@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Query, UploadFile, File
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
@@ -56,3 +56,82 @@ def delete_product(
 ):
     service.delete_product(db, pid, user.id)
     return success(None, "Đã xóa")
+
+@router.get("/export/csv")
+def export_products_csv(
+    ids: str | None = Query(None),
+    request: Request = None,
+    db: Session = Depends(get_db),
+    user=Depends(require("product", "read")),
+):
+    from app.core.csv_utils import export_csv_response
+    from .model import Product
+    
+    query = apply_filters(db.query(Product), Product, request, service.FILTERABLE)
+    if ids:
+        id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
+        if id_list:
+            query = query.filter(Product.id.in_(id_list))
+            
+    items = query.order_by(Product.id.desc()).all()
+    headers_map = {
+        "code": "Mã",
+        "name": "Tên",
+        "invoice_name": "Tên trên hóa đơn",
+        "item_group": "Phân loại",
+        "unit": "ĐVT",
+    }
+    return export_csv_response(items, headers_map, "products")
+
+@router.post("/import/csv")
+def import_products_csv(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user=Depends(require("product", "write")),
+):
+    import csv
+    from io import StringIO
+    from fastapi import HTTPException
+    from .model import Product
+    
+    content = file.file.read().decode("utf-8")
+    reader = csv.DictReader(StringIO(content))
+    if not reader.fieldnames:
+        raise HTTPException(400, "File CSV trống")
+        
+    created, updated, deleted = 0, 0, 0
+    for row in reader:
+        action = row.get("Hành động", "").strip().lower()
+        is_active = action not in ["xóa", "delete", "ngừng"]
+        
+        code = row.get("Mã", "").strip()
+        name = row.get("Tên", "").strip()
+        invoice_name = row.get("Tên trên hóa đơn", "").strip()
+        item_group = row.get("Phân loại", "").strip()
+        unit = row.get("ĐVT", "").strip()
+        
+        if not code and not name:
+            continue
+            
+        existing = db.query(Product).filter(Product.code == code).first() if code else None
+        if existing:
+            if name: existing.name = name
+            existing.invoice_name = invoice_name
+            existing.item_group = item_group
+            existing.unit = unit
+            existing.is_active = is_active
+            existing.updated_by = user.id
+            if not is_active: deleted += 1
+            else: updated += 1
+        else:
+            if not is_active or not name or not code: continue
+            new_obj = Product(
+                code=code, name=name, invoice_name=invoice_name,
+                item_group=item_group, unit=unit, is_active=is_active,
+                created_by=user.id, updated_by=user.id
+            )
+            db.add(new_obj)
+            created += 1
+            
+    db.commit()
+    return success(None, f"Nhập file thành công. Thêm mới {created}, cập nhật {updated}, ẩn {deleted}.")

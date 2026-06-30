@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.utils import generate_code
 
 from .model import Supplier
 from .schema import SupplierCreate, SupplierUpdate
@@ -24,7 +25,9 @@ def get_supplier(db: Session, sid: int) -> Supplier:
 
 
 def create_supplier(db: Session, data: SupplierCreate, user_id: int) -> Supplier:
-    if db.query(Supplier).filter(Supplier.code == data.code).first():
+    if not data.code:
+        data.code = generate_code(db, Supplier, "NCC")
+    elif db.query(Supplier).filter(Supplier.code == data.code).first():
         raise HTTPException(400, "Mã NCC đã tồn tại")
     obj = Supplier(**data.model_dump(), created_by=user_id, updated_by=user_id)
     db.add(obj)

@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.utils import generate_code
 
 from .model import Employee
 from .schema import EmployeeCreate, EmployeeUpdate
@@ -26,7 +27,9 @@ def get_employee(db: Session, eid: int) -> Employee:
 
 
 def create_employee(db: Session, data: EmployeeCreate, user_id: int) -> Employee:
-    if db.query(Employee).filter(Employee.code == data.code).first():
+    if not data.code:
+        data.code = generate_code(db, Employee, "NSU")
+    elif db.query(Employee).filter(Employee.code == data.code).first():
         raise HTTPException(400, "Mã nhân viên đã tồn tại")
     obj = Employee(**data.model_dump(), created_by=user_id, updated_by=user_id)
     db.add(obj)

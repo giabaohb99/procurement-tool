@@ -17,6 +17,7 @@ export type CrudConfig = {
   columns: Column[]
   fields: FieldDef[]
   filters: FilterField[]
+  importExport?: boolean
 }
 
 const badge = (v: any, on = 'Đang dùng', off = 'Ngừng') =>
@@ -54,7 +55,7 @@ export const poBadge = (st: string) => {
 
 export const cruds: Record<string, CrudConfig> = {
   companies: {
-    slug: 'companies', entity: 'company', title: 'Công ty (pháp nhân)', apiPath: '/api/companies',
+    slug: 'companies', entity: 'company', title: 'Công ty (pháp nhân)', apiPath: '/api/companies', importExport: true,
     columns: [
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên' }, { key: 'tax_code', label: 'MST' },
       { key: 'invoice_email', label: 'Email hóa đơn' },
@@ -70,7 +71,7 @@ export const cruds: Record<string, CrudConfig> = {
     ],
   },
   suppliers: {
-    slug: 'suppliers', entity: 'supplier', title: 'Nhà cung cấp', apiPath: '/api/suppliers',
+    slug: 'suppliers', entity: 'supplier', title: 'Nhà cung cấp', apiPath: '/api/suppliers', importExport: true,
     columns: [
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên pháp lý' }, { key: 'tax_code', label: 'MST' },
       { key: 'supplier_type', label: 'Loại', render: (r) => (r.supplier_type === 'transport' ? 'Vận chuyển' : 'Bán hàng') },
@@ -90,7 +91,7 @@ export const cruds: Record<string, CrudConfig> = {
     ],
   },
   products: {
-    slug: 'products', entity: 'product', title: 'Sản phẩm / Hàng hóa', apiPath: '/api/products',
+    slug: 'products', entity: 'product', title: 'Sản phẩm / Hàng hóa', apiPath: '/api/products', importExport: true,
     columns: [
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên' }, { key: 'item_group', label: 'Phân loại' },
       { key: 'unit', label: 'ĐVT' }, { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
@@ -107,7 +108,7 @@ export const cruds: Record<string, CrudConfig> = {
     ],
   },
   employees: {
-    slug: 'employees', entity: 'employee', title: 'Nhân viên', apiPath: '/api/employees',
+    slug: 'employees', entity: 'employee', title: 'Nhân sự', apiPath: '/api/employees', importExport: true,
     columns: [
       { key: 'code', label: 'Mã NV' }, { key: 'full_name', label: 'Họ tên' }, { key: 'email', label: 'Email' },
       { key: 'position', label: 'Chức vụ' }, { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active, 'Đang làm', 'Nghỉ') },
@@ -142,7 +143,7 @@ export const cruds: Record<string, CrudConfig> = {
     fields: [],  // chi tiết dùng trang riêng (PurchaseRequestDetail)
   },
   warehouses: {
-    slug: 'warehouses', entity: 'warehouse', title: 'Kho', apiPath: '/api/warehouses',
+    slug: 'warehouses', entity: 'warehouse', title: 'Kho', apiPath: '/api/warehouses', importExport: true,
     columns: [
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên kho' }, { key: 'address', label: 'Địa chỉ' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
@@ -154,7 +155,7 @@ export const cruds: Record<string, CrudConfig> = {
     ],
   },
   units: {
-    slug: 'units', entity: 'unit', title: 'Đơn vị tính', apiPath: '/api/units',
+    slug: 'units', entity: 'unit', title: 'Đơn vị tính', apiPath: '/api/units', importExport: true,
     columns: [
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên ĐVT' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
@@ -166,7 +167,7 @@ export const cruds: Record<string, CrudConfig> = {
     ],
   },
   'item-groups': {
-    slug: 'item-groups', entity: 'item_group', title: 'Phân loại VTBB/NL', apiPath: '/api/item-groups',
+    slug: 'item-groups', entity: 'item_group', title: 'Phân loại VTBB/NL', apiPath: '/api/item-groups', importExport: true,
     columns: [
       { key: 'name', label: 'Phân loại' }, { key: 'std_days', label: 'Số ngày quy định' },
       { key: 'apply_date', label: 'Ngày áp dụng' },
@@ -180,7 +181,7 @@ export const cruds: Record<string, CrudConfig> = {
     ],
   },
   brands: {
-    slug: 'brands', entity: 'brand', title: 'Thương hiệu / Bộ phận', apiPath: '/api/brands',
+    slug: 'brands', entity: 'brand', title: 'Phòng ban', apiPath: '/api/brands', importExport: true,
     columns: [
       { key: 'code', label: 'Viết tắt' }, { key: 'department', label: 'Bộ phận đặt hàng' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },

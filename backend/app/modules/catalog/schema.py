@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 # ---- Warehouse ----
 class WarehouseCreate(BaseModel):
-    code: str
+    code: str = ""
     name: str
     address: str = ""
     is_active: bool = True
@@ -22,7 +22,7 @@ class WarehouseOut(WarehouseCreate):
 
 # ---- Unit ----
 class UnitCreate(BaseModel):
-    code: str
+    code: str = ""
     name: str
     is_active: bool = True
 
@@ -39,6 +39,7 @@ class UnitOut(UnitCreate):
 
 # ---- ItemGroup ----
 class ItemGroupCreate(BaseModel):
+    code: str = ""
     name: str
     std_days: str = ""
     note: str = ""
@@ -60,7 +61,7 @@ class ItemGroupOut(ItemGroupCreate):
 
 # ---- Brand ----
 class BrandCreate(BaseModel):
-    code: str
+    code: str = ""
     department: str = ""
     is_active: bool = True
 
