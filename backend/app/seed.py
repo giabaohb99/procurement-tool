@@ -21,6 +21,8 @@ from app.modules.purchase_request.model import (PurchaseRequest,  # noqa: F401
                                                 PurchaseRequestItem)
 from app.modules.role.model import Permission, Role
 from app.modules.supplier.model import Supplier
+from app.modules.survey.model import (Survey, SurveyProductLine,  # noqa: F401
+                                      SurveySupplierLine)
 from app.modules.user.model import User, UserRole
 
 

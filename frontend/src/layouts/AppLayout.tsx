@@ -5,6 +5,8 @@ import { useAuth } from '../auth/AuthContext'
 const NAV = [
   { to: '/', label: 'Trang chủ', icon: 'ti-layout-dashboard' },
   { to: '/purchase-requests', label: 'Yêu cầu mua', icon: 'ti-file-text' },
+  { to: '/surveys-supplier', label: 'Khảo sát NCC', icon: 'ti-clipboard-search' },
+  { to: '/surveys-product', label: 'Khảo sát SP', icon: 'ti-clipboard-check' },
   { to: '/companies', label: 'Công ty', icon: 'ti-building' },
   { to: '/suppliers', label: 'Nhà cung cấp', icon: 'ti-truck' },
   { to: '/products', label: 'Sản phẩm', icon: 'ti-box' },

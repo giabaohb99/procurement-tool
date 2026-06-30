@@ -7,6 +7,7 @@ import CrudList from './components/CrudList'
 import CrudDetail from './components/CrudDetail'
 import PurchaseRequestDetail from './pages/PurchaseRequestDetail'
 import PrintPurchaseRequest from './pages/PrintPurchaseRequest'
+import SurveyDetail from './pages/SurveyDetail'
 
 function Protected({ children }: { children: JSX.Element }) {
   const { user } = useAuth()
@@ -23,6 +24,8 @@ export default function App() {
           <Route path="/" element={<Protected><AppLayout /></Protected>}>
             <Route index element={<Dashboard />} />
             <Route path="purchase-requests/:id" element={<PurchaseRequestDetail />} />
+            <Route path="surveys-supplier/:id" element={<SurveyDetail type="supplier" />} />
+            <Route path="surveys-product/:id" element={<SurveyDetail type="product" />} />
             <Route path=":entity" element={<CrudList />} />
             <Route path=":entity/:id" element={<CrudDetail />} />
           </Route>

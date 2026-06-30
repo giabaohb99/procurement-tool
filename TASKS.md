@@ -30,7 +30,7 @@
 - [x] Dashboard trang chủ (thẻ chỉ số + shortcut + biểu đồ xu hướng/cơ cấu trạng thái) — khớp mockup & phân tách rõ ràng
 - [x] Purchase Request (PYC): header + bảng items + luồng Nháp→Gửi duyệt→Duyệt/Từ chối + log + đính kèm báo giá/chứng từ riêng biệt
 - [ ] Unit / Unit conversion (Sheet 5)
-- [ ] Survey (form chính + bảng con supplier/product) + LAB result
+- [x] Survey NCC + SP (form + bảng con inline đủ cột Sheet 3/4 + LAB + duyệt)
 - [ ] Email cơ bản (giao việc, chờ duyệt, kết quả)
 
 ## Phase 2 — Mua hàng + Nhận hàng (GR)

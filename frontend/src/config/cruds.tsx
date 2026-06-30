@@ -176,4 +176,34 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
     ],
   },
+  'surveys-supplier': {
+    slug: 'surveys-supplier', entity: 'survey', title: 'Khảo sát Nhà cung cấp', apiPath: '/api/surveys-supplier',
+    columns: [
+      { key: 'code', label: 'Mã phiếu' }, { key: 'pr_code', label: 'Mã YC (PYC)' },
+      { key: 'item_group', label: 'Nhóm hàng' }, { key: 'nspt', label: 'NSPT' },
+      { key: 'status', label: 'Trạng thái', render: (r) => prBadge(r.status) },
+    ],
+    filters: [
+      { key: 'code', label: 'Mã phiếu' }, { key: 'pr_code', label: 'Mã YC' }, { key: 'nspt', label: 'NSPT' },
+      { key: 'status', label: 'Trạng thái', type: 'select', options: [
+        { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
+        { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Từ chối' }] },
+    ],
+    fields: [],
+  },
+  'surveys-product': {
+    slug: 'surveys-product', entity: 'survey', title: 'Khảo sát Sản phẩm', apiPath: '/api/surveys-product',
+    columns: [
+      { key: 'code', label: 'Mã phiếu' }, { key: 'pr_code', label: 'Mã YC (PYC)' },
+      { key: 'item_group', label: 'Nhóm hàng' }, { key: 'nspt', label: 'NSPT' },
+      { key: 'status', label: 'Trạng thái', render: (r) => prBadge(r.status) },
+    ],
+    filters: [
+      { key: 'code', label: 'Mã phiếu' }, { key: 'pr_code', label: 'Mã YC' }, { key: 'nspt', label: 'NSPT' },
+      { key: 'status', label: 'Trạng thái', type: 'select', options: [
+        { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
+        { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Từ chối' }] },
+    ],
+    fields: [],
+  },
 }
