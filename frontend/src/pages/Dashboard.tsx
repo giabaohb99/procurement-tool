@@ -15,14 +15,17 @@ export default function Dashboard() {
       .catch(() => {})
   }, [days])
 
+  const pycMetrics = [
+    { label: 'Yêu cầu chờ', value: stats.pr_pending ?? 0, icon: 'ti-file-alert', to: '/purchase-requests?status=submitted', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+    { label: 'Đang xử lý', value: stats.pr_processing ?? 0, icon: 'ti-settings', to: '/purchase-requests?status=approved', color: '#0d9488', bg: '#f0fdfa', border: '#99f6e4' },
+    { label: 'Khảo sát chờ', value: stats.survey_pending ?? 0, icon: 'ti-clipboard-check', to: '#', color: '#7c3aed', bg: '#faf5ff', border: '#e9d5ff' },
+  ]
+
   const poMetrics = [
-    { label: 'Yêu cầu chờ', value: stats.pr_pending ?? 0, icon: 'ti-file-alert', to: '/purchase-requests?status=submitted', color: 'var(--amber)' },
-    { label: 'Đang xử lý', value: stats.pr_processing ?? 0, icon: 'ti-settings', to: '/purchase-requests?status=approved', color: 'var(--teal)' },
-    { label: 'Khảo sát chờ', value: stats.survey_pending ?? 0, icon: 'ti-clipboard-check', to: '#', color: '#8e44ad' },
-    { label: 'PO đã đặt hàng', value: stats.po_ordered ?? 0, icon: 'ti-shopping-cart', to: '#', color: 'var(--navy)' },
-    { label: 'Đã giao', value: stats.po_delivered ?? 0, icon: 'ti-circle-check', to: '#', color: 'var(--green)' },
-    { label: 'Giao chưa đủ', value: stats.po_partial ?? 0, icon: 'ti-alert-triangle', to: '#', color: '#d35400' },
-    { label: 'Hoàn thành', value: stats.po_completed ?? 0, icon: 'ti-circle-check-filled', to: '#', color: '#27ae60' },
+    { label: 'PO đã đặt hàng', value: stats.po_ordered ?? 0, icon: 'ti-shopping-cart', to: '#', color: '#0284c7', bg: '#f0f9ff', border: '#bae6fd' },
+    { label: 'Đã giao', value: stats.po_delivered ?? 0, icon: 'ti-circle-check', to: '#', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' },
+    { label: 'Giao chưa đủ', value: stats.po_partial ?? 0, icon: 'ti-alert-triangle', to: '#', color: '#ea580c', bg: '#fff7ed', border: '#ffedd5' },
+    { label: 'Hoàn thành', value: stats.po_completed ?? 0, icon: 'ti-circle-check-filled', to: '#', color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
   ]
 
   const shortcuts = [
@@ -103,19 +106,42 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <h3 style={{ margin: '0 0 12px', color: 'var(--navy)', fontSize: 15, fontWeight: 600 }}>Tình trạng hoạt động (PO &amp; PYC)</h3>
-      <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', marginBottom: 24 }}>
-        {poMetrics.map((m) => (
-          <div key={m.label} className="metric-card" style={{ borderLeft: `4px solid ${m.color}` }} onClick={() => m.to !== '#' && navigate(m.to)}>
-            <div className="metric-icon" style={{ color: m.color, background: `${m.color}15` }}>
-              <i className={'ti ' + m.icon} />
-            </div>
-            <div>
-              <div className="metric-value" style={{ fontSize: 20 }}>{m.value}</div>
-              <div className="metric-label" style={{ fontSize: 12.5 }}>{m.label}</div>
-            </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 20, marginBottom: 24 }}>
+        {/* PYC Section */}
+        <div style={{ background: '#f8fafc', padding: '16px 18px', borderRadius: 12, border: '1px solid var(--border)', boxShadow: '0 2px 12px rgba(26, 77, 107, 0.02)' }}>
+          <h4 style={{ margin: '0 0 14px 0', fontSize: 13, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Yêu cầu thu mua (PYC)</h4>
+          <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 10 }}>
+            {pycMetrics.map((m) => (
+              <div key={m.label} className="metric-card" style={{ background: m.bg, border: `1px solid ${m.border}`, borderLeft: `3.5px solid ${m.color}`, padding: '10px 12px', margin: 0 }} onClick={() => m.to !== '#' && navigate(m.to)}>
+                <div className="metric-icon" style={{ color: m.color, background: '#ffffff', width: 34, height: 34, fontSize: 15, boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
+                  <i className={'ti ' + m.icon} />
+                </div>
+                <div>
+                  <div className="metric-value" style={{ fontSize: 17, color: m.color }}>{m.value}</div>
+                  <div className="metric-label" style={{ fontSize: 12, color: 'var(--ink)' }}>{m.label}</div>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+
+        {/* PO Section */}
+        <div style={{ background: '#f8fafc', padding: '16px 18px', borderRadius: 12, border: '1px solid var(--border)', boxShadow: '0 2px 12px rgba(26, 77, 107, 0.02)' }}>
+          <h4 style={{ margin: '0 0 14px 0', fontSize: 13, color: 'var(--navy)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Đơn đặt hàng (PO)</h4>
+          <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 10 }}>
+            {poMetrics.map((m) => (
+              <div key={m.label} className="metric-card" style={{ background: m.bg, border: `1px solid ${m.border}`, borderLeft: `3.5px solid ${m.color}`, padding: '10px 12px', margin: 0 }} onClick={() => m.to !== '#' && navigate(m.to)}>
+                <div className="metric-icon" style={{ color: m.color, background: '#ffffff', width: 34, height: 34, fontSize: 15, boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
+                  <i className={'ti ' + m.icon} />
+                </div>
+                <div>
+                  <div className="metric-value" style={{ fontSize: 17, color: m.color }}>{m.value}</div>
+                  <div className="metric-label" style={{ fontSize: 12, color: 'var(--ink)' }}>{m.label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* SVG Charts section */}

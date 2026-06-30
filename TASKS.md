@@ -9,7 +9,7 @@
 - [x] Module: company (CRUD) · department (CRUD) · employee (CRUD)
 - [x] Module: role (list/create + ma trận quyền + meta) · user (cấp tài khoản, đổi mật khẩu, gán vai trò)
 - [x] Frontend: login · layout · trang Công ty · trang Nhân viên
-- [ ] Chạy thử `docker compose up`, sửa lỗi phát sinh (môi trường thật)
+- [x] Chạy thử `docker compose up`, sửa lỗi phát sinh (môi trường thật)
 - [ ] Alembic migration (thay cho create_all) — `migrations/`
 - [ ] Màn cấu hình phân quyền (FE) dùng `/api/roles/{id}/permissions` + `/meta`
 - [ ] Google OAuth (sau)
@@ -27,8 +27,8 @@
 ## Phase 1 — Danh mục + Khảo sát
 - [x] Supplier (có `supplier_type` goods/transport) + data mẫu + filter
 - [x] Product (VTBB/NL) + data mẫu + filter
-- [x] Dashboard trang chủ (thẻ chỉ số + shortcut) — khớp mockup
-- [x] Purchase Request (PYC): header + bảng items + luồng Nháp→Gửi duyệt→Duyệt/Từ chối + log
+- [x] Dashboard trang chủ (thẻ chỉ số + shortcut + biểu đồ xu hướng/cơ cấu trạng thái) — khớp mockup & phân tách rõ ràng
+- [x] Purchase Request (PYC): header + bảng items + luồng Nháp→Gửi duyệt→Duyệt/Từ chối + log + đính kèm báo giá/chứng từ riêng biệt
 - [ ] Unit / Unit conversion (Sheet 5)
 - [ ] Survey (form chính + bảng con supplier/product) + LAB result
 - [ ] Email cơ bản (giao việc, chờ duyệt, kết quả)

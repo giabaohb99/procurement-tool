@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext'
 export default function Login() {
   const { login } = useAuth()
   const nav = useNavigate()
-  const [username, setUsername] = useState('degoadmin')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [err, setErr] = useState('')
 
