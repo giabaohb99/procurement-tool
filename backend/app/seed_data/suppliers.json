@@ -1,0 +1,996 @@
+[
+  {
+    "code": "Cẩm Hùng",
+    "name": "CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI BAO BÌ CẨM HÙNG",
+    "address": "số 37, đường B11, KDC 91B, Phường Tân An, Thành phố Cần Thơ, Việt Nam",
+    "tax_code": "180177824100",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Đông Tây",
+    "name": "CÔNG TY TNHH SẢN XUẤT BAO BÌ ĐÔNG TÂY",
+    "address": "0827/3 Đường Võ Thị Thừa, Khu phố 3, Phường An Phú Đông, Quận 12, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0316254811",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Mộc Ấn",
+    "name": "CÔNG TY TNHH QUẢNG CÁO MỘC ẤN",
+    "address": "368/12 Đường TTH21, Khu phố 3, Phường Tân Thới Hiệp, Quận 12, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0312214688",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Tân Đức",
+    "name": "CÔNG TY TNHH SẢN XUẤT- THƯƠNG MẠI- DỊCH VỤ TÂN ĐỨC",
+    "address": "108/8 Đường số 11, Khu phố 5, Phường Linh Xuân, Thành phố Thủ Đức, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0301909568",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Thành Công",
+    "name": "CÔNG TY TRÁCH NHIỆM HỮU HẠN MỘT THÀNH VIÊN HỢP TRÍ THÀNH CÔNG",
+    "address": "98, đường 3/2, Phường Xuân Khánh, Quận Ninh Kiều, Thành phố Cần Thơ, Việt Nam",
+    "tax_code": "180135601700",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "An Tín",
+    "name": "CÔNG TY TNHH SẢN XUẤT - THƯƠNG MẠI AN TÍN",
+    "address": "247/16 Đường Bình Tiên, Phường 08, Quận 6, Thành Phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0315259038",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Cường Phát",
+    "name": "CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI NHỰA CƯỜNG PHÁT LONG AN",
+    "address": "Ấp Hóc Thơm 1, Xã Hòa Khánh, Tỉnh Tây Ninh, Việt Nam",
+    "tax_code": "1101721810",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Hns",
+    "name": "CÔNG TY TNHH BAO BÌ HNS",
+    "address": "084 QL1, KV2, Ba Láng, Cái Răng, Cần Thơ",
+    "tax_code": "1801399719",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Hồ Gia",
+    "name": "CÔNG TY TNHH MTV SẢN XUẤT THƯƠNG MẠI NHỰA HỒ GIA",
+    "address": "100/7B khu phố 1, Bùi Dương Lịch, Phường Bình Hưng Hòa B, Quận Bình Tân, Thành phố Hồ Chí Minh",
+    "tax_code": "0315743256",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Minh Ngọc",
+    "name": "CÔNG TY TNHH BAO BÌ MINH NGỌC",
+    "address": "Lô D2.1 - D2.2 Đường số 4, KCN Nhị Xuân, Xã Xuân Thới Sơn, Huyện Hóc Môn, Tp. HCM",
+    "tax_code": "0313694927",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Quang Đạt",
+    "name": "CÔNG TY TNHH SX TM DV  QUỐC TẾ QUANG ĐẠT",
+    "address": "43D, Ao Đôi, P. Bình Trị Đông A, Q. Bình Tân, TP. HCM",
+    "tax_code": "0317703989",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Thành Phát",
+    "name": "CÔNG TY CỔ PHẦN BAO BÌ NHỰA THÀNH PHÁT",
+    "address": "F01-1, đường số 1, KCN Hạnh Phúc, ấp 5 Đức Hoà Đông, ĐH, LA",
+    "tax_code": "0302299160",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Phương Nam",
+    "name": "CÔNG TY TNHH BAO BÌ NHỰA PHƯƠNG NAM",
+    "address": "384A, Tổ 3, Ấp 1, Xã Mỹ Hạnh, Tỉnh Tây Ninh, Việt Nam",
+    "tax_code": "0301515210",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "PHL",
+    "name": "CÔNG TY CỔ PHẦN PHL",
+    "address": "Lô MB1-1, Lô MB1-1a, khu công nghiệp Đức Hòa 1, Đường số 5, Ấp 5, Xã Đức Hòa Đông, Huyện Đức Hoà, Tỉnh Long An, Việt Nam",
+    "tax_code": "1101392309",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Vinaco",
+    "name": "CÔNG TY TNHH SẢN XUẤT BAO BÌ VINACO",
+    "address": "Lô B10, Đường số 1, KCN Hải Sơn (GĐ 3+4), Xã Đức Hòa Hạ, Huyện Đức Hòa, tỉnh Long An",
+    "tax_code": "1101950715",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Hải Bình",
+    "name": "CÔNG TY TNHH SX TM DV HẢI BÌNH",
+    "address": "30 Võ Hoành, Phường Phú Thọ Hoà, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "302202299",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Hóa Chất Miền Nam",
+    "name": "CÔNG TY CP HÓA CHẤT MIỀN NAM",
+    "address": "137B -137C, Trần Hưng Đạo, Phường An Phú, Quận Ninh Kiều, Thành phố Cần Thơ",
+    "tax_code": "1800662621",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Tmg",
+    "name": "CÔNG TY CP QUÔC TẾ TM GROW",
+    "address": "Trung tâm dịch vụ khu công nghiệp Amata, đường Amata, KCN Amata, Phường Long Bình, Thành phố Biên Hoà, Tỉnh Đồng Nai",
+    "tax_code": "3600630513",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Đắc Khang",
+    "name": "CÔNG TY CP ĐẮC KHANG",
+    "address": "482/10/28A1 Nơ Trang Long, Phường 13, Quận Bình Thạnh, Thành phố Hồ Chí Minh",
+    "tax_code": "304714687",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Phát Đại Lộc",
+    "name": "CÔNG TY TNHH SX TM DV PHÁT ĐẠI LỘC",
+    "address": "Số 24 Đường Hiệp Thành 48, Phường Hiệp Thành, Quận 12, Thành phố Hồ Chí Minh",
+    "tax_code": "317409056",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Hiền Phan",
+    "name": "CÔNG TY TNHH THƯƠNG MẠI HIỀN PHAN",
+    "address": "Số 64 Lê Lăng, Phường Phú Thọ Hoà, Quận Tân Phú, Thành phố Hồ Chí Minh",
+    "tax_code": "305877109",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Vạn An",
+    "name": "CÔNG TY TNHH XNK HÓA CHẤT VẠN AN",
+    "address": "208C Nguyễn Ngọc Nhựt, Phường Tân Quý, Quận Tân Phú, Thành phố Hồ Chí Minh",
+    "tax_code": "314845752",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Vĩnh Nam Anh",
+    "name": "CÔNG TY TNHH VĨNH NAM ANH",
+    "address": "65/1 Ấp 1, Bùi Công Trừng, Xã Nhị Bình, Huyện Hóc Môn, Thành phố Hồ Chí Minh",
+    "tax_code": "304973949",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Hòa Phát",
+    "name": "CÔNG TY TNHH KỸ THUẬT AN TOÀN MÔI TRƯỜNG HÒA PHÁT",
+    "address": "173/53 Thoại Ngọc Hầu, Phường Phú Thạnh, Quận Tân Phú, Thành phố Hồ Chí Minh",
+    "tax_code": "312483507",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Mekong",
+    "name": "CÔNG TY TNHH NGUYÊN LIỆU NÔNG NGHIỆP MEKONG",
+    "address": "Lô Officetel L4-20, tầng 20, Block Lucky, Tòa nhà Richmond City, 207C Nguyễn Xí, Phường Bình Thạnh, TP. Hồ Chí Minh",
+    "tax_code": "313587019",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "An Gia Phú",
+    "name": "CÔNG TY TNHH SX VÀ TM AN GIA PHÚ",
+    "address": "40/17/9 Đường số 7, Khu phố 12, Phường Bình Hưng Hòa, Quận Bình Tân, Thành phố Hồ Chí Minh",
+    "tax_code": "313155900",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Ngàn Hương",
+    "name": "CÔNG TY TNHH XNK NGÀN HƯƠNG",
+    "address": "133K, Trần Hưng Đạo, Phường An Phú, Quận Ninh Kiều, Thành phố Cần Thơ",
+    "tax_code": "1800385992",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Mạnh Đan",
+    "name": "CÔNG TY CỔ PHẦN MẠNH ĐAN",
+    "address": "43 Đường số 5, Cư xá Chu Văn An, Phường 26, Quận Bình Thạnh, Thành phố Hồ Chí Minh",
+    "tax_code": "311118396",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Trung Phong",
+    "name": "CÔNG TY TNHH VẬT TƯ NÔNG NGHIỆP TRUNG PHONG",
+    "address": "36/7 Lam Sơn , Phường 6, Quận Bình Thạnh, Thành phố Hồ Chí Minh",
+    "tax_code": "314509888",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Jd",
+    "name": "CÔNG TY TNHH SOLUTION JD",
+    "address": "43 đường số 5, cư xá Chu Văn An , Phường 26, Quận Bình Thạnh, Thành phố Hồ Chí Minh",
+    "tax_code": "0314465052",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Kel",
+    "name": "CÔNG TY TNHH KING ELONG",
+    "address": "Lô Officetel L5-20, Tầng 20, Block Lucky, Tòa nhà Richmond City, 207C Nguyễn Xí, Phường 26, Quận Bình Thạnh, TP Hồ Chí Minh, Việt Nam",
+    "tax_code": "0317197235",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Ntk",
+    "name": "CÔNG TY TNHH HOÁ SINH NTK",
+    "address": "Lô B113, đường số 5, KCN Thái Hoà, Xã Đức Lập Hạ, Huyện Đức Hoà, Tỉnh Long An",
+    "tax_code": "1102004566",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Mộc Lan",
+    "name": "CÔNG TY TNHH CÂY XANH MỘC LAN",
+    "address": "Số 112/8/2 Tổ 8, khu phố Tân Cang, phường Phước Tân, TP Biên Hòa, tỉnh Đồng Nai",
+    "tax_code": "3603725410",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Nam Bình",
+    "name": "CÔNG TY TNHH THƯƠNG MẠI HÓA CHẤT NAM BÌNH",
+    "address": "4/107, Ấp Nhị Tân 2, Xã Tân Thới Nhì, Huyện Hóc Môn, Thành phố Hồ Chí Minh",
+    "tax_code": "0309910935",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Kết Nông",
+    "name": "CÔNG TY TNHH XNK KẾT NÔNG",
+    "address": "119/83 Nguyễn Thị Tần, Phường 2, Quận 8, TP HCM",
+    "tax_code": "0315006943",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Hóa Chất Mê Kông",
+    "name": "CÔNG TY TNHH HÓA CHẤT MÊ KÔNG",
+    "address": "74A Đường số 18, Phường 8, Quận Gò Vấp, TP.HCM, Việt Nam",
+    "tax_code": "0304920055",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Đệ Nhất",
+    "name": "CÔNG TY CỔ PHẦN THIẾT BỊ ĐỆ NHẤT",
+    "address": "Tầng 3, Phòng 3.07, khu I, Tòa nhà The Prince Residence, số 19-21 Nguyễn Văn Trỗi, Phường 11, Quận Phú Nhuận, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0310937272",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Svc",
+    "name": "CÔNG TY TNHH SVC CHEMICAL",
+    "address": "Số nhà C17, đường số 4, KDC Trần Anh, Ấp Mới 2, Xã Mỹ Hạnh Nam, Huyện Đức Hòa, Tình Long An",
+    "tax_code": "1101987225",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Khả Doanh",
+    "name": "CÔNG TY TNHH KHẢ DOANH",
+    "address": "9/27 Phạm Văn Hai, Phường 1, Quận Tân Bình, TP Hồ Chí Minh",
+    "tax_code": "303557142",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Basel Thụy Sĩ",
+    "name": "CÔNG TY TNHH BASEL THỤY SĨ",
+    "address": "Lô H2A đường số 4, KCN Hải Sơn (GĐ 3+4), ấp Bình Tiền 2, Xã Đức Hòa Hạ, Huyện Đức Hoà, Tỉnh Long An",
+    "tax_code": "1101742391",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Thiên Nhiên Xanh",
+    "name": "CÔNG TY TNHH DƯỢC LIỆU THIÊN NHIÊN XANH",
+    "address": "85A Ỷ Lan, Phường Hiệp Tân, Quận Tân Phú, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "314051566",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Thịnh Phát Vi Na",
+    "name": "CÔNG TY TNHH THỊNH PHÁT VI NA",
+    "address": "110 Đường số 30, Phường An Lạc, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "303702463",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Nguyễn Bá",
+    "name": "CÔNG TY TNHH SẢN XUẤT VÀ THƯƠNG MẠI NGUYỄN BÁ",
+    "address": "10-12 Trung Lang, Phường Bảy Hiền, TP Hồ Chí Minh, Việt Nam",
+    "tax_code": "308923441",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Thuận Duyên",
+    "name": "CÔNG TY CỔ PHẦN XUẤT NHẬP KHẨU THƯƠNG MẠI SẢN XUẤT HÓA CHẤT THUẬN DUYÊN",
+    "address": "49/6G Bà Điểm 11, Ấp Đông Lân, Xã Bà Điểm, TP Hồ Chí Minh, Việt Nam",
+    "tax_code": "311269934",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Việt Mỹ",
+    "name": "CÔNG TY CỔ PHẦN VIỆT MỸ CẦN THƠ",
+    "address": "M40- đường 3A- KDC Hưng Phú 1- Quận Cái Răng- TP.Cần Thơ",
+    "tax_code": "1801548985",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Châu Ngân",
+    "name": "CÔNG TY CỔ PHẦN XUẤT NHẬP KHẨU CHÂU NGÂN",
+    "address": "71 Đường Số 27, KDC Tân Quy Đông, Phường Tân Hưng, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "309818111",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "An Khánh",
+    "name": "CÔNG TY TNHH THIẾT BỊ - HÓA CHẤT KHOA HỌC KỸ THUẬT AN KHÁNH",
+    "address": "43, đường 14, Khu tái định cư Thới Nhựt, Phường Tân An, TP Cần Thơ, Việt Nam",
+    "tax_code": "1800702458",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Nutifer Vn",
+    "name": "CÔNG TY TNHH NUTIFER VN",
+    "address": "Lô D01A, CCN Đức Thuận, KCN Đức Hoà 3, Ấp Tràm Lạc, Xã Đức Lập, Tỉnh Tây Ninh, Việt Nam",
+    "tax_code": "1101793371",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Hiền Phan Long An",
+    "name": "CÔNG TY TNHH TM HIỀN PHAN LONG AN",
+    "address": "Lô A5.1, Đường số 1, KCN Đức Hòa III - Tập Đoàn Tân Á Đại Thành, Ấp Đức Hạnh 2, Xã Đức Lập, Tỉnh Tây Ninh, Việt Nam",
+    "tax_code": "1102007045",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Cvgr",
+    "name": "CÔNG TY CỔ PHẦN CVGREEN",
+    "address": "14/4 Thạnh Xuân 18, Phường Thới An, Thành Phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0316184314",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Namsiang",
+    "name": "CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ NAMSIANG VIỆT NAM",
+    "address": "180/21 Lý Thánh Tông, Phường Phú Thạnh, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "310194210",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Nam Hà",
+    "name": "CÔNG TY TNHH NAM HÀ",
+    "address": "103 Lý Tự Trọng, Phường Ninh Kiều, Thành phố Cần Thơ",
+    "tax_code": "1800567865",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Kỳ Anh",
+    "name": "CÔNG TY TNHH SẢN XUẤT VÀ THƯƠNG MẠI DƯỢC LIỆU KỲ ANH",
+    "address": "Ấp Mỹ Hòa 1, Xã Tháp Mười, Tỉnh Đồng Tháp, Việt Nam",
+    "tax_code": "1402129830",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Trương Gia Phước",
+    "name": "CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ IN ẤN TRƯƠNG GIA PHƯỚC",
+    "address": "Số 311 Nguyễn Văn Cừ, Phường Cái Khế, Thành phố Cần Thơ, Việt Nam",
+    "tax_code": "1801514778",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Như Cương",
+    "name": "DOANH NGHIỆP TƯ NHÂN NHƯ CƯƠNG",
+    "address": "78, đường 30/4, phường Ninh Kiều, TP Cần Thơ",
+    "tax_code": "1800525914",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Tân Hoa Mai",
+    "name": "CÔNG TY TNHH IN ẤN KỸ THUẬT MỚI TÂN HOA MAI",
+    "address": "96/5A Đặng Thùy Trâm, Phường Bình Lợi Trung, Thành Phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0311275254",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Cbv",
+    "name": "HỢP TÁC XÃ SẢN XUẤT THƯƠNG MẠI NÔNG, THỦY SẢN CÁNH BUỒM VÀNG",
+    "address": "B14/257 Ấp 2, xã Tân Nhựt, huyện Bình Chánh, TP. Hồ Chí Minh",
+    "tax_code": "315907352",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Ldb",
+    "name": "CÔNG TY TNHH TMDV LADYBUG VIỆT NAM",
+    "address": "32/36/27 Ông Ích Khiêm, Phường 14, Quận 11, TP Hồ Chí Minh",
+    "tax_code": "317370225",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Cmc",
+    "name": "CÔNG TY TNHH CEMACO VIỆT NAM",
+    "address": "87B1 Ung Văn Khiêm, P. Cái Khế, Q. Ninh Kiều, Thành phố Cần Thơ, Việt Nam",
+    "tax_code": "0108075628005",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Aq",
+    "name": "CÔNG TY CP CÔNG NGHỆ AQUADELTA",
+    "address": "55 đường 3/2, phường Hưng lợi, quận Ninh Kiều, TPCT",
+    "tax_code": "1801666202",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Du Bai",
+    "name": "CÔNG TY TNHH HÓA CHẤT PHÂN BÓN, THUỐC BVTV DUBAI",
+    "address": "Lô B115, Đường số 5, KCN Thái Hòa, Ấp Tân Hòa, Xã Đức Lập Hạ, Huyện Đức Hòa, Tỉnh Long An",
+    "tax_code": "1101798524",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Gemachem",
+    "name": "CÔNG TY CỔ PHẦN GEMACHEM VIỆT NAM",
+    "address": "46 Ngồ Quyền, P Hàng Bài, Quận Hoàn Kiếm, TP Hà Nội",
+    "tax_code": "102135197",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Gemsky",
+    "name": "CÔNG TY TNHHH THƯƠNG MẠI GEMSKY",
+    "address": "507 Lũy Bán Bích, Phường Phú Thạnh,  TP HCM",
+    "tax_code": "316840661",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "An Phát",
+    "name": "CÔNG TY CỔ PHẦN THIẾT BỊ KIỂM ĐỊNH AN PHÁT",
+    "address": "Km số 9, đường 72, xã Cộng Hòa, huyện Quốc Oai, thành phố Hà Nội.",
+    "tax_code": "108673258",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Phương Lâm",
+    "name": "Cửa Hàng Phương Lâm",
+    "address": "Ngõ 2 đội 3 Võng La - Đông Anh - Hà Nội",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Khai Nhật",
+    "name": "CÔNG TY TNHH KHAI NHẬT",
+    "address": "Tầng 15, P.1508 Tòa nhà Vincom Center, Số 72 Lê Thánh Tôn, Phường Bến Nghé, Quận 1, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0317473485",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Sam Chem",
+    "name": "CÔNG TY CP SAM CHEM QUẢ CẦU",
+    "address": "Lầu 7, Số 82 Trần Huy Liệu - Phường 15 - Quận Phú Nhuận - TP HCM",
+    "tax_code": "0304750798",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Thùy Anh",
+    "name": "CÔNG TY CP ĐẦU TƯ PHÁT TRIỂN THƯƠNG MẠI VÀ DỊCH VỤ THÙY ANH",
+    "address": "Thửa đất số 1, khu đất dịch vụ thôn Yên Vĩnh, xã Kim Chung, huyện Hoài Đức, TP Hà Nội33/4F",
+    "tax_code": "0109206922",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Hkm",
+    "name": "CÔNG TY TNHH THIẾT BỊ KHOA HỌC CÔNG NGHỆ HKM",
+    "address": "52/4T Đường Xuân Thới 3, Ấp Xuân Thới Đông 2, Xã Xuân Thới Đông, Huyện Hóc Môn, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0312965740",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Mỹ Kỳ",
+    "name": "CÔNG TY TNHH CÔNG NGHIỆP MỸ KỲ",
+    "address": "87/1 Đường TL 41, Phường An Phú Đông, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0313245382",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Sài Gòn Nguyễn",
+    "name": "CÔNG TY TNHH ĐẦU TƯ THƯƠNG MẠI SÀI GÒN NGUYỄN",
+    "address": "30/12/18 Đường 49, Phường Hiệp Bình, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0314511301",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Intrie",
+    "name": "CÔNG TY TNHH INTRIE",
+    "address": "56/16 Nguyễn Văn Săng, Phường Tân Sơn Nhì, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0317214025",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Kpos",
+    "name": "CÔNG TY TNHH MỘT THÀNH VIÊN TM AN KHÁNH",
+    "address": "623 Tên Lửa, Phường An Lạc, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0316113105",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Hdsd Antisol",
+    "name": "CÔNG TY TNHH WAF BRANDS",
+    "address": "72/1 Nguyễn Trãi, Phường Ninh Kiều, Thành phố Cần Thơ, Việt Nam",
+    "tax_code": "1801773973",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Trí Tín",
+    "name": "CÔNG TY TNHH IN BAO BÌ TRÍ TÍN",
+    "address": "168/59A Đường Bình Trị Đông, Phường Bình Trị Đông, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0311841439",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Sáng Tâm",
+    "name": "CÔNG TY TNHH SẢN XUẤT BAO BÌ NHỰA SÁNG TÂM",
+    "address": "841 Quốc Lộ 1A, Phường Bình Hưng Hòa, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0317140831",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Thiên An Phú",
+    "name": "CÔNG TY TRÁCH NHIỆM HỮU HẠN SẢN XUẤT THƯƠNG MẠI THIÊN AN PHÚ",
+    "address": "1A140 Vĩnh Lộc, Xã Phạm Văn Hai, Huyện Bình Chánh, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0314862758",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Oanh Design",
+    "name": "CÔNG TY TNHH MỸ THUẬT ỨNG DỤNG MASTER",
+    "address": "240/32 Nguyễn Văn Luông, Phường Bình Phú, TP Hồ Chí Minh, Việt Nam",
+    "tax_code": "317050521",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Hiệp Phát",
+    "name": "CÔNG TY TNHH XNK HIỆP PHÁT CHEM",
+    "address": "Lô Q17A-18 đường số 11, KCN Hải Sơn mở rộng (GĐ 3+4), Xã Đức Hòa , Tỉnh Tây Ninh, Việt Nam",
+    "tax_code": "1101925116",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "AMG",
+    "name": "CÔNG TY TNHH THƯƠNG MẠI VÀ DỊCH VỤ AMG GROUP",
+    "address": "Số 63 Vũ Ngọc Phan, phường Láng Hạ, quận Đống Đa, Hà Nội",
+    "tax_code": "108764547",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "VNT",
+    "name": "CÔNG TY CỔ PHẦN THƯƠNG MẠI XUẤT NHẬP KHẨU VNT",
+    "address": "Xóm 3, Thôn Hải Bối, Xã Vĩnh Thanh, Thành phố Hà Nội, Việt Nam",
+    "tax_code": "0104188003",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Short Hills",
+    "name": "CÔNG TY TNHH SHORT HILLS VIỆT NAM",
+    "address": "Tầng 6, Toà nhà Intan, số 97 Nguyễn Văn Trỗi, Phường Phú Nhuận, TP Hồ Chí Minh, Việt Nam",
+    "tax_code": "318537734",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Hải Đăng",
+    "name": "CÔNG TY CỔ PHẦN XNK HÓA CHẤT HẢI ĐĂNG",
+    "address": "Tổ 41, Khu 4, Hà Khẩu, Tp Hạ Long, Tỉnh Quảng Ninh",
+    "tax_code": "5702087191",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Hà Linh",
+    "name": "CÔNG TY TNHH PHÂN BÓN HÓA CHẤT HÀ LINH",
+    "address": "Thửa đất số 861, tờ bản đồ số 9, tổ 10, ấp Mỹ Hưng 2, Phường Cái Vồn, Tỉnh Vĩnh Long, Việt Nam",
+    "tax_code": "1501146107",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "La Hán Hoàng Phát",
+    "name": "CÔNG TY CỔ PHẦN LA HÁN HOÀNG PHÁT",
+    "address": "Số nhà 83D, Ngõ 165 Dương Quảng Hàm, Phường Quan Hoa, Quận Cầu Giấy, TP Hà Nội",
+    "tax_code": "108529582",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Phát Thiên Phú",
+    "name": "CÔNG TY TNHH PHÁT THIÊN PHÚ",
+    "address": "Số 38-40-42, đường N18, khu Phố Vinh Thạnh, Phường Trấn Biên, Tỉnh Đồng Nai, Việt Nam",
+    "tax_code": "3600889932",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Alley 70",
+    "name": "CÔNG TY CỔ PHẦN ALLEY 70",
+    "address": "70/17D Đinh Bộ Lĩnh, Phường 26, Quận Bình Thạnh, Thành phố Hồ Chí Minh",
+    "tax_code": "317962278",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Quang Trung",
+    "name": "CÔNG TY TNHH SX TM QUANG TRUNG",
+    "address": "Thửa 290 tờ bản đồ số 28, KCN Xuyên Á, Đức Hòa, Long An",
+    "tax_code": "317065768",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "AP Têchm",
+    "name": "CÔNG TY TNHH KỸ THUẬT HOÁ PHẨM AP",
+    "address": "Tầng 3, Tòa nhà An Phú Plaza, 117-119 Lý Chính Thắng, Phường Xuân Hòa, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "319161467",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Ngọc Minh",
+    "name": "CÔNG TY TNHH SX TM BAO BÌ NGỌC MINH",
+    "address": "B4 ẤP MỸ HOÀ 4, XUÂN THỚI ĐÔNG, HÓC MÔN, TP.HCM",
+    "tax_code": "313635470",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Lưu Xuân Giang",
+    "name": "CÔNG TY TNHH MỘT THÀNH VIÊN LƯU XUÂN GIANG",
+    "address": "56A Phạm Ngũ Lão, Phường Cái Khế, TP. Cần Thơ",
+    "tax_code": "1800690555",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "In Tổng Hợp Cần Thơ",
+    "name": "CÔNG TY CỔ PHẦN IN TỔNG HỢP CẦN THƠ",
+    "address": "Số 500 đường 30/4, Phường Tân An, TP. Cần Thơ",
+    "tax_code": "1800157925",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "G28",
+    "name": "CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI G28",
+    "address": "ô LE5, Đường Số 2, KCN Xuyên Á, Xã Đức Lập, Tỉnh Tây Ninh, Việt Nam \n XSX: 31/13 Ấp 4, Đường Dương Công Khi, Xã Xuân Thới Sơn, TP. Hồ Chí Minh.",
+    "tax_code": "1101926825",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Bao Bì Đông Bắc",
+    "name": "CÔNG TY TNHH SẢN XUẤT BAO BÌ ĐÔNG BẮC",
+    "address": "Số 11 Đường 406 Ấp 2, Xã Củ Chi, TP Hồ Chí Minh, Việt Nam",
+    "tax_code": "318450547",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Bao Bì Duy Nhật",
+    "name": "Công ty TNHH SX & TM Duy Nhật",
+    "address": "Lô O, KCN An Nghiệp, Xã An Nghiệp, Tỉnh Vĩnh Long",
+    "tax_code": "2200717750",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Dao Carton",
+    "name": "CTY TNHH SX TM DV TH DAO CARTON",
+    "address": "Số 83, Đường B13, KDC 91B, Phường Tân An, Thành phố Cần Thơ, Việt Nam",
+    "tax_code": "1801699046",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Bao Bì Giấy An Tín",
+    "name": "CÔNG TY TNHH BAO BÌ GIẤY AN TÍN",
+    "address": "Số 23 Đường 23, Khu phố 2, Phường Tam Bình, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0315839173",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Bao Bì Trọng Tín",
+    "name": "CÔNG TY CỔ PHẦN BAO BÌ TRỌNG TÍN",
+    "address": "Số 112/7 Đường Lê Thị Hà, Tổ 11, Ấp Chánh 1, Xã Hóc Môn, TP Hồ Chí Minh, Việt Nam",
+    "tax_code": "0313183129",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Giấy Yuen Foong Yu",
+    "name": "CÔNG TY TNHH GIẤY YUEN FOONG YU (VN)",
+    "address": "Lô E3, E4, E5, E6 khu công nghiệp Đức Hòa 1, Ấp 5, Xã Mỹ Hạnh, Tỉnh Tây Ninh, Việt Nam",
+    "tax_code": "1100635534",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Hebei Veyong",
+    "name": "HEBEI VEYONG BIO-CHEMICAL CO., LTD.",
+    "address": "NO.6, MIDDLE HUAGONG ROAD, CIRCULATION CHEMICAL\nINDUSTRY PARK, SHIJIAZHUANG CITY, HEBEI, CHINA",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Tien Yuan",
+    "name": "TIEN YUAN CHEMICAL (PTE) LTD.",
+    "address": "NO. 18 CHIN BEE ROAD, JURONG TOWN, SINGAPORE 619827",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Hoa Việt Chemgroup",
+    "name": "CÔNG TY TNHH HOA VIỆT CHEMGROUP",
+    "address": "A2/11Y, tổ 3, ấp 1, xã Vĩnh Lộc A, huyện Bình Chánh, TP.HCM",
+    "tax_code": "0317598043",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Nông Nghiệp Thông Minh",
+    "name": "CÔNG TY TNHH ĐẦU TƯ NÔNG NGHIỆP THÔNG MINH",
+    "address": "33 Đường 2, Phường Phước Long, Thành phố Hồ Chí Minh, Việt Nam;",
+    "tax_code": "0312170342",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Trần Tiến",
+    "name": "CÔNG TY TNHH XUẤT NHẬP KHẨU TRẦN TIẾN",
+    "address": "911-913-915-917 Nguyễn Trãi, Phường Chợ Lớn, Tp. Hồ Chí Minh",
+    "tax_code": "0312284043",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Việt Mỹ (Sài Gòn)",
+    "name": "CÔNG TY CỔ PHẦN XUẤT NHẬP KHẨU HÓA CHẤT VIỆT MỸ",
+    "address": "9 Đường số 5, Bình Hưng, Bình Chánh, TP.HCM",
+    "tax_code": "0312669004",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Ak Vina",
+    "name": "CÔNG TY TRÁCH NHIỆM HỮU HẠN AK VINA AK VINA CO., LTD",
+    "address": "Số 02, KCN Gò Dầu, Xã Phước Thái, Huyện Long Thành, Tỉnh Đồng Nai, Việt Nam",
+    "tax_code": "3600649634",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Amigos",
+    "name": "CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI AMIGOS",
+    "address": "60/15 Huỳnh Văn Nghệ, Phường Tân Sơn, TP Hồ Chí Minh, Việt Nam",
+    "tax_code": "0311360340",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "MIA",
+    "name": "CÔNG TY TNHH VẬT TƯ NÔNG NGHIỆP MIA",
+    "address": "12/29 Nguyễn Tuân, Phường Hạnh Thông, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0315662254",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Agama",
+    "name": "CÔNG TY CỔ PHẦN AGAMA",
+    "address": "Lô 2, Đường số 2, Cụm Công nghiệp Đức Thuận, Ấp Tràm Lạc, Xã Mỹ Hạnh Bắc, Huyện Đức Hoà, Tỉnh Long An, Việt Nam",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Hà Long",
+    "name": "CÔNG TY CỔ PHẦN HÓA CHẤT NÔNG NGHIỆP HÀ LONG",
+    "address": "Lô A 204, Khu công nghiệp Thái Hòa , Xã Đức Lập Hạ, Huyện Đức Hoà, Tỉnh Long An, Việt Nam",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Âu Việt",
+    "name": "CÔNG TY CỔ PHẦN PHÂN BÓN QUỐC TẾ ÂU VIỆT (CÔNG TY CP EVF)",
+    "address": "Quốc lộ 1A, Ấp Long An B, Thị Trấn Cái Tắc, Huyện Châu Thành A, Tỉnh Hậu Giang, Việt Nam",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Basel",
+    "name": "CÔNG TY TNHH BASEL THỤY SĨ",
+    "address": "Lô H2A đường số 4, KCN Hải Sơn (GĐ 3+4), ấp Bình Tiền 2, Xã Đức Hòa Hạ, Huyện Đức Hoà, Tỉnh Long An",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Dego Cần Thơ",
+    "name": "CÔNG TY TNHH DEGO HOLDING",
+    "address": "B19 đường cầu dẫn cầu Cần Thơ, QL 1A, Khu Dân cư Trung tâm văn hóa Tây Đô, phường Cái Răng, Thành phố Cần Thơ.",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Niềm Tin Việt",
+    "name": "CÔNG TY TNHH PHÂN BÓN NIỀM TIN VIỆT",
+    "address": "Ấp 2A, Xã Hưng Thạnh, H.Tháp Mười, Đồng Tháp",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Đại Tâm",
+    "name": "CÔNG TY TNHH PRIMA - PHÁP - CHÂU ÂU",
+    "address": "Lô B101 đường B. KCN Thái Hoà, Xã Đức Lập Hạ, Huyện Đức Hoà, Tỉnh Long An",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Pesticidex",
+    "name": "CÔNG TY TNHH SÀN GIAO DỊCH THUỐC BẢO VỆ THỰC VẬT VIỆT NAM",
+    "address": "Tầng 1, B19 đường dẫn cầu Cần Thơ, Quốc lộ 1A, KDC TTVH Tây Đô, Phường Hưng Thạnh, Quận Cái Răng, Thành phố Cần Thơ, Việt Nam",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Yamato",
+    "name": "CÔNG TY TNHH SX TM YAMATO VN",
+    "address": "Lô A20A Đường số 6, KCN Hải Sơn (GĐ 3+4), Xã Đức Hòa Hạ, Huyện Đức Hoà, Tỉnh Long An",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "ATC",
+    "name": "CÔNG TY TNHH XUẤT NHẬP KHẨU HÓA CHẤT ATC",
+    "address": "Số 87, Đường Lý Bôn, Phường Bình Đức, Tỉnh An Giang, Việt Nam",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Agrifuture",
+    "name": "CÔNG TY TNHH AGRIFUTURE",
+    "address": "Nhà Máy: Lô B123B, Đường số 7, KCN, ấp Tân Hòa, Đức Hòa, Long An\nVP: Phòng A4.04, Khu Phức Hợp Căn Hộ Nhật Hoa, 33 Nguyễn Hữu Thọ, Phường Tân Hưng, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Thu Loan",
+    "name": "Cty TNHH SX TM DV Thu Loan",
+    "address": "699 tổ 34 Khóm Đông Thuận , Phường Đông Thành , Bình Minh, Vĩnh Long",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Thái Nông",
+    "name": "CÔNG TY TNHH THƯƠNG MẠI THÁI NÔNG",
+    "address": "73 Lạc Long Quân, Phường 1, Quận 11, Thành phố Hồ Chí Minh\n CN: Khu Công nghiệp Nhơn Trạch 3, Thị trấn Hiệp Phước, Huyện Nhơn Trạch, Tỉnh Đồng Nai, Việt Nam\n Giao Vật Tư: HKD Cơ Sở Phân Bón Lá Phú Hưng\n ĐC: 49A, đường số 27, Tân Lập, Tân Thông Hội, Củ Chi, HCM\n Người nhận: 0937 021 818 - Chị Bội",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "An Nông",
+    "name": "CÔNG TY TNHH TẬP ĐOÀN AN NÔNG (AN GROUP)",
+    "address": "Trụ sở : 464 Đường số 7, khu phố 8, Phường Tân Tạo, Quận Bình Tân, TP Hồ Chí Minh\n Nhà máy : Lô H7, Đường số 5, KCN Hải Sơn (GĐ 3+4), ấp Bình Tiền 2, Xã Đức Hòa Hạ, Huyện Đức Hoà, Tỉnh Long An, Việt Nam",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Kho Dr. Xanh",
+    "name": "KHO DR XANH",
+    "address": "Số 124 Võ Văn Kiệt, KV Bình Trung, P.Long Hòa, Q. Bình Thủy, Cần Thơ",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Kho B18",
+    "name": "KHO B18",
+    "address": "B18 đường dẫn cầu Cần Thơ, Quốc lộ 1A, KDC TTVH Tây Đô, Phường Cái Răng, Thành phố Cần Thơ",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Kho C1-2",
+    "name": "Kho C1-2",
+    "address": "Kho C1-2",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Kho F49 - Icare",
+    "name": "KHO F49 - ICARE",
+    "address": "nhà F49 (chạy qua trường lái Chiến Thắng) đường số 7, KDC Long Thịnh, Phường Phú Thứ, Cái Răng, Cần Thơ",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Kho Lab Dego",
+    "name": "KHO LAB DEGO",
+    "address": "B19 đường dẫn cầu Cần Thơ, Quốc lộ 1A, KDC TTVH Tây Đô, Phường Cái Răng, Thành phố Cần Thơ",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "BAO BÌ LỘC PHÁT",
+    "name": "CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ BAO BÌ LỘC PHÁT",
+    "address": "229 Nguyễn Thị Minh Khai, Ninh Kiều, Cần Thơ",
+    "tax_code": "1801722746",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "CHẤN HƯNG NÔNG",
+    "name": "CÔNG TY TNHH CHẤN HƯNG NÔNG",
+    "address": "Ấp Trường Thọ, Xã Trường Xuân, TP Cần Thơ, Việt Nam.",
+    "tax_code": "1801800440",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "BAO BÌ CHÂU DUY",
+    "name": "BAO BÌ CHÂU DUY",
+    "address": "26-28 Ngô Sĩ Liên KDC MeTro,Tân An, Cần Thơ",
+    "tax_code": "",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "HÓA CHẤT TOÀN CẦU",
+    "name": "CÔNG TY TNHH MÁY VÀ HÓA CHẤT TOÀN CẦU",
+    "address": "Tầng 6, tòa nhà CDS, Số 33,Ngõ 61 Lạc Trung, Phường Vĩnh Tuy, Hà Nội",
+    "tax_code": "0105111638",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "CAO VẠN THỊNH",
+    "name": "CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI CAO VẠN THỊNH",
+    "address": "1004/12 Hương lộ 2, khu phố 6, Phường Bình Trị Đông, TP Hồ Chí Minh, Việt Nam",
+    "tax_code": "0311953982",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "NGỌC HÂN XUYÊN Á",
+    "name": "CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ NGỌC HÂN XUYÊN Á",
+    "address": "Số 134 đường Giồng Lớn, ấp Giồng Lớn, Xã Mỹ Hạnh, Tỉnh Tây Ninh, Việt Nam",
+    "tax_code": "1102106818",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "TANK LÊ HỮU THÔNG",
+    "name": "LÊ HỮU THÔNG",
+    "address": "252 Ấp 17, xã Hiệp Phước, Thành phố Hồ Chí Minh",
+    "tax_code": "079082006587",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Nông Xanh",
+    "name": "Công Ty TNHH TM Nông Xanh",
+    "address": "168 Đường 16, KDC Đông Tăng Long ,P long phước,TP.HCM",
+    "tax_code": "0310187076",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "XANH VIỆT VINA",
+    "name": "CÔNG TY TNHH XANH VIỆT VINA",
+    "address": "Tầng 2, Hado Airport Building, số 2 đường Hồng Hà, Phường Tân Sơn Hòa, Thành Phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0318499006",
+    "supplier_type": "goods"
+  },
+  {
+    "code": "Mekong Logistics",
+    "name": "Mekong Logistics",
+    "address": "",
+    "tax_code": "",
+    "supplier_type": "transport"
+  },
+  {
+    "code": "Sang Giàu",
+    "name": "Sang Giàu",
+    "address": "",
+    "tax_code": "",
+    "supplier_type": "transport"
+  },
+  {
+    "code": "Trần Quyên",
+    "name": "Trần Quyên",
+    "address": "",
+    "tax_code": "",
+    "supplier_type": "transport"
+  },
+  {
+    "code": "Phan Khánh",
+    "name": "Phan Khánh",
+    "address": "",
+    "tax_code": "",
+    "supplier_type": "transport"
+  },
+  {
+    "code": "NCC tự vận chuyển",
+    "name": "NCC tự vận chuyển",
+    "address": "",
+    "tax_code": "",
+    "supplier_type": "transport"
+  },
+  {
+    "code": "Grab",
+    "name": "Grab",
+    "address": "",
+    "tax_code": "",
+    "supplier_type": "transport"
+  }
+]

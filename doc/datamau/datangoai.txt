@@ -1,0 +1,5 @@
+ĐVT VC		NSPT		VAT		Hình thức thanh toán của NCC
+Kiện		Ms Quyên		5%		Công nợ 60 ngày
+Chuyến		Mr Tiên		8%		Thanh toán 100% khi nhận hàng
+m2		Ms Dung		10%		Công nợ 30 ngày
+tấn 		Mr Hậu 		2%		Thanh toán trước khi giao hàng

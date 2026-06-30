@@ -1,0 +1,26 @@
+{
+  "shipping_units": [
+    "Kiện",
+    "Chuyến",
+    "m2",
+    "tấn"
+  ],
+  "nspt": [
+    "Ms Quyên",
+    "Mr Tiên",
+    "Ms Dung",
+    "Mr Hậu"
+  ],
+  "vat": [
+    "5%",
+    "8%",
+    "10%",
+    "2%"
+  ],
+  "payment_terms": [
+    "Công nợ 60 ngày",
+    "Thanh toán 100% khi nhận hàng",
+    "Công nợ 30 ngày",
+    "Thanh toán trước khi giao hàng"
+  ]
+}

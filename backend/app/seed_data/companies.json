@@ -1,0 +1,62 @@
+[
+  {
+    "code": "DEGO HOLDING",
+    "name": "CÔNG TY TNHH DEGO HOLDING",
+    "address": "B19 đường dẫn cầu Cần Thơ, QL1A, Khu dân cư Trung tâm văn hóa Tây Đô, Phường Cái Răng, Thành phố Cần Thơ, Việt Nam.",
+    "tax_code": "1801722464"
+  },
+  {
+    "code": "IDA",
+    "name": "CÔNG TY TNHH XUẤT NHẬP KHẨU IDA GLOBAL",
+    "address": "68 Nguyễn Huệ, Phường Sài Gòn, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0314562909"
+  },
+  {
+    "code": "ABA",
+    "name": "CÔNG TY TNHH SẢN XUẤT HÓA CHẤT ABA",
+    "address": "108 Trần Đình Xu, Phường Cầu Ông Lãnh, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0316342296"
+  },
+  {
+    "code": "ICARE",
+    "name": "CÔNG TY TNHH DƯỢC PHẨM ICARE",
+    "address": "108 Trần Đình Xu, Phường Cầu Ông Lãnh, Thành phố Hồ Chí Minh, Việt Nam",
+    "tax_code": "0315593265"
+  },
+  {
+    "code": "NPP DR.XANH",
+    "name": "NHÀ PHÂN PHỐI DR XANH",
+    "address": "Số 124, Đường Võ Văn Kiệt, khu vực Bình Trung, Phường Long Hòa, Quận Bình Thủy, TP.Cần Thơ",
+    "tax_code": "578010406"
+  },
+  {
+    "code": "HỘ KD DR.XANH",
+    "name": "HỘ KINH DOANH DR XANH",
+    "address": "Ấp Qui Lân 1, Xã Thạnh Quới, Huyện Vĩnh Thạnh, TP Cần Thơ, Việt Nam",
+    "tax_code": "578005750"
+  },
+  {
+    "code": "BAMBOO",
+    "name": "CÔNG TY TNHH XUẤT NHẬP KHẨU SẢN XUẤT THƯƠNG MẠI BAMBOO VIỆT NAM",
+    "address": "Tầng 18, Tòa nhà ROX Tower, 180-192 Nguyễn Công Trứ, Phường Bến Thành, Thành phó Hồ Chí Minh, Việt Nam.",
+    "tax_code": "0318629897"
+  },
+  {
+    "code": "N2SBIO",
+    "name": "CÔNG TY TNHH N2SBIO VIỆT NAM",
+    "address": "108 Trần Đình Xu, Phường Nguyễn Cư Trinh, Quận 1, TP Hồ Chí Minh",
+    "tax_code": "0318776965"
+  },
+  {
+    "code": "NN DEGO",
+    "name": "CÔNG TY TNHH SẢN XUẤT VÀ XUẤT NHẬP KHẨU HOÁ CHẤT NÔNG NGHIỆP DEGO",
+    "address": "Tầng 9, tòa nhà K&M Tower, 33 Ung Văn Khiêm, Phường Thạnh Mỹ Tây, TP Hồ Chí Minh, Việt Nam",
+    "tax_code": "0318430011"
+  },
+  {
+    "code": "NN ABA",
+    "name": "CÔNG TY TNHH HÓA CHẤT NÔNG NGHIỆP ABA",
+    "address": "B18 đường dẫn cầu Cần Thơ, QL1A, Khu dân cư Trung tâm văn hóa Tây Đô, Phường Cái Răng, Thành phố Cần Thơ, Việt Nam.",
+    "tax_code": "1801818328"
+  }
+]

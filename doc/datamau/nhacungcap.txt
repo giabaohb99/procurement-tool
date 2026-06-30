@@ -1,0 +1,151 @@
+NCC 	NCC (VIẾT TẮT)	ĐỊA CHỈ NCC 	MST NCC
+CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI BAO BÌ CẨM HÙNG	Cẩm Hùng	số 37, đường B11, KDC 91B, Phường Tân An, Thành phố Cần Thơ, Việt Nam	180177824100%
+CÔNG TY TNHH SẢN XUẤT BAO BÌ ĐÔNG TÂY	Đông Tây	0827/3 Đường Võ Thị Thừa, Khu phố 3, Phường An Phú Đông, Quận 12, Thành phố Hồ Chí Minh, Việt Nam	0316254811
+CÔNG TY TNHH QUẢNG CÁO MỘC ẤN	Mộc Ấn	368/12 Đường TTH21, Khu phố 3, Phường Tân Thới Hiệp, Quận 12, Thành phố Hồ Chí Minh, Việt Nam	0312214688
+CÔNG TY TNHH SẢN XUẤT- THƯƠNG MẠI- DỊCH VỤ TÂN ĐỨC	Tân Đức	108/8 Đường số 11, Khu phố 5, Phường Linh Xuân, Thành phố Thủ Đức, Thành phố Hồ Chí Minh, Việt Nam	0301909568
+CÔNG TY TRÁCH NHIỆM HỮU HẠN MỘT THÀNH VIÊN HỢP TRÍ THÀNH CÔNG	Thành Công	98, đường 3/2, Phường Xuân Khánh, Quận Ninh Kiều, Thành phố Cần Thơ, Việt Nam	180135601700%
+CÔNG TY TNHH SẢN XUẤT - THƯƠNG MẠI AN TÍN	An Tín	247/16 Đường Bình Tiên, Phường 08, Quận 6, Thành Phố Hồ Chí Minh, Việt Nam	0315259038
+CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI NHỰA CƯỜNG PHÁT LONG AN	Cường Phát	Ấp Hóc Thơm 1, Xã Hòa Khánh, Tỉnh Tây Ninh, Việt Nam	1101721810
+CÔNG TY TNHH BAO BÌ HNS	Hns	084 QL1, KV2, Ba Láng, Cái Răng, Cần Thơ	1801399719
+CÔNG TY TNHH MTV SẢN XUẤT THƯƠNG MẠI NHỰA HỒ GIA	Hồ Gia	100/7B khu phố 1, Bùi Dương Lịch, Phường Bình Hưng Hòa B, Quận Bình Tân, Thành phố Hồ Chí Minh	0315743256
+CÔNG TY TNHH BAO BÌ MINH NGỌC	Minh Ngọc	Lô D2.1 - D2.2 Đường số 4, KCN Nhị Xuân, Xã Xuân Thới Sơn, Huyện Hóc Môn, Tp. HCM	0313694927
+CÔNG TY TNHH SX TM DV  QUỐC TẾ QUANG ĐẠT	Quang Đạt	43D, Ao Đôi, P. Bình Trị Đông A, Q. Bình Tân, TP. HCM	0317703989
+CÔNG TY CỔ PHẦN BAO BÌ NHỰA THÀNH PHÁT	Thành Phát	F01-1, đường số 1, KCN Hạnh Phúc, ấp 5 Đức Hoà Đông, ĐH, LA	0302299160
+CÔNG TY TNHH BAO BÌ NHỰA PHƯƠNG NAM	Phương Nam	384A, Tổ 3, Ấp 1, Xã Mỹ Hạnh, Tỉnh Tây Ninh, Việt Nam	0301515210
+CÔNG TY CỔ PHẦN PHL	PHL	Lô MB1-1, Lô MB1-1a, khu công nghiệp Đức Hòa 1, Đường số 5, Ấp 5, Xã Đức Hòa Đông, Huyện Đức Hoà, Tỉnh Long An, Việt Nam	1101392309
+CÔNG TY TNHH SẢN XUẤT BAO BÌ VINACO	Vinaco	Lô B10, Đường số 1, KCN Hải Sơn (GĐ 3+4), Xã Đức Hòa Hạ, Huyện Đức Hòa, tỉnh Long An	1101950715
+CÔNG TY TNHH SX TM DV HẢI BÌNH	Hải Bình	30 Võ Hoành, Phường Phú Thọ Hoà, Thành phố Hồ Chí Minh, Việt Nam	302202299
+CÔNG TY CP HÓA CHẤT MIỀN NAM	Hóa Chất Miền Nam	137B -137C, Trần Hưng Đạo, Phường An Phú, Quận Ninh Kiều, Thành phố Cần Thơ	1800662621
+CÔNG TY CP QUÔC TẾ TM GROW	Tmg	Trung tâm dịch vụ khu công nghiệp Amata, đường Amata, KCN Amata, Phường Long Bình, Thành phố Biên Hoà, Tỉnh Đồng Nai	3600630513
+CÔNG TY CP ĐẮC KHANG	Đắc Khang	482/10/28A1 Nơ Trang Long, Phường 13, Quận Bình Thạnh, Thành phố Hồ Chí Minh	304714687
+CÔNG TY TNHH SX TM DV PHÁT ĐẠI LỘC	Phát Đại Lộc	Số 24 Đường Hiệp Thành 48, Phường Hiệp Thành, Quận 12, Thành phố Hồ Chí Minh	317409056
+CÔNG TY TNHH THƯƠNG MẠI HIỀN PHAN	Hiền Phan	Số 64 Lê Lăng, Phường Phú Thọ Hoà, Quận Tân Phú, Thành phố Hồ Chí Minh	305877109
+CÔNG TY TNHH XNK HÓA CHẤT VẠN AN	Vạn An	208C Nguyễn Ngọc Nhựt, Phường Tân Quý, Quận Tân Phú, Thành phố Hồ Chí Minh	314845752
+CÔNG TY TNHH VĨNH NAM ANH	Vĩnh Nam Anh	65/1 Ấp 1, Bùi Công Trừng, Xã Nhị Bình, Huyện Hóc Môn, Thành phố Hồ Chí Minh	304973949
+CÔNG TY TNHH KỸ THUẬT AN TOÀN MÔI TRƯỜNG HÒA PHÁT	Hòa Phát	173/53 Thoại Ngọc Hầu, Phường Phú Thạnh, Quận Tân Phú, Thành phố Hồ Chí Minh	312483507
+CÔNG TY TNHH NGUYÊN LIỆU NÔNG NGHIỆP MEKONG	Mekong	 Lô Officetel L4-20, tầng 20, Block Lucky, Tòa nhà Richmond City, 207C Nguyễn Xí, Phường Bình Thạnh, TP. Hồ Chí Minh	313587019
+CÔNG TY TNHH SX VÀ TM AN GIA PHÚ	An Gia Phú	40/17/9 Đường số 7, Khu phố 12, Phường Bình Hưng Hòa, Quận Bình Tân, Thành phố Hồ Chí Minh	313155900
+CÔNG TY TNHH XNK NGÀN HƯƠNG	Ngàn Hương	133K, Trần Hưng Đạo, Phường An Phú, Quận Ninh Kiều, Thành phố Cần Thơ	1800385992
+CÔNG TY CỔ PHẦN MẠNH ĐAN	Mạnh Đan	43 Đường số 5, Cư xá Chu Văn An, Phường 26, Quận Bình Thạnh, Thành phố Hồ Chí Minh	311118396
+CÔNG TY TNHH VẬT TƯ NÔNG NGHIỆP TRUNG PHONG	Trung Phong	36/7 Lam Sơn , Phường 6, Quận Bình Thạnh, Thành phố Hồ Chí Minh	314509888
+CÔNG TY TNHH SOLUTION JD	Jd	43 đường số 5, cư xá Chu Văn An , Phường 26, Quận Bình Thạnh, Thành phố Hồ Chí Minh	0314465052
+CÔNG TY TNHH KING ELONG	Kel	Lô Officetel L5-20, Tầng 20, Block Lucky, Tòa nhà Richmond City, 207C Nguyễn Xí, Phường 26, Quận Bình Thạnh, TP Hồ Chí Minh, Việt Nam	0317197235
+CÔNG TY TNHH HOÁ SINH NTK	Ntk	Lô B113, đường số 5, KCN Thái Hoà, Xã Đức Lập Hạ, Huyện Đức Hoà, Tỉnh Long An	1102004566
+CÔNG TY TNHH CÂY XANH MỘC LAN	Mộc Lan	Số 112/8/2 Tổ 8, khu phố Tân Cang, phường Phước Tân, TP Biên Hòa, tỉnh Đồng Nai	3603725410
+CÔNG TY TNHH THƯƠNG MẠI HÓA CHẤT NAM BÌNH	Nam Bình	4/107, Ấp Nhị Tân 2, Xã Tân Thới Nhì, Huyện Hóc Môn, Thành phố Hồ Chí Minh	0309910935
+CÔNG TY TNHH XNK KẾT NÔNG	Kết Nông	119/83 Nguyễn Thị Tần, Phường 2, Quận 8, TP HCM	0315006943
+CÔNG TY TNHH HÓA CHẤT MÊ KÔNG	Hóa Chất Mê Kông	74A Đường số 18, Phường 8, Quận Gò Vấp, TP.HCM, Việt Nam	 0304920055
+CÔNG TY CỔ PHẦN THIẾT BỊ ĐỆ NHẤT	Đệ Nhất	Tầng 3, Phòng 3.07, khu I, Tòa nhà The Prince Residence, số 19-21 Nguyễn Văn Trỗi, Phường 11, Quận Phú Nhuận, Thành phố Hồ Chí Minh, Việt Nam	0310937272
+CÔNG TY TNHH SVC CHEMICAL	Svc	Số nhà C17, đường số 4, KDC Trần Anh, Ấp Mới 2, Xã Mỹ Hạnh Nam, Huyện Đức Hòa, Tình Long An	1101987225
+CÔNG TY TNHH KHẢ DOANH	Khả Doanh	9/27 Phạm Văn Hai, Phường 1, Quận Tân Bình, TP Hồ Chí Minh	303557142
+CÔNG TY TNHH BASEL THỤY SĨ	Basel Thụy Sĩ	Lô H2A đường số 4, KCN Hải Sơn (GĐ 3+4), ấp Bình Tiền 2, Xã Đức Hòa Hạ, Huyện Đức Hoà, Tỉnh Long An	1101742391
+CÔNG TY TNHH DƯỢC LIỆU THIÊN NHIÊN XANH	Thiên Nhiên Xanh	85A Ỷ Lan, Phường Hiệp Tân, Quận Tân Phú, Thành phố Hồ Chí Minh, Việt Nam	314051566
+CÔNG TY TNHH THỊNH PHÁT VI NA	Thịnh Phát Vi Na	110 Đường số 30, Phường An Lạc, Thành phố Hồ Chí Minh, Việt Nam	303702463
+CÔNG TY TNHH SẢN XUẤT VÀ THƯƠNG MẠI NGUYỄN BÁ	Nguyễn Bá	10-12 Trung Lang, Phường Bảy Hiền, TP Hồ Chí Minh, Việt Nam	308923441
+CÔNG TY CỔ PHẦN XUẤT NHẬP KHẨU THƯƠNG MẠI SẢN XUẤT HÓA CHẤT THUẬN DUYÊN	Thuận Duyên	49/6G Bà Điểm 11, Ấp Đông Lân, Xã Bà Điểm, TP Hồ Chí Minh, Việt Nam	311269934
+CÔNG TY CỔ PHẦN VIỆT MỸ CẦN THƠ	Việt Mỹ	 M40- đường 3A- KDC Hưng Phú 1- Quận Cái Răng- TP.Cần Thơ 	1801548985
+CÔNG TY CỔ PHẦN XUẤT NHẬP KHẨU CHÂU NGÂN	Châu Ngân	 71 Đường Số 27, KDC Tân Quy Đông, Phường Tân Hưng, Thành phố Hồ Chí Minh, Việt Nam 	309818111
+CÔNG TY TNHH THIẾT BỊ - HÓA CHẤT KHOA HỌC KỸ THUẬT AN KHÁNH	An Khánh	 43, đường 14, Khu tái định cư Thới Nhựt, Phường Tân An, TP Cần Thơ, Việt Nam 	1800702458
+CÔNG TY TNHH NUTIFER VN	Nutifer Vn	 Lô D01A, CCN Đức Thuận, KCN Đức Hoà 3, Ấp Tràm Lạc, Xã Đức Lập, Tỉnh Tây Ninh, Việt Nam 	1101 793 371
+CÔNG TY TNHH TM HIỀN PHAN LONG AN	Hiền Phan Long An	 Lô A5.1, Đường số 1, KCN Đức Hòa III - Tập Đoàn Tân Á Đại Thành, Ấp Đức Hạnh 2, Xã Đức Lập, Tỉnh Tây Ninh, Việt Nam 	1102007045
+CÔNG TY CỔ PHẦN CVGREEN	Cvgr	 14/4 Thạnh Xuân 18, Phường Thới An, Thành Phố Hồ Chí Minh, Việt Nam 	0 3 1 6 1 8 4 3 1 4
+CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ NAMSIANG VIỆT NAM	Namsiang	 180/21 Lý Thánh Tông, Phường Phú Thạnh, Thành phố Hồ Chí Minh, Việt Nam 	310194210
+CÔNG TY TNHH SẢN XUẤT VÀ THƯƠNG MẠI NGUYỄN BÁ	Nguyễn Bá	 10-12 Trung Lang, Phường Bảy Hiền, TP Hồ Chí Minh, Việt Nam 	308923441
+CÔNG TY TNHH NAM HÀ	Nam Hà	 103 Lý Tự Trọng, Phường Ninh Kiều, Thành phố Cần Thơ 	1800567865
+CÔNG TY TNHH SẢN XUẤT VÀ THƯƠNG MẠI DƯỢC LIỆU KỲ ANH	Kỳ Anh	 Ấp Mỹ Hòa 1, Xã Tháp Mười, Tỉnh Đồng Tháp, Việt Nam 	1402129830
+CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ IN ẤN TRƯƠNG GIA PHƯỚC	Trương Gia Phước	 Số 311 Nguyễn Văn Cừ, Phường Cái Khế, Thành phố Cần Thơ, Việt Nam 	1801514778
+DOANH NGHIỆP TƯ NHÂN NHƯ CƯƠNG	Như Cương	 78, đường 30/4, phường Ninh Kiều, TP Cần Thơ 	1 8 0 0 5 2 5 9 1 4
+CÔNG TY TNHH IN ẤN KỸ THUẬT MỚI TÂN HOA MAI	Tân Hoa Mai	 96/5A Đặng Thùy Trâm, Phường Bình Lợi Trung, Thành Phố Hồ Chí Minh, Việt Nam 	0 3 1 1 2 7 5 2 5 4
+HỢP TÁC XÃ SẢN XUẤT THƯƠNG MẠI NÔNG, THỦY SẢN CÁNH BUỒM VÀNG	Cbv	 B14/257 Ấp 2, xã Tân Nhựt, huyện Bình Chánh, TP. Hồ Chí Minh 	315907352
+CÔNG TY TNHH TMDV LADYBUG VIỆT NAM	Ldb	 32/36/27 Ông Ích Khiêm, Phường 14, Quận 11, TP Hồ Chí Minh 	317370225
+CÔNG TY TNHH CEMACO VIỆT NAM	Cmc	 87B1 Ung Văn Khiêm, P. Cái Khế, Q. Ninh Kiều, Thành phố Cần Thơ, Việt Nam 	0108075628-005
+CÔNG TY CP CÔNG NGHỆ AQUADELTA	Aq	 55 đường 3/2, phường Hưng lợi, quận Ninh Kiều, TPCT 	1 8 0 1 6 6 6 2 0 2
+CÔNG TY TNHH HÓA CHẤT PHÂN BÓN, THUỐC BVTV DUBAI	Du Bai	 Lô B115, Đường số 5, KCN Thái Hòa, Ấp Tân Hòa, Xã Đức Lập Hạ, Huyện Đức Hòa, Tỉnh Long An 	1101798524
+CÔNG TY CỔ PHẦN GEMACHEM VIỆT NAM	Gemachem	 46 Ngồ Quyền, P Hàng Bài, Quận Hoàn Kiếm, TP Hà Nội 	102135197
+CÔNG TY TNHHH THƯƠNG MẠI GEMSKY	Gemsky	 507 Lũy Bán Bích, Phường Phú Thạnh,  TP HCM 	316840661
+CÔNG TY CỔ PHẦN THIẾT BỊ KIỂM ĐỊNH AN PHÁT	An Phát	 Km số 9, đường 72, xã Cộng Hòa, huyện Quốc Oai, thành phố Hà Nội. 	108673258
+CÔNG TY TNHH HOÁ SINH NTK	Ntk	 Lô B113, đường số 5, KCN Thái Hoà, Xã Đức Lập Hạ, Huyện Đức Hoà, Tỉnh Long An 	1102004566
+CÔNG TY TNHH CÂY XANH MỘC LAN	Mộc Lan	 Số 112/8/2 Tổ 8, khu phố Tân Cang, phường Phước Tân, TP Biên Hòa, tỉnh Đồng Nai 	3603725410
+Cửa Hàng Phương Lâm	Phương Lâm	 Ngõ 2 đội 3 Võng La - Đông Anh - Hà Nội 	
+CÔNG TY TNHH THƯƠNG MẠI HÓA CHẤT NAM BÌNH	Nam Bình	 4/107, Ấp Nhị Tân 2, Xã Tân Thới Nhì, Huyện Hóc Môn, Thành phố Hồ Chí Minh 	0309910935
+CÔNG TY TNHH KHAI NHẬT	Khai Nhật	 Tầng 15, P.1508 Tòa nhà Vincom Center, Số 72 Lê Thánh Tôn, Phường Bến Nghé, Quận 1, Thành phố Hồ Chí Minh, Việt Nam 	0317473485
+CÔNG TY CP SAM CHEM QUẢ CẦU	Sam Chem	 Lầu 7, Số 82 Trần Huy Liệu - Phường 15 - Quận Phú Nhuận - TP HCM 	0304750798
+CÔNG TY CP ĐẦU TƯ PHÁT TRIỂN THƯƠNG MẠI VÀ DỊCH VỤ THÙY ANH	Thùy Anh	 Thửa đất số 1, khu đất dịch vụ thôn Yên Vĩnh, xã Kim Chung, huyện Hoài Đức, TP Hà Nội33/4F 	0109206922
+CÔNG TY TNHH THIẾT BỊ KHOA HỌC CÔNG NGHỆ HKM	Hkm	 52/4T Đường Xuân Thới 3, Ấp Xuân Thới Đông 2, Xã Xuân Thới Đông, Huyện Hóc Môn, Thành phố Hồ Chí Minh, Việt Nam 	0312965740
+CÔNG TY TNHH CÔNG NGHIỆP MỸ KỲ	Mỹ Kỳ	 87/1 Đường TL 41, Phường An Phú Đông, Thành phố Hồ Chí Minh, Việt Nam 	 0313245382 
+CÔNG TY TNHH ĐẦU TƯ THƯƠNG MẠI SÀI GÒN NGUYỄN	Sài Gòn Nguyễn	 30/12/18 Đường 49, Phường Hiệp Bình, Thành phố Hồ Chí Minh, Việt Nam 	0314511301
+CÔNG TY TNHH INTRIE	Intrie	 56/16 Nguyễn Văn Săng, Phường Tân Sơn Nhì, Thành phố Hồ Chí Minh, Việt Nam 	0317214025
+CÔNG TY TNHH MỘT THÀNH VIÊN TM AN KHÁNH	Kpos	 623 Tên Lửa, Phường An Lạc, Thành phố Hồ Chí Minh, Việt Nam 	0316113105
+CÔNG TY TNHH WAF BRANDS	Hdsd Antisol	72/1 Nguyễn Trãi, Phường Ninh Kiều, Thành phố Cần Thơ, Việt Nam	1801773973
+CÔNG TY TNHH IN BAO BÌ TRÍ TÍN	Trí Tín	 168/59A Đường Bình Trị Đông, Phường Bình Trị Đông, Thành phố Hồ Chí Minh, Việt Nam 	0311841439
+CÔNG TY TNHH SẢN XUẤT BAO BÌ NHỰA SÁNG TÂM	Sáng Tâm	 841 Quốc Lộ 1A, Phường Bình Hưng Hòa, Thành phố Hồ Chí Minh, Việt Nam 	0317140831
+CÔNG TY TRÁCH NHIỆM HỮU HẠN SẢN XUẤT THƯƠNG MẠI THIÊN AN PHÚ	Thiên An Phú	 1A140 Vĩnh Lộc, Xã Phạm Văn Hai, Huyện Bình Chánh, Thành phố Hồ Chí Minh, Việt Nam 	"0314862758
+"
+CÔNG TY TNHH MỸ THUẬT ỨNG DỤNG MASTER	Oanh Design	 240/32 Nguyễn Văn Luông, Phường Bình Phú, TP Hồ Chí Minh, Việt Nam 	317050521
+CÔNG TY TNHH XNK HIỆP PHÁT CHEM	Hiệp Phát 	 Lô Q17A-18 đường số 11, KCN Hải Sơn mở rộng (GĐ 3+4), Xã Đức Hòa , Tỉnh Tây Ninh, Việt Nam 	1101925116
+CÔNG TY TNHH THƯƠNG MẠI VÀ DỊCH VỤ AMG GROUP	AMG	 Số 63 Vũ Ngọc Phan, phường Láng Hạ, quận Đống Đa, Hà Nội 	108764547
+CÔNG TY CỔ PHẦN THƯƠNG MẠI XUẤT NHẬP KHẨU VNT	VNT 	 Xóm 3, Thôn Hải Bối, Xã Vĩnh Thanh, Thành phố Hà Nội, Việt Nam 	0104188003
+CÔNG TY TNHH SHORT HILLS VIỆT NAM	Short Hills	 Tầng 6, Toà nhà Intan, số 97 Nguyễn Văn Trỗi, Phường Phú Nhuận, TP Hồ Chí Minh, Việt Nam 	318537734
+CÔNG TY CỔ PHẦN XNK HÓA CHẤT HẢI ĐĂNG	Hải Đăng	 Tổ 41, Khu 4, Hà Khẩu, Tp Hạ Long, Tỉnh Quảng Ninh 	5702087191
+CÔNG TY TNHH PHÂN BÓN HÓA CHẤT HÀ LINH	Hà Linh	 Thửa đất số 861, tờ bản đồ số 9, tổ 10, ấp Mỹ Hưng 2, Phường Cái Vồn, Tỉnh Vĩnh Long, Việt Nam 	1501146107
+CÔNG TY CỔ PHẦN LA HÁN HOÀNG PHÁT	La Hán Hoàng Phát	 Số nhà 83D, Ngõ 165 Dương Quảng Hàm, Phường Quan Hoa, Quận Cầu Giấy, TP Hà Nội 	108529582
+CÔNG TY TNHH PHÁT THIÊN PHÚ	Phát Thiên Phú	 Số 38-40-42, đường N18, khu Phố Vinh Thạnh, Phường Trấn Biên, Tỉnh Đồng Nai, Việt Nam 	3600889932
+CÔNG TY CỔ PHẦN ALLEY 70	Alley 70	 70/17D Đinh Bộ Lĩnh, Phường 26, Quận Bình Thạnh, Thành phố Hồ Chí Minh 	317962278
+CÔNG TY TNHH SX TM QUANG TRUNG	Quang Trung	 Thửa 290 tờ bản đồ số 28, KCN Xuyên Á, Đức Hòa, Long An 	317065768
+CÔNG TY TNHH KỸ THUẬT HOÁ PHẨM AP	AP Têchm	 Tầng 3, Tòa nhà An Phú Plaza, 117-119 Lý Chính Thắng, Phường Xuân Hòa, Thành phố Hồ Chí Minh, Việt Nam 	319161467
+CÔNG TY TNHH SX TM BAO BÌ NGỌC MINH	Ngọc Minh	 B4 ẤP MỸ HOÀ 4, XUÂN THỚI ĐÔNG, HÓC MÔN, TP.HCM 	313635470
+CÔNG TY TNHH MỘT THÀNH VIÊN LƯU XUÂN GIANG	Lưu Xuân Giang	 56A Phạm Ngũ Lão, Phường Cái Khế, TP. Cần Thơ 	1800690555
+CÔNG TY CỔ PHẦN IN TỔNG HỢP CẦN THƠ	In Tổng Hợp Cần Thơ	 Số 500 đường 30/4, Phường Tân An, TP. Cần Thơ 	1800157925
+CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI G28	G28	" ô LE5, Đường Số 2, KCN Xuyên Á, Xã Đức Lập, Tỉnh Tây Ninh, Việt Nam 
+ XSX: 31/13 Ấp 4, Đường Dương Công Khi, Xã Xuân Thới Sơn, TP. Hồ Chí Minh. "	1101926825
+CÔNG TY TNHH SẢN XUẤT BAO BÌ ĐÔNG BẮC	Bao Bì Đông Bắc	 Số 11 Đường 406 Ấp 2, Xã Củ Chi, TP Hồ Chí Minh, Việt Nam 	318450547
+Công ty TNHH SX & TM Duy Nhật	Bao Bì Duy Nhật	 Lô O, KCN An Nghiệp, Xã An Nghiệp, Tỉnh Vĩnh Long 	2200717750
+CTY TNHH SX TM DV TH DAO CARTON	Dao Carton	 Số 83, Đường B13, KDC 91B, Phường Tân An, Thành phố Cần Thơ, Việt Nam 	1801699046
+CÔNG TY TNHH BAO BÌ GIẤY AN TÍN	Bao Bì Giấy An Tín	 Số 23 Đường 23, Khu phố 2, Phường Tam Bình, Thành phố Hồ Chí Minh, Việt Nam 	0315839173
+CÔNG TY CỔ PHẦN BAO BÌ TRỌNG TÍN	Bao Bì Trọng Tín	 Số 112/7 Đường Lê Thị Hà, Tổ 11, Ấp Chánh 1, Xã Hóc Môn, TP Hồ Chí Minh, Việt Nam 	0313183129
+CÔNG TY TNHH GIẤY YUEN FOONG YU (VN)	Giấy Yuen Foong Yu	 Lô E3, E4, E5, E6 khu công nghiệp Đức Hòa 1, Ấp 5, Xã Mỹ Hạnh, Tỉnh Tây Ninh, Việt Nam 	1100635534
+HEBEI VEYONG BIO-CHEMICAL CO., LTD.	Hebei Veyong	" NO.6, MIDDLE HUAGONG ROAD, CIRCULATION CHEMICAL
+INDUSTRY PARK, SHIJIAZHUANG CITY, HEBEI, CHINA "	
+TIEN YUAN CHEMICAL (PTE) LTD.	Tien Yuan	 NO. 18 CHIN BEE ROAD, JURONG TOWN, SINGAPORE 619827 	
+CÔNG TY TNHH HOA VIỆT CHEMGROUP	Hoa Việt Chemgroup	 A2/11Y, tổ 3, ấp 1, xã Vĩnh Lộc A, huyện Bình Chánh, TP.HCM 	0317598043
+CÔNG TY TNHH ĐẦU TƯ NÔNG NGHIỆP THÔNG MINH	Nông Nghiệp Thông Minh	 33 Đường 2, Phường Phước Long, Thành phố Hồ Chí Minh, Việt Nam; 	0312170342
+CÔNG TY TNHH XUẤT NHẬP KHẨU TRẦN TIẾN	Trần Tiến	 911-913-915-917 Nguyễn Trãi, Phường Chợ Lớn, Tp. Hồ Chí Minh 	0312284043
+CÔNG TY CỔ PHẦN XUẤT NHẬP KHẨU HÓA CHẤT VIỆT MỸ	Việt Mỹ (Sài Gòn)	 9 Đường số 5, Bình Hưng, Bình Chánh, TP.HCM 	0312669004
+CÔNG TY TRÁCH NHIỆM HỮU HẠN AK VINA AK VINA CO., LTD	Ak Vina	 Số 02, KCN Gò Dầu, Xã Phước Thái, Huyện Long Thành, Tỉnh Đồng Nai, Việt Nam 	3600649634
+CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI AMIGOS	Amigos	 60/15 Huỳnh Văn Nghệ, Phường Tân Sơn, TP Hồ Chí Minh, Việt Nam 	0311360340
+CÔNG TY TNHH VẬT TƯ NÔNG NGHIỆP MIA	MIA	 12/29 Nguyễn Tuân, Phường Hạnh Thông, Thành phố Hồ Chí Minh, Việt Nam 	0315662254
+CÔNG TY CỔ PHẦN AGAMA	Agama	Lô 2, Đường số 2, Cụm Công nghiệp Đức Thuận, Ấp Tràm Lạc, Xã Mỹ Hạnh Bắc, Huyện Đức Hoà, Tỉnh Long An, Việt Nam	
+CÔNG TY CỔ PHẦN HÓA CHẤT NÔNG NGHIỆP HÀ LONG	Hà Long	Lô A 204, Khu công nghiệp Thái Hòa , Xã Đức Lập Hạ, Huyện Đức Hoà, Tỉnh Long An, Việt Nam	
+CÔNG TY CỔ PHẦN PHÂN BÓN QUỐC TẾ ÂU VIỆT (CÔNG TY CP EVF)	Âu Việt 	Quốc lộ 1A, Ấp Long An B, Thị Trấn Cái Tắc, Huyện Châu Thành A, Tỉnh Hậu Giang, Việt Nam	
+CÔNG TY TNHH BASEL THỤY SĨ	Basel	Lô H2A đường số 4, KCN Hải Sơn (GĐ 3+4), ấp Bình Tiền 2, Xã Đức Hòa Hạ, Huyện Đức Hoà, Tỉnh Long An	
+CÔNG TY TNHH DEGO HOLDING	Dego Cần Thơ	B19 đường cầu dẫn cầu Cần Thơ, QL 1A, Khu Dân cư Trung tâm văn hóa Tây Đô, phường Cái Răng, Thành phố Cần Thơ.	
+CÔNG TY TNHH PHÂN BÓN NIỀM TIN VIỆT	Niềm Tin Việt	Ấp 2A, Xã Hưng Thạnh, H.Tháp Mười, Đồng Tháp	
+CÔNG TY TNHH PRIMA - PHÁP - CHÂU ÂU	Đại Tâm	Lô B101 đường B. KCN Thái Hoà, Xã Đức Lập Hạ, Huyện Đức Hoà, Tỉnh Long An	
+CÔNG TY TNHH SÀN GIAO DỊCH THUỐC BẢO VỆ THỰC VẬT VIỆT NAM	Pesticidex	Tầng 1, B19 đường dẫn cầu Cần Thơ, Quốc lộ 1A, KDC TTVH Tây Đô, Phường Hưng Thạnh, Quận Cái Răng, Thành phố Cần Thơ, Việt Nam	
+CÔNG TY TNHH SX TM YAMATO VN	Yamato	Lô A20A Đường số 6, KCN Hải Sơn (GĐ 3+4), Xã Đức Hòa Hạ, Huyện Đức Hoà, Tỉnh Long An	
+CÔNG TY TNHH XUẤT NHẬP KHẨU HÓA CHẤT ATC	ATC	Số 87, Đường Lý Bôn, Phường Bình Đức, Tỉnh An Giang, Việt Nam	
+CÔNG TY TNHH AGRIFUTURE	Agrifuture	" Nhà Máy: Lô B123B, Đường số 7, KCN, ấp Tân Hòa, Đức Hòa, Long An
+VP: Phòng A4.04, Khu Phức Hợp Căn Hộ Nhật Hoa, 33 Nguyễn Hữu Thọ, Phường Tân Hưng, Thành phố Hồ Chí Minh, Việt Nam"	
+Cty TNHH SX TM DV Thu Loan 	Thu Loan	699 tổ 34 Khóm Đông Thuận , Phường Đông Thành , Bình Minh, Vĩnh Long 	
+CÔNG TY TNHH THƯƠNG MẠI THÁI NÔNG	Thái Nông	"73 Lạc Long Quân, Phường 1, Quận 11, Thành phố Hồ Chí Minh
+ CN: Khu Công nghiệp Nhơn Trạch 3, Thị trấn Hiệp Phước, Huyện Nhơn Trạch, Tỉnh Đồng Nai, Việt Nam
+ Giao Vật Tư: HKD Cơ Sở Phân Bón Lá Phú Hưng
+ ĐC: 49A, đường số 27, Tân Lập, Tân Thông Hội, Củ Chi, HCM
+ Người nhận: 0937 021 818 - Chị Bội"	
+CÔNG TY TNHH TẬP ĐOÀN AN NÔNG (AN GROUP)	An Nông	"Trụ sở : 464 Đường số 7, khu phố 8, Phường Tân Tạo, Quận Bình Tân, TP Hồ Chí Minh
+ Nhà máy : Lô H7, Đường số 5, KCN Hải Sơn (GĐ 3+4), ấp Bình Tiền 2, Xã Đức Hòa Hạ, Huyện Đức Hoà, Tỉnh Long An, Việt Nam"	
+KHO DR XANH	Kho Dr. Xanh	Số 124 Võ Văn Kiệt, KV Bình Trung, P.Long Hòa, Q. Bình Thủy, Cần Thơ	
+KHO B18	Kho B18	B18 đường dẫn cầu Cần Thơ, Quốc lộ 1A, KDC TTVH Tây Đô, Phường Cái Răng, Thành phố Cần Thơ	
+Kho C1-2	Kho C1-2	Kho C1-2	
+KHO F49 - ICARE	Kho F49 - Icare	nhà F49 (chạy qua trường lái Chiến Thắng) đường số 7, KDC Long Thịnh, Phường Phú Thứ, Cái Răng, Cần Thơ	
+KHO LAB DEGO	Kho Lab Dego	B19 đường dẫn cầu Cần Thơ, Quốc lộ 1A, KDC TTVH Tây Đô, Phường Cái Răng, Thành phố Cần Thơ	
+CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ BAO BÌ LỘC PHÁT	BAO BÌ LỘC PHÁT	229 Nguyễn Thị Minh Khai, Ninh Kiều, Cần Thơ 	1801722746
+CÔNG TY TNHH CHẤN HƯNG NÔNG 	CHẤN HƯNG NÔNG 	 Ấp Trường Thọ, Xã Trường Xuân, TP Cần Thơ, Việt Nam. 	1801800440
+BAO BÌ CHÂU DUY	BAO BÌ CHÂU DUY	 26-28 Ngô Sĩ Liên KDC MeTro,Tân An, Cần Thơ 	
+CÔNG TY TNHH SẢN XUẤT BAO BÌ ĐÔNG BẮC	BAO BÌ ĐÔNG BẮC	 Số 11 Đường 406 Ấp 2, Xã Củ Chi, TP Hồ Chí Minh, Việt Nam 	0318450547
+CÔNG TY TNHH MÁY VÀ HÓA CHẤT TOÀN CẦU	HÓA CHẤT TOÀN CẦU	 Tầng 6, tòa nhà CDS, Số 33,Ngõ 61 Lạc Trung, Phường Vĩnh Tuy, Hà Nội 	010 511 1638 
+CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI CAO VẠN THỊNH	CAO VẠN THỊNH	 1004/12 Hương lộ 2, khu phố 6, Phường Bình Trị Đông, TP Hồ Chí Minh, Việt Nam 	0311953982
+CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ NGỌC HÂN XUYÊN Á	NGỌC HÂN XUYÊN Á	 Số 134 đường Giồng Lớn, ấp Giồng Lớn, Xã Mỹ Hạnh, Tỉnh Tây Ninh, Việt Nam 	1 1 0 2 1 0 6 8 1 8
+LÊ HỮU THÔNG	TANK LÊ HỮU THÔNG	 252 Ấp 17, xã Hiệp Phước, Thành phố Hồ Chí Minh 	0 7 9 0 8 2 0 0 6 5 8 7
+Công Ty TNHH TM Nông Xanh	Nông Xanh	 168 Đường 16, KDC Đông Tăng Long ,P long phước,TP.HCM 	0310187076
+CÔNG TY TNHH XANH VIỆT VINA	XANH VIỆT VINA	 Tầng 2, Hado Airport Building, số 2 đường Hồng Hà, Phường Tân Sơn Hòa, Thành Phố Hồ Chí Minh, Việt Nam 	0318499006

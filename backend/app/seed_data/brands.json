@@ -1,0 +1,42 @@
+[
+  {
+    "code": "NM",
+    "department": "Nhà máy Dego"
+  },
+  {
+    "code": "SX",
+    "department": "SX - Ms Ly"
+  },
+  {
+    "code": "LAB",
+    "department": "Lab"
+  },
+  {
+    "code": "AB",
+    "department": "KD ABA"
+  },
+  {
+    "code": "IC",
+    "department": "KD ICARE"
+  },
+  {
+    "code": "DR",
+    "department": "KD DR XANH"
+  },
+  {
+    "code": "ID",
+    "department": "KD IDA"
+  },
+  {
+    "code": "TM",
+    "department": "TM - Ms Quyên"
+  },
+  {
+    "code": "N2",
+    "department": "KD N2SBIO"
+  },
+  {
+    "code": "QLTM_Ms Ngân",
+    "department": "QLTM_Ms Ngân"
+  }
+]

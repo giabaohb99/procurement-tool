@@ -1,0 +1,440 @@
+[
+  {
+    "name": "Nhãn",
+    "std_days": "7",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Nhãn Metalize",
+    "std_days": "12",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Nhãn Thùng",
+    "std_days": "7",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Túi flexo",
+    "std_days": "15",
+    "note": "Nhãn túi (Tân Đức)\n<5.000 túi: 12 ngày\n> 5.000 túi: 15 ngày",
+    "apply_date": "01/01/2026"
+  },
+  {
+    "name": "Túi trục",
+    "std_days": "21",
+    "note": "Làm trục: 12 - 15 ngày\nIn túi: 3 -5 ngày\nCắt: 1-2 ngày",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Hộp",
+    "std_days": "15",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Can/Xô",
+    "std_days": "5",
+    "note": "Thông tin tham khảo từ Ms Ly/ Thu mua check lại",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "NL",
+    "std_days": "10",
+    "note": "Trong nước",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Thùng",
+    "std_days": "18",
+    "note": "Thời gian Sx: 15 ngày\nNhận hàng: 2 ngày",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Chai Nhôm",
+    "std_days": "8",
+    "note": "Hàng cần thanh toán trước: \n- Làm hồ sơ 1 ngày\n- Thanh toán 5 ngày\n- Nhận hàng 2 ngày\n(Thông tin tham khảo từ Ms Ly/ Thu mua check lại)",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Chai khác",
+    "std_days": "7",
+    "note": "Hàng cần thanh toán trước: \n- Làm hồ sơ 1 ngày\n- Thanh toán 5 ngày\n- Sản xuất 0 ngày\n- Nhận hàng 2 ngày",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Nắp",
+    "std_days": "7",
+    "note": "Nắp NCC giao chung hàng với chai.",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Cốc đong",
+    "std_days": "7",
+    "note": "Cốc đong NCC giao chung hàng với chai.",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "NL NK",
+    "std_days": "59",
+    "note": "- Làm hợp đồng với NCC cũ: 5 ngày\n- Chuẩn bị hàng: 14 ngày\n- Giao hàng 20 ngày\n- Nhận hàng + thông quan: 20 ngày",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "NL Icare",
+    "std_days": "4",
+    "note": "Trong nước, công nợ",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Xốp ( bong bóng khí)",
+    "std_days": "5",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Giấy nhiệt K100x150",
+    "std_days": "5",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "HDSD Antisol",
+    "std_days": "10",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Tem phụ antisol",
+    "std_days": "15",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Tem chống hàng giả",
+    "std_days": "10",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Chai Pet có vòi",
+    "std_days": "15",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Hộp trắng",
+    "std_days": "10",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Màng co",
+    "std_days": "20",
+    "note": "NCC quá tải chưa tìm được NCC mới giá cạnh tranh",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Túi in cuộn màng",
+    "std_days": "14",
+    "note": "Nhãn túi",
+    "apply_date": "08/04/2026"
+  },
+  {
+    "name": "Vận chuyển",
+    "std_days": "",
+    "note": "",
+    "apply_date": "18/04/2026"
+  },
+  {
+    "name": "Băng keo",
+    "std_days": "5",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Cuộn PE",
+    "std_days": "7",
+    "note": "",
+    "apply_date": "01/05/2026"
+  },
+  {
+    "name": "Lon",
+    "std_days": "7",
+    "note": "Hàng cần thanh toán trước: \n- Làm hồ sơ 1 ngày\n- Thanh toán 5 ngày\n- Sản xuất 0 ngày\n- Nhận hàng 2 ngày",
+    "apply_date": "01/06/2026"
+  },
+  {
+    "name": "VTBB SX",
+    "std_days": "7",
+    "note": "Hàng cần thanh toán trước: \n- Làm hồ sơ 1 ngày\n- Thanh toán 5 ngày\n- Sản xuất 0 ngày\n- Nhận hàng 2 ngày",
+    "apply_date": "01/06/2026"
+  },
+  {
+    "name": "Túi Zip",
+    "std_days": "7",
+    "note": "Hàng cần thanh toán trước: \n- Làm hồ sơ 1 ngày\n- Thanh toán 5 ngày\n- Sản xuất 0 ngày\n- Nhận hàng 2 ngày",
+    "apply_date": "01/06/2026"
+  },
+  {
+    "name": "Túi PA",
+    "std_days": "7",
+    "note": "Hàng cần thanh toán trước: \n- Làm hồ sơ 1 ngày\n- Thanh toán 5 ngày\n- Sản xuất 0 ngày\n- Nhận hàng 2 ngày",
+    "apply_date": "09/06/2026"
+  },
+  {
+    "name": "Tank",
+    "std_days": "7",
+    "note": "Hàng cần thanh toán trước: \n- Làm hồ sơ 1 ngày\n- Thanh toán 5 ngày\n- Sản xuất 0 ngày\n- Nhận hàng 2 ngày",
+    "apply_date": "09/06/2026"
+  },
+  {
+    "name": "Chai Pet",
+    "std_days": "7",
+    "note": "Hàng cần thanh toán trước: \n- Làm hồ sơ 1 ngày\n- Thanh toán 5 ngày\n- Sản xuất 0 ngày\n- Nhận hàng 2 ngày",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Chai Hdpe",
+    "std_days": "7",
+    "note": "Hàng cần thanh toán trước: \n- Làm hồ sơ 1 ngày\n- Thanh toán 5 ngày\n- Sản xuất 0 ngày\n- Nhận hàng 2 ngày",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Chai Pape",
+    "std_days": "7",
+    "note": "Hàng cần thanh toán trước: \n- Làm hồ sơ 1 ngày\n- Thanh toán 5 ngày\n- Sản xuất 0 ngày\n- Nhận hàng 2 ngày",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Chai Nhôm nhập khẩu",
+    "std_days": "33",
+    "note": "Hàng cần thanh toán trước: \n- Làm hồ sơ 1 ngày\n- Nhập khẩu : 25 ngày\n- Thanh toán 5 ngày\n- Nhận hàng 2 ngày\n(Thông tin tham khảo từ Ms Ly/ Thu mua check lại)",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Chai Pet giả nhôm",
+    "std_days": "7",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Chai HD giả nhôm",
+    "std_days": "7",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Chai Pape giả nhôm",
+    "std_days": "7",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Nắp Hdpe",
+    "std_days": "7",
+    "note": "Nắp NCC giao chung hàng với chai.",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Nắp Pet",
+    "std_days": "7",
+    "note": "Nắp NCC giao chung hàng với chai.",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Can HDPE",
+    "std_days": "5",
+    "note": "Thông tin tham khảo từ Ms Ly/ Thu mua check lại",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Xô HDPE",
+    "std_days": "5",
+    "note": "Thông tin tham khảo từ Ms Ly/ Thu mua check lại",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Nhãn giấy",
+    "std_days": "7",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Nhãn Decal",
+    "std_days": "7",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Nhãn Phụ",
+    "std_days": "7",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Nhãn dán thùng",
+    "std_days": "7",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Túi rời",
+    "std_days": "15",
+    "note": "Nhãn túi (Tân Đức)\n<5.000 túi: 12 ngày\n> 5.000 túi: 15 ngày",
+    "apply_date": "01/01/2026"
+  },
+  {
+    "name": "Túi in cuộn (không trục)",
+    "std_days": "14",
+    "note": "Nhãn túi",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Túi PE (Túi nilong)",
+    "std_days": "7",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Túi PA 3 biên",
+    "std_days": "7",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Hộp carton 3 lớp",
+    "std_days": "15",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Hộp giấy D",
+    "std_days": "15",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Hộp đóng gói nâu",
+    "std_days": "15",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Hộp icare: giấy Ivory",
+    "std_days": "10",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Thùng carton 5 lớp",
+    "std_days": "18",
+    "note": "Thời gian Sx: 15 ngày\nNhận hàng: 2 ngày",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Thùng carton 3 lớp",
+    "std_days": "18",
+    "note": "Thời gian Sx: 15 ngày\nNhận hàng: 2 ngày",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Lon HDPE",
+    "std_days": "7",
+    "note": "Hàng cần thanh toán trước: \n- Làm hồ sơ 1 ngày\n- Thanh toán 4 ngày\n- Sản xuất 0 ngày\n- Nhận hàng 2 ngày",
+    "apply_date": "01/06/2026"
+  },
+  {
+    "name": "Bao PP",
+    "std_days": "7",
+    "note": "",
+    "apply_date": "01/06/2026"
+  },
+  {
+    "name": "Bao PE",
+    "std_days": "7",
+    "note": "",
+    "apply_date": "01/06/2026"
+  },
+  {
+    "name": "Phuy",
+    "std_days": "15",
+    "note": "",
+    "apply_date": "01/06/2026"
+  },
+  {
+    "name": "Màng co nhiệt",
+    "std_days": "20",
+    "note": "NCC quá tải chưa tìm được NCC mới giá cạnh tranh",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Màng PE cuộn",
+    "std_days": "21",
+    "note": "",
+    "apply_date": "01/06/2026"
+  },
+  {
+    "name": "Băng keo trong",
+    "std_days": "7",
+    "note": "",
+    "apply_date": "01/06/2026"
+  },
+  {
+    "name": "Băng keo in logo",
+    "std_days": "7",
+    "note": "",
+    "apply_date": "01/06/2026"
+  },
+  {
+    "name": "Keo sữa",
+    "std_days": "7",
+    "note": "",
+    "apply_date": "01/06/2026"
+  },
+  {
+    "name": "Tem Hologram bạc (tem chống hàng giả icare)",
+    "std_days": "12",
+    "note": "",
+    "apply_date": "01/06/2026"
+  },
+  {
+    "name": "Tem decal vỡ (tem Asahi)",
+    "std_days": "12",
+    "note": "",
+    "apply_date": "01/06/2026"
+  },
+  {
+    "name": "Tem decal giấy",
+    "std_days": "12",
+    "note": "",
+    "apply_date": "01/06/2026"
+  },
+  {
+    "name": "NL Nhập khẩu",
+    "std_days": "59",
+    "note": "- Làm hợp đồng với NCC mới: 5 ngày\n- Chuẩn bị hàng: 14 ngày\n- Giao hàng 20 ngày\n- Nhận hàng + thông quan: 20 ngày\nĐối với đường bay thì 41 ngày",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Tag treo",
+    "std_days": "10",
+    "note": "",
+    "apply_date": "01/03/2026"
+  },
+  {
+    "name": "Hàng sẵn kho ncc",
+    "std_days": "",
+    "note": "",
+    "apply_date": ""
+  },
+  {
+    "name": "Hàng ko sẵn kho ncc",
+    "std_days": "",
+    "note": "",
+    "apply_date": ""
+  }
+]

@@ -1,0 +1,27 @@
+TÊN PHÁP LÝ KHO NHẬN	KHO NHẬN  (VIẾT TẮT)	ĐỊA CHỈ KHO NHẬN 
+CÔNG TY CỔ PHẦN AGAMA	Agama	Lô 2, Đường số 2, Cụm Công nghiệp Đức Thuận, Ấp Tràm Lạc, Xã Mỹ Hạnh Bắc, Huyện Đức Hoà, Tỉnh Long An, Việt Nam
+CÔNG TY CỔ PHẦN HÓA CHẤT NÔNG NGHIỆP HÀ LONG	Hà Long	Lô A 204, Khu công nghiệp Thái Hòa , Xã Đức Lập Hạ, Huyện Đức Hoà, Tỉnh Long An, Việt Nam
+CÔNG TY CỔ PHẦN PHÂN BÓN QUỐC TẾ ÂU VIỆT (CÔNG TY CP EVF)	Âu Việt 	Quốc lộ 1A, Ấp Long An B, Thị Trấn Cái Tắc, Huyện Châu Thành A, Tỉnh Hậu Giang, Việt Nam
+CÔNG TY TNHH BASEL THỤY SĨ	Basel	Lô H2A đường số 4, KCN Hải Sơn (GĐ 3+4), ấp Bình Tiền 2, Xã Đức Hòa Hạ, Huyện Đức Hoà, Tỉnh Long An
+CÔNG TY TNHH DEGO HOLDING	Dego Cần Thơ	Thửa đất số 86-Tờ bản đồ số 1, đường dẫn cầu Cần Thơ, QL 1A, KDC TTVH Tây Đô, P. Hưng Thạnh, Q. Cái Răng, TP. Cần Thơ (Cách trụ sở công an Quận Cái Răng 100m)
+CÔNG TY TNHH PHÂN BÓN NIỀM TIN VIỆT	Niềm Tin Việt	Ấp 2A, Xã Hưng Thạnh, H.Tháp Mười, Đồng Tháp
+CÔNG TY TNHH PRIMA - PHÁP - CHÂU ÂU	Đại Tâm	Lô B101 đường B. KCN Thái Hoà, Xã Đức Lập Hạ, Huyện Đức Hoà, Tỉnh Long An
+CÔNG TY TNHH SÀN GIAO DỊCH THUỐC BẢO VỆ THỰC VẬT VIỆT NAM	Pesticidex	Tầng 1, B19 đường dẫn cầu Cần Thơ, Quốc lộ 1A, KDC TTVH Tây Đô, Phường Hưng Thạnh, Quận Cái Răng, Thành phố Cần Thơ, Việt Nam
+CÔNG TY TNHH SX TM YAMATO VN	Yamato	Lô A20A Đường số 6, KCN Hải Sơn (GĐ 3+4), Xã Đức Hòa Hạ, Huyện Đức Hoà, Tỉnh Long An
+CÔNG TY TNHH XUẤT NHẬP KHẨU HÓA CHẤT ATC	ATC	Số 87, Đường Lý Bôn, Phường Bình Đức, Tỉnh An Giang, Việt Nam
+CÔNG TY TNHH AGRIFUTURE	Agrifuture	" Nhà Máy: Lô B123B, Đường số 7, KCN, ấp Tân Hòa, Đức Hòa, Long An
+VP: Phòng A4.04, Khu Phức Hợp Căn Hộ Nhật Hoa, 33 Nguyễn Hữu Thọ, Phường Tân Hưng, Thành phố Hồ Chí Minh, Việt Nam"
+Cty TNHH SX TM DV Thu Loan 	Thu Loan	699 tổ 34 Khóm Đông Thuận , Phường Đông Thành , Bình Minh, Vĩnh Long 
+CÔNG TY TNHH THƯƠNG MẠI THÁI NÔNG	Thái Nông	"73 Lạc Long Quân, Phường 1, Quận 11, Thành phố Hồ Chí Minh
+ CN: Khu Công nghiệp Nhơn Trạch 3, Thị trấn Hiệp Phước, Huyện Nhơn Trạch, Tỉnh Đồng Nai, Việt Nam
+ Giao Vật Tư: HKD Cơ Sở Phân Bón Lá Phú Hưng
+ ĐC: 49A, đường số 27, Tân Lập, Tân Thông Hội, Củ Chi, HCM
+ Người nhận: 0937 021 818 - Chị Bội"
+CÔNG TY TNHH TẬP ĐOÀN AN NÔNG (AN GROUP)	An Nông	"Trụ sở : 464 Đường số 7, khu phố 8, Phường Tân Tạo, Quận Bình Tân, TP Hồ Chí Minh
+ Nhà máy : Lô H7, Đường số 5, KCN Hải Sơn (GĐ 3+4), ấp Bình Tiền 2, Xã Đức Hòa Hạ, Huyện Đức Hoà, Tỉnh Long An, Việt Nam"
+KHO DR XANH	Kho Dr. Xanh	Số 124 Võ Văn Kiệt, KV Bình Trung, P.Long Hòa, Q. Bình Thủy, Cần Thơ
+KHO B18	Kho B18	B18 đường dẫn cầu Cần Thơ, Quốc lộ 1A, KDC TTVH Tây Đô, Phường Cái Răng, Thành phố Cần Thơ
+Kho C1-2	Kho C1-2	Kho C1-2
+KHO F49 - ICARE	Kho F49 - Icare	nhà F49 (chạy qua trường lái Chiến Thắng) đường số 7, KDC Long Thịnh, Phường Phú Thứ, Cái Răng, Cần Thơ
+KHO LAB DEGO	Kho Lab Dego	B19 đường dẫn cầu Cần Thơ, Quốc lộ 1A, KDC TTVH Tây Đô, Phường Cái Răng, Thành phố Cần Thơ
+Công ty TNHH Nam Bắc	ADU	lô 215 đường số 5 KCN Thái Hòa, xã Đức Lập, Tây Ninh
