@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
+from app.core.audit import resolve_actor
 from app.core.auth import require
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
@@ -56,6 +57,8 @@ def print_(rid: int, db: Session = Depends(get_db), user=Depends(require("paymen
     company = db.get(Company, req.company_id) if req.company_id else None
     data["company"] = {"name": company.name, "address": company.address,
                        "tax_code": company.tax_code} if company else {}
+    data["created_by_name"] = resolve_actor(db, req.created_by)
+    data["period"] = (req.request_date or "")[:7]  # YYYY-MM
     return success(data)
 
 

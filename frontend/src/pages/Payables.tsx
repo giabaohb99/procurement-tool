@@ -39,7 +39,7 @@ export default function Payables() {
   }, [])
 
   const companyName = (cid: number) => companies.find((c) => c.id === cid)?.name || '—'
-  const payable = (r: any) => r.status !== 'Đã TT' && r.remaining > 0
+  const payable = (r: any) => r.status !== 'Đã TT' && r.remaining > 0 && !!(r.invoice_no || '').trim()
   const toggle = (id: number) => setSel((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id])
 
   const selSuppliers = new Set(rows.filter((r) => sel.includes(r.id)).map((r) => r.supplier_code))
@@ -82,7 +82,7 @@ export default function Payables() {
         <Card label="Quá hạn" val={sum.overdue} color="var(--red)" />
       </div>
 
-      <div className="card" style={{ padding: 14, marginBottom: 12, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+      <div className="card filters" style={{ padding: 14, marginBottom: 12, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div><label style={{ fontSize: 12, color: 'var(--muted)' }}>Công ty</label><br />
           <select value={f.company_id} onChange={(e) => setF((s: any) => ({ ...s, company_id: e.target.value }))}>
             <option value="">Tất cả</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -140,7 +140,8 @@ export default function Payables() {
                   <td>{r.supplier_name || r.supplier_code}</td>
                   <td>{r.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa'}</td>
                   <td>{companyName(r.company_id)}</td>
-                  <td>{r.po_code}</td><td>{r.invoice_no}</td>
+                  <td>{r.po_code}</td>
+                  <td>{r.invoice_no ? r.invoice_no : <span style={{ color: 'var(--red)', fontSize: 12 }}>chưa có HĐ</span>}</td>
                   <td>{r.incur_date}</td><td>{r.due_date}</td><td>{agingBadge(r.aging)}</td>
                   <td style={{ textAlign: 'right' }}>{fmt(r.total)}</td>
                   <td style={{ textAlign: 'right' }}>{fmt(r.paid_amount)}</td>
@@ -152,6 +153,9 @@ export default function Payables() {
             </tbody>
           </table>
         </div>
+      </div>
+      <div style={{ marginTop: 8, fontSize: 12.5, color: 'var(--muted)' }}>
+        * Chỉ chọn được khoản nợ <b>đã có Số hóa đơn</b> để tạo đề nghị thanh toán. (Công nợ hàng: nhập Số HĐ ở chi tiết sản phẩm trên đơn; Vận chuyển: tự lấy Mã MISA + Mã SP.)
       </div>
       {sel.length > 0 && selSuppliers.size > 1 && (
         <div style={{ marginTop: 8, fontSize: 13, color: 'var(--muted)' }}>

@@ -12,6 +12,7 @@ class Product(Base, AuditMixin):
     code: Mapped[str] = mapped_column(String(50), unique=True)        # Mã VTBB/NL
     name: Mapped[str] = mapped_column(String(255))                   # Tên VTBB/NL
     invoice_name: Mapped[str] = mapped_column(String(255), default="")  # tên trên hóa đơn
+    legal_name: Mapped[str] = mapped_column(String(255), default="")    # tên pháp lý HH (col45)
     item_group: Mapped[str] = mapped_column(String(50), default="")     # Phân loại (Thùng, Nhãn...)
     unit: Mapped[str] = mapped_column(String(25), default="")           # ĐVT
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

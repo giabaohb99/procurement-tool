@@ -31,12 +31,19 @@ def create_requests(db: Session, data: PRequestCreate, user_id: int) -> list[Pay
 
     # gom theo (supplier_code, source_type)
     groups: dict[tuple, list] = {}
+    missing = []
     for ln in data.lines:
         p = db.get(Payable, ln.payable_id)
         if not p:
             continue
+        if not (p.invoice_no or "").strip():
+            missing.append(p.po_code or str(p.id))
+            continue
         amt = ln.amount if ln.amount > 0 else round(float(p.total or 0) - float(p.paid_amount or 0), 2)
         groups.setdefault((p.supplier_code, p.source_type), []).append((p, amt))
+
+    if missing:
+        raise HTTPException(400, f"Các khoản nợ chưa có Số hóa đơn, không thể tạo đề nghị thanh toán: {', '.join(missing)}")
 
     if not groups:
         raise HTTPException(400, "Khoản công nợ không hợp lệ")

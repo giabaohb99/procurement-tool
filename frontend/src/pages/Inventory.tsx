@@ -52,7 +52,7 @@ export default function Inventory() {
         {can('inventory', 'write') && <button className="btn" onClick={() => setShowAdjust(true)}><i className="ti ti-adjustments" />Điều chỉnh tồn</button>}
       </div>
 
-      <div className="card" style={{ padding: 14, marginBottom: 12, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+      <div className="card filters" style={{ padding: 14, marginBottom: 12, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div><label style={{ fontSize: 12, color: 'var(--muted)' }}>Công ty</label><br />
           <select value={f.company_id || ''} onChange={(e) => setF((s) => ({ ...s, company_id: e.target.value }))}>
             <option value="">Tất cả</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -72,23 +72,25 @@ export default function Inventory() {
       {msg && <div style={{ color: 'var(--green)', fontSize: 13, marginBottom: 8 }}>{msg}</div>}
       <div className="card">
         <table>
-          <thead><tr><th>Công ty</th><th>Kho</th><th>Mã SP</th><th>Tên sản phẩm</th><th>ĐVT</th><th style={{ textAlign: 'right' }}>Tồn hiện tại</th></tr></thead>
+          <thead><tr><th>Công ty</th><th>Kho</th><th>Mã SP</th><th>Tên sản phẩm</th><th>ĐVT</th><th style={{ textAlign: 'right' }}>Tồn hiện tại</th><th style={{ textAlign: 'right' }}>Đơn giá BQ</th><th style={{ textAlign: 'right' }}>Giá trị tồn</th></tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.id}>
                 <td>{companyName(r.company_id)}</td><td>{r.warehouse_code}</td><td>{r.product_code}</td>
                 <td>{r.product_name}</td><td>{r.unit}</td>
                 <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(r.qty)}</td>
+                <td style={{ textAlign: 'right' }}>{fmt(r.avg_cost)}</td>
+                <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(r.value)}</td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có tồn kho</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có tồn kho</td></tr>}
           </tbody>
         </table>
       </div>
 
       {showAdjust && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowAdjust(false)}>
-          <div style={{ width: 440, maxWidth: '100%', background: '#fff', borderRadius: 12, padding: 20 }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card" style={{ width: 440, maxWidth: '100%', background: '#fff', borderRadius: 12, padding: 20 }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ marginTop: 0, color: 'var(--navy)' }}>Điều chỉnh tồn kho</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div>

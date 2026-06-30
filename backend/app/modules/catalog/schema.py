@@ -42,6 +42,7 @@ class ItemGroupCreate(BaseModel):
     code: str = ""
     name: str
     std_days: str = ""
+    std_days_unavail: str = ""
     note: str = ""
     apply_date: str = ""
     is_active: bool = True
@@ -49,6 +50,7 @@ class ItemGroupCreate(BaseModel):
 
 class ItemGroupUpdate(BaseModel):
     std_days: str | None = None
+    std_days_unavail: str | None = None
     note: str | None = None
     apply_date: str | None = None
     is_active: bool | None = None

@@ -13,10 +13,12 @@ class DeliveryIn(BaseModel):
     promised_date: str = ""
     expected_date: str = ""
     received_date: str = ""
+    std_days: int = 0
     invoice_no: str = ""
     shipping_unit_price: float = 0
     shipping_amount: float = 0
     qc_result: str = ""
+    extra_request: str = ""
     progress_note: str = ""
 
 
@@ -24,8 +26,13 @@ class POItemIn(BaseModel):
     id: int | None = None
     product_code: str = ""
     product_name: str = ""
+    invoice_name: str = ""
     item_group: str = ""
     spec: str = ""
+    fg_code: str = ""
+    invoice_no: str = ""
+    supplier_ready: bool = False
+    required_date: str = ""
     unit: str = ""
     qty_request: float = 0
     qty_order: float = 0
@@ -48,6 +55,7 @@ class POCreate(BaseModel):
     nspt: str = ""
     order_date: str = ""
     vat_rate: float = 0.08
+    payment_terms: str = ""
     is_urgent: bool = False
     note: str = ""
     items: list[POItemIn] = []
@@ -64,6 +72,7 @@ class POUpdate(BaseModel):
     nspt: str | None = None
     order_date: str | None = None
     vat_rate: float | None = None
+    payment_terms: str | None = None
     is_urgent: bool | None = None
     note: str | None = None
     items: list[POItemIn] | None = None

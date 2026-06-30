@@ -17,7 +17,8 @@ router = APIRouter(prefix="/api/inventory", tags=["inventory"])
 def _out(r: Inventory) -> dict:
     return {"id": r.id, "company_id": r.company_id, "warehouse_code": r.warehouse_code,
             "product_code": r.product_code, "product_name": r.product_name,
-            "unit": r.unit, "qty": float(r.qty or 0)}
+            "unit": r.unit, "qty": float(r.qty or 0),
+            "avg_cost": float(r.avg_cost or 0), "value": float(r.value or 0)}
 
 
 @router.get("")

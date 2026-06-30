@@ -7,9 +7,11 @@ import { poBadge } from '../config/cruds'
 const API = '/api/purchase-orders'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const QC = ['', 'Đạt', 'Thiếu', 'Lỗi']
+const SHIP_UNITS = ['Kiện', 'Chuyến', 'm2', 'tấn']
 
 const emptyItem = {
-  product_code: '', product_name: '', item_group: '', spec: '', unit: '',
+  product_code: '', product_name: '', invoice_name: '', item_group: '', spec: '', fg_code: '',
+  supplier_ready: false, required_date: '', unit: '',
   qty_request: 0, qty_order: 0, price: 0, vat: 8, warehouse_code: '', note: '', deliveries: [],
 }
 const emptyDelivery = {
@@ -27,7 +29,7 @@ export default function PurchaseOrderDetail() {
   const [po, setPo] = useState<any>({
     code: '', misa_code: '', pr_code: '', survey_code: '', company_id: 0, supplier_code: '',
     supplier_name: '', department: '', nspt: '', order_date: new Date().toISOString().slice(0, 10),
-    vat_rate: 0.08, is_urgent: false, note: '', status: 'draft', items: [],
+    vat_rate: 0.08, payment_terms: '', is_urgent: false, note: '', status: 'draft', items: [],
   })
   const [companies, setCompanies] = useState<any[]>([])
   const [suppliers, setSuppliers] = useState<any[]>([])
@@ -60,8 +62,11 @@ export default function PurchaseOrderDetail() {
   const goodsSuppliers = suppliers.filter((s) => s.supplier_type !== 'transport')
   const carriers = suppliers.filter((s) => s.supplier_type === 'transport')
 
-  const headerEditable = isNew || po.status === 'draft' || po.status === 'rejected'
+  // Đơn CHƯA hoàn thành (và chưa hủy) thì vẫn cho sửa sản phẩm/thông tin bên trong
+  const locked = ['completed', 'cancelled'].includes(po.status)
+  const headerEditable = isNew || !locked
   const deliveryEditable = !isNew && ['approved', 'partial', 'received'].includes(po.status)
+  const canDelete = isNew || ['draft', 'rejected'].includes(po.status)
 
   const setH = (k: string, v: any) => setPo((s: any) => ({ ...s, [k]: v }))
   const items = po.items || []
@@ -75,9 +80,13 @@ export default function PurchaseOrderDetail() {
     const items = [...s.items]; items.splice(i + 1, 0, copy); return { ...s, items }
   })
 
-  const rowAmount = (it: any) => (Number(it.qty_order) || 0) * (Number(it.price) || 0) * (1 + (Number(it.vat) || 0) / 100)
-  const subtotal = items.reduce((s: number, it: any) => s + (Number(it.qty_order) || 0) * (Number(it.price) || 0), 0)
+  // Thành tiền đơn hàng = SL THỰC NHẬN × đơn giá × (1+VAT) (đã chốt)
+  const recvQty = (it: any) => (it.deliveries || []).reduce((a: number, d: any) => a + (Number(d.received_qty) || 0), 0)
+  const rowAmount = (it: any) => recvQty(it) * (Number(it.price) || 0) * (1 + (Number(it.vat) || 0) / 100)
+  const orderAmount = (it: any) => (Number(it.qty_order) || 0) * (Number(it.price) || 0) * (1 + (Number(it.vat) || 0) / 100)
+  const subtotal = items.reduce((s: number, it: any) => s + recvQty(it) * (Number(it.price) || 0), 0)
   const vat = items.reduce((s: number, it: any) => s + rowAmount(it), 0) - subtotal
+  const orderTotal = items.reduce((s: number, it: any) => s + orderAmount(it), 0)
   const shippingTotal = items.reduce((s: number, it: any) => s + (it.deliveries || []).reduce((a: number, d: any) => a + (Number(d.shipping_amount) || 0), 0), 0)
 
   // ---- deliveries within an item ----
@@ -102,11 +111,11 @@ export default function PurchaseOrderDetail() {
 
   const onPickProduct = (i: number, code: string) => {
     const p = products.find((x) => x.code === code)
-    setItem(i, p ? { product_code: p.code, product_name: p.name, unit: p.unit || '', item_group: p.item_group || '' } : { product_code: code })
+    setItem(i, p ? { product_code: p.code, product_name: p.name, invoice_name: p.invoice_name || p.name, unit: p.unit || '', item_group: p.item_group || '' } : { product_code: code })
   }
   const onPickSupplier = (code: string) => {
     const s = goodsSuppliers.find((x) => x.code === code)
-    setPo((st: any) => ({ ...st, supplier_code: code, supplier_name: s ? s.name : '', vat_rate: s ? (Number(s.vat) || st.vat_rate) : st.vat_rate }))
+    setPo((st: any) => ({ ...st, supplier_code: code, supplier_name: s ? s.name : '', vat_rate: s ? (Number(s.vat) || st.vat_rate) : st.vat_rate, payment_terms: s ? (s.payment_terms || st.payment_terms) : st.payment_terms }))
   }
   const onPickCarrier = (ii: number, di: number, code: string) => {
     const c = carriers.find((x) => x.code === code)
@@ -123,18 +132,22 @@ export default function PurchaseOrderDetail() {
       misa_code: po.misa_code, pr_code: po.pr_code, survey_code: po.survey_code,
       company_id: Number(po.company_id) || 0, supplier_code: po.supplier_code, supplier_name: po.supplier_name,
       department: po.department, nspt: po.nspt, order_date: po.order_date,
-      vat_rate: Number(po.vat_rate) || 0, is_urgent: po.is_urgent, note: po.note,
+      vat_rate: Number(po.vat_rate) || 0, payment_terms: po.payment_terms, is_urgent: po.is_urgent, note: po.note,
       items: items.filter((it: any) => it.product_name || it.product_code).map((it: any) => ({
-        id: it.id, product_code: it.product_code, product_name: it.product_name, item_group: it.item_group,
-        spec: it.spec, unit: it.unit, qty_request: Number(it.qty_request) || 0, qty_order: Number(it.qty_order) || 0,
+        id: it.id, product_code: it.product_code, product_name: it.product_name, invoice_name: it.invoice_name,
+        item_group: it.item_group, spec: it.spec, fg_code: it.fg_code, invoice_no: it.invoice_no,
+        supplier_ready: !!it.supplier_ready,
+        required_date: it.required_date, unit: it.unit, qty_request: Number(it.qty_request) || 0,
+        qty_order: Number(it.qty_order) || 0,
         price: Number(it.price) || 0, vat: Number(it.vat) || 0, warehouse_code: it.warehouse_code, note: it.note,
         deliveries: (it.deliveries || []).map((d: any) => ({
           id: d.id, delivery_no: Number(d.delivery_no) || 1, warehouse_code: d.warehouse_code,
           carrier_code: d.carrier_code, carrier_name: d.carrier_name, ship_qty: Number(d.ship_qty) || 0,
           ship_unit: d.ship_unit, received_qty: Number(d.received_qty) || 0, promised_date: d.promised_date,
-          expected_date: d.expected_date, received_date: d.received_date, invoice_no: d.invoice_no,
-          shipping_unit_price: Number(d.shipping_unit_price) || 0, shipping_amount: Number(d.shipping_amount) || 0,
-          qc_result: d.qc_result, progress_note: d.progress_note,
+          expected_date: d.expected_date, received_date: d.received_date, std_days: Number(d.std_days) || 0,
+          invoice_no: d.invoice_no, shipping_unit_price: Number(d.shipping_unit_price) || 0,
+          shipping_amount: Number(d.shipping_amount) || 0, qc_result: d.qc_result,
+          extra_request: d.extra_request, progress_note: d.progress_note,
         })),
       })),
     }
@@ -198,13 +211,22 @@ export default function PurchaseOrderDetail() {
           <button className="btn" onClick={save}>{isNew ? 'Tạo' : 'Lưu'}</button>
         )}
         {!isNew && po.status === 'draft' && can('purchase_order', 'write') && (
-          <button className="btn secondary" onClick={() => action('submit')}><i className="ti ti-send" />Gửi duyệt</button>
+          <button className="btn secondary" onClick={() => { if (!String(po.misa_code || '').trim()) { setErr('Mã đơn MISA không được để trống khi gửi duyệt'); return } action('submit') }}><i className="ti ti-send" />Gửi duyệt</button>
         )}
         {!isNew && po.status === 'submitted' && can('purchase_order', 'approve') && (
           <>
             <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>
             <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => action('reject', { reason: prompt('Lý do từ chối:') || '' })}><i className="ti ti-x" />Từ chối</button>
           </>
+        )}
+        {!isNew && po.status === 'received' && can('purchase_order', 'write') && (
+          <button className="btn" onClick={() => action('complete')}><i className="ti ti-circle-check" />Hoàn thành</button>
+        )}
+        {!isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'write') && (
+          <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => { if (confirm('Hủy đơn mua hàng này?')) action('cancel', { reason: prompt('Lý do hủy:') || '' }) }}><i className="ti ti-ban" />Hủy đơn</button>
+        )}
+        {!isNew && ['cancelled', 'rejected', 'completed'].includes(po.status) && can('purchase_order', 'write') && (
+          <button className="btn ghost" onClick={() => { if (confirm('Mở lại đơn về trạng thái Nháp?')) action('reopen') }}><i className="ti ti-rotate" />Mở lại</button>
         )}
       </div>
 
@@ -219,7 +241,7 @@ export default function PurchaseOrderDetail() {
                 <input list="po-pyc-list" placeholder="Nhập/chọn mã PYC…" value={po.pr_code || ''} disabled={!headerEditable} onChange={(e) => onPickPr(e.target.value)} />
                 <datalist id="po-pyc-list">{prList.map((p) => <option key={p.id} value={p.code}>{p.purpose || ''}</option>)}</datalist>
               </div>
-              <div className="form-row"><label>Mã đơn MISA</label><input value={po.misa_code || ''} disabled={!headerEditable} onChange={(e) => setH('misa_code', e.target.value)} /></div>
+              <div className="form-row"><label>Mã đơn MISA *</label><input value={po.misa_code || ''} placeholder="Bắt buộc nhập" disabled={!headerEditable} onChange={(e) => setH('misa_code', e.target.value)} /></div>
               <div className="form-row"><label>Công ty nhận HĐ *</label>
                 <select value={po.company_id || ''} disabled={!headerEditable} onChange={(e) => setH('company_id', Number(e.target.value))}>
                   <option value="">-- Chọn --</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -233,6 +255,7 @@ export default function PurchaseOrderDetail() {
               <div className="form-row"><label>Ngày đặt hàng</label><input type="date" value={po.order_date || ''} disabled={!headerEditable} onChange={(e) => setH('order_date', e.target.value)} /></div>
               <div className="form-row"><label>Bộ phận</label><input value={po.department || ''} disabled={!headerEditable} onChange={(e) => setH('department', e.target.value)} /></div>
               <div className="form-row"><label>NSPT phụ trách</label><input value={po.nspt || ''} disabled={!headerEditable} onChange={(e) => setH('nspt', e.target.value)} /></div>
+              <div className="form-row"><label>Hình thức thanh toán NCC</label><input value={po.payment_terms || ''} placeholder="Tự điền theo NCC (vd Công nợ 30 ngày)" disabled={!headerEditable} onChange={(e) => setH('payment_terms', e.target.value)} /></div>
               <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                 <input type="checkbox" checked={!!po.is_urgent} disabled={!headerEditable} onChange={(e) => setH('is_urgent', e.target.checked)} style={{ width: 18, height: 18 }} /> Đơn gấp
               </label></div>
@@ -252,18 +275,20 @@ export default function PurchaseOrderDetail() {
               )}
             </div>
             <div className="items-scroll">
-              <table className="items-table" style={{ minWidth: 980 }}>
+              <table className="items-table" style={{ minWidth: 1180 }}>
                 <thead>
                   <tr>
                     <th style={{ width: 36 }}>#</th>
                     <th style={{ width: 130 }}>Mã hàng</th>
                     <th style={{ minWidth: 220 }}>Tên hàng *</th>
                     <th style={{ width: 90 }}>ĐVT</th>
-                    <th style={{ width: 100 }}>SL đặt</th>
-                    <th style={{ width: 110 }}>Đơn giá</th>
-                    <th style={{ width: 80 }}>VAT%</th>
-                    <th style={{ width: 130 }}>Thành tiền</th>
-                    <th style={{ width: 120 }}>Tiến độ giao</th>
+                    <th style={{ width: 90 }}>SL đặt</th>
+                    <th style={{ width: 105 }}>Đơn giá</th>
+                    <th style={{ width: 64 }}>VAT%</th>
+                    <th style={{ width: 120 }}>Trước thuế</th>
+                    <th style={{ width: 110 }}>Tiền thuế</th>
+                    <th style={{ width: 130, background: '#fff3cd' }}>Sau thuế</th>
+                    <th style={{ width: 110 }}>Tiến độ giao</th>
                     <th style={{ width: 120, textAlign: 'center' }}>Hành động</th>
                   </tr>
                 </thead>
@@ -282,10 +307,12 @@ export default function PurchaseOrderDetail() {
                           <option value="">—</option>{units.map((u) => <option key={u} value={u}>{u}</option>)}
                         </select>
                       </td>
-                      <td>{num(i, 'qty_order', 90)}</td>
-                      <td>{num(i, 'price', 100)}</td>
+                      <td>{num(i, 'qty_order', 80)}</td>
+                      <td>{num(i, 'price', 95)}</td>
                       <td style={{ textAlign: 'center' }}>{(Number(it.vat) || 0)}%</td>
-                      <td style={{ textAlign: 'right', fontWeight: 500 }}>{fmt(rowAmount(it))}</td>
+                      <td style={{ textAlign: 'right' }}>{fmt(recvQty(it) * (Number(it.price) || 0))}</td>
+                      <td style={{ textAlign: 'right' }}>{fmt(recvQty(it) * (Number(it.price) || 0) * (Number(it.vat) || 0) / 100)}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmt(rowAmount(it))}</td>
                       <td style={{ textAlign: 'center', fontSize: 13 }}>
                         {fmt(it.qty_received || 0)}/{fmt(it.qty_order || 0)}
                         {it.line_status && <div style={{ fontSize: 11, color: 'var(--muted)' }}>{it.line_status}</div>}
@@ -309,14 +336,15 @@ export default function PurchaseOrderDetail() {
                       </td>
                     </tr>
                   ))}
-                  {items.length === 0 && <tr><td colSpan={10} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có dòng nào</td></tr>}
+                  {items.length === 0 && <tr><td colSpan={12} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có dòng nào</td></tr>}
                 </tbody>
               </table>
             </div>
             <div style={{ marginTop: 14, textAlign: 'right', fontSize: 14 }}>
-              <div>Tiền hàng: <b>{fmt(subtotal)}</b></div>
-              <div>VAT: <b>{fmt(vat)}</b></div>
-              <div style={{ fontSize: 16, color: 'var(--navy)', marginTop: 4 }}>Tổng tiền hàng: <b>{fmt(subtotal + vat)}</b></div>
+              <div style={{ color: 'var(--muted)' }}>Giá trị đặt hàng (SL đặt): <b>{fmt(orderTotal)}</b></div>
+              <div>Tổng trước thuế (đã nhận): <b>{fmt(subtotal)}</b></div>
+              <div>Tổng tiền thuế: <b>{fmt(vat)}</b></div>
+              <div style={{ fontSize: 16, color: 'var(--navy)', marginTop: 4 }}>Tổng cộng (sau thuế): <b>{fmt(subtotal + vat)}</b></div>
               <div style={{ marginTop: 4, color: 'var(--muted)' }}>Tổng cước vận chuyển (riêng): <b>{fmt(shippingTotal)}</b></div>
             </div>
           </div>
@@ -342,7 +370,7 @@ export default function PurchaseOrderDetail() {
           {err && <div className="err" style={{ marginTop: 12 }}>{err}</div>}
           {msg && <div style={{ color: 'var(--green)', fontSize: 13, marginTop: 8 }}>{msg}</div>}
 
-          {!isNew && headerEditable && can('purchase_order', 'delete') && (
+          {!isNew && canDelete && can('purchase_order', 'delete') && (
             <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)', marginTop: 20 }}
                     onClick={async () => { if (confirm('Xóa đơn mua hàng này?')) { await api.delete(`${API}/${id}`); navigate('/purchase-orders') } }}><i className="ti ti-trash" /> Xóa đơn</button>
           )}
@@ -367,7 +395,7 @@ export default function PurchaseOrderDetail() {
       {/* Popup giao hàng nhiều lần của 1 dòng */}
       {editingItemIdx !== null && items[editingItemIdx] && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setEditingItemIdx(null)}>
-          <div style={{ width: 1100, maxWidth: '100%', background: '#fff', borderRadius: 12, boxShadow: '0 20px 25px -5px rgba(0,0,0,.15)', display: 'flex', flexDirection: 'column', maxHeight: '88vh', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card" style={{ width: 1100, maxWidth: '100%', background: '#fff', borderRadius: 12, boxShadow: '0 20px 25px -5px rgba(0,0,0,.15)', display: 'flex', flexDirection: 'column', maxHeight: '88vh', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: 16, color: 'var(--navy)' }}>Chi tiết dòng: {items[editingItemIdx].product_name || items[editingItemIdx].product_code}</h3>
@@ -387,10 +415,15 @@ export default function PurchaseOrderDetail() {
                 const de = !headerEditable
                 return (
                   <div className="form-grid" style={{ marginBottom: 18 }}>
-                    <div className="form-row"><label>Mã hàng</label><input value={it.product_code || ''} disabled /></div>
+                    <div className="form-row"><label>Mã hàng (VTBB/NL)</label><input value={it.product_code || ''} disabled /></div>
                     <div className="form-row"><label>Phân loại</label><input value={it.item_group || ''} disabled={de} onChange={(e) => setItem(ii, { item_group: e.target.value })} /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên hàng</label><input value={it.product_name || ''} disabled={de} onChange={(e) => setItem(ii, { product_name: e.target.value })} /></div>
+                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên trên hóa đơn</label><input value={it.invoice_name || ''} disabled={de} onChange={(e) => setItem(ii, { invoice_name: e.target.value })} /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Xuất xứ / TSKT / chất liệu</label><input value={it.spec || ''} disabled={de} onChange={(e) => setItem(ii, { spec: e.target.value })} /></div>
+                    <div className="form-row"><label>Mã HH (thành phẩm)</label><input value={it.fg_code || ''} disabled={de} onChange={(e) => setItem(ii, { fg_code: e.target.value })} /></div>
+                    <div className="form-row"><label>Số hóa đơn</label><input value={it.invoice_no || ''} placeholder="Số HĐ theo sản phẩm" disabled={de} onChange={(e) => setItem(ii, { invoice_no: e.target.value })} /></div>
+                    <div className="form-row"><label>Ngày yêu cầu có hàng</label><input type="date" value={it.required_date || ''} disabled={de} onChange={(e) => setItem(ii, { required_date: e.target.value })} /></div>
+                    <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={!!it.supplier_ready} disabled={de} onChange={(e) => setItem(ii, { supplier_ready: e.target.checked })} style={{ width: 16, height: 16 }} /> NCC có sẵn hàng</label></div>
                     <div className="form-row"><label>ĐVT</label>
                       <select value={it.unit ?? ''} disabled={de} onChange={(e) => setItem(ii, { unit: e.target.value })}>
                         <option value="">—</option>{units.map((u) => <option key={u} value={u}>{u}</option>)}
@@ -400,12 +433,15 @@ export default function PurchaseOrderDetail() {
                       <select value={it.warehouse_code ?? ''} disabled={de} onChange={(e) => setItem(ii, { warehouse_code: e.target.value })}>
                         <option value="">—</option>{warehouses.map((w) => <option key={w.id} value={w.code}>{w.code} — {w.name}</option>)}
                       </select>
+                      {/* popup rộng nên giữ code — name cho dễ chọn */}
                     </div>
                     <div className="form-row"><label>SL yêu cầu</label><input type="number" value={it.qty_request ?? 0} disabled={de} onChange={(e) => setItem(ii, { qty_request: Number(e.target.value) })} /></div>
                     <div className="form-row"><label>SL đặt NCC</label><input type="number" value={it.qty_order ?? 0} disabled={de} onChange={(e) => setItem(ii, { qty_order: Number(e.target.value) })} /></div>
                     <div className="form-row"><label>Đơn giá</label><input type="number" value={it.price ?? 0} disabled={de} onChange={(e) => setItem(ii, { price: Number(e.target.value) })} /></div>
                     <div className="form-row"><label>VAT (%)</label><input type="number" value={it.vat ?? 0} disabled={de} onChange={(e) => setItem(ii, { vat: Number(e.target.value) })} /></div>
-                    <div className="form-row"><label>Thành tiền</label><input value={fmt(rowAmount(it))} disabled /></div>
+                    <div className="form-row"><label>Trước thuế (đã nhận)</label><input value={fmt(recvQty(it) * (Number(it.price) || 0))} disabled /></div>
+                    <div className="form-row"><label>Tiền thuế</label><input value={fmt(recvQty(it) * (Number(it.price) || 0) * (Number(it.vat) || 0) / 100)} disabled /></div>
+                    <div className="form-row"><label>Sau thuế (thành tiền)</label><input value={fmt(rowAmount(it))} disabled /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><input value={it.note || ''} disabled={de} onChange={(e) => setItem(ii, { note: e.target.value })} /></div>
                   </div>
                 )
@@ -418,21 +454,32 @@ export default function PurchaseOrderDetail() {
                 <button className="btn ghost" style={{ height: 30, fontSize: 13, marginBottom: 10 }} onClick={() => addDelivery(editingItemIdx)}><i className="ti ti-plus" />Thêm lần giao</button>
               )}
               <div className="items-scroll">
-                <table className="items-table" style={{ minWidth: 1400 }}>
+                <table className="items-table" style={{ minWidth: 2800 }}>
                   <thead>
                     <tr>
-                      <th style={{ width: 50 }}>Lần</th>
+                      <th style={{ width: 44 }}>Lần</th>
                       <th style={{ width: 130 }}>Kho nhận</th>
-                      <th style={{ width: 160 }}>Đơn vị vận chuyển</th>
-                      <th style={{ width: 90 }}>SL gửi</th>
+                      <th style={{ width: 150 }}>Đơn vị vận chuyển</th>
+                      <th style={{ width: 80 }}>SL gửi</th>
+                      <th style={{ width: 90 }}>ĐVT VC</th>
+                      <th style={{ width: 80 }}>SL đặt</th>
                       <th style={{ width: 90 }}>SL nhận</th>
-                      <th style={{ width: 110 }}>Cam kết</th>
+                      <th style={{ width: 100 }}>Đơn giá</th>
+                      <th style={{ width: 64 }}>VAT%</th>
+                      <th style={{ width: 130, background: '#fff3cd' }}>Thành tiền (nhận)</th>
+                      <th style={{ width: 110 }}>Cam kết giao</th>
                       <th style={{ width: 110 }}>Ngày nhận</th>
-                      <th style={{ width: 110 }}>Số HĐ</th>
-                      <th style={{ width: 110 }}>Đơn giá VC</th>
-                      <th style={{ width: 120 }}>Thành tiền VC</th>
-                      <th style={{ width: 100 }}>QC</th>
-                      <th style={{ width: 150 }}>Phiếu giao</th>
+                      <th style={{ width: 70 }}>Số ngày QĐ</th>
+                      <th style={{ width: 100 }}>Ngày QĐ</th>
+                      <th style={{ width: 70 }}>Trễ CK</th>
+                      <th style={{ width: 70 }}>Trễ QĐ</th>
+                      <th style={{ width: 80 }}>Trễ QĐ-KD</th>
+                      <th style={{ width: 110 }}>Trạng thái giao</th>
+                      <th style={{ width: 100 }}>Đơn giá VC</th>
+                      <th style={{ width: 110 }}>Thành tiền VC</th>
+                      <th style={{ width: 90 }}>QC</th>
+                      <th style={{ width: 150 }}>Yêu cầu khác</th>
+                      <th style={{ width: 140 }}>Phiếu giao</th>
                       {deliveryEditable && <th style={{ width: 40 }} />}
                     </tr>
                   </thead>
@@ -444,8 +491,8 @@ export default function PurchaseOrderDetail() {
                         <tr key={di}>
                           <td><input className="cell-input" type="number" style={{ width: 44 }} value={d.delivery_no ?? 1} disabled={dis} onChange={(e) => setDelivery(ii, di, { delivery_no: Number(e.target.value) })} /></td>
                           <td>
-                            <select className="cell-input" style={{ width: 120 }} value={d.warehouse_code ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { warehouse_code: e.target.value })}>
-                              <option value="">—</option>{warehouses.map((w) => <option key={w.id} value={w.code}>{w.code} — {w.name}</option>)}
+                            <select className="cell-input" style={{ width: 120 }} value={d.warehouse_code ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { warehouse_code: e.target.value })} title="Kho nhận">
+                              <option value="">—</option>{warehouses.map((w) => <option key={w.id} value={w.code}>{w.code}</option>)}
                             </select>
                           </td>
                           <td>
@@ -453,11 +500,25 @@ export default function PurchaseOrderDetail() {
                               <option value="">NCC tự vận chuyển</option>{carriers.map((c) => <option key={c.id} value={c.code}>{c.name}</option>)}
                             </select>
                           </td>
-                          <td><input className="cell-input" type="number" style={{ width: 80 }} value={d.ship_qty ?? 0} disabled={dis} onChange={(e) => setDelivery(ii, di, { ship_qty: Number(e.target.value) })} /></td>
+                          <td><input className="cell-input" type="number" style={{ width: 72 }} value={d.ship_qty ?? 0} disabled={dis} onChange={(e) => setDelivery(ii, di, { ship_qty: Number(e.target.value) })} /></td>
+                          <td>
+                            <select className="cell-input" style={{ width: 80 }} value={d.ship_unit ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { ship_unit: e.target.value })}>
+                              <option value="">—</option>{SHIP_UNITS.map((su) => <option key={su} value={su}>{su}</option>)}
+                            </select>
+                          </td>
+                          <td style={{ textAlign: 'right', color: 'var(--muted)' }}>{fmt(items[ii].qty_order)}</td>
                           <td><input className="cell-input" type="number" style={{ width: 80 }} value={d.received_qty ?? 0} disabled={dis} onChange={(e) => setDelivery(ii, di, { received_qty: Number(e.target.value) })} /></td>
+                          <td style={{ textAlign: 'right', color: 'var(--muted)' }}>{fmt(items[ii].price)}</td>
+                          <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{Number(items[ii].vat) || 0}%</td>
+                          <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmt((Number(d.received_qty) || 0) * (Number(items[ii].price) || 0) * (1 + (Number(items[ii].vat) || 0) / 100))}</td>
                           <td><input className="cell-input" type="date" style={{ width: 100 }} value={d.promised_date ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { promised_date: e.target.value })} /></td>
                           <td><input className="cell-input" type="date" style={{ width: 100 }} value={d.received_date ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { received_date: e.target.value })} /></td>
-                          <td><input className="cell-input" style={{ width: 100 }} value={d.invoice_no ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { invoice_no: e.target.value })} /></td>
+                          <td><input className="cell-input" type="number" style={{ width: 60 }} value={d.std_days ?? 0} disabled={dis} onChange={(e) => setDelivery(ii, di, { std_days: Number(e.target.value) })} /></td>
+                          <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{d.regulated_date || '—'}</td>
+                          <td style={{ textAlign: 'center', color: (d.diff_promise < 0 ? 'var(--red)' : 'var(--muted)'), fontWeight: d.diff_promise < 0 ? 600 : 400 }}>{d.received_date ? (d.diff_promise ?? 0) : '—'}</td>
+                          <td style={{ textAlign: 'center', color: (d.diff_regulated < 0 ? 'var(--red)' : 'var(--muted)'), fontWeight: d.diff_regulated < 0 ? 600 : 400 }}>{d.received_date ? (d.diff_regulated ?? 0) : '—'}</td>
+                          <td style={{ textAlign: 'center', color: (d.diff_required < 0 ? 'var(--red)' : 'var(--muted)') }}>{items[ii].required_date ? (d.diff_required ?? 0) : '—'}</td>
+                          <td style={{ textAlign: 'center', fontSize: 12 }}>{d.status ? <span className={'badge ' + (d.status === 'Đã nhận' ? 'ok' : d.status === 'Lỗi' ? 'err' : 'warn')}>{d.status}</span> : '—'}</td>
                           <td><input className="cell-input" type="number" style={{ width: 100 }} value={d.shipping_unit_price ?? 0} disabled={dis} onChange={(e) => { const up = Number(e.target.value); setDelivery(ii, di, { shipping_unit_price: up, shipping_amount: up * (Number(d.ship_qty) || 0) }) }} /></td>
                           <td><input className="cell-input" type="number" style={{ width: 110 }} value={d.shipping_amount ?? 0} disabled={dis} onChange={(e) => setDelivery(ii, di, { shipping_amount: Number(e.target.value) })} /></td>
                           <td>
@@ -465,6 +526,7 @@ export default function PurchaseOrderDetail() {
                               {QC.map((q) => <option key={q} value={q}>{q || '—'}</option>)}
                             </select>
                           </td>
+                          <td><input className="cell-input" style={{ width: 140 }} value={d.extra_request ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { extra_request: e.target.value })} /></td>
                           <td style={{ fontSize: 12 }}>
                             {d.id ? (
                               <div>
@@ -485,7 +547,7 @@ export default function PurchaseOrderDetail() {
                         </tr>
                       )
                     })}
-                    {(items[editingItemIdx].deliveries || []).length === 0 && <tr><td colSpan={13} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có lần giao nào</td></tr>}
+                    {(items[editingItemIdx].deliveries || []).length === 0 && <tr><td colSpan={24} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có lần giao nào</td></tr>}
                   </tbody>
                 </table>
               </div>
