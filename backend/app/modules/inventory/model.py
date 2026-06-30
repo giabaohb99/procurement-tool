@@ -15,6 +15,8 @@ class Inventory(Base, AuditMixin):
     product_name: Mapped[str] = mapped_column(String(255), default="")
     unit: Mapped[str] = mapped_column(String(25), default="")
     qty: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
+    avg_cost: Mapped[float] = mapped_column(Numeric(18, 2), default=0)   # đơn giá bình quân gia quyền
+    value: Mapped[float] = mapped_column(Numeric(18, 2), default=0)      # giá trị tồn = qty × avg_cost
 
 
 class InventoryMove(Base, AuditMixin):
@@ -26,6 +28,7 @@ class InventoryMove(Base, AuditMixin):
     warehouse_code: Mapped[str] = mapped_column(String(50), default="", index=True)
     product_code: Mapped[str] = mapped_column(String(50), default="", index=True)
     qty: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
+    unit_price: Mapped[float] = mapped_column(Numeric(18, 2), default=0)  # đơn giá nhập (cho BQ gia quyền)
     ref_type: Mapped[str] = mapped_column(String(20), default="")   # gr | adjust
     ref_id: Mapped[int] = mapped_column(BigInteger, default=0)       # delivery_id khi gr
     note: Mapped[str] = mapped_column(Text, default="")

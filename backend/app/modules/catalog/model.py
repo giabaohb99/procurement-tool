@@ -24,7 +24,8 @@ class ItemGroup(Base, AuditMixin):
     __tablename__ = "tab_item_group"
     code: Mapped[str] = mapped_column(String(25), unique=True, default="")
     name: Mapped[str] = mapped_column(String(100), unique=True)
-    std_days: Mapped[str] = mapped_column(String(20), default="")   # thời gian quy định (ngày)
+    std_days: Mapped[str] = mapped_column(String(20), default="")          # số ngày QĐ khi NCC CÓ sẵn hàng
+    std_days_unavail: Mapped[str] = mapped_column(String(20), default="")  # số ngày QĐ khi KHÔNG sẵn hàng
     note: Mapped[str] = mapped_column(Text, default="")
     apply_date: Mapped[str] = mapped_column(String(20), default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

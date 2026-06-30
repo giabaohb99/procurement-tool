@@ -31,7 +31,6 @@ export default function PurchaseRequestDetail() {
   const [warehouses, setWarehouses] = useState<string[]>([])
   const [employees, setEmployees] = useState<any[]>([])
   const [departments, setDepartments] = useState<any[]>([])
-  const [suppliers, setSuppliers] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [files, setFiles] = useState<any[]>([])
@@ -45,7 +44,6 @@ export default function PurchaseRequestDetail() {
     api.get('/api/warehouses', { params: { page_size: 200 } }).then((r) => setWarehouses(r.data.data.items.map((x: any) => x.name)))
     api.get('/api/employees', { params: { page_size: 1000 } }).then((r) => setEmployees(r.data.data.items))
     api.get('/api/departments', { params: { page_size: 500 } }).then((r) => setDepartments(r.data.data.items))
-    api.get('/api/suppliers', { params: { page_size: 1000 } }).then((r) => setSuppliers(r.data.data.items))
     api.get('/api/products', { params: { page_size: 1000 } }).then((r) => setProducts(r.data.data.items))
   }, [])
 
@@ -90,16 +88,6 @@ export default function PurchaseRequestDetail() {
     } else {
       setPr((s: any) => ({ ...s, requester: empName }))
     }
-  }
-
-  const handleSupplierChange = (supName: string) => {
-    const sup = suppliers.find(s => s.name === supName)
-    setPr((s: any) => ({
-      ...s,
-      suggested_supplier: supName,
-      suggested_supplier_tax_code: sup ? sup.tax_code : '',
-      suggested_supplier_contact: sup ? (sup.phone || sup.address || '') : ''
-    }))
   }
 
   const handleProductChange = (i: number, prodCode: string) => {
@@ -198,7 +186,7 @@ export default function PurchaseRequestDetail() {
     catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi tải file') }
   }
 
-  const txt = (i: number, k: string, w = 120) => (
+  const txt = (i: number, k: string, w: number | string = 120) => (
     <input className="cell-input" style={{ width: w }} value={items[i][k] ?? ''} disabled={!editable} onChange={(e) => setItem(i, k, e.target.value)} />
   )
   const num = (i: number, k: string, w = 90) => (
@@ -372,10 +360,7 @@ export default function PurchaseRequestDetail() {
             <div className="form-grid" style={{ marginBottom: 14 }}>
               <div className="form-row">
                 <label>Tên nhà cung cấp đề xuất</label>
-                <select value={pr.suggested_supplier || ''} disabled={!editable} onChange={(e) => handleSupplierChange(e.target.value)}>
-                  <option value="">-- Chọn NCC --</option>
-                  {suppliers.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
-                </select>
+                <input value={pr.suggested_supplier || ''} placeholder="Nhập tên NCC đề xuất (nếu có)" disabled={!editable} onChange={(e) => setH('suggested_supplier', e.target.value)} />
               </div>
               <div className="form-row">
                 <label>Mã số thuế NCC</label>

@@ -40,7 +40,9 @@ export default function PrintPurchaseOrder() {
         <div style={{ fontSize: 12 }}><b>Địa chỉ:</b> {sup.address || ''}</div>
 
         <h2 style={{ textAlign: 'center', fontSize: 18, margin: '12px 0 2px' }}>ĐƠN ĐẶT HÀNG</h2>
-        <div style={{ textAlign: 'center', fontSize: 12, color: '#c0392b', fontWeight: 700, marginBottom: 8 }}>Số: {po.code}</div>
+        <div style={{ textAlign: 'center', fontSize: 12, color: '#c0392b', fontWeight: 700 }}>Số: {po.code}</div>
+        {po.misa_code && <div style={{ textAlign: 'center', fontSize: 11.5, marginBottom: 8 }}>Mã đơn MISA: {po.misa_code}</div>}
+        {!po.misa_code && <div style={{ marginBottom: 8 }} />}
 
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -65,16 +67,16 @@ export default function PrintPurchaseOrder() {
                   <td style={{ ...cell, textAlign: 'right' }}>{fmt(it.price)}</td>
                   <td style={{ ...cell, textAlign: 'center' }}>{(it.vat || 0)}%</td>
                   <td style={{ ...cell, textAlign: 'right' }}>{fmt(priceVat)}</td>
-                  <td style={{ ...cell, textAlign: 'right' }}>{fmt(it.amount)}</td>
+                  <td style={{ ...cell, textAlign: 'right' }}>{fmt(it.qty_order * priceVat)}</td>
                   <td style={cell}>{it.warehouse_code}</td>
-                  <td style={cell}>{it.product_name}</td>
+                  <td style={cell}>{it.invoice_name || it.product_name}</td>
                   <td style={cell}>{it.note}</td>
                 </tr>
               )
             })}
             <tr>
               <td style={{ ...cell, fontWeight: 700, textAlign: 'center' }} colSpan={9}>TỔNG CỘNG</td>
-              <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{fmt(po.total)}</td>
+              <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{fmt(po.order_total)}</td>
               <td style={cell} colSpan={3} />
             </tr>
           </tbody>
@@ -102,10 +104,18 @@ export default function PrintPurchaseOrder() {
         </div>
 
         <div style={{ fontSize: 11.5, marginTop: 10 }}>Các thông tin, file, hình ảnh gửi kèm đơn hàng:</div>
-        <div style={{ textAlign: 'right', fontSize: 11.5, marginTop: 14, fontStyle: 'italic' }}>{viDate(po.order_date)}</div>
-        <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center', fontSize: 12, marginTop: 6 }}>
-          <div><b>Trưởng bộ phận</b><div style={{ height: 60 }} /></div>
-          <div><b>Người lập</b><div style={{ height: 60 }} /></div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 18, fontSize: 12 }}>
+          <div style={{ width: '48%', textAlign: 'center' }}>
+            <b>Trưởng bộ phận</b>
+            <div style={{ fontStyle: 'italic', fontSize: 11 }}>(Ký, ghi rõ họ tên)</div>
+            <div style={{ height: 60 }} />
+          </div>
+          <div style={{ width: '48%', textAlign: 'center' }}>
+            <div style={{ fontStyle: 'italic', fontSize: 11.5, marginBottom: 6 }}>{viDate(po.order_date)}</div>
+            <b>Người lập</b>
+            <div style={{ fontStyle: 'italic', fontSize: 11 }}>(Ký, ghi rõ họ tên)</div>
+            <div style={{ height: 60 }} />
+          </div>
         </div>
       </div>
     </div>

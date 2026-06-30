@@ -52,6 +52,7 @@ export const PO_STATUS: Record<string, { label: string; cls: string }> = {
   approved: { label: 'Đã duyệt', cls: 'ok' },
   partial: { label: 'Đang giao', cls: 'warn' },
   received: { label: 'Đã nhận đủ', cls: 'ok' },
+  completed: { label: 'Hoàn thành', cls: 'ok' },
   rejected: { label: 'Từ chối', cls: 'err' },
   cancelled: { label: 'Đã hủy', cls: 'err' },
 }
@@ -115,7 +116,8 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     fields: [
       { key: 'code', label: 'Mã VTBB/NL', readonlyOnEdit: true }, { key: 'name', label: 'Tên' },
-      { key: 'invoice_name', label: 'Tên trên hóa đơn' }, { key: 'item_group', label: 'Phân loại' },
+      { key: 'invoice_name', label: 'Tên trên hóa đơn' }, { key: 'legal_name', label: 'Tên pháp lý (HH)' },
+      { key: 'item_group', label: 'Phân loại' },
       { key: 'unit', label: 'ĐVT' }, { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
     ],
   },
@@ -206,7 +208,8 @@ export const cruds: Record<string, CrudConfig> = {
   'item-groups': {
     slug: 'item-groups', entity: 'item_group', title: 'Phân loại VTBB/NL', apiPath: '/api/item-groups', importExport: true,
     columns: [
-      { key: 'name', label: 'Phân loại' }, { key: 'std_days', label: 'Số ngày quy định' },
+      { key: 'name', label: 'Phân loại' },
+      { key: 'std_days', label: 'Ngày QĐ (sẵn hàng)' }, { key: 'std_days_unavail', label: 'Ngày QĐ (không sẵn)' },
       { key: 'apply_date', label: 'Ngày áp dụng' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
     ],
@@ -215,7 +218,9 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
     ],
     fields: [
-      { key: 'name', label: 'Phân loại', readonlyOnEdit: true }, { key: 'std_days', label: 'Số ngày quy định' },
+      { key: 'name', label: 'Phân loại', readonlyOnEdit: true },
+      { key: 'std_days', label: 'Số ngày QĐ khi NCC CÓ sẵn hàng' },
+      { key: 'std_days_unavail', label: 'Số ngày QĐ khi KHÔNG sẵn hàng' },
       { key: 'note', label: 'Ghi chú', type: 'textarea' }, { key: 'apply_date', label: 'Ngày áp dụng' },
       { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
     ],

@@ -151,11 +151,15 @@ def run():
             if code and code.upper() not in seen_units:
                 db.add(Unit(code=code, name=nm[:100], is_active=True))
                 seen_units.add(code.upper())
+        ig_seq = db.query(ItemGroup).count()
         for g in _load("item_groups.json"):
             nm = (g.get("name") or "").strip()
             if nm and nm[:100].upper() not in seen_item_groups:
-                db.add(ItemGroup(name=nm[:100], std_days=str(g.get("std_days", "")), note=g.get("note", ""),
-                                 apply_date=g.get("apply_date", ""), is_active=True))
+                ig_seq += 1
+                code = (g.get("code") or f"PL{ig_seq:03d}")[:25]
+                db.add(ItemGroup(code=code, name=nm[:100], std_days=str(g.get("std_days", "")),
+                                 std_days_unavail=str(g.get("std_days_unavail", "")),
+                                 note=g.get("note", ""), apply_date=g.get("apply_date", ""), is_active=True))
                 seen_item_groups.add(nm[:100].upper())
         for b in _load("brands.json"):
             code = (b.get("code") or "")[:25]

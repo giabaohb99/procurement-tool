@@ -1,0 +1,53 @@
+{
+  "_meta": {
+    "sheet_name": "3. KHẢO SÁT, LẤY MẪU ĐÁNH GIÁ NCC",
+    "doctype_parent": "Supplier Survey",
+    "doctype_child": "Supplier Survey Item",
+    "trigger": "Khi Supplier Survey được Submit",
+    "rows_per_submit": "Bằng số dòng trong child table items",
+    "unique_keys": {
+      "key1": "Mã yêu cầu (Parent.name / Parent.survey_id)",
+      "key2": "Tên viết tắt NCC (Child.supplier)"
+    },
+    "header_row_index": 5,
+    "note": "Parent fields áp dụng cho tất cả dòng; Child fields là duy nhất cho mỗi dòng"
+  },
+  "columns": [
+    {"col": 1,  "header": "Stt",                       "doctype": "-",      "field": "-",                     "note": "Google Sheet tự đánh số"},
+    {"col": 2,  "header": "Ngày tiếp nhận",            "doctype": "Parent", "field": "creation",               "note": "Ngày tạo tự động của Supplier Survey"},
+    {"col": 3,  "header": "Ngày YC trả KQ",            "doctype": "Child",  "field": "expected_response_date", "note": "Ngày dự kiến NCC phản hồi kết quả"},
+    {"col": 4,  "header": "BP/Người YC",               "doctype": "Parent", "field": "requester",              "note": "Người yêu cầu mua hàng (Link User)"},
+    {"col": 5,  "header": "Mã yêu cầu",                 "doctype": "Parent", "field": "name",                  "note": "Mã Supplier Survey tự động (KS.NCC.DDMMYYYY.##)"},
+    {"col": 6,  "header": "Phân loại",                  "doctype": "Parent", "field": "item_class",            "note": "Lấy name từ Item Group — fetch_from: item_code.item_group"},
+    {"col": 7,  "header": "Chi tiết thông số kỹ thuật...", "doctype": "Parent", "field": "technical_specs_notes", "note": "Chi tiết yêu cầu kỹ thuật, chất lượng, yêu cầu khác"},
+    {"col": 8,  "header": "Số lượng dự kiến mua",      "doctype": "Parent", "field": "expected_qty",            "note": "Số lượng dự kiến mua"},
+    {"col": 9,  "header": "ĐVT",                       "doctype": "Parent", "field": "uom",                     "note": "Đơn vị tính"},
+    {"col": 10, "header": "Giá đề xuất VNĐ",           "doctype": "Parent", "field": "proposed_rate",           "note": "Giá đề xuất"},
+    {"col": 11, "header": "NSPT",                      "doctype": "Parent", "field": "person_in_charge",        "note": "Nhân sự phụ trách thu mua (Link User)"},
+    {"col": 12, "header": "Ngày liên hệ NCC",          "doctype": "Child",  "field": "contact_date",           "note": "Ngày NSPT liên hệ NCC"},
+    {"col": 13, "header": "Ngày dự kiến NCC phản hồi KQ", "doctype": "Child", "field": "expected_response_date", "note": "Ngày cam kết NCC gửi báo giá"},
+    {"col": 14, "header": "Ngày dự kiến trả KQ",      "doctype": "Child",  "field": "expected_completion_date", "note": "Ngày dự kiến hoàn thành đánh giá"},
+    {"col": 15, "header": "Tên viết tắt NCC",          "doctype": "Child",  "field": "supplier",              "note": "Tên viết tắt NCC (Link Supplier)"},
+    {"col": 16, "header": "Tên NCC",                    "doctype": "Child",  "field": "supplier_name",         "note": "Tên đầy đủ NCC"},
+    {"col": 17, "header": "Mã số thuế",                "doctype": "Child",  "field": "tax_id",                "note": "Mã số thuế NCC"},
+    {"col": 18, "header": "Địa chỉ theo giấy đăng kí", "doctype": "Child", "field": "registered_address",     "note": "Địa chỉ pháp lý NCC"},
+    {"col": 19, "header": "Địa chỉ kho của NCC",      "doctype": "Child",  "field": "warehouse_address",      "note": "Địa chỉ kho NCC phục vụ giao nhận"},
+    {"col": 20, "header": "Link định vị kho",          "doctype": "Child",  "field": "warehouse_location_link","note": "URL Google Maps định vị kho NCC"},
+    {"col": 21, "header": "NVKD của NCC",              "doctype": "Child",  "field": "supplier_sales_contact",  "note": "Họ tên NV kinh doanh NCC"},
+    {"col": 22, "header": "SĐT NCC đang làm việc",    "doctype": "Child",  "field": "supplier_sales_phone",   "note": "SĐT liên hệ với NCC"},
+    {"col": 23, "header": "Nhóm sản phẩm dịch vụ NCC cung ứng", "doctype": "Child", "field": "supplied_product_groups", "note": "Các nhóm hàng NCC có thể cung cấp"},
+    {"col": 24, "header": "Link báo giá",               "doctype": "Child",  "field": "quotation_link",        "note": "Đường dẫn Drive/Cloud lưu báo giá NCC"},
+    {"col": 25, "header": "Nguồn thông tin đầu vào",   "doctype": "Child",  "field": "source_of_information",  "note": "Nguồn tìm thấy thông tin NCC"},
+    {"col": 26, "header": "Công nghệ sản xuất...",    "doctype": "Child",  "field": "production_technology",   "note": "Mô tả công nghệ, chủng loại sản phẩm"},
+    {"col": 27, "header": "Thời gian SX",              "doctype": "Child",  "field": "production_lead_time",   "note": "Lead time sản xuất của NCC (VD: 10-15 ngày)"},
+    {"col": 28, "header": "Đánh giá tư vấn NVKD",    "doctype": "Child",  "field": "sales_consultation_rating", "note": "Rất tốt / Tốt / Trung bình / Kém"},
+    {"col": 29, "header": "Hóa đơn",                  "doctype": "Child",  "field": "invoice_availability",   "note": "Có hóa đơn VAT / Không có hóa đơn / Khác"},
+    {"col": 30, "header": "Mức độ tin cậy",           "doctype": "Child",  "field": "reliability_level",      "note": "Cao / Trung bình / Thấp"},
+    {"col": 31, "header": "Chính sách nhận hàng",     "doctype": "Child",  "field": "delivery_policy",        "note": "Quy định giao nhận hàng"},
+    {"col": 32, "header": "Chính sách công nợ",       "doctype": "Child",  "field": "payment_credit_policy",  "note": "Điều khoản thanh toán/công nợ"},
+    {"col": 33, "header": "Hàng lỗi, hàng trả",        "doctype": "Child",  "field": "defect_return_policy",   "note": "Quy định xử lý hàng lỗi"},
+    {"col": 34, "header": "Nhận xét (NSPT)",           "doctype": "Child",  "field": "remarks_nspt",           "note": "Đánh giá tổng quan của thu mua"},
+    {"col": 35, "header": "Duyệt (TP/QL)",            "doctype": "Child",  "field": "manager_approval",        "note": "Chờ duyệt / Đã duyệt / Không duyệt"},
+    {"col": 36, "header": "Yêu cầu (TP/QL)",         "doctype": "Child",  "field": "manager_requirements",   "note": "Ý kiến/yêu cầu của quản lý"}
+  ]
+}

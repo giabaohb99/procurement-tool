@@ -34,7 +34,7 @@
 | Nhãn | key | Kiểu | Sheet | Ghi chú |
 |---|---|---|---|---|
 | Mã PO | `code` | varchar(50) | — | auto **`PO00045`** (`PO` + số tăng dần 5 chữ số) — gọn, không theo mẫu in |
-| Mã đơn MISA | `misa_code` | varchar(50) | J | nhập tay |
+| Mã đơn MISA | `misa_code` | varchar(50) | J | nhập tay — **bắt buộc khi Gửi duyệt/Duyệt** (nháp cho trống) |
 | Mã PYC | `pr_code` | varchar(50) | — | nguồn (nếu tạo từ PYC) |
 | Mã khảo sát | `survey_code` | varchar(50) | — | nếu tạo từ khảo sát |
 | Công ty nhận hóa đơn | `company_id` | bigint | G | dropdown |
@@ -87,9 +87,12 @@
 | **Thành tiền VC** | `shipping_amount` | decimal(18,2) | AK | RIÊNG (không cộng giá hàng) |
 | CL ngày (cam kết−nhận) | `diff_promise` | int | AL | auto: <0 = trễ |
 | CL ngày (quy định−nhận) | `diff_regulated` | int | AM | auto: <0 = không đạt |
+| Yêu cầu khác | `extra_request` | text | AC | ghi chú yêu cầu thêm cho lần giao |
 | Chi tiết tiến độ/ghi chú | `progress_note` | text | AG | nguyên nhân trễ |
 | Kết quả QC | `qc_result` | varchar(20) | — | Đạt/Thiếu/Lỗi |
-| Trạng thái giao | `status` | varchar(30) | P | Chờ giao/Đang giao/Đã nhận/Lỗi |
+| Trạng thái giao | `status` | varchar(30) | P | auto: Chờ giao/Giao thiếu/Đã nhận/Lỗi |
+
+> **ĐVT vận chuyển (`ship_unit`)** là đơn vị tính cước (Kiện/Chuyến/m²/tấn) → công nợ vận chuyển = `ship_qty × shipping_unit_price` theo ĐVT này, tách khỏi ĐVT hàng. `std_days/regulated_date/diff_promise/diff_regulated/status` được **tính tự động** khi lưu (theo `order_date`, phân loại, ngày cam kết/nhận).
 
 ### 1.4 `tab_goods_receipt` (+ `tab_gr_item`) — ✅ CHỐT: bảng RIÊNG, sinh NGẦM
 > Người dùng **chỉ thao tác trên dòng giao (po_delivery) của PO**: nhập `received_qty` + QC. Backend **tự sinh** 1 bản ghi `goods_receipt` + `gr_item` ngầm (KHÔNG có màn nhập GR riêng) để lưu vết phiếu nhập kho & phục vụ tồn/báo cáo. Sửa lại SL nhận trên dòng giao → cập nhật lại GR + inventory_move tương ứng (idempotent theo `delivery_id`).

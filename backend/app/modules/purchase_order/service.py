@@ -1,9 +1,12 @@
 """Đơn mua hàng: lưu header + dòng hàng + các lần giao; mỗi lần lưu reconcile side-effect
 (phiếu nhập kho ngầm, tồn kho, công nợ 2 luồng). Idempotent theo id của dòng giao."""
+from datetime import datetime, timedelta
+
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.modules.catalog.model import ItemGroup
 from app.modules.goods_receipt import service as gr_service
 from app.modules.inventory import service as inv_service
 from app.modules.payable import service as pay_service
@@ -11,6 +14,19 @@ from app.modules.supplier.model import Supplier
 
 from .model import PODelivery, POItem, PurchaseOrder
 from .schema import POCreate, POUpdate
+
+
+def _pdate(s: str):
+    try:
+        return datetime.strptime(s, "%Y-%m-%d").date() if s else None
+    except ValueError:
+        return None
+
+
+def _days(a: str, b: str) -> int:
+    """Số ngày = (a − b). a,b là 'YYYY-MM-DD'. Trả 0 nếu thiếu."""
+    da, db_ = _pdate(a), _pdate(b)
+    return (da - db_).days if da and db_ else 0
 
 FILTERABLE = ["code", "status", "supplier_code", "pr_code"]
 ENTITY = "purchase_order"
@@ -111,11 +127,16 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
     goods_sup = suppliers.get(po.supplier_code)
     goods_days = pay_service.debt_days(goods_sup.payment_terms if goods_sup else "")
 
+    def _int(x):
+        return int("".join(ch for ch in str(x) if ch.isdigit()) or 0)
+    _groups = db.query(ItemGroup).all()
+    group_std = {g.name: _int(g.std_days) for g in _groups}                       # NCC có sẵn hàng
+    group_std_un = {g.name: _int(g.std_days_unavail) or _int(g.std_days) for g in _groups}  # không sẵn
+
     total_order = total_received = 0.0
     for it in items_of(db, po.id):
         qty_order = float(it.qty_order or 0)
         vat = float(it.vat or 0)
-        it.amount = round(qty_order * float(it.price or 0) * (1 + vat / 100), 2)
 
         recv_sum = 0.0
         for d in deliveries_of(db, it.id):
@@ -132,13 +153,13 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
                 inv_service.apply_delivery(
                     db, delivery_id=d.id, company_id=po.company_id, warehouse_code=wh,
                     product_code=it.product_code, product_name=it.product_name, unit=it.unit,
-                    qty=recv, user_id=user_id)
-                # Công nợ hàng (NCC bán)
+                    qty=recv, price=float(it.price or 0), user_id=user_id)
+                # Công nợ hàng (NCC bán) — số HĐ lấy theo sản phẩm (po_item)
                 amt = recv * float(it.price or 0)
                 pay_service.upsert(
                     db, source_type="goods", ref_id=d.id, company_id=po.company_id,
                     supplier_code=po.supplier_code, supplier_name=po.supplier_name,
-                    po_id=po.id, po_code=po.code, invoice_no=d.invoice_no,
+                    po_id=po.id, po_code=po.code, invoice_no=it.invoice_no,
                     incur_date=d.received_date, amount=amt, vat=amt * vat / 100,
                     due_days=goods_days, user_id=user_id)
                 # Công nợ vận chuyển (carrier riêng) — chỉ khi có carrier + cước > 0
@@ -146,11 +167,13 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
                 if d.carrier_code and ship_amt > 0:
                     carrier = suppliers.get(d.carrier_code)
                     c_days = pay_service.debt_days(carrier.payment_terms if carrier else "")
+                    # Vận chuyển không có hóa đơn riêng → số HĐ tạm = Mã MISA + Mã SP
+                    ship_inv = f"{po.misa_code}-{it.product_code}".strip("-")
                     pay_service.upsert(
                         db, source_type="shipping", ref_id=d.id, company_id=po.company_id,
                         supplier_code=d.carrier_code,
                         supplier_name=d.carrier_name or (carrier.name if carrier else ""),
-                        po_id=po.id, po_code=po.code, invoice_no=d.invoice_no,
+                        po_id=po.id, po_code=po.code, invoice_no=ship_inv,
                         incur_date=d.received_date, amount=ship_amt, vat=0,
                         due_days=c_days, user_id=user_id)
                 else:
@@ -158,8 +181,29 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
             else:
                 _cleanup_delivery(db, d.id)
 
+            # Tiến độ giao: số ngày QĐ (theo NCC có sẵn hàng hay không) → ngày QĐ → chênh lệch
+            base_std = group_std.get(it.item_group, 0) if it.supplier_ready else group_std_un.get(it.item_group, 0)
+            std = base_std or int(d.std_days or 0)   # ưu tiên quy định theo phân loại + có sẵn hàng
+            d.std_days = std
+            od = _pdate(po.order_date)
+            d.regulated_date = (od + timedelta(days=std)).strftime("%Y-%m-%d") if (od and std) else ""
+            d.diff_promise = _days(d.promised_date, d.received_date) if (d.promised_date and d.received_date) else 0
+            d.diff_regulated = _days(d.regulated_date, d.received_date) if (d.regulated_date and d.received_date) else 0
+            d.diff_required = _days(d.regulated_date, it.required_date) if (d.regulated_date and it.required_date) else 0
+            ship_q = float(d.ship_qty or 0)
+            if recv <= 0:
+                d.status = "Chờ giao"
+            elif d.qc_result == "Lỗi":
+                d.status = "Lỗi"
+            elif ship_q > 0 and recv + 0.001 < ship_q:
+                d.status = "Giao thiếu"
+            else:
+                d.status = "Đã nhận"
+
         it.qty_received = round(recv_sum, 3)
         it.qty_remaining = round(qty_order - recv_sum, 3)
+        # Thành tiền đơn hàng = SL THỰC NHẬN × đơn giá × (1+VAT) (đã chốt)
+        it.amount = round(recv_sum * float(it.price or 0) * (1 + vat / 100), 2)
         if recv_sum <= 0:
             it.line_status = "Chưa giao"
         elif recv_sum + 0.001 < qty_order:
@@ -185,8 +229,8 @@ def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
         code=data.code or "", misa_code=data.misa_code, pr_code=data.pr_code,
         survey_code=data.survey_code, company_id=data.company_id, supplier_code=data.supplier_code,
         supplier_name=data.supplier_name, department=data.department, nspt=data.nspt,
-        order_date=data.order_date, vat_rate=data.vat_rate, is_urgent=data.is_urgent,
-        note=data.note, status="draft", created_by=user_id, updated_by=user_id,
+        order_date=data.order_date, vat_rate=data.vat_rate, payment_terms=data.payment_terms,
+        is_urgent=data.is_urgent, note=data.note, status="draft", created_by=user_id, updated_by=user_id,
     )
     db.add(po)
     db.flush()
@@ -202,6 +246,8 @@ def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
 
 def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOrder:
     po = get_po(db, pid)
+    if po.status in ("completed", "cancelled"):
+        raise HTTPException(400, "Đơn đã hoàn thành/đã hủy — không sửa được. Hãy 'Mở lại' nếu cần chỉnh.")
     for k, v in data.model_dump(exclude_unset=True, exclude={"items"}).items():
         setattr(po, k, v)
     po.updated_by = user_id
@@ -227,6 +273,8 @@ def delete_po(db: Session, pid: int, user_id: int):
 
 def set_status(db: Session, pid: int, status: str, user_id: int, message: str = "") -> PurchaseOrder:
     po = get_po(db, pid)
+    if status in ("submitted", "approved") and not (po.misa_code or "").strip():
+        raise HTTPException(400, "Mã đơn MISA không được để trống khi gửi duyệt/duyệt đơn")
     po.status = status
     if message:
         po.approve_note = message

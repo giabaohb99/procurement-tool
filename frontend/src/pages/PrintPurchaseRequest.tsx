@@ -36,10 +36,15 @@ export default function PrintPurchaseRequest() {
       <div style={{ maxWidth: 820, margin: '0 auto', background: '#fff', padding: '28px 32px', fontFamily: 'Inter, Arial, sans-serif', color: '#000' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ fontSize: 13 }}><b>Đơn vị:</b> {company || '...'}</div>
-          <table style={{ borderCollapse: 'collapse', fontSize: 11 }}>
+          <table style={{ borderCollapse: 'collapse', fontSize: 9.5 }}>
             <tbody>
-              <tr><td style={cell}>Mẫu</td><td style={cell}>003/BM/PKT</td></tr>
-              <tr><td style={cell}>Phiên bản</td><td style={cell}>V1-062025</td></tr>
+              {(() => { const c = { border: '1px solid #999', padding: '2px 6px', fontSize: 9.5, lineHeight: 1.3 } as const; const c2 = { ...c, fontWeight: 600 } as const; return (
+                <>
+                  <tr><td style={{ ...c2, width: 56 }}>Mẫu</td><td style={{ ...c, width: 92 }}>003/BM/PKT</td></tr>
+                  <tr><td style={c2}>Phiên bản</td><td style={c}>V1-062025</td></tr>
+                  <tr><td style={c2}>Ngày update</td><td style={c}>17/7/2025</td></tr>
+                </>
+              ) })()}
             </tbody>
           </table>
         </div>
@@ -58,15 +63,9 @@ export default function PrintPurchaseRequest() {
 
         <div style={SH}>MỤC ĐÍCH &amp; NỘI DUNG ĐỀ XUẤT</div>
         <div style={{ fontSize: 12, padding: '6px 4px', lineHeight: 1.8 }}>
-          <div><b>Mục đích:</b> {pr.purpose}</div>
-          <div><b>Thời gian cần hàng:</b> {pr.need_date || '...'}</div>
-          {pr.suggested_supplier && (
-            <>
-              <div><b>Nhà cung cấp đề xuất:</b> {pr.suggested_supplier}</div>
-              {pr.suggested_supplier_tax_code && <div><b>MST nhà cung cấp:</b> {pr.suggested_supplier_tax_code}</div>}
-              {pr.suggested_supplier_contact && <div><b>Liên hệ nhà cung cấp:</b> {pr.suggested_supplier_contact}</div>}
-            </>
-          )}
+          <div><b>Mục đích mua hàng/dịch vụ:</b> {pr.is_urgent ? '[Gấp] ' : ''}{pr.purpose}</div>
+          <div><b>Thời gian cần hàng/dịch vụ:</b> {pr.need_date || '...'}</div>
+          <div><b>Nội dung:</b> {pr.note || ''}</div>
         </div>
 
         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 6 }}>
@@ -91,6 +90,20 @@ export default function PrintPurchaseRequest() {
         </table>
         <div style={{ textAlign: 'right', fontSize: 12, marginTop: 6 }}>VAT: <b>{fmt(pr.vat)}</b></div>
         <div style={{ textAlign: 'right', fontSize: 13 }}>Tổng cộng thanh toán: <b>{fmt(pr.total)}</b></div>
+
+        <div style={SH}>THÔNG TIN NHÀ CUNG CẤP</div>
+        <div style={{ fontSize: 12, padding: '6px 4px', lineHeight: 1.8 }}>
+          <div><b>Tên nhà cung cấp:</b> {pr.suggested_supplier || ''}</div>
+          <div><b>Mã số thuế:</b> {pr.suggested_supplier_tax_code || ''}</div>
+          <div><b>Liên hệ:</b> {pr.suggested_supplier_contact || ''}</div>
+          <div><b>Báo giá đính kèm:</b> {pr.quote_file_url ? '☑ Có' : '☐ Có'} &nbsp;&nbsp; {pr.quote_file_url ? '☐ Không' : '☑ Không'} {pr.quote_filename ? `( ${pr.quote_filename} )` : ''}</div>
+        </div>
+
+        <div style={SH}>PHẦN DÀNH CHO BỘ PHẬN MUA HÀNG</div>
+        <div style={{ fontSize: 12, padding: '6px 4px', lineHeight: 1.8 }}>
+          <div><b>Thời gian cần hàng/dịch vụ:</b> .............................</div>
+          <div><b>Yêu cầu khác (nếu có):</b> .............................</div>
+        </div>
 
         <div style={SH}>XÉT DUYỆT</div>
         <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center', fontSize: 12, marginTop: 16 }}>

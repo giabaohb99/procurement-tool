@@ -16,8 +16,8 @@ from .schema import POCreate, POUpdate, RejectIn
 router = APIRouter(prefix="/api/purchase-orders", tags=["purchase_order"])
 
 HEADER = ["id", "code", "misa_code", "pr_code", "survey_code", "company_id", "supplier_code",
-          "supplier_name", "department", "nspt", "order_date", "vat_rate", "is_urgent",
-          "status", "note", "approve_note"]
+          "supplier_name", "department", "nspt", "order_date", "vat_rate", "payment_terms",
+          "is_urgent", "status", "note", "approve_note"]
 
 
 def _delivery(d) -> dict:
@@ -26,15 +26,19 @@ def _delivery(d) -> dict:
             "ship_qty": float(d.ship_qty or 0), "ship_unit": d.ship_unit,
             "received_qty": float(d.received_qty or 0), "promised_date": d.promised_date,
             "expected_date": d.expected_date, "received_date": d.received_date,
+            "std_days": d.std_days, "regulated_date": d.regulated_date,
+            "diff_promise": d.diff_promise, "diff_regulated": d.diff_regulated, "diff_required": d.diff_required,
             "invoice_no": d.invoice_no, "shipping_unit_price": float(d.shipping_unit_price or 0),
             "shipping_amount": float(d.shipping_amount or 0), "qc_result": d.qc_result,
-            "progress_note": d.progress_note}
+            "status": d.status, "extra_request": d.extra_request, "progress_note": d.progress_note}
 
 
 def _item(db, it) -> dict:
     return {"id": it.id, "product_code": it.product_code, "product_name": it.product_name,
-            "item_group": it.item_group, "spec": it.spec, "unit": it.unit,
-            "qty_request": float(it.qty_request or 0), "qty_order": float(it.qty_order or 0),
+            "invoice_name": it.invoice_name, "item_group": it.item_group, "spec": it.spec,
+            "fg_code": it.fg_code, "invoice_no": it.invoice_no,
+            "supplier_ready": bool(it.supplier_ready), "required_date": it.required_date,
+            "unit": it.unit, "qty_request": float(it.qty_request or 0), "qty_order": float(it.qty_order or 0),
             "price": float(it.price or 0), "vat": float(it.vat or 0), "amount": float(it.amount or 0),
             "qty_received": float(it.qty_received or 0), "qty_remaining": float(it.qty_remaining or 0),
             "line_status": it.line_status, "warehouse_code": it.warehouse_code, "note": it.note,
@@ -46,13 +50,19 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
     d["vat_rate"] = float(po.vat_rate or 0)
     items = [_item(db, it) for it in service.items_of(db, po.id)]
     d["items"] = items
-    subtotal = round(sum(i["qty_order"] * i["price"] for i in items), 2)
-    vat = round(sum(i["amount"] - i["qty_order"] * i["price"] for i in items), 2)
+    # Tổng theo SL THỰC NHẬN (thành tiền đơn hàng = đã chốt)
+    subtotal = round(sum(i["qty_received"] * i["price"] for i in items), 2)
+    vat = round(sum(i["amount"] - i["qty_received"] * i["price"] for i in items), 2)
     shipping = round(sum(dl["shipping_amount"] for i in items for dl in i["deliveries"]), 2)
     d["subtotal"] = subtotal
     d["vat"] = vat
     d["total"] = round(subtotal + vat, 2)
     d["shipping_total"] = shipping
+    # Tổng theo SL ĐẶT (cho bản in đặt hàng gửi NCC)
+    order_sub = round(sum(i["qty_order"] * i["price"] for i in items), 2)
+    order_vat = round(sum(i["qty_order"] * i["price"] * (i["vat"] / 100) for i in items), 2)
+    d["order_subtotal"] = order_sub
+    d["order_total"] = round(order_sub + order_vat, 2)
     return d
 
 
@@ -131,3 +141,21 @@ def reject_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: S
                          creator_id=po.created_by or user.id, background_tasks=background_tasks,
                          reason=data.reason or "", link=f"/purchase-orders/{po.id}")
     return success(_out(db, po), "Đã từ chối")
+
+
+@router.post("/{pid}/cancel")
+def cancel_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
+              user=Depends(require("purchase_order", "write"))):
+    return success(_out(db, service.set_status(db, pid, "cancelled", user.id, data.reason)), "Đã hủy đơn")
+
+
+@router.post("/{pid}/complete")
+def complete_po(pid: int, db: Session = Depends(get_db),
+                user=Depends(require("purchase_order", "write"))):
+    return success(_out(db, service.set_status(db, pid, "completed", user.id)), "Đã hoàn thành đơn")
+
+
+@router.post("/{pid}/reopen")
+def reopen_po(pid: int, db: Session = Depends(get_db),
+              user=Depends(require("purchase_order", "write"))):
+    return success(_out(db, service.set_status(db, pid, "draft", user.id)), "Đã mở lại đơn (về nháp)")
