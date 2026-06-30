@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel
 
 
@@ -28,4 +29,8 @@ class EmployeeUpdate(BaseModel):
 
 class EmployeeOut(EmployeeBase):
     id: int
+    code: str
+    department_name: str | None = None
+    manager_name: str | None = None
+    created_at: datetime | None = None
     model_config = {"from_attributes": True}

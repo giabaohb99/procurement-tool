@@ -7,7 +7,7 @@ from app.core.utils import generate_code
 from .model import Supplier
 from .schema import SupplierCreate, SupplierUpdate
 
-FILTERABLE = ["code", "name", "tax_code", "supplier_type"]
+FILTERABLE = ["code", "name", "tax_code", "supplier_type", "is_active"]
 ENTITY = "supplier"
 
 

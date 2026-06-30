@@ -7,15 +7,13 @@ from app.core.utils import generate_code
 from .model import Employee
 from .schema import EmployeeCreate, EmployeeUpdate
 
+FILTERABLE = ["code", "full_name", "email", "is_active"]
 ENTITY = "employee"
 
 
-def list_employees(db: Session, q: str | None, pg: dict):
-    query = db.query(Employee)
-    if q:
-        query = query.filter(Employee.full_name.like(f"%{q}%"))
-    total = query.count()
-    items = query.order_by(Employee.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
+def list_employees(db: Session, base_query, pg: dict):
+    total = base_query.count()
+    items = base_query.order_by(Employee.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
     return total, items
 
 

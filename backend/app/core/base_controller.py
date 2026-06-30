@@ -23,5 +23,9 @@ def apply_filters(query, model, request: Request, filterable: list[str]):
         if key in filterable and val not in (None, ""):
             col = getattr(model, key, None)
             if col is not None:
-                query = query.filter(col.like(f"%{val}%"))
+                if key == 'is_active':
+                    is_true = val.lower() in ('true', '1', 'yes')
+                    query = query.filter(col == is_true)
+                else:
+                    query = query.filter(col.like(f"%{val}%"))
     return query

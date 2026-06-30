@@ -132,16 +132,20 @@ def import_suppliers_csv(
 
         existing = db.query(Supplier).filter(Supplier.code == code).first()
         if existing:
-            existing.name = name
-            existing.tax_code = tax_code
-            existing.address = address
-            existing.supplier_type = supplier_type
-            existing.payment_terms = payment_terms
-            existing.vat = vat
-            existing.is_active = is_active
-            existing.updated_by = user.id
-            if not is_active: deleted += 1
-            else: updated += 1
+            if action in ["xóa", "delete"]:
+                db.delete(existing)
+                deleted += 1
+            else:
+                existing.name = name
+                existing.tax_code = tax_code
+                existing.address = address
+                existing.supplier_type = supplier_type
+                existing.payment_terms = payment_terms
+                existing.vat = vat
+                existing.is_active = is_active
+                existing.updated_by = user.id
+                if not is_active: deleted += 1
+                else: updated += 1
         else:
             if not is_active or not name: continue
             if not code: code = generate_code(db, Supplier, "NCC")

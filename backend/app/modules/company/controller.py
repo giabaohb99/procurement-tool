@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
-from app.core.base_controller import pagination
+from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
 
@@ -14,12 +14,13 @@ router = APIRouter(prefix="/api/companies", tags=["company"])
 
 @router.get("")
 def list_companies(
-    q: str | None = Query(None),
+    request: Request,
     pg: dict = Depends(pagination),
     db: Session = Depends(get_db),
     user=Depends(require("company", "read")),
 ):
-    total, items = service.list_companies(db, q, pg)
+    query = apply_filters(db.query(service.Company), service.Company, request, service.FILTERABLE)
+    total, items = service.list_companies(db, query, pg)
     return success({
         "total": total,
         "items": [CompanyOut.model_validate(i).model_dump() for i in items],
@@ -56,16 +57,14 @@ def delete_company(cid: int, db: Session = Depends(get_db), user=Depends(require
 @router.get("/export/csv")
 def export_companies_csv(
     ids: str | None = Query(None),
-    q: str | None = Query(None),
+    request: Request = None,
     db: Session = Depends(get_db),
     user=Depends(require("company", "read")),
 ):
     from app.core.csv_utils import export_csv_response
     from .model import Company
     
-    query = db.query(Company)
-    if q:
-        query = query.filter(Company.name.like(f"%{q}%"))
+    query = apply_filters(db.query(Company), Company, request, service.FILTERABLE)
     if ids:
         id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
         if id_list:
@@ -114,14 +113,18 @@ def import_companies_csv(
             
         existing = db.query(Company).filter(Company.code == code).first() if code else None
         if existing:
-            if name: existing.name = name
-            existing.tax_code = tax_code
-            existing.address = address
-            existing.invoice_email = invoice_email
-            existing.is_active = is_active
-            existing.updated_by = user.id
-            if not is_active: deleted += 1
-            else: updated += 1
+            if action in ["xóa", "delete"]:
+                db.delete(existing)
+                deleted += 1
+            else:
+                if name: existing.name = name
+                existing.tax_code = tax_code
+                existing.address = address
+                existing.invoice_email = invoice_email
+                existing.is_active = is_active
+                existing.updated_by = user.id
+                if not is_active: deleted += 1
+                else: updated += 1
         else:
             if not is_active or not name: continue
             if not code: code = generate_code(db, Company, "CTY")

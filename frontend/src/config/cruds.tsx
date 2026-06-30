@@ -6,6 +6,8 @@ export type FieldDef = {
   type?: 'text' | 'number' | 'textarea' | 'select' | 'checkbox'
   options?: { value: string; label: string }[]
   readonlyOnEdit?: boolean
+  source?: { url: string; value?: string; label?: string }
+  onValueChange?: (val: any, form: any, setForm: (k: string, v: any) => void) => void
 }
 export type Column = { key: string; label: string; render?: (row: any) => any }
 
@@ -26,6 +28,11 @@ const badge = (v: any, on = 'Đang dùng', off = 'Ngừng') =>
 const SUP_TYPE = [
   { value: 'goods', label: 'NCC bán hàng' },
   { value: 'transport', label: 'Đơn vị vận chuyển' },
+]
+
+const ACTIVE_OPTIONS = [
+  { value: 'true', label: 'Đang dùng / Hiện' },
+  { value: 'false', label: 'Ngừng / Ẩn' },
 ]
 
 export const PR_STATUS: Record<string, { label: string; cls: string }> = {
@@ -61,7 +68,10 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'invoice_email', label: 'Email hóa đơn' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
     ],
-    filters: [{ key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên' }, { key: 'tax_code', label: 'MST' }],
+    filters: [
+      { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên' }, { key: 'tax_code', label: 'MST' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
+    ],
     fields: [
       { key: 'code', label: 'Mã', readonlyOnEdit: true }, { key: 'name', label: 'Tên pháp nhân' },
       { key: 'tax_code', label: 'MST' }, { key: 'address', label: 'Địa chỉ', type: 'textarea' },
@@ -81,6 +91,7 @@ export const cruds: Record<string, CrudConfig> = {
     filters: [
       { key: 'code', label: 'Mã / viết tắt' }, { key: 'name', label: 'Tên NCC' }, { key: 'tax_code', label: 'MST' },
       { key: 'supplier_type', label: 'Loại', type: 'select', options: SUP_TYPE },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
     ],
     fields: [
       { key: 'code', label: 'Mã / viết tắt', readonlyOnEdit: true }, { key: 'name', label: 'Tên pháp lý' },
@@ -100,6 +111,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã VTBB/NL' }, { key: 'name', label: 'Tên' },
       { key: 'item_group', label: 'Phân loại', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
       { key: 'unit', label: 'ĐVT', source: { url: '/api/units', value: 'name', label: 'name' } },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
     ],
     fields: [
       { key: 'code', label: 'Mã VTBB/NL', readonlyOnEdit: true }, { key: 'name', label: 'Tên' },
@@ -108,16 +120,35 @@ export const cruds: Record<string, CrudConfig> = {
     ],
   },
   employees: {
-    slug: 'employees', entity: 'employee', title: 'Nhân sự', apiPath: '/api/employees', importExport: true,
+    slug: 'employees', entity: 'employee', apiPath: '/api/employees',
+    title: 'Nhân sự', importExport: true,
     columns: [
       { key: 'code', label: 'Mã NV' }, { key: 'full_name', label: 'Họ tên' }, { key: 'email', label: 'Email' },
-      { key: 'position', label: 'Chức vụ' }, { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active, 'Đang làm', 'Nghỉ') },
+      { key: 'position', label: 'Chức vụ' }, { key: 'department_name', label: 'Phòng ban' },
+      { key: 'manager_name', label: 'Trưởng bộ phận' },
+      { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active, 'Đang làm', 'Nghỉ') },
     ],
-    filters: [{ key: 'code', label: 'Mã NV' }, { key: 'full_name', label: 'Họ tên' }, { key: 'email', label: 'Email' }],
+    filters: [
+      { key: 'code', label: 'Mã NV' }, { key: 'full_name', label: 'Họ tên' }, { key: 'email', label: 'Email' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
+    ],
     fields: [
       { key: 'code', label: 'Mã NV', readonlyOnEdit: true }, { key: 'full_name', label: 'Họ tên' },
       { key: 'email', label: 'Email' }, { key: 'phone', label: 'Điện thoại' },
-      { key: 'company_id', label: 'Công ty (ID)', type: 'number' }, { key: 'department_id', label: 'Phòng ban (ID)', type: 'number' },
+      { key: 'department_id', label: 'Phòng ban', type: 'select', source: { url: '/api/brands', value: 'id', label: 'department' }, 
+        onValueChange: async (val, form, setForm) => {
+          if (val) {
+            import('../api/client').then(({ api }) => {
+              api.get('/api/brands/' + val).then(r => {
+                setForm('manager_name', r.data.data.manager_name || '')
+              })
+            })
+          } else {
+            setForm('manager_name', '')
+          }
+        } 
+      },
+      { key: 'manager_name', label: 'Trưởng bộ phận', readonlyOnEdit: true },
       { key: 'position', label: 'Chức vụ' }, { key: 'is_active', label: 'Đang làm', type: 'checkbox' },
     ],
   },
@@ -148,7 +179,10 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên kho' }, { key: 'address', label: 'Địa chỉ' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
     ],
-    filters: [{ key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên kho' }],
+    filters: [
+      { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên kho' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
+    ],
     fields: [
       { key: 'code', label: 'Mã', readonlyOnEdit: true }, { key: 'name', label: 'Tên kho' },
       { key: 'address', label: 'Địa chỉ', type: 'textarea' }, { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
@@ -160,7 +194,10 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên ĐVT' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
     ],
-    filters: [{ key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên' }],
+    filters: [
+      { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
+    ],
     fields: [
       { key: 'code', label: 'Mã', readonlyOnEdit: true }, { key: 'name', label: 'Tên ĐVT' },
       { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
@@ -173,7 +210,10 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'apply_date', label: 'Ngày áp dụng' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
     ],
-    filters: [{ key: 'name', label: 'Phân loại' }],
+    filters: [
+      { key: 'name', label: 'Phân loại' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
+    ],
     fields: [
       { key: 'name', label: 'Phân loại', readonlyOnEdit: true }, { key: 'std_days', label: 'Số ngày quy định' },
       { key: 'note', label: 'Ghi chú', type: 'textarea' }, { key: 'apply_date', label: 'Ngày áp dụng' },
@@ -181,16 +221,22 @@ export const cruds: Record<string, CrudConfig> = {
     ],
   },
   brands: {
-    slug: 'brands', entity: 'brand', title: 'Phòng ban', apiPath: '/api/brands', importExport: true,
+    slug: 'brands', entity: 'brand', apiPath: '/api/brands',
+    title: 'Phòng Ban', importExport: true,
     columns: [
-      { key: 'code', label: 'Viết tắt' }, { key: 'department', label: 'Bộ phận đặt hàng' },
+      { key: 'department', label: 'Phòng ban' },
+      { key: 'manager_name', label: 'Trưởng bộ phận' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
     ],
-    filters: [{ key: 'code', label: 'Viết tắt' }, { key: 'department', label: 'Bộ phận' }],
-    fields: [
-      { key: 'code', label: 'Viết tắt', readonlyOnEdit: true }, { key: 'department', label: 'Bộ phận đặt hàng' },
-      { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
+    filters: [
+      { key: 'department', label: 'Phòng ban' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
     ],
+    fields: [
+      { key: 'department', label: 'Phòng ban' },
+      { key: 'manager_id', label: 'Trưởng bộ phận', type: 'select', source: { url: '/api/employees', value: 'id', label: 'full_name' } },
+      { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
+    ]
   },
   'purchase-orders': {
     slug: 'purchase-orders', entity: 'purchase_order', title: 'Đơn mua hàng (PO)', apiPath: '/api/purchase-orders',

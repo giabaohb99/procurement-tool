@@ -1,0 +1,230 @@
+﻿id,disabled,name,dept,manager,email
+NSU001,false,Trần Viết Vỹ,Xây dựng,Trần Chí Dững,tvvy.idagroup@gmail.com
+NSU002,false,Thái Thị Thu Hiền,Xây dựng,Trần Chí Dững,ttthien.idagroup@gmail.com
+NSU003,false,Trần Hoàng Diệu,Xây dựng,Trần Chí Dững,thdieu.idagroup@gmail.com
+NSU004,false,Đoàn Minh Khôi,Dego Organic,Đoàn Minh Khôi,dmkhoi.degoholding@gmail.com
+NSU005,false,Võ Thanh Huyền,Dego Organic,Đoàn Minh Khôi,vthuyen.idagroup@gmail.com
+NSU006,false,Nguyễn Minh Cảnh,Dego Organic,Đoàn Minh Khôi,nmcanh.idaglobal@gmail.com
+NSU007,false,Phan Thị Chúc Ly,Dego Organic,Đoàn Minh Khôi,ptcly.degoholding@gmail.com
+NSU008,false,Nguyễn Đình Chương,Dego Organic,Đoàn Minh Khôi,ndchuong.degoholding@gmail.com
+NSU009,false,Lê Phú Ngoan,Dego Organic,Đoàn Minh Khôi,ngoanle789123@gmail.com
+NSU010,false,Nguyễn Lương Nhật Anh,Dego Organic,Đoàn Minh Khôi,nlnanh.degoholding@gmail.com
+NSU011,false,Trần Diễm Phương,Dego Organic,Đoàn Minh Khôi,tphuong.degoholding@gmail.com
+NSU012,false,Nguyễn Văn Hiếu,Dego Organic,Đoàn Minh Khôi,
+NSU013,false,Nguyễn Thanh Phương,Dego Organic,Đoàn Minh Khôi,ntphuong.degoholding@gmail.com
+NSU014,false,Nguyễn Quốc Phòng,Dego Organic,Đoàn Minh Khôi,
+NSU015,false,Nguyễn Thị Kiều Trang,Dego Organic,Đoàn Minh Khôi,ntktrang.idagroup@gmail.com
+NSU016,false,Nguyễn Trung Lượng,Dego Organic,Đoàn Minh Khôi,
+NSU017,false,Hồ Văn Phúc,Dego Organic,Đoàn Minh Khôi,
+NSU018,false,Trần Văn Nhí,Dego Organic,Đoàn Minh Khôi,tranvannhi17121998@gmail.com
+NSU019,false,Nguyễn Văn Điền,Dego Organic,Đoàn Minh Khôi,nvdien.degoholding@gmail.com
+NSU020,false,Nguyễn Lê Vĩnh Khang,Dego Organic,Đoàn Minh Khôi,nlvkhang.degoholding@gmail.com
+NSU021,false,Mai Văn Lãm,Dego Organic,Đoàn Minh Khôi,
+NSU022,false,Trương Duy Khánh,Dego Organic,Đoàn Minh Khôi,tdkhanh.degoholding@gmail.com
+NSU023,false,Trần Văn Hòn,Dego Organic,Đoàn Minh Khôi,tvhon.degoholding@gmail.com
+NSU024,false,Phạm Vũ Phong,Dego Organic,Đoàn Minh Khôi,ks.phong12a2@gmail.com
+NSU025,false,Đặng Phong Phú,Dego Organic,Đoàn Minh Khôi,dphu9377@gmail.com
+NSU026,false,Nguyễn Hoàng Minh Ngân,Dego Organic,Đoàn Minh Khôi,nhmngan.degoholding@gmail.com
+NSU027,false,Đặng Tuyết Ngân,Dego Organic,Đoàn Minh Khôi,ngan100107@gmail.com
+NSU028,false,Trần Thị Thuý Hằng,Dego Organic,Đoàn Minh Khôi,thuyhang1978.hg@gmail.com
+NSU029,false,Dương Văn Quyền,Dego Organic,Đoàn Minh Khôi,dvquyen.degoholding@gmail.com
+NSU030,false,Nguyễn Anh Đức,Dego Organic,Đoàn Minh Khôi,nguyenanhduc69cm@gmail.com
+NSU031,false,Lê Hữu Hãi,Dego Lab,Lê Hữu Hãi,lhhai.degoholding@gmail.com
+NSU032,false,Dương Ngọc Lam,Dego Lab,Lê Hữu Hãi,dnlam.degoholding@gmail.com
+NSU033,false,Trần Hoàng Bảo,Dego Lab,Lê Hữu Hãi,thbao.degoholding@gmail.com
+NSU034,false,Trần Cao Huỳnh Như,Dego Lab,Lê Hữu Hãi,tchnhu.degoholding@gmail.com
+NSU035,false,Nguyễn Thị Tường Vân,Dego Lab,Lê Hữu Hãi,nttvan.degoholding@gmail.com
+NSU036,false,Hồng Văn Sơn,Dego Lab,Lê Hữu Hãi,hvson.degoholding@gmail.com
+NSU037,false,Đỗ Thị Hà Thanh,Dego Lab,Lê Hữu Hãi,dththanh.idagroup@gmail.com
+NSU038,false,Trần Thị Cẩm Thu,Dego Lab,Lê Hữu Hãi,ttcthu.idagroup@gmail.com
+NSU039,false,Trần Quang Phú,N2SBIO,Trần Quang Phú,phutq.n2sbiovn@gmail.com
+NSU040,false,Nguyễn Hiếu Khương,N2SBIO,Trần Quang Phú,nhkhuong.idagroup@gmail.com
+NSU041,false,Nguyễn Trung Đức,N2SBIO,Trần Quang Phú,ducnt.n2sbiovn@gmail.com
+NSU042,false,Nguyễn Thị Hường,N2SBIO,Trần Quang Phú,huongnt.n2sbiovn@gmail.com
+NSU043,false,Phạm Văn Chương,N2SBIO,Trần Quang Phú,
+NSU044,false,Nguyễn Trường Duy,N2SBIO,Trần Quang Phú,duynt.n2sbiovn@gmail.com
+NSU045,false,Nguyễn Trường Giang,N2SBIO,Trần Quang Phú,giangnt.n2sbiovn@gmail.com
+NSU046,false,Đàm Tử Hồng,N2SBIO,Trần Quang Phú,hongdt.n2sbiovn@gmail.com
+NSU047,false,Nguyễn Thị Hoàng Lộc,N2SBIO,Trần Quang Phú,locnt1.n2sbiovn@gmail.com
+NSU048,false,Võ Minh Quang,N2SBIO,Trần Quang Phú,
+NSU049,false,Ngũ Thị Như Ý,N2SBIO,Trần Quang Phú,
+NSU050,false,Đỗ Kim Hiền,N2SBIO,Trần Quang Phú,
+NSU051,false,Phan Tấn Đạt,N2SBIO,Trần Quang Phú,
+NSU052,false,Nguyễn Thị Thuỳ Trang,N2SBIO,Trần Quang Phú,ntttrang.degoholding@gmail.com
+NSU053,false,Lê Huy Tân,N2SBIO,Trần Quang Phú,
+NSU054,false,Trần Thị Hương Tuyền,Điều phối,Trần Thị Hương Tuyền,tthtuyen.idagroup@gmail.com
+NSU055,false,Bùi Huỳnh Trường Thành,Điều phối,Trần Thị Hương Tuyền,bhtthanh.idaglobal@gmail.com
+NSU056,false,Lê Vỹ Khang,Điều phối,Trần Thị Hương Tuyền,lvkhang.idagroup@gmail.com
+NSU057,false,Trần Quốc Thái,Điều phối,Trần Thị Hương Tuyền,tqthai.idagroup@gmail.com
+NSU058,false,Đào Quốc Triệu,Điều phối,Trần Thị Hương Tuyền,dqtrieu.idagroup@gmail.com
+NSU059,false,Lê Tấn Nhựt,Điều phối,Trần Thị Hương Tuyền,ltnhut.idagroup@gmail.com
+NSU060,false,Trần Quang Huy,Điều phối,Trần Thị Hương Tuyền,tqhuy.idagroup@gmail.com
+NSU061,false,Lê Lâm Tùng,Điều phối,Trần Thị Hương Tuyền,lltung.idagroup@gmail.com
+NSU062,false,Lê Minh Thông,Điều phối,Trần Thị Hương Tuyền,lmthong.degoholding@gmail.com
+NSU063,false,Trần Minh Sang,Điều phối,Trần Thị Hương Tuyền,tmsang.degoholding@gmail.com
+NSU064,false,Lưu Nhựt Minh,Điều phối,Trần Thị Hương Tuyền,lnminh.degoholding@gmail.com
+NSU065,false,Huỳnh Quang Tín,Điều phối,Trần Thị Hương Tuyền,hqtin.degoholding@gmail.com
+NSU066,false,Nguyễn Xuân Khánh,Điều phối,Trần Thị Hương Tuyền,
+NSU067,false,Chim Cẩm Chi,ABA Chemical,Chim Cẩm Chi,ccchi.idagroup@gmail.com
+NSU068,false,Trần Ngọc Trâm,ABA Chemical,Chim Cẩm Chi,tntram.aba@gmail.com
+NSU069,false,Châu Thị Như Ý,ABA Chemical,Chim Cẩm Chi,ctny.aba@gmail.com
+NSU070,false,Đặng Trúc Phi,ABA Chemical,Chim Cẩm Chi,dtphi.aba@gmail.com
+NSU071,false,Trần Thị Mỹ Duyên,ABA Chemical,Chim Cẩm Chi,
+NSU072,false,Nguyễn Hoàng Thoại,ABA Chemical,Chim Cẩm Chi,
+NSU073,false,Lê Thị Thanh Nhàn,ABA Chemical,Chim Cẩm Chi,lttnhan.idagroup@gmail.com
+NSU074,false,Trần Thị Bé Hai,ABA Chemical,Chim Cẩm Chi,ttbhai.aba@gmail.com
+NSU075,false,Nguyễn Thị Mỹ Linh,ABA Chemical,Chim Cẩm Chi,ntmlinh.aba@gmail.com
+NSU076,false,Phạm Từ Phương Trinh,ABA Chemical,Chim Cẩm Chi,ptptrinh.aba@gmail.com
+NSU077,false,Nguyễn Hoàng Đạt,ABA Chemical,Chim Cẩm Chi,nhdat.aba@gmail.com
+NSU078,false,Nguyễn Khôi Nguyên,ABA Chemical,Chim Cẩm Chi,nknguyen.aba@gmail.com
+NSU079,false,Lâm Hữu Thịnh,Thiết kế,Lâm Hữu Thịnh,lhthinh.agc@gmail.com
+NSU080,false,Phạm Hồ Minh Minh,Thiết kế,Lâm Hữu Thịnh,phmminh.idagroup@gmail.com
+NSU081,false,Lý Gia Nguyên,Thiết kế,Lâm Hữu Thịnh,lgnguyen.idagroup@gmail.com
+NSU082,false,Nguyễn Xuân Vinh,Thiết kế,Lâm Hữu Thịnh,nxvinh.degoholding@gmail.com
+NSU083,false,Lê Phước Hữu,Icare,Lê Phước Hữu,lphuu.idagroup@gmail.com
+NSU084,false,Lê Tuyết Mai,Icare,Lê Phước Hữu,ltmai.idagroup@gmail.com
+NSU085,false,Trần Lê Tường Vy,Icare,Lê Phước Hữu,tltvy.icare@gmail.com
+NSU086,false,Lê Tuấn Kiệt,Icare,Lê Phước Hữu,ltkiet.icare@gmail.com
+NSU087,false,Huỳnh Quốc Bảo,Icare,Lê Phước Hữu,hqbao.icare@gmail.com
+NSU088,false,Danh Hoàng Nguyên,Icare,Lê Phước Hữu,dhnguyen.icare@gmail.com
+NSU089,false,Âu Kim Thương,Icare,Lê Phước Hữu,akthuong.icare@gmail.com
+NSU090,false,Quách Nguyễn Hoàng Huy,Icare,Lê Phước Hữu,qnhhuy.icare@gmail.com
+NSU091,false,Trà Lê Nhựt Lam,Icare,Lê Phước Hữu,tlnlam.icare@gmail.com
+NSU092,false,Ngô Thị Tuyết Khang,Icare,Lê Phước Hữu,nttkhang.icare@gmail.com
+NSU093,false,Nguyễn Cẫm Thu,Icare,Lê Phước Hữu,ncthu.icare@gmail.com
+NSU094,false,Huỳnh Văn Kavin,Icare,Lê Phước Hữu,hvkavin.icare@gmail.com
+NSU095,false,Nguyễn Hồng Nhung,Icare,Lê Phước Hữu,nhnhung.icare@gmail.com
+NSU096,false,Trịnh Thanh Ngân,Icare,Lê Phước Hữu,ttngan.icare@gmail.com
+NSU097,false,Đặng Thị Mỹ Dung,Icare,Lê Phước Hữu,dtmdung.icare@gmail.com
+NSU098,false,Nguyễn Thị Thanh Duyên,Icare,Lê Phước Hữu,nttduyen.icare@gmail.com
+NSU099,false,Nguyễn Thị Kim Thuyền,Icare,Lê Phước Hữu,ntkthuyen.icare@gmail.com
+NSU100,false,Nguyễn Thanh Trúc,Icare,Lê Phước Hữu,nttruc.icare@gmail.com
+NSU101,false,Vương Hoàng Thân,IDA Global,Vương Hoàng Thân,vhthan.idagroup@gmail.com
+NSU102,false,Đặng Văn Tỏa,IDA Global,Vương Hoàng Thân,
+NSU103,false,Lưu Trần Bảo Ngọc,IDA Global,Vương Hoàng Thân,ltbaongoc.idagroup@gmail.com
+NSU104,false,Nguyễn Huỳnh Đức,IDA Global,Vương Hoàng Thân,nhduc.idagroup@gmail.com
+NSU105,false,Nguyễn Quốc Việt,IDA Global,Vương Hoàng Thân,nqviet.idaglobal@gmail.com
+NSU106,false,Phan Đỗ Gia Huy,IDA Global,Vương Hoàng Thân,pdghuy.idaglobal@gmail.com
+NSU107,false,Phạm Xuân Hài,IDA Global,Vương Hoàng Thân,pxhai.idaglobal@gmail.com
+NSU108,false,Nguyễn Hồng Phát,IDA Global,Vương Hoàng Thân,nhphat.idaglobal@gmail.com
+NSU109,false,Mai Thị Ngọc Phương,IDA Global,Vương Hoàng Thân,mtnphuong.idaglobal@gmail.com
+NSU110,false,Nguyễn Thanh Bi,IDA Global,Vương Hoàng Thân,ntbi.idaglobal@gmail.com
+NSU111,false,Lê Nguyễn Tuyết Vi,IDA Global,Vương Hoàng Thân,
+NSU112,false,Trần Văn Hiếu,IDA Global,Vương Hoàng Thân,tvhieu.idaglobal@gmail.com
+NSU113,false,Lê Đăng Khoa,IDA Global,Vương Hoàng Thân,ldkhoa.idagroup@gmail.com
+NSU114,false,Lê Trọng Nhân,IDA Global,Vương Hoàng Thân,ltrongnhan.idaglobal@gmail.com
+NSU115,false,Trần Hữu Nghĩa,IDA Global,Vương Hoàng Thân,thnghia1.idaglobal@gmail.com
+NSU116,false,Đoàn Ngọc Trang,IDA Global,Vương Hoàng Thân,dntrang.idaglobal@gmail.com
+NSU117,false,Nguyễn Hùng Tính,IDA Global,Vương Hoàng Thân,
+NSU118,false,Phạm Văn Phúc,IDA Global,Vương Hoàng Thân,pvphuc.idaglobal@gmail.com
+NSU119,false,Đàm Văn Nhật,IDA Global,Vương Hoàng Thân,dvnhat.idaglobal@gmail.com
+NSU120,false,Nguyễn Thị Thu Quyên,IDA Global,Vương Hoàng Thân,nttquyen.idagroup@gmail.com
+NSU121,false,Kiều Quốc Tiến,IDA Global,Vương Hoàng Thân,kqtien.idaglobal@gmail.com
+NSU122,false,Nguyễn Văn Tường Huy,IDA Global,Vương Hoàng Thân,nvthuy.idaglobal@gmail.com
+NSU123,false,Võ Trọng Nghĩa,IDA Global,Vương Hoàng Thân,vtnghia.idaglobal@gmail.com
+NSU124,false,Võ Anh Kiệt,IDA Global,Vương Hoàng Thân,vakiet.idaglobal@gmail.com
+NSU125,false,Nguyễn Đức Duy,IDA Global,Vương Hoàng Thân,ndduy.idaglobal@gmail.com
+NSU126,false,Lê Tuấn Thịnh,IDA Global,Vương Hoàng Thân,ltthinhidaglobal@gmail.com
+NSU127,false,Huỳnh Văn Hạnh Em,IDA Global,Vương Hoàng Thân,hvhem.idaglobal@gmail.com
+NSU128,false,Trần Văn Liêm,IDA Global,Vương Hoàng Thân,tvliem.idaglobal@gmail.com
+NSU129,false,Trần Huỳnh Phát,IDA Global,Vương Hoàng Thân,thphat.idaglobal@gmail.com
+NSU130,false,Nguyễn Cao Kỳ,IDA Global,Vương Hoàng Thân,ncky.idaglobal@gmail.com
+NSU131,false,Mai Phúc Thạnh,IDA Global,Vương Hoàng Thân,mpthanh.idaglobal@gmail.com
+NSU132,false,Nguyễn Nhật Minh,IDA Global,Vương Hoàng Thân,nnminh.idaglobal@gmail.com
+NSU133,false,Nguyễn Ngọc Pha,IDA Global,Vương Hoàng Thân,nnpha.idaglobal@gmail.com
+NSU134,false,Trương Minh Hiển,IDA Global,Vương Hoàng Thân,tmhien.idaglobal@gmail.com
+NSU135,false,Võ Thanh Thảo,IDA Global,Vương Hoàng Thân,vtthao.idaglobal@gmail.com
+NSU136,false,Phùng Thanh Bình,IDA Global,Vương Hoàng Thân,ptbinh.idaglobal@gmail.com
+NSU137,false,Lê Nguyễn Hoàng Huy,IDA Global,Vương Hoàng Thân,lnhhuy.idaglobal@gmail.com
+NSU138,false,Phan Thanh Tân,IDA Global,Vương Hoàng Thân,pttan.idaglobal@gmail.com
+NSU139,false,Nguyễn Thị Kim Ngọc,IDA Global,Vương Hoàng Thân,ntkngoc.idaglobal@gmail.com
+NSU140,false,Lê Thị Ngọc Mi,IDA Global,Vương Hoàng Thân,ltnmi.idagroup@gmail.com
+NSU141,false,Phan Kiều Ngọc Duyên Sang,IDA Global,Vương Hoàng Thân,pkndsang.idagroup@gmail.com
+NSU142,false,Huỳnh Lâm Kim Loan,IDA Global,Vương Hoàng Thân,hlkloan.idagroup@gmail.com
+NSU143,false,Lê Thị Ngọc Hân,IDA Global,Vương Hoàng Thân,ltnhan.idaglobal@gmail.com
+NSU144,false,Huỳnh Thị Thanh Nguyên,IDA Global,Vương Hoàng Thân,httnguyen.idaglobal@gmail.com
+NSU145,false,Nguyễn Thị Anh Thư,IDA Global,Vương Hoàng Thân,
+NSU146,false,Lương Thị Như Ý,IDA Global,Vương Hoàng Thân,ltnhuy.idaglobal@gmail.com
+NSU147,false,Nguyễn Dương Bình,IDA Global,Vương Hoàng Thân,
+NSU148,false,Nguyễn Hoàng Nhựt,IDA Global,Vương Hoàng Thân,
+NSU149,false,Đặng Bảo Trân,IDA Global,Vương Hoàng Thân,dbtran.idaglobal@gmail.com
+NSU150,false,Nguyễn Duy Linh,Bamboo,Nguyễn Duy Linh,ndlinh.idagroup@gmail.com
+NSU151,false,Mai Thi Hiểu,Bamboo,Nguyễn Duy Linh,
+NSU152,false,Trần Thị Bích Trâm,Bamboo,Nguyễn Duy Linh,ttbtram.idagroup@gmail.com
+NSU153,false,Nguyễn Thị Ngọc Hân,Bamboo,Nguyễn Duy Linh,ntnhan.idaglobal@gmail.com
+NSU154,false,Trần Thị An An,Bamboo,Nguyễn Duy Linh,ttaan.idaglobal@gmail.com
+NSU155,false,Nguyễn Huỳnh Thiên An,Bamboo,Nguyễn Duy Linh,
+NSU156,false,Lê Thị Như Ý,Bamboo,Nguyễn Duy Linh,ltny.idagroup@gmail.com
+NSU157,false,Nguyễn Châu Bảo Trân,Bamboo,Nguyễn Duy Linh,ncbtran.idaglobal@gmail.com
+NSU158,false,Trương Thị Kim Ngân,Bamboo,Nguyễn Duy Linh,ttkngan.bamboo@gmail.com
+NSU159,false,Phạm Thành Nhân,Bamboo,Nguyễn Duy Linh,
+NSU160,false,Lê Vi,Bamboo,Nguyễn Duy Linh,
+NSU161,false,Hồ Trúc Quỳnh,Bamboo,Nguyễn Duy Linh,
+NSU162,false,Nguyễn Thị Yến Vân,Bamboo,Nguyễn Duy Linh,
+NSU163,false,Kiều Thị Thảo Ngân,Bamboo,Nguyễn Duy Linh,kttngan.bamboo@gmail.com
+NSU164,false,Thái Thị Yến Nhi,Bamboo,Nguyễn Duy Linh,ttynhi.icare@gmail.com
+NSU165,false,Trương Thùy Linh,Dr.Xanh,Trương Thùy Linh,ttlinh.degoholding@gmail.com
+NSU166,false,Nguyễn Thị Thuý Phương,Dr.Xanh,Trương Thùy Linh,nttphuong.degoholding@gmail.com
+NSU167,false,Dương Hồng Ngọc,Dr.Xanh,Trương Thùy Linh,dhngoc.degoholding@gmail.com
+NSU168,false,Ngô Trọng Nguyên,Dr.Xanh,Trương Thùy Linh,ntnguyen.degoholding@gmail.com
+NSU169,false,Lê Thị Cẩm Hường,Dr.Xanh,Trương Thùy Linh,ltchuong.degoholding@gmail.com
+NSU170,false,Nguyễn Minh Toàn,Kế toán,Nguyễn Minh Toàn,nmtoan.idagroup@gmail.com
+NSU171,false,Hồ Ngọc Quế Anh,Kế toán,Nguyễn Minh Toàn,hnqanh.idagroup@gmail.com
+NSU172,false,Lê Mỹ Duyên,Kế toán,Nguyễn Minh Toàn,lmduyen.idagroup@gmail.com
+NSU173,false,Nguyễn Thị Ngọc Hân,Kế toán,Nguyễn Minh Toàn,ntnhan.idaglobal@gmail.com
+NSU174,false,Lý Minh Nguyệt,Kế toán,Nguyễn Minh Toàn,lmnguyet.idagroup@gmail.com
+NSU175,false,Huỳnh Hoàng Phúc,Kế toán,Nguyễn Minh Toàn,hhphuc.idagroup@gmail.com
+NSU176,false,Danh Nhật Hào,Kế toán,Nguyễn Minh Toàn,
+NSU177,false,Phạm Hửu My,Kế toán,Nguyễn Minh Toàn,
+NSU178,false,Nguyễn Thị Kiều Trang,Kế toán,Nguyễn Minh Toàn,ntktrang.idagroup@gmail.com
+NSU179,false,Đỗ Quốc Toàn,Kế toán,Nguyễn Minh Toàn,doquoctoan2004cm@gmail.com
+NSU180,false,Vương Mỹ Ngân,Kế toán,Nguyễn Minh Toàn,vuongmyngan204@gmail.com
+NSU181,false,Phạm Duy Tính,Kế toán,Nguyễn Minh Toàn,phamduytinh15072004@gmail.com
+NSU182,false,Nguyễn Thị Ngọc Thảo,Kế toán,Nguyễn Minh Toàn,ntnthao.bamboo@gmail.com
+NSU183,false,Võ Trình Kim Vy,Kế toán,Nguyễn Minh Toàn,vtkvy.idagroup@gmail.com
+NSU184,false,Võ Thị Kiều Loan,Kế toán,Nguyễn Minh Toàn,vtkloan.idagroup@gmail.com
+NSU185,false,Nguyễn Thị Yến Giang,Kế toán,Nguyễn Minh Toàn,nty.giang.idagroup@gmail.com
+NSU186,false,Đặng Bá Tiếp,Kế toán,Nguyễn Minh Toàn,dangbatiep246@gmail.com
+NSU187,false,La Tường Vi,Kế toán,Nguyễn Minh Toàn,ltvi.degoholding@gmail.com
+NSU188,false,Trần Ngọc Thảo Ly,Kế toán,Nguyễn Minh Toàn,thaolynt1707@gmail.com
+NSU189,false,Võ Thị Kim Hoa,Kế toán,Nguyễn Minh Toàn,vtkhoa.idagroup@gmail.com
+NSU190,false,Nguyễn Hoàng Dủ,Kế toán,Nguyễn Minh Toàn,nhdu.idagroup@gmail.com
+NSU191,false,Nguyễn Thị Thu Thủy,Kế toán,Nguyễn Minh Toàn,nttthuy15102025@gmail.com
+NSU192,false,Phạm Huỳnh Bảo Trang,Kế toán,Nguyễn Minh Toàn,phbtrang.idagroup@gmail.com
+NSU193,false,Lê Thị Thu Ba,Kế toán,Nguyễn Minh Toàn,lttba.degoholding@gmail.com
+NSU194,false,Nguyễn Minh Hiếu,Kế toán,Nguyễn Minh Toàn,hieuminh8486@gmail.com
+NSU195,false,Trần Thị Ánh Hường,Nhân sự,Trần Thị Ánh Hường,amytran.hr@gmail.com
+NSU196,false,Trịnh Thùy Giang,Nhân sự,Trần Thị Ánh Hường,ttgiang.idagroup@gmail.com
+NSU197,false,Hoàng Thị Diệu,Nhân sự,Trần Thị Ánh Hường,htdieu.degoholding@gmail.com
+NSU198,false,Phạm Lê Triết Giang,Lập trình & IT nội bộ,Trần Thị Ánh Hường,pltgiang.degoholding@gmail.com
+NSU199,false,Võ Nguyễn Thư Sinh,Nhân sự,Trần Thị Ánh Hường,vntsinh.idagroup@gmail.com
+NSU200,false,Nguyễn Thị Mỹ Duyên,Nhân sự,Trần Thị Ánh Hường,duyenntm88@gmail.com
+NSU201,false,Võ Thanh Ngân,Nhân sự,Trần Thị Ánh Hường,vtngan.degoholding@gmail.com
+NSU202,false,Nguyễn Đỗ Quyên,Kiểm soát kế hoạch,Nguyễn Đỗ Quyên,ndquyen.idagroup@gmail.com
+NSU203,false,Dương Hải Yến,Hành chính,Nguyễn Đỗ Quyên,duonghaiyen.idagroup@gmail.com
+NSU204,false,Huỳnh Cẩm Tiên,Hành chính,Nguyễn Đỗ Quyên,hctien.degoholding@gmail.com
+NSU205,false,Đào Trúc Nhi,Hành chính,Nguyễn Đỗ Quyên,dtnhi.degoholding@gmail.com
+NSU206,false,Hồ Thị Thiên Trang,Kiểm soát kế hoạch,Nguyễn Đỗ Quyên,htttrang.degoholding@gmail.com
+NSU207,false,Nguyễn Mạnh Cường,Lập trình & IT nội bộ,Trần Thị Ánh Hường,nmcuong.degoholding@gmail.com
+NSU208,false,Huỳnh Gia Bảo,Lập trình & IT nội bộ,Trần Thị Ánh Hường,
+NSU209,false,Trần Ngọc Huỳnh,Sản xuất -Thu mua,Trần Ngọc Huỳnh,tnhuynh.idagroup@gmail.com
+NSU210,false,Võ Trọng Tín,Sản xuất -Thu mua,Trần Ngọc Huỳnh,vttin.aba@gmail.com
+NSU211,false,Hồ Thị Diệu Liên,Sản xuất -Thu mua,Phạm Khánh Ngân,htdlien.degoholding@gmail.com
+NSU212,false,Trần Phước Hoàng Khang,Sản xuất -Thu mua,Phạm Khánh Ngân,
+NSU213,false,Lê Thị Trúc Thơ,Sản xuất -Thu mua,Phạm Khánh Ngân,
+NSU214,false,Phạm Khánh Ngân,Sản xuất -Thu mua,Phạm Khánh Ngân,pkngan.idagroup@gmail.com
+NSU215,false,Nguyễn Thị Phương Thảo,Sản xuất -Thu mua,Phạm Khánh Ngân,npthao2777@gmail.com
+NSU216,false,Mai Thị Yến Ly,Sản xuất -Thu mua,Phạm Khánh Ngân,mtyly.idagroup@gmail.com
+NSU217,false,Huỳnh Thị Kim Hương,Sản xuất -Thu mua,Phạm Khánh Ngân,htkhuong.idagroup@gmail.com
+NSU218,false,Trần Minh Kha,Sản xuất -Thu mua,Phạm Khánh Ngân,
+NSU219,false,Trương Thị Hồng Mai,Sản xuất -Thu mua,Phạm Khánh Ngân,
+NSU220,false,Nguyễn Ngọc Bảo Thi,Sản xuất -Thu mua,Phạm Khánh Ngân,
+NSU221,false,Trần Nguyễn Phương Quyên,Sản xuất -Thu mua,Phạm Khánh Ngân,tnpquyen.degoholding@gmail.com
+NSU222,false,Nguyễn Thanh Tiên,Sản xuất -Thu mua,Phạm Khánh Ngân,nttien.idagroup@gmail.com
+NSU223,false,Lâm Bích Dư,Sản xuất -Thu mua,Phạm Khánh Ngân,
+NSU224,false,Đào Thị Thuý Oanh,Sản xuất -Thu mua,Phạm Khánh Ngân,
+NSU225,false,Bùi Thị Diễm Tiên,Sản xuất -Thu mua,Phạm Khánh Ngân,
+NSU226,false,Lê Mỹ Ngọc,Sản xuất -Thu mua,Phạm Khánh Ngân,lmngoc.degoholding@gmail.com
+NSU227,false,Triệu Nam Lộc,Sản xuất -Thu mua,Phạm Khánh Ngân,
+NSU228,false,Nguyễn Thị Trúc Linh,Sản xuất -Thu mua,Phạm Khánh Ngân,
+NSU229,false,Nguyễn Thị Thu Hồng,Sản xuất -Thu mua,Phạm Khánh Ngân,ntthong.degoholding@gmail.com

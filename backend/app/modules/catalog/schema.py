@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel
 
 
@@ -63,14 +64,25 @@ class ItemGroupOut(ItemGroupCreate):
 class BrandCreate(BaseModel):
     code: str = ""
     department: str = ""
+    manager_id: int | None = 0
     is_active: bool = True
 
 
 class BrandUpdate(BaseModel):
     department: str | None = None
+    manager_id: int | None = None
     is_active: bool | None = None
 
 
-class BrandOut(BrandCreate):
+class BrandBase(BaseModel):
+    department: str | None = ""
+    manager_id: int | None = 0
+    is_active: bool | None = True
+
+
+class BrandOut(BrandBase):
     id: int
+    code: str
+    manager_name: str | None = None
+    created_at: datetime | None = None
     model_config = {"from_attributes": True}

@@ -1,5 +1,5 @@
-from sqlalchemy import Boolean, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Boolean, String, Text, BigInteger
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base_model import Base, AuditMixin
 
@@ -35,4 +35,16 @@ class Brand(Base, AuditMixin):
     __tablename__ = "tab_brand"
     code: Mapped[str] = mapped_column(String(25), unique=True)
     department: Mapped[str] = mapped_column(String(255), default="")
+    manager_id: Mapped[int] = mapped_column(BigInteger, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    manager = relationship(
+        "Employee",
+        primaryjoin="foreign(Brand.manager_id) == Employee.id",
+        uselist=False,
+        viewonly=True
+    )
+
+    @property
+    def manager_name(self) -> str | None:
+        return self.manager.full_name if self.manager else None

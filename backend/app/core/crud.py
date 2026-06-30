@@ -123,13 +123,17 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
                     existing = db.query(Model).filter(Model.name == data["name"]).first()
                     
                 if existing:
-                    for k, v in data.items():
-                        if k != "code" and v:
-                            setattr(existing, k, v)
-                    existing.is_active = is_active
-                    existing.updated_by = user.id
-                    if not is_active: deleted += 1
-                    else: updated += 1
+                    if action in ["xóa", "delete"]:
+                        db.delete(existing)
+                        deleted += 1
+                    else:
+                        for k, v in data.items():
+                            if k != "code" and v:
+                                setattr(existing, k, v)
+                        existing.is_active = is_active
+                        existing.updated_by = user.id
+                        if not is_active: deleted += 1
+                        else: updated += 1
                 else:
                     if not is_active: continue
                     if not code and code_prefix:

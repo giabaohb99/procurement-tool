@@ -15,12 +15,27 @@ export default function CrudDetail() {
   const [logs, setLogs] = useState<any[]>([])
   const [err, setErr] = useState('')
   const [msg, setMsg] = useState('')
+  const [dynOpts, setDynOpts] = useState<Record<string, { value: string; label: string }[]>>({})
 
   async function loadLogs() {
     if (isNew || !cfg) return
     const r = await api.get('/api/audit-logs', { params: { entity: cfg.entity, entity_id: id } })
     setLogs(r.data.data)
   }
+
+  useEffect(() => {
+    if (!cfg) return
+    cfg.fields.filter(f => f.source).forEach(f => {
+      api.get(f.source!.url, { params: { page_size: 1000 } }).then(r => {
+        const vk = f.source!.value || 'code'
+        const lk = f.source!.label || 'name'
+        const opts = (r.data.data.items || []).map((it: any) => ({
+          value: String(it[vk] ?? ''), label: String(it[lk] ?? it[vk] ?? ''),
+        })).filter((o: any) => o.value)
+        setDynOpts(s => ({ ...s, [f.key]: opts }))
+      }).catch(() => {})
+    })
+  }, [cfg?.slug])
 
   useEffect(() => {
     if (!cfg) return
@@ -75,9 +90,13 @@ export default function CrudDetail() {
                   <label>{f.label}</label>
                   {f.type === 'textarea' ? (
                     <textarea value={form[f.key] ?? ''} disabled={ro} onChange={(e) => set(f.key, e.target.value)} />
-                  ) : f.type === 'select' ? (
-                    <select value={form[f.key] ?? ''} disabled={ro} onChange={(e) => set(f.key, e.target.value)}>
-                      {f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  ) : (f.type === 'select' || f.source) ? (
+                    <select value={form[f.key] ?? ''} disabled={ro} onChange={(e) => {
+                      set(f.key, e.target.value);
+                      if (f.onValueChange) f.onValueChange(e.target.value, form, (k: string, v: any) => setForm((s:any) => ({...s, [k]: v})));
+                    }}>
+                      <option value="">-- Chọn --</option>
+                      {(f.options || dynOpts[f.key] || []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   ) : f.type === 'checkbox' ? (
                     <input type="checkbox" checked={!!form[f.key]} disabled={ro} onChange={(e) => set(f.key, e.target.checked)} />

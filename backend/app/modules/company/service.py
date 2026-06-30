@@ -7,15 +7,13 @@ from app.core.utils import generate_code
 from .model import Company
 from .schema import CompanyCreate, CompanyUpdate
 
+FILTERABLE = ["code", "name", "tax_code", "is_active"]
 ENTITY = "company"
 
 
-def list_companies(db: Session, q: str | None, pg: dict):
-    query = db.query(Company)
-    if q:
-        query = query.filter(Company.name.like(f"%{q}%"))
-    total = query.count()
-    items = query.order_by(Company.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
+def list_companies(db: Session, base_query, pg: dict):
+    total = base_query.count()
+    items = base_query.order_by(Company.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
     return total, items
 
 

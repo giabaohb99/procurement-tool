@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
-from app.core.base_controller import pagination
+from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
 
@@ -14,12 +14,13 @@ router = APIRouter(prefix="/api/employees", tags=["employee"])
 
 @router.get("")
 def list_employees(
-    q: str | None = Query(None),
+    request: Request,
     pg: dict = Depends(pagination),
     db: Session = Depends(get_db),
     user=Depends(require("employee", "read")),
 ):
-    total, items = service.list_employees(db, q, pg)
+    query = apply_filters(db.query(service.Employee), service.Employee, request, service.FILTERABLE)
+    total, items = service.list_employees(db, query, pg)
     return success({
         "total": total,
         "items": [EmployeeOut.model_validate(i).model_dump() for i in items],
@@ -59,16 +60,14 @@ def delete_employee(
 @router.get("/export/csv")
 def export_employees_csv(
     ids: str | None = Query(None),
-    q: str | None = Query(None),
+    request: Request = None,
     db: Session = Depends(get_db),
     user=Depends(require("employee", "read")),
 ):
     from app.core.csv_utils import export_csv_response
     from .model import Employee
     
-    query = db.query(Employee)
-    if q:
-        query = query.filter(Employee.full_name.like(f"%{q}%"))
+    query = apply_filters(db.query(Employee), Employee, request, service.FILTERABLE)
     if ids:
         id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
         if id_list:
@@ -117,14 +116,18 @@ def import_employees_csv(
             
         existing = db.query(Employee).filter(Employee.code == code).first() if code else None
         if existing:
-            if full_name: existing.full_name = full_name
-            existing.email = email
-            existing.phone = phone
-            existing.position = position
-            existing.is_active = is_active
-            existing.updated_by = user.id
-            if not is_active: deleted += 1
-            else: updated += 1
+            if action in ["xóa", "delete"]:
+                db.delete(existing)
+                deleted += 1
+            else:
+                if full_name: existing.full_name = full_name
+                existing.email = email
+                existing.phone = phone
+                existing.position = position
+                existing.is_active = is_active
+                existing.updated_by = user.id
+                if not is_active: deleted += 1
+                else: updated += 1
         else:
             if not is_active or not full_name: continue
             if not code: code = generate_code(db, Employee, "NSU")
