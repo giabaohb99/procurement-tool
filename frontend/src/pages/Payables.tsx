@@ -15,7 +15,8 @@ export default function Payables() {
   const [sum, setSum] = useState<any>({ total: 0, paid: 0, remaining: 0, overdue: 0 })
   const [companies, setCompanies] = useState<any[]>([])
   const [suppliers, setSuppliers] = useState<any[]>([])
-  const [f, setF] = useState<any>({ company_id: '', supplier_code: '', source_type: '', status: '', aging: '' })
+  const thisYear = new Date().getFullYear()
+  const [f, setF] = useState<any>({ company_id: '', supplier_code: '', source_type: '', status: '', aging: '', year: String(thisYear) })
   const [sel, setSel] = useState<number[]>([])
   const [err, setErr] = useState('')
 
@@ -106,6 +107,12 @@ export default function Payables() {
           <select value={f.aging} onChange={(e) => setF((s: any) => ({ ...s, aging: e.target.value }))}>
             <option value="">Tất cả</option><option value="Chưa đến hạn">Chưa đến hạn</option>
             <option value="1-30">1-30</option><option value="31-60">31-60</option><option value="61-90">61-90</option><option value=">90">&gt;90</option>
+          </select>
+        </div>
+        <div><label style={{ fontSize: 12, color: 'var(--muted)' }}>Năm</label><br />
+          <select value={f.year} onChange={(e) => setF((s: any) => ({ ...s, year: e.target.value }))}>
+            <option value="all">Tất cả</option>
+            {[thisYear, thisYear - 1, thisYear - 2].map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
         <button className="btn" onClick={load}>Lọc</button>

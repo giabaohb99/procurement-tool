@@ -203,6 +203,8 @@ Lúc user nhập `received_qty` + QC trên 1 lần giao (= nhận hàng), backen
 
 `due_date` mỗi payable = `received_date + số ngày công nợ` lấy từ `supplier.debt_policy` (Tiền mặt = 0 ngày; Công nợ 30/60/90 ngày). `paid_amount=0`, `status='Chờ thanh toán'`.
 
+> **Hiệu năng (đã chốt):** KHÔNG sum-từ-deliveries khi đọc. Mỗi `payable` lưu sẵn `total`/`paid_amount`/**`remaining`** (tính sẵn lúc ghi). Màn Công nợ phân trang ở DB + **mặc định lọc theo năm** (`period`=YYYY, có index) để giới hạn dữ liệu; 4 thẻ tổng dùng **1 truy vấn `SUM` ở DB** (index trên `due_date`/`status`/`period`), không quét toàn bảng. Bảng snapshot vật lý chỉ làm cho **báo cáo lịch sử ở Phase 3** (chạy ngầm), không dùng cho số liệu live (tránh lệch).
+
 ### 4.2 Màn hình CÔNG NỢ (`/payables`) — chỉ xem & lọc, không sửa tay
 Danh sách các khoản nợ (`payable`), 1 dòng = 1 khoản phát sinh từ 1 lần nhận hàng. Cột: NCC · loại (Hàng/Vận chuyển) · Công ty · **Phát sinh từ PO** (`po_code`, click mở PO) · Số HĐ · Ngày phát sinh · Hạn trả · **Tuổi nợ** · Tổng nợ · Đã trả · **Còn lại** · Trạng thái.
 - **Tuổi nợ (aging)** = số ngày từ `due_date` đến hôm nay (nếu đã quá hạn). Phân nhóm hiển thị màu: `Chưa đến hạn` · `1–30` · `31–60` · `61–90` · `>90` ngày quá hạn.

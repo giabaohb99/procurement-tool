@@ -97,7 +97,8 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     filters: [
       { key: 'code', label: 'Mã VTBB/NL' }, { key: 'name', label: 'Tên' },
-      { key: 'item_group', label: 'Phân loại' }, { key: 'unit', label: 'ĐVT' },
+      { key: 'item_group', label: 'Phân loại', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
+      { key: 'unit', label: 'ĐVT', source: { url: '/api/units', value: 'name', label: 'name' } },
     ],
     fields: [
       { key: 'code', label: 'Mã VTBB/NL', readonlyOnEdit: true }, { key: 'name', label: 'Tên' },
@@ -202,7 +203,9 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'status', label: 'Trạng thái', render: (r) => poBadge(r.status) },
     ],
     filters: [
-      { key: 'code', label: 'Mã PO' }, { key: 'supplier_code', label: 'NCC (mã)' }, { key: 'pr_code', label: 'Mã PYC' },
+      { key: 'code', label: 'Mã PO' },
+      { key: 'supplier_code', label: 'Nhà cung cấp', source: { url: '/api/suppliers', value: 'code', label: 'name' } },
+      { key: 'pr_code', label: 'Mã PYC' },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'partial', label: 'Đang giao' },
@@ -221,7 +224,8 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'status', label: 'Trạng thái', render: (r) => poBadge(r.status === 'paid' ? 'received' : r.status) },
     ],
     filters: [
-      { key: 'code', label: 'Mã phiếu' }, { key: 'supplier_code', label: 'NCC (mã)' },
+      { key: 'code', label: 'Mã phiếu' },
+      { key: 'supplier_code', label: 'Nhà cung cấp', source: { url: '/api/suppliers', value: 'code', label: 'name' } },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'paid', label: 'Đã chi' }] },

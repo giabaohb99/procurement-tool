@@ -3,7 +3,7 @@ from fastapi import Query, Request
 
 def pagination(
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=200),
+    page_size: int = Query(20, ge=1, le=5000),  # cho phép tải danh mục đầy đủ để đổ dropdown
 ):
     """Tham số phân trang dùng chung cho mọi danh sách."""
     return {

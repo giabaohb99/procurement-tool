@@ -28,6 +28,7 @@ def calc_due(incur_date: str, days: int) -> str:
 def recalc_status(p: Payable):
     paid = float(p.paid_amount or 0)
     total = float(p.total or 0)
+    p.remaining = round(total - paid, 2)   # tính sẵn, không sum lúc đọc
     if paid <= 0:
         p.status = "Chờ TT"
     elif paid + 0.01 < total:
@@ -53,6 +54,7 @@ def upsert(db: Session, *, source_type: str, ref_id: int, company_id: int, suppl
     p.po_code = po_code
     p.invoice_no = invoice_no
     p.incur_date = incur_date
+    p.period = (incur_date or "")[:4]
     p.due_date = calc_due(incur_date, due_days)
     p.amount = round(amount, 2)
     p.vat = round(vat, 2)

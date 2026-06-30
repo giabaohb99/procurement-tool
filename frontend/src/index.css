@@ -51,10 +51,11 @@ input:focus, select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgb
 .hamburger { display: none; }
 .backdrop { display: none; }
 table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-thead th { background: var(--teal); color: #fff; text-align: left; padding: 11px 14px; font-weight: 600; }
-tbody td { padding: 11px 14px; border-bottom: 1px solid #eef2f5; }
-tbody tr:last-child td { border-bottom: 0; }
-tbody tr:hover { background: #f7fafb; }
+thead th { background: var(--teal); color: #fff; text-align: left; padding: 11px 14px; font-weight: 600; border-right: 1px solid rgba(255,255,255,.18); }
+tbody td { padding: 11px 14px; border-bottom: 1px solid #e6ebf0; border-right: 1px solid #eef2f5; }
+tbody td:last-child, thead th:last-child { border-right: 0; }
+tbody tr:nth-child(even) { background: #fafbfc; }
+tbody tr:hover { background: #f0f7f8; }
 
 .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
 .badge.ok { background: var(--green-bg); color: var(--green); }
@@ -127,9 +128,12 @@ tbody tr:hover { background: #f7fafb; }
 .metric-value { font-size: 24px; font-weight: 700; color: var(--navy); }
 .metric-label { font-size: 13px; color: var(--muted); }
 
-.items-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.items-table th { text-align: left; padding: 8px; background: #f6f8fa; color: var(--ink); font-weight: 600; border-bottom: 1px solid var(--border); }
-.items-table td { padding: 6px 8px; border-bottom: 1px solid #eef2f5; }
+/* Bảng inline kiểu Excel: kẻ viền đầy đủ cột + dòng */
+.items-table { width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid #cdd6e0; }
+.items-table th { text-align: center; padding: 8px; background: #eef2f6; color: var(--ink); font-weight: 600; border: 1px solid #cdd6e0; white-space: nowrap; }
+.items-table td { padding: 6px 8px; border: 1px solid #dde3ea; }
+.items-table tbody tr:nth-child(even) { background: #fafbfc; }
+.items-table tbody tr:hover { background: #eef7f8; }
 .items-table input { height: 32px; width: 100%; }
 
 /* ===== In ấn ===== */

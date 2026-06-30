@@ -69,6 +69,11 @@ export default function PurchaseOrderDetail() {
     setPo((s: any) => ({ ...s, items: s.items.map((it: any, idx: number) => idx === i ? { ...it, ...patch } : it) }))
   const addItems = (n = 1) => setPo((s: any) => ({ ...s, items: [...(s.items || []), ...Array.from({ length: n }, () => ({ ...emptyItem }))] }))
   const delItem = (i: number) => setPo((s: any) => ({ ...s, items: s.items.filter((_: any, idx: number) => idx !== i) }))
+  const dupItem = (i: number) => setPo((s: any) => {
+    const src = s.items[i]
+    const copy = { ...src, id: undefined, qty_received: 0, qty_remaining: 0, line_status: '', deliveries: [] }
+    const items = [...s.items]; items.splice(i + 1, 0, copy); return { ...s, items }
+  })
 
   const rowAmount = (it: any) => (Number(it.qty_order) || 0) * (Number(it.price) || 0) * (1 + (Number(it.vat) || 0) / 100)
   const subtotal = items.reduce((s: number, it: any) => s + (Number(it.qty_order) || 0) * (Number(it.price) || 0), 0)
@@ -163,7 +168,7 @@ export default function PurchaseOrderDetail() {
     await api.post('/api/attachments', fd); loadDeliveryAtt(deliveryId)
   }
 
-  function openDeliveries(i: number) {
+  function openDetail(i: number) {
     setEditingItemIdx(i)
     ;(items[i].deliveries || []).forEach((d: any) => { if (d.id) loadDeliveryAtt(d.id) })
   }
@@ -228,7 +233,6 @@ export default function PurchaseOrderDetail() {
               <div className="form-row"><label>Ngày đặt hàng</label><input type="date" value={po.order_date || ''} disabled={!headerEditable} onChange={(e) => setH('order_date', e.target.value)} /></div>
               <div className="form-row"><label>Bộ phận</label><input value={po.department || ''} disabled={!headerEditable} onChange={(e) => setH('department', e.target.value)} /></div>
               <div className="form-row"><label>NSPT phụ trách</label><input value={po.nspt || ''} disabled={!headerEditable} onChange={(e) => setH('nspt', e.target.value)} /></div>
-              <div className="form-row"><label>VAT (%)</label><input type="number" value={Math.round((Number(po.vat_rate) || 0) * 100)} disabled={!headerEditable} onChange={(e) => setH('vat_rate', Number(e.target.value) / 100)} /></div>
               <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                 <input type="checkbox" checked={!!po.is_urgent} disabled={!headerEditable} onChange={(e) => setH('is_urgent', e.target.checked)} style={{ width: 18, height: 18 }} /> Đơn gấp
               </label></div>
@@ -248,23 +252,19 @@ export default function PurchaseOrderDetail() {
               )}
             </div>
             <div className="items-scroll">
-              <table className="items-table" style={{ minWidth: 1300 }}>
+              <table className="items-table" style={{ minWidth: 980 }}>
                 <thead>
                   <tr>
                     <th style={{ width: 36 }}>#</th>
                     <th style={{ width: 130 }}>Mã hàng</th>
-                    <th style={{ minWidth: 200 }}>Tên hàng *</th>
-                    <th style={{ width: 130 }}>Phân loại</th>
-                    <th style={{ width: 150 }}>Xuất xứ/TSKT</th>
+                    <th style={{ minWidth: 220 }}>Tên hàng *</th>
                     <th style={{ width: 90 }}>ĐVT</th>
-                    <th style={{ width: 90 }}>SL YC</th>
                     <th style={{ width: 100 }}>SL đặt</th>
                     <th style={{ width: 110 }}>Đơn giá</th>
                     <th style={{ width: 80 }}>VAT%</th>
                     <th style={{ width: 130 }}>Thành tiền</th>
                     <th style={{ width: 120 }}>Tiến độ giao</th>
-                    <th style={{ width: 150, textAlign: 'center' }}>Giao hàng</th>
-                    {headerEditable && <th style={{ width: 44 }} />}
+                    <th style={{ width: 120, textAlign: 'center' }}>Hành động</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -277,36 +277,39 @@ export default function PurchaseOrderDetail() {
                         </select>
                       </td>
                       <td>{txt(i, 'product_name', '100%')}</td>
-                      <td>{txt(i, 'item_group', 120)}</td>
-                      <td>{txt(i, 'spec', 140)}</td>
                       <td>
                         <select className="cell-input" style={{ width: 80 }} value={it.unit ?? ''} disabled={!headerEditable} onChange={(e) => setItem(i, { unit: e.target.value })}>
                           <option value="">—</option>{units.map((u) => <option key={u} value={u}>{u}</option>)}
                         </select>
                       </td>
-                      <td>{num(i, 'qty_request', 80)}</td>
                       <td>{num(i, 'qty_order', 90)}</td>
                       <td>{num(i, 'price', 100)}</td>
-                      <td>{num(i, 'vat', 70)}</td>
+                      <td style={{ textAlign: 'center' }}>{(Number(it.vat) || 0)}%</td>
                       <td style={{ textAlign: 'right', fontWeight: 500 }}>{fmt(rowAmount(it))}</td>
                       <td style={{ textAlign: 'center', fontSize: 13 }}>
                         {fmt(it.qty_received || 0)}/{fmt(it.qty_order || 0)}
                         {it.line_status && <div style={{ fontSize: 11, color: 'var(--muted)' }}>{it.line_status}</div>}
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <button className="btn ghost" style={{ height: 30, fontSize: 12 }} disabled={isNew} title={isNew ? 'Lưu PO trước' : ''}
-                                onClick={() => openDeliveries(i)}>
-                          <i className="ti ti-truck-delivery" /> {(it.deliveries?.length || 0)} lần
-                        </button>
+                        <div style={{ display: 'inline-flex', gap: 6 }}>
+                          <button className="icon-btn" title={`Chi tiết & giao hàng (${it.deliveries?.length || 0} lần)`} onClick={() => openDetail(i)}>
+                            <i className="ti ti-edit" style={{ fontSize: 16, color: 'var(--teal)' }} />
+                          </button>
+                          {headerEditable && (
+                            <button className="icon-btn" title="Nhân bản dòng" onClick={() => dupItem(i)}>
+                              <i className="ti ti-copy" style={{ fontSize: 16, color: 'var(--muted)' }} />
+                            </button>
+                          )}
+                          {headerEditable && (
+                            <button className="icon-btn" title="Xóa dòng" onClick={() => { if (confirm('Xóa dòng này?')) delItem(i) }}>
+                              <i className="ti ti-trash" style={{ fontSize: 16, color: 'var(--red)' }} />
+                            </button>
+                          )}
+                        </div>
                       </td>
-                      {headerEditable && (
-                        <td style={{ textAlign: 'center' }}>
-                          <button className="icon-btn" onClick={() => delItem(i)}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>
-                        </td>
-                      )}
                     </tr>
                   ))}
-                  {items.length === 0 && <tr><td colSpan={headerEditable ? 14 : 13} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có dòng nào</td></tr>}
+                  {items.length === 0 && <tr><td colSpan={10} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có dòng nào</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -367,7 +370,7 @@ export default function PurchaseOrderDetail() {
           <div style={{ width: 1100, maxWidth: '100%', background: '#fff', borderRadius: 12, boxShadow: '0 20px 25px -5px rgba(0,0,0,.15)', display: 'flex', flexDirection: 'column', maxHeight: '88vh', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: 16, color: 'var(--navy)' }}>Giao hàng: {items[editingItemIdx].product_name || items[editingItemIdx].product_code}</h3>
+                <h3 style={{ margin: 0, fontSize: 16, color: 'var(--navy)' }}>Chi tiết dòng: {items[editingItemIdx].product_name || items[editingItemIdx].product_code}</h3>
                 <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 2 }}>
                   SL đặt {fmt(items[editingItemIdx].qty_order)} · Đã nhận {fmt(items[editingItemIdx].qty_received || 0)} · Còn lại {fmt((Number(items[editingItemIdx].qty_order) || 0) - (Number(items[editingItemIdx].qty_received) || 0))}
                 </div>
@@ -376,7 +379,41 @@ export default function PurchaseOrderDetail() {
             </div>
 
             <div style={{ padding: 16, overflowY: 'auto', flex: 1 }}>
-              {!deliveryEditable && <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10 }}>⚠️ Chỉ thêm/sửa lần giao khi đơn đã được duyệt.</div>}
+              {/* Thông tin sản phẩm (gồm VAT) */}
+              <h4 style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--navy)' }}>Thông tin sản phẩm</h4>
+              {(() => {
+                const ii = editingItemIdx
+                const it = items[ii]
+                const de = !headerEditable
+                return (
+                  <div className="form-grid" style={{ marginBottom: 18 }}>
+                    <div className="form-row"><label>Mã hàng</label><input value={it.product_code || ''} disabled /></div>
+                    <div className="form-row"><label>Phân loại</label><input value={it.item_group || ''} disabled={de} onChange={(e) => setItem(ii, { item_group: e.target.value })} /></div>
+                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên hàng</label><input value={it.product_name || ''} disabled={de} onChange={(e) => setItem(ii, { product_name: e.target.value })} /></div>
+                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Xuất xứ / TSKT / chất liệu</label><input value={it.spec || ''} disabled={de} onChange={(e) => setItem(ii, { spec: e.target.value })} /></div>
+                    <div className="form-row"><label>ĐVT</label>
+                      <select value={it.unit ?? ''} disabled={de} onChange={(e) => setItem(ii, { unit: e.target.value })}>
+                        <option value="">—</option>{units.map((u) => <option key={u} value={u}>{u}</option>)}
+                      </select>
+                    </div>
+                    <div className="form-row"><label>Kho nhận mặc định</label>
+                      <select value={it.warehouse_code ?? ''} disabled={de} onChange={(e) => setItem(ii, { warehouse_code: e.target.value })}>
+                        <option value="">—</option>{warehouses.map((w) => <option key={w.id} value={w.code}>{w.code} — {w.name}</option>)}
+                      </select>
+                    </div>
+                    <div className="form-row"><label>SL yêu cầu</label><input type="number" value={it.qty_request ?? 0} disabled={de} onChange={(e) => setItem(ii, { qty_request: Number(e.target.value) })} /></div>
+                    <div className="form-row"><label>SL đặt NCC</label><input type="number" value={it.qty_order ?? 0} disabled={de} onChange={(e) => setItem(ii, { qty_order: Number(e.target.value) })} /></div>
+                    <div className="form-row"><label>Đơn giá</label><input type="number" value={it.price ?? 0} disabled={de} onChange={(e) => setItem(ii, { price: Number(e.target.value) })} /></div>
+                    <div className="form-row"><label>VAT (%)</label><input type="number" value={it.vat ?? 0} disabled={de} onChange={(e) => setItem(ii, { vat: Number(e.target.value) })} /></div>
+                    <div className="form-row"><label>Thành tiền</label><input value={fmt(rowAmount(it))} disabled /></div>
+                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><input value={it.note || ''} disabled={de} onChange={(e) => setItem(ii, { note: e.target.value })} /></div>
+                  </div>
+                )
+              })()}
+
+              <h4 style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--navy)', borderTop: '1px solid var(--border)', paddingTop: 14 }}>Giao hàng (nhiều lần)</h4>
+              {isNew && <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10 }}>⚠️ Lưu đơn (Tạo) trước rồi mới thêm lần giao.</div>}
+              {!isNew && !deliveryEditable && <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10 }}>⚠️ Chỉ thêm/sửa lần giao khi đơn đã được duyệt.</div>}
               {deliveryEditable && (
                 <button className="btn ghost" style={{ height: 30, fontSize: 13, marginBottom: 10 }} onClick={() => addDelivery(editingItemIdx)}><i className="ti ti-plus" />Thêm lần giao</button>
               )}
@@ -456,7 +493,7 @@ export default function PurchaseOrderDetail() {
 
             <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button className="btn ghost" style={{ height: 36, fontSize: 13 }} onClick={() => setEditingItemIdx(null)}>Đóng</button>
-              {(headerEditable || deliveryEditable) && <button className="btn" style={{ height: 36, fontSize: 13 }} onClick={() => { setEditingItemIdx(null); save() }}>Lưu & cập nhật tồn/công nợ</button>}
+              {(headerEditable || deliveryEditable) && <button className="btn" style={{ height: 36, fontSize: 13 }} onClick={() => { setEditingItemIdx(null); save() }}>Lưu đơn</button>}
             </div>
           </div>
         </div>

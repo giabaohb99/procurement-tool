@@ -21,10 +21,12 @@ class Payable(Base, AuditMixin):
     po_id: Mapped[int] = mapped_column(BigInteger, default=0)
     po_code: Mapped[str] = mapped_column(String(50), default="", index=True)
     invoice_no: Mapped[str] = mapped_column(String(50), default="")
-    incur_date: Mapped[str] = mapped_column(String(10), default="")    # ngày phát sinh (= ngày nhận)
-    due_date: Mapped[str] = mapped_column(String(10), default="")      # hạn trả
+    incur_date: Mapped[str] = mapped_column(String(10), default="", index=True)  # ngày phát sinh (= ngày nhận)
+    period: Mapped[str] = mapped_column(String(7), default="", index=True)        # YYYY (lọc/nhóm theo năm)
+    due_date: Mapped[str] = mapped_column(String(10), default="", index=True)     # hạn trả
     amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)   # trước VAT
     vat: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
     total: Mapped[float] = mapped_column(Numeric(18, 2), default=0)    # phải trả = amount + vat
     paid_amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
-    status: Mapped[str] = mapped_column(String(20), default="Chờ TT")  # Chờ TT | Trả một phần | Đã TT
+    remaining: Mapped[float] = mapped_column(Numeric(18, 2), default=0)  # tính sẵn = total - paid
+    status: Mapped[str] = mapped_column(String(20), default="Chờ TT", index=True)  # Chờ TT | Trả một phần | Đã TT

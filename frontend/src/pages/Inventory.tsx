@@ -88,26 +88,35 @@ export default function Inventory() {
 
       {showAdjust && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowAdjust(false)}>
-          <div style={{ width: 460, background: '#fff', borderRadius: 12, padding: 20 }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ width: 440, maxWidth: '100%', background: '#fff', borderRadius: 12, padding: 20 }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ marginTop: 0, color: 'var(--navy)' }}>Điều chỉnh tồn kho</h3>
-            <div className="form-grid">
-              <div className="form-row"><label>Công ty</label>
-                <select value={adj.company_id || ''} onChange={(e) => setAdj((s: any) => ({ ...s, company_id: Number(e.target.value) }))}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Công ty</label>
+                <select style={{ width: '100%' }} value={adj.company_id || ''} onChange={(e) => setAdj((s: any) => ({ ...s, company_id: Number(e.target.value) }))}>
                   <option value="">-- Chọn --</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
-              <div className="form-row"><label>Kho</label>
-                <select value={adj.warehouse_code || ''} onChange={(e) => setAdj((s: any) => ({ ...s, warehouse_code: e.target.value }))}>
+              <div>
+                <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Kho</label>
+                <select style={{ width: '100%' }} value={adj.warehouse_code || ''} onChange={(e) => setAdj((s: any) => ({ ...s, warehouse_code: e.target.value }))}>
                   <option value="">-- Chọn --</option>{warehouses.map((w) => <option key={w.id} value={w.code}>{w.code} — {w.name}</option>)}
                 </select>
               </div>
-              <div className="form-row"><label>Sản phẩm</label>
-                <select value={adj.product_code || ''} onChange={(e) => onAdjProduct(e.target.value)}>
+              <div>
+                <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Sản phẩm</label>
+                <select style={{ width: '100%' }} value={adj.product_code || ''} onChange={(e) => onAdjProduct(e.target.value)}>
                   <option value="">-- Chọn --</option>{products.map((p) => <option key={p.id} value={p.code}>{p.code} — {p.name}</option>)}
                 </select>
               </div>
-              <div className="form-row"><label>Số lượng điều chỉnh (+/−)</label><input type="number" value={adj.qty} onChange={(e) => setAdj((s: any) => ({ ...s, qty: e.target.value }))} /></div>
-              <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Lý do</label><input value={adj.note} onChange={(e) => setAdj((s: any) => ({ ...s, note: e.target.value }))} /></div>
+              <div>
+                <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Số lượng điều chỉnh (+/−)</label>
+                <input style={{ width: '100%' }} type="number" value={adj.qty} onChange={(e) => setAdj((s: any) => ({ ...s, qty: e.target.value }))} />
+              </div>
+              <div>
+                <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Lý do</label>
+                <input style={{ width: '100%' }} value={adj.note} onChange={(e) => setAdj((s: any) => ({ ...s, note: e.target.value }))} />
+              </div>
             </div>
             {err && <div className="err" style={{ marginTop: 8 }}>{err}</div>}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
