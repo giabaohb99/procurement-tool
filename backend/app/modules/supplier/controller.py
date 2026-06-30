@@ -76,7 +76,7 @@ def export_suppliers_csv(
     items = query.order_by(Supplier.id.desc()).all()
 
     headers_map = {
-        "code": "Mã NCC",
+        "code": "ID",
         "name": "Tên pháp lý",
         "tax_code": "MST",
         "address": "Địa chỉ",
@@ -113,7 +113,7 @@ def import_suppliers_csv(
         action = row.get("Hành động", "").strip().lower()
         is_active = action not in ["xóa", "delete", "ngừng"]
 
-        code = row.get("Mã NCC", "").strip()
+        code = row.get("ID", "").strip()
         name = row.get("Tên pháp lý", "").strip()
         if not code or not name:
             continue

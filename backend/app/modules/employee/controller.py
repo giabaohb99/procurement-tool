@@ -76,7 +76,7 @@ def export_employees_csv(
             
     items = query.order_by(Employee.id.desc()).all()
     headers_map = {
-        "code": "Mã NV",
+        "code": "ID",
         "full_name": "Họ tên",
         "email": "Email",
         "phone": "SĐT",
@@ -106,7 +106,7 @@ def import_employees_csv(
         action = row.get("Hành động", "").strip().lower()
         is_active = action not in ["xóa", "delete", "ngừng"]
         
-        code = row.get("Mã NV", "").strip()
+        code = row.get("ID", "").strip()
         full_name = row.get("Họ tên", "").strip()
         email = row.get("Email", "").strip()
         phone = row.get("SĐT", "").strip()

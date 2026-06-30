@@ -73,7 +73,7 @@ def export_companies_csv(
             
     items = query.order_by(Company.id.desc()).all()
     headers_map = {
-        "code": "Mã",
+        "code": "ID",
         "name": "Tên",
         "tax_code": "MST",
         "address": "Địa chỉ",
@@ -103,7 +103,7 @@ def import_companies_csv(
         action = row.get("Hành động", "").strip().lower()
         is_active = action not in ["xóa", "delete", "ngừng"]
         
-        code = row.get("Mã", "").strip()
+        code = row.get("ID", "").strip()
         name = row.get("Tên", "").strip()
         tax_code = row.get("MST", "").strip()
         address = row.get("Địa chỉ", "").strip()
