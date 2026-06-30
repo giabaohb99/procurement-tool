@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 
 class CompanyBase(BaseModel):
-    code: str
+    code: str = ""
     name: str
     tax_code: str = ""
     address: str = ""

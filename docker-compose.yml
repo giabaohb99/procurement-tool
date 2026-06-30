@@ -31,15 +31,10 @@ services:
       context: .
       dockerfile: docker/Dockerfile.api
     env_file: .env
-    environment:
-      DB_HOST: db
     volumes:
       - ./backend:/app          # mount code -> hot reload, không cần build lại
     ports:
       - "8000:8000"
-    depends_on:
-      db:
-        condition: service_healthy
 
   web:
     build:

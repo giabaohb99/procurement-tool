@@ -7,16 +7,21 @@ from .schema import (BrandCreate, BrandOut, BrandUpdate, ItemGroupCreate,
 
 warehouse_router = make_crud_router(
     "/api/warehouses", "warehouse", Warehouse,
-    WarehouseCreate, WarehouseUpdate, WarehouseOut, ["code", "name"])
+    WarehouseCreate, WarehouseUpdate, WarehouseOut, ["code", "name"], 
+    code_prefix=None, csv_headers={"code": "Mã", "name": "Tên kho", "address": "Địa chỉ"})
 
 unit_router = make_crud_router(
     "/api/units", "unit", Unit,
-    UnitCreate, UnitUpdate, UnitOut, ["code", "name"])
+    UnitCreate, UnitUpdate, UnitOut, ["code", "name"], 
+    code_prefix="DVT", csv_headers={"code": "Mã", "name": "Tên ĐVT"})
 
 item_group_router = make_crud_router(
     "/api/item-groups", "item_group", ItemGroup,
-    ItemGroupCreate, ItemGroupUpdate, ItemGroupOut, ["name"], unique_field="name")
+    ItemGroupCreate, ItemGroupUpdate, ItemGroupOut, ["code", "name"], 
+    unique_field="code", code_prefix="PLO", 
+    csv_headers={"code": "Mã", "name": "Phân loại", "std_days": "Số ngày quy định", "apply_date": "Ngày áp dụng", "note": "Ghi chú"})
 
 brand_router = make_crud_router(
     "/api/brands", "brand", Brand,
-    BrandCreate, BrandUpdate, BrandOut, ["code", "department"])
+    BrandCreate, BrandUpdate, BrandOut, ["code", "department"], 
+    code_prefix="PBA", csv_headers={"code": "Viết tắt", "department": "Bộ phận đặt hàng"})

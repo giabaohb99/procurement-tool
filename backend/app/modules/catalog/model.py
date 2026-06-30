@@ -22,6 +22,7 @@ class Unit(Base, AuditMixin):
 class ItemGroup(Base, AuditMixin):
     """Phân loại VTBB/NL + thời gian quy định (Sheet phân loại)."""
     __tablename__ = "tab_item_group"
+    code: Mapped[str] = mapped_column(String(25), unique=True, default="")
     name: Mapped[str] = mapped_column(String(100), unique=True)
     std_days: Mapped[str] = mapped_column(String(20), default="")   # thời gian quy định (ngày)
     note: Mapped[str] = mapped_column(Text, default="")

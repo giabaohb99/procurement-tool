@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.utils import generate_code
 
 from .model import Company
 from .schema import CompanyCreate, CompanyUpdate
@@ -26,7 +27,9 @@ def get_company(db: Session, cid: int) -> Company:
 
 
 def create_company(db: Session, data: CompanyCreate, user_id: int) -> Company:
-    if db.query(Company).filter(Company.code == data.code).first():
+    if not data.code:
+        data.code = generate_code(db, Company, "CTY")
+    elif db.query(Company).filter(Company.code == data.code).first():
         raise HTTPException(400, "Mã công ty đã tồn tại")
     obj = Company(**data.model_dump(), created_by=user_id, updated_by=user_id)
     db.add(obj)
