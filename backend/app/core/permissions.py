@@ -8,7 +8,7 @@ ENTITIES = [
     "warehouse", "unit", "item_group", "brand",
     "supplier", "product", "contract",
     "purchase_request", "survey", "purchase_order", "goods_receipt",
-    "inventory", "payable", "payment",
+    "inventory", "payable", "payment", "payment_request",
     "report", "setting",
 ]
 
@@ -35,6 +35,7 @@ ENTITY_LABELS = {
     "inventory": "Kho / Tồn",
     "payable": "Công nợ",
     "payment": "Thanh toán",
+    "payment_request": "Yêu cầu thanh toán",
     "report": "Báo cáo",
     "setting": "Cấu hình hệ thống",
 }

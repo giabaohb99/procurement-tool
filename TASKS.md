@@ -33,10 +33,13 @@
 - [x] Survey NCC + SP (form + bảng con inline đủ cột Sheet 3/4 + LAB + duyệt)
 - [ ] Email cơ bản (giao việc, chờ duyệt, kết quả)
 
-## Phase 2 — Mua hàng + Nhận hàng (GR)
-- [ ] Purchase Order (+ items) · duyệt theo ngưỡng · in PO (PDF)
-- [ ] PO Delivery (giao nhiều lần) + vận chuyển (chi phí riêng)
-- [ ] Goods Receipt + QC + tồn kho (theo company)
+## Phase 2 — Mua hàng + Nhận hàng (GR) + Tồn + Công nợ + Thanh toán
+- [x] Purchase Order (header + items) · luồng Nháp→Gửi→Duyệt/Từ chối · in PO (A4 ngang)
+- [x] PO Delivery (giao nhiều lần, trong popup từng dòng) + vận chuyển (cước riêng) + đính kèm phiếu giao
+- [x] Goods Receipt ngầm + QC + tồn kho theo company/kho (chỉ nhập + điều chỉnh tay)
+- [x] Công nợ tự sinh 2 luồng (hàng/vận chuyển) + màn Công nợ (tuổi nợ, filter, summary)
+- [x] Yêu cầu thanh toán (1 NCC/phiếu, gom nhiều PO, tự tách theo NCC, in được)
+- [ ] Duyệt PO theo ngưỡng (đang dùng luồng duyệt cơ bản; ngưỡng để Phase 5)
 
 ## Phase 3 — Cảnh báo & thông báo (Celery + Redis)
 - [ ] Celery worker + beat + Redis (thêm service docker)
@@ -44,7 +47,7 @@
 - [ ] Báo cáo chạy ngầm (bảng snapshot)
 
 ## Phase 4 — Công nợ · Báo cáo · Hợp đồng
-- [ ] Công nợ 2 luồng (hàng/vận chuyển) + thanh toán gom (nút trên màn + đính kèm)
+- [x] Công nợ 2 luồng (hàng/vận chuyển) + yêu cầu thanh toán gom + đính kèm (làm sớm ở Phase 2)
 - [ ] Báo cáo tiến độ/KPI/chi phí · Hợp đồng + cảnh báo hết hạn
 
 ## Phase 5 — Quản trị nâng cao

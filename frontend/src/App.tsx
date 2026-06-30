@@ -8,6 +8,12 @@ import CrudDetail from './components/CrudDetail'
 import PurchaseRequestDetail from './pages/PurchaseRequestDetail'
 import PrintPurchaseRequest from './pages/PrintPurchaseRequest'
 import SurveyDetail from './pages/SurveyDetail'
+import PurchaseOrderDetail from './pages/PurchaseOrderDetail'
+import PrintPurchaseOrder from './pages/PrintPurchaseOrder'
+import Inventory from './pages/Inventory'
+import Payables from './pages/Payables'
+import PaymentRequestDetail from './pages/PaymentRequestDetail'
+import PrintPaymentRequest from './pages/PrintPaymentRequest'
 
 function Protected({ children }: { children: JSX.Element }) {
   const { user } = useAuth()
@@ -21,11 +27,17 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/print/purchase-request/:id" element={<Protected><PrintPurchaseRequest /></Protected>} />
+          <Route path="/print/purchase-order/:id" element={<Protected><PrintPurchaseOrder /></Protected>} />
+          <Route path="/print/payment-request/:id" element={<Protected><PrintPaymentRequest /></Protected>} />
           <Route path="/" element={<Protected><AppLayout /></Protected>}>
             <Route index element={<Dashboard />} />
             <Route path="purchase-requests/:id" element={<PurchaseRequestDetail />} />
             <Route path="surveys-supplier/:id" element={<SurveyDetail type="supplier" />} />
             <Route path="surveys-product/:id" element={<SurveyDetail type="product" />} />
+            <Route path="purchase-orders/:id" element={<PurchaseOrderDetail />} />
+            <Route path="payment-requests/:id" element={<PaymentRequestDetail />} />
+            <Route path="inventory" element={<Inventory />} />
+            <Route path="payables" element={<Payables />} />
             <Route path=":entity" element={<CrudList />} />
             <Route path=":entity/:id" element={<CrudDetail />} />
           </Route>

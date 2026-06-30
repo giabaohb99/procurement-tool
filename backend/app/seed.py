@@ -19,11 +19,19 @@ from app.modules.employee.model import Employee
 from app.modules.product.model import Product
 from app.modules.purchase_request.model import (PurchaseRequest,  # noqa: F401
                                                 PurchaseRequestItem)
+from app.modules.purchase_order.model import (PurchaseOrder,  # noqa: F401
+                                              POItem, PODelivery)
+from app.modules.goods_receipt.model import GoodsReceipt  # noqa: F401
+from app.modules.inventory.model import Inventory, InventoryMove  # noqa: F401
+from app.modules.payable.model import Payable  # noqa: F401
+from app.modules.payment_request.model import (PaymentRequest,  # noqa: F401
+                                               PaymentRequestLine)
 from app.modules.role.model import Permission, Role
 from app.modules.supplier.model import Supplier
 from app.modules.survey.model import (Survey, SurveyProductLine,  # noqa: F401
                                       SurveySupplierLine)
 from app.modules.user.model import User, UserRole
+from app.modules.notification.model import Notification, EmailLog  # noqa: F401
 
 
 SAMPLE_COMPANIES = [
@@ -166,7 +174,7 @@ def run():
 
         user = db.query(User).filter(User.employee_id == emp.id).first()
         if not user:
-            user = User(email="admin@dego.local", employee_id=emp.id,
+            user = User(email="hgbao.idagroup@gmail.com", employee_id=emp.id,
                         password_hash=hash_password(settings.ADMIN_PASSWORD), is_active=True)
             db.add(user)
             db.commit()

@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, BackgroundTasks
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.orm import Session
 
@@ -8,6 +8,7 @@ from app.core.auth import require
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
+from app.modules.notification.service import trigger_notification
 
 from . import service
 from .model import Survey
@@ -66,16 +67,48 @@ def _build_router(survey_type: str, prefix: str, CreateSchema, UpdateSchema):
         return success(None, "Đã xóa")
 
     @router.post("/{sid}/submit")
-    def submit_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey", "write"))):
-        return success(_out(db, service.set_status(db, sid, "submitted", user.id)), "Đã gửi duyệt")
+    def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("survey", "write"))):
+        s = service.set_status(db, sid, "submitted", user.id)
+        trigger_notification(
+            db=db,
+            event="survey_submitted",
+            doc_type="survey",
+            doc_code=s.code,
+            creator_id=s.created_by or user.id,
+            background_tasks=background_tasks,
+            link=f"/surveys-{survey_type}/{s.id}"
+        )
+        return success(_out(db, s), "Đã gửi duyệt")
 
     @router.post("/{sid}/approve")
-    def approve_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey", "approve"))):
-        return success(_out(db, service.set_status(db, sid, "approved", user.id)), "Đã duyệt")
+    def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("survey", "approve"))):
+        s = service.set_status(db, sid, "approved", user.id)
+        trigger_notification(
+            db=db,
+            event="survey_approved",
+            doc_type="survey",
+            doc_code=s.code,
+            creator_id=s.created_by or user.id,
+            background_tasks=background_tasks,
+            approve_note=s.approve_note or "",
+            link=f"/surveys-{survey_type}/{s.id}"
+        )
+        return success(_out(db, s), "Đã duyệt")
 
     @router.post("/{sid}/reject")
-    def reject_(sid: int, data: RejectIn, db: Session = Depends(get_db), user=Depends(require("survey", "approve"))):
-        return success(_out(db, service.set_status(db, sid, "rejected", user.id, data.reason)), "Đã từ chối")
+    def reject_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("survey", "approve"))):
+        s = service.set_status(db, sid, "rejected", user.id, data.reason)
+        trigger_notification(
+            db=db,
+            event="survey_rejected",
+            doc_type="survey",
+            doc_code=s.code,
+            creator_id=s.created_by or user.id,
+            background_tasks=background_tasks,
+            reason=data.reason or "",
+            link=f"/surveys-{survey_type}/{s.id}"
+        )
+        return success(_out(db, s), "Đã từ chối")
 
     return router
 

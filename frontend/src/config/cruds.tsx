@@ -38,6 +38,20 @@ export const prBadge = (st: string) => {
   return <span className={'badge ' + s.cls}>{s.label}</span>
 }
 
+export const PO_STATUS: Record<string, { label: string; cls: string }> = {
+  draft: { label: 'Nháp', cls: 'gray' },
+  submitted: { label: 'Chờ duyệt', cls: 'warn' },
+  approved: { label: 'Đã duyệt', cls: 'ok' },
+  partial: { label: 'Đang giao', cls: 'warn' },
+  received: { label: 'Đã nhận đủ', cls: 'ok' },
+  rejected: { label: 'Từ chối', cls: 'err' },
+  cancelled: { label: 'Đã hủy', cls: 'err' },
+}
+export const poBadge = (st: string) => {
+  const s = PO_STATUS[st] || { label: st, cls: 'gray' }
+  return <span className={'badge ' + s.cls}>{s.label}</span>
+}
+
 export const cruds: Record<string, CrudConfig> = {
   companies: {
     slug: 'companies', entity: 'company', title: 'Công ty (pháp nhân)', apiPath: '/api/companies',
@@ -175,6 +189,44 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Viết tắt', readonlyOnEdit: true }, { key: 'department', label: 'Bộ phận đặt hàng' },
       { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
     ],
+  },
+  'purchase-orders': {
+    slug: 'purchase-orders', entity: 'purchase_order', title: 'Đơn mua hàng (PO)', apiPath: '/api/purchase-orders',
+    columns: [
+      { key: 'code', label: 'Mã PO' },
+      { key: 'order_date', label: 'Ngày đặt' },
+      { key: 'supplier_name', label: 'Nhà cung cấp', render: (r) => r.supplier_name || r.supplier_code },
+      { key: 'pr_code', label: 'Mã PYC' },
+      { key: 'amount', label: 'Tiền hàng', render: (r) => (r.amount ? Number(r.amount).toLocaleString('vi-VN') + ' đ' : '0 đ') },
+      { key: 'is_urgent', label: 'Gấp', render: (r) => (r.is_urgent ? <span className="badge warn">Gấp</span> : '—') },
+      { key: 'status', label: 'Trạng thái', render: (r) => poBadge(r.status) },
+    ],
+    filters: [
+      { key: 'code', label: 'Mã PO' }, { key: 'supplier_code', label: 'NCC (mã)' }, { key: 'pr_code', label: 'Mã PYC' },
+      { key: 'status', label: 'Trạng thái', type: 'select', options: [
+        { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
+        { value: 'approved', label: 'Đã duyệt' }, { value: 'partial', label: 'Đang giao' },
+        { value: 'received', label: 'Đã nhận đủ' }, { value: 'rejected', label: 'Từ chối' }] },
+    ],
+    fields: [],  // chi tiết dùng trang riêng (PurchaseOrderDetail)
+  },
+  'payment-requests': {
+    slug: 'payment-requests', entity: 'payment_request', title: 'Yêu cầu thanh toán', apiPath: '/api/payment-requests',
+    columns: [
+      { key: 'code', label: 'Mã phiếu' },
+      { key: 'request_date', label: 'Ngày lập' },
+      { key: 'supplier_name', label: 'Nhà cung cấp', render: (r) => r.supplier_name || r.supplier_code },
+      { key: 'source_type', label: 'Loại', render: (r) => (r.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa') },
+      { key: 'total', label: 'Số tiền', render: (r) => (r.total ? Number(r.total).toLocaleString('vi-VN') + ' đ' : '0 đ') },
+      { key: 'status', label: 'Trạng thái', render: (r) => poBadge(r.status === 'paid' ? 'received' : r.status) },
+    ],
+    filters: [
+      { key: 'code', label: 'Mã phiếu' }, { key: 'supplier_code', label: 'NCC (mã)' },
+      { key: 'status', label: 'Trạng thái', type: 'select', options: [
+        { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
+        { value: 'approved', label: 'Đã duyệt' }, { value: 'paid', label: 'Đã chi' }] },
+    ],
+    fields: [],
   },
   'surveys-supplier': {
     slug: 'surveys-supplier', entity: 'survey', title: 'Khảo sát Nhà cung cấp', apiPath: '/api/surveys-supplier',

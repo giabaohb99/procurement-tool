@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
+from app.modules.notification.service import trigger_notification
 
 from sqlalchemy import func
 from . import service
@@ -91,19 +92,53 @@ def delete_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("pur
 
 
 @router.post("/{pid}/submit")
-def submit_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "write"))):
-    return success(_out(db, service.set_status(db, pid, "submitted", user.id)), "Đã gửi duyệt")
+def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "write"))):
+    pr = service.set_status(db, pid, "submitted", user.id)
+    trigger_notification(
+        db=db,
+        event="pr_submitted",
+        doc_type="purchase_request",
+        doc_code=pr.code,
+        creator_id=pr.created_by or user.id,
+        background_tasks=background_tasks,
+        is_urgent=bool(pr.is_urgent),
+        link=f"/purchase-requests/{pr.id}"
+    )
+    return success(_out(db, pr), "Đã gửi duyệt")
 
 
 @router.post("/{pid}/approve")
-def approve_pr(pid: int, data: ApproveIn, db: Session = Depends(get_db), user=Depends(require("purchase_request", "approve"))):
+def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "approve"))):
     pr = service.set_status(db, pid, "approved", user.id)
     if data.assignee_id:
         pr.assignee_id = data.assignee_id
         db.commit()
+    trigger_notification(
+        db=db,
+        event="pr_approved",
+        doc_type="purchase_request",
+        doc_code=pr.code,
+        creator_id=pr.created_by or user.id,
+        background_tasks=background_tasks,
+        is_urgent=bool(pr.is_urgent),
+        approve_note=pr.note or "",
+        link=f"/purchase-requests/{pr.id}"
+    )
     return success(_out(db, pr), "Đã duyệt")
 
 
 @router.post("/{pid}/reject")
-def reject_pr(pid: int, data: RejectIn, db: Session = Depends(get_db), user=Depends(require("purchase_request", "approve"))):
-    return success(_out(db, service.set_status(db, pid, "rejected", user.id, data.reason)), "Đã từ chối")
+def reject_pr(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "approve"))):
+    pr = service.set_status(db, pid, "rejected", user.id, data.reason)
+    trigger_notification(
+        db=db,
+        event="pr_rejected",
+        doc_type="purchase_request",
+        doc_code=pr.code,
+        creator_id=pr.created_by or user.id,
+        background_tasks=background_tasks,
+        is_urgent=bool(pr.is_urgent),
+        reason=data.reason or "",
+        link=f"/purchase-requests/{pr.id}"
+    )
+    return success(_out(db, pr), "Đã từ chối")
