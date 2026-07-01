@@ -54,7 +54,7 @@ def build(db: Session) -> dict:
         if not c.end_date:
             continue
         link = "/contracts"
-        who = c.supplier_name or c.supplier_code
+        who = c.party_name or c.party_code
         if c.end_date < tstr:
             items.append({"type": "contract", "level": "danger", "title": f"Hợp đồng HẾT HẠN: {c.code} · {who} ({c.end_date})", "link": link})
         elif d_le(c.end_date, 30):

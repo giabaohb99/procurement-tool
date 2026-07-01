@@ -62,7 +62,7 @@ export default function AppLayout() {
     <div className="app">
       {open && <div className="backdrop" onClick={() => setOpen(false)} />}
       <aside className={'sidebar' + (open ? ' open' : '')}>
-        <div className="brand"><i className="ti ti-building-warehouse" />Thu Mua Tool</div>
+        <div className="brand"><div className="brand-logo"><img src="/logo.svg" alt="DEGO Holding" /></div></div>
         {NAV_GROUPS.map((g, gi) => {
           const isCol = g.collapsible && g.key && collapsed[g.key]
           return (

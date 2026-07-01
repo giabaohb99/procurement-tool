@@ -19,7 +19,7 @@ export default function SupplierDetail() {
   const isNew = id === 'new'
   const { can } = useAuth()
   const navigate = useNavigate()
-  const [sup, setSup] = useState<any>({ code: '', name: '', legal_type: '', tax_code: '', address: '', supplier_type: 'goods', contact_person: '', phone: '', payment_terms: '', bank_account: '', bank_name: '', vat: 0.08, is_active: true })
+  const [sup, setSup] = useState<any>({ code: '', name: '', legal_type: '', tax_code: '', address: '', supplier_type: 'goods', contact_person: '', phone: '', payment_terms: '', bank_account: '', bank_name: '', vat: 8, is_active: true })
   const [tab, setTab] = useState('info')
   const [contracts, setContracts] = useState<any[]>([])
   const [payables, setPayables] = useState<any[]>([])
@@ -40,21 +40,40 @@ export default function SupplierDetail() {
   }
   useEffect(() => {
     if (isNew) return
-    api.get(`/api/suppliers/${id}`).then((r) => { setSup(r.data.data); loadRelated(r.data.data) })
+    api.get(`/api/suppliers/${id}`).then((r) => {
+      const data = r.data.data
+      data.vat = data.vat !== undefined ? data.vat * 100 : 8
+      setSup(data)
+      loadRelated(data)
+    })
   }, [id])
 
   const setH = (k: string, v: any) => setSup((s: any) => ({ ...s, [k]: v }))
   async function save() {
     setErr(''); setMsg('')
+    if (!String(sup.code || '').trim()) {
+      setErr('Mã / viết tắt không được để trống')
+      return
+    }
+    if (!String(sup.name || '').trim()) {
+      setErr('Tên pháp lý không được để trống')
+      return
+    }
+    const vatNum = Number(sup.vat)
+    if (isNaN(vatNum) || vatNum < 0 || vatNum > 100) {
+      setErr('VAT (%) phải là số từ 0 đến 100')
+      return
+    }
+
     const body = {
       name: sup.name, legal_type: sup.legal_type, tax_code: sup.tax_code, address: sup.address,
       supplier_type: sup.supplier_type, contact_person: sup.contact_person, phone: sup.phone,
       payment_terms: sup.payment_terms, bank_account: sup.bank_account, bank_name: sup.bank_name,
-      vat: Number(sup.vat) || 0, is_active: sup.is_active,
+      vat: vatNum / 100, is_active: sup.is_active,
     }
     try {
       if (isNew) { const r = await api.post('/api/suppliers', { code: sup.code, ...body }); navigate(`/suppliers/${r.data.data.id}`) }
-      else { await api.patch(`/api/suppliers/${id}`, body); setMsg('Đã lưu'); }
+      else { await api.patch(`/api/suppliers/${id}`, body); setMsg('Đã lưu thành công'); }
     } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
   }
   async function remove() {
@@ -77,7 +96,7 @@ export default function SupplierDetail() {
         </span>
         <span style={{ flex: 1 }} />
         {tab === 'info' && can('supplier', isNew ? 'create' : 'write') && <button className="btn" onClick={save}>{isNew ? 'Tạo' : 'Lưu'}</button>}
-        {!isNew && tab === 'info' && can('supplier', 'delete') && <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={remove}><i className="ti ti-trash" />Xóa</button>}
+        {!isNew && tab === 'info' && can('supplier', 'delete') && <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={remove}><i className="ti ti-trash" />Xóa nhà cung cấp</button>}
       </div>
 
       {!isNew && (
@@ -89,30 +108,97 @@ export default function SupplierDetail() {
       )}
 
       {tab === 'info' && (
-        <div className="card" style={{ padding: 18 }}>
-          <div className="form-grid">
-            <div className="form-row"><label>Mã / viết tắt</label><input value={sup.code || ''} disabled={!isNew} onChange={(e) => setH('code', e.target.value)} /></div>
-            <div className="form-row"><label>Vai trò cung cấp</label>
-              <select value={sup.supplier_type} onChange={(e) => setH('supplier_type', e.target.value)}>{SUP_TYPE.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {/* Card 1: Thông tin pháp lý & Vai trò */}
+          <div className="card" style={{ padding: 18 }}>
+            <h3 style={{ fontSize: 15, marginBottom: 14, color: 'var(--navy)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
+              <i className="ti ti-id" style={{ fontSize: 18, color: 'var(--teal)' }} />Thông tin pháp lý & Vai trò
+            </h3>
+            <div className="form-grid">
+              <div className="form-row">
+                <label>Mã / viết tắt *</label>
+                <input value={sup.code || ''} disabled={!isNew} onChange={(e) => setH('code', e.target.value)} placeholder="Nhập mã nhà cung cấp..." />
+              </div>
+              <div className="form-row">
+                <label>Vai trò cung cấp *</label>
+                <select value={sup.supplier_type} onChange={(e) => setH('supplier_type', e.target.value)}>
+                  {SUP_TYPE.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+              <div className="form-row" style={{ gridColumn: '1 / -1' }}>
+                <label>Tên pháp lý *</label>
+                <input value={sup.name || ''} onChange={(e) => setH('name', e.target.value)} placeholder="Nhập tên công ty hoặc cá nhân pháp lý..." />
+              </div>
+              <div className="form-row" style={{ gridColumn: '1 / -1' }}>
+                <label>Loại nhà cung cấp</label>
+                <select value={sup.legal_type || ''} onChange={(e) => setH('legal_type', e.target.value)}>
+                  <option value="">— Chọn —</option>
+                  {LEGAL_TYPE.map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
             </div>
-            <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên pháp lý</label><input value={sup.name || ''} onChange={(e) => setH('name', e.target.value)} /></div>
-            <div className="form-row"><label>Loại nhà cung cấp</label>
-              <select value={sup.legal_type || ''} onChange={(e) => setH('legal_type', e.target.value)}>
-                <option value="">— Chọn —</option>{LEGAL_TYPE.map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
-            </div>
-            <div className="form-row"><label>Mã số thuế</label><input value={sup.tax_code || ''} onChange={(e) => setH('tax_code', e.target.value)} /></div>
-            <div className="form-row"><label>Người liên hệ</label><input value={sup.contact_person || ''} onChange={(e) => setH('contact_person', e.target.value)} /></div>
-            <div className="form-row"><label>Điện thoại</label><input value={sup.phone || ''} onChange={(e) => setH('phone', e.target.value)} /></div>
-            <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Địa chỉ</label><textarea value={sup.address || ''} onChange={(e) => setH('address', e.target.value)} /></div>
-            <div className="form-row"><label>Hình thức thanh toán</label><input value={sup.payment_terms || ''} placeholder="vd Công nợ 30 ngày" onChange={(e) => setH('payment_terms', e.target.value)} /></div>
-            <div className="form-row"><label>VAT (vd 0.08)</label><input type="number" value={sup.vat ?? 0} onChange={(e) => setH('vat', Number(e.target.value))} /></div>
-            <div className="form-row"><label>Số tài khoản</label><input value={sup.bank_account || ''} onChange={(e) => setH('bank_account', e.target.value)} /></div>
-            <div className="form-row"><label>Ngân hàng</label><input value={sup.bank_name || ''} onChange={(e) => setH('bank_name', e.target.value)} /></div>
-            <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={!!sup.is_active} onChange={(e) => setH('is_active', e.target.checked)} style={{ width: 18, height: 18 }} /> Đang dùng</label></div>
           </div>
-          {err && <div className="err" style={{ marginTop: 12 }}>{err}</div>}
-          {msg && <div style={{ color: 'var(--green)', fontSize: 13, marginTop: 8 }}>{msg}</div>}
+
+          {/* Card 2: Thông tin liên hệ & Địa chỉ */}
+          <div className="card" style={{ padding: 18 }}>
+            <h3 style={{ fontSize: 15, marginBottom: 14, color: 'var(--navy)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
+              <i className="ti ti-mail" style={{ fontSize: 18, color: 'var(--teal)' }} />Thông tin liên hệ & Địa chỉ
+            </h3>
+            <div className="form-grid">
+              <div className="form-row">
+                <label>Người liên hệ</label>
+                <input value={sup.contact_person || ''} onChange={(e) => setH('contact_person', e.target.value)} placeholder="Tên người đại diện liên hệ..." />
+              </div>
+              <div className="form-row">
+                <label>Điện thoại</label>
+                <input value={sup.phone || ''} onChange={(e) => setH('phone', e.target.value)} placeholder="Số điện thoại liên hệ..." />
+              </div>
+              <div className="form-row" style={{ gridColumn: '1 / -1' }}>
+                <label>Địa chỉ</label>
+                <textarea value={sup.address || ''} onChange={(e) => setH('address', e.target.value)} placeholder="Địa chỉ trụ sở / kho bãi..." />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Thông tin tài chính & Giao dịch */}
+          <div className="card" style={{ padding: 18 }}>
+            <h3 style={{ fontSize: 15, marginBottom: 14, color: 'var(--navy)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
+              <i className="ti ti-credit-card" style={{ fontSize: 18, color: 'var(--teal)' }} />Thông tin tài chính & Giao dịch
+            </h3>
+            <div className="form-grid">
+              <div className="form-row">
+                <label>Mã số thuế</label>
+                <input value={sup.tax_code || ''} onChange={(e) => setH('tax_code', e.target.value.replace(/[^\d]/g, ''))} placeholder="Chỉ nhập số..." />
+              </div>
+              <div className="form-row">
+                <label>VAT mặc định (%)</label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <input type="number" style={{ width: '100%', paddingRight: 32 }} value={sup.vat ?? 8} min="0" max="100" onChange={(e) => setH('vat', e.target.value === '' ? '' : Number(e.target.value))} placeholder="Nhập từ 0 đến 100..." />
+                  <span style={{ position: 'absolute', right: 12, color: 'var(--muted)', fontWeight: 600 }}>%</span>
+                </div>
+              </div>
+              <div className="form-row" style={{ gridColumn: '1 / -1' }}>
+                <label>Hình thức thanh toán</label>
+                <input value={sup.payment_terms || ''} placeholder="Ví dụ: Công nợ 30 ngày, Tiền mặt..." onChange={(e) => setH('payment_terms', e.target.value)} />
+              </div>
+              <div className="form-row">
+                <label>Số tài khoản ngân hàng</label>
+                <input value={sup.bank_account || ''} onChange={(e) => setH('bank_account', e.target.value)} placeholder="Số tài khoản giao dịch..." />
+              </div>
+              <div className="form-row">
+                <label>Tên ngân hàng & Chi nhánh</label>
+                <input value={sup.bank_name || ''} onChange={(e) => setH('bank_name', e.target.value)} placeholder="Ví dụ: Vietcombank - CN Tân Bình..." />
+              </div>
+              <div className="form-row" style={{ gridColumn: '1 / -1', marginTop: 6 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 600, color: 'var(--navy)' }}>
+                  <input type="checkbox" checked={!!sup.is_active} onChange={(e) => setH('is_active', e.target.checked)} style={{ width: 18, height: 18 }} /> Đang hoạt động giao dịch
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {err && <div className="err" style={{ marginTop: 6 }}>{err}</div>}
+          {msg && <div style={{ color: 'var(--green)', fontSize: 13, marginTop: 6, fontWeight: 500 }}><i className="ti ti-checkbox" /> {msg}</div>}
         </div>
       )}
 

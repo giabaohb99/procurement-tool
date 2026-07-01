@@ -58,6 +58,9 @@
 - [x] Task 7 — Gom sidebar theo cụm (Mua hàng / Kho & Công nợ / Danh mục thu gọn / Hệ thống)
 - [x] Task 9 — Trang chi tiết NCC dạng tab (Thông tin · Đánh giá · Hợp đồng · Công nợ)
 - [x] Fix `start.sh` bị CRLF làm container crash (chuẩn hóa LF)
+- [x] Thiết kế lại giao diện kiểu Horizon: màu theo **logo DEGO** (xanh biển #00AEEF + xanh lá #92C83E), gắn logo vào sidebar, bỏ gradient chói. Xem `doc/Thiet_Ke_Giao_Dien.md`
+- [x] Trang chủ "dày thông tin": 6 KPI (đơn chờ duyệt/PO chạy/nợ đến hạn/nợ quá hạn/HĐ sắp hết/mặt hàng hết) + biểu đồ chi phí 12 tháng + donut cơ cấu phân loại + Top NCC + Cảnh báo + Tồn thấp — endpoint `GET /api/dashboard/overview`
+- [x] Fix bug `alert.build` còn tham chiếu `Contract.supplier_name` (đã đổi generic → `party_name`)
 
 ## Phase 5 — Quản trị nâng cao
 - [ ] Cấu hình duyệt theo ngưỡng · mẫu in · audit log UI · sao lưu
