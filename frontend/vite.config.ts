@@ -6,6 +6,7 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    allowedHosts: true, // Cho phép các host từ Cloudflare/ngrok
     watch: { usePolling: true }, // để HMR nhận thay đổi qua volume trên Docker/Windows
   },
 })
