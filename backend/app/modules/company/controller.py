@@ -54,6 +54,21 @@ def delete_company(cid: int, db: Session = Depends(get_db), user=Depends(require
     service.delete_company(db, cid, user.id)
     return success(None, "Đã xóa")
 
+
+@router.delete("")
+def bulk_delete_companies(ids: str, db: Session = Depends(get_db), user=Depends(require("company", "delete"))):
+    id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
+    from fastapi import HTTPException
+    if not id_list:
+        raise HTTPException(400, "Không có ID hợp lệ")
+    from .model import Company
+    db.query(Company).filter(Company.id.in_(id_list)).delete(synchronize_session=False)
+    db.commit()
+    from app.core.audit import record
+    for oid in id_list:
+        record(db, user.id, "company", oid, "delete")
+    return success(None, f"Đã xóa {len(id_list)} bản ghi")
+
 @router.get("/export/csv")
 def export_companies_csv(
     ids: str | None = Query(None),
@@ -72,7 +87,8 @@ def export_companies_csv(
             
     items = query.order_by(Company.id.desc()).all()
     headers_map = {
-        "code": "ID",
+        "id": "ID",
+        "code": "Mã",
         "name": "Tên",
         "tax_code": "MST",
         "address": "Địa chỉ",
@@ -102,16 +118,21 @@ def import_companies_csv(
         action = row.get("Hành động", "").strip().lower()
         is_active = action not in ["xóa", "delete", "ngừng"]
         
-        code = row.get("ID", "").strip()
+        db_id = row.get("ID", "").strip()
+        code = row.get("Mã", "").strip()
         name = row.get("Tên", "").strip()
         tax_code = row.get("MST", "").strip()
         address = row.get("Địa chỉ", "").strip()
         invoice_email = row.get("Email hóa đơn", "").strip()
         
-        if not code and not name:
+        if not db_id and not code and not name:
             continue
             
-        existing = db.query(Company).filter(Company.code == code).first() if code else None
+        existing = None
+        if db_id and db_id.isdigit():
+            existing = db.query(Company).filter(Company.id == int(db_id)).first()
+        if not existing and code:
+            existing = db.query(Company).filter(Company.code == code).first()
         if existing:
             if action in ["xóa", "delete"]:
                 db.delete(existing)

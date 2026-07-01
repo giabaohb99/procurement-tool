@@ -8,5 +8,11 @@ export default defineConfig({
     port: 5173,
     allowedHosts: true, // Cho phép các host từ Cloudflare/ngrok
     watch: { usePolling: true }, // để HMR nhận thay đổi qua volume trên Docker/Windows
+    proxy: {
+      '/api': {
+        target: 'http://api:8000',
+        changeOrigin: true,
+      },
+    },
   },
 })

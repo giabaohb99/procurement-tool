@@ -59,6 +59,21 @@ def delete_supplier(
     return success(None, "Đã xóa")
 
 
+@router.delete("")
+def bulk_delete_suppliers(ids: str, db: Session = Depends(get_db), user=Depends(require("supplier", "delete"))):
+    id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
+    from fastapi import HTTPException
+    if not id_list:
+        raise HTTPException(400, "Không có ID hợp lệ")
+    from .model import Supplier
+    db.query(Supplier).filter(Supplier.id.in_(id_list)).delete(synchronize_session=False)
+    db.commit()
+    from app.core.audit import record
+    for oid in id_list:
+        record(db, user.id, "supplier", oid, "delete")
+    return success(None, f"Đã xóa {len(id_list)} bản ghi")
+
+
 @router.get("/export/csv")
 def export_suppliers_csv(
     ids: str | None = None,
@@ -76,13 +91,14 @@ def export_suppliers_csv(
     items = query.order_by(Supplier.id.desc()).all()
 
     headers_map = {
-        "code": "ID",
+        "id": "ID",
+        "code": "Mã",
         "name": "Tên pháp lý",
         "tax_code": "MST",
         "address": "Địa chỉ",
-        "supplier_type": "Loại",
-        "payment_terms": "Hình thức thanh toán",
-        "vat": "VAT"
+        "supplier_type": "Loại (goods/transport)",
+        "payment_terms": "Thanh toán",
+        "vat": "VAT",
     }
     return export_csv_response(items, headers_map, "suppliers")
 
@@ -96,41 +112,42 @@ def import_suppliers_csv(
     import csv
     from io import StringIO
     from fastapi import HTTPException
-
     from app.core.utils import generate_code
-
+    from .model import Supplier
+    
     content = file.file.read().decode("utf-8")
     reader = csv.DictReader(StringIO(content))
-
-    if not reader.fieldnames or "Tên pháp lý" not in reader.fieldnames:
-        raise HTTPException(400, "File CSV không đúng định dạng. Cần có cột 'Tên pháp lý'.")
-
-    created = 0
-    updated = 0
-    deleted = 0
-
+    if not reader.fieldnames:
+        raise HTTPException(400, "File CSV trống")
+        
+    created, updated, deleted = 0, 0, 0
     for row in reader:
         action = row.get("Hành động", "").strip().lower()
         is_active = action not in ["xóa", "delete", "ngừng"]
-
-        code = row.get("ID", "").strip()
-        name = row.get("Tên pháp lý", "").strip()
-        if not code or not name:
-            continue
         
+        db_id = row.get("ID", "").strip()
+        code = row.get("Mã", "").strip()
+        name = row.get("Tên pháp lý", "").strip()
         tax_code = row.get("MST", "").strip()
         address = row.get("Địa chỉ", "").strip()
-        supplier_type = row.get("Loại", "").strip()
-        if supplier_type not in ["goods", "transport"]:
-            supplier_type = "goods"
-        payment_terms = row.get("Hình thức thanh toán", "").strip()
+        stype = row.get("Loại (goods/transport)", "").strip() or "goods"
+        terms = row.get("Thanh toán", "").strip()
+        vat_str = row.get("VAT", "").strip()
+        
+        if not db_id and not code and not name:
+            continue
+            
+        existing = None
+        if db_id and db_id.isdigit():
+            existing = db.query(Supplier).filter(Supplier.id == int(db_id)).first()
+        if not existing and code:
+            existing = db.query(Supplier).filter(Supplier.code == code).first()
         
         try:
-            vat = float(row.get("VAT", 0.08))
+            vat = float(vat_str) if vat_str else 0.08
         except ValueError:
             vat = 0.08
 
-        existing = db.query(Supplier).filter(Supplier.code == code).first()
         if existing:
             if action in ["xóa", "delete"]:
                 db.delete(existing)
@@ -139,19 +156,21 @@ def import_suppliers_csv(
                 existing.name = name
                 existing.tax_code = tax_code
                 existing.address = address
-                existing.supplier_type = supplier_type
-                existing.payment_terms = payment_terms
+                existing.supplier_type = stype
+                existing.payment_terms = terms
                 existing.vat = vat
                 existing.is_active = is_active
                 existing.updated_by = user.id
-                if not is_active: deleted += 1
-                else: updated += 1
+                if not is_active:
+                    deleted += 1
+                else:
+                    updated += 1
         else:
             if not is_active or not name: continue
             if not code: code = generate_code(db, Supplier, "NCC")
             new_sup = Supplier(
                 code=code, name=name, tax_code=tax_code, address=address,
-                supplier_type=supplier_type, payment_terms=payment_terms,
+                supplier_type=stype, payment_terms=terms,
                 vat=vat, is_active=is_active, created_by=user.id, updated_by=user.id
             )
             db.add(new_sup)

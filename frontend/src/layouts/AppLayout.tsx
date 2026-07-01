@@ -17,8 +17,9 @@ const NAV = [
   { to: '/warehouses', label: 'Kho', icon: 'ti-building-warehouse' },
   { to: '/units', label: 'Đơn vị tính', icon: 'ti-ruler-2' },
   { to: '/item-groups', label: 'Phân loại', icon: 'ti-category' },
-  { to: '/brands', label: 'Phòng Ban', icon: 'ti-tag' },
-  { to: '/employees', label: 'Nhân viên', icon: 'ti-users' },
+  { to: '/departments', label: 'Phòng Ban', icon: 'ti-tag' },
+  { to: '/employees', label: 'Nhân sự', icon: 'ti-users' },
+  { to: '/roles', label: 'Vai trò', icon: 'ti-shield' },
 ]
 
 const isActive = (path: string, to: string) =>

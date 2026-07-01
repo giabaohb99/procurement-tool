@@ -8,6 +8,8 @@ class CompanyBase(BaseModel):
     address: str = ""
     invoice_email: str = ""
     parent: int = 0
+    legal_representative_id: int | None = None
+    legal_rep_title: str = ""
     is_active: bool = True
 
 
@@ -21,6 +23,8 @@ class CompanyUpdate(BaseModel):
     address: str | None = None
     invoice_email: str | None = None
     parent: int | None = None
+    legal_representative_id: int | None = None
+    legal_rep_title: str | None = None
     is_active: bool | None = None
 
 

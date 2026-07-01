@@ -57,6 +57,21 @@ def delete_product(
     service.delete_product(db, pid, user.id)
     return success(None, "Đã xóa")
 
+
+@router.delete("")
+def bulk_delete_products(ids: str, db: Session = Depends(get_db), user=Depends(require("product", "delete"))):
+    id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
+    from fastapi import HTTPException
+    if not id_list:
+        raise HTTPException(400, "Không có ID hợp lệ")
+    from .model import Product
+    db.query(Product).filter(Product.id.in_(id_list)).delete(synchronize_session=False)
+    db.commit()
+    from app.core.audit import record
+    for oid in id_list:
+        record(db, user.id, "product", oid, "delete")
+    return success(None, f"Đã xóa {len(id_list)} bản ghi")
+
 @router.get("/export/csv")
 def export_products_csv(
     ids: str | None = Query(None),
@@ -75,9 +90,11 @@ def export_products_csv(
             
     items = query.order_by(Product.id.desc()).all()
     headers_map = {
+        "id": "ID",
         "code": "Mã",
         "name": "Tên",
-        "invoice_name": "Tên trên hóa đơn",
+        "invoice_name": "Tên trên HĐ",
+        "legal_name": "Tên pháp lý",
         "item_group": "Phân loại",
         "unit": "ĐVT",
     }
@@ -92,6 +109,7 @@ def import_products_csv(
     import csv
     from io import StringIO
     from fastapi import HTTPException
+    from app.core.utils import generate_code
     from .model import Product
     
     content = file.file.read().decode("utf-8")
@@ -104,29 +122,41 @@ def import_products_csv(
         action = row.get("Hành động", "").strip().lower()
         is_active = action not in ["xóa", "delete", "ngừng"]
         
+        db_id = row.get("ID", "").strip()
         code = row.get("Mã", "").strip()
         name = row.get("Tên", "").strip()
-        invoice_name = row.get("Tên trên hóa đơn", "").strip()
+        invoice_name = row.get("Tên trên HĐ", "").strip()
+        legal_name = row.get("Tên pháp lý", "").strip()
         item_group = row.get("Phân loại", "").strip()
         unit = row.get("ĐVT", "").strip()
         
-        if not code and not name:
+        if not db_id and not code and not name:
             continue
             
-        existing = db.query(Product).filter(Product.code == code).first() if code else None
+        existing = None
+        if db_id and db_id.isdigit():
+            existing = db.query(Product).filter(Product.id == int(db_id)).first()
+        if not existing and code:
+            existing = db.query(Product).filter(Product.code == code).first()
         if existing:
-            if name: existing.name = name
-            existing.invoice_name = invoice_name
-            existing.item_group = item_group
-            existing.unit = unit
-            existing.is_active = is_active
-            existing.updated_by = user.id
-            if not is_active: deleted += 1
-            else: updated += 1
+            if action in ["xóa", "delete"]:
+                db.delete(existing)
+                deleted += 1
+            else:
+                if name: existing.name = name
+                existing.invoice_name = invoice_name
+                existing.legal_name = legal_name
+                existing.item_group = item_group
+                existing.unit = unit
+                existing.is_active = is_active
+                existing.updated_by = user.id
+                if not is_active: deleted += 1
+                else: updated += 1
         else:
             if not is_active or not name or not code: continue
             new_obj = Product(
                 code=code, name=name, invoice_name=invoice_name,
+                legal_name=legal_name,
                 item_group=item_group, unit=unit, is_active=is_active,
                 created_by=user.id, updated_by=user.id
             )

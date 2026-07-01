@@ -7,8 +7,9 @@ from app.core.base_model import Base, AuditMixin
 class Role(Base, AuditMixin):
     __tablename__ = "tab_role"
 
-    code: Mapped[str] = mapped_column(String(25), unique=True)
-    name: Mapped[str] = mapped_column(String(255))
+    code: Mapped[str] = mapped_column(String(50), unique=True)
+    name: Mapped[str] = mapped_column(String(100))
+    description: Mapped[str] = mapped_column(String(255), default="")
 
 
 class Permission(Base, AuditMixin):

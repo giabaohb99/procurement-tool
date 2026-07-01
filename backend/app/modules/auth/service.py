@@ -7,10 +7,11 @@ from app.modules.user.model import User
 
 
 def authenticate(db: Session, username: str, password: str) -> User:
-    user = None
-    if "@" in username:
-        user = db.query(User).filter(User.email == username).first()
-    else:
+    # 1. Thử tìm theo email trực tiếp trong User trước
+    user = db.query(User).filter(User.email == username).first()
+    
+    # 2. Nếu không tìm thấy, thử tìm theo mã nhân viên
+    if not user:
         emp = db.query(Employee).filter(Employee.code == username).first()
         if emp:
             user = db.query(User).filter(User.employee_id == emp.id).first()

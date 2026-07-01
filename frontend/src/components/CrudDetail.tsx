@@ -29,7 +29,9 @@ export default function CrudDetail() {
       api.get(f.source!.url, { params: { page_size: 1000 } }).then(r => {
         const vk = f.source!.value || 'code'
         const lk = f.source!.label || 'name'
-        const opts = (r.data.data.items || []).map((it: any) => ({
+        const data = r.data.data
+        const items = Array.isArray(data) ? data : (data.items || [])
+        const opts = items.map((it: any) => ({
           value: String(it[vk] ?? ''), label: String(it[lk] ?? it[vk] ?? ''),
         })).filter((o: any) => o.value)
         setDynOpts(s => ({ ...s, [f.key]: opts }))
@@ -90,7 +92,7 @@ export default function CrudDetail() {
                   <label>{f.label}</label>
                   {f.type === 'textarea' ? (
                     <textarea value={form[f.key] ?? ''} disabled={ro} onChange={(e) => set(f.key, e.target.value)} />
-                  ) : (f.type === 'select' || f.source) ? (
+                  ) : (f.type === 'select' || (f.source && f.type !== 'select-multiple')) ? (
                     <select value={form[f.key] ?? ''} disabled={ro} onChange={(e) => {
                       set(f.key, e.target.value);
                       if (f.onValueChange) f.onValueChange(e.target.value, form, (k: string, v: any) => setForm((s:any) => ({...s, [k]: v})));
@@ -98,6 +100,25 @@ export default function CrudDetail() {
                       <option value="">-- Chọn --</option>
                       {(f.options || dynOpts[f.key] || []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
+                  ) : f.type === 'select-multiple' ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+                      {(f.options || dynOpts[f.key] || []).map((o) => {
+                        const checked = Array.isArray(form[f.key]) && form[f.key].includes(Number(o.value))
+                        return (
+                          <label key={o.value} style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 'normal' }}>
+                            <input type="checkbox" checked={checked} disabled={ro} onChange={(e) => {
+                              const curr = Array.isArray(form[f.key]) ? [...form[f.key]] : []
+                              if (e.target.checked) curr.push(Number(o.value))
+                              else {
+                                const idx = curr.indexOf(Number(o.value))
+                                if (idx > -1) curr.splice(idx, 1)
+                              }
+                              set(f.key, curr)
+                            }} /> {o.label}
+                          </label>
+                        )
+                      })}
+                    </div>
                   ) : f.type === 'checkbox' ? (
                     <input type="checkbox" checked={!!form[f.key]} disabled={ro} onChange={(e) => set(f.key, e.target.checked)} />
                   ) : (
@@ -112,6 +133,24 @@ export default function CrudDetail() {
           {msg && <div style={{ color: 'var(--green)', marginTop: 12, fontSize: 13 }}>{msg}</div>}
           <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
             {canSave && <button className="btn" onClick={save}>{isNew ? 'Tạo' : 'Lưu'}</button>}
+            
+            {!isNew && cfg.slug === 'employees' && can(cfg.entity, 'write') && (
+              <button className="btn outline" style={{ color: 'var(--teal)', borderColor: 'var(--teal)', background: '#fff' }} 
+                      onClick={async () => {
+                        if (!confirm('Cấp lại mật khẩu và gửi email cho nhân sự này?')) return
+                        setErr(''); setMsg('Đang xử lý...')
+                        try {
+                          await api.post(`/api/employees/${id}/reset-password`)
+                          setMsg('Đã cấp lại mật khẩu và gửi email thành công!')
+                        } catch (ex: any) {
+                          setErr(ex?.response?.data?.error?.message || 'Lỗi khi reset password')
+                          setMsg('')
+                        }
+                      }}>
+                <i className="ti ti-key" />Cấp lại mật khẩu
+              </button>
+            )}
+            
             {!isNew && can(cfg.entity, 'delete') && (
               <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={remove}>
                 <i className="ti ti-trash" />Xóa

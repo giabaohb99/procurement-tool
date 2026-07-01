@@ -46,6 +46,9 @@ input:focus, select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgb
 .btn.secondary { background: #fff; color: var(--teal); }
 .btn.ghost { background: none; border: 1px solid var(--border); color: var(--ink); font-weight: 500; }
 .btn.ghost:hover { background: #f0f4f7; }
+.btn.err { background: none; border-color: var(--red); color: var(--red); }
+.btn.err:hover { background: var(--red-bg); }
+
 
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: auto; box-shadow: 0 4px 18px rgba(26, 77, 107, 0.05); }
 .hamburger { display: none; }

@@ -15,4 +15,9 @@ class Company(Base, AuditMixin):
     address: Mapped[str] = mapped_column(Text, default="")
     invoice_email: Mapped[str] = mapped_column(String(255), default="")
     parent: Mapped[int] = mapped_column(BigInteger, default=0)  # 0 = gốc
+    legal_representative_id: Mapped[int] = mapped_column(BigInteger, nullable=True)
+    legal_rep_title: Mapped[str] = mapped_column(String(100), default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # Note: Import Employee in module to avoid circular deps, or use string reference "Employee"
+    # But since it's an API, usually relationships are lazy loaded or configured at the end.

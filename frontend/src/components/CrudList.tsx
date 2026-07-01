@@ -37,6 +37,19 @@ export default function CrudList() {
     }
   }
 
+  async function handleDeleteSelected() {
+    if (selectedIds.length === 0) return;
+    if (!confirm(`Bạn có chắc chắn muốn xóa ${selectedIds.length} bản ghi đã chọn? Hành động này không thể hoàn tác!`)) return;
+    try {
+      await api.delete(cfg.apiPath, { params: { ids: selectedIds.join(',') } });
+      alert('Xóa thành công');
+      setSelectedIds([]);
+      load(page, pageSize, filters);
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Lỗi khi xóa dữ liệu');
+    }
+  }
+
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -59,8 +72,14 @@ export default function CrudList() {
 
   async function load(p = 1, s = 20, f: Record<string, string> = {}) {
     const r = await api.get(cfg.apiPath, { params: { ...f, page: p, page_size: s } })
-    setItems(r.data.data.items)
-    setTotal(r.data.data.total)
+    const data = r.data.data
+    if (Array.isArray(data)) {
+      setItems(data)
+      setTotal(data.length)
+    } else {
+      setItems(data.items || [])
+      setTotal(data.total || 0)
+    }
     setSelectedIds([])
   }
   useEffect(() => {
@@ -79,6 +98,25 @@ export default function CrudList() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h2 className="page-title" style={{ marginBottom: 12 }}>{cfg.title}</h2>
         <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn ghost" onClick={async () => {
+            if (selectedIds.length === total && total > 0) {
+              setSelectedIds([])
+            } else {
+              try {
+                const r = await api.get(cfg.apiPath, { params: { ...filters, page: 1, page_size: 5000 } })
+                const data = r.data.data
+                const allItems = Array.isArray(data) ? data : (data.items || [])
+                setSelectedIds(allItems.map((i: any) => i.id))
+              } catch (e) { alert('Lỗi lấy dữ liệu') }
+            }
+          }}>
+            {selectedIds.length === total && total > 0 ? 'Bỏ chọn' : `Chọn tất cả các trang (${total})`}
+          </button>
+          {selectedIds.length > 0 && can(cfg.entity, 'delete') && (
+            <button className="btn err" onClick={handleDeleteSelected}>
+              <i className="ti ti-trash" />Xóa đã chọn ({selectedIds.length})
+            </button>
+          )}
           {cfg.importExport && can(cfg.entity, 'write') && (
             <>
               <button className="btn outline" onClick={handleExport}><i className="ti ti-download" />Export CSV</button>
