@@ -7,6 +7,7 @@ from app.core.database import get_db
 from app.core.response import success
 from app.modules.company.model import Company
 from app.modules.supplier.model import Supplier
+from app.modules.catalog.model import Warehouse
 from app.modules.notification.service import trigger_notification
 
 from . import service
@@ -94,6 +95,19 @@ def print_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purc
                        "invoice_email": company.invoice_email} if company else {}
     data["supplier"] = {"name": sup.name, "address": sup.address, "tax_code": sup.tax_code,
                         "payment_terms": sup.payment_terms} if sup else {}
+    # Nơi nhận hàng = kho nhận (lấy kho đầu tiên có trên dòng hàng / lần giao)
+    wcode = ""
+    for it in data["items"]:
+        wcode = it.get("warehouse_code") or next((d.get("warehouse_code") for d in it["deliveries"] if d.get("warehouse_code")), "")
+        if wcode:
+            break
+    wh = db.query(Warehouse).filter(Warehouse.code == wcode).first() if wcode else None
+    data["warehouse"] = {"code": wh.code, "name": wh.name, "address": wh.address} if wh else {}
+    # Map mã kho -> tên kho (cho cột "Tên kho nhập" của Đơn mua hàng)
+    codes = {it.get("warehouse_code") for it in data["items"] if it.get("warehouse_code")}
+    codes |= {d.get("warehouse_code") for it in data["items"] for d in it["deliveries"] if d.get("warehouse_code")}
+    whs = db.query(Warehouse).filter(Warehouse.code.in_(list(codes))).all() if codes else []
+    data["wh_names"] = {w.code: w.name for w in whs}
     return success(data)
 
 

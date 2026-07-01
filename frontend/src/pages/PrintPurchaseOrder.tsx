@@ -20,6 +20,7 @@ export default function PrintPurchaseOrder() {
   if (!po) return <div style={{ padding: 40 }}>Đang tải...</div>
   const co = po.company || {}
   const sup = po.supplier || {}
+  const wh = po.warehouse || {}
   const cell = { border: '1px solid #555', padding: '4px 6px', fontSize: 11, verticalAlign: 'top' } as const
   const head = { ...cell, background: '#dfe7df', fontWeight: 700, textAlign: 'center' as const }
 
@@ -40,9 +41,7 @@ export default function PrintPurchaseOrder() {
         <div style={{ fontSize: 12 }}><b>Địa chỉ:</b> {sup.address || ''}</div>
 
         <h2 style={{ textAlign: 'center', fontSize: 18, margin: '12px 0 2px' }}>ĐƠN ĐẶT HÀNG</h2>
-        <div style={{ textAlign: 'center', fontSize: 12, color: '#c0392b', fontWeight: 700 }}>Số: {po.code}</div>
-        {po.misa_code && <div style={{ textAlign: 'center', fontSize: 11.5, marginBottom: 8 }}>Mã đơn MISA: {po.misa_code}</div>}
-        {!po.misa_code && <div style={{ marginBottom: 8 }} />}
+        <div style={{ textAlign: 'center', fontSize: 12, color: '#c0392b', fontWeight: 700, marginBottom: 8 }}>Số: {po.misa_code || po.code}</div>
 
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -89,8 +88,8 @@ export default function PrintPurchaseOrder() {
           <div><b>2. Thời gian nhận hóa đơn:</b> Chậm nhất 24h kể từ khi nhận hàng</div>
           <div><b>3. Thông tin nhận hàng:</b></div>
           <div style={{ paddingLeft: 16 }}>- Phương thức giao nhận:</div>
-          <div style={{ paddingLeft: 16 }}>- Nơi giao: {sup.name || ''}</div>
-          <div style={{ paddingLeft: 16 }}>- Địa chỉ:</div>
+          <div style={{ paddingLeft: 16 }}>- Nơi giao (kho nhận): {wh.name || co.name || ''}</div>
+          <div style={{ paddingLeft: 16 }}>- Địa chỉ: {wh.address || co.address || ''}</div>
           <div style={{ paddingLeft: 16 }}>- Người liên hệ bên mua:</div>
           <div><b>4. Thông tin nhận hóa đơn:</b></div>
           <div style={{ paddingLeft: 16 }}>- Tên đơn vị: {co.name || ''}</div>

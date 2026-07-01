@@ -22,7 +22,10 @@ else:
     raise SystemExit("Database not reachable")
 PY
 
-echo "Creating tables & seeding admin..."
+echo "Running DB migrations (alembic)..."
+alembic upgrade head
+
+echo "Seeding data..."
 python -m app.seed
 
 echo "Starting API (reload)..."

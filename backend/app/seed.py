@@ -57,21 +57,9 @@ SAMPLE_PRODUCTS = [
 
 
 def run():
-    Base.metadata.create_all(bind=engine)
+    # Schema do Alembic quản lý (start.sh chạy `alembic upgrade head` trước). Seed chỉ nạp DATA.
     db = SessionLocal()
     try:
-        # Schema verification: check if quote_file_url column exists in tab_purchase_request
-        from sqlalchemy import text
-        try:
-            db.execute(text("SELECT quote_file_url FROM tab_purchase_request LIMIT 1"))
-        except Exception:
-            db.rollback()
-            print("Database schema upgrade needed: recreating purchase request tables...")
-            db.execute(text("DROP TABLE IF EXISTS tab_purchase_request_item"))
-            db.execute(text("DROP TABLE IF EXISTS tab_purchase_request"))
-            db.commit()
-            Base.metadata.create_all(bind=engine)
-
         admin_role = db.query(Role).filter(Role.code == "admin").first()
         if not admin_role:
             admin_role = Role(code="admin", name="Quản trị hệ thống")
@@ -184,6 +172,25 @@ def run():
             db.commit()
             db.refresh(user)
             db.add(UserRole(user_id=user.id, role_id=admin_role.id))
+            db.commit()
+
+        # Seed second admin: DEGO0001 (username: admin, pass: admin, name: Dego Admin)
+        emp2 = db.query(Employee).filter(Employee.code == "DEGO0001").first()
+        if not emp2:
+            emp2 = Employee(code="DEGO0001", full_name="Dego Admin",
+                            company_id=company.id, position="Admin", is_active=True)
+            db.add(emp2)
+            db.commit()
+            db.refresh(emp2)
+
+        user2 = db.query(User).filter(User.employee_id == emp2.id).first()
+        if not user2:
+            user2 = User(email="admin", employee_id=emp2.id,
+                         password_hash=hash_password("admin"), is_active=True)
+            db.add(user2)
+            db.commit()
+            db.refresh(user2)
+            db.add(UserRole(user_id=user2.id, role_id=admin_role.id))
             db.commit()
 
         print(f"Seed done. Admin login: {settings.ADMIN_CODE} / (mật khẩu trong .env)")
