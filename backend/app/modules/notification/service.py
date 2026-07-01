@@ -58,7 +58,9 @@ def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
             server.starttls()
             server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.sendmail(msg["From"], to_email, msg.as_string())
+            from email.utils import parseaddr
+            _, from_email = parseaddr(msg["From"])
+            server.sendmail(from_email or msg["From"], to_email, msg.as_string())
 
         log.status = "sent"
         log.sent_at = datetime.utcnow()
@@ -195,4 +197,70 @@ def trigger_notification(
                 html_content
             )
             
+    db.commit()
+
+def send_account_creation_email(db: Session, user_id: int, background_tasks, full_name: str, email: str, link: str):
+    from .email_templates import ACCOUNT_CREATION_TEMPLATE
+    
+    subject = "Thông Báo Cấp Tài Khoản Hệ Thống Dego ERP"
+    login_url = settings.FRONTEND_URL if hasattr(settings, 'FRONTEND_URL') else "http://localhost:5173"
+    
+    email_log = EmailLog(
+        event="account_creation",
+        to_email=email,
+        subject=subject,
+        status="pending",
+        created_by=user_id
+    )
+    db.add(email_log)
+    db.flush()
+    
+    html_content = render_template(ACCOUNT_CREATION_TEMPLATE, {
+        "full_name": full_name,
+        "email": email,
+        "login_url": login_url,
+        "link": link
+    })
+    
+    from app.core.database import SessionLocal
+    background_tasks.add_task(
+        send_smtp_email,
+        SessionLocal,
+        email_log.id,
+        email,
+        subject,
+        html_content
+    )
+    db.commit()
+
+def send_password_reset_email(db: Session, user_id: int, background_tasks, full_name: str, email: str, link: str):
+    from .email_templates import PASSWORD_RESET_TEMPLATE
+    
+    subject = "Yêu Cầu Thiết Lập Lại Mật Khẩu"
+    
+    email_log = EmailLog(
+        event="password_reset",
+        to_email=email,
+        subject=subject,
+        status="pending",
+        created_by=user_id
+    )
+    db.add(email_log)
+    db.flush()
+    
+    html_content = render_template(PASSWORD_RESET_TEMPLATE, {
+        "full_name": full_name,
+        "email": email,
+        "link": link
+    })
+    
+    from app.core.database import SessionLocal
+    background_tasks.add_task(
+        send_smtp_email,
+        SessionLocal,
+        email_log.id,
+        email,
+        subject,
+        html_content
+    )
     db.commit()

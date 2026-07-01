@@ -6,7 +6,7 @@ from app.core.utils import generate_code
 
 def export_csv_response(items, headers_map, filename):
     output = StringIO()
-    output.write("sep=,\n")
+
     writer = csv.writer(output)
     writer.writerow(list(headers_map.values()) + ["Trạng thái"])
 

@@ -3,6 +3,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from fastapi.staticfiles import StaticFiles
+import os
 
 from app.core.config import settings
 from app.core.limiter import limiter
@@ -43,6 +45,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+os.makedirs("uploads", exist_ok=True)
+app.mount("/api/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 @app.exception_handler(HTTPException)

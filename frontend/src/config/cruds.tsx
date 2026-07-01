@@ -74,10 +74,10 @@ export const poBadge = (st: string) => {
 
 export const cruds: Record<string, CrudConfig> = {
   companies: {
-    slug: 'companies', entity: 'company', title: 'Công ty (pháp nhân)', apiPath: '/api/companies', importExport: true,
+    slug: 'companies', entity: 'company', title: 'Công ty', apiPath: '/api/companies', importExport: true,
     columns: [
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên' }, { key: 'tax_code', label: 'MST' },
-      { key: 'invoice_email', label: 'Email hóa đơn' },
+      { key: 'legal_rep_name', label: 'Người đại diện' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
     ],
     filters: [
@@ -91,7 +91,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'parent', label: 'Thuộc công ty (ID cha, 0 = gốc)', type: 'number' },
       { key: 'legal_representative_id', label: 'Người đại diện pháp lý', type: 'select', source: { url: '/api/employees', value: 'id', label: 'full_name' } },
       { key: 'legal_rep_title', label: 'Chức danh' },
-      { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
     ],
   },
   suppliers: {

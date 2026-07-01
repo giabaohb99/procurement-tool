@@ -56,6 +56,115 @@ SAMPLE_PRODUCTS = [
 ]
 
 
+def seed_demo_accounts(db, company_id):
+    from app.modules.role.model import Role, Permission
+    from app.modules.user.model import User, UserRole
+    from app.modules.employee.model import Employee
+    from app.core.auth import hash_password
+    
+    roles_def = {
+        "staff": {
+            "name": "Nhân viên (Demo)",
+            "perms": {
+                "purchase_request": {"read": True, "create": True, "write": True, "delete": True},
+                "report": {"read": True},
+            }
+        },
+        "manager": {
+            "name": "Trưởng bộ phận (Demo)",
+            "perms": {
+                "purchase_request": {"read": True, "create": True, "write": True, "delete": True, "approve": True},
+                "report": {"read": True},
+            }
+        },
+        "manager_purchase": {
+            "name": "Trưởng phòng Thu mua (Demo)",
+            "perms": {
+                "purchase_request": {"read": True, "create": True, "write": True, "delete": True, "approve": True},
+                "report": {"read": True},
+                "survey": {"read": True, "create": True, "write": True, "approve": True},
+                "purchase_order": {"read": True, "create": True, "write": True, "approve": True},
+                "inventory": {"read": True},
+                "payable": {"read": True},
+                "payment_request": {"read": True},
+                "warehouse": {"read": True},
+                "unit": {"read": True},
+                "item_group": {"read": True},
+                "brand": {"read": True},
+                "supplier": {"read": True},
+                "product": {"read": True},
+                "contract": {"read": True},
+                "department": {"read": True},
+            }
+        },
+        "purchaser": {
+            "name": "Nhân viên Thu mua (Demo)",
+            "perms": {
+                "purchase_request": {"read": True, "create": True, "write": True, "delete": True},
+                "report": {"read": True},
+                "survey": {"read": True, "create": True, "write": True, "delete": True},
+                "purchase_order": {"read": True, "create": True, "write": True, "delete": True},
+                "inventory": {"read": True},
+                "payable": {"read": True},
+                "payment_request": {"read": True, "create": True, "write": True},
+                "warehouse": {"read": True},
+                "unit": {"read": True},
+                "item_group": {"read": True},
+                "brand": {"read": True},
+                "supplier": {"read": True},
+                "product": {"read": True},
+                "contract": {"read": True},
+                "department": {"read": True},
+            }
+        }
+    }
+    
+    for code, r_info in roles_def.items():
+        role = db.query(Role).filter(Role.code == code).first()
+        if not role:
+            role = Role(code=code, name=r_info["name"])
+            db.add(role)
+            db.commit()
+            db.refresh(role)
+            
+        existing_perms = {p.entity: p for p in db.query(Permission).filter(Permission.role_id == role.id).all()}
+        for entity, actions in r_info["perms"].items():
+            if entity not in existing_perms:
+                perm = Permission(
+                    role_id=role.id,
+                    entity=entity,
+                    can_read=actions.get("read", False),
+                    can_create=actions.get("create", False),
+                    can_write=actions.get("write", False),
+                    can_delete=actions.get("delete", False),
+                    can_approve=actions.get("approve", False),
+                    scope="all"
+                )
+                db.add(perm)
+        db.commit()
+
+        emp_code = f"DEMO_{code.upper()}"
+        emp = db.query(Employee).filter(Employee.code == emp_code).first()
+        if not emp:
+            emp = Employee(code=emp_code, full_name=r_info["name"], company_id=company_id, position=r_info["name"], is_active=True)
+            db.add(emp)
+            db.commit()
+            db.refresh(emp)
+            
+        email = f"{code}@demo.com"
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            user = User(email=email, employee_id=emp.id, password_hash=hash_password("demo123"), is_active=True)
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            
+            # Xoá role cũ (nếu có)
+            db.query(UserRole).filter(UserRole.user_id == user.id).delete()
+            db.add(UserRole(user_id=user.id, role_id=role.id))
+            db.commit()
+
+
 def run():
     # Schema do Alembic quản lý (start.sh chạy `alembic upgrade head` trước). Seed chỉ nạp DATA.
     db = SessionLocal()
@@ -192,6 +301,9 @@ def run():
             db.refresh(user2)
             db.add(UserRole(user_id=user2.id, role_id=admin_role.id))
             db.commit()
+
+        # Seed demo accounts
+        seed_demo_accounts(db, company.id)
 
         print(f"Seed done. Admin login: {settings.ADMIN_CODE} / (mật khẩu trong .env)")
     finally:

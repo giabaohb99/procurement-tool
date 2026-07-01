@@ -37,6 +37,9 @@ def create_access_token(user_id: int) -> str:
 def create_refresh_token(user_id: int) -> str:
     return _create_token(user_id, "refresh", settings.REFRESH_EXPIRE_DAYS * 24 * 60)
 
+def create_reset_token(user_id: int) -> str:
+    return _create_token(user_id, "reset_password", 24 * 60)
+
 
 def decode_token(token: str, expected_type: str) -> int:
     """Giải mã token, kiểm tra đúng loại (access/refresh). Trả user_id."""

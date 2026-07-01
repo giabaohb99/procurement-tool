@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import Login from './pages/Login'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import AppLayout from './layouts/AppLayout'
 import Dashboard from './pages/Dashboard'
 import CrudList from './components/CrudList'
@@ -30,6 +32,8 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/print/purchase-request/:id" element={<Protected><PrintPurchaseRequest /></Protected>} />
           <Route path="/print/purchase-order/:id" element={<Protected><PrintPurchaseOrder /></Protected>} />
           <Route path="/print/purchase-order-mh/:id" element={<Protected><PrintPurchaseOrderMH /></Protected>} />

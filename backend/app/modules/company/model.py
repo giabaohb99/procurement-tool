@@ -1,5 +1,5 @@
 from sqlalchemy import BigInteger, Boolean, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base_model import Base, AuditMixin
 
@@ -19,5 +19,18 @@ class Company(Base, AuditMixin):
     legal_rep_title: Mapped[str] = mapped_column(String(100), default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    # Note: Import Employee in module to avoid circular deps, or use string reference "Employee"
-    # But since it's an API, usually relationships are lazy loaded or configured at the end.
+    # Relationship to Employee for legal representative
+    legal_rep = relationship(
+        "Employee",
+        primaryjoin="foreign(Company.legal_representative_id) == Employee.id",
+        uselist=False,
+        viewonly=True
+    )
+
+    @property
+    def legal_rep_name(self) -> str | None:
+        return self.legal_rep.full_name if self.legal_rep else None
+
+    @property
+    def export_tax_code(self) -> str:
+        return f"'{self.tax_code}" if self.tax_code else ""

@@ -19,7 +19,9 @@ def list_companies(
     db: Session = Depends(get_db),
     user=Depends(require("company", "read")),
 ):
+    from sqlalchemy.orm import joinedload
     query = apply_filters(db.query(service.Company), service.Company, request, service.FILTERABLE)
+    query = query.options(joinedload(service.Company.legal_rep))
     total, items = service.list_companies(db, query, pg)
     return success({
         "total": total,
@@ -89,10 +91,13 @@ def export_companies_csv(
     headers_map = {
         "id": "ID",
         "code": "Mã",
-        "name": "Tên",
-        "tax_code": "MST",
+        "name": "Tên pháp nhân",
+        "export_tax_code": "MST",
         "address": "Địa chỉ",
         "invoice_email": "Email hóa đơn",
+        "parent": "Thuộc công ty",
+        "legal_rep_name": "Người đại diện",
+        "legal_rep_title": "Chức danh",
     }
     return export_csv_response(items, headers_map, "companies")
 
@@ -126,8 +131,10 @@ def import_companies_csv(
         
         db_id = row.get("ID", "").strip()
         code = row.get("Mã", "").strip()
-        name = row.get("Tên", "").strip()
+        name = (row.get("Tên pháp nhân") or row.get("Tên") or "").strip()
         tax_code = row.get("MST", "").strip()
+        if tax_code.startswith("'"):
+            tax_code = tax_code[1:]
         address = row.get("Địa chỉ", "").strip()
         invoice_email = row.get("Email hóa đơn", "").strip()
         

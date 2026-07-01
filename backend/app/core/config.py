@@ -20,6 +20,10 @@ class Settings(BaseSettings):
 
     ADMIN_CODE: str = "degoadmin"
     ADMIN_PASSWORD: str = "dego2026"
+    
+    FRONTEND_URL: str = "https://thumuatool.degoholding.vn"
+    
+    GOOGLE_CLIENT_ID: str = ""
 
     R2_ENDPOINT: str = ""
     R2_PUBLIC_URL: str = ""

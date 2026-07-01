@@ -30,4 +30,5 @@ class CompanyUpdate(BaseModel):
 
 class CompanyOut(CompanyBase):
     id: int
+    legal_rep_name: str | None = None
     model_config = {"from_attributes": True}
