@@ -57,21 +57,9 @@ SAMPLE_PRODUCTS = [
 
 
 def run():
-    Base.metadata.create_all(bind=engine)
+    # Schema do Alembic quản lý (start.sh chạy `alembic upgrade head` trước). Seed chỉ nạp DATA.
     db = SessionLocal()
     try:
-        # Schema verification: check if quote_file_url column exists in tab_purchase_request
-        from sqlalchemy import text
-        try:
-            db.execute(text("SELECT quote_file_url FROM tab_purchase_request LIMIT 1"))
-        except Exception:
-            db.rollback()
-            print("Database schema upgrade needed: recreating purchase request tables...")
-            db.execute(text("DROP TABLE IF EXISTS tab_purchase_request_item"))
-            db.execute(text("DROP TABLE IF EXISTS tab_purchase_request"))
-            db.commit()
-            Base.metadata.create_all(bind=engine)
-
         admin_role = db.query(Role).filter(Role.code == "admin").first()
         if not admin_role:
             admin_role = Role(code="admin", name="Quản trị hệ thống")

@@ -17,6 +17,7 @@ from app.modules.inventory.controller import router as inventory_router
 from app.modules.payable.controller import router as payable_router
 from app.modules.payment_request.controller import router as payment_request_router
 from app.modules.purchase_order.controller import router as po_router
+from app.modules.report.controller import router as report_router
 from app.modules.purchase_request.controller import router as pr_router
 from app.modules.company.controller import router as company_router
 from app.modules.department.controller import router as department_router
@@ -80,3 +81,4 @@ app.include_router(po_router)
 app.include_router(inventory_router)
 app.include_router(payable_router)
 app.include_router(payment_request_router)
+app.include_router(report_router)

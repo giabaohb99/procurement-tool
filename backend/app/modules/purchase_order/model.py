@@ -18,7 +18,7 @@ class PurchaseOrder(Base, AuditMixin):
     supplier_name: Mapped[str] = mapped_column(String(255), default="")
     department: Mapped[str] = mapped_column(String(255), default="")
     nspt: Mapped[str] = mapped_column(String(100), default="")
-    order_date: Mapped[str] = mapped_column(String(10), default="")
+    order_date: Mapped[str] = mapped_column(String(10), default="", index=True)
     vat_rate: Mapped[float] = mapped_column(Numeric(5, 4), default=0.08)
     payment_terms: Mapped[str] = mapped_column(String(255), default="")    # hình thức TT cho NCC (col46)
     is_urgent: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -72,7 +72,7 @@ class PODelivery(Base, AuditMixin):
     received_qty: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
     promised_date: Mapped[str] = mapped_column(String(10), default="")      # NCC cam kết giao
     expected_date: Mapped[str] = mapped_column(String(10), default="")      # dự kiến nhận
-    received_date: Mapped[str] = mapped_column(String(10), default="")      # ngày nhận thực tế
+    received_date: Mapped[str] = mapped_column(String(10), default="", index=True)  # ngày nhận thực tế
     std_days: Mapped[int] = mapped_column(BigInteger, default=0)            # số ngày quy định (AH)
     regulated_date: Mapped[str] = mapped_column(String(10), default="")     # ngày quy định (AI)
     diff_promise: Mapped[int] = mapped_column(BigInteger, default=0)        # CL cam kết−nhận (AL) <0=trễ

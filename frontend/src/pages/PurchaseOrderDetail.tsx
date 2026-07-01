@@ -9,6 +9,42 @@ const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const QC = ['', 'Đạt', 'Thiếu', 'Lỗi']
 const SHIP_UNITS = ['Kiện', 'Chuyến', 'm2', 'tấn']
 
+const CurrencyInput = ({ value, onChange, disabled, style, className }: any) => {
+  const [focused, setFocused] = useState(false)
+  const [localVal, setLocalVal] = useState(value)
+
+  useEffect(() => {
+    if (!focused) {
+      setLocalVal(value)
+    }
+  }, [value, focused])
+
+  const displayVal = focused ? String(localVal || '') : (localVal ? Number(localVal).toLocaleString('vi-VN') : '')
+
+  return (
+    <input
+      type="text"
+      className={className || "cell-input"}
+      style={style}
+      value={displayVal}
+      disabled={disabled}
+      onFocus={() => {
+        setFocused(true)
+        setLocalVal(value)
+      }}
+      onBlur={() => {
+        setFocused(false)
+        const parsed = Number(String(localVal).replace(/[^\d]/g, '')) || 0
+        onChange(parsed)
+      }}
+      onChange={(e) => {
+        const clean = e.target.value.replace(/[^\d]/g, '')
+        setLocalVal(clean)
+      }}
+    />
+  )
+}
+
 const emptyItem = {
   product_code: '', product_name: '', invoice_name: '', item_group: '', spec: '', fg_code: '',
   supplier_ready: false, required_date: '', unit: '',
@@ -190,9 +226,21 @@ export default function PurchaseOrderDetail() {
   const txt = (i: number, k: string, w: number | string = 120) => (
     <input className="cell-input" style={{ width: w }} value={items[i][k] ?? ''} disabled={!headerEditable} onChange={(e) => setItem(i, { [k]: e.target.value })} />
   )
-  const num = (i: number, k: string, w = 90) => (
-    <input className="cell-input" type="number" style={{ width: w }} value={items[i][k] ?? 0} disabled={!headerEditable} onChange={(e) => setItem(i, { [k]: Number(e.target.value) })} />
-  )
+  const num = (i: number, k: string, w = 90) => {
+    if (k === 'price') {
+      return (
+        <CurrencyInput
+          style={{ width: w }}
+          value={items[i][k] ?? 0}
+          disabled={!headerEditable}
+          onChange={(val: number) => setItem(i, { [k]: val })}
+        />
+      )
+    }
+    return (
+      <input className="cell-input" type="number" style={{ width: w }} value={items[i][k] ?? 0} disabled={!headerEditable} onChange={(e) => setItem(i, { [k]: Number(e.target.value) })} />
+    )
+  }
 
   const title = isNew ? 'Tạo Đơn mua hàng' : `Đơn mua hàng ${po.code || ''}`
   const isLogShown = !isNew && logs.length > 0
@@ -205,7 +253,10 @@ export default function PurchaseOrderDetail() {
         {!isNew && poBadge(po.status)}
         <span style={{ flex: 1 }} />
         {!isNew && can('purchase_order', 'print') && (
-          <button className="btn ghost" onClick={() => window.open(`/print/purchase-order/${id}`, '_blank')}><i className="ti ti-printer" />In PO gửi NCC</button>
+          <>
+            <button className="btn ghost" onClick={() => window.open(`/print/purchase-order/${id}`, '_blank')}><i className="ti ti-printer" />In Đơn đặt hàng</button>
+            <button className="btn ghost" onClick={() => window.open(`/print/purchase-order-mh/${id}`, '_blank')}><i className="ti ti-file-invoice" />In Đơn mua hàng</button>
+          </>
         )}
         {(headerEditable || deliveryEditable) && can('purchase_order', isNew ? 'create' : 'write') && (
           <button className="btn" onClick={save}>{isNew ? 'Tạo' : 'Lưu'}</button>
@@ -231,7 +282,7 @@ export default function PurchaseOrderDetail() {
       </div>
 
       <div className={isLogShown ? 'detail-grid' : ''}>
-        <div>
+        <div style={{ minWidth: 0 }}>
           {/* Thông tin chung */}
           <div className="card" style={{ padding: 18, marginBottom: 16 }}>
             <h3 className="sec-title">Thông tin chung</h3>
@@ -394,8 +445,8 @@ export default function PurchaseOrderDetail() {
 
       {/* Popup giao hàng nhiều lần của 1 dòng */}
       {editingItemIdx !== null && items[editingItemIdx] && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setEditingItemIdx(null)}>
-          <div className="modal-card" style={{ width: 1100, maxWidth: '100%', background: '#fff', borderRadius: 12, boxShadow: '0 20px 25px -5px rgba(0,0,0,.15)', display: 'flex', flexDirection: 'column', maxHeight: '88vh', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }} onClick={() => setEditingItemIdx(null)}>
+          <div className="modal-card" style={{ width: 1100, maxWidth: '96vw', background: '#fff', borderRadius: 12, boxShadow: '0 20px 25px -5px rgba(0,0,0,.15)', display: 'flex', flexDirection: 'column', maxHeight: '92vh', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: 16, color: 'var(--navy)' }}>Chi tiết dòng: {items[editingItemIdx].product_name || items[editingItemIdx].product_code}</h3>
@@ -406,7 +457,7 @@ export default function PurchaseOrderDetail() {
               <button className="icon-btn" onClick={() => setEditingItemIdx(null)}><i className="ti ti-x" style={{ fontSize: 18 }} /></button>
             </div>
 
-            <div style={{ padding: 16, overflowY: 'auto', flex: 1 }}>
+            <div style={{ padding: '16px 18px', overflowY: 'auto', flex: 1, minWidth: 0, maxWidth: '100%' }}>
               {/* Thông tin sản phẩm (gồm VAT) */}
               <h4 style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--navy)' }}>Thông tin sản phẩm</h4>
               {(() => {
@@ -437,7 +488,7 @@ export default function PurchaseOrderDetail() {
                     </div>
                     <div className="form-row"><label>SL yêu cầu</label><input type="number" value={it.qty_request ?? 0} disabled={de} onChange={(e) => setItem(ii, { qty_request: Number(e.target.value) })} /></div>
                     <div className="form-row"><label>SL đặt NCC</label><input type="number" value={it.qty_order ?? 0} disabled={de} onChange={(e) => setItem(ii, { qty_order: Number(e.target.value) })} /></div>
-                    <div className="form-row"><label>Đơn giá</label><input type="number" value={it.price ?? 0} disabled={de} onChange={(e) => setItem(ii, { price: Number(e.target.value) })} /></div>
+                    <div className="form-row"><label>Đơn giá</label><CurrencyInput value={it.price ?? 0} disabled={de} onChange={(val: number) => setItem(ii, { price: val })} /></div>
                     <div className="form-row"><label>VAT (%)</label><input type="number" value={it.vat ?? 0} disabled={de} onChange={(e) => setItem(ii, { vat: Number(e.target.value) })} /></div>
                     <div className="form-row"><label>Trước thuế (đã nhận)</label><input value={fmt(recvQty(it) * (Number(it.price) || 0))} disabled /></div>
                     <div className="form-row"><label>Tiền thuế</label><input value={fmt(recvQty(it) * (Number(it.price) || 0) * (Number(it.vat) || 0) / 100)} disabled /></div>
@@ -448,8 +499,8 @@ export default function PurchaseOrderDetail() {
               })()}
 
               <h4 style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--navy)', borderTop: '1px solid var(--border)', paddingTop: 14 }}>Giao hàng (nhiều lần)</h4>
-              {isNew && <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10 }}>⚠️ Lưu đơn (Tạo) trước rồi mới thêm lần giao.</div>}
-              {!isNew && !deliveryEditable && <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10 }}>⚠️ Chỉ thêm/sửa lần giao khi đơn đã được duyệt.</div>}
+              {isNew && <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10 }}>Lưu đơn (Tạo) trước rồi mới thêm lần giao.</div>}
+              {!isNew && !deliveryEditable && <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10 }}>Chỉ thêm/sửa lần giao khi đơn đã được duyệt.</div>}
               {deliveryEditable && (
                 <button className="btn ghost" style={{ height: 30, fontSize: 13, marginBottom: 10 }} onClick={() => addDelivery(editingItemIdx)}><i className="ti ti-plus" />Thêm lần giao</button>
               )}
@@ -519,8 +570,22 @@ export default function PurchaseOrderDetail() {
                           <td style={{ textAlign: 'center', color: (d.diff_regulated < 0 ? 'var(--red)' : 'var(--muted)'), fontWeight: d.diff_regulated < 0 ? 600 : 400 }}>{d.received_date ? (d.diff_regulated ?? 0) : '—'}</td>
                           <td style={{ textAlign: 'center', color: (d.diff_required < 0 ? 'var(--red)' : 'var(--muted)') }}>{items[ii].required_date ? (d.diff_required ?? 0) : '—'}</td>
                           <td style={{ textAlign: 'center', fontSize: 12 }}>{d.status ? <span className={'badge ' + (d.status === 'Đã nhận' ? 'ok' : d.status === 'Lỗi' ? 'err' : 'warn')}>{d.status}</span> : '—'}</td>
-                          <td><input className="cell-input" type="number" style={{ width: 100 }} value={d.shipping_unit_price ?? 0} disabled={dis} onChange={(e) => { const up = Number(e.target.value); setDelivery(ii, di, { shipping_unit_price: up, shipping_amount: up * (Number(d.ship_qty) || 0) }) }} /></td>
-                          <td><input className="cell-input" type="number" style={{ width: 110 }} value={d.shipping_amount ?? 0} disabled={dis} onChange={(e) => setDelivery(ii, di, { shipping_amount: Number(e.target.value) })} /></td>
+                          <td>
+                            <CurrencyInput
+                              style={{ width: 100 }}
+                              value={d.shipping_unit_price ?? 0}
+                              disabled={dis}
+                              onChange={(val: number) => setDelivery(ii, di, { shipping_unit_price: val, shipping_amount: val * (Number(d.ship_qty) || 0) })}
+                            />
+                          </td>
+                          <td>
+                            <CurrencyInput
+                              style={{ width: 110 }}
+                              value={d.shipping_amount ?? 0}
+                              disabled={dis}
+                              onChange={(val: number) => setDelivery(ii, di, { shipping_amount: val })}
+                            />
+                          </td>
                           <td>
                             <select className="cell-input" style={{ width: 90 }} value={d.qc_result ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { qc_result: e.target.value })}>
                               {QC.map((q) => <option key={q} value={q}>{q || '—'}</option>)}

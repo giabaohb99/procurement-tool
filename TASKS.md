@@ -10,7 +10,7 @@
 - [x] Module: role (list/create + ma trận quyền + meta) · user (cấp tài khoản, đổi mật khẩu, gán vai trò)
 - [x] Frontend: login · layout · trang Công ty · trang Nhân viên
 - [x] Chạy thử `docker compose up`, sửa lỗi phát sinh (môi trường thật)
-- [ ] Alembic migration (thay cho create_all) — `migrations/`
+- [x] Alembic migration (thay cho create_all) — `backend/migrations/` · start.sh chạy `alembic upgrade head` trước seed
 - [ ] Màn cấu hình phân quyền (FE) dùng `/api/roles/{id}/permissions` + `/meta`
 - [ ] Google OAuth (sau)
 
@@ -48,11 +48,20 @@
 
 ## Phase 4 — Công nợ · Báo cáo · Hợp đồng
 - [x] Công nợ 2 luồng (hàng/vận chuyển) + yêu cầu thanh toán gom + đính kèm (làm sớm ở Phase 2)
-- [ ] Báo cáo tiến độ/KPI/chi phí · Hợp đồng + cảnh báo hết hạn
+- [x] Báo cáo mua hàng (1 màn nhiều tab: Tổng quan/NCC/Phân loại/NSPT/Bộ phận/Vận chuyển/Tồn) — precompute snapshot (`tab_report_snapshot`) + nút Cập nhật + In. Xem `doc/Requirement_BaoCao_MuaHang.md`
+- [ ] Lịch tự refresh snapshot báo cáo (Phase 3 worker) · Hợp đồng + cảnh báo hết hạn
 
 ## Phase 5 — Quản trị nâng cao
 - [ ] Cấu hình duyệt theo ngưỡng · mẫu in · audit log UI · sao lưu
 - [ ] Đính kèm R2 + xem bộ chứng từ theo đơn
+
+---
+## Quy trình đổi cấu trúc DB (Alembic) — KHÔNG drop bảng tay nữa
+1. Sửa model (`app/modules/**/model.py`) + thêm import vào `app/core/all_models.py` nếu là model mới.
+2. Sinh migration:  `docker compose exec api sh -c "cd /app && alembic revision --autogenerate -m 'mo ta'"`
+3. Áp dụng:        `docker compose exec api sh -c "cd /app && alembic upgrade head"`  (start.sh cũng tự chạy khi khởi động)
+4. Kiểm tra khớp:  `docker compose exec api sh -c "cd /app && alembic check"`  → "No new upgrade operations detected"
+- Lùi 1 bước: `alembic downgrade -1`. Migration lưu ở `backend/migrations/versions/`.
 
 ---
 **Đăng nhập:** `degoadmin` / `dego2026` (đổi qua `.env`). Web: http://localhost:8080 · API: http://localhost:8000/docs

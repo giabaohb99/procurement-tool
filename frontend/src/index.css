@@ -104,7 +104,11 @@ tbody tr:hover { background: #f0f7f8; }
 .form-row input[type=checkbox] { width: 18px; height: 18px; }
 
 /* ===== Trang chi tiết + timeline log ===== */
-.detail-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: start; }
+/* Trang chi tiết: nội dung trên, lịch sử thao tác xuống dưới (1 cột). */
+.detail-grid { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+/* Lưới 2 cột responsive (Báo cáo…) — tự xuống 1 cột trên điện thoại */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .timeline { display: flex; flex-direction: column; gap: 12px; }
 .tl-item { display: flex; gap: 10px; align-items: flex-start; }
@@ -113,7 +117,7 @@ tbody tr:hover { background: #f0f7f8; }
 .tl-dot.update { background: var(--teal); }
 .tl-dot.delete { background: var(--red); }
 @media (max-width: 820px) {
-  .detail-grid { grid-template-columns: 1fr; }
+  .detail-grid, .grid-2, .grid-1-2 { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   /* Thanh lọc tùy biến (Tồn kho / Công nợ): mỗi ô full hàng cho dễ bấm trên điện thoại */
   .filters > div { flex: 1 1 100% !important; }
@@ -146,6 +150,8 @@ tbody tr:hover { background: #f0f7f8; }
 /* ===== In ấn ===== */
 @media print {
   .no-print { display: none !important; }
+  .sidebar, .topbar { display: none !important; }
+  .content { padding: 0 !important; }
   body { background: #fff !important; }
 }
 

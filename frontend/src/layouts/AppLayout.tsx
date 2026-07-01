@@ -11,6 +11,7 @@ const NAV = [
   { to: '/inventory', label: 'Tồn kho', icon: 'ti-packages' },
   { to: '/payables', label: 'Công nợ', icon: 'ti-cash' },
   { to: '/payment-requests', label: 'Yêu cầu thanh toán', icon: 'ti-receipt' },
+  { to: '/reports', label: 'Báo cáo mua hàng', icon: 'ti-chart-bar' },
   { to: '/companies', label: 'Công ty', icon: 'ti-building' },
   { to: '/suppliers', label: 'Nhà cung cấp', icon: 'ti-truck' },
   { to: '/products', label: 'Sản phẩm', icon: 'ti-box' },
