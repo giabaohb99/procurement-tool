@@ -15,6 +15,8 @@ import Inventory from './pages/Inventory'
 import Payables from './pages/Payables'
 import PaymentRequestDetail from './pages/PaymentRequestDetail'
 import Reports from './pages/Reports'
+import SupplierDetail from './pages/SupplierDetail'
+import ContractDetail from './pages/ContractDetail'
 import PrintPaymentRequest from './pages/PrintPaymentRequest'
 
 function Protected({ children }: { children: JSX.Element }) {
@@ -42,6 +44,8 @@ export default function App() {
             <Route path="inventory" element={<Inventory />} />
             <Route path="payables" element={<Payables />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="suppliers/:id" element={<SupplierDetail />} />
+            <Route path="contracts/:id" element={<ContractDetail />} />
             <Route path=":entity" element={<CrudList />} />
             <Route path=":entity/:id" element={<CrudDetail />} />
           </Route>

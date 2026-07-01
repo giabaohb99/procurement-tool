@@ -27,6 +27,9 @@ h2, h3 { margin: 0; }
 .nav-item .ti { font-size: 18px; }
 .nav-item:hover { background: #f1f5f9; color: var(--ink); }
 .nav-item.active { background: #e0f2fe; color: #0284c7; font-weight: 600; }
+.nav-group-title { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: #94a3b8; font-weight: 700; padding: 12px 12px 4px; }
+button.nav-group-title { display: flex; align-items: center; gap: 6px; width: 100%; background: none; border: 0; cursor: pointer; text-align: left; height: auto; }
+button.nav-group-title:hover { color: var(--muted); }
 
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-x: hidden; }
 .topbar { display: flex; align-items: center; justify-content: space-between; padding: 11px 22px; background: var(--surface); border-bottom: 1px solid var(--border); }

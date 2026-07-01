@@ -122,7 +122,7 @@ export default function CrudDetail() {
                   ) : f.type === 'checkbox' ? (
                     <input type="checkbox" checked={!!form[f.key]} disabled={ro} onChange={(e) => set(f.key, e.target.checked)} />
                   ) : (
-                    <input type={f.type === 'number' ? 'number' : 'text'} value={form[f.key] ?? ''} disabled={ro}
+                    <input type={f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : 'text'} value={form[f.key] ?? ''} disabled={ro}
                            onChange={(e) => set(f.key, f.type === 'number' ? Number(e.target.value) : e.target.value)} />
                   )}
                 </div>
