@@ -8,7 +8,7 @@ from app.core.permissions import (ACTION_LABELS, ACTIONS, ENTITIES,
 from app.core.response import success
 
 from . import service
-from .schema import PermissionUpdate, RoleCreate, RoleOut
+from .schema import PermissionUpdate, RoleCreate, RoleOut, RoleUpdate
 
 router = APIRouter(prefix="/api/roles", tags=["role"])
 
@@ -32,6 +32,24 @@ def list_roles(db: Session = Depends(get_db), user=Depends(require("role", "read
 def create_role(data: RoleCreate, db: Session = Depends(get_db), user=Depends(require("role", "create"))):
     obj = service.create_role(db, data, user.id)
     return success(RoleOut.model_validate(obj).model_dump(), "Đã tạo vai trò", 201)
+
+
+@router.get("/{rid}")
+def get_role(rid: int, db: Session = Depends(get_db), user=Depends(require("role", "read"))):
+    obj = service.get_role(db, rid)
+    return success(RoleOut.model_validate(obj).model_dump())
+
+
+@router.patch("/{rid}")
+def update_role(rid: int, data: RoleUpdate, db: Session = Depends(get_db), user=Depends(require("role", "write"))):
+    obj = service.update_role(db, rid, data, user.id)
+    return success(RoleOut.model_validate(obj).model_dump(), "Đã cập nhật vai trò")
+
+
+@router.delete("/{rid}")
+def delete_role(rid: int, db: Session = Depends(get_db), user=Depends(require("role", "delete"))):
+    service.delete_role(db, rid, user.id)
+    return success(None, "Đã xóa vai trò")
 
 
 @router.get("/{rid}/permissions")

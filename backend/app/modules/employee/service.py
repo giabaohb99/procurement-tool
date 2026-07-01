@@ -7,7 +7,7 @@ from app.core.utils import generate_code
 from .model import Employee
 from .schema import EmployeeCreate, EmployeeUpdate
 
-FILTERABLE = ["code", "full_name", "email", "is_active"]
+FILTERABLE = ["code", "full_name", "email", "is_active", "role_names"]
 ENTITY = "employee"
 
 
@@ -25,6 +25,8 @@ def get_employee(db: Session, eid: int) -> Employee:
 
 
 def create_employee(db: Session, data: EmployeeCreate, user_id: int) -> Employee:
+    if not data.role_name:
+        raise HTTPException(400, "Bắt buộc chọn vai trò cho nhân sự")
     if not data.code:
         data.code = generate_code(db, Employee, "NSU")
     elif db.query(Employee).filter(Employee.code == data.code).first():
@@ -39,6 +41,8 @@ def create_employee(db: Session, data: EmployeeCreate, user_id: int) -> Employee
 
 def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -> Employee:
     obj = get_employee(db, eid)
+    if data.role_name is not None and not data.role_name.strip():
+        raise HTTPException(400, "Bắt buộc chọn vai trò cho nhân sự")
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(obj, key, value)
     obj.updated_by = user_id

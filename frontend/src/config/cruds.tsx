@@ -255,9 +255,8 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: [{value: 'true', label: 'Hoạt động'}, {value: 'false', label: 'Đã ẩn'}] },
     ],
     fields: [
-      { key: 'code', label: 'Mã Phòng ban' },
+      { key: 'code', label: 'Mã Phòng ban', readonlyOnEdit: true },
       { key: 'name', label: 'Tên Phòng ban' },
-      { key: 'manager_id', label: 'Trưởng bộ phận', type: 'select', source: { url: '/api/employees?role_name=' + encodeURIComponent('Trưởng bộ phận/Admin'), value: 'id', label: 'full_name' } },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: [{value: 'true', label: 'Hoạt động'}, {value: 'false', label: 'Đã ẩn'}] },
     ]
   },

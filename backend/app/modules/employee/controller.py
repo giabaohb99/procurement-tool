@@ -75,11 +75,13 @@ def export_employees_csv(
             
     items = query.order_by(Employee.id.desc()).all()
     headers_map = {
-        "code": "ID",
+        "code": "Mã NV",
         "full_name": "Họ tên",
         "email": "Email",
-        "phone": "SĐT",
-        "position": "Chức vụ",
+        "phone": "Số điện thoại",
+        "department_name": "Phòng ban",
+        "role_name": "Vai trò",
+        "status": "Trạng thái NS",
     }
     return export_csv_response(items, headers_map, "employees")
 
@@ -95,25 +97,42 @@ def import_employees_csv(
     from app.core.utils import generate_code
     from .model import Employee
     
-    content = file.file.read().decode("utf-8")
+    try:
+        content = file.file.read().decode("utf-8-sig").replace("\r\n", "\n")
+        if content.lower().startswith("sep="):
+            content = content.split("\n", 1)[-1]
+    except UnicodeDecodeError:
+        raise HTTPException(400, "Lỗi định dạng file. Vui lòng lưu file CSV với encoding UTF-8.")
+        
     reader = csv.DictReader(StringIO(content))
     if not reader.fieldnames:
         raise HTTPException(400, "File CSV trống")
         
     created, updated, deleted = 0, 0, 0
     for row in reader:
-        action = row.get("Hành động", "").strip().lower()
+        action = (row.get("Hành động") or "").strip().lower()
         is_active = action not in ["xóa", "delete", "ngừng"]
         
-        code = row.get("ID", "").strip()
-        full_name = row.get("Họ tên", "").strip()
-        email = row.get("Email", "").strip()
-        phone = row.get("SĐT", "").strip()
-        position = row.get("Chức vụ", "").strip()
+        code = (row.get("Mã NV") or row.get("ID") or "").strip()
+        full_name = (row.get("Họ tên") or "").strip()
+        email = (row.get("Email") or "").strip()
+        phone = (row.get("Số điện thoại") or row.get("SĐT") or "").strip()
+        department_name = (row.get("Phòng ban") or "").strip()
+        role_name = (row.get("Vai trò") or "").strip()
+        status = (row.get("Trạng thái NS") or row.get("Trạng thái") or "Chính thức").strip()
         
         if not code and not full_name:
             continue
             
+        # Try mapping department_name to department_id
+        department_id = 0
+        if department_name:
+            from .model import Employee
+            from app.modules.department.model import Department
+            dept = db.query(Department).filter(Department.name.like(f"%{department_name}%")).first()
+            if dept:
+                department_id = dept.id
+
         existing = db.query(Employee).filter(Employee.code == code).first() if code else None
         if existing:
             if action in ["xóa", "delete"]:
@@ -123,7 +142,9 @@ def import_employees_csv(
                 if full_name: existing.full_name = full_name
                 existing.email = email
                 existing.phone = phone
-                existing.position = position
+                if department_id: existing.department_id = department_id
+                existing.role_name = role_name
+                existing.status = status
                 existing.is_active = is_active
                 existing.updated_by = user.id
                 if not is_active: deleted += 1
@@ -133,10 +154,11 @@ def import_employees_csv(
             if not code: code = generate_code(db, Employee, "NSU")
             new_obj = Employee(
                 code=code, full_name=full_name, email=email, phone=phone,
-                position=position, is_active=is_active,
-                created_by=user.id, updated_by=user.id
+                department_id=department_id, role_name=role_name, status=status,
+                is_active=is_active, created_by=user.id, updated_by=user.id
             )
             db.add(new_obj)
+            db.flush()
             created += 1
             
     db.commit()

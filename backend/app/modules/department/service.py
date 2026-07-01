@@ -22,8 +22,12 @@ def get_department(db: Session, did: int) -> Department:
 
 
 def create_department(db: Session, data: DepartmentCreate, user_id: int) -> Department:
-    if db.query(Department).filter(Department.code == data.code).first():
+    if not data.code:
+        from app.core.utils import generate_code
+        data.code = generate_code(db, Department, "PBA")
+    elif db.query(Department).filter(Department.code == data.code).first():
         raise HTTPException(400, "Mã phòng ban đã tồn tại")
+
     obj = Department(**data.model_dump(), created_by=user_id, updated_by=user_id)
     db.add(obj)
     db.commit()

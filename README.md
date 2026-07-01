@@ -49,5 +49,6 @@ Xem `doc/NAMING_CONVENTIONS.md` và `doc/Requirement_Mini_Tool_Thu_Mua.md`.
 Do đó, khi cập nhật code có liên quan đến cấu trúc cơ sở dữ liệu (thêm/sửa cột, thay đổi model SQLAlchemy), **TUYỆT ĐỐI KHÔNG ĐƯỢC BỎ QUA** bước cập nhật trực tiếp vào MySQL.
 - Bất kỳ thay đổi nào trong `model.py` phải đi kèm với việc cập nhật cấu trúc bảng (`ALTER TABLE`) trực tiếp trong cơ sở dữ liệu.
 - Viết file script Python (sử dụng SQLAlchemy) hoặc `.sql` để chạy lệnh `ALTER TABLE` khi deploy.
-- **KHÔNG** thao tác `ALTER TABLE` chứa chuỗi tiếng Việt trực tiếp qua Command Line / PowerShell vì sẽ gây lỗi font chữ (Unicode mojibake). Luôn chạy script qua file `.py` hoặc `.sql` để đảm bảo đúng định dạng `UTF-8`.
+- **KHÔNG** thao tác `ALTER TABLE` hoặc `INSERT/UPDATE` chứa chuỗi tiếng Việt trực tiếp qua Command Line / PowerShell (vd: `docker compose exec db mysql -e "..."`). Việc này sẽ gây lỗi mã hóa kép (Unicode double-encoding mojibake), biến chữ `Chính thức` thành `ChÃnh thá»©c` trong database.
+- Luôn chạy script qua file `.py` hoặc mount file `.sql` vào container để đảm bảo đúng định dạng `UTF-8`.
 - Nếu thiếu bước cập nhật schema, API sẽ báo lỗi 500 do thiếu cột, khiến toàn bộ dữ liệu bảng bị ẩn/mất khỏi giao diện, gây gián đoạn hệ thống nghiêm trọng.

@@ -108,15 +108,21 @@ def import_companies_csv(
     from app.core.utils import generate_code
     from .model import Company
     
-    content = file.file.read().decode("utf-8")
+    try:
+        content = file.file.read().decode("utf-8-sig").replace("\r\n", "\n")
+        if content.lower().startswith("sep="):
+            content = content.split("\n", 1)[-1]
+    except UnicodeDecodeError:
+        raise HTTPException(400, "Lỗi định dạng file. Vui lòng lưu file CSV với encoding UTF-8.")
+    
     reader = csv.DictReader(StringIO(content))
     if not reader.fieldnames:
         raise HTTPException(400, "File CSV trống")
         
     created, updated, deleted = 0, 0, 0
     for row in reader:
-        action = row.get("Hành động", "").strip().lower()
-        is_active = action not in ["xóa", "delete", "ngừng"]
+        status_str = (row.get("Trạng thái") or row.get("Hành động") or "").strip().lower()
+        is_active = status_str not in ["xóa", "delete", "ngừng", "đã ẩn", "ẩn", "false"]
         
         db_id = row.get("ID", "").strip()
         code = row.get("Mã", "").strip()
@@ -134,7 +140,7 @@ def import_companies_csv(
         if not existing and code:
             existing = db.query(Company).filter(Company.code == code).first()
         if existing:
-            if action in ["xóa", "delete"]:
+            if status_str in ["xóa", "delete"]:
                 db.delete(existing)
                 deleted += 1
             else:
@@ -155,6 +161,7 @@ def import_companies_csv(
                 created_by=user.id, updated_by=user.id
             )
             db.add(new_obj)
+            db.flush()
             created += 1
             
     db.commit()

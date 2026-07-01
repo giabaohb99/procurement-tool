@@ -10,6 +10,8 @@ class EmployeeBase(BaseModel):
     company_id: int = 0
     department_id: int = 0
     position: str = ""
+    role_name: str = ""
+    status: str = "Chính thức"
     is_active: bool = True
 
 
@@ -24,6 +26,8 @@ class EmployeeUpdate(BaseModel):
     company_id: int | None = None
     department_id: int | None = None
     position: str | None = None
+    role_name: str | None = None
+    status: str | None = None
     is_active: bool | None = None
 
 

@@ -16,18 +16,20 @@ class Employee(Base, AuditMixin):
     company_id: Mapped[int] = mapped_column(BigInteger, default=0)
     department_id: Mapped[int] = mapped_column(BigInteger, default=0)
     position: Mapped[str] = mapped_column(String(100), default="")
+    role_name: Mapped[str] = mapped_column(String(100), default="")
+    status: Mapped[str] = mapped_column(String(50), default="Chính thức")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     department = relationship(
-        "Brand",
-        primaryjoin="foreign(Employee.department_id) == Brand.id",
+        "Department",
+        primaryjoin="foreign(Employee.department_id) == Department.id",
         uselist=False,
         viewonly=True
     )
 
     @property
     def department_name(self) -> str | None:
-        return self.department.department if self.department else None
+        return self.department.name if self.department else None
 
     @property
     def manager_name(self) -> str | None:

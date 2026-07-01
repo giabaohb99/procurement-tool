@@ -28,4 +28,12 @@ def apply_filters(query, model, request: Request, filterable: list[str]):
                     query = query.filter(col == is_true)
                 else:
                     query = query.filter(col.like(f"%{val}%"))
+        elif key.endswith("s") and key[:-1] in filterable and val not in (None, ""):
+            # Handle comma-separated list like role_names -> roles_name IN (list)
+            actual_key = key[:-1]
+            if hasattr(model, actual_key) or hasattr(model, key):
+                db_col_name = key if hasattr(model, key) else actual_key
+                col = getattr(model, db_col_name)
+                val_list = [v.strip() for v in val.split(",")]
+                query = query.filter(col.in_(val_list))
     return query
