@@ -186,6 +186,25 @@ def run():
             db.add(UserRole(user_id=user.id, role_id=admin_role.id))
             db.commit()
 
+        # Seed second admin: DEGO0001 (username: admin, pass: admin, name: Dego Admin)
+        emp2 = db.query(Employee).filter(Employee.code == "DEGO0001").first()
+        if not emp2:
+            emp2 = Employee(code="DEGO0001", full_name="Dego Admin",
+                            company_id=company.id, position="Admin", is_active=True)
+            db.add(emp2)
+            db.commit()
+            db.refresh(emp2)
+
+        user2 = db.query(User).filter(User.employee_id == emp2.id).first()
+        if not user2:
+            user2 = User(email="admin", employee_id=emp2.id,
+                         password_hash=hash_password("admin"), is_active=True)
+            db.add(user2)
+            db.commit()
+            db.refresh(user2)
+            db.add(UserRole(user_id=user2.id, role_id=admin_role.id))
+            db.commit()
+
         print(f"Seed done. Admin login: {settings.ADMIN_CODE} / (mật khẩu trong .env)")
     finally:
         db.close()

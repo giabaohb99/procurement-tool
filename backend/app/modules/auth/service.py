@@ -14,6 +14,8 @@ def authenticate(db: Session, username: str, password: str) -> User:
         emp = db.query(Employee).filter(Employee.code == username).first()
         if emp:
             user = db.query(User).filter(User.employee_id == emp.id).first()
+        if not user:
+            user = db.query(User).filter(User.email == username).first()
 
     if not user or not user.is_active or not verify_password(password, user.password_hash):
         raise HTTPException(401, "Sai tài khoản hoặc mật khẩu")
