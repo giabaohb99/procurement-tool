@@ -42,14 +42,22 @@
 - [ ] Duyệt PO theo ngưỡng (đang dùng luồng duyệt cơ bản; ngưỡng để Phase 5)
 
 ## Phase 3 — Cảnh báo & thông báo (Celery + Redis)
-- [ ] Celery worker + beat + Redis (thêm service docker)
-- [ ] Cảnh báo trễ hạn, nhắc D-1, công nợ, HĐ hết hạn
-- [ ] Báo cáo chạy ngầm (bảng snapshot)
+- [x] Logic cảnh báo + endpoint `GET /api/alerts` (giao trễ/sắp tới hạn · công nợ đến/quá hạn · HĐ sắp hết hạn) — xem `doc/Requirement_Phase34_UX.md`
+- [ ] Celery worker + beat + Redis (thêm service docker) — chạy ngầm: sinh notification/email + tự refresh snapshot báo cáo
+- [ ] Chuông thông báo (FE) đọc `/api/alerts` (badge + dropdown)
 
 ## Phase 4 — Công nợ · Báo cáo · Hợp đồng
 - [x] Công nợ 2 luồng (hàng/vận chuyển) + yêu cầu thanh toán gom + đính kèm (làm sớm ở Phase 2)
 - [x] Báo cáo mua hàng (1 màn nhiều tab: Tổng quan/NCC/Phân loại/NSPT/Bộ phận/Vận chuyển/Tồn) — precompute snapshot (`tab_report_snapshot`) + nút Cập nhật + In. Xem `doc/Requirement_BaoCao_MuaHang.md`
-- [ ] Lịch tự refresh snapshot báo cáo (Phase 3 worker) · Hợp đồng + cảnh báo hết hạn
+- [x] Hợp đồng **tổng quát** (module `contract`: đối tượng NCC/Khách hàng/Khác · công ty ký · đã ký · **đính kèm file thật (R2)** · bỏ giá trị · cảnh báo Còn hạn/Sắp hết hạn/Hết hạn) — trang ContractDetail riêng
+- [x] NCC: thêm **Loại NCC** (Công ty/Cá nhân/Hợp danh/Hộ kinh doanh) · người liên hệ/SĐT · **TK ngân hàng**; trang chi tiết NCC 4 tab (Thông tin/Đánh giá/Hợp đồng/Công nợ) đầy đủ thêm-sửa-xóa
+- [ ] Lịch tự refresh snapshot báo cáo (Phase 3 worker)
+
+## UX (đợt này)
+- [x] Task 1 — Ô search tự lọc khi ngừng gõ (debounce 400ms), bỏ nút Lọc
+- [x] Task 7 — Gom sidebar theo cụm (Mua hàng / Kho & Công nợ / Danh mục thu gọn / Hệ thống)
+- [x] Task 9 — Trang chi tiết NCC dạng tab (Thông tin · Đánh giá · Hợp đồng · Công nợ)
+- [x] Fix `start.sh` bị CRLF làm container crash (chuẩn hóa LF)
 
 ## Phase 5 — Quản trị nâng cao
 - [ ] Cấu hình duyệt theo ngưỡng · mẫu in · audit log UI · sao lưu

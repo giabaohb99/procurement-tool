@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
 
 export type FilterField = {
@@ -11,9 +11,7 @@ export type FilterField = {
 }
 
 export default function FilterBar({
-  fields,
-  onApply,
-  extra,
+  fields, onApply, extra,
 }: {
   fields: FilterField[]
   onApply: (params: Record<string, string>) => void
@@ -21,6 +19,9 @@ export default function FilterBar({
 }) {
   const [vals, setVals] = useState<Record<string, string>>({})
   const [dyn, setDyn] = useState<Record<string, { value: string; label: string }[]>>({})
+  const onApplyRef = useRef(onApply)
+  onApplyRef.current = onApply
+  const first = useRef(true)
 
   useEffect(() => {
     fields.filter((f) => f.source).forEach((f) => {
@@ -35,13 +36,19 @@ export default function FilterBar({
     })
   }, [fields])
 
+  // Tự lọc khi ngừng gõ / đổi lựa chọn (debounce 400ms) — không cần bấm nút
+  useEffect(() => {
+    if (first.current) { first.current = false; return }
+    const t = setTimeout(() => {
+      const params: Record<string, string> = {}
+      Object.entries(vals).forEach(([k, v]) => { if (v) params[k] = v })
+      onApplyRef.current(params)
+    }, 400)
+    return () => clearTimeout(t)
+  }, [vals])
+
   function set(k: string, v: string) { setVals((s) => ({ ...s, [k]: v })) }
-  function apply() {
-    const params: Record<string, string> = {}
-    Object.entries(vals).forEach(([k, v]) => { if (v) params[k] = v })
-    onApply(params)
-  }
-  function clear() { setVals({}); onApply({}) }
+  function clear() { setVals({}) }
 
   return (
     <div className="toolbar">
@@ -57,8 +64,7 @@ export default function FilterBar({
                  onChange={(e) => set(f.key, e.target.value)} />
         )
       })}
-      <button className="btn secondary" onClick={apply}><i className="ti ti-filter" />Lọc</button>
-      <button className="btn ghost" onClick={clear}>Xóa lọc</button>
+      {Object.values(vals).some((v) => v) && <button className="btn ghost" onClick={clear}>Xóa lọc</button>}
       <span style={{ flex: 1 }} />
       {extra}
     </div>

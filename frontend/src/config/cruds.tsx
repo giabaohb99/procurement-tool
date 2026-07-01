@@ -3,7 +3,7 @@ import { FilterField } from '../components/FilterBar'
 export type FieldDef = {
   key: string
   label: string
-  type?: 'text' | 'number' | 'textarea' | 'select' | 'checkbox'
+  type?: 'text' | 'number' | 'textarea' | 'select' | 'checkbox' | 'date' | 'select-multiple'
   options?: { value: string; label: string }[]
   readonlyOnEdit?: boolean
   source?: { url: string; value?: string; label?: string }
@@ -20,6 +20,7 @@ export type CrudConfig = {
   fields: FieldDef[]
   filters: FilterField[]
   importExport?: boolean
+  rowStyle?: (row: any) => any   // tô màu dòng theo điều kiện (vd HĐ sắp hết hạn)
 }
 
 const badge = (v: any, on = 'Đang dùng', off = 'Ngừng') =>
@@ -34,6 +35,16 @@ const ACTIVE_OPTIONS = [
   { value: 'true', label: 'Đang dùng / Hiện' },
   { value: 'false', label: 'Ngừng / Ẩn' },
 ]
+
+export const contractExpiryBadge = (e: string) => {
+  if (!e) return '—'
+  const c = e === 'Hết hạn' ? { bg: '#fee2e2', fg: '#b91c1c' } : e === 'Sắp hết hạn' ? { bg: '#fef3c7', fg: '#d97706' } : { bg: '#dcfce7', fg: '#15803d' }
+  return <span className="badge" style={{ background: c.bg, color: c.fg }}>{e}</span>
+}
+// Tô cả dòng HĐ sắp/hết hạn (cảnh báo trực quan)
+export const contractRowStyle = (r: any) => r.expiry === 'Hết hạn' ? { background: '#fdecea' } : r.expiry === 'Sắp hết hạn' ? { background: '#fff7ed' } : undefined
+const CONTRACT_TYPES = [{ value: 'Mua bán', label: 'Mua bán' }, { value: 'Nguyên tắc', label: 'Nguyên tắc' }, { value: 'Vận chuyển', label: 'Vận chuyển' }]
+const CONTRACT_STATUS = [{ value: 'Hiệu lực', label: 'Hiệu lực' }, { value: 'Hết hạn', label: 'Hết hạn' }, { value: 'Thanh lý', label: 'Thanh lý' }]
 
 export const PR_STATUS: Record<string, { label: string; cls: string }> = {
   draft: { label: 'Nháp', cls: 'gray' },
@@ -86,14 +97,16 @@ export const cruds: Record<string, CrudConfig> = {
   suppliers: {
     slug: 'suppliers', entity: 'supplier', title: 'Nhà cung cấp', apiPath: '/api/suppliers', importExport: true,
     columns: [
-      { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên pháp lý' }, { key: 'tax_code', label: 'MST' },
-      { key: 'supplier_type', label: 'Loại', render: (r) => (r.supplier_type === 'transport' ? 'Vận chuyển' : 'Bán hàng') },
+      { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên pháp lý' },
+      { key: 'legal_type', label: 'Loại NCC' }, { key: 'tax_code', label: 'MST' },
+      { key: 'supplier_type', label: 'Vai trò', render: (r) => (r.supplier_type === 'transport' ? 'Vận chuyển' : 'Bán hàng') },
       { key: 'payment_terms', label: 'Thanh toán' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
     ],
     filters: [
       { key: 'code', label: 'Mã / viết tắt' }, { key: 'name', label: 'Tên NCC' }, { key: 'tax_code', label: 'MST' },
-      { key: 'supplier_type', label: 'Loại', type: 'select', options: SUP_TYPE },
+      { key: 'legal_type', label: 'Loại NCC', type: 'select', options: ['Công ty', 'Cá nhân', 'Hợp danh', 'Hộ kinh doanh'].map((x) => ({ value: x, label: x })) },
+      { key: 'supplier_type', label: 'Vai trò', type: 'select', options: SUP_TYPE },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
     ],
     fields: [
@@ -122,6 +135,27 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'item_group', label: 'Phân loại' },
       { key: 'unit', label: 'ĐVT' }, { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
     ],
+  },
+  contracts: {
+    slug: 'contracts', entity: 'contract', title: 'Hợp đồng', apiPath: '/api/contracts',
+    rowStyle: contractRowStyle,
+    columns: [
+      { key: 'code', label: 'Mã HĐ' },
+      { key: 'party_type', label: 'Đối tượng' },
+      { key: 'party_name', label: 'Tên đối tượng', render: (r) => r.party_name || r.party_code },
+      { key: 'title', label: 'Trích yếu' }, { key: 'contract_type', label: 'Loại' },
+      { key: 'end_date', label: 'Đến ngày' },
+      { key: 'signed', label: 'Đã ký', render: (r) => (r.signed ? '✓' : '—') },
+      { key: 'expiry', label: 'Hết hạn', render: (r) => contractExpiryBadge(r.expiry) },
+      { key: 'status', label: 'Trạng thái' },
+    ],
+    filters: [
+      { key: 'code', label: 'Mã HĐ' },
+      { key: 'party_type', label: 'Đối tượng', type: 'select', options: ['Nhà cung cấp', 'Khách hàng', 'Khác'].map((x) => ({ value: x, label: x })) },
+      { key: 'status', label: 'Trạng thái', type: 'select', options: CONTRACT_STATUS },
+      { key: 'contract_type', label: 'Loại', type: 'select', options: CONTRACT_TYPES },
+    ],
+    fields: [],  // chi tiết dùng trang riêng (ContractDetail) — có đính kèm file
   },
   employees: {
     slug: 'employees', entity: 'employee', apiPath: '/api/employees',
