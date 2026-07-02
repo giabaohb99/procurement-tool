@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
-from app.core.auth import require
+from app.core.auth import get_perm_profile, require
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
+from app.core.scoping import apply_scope
 
 from . import service
 from .model import Inventory, InventoryMove
@@ -25,6 +26,7 @@ def _out(r: Inventory) -> dict:
 def list_inventory(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
                    user=Depends(require("inventory", "read"))):
     q = apply_filters(db.query(Inventory), Inventory, request, service.FILTERABLE)
+    q = apply_scope(q, Inventory, "inventory", user, get_perm_profile(db, user))
     company_id = request.query_params.get("company_id")
     if company_id:
         q = q.filter(Inventory.company_id == int(company_id))

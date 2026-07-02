@@ -12,7 +12,7 @@ ENTITIES = [
     "report", "setting",
 ]
 
-ACTIONS = ["read", "create", "write", "delete", "approve", "print", "export"]
+ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
 
 # Nhãn tiếng Việt để hiển thị ở màn cấu hình phân quyền
 ENTITY_LABELS = {
@@ -42,7 +42,12 @@ ENTITY_LABELS = {
 
 ACTION_LABELS = {
     "read": "Xem", "create": "Tạo", "write": "Sửa", "delete": "Xóa",
-    "approve": "Duyệt", "print": "In", "export": "Xuất",
+    "approve": "Duyệt", "cancel": "Hủy", "print": "In", "export": "Xuất",
 }
 
-SCOPES = ["own", "dept", "all"]  # own = của mình hoặc được gán
+# Phạm vi theo cấp bậc (tương đối với công ty/phòng ban của chính user)
+SCOPES = ["own", "dept", "company", "all"]
+SCOPE_LABELS = {
+    "own": "Của mình", "dept": "Phòng ban", "company": "Công ty", "all": "Tất cả",
+}
+SCOPE_RANK = {"own": 0, "dept": 1, "company": 2, "all": 3}  # để lấy phạm vi rộng nhất khi gộp vai trò

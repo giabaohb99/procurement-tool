@@ -11,7 +11,11 @@
 - [x] Frontend: login · layout · trang Công ty · trang Nhân viên
 - [x] Chạy thử `docker compose up`, sửa lỗi phát sinh (môi trường thật)
 - [x] Alembic migration (thay cho create_all) — `backend/migrations/` · start.sh chạy `alembic upgrade head` trước seed
-- [ ] Màn cấu hình phân quyền (FE) dùng `/api/roles/{id}/permissions` + `/meta`
+- [~] Phân quyền — **Bước 1 xong**: hành động thêm **Hủy** (`cancel`); scope cấp bậc **own/dept/company/all**; màn **Phân quyền** (`/roles` → RolePermissions: tab Vai trò + Ma trận quyền); seed 6 vai trò chuẩn (Nhân sự/Trưởng phòng/Quản lý cty/NV thu mua/QL thu mua/Admin thu mua). Xem `doc/Thiet_Ke_Phan_Quyen.md`
+- [~] Phân quyền — **Bước 2 (lõi xong)**: `perm_cache` in-process + `get_perm_profile` (gộp phạm vi rộng nhất) · `scope_query` own/dept/company/all (`core/scoping.py`) đã áp cho **Yêu cầu mua** (list+chi tiết) · ẩn menu theo quyền Xem · tab **Người dùng** gán vai trò · invalidate cache khi sửa quyền. Đã test: admin thấy tất cả, user scope own bị lọc.
+- [~] Phân quyền — **Bước 2 (tiếp)**: đã áp `scope_query` cho **PO · Công nợ · Tồn kho · Thanh toán** (Báo cáo/Dashboard tổng hợp để sau) · **tạo 21 tài khoản phòng Thu mua** (user=pass=mã NV) + gán vai trò (NSU210/NSU215=QL thu mua, NSU224=Admin thu mua, còn lại=NV thu mua) · login bằng email hoặc mã NV
+- [~] Phân quyền — **Bước 2 (mô hình GRANT)**: phạm vi theo **(user × vai trò)** — mỗi vai trò gán cho user có phạm vi RIÊNG (công ty/phòng ban/**nhân sự** + loại trừ). Enforcement = HỢP (OR) các grant có quyền (`core/scoping.py`). Bảng `tab_user_scope` (thêm `role_id`). **Trang chi tiết Người dùng** (`/users/:id`) liệt kê vai trò + nút **Phạm vi → popup** (mã/tên ngắn, tìm nhân sự). API `/api/users/{id}` · `/api/users/{id}/roles/{role_id}/scope`. Người dùng list: phân trang 20 + tìm kiếm.
+- [ ] Phân quyền — **còn lại (tùy chọn)**: popup phạm vi RIÊNG theo từng quyền (override per-entity) · scope cho Báo cáo/Dashboard · cấp tài khoản hàng loạt cho nhân sự ngoài phòng thu mua · chiều Nhân sự/Kho
 - [ ] Google OAuth (sau)
 
 ## Cross-cutting (áp dụng mọi module — xem doc/FEATURE_CHECKLIST.md)

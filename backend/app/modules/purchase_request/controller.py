@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, Request, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 
-from app.core.auth import require
+from app.core.auth import get_perm_profile, require
+from app.core.scoping import apply_scope
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
@@ -47,6 +48,7 @@ def list_pr(
     user=Depends(require("purchase_request", "read")),
 ):
     query = apply_filters(db.query(PurchaseRequest), PurchaseRequest, request, service.FILTERABLE)
+    query = apply_scope(query, PurchaseRequest, "purchase_request", user, get_perm_profile(db, user))
     total, items = service.list_pr(db, query, pg)
     
     pr_ids = [p.id for p in items]
@@ -72,6 +74,10 @@ def list_pr(
 
 @router.get("/{pid}")
 def get_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
+    scoped = apply_scope(db.query(PurchaseRequest).filter(PurchaseRequest.id == pid),
+                         PurchaseRequest, "purchase_request", user, get_perm_profile(db, user))
+    if not scoped.first():
+        raise HTTPException(403, "Ngoài phạm vi được phép xem")
     return success(_out(db, service.get_pr(db, pid)))
 
 

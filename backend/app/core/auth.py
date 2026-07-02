@@ -1,4 +1,5 @@
 """Xác thực (JWT) + phân quyền (RBAC) dùng chung — giống AuthMiddleware."""
+import time
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, Header, HTTPException
@@ -64,29 +65,101 @@ def get_current_user(authorization: str = Header(None), db: Session = Depends(ge
     return user
 
 
-def get_user_permissions(db: Session, user) -> dict:
-    """Trả về map { entity: {action: bool, scope: str} } gộp từ các vai trò của user."""
-    from app.modules.role.model import Permission
-    from app.modules.user.model import UserRole
+# ===== Hồ sơ quyền + cache in-process (xem doc/Thiet_Ke_Phan_Quyen.md mục 9) =====
+_PERM_CACHE: dict = {}   # {user_id: (profile, expires_at)}
+_PERM_TTL = 60           # giây
+
+
+def perm_cache_clear(user_id: int | None = None):
+    """Xóa cache quyền khi admin sửa vai trò/quyền/gán vai trò."""
+    if user_id is None:
+        _PERM_CACHE.clear()
+    else:
+        _PERM_CACHE.pop(user_id, None)
+
+
+def get_perm_profile(db: Session, user) -> dict:
+    """Hồ sơ quyền (cache in-process) theo mô hình GRANT — mỗi vai trò của user là 1 grant
+    (quyền hành động + phạm vi RIÊNG). Trả:
+      { grants: [ {role_id, perms:{entity:{action:bool,scope}}, scope:{inc,exc}} ],
+        perms_union: {entity:{action:bool}}, company_id, dept_name }.
+    """
+    now = time.time()
+    hit = _PERM_CACHE.get(user.id)
+    if hit and hit[1] > now:
+        return hit[0]
+
     from app.core.permissions import ACTIONS
+    from app.modules.role.model import Permission
+    from app.modules.user.model import UserRole, UserScope, User
 
     role_ids = [ur.role_id for ur in db.query(UserRole).filter(UserRole.user_id == user.id).all()]
-    result: dict = {}
-    if not role_ids:
-        return result
-    perms = db.query(Permission).filter(Permission.role_id.in_(role_ids)).all()
-    for p in perms:
-        cur = result.setdefault(p.entity, {a: False for a in ACTIONS})
-        for a in ACTIONS:
-            if getattr(p, f"can_{a}", False):
-                cur[a] = True
-        cur["scope"] = p.scope
-    return result
+
+    # Quyền theo từng vai trò
+    role_perms: dict = {}
+    if role_ids:
+        for p in db.query(Permission).filter(Permission.role_id.in_(role_ids)).all():
+            rp = role_perms.setdefault(p.role_id, {})
+            ent = rp.setdefault(p.entity, {**{a: False for a in ACTIONS}, "scope": "own"})
+            for a in ACTIONS:
+                if getattr(p, f"can_{a}", False):
+                    ent[a] = True
+            ent["scope"] = p.scope
+
+    # Phạm vi cụ thể theo (user, vai trò); chiều nhân sự → đổi employee_id thành user_id (created_by)
+    scope_rows = db.query(UserScope).filter(UserScope.user_id == user.id).all()
+    emp_ids = {int(s.value) for s in scope_rows if s.dim == "employee" and (s.value or "").isdigit()}
+    emp_to_user = {}
+    if emp_ids:
+        emp_to_user = {u.employee_id: u.id for u in db.query(User).filter(User.employee_id.in_(emp_ids)).all()}
+    scope_by_role: dict = {}
+    for s in scope_rows:
+        b = scope_by_role.setdefault(s.role_id, {"inc": {}, "exc": {}})
+        kind = "exc" if s.is_exclude else "inc"
+        if s.dim == "employee":
+            uid = emp_to_user.get(int(s.value)) if (s.value or "").isdigit() else None
+            if uid is not None:
+                b[kind].setdefault("employee", []).append(uid)
+        elif s.dim == "company":
+            b[kind].setdefault("company", []).append(int(s.value) if (s.value or "").isdigit() else s.value)
+        else:
+            b[kind].setdefault("department", []).append(s.value)
+
+    grants = [{"role_id": rid, "perms": role_perms.get(rid, {}),
+               "scope": scope_by_role.get(rid, {"inc": {}, "exc": {}})} for rid in role_ids]
+
+    perms_union: dict = {}
+    for g in grants:
+        for ent, p in g["perms"].items():
+            u = perms_union.setdefault(ent, {a: False for a in ACTIONS})
+            for a in ACTIONS:
+                if p.get(a):
+                    u[a] = True
+
+    company_id, dept_name = 0, ""
+    if getattr(user, "employee_id", 0):
+        from app.modules.employee.model import Employee
+        from app.modules.department.model import Department
+        emp = db.get(Employee, user.employee_id)
+        if emp:
+            company_id = emp.company_id or 0
+            if emp.department_id:
+                dep = db.get(Department, emp.department_id)
+                dept_name = dep.name if dep else ""
+
+    profile = {"grants": grants, "perms_union": perms_union,
+               "company_id": company_id, "dept_name": dept_name}
+    _PERM_CACHE[user.id] = (profile, now + _PERM_TTL)
+    return profile
+
+
+def get_user_permissions(db: Session, user) -> dict:
+    """Map { entity: {action: bool} } — dùng cho /api/auth/me (FE ẩn menu/nút)."""
+    return get_perm_profile(db, user)["perms_union"]
 
 
 def user_has_permission(db: Session, user, entity: str, action: str) -> bool:
-    perms = get_user_permissions(db, user)
-    return bool(perms.get(entity, {}).get(action, False))
+    return bool(get_perm_profile(db, user)["perms_union"].get(entity, {}).get(action, False))
 
 
 def require(entity: str, action: str):

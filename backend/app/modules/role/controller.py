@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import require
 from app.core.database import get_db
 from app.core.permissions import (ACTION_LABELS, ACTIONS, ENTITIES,
-                                  ENTITY_LABELS, SCOPES)
+                                  ENTITY_LABELS, SCOPE_LABELS, SCOPES)
 from app.core.response import success
 
 from . import service
@@ -19,7 +19,7 @@ def permission_meta(db: Session = Depends(get_db), user=Depends(require("role", 
     return success({
         "entities": [{"key": e, "label": ENTITY_LABELS.get(e, e)} for e in ENTITIES],
         "actions": [{"key": a, "label": ACTION_LABELS.get(a, a)} for a in ACTIONS],
-        "scopes": SCOPES,
+        "scopes": [{"key": s, "label": SCOPE_LABELS.get(s, s)} for s in SCOPES],
     })
 
 
@@ -58,7 +58,7 @@ def get_permissions(rid: int, db: Session = Depends(get_db), user=Depends(requir
     return success([{
         "entity": p.entity, "can_read": p.can_read, "can_create": p.can_create,
         "can_write": p.can_write, "can_delete": p.can_delete, "can_approve": p.can_approve,
-        "can_print": p.can_print, "can_export": p.can_export, "scope": p.scope,
+        "can_cancel": p.can_cancel, "can_print": p.can_print, "can_export": p.can_export, "scope": p.scope,
     } for p in perms])
 
 

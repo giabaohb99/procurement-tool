@@ -27,6 +27,7 @@ class PermissionItem(BaseModel):
     can_write: bool = False
     can_delete: bool = False
     can_approve: bool = False
+    can_cancel: bool = False
     can_print: bool = False
     can_export: bool = False
     scope: str = "own"

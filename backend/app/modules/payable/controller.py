@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
-from app.core.auth import require
+from app.core.auth import get_perm_profile, require
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
+from app.core.scoping import apply_scope
 
 from . import service
 from .model import Payable
@@ -31,9 +32,10 @@ def _today():
     return datetime.now().date()
 
 
-def _filtered(db: Session, request: Request):
+def _filtered(db: Session, request: Request, user):
     """Lọc ở DB (không nạp toàn bộ). Mặc định theo năm hiện tại để giới hạn dữ liệu."""
     q = apply_filters(db.query(Payable), Payable, request, service.FILTERABLE)
+    q = apply_scope(q, Payable, "payable", user, get_perm_profile(db, user))
     company_id = request.query_params.get("company_id")
     if company_id:
         q = q.filter(Payable.company_id == int(company_id))
@@ -64,7 +66,7 @@ def _filtered(db: Session, request: Request):
 @router.get("")
 def list_payables(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
                   user=Depends(require("payable", "read"))):
-    q = _filtered(db, request)
+    q = _filtered(db, request, user)
     total = q.count()
     rows = (q.order_by(Payable.due_date.asc(), Payable.id.desc())
             .offset(pg["offset"]).limit(pg["limit"]).all())
@@ -74,7 +76,7 @@ def list_payables(request: Request, pg: dict = Depends(pagination), db: Session 
 @router.get("/summary")
 def summary(request: Request, db: Session = Depends(get_db), user=Depends(require("payable", "read"))):
     today = _today().strftime("%Y-%m-%d")
-    q = _filtered(db, request)
+    q = _filtered(db, request, user)
     overdue_case = case(
         (((Payable.status != "Đã TT") & (Payable.due_date != "") & (Payable.due_date < today)), Payable.remaining),
         else_=0,

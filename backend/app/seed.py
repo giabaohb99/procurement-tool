@@ -165,6 +165,106 @@ def seed_demo_accounts(db, company_id):
             db.commit()
 
 
+# Vai trò chuẩn theo phân quyền DEGO. Mỗi entity: (danh sách hành động, phạm vi).
+# Phạm vi: own | dept | company | all. Xem doc/Thiet_Ke_Phan_Quyen.md.
+_CATALOG_READ = {e: (["read"], "all") for e in
+                 ["supplier", "product", "warehouse", "unit", "item_group", "contract", "department"]}
+
+STD_ROLES = {
+    "employee": {"name": "Nhân sự (cơ bản)", "perms": {
+        **_CATALOG_READ,
+        "purchase_request": (["read", "create"], "own"),
+    }},
+    "dept_head": {"name": "Trưởng phòng (duyệt PYC)", "perms": {
+        **_CATALOG_READ,
+        "purchase_request": (["read", "approve", "cancel"], "dept"),
+        "report": (["read"], "dept"),
+    }},
+    "company_head": {"name": "Quản lý công ty", "perms": {
+        **_CATALOG_READ,
+        "purchase_request": (["read"], "company"),
+        "purchase_order": (["read"], "company"),
+        "report": (["read"], "company"),
+    }},
+    "pur_staff": {"name": "Nhân viên thu mua", "perms": {
+        **_CATALOG_READ,
+        "purchase_request": (["read", "create", "write"], "dept"),
+        "survey": (["read", "create", "write"], "all"),
+        "purchase_order": (["read", "create", "write", "print"], "dept"),
+        "inventory": (["read"], "company"),
+        "payable": (["read"], "company"),
+        "payment_request": (["read", "create", "write", "print"], "company"),
+        "report": (["read"], "company"),
+    }},
+    "pur_manager": {"name": "Quản lý thu mua", "perms": {
+        **_CATALOG_READ,
+        "purchase_request": (["read", "approve", "cancel"], "all"),
+        "survey": (["read", "approve"], "all"),
+        "purchase_order": (["read", "write", "approve", "cancel", "print", "export"], "all"),
+        "inventory": (["read"], "all"),
+        "payable": (["read"], "all"),
+        "payment_request": (["read", "approve", "print", "export"], "all"),
+        "report": (["read", "export"], "all"),
+    }},
+    "pur_admin": {"name": "Admin thu mua", "perms": {
+        "purchase_request": (["read", "create", "write", "delete", "approve", "cancel", "print", "export"], "all"),
+        "purchase_order": (["read", "create", "write", "delete", "approve", "cancel", "print", "export"], "all"),
+        "survey": (["read", "create", "write", "delete", "approve"], "all"),
+        "inventory": (["read", "write"], "all"),
+        "payable": (["read", "write"], "all"),
+        "payment_request": (["read", "create", "write", "delete", "approve", "print", "export"], "all"),
+        "report": (["read", "export"], "all"),
+        "supplier": (["read", "create", "write", "delete"], "all"),
+        "product": (["read", "create", "write", "delete"], "all"),
+        "contract": (["read", "create", "write", "delete"], "all"),
+        "warehouse": (["read", "create", "write"], "all"),
+        "unit": (["read", "create", "write"], "all"),
+        "item_group": (["read", "create", "write"], "all"),
+        "department": (["read"], "all"),
+    }},
+}
+
+
+def seed_standard_roles(db):
+    """Tạo các vai trò chuẩn + ma trận quyền (idempotent). Không tạo user; gán cho nhân sự ở màn Phân quyền."""
+    for code, info in STD_ROLES.items():
+        role = db.query(Role).filter(Role.code == code).first()
+        if not role:
+            role = Role(code=code, name=info["name"])
+            db.add(role)
+            db.commit()
+            db.refresh(role)
+        existing = {p.entity for p in db.query(Permission).filter(Permission.role_id == role.id).all()}
+        for entity, (actions, scope) in info["perms"].items():
+            if entity in existing:
+                continue
+            db.add(Permission(
+                role_id=role.id, entity=entity, scope=scope,
+                can_read="read" in actions, can_create="create" in actions,
+                can_write="write" in actions, can_delete="delete" in actions,
+                can_approve="approve" in actions, can_cancel="cancel" in actions,
+                can_print="print" in actions, can_export="export" in actions,
+            ))
+        db.commit()
+
+
+def assign_default_roles(db):
+    """Tài khoản nào CHƯA có vai trò → gán 'Nhân sự' (employee) để ai cũng tạo/xem PYC của mình.
+    Không đụng tài khoản đã có vai trò (admin, đã gán tay...)."""
+    emp_role = db.query(Role).filter(Role.code == "employee").first()
+    if not emp_role:
+        return 0
+    assigned = {ur.user_id for ur in db.query(UserRole).all()}
+    n = 0
+    for u in db.query(User).all():
+        if u.id not in assigned:
+            db.add(UserRole(user_id=u.id, role_id=emp_role.id))
+            n += 1
+    if n:
+        db.commit()
+    return n
+
+
 def run():
     # Schema do Alembic quản lý (start.sh chạy `alembic upgrade head` trước). Seed chỉ nạp DATA.
     db = SessionLocal()
@@ -186,6 +286,9 @@ def run():
                      can_export=True, scope="all",
                 ))
         db.commit()
+
+        # Vai trò chuẩn (Nhân sự / Trưởng phòng / Quản lý cty / NV thu mua / QL thu mua / Admin thu mua)
+        seed_standard_roles(db)
 
         # Deduplication tracking sets (using upper case for case-insensitivity)
         seen_companies = {c[0].upper() for c in db.query(Company.code).all()}
@@ -304,6 +407,11 @@ def run():
 
         # Seed demo accounts
         seed_demo_accounts(db, company.id)
+
+        # Gán vai trò mặc định "Nhân sự" cho tài khoản chưa có vai trò
+        n_default = assign_default_roles(db)
+        if n_default:
+            print(f"Gán vai trò 'Nhân sự' mặc định cho {n_default} tài khoản.")
 
         print(f"Seed done. Admin login: {settings.ADMIN_CODE} / (mật khẩu trong .env)")
     finally:

@@ -3,38 +3,38 @@ import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { api } from '../api/client'
 
-type NavItem = { to: string; label: string; icon: string }
+type NavItem = { to: string; label: string; icon: string; entity?: string }
 type NavGroup = { title?: string; key?: string; collapsible?: boolean; items: NavItem[] }
 
 const NAV_GROUPS: NavGroup[] = [
   { items: [
     { to: '/', label: 'Trang chủ', icon: 'ti-layout-dashboard' },
-    { to: '/reports', label: 'Báo cáo mua hàng', icon: 'ti-chart-bar' },
+    { to: '/reports', label: 'Báo cáo mua hàng', icon: 'ti-chart-bar', entity: 'report' },
   ] },
   { title: 'Mua hàng', items: [
-    { to: '/purchase-requests', label: 'Yêu cầu mua', icon: 'ti-file-text' },
-    { to: '/surveys-supplier', label: 'Khảo sát NCC', icon: 'ti-clipboard-search' },
-    { to: '/surveys-product', label: 'Khảo sát SP', icon: 'ti-clipboard-check' },
-    { to: '/purchase-orders', label: 'Đơn mua hàng', icon: 'ti-shopping-cart' },
+    { to: '/purchase-requests', label: 'Yêu cầu mua', icon: 'ti-file-text', entity: 'purchase_request' },
+    { to: '/surveys-supplier', label: 'Khảo sát NCC', icon: 'ti-clipboard-search', entity: 'survey' },
+    { to: '/surveys-product', label: 'Khảo sát SP', icon: 'ti-clipboard-check', entity: 'survey' },
+    { to: '/purchase-orders', label: 'Đơn mua hàng', icon: 'ti-shopping-cart', entity: 'purchase_order' },
   ] },
   { title: 'Kho & Công nợ', items: [
-    { to: '/inventory', label: 'Tồn kho', icon: 'ti-packages' },
-    { to: '/payables', label: 'Công nợ', icon: 'ti-cash' },
-    { to: '/payment-requests', label: 'Yêu cầu thanh toán', icon: 'ti-receipt' },
+    { to: '/inventory', label: 'Tồn kho', icon: 'ti-packages', entity: 'inventory' },
+    { to: '/payables', label: 'Công nợ', icon: 'ti-cash', entity: 'payable' },
+    { to: '/payment-requests', label: 'Yêu cầu thanh toán', icon: 'ti-receipt', entity: 'payment_request' },
   ] },
   { title: 'Danh mục', key: 'danhmuc', collapsible: true, items: [
-    { to: '/suppliers', label: 'Nhà cung cấp', icon: 'ti-truck' },
-    { to: '/products', label: 'Sản phẩm', icon: 'ti-box' },
-    { to: '/contracts', label: 'Hợp đồng', icon: 'ti-file-certificate' },
-    { to: '/warehouses', label: 'Kho', icon: 'ti-building-warehouse' },
-    { to: '/units', label: 'Đơn vị tính', icon: 'ti-ruler-2' },
-    { to: '/item-groups', label: 'Phân loại', icon: 'ti-category' },
-    { to: '/departments', label: 'Phòng ban', icon: 'ti-tag' },
+    { to: '/suppliers', label: 'Nhà cung cấp', icon: 'ti-truck', entity: 'supplier' },
+    { to: '/products', label: 'Sản phẩm', icon: 'ti-box', entity: 'product' },
+    { to: '/contracts', label: 'Hợp đồng', icon: 'ti-file-certificate', entity: 'contract' },
+    { to: '/warehouses', label: 'Kho', icon: 'ti-building-warehouse', entity: 'warehouse' },
+    { to: '/units', label: 'Đơn vị tính', icon: 'ti-ruler-2', entity: 'unit' },
+    { to: '/item-groups', label: 'Phân loại', icon: 'ti-category', entity: 'item_group' },
+    { to: '/departments', label: 'Phòng ban', icon: 'ti-tag', entity: 'department' },
   ] },
   { title: 'Hệ thống', items: [
-    { to: '/companies', label: 'Công ty', icon: 'ti-building' },
-    { to: '/employees', label: 'Nhân sự', icon: 'ti-users' },
-    { to: '/roles', label: 'Vai trò', icon: 'ti-shield' },
+    { to: '/companies', label: 'Công ty', icon: 'ti-building', entity: 'company' },
+    { to: '/employees', label: 'Nhân sự', icon: 'ti-users', entity: 'employee' },
+    { to: '/roles', label: 'Vai trò', icon: 'ti-shield', entity: 'role' },
   ] },
 ]
 const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items)
@@ -43,7 +43,8 @@ const isActive = (path: string, to: string) =>
   to === '/' ? path === '/' : path.startsWith(to)
 
 export default function AppLayout() {
-  const { user, logout, updateUser } = useAuth()
+  const { user, logout, updateUser, can } = useAuth()
+  const visibleItems = (items: NavItem[]) => items.filter((n) => !n.entity || can(n.entity, 'read'))
   const nav = useNavigate()
   const loc = useLocation()
   const [open, setOpen] = useState(false)
@@ -85,6 +86,8 @@ export default function AppLayout() {
       <aside className={'sidebar' + (open ? ' open' : '')}>
         <div className="brand"><div className="brand-logo"><img src="/logo.svg" alt="DEGO Holding" /></div></div>
         {NAV_GROUPS.map((g, gi) => {
+          const items = visibleItems(g.items)
+          if (items.length === 0) return null
           const isCol = g.collapsible && g.key && collapsed[g.key]
           return (
             <div key={gi}>
@@ -95,7 +98,7 @@ export default function AppLayout() {
                   </button>
                 ) : <div className="nav-group-title">{g.title}</div>
               )}
-              {!isCol && g.items.map((n) => (
+              {!isCol && items.map((n) => (
                 <Link key={n.to} to={n.to} onClick={() => setOpen(false)}
                       className={'nav-item' + (isActive(loc.pathname, n.to) ? ' active' : '')}>
                   <i className={'ti ' + n.icon} />{n.label}
