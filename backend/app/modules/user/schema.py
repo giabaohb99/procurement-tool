@@ -18,6 +18,17 @@ class RoleAssign(BaseModel):
     role_ids: list[int]
 
 
+class ScopeUpdate(BaseModel):
+    """Phạm vi tổng theo user (Lớp B). Trống = không giới hạn chiều đó."""
+
+    companies: list[int] = []
+    departments: list[str] = []
+    employees: list[int] = []
+    exclude_companies: list[int] = []
+    exclude_departments: list[str] = []
+    exclude_employees: list[int] = []
+
+
 class UserOut(BaseModel):
     id: int
     email: str

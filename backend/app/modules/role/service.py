@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.auth import perm_cache_clear
 from .model import Permission, Role
 from .schema import PermissionUpdate, RoleCreate, RoleUpdate
 
@@ -56,4 +57,5 @@ def set_permissions(db: Session, rid: int, data: PermissionUpdate, user_id: int)
     for item in data.permissions:
         db.add(Permission(role_id=rid, created_by=user_id, updated_by=user_id, **item.model_dump()))
     db.commit()
+    perm_cache_clear()  # quyền vừa đổi → nạp lại ở request sau
     return get_permissions(db, rid)

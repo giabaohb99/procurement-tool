@@ -24,6 +24,7 @@ class Permission(Base, AuditMixin):
     can_write: Mapped[bool] = mapped_column(Boolean, default=False)
     can_delete: Mapped[bool] = mapped_column(Boolean, default=False)
     can_approve: Mapped[bool] = mapped_column(Boolean, default=False)
+    can_cancel: Mapped[bool] = mapped_column(Boolean, default=False)
     can_print: Mapped[bool] = mapped_column(Boolean, default=False)
     can_export: Mapped[bool] = mapped_column(Boolean, default=False)
-    scope: Mapped[str] = mapped_column(String(10), default="own")  # own | dept | all
+    scope: Mapped[str] = mapped_column(String(10), default="own")  # own | dept | company | all

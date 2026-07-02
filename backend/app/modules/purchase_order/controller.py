@@ -1,10 +1,11 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from sqlalchemy.orm import Session
 
-from app.core.auth import require
+from app.core.auth import get_perm_profile, require
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
+from app.core.scoping import apply_scope
 from app.modules.company.model import Company
 from app.modules.supplier.model import Supplier
 from app.modules.catalog.model import Warehouse
@@ -71,6 +72,7 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
 def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
             user=Depends(require("purchase_order", "read"))):
     q = apply_filters(db.query(PurchaseOrder), PurchaseOrder, request, service.FILTERABLE)
+    q = apply_scope(q, PurchaseOrder, "purchase_order", user, get_perm_profile(db, user))
     total, items = service.list_po(db, q, pg)
     out = []
     for p in items:
@@ -82,6 +84,11 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
 
 @router.get("/{pid}")
 def get_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_order", "read"))):
+    scoped = apply_scope(db.query(PurchaseOrder).filter(PurchaseOrder.id == pid),
+                         PurchaseOrder, "purchase_order", user, get_perm_profile(db, user))
+    if not scoped.first():
+        from fastapi import HTTPException
+        raise HTTPException(403, "Ngoài phạm vi được phép xem")
     return success(_out(db, service.get_po(db, pid)))
 
 
