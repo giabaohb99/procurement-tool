@@ -51,9 +51,12 @@ export const PR_STATUS: Record<string, { label: string; cls: string }> = {
   submitted: { label: 'Chờ duyệt', cls: 'warn' },
   approved: { label: 'Đã duyệt', cls: 'ok' },
   rejected: { label: 'Từ chối', cls: 'err' },
+  processing: { label: 'Đang xử lý', cls: 'warn' },
+  completed: { label: 'Hoàn thành', cls: 'ok' },
+  cancelled: { label: 'Đã hủy', cls: 'err' },
 }
 export const prBadge = (st: string) => {
-  const s = PR_STATUS[st] || { label: st, cls: 'gray' }
+  const s = PR_STATUS[String(st || '').toLowerCase()] || { label: st, cls: 'gray' }
   return <span className={'badge ' + s.cls}>{s.label}</span>
 }
 
@@ -66,9 +69,10 @@ export const PO_STATUS: Record<string, { label: string; cls: string }> = {
   completed: { label: 'Hoàn thành', cls: 'ok' },
   rejected: { label: 'Từ chối', cls: 'err' },
   cancelled: { label: 'Đã hủy', cls: 'err' },
+  processing: { label: 'Đang xử lý', cls: 'warn' },
 }
 export const poBadge = (st: string) => {
-  const s = PO_STATUS[st] || { label: st, cls: 'gray' }
+  const s = PO_STATUS[String(st || '').toLowerCase()] || { label: st, cls: 'gray' }
   return <span className={'badge ' + s.cls}>{s.label}</span>
 }
 
@@ -207,6 +211,7 @@ export const cruds: Record<string, CrudConfig> = {
   },
   'purchase-requests': {
     slug: 'purchase-requests', entity: 'purchase_request', title: 'Yêu cầu mua (PYC)', apiPath: '/api/purchase-requests',
+    rowStyle: (r: any) => r.has_cancelled_line ? { background: '#fdecea' } : undefined,   // có dòng "Hủy đơn" → tô đỏ
     columns: [
       { key: 'code', label: 'Mã PYC' },
       { key: 'request_date', label: 'Ngày tạo' },

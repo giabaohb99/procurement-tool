@@ -16,11 +16,16 @@ router = APIRouter(prefix="/api/products", tags=["product"])
 @router.get("")
 def list_products(
     request: Request,
+    search: str = Query("", description="Tìm theo Mã hoặc Tên (LIKE)"),
     pg: dict = Depends(pagination),
     db: Session = Depends(get_db),
     user=Depends(require("product", "read")),
 ):
     query = apply_filters(db.query(Product), Product, request, service.FILTERABLE)
+    if search.strip():
+        from sqlalchemy import or_
+        kw = f"%{search.strip()}%"
+        query = query.filter(or_(Product.code.like(kw), Product.name.like(kw)))
     total, items = service.list_products(db, query, pg)
     return success({
         "total": total,

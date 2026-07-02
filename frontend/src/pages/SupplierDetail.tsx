@@ -48,6 +48,7 @@ export default function SupplierDetail() {
     })
   }, [id])
 
+  const canEdit = can('supplier', isNew ? 'create' : 'write')
   const setH = (k: string, v: any) => setSup((s: any) => ({ ...s, [k]: v }))
   async function save() {
     setErr(''); setMsg('')
@@ -117,21 +118,21 @@ export default function SupplierDetail() {
             <div className="form-grid">
               <div className="form-row">
                 <label>Mã / viết tắt *</label>
-                <input value={sup.code || ''} disabled={!isNew} onChange={(e) => setH('code', e.target.value)} placeholder="Nhập mã nhà cung cấp..." />
+                <input value={sup.code || ''} disabled={!isNew || !canEdit} onChange={(e) => setH('code', e.target.value)} placeholder="Nhập mã nhà cung cấp..." />
               </div>
               <div className="form-row">
                 <label>Vai trò cung cấp *</label>
-                <select value={sup.supplier_type} onChange={(e) => setH('supplier_type', e.target.value)}>
+                <select value={sup.supplier_type} disabled={!canEdit} onChange={(e) => setH('supplier_type', e.target.value)}>
                   {SUP_TYPE.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Tên pháp lý *</label>
-                <input value={sup.name || ''} onChange={(e) => setH('name', e.target.value)} placeholder="Nhập tên công ty hoặc cá nhân pháp lý..." />
+                <input value={sup.name || ''} disabled={!canEdit} onChange={(e) => setH('name', e.target.value)} placeholder="Nhập tên công ty hoặc cá nhân pháp lý..." />
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Loại nhà cung cấp</label>
-                <select value={sup.legal_type || ''} onChange={(e) => setH('legal_type', e.target.value)}>
+                <select value={sup.legal_type || ''} disabled={!canEdit} onChange={(e) => setH('legal_type', e.target.value)}>
                   <option value="">— Chọn —</option>
                   {LEGAL_TYPE.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
@@ -147,15 +148,15 @@ export default function SupplierDetail() {
             <div className="form-grid">
               <div className="form-row">
                 <label>Người liên hệ</label>
-                <input value={sup.contact_person || ''} onChange={(e) => setH('contact_person', e.target.value)} placeholder="Tên người đại diện liên hệ..." />
+                <input value={sup.contact_person || ''} disabled={!canEdit} onChange={(e) => setH('contact_person', e.target.value)} placeholder="Tên người đại diện liên hệ..." />
               </div>
               <div className="form-row">
                 <label>Điện thoại</label>
-                <input value={sup.phone || ''} onChange={(e) => setH('phone', e.target.value)} placeholder="Số điện thoại liên hệ..." />
+                <input value={sup.phone || ''} disabled={!canEdit} onChange={(e) => setH('phone', e.target.value)} placeholder="Số điện thoại liên hệ..." />
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Địa chỉ</label>
-                <textarea value={sup.address || ''} onChange={(e) => setH('address', e.target.value)} placeholder="Địa chỉ trụ sở / kho bãi..." />
+                <textarea value={sup.address || ''} disabled={!canEdit} onChange={(e) => setH('address', e.target.value)} placeholder="Địa chỉ trụ sở / kho bãi..." />
               </div>
             </div>
           </div>
@@ -168,30 +169,30 @@ export default function SupplierDetail() {
             <div className="form-grid">
               <div className="form-row">
                 <label>Mã số thuế</label>
-                <input value={sup.tax_code || ''} onChange={(e) => setH('tax_code', e.target.value.replace(/[^\d]/g, ''))} placeholder="Chỉ nhập số..." />
+                <input value={sup.tax_code || ''} disabled={!canEdit} onChange={(e) => setH('tax_code', e.target.value.replace(/[^\d]/g, ''))} placeholder="Chỉ nhập số..." />
               </div>
               <div className="form-row">
                 <label>VAT mặc định (%)</label>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <input type="number" style={{ width: '100%', paddingRight: 32 }} value={sup.vat ?? 8} min="0" max="100" onChange={(e) => setH('vat', e.target.value === '' ? '' : Number(e.target.value))} placeholder="Nhập từ 0 đến 100..." />
+                  <input type="number" style={{ width: '100%', paddingRight: 32 }} value={sup.vat ?? 8} min="0" max="100" disabled={!canEdit} onChange={(e) => setH('vat', e.target.value === '' ? '' : Number(e.target.value))} placeholder="Nhập từ 0 đến 100..." />
                   <span style={{ position: 'absolute', right: 12, color: 'var(--muted)', fontWeight: 600 }}>%</span>
                 </div>
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Hình thức thanh toán</label>
-                <input value={sup.payment_terms || ''} placeholder="Ví dụ: Công nợ 30 ngày, Tiền mặt..." onChange={(e) => setH('payment_terms', e.target.value)} />
+                <input value={sup.payment_terms || ''} placeholder="Ví dụ: Công nợ 30 ngày, Tiền mặt..." disabled={!canEdit} onChange={(e) => setH('payment_terms', e.target.value)} />
               </div>
               <div className="form-row">
                 <label>Số tài khoản ngân hàng</label>
-                <input value={sup.bank_account || ''} onChange={(e) => setH('bank_account', e.target.value)} placeholder="Số tài khoản giao dịch..." />
+                <input value={sup.bank_account || ''} disabled={!canEdit} onChange={(e) => setH('bank_account', e.target.value)} placeholder="Số tài khoản giao dịch..." />
               </div>
               <div className="form-row">
                 <label>Tên ngân hàng & Chi nhánh</label>
-                <input value={sup.bank_name || ''} onChange={(e) => setH('bank_name', e.target.value)} placeholder="Ví dụ: Vietcombank - CN Tân Bình..." />
+                <input value={sup.bank_name || ''} disabled={!canEdit} onChange={(e) => setH('bank_name', e.target.value)} placeholder="Ví dụ: Vietcombank - CN Tân Bình..." />
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1', marginTop: 6 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 600, color: 'var(--navy)' }}>
-                  <input type="checkbox" checked={!!sup.is_active} onChange={(e) => setH('is_active', e.target.checked)} style={{ width: 18, height: 18 }} /> Đang hoạt động giao dịch
+                  <input type="checkbox" checked={!!sup.is_active} disabled={!canEdit} onChange={(e) => setH('is_active', e.target.checked)} style={{ width: 18, height: 18 }} /> Đang hoạt động giao dịch
                 </label>
               </div>
             </div>

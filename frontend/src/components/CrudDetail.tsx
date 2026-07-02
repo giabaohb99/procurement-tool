@@ -86,7 +86,7 @@ export default function CrudDetail() {
         <div className="card" style={{ padding: 18 }}>
           <div className="form-grid">
             {cfg.fields.map((f) => {
-              const ro = !isNew && f.readonlyOnEdit
+              const ro = (!isNew && f.readonlyOnEdit) || !canSave   // không có quyền lưu → khóa field
               return (
                 <div key={f.key} className="form-row">
                   <label>{f.label}</label>

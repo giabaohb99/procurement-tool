@@ -2,7 +2,7 @@ import { createContext, useContext, useState, ReactNode } from 'react'
 import { api } from '../api/client'
 
 type Perms = Record<string, Record<string, boolean | string>>
-type User = { id: number; full_name: string; email: string; phone?: string; department_name?: string; avatar?: string; permissions: Perms }
+type User = { id: number; full_name: string; email: string; emp_code?: string; phone?: string; department_name?: string; avatar?: string; permissions: Perms }
 type Ctx = {
   user: User | null
   login: (username: string, password: string) => Promise<void>

@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
 from sqlalchemy.orm import Session
 
-from app.core.auth import require
+from app.core.auth import get_perm_profile, require
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
+from app.core.scoping import apply_scope
 
 from . import service
 from .schema import EmployeeCreate, EmployeeOut, EmployeeUpdate
@@ -20,6 +21,7 @@ def list_employees(
     user=Depends(require("employee", "read")),
 ):
     query = apply_filters(db.query(service.Employee), service.Employee, request, service.FILTERABLE)
+    query = apply_scope(query, service.Employee, "employee", user, get_perm_profile(db, user))
     total, items = service.list_employees(db, query, pg)
     return success({
         "total": total,

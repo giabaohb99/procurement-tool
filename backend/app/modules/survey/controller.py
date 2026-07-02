@@ -4,11 +4,13 @@ from fastapi import APIRouter, Depends, Request, BackgroundTasks
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.orm import Session
 
-from app.core.auth import require
+from app.core.auth import get_perm_profile, require
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
+from app.core.scoping import apply_scope
 from app.modules.notification.service import trigger_notification
+from fastapi import HTTPException
 
 from . import service
 from .model import Survey
@@ -44,12 +46,17 @@ def _build_router(survey_type: str, prefix: str, CreateSchema, UpdateSchema):
     def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
               user=Depends(require("survey", "read"))):
         q = apply_filters(db.query(Survey), Survey, request, service.FILTERABLE)
+        q = apply_scope(q, Survey, "survey", user, get_perm_profile(db, user))
         total, items = service.list_surveys(db, survey_type, q, pg)
         return success({"total": total, "items": [_dict(x) for x in items]})
 
     @router.get("/{sid}")
     def get_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey", "read"))):
-        return success(_out(db, service.get_survey(db, sid)))
+        s = apply_scope(db.query(Survey).filter(Survey.id == sid),
+                        Survey, "survey", user, get_perm_profile(db, user)).first()
+        if not s:
+            raise HTTPException(403, "Ngoài phạm vi được phép xem")
+        return success(_out(db, s))
 
     @router.post("")
     def create_(data: CreateSchema, db: Session = Depends(get_db),

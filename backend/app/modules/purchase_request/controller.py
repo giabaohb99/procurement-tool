@@ -11,7 +11,7 @@ from app.modules.notification.service import trigger_notification
 from sqlalchemy import func
 from . import service
 from .model import PurchaseRequest, PurchaseRequestItem
-from .schema import ApproveIn, PRCreate, PRUpdate, RejectIn
+from .schema import ApproveIn, AssignIn, ItemStatusIn, PRCreate, PRUpdate, ReasonIn, RejectIn
 
 router = APIRouter(prefix="/api/purchase-requests", tags=["purchase_request"])
 
@@ -39,15 +39,14 @@ def _out(db: Session, pr) -> dict:
         {"id": i.id, "product_code": i.product_code, "product_name": i.product_name,
          "item_group": i.item_group, "group_desc": i.group_desc, "qty": float(i.qty or 0),
          "unit": i.unit, "price": float(i.price or 0), "amount": float(i.amount or 0),
-         "warehouse": i.warehouse, "assignee": i.assignee, "line_status": i.line_status,
-         "progress_note": i.progress_note, "note": i.note}
+         "warehouse": i.warehouse, "required_date": i.required_date, "assignee": i.assignee,
+         "line_status": i.line_status, "progress_note": i.progress_note, "note": i.note}
         for i in items
     ]
     subtotal = round(sum(x["amount"] for x in d["items"]), 2)
-    vat = round(subtotal * d["vat_rate"], 2)
     d["subtotal"] = subtotal
-    d["vat"] = vat
-    d["total"] = round(subtotal + vat, 2)
+    d["vat"] = 0            # Yêu cầu mua KHÔNG tính VAT (thuế tính ở PO/hóa đơn)
+    d["total"] = subtotal
     return d
 
 
@@ -70,29 +69,89 @@ def list_pr(
             ).filter(PurchaseRequestItem.pr_id.in_(pr_ids)).group_by(PurchaseRequestItem.pr_id).all()
         }
         
+    cancelled_ids = set()
+    if pr_ids:
+        cancelled_ids = {r[0] for r in db.query(PurchaseRequestItem.pr_id).filter(
+            PurchaseRequestItem.pr_id.in_(pr_ids), PurchaseRequestItem.line_status == "Hủy đơn").distinct().all()}
+
     out_items = []
     for p in items:
         d = {c: getattr(p, c) for c in HEADER_COLS}
-        subtotal = subtotals.get(p.id, 0.0)
-        vat = round(subtotal * float(p.vat_rate or 0), 2)
-        d["total"] = round(subtotal + vat, 2)
+        d["total"] = round(subtotals.get(p.id, 0.0), 2)   # Yêu cầu mua không tính VAT
+        d["has_cancelled_line"] = p.id in cancelled_ids
         out_items.append(d)
-        
+
     return success({"total": total, "items": out_items})
+
+
+def _see_all_items(profile: dict, pr, user) -> bool:
+    """Người tạo / quản lý (dept/company/all) / người duyệt → thấy mọi dòng.
+    Nhân viên thu mua (được giao) → chỉ thấy dòng phân bổ cho mình."""
+    if pr.created_by == user.id:
+        return True
+    for g in profile.get("grants", []):
+        p = g["perms"].get("purchase_request")
+        if not p:
+            continue
+        if p.get("approve"):
+            return True
+        if p.get("read") and p.get("scope") in ("dept", "company", "all"):
+            return True
+    return False
+
+
+@router.get("/meta/dept-head")
+def dept_head(department: str = "", db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
+    """Trưởng bộ phận của 1 phòng ban — cho người yêu cầu (không được xem DS nhân sự) tự điền TBP."""
+    return success({"head_of_dept": service.find_dept_head(db, department)})
 
 
 @router.get("/{pid}")
 def get_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
-    scoped = apply_scope(db.query(PurchaseRequest).filter(PurchaseRequest.id == pid),
-                         PurchaseRequest, "purchase_request", user, get_perm_profile(db, user))
-    if not scoped.first():
+    profile = get_perm_profile(db, user)
+    pr = apply_scope(db.query(PurchaseRequest).filter(PurchaseRequest.id == pid),
+                     PurchaseRequest, "purchase_request", user, profile).first()
+    if not pr:
         raise HTTPException(403, "Ngoài phạm vi được phép xem")
-    return success(_out(db, service.get_pr(db, pid)))
+    data = _out(db, pr)
+    if not _see_all_items(profile, pr, user):
+        code = profile.get("emp_code") or ""
+        data["items"] = [it for it in data["items"] if (it.get("assignee") or "") == code]
+    return success(data)
 
 
 @router.post("")
 def create_pr(data: PRCreate, db: Session = Depends(get_db), user=Depends(require("purchase_request", "create"))):
     return success(_out(db, service.create_pr(db, data, user.id)), "Đã tạo yêu cầu mua", 201)
+
+
+@router.patch("/{pid}/assign")
+def assign_pr(pid: int, data: AssignIn, db: Session = Depends(get_db), user=Depends(require("purchase_request", "approve"))):
+    return success(_out(db, service.assign(db, pid, data, user.id)), "Đã lưu phân bổ NSTM")
+
+
+@router.patch("/{pid}/item-status")
+def update_item_status(pid: int, data: ItemStatusIn, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
+    prof = get_perm_profile(db, user)
+    pr_perm = prof["perms_union"].get("purchase_request", {})
+    is_manager = bool(pr_perm.get("cancel") or pr_perm.get("approve"))   # quản lý/admin sửa mọi dòng
+    emp_code = prof.get("emp_code") or ""
+    return success(_out(db, service.update_item_status(db, pid, data, user.id, emp_code, is_manager)), "Đã cập nhật trạng thái")
+
+
+@router.post("/{pid}/cancel")
+def cancel_pr(pid: int, data: ReasonIn, db: Session = Depends(get_db), user=Depends(require("purchase_request", "cancel"))):
+    return success(_out(db, service.cancel_pr(db, pid, data.reason, user.id)), "Đã hủy phiếu")
+
+
+@router.post("/{pid}/return")
+def return_pr(pid: int, data: ReasonIn, db: Session = Depends(get_db), user=Depends(require("purchase_request", "cancel"))):
+    return success(_out(db, service.return_pr(db, pid, data.reason, user.id)), "Đã trả phiếu về (Nháp)")
+
+
+@router.post("/{pid}/complete")
+def complete_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "cancel"))):
+    return success(_out(db, service.complete_pr(db, pid, user.id)), "Đã hoàn thành phiếu")
 
 
 @router.patch("/{pid}")

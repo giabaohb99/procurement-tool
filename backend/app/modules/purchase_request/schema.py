@@ -10,8 +10,9 @@ class PRItemIn(BaseModel):
     unit: str = ""
     price: float = 0
     warehouse: str = ""
+    required_date: str = ""
     assignee: str = ""
-    line_status: str = ""
+    line_status: str = "Chưa đặt hàng"
     progress_note: str = ""
     note: str = ""
 
@@ -66,3 +67,30 @@ class RejectIn(BaseModel):
 
 class ApproveIn(BaseModel):
     assignee_id: int = 0
+
+
+class AssignItemIn(BaseModel):
+    id: int
+    assignee: str = ""
+
+
+class AssignIn(BaseModel):
+    """Phân bổ NSTM (do admin/quản lý/người duyệt) — chạy được cả khi phiếu đã gửi duyệt."""
+    assignee_id: int = 0
+    items: list[AssignItemIn] = []
+
+
+class ItemStatusItem(BaseModel):
+    id: int
+    line_status: str | None = None
+    progress_note: str | None = None
+    note: str | None = None
+
+
+class ItemStatusIn(BaseModel):
+    """Cập nhật trạng thái/tiến độ từng dòng (NSTM phụ trách hoặc admin/quản lý)."""
+    items: list[ItemStatusItem] = []
+
+
+class ReasonIn(BaseModel):
+    reason: str = ""

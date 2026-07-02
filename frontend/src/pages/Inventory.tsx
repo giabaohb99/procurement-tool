@@ -123,7 +123,7 @@ export default function Inventory() {
             {err && <div className="err" style={{ marginTop: 8 }}>{err}</div>}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
               <button className="btn ghost" onClick={() => setShowAdjust(false)}>Hủy</button>
-              <button className="btn" onClick={submitAdjust}>Lưu điều chỉnh</button>
+              {can('inventory', 'write') && <button className="btn" onClick={submitAdjust}>Lưu điều chỉnh</button>}
             </div>
           </div>
         </div>

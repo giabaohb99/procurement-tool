@@ -167,28 +167,36 @@ def seed_demo_accounts(db, company_id):
 
 # Vai trò chuẩn theo phân quyền DEGO. Mỗi entity: (danh sách hành động, phạm vi).
 # Phạm vi: own | dept | company | all. Xem doc/Thiet_Ke_Phan_Quyen.md.
+# employee KHÔNG nằm ở đây: danh sách nhân sự phải giới hạn theo phạm vi từng vai trò
+# (phòng ban của mình) — cấu hình riêng bên dưới.
 _CATALOG_READ = {e: (["read"], "all") for e in
-                 ["supplier", "product", "warehouse", "unit", "item_group", "contract", "department"]}
+                 ["supplier", "product", "warehouse", "unit", "item_group", "contract", "department", "company"]}
 
 STD_ROLES = {
     "employee": {"name": "Nhân sự (cơ bản)", "perms": {
-        **_CATALOG_READ,
+        # chỉ các danh mục cần cho form tạo yêu cầu (không có Hợp đồng/NCC)
+        "product": (["read"], "all"), "unit": (["read"], "all"),
+        "item_group": (["read"], "all"), "warehouse": (["read"], "all"),
+        "department": (["read"], "all"), "company": (["read"], "all"),
         "purchase_request": (["read", "create"], "own"),
     }},
     "dept_head": {"name": "Trưởng phòng (duyệt PYC)", "perms": {
         **_CATALOG_READ,
-        "purchase_request": (["read", "approve", "cancel"], "dept"),
+        "employee": (["read"], "dept"),
+        "purchase_request": (["read", "approve"], "dept"),
         "report": (["read"], "dept"),
     }},
     "company_head": {"name": "Quản lý công ty", "perms": {
         **_CATALOG_READ,
+        "employee": (["read"], "company"),
         "purchase_request": (["read"], "company"),
         "purchase_order": (["read"], "company"),
         "report": (["read"], "company"),
     }},
     "pur_staff": {"name": "Nhân viên thu mua", "perms": {
         **_CATALOG_READ,
-        "purchase_request": (["read", "create", "write"], "dept"),
+        "employee": (["read"], "dept"),
+        "purchase_request": (["read", "create", "write"], "assigned"),
         "survey": (["read", "create", "write"], "all"),
         "purchase_order": (["read", "create", "write", "print"], "dept"),
         "inventory": (["read"], "company"),
@@ -198,6 +206,7 @@ STD_ROLES = {
     }},
     "pur_manager": {"name": "Quản lý thu mua", "perms": {
         **_CATALOG_READ,
+        "employee": (["read"], "dept"),
         "purchase_request": (["read", "approve", "cancel"], "all"),
         "survey": (["read", "approve"], "all"),
         "purchase_order": (["read", "write", "approve", "cancel", "print", "export"], "all"),
@@ -221,6 +230,8 @@ STD_ROLES = {
         "unit": (["read", "create", "write"], "all"),
         "item_group": (["read", "create", "write"], "all"),
         "department": (["read"], "all"),
+        "company": (["read", "create", "write"], "all"),
+        "employee": (["read"], "all"),
     }},
 }
 
@@ -282,9 +293,26 @@ def run():
             if entity not in existing:
                 db.add(Permission(
                      role_id=admin_role.id, entity=entity, can_read=True, can_create=True,
-                     can_write=True, can_delete=True, can_approve=True, can_print=True,
-                     can_export=True, scope="all",
+                     can_write=True, can_delete=True, can_approve=True, can_cancel=True,
+                     can_print=True, can_export=True, scope="all",
                 ))
+        # Bổ sung can_cancel cho các vai trò quản trị (admin, ADMINISTRATOR) tạo trước khi có action 'cancel'
+        admin_role_ids = [r.id for r in db.query(Role).filter(Role.code.in_(["admin", "ADMINISTRATOR"])).all()]
+        if admin_role_ids:
+            db.query(Permission).filter(Permission.role_id.in_(admin_role_ids), Permission.can_cancel == False).update({"can_cancel": True}, synchronize_session=False)
+        db.commit()
+
+        # Sửa phạm vi employee-read cho các vai trò đã seed trước đây (khi còn để "all").
+        # Danh sách nhân sự phải giới hạn theo phòng ban/công ty của người xem.
+        _EMP_READ_SCOPE = {"dept_head": "dept", "company_head": "company",
+                           "pur_staff": "dept", "pur_manager": "dept"}
+        for rcode, sc in _EMP_READ_SCOPE.items():
+            r = db.query(Role).filter(Role.code == rcode).first()
+            if r:
+                db.query(Permission).filter(
+                    Permission.role_id == r.id, Permission.entity == "employee",
+                    Permission.scope == "all",
+                ).update({"scope": sc}, synchronize_session=False)
         db.commit()
 
         # Vai trò chuẩn (Nhân sự / Trưởng phòng / Quản lý cty / NV thu mua / QL thu mua / Admin thu mua)

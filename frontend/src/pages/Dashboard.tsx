@@ -77,7 +77,7 @@ function Donut({ items }: { items: { label: string; value: number; color: string
 }
 
 export default function Dashboard() {
-  const { user } = useAuth()
+  const { user, can: authCan } = useAuth()
   const navigate = useNavigate()
   const [d, setD] = useState<any>(null)
 
@@ -132,14 +132,15 @@ export default function Dashboard() {
   }, [])
 
   const k = d?.kpi || {}
+  const can = (e: string) => !!d?.can?.[e]
   const cats = d?.categories || []
   const totalSpendVal = cats.reduce((s: number, c: any) => s + (c.cost || 0), 0)
   const kpis = [
-    { label: 'Tổng chi tiêu', value: money(totalSpendVal), icon: 'ti-coin', color: '#00AEEF', tint: '#E5F7FF', to: '/purchase-orders', trend: 'Số liệu năm 2026', trendColor: 'var(--hz-muted)' },
-    { label: 'Yêu cầu chờ duyệt (PRs)', value: k.pr_pending ?? 0, icon: 'ti-file-alert', color: '#D97706', tint: '#FFF6E5', to: '/purchase-requests?status=submitted', trend: 'Cần phê duyệt gấp', trendColor: '#E24B4A' },
-    { label: 'Đơn hàng hoạt động (POs)', value: k.po_ordered ?? 0, icon: 'ti-shopping-cart', color: '#4318FF', tint: '#ebe8ff', to: '/purchase-orders', trend: 'Đang theo dõi tiến độ', trendColor: '#00AEEF' },
-    { label: 'Công nợ quá hạn', value: money(k.overdue ?? 0), icon: 'ti-alert-triangle', color: '#E24B4A', tint: '#FEECEC', to: '/payables', trend: (k.overdue ?? 0) > 0 ? 'Cần đối soát thanh toán' : 'Không có nợ xấu', trendColor: (k.overdue ?? 0) > 0 ? '#E24B4A' : '#92C83E' },
-  ]
+    { entity: 'purchase_order', label: 'Tổng chi tiêu', value: money(totalSpendVal), icon: 'ti-coin', color: '#00AEEF', tint: '#E5F7FF', to: '/purchase-orders', trend: `Số liệu năm ${d?.year || 2026}`, trendColor: 'var(--hz-muted)' },
+    { entity: 'purchase_request', label: 'Yêu cầu chờ duyệt (PRs)', value: k.pr_pending ?? 0, icon: 'ti-file-alert', color: '#D97706', tint: '#FFF6E5', to: '/purchase-requests?status=submitted', trend: 'Cần phê duyệt gấp', trendColor: '#E24B4A' },
+    { entity: 'purchase_order', label: 'Đơn hàng hoạt động (POs)', value: k.po_ordered ?? 0, icon: 'ti-shopping-cart', color: '#4318FF', tint: '#ebe8ff', to: '/purchase-orders', trend: 'Đang theo dõi tiến độ', trendColor: '#00AEEF' },
+    { entity: 'payable', label: 'Công nợ quá hạn', value: money(k.overdue ?? 0), icon: 'ti-alert-triangle', color: '#E24B4A', tint: '#FEECEC', to: '/payables', trend: (k.overdue ?? 0) > 0 ? 'Cần đối soát thanh toán' : 'Không có nợ xấu', trendColor: (k.overdue ?? 0) > 0 ? '#E24B4A' : '#92C83E' },
+  ].filter((m) => can(m.entity))
 
   // Biểu đồ cột 12 tháng (khóa chiều cao 240 để không "to đùng")
   const cost = d?.cost_12m || []
@@ -201,6 +202,7 @@ export default function Dashboard() {
       </div>
 
       {/* Chi phí 12 tháng + Cơ cấu phân loại */}
+      {can('purchase_order') && (
       <div className="hz-grid">
         <div className="hz-card" style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
@@ -260,8 +262,11 @@ export default function Dashboard() {
         </div>
       </div>
 
+      )}
+
       {/* Yêu cầu mua hàng gần đây (Recent Requisitions) & Hiệu suất NCC */}
       <div className="hz-grid">
+        {can('purchase_request') && (
         <div className="hz-card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px 10px' }}>
             <h3 className="hz-title">Yêu cầu mua gần đây</h3>
@@ -301,7 +306,7 @@ export default function Dashboard() {
                         </span>
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        {r.status === 'submitted' ? (
+                        {r.status === 'submitted' && authCan('purchase_request', 'approve') ? (
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                             <button style={{
                               width: 26, height: 26, borderRadius: '50%', border: 'none', background: '#e7f8ec', color: '#16a34a',
@@ -327,7 +332,9 @@ export default function Dashboard() {
             </table>
           </div>
         </div>
+        )}
 
+        {can('purchase_order') && (
         <div className="hz-card" style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <h3 className="hz-title">Top nhà cung cấp</h3>
@@ -358,25 +365,31 @@ export default function Dashboard() {
             })()}
           </div>
         </div>
+        )}
       </div>
 
       {/* Trạng thái đơn + Tuổi nợ */}
       <div className="hz-grid half">
+        {can('purchase_order') && (
         <div className="hz-card" style={{ display: 'flex', flexDirection: 'column' }}>
           <h3 className="hz-title" style={{ marginBottom: 12 }}>Trạng thái đơn hàng</h3>
           <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
             <Donut items={po_status.map((s: any) => ({ label: s.label, value: s.value, color: s.color, display: String(s.value) }))} />
           </div>
         </div>
+        )}
+        {can('payable') && (
         <div className="hz-card" style={{ display: 'flex', flexDirection: 'column' }}>
           <h3 className="hz-title" style={{ marginBottom: 12 }}>Tuổi nợ (còn phải trả)</h3>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <BarList items={ap_aging} fmt={money} />
           </div>
         </div>
+        )}
       </div>
 
       {/* Top NCC + Chi tiêu bộ phận */}
+      {can('purchase_order') && (
       <div className="hz-grid half">
         <div className="hz-card" style={{ display: 'flex', flexDirection: 'column' }}>
           <h3 className="hz-title" style={{ marginBottom: 12 }}>Top nhà cung cấp theo giá trị</h3>
@@ -391,8 +404,10 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Cảnh báo cần xử lý (Full Width) */}
+      {alerts.length > 0 && (
       <div className="hz-card" style={{ display: 'flex', flexDirection: 'column', marginBottom: 20 }}>
         <h3 className="hz-title" style={{ marginBottom: 12 }}>Cảnh báo cần xử lý</h3>
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -404,6 +419,7 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
+      )}
     </div>
   )
 }

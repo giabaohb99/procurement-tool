@@ -130,7 +130,8 @@ export default function SurveyDetail({ type }: { type: 'supplier' | 'product' })
 
   useEffect(() => { if (!isNew) loadAll() }, [id, type])
 
-  const editable = isNew || sv.status === 'draft' || sv.status === 'rejected'
+  // Chỉ cho sửa khi ở trạng thái nháp/từ chối VÀ có quyền tạo/ghi
+  const editable = (isNew || sv.status === 'draft' || sv.status === 'rejected') && can('survey', isNew ? 'create' : 'write')
   const setH = (k: string, v: any) => setSv((s: any) => ({ ...s, [k]: v }))
   const lines = sv.lines || []
   const setLine = (i: number, patch: any) => setSv((s: any) => ({ ...s, lines: s.lines.map((it: any, idx: number) => idx === i ? { ...it, ...patch } : it) }))
@@ -353,9 +354,11 @@ export default function SurveyDetail({ type }: { type: 'supplier' | 'product' })
                           <button className="icon-btn" title="Chỉnh sửa chi tiết" onClick={() => setEditingIndex(i)}>
                             <i className="ti ti-edit" style={{ fontSize: 16, color: 'var(--teal)' }} />
                           </button>
-                          <button className="icon-btn" title="Nhân bản dòng" onClick={() => duplicateLine(i)}>
-                            <i className="ti ti-copy" style={{ fontSize: 16, color: 'var(--muted)' }} />
-                          </button>
+                          {editable && (
+                            <button className="icon-btn" title="Nhân bản dòng" onClick={() => duplicateLine(i)}>
+                              <i className="ti ti-copy" style={{ fontSize: 16, color: 'var(--muted)' }} />
+                            </button>
+                          )}
                           {editable && (
                             <button className="icon-btn" title="Xóa dòng" onClick={() => { if (confirm('Xóa dòng này?')) delLine(i) }}>
                               <i className="ti ti-trash" style={{ fontSize: 16, color: 'var(--red)' }} />
@@ -378,12 +381,12 @@ export default function SurveyDetail({ type }: { type: 'supplier' | 'product' })
           {!isNew && (
             <div className="card" style={{ padding: 18, marginBottom: 16 }}>
               <h3 className="sec-title"><i className="ti ti-paperclip" /> Chứng từ đính kèm</h3>
-              <input type="file" multiple onChange={(e) => uploadFiles(e.target.files)} />
+              {can('survey', 'write') && <input type="file" multiple onChange={(e) => uploadFiles(e.target.files)} />}
               <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {files.map((f) => (
                   <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
                     <i className="ti ti-file" /><a href={f.url} target="_blank" style={{ color: 'var(--teal)', flex: 1, textDecoration: 'underline' }}>{f.filename}</a>
-                    <button className="icon-btn" onClick={async () => { if (confirm('Xóa file?')) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>
+                    {can('survey', 'write') && <button className="icon-btn" onClick={async () => { if (confirm('Xóa file?')) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
                   </div>
                 ))}
                 {files.length === 0 && <span style={{ color: '#999', fontSize: 13 }}>Chưa có file nào.</span>}

@@ -49,7 +49,12 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
 
 @router.get("/{rid}")
 def get_(rid: int, db: Session = Depends(get_db), user=Depends(require("payment_request", "read"))):
-    return success(_out(db, service.get_request(db, rid)))
+    from fastapi import HTTPException
+    req = apply_scope(db.query(PaymentRequest).filter(PaymentRequest.id == rid),
+                      PaymentRequest, "payment_request", user, get_perm_profile(db, user)).first()
+    if not req:
+        raise HTTPException(403, "Ngoài phạm vi được phép xem")
+    return success(_out(db, req))
 
 
 @router.get("/{rid}/print")

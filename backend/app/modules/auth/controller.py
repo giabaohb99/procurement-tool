@@ -23,6 +23,8 @@ def _me_payload(db: Session, user) -> dict:
         "id": user.id,
         "email": user.email,
         "employee_id": user.employee_id,
+        "emp_code": emp.code if emp else "",
+        "company_id": emp.company_id if emp else 0,
         "full_name": emp.full_name if emp else user.email,
         "avatar": getattr(user, 'avatar', ''),
         "phone": emp.phone if emp else "",

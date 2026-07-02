@@ -166,7 +166,7 @@ def reject_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: S
 
 @router.post("/{pid}/cancel")
 def cancel_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
-              user=Depends(require("purchase_order", "write"))):
+              user=Depends(require("purchase_order", "cancel"))):
     return success(_out(db, service.set_status(db, pid, "cancelled", user.id, data.reason)), "Đã hủy đơn")
 
 

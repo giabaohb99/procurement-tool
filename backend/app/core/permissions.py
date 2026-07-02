@@ -46,8 +46,9 @@ ACTION_LABELS = {
 }
 
 # Phạm vi theo cấp bậc (tương đối với công ty/phòng ban của chính user)
-SCOPES = ["own", "dept", "company", "all"]
+# "assigned" (Được giao) = của mình HOẶC được phân bổ cho mình — dùng cho nhân viên thu mua trên PYC.
+SCOPES = ["own", "assigned", "dept", "company", "all"]
 SCOPE_LABELS = {
-    "own": "Của mình", "dept": "Phòng ban", "company": "Công ty", "all": "Tất cả",
+    "own": "Của mình", "assigned": "Được giao", "dept": "Phòng ban", "company": "Công ty", "all": "Tất cả",
 }
-SCOPE_RANK = {"own": 0, "dept": 1, "company": 2, "all": 3}  # để lấy phạm vi rộng nhất khi gộp vai trò
+SCOPE_RANK = {"own": 0, "assigned": 1, "dept": 2, "company": 3, "all": 4}

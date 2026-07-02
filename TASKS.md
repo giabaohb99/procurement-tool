@@ -28,6 +28,15 @@
 - [x] Import data thật từ Excel (tools/import_excel.py)
 - [x] Phân trang (page + limit 10/20/50/100)
 
+## Yêu cầu mua — nâng cấp form + luồng (đã xong)
+- [x] Bỏ VAT khỏi PYC (tổng = SL×giá); **Ngày cần hàng + Trạng thái xử lý theo TỪNG DÒNG** (`required_date`, `line_status` 7 giá trị)
+- [x] Item = **popup chi tiết** (đủ trường như hình) + nút **Copy dòng**; bảng ngoài gọn + badge trạng thái dòng
+- [x] "Mô tả phân loại" tự sinh từ Phân loại (Ngày QĐ sẵn/không sẵn); Kho nhận bắt buộc
+- [x] NCC đề xuất = ô nhập tay (người YC không xem được DS NCC); fix auto Trưởng bộ phận theo phòng ban (dò role_name)
+- [x] Luồng: Nháp→Chờ duyệt→(Trưởng phòng) Đã duyệt→**Đang xử lý** (tự khi có dòng ≠ Chưa đặt hàng)→**Hoàn thành** (tự khi mọi dòng xong)
+- [x] Admin/Quản lý: **Hủy / Trả về (Nháp, xóa NSTM, reset dòng) / Hoàn thành** (quyền `cancel`; đã gỡ cancel khỏi Trưởng phòng); dòng "Hủy đơn" → **tô đỏ phiếu** trên danh sách
+- [x] Endpoint: `item-status` (NSTM/quản lý) · `cancel` · `return` · `complete`. Fix bug vai trò `ADMINISTRATOR` thiếu `cancel`.
+
 ## Phase 1 — Danh mục + Khảo sát
 - [x] Supplier (có `supplier_type` goods/transport) + data mẫu + filter
 - [x] Product (VTBB/NL) + data mẫu + filter

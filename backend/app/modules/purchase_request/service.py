@@ -4,10 +4,125 @@ from sqlalchemy.orm import Session
 from app.core.audit import record
 
 from .model import PurchaseRequest, PurchaseRequestItem
-from .schema import PRCreate, PRUpdate
+from .schema import AssignIn, ItemStatusIn, PRCreate, PRUpdate
 
 FILTERABLE = ["code", "status", "requester", "department"]
 ENTITY = "purchase_request"
+
+# Trạng thái xử lý theo DÒNG hàng
+LINE_STATUS = ["Chưa đặt hàng", "Đã đặt hàng", "Đã gửi ĐMH cho KT",
+               "Đã nhận hàng", "Hoàn thành", "Hủy đơn", "Tạm ngưng"]
+
+
+def find_dept_head(db: Session, department_name: str) -> str:
+    """Tên Trưởng bộ phận của 1 phòng ban (chức danh chứa 'trưởng'). '' nếu không có."""
+    if not department_name:
+        return ""
+    from app.modules.department.model import Department
+    from app.modules.employee.model import Employee
+    dep = db.query(Department).filter(Department.name == department_name).first()
+    if not dep:
+        return ""
+    head = next((e for e in db.query(Employee).filter(Employee.department_id == dep.id).all()
+                 if 'trưởng' in ((e.role_name or '') + ' ' + (e.position or '')).lower()), None)
+    return head.full_name if head else ""
+
+
+def has_cancelled_line(db: Session, pr_id: int) -> bool:
+    return db.query(PurchaseRequestItem).filter(
+        PurchaseRequestItem.pr_id == pr_id, PurchaseRequestItem.line_status == "Hủy đơn").first() is not None
+
+
+def recompute_status(db: Session, pr: PurchaseRequest) -> None:
+    """Tự suy trạng thái phiếu từ trạng thái các dòng (chỉ khi đã duyệt / đang xử lý / hoàn thành)."""
+    if pr.status not in ("approved", "processing", "completed"):
+        return
+    st = [(i.line_status or "Chưa đặt hàng") for i in items_of(db, pr.id)]
+    if not st:
+        return
+    if all(s == "Hoàn thành" for s in st):
+        pr.status = "completed"
+    elif any(s != "Chưa đặt hàng" for s in st):
+        pr.status = "processing"
+    else:
+        pr.status = "approved"
+    db.commit()
+
+
+def update_item_status(db: Session, pid: int, data: ItemStatusIn, user_id: int, emp_code: str, is_manager: bool) -> PurchaseRequest:
+    pr = get_pr(db, pid)
+    rows = {i.id: i for i in items_of(db, pid)}
+    for it in data.items:
+        row = rows.get(it.id)
+        if row is None:
+            continue
+        if not is_manager and (row.assignee or "") != (emp_code or "__none__"):
+            continue  # NSTM chỉ sửa dòng được giao cho mình
+        if it.line_status is not None:
+            row.line_status = it.line_status
+        if it.progress_note is not None:
+            row.progress_note = it.progress_note
+        if it.note is not None:
+            row.note = it.note
+    pr.updated_by = user_id
+    db.commit()
+    recompute_status(db, pr)
+    record(db, user_id, ENTITY, pid, "line_status", "Cập nhật trạng thái dòng")
+    db.refresh(pr)
+    return pr
+
+
+def cancel_pr(db: Session, pid: int, reason: str, user_id: int) -> PurchaseRequest:
+    pr = get_pr(db, pid)
+    pr.status = "cancelled"
+    pr.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, pid, "cancelled", reason)
+    db.refresh(pr)
+    return pr
+
+
+def return_pr(db: Session, pid: int, reason: str, user_id: int) -> PurchaseRequest:
+    """Trả phiếu về Nháp: xóa nhân sự phụ trách + reset trạng thái mọi dòng về 'Chưa đặt hàng'."""
+    pr = get_pr(db, pid)
+    for it in items_of(db, pid):
+        it.assignee = ""
+        it.line_status = "Chưa đặt hàng"
+    pr.assignee_id = 0
+    pr.status = "draft"
+    pr.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, pid, "returned", reason)
+    db.refresh(pr)
+    return pr
+
+
+def complete_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
+    pr = get_pr(db, pid)
+    pr.status = "completed"
+    pr.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, pid, "completed", "")
+    db.refresh(pr)
+    return pr
+
+
+def assign(db: Session, pid: int, data: AssignIn, user_id: int) -> PurchaseRequest:
+    """Phân bổ NSTM cho từng dòng — chạy được cả khi phiếu đã gửi duyệt (không bị khóa như sửa)."""
+    pr = get_pr(db, pid)
+    if pr.status == "cancelled":
+        raise HTTPException(400, "Phiếu đã hủy, không phân bổ được")
+    if data.assignee_id:
+        pr.assignee_id = data.assignee_id
+    rows = {i.id: i for i in items_of(db, pid)}
+    for it in data.items:
+        row = rows.get(it.id)
+        if row is not None:
+            row.assignee = it.assignee
+    pr.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, pid, "assign", "Phân bổ NSTM")
+    return pr
 
 
 def _save_items(db: Session, pr_id: int, items, user_id: int):
@@ -50,6 +165,9 @@ def create_pr(db: Session, data: PRCreate, user_id: int) -> PurchaseRequest:
         quote_filename=data.quote_filename,
         quote_file_url=data.quote_file_url,
     )
+    # Tự điền Trưởng bộ phận theo phòng ban của người yêu cầu (nếu phòng có trưởng)
+    if not pr.head_of_dept and pr.department:
+        pr.head_of_dept = find_dept_head(db, pr.department)
     db.add(pr)
     db.commit()
     db.refresh(pr)

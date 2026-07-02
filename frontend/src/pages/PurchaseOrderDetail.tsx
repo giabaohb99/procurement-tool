@@ -100,8 +100,9 @@ export default function PurchaseOrderDetail() {
 
   // Đơn CHƯA hoàn thành (và chưa hủy) thì vẫn cho sửa sản phẩm/thông tin bên trong
   const locked = ['completed', 'cancelled'].includes(po.status)
-  const headerEditable = isNew || !locked
-  const deliveryEditable = !isNew && ['approved', 'partial', 'received'].includes(po.status)
+  const canWrite = can('purchase_order', isNew ? 'create' : 'write')
+  const headerEditable = (isNew || !locked) && canWrite
+  const deliveryEditable = !isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'write')
   const canDelete = isNew || ['draft', 'rejected'].includes(po.status)
 
   const setH = (k: string, v: any) => setPo((s: any) => ({ ...s, [k]: v }))
@@ -273,7 +274,7 @@ export default function PurchaseOrderDetail() {
         {!isNew && po.status === 'received' && can('purchase_order', 'write') && (
           <button className="btn" onClick={() => action('complete')}><i className="ti ti-circle-check" />Hoàn thành</button>
         )}
-        {!isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'write') && (
+        {!isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'cancel') && (
           <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => { if (confirm('Hủy đơn mua hàng này?')) action('cancel', { reason: prompt('Lý do hủy:') || '' }) }}><i className="ti ti-ban" />Hủy đơn</button>
         )}
         {!isNew && ['cancelled', 'rejected', 'completed'].includes(po.status) && can('purchase_order', 'write') && (
@@ -404,12 +405,12 @@ export default function PurchaseOrderDetail() {
           {!isNew && (
             <div className="card" style={{ padding: 18, marginBottom: 16 }}>
               <h3 className="sec-title"><i className="ti ti-paperclip" /> Chứng từ đính kèm (báo giá, HĐ…)</h3>
-              <input type="file" multiple onChange={(e) => uploadFiles(e.target.files)} />
+              {can('purchase_order', 'write') && <input type="file" multiple onChange={(e) => uploadFiles(e.target.files)} />}
               <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {files.map((f) => (
                   <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
                     <i className="ti ti-file" /><a href={f.url} target="_blank" style={{ color: 'var(--teal)', flex: 1, textDecoration: 'underline' }}>{f.filename}</a>
-                    <button className="icon-btn" onClick={async () => { if (confirm('Xóa file?')) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>
+                    {can('purchase_order', 'write') && <button className="icon-btn" onClick={async () => { if (confirm('Xóa file?')) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
                   </div>
                 ))}
                 {files.length === 0 && <span style={{ color: '#999', fontSize: 13 }}>Chưa có file nào.</span>}
@@ -595,12 +596,14 @@ export default function PurchaseOrderDetail() {
                           <td style={{ fontSize: 12 }}>
                             {d.id ? (
                               <div>
-                                <input type="file" id={`datt-${d.id}`} style={{ display: 'none' }} onChange={(e) => uploadDeliveryAtt(d.id, e.target.files)} />
-                                <label htmlFor={`datt-${d.id}`} className="btn ghost" style={{ cursor: 'pointer', height: 26, fontSize: 11, padding: '0 8px' }}><i className="ti ti-upload" /> Tải</label>
+                                {deliveryEditable && <>
+                                  <input type="file" id={`datt-${d.id}`} style={{ display: 'none' }} onChange={(e) => uploadDeliveryAtt(d.id, e.target.files)} />
+                                  <label htmlFor={`datt-${d.id}`} className="btn ghost" style={{ cursor: 'pointer', height: 26, fontSize: 11, padding: '0 8px' }}><i className="ti ti-upload" /> Tải</label>
+                                </>}
                                 {(attByDelivery[d.id] || []).map((f) => (
                                   <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
                                     <a href={f.url} target="_blank" style={{ color: 'var(--teal)', textDecoration: 'underline', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.filename}</a>
-                                    <button className="icon-btn" onClick={async () => { await api.delete(`/api/attachments/${f.id}`); loadDeliveryAtt(d.id) }}><i className="ti ti-x" style={{ color: 'var(--red)', fontSize: 13 }} /></button>
+                                    {deliveryEditable && <button className="icon-btn" onClick={async () => { await api.delete(`/api/attachments/${f.id}`); loadDeliveryAtt(d.id) }}><i className="ti ti-x" style={{ color: 'var(--red)', fontSize: 13 }} /></button>}
                                   </div>
                                 ))}
                               </div>

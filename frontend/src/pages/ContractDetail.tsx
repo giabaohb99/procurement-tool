@@ -29,6 +29,7 @@ export default function ContractDetail() {
     const r = await api.get(`/api/contracts/${id}`); setC(r.data.data)
     api.get('/api/attachments', { params: { entity: 'contract', entity_id: id } }).then((x) => setFiles(x.data.data))
   }
+  const canEdit = can('contract', isNew ? 'create' : 'write')
   const setH = (k: string, v: any) => setC((s: any) => ({ ...s, [k]: v }))
   const onPickParty = (code: string) => {
     const s = suppliers.find((x) => x.code === code)
@@ -71,35 +72,35 @@ export default function ContractDetail() {
         <h3 className="sec-title">Thông tin hợp đồng</h3>
         <div className="form-grid">
           <div className="form-row"><label>Đối tượng *</label>
-            <select value={c.party_type} onChange={(e) => setH('party_type', e.target.value)}>{PARTY_TYPES.map((o) => <option key={o} value={o}>{o}</option>)}</select>
+            <select value={c.party_type} disabled={!canEdit} onChange={(e) => setH('party_type', e.target.value)}>{PARTY_TYPES.map((o) => <option key={o} value={o}>{o}</option>)}</select>
           </div>
           {isNCC ? (
             <div className="form-row"><label>Nhà cung cấp *</label>
-              <select value={c.party_code || ''} onChange={(e) => onPickParty(e.target.value)}>
+              <select value={c.party_code || ''} disabled={!canEdit} onChange={(e) => onPickParty(e.target.value)}>
                 <option value="">— Chọn NCC —</option>{suppliers.map((s) => <option key={s.id} value={s.code}>{s.code} — {s.name}</option>)}
               </select>
             </div>
           ) : (
-            <div className="form-row"><label>Tên đối tượng *</label><input value={c.party_name || ''} onChange={(e) => setH('party_name', e.target.value)} /></div>
+            <div className="form-row"><label>Tên đối tượng *</label><input value={c.party_name || ''} disabled={!canEdit} onChange={(e) => setH('party_name', e.target.value)} /></div>
           )}
           <div className="form-row"><label>Công ty (bên mình) ký *</label>
-            <select value={c.company_id || ''} onChange={(e) => setH('company_id', Number(e.target.value))}>
+            <select value={c.company_id || ''} disabled={!canEdit} onChange={(e) => setH('company_id', Number(e.target.value))}>
               <option value="">— Chọn —</option>{companies.map((co) => <option key={co.id} value={co.id}>{co.name}</option>)}
             </select>
           </div>
           <div className="form-row"><label>Loại hợp đồng</label>
-            <select value={c.contract_type || ''} onChange={(e) => setH('contract_type', e.target.value)}>
+            <select value={c.contract_type || ''} disabled={!canEdit} onChange={(e) => setH('contract_type', e.target.value)}>
               <option value="">— Chọn —</option>{C_TYPES.map((o) => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
-          <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Trích yếu hợp đồng</label><input value={c.title || ''} onChange={(e) => setH('title', e.target.value)} /></div>
-          <div className="form-row"><label>Từ ngày</label><input type="date" value={c.start_date || ''} onChange={(e) => setH('start_date', e.target.value)} /></div>
-          <div className="form-row"><label>Đến ngày</label><input type="date" value={c.end_date || ''} onChange={(e) => setH('end_date', e.target.value)} /></div>
+          <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Trích yếu hợp đồng</label><input value={c.title || ''} disabled={!canEdit} onChange={(e) => setH('title', e.target.value)} /></div>
+          <div className="form-row"><label>Từ ngày</label><input type="date" value={c.start_date || ''} disabled={!canEdit} onChange={(e) => setH('start_date', e.target.value)} /></div>
+          <div className="form-row"><label>Đến ngày</label><input type="date" value={c.end_date || ''} disabled={!canEdit} onChange={(e) => setH('end_date', e.target.value)} /></div>
           <div className="form-row"><label>Trạng thái</label>
-            <select value={c.status} onChange={(e) => setH('status', e.target.value)}>{C_STATUS.map((o) => <option key={o} value={o}>{o}</option>)}</select>
+            <select value={c.status} disabled={!canEdit} onChange={(e) => setH('status', e.target.value)}>{C_STATUS.map((o) => <option key={o} value={o}>{o}</option>)}</select>
           </div>
-          <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={!!c.signed} onChange={(e) => setH('signed', e.target.checked)} style={{ width: 18, height: 18 }} /> Đã ký</label></div>
-          <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><textarea value={c.note || ''} onChange={(e) => setH('note', e.target.value)} /></div>
+          <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={!!c.signed} disabled={!canEdit} onChange={(e) => setH('signed', e.target.checked)} style={{ width: 18, height: 18 }} /> Đã ký</label></div>
+          <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><textarea value={c.note || ''} disabled={!canEdit} onChange={(e) => setH('note', e.target.value)} /></div>
         </div>
         {err && <div className="err" style={{ marginTop: 12 }}>{err}</div>}
         {msg && <div style={{ color: 'var(--green)', fontSize: 13, marginTop: 8 }}>{msg}</div>}
@@ -109,12 +110,12 @@ export default function ContractDetail() {
         <h3 className="sec-title"><i className="ti ti-paperclip" /> Tệp hợp đồng đính kèm</h3>
         {isNew ? <span style={{ color: '#999', fontSize: 13 }}>Lưu hợp đồng trước rồi mới đính kèm file.</span> : (
           <>
-            <input type="file" multiple onChange={(e) => upload(e.target.files)} />
+            {canEdit && <input type="file" multiple onChange={(e) => upload(e.target.files)} />}
             <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
               {files.map((f) => (
                 <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
                   <i className="ti ti-file" /><a href={f.url} target="_blank" style={{ color: 'var(--teal)', flex: 1, textDecoration: 'underline' }}>{f.filename}</a>
-                  <button className="icon-btn" onClick={async () => { if (confirm('Xóa file?')) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>
+                  {canEdit && <button className="icon-btn" onClick={async () => { if (confirm('Xóa file?')) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
                 </div>
               ))}
               {files.length === 0 && <span style={{ color: '#999', fontSize: 13 }}>Chưa có file. Kéo/chọn file HĐ (PDF, ảnh…) để đính kèm.</span>}

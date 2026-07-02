@@ -42,7 +42,7 @@ export default function PaymentRequestDetail() {
   )
   if (!req) return <div style={{ padding: 40 }}>Đang tải...</div>
 
-  const editable = req.status === 'draft'
+  const editable = req.status === 'draft' && can('payment_request', 'write')
   const companyName = companies.find((c) => c.id === req.company_id)?.name || '—'
   const setLineAmount = (i: number, v: number) =>
     setReq((s: any) => ({ ...s, lines: s.lines.map((l: any, idx: number) => idx === i ? { ...l, amount: v } : l) }))
@@ -116,12 +116,12 @@ export default function PaymentRequestDetail() {
 
       <div className="card" style={{ padding: 18, marginBottom: 16 }}>
         <h3 className="sec-title"><i className="ti ti-paperclip" /> Chứng từ thanh toán (ủy nhiệm chi…)</h3>
-        <input type="file" multiple onChange={(e) => uploadFiles(e.target.files)} />
+        {can('payment_request', 'write') && <input type="file" multiple onChange={(e) => uploadFiles(e.target.files)} />}
         <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
           {files.map((f) => (
             <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
               <i className="ti ti-file" /><a href={f.url} target="_blank" style={{ color: 'var(--teal)', flex: 1, textDecoration: 'underline' }}>{f.filename}</a>
-              <button className="icon-btn" onClick={async () => { if (confirm('Xóa file?')) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>
+              {can('payment_request', 'write') && <button className="icon-btn" onClick={async () => { if (confirm('Xóa file?')) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
             </div>
           ))}
           {files.length === 0 && <span style={{ color: '#999', fontSize: 13 }}>Chưa có file nào.</span>}
