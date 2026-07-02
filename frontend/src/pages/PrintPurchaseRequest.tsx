@@ -13,12 +13,14 @@ export default function PrintPurchaseRequest() {
   const { id } = useParams()
   const [pr, setPr] = useState<any>(null)
   const [company, setCompany] = useState('')
+  const [files, setFiles] = useState<any[]>([])
 
   useEffect(() => {
     api.get(`/api/purchase-requests/${id}`).then(async (r) => {
       const d = r.data.data; setPr(d)
-      if (d.company_id) { try { const c = await api.get(`/api/companies/${d.company_id}`); setCompany(c.data.data.name) } catch {} }
+      if (d.company_id) { try { const c = await api.get(`/api/companies/${d.company_id}`); setCompany(c.data.data.name) } catch { } }
     })
+    api.get('/api/attachments', { params: { entity: 'purchase_request', entity_id: id } }).then((x) => setFiles(x.data.data || []))
   }, [id])
 
   if (!pr) return <div style={{ padding: 40 }}>Đang tải...</div>
@@ -36,15 +38,17 @@ export default function PrintPurchaseRequest() {
       <div style={{ maxWidth: 820, margin: '0 auto', background: '#fff', padding: '28px 32px', fontFamily: 'Inter, Arial, sans-serif', color: '#000' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ fontSize: 13 }}><b>Đơn vị:</b> {company || '...'}</div>
-          <table style={{ borderCollapse: 'collapse', fontSize: 9.5 }}>
+          <table style={{ borderCollapse: 'collapse', fontSize: 12, textAlign: 'left' }}>
             <tbody>
-              {(() => { const c = { border: '1px solid #999', padding: '2px 6px', fontSize: 9.5, lineHeight: 1.3 } as const; const c2 = { ...c, fontWeight: 600 } as const; return (
-                <>
-                  <tr><td style={{ ...c2, width: 56 }}>Mẫu</td><td style={{ ...c, width: 92 }}>003/BM/PKT</td></tr>
-                  <tr><td style={c2}>Phiên bản</td><td style={c}>V1-062025</td></tr>
-                  <tr><td style={c2}>Ngày update</td><td style={c}>17/7/2025</td></tr>
-                </>
-              ) })()}
+              {(() => {
+                const c = { border: '1px solid #999', padding: '4px 8px', lineHeight: 1.4, whiteSpace: 'nowrap' } as const; return (
+                  <>
+                    <tr><td colSpan={2} style={{ ...c, fontWeight: 700, textAlign: 'center' }}>Mẫu 003/BM/PKT</td></tr>
+                    <tr><td style={{ ...c, width: 80 }}>Phiên bản</td><td style={{ ...c, textAlign: 'center' }}>V1-062025</td></tr>
+                    <tr><td style={{ ...c, width: 80 }}>Ngày update:</td><td style={{ ...c, textAlign: 'center' }}>17/7/2025</td></tr>
+                  </>
+                )
+              })()}
             </tbody>
           </table>
         </div>
@@ -55,10 +59,10 @@ export default function PrintPurchaseRequest() {
 
         <div style={SH}>THÔNG TIN CHUNG</div>
         <div style={{ fontSize: 12, padding: '6px 4px', lineHeight: 1.8 }}>
-          <div><b>Người đề xuất:</b> {pr.requester} {pr.requester_position ? `(${pr.requester_position})` : ''}</div>
-          <div><b>Phòng ban/bộ phận:</b> {pr.department}</div>
-          <div><b>Trưởng bộ phận / Người liên hệ:</b> {pr.head_of_dept || '............'}</div>
-          <div><b>Công ty nhận hóa đơn:</b> {company}</div>
+          <div><b>Người đề xuất:</b> {pr.requester}</div>
+          <div><b>Chức vụ:</b> {pr.requester_position || '............'}</div>
+          <div><b>Hiện công tác tại bộ phận:</b> {pr.department || '............'}</div>
+          <div><b>Trưởng phòng ban/bộ phận:</b> {pr.head_of_dept || '............'}</div>
         </div>
 
         <div style={SH}>MỤC ĐÍCH &amp; NỘI DUNG ĐỀ XUẤT</div>
@@ -96,7 +100,7 @@ export default function PrintPurchaseRequest() {
           <div><b>Tên nhà cung cấp:</b> {pr.suggested_supplier || ''}</div>
           <div><b>Mã số thuế:</b> {pr.suggested_supplier_tax_code || ''}</div>
           <div><b>Liên hệ:</b> {pr.suggested_supplier_contact || ''}</div>
-          <div><b>Báo giá đính kèm:</b> {pr.quote_file_url ? '☑ Có' : '☐ Có'} &nbsp;&nbsp; {pr.quote_file_url ? '☐ Không' : '☑ Không'} {pr.quote_filename ? `( ${pr.quote_filename} )` : ''}</div>
+          <div><b>Báo giá đính kèm:</b> {pr.quote_file_url || files.length > 0 ? '☑ Có' : '☐ Có'} &nbsp;&nbsp; {pr.quote_file_url || files.length > 0 ? '☐ Không' : '☑ Không'} {pr.quote_filename ? `( ${pr.quote_filename} )` : ''}</div>
         </div>
 
         <div style={SH}>PHẦN DÀNH CHO BỘ PHẬN MUA HÀNG</div>
@@ -108,7 +112,13 @@ export default function PrintPurchaseRequest() {
         <div style={SH}>XÉT DUYỆT</div>
         <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center', fontSize: 12, marginTop: 16 }}>
           {['Giám đốc', 'TP/BP mua hàng', 'TP/BP đề xuất', 'Người lập'].map((r) => (
-            <div key={r}><b>{r}</b><div style={{ fontStyle: 'italic', fontSize: 11 }}>(Ký, ghi rõ họ tên)</div><div style={{ height: 56 }} /></div>
+            <div key={r}>
+              <b>{r}</b>
+              <div style={{ fontStyle: 'italic', fontSize: 11 }}>(Ký, ghi rõ họ tên)</div>
+              <div style={{ height: 60, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', fontWeight: 500 }}>
+                {r === 'Người lập' ? pr.requester : ''}
+              </div>
+            </div>
           ))}
         </div>
       </div>

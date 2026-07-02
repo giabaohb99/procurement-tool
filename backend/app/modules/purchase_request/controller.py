@@ -24,6 +24,15 @@ HEADER_COLS = ["id", "code", "company_id", "requester", "requester_position",
 def _out(db: Session, pr) -> dict:
     d = {c: getattr(pr, c) for c in HEADER_COLS}
     d["vat_rate"] = float(pr.vat_rate or 0)
+    
+    # Fetch company name safely to avoid permission issues on the frontend
+    d["company_name"] = ""
+    if pr.company_id:
+        from app.modules.company.model import Company
+        comp = db.query(Company).filter(Company.id == pr.company_id).first()
+        if comp:
+            d["company_name"] = comp.name
+
     items = service.items_of(db, pr.id)
     d["items"] = [
         {"id": i.id, "product_code": i.product_code, "product_name": i.product_name,

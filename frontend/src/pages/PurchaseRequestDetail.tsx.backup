@@ -3,8 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { prBadge } from '../config/cruds'
-import Select from 'react-select'
-import CreatableSelect from 'react-select/creatable'
 
 const API = '/api/purchase-requests'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -17,7 +15,7 @@ const emptyItem = {
 export default function PurchaseRequestDetail() {
   const { id } = useParams()
   const isNew = id === 'new'
-  const { user, can } = useAuth()
+  const { can } = useAuth()
   const navigate = useNavigate()
 
   const [pr, setPr] = useState<any>({
@@ -34,9 +32,6 @@ export default function PurchaseRequestDetail() {
   const [employees, setEmployees] = useState<any[]>([])
   const [departments, setDepartments] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
-  const [suppliers, setSuppliers] = useState<any[]>([])
-  const [users, setUsers] = useState<any[]>([])
-  const [roles, setRoles] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [files, setFiles] = useState<any[]>([])
   const [err, setErr] = useState('')
@@ -50,9 +45,6 @@ export default function PurchaseRequestDetail() {
     api.get('/api/employees', { params: { page_size: 1000 } }).then((r) => setEmployees(r.data.data.items))
     api.get('/api/departments', { params: { page_size: 500 } }).then((r) => setDepartments(r.data.data.items))
     api.get('/api/products', { params: { page_size: 1000 } }).then((r) => setProducts(r.data.data.items))
-    api.get('/api/suppliers', { params: { page_size: 1000 } }).then((r) => setSuppliers(r.data.data.items || []))
-    api.get('/api/users', { params: { page_size: 1000 } }).then((r) => setUsers(r.data.data.items || []))
-    api.get('/api/roles', { params: { page_size: 100 } }).then((r) => setRoles(r.data.data.items || []))
   }, [])
 
   async function loadAll() {
@@ -63,32 +55,7 @@ export default function PurchaseRequestDetail() {
   }
   useEffect(() => { if (!isNew) loadAll() }, [id])
 
-  useEffect(() => {
-    if (isNew && employees.length > 0 && user && !pr.requester) {
-      const matchEmp = employees.find(e => e.email === user.email || e.full_name === user.full_name)
-      if (matchEmp) {
-        handleRequesterChange(matchEmp.full_name, true)
-      }
-    }
-  }, [isNew, employees, user])
-
   const editable = isNew || pr.status === 'draft' || pr.status === 'rejected'
-  const isStaff = !can('purchase_request', 'approve') && !can('purchase_request', 'delete')
-  const canAssignPurchaser = can('purchase_order', 'approve') // Only Manager Purchase can do this
-  
-  const managerRoleIds = roles.filter(r => r.code === 'manager' || r.code === 'manager_purchase' || r.code === 'admin').map(r => r.id)
-  const purchaserRoleIds = roles.filter(r => r.code === 'purchaser' || r.code === 'manager_purchase').map(r => r.id)
-  
-  const managerEmpIds = users.filter(u => u.role_ids?.some((rid: any) => managerRoleIds.includes(rid))).map(u => u.employee_id)
-  const purchaserEmpIds = users.filter(u => u.role_ids?.some((rid: any) => purchaserRoleIds.includes(rid))).map(u => u.employee_id)
-
-  const managerOptions = employees.filter(e => managerEmpIds.includes(e.id) || e.role_name?.toLowerCase().includes('trưởng')).map(e => ({ value: e.full_name, label: e.full_name }))
-  const purchaserOptions = employees.filter(e => purchaserEmpIds.includes(e.id) || e.role_name?.toLowerCase().includes('thu mua')).map(e => ({ value: e.full_name, label: e.full_name }))
-  const companyOptions = companies.map(c => ({ value: c.id, label: c.name }))
-  const employeeOptions = employees.map(e => ({ value: e.full_name, label: e.full_name }))
-  const warehouseOptions = warehouses.map(w => ({ value: w, label: w }))
-  const supplierOptions = suppliers.map(s => ({ value: s.name, label: s.name }))
-
   const setH = (k: string, v: any) => setPr((s: any) => ({ ...s, [k]: v }))
   const items = pr.items || []
   const setItem = (i: number, k: string, v: any) =>
@@ -100,12 +67,12 @@ export default function PurchaseRequestDetail() {
   const vat = subtotal * (Number(pr.vat_rate) || 0)
   const total = subtotal + vat
 
-  const handleRequesterChange = (empName: string, isAutoFill = false) => {
+  const handleRequesterChange = (empName: string) => {
     const emp = employees.find(e => e.full_name === empName)
     if (emp) {
       const dept = departments.find(d => d.id === emp.department_id)
       const deptName = dept ? dept.name : ''
-      const head = employees.find(e => e.department_id === emp.department_id && e.position && (
+      const head = employees.find(e => e.department_id === emp.department_id && (
         e.position.toLowerCase().includes('trưởng') ||
         e.position.toLowerCase().includes('manager') ||
         e.position.toLowerCase().includes('head')
@@ -113,27 +80,13 @@ export default function PurchaseRequestDetail() {
       setPr((s: any) => ({
         ...s,
         requester: emp.full_name,
-        requester_position: isAutoFill && s.requester_position ? s.requester_position : (emp.position || ''),
-        department: isAutoFill && s.department ? s.department : deptName,
-        head_of_dept: isAutoFill && s.head_of_dept ? s.head_of_dept : (head ? head.full_name : s.head_of_dept || ''),
-        company_id: (isAutoFill && s.company_id) ? s.company_id : (emp.company_id || s.company_id)
+        requester_position: emp.position || '',
+        department: deptName,
+        head_of_dept: head ? head.full_name : s.head_of_dept || '',
+        company_id: emp.company_id || s.company_id
       }))
     } else {
       setPr((s: any) => ({ ...s, requester: empName }))
-    }
-  }
-
-  const handleSupplierChange = (val: string) => {
-    const sup = suppliers.find(s => s.name === val)
-    if (sup) {
-      setPr((s: any) => ({
-        ...s,
-        suggested_supplier: sup.name,
-        suggested_supplier_tax_code: sup.tax_code || '',
-        suggested_supplier_contact: [sup.phone, sup.email, sup.address].filter(Boolean).join(' - ') || '',
-      }))
-    } else {
-      setH('suggested_supplier', val)
     }
   }
 
@@ -286,27 +239,17 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Công ty *</label>
-                <Select
-                  value={companyOptions.find(o => o.value === pr.company_id) || null}
-                  onChange={(o: any) => setH('company_id', o ? o.value : 0)}
-                  options={companyOptions}
-                  isDisabled={!editable}
-                  isClearable={true}
-                  placeholder="Nhập/Chọn công ty"
-                  styles={{ control: (b) => ({ ...b, minHeight: 36, borderColor: '#d1d5db' }) }}
-                />
+                <select value={pr.company_id || ''} disabled={!editable} onChange={(e) => setH('company_id', Number(e.target.value))}>
+                  <option value="">-- Chọn Công ty --</option>
+                  {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
               </div>
               <div className="form-row">
                 <label>Nhân sự YC *</label>
-                <Select
-                  value={employeeOptions.find(o => o.value === pr.requester) || null}
-                  onChange={(o: any) => handleRequesterChange(o ? o.value : '')}
-                  options={employeeOptions}
-                  isDisabled={!editable || isStaff}
-                  isClearable={true}
-                  placeholder="Nhập/Chọn nhân sự"
-                  styles={{ control: (b) => ({ ...b, minHeight: 36, borderColor: '#d1d5db' }) }}
-                />
+                <select value={pr.requester || ''} disabled={!editable} onChange={(e) => handleRequesterChange(e.target.value)}>
+                  <option value="">-- Chọn Nhân sự --</option>
+                  {employees.map((e) => <option key={e.id} value={e.full_name}>{e.code} - {e.full_name}</option>)}
+                </select>
               </div>
               <div className="form-row">
                 <label>Bộ phận YC *</label>
@@ -318,15 +261,7 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Trưởng bộ phận (TBP) / Người liên hệ *</label>
-                <Select
-                  value={managerOptions.find(o => o.value === pr.head_of_dept) || (pr.head_of_dept ? { value: pr.head_of_dept, label: pr.head_of_dept } : null)}
-                  onChange={(o: any) => setH('head_of_dept', o ? o.value : '')}
-                  options={managerOptions}
-                  isDisabled={!editable}
-                  isClearable={true}
-                  placeholder="Chọn Trưởng bộ phận / Người liên hệ..."
-                  styles={{ control: (b) => ({ ...b, minHeight: 36, borderColor: '#d1d5db' }) }}
-                />
+                <input value={pr.head_of_dept || ''} placeholder="Tự động điền theo Nhân sự..." disabled={!editable} onChange={(e) => setH('head_of_dept', e.target.value)} />
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Mục đích mua hàng *</label>
@@ -375,8 +310,7 @@ export default function PurchaseRequestDetail() {
                     <th style={{ width: 90 }}>Số lượng</th>
                     <th style={{ width: 110 }}>Đơn giá</th>
                     <th style={{ width: 120 }}>Thành tiền</th>
-                    <th style={{ width: 160 }}>Ghi chú</th>
-                    <th style={{ width: 160 }}>Phân bổ NSTM</th>
+                    <th>Ghi chú</th>
                     {editable && <th style={{ width: 40 }} />}
                   </tr>
                 </thead>
@@ -396,26 +330,7 @@ export default function PurchaseRequestDetail() {
                       <td>{num(i, 'qty', 80)}</td>
                       <td>{num(i, 'price', 100)}</td>
                       <td style={{ textAlign: 'right', fontWeight: 500 }}>{fmt((Number(it.qty) || 0) * (Number(it.price) || 0))}</td>
-                      <td>
-                        <CreatableSelect
-                          value={it.note ? { value: it.note, label: it.note } : null}
-                          onChange={(o: any) => setItem(i, 'note', o ? o.value : '')}
-                          options={warehouseOptions}
-                          isDisabled={!editable}
-                          placeholder="Chọn/Nhập..."
-                          styles={{ control: (b) => ({ ...b, minHeight: 32, borderColor: '#d1d5db', fontSize: 13 }) }}
-                        />
-                      </td>
-                      <td>
-                        <Select
-                          value={purchaserOptions.find(o => o.value === it.assignee) || (it.assignee ? { value: it.assignee, label: it.assignee } : null)}
-                          onChange={(o: any) => setItem(i, 'assignee', o ? o.value : '')}
-                          options={purchaserOptions}
-                          isDisabled={!canAssignPurchaser}
-                          placeholder="Chọn NSTM..."
-                          styles={{ control: (b) => ({ ...b, minHeight: 32, borderColor: '#d1d5db', fontSize: 13 }) }}
-                        />
-                      </td>
+                      <td>{txt(i, 'note', '100%')}</td>
                       {editable && (
                         <td style={{ textAlign: 'center' }}>
                           <button className="icon-btn" onClick={() => delItem(i)}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>
@@ -445,15 +360,7 @@ export default function PurchaseRequestDetail() {
             <div className="form-grid" style={{ marginBottom: 14 }}>
               <div className="form-row">
                 <label>Tên nhà cung cấp đề xuất</label>
-                <CreatableSelect
-                  value={pr.suggested_supplier ? { value: pr.suggested_supplier, label: pr.suggested_supplier } : null}
-                  onChange={(o: any) => handleSupplierChange(o ? o.value : '')}
-                  options={supplierOptions}
-                  isDisabled={!editable}
-                  isClearable={true}
-                  placeholder="Nhập/chọn NCC đề xuất..."
-                  styles={{ control: (b) => ({ ...b, minHeight: 36, borderColor: '#d1d5db' }) }}
-                />
+                <input value={pr.suggested_supplier || ''} placeholder="Nhập tên NCC đề xuất (nếu có)" disabled={!editable} onChange={(e) => setH('suggested_supplier', e.target.value)} />
               </div>
               <div className="form-row">
                 <label>Mã số thuế NCC</label>

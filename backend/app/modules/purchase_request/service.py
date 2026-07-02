@@ -54,7 +54,26 @@ def create_pr(db: Session, data: PRCreate, user_id: int) -> PurchaseRequest:
     db.commit()
     db.refresh(pr)
     if not pr.code:
-        pr.code = f"PYC{pr.id:05d}"
+        date_str = ""
+        if pr.request_date and len(pr.request_date) >= 10 and "-" in pr.request_date:
+            parts = pr.request_date.split("-")
+            if len(parts) == 3:
+                date_str = f"{parts[2]}{parts[1]}{parts[0][-2:]}"
+        if not date_str:
+            from datetime import datetime
+            date_str = datetime.now().strftime("%d%m%y")
+            
+        prefix = f"PYC{date_str}"
+        last_pr = db.query(PurchaseRequest).filter(PurchaseRequest.code.like(f"{prefix}%")).order_by(PurchaseRequest.code.desc()).first()
+        
+        seq = 1
+        if last_pr and last_pr.code.startswith(prefix):
+            try:
+                seq = int(last_pr.code[len(prefix):]) + 1
+            except ValueError:
+                seq = 1
+                
+        pr.code = f"{prefix}{seq:02d}"
         db.commit()
     _save_items(db, pr.id, data.items, user_id)
     record(db, user_id, ENTITY, pr.id, "create")
