@@ -101,14 +101,21 @@ export default function CrudList() {
 
   if (!cfg) return <div>Không tìm thấy trang.</div>
 
-  // Trang danh mục chỉ dành cho người QUẢN LÝ (write/create/delete).
-  // Người chỉ có 'read' (để đổ dropdown trong biểu mẫu) không xem danh sách này.
+  // Chứng từ giao dịch (txn: PYC/PO/khảo sát/YCTT): ai có 'read' là xem danh sách được
+  // (trưởng phòng duyệt, quản lý theo dõi...). Nút Thêm/Sửa/Xóa vẫn ẩn theo quyền cụ thể bên dưới.
+  // Danh mục (company/product/...): chỉ QUẢN LÝ (write/create/delete) mới xem; người chỉ có 'read'
+  // dùng cho dropdown, không xem danh sách.
   const canManage = can(cfg.entity, 'write') || can(cfg.entity, 'create') || can(cfg.entity, 'delete')
-  if (!canManage) return (
+  const canView = cfg.txn ? can(cfg.entity, 'read') : canManage
+  if (!canView) return (
     <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
       <i className="ti ti-lock" style={{ fontSize: 34, color: '#cbd5e1' }} />
-      <div style={{ marginTop: 12, fontSize: 15, color: 'var(--navy)', fontWeight: 600 }}>Không có quyền quản lý danh mục này</div>
-      <div style={{ marginTop: 6, fontSize: 13 }}>Bạn chỉ có quyền dùng dữ liệu này trong biểu mẫu (dropdown), không xem/quản lý danh sách.</div>
+      <div style={{ marginTop: 12, fontSize: 15, color: 'var(--navy)', fontWeight: 600 }}>
+        {cfg.txn ? 'Không có quyền xem danh sách này' : 'Không có quyền quản lý danh mục này'}
+      </div>
+      <div style={{ marginTop: 6, fontSize: 13 }}>
+        {cfg.txn ? 'Bạn không có quyền xem chứng từ này.' : 'Bạn chỉ có quyền dùng dữ liệu này trong biểu mẫu (dropdown), không xem/quản lý danh sách.'}
+      </div>
       <button className="btn" style={{ marginTop: 16 }} onClick={() => navigate('/')}><i className="ti ti-home" />Về Trang chủ</button>
     </div>
   )

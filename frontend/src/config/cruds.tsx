@@ -21,6 +21,7 @@ export type CrudConfig = {
   filters: FilterField[]
   importExport?: boolean
   rowStyle?: (row: any) => any   // tô màu dòng theo điều kiện (vd HĐ sắp hết hạn)
+  txn?: boolean                  // chứng từ giao dịch (PYC/PO/khảo sát/YCTT): ai có 'read' là xem danh sách được
 }
 
 const badge = (v: any, on = 'Đang dùng', off = 'Ngừng') =>
@@ -210,7 +211,7 @@ export const cruds: Record<string, CrudConfig> = {
     ],
   },
   'purchase-requests': {
-    slug: 'purchase-requests', entity: 'purchase_request', title: 'Yêu cầu mua (PYC)', apiPath: '/api/purchase-requests',
+    slug: 'purchase-requests', entity: 'purchase_request', title: 'Yêu cầu mua (PYC)', apiPath: '/api/purchase-requests', txn: true,
     rowStyle: (r: any) => r.has_cancelled_line ? { background: '#fdecea' } : undefined,   // có dòng "Hủy đơn" → tô đỏ
     columns: [
       { key: 'code', label: 'Mã PYC' },
@@ -305,7 +306,7 @@ export const cruds: Record<string, CrudConfig> = {
     ]
   },
   'purchase-orders': {
-    slug: 'purchase-orders', entity: 'purchase_order', title: 'Đơn mua hàng (PO)', apiPath: '/api/purchase-orders',
+    slug: 'purchase-orders', entity: 'purchase_order', title: 'Đơn mua hàng (PO)', apiPath: '/api/purchase-orders', txn: true,
     columns: [
       { key: 'code', label: 'Mã PO' },
       { key: 'order_date', label: 'Ngày đặt' },
@@ -327,7 +328,7 @@ export const cruds: Record<string, CrudConfig> = {
     fields: [],  // chi tiết dùng trang riêng (PurchaseOrderDetail)
   },
   'payment-requests': {
-    slug: 'payment-requests', entity: 'payment_request', title: 'Yêu cầu thanh toán', apiPath: '/api/payment-requests',
+    slug: 'payment-requests', entity: 'payment_request', title: 'Yêu cầu thanh toán', apiPath: '/api/payment-requests', txn: true,
     columns: [
       { key: 'code', label: 'Mã phiếu' },
       { key: 'request_date', label: 'Ngày lập' },
@@ -346,7 +347,7 @@ export const cruds: Record<string, CrudConfig> = {
     fields: [],
   },
   'surveys-supplier': {
-    slug: 'surveys-supplier', entity: 'survey', title: 'Khảo sát Nhà cung cấp', apiPath: '/api/surveys-supplier',
+    slug: 'surveys-supplier', entity: 'survey', title: 'Khảo sát Nhà cung cấp', apiPath: '/api/surveys-supplier', txn: true,
     columns: [
       { key: 'code', label: 'Mã phiếu' }, { key: 'pr_code', label: 'Mã YC (PYC)' },
       { key: 'item_group', label: 'Nhóm hàng' }, { key: 'nspt', label: 'NSPT' },
@@ -364,7 +365,7 @@ export const cruds: Record<string, CrudConfig> = {
     fields: [],
   },
   'surveys-product': {
-    slug: 'surveys-product', entity: 'survey', title: 'Khảo sát Sản phẩm', apiPath: '/api/surveys-product',
+    slug: 'surveys-product', entity: 'survey', title: 'Khảo sát Sản phẩm', apiPath: '/api/surveys-product', txn: true,
     columns: [
       { key: 'code', label: 'Mã phiếu' }, { key: 'pr_code', label: 'Mã YC (PYC)' },
       { key: 'item_group', label: 'Nhóm hàng' }, { key: 'nspt', label: 'NSPT' },
