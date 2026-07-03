@@ -58,9 +58,12 @@ def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str
             db.commit()
             return
 
+        # Nếu đặt EMAIL_TEST_OVERRIDE → chuyển hướng mọi email ra địa chỉ test (an toàn khi test)
+        target = app_settings.get("email_test_override") or to_email
+
         msg = MIMEMultipart()
         msg["From"] = app_settings.get("smtp_from") or smtp_user
-        msg["To"] = to_email
+        msg["To"] = target
         msg["Subject"] = subject
         msg.attach(MIMEText(html_body, "html"))
 
@@ -70,7 +73,7 @@ def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str
             server.login(smtp_user, smtp_pass)
             from email.utils import parseaddr
             _, from_email = parseaddr(msg["From"])
-            server.sendmail(from_email or msg["From"], to_email, msg.as_string())
+            server.sendmail(from_email or msg["From"], target, msg.as_string())
 
         log.status = "sent"
         log.sent_at = datetime.utcnow()
@@ -156,57 +159,19 @@ def trigger_notification(
     else:
         recipients = [creator] if creator else []
 
-    # Insert Notification and EmailLog for each recipient
+    # CHỈ tạo thông báo trong app (chuông) — KHÔNG gửi email cho workflow.
+    # Email chỉ dùng cho cấp tài khoản / reset mật khẩu (hàm riêng bên dưới).
     for recipient in recipients:
         if not recipient:
             continue
-            
-        # 1. In-app notification
-        notif = Notification(
+        db.add(Notification(
             user_id=recipient.id,
             title=subject,
             body=body,
             link=link,
-            created_by=creator_id
-        )
-        db.add(notif)
-        
-        # 2. Email log & sending
-        if recipient.email:
-            email_log = EmailLog(
-                event=event,
-                to_email=recipient.email,
-                subject=subject,
-                status="pending",
-                created_by=creator_id
-            )
-            db.add(email_log)
-            db.flush() # get email_log.id
-            
-            # Render template
-            html_content = render_template(HTML_LAYOUT, {
-                "subject": subject,
-                "is_urgent": is_urgent,
-                "intro_message": body,
-                "doc_type": doc_type_label,
-                "doc_code": doc_code,
-                "creator": creator_name,
-                "reason": reason,
-                "approve_note": approve_note,
-                "link": link
-            })
-            
-            # Enqueue task
-            from app.core.database import SessionLocal
-            background_tasks.add_task(
-                send_smtp_email,
-                SessionLocal,
-                email_log.id,
-                recipient.email,
-                subject,
-                html_content
-            )
-            
+            created_by=creator_id,
+        ))
+
     db.commit()
 
 def send_account_creation_email(db: Session, user_id: int, background_tasks, full_name: str, email: str, link: str):

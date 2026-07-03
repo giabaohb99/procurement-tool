@@ -100,6 +100,8 @@ def delete_(cid: int, db: Session = Depends(get_db), user=Depends(require("contr
     c = db.get(Contract, cid)
     if not c:
         raise HTTPException(404, "Không tìm thấy hợp đồng")
+    from app.modules.attachment.service import delete_attachments_for
+    delete_attachments_for(db, [("contract", cid)])
     db.delete(c)
     db.commit()
     record(db, user.id, "contract", cid, "delete")

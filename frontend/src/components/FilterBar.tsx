@@ -55,16 +55,22 @@ export default function FilterBar({
     <div className="toolbar">
       {fields.map((f) => {
         const opts = f.options || dyn[f.key]
-        return (f.type === 'select' || f.source) ? (
-          <div key={f.key} style={{ minWidth: 180 }}>
-            <SearchSelect value={vals[f.key] || ''} options={opts || []} placeholder={`${f.label}: Tất cả`} onChange={(v) => set(f.key, v)} />
+        return (
+          <div key={f.key} className="toolbar-filter-item">
+            {(f.type === 'select' || f.source) ? (
+              <SearchSelect value={vals[f.key] || ''} options={opts || []} placeholder={`${f.label}: Tất cả`} onChange={(v) => set(f.key, v)} />
+            ) : (
+              <input placeholder={f.label} value={vals[f.key] || ''}
+                     onChange={(e) => set(f.key, e.target.value)} />
+            )}
           </div>
-        ) : (
-          <input key={f.key} placeholder={f.label} value={vals[f.key] || ''}
-                 onChange={(e) => set(f.key, e.target.value)} />
         )
       })}
-      {Object.values(vals).some((v) => v) && <button className="btn ghost" onClick={clear}>Xóa lọc</button>}
+      {Object.values(vals).some((v) => v) && (
+        <button className="btn ghost" onClick={clear} style={{ height: 40, borderRadius: 12 }}>
+          Xóa lọc
+        </button>
+      )}
       <span style={{ flex: 1 }} />
       {extra}
     </div>

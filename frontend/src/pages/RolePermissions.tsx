@@ -20,15 +20,21 @@ export default function RolePermissions() {
   const [uTotal, setUTotal] = useState(0)
   const [uPage, setUPage] = useState(1)
   const [uSearch, setUSearch] = useState('')
+  const [uDept, setUDept] = useState(''); const [uRole, setURole] = useState(''); const [uSort, setUSort] = useState('')
+  const [depts, setDepts] = useState<any[]>([])
   const PAGE = 20
 
-  useEffect(() => { api.get('/api/roles/meta').then((r) => setMeta(r.data.data)); loadRoles() }, [])
+  useEffect(() => {
+    api.get('/api/roles/meta').then((r) => setMeta(r.data.data)); loadRoles()
+    api.get('/api/departments', { params: { page_size: 500 } }).then((r) => setDepts(r.data.data.items || [])).catch(() => {})
+  }, [])
   function loadRoles() { api.get('/api/roles').then((r) => setRoles(r.data.data)) }
   function loadUsers() {
-    api.get('/api/users', { params: { search: uSearch, page: uPage, page_size: PAGE } })
+    api.get('/api/users', { params: { search: uSearch, department: uDept, role_id: uRole || 0, sort: uSort, page: uPage, page_size: PAGE } })
       .then((r) => { setUsers(r.data.data.items); setUTotal(r.data.data.total) })
   }
-  useEffect(() => { if (tab !== 'users') return; const t = setTimeout(loadUsers, 300); return () => clearTimeout(t) }, [tab, uPage, uSearch])
+  useEffect(() => { if (tab !== 'users') return; const t = setTimeout(loadUsers, 300); return () => clearTimeout(t) }, [tab, uPage, uSearch, uDept, uRole, uSort])
+  useEffect(() => { setUPage(1) }, [uSearch, uDept, uRole, uSort])
   const uPages = Math.max(1, Math.ceil(uTotal / PAGE))
   const roleName = (id: number) => roles.find((r) => r.id === id)?.name || String(id)
 
@@ -84,10 +90,24 @@ export default function RolePermissions() {
 
       {tab === 'users' ? (
         <div className="hz-card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'center', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
             <input placeholder="Tìm theo tên / email / mã NV…" value={uSearch}
-              onChange={(e) => { setUSearch(e.target.value); setUPage(1) }} style={{ flex: 1, maxWidth: 340 }} />
-            <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>{uTotal} tài khoản</span>
+              onChange={(e) => setUSearch(e.target.value)} style={{ flex: 1, minWidth: 200, maxWidth: 320 }} />
+            <select value={uDept} onChange={(e) => setUDept(e.target.value)} style={{ minWidth: 160 }}>
+              <option value="">— Phòng ban —</option>
+              {depts.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
+            </select>
+            <select value={uRole} onChange={(e) => setURole(e.target.value)} style={{ minWidth: 150 }}>
+              <option value="">— Vai trò —</option>
+              {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
+            <select value={uSort} onChange={(e) => setUSort(e.target.value)} style={{ minWidth: 130 }}>
+              <option value="">Mặc định</option>
+              <option value="name_asc">Tên A→Z</option>
+              <option value="name_desc">Tên Z→A</option>
+            </select>
+            {(uSearch || uDept || uRole || uSort) && <button className="btn ghost" style={{ height: 34 }} onClick={() => { setUSearch(''); setUDept(''); setURole(''); setUSort('') }}>Xóa lọc</button>}
+            <span style={{ fontSize: 12.5, color: 'var(--muted)', marginLeft: 'auto' }}>{uTotal} tài khoản</span>
           </div>
           <table>
             <thead><tr><th>Người dùng</th><th>Phòng ban</th><th>Vai trò</th><th style={{ width: 90 }}></th></tr></thead>

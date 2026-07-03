@@ -48,7 +48,8 @@ button.nav-group-title:hover { color: #1B2559; }
 .page-title { font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 16px; }
 
 .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
-.toolbar input, .toolbar select { width: auto; flex: 1 1 180px; min-width: 0; }
+.toolbar-filter-item { flex: 1 1 200px; min-width: 160px; max-width: 260px; }
+.toolbar-filter-item input { width: 100% !important; }
 input, select, textarea { height: 40px; padding: 0 16px; border: 1px solid #E9EDF7; border-radius: 12px; font-size: 13.5px; color: var(--navy); background: #fff; font-weight: 500; outline: none; transition: border-color 0.2s, box-shadow 0.2s; width: 100%; max-width: 100%; box-sizing: border-box; }
 input[type=checkbox], input[type=radio] { width: auto !important; max-width: none !important; height: auto; }
 input:focus, select:focus, textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,174,239,.15); }

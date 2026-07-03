@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { api } from '../api/client'
+import NotificationBell from '../components/NotificationBell'
 
-type NavItem = { to: string; label: string; icon: string; entity?: string }
+type NavItem = { to: string; label: string; icon: string; entity?: string; manage?: boolean }
 type NavGroup = { title?: string; key?: string; collapsible?: boolean; items: NavItem[] }
 
 const NAV_GROUPS: NavGroup[] = [
@@ -23,18 +24,18 @@ const NAV_GROUPS: NavGroup[] = [
     { to: '/payment-requests', label: 'Yêu cầu thanh toán', icon: 'ti-receipt', entity: 'payment_request' },
   ] },
   { title: 'Danh mục', key: 'danhmuc', collapsible: true, items: [
-    { to: '/suppliers', label: 'Nhà cung cấp', icon: 'ti-truck', entity: 'supplier' },
-    { to: '/products', label: 'Sản phẩm', icon: 'ti-box', entity: 'product' },
-    { to: '/contracts', label: 'Hợp đồng', icon: 'ti-file-certificate', entity: 'contract' },
-    { to: '/warehouses', label: 'Kho', icon: 'ti-building-warehouse', entity: 'warehouse' },
-    { to: '/units', label: 'Đơn vị tính', icon: 'ti-ruler-2', entity: 'unit' },
-    { to: '/item-groups', label: 'Phân loại', icon: 'ti-category', entity: 'item_group' },
-    { to: '/departments', label: 'Phòng ban', icon: 'ti-tag', entity: 'department' },
+    { to: '/suppliers', label: 'Nhà cung cấp', icon: 'ti-truck', entity: 'supplier', manage: true },
+    { to: '/products', label: 'Sản phẩm', icon: 'ti-box', entity: 'product', manage: true },
+    { to: '/contracts', label: 'Hợp đồng', icon: 'ti-file-certificate', entity: 'contract', manage: true },
+    { to: '/warehouses', label: 'Kho', icon: 'ti-building-warehouse', entity: 'warehouse', manage: true },
+    { to: '/units', label: 'Đơn vị tính', icon: 'ti-ruler-2', entity: 'unit', manage: true },
+    { to: '/item-groups', label: 'Phân loại', icon: 'ti-category', entity: 'item_group', manage: true },
+    { to: '/departments', label: 'Phòng ban', icon: 'ti-tag', entity: 'department', manage: true },
   ] },
   { title: 'Hệ thống', items: [
-    { to: '/companies', label: 'Công ty', icon: 'ti-building', entity: 'company' },
-    { to: '/employees', label: 'Nhân sự', icon: 'ti-users', entity: 'employee' },
-    { to: '/roles', label: 'Vai trò', icon: 'ti-shield', entity: 'role' },
+    { to: '/companies', label: 'Công ty', icon: 'ti-building', entity: 'company', manage: true },
+    { to: '/employees', label: 'Nhân sự', icon: 'ti-users', entity: 'employee', manage: true },
+    { to: '/roles', label: 'Vai trò', icon: 'ti-shield', entity: 'role', manage: true },
     { to: '/settings', label: 'Cấu hình hệ thống', icon: 'ti-settings', entity: 'setting' },
   ] },
 ]
@@ -45,7 +46,11 @@ const isActive = (path: string, to: string) =>
 
 export default function AppLayout() {
   const { user, logout, updateUser, can } = useAuth()
-  const visibleItems = (items: NavItem[]) => items.filter((n) => !n.entity || can(n.entity, 'read'))
+  // Menu "quản lý" (danh mục, hệ thống) chỉ hiện khi được QUẢN LÝ (write/create/delete),
+  // không hiện chỉ vì có read (read dùng để đổ dropdown trong form).
+  const canManage = (e: string) => can(e, 'write') || can(e, 'create') || can(e, 'delete')
+  const visibleItems = (items: NavItem[]) =>
+    items.filter((n) => !n.entity || (n.manage ? canManage(n.entity) : can(n.entity, 'read')))
   const nav = useNavigate()
   const loc = useLocation()
   const [open, setOpen] = useState(false)
@@ -118,7 +123,7 @@ export default function AppLayout() {
             <div className="crumb">Mua hàng / {current?.label || ''}</div>
           </div>
           <div className="topbar-right" style={{ position: 'relative' }}>
-            <i className="ti ti-bell icon-btn" />
+            <NotificationBell />
             <div 
               style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 8 }} 
               onClick={() => setProfileOpen(!profileOpen)}

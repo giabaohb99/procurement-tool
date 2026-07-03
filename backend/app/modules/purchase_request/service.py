@@ -6,7 +6,7 @@ from app.core.audit import record
 from .model import PurchaseRequest, PurchaseRequestItem
 from .schema import AssignIn, ItemStatusIn, PRCreate, PRUpdate
 
-FILTERABLE = ["code", "status", "requester", "department"]
+FILTERABLE = ["code", "status", "requester", "department", "is_urgent"]
 ENTITY = "purchase_request"
 
 # Trạng thái xử lý theo DÒNG hàng
@@ -257,6 +257,8 @@ def update_pr(db: Session, pid: int, data: PRUpdate, user_id: int) -> PurchaseRe
 
 def delete_pr(db: Session, pid: int, user_id: int) -> None:
     pr = get_pr(db, pid)
+    from app.modules.attachment.service import delete_attachments_for
+    delete_attachments_for(db, [("purchase_request", pid), ("purchase_request_quote", pid)])
     db.query(PurchaseRequestItem).filter(PurchaseRequestItem.pr_id == pid).delete()
     db.delete(pr)
     db.commit()

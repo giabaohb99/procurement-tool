@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, File
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.core.auth import get_perm_profile, require
+from app.core.auth import get_perm_profile, hash_password, require
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
@@ -32,6 +33,25 @@ def list_employees(
 @router.get("/{eid}")
 def get_employee(eid: int, db: Session = Depends(get_db), user=Depends(require("employee", "read"))):
     return success(EmployeeOut.model_validate(service.get_employee(db, eid)).model_dump())
+
+
+class SetPasswordIn(BaseModel):
+    password: str
+
+
+@router.post("/{eid}/set-password")
+def set_password(eid: int, data: SetPasswordIn, db: Session = Depends(get_db),
+                 user=Depends(require("employee", "write"))):
+    """Người có quyền nhân sự đặt lại mật khẩu tài khoản của nhân sự này (nhập thẳng)."""
+    from app.modules.user.model import User
+    if not (data.password or "").strip() or len(data.password) < 4:
+        raise HTTPException(400, "Mật khẩu tối thiểu 4 ký tự")
+    u = db.query(User).filter(User.employee_id == eid).first()
+    if not u:
+        raise HTTPException(404, "Nhân sự này chưa có tài khoản đăng nhập")
+    u.password_hash = hash_password(data.password)
+    db.commit()
+    return success(None, "Đã đặt lại mật khẩu")
 
 
 @router.post("")

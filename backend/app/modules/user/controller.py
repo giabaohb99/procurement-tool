@@ -14,11 +14,12 @@ router = APIRouter(prefix="/api/users", tags=["user"])
 
 @router.get("")
 def list_users(
-    search: str = "", pg: dict = Depends(pagination), db: Session = Depends(get_db),
+    search: str = "", department: str = "", role_id: int = 0, sort: str = "",
+    pg: dict = Depends(pagination), db: Session = Depends(get_db),
     user=Depends(require("user", "read")),
 ):
     from app.modules.employee.model import Employee
-    total, items = service.list_users(db, pg, search)
+    total, items = service.list_users(db, pg, search, department, role_id, sort)
     out = []
     for u in items:
         d = UserOut.model_validate(u).model_dump()

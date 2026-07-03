@@ -17,6 +17,8 @@ export default function CrudDetail() {
   const [err, setErr] = useState('')
   const [msg, setMsg] = useState('')
   const [dynOpts, setDynOpts] = useState<Record<string, { value: string; label: string }[]>>({})
+  const [pwOpen, setPwOpen] = useState(false)
+  const [pw1, setPw1] = useState(''); const [pw2, setPw2] = useState('')
 
   async function loadLogs() {
     if (isNew || !cfg) return
@@ -54,6 +56,17 @@ export default function CrudDetail() {
   }, [cfg?.slug, id])
 
   if (!cfg) return <div>Không tìm thấy trang.</div>
+
+  // Danh mục chỉ dành cho người QUẢN LÝ (write/create/delete); read chỉ để đổ dropdown.
+  const canManage = can(cfg.entity, 'write') || can(cfg.entity, 'create') || can(cfg.entity, 'delete')
+  if (!canManage) return (
+    <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+      <i className="ti ti-lock" style={{ fontSize: 34, color: '#cbd5e1' }} />
+      <div style={{ marginTop: 12, fontSize: 15, color: 'var(--navy)', fontWeight: 600 }}>Không có quyền quản lý danh mục này</div>
+      <button className="btn" style={{ marginTop: 16 }} onClick={() => navigate('/')}><i className="ti ti-home" />Về Trang chủ</button>
+    </div>
+  )
+
   const set = (k: string, v: any) => setForm((s: any) => ({ ...s, [k]: v }))
   const canSave = isNew ? can(cfg.entity, 'create') : can(cfg.entity, 'write')
 
@@ -131,32 +144,53 @@ export default function CrudDetail() {
           </div>
           {err && <div className="err" style={{ marginTop: 12 }}>{err}</div>}
           {msg && <div style={{ color: 'var(--green)', marginTop: 12, fontSize: 13 }}>{msg}</div>}
-          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
             {canSave && <button className="btn" onClick={save}>{isNew ? 'Tạo' : 'Lưu'}</button>}
-            
+
             {!isNew && cfg.slug === 'employees' && can(cfg.entity, 'write') && (
-              <button className="btn outline" style={{ color: 'var(--teal)', borderColor: 'var(--teal)', background: '#fff' }} 
-                      onClick={async () => {
-                        if (!confirm('Cấp lại mật khẩu và gửi email cho nhân sự này?')) return
-                        setErr(''); setMsg('Đang xử lý...')
-                        try {
-                          await api.post(`/api/employees/${id}/reset-password`)
-                          setMsg('Đã cấp lại mật khẩu và gửi email thành công!')
-                        } catch (ex: any) {
-                          setErr(ex?.response?.data?.error?.message || 'Lỗi khi reset password')
-                          setMsg('')
-                        }
-                      }}>
-                <i className="ti ti-key" />Cấp lại mật khẩu
+              <button className="btn outline" style={{ color: 'var(--teal)', borderColor: 'var(--teal)', background: '#fff' }}
+                onClick={() => { setPwOpen((o) => !o); setErr(''); setMsg('') }}>
+                <i className="ti ti-key" />Đặt lại mật khẩu
               </button>
             )}
-            
+            {!isNew && cfg.slug === 'employees' && can('user', 'read') && (
+              <button className="btn ghost" onClick={async () => {
+                setErr('')
+                try {
+                  const r = await api.get('/api/users', { params: { search: form.code || form.email || form.full_name, page_size: 20 } })
+                  const u = (r.data.data.items || []).find((x: any) => x.employee_id === Number(id))
+                  if (u) navigate(`/users/${u.id}`); else setErr('Nhân sự này chưa có tài khoản để phân quyền')
+                } catch { setErr('Không mở được phân quyền') }
+              }}><i className="ti ti-shield" />Phân quyền tài khoản</button>
+            )}
+
             {!isNew && can(cfg.entity, 'delete') && (
               <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={remove}>
                 <i className="ti ti-trash" />Xóa
               </button>
             )}
           </div>
+
+          {/* Ô đặt lại mật khẩu trực tiếp (pass1/pass2) */}
+          {pwOpen && !isNew && cfg.slug === 'employees' && (
+            <div style={{ marginTop: 14, padding: 14, border: '1px solid var(--border)', borderRadius: 10, background: '#f8fafc' }}>
+              <div style={{ fontWeight: 600, color: 'var(--navy)', marginBottom: 10 }}>Đặt lại mật khẩu tài khoản</div>
+              <div className="form-grid">
+                <div className="form-row"><label>Mật khẩu mới</label><input type="password" autoComplete="new-password" value={pw1} onChange={(e) => setPw1(e.target.value)} /></div>
+                <div className="form-row"><label>Nhập lại mật khẩu</label><input type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <button className="btn" onClick={async () => {
+                  setErr(''); setMsg('')
+                  if (pw1.length < 4) { setErr('Mật khẩu tối thiểu 4 ký tự'); return }
+                  if (pw1 !== pw2) { setErr('Hai mật khẩu không khớp'); return }
+                  try { await api.post(`/api/employees/${id}/set-password`, { password: pw1 }); setMsg('Đã đặt lại mật khẩu'); setPw1(''); setPw2(''); setPwOpen(false) }
+                  catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi đặt lại mật khẩu') }
+                }}><i className="ti ti-check" />Xác nhận</button>
+                <button className="btn ghost" onClick={() => { setPwOpen(false); setPw1(''); setPw2('') }}>Hủy</button>
+              </div>
+            </div>
+          )}
         </div>
 
         {!isNew && (

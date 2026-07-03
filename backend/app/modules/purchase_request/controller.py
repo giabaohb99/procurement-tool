@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 
-from app.core.auth import get_perm_profile, require
+from app.core.auth import get_perm_profile, require, user_has_permission
 from app.core.scoping import apply_scope
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
@@ -159,8 +159,16 @@ def complete_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("p
     return success(_out(db, service.complete_pr(db, pid, user.id)), "Đã hoàn thành phiếu")
 
 
+def _can_edit_own(db: Session, pr, user) -> bool:
+    """Chủ phiếu (người tạo) được sửa/gửi duyệt phiếu của mình; hoặc người có quyền write."""
+    return pr.created_by == user.id or user_has_permission(db, user, "purchase_request", "write")
+
+
 @router.patch("/{pid}")
-def update_pr(pid: int, data: PRUpdate, db: Session = Depends(get_db), user=Depends(require("purchase_request", "write"))):
+def update_pr(pid: int, data: PRUpdate, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
+    pr = service.get_pr(db, pid)
+    if not _can_edit_own(db, pr, user):
+        raise HTTPException(403, "Không có quyền sửa phiếu này")
     return success(_out(db, service.update_pr(db, pid, data, user.id)), "Đã cập nhật")
 
 
@@ -171,7 +179,12 @@ def delete_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("pur
 
 
 @router.post("/{pid}/submit")
-def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "write"))):
+def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
+    pr = service.get_pr(db, pid)
+    if not _can_edit_own(db, pr, user):
+        raise HTTPException(403, "Không có quyền gửi duyệt phiếu này")
+    if pr.status not in ("draft", "rejected"):
+        raise HTTPException(400, "Chỉ gửi duyệt được phiếu ở trạng thái Nháp/Từ chối")
     pr = service.set_status(db, pid, "submitted", user.id)
     trigger_notification(
         db=db,

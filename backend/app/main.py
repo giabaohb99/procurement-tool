@@ -33,6 +33,7 @@ from app.modules.survey.controller import (product_survey_router,
 from app.modules.supplier.controller import router as supplier_router
 from app.modules.user.controller import router as user_router
 from app.modules.setting.controller import router as setting_router
+from app.modules.notification.controller import router as notification_router
 
 app = FastAPI(title="Procurement Tool API", version="0.1.0")
 
@@ -93,3 +94,4 @@ app.include_router(report_router)
 app.include_router(contract_router)
 app.include_router(alert_router)
 app.include_router(setting_router)
+app.include_router(notification_router)

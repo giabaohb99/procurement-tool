@@ -101,6 +101,8 @@ def delete_request(db: Session, rid: int, user_id: int):
     req = get_request(db, rid)
     if req.status == "paid":
         raise HTTPException(400, "Phiếu đã chi, không xóa được")
+    from app.modules.attachment.service import delete_attachments_for
+    delete_attachments_for(db, [("payment_request", rid)])
     db.query(PaymentRequestLine).filter(PaymentRequestLine.request_id == rid).delete()
     db.delete(req)
     db.commit()

@@ -19,6 +19,7 @@ REGISTRY = {
     "smtp_port": ("int", "SMTP_PORT"),
     "smtp_from": ("str", "SMTP_FROM"),
     "smtp_user": ("str", "SMTP_USER"),
+    "email_test_override": ("str", "EMAIL_TEST_OVERRIDE"),
     "r2_endpoint": ("str", "R2_ENDPOINT"),
     "r2_bucket": ("str", "R2_BUCKET"),
     "r2_public_url": ("str", "R2_PUBLIC_URL"),

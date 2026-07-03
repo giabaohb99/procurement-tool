@@ -15,6 +15,7 @@ FIELDS = [
     {"key": "smtp_port", "group": "email", "label": "SMTP Port", "type": "int"},
     {"key": "smtp_user", "group": "email", "label": "SMTP User (email gửi)", "type": "str"},
     {"key": "smtp_from", "group": "email", "label": "Tên người gửi (From)", "type": "str"},
+    {"key": "email_test_override", "group": "email", "label": "Email test (chuyển hướng MỌI email ra đây nếu đặt)", "type": "str"},
     {"key": "r2_endpoint", "group": "storage", "label": "Endpoint (R2/S3)", "type": "str"},
     {"key": "r2_bucket", "group": "storage", "label": "Bucket", "type": "str"},
     {"key": "r2_public_url", "group": "storage", "label": "Public URL", "type": "str"},
@@ -68,18 +69,19 @@ def test_email(to_email: str) -> tuple[bool, str]:
     sender = app_settings.get("smtp_from") or smtp_user
     if not smtp_user or not smtp_pass:
         return False, "Chưa cấu hình SMTP User / App Password"
-    if not to_email:
+    target = app_settings.get("email_test_override") or to_email
+    if not target:
         return False, "Thiếu email nhận"
     try:
         msg = MIMEText("Đây là email kiểm tra cấu hình từ Mini Tool Thu Mua.", "plain", "utf-8")
         msg["Subject"] = "[Thu Mua] Kiểm tra cấu hình email"
         msg["From"] = sender
-        msg["To"] = to_email
+        msg["To"] = target
         with smtplib.SMTP(host, port, timeout=15) as server:
             server.starttls()
             server.login(smtp_user, smtp_pass)
-            server.sendmail(smtp_user, to_email, msg.as_string())
-        return True, f"Đã gửi email thử tới {to_email}"
+            server.sendmail(smtp_user, target, msg.as_string())
+        return True, f"Đã gửi email thử tới {target}"
     except Exception as e:
         return False, f"Lỗi gửi email: {e}"
 

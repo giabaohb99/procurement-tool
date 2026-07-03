@@ -23,7 +23,7 @@ def apply_filters(query, model, request: Request, filterable: list[str]):
         if key in filterable and val not in (None, ""):
             col = getattr(model, key, None)
             if col is not None:
-                if key == 'is_active':
+                if key == 'is_active' or key.startswith('is_'):
                     is_true = val.lower() in ('true', '1', 'yes')
                     query = query.filter(col == is_true)
                 else:

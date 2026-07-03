@@ -12,7 +12,7 @@ def _role_ids(db: Session, user_id: int) -> list[int]:
     return [ur.role_id for ur in db.query(UserRole).filter(UserRole.user_id == user_id).all()]
 
 
-def list_users(db: Session, pg: dict, search: str = ""):
+def list_users(db: Session, pg: dict, search: str = "", department: str = "", role_id: int = 0, sort: str = ""):
     query = db.query(User)
     if search:
         like = f"%{search.strip()}%"
@@ -23,8 +23,21 @@ def list_users(db: Session, pg: dict, search: str = ""):
         if emp_ids:
             cond = cond | User.employee_id.in_(emp_ids)
         query = query.filter(cond)
+    if department:
+        from app.modules.department.model import Department
+        dep = db.query(Department).filter(Department.name == department).first()
+        emp_ids = [e.id for e in db.query(Employee).filter(Employee.department_id == (dep.id if dep else -1)).all()]
+        query = query.filter(User.employee_id.in_(emp_ids or [-1]))
+    if role_id:
+        uids = [ur.user_id for ur in db.query(UserRole).filter(UserRole.role_id == role_id).all()]
+        query = query.filter(User.id.in_(uids or [-1]))
     total = query.count()
-    items = query.order_by(User.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
+    if sort in ("name_asc", "name_desc"):
+        query = query.outerjoin(Employee, User.employee_id == Employee.id)
+        query = query.order_by(Employee.full_name.asc() if sort == "name_asc" else Employee.full_name.desc())
+    else:
+        query = query.order_by(User.id.desc())
+    items = query.offset(pg["offset"]).limit(pg["limit"]).all()
     return total, items
 
 

@@ -102,6 +102,9 @@ def approve_lines(db: Session, survey_type: str, sid: int, data, user_id: int) -
 def delete_survey(db: Session, sid: int, survey_type: str, user_id: int):
     s = get_survey(db, sid)
     LM = line_model(survey_type)
+    from app.modules.attachment.service import delete_attachments_for
+    line_ids = [ln.id for ln in lines_of(db, survey_type, sid)]
+    delete_attachments_for(db, [("survey", sid)] + [("survey_line", lid) for lid in line_ids])
     db.query(LM).filter(LM.survey_id == sid).delete()
     db.delete(s)
     db.commit()

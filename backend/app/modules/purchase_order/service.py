@@ -290,11 +290,15 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
 
 def delete_po(db: Session, pid: int, user_id: int):
     po = get_po(db, pid)
+    from app.modules.attachment.service import delete_attachments_for
+    pairs = [("purchase_order", pid)]
     for it in items_of(db, pid):
         for d in deliveries_of(db, it.id):
+            pairs.append(("delivery", d.id))
             _cleanup_delivery(db, d.id)
             db.delete(d)
         db.delete(it)
+    delete_attachments_for(db, pairs)
     db.delete(po)
     db.commit()
     record(db, user_id, ENTITY, pid, "delete")

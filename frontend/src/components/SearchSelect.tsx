@@ -53,7 +53,20 @@ export default function SearchSelect({
           backgroundColor: color ? `${color}1a` : (state.isFocused ? '#fff' : 'transparent'),
           border: color ? `1px solid ${color}` : (state.isFocused ? '1px solid #cbd5e1' : '1px solid transparent'),
           ':hover': { border: color ? `1px solid ${color}` : '1px solid #cbd5e1' },
-        }) : ({ ...b, minHeight: 40, borderRadius: 12, borderColor: '#E9EDF7', fontSize: 14 }),
+        }) : ({
+          ...b,
+          minHeight: 40,
+          borderRadius: 12,
+          borderColor: state.isFocused ? 'var(--teal)' : '#E9EDF7',
+          boxShadow: state.isFocused ? '0 0 0 3px rgba(0,174,239,.15)' : 'none',
+          fontSize: 13.5,
+          fontWeight: 500,
+          color: 'var(--navy)',
+          transition: 'border-color 0.2s, box-shadow 0.2s',
+          ':hover': {
+            borderColor: state.isFocused ? 'var(--teal)' : '#cbd5e1'
+          }
+        }),
         valueContainer: (b) => table ? ({ ...b, padding: '0 6px' }) : b,
         singleValue: (b) => color ? ({ ...b, color, fontWeight: 600 }) : b,
         input: (b) => table ? ({ ...b, margin: 0, padding: 0 }) : b,

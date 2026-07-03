@@ -223,10 +223,14 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'status', label: 'Trạng thái', render: (r) => prBadge(r.status) },
     ],
     filters: [
-      { key: 'code', label: 'Mã PYC' }, { key: 'requester', label: 'Người yêu cầu' },
+      { key: 'code', label: 'Mã PYC' },
+      { key: 'requester', label: 'Người yêu cầu' },
+      { key: 'department', label: 'Bộ phận YC', source: { url: '/api/departments', value: 'name', label: 'name' } },
+      { key: 'is_urgent', label: 'Đơn gấp', type: 'select', options: [{ value: 'true', label: 'Gấp' }, { value: 'false', label: 'Thường' }] },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Từ chối' },
+        { value: 'processing', label: 'Đang xử lý' }, { value: 'completed', label: 'Hoàn thành' },
       ] },
     ],
     fields: [],  // chi tiết dùng trang riêng (PurchaseRequestDetail)
@@ -348,7 +352,10 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'status', label: 'Trạng thái', render: (r) => prBadge(r.status) },
     ],
     filters: [
-      { key: 'code', label: 'Mã phiếu' }, { key: 'pr_code', label: 'Mã YC' }, { key: 'nspt', label: 'NSPT' },
+      { key: 'code', label: 'Mã phiếu' },
+      { key: 'pr_code', label: 'Mã YC' },
+      { key: 'item_group', label: 'Nhóm hàng', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
+      { key: 'nspt', label: 'NSPT' },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Từ chối' }] },
@@ -363,7 +370,10 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'status', label: 'Trạng thái', render: (r) => prBadge(r.status) },
     ],
     filters: [
-      { key: 'code', label: 'Mã phiếu' }, { key: 'pr_code', label: 'Mã YC' }, { key: 'nspt', label: 'NSPT' },
+      { key: 'code', label: 'Mã phiếu' },
+      { key: 'pr_code', label: 'Mã YC' },
+      { key: 'item_group', label: 'Nhóm hàng', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
+      { key: 'nspt', label: 'NSPT' },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Từ chối' }] },
