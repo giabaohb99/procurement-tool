@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { poBadge } from '../config/cruds'
+import SearchSelect from '../components/SearchSelect'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const pctv = (n: any) => `${Number(n || 0).toLocaleString('vi-VN')}%`
@@ -203,14 +204,14 @@ export default function Reports() {
       <div className="no-print" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
         <h2 className="page-title" style={{ margin: 0 }}>Báo cáo mua hàng</h2>
         <div className="filters" style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div><label style={{ fontSize: 12, color: 'var(--muted)' }}>Công ty</label><br />
-            <select value={f.company_id} onChange={(e) => setF((s: any) => ({ ...s, company_id: e.target.value }))}>
-              <option value="">Tất cả</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select></div>
-          <div><label style={{ fontSize: 12, color: 'var(--muted)' }}>Năm</label><br />
-            <select value={f.year} onChange={(e) => setF((s: any) => ({ ...s, year: e.target.value }))}>
-              <option value="all">Tất cả</option>{[thisYear, thisYear - 1, thisYear - 2].map((y) => <option key={y} value={y}>{y}</option>)}
-            </select></div>
+          <div style={{ minWidth: 180 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Công ty</label>
+            <SearchSelect value={f.company_id} placeholder="Tất cả"
+              options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
+              onChange={(v) => setF((s: any) => ({ ...s, company_id: v }))} /></div>
+          <div style={{ minWidth: 120 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Năm</label>
+            <SearchSelect value={String(f.year)} placeholder="Tất cả"
+              options={[{ value: 'all', label: 'Tất cả' }, ...[thisYear, thisYear - 1, thisYear - 2].map((y) => ({ value: String(y), label: String(y) }))]}
+              onChange={(v) => setF((s: any) => ({ ...s, year: v }))} /></div>
           <button className="btn" disabled={busy} onClick={() => load(false)}>Lọc</button>
           <button className="btn secondary" disabled={busy} onClick={() => load(true)} title="Tính lại số liệu báo cáo"><i className="ti ti-refresh" />Cập nhật</button>
           <button className="btn ghost" onClick={() => window.print()}><i className="ti ti-printer" />In</button>
@@ -226,11 +227,12 @@ export default function Reports() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
         <div style={{ fontSize: 12, color: 'var(--muted)' }}>Kỳ: {f.year === 'all' ? 'Tất cả' : `Năm ${f.year}`} · {f.company_id ? companies.find((c) => String(c.id) === String(f.company_id))?.name : 'Tất cả công ty'} · Tính lúc: {mx.computed_at}</div>
         {isMatrix && (
-          <div className="no-print" style={{ fontSize: 12.5 }}>Xem theo:&nbsp;
-            <select value={period} onChange={(e) => setPeriod(e.target.value)}>
-              <option value="all">Cả năm</option>
-              {months.map((m: any) => <option key={m.key} value={m.key}>{m.label}</option>)}
-            </select>
+          <div className="no-print" style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>Xem theo:
+            <div style={{ minWidth: 150 }}>
+              <SearchSelect value={period} placeholder="Cả năm"
+                options={[{ value: 'all', label: 'Cả năm' }, ...months.map((m: any) => ({ value: m.key, label: m.label }))]}
+                onChange={(v) => setPeriod(v)} />
+            </div>
           </div>
         )}
       </div>

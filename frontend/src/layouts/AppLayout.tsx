@@ -35,6 +35,7 @@ const NAV_GROUPS: NavGroup[] = [
     { to: '/companies', label: 'Công ty', icon: 'ti-building', entity: 'company' },
     { to: '/employees', label: 'Nhân sự', icon: 'ti-users', entity: 'employee' },
     { to: '/roles', label: 'Vai trò', icon: 'ti-shield', entity: 'role' },
+    { to: '/settings', label: 'Cấu hình hệ thống', icon: 'ti-settings', entity: 'setting' },
   ] },
 ]
 const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items)

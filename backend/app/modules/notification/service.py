@@ -41,23 +41,33 @@ def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str
         log = db.query(EmailLog).filter(EmailLog.id == log_id).first()
         if not log:
             return
-            
-        if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+
+        # Tắt gửi email (cấu hình ở trang Cấu hình hệ thống / .env EMAIL_ENABLED)
+        from app.core import app_settings
+        if not app_settings.get("email_enabled"):
+            log.status = "disabled"
+            log.error = "Email đang tắt (EMAIL_ENABLED=false)"
+            db.commit()
+            return
+
+        smtp_user = app_settings.get("smtp_user")
+        smtp_pass = app_settings.get("smtp_password")
+        if not smtp_user or not smtp_pass:
             log.status = "failed"
             log.error = "SMTP credentials not configured in settings."
             db.commit()
             return
 
         msg = MIMEMultipart()
-        msg["From"] = settings.SMTP_FROM or settings.SMTP_USER
+        msg["From"] = app_settings.get("smtp_from") or smtp_user
         msg["To"] = to_email
         msg["Subject"] = subject
         msg.attach(MIMEText(html_body, "html"))
 
         # Connect and send
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+        with smtplib.SMTP(app_settings.get("smtp_host"), int(app_settings.get("smtp_port") or 587)) as server:
             server.starttls()
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            server.login(smtp_user, smtp_pass)
             from email.utils import parseaddr
             _, from_email = parseaddr(msg["From"])
             server.sendmail(from_email or msg["From"], to_email, msg.as_string())

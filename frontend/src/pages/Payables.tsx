@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
+import SearchSelect from '../components/SearchSelect'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const AGING_CLS: Record<string, string> = { 'Chưa đến hạn': 'gray', '1-30': 'warn', '31-60': 'warn', '61-90': 'err', '>90': 'err' }
@@ -83,37 +84,35 @@ export default function Payables() {
       </div>
 
       <div className="card filters" style={{ padding: 14, marginBottom: 12, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <div><label style={{ fontSize: 12, color: 'var(--muted)' }}>Công ty</label><br />
-          <select value={f.company_id} onChange={(e) => setF((s: any) => ({ ...s, company_id: e.target.value }))}>
-            <option value="">Tất cả</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+        <div style={{ minWidth: 180 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Công ty</label>
+          <SearchSelect value={f.company_id} placeholder="Tất cả"
+            options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
+            onChange={(v) => setF((s: any) => ({ ...s, company_id: v }))} />
         </div>
-        <div><label style={{ fontSize: 12, color: 'var(--muted)' }}>Nhà cung cấp</label><br />
-          <select value={f.supplier_code} onChange={(e) => setF((s: any) => ({ ...s, supplier_code: e.target.value }))}>
-            <option value="">Tất cả</option>{suppliers.map((c) => <option key={c.id} value={c.code}>{c.name}</option>)}
-          </select>
+        <div style={{ minWidth: 180 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Nhà cung cấp</label>
+          <SearchSelect value={f.supplier_code} placeholder="Tất cả"
+            options={suppliers.map((c) => ({ value: c.code, label: c.name }))}
+            onChange={(v) => setF((s: any) => ({ ...s, supplier_code: v }))} />
         </div>
-        <div><label style={{ fontSize: 12, color: 'var(--muted)' }}>Loại nợ</label><br />
-          <select value={f.source_type} onChange={(e) => setF((s: any) => ({ ...s, source_type: e.target.value }))}>
-            <option value="">Tất cả</option><option value="goods">Hàng hóa</option><option value="shipping">Vận chuyển</option>
-          </select>
+        <div style={{ minWidth: 150 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Loại nợ</label>
+          <SearchSelect value={f.source_type} placeholder="Tất cả"
+            options={[{ value: 'goods', label: 'Hàng hóa' }, { value: 'shipping', label: 'Vận chuyển' }]}
+            onChange={(v) => setF((s: any) => ({ ...s, source_type: v }))} />
         </div>
-        <div><label style={{ fontSize: 12, color: 'var(--muted)' }}>Trạng thái</label><br />
-          <select value={f.status} onChange={(e) => setF((s: any) => ({ ...s, status: e.target.value }))}>
-            <option value="">Tất cả</option><option value="Chờ TT">Chờ TT</option><option value="Trả một phần">Trả một phần</option><option value="Đã TT">Đã TT</option>
-          </select>
+        <div style={{ minWidth: 150 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Trạng thái</label>
+          <SearchSelect value={f.status} placeholder="Tất cả"
+            options={['Chờ TT', 'Trả một phần', 'Đã TT']}
+            onChange={(v) => setF((s: any) => ({ ...s, status: v }))} />
         </div>
-        <div><label style={{ fontSize: 12, color: 'var(--muted)' }}>Tuổi nợ</label><br />
-          <select value={f.aging} onChange={(e) => setF((s: any) => ({ ...s, aging: e.target.value }))}>
-            <option value="">Tất cả</option><option value="Chưa đến hạn">Chưa đến hạn</option>
-            <option value="1-30">1-30</option><option value="31-60">31-60</option><option value="61-90">61-90</option><option value=">90">&gt;90</option>
-          </select>
+        <div style={{ minWidth: 150 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Tuổi nợ</label>
+          <SearchSelect value={f.aging} placeholder="Tất cả"
+            options={['Chưa đến hạn', '1-30', '31-60', '61-90', '>90']}
+            onChange={(v) => setF((s: any) => ({ ...s, aging: v }))} />
         </div>
-        <div><label style={{ fontSize: 12, color: 'var(--muted)' }}>Năm</label><br />
-          <select value={f.year} onChange={(e) => setF((s: any) => ({ ...s, year: e.target.value }))}>
-            <option value="all">Tất cả</option>
-            {[thisYear, thisYear - 1, thisYear - 2].map((y) => <option key={y} value={y}>{y}</option>)}
-          </select>
+        <div style={{ minWidth: 120 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Năm</label>
+          <SearchSelect value={String(f.year)} placeholder="Tất cả"
+            options={[{ value: 'all', label: 'Tất cả' }, ...[thisYear, thisYear - 1, thisYear - 2].map((y) => ({ value: String(y), label: String(y) }))]}
+            onChange={(v) => setF((s: any) => ({ ...s, year: v }))} />
         </div>
         <button className="btn" onClick={load}>Lọc</button>
       </div>

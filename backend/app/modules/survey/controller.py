@@ -14,7 +14,7 @@ from fastapi import HTTPException
 
 from . import service
 from .model import Survey
-from .schema import (ProductSurveyCreate, ProductSurveyUpdate, RejectIn,
+from .schema import (LineApproveIn, ProductSurveyCreate, ProductSurveyUpdate, RejectIn,
                      SupplierSurveyCreate, SupplierSurveyUpdate)
 
 
@@ -86,6 +86,10 @@ def _build_router(survey_type: str, prefix: str, CreateSchema, UpdateSchema):
             link=f"/surveys-{survey_type}/{s.id}"
         )
         return success(_out(db, s), "Đã gửi duyệt")
+
+    @router.patch("/{sid}/line-approve")
+    def line_approve_(sid: int, data: LineApproveIn, db: Session = Depends(get_db), user=Depends(require("survey", "approve"))):
+        return success(_out(db, service.approve_lines(db, survey_type, sid, data, user.id)), "Đã lưu duyệt dòng")
 
     @router.post("/{sid}/approve")
     def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("survey", "approve"))):

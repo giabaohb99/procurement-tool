@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
+import SearchSelect from '../components/SearchSelect'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 
@@ -53,15 +54,15 @@ export default function Inventory() {
       </div>
 
       <div className="card filters" style={{ padding: 14, marginBottom: 12, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <div><label style={{ fontSize: 12, color: 'var(--muted)' }}>Công ty</label><br />
-          <select value={f.company_id || ''} onChange={(e) => setF((s) => ({ ...s, company_id: e.target.value }))}>
-            <option value="">Tất cả</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+        <div style={{ minWidth: 200 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Công ty</label>
+          <SearchSelect value={f.company_id || ''} placeholder="Tất cả"
+            options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
+            onChange={(v) => setF((s) => ({ ...s, company_id: v }))} />
         </div>
-        <div><label style={{ fontSize: 12, color: 'var(--muted)' }}>Kho</label><br />
-          <select value={f.warehouse_code || ''} onChange={(e) => setF((s) => ({ ...s, warehouse_code: e.target.value }))}>
-            <option value="">Tất cả</option>{warehouses.map((w) => <option key={w.id} value={w.code}>{w.code} — {w.name}</option>)}
-          </select>
+        <div style={{ minWidth: 200 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Kho</label>
+          <SearchSelect value={f.warehouse_code || ''} placeholder="Tất cả"
+            options={warehouses.map((w) => ({ value: w.code, label: `${w.code} — ${w.name}` }))}
+            onChange={(v) => setF((s) => ({ ...s, warehouse_code: v }))} />
         </div>
         <div><label style={{ fontSize: 12, color: 'var(--muted)' }}>Mã SP</label><br />
           <input value={f.product_code || ''} onChange={(e) => setF((s) => ({ ...s, product_code: e.target.value }))} placeholder="Mã sản phẩm" />
@@ -95,21 +96,21 @@ export default function Inventory() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div>
                 <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Công ty</label>
-                <select style={{ width: '100%' }} value={adj.company_id || ''} onChange={(e) => setAdj((s: any) => ({ ...s, company_id: Number(e.target.value) }))}>
-                  <option value="">-- Chọn --</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                <SearchSelect value={adj.company_id ? String(adj.company_id) : ''} placeholder="Chọn/tìm công ty…"
+                  options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
+                  onChange={(v) => setAdj((s: any) => ({ ...s, company_id: Number(v) || 0 }))} />
               </div>
               <div>
                 <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Kho</label>
-                <select style={{ width: '100%' }} value={adj.warehouse_code || ''} onChange={(e) => setAdj((s: any) => ({ ...s, warehouse_code: e.target.value }))}>
-                  <option value="">-- Chọn --</option>{warehouses.map((w) => <option key={w.id} value={w.code}>{w.code} — {w.name}</option>)}
-                </select>
+                <SearchSelect value={adj.warehouse_code || ''} placeholder="Chọn/tìm kho…"
+                  options={warehouses.map((w) => ({ value: w.code, label: `${w.code} — ${w.name}` }))}
+                  onChange={(v) => setAdj((s: any) => ({ ...s, warehouse_code: v }))} />
               </div>
               <div>
                 <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Sản phẩm</label>
-                <select style={{ width: '100%' }} value={adj.product_code || ''} onChange={(e) => onAdjProduct(e.target.value)}>
-                  <option value="">-- Chọn --</option>{products.map((p) => <option key={p.id} value={p.code}>{p.code} — {p.name}</option>)}
-                </select>
+                <SearchSelect value={adj.product_code || ''} placeholder="Chọn/tìm sản phẩm…"
+                  options={products.map((p) => ({ value: p.code, label: `${p.code} — ${p.name}` }))}
+                  onChange={(v) => onAdjProduct(v)} />
               </div>
               <div>
                 <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Số lượng điều chỉnh (+/−)</label>

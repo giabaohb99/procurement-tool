@@ -13,11 +13,17 @@ class Survey(Base, AuditMixin):
     pr_code: Mapped[str] = mapped_column(String(50), default="")    # mã PYC liên kết
     received_date: Mapped[str] = mapped_column(String(10), default="")
     result_due_date: Mapped[str] = mapped_column(String(10), default="")
-    item_group: Mapped[str] = mapped_column(String(100), default="")
-    requirement_detail: Mapped[str] = mapped_column(Text, default="")
-    request_qty: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
-    market_price: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
-    nspt: Mapped[str] = mapped_column(String(100), default="")
+    item_group: Mapped[str] = mapped_column(String(100), default="")       # Phân loại (item_class)
+    requirement_detail: Mapped[str] = mapped_column(Text, default="")      # Yêu cầu kỹ thuật & chất lượng
+    request_qty: Mapped[float] = mapped_column(Numeric(18, 3), default=0)   # SL dự kiến mua
+    market_price: Mapped[float] = mapped_column(Numeric(18, 2), default=0)  # (deprecated — không dùng nữa)
+    nspt: Mapped[str] = mapped_column(String(100), default="")             # NSPT phụ trách = người tạo
+    # Thông tin sản phẩm (khi đã có mã trong hệ thống)
+    has_product_code: Mapped[bool] = mapped_column(Boolean, default=False)
+    item_code: Mapped[str] = mapped_column(String(50), default="")          # Mã VTBB/VL nội bộ
+    item_name: Mapped[str] = mapped_column(String(255), default="")         # Tên VTBB (tự điền theo mã)
+    uom: Mapped[str] = mapped_column(String(25), default="")               # ĐVT
+    proposed_rate: Mapped[float] = mapped_column(Numeric(18, 2), default=0)  # Giá đề xuất
     approve_status: Mapped[str] = mapped_column(String(20), default="")   # Duyệt|Không duyệt
     approve_note: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(30), default="draft")
@@ -41,6 +47,7 @@ class SurveySupplierLine(Base, AuditMixin):
     contact_phone: Mapped[str] = mapped_column(String(30), default="")
     supply_group: Mapped[str] = mapped_column(String(255), default="")
     quote_folder: Mapped[str] = mapped_column(String(500), default="")
+    source_of_information: Mapped[str] = mapped_column(String(255), default="")  # Nguồn thông tin đầu vào
     production_tech: Mapped[str] = mapped_column(String(255), default="")
     production_time: Mapped[str] = mapped_column(String(100), default="")
     nvkd_eval: Mapped[str] = mapped_column(String(100), default="")
@@ -60,8 +67,11 @@ class SurveyProductLine(Base, AuditMixin):
     __tablename__ = "tab_survey_product_line"
 
     survey_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    contact_date: Mapped[str] = mapped_column(String(10), default="")       # Ngày liên hệ
+    reply_date: Mapped[str] = mapped_column(String(10), default="")         # Ngày dự kiến phản hồi
+    result_date: Mapped[str] = mapped_column(String(10), default="")        # Ngày dự kiến trả KQ
     supplier_code: Mapped[str] = mapped_column(String(50), default="")
-    internal_code: Mapped[str] = mapped_column(String(50), default="")
+    internal_code: Mapped[str] = mapped_column(String(50), default="")      # Mã SP theo NCC (nhập tay khi khảo sát)
     product_name: Mapped[str] = mapped_column(String(255), default="")
     spec: Mapped[str] = mapped_column(Text, default="")
     origin: Mapped[str] = mapped_column(String(100), default="")

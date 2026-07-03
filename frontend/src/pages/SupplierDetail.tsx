@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { contractExpiryBadge } from '../config/cruds'
+import SearchSelect from '../components/SearchSelect'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const SUP_TYPE = [{ value: 'goods', label: 'NCC bán hàng' }, { value: 'transport', label: 'Đơn vị vận chuyển' }]
@@ -122,9 +123,7 @@ export default function SupplierDetail() {
               </div>
               <div className="form-row">
                 <label>Vai trò cung cấp *</label>
-                <select value={sup.supplier_type} disabled={!canEdit} onChange={(e) => setH('supplier_type', e.target.value)}>
-                  {SUP_TYPE.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
+                <SearchSelect value={sup.supplier_type} options={SUP_TYPE} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('supplier_type', v)} />
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Tên pháp lý *</label>
@@ -132,10 +131,7 @@ export default function SupplierDetail() {
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Loại nhà cung cấp</label>
-                <select value={sup.legal_type || ''} disabled={!canEdit} onChange={(e) => setH('legal_type', e.target.value)}>
-                  <option value="">— Chọn —</option>
-                  {LEGAL_TYPE.map((o) => <option key={o} value={o}>{o}</option>)}
-                </select>
+                <SearchSelect value={sup.legal_type || ''} options={LEGAL_TYPE} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('legal_type', v)} />
               </div>
             </div>
           </div>

@@ -8,7 +8,8 @@ from .model import Survey, SurveyProductLine, SurveySupplierLine
 ENTITY = "survey"
 FILTERABLE = ["code", "pr_code", "status", "item_group", "nspt"]
 HEADER_FIELDS = ["pr_code", "received_date", "result_due_date", "item_group",
-                 "requirement_detail", "request_qty", "market_price", "nspt"]
+                 "requirement_detail", "request_qty", "market_price", "nspt",
+                 "has_product_code", "item_code", "item_name", "uom", "proposed_rate"]
 
 
 def line_model(survey_type: str):
@@ -75,6 +76,25 @@ def update_survey(db: Session, sid: int, data, survey_type: str, user_id: int) -
     if data.lines is not None:
         _save_lines(db, survey_type, sid, data.lines, user_id)
     record(db, user_id, ENTITY, sid, "update")
+    db.refresh(s)
+    return s
+
+
+def approve_lines(db: Session, survey_type: str, sid: int, data, user_id: int) -> Survey:
+    """Quản lý/Admin duyệt TỪNG dòng (khi phiếu đã gửi duyệt) — chỉ sửa trường duyệt của dòng."""
+    s = get_survey(db, sid)
+    rows = {r.id: r for r in lines_of(db, survey_type, sid)}
+    for it in data.lines:
+        row = rows.get(it.id)
+        if not row:
+            continue
+        if it.line_approve is not None:
+            row.line_approve = it.line_approve
+        if it.line_approve_note is not None:
+            row.line_approve_note = it.line_approve_note
+    s.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, sid, "line_approve", "Duyệt dòng khảo sát")
     db.refresh(s)
     return s
 

@@ -15,6 +15,7 @@ class SupplierLineIn(BaseModel):
     contact_phone: str = ""
     supply_group: str = ""
     quote_folder: str = ""
+    source_of_information: str = ""
     production_tech: str = ""
     production_time: str = ""
     nvkd_eval: str = ""
@@ -30,6 +31,9 @@ class SupplierLineIn(BaseModel):
 
 
 class ProductLineIn(BaseModel):
+    contact_date: str = ""
+    reply_date: str = ""
+    result_date: str = ""
     supplier_code: str = ""
     internal_code: str = ""
     product_name: str = ""
@@ -67,6 +71,11 @@ class _SurveyHeader(BaseModel):
     request_qty: float = 0
     market_price: float = 0
     nspt: str = ""
+    has_product_code: bool = False
+    item_code: str = ""
+    item_name: str = ""
+    uom: str = ""
+    proposed_rate: float = 0
 
 
 class SupplierSurveyCreate(_SurveyHeader):
@@ -79,7 +88,7 @@ class ProductSurveyCreate(_SurveyHeader):
     lines: list[ProductLineIn] = []
 
 
-class SupplierSurveyUpdate(BaseModel):
+class _HeaderUpdate(BaseModel):
     pr_code: str | None = None
     received_date: str | None = None
     result_due_date: str | None = None
@@ -88,20 +97,30 @@ class SupplierSurveyUpdate(BaseModel):
     request_qty: float | None = None
     market_price: float | None = None
     nspt: str | None = None
+    has_product_code: bool | None = None
+    item_code: str | None = None
+    item_name: str | None = None
+    uom: str | None = None
+    proposed_rate: float | None = None
+
+
+class SupplierSurveyUpdate(_HeaderUpdate):
     lines: list[SupplierLineIn] | None = None
 
 
-class ProductSurveyUpdate(BaseModel):
-    pr_code: str | None = None
-    received_date: str | None = None
-    result_due_date: str | None = None
-    item_group: str | None = None
-    requirement_detail: str | None = None
-    request_qty: float | None = None
-    market_price: float | None = None
-    nspt: str | None = None
+class ProductSurveyUpdate(_HeaderUpdate):
     lines: list[ProductLineIn] | None = None
 
 
 class RejectIn(BaseModel):
     reason: str = ""
+
+
+class LineApproveItem(BaseModel):
+    id: int
+    line_approve: str | None = None
+    line_approve_note: str | None = None
+
+
+class LineApproveIn(BaseModel):
+    lines: list[LineApproveItem] = []

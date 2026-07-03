@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { contractExpiryBadge } from '../config/cruds'
+import SearchSelect from '../components/SearchSelect'
 
 const PARTY_TYPES = ['Nhà cung cấp', 'Khách hàng', 'Khác']
 const C_TYPES = ['Mua bán', 'Nguyên tắc', 'Vận chuyển', 'Dịch vụ', 'Khác']
@@ -72,32 +73,30 @@ export default function ContractDetail() {
         <h3 className="sec-title">Thông tin hợp đồng</h3>
         <div className="form-grid">
           <div className="form-row"><label>Đối tượng *</label>
-            <select value={c.party_type} disabled={!canEdit} onChange={(e) => setH('party_type', e.target.value)}>{PARTY_TYPES.map((o) => <option key={o} value={o}>{o}</option>)}</select>
+            <SearchSelect value={c.party_type} options={PARTY_TYPES} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('party_type', v)} />
           </div>
           {isNCC ? (
             <div className="form-row"><label>Nhà cung cấp *</label>
-              <select value={c.party_code || ''} disabled={!canEdit} onChange={(e) => onPickParty(e.target.value)}>
-                <option value="">— Chọn NCC —</option>{suppliers.map((s) => <option key={s.id} value={s.code}>{s.code} — {s.name}</option>)}
-              </select>
+              <SearchSelect value={c.party_code || ''} disabled={!canEdit} placeholder="Chọn/tìm NCC…"
+                options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
+                onChange={(v) => onPickParty(v)} />
             </div>
           ) : (
             <div className="form-row"><label>Tên đối tượng *</label><input value={c.party_name || ''} disabled={!canEdit} onChange={(e) => setH('party_name', e.target.value)} /></div>
           )}
           <div className="form-row"><label>Công ty (bên mình) ký *</label>
-            <select value={c.company_id || ''} disabled={!canEdit} onChange={(e) => setH('company_id', Number(e.target.value))}>
-              <option value="">— Chọn —</option>{companies.map((co) => <option key={co.id} value={co.id}>{co.name}</option>)}
-            </select>
+            <SearchSelect value={c.company_id ? String(c.company_id) : ''} disabled={!canEdit} placeholder="Chọn/tìm công ty…"
+              options={companies.map((co) => ({ value: String(co.id), label: co.name }))}
+              onChange={(v) => setH('company_id', Number(v) || 0)} />
           </div>
           <div className="form-row"><label>Loại hợp đồng</label>
-            <select value={c.contract_type || ''} disabled={!canEdit} onChange={(e) => setH('contract_type', e.target.value)}>
-              <option value="">— Chọn —</option>{C_TYPES.map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
+            <SearchSelect value={c.contract_type || ''} options={C_TYPES} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('contract_type', v)} />
           </div>
           <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Trích yếu hợp đồng</label><input value={c.title || ''} disabled={!canEdit} onChange={(e) => setH('title', e.target.value)} /></div>
           <div className="form-row"><label>Từ ngày</label><input type="date" value={c.start_date || ''} disabled={!canEdit} onChange={(e) => setH('start_date', e.target.value)} /></div>
           <div className="form-row"><label>Đến ngày</label><input type="date" value={c.end_date || ''} disabled={!canEdit} onChange={(e) => setH('end_date', e.target.value)} /></div>
           <div className="form-row"><label>Trạng thái</label>
-            <select value={c.status} disabled={!canEdit} onChange={(e) => setH('status', e.target.value)}>{C_STATUS.map((o) => <option key={o} value={o}>{o}</option>)}</select>
+            <SearchSelect value={c.status} options={C_STATUS} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('status', v)} />
           </div>
           <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={!!c.signed} disabled={!canEdit} onChange={(e) => setH('signed', e.target.checked)} style={{ width: 18, height: 18 }} /> Đã ký</label></div>
           <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><textarea value={c.note || ''} disabled={!canEdit} onChange={(e) => setH('note', e.target.value)} /></div>

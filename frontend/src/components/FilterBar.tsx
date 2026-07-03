@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
+import SearchSelect from './SearchSelect'
 
 export type FilterField = {
   key: string
@@ -55,10 +56,9 @@ export default function FilterBar({
       {fields.map((f) => {
         const opts = f.options || dyn[f.key]
         return (f.type === 'select' || f.source) ? (
-          <select key={f.key} value={vals[f.key] || ''} onChange={(e) => set(f.key, e.target.value)}>
-            <option value="">{f.label}: Tất cả</option>
-            {(opts || []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+          <div key={f.key} style={{ minWidth: 180 }}>
+            <SearchSelect value={vals[f.key] || ''} options={opts || []} placeholder={`${f.label}: Tất cả`} onChange={(v) => set(f.key, v)} />
+          </div>
         ) : (
           <input key={f.key} placeholder={f.label} value={vals[f.key] || ''}
                  onChange={(e) => set(f.key, e.target.value)} />

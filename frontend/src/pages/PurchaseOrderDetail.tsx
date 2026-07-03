@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { poBadge } from '../config/cruds'
+import SearchSelect from '../components/SearchSelect'
 
 const API = '/api/purchase-orders'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -301,14 +302,14 @@ export default function PurchaseOrderDetail() {
               </div>
               <div className="form-row"><label>Mã đơn MISA *</label><input value={po.misa_code || ''} placeholder="Bắt buộc nhập" disabled={!headerEditable} onChange={(e) => setH('misa_code', e.target.value)} /></div>
               <div className="form-row"><label>Công ty nhận HĐ *</label>
-                <select value={po.company_id || ''} disabled={!headerEditable} onChange={(e) => setH('company_id', Number(e.target.value))}>
-                  <option value="">-- Chọn --</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                <SearchSelect value={po.company_id ? String(po.company_id) : ''} disabled={!headerEditable} placeholder="Chọn/tìm công ty…"
+                  options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
+                  onChange={(v) => setH('company_id', Number(v) || 0)} />
               </div>
               <div className="form-row"><label>Nhà cung cấp bán hàng *</label>
-                <select value={po.supplier_code || ''} disabled={!headerEditable} onChange={(e) => onPickSupplier(e.target.value)}>
-                  <option value="">-- Chọn NCC --</option>{goodsSuppliers.map((s) => <option key={s.id} value={s.code}>{s.code} — {s.name}</option>)}
-                </select>
+                <SearchSelect value={po.supplier_code || ''} disabled={!headerEditable} placeholder="Chọn/tìm NCC…"
+                  options={goodsSuppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
+                  onChange={(v) => onPickSupplier(v)} />
               </div>
               <div className="form-row"><label>Ngày đặt hàng</label><input type="date" value={po.order_date || ''} disabled={!headerEditable} onChange={(e) => setH('order_date', e.target.value)} /></div>
               <div className="form-row"><label>Bộ phận</label><input value={po.department || ''} disabled={!headerEditable} onChange={(e) => setH('department', e.target.value)} /></div>
@@ -483,15 +484,12 @@ export default function PurchaseOrderDetail() {
                     <div className="form-row"><label>Ngày yêu cầu có hàng</label><input type="date" value={it.required_date || ''} disabled={de} onChange={(e) => setItem(ii, { required_date: e.target.value })} /></div>
                     <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={!!it.supplier_ready} disabled={de} onChange={(e) => setItem(ii, { supplier_ready: e.target.checked })} style={{ width: 16, height: 16 }} /> NCC có sẵn hàng</label></div>
                     <div className="form-row"><label>ĐVT</label>
-                      <select value={it.unit ?? ''} disabled={de} onChange={(e) => setItem(ii, { unit: e.target.value })}>
-                        <option value="">—</option>{units.map((u) => <option key={u} value={u}>{u}</option>)}
-                      </select>
+                      <SearchSelect value={it.unit ?? ''} options={units} disabled={de} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setItem(ii, { unit: v })} />
                     </div>
                     <div className="form-row"><label>Kho nhận mặc định</label>
-                      <select value={it.warehouse_code ?? ''} disabled={de} onChange={(e) => setItem(ii, { warehouse_code: e.target.value })}>
-                        <option value="">—</option>{warehouses.map((w) => <option key={w.id} value={w.code}>{w.code} — {w.name}</option>)}
-                      </select>
-                      {/* popup rộng nên giữ code — name cho dễ chọn */}
+                      <SearchSelect value={it.warehouse_code ?? ''} disabled={de} placeholder="Chọn/tìm kho…"
+                        options={warehouses.map((w) => ({ value: w.code, label: `${w.code} — ${w.name}` }))}
+                        onChange={(v) => setItem(ii, { warehouse_code: v })} />
                     </div>
                     <div className="form-row"><label>SL yêu cầu</label><input type="number" value={it.qty_request ?? 0} disabled={de} onChange={(e) => setItem(ii, { qty_request: Number(e.target.value) })} /></div>
                     <div className="form-row"><label>SL đặt NCC</label><input type="number" value={it.qty_order ?? 0} disabled={de} onChange={(e) => setItem(ii, { qty_order: Number(e.target.value) })} /></div>

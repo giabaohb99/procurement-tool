@@ -8,14 +8,22 @@ import os
 import shutil
 from fastapi import HTTPException
 
+def _eff(key: str):
+    from app.core import app_settings
+    return app_settings.get(key)
+
+
 def _client():
-    if not settings.R2_ENDPOINT or not settings.R2_ACCESS_KEY_ID:
+    endpoint = _eff("r2_endpoint")
+    akey = _eff("r2_access_key_id")
+    skey = _eff("r2_secret_access_key")
+    if not endpoint or not akey:
         return None
     return boto3.client(
         "s3",
-        endpoint_url=settings.R2_ENDPOINT,
-        aws_access_key_id=settings.R2_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.R2_SECRET_ACCESS_KEY,
+        endpoint_url=endpoint,
+        aws_access_key_id=akey,
+        aws_secret_access_key=skey,
         region_name="auto",
     )
 
@@ -24,10 +32,10 @@ def upload_fileobj(fileobj, key: str, content_type: str = "") -> str:
     s3 = _client()
     if s3:
         s3.upload_fileobj(
-            fileobj, settings.R2_BUCKET, key,
+            fileobj, _eff("r2_bucket"), key,
             ExtraArgs={"ContentType": content_type or "application/octet-stream"},
         )
-        return f"{settings.R2_PUBLIC_URL.rstrip('/')}/{key}"
+        return f"{(_eff('r2_public_url') or '').rstrip('/')}/{key}"
     
     # Fallback local
     local_path = os.path.join("uploads", key)
@@ -41,7 +49,7 @@ def delete_key(key: str):
     s3 = _client()
     if s3:
         try:
-            s3.delete_object(Bucket=settings.R2_BUCKET, Key=key)
+            s3.delete_object(Bucket=_eff("r2_bucket"), Key=key)
         except Exception:
             pass
     else:

@@ -1,40 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { prBadge } from '../config/cruds'
 import Select from 'react-select'
-import AsyncSelect from 'react-select/async'
-
-// Ô chọn sản phẩm có tìm kiếm (gõ mã hoặc tên → LIKE trên server). Dùng cho DS cả ngàn SP.
-function ProductPicker({ code, name, disabled, onPick }: { code?: string; name?: string; disabled?: boolean; onPick: (prod: any) => void }) {
-  const t = useRef<any>(null)
-  const loadOptions = (input: string) =>
-    new Promise<any[]>((resolve) => {
-      clearTimeout(t.current)
-      t.current = setTimeout(async () => {
-        try {
-          const r = await api.get('/api/products', { params: { search: input, page_size: 30 } })
-          resolve((r.data.data.items || []).map((p: any) => ({ value: p.code, label: `${p.code} — ${p.name}`, prod: p })))
-        } catch { resolve([]) }
-      }, 250)
-    })
-  const cur = code ? { value: code, label: name ? `${code} — ${name}` : code } : null
-  return (
-    <AsyncSelect
-      value={cur} isDisabled={disabled} isClearable cacheOptions defaultOptions
-      loadOptions={loadOptions} placeholder="Gõ mã/tên để tìm..."
-      noOptionsMessage={({ inputValue }) => (inputValue ? 'Không tìm thấy' : 'Gõ để tìm sản phẩm')}
-      loadingMessage={() => 'Đang tìm...'}
-      onChange={(o: any) => onPick(o?.prod || null)}
-      menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
-      styles={{
-        control: (b) => ({ ...b, minHeight: 36, borderRadius: 8, borderColor: '#E9EDF7', fontSize: 13 }),
-        menuPortal: (b) => ({ ...b, zIndex: 9999 }),
-      }}
-    />
-  )
-}
+import ProductPicker from '../components/ProductPicker'
+import SearchSelect from '../components/SearchSelect'
 
 const API = '/api/purchase-requests'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -574,10 +545,8 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Phân loại</label>
-                <select value={edit.item_group || ''} disabled={!editable} onChange={(e) => { setItem(editIdx, 'item_group', e.target.value); setItem(editIdx, 'group_desc', groupDesc(e.target.value)) }}>
-                  <option value="">—</option>
-                  {groups.map((g) => <option key={g} value={g}>{g}</option>)}
-                </select>
+                <SearchSelect value={edit.item_group || ''} options={groups} disabled={!editable} placeholder="Chọn/tìm phân loại…"
+                  onChange={(v) => { setItem(editIdx, 'item_group', v); setItem(editIdx, 'group_desc', groupDesc(v)) }} />
               </div>
               <div className="form-row">
                 <label>Mô tả phân loại</label>
@@ -593,9 +562,7 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>ĐVT</label>
-                <select value={edit.unit || ''} disabled={!editable} onChange={(e) => setItem(editIdx, 'unit', e.target.value)}>
-                  <option value="">—</option>{units.map((u) => <option key={u} value={u}>{u}</option>)}
-                </select>
+                <SearchSelect value={edit.unit || ''} options={units} disabled={!editable} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setItem(editIdx, 'unit', v)} />
               </div>
               <div className="form-row">
                 <label>Thành tiền</label>
@@ -603,9 +570,7 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Kho nhận *</label>
-                <select value={edit.warehouse || ''} disabled={!editable} onChange={(e) => setItem(editIdx, 'warehouse', e.target.value)}>
-                  <option value="">-- Chọn kho --</option>{warehouses.map((w) => <option key={w} value={w}>{w}</option>)}
-                </select>
+                <SearchSelect value={edit.warehouse || ''} options={warehouses} disabled={!editable} placeholder="Chọn/tìm kho…" onChange={(v) => setItem(editIdx, 'warehouse', v)} />
               </div>
               <div className="form-row">
                 <label>Ngày cần hàng</label>

@@ -22,6 +22,7 @@ import ContractDetail from './pages/ContractDetail'
 import RolePermissions from './pages/RolePermissions'
 import UserPermissionDetail from './pages/UserPermissionDetail'
 import PrintPaymentRequest from './pages/PrintPaymentRequest'
+import Settings from './pages/Settings'
 
 function Protected({ children }: { children: JSX.Element }) {
   const { user } = useAuth()
@@ -53,6 +54,7 @@ export default function App() {
             <Route path="suppliers/:id" element={<SupplierDetail />} />
             <Route path="contracts/:id" element={<ContractDetail />} />
             <Route path="roles" element={<RolePermissions />} />
+            <Route path="settings" element={<Settings />} />
             <Route path="users/:id" element={<UserPermissionDetail />} />
             <Route path=":entity" element={<CrudList />} />
             <Route path=":entity/:id" element={<CrudDetail />} />

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { cruds } from '../config/cruds'
+import SearchSelect from './SearchSelect'
 
 export default function CrudDetail() {
   const { entity, id } = useParams()
@@ -93,13 +94,12 @@ export default function CrudDetail() {
                   {f.type === 'textarea' ? (
                     <textarea value={form[f.key] ?? ''} disabled={ro} onChange={(e) => set(f.key, e.target.value)} />
                   ) : (f.type === 'select' || (f.source && f.type !== 'select-multiple')) ? (
-                    <select value={form[f.key] ?? ''} disabled={ro} onChange={(e) => {
-                      set(f.key, e.target.value);
-                      if (f.onValueChange) f.onValueChange(e.target.value, form, (k: string, v: any) => setForm((s:any) => ({...s, [k]: v})));
-                    }}>
-                      <option value="">-- Chọn --</option>
-                      {(f.options || dynOpts[f.key] || []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
+                    <SearchSelect value={form[f.key] ?? ''} disabled={ro} placeholder="Chọn…"
+                      options={(f.options || dynOpts[f.key] || [])}
+                      onChange={(v) => {
+                        set(f.key, v);
+                        if (f.onValueChange) f.onValueChange(v, form, (k: string, val: any) => setForm((s: any) => ({ ...s, [k]: val })));
+                      }} />
                   ) : f.type === 'select-multiple' ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
                       {(f.options || dynOpts[f.key] || []).map((o) => {
