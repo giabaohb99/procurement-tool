@@ -1,0 +1,37 @@
+# Production — dùng CHUNG MariaDB của dego-erp (container 'dego-erp-db-1', network 'dego-erp_default'),
+# database riêng 'procurement'. Web (nginx static + proxy /api) join 'proxy-tier' để Cloudflare Tunnel gọi tới.
+# KHÔNG có service db (tái dùng MariaDB sẵn có).
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    env_file: .env
+    restart: always
+    command: ["sh", "start.prod.sh"]
+    networks:
+      - dego-erp_default        # để tới MariaDB dego-erp-db-1:3306
+      - procurement-internal    # để web (nginx) proxy /api tới
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web.prod
+      args:
+        VITE_API_URL: "https://thumua.degoholding.vn"
+    container_name: procurement-web
+    restart: always
+    depends_on:
+      - api
+    networks:
+      - procurement-internal
+      - proxy-tier              # để cloudflare_tunnel (cùng net) gọi http://procurement-web:80
+
+networks:
+  dego-erp_default:
+    external: true
+  proxy-tier:
+    external: true
+  procurement-internal:
+    driver: bridge
