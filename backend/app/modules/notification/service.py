@@ -119,6 +119,17 @@ def get_department_head_users(db: Session, department_name: str) -> list[User]:
     return db.query(User).filter(User.employee_id == dep.manager_id, User.is_active == True).all()
 
 
+def get_users_by_role_codes(db: Session, codes: list[str]) -> list[User]:
+    """Tài khoản thuộc các vai trò theo mã (vd Quản lý TM / Admin TM)."""
+    role_ids = [r.id for r in db.query(Role).filter(Role.code.in_(codes)).all()]
+    if not role_ids:
+        return []
+    user_ids = [ur.user_id for ur in db.query(UserRole).filter(UserRole.role_id.in_(role_ids)).all()]
+    if not user_ids:
+        return []
+    return db.query(User).filter(User.id.in_(user_ids), User.is_active == True).all()
+
+
 def trigger_notification(
     db: Session,
     event: str,
@@ -167,13 +178,16 @@ def trigger_notification(
         subject = f"[GẤP] {subject}"
 
     # Xác định người nhận chuông
-    if event in ["pr_submitted", "survey_submitted"]:
-        # Gửi duyệt → ưu tiên Trưởng bộ phận của phòng; chưa gán trưởng phòng thì fallback
-        # về người có quyền duyệt (quản lý/admin) để phiếu không bị kẹt.
-        recipients = get_department_head_users(db, department) or get_approvers_for_entity(db, doc_type)
+    if event == "pr_submitted":
+        # CHỈ Trưởng bộ phận của phòng — KHÔNG fallback sang quản lý/admin (tránh spam, ~300 phiếu/ngày).
+        # Chưa gán trưởng phòng thì không báo ai; quản lý vẫn thấy phiếu trong danh sách (scope all).
+        recipients = get_department_head_users(db, department)
+    elif event == "survey_submitted":
+        # Khảo sát do Quản lý thu mua / Admin duyệt
+        recipients = get_approvers_for_entity(db, doc_type)
     elif event == "pr_approved":
-        # Đã duyệt → báo người tạo + quản lý thu mua (để họ phân bổ nhân sự trên line)
-        recipients = ([creator] if creator else []) + get_approvers_for_entity(db, doc_type)
+        # DUYỆT XONG → báo người YC + Quản lý TM + Admin TM (để phân bổ nhân sự trên line)
+        recipients = ([creator] if creator else []) + get_users_by_role_codes(db, ["pur_manager", "pur_admin"])
     else:
         recipients = [creator] if creator else []
 
