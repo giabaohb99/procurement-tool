@@ -300,6 +300,7 @@ export const cruds: Record<string, CrudConfig> = {
     fields: [
       { key: 'code', label: 'Mã Phòng ban', readonlyOnEdit: true },
       { key: 'name', label: 'Tên Phòng ban' },
+      { key: 'manager_id', label: 'Trưởng bộ phận', type: 'select', source: { url: '/api/employees', value: 'id', label: 'full_name' } },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: [{value: 'true', label: 'Hoạt động'}, {value: 'false', label: 'Đã ẩn'}] },
     ]
   },

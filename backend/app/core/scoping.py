@@ -32,10 +32,13 @@ def _role_scope_cond(model, entity, scope, user, profile):
     dept_id = profile.get("dept_id") or 0
 
     # "Được giao": của mình HOẶC được phân bổ cho mình (áp cho PYC)
-    if scope == "assigned":
+    if scope in ("assigned", "proc"):
         if entity == "purchase_request":
             from app.modules.purchase_request.model import PurchaseRequestItem
             conds = [model.created_by == user.id]
+            # "proc" (NV/Admin thu mua): thấy thêm MỌI phiếu đã duyệt để nhặt việc + phân bổ
+            if scope == "proc":
+                conds.append(model.status == "approved")
             if profile.get("employee_id"):
                 conds.append(model.assignee_id == profile["employee_id"])
             if profile.get("emp_code"):

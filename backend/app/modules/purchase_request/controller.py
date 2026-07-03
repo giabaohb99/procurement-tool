@@ -194,7 +194,8 @@ def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
         creator_id=pr.created_by or user.id,
         background_tasks=background_tasks,
         is_urgent=bool(pr.is_urgent),
-        link=f"/purchase-requests/{pr.id}"
+        link=f"/purchase-requests/{pr.id}",
+        department=pr.department or "",
     )
     return success(_out(db, pr), "Đã gửi duyệt")
 

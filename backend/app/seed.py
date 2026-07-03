@@ -196,7 +196,7 @@ STD_ROLES = {
     "pur_staff": {"name": "Nhân viên thu mua", "perms": {
         **_CATALOG_READ,
         "employee": (["read"], "dept"),
-        "purchase_request": (["read", "create", "write"], "assigned"),
+        "purchase_request": (["read", "create", "write"], "proc"),
         "survey": (["read", "create", "write"], "all"),
         "purchase_order": (["read", "create", "write", "print"], "dept"),
         "inventory": (["read"], "company"),
@@ -216,7 +216,7 @@ STD_ROLES = {
         "report": (["read", "export"], "all"),
     }},
     "pur_admin": {"name": "Admin thu mua", "perms": {
-        "purchase_request": (["read", "create", "write", "delete", "approve", "cancel", "print", "export"], "all"),
+        "purchase_request": (["read", "create", "write", "delete", "approve", "cancel", "print", "export"], "proc"),
         "purchase_order": (["read", "create", "write", "delete", "approve", "cancel", "print", "export"], "all"),
         "survey": (["read", "create", "write", "delete", "approve"], "all"),
         "inventory": (["read", "write"], "all"),
@@ -257,6 +257,16 @@ def seed_standard_roles(db):
                 can_print="print" in actions, can_export="export" in actions,
             ))
         db.commit()
+
+    # Ép scope theo mô hình duyệt mới cho các role đã tồn tại từ trước
+    # (NV/Admin thu mua: 'proc' = phiếu được giao + mọi phiếu đã duyệt).
+    for role_code, scope in [("pur_staff", "proc"), ("pur_admin", "proc")]:
+        role = db.query(Role).filter(Role.code == role_code).first()
+        if role:
+            db.query(Permission).filter(
+                Permission.role_id == role.id, Permission.entity == "purchase_request"
+            ).update({"scope": scope}, synchronize_session=False)
+    db.commit()
 
 
 def assign_default_roles(db):

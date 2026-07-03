@@ -15,16 +15,15 @@ LINE_STATUS = ["Chưa đặt hàng", "Đã đặt hàng", "Đã gửi ĐMH cho K
 
 
 def find_dept_head(db: Session, department_name: str) -> str:
-    """Tên Trưởng bộ phận của 1 phòng ban (chức danh chứa 'trưởng'). '' nếu không có."""
+    """Tên Trưởng bộ phận của 1 phòng ban (theo field manager_id chọn cứng). '' nếu chưa gán."""
     if not department_name:
         return ""
     from app.modules.department.model import Department
     from app.modules.employee.model import Employee
     dep = db.query(Department).filter(Department.name == department_name).first()
-    if not dep:
+    if not dep or not dep.manager_id:
         return ""
-    head = next((e for e in db.query(Employee).filter(Employee.department_id == dep.id).all()
-                 if 'trưởng' in ((e.role_name or '') + ' ' + (e.position or '')).lower()), None)
+    head = db.get(Employee, dep.manager_id)
     return head.full_name if head else ""
 
 

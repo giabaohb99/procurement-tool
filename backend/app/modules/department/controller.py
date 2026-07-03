@@ -20,24 +20,8 @@ def list_departments(
     user=Depends(require("department", "read")),
 ):
     total, items = service.list_departments(db, q, pg)
-    
-    # Auto-resolve managers
-    from app.modules.employee.model import Employee
-    managers = db.query(Employee).filter(
-        Employee.role_name.in_(["Trưởng bộ phận", "Administrator", "ADMIN", "MANAGER", "ADMINISTRATOR"]),
-        Employee.is_active == True
-    ).all()
-    manager_map = {m.department_id: m for m in managers if m.department_id}
-
-    res = []
-    for i in items:
-        out = DepartmentOut.model_validate(i).model_dump()
-        mgr = manager_map.get(i.id)
-        if mgr:
-            out["manager_id"] = mgr.id
-            out["manager_name"] = mgr.full_name
-        res.append(out)
-
+    # manager_id (chọn cứng) + manager_name (property của model) tự lấy qua model_validate
+    res = [DepartmentOut.model_validate(i).model_dump() for i in items]
     return success({
         "total": total,
         "items": res,
@@ -47,19 +31,7 @@ def list_departments(
 @router.get("/{did}")
 def get_department(did: int, db: Session = Depends(get_db), user=Depends(require("department", "read"))):
     obj = service.get_department(db, did)
-    out = DepartmentOut.model_validate(obj).model_dump()
-    
-    from app.modules.employee.model import Employee
-    mgr = db.query(Employee).filter(
-        Employee.department_id == did,
-        Employee.role_name.in_(["Trưởng bộ phận", "Administrator", "ADMIN", "MANAGER", "ADMINISTRATOR"]),
-        Employee.is_active == True
-    ).first()
-    if mgr:
-        out["manager_id"] = mgr.id
-        out["manager_name"] = mgr.full_name
-
-    return success(out)
+    return success(DepartmentOut.model_validate(obj).model_dump())
 
 
 @router.post("")

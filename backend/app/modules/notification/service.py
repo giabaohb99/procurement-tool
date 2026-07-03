@@ -103,8 +103,20 @@ def get_approvers_for_entity(db: Session, entity: str) -> list[User]:
     user_ids = [ur.user_id for ur in db.query(UserRole).filter(UserRole.role_id.in_(role_ids)).all()]
     if not user_ids:
         return []
-        
+
     return db.query(User).filter(User.id.in_(user_ids), User.is_active == True).all()
+
+
+def get_department_head_users(db: Session, department_name: str) -> list[User]:
+    """Tài khoản của Trưởng bộ phận phòng ban (theo Department.manager_id chọn cứng). [] nếu chưa gán."""
+    if not department_name:
+        return []
+    from app.modules.department.model import Department
+    dep = db.query(Department).filter(Department.name == department_name).first()
+    if not dep or not dep.manager_id:
+        return []
+    # manager_id = employee id → tìm tài khoản user gắn nhân sự đó
+    return db.query(User).filter(User.employee_id == dep.manager_id, User.is_active == True).all()
 
 
 def trigger_notification(
@@ -117,7 +129,8 @@ def trigger_notification(
     reason: str = "",
     approve_note: str = "",
     is_urgent: bool = False,
-    link: str = ""
+    link: str = "",
+    department: str = "",
 ):
     """
     Creates an in-app notification and sends an email notification asynchronously.
@@ -153,11 +166,20 @@ def trigger_notification(
     if is_urgent:
         subject = f"[GẤP] {subject}"
 
-    # Determine recipients
+    # Xác định người nhận chuông
     if event in ["pr_submitted", "survey_submitted"]:
-        recipients = get_approvers_for_entity(db, doc_type)
+        # Gửi duyệt → ưu tiên Trưởng bộ phận của phòng; chưa gán trưởng phòng thì fallback
+        # về người có quyền duyệt (quản lý/admin) để phiếu không bị kẹt.
+        recipients = get_department_head_users(db, department) or get_approvers_for_entity(db, doc_type)
+    elif event == "pr_approved":
+        # Đã duyệt → báo người tạo + quản lý thu mua (để họ phân bổ nhân sự trên line)
+        recipients = ([creator] if creator else []) + get_approvers_for_entity(db, doc_type)
     else:
         recipients = [creator] if creator else []
+
+    # Khử trùng lặp người nhận
+    seen_ids = set()
+    recipients = [r for r in recipients if r and not (r.id in seen_ids or seen_ids.add(r.id))]
 
     # CHỈ tạo thông báo trong app (chuông) — KHÔNG gửi email cho workflow.
     # Email chỉ dùng cho cấp tài khoản / reset mật khẩu (hàm riêng bên dưới).

@@ -8,6 +8,26 @@ type Alert = { type: string; level: string; title: string; link: string }
 const LV_COLOR: Record<string, string> = { danger: '#b91c1c', warn: '#d97706' }
 const fmtTime = (s: string) => { try { return new Date(s).toLocaleString('vi-VN') } catch { return '' } }
 
+// Tiếng "tin-tin" khi có thông báo mới (Web Audio, không cần file)
+function playDing() {
+  try {
+    const AC = (window as any).AudioContext || (window as any).webkitAudioContext
+    if (!AC) return
+    const ctx = new AC()
+    const beep = (t: number, freq: number) => {
+      const o = ctx.createOscillator(); const g = ctx.createGain()
+      o.type = 'sine'; o.frequency.value = freq
+      o.connect(g); g.connect(ctx.destination)
+      g.gain.setValueAtTime(0.0001, ctx.currentTime + t)
+      g.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + t + 0.02)
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t + 0.18)
+      o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.2)
+    }
+    beep(0, 880); beep(0.19, 1175)
+    setTimeout(() => { try { ctx.close() } catch { /* noop */ } }, 700)
+  } catch { /* noop */ }
+}
+
 export default function NotificationBell() {
   const nav = useNavigate()
   const [open, setOpen] = useState(false)
@@ -16,6 +36,7 @@ export default function NotificationBell() {
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [danger, setDanger] = useState(0)
   const ref = useRef<HTMLDivElement>(null)
+  const prevBadge = useRef<number | null>(null)   // để phát tiếng khi badge tăng
 
   async function load() {
     try {
@@ -23,14 +44,20 @@ export default function NotificationBell() {
         api.get('/api/notifications'),
         api.get('/api/alerts').catch(() => ({ data: { data: { items: [], danger: 0 } } })),
       ])
-      setNotifs(n.data.data.items || []); setUnread(n.data.data.unread || 0)
-      setAlerts(a.data.data.items || []); setDanger(a.data.data.danger || 0)
+      const newUnread = n.data.data.unread || 0
+      const newDanger = a.data.data.danger || 0
+      const newBadge = newUnread + newDanger
+      // Chỉ kêu khi có thông báo MỚI (badge tăng), bỏ qua lần load đầu
+      if (prevBadge.current !== null && newBadge > prevBadge.current) playDing()
+      prevBadge.current = newBadge
+      setNotifs(n.data.data.items || []); setUnread(newUnread)
+      setAlerts(a.data.data.items || []); setDanger(newDanger)
     } catch { /* im lặng */ }
   }
 
   useEffect(() => {
     load()
-    const t = setInterval(load, 60000)
+    const t = setInterval(load, 20000)
     const onClick = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
     document.addEventListener('mousedown', onClick)
     return () => { clearInterval(t); document.removeEventListener('mousedown', onClick) }
