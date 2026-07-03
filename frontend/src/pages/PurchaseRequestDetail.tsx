@@ -333,10 +333,6 @@ export default function PurchaseRequestDetail() {
               <div className="form-row">
                 <label>Tùy chọn phiếu</label>
                 <div style={{ display: 'flex', gap: 20, alignItems: 'center', height: 40 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', margin: 0, color: 'var(--navy)' }}>
-                    <input type="checkbox" checked={!!pr.show_code_on_print} disabled={!editable} onChange={(e) => setH('show_code_on_print', e.target.checked)} style={{ width: 18, height: 18 }} />
-                    Hiển thị Mã phiếu
-                  </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', margin: 0, color: 'var(--red)' }}>
                     <input type="checkbox" checked={!!pr.is_urgent} disabled={!editable} onChange={(e) => setH('is_urgent', e.target.checked)} style={{ width: 18, height: 18 }} />
                     Đơn gấp

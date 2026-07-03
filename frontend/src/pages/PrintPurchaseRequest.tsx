@@ -54,7 +54,7 @@ export default function PrintPurchaseRequest() {
         </div>
 
         <h2 style={{ textAlign: 'center', fontSize: 17, margin: '14px 0 2px' }}>PHIẾU ĐỀ XUẤT MUA HÀNG HÓA/DỊCH VỤ</h2>
-        <div style={{ textAlign: 'center', fontSize: 12 }}>Số: {pr.show_code_on_print !== false ? pr.code : '....................'}</div>
+        <div style={{ textAlign: 'center', fontSize: 12 }}>Số: {pr.code}</div>
         <div style={{ textAlign: 'center', fontSize: 12, marginBottom: 6 }}>{viDate(pr.request_date)}</div>
 
         <div style={SH}>THÔNG TIN CHUNG</div>
