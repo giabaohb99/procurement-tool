@@ -200,6 +200,12 @@ export default function PurchaseOrderDetail() {
     catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi') }
   }
 
+  async function copyDoc() {
+    setErr('')
+    try { const r = await api.post(`${API}/${id}/copy`); navigate(`/purchase-orders/${r.data.data.id}`) }
+    catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi nhân bản') }
+  }
+
   async function uploadFiles(fl: FileList | null) {
     if (!fl?.length) return
     const fd = new FormData(); fd.append('entity', 'purchase_order'); fd.append('entity_id', String(id))
@@ -277,8 +283,8 @@ export default function PurchaseOrderDetail() {
         {!isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'cancel') && (
           <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => { if (confirm('Hủy đơn mua hàng này?')) action('cancel', { reason: prompt('Lý do hủy:') || '' }) }}><i className="ti ti-ban" />Hủy đơn</button>
         )}
-        {!isNew && ['cancelled', 'rejected', 'completed'].includes(po.status) && can('purchase_order', 'write') && (
-          <button className="btn ghost" onClick={() => { if (confirm('Mở lại đơn về trạng thái Nháp?')) action('reopen') }}><i className="ti ti-rotate" />Mở lại</button>
+        {!isNew && can('purchase_order', 'create') && (
+          <button className="btn ghost" onClick={() => { if (confirm('Nhân bản đơn này thành đơn Nháp mới?')) copyDoc() }}><i className="ti ti-copy" />Nhân bản</button>
         )}
       </div>
 

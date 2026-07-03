@@ -224,6 +224,35 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
     db.flush()
 
 
+# Các cột dòng hàng được sao chép khi Nhân bản (KHÔNG copy số đã nhận / lần giao / trạng thái)
+_ITEM_COPY_FIELDS = ["product_code", "product_name", "invoice_name", "item_group", "spec",
+                     "fg_code", "invoice_no", "supplier_ready", "required_date", "unit",
+                     "qty_request", "qty_order", "price", "vat", "warehouse_code", "note"]
+
+
+def copy_po(db: Session, pid: int, user_id: int) -> PurchaseOrder:
+    """Nhân bản đơn thành 1 đơn Nháp mới: giữ dòng hàng, bỏ lần giao/số đã nhận, reset mã/MISA/trạng thái."""
+    src = get_po(db, pid)
+    po = PurchaseOrder(
+        code="", misa_code="", pr_code=src.pr_code, survey_code=src.survey_code,
+        company_id=src.company_id, supplier_code=src.supplier_code, supplier_name=src.supplier_name,
+        department=src.department, nspt=src.nspt, order_date=src.order_date, vat_rate=src.vat_rate,
+        payment_terms=src.payment_terms, is_urgent=src.is_urgent, note=src.note,
+        status="draft", created_by=user_id, updated_by=user_id,
+    )
+    db.add(po)
+    db.flush()
+    po.code = f"PO{po.id:05d}"
+    for it in items_of(db, src.id):
+        data = {k: getattr(it, k) for k in _ITEM_COPY_FIELDS}
+        data["amount"] = round((float(data.get("qty_order") or 0)) * (float(data.get("price") or 0)) * (1 + (float(data.get("vat") or 0)) / 100), 2)
+        db.add(POItem(po_id=po.id, created_by=user_id, updated_by=user_id, **data))
+    db.commit()
+    db.refresh(po)
+    record(db, user_id, ENTITY, po.id, "create", f"Nhân bản từ {src.code}")
+    return po
+
+
 def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
     po = PurchaseOrder(
         code=data.code or "", misa_code=data.misa_code, pr_code=data.pr_code,
@@ -247,7 +276,7 @@ def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
 def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOrder:
     po = get_po(db, pid)
     if po.status in ("completed", "cancelled"):
-        raise HTTPException(400, "Đơn đã hoàn thành/đã hủy — không sửa được. Hãy 'Mở lại' nếu cần chỉnh.")
+        raise HTTPException(400, "Đơn đã hoàn thành/đã hủy — không sửa được. Dùng 'Nhân bản' để tạo đơn mới.")
     for k, v in data.model_dump(exclude_unset=True, exclude={"items"}).items():
         setattr(po, k, v)
     po.updated_by = user_id

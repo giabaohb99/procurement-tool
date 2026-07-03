@@ -123,6 +123,11 @@ def create_po(data: POCreate, db: Session = Depends(get_db), user=Depends(requir
     return success(_out(db, service.create_po(db, data, user.id)), "Đã tạo đơn mua hàng", 201)
 
 
+@router.post("/{pid}/copy")
+def copy_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_order", "create"))):
+    return success(_out(db, service.copy_po(db, pid, user.id)), "Đã nhân bản thành đơn Nháp mới", 201)
+
+
 @router.patch("/{pid}")
 def update_po(pid: int, data: POUpdate, db: Session = Depends(get_db), user=Depends(require("purchase_order", "write"))):
     return success(_out(db, service.update_po(db, pid, data, user.id)), "Đã cập nhật")

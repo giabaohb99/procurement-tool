@@ -125,6 +125,11 @@ def create_pr(data: PRCreate, db: Session = Depends(get_db), user=Depends(requir
     return success(_out(db, service.create_pr(db, data, user.id)), "Đã tạo yêu cầu mua", 201)
 
 
+@router.post("/{pid}/copy")
+def copy_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "create"))):
+    return success(_out(db, service.copy_pr(db, pid, user.id)), "Đã nhân bản thành phiếu Nháp mới", 201)
+
+
 @router.patch("/{pid}/assign")
 def assign_pr(pid: int, data: AssignIn, db: Session = Depends(get_db), user=Depends(require("purchase_request", "approve"))):
     return success(_out(db, service.assign(db, pid, data, user.id)), "Đã lưu phân bổ NSTM")

@@ -264,6 +264,12 @@ export default function PurchaseRequestDetail() {
     catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi') }
   }
 
+  async function copyDoc() {
+    setErr('')
+    try { const r = await api.post(`${API}/${id}/copy`); navigate(`/purchase-requests/${r.data.data.id}`) }
+    catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi nhân bản') }
+  }
+
   // Lưu popup chi tiết dòng khi phiếu KHÔNG còn ở trạng thái sửa (đã gửi duyệt trở đi)
   async function savePopupLine(it: any) {
     setErr(''); setMsg('')
@@ -295,6 +301,7 @@ export default function PurchaseRequestDetail() {
         {!isNew && prBadge(pr.status)}
         <span style={{ flex: 1 }} />
         {!isNew && <button className="btn ghost" onClick={() => window.open(`/print/purchase-request/${id}`, '_blank')}><i className="ti ti-printer" />In phiếu</button>}
+        {!isNew && can('purchase_request', 'create') && <button className="btn ghost" onClick={() => { if (confirm('Nhân bản phiếu này thành phiếu Nháp mới?')) copyDoc() }}><i className="ti ti-copy" />Nhân bản</button>}
         {!isNew && pr.status === 'submitted' && can('purchase_request', 'approve') && (
           <>
             <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>

@@ -151,6 +151,48 @@ def list_pr(db: Session, base_query, pg: dict):
     return total, items
 
 
+def copy_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
+    """Nhân bản phiếu thành 1 phiếu Nháp mới: giữ dòng hàng, reset mã/trạng thái/NSTM/trạng thái dòng."""
+    src = get_pr(db, pid)
+    pr = PurchaseRequest(
+        code="", company_id=src.company_id, requester=src.requester,
+        requester_position=src.requester_position, department=src.department,
+        head_of_dept=src.head_of_dept, purpose=src.purpose, request_date=src.request_date,
+        need_date=src.need_date, is_urgent=src.is_urgent, note=src.note,
+        status="draft", assignee_id=0, created_by=user_id, updated_by=user_id,
+        show_code_on_print=src.show_code_on_print, suggested_supplier=src.suggested_supplier,
+        suggested_supplier_tax_code=src.suggested_supplier_tax_code,
+        suggested_supplier_contact=src.suggested_supplier_contact,
+        quote_filename=src.quote_filename, quote_file_url=src.quote_file_url,
+    )
+    db.add(pr)
+    db.commit()
+    db.refresh(pr)
+    if not pr.code:
+        from datetime import datetime
+        date_str = datetime.now().strftime("%d%m%y")
+        prefix = f"PYC{date_str}"
+        last = db.query(PurchaseRequest).filter(PurchaseRequest.code.like(f"{prefix}%")).order_by(PurchaseRequest.code.desc()).first()
+        seq = 1
+        if last and last.code.startswith(prefix):
+            try:
+                seq = int(last.code[len(prefix):]) + 1
+            except ValueError:
+                seq = 1
+        pr.code = f"{prefix}{seq:02d}"
+        db.commit()
+    _COPY = ["product_code", "product_name", "item_group", "group_desc", "qty", "unit",
+             "price", "amount", "warehouse", "required_date", "note"]
+    for it in items_of(db, src.id):
+        data = {k: getattr(it, k) for k in _COPY}
+        db.add(PurchaseRequestItem(pr_id=pr.id, created_by=user_id, updated_by=user_id,
+                                   assignee="", line_status="Chưa đặt hàng", progress_note="", **data))
+    db.commit()
+    record(db, user_id, ENTITY, pr.id, "create", f"Nhân bản từ {src.code}")
+    db.refresh(pr)
+    return pr
+
+
 def create_pr(db: Session, data: PRCreate, user_id: int) -> PurchaseRequest:
     pr = PurchaseRequest(
         code=data.code or "", company_id=data.company_id, requester=data.requester,
