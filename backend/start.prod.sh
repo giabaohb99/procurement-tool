@@ -22,8 +22,24 @@ else:
     raise SystemExit("Database not reachable")
 PY
 
-echo "Running DB migrations (alembic)..."
-alembic upgrade head
+echo "Preparing schema..."
+python - <<'PY'
+import app.core.all_models  # noqa: F401  (đăng ký toàn bộ model)
+from sqlalchemy import inspect, create_engine
+from alembic.config import Config
+from alembic import command
+from app.core.config import settings
+from app.core.base_model import Base
+eng = create_engine(settings.db_url)
+cfg = Config("alembic.ini")
+if "alembic_version" not in inspect(eng).get_table_names():
+    print("  DB trống -> tạo schema từ models (create_all) + stamp head")
+    Base.metadata.create_all(eng)
+    command.stamp(cfg, "head")
+else:
+    print("  DB đã có -> alembic upgrade head")
+    command.upgrade(cfg, "head")
+PY
 
 echo "Seeding data..."
 python -m app.seed
