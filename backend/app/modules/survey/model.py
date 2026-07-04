@@ -60,6 +60,7 @@ class SurveySupplierLine(Base, AuditMixin):
     nspt_reason: Mapped[str] = mapped_column(Text, default="")
     line_approve: Mapped[str] = mapped_column(String(20), default="")
     line_approve_note: Mapped[str] = mapped_column(Text, default="")
+    note: Mapped[str] = mapped_column(Text, default="")                     # Ghi chú nội bộ (KHÔNG show ra Yêu cầu khảo sát)
 
 
 class SurveyProductLine(Base, AuditMixin):
@@ -97,3 +98,4 @@ class SurveyProductLine(Base, AuditMixin):
     nspt_reason: Mapped[str] = mapped_column(Text, default="")
     line_approve: Mapped[str] = mapped_column(String(20), default="")
     line_approve_note: Mapped[str] = mapped_column(Text, default="")
+    note: Mapped[str] = mapped_column(Text, default="")                     # Ghi chú nội bộ (KHÔNG show ra Yêu cầu khảo sát)

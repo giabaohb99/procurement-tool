@@ -360,28 +360,11 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     fields: [],
   },
-  'surveys-supplier': {
-    slug: 'surveys-supplier', entity: 'survey', title: 'Khảo sát Nhà cung cấp', apiPath: '/api/surveys-supplier', txn: true,
+  'surveys': {
+    slug: 'surveys', entity: 'survey', title: 'Khảo sát (NCC + Sản phẩm)', apiPath: '/api/surveys', txn: true,
     columns: [
       { key: 'code', label: 'Mã phiếu' }, { key: 'pr_code', label: 'Mã YC (PYC)' },
-      { key: 'item_group', label: 'Nhóm hàng' }, { key: 'nspt', label: 'NSPT' },
-      { key: 'status', label: 'Trạng thái', render: (r) => prBadge(r.status) },
-    ],
-    filters: [
-      { key: 'code', label: 'Mã phiếu' },
-      { key: 'pr_code', label: 'Mã YC' },
-      { key: 'item_group', label: 'Nhóm hàng', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
-      { key: 'nspt', label: 'NSPT' },
-      { key: 'status', label: 'Trạng thái', type: 'select', options: [
-        { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
-        { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Từ chối' }] },
-    ],
-    fields: [],
-  },
-  'surveys-product': {
-    slug: 'surveys-product', entity: 'survey', title: 'Khảo sát Sản phẩm', apiPath: '/api/surveys-product', txn: true,
-    columns: [
-      { key: 'code', label: 'Mã phiếu' }, { key: 'pr_code', label: 'Mã YC (PYC)' },
+      { key: 'main', label: 'Nội dung chính' },
       { key: 'item_group', label: 'Nhóm hàng' }, { key: 'nspt', label: 'NSPT' },
       { key: 'status', label: 'Trạng thái', render: (r) => prBadge(r.status) },
     ],

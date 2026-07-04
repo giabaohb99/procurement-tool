@@ -12,10 +12,6 @@ HEADER_FIELDS = ["pr_code", "received_date", "result_due_date", "item_group",
                  "has_product_code", "item_code", "item_name", "uom", "proposed_rate"]
 
 
-def line_model(survey_type: str):
-    return SurveySupplierLine if survey_type == "supplier" else SurveyProductLine
-
-
 def get_survey(db: Session, sid: int) -> Survey:
     o = db.get(Survey, sid)
     if not o:
@@ -23,35 +19,44 @@ def get_survey(db: Session, sid: int) -> Survey:
     return o
 
 
-def lines_of(db: Session, survey_type: str, sid: int):
-    LM = line_model(survey_type)
-    return db.query(LM).filter(LM.survey_id == sid).order_by(LM.id).all()
+def supplier_lines_of(db: Session, sid: int):
+    return (db.query(SurveySupplierLine).filter(SurveySupplierLine.survey_id == sid)
+            .order_by(SurveySupplierLine.id).all())
 
 
-def _save_lines(db: Session, survey_type: str, sid: int, lines, user_id: int):
-    LM = line_model(survey_type)
-    db.query(LM).filter(LM.survey_id == sid).delete()
+def product_lines_of(db: Session, sid: int):
+    return (db.query(SurveyProductLine).filter(SurveyProductLine.survey_id == sid)
+            .order_by(SurveyProductLine.id).all())
+
+
+def _save_supplier_lines(db: Session, sid: int, lines, user_id: int):
+    db.query(SurveySupplierLine).filter(SurveySupplierLine.survey_id == sid).delete()
     for it in lines or []:
-        data = it.model_dump()
-        if survey_type == "product":
-            amount = round((data.get("request_qty") or 0) * (data.get("price_by_volume") or 0)
-                           * (1 + (data.get("vat") or 0) / 100), 2)
-            data["amount"] = amount
-            if not data.get("amount_converted"):
-                data["amount_converted"] = amount
-        db.add(LM(survey_id=sid, created_by=user_id, updated_by=user_id, **data))
+        db.add(SurveySupplierLine(survey_id=sid, created_by=user_id, updated_by=user_id, **it.model_dump()))
     db.commit()
 
 
-def list_surveys(db: Session, survey_type: str, base_query, pg: dict):
-    q = base_query.filter(Survey.survey_type == survey_type)
-    total = q.count()
-    items = q.order_by(Survey.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
+def _save_product_lines(db: Session, sid: int, lines, user_id: int):
+    db.query(SurveyProductLine).filter(SurveyProductLine.survey_id == sid).delete()
+    for it in lines or []:
+        data = it.model_dump()
+        amount = round((data.get("request_qty") or 0) * (data.get("price_by_volume") or 0)
+                       * (1 + (data.get("vat") or 0) / 100), 2)
+        data["amount"] = amount
+        if not data.get("amount_converted"):
+            data["amount_converted"] = amount
+        db.add(SurveyProductLine(survey_id=sid, created_by=user_id, updated_by=user_id, **data))
+    db.commit()
+
+
+def list_surveys(db: Session, base_query, pg: dict):
+    total = base_query.count()
+    items = base_query.order_by(Survey.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
     return total, items
 
 
-def create_survey(db: Session, data, survey_type: str, user_id: int) -> Survey:
-    s = Survey(code=data.code or "", survey_type=survey_type, status="draft",
+def create_survey(db: Session, data, user_id: int) -> Survey:
+    s = Survey(code=data.code or "", survey_type="combined", status="draft",
                created_by=user_id, updated_by=user_id,
                **{f: getattr(data, f) for f in HEADER_FIELDS})
     db.add(s)
@@ -60,38 +65,48 @@ def create_survey(db: Session, data, survey_type: str, user_id: int) -> Survey:
     if not s.code:
         s.code = f"KS{s.id:05d}"
         db.commit()
-    _save_lines(db, survey_type, s.id, data.lines, user_id)
+    _save_supplier_lines(db, s.id, data.supplier_lines, user_id)
+    _save_product_lines(db, s.id, data.product_lines, user_id)
     record(db, user_id, ENTITY, s.id, "create")
     return s
 
 
-def update_survey(db: Session, sid: int, data, survey_type: str, user_id: int) -> Survey:
+def update_survey(db: Session, sid: int, data, user_id: int) -> Survey:
     s = get_survey(db, sid)
     if s.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ sửa được khi ở trạng thái Nháp/Từ chối")
-    for k, v in data.model_dump(exclude_unset=True, exclude={"lines"}).items():
+    for k, v in data.model_dump(exclude_unset=True, exclude={"supplier_lines", "product_lines"}).items():
         setattr(s, k, v)
     s.updated_by = user_id
     db.commit()
-    if data.lines is not None:
-        _save_lines(db, survey_type, sid, data.lines, user_id)
+    if data.supplier_lines is not None:
+        _save_supplier_lines(db, sid, data.supplier_lines, user_id)
+    if data.product_lines is not None:
+        _save_product_lines(db, sid, data.product_lines, user_id)
     record(db, user_id, ENTITY, sid, "update")
     db.refresh(s)
     return s
 
 
-def approve_lines(db: Session, survey_type: str, sid: int, data, user_id: int) -> Survey:
-    """Quản lý/Admin duyệt TỪNG dòng (khi phiếu đã gửi duyệt) — chỉ sửa trường duyệt của dòng."""
+def approve_lines(db: Session, sid: int, data, user_id: int) -> Survey:
+    """Quản lý/Admin duyệt TỪNG dòng (cả 2 bảng) khi phiếu đã gửi duyệt."""
     s = get_survey(db, sid)
-    rows = {r.id: r for r in lines_of(db, survey_type, sid)}
-    for it in data.lines:
-        row = rows.get(it.id)
-        if not row:
-            continue
-        if it.line_approve is not None:
-            row.line_approve = it.line_approve
-        if it.line_approve_note is not None:
-            row.line_approve_note = it.line_approve_note
+    sup = {r.id: r for r in supplier_lines_of(db, sid)}
+    prod = {r.id: r for r in product_lines_of(db, sid)}
+    for it in data.supplier_lines:
+        row = sup.get(it.id)
+        if row:
+            if it.line_approve is not None:
+                row.line_approve = it.line_approve
+            if it.line_approve_note is not None:
+                row.line_approve_note = it.line_approve_note
+    for it in data.product_lines:
+        row = prod.get(it.id)
+        if row:
+            if it.line_approve is not None:
+                row.line_approve = it.line_approve
+            if it.line_approve_note is not None:
+                row.line_approve_note = it.line_approve_note
     s.updated_by = user_id
     db.commit()
     record(db, user_id, ENTITY, sid, "line_approve", "Duyệt dòng khảo sát")
@@ -99,13 +114,14 @@ def approve_lines(db: Session, survey_type: str, sid: int, data, user_id: int) -
     return s
 
 
-def delete_survey(db: Session, sid: int, survey_type: str, user_id: int):
+def delete_survey(db: Session, sid: int, user_id: int):
     s = get_survey(db, sid)
-    LM = line_model(survey_type)
     from app.modules.attachment.service import delete_attachments_for
-    line_ids = [ln.id for ln in lines_of(db, survey_type, sid)]
+    line_ids = ([ln.id for ln in supplier_lines_of(db, sid)]
+                + [ln.id for ln in product_lines_of(db, sid)])
     delete_attachments_for(db, [("survey", sid)] + [("survey_line", lid) for lid in line_ids])
-    db.query(LM).filter(LM.survey_id == sid).delete()
+    db.query(SurveySupplierLine).filter(SurveySupplierLine.survey_id == sid).delete()
+    db.query(SurveyProductLine).filter(SurveyProductLine.survey_id == sid).delete()
     db.delete(s)
     db.commit()
     record(db, user_id, ENTITY, sid, "delete")

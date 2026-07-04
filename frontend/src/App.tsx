@@ -44,8 +44,10 @@ export default function App() {
           <Route path="/" element={<Protected><AppLayout /></Protected>}>
             <Route index element={<Dashboard />} />
             <Route path="purchase-requests/:id" element={<PurchaseRequestDetail />} />
-            <Route path="surveys-supplier/:id" element={<SurveyDetail type="supplier" />} />
-            <Route path="surveys-product/:id" element={<SurveyDetail type="product" />} />
+            <Route path="surveys/:id" element={<SurveyDetail />} />
+            {/* Link cũ trong thông báo vẫn mở được (cùng phiếu, load theo id) */}
+            <Route path="surveys-supplier/:id" element={<SurveyDetail />} />
+            <Route path="surveys-product/:id" element={<SurveyDetail />} />
             <Route path="purchase-orders/:id" element={<PurchaseOrderDetail />} />
             <Route path="payment-requests/:id" element={<PaymentRequestDetail />} />
             <Route path="inventory" element={<Inventory />} />

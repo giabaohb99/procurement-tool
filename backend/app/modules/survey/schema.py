@@ -28,6 +28,7 @@ class SupplierLineIn(BaseModel):
     nspt_reason: str = ""
     line_approve: str = ""
     line_approve_note: str = ""
+    note: str = ""
 
 
 class ProductLineIn(BaseModel):
@@ -60,6 +61,7 @@ class ProductLineIn(BaseModel):
     nspt_reason: str = ""
     line_approve: str = ""
     line_approve_note: str = ""
+    note: str = ""
 
 
 class _SurveyHeader(BaseModel):
@@ -124,3 +126,20 @@ class LineApproveItem(BaseModel):
 
 class LineApproveIn(BaseModel):
     lines: list[LineApproveItem] = []
+
+
+# ===== Phiếu khảo sát GỘP (1 phiếu = 2 bảng: NCC + SP) =====
+class SurveyCreate(_SurveyHeader):
+    code: str | None = None
+    supplier_lines: list[SupplierLineIn] = []
+    product_lines: list[ProductLineIn] = []
+
+
+class SurveyUpdate(_HeaderUpdate):
+    supplier_lines: list[SupplierLineIn] | None = None
+    product_lines: list[ProductLineIn] | None = None
+
+
+class LineApproveCombined(BaseModel):
+    supplier_lines: list[LineApproveItem] = []
+    product_lines: list[LineApproveItem] = []
