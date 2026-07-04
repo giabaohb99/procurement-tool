@@ -9,6 +9,8 @@ import SearchSelect from '../components/SearchSelect'
 
 const API = '/api/purchase-requests'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
+// Hiển thị số: để TRỐNG nếu chưa nhập (0/rỗng) để tránh hiểu lầm "đã nhập = 0"
+const fmtBlank = (n: any) => { const v = Number(n || 0); return v ? v.toLocaleString('vi-VN') : '' }
 const LINE_STATUS = ['Chưa đặt hàng', 'Đã đặt hàng', 'Đã gửi ĐMH cho KT', 'Đã nhận hàng', 'Hoàn thành', 'Hủy đơn', 'Tạm ngưng']
 const LS_COLOR: Record<string, string> = {
   'Chưa đặt hàng': '#94a3b8', 'Đã đặt hàng': '#00AEEF', 'Đã gửi ĐMH cho KT': '#7c3aed',
@@ -301,25 +303,25 @@ export default function PurchaseRequestDetail() {
                 <input placeholder="Để trống để tự động tạo" value={pr.code || ''} disabled={!isNew} onChange={(e) => setH('code', e.target.value)} />
               </div>
               <div className="form-row">
-                <label>Ngày tiếp nhận *</label>
+                <label>Ngày tiếp nhận <span className="req">*</span></label>
                 <input type="date" value={pr.request_date || ''} disabled={!editable} onChange={(e) => setH('request_date', e.target.value)} />
               </div>
               <div className="form-row">
-                <label>Công ty nhận hóa đơn *</label>
+                <label>Công ty nhận hóa đơn <span className="req">*</span></label>
                 <Select value={companyOptions.find(o => o.value === pr.company_id) || null}
                   onChange={(o: any) => setH('company_id', o ? o.value : 0)} options={companyOptions}
                   isDisabled={!editable} isClearable placeholder="Chọn công ty"
                   styles={{ control: (b) => ({ ...b, minHeight: 40, borderRadius: 12, borderColor: '#E9EDF7' }) }} />
               </div>
               <div className="form-row">
-                <label>Nhân sự YC *</label>
+                <label>Nhân sự YC <span className="req">*</span></label>
                 <Select value={employeeOptions.find(o => o.value === pr.requester) || (pr.requester ? { value: pr.requester, label: pr.requester } : null)}
                   onChange={(o: any) => handleRequesterChange(o ? o.value : '')} options={employeeOptions}
                   isDisabled={!editable || isStaff} isClearable placeholder="Chọn nhân sự"
                   styles={{ control: (b) => ({ ...b, minHeight: 40, borderRadius: 12, borderColor: '#E9EDF7' }) }} />
               </div>
               <div className="form-row">
-                <label>Bộ phận YC *</label>
+                <label>Bộ phận YC <span className="req">*</span></label>
                 <input value={pr.department || ''} placeholder="Tự động theo Nhân sự" disabled />
               </div>
               <div className="form-row">
@@ -327,7 +329,7 @@ export default function PurchaseRequestDetail() {
                 <input value={pr.requester_position || ''} placeholder="Tự động theo Nhân sự" disabled={!editable} onChange={(e) => setH('requester_position', e.target.value)} />
               </div>
               <div className="form-row">
-                <label>Trưởng bộ phận (TBP) / Người liên hệ *</label>
+                <label>Trưởng bộ phận (TBP) / Người liên hệ <span className="req">*</span></label>
                 <input value={pr.head_of_dept || ''} placeholder="Tự động theo phòng ban của người yêu cầu" disabled />
               </div>
               <div className="form-row">
@@ -340,7 +342,7 @@ export default function PurchaseRequestDetail() {
                 </div>
               </div>
               <div className="form-row">
-                <label>Mục đích mua hàng *</label>
+                <label>Mục đích mua hàng <span className="req">*</span></label>
                 <textarea placeholder="Nhập mục đích mua hàng/dịch vụ..." style={{ minHeight: 80 }} value={pr.purpose || ''} disabled={!editable} onChange={(e) => setH('purpose', e.target.value)} />
               </div>
               <div className="form-row">
@@ -400,9 +402,9 @@ export default function PurchaseRequestDetail() {
                           </select>
                         ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }} title={it.item_group}>{it.item_group || '—'}</span>}
                       </td>
-                      <td style={{ textAlign: 'right' }}>{fmt(it.qty)}</td>
-                      <td style={{ textAlign: 'right' }}>{fmt(it.price)}</td>
-                      <td style={{ textAlign: 'right', fontWeight: 500 }}>{fmt((Number(it.qty) || 0) * (Number(it.price) || 0))}</td>
+                      <td style={{ textAlign: 'right' }}>{fmtBlank(it.qty)}</td>
+                      <td style={{ textAlign: 'right' }}>{fmtBlank(it.price)}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 500 }}>{fmtBlank((Number(it.qty) || 0) * (Number(it.price) || 0))}</td>
                       <td>
                         {canLineStatus(it) ? (
                           <select className="cell-input" value={it.line_status || 'Chưa đặt hàng'}
@@ -536,7 +538,7 @@ export default function PurchaseRequestDetail() {
                 <ProductPicker code={edit.product_code} name={edit.product_name} disabled={!editable} onPick={(prod) => applyProduct(editIdx, prod)} />
               </div>
               <div className="form-row">
-                <label>Tên vật tư *</label>
+                <label>Tên vật tư <span className="req">*</span></label>
                 <input value={edit.product_name || ''} disabled={!editable} onChange={(e) => setItem(editIdx, 'product_name', e.target.value)} />
               </div>
               <div className="form-row">
@@ -549,12 +551,12 @@ export default function PurchaseRequestDetail() {
                 <input value={edit.group_desc || ''} disabled placeholder="Tự động theo phân loại" />
               </div>
               <div className="form-row">
-                <label>Số lượng mua *</label>
-                <input type="number" value={edit.qty ?? 0} disabled={!editable} onChange={(e) => setItem(editIdx, 'qty', Number(e.target.value))} />
+                <label>Số lượng mua <span className="req">*</span></label>
+                <input type="number" value={edit.qty || ''} placeholder="Nhập số lượng" disabled={!editable} onChange={(e) => setItem(editIdx, 'qty', Number(e.target.value))} />
               </div>
               <div className="form-row">
                 <label>Giá đề xuất</label>
-                <input type="number" value={edit.price ?? 0} disabled={!editable} onChange={(e) => setItem(editIdx, 'price', Number(e.target.value))} />
+                <input type="number" value={edit.price || ''} placeholder="Để trống nếu chưa có giá" disabled={!editable} onChange={(e) => setItem(editIdx, 'price', Number(e.target.value))} />
               </div>
               <div className="form-row">
                 <label>ĐVT</label>
@@ -562,10 +564,10 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Thành tiền</label>
-                <input value={fmt((Number(edit.qty) || 0) * (Number(edit.price) || 0)) + ' đ'} disabled />
+                <input value={(() => { const v = (Number(edit.qty) || 0) * (Number(edit.price) || 0); return v ? fmt(v) + ' đ' : '' })()} placeholder="—" disabled />
               </div>
               <div className="form-row">
-                <label>Kho nhận *</label>
+                <label>Kho nhận <span className="req">*</span></label>
                 <SearchSelect value={edit.warehouse || ''} options={warehouses} disabled={!editable} placeholder="Chọn/tìm kho…" onChange={(v) => setItem(editIdx, 'warehouse', v)} />
               </div>
               <div className="form-row">

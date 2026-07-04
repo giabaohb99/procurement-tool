@@ -26,7 +26,7 @@ h2, h3 { margin: 0; }
 
 .app { display: flex; min-height: 100vh; }
 
-.sidebar { width: 222px; flex: none; background: #ffffff; border-right: 1px solid #eef1f8; padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; }
+.sidebar { width: 222px; flex: none; background: #ffffff; border-right: 1px solid #eef1f8; padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; position: sticky; top: 0; height: 100vh; align-self: flex-start; overflow-y: auto; }
 .brand { padding: 8px 8px 24px; }
 .brand-logo { background: transparent; padding: 0; display: flex; align-items: center; justify-content: center; }
 .brand-logo img { height: 32px; width: auto; display: block; }
@@ -262,3 +262,13 @@ button, select, input, .badge {
 .cell-input:focus { border-color: var(--teal); }
 .cell-input:disabled { background: #f6f8fa; color: var(--ink); }
 .items-table td { padding: 5px 6px; vertical-align: middle; }
+
+/* Dấu * trường bắt buộc — đỏ, to hơn */
+.req { color: #dc2626; font-weight: 800; font-size: 1.2em; line-height: 0; }
+
+/* Mobile / màn nhỏ: bảng danh sách cuộn NGANG thay vì bị bóp méo */
+@media (max-width: 820px) {
+  .card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .card > table { min-width: 640px; }
+  .items-scroll { -webkit-overflow-scrolling: touch; }
+}
