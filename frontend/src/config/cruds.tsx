@@ -211,7 +211,7 @@ export const cruds: Record<string, CrudConfig> = {
     ],
   },
   'purchase-requests': {
-    slug: 'purchase-requests', entity: 'purchase_request', title: 'Yêu cầu mua (PYC)', apiPath: '/api/purchase-requests', txn: true,
+    slug: 'purchase-requests', entity: 'purchase_request', title: 'Yêu cầu mua hàng (PYC)', apiPath: '/api/purchase-requests', txn: true,
     rowStyle: (r: any) => r.has_cancelled_line ? { background: '#fdecea' } : undefined,   // có dòng "Hủy đơn" → tô đỏ
     columns: [
       { key: 'code', label: 'Mã PYC' },
@@ -304,6 +304,20 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'manager_id', label: 'Trưởng bộ phận', type: 'select', source: { url: '/api/employees', value: 'id', label: 'full_name' } },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: [{value: 'true', label: 'Hoạt động'}, {value: 'false', label: 'Đã ẩn'}] },
     ]
+  },
+  'category-assignees': {
+    slug: 'category-assignees', entity: 'category_assignee', title: 'Phân công phụ trách (theo phân loại)', apiPath: '/api/category-assignees',
+    columns: [
+      { key: 'item_group_name', label: 'Phân loại' },
+      { key: 'primary_name', label: 'NSTM chính' },
+      { key: 'backup_name', label: 'NSTM dự phòng' },
+    ],
+    filters: [],
+    fields: [
+      { key: 'item_group_id', label: 'Phân loại VTBB', type: 'select', source: { url: '/api/item-groups', value: 'id', label: 'name' } },
+      { key: 'primary_employee_id', label: 'NSTM chính', type: 'select', source: { url: '/api/employees', value: 'id', label: 'full_name' } },
+      { key: 'backup_employee_id', label: 'NSTM dự phòng', type: 'select', source: { url: '/api/employees', value: 'id', label: 'full_name' } },
+    ],
   },
   'purchase-orders': {
     slug: 'purchase-orders', entity: 'purchase_order', title: 'Đơn mua hàng (PO)', apiPath: '/api/purchase-orders', txn: true,

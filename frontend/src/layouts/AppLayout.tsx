@@ -13,7 +13,7 @@ const NAV_GROUPS: NavGroup[] = [
     { to: '/reports', label: 'Báo cáo mua hàng', icon: 'ti-chart-bar', entity: 'report' },
   ] },
   { title: 'Mua hàng', items: [
-    { to: '/purchase-requests', label: 'Yêu cầu mua', icon: 'ti-file-text', entity: 'purchase_request' },
+    { to: '/purchase-requests', label: 'Yêu cầu mua hàng', icon: 'ti-file-text', entity: 'purchase_request' },
     { to: '/surveys-supplier', label: 'Khảo sát NCC', icon: 'ti-clipboard-search', entity: 'survey' },
     { to: '/surveys-product', label: 'Khảo sát SP', icon: 'ti-clipboard-check', entity: 'survey' },
     { to: '/purchase-orders', label: 'Đơn mua hàng', icon: 'ti-shopping-cart', entity: 'purchase_order' },
@@ -31,6 +31,7 @@ const NAV_GROUPS: NavGroup[] = [
     { to: '/units', label: 'Đơn vị tính', icon: 'ti-ruler-2', entity: 'unit', manage: true },
     { to: '/item-groups', label: 'Phân loại', icon: 'ti-category', entity: 'item_group', manage: true },
     { to: '/departments', label: 'Phòng ban', icon: 'ti-tag', entity: 'department', manage: true },
+    { to: '/category-assignees', label: 'Phân công phụ trách', icon: 'ti-user-cog', entity: 'category_assignee', manage: true },
   ] },
   { title: 'Hệ thống', items: [
     { to: '/companies', label: 'Công ty', icon: 'ti-building', entity: 'company', manage: true },

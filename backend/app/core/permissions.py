@@ -9,7 +9,7 @@ ENTITIES = [
     "supplier", "product", "contract",
     "purchase_request", "survey", "purchase_order", "goods_receipt",
     "inventory", "payable", "payment", "payment_request",
-    "report", "setting",
+    "report", "setting", "category_assignee",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -28,7 +28,7 @@ ENTITY_LABELS = {
     "supplier": "Nhà cung cấp",
     "product": "Sản phẩm / Hàng hóa",
     "contract": "Hợp đồng",
-    "purchase_request": "Yêu cầu mua",
+    "purchase_request": "Yêu cầu mua hàng",
     "survey": "Khảo sát",
     "purchase_order": "Đơn mua hàng",
     "goods_receipt": "Nhận hàng (GR)",
@@ -38,6 +38,7 @@ ENTITY_LABELS = {
     "payment_request": "Yêu cầu thanh toán",
     "report": "Báo cáo",
     "setting": "Cấu hình hệ thống",
+    "category_assignee": "Phân công phụ trách (theo phân loại)",
 }
 
 ACTION_LABELS = {
@@ -47,8 +48,9 @@ ACTION_LABELS = {
 
 # Phạm vi theo cấp bậc (tương đối với công ty/phòng ban của chính user)
 # "assigned" (Được giao) = của mình HOẶC được phân bổ cho mình — dùng cho nhân viên thu mua trên PYC.
-SCOPES = ["own", "assigned", "dept", "company", "all"]
+SCOPES = ["own", "assigned", "proc", "dept", "company", "all"]
 SCOPE_LABELS = {
-    "own": "Của mình", "assigned": "Được giao", "dept": "Phòng ban", "company": "Công ty", "all": "Tất cả",
+    "own": "Của mình", "assigned": "Được giao", "proc": "Thu mua (được giao + đã duyệt)",
+    "dept": "Phòng ban", "company": "Công ty", "all": "Tất cả",
 }
-SCOPE_RANK = {"own": 0, "assigned": 1, "dept": 2, "company": 3, "all": 4}
+SCOPE_RANK = {"own": 0, "assigned": 1, "proc": 1, "dept": 2, "company": 3, "all": 4}

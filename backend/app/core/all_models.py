@@ -22,3 +22,4 @@ from app.modules.notification import model as _notification  # noqa: F401
 from app.modules.report import model as _report  # noqa: F401
 from app.modules.contract import model as _contract  # noqa: F401
 from app.modules.setting import model as _setting  # noqa: F401
+from app.modules.category_assignee import model as _category_assignee  # noqa: F401

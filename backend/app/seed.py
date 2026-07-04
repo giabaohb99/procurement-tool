@@ -214,6 +214,7 @@ STD_ROLES = {
         "payable": (["read"], "all"),
         "payment_request": (["read", "approve", "print", "export"], "all"),
         "report": (["read", "export"], "all"),
+        "category_assignee": (["read", "create", "write", "delete"], "all"),
     }},
     "pur_admin": {"name": "Admin thu mua", "perms": {
         "purchase_request": (["read", "create", "write", "delete", "approve", "cancel", "print", "export"], "proc"),
@@ -232,6 +233,7 @@ STD_ROLES = {
         "department": (["read"], "all"),
         "company": (["read", "create", "write"], "all"),
         "employee": (["read"], "all"),
+        "category_assignee": (["read", "create", "write", "delete"], "all"),
     }},
 }
 

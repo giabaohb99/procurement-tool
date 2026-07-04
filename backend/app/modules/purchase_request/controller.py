@@ -206,6 +206,9 @@ def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db:
     if data.assignee_id:
         pr.assignee_id = data.assignee_id
         db.commit()
+    # Tự động phân bổ NSTM phụ trách cho từng dòng theo phân loại (Task 4)
+    from app.modules.category_assignee.service import auto_assign_by_category
+    auto_assign_by_category(db, pr)
     trigger_notification(
         db=db,
         event="pr_approved",
