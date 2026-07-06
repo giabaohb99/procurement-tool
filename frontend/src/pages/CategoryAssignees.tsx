@@ -62,7 +62,7 @@ export default function CategoryAssignees() {
 
       <div className="card">
         <table>
-          <thead><tr><th>Phân loại</th><th>NSTM chính</th><th>NSTM dự phòng</th><th style={{ width: 150, textAlign: 'center' }}>Thao tác</th></tr></thead>
+          <thead><tr><th>Phân loại</th><th>NSTM chính</th><th>NSTM dự phòng</th><th style={{ width: 100, textAlign: 'center' }}>Thao tác</th></tr></thead>
           <tbody>
             {filtered.map(r => (
               <tr key={r.id}>
@@ -70,9 +70,7 @@ export default function CategoryAssignees() {
                 <td>{r.primary_name || '—'}{r.primary_code ? <span style={{ color: '#94a3b8', fontSize: 12 }}> · {r.primary_code}</span> : ''}</td>
                 <td>{r.backup_name ? <>{r.backup_name}{r.backup_code ? <span style={{ color: '#94a3b8', fontSize: 12 }}> · {r.backup_code}</span> : ''}</> : <span style={{ color: '#94a3b8' }}>—</span>}</td>
                 <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                  {canCreate && <button className="btn ghost" style={{ height: 30, padding: '0 8px', marginRight: 6 }} title="Copy NSTM sang phân loại khác"
-                    onClick={() => navigate(`/category-assignees/new?primary=${r.primary_employee_id}&backup=${r.backup_employee_id}`)}><i className="ti ti-copy" />Copy</button>}
-                  {canDelete && <button className="btn err" style={{ height: 30, padding: '0 8px' }} onClick={() => del(r.id)}><i className="ti ti-trash" /></button>}
+                  {canDelete && <button className="btn err" style={{ height: 30, padding: '0 8px' }} onClick={() => del(r.id)}><i className="ti ti-trash" />Xóa</button>}
                 </td>
               </tr>
             ))}
