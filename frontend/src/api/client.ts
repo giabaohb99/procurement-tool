@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { toast } from '../components/toast'
 
 const baseURL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000'
 
@@ -33,6 +34,14 @@ api.interceptors.response.use(
       } catch {
         logout()
       }
+      return Promise.reject(err)
+    }
+    // Popup lỗi cho HÀNH ĐỘNG của người dùng (POST/PATCH/PUT/DELETE). GET (nạp nền) để màn tự xử lý.
+    // Caller có thể đặt config._silent = true để tự hiển thị lỗi.
+    const method = (orig?.method || 'get').toLowerCase()
+    if (method !== 'get' && !orig?._silent) {
+      const msg = err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Có lỗi xảy ra, vui lòng thử lại'
+      toast.error(msg)
     }
     return Promise.reject(err)
   },

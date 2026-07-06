@@ -46,6 +46,26 @@ def _role_scope_cond(model, entity, scope, user, profile):
                 sub = select(PurchaseRequestItem.pr_id).where(PurchaseRequestItem.assignee == profile["emp_code"])
                 conds.append(model.id.in_(sub))
             return or_(*conds)
+        if entity == "survey_request":
+            from app.modules.catalog.model import ItemGroup
+            from app.modules.category_assignee.model import CategoryAssignee
+            from app.modules.survey_request.model import SurveyRequestLine
+            conds = [model.created_by == user.id]
+            emp_id = profile.get("employee_id") or 0
+            if emp_id:
+                conds.append(model.assignee_id == emp_id)
+                # phiếu có dòng thuộc phân loại mình là NSTM chính HOẶC phụ
+                cat_sub = (select(SurveyRequestLine.survey_request_id)
+                           .join(ItemGroup, ItemGroup.name == SurveyRequestLine.item_group)
+                           .join(CategoryAssignee, CategoryAssignee.item_group_id == ItemGroup.id)
+                           .where(or_(CategoryAssignee.primary_employee_id == emp_id,
+                                      CategoryAssignee.backup_employee_id == emp_id)))
+                conds.append(model.id.in_(cat_sub))
+            if profile.get("emp_code"):
+                code_sub = (select(SurveyRequestLine.survey_request_id)
+                            .where(SurveyRequestLine.assignee == profile["emp_code"]))
+                conds.append(model.id.in_(code_sub))
+            return or_(*conds)
         scope = "own"   # entity khác chưa có phân bổ → coi như của mình
 
     if scope == "own":

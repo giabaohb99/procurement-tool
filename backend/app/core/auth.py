@@ -136,6 +136,16 @@ def get_perm_profile(db: Session, user) -> dict:
                 if p.get(a):
                     u[a] = True
 
+    # Cờ tổng hợp cho FE: "process" = là nhân sự thu mua (được xem/xử lý khảo sát, thấy NCC).
+    # = có grant survey_request read với scope proc|all (người YC own / trưởng BP dept → False).
+    is_purchaser = any(
+        g["perms"].get("survey_request", {}).get("read") and
+        g["perms"].get("survey_request", {}).get("scope") in ("proc", "all")
+        for g in grants
+    )
+    if is_purchaser:
+        perms_union.setdefault("survey_request", {a: False for a in ACTIONS})["process"] = True
+
     company_id, dept_name, emp_code, dept_id = 0, "", "", 0
     if getattr(user, "employee_id", 0):
         from app.modules.employee.model import Employee

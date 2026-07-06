@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.orm import Session
 
-from app.core.auth import get_perm_profile, require, user_has_permission
+from app.core.auth import (get_current_user, get_perm_profile, require,
+                           user_has_permission)
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
@@ -37,6 +38,9 @@ def _out(db: Session, s: SurveyRequest) -> dict:
     for x in lines:
         d = _dict(x)
         d["assignee_name"] = name_by_code.get(x.assignee, "")
+        opts = service.options_of(db, x.id)
+        d["option_count"] = len(opts)
+        d["has_chosen"] = any(o.is_chosen for o in opts)
         out_lines.append(d)
     base["lines"] = out_lines
     return base
@@ -159,3 +163,216 @@ def set_line_assignee_(sid: int, line_id: int, data: dict, db: Session = Depends
     ln.updated_by = user.id
     db.commit()
     return success(_out(db, service.get_sr(db, sid)), "Đã gán nhân sự phụ trách")
+
+
+@router.patch("/{sid}/lines/{line_id}/status")
+def set_line_status_(sid: int, line_id: int, data: dict, db: Session = Depends(get_db),
+                     user=Depends(require("survey_request", "write"))):
+    """Đổi Tình trạng dòng (is_completed). Hoạt động ở mọi trạng thái phiếu. Body: {is_completed: bool}."""
+    ln = service.get_line(db, sid, line_id)
+    ln.is_completed = bool(data.get("is_completed"))
+    ln.updated_by = user.id
+    db.commit()
+    return success(_out(db, service.get_sr(db, sid)), "Đã cập nhật tình trạng")
+
+
+# ─────────────────── Phase 5B: màn xử lý NSTM (ẩn NCC ở tầng backend) ───────────────────
+
+def _purchaser(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Chỉ NSTM/Quản lý/Admin TM (scope proc|all). Người YC/Trưởng BP → 403 (không thấy NCC)."""
+    if not user_has_permission(db, user, "survey_request", "read"):
+        raise HTTPException(403, "Không có quyền")
+    prof = get_perm_profile(db, user)
+    if not service.is_purchaser(prof):
+        raise HTTPException(403, "Chỉ nhân sự thu mua được xem/xử lý khảo sát")
+    return user, prof
+
+
+def _opt_internal(o) -> dict:
+    return _dict(o)                      # đầy đủ, gồm supplier_* (NSTM/Admin xem được)
+
+
+def _out_process(db: Session, s: SurveyRequest) -> dict:
+    from app.modules.employee.model import Employee
+    base = _dict(s)
+    lines = service.lines_of(db, s.id)
+    codes = {ln.assignee for ln in lines if ln.assignee}
+    name_by_code = {e.code: e.full_name for e in db.query(Employee).filter(Employee.code.in_(codes)).all()} if codes else {}
+    out_lines = []
+    for ln in lines:
+        d = _dict(ln)
+        d["assignee_name"] = name_by_code.get(ln.assignee, "")
+        d["options"] = [_opt_internal(o) for o in service.options_of(db, ln.id)]
+        out_lines.append(d)
+    base["lines"] = out_lines
+    return base
+
+
+@router.get("/{sid}/process")
+def process_view_(sid: int, db: Session = Depends(get_db), up=Depends(_purchaser)):
+    s = service.get_sr(db, sid)
+    return success(_out_process(db, s))
+
+
+@router.get("/{sid}/lines/{line_id}/available-survey-lines")
+def available_survey_lines_(sid: int, line_id: int, supplier_code: str = "", item_group: str = "",
+                            db: Session = Depends(get_db), up=Depends(_purchaser)):
+    ln = service.get_line(db, sid, line_id)
+    if not supplier_code:
+        return success([])
+    # Lọc theo phân loại của DÒNG (mặc định) — Nhãn không ra Thùng
+    rows = service.available_survey_lines(db, supplier_code, item_group or ln.item_group)
+    out = []
+    for r in rows:
+        d = _dict(r)
+        d["supplier_name"] = service.resolve_supplier_name(db, r.supplier_code or "")
+        out.append(d)
+    return success(out)
+
+
+@router.post("/{sid}/lines/{line_id}/options")
+def add_option_(sid: int, line_id: int, data: dict, db: Session = Depends(get_db), up=Depends(_purchaser)):
+    user, prof = up
+    s = service.get_sr(db, sid)
+    if s.status not in ("processing", "survey_done"):
+        raise HTTPException(400, "Chỉ gắn phương án khi phiếu đang xử lý hoặc đã khảo sát")
+    ln = service.get_line(db, sid, line_id)
+    if ln.is_completed:
+        raise HTTPException(400, "Dòng đã tạo yêu cầu mua hàng — không sửa phương án được")
+    if not service.can_process_line(db, ln, prof):
+        raise HTTPException(403, "Bạn không phụ trách dòng này")
+    psl_id = int(data.get("product_survey_line_id") or 0)
+    if not psl_id:
+        raise HTTPException(400, "Thiếu product_survey_line_id")
+    service.create_option(db, ln, psl_id, user.id)
+    return success(_out_process(db, s), "Đã thêm option", 201)
+
+
+@router.delete("/{sid}/lines/{line_id}/options/{oid}")
+def del_option_(sid: int, line_id: int, oid: int, db: Session = Depends(get_db), up=Depends(_purchaser)):
+    user, prof = up
+    ln = service.get_line(db, sid, line_id)
+    if ln.is_completed:
+        raise HTTPException(400, "Dòng đã tạo yêu cầu mua hàng — không xóa phương án được")
+    if not service.can_process_line(db, ln, prof):
+        raise HTTPException(403, "Bạn không phụ trách dòng này")
+    service.delete_option(db, line_id, oid)
+    return success(_out_process(db, service.get_sr(db, sid)), "Đã xóa option")
+
+
+@router.patch("/{sid}/lines/{line_id}/options/{oid}")
+def edit_option_note_(sid: int, line_id: int, oid: int, data: dict, db: Session = Depends(get_db), up=Depends(_purchaser)):
+    user, prof = up
+    ln = service.get_line(db, sid, line_id)
+    if not service.can_process_line(db, ln, prof):
+        raise HTTPException(403, "Bạn không phụ trách dòng này")
+    service.update_option_note(db, line_id, oid, data.get("nstm_note") or "", user.id)
+    return success(_out_process(db, service.get_sr(db, sid)), "Đã cập nhật ghi chú")
+
+
+@router.post("/{sid}/complete")
+def complete_(sid: int, db: Session = Depends(get_db),
+              user=Depends(require("survey_request", "delete"))):
+    """Chốt hoàn thành khảo sát (chỉ Admin TM — quyền delete). processing → survey_done."""
+    s = service.complete_sr(db, sid, user.id)
+    from app.modules.user.model import User
+    reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
+    _notify(db, reqs, f"[Khảo sát xong] Phiếu {s.code}",
+            f"Kết quả khảo sát cho phiếu {s.code} đã sẵn sàng — vào chọn phương án.",
+            f"/survey-requests/{s.id}", s.created_by or user.id)
+    return success(_out(db, s), "Đã chốt hoàn thành khảo sát")
+
+
+# ─────────────── Phase 5C: người YC xem kết quả (ẨN NCC) + chọn option ───────────────
+
+# WHITELIST field an toàn trả cho người YC (KHÔNG có supplier_*, snap_internal_code,
+# nstm_note, supplier_survey_id, product_survey_line_id → không lộ NCC).
+_OPT_PUBLIC_FIELDS = [
+    "id", "public_id", "display_label", "is_chosen",
+    "snap_product_name", "snap_spec", "snap_origin", "snap_quote_unit",
+    "snap_moq", "snap_price_by_volume", "snap_volume_range", "snap_vat",
+    "snap_delivery_time", "snap_delivery_place", "snap_shipping_cost",
+    "snap_sample_ready", "snap_lab_result",
+]
+_LINE_PUBLIC_FIELDS = [
+    "id", "item_group", "requirement_detail", "other_requirement",
+    "request_qty", "uom", "proposed_price", "is_completed", "pr_id", "pr_code",
+]
+
+
+def _opt_public(o) -> dict:
+    d = _dict(o)
+    return {k: d.get(k) for k in _OPT_PUBLIC_FIELDS}
+
+
+def _out_result(db: Session, s: SurveyRequest) -> dict:
+    base = _dict(s)
+    out_lines = []
+    for ln in service.lines_of(db, s.id):
+        d = {k: getattr(ln, k) for k in _LINE_PUBLIC_FIELDS}
+        d["request_qty"] = float(d["request_qty"] or 0)
+        d["proposed_price"] = float(d["proposed_price"] or 0)
+        d["options"] = [_opt_public(o) for o in service.options_of(db, ln.id)]
+        out_lines.append(d)
+    base["lines"] = out_lines
+    return base
+
+
+@router.get("/{sid}/result")
+def result_view_(sid: int, db: Session = Depends(get_db),
+                 user=Depends(require("survey_request", "read"))):
+    """Kết quả khảo sát cho người YC — ẩn NCC ở tầng backend (whitelist field)."""
+    s = apply_scope(db.query(SurveyRequest).filter(SurveyRequest.id == sid),
+                    SurveyRequest, "survey_request", user, get_perm_profile(db, user)).first()
+    if not s:
+        raise HTTPException(403, "Ngoài phạm vi được phép xem")
+    return success(_out_result(db, s))
+
+
+@router.patch("/{sid}/lines/{line_id}/options/{oid}/choose")
+def choose_option_(sid: int, line_id: int, oid: int, db: Session = Depends(get_db),
+                   user=Depends(require("survey_request", "write"))):
+    """Người YC chọn 1 phương án cho 1 sản phẩm (chỉ khi đã hoàn thành khảo sát)."""
+    s = service.get_sr(db, sid)
+    if not _can_edit_own(db, s, user):
+        raise HTTPException(403, "Không có quyền chọn phương án cho phiếu này")
+    if s.status != "survey_done":
+        raise HTTPException(400, "Chỉ chọn phương án khi khảo sát đã hoàn thành")
+    service.get_line(db, sid, line_id)
+    service.choose_option(db, line_id, oid, user.id)
+    return success(_out_result(db, s), "Đã chọn phương án")
+
+
+# ─────────────── Phase 5D: sinh PYC + hoàn thành ───────────────
+
+@router.post("/{sid}/create-prs")
+def create_prs_(sid: int, db: Session = Depends(get_db),
+                user=Depends(require("survey_request", "write"))):
+    """Người YC tạo Yêu cầu mua hàng từ các phương án đã chọn (gom theo NCC)."""
+    s = service.get_sr(db, sid)
+    # Chỉ NGƯỜI YÊU CẦU (người tạo phiếu) hoặc Admin TM (quyền delete) được tạo YCMH — NSTM thì không.
+    if not (s.created_by == user.id or user_has_permission(db, user, "survey_request", "delete")):
+        raise HTTPException(403, "Chỉ người yêu cầu mới được tạo Yêu cầu mua hàng")
+    prs = service.create_prs(db, sid, user.id)
+    from app.modules.notification.service import get_users_by_role_codes
+    _notify(db, get_users_by_role_codes(db, ["pur_manager", "pur_admin"]),
+            f"[YCMH mới] Từ khảo sát {s.code}",
+            f"Phiếu khảo sát {s.code} đã sinh {len(prs)} yêu cầu mua hàng: {', '.join(p.code for p in prs)}.",
+            f"/survey-requests/{s.id}", s.created_by or user.id)
+    return success({"created_prs": [{"id": p.id, "code": p.code} for p in prs], "sr": _out(db, s)},
+                   f"Đã tạo {len(prs)} phiếu yêu cầu mua hàng")
+
+
+@router.post("/{sid}/finalize")
+def finalize_(sid: int, db: Session = Depends(get_db),
+              user=Depends(require("survey_request", "approve"))):
+    """Admin/Quản lý thu mua chuyển Hoàn thành (pr_created → done)."""
+    if not service.is_purchaser(get_perm_profile(db, user)):
+        raise HTTPException(403, "Chỉ Quản lý / Admin thu mua được chuyển Hoàn thành")
+    s = service.finalize_sr(db, sid, user.id)
+    from app.modules.user.model import User
+    reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
+    _notify(db, reqs, f"[Hoàn thành] Phiếu khảo sát {s.code}",
+            f"Phiếu {s.code} đã được chuyển sang Hoàn thành.",
+            f"/survey-requests/{s.id}", s.created_by or user.id)
+    return success(_out(db, s), "Đã chuyển Hoàn thành")

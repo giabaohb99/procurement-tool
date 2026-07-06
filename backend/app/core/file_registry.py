@@ -12,6 +12,8 @@ FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
     "purchase_request_quote": ("purchase_request", _DOC, 20),
     "survey":                 ("survey", {"pdf", "jpg", "jpeg", "png", "xlsx", "xls"}, 20),
     "survey_line":            ("survey", {"pdf", "jpg", "jpeg", "png", "xlsx", "xls"}, 20),
+    "survey_request":         ("survey_request", _DOC, 20),
+    "survey_request_line":    ("survey_request", {"pdf", "jpg", "jpeg", "png", "webp"}, 20),
     "purchase_order":         ("purchase_order", _DOC, 20),
     "delivery":               ("purchase_order", _DOC, 20),
     "contract":               ("contract", {"pdf", "jpg", "jpeg", "png", "docx", "doc"}, 30),

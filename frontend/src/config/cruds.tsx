@@ -54,6 +54,8 @@ export const PR_STATUS: Record<string, { label: string; cls: string }> = {
   rejected: { label: 'Từ chối', cls: 'err' },
   processing: { label: 'Đang xử lý', cls: 'warn' },
   survey_done: { label: 'Đã khảo sát', cls: 'ok' },
+  pr_created: { label: 'Đã tạo YCMH', cls: 'warn' },
+  done: { label: 'Hoàn thành', cls: 'ok' },
   completed: { label: 'Hoàn thành', cls: 'ok' },
   cancelled: { label: 'Đã hủy', cls: 'err' },
 }
@@ -253,7 +255,8 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'processing', label: 'Đang xử lý' },
-        { value: 'survey_done', label: 'Đã khảo sát' }, { value: 'rejected', label: 'Từ chối' }] },
+        { value: 'survey_done', label: 'Đã khảo sát' }, { value: 'pr_created', label: 'Đã tạo YCMH' },
+        { value: 'done', label: 'Hoàn thành' }, { value: 'rejected', label: 'Từ chối' }] },
     ],
     fields: [],
   },

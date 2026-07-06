@@ -7,7 +7,6 @@ import ProductPicker from '../components/ProductPicker'
 import SearchSelect from '../components/SearchSelect'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
-const GROUPS = ['Bao bì', 'Nguyên liệu', 'In ấn', 'Chai lọ', 'Hóa chất']
 const VAT_OPTS = ['0', '2', '4', '6', '8', '10']
 const APPROVE_OPTS = ['Chờ duyệt', 'Đã duyệt', 'Không duyệt', 'Thiếu thông tin']
 const APPROVE_COLOR: Record<string, string> = { 'Chờ duyệt': '#d97706', 'Đã duyệt': '#16a34a', 'Không duyệt': '#b91c1c', 'Thiếu thông tin': '#ea580c' }
@@ -200,6 +199,7 @@ export default function SurveyDetail() {
   })
   const [suppliers, setSuppliers] = useState<any[]>([])
   const [units, setUnits] = useState<string[]>([])
+  const [groups, setGroups] = useState<string[]>([])
   const [prList, setPrList] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [files, setFiles] = useState<any[]>([])
@@ -221,6 +221,7 @@ export default function SurveyDetail() {
   useEffect(() => {
     api.get('/api/suppliers', { params: { page_size: 1000 } }).then((r) => setSuppliers(r.data.data.items))
     api.get('/api/units', { params: { page_size: 200 } }).then((r) => setUnits(r.data.data.items.map((x: any) => x.name)))
+    api.get('/api/item-groups', { params: { page_size: 1000 } }).then((r) => setGroups(r.data.data.items.map((x: any) => x.name))).catch(() => {})
     api.get('/api/purchase-requests', { params: { page_size: 1000 } }).then((r) => setPrList(r.data.data.items))
   }, [])
 
@@ -539,7 +540,7 @@ export default function SurveyDetail() {
         </div>
 
         <div className="items-scroll">
-          <table className="items-table">
+          <table className="items-table" style={{ width: tbl === 'supplier' ? 1350 : 1400, tableLayout: 'fixed' }}>
             <thead>
               <tr>
                 {editable && <th style={{ width: 36, textAlign: 'center' }}><input type="checkbox" checked={lines.length > 0 && selIdxs.length === lines.length} onChange={toggleSelectAll} /></th>}
@@ -654,7 +655,7 @@ export default function SurveyDetail() {
               <div className="form-row"><label>Ngày dự kiến trả KQ</label><input type="date" value={sv.result_due_date || ''} disabled={!editable} onChange={(e) => setH('result_due_date', e.target.value)} /></div>
               <div className="form-row">
                 <label>Phân loại</label>
-                <SearchSelect value={sv.item_group} options={GROUPS} disabled={!editable} placeholder="Chọn/tìm phân loại…" onChange={(v) => setH('item_group', v)} />
+                <SearchSelect value={sv.item_group} options={groups} disabled={!editable} placeholder="Chọn/tìm phân loại…" onChange={(v) => setH('item_group', v)} />
               </div>
               <div className="form-row"><label>NSPT phụ trách (người tạo)</label><input value={sv.nspt || ''} disabled placeholder="Tự động theo người tạo" /></div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>

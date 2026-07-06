@@ -100,6 +100,270 @@ def set_status(db: Session, sid: int, status: str, user_id: int, reason: str = "
     return s
 
 
+# ───────────────────────── Phase 5B: xử lý khảo sát (NSTM) ─────────────────────────
+
+def get_line(db: Session, sid: int, line_id: int) -> SurveyRequestLine:
+    ln = (db.query(SurveyRequestLine)
+          .filter(SurveyRequestLine.id == line_id, SurveyRequestLine.survey_request_id == sid).first())
+    if not ln:
+        raise HTTPException(404, "Không tìm thấy dòng khảo sát")
+    return ln
+
+
+def resolve_supplier_name(db: Session, code: str) -> str:
+    if not code:
+        return ""
+    from app.modules.supplier.model import Supplier
+    sup = db.query(Supplier).filter(Supplier.code == code).first()
+    return sup.name if sup else code
+
+
+def is_purchaser(profile: dict) -> bool:
+    """NSTM/Quản lý/Admin TM = có grant survey_request read với scope proc|all.
+    Người YC (own) & trưởng BP (dept) KHÔNG phải purchaser → không xem được màn xử lý (ẩn NCC)."""
+    for g in profile.get("grants", []):
+        p = g["perms"].get("survey_request")
+        if p and p.get("read") and p.get("scope") in ("proc", "all"):
+            return True
+    return False
+
+
+def _has_scope_all(profile: dict) -> bool:
+    for g in profile.get("grants", []):
+        p = g["perms"].get("survey_request")
+        if p and p.get("read") and p.get("scope") == "all":
+            return True
+    return False
+
+
+def can_process_line(db: Session, line: SurveyRequestLine, profile: dict) -> bool:
+    """Ai được gắn/xóa option cho 1 dòng:
+       - Quản lý/Admin TM (scope=all): mọi dòng.
+       - NSTM (scope=proc): là NSTM chính HOẶC phụ của phân loại dòng, hoặc dòng đã gán mã mình."""
+    if _has_scope_all(profile):
+        return True
+    emp_id = profile.get("employee_id") or 0
+    emp_code = profile.get("emp_code") or ""
+    if emp_code and line.assignee == emp_code:
+        return True
+    if not emp_id:
+        return False
+    from app.modules.catalog.model import ItemGroup
+    from app.modules.category_assignee.model import CategoryAssignee
+    row = (db.query(CategoryAssignee)
+           .join(ItemGroup, ItemGroup.id == CategoryAssignee.item_group_id)
+           .filter(ItemGroup.name == line.item_group).first())
+    return bool(row and emp_id in (row.primary_employee_id, row.backup_employee_id))
+
+
+def available_survey_lines(db: Session, supplier_code: str, item_group: str = ""):
+    """Dòng khảo sát SẢN PHẨM đã DUYỆT của 1 NCC (nguồn để tạo option).
+    Lọc thêm theo PHÂN LOẠI = item_group của Survey cha (SurveyProductLine không có cột phân loại)."""
+    from app.modules.survey.model import Survey, SurveyProductLine
+    q = (db.query(SurveyProductLine)
+         .join(Survey, Survey.id == SurveyProductLine.survey_id)
+         .filter(SurveyProductLine.supplier_code == supplier_code,
+                 SurveyProductLine.line_approve == "Đã duyệt",
+                 Survey.status == "approved"))
+    if item_group:
+        q = q.filter(Survey.item_group == item_group)
+    return q.order_by(SurveyProductLine.id.desc()).all()
+
+
+def create_option(db: Session, line: SurveyRequestLine, psl_id: int, user_id: int) -> SurveyRequestOption:
+    """Gắn 1 dòng khảo sát SP đã duyệt vào dòng yêu cầu → tạo option (snapshot + ẩn danh public_id)."""
+    from app.modules.survey.model import Survey, SurveyProductLine
+    psl = db.get(SurveyProductLine, psl_id)
+    if not psl:
+        raise HTTPException(404, "Không tìm thấy dòng khảo sát sản phẩm")
+    if psl.line_approve != "Đã duyệt":
+        raise HTTPException(400, "Dòng khảo sát chưa được duyệt")
+    if any(o.product_survey_line_id == psl_id for o in options_of(db, line.id)):
+        raise HTTPException(400, "Dòng khảo sát này đã được gắn làm option")
+    survey = db.get(Survey, psl.survey_id)
+    public_id = len(options_of(db, line.id)) + 1
+    o = SurveyRequestOption(
+        survey_request_line_id=line.id,
+        product_survey_line_id=psl.id,
+        public_id=public_id,
+        display_label=f"Option {public_id}",
+        created_by=user_id, updated_by=user_id,
+        # snapshot (hiện được với người YC)
+        snap_product_name=psl.product_name or "",
+        snap_spec=psl.spec or "",
+        snap_origin=psl.origin or "",
+        snap_quote_unit=psl.quote_unit or "",
+        snap_moq=psl.moq or 0,
+        snap_price_by_volume=psl.price_by_volume or 0,
+        snap_volume_range=psl.volume_range or "",
+        snap_vat=psl.vat or 0,
+        snap_delivery_time=psl.delivery_time or "",
+        snap_delivery_place=psl.delivery_place or "",
+        snap_shipping_cost=psl.shipping_cost or 0,
+        snap_sample_ready=bool(psl.sample_ready),
+        snap_lab_result=psl.lab_result or "",
+        # nội bộ NSTM (backend LỌC khỏi view người YC)
+        snap_internal_code=psl.internal_code or "",
+        supplier_code=psl.supplier_code or "",
+        supplier_name=resolve_supplier_name(db, psl.supplier_code or ""),
+        supplier_survey_id=psl.survey_id or 0,
+        nstm_note=psl.nspt_reason or "",
+    )
+    db.add(o)
+    db.commit()
+    db.refresh(o)
+    o.display_label = f"Option {public_id} — ID {o.id}"
+    db.commit()
+    return o
+
+
+def delete_option(db: Session, line_id: int, oid: int):
+    o = (db.query(SurveyRequestOption)
+         .filter(SurveyRequestOption.id == oid, SurveyRequestOption.survey_request_line_id == line_id).first())
+    if not o:
+        raise HTTPException(404, "Không tìm thấy option")
+    db.delete(o)
+    db.commit()
+
+
+def update_option_note(db: Session, line_id: int, oid: int, note: str, user_id: int) -> SurveyRequestOption:
+    o = (db.query(SurveyRequestOption)
+         .filter(SurveyRequestOption.id == oid, SurveyRequestOption.survey_request_line_id == line_id).first())
+    if not o:
+        raise HTTPException(404, "Không tìm thấy option")
+    o.nstm_note = note or ""
+    o.updated_by = user_id
+    db.commit()
+    db.refresh(o)
+    return o
+
+
+def choose_option(db: Session, line_id: int, oid: int, user_id: int) -> SurveyRequestOption:
+    """Người YC chọn 1 option cho 1 dòng (bỏ chọn các option khác cùng dòng)."""
+    target = (db.query(SurveyRequestOption)
+              .filter(SurveyRequestOption.id == oid,
+                      SurveyRequestOption.survey_request_line_id == line_id).first())
+    if not target:
+        raise HTTPException(404, "Không tìm thấy option")
+    for o in options_of(db, line_id):
+        o.is_chosen = (o.id == oid)
+        if o.id == oid:
+            o.chosen_by = user_id
+            o.updated_by = user_id
+    db.commit()
+    db.refresh(target)
+    return target
+
+
+# ───────────────────────── Phase 5D: sinh PYC từ option đã chọn ─────────────────────────
+
+def _gen_pr_code(db: Session, request_date: str = "") -> str:
+    from app.modules.purchase_request.model import PurchaseRequest
+    date_str = ""
+    if request_date and len(request_date) >= 10 and "-" in request_date:
+        p = request_date.split("-")
+        if len(p) == 3:
+            date_str = f"{p[2]}{p[1]}{p[0][-2:]}"
+    if not date_str:
+        date_str = datetime.now().strftime("%d%m%y")
+    prefix = f"PYC{date_str}"
+    last = (db.query(PurchaseRequest).filter(PurchaseRequest.code.like(f"{prefix}%"))
+            .order_by(PurchaseRequest.code.desc()).first())
+    seq = 1
+    if last and last.code.startswith(prefix):
+        try:
+            seq = int(last.code[len(prefix):]) + 1
+        except ValueError:
+            seq = 1
+    return f"{prefix}{seq:02d}"
+
+
+def create_prs(db: Session, sid: int, user_id: int):
+    """Gom option đã chọn theo NCC → mỗi NCC 1 PYC nháp (giá từ snapshot khảo sát).
+    Cập nhật dòng: pr_id/pr_code/is_completed; phiếu KS → 'pr_created'."""
+    from app.modules.purchase_request.model import (PurchaseRequest,
+                                                    PurchaseRequestItem)
+    from app.modules.purchase_request.service import find_dept_head
+    from app.modules.supplier.model import Supplier
+    s = get_sr(db, sid)
+    if s.status != "survey_done":
+        raise HTTPException(400, "Chỉ tạo YCMH khi phiếu đã khảo sát xong")
+
+    groups: dict[str, list] = {}
+    for ln in lines_of(db, sid):
+        if ln.is_completed:
+            continue
+        chosen = [o for o in options_of(db, ln.id) if o.is_chosen]
+        if not chosen:
+            raise HTTPException(400, f"Sản phẩm '{ln.item_group or ln.id}' chưa chọn phương án")
+        groups.setdefault(chosen[0].supplier_code or "", []).append((ln, chosen[0]))
+    if not groups:
+        raise HTTPException(400, "Không có phương án nào để tạo YCMH")
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    created = []
+    for sup_code, items in groups.items():
+        sup = db.query(Supplier).filter(Supplier.code == sup_code).first() if sup_code else None
+        first_opt = items[0][1]
+        pr = PurchaseRequest(
+            code=_gen_pr_code(db, today), company_id=s.company_id, requester=s.requester,
+            requester_position=s.requester_position, department=s.department,
+            head_of_dept=s.head_of_dept or find_dept_head(db, s.department or ""),
+            purpose=s.purpose, request_date=today, status="draft",
+            note=f"Sinh tự động từ Yêu cầu khảo sát {s.code}",
+            suggested_supplier=first_opt.supplier_name or "",
+            suggested_supplier_tax_code=(sup.tax_code if sup else ""),
+            suggested_supplier_contact=(sup.contact_person if sup else ""),
+            created_by=user_id, updated_by=user_id,
+        )
+        db.add(pr)
+        db.commit()
+        db.refresh(pr)
+        for ln, opt in items:
+            qty = float(ln.request_qty or 0)
+            price = float(opt.snap_price_by_volume or 0)
+            db.add(PurchaseRequestItem(
+                pr_id=pr.id, product_name=opt.snap_product_name or ln.requirement_detail or "Sản phẩm",
+                item_group=ln.item_group or "", qty=qty, unit=opt.snap_quote_unit or ln.uom or "",
+                price=price, amount=qty * price, note=f"Từ {opt.display_label}",
+                line_status="Chưa đặt hàng", created_by=user_id, updated_by=user_id,
+            ))
+            ln.pr_id = pr.id
+            ln.pr_code = pr.code
+            ln.is_completed = True
+            ln.updated_by = user_id
+        db.commit()
+        created.append(pr)
+
+    s.status = "pr_created"
+    s.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, sid, "pr_created")
+    return created
+
+
+def finalize_sr(db: Session, sid: int, user_id: int) -> SurveyRequest:
+    """Admin/QL chuyển Hoàn thành (dừng hẳn). pr_created → done."""
+    s = get_sr(db, sid)
+    if s.status != "pr_created":
+        raise HTTPException(400, "Chỉ hoàn thành phiếu đã tạo Yêu cầu mua hàng")
+    return set_status(db, sid, "done", user_id)
+
+
+def complete_sr(db: Session, sid: int, user_id: int) -> SurveyRequest:
+    """AdminTM chốt hoàn thành: mỗi dòng phải có ≥1 option → survey_done."""
+    s = get_sr(db, sid)
+    if s.status != "processing":
+        raise HTTPException(400, "Chỉ chốt được phiếu đang xử lý")
+    lns = lines_of(db, sid)
+    if not lns:
+        raise HTTPException(400, "Phiếu không có dòng nào")
+    missing = [ln.internal_line_code or str(ln.id) for ln in lns if not options_of(db, ln.id)]
+    if missing:
+        raise HTTPException(400, f"Còn {len(missing)} dòng chưa có option — không thể chốt")
+    return set_status(db, sid, "survey_done", user_id)
+
+
 def auto_assign(db: Session, s: SurveyRequest) -> int:
     """Sau khi trưởng phòng duyệt: tự gán NSTM cho từng dòng theo phân loại (tái dùng Task 4).
     Header.assignee_id = NSTM của dòng đầu tiên có phân loại được cấu hình."""

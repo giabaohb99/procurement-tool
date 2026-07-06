@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth/AuthContext'
+import { ToastHost } from './components/toast'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
@@ -27,6 +28,7 @@ import UserPermissionDetail from './pages/UserPermissionDetail'
 import PrintPaymentRequest from './pages/PrintPaymentRequest'
 import Settings from './pages/Settings'
 import SurveyRequestDetail from './pages/SurveyRequestDetail'
+import SurveyRequestProcess from './pages/SurveyRequestProcess'
 
 function Protected({ children }: { children: JSX.Element }) {
   const { user } = useAuth()
@@ -49,6 +51,7 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="purchase-requests/:id" element={<PurchaseRequestDetail />} />
             <Route path="survey-requests/:id" element={<SurveyRequestDetail />} />
+            <Route path="survey-requests/:id/process" element={<SurveyRequestProcess />} />
             <Route path="surveys/:id" element={<SurveyDetail />} />
             {/* Link cũ trong thông báo vẫn mở được (cùng phiếu, load theo id) */}
             <Route path="surveys-supplier/:id" element={<SurveyDetail />} />
@@ -71,6 +74,7 @@ export default function App() {
           </Route>
         </Routes>
       </BrowserRouter>
+      <ToastHost />
     </AuthProvider>
   )
 }

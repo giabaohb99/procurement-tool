@@ -5,11 +5,40 @@ import { useAuth } from '../auth/AuthContext'
 import { prBadge } from '../config/cruds'
 import Select from 'react-select'
 import SearchSelect from '../components/SearchSelect'
+import { toast } from '../components/toast'
 
 const API = '/api/survey-requests'
 
 // Hiển thị số: để TRỐNG nếu chưa nhập (0/rỗng)
 const fmtBlank = (n: any) => { const v = Number(n || 0); return v ? v.toLocaleString('vi-VN') : '' }
+
+// Parse chuỗi số kiểu VN (bỏ dấu chấm ngăn nghìn, dấu phẩy = thập phân)
+const parseVN = (s: string) => {
+  const c = String(s).replace(/\./g, '').replace(/\s/g, '').replace(',', '.').replace(/[^\d.]/g, '')
+  return c === '' ? 0 : Number(c)
+}
+// Ô nhập số: hiển thị 3.000 khi không focus, cho gõ tự do khi focus
+function NumberInput({ value, onChange, disabled, placeholder }: any) {
+  const [foc, setFoc] = useState(false)
+  const [raw, setRaw] = useState('')
+  const shown = foc ? raw : (Number(value) ? Number(value).toLocaleString('vi-VN') : '')
+  return (
+    <input type="text" inputMode="decimal" disabled={disabled} placeholder={placeholder} value={shown}
+      onFocus={() => { setRaw(value ? String(value).replace('.', ',') : ''); setFoc(true) }}
+      onBlur={() => setFoc(false)}
+      onChange={(e) => { setRaw(e.target.value); onChange(parseVN(e.target.value)) }} />
+  )
+}
+
+// Cặp nhãn:giá trị nhỏ gọn cho thẻ option
+function Field({ label, value, strong }: any) {
+  return (
+    <div>
+      <span style={{ color: 'var(--muted)' }}>{label}: </span>
+      <span style={{ fontWeight: strong ? 700 : 400 }}>{(value ?? '') === '' ? '—' : value}</span>
+    </div>
+  )
+}
 
 const SR_STATUS: Record<string, { label: string; cls: string }> = {
   draft:       { label: 'Nháp',         cls: 'gray' },
@@ -18,6 +47,8 @@ const SR_STATUS: Record<string, { label: string; cls: string }> = {
   rejected:    { label: 'Từ chối',      cls: 'err'  },
   processing:  { label: 'Đang xử lý',   cls: 'warn' },
   survey_done: { label: 'Đã khảo sát',  cls: 'ok'   },
+  pr_created:  { label: 'Đã tạo YCMH',  cls: 'warn' },
+  done:        { label: 'Hoàn thành',   cls: 'ok'   },
 }
 
 const srBadge = (st: string) => {
@@ -25,10 +56,17 @@ const srBadge = (st: string) => {
   return <span className={'badge ' + s.cls}>{s.label}</span>
 }
 
+// Tình trạng DÒNG — tự suy theo tiến trình (không chỉnh tay)
+const srLineStatus = (l: any): { label: string; cls: string } => {
+  if (l.is_completed) return { label: 'Hoàn thành', cls: 'ok' }
+  if (l.has_chosen)   return { label: 'Đã chọn PA', cls: 'ok' }
+  if ((l.option_count || 0) > 0) return { label: 'Đã khảo sát', cls: 'warn' }
+  return { label: 'Chưa xong', cls: 'gray' }
+}
+
 const emptyLine = {
   received_date: '',
   result_due_date: '',
-  department_requester: '',
   item_group: '',
   requirement_detail: '',
   other_requirement: '',
@@ -77,6 +115,12 @@ export default function SurveyRequestDetail() {
   }
   useEffect(() => { if (!isNew) loadAll() }, [id])
 
+  // Nạp hình đính kèm khi mở popup chi tiết dòng
+  useEffect(() => {
+    const ln = editIdx != null ? (sv.lines || [])[editIdx] : null
+    if (ln && ln.id) loadLineFiles(ln.id); else setLineFiles([])
+  }, [editIdx])
+
   // --- auto-fill người yêu cầu từ user đăng nhập (chỉ khi tạo mới) ---
   useEffect(() => {
     if (!isNew || !user || sv.requester) return
@@ -117,6 +161,70 @@ export default function SurveyRequestDetail() {
   async function assignPurchaser(lineId: number, code: string) {
     try { await api.patch(`${API}/${id}/lines/${lineId}/assignee`, { assignee: code }); await loadAll() }
     catch (e: any) { setErr(e.response?.data?.message || 'Lỗi gán nhân sự') }
+  }
+
+  // --- Phase 5C/5D: kết quả khảo sát (ẩn NCC) + sinh PYC ---
+  const [result, setResult] = useState<any>(null)
+  useEffect(() => {
+    if (!isNew && ['survey_done', 'pr_created', 'done'].includes(sv.status)) {
+      api.get(`${API}/${id}/result`).then((r) => setResult(r.data.data)).catch(() => setResult(null))
+    }
+  }, [sv.status])
+  async function chooseOption(lineId: number, oid: number) {
+    try {
+      await api.patch(`${API}/${id}/lines/${lineId}/options/${oid}/choose`)
+      await loadAll()                                     // refresh badge bảng + trạng thái phiếu
+      const r = await api.get(`${API}/${id}/result`)      // refresh thẻ Kết quả (đánh dấu đã chọn)
+      setResult(r.data.data)
+      toast.success('Đã chọn phương án')
+    } catch { /* lỗi đã hiện popup từ interceptor */ }
+  }
+  // 5D: người YC sinh Yêu cầu mua hàng từ phương án đã chọn
+  async function createPrs() {
+    if (!confirm('Tạo Yêu cầu mua hàng từ các phương án đã chọn?')) return
+    try {
+      const r = await api.post(`${API}/${id}/create-prs`)
+      const codes = (r.data.data.created_prs || []).map((p: any) => p.code).join(', ')
+      toast.success(`Đã tạo ${(r.data.data.created_prs || []).length} phiếu yêu cầu mua: ${codes}`)
+      await loadAll()
+      const rr = await api.get(`${API}/${id}/result`); setResult(rr.data.data)
+    } catch { /* interceptor toast */ }
+  }
+  // 5D: Admin/QL chốt Hoàn thành
+  async function finalizeSr() {
+    if (!confirm('Chuyển phiếu sang Hoàn thành? Sau đó không chỉnh sửa được nữa.')) return
+    try { await api.post(`${API}/${id}/finalize`); toast.success('Đã chuyển Hoàn thành'); await loadAll() }
+    catch { /* interceptor toast */ }
+  }
+  // PYC đã sinh (duy nhất theo pr_id) để hiện link
+  const createdPrs = (() => {
+    const seen = new Map<number, string>()
+    for (const l of (result?.lines || [])) if (l.pr_id) seen.set(l.pr_id, l.pr_code)
+    return Array.from(seen, ([pid, code]) => ({ pid, code }))
+  })()
+  const allChosen = (result?.lines || []).length > 0 && (result?.lines || []).every((l: any) => (l.options || []).some((o: any) => o.is_chosen))
+  const canFinalize = can('survey_request', 'process') && can('survey_request', 'approve')
+  // Chỉ NGƯỜI YÊU CẦU (người tạo) hoặc Admin TM (delete) được tạo YCMH
+  const canCreatePr = String((sv as any).created_by) === String(user?.id) || can('survey_request', 'delete')
+
+  // --- Đính kèm hình/tài liệu theo dòng ---
+  const [lineFiles, setLineFiles] = useState<any[]>([])
+  async function loadLineFiles(lineId: number) {
+    try {
+      const r = await api.get('/api/attachments', { params: { entity: 'survey_request_line', entity_id: lineId } })
+      setLineFiles(r.data.data || [])
+    } catch { setLineFiles([]) }
+  }
+  async function uploadLineFiles(fl: FileList | null, lineId: number) {
+    if (!fl || !fl.length || !lineId) return
+    const fd = new FormData(); fd.append('entity', 'survey_request_line'); fd.append('entity_id', String(lineId))
+    Array.from(fl).forEach((f) => fd.append('files', f))
+    try { await api.post('/api/attachments', fd); await loadLineFiles(lineId) }
+    catch (e: any) { setErr(e?.response?.data?.error?.message || e?.response?.data?.message || 'Lỗi tải file') }
+  }
+  async function delLineFile(fid: number, lineId: number) {
+    if (!confirm('Xóa hình/tài liệu này?')) return
+    try { await api.delete(`/api/attachments/${fid}`); await loadLineFiles(lineId) } catch {}
   }
 
   const setH = (k: string, v: any) => setSv((s: any) => ({ ...s, [k]: v }))
@@ -222,7 +330,7 @@ export default function SurveyRequestDetail() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
         <button className="btn ghost" onClick={() => navigate('/survey-requests')}><i className="ti ti-arrow-left" /></button>
         <h2 className="page-title" style={{ margin: 0 }}>
-          {isNew ? 'Tạo Phiếu Yêu cầu Khảo sát mới' : (sv.purpose || sv.code || 'Phiếu Yêu cầu Khảo sát')}
+          {isNew ? 'Tạo Phiếu Yêu cầu Khảo sát mới' : (sv.code || 'Phiếu Yêu cầu Khảo sát')}
         </h2>
         {!isNew && srBadge(sv.status)}
         <span style={{ flex: 1 }} />
@@ -244,6 +352,31 @@ export default function SurveyRequestDetail() {
               <i className="ti ti-x" />Trả lại
             </button>
           </>
+        )}
+
+        {/* Nút Xử lý khảo sát — chỉ nhân sự thu mua thấy.
+            Cờ 'process' được backend bơm vào perms (= survey_request read scope proc|all),
+            nên NSTM/Quản lý/Admin TM đều thấy; người YC (own) & trưởng BP (dept) thì không. */}
+        {!isNew && (sv.status === 'processing' || sv.status === 'survey_done') &&
+          can('survey_request', 'process') && (
+          <button className="btn" onClick={() => navigate(`/survey-requests/${id}/process`)}>
+            <i className="ti ti-clipboard-list" />Xử lý khảo sát
+          </button>
+        )}
+
+        {/* Nút Tạo yêu cầu mua (người YC) — góc phải như Xử lý khảo sát */}
+        {!isNew && sv.status === 'survey_done' && canCreatePr && (
+          <button className="btn" disabled={!allChosen}
+            title={allChosen ? '' : 'Chọn phương án cho tất cả sản phẩm trước'} onClick={createPrs}>
+            <i className="ti ti-file-plus" />Tạo yêu cầu mua
+          </button>
+        )}
+
+        {/* Nút Chuyển Hoàn thành (Quản lý/Admin TM) */}
+        {!isNew && sv.status === 'pr_created' && canFinalize && (
+          <button className="btn" onClick={finalizeSr}>
+            <i className="ti ti-flag-check" />Chuyển Hoàn thành
+          </button>
         )}
 
         {/* Nút Xóa */}
@@ -380,19 +513,19 @@ export default function SurveyRequestDetail() {
             </div>
 
             <div className="items-scroll">
-              <table className="items-table" style={{ minWidth: 860, tableLayout: 'fixed' }}>
+              <table className="items-table" style={{ width: '100%', minWidth: 1100, tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
                     <th style={{ width: 34, textAlign: 'center' }}>No.</th>
-                    <th style={{ width: 110, textAlign: 'left' }}>Ngày tiếp nhận</th>
-                    <th style={{ width: 110, textAlign: 'left' }}>Ngày YC trả KQ</th>
-                    <th style={{ width: 130, textAlign: 'left' }}>BP/Người YC</th>
-                    <th style={{ width: 140, textAlign: 'left' }}>Phân loại</th>
-                    <th style={{ width: 200, textAlign: 'left' }}>Chi tiết thông số</th>
+                    <th style={{ width: 100, textAlign: 'left' }}>Ngày tiếp nhận</th>
+                    <th style={{ width: 100, textAlign: 'left' }}>Ngày YC trả KQ</th>
+                    <th style={{ width: 150, textAlign: 'left' }}>Phân loại</th>
+                    <th style={{ width: 210, textAlign: 'left' }}>Chi tiết thông số</th>
                     <th style={{ width: 70, textAlign: 'right' }}>SL dự kiến</th>
                     <th style={{ width: 80, textAlign: 'left' }}>ĐVT</th>
                     <th style={{ width: 100, textAlign: 'right' }}>Giá đề xuất</th>
                     <th style={{ width: 150, textAlign: 'left' }}>Nhân sự phụ trách</th>
+                    <th style={{ width: 120, textAlign: 'center' }}>Tình trạng</th>
                     <th style={{ width: 80, textAlign: 'center' }}>Thao tác</th>
                   </tr>
                 </thead>
@@ -400,30 +533,8 @@ export default function SurveyRequestDetail() {
                   {lines.map((l: any, i: number) => (
                     <tr key={i}>
                       <td style={{ textAlign: 'center' }}>{i + 1}</td>
-                      <td>
-                        {editable ? (
-                          <input type="date" className="cell-input" value={l.received_date || ''}
-                            onChange={(e) => setLine(i, 'received_date', e.target.value)} style={{ width: '100%' }} />
-                        ) : <span>{l.received_date || '—'}</span>}
-                      </td>
-                      <td>
-                        {editable ? (
-                          <input type="date" className="cell-input" value={l.result_due_date || ''}
-                            onChange={(e) => setLine(i, 'result_due_date', e.target.value)} style={{ width: '100%' }} />
-                        ) : <span>{l.result_due_date || '—'}</span>}
-                      </td>
-                      <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                          title={l.department_requester}>
-                        {editable ? (
-                          <SearchSelect
-                            value={l.department_requester || ''}
-                            options={deptOptions}
-                            variant="table"
-                            placeholder="—"
-                            onChange={(v) => setLine(i, 'department_requester', v)}
-                          />
-                        ) : <span>{l.department_requester || '—'}</span>}
-                      </td>
+                      <td><span style={{ color: l.received_date ? 'inherit' : '#bbb' }}>{l.received_date ? new Date(l.received_date).toLocaleDateString('vi-VN') : '—'}</span></td>
+                      <td><span style={{ color: l.result_due_date ? 'inherit' : '#bbb' }}>{l.result_due_date ? new Date(l.result_due_date).toLocaleDateString('vi-VN') : '—'}</span></td>
                       <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                           title={l.item_group}>
                         {editable ? (
@@ -448,6 +559,9 @@ export default function SurveyRequestDetail() {
                           <SearchSelect value={l.assignee || ''} options={purchaserOptions} variant="table" placeholder="— Gán —"
                             onChange={(v) => assignPurchaser(l.id, v)} />
                         ) : <span>{l.assignee_name || empName(l.assignee) || <span style={{ color: '#bbb' }}>—</span>}</span>}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        {(() => { const s = srLineStatus(l); return <span className={'badge ' + s.cls}>{s.label}</span> })()}
                       </td>
                       <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                         <button className="icon-btn" title="Chi tiết" onClick={() => setEditIdx(i)}>
@@ -477,6 +591,97 @@ export default function SurveyRequestDetail() {
               </table>
             </div>
           </div>
+
+          {/* Phase 5C/5D: Kết quả khảo sát (ẩn NCC) — khi đã khảo sát / đã tạo YCMH / hoàn thành */}
+          {!isNew && ['survey_done', 'pr_created', 'done'].includes(sv.status) && result && (
+            <div className="card" style={{ padding: 18, marginBottom: 16 }}>
+              <h3 className="sec-title"><i className="ti ti-clipboard-check" /> Kết quả khảo sát {sv.status === 'survey_done' ? '— chọn phương án' : ''}</h3>
+
+              {/* Banner PYC đã sinh */}
+              {createdPrs.length > 0 && (
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: 12, marginBottom: 14, fontSize: 13 }}>
+                  <b style={{ color: '#15803d' }}><i className="ti ti-circle-check" /> Đã tạo {createdPrs.length} phiếu yêu cầu mua hàng: </b>
+                  {createdPrs.map((p, i) => (
+                    <span key={p.pid}>
+                      {i > 0 && ', '}
+                      <a className="clickable" style={{ color: 'var(--teal)', fontWeight: 600 }} onClick={() => navigate(`/purchase-requests/${p.pid}`)}>{p.code}</a>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {sv.status === 'survey_done' && (
+                <p style={{ color: 'var(--muted)', fontSize: 12.5, marginTop: -6, marginBottom: 14 }}>
+                  Với mỗi sản phẩm, nhấn chọn 1 phương án phù hợp nhất. (Thông tin nhà cung cấp được ẩn theo chính sách.)
+                </p>
+              )}
+              {(result.lines || []).map((ln: any, li: number) => (
+                <div key={ln.id} style={{ marginBottom: 22 }}>
+                  <div style={{ fontWeight: 700, marginBottom: 3 }}>
+                    Sản phẩm {li + 1}: {ln.requirement_detail || ln.item_group || '—'}
+                  </div>
+                  <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 10 }}>
+                    Phân loại: <b>{ln.item_group || '—'}</b> · SL dự kiến: <b>{fmtBlank(ln.request_qty) || '—'}</b> {ln.uom} · Giá đề xuất của bạn: <b>{fmtBlank(ln.proposed_price) || '—'}</b>
+                  </div>
+                  {(ln.options || []).length === 0 ? (
+                    <div style={{ color: '#999', fontSize: 13 }}>Chưa có phương án nào cho sản phẩm này.</div>
+                  ) : (
+                    <div className="options-container">
+                      {ln.options.map((o: any) => {
+                        const canChoose = sv.status === 'survey_done'
+                        return (
+                        <div key={o.id} onClick={() => { if (canChoose) chooseOption(ln.id, o.id) }}
+                          className="option-card"
+                          style={{ border: `2px solid ${o.is_chosen ? 'var(--teal)' : '#E9EDF7'}`, borderRadius: 12, padding: 14, cursor: canChoose ? 'pointer' : 'default', opacity: (!canChoose && !o.is_chosen) ? 0.55 : 1, background: o.is_chosen ? 'rgba(20,184,166,.06)' : '#fff' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                            <span style={{ fontWeight: 700 }}>
+                              <input type="radio" checked={!!o.is_chosen} readOnly style={{ marginRight: 6, verticalAlign: 'middle' }} />
+                              {o.display_label || `Option ${o.public_id}`}
+                            </span>
+                            {o.is_chosen && <span className="badge ok">Đã chọn</span>}
+                          </div>
+                          <div style={{ fontWeight: 600, marginBottom: 8 }}>{o.snap_product_name || '—'}</div>
+                          <div className="option-fields">
+                            <Field label="Đơn giá" value={o.snap_price_by_volume ? fmtBlank(o.snap_price_by_volume) + ' đ' : ''} strong />
+                            <Field label="ĐVT báo giá" value={o.snap_quote_unit} />
+                            <Field label="MOQ" value={fmtBlank(o.snap_moq)} />
+                            <Field label="Khoảng SL áp giá" value={o.snap_volume_range} />
+                            <Field label="VAT" value={o.snap_vat ? o.snap_vat + '%' : ''} />
+                            <Field label="Xuất xứ" value={o.snap_origin} />
+                            <Field label="Thời gian giao" value={o.snap_delivery_time} />
+                            <Field label="Địa điểm giao" value={o.snap_delivery_place} />
+                            <Field label="Phí vận chuyển" value={o.snap_shipping_cost ? fmtBlank(o.snap_shipping_cost) + ' đ' : 'Miễn phí'} />
+                            <Field label="Có mẫu" value={o.snap_sample_ready ? 'Có' : 'Không'} />
+                            <Field label="Kết quả lab" value={o.snap_lab_result} />
+                          </div>
+                          {o.snap_spec && (
+                            <div style={{ marginTop: 8, fontSize: 12.5, borderTop: '1px dashed #E9EDF7', paddingTop: 8 }}>
+                              <span style={{ color: 'var(--muted)' }}>Thông số: </span>{o.snap_spec}
+                            </div>
+                          )}
+                        </div>
+                      ) })}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Ghi chú trạng thái 5D (nút hành động ở góc phải header) */}
+              {sv.status === 'survey_done' && !allChosen && (
+                <div style={{ color: 'var(--muted)', fontSize: 12.5, marginTop: 4 }}>
+                  Hãy chọn phương án cho tất cả sản phẩm, rồi bấm <b>“Tạo yêu cầu mua”</b> ở góc phải trên.
+                </div>
+              )}
+              {sv.status === 'pr_created' && !canFinalize && (
+                <div style={{ color: 'var(--muted)', fontSize: 12.5, marginTop: 4 }}>
+                  Đã tạo YCMH — chờ Quản lý/Admin thu mua chuyển Hoàn thành.
+                </div>
+              )}
+              {sv.status === 'done' && (
+                <div style={{ marginTop: 4 }}><span className="badge ok">Phiếu đã Hoàn thành</span></div>
+              )}
+            </div>
+          )}
 
           {err && <div className="err" style={{ marginTop: 12 }}>{err}</div>}
           {msg && <div style={{ color: 'var(--green)', fontSize: 13, marginTop: 8 }}>{msg}</div>}
@@ -535,29 +740,6 @@ export default function SurveyRequestDetail() {
 
             <div className="form-grid">
               <div className="form-row">
-                <label>Ngày tiếp nhận</label>
-                <input type="date" value={edit.received_date || ''} disabled={!editable}
-                  onChange={(e) => setLine(editIdx, 'received_date', e.target.value)} />
-              </div>
-
-              <div className="form-row">
-                <label>Ngày YC trả KQ</label>
-                <input type="date" value={edit.result_due_date || ''} disabled={!editable}
-                  onChange={(e) => setLine(editIdx, 'result_due_date', e.target.value)} />
-              </div>
-
-              <div className="form-row">
-                <label>BP/Người YC</label>
-                <SearchSelect
-                  value={edit.department_requester || ''}
-                  options={deptOptions}
-                  disabled={!editable}
-                  placeholder="Chọn bộ phận…"
-                  onChange={(v) => setLine(editIdx, 'department_requester', v)}
-                />
-              </div>
-
-              <div className="form-row">
                 <label>Phân loại <span className="req">*</span></label>
                 <SearchSelect
                   value={edit.item_group || ''}
@@ -592,12 +774,11 @@ export default function SurveyRequestDetail() {
 
               <div className="form-row">
                 <label>Số lượng dự kiến mua</label>
-                <input
-                  type="number"
-                  value={edit.request_qty || ''}
+                <NumberInput
+                  value={edit.request_qty}
                   placeholder="0"
                   disabled={!editable}
-                  onChange={(e) => setLine(editIdx, 'request_qty', Number(e.target.value))}
+                  onChange={(v: number) => setLine(editIdx, 'request_qty', v)}
                 />
               </div>
 
@@ -614,13 +795,62 @@ export default function SurveyRequestDetail() {
 
               <div className="form-row">
                 <label>Giá đề xuất VNĐ</label>
-                <input
-                  type="number"
-                  value={edit.proposed_price || ''}
+                <NumberInput
+                  value={edit.proposed_price}
                   placeholder="Để trống nếu chưa có"
                   disabled={!editable}
-                  onChange={(e) => setLine(editIdx, 'proposed_price', Number(e.target.value))}
+                  onChange={(v: number) => setLine(editIdx, 'proposed_price', v)}
                 />
+              </div>
+
+              {/* Tình trạng dòng — tự suy theo tiến trình khảo sát (không chỉnh tay) */}
+              {!isNew && edit.id && (
+                <div className="form-row">
+                  <label>Tình trạng</label>
+                  <div style={{ paddingTop: 4 }}>
+                    {(() => { const s = srLineStatus(edit); return <span className={'badge ' + s.cls}>{s.label}</span> })()}
+                    <span style={{ color: 'var(--muted)', fontSize: 12, marginLeft: 8 }}>
+                      ({edit.option_count || 0} phương án{edit.has_chosen ? ', đã chọn' : ''})
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Đính kèm hình/tài liệu cho dòng (nhiều hình cho người đi khảo sát) */}
+              <div className="form-row" style={{ gridColumn: '1 / -1' }}>
+                <label>Hình ảnh / tài liệu đính kèm <span style={{ color: '#94a3b8', fontWeight: 400 }}>(có thể nhiều hình)</span></label>
+                {edit.id ? (
+                  <div>
+                    {lineFiles.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+                        {lineFiles.map((f) => {
+                          const isImg = /\.(jpg|jpeg|png|webp)$/i.test(f.filename || '')
+                          return (
+                            <div key={f.id} style={{ position: 'relative', border: '1px solid #E9EDF7', borderRadius: 10, padding: 6, width: isImg ? 96 : 160 }}>
+                              <a href={f.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: 'inherit' }} title={f.filename}>
+                                {isImg
+                                  ? <img src={f.url} style={{ width: 82, height: 82, objectFit: 'cover', borderRadius: 6, display: 'block' }} />
+                                  : <div style={{ fontSize: 12, lineHeight: 1.3, wordBreak: 'break-all' }}><i className="ti ti-file" /> {f.filename}</div>}
+                              </a>
+                              <button type="button" title="Xóa" onClick={() => delLineFile(f.id, edit.id)}
+                                style={{ position: 'absolute', top: -8, right: -8, width: 22, height: 22, borderRadius: '50%', border: '1px solid #E9EDF7', background: '#fff', cursor: 'pointer', lineHeight: 1 }}>
+                                <i className="ti ti-x" style={{ color: 'var(--red)', fontSize: 13 }} />
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                    <input type="file" id="sr-line-upload" multiple accept="image/*,.pdf" style={{ display: 'none' }}
+                      onChange={(e) => { uploadLineFiles(e.target.files, edit.id); e.currentTarget.value = '' }} />
+                    <label htmlFor="sr-line-upload" className="btn ghost" style={{ cursor: 'pointer', height: 32, fontSize: 13, width: 'fit-content' }}>
+                      <i className="ti ti-upload" /> Thêm hình / file
+                    </label>
+                    {lineFiles.length === 0 && <div style={{ color: '#999', fontSize: 12.5, marginTop: 6 }}>Chưa có hình. Tải nhiều hình (jpg/png/webp/pdf) để người khảo sát tham khảo.</div>}
+                  </div>
+                ) : (
+                  <div style={{ color: '#999', fontSize: 12.5 }}>Lưu phiếu trước, rồi mở lại dòng này để đính kèm hình.</div>
+                )}
               </div>
 
               {/* Thông tin chỉ đọc (từ server khi phiếu đã được xử lý) */}
@@ -636,12 +866,6 @@ export default function SurveyRequestDetail() {
                     <div className="form-row">
                       <label>Mã PYC liên kết</label>
                       <input value={edit.pr_code || ''} disabled />
-                    </div>
-                  )}
-                  {edit.is_completed !== undefined && (
-                    <div className="form-row">
-                      <label>Đã hoàn thành</label>
-                      <input value={edit.is_completed ? 'Đã hoàn thành' : 'Chưa hoàn thành'} disabled />
                     </div>
                   )}
                 </>
