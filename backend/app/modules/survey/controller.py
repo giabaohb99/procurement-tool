@@ -1,6 +1,8 @@
 from decimal import Decimal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from collections import Counter
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.orm import Session
 
@@ -110,3 +112,52 @@ def reject_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Ses
                          creator_id=s.created_by or user.id, background_tasks=background_tasks,
                          reason=data.reason or "", link=f"/surveys/{s.id}")
     return success(_out(db, s), "Đã từ chối")
+
+
+@router.patch("/{sid}/lines/{table}/{line_id}/fill")
+def fill_line_(sid: int, table: str, line_id: int, data: dict, db: Session = Depends(get_db),
+               user=Depends(require("survey", "write"))):
+    """Bổ sung 1 dòng đang 'Thiếu thông tin' (kể cả phiếu đã duyệt) — có guard trong service."""
+    return success(_out(db, service.fill_missing_line(db, sid, table, line_id, data, user.id)), "Đã bổ sung dòng")
+
+
+# ===== Báo cáo khảo sát theo DÒNG (gộp NCC + SP) =====
+report_router = APIRouter(prefix="/api/survey-report", tags=["survey_report"])
+
+
+@report_router.get("/lines")
+def report_lines_(kind: str | None = Query(None), line_approve: str | None = Query(None),
+                  item_group: str | None = Query(None), supplier: str | None = Query(None),
+                  code: str | None = Query(None), nspt: str | None = Query(None),
+                  date_from: str | None = Query(None), date_to: str | None = Query(None),
+                  pg: dict = Depends(pagination), db: Session = Depends(get_db),
+                  user=Depends(require("survey", "read"))):
+    base = apply_scope(db.query(Survey), Survey, "survey", user, get_perm_profile(db, user))
+    rows = service.report_rows(db, base)
+
+    def keep(r):
+        if kind and r["kind"] != kind:
+            return False
+        if item_group and r["item_group"] != item_group:
+            return False
+        if supplier and supplier.lower() not in (r["supplier_code"] or "").lower():
+            return False
+        if code and code.lower() not in (r["survey_code"] or "").lower():
+            return False
+        if nspt and nspt.lower() not in (r["nspt"] or "").lower():
+            return False
+        if date_from and (r["date"] or "") < date_from:
+            return False
+        if date_to and (r["date"] or "") > date_to:
+            return False
+        return True
+
+    rows = [r for r in rows if keep(r)]
+    cnt = Counter(r["line_approve"] for r in rows)   # tổng theo trạng thái (trước lọc trạng thái)
+    summary = {k: cnt.get(k, 0) for k in ("Chờ duyệt", "Đã duyệt", "Không duyệt", "Thiếu thông tin")}
+    if line_approve:
+        rows = [r for r in rows if r["line_approve"] == line_approve]
+    rows.sort(key=lambda r: (-r["survey_id"], r["kind"], r["line_id"]))
+    total = len(rows)
+    items = rows[pg["offset"]: pg["offset"] + pg["limit"]]
+    return success({"total": total, "items": items, "summary": summary})

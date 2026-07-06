@@ -127,6 +127,70 @@ def delete_survey(db: Session, sid: int, user_id: int):
     record(db, user_id, ENTITY, sid, "delete")
 
 
+MISSING = "Thiếu thông tin"
+_LINE_AUDIT = {"id", "survey_id", "created_at", "created_by", "updated_at", "updated_by"}
+
+
+def _line_model(table: str):
+    return SurveySupplierLine if table == "supplier" else SurveyProductLine
+
+
+def fill_missing_line(db: Session, sid: int, table: str, line_id: int, data: dict, user_id: int) -> Survey:
+    """Ngoại lệ có kiểm soát: nhân sự phụ trách bổ sung 1 DÒNG đang 'Thiếu thông tin',
+    bất kể phiếu đang Chờ duyệt hay Đã duyệt (không mở khóa toàn phiếu, không trả lại đơn).
+    Bổ sung xong → dòng tự về 'Chờ duyệt' để duyệt lại."""
+    if table not in ("supplier", "product"):
+        raise HTTPException(400, "Loại bảng không hợp lệ")
+    LM = _line_model(table)
+    row = db.query(LM).filter(LM.id == line_id, LM.survey_id == sid).first()
+    if not row:
+        raise HTTPException(404, "Không tìm thấy dòng khảo sát")
+    if (row.line_approve or "") != MISSING:
+        raise HTTPException(403, "Chỉ được bổ sung dòng đang ở trạng thái 'Thiếu thông tin'")
+    for k, v in (data or {}).items():
+        if k in _LINE_AUDIT or k in ("line_approve", "line_approve_note"):
+            continue
+        if hasattr(row, k):
+            setattr(row, k, v)
+    if table == "product":
+        amt = round(float(row.request_qty or 0) * float(row.price_by_volume or 0)
+                    * (1 + float(row.vat or 0) / 100), 2)
+        row.amount = amt
+        if not row.amount_converted:
+            row.amount_converted = amt
+    row.line_approve = "Chờ duyệt"
+    row.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, sid, "fill_line", f"Bổ sung dòng {table}#{line_id}")
+    return get_survey(db, sid)
+
+
+def report_rows(db: Session, base_survey_query):
+    """Chuẩn hóa TẤT CẢ dòng khảo sát (NCC + SP) trong phạm vi cho phép → list dict (theo dòng)."""
+    surveys = {s.id: s for s in base_survey_query.all()}
+    if not surveys:
+        return []
+    sids = list(surveys.keys())
+    rows = []
+    for x in db.query(SurveySupplierLine).filter(SurveySupplierLine.survey_id.in_(sids)).all():
+        s = surveys[x.survey_id]
+        rows.append({"survey_id": s.id, "survey_code": s.code, "kind": "supplier", "line_id": x.id,
+                     "content": x.supplier_name or x.supplier_code or "", "supplier_code": x.supplier_code or "",
+                     "item_group": s.item_group or "", "nspt": s.nspt or "",
+                     "date": x.contact_date or s.received_date or "",
+                     "line_approve": x.line_approve or "Chờ duyệt", "line_approve_note": x.line_approve_note or "",
+                     "survey_status": s.status})
+    for x in db.query(SurveyProductLine).filter(SurveyProductLine.survey_id.in_(sids)).all():
+        s = surveys[x.survey_id]
+        rows.append({"survey_id": s.id, "survey_code": s.code, "kind": "product", "line_id": x.id,
+                     "content": x.product_name or "", "supplier_code": x.supplier_code or "",
+                     "item_group": s.item_group or "", "nspt": s.nspt or "",
+                     "date": x.contact_date or s.received_date or "",
+                     "line_approve": x.line_approve or "Chờ duyệt", "line_approve_note": x.line_approve_note or "",
+                     "survey_status": s.status})
+    return rows
+
+
 def set_status(db: Session, sid: int, status: str, user_id: int, msg: str = "") -> Survey:
     s = get_survey(db, sid)
     s.status = status
