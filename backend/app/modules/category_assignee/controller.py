@@ -20,7 +20,9 @@ def _out(db: Session, obj) -> dict:
     b = db.get(Employee, obj.backup_employee_id) if obj.backup_employee_id else None
     d["item_group_name"] = g.name if g else None
     d["primary_name"] = p.full_name if p else None
+    d["primary_code"] = p.code if p else None
     d["backup_name"] = b.full_name if b else None
+    d["backup_code"] = b.code if b else None
     return d
 
 

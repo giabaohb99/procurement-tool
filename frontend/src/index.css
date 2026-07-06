@@ -57,6 +57,10 @@ input:disabled, select:disabled, textarea:disabled { background: #F8FAFC; color:
 
 label { font-size: 13px; font-weight: 700; color: #1B2559; margin-bottom: 6px; display: inline-block; }
 
+/* react-select: ô tìm kiếm bên trong KHÔNG bị style input toàn cục đè (fix lỗi hiển thị multi-select) */
+.rs__control input, .rs__input { height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; background: transparent !important; }
+.rs__menu { z-index: 30; }
+
 .btn { height: 40px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--teal); background: var(--teal); color: #fff; font-weight: 600; cursor: pointer; font-size: 13.5px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,174,239,0.15); transition: all 0.2s ease; }
 .btn:hover { background: var(--teal-dark); border-color: var(--teal-dark); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,174,239,0.25); }
 .btn:active { transform: translateY(0); }
