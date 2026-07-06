@@ -299,15 +299,17 @@ def run():
             db.commit()
             db.refresh(admin_role)
 
-        # Đảm bảo admin có quyền đầy đủ cho MỌI entity (thêm entity mới sẽ tự được cấp)
-        existing = {p.entity for p in db.query(Permission).filter(Permission.role_id == admin_role.id).all()}
-        for entity in ENTITIES:
-            if entity not in existing:
-                db.add(Permission(
-                     role_id=admin_role.id, entity=entity, can_read=True, can_create=True,
-                     can_write=True, can_delete=True, can_approve=True, can_cancel=True,
-                     can_print=True, can_export=True, scope="all",
-                ))
+        # Đảm bảo MỌI vai trò quản trị (admin + ADMINISTRATOR) có quyền đầy đủ cho MỌI entity
+        # (thêm entity mới sẽ tự được cấp cho cả 2 role admin).
+        for _ar in db.query(Role).filter(Role.code.in_(["admin", "ADMINISTRATOR"])).all():
+            existing = {p.entity for p in db.query(Permission).filter(Permission.role_id == _ar.id).all()}
+            for entity in ENTITIES:
+                if entity not in existing:
+                    db.add(Permission(
+                         role_id=_ar.id, entity=entity, can_read=True, can_create=True,
+                         can_write=True, can_delete=True, can_approve=True, can_cancel=True,
+                         can_print=True, can_export=True, scope="all",
+                    ))
         # Bổ sung can_cancel cho các vai trò quản trị (admin, ADMINISTRATOR) tạo trước khi có action 'cancel'
         admin_role_ids = [r.id for r in db.query(Role).filter(Role.code.in_(["admin", "ADMINISTRATOR"])).all()]
         if admin_role_ids:
