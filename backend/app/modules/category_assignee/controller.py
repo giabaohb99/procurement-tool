@@ -6,7 +6,7 @@ from app.core.database import get_db
 from app.core.response import success
 
 from . import service
-from .schema import CategoryAssigneeCreate, CategoryAssigneeOut, CategoryAssigneeUpdate
+from .schema import CategoryAssigneeBulk, CategoryAssigneeCreate, CategoryAssigneeOut, CategoryAssigneeUpdate
 
 router = APIRouter(prefix="/api/category-assignees", tags=["category_assignee"])
 
@@ -39,6 +39,13 @@ def get_(cid: int, db: Session = Depends(get_db), user=Depends(require("category
 def create_(data: CategoryAssigneeCreate, db: Session = Depends(get_db),
             user=Depends(require("category_assignee", "create"))):
     return success(_out(db, service.create(db, data, user.id)), "Đã tạo phân công", 201)
+
+
+@router.post("/bulk")
+def bulk_(data: CategoryAssigneeBulk, db: Session = Depends(get_db),
+          user=Depends(require("category_assignee", "create"))):
+    n = service.bulk_upsert(db, data.item_group_ids, data.primary_employee_id, data.backup_employee_id, user.id)
+    return success({"count": n}, f"Đã gán cho {n} phân loại")
 
 
 @router.patch("/{cid}")

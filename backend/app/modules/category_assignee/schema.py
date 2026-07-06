@@ -17,6 +17,12 @@ class CategoryAssigneeUpdate(BaseModel):
     backup_employee_id: int | None = None
 
 
+class CategoryAssigneeBulk(BaseModel):
+    item_group_ids: list[int] = []
+    primary_employee_id: int = 0
+    backup_employee_id: int = 0
+
+
 class CategoryAssigneeOut(CategoryAssigneeBase):
     id: int
     item_group_name: str | None = None

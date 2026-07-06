@@ -41,6 +41,25 @@ def delete(db: Session, cid: int, user_id: int) -> None:
     db.commit()
 
 
+def bulk_upsert(db: Session, item_group_ids: list[int], primary_id: int, backup_id: int, user_id: int) -> int:
+    """Gán 1 cặp NSTM (chính + dự phòng) cho NHIỀU phân loại cùng lúc (upsert theo phân loại)."""
+    n = 0
+    for gid in item_group_ids:
+        if not gid:
+            continue
+        row = db.query(CategoryAssignee).filter(CategoryAssignee.item_group_id == gid).first()
+        if row:
+            row.primary_employee_id = primary_id
+            row.backup_employee_id = backup_id
+            row.updated_by = user_id
+        else:
+            db.add(CategoryAssignee(item_group_id=gid, primary_employee_id=primary_id,
+                                    backup_employee_id=backup_id, created_by=user_id, updated_by=user_id))
+        n += 1
+    db.commit()
+    return n
+
+
 def auto_assign_by_category(db: Session, pr) -> int:
     """Sau khi TRƯỞNG PHÒNG duyệt PYC: điền `assignee` (mã NV) cho các dòng CHƯA có người,
     theo phân loại của dòng. Ưu tiên người CHÍNH; người chính nghỉ (is_active=false) → DỰ PHÒNG.
