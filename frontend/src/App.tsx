@@ -26,6 +26,7 @@ import RolePermissions from './pages/RolePermissions'
 import UserPermissionDetail from './pages/UserPermissionDetail'
 import PrintPaymentRequest from './pages/PrintPaymentRequest'
 import Settings from './pages/Settings'
+import SurveyRequestDetail from './pages/SurveyRequestDetail'
 
 function Protected({ children }: { children: JSX.Element }) {
   const { user } = useAuth()
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="/" element={<Protected><AppLayout /></Protected>}>
             <Route index element={<Dashboard />} />
             <Route path="purchase-requests/:id" element={<PurchaseRequestDetail />} />
+            <Route path="survey-requests/:id" element={<SurveyRequestDetail />} />
             <Route path="surveys/:id" element={<SurveyDetail />} />
             {/* Link cũ trong thông báo vẫn mở được (cùng phiếu, load theo id) */}
             <Route path="surveys-supplier/:id" element={<SurveyDetail />} />

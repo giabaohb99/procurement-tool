@@ -53,6 +53,7 @@ export const PR_STATUS: Record<string, { label: string; cls: string }> = {
   approved: { label: 'Đã duyệt', cls: 'ok' },
   rejected: { label: 'Từ chối', cls: 'err' },
   processing: { label: 'Đang xử lý', cls: 'warn' },
+  survey_done: { label: 'Đã khảo sát', cls: 'ok' },
   completed: { label: 'Hoàn thành', cls: 'ok' },
   cancelled: { label: 'Đã hủy', cls: 'err' },
 }
@@ -235,6 +236,26 @@ export const cruds: Record<string, CrudConfig> = {
       ] },
     ],
     fields: [],  // chi tiết dùng trang riêng (PurchaseRequestDetail)
+  },
+  'survey-requests': {
+    slug: 'survey-requests', entity: 'survey_request', title: 'Yêu cầu khảo sát', apiPath: '/api/survey-requests', txn: true,
+    columns: [
+      { key: 'code', label: 'Mã phiếu' },
+      { key: 'requester', label: 'Người yêu cầu' },
+      { key: 'department', label: 'Bộ phận' },
+      { key: 'request_date', label: 'Ngày tạo' },
+      { key: 'status', label: 'Trạng thái', render: (r) => prBadge(r.status) },
+    ],
+    filters: [
+      { key: 'code', label: 'Mã phiếu' },
+      { key: 'requester', label: 'Người yêu cầu' },
+      { key: 'department', label: 'Bộ phận', source: { url: '/api/departments', value: 'name', label: 'name' } },
+      { key: 'status', label: 'Trạng thái', type: 'select', options: [
+        { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
+        { value: 'approved', label: 'Đã duyệt' }, { value: 'processing', label: 'Đang xử lý' },
+        { value: 'survey_done', label: 'Đã khảo sát' }, { value: 'rejected', label: 'Từ chối' }] },
+    ],
+    fields: [],
   },
   warehouses: {
     slug: 'warehouses', entity: 'warehouse', title: 'Kho', apiPath: '/api/warehouses', importExport: true,
