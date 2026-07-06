@@ -629,7 +629,7 @@ export default function SurveyRequestDetail() {
                   {edit.assignee && (
                     <div className="form-row">
                       <label>Người phụ trách</label>
-                      <input value={edit.assignee || ''} disabled />
+                      <input value={edit.assignee_name || empName(edit.assignee) || ''} disabled />
                     </div>
                   )}
                   {edit.pr_code && (
