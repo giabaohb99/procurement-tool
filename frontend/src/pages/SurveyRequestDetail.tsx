@@ -109,6 +109,15 @@ export default function SurveyRequestDetail() {
   const companyOptions  = companies.map((c) => ({ value: c.id, label: c.name }))
   const employeeOptions = employees.map((e) => ({ value: e.full_name, label: e.full_name }))
   const deptOptions     = departments.map((d) => ({ value: d.name, label: d.name }))
+  // NSTM phụ trách: value = MÃ NV (khớp cột assignee), label = tên
+  const purchaserOptions = employees.map((e) => ({ value: e.code, label: e.full_name }))
+  const canAssign = can('survey_request', 'write')   // Admin / Admin TM gán NSTM cho dòng
+  const empName = (code: string) => employees.find((e) => e.code === code)?.full_name || code || ''
+
+  async function assignPurchaser(lineId: number, code: string) {
+    try { await api.patch(`${API}/${id}/lines/${lineId}/assignee`, { assignee: code }); await loadAll() }
+    catch (e: any) { setErr(e.response?.data?.message || 'Lỗi gán nhân sự') }
+  }
 
   const setH = (k: string, v: any) => setSv((s: any) => ({ ...s, [k]: v }))
   const lines: any[] = sv.lines || []
@@ -383,6 +392,7 @@ export default function SurveyRequestDetail() {
                     <th style={{ width: 70, textAlign: 'right' }}>SL dự kiến</th>
                     <th style={{ width: 80, textAlign: 'left' }}>ĐVT</th>
                     <th style={{ width: 100, textAlign: 'right' }}>Giá đề xuất</th>
+                    <th style={{ width: 150, textAlign: 'left' }}>Nhân sự phụ trách</th>
                     <th style={{ width: 80, textAlign: 'center' }}>Thao tác</th>
                   </tr>
                 </thead>
@@ -433,6 +443,12 @@ export default function SurveyRequestDetail() {
                       <td style={{ textAlign: 'right' }}>{fmtBlank(l.request_qty)}</td>
                       <td>{l.uom || '—'}</td>
                       <td style={{ textAlign: 'right' }}>{fmtBlank(l.proposed_price)}</td>
+                      <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={l.assignee_name || l.assignee}>
+                        {canAssign && !isNew && l.id ? (
+                          <SearchSelect value={l.assignee || ''} options={purchaserOptions} variant="table" placeholder="— Gán —"
+                            onChange={(v) => assignPurchaser(l.id, v)} />
+                        ) : <span>{l.assignee_name || empName(l.assignee) || <span style={{ color: '#bbb' }}>—</span>}</span>}
+                      </td>
                       <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                         <button className="icon-btn" title="Chi tiết" onClick={() => setEditIdx(i)}>
                           <i className="ti ti-pencil" style={{ color: 'var(--teal)' }} />
@@ -452,7 +468,7 @@ export default function SurveyRequestDetail() {
                   ))}
                   {lines.length === 0 && (
                     <tr>
-                      <td colSpan={10} style={{ textAlign: 'center', color: '#999', padding: 20 }}>
+                      <td colSpan={11} style={{ textAlign: 'center', color: '#999', padding: 20 }}>
                         Chưa có dòng nào — nhấn "Thêm dòng" để bắt đầu
                       </td>
                     </tr>

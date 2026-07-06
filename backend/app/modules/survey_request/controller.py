@@ -26,8 +26,19 @@ def _dict(obj) -> dict:
 
 
 def _out(db: Session, s: SurveyRequest) -> dict:
+    from app.modules.employee.model import Employee
     base = _dict(s)
-    base["lines"] = [_dict(x) for x in service.lines_of(db, s.id)]
+    lines = service.lines_of(db, s.id)
+    codes = {ln.assignee for ln in lines if ln.assignee}
+    name_by_code = {}
+    if codes:
+        name_by_code = {e.code: e.full_name for e in db.query(Employee).filter(Employee.code.in_(codes)).all()}
+    out_lines = []
+    for x in lines:
+        d = _dict(x)
+        d["assignee_name"] = name_by_code.get(x.assignee, "")
+        out_lines.append(d)
+    base["lines"] = out_lines
     return base
 
 
@@ -43,6 +54,13 @@ def _notify(db, users, title, body, link, creator_id):
             seen.add(u.id)
             db.add(Notification(user_id=u.id, title=title, body=body, link=link, created_by=creator_id))
     db.commit()
+
+
+@router.get("/meta/dept-head")
+def dept_head_(department: str = "", db: Session = Depends(get_db),
+               user=Depends(require("survey_request", "read"))):
+    from app.modules.purchase_request.service import find_dept_head
+    return success({"head_of_dept": find_dept_head(db, department)})
 
 
 @router.get("")
@@ -126,3 +144,18 @@ def reject_(sid: int, data: RejectIn, db: Session = Depends(get_db),
             f"Phiếu yêu cầu khảo sát {s.code} bị từ chối. Lý do: {data.reason or '(không nêu)'}",
             f"/survey-requests/{s.id}", s.created_by or user.id)
     return success(_out(db, s), "Đã từ chối")
+
+
+@router.patch("/{sid}/lines/{line_id}/assignee")
+def set_line_assignee_(sid: int, line_id: int, data: dict, db: Session = Depends(get_db),
+                       user=Depends(require("survey_request", "write"))):
+    """Gán/đổi NSTM phụ trách 1 dòng (Admin/AdminTM). Body: {assignee: mã NV}."""
+    from .model import SurveyRequestLine
+    ln = db.query(SurveyRequestLine).filter(SurveyRequestLine.id == line_id,
+                                            SurveyRequestLine.survey_request_id == sid).first()
+    if not ln:
+        raise HTTPException(404, "Không tìm thấy dòng")
+    ln.assignee = (data.get("assignee") or "").strip()
+    ln.updated_by = user.id
+    db.commit()
+    return success(_out(db, service.get_sr(db, sid)), "Đã gán nhân sự phụ trách")
