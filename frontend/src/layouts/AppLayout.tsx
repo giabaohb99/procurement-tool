@@ -69,6 +69,7 @@ export default function AppLayout() {
     return n
   })
   const current = [...ALL_ITEMS].reverse().find((n) => isActive(loc.pathname, n.to))
+  const currentGroup = NAV_GROUPS.find((g) => g.items.some((n) => n.to === current?.to))
   const name = user?.full_name || 'Người dùng'
   const initials = name.trim().split(' ').slice(-1)[0]?.[0]?.toUpperCase() || 'U'
 
@@ -124,7 +125,7 @@ export default function AppLayout() {
             <button className="icon-btn hamburger" onClick={() => setOpen(true)} aria-label="Menu">
               <i className="ti ti-menu-2" />
             </button>
-            <div className="crumb">Mua hàng / {current?.label || ''}</div>
+            <div className="crumb">{currentGroup?.title ? `${currentGroup.title} / ` : ''}{current?.label || 'Trang chủ'}</div>
           </div>
           <div className="topbar-right" style={{ position: 'relative' }}>
             <NotificationBell />
