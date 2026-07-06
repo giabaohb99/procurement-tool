@@ -191,6 +191,36 @@ def report_rows(db: Session, base_survey_query):
     return rows
 
 
+def lines_by_supplier(db: Session, tax_code: str, supplier_code: str):
+    """Task 9: dòng khảo sát của 1 NCC. KSNCC match theo tax_code (fallback supplier_code);
+    KSSP match theo supplier_code (product line không có tax_code)."""
+    from sqlalchemy import or_
+    sup = []
+    conds = []
+    if tax_code:
+        conds.append(SurveySupplierLine.tax_code == tax_code)
+    if supplier_code:
+        conds.append(SurveySupplierLine.supplier_code == supplier_code)
+    if conds:
+        sup = db.query(SurveySupplierLine).filter(or_(*conds)).order_by(SurveySupplierLine.id.desc()).all()
+    prod = []
+    if supplier_code:
+        prod = (db.query(SurveyProductLine).filter(SurveyProductLine.supplier_code == supplier_code)
+                .order_by(SurveyProductLine.id.desc()).all())
+    sids = {x.survey_id for x in sup} | {x.survey_id for x in prod}
+    codes = {s.id: s.code for s in db.query(Survey).filter(Survey.id.in_(sids)).all()} if sids else {}
+    sup_rows = [{"survey_id": x.survey_id, "survey_code": codes.get(x.survey_id, ""), "line_id": x.id,
+                 "supplier_code": x.supplier_code, "supplier_name": x.supplier_name, "tax_code": x.tax_code,
+                 "contact_date": x.contact_date, "contact_person": x.contact_person, "contact_phone": x.contact_phone,
+                 "line_approve": x.line_approve or "Chờ duyệt", "note": x.note or ""} for x in sup]
+    prod_rows = [{"survey_id": x.survey_id, "survey_code": codes.get(x.survey_id, ""), "line_id": x.id,
+                  "supplier_code": x.supplier_code, "internal_code": x.internal_code, "product_name": x.product_name,
+                  "quote_unit": x.quote_unit, "price_by_volume": float(x.price_by_volume or 0),
+                  "moq": float(x.moq or 0), "line_approve": x.line_approve or "Chờ duyệt", "note": x.note or ""}
+                 for x in prod]
+    return sup_rows, prod_rows
+
+
 def set_status(db: Session, sid: int, status: str, user_id: int, msg: str = "") -> Survey:
     s = get_survey(db, sid)
     s.status = status

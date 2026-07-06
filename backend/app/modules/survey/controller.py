@@ -161,3 +161,11 @@ def report_lines_(kind: str | None = Query(None), line_approve: str | None = Que
     total = len(rows)
     items = rows[pg["offset"]: pg["offset"] + pg["limit"]]
     return success({"total": total, "items": items, "summary": summary})
+
+
+@report_router.get("/by-supplier")
+def by_supplier_(tax_code: str = Query(""), supplier_code: str = Query(""),
+                 db: Session = Depends(get_db), user=Depends(require("survey", "read"))):
+    """Task 9: khảo sát của 1 NCC — KSNCC (theo tax_code) + KSSP (theo supplier_code)."""
+    sup, prod = service.lines_by_supplier(db, tax_code, supplier_code)
+    return success({"supplier_lines": sup, "product_lines": prod})

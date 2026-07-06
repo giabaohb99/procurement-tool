@@ -13,7 +13,16 @@ const TABS = [
   { key: 'eval', label: 'Đánh giá' },
   { key: 'contracts', label: 'Hợp đồng' },
   { key: 'payables', label: 'Công nợ' },
+  { key: 'surveys', label: 'Khảo sát của NCC' },
 ]
+const AP_COLOR: Record<string, [string, string]> = {
+  'Đã duyệt': ['#dcfce7', '#166534'], 'Không duyệt': ['#fee2e2', '#b91c1c'],
+  'Thiếu thông tin': ['#ffedd5', '#c2410c'], 'Chờ duyệt': ['#fef9c3', '#a16207'],
+}
+const apStyle = (v: string) => {
+  const [bg, c] = AP_COLOR[v] || ['#eef1f4', '#5b6770']
+  return { background: bg, color: c, padding: '2px 8px', borderRadius: 8, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' as const }
+}
 
 export default function SupplierDetail() {
   const { id } = useParams()
@@ -24,6 +33,9 @@ export default function SupplierDetail() {
   const [tab, setTab] = useState('info')
   const [contracts, setContracts] = useState<any[]>([])
   const [payables, setPayables] = useState<any[]>([])
+  const [surveySup, setSurveySup] = useState<any[]>([])
+  const [surveyProd, setSurveyProd] = useState<any[]>([])
+  const [surveySub, setSurveySub] = useState<'ncc' | 'sp'>('ncc')
   const [companies, setCompanies] = useState<any[]>([])
   const [kpi, setKpi] = useState<any>(null)
   const [err, setErr] = useState(''); const [msg, setMsg] = useState('')
@@ -34,6 +46,9 @@ export default function SupplierDetail() {
     if (!s?.code) return
     api.get('/api/contracts', { params: { party_code: s.code, page_size: 500 } }).then((r) => setContracts(r.data.data.items))
     api.get('/api/payables', { params: { supplier_code: s.code, year: 'all', page_size: 500 } }).then((r) => setPayables(r.data.data.items))
+    api.get('/api/survey-report/by-supplier', { params: { tax_code: s.tax_code || '', supplier_code: s.code } }).then((r) => {
+      setSurveySup(r.data.data.supplier_lines || []); setSurveyProd(r.data.data.product_lines || [])
+    }).catch(() => {})
     api.get('/api/reports/matrix', { params: { year: 'all' } }).then((r) => {
       const row = (r.data.data.supplier || []).find((x: any) => x.key === s.name)
       setKpi(row || null)
@@ -268,6 +283,51 @@ export default function SupplierDetail() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {tab === 'surveys' && (
+        <div className="card" style={{ padding: 18 }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, borderBottom: '1px solid var(--border)' }}>
+            {([['ncc', `Khảo sát NCC (${surveySup.length})`], ['sp', `Khảo sát Sản phẩm (${surveyProd.length})`]] as const).map(([k, lb]) => (
+              <button key={k} onClick={() => setSurveySub(k)} style={{ border: 'none', background: 'none', padding: '6px 12px', cursor: 'pointer', fontSize: 13.5, fontWeight: surveySub === k ? 700 : 500, color: surveySub === k ? 'var(--teal)' : 'var(--muted)', borderBottom: surveySub === k ? '2px solid var(--teal)' : '2px solid transparent' }}>{lb}</button>
+            ))}
+          </div>
+          {surveySub === 'ncc' ? (
+            <div className="items-scroll">
+              <table className="items-table" style={{ minWidth: 820 }}>
+                <thead><tr><th>Mã phiếu</th><th>Ngày LH</th><th>NCC (viết tắt)</th><th>Tên pháp lý</th><th>MST</th><th>Người LH</th><th>SĐT</th><th>Duyệt</th></tr></thead>
+                <tbody>
+                  {surveySup.map((x) => (
+                    <tr key={x.line_id} className="clickable" onClick={() => navigate(`/surveys/${x.survey_id}`)}>
+                      <td style={{ color: 'var(--teal)', fontWeight: 600 }}>{x.survey_code}</td><td>{x.contact_date}</td>
+                      <td>{x.supplier_code}</td><td>{x.supplier_name}</td><td>{x.tax_code}</td>
+                      <td>{x.contact_person}</td><td>{x.contact_phone}</td>
+                      <td><span style={apStyle(x.line_approve)}>{x.line_approve}</span></td>
+                    </tr>
+                  ))}
+                  {surveySup.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có khảo sát NCC cho nhà cung cấp này</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="items-scroll">
+              <table className="items-table" style={{ minWidth: 780 }}>
+                <thead><tr><th>Mã phiếu</th><th>Mã SP (NCC)</th><th>Tên SP</th><th>ĐVT báo giá</th><th style={{ textAlign: 'right' }}>Giá</th><th style={{ textAlign: 'right' }}>MOQ</th><th>Duyệt</th></tr></thead>
+                <tbody>
+                  {surveyProd.map((x) => (
+                    <tr key={x.line_id} className="clickable" onClick={() => navigate(`/surveys/${x.survey_id}`)}>
+                      <td style={{ color: 'var(--teal)', fontWeight: 600 }}>{x.survey_code}</td><td>{x.internal_code}</td>
+                      <td>{x.product_name}</td><td>{x.quote_unit}</td>
+                      <td style={{ textAlign: 'right' }}>{fmt(x.price_by_volume)}</td><td style={{ textAlign: 'right' }}>{fmt(x.moq)}</td>
+                      <td><span style={apStyle(x.line_approve)}>{x.line_approve}</span></td>
+                    </tr>
+                  ))}
+                  {surveyProd.length === 0 && <tr><td colSpan={7} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có khảo sát SP cho nhà cung cấp này</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>
