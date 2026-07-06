@@ -179,11 +179,13 @@ STD_ROLES = {
         "item_group": (["read"], "all"), "warehouse": (["read"], "all"),
         "department": (["read"], "all"), "company": (["read"], "all"),
         "purchase_request": (["read", "create"], "own"),
+        "survey_request": (["read", "create", "write"], "own"),
     }},
     "dept_head": {"name": "Trưởng phòng (duyệt PYC)", "perms": {
         **_CATALOG_READ,
         "employee": (["read"], "dept"),
         "purchase_request": (["read", "approve"], "dept"),
+        "survey_request": (["read", "approve"], "dept"),
         "report": (["read"], "dept"),
     }},
     "company_head": {"name": "Quản lý công ty", "perms": {
@@ -197,6 +199,7 @@ STD_ROLES = {
         **_CATALOG_READ,
         "employee": (["read"], "dept"),
         "purchase_request": (["read", "create", "write"], "proc"),
+        "survey_request": (["read", "write"], "proc"),
         "survey": (["read", "create", "write"], "all"),
         "purchase_order": (["read", "create", "write", "print"], "dept"),
         "inventory": (["read"], "company"),
@@ -208,6 +211,7 @@ STD_ROLES = {
         **_CATALOG_READ,
         "employee": (["read"], "dept"),
         "purchase_request": (["read", "approve", "cancel"], "all"),
+        "survey_request": (["read", "approve"], "all"),
         "survey": (["read", "approve"], "all"),
         "purchase_order": (["read", "write", "approve", "cancel", "print", "export"], "all"),
         "inventory": (["read"], "all"),
@@ -218,6 +222,7 @@ STD_ROLES = {
     }},
     "pur_admin": {"name": "Admin thu mua", "perms": {
         "purchase_request": (["read", "create", "write", "delete", "approve", "cancel", "print", "export"], "proc"),
+        "survey_request": (["read", "create", "write", "delete", "approve"], "proc"),
         "purchase_order": (["read", "create", "write", "delete", "approve", "cancel", "print", "export"], "all"),
         "survey": (["read", "create", "write", "delete", "approve"], "all"),
         "inventory": (["read", "write"], "all"),

@@ -60,6 +60,24 @@ def bulk_upsert(db: Session, item_group_ids: list[int], primary_id: int, backup_
     return n
 
 
+def resolve_for_group(db: Session, item_group_name: str):
+    """Trả về nhân sự NSTM phụ trách 1 phân loại (chính; chính nghỉ → dự phòng). None nếu chưa cấu hình."""
+    if not item_group_name:
+        return None
+    from app.modules.catalog.model import ItemGroup
+    from app.modules.employee.model import Employee
+    g = db.query(ItemGroup).filter(ItemGroup.name == item_group_name).first()
+    if not g:
+        return None
+    cfg = db.query(CategoryAssignee).filter(CategoryAssignee.item_group_id == g.id).first()
+    if not cfg:
+        return None
+    primary = db.get(Employee, cfg.primary_employee_id) if cfg.primary_employee_id else None
+    if primary and primary.is_active:
+        return primary
+    return db.get(Employee, cfg.backup_employee_id) if cfg.backup_employee_id else None
+
+
 def auto_assign_by_category(db: Session, pr) -> int:
     """Sau khi TRƯỞNG PHÒNG duyệt PYC: điền `assignee` (mã NV) cho các dòng CHƯA có người,
     theo phân loại của dòng. Ưu tiên người CHÍNH; người chính nghỉ (is_active=false) → DỰ PHÒNG.

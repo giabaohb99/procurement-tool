@@ -11,6 +11,7 @@ from app.core.auth import get_perm_profile  # noqa: F401  (re-export tiện dùn
 # Entity → tên cột theo từng chiều. Thiếu chiều nào = không lọc theo chiều đó.
 SCOPE_FIELDS = {
     "purchase_request": {"company": "company_id", "dept_name": "department", "owner": "created_by"},
+    "survey_request":   {"company": "company_id", "dept_name": "department", "owner": "created_by"},
     "purchase_order":   {"company": "company_id", "dept_name": "department", "owner": "created_by"},
     "payable":          {"company": "company_id", "owner": "created_by"},
     "payment_request":  {"company": "company_id", "owner": "created_by"},
