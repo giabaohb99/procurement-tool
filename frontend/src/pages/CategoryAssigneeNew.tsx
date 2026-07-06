@@ -24,13 +24,21 @@ export default function CategoryAssigneeNew() {
     api.get('/api/category-assignees').then(r => setConfigured(new Set((r.data.data.items || []).map((x: any) => x.item_group_id))))
   }, [])
 
-  // Prefill NSTM khi bấm Copy từ danh sách (?primary=&backup=)
+  // Prefill khi Sửa/Copy từ danh sách (?cats=&primary=&backup=)
   useEffect(() => {
     if (!emps.length) return
     const p = Number(sp.get('primary')); const b = Number(sp.get('backup'))
     if (p && !primary) setPrimary(emps.find(e => e.value === p) || null)
     if (b && !backup) setBackup(emps.find(e => e.value === b) || null)
   }, [emps])
+  useEffect(() => {
+    if (!cats.length) return
+    const c = Number(sp.get('cats'))
+    if (c && selCats.length === 0) {
+      const opt = cats.find(x => x.value === c)
+      if (opt) setSelCats([opt])
+    }
+  }, [cats])
 
   async function save() {
     setErr('')

@@ -70,7 +70,9 @@ export default function CategoryAssignees() {
                 <td>{r.primary_name || '—'}{r.primary_code ? <span style={{ color: '#94a3b8', fontSize: 12 }}> · {r.primary_code}</span> : ''}</td>
                 <td>{r.backup_name ? <>{r.backup_name}{r.backup_code ? <span style={{ color: '#94a3b8', fontSize: 12 }}> · {r.backup_code}</span> : ''}</> : <span style={{ color: '#94a3b8' }}>—</span>}</td>
                 <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                  {canDelete && <button className="btn err" style={{ height: 30, padding: '0 8px' }} onClick={() => del(r.id)}><i className="ti ti-trash" />Xóa</button>}
+                  {canCreate && <button className="btn ghost" style={{ height: 30, padding: '0 8px', marginRight: 6 }} title="Sửa phân công"
+                    onClick={() => navigate(`/category-assignees/new?cats=${r.item_group_id}&primary=${r.primary_employee_id}&backup=${r.backup_employee_id}`)}><i className="ti ti-pencil" />Sửa</button>}
+                  {canDelete && <button className="btn err" style={{ height: 30, padding: '0 8px' }} onClick={() => del(r.id)}><i className="ti ti-trash" /></button>}
                 </td>
               </tr>
             ))}
