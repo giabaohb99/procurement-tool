@@ -17,6 +17,7 @@ import Inventory from './pages/Inventory'
 import Payables from './pages/Payables'
 import PaymentRequestDetail from './pages/PaymentRequestDetail'
 import Reports from './pages/Reports'
+import SurveyReport from './pages/SurveyReport'
 import SupplierDetail from './pages/SupplierDetail'
 import ContractDetail from './pages/ContractDetail'
 import RolePermissions from './pages/RolePermissions'
@@ -53,6 +54,7 @@ export default function App() {
             <Route path="inventory" element={<Inventory />} />
             <Route path="payables" element={<Payables />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="survey-report" element={<SurveyReport />} />
             <Route path="suppliers/:id" element={<SupplierDetail />} />
             <Route path="contracts/:id" element={<ContractDetail />} />
             <Route path="roles" element={<RolePermissions />} />

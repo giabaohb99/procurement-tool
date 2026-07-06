@@ -9,8 +9,8 @@ import SearchSelect from '../components/SearchSelect'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const GROUPS = ['Bao bì', 'Nguyên liệu', 'In ấn', 'Chai lọ', 'Hóa chất']
 const VAT_OPTS = ['0', '2', '4', '6', '8', '10']
-const APPROVE_OPTS = ['Chờ duyệt', 'Đã duyệt', 'Không duyệt']
-const APPROVE_COLOR: Record<string, string> = { 'Chờ duyệt': '#d97706', 'Đã duyệt': '#16a34a', 'Không duyệt': '#b91c1c' }
+const APPROVE_OPTS = ['Chờ duyệt', 'Đã duyệt', 'Không duyệt', 'Thiếu thông tin']
+const APPROVE_COLOR: Record<string, string> = { 'Chờ duyệt': '#d97706', 'Đã duyệt': '#16a34a', 'Không duyệt': '#b91c1c', 'Thiếu thông tin': '#ea580c' }
 
 // Kiểu trường: date | text | textarea | num | check | computed | unit(chọn) | vat(chọn) | approve(chọn)
 type SecField = { k: string; label: string; type?: string; full?: boolean }
@@ -129,7 +129,7 @@ const SUPPLIER_COLS: Col[] = [
   { key: 'nspt_note', label: 'Nhận xét NSPT', w: 160 },
   { key: 'nspt_reason', label: 'Lý do', w: 160 },
   { key: 'note', label: 'Ghi chú', w: 160 },
-  { key: 'line_approve', label: 'Duyệt (TP/QL)', w: 140, type: 'select', options: ['', 'Chờ duyệt', 'Đã duyệt', 'Không duyệt'] },
+  { key: 'line_approve', label: 'Duyệt (TP/QL)', w: 140, type: 'select', options: ['', 'Chờ duyệt', 'Đã duyệt', 'Không duyệt', 'Thiếu thông tin'] },
   { key: 'line_approve_note', label: 'Ghi chú duyệt', w: 180 },
 ]
 
@@ -162,7 +162,7 @@ const PRODUCT_COLS: Col[] = [
   { key: 'nspt_note', label: 'Nhận xét NSPT', w: 160 },
   { key: 'nspt_reason', label: 'Lý do NSPT', w: 160 },
   { key: 'note', label: 'Ghi chú', w: 160 },
-  { key: 'line_approve', label: 'Duyệt (TP/QL)', w: 140, type: 'select', options: ['', 'Chờ duyệt', 'Đã duyệt', 'Không duyệt'] },
+  { key: 'line_approve', label: 'Duyệt (TP/QL)', w: 140, type: 'select', options: ['', 'Chờ duyệt', 'Đã duyệt', 'Không duyệt', 'Thiếu thông tin'] },
   { key: 'line_approve_note', label: 'Ghi chú duyệt', w: 180 },
 ]
 
@@ -214,6 +214,9 @@ export default function SurveyDetail() {
   // Selection state for each table
   const [selSupplier, setSelSupplier] = useState<number[]>([])
   const [selProduct, setSelProduct] = useState<number[]>([])
+
+  // fillMode: popup mở ở chế độ "Bổ sung" cho dòng Thiếu thông tin (phiếu không editable)
+  const [fillMode, setFillMode] = useState(false)
 
   useEffect(() => {
     api.get('/api/suppliers', { params: { page_size: 1000 } }).then((r) => setSuppliers(r.data.data.items))
@@ -386,6 +389,26 @@ export default function SurveyDetail() {
     }
   }
 
+  // Lưu bổ sung dòng Thiếu thông tin qua fill endpoint
+  async function saveFillLine(tbl: 'supplier' | 'product', i: number) {
+    if (editingIndex === null) return
+    const it = getLines(tbl)[i]
+    if (!it?.id) { setErr('Dòng chưa có ID, cần lưu phiếu trước.'); return }
+    setErr(''); setMsg('')
+    // Lấy tất cả field nội dung (bỏ qua MGR_KEYS và line_approve*)
+    const sections = tbl === 'supplier' ? SUPPLIER_SECTIONS : PRODUCT_SECTIONS
+    const body: Record<string, any> = {}
+    sections.flatMap((s) => s.fields).forEach((f) => {
+      if (MGR_KEYS.includes(f.k)) return
+      body[f.k] = it[f.k]
+    })
+    try {
+      await api.patch(`${API}/${id}/lines/${tbl}/${it.id}/fill`, body)
+      setMsg('Đã bổ sung dòng thành công'); setEditingTable(null); setEditingIndex(null); setFillMode(false)
+      loadAll()
+    } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi bổ sung dòng') }
+  }
+
   async function action(path: string, payload: any = {}) {
     setErr('')
     try { await api.post(`${API}/${id}/${path}`, payload); loadAll() }
@@ -423,7 +446,8 @@ export default function SurveyDetail() {
   function lineField(f: SecField, tbl: 'supplier' | 'product', i: number) {
     const lines = getLines(tbl)
     const it = lines[i]; const k = f.k; const t = f.type || 'text'
-    const ce = MGR_KEYS.includes(k) ? canEditApprove : editable
+    // fillMode: cho sửa tất cả field nội dung (không phải MGR) khi popup ở chế độ Bổ sung
+    const ce = MGR_KEYS.includes(k) ? canEditApprove : (editable || fillMode)
     if (t === 'computed') return <input value={fmt(rowAmount(it))} disabled />
     if (t === 'check') return (
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: ce ? 'pointer' : 'default', height: 40 }}>
@@ -535,10 +559,17 @@ export default function SurveyDetail() {
                   <td>{i + 1}</td>
                   {tableCols.map((c) => <td key={c.key}>{cell(c, tbl, i)}</td>)}
                   <td style={{ textAlign: 'center' }}>
-                    <div style={{ display: 'inline-flex', gap: 6 }}>
-                      <button className="icon-btn" title="Chỉnh sửa chi tiết" onClick={() => openLine(tbl, i)}>
+                    <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'nowrap' }}>
+                      <button className="icon-btn" title="Chỉnh sửa chi tiết" onClick={() => { setFillMode(false); openLine(tbl, i) }}>
                         <i className="ti ti-edit" style={{ fontSize: 16, color: 'var(--teal)' }} />
                       </button>
+                      {!editable && can('survey', 'write') && getLines(tbl)[i]?.line_approve === 'Thiếu thông tin' && (
+                        <button className="btn ghost" title="Bổ sung nội dung dòng thiếu thông tin"
+                          style={{ height: 26, padding: '0 8px', fontSize: 11.5, color: '#ea580c', borderColor: '#ea580c' }}
+                          onClick={() => { setFillMode(true); openLine(tbl, i) }}>
+                          <i className="ti ti-pencil-plus" style={{ fontSize: 13 }} /> Bổ sung
+                        </button>
+                      )}
                       {editable && (
                         <button className="icon-btn" title="Nhân bản dòng" onClick={() => duplicateLine(tbl, i)}>
                           <i className="ti ti-copy" style={{ fontSize: 16, color: 'var(--muted)' }} />
@@ -716,7 +747,7 @@ export default function SurveyDetail() {
         return (
           <div
             style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.45)', zIndex: 100, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '4vh 12px', overflowY: 'auto' }}
-            onClick={() => { setEditingTable(null); setEditingIndex(null) }}
+            onClick={() => { setEditingTable(null); setEditingIndex(null); setFillMode(false) }}
           >
             <div
               style={{ width: 980, maxWidth: '100%', background: '#fff', borderRadius: 12, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', maxHeight: '92vh', overflow: 'hidden' }}
@@ -724,11 +755,11 @@ export default function SurveyDetail() {
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
                 <h3 style={{ margin: 0, fontSize: 16, color: 'var(--navy)', fontWeight: 600 }}>
-                  {editingTable === 'supplier' ? 'NCC' : 'SP'} — Chi tiết dòng #{editingIndex + 1}
+                  {editingTable === 'supplier' ? 'NCC' : 'SP'} — {fillMode ? <span style={{ color: '#ea580c' }}>Bổ sung</span> : 'Chi tiết'} dòng #{editingIndex + 1}
                   {activeIt.supplier_code ? ` — ${activeIt.supplier_code}` : ''}
                   {activeIt.product_name ? ` — ${activeIt.product_name}` : ''}
                 </h3>
-                <button className="icon-btn" onClick={() => { setEditingTable(null); setEditingIndex(null) }}>
+                <button className="icon-btn" onClick={() => { setEditingTable(null); setEditingIndex(null); setFillMode(false) }}>
                   <i className="ti ti-x" style={{ fontSize: 18 }} />
                 </button>
               </div>
@@ -781,8 +812,14 @@ export default function SurveyDetail() {
               </div>
 
               <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                <button className="btn ghost" style={{ height: 36, padding: '0 18px', fontSize: 13 }} onClick={() => { setEditingTable(null); setEditingIndex(null) }}>Đóng</button>
-                {liveApprove && (
+                <button className="btn ghost" style={{ height: 36, padding: '0 18px', fontSize: 13 }} onClick={() => { setEditingTable(null); setEditingIndex(null); setFillMode(false) }}>Đóng</button>
+                {fillMode && editingTable && editingIndex !== null && (
+                  <button className="btn" style={{ height: 36, padding: '0 18px', fontSize: 13, background: '#ea580c', borderColor: '#ea580c' }}
+                    onClick={() => saveFillLine(editingTable, editingIndex)}>
+                    <i className="ti ti-device-floppy" />Lưu bổ sung
+                  </button>
+                )}
+                {liveApprove && !fillMode && (
                   <button className="btn" style={{ height: 36, padding: '0 18px', fontSize: 13 }} onClick={() => { saveLineApprove(); setEditingTable(null); setEditingIndex(null) }}>
                     <i className="ti ti-check" />Lưu duyệt dòng
                   </button>

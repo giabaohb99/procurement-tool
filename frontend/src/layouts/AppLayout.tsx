@@ -14,8 +14,11 @@ const NAV_GROUPS: NavGroup[] = [
   ] },
   { title: 'Mua hàng', items: [
     { to: '/purchase-requests', label: 'Yêu cầu mua hàng', icon: 'ti-file-text', entity: 'purchase_request' },
-    { to: '/surveys', label: 'Khảo sát', icon: 'ti-clipboard-search', entity: 'survey' },
     { to: '/purchase-orders', label: 'Đơn mua hàng', icon: 'ti-shopping-cart', entity: 'purchase_order' },
+  ] },
+  { title: 'Khảo sát', items: [
+    { to: '/surveys', label: 'Phiếu khảo sát', icon: 'ti-clipboard-search', entity: 'survey' },
+    { to: '/survey-report', label: 'Báo cáo khảo sát', icon: 'ti-report-analytics', entity: 'survey' },
   ] },
   { title: 'Kho & Công nợ', items: [
     { to: '/inventory', label: 'Tồn kho', icon: 'ti-packages', entity: 'inventory' },
