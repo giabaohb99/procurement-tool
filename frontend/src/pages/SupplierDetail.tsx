@@ -36,6 +36,8 @@ export default function SupplierDetail() {
   const [surveySup, setSurveySup] = useState<any[]>([])
   const [surveyProd, setSurveyProd] = useState<any[]>([])
   const [surveySub, setSurveySub] = useState<'ncc' | 'sp'>('ncc')
+  const [surveyStatus, setSurveyStatus] = useState('')
+  const [surveyQ, setSurveyQ] = useState('')
   const [companies, setCompanies] = useState<any[]>([])
   const [kpi, setKpi] = useState<any>(null)
   const [err, setErr] = useState(''); const [msg, setMsg] = useState('')
@@ -286,19 +288,31 @@ export default function SupplierDetail() {
         </div>
       )}
 
-      {tab === 'surveys' && (
+      {tab === 'surveys' && (() => {
+        const q = surveyQ.trim().toLowerCase()
+        const okStatus = (x: any) => !surveyStatus || x.line_approve === surveyStatus
+        const fSup = surveySup.filter((x) => okStatus(x) && (!q || `${x.survey_code} ${x.supplier_code} ${x.supplier_name} ${x.tax_code} ${x.contact_person}`.toLowerCase().includes(q)))
+        const fProd = surveyProd.filter((x) => okStatus(x) && (!q || `${x.survey_code} ${x.internal_code} ${x.product_name}`.toLowerCase().includes(q)))
+        return (
         <div className="card" style={{ padding: 18 }}>
           <div style={{ display: 'flex', gap: 8, marginBottom: 12, borderBottom: '1px solid var(--border)' }}>
-            {([['ncc', `Khảo sát NCC (${surveySup.length})`], ['sp', `Khảo sát Sản phẩm (${surveyProd.length})`]] as const).map(([k, lb]) => (
+            {([['ncc', `Khảo sát NCC (${fSup.length})`], ['sp', `Khảo sát Sản phẩm (${fProd.length})`]] as const).map(([k, lb]) => (
               <button key={k} onClick={() => setSurveySub(k)} style={{ border: 'none', background: 'none', padding: '6px 12px', cursor: 'pointer', fontSize: 13.5, fontWeight: surveySub === k ? 700 : 500, color: surveySub === k ? 'var(--teal)' : 'var(--muted)', borderBottom: surveySub === k ? '2px solid var(--teal)' : '2px solid transparent' }}>{lb}</button>
             ))}
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+            <select value={surveyStatus} onChange={(e) => setSurveyStatus(e.target.value)} style={{ maxWidth: 200 }}>
+              <option value="">— Tất cả trạng thái —</option>
+              <option>Chờ duyệt</option><option>Đã duyệt</option><option>Không duyệt</option><option>Thiếu thông tin</option>
+            </select>
+            <input value={surveyQ} onChange={(e) => setSurveyQ(e.target.value)} placeholder="Tìm mã phiếu / tên…" style={{ maxWidth: 280 }} />
           </div>
           {surveySub === 'ncc' ? (
             <div className="items-scroll">
               <table className="items-table" style={{ minWidth: 820 }}>
                 <thead><tr><th>Mã phiếu</th><th>Ngày LH</th><th>NCC (viết tắt)</th><th>Tên pháp lý</th><th>MST</th><th>Người LH</th><th>SĐT</th><th>Duyệt</th></tr></thead>
                 <tbody>
-                  {surveySup.map((x) => (
+                  {fSup.map((x) => (
                     <tr key={x.line_id} className="clickable" onClick={() => navigate(`/surveys/${x.survey_id}`)}>
                       <td style={{ color: 'var(--teal)', fontWeight: 600 }}>{x.survey_code}</td><td>{x.contact_date}</td>
                       <td>{x.supplier_code}</td><td>{x.supplier_name}</td><td>{x.tax_code}</td>
@@ -306,7 +320,7 @@ export default function SupplierDetail() {
                       <td><span style={apStyle(x.line_approve)}>{x.line_approve}</span></td>
                     </tr>
                   ))}
-                  {surveySup.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có khảo sát NCC cho nhà cung cấp này</td></tr>}
+                  {fSup.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Không có khảo sát NCC khớp bộ lọc</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -315,7 +329,7 @@ export default function SupplierDetail() {
               <table className="items-table" style={{ minWidth: 780 }}>
                 <thead><tr><th>Mã phiếu</th><th>Mã SP (NCC)</th><th>Tên SP</th><th>ĐVT báo giá</th><th style={{ textAlign: 'right' }}>Giá</th><th style={{ textAlign: 'right' }}>MOQ</th><th>Duyệt</th></tr></thead>
                 <tbody>
-                  {surveyProd.map((x) => (
+                  {fProd.map((x) => (
                     <tr key={x.line_id} className="clickable" onClick={() => navigate(`/surveys/${x.survey_id}`)}>
                       <td style={{ color: 'var(--teal)', fontWeight: 600 }}>{x.survey_code}</td><td>{x.internal_code}</td>
                       <td>{x.product_name}</td><td>{x.quote_unit}</td>
@@ -323,13 +337,14 @@ export default function SupplierDetail() {
                       <td><span style={apStyle(x.line_approve)}>{x.line_approve}</span></td>
                     </tr>
                   ))}
-                  {surveyProd.length === 0 && <tr><td colSpan={7} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có khảo sát SP cho nhà cung cấp này</td></tr>}
+                  {fProd.length === 0 && <tr><td colSpan={7} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Không có khảo sát SP khớp bộ lọc</td></tr>}
                 </tbody>
               </table>
             </div>
           )}
         </div>
-      )}
+        )
+      })()}
     </div>
   )
 }
