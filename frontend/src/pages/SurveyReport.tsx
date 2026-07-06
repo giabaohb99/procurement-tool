@@ -99,9 +99,10 @@ export default function SurveyReport() {
       if (f.date_from) params.date_from = f.date_from
       if (f.date_to) params.date_to = f.date_to
       const r = await api.get('/api/survey-report/lines', { params })
-      setItems(r.data.items || [])
-      setTotal(r.data.total || 0)
-      setSummary(r.data.summary || { 'Chờ duyệt': 0, 'Đã duyệt': 0, 'Không duyệt': 0, 'Thiếu thông tin': 0 })
+      const d = r.data.data || {}
+      setItems(d.items || [])
+      setTotal(d.total || 0)
+      setSummary(d.summary || { 'Chờ duyệt': 0, 'Đã duyệt': 0, 'Không duyệt': 0, 'Thiếu thông tin': 0 })
     } finally {
       setBusy(false)
     }
