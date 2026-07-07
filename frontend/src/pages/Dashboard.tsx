@@ -194,7 +194,8 @@ export default function Dashboard() {
             <div className="hz-stat-ic" style={{ background: m.tint, color: m.color }}><i className={'ti ' + m.icon} /></div>
             <div style={{ minWidth: 0 }}>
               <div className="hz-stat-label">{m.label}</div>
-              <div className="hz-stat-val">{m.value}</div>
+              <div className="hz-stat-val" title={String(m.value)}
+                style={{ fontSize: (() => { const n = String(m.value).length; return n <= 8 ? 26 : n <= 12 ? 22 : n <= 15 ? 18 : 15 })() }}>{m.value}</div>
               <div style={{ fontSize: 11, color: m.trendColor, marginTop: 4, fontWeight: 500 }}>{m.trend}</div>
             </div>
           </div>
