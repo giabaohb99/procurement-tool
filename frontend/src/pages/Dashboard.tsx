@@ -136,10 +136,10 @@ export default function Dashboard() {
   const cats = d?.categories || []
   const totalSpendVal = cats.reduce((s: number, c: any) => s + (c.cost || 0), 0)
   const kpis = [
-    { entity: 'purchase_order', label: 'Tổng chi tiêu', value: money(totalSpendVal), icon: 'ti-coin', color: '#00AEEF', tint: '#E5F7FF', to: '/purchase-orders', trend: `Số liệu năm ${d?.year || 2026}`, trendColor: 'var(--hz-muted)' },
+    { entity: 'purchase_order', label: 'Tổng chi tiêu', value: full(totalSpendVal), icon: 'ti-coin', color: '#00AEEF', tint: '#E5F7FF', to: '/purchase-orders', trend: `Số liệu năm ${d?.year || 2026}`, trendColor: 'var(--hz-muted)' },
     { entity: 'purchase_request', label: 'Yêu cầu chờ duyệt (PRs)', value: k.pr_pending ?? 0, icon: 'ti-file-alert', color: '#D97706', tint: '#FFF6E5', to: '/purchase-requests?status=submitted', trend: 'Cần phê duyệt gấp', trendColor: '#E24B4A' },
     { entity: 'purchase_order', label: 'Đơn hàng hoạt động (POs)', value: k.po_ordered ?? 0, icon: 'ti-shopping-cart', color: '#4318FF', tint: '#ebe8ff', to: '/purchase-orders', trend: 'Đang theo dõi tiến độ', trendColor: '#00AEEF' },
-    { entity: 'payable', label: 'Công nợ quá hạn', value: money(k.overdue ?? 0), icon: 'ti-alert-triangle', color: '#E24B4A', tint: '#FEECEC', to: '/payables', trend: (k.overdue ?? 0) > 0 ? 'Cần đối soát thanh toán' : 'Không có nợ xấu', trendColor: (k.overdue ?? 0) > 0 ? '#E24B4A' : '#92C83E' },
+    { entity: 'payable', label: 'Công nợ quá hạn', value: full(k.overdue ?? 0), icon: 'ti-alert-triangle', color: '#E24B4A', tint: '#FEECEC', to: '/payables', trend: (k.overdue ?? 0) > 0 ? 'Cần đối soát thanh toán' : 'Không có nợ xấu', trendColor: (k.overdue ?? 0) > 0 ? '#E24B4A' : '#92C83E' },
   ].filter((m) => can(m.entity))
 
   // Biểu đồ cột 12 tháng (khóa chiều cao 240 để không "to đùng")
