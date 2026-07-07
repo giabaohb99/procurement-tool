@@ -135,12 +135,21 @@ export default function Dashboard() {
   const can = (e: string) => !!d?.can?.[e]
   const cats = d?.categories || []
   const totalSpendVal = cats.reduce((s: number, c: any) => s + (c.cost || 0), 0)
+  const yr = d?.year || 2026
   const kpis = [
-    { entity: 'purchase_order', label: 'Tổng chi tiêu', value: full(totalSpendVal), icon: 'ti-coin', color: '#00AEEF', tint: '#E5F7FF', to: '/purchase-orders', trend: `Số liệu năm ${d?.year || 2026}`, trendColor: 'var(--hz-muted)' },
+    { entity: 'purchase_order', label: 'Tổng chi tiêu', value: full(totalSpendVal), icon: 'ti-coin', color: '#00AEEF', tint: '#E5F7FF', to: '/purchase-orders', trend: `Số liệu năm ${yr}`, trendColor: 'var(--hz-muted)' },
     { entity: 'purchase_request', label: 'Yêu cầu chờ duyệt (PRs)', value: k.pr_pending ?? 0, icon: 'ti-file-alert', color: '#D97706', tint: '#FFF6E5', to: '/purchase-requests?status=submitted', trend: 'Cần phê duyệt gấp', trendColor: '#E24B4A' },
-    { entity: 'purchase_order', label: 'Đơn hàng hoạt động (POs)', value: k.po_ordered ?? 0, icon: 'ti-shopping-cart', color: '#4318FF', tint: '#ebe8ff', to: '/purchase-orders', trend: 'Đang theo dõi tiến độ', trendColor: '#00AEEF' },
-    { entity: 'payable', label: 'Công nợ quá hạn', value: full(k.overdue ?? 0), icon: 'ti-alert-triangle', color: '#E24B4A', tint: '#FEECEC', to: '/payables', trend: (k.overdue ?? 0) > 0 ? 'Cần đối soát thanh toán' : 'Không có nợ xấu', trendColor: (k.overdue ?? 0) > 0 ? '#E24B4A' : '#92C83E' },
+    { entity: 'survey_request', label: 'YC khảo sát chờ duyệt', value: k.sr_pending ?? 0, icon: 'ti-clipboard-check', color: '#0891b2', tint: '#e0f7fb', to: '/survey-requests?status=submitted', trend: (k.sr_pending ?? 0) > 0 ? 'Chờ trưởng bộ phận' : 'Không tồn đọng', trendColor: (k.sr_pending ?? 0) > 0 ? '#0891b2' : '#16a34a' },
+    { entity: 'purchase_order', label: 'Đơn hàng hoạt động (POs)', value: k.po_ordered ?? 0, icon: 'ti-shopping-cart', color: '#0d9488', tint: '#e3f6f3', to: '/purchase-orders', trend: 'Đang theo dõi tiến độ', trendColor: '#0d9488' },
+    { entity: 'payable', label: 'Công nợ quá hạn', value: full(k.overdue ?? 0), icon: 'ti-alert-triangle', color: '#E24B4A', tint: '#FEECEC', to: '/payables', trend: (k.overdue ?? 0) > 0 ? 'Cần đối soát thanh toán' : 'Không có nợ xấu', trendColor: (k.overdue ?? 0) > 0 ? '#E24B4A' : '#16a34a' },
   ].filter((m) => can(m.entity))
+
+  // "Việc cần xử lý" — gom số chờ duyệt + cảnh báo thành danh sách hành động
+  const todos: { icon: string; color: string; text: string; to?: string }[] = []
+  if (can('purchase_request') && (k.pr_pending ?? 0) > 0) todos.push({ icon: 'ti-file-alert', color: '#D97706', text: `${k.pr_pending} yêu cầu mua chờ duyệt`, to: '/purchase-requests?status=submitted' })
+  if (can('survey_request') && (k.sr_pending ?? 0) > 0) todos.push({ icon: 'ti-clipboard-check', color: '#0891b2', text: `${k.sr_pending} yêu cầu khảo sát chờ duyệt`, to: '/survey-requests?status=submitted' })
+  if (can('survey') && (k.survey_pending ?? 0) > 0) todos.push({ icon: 'ti-clipboard-search', color: '#0ea5e9', text: `${k.survey_pending} phiếu khảo sát chờ duyệt`, to: '/surveys' })
+  if (can('purchase_order') && (k.late_deliveries ?? 0) > 0) todos.push({ icon: 'ti-truck-delivery', color: '#EA580C', text: `${k.late_deliveries} lô hàng giao trễ hẹn`, to: '/purchase-orders' })
 
   // Biểu đồ cột 12 tháng (khóa chiều cao 240 để không "to đùng")
   const cost = d?.cost_12m || []
@@ -162,7 +171,7 @@ export default function Dashboard() {
   const recent_prs = d?.recent_prs || []
 
   return (
-    <div>
+    <div className="hz-page">
       {/* Header */}
       <div className="hz-head" style={{ marginBottom: 20 }}>
         <div>
@@ -195,7 +204,7 @@ export default function Dashboard() {
             <div style={{ minWidth: 0 }}>
               <div className="hz-stat-label">{m.label}</div>
               <div className="hz-stat-val" title={String(m.value)}
-                style={{ fontSize: (() => { const n = String(m.value).length; return n <= 8 ? 26 : n <= 12 ? 22 : n <= 15 ? 18 : 15 })() }}>{m.value}</div>
+                style={{ fontSize: (() => { const n = String(m.value).length; return n <= 8 ? 24 : n <= 12 ? 20 : n <= 15 ? 17 : 14 })() }}>{m.value}</div>
               <div style={{ fontSize: 11, color: m.trendColor, marginTop: 4, fontWeight: 500 }}>{m.trend}</div>
             </div>
           </div>
@@ -256,19 +265,43 @@ export default function Dashboard() {
         </div>
 
         <div className="hz-card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <h3 className="hz-title" style={{ marginBottom: 14 }}>Cơ cấu theo phân loại</h3>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-            <Donut items={cats.map((c: any, i: number) => ({ label: c.name, value: c.cost, color: CAT_COLORS[i % CAT_COLORS.length], display: `${c.pct}%` }))} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <h3 className="hz-title">Việc cần xử lý</h3>
+            {(todos.length + alerts.length) > 0 && <span className="badge warn">{todos.length + alerts.length}</span>}
+          </div>
+          <div style={{ flex: 1, overflow: 'auto', minHeight: 210 }}>
+            {todos.length === 0 && alerts.length === 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#16a34a', gap: 8, padding: '24px 0' }}>
+                <i className="ti ti-circle-check" style={{ fontSize: 32 }} />
+                <span style={{ fontSize: 13 }}>Không có việc tồn đọng</span>
+              </div>
+            ) : (
+              <>
+                {todos.map((t, i) => (
+                  <div key={'t' + i} className="hz-todo" onClick={() => t.to && navigate(t.to)}>
+                    <span className="hz-todo-ic" style={{ color: t.color, background: t.color + '1a' }}><i className={'ti ' + t.icon} /></span>
+                    <span className="hz-todo-tx">{t.text}</span>
+                    <i className="ti ti-chevron-right hz-todo-ch" />
+                  </div>
+                ))}
+                {alerts.map((a: any, i: number) => (
+                  <div key={'a' + i} className="hz-todo" onClick={() => a.link && navigate(a.link)}>
+                    <span className="hz-todo-ic" style={{ color: a.level === 'danger' ? '#E24B4A' : '#D97706', background: (a.level === 'danger' ? '#E24B4A' : '#D97706') + '1a' }}><i className={'ti ' + (a.level === 'danger' ? 'ti-alert-triangle' : 'ti-clock')} /></span>
+                    <span className="hz-todo-tx">{a.title}</span>
+                    <i className="ti ti-chevron-right hz-todo-ch" />
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         </div>
       </div>
 
       )}
 
-      {/* Yêu cầu mua hàng gần đây (Recent Requisitions) & Hiệu suất NCC */}
-      <div className="hz-grid">
-        {can('purchase_request') && (
-        <div className="hz-card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+      {/* Yêu cầu mua gần đây (full width) */}
+      {can('purchase_request') && (
+        <div className="hz-card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden', marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px 10px' }}>
             <h3 className="hz-title">Yêu cầu mua gần đây</h3>
             <span style={{ fontSize: 13, color: 'var(--teal)', fontWeight: 600, cursor: 'pointer' }} onClick={() => navigate('/purchase-requests')}>Xem tất cả</span>
@@ -333,94 +366,41 @@ export default function Dashboard() {
             </table>
           </div>
         </div>
-        )}
+      )}
 
+      {/* Phân tích chi tiêu & tình trạng — bar gọn, đọc nhanh */}
+      <div className="hz-breakdowns">
         {can('purchase_order') && (
-        <div className="hz-card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h3 className="hz-title">Top nhà cung cấp</h3>
-            <span style={{ fontSize: 13, color: 'var(--teal)', fontWeight: 600, cursor: 'pointer' }} onClick={() => navigate('/suppliers')}>Xem tất cả</span>
+          <div className="hz-card">
+            <h3 className="hz-title" style={{ marginBottom: 14 }}>Chi tiêu theo phân loại</h3>
+            <BarList items={cats.map((c: any, i: number) => ({ label: c.name, value: c.cost, color: CAT_COLORS[i % CAT_COLORS.length] }))} fmt={money} />
           </div>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            {(() => {
-              const items = top_sup.slice(0, 4)
-              const maxVal = Math.max(1, ...items.map((x: any) => x.value || 0))
-              return items.length === 0 ? (
-                <div style={{ color: 'var(--hz-muted)', fontSize: 13, textAlign: 'center' }}>Chưa có dữ liệu nhà cung cấp</div>
-              ) : items.map((s: any, idx: number) => {
-                const pct = Math.round(((s.value || 0) / maxVal) * 100)
-                const colors = ['#00AEEF', '#92C83E', '#7c3aed', '#d97706']
-                const barColor = colors[idx % colors.length]
-                return (
-                  <div key={idx} style={{ marginBottom: 15 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 5 }}>
-                      <span style={{ fontWeight: 600, color: 'var(--navy)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }} title={s.label}>{s.label}</span>
-                      <span style={{ fontWeight: 700, color: 'var(--navy)', flex: 'none' }}>{money(s.value)}</span>
-                    </div>
-                    <div style={{ height: 6, background: '#f0f2f9', borderRadius: 4, overflow: 'hidden' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', background: barColor, borderRadius: 4 }} />
-                    </div>
-                  </div>
-                )
-              })
-            })()}
-          </div>
-        </div>
         )}
-      </div>
-
-      {/* Trạng thái đơn + Tuổi nợ */}
-      <div className="hz-grid half">
         {can('purchase_order') && (
-        <div className="hz-card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <h3 className="hz-title" style={{ marginBottom: 12 }}>Trạng thái đơn hàng</h3>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-            <Donut items={po_status.map((s: any) => ({ label: s.label, value: s.value, color: s.color, display: String(s.value) }))} />
-          </div>
-        </div>
-        )}
-        {can('payable') && (
-        <div className="hz-card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <h3 className="hz-title" style={{ marginBottom: 12 }}>Tuổi nợ (còn phải trả)</h3>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <BarList items={ap_aging} fmt={money} />
-          </div>
-        </div>
-        )}
-      </div>
-
-      {/* Top NCC + Chi tiêu bộ phận */}
-      {can('purchase_order') && (
-      <div className="hz-grid half">
-        <div className="hz-card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <h3 className="hz-title" style={{ marginBottom: 12 }}>Top nhà cung cấp theo giá trị</h3>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div className="hz-card">
+            <h3 className="hz-title" style={{ marginBottom: 14 }}>Top nhà cung cấp</h3>
             <BarList items={top_sup} fmt={money} />
           </div>
-        </div>
-        <div className="hz-card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <h3 className="hz-title" style={{ marginBottom: 12 }}>Chi tiêu theo bộ phận</h3>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        )}
+        {can('purchase_order') && (
+          <div className="hz-card">
+            <h3 className="hz-title" style={{ marginBottom: 14 }}>Chi tiêu theo bộ phận</h3>
             <BarList items={dept} fmt={money} />
           </div>
-        </div>
+        )}
+        {can('purchase_order') && (
+          <div className="hz-card">
+            <h3 className="hz-title" style={{ marginBottom: 14 }}>Trạng thái đơn hàng</h3>
+            <BarList items={po_status} />
+          </div>
+        )}
+        {can('payable') && (
+          <div className="hz-card">
+            <h3 className="hz-title" style={{ marginBottom: 14 }}>Tuổi nợ (còn phải trả)</h3>
+            <BarList items={ap_aging} fmt={money} />
+          </div>
+        )}
       </div>
-      )}
-
-      {/* Cảnh báo cần xử lý (Full Width) */}
-      {alerts.length > 0 && (
-      <div className="hz-card" style={{ display: 'flex', flexDirection: 'column', marginBottom: 20 }}>
-        <h3 className="hz-title" style={{ marginBottom: 12 }}>Cảnh báo cần xử lý</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          {alerts.length === 0 ? <div style={{ color: 'var(--hz-muted)', fontSize: 13 }}>Không có cảnh báo</div> : alerts.map((a: any, i: number) => (
-            <div key={i} onClick={() => a.link && navigate(a.link)} style={{ display: 'flex', gap: 9, alignItems: 'flex-start', padding: '10px 0', fontSize: 13, cursor: 'pointer', borderBottom: i < alerts.length - 1 ? '1px solid #f2f4fa' : 'none' }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', marginTop: 5, flex: 'none', background: a.level === 'danger' ? '#E24B4A' : '#D97706' }} />
-              <span style={{ color: 'var(--navy)', lineHeight: 1.4 }}>{a.title}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      )}
     </div>
   )
 }

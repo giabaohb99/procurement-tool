@@ -33,6 +33,7 @@ services:
     env_file: .env
     volumes:
       - ./backend:/app          # mount code -> hot reload, không cần build lại
+      - ./test:/app/test        # mount test dir để pytest chạy trong container
     ports:
       - "8000:8000"
 

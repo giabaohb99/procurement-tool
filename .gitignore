@@ -7,3 +7,9 @@ __pycache__/
 node_modules/
 dist/
 *.log
+# Skill "taste" cài local cho agent — không thuộc app
+.agents/
+skills-lock.json
+# Cache pytest/e2e
+test/**/__pycache__/
+.pytest_cache/

@@ -9,53 +9,95 @@ export default function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
-    setErr('')
+    setErr(''); setBusy(true)
     try {
       await login(username, password)
       nav('/')
     } catch (ex: any) {
       setErr(ex?.response?.data?.error?.message || 'Đăng nhập thất bại')
+      setBusy(false)
     }
   }
 
   return (
-    <div className="login-wrap">
-      <div className="login-card">
-        <div className="brand"><i className="ti ti-building-warehouse" />Thu Mua Tool</div>
-        <div className="sub">Đăng nhập hệ thống nội bộ</div>
-        <form className="field" onSubmit={submit}>
-          <input placeholder="Mã nhân viên" value={username} onChange={(e) => setUsername(e.target.value)} />
-          <input placeholder="Mật khẩu" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <Link to="/forgot-password" style={{ fontSize: 13, textAlign: 'right', display: 'block', color: '#1c9cf0', textDecoration: 'none' }}>Quên mật khẩu?</Link>
-          {err && <div className="err">{err}</div>}
-          <button className="btn" type="submit" style={{ height: 42, justifyContent: 'center' }}>Đăng nhập</button>
-        </form>
-        <div style={{ margin: '20px 0', display: 'flex', alignItems: 'center', color: '#666' }}>
-          <div style={{ flex: 1, height: 1, backgroundColor: '#eee' }}></div>
-          <span style={{ padding: '0 10px', fontSize: 13 }}>HOẶC</span>
-          <div style={{ flex: 1, height: 1, backgroundColor: '#eee' }}></div>
+    <div className="lg-page">
+      {/* Bảng thương hiệu (ẩn trên mobile) */}
+      <aside className="lg-brand" aria-hidden="true">
+        <div className="lg-brand-top">
+          <img src="/logo.svg" className="lg-logo" alt="DEGO Holding" />
         </div>
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <GoogleLogin
-            onSuccess={async (credentialResponse) => {
-              if (credentialResponse.credential) {
-                setErr('')
-                try {
-                  await loginGoogle(credentialResponse.credential)
-                  nav('/')
-                } catch (ex: any) {
-                  setErr(ex?.response?.data?.error?.message || 'Đăng nhập Google thất bại')
+        <div className="lg-brand-body">
+          <h1 className="lg-brand-title">Hệ thống Quản lý Thu Mua</h1>
+          <p className="lg-brand-sub">
+            Nền tảng nội bộ của DEGO Holding — yêu cầu, khảo sát, đơn mua hàng và công nợ, gọn trong một chỗ.
+          </p>
+          <ul className="lg-brand-list">
+            <li><i className="ti ti-checks" /> Quy trình duyệt &amp; khảo sát minh bạch</li>
+            <li><i className="ti ti-shield-lock" /> Phân quyền chặt theo vai trò</li>
+            <li><i className="ti ti-chart-histogram" /> Báo cáo chi tiêu thời gian thực</li>
+          </ul>
+        </div>
+        <div className="lg-brand-foot">© {new Date().getFullYear()} DEGO Holding</div>
+      </aside>
+
+      {/* Bảng đăng nhập */}
+      <main className="lg-form-wrap">
+        <div className="lg-form">
+          <img src="/logo.svg" className="lg-logo-m" alt="DEGO Holding" />
+          <h2 className="lg-title">Đăng nhập</h2>
+          <p className="lg-sub">Dùng mã nhân viên nội bộ để tiếp tục.</p>
+
+          <form onSubmit={submit} className="lg-fields">
+            <div className="lg-inp">
+              <i className="ti ti-id-badge-2" />
+              <input placeholder="Mã nhân viên" autoComplete="username" value={username}
+                onChange={(e) => setUsername(e.target.value)} />
+            </div>
+            <div className="lg-inp">
+              <i className="ti ti-lock" />
+              <input placeholder="Mật khẩu" type="password" autoComplete="current-password" value={password}
+                onChange={(e) => setPassword(e.target.value)} />
+            </div>
+
+            <div className="lg-row">
+              <Link to="/forgot-password" className="lg-link">Quên mật khẩu?</Link>
+            </div>
+
+            {err && <div className="lg-err"><i className="ti ti-alert-circle" />{err}</div>}
+
+            <button className="lg-btn" type="submit" disabled={busy}>
+              {busy ? <i className="ti ti-loader-2 lg-spin" /> : <i className="ti ti-login-2" />}
+              {busy ? 'Đang đăng nhập…' : 'Đăng nhập'}
+            </button>
+          </form>
+
+          <div className="lg-or"><span>HOẶC</span></div>
+
+          <div className="lg-google">
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                if (credentialResponse.credential) {
+                  setErr('')
+                  try {
+                    await loginGoogle(credentialResponse.credential)
+                    nav('/')
+                  } catch (ex: any) {
+                    setErr(ex?.response?.data?.error?.message || 'Đăng nhập Google thất bại')
+                  }
                 }
-              }
-            }}
-            onError={() => setErr('Đăng nhập Google bị lỗi hoặc bị hủy')}
-            useOneTap
-          />
+              }}
+              onError={() => setErr('Đăng nhập Google bị lỗi hoặc bị hủy')}
+              useOneTap
+            />
+          </div>
+
+          <p className="lg-foot-m">© {new Date().getFullYear()} DEGO Holding · Hệ thống nội bộ</p>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

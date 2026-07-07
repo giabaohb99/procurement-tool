@@ -208,6 +208,11 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
     if can("survey"):
         kpi["survey_pending"] = apply_scope(db.query(Survey), Survey, "survey", user, prof).filter(Survey.status == "submitted").count()
 
+    # ===== Yêu cầu khảo sát (chờ trưởng bộ phận duyệt) =====
+    if can("survey_request"):
+        from app.modules.survey_request.model import SurveyRequest
+        kpi["sr_pending"] = apply_scope(db.query(SurveyRequest), SurveyRequest, "survey_request", user, prof).filter(SurveyRequest.status == "submitted").count()
+
     # ===== Công nợ =====
     if can("payable"):
         pays = apply_scope(db.query(Payable), Payable, "payable", user, prof).filter(Payable.status != "Đã TT").all()
@@ -245,7 +250,7 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
         return (t == "payable" and can("payable")) or (t == "contract" and can("contract")) or (t == "delivery" and can("purchase_order"))
     al_items = [x for x in build_alerts(db)["items"] if alert_ok(x)]
 
-    can_map = {e: can(e) for e in ["purchase_request", "purchase_order", "survey", "payable", "contract", "inventory", "report"]}
+    can_map = {e: can(e) for e in ["purchase_request", "purchase_order", "survey", "survey_request", "payable", "contract", "inventory", "report"]}
 
     return success({
         "year": target_year,
