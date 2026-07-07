@@ -6,7 +6,7 @@ from app.core.audit import record
 from .model import Product
 from .schema import ProductCreate, ProductUpdate
 
-FILTERABLE = ["code", "name", "item_group", "unit", "is_active"]
+FILTERABLE = ["code", "name", "item_group", "unit", "hh_code", "hh_name", "is_active"]
 ENTITY = "product"
 
 

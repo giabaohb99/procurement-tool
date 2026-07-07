@@ -128,20 +128,24 @@ export const cruds: Record<string, CrudConfig> = {
   products: {
     slug: 'products', entity: 'product', title: 'Sản phẩm / Hàng hóa', apiPath: '/api/products', importExport: true,
     columns: [
-      { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên' }, { key: 'item_group', label: 'Phân loại' },
-      { key: 'unit', label: 'ĐVT' }, { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
+      { key: 'code', label: 'Mã VTBB/NL' }, { key: 'name', label: 'Tên VTBB/NL' }, { key: 'item_group', label: 'Phân loại' },
+      { key: 'unit', label: 'ĐVT' },
+      { key: 'hh_code', label: 'Mã HH' }, { key: 'hh_name', label: 'Tên SP (HH)' },
+      { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
     ],
     filters: [
       { key: 'code', label: 'Mã VTBB/NL' }, { key: 'name', label: 'Tên' },
       { key: 'item_group', label: 'Phân loại', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
+      { key: 'hh_code', label: 'Mã HH (sản phẩm)' },
       { key: 'unit', label: 'ĐVT', source: { url: '/api/units', value: 'name', label: 'name' } },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
     ],
     fields: [
-      { key: 'code', label: 'Mã VTBB/NL', readonlyOnEdit: true }, { key: 'name', label: 'Tên' },
-      { key: 'invoice_name', label: 'Tên trên hóa đơn' }, { key: 'legal_name', label: 'Tên pháp lý (HH)' },
-      { key: 'item_group', label: 'Phân loại' },
-      { key: 'unit', label: 'ĐVT' }, { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
+      { key: 'code', label: 'Mã VTBB/NL', readonlyOnEdit: true }, { key: 'name', label: 'Tên VTBB/NL' },
+      { key: 'invoice_name', label: 'Tên trên hóa đơn' }, { key: 'legal_name', label: 'Tên pháp lý' },
+      { key: 'item_group', label: 'Phân loại' }, { key: 'unit', label: 'ĐVT' },
+      { key: 'hh_code', label: 'Mã HH (sản phẩm)' }, { key: 'hh_name', label: 'Tên Sản phẩm (HH)' },
+      { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
     ],
   },
   contracts: {

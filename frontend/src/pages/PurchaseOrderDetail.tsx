@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { poBadge } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
+import ProductPicker from '../components/ProductPicker'
 
 const API = '/api/purchase-orders'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -47,7 +48,7 @@ const CurrencyInput = ({ value, onChange, disabled, style, className }: any) => 
 }
 
 const emptyItem = {
-  product_code: '', product_name: '', invoice_name: '', item_group: '', spec: '', fg_code: '',
+  product_code: '', product_name: '', invoice_name: '', item_group: '', spec: '', fg_code: '', fg_name: '',
   supplier_ready: false, required_date: '', unit: '',
   qty_request: 0, qty_order: 0, price: 0, vat: 8, warehouse_code: '', note: '', deliveries: [],
 }
@@ -70,7 +71,6 @@ export default function PurchaseOrderDetail() {
   })
   const [companies, setCompanies] = useState<any[]>([])
   const [suppliers, setSuppliers] = useState<any[]>([])
-  const [products, setProducts] = useState<any[]>([])
   const [units, setUnits] = useState<string[]>([])
   const [warehouses, setWarehouses] = useState<any[]>([])
   const [prList, setPrList] = useState<any[]>([])
@@ -83,7 +83,6 @@ export default function PurchaseOrderDetail() {
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items))
     api.get('/api/suppliers', { params: { page_size: 1000 } }).then((r) => setSuppliers(r.data.data.items))
-    api.get('/api/products', { params: { page_size: 2000 } }).then((r) => setProducts(r.data.data.items))
     api.get('/api/units', { params: { page_size: 300 } }).then((r) => setUnits(r.data.data.items.map((x: any) => x.name)))
     api.get('/api/warehouses', { params: { page_size: 300 } }).then((r) => setWarehouses(r.data.data.items))
     api.get('/api/purchase-requests', { params: { page_size: 1000 } }).then((r) => setPrList(r.data.data.items))
@@ -147,9 +146,10 @@ export default function PurchaseOrderDetail() {
       }),
     }))
 
-  const onPickProduct = (i: number, code: string) => {
-    const p = products.find((x) => x.code === code)
-    setItem(i, p ? { product_code: p.code, product_name: p.name, invoice_name: p.invoice_name || p.name, unit: p.unit || '', item_group: p.item_group || '' } : { product_code: code })
+  const applyProduct = (i: number, p: any) => {
+    setItem(i, p
+      ? { product_code: p.code, product_name: p.name, invoice_name: p.invoice_name || p.name, unit: p.unit || '', item_group: p.item_group || '', fg_code: p.hh_code || '', fg_name: p.hh_name || '' }
+      : { product_code: '', product_name: '', invoice_name: '', item_group: '', fg_code: '', fg_name: '' })
   }
   const onPickSupplier = (code: string) => {
     const s = goodsSuppliers.find((x) => x.code === code)
@@ -173,7 +173,7 @@ export default function PurchaseOrderDetail() {
       vat_rate: Number(po.vat_rate) || 0, payment_terms: po.payment_terms, is_urgent: po.is_urgent, note: po.note,
       items: items.filter((it: any) => it.product_name || it.product_code).map((it: any) => ({
         id: it.id, product_code: it.product_code, product_name: it.product_name, invoice_name: it.invoice_name,
-        item_group: it.item_group, spec: it.spec, fg_code: it.fg_code, invoice_no: it.invoice_no,
+        item_group: it.item_group, spec: it.spec, fg_code: it.fg_code, fg_name: it.fg_name, invoice_no: it.invoice_no,
         supplier_ready: !!it.supplier_ready,
         required_date: it.required_date, unit: it.unit, qty_request: Number(it.qty_request) || 0,
         qty_order: Number(it.qty_order) || 0,
@@ -355,10 +355,8 @@ export default function PurchaseOrderDetail() {
                   {items.map((it: any, i: number) => (
                     <tr key={i}>
                       <td>{i + 1}</td>
-                      <td>
-                        <select className="cell-input" style={{ width: 120 }} value={it.product_code || ''} disabled={!headerEditable} onChange={(e) => onPickProduct(i, e.target.value)}>
-                          <option value="">-- Chọn --</option>{products.map((p) => <option key={p.id} value={p.code}>{p.code}</option>)}
-                        </select>
+                      <td style={{ minWidth: 190 }}>
+                        <ProductPicker code={it.product_code} name={it.product_name} disabled={!headerEditable} onPick={(prod) => applyProduct(i, prod)} />
                       </td>
                       <td>{txt(i, 'product_name', '100%')}</td>
                       <td>
@@ -474,12 +472,13 @@ export default function PurchaseOrderDetail() {
                 const de = !headerEditable
                 return (
                   <div className="form-grid" style={{ marginBottom: 18 }}>
-                    <div className="form-row"><label>Mã hàng (VTBB/NL)</label><input value={it.product_code || ''} disabled /></div>
+                    <div className="form-row"><label>Mã hàng (VTBB/NL)</label><ProductPicker code={it.product_code} name={it.product_name} disabled={de} onPick={(prod) => applyProduct(ii, prod)} /></div>
                     <div className="form-row"><label>Phân loại</label><input value={it.item_group || ''} disabled={de} onChange={(e) => setItem(ii, { item_group: e.target.value })} /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên hàng</label><input value={it.product_name || ''} disabled={de} onChange={(e) => setItem(ii, { product_name: e.target.value })} /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên trên hóa đơn</label><input value={it.invoice_name || ''} disabled={de} onChange={(e) => setItem(ii, { invoice_name: e.target.value })} /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Xuất xứ / TSKT / chất liệu</label><input value={it.spec || ''} disabled={de} onChange={(e) => setItem(ii, { spec: e.target.value })} /></div>
-                    <div className="form-row"><label>Mã HH (thành phẩm)</label><input value={it.fg_code || ''} disabled={de} onChange={(e) => setItem(ii, { fg_code: e.target.value })} /></div>
+                    <div className="form-row"><label>Mã HH (thành phẩm)</label><input value={it.fg_code || ''} placeholder="Tự gắn khi chọn SP" disabled={de} onChange={(e) => setItem(ii, { fg_code: e.target.value })} /></div>
+                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên HH (thành phẩm)</label><input value={it.fg_name || ''} placeholder="Tự gắn khi chọn SP" disabled={de} onChange={(e) => setItem(ii, { fg_name: e.target.value })} /></div>
                     <div className="form-row"><label>Số hóa đơn</label><input value={it.invoice_no || ''} placeholder="Số HĐ theo sản phẩm" disabled={de} onChange={(e) => setItem(ii, { invoice_no: e.target.value })} /></div>
                     <div className="form-row"><label>Ngày yêu cầu có hàng</label><input type="date" value={it.required_date || ''} disabled={de} onChange={(e) => setItem(ii, { required_date: e.target.value })} /></div>
                     <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={!!it.supplier_ready} disabled={de} onChange={(e) => setItem(ii, { supplier_ready: e.target.checked })} style={{ width: 16, height: 16 }} /> NCC có sẵn hàng</label></div>

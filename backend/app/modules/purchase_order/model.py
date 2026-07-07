@@ -40,6 +40,7 @@ class POItem(Base, AuditMixin):
     item_group: Mapped[str] = mapped_column(String(100), default="")
     spec: Mapped[str] = mapped_column(String(255), default="")              # xuất xứ/TSKT/chất liệu
     fg_code: Mapped[str] = mapped_column(String(50), default="")           # Mã HH / thành phẩm (col42)
+    fg_name: Mapped[str] = mapped_column(String(255), default="")          # Tên HH / thành phẩm (theo master SP)
     invoice_no: Mapped[str] = mapped_column(String(50), default="")        # Số hóa đơn (theo sản phẩm, col31)
     supplier_ready: Mapped[bool] = mapped_column(Boolean, default=False)    # NCC có sẵn hàng (col17)
     required_date: Mapped[str] = mapped_column(String(10), default="")      # ngày yêu cầu có hàng (col3)

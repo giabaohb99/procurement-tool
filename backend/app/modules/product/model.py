@@ -15,4 +15,6 @@ class Product(Base, AuditMixin):
     legal_name: Mapped[str] = mapped_column(String(255), default="")    # tên pháp lý HH (col45)
     item_group: Mapped[str] = mapped_column(String(50), default="")     # Phân loại (Thùng, Nhãn...)
     unit: Mapped[str] = mapped_column(String(25), default="")           # ĐVT
+    hh_code: Mapped[str] = mapped_column(String(50), default="", index=True)  # Mã HH (sản phẩm/hàng hóa) — liên kết
+    hh_name: Mapped[str] = mapped_column(String(255), default="")       # Tên Sản phẩm (HH)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

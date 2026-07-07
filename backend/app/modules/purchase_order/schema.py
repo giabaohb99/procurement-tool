@@ -30,6 +30,7 @@ class POItemIn(BaseModel):
     item_group: str = ""
     spec: str = ""
     fg_code: str = ""
+    fg_name: str = ""
     invoice_no: str = ""
     supplier_ready: bool = False
     required_date: str = ""

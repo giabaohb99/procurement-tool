@@ -226,7 +226,7 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
 
 # Các cột dòng hàng được sao chép khi Nhân bản (KHÔNG copy số đã nhận / lần giao / trạng thái)
 _ITEM_COPY_FIELDS = ["product_code", "product_name", "invoice_name", "item_group", "spec",
-                     "fg_code", "invoice_no", "supplier_ready", "required_date", "unit",
+                     "fg_code", "fg_name", "invoice_no", "supplier_ready", "required_date", "unit",
                      "qty_request", "qty_order", "price", "vat", "warehouse_code", "note"]
 
 
