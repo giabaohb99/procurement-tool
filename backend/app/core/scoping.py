@@ -94,7 +94,8 @@ def _role_scope_cond(model, entity, scope, user, profile):
 
 
 def _explicit_cond(model, entity, scopeconf):
-    """Điều kiện theo chọn cụ thể + loại trừ (công ty/phòng ban/nhân sự). None = không đặt."""
+    """Điều kiện THU HẸP: include công ty/nhân sự + MỌI loại trừ (AND).
+    Riêng 'Phòng ban được xem' (department include) = CỘNG THÊM → xử lý ở apply_scope."""
     f = SCOPE_FIELDS.get(entity) or {}
     dim_col = {"company": f.get("company"), "department": f.get("dept_name"), "employee": f.get("owner")}
     cs = []
@@ -105,11 +106,21 @@ def _explicit_cond(model, entity, scopeconf):
         inc = (scopeconf.get("inc") or {}).get(dim) or []
         exc = (scopeconf.get("exc") or {}).get(dim) or []
         cast = (lambda v: int(v)) if dim in ("company", "employee") else (lambda v: v)
-        if inc:
+        if inc and dim != "department":       # department include = additive (không thu hẹp)
             cs.append(column.in_([cast(v) for v in inc]))
         if exc:
             cs.append(~column.in_([cast(v) for v in exc]))
     return and_(*cs) if cs else None
+
+
+def _dept_include_cond(model, entity, scopeconf):
+    """'Phòng ban được xem' → điều kiện CỘNG THÊM (OR với phạm vi vai trò). None = không chọn phòng nào."""
+    f = SCOPE_FIELDS.get(entity) or {}
+    col = f.get("dept_name")
+    inc = (scopeconf.get("inc") or {}).get("department") or []
+    if not col or not inc:
+        return None
+    return getattr(model, col).in_(list(inc))
 
 
 def apply_scope(query, model, entity: str, user, profile: dict, action: str = "read"):
@@ -119,9 +130,14 @@ def apply_scope(query, model, entity: str, user, profile: dict, action: str = "r
         p = g["perms"].get(entity)
         if not p or not p.get(action):
             continue
+        scopeconf = g.get("scope") or {}
         rc = _role_scope_cond(model, entity, p.get("scope", "all"), user, profile)
-        ec = _explicit_cond(model, entity, g.get("scope") or {})
-        parts = [c for c in (rc, ec) if c is not None]
+        # 'Phòng ban được xem' = CỘNG THÊM vào phạm vi vai trò.
+        # rc None (scope=all) → đã thấy hết, bỏ qua để không thu hẹp nhầm.
+        dept_add = _dept_include_cond(model, entity, scopeconf)
+        base = or_(rc, dept_add) if (rc is not None and dept_add is not None) else rc
+        ec = _explicit_cond(model, entity, scopeconf)   # thu hẹp: company include + mọi loại trừ
+        parts = [c for c in (base, ec) if c is not None]
         if not parts:
             return query          # grant này thấy tất cả → không lọc
         conds.append(and_(*parts))

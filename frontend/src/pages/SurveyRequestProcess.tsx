@@ -238,7 +238,7 @@ export default function SurveyRequestProcess() {
 
   const lines = data.lines || []
   const allHaveOptions = lines.length > 0 && lines.every((l) => (l.options || []).length > 0)
-  const isAdminTM = can('survey_request', 'delete')
+  const canProcess = can('survey_request', 'process')   // NSTM/QL/Admin TM (người xử lý khảo sát)
 
   return (
     <div>
@@ -505,8 +505,8 @@ export default function SurveyRequestProcess() {
         )
       })}
 
-      {/* Nút chốt hoàn thành — chỉ Admin TM */}
-      {isAdminTM && lines.length > 0 && (
+      {/* Nút chốt hoàn thành — NSTM trực tiếp khảo sát (hoặc QL/Admin TM) */}
+      {canProcess && lines.length > 0 && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 12, alignItems: 'center' }}>
           {!allHaveOptions && (
             <span style={{ fontSize: 13, color: 'var(--muted)' }}>

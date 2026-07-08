@@ -145,7 +145,7 @@ def add_line_popup(page: Page, item_group: str = "Nhãn",
     page.wait_for_timeout(500)
 
     # Mở popup chi tiết dòng cuối (icon bút title="Chi tiết")
-    page.locator('button[title="Chi tiết"]').last.click()
+    page.locator('button[title="Chi tiết / hình ảnh"]').last.click()
     expect(page.get_by_text("Chi tiết dòng #")).to_be_visible(timeout=6000)
 
     # Phân loại — SearchSelect (react-select) trong popup
@@ -222,8 +222,8 @@ def add_line_popup(page: Page, item_group: str = "Nhãn",
 # ---------------------------------------------------------------------------
 
 def save_as_draft(page: Page) -> None:
-    """Bấm Lưu nháp và chờ redirect ra khỏi /new."""
-    page.get_by_role("button", name="Lưu nháp").click()
+    """Bấm Lưu và chờ redirect ra khỏi /new."""
+    page.get_by_role("button", name="Lưu").click()
     page.wait_for_url(
         lambda url: "/survey-requests/" in url and url.split("/")[-1] != "new",
         timeout=12000,
@@ -231,8 +231,8 @@ def save_as_draft(page: Page) -> None:
 
 
 def save_and_submit(page: Page) -> None:
-    """Bấm 'Lưu & Gửi Duyệt' và chờ redirect."""
-    page.get_by_role("button", name="Lưu & Gửi Duyệt").click()
+    """Bấm 'Gửi duyệt' (lưu + gửi duyệt) và chờ redirect."""
+    page.get_by_role("button", name="Gửi duyệt").click()
     page.wait_for_url(
         lambda url: "/survey-requests/" in url and url.split("/")[-1] != "new",
         timeout=12000,

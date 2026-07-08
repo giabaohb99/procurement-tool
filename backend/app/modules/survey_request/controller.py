@@ -60,6 +60,17 @@ def _notify(db, users, title, body, link, creator_id):
     db.commit()
 
 
+def _users_of_codes(db, codes):
+    """Tài khoản user theo danh sách mã NV (để thông báo NSTM được phân công)."""
+    codes = [c for c in codes if c]
+    if not codes:
+        return []
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+    emp_ids = [e.id for e in db.query(Employee).filter(Employee.code.in_(codes)).all()]
+    return db.query(User).filter(User.employee_id.in_(emp_ids)).all() if emp_ids else []
+
+
 @router.get("/meta/dept-head")
 def dept_head_(department: str = "", db: Session = Depends(get_db),
                user=Depends(require("survey_request", "read"))):
@@ -135,33 +146,66 @@ def approve_(sid: int, db: Session = Depends(get_db), user=Depends(require("surv
             f"[Đã duyệt] Phiếu khảo sát {s.code}",
             f"Phiếu yêu cầu khảo sát {s.code} đã được duyệt, chuyển sang xử lý khảo sát.",
             f"/survey-requests/{s.id}", s.created_by or user.id)
+    # Báo cho các NSTM vừa được TỰ GÁN theo phân loại
+    codes = {ln.assignee for ln in service.lines_of(db, s.id) if ln.assignee}
+    if codes:
+        _notify(db, _users_of_codes(db, list(codes)),
+                f"[Phân công khảo sát] {s.code}",
+                f"Bạn được phân công khảo sát trong phiếu {s.code} (vừa được duyệt).",
+                f"/survey-requests/{s.id}/process", user.id)
     return success(_out(db, s), "Đã duyệt — chuyển sang xử lý")
 
 
 @router.post("/{sid}/reject")
 def reject_(sid: int, data: RejectIn, db: Session = Depends(get_db),
             user=Depends(require("survey_request", "approve"))):
+    """TRẢ ĐƠN — trả về để người YC sửa & gửi lại (như nháp). status → rejected (còn sửa được)."""
     s = service.set_status(db, sid, "rejected", user.id, data.reason)
     from app.modules.user.model import User
     reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
-    _notify(db, reqs, f"[Từ chối] Phiếu khảo sát {s.code}",
-            f"Phiếu yêu cầu khảo sát {s.code} bị từ chối. Lý do: {data.reason or '(không nêu)'}",
+    _notify(db, reqs, f"[Trả đơn] Phiếu khảo sát {s.code}",
+            f"Phiếu yêu cầu khảo sát {s.code} bị TRẢ LẠI để chỉnh sửa. Lý do: {data.reason or '(không nêu)'}",
             f"/survey-requests/{s.id}", s.created_by or user.id)
-    return success(_out(db, s), "Đã từ chối")
+    return success(_out(db, s), "Đã trả đơn")
+
+
+@router.post("/{sid}/cancel")
+def cancel_(sid: int, data: RejectIn, db: Session = Depends(get_db),
+            user=Depends(require("survey_request", "approve"))):
+    """TỪ CHỐI — khóa đơn hẳn (không sửa được nữa, phải làm đơn mới). status → cancelled."""
+    s = service.set_status(db, sid, "cancelled", user.id, data.reason)
+    from app.modules.user.model import User
+    reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
+    _notify(db, reqs, f"[Từ chối] Phiếu khảo sát {s.code}",
+            f"Phiếu yêu cầu khảo sát {s.code} bị TỪ CHỐI (khóa đơn). Lý do: {data.reason or '(không nêu)'}",
+            f"/survey-requests/{s.id}", s.created_by or user.id)
+    return success(_out(db, s), "Đã từ chối (khóa đơn)")
 
 
 @router.patch("/{sid}/lines/{line_id}/assignee")
 def set_line_assignee_(sid: int, line_id: int, data: dict, db: Session = Depends(get_db),
-                       user=Depends(require("survey_request", "write"))):
-    """Gán/đổi NSTM phụ trách 1 dòng (Admin/AdminTM). Body: {assignee: mã NV}."""
+                       user=Depends(require("survey_request", "process"))):
+    """Gán/đổi NSTM phụ trách 1 dòng — CHỈ thu mua side (NSTM/QL/Admin TM). Người YC không được. Body: {assignee: mã NV}."""
     from .model import SurveyRequestLine
     ln = db.query(SurveyRequestLine).filter(SurveyRequestLine.id == line_id,
                                             SurveyRequestLine.survey_request_id == sid).first()
     if not ln:
         raise HTTPException(404, "Không tìm thấy dòng")
     ln.assignee = (data.get("assignee") or "").strip()
+    # Ngày tiếp nhận = ngày NSTM được gán (tự tính); bỏ gán thì xóa
+    if ln.assignee and not ln.received_date:
+        from datetime import datetime
+        ln.received_date = datetime.now().strftime("%Y-%m-%d")
+    elif not ln.assignee:
+        ln.received_date = ""
     ln.updated_by = user.id
     db.commit()
+    if ln.assignee:                                   # báo cho NSTM vừa được gán
+        s = service.get_sr(db, sid)
+        _notify(db, _users_of_codes(db, [ln.assignee]),
+                f"[Phân công khảo sát] {s.code}",
+                f"Bạn được phân công phụ trách khảo sát trong phiếu {s.code}.",
+                f"/survey-requests/{sid}/process", user.id)
     return success(_out(db, service.get_sr(db, sid)), "Đã gán nhân sự phụ trách")
 
 
@@ -272,8 +316,9 @@ def edit_option_note_(sid: int, line_id: int, oid: int, data: dict, db: Session 
 
 @router.post("/{sid}/complete")
 def complete_(sid: int, db: Session = Depends(get_db),
-              user=Depends(require("survey_request", "delete"))):
-    """Chốt hoàn thành khảo sát (chỉ Admin TM — quyền delete). processing → survey_done."""
+              up=Depends(_purchaser)):
+    """Chốt hoàn thành khảo sát — NSTM trực tiếp khảo sát (hoặc Quản lý/Admin TM). processing → survey_done."""
+    user, _ = up
     s = service.complete_sr(db, sid, user.id)
     from app.modules.user.model import User
     reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()

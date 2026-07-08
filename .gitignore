@@ -13,3 +13,12 @@ skills-lock.json
 # Cache pytest/e2e
 test/**/__pycache__/
 .pytest_cache/
+
+# Runtime uploads (file người dùng tải lên)
+backend/uploads/
+
+# Tài liệu kỹ thuật — artifact sinh ra (giữ .md + script build)
+doc/tai-lieu-ky-thuat/export/mermaid.min.js
+doc/tai-lieu-ky-thuat/export/*.pdf
+doc/tai-lieu-ky-thuat/export/*.png
+doc/tai-lieu-ky-thuat/export/*.html

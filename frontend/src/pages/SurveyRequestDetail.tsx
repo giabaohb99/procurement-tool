@@ -18,12 +18,13 @@ const parseVN = (s: string) => {
   return c === '' ? 0 : Number(c)
 }
 // Ô nhập số: hiển thị 3.000 khi không focus, cho gõ tự do khi focus
-function NumberInput({ value, onChange, disabled, placeholder }: any) {
+function NumberInput({ value, onChange, disabled, placeholder, className, style }: any) {
   const [foc, setFoc] = useState(false)
   const [raw, setRaw] = useState('')
   const shown = foc ? raw : (Number(value) ? Number(value).toLocaleString('vi-VN') : '')
   return (
     <input type="text" inputMode="decimal" disabled={disabled} placeholder={placeholder} value={shown}
+      className={className} style={style}
       onFocus={() => { setRaw(value ? String(value).replace('.', ',') : ''); setFoc(true) }}
       onBlur={() => setFoc(false)}
       onChange={(e) => { setRaw(e.target.value); onChange(parseVN(e.target.value)) }} />
@@ -44,7 +45,8 @@ const SR_STATUS: Record<string, { label: string; cls: string }> = {
   draft:       { label: 'Nháp',         cls: 'gray' },
   submitted:   { label: 'Chờ duyệt',    cls: 'warn' },
   approved:    { label: 'Đã duyệt',     cls: 'ok'   },
-  rejected:    { label: 'Từ chối',      cls: 'err'  },
+  rejected:    { label: 'Bị trả lại',   cls: 'warn' },
+  cancelled:   { label: 'Đã từ chối',   cls: 'err'  },
   processing:  { label: 'Đang xử lý',   cls: 'warn' },
   survey_done: { label: 'Đã khảo sát',  cls: 'ok'   },
   pr_created:  { label: 'Đã tạo YCMH',  cls: 'warn' },
@@ -90,7 +92,7 @@ export default function SurveyRequestDetail() {
   const [companies, setCompanies]   = useState<any[]>([])
   const [departments, setDepartments] = useState<any[]>([])
   const [employees, setEmployees]   = useState<any[]>([])
-  const [itemGroups, setItemGroups] = useState<string[]>([])
+  const [itemGroups, setItemGroups] = useState<any[]>([])
   const [units, setUnits]           = useState<string[]>([])
   const [logs, setLogs]             = useState<any[]>([])
   const [err, setErr]               = useState('')
@@ -102,7 +104,7 @@ export default function SurveyRequestDetail() {
     api.get('/api/companies',   { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items)).catch(() => {})
     api.get('/api/departments', { params: { page_size: 500 } }).then((r) => setDepartments(r.data.data.items)).catch(() => {})
     api.get('/api/employees',   { params: { page_size: 1000 } }).then((r) => setEmployees(r.data.data.items)).catch(() => {})
-    api.get('/api/item-groups', { params: { page_size: 500 } }).then((r) => setItemGroups(r.data.data.items.map((x: any) => x.name))).catch(() => {})
+    api.get('/api/item-groups', { params: { page_size: 500 } }).then((r) => setItemGroups(r.data.data.items)).catch(() => {})
     api.get('/api/units',       { params: { page_size: 200 } }).then((r) => setUnits(r.data.data.items.map((x: any) => x.name))).catch(() => {})
   }, [])
 
@@ -153,10 +155,33 @@ export default function SurveyRequestDetail() {
   const companyOptions  = companies.map((c) => ({ value: c.id, label: c.name }))
   const employeeOptions = employees.map((e) => ({ value: e.full_name, label: e.full_name }))
   const deptOptions     = departments.map((d) => ({ value: d.name, label: d.name }))
-  // NSTM phụ trách: value = MÃ NV (khớp cột assignee), label = tên
-  const purchaserOptions = employees.map((e) => ({ value: e.code, label: e.full_name }))
-  const canAssign = can('survey_request', 'write')   // Admin / Admin TM gán NSTM cho dòng
+  // NSTM phụ trách: value = MÃ NV (khớp cột assignee), label = tên.
+  // Bổ sung NSTM đã gán ở các dòng (dù không nằm trong ds nhân viên tải về do scope) → luôn hiện đúng tên.
+  const purchaserOptions = (() => {
+    const opts = employees.map((e) => ({ value: e.code, label: e.full_name }))
+    for (const l of (sv.lines || [])) {
+      if (l.assignee && !opts.some((o) => o.value === l.assignee))
+        opts.push({ value: l.assignee, label: l.assignee_name || l.assignee })
+    }
+    return opts
+  })()
+  const canAssign = can('survey_request', 'process')  // CHỈ thu mua side (NSTM/QL/Admin TM) gán NSTM; người YC không
+  // Cột NSTM (Ngày tiếp nhận, Nhân sự phụ trách): CHỈ hiện với quản lý/thu mua, KHÔNG hiện với người YC & lúc tạo
+  const showNstmCols = canAssign && !isNew
+  // Trạng thái dòng: ẩn khi TẠO mới (mọi dòng đều "Chưa xong" → rối mắt)
+  const showStatus = !isNew
   const empName = (code: string) => employees.find((e) => e.code === code)?.full_name || code || ''
+  const itemGroupNames = itemGroups.map((g: any) => g.name)
+  // Mô tả phân loại = số ngày quy định (hàng NCC có sẵn / không sẵn)
+  const groupDesc = (name: string) => {
+    const g = itemGroups.find((x: any) => x.name === name)
+    if (!g) return ''
+    const p: string[] = []
+    if (g.std_days) p.push(`NCC có sẵn: ${g.std_days} ngày`)
+    if (g.std_days_unavail) p.push(`không sẵn: ${g.std_days_unavail} ngày`)
+    if (g.note) p.push(g.note)
+    return p.join(' · ')
+  }
 
   async function assignPurchaser(lineId: number, code: string) {
     try { await api.patch(`${API}/${id}/lines/${lineId}/assignee`, { assignee: code }); await loadAll() }
@@ -227,6 +252,29 @@ export default function SurveyRequestDetail() {
     try { await api.delete(`/api/attachments/${fid}`); await loadLineFiles(lineId) } catch {}
   }
 
+  // --- Hình CHỜ TẢI cho dòng CHƯA có id (gắn ngay lúc tạo, upload khi Lưu) ---
+  const [pendingFiles, setPendingFiles] = useState<Record<number, File[]>>({})
+  const addPending = (idx: number, fl: FileList | null) => {
+    if (!fl || !fl.length) return
+    const arr = Array.from(fl)   // chụp NGAY — vì input bị clear value sau onChange
+    setPendingFiles((p) => ({ ...p, [idx]: [...(p[idx] || []), ...arr] }))
+  }
+  const removePending = (idx: number, fi: number) =>
+    setPendingFiles((p) => ({ ...p, [idx]: (p[idx] || []).filter((_, k) => k !== fi) }))
+  async function uploadFilesToLine(lineId: number, files: File[]) {
+    const fd = new FormData(); fd.append('entity', 'survey_request_line'); fd.append('entity_id', String(lineId))
+    files.forEach((f) => fd.append('files', f))
+    await api.post('/api/attachments', fd)
+  }
+  // Sau khi lưu: đẩy hình chờ lên đúng dòng (khớp theo thứ tự index dòng trả về)
+  async function flushPending(returnedLines: any[]) {
+    for (const [idxStr, files] of Object.entries(pendingFiles)) {
+      const i = Number(idxStr); const lineId = returnedLines?.[i]?.id
+      if (lineId && (files as File[]).length) { try { await uploadFilesToLine(lineId, files as File[]) } catch {} }
+    }
+    setPendingFiles({})
+  }
+
   const setH = (k: string, v: any) => setSv((s: any) => ({ ...s, [k]: v }))
   const lines: any[] = sv.lines || []
 
@@ -237,11 +285,25 @@ export default function SurveyRequestDetail() {
     }))
 
   const addLine = () => setSv((s: any) => ({ ...s, lines: [...(s.lines || []), { ...emptyLine }] }))
-  const delLine = (i: number) => setSv((s: any) => ({ ...s, lines: s.lines.filter((_: any, idx: number) => idx !== i) }))
-  const copyLine = (i: number) => setSv((s: any) => {
-    const src = { ...s.lines[i] }; delete src.id
-    const arr = [...s.lines]; arr.splice(i + 1, 0, src); return { ...s, lines: arr }
-  })
+  const delLine = (i: number) => {
+    setSv((s: any) => ({ ...s, lines: s.lines.filter((_: any, idx: number) => idx !== i) }))
+    setPendingFiles((p) => {
+      const n: Record<number, File[]> = {}
+      for (const [k, v] of Object.entries(p)) { const kk = Number(k); if (kk === i) continue; n[kk > i ? kk - 1 : kk] = v }
+      return n
+    })
+  }
+  const copyLine = (i: number) => {
+    setSv((s: any) => {
+      const src = { ...s.lines[i] }; delete src.id
+      const arr = [...s.lines]; arr.splice(i + 1, 0, src); return { ...s, lines: arr }
+    })
+    setPendingFiles((p) => {
+      const n: Record<number, File[]> = {}
+      for (const [k, v] of Object.entries(p)) { const kk = Number(k); n[kk > i ? kk + 1 : kk] = v }
+      return n
+    })
+  }
 
   function handleRequesterChange(empName: string, isAutoFill = false) {
     const emp = employees.find((e) => e.full_name === empName)
@@ -297,11 +359,13 @@ export default function SurveyRequestDetail() {
     try {
       if (isNew) {
         const r = await api.post(API, body)
-        const nid = r.data.data.id
-        if (submitAfterSave) await api.post(`${API}/${nid}/submit`)
-        navigate(`/survey-requests/${nid}`)
+        const created = r.data.data
+        await flushPending(created.lines || [])          // đẩy hình chờ lên dòng vừa tạo
+        if (submitAfterSave) await api.post(`${API}/${created.id}/submit`)
+        navigate(`/survey-requests/${created.id}`)
       } else {
-        await api.patch(`${API}/${id}`, body)
+        const r = await api.patch(`${API}/${id}`, body)
+        await flushPending(r.data?.data?.lines || [])    // dòng mới thêm vào phiếu cũ
         if (submitAfterSave) await api.post(`${API}/${id}/submit`)
         setMsg('Đã lưu'); loadAll()
       }
@@ -335,6 +399,18 @@ export default function SurveyRequestDetail() {
         {!isNew && srBadge(sv.status)}
         <span style={{ flex: 1 }} />
 
+        {/* Lưu (riêng) + Gửi duyệt (riêng) — góc trên phải, khi đang soạn/nháp */}
+        {editable && (
+          <>
+            <button className="btn" onClick={() => save(false)}>
+              <i className="ti ti-device-floppy" />Lưu
+            </button>
+            <button className="btn secondary" onClick={() => save(true)}>
+              <i className="ti ti-send" />Gửi duyệt
+            </button>
+          </>
+        )}
+
         {/* Nút Duyệt / Trả lại (khi chờ duyệt + có quyền approve) */}
         {!isNew && sv.status === 'submitted' && can('survey_request', 'approve') && (
           <>
@@ -343,13 +419,25 @@ export default function SurveyRequestDetail() {
             </button>
             <button
               className="btn ghost"
-              style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
+              style={{ color: 'var(--amber, #d97706)', borderColor: 'var(--amber, #d97706)' }}
+              title="Trả về để người YC sửa & gửi lại"
               onClick={() => {
-                const r = prompt('Lý do từ chối:')
+                const r = prompt('Lý do trả đơn (để người YC sửa lại):')
                 if (r !== null) action('reject', { reason: r })
               }}
             >
-              <i className="ti ti-x" />Trả lại
+              <i className="ti ti-corner-up-left" />Trả đơn
+            </button>
+            <button
+              className="btn ghost"
+              style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
+              title="Khóa đơn hẳn — không sửa được, phải làm đơn mới"
+              onClick={() => {
+                const r = prompt('Lý do từ chối (khóa đơn, không thể sửa lại):')
+                if (r !== null) action('cancel', { reason: r })
+              }}
+            >
+              <i className="ti ti-ban" />Từ chối
             </button>
           </>
         )}
@@ -391,10 +479,10 @@ export default function SurveyRequestDetail() {
         )}
       </div>
 
-      {/* Lý do từ chối */}
-      {!isNew && sv.reject_reason && (
+      {/* Lý do trả đơn / từ chối — chỉ hiện khi đang ở trạng thái đó */}
+      {!isNew && sv.reject_reason && (sv.status === 'rejected' || sv.status === 'cancelled') && (
         <div className="err" style={{ marginBottom: 12 }}>
-          <b>Lý do từ chối:</b> {sv.reject_reason}
+          <b>{sv.status === 'cancelled' ? 'Lý do từ chối:' : 'Lý do trả đơn:'}</b> {sv.reject_reason}
         </div>
       )}
 
@@ -513,58 +601,93 @@ export default function SurveyRequestDetail() {
             </div>
 
             <div className="items-scroll">
-              <table className="items-table" style={{ width: '100%', minWidth: 1100, tableLayout: 'fixed' }}>
+              <table className="items-table" style={{ width: '100%', minWidth: showNstmCols ? 1160 : 960, tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
                     <th style={{ width: 34, textAlign: 'center' }}>No.</th>
-                    <th style={{ width: 100, textAlign: 'left' }}>Ngày tiếp nhận</th>
-                    <th style={{ width: 100, textAlign: 'left' }}>Ngày YC trả KQ</th>
+                    {showNstmCols && <th style={{ width: 110, textAlign: 'left' }}>Ngày tiếp nhận</th>}
+                    <th style={{ width: 120, textAlign: 'left' }}>Ngày YC trả KQ</th>
                     <th style={{ width: 150, textAlign: 'left' }}>Phân loại</th>
-                    <th style={{ width: 210, textAlign: 'left' }}>Chi tiết thông số</th>
-                    <th style={{ width: 70, textAlign: 'right' }}>SL dự kiến</th>
-                    <th style={{ width: 80, textAlign: 'left' }}>ĐVT</th>
-                    <th style={{ width: 100, textAlign: 'right' }}>Giá đề xuất</th>
-                    <th style={{ width: 150, textAlign: 'left' }}>Nhân sự phụ trách</th>
-                    <th style={{ width: 120, textAlign: 'center' }}>Tình trạng</th>
-                    <th style={{ width: 80, textAlign: 'center' }}>Thao tác</th>
+                    <th style={{ width: 220, textAlign: 'left' }}>Chi tiết thông số</th>
+                    <th style={{ width: 80, textAlign: 'right' }}>SL dự kiến</th>
+                    <th style={{ width: 90, textAlign: 'left' }}>ĐVT</th>
+                    <th style={{ width: 110, textAlign: 'right' }}>Giá đề xuất</th>
+                    {showNstmCols && <th style={{ width: 150, textAlign: 'left' }}>Nhân sự phụ trách</th>}
+                    {showStatus && <th style={{ width: 110, textAlign: 'center' }}>Trạng thái</th>}
+                    <th style={{ width: 84, textAlign: 'center' }}>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {lines.map((l: any, i: number) => (
                     <tr key={i}>
                       <td style={{ textAlign: 'center' }}>{i + 1}</td>
-                      <td><span style={{ color: l.received_date ? 'inherit' : '#bbb' }}>{l.received_date ? new Date(l.received_date).toLocaleDateString('vi-VN') : '—'}</span></td>
-                      <td><span style={{ color: l.result_due_date ? 'inherit' : '#bbb' }}>{l.result_due_date ? new Date(l.result_due_date).toLocaleDateString('vi-VN') : '—'}</span></td>
-                      <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                          title={l.item_group}>
-                        {editable ? (
-                          <SearchSelect
-                            value={l.item_group || ''}
-                            options={itemGroups}
-                            variant="table"
-                            placeholder="—"
-                            onChange={(v) => setLine(i, 'item_group', v)}
-                          />
-                        ) : <span>{l.item_group || '—'}</span>}
+
+                      {/* Ngày tiếp nhận — chỉ view NSTM/QL */}
+                      {showNstmCols && (
+                        <td><span style={{ color: l.received_date ? 'inherit' : '#bbb' }}>{l.received_date ? new Date(l.received_date).toLocaleDateString('vi-VN') : '—'}</span></td>
+                      )}
+
+                      {/* Ngày YC trả KQ — sửa inline được */}
+                      <td>
+                        {editable
+                          ? <input type="date" className="cell-input" value={l.result_due_date || ''} onChange={(e) => setLine(i, 'result_due_date', e.target.value)} />
+                          : <span style={{ color: l.result_due_date ? 'inherit' : '#bbb' }}>{l.result_due_date ? new Date(l.result_due_date).toLocaleDateString('vi-VN') : '—'}</span>}
                       </td>
-                      <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                          title={l.requirement_detail}>
-                        {l.requirement_detail || <span style={{ color: '#bbb' }}>(mở chi tiết)</span>}
+
+                      {/* Phân loại */}
+                      <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={l.item_group}>
+                        {editable
+                          ? <SearchSelect value={l.item_group || ''} options={itemGroupNames} variant="table" placeholder="—" onChange={(v) => setLine(i, 'item_group', v)} />
+                          : <span>{l.item_group || '—'}</span>}
                       </td>
-                      <td style={{ textAlign: 'right' }}>{fmtBlank(l.request_qty)}</td>
-                      <td>{l.uom || '—'}</td>
-                      <td style={{ textAlign: 'right' }}>{fmtBlank(l.proposed_price)}</td>
-                      <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={l.assignee_name || l.assignee}>
-                        {canAssign && !isNew && l.id ? (
-                          <SearchSelect value={l.assignee || ''} options={purchaserOptions} variant="table" placeholder="— Gán —"
-                            onChange={(v) => assignPurchaser(l.id, v)} />
-                        ) : <span>{l.assignee_name || empName(l.assignee) || <span style={{ color: '#bbb' }}>—</span>}</span>}
+
+                      {/* Chi tiết thông số — sửa inline (mô tả dài mở nút chi tiết) */}
+                      <td style={{ overflow: 'hidden' }} title={l.requirement_detail}>
+                        {editable
+                          ? <input className="cell-input" value={l.requirement_detail || ''} placeholder="Mô tả thông số…" onChange={(e) => setLine(i, 'requirement_detail', e.target.value)} />
+                          : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{l.requirement_detail || <span style={{ color: '#bbb' }}>—</span>}</span>}
                       </td>
-                      <td style={{ textAlign: 'center' }}>
-                        {(() => { const s = srLineStatus(l); return <span className={'badge ' + s.cls}>{s.label}</span> })()}
+
+                      {/* SL dự kiến */}
+                      <td style={{ textAlign: 'right' }}>
+                        {editable
+                          ? <NumberInput className="cell-input" style={{ textAlign: 'right' }} value={l.request_qty} placeholder="0" onChange={(v: number) => setLine(i, 'request_qty', v)} />
+                          : fmtBlank(l.request_qty)}
                       </td>
+
+                      {/* ĐVT */}
+                      <td>
+                        {editable
+                          ? <SearchSelect value={l.uom || ''} options={units} variant="table" placeholder="—" onChange={(v) => setLine(i, 'uom', v)} />
+                          : (l.uom || '—')}
+                      </td>
+
+                      {/* Giá đề xuất */}
+                      <td style={{ textAlign: 'right' }}>
+                        {editable
+                          ? <NumberInput className="cell-input" style={{ textAlign: 'right' }} value={l.proposed_price} placeholder="—" onChange={(v: number) => setLine(i, 'proposed_price', v)} />
+                          : fmtBlank(l.proposed_price)}
+                      </td>
+
+                      {/* Nhân sự phụ trách — chỉ view NSTM/QL */}
+                      {showNstmCols && (
+                        <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={l.assignee_name || l.assignee}>
+                          {canAssign && l.id
+                            ? <SearchSelect value={l.assignee || ''} options={purchaserOptions} variant="table" placeholder="— Gán —" onChange={(v) => assignPurchaser(l.id, v)} />
+                            : <span>{l.assignee_name || empName(l.assignee) || <span style={{ color: '#bbb' }}>—</span>}</span>}
+                        </td>
+                      )}
+
+                      {/* Trạng thái — ẩn khi tạo mới */}
+                      {showStatus && (
+                        <td style={{ textAlign: 'center' }}>
+                          {(() => { const s = srLineStatus(l); return <span className={'badge ' + s.cls}>{s.label}</span> })()}
+                        </td>
+                      )}
+
+                      {/* Thao tác */}
                       <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                        <button className="icon-btn" title="Chi tiết" onClick={() => setEditIdx(i)}>
+                        <button className="icon-btn" title="Chi tiết / hình ảnh" onClick={() => setEditIdx(i)}>
                           <i className="ti ti-pencil" style={{ color: 'var(--teal)' }} />
                         </button>
                         {editable && (
@@ -582,7 +705,7 @@ export default function SurveyRequestDetail() {
                   ))}
                   {lines.length === 0 && (
                     <tr>
-                      <td colSpan={11} style={{ textAlign: 'center', color: '#999', padding: 20 }}>
+                      <td colSpan={8 + (showNstmCols ? 2 : 0) + (showStatus ? 1 : 0)} style={{ textAlign: 'center', color: '#999', padding: 20 }}>
                         Chưa có dòng nào — nhấn "Thêm dòng" để bắt đầu
                       </td>
                     </tr>
@@ -685,15 +808,6 @@ export default function SurveyRequestDetail() {
 
           {err && <div className="err" style={{ marginTop: 12 }}>{err}</div>}
           {msg && <div style={{ color: 'var(--green)', fontSize: 13, marginTop: 8 }}>{msg}</div>}
-
-          {/* Nút hành động cuối trang */}
-          {editable && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
-              <button className="btn ghost" onClick={() => navigate('/survey-requests')}>Hủy</button>
-              <button className="btn secondary" onClick={() => save(false)}>Lưu nháp</button>
-              <button className="btn" onClick={() => save(true)}>Lưu &amp; Gửi Duyệt</button>
-            </div>
-          )}
         </div>
 
         {/* Lịch sử thao tác */}
@@ -743,11 +857,22 @@ export default function SurveyRequestDetail() {
                 <label>Phân loại <span className="req">*</span></label>
                 <SearchSelect
                   value={edit.item_group || ''}
-                  options={itemGroups}
+                  options={itemGroupNames}
                   disabled={!editable}
                   placeholder="Chọn/tìm phân loại…"
                   onChange={(v) => setLine(editIdx, 'item_group', v)}
                 />
+                {groupDesc(edit.item_group) && (
+                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+                    <i className="ti ti-info-circle" style={{ fontSize: 13, verticalAlign: '-1px' }} /> {groupDesc(edit.item_group)}
+                  </div>
+                )}
+              </div>
+
+              <div className="form-row">
+                <label>Ngày yêu cầu trả kết quả</label>
+                <input type="date" value={edit.result_due_date || ''} disabled={!editable}
+                  onChange={(e) => setLine(editIdx, 'result_due_date', e.target.value)} />
               </div>
 
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
@@ -803,15 +928,17 @@ export default function SurveyRequestDetail() {
                 />
               </div>
 
-              {/* Tình trạng dòng — tự suy theo tiến trình khảo sát (không chỉnh tay) */}
-              {!isNew && edit.id && (
+              {/* Trạng thái dòng — tự suy theo tiến trình (ẩn khi tạo mới) */}
+              {showStatus && (
                 <div className="form-row">
-                  <label>Tình trạng</label>
+                  <label>Trạng thái</label>
                   <div style={{ paddingTop: 4 }}>
                     {(() => { const s = srLineStatus(edit); return <span className={'badge ' + s.cls}>{s.label}</span> })()}
-                    <span style={{ color: 'var(--muted)', fontSize: 12, marginLeft: 8 }}>
-                      ({edit.option_count || 0} phương án{edit.has_chosen ? ', đã chọn' : ''})
-                    </span>
+                    {edit.id && (
+                      <span style={{ color: 'var(--muted)', fontSize: 12, marginLeft: 8 }}>
+                        ({edit.option_count || 0} phương án{edit.has_chosen ? ', đã chọn' : ''})
+                      </span>
+                    )}
                   </div>
                 </div>
               )}
@@ -849,17 +976,53 @@ export default function SurveyRequestDetail() {
                     {lineFiles.length === 0 && <div style={{ color: '#999', fontSize: 12.5, marginTop: 6 }}>Chưa có hình. Tải nhiều hình (jpg/png/webp/pdf) để người khảo sát tham khảo.</div>}
                   </div>
                 ) : (
-                  <div style={{ color: '#999', fontSize: 12.5 }}>Lưu phiếu trước, rồi mở lại dòng này để đính kèm hình.</div>
+                  <div>
+                    {(pendingFiles[editIdx] || []).length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+                        {(pendingFiles[editIdx] || []).map((f, fi) => {
+                          const isImg = /\.(jpg|jpeg|png|webp)$/i.test(f.name)
+                          return (
+                            <div key={fi} style={{ position: 'relative', border: '1px solid #E9EDF7', borderRadius: 10, padding: 6, width: isImg ? 96 : 160 }}>
+                              {isImg
+                                ? <img src={URL.createObjectURL(f)} style={{ width: 82, height: 82, objectFit: 'cover', borderRadius: 6, display: 'block' }} />
+                                : <div style={{ fontSize: 12, lineHeight: 1.3, wordBreak: 'break-all' }}><i className="ti ti-file" /> {f.name}</div>}
+                              <button type="button" title="Bỏ" onClick={() => removePending(editIdx, fi)}
+                                style={{ position: 'absolute', top: -8, right: -8, width: 22, height: 22, borderRadius: '50%', border: '1px solid #E9EDF7', background: '#fff', cursor: 'pointer', lineHeight: 1 }}>
+                                <i className="ti ti-x" style={{ color: 'var(--red)', fontSize: 13 }} />
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                    <input type="file" id="sr-line-pending" multiple accept="image/*,.pdf" style={{ display: 'none' }}
+                      onChange={(e) => { addPending(editIdx, e.target.files); e.currentTarget.value = '' }} />
+                    <label htmlFor="sr-line-pending" className="btn ghost" style={{ cursor: 'pointer', height: 32, fontSize: 13, width: 'fit-content' }}>
+                      <i className="ti ti-upload" /> Thêm hình / file
+                    </label>
+                    <div style={{ color: '#0b6bcb', fontSize: 12.5, marginTop: 6 }}>
+                      Chọn hình bây giờ — sẽ được <b>lưu cùng khi bạn bấm Lưu</b>.
+                    </div>
+                  </div>
                 )}
               </div>
 
-              {/* Thông tin chỉ đọc (từ server khi phiếu đã được xử lý) */}
-              {!isNew && (edit.pr_code || edit.assignee) && (
+              {/* Nhân sự phụ trách + PYC (từ server khi phiếu đã xử lý) */}
+              {!isNew && (edit.pr_code || (showNstmCols && edit.id)) && (
                 <>
-                  {edit.assignee && (
+                  {/* Nhân sự phụ trách — CHỈ người có quyền gán mới thấy & sửa (đồng bộ cột ngoài bảng); người YC ẩn hẳn */}
+                  {showNstmCols && edit.id && (
                     <div className="form-row">
-                      <label>Người phụ trách</label>
-                      <input value={edit.assignee_name || empName(edit.assignee) || ''} disabled />
+                      <label>Nhân sự phụ trách</label>
+                      <SearchSelect value={edit.assignee || ''} options={purchaserOptions} placeholder="— Gán —"
+                        onChange={(v) => assignPurchaser(edit.id, v)} />
+                    </div>
+                  )}
+                  {/* Ngày tiếp nhận — tự tính khi gán NSTM (chỉ đọc) */}
+                  {showNstmCols && edit.id && (
+                    <div className="form-row">
+                      <label>Ngày tiếp nhận <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>(tự tính khi gán NSTM)</span></label>
+                      <input value={edit.received_date ? new Date(edit.received_date).toLocaleDateString('vi-VN') : '—'} disabled />
                     </div>
                   )}
                   {edit.pr_code && (

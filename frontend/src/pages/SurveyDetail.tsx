@@ -540,7 +540,7 @@ export default function SurveyDetail() {
         </div>
 
         <div className="items-scroll">
-          <table className="items-table" style={{ width: tbl === 'supplier' ? 1350 : 1400, tableLayout: 'fixed' }}>
+          <table className="items-table" style={{ width: '100%', minWidth: tbl === 'supplier' ? 1350 : 1400, tableLayout: 'fixed' }}>
             <thead>
               <tr>
                 {editable && <th style={{ width: 36, textAlign: 'center' }}><input type="checkbox" checked={lines.length > 0 && selIdxs.length === lines.length} onChange={toggleSelectAll} /></th>}

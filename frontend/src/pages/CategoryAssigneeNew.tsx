@@ -4,7 +4,11 @@ import Select from 'react-select'
 import { api } from '../api/client'
 
 type Opt = { value: number; label: string }
-const selStyle = { control: (b: any) => ({ ...b, minHeight: 40, borderRadius: 12, borderColor: '#E9EDF7' }) }
+const selStyle = {
+  control: (b: any) => ({ ...b, minHeight: 40, borderRadius: 12, borderColor: '#E9EDF7' }),
+  menuPortal: (b: any) => ({ ...b, zIndex: 9999 }),
+}
+const portal = typeof document !== 'undefined' ? document.body : undefined
 
 export default function CategoryAssigneeNew() {
   const navigate = useNavigate()
@@ -66,18 +70,18 @@ export default function CategoryAssigneeNew() {
         <div className="form-row" style={{ marginBottom: 16 }}>
           <label>Phân loại VTBB <span style={{ color: '#94a3b8', fontWeight: 400 }}>(chọn nhiều)</span></label>
           <Select isMulti classNamePrefix="rs" value={selCats} options={cats} onChange={(v: any) => setSelCats(v || [])}
-            placeholder="Chọn/tìm phân loại…" styles={selStyle} closeMenuOnSelect={false}
+            placeholder="Chọn/tìm phân loại…" styles={selStyle} menuPortalTarget={portal} menuPosition="fixed" closeMenuOnSelect={false}
             formatOptionLabel={(o: any) => <span>{o.label}{configured.has(o.value) ? <span style={{ color: '#d97706', fontSize: 11 }}> · đã có, sẽ ghi đè</span> : ''}</span>} />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
           <div className="form-row">
             <label>NSTM chính <span className="req" style={{ color: '#dc2626' }}>*</span></label>
-            <Select classNamePrefix="rs" value={primary} options={emps} onChange={(v: any) => setPrimary(v)} isClearable placeholder="Chọn/tìm NSTM…" styles={selStyle} />
+            <Select classNamePrefix="rs" value={primary} options={emps} onChange={(v: any) => setPrimary(v)} isClearable placeholder="Chọn/tìm NSTM…" styles={selStyle} menuPortalTarget={portal} menuPosition="fixed" />
           </div>
           <div className="form-row">
             <label>NSTM dự phòng</label>
-            <Select classNamePrefix="rs" value={backup} options={emps} onChange={(v: any) => setBackup(v)} isClearable placeholder="Chọn/tìm NSTM…" styles={selStyle} />
+            <Select classNamePrefix="rs" value={backup} options={emps} onChange={(v: any) => setBackup(v)} isClearable placeholder="Chọn/tìm NSTM…" styles={selStyle} menuPortalTarget={portal} menuPosition="fixed" />
           </div>
         </div>
 

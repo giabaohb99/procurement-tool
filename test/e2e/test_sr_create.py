@@ -23,7 +23,7 @@ class TestSurveyRequestCreate:
         go_to_new_sr_form(page_req)
         expect(page_req.get_by_text("Tạo Phiếu Yêu cầu Khảo sát mới")).to_be_visible()
         # Nút Lưu nháp visible
-        expect(page_req.get_by_role("button", name="Lưu nháp")).to_be_visible()
+        expect(page_req.get_by_role("button", name="Lưu")).to_be_visible()
 
     def test_validation_no_purpose(self, page_req: Page):
         """Thiếu mục đích → hiện lỗi."""
@@ -35,7 +35,7 @@ class TestSurveyRequestCreate:
         # Xóa mục đích
         purpose_ta = page_req.get_by_placeholder("Nhập mục đích khảo sát...")
         purpose_ta.fill("")
-        page_req.get_by_role("button", name="Lưu nháp").click()
+        page_req.get_by_role("button", name="Lưu").click()
         # Lỗi validation mục đích
         err = page_req.get_by_text("Vui lòng nhập Mục đích", exact=False)
         expect(err).to_be_visible(timeout=5000)
@@ -45,7 +45,7 @@ class TestSurveyRequestCreate:
         go_to_new_sr_form(page_req)
         fill_sr_header(page_req, purpose="Test không có dòng")
         # KHÔNG thêm dòng
-        page_req.get_by_role("button", name="Lưu nháp").click()
+        page_req.get_by_role("button", name="Lưu").click()
         expect(page_req.get_by_text("Cần ít nhất 1 dòng", exact=False)).to_be_visible(timeout=5000)
 
     def test_create_valid_draft(self, page_req: Page):
@@ -84,7 +84,7 @@ class TestSurveyRequestCreate:
         page_req.get_by_role("button", name="Thêm dòng").click()
         page_req.wait_for_timeout(300)
         # Mở popup chi tiết
-        page_req.locator('button[title="Chi tiết"]').last.click()
+        page_req.locator('button[title="Chi tiết / hình ảnh"]').last.click()
         expect(page_req.get_by_text("Chi tiết dòng #")).to_be_visible(timeout=5000)
 
         # Ô Giá đề xuất VNĐ
@@ -105,7 +105,7 @@ class TestSurveyRequestCreate:
         page_req.wait_for_timeout(300)
 
         # Mở popup
-        page_req.locator('button[title="Chi tiết"]').last.click()
+        page_req.locator('button[title="Chi tiết / hình ảnh"]').last.click()
         expect(page_req.get_by_text("Chi tiết dòng #1")).to_be_visible(timeout=5000)
 
         # Đóng bằng nút Xong
@@ -118,7 +118,7 @@ class TestSurveyRequestCreate:
         go_to_new_sr_form(page_req)
         fill_sr_header(page_req, purpose=f"E2E Submit {ts}")
         add_line_popup(page_req, item_group="Nhãn", detail=f"SP {ts}", qty="2")
-        page_req.get_by_role("button", name="Lưu & Gửi Duyệt").click()
+        page_req.get_by_role("button", name="Gửi duyệt").click()
         page_req.wait_for_url(
             lambda url: "/survey-requests/" in url and url.split("/")[-1] != "new",
             timeout=12000,

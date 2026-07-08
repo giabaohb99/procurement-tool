@@ -92,7 +92,7 @@ def set_status(db: Session, sid: int, status: str, user_id: int, reason: str = "
     s = get_sr(db, sid)
     s.status = status
     s.updated_by = user_id
-    if status == "rejected":
+    if status in ("rejected", "cancelled"):
         s.reject_reason = reason
     db.commit()
     record(db, user_id, ENTITY, sid, status, reason)
@@ -376,6 +376,8 @@ def auto_assign(db: Session, s: SurveyRequest) -> int:
         emp = resolve_for_group(db, ln.item_group)
         if emp and emp.code:
             ln.assignee = emp.code
+            if not ln.received_date:                          # Ngày tiếp nhận = ngày NSTM được gán
+                ln.received_date = datetime.now().strftime("%Y-%m-%d")
             assigned += 1
             if header_emp is None:
                 header_emp = emp

@@ -64,6 +64,23 @@ export const prBadge = (st: string) => {
   return <span className={'badge ' + s.cls}>{s.label}</span>
 }
 
+// Yêu cầu khảo sát: 'rejected' = TRẢ ĐƠN (sửa lại được), 'cancelled' = TỪ CHỐI (khóa đơn)
+export const SR_STATUS: Record<string, { label: string; cls: string }> = {
+  draft: { label: 'Nháp', cls: 'gray' },
+  submitted: { label: 'Chờ duyệt', cls: 'warn' },
+  approved: { label: 'Đã duyệt', cls: 'ok' },
+  rejected: { label: 'Bị trả lại', cls: 'warn' },
+  cancelled: { label: 'Đã từ chối', cls: 'err' },
+  processing: { label: 'Đang xử lý', cls: 'warn' },
+  survey_done: { label: 'Đã khảo sát', cls: 'ok' },
+  pr_created: { label: 'Đã tạo YCMH', cls: 'warn' },
+  done: { label: 'Hoàn thành', cls: 'ok' },
+}
+export const srBadge = (st: string) => {
+  const s = SR_STATUS[String(st || '').toLowerCase()] || { label: st, cls: 'gray' }
+  return <span className={'badge ' + s.cls}>{s.label}</span>
+}
+
 export const PO_STATUS: Record<string, { label: string; cls: string }> = {
   draft: { label: 'Nháp', cls: 'gray' },
   submitted: { label: 'Chờ duyệt', cls: 'warn' },
@@ -250,7 +267,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'requester', label: 'Người yêu cầu' },
       { key: 'department', label: 'Bộ phận' },
       { key: 'request_date', label: 'Ngày tạo' },
-      { key: 'status', label: 'Trạng thái', render: (r) => prBadge(r.status) },
+      { key: 'status', label: 'Trạng thái', render: (r) => srBadge(r.status) },
     ],
     filters: [
       { key: 'code', label: 'Mã phiếu' },
@@ -260,7 +277,8 @@ export const cruds: Record<string, CrudConfig> = {
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'processing', label: 'Đang xử lý' },
         { value: 'survey_done', label: 'Đã khảo sát' }, { value: 'pr_created', label: 'Đã tạo YCMH' },
-        { value: 'done', label: 'Hoàn thành' }, { value: 'rejected', label: 'Từ chối' }] },
+        { value: 'done', label: 'Hoàn thành' }, { value: 'rejected', label: 'Bị trả lại' },
+        { value: 'cancelled', label: 'Đã từ chối' }] },
     ],
     fields: [],
   },
