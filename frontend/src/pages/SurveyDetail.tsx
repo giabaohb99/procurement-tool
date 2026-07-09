@@ -300,14 +300,22 @@ export default function SurveyDetail() {
   const rowAmount = (it: any) => (Number(sv.request_qty) || 0) * (Number(it.price_by_volume) || 0) * (1 + (Number(it.vat) || 0) / 100)
   const subtotal = (sv.product_lines || []).reduce((acc: number, it: any) => acc + rowAmount(it), 0)
 
+  // Giữ dòng nếu có BẤT KỲ nội dung (nháp cho lưu dở dang) — chỉ bỏ dòng RỖNG hẳn.
+  // (KHÔNG bắt buộc chọn NCC/tên SP khi Lưu — cái đó chỉ bắt khi Gửi duyệt.)
+  const supHasContent = (it: any) => !!(it.supplier_code || it.supplier_name || it.tax_code
+    || it.contact_person || it.contact_phone || it.reg_address || it.warehouse_address
+    || it.supply_group || it.nspt_note || it.note)
+  const prodHasContent = (it: any) => !!(it.product_name || it.internal_code || it.supplier_code
+    || it.spec || it.origin || it.quote_unit || Number(it.moq) || Number(it.price_by_volume) || it.nspt_note || it.note)
+
   function buildBody() {
     return {
       pr_code: sv.pr_code, received_date: sv.received_date, result_due_date: sv.result_due_date || '',
       item_group: sv.item_group, requirement_detail: sv.requirement_detail, nspt: sv.nspt,
       has_product_code: !!sv.has_product_code, item_code: sv.item_code, item_name: sv.item_name,
       request_qty: Number(sv.request_qty) || 0, uom: sv.uom, proposed_rate: Number(sv.proposed_rate) || 0,
-      supplier_lines: (sv.supplier_lines || []).filter((it: any) => it.supplier_code),
-      product_lines: (sv.product_lines || []).filter((it: any) => it.product_name),
+      supplier_lines: (sv.supplier_lines || []).filter(supHasContent),
+      product_lines: (sv.product_lines || []).filter(prodHasContent),
     }
   }
 
@@ -473,9 +481,9 @@ export default function SurveyDetail() {
   // index local (chỉ đếm dòng có supplier_code/product_name) sang dòng đã lưu.
   async function flushPendingAtt(supLines: any[], prodLines: any[]) {
     const supMap: Record<number, any> = {}; let j = 0
-    ;(sv.supplier_lines || []).forEach((it: any, idx: number) => { if (it.supplier_code) { supMap[idx] = supLines[j]; j++ } })
+    ;(sv.supplier_lines || []).forEach((it: any, idx: number) => { if (supHasContent(it)) { supMap[idx] = supLines[j]; j++ } })
     const prodMap: Record<number, any> = {}; let k = 0
-    ;(sv.product_lines || []).forEach((it: any, idx: number) => { if (it.product_name) { prodMap[idx] = prodLines[k]; k++ } })
+    ;(sv.product_lines || []).forEach((it: any, idx: number) => { if (prodHasContent(it)) { prodMap[idx] = prodLines[k]; k++ } })
     for (const [key, metas] of Object.entries(pendingAtt)) {
       const dash = key.lastIndexOf('-'); const tbl = key.slice(0, dash); const i = Number(key.slice(dash + 1))
       const line = tbl === 'supplier' ? supMap[i] : prodMap[i]
