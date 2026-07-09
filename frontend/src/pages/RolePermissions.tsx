@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
+import { askConfirm } from '../components/confirm'
 
 type Opt = { key: string; label: string }
 type Meta = { entities: Opt[]; actions: Opt[]; scopes: Opt[] }
@@ -73,7 +74,7 @@ export default function RolePermissions() {
     } catch (e: any) { setErr(e?.response?.data?.error?.message || 'Lỗi tạo vai trò') }
   }
   async function delRole() {
-    if (!sel || !confirm('Xóa vai trò này?')) return
+    if (!sel || !(await askConfirm({ message: 'Xóa vai trò này?' }))) return
     try { await api.delete(`/api/roles/${sel}`); setSel(null); setPerm({}); loadRoles() }
     catch (e: any) { setErr(e?.response?.data?.error?.message || 'Lỗi khi xóa') }
   }

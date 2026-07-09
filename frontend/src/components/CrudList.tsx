@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { toast } from './toast'
 import { useAuth } from '../auth/AuthContext'
 import { cruds } from '../config/cruds'
 import ConfirmModal from './ConfirmModal'
@@ -45,7 +46,7 @@ export default function CrudList() {
       link.click();
       link.parentNode?.removeChild(link);
     } catch (e) {
-      alert('Lỗi khi xuất file');
+      toast.error('Lỗi khi xuất file');
     }
   }
 
@@ -93,7 +94,7 @@ export default function CrudList() {
           setSelectedIds([]);
           load(page, pageSize, filters);
         } catch (e: any) {
-          alert(e.response?.data?.message || 'Lỗi khi xóa dữ liệu');
+          toast.error(e.response?.data?.message || 'Lỗi khi xóa dữ liệu');
         }
       },
     });
@@ -110,10 +111,10 @@ export default function CrudList() {
       const r = await api.post(`${cfg.apiPath}/import/csv`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      alert(r.data.message || 'Nhập file thành công');
+      toast.success(r.data.message || 'Nhập file thành công');
       load(page, pageSize, filters);
     } catch (e: any) {
-      alert(e.response?.data?.message || 'Lỗi khi nhập file');
+      toast.error(e.response?.data?.message || 'Lỗi khi nhập file');
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }

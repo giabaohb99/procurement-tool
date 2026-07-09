@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { askConfirm } from './confirm'
+import { fmtDateTime } from '../utils/datetime'
 import { useAuth } from '../auth/AuthContext'
 import { cruds } from '../config/cruds'
 import SearchSelect from './SearchSelect'
@@ -84,7 +86,7 @@ export default function CrudDetail() {
   }
 
   async function remove() {
-    if (!confirm('Xóa bản ghi này?')) return
+    if (!(await askConfirm({ message: 'Xóa bản ghi này?' }))) return
     try { await api.delete(`${cfg.apiPath}/${id}`); navigate(`/${cfg.slug}`) }
     catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi xóa') }
   }
@@ -203,7 +205,7 @@ export default function CrudDetail() {
                   <span className={'tl-dot ' + l.action} />
                   <div>
                     <div style={{ fontSize: 13 }}><b>{l.by}</b> — {l.action_label}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{new Date(l.at).toLocaleString('vi-VN')}</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{fmtDateTime(l.at)}</div>
                   </div>
                 </div>
               ))}

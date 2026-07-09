@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
+import { askConfirm, askPrompt } from '../components/confirm'
+import { toast } from '../components/toast'
 import { useAuth } from '../auth/AuthContext'
 
 const money = (v: number) => {
@@ -82,48 +84,48 @@ export default function Dashboard() {
   const [d, setD] = useState<any>(null)
 
   async function handleApprove(id: number) {
-    if (!confirm('Bạn có chắc chắn muốn duyệt đơn hàng này?')) return
+    if (!(await askConfirm({ title: 'Duyệt đơn hàng', message: 'Bạn có chắc chắn muốn duyệt đơn hàng này?', confirmText: 'Duyệt', danger: false }))) return
     try {
       await api.post(`/api/purchase-orders/${id}/approve`)
-      alert('Đã duyệt đơn hàng thành công!')
+      toast.success('Đã duyệt đơn hàng thành công!')
       api.get('/api/dashboard/overview').then((r) => setD(r.data.data)).catch(() => {})
     } catch (err: any) {
-      alert(err?.response?.data?.error?.message || 'Lỗi khi duyệt đơn hàng')
+      toast.error(err?.response?.data?.error?.message || 'Lỗi khi duyệt đơn hàng')
     }
   }
 
   async function handleReject(id: number) {
-    const reason = prompt('Nhập lý do từ chối đơn hàng:')
+    const reason = await askPrompt({ title: 'Từ chối đơn hàng', message: 'Nhập lý do từ chối:', confirmText: 'Từ chối', danger: true })
     if (reason === null) return
     try {
       await api.post(`/api/purchase-orders/${id}/reject`, { reason: reason || 'Từ chối từ Dashboard' })
-      alert('Đã từ chối đơn hàng thành công!')
+      toast.success('Đã từ chối đơn hàng thành công!')
       api.get('/api/dashboard/overview').then((r) => setD(r.data.data)).catch(() => {})
     } catch (err: any) {
-      alert(err?.response?.data?.error?.message || 'Lỗi khi từ chối đơn hàng')
+      toast.error(err?.response?.data?.error?.message || 'Lỗi khi từ chối đơn hàng')
     }
   }
 
   async function handleApprovePR(id: number) {
-    if (!confirm('Bạn có chắc chắn muốn duyệt yêu cầu mua hàng này?')) return
+    if (!(await askConfirm({ title: 'Duyệt yêu cầu mua hàng', message: 'Bạn có chắc chắn muốn duyệt yêu cầu mua hàng này?', confirmText: 'Duyệt', danger: false }))) return
     try {
       await api.post(`/api/purchase-requests/${id}/approve`, {})
-      alert('Đã duyệt yêu cầu mua hàng thành công!')
+      toast.success('Đã duyệt yêu cầu mua hàng thành công!')
       api.get('/api/dashboard/overview').then((r) => setD(r.data.data)).catch(() => {})
     } catch (err: any) {
-      alert(err?.response?.data?.error?.message || 'Lỗi khi duyệt yêu cầu mua hàng')
+      toast.error(err?.response?.data?.error?.message || 'Lỗi khi duyệt yêu cầu mua hàng')
     }
   }
 
   async function handleRejectPR(id: number) {
-    const reason = prompt('Nhập lý do từ chối yêu cầu mua hàng:')
+    const reason = await askPrompt({ title: 'Từ chối yêu cầu mua hàng', message: 'Nhập lý do từ chối:', confirmText: 'Từ chối', danger: true })
     if (reason === null) return
     try {
       await api.post(`/api/purchase-requests/${id}/reject`, { reason: reason || 'Từ chối từ Dashboard' })
-      alert('Đã từ chối yêu cầu mua hàng thành công!')
+      toast.success('Đã từ chối yêu cầu mua hàng thành công!')
       api.get('/api/dashboard/overview').then((r) => setD(r.data.data)).catch(() => {})
     } catch (err: any) {
-      alert(err?.response?.data?.error?.message || 'Lỗi khi từ chối yêu cầu mua hàng')
+      toast.error(err?.response?.data?.error?.message || 'Lỗi khi từ chối yêu cầu mua hàng')
     }
   }
 
@@ -224,7 +226,7 @@ export default function Dashboard() {
               <select style={{ height: 32, borderRadius: 8, fontSize: 12, padding: '0 8px', border: '1px solid #eef1f8', outline: 'none', background: '#fff', cursor: 'pointer' }}>
                 <option>Năm {d?.year || 2026}</option>
               </select>
-              <button className="btn secondary" style={{ height: 32, padding: '0 10px', fontSize: 12, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 4, background: '#fff', border: '1px solid #eef1f8', cursor: 'pointer' }} onClick={() => alert('Đang xuất báo cáo chi phí...')}>
+              <button className="btn secondary" style={{ height: 32, padding: '0 10px', fontSize: 12, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 4, background: '#fff', border: '1px solid #eef1f8', cursor: 'pointer' }} onClick={() => toast.info('Đang xuất báo cáo chi phí...')}>
                 <i className="ti ti-download" /> Xuất
               </button>
             </div>

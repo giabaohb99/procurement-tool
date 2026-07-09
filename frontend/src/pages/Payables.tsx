@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
+import { toast } from '../components/toast'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
 
@@ -52,7 +53,7 @@ export default function Payables() {
     try {
       const r = await api.post('/api/payment-requests', { request_date: new Date().toISOString().slice(0, 10), lines })
       const created = r.data.data
-      alert(`Đã tạo ${created.length} phiếu yêu cầu thanh toán (mỗi nhà cung cấp 1 phiếu).`)
+      toast.success(`Đã tạo ${created.length} phiếu yêu cầu thanh toán (mỗi nhà cung cấp 1 phiếu).`)
       if (created.length === 1) navigate(`/payment-requests/${created[0].id}`)
       else navigate('/payment-requests')
     } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi tạo yêu cầu thanh toán') }

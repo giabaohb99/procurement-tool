@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { askConfirm } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import { contractExpiryBadge } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
@@ -96,7 +97,7 @@ export default function SupplierDetail() {
     } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
   }
   async function remove() {
-    if (!confirm('Xóa nhà cung cấp này?')) return
+    if (!(await askConfirm({ message: 'Xóa nhà cung cấp này?' }))) return
     try { await api.delete(`/api/suppliers/${id}`); navigate('/suppliers') }
     catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi xóa') }
   }

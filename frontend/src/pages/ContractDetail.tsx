@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { askConfirm } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import { contractExpiryBadge } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
@@ -46,7 +47,7 @@ export default function ContractDetail() {
     } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
   }
   async function remove() {
-    if (!confirm('Xóa hợp đồng này?')) return
+    if (!(await askConfirm({ message: 'Xóa hợp đồng này?' }))) return
     try { await api.delete(`/api/contracts/${id}`); navigate('/contracts') } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi') }
   }
   async function upload(fl: FileList | null) {
@@ -114,7 +115,7 @@ export default function ContractDetail() {
               {files.map((f) => (
                 <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
                   <i className="ti ti-file" /><a href={f.url} target="_blank" style={{ color: 'var(--teal)', flex: 1, textDecoration: 'underline' }}>{f.filename}</a>
-                  {canEdit && <button className="icon-btn" onClick={async () => { if (confirm('Xóa file?')) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
+                  {canEdit && <button className="icon-btn" onClick={async () => { if (await askConfirm({ message: 'Xóa file?' })) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
                 </div>
               ))}
               {files.length === 0 && <span style={{ color: '#999', fontSize: 13 }}>Chưa có file. Kéo/chọn file HĐ (PDF, ảnh…) để đính kèm.</span>}

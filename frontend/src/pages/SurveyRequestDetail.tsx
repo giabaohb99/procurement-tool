@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { fmtDateTime } from '../utils/datetime'
+import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import { prBadge } from '../config/cruds'
 import Select from 'react-select'
@@ -206,7 +208,7 @@ export default function SurveyRequestDetail() {
   }
   // 5D: người YC sinh Yêu cầu mua hàng từ phương án đã chọn
   async function createPrs() {
-    if (!confirm('Tạo Yêu cầu mua hàng từ các phương án đã chọn?')) return
+    if (!(await askConfirm({ title: 'Tạo Yêu cầu mua hàng', message: 'Tạo Yêu cầu mua hàng từ các phương án đã chọn?', confirmText: 'Tạo YCMH', danger: false }))) return
     try {
       const r = await api.post(`${API}/${id}/create-prs`)
       const codes = (r.data.data.created_prs || []).map((p: any) => p.code).join(', ')
@@ -217,7 +219,7 @@ export default function SurveyRequestDetail() {
   }
   // 5D: Admin/QL chốt Hoàn thành
   async function finalizeSr() {
-    if (!confirm('Chuyển phiếu sang Hoàn thành? Sau đó không chỉnh sửa được nữa.')) return
+    if (!(await askConfirm({ title: 'Hoàn thành phiếu', message: 'Chuyển phiếu sang Hoàn thành? Sau đó không chỉnh sửa được nữa.', confirmText: 'Hoàn thành', danger: false }))) return
     try { await api.post(`${API}/${id}/finalize`); toast.success('Đã chuyển Hoàn thành'); await loadAll() }
     catch { /* interceptor toast */ }
   }
@@ -248,7 +250,7 @@ export default function SurveyRequestDetail() {
     catch (e: any) { setErr(e?.response?.data?.error?.message || e?.response?.data?.message || 'Lỗi tải file') }
   }
   async function delLineFile(fid: number, lineId: number) {
-    if (!confirm('Xóa hình/tài liệu này?')) return
+    if (!(await askConfirm({ message: 'Xóa hình/tài liệu này?' }))) return
     try { await api.delete(`/api/attachments/${fid}`); await loadLineFiles(lineId) } catch {}
   }
 
@@ -379,7 +381,7 @@ export default function SurveyRequestDetail() {
   }
 
   async function deleteSv() {
-    if (!confirm('Xóa phiếu này?')) return
+    if (!(await askConfirm({ message: 'Xóa phiếu này?' }))) return
     setErr('')
     try { await api.delete(`${API}/${id}`); navigate('/survey-requests') }
     catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi xóa') }
@@ -421,8 +423,8 @@ export default function SurveyRequestDetail() {
               className="btn ghost"
               style={{ color: 'var(--amber, #d97706)', borderColor: 'var(--amber, #d97706)' }}
               title="Trả về để người YC sửa & gửi lại"
-              onClick={() => {
-                const r = prompt('Lý do trả đơn (để người YC sửa lại):')
+              onClick={async () => {
+                const r = await askPrompt({ title: 'Trả đơn', message: 'Lý do trả đơn (để người YC sửa lại):', confirmText: 'Trả đơn' })
                 if (r !== null) action('reject', { reason: r })
               }}
             >
@@ -432,8 +434,8 @@ export default function SurveyRequestDetail() {
               className="btn ghost"
               style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
               title="Khóa đơn hẳn — không sửa được, phải làm đơn mới"
-              onClick={() => {
-                const r = prompt('Lý do từ chối (khóa đơn, không thể sửa lại):')
+              onClick={async () => {
+                const r = await askPrompt({ title: 'Từ chối đơn', message: 'Lý do từ chối (khóa đơn, không thể sửa lại):', confirmText: 'Từ chối' })
                 if (r !== null) action('cancel', { reason: r })
               }}
             >
@@ -826,7 +828,7 @@ export default function SurveyRequestDetail() {
                       <b>{l.by}</b> — {l.action_label}{l.message ? `: ${l.message}` : ''}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
-                      {new Date(l.at).toLocaleString('vi-VN')}
+                      {fmtDateTime(l.at)}
                     </div>
                   </div>
                 </div>

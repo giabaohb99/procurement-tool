@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { fmtDateTime } from '../utils/datetime'
+import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import { poBadge } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
@@ -275,17 +277,17 @@ export default function PurchaseOrderDetail() {
         {!isNew && po.status === 'submitted' && can('purchase_order', 'approve') && (
           <>
             <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>
-            <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => action('reject', { reason: prompt('Lý do từ chối:') || '' })}><i className="ti ti-x" />Từ chối</button>
+            <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { const r = await askPrompt({ title: 'Từ chối đơn', message: 'Lý do từ chối:', confirmText: 'Từ chối' }); if (r !== null) action('reject', { reason: r }) }}><i className="ti ti-x" />Từ chối</button>
           </>
         )}
         {!isNew && po.status === 'received' && can('purchase_order', 'write') && (
           <button className="btn" onClick={() => action('complete')}><i className="ti ti-circle-check" />Hoàn thành</button>
         )}
         {!isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'cancel') && (
-          <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => { if (confirm('Hủy đơn mua hàng này?')) action('cancel', { reason: prompt('Lý do hủy:') || '' }) }}><i className="ti ti-ban" />Hủy đơn</button>
+          <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { if (!(await askConfirm({ message: 'Hủy đơn mua hàng này?', confirmText: 'Hủy đơn' }))) return; const r = await askPrompt({ title: 'Hủy đơn', message: 'Lý do hủy:' }); action('cancel', { reason: r || '' }) }}><i className="ti ti-ban" />Hủy đơn</button>
         )}
         {!isNew && can('purchase_order', 'create') && (
-          <button className="btn ghost" onClick={() => { if (confirm('Nhân bản đơn này thành đơn Nháp mới?')) copyDoc() }}><i className="ti ti-copy" />Nhân bản</button>
+          <button className="btn ghost" onClick={async () => { if (await askConfirm({ message: 'Nhân bản đơn này thành đơn Nháp mới?', confirmText: 'Nhân bản', danger: false })) copyDoc() }}><i className="ti ti-copy" />Nhân bản</button>
         )}
       </div>
 
@@ -329,7 +331,7 @@ export default function PurchaseOrderDetail() {
               {headerEditable && (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="btn ghost" onClick={() => addItems(1)} style={{ height: 32, fontSize: 13 }}><i className="ti ti-plus" />Thêm dòng</button>
-                  <button className="btn ghost" onClick={() => addItems(Math.max(1, parseInt(prompt('Thêm bao nhiêu dòng?', '3') || '0') || 0))} style={{ height: 32, fontSize: 13 }}><i className="ti ti-rows" />Thêm nhiều</button>
+                  <button className="btn ghost" onClick={async () => { const n = await askPrompt({ message: 'Thêm bao nhiêu dòng?', defaultValue: '3' }); if (n !== null) addItems(Math.max(1, parseInt(n || '0') || 0)) }} style={{ height: 32, fontSize: 13 }}><i className="ti ti-rows" />Thêm nhiều</button>
                 </div>
               )}
             </div>
@@ -385,7 +387,7 @@ export default function PurchaseOrderDetail() {
                             </button>
                           )}
                           {headerEditable && (
-                            <button className="icon-btn" title="Xóa dòng" onClick={() => { if (confirm('Xóa dòng này?')) delItem(i) }}>
+                            <button className="icon-btn" title="Xóa dòng" onClick={async () => { if (await askConfirm({ message: 'Xóa dòng này?' })) delItem(i) }}>
                               <i className="ti ti-trash" style={{ fontSize: 16, color: 'var(--red)' }} />
                             </button>
                           )}
@@ -415,7 +417,7 @@ export default function PurchaseOrderDetail() {
                 {files.map((f) => (
                   <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
                     <i className="ti ti-file" /><a href={f.url} target="_blank" style={{ color: 'var(--teal)', flex: 1, textDecoration: 'underline' }}>{f.filename}</a>
-                    {can('purchase_order', 'write') && <button className="icon-btn" onClick={async () => { if (confirm('Xóa file?')) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
+                    {can('purchase_order', 'write') && <button className="icon-btn" onClick={async () => { if (await askConfirm({ message: 'Xóa file?' })) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
                   </div>
                 ))}
                 {files.length === 0 && <span style={{ color: '#999', fontSize: 13 }}>Chưa có file nào.</span>}
@@ -429,7 +431,7 @@ export default function PurchaseOrderDetail() {
 
           {!isNew && canDelete && can('purchase_order', 'delete') && (
             <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)', marginTop: 20 }}
-                    onClick={async () => { if (confirm('Xóa đơn mua hàng này?')) { await api.delete(`${API}/${id}`); navigate('/purchase-orders') } }}><i className="ti ti-trash" /> Xóa đơn</button>
+                    onClick={async () => { if (await askConfirm({ message: 'Xóa đơn mua hàng này?' })) { await api.delete(`${API}/${id}`); navigate('/purchase-orders') } }}><i className="ti ti-trash" /> Xóa đơn</button>
           )}
         </div>
 
@@ -441,7 +443,7 @@ export default function PurchaseOrderDetail() {
                 <div key={i} className="tl-item">
                   <span className={'tl-dot ' + (l.action === 'approved' ? 'create' : l.action === 'rejected' ? 'delete' : l.action)} />
                   <div><div style={{ fontSize: 13 }}><b>{l.by}</b> — {l.action_label}{l.message ? `: ${l.message}` : ''}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{new Date(l.at).toLocaleString('vi-VN')}</div></div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{fmtDateTime(l.at)}</div></div>
                 </div>
               ))}
             </div>
