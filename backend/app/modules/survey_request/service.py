@@ -241,12 +241,14 @@ def set_option_fields(db: Session, line_id: int, oid: int, user_id: int, **field
     for k in ("nstm_note", "system_product_code"):
         if k in fields and fields[k] is not None:
             setattr(o, k, (fields[k] or "").strip() if k == "system_product_code" else (fields[k] or ""))
-    # Gán ở option → back-propagate về dòng khảo sát nguồn (đồng bộ 2 chiều)
-    if fields.get("system_product_code") is not None and o.product_survey_line_id:
+    # Gán ở option → điền về dòng khảo sát nguồn CHỈ KHI dòng đang RỖNG
+    # (dòng khảo sát đã có mã chuẩn → giữ nguyên; override chỉ nằm ở option của YCKS này)
+    new_code = (fields.get("system_product_code") or "").strip()
+    if new_code and o.product_survey_line_id:
         from app.modules.survey.model import SurveyProductLine
         psl = db.get(SurveyProductLine, o.product_survey_line_id)
-        if psl:
-            psl.system_product_code = (fields["system_product_code"] or "").strip()
+        if psl and not (psl.system_product_code or "").strip():
+            psl.system_product_code = new_code
             psl.updated_by = user_id
     o.updated_by = user_id
     db.commit()
