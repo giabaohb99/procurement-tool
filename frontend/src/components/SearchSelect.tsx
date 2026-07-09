@@ -37,7 +37,8 @@ export default function SearchSelect({
     if (!disabled && !value && opts.length === 1) onChange(opts[0].value)
   }, [opts.length, value, disabled])
 
-  const cur = opts.find((o) => o.value === value) || null
+  // Nếu value không có trong options (vd NCC/ĐVT chưa được tải) → vẫn hiện value, không để trắng
+  const cur = opts.find((o) => o.value === value) || (value ? { value, label: value } : null)
   return (
     <Select
       value={cur} options={opts} isDisabled={disabled} isClearable={!table}
