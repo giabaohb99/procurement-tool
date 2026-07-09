@@ -1024,7 +1024,7 @@ export default function SurveyRequestDetail() {
                   {showNstmCols && edit.id && (
                     <div className="form-row">
                       <label>Ngày tiếp nhận <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>(tự tính khi gán NSTM)</span></label>
-                      <input value={edit.received_date ? new Date(edit.received_date).toLocaleDateString('vi-VN') : '—'} disabled />
+                      <input value={edit.received_date ? new Date(edit.received_date).toLocaleDateString('vi-VN') : ''} placeholder="Chưa có ngày tiếp nhận" disabled />
                     </div>
                   )}
                   {edit.pr_code && (

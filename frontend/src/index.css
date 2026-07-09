@@ -279,7 +279,9 @@ label {
 
 /* react-select: ô tìm kiếm bên trong KHÔNG bị style input toàn cục đè (fix lỗi hiển thị multi-select) */
 .rs__control input,
-.rs__input {
+.rs__input,
+input[id^="react-select-"],
+input[role="combobox"] {
   height: auto !important;
   min-height: 0 !important;
   padding: 0 !important;

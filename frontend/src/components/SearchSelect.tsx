@@ -41,6 +41,7 @@ export default function SearchSelect({
   const cur = opts.find((o) => o.value === value) || (value ? { value, label: value } : null)
   return (
     <Select
+      classNamePrefix="rs"
       value={cur} options={opts} isDisabled={disabled} isClearable={!table}
       placeholder={placeholder}
       onChange={(o: any) => onChange(o ? o.value : '')}
@@ -58,6 +59,7 @@ export default function SearchSelect({
           ...b,
           minHeight: 40,
           height: 40,
+          boxSizing: 'border-box',
           borderRadius: 12,
           borderColor: state.isFocused ? 'var(--teal)' : '#E9EDF7',
           boxShadow: state.isFocused ? '0 0 0 3px rgba(0,174,239,.15)' : 'none',
@@ -72,9 +74,6 @@ export default function SearchSelect({
         valueContainer: (b) => table ? ({ ...b, padding: '0 6px' }) : ({
           ...b,
           padding: '0 16px',
-          height: 38,
-          display: 'flex',
-          alignItems: 'center',
         }),
         placeholder: (b) => table ? b : ({
           ...b,
@@ -93,7 +92,6 @@ export default function SearchSelect({
         }),
         indicatorsContainer: (b) => table ? b : ({
           ...b,
-          height: 38,
         }),
         dropdownIndicator: (b) => table ? ({ ...b, padding: 2, color: color || '#94a3b8' }) : ({
           ...b,
