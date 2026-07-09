@@ -11,14 +11,22 @@ from app.core.file_registry import ext_of, policy
 from app.core.response import success
 from app.core.storage import delete_key, upload_fileobj
 
-from .model import Attachment
+from .model import FileLink, StoredFile
+from .service import _delete_file_if_orphan
 
 router = APIRouter(prefix="/api/attachments", tags=["attachment"])
 
 
-def _out(a: Attachment) -> dict:
-    return {"id": a.id, "filename": a.filename, "url": a.url, "content_type": a.content_type,
-            "size": a.size, "entity": a.entity, "entity_id": a.entity_id}
+def _link_out(link: FileLink, f: StoredFile) -> dict:
+    # id = LINK id (để DELETE tương thích FE cũ); kèm file_id + thông tin file
+    return {"id": link.id, "file_id": f.id, "filename": f.filename, "url": f.url,
+            "content_type": f.content_type, "size": f.size,
+            "entity": link.entity, "entity_id": link.entity_id}
+
+
+def _file_out(f: StoredFile) -> dict:
+    return {"file_id": f.id, "filename": f.filename, "url": f.url,
+            "content_type": f.content_type, "size": f.size}
 
 
 def _policy_or_400(entity: str):
@@ -29,10 +37,9 @@ def _policy_or_400(entity: str):
 
 
 def _check(db: Session, user, entity: str, mode: str):
-    """mode='read' → cần đọc phiếu cha; mode='manage' → cần write HOẶC create phiếu cha
-       (để người TẠO phiếu, vd nhân viên, vẫn đính kèm được phiếu của mình)."""
+    """mode='read' → cần đọc phiếu cha; mode='manage' → write HOẶC create phiếu cha."""
     parent, exts, max_mb = _policy_or_400(entity)
-    if parent == "__self__":          # avatar: chỉ cần đăng nhập
+    if parent == "__self__":
         return exts, max_mb
     if mode == "read":
         ok = user_has_permission(db, user, parent, "read")
@@ -43,16 +50,37 @@ def _check(db: Session, user, entity: str, mode: str):
     return exts, max_mb
 
 
+def _store_one(db: Session, f: UploadFile, exts: set, max_mb: int, user_id: int) -> StoredFile:
+    """Upload 1 file lên storage + tạo dòng tab_file. Chưa gắn link."""
+    ext = ext_of(f.filename or "")
+    if ext not in exts:
+        raise HTTPException(400, f"Định dạng .{ext or '?'} không được phép (cho phép: {', '.join(sorted(exts))})")
+    f.file.seek(0, 2); size = f.file.tell(); f.file.seek(0)
+    if size > max_mb * 1024 * 1024:
+        raise HTTPException(400, f"File '{f.filename}' vượt {max_mb}MB")
+    key = f"file/{uuid.uuid4().hex}_{f.filename}"
+    try:
+        url = upload_fileobj(f.file, key, f.content_type or "")
+    except RuntimeError as e:
+        raise HTTPException(400, str(e))
+    sf = StoredFile(filename=f.filename, file_key=key, url=url,
+                    content_type=f.content_type or "", size=size,
+                    created_by=user_id, updated_by=user_id)
+    db.add(sf); db.commit(); db.refresh(sf)
+    return sf
+
+
 @router.get("")
 def list_attachments(
     entity: str = Query(...), entity_id: int = Query(...),
     db: Session = Depends(get_db), user=Depends(get_current_user),
 ):
     _check(db, user, entity, "read")
-    rows = (db.query(Attachment)
-            .filter(Attachment.entity == entity, Attachment.entity_id == entity_id)
-            .order_by(Attachment.id.desc()).all())
-    return success([_out(a) for a in rows])
+    rows = (db.query(FileLink, StoredFile)
+            .join(StoredFile, StoredFile.id == FileLink.file_id)
+            .filter(FileLink.entity == entity, FileLink.entity_id == entity_id)
+            .order_by(FileLink.id.desc()).all())
+    return success([_link_out(lk, f) for lk, f in rows])
 
 
 @router.post("")
@@ -62,49 +90,16 @@ def upload(
     files: list[UploadFile] = File(...),
     db: Session = Depends(get_db), user=Depends(get_current_user),
 ):
+    """Upload + gắn luôn (record đã có id) — tương thích FE cũ."""
     exts, max_mb = _check(db, user, entity, "manage")
     out = []
     for f in files:
-        ext = ext_of(f.filename or "")
-        if ext not in exts:
-            raise HTTPException(400, f"Định dạng .{ext or '?'} không được phép (cho phép: {', '.join(sorted(exts))})")
-        # đo dung lượng
-        f.file.seek(0, 2)
-        size = f.file.tell()
-        f.file.seek(0)
-        if size > max_mb * 1024 * 1024:
-            raise HTTPException(400, f"File '{f.filename}' vượt {max_mb}MB")
-
-        key = f"{entity}/{entity_id}/{uuid.uuid4().hex}_{f.filename}"
-        try:
-            url = upload_fileobj(f.file, key, f.content_type or "")
-        except RuntimeError as e:
-            raise HTTPException(400, str(e))
-        a = Attachment(entity=entity, entity_id=entity_id, purchase_order_id=purchase_order_id,
-                       filename=f.filename, file_key=key, url=url, content_type=f.content_type or "",
-                       size=size, created_by=user.id, updated_by=user.id)
-        db.add(a)
-        db.commit()
-        db.refresh(a)
-        out.append(_out(a))
+        sf = _store_one(db, f, exts, max_mb, user.id)
+        lk = FileLink(file_id=sf.id, entity=entity, entity_id=entity_id,
+                      purchase_order_id=purchase_order_id, created_by=user.id, updated_by=user.id)
+        db.add(lk); db.commit(); db.refresh(lk)
+        out.append(_link_out(lk, sf))
     return success(out, "Đã tải lên", 201)
-
-
-# ─── Upload NGAY (chưa tạo dòng) + gắn khi Lưu record — cho đính kèm trước khi có id ───
-
-class FileMeta(BaseModel):
-    filename: str = ""
-    file_key: str
-    url: str = ""
-    content_type: str = ""
-    size: int = 0
-
-
-class RegisterIn(BaseModel):
-    entity: str
-    entity_id: int
-    purchase_order_id: int = 0
-    files: list[FileMeta] = []
 
 
 @router.post("/upload-file")
@@ -113,49 +108,43 @@ def upload_file_only(
     files: list[UploadFile] = File(...),
     db: Session = Depends(get_db), user=Depends(get_current_user),
 ):
-    """Upload file lên storage NGAY (chưa tạo dòng attachment) → trả metadata để gắn khi Lưu record."""
+    """Upload file NGAY → tạo tab_file (chưa gắn link) → trả file_id để gắn khi Lưu record."""
     exts, max_mb = _check(db, user, entity, "manage")
-    out = []
-    for f in files:
-        ext = ext_of(f.filename or "")
-        if ext not in exts:
-            raise HTTPException(400, f"Định dạng .{ext or '?'} không được phép (cho phép: {', '.join(sorted(exts))})")
-        f.file.seek(0, 2); size = f.file.tell(); f.file.seek(0)
-        if size > max_mb * 1024 * 1024:
-            raise HTTPException(400, f"File '{f.filename}' vượt {max_mb}MB")
-        key = f"{entity}/pending/{uuid.uuid4().hex}_{f.filename}"
-        try:
-            url = upload_fileobj(f.file, key, f.content_type or "")
-        except RuntimeError as e:
-            raise HTTPException(400, str(e))
-        out.append({"filename": f.filename, "file_key": key, "url": url,
-                    "content_type": f.content_type or "", "size": size})
+    out = [_file_out(_store_one(db, f, exts, max_mb, user.id)) for f in files]
     return success(out, "Đã tải lên", 201)
+
+
+class RegisterIn(BaseModel):
+    entity: str
+    entity_id: int
+    purchase_order_id: int = 0
+    file_ids: list[int] = []
 
 
 @router.post("/register")
 def register_files(data: RegisterIn, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """Gắn các file ĐÃ upload (metadata) vào 1 record (entity, entity_id) — dùng khi record vừa được lưu."""
+    """Gắn các file ĐÃ upload (theo file_id) vào 1 record — khi record vừa có id."""
     _check(db, user, data.entity, "manage")
     out = []
-    for m in data.files:
-        a = Attachment(entity=data.entity, entity_id=data.entity_id, purchase_order_id=data.purchase_order_id,
-                       filename=m.filename, file_key=m.file_key, url=m.url, content_type=m.content_type,
-                       size=m.size, created_by=user.id, updated_by=user.id)
-        db.add(a)
-        db.commit()
-        db.refresh(a)
-        out.append(_out(a))
+    for fid in data.file_ids:
+        f = db.get(StoredFile, fid)
+        if not f:
+            continue
+        lk = FileLink(file_id=fid, entity=data.entity, entity_id=data.entity_id,
+                      purchase_order_id=data.purchase_order_id, created_by=user.id, updated_by=user.id)
+        db.add(lk); db.commit(); db.refresh(lk)
+        out.append(_link_out(lk, f))
     return success(out, "Đã gắn file", 201)
 
 
-@router.delete("/{aid}")
-def remove(aid: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    a = db.get(Attachment, aid)
-    if not a:
+@router.delete("/{link_id}")
+def remove(link_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    lk = db.get(FileLink, link_id)
+    if not lk:
         raise HTTPException(404, "Không tìm thấy file")
-    _check(db, user, a.entity, "manage")
-    delete_key(a.file_key)
-    db.delete(a)
+    _check(db, user, lk.entity, "manage")
+    fid = lk.file_id
+    db.delete(lk); db.flush()
+    _delete_file_if_orphan(db, fid)      # còn dùng chỗ khác thì giữ file
     db.commit()
     return success(None, "Đã xóa")

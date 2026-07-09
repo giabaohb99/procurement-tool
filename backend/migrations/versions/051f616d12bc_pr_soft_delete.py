@@ -1,7 +1,7 @@
 """pr_soft_delete
 
 Revision ID: 051f616d12bc
-Revises: c3f6a2d8e5b1
+Revises: b2e5f9c3a7d4
 Create Date: 2026-07-09 04:50:27.981517
 """
 from typing import Sequence, Union
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '051f616d12bc'
-down_revision: Union[str, None] = 'c3f6a2d8e5b1'
+down_revision: Union[str, None] = 'b2e5f9c3a7d4'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

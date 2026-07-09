@@ -460,7 +460,7 @@ export default function SurveyDetail() {
       const metas = r.data.data || []
       const lineId = getLines(tbl)[i]?.id
       if (lineId) {
-        await api.post('/api/attachments/register', { entity: 'survey_line', entity_id: lineId, files: metas })
+        await api.post('/api/attachments/register', { entity: 'survey_line', entity_id: lineId, file_ids: metas.map((m: any) => m.file_id) })
         await loadLineAtt(lineId)
       } else {
         const key = `${tbl}-${i}`
@@ -475,7 +475,7 @@ export default function SurveyDetail() {
       const dash = key.lastIndexOf('-'); const tbl = key.slice(0, dash); const i = Number(key.slice(dash + 1))
       const lineId = (tbl === 'supplier' ? supLines : prodLines)?.[i]?.id
       if (lineId && (metas as any[]).length) {
-        try { await api.post('/api/attachments/register', { entity: 'survey_line', entity_id: lineId, files: metas }) } catch {}
+        try { await api.post('/api/attachments/register', { entity: 'survey_line', entity_id: lineId, file_ids: (metas as any[]).map((m) => m.file_id) }) } catch {}
       }
     }
     setPendingAtt({})
