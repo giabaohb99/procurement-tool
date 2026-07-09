@@ -356,6 +356,8 @@ label {
   border-color: var(--red);
   color: var(--red);
   box-shadow: none;
+  margin-bottom: 0;
+  font-size: 13.5px;
 }
 
 .btn.err:hover {
@@ -432,9 +434,9 @@ tbody tr:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 12px;
+  padding: 4px 10px;
   border-radius: 20px;
-  font-size: 11.5px;
+  font-size: 10.5px !important;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -448,7 +450,6 @@ tbody tr:hover {
 .badge.err {
   background: #fdecea !important;
   color: #d32f2f !important;
-  font-size: 11.5px !important;
 }
 
 .err {
@@ -867,8 +868,10 @@ tbody tr:hover {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 4px;
-  font-size: 13px;
+  .badge {
+    padding: 3px 8px;
+    font-size: 10px !important;
+  }
   color: var(--muted);
   flex-wrap: wrap;
 }
@@ -1637,15 +1640,76 @@ input,
   font-size: 12.5px;
 }
 
-/* Card tổng quan trạng thái trong Báo cáo khảo sát */
-.status-summary-card {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+/* ─── Confirm Modal ─── */
+.confirm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: confirmFadeIn 0.2s ease;
 }
-.status-summary-card:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06) !important;
-  border-color: #cbd5e1 !important;
+
+.confirm-modal {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  animation: confirmSlideUp 0.25s ease;
 }
-.status-summary-card:hover .icon-container {
-  transform: scale(1.08);
+
+.confirm-modal-icon {
+  font-size: 44px;
+  margin-bottom: 12px;
+  line-height: 1;
+}
+
+.confirm-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0 0 8px;
+}
+
+.confirm-modal-message {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0 0 24px;
+  line-height: 1.6;
+}
+
+.confirm-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.confirm-modal-actions .btn {
+  min-width: 100px;
+  justify-content: center;
+}
+
+@keyframes confirmFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes confirmSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
