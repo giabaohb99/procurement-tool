@@ -73,8 +73,8 @@ def create_survey(db: Session, data, user_id: int) -> Survey:
 
 def update_survey(db: Session, sid: int, data, user_id: int) -> Survey:
     s = get_survey(db, sid)
-    if s.status not in ("draft", "rejected"):
-        raise HTTPException(400, "Chỉ sửa được khi ở trạng thái Nháp/Từ chối")
+    if s.status != "draft":
+        raise HTTPException(400, "Chỉ sửa được khi ở trạng thái Nháp")
     for k, v in data.model_dump(exclude_unset=True, exclude={"supplier_lines", "product_lines"}).items():
         setattr(s, k, v)
     s.updated_by = user_id

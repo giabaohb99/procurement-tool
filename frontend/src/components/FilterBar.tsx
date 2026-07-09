@@ -52,27 +52,32 @@ export default function FilterBar({
   function clear() { setVals({}) }
 
   return (
-    <div className="toolbar">
-      {fields.map((f) => {
-        const opts = f.options || dyn[f.key]
-        return (
-          <div key={f.key} className="toolbar-filter-item">
-            {(f.type === 'select' || f.source) ? (
-              <SearchSelect value={vals[f.key] || ''} options={opts || []} placeholder={`${f.label}: Tất cả`} onChange={(v) => set(f.key, v)} />
-            ) : (
-              <input placeholder={f.label} value={vals[f.key] || ''}
-                     onChange={(e) => set(f.key, e.target.value)} />
-            )}
-          </div>
-        )
-      })}
-      {Object.values(vals).some((v) => v) && (
-        <button className="btn ghost" onClick={clear} style={{ height: 40, borderRadius: 12 }}>
-          Xóa lọc
-        </button>
-      )}
-      <span style={{ flex: 1 }} />
-      {extra}
+    <div className="card" style={{ padding: 18, marginBottom: 14 }}>
+      <div className="toolbar" style={{ marginBottom: 0, alignItems: 'flex-end' }}>
+        {fields.map((f) => {
+          const opts = f.options || dyn[f.key]
+          return (
+            <div key={f.key} className="toolbar-filter-item">
+              <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', display: 'block', marginBottom: 6 }}>
+                {f.label}
+              </label>
+              {(f.type === 'select' || f.source) ? (
+                <SearchSelect value={vals[f.key] || ''} options={opts || []} placeholder="Tất cả" onChange={(v) => set(f.key, v)} />
+              ) : (
+                <input placeholder={`Nhập ${f.label.toLowerCase()}…`} value={vals[f.key] || ''}
+                       onChange={(e) => set(f.key, e.target.value)} />
+              )}
+            </div>
+          )
+        })}
+        {Object.values(vals).some((v) => v) && (
+          <button className="btn ghost" onClick={clear} style={{ height: 40, borderRadius: 12 }}>
+            Xóa lọc
+          </button>
+        )}
+        <span style={{ flex: 1 }} />
+        {extra}
+      </div>
     </div>
   )
 }

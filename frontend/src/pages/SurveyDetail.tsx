@@ -246,7 +246,7 @@ export default function SurveyDetail() {
 
   useEffect(() => { if (!isNew) loadAll() }, [id])
 
-  const editable = (isNew || sv.status === 'draft' || sv.status === 'rejected') && can('survey', isNew ? 'create' : 'write')
+  const editable = (isNew || sv.status === 'draft') && can('survey', isNew ? 'create' : 'write')
   const canApprove = can('survey', 'approve')
   const canEditApprove = canApprove && (isNew || ['draft', 'rejected', 'submitted'].includes(sv.status))
   const liveApprove = !isNew && sv.status === 'submitted' && canApprove
@@ -363,6 +363,16 @@ export default function SurveyDetail() {
       await api.patch(`${API}/${id}`, buildBody())
       await api.post(`${API}/${id}/submit`); loadAll()
     } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi gửi duyệt') }
+  }
+
+  async function doCancel() {
+    if (!confirm('Bạn có chắc chắn muốn hủy phiếu khảo sát này?')) return
+    setErr(''); setMsg('')
+    try {
+      await api.post(`${API}/${id}/cancel`)
+      setMsg('Đã hủy phiếu khảo sát')
+      loadAll()
+    } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi hủy phiếu') }
   }
 
   async function saveLineApprove() {
@@ -632,7 +642,12 @@ export default function SurveyDetail() {
             </button>
           </>
         )}
-        {!isNew && can('survey', 'delete') && sv.status === 'draft' && (
+        {!isNew && can('survey', 'write') && sv.status === 'draft' && (
+          <button className="btn ghost" style={{ color: 'var(--amber)', borderColor: 'var(--amber)' }} onClick={doCancel}>
+            <i className="ti ti-ban" />Hủy phiếu
+          </button>
+        )}
+        {!isNew && can('survey', 'delete') && (sv.status === 'draft' || sv.status === 'cancelled') && (
           <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
             onClick={async () => { if (confirm('Xóa phiếu khảo sát này?')) { try { await api.delete(`${API}/${id}`); navigate('/surveys') } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi xóa') } } }}>
             <i className="ti ti-trash" />Xóa
