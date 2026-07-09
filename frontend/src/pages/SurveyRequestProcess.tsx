@@ -129,6 +129,7 @@ export default function SurveyRequestProcess() {
   const [msg, setMsg]             = useState('')
   const [forbidden, setForbidden] = useState(false)
   const [completing, setCompleting] = useState(false)
+  const [attempted, setAttempted] = useState(false)
 
   const supplierOptions = suppliers.map((s) => ({
     value: s.code,
@@ -214,6 +215,14 @@ export default function SurveyRequestProcess() {
   }
 
   async function complete() {
+    setAttempted(true)
+    const lines = data?.lines || []
+    const missingOptions = lines.flatMap(l => l.options || []).filter(o => !o.system_product_code)
+    if (missingOptions.length > 0) {
+      toast.error('Vui lòng chọn Mã SP hệ thống cho tất cả Option trước khi chốt')
+      return
+    }
+
     if (!(await askConfirm({ title: 'Chốt hoàn thành', message: 'Chốt hoàn thành khảo sát? Hành động này không thể hoàn tác.', confirmText: 'Chốt hoàn thành', danger: false }))) return
     setCompleting(true)
     try {
@@ -494,8 +503,10 @@ export default function SurveyRequestProcess() {
                             </span>
                           </td>
                           <td style={{ minWidth: 200 }}>
-                            <ProductPicker code={opt.system_product_code}
-                              onPick={(prod) => setOptionProduct(line.id, opt.id, prod?.code || '')} />
+                            <div style={{ border: attempted && !opt.system_product_code ? '1px solid var(--red)' : 'none', borderRadius: 4 }}>
+                              <ProductPicker code={opt.system_product_code}
+                                onPick={(prod) => setOptionProduct(line.id, opt.id, prod?.code || '')} />
+                            </div>
                           </td>
                           <td style={{ textAlign: 'center' }}>
                             {opt.is_chosen

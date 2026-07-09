@@ -227,6 +227,20 @@ def delete_option(db: Session, line_id: int, oid: int):
     db.delete(o)
     db.commit()
 
+    # Tự động cập nhật trạng thái phiếu thành đang xử lý nếu không còn option nào
+    line = db.query(SurveyRequestLine).filter(SurveyRequestLine.id == line_id).first()
+    if line:
+        req_id = line.survey_request_id
+        total_opts = (db.query(SurveyRequestOption)
+                      .join(SurveyRequestLine, SurveyRequestOption.survey_request_line_id == SurveyRequestLine.id)
+                      .filter(SurveyRequestLine.survey_request_id == req_id)
+                      .count())
+        if total_opts == 0:
+            req = db.query(SurveyRequest).filter(SurveyRequest.id == req_id).first()
+            if req and req.status != "processing":
+                req.status = "processing"
+                db.commit()
+
 
 def update_option_note(db: Session, line_id: int, oid: int, note: str, user_id: int) -> SurveyRequestOption:
     return set_option_fields(db, line_id, oid, user_id, nstm_note=note or "")
