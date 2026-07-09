@@ -290,23 +290,32 @@ export default function PurchaseRequestDetail() {
         <span style={{ flex: 1 }} />
         {!isNew && <button className="btn ghost" onClick={() => window.open(`/print/purchase-request/${id}`, '_blank')}><i className="ti ti-printer" />In phiếu</button>}
         {!isNew && can('purchase_request', 'create') && <button className="btn ghost" onClick={() => setConfirmAction({ type: 'copy', title: 'Nhân bản', message: 'Nhân bản phiếu này thành phiếu Nháp mới?', confirmText: 'Nhân bản' })}><i className="ti ti-copy" />Nhân bản</button>}
-        {!isNew && pr.status === 'submitted' && can('purchase_request', 'approve') && (
-          <>
-            <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>
-            <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => setPromptAction({ type: 'reject', title: 'Từ chối yêu cầu', message: 'Vui lòng nhập lý do từ chối:' })}><i className="ti ti-x" />Từ chối</button>
-          </>
+        
+        {!isNew && pr.status === 'draft' && can('purchase_request', 'delete') && (
+          <button className="btn ghost err" onClick={() => setConfirmDelete(true)}><i className="ti ti-trash" />Xóa phiếu</button>
         )}
-        {!isNew && canManage && ['approved', 'processing'].includes(pr.status) && (
-          <button className="btn secondary" onClick={() => setConfirmAction({ type: 'complete', title: 'Hoàn thành', message: 'Đánh dấu phiếu HOÀN THÀNH?', confirmText: 'Đồng ý' })}><i className="ti ti-checks" />Hoàn thành</button>
+        {!isNew && canManage && !['draft', 'submitted', 'cancelled', 'completed', 'done'].includes(pr.status) && (
+          <button className="btn ghost err" onClick={() => setPromptAction({ type: 'cancel', title: 'Hủy đơn', message: 'Vui lòng nhập lý do hủy đơn:' })}><i className="ti ti-ban" />Hủy đơn</button>
         )}
+        
         {!isNew && canManage && !['draft', 'cancelled', 'completed', 'done'].includes(pr.status) && (
           <button className="btn ghost" onClick={() => setPromptAction({ type: 'return', title: 'Trả phiếu về', message: 'Vui lòng nhập lý do trả phiếu về (Nháp):' })}><i className="ti ti-arrow-back-up" />Trả về</button>
         )}
-        {!isNew && canManage && !['cancelled', 'completed', 'done'].includes(pr.status) && (
-          <button className="btn err" onClick={() => { if (pr.status === 'draft') { setConfirmAction({ type: 'cancel_draft', title: 'Hủy phiếu', message: 'Hủy phiếu này?', confirmText: 'Hủy phiếu' }) } else { setPromptAction({ type: 'cancel', title: 'Hủy đơn', message: 'Vui lòng nhập lý do hủy đơn:' }) } }}><i className="ti ti-ban" />Hủy đơn</button>
+        {!isNew && pr.status === 'submitted' && can('purchase_request', 'approve') && (
+          <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => setPromptAction({ type: 'reject', title: 'Từ chối yêu cầu', message: 'Vui lòng nhập lý do từ chối:' })}><i className="ti ti-x" />Từ chối</button>
         )}
-        {!isNew && pr.status === 'draft' && can('purchase_request', 'delete') && (
-          <button className="btn err" onClick={() => setConfirmDelete(true)}><i className="ti ti-trash" />Xóa phiếu</button>
+        
+        {editable && (
+          <button className="btn secondary" onClick={() => setConfirmSave(true)}><i className="ti ti-device-floppy" />Lưu</button>
+        )}
+        {editable && (
+          <button className="btn" onClick={() => save(true)}><i className="ti ti-send" />Gửi duyệt</button>
+        )}
+        {!isNew && pr.status === 'submitted' && can('purchase_request', 'approve') && (
+          <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>
+        )}
+        {!isNew && canManage && ['approved', 'processing'].includes(pr.status) && (
+          <button className="btn secondary" onClick={() => setConfirmAction({ type: 'complete', title: 'Hoàn thành', message: 'Đánh dấu phiếu HOÀN THÀNH?', confirmText: 'Đồng ý' })}><i className="ti ti-checks" />Hoàn thành</button>
         )}
       </div>
 
@@ -367,13 +376,7 @@ export default function PurchaseRequestDetail() {
 
       <div className={isLogShown ? 'detail-grid' : ''}>
         <div>
-          {editable && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 16 }}>
-              <button className="btn ghost" onClick={() => navigate('/purchase-requests')}>Hủy</button>
-              <button className="btn secondary" onClick={() => setConfirmSave(true)}>Lưu</button>
-              <button className="btn" onClick={() => save(true)}>Gửi duyệt</button>
-            </div>
-          )}
+
 
           {/* Thông tin chung */}
           <div className="card" style={{ padding: 18, marginBottom: 16 }}>
