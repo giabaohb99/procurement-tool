@@ -1516,3 +1516,16 @@ input,
   gap: 5px 14px;
   font-size: 12.5px;
 }
+
+/* Card tổng quan trạng thái trong Báo cáo khảo sát */
+.status-summary-card {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+}
+.status-summary-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.06) !important;
+  border-color: #cbd5e1 !important;
+}
+.status-summary-card:hover .icon-container {
+  transform: scale(1.08);
+}

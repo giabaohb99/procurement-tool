@@ -9,6 +9,13 @@ const LINE_APPROVE_COLOR: Record<string, string> = {
   'Thiếu thông tin': '#ea580c',
 }
 
+const STATUS_COLORS: Record<string, { main: string; bg: string; icon: string }> = {
+  'Chờ duyệt': { main: '#d97706', bg: 'rgba(217,119,6,0.08)', icon: 'ti-clock' },
+  'Đã duyệt': { main: '#16a34a', bg: 'rgba(22,163,74,0.08)', icon: 'ti-circle-check' },
+  'Không duyệt': { main: '#b91c1c', bg: 'rgba(185,28,28,0.08)', icon: 'ti-circle-x' },
+  'Thiếu thông tin': { main: '#ea580c', bg: 'rgba(234,88,12,0.08)', icon: 'ti-alert-circle' },
+}
+
 function lineApproveBadge(st: string) {
   const c = LINE_APPROVE_COLOR[st] || '#64748b'
   return (
@@ -148,7 +155,18 @@ export default function SurveyReport() {
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
-  const CARD_STYLE_BASE: React.CSSProperties = { flex: 1, minWidth: 150, padding: '14px 18px', cursor: 'pointer', borderRadius: 10, border: '2px solid transparent', transition: 'all .15s' }
+  const CARD_STYLE_BASE: React.CSSProperties = {
+    flex: '1 1 200px',
+    padding: '16px 20px',
+    cursor: 'pointer',
+    borderRadius: 16,
+    border: '1px solid #E9EDF7',
+    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+  }
 
   return (
     <div>
@@ -160,13 +178,34 @@ export default function SurveyReport() {
       {/* Summary cards */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
         {SUMMARY_KEYS.map((st) => {
-          const c = LINE_APPROVE_COLOR[st] || '#64748b'
+          const sc = STATUS_COLORS[st] || { main: '#64748b', bg: 'rgba(100,116,139,0.08)', icon: 'ti-info-circle' }
           const active = filters.line_approve === st
           return (
-            <div key={st} className="card" onClick={() => toggleStatusCard(st)}
-              style={{ ...CARD_STYLE_BASE, borderColor: active ? c : 'transparent', boxShadow: active ? `0 0 0 1px ${c}55` : undefined }}>
-              <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>{st}</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: c }}>{summary[st]}</div>
+            <div key={st} className="card status-summary-card" onClick={() => toggleStatusCard(st)}
+              style={{ 
+                ...CARD_STYLE_BASE, 
+                borderColor: active ? sc.main : '#E9EDF7', 
+                boxShadow: active ? `0 10px 20px ${sc.bg}, 0 0 0 3px ${sc.bg}` : 'none',
+                transform: active ? 'translateY(-2px)' : 'none',
+              }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 4 }}>{st}</div>
+                <div style={{ fontSize: 26, fontWeight: 800, color: sc.main }}>{summary[st]}</div>
+              </div>
+              <div className="icon-container" style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                backgroundColor: sc.bg,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: sc.main,
+                fontSize: 22,
+                transition: 'transform 0.2s ease',
+              }}>
+                <i className={`ti ${sc.icon}`} />
+              </div>
             </div>
           )
         })}
