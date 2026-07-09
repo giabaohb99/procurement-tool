@@ -134,12 +134,17 @@ def reject_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Ses
 
 
 @router.post("/{sid}/cancel")
-def cancel_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey", "write"))):
+def cancel_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
+            user=Depends(require("survey", "approve"))):
+    """Từ chối phiếu đang chờ duyệt (khóa hẳn) — người duyệt thao tác."""
     s = service.get_survey(db, sid)
-    if s.status != "draft":
-        raise HTTPException(400, "Chỉ được hủy phiếu ở trạng thái Nháp")
-    s = service.set_status(db, sid, "cancelled", user.id)
-    return success(_out(db, s), "Đã hủy phiếu")
+    if s.status != "submitted":
+        raise HTTPException(400, "Chỉ từ chối được phiếu đang chờ duyệt")
+    s = service.set_status(db, sid, "cancelled", user.id, data.reason)
+    trigger_notification(db=db, event="survey_rejected", doc_type="survey", doc_code=s.code,
+                         creator_id=s.created_by or user.id, background_tasks=background_tasks,
+                         reason=data.reason or "", link=f"/surveys/{s.id}")
+    return success(_out(db, s), "Đã từ chối")
 
 
 @router.patch("/{sid}/lines/{table}/{line_id}/fill")

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { fmtDateTime } from '../utils/datetime'
 import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import { poBadge } from '../config/cruds'
@@ -442,7 +443,7 @@ export default function PurchaseOrderDetail() {
                 <div key={i} className="tl-item">
                   <span className={'tl-dot ' + (l.action === 'approved' ? 'create' : l.action === 'rejected' ? 'delete' : l.action)} />
                   <div><div style={{ fontSize: 13 }}><b>{l.by}</b> — {l.action_label}{l.message ? `: ${l.message}` : ''}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{new Date(l.at).toLocaleString('vi-VN')}</div></div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{fmtDateTime(l.at)}</div></div>
                 </div>
               ))}
             </div>

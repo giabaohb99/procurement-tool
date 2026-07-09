@@ -6,6 +6,7 @@ import { prBadge } from '../config/cruds'
 import ProductPicker from '../components/ProductPicker'
 import SearchSelect from '../components/SearchSelect'
 import { toast } from '../components/toast'
+import { fmtDateTime } from '../utils/datetime'
 import { askConfirm, askPrompt } from '../components/confirm'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -169,6 +170,9 @@ const PRODUCT_COLS: Col[] = [
 
 const API = '/api/surveys'
 const MGR_KEYS = ['line_approve', 'line_approve_note']
+// Field KHÔNG bắt buộc khi Gửi duyệt (link, maps, folder, lý do, ghi chú phụ…)
+const OPTIONAL_KEYS = ['google_maps', 'quote_folder', 'quote_file', 'source_of_information',
+  'nspt_reason', 'lab_note', 'defect_return', 'reply_date', 'result_date', 'result_due_date']
 
 function makeEmptyLine(sections: Section[]): Record<string, any> {
   return Object.fromEntries(
@@ -262,7 +266,7 @@ export default function SurveyDetail() {
 
   useEffect(() => { if (!isNew) loadAll() }, [id])
 
-  const editable = (isNew || sv.status === 'draft') && can('survey', isNew ? 'create' : 'write')
+  const editable = (isNew || sv.status === 'draft' || sv.status === 'rejected') && can('survey', isNew ? 'create' : 'write')
   const canApprove = can('survey', 'approve')
   const canEditApprove = canApprove && (isNew || ['draft', 'rejected', 'submitted'].includes(sv.status))
   const liveApprove = !isNew && sv.status === 'submitted' && canApprove
@@ -392,7 +396,7 @@ export default function SurveyDetail() {
       if (!it.supplier_code) continue
       let bad = false
       for (const sec of SUPPLIER_SECTIONS) for (const f of sec.fields) {
-        if (MGR_KEYS.includes(f.k) || f.k === 'note') continue
+        if (MGR_KEYS.includes(f.k) || f.k === 'note' || OPTIONAL_KEYS.includes(f.k)) continue
         const t = f.type || 'text'
         if (t === 'num' || t === 'computed' || t === 'check') continue
         if (!String(it[f.k] ?? '').trim()) { invalid.add(`supplier-${i}-${f.k}`); bad = true }
@@ -405,7 +409,7 @@ export default function SurveyDetail() {
       if (!it.product_name) continue
       let bad = false
       for (const sec of PRODUCT_SECTIONS) for (const f of sec.fields) {
-        if (MGR_KEYS.includes(f.k) || f.k === 'note') continue
+        if (MGR_KEYS.includes(f.k) || f.k === 'note' || OPTIONAL_KEYS.includes(f.k)) continue
         const t = f.type || 'text'
         if (t === 'num' || t === 'computed' || t === 'check') continue
         if (['sample_date', 'sample_qty', 'lab_result'].includes(f.k) && !it.sample_ready) continue
@@ -416,36 +420,30 @@ export default function SurveyDetail() {
     const parts: string[] = []
     if (badSup.length) parts.push(`Khảo sát NCC dòng ${badSup.join(', ')}`)
     if (badProd.length) parts.push(`Khảo sát Sản phẩm dòng ${badProd.join(', ')}`)
-    const msg = parts.length ? `${parts.join('; ')} còn thiếu thông tin bắt buộc — vui lòng kiểm tra các ô đang tô đỏ.` : ''
+    const msg = parts.length ? `${parts.join('; ')} còn thiếu thông tin bắt buộc — mở chi tiết dòng để điền các ô đang tô đỏ.` : ''
     return { msg, invalid }
   }
 
-  function scrollToFirstInvalid() {
-    setTimeout(() => {
-      const el = document.querySelector('.cell-invalid')
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }, 60)
+  // Mở popup chi tiết dòng lỗi đầu tiên để người dùng thấy ngay ô tô đỏ.
+  function openFirstInvalid(invalid: Set<string>) {
+    const first = invalid.values().next().value as string | undefined
+    if (!first) return
+    const [tbl, idxStr] = first.split('-')
+    const idx = Number(idxStr)
+    if ((tbl === 'supplier' || tbl === 'product') && !Number.isNaN(idx)) {
+      setFillMode(false); setEditingTable(tbl); setEditingIndex(idx)
+    }
   }
 
   async function doSubmit() {
     const { msg, invalid } = validateSubmit()
-    if (msg) { setInvalidCells(invalid); toast.error(msg); if (invalid.size) scrollToFirstInvalid(); return }
+    if (msg) { setInvalidCells(invalid); toast.error(msg); if (invalid.size) openFirstInvalid(invalid); return }
     setInvalidCells(new Set())
     try {
       await api.patch(`${API}/${id}`, buildBody())
       await api.post(`${API}/${id}/submit`); loadAll()
       toast.success('Đã gửi duyệt phiếu khảo sát')
     } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi gửi duyệt') }
-  }
-
-  async function doCancel() {
-    if (!(await askConfirm({ title: 'Hủy phiếu khảo sát', message: 'Bạn có chắc chắn muốn hủy phiếu khảo sát này?', confirmText: 'Hủy phiếu' }))) return
-    setErr(''); setMsg('')
-    try {
-      await api.post(`${API}/${id}/cancel`)
-      setMsg('Đã hủy phiếu khảo sát')
-      loadAll()
-    } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi hủy phiếu') }
   }
 
   async function saveLineApprove() {
@@ -741,7 +739,7 @@ export default function SurveyDetail() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
         <button className="btn ghost" onClick={() => navigate('/surveys')}><i className="ti ti-arrow-left" /></button>
         <h2 className="page-title" style={{ margin: 0 }}>{isNew ? 'Tạo Phiếu Khảo sát' : `Phiếu Khảo sát ${sv.code || ''}`}</h2>
-        {!isNew && prBadge(sv.status)}
+        {!isNew && sv.status !== 'draft' && prBadge(sv.status)}
         <span style={{ flex: 1 }} />
         {editable && can('survey', isNew ? 'create' : 'write') && (
           <button className="btn" onClick={save}>{isNew ? 'Tạo' : 'Lưu'}</button>
@@ -753,15 +751,14 @@ export default function SurveyDetail() {
           <>
             <button className="btn" onClick={async () => { if (await askConfirm({ message: 'Duyệt cả phiếu khảo sát này?', confirmText: 'Duyệt phiếu', danger: false })) action('approve') }}><i className="ti ti-check" />Duyệt phiếu</button>
             <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
+              onClick={async () => { const r = await askPrompt({ title: 'Từ chối phiếu', message: 'Lý do từ chối (khóa phiếu):', danger: true, confirmText: 'Từ chối' }); if (r !== null) action('cancel', { reason: r }) }}>
+              <i className="ti ti-ban" />Từ chối
+            </button>
+            <button className="btn ghost" style={{ color: 'var(--amber)', borderColor: 'var(--amber)' }}
               onClick={async () => { const r = await askPrompt({ title: 'Trả lại phiếu', message: 'Lý do trả lại (để khảo sát lại):' }); if (r !== null) action('reject', { reason: r }) }}>
               <i className="ti ti-arrow-back-up" />Trả lại
             </button>
           </>
-        )}
-        {!isNew && can('survey', 'write') && sv.status === 'draft' && (
-          <button className="btn ghost" style={{ color: 'var(--amber)', borderColor: 'var(--amber)' }} onClick={doCancel}>
-            <i className="ti ti-ban" />Hủy phiếu
-          </button>
         )}
         {!isNew && can('survey', 'delete') && (sv.status === 'draft' || sv.status === 'cancelled') && (
           <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
@@ -863,7 +860,7 @@ export default function SurveyDetail() {
                   <span className={'tl-dot ' + (l.action === 'approved' ? 'create' : l.action === 'rejected' ? 'delete' : l.action)} />
                   <div>
                     <div style={{ fontSize: 13 }}><b>{l.by}</b> — {l.action_label}{l.message ? `: ${l.message}` : ''}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{new Date(l.at).toLocaleString('vi-VN')}</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{fmtDateTime(l.at)}</div>
                   </div>
                 </div>
               ))}
@@ -899,12 +896,15 @@ export default function SurveyDetail() {
                   <div key={sec.title} style={{ marginBottom: 18 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: .3, marginBottom: 10, paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>{sec.title}</div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px 20px' }}>
-                      {sec.fields.map((f) => (
-                        <div className="form-row" key={f.k} style={f.full ? { gridColumn: '1 / -1' } : undefined}>
-                          <label>{f.label}</label>
-                          {lineField(f, editingTable, editingIndex)}
-                        </div>
-                      ))}
+                      {sec.fields.map((f) => {
+                        const bad = editingTable !== null && editingIndex !== null && invalidCells.has(`${editingTable}-${editingIndex}-${f.k}`)
+                        return (
+                          <div className="form-row" key={f.k} style={{ ...(f.full ? { gridColumn: '1 / -1' } : {}), ...(bad ? { padding: 8, borderRadius: 8, background: '#fef2f2', boxShadow: 'inset 0 0 0 1.5px #ef4444' } : {}) }}>
+                            <label style={bad ? { color: '#dc2626' } : undefined}>{f.label}{bad ? ' *' : ''}</label>
+                            {lineField(f, editingTable, editingIndex)}
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                 ))}

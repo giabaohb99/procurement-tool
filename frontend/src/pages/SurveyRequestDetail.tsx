@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { fmtDateTime } from '../utils/datetime'
 import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import { prBadge } from '../config/cruds'
@@ -827,7 +828,7 @@ export default function SurveyRequestDetail() {
                       <b>{l.by}</b> — {l.action_label}{l.message ? `: ${l.message}` : ''}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
-                      {new Date(l.at).toLocaleString('vi-VN')}
+                      {fmtDateTime(l.at)}
                     </div>
                   </div>
                 </div>
