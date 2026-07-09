@@ -469,13 +469,18 @@ export default function SurveyDetail() {
     } catch (ex: any) { setErr(ex?.response?.data?.error?.message || ex?.response?.data?.message || 'Lỗi tải file') }
     finally { setAttProgress(null) }
   }
-  // Gắn file chờ vào dòng sau khi lưu (khớp theo index dòng trả về)
+  // Gắn file chờ vào dòng sau khi lưu. buildBody LỌC bỏ dòng rỗng → phải map
+  // index local (chỉ đếm dòng có supplier_code/product_name) sang dòng đã lưu.
   async function flushPendingAtt(supLines: any[], prodLines: any[]) {
+    const supMap: Record<number, any> = {}; let j = 0
+    ;(sv.supplier_lines || []).forEach((it: any, idx: number) => { if (it.supplier_code) { supMap[idx] = supLines[j]; j++ } })
+    const prodMap: Record<number, any> = {}; let k = 0
+    ;(sv.product_lines || []).forEach((it: any, idx: number) => { if (it.product_name) { prodMap[idx] = prodLines[k]; k++ } })
     for (const [key, metas] of Object.entries(pendingAtt)) {
       const dash = key.lastIndexOf('-'); const tbl = key.slice(0, dash); const i = Number(key.slice(dash + 1))
-      const lineId = (tbl === 'supplier' ? supLines : prodLines)?.[i]?.id
-      if (lineId && (metas as any[]).length) {
-        try { await api.post('/api/attachments/register', { entity: 'survey_line', entity_id: lineId, file_ids: (metas as any[]).map((m) => m.file_id) }) } catch {}
+      const line = tbl === 'supplier' ? supMap[i] : prodMap[i]
+      if (line?.id && (metas as any[]).length) {
+        try { await api.post('/api/attachments/register', { entity: 'survey_line', entity_id: line.id, file_ids: (metas as any[]).map((m) => m.file_id) }) } catch {}
       }
     }
     setPendingAtt({})
