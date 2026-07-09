@@ -172,13 +172,22 @@ function makeEmptyLine(sections: Section[]): Record<string, any> {
   return Object.fromEntries(
     sections.flatMap((s) => s.fields).map((f) => [
       f.k,
-      f.k === 'line_approve' ? 'Chờ duyệt' : f.type === 'check' ? false : (f.type === 'num' || f.type === 'computed') ? 0 : '',
+      f.k === 'line_approve' ? 'Chờ duyệt' : f.type === 'check' ? false : (f.type === 'num' || f.type === 'computed' || f.type === 'vat') ? 0 : '',
     ])
   )
 }
 
 const emptySupplierLine = makeEmptyLine(SUPPLIER_SECTIONS)
 const emptyProductLine = makeEmptyLine(PRODUCT_SECTIONS)
+
+// Tập key kiểu số của mỗi loại dòng — để ép Number khi gửi (BE là float).
+const numKeysOf = (sections: any[]) => new Set<string>(
+  sections.flatMap((s) => s.fields)
+    .filter((f: any) => f.type === 'num' || f.type === 'computed' || f.type === 'vat')
+    .map((f: any) => f.k)
+)
+const SUP_NUM_KEYS = numKeysOf(SUPPLIER_SECTIONS)
+const PROD_NUM_KEYS = numKeysOf(PRODUCT_SECTIONS)
 
 export default function SurveyDetail() {
   const { id } = useParams()
@@ -302,11 +311,24 @@ export default function SurveyDetail() {
 
   // Giữ dòng nếu có BẤT KỲ nội dung (nháp cho lưu dở dang) — chỉ bỏ dòng RỖNG hẳn.
   // (KHÔNG bắt buộc chọn NCC/tên SP khi Lưu — cái đó chỉ bắt khi Gửi duyệt.)
-  const supHasContent = (it: any) => !!(it.supplier_code || it.supplier_name || it.tax_code
-    || it.contact_person || it.contact_phone || it.reg_address || it.warehouse_address
-    || it.supply_group || it.nspt_note || it.note)
-  const prodHasContent = (it: any) => !!(it.product_name || it.internal_code || it.supplier_code
-    || it.spec || it.origin || it.quote_unit || Number(it.moq) || Number(it.price_by_volume) || it.nspt_note || it.note)
+  // So với dòng rỗng mẫu: bỏ qua id + line_approve (mặc định 'Chờ duyệt') để không sót field nào.
+  const LINE_META = new Set(['id', 'line_approve', 'line_approve_note'])
+  const lineHasContent = (it: any, empty: any) => Object.keys(empty).some((k) => {
+    if (LINE_META.has(k)) return false
+    const v = it[k]
+    if (typeof v === 'number') return v !== 0
+    if (typeof v === 'boolean') return v === true
+    return !!(v && String(v).trim())
+  })
+  const supHasContent = (it: any) => lineHasContent(it, emptySupplierLine)
+  const prodHasContent = (it: any) => lineHasContent(it, emptyProductLine)
+
+  // Ép các field kiểu số (num/computed/vat) về Number — tránh gửi "" cho cột float ở BE (422).
+  const coerceNums = (it: any, keys: Set<string>) => {
+    const o = { ...it }
+    keys.forEach((k) => { o[k] = Number(o[k]) || 0 })
+    return o
+  }
 
   function buildBody() {
     return {
@@ -314,8 +336,8 @@ export default function SurveyDetail() {
       item_group: sv.item_group, requirement_detail: sv.requirement_detail, nspt: sv.nspt,
       has_product_code: !!sv.has_product_code, item_code: sv.item_code, item_name: sv.item_name,
       request_qty: Number(sv.request_qty) || 0, uom: sv.uom, proposed_rate: Number(sv.proposed_rate) || 0,
-      supplier_lines: (sv.supplier_lines || []).filter(supHasContent),
-      product_lines: (sv.product_lines || []).filter(prodHasContent),
+      supplier_lines: (sv.supplier_lines || []).filter(supHasContent).map((it: any) => coerceNums(it, SUP_NUM_KEYS)),
+      product_lines: (sv.product_lines || []).filter(prodHasContent).map((it: any) => coerceNums(it, PROD_NUM_KEYS)),
     }
   }
 
