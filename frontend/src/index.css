@@ -208,7 +208,7 @@ button.nav-group-title:hover {
 
 .toolbar {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
   margin-bottom: 16px;
   flex-wrap: wrap;
@@ -304,6 +304,7 @@ label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  line-height: 1;
   box-shadow: 0 4px 12px rgba(0, 174, 239, 0.15);
   transition: all 0.2s ease;
 }

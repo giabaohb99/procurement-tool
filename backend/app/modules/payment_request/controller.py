@@ -89,6 +89,19 @@ def delete_(rid: int, db: Session = Depends(get_db), user=Depends(require("payme
     return success(None, "Đã xóa")
 
 
+@router.delete("")
+def bulk_delete_requests(ids: str, db: Session = Depends(get_db), user=Depends(require("payment_request", "delete"))):
+    id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
+    if not id_list:
+        raise HTTPException(400, "Không có ID hợp lệ")
+    for rid in id_list:
+        try:
+            service.delete_request(db, rid, user.id)
+        except Exception as e:
+            raise HTTPException(400, f"Lỗi khi xóa phiếu ID {rid}: {str(e)}")
+    return success(None, f"Đã xóa {len(id_list)} bản ghi")
+
+
 @router.post("/{rid}/submit")
 def submit_(rid: int, db: Session = Depends(get_db), user=Depends(require("payment_request", "write"))):
     return success(_out(db, service.set_status(db, rid, "submitted", user.id)), "Đã gửi duyệt")

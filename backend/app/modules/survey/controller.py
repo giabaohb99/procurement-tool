@@ -78,6 +78,19 @@ def delete_(sid: int, db: Session = Depends(get_db), user=Depends(require("surve
     return success(None, "Đã xóa")
 
 
+@router.delete("")
+def bulk_delete_surveys(ids: str, db: Session = Depends(get_db), user=Depends(require("survey", "delete"))):
+    id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
+    if not id_list:
+        raise HTTPException(400, "Không có ID hợp lệ")
+    for sid in id_list:
+        try:
+            service.delete_survey(db, sid, user.id)
+        except Exception as e:
+            raise HTTPException(400, f"Lỗi khi xóa khảo sát ID {sid}: {str(e)}")
+    return success(None, f"Đã xóa {len(id_list)} bản ghi")
+
+
 @router.post("/{sid}/submit")
 def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
             user=Depends(require("survey", "write"))):

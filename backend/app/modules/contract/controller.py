@@ -106,3 +106,19 @@ def delete_(cid: int, db: Session = Depends(get_db), user=Depends(require("contr
     db.commit()
     record(db, user.id, "contract", cid, "delete")
     return success(None, "Đã xóa")
+
+
+@router.delete("")
+def bulk_delete_contracts(ids: str, db: Session = Depends(get_db), user=Depends(require("contract", "delete"))):
+    id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
+    if not id_list:
+        raise HTTPException(400, "Không có ID hợp lệ")
+    from app.modules.attachment.service import delete_attachments_for
+    for cid in id_list:
+        c = db.get(Contract, cid)
+        if c:
+            delete_attachments_for(db, [("contract", cid)])
+            db.delete(c)
+            record(db, user.id, "contract", cid, "delete")
+    db.commit()
+    return success(None, f"Đã xóa {len(id_list)} bản ghi")
