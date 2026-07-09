@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
+import { toast } from '../components/toast'
 
 const LINE_APPROVE_COLOR: Record<string, string> = {
   'Chờ duyệt': '#d97706',
@@ -139,7 +140,7 @@ export default function SurveyReport() {
   }
 
   function exportCsv() {
-    if (items.length === 0) { alert('Không có dữ liệu để xuất.'); return }
+    if (items.length === 0) { toast.error('Không có dữ liệu để xuất.'); return }
     const headers = ['Mã phiếu', 'Loại', 'Nội dung', 'Phân loại', 'NSPT', 'Ngày', 'Trạng thái duyệt', 'Ghi chú duyệt']
     const rows = items.map((it) => [
       it.survey_code, KIND_LABEL[it.kind] || it.kind, it.content || '',

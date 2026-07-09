@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { toast } from '../components/toast'
 import { api } from '../api/client'
 import NotificationBell from '../components/NotificationBell'
 
@@ -85,7 +86,7 @@ export default function AppLayout() {
       })
       updateUser({ avatar: res.data.data.avatar })
     } catch (err) {
-      alert('Không thể tải ảnh lên. Vui lòng thử lại.')
+      toast.error('Không thể tải ảnh lên. Vui lòng thử lại.')
     } finally {
       setUploadingAvatar(false)
     }

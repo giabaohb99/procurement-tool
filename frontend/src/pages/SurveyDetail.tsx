@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext'
 import { prBadge } from '../config/cruds'
 import ProductPicker from '../components/ProductPicker'
 import SearchSelect from '../components/SearchSelect'
+import { toast } from '../components/toast'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const VAT_OPTS = ['0', '2', '4', '6', '8', '10']
@@ -215,8 +216,11 @@ export default function SurveyDetail() {
   const [attByLine, setAttByLine] = useState<Record<number, any[]>>({})
   const [attProgress, setAttProgress] = useState<number | null>(null)          // % đang upload (null = không upload)
   const [pendingAtt, setPendingAtt] = useState<Record<string, any[]>>({})      // file ĐÃ upload, chờ gắn khi lưu (dòng chưa có id); key = `${tbl}-${index}`
-  const [err, setErr] = useState('')
-  const [msg, setMsg] = useState('')
+  // Thông báo dùng toast chung thay cho banner/alert trình duyệt.
+  const setErr = (m: string) => { if (m) toast.error(m) }
+  const setMsg = (m: string) => { if (m) toast.success(m) }
+  // Ô bắt buộc còn trống khi Gửi duyệt (key = `${tbl}-${index}-${fieldKey}`) → tô đỏ.
+  const [invalidCells, setInvalidCells] = useState<Set<string>>(new Set())
 
   // Popup state: which table ('supplier'|'product') + which row index
   const [editingTable, setEditingTable] = useState<'supplier' | 'product' | null>(null)
@@ -280,8 +284,16 @@ export default function SurveyDetail() {
   const getLines = (tbl: 'supplier' | 'product') => tbl === 'supplier' ? (sv.supplier_lines || []) : (sv.product_lines || [])
   const lineKey = (tbl: 'supplier' | 'product') => tbl === 'supplier' ? 'supplier_lines' : 'product_lines'
 
-  const setLine = (tbl: 'supplier' | 'product', i: number, patch: any) =>
+  const setLine = (tbl: 'supplier' | 'product', i: number, patch: any) => {
     setSv((s: any) => ({ ...s, [lineKey(tbl)]: s[lineKey(tbl)].map((it: any, idx: number) => idx === i ? { ...it, ...patch } : it) }))
+    // Sửa ô nào thì bỏ tô đỏ ô đó
+    setInvalidCells((prev) => {
+      if (!prev.size) return prev
+      const next = new Set(prev)
+      Object.keys(patch).forEach((k) => next.delete(`${tbl}-${i}-${k}`))
+      return next.size === prev.size ? prev : next
+    })
+  }
 
   const addLines = (tbl: 'supplier' | 'product', n = 1) => {
     const empty = tbl === 'supplier' ? emptySupplierLine : emptyProductLine
@@ -356,51 +368,72 @@ export default function SurveyDetail() {
     } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
   }
 
-  function validateSubmit(): string {
-    if (!sv.item_group) return 'Vui lòng chọn Phân loại'
+  // Trả { msg, invalid } — invalid là tập ô còn trống (để tô đỏ). msg rỗng = hợp lệ.
+  function validateSubmit(): { msg: string; invalid: Set<string> } {
+    const invalid = new Set<string>()
+    if (!sv.item_group) return { msg: 'Vui lòng chọn Phân loại', invalid }
     if (sv.has_product_code) {
-      if (!sv.item_code) return 'Vui lòng chọn Mã VTBB/VL'
-      if (!(Number(sv.request_qty) > 0)) return 'Vui lòng nhập Số lượng dự kiến mua'
-      if (!sv.uom) return 'Vui lòng chọn ĐVT ở phần Thông tin tiếp nhận'
-      if (!(Number(sv.proposed_rate) > 0)) return 'Vui lòng nhập Giá đề xuất'
+      if (!sv.item_code) return { msg: 'Vui lòng chọn Mã VTBB/VL', invalid }
+      if (!(Number(sv.request_qty) > 0)) return { msg: 'Vui lòng nhập Số lượng dự kiến mua', invalid }
+      if (!sv.uom) return { msg: 'Vui lòng chọn ĐVT ở phần Thông tin tiếp nhận', invalid }
+      if (!(Number(sv.proposed_rate) > 0)) return { msg: 'Vui lòng nhập Giá đề xuất', invalid }
     } else if (!String(sv.requirement_detail || '').trim()) {
-      return 'Nhập Yêu cầu kỹ thuật & chất lượng, hoặc tick "Đã có mã sản phẩm sẵn"'
+      return { msg: 'Nhập Yêu cầu kỹ thuật & chất lượng, hoặc tick "Đã có mã sản phẩm sẵn"', invalid }
     }
     const validSupplier = (sv.supplier_lines || []).filter((it: any) => it.supplier_code)
     const validProduct = (sv.product_lines || []).filter((it: any) => it.product_name)
-    if (validSupplier.length === 0 && validProduct.length === 0) return 'Cần ít nhất 1 dòng khảo sát NCC hoặc Sản phẩm'
+    if (validSupplier.length === 0 && validProduct.length === 0)
+      return { msg: 'Cần ít nhất 1 dòng khảo sát NCC hoặc Sản phẩm (đã chọn NCC / nhập Tên SP).', invalid }
 
+    const badSup: number[] = []
     for (let i = 0; i < (sv.supplier_lines || []).length; i++) {
       const it = sv.supplier_lines[i]
       if (!it.supplier_code) continue
+      let bad = false
       for (const sec of SUPPLIER_SECTIONS) for (const f of sec.fields) {
         if (MGR_KEYS.includes(f.k) || f.k === 'note') continue
         const t = f.type || 'text'
         if (t === 'num' || t === 'computed' || t === 'check') continue
-        if (!String(it[f.k] ?? '').trim()) return `NCC dòng ${i + 1}: thiếu "${f.label}"`
+        if (!String(it[f.k] ?? '').trim()) { invalid.add(`supplier-${i}-${f.k}`); bad = true }
       }
+      if (bad) badSup.push(i + 1)
     }
+    const badProd: number[] = []
     for (let i = 0; i < (sv.product_lines || []).length; i++) {
       const it = sv.product_lines[i]
       if (!it.product_name) continue
+      let bad = false
       for (const sec of PRODUCT_SECTIONS) for (const f of sec.fields) {
         if (MGR_KEYS.includes(f.k) || f.k === 'note') continue
         const t = f.type || 'text'
         if (t === 'num' || t === 'computed' || t === 'check') continue
         if (['sample_date', 'sample_qty', 'lab_result'].includes(f.k) && !it.sample_ready) continue
-        if (!String(it[f.k] ?? '').trim()) return `SP dòng ${i + 1}: thiếu "${f.label}"`
+        if (!String(it[f.k] ?? '').trim()) { invalid.add(`product-${i}-${f.k}`); bad = true }
       }
+      if (bad) badProd.push(i + 1)
     }
-    return ''
+    const parts: string[] = []
+    if (badSup.length) parts.push(`Khảo sát NCC dòng ${badSup.join(', ')}`)
+    if (badProd.length) parts.push(`Khảo sát Sản phẩm dòng ${badProd.join(', ')}`)
+    const msg = parts.length ? `${parts.join('; ')} còn thiếu thông tin bắt buộc — vui lòng kiểm tra các ô đang tô đỏ.` : ''
+    return { msg, invalid }
+  }
+
+  function scrollToFirstInvalid() {
+    setTimeout(() => {
+      const el = document.querySelector('.cell-invalid')
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 60)
   }
 
   async function doSubmit() {
-    const v = validateSubmit()
-    if (v) { setErr(v); return }
-    setErr(''); setMsg('')
+    const { msg, invalid } = validateSubmit()
+    if (msg) { setInvalidCells(invalid); toast.error(msg); if (invalid.size) scrollToFirstInvalid(); return }
+    setInvalidCells(new Set())
     try {
       await api.patch(`${API}/${id}`, buildBody())
       await api.post(`${API}/${id}/submit`); loadAll()
+      toast.success('Đã gửi duyệt phiếu khảo sát')
     } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi gửi duyệt') }
   }
 
@@ -640,7 +673,15 @@ export default function SurveyDetail() {
                     </td>
                   )}
                   <td>{i + 1}</td>
-                  {tableCols.map((c) => <td key={c.key}>{cell(c, tbl, i)}</td>)}
+                  {tableCols.map((c) => {
+                    const bad = editable && invalidCells.has(`${tbl}-${i}-${c.key}`)
+                    return (
+                      <td key={c.key} className={bad ? 'cell-invalid' : undefined}
+                        style={bad ? { boxShadow: 'inset 0 0 0 1.5px #ef4444', background: '#fef2f2', borderRadius: 6 } : undefined}>
+                        {cell(c, tbl, i)}
+                      </td>
+                    )
+                  })}
                   <td style={{ textAlign: 'center' }}>
                     <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'nowrap' }}>
                       <button className="icon-btn" title="Chỉnh sửa chi tiết" onClick={() => { setFillMode(false); openLine(tbl, i) }}>
@@ -810,8 +851,6 @@ export default function SurveyDetail() {
             </div>
           )}
 
-          {err && <div className="err" style={{ marginTop: 12 }}>{err}</div>}
-          {msg && <div style={{ color: 'var(--green)', fontSize: 13, marginTop: 8 }}>{msg}</div>}
         </div>
 
         {isLogShown && (
