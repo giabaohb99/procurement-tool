@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { cruds } from '../config/cruds'
+import ConfirmModal from './ConfirmModal'
 import FilterBar from './FilterBar'
 import Pagination from './Pagination'
 
@@ -48,17 +49,54 @@ export default function CrudList() {
     }
   }
 
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean; title: string; message: string;
+    confirmText?: string; cancelText?: string; hideCancel?: boolean; variant?: 'danger' | 'warn' | 'info';
+    onConfirm: () => void;
+  }>({
+    open: false, title: '', message: '', onConfirm: () => {},
+  })
+
   async function handleDeleteSelected() {
     if (selectedIds.length === 0) return;
-    if (!confirm(`Bạn có chắc chắn muốn xóa ${selectedIds.length} bản ghi đã chọn? Hành động này không thể hoàn tác!`)) return;
-    try {
-      await api.delete(cfg.apiPath, { params: { ids: selectedIds.join(',') } });
-      alert('Xóa thành công');
-      setSelectedIds([]);
-      load(page, pageSize, filters);
-    } catch (e: any) {
-      alert(e.response?.data?.message || 'Lỗi khi xóa dữ liệu');
+
+    // Nếu là purchase-requests, kiểm tra chỉ cho xóa phiếu Nháp
+    if (cfg.slug === 'purchase-requests') {
+      const nonDraftItems = items.filter(
+        (item) => selectedIds.includes(item.id) && item.status !== 'draft'
+      );
+      if (nonDraftItems.length > 0) {
+        setConfirmModal({
+          open: true,
+          title: 'Không thể xóa',
+          message: `Không thể xóa item này do trạng thái không phải là Nháp.`,
+          confirmText: 'Đã hiểu',
+          hideCancel: true,
+          variant: 'warn',
+          onConfirm: () => setConfirmModal((prev) => ({ ...prev, open: false })),
+        });
+        return;
+      }
     }
+
+    setConfirmModal({
+      open: true,
+      title: 'Xác nhận xóa',
+      message: `Bạn có chắc chắn muốn xóa ${selectedIds.length} bản ghi đã chọn?`,
+      confirmText: 'Xóa',
+      cancelText: 'Hủy',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, open: false }));
+        try {
+          await api.delete(cfg.apiPath, { params: { ids: selectedIds.join(',') } });
+          setSelectedIds([]);
+          load(page, pageSize, filters);
+        } catch (e: any) {
+          alert(e.response?.data?.message || 'Lỗi khi xóa dữ liệu');
+        }
+      },
+    });
   }
 
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
@@ -236,6 +274,18 @@ export default function CrudList() {
       </div>
 
       <Pagination page={page} pageSize={pageSize} total={total} onChange={changePage} />
+
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText || 'Xác nhận'}
+        cancelText={confirmModal.cancelText || 'Hủy'}
+        hideCancel={confirmModal.hideCancel}
+        variant={confirmModal.variant || 'danger'}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   )
 }
