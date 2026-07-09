@@ -135,7 +135,7 @@ const SUPPLIER_COLS: Col[] = [
   { key: 'line_approve_note', label: 'Ghi chú duyệt', w: 180 },
 ]
 
-const PRODUCT_CORE_KEYS = ['supplier_code', 'internal_code', 'product_name', 'quote_unit', 'moq', 'price_by_volume', 'amount', 'note', 'line_approve']
+const PRODUCT_CORE_KEYS = ['supplier_code', 'internal_code', 'product_name', 'quote_unit', 'moq', 'price_by_volume', 'note', 'line_approve']
 
 const PRODUCT_COLS: Col[] = [
   { key: 'supplier_code', label: 'NCC *', w: 140, type: 'supplier' },
@@ -335,9 +335,8 @@ export default function SurveyDetail() {
     setSv((s: any) => ({ ...s, [lineKey(tbl)]: [...s[lineKey(tbl)], cloned] }))
   }
 
-  // Thành tiền (product only)
+  // Thành tiền từng dòng (chỉ hiển thị trong popup chi tiết SP)
   const rowAmount = (it: any) => (Number(sv.request_qty) || 0) * (Number(it.price_by_volume) || 0) * (1 + (Number(it.vat) || 0) / 100)
-  const subtotal = (sv.product_lines || []).reduce((acc: number, it: any) => acc + rowAmount(it), 0)
 
   // Giữ dòng nếu có BẤT KỲ nội dung (nháp cho lưu dở dang) — chỉ bỏ dòng RỖNG hẳn.
   // (KHÔNG bắt buộc chọn NCC/tên SP khi Lưu — cái đó chỉ bắt khi Gửi duyệt.)
@@ -589,7 +588,7 @@ export default function SurveyDetail() {
     const it = lines[i]
     if (col.key === 'line_approve') {
       if (canEditApprove)
-        return <div style={{ width: col.w }}><SearchSelect variant="table" colorMap={APPROVE_COLOR} value={it[col.key] || 'Chờ duyệt'} options={APPROVE_OPTS} placeholder="Duyệt…" onChange={(v) => changeLineApprove(tbl, i, v)} /></div>
+        return <div style={{ width: '100%' }}><SearchSelect variant="table" colorMap={APPROVE_COLOR} value={it[col.key] || 'Chờ duyệt'} options={APPROVE_OPTS} placeholder="Duyệt…" onChange={(v) => changeLineApprove(tbl, i, v)} /></div>
       const st = it.line_approve || 'Chờ duyệt'; const c = APPROVE_COLOR[st] || '#64748b'
       return <span className="badge" style={{ background: `${c}1a`, color: c, border: `1px solid ${c}55` }}>{st}</span>
     }
@@ -601,22 +600,22 @@ export default function SurveyDetail() {
     }
     if (col.type === 'computed') return <span style={{ fontWeight: 500 }}>{fmt(rowAmount(it))}</span>
     if (col.type === 'check') return <input type="checkbox" checked={!!it[col.key]} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.checked })} />
-    if (col.type === 'num') return <NumCell className="cell-input" style={{ width: col.w }} value={it[col.key]} onChange={(v: number) => setLine(tbl, i, { [col.key]: v })} />
-    if (col.type === 'date') return <input className="cell-input" type="date" style={{ width: col.w }} value={it[col.key] ?? ''} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.value })} />
+    if (col.type === 'num') return <NumCell className="cell-input" style={{ width: '100%' }} value={it[col.key]} onChange={(v: number) => setLine(tbl, i, { [col.key]: v })} />
+    if (col.type === 'date') return <input className="cell-input" type="date" style={{ width: '100%' }} value={it[col.key] ?? ''} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.value })} />
     if (col.type === 'select') return (
-      <div style={{ width: col.w }}><SearchSelect variant="table" colorMap={col.key === 'line_approve' ? APPROVE_COLOR : undefined}
+      <div style={{ width: '100%' }}><SearchSelect variant="table" colorMap={col.key === 'line_approve' ? APPROVE_COLOR : undefined}
         value={String(it[col.key] ?? '')} options={col.options!.filter((o) => o !== '')} placeholder="Chọn…"
         onChange={(v) => setLine(tbl, i, { [col.key]: col.key === 'vat' ? Number(v) : v })} /></div>
     )
     if (col.type === 'unit') return (
-      <div style={{ width: col.w }}><SearchSelect variant="table" value={it[col.key] ?? ''} options={units} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setLine(tbl, i, { [col.key]: v })} /></div>
+      <div style={{ width: '100%' }}><SearchSelect variant="table" value={it[col.key] ?? ''} options={units} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setLine(tbl, i, { [col.key]: v })} /></div>
     )
     if (col.type === 'supplier') return (
-      <div style={{ width: col.w }}><SearchSelect variant="table" value={it[col.key] ?? ''} placeholder="Chọn/tìm NCC…"
+      <div style={{ width: '100%' }}><SearchSelect variant="table" value={it[col.key] ?? ''} placeholder="Chọn/tìm NCC…"
         options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
         onChange={(v) => { const sup = suppliers.find((s) => s.code === v); setLine(tbl, i, sup ? { supplier_code: sup.code, supplier_name: sup.name, tax_code: sup.tax_code, reg_address: sup.address } : { supplier_code: v }) }} /></div>
     )
-    return <input className="cell-input" style={{ width: col.w }} value={it[col.key] ?? ''} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.value })} />
+    return <input className="cell-input" style={{ width: '100%' }} value={it[col.key] ?? ''} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.value })} />
   }
 
   // ---- Render one survey table section (NCC or Product) ----
@@ -716,12 +715,6 @@ export default function SurveyDetail() {
             </tbody>
           </table>
         </div>
-
-        {tbl === 'product' && (
-          <div style={{ marginTop: 12, textAlign: 'right', fontSize: 15, color: 'var(--navy)' }}>
-            Tổng thành tiền: <b>{fmt(subtotal)}</b>
-          </div>
-        )}
       </div>
     )
   }
