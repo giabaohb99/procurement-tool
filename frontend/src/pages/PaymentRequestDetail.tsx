@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { askConfirm } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 
 const API = '/api/payment-requests'
@@ -78,7 +79,7 @@ export default function PaymentRequestDetail() {
         {editable && can('payment_request', 'write') && <button className="btn" onClick={save}>Lưu</button>}
         {req.status === 'draft' && can('payment_request', 'write') && <button className="btn secondary" onClick={() => action('submit')}><i className="ti ti-send" />Gửi duyệt</button>}
         {req.status === 'submitted' && can('payment_request', 'approve') && <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>}
-        {req.status === 'approved' && can('payment_request', 'write') && <button className="btn" onClick={() => { if (confirm('Xác nhận đã chi tiền? Công nợ sẽ được trừ tương ứng.')) action('pay') }}><i className="ti ti-cash" />Ghi nhận đã chi</button>}
+        {req.status === 'approved' && can('payment_request', 'write') && <button className="btn" onClick={async () => { if (await askConfirm({ message: 'Xác nhận đã chi tiền? Công nợ sẽ được trừ tương ứng.', confirmText: 'Ghi nhận đã chi', danger: false })) action('pay') }}><i className="ti ti-cash" />Ghi nhận đã chi</button>}
       </div>
 
       <div className="card" style={{ padding: 18, marginBottom: 16 }}>
@@ -121,7 +122,7 @@ export default function PaymentRequestDetail() {
           {files.map((f) => (
             <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
               <i className="ti ti-file" /><a href={f.url} target="_blank" style={{ color: 'var(--teal)', flex: 1, textDecoration: 'underline' }}>{f.filename}</a>
-              {can('payment_request', 'write') && <button className="icon-btn" onClick={async () => { if (confirm('Xóa file?')) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
+              {can('payment_request', 'write') && <button className="icon-btn" onClick={async () => { if (await askConfirm({ message: 'Xóa file?' })) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
             </div>
           ))}
           {files.length === 0 && <span style={{ color: '#999', fontSize: 13 }}>Chưa có file nào.</span>}
@@ -133,7 +134,7 @@ export default function PaymentRequestDetail() {
 
       {editable && can('payment_request', 'delete') && (
         <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)', marginTop: 16 }}
-                onClick={async () => { if (confirm('Xóa phiếu này?')) { await api.delete(`${API}/${id}`); navigate('/payment-requests') } }}><i className="ti ti-trash" /> Xóa phiếu</button>
+                onClick={async () => { if (await askConfirm({ message: 'Xóa phiếu này?' })) { await api.delete(`${API}/${id}`); navigate('/payment-requests') } }}><i className="ti ti-trash" /> Xóa phiếu</button>
       )}
     </div>
   )

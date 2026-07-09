@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { askConfirm } from './confirm'
 import { useAuth } from '../auth/AuthContext'
 import { cruds } from '../config/cruds'
 import SearchSelect from './SearchSelect'
@@ -84,7 +85,7 @@ export default function CrudDetail() {
   }
 
   async function remove() {
-    if (!confirm('Xóa bản ghi này?')) return
+    if (!(await askConfirm({ message: 'Xóa bản ghi này?' }))) return
     try { await api.delete(`${cfg.apiPath}/${id}`); navigate(`/${cfg.slug}`) }
     catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi xóa') }
   }

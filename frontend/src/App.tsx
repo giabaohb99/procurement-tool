@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import { ToastHost } from './components/toast'
+import { ConfirmHost } from './components/confirm'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
@@ -75,6 +76,7 @@ export default function App() {
         </Routes>
       </BrowserRouter>
       <ToastHost />
+      <ConfirmHost />
     </AuthProvider>
   )
 }

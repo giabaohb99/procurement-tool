@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
+import { askConfirm, askPrompt } from '../components/confirm'
 import { toast } from '../components/toast'
 import { useAuth } from '../auth/AuthContext'
 
@@ -83,7 +84,7 @@ export default function Dashboard() {
   const [d, setD] = useState<any>(null)
 
   async function handleApprove(id: number) {
-    if (!confirm('Bạn có chắc chắn muốn duyệt đơn hàng này?')) return
+    if (!(await askConfirm({ title: 'Duyệt đơn hàng', message: 'Bạn có chắc chắn muốn duyệt đơn hàng này?', confirmText: 'Duyệt', danger: false }))) return
     try {
       await api.post(`/api/purchase-orders/${id}/approve`)
       toast.success('Đã duyệt đơn hàng thành công!')
@@ -94,7 +95,7 @@ export default function Dashboard() {
   }
 
   async function handleReject(id: number) {
-    const reason = prompt('Nhập lý do từ chối đơn hàng:')
+    const reason = await askPrompt({ title: 'Từ chối đơn hàng', message: 'Nhập lý do từ chối:', confirmText: 'Từ chối', danger: true })
     if (reason === null) return
     try {
       await api.post(`/api/purchase-orders/${id}/reject`, { reason: reason || 'Từ chối từ Dashboard' })
@@ -106,7 +107,7 @@ export default function Dashboard() {
   }
 
   async function handleApprovePR(id: number) {
-    if (!confirm('Bạn có chắc chắn muốn duyệt yêu cầu mua hàng này?')) return
+    if (!(await askConfirm({ title: 'Duyệt yêu cầu mua hàng', message: 'Bạn có chắc chắn muốn duyệt yêu cầu mua hàng này?', confirmText: 'Duyệt', danger: false }))) return
     try {
       await api.post(`/api/purchase-requests/${id}/approve`, {})
       toast.success('Đã duyệt yêu cầu mua hàng thành công!')
@@ -117,7 +118,7 @@ export default function Dashboard() {
   }
 
   async function handleRejectPR(id: number) {
-    const reason = prompt('Nhập lý do từ chối yêu cầu mua hàng:')
+    const reason = await askPrompt({ title: 'Từ chối yêu cầu mua hàng', message: 'Nhập lý do từ chối:', confirmText: 'Từ chối', danger: true })
     if (reason === null) return
     try {
       await api.post(`/api/purchase-requests/${id}/reject`, { reason: reason || 'Từ chối từ Dashboard' })

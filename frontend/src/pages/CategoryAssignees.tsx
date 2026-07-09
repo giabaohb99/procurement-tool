@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
+import { askConfirm } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 
 type Row = {
@@ -31,7 +32,7 @@ export default function CategoryAssignees() {
   }, [])
 
   async function del(id: number) {
-    if (!confirm('Xóa phân công này?')) return
+    if (!(await askConfirm({ message: 'Xóa phân công này?' }))) return
     await api.delete(`/api/category-assignees/${id}`); await load()
   }
 

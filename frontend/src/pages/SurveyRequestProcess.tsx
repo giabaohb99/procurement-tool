@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { askConfirm } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import { toast } from '../components/toast'
 import Select from 'react-select'
@@ -195,7 +196,7 @@ export default function SurveyRequestProcess() {
   }
 
   async function removeOption(lineId: number, optionId: number) {
-    if (!confirm('Xóa phương án này?')) return
+    if (!(await askConfirm({ message: 'Xóa phương án này?' }))) return
     try {
       await api.delete(`${API}/${id}/lines/${lineId}/options/${optionId}`)
       await loadProcess()
@@ -213,7 +214,7 @@ export default function SurveyRequestProcess() {
   }
 
   async function complete() {
-    if (!confirm('Chốt hoàn thành khảo sát? Hành động này không thể hoàn tác.')) return
+    if (!(await askConfirm({ title: 'Chốt hoàn thành', message: 'Chốt hoàn thành khảo sát? Hành động này không thể hoàn tác.', confirmText: 'Chốt hoàn thành', danger: false }))) return
     setCompleting(true)
     try {
       await api.post(`${API}/${id}/complete`)

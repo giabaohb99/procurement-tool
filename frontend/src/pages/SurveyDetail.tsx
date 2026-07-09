@@ -6,6 +6,7 @@ import { prBadge } from '../config/cruds'
 import ProductPicker from '../components/ProductPicker'
 import SearchSelect from '../components/SearchSelect'
 import { toast } from '../components/toast'
+import { askConfirm, askPrompt } from '../components/confirm'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const VAT_OPTS = ['0', '2', '4', '6', '8', '10']
@@ -438,7 +439,7 @@ export default function SurveyDetail() {
   }
 
   async function doCancel() {
-    if (!confirm('Bạn có chắc chắn muốn hủy phiếu khảo sát này?')) return
+    if (!(await askConfirm({ title: 'Hủy phiếu khảo sát', message: 'Bạn có chắc chắn muốn hủy phiếu khảo sát này?', confirmText: 'Hủy phiếu' }))) return
     setErr(''); setMsg('')
     try {
       await api.post(`${API}/${id}/cancel`)
@@ -628,8 +629,8 @@ export default function SurveyDetail() {
     const lines = getLines(tbl)
     const toggleSelect = (i: number) => setSelIdxs((s) => s.includes(i) ? s.filter((idx) => idx !== i) : [...s, i])
     const toggleSelectAll = () => { if (selIdxs.length === lines.length) setSelIdxs([]); else setSelIdxs(lines.map((_: any, i: number) => i)) }
-    const deleteSelected = () => {
-      if (confirm('Xóa các dòng đã chọn?')) {
+    const deleteSelected = async () => {
+      if (await askConfirm({ message: 'Xóa các dòng đã chọn?' })) {
         setSv((s: any) => ({ ...s, [lineKey(tbl)]: s[lineKey(tbl)].filter((_: any, idx: number) => !selIdxs.includes(idx)) }))
         setSelIdxs([])
         if (editingTable === tbl) setEditingIndex(null)
@@ -648,7 +649,7 @@ export default function SurveyDetail() {
             {editable && (
               <>
                 <button className="btn ghost" onClick={() => addLines(tbl, 1)} style={{ height: 32, fontSize: 13 }}><i className="ti ti-plus" />Thêm dòng</button>
-                <button className="btn ghost" onClick={() => { const n = parseInt(prompt('Thêm bao nhiêu dòng?', '3') || '0') || 0; if (n > 0) addLines(tbl, n) }} style={{ height: 32, fontSize: 13 }}><i className="ti ti-rows" />Thêm nhiều</button>
+                <button className="btn ghost" onClick={async () => { const s = await askPrompt({ message: 'Thêm bao nhiêu dòng?', defaultValue: '3' }); const n = parseInt(s || '0') || 0; if (n > 0) addLines(tbl, n) }} style={{ height: 32, fontSize: 13 }}><i className="ti ti-rows" />Thêm nhiều</button>
               </>
             )}
           </div>
@@ -700,7 +701,7 @@ export default function SurveyDetail() {
                         </button>
                       )}
                       {editable && (
-                        <button className="icon-btn" title="Xóa dòng" onClick={() => { if (confirm('Xóa dòng này?')) delLine(tbl, i) }}>
+                        <button className="icon-btn" title="Xóa dòng" onClick={async () => { if (await askConfirm({ message: 'Xóa dòng này?' })) delLine(tbl, i) }}>
                           <i className="ti ti-trash" style={{ fontSize: 16, color: 'var(--red)' }} />
                         </button>
                       )}
@@ -750,9 +751,9 @@ export default function SurveyDetail() {
         )}
         {!isNew && sv.status === 'submitted' && canApprove && (
           <>
-            <button className="btn" onClick={() => { if (confirm('Duyệt cả phiếu khảo sát này?')) action('approve') }}><i className="ti ti-check" />Duyệt phiếu</button>
+            <button className="btn" onClick={async () => { if (await askConfirm({ message: 'Duyệt cả phiếu khảo sát này?', confirmText: 'Duyệt phiếu', danger: false })) action('approve') }}><i className="ti ti-check" />Duyệt phiếu</button>
             <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
-              onClick={() => { const r = prompt('Lý do trả lại (để khảo sát lại):'); if (r !== null) action('reject', { reason: r }) }}>
+              onClick={async () => { const r = await askPrompt({ title: 'Trả lại phiếu', message: 'Lý do trả lại (để khảo sát lại):' }); if (r !== null) action('reject', { reason: r }) }}>
               <i className="ti ti-arrow-back-up" />Trả lại
             </button>
           </>
@@ -764,7 +765,7 @@ export default function SurveyDetail() {
         )}
         {!isNew && can('survey', 'delete') && (sv.status === 'draft' || sv.status === 'cancelled') && (
           <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
-            onClick={async () => { if (confirm('Xóa phiếu khảo sát này?')) { try { await api.delete(`${API}/${id}`); navigate('/surveys') } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi xóa') } } }}>
+            onClick={async () => { if (await askConfirm({ message: 'Xóa phiếu khảo sát này?' })) { try { await api.delete(`${API}/${id}`); navigate('/surveys') } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi xóa') } } }}>
             <i className="ti ti-trash" />Xóa
           </button>
         )}
@@ -840,7 +841,7 @@ export default function SurveyDetail() {
                     <i className="ti ti-file" />
                     <a href={f.url} target="_blank" style={{ color: 'var(--teal)', flex: 1, textDecoration: 'underline' }}>{f.filename}</a>
                     {can('survey', 'write') && (
-                      <button className="icon-btn" onClick={async () => { if (confirm('Xóa file?')) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}>
+                      <button className="icon-btn" onClick={async () => { if (await askConfirm({ message: 'Xóa file?' })) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}>
                         <i className="ti ti-trash" style={{ color: 'var(--red)' }} />
                       </button>
                     )}
@@ -934,7 +935,7 @@ export default function SurveyDetail() {
                           <i className="ti ti-file" />
                           <a href={f.url} target="_blank" style={{ color: 'var(--teal)', flex: 1, textDecoration: 'underline' }}>{f.filename}</a>
                           {editable && (
-                            <button className="icon-btn" onClick={async () => { if (confirm('Xóa file?')) { await api.delete(`/api/attachments/${f.id}`); if (activeLid) loadLineAtt(activeLid) } }}>
+                            <button className="icon-btn" onClick={async () => { if (await askConfirm({ message: 'Xóa file?' })) { await api.delete(`/api/attachments/${f.id}`); if (activeLid) loadLineAtt(activeLid) } }}>
                               <i className="ti ti-trash" style={{ color: 'var(--red)' }} />
                             </button>
                           )}
