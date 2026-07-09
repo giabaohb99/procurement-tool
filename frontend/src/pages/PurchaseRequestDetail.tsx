@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { prBadge } from '../config/cruds'
-import Select from 'react-select'
 import ProductPicker from '../components/ProductPicker'
 import SearchSelect from '../components/SearchSelect'
 
@@ -103,7 +102,7 @@ export default function PurchaseRequestDetail() {
     .filter(e => purDeptIds.includes(e.department_id) || (e.department_name || '').toLowerCase().includes('thu mua'))
     .map(e => ({ value: e.code, label: e.full_name }))
   const empName = (code: string) => employees.find(e => e.code === code)?.full_name || code
-  const companyOptions = companies.map(c => ({ value: c.id, label: c.name }))
+  const companyOptions = companies.map(c => ({ value: String(c.id), label: c.name }))
   const employeeOptions = employees.map(e => ({ value: e.full_name, label: e.full_name }))
   const warehouseOptions = warehouses.map(w => ({ value: w, label: w }))
 
@@ -308,17 +307,15 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Công ty nhận hóa đơn <span className="req">*</span></label>
-                <Select value={companyOptions.find(o => o.value === pr.company_id) || null}
-                  onChange={(o: any) => setH('company_id', o ? o.value : 0)} options={companyOptions}
-                  isDisabled={!editable} isClearable placeholder="Chọn công ty"
-                  styles={{ control: (b) => ({ ...b, minHeight: 40, borderRadius: 12, borderColor: '#E9EDF7' }) }} />
+                <SearchSelect value={String(pr.company_id || '')}
+                  onChange={(v) => setH('company_id', Number(v) || 0)} options={companyOptions}
+                  disabled={!editable} placeholder="Chọn công ty" />
               </div>
               <div className="form-row">
                 <label>Nhân sự YC <span className="req">*</span></label>
-                <Select value={employeeOptions.find(o => o.value === pr.requester) || (pr.requester ? { value: pr.requester, label: pr.requester } : null)}
-                  onChange={(o: any) => handleRequesterChange(o ? o.value : '')} options={employeeOptions}
-                  isDisabled={!editable || isStaff} isClearable placeholder="Chọn nhân sự"
-                  styles={{ control: (b) => ({ ...b, minHeight: 40, borderRadius: 12, borderColor: '#E9EDF7' }) }} />
+                <SearchSelect value={pr.requester || ''}
+                  onChange={(v) => handleRequesterChange(v)} options={employeeOptions}
+                  disabled={!editable || isStaff} placeholder="Chọn nhân sự" />
               </div>
               <div className="form-row">
                 <label>Bộ phận YC <span className="req">*</span></label>
@@ -577,9 +574,9 @@ export default function PurchaseRequestDetail() {
               {canAssignPurchaser && (
                 <div className="form-row">
                   <label>Nhân sự phụ trách</label>
-                  <Select value={purchaserOptions.find(o => o.value === edit.assignee) || (edit.assignee ? { value: edit.assignee, label: empName(edit.assignee) } : null)}
-                    onChange={(o: any) => setItem(editIdx, 'assignee', o ? o.value : '')} options={purchaserOptions}
-                    isClearable placeholder="Chọn NSTM..." styles={{ control: (b) => ({ ...b, minHeight: 40, borderRadius: 12, borderColor: '#E9EDF7' }) }} />
+                  <SearchSelect value={edit.assignee || ''}
+                    onChange={(v) => setItem(editIdx, 'assignee', v)} options={purchaserOptions}
+                    placeholder="Chọn NSTM..." />
                 </div>
               )}
               {canLineStatus(edit) && (

@@ -56,6 +56,7 @@ export default function SearchSelect({
         }) : ({
           ...b,
           minHeight: 40,
+          height: 40,
           borderRadius: 12,
           borderColor: state.isFocused ? 'var(--teal)' : '#E9EDF7',
           boxShadow: state.isFocused ? '0 0 0 3px rgba(0,174,239,.15)' : 'none',
@@ -67,10 +68,42 @@ export default function SearchSelect({
             borderColor: state.isFocused ? 'var(--teal)' : '#cbd5e1'
           }
         }),
-        valueContainer: (b) => table ? ({ ...b, padding: '0 6px' }) : b,
-        singleValue: (b) => color ? ({ ...b, color, fontWeight: 600 }) : b,
-        input: (b) => table ? ({ ...b, margin: 0, padding: 0 }) : b,
-        dropdownIndicator: (b) => table ? ({ ...b, padding: 2, color: color || '#94a3b8' }) : b,
+        valueContainer: (b) => table ? ({ ...b, padding: '0 6px' }) : ({
+          ...b,
+          padding: '0 16px',
+          height: 38,
+          display: 'flex',
+          alignItems: 'center',
+        }),
+        placeholder: (b) => table ? b : ({
+          ...b,
+          margin: 0,
+        }),
+        singleValue: (b) => table ? (color ? ({ ...b, color, fontWeight: 600 }) : b) : ({
+          ...b,
+          margin: 0,
+          color: colorMap && value ? colorMap[value] : undefined,
+          fontWeight: colorMap && value ? 600 : undefined,
+        }),
+        input: (b) => table ? ({ ...b, margin: 0, padding: 0 }) : ({
+          ...b,
+          margin: 0,
+          padding: 0,
+        }),
+        indicatorsContainer: (b) => table ? b : ({
+          ...b,
+          height: 38,
+        }),
+        dropdownIndicator: (b) => table ? ({ ...b, padding: 2, color: color || '#94a3b8' }) : ({
+          ...b,
+          color: '#94a3b8',
+          padding: '0 8px',
+        }),
+        clearIndicator: (b) => table ? b : ({
+          ...b,
+          color: '#94a3b8',
+          padding: '0 8px',
+        }),
         menu: (b) => ({ ...b, fontSize: table ? 12.5 : 14, minWidth: 160 }),
         menuPortal: (b) => ({ ...b, zIndex: 9999 }),
         option: (b, state: any) => ({

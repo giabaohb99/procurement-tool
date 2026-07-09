@@ -125,9 +125,9 @@ export default function CrudList() {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h2 className="page-title" style={{ marginBottom: 12 }}>{cfg.title}</h2>
-        <div style={{ display: 'flex', gap: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h2 className="page-title" style={{ margin: 0 }}>{cfg.title}</h2>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button className="btn ghost" onClick={async () => {
             if (selectedIds.length === total && total > 0) {
               setSelectedIds([])
