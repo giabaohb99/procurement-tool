@@ -75,7 +75,7 @@ export default function SurveyReport() {
   const [total, setTotal] = useState(0)
   const [summary, setSummary] = useState<SummaryMap>({ 'Chờ duyệt': 0, 'Đã duyệt': 0, 'Không duyệt': 0, 'Thiếu thông tin': 0 })
   const [filters, setFilters] = useState<FiltersState>(EMPTY_FILTERS)
-  const [draft, setDraft] = useState<FiltersState>(EMPTY_FILTERS)
+  const [debouncedFilters, setDebouncedFilters] = useState<FiltersState>(EMPTY_FILTERS)
   const [page, setPage] = useState(1)
   const [busy, setBusy] = useState(false)
   const [itemGroups, setItemGroups] = useState<string[]>([])
@@ -108,24 +108,26 @@ export default function SurveyReport() {
     }
   }
 
-  useEffect(() => { load(filters, page) }, [filters, page])
+  // Debounce filter updates to automatically reload the page
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedFilters(filters)
+    }, 300)
+    return () => clearTimeout(handler)
+  }, [filters])
 
-  function applyFilters() {
-    setFilters({ ...draft })
-    setPage(1)
-  }
+  useEffect(() => {
+    load(debouncedFilters, page)
+  }, [debouncedFilters, page])
 
   function resetFilters() {
-    setDraft(EMPTY_FILTERS)
     setFilters(EMPTY_FILTERS)
     setPage(1)
   }
 
   function toggleStatusCard(st: string) {
     const newApprove = filters.line_approve === st ? '' : st
-    const newFilters = { ...filters, line_approve: newApprove }
-    setFilters(newFilters)
-    setDraft((d) => ({ ...d, line_approve: newApprove }))
+    setFilters((f) => ({ ...f, line_approve: newApprove }))
     setPage(1)
   }
 
@@ -171,19 +173,19 @@ export default function SurveyReport() {
       </div>
 
       {/* Filters */}
-      <div className="card" style={{ padding: '14px 18px', marginBottom: 14 }}>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div>
-            <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Loại dòng</label>
-            <select value={draft.kind} onChange={(e) => setDraft((d) => ({ ...d, kind: e.target.value }))} style={{ height: 36, borderRadius: 8, border: '1px solid #E9EDF7', padding: '0 10px', fontSize: 13 }}>
+      <div className="card" style={{ padding: 18, marginBottom: 14 }}>
+        <div className="toolbar" style={{ marginBottom: 0 }}>
+          <div className="toolbar-filter-item">
+            <label>Loại dòng</label>
+            <select value={filters.kind} onChange={(e) => { setFilters((d) => ({ ...d, kind: e.target.value })); setPage(1); }}>
               <option value="">Tất cả</option>
               <option value="supplier">NCC</option>
               <option value="product">Sản phẩm</option>
             </select>
           </div>
-          <div>
-            <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Trạng thái dòng</label>
-            <select value={draft.line_approve} onChange={(e) => setDraft((d) => ({ ...d, line_approve: e.target.value }))} style={{ height: 36, borderRadius: 8, border: '1px solid #E9EDF7', padding: '0 10px', fontSize: 13 }}>
+          <div className="toolbar-filter-item">
+            <label>Trạng thái dòng</label>
+            <select value={filters.line_approve} onChange={(e) => { setFilters((d) => ({ ...d, line_approve: e.target.value })); setPage(1); }}>
               <option value="">Tất cả</option>
               <option value="Chờ duyệt">Chờ duyệt</option>
               <option value="Đã duyệt">Đã duyệt</option>
@@ -191,35 +193,39 @@ export default function SurveyReport() {
               <option value="Thiếu thông tin">Thiếu thông tin</option>
             </select>
           </div>
-          <div>
-            <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Phân loại</label>
-            <select value={draft.item_group} onChange={(e) => setDraft((d) => ({ ...d, item_group: e.target.value }))} style={{ height: 36, borderRadius: 8, border: '1px solid #E9EDF7', padding: '0 10px', fontSize: 13 }}>
+          <div className="toolbar-filter-item">
+            <label>Phân loại</label>
+            <select value={filters.item_group} onChange={(e) => { setFilters((d) => ({ ...d, item_group: e.target.value })); setPage(1); }}>
               <option value="">Tất cả</option>
               {itemGroups.map((g) => <option key={g} value={g}>{g}</option>)}
             </select>
           </div>
-          <div>
-            <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>NCC</label>
-            <input value={draft.supplier} placeholder="Mã / tên NCC" onChange={(e) => setDraft((d) => ({ ...d, supplier: e.target.value }))} style={{ height: 36, borderRadius: 8, border: '1px solid #E9EDF7', padding: '0 10px', fontSize: 13, width: 130 }} />
+          <div className="toolbar-filter-item">
+            <label>NCC</label>
+            <input value={filters.supplier} placeholder="Mã / tên NCC" onChange={(e) => { setFilters((d) => ({ ...d, supplier: e.target.value })); setPage(1); }} />
           </div>
-          <div>
-            <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Mã phiếu</label>
-            <input value={draft.code} placeholder="Mã khảo sát" onChange={(e) => setDraft((d) => ({ ...d, code: e.target.value }))} style={{ height: 36, borderRadius: 8, border: '1px solid #E9EDF7', padding: '0 10px', fontSize: 13, width: 130 }} />
+          <div className="toolbar-filter-item">
+            <label>Mã phiếu</label>
+            <input value={filters.code} placeholder="Mã khảo sát" onChange={(e) => { setFilters((d) => ({ ...d, code: e.target.value })); setPage(1); }} />
           </div>
-          <div>
-            <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>NSPT</label>
-            <input value={draft.nspt} placeholder="NSPT" onChange={(e) => setDraft((d) => ({ ...d, nspt: e.target.value }))} style={{ height: 36, borderRadius: 8, border: '1px solid #E9EDF7', padding: '0 10px', fontSize: 13, width: 110 }} />
+          <div className="toolbar-filter-item">
+            <label>NSPT</label>
+            <input value={filters.nspt} placeholder="NSPT" onChange={(e) => { setFilters((d) => ({ ...d, nspt: e.target.value })); setPage(1); }} />
           </div>
-          <div>
-            <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Từ ngày</label>
-            <input type="date" value={draft.date_from} onChange={(e) => setDraft((d) => ({ ...d, date_from: e.target.value }))} style={{ height: 36, borderRadius: 8, border: '1px solid #E9EDF7', padding: '0 8px', fontSize: 13 }} />
+          <div className="toolbar-filter-item">
+            <label>Từ ngày</label>
+            <input type="date" value={filters.date_from} onChange={(e) => { setFilters((d) => ({ ...d, date_from: e.target.value })); setPage(1); }} />
           </div>
-          <div>
-            <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Đến ngày</label>
-            <input type="date" value={draft.date_to} onChange={(e) => setDraft((d) => ({ ...d, date_to: e.target.value }))} style={{ height: 36, borderRadius: 8, border: '1px solid #E9EDF7', padding: '0 8px', fontSize: 13 }} />
+          <div className="toolbar-filter-item">
+            <label>Đến ngày</label>
+            <input type="date" value={filters.date_to} onChange={(e) => { setFilters((d) => ({ ...d, date_to: e.target.value })); setPage(1); }} />
           </div>
-          <button className="btn" disabled={busy} onClick={applyFilters}>Lọc</button>
-          <button className="btn ghost" onClick={resetFilters}>Xóa lọc</button>
+          
+          {Object.values(filters).some((v) => v) && (
+            <button className="btn ghost" onClick={resetFilters} style={{ height: 40, borderRadius: 12 }}>
+              Xóa lọc
+            </button>
+          )}
         </div>
       </div>
 
@@ -253,7 +259,7 @@ export default function SurveyReport() {
                   <td>{it.nspt || '—'}</td>
                   <td style={{ textAlign: 'center' }}>{it.date || '—'}</td>
                   <td style={{ textAlign: 'center' }}>{lineApproveBadge(it.line_approve)}</td>
-                  <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={it.line_approve_note}>{it.line_approve_note || '—'}</td>
+                  <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={it.line_approve_note}>{it.line_approve_note || ''}</td>
                 </tr>
               ))}
               {items.length === 0 && (

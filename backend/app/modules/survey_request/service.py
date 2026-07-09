@@ -202,8 +202,8 @@ def create_option(db: Session, line: SurveyRequestLine, psl_id: int, user_id: in
         snap_shipping_cost=psl.shipping_cost or 0,
         snap_sample_ready=bool(psl.sample_ready),
         snap_lab_result=psl.lab_result or "",
-        # tự lấy Mã SP hệ thống từ dòng khảo sát (NSTM override được sau)
-        system_product_code=psl.system_product_code or "",
+        # tự lấy Mã SP hệ thống từ HEADER phiếu khảo sát (Mã VTBB/VL) nếu có; NSTM override được sau
+        system_product_code=(survey.item_code or "") if survey else "",
         # nội bộ NSTM (backend LỌC khỏi view người YC)
         snap_internal_code=psl.internal_code or "",
         supplier_code=psl.supplier_code or "",
@@ -241,15 +241,6 @@ def set_option_fields(db: Session, line_id: int, oid: int, user_id: int, **field
     for k in ("nstm_note", "system_product_code"):
         if k in fields and fields[k] is not None:
             setattr(o, k, (fields[k] or "").strip() if k == "system_product_code" else (fields[k] or ""))
-    # Gán ở option → điền về dòng khảo sát nguồn CHỈ KHI dòng đang RỖNG
-    # (dòng khảo sát đã có mã chuẩn → giữ nguyên; override chỉ nằm ở option của YCKS này)
-    new_code = (fields.get("system_product_code") or "").strip()
-    if new_code and o.product_survey_line_id:
-        from app.modules.survey.model import SurveyProductLine
-        psl = db.get(SurveyProductLine, o.product_survey_line_id)
-        if psl and not (psl.system_product_code or "").strip():
-            psl.system_product_code = new_code
-            psl.updated_by = user_id
     o.updated_by = user_id
     db.commit()
     db.refresh(o)
@@ -340,16 +331,9 @@ def create_prs(db: Session, sid: int, user_id: int):
         for ln, opt in items:
             qty = float(ln.request_qty or 0)
             price = float(opt.snap_price_by_volume or 0)
-            # Mã SP hệ thống: ưu tiên option; trống thì fallback về dòng khảo sát gốc
-            prod_code = (opt.system_product_code or "").strip()
-            if not prod_code and opt.product_survey_line_id:
-                from app.modules.survey.model import SurveyProductLine
-                psl = db.get(SurveyProductLine, opt.product_survey_line_id)
-                if psl:
-                    prod_code = (psl.system_product_code or "").strip()
             db.add(PurchaseRequestItem(
                 pr_id=pr.id,
-                product_code=prod_code,   # mã SP hệ thống (option -> fallback dòng khảo sát)
+                product_code=(opt.system_product_code or "").strip(),   # mã SP hệ thống gắn ở option
                 product_name=opt.snap_product_name or ln.requirement_detail or "Sản phẩm",
                 item_group=ln.item_group or "", qty=qty, unit=opt.snap_quote_unit or ln.uom or "",
                 price=price, amount=qty * price, note=f"Từ {opt.display_label}",

@@ -65,7 +65,6 @@ const PRODUCT_SECTIONS: Section[] = [
   { title: 'Nhà cung cấp & Sản phẩm', fields: [
     { k: 'supplier_code', label: 'Tên viết tắt NCC', type: 'supplier' },
     { k: 'internal_code', label: 'Mã SP (theo NCC)', type: 'text' },
-    { k: 'system_product_code', label: 'Mã SP hệ thống (chọn từ danh mục)', type: 'sysproduct', full: true },
     { k: 'product_name', label: 'Tên SP (tên NCC đặt)', type: 'text', full: true },
     { k: 'spec', label: 'Thông số kỹ thuật', type: 'textarea', full: true },
     { k: 'origin', label: 'Xuất xứ sản phẩm', type: 'text' },
@@ -250,8 +249,6 @@ export default function SurveyDetail() {
   const editable = (isNew || sv.status === 'draft' || sv.status === 'rejected') && can('survey', isNew ? 'create' : 'write')
   const canApprove = can('survey', 'approve')
   const canEditApprove = canApprove && (isNew || ['draft', 'rejected', 'submitted'].includes(sv.status))
-  // Mã SP hệ thống: NSTM/Admin gắn được MỌI LÚC (kể cả phiếu đã duyệt) — chỉ là ánh xạ
-  const canEditSysProduct = can('survey', 'write')
   const liveApprove = !isNew && sv.status === 'submitted' && canApprove
 
   const setH = (k: string, v: any) => setSv((s: any) => ({ ...s, [k]: v }))
@@ -393,19 +390,6 @@ export default function SurveyDetail() {
     }
   }
 
-  // Gắn/đổi Mã SP hệ thống cho 1 dòng khảo sát SP — optimistic + gọi endpoint (làm được mọi lúc, kể cả done)
-  async function changeLineSysProduct(i: number, code: string) {
-    setLine('product', i, { system_product_code: code })
-    const it = getLines('product')[i]
-    if (it?.id) {
-      setErr(''); setMsg('')
-      try {
-        await api.patch(`${API}/${id}/product-lines/${it.id}/system-product`, { system_product_code: code })
-        setMsg(`Đã cập nhật Mã SP hệ thống dòng ${i + 1}`)
-      } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi cập nhật Mã SP hệ thống') }
-    }
-  }
-
   // Lưu bổ sung dòng Thiếu thông tin qua fill endpoint
   async function saveFillLine(tbl: 'supplier' | 'product', i: number) {
     if (editingIndex === null) return
@@ -465,11 +449,6 @@ export default function SurveyDetail() {
     const it = lines[i]; const k = f.k; const t = f.type || 'text'
     // fillMode: cho sửa tất cả field nội dung (không phải MGR) khi popup ở chế độ Bổ sung
     const ce = MGR_KEYS.includes(k) ? canEditApprove : (editable || fillMode)
-    // Mã SP hệ thống — luôn sửa được (kể cả phiếu đã duyệt), lưu ngay qua endpoint riêng
-    if (t === 'sysproduct') {
-      if (!canEditSysProduct) return <input value={it.system_product_code || ''} disabled />
-      return <ProductPicker code={it.system_product_code} onPick={(prod) => changeLineSysProduct(i, prod?.code || '')} />
-    }
     if (t === 'computed') return <input value={fmt(rowAmount(it))} disabled />
     if (t === 'check') return (
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: ce ? 'pointer' : 'default', height: 40 }}>

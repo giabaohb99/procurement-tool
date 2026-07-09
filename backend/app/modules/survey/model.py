@@ -73,7 +73,6 @@ class SurveyProductLine(Base, AuditMixin):
     result_date: Mapped[str] = mapped_column(String(10), default="")        # Ngày dự kiến trả KQ
     supplier_code: Mapped[str] = mapped_column(String(50), default="")
     internal_code: Mapped[str] = mapped_column(String(50), default="")      # Mã SP theo NCC (nhập tay khi khảo sát)
-    system_product_code: Mapped[str] = mapped_column(String(50), default="")  # Mã SP hệ thống (tab_product.code) — ánh xạ, sửa được mọi lúc
     product_name: Mapped[str] = mapped_column(String(255), default="")
     spec: Mapped[str] = mapped_column(Text, default="")
     origin: Mapped[str] = mapped_column(String(100), default="")
