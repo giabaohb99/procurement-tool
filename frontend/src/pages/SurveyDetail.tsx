@@ -171,7 +171,7 @@ const PRODUCT_COLS: Col[] = [
 const API = '/api/surveys'
 const MGR_KEYS = ['line_approve', 'line_approve_note']
 // Field KHÔNG bắt buộc khi Gửi duyệt (link, maps, folder, lý do, ghi chú phụ…)
-const OPTIONAL_KEYS = ['google_maps', 'quote_folder', 'quote_file', 'source_of_information',
+const OPTIONAL_KEYS = ['supplier_code', 'google_maps', 'quote_folder', 'quote_file', 'source_of_information',
   'nspt_reason', 'lab_note', 'defect_return', 'reply_date', 'result_date', 'result_due_date']
 
 function makeEmptyLine(sections: Section[]): Record<string, any> {
@@ -194,6 +194,19 @@ const numKeysOf = (sections: any[]) => new Set<string>(
 )
 const SUP_NUM_KEYS = numKeysOf(SUPPLIER_SECTIONS)
 const PROD_NUM_KEYS = numKeysOf(PRODUCT_SECTIONS)
+
+// Ô nhập SỐ: rỗng khi = 0, gõ không dính số 0 ở đầu (dùng state cục bộ khi focus)
+function NumCell({ value, onChange, disabled, className, style }: any) {
+  const [foc, setFoc] = useState(false)
+  const [raw, setRaw] = useState('')
+  const shown = foc ? raw : (value ? String(value) : '')
+  return (
+    <input type="number" disabled={disabled} className={className} style={style} value={shown}
+      onFocus={() => { setRaw(value ? String(value) : ''); setFoc(true) }}
+      onBlur={() => setFoc(false)}
+      onChange={(e) => { setRaw(e.target.value); onChange(Number(e.target.value) || 0) }} />
+  )
+}
 
 export default function SurveyDetail() {
   const { id } = useParams()
@@ -424,20 +437,9 @@ export default function SurveyDetail() {
     return { msg, invalid }
   }
 
-  // Mở popup chi tiết dòng lỗi đầu tiên để người dùng thấy ngay ô tô đỏ.
-  function openFirstInvalid(invalid: Set<string>) {
-    const first = invalid.values().next().value as string | undefined
-    if (!first) return
-    const [tbl, idxStr] = first.split('-')
-    const idx = Number(idxStr)
-    if ((tbl === 'supplier' || tbl === 'product') && !Number.isNaN(idx)) {
-      setFillMode(false); setEditingTable(tbl); setEditingIndex(idx)
-    }
-  }
-
   async function doSubmit() {
     const { msg, invalid } = validateSubmit()
-    if (msg) { setInvalidCells(invalid); toast.error(msg); if (invalid.size) openFirstInvalid(invalid); return }
+    if (msg) { setInvalidCells(invalid); toast.error(msg); return }
     setInvalidCells(new Set())
     try {
       await api.patch(`${API}/${id}`, buildBody())
@@ -570,7 +572,7 @@ export default function SurveyDetail() {
       </label>
     )
     if (t === 'date') return <input type="date" value={it[k] ?? ''} disabled={!ce} onChange={(e) => setLine(tbl, i, { [k]: e.target.value })} />
-    if (t === 'num') return <input type="number" value={it[k] ?? 0} disabled={!ce} onChange={(e) => setLine(tbl, i, { [k]: Number(e.target.value) })} />
+    if (t === 'num') return <NumCell value={it[k]} disabled={!ce} onChange={(v: number) => setLine(tbl, i, { [k]: v })} />
     if (t === 'textarea') return <textarea value={it[k] ?? ''} disabled={!ce} style={{ minHeight: 64 }} onChange={(e) => setLine(tbl, i, { [k]: e.target.value })} />
     if (t === 'supplier') return <SearchSelect value={it[k] ?? ''} disabled={!ce} placeholder="Chọn/tìm NCC…"
       options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
@@ -594,11 +596,12 @@ export default function SurveyDetail() {
     if (!editable) {
       if (col.type === 'computed') return fmt(rowAmount(it))
       if (col.type === 'check') return it[col.key] ? '✓' : ''
+      if (col.type === 'num') return it[col.key] ? fmt(it[col.key]) : ''
       return it[col.key] ?? ''
     }
     if (col.type === 'computed') return <span style={{ fontWeight: 500 }}>{fmt(rowAmount(it))}</span>
     if (col.type === 'check') return <input type="checkbox" checked={!!it[col.key]} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.checked })} />
-    if (col.type === 'num') return <input className="cell-input" type="number" style={{ width: col.w }} value={it[col.key] ?? 0} onChange={(e) => setLine(tbl, i, { [col.key]: Number(e.target.value) })} />
+    if (col.type === 'num') return <NumCell className="cell-input" style={{ width: col.w }} value={it[col.key]} onChange={(v: number) => setLine(tbl, i, { [col.key]: v })} />
     if (col.type === 'date') return <input className="cell-input" type="date" style={{ width: col.w }} value={it[col.key] ?? ''} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.value })} />
     if (col.type === 'select') return (
       <div style={{ width: col.w }}><SearchSelect variant="table" colorMap={col.key === 'line_approve' ? APPROVE_COLOR : undefined}
@@ -676,7 +679,7 @@ export default function SurveyDetail() {
                     const bad = editable && invalidCells.has(`${tbl}-${i}-${c.key}`)
                     return (
                       <td key={c.key} className={bad ? 'cell-invalid' : undefined}
-                        style={bad ? { boxShadow: 'inset 0 0 0 1.5px #ef4444', background: '#fef2f2', borderRadius: 6 } : undefined}>
+                        style={bad ? { boxShadow: 'inset 0 0 0 1px #fca5a5', borderRadius: 6 } : undefined}>
                         {cell(c, tbl, i)}
                       </td>
                     )
@@ -899,8 +902,8 @@ export default function SurveyDetail() {
                       {sec.fields.map((f) => {
                         const bad = editingTable !== null && editingIndex !== null && invalidCells.has(`${editingTable}-${editingIndex}-${f.k}`)
                         return (
-                          <div className="form-row" key={f.k} style={{ ...(f.full ? { gridColumn: '1 / -1' } : {}), ...(bad ? { padding: 8, borderRadius: 8, background: '#fef2f2', boxShadow: 'inset 0 0 0 1.5px #ef4444' } : {}) }}>
-                            <label style={bad ? { color: '#dc2626' } : undefined}>{f.label}{bad ? ' *' : ''}</label>
+                          <div className="form-row" key={f.k} style={{ ...(f.full ? { gridColumn: '1 / -1' } : {}), ...(bad ? { borderRadius: 8, outline: '1px solid #fca5a5', outlineOffset: 3 } : {}) }}>
+                            <label style={bad ? { color: '#e06666' } : undefined}>{f.label}{bad ? ' *' : ''}</label>
                             {lineField(f, editingTable, editingIndex)}
                           </div>
                         )
