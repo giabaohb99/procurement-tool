@@ -227,11 +227,18 @@ def delete_option(db: Session, line_id: int, oid: int):
 
 
 def update_option_note(db: Session, line_id: int, oid: int, note: str, user_id: int) -> SurveyRequestOption:
+    return set_option_fields(db, line_id, oid, user_id, nstm_note=note or "")
+
+
+def set_option_fields(db: Session, line_id: int, oid: int, user_id: int, **fields) -> SurveyRequestOption:
+    """Cập nhật các field cho phép của 1 option (ghi chú NSTM, mã SP hệ thống)."""
     o = (db.query(SurveyRequestOption)
          .filter(SurveyRequestOption.id == oid, SurveyRequestOption.survey_request_line_id == line_id).first())
     if not o:
         raise HTTPException(404, "Không tìm thấy option")
-    o.nstm_note = note or ""
+    for k in ("nstm_note", "system_product_code"):
+        if k in fields and fields[k] is not None:
+            setattr(o, k, (fields[k] or "").strip() if k == "system_product_code" else (fields[k] or ""))
     o.updated_by = user_id
     db.commit()
     db.refresh(o)
@@ -323,7 +330,9 @@ def create_prs(db: Session, sid: int, user_id: int):
             qty = float(ln.request_qty or 0)
             price = float(opt.snap_price_by_volume or 0)
             db.add(PurchaseRequestItem(
-                pr_id=pr.id, product_name=opt.snap_product_name or ln.requirement_detail or "Sản phẩm",
+                pr_id=pr.id,
+                product_code=(opt.system_product_code or "").strip(),   # mã SP hệ thống NSTM gắn ở option (nếu có)
+                product_name=opt.snap_product_name or ln.requirement_detail or "Sản phẩm",
                 item_group=ln.item_group or "", qty=qty, unit=opt.snap_quote_unit or ln.uom or "",
                 price=price, amount=qty * price, note=f"Từ {opt.display_label}",
                 line_status="Chưa đặt hàng", created_by=user_id, updated_by=user_id,

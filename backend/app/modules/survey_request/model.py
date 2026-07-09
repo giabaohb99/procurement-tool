@@ -59,6 +59,8 @@ class SurveyRequestOption(Base, AuditMixin):
     display_label: Mapped[str] = mapped_column(String(50), default="")        # "Option 1 — ID 789"
     is_chosen: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     chosen_by: Mapped[int] = mapped_column(BigInteger, default=0)
+    # Mã SP hệ thống (tab_product.code) NSTM gắn cho option — để tạo dòng PYC. KHÔNG bắt buộc.
+    system_product_code: Mapped[str] = mapped_column(String(50), default="")
 
     # SNAPSHOT thông số (copy từ SurveyProductLine tại thời điểm gắn) — hiển thị được với người YC
     snap_product_name: Mapped[str] = mapped_column(String(255), default="")

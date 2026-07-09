@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { toast } from '../components/toast'
 import Select from 'react-select'
+import ProductPicker from '../components/ProductPicker'
 
 const API = '/api/survey-requests'
 
@@ -47,6 +48,7 @@ interface ProcessOption {
   public_id: string
   display_label: string
   is_chosen: boolean
+  system_product_code: string
   snap_product_name: string
   snap_spec: string
   snap_origin: string
@@ -199,6 +201,15 @@ export default function SurveyRequestProcess() {
       await loadProcess()
       toast.success('Đã xóa phương án')
     } catch { /* lỗi đã hiện popup từ interceptor */ }
+  }
+
+  // Gắn/đổi Mã SP hệ thống cho option (chảy sang dòng PYC khi tạo yêu cầu mua)
+  async function setOptionProduct(lineId: number, optionId: number, code: string) {
+    try {
+      await api.patch(`${API}/${id}/lines/${lineId}/options/${optionId}`, { system_product_code: code })
+      await loadProcess()
+      toast.success(code ? 'Đã gắn mã SP hệ thống' : 'Đã bỏ mã SP')
+    } catch { /* interceptor toast */ }
   }
 
   async function complete() {
@@ -451,6 +462,7 @@ export default function SurveyRequestProcess() {
                         <th style={{ textAlign: 'right' }}>Giá</th>
                         <th style={{ textAlign: 'right' }}>MOQ</th>
                         <th style={{ textAlign: 'left' }}>NCC (nội bộ)</th>
+                        <th style={{ textAlign: 'left', minWidth: 200 }}>Mã SP hệ thống</th>
                         <th style={{ textAlign: 'center' }}>Trạng thái</th>
                         <th style={{ width: 60, textAlign: 'center' }}>Xóa</th>
                       </tr>
@@ -479,6 +491,10 @@ export default function SurveyRequestProcess() {
                             >
                               {opt.supplier_name || opt.supplier_code || '—'}
                             </span>
+                          </td>
+                          <td style={{ minWidth: 200 }}>
+                            <ProductPicker code={opt.system_product_code}
+                              onPick={(prod) => setOptionProduct(line.id, opt.id, prod?.code || '')} />
                           </td>
                           <td style={{ textAlign: 'center' }}>
                             {opt.is_chosen

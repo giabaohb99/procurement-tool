@@ -305,13 +305,15 @@ def del_option_(sid: int, line_id: int, oid: int, db: Session = Depends(get_db),
 
 
 @router.patch("/{sid}/lines/{line_id}/options/{oid}")
-def edit_option_note_(sid: int, line_id: int, oid: int, data: dict, db: Session = Depends(get_db), up=Depends(_purchaser)):
+def edit_option_(sid: int, line_id: int, oid: int, data: dict, db: Session = Depends(get_db), up=Depends(_purchaser)):
     user, prof = up
     ln = service.get_line(db, sid, line_id)
     if not service.can_process_line(db, ln, prof):
         raise HTTPException(403, "Bạn không phụ trách dòng này")
-    service.update_option_note(db, line_id, oid, data.get("nstm_note") or "", user.id)
-    return success(_out_process(db, service.get_sr(db, sid)), "Đã cập nhật ghi chú")
+    service.set_option_fields(db, line_id, oid, user.id,
+                              nstm_note=data.get("nstm_note"),
+                              system_product_code=data.get("system_product_code"))
+    return success(_out_process(db, service.get_sr(db, sid)), "Đã cập nhật")
 
 
 @router.post("/{sid}/complete")
