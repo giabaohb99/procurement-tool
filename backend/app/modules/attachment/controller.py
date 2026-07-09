@@ -2,6 +2,7 @@ import uuid
 
 from fastapi import (APIRouter, Depends, File, Form, HTTPException, Query,
                      UploadFile)
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user, user_has_permission
@@ -87,6 +88,65 @@ def upload(
         db.refresh(a)
         out.append(_out(a))
     return success(out, "Đã tải lên", 201)
+
+
+# ─── Upload NGAY (chưa tạo dòng) + gắn khi Lưu record — cho đính kèm trước khi có id ───
+
+class FileMeta(BaseModel):
+    filename: str = ""
+    file_key: str
+    url: str = ""
+    content_type: str = ""
+    size: int = 0
+
+
+class RegisterIn(BaseModel):
+    entity: str
+    entity_id: int
+    purchase_order_id: int = 0
+    files: list[FileMeta] = []
+
+
+@router.post("/upload-file")
+def upload_file_only(
+    entity: str = Form(...),
+    files: list[UploadFile] = File(...),
+    db: Session = Depends(get_db), user=Depends(get_current_user),
+):
+    """Upload file lên storage NGAY (chưa tạo dòng attachment) → trả metadata để gắn khi Lưu record."""
+    exts, max_mb = _check(db, user, entity, "manage")
+    out = []
+    for f in files:
+        ext = ext_of(f.filename or "")
+        if ext not in exts:
+            raise HTTPException(400, f"Định dạng .{ext or '?'} không được phép (cho phép: {', '.join(sorted(exts))})")
+        f.file.seek(0, 2); size = f.file.tell(); f.file.seek(0)
+        if size > max_mb * 1024 * 1024:
+            raise HTTPException(400, f"File '{f.filename}' vượt {max_mb}MB")
+        key = f"{entity}/pending/{uuid.uuid4().hex}_{f.filename}"
+        try:
+            url = upload_fileobj(f.file, key, f.content_type or "")
+        except RuntimeError as e:
+            raise HTTPException(400, str(e))
+        out.append({"filename": f.filename, "file_key": key, "url": url,
+                    "content_type": f.content_type or "", "size": size})
+    return success(out, "Đã tải lên", 201)
+
+
+@router.post("/register")
+def register_files(data: RegisterIn, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Gắn các file ĐÃ upload (metadata) vào 1 record (entity, entity_id) — dùng khi record vừa được lưu."""
+    _check(db, user, data.entity, "manage")
+    out = []
+    for m in data.files:
+        a = Attachment(entity=data.entity, entity_id=data.entity_id, purchase_order_id=data.purchase_order_id,
+                       filename=m.filename, file_key=m.file_key, url=m.url, content_type=m.content_type,
+                       size=m.size, created_by=user.id, updated_by=user.id)
+        db.add(a)
+        db.commit()
+        db.refresh(a)
+        out.append(_out(a))
+    return success(out, "Đã gắn file", 201)
 
 
 @router.delete("/{aid}")

@@ -204,6 +204,8 @@ export default function SurveyDetail() {
   const [logs, setLogs] = useState<any[]>([])
   const [files, setFiles] = useState<any[]>([])
   const [attByLine, setAttByLine] = useState<Record<number, any[]>>({})
+  const [attProgress, setAttProgress] = useState<number | null>(null)          // % đang upload (null = không upload)
+  const [pendingAtt, setPendingAtt] = useState<Record<string, any[]>>({})      // file ĐÃ upload, chờ gắn khi lưu (dòng chưa có id); key = `${tbl}-${index}`
   const [err, setErr] = useState('')
   const [msg, setMsg] = useState('')
 
@@ -312,8 +314,15 @@ export default function SurveyDetail() {
   async function save() {
     setErr(''); setMsg('')
     try {
-      if (isNew) { const r = await api.post(API, buildBody()); navigate(`/surveys/${r.data.data.id}`) }
-      else { await api.patch(`${API}/${id}`, buildBody()); setMsg('Đã lưu thành công'); loadAll() }
+      if (isNew) {
+        const r = await api.post(API, buildBody()); const d = r.data.data
+        await flushPendingAtt(d.supplier_lines || [], d.product_lines || [])   // gắn file chờ vào dòng mới
+        navigate(`/surveys/${d.id}`)
+      } else {
+        const r = await api.patch(`${API}/${id}`, buildBody()); const d = r.data?.data
+        await flushPendingAtt(d?.supplier_lines || [], d?.product_lines || [])
+        setMsg('Đã lưu thành công'); loadAll()
+      }
     } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
   }
 
@@ -438,13 +447,41 @@ export default function SurveyDetail() {
     const r = await api.get('/api/attachments', { params: { entity: 'survey_line', entity_id: lineId } })
     setAttByLine((s) => ({ ...s, [lineId]: r.data.data }))
   }
-  async function uploadLineAtt(lineId: number, fl: FileList | null) {
+  // Upload NGAY khi chọn (có progress). Dòng đã có id → gắn luôn; dòng mới → giữ chờ, gắn khi Lưu.
+  async function uploadLineAtt(tbl: 'supplier' | 'product', i: number, fl: FileList | null) {
     if (!fl?.length) return
-    const fd = new FormData(); fd.append('entity', 'survey_line'); fd.append('entity_id', String(lineId))
+    const fd = new FormData(); fd.append('entity', 'survey_line')
     Array.from(fl).forEach((f) => fd.append('files', f))
-    try { await api.post('/api/attachments', fd); loadLineAtt(lineId) }
-    catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi tải file') }
+    setErr(''); setAttProgress(0)
+    try {
+      const r = await api.post('/api/attachments/upload-file', fd, {
+        onUploadProgress: (e: any) => { if (e.total) setAttProgress(Math.round((e.loaded * 100) / e.total)) },
+      })
+      const metas = r.data.data || []
+      const lineId = getLines(tbl)[i]?.id
+      if (lineId) {
+        await api.post('/api/attachments/register', { entity: 'survey_line', entity_id: lineId, files: metas })
+        await loadLineAtt(lineId)
+      } else {
+        const key = `${tbl}-${i}`
+        setPendingAtt((p) => ({ ...p, [key]: [...(p[key] || []), ...metas] }))
+      }
+    } catch (ex: any) { setErr(ex?.response?.data?.error?.message || ex?.response?.data?.message || 'Lỗi tải file') }
+    finally { setAttProgress(null) }
   }
+  // Gắn file chờ vào dòng sau khi lưu (khớp theo index dòng trả về)
+  async function flushPendingAtt(supLines: any[], prodLines: any[]) {
+    for (const [key, metas] of Object.entries(pendingAtt)) {
+      const dash = key.lastIndexOf('-'); const tbl = key.slice(0, dash); const i = Number(key.slice(dash + 1))
+      const lineId = (tbl === 'supplier' ? supLines : prodLines)?.[i]?.id
+      if (lineId && (metas as any[]).length) {
+        try { await api.post('/api/attachments/register', { entity: 'survey_line', entity_id: lineId, files: metas }) } catch {}
+      }
+    }
+    setPendingAtt({})
+  }
+  const removePendingAtt = (key: string, fi: number) =>
+    setPendingAtt((p) => ({ ...p, [key]: (p[key] || []).filter((_, k) => k !== fi) }))
 
   function openLine(tbl: 'supplier' | 'product', i: number) {
     setEditingTable(tbl)
@@ -619,6 +656,8 @@ export default function SurveyDetail() {
   const activeIt = editingIndex !== null ? activeLines[editingIndex] : null
   const activeLid = activeIt?.id as number | undefined
   const activeAtts = (activeLid && attByLine[activeLid]) || []
+  const activePendKey = editingTable && editingIndex !== null ? `${editingTable}-${editingIndex}` : ''
+  const activePending = (activePendKey && pendingAtt[activePendKey]) || []
 
   return (
     <div>
@@ -798,32 +837,50 @@ export default function SurveyDetail() {
                 {/* Đính kèm file theo dòng */}
                 <div style={{ marginBottom: 4 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: .3, marginBottom: 10, paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>Đính kèm file (theo dòng)</div>
-                  {!activeLid ? (
-                    <span style={{ color: '#999', fontSize: 13 }}><i>Lưu phiếu trước rồi mới đính kèm được file cho dòng này.</i></span>
-                  ) : (
-                    <div>
-                      {editable && (
-                        <div style={{ marginBottom: 8 }}>
-                          <input type="file" id={`sla-${activeLid}`} multiple style={{ display: 'none' }} onChange={(e) => uploadLineAtt(activeLid, e.target.files)} />
-                          <label htmlFor={`sla-${activeLid}`} className="btn ghost" style={{ cursor: 'pointer', height: 32, fontSize: 13 }}><i className="ti ti-upload" /> Tải file lên</label>
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {activeAtts.map((f) => (
-                          <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-                            <i className="ti ti-file" />
-                            <a href={f.url} target="_blank" style={{ color: 'var(--teal)', flex: 1, textDecoration: 'underline' }}>{f.filename}</a>
-                            {editable && (
-                              <button className="icon-btn" onClick={async () => { if (confirm('Xóa file?')) { await api.delete(`/api/attachments/${f.id}`); loadLineAtt(activeLid) } }}>
-                                <i className="ti ti-trash" style={{ color: 'var(--red)' }} />
-                              </button>
-                            )}
+                  <div>
+                    {editable && (
+                      <div style={{ marginBottom: 8 }}>
+                        <input type="file" id="sla-upload" multiple accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls" style={{ display: 'none' }}
+                          disabled={attProgress !== null}
+                          onChange={(e) => { if (editingTable && editingIndex !== null) uploadLineAtt(editingTable, editingIndex, e.target.files); (e.currentTarget as any).value = '' }} />
+                        <label htmlFor="sla-upload" className="btn ghost" style={{ cursor: attProgress !== null ? 'default' : 'pointer', height: 32, fontSize: 13, opacity: attProgress !== null ? .6 : 1 }}>
+                          <i className="ti ti-upload" /> {attProgress !== null ? `Đang tải ${attProgress}%…` : 'Tải file lên'}
+                        </label>
+                        {attProgress !== null && (
+                          <div style={{ height: 4, background: '#e5e7eb', borderRadius: 4, marginTop: 6, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${attProgress}%`, background: 'var(--teal)', transition: 'width .15s' }} />
                           </div>
-                        ))}
-                        {activeAtts.length === 0 && <span style={{ color: '#999', fontSize: 13 }}>Chưa có file nào.</span>}
+                        )}
+                        <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 4 }}>Tối đa 10MB/file · pdf, ảnh, excel{!activeLid ? ' · sẽ lưu cùng phiếu' : ''}</div>
                       </div>
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {activeAtts.map((f) => (
+                        <div key={'a' + f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                          <i className="ti ti-file" />
+                          <a href={f.url} target="_blank" style={{ color: 'var(--teal)', flex: 1, textDecoration: 'underline' }}>{f.filename}</a>
+                          {editable && (
+                            <button className="icon-btn" onClick={async () => { if (confirm('Xóa file?')) { await api.delete(`/api/attachments/${f.id}`); if (activeLid) loadLineAtt(activeLid) } }}>
+                              <i className="ti ti-trash" style={{ color: 'var(--red)' }} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      {activePending.map((f, fi) => (
+                        <div key={'p' + fi} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                          <i className="ti ti-clock" style={{ color: '#d97706' }} />
+                          <a href={f.url} target="_blank" style={{ color: 'var(--teal)', flex: 1, textDecoration: 'underline' }}>{f.filename}</a>
+                          <span style={{ fontSize: 11, color: '#d97706' }}>chờ lưu</span>
+                          {editable && (
+                            <button className="icon-btn" onClick={() => removePendingAtt(activePendKey, fi)}>
+                              <i className="ti ti-x" style={{ color: 'var(--red)' }} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      {activeAtts.length === 0 && activePending.length === 0 && <span style={{ color: '#999', fontSize: 13 }}>Chưa có file nào.</span>}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 
