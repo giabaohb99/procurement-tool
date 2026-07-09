@@ -165,20 +165,6 @@ def fill_missing_line(db: Session, sid: int, table: str, line_id: int, data: dic
     return get_survey(db, sid)
 
 
-def set_line_system_product(db: Session, sid: int, line_id: int, code: str, user_id: int) -> Survey:
-    """Gắn/đổi Mã SP hệ thống cho 1 dòng khảo sát SP — ánh xạ, KHÔNG đổi trạng thái duyệt,
-    làm được mọi lúc (kể cả phiếu đã duyệt/done)."""
-    from app.modules.survey.model import SurveyProductLine
-    row = db.query(SurveyProductLine).filter(SurveyProductLine.id == line_id,
-                                             SurveyProductLine.survey_id == sid).first()
-    if not row:
-        raise HTTPException(404, "Không tìm thấy dòng khảo sát")
-    row.system_product_code = (code or "").strip()
-    row.updated_by = user_id
-    db.commit()
-    return get_survey(db, sid)
-
-
 def report_rows(db: Session, base_survey_query):
     """Chuẩn hóa TẤT CẢ dòng khảo sát (NCC + SP) trong phạm vi cho phép → list dict (theo dòng)."""
     surveys = {s.id: s for s in base_survey_query.all()}

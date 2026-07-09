@@ -37,7 +37,6 @@ class ProductLineIn(BaseModel):
     result_date: str = ""
     supplier_code: str = ""
     internal_code: str = ""
-    system_product_code: str = ""
     product_name: str = ""
     spec: str = ""
     origin: str = ""
