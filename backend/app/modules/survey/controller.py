@@ -74,6 +74,9 @@ def update_(sid: int, data: SurveyUpdate, db: Session = Depends(get_db), user=De
 
 @router.delete("/{sid}")
 def delete_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey", "delete"))):
+    s = service.get_survey(db, sid)
+    if s.status not in ("draft", "cancelled"):
+        raise HTTPException(400, "Chỉ được xóa phiếu khảo sát ở trạng thái Nháp hoặc Đã hủy")
     service.delete_survey(db, sid, user.id)
     return success(None, "Đã xóa")
 
@@ -85,6 +88,9 @@ def bulk_delete_surveys(ids: str, db: Session = Depends(get_db), user=Depends(re
         raise HTTPException(400, "Không có ID hợp lệ")
     for sid in id_list:
         try:
+            s = service.get_survey(db, sid)
+            if s.status not in ("draft", "cancelled"):
+                raise HTTPException(400, f"Phiếu {s.code} không ở trạng thái Nháp hoặc Đã hủy")
             service.delete_survey(db, sid, user.id)
         except Exception as e:
             raise HTTPException(400, f"Lỗi khi xóa khảo sát ID {sid}: {str(e)}")
@@ -125,6 +131,15 @@ def reject_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Ses
                          creator_id=s.created_by or user.id, background_tasks=background_tasks,
                          reason=data.reason or "", link=f"/surveys/{s.id}")
     return success(_out(db, s), "Đã từ chối")
+
+
+@router.post("/{sid}/cancel")
+def cancel_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey", "write"))):
+    s = service.get_survey(db, sid)
+    if s.status != "draft":
+        raise HTTPException(400, "Chỉ được hủy phiếu ở trạng thái Nháp")
+    s = service.set_status(db, sid, "cancelled", user.id)
+    return success(_out(db, s), "Đã hủy phiếu")
 
 
 @router.patch("/{sid}/lines/{table}/{line_id}/fill")

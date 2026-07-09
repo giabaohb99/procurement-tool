@@ -128,20 +128,6 @@ export default function CrudList() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2 className="page-title" style={{ margin: 0 }}>{cfg.title}</h2>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <button className="btn ghost" onClick={async () => {
-            if (selectedIds.length === total && total > 0) {
-              setSelectedIds([])
-            } else {
-              try {
-                const r = await api.get(cfg.apiPath, { params: { ...filters, page: 1, page_size: 5000 } })
-                const data = r.data.data
-                const allItems = Array.isArray(data) ? data : (data.items || [])
-                setSelectedIds(allItems.map((i: any) => i.id))
-              } catch (e) { alert('Lỗi lấy dữ liệu') }
-            }
-          }}>
-            {selectedIds.length === total && total > 0 ? 'Bỏ chọn' : `Chọn tất cả các trang (${total})`}
-          </button>
           {selectedIds.length > 0 && can(cfg.entity, 'delete') && (
             <button className="btn err" onClick={handleDeleteSelected}>
               <i className="ti ti-trash" />Xóa đã chọn ({selectedIds.length})
@@ -166,13 +152,6 @@ export default function CrudList() {
         <table>
           <thead>
             <tr>
-              <th style={{ width: 40 }}>
-                <input 
-                  type="checkbox" 
-                  checked={selectedIds.length === items.length && items.length > 0} 
-                  onChange={(e) => setSelectedIds(e.target.checked ? items.map(i => i.id) : [])} 
-                />
-              </th>
               <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('id')}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   ID {sortField === 'id' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ↕'}
@@ -213,23 +192,13 @@ export default function CrudList() {
 
               return sortedItems.map((row) => (
                 <tr key={row.id} className="clickable" onClick={() => navigate(`/${cfg.slug}/${row.id}`)}>
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <input 
-                      type="checkbox" 
-                      checked={selectedIds.includes(row.id)} 
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setSelectedIds(prev => checked ? [...prev, row.id] : prev.filter(id => id !== row.id));
-                      }} 
-                    />
-                  </td>
                   <td>{row.id}</td>
-                  {cfg.columns.map((c) => <td key={c.key}>{c.render ? c.render(row) : (row[c.key] ?? '—')}</td>)}
+                  {cfg.columns.map((c) => <td key={c.key}>{c.render ? c.render(row) : (row[c.key] ?? '')}</td>)}
                 </tr>
               ));
             })()}
             {items.length === 0 && (
-              <tr><td colSpan={cfg.columns.length + 2} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Không có dữ liệu</td></tr>
+              <tr><td colSpan={cfg.columns.length + 1} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Không có dữ liệu</td></tr>
             )}
           </tbody>
         </table>
