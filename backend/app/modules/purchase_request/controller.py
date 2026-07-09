@@ -178,6 +178,19 @@ def delete_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("pur
     return success(None, "Đã xóa")
 
 
+@router.delete("")
+def bulk_delete_prs(ids: str, db: Session = Depends(get_db), user=Depends(require("purchase_request", "delete"))):
+    id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
+    if not id_list:
+        raise HTTPException(400, "Không có ID hợp lệ")
+    for pid in id_list:
+        try:
+            service.delete_pr(db, pid, user.id)
+        except Exception as e:
+            raise HTTPException(400, f"Lỗi khi xóa phiếu ID {pid}: {str(e)}")
+    return success(None, f"Đã xóa {len(id_list)} bản ghi")
+
+
 @router.post("/{pid}/submit")
 def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
     pr = service.get_pr(db, pid)
