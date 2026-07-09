@@ -55,7 +55,7 @@ def list_pr(
     request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
     user=Depends(require("purchase_request", "read")),
 ):
-    query = apply_filters(db.query(PurchaseRequest), PurchaseRequest, request, service.FILTERABLE)
+    query = apply_filters(db.query(PurchaseRequest).filter(PurchaseRequest.is_deleted == False), PurchaseRequest, request, service.FILTERABLE)
     query = apply_scope(query, PurchaseRequest, "purchase_request", user, get_perm_profile(db, user))
     total, items = service.list_pr(db, query, pg)
     

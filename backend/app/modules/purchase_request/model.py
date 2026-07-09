@@ -32,6 +32,9 @@ class PurchaseRequest(Base, AuditMixin):
     quote_filename: Mapped[str] = mapped_column(String(255), default="")
     quote_file_url: Mapped[str] = mapped_column(String(1000), default="")
 
+    # Soft delete
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+
 
 class PurchaseRequestItem(Base, AuditMixin):
     """Dòng hàng của yêu cầu mua (theo Sheet: giá đề xuất, kho, NSPT, trạng thái...)."""

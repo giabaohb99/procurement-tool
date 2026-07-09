@@ -138,7 +138,10 @@ def items_of(db: Session, pr_id: int):
 
 
 def get_pr(db: Session, pid: int) -> PurchaseRequest:
-    obj = db.get(PurchaseRequest, pid)
+    obj = db.query(PurchaseRequest).filter(
+        PurchaseRequest.id == pid,
+        PurchaseRequest.is_deleted == False,
+    ).first()
     if not obj:
         raise HTTPException(404, "Không tìm thấy yêu cầu mua")
     return obj
@@ -256,10 +259,10 @@ def update_pr(db: Session, pid: int, data: PRUpdate, user_id: int) -> PurchaseRe
 
 def delete_pr(db: Session, pid: int, user_id: int) -> None:
     pr = get_pr(db, pid)
-    from app.modules.attachment.service import delete_attachments_for
-    delete_attachments_for(db, [("purchase_request", pid), ("purchase_request_quote", pid)])
-    db.query(PurchaseRequestItem).filter(PurchaseRequestItem.pr_id == pid).delete()
-    db.delete(pr)
+    if pr.status != "draft":
+        raise HTTPException(400, "Chỉ được xóa phiếu ở trạng thái Nháp")
+    pr.is_deleted = True
+    pr.updated_by = user_id
     db.commit()
     record(db, user_id, ENTITY, pid, "delete")
 
