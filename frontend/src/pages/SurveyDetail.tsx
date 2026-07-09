@@ -65,6 +65,7 @@ const PRODUCT_SECTIONS: Section[] = [
   { title: 'Nhà cung cấp & Sản phẩm', fields: [
     { k: 'supplier_code', label: 'Tên viết tắt NCC', type: 'supplier' },
     { k: 'internal_code', label: 'Mã SP (theo NCC)', type: 'text' },
+    { k: 'system_product_code', label: 'Mã SP hệ thống (chọn từ danh mục)', type: 'sysproduct', full: true },
     { k: 'product_name', label: 'Tên SP (tên NCC đặt)', type: 'text', full: true },
     { k: 'spec', label: 'Thông số kỹ thuật', type: 'textarea', full: true },
     { k: 'origin', label: 'Xuất xứ sản phẩm', type: 'text' },
@@ -132,12 +133,11 @@ const SUPPLIER_COLS: Col[] = [
   { key: 'line_approve_note', label: 'Ghi chú duyệt', w: 180 },
 ]
 
-const PRODUCT_CORE_KEYS = ['supplier_code', 'internal_code', 'system_product_code', 'product_name', 'quote_unit', 'moq', 'price_by_volume', 'amount', 'note', 'line_approve']
+const PRODUCT_CORE_KEYS = ['supplier_code', 'internal_code', 'product_name', 'quote_unit', 'moq', 'price_by_volume', 'amount', 'note', 'line_approve']
 
 const PRODUCT_COLS: Col[] = [
   { key: 'supplier_code', label: 'NCC *', w: 140, type: 'supplier' },
   { key: 'internal_code', label: 'Mã SP (NCC)', w: 120 },
-  { key: 'system_product_code', label: 'Mã SP hệ thống', w: 200, type: 'sysproduct' },
   { key: 'product_name', label: 'Tên SP theo NCC *', w: 220 },
   { key: 'spec', label: 'Thông số KT', w: 180 },
   { key: 'origin', label: 'Xuất xứ', w: 100 },
@@ -465,6 +465,11 @@ export default function SurveyDetail() {
     const it = lines[i]; const k = f.k; const t = f.type || 'text'
     // fillMode: cho sửa tất cả field nội dung (không phải MGR) khi popup ở chế độ Bổ sung
     const ce = MGR_KEYS.includes(k) ? canEditApprove : (editable || fillMode)
+    // Mã SP hệ thống — luôn sửa được (kể cả phiếu đã duyệt), lưu ngay qua endpoint riêng
+    if (t === 'sysproduct') {
+      if (!canEditSysProduct) return <input value={it.system_product_code || ''} disabled />
+      return <ProductPicker code={it.system_product_code} onPick={(prod) => changeLineSysProduct(i, prod?.code || '')} />
+    }
     if (t === 'computed') return <input value={fmt(rowAmount(it))} disabled />
     if (t === 'check') return (
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: ce ? 'pointer' : 'default', height: 40 }}>
@@ -492,12 +497,6 @@ export default function SurveyDetail() {
         return <div style={{ width: col.w }}><SearchSelect variant="table" colorMap={APPROVE_COLOR} value={it[col.key] || 'Chờ duyệt'} options={APPROVE_OPTS} placeholder="Duyệt…" onChange={(v) => changeLineApprove(tbl, i, v)} /></div>
       const st = it.line_approve || 'Chờ duyệt'; const c = APPROVE_COLOR[st] || '#64748b'
       return <span className="badge" style={{ background: `${c}1a`, color: c, border: `1px solid ${c}55` }}>{st}</span>
-    }
-    // Mã SP hệ thống — sửa được MỌI LÚC (kể cả phiếu done), độc lập với 'editable'
-    if (col.key === 'system_product_code') {
-      if (canEditSysProduct)
-        return <div style={{ width: col.w }}><ProductPicker code={it.system_product_code} onPick={(prod) => changeLineSysProduct(i, prod?.code || '')} /></div>
-      return <span>{it.system_product_code || '—'}</span>
     }
     if (!editable) {
       if (col.type === 'computed') return fmt(rowAmount(it))
