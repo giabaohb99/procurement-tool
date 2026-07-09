@@ -18,6 +18,7 @@ export default function ProductPicker({ code, name, disabled, onPick }: { code?:
   const cur = code ? { value: code, label: name ? `${code} — ${name}` : code } : null
   return (
     <AsyncSelect
+      classNamePrefix="rs"
       value={cur} isDisabled={disabled} isClearable cacheOptions defaultOptions
       loadOptions={loadOptions} placeholder="Gõ mã/tên để tìm..."
       noOptionsMessage={({ inputValue }) => (inputValue ? 'Không tìm thấy' : 'Gõ để tìm sản phẩm')}
