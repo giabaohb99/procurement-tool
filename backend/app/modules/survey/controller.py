@@ -121,6 +121,14 @@ def fill_line_(sid: int, table: str, line_id: int, data: dict, db: Session = Dep
     return success(_out(db, service.fill_missing_line(db, sid, table, line_id, data, user.id)), "Đã bổ sung dòng")
 
 
+@router.patch("/{sid}/product-lines/{line_id}/system-product")
+def set_line_sysproduct_(sid: int, line_id: int, data: dict, db: Session = Depends(get_db),
+                         user=Depends(require("survey", "write"))):
+    """Gắn/đổi Mã SP hệ thống cho 1 dòng khảo sát SP — KHÔNG đổi trạng thái duyệt, làm được mọi lúc (kể cả phiếu done)."""
+    s = service.set_line_system_product(db, sid, line_id, data.get("system_product_code") or "", user.id)
+    return success(_out(db, s), "Đã cập nhật Mã SP hệ thống")
+
+
 # ===== Báo cáo khảo sát theo DÒNG (gộp NCC + SP) =====
 report_router = APIRouter(prefix="/api/survey-report", tags=["survey_report"])
 

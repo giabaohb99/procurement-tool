@@ -132,11 +132,12 @@ const SUPPLIER_COLS: Col[] = [
   { key: 'line_approve_note', label: 'Ghi chú duyệt', w: 180 },
 ]
 
-const PRODUCT_CORE_KEYS = ['supplier_code', 'internal_code', 'product_name', 'quote_unit', 'moq', 'price_by_volume', 'amount', 'note', 'line_approve']
+const PRODUCT_CORE_KEYS = ['supplier_code', 'internal_code', 'system_product_code', 'product_name', 'quote_unit', 'moq', 'price_by_volume', 'amount', 'note', 'line_approve']
 
 const PRODUCT_COLS: Col[] = [
   { key: 'supplier_code', label: 'NCC *', w: 140, type: 'supplier' },
   { key: 'internal_code', label: 'Mã SP (NCC)', w: 120 },
+  { key: 'system_product_code', label: 'Mã SP hệ thống', w: 200, type: 'sysproduct' },
   { key: 'product_name', label: 'Tên SP theo NCC *', w: 220 },
   { key: 'spec', label: 'Thông số KT', w: 180 },
   { key: 'origin', label: 'Xuất xứ', w: 100 },
@@ -249,6 +250,8 @@ export default function SurveyDetail() {
   const editable = (isNew || sv.status === 'draft' || sv.status === 'rejected') && can('survey', isNew ? 'create' : 'write')
   const canApprove = can('survey', 'approve')
   const canEditApprove = canApprove && (isNew || ['draft', 'rejected', 'submitted'].includes(sv.status))
+  // Mã SP hệ thống: NSTM/Admin gắn được MỌI LÚC (kể cả phiếu đã duyệt) — chỉ là ánh xạ
+  const canEditSysProduct = can('survey', 'write')
   const liveApprove = !isNew && sv.status === 'submitted' && canApprove
 
   const setH = (k: string, v: any) => setSv((s: any) => ({ ...s, [k]: v }))
@@ -390,6 +393,19 @@ export default function SurveyDetail() {
     }
   }
 
+  // Gắn/đổi Mã SP hệ thống cho 1 dòng khảo sát SP — optimistic + gọi endpoint (làm được mọi lúc, kể cả done)
+  async function changeLineSysProduct(i: number, code: string) {
+    setLine('product', i, { system_product_code: code })
+    const it = getLines('product')[i]
+    if (it?.id) {
+      setErr(''); setMsg('')
+      try {
+        await api.patch(`${API}/${id}/product-lines/${it.id}/system-product`, { system_product_code: code })
+        setMsg(`Đã cập nhật Mã SP hệ thống dòng ${i + 1}`)
+      } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi cập nhật Mã SP hệ thống') }
+    }
+  }
+
   // Lưu bổ sung dòng Thiếu thông tin qua fill endpoint
   async function saveFillLine(tbl: 'supplier' | 'product', i: number) {
     if (editingIndex === null) return
@@ -476,6 +492,12 @@ export default function SurveyDetail() {
         return <div style={{ width: col.w }}><SearchSelect variant="table" colorMap={APPROVE_COLOR} value={it[col.key] || 'Chờ duyệt'} options={APPROVE_OPTS} placeholder="Duyệt…" onChange={(v) => changeLineApprove(tbl, i, v)} /></div>
       const st = it.line_approve || 'Chờ duyệt'; const c = APPROVE_COLOR[st] || '#64748b'
       return <span className="badge" style={{ background: `${c}1a`, color: c, border: `1px solid ${c}55` }}>{st}</span>
+    }
+    // Mã SP hệ thống — sửa được MỌI LÚC (kể cả phiếu done), độc lập với 'editable'
+    if (col.key === 'system_product_code') {
+      if (canEditSysProduct)
+        return <div style={{ width: col.w }}><ProductPicker code={it.system_product_code} onPick={(prod) => changeLineSysProduct(i, prod?.code || '')} /></div>
+      return <span>{it.system_product_code || '—'}</span>
     }
     if (!editable) {
       if (col.type === 'computed') return fmt(rowAmount(it))
