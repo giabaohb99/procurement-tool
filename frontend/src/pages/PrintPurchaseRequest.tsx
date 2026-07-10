@@ -13,26 +13,28 @@ export default function PrintPurchaseRequest() {
   const { id } = useParams();
   const [pr, setPr] = useState<any>(null);
   const [company, setCompany] = useState("");
-  const [files, setFiles] = useState<any[]>([]);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    api.get(`/api/purchase-requests/${id}`).then(async (r) => {
-      const d = r.data.data;
-      setPr(d);
-      if (d.company_id) {
-        try {
-          const c = await api.get(`/api/companies/${d.company_id}`);
-          setCompany(c.data.data.name);
-        } catch {}
-      }
-    });
     api
-      .get("/api/attachments", {
-        params: { entity: "purchase_request", entity_id: id },
+      .get(`/api/purchase-requests/${id}`)
+      .then(async (r) => {
+        const d = r.data.data;
+        setPr(d);
+        if (d.company_id) {
+          try {
+            const c = await api.get(`/api/companies/${d.company_id}`);
+            setCompany(c.data.data.name);
+          } catch {}
+        }
       })
-      .then((x) => setFiles(x.data.data || []));
+      .catch(() => setNotFound(true));
   }, [id]);
 
+  if (notFound)
+    return (
+      <div style={{ padding: 40 }}>Không tìm thấy phiếu yêu cầu mua hàng.</div>
+    );
   if (!pr) return <div style={{ padding: 40 }}>Đang tải...</div>;
 
   const SH = {
@@ -210,7 +212,7 @@ export default function PrintPurchaseRequest() {
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
           <div style={{ marginRight: 110, fontSize: 13, textAlign: "right", lineHeight: 1.9 }}>
             <div>
-              VAT: <b>{Number(pr.vat) ? fmt(pr.vat) : "-"}</b>
+              VAT: <b>{Number(pr.vat) ? fmt(pr.vat) : ""}</b>
             </div>
             <div>
               Tổng cộng thanh toán: <b>{fmt(pr.total)}</b>
@@ -230,11 +232,7 @@ export default function PrintPurchaseRequest() {
             <b>Liên hệ:</b> {pr.suggested_supplier_contact || ""}
           </div>
           <div>
-            <b>Báo giá đính kèm:</b>{" "}
-            {pr.quote_file_url || files.length > 0 ? "☑ Có" : "☐ Có"}{" "}
-            &nbsp;&nbsp;{" "}
-            {pr.quote_file_url || files.length > 0 ? "☐ Không" : "☑ Không"}{" "}
-            {pr.quote_filename ? `( ${pr.quote_filename} )` : ""}
+            <b>Báo giá đính kèm:</b> ☐ Có &nbsp;&nbsp; ☐ Không
           </div>
         </div>
 
