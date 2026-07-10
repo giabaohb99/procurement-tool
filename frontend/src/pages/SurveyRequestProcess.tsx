@@ -115,7 +115,10 @@ interface LineState {
   availLines: AvailSurveyLine[]
   loading: boolean
   selectedAvailIds: Set<number>
+  availPage: number   // trang hiện tại của danh sách dòng khảo sát khả dụng
 }
+
+const AVAIL_PAGE_SIZE = 8   // số dòng khảo sát khả dụng mỗi trang
 
 export default function SurveyRequestProcess() {
   const { id } = useParams()
@@ -148,6 +151,7 @@ export default function SurveyRequestProcess() {
           availLines:   prev[i]?.availLines   || [],
           loading:      false,
           selectedAvailIds: new Set<number>(),
+          availPage:    0,
         }))
       )
     } catch (e: any) {
@@ -172,7 +176,7 @@ export default function SurveyRequestProcess() {
       return
     }
     setLineStates((prev) =>
-      prev.map((s, i) => i === lineIdx ? { ...s, loading: true, supplierCode, availLines: [], selectedAvailIds: new Set() } : s)
+      prev.map((s, i) => i === lineIdx ? { ...s, loading: true, supplierCode, availLines: [], selectedAvailIds: new Set(), availPage: 0 } : s)
     )
     try {
       const r = await api.get(`${API}/${id}/lines/${lineId}/available-survey-lines`, {
@@ -305,7 +309,7 @@ export default function SurveyRequestProcess() {
       )}
 
       {lines.map((line, lineIdx) => {
-        const ls = lineStates[lineIdx] || { supplierCode: '', availLines: [], loading: false, selectedAvailIds: new Set() }
+        const ls = lineStates[lineIdx] || { supplierCode: '', availLines: [], loading: false, selectedAvailIds: new Set(), availPage: 0 }
         const shortName = line.requirement_detail
           ? (line.requirement_detail.length > 60 ? line.requirement_detail.slice(0, 57) + '...' : line.requirement_detail)
           : line.item_group || `Sản phẩm ${lineIdx + 1}`
@@ -313,6 +317,11 @@ export default function SurveyRequestProcess() {
         // Ẩn khỏi bảng trên những dòng khảo sát đã được gắn làm option (tránh trùng)
         const usedPsl = new Set(options.map((o: any) => o.product_survey_line_id))
         const availShown = (ls.availLines || []).filter((al: any) => !usedPsl.has(al.id))
+        // Phân trang danh sách dòng khảo sát khả dụng
+        const availTotalPages = Math.max(1, Math.ceil(availShown.length / AVAIL_PAGE_SIZE))
+        const availPage = Math.min(ls.availPage || 0, availTotalPages - 1)
+        const availPaged = availShown.slice(availPage * AVAIL_PAGE_SIZE, availPage * AVAIL_PAGE_SIZE + AVAIL_PAGE_SIZE)
+        const setAvailPage = (p: number) => setLineStates((prev) => prev.map((s, i) => i === lineIdx ? { ...s, availPage: p } : s))
 
         return (
           <div key={line.id} className="card" style={{ padding: 18, marginBottom: 16 }}>
@@ -387,7 +396,7 @@ export default function SurveyRequestProcess() {
                         </tr>
                       </thead>
                       <tbody>
-                        {availShown.map((al) => (
+                        {availPaged.map((al) => (
                           <tr key={al.id}>
                             <td style={{ textAlign: 'center' }}>
                               <input
@@ -436,6 +445,17 @@ export default function SurveyRequestProcess() {
                         ))}
                       </tbody>
                     </table>
+                    {availTotalPages > 1 && (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 8, fontSize: 13 }}>
+                        <button className="btn ghost" style={{ height: 28, padding: '0 10px' }} disabled={availPage <= 0} onClick={() => setAvailPage(availPage - 1)}>
+                          <i className="ti ti-chevron-left" />
+                        </button>
+                        <span style={{ color: 'var(--muted)' }}>Trang {availPage + 1}/{availTotalPages} ({availShown.length} dòng)</span>
+                        <button className="btn ghost" style={{ height: 28, padding: '0 10px' }} disabled={availPage >= availTotalPages - 1} onClick={() => setAvailPage(availPage + 1)}>
+                          <i className="ti ti-chevron-right" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 

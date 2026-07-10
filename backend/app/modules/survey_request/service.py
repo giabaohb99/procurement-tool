@@ -9,6 +9,7 @@ from .model import SurveyRequest, SurveyRequestLine, SurveyRequestOption
 
 ENTITY = "survey_request"
 FILTERABLE = ["code", "status", "requester", "department"]
+MAX_OPTIONS_PER_LINE = 5   # mỗi sản phẩm (dòng YCKS) tối đa 5 phương án khảo sát
 HEADER_FIELDS = ["company_id", "requester", "requester_position", "department",
                  "head_of_dept", "purpose", "request_date", "note"]
 
@@ -184,6 +185,8 @@ def create_option(db: Session, line: SurveyRequestLine, psl_id: int, user_id: in
         raise HTTPException(400, "Dòng khảo sát chưa được duyệt")
     if any(o.product_survey_line_id == psl_id for o in options_of(db, line.id)):
         raise HTTPException(400, "Dòng khảo sát này đã được gắn làm option")
+    if len(options_of(db, line.id)) >= MAX_OPTIONS_PER_LINE:
+        raise HTTPException(400, f"Mỗi sản phẩm chỉ được tối đa {MAX_OPTIONS_PER_LINE} phương án khảo sát")
     survey = db.get(Survey, psl.survey_id)
     public_id = len(options_of(db, line.id)) + 1
     o = SurveyRequestOption(
