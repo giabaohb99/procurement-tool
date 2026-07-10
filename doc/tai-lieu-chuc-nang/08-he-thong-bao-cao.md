@@ -1,0 +1,548 @@
+# Hệ thống & Báo cáo
+
+Tài liệu này mô tả sáu chức năng thuộc nhóm quản trị hệ thống và báo cáo: Nhân sự, Người dùng, Vai trò & Phân quyền, Cấu hình hệ thống, Báo cáo mua hàng, Báo cáo khảo sát.
+
+---
+
+## Nhân sự
+
+### Mục đích
+
+Quản lý danh sách nhân viên thuộc các công ty/phòng ban. Hồ sơ nhân sự là nền tảng để gắn kết tài khoản đăng nhập, xác định phạm vi dữ liệu, phân bổ công việc mua hàng và khảo sát.
+
+Đường dẫn: `/employees` (danh sách + chi tiết qua sidebar). Hỗ trợ nhập/xuất CSV (nút Import/Export trên danh sách).
+
+### Danh sách trường
+
+### 1. Mã nhân viên (`code`)
+
+- Kiểu nhập: Nhập tay (chuỗi, tối đa 25 ký tự)
+- Mặc định: trống
+- Bắt buộc: Có (unique)
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Người có quyền `employee:write`
+- Logic đặc biệt: Không được sửa sau khi tạo (`readonlyOnEdit: true`); dùng làm khóa tra cứu trong phân bổ (`PurchaseRequestItem.assignee`, `SurveyRequestLine.assignee`)
+
+### 2. Họ tên (`full_name`)
+
+- Kiểu nhập: Nhập tay (chuỗi, tối đa 255 ký tự)
+- Mặc định: trống
+- Bắt buộc: Có
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Người có quyền `employee:write`
+
+### 3. Email (`email`)
+
+- Kiểu nhập: Nhập tay
+- Mặc định: rỗng (`""`)
+- Bắt buộc: Không (nhưng cần để gửi thông báo)
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Người có quyền `employee:write`
+
+### 4. Số điện thoại (`phone`)
+
+- Kiểu nhập: Nhập tay (tối đa 25 ký tự)
+- Mặc định: rỗng
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Người có quyền `employee:write`
+
+### 5. Phòng ban (`department_id`)
+
+- Kiểu nhập: Chọn (ô tìm kiếm)
+- Mặc định: 0 (chưa gán)
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: Bảng Phòng ban (`tab_department`); hiển thị `name`
+- Người sửa: Người có quyền `employee:write`
+- Logic đặc biệt: Phòng ban xác định `dept_name` và `dept_id` trong hồ sơ phân quyền; ảnh hưởng đến phạm vi `dept` của các vai trò gán cho tài khoản liên kết
+
+### 6. Chức vụ (`position`)
+
+- Kiểu nhập: Nhập tay (tối đa 100 ký tự)
+- Mặc định: rỗng
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Người có quyền `employee:write`
+
+### 7. Vai trò nghiệp vụ (`role_name`)
+
+- Kiểu nhập: Chọn (từ danh sách vai trò hệ thống)
+- Mặc định: rỗng
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: Bảng Vai trò (`tab_role`); lấy trường `name`
+- Người sửa: Người có quyền `employee:write`
+- Logic đặc biệt: Trường thông tin mô tả nghiệp vụ trên hồ sơ nhân sự; KHÔNG tự động gán quyền — việc gán quyền thực hiện ở màn Người dùng
+
+### 8. Trạng thái (`status`)
+
+- Kiểu nhập: Chọn (danh sách cố định)
+- Mặc định: `Chính thức`
+- Bắt buộc: Có
+- Nguồn dữ liệu / liên kết: Chính thức / Cộng tác viên / Nghỉ thai sản / Nghỉ việc
+- Người sửa: Người có quyền `employee:write`
+
+### 9. Hoạt động (`is_active`)
+
+- Kiểu nhập: Checkbox (Boolean)
+- Mặc định: `true`
+- Bắt buộc: —
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Người có quyền `employee:write`
+- Logic đặc biệt: Nhân sự không hoạt động không được chọn trong các trường liên kết (phân công, người đại diện pháp lý, NSTM...)
+
+---
+
+## Nguoi dung (Tài khoản)
+
+### Mục đích
+
+Quản lý tài khoản đăng nhập và liên kết tài khoản với hồ sơ nhân sự. Mỗi tài khoản giữ danh sách vai trò được gán và cấu hình phạm vi dữ liệu riêng theo từng vai trò.
+
+Đường dẫn: `/users/:id` (trang chi tiết quyền). Danh sách người dùng xem ở tab "Người dùng" trong màn Phân quyền (`/roles`).
+
+### Danh sách trường
+
+### 1. Email (`email`)
+
+- Kiểu nhập: Nhập tay (hoặc từ đăng nhập Google)
+- Mặc định: rỗng
+- Bắt buộc: Có (dùng làm định danh đăng nhập)
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Admin (`user:write`)
+- Logic đặc biệt: Email dùng để xác thực bằng mật khẩu hoặc SSO Google (`google_sub`); hai cơ chế này cùng tồn tại
+
+### 2. Mật khẩu (`password_hash`)
+
+- Kiểu nhập: Nhập tay (ô password; không hiển thị lại)
+- Mặc định: —
+- Bắt buộc: Không nếu dùng SSO Google
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Người dùng tự đổi qua luồng Quên mật khẩu; Admin đặt lại qua API
+- Logic đặc biệt: Lưu dạng bcrypt hash; không bao giờ trả về plaintext
+
+### 3. Nhân sự liên kết (`employee_id`)
+
+- Kiểu nhập: Chọn (liên kết với bảng Nhân sự)
+- Mặc định: 0 (chưa liên kết)
+- Bắt buộc: Không bắt buộc về mặt kỹ thuật, nhưng cần để phân quyền phạm vi hoạt động đúng
+- Nguồn dữ liệu / liên kết: Bảng Nhân sự (`tab_employee`)
+- Người sửa: Admin (`user:write`)
+- Logic đặc biệt: Qua `employee_id`, hệ thống lấy `emp_code`, `company_id`, `dept_name`, `dept_id` để nạp vào hồ sơ phân quyền (`get_perm_profile`); thiếu liên kết này thì phạm vi `own/dept/company` không hoạt động đúng
+
+### 4. Avatar (`avatar`)
+
+- Kiểu nhập: URL hình ảnh (tự động từ SSO Google hoặc nhập tay)
+- Mặc định: rỗng
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Hệ thống (SSO) hoặc Admin
+
+### 5. Hoạt động (`is_active`)
+
+- Kiểu nhập: Checkbox
+- Mặc định: `true`
+- Bắt buộc: —
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Admin (`user:write`)
+- Logic đặc biệt: Tài khoản bị tắt (`is_active = false`) không thể đăng nhập; token cũ vẫn còn hiệu lực cho đến khi hết hạn nếu không invalidate
+
+### 6. Vai trò được gán (`role_ids` — bảng `tab_user_role`)
+
+- Kiểu nhập: Checkbox đa chọn (danh sách tất cả vai trò trong hệ thống)
+- Mặc định: không gán
+- Bắt buộc: Không (tài khoản không có vai trò nào = không thấy dữ liệu nào)
+- Nguồn dữ liệu / liên kết: Bảng Vai trò (`tab_role`)
+- Người sửa: Admin (`user:write`) tại trang `/users/:id`
+- Logic đặc biệt: Mỗi lần thay đổi vai trò sẽ gọi `perm_cache_clear()` để xóa cache phân quyền (cache sống 60 giây)
+
+### 7. Phạm vi theo vai trò (`tab_user_scope`)
+
+- Kiểu nhập: Popup "Phạm vi" mở sau khi đã lưu vai trò (nút riêng từng dòng vai trò)
+- Mặc định: không giới hạn (tương đương phạm vi mặc định của vai trò)
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: Công ty (`tab_company`), Phòng ban (`tab_department`), Nhân sự (`tab_employee`)
+- Người sửa: Admin (`user:write`)
+- Logic đặc biệt: Xem chi tiết ở mục Vai trò & Phân quyền bên dưới
+
+---
+
+## Vai trò & Phan quyen
+
+### Mục đích
+
+Kiểm soát ai được làm gì với dữ liệu nào thông qua mô hình hai trục: **Trục 1 — Hành động** thuộc vai trò (entity x action), **Trục 2 — Phạm vi dữ liệu** thuộc người dùng (scope per grant + include/exclude). Cơ chế này được mô tả dưới đây; đây là tài liệu về cơ chế hơn là liệt kê trường nhập liệu đơn thuần.
+
+Đường dẫn: `/roles` (tab "Vai trò & quyền" + tab "Người dùng").
+
+### Mô hình hai trục
+
+**Trục 1 — Hành động (gắn vào VAI TRO)**
+
+Mỗi vai trò (`tab_role`) có một bản ghi quyền (`tab_permission`) cho từng entity. Mỗi bản ghi quyền là tổ hợp:
+- **Entity**: đối tượng nghiệp vụ (ví dụ: `purchase_request`, `survey`, `employee`, `report`...). Danh sách đầy đủ trong `core/permissions.py`: `company`, `department`, `employee`, `user`, `role`, `warehouse`, `unit`, `item_group`, `brand`, `supplier`, `product`, `contract`, `purchase_request`, `survey`, `purchase_order`, `goods_receipt`, `inventory`, `payable`, `payment`, `payment_request`, `report`, `setting`, `category_assignee`, `survey_request`.
+- **Actions** (8 hành động): `read` (Xem), `create` (Tạo), `write` (Sửa), `delete` (Xóa), `approve` (Duyệt), `cancel` (Hủy), `print` (In), `export` (Xuất). Mỗi hành động là một cờ boolean độc lập.
+- **Scope mặc định của vai trò**: phạm vi dữ liệu áp dụng cho MỌI tài khoản mang vai trò đó, trừ khi bị override ở cấp người dùng. Các giá trị: `own` (Của mình), `assigned` (Được giao), `proc` (Thu mua: được giao + đã duyệt), `dept` (Phòng ban), `company` (Công ty), `all` (Tất cả).
+
+Trong code: endpoint được bảo vệ bằng `require(entity, action)` — dependency này kiểm tra xem người dùng có bất kỳ grant nào cho `(entity, action)` không.
+
+**Trục 2 — Phạm vi dữ liệu (gắn vào NGUOI DUNG, theo từng vai trò)**
+
+Sau khi gán vai trò, mỗi cặp `(user, role)` có thể đặt thêm phạm vi cụ thể qua popup "Phạm vi". Các chiều tùy chỉnh:
+
+- **Công ty được xem** (include company): thu hẹp về các công ty được chọn. Để trống = không giới hạn.
+- **Phòng ban được xem** (include department): cộng thêm phạm vi — user thấy TẤT CA dữ liệu của các phòng ban này bên cạnh phạm vi cấp bậc vai trò. Cơ chế: OR với phạm vi vai trò, không thu hẹp.
+- **Chỉ xem chứng từ do nhân sự tạo** (include employee): thu hẹp về chứng từ do nhân sự được chọn tạo. Để trống = không giới hạn theo chiều nhân sự.
+- **Loại trừ phòng ban** (exclude department): ẩn dữ liệu của phòng ban bị loại trừ, áp sau include.
+- **Loại trừ nhân sự** (exclude employee): ẩn dữ liệu do nhân sự bị loại trừ tạo, áp sau include.
+
+**Cách kết hợp (hàm `apply_scope` trong `core/scoping.py`)**
+
+Hệ thống tính HOP (OR) trên MỌI grant mà user có quyền `action` trên `entity`. Mỗi grant tạo một điều kiện:
+1. Điều kiện cấp bậc vai trò (own / dept / company / all) theo `SCOPE_FIELDS` của entity.
+2. Cộng thêm điều kiện "phòng ban được xem" (OR với điều kiện trên).
+3. AND với điều kiện thu hẹp: include công ty + mọi loại trừ (company, department, employee).
+
+Nếu không có grant nào → không thấy dữ liệu. Nếu ít nhất một grant là `all` và không có thu hẹp → thấy toàn bộ.
+
+Các entity có định nghĩa `SCOPE_FIELDS` (nghĩa là có lọc phạm vi): `purchase_request`, `survey_request`, `purchase_order`, `payable`, `payment_request`, `inventory`, `survey`, `employee`. Entity không có trong `SCOPE_FIELDS` mặc định thấy tất cả khi đủ quyền.
+
+**Hồ sơ phân quyền và cache**
+
+Hàm `get_perm_profile(db, user)` xây dựng hồ sơ gồm toàn bộ grants (kèm scope) và thông tin nhân sự (`company_id`, `dept_name`, `emp_code`...). Hồ sơ được cache in-process 60 giây. Sau khi thay đổi vai trò hoặc quyền, hệ thống gọi `perm_cache_clear()` để vô hiệu hóa cache.
+
+### Danh sách trường — Vai trò
+
+### 1. Mã vai trò (`code`)
+
+- Kiểu nhập: Nhập tay (chuỗi, tối đa 50 ký tự; vd: `pur_staff`, `manager`)
+- Mặc định: trống (FE gợi ý `role_` + chuỗi ngẫu nhiên nếu bỏ trống)
+- Bắt buộc: Có (unique)
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Admin (`role:write`) khi tạo; không sửa sau khi tạo (`readonlyOnEdit`)
+- Logic đặc biệt: Vai trò có code `ADMIN` / `ADMINISTRATOR` không được xóa
+
+### 2. Tên vai trò (`name`)
+
+- Kiểu nhập: Nhập tay (chuỗi, tối đa 100 ký tự)
+- Mặc định: trống
+- Bắt buộc: Có
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Admin (`role:write`)
+
+### 3. Mô tả (`description`)
+
+- Kiểu nhập: Nhập nhiều dòng (textarea)
+- Mặc định: rỗng
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Admin (`role:write`)
+
+### Danh sách trường — Ma trận quyền (tab "Vai trò & quyền")
+
+Sau khi chọn một vai trò, màn hiển thị bảng ma trận entity x action. Mỗi dòng là một entity, mỗi cột là một action, thêm cột Phạm vi ở cuối.
+
+### 4. Hành động (checkbox per entity x action)
+
+- Kiểu nhập: Checkbox (8 ô per entity: Xem, Tạo, Sửa, Xóa, Duyệt, Hủy, In, Xuất)
+- Mặc định: tất cả false
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: Danh sách cố định từ `ENTITIES` x `ACTIONS` trong `core/permissions.py`
+- Người sửa: Admin (`role:write`)
+- Logic đặc biệt: Nút "tất cả" (per dòng) bật/tắt đồng thời 8 hành động. Lưu = gửi PUT `/api/roles/{rid}/permissions`; bên BE xóa toàn bộ quyền cũ rồi ghi lại (chỉ lưu entity có ít nhất 1 action được bật)
+
+### 5. Phạm vi mặc định của vai trò (`scope` per entity)
+
+- Kiểu nhập: Chọn (dropdown)
+- Mặc định: `own`
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: own / assigned / proc / dept / company / all
+- Người sửa: Admin (`role:write`)
+- Logic đặc biệt: Đây là phạm vi mặc định áp cho mọi tài khoản mang vai trò này; có thể override bằng cấu hình phạm vi riêng ở trang chi tiết Người dùng
+
+---
+
+## Cau hinh he thong
+
+### Mục đích
+
+Lưu các thông số vận hành của hệ thống dưới dạng key-value trong cơ sở dữ liệu. Khóa bí mật (mật khẩu SMTP, khóa R2) được mã hóa bằng Fernet trước khi lưu và không hiển thị lại sau khi đặt. Cấu hình có hiệu lực ngay, không cần sửa `.env` hay build lại Docker; `.env` là giá trị dự phòng khi DB chưa đặt.
+
+Đường dẫn: `/settings`. Quyền truy cập: `setting:read` (xem), `setting:write` (sửa).
+
+Bảng `tab_setting`: hai cột `skey` (VARCHAR 64, unique) và `svalue` (Text). Secret được lưu cùng bảng với `svalue` đã mã hóa.
+
+### Danh sách trường — Nhóm Email (SMTP)
+
+### 1. Bật gửi email (`email_enabled`)
+
+- Kiểu nhập: Checkbox (Boolean)
+- Mặc định: `false`
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Admin (`setting:write`)
+- Logic đặc biệt: Khi tắt, hệ thống không gửi bất kỳ email thông báo nào (workflow bell-only)
+
+### 2. SMTP Host (`smtp_host`)
+
+- Kiểu nhập: Nhập tay
+- Mặc định: trống (dự phòng từ `.env`)
+- Bắt buộc: Cần để gửi email
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Admin (`setting:write`)
+
+### 3. SMTP Port (`smtp_port`)
+
+- Kiểu nhập: Nhập số
+- Mặc định: 587
+- Bắt buộc: Cần để gửi email
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Admin (`setting:write`)
+
+### 4. SMTP User (`smtp_user`)
+
+- Kiểu nhập: Nhập tay (địa chỉ email gửi đi)
+- Mặc định: trống
+- Bắt buộc: Cần để gửi email
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Admin (`setting:write`)
+
+### 5. Tên người gửi (`smtp_from`)
+
+- Kiểu nhập: Nhập tay (hiển thị trong trường From của email)
+- Mặc định: trống (dùng `smtp_user` nếu trống)
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Admin (`setting:write`)
+
+### 6. Email test (`email_test_override`)
+
+- Kiểu nhập: Nhập tay
+- Mặc định: trống
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Admin (`setting:write`)
+- Logic đặc biệt: Khi đặt giá trị, MỌI email hệ thống (kể cả email thật) đều chuyển hướng về địa chỉ này — dùng để kiểm thử mà không gửi email thật tới người dùng
+
+### 7. SMTP App Password (`smtp_password`) — BÍ MẬT
+
+- Kiểu nhập: Nhập tay (ô password; mã hóa Fernet khi lưu; không hiển thị lại)
+- Mặc định: —
+- Bắt buộc: Cần để gửi email
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Admin (`setting:write`)
+- Logic đặc biệt: Để trống = giữ nguyên giá trị cũ. Trạng thái "Đã cấu hình" / "Chưa" hiển thị bên cạnh nhãn
+
+### Danh sách trường — Nhóm Lưu trữ (R2 / S3)
+
+### 8. Endpoint (`r2_endpoint`)
+
+- Kiểu nhập: Nhập tay (URL endpoint Cloudflare R2 hoặc S3-compatible)
+- Mặc định: trống
+- Bắt buộc: Cần để lưu file đính kèm
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Admin (`setting:write`)
+
+### 9. Bucket (`r2_bucket`)
+
+- Kiểu nhập: Nhập tay
+- Mặc định: trống
+- Bắt buộc: Cần để lưu file
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Admin (`setting:write`)
+
+### 10. Public URL (`r2_public_url`)
+
+- Kiểu nhập: Nhập tay (URL gốc để tạo link tải file công khai)
+- Mặc định: trống
+- Bắt buộc: Không (nhưng cần để hiển thị link file đính kèm)
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Admin (`setting:write`)
+
+### 11. R2 Access Key ID (`r2_access_key_id`) — BÍ MẬT
+
+- Kiểu nhập: Nhập tay (mã hóa Fernet khi lưu)
+- Mặc định: —
+- Bắt buộc: Cần để kết nối lưu trữ
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Admin (`setting:write`)
+
+### 12. R2 Secret Key (`r2_secret_access_key`) — BÍ MẬT
+
+- Kiểu nhập: Nhập tay (mã hóa Fernet khi lưu)
+- Mặc định: —
+- Bắt buộc: Cần để kết nối lưu trữ
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Admin (`setting:write`)
+
+### Thao tác kiểm tra
+
+- **Gửi email thử**: nhập email nhận thử, bấm "Gửi email thử" → hệ thống gửi một email kiểm tra qua cấu hình SMTP hiện tại (nếu đặt `email_test_override` thì gửi về đó)
+- **Kiểm tra kết nối R2**: hệ thống thực hiện put + delete một file nhỏ (`healthcheck/ping.txt`) để xác nhận kết nối thành công
+
+---
+
+## Bao cao mua hang
+
+### Mục đích
+
+Cung cấp cái nhìn tổng thể và phân tích đa chiều về hoạt động mua hàng: giá trị đặt hàng, công nợ, tiến độ giao hàng, tần suất và chi phí theo nhiều chiều phân tích (NCC, nhân sự, phòng ban, phân loại vật tư, vận chuyển, tồn kho). Số liệu tải từ hai nguồn: `/api/reports/procurement` (tổng quan — tính realtime) và `/api/reports/matrix` (ma trận phân tích — đọc từ snapshot precompute, cập nhật theo yêu cầu).
+
+Đường dẫn: `/reports`. Quyền: `report:read`.
+
+### Bộ lọc chung
+
+| Bộ lọc | Kiểu | Ghi chú |
+|--------|------|---------|
+| Công ty | Chọn (SearchSelect) | Lọc tất cả số liệu theo `company_id`; để trống = tất cả công ty |
+| Năm | Chọn (SearchSelect) | Năm hiện tại mặc định; có thể chọn `all` (tất cả năm) |
+| Nút Lọc | Bấm để tải lại | Tải lại cả hai endpoint |
+| Nút Cập nhật | Bấm để tính lại | Gọi lại `matrix?refresh=1`; tính lại snapshot và lưu |
+
+### Tab Tổng quan
+
+**Thẻ số liệu:**
+
+| Chỉ tiêu | Nguồn |
+|----------|-------|
+| Số đơn mua hàng (`po_count`) | Đếm PO trong kỳ (theo `order_date`) |
+| Giá trị đặt hàng | Tổng `qty_order * price * (1 + vat/100)` trên toàn bộ dòng PO |
+| Công nợ còn phải trả | Tổng `remaining` từ bảng Công nợ (tách riêng hàng hóa / vận chuyển) |
+| Công nợ quá hạn | Công nợ chưa TT có `due_date` < ngày hôm nay |
+| Giá trị tồn kho | Tổng `value` từ bảng Tồn kho (`tab_inventory`) |
+
+**Đơn theo trạng thái**: đếm PO theo từng trạng thái (draft / submitted / approved / partial / received / completed / cancelled / rejected).
+
+**Tiến độ giao hàng**: số lần giao đúng hạn vs. trễ (theo `diff_regulated < 0`). Danh sách tối đa 20 lần giao trễ gần nhất kèm thông tin: mã PO, sản phẩm, ngày hứa, ngày nhận, số ngày lệch.
+
+**Chi phí mua theo tháng**: biểu đồ cột 12 tháng (từ bảng Công nợ `tab_payable`, trường `incur_date`). Bấm vào cột tháng mở popup "Chi phí theo ngày" với biểu đồ đường và bảng chi tiết (hàng hóa / vận chuyển / tổng).
+
+### Tab NCC (trễ giao)
+
+Dữ liệu từ snapshot `matrix.supplier`. Ma trận: NCC x tháng.
+
+| Cột | Nội dung |
+|-----|---------|
+| Nhà cung cấp | Tên NCC (ưu tiên `supplier_name`, dự phòng `supplier_code`) |
+| Số lần giao dịch (`trans`) | Số lần giao hàng (`PODelivery`) có `received_qty > 0` |
+| Số lần trễ (`late`) | Số lần `diff_regulated < 0` |
+| Tỷ lệ trễ (`rate`) | `late / trans * 100` (%) |
+
+Dòng tô đỏ nhẹ khi `rate > 30%`. Chọn kỳ "Xem theo": cả năm hoặc theo tháng cụ thể.
+
+### Tab Phân loại VTBB/NL
+
+Dữ liệu từ snapshot `matrix.item_group`. Ma trận: phân loại x tháng.
+
+| Cột | Nội dung |
+|-----|---------|
+| Loại VTBB/NL | `item_group` của dòng PO |
+| Số lần mua (`trans`) | Số lần giao hàng |
+| Tổng chi phí mua (`cost`) | Tổng `qty_received * price * (1 + vat/100)` |
+
+### Tab NSPT
+
+Dữ liệu từ snapshot `matrix.nspt`. Ma trận: NSPT x tháng.
+
+| Cột | Nội dung |
+|-----|---------|
+| NSPT | Tên nhân sự phụ trách (`po.nspt`) |
+| Số đơn (`orders`) | Số lần giao hàng phụ trách |
+| Trễ quy định (`late`) | `diff_regulated < 0` |
+| Đúng hạn (`ontime`) | `diff_regulated == 0` |
+| Giao sớm (`early`) | `diff_regulated > 0` |
+| Tỷ lệ trễ (`rate`) | `late / orders * 100` (%) |
+
+### Tab Bộ phận (đơn gấp)
+
+Dữ liệu từ snapshot `matrix.department`. Ma trận: phòng ban x tháng.
+
+| Cột | Nội dung |
+|-----|---------|
+| Bộ phận | `po.department` |
+| Số lần đặt (`orders`) | Số PO |
+| Số lần gấp (`urgent`) | PO có `is_urgent = true` |
+| Tỷ lệ gấp (`rate`) | `urgent / orders * 100` (%) |
+
+Dòng tô đỏ nhẹ khi `rate > 30%`.
+
+### Tab Chi phí vận chuyển
+
+**Bảng tóm tắt** (từ snapshot `matrix.shipping`): đơn vị vận chuyển x tháng.
+
+| Cột | Nội dung |
+|-----|---------|
+| Đơn vị vận chuyển | `carrier_name` hoặc `carrier_code` |
+| Tần suất (`freq`) | Số lần giao hàng dùng đơn vị này |
+| Giá trị đơn hàng (`order_value`) | Tổng thành tiền theo lô nhận |
+| Chi phí vận chuyển (`ship_cost`) | Tổng `shipping_amount` |
+| Tỷ lệ (`rate`) | `ship_cost / order_value * 100` (%) |
+
+**Bảng chi tiết** (tối đa 300 dòng đầu): mỗi dòng = một lần giao hàng có phí vận chuyển, gồm các cột: Đơn vị VC, Tháng, Mã VTBB/NL, Mã MISA, Số HĐ, Ngày nhận, SL đặt, SL nhận, Thành tiền ĐH, Thành tiền VC, Tỷ lệ.
+
+### Tab Tồn kho
+
+Tính tổng từ bảng `tab_inventory` theo công ty.
+
+| Chỉ tiêu | Nội dung |
+|----------|---------|
+| Tổng giá trị tồn | Tổng `value` toàn bộ dòng tồn kho |
+| Theo kho | Tổng `value` gom theo `warehouse_code` (biểu đồ thanh ngang) |
+| Top sản phẩm | 20 dòng tồn giá trị cao nhất: mã SP, tên, kho, tồn, đơn giá BQ, giá trị |
+
+---
+
+## Bao cao khao sat
+
+### Mục đích
+
+Tổng hợp và theo dõi trạng thái phê duyệt các dòng khảo sát (cả dòng NCC và dòng Sản phẩm) trên tất cả phiếu khảo sát mà người dùng có quyền xem. Hỗ trợ lọc đa chiều, xuất CSV.
+
+Đường dẫn: `/survey-report`. Quyền: `survey:read` (kết hợp với phạm vi dữ liệu của entity `survey`).
+
+API: `GET /api/survey-report/lines` — trả về danh sách dòng đã gộp NCC + SP, kèm bản tóm tắt đếm theo trạng thái duyệt.
+
+### Thẻ tóm tắt (Summary cards)
+
+Bốn thẻ đếm theo trạng thái duyệt dòng (`line_approve`), hiển thị tổng trước khi lọc theo trạng thái. Bấm vào thẻ để lọc nhanh theo trạng thái đó:
+
+| Trạng thái | Màu |
+|-----------|-----|
+| Chờ duyệt | Cam |
+| Đã duyệt | Xanh lá |
+| Không duyệt | Đỏ |
+| Thiếu thông tin | Cam sẫm |
+
+### Bộ lọc
+
+| Bộ lọc | Kiểu | Ghi chú |
+|--------|------|---------|
+| Loại dòng (`kind`) | Chọn | NCC / Sản phẩm / Tất cả |
+| Trạng thái dòng (`line_approve`) | Chọn | Chờ duyệt / Đã duyệt / Không duyệt / Thiếu thông tin / Tất cả |
+| Phân loại (`item_group`) | Chọn | Từ danh sách `item_group`; tương ứng `item_group` của phiếu khảo sát |
+| NCC (`supplier`) | Nhập tay (LIKE) | Lọc theo `supplier_code` (chứa, không phân biệt hoa thường) |
+| Mã phiếu (`code`) | Nhập tay (LIKE) | Lọc theo `survey_code` |
+| NSPT (`nspt`) | Nhập tay (LIKE) | Lọc theo tên NSPT của phiếu |
+| Từ ngày / Đến ngày (`date_from` / `date_to`) | Chọn ngày | Lọc theo ngày liên hệ của dòng (`contact_date`) |
+
+Tất cả bộ lọc có debounce 300ms và tự động tải lại khi thay đổi.
+
+### Cột bảng kết quả
+
+| Cột | Nội dung |
+|-----|---------|
+| Mã phiếu (`survey_code`) | Link dẫn tới `/surveys/:id` |
+| Loại (`kind`) | Badge: NCC (xanh dương nhạt) / SP (xanh lá nhạt) |
+| Nội dung (`content`) | Tóm tắt nội dung dòng (tên NCC hoặc tên SP) |
+| Phân loại (`item_group`) | Phân loại VTBB/NL của phiếu |
+| NSPT (`nspt`) | Nhân sự phụ trách phiếu |
+| Ngày (`date`) | Ngày liên hệ của dòng (`contact_date`) |
+| Trạng thái duyệt (`line_approve`) | Badge màu theo trạng thái |
+| Ghi chú duyệt (`line_approve_note`) | Nội dung yêu cầu/ý kiến của TP/QL |
+
+### Sắp xếp và phân trang
+
+Mặc định sắp xếp theo `survey_id` giảm dần, sau đó theo `kind` (supplier trước product), sau đó `line_id`. Phân trang 20 dòng / trang với điều hướng trang đầu/cuối/lân cận.
+
+### Xuất CSV
+
+Nút "Xuất CSV" xuất toàn bộ trang hiện tại (theo bộ lọc đang áp) ra file `bao-cao-khao-sat-YYYY-MM-DD.csv`. Các cột: Mã phiếu, Loại, Nội dung, Phân loại, NSPT, Ngày, Trạng thái duyệt, Ghi chú duyệt. File UTF-8 có BOM để Excel đọc đúng tiếng Việt.

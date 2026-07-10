@@ -3,18 +3,13 @@
 Mỗi chức năng một file riêng. Khi có thay đổi (thêm/bớt trường, đổi quyền, đổi luồng),
 cập nhật trực tiếp vào file tương ứng.
 
-## Mục lục
+Mục lục toàn bộ tính năng: [00-muc-luc.md](00-muc-luc.md)
+
+## Tài liệu đã có
 
 | File | Chức năng |
 |------|-----------|
 | [01-phieu-khao-sat.md](01-phieu-khao-sat.md) | Phiếu khảo sát (NCC + Sản phẩm) |
-| (dự kiến) 02-yeu-cau-khao-sat.md | Yêu cầu khảo sát |
-| (dự kiến) 03-yeu-cau-mua-hang.md | Yêu cầu mua hàng (PYC) |
-| (dự kiến) 04-don-mua-hang.md | Đơn mua hàng (PO) |
-| (dự kiến) 05-yeu-cau-thanh-toan.md | Yêu cầu thanh toán |
-| (dự kiến) 06-ton-kho-cong-no.md | Tồn kho & Công nợ |
-| (dự kiến) 07-danh-muc.md | Danh mục (NCC, SP, Hợp đồng, ...) |
-| (dự kiến) 08-phan-quyen.md | Vai trò & Phân quyền |
 
 ## Quy ước cột trong bảng trường
 
