@@ -207,14 +207,14 @@ export default function PrintPurchaseRequest() {
             </tr>
           </tbody>
         </table>
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <table style={{ borderCollapse: "collapse", fontSize: 13, marginTop: -1, marginRight: 44 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+          <table style={{ borderCollapse: "collapse", fontSize: 13, marginRight: 100, width: 350, tableLayout: "fixed" }}>
             <tbody>
               <tr>
-                <td style={{ ...cell, textAlign: "center", fontWeight: 600, minWidth: 380 }}>
+                <td style={{ ...cell, textAlign: "center", fontWeight: 600, width: 215 }}>
                   VAT
                 </td>
-                <td style={{ ...cell, textAlign: "right", minWidth: 130 }}>
+                <td style={{ ...cell, textAlign: "right", width: 135 }}>
                   {Number(pr.vat) ? fmt(pr.vat) : "-"}
                 </td>
               </tr>
@@ -286,7 +286,7 @@ export default function PrintPurchaseRequest() {
                     fontWeight: 500,
                   }}
                 >
-                  {r === "Người lập" ? pr.requester : ""}
+                  {""}
                 </div>
               </div>
             ),
