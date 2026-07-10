@@ -29,6 +29,8 @@ def _me_payload(db: Session, user) -> dict:
         "avatar": getattr(user, 'avatar', ''),
         "phone": emp.phone if emp else "",
         "department_name": emp.department_name if emp else "",
+        "role_name": emp.role_name if emp else "",
+        "position": emp.position if emp else "",
         "permissions": get_user_permissions(db, user),
     }
 
