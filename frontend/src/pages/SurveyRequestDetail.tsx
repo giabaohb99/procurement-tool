@@ -454,6 +454,13 @@ export default function SurveyRequestDetail() {
           </button>
         )}
 
+        {/* Tạo phiếu khảo sát trống đã gắn sẵn YCKS (chỉ khi đang xử lý) */}
+        {!isNew && sv.status === 'processing' && can('survey_request', 'process') && (
+          <button className="btn secondary" onClick={() => navigate(`/surveys/new?sr=${id}&sr_code=${encodeURIComponent(sv.code || '')}`)}>
+            <i className="ti ti-clipboard-plus" />Tạo phiếu khảo sát
+          </button>
+        )}
+
         {/* Nút Tạo yêu cầu mua (người YC) — góc phải như Xử lý khảo sát */}
         {!isNew && sv.status === 'survey_done' && canCreatePr && (
           <button className="btn" disabled={!allChosen}
