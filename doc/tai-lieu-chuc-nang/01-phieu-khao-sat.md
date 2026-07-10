@@ -30,14 +30,14 @@ Chỉ trạng thái Nháp và Bị trả lại mới cho phép sửa nội dung.
 
 ## A. Thông tin tiếp nhận (phần đầu phiếu)
 
-### 1. Mã yêu cầu (PYC) (`pr_code`)
+### 1. Yêu cầu khảo sát (`sr_code` + `survey_request_id`)
 
-- Kiểu nhập: Nhập/chọn — ô gõ tự do với gợi ý danh sách PYC (datalist)
-- Mặc định: trống
+- Kiểu nhập: Nhập/chọn — ô gõ tự do với gợi ý danh sách Yêu cầu khảo sát (datalist)
+- Mặc định: trống (tự gắn sẵn nếu mở phiếu từ nút "Tạo phiếu khảo sát" trên Yêu cầu khảo sát)
 - Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: Danh sách Yêu cầu mua hàng (PYC) hiện có trong hệ thống
+- Nguồn dữ liệu / liên kết: Danh sách Yêu cầu khảo sát (YCKS) — hiển thị theo phạm vi người dùng (NSTM chỉ thấy phiếu được gán, admin/quản lý thấy hết). Lưu cả `survey_request_id` (id) và `sr_code` (mã)
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
-- Logic đặc biệt: Chọn mã PYC tự điền trường Yêu cầu kỹ thuật & chất lượng từ trường "Mục đích" của PYC tương ứng
+- Logic đặc biệt: Chọn YCKS tự điền Yêu cầu kỹ thuật & chất lượng từ "Mục đích" của YCKS. Là liên kết để hệ thống tự gắn phương án (option) ngược lại cho dòng YCKS khớp phân loại khi phiếu khảo sát được duyệt. (Trường `pr_code` cũ vẫn còn trong dữ liệu để tương thích ngược, không còn dùng trên form.)
 
 ### 2. Ngày tiếp nhận (`received_date`)
 
