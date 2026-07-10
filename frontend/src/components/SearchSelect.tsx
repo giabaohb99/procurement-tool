@@ -19,7 +19,7 @@ const rsComponents = (table: boolean) =>
 export default function SearchSelect({
   value, options, onChange, disabled, placeholder = '', width, variant = 'form', colorMap,
 }: {
-  value?: string
+  value?: string | number
   options: (string | Opt)[]
   onChange: (v: string) => void
   disabled?: boolean
@@ -30,15 +30,16 @@ export default function SearchSelect({
 }) {
   const opts: Opt[] = options.map((o) => (typeof o === 'string' ? { value: o, label: o } : o))
   const table = variant === 'table'
-  const color = colorMap && value ? colorMap[value] : undefined
+  const valStr = value !== undefined && value !== null ? String(value) : ''
+  const color = colorMap && valStr ? colorMap[valStr] : undefined
 
   // Chỉ có đúng 1 lựa chọn và chưa chọn gì → tự gán luôn
   useEffect(() => {
-    if (!disabled && !value && opts.length === 1) onChange(opts[0].value)
-  }, [opts.length, value, disabled])
+    if (!disabled && !valStr && opts.length === 1) onChange(opts[0].value)
+  }, [opts.length, valStr, disabled])
 
   // Nếu value không có trong options (vd NCC/ĐVT chưa được tải) → vẫn hiện value, không để trắng
-  const cur = opts.find((o) => o.value === value) || (value ? { value, label: value } : null)
+  const cur = opts.find((o) => o.value === valStr) || (valStr ? { value: valStr, label: valStr } : null)
   return (
     <Select
       classNamePrefix="rs"

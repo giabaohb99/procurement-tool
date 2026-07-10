@@ -136,6 +136,7 @@ export default function SurveyRequestDetail() {
       setSv((s: any) => ({
         ...s,
         requester: (user as any).full_name || '',
+        requester_position: user.role_name || user.position || s.requester_position,
         department: (user as any).department_name || s.department,
         company_id: (user as any).company_id || s.company_id,
       }))
