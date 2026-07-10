@@ -396,7 +396,7 @@ def create_prs(db: Session, sid: int, user_id: int):
                 product_code=(opt.system_product_code or "").strip(),   # mã SP hệ thống gắn ở option
                 product_name=opt.snap_product_name or ln.requirement_detail or "Sản phẩm",
                 item_group=ln.item_group or "", qty=qty, unit=opt.snap_quote_unit or ln.uom or "",
-                price=price, amount=qty * price, note=f"Từ {opt.display_label}",
+                price=price, amount=qty * price, note="",
                 line_status="Chưa đặt hàng", created_by=user_id, updated_by=user_id,
             ))
             ln.pr_id = pr.id
