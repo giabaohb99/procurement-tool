@@ -21,7 +21,7 @@ function lineApproveBadge(st: string) {
   const c = LINE_APPROVE_COLOR[st] || '#64748b'
   return (
     <span className="badge" style={{ background: `${c}1a`, color: c, border: `1px solid ${c}55` }}>
-      {st || '—'}
+      {st || ''}
     </span>
   )
 }
@@ -294,10 +294,10 @@ export default function SurveyReport() {
                     </Link>
                   </td>
                   <td style={{ textAlign: 'center' }}>{kindBadge(it.kind)}</td>
-                  <td style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={it.content}>{it.content || '—'}</td>
-                  <td>{it.item_group || '—'}</td>
-                  <td>{it.nspt || '—'}</td>
-                  <td style={{ textAlign: 'center' }}>{it.date || '—'}</td>
+                  <td style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={it.content}>{it.content || ''}</td>
+                  <td>{it.item_group || ''}</td>
+                  <td>{it.nspt || ''}</td>
+                  <td style={{ textAlign: 'center' }}>{it.date || ''}</td>
                   <td style={{ textAlign: 'center' }}>{lineApproveBadge(it.line_approve)}</td>
                   <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={it.line_approve_note}>{it.line_approve_note || ''}</td>
                 </tr>

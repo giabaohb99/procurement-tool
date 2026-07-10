@@ -108,8 +108,9 @@ def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(g
 
 
 def _sync_ycks_options(db: Session, s, user_id: int) -> None:
-    """Phiếu khảo sát đã DUYỆT + liên kết Yêu cầu khảo sát -> tự gắn option cho dòng YCKS khớp phân loại."""
-    if getattr(s, "survey_request_id", 0) and s.status == "approved":
+    """Phiếu khảo sát có liên kết Yêu cầu khảo sát -> tự gắn option cho dòng YCKS khớp phân loại
+    ngay khi DÒNG được duyệt (không cần duyệt cả phiếu)."""
+    if getattr(s, "survey_request_id", 0):
         try:
             from app.modules.survey_request import service as sr_service
             sr_service.sync_options_from_surveys(db, s.survey_request_id, user_id)
@@ -139,11 +140,12 @@ def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(
 @router.post("/{sid}/reject")
 def reject_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
             user=Depends(require("survey", "approve"))):
-    s = service.set_status(db, sid, "rejected", user.id, data.reason)
+    # "Trả lại" = đưa phiếu về NHÁP để NSPT sửa & gửi duyệt lại (bị trả lại xem như nháp)
+    s = service.set_status(db, sid, "draft", user.id, data.reason)
     trigger_notification(db=db, event="survey_rejected", doc_type="survey", doc_code=s.code,
                          creator_id=s.created_by or user.id, background_tasks=background_tasks,
                          reason=data.reason or "", link=f"/surveys/{s.id}")
-    return success(_out(db, s), "Đã từ chối")
+    return success(_out(db, s), "Đã trả lại (về nháp)")
 
 
 @router.post("/{sid}/cancel")

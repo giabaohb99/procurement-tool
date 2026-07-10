@@ -409,14 +409,14 @@ export const cruds: Record<string, CrudConfig> = {
   'surveys': {
     slug: 'surveys', entity: 'survey', title: 'Khảo sát (NCC + Sản phẩm)', apiPath: '/api/surveys', txn: true,
     columns: [
-      { key: 'code', label: 'Mã phiếu' }, { key: 'pr_code', label: 'Mã YC (PYC)' },
+      { key: 'code', label: 'Mã phiếu' }, { key: 'sr_code', label: 'Mã YCKS' },
       { key: 'main', label: 'Nội dung chính' },
       { key: 'item_group', label: 'Nhóm hàng' }, { key: 'nspt', label: 'NSPT' },
-      { key: 'status', label: 'Trạng thái', render: (r) => prBadge(r.status) },
+      { key: 'status', label: 'Trạng thái', render: (r) => srBadge(r.status) },
     ],
     filters: [
       { key: 'code', label: 'Mã phiếu' },
-      { key: 'pr_code', label: 'Mã YC' },
+      { key: 'sr_code', label: 'Mã YCKS' },
       { key: 'item_group', label: 'Nhóm hàng', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
       { key: 'nspt', label: 'NSPT' },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
