@@ -14,6 +14,8 @@ if not SUP:
     SUP = [("NCC-A", "Nhà cung cấp A"), ("NCC-B", "Nhà cung cấp B"), ("NCC-C", "Nhà cung cấp C")]
 GROUPS = [r[0] for r in db.execute(text("select name from tab_item_group limit 3")).all()] or ["Nhãn", "Nhãn Metalize", "Nhãn Thùng"]
 UNITS = [r[0] for r in db.execute(text("select name from tab_unit limit 3")).all()] or ["Cái", "Bộ", "Kg"]
+# NSPT phụ trách = tên nhân viên thật (bỏ tài khoản admin id<=2)
+EMP = [r[0] for r in db.execute(text("select full_name from tab_employee where coalesce(full_name,'')<>'' and id>2 order by id limit 5")).all()] or ["Nhân viên thu mua"]
 
 
 def sup_line(k):
@@ -49,7 +51,7 @@ for i in range(3):
     data = SurveyCreate(
         item_group=GROUPS[i % len(GROUPS)],
         requirement_detail="[DEMO nhap %d] Khao sat bao bi nhan decal, can bao gia 3 NCC." % (i + 1),
-        received_date="2026-07-01", request_qty=2000, market_price=1500,
+        received_date="2026-07-01", request_qty=2000, market_price=1500, nspt=EMP[i % len(EMP)],
         supplier_lines=[sup_line(i * 3 + j) for j in range(3)],
         product_lines=[prod_line(i * 3 + j) for j in range(3)])
     s = ss.create_survey(db, data, 1)
