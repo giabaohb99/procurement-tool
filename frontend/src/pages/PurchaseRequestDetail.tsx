@@ -9,6 +9,7 @@ import ProductPicker from '../components/ProductPicker'
 import SearchSelect from '../components/SearchSelect'
 import ConfirmModal from '../components/ConfirmModal'
 import PromptModal from '../components/PromptModal'
+import { toast } from '../components/toast'
 
 const API = '/api/purchase-requests'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -41,13 +42,11 @@ export default function PurchaseRequestDetail() {
   const [itemGroups, setItemGroups] = useState<any[]>([])
   const [groups, setGroups] = useState<string[]>([])
   const [units, setUnits] = useState<string[]>([])
-  const [warehouses, setWarehouses] = useState<string[]>([])
+  const [warehouses, setWarehouses] = useState<{ code: string; name: string }[]>([])
   const [employees, setEmployees] = useState<any[]>([])
   const [departments, setDepartments] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [files, setFiles] = useState<any[]>([])
-  const [err, setErr] = useState('')
-  const [msg, setMsg] = useState('')
   const [editIdx, setEditIdx] = useState<number | null>(null)   // dòng đang mở popup chi tiết
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmSave, setConfirmSave] = useState(false)
@@ -58,7 +57,7 @@ export default function PurchaseRequestDetail() {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items)).catch(() => {})
     api.get('/api/item-groups', { params: { page_size: 500 } }).then((r) => { setItemGroups(r.data.data.items); setGroups(r.data.data.items.map((x: any) => x.name)) }).catch(() => {})
     api.get('/api/units', { params: { page_size: 200 } }).then((r) => setUnits(r.data.data.items.map((x: any) => x.name))).catch(() => {})
-    api.get('/api/warehouses', { params: { page_size: 200 } }).then((r) => setWarehouses(r.data.data.items.map((x: any) => x.name))).catch(() => {})
+    api.get('/api/warehouses', { params: { page_size: 200 } }).then((r) => setWarehouses(r.data.data.items.map((x: any) => ({ code: x.code, name: x.name })))).catch(() => {})
     api.get('/api/employees', { params: { page_size: 1000 } }).then((r) => setEmployees(r.data.data.items)).catch(() => {})
     api.get('/api/departments', { params: { page_size: 500 } }).then((r) => setDepartments(r.data.data.items)).catch(() => {})
   }, [])
@@ -112,7 +111,9 @@ export default function PurchaseRequestDetail() {
   const empName = (code: string) => employees.find(e => e.code === code)?.full_name || code
   const companyOptions = companies.map(c => ({ value: String(c.id), label: c.name }))
   const employeeOptions = employees.map(e => ({ value: e.full_name, label: e.full_name }))
-  const warehouseOptions = warehouses.map(w => ({ value: w, label: w }))
+  const warehouseOptions = warehouses.map(w => ({ value: w.name, label: `${w.code} - ${w.name}` }))
+  // Nhãn hiển thị "MÃ - Tên" cho kho đã lưu (giá trị lưu vẫn là name); fallback name nếu không tìm thấy
+  const whLabel = (name: string) => { const w = warehouses.find(w => w.name === name); return w ? `${w.code} - ${w.name}` : name }
 
   const setH = (k: string, v: any) => setPr((s: any) => ({ ...s, [k]: v }))
   const items = pr.items || []
@@ -130,9 +131,8 @@ export default function PurchaseRequestDetail() {
     setItem(i, 'line_status', val)
     const it = items[i]
     if (!editable && it.id && canLineStatus(it)) {
-      setErr(''); setMsg('')
-      try { await api.patch(`${API}/${id}/item-status`, { items: [{ id: it.id, line_status: val }] }); setMsg('Đã cập nhật trạng thái'); loadAll() }
-      catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi cập nhật trạng thái'); loadAll() }
+      try { await api.patch(`${API}/${id}/item-status`, { items: [{ id: it.id, line_status: val }] }); toast.success('Đã cập nhật trạng thái'); loadAll() }
+      catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi cập nhật trạng thái'); loadAll() }
     }
   }
 
@@ -189,12 +189,11 @@ export default function PurchaseRequestDetail() {
     if (!fl?.length) return
     const fd = new FormData(); fd.append('entity', 'purchase_request_quote'); fd.append('entity_id', String(id || 0)); fd.append('files', fl[0])
     try {
-      setErr('')
       const r = await api.post('/api/attachments', fd)
       const f = r.data.data[0]
       setPr((s: any) => ({ ...s, quote_filename: f.filename, quote_file_url: f.url }))
-      setMsg('Đã tải lên báo giá')
-    } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi tải báo giá') }
+      toast.success('Đã tải lên báo giá')
+    } catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi tải báo giá') }
   }
   const clearQuoteFile = () => setPr((s: any) => ({ ...s, quote_filename: '', quote_file_url: '' }))
 
@@ -211,9 +210,8 @@ export default function PurchaseRequestDetail() {
   }
 
   async function save(submitAfterSave = false) {
-    setErr(''); setMsg('')
     const v = validate()
-    if (v) { setErr(v); return }
+    if (v) { toast.error(v); return }
     const body = {
       company_id: Number(pr.company_id) || 0, requester: pr.requester, requester_position: pr.requester_position,
       department: pr.department, head_of_dept: pr.head_of_dept, purpose: pr.purpose,
@@ -233,43 +231,39 @@ export default function PurchaseRequestDetail() {
       } else {
         await api.patch(`${API}/${id}`, body)
         if (submitAfterSave) await api.post(`${API}/${id}/submit`)
-        setMsg('Đã lưu'); loadAll()
+        toast.success('Đã lưu'); loadAll()
       }
-    } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
+    } catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
   }
 
   async function action(path: string, payload: any = {}) {
-    setErr('')
     try { await api.post(`${API}/${id}/${path}`, payload); loadAll() }
-    catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi') }
+    catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi') }
   }
 
   async function copyDoc() {
-    setErr('')
     try { const r = await api.post(`${API}/${id}/copy`); navigate(`/purchase-requests/${r.data.data.id}`) }
-    catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi nhân bản') }
+    catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi nhân bản') }
   }
 
   async function handleDelete() {
-    setErr('')
     try {
       await api.delete(`${API}?ids=${id}`)
       navigate('/purchase-requests')
     } catch (ex: any) {
-      setErr(ex?.response?.data?.error?.message || 'Lỗi khi xóa')
+      toast.error(ex?.response?.data?.error?.message || 'Lỗi khi xóa')
     }
   }
 
   // Lưu popup chi tiết dòng khi phiếu KHÔNG còn ở trạng thái sửa (đã gửi duyệt trở đi)
   async function savePopupLine(it: any) {
-    setErr(''); setMsg('')
     try {
       if (canLineStatus(it))
         await api.patch(`${API}/${id}/item-status`, { items: [{ id: it.id, line_status: it.line_status, progress_note: it.progress_note, note: it.note }] })
       if (canAssignPurchaser)
         await api.patch(`${API}/${id}/assign`, { items: [{ id: it.id, assignee: it.assignee || '' }] })
-      setMsg('Đã cập nhật dòng'); setEditIdx(null); loadAll()
-    } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi cập nhật dòng') }
+      toast.success('Đã cập nhật dòng'); setEditIdx(null); loadAll()
+    } catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi cập nhật dòng') }
   }
 
   async function uploadFiles(fl: FileList | null) {
@@ -277,7 +271,7 @@ export default function PurchaseRequestDetail() {
     const fd = new FormData(); fd.append('entity', 'purchase_request'); fd.append('entity_id', String(id))
     Array.from(fl).forEach((f) => fd.append('files', f))
     try { await api.post('/api/attachments', fd); loadAll() }
-    catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi tải file') }
+    catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi tải file') }
   }
 
   const isLogShown = !isNew && logs.length > 0
@@ -474,9 +468,9 @@ export default function PurchaseRequestDetail() {
                         {editable ? (
                           <select className="cell-input" value={it.warehouse || ''} onChange={(e) => setItem(i, 'warehouse', e.target.value)} style={{ width: '100%' }}>
                             <option value="">-- Kho --</option>
-                            {warehouses.map((w) => <option key={w} value={w}>{w}</option>)}
+                            {warehouses.map((w) => <option key={w.name} value={w.name}>{w.code} - {w.name}</option>)}
                           </select>
-                        ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }} title={it.warehouse}>{it.warehouse || '—'}</span>}
+                        ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }} title={whLabel(it.warehouse)}>{it.warehouse ? whLabel(it.warehouse) : '—'}</span>}
                       </td>
                       <td>
                         {editable ? (
@@ -578,8 +572,6 @@ export default function PurchaseRequestDetail() {
             ) : <span style={{ color: '#999', fontSize: 13 }}><i>(Tạo phiếu để đính kèm tài liệu)</i></span>}
           </div>
 
-          {err && <div className="err" style={{ marginTop: 12 }}>{err}</div>}
-          {msg && <div style={{ color: 'var(--green)', fontSize: 13, marginTop: 8 }}>{msg}</div>}
 
 
         </div>
@@ -646,7 +638,7 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Kho nhận <span className="req">*</span></label>
-                <SearchSelect value={edit.warehouse || ''} options={warehouses} disabled={!editable} placeholder="Chọn/tìm kho…" onChange={(v) => setItem(editIdx, 'warehouse', v)} />
+                <SearchSelect value={edit.warehouse || ''} options={warehouseOptions} disabled={!editable} placeholder="Chọn/tìm kho…" onChange={(v) => setItem(editIdx, 'warehouse', v)} />
               </div>
               <div className="form-row">
                 <label>Ngày cần hàng</label>
