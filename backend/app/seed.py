@@ -9,7 +9,7 @@ from app.core.database import SessionLocal, engine
 from app.core.permissions import ENTITIES
 
 # Import tất cả model để metadata biết các bảng
-from app.modules.attachment.model import Attachment  # noqa: F401
+from app.modules.attachment.model import FileLink, StoredFile  # noqa: F401
 from app.modules.audit.model import AuditLog  # noqa: F401
 from app.modules.catalog.model import (Brand, ItemGroup,  # noqa: F401
                                        Unit, Warehouse)
