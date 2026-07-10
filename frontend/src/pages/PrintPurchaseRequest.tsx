@@ -85,22 +85,22 @@ export default function PrintPurchaseRequest() {
           }}
         >
           <div style={{ fontSize: 13 }}>
-            <b>Mã đơn vị:</b> {company || "..."}
+            <b>Đơn vị:</b> {company || "..."}
           </div>
           <table
             style={{
               borderCollapse: "collapse",
-              fontSize: 12,
+              fontSize: 10,
               textAlign: "left",
-              width: 260,
+              width: 190,
             }}
           >
             <tbody>
               {(() => {
                 const c = {
                   border: "1px solid #999",
-                  padding: "2px 6px",
-                  lineHeight: 1.4,
+                  padding: "1px 5px",
+                  lineHeight: 1.35,
                   whiteSpace: "nowrap",
                 } as const;
                 return (
@@ -114,11 +114,11 @@ export default function PrintPurchaseRequest() {
                       </td>
                     </tr>
                     <tr>
-                      <td style={{ ...c, width: 80 }}>Phiên bản</td>
+                      <td style={{ ...c, width: 64 }}>Phiên bản</td>
                       <td style={{ ...c, textAlign: "center" }}>V1-062025</td>
                     </tr>
                     <tr>
-                      <td style={{ ...c, width: 80 }}>Ngày update:</td>
+                      <td style={{ ...c, width: 64 }}>Ngày update:</td>
                       <td style={{ ...c, textAlign: "center" }}>17/7/2025</td>
                     </tr>
                   </>
@@ -208,13 +208,13 @@ export default function PrintPurchaseRequest() {
           </tbody>
         </table>
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <table style={{ borderCollapse: "collapse", fontSize: 12, marginTop: -1 }}>
+          <table style={{ borderCollapse: "collapse", fontSize: 13, marginTop: -1, marginRight: 44 }}>
             <tbody>
               <tr>
-                <td style={{ ...cell, textAlign: "center", fontWeight: 600, minWidth: 230 }}>
+                <td style={{ ...cell, textAlign: "center", fontWeight: 600, minWidth: 380 }}>
                   VAT
                 </td>
-                <td style={{ ...cell, textAlign: "right", minWidth: 110 }}>
+                <td style={{ ...cell, textAlign: "right", minWidth: 130 }}>
                   {Number(pr.vat) ? fmt(pr.vat) : "-"}
                 </td>
               </tr>
