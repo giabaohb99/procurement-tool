@@ -85,7 +85,7 @@ export default function PrintPurchaseRequest() {
           }}
         >
           <div style={{ fontSize: 13 }}>
-            <b>Đơn vị:</b> {company || "..."}
+            <b>Mã đơn vị:</b> {company || "..."}
           </div>
           <table
             style={{
@@ -207,11 +207,27 @@ export default function PrintPurchaseRequest() {
             </tr>
           </tbody>
         </table>
-        <div style={{ textAlign: "right", fontSize: 12, marginTop: 6 }}>
-          VAT: <b>{fmt(pr.vat)}</b>
-        </div>
-        <div style={{ textAlign: "right", fontSize: 13 }}>
-          Tổng cộng thanh toán: <b>{fmt(pr.total)}</b>
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <table style={{ borderCollapse: "collapse", fontSize: 12, marginTop: -1 }}>
+            <tbody>
+              <tr>
+                <td style={{ ...cell, textAlign: "center", fontWeight: 600, minWidth: 230 }}>
+                  VAT
+                </td>
+                <td style={{ ...cell, textAlign: "right", minWidth: 110 }}>
+                  {Number(pr.vat) ? fmt(pr.vat) : "-"}
+                </td>
+              </tr>
+              <tr>
+                <td style={{ ...cell, textAlign: "center", fontWeight: 700 }}>
+                  Tổng cộng thanh toán
+                </td>
+                <td style={{ ...cell, textAlign: "right", fontWeight: 700 }}>
+                  {fmt(pr.total)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         <div style={SH}>THÔNG TIN NHÀ CUNG CẤP</div>
