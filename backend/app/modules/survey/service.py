@@ -55,6 +55,19 @@ def list_surveys(db: Session, base_query, pg: dict):
     return total, items
 
 
+def _reconcile_sr_link(db: Session, s: Survey) -> None:
+    """Đồng bộ liên kết YCKS: điền cái còn thiếu (survey_request_id <-> sr_code) từ cái đã có."""
+    from app.modules.survey_request.model import SurveyRequest
+    if s.survey_request_id and not s.sr_code:
+        sr = db.get(SurveyRequest, s.survey_request_id)
+        if sr:
+            s.sr_code = sr.code
+    elif s.sr_code and not s.survey_request_id:
+        sr = db.query(SurveyRequest).filter(SurveyRequest.code == s.sr_code).first()
+        if sr:
+            s.survey_request_id = sr.id
+
+
 def create_survey(db: Session, data, user_id: int) -> Survey:
     s = Survey(code=data.code or "", survey_type="combined", status="draft",
                created_by=user_id, updated_by=user_id,
@@ -64,7 +77,8 @@ def create_survey(db: Session, data, user_id: int) -> Survey:
     db.refresh(s)
     if not s.code:
         s.code = f"KS{s.id:05d}"
-        db.commit()
+    _reconcile_sr_link(db, s)
+    db.commit()
     _save_supplier_lines(db, s.id, data.supplier_lines, user_id)
     _save_product_lines(db, s.id, data.product_lines, user_id)
     record(db, user_id, ENTITY, s.id, "create")
@@ -78,6 +92,7 @@ def update_survey(db: Session, sid: int, data, user_id: int) -> Survey:
     for k, v in data.model_dump(exclude_unset=True, exclude={"supplier_lines", "product_lines"}).items():
         setattr(s, k, v)
     s.updated_by = user_id
+    _reconcile_sr_link(db, s)
     db.commit()
     if data.supplier_lines is not None:
         _save_supplier_lines(db, sid, data.supplier_lines, user_id)
