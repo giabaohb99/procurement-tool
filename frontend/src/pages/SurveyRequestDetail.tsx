@@ -225,9 +225,16 @@ export default function SurveyRequestDetail() {
   }
   // PYC đã sinh (duy nhất theo pr_id) để hiện link
   const createdPrs = (() => {
-    const seen = new Map<number, string>()
-    for (const l of (result?.lines || [])) if (l.pr_id) seen.set(l.pr_id, l.pr_code)
-    return Array.from(seen, ([pid, code]) => ({ pid, code }))
+    const prMap = new Map<number, { code: string; items: string[] }>()
+    ;(result?.lines || []).forEach((l: any, i: number) => {
+      if (l.pr_id) {
+        if (!prMap.has(l.pr_id)) prMap.set(l.pr_id, { code: l.pr_code, items: [] })
+        const chosen = (l.options || []).find((o: any) => o.is_chosen)
+        const optLabel = chosen ? (chosen.display_label || `Option ${chosen.public_id}`) : ''
+        prMap.get(l.pr_id)!.items.push(`SP ${i + 1} (${optLabel})`)
+      }
+    })
+    return Array.from(prMap.entries()).map(([pid, data]) => ({ pid, ...data }))
   })()
   const allChosen = (result?.lines || []).length > 0 && (result?.lines || []).every((l: any) => (l.options || []).some((o: any) => o.is_chosen))
   const canFinalize = can('survey_request', 'process') && can('survey_request', 'approve')
@@ -726,12 +733,14 @@ export default function SurveyRequestDetail() {
               {createdPrs.length > 0 && (
                 <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: 12, marginBottom: 14, fontSize: 13 }}>
                   <b style={{ color: '#15803d' }}><i className="ti ti-circle-check" /> Đã tạo {createdPrs.length} phiếu yêu cầu mua hàng: </b>
-                  {createdPrs.map((p, i) => (
-                    <span key={p.pid}>
-                      {i > 0 && ', '}
-                      <a className="clickable" style={{ color: 'var(--teal)', fontWeight: 600 }} onClick={() => navigate(`/purchase-requests/${p.pid}`)}>{p.code}</a>
-                    </span>
-                  ))}
+                  <ul style={{ margin: '8px 0 0 24px', padding: 0, color: '#15803d', lineHeight: 1.6 }}>
+                    {createdPrs.map((p) => (
+                      <li key={p.pid}>
+                        <a className="clickable" style={{ color: 'var(--teal)', fontWeight: 600 }} onClick={() => navigate(`/purchase-requests/${p.pid}`)}>{p.code}</a>
+                        {' '} — Bao gồm: <b>{p.items.join(', ')}</b>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
 
