@@ -14,8 +14,10 @@ if not SUP:
     SUP = [("NCC-A", "Nhà cung cấp A"), ("NCC-B", "Nhà cung cấp B"), ("NCC-C", "Nhà cung cấp C")]
 GROUPS = [r[0] for r in db.execute(text("select name from tab_item_group limit 3")).all()] or ["Nhãn", "Nhãn Metalize", "Nhãn Thùng"]
 UNITS = [r[0] for r in db.execute(text("select name from tab_unit limit 3")).all()] or ["Cái", "Bộ", "Kg"]
-# NSPT phụ trách = tên nhân viên thật (bỏ tài khoản admin id<=2)
-EMP = [r[0] for r in db.execute(text("select full_name from tab_employee where coalesce(full_name,'')<>'' and id>2 order by id limit 5")).all()] or ["Nhân viên thu mua"]
+# NSPT phụ trách = nhân sự phòng Thu mua (dept 20 = "Sản xuất -Thu mua"; fallback: nhân viên bất kỳ)
+EMP = [r[0] for r in db.execute(text("select full_name from tab_employee where department_id=20 and coalesce(full_name,'')<>'' order by id limit 5")).all()] \
+    or [r[0] for r in db.execute(text("select full_name from tab_employee where coalesce(full_name,'')<>'' and id>2 order by id limit 5")).all()] \
+    or ["Nhân viên thu mua"]
 
 
 def sup_line(k):
