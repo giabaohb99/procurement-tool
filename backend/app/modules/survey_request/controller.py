@@ -277,8 +277,8 @@ def available_survey_lines_(sid: int, line_id: int, supplier_code: str = "", ite
     ln = service.get_line(db, sid, line_id)
     if not supplier_code:
         return success([])
-    # Lọc theo phân loại của DÒNG (mặc định) — Nhãn không ra Thùng
-    rows = service.available_survey_lines(db, supplier_code, item_group or ln.item_group)
+    # Lọc theo phân loại của DÒNG (mặc định) + CHỈ phiếu khảo sát đã liên kết YCKS này
+    rows = service.available_survey_lines(db, supplier_code, item_group or ln.item_group, survey_request_id=sid)
     out = []
     for r in rows:
         d = _dict(r)

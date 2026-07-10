@@ -156,15 +156,19 @@ def can_process_line(db: Session, line: SurveyRequestLine, profile: dict) -> boo
     return bool(row and emp_id in (row.primary_employee_id, row.backup_employee_id))
 
 
-def available_survey_lines(db: Session, supplier_code: str, item_group: str = ""):
-    """Dòng khảo sát SẢN PHẨM đã DUYỆT của 1 NCC (nguồn để tạo option).
-    Lọc thêm theo PHÂN LOẠI = item_group của Survey cha (SurveyProductLine không có cột phân loại)."""
+def available_survey_lines(db: Session, supplier_code: str, item_group: str = "", survey_request_id: int = 0):
+    """Dòng khảo sát SẢN PHẨM đã DUYỆT (line_approve='Đã duyệt') của 1 NCC (nguồn để tạo option).
+    - Chỉ cần DÒNG được duyệt (không đòi cả phiếu duyệt), bỏ phiếu đã hủy.
+    - Nếu truyền survey_request_id: CHỈ lấy từ phiếu khảo sát đã LIÊN KẾT với YCKS đó.
+    - Lọc theo PHÂN LOẠI = item_group của Survey cha."""
     from app.modules.survey.model import Survey, SurveyProductLine
     q = (db.query(SurveyProductLine)
          .join(Survey, Survey.id == SurveyProductLine.survey_id)
          .filter(SurveyProductLine.supplier_code == supplier_code,
                  SurveyProductLine.line_approve == "Đã duyệt",
-                 Survey.status == "approved"))
+                 Survey.status.notin_(["cancelled"])))
+    if survey_request_id:
+        q = q.filter(Survey.survey_request_id == survey_request_id)
     if item_group:
         q = q.filter(Survey.item_group == item_group)
     return q.order_by(SurveyProductLine.id.desc()).all()
@@ -224,8 +228,11 @@ def sync_options_from_surveys(db: Session, sid: int, user_id: int = 0) -> int:
     line_approve='Đã duyệt') thuộc các Phiếu khảo sát ĐÃ LIÊN KẾT với YCKS này (survey_request_id).
     Khớp theo phân loại (item_group). Bỏ qua dòng đã gắn. Trả số option mới thêm."""
     from app.modules.survey.model import Survey, SurveyProductLine
+    # CHỈ lấy từ phiếu khảo sát ĐÃ LIÊN KẾT với YCKS này; không cần duyệt cả phiếu,
+    # chỉ cần DÒNG được duyệt (line_approve='Đã duyệt'). Bỏ phiếu đã hủy/bị từ chối.
     surveys = (db.query(Survey)
-               .filter(Survey.survey_request_id == sid, Survey.status == "approved").all())
+               .filter(Survey.survey_request_id == sid,
+                       Survey.status.notin_(["cancelled"])).all())
     if not surveys:
         return 0
     sr_lines = lines_of(db, sid)

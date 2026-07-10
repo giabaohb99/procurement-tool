@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
-import { prBadge } from '../config/cruds'
+import { srBadge } from '../config/cruds'
 import ProductPicker from '../components/ProductPicker'
 import SearchSelect from '../components/SearchSelect'
 import { toast } from '../components/toast'
@@ -302,6 +302,22 @@ export default function SurveyDetail() {
     if (srId) setSv((s: any) => (s.survey_request_id ? s : { ...s, survey_request_id: srId, sr_code: srCode }))
   }, [isNew, searchParams])
 
+  // Issue 3: giữ nháp form TẠO MỚI qua F5 (localStorage) — khôi phục khi mở lại, xóa khi tạo xong.
+  const DRAFT_KEY = 'survey_new_draft'
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => {
+    if (!isNew) { setHydrated(true); return }
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY)
+      if (raw) { const d = JSON.parse(raw); if (d && typeof d === 'object') setSv((s: any) => ({ ...s, ...d })) }
+    } catch { /* ignore */ }
+    setHydrated(true)
+  }, [isNew])
+  useEffect(() => {
+    if (!isNew || !hydrated) return
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(sv)) } catch { /* ignore */ }
+  }, [isNew, hydrated, sv])
+
   const pickItem = (prod: any) => {
     if (!prod) { setSv((s: any) => ({ ...s, item_code: '', item_name: '' })); return }
     setSv((s: any) => ({
@@ -389,6 +405,7 @@ export default function SurveyDetail() {
       if (isNew) {
         const r = await api.post(API, buildBody()); const d = r.data.data
         await flushPendingAtt(d.supplier_lines || [], d.product_lines || [])   // gắn file chờ vào dòng mới
+        try { localStorage.removeItem(DRAFT_KEY) } catch { /* ignore */ }
         navigate(`/surveys/${d.id}`)
       } else {
         const r = await api.patch(`${API}/${id}`, buildBody()); const d = r.data?.data
@@ -748,7 +765,7 @@ export default function SurveyDetail() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
         <button className="btn ghost" onClick={() => navigate('/surveys')}><i className="ti ti-arrow-left" /></button>
         <h2 className="page-title" style={{ margin: 0 }}>{isNew ? 'Tạo Phiếu Khảo sát' : `Phiếu Khảo sát ${sv.code || ''}`}</h2>
-        {!isNew && sv.status !== 'draft' && prBadge(sv.status)}
+        {!isNew && sv.status !== 'draft' && srBadge(sv.status)}
         <span style={{ flex: 1 }} />
         {editable && can('survey', isNew ? 'create' : 'write') && (
           <button className="btn" onClick={save}>{isNew ? 'Tạo' : 'Lưu'}</button>
