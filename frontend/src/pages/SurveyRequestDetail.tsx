@@ -168,9 +168,10 @@ export default function SurveyRequestDetail() {
     }
     return opts
   })()
-  const canAssign = can('survey_request', 'process')  // CHỈ thu mua side (NSTM/QL/Admin TM) gán NSTM; người YC không
+  const canViewNstm = can('survey_request', 'process') // Ai xử lý được thì xem được cột NSTM
+  const canAssignNstm = can('survey_request', 'approve') // Chỉ QL/Admin mới được gán NSTM
   // Cột NSTM (Ngày tiếp nhận, Nhân sự phụ trách): CHỈ hiện với quản lý/thu mua, KHÔNG hiện với người YC & lúc tạo
-  const showNstmCols = canAssign && !isNew
+  const showNstmCols = canViewNstm && !isNew
   // Trạng thái dòng: ẩn khi TẠO mới (mọi dòng đều "Chưa xong" → rối mắt)
   const showStatus = !isNew
   const empName = (code: string) => employees.find((e) => e.code === code)?.full_name || code || ''
@@ -682,7 +683,7 @@ export default function SurveyRequestDetail() {
                       {/* Nhân sự phụ trách — chỉ view NSTM/QL */}
                       {showNstmCols && (
                         <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={l.assignee_name || l.assignee}>
-                          {canAssign && l.id
+                          {canAssignNstm && l.id
                             ? <SearchSelect value={l.assignee || ''} options={purchaserOptions} variant="table" placeholder="— Gán —" onChange={(v) => assignPurchaser(l.id, v)} />
                             : <span>{l.assignee_name || empName(l.assignee) || <span style={{ color: '#bbb' }}>—</span>}</span>}
                         </td>
@@ -1027,6 +1028,7 @@ export default function SurveyRequestDetail() {
                     <div className="form-row">
                       <label>Nhân sự phụ trách</label>
                       <SearchSelect value={edit.assignee || ''} options={purchaserOptions} placeholder="— Gán —"
+                        disabled={!canAssignNstm}
                         onChange={(v) => assignPurchaser(edit.id, v)} />
                     </div>
                   )}

@@ -12,7 +12,15 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD}"]
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-p${DB_ROOT_PASSWORD}",
+        ]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -32,8 +40,8 @@ services:
       dockerfile: docker/Dockerfile.api
     env_file: .env
     volumes:
-      - ./backend:/app          # mount code -> hot reload, không cần build lại
-      - ./test:/app/test        # mount test dir để pytest chạy trong container
+      - ./backend:/app # mount code -> hot reload, không cần build lại
+      - ./test:/app/test # mount test dir để pytest chạy trong container
     ports:
       - "8000:8000"
 
@@ -44,9 +52,10 @@ services:
     environment:
       VITE_API_URL: ${VITE_API_URL}
       VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+      VITE_DEVELOPER_MODE: ${VITE_DEVELOPER_MODE}
     volumes:
-      - ./frontend:/app         # mount code -> HMR
-      - /app/node_modules       # giữ node_modules trong container
+      - ./frontend:/app # mount code -> HMR
+      - /app/node_modules # giữ node_modules trong container
     ports:
       - "8080:5173"
     depends_on:
