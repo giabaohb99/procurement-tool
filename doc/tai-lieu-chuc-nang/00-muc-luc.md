@@ -17,7 +17,7 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 | # | Chức năng | Đường dẫn | Tài liệu chức năng |
 |---|-----------|-----------|-------------------|
 | 3 | Yêu cầu mua hàng (PYC) | `/purchase-requests` | [03-yeu-cau-mua-hang.md](03-yeu-cau-mua-hang.md) — đã có tài liệu |
-| 4 | Yêu cầu khảo sát | `/survey-requests` | chưa có tài liệu (đang cập nhật theo tính năng liên kết mới) |
+| 4 | Yêu cầu khảo sát | `/survey-requests` | [02-yeu-cau-khao-sat.md](02-yeu-cau-khao-sat.md) — đã có tài liệu |
 | 5 | Đơn mua hàng (PO) | `/purchase-orders` | [04-don-mua-hang.md](04-don-mua-hang.md) — đã có tài liệu |
 
 ## Nhóm: Khảo sát
