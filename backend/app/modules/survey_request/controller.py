@@ -305,6 +305,17 @@ def add_option_(sid: int, line_id: int, data: dict, db: Session = Depends(get_db
     return success(_out_process(db, s), "Đã thêm option", 201)
 
 
+@router.post("/{sid}/sync-options")
+def sync_options_(sid: int, db: Session = Depends(get_db), up=Depends(_purchaser)):
+    """Lấy phương án tự động từ các Phiếu khảo sát đã duyệt liên kết với YCKS này (khớp phân loại)."""
+    user, _prof = up
+    s = service.get_sr(db, sid)
+    if s.status not in ("processing", "survey_done"):
+        raise HTTPException(400, "Chỉ lấy phương án khi phiếu đang xử lý hoặc đã khảo sát")
+    n = service.sync_options_from_surveys(db, sid, user.id)
+    return success(_out_process(db, s), f"Đã lấy {n} phương án từ khảo sát" if n else "Chưa có phương án mới từ khảo sát")
+
+
 @router.delete("/{sid}/lines/{line_id}/options/{oid}")
 def del_option_(sid: int, line_id: int, oid: int, db: Session = Depends(get_db), up=Depends(_purchaser)):
     user, prof = up

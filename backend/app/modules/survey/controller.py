@@ -107,16 +107,29 @@ def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(g
     return success(_out(db, s), "Đã gửi duyệt")
 
 
+def _sync_ycks_options(db: Session, s, user_id: int) -> None:
+    """Phiếu khảo sát đã DUYỆT + liên kết Yêu cầu khảo sát -> tự gắn option cho dòng YCKS khớp phân loại."""
+    if getattr(s, "survey_request_id", 0) and s.status == "approved":
+        try:
+            from app.modules.survey_request import service as sr_service
+            sr_service.sync_options_from_surveys(db, s.survey_request_id, user_id)
+        except Exception:
+            pass
+
+
 @router.patch("/{sid}/line-approve")
 def line_approve_(sid: int, data: LineApproveCombined, db: Session = Depends(get_db),
                   user=Depends(require("survey", "approve"))):
-    return success(_out(db, service.approve_lines(db, sid, data, user.id)), "Đã lưu duyệt dòng")
+    s = service.approve_lines(db, sid, data, user.id)
+    _sync_ycks_options(db, s, user.id)
+    return success(_out(db, s), "Đã lưu duyệt dòng")
 
 
 @router.post("/{sid}/approve")
 def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
              user=Depends(require("survey", "approve"))):
     s = service.set_status(db, sid, "approved", user.id)
+    _sync_ycks_options(db, s, user.id)
     trigger_notification(db=db, event="survey_approved", doc_type="survey", doc_code=s.code,
                          creator_id=s.created_by or user.id, background_tasks=background_tasks,
                          approve_note=s.approve_note or "", link=f"/surveys/{s.id}")

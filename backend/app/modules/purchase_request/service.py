@@ -39,6 +39,7 @@ def recompute_status(db: Session, pr: PurchaseRequest) -> None:
     st = [(i.line_status or "Chưa đặt hàng") for i in items_of(db, pr.id)]
     if not st:
         return
+    was_completed = pr.status == "completed"
     if all(s == "Hoàn thành" for s in st):
         pr.status = "completed"
     elif any(s != "Chưa đặt hàng" for s in st):
@@ -46,6 +47,8 @@ def recompute_status(db: Session, pr: PurchaseRequest) -> None:
     else:
         pr.status = "approved"
     db.commit()
+    if pr.status == "completed" and not was_completed:
+        _notify_survey_request_done(db, pr.id, pr.updated_by or 0)
 
 
 def update_item_status(db: Session, pid: int, data: ItemStatusIn, user_id: int, emp_code: str, is_manager: bool) -> PurchaseRequest:
@@ -102,8 +105,18 @@ def complete_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
     pr.updated_by = user_id
     db.commit()
     record(db, user_id, ENTITY, pid, "completed", "")
+    _notify_survey_request_done(db, pid, user_id)
     db.refresh(pr)
     return pr
+
+
+def _notify_survey_request_done(db: Session, pr_id: int, user_id: int) -> None:
+    """Kích hoạt tự hoàn thành Yêu cầu khảo sát liên quan (nếu mọi PR của nó đã hoàn thành)."""
+    try:
+        from app.modules.survey_request import service as sr_service
+        sr_service.auto_complete_from_pr(db, pr_id, user_id)
+    except Exception:
+        pass
 
 
 def assign(db: Session, pid: int, data: AssignIn, user_id: int) -> PurchaseRequest:

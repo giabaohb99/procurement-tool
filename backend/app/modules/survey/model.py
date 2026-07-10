@@ -10,7 +10,9 @@ class Survey(Base, AuditMixin):
 
     code: Mapped[str] = mapped_column(String(50), unique=True, default="")
     survey_type: Mapped[str] = mapped_column(String(10))           # supplier | product
-    pr_code: Mapped[str] = mapped_column(String(50), default="")    # mã PYC liên kết
+    pr_code: Mapped[str] = mapped_column(String(50), default="")    # mã PYC liên kết (cũ, giữ tương thích)
+    survey_request_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)  # YCKS liên kết
+    sr_code: Mapped[str] = mapped_column(String(50), default="")    # mã YCKS liên kết
     received_date: Mapped[str] = mapped_column(String(10), default="")
     result_due_date: Mapped[str] = mapped_column(String(10), default="")
     item_group: Mapped[str] = mapped_column(String(100), default="")       # Phân loại (item_class)

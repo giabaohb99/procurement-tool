@@ -273,6 +273,22 @@ export default function SurveyRequestProcess() {
         </h2>
         {srBadge(data.status)}
         <span style={{ flex: 1 }} />
+        {data.status === 'processing' && (
+          <>
+            <button className="btn ghost" onClick={async () => {
+              try {
+                const r = await api.post(`${API}/${id}/sync-options`)
+                toast.success(r.data?.message || 'Đã lấy phương án từ khảo sát')
+                loadProcess()
+              } catch (e: any) { toast.error(e?.response?.data?.error?.message || 'Lỗi lấy phương án') }
+            }}>
+              <i className="ti ti-download" />Lấy từ khảo sát
+            </button>
+            <button className="btn secondary" onClick={() => navigate(`/surveys/new?sr=${id}&sr_code=${encodeURIComponent(data.code || '')}`)}>
+              <i className="ti ti-clipboard-plus" />Tạo phiếu khảo sát
+            </button>
+          </>
+        )}
       </div>
 
       {/* Sub-header info */}

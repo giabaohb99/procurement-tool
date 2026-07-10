@@ -219,6 +219,42 @@ def create_option(db: Session, line: SurveyRequestLine, psl_id: int, user_id: in
     return o
 
 
+def sync_options_from_surveys(db: Session, sid: int, user_id: int = 0) -> int:
+    """Tự gắn option cho các dòng YCKS từ dòng khảo sát SP ĐÃ DUYỆT (Survey.status='approved',
+    line_approve='Đã duyệt') thuộc các Phiếu khảo sát ĐÃ LIÊN KẾT với YCKS này (survey_request_id).
+    Khớp theo phân loại (item_group). Bỏ qua dòng đã gắn. Trả số option mới thêm."""
+    from app.modules.survey.model import Survey, SurveyProductLine
+    surveys = (db.query(Survey)
+               .filter(Survey.survey_request_id == sid, Survey.status == "approved").all())
+    if not surveys:
+        return 0
+    sr_lines = lines_of(db, sid)
+    added = 0
+    for sv in surveys:
+        psls = (db.query(SurveyProductLine)
+                .filter(SurveyProductLine.survey_id == sv.id,
+                        SurveyProductLine.line_approve == "Đã duyệt").all())
+        if not psls:
+            continue
+        targets = [ln for ln in sr_lines if (ln.item_group or "") == (sv.item_group or "")]
+        if not targets and len(sr_lines) == 1:
+            targets = sr_lines  # YCKS chỉ 1 dòng -> gắn vào dòng đó dù phân loại lệch
+        for ln in targets:
+            existing = {o.product_survey_line_id for o in options_of(db, ln.id)}
+            for psl in psls:
+                if psl.id in existing:
+                    continue
+                try:
+                    create_option(db, ln, psl.id, user_id or 0)
+                    added += 1
+                except HTTPException:
+                    pass
+    if added:
+        record(db, user_id or 0, ENTITY, sid, "sync_options",
+               f"Tự gắn {added} phương án từ phiếu khảo sát đã duyệt")
+    return added
+
+
 def delete_option(db: Session, line_id: int, oid: int):
     o = (db.query(SurveyRequestOption)
          .filter(SurveyRequestOption.id == oid, SurveyRequestOption.survey_request_line_id == line_id).first())
@@ -373,6 +409,27 @@ def finalize_sr(db: Session, sid: int, user_id: int) -> SurveyRequest:
     if s.status != "pr_created":
         raise HTTPException(400, "Chỉ hoàn thành phiếu đã tạo Yêu cầu mua hàng")
     return set_status(db, sid, "done", user_id)
+
+
+def auto_complete_from_pr(db: Session, pr_id: int, user_id: int = 0) -> None:
+    """Khi 1 Yêu cầu mua hàng (PR) hoàn thành: nếu Yêu cầu khảo sát liên quan (qua line.pr_id)
+    đang ở 'pr_created' VÀ tất cả các PR sinh ra từ nó đều đã 'completed' -> tự chuyển YCKS sang 'done'."""
+    from app.modules.purchase_request.model import PurchaseRequest
+    sr_ids = [r[0] for r in db.query(SurveyRequestLine.survey_request_id)
+              .filter(SurveyRequestLine.pr_id == pr_id).distinct().all()]
+    for sid in sr_ids:
+        s = db.get(SurveyRequest, sid)
+        if not s or s.status != "pr_created":
+            continue
+        pr_ids = [r[0] for r in db.query(SurveyRequestLine.pr_id)
+                  .filter(SurveyRequestLine.survey_request_id == sid,
+                          SurveyRequestLine.pr_id != 0).distinct().all()]
+        prs = [db.get(PurchaseRequest, pid) for pid in pr_ids]
+        prs = [p for p in prs if p]
+        if prs and all(p.status == "completed" for p in prs):
+            set_status(db, sid, "done", user_id or s.created_by or 0)
+            record(db, user_id or s.created_by or 0, ENTITY, sid, "auto_done",
+                   "Tự hoàn thành: mọi Yêu cầu mua hàng liên quan đã hoàn thành")
 
 
 def complete_sr(db: Session, sid: int, user_id: int) -> SurveyRequest:

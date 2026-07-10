@@ -66,6 +66,8 @@ class ProductLineIn(BaseModel):
 
 class _SurveyHeader(BaseModel):
     pr_code: str = ""
+    survey_request_id: int = 0
+    sr_code: str = ""
     received_date: str = ""
     result_due_date: str = ""
     item_group: str = ""
@@ -92,6 +94,8 @@ class ProductSurveyCreate(_SurveyHeader):
 
 class _HeaderUpdate(BaseModel):
     pr_code: str | None = None
+    survey_request_id: int | None = None
+    sr_code: str | None = None
     received_date: str | None = None
     result_due_date: str | None = None
     item_group: str | None = None

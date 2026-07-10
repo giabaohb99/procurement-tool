@@ -7,7 +7,7 @@ from .model import Survey, SurveyProductLine, SurveySupplierLine
 
 ENTITY = "survey"
 FILTERABLE = ["code", "pr_code", "status", "item_group", "nspt"]
-HEADER_FIELDS = ["pr_code", "received_date", "result_due_date", "item_group",
+HEADER_FIELDS = ["pr_code", "survey_request_id", "sr_code", "received_date", "result_due_date", "item_group",
                  "requirement_detail", "request_qty", "market_price", "nspt",
                  "has_product_code", "item_code", "item_name", "uom", "proposed_rate"]
 

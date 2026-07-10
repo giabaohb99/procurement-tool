@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { prBadge } from '../config/cruds'
@@ -218,7 +218,7 @@ export default function SurveyDetail() {
   const productTableCols = PRODUCT_COLS.filter((c) => PRODUCT_CORE_KEYS.includes(c.key))
 
   const [sv, setSv] = useState<any>({
-    pr_code: '', received_date: new Date().toISOString().slice(0, 10), result_due_date: '',
+    pr_code: '', sr_code: '', survey_request_id: 0, received_date: new Date().toISOString().slice(0, 10), result_due_date: '',
     item_group: '', requirement_detail: '', request_qty: 0, nspt: '',
     has_product_code: false, item_code: '', item_name: '', uom: '', proposed_rate: 0,
     status: 'draft', approve_note: '',
@@ -255,15 +255,18 @@ export default function SurveyDetail() {
     api.get('/api/suppliers', { params: { page_size: 1000 } }).then((r) => setSuppliers(r.data.data.items))
     api.get('/api/units', { params: { page_size: 200 } }).then((r) => setUnits(r.data.data.items.map((x: any) => x.name)))
     api.get('/api/item-groups', { params: { page_size: 1000 } }).then((r) => setGroups(r.data.data.items.map((x: any) => x.name))).catch(() => {})
-    api.get('/api/purchase-requests', { params: { page_size: 1000 } }).then((r) => setPrList(r.data.data.items))
+    // Nguồn liên kết = Yêu cầu khảo sát (đã scope theo người dùng: NSTM thấy phiếu được gán, admin/QL thấy hết)
+    api.get('/api/survey-requests', { params: { page_size: 1000 } }).then((r) => setPrList(r.data.data.items)).catch(() => {})
   }, [])
 
+  // Chọn Yêu cầu khảo sát -> lưu liên kết (id + code) + gợi ý Yêu cầu kỹ thuật từ mục đích
   const onPickPr = (code: string) => {
-    const pr = prList.find((p) => p.code === code)
+    const sr = prList.find((p) => p.code === code)
     setSv((s: any) => ({
       ...s,
-      pr_code: code,
-      ...(pr ? { requirement_detail: pr.purpose || s.requirement_detail } : {}),
+      sr_code: code,
+      survey_request_id: sr ? sr.id : 0,
+      ...(sr ? { requirement_detail: sr.purpose || s.requirement_detail } : {}),
     }))
   }
 
@@ -289,6 +292,15 @@ export default function SurveyDetail() {
   useEffect(() => {
     if (isNew && !sv.nspt && user) setH('nspt', (user as any).full_name || '')
   }, [isNew, user])
+
+  // Task 1: mở từ nút "Tạo phiếu khảo sát" trên Yêu cầu khảo sát -> tự gắn liên kết YCKS
+  const [searchParams] = useSearchParams()
+  useEffect(() => {
+    if (!isNew) return
+    const srId = Number(searchParams.get('sr') || 0)
+    const srCode = searchParams.get('sr_code') || ''
+    if (srId) setSv((s: any) => (s.survey_request_id ? s : { ...s, survey_request_id: srId, sr_code: srCode }))
+  }, [isNew, searchParams])
 
   const pickItem = (prod: any) => {
     if (!prod) { setSv((s: any) => ({ ...s, item_code: '', item_name: '' })); return }
@@ -361,7 +373,8 @@ export default function SurveyDetail() {
 
   function buildBody() {
     return {
-      pr_code: sv.pr_code, received_date: sv.received_date, result_due_date: sv.result_due_date || '',
+      pr_code: sv.pr_code, sr_code: sv.sr_code || '', survey_request_id: Number(sv.survey_request_id) || 0,
+      received_date: sv.received_date, result_due_date: sv.result_due_date || '',
       item_group: sv.item_group, requirement_detail: sv.requirement_detail, nspt: sv.nspt,
       has_product_code: !!sv.has_product_code, item_code: sv.item_code, item_name: sv.item_name,
       request_qty: Number(sv.request_qty) || 0, uom: sv.uom, proposed_rate: Number(sv.proposed_rate) || 0,
@@ -771,9 +784,9 @@ export default function SurveyDetail() {
             <h3 className="sec-title">Thông tin tiếp nhận</h3>
             <div className="form-grid">
               <div className="form-row">
-                <label>Mã yêu cầu (PYC) <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(nếu có)</span></label>
-                <input list="pyc-list" placeholder="Nhập/chọn mã PYC để tự điền…" value={sv.pr_code} disabled={!editable} onChange={(e) => onPickPr(e.target.value)} />
-                <datalist id="pyc-list">{prList.map((p) => <option key={p.id} value={p.code}>{p.purpose || ''}</option>)}</datalist>
+                <label>Yêu cầu khảo sát <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(nếu có)</span></label>
+                <input list="ycks-list" placeholder="Nhập/chọn mã YCKS để tự điền…" value={sv.sr_code || ''} disabled={!editable} onChange={(e) => onPickPr(e.target.value)} />
+                <datalist id="ycks-list">{prList.map((p) => <option key={p.id} value={p.code}>{p.purpose || ''}</option>)}</datalist>
               </div>
               <div className="form-row"><label>Ngày tiếp nhận</label><input type="date" value={sv.received_date || ''} disabled={!editable} onChange={(e) => setH('received_date', e.target.value)} /></div>
               <div className="form-row"><label>Ngày dự kiến trả KQ</label><input type="date" value={sv.result_due_date || ''} disabled={!editable} onChange={(e) => setH('result_due_date', e.target.value)} /></div>
