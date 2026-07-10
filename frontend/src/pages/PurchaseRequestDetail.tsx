@@ -338,7 +338,7 @@ export default function PurchaseRequestDetail() {
         message={confirmAction?.message || ''}
         confirmText={confirmAction?.confirmText || "Xác nhận"}
         cancelText="Đóng"
-        variant="warn"
+        variant={confirmAction?.type === 'complete' ? 'info' : 'warn'}
         onConfirm={() => {
           if (confirmAction?.type === 'complete') action('complete')
           if (confirmAction?.type === 'cancel_draft') action('cancel', { reason: '' })
