@@ -119,13 +119,12 @@ export default function PurchaseOrderDetail() {
     const items = [...s.items]; items.splice(i + 1, 0, copy); return { ...s, items }
   })
 
-  // Thành tiền đơn hàng = SL THỰC NHẬN × đơn giá × (1+VAT) (đã chốt)
-  const recvQty = (it: any) => (it.deliveries || []).reduce((a: number, d: any) => a + (Number(d.received_qty) || 0), 0)
-  const rowAmount = (it: any) => recvQty(it) * (Number(it.price) || 0) * (1 + (Number(it.vat) || 0) / 100)
+  // Thành tiền đơn hàng = SL đặt × đơn giá × (1+VAT) — cập nhật ngay khi nhập SL/đơn giá
   const orderAmount = (it: any) => (Number(it.qty_order) || 0) * (Number(it.price) || 0) * (1 + (Number(it.vat) || 0) / 100)
-  const subtotal = items.reduce((s: number, it: any) => s + recvQty(it) * (Number(it.price) || 0), 0)
-  const vat = items.reduce((s: number, it: any) => s + rowAmount(it), 0) - subtotal
   const orderTotal = items.reduce((s: number, it: any) => s + orderAmount(it), 0)
+  // Tiền theo ĐƠN HÀNG (SL đặt × đơn giá) — cập nhật ngay khi nhập SL/đơn giá
+  const orderBeforeTax = items.reduce((s: number, it: any) => s + (Number(it.qty_order) || 0) * (Number(it.price) || 0), 0)
+  const orderTax = orderTotal - orderBeforeTax
   const shippingTotal = items.reduce((s: number, it: any) => s + (it.deliveries || []).reduce((a: number, d: any) => a + (Number(d.shipping_amount) || 0), 0), 0)
 
   // ---- deliveries within an item ----
@@ -272,7 +271,7 @@ export default function PurchaseOrderDetail() {
           <button className="btn" onClick={save}>{isNew ? 'Tạo' : 'Lưu'}</button>
         )}
         {!isNew && po.status === 'draft' && can('purchase_order', 'write') && (
-          <button className="btn secondary" onClick={() => { if (!String(po.misa_code || '').trim()) { setErr('Mã đơn MISA không được để trống khi gửi duyệt'); return } action('submit') }}><i className="ti ti-send" />Gửi duyệt</button>
+          <button className="btn secondary" onClick={() => action('submit')}><i className="ti ti-send" />Gửi duyệt</button>
         )}
         {!isNew && po.status === 'submitted' && can('purchase_order', 'approve') && (
           <>
@@ -302,13 +301,13 @@ export default function PurchaseOrderDetail() {
                 <input list="po-pyc-list" placeholder="Nhập/chọn mã PYC…" value={po.pr_code || ''} disabled={!headerEditable} onChange={(e) => onPickPr(e.target.value)} />
                 <datalist id="po-pyc-list">{prList.map((p) => <option key={p.id} value={p.code}>{p.purpose || ''}</option>)}</datalist>
               </div>
-              <div className="form-row"><label>Mã đơn MISA *</label><input value={po.misa_code || ''} placeholder="Bắt buộc nhập" disabled={!headerEditable} onChange={(e) => setH('misa_code', e.target.value)} /></div>
-              <div className="form-row"><label>Công ty nhận HĐ *</label>
+              <div className="form-row"><label>Mã đơn MISA</label><input value={po.misa_code || ''} placeholder="(nếu có)" disabled={!headerEditable} onChange={(e) => setH('misa_code', e.target.value)} /></div>
+              <div className="form-row"><label>Công ty nhận HĐ <span style={{ color: 'var(--red)' }}>*</span></label>
                 <SearchSelect value={po.company_id ? String(po.company_id) : ''} disabled={!headerEditable} placeholder="Chọn/tìm công ty…"
                   options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
                   onChange={(v) => setH('company_id', Number(v) || 0)} />
               </div>
-              <div className="form-row"><label>Nhà cung cấp bán hàng *</label>
+              <div className="form-row"><label>Nhà cung cấp bán hàng <span style={{ color: 'var(--red)' }}>*</span></label>
                 <SearchSelect value={po.supplier_code || ''} disabled={!headerEditable} placeholder="Chọn/tìm NCC…"
                   options={goodsSuppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
                   onChange={(v) => onPickSupplier(v)} />
@@ -341,14 +340,12 @@ export default function PurchaseOrderDetail() {
                   <tr>
                     <th style={{ width: 36 }}>#</th>
                     <th style={{ width: 130 }}>Mã hàng</th>
-                    <th style={{ minWidth: 220 }}>Tên hàng *</th>
+                    <th style={{ minWidth: 220 }}>Tên hàng <span style={{ color: 'var(--red)' }}>*</span></th>
                     <th style={{ width: 90 }}>ĐVT</th>
                     <th style={{ width: 90 }}>SL đặt</th>
                     <th style={{ width: 105 }}>Đơn giá</th>
                     <th style={{ width: 64 }}>VAT%</th>
-                    <th style={{ width: 120 }}>Trước thuế</th>
-                    <th style={{ width: 110 }}>Tiền thuế</th>
-                    <th style={{ width: 130, background: '#fff3cd' }}>Sau thuế</th>
+                    <th style={{ width: 150, background: '#fff3cd' }}>Thành tiền đơn hàng</th>
                     <th style={{ width: 110 }}>Tiến độ giao</th>
                     <th style={{ width: 120, textAlign: 'center' }}>Hành động</th>
                   </tr>
@@ -369,9 +366,7 @@ export default function PurchaseOrderDetail() {
                       <td>{num(i, 'qty_order', 80)}</td>
                       <td>{num(i, 'price', 95)}</td>
                       <td style={{ textAlign: 'center' }}>{(Number(it.vat) || 0)}%</td>
-                      <td style={{ textAlign: 'right' }}>{fmt(recvQty(it) * (Number(it.price) || 0))}</td>
-                      <td style={{ textAlign: 'right' }}>{fmt(recvQty(it) * (Number(it.price) || 0) * (Number(it.vat) || 0) / 100)}</td>
-                      <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmt(rowAmount(it))}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmt(orderAmount(it))}</td>
                       <td style={{ textAlign: 'center', fontSize: 13 }}>
                         {fmt(it.qty_received || 0)}/{fmt(it.qty_order || 0)}
                         {it.line_status && <div style={{ fontSize: 11, color: 'var(--muted)' }}>{it.line_status}</div>}
@@ -395,15 +390,14 @@ export default function PurchaseOrderDetail() {
                       </td>
                     </tr>
                   ))}
-                  {items.length === 0 && <tr><td colSpan={12} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có dòng nào</td></tr>}
+                  {items.length === 0 && <tr><td colSpan={10} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có dòng nào</td></tr>}
                 </tbody>
               </table>
             </div>
             <div style={{ marginTop: 14, textAlign: 'right', fontSize: 14 }}>
-              <div style={{ color: 'var(--muted)' }}>Giá trị đặt hàng (SL đặt): <b>{fmt(orderTotal)}</b></div>
-              <div>Tổng trước thuế (đã nhận): <b>{fmt(subtotal)}</b></div>
-              <div>Tổng tiền thuế: <b>{fmt(vat)}</b></div>
-              <div style={{ fontSize: 16, color: 'var(--navy)', marginTop: 4 }}>Tổng cộng (sau thuế): <b>{fmt(subtotal + vat)}</b></div>
+              <div style={{ color: 'var(--muted)' }}>Giá trị đặt hàng (trước thuế): <b>{fmt(orderBeforeTax)}</b></div>
+              <div>Tổng tiền thuế: <b>{fmt(orderTax)}</b></div>
+              <div style={{ fontSize: 16, color: 'var(--navy)', marginTop: 4 }}>Tổng cộng (sau thuế): <b>{fmt(orderTotal)}</b></div>
               <div style={{ marginTop: 4, color: 'var(--muted)' }}>Tổng cước vận chuyển (riêng): <b>{fmt(shippingTotal)}</b></div>
             </div>
           </div>
@@ -496,9 +490,7 @@ export default function PurchaseOrderDetail() {
                     <div className="form-row"><label>SL đặt NCC</label><input type="number" value={it.qty_order ?? 0} disabled={de} onChange={(e) => setItem(ii, { qty_order: Number(e.target.value) })} /></div>
                     <div className="form-row"><label>Đơn giá</label><CurrencyInput value={it.price ?? 0} disabled={de} onChange={(val: number) => setItem(ii, { price: val })} /></div>
                     <div className="form-row"><label>VAT (%)</label><input type="number" value={it.vat ?? 0} disabled={de} onChange={(e) => setItem(ii, { vat: Number(e.target.value) })} /></div>
-                    <div className="form-row"><label>Trước thuế (đã nhận)</label><input value={fmt(recvQty(it) * (Number(it.price) || 0))} disabled /></div>
-                    <div className="form-row"><label>Tiền thuế</label><input value={fmt(recvQty(it) * (Number(it.price) || 0) * (Number(it.vat) || 0) / 100)} disabled /></div>
-                    <div className="form-row"><label>Sau thuế (thành tiền)</label><input value={fmt(rowAmount(it))} disabled /></div>
+                    <div className="form-row"><label>Thành tiền đơn hàng</label><input value={fmt(orderAmount(it))} disabled /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><input value={it.note || ''} disabled={de} onChange={(e) => setItem(ii, { note: e.target.value })} /></div>
                   </div>
                 )

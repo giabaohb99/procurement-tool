@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
 
-const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
+const fmt = (n: any) => (Number(n) ? Number(n).toLocaleString('vi-VN') : '')
 function viDate(d: string) {
   if (!d) return ''
   const [y, m, dd] = d.split('-')
@@ -64,7 +64,7 @@ export default function PrintPurchaseOrder() {
                   <td style={{ ...cell, textAlign: 'center' }}>{it.unit}</td>
                   <td style={{ ...cell, textAlign: 'right' }}>{fmt(it.qty_order)}</td>
                   <td style={{ ...cell, textAlign: 'right' }}>{fmt(it.price)}</td>
-                  <td style={{ ...cell, textAlign: 'center' }}>{(it.vat || 0)}%</td>
+                  <td style={{ ...cell, textAlign: 'center' }}>{it.vat ? it.vat + '%' : ''}</td>
                   <td style={{ ...cell, textAlign: 'right' }}>{fmt(priceVat)}</td>
                   <td style={{ ...cell, textAlign: 'right' }}>{fmt(it.qty_order * priceVat)}</td>
                   <td style={cell}>{it.warehouse_code}</td>

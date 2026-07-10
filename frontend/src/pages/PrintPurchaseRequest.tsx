@@ -13,26 +13,28 @@ export default function PrintPurchaseRequest() {
   const { id } = useParams();
   const [pr, setPr] = useState<any>(null);
   const [company, setCompany] = useState("");
-  const [files, setFiles] = useState<any[]>([]);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    api.get(`/api/purchase-requests/${id}`).then(async (r) => {
-      const d = r.data.data;
-      setPr(d);
-      if (d.company_id) {
-        try {
-          const c = await api.get(`/api/companies/${d.company_id}`);
-          setCompany(c.data.data.name);
-        } catch {}
-      }
-    });
     api
-      .get("/api/attachments", {
-        params: { entity: "purchase_request", entity_id: id },
+      .get(`/api/purchase-requests/${id}`)
+      .then(async (r) => {
+        const d = r.data.data;
+        setPr(d);
+        if (d.company_id) {
+          try {
+            const c = await api.get(`/api/companies/${d.company_id}`);
+            setCompany(c.data.data.name);
+          } catch {}
+        }
       })
-      .then((x) => setFiles(x.data.data || []));
+      .catch(() => setNotFound(true));
   }, [id]);
 
+  if (notFound)
+    return (
+      <div style={{ padding: 40 }}>Không tìm thấy phiếu yêu cầu mua hàng.</div>
+    );
   if (!pr) return <div style={{ padding: 40 }}>Đang tải...</div>;
 
   const SH = {
@@ -90,17 +92,17 @@ export default function PrintPurchaseRequest() {
           <table
             style={{
               borderCollapse: "collapse",
-              fontSize: 12,
+              fontSize: 8.5,
               textAlign: "left",
-              width: 260,
+              width: 150,
             }}
           >
             <tbody>
               {(() => {
                 const c = {
                   border: "1px solid #999",
-                  padding: "2px 6px",
-                  lineHeight: 1.4,
+                  padding: "0px 4px",
+                  lineHeight: 1.3,
                   whiteSpace: "nowrap",
                 } as const;
                 return (
@@ -114,11 +116,11 @@ export default function PrintPurchaseRequest() {
                       </td>
                     </tr>
                     <tr>
-                      <td style={{ ...c, width: 80 }}>Phiên bản</td>
+                      <td style={{ ...c, width: 52 }}>Phiên bản</td>
                       <td style={{ ...c, textAlign: "center" }}>V1-062025</td>
                     </tr>
                     <tr>
-                      <td style={{ ...c, width: 80 }}>Ngày update:</td>
+                      <td style={{ ...c, width: 52 }}>Ngày update:</td>
                       <td style={{ ...c, textAlign: "center" }}>17/7/2025</td>
                     </tr>
                   </>
@@ -207,11 +209,15 @@ export default function PrintPurchaseRequest() {
             </tr>
           </tbody>
         </table>
-        <div style={{ textAlign: "right", fontSize: 12, marginTop: 6 }}>
-          VAT: <b>{fmt(pr.vat)}</b>
-        </div>
-        <div style={{ textAlign: "right", fontSize: 13 }}>
-          Tổng cộng thanh toán: <b>{fmt(pr.total)}</b>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+          <div style={{ marginRight: 110, fontSize: 13, textAlign: "right", lineHeight: 1.9 }}>
+            <div>
+              VAT: <b>{Number(pr.vat) ? fmt(pr.vat) : ""}</b>
+            </div>
+            <div>
+              Tổng cộng thanh toán: <b>{fmt(pr.total)}</b>
+            </div>
+          </div>
         </div>
 
         <div style={SH}>THÔNG TIN NHÀ CUNG CẤP</div>
@@ -226,11 +232,7 @@ export default function PrintPurchaseRequest() {
             <b>Liên hệ:</b> {pr.suggested_supplier_contact || ""}
           </div>
           <div>
-            <b>Báo giá đính kèm:</b>{" "}
-            {pr.quote_file_url || files.length > 0 ? "☑ Có" : "☐ Có"}{" "}
-            &nbsp;&nbsp;{" "}
-            {pr.quote_file_url || files.length > 0 ? "☐ Không" : "☑ Không"}{" "}
-            {pr.quote_filename ? `( ${pr.quote_filename} )` : ""}
+            <b>Báo giá đính kèm:</b> ☐ Có &nbsp;&nbsp; ☐ Không
           </div>
         </div>
 
@@ -270,7 +272,7 @@ export default function PrintPurchaseRequest() {
                     fontWeight: 500,
                   }}
                 >
-                  {r === "Người lập" ? pr.requester : ""}
+                  {""}
                 </div>
               </div>
             ),
