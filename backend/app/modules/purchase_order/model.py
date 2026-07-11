@@ -55,6 +55,10 @@ class POItem(Base, AuditMixin):
     line_status: Mapped[str] = mapped_column(String(30), default="")        # Chưa giao/Đang giao/Đủ
     warehouse_code: Mapped[str] = mapped_column(String(50), default="")     # kho mặc định cho dòng
     note: Mapped[str] = mapped_column(String(255), default="")
+    progress_status: Mapped[str] = mapped_column(String(40), default="Chưa đặt hàng")  # cột P — máy trạng thái tiến độ
+    pay_confirm_date: Mapped[str] = mapped_column(String(10), default="")   # AU — Ngày KT xác nhận thanh toán
+    pause_reason: Mapped[str] = mapped_column(String(500), default="")      # AV — Lý do hủy/tạm ngưng
+    status_before_pause: Mapped[str] = mapped_column(String(40), default="")  # AW — trạng thái trước khi tạm ngưng
 
 
 class PODelivery(Base, AuditMixin):
