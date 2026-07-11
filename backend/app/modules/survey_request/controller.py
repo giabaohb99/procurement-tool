@@ -277,8 +277,10 @@ def available_survey_lines_(sid: int, line_id: int, supplier_code: str = "", ite
     ln = service.get_line(db, sid, line_id)
     if not supplier_code:
         return success([])
-    # Lọc theo phân loại của DÒNG (mặc định) + CHỈ phiếu khảo sát đã liên kết YCKS này
-    rows = service.available_survey_lines(db, supplier_code, item_group or ln.item_group, survey_request_id=sid)
+    # Chọn NCC thủ công: tìm MỌI khảo sát đã duyệt của NCC (khớp phân loại của dòng),
+    # KHÔNG giới hạn theo liên kết YCKS — option có thể đã có phiếu khảo sát sẵn từ trước.
+    # (Cơ chế "Lấy từ khảo sát" mới giới hạn theo phiếu đã liên kết.)
+    rows = service.available_survey_lines(db, supplier_code, item_group or ln.item_group)
     out = []
     for r in rows:
         d = _dict(r)

@@ -160,8 +160,9 @@ def can_process_line(db: Session, line: SurveyRequestLine, profile: dict) -> boo
 def available_survey_lines(db: Session, supplier_code: str, item_group: str = "", survey_request_id: int = 0):
     """Dòng khảo sát SẢN PHẨM đã DUYỆT (line_approve='Đã duyệt') của 1 NCC (nguồn để tạo option).
     - Chỉ cần DÒNG được duyệt (không đòi cả phiếu duyệt), bỏ phiếu đã hủy.
-    - Nếu truyền survey_request_id: CHỈ lấy từ phiếu khảo sát đã LIÊN KẾT với YCKS đó.
-    - Lọc theo PHÂN LOẠI = item_group của Survey cha."""
+    - Lọc theo PHÂN LOẠI = item_group của Survey cha.
+    - MẶC ĐỊNH KHÔNG giới hạn liên kết YCKS (dùng cho chọn NCC thủ công — option có thể
+      đã có khảo sát sẵn từ trước). Truyền survey_request_id nếu muốn giới hạn theo liên kết."""
     from app.modules.survey.model import Survey, SurveyProductLine
     q = (db.query(SurveyProductLine)
          .join(Survey, Survey.id == SurveyProductLine.survey_id)
