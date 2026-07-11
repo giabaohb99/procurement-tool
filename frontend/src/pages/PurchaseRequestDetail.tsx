@@ -478,7 +478,7 @@ export default function PurchaseRequestDetail() {
               {editable && <button className="btn ghost" onClick={() => addItems(1)} style={{ height: 30, padding: '0 10px', fontSize: 13 }}><i className="ti ti-plus" /> Thêm SP</button>}
             </div>
             <div className="items-scroll">
-              <table className="items-table" style={{ minWidth: showAssigneeCol ? 1140 : 980, tableLayout: 'fixed' }}>
+              <table className="items-table" style={{ minWidth: showAssigneeCol ? 1220 : 1060, tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
                     <th style={{ width: 34, textAlign: 'center' }}>No.</th>
@@ -486,6 +486,7 @@ export default function PurchaseRequestDetail() {
                     <th style={{ width: 230, textAlign: 'left' }}>Tên sản phẩm *</th>
                     <th style={{ width: 130, textAlign: 'left' }}>Kho nhận</th>
                     <th style={{ width: 140, textAlign: 'left' }}>Phân loại</th>
+                    <th style={{ width: 80, textAlign: 'left' }}>ĐVT</th>
                     <th style={{ width: 70, textAlign: 'right' }}>SL</th>
                     <th style={{ width: 100, textAlign: 'right' }}>Đơn giá</th>
                     <th style={{ width: 110, textAlign: 'right' }}>Thành tiền</th>
@@ -523,6 +524,14 @@ export default function PurchaseRequestDetail() {
                             {groups.map((g) => <option key={g} value={g}>{g}</option>)}
                           </select>
                         ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }} title={it.item_group}>{it.item_group || ''}</span>}
+                      </td>
+                      <td>
+                        {editable ? (
+                          <select className="cell-input" value={it.unit || ''} onChange={(e) => setItem(i, 'unit', e.target.value)} style={{ width: '100%' }}>
+                            <option value="">-- ĐVT --</option>
+                            {units.map((u) => <option key={u} value={u}>{u}</option>)}
+                          </select>
+                        ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }} title={it.unit}>{it.unit || ''}</span>}
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         {editable ? (
@@ -563,7 +572,7 @@ export default function PurchaseRequestDetail() {
                       </td>
                     </tr>
                   ))}
-                  {items.length === 0 && <tr><td colSpan={showAssigneeCol ? 11 : 10} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có sản phẩm nào</td></tr>}
+                  {items.length === 0 && <tr><td colSpan={showAssigneeCol ? 12 : 11} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có sản phẩm nào</td></tr>}
                 </tbody>
               </table>
             </div>
