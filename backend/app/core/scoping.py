@@ -50,21 +50,27 @@ def _role_scope_cond(model, entity, scope, user, profile):
             from app.modules.catalog.model import ItemGroup
             from app.modules.category_assignee.model import CategoryAssignee
             from app.modules.survey_request.model import SurveyRequestLine
-            conds = [model.created_by == user.id]
+            conds = [model.created_by == user.id]   # phiếu MÌNH tạo → thấy mọi trạng thái
+            # "Việc thu mua của tôi" (được giao / phụ trách phân loại) CHỈ áp cho phiếu ĐÃ DUYỆT
+            # (bỏ nháp/chờ duyệt/từ chối) — NSTM không thấy phiếu người khác khi chưa qua duyệt.
+            work = []
             emp_id = profile.get("employee_id") or 0
             if emp_id:
-                conds.append(model.assignee_id == emp_id)
+                work.append(model.assignee_id == emp_id)
                 # phiếu có dòng thuộc phân loại mình là NSTM chính HOẶC phụ
                 cat_sub = (select(SurveyRequestLine.survey_request_id)
                            .join(ItemGroup, ItemGroup.name == SurveyRequestLine.item_group)
                            .join(CategoryAssignee, CategoryAssignee.item_group_id == ItemGroup.id)
                            .where(or_(CategoryAssignee.primary_employee_id == emp_id,
                                       CategoryAssignee.backup_employee_id == emp_id)))
-                conds.append(model.id.in_(cat_sub))
+                work.append(model.id.in_(cat_sub))
             if profile.get("emp_code"):
                 code_sub = (select(SurveyRequestLine.survey_request_id)
                             .where(SurveyRequestLine.assignee == profile["emp_code"]))
-                conds.append(model.id.in_(code_sub))
+                work.append(model.id.in_(code_sub))
+            if work:
+                conds.append(and_(model.status.notin_(["draft", "submitted", "rejected"]),
+                                  or_(*work)))
             return or_(*conds)
         scope = "own"   # entity khác chưa có phân bổ → coi như của mình
 
