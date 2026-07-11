@@ -449,10 +449,12 @@ def auto_complete_from_pr(db: Session, pr_id: int, user_id: int = 0) -> None:
 
 
 def complete_sr(db: Session, sid: int, user_id: int) -> SurveyRequest:
-    """AdminTM chốt hoàn thành: mỗi dòng phải có ≥1 option → survey_done."""
+    """AdminTM chốt hoàn thành: mỗi dòng phải có ≥1 option → survey_done.
+    Cho phép CHỐT LẠI khi phiếu đã ở trạng thái 'đã khảo sát' (survey_done) — vì có thể
+    bổ sung/đổi option (kể cả từ khảo sát ngoài liên kết) sau khi đã chốt lần đầu."""
     s = get_sr(db, sid)
-    if s.status != "processing":
-        raise HTTPException(400, "Chỉ chốt được phiếu đang xử lý")
+    if s.status not in ("processing", "survey_done"):
+        raise HTTPException(400, "Chỉ chốt được phiếu đang xử lý hoặc đã khảo sát")
     lns = lines_of(db, sid)
     if not lns:
         raise HTTPException(400, "Phiếu không có dòng nào")
