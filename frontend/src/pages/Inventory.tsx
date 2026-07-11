@@ -90,7 +90,7 @@ export default function Inventory() {
       </div>
 
       {showAdjust && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowAdjust(false)}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
           <div className="modal-card" style={{ width: 440, maxWidth: '100%', background: '#fff', borderRadius: 12, padding: 20 }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ marginTop: 0, color: 'var(--navy)' }}>Điều chỉnh tồn kho</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
