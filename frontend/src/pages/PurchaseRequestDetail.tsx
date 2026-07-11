@@ -98,6 +98,9 @@ export default function PurchaseRequestDetail() {
   const isStaff = !can('purchase_request', 'approve') && !can('purchase_request', 'delete')
   const canAssignPurchaser = can('purchase_request', 'approve')   // phân bổ NSTM
   const canManage = can('purchase_request', 'cancel')             // admin/quản lý: hủy/trả/hoàn thành
+  // Cột/trường "NSTM phụ trách" chỉ cho phía thu mua (is_purchaser = có quyền xử lý khảo sát).
+  // Ẩn hoàn toàn với người yêu cầu (NSYC/employee) & trưởng bộ phận của họ (dept_head).
+  const showAssigneeCol = can('survey_request', 'process')
   // Trạng thái dòng chỉ cho NSTM phụ trách chính dòng đó hoặc admin/quản lý
   const isAssignee = (it: any) => !!it.assignee && it.assignee === (user as any)?.emp_code
   const canLineStatus = (it: any) => canAssignPurchaser || canManage || isAssignee(it)
@@ -475,7 +478,7 @@ export default function PurchaseRequestDetail() {
               {editable && <button className="btn ghost" onClick={() => addItems(1)} style={{ height: 30, padding: '0 10px', fontSize: 13 }}><i className="ti ti-plus" /> Thêm SP</button>}
             </div>
             <div className="items-scroll">
-              <table className="items-table" style={{ minWidth: 1140, tableLayout: 'fixed' }}>
+              <table className="items-table" style={{ minWidth: showAssigneeCol ? 1140 : 980, tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
                     <th style={{ width: 34, textAlign: 'center' }}>No.</th>
@@ -487,7 +490,7 @@ export default function PurchaseRequestDetail() {
                     <th style={{ width: 100, textAlign: 'right' }}>Đơn giá</th>
                     <th style={{ width: 110, textAlign: 'right' }}>Thành tiền</th>
                     <th style={{ width: 150, textAlign: 'center' }}>Trạng thái</th>
-                    <th style={{ width: 160, textAlign: 'left' }}>NSTM phụ trách</th>
+                    {showAssigneeCol && <th style={{ width: 160, textAlign: 'left' }}>NSTM phụ trách</th>}
                     <th style={{ width: 96, textAlign: 'center' }}>Thao tác</th>
                   </tr>
                 </thead>
@@ -543,14 +546,16 @@ export default function PurchaseRequestDetail() {
                           <span className="badge" style={{ background: (LS_COLOR[it.line_status] || '#94a3b8') + '22', color: LS_COLOR[it.line_status] || '#64748b' }}>{it.line_status || 'Chưa đặt hàng'}</span>
                         )}
                       </td>
-                      <td style={{ overflow: 'hidden' }}>
-                        {canAssignPurchaser ? (
-                          <select className="cell-input" value={it.assignee || ''} onChange={(e) => changeAssignee(i, e.target.value)} style={{ width: '100%' }}>
-                            <option value="">-- Chọn NSTM --</option>
-                            {purchaserOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                          </select>
-                        ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }} title={empName(it.assignee)}>{it.assignee ? empName(it.assignee) : ''}</span>}
-                      </td>
+                      {showAssigneeCol && (
+                        <td style={{ overflow: 'hidden' }}>
+                          {canAssignPurchaser ? (
+                            <select className="cell-input" value={it.assignee || ''} onChange={(e) => changeAssignee(i, e.target.value)} style={{ width: '100%' }}>
+                              <option value="">-- Chọn NSTM --</option>
+                              {purchaserOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                            </select>
+                          ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }} title={empName(it.assignee)}>{it.assignee ? empName(it.assignee) : ''}</span>}
+                        </td>
+                      )}
                       <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                         <button className="icon-btn" title="Chi tiết" onClick={() => setEditIdx(i)}><i className="ti ti-pencil" style={{ color: 'var(--teal)' }} /></button>
                         {editable && <button className="icon-btn" title="Nhân đôi" onClick={() => copyItem(i)}><i className="ti ti-copy" style={{ color: 'var(--muted)' }} /></button>}
@@ -558,7 +563,7 @@ export default function PurchaseRequestDetail() {
                       </td>
                     </tr>
                   ))}
-                  {items.length === 0 && <tr><td colSpan={11} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có sản phẩm nào</td></tr>}
+                  {items.length === 0 && <tr><td colSpan={showAssigneeCol ? 11 : 10} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có sản phẩm nào</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -705,12 +710,14 @@ export default function PurchaseRequestDetail() {
                 <label>Ngày cần hàng</label>
                 <input type="date" value={edit.required_date || ''} disabled={!editable} onChange={(e) => setItem(editIdx, 'required_date', e.target.value)} />
               </div>
-              <div className="form-row">
-                <label>Nhân sự phụ trách</label>
-                <SearchSelect value={edit.assignee || ''} disabled={!canAssignPurchaser}
-                  onChange={(v) => setItem(editIdx, 'assignee', v)} options={purchaserOptions}
-                  placeholder={canAssignPurchaser ? 'Chọn NSTM...' : ''} />
-              </div>
+              {showAssigneeCol && (
+                <div className="form-row">
+                  <label>Nhân sự phụ trách</label>
+                  <SearchSelect value={edit.assignee || ''} disabled={!canAssignPurchaser}
+                    onChange={(v) => setItem(editIdx, 'assignee', v)} options={purchaserOptions}
+                    placeholder={canAssignPurchaser ? 'Chọn NSTM...' : ''} />
+                </div>
+              )}
               <div className="form-row">
                 <label>Trạng thái xử lý</label>
                 <select value={edit.line_status || 'Chưa đặt hàng'} disabled={!canLineStatus(edit)} onChange={(e) => setItem(editIdx, 'line_status', e.target.value)}>
