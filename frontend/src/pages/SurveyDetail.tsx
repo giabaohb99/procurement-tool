@@ -69,6 +69,7 @@ const PRODUCT_SECTIONS: Section[] = [
   ] },
   { title: 'Nhà cung cấp & Sản phẩm', fields: [
     { k: 'supplier_code', label: 'Tên viết tắt NCC', type: 'supplier' },
+    { k: 'supplier_name', label: 'Tên pháp lý NCC', type: 'legal' },
     { k: 'internal_code', label: 'Mã SP (theo NCC)', type: 'text' },
     { k: 'product_name', label: 'Tên SP (tên NCC đặt)', type: 'text', full: true },
     { k: 'spec', label: 'Thông số kỹ thuật', type: 'textarea', full: true },
@@ -138,10 +139,12 @@ const SUPPLIER_COLS: Col[] = [
   { key: 'line_approve_note', label: 'Ghi chú duyệt', w: 180 },
 ]
 
-const PRODUCT_CORE_KEYS = ['supplier_code', 'internal_code', 'product_name', 'quote_unit', 'moq', 'price_by_volume', 'note', 'line_approve']
+const PRODUCT_CORE_KEYS = ['supplier_available', 'supplier_code', 'supplier_name', 'internal_code', 'product_name', 'quote_unit', 'moq', 'price_by_volume', 'note', 'line_approve']
 
 const PRODUCT_COLS: Col[] = [
+  { key: 'supplier_available', label: 'NCC sẵn có', w: 90, type: 'check' },
   { key: 'supplier_code', label: 'NCC *', w: 140, type: 'supplier' },
+  { key: 'supplier_name', label: 'Tên pháp lý', w: 220, type: 'legal' },
   { key: 'internal_code', label: 'Mã SP (NCC)', w: 120 },
   { key: 'product_name', label: 'Tên SP theo NCC *', w: 220 },
   { key: 'spec', label: 'Thông số KT', w: 180 },
@@ -445,7 +448,7 @@ export default function SurveyDetail() {
       for (const sec of SUPPLIER_SECTIONS) for (const f of sec.fields) {
         if (MGR_KEYS.includes(f.k) || f.k === 'note' || OPTIONAL_KEYS.includes(f.k)) continue
         const t = f.type || 'text'
-        if (t === 'num' || t === 'computed' || t === 'check') continue
+        if (t === 'num' || t === 'computed' || t === 'check' || t === 'legal') continue
         if (!String(it[f.k] ?? '').trim()) { invalid.add(`supplier-${i}-${f.k}`); bad = true }
       }
       if (bad) badSup.push(i + 1)
@@ -458,7 +461,7 @@ export default function SurveyDetail() {
       for (const sec of PRODUCT_SECTIONS) for (const f of sec.fields) {
         if (MGR_KEYS.includes(f.k) || f.k === 'note' || OPTIONAL_KEYS.includes(f.k)) continue
         const t = f.type || 'text'
-        if (t === 'num' || t === 'computed' || t === 'check') continue
+        if (t === 'num' || t === 'computed' || t === 'check' || t === 'legal') continue
         if (['sample_date', 'sample_qty', 'lab_result'].includes(f.k) && !it.sample_ready) continue
         if (!String(it[f.k] ?? '').trim()) { invalid.add(`product-${i}-${f.k}`); bad = true }
       }
@@ -618,6 +621,11 @@ export default function SurveyDetail() {
         options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
         onChange={(v) => { const sup = suppliers.find((s) => s.code === v); setLine(tbl, i, sup ? { supplier_code: sup.code, supplier_name: sup.name, tax_code: sup.tax_code, reg_address: sup.address } : { supplier_code: v }) }} />
     }
+    // Tên pháp lý NCC: chỉ hiển thị, tự tra từ NCC đã chọn (theo mã)
+    if (t === 'legal') {
+      const nm = it.supplier_name || suppliers.find((s) => s.code === it.supplier_code)?.name || ''
+      return <input value={nm} disabled placeholder="—" />
+    }
     if (t === 'unit') return <SearchSelect value={it[k] ?? ''} options={units} disabled={!ce} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setLine(tbl, i, { [k]: v })} />
     if (t === 'vat') return <SearchSelect value={String(it[k] ?? '')} options={VAT_OPTS} disabled={!ce} placeholder="Chọn VAT…" onChange={(v) => setLine(tbl, i, { [k]: Number(v) })} />
     if (t === 'approve') return <SearchSelect value={it[k] || 'Chờ duyệt'} options={APPROVE_OPTS} colorMap={APPROVE_COLOR} disabled={!canEditApprove} placeholder="Chọn…" onChange={(v) => setLine(tbl, i, { [k]: v })} />
@@ -633,6 +641,11 @@ export default function SurveyDetail() {
         return <div style={{ width: '100%' }}><SearchSelect variant="table" colorMap={APPROVE_COLOR} value={it[col.key] || 'Chờ duyệt'} options={APPROVE_OPTS} placeholder="Duyệt…" onChange={(v) => changeLineApprove(tbl, i, v)} /></div>
       const st = it.line_approve || 'Chờ duyệt'; const c = APPROVE_COLOR[st] || '#64748b'
       return <span className="badge" style={{ background: `${c}1a`, color: c, border: `1px solid ${c}55` }}>{st}</span>
+    }
+    // Tên pháp lý NCC: chỉ hiển thị, tự tra từ NCC đã chọn (theo mã)
+    if (col.type === 'legal') {
+      const nm = it.supplier_name || suppliers.find((s) => s.code === it.supplier_code)?.name || ''
+      return editable ? <input className="cell-input" style={{ width: '100%' }} value={nm} disabled /> : nm
     }
     // NCC sẵn có: mặc định TRUE (chưa set = có sẵn) → không lưu DB, chỉ đổi kiểu ô NCC
     const supplierAvail = it.supplier_available !== false
@@ -952,11 +965,11 @@ export default function SurveyDetail() {
                         const bad = editingTable !== null && editingIndex !== null && invalidCells.has(`${editingTable}-${editingIndex}-${f.k}`)
                         return (
                           <div className="form-row" key={f.k} style={{ ...(f.full ? { gridColumn: '1 / -1' } : {}), ...(bad ? { borderRadius: 8, outline: '1px solid #fca5a5', outlineOffset: 3 } : {}) }}>
-                            {editingTable === 'supplier' && f.k === 'supplier_code' ? (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <label style={bad ? { color: '#e06666' } : undefined}>{f.label}{bad ? ' *' : ''}</label>
-                                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 400, fontSize: 12.5, color: 'var(--muted)', cursor: (editable || fillMode) ? 'pointer' : 'default' }}>
-                                  <input type="checkbox" checked={activeIt.supplier_available !== false} disabled={!(editable || fillMode)} onChange={(e) => setLine('supplier', editingIndex, { supplier_available: e.target.checked })} /> NCC sẵn có
+                            {f.k === 'supplier_code' ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: 0, padding: 0 }}>
+                                <label style={{ margin: 0, ...(bad ? { color: '#e06666' } : {}) }}>{f.label}{bad ? ' *' : ''}</label>
+                                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, margin: 0, fontWeight: 400, fontSize: 12.5, color: 'var(--muted)', cursor: (editable || fillMode) ? 'pointer' : 'default' }}>
+                                  <input type="checkbox" style={{ margin: 0 }} checked={activeIt.supplier_available !== false} disabled={!(editable || fillMode)} onChange={(e) => setLine(editingTable, editingIndex, { supplier_available: e.target.checked })} /> NCC sẵn có
                                 </label>
                               </div>
                             ) : (
