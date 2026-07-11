@@ -388,7 +388,7 @@ def create_prs(db: Session, sid: int, user_id: int):
             note=f"Sinh tự động từ Yêu cầu khảo sát {s.code}",
             suggested_supplier=first_opt.supplier_name or "",
             suggested_supplier_tax_code=(sup.tax_code if sup else ""),
-            suggested_supplier_contact=(sup.contact_person if sup else ""),
+            suggested_supplier_contact=(sup.address if sup else ""),   # Liên hệ NCC lấy Địa chỉ từ bảng NCC
             created_by=user_id, updated_by=user_id,
         )
         db.add(pr)
