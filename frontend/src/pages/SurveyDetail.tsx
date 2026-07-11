@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext'
 import { srBadge } from '../config/cruds'
 import ProductPicker from '../components/ProductPicker'
 import SearchSelect from '../components/SearchSelect'
+import NumberInput from '../components/NumberInput'
 import { toast } from '../components/toast'
 import { fmtDateTime } from '../utils/datetime'
 import { askConfirm, askPrompt } from '../components/confirm'
@@ -196,18 +197,8 @@ const numKeysOf = (sections: any[]) => new Set<string>(
 const SUP_NUM_KEYS = numKeysOf(SUPPLIER_SECTIONS)
 const PROD_NUM_KEYS = numKeysOf(PRODUCT_SECTIONS)
 
-// Ô nhập SỐ: rỗng khi = 0, gõ không dính số 0 ở đầu (dùng state cục bộ khi focus)
-function NumCell({ value, onChange, disabled, className, style }: any) {
-  const [foc, setFoc] = useState(false)
-  const [raw, setRaw] = useState('')
-  const shown = foc ? raw : (value ? String(value) : '')
-  return (
-    <input type="number" disabled={disabled} className={className} style={style} value={shown}
-      onFocus={() => { setRaw(value ? String(value) : ''); setFoc(true) }}
-      onBlur={() => setFoc(false)}
-      onChange={(e) => { setRaw(e.target.value); onChange(Number(e.target.value) || 0) }} />
-  )
-}
+// Các key kiểu TIỀN (VNĐ) -> nhập số nguyên, dấu chấm ngăn nghìn. Còn lại (SL) -> cho số lẻ (dấu phẩy).
+const MONEY_KEYS = new Set(['price_by_volume', 'amount_converted', 'shipping_cost', 'proposed_rate'])
 
 export default function SurveyDetail() {
   const { id } = useParams()
@@ -608,7 +599,7 @@ export default function SurveyDetail() {
       </label>
     )
     if (t === 'date') return <input type="date" value={it[k] ?? ''} disabled={!ce} onChange={(e) => setLine(tbl, i, { [k]: e.target.value })} />
-    if (t === 'num') return <NumCell value={it[k]} disabled={!ce} onChange={(v: number) => setLine(tbl, i, { [k]: v })} />
+    if (t === 'num') return <NumberInput decimals={!MONEY_KEYS.has(k)} value={it[k]} disabled={!ce} onChange={(v: number) => setLine(tbl, i, { [k]: v })} />
     if (t === 'textarea') return <textarea value={it[k] ?? ''} disabled={!ce} style={{ minHeight: 64 }} onChange={(e) => setLine(tbl, i, { [k]: e.target.value })} />
     if (t === 'supplier') return <SearchSelect value={it[k] ?? ''} disabled={!ce} placeholder="Chọn/tìm NCC…"
       options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
@@ -637,7 +628,7 @@ export default function SurveyDetail() {
     }
     if (col.type === 'computed') return <span style={{ fontWeight: 500 }}>{fmt(rowAmount(it))}</span>
     if (col.type === 'check') return <input type="checkbox" checked={!!it[col.key]} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.checked })} />
-    if (col.type === 'num') return <NumCell className="cell-input" style={{ width: '100%' }} value={it[col.key]} onChange={(v: number) => setLine(tbl, i, { [col.key]: v })} />
+    if (col.type === 'num') return <NumberInput decimals={!MONEY_KEYS.has(col.key)} className="cell-input" style={{ width: '100%' }} value={it[col.key]} onChange={(v: number) => setLine(tbl, i, { [col.key]: v })} />
     if (col.type === 'date') return <input className="cell-input" type="date" style={{ width: '100%' }} value={it[col.key] ?? ''} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.value })} />
     if (col.type === 'select') return (
       <div style={{ width: '100%' }}><SearchSelect variant="table" colorMap={col.key === 'line_approve' ? APPROVE_COLOR : undefined}
@@ -837,11 +828,11 @@ export default function SurveyDetail() {
                     <ProductPicker code={sv.item_code} name={sv.item_name} disabled={!editable} onPick={pickItem} />
                   </div>
                   <div className="form-row"><label>Tên VTBB / VL</label><input value={sv.item_name || ''} disabled placeholder="Tự động theo mã" /></div>
-                  <div className="form-row"><label>Số lượng dự kiến mua</label><input type="number" value={sv.request_qty || 0} disabled={!editable} onChange={(e) => setH('request_qty', Number(e.target.value))} /></div>
+                  <div className="form-row"><label>Số lượng dự kiến mua</label><NumberInput decimals value={sv.request_qty} disabled={!editable} onChange={(v) => setH('request_qty', v)} /></div>
                   <div className="form-row"><label>ĐVT</label>
                     <SearchSelect value={sv.uom} options={units} disabled={!editable} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setH('uom', v)} />
                   </div>
-                  <div className="form-row"><label>Giá đề xuất (VNĐ)</label><input type="number" value={sv.proposed_rate || 0} disabled={!editable} onChange={(e) => setH('proposed_rate', Number(e.target.value))} /></div>
+                  <div className="form-row"><label>Giá đề xuất (VNĐ)</label><NumberInput value={sv.proposed_rate} disabled={!editable} onChange={(v) => setH('proposed_rate', v)} /></div>
                 </>
               )}
             </div>

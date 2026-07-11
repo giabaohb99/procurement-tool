@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthContext'
 import { poBadge } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
 import ProductPicker from '../components/ProductPicker'
+import NumberInput from '../components/NumberInput'
 import { toast } from '../components/toast'
 import NotFound from '../components/NotFound'
 
@@ -14,41 +15,9 @@ const API = '/api/purchase-orders'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const QC = ['', 'Đạt', 'Thiếu', 'Lỗi']
 const SHIP_UNITS = ['Kiện', 'Chuyến', 'm2', 'tấn']
-const CurrencyInput = ({ value, onChange, disabled, style, className }: any) => {
-  const [focused, setFocused] = useState(false)
-  const [localVal, setLocalVal] = useState(value)
-
-  useEffect(() => {
-    if (!focused) {
-      setLocalVal(value)
-    }
-  }, [value, focused])
-
-  const displayVal = focused ? String(localVal || '') : (localVal ? Number(localVal).toLocaleString('vi-VN') : '')
-
-  return (
-    <input
-      type="text"
-      className={className ?? "cell-input"}
-      style={style}
-      value={displayVal}
-      disabled={disabled}
-      onFocus={() => {
-        setFocused(true)
-        setLocalVal(value)
-      }}
-      onBlur={() => {
-        setFocused(false)
-        const parsed = Number(String(localVal).replace(/[^\d]/g, '')) || 0
-        onChange(parsed)
-      }}
-      onChange={(e) => {
-        const clean = e.target.value.replace(/[^\d]/g, '')
-        setLocalVal(clean)
-      }}
-    />
-  )
-}
+// Ô TIỀN (VNĐ) = số nguyên, dấu chấm ngăn nghìn. Dùng chung NumberInput.
+const CurrencyInput = ({ value, onChange, disabled, style, className }: any) =>
+  <NumberInput value={value} onChange={onChange} disabled={disabled} style={style} className={className ?? 'cell-input'} />
 
 const emptyItem = {
   product_code: '', product_name: '', invoice_name: '', item_group: '', spec: '', fg_code: '', fg_name: '',
@@ -291,7 +260,7 @@ export default function PurchaseOrderDetail() {
       )
     }
     return (
-      <input className="cell-input" type="number" style={{ width: w }} value={items[i][k] || ''} disabled={!headerEditable} onChange={(e) => setItem(i, { [k]: Number(e.target.value) })} />
+      <NumberInput decimals className="cell-input" style={{ width: w }} value={items[i][k] ?? 0} disabled={!headerEditable} onChange={(v: number) => setItem(i, { [k]: v })} />
     )
   }
 
@@ -565,10 +534,10 @@ export default function PurchaseOrderDetail() {
                         options={warehouses.map((w) => ({ value: w.code, label: `${w.code} — ${w.name}` }))}
                         onChange={(v) => setItem(ii, { warehouse_code: v })} />
                     </div>
-                    <div className="form-row"><label>SL yêu cầu</label><input type="number" value={it.qty_request || ''} disabled={de} onChange={(e) => setItem(ii, { qty_request: Number(e.target.value) })} /></div>
-                    <div className="form-row"><label>SL đặt NCC</label><input type="number" value={it.qty_order || ''} disabled={de} onChange={(e) => setItem(ii, { qty_order: Number(e.target.value) })} /></div>
+                    <div className="form-row"><label>SL yêu cầu</label><NumberInput decimals value={it.qty_request} disabled={de} onChange={(v) => setItem(ii, { qty_request: v })} /></div>
+                    <div className="form-row"><label>SL đặt NCC</label><NumberInput decimals value={it.qty_order} disabled={de} onChange={(v) => setItem(ii, { qty_order: v })} /></div>
                     <div className="form-row"><label>Đơn giá</label><CurrencyInput className="" value={it.price ?? 0} disabled={de} onChange={(val: number) => setItem(ii, { price: val })} /></div>
-                    <div className="form-row"><label>VAT (%)</label><input type="number" value={it.vat || ''} disabled={de} onChange={(e) => setItem(ii, { vat: Number(e.target.value) })} /></div>
+                    <div className="form-row"><label>VAT (%)</label><NumberInput value={it.vat} disabled={de} onChange={(v) => setItem(ii, { vat: v })} /></div>
                     <div className="form-row"><label>Thành tiền đơn hàng</label><input value={fmt(orderAmount(it))} disabled /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><input value={it.note || ''} disabled={de} onChange={(e) => setItem(ii, { note: e.target.value })} /></div>
                   </div>
@@ -617,7 +586,7 @@ export default function PurchaseOrderDetail() {
                       const dis = !deliveryEditable
                       return (
                         <tr key={di}>
-                          <td><input className="cell-input" type="number" style={{ width: 44 }} value={d.delivery_no || ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { delivery_no: Number(e.target.value) })} /></td>
+                          <td><NumberInput className="cell-input" style={{ width: 44 }} value={d.delivery_no} disabled={dis} onChange={(v) => setDelivery(ii, di, { delivery_no: v })} /></td>
                           <td>
                             <select className="cell-input" style={{ width: 120 }} value={d.warehouse_code ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { warehouse_code: e.target.value })} title="Kho nhận">
                               <option value="">—</option>{warehouses.map((w) => <option key={w.id} value={w.code}>{w.code}</option>)}
@@ -628,20 +597,20 @@ export default function PurchaseOrderDetail() {
                               <option value="">NCC tự vận chuyển</option>{carriers.map((c) => <option key={c.id} value={c.code}>{c.name}</option>)}
                             </select>
                           </td>
-                          <td><input className="cell-input" type="number" style={{ width: 72 }} value={d.ship_qty || ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { ship_qty: Number(e.target.value) })} /></td>
+                          <td><NumberInput decimals className="cell-input" style={{ width: 72 }} value={d.ship_qty} disabled={dis} onChange={(v) => setDelivery(ii, di, { ship_qty: v })} /></td>
                           <td>
                             <select className="cell-input" style={{ width: 80 }} value={d.ship_unit ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { ship_unit: e.target.value })}>
                               <option value="">—</option>{SHIP_UNITS.map((su) => <option key={su} value={su}>{su}</option>)}
                             </select>
                           </td>
                           <td style={{ textAlign: 'right', color: 'var(--muted)' }}>{fmt(items[ii].qty_order)}</td>
-                          <td><input className="cell-input" type="number" style={{ width: 80 }} value={d.received_qty || ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { received_qty: Number(e.target.value) })} /></td>
+                          <td><NumberInput decimals className="cell-input" style={{ width: 80 }} value={d.received_qty} disabled={dis} onChange={(v) => setDelivery(ii, di, { received_qty: v })} /></td>
                           <td style={{ textAlign: 'right', color: 'var(--muted)' }}>{fmt(items[ii].price)}</td>
                           <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{Number(items[ii].vat) || 0}%</td>
                           <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmt((Number(d.received_qty) || 0) * (Number(items[ii].price) || 0) * (1 + (Number(items[ii].vat) || 0) / 100))}</td>
                           <td><input className="cell-input" type="date" style={{ width: 100 }} value={d.promised_date ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { promised_date: e.target.value })} /></td>
                           <td><input className="cell-input" type="date" style={{ width: 100 }} value={d.received_date ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { received_date: e.target.value })} /></td>
-                          <td><input className="cell-input" type="number" style={{ width: 60 }} value={d.std_days || ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { std_days: Number(e.target.value) })} /></td>
+                          <td><NumberInput className="cell-input" style={{ width: 60 }} value={d.std_days} disabled={dis} onChange={(v) => setDelivery(ii, di, { std_days: v })} /></td>
                           <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{d.regulated_date || '—'}</td>
                           <td style={{ textAlign: 'center', color: (d.diff_promise < 0 ? 'var(--red)' : 'var(--muted)'), fontWeight: d.diff_promise < 0 ? 600 : 400 }}>{d.received_date ? (d.diff_promise ?? 0) : '—'}</td>
                           <td style={{ textAlign: 'center', color: (d.diff_regulated < 0 ? 'var(--red)' : 'var(--muted)'), fontWeight: d.diff_regulated < 0 ? 600 : 400 }}>{d.received_date ? (d.diff_regulated ?? 0) : '—'}</td>

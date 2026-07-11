@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthContext'
 import { prBadge } from '../config/cruds'
 import ProductPicker from '../components/ProductPicker'
 import SearchSelect from '../components/SearchSelect'
+import NumberInput from '../components/NumberInput'
 import ConfirmModal from '../components/ConfirmModal'
 import PromptModal from '../components/PromptModal'
 import NotFound from '../components/NotFound'
@@ -549,12 +550,12 @@ export default function PurchaseRequestDetail() {
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         {editable ? (
-                          <input type="number" min={0} step="any" className="cell-input" value={it.qty || ''} placeholder="0" onChange={(e) => setItem(i, 'qty', Math.max(0, Number(e.target.value) || 0))} style={{ width: '100%', textAlign: 'right' }} />
+                          <NumberInput decimals value={it.qty} onChange={(v) => setItem(i, 'qty', v)} className="cell-input" style={{ width: '100%', textAlign: 'right' }} placeholder="0" />
                         ) : fmtBlank(it.qty)}
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         {editable ? (
-                          <input type="number" min={0} step="any" className="cell-input" value={it.price || ''} placeholder="0" onChange={(e) => setItem(i, 'price', Math.max(0, Number(e.target.value) || 0))} style={{ width: '100%', textAlign: 'right' }} />
+                          <NumberInput value={it.price} onChange={(v) => setItem(i, 'price', v)} className="cell-input" style={{ width: '100%', textAlign: 'right' }} placeholder="0" />
                         ) : fmtBlank(it.price)}
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 500 }}>{fmtBlank((Number(it.qty) || 0) * (Number(it.price) || 0))}</td>
@@ -711,11 +712,11 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Số lượng mua <span className="req">*</span></label>
-                <input type="number" min={0} step="any" value={edit.qty || ''} placeholder="Nhập số lượng" disabled={!editable} onChange={(e) => setItem(editIdx, 'qty', Math.max(0, Number(e.target.value) || 0))} />
+                <NumberInput decimals value={edit.qty} onChange={(v) => setItem(editIdx, 'qty', v)} disabled={!editable} placeholder="Nhập số lượng" />
               </div>
               <div className="form-row">
                 <label>Giá đề xuất</label>
-                <input type="number" min={0} step="any" value={edit.price || ''} placeholder="Để trống nếu chưa có giá" disabled={!editable} onChange={(e) => setItem(editIdx, 'price', Math.max(0, Number(e.target.value) || 0))} />
+                <NumberInput value={edit.price} onChange={(v) => setItem(editIdx, 'price', v)} disabled={!editable} placeholder="Để trống nếu chưa có giá" />
               </div>
               <div className="form-row">
                 <label>ĐVT</label>
