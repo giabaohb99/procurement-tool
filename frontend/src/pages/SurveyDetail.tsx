@@ -8,6 +8,7 @@ import SearchSelect from '../components/SearchSelect'
 import { toast } from '../components/toast'
 import { fmtDateTime } from '../utils/datetime'
 import { askConfirm, askPrompt } from '../components/confirm'
+import NotFound from '../components/NotFound'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const VAT_OPTS = ['0', '2', '4', '6', '8', '10']
@@ -239,6 +240,7 @@ export default function SurveyDetail() {
   const setMsg = (m: string) => { if (m) toast.success(m) }
   // Ô bắt buộc còn trống khi Gửi duyệt (key = `${tbl}-${index}-${fieldKey}`) → tô đỏ.
   const [invalidCells, setInvalidCells] = useState<Set<string>>(new Set())
+  const [notFound, setNotFound] = useState(false)
 
   // Popup state: which table ('supplier'|'product') + which row index
   const [editingTable, setEditingTable] = useState<'supplier' | 'product' | null>(null)
@@ -271,16 +273,21 @@ export default function SurveyDetail() {
   }
 
   async function loadAll() {
-    const r = await api.get(`${API}/${id}`)
-    const data = r.data.data
-    data.supplier_lines = (data.supplier_lines || []).map((l: any) => ({ ...l, line_approve: l.line_approve || 'Chờ duyệt' }))
-    data.product_lines = (data.product_lines || []).map((l: any) => ({ ...l, line_approve: l.line_approve || 'Chờ duyệt' }))
-    setSv(data)
-    api.get('/api/audit-logs', { params: { entity: 'survey', entity_id: id } }).then((x) => setLogs(x.data.data))
-    api.get('/api/attachments', { params: { entity: 'survey', entity_id: id } }).then((x) => setFiles(x.data.data))
+    try {
+      const r = await api.get(`${API}/${id}`)
+      const data = r.data.data
+      data.supplier_lines = (data.supplier_lines || []).map((l: any) => ({ ...l, line_approve: l.line_approve || 'Chờ duyệt' }))
+      data.product_lines = (data.product_lines || []).map((l: any) => ({ ...l, line_approve: l.line_approve || 'Chờ duyệt' }))
+      setSv(data)
+      api.get('/api/audit-logs', { params: { entity: 'survey', entity_id: id } }).then((x) => setLogs(x.data.data))
+      api.get('/api/attachments', { params: { entity: 'survey', entity_id: id } }).then((x) => setFiles(x.data.data))
+    } catch (ex: any) {
+      if (ex?.response?.status === 403 || ex?.response?.status === 404) { setNotFound(true); return }
+      throw ex
+    }
   }
 
-  useEffect(() => { if (!isNew) loadAll() }, [id])
+  useEffect(() => { if (!isNew) { setNotFound(false); loadAll() } }, [id])
 
   const editable = (isNew || sv.status === 'draft' || sv.status === 'rejected') && can('survey', isNew ? 'create' : 'write')
   const canApprove = can('survey', 'approve')
@@ -750,6 +757,8 @@ export default function SurveyDetail() {
   }
 
   const isLogShown = !isNew && logs.length > 0
+
+  if (notFound) return <NotFound backTo="/surveys" message="Không tìm thấy phiếu khảo sát này hoặc bạn không có quyền truy cập." />
 
   // Determine active popup data
   const activeLines = editingTable ? getLines(editingTable) : []

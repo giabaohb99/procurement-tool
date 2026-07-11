@@ -9,6 +9,7 @@ import ProductPicker from '../components/ProductPicker'
 import SearchSelect from '../components/SearchSelect'
 import ConfirmModal from '../components/ConfirmModal'
 import PromptModal from '../components/PromptModal'
+import NotFound from '../components/NotFound'
 import { toast } from '../components/toast'
 
 const API = '/api/purchase-requests'
@@ -52,6 +53,7 @@ export default function PurchaseRequestDetail() {
   const [confirmSave, setConfirmSave] = useState(false)
   const [promptAction, setPromptAction] = useState<{type: 'reject'|'return'|'cancel', title: string, message: string, placeholder?: string} | null>(null)
   const [confirmAction, setConfirmAction] = useState<{type: 'complete'|'cancel_draft'|'copy', title: string, message: string, confirmText?: string} | null>(null)
+  const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items)).catch(() => {})
@@ -63,12 +65,17 @@ export default function PurchaseRequestDetail() {
   }, [])
 
   async function loadAll() {
-    const r = await api.get(`${API}/${id}`)
-    setPr(r.data.data)
+    try {
+      const r = await api.get(`${API}/${id}`)
+      setPr(r.data.data)
+    } catch (ex: any) {
+      if ([403, 404].includes(ex?.response?.status)) { setNotFound(true); return }
+      throw ex
+    }
     api.get('/api/audit-logs', { params: { entity: 'purchase_request', entity_id: id } }).then((x) => setLogs(x.data.data)).catch(() => {})
     api.get('/api/attachments', { params: { entity: 'purchase_request', entity_id: id } }).then((x) => setFiles(x.data.data)).catch(() => {})
   }
-  useEffect(() => { if (!isNew) loadAll() }, [id])
+  useEffect(() => { if (!isNew) { setNotFound(false); loadAll() } }, [id])
 
   useEffect(() => {
     if (!isNew || !user || pr.requester) return
@@ -314,6 +321,8 @@ export default function PurchaseRequestDetail() {
 
   const isLogShown = !isNew && logs.length > 0
   const edit = editIdx != null ? items[editIdx] : null
+
+  if (notFound) return <NotFound backTo="/purchase-requests" message="Không tìm thấy phiếu yêu cầu mua hàng này hoặc bạn không có quyền truy cập." />
 
   return (
     <div>

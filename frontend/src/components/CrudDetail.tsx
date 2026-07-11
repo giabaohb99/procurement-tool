@@ -6,6 +6,7 @@ import { fmtDateTime } from '../utils/datetime'
 import { useAuth } from '../auth/AuthContext'
 import { cruds } from '../config/cruds'
 import SearchSelect from './SearchSelect'
+import NotFound from './NotFound'
 
 export default function CrudDetail() {
   const { entity, id } = useParams()
@@ -18,6 +19,7 @@ export default function CrudDetail() {
   const [logs, setLogs] = useState<any[]>([])
   const [err, setErr] = useState('')
   const [msg, setMsg] = useState('')
+  const [notFound, setNotFound] = useState(false)
   const [dynOpts, setDynOpts] = useState<Record<string, { value: string; label: string }[]>>({})
   const [pwOpen, setPwOpen] = useState(false)
   const [pw1, setPw1] = useState(''); const [pw2, setPw2] = useState('')
@@ -46,18 +48,20 @@ export default function CrudDetail() {
 
   useEffect(() => {
     if (!cfg) return
-    setErr(''); setMsg('')
+    setErr(''); setMsg(''); setNotFound(false)
     if (isNew) {
       const init: any = {}
       cfg.fields.forEach((f) => { init[f.key] = f.type === 'checkbox' ? true : f.type === 'number' ? 0 : '' })
       setForm(init); setLogs([])
     } else {
       api.get(`${cfg.apiPath}/${id}`).then((r) => setForm(r.data.data))
+        .catch((ex) => { if ([403, 404].includes(ex?.response?.status)) setNotFound(true) })
       loadLogs()
     }
   }, [cfg?.slug, id])
 
   if (!cfg) return <div>Không tìm thấy trang.</div>
+  if (notFound) return <NotFound backTo={`/${cfg.slug}`} message={`Không tìm thấy ${cfg.title.toLowerCase()} này hoặc bạn không có quyền truy cập.`} />
 
   // Danh mục chỉ dành cho người QUẢN LÝ (write/create/delete); read chỉ để đổ dropdown.
   const canManage = can(cfg.entity, 'write') || can(cfg.entity, 'create') || can(cfg.entity, 'delete')

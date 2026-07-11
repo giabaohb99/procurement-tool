@@ -8,6 +8,7 @@ import { poBadge } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
 import ProductPicker from '../components/ProductPicker'
 import { toast } from '../components/toast'
+import NotFound from '../components/NotFound'
 
 const API = '/api/purchase-orders'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -83,6 +84,7 @@ export default function PurchaseOrderDetail() {
   const [attByDelivery, setAttByDelivery] = useState<Record<number, any[]>>({})
   const [editingItemIdx, setEditingItemIdx] = useState<number | null>(null)
   const [printOpen, setPrintOpen] = useState(false)   // dropdown chọn loại bản in
+  const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items))
@@ -95,11 +97,18 @@ export default function PurchaseOrderDetail() {
   }, [])
 
   async function loadAll() {
-    const r = await api.get(`${API}/${id}`); setPo(r.data.data)
-    api.get('/api/audit-logs', { params: { entity: 'purchase_order', entity_id: id } }).then((x) => setLogs(x.data.data))
-    api.get('/api/attachments', { params: { entity: 'purchase_order', entity_id: id } }).then((x) => setFiles(x.data.data))
+    try {
+      const r = await api.get(`${API}/${id}`); setPo(r.data.data)
+      api.get('/api/audit-logs', { params: { entity: 'purchase_order', entity_id: id } }).then((x) => setLogs(x.data.data))
+      api.get('/api/attachments', { params: { entity: 'purchase_order', entity_id: id } }).then((x) => setFiles(x.data.data))
+    } catch (ex: any) {
+      if (ex?.response?.status === 403 || ex?.response?.status === 404) {
+        setNotFound(true); return
+      }
+      throw ex
+    }
   }
-  useEffect(() => { if (!isNew) loadAll() }, [id])
+  useEffect(() => { if (!isNew) { setNotFound(false); loadAll() } }, [id])
 
   // Điền sẵn khi tạo ĐMH từ phiếu YCMH đã duyệt (điều hướng kèm state.fromPr). Chưa lưu — user xem lại rồi bấm Tạo.
   useEffect(() => {
@@ -288,6 +297,8 @@ export default function PurchaseOrderDetail() {
 
   const title = isNew ? 'Tạo Đơn mua hàng' : `Đơn mua hàng ${po.code || ''}`
   const isLogShown = !isNew && logs.length > 0
+
+  if (notFound) return <NotFound backTo="/purchase-orders" message="Không tìm thấy đơn mua hàng này hoặc bạn không có quyền truy cập." />
 
   return (
     <div>

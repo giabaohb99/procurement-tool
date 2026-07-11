@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { askConfirm } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
+import NotFound from '../components/NotFound'
 
 const API = '/api/payment-requests'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -21,14 +22,20 @@ export default function PaymentRequestDetail() {
   const [companies, setCompanies] = useState<any[]>([])
   const [files, setFiles] = useState<any[]>([])
   const [err, setErr] = useState(''); const [msg, setMsg] = useState('')
+  const [notFound, setNotFound] = useState(false)
 
   async function loadAll() {
-    const r = await api.get(`${API}/${id}`); setReq(r.data.data)
-    api.get('/api/attachments', { params: { entity: 'payment_request', entity_id: id } }).then((x) => setFiles(x.data.data))
+    try {
+      const r = await api.get(`${API}/${id}`); setReq(r.data.data)
+      api.get('/api/attachments', { params: { entity: 'payment_request', entity_id: id } }).then((x) => setFiles(x.data.data))
+    } catch (ex: any) {
+      if (ex?.response?.status === 403 || ex?.response?.status === 404) { setNotFound(true); return }
+      throw ex
+    }
   }
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items))
-    if (!isNew) loadAll()
+    if (!isNew) { setNotFound(false); loadAll() }
   }, [id])
 
   if (isNew) return (
@@ -41,6 +48,7 @@ export default function PaymentRequestDetail() {
       </div>
     </div>
   )
+  if (notFound) return <NotFound backTo="/payment-requests" message="Không tìm thấy yêu cầu thanh toán này hoặc bạn không có quyền truy cập." />
   if (!req) return <div style={{ padding: 40 }}>Đang tải...</div>
 
   const editable = req.status === 'draft' && can('payment_request', 'write')

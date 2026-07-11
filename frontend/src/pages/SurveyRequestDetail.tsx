@@ -8,6 +8,7 @@ import { prBadge } from '../config/cruds'
 import Select from 'react-select'
 import SearchSelect from '../components/SearchSelect'
 import { toast } from '../components/toast'
+import NotFound from '../components/NotFound'
 
 const API = '/api/survey-requests'
 
@@ -100,6 +101,7 @@ export default function SurveyRequestDetail() {
   const [err, setErr]               = useState('')
   const [msg, setMsg]               = useState('')
   const [editIdx, setEditIdx]       = useState<number | null>(null)
+  const [notFound, setNotFound]     = useState(false)
 
   // --- load lookups once ---
   useEffect(() => {
@@ -112,12 +114,18 @@ export default function SurveyRequestDetail() {
 
   // --- load document ---
   async function loadAll() {
-    const r = await api.get(`${API}/${id}`)
-    setSv(r.data.data)
-    api.get('/api/audit-logs', { params: { entity: 'survey_request', entity_id: id } })
-      .then((x) => setLogs(x.data.data)).catch(() => {})
+    try {
+      const r = await api.get(`${API}/${id}`)
+      setSv(r.data.data)
+      api.get('/api/audit-logs', { params: { entity: 'survey_request', entity_id: id } })
+        .then((x) => setLogs(x.data.data)).catch(() => {})
+    } catch (ex: any) {
+      const status = ex?.response?.status
+      if (status === 403 || status === 404) { setNotFound(true); return }
+      throw ex
+    }
   }
-  useEffect(() => { if (!isNew) loadAll() }, [id])
+  useEffect(() => { if (!isNew) { setNotFound(false); loadAll() } }, [id])
 
   // Nạp hình đính kèm khi mở popup chi tiết dòng
   useEffect(() => {
@@ -398,6 +406,8 @@ export default function SurveyRequestDetail() {
 
   const isLogShown = !isNew && logs.length > 0
   const edit = editIdx != null ? lines[editIdx] : null
+
+  if (notFound) return <NotFound backTo="/survey-requests" message="Không tìm thấy yêu cầu khảo sát này hoặc bạn không có quyền truy cập." />
 
   return (
     <div>
