@@ -67,7 +67,7 @@ export function ConfirmHost() {
   }
 
   return (
-    <div onClick={() => close(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, width: 430, maxWidth: '100%', boxShadow: '0 20px 60px rgba(15,23,42,.35)', overflow: 'hidden', animation: 'confIn .16s ease' }}>
         <div style={{ padding: '20px 22px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>

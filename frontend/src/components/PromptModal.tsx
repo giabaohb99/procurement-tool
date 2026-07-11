@@ -57,7 +57,7 @@ export default function PromptModal({
   const colors = colorMap[variant]
 
   return (
-    <div className="confirm-modal-overlay" onClick={onCancel}>
+    <div className="confirm-modal-overlay">
       <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
         <div className="confirm-modal-icon" style={{ color: colors.icon }}>
           <i className={iconMap[variant]} />

@@ -339,7 +339,7 @@ export default function Reports() {
 
       {/* Popup chi phí theo ngày (click cột tháng) */}
       {daily && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setDaily(null)}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
           <div className="modal-card" style={{ width: 680, maxWidth: '100%', background: '#fff', borderRadius: 12, maxHeight: '88vh', overflow: 'auto' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
               <h3 style={{ margin: 0, fontSize: 16, color: 'var(--navy)' }}>Chi phí theo ngày — {daily.label}{daily.data ? ` · Tổng ${fmt(daily.data.total)}` : ''}</h3>

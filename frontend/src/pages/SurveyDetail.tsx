@@ -927,7 +927,6 @@ export default function SurveyDetail() {
         return (
           <div
             style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.45)', zIndex: 100, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '4vh 12px', overflowY: 'auto' }}
-            onClick={() => { setEditingTable(null); setEditingIndex(null); setFillMode(false) }}
           >
             <div
               style={{ width: 980, maxWidth: '100%', background: '#fff', borderRadius: 12, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', maxHeight: '92vh', overflow: 'hidden' }}
