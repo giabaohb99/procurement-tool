@@ -14,6 +14,7 @@ export default function PrintPurchaseRequest() {
   const [pr, setPr] = useState<any>(null);
   const [company, setCompany] = useState("");
   const [notFound, setNotFound] = useState(false);
+  const [taxMode, setTaxMode] = useState(false); // Mẫu thuế: để trống thông tin người yêu cầu
 
   useEffect(() => {
     api
@@ -43,6 +44,8 @@ export default function PrintPurchaseRequest() {
     padding: "5px 8px",
     fontSize: 12,
     margin: "14px 0 0",
+    WebkitPrintColorAdjust: "exact",
+    printColorAdjust: "exact",
   } as const;
   const cell = {
     border: "1px solid #999",
@@ -52,6 +55,7 @@ export default function PrintPurchaseRequest() {
 
   return (
     <div style={{ background: "#f0f0f0", minHeight: "100vh", padding: 20 }}>
+      <style>{`@media print { @page { margin: 12mm; } }`}</style>
       <div
         className="no-print"
         style={{
@@ -59,6 +63,7 @@ export default function PrintPurchaseRequest() {
           margin: "0 auto 12px",
           display: "flex",
           gap: 8,
+          alignItems: "center",
         }}
       >
         <button className="btn" onClick={() => window.print()}>
@@ -67,9 +72,26 @@ export default function PrintPurchaseRequest() {
         <button className="btn ghost" onClick={() => window.close()}>
           Đóng
         </button>
+        <span style={{ flex: 1 }} />
+        <div style={{ display: "inline-flex", border: "1px solid #d9e0ea", borderRadius: 8, overflow: "hidden" }}>
+          {[{ v: false, t: "Mẫu thường" }, { v: true, t: "Mẫu thuế" }].map((tab) => (
+            <button
+              key={tab.t}
+              onClick={() => setTaxMode(tab.v)}
+              style={{
+                padding: "7px 16px", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500,
+                background: taxMode === tab.v ? "#00AEEF" : "#fff",
+                color: taxMode === tab.v ? "#fff" : "#475569",
+              }}
+            >
+              {tab.t}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div
+        className="print-doc"
         style={{
           maxWidth: 820,
           margin: "0 auto",
@@ -92,17 +114,17 @@ export default function PrintPurchaseRequest() {
           <table
             style={{
               borderCollapse: "collapse",
-              fontSize: 8.5,
+              fontSize: 7.5,
               textAlign: "left",
-              width: 150,
+              width: 126,
             }}
           >
             <tbody>
               {(() => {
                 const c = {
                   border: "1px solid #999",
-                  padding: "0px 4px",
-                  lineHeight: 1.3,
+                  padding: "0px 3px",
+                  lineHeight: 1.25,
                   whiteSpace: "nowrap",
                 } as const;
                 return (
@@ -116,11 +138,11 @@ export default function PrintPurchaseRequest() {
                       </td>
                     </tr>
                     <tr>
-                      <td style={{ ...c, width: 52 }}>Phiên bản</td>
+                      <td style={{ ...c, width: 44 }}>Phiên bản</td>
                       <td style={{ ...c, textAlign: "center" }}>V1-062025</td>
                     </tr>
                     <tr>
-                      <td style={{ ...c, width: 52 }}>Ngày update:</td>
+                      <td style={{ ...c, width: 44 }}>Ngày update:</td>
                       <td style={{ ...c, textAlign: "center" }}>17/7/2025</td>
                     </tr>
                   </>
@@ -141,16 +163,16 @@ export default function PrintPurchaseRequest() {
         <div style={SH}>THÔNG TIN CHUNG</div>
         <div style={{ fontSize: 12, padding: "6px 4px", lineHeight: 1.8 }}>
           <div>
-            <b>Người đề xuất:</b> {pr.requester}
+            <b>Người đề xuất:</b> {taxMode ? "" : pr.requester}
           </div>
           <div>
-            <b>Chức vụ:</b> {pr.requester_position || "............"}
+            <b>Chức vụ:</b> {taxMode ? "" : pr.requester_position || "............"}
           </div>
           <div>
-            <b>Hiện công tác tại bộ phận:</b> {pr.department || "............"}
+            <b>Hiện công tác tại bộ phận:</b> {taxMode ? "" : pr.department || "............"}
           </div>
           <div>
-            <b>Trưởng phòng ban/bộ phận:</b> {pr.head_of_dept || "............"}
+            <b>Trưởng phòng ban/bộ phận:</b> {taxMode ? "" : pr.head_of_dept || "............"}
           </div>
         </div>
 

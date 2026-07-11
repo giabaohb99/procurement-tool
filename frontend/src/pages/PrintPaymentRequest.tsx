@@ -54,7 +54,7 @@ export default function PrintPaymentRequest() {
         <button className="btn ghost" onClick={() => window.close()}>Đóng</button>
       </div>
 
-      <div style={{ maxWidth: 800, margin: '0 auto', background: '#fff', padding: '24px 30px', fontFamily: 'Arial, sans-serif', color: '#000' }}>
+      <div className="print-doc" style={{ maxWidth: 800, margin: '0 auto', background: '#fff', padding: '24px 30px', fontFamily: 'Arial, sans-serif', color: '#000' }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ fontWeight: 700, fontSize: 13 }}>{co.name || ''}</div>

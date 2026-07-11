@@ -1,7 +1,10 @@
 import axios from 'axios'
 import { toast } from '../components/toast'
 
-const baseURL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000'
+// Rỗng = gọi tương đối (cùng origin) -> đi qua proxy Vite (/api -> api:8000).
+// Nhờ vậy dùng được từ localhost, LAN (192.168.x.x), Cloudflare... không dính CORS.
+// Production set VITE_API_URL lúc build (domain thật) nên vẫn dùng URL tuyệt đối.
+const baseURL = (import.meta as any).env?.VITE_API_URL || ''
 
 export const api = axios.create({ baseURL })
 

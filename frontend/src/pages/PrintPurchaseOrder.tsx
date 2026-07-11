@@ -32,7 +32,7 @@ export default function PrintPurchaseOrder() {
         <button className="btn ghost" onClick={() => window.close()}>Đóng</button>
       </div>
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', background: '#fff', padding: '24px 28px', fontFamily: 'Arial, sans-serif', color: '#000' }}>
+      <div className="print-doc" style={{ maxWidth: 1100, margin: '0 auto', background: '#fff', padding: '24px 28px', fontFamily: 'Arial, sans-serif', color: '#000' }}>
         {/* Header công ty + kính gửi */}
         <div style={{ fontWeight: 700, fontSize: 14 }}>{co.name || ''}</div>
         <div style={{ fontSize: 11 }}>Địa chỉ: {co.address || ''}</div>

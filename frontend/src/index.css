@@ -1166,6 +1166,13 @@ tbody tr:hover {
 
 /* ===== In ấn ===== */
 @media print {
+  /* In cả màu nền tiêu đề/khung của phiếu (trình duyệt mặc định bỏ nền để tiết kiệm mực) */
+  .print-doc,
+  .print-doc * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   .no-print {
     display: none !important;
   }
