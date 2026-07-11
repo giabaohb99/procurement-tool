@@ -105,12 +105,13 @@ const PRODUCT_SECTIONS: Section[] = [
 
 type Col = { key: string; label: string; w: number; type?: string; options?: string[] }
 
-const SUPPLIER_CORE_KEYS = ['contact_date', 'supplier_code', 'supplier_name', 'contact_person', 'contact_phone', 'nspt_note', 'note', 'line_approve']
+const SUPPLIER_CORE_KEYS = ['contact_date', 'supplier_available', 'supplier_code', 'supplier_name', 'contact_person', 'contact_phone', 'nspt_note', 'note', 'line_approve']
 
 const SUPPLIER_COLS: Col[] = [
   { key: 'contact_date', label: 'Ngày LH', w: 110, type: 'date' },
   { key: 'reply_date', label: 'NCC phản hồi', w: 120, type: 'date' },
   { key: 'result_date', label: 'Ngày trả KQ', w: 120, type: 'date' },
+  { key: 'supplier_available', label: 'NCC sẵn có', w: 90, type: 'check' },
   { key: 'supplier_code', label: 'NCC (viết tắt) *', w: 140, type: 'supplier' },
   { key: 'supplier_name', label: 'Tên pháp lý', w: 220 },
   { key: 'tax_code', label: 'MST', w: 110 },
@@ -610,9 +611,14 @@ export default function SurveyDetail() {
     if (t === 'date') return <input type="date" value={it[k] ?? ''} disabled={!ce} onChange={(e) => setLine(tbl, i, { [k]: e.target.value })} />
     if (t === 'num') return <NumCell value={it[k]} disabled={!ce} onChange={(v: number) => setLine(tbl, i, { [k]: v })} />
     if (t === 'textarea') return <textarea value={it[k] ?? ''} disabled={!ce} style={{ minHeight: 64 }} onChange={(e) => setLine(tbl, i, { [k]: e.target.value })} />
-    if (t === 'supplier') return <SearchSelect value={it[k] ?? ''} disabled={!ce} placeholder="Chọn/tìm NCC…"
-      options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
-      onChange={(v) => { const sup = suppliers.find((s) => s.code === v); setLine(tbl, i, sup ? { supplier_code: sup.code, supplier_name: sup.name, tax_code: sup.tax_code, reg_address: sup.address } : { supplier_code: v }) }} />
+    if (t === 'supplier') {
+      // Bỏ check "NCC sẵn có" → ô thành text tự do (NCC chưa có trong danh mục)
+      if (it.supplier_available === false)
+        return <input value={it[k] ?? ''} disabled={!ce} placeholder="Nhập NCC…" onChange={(e) => setLine(tbl, i, { [k]: e.target.value })} />
+      return <SearchSelect value={it[k] ?? ''} disabled={!ce} placeholder="Chọn/tìm NCC…"
+        options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
+        onChange={(v) => { const sup = suppliers.find((s) => s.code === v); setLine(tbl, i, sup ? { supplier_code: sup.code, supplier_name: sup.name, tax_code: sup.tax_code, reg_address: sup.address } : { supplier_code: v }) }} />
+    }
     if (t === 'unit') return <SearchSelect value={it[k] ?? ''} options={units} disabled={!ce} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setLine(tbl, i, { [k]: v })} />
     if (t === 'vat') return <SearchSelect value={String(it[k] ?? '')} options={VAT_OPTS} disabled={!ce} placeholder="Chọn VAT…" onChange={(v) => setLine(tbl, i, { [k]: Number(v) })} />
     if (t === 'approve') return <SearchSelect value={it[k] || 'Chờ duyệt'} options={APPROVE_OPTS} colorMap={APPROVE_COLOR} disabled={!canEditApprove} placeholder="Chọn…" onChange={(v) => setLine(tbl, i, { [k]: v })} />
@@ -629,13 +635,17 @@ export default function SurveyDetail() {
       const st = it.line_approve || 'Chờ duyệt'; const c = APPROVE_COLOR[st] || '#64748b'
       return <span className="badge" style={{ background: `${c}1a`, color: c, border: `1px solid ${c}55` }}>{st}</span>
     }
+    // NCC sẵn có: mặc định TRUE (chưa set = có sẵn) → không lưu DB, chỉ đổi kiểu ô NCC
+    const supplierAvail = it.supplier_available !== false
     if (!editable) {
       if (col.type === 'computed') return fmt(rowAmount(it))
+      if (col.key === 'supplier_available') return supplierAvail ? '✓' : ''
       if (col.type === 'check') return it[col.key] ? '✓' : ''
       if (col.type === 'num') return it[col.key] ? fmt(it[col.key]) : ''
       return it[col.key] ?? ''
     }
     if (col.type === 'computed') return <span style={{ fontWeight: 500 }}>{fmt(rowAmount(it))}</span>
+    if (col.key === 'supplier_available') return <input type="checkbox" checked={supplierAvail} onChange={(e) => setLine(tbl, i, { supplier_available: e.target.checked })} />
     if (col.type === 'check') return <input type="checkbox" checked={!!it[col.key]} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.checked })} />
     if (col.type === 'num') return <NumCell className="cell-input" style={{ width: '100%' }} value={it[col.key]} onChange={(v: number) => setLine(tbl, i, { [col.key]: v })} />
     if (col.type === 'date') return <input className="cell-input" type="date" style={{ width: '100%' }} value={it[col.key] ?? ''} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.value })} />
@@ -647,11 +657,16 @@ export default function SurveyDetail() {
     if (col.type === 'unit') return (
       <div style={{ width: '100%' }}><SearchSelect variant="table" value={it[col.key] ?? ''} options={units} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setLine(tbl, i, { [col.key]: v })} /></div>
     )
-    if (col.type === 'supplier') return (
-      <div style={{ width: '100%' }}><SearchSelect variant="table" value={it[col.key] ?? ''} placeholder="Chọn/tìm NCC…"
-        options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
-        onChange={(v) => { const sup = suppliers.find((s) => s.code === v); setLine(tbl, i, sup ? { supplier_code: sup.code, supplier_name: sup.name, tax_code: sup.tax_code, reg_address: sup.address } : { supplier_code: v }) }} /></div>
-    )
+    if (col.type === 'supplier') {
+      // Bỏ check "NCC sẵn có" → ô NCC thành text tự do (NCC chưa có trong danh mục)
+      if (!supplierAvail)
+        return <input className="cell-input" style={{ width: '100%' }} value={it[col.key] ?? ''} placeholder="Nhập NCC…" onChange={(e) => setLine(tbl, i, { [col.key]: e.target.value })} />
+      return (
+        <div style={{ width: '100%' }}><SearchSelect variant="table" value={it[col.key] ?? ''} placeholder="Chọn/tìm NCC…"
+          options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
+          onChange={(v) => { const sup = suppliers.find((s) => s.code === v); setLine(tbl, i, sup ? { supplier_code: sup.code, supplier_name: sup.name, tax_code: sup.tax_code, reg_address: sup.address } : { supplier_code: v }) }} /></div>
+      )
+    }
     return <input className="cell-input" style={{ width: '100%' }} value={it[col.key] ?? ''} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.value })} />
   }
 
@@ -935,7 +950,16 @@ export default function SurveyDetail() {
                         const bad = editingTable !== null && editingIndex !== null && invalidCells.has(`${editingTable}-${editingIndex}-${f.k}`)
                         return (
                           <div className="form-row" key={f.k} style={{ ...(f.full ? { gridColumn: '1 / -1' } : {}), ...(bad ? { borderRadius: 8, outline: '1px solid #fca5a5', outlineOffset: 3 } : {}) }}>
-                            <label style={bad ? { color: '#e06666' } : undefined}>{f.label}{bad ? ' *' : ''}</label>
+                            {editingTable === 'supplier' && f.k === 'supplier_code' ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <label style={bad ? { color: '#e06666' } : undefined}>{f.label}{bad ? ' *' : ''}</label>
+                                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 400, fontSize: 12.5, color: 'var(--muted)', cursor: (editable || fillMode) ? 'pointer' : 'default' }}>
+                                  <input type="checkbox" checked={activeIt.supplier_available !== false} disabled={!(editable || fillMode)} onChange={(e) => setLine('supplier', editingIndex, { supplier_available: e.target.checked })} /> NCC sẵn có
+                                </label>
+                              </div>
+                            ) : (
+                              <label style={bad ? { color: '#e06666' } : undefined}>{f.label}{bad ? ' *' : ''}</label>
+                            )}
                             {lineField(f, editingTable, editingIndex)}
                           </div>
                         )
