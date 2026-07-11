@@ -367,8 +367,8 @@ export default function SurveyDetail() {
     setSv((s: any) => ({ ...s, [lineKey(tbl)]: [...s[lineKey(tbl)], cloned] }))
   }
 
-  // Thành tiền từng dòng (chỉ hiển thị trong popup chi tiết SP)
-  const rowAmount = (it: any) => (Number(sv.request_qty) || 0) * (Number(it.price_by_volume) || 0) * (1 + (Number(it.vat) || 0) / 100)
+  // Thành tiền = Giá theo sản lượng × MOQ tối thiểu × (1+VAT%) — tự chạy, khóa không cho sửa
+  const rowAmount = (it: any) => (Number(it.price_by_volume) || 0) * (Number(it.moq) || 0) * (1 + (Number(it.vat) || 0) / 100)
 
   // Giữ dòng nếu có BẤT KỲ nội dung (nháp cho lưu dở dang) — chỉ bỏ dòng RỖNG hẳn.
   // (KHÔNG bắt buộc chọn NCC/tên SP khi Lưu — cái đó chỉ bắt khi Gửi duyệt.)
@@ -606,6 +606,8 @@ export default function SurveyDetail() {
       </label>
     )
     if (t === 'date') return <input type="date" value={it[k] ?? ''} disabled={!ce} onChange={(e) => setLine(tbl, i, { [k]: e.target.value })} />
+    // Thành tiền (đã quy đổi): mặc định = Thành tiền (VNĐ) tự chạy, nhưng cho ghi đè
+    if (k === 'amount_converted') return <NumberInput value={it.amount_converted || rowAmount(it)} disabled={!ce} onChange={(v: number) => setLine(tbl, i, { amount_converted: v })} />
     if (t === 'num') return <NumberInput value={it[k]} disabled={!ce} onChange={(v: number) => setLine(tbl, i, { [k]: v })} />
     if (t === 'textarea') return <textarea value={it[k] ?? ''} disabled={!ce} style={{ minHeight: 64 }} onChange={(e) => setLine(tbl, i, { [k]: e.target.value })} />
     if (t === 'supplier') {
