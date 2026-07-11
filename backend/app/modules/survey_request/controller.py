@@ -273,18 +273,24 @@ def process_view_(sid: int, db: Session = Depends(get_db), up=Depends(_purchaser
 
 @router.get("/{sid}/lines/{line_id}/available-survey-lines")
 def available_survey_lines_(sid: int, line_id: int, supplier_code: str = "", item_group: str = "",
-                            db: Session = Depends(get_db), up=Depends(_purchaser)):
+                            search: str = "", db: Session = Depends(get_db), up=Depends(_purchaser)):
+    from app.modules.survey.model import Survey
     ln = service.get_line(db, sid, line_id)
-    if not supplier_code:
+    # Lọc MỞ (chọn NCC thủ công) — KHÔNG giới hạn liên kết YCKS: option có thể đã có khảo sát sẵn.
+    # Phân loại mặc định = của dòng (FE gửi sẵn); có thể đổi hoặc để trống. Cần ≥1 tiêu chí.
+    if not (supplier_code or (item_group or "").strip() or (search or "").strip()):
         return success([])
-    # Chọn NCC thủ công: tìm MỌI khảo sát đã duyệt của NCC (khớp phân loại của dòng),
-    # KHÔNG giới hạn theo liên kết YCKS — option có thể đã có phiếu khảo sát sẵn từ trước.
-    # (Cơ chế "Lấy từ khảo sát" mới giới hạn theo phiếu đã liên kết.)
-    rows = service.available_survey_lines(db, supplier_code, item_group or ln.item_group)
+    rows = service.available_survey_lines(db, supplier_code=supplier_code, item_group=item_group, search=search)
+    _sv_cache: dict = {}
     out = []
     for r in rows:
         d = _dict(r)
         d["supplier_name"] = service.resolve_supplier_name(db, r.supplier_code or "")
+        if r.survey_id not in _sv_cache:
+            _sv_cache[r.survey_id] = db.get(Survey, r.survey_id)
+        sv = _sv_cache[r.survey_id]
+        d["survey_item_group"] = sv.item_group if sv else ""   # để FE cảnh báo khi khác phân loại dòng
+        d["survey_code"] = sv.code if sv else ""
         out.append(d)
     return success(out)
 

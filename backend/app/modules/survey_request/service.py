@@ -157,23 +157,28 @@ def can_process_line(db: Session, line: SurveyRequestLine, profile: dict) -> boo
     return bool(row and emp_id in (row.primary_employee_id, row.backup_employee_id))
 
 
-def available_survey_lines(db: Session, supplier_code: str, item_group: str = "", survey_request_id: int = 0):
-    """Dòng khảo sát SẢN PHẨM đã DUYỆT (line_approve='Đã duyệt') của 1 NCC (nguồn để tạo option).
-    - Chỉ cần DÒNG được duyệt (không đòi cả phiếu duyệt), bỏ phiếu đã hủy.
-    - Lọc theo PHÂN LOẠI = item_group của Survey cha.
-    - MẶC ĐỊNH KHÔNG giới hạn liên kết YCKS (dùng cho chọn NCC thủ công — option có thể
-      đã có khảo sát sẵn từ trước). Truyền survey_request_id nếu muốn giới hạn theo liên kết."""
+def available_survey_lines(db: Session, supplier_code: str = "", item_group: str = "", search: str = ""):
+    """Dòng khảo sát SẢN PHẨM đã DUYỆT (line_approve='Đã duyệt') — nguồn để tạo option.
+    Dùng cho CHỌN NCC THỦ CÔNG: lọc mở theo nhiều tiêu chí (tùy chọn, KHÔNG giới hạn liên kết YCKS):
+    - supplier_code: theo NCC (tùy chọn).
+    - item_group: theo PHÂN LOẠI của Survey cha (mặc định = phân loại dòng, đổi được).
+    - search: khớp Tên SP hoặc Mã SP theo NCC (LIKE).
+    Cần ít nhất 1 tiêu chí (controller đã chặn rỗng). Giới hạn 100 dòng."""
+    from sqlalchemy import or_
     from app.modules.survey.model import Survey, SurveyProductLine
     q = (db.query(SurveyProductLine)
          .join(Survey, Survey.id == SurveyProductLine.survey_id)
-         .filter(SurveyProductLine.supplier_code == supplier_code,
-                 SurveyProductLine.line_approve == "Đã duyệt",
+         .filter(SurveyProductLine.line_approve == "Đã duyệt",
                  Survey.status.notin_(["cancelled"])))
-    if survey_request_id:
-        q = q.filter(Survey.survey_request_id == survey_request_id)
+    if supplier_code:
+        q = q.filter(SurveyProductLine.supplier_code == supplier_code)
     if item_group:
         q = q.filter(Survey.item_group == item_group)
-    return q.order_by(SurveyProductLine.id.desc()).all()
+    if (search or "").strip():
+        like = f"%{search.strip()}%"
+        q = q.filter(or_(SurveyProductLine.product_name.ilike(like),
+                         SurveyProductLine.internal_code.ilike(like)))
+    return q.order_by(SurveyProductLine.id.desc()).limit(100).all()
 
 
 def create_option(db: Session, line: SurveyRequestLine, psl_id: int, user_id: int) -> SurveyRequestOption:

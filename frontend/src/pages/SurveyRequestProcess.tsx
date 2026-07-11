@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { askConfirm } from '../components/confirm'
@@ -90,6 +90,8 @@ interface AvailSurveyLine {
   lab_result: string
   nspt_reason: string
   line_approve: string
+  survey_item_group?: string   // phân loại của Phiếu khảo sát cha (để cảnh báo khi khác phân loại dòng)
+  survey_code?: string
 }
 
 interface ProcessData {
@@ -112,6 +114,8 @@ interface Supplier {
 // Per-line local state for supplier selection + available survey lines
 interface LineState {
   supplierCode: string
+  filterGroup: string   // phân loại đang lọc (mặc định = phân loại dòng, đổi được)
+  search: string        // tìm theo mã/tên SP
   availLines: AvailSurveyLine[]
   loading: boolean
   selectedAvailIds: Set<number>
@@ -119,6 +123,11 @@ interface LineState {
 }
 
 const AVAIL_PAGE_SIZE = 8   // số dòng khảo sát khả dụng mỗi trang
+const SEL_STYLES = {
+  control: (b: any) => ({ ...b, minHeight: 40, borderRadius: 12, borderColor: '#E9EDF7' }),
+  menu: (b: any) => ({ ...b, zIndex: 9999 }),
+  menuPortal: (b: any) => ({ ...b, zIndex: 9999 }),
+}
 
 export default function SurveyRequestProcess() {
   const { id } = useParams()
@@ -127,7 +136,9 @@ export default function SurveyRequestProcess() {
 
   const [data, setData]           = useState<ProcessData | null>(null)
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [groups, setGroups]       = useState<string[]>([])   // danh mục phân loại (cho bộ lọc)
   const [lineStates, setLineStates] = useState<LineState[]>([])
+  const searchTimers = useRef<Record<number, any>>({})       // debounce ô tìm mỗi dòng
   const [err, setErr]             = useState('')
   const [msg, setMsg]             = useState('')
   const [forbidden, setForbidden] = useState(false)
@@ -144,14 +155,16 @@ export default function SurveyRequestProcess() {
       const r = await api.get(`${API}/${id}/process`)
       const d: ProcessData = r.data.data
       setData(d)
-      // Reset per-line state, preserving supplier selection
+      // Reset per-line state, giữ lại bộ lọc + kết quả đã tải (phân loại mặc định = phân loại dòng)
       setLineStates((prev) =>
-        (d.lines || []).map((_, i) => ({
+        (d.lines || []).map((ln, i) => ({
           supplierCode: prev[i]?.supplierCode || '',
+          filterGroup:  prev[i]?.filterGroup ?? (ln.item_group || ''),
+          search:       prev[i]?.search || '',
           availLines:   prev[i]?.availLines   || [],
           loading:      false,
           selectedAvailIds: new Set<number>(),
-          availPage:    0,
+          availPage:    prev[i]?.availPage || 0,
         }))
       )
     } catch (e: any) {
@@ -165,31 +178,51 @@ export default function SurveyRequestProcess() {
     api.get('/api/suppliers', { params: { page_size: 1000, supplier_type: 'goods', is_active: true } })
       .then((r) => setSuppliers((r.data.data.items || []).filter((s: any) => s.supplier_type === 'goods')))
       .catch(() => {})
+    api.get('/api/item-groups', { params: { page_size: 1000 } })
+      .then((r) => setGroups((r.data.data.items || []).map((x: any) => x.name))).catch(() => {})
     loadProcess()
   }, [id])
 
-  async function fetchAvailLines(lineIdx: number, lineId: number, supplierCode: string) {
-    if (!supplierCode) {
-      setLineStates((prev) =>
-        prev.map((s, i) => i === lineIdx ? { ...s, availLines: [], supplierCode: '' } : s)
-      )
+  // Lần đầu tải phiếu -> tự tìm kết quả khảo sát theo PHÂN LOẠI mặc định của từng dòng
+  useEffect(() => {
+    if (!data) return
+    ;(data.lines || []).forEach((ln, i) => {
+      if ((lineStates[i]?.availLines || []).length === 0)
+        fetchAvail(i, ln.id, { filterGroup: ln.item_group || '' })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.id])
+
+  // Tìm dòng khảo sát khả dụng theo bộ lọc (NCC / phân loại / mã-tên SP). patch = phần filter thay đổi.
+  async function fetchAvail(lineIdx: number, lineId: number, patch: Partial<Pick<LineState, 'supplierCode' | 'filterGroup' | 'search'>>) {
+    const cur = lineStates[lineIdx] || ({} as LineState)
+    const merged = {
+      supplierCode: patch.supplierCode ?? cur.supplierCode ?? '',
+      filterGroup: patch.filterGroup ?? cur.filterGroup ?? '',
+      search: patch.search ?? cur.search ?? '',
+    }
+    setLineStates((prev) => prev.map((s, i) => i === lineIdx
+      ? { ...s, ...patch, loading: true, availPage: 0, selectedAvailIds: new Set<number>() } : s))
+    // Cần ít nhất 1 tiêu chí -> nếu rỗng hết thì xóa kết quả
+    if (!merged.supplierCode && !merged.filterGroup && !merged.search.trim()) {
+      setLineStates((prev) => prev.map((s, i) => i === lineIdx ? { ...s, availLines: [], loading: false } : s))
       return
     }
-    setLineStates((prev) =>
-      prev.map((s, i) => i === lineIdx ? { ...s, loading: true, supplierCode, availLines: [], selectedAvailIds: new Set(), availPage: 0 } : s)
-    )
     try {
       const r = await api.get(`${API}/${id}/lines/${lineId}/available-survey-lines`, {
-        params: { supplier_code: supplierCode },
+        params: { supplier_code: merged.supplierCode, item_group: merged.filterGroup, search: merged.search.trim() },
       })
-      setLineStates((prev) =>
-        prev.map((s, i) => i === lineIdx ? { ...s, loading: false, availLines: r.data.data || [] } : s)
-      )
+      setLineStates((prev) => prev.map((s, i) => i === lineIdx ? { ...s, loading: false, availLines: r.data.data || [] } : s))
     } catch {
-      setLineStates((prev) =>
-        prev.map((s, i) => i === lineIdx ? { ...s, loading: false, availLines: [] } : s)
-      )
+      setLineStates((prev) => prev.map((s, i) => i === lineIdx ? { ...s, loading: false, availLines: [] } : s))
     }
+  }
+
+  // Ô tìm có debounce 400ms (cập nhật input ngay, gọi API sau)
+  function onSearchChange(lineIdx: number, lineId: number, val: string) {
+    setLineStates((prev) => prev.map((s, i) => i === lineIdx ? { ...s, search: val } : s))
+    clearTimeout(searchTimers.current[lineIdx])
+    searchTimers.current[lineIdx] = setTimeout(() => fetchAvail(lineIdx, lineId, { search: val }), 400)
   }
 
   async function addOption(lineId: number, surveyLineId: number) {
@@ -309,7 +342,7 @@ export default function SurveyRequestProcess() {
       )}
 
       {lines.map((line, lineIdx) => {
-        const ls = lineStates[lineIdx] || { supplierCode: '', availLines: [], loading: false, selectedAvailIds: new Set(), availPage: 0 }
+        const ls = lineStates[lineIdx] || { supplierCode: '', filterGroup: line.item_group || '', search: '', availLines: [], loading: false, selectedAvailIds: new Set(), availPage: 0 }
         const shortName = line.requirement_detail
           ? (line.requirement_detail.length > 60 ? line.requirement_detail.slice(0, 57) + '...' : line.requirement_detail)
           : line.item_group || `Sản phẩm ${lineIdx + 1}`
@@ -342,42 +375,56 @@ export default function SurveyRequestProcess() {
               </div>
             )}
 
-            {/* Chọn NCC */}
+            {/* Bộ lọc: Phân loại (mặc định theo dòng, đổi được) + NCC (tùy chọn) + Tìm mã/tên SP */}
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>
-                <i className="ti ti-building-store" style={{ marginRight: 4 }} />Chọn Nhà cung cấp để thêm option
+                <i className="ti ti-filter" style={{ marginRight: 4 }} />Tìm kết quả khảo sát để thêm option
               </div>
-              <div style={{ maxWidth: 420 }}>
-                <Select
-                  value={supplierOptions.find((o) => o.value === ls.supplierCode) || null}
-                  options={supplierOptions}
-                  onChange={(o: any) => fetchAvailLines(lineIdx, line.id, o ? o.value : '')}
-                  isClearable
-                  placeholder="Tìm / chọn NCC..."
-                  styles={{
-                    control: (b) => ({ ...b, minHeight: 40, borderRadius: 12, borderColor: '#E9EDF7' }),
-                    menu: (b) => ({ ...b, zIndex: 9999 }),
-                    menuPortal: (b) => ({ ...b, zIndex: 9999 }),
-                  }}
-                  menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
-                />
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ width: 220 }}>
+                  <Select
+                    value={ls.filterGroup ? { value: ls.filterGroup, label: ls.filterGroup } : null}
+                    options={groups.map((g) => ({ value: g, label: g }))}
+                    onChange={(o: any) => fetchAvail(lineIdx, line.id, { filterGroup: o ? o.value : '' })}
+                    isClearable placeholder="Phân loại..." styles={SEL_STYLES}
+                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                  />
+                </div>
+                <div style={{ width: 300 }}>
+                  <Select
+                    value={supplierOptions.find((o) => o.value === ls.supplierCode) || null}
+                    options={supplierOptions}
+                    onChange={(o: any) => fetchAvail(lineIdx, line.id, { supplierCode: o ? o.value : '' })}
+                    isClearable placeholder="Nhà cung cấp (tùy chọn)..." styles={SEL_STYLES}
+                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                  />
+                </div>
+                <input value={ls.search || ''} onChange={(e) => onSearchChange(lineIdx, line.id, e.target.value)}
+                  placeholder="Tìm mã / tên SP..." style={{ width: 220 }} />
+                {ls.filterGroup !== (line.item_group || '') && (
+                  <button className="btn ghost" style={{ height: 34, fontSize: 12, padding: '0 10px' }}
+                    onClick={() => fetchAvail(lineIdx, line.id, { filterGroup: line.item_group || '' })}>
+                    <i className="ti ti-rotate" />Về phân loại dòng
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Bảng dòng khảo sát có sẵn từ NCC đã chọn */}
-            {ls.supplierCode && (
+            {/* Bảng dòng khảo sát khả dụng theo bộ lọc */}
+            {(ls.supplierCode || ls.filterGroup || (ls.search || '').trim() || ls.loading || availShown.length > 0) && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
-                  Dòng khảo sát đã duyệt của NCC{' '}
-                  <span style={{ color: 'var(--teal)' }}>{ls.supplierCode}</span>:
+                  Kết quả khảo sát đã duyệt
+                  {ls.filterGroup && <> · phân loại <span style={{ color: 'var(--teal)' }}>{ls.filterGroup}</span></>}
+                  {ls.supplierCode && <> · NCC <span style={{ color: 'var(--teal)' }}>{ls.supplierCode}</span></>}:
                 </div>
                 {ls.loading ? (
                   <div style={{ color: 'var(--muted)', fontSize: 13 }}>Đang tải...</div>
                 ) : availShown.length === 0 ? (
                   <div style={{ color: 'var(--muted)', fontSize: 13, fontStyle: 'italic' }}>
                     {ls.availLines.length > 0
-                      ? 'Tất cả dòng khảo sát của NCC này đã được gắn.'
-                      : 'Chưa có dòng khảo sát đã duyệt cho NCC này.'}
+                      ? 'Tất cả kết quả khớp đã được gắn.'
+                      : 'Không tìm thấy kết quả khảo sát đã duyệt khớp bộ lọc.'}
                   </div>
                 ) : (
                   <div className="items-scroll">
@@ -415,9 +462,13 @@ export default function SurveyRequestProcess() {
                                 }}
                               />
                             </td>
-                            <td title={al.product_name}
-                              style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {al.product_name || '—'}
+                            <td title={al.product_name} style={{ maxWidth: 200 }}>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: 160, verticalAlign: 'middle' }}>{al.product_name || '—'}</span>
+                              {al.internal_code && <span style={{ color: 'var(--muted)', fontSize: 11, marginLeft: 4 }}>({al.internal_code})</span>}
+                              {al.survey_item_group && al.survey_item_group !== line.item_group && (
+                                <span className="badge warn" style={{ fontSize: 10, marginLeft: 6 }}
+                                  title={`Khác phân loại dòng — khảo sát thuộc: ${al.survey_item_group}`}>≠ {al.survey_item_group}</span>
+                              )}
                             </td>
                             <td title={al.spec}
                               style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
