@@ -4,15 +4,16 @@ import type { CSSProperties } from 'react'
 /** Ô nhập SỐ theo chuẩn Việt Nam:
  *  - dấu chấm "." = ngăn cách hàng nghìn (bỏ khi tính)
  *  - dấu phẩy "," = dấu thập phân
- *  Chặn số âm. `decimals=false` (mặc định) => số nguyên (tiền/VNĐ).
- *  `decimals=true` => cho số lẻ (số lượng theo kg/mét…), tối đa 3 chữ số thập phân.
+ *  Chặn số âm. Mặc định CHO số lẻ (`decimals=true`): áp dụng cho cả tiền lẫn số lượng,
+ *  tối đa 3 chữ số thập phân (vd 5.000,5 · 1.250,75). Đặt `decimals={false}` nếu muốn
+ *  ép số nguyên (vd số thứ tự, số ngày…).
  *
  *  Hiển thị: khi KHÔNG focus -> định dạng VN (vd 1.250,5 hoặc 10.500).
  *            khi ĐANG focus  -> giữ đúng chuỗi người dùng đang gõ.
  */
 
 // Định dạng số -> chuỗi kiểu VN
-export function formatVN(n: number, decimals = false): string {
+export function formatVN(n: number, decimals = true): string {
   const v = Number(n) || 0
   if (!v) return ''
   return decimals
@@ -21,7 +22,7 @@ export function formatVN(n: number, decimals = false): string {
 }
 
 // Parse chuỗi người dùng gõ (kiểu VN) -> number (không âm)
-export function parseVN(s: string, decimals = false): number {
+export function parseVN(s: string, decimals = true): number {
   if (!s) return 0
   if (!decimals) {
     const digits = s.replace(/[^\d]/g, '')          // chỉ lấy chữ số -> số nguyên
@@ -45,7 +46,7 @@ type Props = {
   style?: CSSProperties
 }
 
-export default function NumberInput({ value, onChange, decimals = false, disabled, placeholder, className, style }: Props) {
+export default function NumberInput({ value, onChange, decimals = true, disabled, placeholder, className, style }: Props) {
   const [focused, setFocused] = useState(false)
   const [raw, setRaw] = useState('')
 

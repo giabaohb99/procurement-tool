@@ -198,9 +198,6 @@ const numKeysOf = (sections: any[]) => new Set<string>(
 const SUP_NUM_KEYS = numKeysOf(SUPPLIER_SECTIONS)
 const PROD_NUM_KEYS = numKeysOf(PRODUCT_SECTIONS)
 
-// Các key kiểu TIỀN (VNĐ) -> nhập số nguyên, dấu chấm ngăn nghìn. Còn lại (SL) -> cho số lẻ (dấu phẩy).
-const MONEY_KEYS = new Set(['price_by_volume', 'amount_converted', 'shipping_cost', 'proposed_rate'])
-
 export default function SurveyDetail() {
   const { id } = useParams()
   const isNew = id === 'new'
@@ -600,7 +597,7 @@ export default function SurveyDetail() {
       </label>
     )
     if (t === 'date') return <input type="date" value={it[k] ?? ''} disabled={!ce} onChange={(e) => setLine(tbl, i, { [k]: e.target.value })} />
-    if (t === 'num') return <NumberInput decimals={!MONEY_KEYS.has(k)} value={it[k]} disabled={!ce} onChange={(v: number) => setLine(tbl, i, { [k]: v })} />
+    if (t === 'num') return <NumberInput value={it[k]} disabled={!ce} onChange={(v: number) => setLine(tbl, i, { [k]: v })} />
     if (t === 'textarea') return <textarea value={it[k] ?? ''} disabled={!ce} style={{ minHeight: 64 }} onChange={(e) => setLine(tbl, i, { [k]: e.target.value })} />
     if (t === 'supplier') {
       // Bỏ check "NCC sẵn có" → ô thành text tự do (NCC chưa có trong danh mục)
@@ -638,7 +635,7 @@ export default function SurveyDetail() {
     if (col.type === 'computed') return <span style={{ fontWeight: 500 }}>{fmt(rowAmount(it))}</span>
     if (col.key === 'supplier_available') return <input type="checkbox" checked={supplierAvail} onChange={(e) => setLine(tbl, i, { supplier_available: e.target.checked })} />
     if (col.type === 'check') return <input type="checkbox" checked={!!it[col.key]} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.checked })} />
-    if (col.type === 'num') return <NumberInput decimals={!MONEY_KEYS.has(col.key)} className="cell-input" style={{ width: '100%' }} value={it[col.key]} onChange={(v: number) => setLine(tbl, i, { [col.key]: v })} />
+    if (col.type === 'num') return <NumberInput className="cell-input" style={{ width: '100%' }} value={it[col.key]} onChange={(v: number) => setLine(tbl, i, { [col.key]: v })} />
     if (col.type === 'date') return <input className="cell-input" type="date" style={{ width: '100%' }} value={it[col.key] ?? ''} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.value })} />
     if (col.type === 'select') return (
       <div style={{ width: '100%' }}><SearchSelect variant="table" colorMap={col.key === 'line_approve' ? APPROVE_COLOR : undefined}
