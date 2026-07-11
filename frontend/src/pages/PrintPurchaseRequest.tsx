@@ -44,6 +44,8 @@ export default function PrintPurchaseRequest() {
     padding: "5px 8px",
     fontSize: 12,
     margin: "14px 0 0",
+    WebkitPrintColorAdjust: "exact",
+    printColorAdjust: "exact",
   } as const;
   const cell = {
     border: "1px solid #999",
@@ -53,6 +55,7 @@ export default function PrintPurchaseRequest() {
 
   return (
     <div style={{ background: "#f0f0f0", minHeight: "100vh", padding: 20 }}>
+      <style>{`@media print { @page { margin: 12mm; } }`}</style>
       <div
         className="no-print"
         style={{
@@ -88,6 +91,7 @@ export default function PrintPurchaseRequest() {
       </div>
 
       <div
+        className="print-doc"
         style={{
           maxWidth: 820,
           margin: "0 auto",

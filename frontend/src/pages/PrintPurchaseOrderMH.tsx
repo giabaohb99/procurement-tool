@@ -55,7 +55,7 @@ export default function PrintPurchaseOrderMH() {
         <button className="btn ghost" onClick={() => window.close()}>Đóng</button>
       </div>
 
-      <div style={{ maxWidth: 800, margin: '0 auto', background: '#fff', padding: '24px 30px', fontFamily: 'Arial, sans-serif', color: '#000' }}>
+      <div className="print-doc" style={{ maxWidth: 800, margin: '0 auto', background: '#fff', padding: '24px 30px', fontFamily: 'Arial, sans-serif', color: '#000' }}>
         {/* Header công ty */}
         <div style={{ borderBottom: '2px solid #1a4d6b', paddingBottom: 6 }}>
           <div style={{ fontWeight: 700, fontSize: 13 }}>{co.name || ''}</div>
