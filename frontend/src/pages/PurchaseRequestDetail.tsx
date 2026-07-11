@@ -500,8 +500,10 @@ export default function PurchaseRequestDetail() {
                           <ProductPicker code={it.product_code} name={it.product_name} onPick={(prod) => applyProduct(i, prod)} />
                         ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{it.product_code || '—'}</span>}
                       </td>
-                      <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={it.product_name}>
-                        {it.product_name || <span style={{ color: '#bbb' }}>(mở chi tiết để nhập)</span>}
+                      <td style={{ overflow: 'hidden' }} title={it.product_name}>
+                        {editable ? (
+                          <input className="cell-input" value={it.product_name || ''} placeholder="Nhập tên sản phẩm" onChange={(e) => setItem(i, 'product_name', e.target.value)} style={{ width: '100%' }} />
+                        ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{it.product_name || ''}</span>}
                       </td>
                       <td>
                         {editable ? (
@@ -509,18 +511,26 @@ export default function PurchaseRequestDetail() {
                             <option value="">-- Kho --</option>
                             {warehouses.map((w) => <option key={w.name} value={w.name}>{w.code} - {w.name}</option>)}
                           </select>
-                        ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }} title={whLabel(it.warehouse)}>{it.warehouse ? whLabel(it.warehouse) : '—'}</span>}
+                        ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }} title={whLabel(it.warehouse)}>{it.warehouse ? whLabel(it.warehouse) : ''}</span>}
                       </td>
                       <td>
                         {editable ? (
                           <select className="cell-input" value={it.item_group || ''} onChange={(e) => { setItem(i, 'item_group', e.target.value); setItem(i, 'group_desc', groupDesc(e.target.value)) }} style={{ width: '100%' }}>
-                            <option value="">—</option>
+                            <option value="">-- Phân loại --</option>
                             {groups.map((g) => <option key={g} value={g}>{g}</option>)}
                           </select>
-                        ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }} title={it.item_group}>{it.item_group || '—'}</span>}
+                        ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }} title={it.item_group}>{it.item_group || ''}</span>}
                       </td>
-                      <td style={{ textAlign: 'right' }}>{fmtBlank(it.qty)}</td>
-                      <td style={{ textAlign: 'right' }}>{fmtBlank(it.price)}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        {editable ? (
+                          <input type="number" className="cell-input" value={it.qty || ''} placeholder="0" onChange={(e) => setItem(i, 'qty', Number(e.target.value))} style={{ width: '100%', textAlign: 'right' }} />
+                        ) : fmtBlank(it.qty)}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        {editable ? (
+                          <input type="number" className="cell-input" value={it.price || ''} placeholder="0" onChange={(e) => setItem(i, 'price', Number(e.target.value))} style={{ width: '100%', textAlign: 'right' }} />
+                        ) : fmtBlank(it.price)}
+                      </td>
                       <td style={{ textAlign: 'right', fontWeight: 500 }}>{fmtBlank((Number(it.qty) || 0) * (Number(it.price) || 0))}</td>
                       <td>
                         {canLineStatus(it) ? (
@@ -539,7 +549,7 @@ export default function PurchaseRequestDetail() {
                             <option value="">-- Chọn NSTM --</option>
                             {purchaserOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                           </select>
-                        ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }} title={empName(it.assignee)}>{it.assignee ? empName(it.assignee) : '—'}</span>}
+                        ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }} title={empName(it.assignee)}>{it.assignee ? empName(it.assignee) : ''}</span>}
                       </td>
                       <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                         <button className="icon-btn" title="Chi tiết" onClick={() => setEditIdx(i)}><i className="ti ti-pencil" style={{ color: 'var(--teal)' }} /></button>
