@@ -136,6 +136,16 @@ export default function PurchaseRequestDetail() {
     }
   }
 
+  // Đổi NSTM phụ trách ngay trên bảng ngoài (chỉ người có quyền duyệt). Phiếu đã lưu -> auto-lưu; phiếu nháp -> theo nút Lưu.
+  async function changeAssignee(i: number, val: string) {
+    setItem(i, 'assignee', val)
+    const it = items[i]
+    if (!editable && it.id && canAssignPurchaser) {
+      try { await api.patch(`${API}/${id}/assign`, { items: [{ id: it.id, assignee: val || '' }] }); toast.success('Đã cập nhật NSTM phụ trách'); loadAll() }
+      catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi cập nhật NSTM'); loadAll() }
+    }
+  }
+
   const subtotal = items.reduce((s: number, it: any) => s + (Number(it.qty) || 0) * (Number(it.price) || 0), 0)
 
   const groupDesc = (name: string) => {
@@ -437,7 +447,7 @@ export default function PurchaseRequestDetail() {
               {editable && <button className="btn ghost" onClick={() => addItems(1)} style={{ height: 30, padding: '0 10px', fontSize: 13 }}><i className="ti ti-plus" /> Thêm SP</button>}
             </div>
             <div className="items-scroll">
-              <table className="items-table" style={{ minWidth: 980, tableLayout: 'fixed' }}>
+              <table className="items-table" style={{ minWidth: 1140, tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
                     <th style={{ width: 34, textAlign: 'center' }}>No.</th>
@@ -449,6 +459,7 @@ export default function PurchaseRequestDetail() {
                     <th style={{ width: 100, textAlign: 'right' }}>Đơn giá</th>
                     <th style={{ width: 110, textAlign: 'right' }}>Thành tiền</th>
                     <th style={{ width: 150, textAlign: 'center' }}>Trạng thái</th>
+                    <th style={{ width: 160, textAlign: 'left' }}>NSTM phụ trách</th>
                     <th style={{ width: 96, textAlign: 'center' }}>Thao tác</th>
                   </tr>
                 </thead>
@@ -494,6 +505,14 @@ export default function PurchaseRequestDetail() {
                           <span className="badge" style={{ background: (LS_COLOR[it.line_status] || '#94a3b8') + '22', color: LS_COLOR[it.line_status] || '#64748b' }}>{it.line_status || 'Chưa đặt hàng'}</span>
                         )}
                       </td>
+                      <td style={{ overflow: 'hidden' }}>
+                        {canAssignPurchaser ? (
+                          <select className="cell-input" value={it.assignee || ''} onChange={(e) => changeAssignee(i, e.target.value)} style={{ width: '100%' }}>
+                            <option value="">-- Chọn NSTM --</option>
+                            {purchaserOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                          </select>
+                        ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }} title={empName(it.assignee)}>{it.assignee ? empName(it.assignee) : '—'}</span>}
+                      </td>
                       <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                         <button className="icon-btn" title="Chi tiết" onClick={() => setEditIdx(i)}><i className="ti ti-pencil" style={{ color: 'var(--teal)' }} /></button>
                         {editable && <button className="icon-btn" title="Nhân đôi" onClick={() => copyItem(i)}><i className="ti ti-copy" style={{ color: 'var(--muted)' }} /></button>}
@@ -501,7 +520,7 @@ export default function PurchaseRequestDetail() {
                       </td>
                     </tr>
                   ))}
-                  {items.length === 0 && <tr><td colSpan={10} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có sản phẩm nào</td></tr>}
+                  {items.length === 0 && <tr><td colSpan={11} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có sản phẩm nào</td></tr>}
                 </tbody>
               </table>
             </div>
