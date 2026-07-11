@@ -34,6 +34,10 @@ function NumberInput({ value, onChange, disabled, placeholder, className, style 
   )
 }
 
+// Đính kèm là ảnh? (theo content_type hoặc đuôi file)
+const isImageAtt = (a: any) =>
+  (a?.content_type || '').startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(a?.filename || '')
+
 // Cặp nhãn:giá trị nhỏ gọn cho thẻ option
 function Field({ label, value, strong }: any) {
   return (
@@ -202,6 +206,15 @@ export default function SurveyRequestDetail() {
 
   // --- Phase 5C/5D: kết quả khảo sát (ẩn NCC) + sinh PYC ---
   const [result, setResult] = useState<any>(null)
+  const [viewImg, setViewImg] = useState<string | null>(null)   // lightbox ảnh đính kèm
+
+  // Đính kèm không phải ảnh → hỏi trước khi tải về
+  async function openAtt(a: any) {
+    if (!(await askConfirm({ title: 'Tải tài liệu', message: `Tải file "${a.filename}" về máy?`, confirmText: 'Tải về', danger: false }))) return
+    const el = document.createElement('a')
+    el.href = a.url; el.download = a.filename || ''; el.target = '_blank'; el.rel = 'noopener'
+    document.body.appendChild(el); el.click(); el.remove()
+  }
   useEffect(() => {
     if (!isNew && ['survey_done', 'pr_created', 'done'].includes(sv.status)) {
       api.get(`${API}/${id}/result`).then((r) => setResult(r.data.data)).catch(() => setResult(null))
@@ -218,6 +231,7 @@ export default function SurveyRequestDetail() {
   }
   // 5D: người YC sinh Yêu cầu mua hàng từ phương án đã chọn
   async function createPrs() {
+    if (!allChosen) { toast.error('Vui lòng chọn phương án đề xuất mua hàng'); return }
     if (!(await askConfirm({ title: 'Tạo Yêu cầu mua hàng', message: 'Tạo Yêu cầu mua hàng từ các phương án đã chọn?', confirmText: 'Tạo YCMH', danger: false }))) return
     try {
       const r = await api.post(`${API}/${id}/create-prs`)
@@ -482,8 +496,7 @@ export default function SurveyRequestDetail() {
 
         {/* Nút Tạo yêu cầu mua (người YC) — góc phải như Xử lý khảo sát */}
         {!isNew && sv.status === 'survey_done' && canCreatePr && (
-          <button className="btn" disabled={!allChosen}
-            title={allChosen ? '' : 'Chọn phương án cho tất cả sản phẩm trước'} onClick={createPrs}>
+          <button className="btn" onClick={createPrs}>
             <i className="ti ti-file-plus" />Tạo yêu cầu mua
           </button>
         )}
@@ -506,6 +519,21 @@ export default function SurveyRequestDetail() {
           </button>
         )}
       </div>
+
+      {/* Banner PYC đã sinh — đưa lên đầu để dễ mở các phiếu vừa tạo */}
+      {createdPrs.length > 0 && (
+        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 13 }}>
+          <b style={{ color: '#15803d' }}><i className="ti ti-circle-check" /> Đã tạo {createdPrs.length} phiếu yêu cầu mua hàng: </b>
+          <ul style={{ margin: '8px 0 0 24px', padding: 0, color: '#15803d', lineHeight: 1.6 }}>
+            {createdPrs.map((p) => (
+              <li key={p.pid}>
+                <a className="clickable" style={{ color: 'var(--teal)', fontWeight: 600 }} onClick={() => navigate(`/purchase-requests/${p.pid}`)}>{p.code}</a>
+                {' '} — Bao gồm: <b>{p.items.join(', ')}</b>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Lý do trả đơn / từ chối — chỉ hiện khi đang ở trạng thái đó */}
       {!isNew && sv.reject_reason && (sv.status === 'rejected' || sv.status === 'cancelled') && (
@@ -748,21 +776,6 @@ export default function SurveyRequestDetail() {
             <div className="card" style={{ padding: 18, marginBottom: 16 }}>
               <h3 className="sec-title"><i className="ti ti-clipboard-check" /> Kết quả khảo sát {sv.status === 'survey_done' ? '— chọn phương án' : ''}</h3>
 
-              {/* Banner PYC đã sinh */}
-              {createdPrs.length > 0 && (
-                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: 12, marginBottom: 14, fontSize: 13 }}>
-                  <b style={{ color: '#15803d' }}><i className="ti ti-circle-check" /> Đã tạo {createdPrs.length} phiếu yêu cầu mua hàng: </b>
-                  <ul style={{ margin: '8px 0 0 24px', padding: 0, color: '#15803d', lineHeight: 1.6 }}>
-                    {createdPrs.map((p) => (
-                      <li key={p.pid}>
-                        <a className="clickable" style={{ color: 'var(--teal)', fontWeight: 600 }} onClick={() => navigate(`/purchase-requests/${p.pid}`)}>{p.code}</a>
-                        {' '} — Bao gồm: <b>{p.items.join(', ')}</b>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
               {sv.status === 'survey_done' && (
                 <p style={{ color: 'var(--muted)', fontSize: 12.5, marginTop: -6, marginBottom: 14 }}>
                   Với mỗi sản phẩm, nhấn chọn 1 phương án phù hợp nhất. (Thông tin nhà cung cấp được ẩn theo chính sách.)
@@ -812,6 +825,23 @@ export default function SurveyRequestDetail() {
                               <span style={{ color: 'var(--muted)' }}>Thông số: </span>{o.snap_spec}
                             </div>
                           )}
+                          <div style={{ marginTop: 8, fontSize: 12.5, borderTop: '1px dashed #E9EDF7', paddingTop: 8 }} onClick={(e) => e.stopPropagation()}>
+                            <div style={{ color: 'var(--muted)', marginBottom: 6 }}>Tài liệu đính kèm:</div>
+                            {(o.attachments || []).length > 0 ? (
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                {(o.attachments || []).map((a: any) => isImageAtt(a) ? (
+                                  <img key={a.file_id} src={a.url} title={a.filename} onClick={() => setViewImg(a.url)}
+                                    style={{ width: 54, height: 54, objectFit: 'cover', borderRadius: 8, border: '1px solid #E9EDF7', cursor: 'pointer' }} />
+                                ) : (
+                                  <button key={a.file_id} type="button" className="btn ghost" style={{ height: 32, fontSize: 12.5 }} onClick={() => openAtt(a)}>
+                                    <i className="ti ti-file-download" /> {a.filename}
+                                  </button>
+                                ))}
+                              </div>
+                            ) : (
+                              <div style={{ color: '#94a3b8', fontStyle: 'italic' }}>Không có file đính kèm</div>
+                            )}
+                          </div>
                         </div>
                       ) })}
                     </div>
@@ -1077,6 +1107,19 @@ export default function SurveyRequestDetail() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Lightbox xem ảnh đính kèm — click nền hoặc nút X để đóng */}
+      {viewImg && (
+        <div onClick={() => setViewImg(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.8)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <button className="icon-btn" onClick={() => setViewImg(null)}
+            style={{ position: 'absolute', top: 16, right: 16, color: '#fff', fontSize: 22 }}>
+            <i className="ti ti-x" />
+          </button>
+          <img src={viewImg} onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '92vw', maxHeight: '88vh', objectFit: 'contain', borderRadius: 8 }} />
         </div>
       )}
     </div>

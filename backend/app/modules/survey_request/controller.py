@@ -379,9 +379,25 @@ _LINE_PUBLIC_FIELDS = [
 ]
 
 
-def _opt_public(o) -> dict:
+def _opt_attachments(db: Session, psl_id: int) -> list[dict]:
+    """Đính kèm của dòng khảo sát SP (entity 'survey_line') → hiện trên option.
+    Chạy trong /result (đã kiểm quyền survey_request read) nên không gọi API riêng."""
+    from app.modules.attachment.model import FileLink, StoredFile
+    if not psl_id:
+        return []
+    rows = (db.query(FileLink, StoredFile)
+            .join(StoredFile, StoredFile.id == FileLink.file_id)
+            .filter(FileLink.entity == "survey_line", FileLink.entity_id == psl_id)
+            .order_by(FileLink.id.desc()).all())
+    return [{"file_id": f.id, "filename": f.filename, "url": f.url,
+             "content_type": f.content_type, "size": f.size} for _lk, f in rows]
+
+
+def _opt_public(o, db: Session) -> dict:
     d = _dict(o)
-    return {k: d.get(k) for k in _OPT_PUBLIC_FIELDS}
+    out = {k: d.get(k) for k in _OPT_PUBLIC_FIELDS}
+    out["attachments"] = _opt_attachments(db, o.product_survey_line_id)
+    return out
 
 
 def _out_result(db: Session, s: SurveyRequest) -> dict:
@@ -391,7 +407,7 @@ def _out_result(db: Session, s: SurveyRequest) -> dict:
         d = {k: getattr(ln, k) for k in _LINE_PUBLIC_FIELDS}
         d["request_qty"] = float(d["request_qty"] or 0)
         d["proposed_price"] = float(d["proposed_price"] or 0)
-        d["options"] = [_opt_public(o) for o in service.options_of(db, ln.id)]
+        d["options"] = [_opt_public(o, db) for o in service.options_of(db, ln.id)]
         out_lines.append(d)
     base["lines"] = out_lines
     return base
