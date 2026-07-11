@@ -264,6 +264,7 @@ export const cruds: Record<string, CrudConfig> = {
     slug: 'survey-requests', entity: 'survey_request', title: 'Yêu cầu khảo sát', apiPath: '/api/survey-requests', txn: true,
     columns: [
       { key: 'code', label: 'Mã phiếu' },
+      { key: 'purpose', label: 'Mục đích' },
       { key: 'requester', label: 'Người yêu cầu' },
       { key: 'department', label: 'Bộ phận' },
       { key: 'request_date', label: 'Ngày tạo' },
