@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class PRItemIn(BaseModel):
@@ -6,9 +6,9 @@ class PRItemIn(BaseModel):
     product_name: str
     item_group: str = ""
     group_desc: str = ""
-    qty: float = 0
+    qty: float = Field(0, ge=0)      # SL không âm; cho số lẻ (BE Numeric(18,3))
     unit: str = ""
-    price: float = 0
+    price: float = Field(0, ge=0)    # giá không âm; cho số lẻ (BE Numeric(18,2))
     warehouse: str = ""
     required_date: str = ""
     assignee: str = ""
