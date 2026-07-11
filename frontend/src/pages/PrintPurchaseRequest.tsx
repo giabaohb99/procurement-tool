@@ -9,6 +9,52 @@ function viDate(d: string) {
   return `Ngày ${dd} tháng ${m} năm ${y}`;
 }
 
+function fmtDate(d: string) {
+  if (!d) return "";
+  const parts = d.split("-");
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return d;
+}
+
+function getClosestNeedDate(items: any[]) {
+  if (!items || items.length === 0) return "";
+  const dates = items
+    .map((it) => it.required_date)
+    .filter((d) => d && typeof d === "string" && d.trim() !== "");
+
+  if (dates.length === 0) return "";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let closestDate = "";
+  let minDiff = Infinity;
+
+  for (const d of dates) {
+    const parts = d.split("-");
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const dObj = new Date(year, month, day);
+      dObj.setHours(0, 0, 0, 0);
+      const diff = Math.abs(dObj.getTime() - today.getTime());
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestDate = d;
+      }
+    }
+  }
+
+  if (!closestDate && dates.length > 0) {
+    closestDate = dates[0];
+  }
+
+  return fmtDate(closestDate);
+}
+
 export default function PrintPurchaseRequest() {
   const { id } = useParams();
   const [pr, setPr] = useState<any>(null);
@@ -183,7 +229,7 @@ export default function PrintPurchaseRequest() {
             {pr.purpose}
           </div>
           <div>
-            <b>Thời gian cần hàng/dịch vụ:</b> {pr.need_date || "..."}
+            <b>Thời gian cần hàng/dịch vụ:</b> {getClosestNeedDate(pr.items) || fmtDate(pr.need_date) || "..."}
           </div>
           <div>
             <b>Nội dung:</b> {pr.note || ""}
@@ -229,18 +275,26 @@ export default function PrintPurchaseRequest() {
               </td>
               <td style={cell} />
             </tr>
+            <tr>
+              <td colSpan={6} style={{ border: "none", textAlign: "right", padding: "8px 8px 4px", fontSize: 13 }}>
+                VAT:
+              </td>
+              <td style={{ border: "none", textAlign: "right", padding: "8px 8px 4px", fontSize: 13, fontWeight: 700 }}>
+                {Number(pr.vat) ? fmt(pr.vat) : ""}
+              </td>
+              <td style={{ border: "none" }} />
+            </tr>
+            <tr>
+              <td colSpan={6} style={{ border: "none", textAlign: "right", padding: "4px 8px 8px", fontSize: 13 }}>
+                Tổng cộng thanh toán:
+              </td>
+              <td style={{ border: "none", textAlign: "right", padding: "4px 8px 8px", fontSize: 13, fontWeight: 700 }}>
+                {fmt(pr.total)}
+              </td>
+              <td style={{ border: "none" }} />
+            </tr>
           </tbody>
         </table>
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-          <div style={{ marginRight: 110, fontSize: 13, textAlign: "right", lineHeight: 1.9 }}>
-            <div>
-              VAT: <b>{Number(pr.vat) ? fmt(pr.vat) : ""}</b>
-            </div>
-            <div>
-              Tổng cộng thanh toán: <b>{fmt(pr.total)}</b>
-            </div>
-          </div>
-        </div>
 
         <div style={SH}>THÔNG TIN NHÀ CUNG CẤP</div>
         <div style={{ fontSize: 12, padding: "6px 4px", lineHeight: 1.8 }}>
@@ -291,10 +345,10 @@ export default function PrintPurchaseRequest() {
                     display: "flex",
                     alignItems: "flex-end",
                     justifyContent: "center",
-                    fontWeight: 500,
+                    fontWeight: 700,
                   }}
                 >
-                  {""}
+                  {r === "Người lập" && !taxMode ? pr.requester : ""}
                 </div>
               </div>
             ),
