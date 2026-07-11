@@ -157,6 +157,14 @@ def can_process_line(db: Session, line: SurveyRequestLine, profile: dict) -> boo
     return bool(row and emp_id in (row.primary_employee_id, row.backup_employee_id))
 
 
+def visible_lines_for(db: Session, s, lines, user, profile: dict):
+    """Lọc dòng theo NGƯỜI XEM: Quản lý/Admin TM (scope=all) & người TẠO phiếu -> thấy hết;
+    NSTM -> chỉ thấy dòng mình xử lý được (được giao / phụ trách phân loại)."""
+    if _has_scope_all(profile) or getattr(user, "id", 0) == getattr(s, "created_by", None):
+        return list(lines)
+    return [ln for ln in lines if can_process_line(db, ln, profile)]
+
+
 def available_survey_lines(db: Session, supplier_code: str = "", item_group: str = "", search: str = ""):
     """Dòng khảo sát SẢN PHẨM đã DUYỆT (line_approve='Đã duyệt') — nguồn để tạo option.
     Dùng cho CHỌN NCC THỦ CÔNG: lọc mở theo nhiều tiêu chí (tùy chọn, KHÔNG giới hạn liên kết YCKS):

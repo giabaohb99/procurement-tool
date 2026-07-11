@@ -26,10 +26,12 @@ def _dict(obj) -> dict:
     return d
 
 
-def _out(db: Session, s: SurveyRequest) -> dict:
+def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
     from app.modules.employee.model import Employee
     base = _dict(s)
     lines = service.lines_of(db, s.id)
+    if user is not None and profile is not None:   # NSTM chỉ thấy dòng mình phụ trách
+        lines = service.visible_lines_for(db, s, lines, user, profile)
     codes = {ln.assignee for ln in lines if ln.assignee}
     name_by_code = {}
     if codes:
@@ -90,11 +92,12 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
 
 @router.get("/{sid}")
 def get_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey_request", "read"))):
+    prof = get_perm_profile(db, user)
     s = apply_scope(db.query(SurveyRequest).filter(SurveyRequest.id == sid),
-                    SurveyRequest, "survey_request", user, get_perm_profile(db, user)).first()
+                    SurveyRequest, "survey_request", user, prof).first()
     if not s:
         raise HTTPException(403, "Ngoài phạm vi được phép xem")
-    return success(_out(db, s))
+    return success(_out(db, s, user, prof))
 
 
 @router.post("")
@@ -249,10 +252,12 @@ def _opt_internal(o) -> dict:
     return _dict(o)                      # đầy đủ, gồm supplier_* (NSTM/Admin xem được)
 
 
-def _out_process(db: Session, s: SurveyRequest) -> dict:
+def _out_process(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
     from app.modules.employee.model import Employee
     base = _dict(s)
     lines = service.lines_of(db, s.id)
+    if user is not None and profile is not None:   # NSTM chỉ thấy dòng mình phụ trách
+        lines = service.visible_lines_for(db, s, lines, user, profile)
     codes = {ln.assignee for ln in lines if ln.assignee}
     name_by_code = {e.code: e.full_name for e in db.query(Employee).filter(Employee.code.in_(codes)).all()} if codes else {}
     out_lines = []
@@ -267,8 +272,9 @@ def _out_process(db: Session, s: SurveyRequest) -> dict:
 
 @router.get("/{sid}/process")
 def process_view_(sid: int, db: Session = Depends(get_db), up=Depends(_purchaser)):
+    user, prof = up
     s = service.get_sr(db, sid)
-    return success(_out_process(db, s))
+    return success(_out_process(db, s, user, prof))
 
 
 @router.get("/{sid}/lines/{line_id}/available-survey-lines")
