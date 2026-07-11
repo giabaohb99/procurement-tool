@@ -13,13 +13,6 @@ const API = '/api/purchase-orders'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const QC = ['', 'Đạt', 'Thiếu', 'Lỗi']
 const SHIP_UNITS = ['Kiện', 'Chuyến', 'm2', 'tấn']
-// Máy trạng thái tiến độ dòng PO (khớp backend state_machine.PROGRESS_FLOW)
-const PROGRESS_FLOW = ['Chưa đặt hàng', 'Đã đặt hàng', 'Đã nhận hàng', 'Đã gửi ĐMH cho KT', 'Hoàn thành']
-const PROGRESS_COLOR: Record<string, string> = {
-  'Chưa đặt hàng': '#94a3b8', 'Đã đặt hàng': '#00AEEF', 'Đã nhận hàng': '#0d9488',
-  'Đã gửi ĐMH cho KT': '#7c3aed', 'Hoàn thành': '#16a34a', 'Tạm ngưng': '#d97706', 'Hủy đơn': '#b91c1c',
-}
-
 const CurrencyInput = ({ value, onChange, disabled, style, className }: any) => {
   const [focused, setFocused] = useState(false)
   const [localVal, setLocalVal] = useState(value)
@@ -35,7 +28,7 @@ const CurrencyInput = ({ value, onChange, disabled, style, className }: any) => 
   return (
     <input
       type="text"
-      className={className || "cell-input"}
+      className={className ?? "cell-input"}
       style={style}
       value={displayVal}
       disabled={disabled}
@@ -70,7 +63,7 @@ const emptyDelivery = {
 export default function PurchaseOrderDetail() {
   const { id } = useParams()
   const isNew = id === 'new'
-  const { can } = useAuth()
+  const { can, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -84,10 +77,12 @@ export default function PurchaseOrderDetail() {
   const [units, setUnits] = useState<string[]>([])
   const [warehouses, setWarehouses] = useState<any[]>([])
   const [prList, setPrList] = useState<any[]>([])
+  const [employees, setEmployees] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [files, setFiles] = useState<any[]>([])
   const [attByDelivery, setAttByDelivery] = useState<Record<number, any[]>>({})
   const [editingItemIdx, setEditingItemIdx] = useState<number | null>(null)
+  const [printOpen, setPrintOpen] = useState(false)   // dropdown chọn loại bản in
 
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items))
@@ -95,6 +90,8 @@ export default function PurchaseOrderDetail() {
     api.get('/api/units', { params: { page_size: 300 } }).then((r) => setUnits(r.data.data.items.map((x: any) => x.name)))
     api.get('/api/warehouses', { params: { page_size: 300 } }).then((r) => setWarehouses(r.data.data.items))
     api.get('/api/purchase-requests', { params: { page_size: 1000 } }).then((r) => setPrList(r.data.data.items))
+    // Danh sách nhân sự cho dropdown NSPT phụ trách (admin); user thường có thể bị 403 → bỏ qua
+    api.get('/api/employees', { params: { page_size: 1000 } }).then((r) => setEmployees(r.data.data.items)).catch(() => {})
   }, [])
 
   async function loadAll() {
@@ -125,6 +122,15 @@ export default function PurchaseOrderDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNew])
 
+  // User thường (không có quyền duyệt) tạo đơn mới → tự điền NSPT = tên mình (không đè giá trị từ PR)
+  useEffect(() => {
+    if (!isNew || canPickNspt) return
+    const fromPr = (location.state as any)?.fromPr
+    if (po.nspt || fromPr?.nspt) return
+    if (user) setH('nspt', (user as any).full_name || '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, user])
+
   const goodsSuppliers = suppliers.filter((s) => s.supplier_type !== 'transport')
   const carriers = suppliers.filter((s) => s.supplier_type === 'transport')
 
@@ -134,11 +140,9 @@ export default function PurchaseOrderDetail() {
   const headerEditable = (isNew || !locked) && canWrite
   const deliveryEditable = !isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'write')
   const canDelete = isNew || ['draft', 'rejected'].includes(po.status)
-  // Tiến độ dòng: khóa (không sửa được nữa) khi đã Hủy đơn/Hoàn thành; Tạm ngưng thì khóa dropdown, chỉ cho "Tiếp tục"
-  const isLineLocked = (it: any) => ['Hủy đơn', 'Hoàn thành'].includes(it.progress_status)
-  const isLinePaused = (it: any) => it.progress_status === 'Tạm ngưng'
-  const allowedEntry = (it: any, status: string) => (it.allowed_statuses || []).find((a: any) => a.status === status)
-  const progressOptions = (it: any) => PROGRESS_FLOW.includes(it.progress_status) ? PROGRESS_FLOW : [it.progress_status, ...PROGRESS_FLOW]
+  // NSPT phụ trách: người có quyền duyệt = admin → chọn tự do; user thường bị khóa, auto-fill tên mình
+  const canPickNspt = can('purchase_order', 'approve')
+  const employeeOptions = employees.map((e) => ({ value: e.full_name, label: e.full_name }))
 
   const setH = (k: string, v: any) => setPo((s: any) => ({ ...s, [k]: v }))
   const items = po.items || []
@@ -239,45 +243,6 @@ export default function PurchaseOrderDetail() {
   }
 
   // Đổi tiến độ 1 dòng theo máy trạng thái (chỉ qua các endpoint riêng, không qua form Lưu thường)
-  async function changeProgress(i: number, status: string) {
-    const it = items[i]
-    if (!it.id || status === it.progress_status) return
-    const entry = allowedEntry(it, status)
-    if (entry?.disabled) {
-      toast.error(entry.missing?.length ? 'Cần điền: ' + entry.missing.join(', ') : 'Không thể chuyển sang trạng thái này')
-      return
-    }
-    try { await api.post(`${API}/${id}/items/${it.id}/progress`, { status }); toast.success('Đã cập nhật tiến độ'); loadAll() }
-    catch { /* interceptor đã toast lỗi */ }
-  }
-
-  async function pauseLine(i: number) {
-    const it = items[i]
-    if (!it.id) return
-    const reason = await askPrompt({ title: 'Tạm ngưng dòng', message: 'Vui lòng nhập lý do tạm ngưng:', required: true })
-    if (!reason) return
-    try { await api.post(`${API}/${id}/items/${it.id}/pause`, { reason }); toast.success('Đã tạm ngưng dòng'); loadAll() }
-    catch { /* interceptor đã toast lỗi */ }
-  }
-
-  async function resumeLine(i: number) {
-    const it = items[i]
-    if (!it.id) return
-    try { await api.post(`${API}/${id}/items/${it.id}/resume`); toast.success('Đã tiếp tục dòng'); loadAll() }
-    catch { /* interceptor đã toast lỗi */ }
-  }
-
-  async function cancelLine(i: number) {
-    const it = items[i]
-    if (!it.id) return
-    if (!(await askConfirm({ message: 'Hủy dòng này?', confirmText: 'Hủy dòng' }))) return
-    if (!(await askConfirm({ message: 'Thao tác không thể hoàn tác, bạn chắc chắn muốn hủy dòng này?', confirmText: 'Chắc chắn hủy' }))) return
-    const reason = await askPrompt({ title: 'Hủy dòng', message: 'Lý do hủy dòng (nếu có):' })
-    if (reason === null) return
-    try { await api.post(`${API}/${id}/items/${it.id}/cancel-line`, { reason }); toast.success('Đã hủy dòng'); loadAll() }
-    catch { /* interceptor đã toast lỗi */ }
-  }
-
   async function uploadFiles(fl: FileList | null) {
     if (!fl?.length) return
     const fd = new FormData(); fd.append('entity', 'purchase_order'); fd.append('entity_id', String(id))
@@ -317,7 +282,7 @@ export default function PurchaseOrderDetail() {
       )
     }
     return (
-      <input className="cell-input" type="number" style={{ width: w }} value={items[i][k] ?? 0} disabled={!headerEditable} onChange={(e) => setItem(i, { [k]: Number(e.target.value) })} />
+      <input className="cell-input" type="number" style={{ width: w }} value={items[i][k] || ''} disabled={!headerEditable} onChange={(e) => setItem(i, { [k]: Number(e.target.value) })} />
     )
   }
 
@@ -331,15 +296,32 @@ export default function PurchaseOrderDetail() {
         <h2 className="page-title" style={{ margin: 0 }}>{title}</h2>
         {!isNew && poBadge(po.status)}
         <span style={{ flex: 1 }} />
+        {/* ── Nhóm tiện ích + destructive (trái) ── */}
         {!isNew && can('purchase_order', 'print') && (
-          <>
-            <button className="btn ghost" onClick={() => window.open(`/print/purchase-order/${id}`, '_blank')}><i className="ti ti-printer" />In Đơn đặt hàng</button>
-            <button className="btn ghost" onClick={() => window.open(`/print/purchase-order-mh/${id}`, '_blank')}><i className="ti ti-file-invoice" />In Đơn mua hàng</button>
-          </>
+          <div style={{ position: 'relative' }}>
+            <button className="btn ghost" onClick={() => setPrintOpen((o) => !o)}><i className="ti ti-printer" />In<i className="ti ti-chevron-down" style={{ fontSize: 14, marginLeft: 2 }} /></button>
+            {printOpen && (
+              <>
+                <div onClick={() => setPrintOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 50 }} />
+                <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: '#fff', border: '1px solid var(--border)', borderRadius: 8, boxShadow: '0 10px 30px rgba(27,37,89,.15)', zIndex: 51, minWidth: 190, overflow: 'hidden' }}>
+                  <button className="btn ghost" style={{ display: 'flex', width: '100%', justifyContent: 'flex-start', border: 'none', borderRadius: 0 }} onClick={() => { window.open(`/print/purchase-order/${id}`, '_blank'); setPrintOpen(false) }}><i className="ti ti-printer" />In Đơn đặt hàng</button>
+                  <button className="btn ghost" style={{ display: 'flex', width: '100%', justifyContent: 'flex-start', border: 'none', borderRadius: 0 }} onClick={() => { window.open(`/print/purchase-order-mh/${id}`, '_blank'); setPrintOpen(false) }}><i className="ti ti-file-invoice" />In Đơn mua hàng</button>
+                </div>
+              </>
+            )}
+          </div>
         )}
-        {(headerEditable || deliveryEditable) && can('purchase_order', isNew ? 'create' : 'write') && (
-          <button className="btn" onClick={save}>{isNew ? 'Tạo' : 'Lưu'}</button>
+        {!isNew && can('purchase_order', 'create') && (
+          <button className="btn ghost" onClick={async () => { if (await askConfirm({ message: 'Nhân bản đơn này thành đơn Nháp mới?', confirmText: 'Nhân bản', danger: false })) copyDoc() }}><i className="ti ti-copy" />Nhân bản</button>
         )}
+        {!isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'cancel') && (
+          <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { if (!(await askConfirm({ message: 'Hủy đơn mua hàng này?', confirmText: 'Hủy đơn' }))) return; const r = await askPrompt({ title: 'Hủy đơn', message: 'Lý do hủy:' }); action('cancel', { reason: r || '' }) }}><i className="ti ti-ban" />Hủy đơn</button>
+        )}
+        {!isNew && canDelete && can('purchase_order', 'delete') && (
+          <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { if (await askConfirm({ message: 'Xóa đơn mua hàng này?' })) { await api.delete(`${API}/${id}`); navigate('/purchase-orders') } }}><i className="ti ti-trash" />Xóa đơn</button>
+        )}
+        {!isNew && <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--border)', margin: '2px 4px' }} />}
+        {/* ── Nhóm workflow + Lưu (phải) ── */}
         {!isNew && po.status === 'draft' && can('purchase_order', 'write') && (
           <button className="btn secondary" onClick={() => action('submit')}><i className="ti ti-send" />Gửi duyệt</button>
         )}
@@ -352,11 +334,8 @@ export default function PurchaseOrderDetail() {
         {!isNew && po.status === 'received' && can('purchase_order', 'write') && (
           <button className="btn" onClick={() => action('complete')}><i className="ti ti-circle-check" />Hoàn thành</button>
         )}
-        {!isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'cancel') && (
-          <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { if (!(await askConfirm({ message: 'Hủy đơn mua hàng này?', confirmText: 'Hủy đơn' }))) return; const r = await askPrompt({ title: 'Hủy đơn', message: 'Lý do hủy:' }); action('cancel', { reason: r || '' }) }}><i className="ti ti-ban" />Hủy đơn</button>
-        )}
-        {!isNew && can('purchase_order', 'create') && (
-          <button className="btn ghost" onClick={async () => { if (await askConfirm({ message: 'Nhân bản đơn này thành đơn Nháp mới?', confirmText: 'Nhân bản', danger: false })) copyDoc() }}><i className="ti ti-copy" />Nhân bản</button>
+        {(headerEditable || deliveryEditable) && can('purchase_order', isNew ? 'create' : 'write') && (
+          <button className="btn" onClick={save}>{isNew ? 'Tạo' : 'Lưu'}</button>
         )}
       </div>
 
@@ -384,7 +363,11 @@ export default function PurchaseOrderDetail() {
               </div>
               <div className="form-row"><label>Ngày đặt hàng</label><input type="date" value={po.order_date || ''} disabled={!headerEditable} onChange={(e) => setH('order_date', e.target.value)} /></div>
               <div className="form-row"><label>Bộ phận</label><input value={po.department || ''} disabled={!headerEditable} onChange={(e) => setH('department', e.target.value)} /></div>
-              <div className="form-row"><label>NSPT phụ trách</label><input value={po.nspt || ''} disabled={!headerEditable} onChange={(e) => setH('nspt', e.target.value)} /></div>
+              <div className="form-row"><label>NSPT phụ trách</label>
+                <SearchSelect value={po.nspt || ''} options={employeeOptions}
+                  onChange={(v) => setH('nspt', v)} disabled={!headerEditable || !canPickNspt}
+                  placeholder={canPickNspt ? 'Chọn nhân sự phụ trách' : ''} />
+              </div>
               <div className="form-row"><label>Hình thức thanh toán NCC</label><input value={po.payment_terms || ''} placeholder="Tự điền theo NCC (vd Công nợ 30 ngày)" disabled={!headerEditable} onChange={(e) => setH('payment_terms', e.target.value)} /></div>
               <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                 <input type="checkbox" checked={!!po.is_urgent} disabled={!headerEditable} onChange={(e) => setH('is_urgent', e.target.checked)} style={{ width: 18, height: 18 }} /> Đơn gấp
@@ -438,31 +421,12 @@ export default function PurchaseOrderDetail() {
                       <td style={{ textAlign: 'center' }}>{(Number(it.vat) || 0)}%</td>
                       <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmt(orderAmount(it))}</td>
                       <td style={{ textAlign: 'center', fontSize: 12 }}>
-                        <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 3 }}>
+                        <div style={{ color: 'var(--muted)' }}>
                           {fmt(it.qty_received || 0)}/{fmt(it.qty_order || 0)}
                           {it.is_short_delivery && (
                             <span className="badge" style={{ marginLeft: 4, background: '#fef3c7', color: '#b45309', fontSize: 10, padding: '1px 5px' }} title="Tổng SL đã nhận nhỏ hơn SL đặt">Giao thiếu</span>
                           )}
                         </div>
-                        {!isNew && it.id ? (
-                          canWrite ? (
-                            <select
-                              className="cell-input"
-                              style={{ width: '100%', fontSize: 12, color: PROGRESS_COLOR[it.progress_status] || 'var(--ink)', fontWeight: 500 }}
-                              value={it.progress_status || 'Chưa đặt hàng'}
-                              disabled={isLineLocked(it) || isLinePaused(it)}
-                              onChange={(e) => changeProgress(i, e.target.value)}
-                            >
-                              {progressOptions(it).map((s) => {
-                                const entry = allowedEntry(it, s)
-                                const dis = s !== it.progress_status && !!entry?.disabled
-                                return <option key={s} value={s} disabled={dis} style={{ color: 'var(--ink)' }}>{s}</option>
-                              })}
-                            </select>
-                          ) : (
-                            <span className="badge" style={{ background: (PROGRESS_COLOR[it.progress_status] || '#94a3b8') + '22', color: PROGRESS_COLOR[it.progress_status] || '#64748b', fontSize: 11 }}>{it.progress_status || 'Chưa đặt hàng'}</span>
-                          )
-                        ) : <span style={{ color: '#999', fontSize: 11 }}>—</span>}
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <div style={{ display: 'inline-flex', gap: 6 }}>
@@ -474,7 +438,7 @@ export default function PurchaseOrderDetail() {
                               <i className="ti ti-copy" style={{ fontSize: 16, color: 'var(--muted)' }} />
                             </button>
                           )}
-                          {headerEditable && !isLineLocked(it) && (
+                          {headerEditable && (
                             <button className="icon-btn" title="Xóa dòng" onClick={async () => { if (await askConfirm({ message: 'Xóa dòng này?' })) delItem(i) }}>
                               <i className="ti ti-trash" style={{ fontSize: 16, color: 'var(--red)' }} />
                             </button>
@@ -528,11 +492,6 @@ export default function PurchaseOrderDetail() {
           )}
 
           {po.approve_note && <div className="card" style={{ padding: 14, marginBottom: 16 }}><b>Ghi chú duyệt:</b> {po.approve_note}</div>}
-
-          {!isNew && canDelete && can('purchase_order', 'delete') && (
-            <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)', marginTop: 20 }}
-                    onClick={async () => { if (await askConfirm({ message: 'Xóa đơn mua hàng này?' })) { await api.delete(`${API}/${id}`); navigate('/purchase-orders') } }}><i className="ti ti-trash" /> Xóa đơn</button>
-          )}
         </div>
 
         {isLogShown && (
@@ -560,17 +519,10 @@ export default function PurchaseOrderDetail() {
                 <h3 style={{ margin: 0, fontSize: 16, color: 'var(--navy)' }}>Chi tiết dòng: {items[editingItemIdx].product_name || items[editingItemIdx].product_code}</h3>
                 <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 2 }}>
                   SL đặt {fmt(items[editingItemIdx].qty_order)} · Đã nhận {fmt(items[editingItemIdx].qty_received || 0)} · Còn lại {fmt((Number(items[editingItemIdx].qty_order) || 0) - (Number(items[editingItemIdx].qty_received) || 0))}
-                  {' · '}Tiến độ:{' '}
-                  <span style={{ color: PROGRESS_COLOR[items[editingItemIdx].progress_status] || 'var(--ink)', fontWeight: 600 }}>
-                    {items[editingItemIdx].progress_status || 'Chưa đặt hàng'}
-                  </span>
                   {items[editingItemIdx].is_short_delivery && (
                     <span className="badge" style={{ marginLeft: 6, background: '#fef3c7', color: '#b45309', fontSize: 10, padding: '1px 5px' }}>Giao thiếu</span>
                   )}
                 </div>
-                {items[editingItemIdx].progress_status === 'Tạm ngưng' && items[editingItemIdx].pause_reason && (
-                  <div style={{ fontSize: 12, color: '#b45309', marginTop: 3 }}>Lý do tạm ngưng: {items[editingItemIdx].pause_reason}</div>
-                )}
               </div>
               <button className="icon-btn" onClick={() => setEditingItemIdx(null)}><i className="ti ti-x" style={{ fontSize: 18 }} /></button>
             </div>
@@ -602,10 +554,10 @@ export default function PurchaseOrderDetail() {
                         options={warehouses.map((w) => ({ value: w.code, label: `${w.code} — ${w.name}` }))}
                         onChange={(v) => setItem(ii, { warehouse_code: v })} />
                     </div>
-                    <div className="form-row"><label>SL yêu cầu</label><input type="number" value={it.qty_request ?? 0} disabled={de} onChange={(e) => setItem(ii, { qty_request: Number(e.target.value) })} /></div>
-                    <div className="form-row"><label>SL đặt NCC</label><input type="number" value={it.qty_order ?? 0} disabled={de} onChange={(e) => setItem(ii, { qty_order: Number(e.target.value) })} /></div>
-                    <div className="form-row"><label>Đơn giá</label><CurrencyInput value={it.price ?? 0} disabled={de} onChange={(val: number) => setItem(ii, { price: val })} /></div>
-                    <div className="form-row"><label>VAT (%)</label><input type="number" value={it.vat ?? 0} disabled={de} onChange={(e) => setItem(ii, { vat: Number(e.target.value) })} /></div>
+                    <div className="form-row"><label>SL yêu cầu</label><input type="number" value={it.qty_request || ''} disabled={de} onChange={(e) => setItem(ii, { qty_request: Number(e.target.value) })} /></div>
+                    <div className="form-row"><label>SL đặt NCC</label><input type="number" value={it.qty_order || ''} disabled={de} onChange={(e) => setItem(ii, { qty_order: Number(e.target.value) })} /></div>
+                    <div className="form-row"><label>Đơn giá</label><CurrencyInput className="" value={it.price ?? 0} disabled={de} onChange={(val: number) => setItem(ii, { price: val })} /></div>
+                    <div className="form-row"><label>VAT (%)</label><input type="number" value={it.vat || ''} disabled={de} onChange={(e) => setItem(ii, { vat: Number(e.target.value) })} /></div>
                     <div className="form-row"><label>Thành tiền đơn hàng</label><input value={fmt(orderAmount(it))} disabled /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><input value={it.note || ''} disabled={de} onChange={(e) => setItem(ii, { note: e.target.value })} /></div>
                   </div>
@@ -654,7 +606,7 @@ export default function PurchaseOrderDetail() {
                       const dis = !deliveryEditable
                       return (
                         <tr key={di}>
-                          <td><input className="cell-input" type="number" style={{ width: 44 }} value={d.delivery_no ?? 1} disabled={dis} onChange={(e) => setDelivery(ii, di, { delivery_no: Number(e.target.value) })} /></td>
+                          <td><input className="cell-input" type="number" style={{ width: 44 }} value={d.delivery_no || ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { delivery_no: Number(e.target.value) })} /></td>
                           <td>
                             <select className="cell-input" style={{ width: 120 }} value={d.warehouse_code ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { warehouse_code: e.target.value })} title="Kho nhận">
                               <option value="">—</option>{warehouses.map((w) => <option key={w.id} value={w.code}>{w.code}</option>)}
@@ -665,20 +617,20 @@ export default function PurchaseOrderDetail() {
                               <option value="">NCC tự vận chuyển</option>{carriers.map((c) => <option key={c.id} value={c.code}>{c.name}</option>)}
                             </select>
                           </td>
-                          <td><input className="cell-input" type="number" style={{ width: 72 }} value={d.ship_qty ?? 0} disabled={dis} onChange={(e) => setDelivery(ii, di, { ship_qty: Number(e.target.value) })} /></td>
+                          <td><input className="cell-input" type="number" style={{ width: 72 }} value={d.ship_qty || ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { ship_qty: Number(e.target.value) })} /></td>
                           <td>
                             <select className="cell-input" style={{ width: 80 }} value={d.ship_unit ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { ship_unit: e.target.value })}>
                               <option value="">—</option>{SHIP_UNITS.map((su) => <option key={su} value={su}>{su}</option>)}
                             </select>
                           </td>
                           <td style={{ textAlign: 'right', color: 'var(--muted)' }}>{fmt(items[ii].qty_order)}</td>
-                          <td><input className="cell-input" type="number" style={{ width: 80 }} value={d.received_qty ?? 0} disabled={dis} onChange={(e) => setDelivery(ii, di, { received_qty: Number(e.target.value) })} /></td>
+                          <td><input className="cell-input" type="number" style={{ width: 80 }} value={d.received_qty || ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { received_qty: Number(e.target.value) })} /></td>
                           <td style={{ textAlign: 'right', color: 'var(--muted)' }}>{fmt(items[ii].price)}</td>
                           <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{Number(items[ii].vat) || 0}%</td>
                           <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmt((Number(d.received_qty) || 0) * (Number(items[ii].price) || 0) * (1 + (Number(items[ii].vat) || 0) / 100))}</td>
                           <td><input className="cell-input" type="date" style={{ width: 100 }} value={d.promised_date ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { promised_date: e.target.value })} /></td>
                           <td><input className="cell-input" type="date" style={{ width: 100 }} value={d.received_date ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { received_date: e.target.value })} /></td>
-                          <td><input className="cell-input" type="number" style={{ width: 60 }} value={d.std_days ?? 0} disabled={dis} onChange={(e) => setDelivery(ii, di, { std_days: Number(e.target.value) })} /></td>
+                          <td><input className="cell-input" type="number" style={{ width: 60 }} value={d.std_days || ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { std_days: Number(e.target.value) })} /></td>
                           <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{d.regulated_date || '—'}</td>
                           <td style={{ textAlign: 'center', color: (d.diff_promise < 0 ? 'var(--red)' : 'var(--muted)'), fontWeight: d.diff_promise < 0 ? 600 : 400 }}>{d.received_date ? (d.diff_promise ?? 0) : '—'}</td>
                           <td style={{ textAlign: 'center', color: (d.diff_regulated < 0 ? 'var(--red)' : 'var(--muted)'), fontWeight: d.diff_regulated < 0 ? 600 : 400 }}>{d.received_date ? (d.diff_regulated ?? 0) : '—'}</td>
@@ -734,30 +686,9 @@ export default function PurchaseOrderDetail() {
               </div>
             </div>
 
-            <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', gap: 8 }}>
-                {!isNew && canWrite && items[editingItemIdx].id && !isLineLocked(items[editingItemIdx]) && (
-                  <>
-                    {!isLinePaused(items[editingItemIdx]) && (
-                      <button className="btn ghost" style={{ height: 36, fontSize: 13, color: '#d97706', borderColor: '#d97706' }} onClick={() => pauseLine(editingItemIdx)}>
-                        <i className="ti ti-player-pause" />Tạm ngưng
-                      </button>
-                    )}
-                    {isLinePaused(items[editingItemIdx]) && (
-                      <button className="btn ghost" style={{ height: 36, fontSize: 13 }} onClick={() => resumeLine(editingItemIdx)}>
-                        <i className="ti ti-player-play" />Tiếp tục
-                      </button>
-                    )}
-                    <button className="btn ghost" style={{ height: 36, fontSize: 13, color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => cancelLine(editingItemIdx)}>
-                      <i className="ti ti-ban" />Hủy dòng
-                    </button>
-                  </>
-                )}
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn ghost" style={{ height: 36, fontSize: 13 }} onClick={() => setEditingItemIdx(null)}>Đóng</button>
-                {(headerEditable || deliveryEditable) && <button className="btn" style={{ height: 36, fontSize: 13 }} onClick={() => { setEditingItemIdx(null); save() }}>Lưu đơn</button>}
-              </div>
+            <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <button className="btn ghost" style={{ height: 36, fontSize: 13 }} onClick={() => setEditingItemIdx(null)}>Đóng</button>
+              {(headerEditable || deliveryEditable) && <button className="btn" style={{ height: 36, fontSize: 13 }} onClick={() => { setEditingItemIdx(null); save() }}>Lưu đơn</button>}
             </div>
           </div>
         </div>

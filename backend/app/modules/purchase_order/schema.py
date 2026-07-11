@@ -41,10 +41,6 @@ class POItemIn(BaseModel):
     vat: float = 0
     warehouse_code: str = ""
     note: str = ""
-    progress_status: str = "Chưa đặt hàng"
-    pay_confirm_date: str = ""
-    pause_reason: str = ""
-    status_before_pause: str = ""
     deliveries: list[DeliveryIn] = []
 
 
@@ -85,11 +81,3 @@ class POUpdate(BaseModel):
 
 class RejectIn(BaseModel):
     reason: str = ""
-
-
-class ProgressIn(BaseModel):
-    status: str = ""
-
-
-# Alias — dùng chung shape với RejectIn cho các route pause/cancel-line dòng hàng
-ReasonIn = RejectIn
