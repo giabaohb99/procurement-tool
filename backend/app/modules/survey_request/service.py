@@ -456,20 +456,29 @@ def auto_complete_from_pr(db: Session, pr_id: int, user_id: int = 0) -> None:
                    "Tự hoàn thành: mọi Yêu cầu mua hàng liên quan đã hoàn thành")
 
 
-def complete_sr(db: Session, sid: int, user_id: int) -> SurveyRequest:
-    """AdminTM chốt hoàn thành: mỗi dòng phải có ≥1 option → survey_done.
-    Cho phép CHỐT LẠI khi phiếu đã ở trạng thái 'đã khảo sát' (survey_done) — vì có thể
-    bổ sung/đổi option (kể cả từ khảo sát ngoài liên kết) sau khi đã chốt lần đầu."""
+def complete_sr(db: Session, sid: int, user, profile: dict):
+    """Chốt PHẦN KHẢO SÁT CỦA NGƯỜI GỌI: chỉ validate các dòng MÌNH phụ trách phải có option.
+    Phiếu chỉ chuyển 'survey_done' khi TẤT CẢ dòng (mọi NSTM) đã có option.
+    Cho phép chốt lại khi đã 'survey_done'. Trả (phiếu, fully_done)."""
     s = get_sr(db, sid)
     if s.status not in ("processing", "survey_done"):
         raise HTTPException(400, "Chỉ chốt được phiếu đang xử lý hoặc đã khảo sát")
     lns = lines_of(db, sid)
     if not lns:
         raise HTTPException(400, "Phiếu không có dòng nào")
-    missing = [ln.internal_line_code or str(ln.id) for ln in lns if not options_of(db, ln.id)]
-    if missing:
-        raise HTTPException(400, f"Còn {len(missing)} dòng chưa có option — không thể chốt")
-    return set_status(db, sid, "survey_done", user_id)
+    # Quản lý/Admin TM (scope all) & người tạo -> chốt cả phiếu; NSTM -> chỉ dòng mình phụ trách
+    see_all = _has_scope_all(profile) or getattr(user, "id", 0) == s.created_by
+    my_lines = lns if see_all else [ln for ln in lns if can_process_line(db, ln, profile)]
+    missing_mine = [ln.internal_line_code or str(ln.id) for ln in my_lines if not options_of(db, ln.id)]
+    if missing_mine:
+        raise HTTPException(400, f"Còn {len(missing_mine)} dòng của bạn chưa có option — không thể chốt")
+    all_done = all(options_of(db, ln.id) for ln in lns)   # đủ mọi dòng của mọi NSTM?
+    if all_done:
+        if s.status != "survey_done":
+            s = set_status(db, sid, "survey_done", getattr(user, "id", 0))
+        return s, True
+    db.refresh(s)
+    return s, False   # phần của mình xong, còn dòng NSTM khác
 
 
 def auto_assign(db: Session, s: SurveyRequest) -> int:

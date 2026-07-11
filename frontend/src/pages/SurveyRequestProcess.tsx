@@ -263,8 +263,8 @@ export default function SurveyRequestProcess() {
     if (!(await askConfirm({ title: 'Chốt hoàn thành', message: 'Chốt hoàn thành khảo sát? Hành động này không thể hoàn tác.', confirmText: 'Chốt hoàn thành', danger: false }))) return
     setCompleting(true)
     try {
-      await api.post(`${API}/${id}/complete`)
-      toast.success('Đã chốt hoàn thành khảo sát')
+      const r = await api.post(`${API}/${id}/complete`)
+      toast.success(r.data?.message || 'Đã chốt hoàn thành khảo sát')
       navigate(`/survey-requests/${id}`)
     } catch { /* lỗi đã hiện popup từ interceptor */
     } finally {

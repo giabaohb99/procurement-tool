@@ -357,15 +357,18 @@ def edit_option_(sid: int, line_id: int, oid: int, data: dict, db: Session = Dep
 @router.post("/{sid}/complete")
 def complete_(sid: int, db: Session = Depends(get_db),
               up=Depends(_purchaser)):
-    """Chốt hoàn thành khảo sát — NSTM trực tiếp khảo sát (hoặc Quản lý/Admin TM). processing → survey_done."""
-    user, _ = up
-    s = service.complete_sr(db, sid, user.id)
-    from app.modules.user.model import User
-    reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
-    _notify(db, reqs, f"[Khảo sát xong] Phiếu {s.code}",
-            f"Kết quả khảo sát cho phiếu {s.code} đã sẵn sàng — vào chọn phương án.",
-            f"/survey-requests/{s.id}", s.created_by or user.id)
-    return success(_out(db, s), "Đã chốt hoàn thành khảo sát")
+    """Chốt hoàn thành khảo sát — NSTM chốt PHẦN DÒNG CỦA MÌNH; phiếu -> survey_done khi
+    MỌI dòng (mọi NSTM) đã có option."""
+    user, prof = up
+    s, fully = service.complete_sr(db, sid, user, prof)
+    if fully:   # cả phiếu xong -> báo người yêu cầu vào chọn phương án
+        from app.modules.user.model import User
+        reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
+        _notify(db, reqs, f"[Khảo sát xong] Phiếu {s.code}",
+                f"Kết quả khảo sát cho phiếu {s.code} đã sẵn sàng — vào chọn phương án.",
+                f"/survey-requests/{s.id}", s.created_by or user.id)
+        return success(_out(db, s, user, prof), "Đã chốt hoàn thành khảo sát")
+    return success(_out(db, s, user, prof), "Đã chốt phần khảo sát của bạn. Còn dòng của NSTM khác chưa xong.")
 
 
 # ─────────────── Phase 5C: người YC xem kết quả (ẨN NCC) + chọn option ───────────────
