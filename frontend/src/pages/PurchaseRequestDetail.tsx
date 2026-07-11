@@ -98,6 +98,11 @@ export default function PurchaseRequestDetail() {
   const isStaff = !can('purchase_request', 'approve') && !can('purchase_request', 'delete')
   const canAssignPurchaser = can('purchase_request', 'approve')   // phân bổ NSTM
   const canManage = can('purchase_request', 'cancel')             // admin/quản lý: hủy/trả/hoàn thành
+  // Nút "Tạo ĐMH" chỉ hiện cho phòng thu mua / quản lý / admin (và có quyền tạo ĐMH)
+  const isPurchaserDept = ((user as any)?.department_name || '').toLowerCase().includes('thu mua')
+  const canCreatePO = can('purchase_order', 'create') && (isPurchaserDept || canManage || canAssignPurchaser)
+  // Còn dòng nào chưa đặt hàng → vẫn cho tạo ĐMH (không ẩn khi mới hoàn thành 1 dòng)
+  const hasUnorderedItem = (pr.items || []).some((it: any) => (it.line_status || 'Chưa đặt hàng') === 'Chưa đặt hàng')
   // Cột/trường "NSTM phụ trách" chỉ cho phía thu mua (is_purchaser = có quyền xử lý khảo sát).
   // Ẩn hoàn toàn với người yêu cầu (NSYC/employee) & trưởng bộ phận của họ (dept_head).
   const showAssigneeCol = can('survey_request', 'process')
@@ -319,26 +324,26 @@ export default function PurchaseRequestDetail() {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
         <button className="btn ghost" onClick={() => navigate('/purchase-requests')}><i className="ti ti-arrow-left" /></button>
-        <h2 className="page-title" style={{ margin: 0 }}>{isNew ? 'Tạo Yêu cầu Thu mua mới' : (pr.purpose || pr.code)}</h2>
+        <h2 className="page-title" style={{ margin: 0 }}>{isNew ? 'Tạo Yêu cầu Thu mua mới' : `Yêu cầu mua hàng ${pr.code || ''}`}</h2>
         {!isNew && prBadge(pr.status)}
         <span style={{ flex: 1 }} />
+        {/* ── Nhóm tiện ích + destructive (trái) ── */}
         {!isNew && <button className="btn ghost" onClick={() => window.open(`/print/purchase-request/${id}`, '_blank')}><i className="ti ti-printer" />In phiếu</button>}
         {!isNew && can('purchase_request', 'create') && <button className="btn ghost" onClick={() => setConfirmAction({ type: 'copy', title: 'Nhân bản', message: 'Nhân bản phiếu này thành phiếu Nháp mới?', confirmText: 'Nhân bản' })}><i className="ti ti-copy" />Nhân bản</button>}
-        
         {!isNew && pr.status === 'draft' && can('purchase_request', 'delete') && (
           <button className="btn ghost err" onClick={() => setConfirmDelete(true)}><i className="ti ti-trash" />Xóa phiếu</button>
         )}
         {!isNew && canManage && !['draft', 'submitted', 'cancelled', 'completed', 'done'].includes(pr.status) && (
           <button className="btn ghost err" onClick={() => setPromptAction({ type: 'cancel', title: 'Hủy đơn', message: 'Vui lòng nhập lý do hủy đơn:' })}><i className="ti ti-ban" />Hủy đơn</button>
         )}
-        
         {!isNew && canManage && !['draft', 'cancelled', 'completed', 'done'].includes(pr.status) && (
           <button className="btn ghost" onClick={() => setPromptAction({ type: 'return', title: 'Trả phiếu về', message: 'Vui lòng nhập lý do trả phiếu về (Nháp):' })}><i className="ti ti-arrow-back-up" />Trả về</button>
         )}
         {!isNew && pr.status === 'submitted' && can('purchase_request', 'approve') && (
           <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => setPromptAction({ type: 'reject', title: 'Từ chối yêu cầu', message: 'Vui lòng nhập lý do từ chối:' })}><i className="ti ti-x" />Từ chối</button>
         )}
-        
+        {!isNew && <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--border)', margin: '2px 4px' }} />}
+        {/* ── Nhóm workflow + chính (phải) ── */}
         {editable && (
           <button className="btn secondary" onClick={() => setConfirmSave(true)}><i className="ti ti-device-floppy" />Lưu</button>
         )}
@@ -348,7 +353,7 @@ export default function PurchaseRequestDetail() {
         {!isNew && pr.status === 'submitted' && can('purchase_request', 'approve') && (
           <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>
         )}
-        {!isNew && pr.status === 'approved' && can('purchase_order', 'create') && (
+        {!isNew && canCreatePO && ['approved', 'processing'].includes(pr.status) && hasUnorderedItem && (
           <button className="btn" onClick={createPO}><i className="ti ti-shopping-cart" />Tạo đơn mua hàng</button>
         )}
         {!isNew && canManage && ['approved', 'processing'].includes(pr.status) && (
