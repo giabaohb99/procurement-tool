@@ -198,7 +198,7 @@ STD_ROLES = {
     "pur_staff": {"name": "Nhân viên thu mua", "perms": {
         **_CATALOG_READ,
         "employee": (["read"], "dept"),
-        "purchase_request": (["read", "create", "write"], "proc"),
+        "purchase_request": (["read", "create", "write"], "assigned"),
         "survey_request": (["read", "write"], "proc"),
         "survey": (["read", "create", "write"], "all"),
         "purchase_order": (["read", "create", "write", "print"], "dept"),
@@ -265,9 +265,9 @@ def seed_standard_roles(db):
             ))
         db.commit()
 
-    # Ép scope theo mô hình duyệt mới cho các role đã tồn tại từ trước
-    # (NV/Admin thu mua: 'proc' = phiếu được giao + mọi phiếu đã duyệt).
-    for role_code, scope in [("pur_staff", "proc"), ("pur_admin", "proc")]:
+    # Ép scope PYC theo mô hình mới: NV thu mua = 'assigned' (chỉ phiếu của mình / được gán,
+    # KHÔNG thấy mọi phiếu đã duyệt — khớp tài liệu); Admin thu mua giữ 'proc'.
+    for role_code, scope in [("pur_staff", "assigned"), ("pur_admin", "proc")]:
         role = db.query(Role).filter(Role.code == role_code).first()
         if role:
             db.query(Permission).filter(
