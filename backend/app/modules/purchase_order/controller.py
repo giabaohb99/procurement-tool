@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_perm_profile, require
@@ -11,9 +11,9 @@ from app.modules.supplier.model import Supplier
 from app.modules.catalog.model import Warehouse
 from app.modules.notification.service import trigger_notification
 
-from . import service
+from . import service, state_machine
 from .model import PurchaseOrder
-from .schema import POCreate, POUpdate, RejectIn
+from .schema import POCreate, POUpdate, ProgressIn, ReasonIn, RejectIn
 
 router = APIRouter(prefix="/api/purchase-orders", tags=["purchase_order"])
 
@@ -35,7 +35,8 @@ def _delivery(d) -> dict:
             "status": d.status, "extra_request": d.extra_request, "progress_note": d.progress_note}
 
 
-def _item(db, it) -> dict:
+def _item(db, po, it) -> dict:
+    dels = service.deliveries_of(db, it.id)
     return {"id": it.id, "product_code": it.product_code, "product_name": it.product_name,
             "invoice_name": it.invoice_name, "item_group": it.item_group, "spec": it.spec,
             "fg_code": it.fg_code, "fg_name": it.fg_name, "invoice_no": it.invoice_no,
@@ -44,13 +45,17 @@ def _item(db, it) -> dict:
             "price": float(it.price or 0), "vat": float(it.vat or 0), "amount": float(it.amount or 0),
             "qty_received": float(it.qty_received or 0), "qty_remaining": float(it.qty_remaining or 0),
             "line_status": it.line_status, "warehouse_code": it.warehouse_code, "note": it.note,
-            "deliveries": [_delivery(d) for d in service.deliveries_of(db, it.id)]}
+            "progress_status": it.progress_status, "pay_confirm_date": it.pay_confirm_date,
+            "pause_reason": it.pause_reason, "status_before_pause": it.status_before_pause,
+            "allowed_statuses": state_machine.get_allowed_statuses(po, it, dels),
+            "is_short_delivery": state_machine.is_short_delivery(it, dels),
+            "deliveries": [_delivery(d) for d in dels]}
 
 
 def _out(db: Session, po: PurchaseOrder) -> dict:
     d = {c: getattr(po, c) for c in HEADER}
     d["vat_rate"] = float(po.vat_rate or 0)
-    items = [_item(db, it) for it in service.items_of(db, po.id)]
+    items = [_item(db, po, it) for it in service.items_of(db, po.id)]
     d["items"] = items
     # Tổng theo SL THỰC NHẬN (thành tiền đơn hàng = đã chốt)
     subtotal = round(sum(i["qty_received"] * i["price"] for i in items), 2)
@@ -87,7 +92,6 @@ def get_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purcha
     scoped = apply_scope(db.query(PurchaseOrder).filter(PurchaseOrder.id == pid),
                          PurchaseOrder, "purchase_order", user, get_perm_profile(db, user))
     if not scoped.first():
-        from fastapi import HTTPException
         raise HTTPException(403, "Ngoài phạm vi được phép xem")
     return success(_out(db, service.get_po(db, pid)))
 
@@ -198,3 +202,37 @@ def complete_po(pid: int, db: Session = Depends(get_db),
 def reopen_po(pid: int, db: Session = Depends(get_db),
               user=Depends(require("purchase_order", "write"))):
     return success(_out(db, service.set_status(db, pid, "draft", user.id)), "Đã mở lại đơn (về nháp)")
+
+
+def _is_manager(db: Session, user) -> bool:
+    """Quản lý/admin (có quyền hủy hoặc duyệt đơn mua hàng) được sửa cả dòng đã chốt/lùi trạng thái."""
+    perm = get_perm_profile(db, user)["perms_union"].get("purchase_order", {})
+    return bool(perm.get("cancel") or perm.get("approve"))
+
+
+@router.post("/{pid}/items/{iid}/progress")
+def progress_item(pid: int, iid: int, data: ProgressIn, db: Session = Depends(get_db),
+                  user=Depends(require("purchase_order", "write"))):
+    po = service.set_item_progress(db, pid, iid, data.status, user.id, _is_manager(db, user))
+    return success(_out(db, po), "Đã cập nhật tiến độ dòng")
+
+
+@router.post("/{pid}/items/{iid}/pause")
+def pause_item(pid: int, iid: int, data: ReasonIn, db: Session = Depends(get_db),
+               user=Depends(require("purchase_order", "write"))):
+    po = service.pause_item(db, pid, iid, data.reason, user.id)
+    return success(_out(db, po), "Đã tạm ngưng dòng")
+
+
+@router.post("/{pid}/items/{iid}/resume")
+def resume_item(pid: int, iid: int, db: Session = Depends(get_db),
+                user=Depends(require("purchase_order", "write"))):
+    po = service.resume_item(db, pid, iid, user.id)
+    return success(_out(db, po), "Đã tiếp tục dòng")
+
+
+@router.post("/{pid}/items/{iid}/cancel-line")
+def cancel_item(pid: int, iid: int, data: ReasonIn, db: Session = Depends(get_db),
+                user=Depends(require("purchase_order", "cancel"))):
+    po = service.cancel_item(db, pid, iid, data.reason, user.id)
+    return success(_out(db, po), "Đã hủy dòng")

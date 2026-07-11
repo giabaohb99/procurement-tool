@@ -132,7 +132,7 @@ export default function PurchaseRequestDetail() {
     const it = items[i]
     if (!editable && it.id && canLineStatus(it)) {
       try { await api.patch(`${API}/${id}/item-status`, { items: [{ id: it.id, line_status: val }] }); toast.success('Đã cập nhật trạng thái'); loadAll() }
-      catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi cập nhật trạng thái'); loadAll() }
+      catch { loadAll() /* interceptor đã toast lỗi */ }
     }
   }
 
@@ -203,7 +203,7 @@ export default function PurchaseRequestDetail() {
       const f = r.data.data[0]
       setPr((s: any) => ({ ...s, quote_filename: f.filename, quote_file_url: f.url }))
       toast.success('Đã tải lên báo giá')
-    } catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi tải báo giá') }
+    } catch { /* interceptor đã toast lỗi */ }
   }
   const clearQuoteFile = () => setPr((s: any) => ({ ...s, quote_filename: '', quote_file_url: '' }))
 
@@ -243,26 +243,51 @@ export default function PurchaseRequestDetail() {
         if (submitAfterSave) await api.post(`${API}/${id}/submit`)
         toast.success('Đã lưu'); loadAll()
       }
-    } catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
+    } catch { /* interceptor đã toast lỗi */ }
   }
 
   async function action(path: string, payload: any = {}) {
     try { await api.post(`${API}/${id}/${path}`, payload); loadAll() }
-    catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi') }
+    catch { /* interceptor đã toast lỗi */ }
   }
 
   async function copyDoc() {
     try { const r = await api.post(`${API}/${id}/copy`); navigate(`/purchase-requests/${r.data.data.id}`) }
-    catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi nhân bản') }
+    catch { /* interceptor đã toast lỗi */ }
+  }
+
+  // Tạo Đơn mua hàng từ phiếu YCMH đã duyệt: điền sẵn header + dòng hàng (bỏ dòng đã hủy) rồi mở form ĐMH
+  function createPO() {
+    const whCode = (name: string) => warehouses.find((w) => w.name === name)?.code || ''
+    const vatPct = Math.round((Number(pr.vat_rate) || 0.08) * 100)   // PR chỉ có vat_rate ở header → quy về % cho từng dòng ĐMH
+    const fromPr = {
+      pr_code: pr.code,
+      company_id: pr.company_id,
+      department: pr.department,
+      nspt: pr.requester,                       // khớp cách onPickPr bên ĐMH lấy NSPT = người yêu cầu
+      supplier_name: pr.suggested_supplier || '',
+      supplier_code: '',                        // PR chỉ có tên NCC đề xuất, không có mã
+      vat_rate: Number(pr.vat_rate) || 0.08,
+      is_urgent: !!pr.is_urgent,
+      note: pr.note || '',
+      items: (pr.items || [])
+        .filter((it: any) => it.product_name && it.line_status !== 'Hủy đơn')
+        .map((it: any) => ({
+          product_code: it.product_code, product_name: it.product_name,
+          item_group: it.item_group, unit: it.unit,
+          qty_request: Number(it.qty) || 0, qty_order: Number(it.qty) || 0,
+          price: Number(it.price) || 0, vat: vatPct,
+          warehouse_code: whCode(it.warehouse), note: it.note || '',
+        })),
+    }
+    navigate('/purchase-orders/new', { state: { fromPr } })
   }
 
   async function handleDelete() {
     try {
       await api.delete(`${API}?ids=${id}`)
       navigate('/purchase-requests')
-    } catch (ex: any) {
-      toast.error(ex?.response?.data?.error?.message || 'Lỗi khi xóa')
-    }
+    } catch { /* interceptor đã toast lỗi */ }
   }
 
   // Lưu popup chi tiết dòng khi phiếu KHÔNG còn ở trạng thái sửa (đã gửi duyệt trở đi)
@@ -273,7 +298,7 @@ export default function PurchaseRequestDetail() {
       if (canAssignPurchaser)
         await api.patch(`${API}/${id}/assign`, { items: [{ id: it.id, assignee: it.assignee || '' }] })
       toast.success('Đã cập nhật dòng'); setEditIdx(null); loadAll()
-    } catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi cập nhật dòng') }
+    } catch { /* interceptor đã toast lỗi */ }
   }
 
   async function uploadFiles(fl: FileList | null) {
@@ -281,7 +306,7 @@ export default function PurchaseRequestDetail() {
     const fd = new FormData(); fd.append('entity', 'purchase_request'); fd.append('entity_id', String(id))
     Array.from(fl).forEach((f) => fd.append('files', f))
     try { await api.post('/api/attachments', fd); loadAll() }
-    catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi tải file') }
+    catch { /* interceptor đã toast lỗi */ }
   }
 
   const isLogShown = !isNew && logs.length > 0
@@ -319,6 +344,9 @@ export default function PurchaseRequestDetail() {
         )}
         {!isNew && pr.status === 'submitted' && can('purchase_request', 'approve') && (
           <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>
+        )}
+        {!isNew && pr.status === 'approved' && can('purchase_order', 'create') && (
+          <button className="btn" onClick={createPO}><i className="ti ti-shopping-cart" />Tạo đơn mua hàng</button>
         )}
         {!isNew && canManage && ['approved', 'processing'].includes(pr.status) && (
           <button className="btn secondary" onClick={() => setConfirmAction({ type: 'complete', title: 'Hoàn thành', message: 'Đánh dấu phiếu HOÀN THÀNH?', confirmText: 'Đồng ý' })}><i className="ti ti-checks" />Hoàn thành</button>

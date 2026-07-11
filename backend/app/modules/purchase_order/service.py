@@ -14,6 +14,7 @@ from app.modules.supplier.model import Supplier
 
 from .model import PODelivery, POItem, PurchaseOrder
 from .schema import POCreate, POUpdate
+from .state_machine import validate_transition
 
 
 def _pdate(s: str):
@@ -58,6 +59,11 @@ def _supplier_map(db: Session) -> dict:
     return {s.code: s for s in db.query(Supplier).all()}
 
 
+# Các cột máy trạng thái tiến độ — KHÔNG được ghi đè khi lưu form thường (chỉ đổi
+# qua set_item_progress/pause_item/resume_item/cancel_item để đảm bảo validate + log)
+_PROGRESS_FIELDS = {"progress_status", "pay_confirm_date", "pause_reason", "status_before_pause"}
+
+
 def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
     """Upsert dòng hàng + các lần giao theo id (giữ id ổn định để side-effect idempotent)."""
     if items is None:
@@ -66,10 +72,14 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
     keep_item_ids = set()
     for raw in items:
         delivs = raw.deliveries or []
-        data = raw.model_dump(exclude={"deliveries"})
+        data = raw.model_dump(exclude={"deliveries"} | _PROGRESS_FIELDS)
         iid = data.pop("id", None)
         if iid and iid in existing_items:
             it = existing_items[iid]
+            if it.progress_status in ("Hủy đơn", "Hoàn thành"):
+                # Dòng đã hủy/hoàn thành — khóa sửa, giữ nguyên bản ghi (bỏ qua thay đổi field + lần giao)
+                keep_item_ids.add(it.id)
+                continue
             for k, v in data.items():
                 setattr(it, k, v)
             it.updated_by = user_id
@@ -83,6 +93,8 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
     # Xóa dòng hàng (và lần giao + side-effect) không còn trong payload
     for old_id, it in existing_items.items():
         if old_id not in keep_item_ids:
+            if it.progress_status in ("Hủy đơn", "Hoàn thành"):
+                continue  # Dòng đã chốt — khóa vĩnh viễn, KHÔNG cho xóa qua save thường
             for d in deliveries_of(db, old_id):
                 _cleanup_delivery(db, d.id)
                 db.delete(d)
@@ -302,6 +314,87 @@ def delete_po(db: Session, pid: int, user_id: int):
     db.delete(po)
     db.commit()
     record(db, user_id, ENTITY, pid, "delete")
+
+
+def _get_item(db: Session, pid: int, iid: int) -> POItem:
+    it = db.query(POItem).filter(POItem.po_id == pid, POItem.id == iid).first()
+    if not it:
+        raise HTTPException(404, "Không tìm thấy dòng hàng")
+    return it
+
+
+def set_item_progress(db: Session, pid: int, iid: int, target: str, user_id: int, is_manager: bool) -> PurchaseOrder:
+    """Chuyển progress_status của 1 dòng PO theo máy trạng thái (xem state_machine.py)."""
+    po = get_po(db, pid)
+    item = _get_item(db, pid, iid)
+    if item.progress_status in ("Hủy đơn", "Hoàn thành") and not is_manager:
+        raise HTTPException(400, "Dòng đã chốt, không đổi được")
+    if item.progress_status == "Tạm ngưng":
+        raise HTTPException(400, "Dòng đang tạm ngưng — bấm 'Tiếp tục' trước khi đổi trạng thái")
+    dels = deliveries_of(db, iid)
+    v = validate_transition(po, item, dels, target, is_manager)
+    if not v["ok"]:
+        msg = v.get("error") or ("Thiếu: " + ", ".join(v["missing_fields"]))
+        raise HTTPException(400, msg)
+    old = item.progress_status
+    item.progress_status = target
+    item.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, pid, "progress", f"Dòng {iid}: {old} → {target}")
+    db.refresh(po)
+    return po
+
+
+def pause_item(db: Session, pid: int, iid: int, reason: str, user_id: int) -> PurchaseOrder:
+    """Tạm ngưng 1 dòng PO — lưu trạng thái hiện tại để resume_item khôi phục lại."""
+    po = get_po(db, pid)
+    item = _get_item(db, pid, iid)
+    if not (reason or "").strip():
+        raise HTTPException(400, "Lý do tạm ngưng không được để trống")
+    if item.progress_status in ("Hủy đơn", "Hoàn thành"):
+        raise HTTPException(400, "Dòng đã chốt, không đổi được")
+    if item.progress_status != "Tạm ngưng":
+        item.status_before_pause = item.progress_status
+    item.progress_status = "Tạm ngưng"
+    item.pause_reason = reason
+    item.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, pid, "pause", f"Dòng {iid}: tạm ngưng — {reason}")
+    db.refresh(po)
+    return po
+
+
+def resume_item(db: Session, pid: int, iid: int, user_id: int) -> PurchaseOrder:
+    """Tiếp tục 1 dòng PO đang Tạm ngưng — khôi phục progress_status trước khi tạm ngưng."""
+    po = get_po(db, pid)
+    item = _get_item(db, pid, iid)
+    if item.progress_status != "Tạm ngưng":
+        raise HTTPException(400, "Dòng không ở trạng thái Tạm ngưng")
+    restored = item.status_before_pause or "Chưa đặt hàng"
+    item.progress_status = restored
+    item.status_before_pause = ""
+    item.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, pid, "resume", f"Dòng {iid}: tiếp tục — {restored}")
+    db.refresh(po)
+    return po
+
+
+def cancel_item(db: Session, pid: int, iid: int, reason: str, user_id: int) -> PurchaseOrder:
+    """Hủy 1 dòng PO — khóa sửa (chặn ở _save_items khi progress_status == 'Hủy đơn')."""
+    po = get_po(db, pid)
+    item = _get_item(db, pid, iid)
+    if not (reason or "").strip():
+        raise HTTPException(400, "Lý do hủy dòng không được để trống")
+    if item.progress_status == "Hoàn thành":
+        raise HTTPException(400, "Dòng đã hoàn thành, không thể hủy")
+    item.progress_status = "Hủy đơn"
+    item.pause_reason = reason
+    item.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, pid, "cancel_line", f"Dòng {iid}: hủy — {reason}")
+    db.refresh(po)
+    return po
 
 
 def set_status(db: Session, pid: int, status: str, user_id: int, message: str = "") -> PurchaseOrder:
