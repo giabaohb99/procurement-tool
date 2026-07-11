@@ -252,6 +252,17 @@ input[type="radio"] {
   height: auto;
 }
 
+/* Bỏ mũi tên tăng/giảm mặc định của ô nhập số (áp dụng mọi nơi) */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 input:focus,
 select:focus,
 textarea:focus {

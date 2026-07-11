@@ -705,22 +705,18 @@ export default function PurchaseRequestDetail() {
                 <label>Ngày cần hàng</label>
                 <input type="date" value={edit.required_date || ''} disabled={!editable} onChange={(e) => setItem(editIdx, 'required_date', e.target.value)} />
               </div>
-              {canAssignPurchaser && (
-                <div className="form-row">
-                  <label>Nhân sự phụ trách</label>
-                  <SearchSelect value={edit.assignee || ''}
-                    onChange={(v) => setItem(editIdx, 'assignee', v)} options={purchaserOptions}
-                    placeholder="Chọn NSTM..." />
-                </div>
-              )}
-              {canLineStatus(edit) && (
-                <div className="form-row">
-                  <label>Trạng thái xử lý</label>
-                  <select value={edit.line_status || 'Chưa đặt hàng'} onChange={(e) => setItem(editIdx, 'line_status', e.target.value)}>
-                    {LINE_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              )}
+              <div className="form-row">
+                <label>Nhân sự phụ trách</label>
+                <SearchSelect value={edit.assignee || ''} disabled={!canAssignPurchaser}
+                  onChange={(v) => setItem(editIdx, 'assignee', v)} options={purchaserOptions}
+                  placeholder={canAssignPurchaser ? 'Chọn NSTM...' : ''} />
+              </div>
+              <div className="form-row">
+                <label>Trạng thái xử lý</label>
+                <select value={edit.line_status || 'Chưa đặt hàng'} disabled={!canLineStatus(edit)} onChange={(e) => setItem(editIdx, 'line_status', e.target.value)}>
+                  {LINE_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Chi tiết tiến độ</label>
                 <textarea value={edit.progress_note || ''} disabled={!canEditNote(edit)} onChange={(e) => setItem(editIdx, 'progress_note', e.target.value)} />
