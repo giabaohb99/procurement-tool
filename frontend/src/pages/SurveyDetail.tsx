@@ -410,6 +410,7 @@ export default function SurveyDetail() {
         const r = await api.post(API, buildBody()); const d = r.data.data
         await flushPendingAtt(d.supplier_lines || [], d.product_lines || [])   // gắn file chờ vào dòng mới
         try { localStorage.removeItem(DRAFT_KEY) } catch { /* ignore */ }
+        setMsg('Đã lưu thành công')   // toast toàn cục vẫn hiện sau khi điều hướng
         navigate(`/surveys/${d.id}`)
       } else {
         const r = await api.patch(`${API}/${id}`, buildBody()); const d = r.data?.data
@@ -788,7 +789,7 @@ export default function SurveyDetail() {
         {!isNew && sv.status !== 'draft' && srBadge(sv.status)}
         <span style={{ flex: 1 }} />
         {editable && can('survey', isNew ? 'create' : 'write') && (
-          <button className="btn" onClick={save}>{isNew ? 'Tạo' : 'Lưu'}</button>
+          <button className="btn" onClick={save}>Lưu</button>
         )}
         {!isNew && editable && can('survey', 'write') && (
           <button className="btn secondary" onClick={doSubmit}><i className="ti ti-send" />Gửi duyệt</button>
