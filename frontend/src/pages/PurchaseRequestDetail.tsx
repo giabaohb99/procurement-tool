@@ -334,7 +334,7 @@ export default function PurchaseRequestDetail() {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
         <button className="btn ghost" onClick={() => navigate('/purchase-requests')}><i className="ti ti-arrow-left" /></button>
-        <h2 className="page-title" style={{ margin: 0 }}>{isNew ? 'Tạo Yêu cầu Thu mua mới' : `Yêu cầu mua hàng ${pr.code || ''}`}</h2>
+        <h2 className="page-title" style={{ margin: 0 }}>{isNew ? 'Tạo Yêu cầu Thu mua mới' : (pr.code || '')}</h2>
         {!isNew && prBadge(pr.status)}
         <span style={{ flex: 1 }} />
         {/* ── Nhóm tiện ích + destructive (trái) ── */}
