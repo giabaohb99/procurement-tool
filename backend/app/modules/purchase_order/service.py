@@ -306,8 +306,6 @@ def delete_po(db: Session, pid: int, user_id: int):
 
 def set_status(db: Session, pid: int, status: str, user_id: int, message: str = "") -> PurchaseOrder:
     po = get_po(db, pid)
-    if status in ("submitted", "approved") and not (po.misa_code or "").strip():
-        raise HTTPException(400, "Mã đơn MISA không được để trống khi gửi duyệt/duyệt đơn")
     po.status = status
     if message:
         po.approve_note = message
