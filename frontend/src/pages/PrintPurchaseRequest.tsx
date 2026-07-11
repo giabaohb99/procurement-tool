@@ -308,7 +308,7 @@ export default function PrintPurchaseRequest() {
             <b>Liên hệ:</b> {pr.suggested_supplier_contact || ""}
           </div>
           <div>
-            <b>Báo giá đính kèm:</b> ☐ Có &nbsp;&nbsp; ☐ Không
+            <b>Báo giá đính kèm:</b> {pr.quote_file_url ? "☑" : "☐"} Có &nbsp;&nbsp; {pr.quote_file_url ? "☐" : "☑"} Không
           </div>
         </div>
 
