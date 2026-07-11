@@ -16,6 +16,7 @@ class Survey(Base, AuditMixin):
     received_date: Mapped[str] = mapped_column(String(10), default="")
     result_due_date: Mapped[str] = mapped_column(String(10), default="")
     item_group: Mapped[str] = mapped_column(String(100), default="")       # Phân loại (item_class)
+    main_content: Mapped[str] = mapped_column(String(500), default="")     # Nội dung chính (clone từ Mục đích của YCKS)
     requirement_detail: Mapped[str] = mapped_column(Text, default="")      # Yêu cầu kỹ thuật & chất lượng
     request_qty: Mapped[float] = mapped_column(Numeric(18, 3), default=0)   # SL dự kiến mua
     market_price: Mapped[float] = mapped_column(Numeric(18, 2), default=0)  # (deprecated — không dùng nữa)

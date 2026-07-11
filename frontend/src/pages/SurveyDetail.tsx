@@ -209,7 +209,7 @@ export default function SurveyDetail() {
 
   const [sv, setSv] = useState<any>({
     pr_code: '', sr_code: '', survey_request_id: 0, received_date: new Date().toISOString().slice(0, 10), result_due_date: '',
-    item_group: '', requirement_detail: '', request_qty: 0, nspt: '',
+    item_group: '', main_content: '', requirement_detail: '', request_qty: 0, nspt: '',
     has_product_code: false, item_code: '', item_name: '', uom: '', proposed_rate: 0,
     status: 'draft', approve_note: '',
     supplier_lines: [],
@@ -250,14 +250,14 @@ export default function SurveyDetail() {
     api.get('/api/survey-requests', { params: { page_size: 1000 } }).then((r) => setPrList(r.data.data.items)).catch(() => {})
   }, [])
 
-  // Chọn Yêu cầu khảo sát -> lưu liên kết (id + code) + gợi ý Yêu cầu kỹ thuật từ mục đích
+  // Chọn Yêu cầu khảo sát -> lưu liên kết (id + code) + clone Mục đích khảo sát -> Nội dung chính
   const onPickPr = (code: string) => {
     const sr = prList.find((p) => p.code === code)
     setSv((s: any) => ({
       ...s,
       sr_code: code,
       survey_request_id: sr ? sr.id : 0,
-      ...(sr ? { requirement_detail: sr.purpose || s.requirement_detail } : {}),
+      ...(sr ? { main_content: sr.purpose || s.main_content } : {}),
     }))
   }
 
@@ -290,13 +290,21 @@ export default function SurveyDetail() {
   }, [isNew, user])
 
   // Task 1: mở từ nút "Tạo phiếu khảo sát" trên Yêu cầu khảo sát -> tự gắn liên kết YCKS
+  // + clone Mục đích khảo sát (purpose) -> Nội dung chính (main_content)
   const [searchParams] = useSearchParams()
   useEffect(() => {
     if (!isNew) return
     const srId = Number(searchParams.get('sr') || 0)
+    if (!srId) return
     const srCode = searchParams.get('sr_code') || ''
-    if (srId) setSv((s: any) => (s.survey_request_id ? s : { ...s, survey_request_id: srId, sr_code: srCode }))
-  }, [isNew, searchParams])
+    const sr = prList.find((p) => p.id === srId)
+    setSv((s: any) => {
+      const next = { ...s }
+      if (!s.survey_request_id) { next.survey_request_id = srId; next.sr_code = srCode || (sr ? sr.code : '') }
+      if (sr && !s.main_content && sr.purpose) next.main_content = sr.purpose   // clone 1 lần khi chưa nhập
+      return next
+    })
+  }, [isNew, searchParams, prList])
 
   // Issue 3: giữ nháp form TẠO MỚI qua F5 (localStorage) — khôi phục khi mở lại, xóa khi tạo xong.
   const DRAFT_KEY = 'survey_new_draft'
@@ -387,7 +395,7 @@ export default function SurveyDetail() {
     return {
       pr_code: sv.pr_code, sr_code: sv.sr_code || '', survey_request_id: Number(sv.survey_request_id) || 0,
       received_date: sv.received_date, result_due_date: sv.result_due_date || '',
-      item_group: sv.item_group, requirement_detail: sv.requirement_detail, nspt: sv.nspt,
+      item_group: sv.item_group, main_content: sv.main_content || '', requirement_detail: sv.requirement_detail, nspt: sv.nspt,
       has_product_code: !!sv.has_product_code, item_code: sv.item_code, item_name: sv.item_name,
       request_qty: Number(sv.request_qty) || 0, uom: sv.uom, proposed_rate: Number(sv.proposed_rate) || 0,
       supplier_lines: (sv.supplier_lines || []).filter(supHasContent).map((it: any) => coerceNums(it, SUP_NUM_KEYS)),
@@ -816,6 +824,10 @@ export default function SurveyDetail() {
                 <label>Yêu cầu khảo sát <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(nếu có)</span></label>
                 <input list="ycks-list" placeholder="Nhập/chọn mã YCKS để tự điền…" value={sv.sr_code || ''} disabled={!editable} onChange={(e) => onPickPr(e.target.value)} />
                 <datalist id="ycks-list">{prList.map((p) => <option key={p.id} value={p.code}>{p.purpose || ''}</option>)}</datalist>
+              </div>
+              <div className="form-row" style={{ gridColumn: '1 / -1' }}>
+                <label>Nội dung chính</label>
+                <input value={sv.main_content || ''} disabled={!editable} placeholder="Nội dung chính của phiếu khảo sát (tự điền từ Mục đích khi tạo từ YCKS)…" onChange={(e) => setH('main_content', e.target.value)} />
               </div>
               <div className="form-row"><label>Ngày tiếp nhận</label><input type="date" value={sv.received_date || ''} disabled={!editable} onChange={(e) => setH('received_date', e.target.value)} /></div>
               <div className="form-row"><label>Ngày dự kiến trả KQ</label><input type="date" value={sv.result_due_date || ''} disabled={!editable} onChange={(e) => setH('result_due_date', e.target.value)} /></div>

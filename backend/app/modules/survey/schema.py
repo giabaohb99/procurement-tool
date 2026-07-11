@@ -71,6 +71,7 @@ class _SurveyHeader(BaseModel):
     received_date: str = ""
     result_due_date: str = ""
     item_group: str = ""
+    main_content: str = ""
     requirement_detail: str = ""
     request_qty: float = 0
     market_price: float = 0
@@ -99,6 +100,7 @@ class _HeaderUpdate(BaseModel):
     received_date: str | None = None
     result_due_date: str | None = None
     item_group: str | None = None
+    main_content: str | None = None
     requirement_detail: str | None = None
     request_qty: float | None = None
     market_price: float | None = None
