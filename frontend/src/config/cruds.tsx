@@ -9,7 +9,8 @@ export type FieldDef = {
   source?: { url: string; value?: string; label?: string }
   onValueChange?: (val: any, form: any, setForm: (k: string, v: any) => void) => void
 }
-export type Column = { key: string; label: string; render?: (row: any) => any }
+// link?: trả URL → cell thành clickable, điều hướng tới URL đó (chặn click lan ra dòng)
+export type Column = { key: string; label: string; render?: (row: any) => any; link?: (row: any) => string }
 
 export type CrudConfig = {
   slug: string
@@ -394,7 +395,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã PO' },
       { key: 'order_date', label: 'Ngày đặt' },
       { key: 'supplier_name', label: 'Nhà cung cấp', render: (r) => r.supplier_name || r.supplier_code },
-      { key: 'pr_code', label: 'Mã PYC' },
+      { key: 'pr_code', label: 'Mã PYC', link: (r) => (r.pr_id ? `/purchase-requests/${r.pr_id}` : '') },
       { key: 'amount', label: 'Tiền hàng', render: (r) => (r.amount ? Number(r.amount).toLocaleString('vi-VN') + ' đ' : '0 đ') },
       { key: 'is_urgent', label: 'Gấp', render: (r) => (r.is_urgent ? <span className="badge warn">Gấp</span> : '—') },
       { key: 'status', label: 'Trạng thái', render: (r) => poBadge(r.status) },

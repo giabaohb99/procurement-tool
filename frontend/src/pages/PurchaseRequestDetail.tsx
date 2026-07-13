@@ -4,7 +4,7 @@ import { api } from '../api/client'
 import { fmtDateTime } from '../utils/datetime'
 import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
-import { prBadge } from '../config/cruds'
+import { prBadge, poBadge } from '../config/cruds'
 import ProductPicker from '../components/ProductPicker'
 import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
@@ -54,6 +54,9 @@ export default function PurchaseRequestDetail() {
   const [promptAction, setPromptAction] = useState<{type: 'reject'|'return'|'cancel', title: string, message: string, placeholder?: string} | null>(null)
   const [confirmAction, setConfirmAction] = useState<{type: 'complete'|'cancel_draft'|'copy', title: string, message: string, confirmText?: string} | null>(null)
   const [notFound, setNotFound] = useState(false)
+  const [pos, setPos] = useState<any[] | null>(null)   // ĐMH tạo từ phiếu này (cùng mã PYC); null = chưa tải/không quyền → ẩn khối
+  const [orderedMap, setOrderedMap] = useState<Record<string, number>>({})   // SL đã đặt theo mã hàng (gộp mọi ĐMH cùng PYC)
+  const [poExceed, setPoExceed] = useState<{ msg: string; normal: any[]; all: any[] } | null>(null)   // popup cảnh báo đặt vượt
 
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items)).catch(() => {})
@@ -76,6 +79,18 @@ export default function PurchaseRequestDetail() {
     api.get('/api/attachments', { params: { entity: 'purchase_request', entity_id: id } }).then((x) => setFiles(x.data.data)).catch(() => {})
   }
   useEffect(() => { if (!isNew) { setNotFound(false); loadAll() } }, [id])
+
+  // Tải danh sách ĐMH tạo từ phiếu này (lọc theo mã PYC). Lỗi/không quyền xem ĐMH → ẩn khối.
+  useEffect(() => {
+    if (isNew || !pr.code) { setPos(null); return }
+    api.get('/api/purchase-orders', { params: { pr_code: pr.code, page_size: 200 }, _silent: true } as any)
+      .then((r) => setPos((r.data.data.items || []).slice().sort((a: any, b: any) => b.id - a.id)))
+      .catch(() => setPos(null))
+    // SL đã đặt theo mã hàng → prefill 'còn thiếu' + cảnh báo đặt vượt khi tạo ĐMH
+    api.get(`${API}/${id}/order-progress`, { _silent: true } as any)
+      .then((r) => setOrderedMap(r.data.data.ordered || {}))
+      .catch(() => setOrderedMap({}))
+  }, [isNew, pr.code])
 
   useEffect(() => {
     if (!isNew || !user || pr.requester) return
@@ -274,10 +289,8 @@ export default function PurchaseRequestDetail() {
     catch { /* interceptor đã toast lỗi */ }
   }
 
-  // Tạo Đơn mua hàng từ phiếu YCMH đã duyệt: điền sẵn header + dòng hàng (bỏ dòng đã hủy) rồi mở form ĐMH
-  function createPO() {
-    const whCode = (name: string) => warehouses.find((w) => w.name === name)?.code || ''
-    const vatPct = Math.round((Number(pr.vat_rate) || 0.08) * 100)   // PR chỉ có vat_rate ở header → quy về % cho từng dòng ĐMH
+  // Điều hướng sang form ĐMH mới với header từ phiếu + danh sách dòng đã tính sẵn
+  function goPO(items: any[]) {
     const fromPr = {
       pr_code: pr.code,
       company_id: pr.company_id,
@@ -288,17 +301,34 @@ export default function PurchaseRequestDetail() {
       vat_rate: Number(pr.vat_rate) || 0.08,
       is_urgent: !!pr.is_urgent,
       note: pr.note || '',
-      items: (pr.items || [])
-        .filter((it: any) => it.product_name && it.line_status !== 'Hủy đơn')
-        .map((it: any) => ({
-          product_code: it.product_code, product_name: it.product_name,
-          item_group: it.item_group, unit: it.unit,
-          qty_request: Number(it.qty) || 0, qty_order: Number(it.qty) || 0,
-          price: Number(it.price) || 0, vat: vatPct,
-          warehouse_code: whCode(it.warehouse), note: it.note || '',
-        })),
+      items,
     }
     navigate('/purchase-orders/new', { state: { fromPr } })
+  }
+
+  // Tạo ĐMH từ phiếu đã duyệt: prefill SL theo 'còn thiếu' (yêu cầu − đã đặt), cảnh báo dòng đã đặt đủ/vượt
+  function createPO() {
+    const whCode = (name: string) => warehouses.find((w) => w.name === name)?.code || ''
+    const vatPct = Math.round((Number(pr.vat_rate) || 0.08) * 100)   // PR chỉ có vat_rate ở header → quy về % cho từng dòng ĐMH
+    const mk = (it: any, qty: number) => ({
+      product_code: it.product_code, product_name: it.product_name,
+      item_group: it.item_group, unit: it.unit,
+      qty_request: qty, qty_order: qty,
+      price: Number(it.price) || 0, vat: vatPct,
+      warehouse_code: whCode(it.warehouse), note: it.note || '',
+    })
+    const lines = (pr.items || []).filter((it: any) => it.product_name && it.line_status !== 'Hủy đơn')
+    const normal: any[] = [], exceeded: any[] = [], exceededMsg: string[] = []
+    for (const it of lines) {
+      const req = Number(it.qty) || 0
+      const ordered = Number(orderedMap[it.product_code] || 0)
+      const remaining = req - ordered
+      if (remaining > 0) normal.push(mk(it, remaining))
+      else { exceeded.push(mk(it, req)); exceededMsg.push(`${it.product_name} (đã đặt ${fmt(ordered)}/${fmt(req)})`) }
+    }
+    if (exceeded.length === 0) { goPO(normal); return }
+    // Có dòng đã đặt đủ/vượt → cảnh báo, cho chọn mua thêm hay chỉ SP còn thiếu
+    setPoExceed({ msg: exceededMsg.join('; '), normal, all: [...normal, ...exceeded] })
   }
 
   async function handleDelete() {
@@ -407,6 +437,17 @@ export default function PurchaseRequestDetail() {
       />
 
       <ConfirmModal
+        open={!!poExceed}
+        title="Số lượng đã đặt đủ/vượt"
+        message={`Các sản phẩm sau đã đặt đủ hoặc vượt số lượng yêu cầu: ${poExceed?.msg || ''}. Bạn vẫn muốn tạo đơn mua hàng?`}
+        confirmText="Vẫn mua thêm"
+        cancelText="Chỉ SP còn thiếu"
+        variant="warn"
+        onConfirm={() => { const p = poExceed; setPoExceed(null); if (p) goPO(p.all) }}
+        onCancel={() => { const p = poExceed; setPoExceed(null); if (p) { if (p.normal.length) goPO(p.normal); else toast.info('Không còn sản phẩm cần đặt') } }}
+      />
+
+      <ConfirmModal
         open={confirmDelete}
         title="Xác nhận xóa"
         message="Bạn có chắc chắn muốn xóa phiếu mua hàng này không?"
@@ -416,6 +457,43 @@ export default function PurchaseRequestDetail() {
         onConfirm={() => { setConfirmDelete(false); handleDelete(); }}
         onCancel={() => setConfirmDelete(false)}
       />
+
+      {/* Đơn mua hàng liên quan (tạo từ phiếu này, cùng mã PYC). Không có đơn nào → ẩn khối */}
+      {!isNew && pos && pos.length > 0 && (
+        <div className="card" style={{ padding: 18, marginBottom: 16 }}>
+          <h3 className="sec-title">Đơn mua hàng liên quan</h3>
+          <table className="items-table" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left' }}>Mã PO</th>
+                  <th style={{ textAlign: 'left' }}>NCC</th>
+                  <th style={{ textAlign: 'right' }}>Tổng tiền</th>
+                  <th style={{ textAlign: 'center', width: 150 }}>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pos.slice(0, 5).map((po: any) => (
+                  <tr key={po.id}>
+                    <td>
+                      <span className="clickable" style={{ color: 'var(--teal)', fontWeight: 500, cursor: 'pointer' }}
+                        onClick={() => navigate(`/purchase-orders/${po.id}`)}>{po.code || `#${po.id}`}</span>
+                    </td>
+                    <td>{po.supplier_name || po.supplier_code || ''}</td>
+                    <td style={{ textAlign: 'right' }}>{fmtBlank(po.amount)}</td>
+                    <td style={{ textAlign: 'center' }}>{poBadge(po.status)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          {pos.length > 5 && (
+            <div style={{ marginTop: 10, textAlign: 'center' }}>
+              <button className="btn ghost" onClick={() => navigate(`/purchase-orders?pr_code=${encodeURIComponent(pr.code)}`)}>
+                Xem thêm ({pos.length} đơn) <i className="ti ti-arrow-right" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className={isLogShown ? 'detail-grid' : ''}>
         <div>

@@ -94,6 +94,14 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
         row = {c: getattr(p, c) for c in HEADER}
         row["amount"] = round(sum(float(i.amount or 0) for i in service.items_of(db, p.id)), 2)
         out.append(row)
+    # Gắn pr_id (id phiếu YCMH theo mã PYC) để FE điều hướng sang chi tiết PYC khi click Mã PYC
+    codes = {r["pr_code"] for r in out if r.get("pr_code")}
+    if codes:
+        from app.modules.purchase_request.model import PurchaseRequest
+        id_by_code = {c: i for i, c in db.query(PurchaseRequest.id, PurchaseRequest.code)
+                      .filter(PurchaseRequest.code.in_(codes)).all()}
+        for r in out:
+            r["pr_id"] = id_by_code.get(r.get("pr_code"))
     return success({"total": total, "items": out})
 
 

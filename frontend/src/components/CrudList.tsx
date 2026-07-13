@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { toast } from './toast'
 import { useAuth } from '../auth/AuthContext'
@@ -13,12 +13,20 @@ export default function CrudList() {
   const cfg = cruds[entity || '']
   const { can } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  // Filter khởi tạo từ URL query (chỉ nhận key khớp cfg.filters) — vd /purchase-orders?pr_code=PYC-001
+  const urlFilters = useMemo(() => {
+    const o: Record<string, string> = {}
+    cfg?.filters?.forEach((f: any) => { const v = searchParams.get(f.key); if (v) o[f.key] = v })
+    return o
+  }, [cfg?.slug, searchParams])
 
   const [items, setItems] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [filters, setFilters] = useState<Record<string, string>>({})
+  const [filters, setFilters] = useState<Record<string, string>>(urlFilters)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [sortField, setSortField] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
@@ -134,8 +142,8 @@ export default function CrudList() {
   }
   useEffect(() => {
     if (!cfg) return
-    setPage(1); setPageSize(20); setFilters({}); setSortField(null); setSortDir('asc')
-    load(1, 20, {})
+    setPage(1); setPageSize(20); setFilters(urlFilters); setSortField(null); setSortDir('asc')
+    load(1, 20, urlFilters)
   }, [cfg?.slug])
 
   if (!cfg) return <div>Không tìm thấy trang.</div>
@@ -185,7 +193,7 @@ export default function CrudList() {
         </div>
       </div>
 
-      <FilterBar fields={cfg.filters} onApply={applyFilters} />
+      <FilterBar key={cfg.slug} fields={cfg.filters} initial={urlFilters} onApply={applyFilters} />
 
       <div className="card">
         <table>
@@ -232,7 +240,18 @@ export default function CrudList() {
               return sortedItems.map((row) => (
                 <tr key={row.id} className="clickable" onClick={() => navigate(`/${cfg.slug}/${row.id}`)}>
                   <td>{row.id}</td>
-                  {cfg.columns.map((c) => <td key={c.key}>{c.render ? c.render(row) : (row[c.key] ?? '')}</td>)}
+                  {cfg.columns.map((c) => {
+                    const content = c.render ? c.render(row) : (row[c.key] ?? '')
+                    const href = c.link?.(row)
+                    return (
+                      <td key={c.key}>
+                        {href ? (
+                          <span className="clickable" style={{ color: 'var(--teal)', fontWeight: 500 }}
+                            onClick={(e) => { e.stopPropagation(); navigate(href) }}>{content}</span>
+                        ) : content}
+                      </td>
+                    )
+                  })}
                 </tr>
               ));
             })()}
