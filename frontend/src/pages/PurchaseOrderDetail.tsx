@@ -326,7 +326,16 @@ export default function PurchaseOrderDetail() {
             <h3 className="sec-title">Thông tin chung</h3>
             <div className="form-grid">
               <div className="form-row"><label>Mã PO</label><input value={po.code || ''} disabled placeholder="Tự sinh khi tạo" /></div>
-              <div className="form-row"><label>Mã PYC nguồn</label>
+              <div className="form-row">
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>Mã PYC nguồn
+                  {(() => {
+                    const prId = prList.find((p) => p.code === po.pr_code)?.id
+                    return prId ? (
+                      <i className="ti ti-external-link clickable" title="Mở phiếu yêu cầu mua hàng"
+                        style={{ color: 'var(--teal)' }} onClick={() => navigate(`/purchase-requests/${prId}`)} />
+                    ) : null
+                  })()}
+                </label>
                 <input list="po-pyc-list" placeholder="Nhập/chọn mã PYC…" value={po.pr_code || ''} disabled={!headerEditable} onChange={(e) => onPickPr(e.target.value)} />
                 <datalist id="po-pyc-list">{prList.map((p) => <option key={p.id} value={p.code}>{p.purpose || ''}</option>)}</datalist>
               </div>

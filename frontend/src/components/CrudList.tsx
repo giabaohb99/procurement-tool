@@ -240,7 +240,18 @@ export default function CrudList() {
               return sortedItems.map((row) => (
                 <tr key={row.id} className="clickable" onClick={() => navigate(`/${cfg.slug}/${row.id}`)}>
                   <td>{row.id}</td>
-                  {cfg.columns.map((c) => <td key={c.key}>{c.render ? c.render(row) : (row[c.key] ?? '')}</td>)}
+                  {cfg.columns.map((c) => {
+                    const content = c.render ? c.render(row) : (row[c.key] ?? '')
+                    const href = c.link?.(row)
+                    return (
+                      <td key={c.key}>
+                        {href ? (
+                          <span className="clickable" style={{ color: 'var(--teal)', fontWeight: 500 }}
+                            onClick={(e) => { e.stopPropagation(); navigate(href) }}>{content}</span>
+                        ) : content}
+                      </td>
+                    )
+                  })}
                 </tr>
               ));
             })()}
