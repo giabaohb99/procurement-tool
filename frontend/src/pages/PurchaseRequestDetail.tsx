@@ -236,9 +236,9 @@ export default function PurchaseRequestDetail() {
     return ''
   }
 
-  async function save(submitAfterSave = false) {
+  async function save(submitAfterSave = false): Promise<boolean> {
     const v = validate()
-    if (v) { toast.error(v); return }
+    if (v) { toast.error(v); return false }
     const body = {
       company_id: Number(pr.company_id) || 0, requester: pr.requester, requester_position: pr.requester_position,
       department: pr.department, head_of_dept: pr.head_of_dept, purpose: pr.purpose,
@@ -260,7 +260,8 @@ export default function PurchaseRequestDetail() {
         if (submitAfterSave) await api.post(`${API}/${id}/submit`)
         toast.success('Đã lưu'); loadAll()
       }
-    } catch { /* interceptor đã toast lỗi */ }
+      return true
+    } catch { /* interceptor đã toast lỗi */ return false }
   }
 
   async function action(path: string, payload: any = {}) {
@@ -752,7 +753,7 @@ export default function PurchaseRequestDetail() {
               {!editable && (canLineStatus(edit) || canAssignPurchaser) && (
                 <button className="btn" onClick={() => savePopupLine(items[editIdx])}><i className="ti ti-device-floppy" />Lưu dòng</button>
               )}
-              {editable && <button className="btn" onClick={() => setEditIdx(null)}>Xong</button>}
+              {editable && <button className="btn" onClick={async () => { const ok = await save(false); if (ok) setEditIdx(null) }}><i className="ti ti-device-floppy" />Xong</button>}
             </div>
           </div>
         </div>
