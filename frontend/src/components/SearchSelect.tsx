@@ -62,14 +62,15 @@ export default function SearchSelect({
           height: 40,
           boxSizing: 'border-box',
           borderRadius: 12,
-          borderColor: state.isFocused ? 'var(--teal)' : '#E9EDF7',
+          backgroundColor: color ? `${color}0d` : '#fff',
+          borderColor: state.isFocused ? 'var(--teal)' : (color ? `${color}66` : '#E9EDF7'),
           boxShadow: state.isFocused ? '0 0 0 3px rgba(0,174,239,.15)' : 'none',
           fontSize: 13.5,
           fontWeight: 500,
           color: 'var(--navy)',
-          transition: 'border-color 0.2s, box-shadow 0.2s',
+          transition: 'border-color 0.2s, box-shadow 0.2s, background-color 0.2s',
           ':hover': {
-            borderColor: state.isFocused ? 'var(--teal)' : '#cbd5e1'
+            borderColor: state.isFocused ? 'var(--teal)' : (color ? color : '#cbd5e1')
           }
         }),
         valueContainer: (b) => table ? ({ ...b, padding: '0 6px' }) : ({
@@ -83,8 +84,8 @@ export default function SearchSelect({
         singleValue: (b) => table ? (color ? ({ ...b, color, fontWeight: 600 }) : b) : ({
           ...b,
           margin: 0,
-          color: colorMap && value ? colorMap[value] : undefined,
-          fontWeight: colorMap && value ? 600 : undefined,
+          color: color ? color : undefined,
+          fontWeight: color ? 600 : undefined,
         }),
         input: (b) => table ? ({ ...b, margin: 0, padding: 0 }) : ({
           ...b,
@@ -106,10 +107,17 @@ export default function SearchSelect({
         }),
         menu: (b) => ({ ...b, fontSize: table ? 12.5 : 14, minWidth: 160 }),
         menuPortal: (b) => ({ ...b, zIndex: 9999 }),
-        option: (b, state: any) => ({
-          ...b, cursor: 'pointer', color: '#1e293b',
-          backgroundColor: state.isSelected ? '#e0f2fe' : state.isFocused ? '#f1f5f9' : '#fff',
-        }),
+        option: (b, state: any) => {
+          const optVal = state.data ? String(state.data.value) : ''
+          const optColor = colorMap ? colorMap[optVal] : undefined
+          return {
+            ...b,
+            cursor: 'pointer',
+            color: optColor ? optColor : '#1e293b',
+            fontWeight: optColor ? 600 : 'normal',
+            backgroundColor: state.isSelected ? '#e0f2fe' : state.isFocused ? '#f1f5f9' : '#fff',
+          }
+        },
       }}
     />
   )

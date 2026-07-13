@@ -8,6 +8,7 @@ export type FieldDef = {
   readonlyOnEdit?: boolean
   source?: { url: string; value?: string; label?: string }
   onValueChange?: (val: any, form: any, setForm: (k: string, v: any) => void) => void
+  colorMap?: Record<string, string>   // map giá trị option → màu chữ (vd trạng thái: true→xanh, false→đỏ)
 }
 // link?: trả URL → cell thành clickable, điều hướng tới URL đó (chặn click lan ra dòng)
 export type Column = { key: string; label: string; render?: (row: any) => any; link?: (row: any) => string }
@@ -173,7 +174,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'invoice_name', label: 'Tên trên hóa đơn' }, { key: 'legal_name', label: 'Tên pháp lý' },
       { key: 'item_group', label: 'Phân loại' }, { key: 'unit', label: 'ĐVT' },
       { key: 'hh_code', label: 'Mã HH (sản phẩm)' }, { key: 'hh_name', label: 'Tên Sản phẩm (HH)' },
-      { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, colorMap: { 'true': '#16a34a', 'false': '#dc2626' } },
     ],
   },
   contracts: {
@@ -310,8 +311,9 @@ export const cruds: Record<string, CrudConfig> = {
   warehouses: {
     slug: 'warehouses', entity: 'warehouse', title: 'Kho', apiPath: '/api/warehouses', importExport: true,
     columns: [
-      { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên kho' }, { key: 'address', label: 'Địa chỉ' },
-      { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
+      { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên kho' },
+      { key: 'address', label: 'Địa chỉ', render: (r) => <div style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.address}>{r.address || '—'}</div> },
+      { key: 'is_active', label: 'Trạng thái', render: (r) => <div style={{ textAlign: 'center', minWidth: 80 }}>{badge(r.is_active)}</div> },
     ],
     filters: [
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên kho' },
@@ -319,7 +321,8 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     fields: [
       { key: 'code', label: 'Mã', readonlyOnEdit: true }, { key: 'name', label: 'Tên kho' },
-      { key: 'address', label: 'Địa chỉ', type: 'textarea' }, { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
+      { key: 'address', label: 'Địa chỉ', type: 'textarea' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, colorMap: { 'true': '#16a34a', 'false': '#dc2626' } },
     ],
   },
   units: {
@@ -334,7 +337,7 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     fields: [
       { key: 'code', label: 'Mã', readonlyOnEdit: true }, { key: 'name', label: 'Tên ĐVT' },
-      { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, colorMap: { 'true': '#16a34a', 'false': '#dc2626' } },
     ],
   },
   'item-groups': {
@@ -354,7 +357,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'std_days', label: 'Số ngày QĐ khi NCC CÓ sẵn hàng' },
       { key: 'std_days_unavail', label: 'Số ngày QĐ khi KHÔNG sẵn hàng' },
       { key: 'note', label: 'Ghi chú', type: 'textarea' }, { key: 'apply_date', label: 'Ngày áp dụng' },
-      { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, colorMap: { 'true': '#16a34a', 'false': '#dc2626' } },
     ],
   },
   departments: {

@@ -51,7 +51,13 @@ export default function CrudDetail() {
     setErr(''); setMsg(''); setNotFound(false)
     if (isNew) {
       const init: any = {}
-      cfg.fields.forEach((f) => { init[f.key] = f.type === 'checkbox' ? true : f.type === 'number' ? 0 : '' })
+      cfg.fields.forEach((f) => {
+        if (f.key === 'is_active') {
+          init[f.key] = f.type === 'checkbox' ? true : 'true'
+        } else {
+          init[f.key] = f.type === 'checkbox' ? true : f.type === 'number' ? 0 : ''
+        }
+      })
       setForm(init); setLogs([])
     } else {
       api.get(`${cfg.apiPath}/${id}`).then((r) => setForm(r.data.data))
@@ -114,6 +120,7 @@ export default function CrudDetail() {
                     <textarea value={form[f.key] ?? ''} disabled={ro} onChange={(e) => set(f.key, e.target.value)} />
                   ) : (f.type === 'select' || (f.source && f.type !== 'select-multiple')) ? (
                     <SearchSelect value={form[f.key] ?? ''} disabled={ro} placeholder="Chọn…"
+                      colorMap={f.colorMap}
                       options={(f.options || dynOpts[f.key] || [])}
                       onChange={(v) => {
                         set(f.key, v);
