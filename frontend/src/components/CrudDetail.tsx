@@ -207,6 +207,8 @@ export default function CrudDetail() {
         </div>
 
         {!isNew && (
+         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {cfg.detailExtra && cfg.detailExtra(form)}
           <div className="card" style={{ padding: 18 }}>
             <h3 style={{ fontSize: 14, color: 'var(--navy)', marginBottom: 12 }}><i className="ti ti-history" /> Lịch sử thao tác</h3>
             {logs.length === 0 && <div style={{ color: '#999', fontSize: 13 }}>Chưa có log.</div>}
@@ -222,6 +224,7 @@ export default function CrudDetail() {
               ))}
             </div>
           </div>
+         </div>
         )}
       </div>
     </div>

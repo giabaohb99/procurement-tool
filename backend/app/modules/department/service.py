@@ -1,14 +1,21 @@
 from fastapi import HTTPException
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from .model import Department
 from .schema import DepartmentCreate, DepartmentUpdate
 
 
-def list_departments(db: Session, q: str | None, pg: dict):
+def list_departments(db: Session, q: str | None, pg: dict, is_active: bool | None = None):
     query = db.query(Department)
     if q:
-        query = query.filter(Department.name.like(f"%{q}%"))
+        # Tìm chung 1 ô: theo tên phòng ban HOẶC tên trưởng bộ phận (manager)
+        from app.modules.employee.model import Employee
+        query = query.outerjoin(Employee, Employee.id == Department.manager_id).filter(
+            or_(Department.name.like(f"%{q}%"), Employee.full_name.like(f"%{q}%"))
+        )
+    if is_active is not None:
+        query = query.filter(Department.is_active == is_active)
     total = query.count()
     items = query.order_by(Department.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
     return total, items

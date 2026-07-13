@@ -1,4 +1,5 @@
 import { FilterField } from '../components/FilterBar'
+import DepartmentMembers from '../components/DepartmentMembers'
 
 export type FieldDef = {
   key: string
@@ -25,6 +26,7 @@ export type CrudConfig = {
   rowStyle?: (row: any) => any   // tô màu dòng theo điều kiện (vd HĐ sắp hết hạn)
   txn?: boolean                  // chứng từ giao dịch (PYC/PO/khảo sát/YCTT): ai có 'read' là xem danh sách được
   cloneable?: boolean            // hiện nút "Nhân bản" mỗi dòng → POST {apiPath}/{id}/clone tạo phiếu nháp mới
+  detailExtra?: (row: any) => any  // section tùy biến render dưới form ở trang chi tiết (chỉ khi đã có bản ghi)
 }
 
 const badge = (v: any, on = 'Đang dùng', off = 'Ngừng') =>
@@ -369,7 +371,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active, 'Hoạt động', 'Đã ẩn') },
     ],
     filters: [
-      { key: 'name', label: 'Phòng ban' },
+      { key: 'q', label: 'Tìm kiếm' },   // tìm chung: tên phòng ban / trưởng bộ phận
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: [{value: 'true', label: 'Hoạt động'}, {value: 'false', label: 'Đã ẩn'}] },
     ],
     fields: [
@@ -377,7 +379,8 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'name', label: 'Tên Phòng ban' },
       { key: 'manager_id', label: 'Trưởng bộ phận', type: 'select', source: { url: '/api/employees', value: 'id', label: 'full_name' } },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: [{value: 'true', label: 'Hoạt động'}, {value: 'false', label: 'Đã ẩn'}] },
-    ]
+    ],
+    detailExtra: (row) => <DepartmentMembers departmentId={row.id} managerId={row.manager_id} />,
   },
   'category-assignees': {
     slug: 'category-assignees', entity: 'category_assignee', title: 'Phân công phụ trách (theo phân loại)', apiPath: '/api/category-assignees',
