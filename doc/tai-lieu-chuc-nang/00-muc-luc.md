@@ -57,6 +57,13 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 | 21 | Vai trò & Phân quyền | `/roles` | [08-he-thong-bao-cao.md](08-he-thong-bao-cao.md) — đã có tài liệu |
 | 22 | Cấu hình hệ thống | `/settings` | [08-he-thong-bao-cao.md](08-he-thong-bao-cao.md) — đã có tài liệu |
 
+## Nhóm: Người dùng cá nhân
+
+| # | Chức năng | Đường dẫn | Tài liệu chức năng |
+|---|-----------|-----------|-------------------|
+| 23 | Thông báo (chuông + trang) | `/notifications` | [09-thong-bao-va-trang-ca-nhan.md](09-thong-bao-va-trang-ca-nhan.md) — đã có tài liệu |
+| 24 | Trang cá nhân (thông tin + việc cần làm) | `/me` | [09-thong-bao-va-trang-ca-nhan.md](09-thong-bao-va-trang-ca-nhan.md) — đã có tài liệu |
+
 ---
 
 ## Ghi chú

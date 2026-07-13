@@ -87,10 +87,10 @@ Lưu trữ thông tin pháp lý, liên lạc và tài chính của các đối t
 
 ### 10. Hình thức thanh toán (`payment_terms`)
 
-- Kiểu nhập: Nhập tay
+- Kiểu nhập: Chọn (danh sách cố định)
 - Mặc định: trống
 - Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: —
+- Nguồn dữ liệu / liên kết: Công nợ 60 ngày / Thanh toán 100% khi nhận hàng / Công nợ 30 ngày / Thanh toán trước khi giao hàng / Thanh toán 7 ngày sau khi nhận hàng / Công nợ 20 ngày
 - Người sửa: Người dùng có quyền `supplier:write`
 
 ### 11. Số tài khoản ngân hàng (`bank_account`)
@@ -160,7 +160,7 @@ Danh mục vật tư bao bì / nguyên liệu / hàng hóa nội bộ (VTBB/NL).
 
 ### 5. Phân loại (`item_group`)
 
-- Kiểu nhập: Nhập tay (tên phân loại)
+- Kiểu nhập: Chọn (dropdown, lấy từ `/api/item-groups`; value và label đều là `name`)
 - Mặc định: trống
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Bảng Phân loại VTBB/NL (`item_group.name`)
@@ -194,8 +194,8 @@ Danh mục vật tư bao bì / nguyên liệu / hàng hóa nội bộ (VTBB/NL).
 
 ### 9. Đang dùng (`is_active`)
 
-- Kiểu nhập: Checkbox
-- Mặc định: Có (tích)
+- Kiểu nhập: Chọn (danh sách cố định: Đang dùng / Ngừng)
+- Mặc định: Đang dùng
 - Bắt buộc: —
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người dùng có quyền `product:write`
@@ -239,7 +239,7 @@ Quản lý hợp đồng giữa công ty (pháp nhân nội bộ) và đối tá
 - Kiểu nhập: Chọn (danh sách cố định)
 - Mặc định: trống
 - Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: Mua bán / Nguyên tắc / Vận chuyển / Dịch vụ / Khác
+- Nguồn dữ liệu / liên kết: Mua bán / Nguyên tắc / Vận chuyển
 - Người sửa: Người dùng có quyền `contract:write`
 
 ### 5. Trích yếu hợp đồng (`title`)
@@ -300,6 +300,19 @@ Quản lý hợp đồng giữa công ty (pháp nhân nội bộ) và đối tá
 - Người sửa: Người dùng có quyền `contract:write`
 - Logic: Chỉ đính kèm được sau khi hợp đồng đã được tạo và có `id`. Mỗi file xóa riêng lẻ qua nút xóa bên cạnh
 
+### Bộ lọc danh sách
+
+| Bộ lọc | Kiểu | Ghi chú |
+|---|---|---|
+| Mã HĐ | Nhập text | |
+| Tên đối tượng | Nhập text | Lọc theo `party_name` |
+| Đối tượng | Chọn | Nhà cung cấp / Khách hàng / Khác |
+| Loại | Chọn | Mua bán / Nguyên tắc / Vận chuyển |
+| Trạng thái | Chọn | Hiệu lực / Hết hạn / Thanh lý |
+| Tình trạng hết hạn | Chọn | Còn hạn / Sắp hết hạn / Hết hạn (tính từ `end_date` so với hôm nay) |
+| Đã ký | Chọn | Đã ký / Chưa ký |
+| Ngày hết hạn | Khoảng ngày | Lọc theo khoảng `end_date` |
+
 ---
 
 ## Kho
@@ -334,11 +347,13 @@ Danh sách kho hàng vật lý của tổ chức. Được tham chiếu từ ngh
 
 ### 4. Đang dùng (`is_active`)
 
-- Kiểu nhập: Checkbox
-- Mặc định: Có (tích)
+- Kiểu nhập: Chọn (danh sách cố định: Đang dùng / Ngừng)
+- Mặc định: Đang dùng
 - Bắt buộc: —
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người dùng có quyền `warehouse:write`
+
+> **Ghi chú:** Đang có CR-001 (đề xuất redesign Kho — bổ sung `company_id`, `supplier_code`, `warehouse_type`) chờ phê duyệt; chưa được triển khai vào code. Cấu trúc hiện tại là `code / name / address / is_active`.
 
 ---
 
@@ -366,8 +381,8 @@ Danh sách đơn vị tính dùng cho sản phẩm và phiếu khảo sát (ĐVT
 
 ### 3. Đang dùng (`is_active`)
 
-- Kiểu nhập: Checkbox
-- Mặc định: Có (tích)
+- Kiểu nhập: Chọn (danh sách cố định: Đang dùng / Ngừng)
+- Mặc định: Đang dùng
 - Bắt buộc: —
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người dùng có quyền `unit:write`
@@ -423,8 +438,8 @@ Danh sách nhóm phân loại VTBB/NL kèm thời gian quy định (số ngày c
 
 ### 6. Đang dùng (`is_active`)
 
-- Kiểu nhập: Checkbox
-- Mặc định: Có (tích)
+- Kiểu nhập: Chọn (danh sách cố định: Đang dùng / Ngừng)
+- Mặc định: Đang dùng
 - Bắt buộc: —
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người dùng có quyền `item_group:write`
@@ -532,6 +547,14 @@ Cơ cấu tổ chức các phòng ban / bộ phận. Tham chiếu từ PYC (bộ
 Gán Nhân sự thu mua (NSTM) chính và dự phòng cho từng nhóm phân loại VTBB/NL. Hệ thống dùng bảng này để tự động điền người phụ trách (`assignee`) vào từng dòng PYC khi trưởng phòng duyệt. Mỗi phân loại chỉ được phân công một lần (`item_group_id` là duy nhất); để thay đổi nhân sự cần sửa bản ghi hiện có.
 
 Đường dẫn: `/category-assignees` (trang riêng `CategoryAssignees`).
+
+### Danh sách & bộ lọc
+
+Cột hiển thị: Phân loại · NSTM chính (kèm mã NV) · NSTM dự phòng (kèm mã NV). Danh sách lấy 1 lần rồi **lọc phía client** ngay trên trang riêng (không qua tham số API):
+
+- **Phân loại**: chọn từ danh mục Phân loại (`item_group`)
+- **Tìm theo tên NSTM**: khớp tên NSTM chính hoặc dự phòng
+- **Tìm theo mã NV**: khớp mã NSTM chính hoặc dự phòng
 
 ### 1. Phân loại VTBB (`item_group_id`)
 

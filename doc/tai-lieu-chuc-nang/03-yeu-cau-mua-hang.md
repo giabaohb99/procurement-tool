@@ -51,7 +51,16 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Người sửa: Người tạo (chỉ khi tạo mới, trường bị khóa sau khi phiếu đã lưu)
 - Logic đặc biệt: Trường bị `disabled` sau lần tạo đầu tiên (`!isNew`). Mã hiển thị trên bản in khi `show_code_on_print = true`.
 
-### 2. Ngày tiếp nhận (`request_date`)
+### 2. Ngày tạo (`created_at`)
+
+- Kiểu nhập: Chỉ đọc (hệ thống — timestamp khi phiếu được khởi tạo)
+- Mặc định: Thời điểm `INSERT` bản ghi (`AuditMixin.created_at`)
+- Bắt buộc: — (hệ thống điền, không thay đổi được)
+- Nguồn dữ liệu / liên kết: Cột `created_at` trong bảng `tab_purchase_request` (từ `AuditMixin`)
+- Người sửa: Hệ thống (khóa hoàn toàn)
+- Logic đặc biệt: Hiển thị cạnh "Ngày tiếp nhận" trên trang chi tiết khi xem phiếu đã tạo (`!isNew`), định dạng ngày+giờ đầy đủ qua `fmtDateTime`. Ẩn trên form tạo mới. Trả về trong API response (`_out()`).
+
+### 3. Ngày tiếp nhận (`request_date`)
 
 - Kiểu nhập: Chọn ngày (date input)
 - Mặc định: Ngày hiện tại (hôm nay, `new Date().toISOString().slice(0,10)`)
@@ -60,7 +69,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Ngày này ảnh hưởng đến định dạng mã tự sinh (`ddmmyy` lấy từ `request_date`).
 
-### 3. Công ty nhận hóa đơn (`company_id`)
+### 4. Công ty nhận hóa đơn (`company_id`)
 
 - Kiểu nhập: Chọn (SearchSelect, tìm kiếm theo tên)
 - Mặc định: 0 (chưa chọn); tự điền từ công ty của Nhân sự YC nếu nhân sự đã có `company_id`
@@ -69,7 +78,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Tên công ty (`company_name`) được tra cứu và gắn vào response để hiển thị; không lưu riêng.
 
-### 4. Nhân sự yêu cầu (`requester`)
+### 5. Nhân sự yêu cầu (`requester`)
 
 - Kiểu nhập: Chọn (SearchSelect, tìm theo tên đầy đủ)
 - Mặc định: Tự điền tên người đang đăng nhập (khớp email hoặc full_name với danh sách nhân sự)
@@ -78,7 +87,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Người sửa: Người có `write` (TP/QL); nhân viên thường (`isStaff`) bị khóa trường này — chỉ điền tên mình
 - Logic đặc biệt: Chọn nhân sự tự điền `requester_position`, `department`, `head_of_dept`, `company_id` theo dữ liệu nhân sự đó.
 
-### 5. Chức vụ (`requester_position`)
+### 6. Chức vụ (`requester_position`)
 
 - Kiểu nhập: Nhập tay (tự điền khi chọn Nhân sự YC)
 - Mặc định: trống; tự điền từ `employee.position` hoặc `employee.role_name`
@@ -86,7 +95,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Nguồn dữ liệu / liên kết: Tự điền từ `employee.position`; có thể sửa thủ công sau
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 
-### 6. Bộ phận yêu cầu (`department`)
+### 7. Bộ phận yêu cầu (`department`)
 
 - Kiểu nhập: Tự động (trường bị khóa `disabled`)
 - Mặc định: trống; tự điền theo phòng ban của Nhân sự YC đã chọn
@@ -94,7 +103,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Nguồn dữ liệu / liên kết: Lấy tên phòng ban từ `employee.department_id` → `department.name`
 - Người sửa: Hệ thống (thay đổi khi đổi Nhân sự YC)
 
-### 7. Trưởng bộ phận (`head_of_dept`)
+### 8. Trưởng bộ phận (`head_of_dept`)
 
 - Kiểu nhập: Tự động (trường bị khóa `disabled`)
 - Mặc định: trống; tự điền từ trưởng phòng của bộ phận
@@ -102,7 +111,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Nguồn dữ liệu / liên kết: Tìm nhân sự cùng phòng có chức danh chứa "trưởng" / "manager" / "head"; hoặc qua API `/api/purchase-requests/meta/dept-head`
 - Người sửa: Hệ thống (cập nhật khi đổi Nhân sự YC; phía BE cũng tự điền khi tạo qua `find_dept_head`)
 
-### 8. Đơn gấp (`is_urgent`)
+### 9. Đơn gấp (`is_urgent`)
 
 - Kiểu nhập: Checkbox
 - Mặc định: Không tích (`false`)
@@ -111,7 +120,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Khi tích, hệ thống gắn cờ ưu tiên trong thông báo (`is_urgent=true` được truyền vào `trigger_notification`). Danh sách hiển thị badge "Gấp" màu cam.
 
-### 9. Mục đích mua hàng (`purpose`)
+### 10. Mục đích mua hàng (`purpose`)
 
 - Kiểu nhập: Nhập nhiều dòng (textarea)
 - Mặc định: trống
@@ -120,7 +129,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Trường này được dùng làm tiêu đề phiếu trên trang chi tiết (`pr.purpose || pr.code`). Phiếu khảo sát (Survey) liên kết PYC cũng tự điền `requirement_detail` từ trường này.
 
-### 10. Nội dung mua hàng (`note`)
+### 11. Nội dung mua hàng (`note`)
 
 - Kiểu nhập: Nhập nhiều dòng (textarea)
 - Mặc định: trống
@@ -128,7 +137,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 
-### 11. NSTM phụ trách phiếu (`assignee_id`)
+### 12. NSTM phụ trách phiếu (`assignee_id`)
 
 - Kiểu nhập: Tự động (gán qua endpoint `PATCH /assign`, không có ô nhập trực tiếp trong form header)
 - Mặc định: 0 (chưa gán)
@@ -137,7 +146,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Người sửa: Người có `approve` (qua endpoint `PATCH /{pid}/assign`); tự động điền khi duyệt nếu truyền `assignee_id` vào `ApproveIn`
 - Logic đặc biệt: Ảnh hưởng đến data scope — nhân viên thu mua chỉ thấy phiếu được giao cho mình (theo cấu hình scope `assigned`).
 
-### 12. Hiện mã trên bản in (`show_code_on_print`)
+### 13. Hiện mã trên bản in (`show_code_on_print`)
 
 - Kiểu nhập: Checkbox (ẩn trong form chính, có trong schema)
 - Mặc định: `true`
@@ -146,7 +155,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Kiểm soát việc hiển thị mã PYC trên bản in (`/print/purchase-request/:id`).
 
-### 13. Tên nhà cung cấp đề xuất (`suggested_supplier`)
+### 14. Tên nhà cung cấp đề xuất (`suggested_supplier`)
 
 - Kiểu nhập: Nhập tay
 - Mặc định: trống
@@ -154,7 +163,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 
-### 14. Mã số thuế NCC đề xuất (`suggested_supplier_tax_code`)
+### 15. Mã số thuế NCC đề xuất (`suggested_supplier_tax_code`)
 
 - Kiểu nhập: Nhập tay
 - Mặc định: trống
@@ -162,7 +171,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 
-### 15. Liên hệ NCC đề xuất (`suggested_supplier_contact`)
+### 16. Liên hệ NCC đề xuất (`suggested_supplier_contact`)
 
 - Kiểu nhập: Nhập tay (SĐT / Email / Địa chỉ)
 - Mặc định: trống
@@ -170,7 +179,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 
-### 16. Báo giá đính kèm (`quote_filename` + `quote_file_url`)
+### 17. Báo giá đính kèm (`quote_filename` + `quote_file_url`)
 
 - Kiểu nhập: Upload file (1 file, chọn qua nút "Chọn báo giá")
 - Mặc định: trống
@@ -179,7 +188,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Chỉ upload được sau khi phiếu đã được tạo (`!isNew`). Xóa file chỉ xóa tham chiếu (reset về trống), không xóa file trên R2.
 
-### 17. Tỷ lệ VAT (`vat_rate`)
+### 18. Tỷ lệ VAT (`vat_rate`)
 
 - Kiểu nhập: Số (không hiển thị trên form UI hiện tại)
 - Mặc định: `0.08` (8%)
@@ -198,10 +207,10 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 
 - Kiểu nhập: Chọn sản phẩm (ProductPicker — tìm theo mã hoặc tên)
 - Mặc định: trống
-- Bắt buộc: Không
+- Bắt buộc: Có (khi dòng có `product_name`, `validate()` yêu cầu phải chọn mã hàng từ danh mục: "cần chọn Mã hàng (chọn từ danh mục)")
 - Nguồn dữ liệu / liên kết: Danh mục Sản phẩm (`product`), API `/api/products`
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
-- Logic đặc biệt: Chọn mã tự điền `product_name`, `unit`, `item_group`, `group_desc`. Nếu không có trong danh mục, có thể nhập thủ công `product_name` trực tiếp.
+- Logic đặc biệt: Chọn mã tự điền `product_name`, `unit`, `item_group`, `group_desc`. Nhập thủ công `product_name` mà không chọn mã sẽ bị chặn khi gửi duyệt.
 
 ### 2. Tên sản phẩm (`product_name`)
 
@@ -276,7 +285,7 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 
 - Kiểu nhập: Chọn ngày (date input)
 - Mặc định: trống
-- Bắt buộc: Không
+- Bắt buộc: Có (đánh dấu `*`; `validate()` yêu cầu cho mỗi dòng có `product_name`: "cần nhập Ngày cần hàng")
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Trường cấp dòng, khác với `need_date` ở header phiếu (cấp phiếu toàn bộ, hiện chưa hiển thị trên form).
@@ -320,7 +329,7 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 ## C. Quy tắc nghiệp vụ
 
 1. Lưu (Nháp): lọc bỏ dòng không có `product_name`; dòng còn lại được lưu toàn bộ (xóa dòng cũ và ghi lại — `_save_items` dùng `DELETE` rồi `INSERT`).
-2. Gửi duyệt: kiểm tra `validate()` — phải có `company_id`, `requester`, ít nhất 1 dòng có `product_name`, mỗi dòng đó phải có `qty > 0` và `warehouse`. Nếu không pass, thông báo lỗi cụ thể.
+2. Gửi duyệt: kiểm tra `validate()` — phải có `company_id`, `requester`, ít nhất 1 dòng có `product_name`; mỗi dòng đó phải có `product_code` (chọn từ danh mục), `qty > 0`, `warehouse` và `required_date`. Nếu không pass, thông báo lỗi cụ thể từng trường.
 3. Mã phiếu tự sinh: định dạng `PYC{ddmmyy}{seq:02d}`, trong đó `ddmmyy` lấy từ `request_date` (không có thì lấy ngày hiện tại), `seq` là số thứ tự tăng dần trong ngày.
 4. Chọn Nhân sự YC: tự điền `requester_position` (chức vụ), `department` (phòng ban), `head_of_dept` (trưởng bộ phận tìm theo chức danh), `company_id`.
 5. Chọn Mã hàng: tự điền `product_name`, `unit`, `item_group`, `group_desc`.
@@ -329,7 +338,7 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 8. Phân quyền xem dòng: người tạo phiếu và người có `approve` hoặc scope `dept`/`company`/`all` xem được mọi dòng; NSTM (scope nhỏ hơn) chỉ thấy dòng có `assignee` trùng với mã NV của mình.
 9. Tự phân công NSTM khi duyệt: hàm `auto_assign_by_category` gán NSTM cho từng dòng theo bảng phân công phụ trách (`category_assignee`).
 10. Trạng thái phiếu tự tính lại: sau mỗi lần NSTM cập nhật `line_status`, hàm `recompute_status` xét lại trạng thái phiếu (chỉ khi phiếu đang ở `approved`/`processing`/`completed`).
-11. Nhân bản phiếu: tạo phiếu `draft` mới, copy header và dòng hàng (không copy `assignee`, `line_status`, `progress_note`); mã mới được tự sinh.
+11. Nhân bản phiếu: `POST /api/purchase-requests/{id}/copy` (và alias `/clone`) tạo phiếu `draft` mới — copy toàn bộ header và dòng hàng (reset `assignee_id = 0`, `assignee = ""`, `line_status = "Chưa đặt hàng"`, `progress_note = ""`); mã mới tự sinh theo ngày tạo bản sao. Nút "Nhân bản" có trên trang chi tiết (cần `purchase_request:create`) và trên danh sách (cấu hình `cloneable = true`, endpoint `/clone`).
 12. Xóa mềm: phiếu xóa được đánh dấu `is_deleted = true`, không xóa vật lý; chỉ xóa được khi `status = draft`.
 13. Thông báo: gửi khi gửi duyệt (`pr_submitted`), duyệt (`pr_approved`), và từ chối (`pr_rejected`). Thông báo gồm thông tin người tạo, mã phiếu, link, cờ gấp.
 14. Đính kèm tài liệu: mỗi phiếu có thể đính kèm nhiều file (entity `purchase_request`); riêng báo giá NCC đề xuất dùng entity riêng `purchase_request_quote` (chỉ 1 file). Cả hai lưu trên Cloudflare R2 qua API `/api/attachments`.
@@ -356,3 +365,22 @@ Entity: `purchase_request`
 | Hoàn thành | `purchase_request:cancel` | `approved`, `processing` |
 | Xóa | `purchase_request:delete` | `draft` |
 | In phiếu | `purchase_request:read` (hoặc `print` nếu cấu hình riêng) | mọi trạng thái |
+
+## E. Bộ lọc danh sách
+
+Trang danh sách `/purchase-requests` hỗ trợ các bộ lọc sau (khai báo trong `cruds.tsx` và xử lý ở controller):
+
+| Tham số | Nhãn trên UI | Kiểu | Ghi chú |
+|---------|-------------|------|---------|
+| `code` | Mã PYC | Văn bản (LIKE) | Tìm theo mã phiếu |
+| `company_id` | Công ty | Chọn (exact) | Source: `/api/companies` |
+| `requester` | Người yêu cầu | Văn bản (LIKE) | Tìm theo tên nhân sự yêu cầu |
+| `department` | Bộ phận YC | Chọn (LIKE) | Source: `/api/departments` |
+| `assignee` | NSTM phụ trách | Chọn (exact — mã NV) | Lọc phiếu có ít nhất 1 dòng gán cho NSTM này; source: `/api/employees` |
+| `item_group` | Phân loại | Chọn (LIKE) | Lọc phiếu có ít nhất 1 dòng thuộc phân loại này; source: `/api/item-groups` |
+| `request_date` | Ngày tạo | Khoảng ngày (daterange) | Tham số `request_date_from` / `request_date_to` |
+| `need_date` | Ngày cần hàng | Khoảng ngày (daterange) | Tham số `need_date_from` / `need_date_to` |
+| `is_urgent` | Đơn gấp | Chọn (`true`/`false`) | Lọc đơn gấp / thường |
+| `status` | Trạng thái | Chọn | `draft`, `submitted`, `approved`, `rejected`, `processing`, `completed` |
+
+Tất cả bộ lọc kết hợp với nhau theo AND và áp dụng thêm `apply_scope` theo phân quyền dữ liệu của người dùng.

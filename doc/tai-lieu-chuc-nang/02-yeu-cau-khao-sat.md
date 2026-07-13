@@ -6,6 +6,8 @@ Ghi nhận nhu cầu khảo sát giá / nhà cung cấp do bộ phận nghiệp 
 
 Đường dẫn: `/survey-requests` (danh sách), `/survey-requests/:id` (chi tiết + kết quả khảo sát), `/survey-requests/:id/process` (màn xử lý dành riêng NSTM).
 
+Màn chi tiết hiển thị phần **Lịch sử thao tác** (audit log) ở cột bên phải khi phiếu đã có thao tác được ghi nhận — gọi `GET /api/audit-logs?entity=survey_request&entity_id={id}`.
+
 ## Vai trò tham gia
 
 - Người yêu cầu — scope `own` (`survey_request:create` / `write`): lập phiếu, gửi duyệt, chọn phương án, tạo YCMH.
@@ -34,10 +36,25 @@ Các chuyển tiếp trạng thái:
 - `submitted` → `rejected` — endpoint `POST /{id}/reject`; quyền `approve`; phiếu quay về trạng thái có thể sửa.
 - `submitted` → `cancelled` — endpoint `POST /{id}/cancel`; quyền `approve`; khóa vĩnh viễn.
 - `rejected` → `submitted` — người YC sửa rồi gửi duyệt lại.
-- `processing` → `survey_done` — endpoint `POST /{id}/complete`; quyền `process` + `is_purchaser`; mọi dòng phải có ít nhất 1 option và mọi option phải có Mã SP hệ thống.
+- `processing` → `survey_done` — endpoint `POST /{id}/complete`; quyền `process` + `is_purchaser`; mỗi NSTM validate dòng mình phụ trách; phiếu chuyển khi TẤT CẢ dòng (mọi NSTM) đã có option. Mọi option phải có Mã SP hệ thống (kiểm tra phía FE). Có thể gọi lại từ `survey_done`.
 - `survey_done` → `pr_created` — endpoint `POST /{id}/create-prs`; người YC (`created_by`) hoặc Admin TM (quyền `delete`).
 - `pr_created` → `done` (thủ công) — endpoint `POST /{id}/finalize`; Admin/QL TM (scope `all` + quyền `approve`).
 - `pr_created` → `done` (tự động) — hàm `auto_complete_from_pr` kích hoạt khi PYC liên quan chuyển `completed`; nếu mọi PYC của YCKS đều `completed` thì YCKS tự sang `done`.
+
+## Bộ lọc danh sách
+
+Màn danh sách `/survey-requests` hỗ trợ các bộ lọc:
+
+| Nhãn lọc | Param API | Loại | Ghi chú |
+|-----------|-----------|------|---------|
+| Mã phiếu | `code` | LIKE | |
+| Công ty | `company_id` | Bằng (ID) | |
+| Người yêu cầu | `requester` | LIKE | |
+| Bộ phận | `department` | LIKE | |
+| NSTM phụ trách | `assignee` | Bằng (mã NV) | Lọc theo `SurveyRequestLine.assignee` (subquery) |
+| Phân loại | `item_group` | LIKE | Lọc theo `SurveyRequestLine.item_group` (subquery) |
+| Ngày tạo | `request_date_from` / `request_date_to` | Khoảng ngày | |
+| Trạng thái | `status` | Bằng | `draft`, `submitted`, `approved`, `rejected`, `cancelled`, `processing`, `survey_done`, `pr_created`, `done` |
 
 ---
 
@@ -104,16 +121,16 @@ Các chuyển tiếp trạng thái:
 - Bắt buộc: Có — "Vui lòng nhập Mục đích khảo sát"
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người YC khi phiếu `draft` / `rejected`
-- Logic đặc biệt: Khi chọn YCKS trên màn tạo Phiếu khảo sát, trường "Yêu cầu kỹ thuật & chất lượng" của phiếu khảo sát tự điền từ đây. Khi tạo PYC sao chép sang `PurchaseRequest.purpose`.
+- Logic đặc biệt: Khi chọn YCKS trên màn tạo Phiếu khảo sát, trường **Nội dung chính** (`main_content`) của phiếu khảo sát tự điền từ đây. Khi tạo PYC sao chép sang `PurchaseRequest.purpose`.
 
-### 8. Ngày tạo (`request_date`)
+### 8. Ngày tạo (`request_date` / `created_at`)
 
-- Kiểu nhập: Chọn ngày
+- Kiểu nhập: Chọn ngày — chỉ khi TẠO MỚI (nhập `request_date`). Khi XEM phiếu đã tạo, ô hiển thị `created_at` (ngày + giờ đầy đủ từ hệ thống, chỉ đọc); nếu không có `created_at` thì fallback về `request_date`.
 - Mặc định: Ngày hiện tại (ISO format `YYYY-MM-DD`)
 - Bắt buộc: Hiển thị dấu `*`; không validate phía FE
 - Nguồn dữ liệu / liên kết: —
-- Người sửa: Người YC khi phiếu `draft` / `rejected`
-- Logic đặc biệt: Dùng làm ngày tham chiếu khi sinh mã PYC (`_gen_pr_code`).
+- Người sửa: Người YC khi phiếu `draft` / `rejected` (chỉ ảnh hưởng đến `request_date`; `created_at` do hệ thống ghi lúc tạo và không thay đổi)
+- Logic đặc biệt: `request_date` dùng làm ngày tham chiếu khi sinh mã PYC (`_gen_pr_code`). `created_at` là timestamp tạo phiếu thực tế và được ưu tiên hiển thị trên giao diện.
 
 ### 9. NSTM chính (`assignee_id`)
 
@@ -155,6 +172,8 @@ Các chuyển tiếp trạng thái:
 ## B. Trường của từng dòng yêu cầu (`SurveyRequestLine`)
 
 Mỗi dòng = một sản phẩm / nhóm hàng cần khảo sát. Bảng tóm tắt hiển thị các cột chính; toàn bộ trường xem và sửa trong popup "Chi tiết dòng".
+
+**Hiển thị dòng theo người xem (`visible_lines_for`)**: Quản lý/Admin TM (scope `all`) và người tạo phiếu (`created_by`) luôn thấy tất cả dòng. NSTM (scope `proc`) chỉ thấy dòng được giao (`assignee == mã NV của mình`) hoặc dòng có phân loại mình phụ trách theo bảng `CategoryAssignee`. Quy tắc này áp dụng cho cả màn chi tiết, màn Xử lý, lẫn hàm Nhân bản (`clone`).
 
 ### 1. Ngày tiếp nhận (`received_date`)
 
@@ -493,7 +512,7 @@ Các trường dưới đây KHÔNG có trong `_OPT_PUBLIC_FIELDS`. Backend endp
 
 2. Validate khi Lưu/Gửi duyệt (phía FE): phải có Công ty (`company_id`), Người yêu cầu (`requester`), Mục đích (`purpose`), và ít nhất 1 dòng có `item_group` hoặc `requirement_detail`.
 
-3. Sửa nội dung phiếu chỉ cho phép khi `status = draft` hoặc `rejected`. Backend trả HTTP 400 "Chỉ sửa được khi ở trạng thái Nháp/Từ chối" nếu cố sửa ở trạng thái khác.
+3. Sửa nội dung phiếu chỉ cho phép khi `status = draft` hoặc `rejected`. Backend trả HTTP 400 "Chỉ sửa được khi phiếu ở trạng thái Nháp hoặc Bị trả lại" nếu cố sửa ở trạng thái khác. Phiếu `cancelled` ("Đã từ chối") bị khóa vĩnh viễn — hệ thống gợi ý Nhân bản (`clone`) thành phiếu nháp mới.
 
 4. Sau khi Duyệt: hàm `auto_assign` tự gán NSTM cho từng dòng theo bảng `CategoryAssignee` (khớp `item_group`), cập nhật `received_date`, và đặt `SurveyRequest.assignee_id`. Phiếu chuyển `processing` trong cùng một request. Gửi thông báo đến NSTM được gán và Admin/QL TM.
 
@@ -503,19 +522,23 @@ Các trường dưới đây KHÔNG có trong `_OPT_PUBLIC_FIELDS`. Backend endp
 
 7. NSTM scope `proc` chỉ gắn/xóa/sửa option cho dòng mình phụ trách (`can_process_line`): hoặc `assignee == emp_code`, hoặc phân loại dòng thuộc `CategoryAssignee.primary_employee_id` / `backup_employee_id` của NSTM đó. Admin/QL TM (scope `all`) xử lý được mọi dòng.
 
-8. Gắn option thủ công: NSTM chọn NCC → gọi `GET /{id}/lines/{line_id}/available-survey-lines?supplier_code=...` lấy dòng khảo sát SP đã duyệt (`line_approve = "Đã duyệt"`, `Survey.status = "approved"`) khớp phân loại → chọn 1 hoặc nhiều dòng → `POST /{id}/lines/{line_id}/options`. Không thể gắn cùng 1 `product_survey_line_id` hai lần cho cùng 1 dòng YCKS.
+8. Gắn option thủ công: NSTM chọn NCC → gọi `GET /{id}/lines/{line_id}/available-survey-lines?supplier_code=...` lấy dòng khảo sát SP đã duyệt (`line_approve = "Đã duyệt"`, `Survey.status` bất kỳ trừ `cancelled`) khớp phân loại → chọn 1 hoặc nhiều dòng → `POST /{id}/lines/{line_id}/options`. Không thể gắn cùng 1 `product_survey_line_id` hai lần cho cùng 1 dòng YCKS.
 
 9. Nút "Tạo phiếu khảo sát" (chỉ hiển thị khi `status = processing`, với người có quyền `process`): điều hướng sang `/surveys/new?sr={id}&sr_code={code}`, truyền sẵn liên kết YCKS để Phiếu khảo sát mới tự gắn `survey_request_id`. Khi Phiếu khảo sát được duyệt, hệ thống có thể dùng nút "Lấy từ khảo sát" để tự gắn option.
 
-10. Nút "Lấy từ khảo sát" (`POST /{id}/sync-options`): hàm `sync_options_from_surveys` tìm mọi Phiếu khảo sát `status = "approved"` đã liên kết YCKS qua `survey.survey_request_id = sid`, lấy dòng SP `line_approve = "Đã duyệt"`, khớp `item_group` với dòng YCKS để gắn option. Nếu YCKS chỉ có 1 dòng nhưng phân loại không khớp thì cũng tự gắn vào dòng đó. Bỏ qua dòng đã có option nguồn đó. Trả về số option mới thêm. Chỉ hoạt động khi `status = processing` hoặc `survey_done`.
+10. Nút "Lấy từ khảo sát" (`POST /{id}/sync-options`): hàm `sync_options_from_surveys` tìm mọi Phiếu khảo sát (`status` bất kỳ trừ `cancelled`) đã liên kết YCKS qua `survey.survey_request_id = sid`, lấy dòng SP `line_approve = "Đã duyệt"`, khớp `item_group` với dòng YCKS để gắn option. Nếu YCKS chỉ có 1 dòng nhưng phân loại không khớp thì cũng tự gắn vào dòng đó. Bỏ qua dòng đã có option nguồn đó. Trả về số option mới thêm. Chỉ hoạt động khi `status = processing` hoặc `survey_done`. (Lưu ý: frontend chỉ hiện nút "Lấy từ khảo sát" khi `processing`, nhưng backend cho phép cả `survey_done`.)
 
-11. Chốt hoàn thành khảo sát (`POST /{id}/complete`, `processing → survey_done`): mọi dòng phải có ít nhất 1 option; mọi option phải có `system_product_code` (kiểm tra phía FE). Gửi thông báo cho người YC.
+11. Chốt hoàn thành khảo sát (`POST /{id}/complete`, chấp nhận `processing` hoặc `survey_done`): Backend chỉ validate rằng các dòng người gọi phụ trách (`my_lines`) đều có ít nhất 1 option — Quản lý/Admin TM (scope `all`) và người tạo phiếu (`created_by`) validate toàn bộ dòng. Phiếu chuyển `survey_done` chỉ khi TẤT CẢ dòng (mọi NSTM) đã có option; nếu còn dòng của NSTM khác chưa xong thì phiếu giữ nguyên `processing` (backend trả thông báo "còn dòng chưa xong"). Frontend kiểm tra thêm trước khi gọi API: mọi dòng hiển thị phải có option VÀ mọi option phải có `system_product_code`. Khi phiếu chuyển sang `survey_done`, gửi thông báo cho người YC.
 
 12. Tạo PYC (`POST /{id}/create-prs`, `survey_done → pr_created`): gom option đã chọn (`is_chosen = true`) theo `supplier_code` → mỗi NCC 1 PYC Nháp. Dữ liệu PYC lấy từ snapshot option. Đặt `is_completed = true` và điền `pr_id`/`pr_code` cho dòng. Chỉ người YC (`created_by`) hoặc Admin TM (quyền `delete`) được gọi.
 
 13. Tự hoàn thành (`auto_complete_from_pr`): khi 1 PYC liên quan chuyển sang `completed`, hàm tra tất cả PYC (`pr_id`) sinh từ YCKS đó. Nếu tất cả đều `completed` và YCKS đang `pr_created` → tự chuyển YCKS sang `done` và ghi audit log "Tự hoàn thành".
 
 14. Xóa phiếu: chỉ khi `draft` hoặc `rejected` (backend kiểm tra). Xóa cascade: xóa toàn bộ `SurveyRequestOption` của các dòng trước, rồi xóa `SurveyRequestLine`, cuối cùng xóa phiếu header.
+
+15. Hiển thị dòng theo người xem (`visible_lines_for`): Quản lý/Admin TM (scope `all`) và người tạo phiếu (`created_by`) luôn thấy tất cả dòng. NSTM (scope `proc`) chỉ thấy dòng được giao (`assignee == mã NV`) hoặc dòng có phân loại mình phụ trách theo bảng `CategoryAssignee` (primary/backup). Quy tắc áp dụng cho cả endpoint `GET /{id}` (màn chi tiết), `GET /{id}/process` (màn xử lý), hàm `complete_sr` (validate chỉ "dòng mình") và hàm `clone_sr` (chỉ sao chép "dòng mình").
+
+16. Nhân bản phiếu (`POST /{id}/clone`, quyền `survey_request:create`): Tạo phiếu Nháp mới — sao chép toàn bộ trường header (`company_id`, `requester`, `requester_position`, `department`, `head_of_dept`, `purpose`, `request_date`, `note`) và các dòng mà người dùng được xem (`visible_lines_for`). Sinh mã phiếu mới theo quy tắc `_gen_code`. Các thông tin sau KHÔNG được sao chép: `assignee` (NSTM phụ trách dòng; reset về rỗng), `received_date` (reset về rỗng), option, `pr_id`/`pr_code`, `is_completed`. Đính kèm file dòng được tái sử dụng (thêm `FileLink` mới trỏ cùng file gốc — không sao chép file vật lý). Có thể nhân bản từ bất kỳ trạng thái nào, kể cả phiếu `cancelled`.
 
 ---
 
@@ -539,7 +562,7 @@ Entity: `survey_request`. Actions: `read`, `create`, `write`, `approve`, `cancel
 | Đặt Mã SP hệ thống cho option | `survey_request:process` + `can_process_line` | mọi trạng thái | — |
 | Cập nhật ghi chú NSTM cho option | `survey_request:process` + `can_process_line` | mọi trạng thái | — |
 | Lấy từ khảo sát (`sync-options`) | `survey_request:process` + `is_purchaser` | `processing`, `survey_done` | `POST /{id}/sync-options` |
-| Chốt hoàn thành khảo sát | `survey_request:process` + `is_purchaser` | `processing` | Mọi dòng cần có option + mã SP hệ thống |
+| Chốt hoàn thành khảo sát | `survey_request:process` + `is_purchaser` | `processing`, `survey_done` | Backend validate dòng người gọi phụ trách; phiếu chuyển `survey_done` khi mọi dòng đủ option |
 | Chọn phương án (người YC) | `survey_request:write` + `created_by == user.id` hoặc `write` | `survey_done` | Endpoint `PATCH /{id}/lines/{line_id}/options/{oid}/choose` |
 | Tạo YCMH từ phương án | `created_by == user.id` hoặc `survey_request:delete` | `survey_done` | Gom theo NCC; chỉ người YC hoặc Admin TM |
 | Chuyển Hoàn thành (finalize) | `survey_request:approve` + `is_purchaser` (scope `all`) | `pr_created` | Admin / QL TM |

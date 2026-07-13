@@ -244,6 +244,9 @@ Hiển thị bốn chỉ số tổng hợp theo bộ lọc hiện tại (gọi e
 
 ## B. Bộ lọc
 
+> Bộ lọc **tự áp dụng** ngay khi thay đổi (debounce 300 ms) — không cần nhấn nút riêng.
+> Deep-link: khi vào `/payables?supplier=<code>` hoặc `/payables?po_code=<code>` (từ cảnh báo công nợ hoặc dashboard), trang tự điền sẵn bộ lọc tương ứng và đặt Năm = "Tất cả" để hiện đủ nợ.
+
 ### 1. Công ty (`company_id`)
 
 - Kiểu nhập: Bộ lọc — Chọn (ô tìm kiếm)
@@ -256,13 +259,31 @@ Hiển thị bốn chỉ số tổng hợp theo bộ lọc hiện tại (gọi e
 ### 2. Nhà cung cấp (`supplier_code`)
 
 - Kiểu nhập: Bộ lọc — Chọn (ô tìm kiếm, hiển thị tên NCC)
-- Mặc định: Tất cả
+- Mặc định: Tất cả; tự điền nếu URL có `?supplier=<code>`
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Bảng `supplier`
 - Người sửa: Người dùng
-- Logic đặc biệt: Thuộc `FILTERABLE` của module (`supplier_code`, `po_code`, `source_type`, `status`)
+- Logic đặc biệt: Thuộc `FILTERABLE` của module (`supplier_code`, `po_code`, `invoice_no`, `source_type`, `status`)
 
-### 3. Loại nợ (`source_type`)
+### 3. PO (`po_code`)
+
+- Kiểu nhập: Bộ lọc — Nhập tự do (LIKE)
+- Mặc định: Trống; tự điền nếu URL có `?po_code=<code>`
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: Cột `po_code` trên `tab_payable`
+- Người sửa: Người dùng
+- Logic đặc biệt: Thuộc `FILTERABLE` — lọc LIKE chứa chuỗi
+
+### 4. Số hóa đơn (`invoice_no`)
+
+- Kiểu nhập: Bộ lọc — Nhập tự do (LIKE)
+- Mặc định: Trống (không lọc)
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: Cột `invoice_no` trên `tab_payable`
+- Người sửa: Người dùng
+- Logic đặc biệt: Thuộc `FILTERABLE` — lọc LIKE chứa chuỗi
+
+### 5. Loại nợ (`source_type`)
 
 - Kiểu nhập: Bộ lọc — Chọn từ danh sách
 - Mặc định: Tất cả
@@ -270,15 +291,15 @@ Hiển thị bốn chỉ số tổng hợp theo bộ lọc hiện tại (gọi e
 - Nguồn dữ liệu / liên kết: `goods` (Hàng hóa) / `shipping` (Vận chuyển)
 - Người sửa: Người dùng
 
-### 4. Trạng thái (`status`)
+### 6. Trạng thái (`status`)
 
 - Kiểu nhập: Bộ lọc — Chọn từ danh sách
 - Mặc định: Tất cả
 - Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: `Chờ TT` / `Trả một phần` / `Đã TT`
+- Nguồn dữ liệu / liên kết: DB lưu `Chờ TT` / `Trả một phần` / `Đã TT`; nhãn hiển thị trong bộ lọc: "Chờ thanh toán" / "Thanh toán một phần" / "Đã thanh toán"
 - Người sửa: Người dùng
 
-### 5. Tuổi nợ (`aging`)
+### 7. Tuổi nợ (`aging`)
 
 - Kiểu nhập: Bộ lọc — Chọn từ danh sách
 - Mặc định: Tất cả
@@ -287,14 +308,32 @@ Hiển thị bốn chỉ số tổng hợp theo bộ lọc hiện tại (gọi e
 - Người sửa: Người dùng
 - Logic đặc biệt: Bộ lọc tuổi nợ được xử lý ở DB bằng cách so sánh `due_date` với ngày hiện tại; lọc "Chưa đến hạn" bao gồm cả dòng có `due_date` trống
 
-### 6. Năm (`year`/`period`)
+### 8. Năm (`year`/`period`)
 
 - Kiểu nhập: Bộ lọc — Chọn (năm hiện tại, năm trước, năm kia, hoặc "Tất cả")
-- Mặc định: Năm hiện tại
+- Mặc định: Năm hiện tại (hoặc "Tất cả" khi vào qua deep-link)
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Cột `period` (`YYYY`, 4 ký tự đầu của `incur_date`)
 - Người sửa: Người dùng
 - Logic đặc biệt: Mặc định lọc năm hiện tại để giới hạn dữ liệu nạp; chọn "Tất cả" (`all`) bỏ lọc năm
+
+### 9. Ngày phát sinh (`incur_from` / `incur_to`)
+
+- Kiểu nhập: Bộ lọc — Chọn ngày (2 ô nhập: từ – đến)
+- Mặc định: Trống (không lọc)
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: Cột `incur_date` trên `tab_payable`
+- Người sửa: Người dùng
+- Logic đặc biệt: Lọc `incur_date >= incur_from` và/hoặc `incur_date <= incur_to`; hai ô dùng độc lập hoặc kết hợp
+
+### 10. Số tiền tổng nợ (`amount_from` / `amount_to`)
+
+- Kiểu nhập: Bộ lọc — Nhập số (2 ô nhập: từ – đến)
+- Mặc định: 0 (không lọc khi bằng 0)
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: Cột `total` trên `tab_payable` (tổng nợ = amount + vat)
+- Người sửa: Người dùng
+- Logic đặc biệt: Lọc `total >= amount_from` và/hoặc `total <= amount_to`
 
 ---
 
@@ -311,16 +350,25 @@ Mỗi dòng tương ứng một bản ghi `Payable`. Khoản nợ không thể s
 - Người sửa: Người dùng
 - Logic đặc biệt: Chỉ cho phép chọn khoản nợ thỏa mãn đồng thời: `status != "Đã TT"`, `remaining > 0`, và `invoice_no` không trống. Mục đích: chọn để lập phiếu yêu cầu thanh toán
 
-### 2. Nhà cung cấp (`supplier_name` / `supplier_code`)
+### 2. Nhà cung cấp (`supplier_name`)
 
 - Kiểu nhập: Chỉ hiển thị (cột bảng)
 - Mặc định: —
 - Bắt buộc: —
 - Nguồn dữ liệu / liên kết: Được lấy từ `PurchaseOrder.supplier_name` hoặc `carrier_name` khi sinh công nợ
 - Người sửa: Hệ thống (cập nhật khi lưu lại PO)
-- Logic đặc biệt: Hiển thị `supplier_name` ưu tiên; nếu trống hiển thị `supplier_code`
+- Logic đặc biệt: Hiển thị `supplier_name` ưu tiên; nếu trống hiển thị `supplier_code`. Cột "Mã NCC" là cột riêng liền kề (xem C.3)
 
-### 3. Loại (`source_type`)
+### 3. Mã NCC (`supplier_code`)
+
+- Kiểu nhập: Chỉ hiển thị (cột bảng, màu mờ/muted)
+- Mặc định: —
+- Bắt buộc: —
+- Nguồn dữ liệu / liên kết: Cột `supplier_code` trên `tab_payable`
+- Người sửa: Hệ thống
+- Logic đặc biệt: Cột độc lập với cột "Nhà cung cấp"; dùng để tra cứu nhanh mã NCC
+
+### 4. Loại (`source_type`)
 
 - Kiểu nhập: Chỉ hiển thị (cột bảng)
 - Mặc định: —
@@ -328,7 +376,7 @@ Mỗi dòng tương ứng một bản ghi `Payable`. Khoản nợ không thể s
 - Nguồn dữ liệu / liên kết: `goods` hiển thị "Hàng hóa"; `shipping` hiển thị "Vận chuyển"
 - Người sửa: Hệ thống
 
-### 4. Công ty (`company_id`)
+### 5. Công ty (`company_id`)
 
 - Kiểu nhập: Chỉ hiển thị (cột bảng, hiển thị tên công ty)
 - Mặc định: —
@@ -336,7 +384,7 @@ Mỗi dòng tương ứng một bản ghi `Payable`. Khoản nợ không thể s
 - Nguồn dữ liệu / liên kết: Bảng `company`
 - Người sửa: Hệ thống (lấy từ `PurchaseOrder.company_id`)
 
-### 5. PO (`po_code`)
+### 6. PO (`po_code`)
 
 - Kiểu nhập: Chỉ hiển thị (cột bảng)
 - Mặc định: —
@@ -345,7 +393,7 @@ Mỗi dòng tương ứng một bản ghi `Payable`. Khoản nợ không thể s
 - Người sửa: Hệ thống
 - Logic đặc biệt: Có thể dùng để tìm kiếm bằng bộ lọc `po_code` (FILTERABLE)
 
-### 6. Số hóa đơn (`invoice_no`)
+### 7. Số hóa đơn (`invoice_no`)
 
 - Kiểu nhập: Chỉ hiển thị (cột bảng)
 - Mặc định: Trống
@@ -354,7 +402,7 @@ Mỗi dòng tương ứng một bản ghi `Payable`. Khoản nợ không thể s
 - Người sửa: Hệ thống (cập nhật mỗi khi lưu PO)
 - Logic đặc biệt: Khoản nợ thiếu số hóa đơn hiển thị cảnh báo "chưa có HĐ" màu đỏ và không cho chọn để tạo yêu cầu thanh toán
 
-### 7. Ngày phát sinh (`incur_date`)
+### 8. Ngày phát sinh (`incur_date`)
 
 - Kiểu nhập: Chỉ hiển thị (cột bảng)
 - Mặc định: —
@@ -362,7 +410,7 @@ Mỗi dòng tương ứng một bản ghi `Payable`. Khoản nợ không thể s
 - Nguồn dữ liệu / liên kết: Bằng `PODelivery.received_date` — ngày ghi nhận hàng thực nhận
 - Người sửa: Hệ thống
 
-### 8. Hạn trả (`due_date`)
+### 9. Hạn trả (`due_date`)
 
 - Kiểu nhập: Chỉ hiển thị (cột bảng)
 - Mặc định: —
@@ -371,7 +419,7 @@ Mỗi dòng tương ứng một bản ghi `Payable`. Khoản nợ không thể s
 - Người sửa: Hệ thống (tính lại khi lưu PO)
 - Logic đặc biệt: Nếu `payment_terms` không chứa số ngày (tiền mặt, v.v.) thì `due_days = 0` và `due_date = incur_date`
 
-### 9. Tuổi nợ (`aging`)
+### 10. Tuổi nợ (`aging`)
 
 - Kiểu nhập: Chỉ hiển thị (nhãn badge màu)
 - Mặc định: —
@@ -380,7 +428,7 @@ Mỗi dòng tương ứng một bản ghi `Payable`. Khoản nợ không thể s
 - Người sửa: Hệ thống (tính live, không lưu DB)
 - Logic đặc biệt: Badge màu: "Chưa đến hạn" = xám; "1-30", "31-60" = vàng (warn); "61-90", ">90" = đỏ (err)
 
-### 10. Tổng nợ (`total`)
+### 11. Tổng nợ (`total`)
 
 - Kiểu nhập: Chỉ hiển thị (cột bảng, căn phải)
 - Mặc định: 0
@@ -388,7 +436,7 @@ Mỗi dòng tương ứng một bản ghi `Payable`. Khoản nợ không thể s
 - Nguồn dữ liệu / liên kết: `total = amount + vat`; `amount = received_qty × đơn giá PO` (luồng goods) hoặc `shipping_amount` (luồng shipping); `vat = amount × vat_rate / 100` (luồng goods) hoặc 0 (luồng shipping)
 - Người sửa: Hệ thống
 
-### 11. Đã trả (`paid_amount`)
+### 12. Đã trả (`paid_amount`)
 
 - Kiểu nhập: Chỉ hiển thị (cột bảng, căn phải)
 - Mặc định: 0
@@ -396,7 +444,7 @@ Mỗi dòng tương ứng một bản ghi `Payable`. Khoản nợ không thể s
 - Nguồn dữ liệu / liên kết: Cộng dồn từ các thanh toán đã ghi nhận trên phiếu yêu cầu thanh toán
 - Người sửa: Hệ thống (module payment)
 
-### 12. Còn lại (`remaining`)
+### 13. Còn lại (`remaining`)
 
 - Kiểu nhập: Chỉ hiển thị (cột bảng, in đậm, căn phải)
 - Mặc định: 0
@@ -404,14 +452,14 @@ Mỗi dòng tương ứng một bản ghi `Payable`. Khoản nợ không thể s
 - Nguồn dữ liệu / liên kết: `remaining = total - paid_amount` — lưu sẵn trong DB (không tính live khi đọc)
 - Người sửa: Hệ thống (cập nhật sau mỗi thanh toán qua `recalc_status`)
 
-### 13. Trạng thái (`status`)
+### 14. Trạng thái (`status`)
 
 - Kiểu nhập: Chỉ hiển thị (nhãn badge màu)
 - Mặc định: `Chờ TT`
 - Bắt buộc: —
-- Nguồn dữ liệu / liên kết: `Chờ TT` (paid = 0) / `Trả một phần` (0 < paid < total − 0.01) / `Đã TT` (paid ≥ total − 0.01)
+- Nguồn dữ liệu / liên kết: DB lưu `Chờ TT` (paid = 0) / `Trả một phần` (0 < paid < total − 0.01) / `Đã TT` (paid ≥ total − 0.01)
 - Người sửa: Hệ thống (`recalc_status` được gọi mỗi khi `paid_amount` thay đổi)
-- Logic đặc biệt: Badge màu: "Đã TT" = xanh lá; "Trả một phần" = vàng; "Chờ TT" = xám
+- Logic đặc biệt: Nhãn hiển thị đầy đủ: "Chờ thanh toán" / "Thanh toán một phần" / "Đã thanh toán". Badge màu: "Đã TT" = xanh lá; "Trả một phần" = vàng; "Chờ TT" = xám
 
 ---
 
@@ -461,8 +509,10 @@ Hàm `recompute_effects` trong `purchase_order/service.py` được gọi mỗi 
 4. Khoản nợ vận chuyển chỉ sinh khi đồng thời có `carrier_code` và `shipping_amount > 0` trên dòng giao; thiếu một trong hai thì khoản nợ shipping bị xóa (nếu đã tồn tại).
 5. Điều kiện chọn để lập phiếu thanh toán: `status != "Đã TT"` **và** `remaining > 0` **và** `invoice_no` không trống — kiểm tra phía FE (`payable` function trong `Payables.tsx`).
 6. Khi chọn nhiều khoản từ nhiều NCC: hệ thống tự tách thành nhiều phiếu yêu cầu thanh toán (1 phiếu/NCC), hiển thị cảnh báo số phiếu sẽ tạo.
-7. Mặc định API lọc theo năm hiện tại (`period = YYYY`) để tránh nạp toàn bộ lịch sử; chọn "Tất cả" bỏ lọc này.
+7. Mặc định API lọc theo năm hiện tại (`period = YYYY`) để tránh nạp toàn bộ lịch sử; chọn "Tất cả" bỏ lọc này. Khi vào qua deep-link (`?supplier=` hoặc `?po_code=`), FE tự chuyển Năm sang "Tất cả".
 8. Tuổi nợ (`aging`) được tính thời điểm đọc, không lưu DB.
+9. Deep-link từ cảnh báo: cảnh báo công nợ quá hạn/sắp hạn tạo link `/payables?po_code=<mã_PO>`; dashboard cũng có thể link `/payables?supplier=<mã_NCC>`. Payables đọc cả hai URL param khi load trang.
+10. Phân trang phía FE: API lấy tối đa 1 000 dòng mỗi lần gọi (`page_size=1000`); FE phân trang cục bộ với cỡ trang mặc định 20 dòng.
 
 ## G. Quyền thao tác (RBAC)
 

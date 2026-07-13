@@ -21,10 +21,10 @@ Ghi nhận kết quả khảo sát giá/nhà cung cấp cho một nhu cầu mua 
 | Nháp | Đang soạn (ẩn nhãn trạng thái) | Lưu, Gửi duyệt, Xóa |
 | Chờ duyệt | Đã gửi, đợi TP/QL | Duyệt phiếu, Từ chối, Trả lại |
 | Đã duyệt | TP/QL đã duyệt | (chỉ xem) |
-| Bị trả lại | TP/QL trả về để khảo sát lại | Cho sửa lại + Gửi duyệt lại |
+| Bị trả lại | TP/QL trả về (`rejected`) để NSPT sửa & gửi lại | Lưu, Gửi duyệt, Xóa |
 | Đã từ chối | TP/QL từ chối (khóa) | Xóa |
 
-Chỉ trạng thái Nháp và Bị trả lại mới cho phép sửa nội dung. Riêng dòng bị đánh dấu "Thiếu thông tin" có thể mở ở chế độ Bổ sung để sửa dù phiếu đã gửi.
+Chỉ trạng thái Nháp (`draft`) và Bị trả lại (`rejected`) mới cho phép sửa nội dung và xóa phiếu. Trạng thái Đã từ chối (`cancelled`) cũng cho phép xóa nhưng không cho sửa. Riêng dòng bị đánh dấu "Thiếu thông tin" có thể mở ở chế độ Bổ sung để sửa dù phiếu đang ở trạng thái Chờ duyệt hoặc Đã duyệt.
 
 ---
 
@@ -37,9 +37,18 @@ Chỉ trạng thái Nháp và Bị trả lại mới cho phép sửa nội dung.
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Danh sách Yêu cầu khảo sát (YCKS) — hiển thị theo phạm vi người dùng (NSTM chỉ thấy phiếu được gán, admin/quản lý thấy hết). Lưu cả `survey_request_id` (id) và `sr_code` (mã)
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
-- Logic đặc biệt: Chọn YCKS tự điền Yêu cầu kỹ thuật & chất lượng từ "Mục đích" của YCKS. Là liên kết để hệ thống tự gắn phương án (option) ngược lại cho dòng YCKS khớp phân loại khi phiếu khảo sát được duyệt. (Trường `pr_code` cũ vẫn còn trong dữ liệu để tương thích ngược, không còn dùng trên form.)
+- Logic đặc biệt: Chọn YCKS tự điền Nội dung chính (trường `main_content`) từ "Mục đích" của YCKS. Là liên kết để hệ thống tự gắn phương án (option) ngược lại cho dòng YCKS khớp phân loại khi phiếu khảo sát được duyệt. (Trường `pr_code` cũ vẫn còn trong dữ liệu để tương thích ngược, không còn dùng trên form.)
 
-### 2. Ngày tiếp nhận (`received_date`)
+### 2. Nội dung chính (`main_content`)
+
+- Kiểu nhập: Nhập văn bản (một dòng)
+- Mặc định: trống; tự điền từ "Mục đích" của Yêu cầu khảo sát khi chọn YCKS
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
+- Logic đặc biệt: Hiển thị trong danh sách phiếu và bộ lọc. Tự điền một lần từ trường "Mục đích" của YCKS khi chọn liên kết YCKS; có thể sửa thủ công sau đó. Tối đa 500 ký tự.
+
+### 3. Ngày tiếp nhận (`received_date`)
 
 - Kiểu nhập: Chọn ngày
 - Mặc định: Ngày hiện tại (hôm nay)
@@ -47,7 +56,7 @@ Chỉ trạng thái Nháp và Bị trả lại mới cho phép sửa nội dung.
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 
-### 3. Ngày dự kiến trả KQ (`result_due_date`)
+### 4. Ngày dự kiến trả KQ (`result_due_date`)
 
 - Kiểu nhập: Chọn ngày
 - Mặc định: trống
@@ -55,7 +64,7 @@ Chỉ trạng thái Nháp và Bị trả lại mới cho phép sửa nội dung.
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 
-### 4. Phân loại (`item_group`)
+### 5. Phân loại (`item_group`)
 
 - Kiểu nhập: Chọn (ô tìm kiếm, gõ để lọc)
 - Mặc định: trống
@@ -64,7 +73,7 @@ Chỉ trạng thái Nháp và Bị trả lại mới cho phép sửa nội dung.
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 - Logic đặc biệt: Tự điền khi chọn Mã VTBB/VL nếu sản phẩm đó đã có phân loại
 
-### 5. NSPT phụ trách (`nspt`)
+### 6. NSPT phụ trách (`nspt`)
 
 - Kiểu nhập: Tự động
 - Mặc định: Tên đầy đủ của người đang đăng nhập (`user.full_name`)
@@ -72,16 +81,16 @@ Chỉ trạng thái Nháp và Bị trả lại mới cho phép sửa nội dung.
 - Nguồn dữ liệu / liên kết: Tài khoản người tạo phiếu
 - Người sửa: Hệ thống (trường bị khóa, không chỉnh sửa thủ công)
 
-### 6. Yêu cầu kỹ thuật & chất lượng (`requirement_detail`)
+### 7. Yêu cầu kỹ thuật & chất lượng (`requirement_detail`)
 
 - Kiểu nhập: Nhập nhiều dòng (textarea)
 - Mặc định: trống
-- Bắt buộc: Không bắt buộc khi Nháp, bắt buộc khi Gửi duyệt (trừ khi đã tick "Đã có mã sản phẩm sẵn" — xem trường 7)
+- Bắt buộc: Không bắt buộc khi Nháp, bắt buộc khi Gửi duyệt (trừ khi đã tick "Đã có mã sản phẩm sẵn" — xem trường 8)
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
-- Logic đặc biệt: Khi chọn mã PYC, trường tự điền từ trường "Mục đích" của PYC. Khi tick "Đã có mã sản phẩm sẵn", trường này không bắt buộc (thay thế bằng nhóm trường Mã VTBB/VL, SL, ĐVT, Giá đề xuất)
+- Logic đặc biệt: Khi tick "Đã có mã sản phẩm sẵn", trường này không bắt buộc (thay thế bằng nhóm trường Mã VTBB/VL, SL, ĐVT, Giá đề xuất)
 
-### 7. Đã có mã sản phẩm sẵn (`has_product_code`)
+### 8. Đã có mã sản phẩm sẵn (`has_product_code`)
 
 - Kiểu nhập: Checkbox
 - Mặc định: Không tích
@@ -90,7 +99,7 @@ Chỉ trạng thái Nháp và Bị trả lại mới cho phép sửa nội dung.
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 - Logic đặc biệt: Khi tích, hiện thêm bốn trường bên dưới (Mã VTBB/VL, Số lượng dự kiến mua, ĐVT, Giá đề xuất) và chuyển nghĩa vụ bắt buộc từ Yêu cầu kỹ thuật sang bốn trường đó
 
-### 8. Mã VTBB/VL (`item_code`)
+### 9. Mã VTBB/VL (`item_code`)
 
 - Kiểu nhập: Chọn sản phẩm (ProductPicker — tìm theo mã hoặc tên)
 - Mặc định: trống
@@ -99,16 +108,16 @@ Chỉ trạng thái Nháp và Bị trả lại mới cho phép sửa nội dung.
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 - Logic đặc biệt: Chọn mã tự điền Tên VTBB/VL, ĐVT, Phân loại. Tên VTBB/VL hiển thị ngay bên cạnh (trường đọc, không sửa)
 
-### 9. Số lượng dự kiến mua (`request_qty`)
+### 10. Số lượng dự kiến mua (`request_qty`)
 
 - Kiểu nhập: Nhập số
 - Mặc định: 0 (hiển thị trống khi bằng 0)
 - Bắt buộc: Không bắt buộc khi Nháp, bắt buộc khi Gửi duyệt (chỉ khi đã tick "Đã có mã sản phẩm sẵn")
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
-- Logic đặc biệt: Dùng trong công thức tính Thành tiền ở dòng khảo sát Sản phẩm: SL × Giá theo sản lượng × (1 + VAT/100)
+- Logic đặc biệt: Thông tin tham khảo ở cấp phiếu (khi đã có mã sản phẩm sẵn). Công thức Thành tiền của dòng Sản phẩm sử dụng trường `request_qty` riêng của từng dòng SP (xem mục C).
 
-### 10. ĐVT (`uom`)
+### 11. ĐVT (`uom`)
 
 - Kiểu nhập: Chọn (ô tìm kiếm, gõ để lọc)
 - Mặc định: trống
@@ -117,7 +126,7 @@ Chỉ trạng thái Nháp và Bị trả lại mới cho phép sửa nội dung.
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 - Logic đặc biệt: Tự điền khi chọn Mã VTBB/VL nếu sản phẩm đã có ĐVT mặc định
 
-### 11. Giá đề xuất (`proposed_rate`)
+### 12. Giá đề xuất (`proposed_rate`)
 
 - Kiểu nhập: Nhập số (VNĐ)
 - Mặc định: 0 (hiển thị trống khi bằng 0)
@@ -324,9 +333,17 @@ Mỗi dòng = một NCC. Bảng tóm tắt hiện các cột chính; toàn bộ 
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 
+### 24. Lý do (NSPT) (`nspt_reason`)
+
+- Kiểu nhập: Nhập nhiều dòng (chỉ hiển thị trong bảng tóm tắt — không có trong popup chi tiết dòng)
+- Mặc định: trống
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
+
 **Nhóm: Ghi chú**
 
-### 24. Ghi chú (`note`)
+### 25. Ghi chú (`note`)
 
 - Kiểu nhập: Nhập nhiều dòng
 - Mặc định: trống
@@ -336,7 +353,7 @@ Mỗi dòng = một NCC. Bảng tóm tắt hiện các cột chính; toàn bộ 
 
 **Nhóm: Phê duyệt Trưởng phòng / Quản lý**
 
-### 25. Duyệt (TP/QL) (`line_approve`)
+### 26. Duyệt (TP/QL) (`line_approve`)
 
 - Kiểu nhập: Chọn (danh sách cố định)
 - Mặc định: Chờ duyệt
@@ -345,7 +362,7 @@ Mỗi dòng = một NCC. Bảng tóm tắt hiện các cột chính; toàn bộ 
 - Người sửa: TP/QL (quyền `survey:approve`) khi phiếu Nháp, Chờ duyệt, hoặc Bị trả lại
 - Logic đặc biệt: Chọn "Thiếu thông tin" mở nút "Bổ sung" trên dòng, cho phép NSPT sửa nội dung dù phiếu đang ở trạng thái Chờ duyệt
 
-### 26. Yêu cầu (TP/QL) (`line_approve_note`)
+### 27. Yêu cầu (TP/QL) (`line_approve_note`)
 
 - Kiểu nhập: Nhập nhiều dòng
 - Mặc định: trống
@@ -453,7 +470,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
-- Logic đặc biệt: Dùng trong công thức tính Thành tiền: SL dự kiến mua (header) × Giá × (1 + VAT/100)
+- Logic đặc biệt: Dùng trong công thức tính Thành tiền: SL YC dòng SP (`request_qty`) × Giá × (1 + VAT/100)
 
 ### 12. Khung sản lượng (`volume_range`)
 
@@ -471,15 +488,24 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Nguồn dữ liệu / liên kết: 0 / 2 / 4 / 6 / 8 / 10
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 
-### 14. Thành tiền (`amount`)
+### 14. SL YC theo dòng (`request_qty`)
 
-- Kiểu nhập: Tự tính
+- Kiểu nhập: Nhập số (chỉ hiển thị và chỉnh sửa trực tiếp trong bảng tóm tắt — không có trong popup chi tiết dòng)
+- Mặc định: 0 (hiển thị trống khi bằng 0)
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
+- Logic đặc biệt: Là số lượng yêu cầu theo từng dòng SP. Server dùng để tính `amount` khi lưu: SL YC × Giá theo sản lượng × (1 + VAT/100). Phân biệt với `request_qty` ở header (mục A) là thông tin tổng của cả phiếu khi đã có mã sản phẩm.
+
+### 15. Thành tiền (`amount`)
+
+- Kiểu nhập: Tự tính (server tính khi lưu; preview trên giao diện dùng MOQ thay thế)
 - Mặc định: 0
 - Bắt buộc: — (hệ thống tính, không sửa)
-- Nguồn dữ liệu / liên kết: SL dự kiến mua (header) × Giá theo sản lượng × (1 + VAT/100)
+- Nguồn dữ liệu / liên kết: SL YC dòng SP (`request_qty`) × Giá theo sản lượng × (1 + VAT/100)
 - Người sửa: Hệ thống (chỉ hiển thị)
 
-### 15. ĐVT quy đổi về Cty (`internal_unit`)
+### 16. ĐVT quy đổi về Cty (`internal_unit`)
 
 - Kiểu nhập: Chọn (ô tìm kiếm, gõ để lọc)
 - Mặc định: trống
@@ -487,7 +513,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Nguồn dữ liệu / liên kết: Bảng Đơn vị tính (`unit`)
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 
-### 16. Thành tiền đã quy đổi (`amount_converted`)
+### 17. Thành tiền đã quy đổi (`amount_converted`)
 
 - Kiểu nhập: Nhập số (VNĐ)
 - Mặc định: 0 (hiển thị trống khi bằng 0)
@@ -495,7 +521,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 
-### 17. Chi phí vận chuyển (`shipping_cost`)
+### 18. Chi phí vận chuyển (`shipping_cost`)
 
 - Kiểu nhập: Nhập số (VNĐ)
 - Mặc định: 0 (hiển thị trống khi bằng 0)
@@ -503,7 +529,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 
-### 18. Thời gian giao hàng (`delivery_time`)
+### 19. Thời gian giao hàng (`delivery_time`)
 
 - Kiểu nhập: Nhập tay
 - Mặc định: trống
@@ -511,7 +537,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 
-### 19. Địa điểm giao/nhận (`delivery_place`)
+### 20. Địa điểm giao/nhận (`delivery_place`)
 
 - Kiểu nhập: Nhập tay
 - Mặc định: trống
@@ -519,7 +545,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 
-### 20. Link báo giá (`quote_file`)
+### 21. Link báo giá (`quote_file`)
 
 - Kiểu nhập: Nhập tay
 - Mặc định: trống
@@ -529,7 +555,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 
 **Nhóm: Lấy mẫu & LAB**
 
-### 21. Mẫu sẵn (`sample_ready`)
+### 22. Mẫu sẵn (`sample_ready`)
 
 - Kiểu nhập: Checkbox
 - Mặc định: Không tích
@@ -538,7 +564,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 - Logic đặc biệt: Khi tích, các trường Ngày lấy mẫu và Đánh giá chất lượng LAB trở thành bắt buộc khi Gửi duyệt
 
-### 22. Ngày lấy mẫu (`sample_date`)
+### 23. Ngày lấy mẫu (`sample_date`)
 
 - Kiểu nhập: Chọn ngày
 - Mặc định: trống
@@ -546,7 +572,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 
-### 23. Số lượng mẫu nhận (`sample_qty`)
+### 24. Số lượng mẫu nhận (`sample_qty`)
 
 - Kiểu nhập: Nhập số
 - Mặc định: 0 (hiển thị trống khi bằng 0)
@@ -554,7 +580,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 
-### 24. Đánh giá chất lượng LAB (`lab_result`)
+### 25. Đánh giá chất lượng LAB (`lab_result`)
 
 - Kiểu nhập: Nhập nhiều dòng
 - Mặc định: trống
@@ -562,7 +588,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 
-### 25. Ghi chú LAB (`lab_note`)
+### 26. Ghi chú LAB (`lab_note`)
 
 - Kiểu nhập: Nhập nhiều dòng
 - Mặc định: trống
@@ -573,7 +599,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 
 **Nhóm: Ghi chú**
 
-### 26. Ghi chú (`note`)
+### 27. Ghi chú (`note`)
 
 - Kiểu nhập: Nhập nhiều dòng
 - Mặc định: trống
@@ -583,7 +609,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 
 **Nhóm: Đánh giá & Phê duyệt**
 
-### 27. Nhận xét NSPT (`nspt_note`)
+### 28. Nhận xét NSPT (`nspt_note`)
 
 - Kiểu nhập: Nhập nhiều dòng
 - Mặc định: trống
@@ -591,7 +617,15 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 
-### 28. Duyệt (TP/QL) (`line_approve`)
+### 29. Lý do NSPT (`nspt_reason`)
+
+- Kiểu nhập: Nhập nhiều dòng (chỉ hiển thị và chỉnh sửa trực tiếp trong bảng tóm tắt — không có trong popup chi tiết dòng)
+- Mặc định: trống
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
+
+### 30. Duyệt (TP/QL) (`line_approve`)
 
 - Kiểu nhập: Chọn (danh sách cố định)
 - Mặc định: Chờ duyệt
@@ -600,7 +634,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Người sửa: TP/QL (quyền `survey:approve`) khi phiếu Nháp, Chờ duyệt, hoặc Bị trả lại
 - Logic đặc biệt: Chọn "Thiếu thông tin" mở nút "Bổ sung" trên dòng, cho phép NSPT sửa nội dung dù phiếu đang ở trạng thái Chờ duyệt
 
-### 29. Ý kiến TP/QL (`line_approve_note`)
+### 31. Ý kiến TP/QL (`line_approve_note`)
 
 - Kiểu nhập: Nhập nhiều dòng
 - Mặc định: trống
@@ -618,6 +652,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 4. Trường số: hiển thị trống khi bằng 0, gửi về BE là giá trị số (0 nếu để trống).
 5. Trường duyệt (`line_approve`, `line_approve_note`): chỉ TP/QL (`survey:approve`) sửa; NSPT chỉ xem. Chọn "Thiếu thông tin" cho phép NSPT mở dòng ở chế độ Bổ sung để sửa dù phiếu đã gửi.
 6. Đính kèm: mỗi dòng đính kèm file (PDF/ảnh/Excel, tối đa 10MB/file), lưu trên Cloudflare R2. Phiếu cũng có đính kèm ở cấp toàn phiếu (riêng với đính kèm theo dòng).
+7. Nhân bản (`POST /api/surveys/{id}/clone`): tạo phiếu Nháp mới từ phiếu nguồn — copy toàn bộ thông tin tiếp nhận (header) + dòng NCC + dòng SP. Phiếu mới được cấp mã tự động (KS…); trạng thái = Nháp; kết quả duyệt header và dòng bị reset về trống/Chờ duyệt. Liên kết YCKS/PYC (`sr_code`, `survey_request_id`, `pr_code`) KHÔNG được copy — phiếu nhân bản hoàn toàn độc lập. Nút "Nhân bản" hiển thị trong danh sách phiếu (người có quyền `survey:create`).
 
 ## E. Quyền thao tác (RBAC)
 
@@ -627,4 +662,5 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 | Tạo / Sửa nội dung | `survey:write` (hoặc `create`) | Nháp / Bị trả lại / tạo mới |
 | Gửi duyệt | `survey:write` | Nháp / Bị trả lại |
 | Duyệt dòng / Duyệt phiếu / Từ chối / Trả lại | `survey:approve` | Chờ duyệt (duyệt dòng: Nháp/Chờ duyệt/Bị trả lại) |
-| Xóa | `survey:delete` | Nháp / Đã từ chối |
+| Nhân bản | `survey:create` | mọi trạng thái (theo phạm vi dữ liệu) |
+| Xóa | `survey:delete` | Nháp / Bị trả lại / Đã từ chối |

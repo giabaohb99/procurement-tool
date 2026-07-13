@@ -22,10 +22,10 @@ Bảng DB: `tab_purchase_order` (header), `tab_po_item` (dòng hàng), `tab_po_d
 | Giá trị DB | Nhãn hiển thị | Ý nghĩa | Nút thao tác hiển thị |
 |------------|---------------|---------|----------------------|
 | `draft` | Nháp | Đang soạn hoặc vừa mở lại | Lưu, Gửi duyệt, Xóa, Nhân bản |
-| `submitted` | Chờ duyệt | Đã gửi, đợi TP/QL duyệt | Duyệt, Từ chối (TP/QL) |
-| `approved` | Đã duyệt | TP/QL đã duyệt, cho phép nhập giao hàng | Thêm lần giao, Hủy đơn |
-| `partial` | Đang giao | Đã nhận một phần (tự động khi `received > 0` và `received < total`) | Hủy đơn |
-| `received` | Đã nhận đủ | Toàn bộ SL đã nhận | Hoàn thành, Hủy đơn |
+| `submitted` | Chờ duyệt | Đã gửi, đợi TP/QL duyệt | Duyệt, Từ chối (TP/QL), Nhân bản |
+| `approved` | Đã duyệt | TP/QL đã duyệt, cho phép nhập giao hàng | Thêm lần giao, Hủy đơn, Nhân bản |
+| `partial` | Đang giao | Đã nhận một phần (tự động khi `received > 0` và `received < total`) | Hủy đơn, Nhân bản |
+| `received` | Đã nhận đủ | Toàn bộ SL đã nhận | Hoàn thành, Hủy đơn, Nhân bản |
 | `completed` | Hoàn thành | Đã đóng đơn (khóa sửa hoàn toàn) | Nhân bản |
 | `rejected` | Từ chối | TP/QL từ chối (khóa sửa) | Xóa, Nhân bản |
 | `cancelled` | Đã hủy | Bị hủy bởi người có quyền cancel (khóa sửa) | Nhân bản |
@@ -34,7 +34,7 @@ Luồng trạng thái chính: `draft` → `submitted` → `approved` → `partia
 
 Trạng thái `partial` và `received` được cập nhật tự động sau mỗi lần lưu khi đơn đang ở `approved/partial/received`. Đơn ở `completed` hoặc `cancelled` không cho phép sửa; dùng "Nhân bản" để tạo đơn Nháp mới.
 
-Nút "Mở lại" (`reopen`) chuyển đơn về `draft`.
+Nút "Mở lại" (`reopen`) chuyển đơn về `draft` (endpoint `POST /{id}/reopen` tồn tại ở backend; nút UI chưa hiển thị trong trang chi tiết hiện tại).
 
 ### Trạng thái dòng hàng (`line_status` — tự động)
 
@@ -391,6 +391,42 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 - Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
 - Logic đặc biệt: Hiển thị trên cả hai bản in cột "Ghi chú".
 
+### 22. Tiến độ đặt hàng dòng (`progress_status`)
+
+- Kiểu nhập: Thao tác qua endpoint chuyên biệt (không thay đổi qua form Lưu thông thường)
+- Mặc định: `"Chưa đặt hàng"` (gán cho mọi dòng khi tạo hoặc migrate)
+- Bắt buộc: — (hệ thống/nghiệp vụ quản lý)
+- Nguồn dữ liệu / liên kết: Giá trị chuỗi cố định theo luồng nghiệp vụ
+- Người sửa: Qua endpoint riêng (không phải payload PATCH thông thường)
+- Logic đặc biệt: Máy trạng thái tiến độ riêng của dòng hàng — **khác với `status` của phiếu PO**. Chuyển tiếp thủ công theo luồng đặt hàng; không tự động nâng theo `qty_received`. Khi dòng bị tạm ngưng/hủy: `progress_status` hiện tại được snapshot vào `status_before_pause` để phục hồi sau, còn lý do ghi vào `pause_reason`. **Trạng thái hiện tại**: cột tồn tại trong DB và model (migration `5ad008ca924e`); chưa được đưa vào schema API (`POItemIn`) và chưa trả về trong response `_item()` — cần endpoint riêng (dự kiến v1, chưa triển khai trong controller hiện tại).
+
+### 23. Ngày KT xác nhận thanh toán (`pay_confirm_date`)
+
+- Kiểu nhập: Nhập tay (Kế toán điền) qua endpoint chuyên biệt
+- Mặc định: trống
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Kế toán (qua endpoint riêng)
+- Logic đặc biệt: Ngày Kế toán xác nhận đã thanh toán cho dòng hàng cụ thể. Lưu dạng `"YYYY-MM-DD"` (String(10)). **Trạng thái hiện tại**: tồn tại trong DB và model; chưa được đưa vào schema API và chưa trả về trong response dòng hàng thông thường.
+
+### 24. Lý do hủy / tạm ngưng dòng (`pause_reason`)
+
+- Kiểu nhập: Nhập tay qua endpoint tạm ngưng/hủy dòng
+- Mặc định: trống
+- Bắt buộc: Không (bắt buộc khi gọi endpoint tạm ngưng)
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Qua endpoint tạm ngưng/hủy dòng
+- Logic đặc biệt: Ghi lý do khi dòng hàng bị tạm ngưng hoặc hủy (tối đa 500 ký tự). Kết hợp với `status_before_pause` để hỗ trợ khôi phục trạng thái tiến độ sau khi mở lại dòng. **Trạng thái hiện tại**: tồn tại trong DB và model; chưa expose qua API thông thường.
+
+### 25. Trạng thái tiến độ trước khi tạm ngưng (`status_before_pause`)
+
+- Kiểu nhập: Tự động (hệ thống ghi khi gọi endpoint tạm ngưng dòng)
+- Mặc định: trống
+- Bắt buộc: — (hệ thống ghi)
+- Nguồn dữ liệu / liên kết: Giá trị `progress_status` tại thời điểm tạm ngưng
+- Người sửa: Hệ thống (ghi tự động khi tạm ngưng dòng)
+- Logic đặc biệt: Snapshot `progress_status` của dòng trước khi tạm ngưng, dùng để phục hồi khi mở lại dòng. **Trạng thái hiện tại**: tồn tại trong DB và model; chưa expose qua API thông thường.
+
 ---
 
 ## C. Lần giao hàng (`tab_po_delivery`) — popup chi tiết dòng
@@ -629,7 +665,12 @@ Cả hai mẫu gọi cùng endpoint `GET /api/purchase-orders/{id}/print` (yêu 
 8. Tổng tiền trên header: `subtotal` = SL nhận × đơn giá; `vat` = tiền thuế từ thực nhận; `total` = subtotal + vat; `order_subtotal`/`order_total` = theo SL đặt (dùng cho bản in).
 9. Công nợ hàng: sinh khi `received_qty > 0`; xóa khi `received_qty` về 0. Không có VAT riêng ở cấp đơn vị giao — VAT tính từ `po_item.vat`.
 10. Công nợ vận chuyển: sinh khi carrier được chọn VÀ `shipping_amount > 0`; xóa khi carrier xóa hoặc `shipping_amount = 0`.
-11. Lọc danh sách: hỗ trợ lọc theo `code`, `status`, `supplier_code`, `pr_code`.
+11. Lọc danh sách: hỗ trợ các bộ lọc sau:
+    - LIKE trên header PO: `code`, `status`, `supplier_code`, `pr_code`, `misa_code`, `nspt`, `is_urgent`
+    - Exact match: `company_id`
+    - Khoảng ngày: `order_date` (từ–đến)
+    - Lọc qua dòng hàng `tab_po_item` (trả về PO có ít nhất một dòng khớp): `item_group` (LIKE), `invoice_no` (LIKE)
+    - Danh sách PO còn gắn kèm `pr_id` (ID phiếu YCMH tương ứng `pr_code`) để frontend tạo deep-link điều hướng thẳng sang chi tiết PYC khi click cột "Mã PYC" trong danh sách.
 
 ---
 

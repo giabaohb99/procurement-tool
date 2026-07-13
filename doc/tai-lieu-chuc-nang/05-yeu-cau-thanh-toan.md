@@ -75,16 +75,25 @@ Luồng chuyển trạng thái: `draft` -> `submitted` (Gửi duyệt) -> `appro
 - Người sửa: Hệ thống (không chỉnh sửa)
 - Logic đặc biệt: Endpoint `/print` join thêm `Company` để lấy `name`, `address`, `tax_code` in vào header phiếu
 
-### 6. Ngày lập (`request_date`)
+### 6. Người yêu cầu (`created_by_name`)
 
-- Kiểu nhập: Chọn ngày (ISO format `YYYY-MM-DD`)
-- Mặc định: trống (người dùng nhập khi tạo hoặc sửa)
-- Bắt buộc: Không bắt buộc (hệ thống không chặn nếu trống)
-- Nguồn dữ liệu / liên kết: —
-- Người sửa: Người tạo (quyền `payment_request:write`) khi phiếu ở trạng thái Nháp
-- Logic đặc biệt: Dùng để tính `period` (7 ký tự đầu `YYYY-MM`) hiển thị trên phiếu in; nội dung chuyển khoản tự ghép tên NCC và period
+- Kiểu nhập: Chỉ đọc (tự động — tên người tạo phiếu)
+- Mặc định: Tên đầy đủ của người tạo phiếu (`resolve_actor(db, created_by)`)
+- Bắt buộc: — (hệ thống điền)
+- Nguồn dữ liệu / liên kết: Bảng `employee` / `user` qua `created_by` (user_id)
+- Người sửa: Hệ thống (khóa hoàn toàn)
+- Logic đặc biệt: Trả về trong `_out()` dưới key `created_by_name`; hiển thị trên form chi tiết và phiếu in.
 
-### 7. Tổng tiền đề nghị (`total`)
+### 7. Ngày lập (`created_at` / `request_date`)
+
+- Kiểu nhập: Chỉ đọc trên UI chi tiết — hiển thị `created_at` (timestamp hệ thống, ngày+giờ đầy đủ qua `fmtDateTime`)
+- Mặc định: Thời điểm `INSERT` bản ghi (`AuditMixin.created_at`)
+- Bắt buộc: — (hệ thống điền)
+- Nguồn dữ liệu / liên kết: `AuditMixin.created_at`; trường `request_date` (`String(10)`) vẫn tồn tại trong backend và API response (dùng tính `period = request_date[:7]` cho phiếu in), nhưng không hiển thị dưới dạng ô nhập chỉnh sửa trong UI chi tiết hiện tại
+- Người sửa: Hệ thống (`created_at`); `request_date` được set tại thời điểm tạo và không đổi trong UI chi tiết
+- Logic đặc biệt: Phiếu in (`/print`) dùng `request_date[:7]` làm `period` (dạng `YYYY-MM`) để ghép nội dung chuyển khoản.
+
+### 8. Tổng tiền đề nghị (`total`)
 
 - Kiểu nhập: Tự tính
 - Mặc định: Tổng `amount` của tất cả dòng trong phiếu (tính khi tạo và khi cập nhật dòng)
@@ -93,7 +102,7 @@ Luồng chuyển trạng thái: `draft` -> `submitted` (Gửi duyệt) -> `appro
 - Người sửa: Hệ thống (cập nhật tự động mỗi khi PATCH thay đổi dòng)
 - Logic đặc biệt: Hiển thị trên phiếu in cả dạng số (`fmt`) lẫn dạng chữ (`docTien`)
 
-### 8. Ghi chú (`note`)
+### 9. Ghi chú (`note`)
 
 - Kiểu nhập: Nhập nhiều dòng (textarea)
 - Mặc định: trống
@@ -172,12 +181,12 @@ Mỗi dòng tương ứng với một khoản công nợ (`Payable`) được đ
 
 ### 8. Số tiền đề nghị trả (`amount`)
 
-- Kiểu nhập: Nhập số (VND) khi phiếu ở trạng thái Nháp; chỉ đọc ở trạng thái khác
+- Kiểu nhập: Nhập số (VND) qua component `NumberInput` khi phiếu ở trạng thái Nháp; chỉ đọc ở trạng thái khác. Định dạng VN: dấu `.` ngăn nghìn, dấu `,` thập phân; chặn số âm.
 - Mặc định: `payable.total - payable.paid_amount` (phần còn lại chưa trả) — áp dụng nếu người dùng để 0 hoặc không nhập
 - Bắt buộc: Không bắt buộc (cho phép nhập 0 hoặc để trống; server tự tính từ phần còn lại)
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người tạo (quyền `payment_request:write`) khi phiếu Nháp
-- Logic đặc biệt: Nếu `LineIn.amount > 0` thì dùng giá trị người nhập; ngược lại server tính `round(float(p.total) - float(p.paid_amount), 2)`. Tổng tất cả `amount` của dòng được cộng vào `PaymentRequest.total`
+- Logic đặc biệt: Nếu `LineIn.amount > 0` thì dùng giá trị người nhập; ngược lại server tính `round(float(p.total) - float(p.paid_amount), 2)`. Tổng tất cả `amount` của dòng được cộng vào `PaymentRequest.total`. Số âm bị chặn ở FE (`NumberInput` không cho nhập âm).
 
 ---
 
@@ -205,6 +214,8 @@ Mỗi dòng tương ứng với một khoản công nợ (`Payable`) được đ
 9. Đính kèm file: sử dụng module `attachment` với `entity = "payment_request"`, `entity_id = <id>`. Không giới hạn số file; file xóa kèm khi phiếu bị xóa.
 
 10. Tổng hiển thị cuối bảng dòng trên UI được tính phía client (`req.lines.reduce(sum, 0)`) và có thể khác `req.total` nếu người dùng đang chỉnh sửa chưa lưu. Sau khi lưu, `req.total` từ server là giá trị chính xác.
+
+11. Lịch sử thao tác (audit log): mỗi hành động thay đổi trạng thái (tạo — `create`, cập nhật — `update`, gửi duyệt — `submitted`, duyệt — `approved`, ghi nhận đã chi — `paid`, xóa — `delete`) được ghi vào bảng audit log (`entity = "payment_request"`, `entity_id = id`). Trang chi tiết hiển thị khối "Lịch sử thao tác" khi có ít nhất 1 bản ghi (API `/api/audit-logs?entity=payment_request&entity_id=<id>`).
 
 ---
 
