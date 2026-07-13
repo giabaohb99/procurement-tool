@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session, aliased
 
 from app.core.auth import require
+from app.core.base_controller import pagination
 from app.core.database import get_db
 from app.core.response import success
 
 from . import service
+from .model import CategoryAssignee
 from .schema import CategoryAssigneeBulk, CategoryAssigneeCreate, CategoryAssigneeOut, CategoryAssigneeUpdate
 
 router = APIRouter(prefix="/api/category-assignees", tags=["category_assignee"])
@@ -27,9 +29,53 @@ def _out(db: Session, obj) -> dict:
 
 
 @router.get("")
-def list_(db: Session = Depends(get_db), user=Depends(require("category_assignee", "read"))):
-    items = [_out(db, o) for o in service.list_all(db)]
-    return success({"total": len(items), "items": items})
+def list_(
+    sort: str = Query("item_group_name"),
+    order: str = Query("asc"),
+    pg: dict = Depends(pagination),
+    db: Session = Depends(get_db),
+    user=Depends(require("category_assignee", "read")),
+):
+    """Danh sách phân công NSTM — 1 query JOIN (hết N+1), phân trang + sort tại DB."""
+    from app.modules.catalog.model import ItemGroup
+    from app.modules.employee.model import Employee
+
+    Pr = aliased(Employee)   # NSTM chính
+    Bk = aliased(Employee)   # NSTM dự phòng
+    q = (
+        db.query(
+            CategoryAssignee,
+            ItemGroup.name.label("item_group_name"),
+            Pr.full_name.label("primary_name"), Pr.code.label("primary_code"),
+            Bk.full_name.label("backup_name"), Bk.code.label("backup_code"),
+        )
+        .outerjoin(ItemGroup, ItemGroup.id == CategoryAssignee.item_group_id)
+        .outerjoin(Pr, Pr.id == CategoryAssignee.primary_employee_id)
+        .outerjoin(Bk, Bk.id == CategoryAssignee.backup_employee_id)
+    )
+
+    sort_map = {
+        "id": CategoryAssignee.id,
+        "item_group_name": ItemGroup.name,
+        "primary_name": Pr.full_name,
+        "backup_name": Bk.full_name,
+    }
+    col = sort_map.get(sort, ItemGroup.name)
+    q = q.order_by(col.desc() if order == "desc" else col.asc())
+
+    total = q.count()
+    rows = q.offset(pg["offset"]).limit(pg["limit"]).all()
+
+    items = []
+    for obj, ig_name, p_name, p_code, b_name, b_code in rows:
+        d = CategoryAssigneeOut.model_validate(obj).model_dump()
+        d["item_group_name"] = ig_name
+        d["primary_name"] = p_name
+        d["primary_code"] = p_code
+        d["backup_name"] = b_name
+        d["backup_code"] = b_code
+        items.append(d)
+    return success({"total": total, "items": items})
 
 
 @router.get("/{cid}")

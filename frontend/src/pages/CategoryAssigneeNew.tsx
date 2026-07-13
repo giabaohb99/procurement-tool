@@ -25,7 +25,7 @@ export default function CategoryAssigneeNew() {
   useEffect(() => {
     api.get('/api/item-groups', { params: { page_size: 1000 } }).then(r => setCats((r.data.data.items || []).map((x: any) => ({ value: x.id, label: x.name }))))
     api.get('/api/employees', { params: { page_size: 1000 } }).then(r => setEmps((r.data.data.items || []).map((x: any) => ({ value: x.id, label: x.full_name + (x.code ? ` · ${x.code}` : '') }))))
-    api.get('/api/category-assignees').then(r => setConfigured(new Set((r.data.data.items || []).map((x: any) => x.item_group_id))))
+    api.get('/api/category-assignees', { params: { page_size: 1000 } }).then(r => setConfigured(new Set((r.data.data.items || []).map((x: any) => x.item_group_id))))
   }, [])
 
   // Prefill khi Sửa/Copy từ danh sách (?cats=&primary=&backup=)
