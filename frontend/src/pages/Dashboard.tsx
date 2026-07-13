@@ -148,10 +148,46 @@ export default function Dashboard() {
 
   // "Việc cần xử lý" — gom số chờ duyệt + cảnh báo thành danh sách hành động
   const todos: { icon: string; color: string; text: string; to?: string }[] = []
-  if (can('purchase_request') && (k.pr_pending ?? 0) > 0) todos.push({ icon: 'ti-file-alert', color: '#D97706', text: `${k.pr_pending} yêu cầu mua chờ duyệt`, to: '/purchase-requests?status=submitted' })
-  if (can('survey_request') && (k.sr_pending ?? 0) > 0) todos.push({ icon: 'ti-clipboard-check', color: '#0891b2', text: `${k.sr_pending} yêu cầu khảo sát chờ duyệt`, to: '/survey-requests?status=submitted' })
-  if (can('survey') && (k.survey_pending ?? 0) > 0) todos.push({ icon: 'ti-clipboard-search', color: '#0ea5e9', text: `${k.survey_pending} phiếu khảo sát chờ duyệt`, to: '/surveys' })
-  if (can('purchase_order') && (k.late_deliveries ?? 0) > 0) todos.push({ icon: 'ti-truck-delivery', color: '#EA580C', text: `${k.late_deliveries} lô hàng giao trễ hẹn`, to: '/purchase-orders' })
+  if (can('purchase_request') && d?.pending_prs_list) {
+    d.pending_prs_list.forEach((pr: any) => {
+      todos.push({
+        icon: 'ti-file-alert',
+        color: '#D97706',
+        text: `Duyệt PYC: ${pr.code} - ${pr.requester} (${pr.purpose})`,
+        to: `/purchase-requests/${pr.id}`
+      })
+    })
+  }
+  if (can('survey_request') && d?.pending_srs_list) {
+    d.pending_srs_list.forEach((sr: any) => {
+      todos.push({
+        icon: 'ti-clipboard-check',
+        color: '#0891b2',
+        text: `Duyệt YC Khảo sát: ${sr.code} - ${sr.requester} (${sr.purpose})`,
+        to: `/survey-requests/${sr.id}`
+      })
+    })
+  }
+  if (can('survey') && d?.pending_surveys_list) {
+    d.pending_surveys_list.forEach((s: any) => {
+      todos.push({
+        icon: 'ti-clipboard-search',
+        color: '#0ea5e9',
+        text: `Duyệt Khảo sát: ${s.code} - ${s.main_content}`,
+        to: `/surveys/${s.id}`
+      })
+    })
+  }
+  if (can('purchase_order') && d?.late_deliveries_list) {
+    d.late_deliveries_list.forEach((ld: any) => {
+      todos.push({
+        icon: 'ti-truck-delivery',
+        color: '#EA580C',
+        text: `Giao trễ: ${ld.po_code} - ${ld.product_name} (hẹn ${ld.expected_date})`,
+        to: `/purchase-orders/${ld.po_id}`
+      })
+    })
+  }
 
   // Biểu đồ cột 12 tháng (khóa chiều cao 240 để không "to đùng")
   const cost = d?.cost_12m || []
@@ -186,15 +222,6 @@ export default function Dashboard() {
               </span>
             ) : null}
           </h2>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <i className="ti ti-search" style={{ position: 'absolute', left: 12, color: 'var(--hz-muted)' }} />
-            <input type="text" placeholder="Tìm kiếm nhanh..." style={{ paddingLeft: 34, height: 40, width: 220, borderRadius: 12, border: '1px solid #eef1f8', fontSize: 13, outline: 'none' }} />
-          </div>
-          <button className="btn" style={{ background: '#00AEEF', color: '#fff', borderRadius: 12, height: 40, padding: '0 16px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, border: 'none', cursor: 'pointer' }} onClick={() => navigate('/purchase-requests/new')}>
-            <i className="ti ti-plus" />Tạo yêu cầu mua
-          </button>
         </div>
       </div>
 
@@ -268,8 +295,11 @@ export default function Dashboard() {
 
         <div className="hz-card" style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <h3 className="hz-title">Việc cần xử lý</h3>
-            {(todos.length + alerts.length) > 0 && <span className="badge warn">{todos.length + alerts.length}</span>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h3 className="hz-title" style={{ margin: 0 }}>Việc cần xử lý</h3>
+              {(todos.length + alerts.length) > 0 && <span className="badge warn">{todos.length + alerts.length}</span>}
+            </div>
+            <span style={{ fontSize: 13, color: 'var(--teal)', fontWeight: 600, cursor: 'pointer' }} onClick={() => navigate('/me?tab=tasks')}>Xem tất cả</span>
           </div>
           <div style={{ flex: 1, overflow: 'auto', minHeight: 210 }}>
             {todos.length === 0 && alerts.length === 0 ? (

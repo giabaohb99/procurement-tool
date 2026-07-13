@@ -17,6 +17,8 @@ import PrintPurchaseOrder from './pages/PrintPurchaseOrder'
 import PrintPurchaseOrderMH from './pages/PrintPurchaseOrderMH'
 import Inventory from './pages/Inventory'
 import Payables from './pages/Payables'
+import Notifications from './pages/Notifications'
+import Me from './pages/Me'
 import PaymentRequestDetail from './pages/PaymentRequestDetail'
 import Reports from './pages/Reports'
 import SurveyReport from './pages/SurveyReport'
@@ -61,6 +63,8 @@ export default function App() {
             <Route path="payment-requests/:id" element={<PaymentRequestDetail />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="payables" element={<Payables />} />
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="me" element={<Me />} />
             <Route path="reports" element={<Reports />} />
             <Route path="survey-report" element={<SurveyReport />} />
             <Route path="category-assignees" element={<CategoryAssignees />} />

@@ -3,7 +3,8 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app.core.auth import (create_access_token, create_refresh_token,
-                           decode_token, get_current_user, get_user_permissions)
+                           decode_token, get_current_user, get_user_permissions,
+                           hash_password, verify_password)
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.limiter import limiter
@@ -69,6 +70,22 @@ def refresh(data: schema.RefreshInput, db: Session = Depends(get_db)):
 @router.get("/me")
 def me(user=Depends(get_current_user), db: Session = Depends(get_db)):
     return success(_me_payload(db, user))
+
+
+@router.post("/change-password")
+def change_password(data: dict, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Người dùng tự đổi mật khẩu (đang đăng nhập). Body: {old_password, new_password}."""
+    old = (data.get("old_password") or "").strip()
+    new = (data.get("new_password") or "").strip()
+    if not verify_password(old, user.password_hash):
+        raise HTTPException(400, "Mật khẩu hiện tại không đúng")
+    if len(new) < 6:
+        raise HTTPException(400, "Mật khẩu mới phải từ 6 ký tự trở lên")
+    if verify_password(new, user.password_hash):
+        raise HTTPException(400, "Mật khẩu mới không được trùng mật khẩu cũ")
+    user.password_hash = hash_password(new)
+    db.commit()
+    return success(None, "Đã đổi mật khẩu thành công")
 
 @router.post("/avatar")
 def update_avatar(file: UploadFile = File(...), user=Depends(get_current_user), db: Session = Depends(get_db)):

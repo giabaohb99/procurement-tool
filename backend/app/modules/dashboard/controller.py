@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 
@@ -134,12 +134,18 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
     kpi = {}
     cost_12m, categories, top_suppliers, dept_spend = [], [], [], []
     po_status, ap_aging, recent_pos, recent_prs, low_stock = [], [], [], [], []
+    pending_prs_list, pending_srs_list, pending_surveys_list, late_deliveries_list = [], [], [], []
     target_year = str(today.year)
 
     # ===== Yêu cầu mua =====
     if can("purchase_request"):
         prq = apply_scope(db.query(PurchaseRequest), PurchaseRequest, "purchase_request", user, prof)
         kpi["pr_pending"] = prq.filter(PurchaseRequest.status == "submitted").count()
+        
+        # Get pending list for dashboard action items
+        pending_prs = prq.filter(PurchaseRequest.status == "submitted").order_by(PurchaseRequest.id.desc()).limit(5).all()
+        pending_prs_list = [{"id": pr.id, "code": pr.code, "requester": pr.requester or "", "purpose": pr.purpose or "Yêu cầu mua hàng"} for pr in pending_prs]
+
         rprs = apply_scope(db.query(PurchaseRequest), PurchaseRequest, "purchase_request", user, prof) \
             .order_by(PurchaseRequest.id.desc()).limit(8).all()
         for pr in rprs:
@@ -158,6 +164,19 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
         kpi["po_ordered"] = sum(1 for p in pos.values() if p.status in ("approved", "partial", "received"))
         late_src = db.query(PODelivery).filter(PODelivery.po_id.in_(po_ids), PODelivery.received_qty <= 0).all() if po_ids else []
         kpi["late_deliveries"] = sum(1 for d in late_src if (d.expected_date or d.promised_date) and (d.expected_date or d.promised_date) < tstr)
+        
+        # Get detailed late deliveries list
+        late_delivs_sorted = sorted([d for d in late_src if (d.expected_date or d.promised_date) and (d.expected_date or d.promised_date) < tstr], key=lambda x: x.expected_date or x.promised_date)[:5]
+        for ld in late_delivs_sorted:
+            po = pos.get(ld.po_id)
+            it = items.get(ld.po_item_id)
+            name = it.product_name if it else ""
+            late_deliveries_list.append({
+                "po_id": ld.po_id,
+                "po_code": po.code if po else "",
+                "product_name": name,
+                "expected_date": ld.expected_date or ld.promised_date
+            })
 
         cat, sup, dept, po_total = {}, {}, {}, {}
         for it in items.values():
@@ -206,12 +225,18 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
 
     # ===== Khảo sát =====
     if can("survey"):
-        kpi["survey_pending"] = apply_scope(db.query(Survey), Survey, "survey", user, prof).filter(Survey.status == "submitted").count()
+        svq = apply_scope(db.query(Survey), Survey, "survey", user, prof)
+        kpi["survey_pending"] = svq.filter(Survey.status == "submitted").count()
+        pending_surveys = svq.filter(Survey.status == "submitted").order_by(Survey.id.desc()).limit(5).all()
+        pending_surveys_list = [{"id": s.id, "code": s.code, "main_content": s.main_content or s.item_name or "Khảo sát", "nspt": s.nspt or ""} for s in pending_surveys]
 
     # ===== Yêu cầu khảo sát (chờ trưởng bộ phận duyệt) =====
     if can("survey_request"):
         from app.modules.survey_request.model import SurveyRequest
-        kpi["sr_pending"] = apply_scope(db.query(SurveyRequest), SurveyRequest, "survey_request", user, prof).filter(SurveyRequest.status == "submitted").count()
+        srq = apply_scope(db.query(SurveyRequest), SurveyRequest, "survey_request", user, prof)
+        kpi["sr_pending"] = srq.filter(SurveyRequest.status == "submitted").count()
+        pending_srs = srq.filter(SurveyRequest.status == "submitted").order_by(SurveyRequest.id.desc()).limit(5).all()
+        pending_srs_list = [{"id": sr.id, "code": sr.code, "requester": sr.requester or "", "purpose": sr.purpose or ""} for sr in pending_srs]
 
     # ===== Công nợ =====
     if can("payable"):
@@ -267,4 +292,104 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
         "alerts": al_items[:6],
         "alert_total": len(al_items),
         "can": can_map,
+        "pending_prs_list": pending_prs_list,
+        "pending_srs_list": pending_srs_list,
+        "pending_surveys_list": pending_surveys_list,
+        "late_deliveries_list": late_deliveries_list,
     })
+
+
+@router.get("/tasks")
+def my_tasks(request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Việc CẦN TÔI XỬ LÝ — danh sách chi tiết (đầy đủ, phân trang), lọc theo quyền + phạm vi.
+    Gồm: YCMH/khảo sát/ĐMH chờ duyệt, lô hàng giao trễ, công nợ quá hạn. Query: page, page_size, type."""
+    from app.core.auth import get_perm_profile
+    from app.core.scoping import apply_scope
+    from app.modules.purchase_request.model import PurchaseRequest
+    from app.modules.survey_request.model import SurveyRequest
+    from app.modules.purchase_order.model import PurchaseOrder, PODelivery
+    from app.modules.payable.model import Payable
+
+    prof = get_perm_profile(db, user)
+
+    def can(e):
+        return bool(prof["perms_union"].get(e, {}).get("read"))
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    tasks = []
+
+    if can("purchase_request"):
+        rows = (apply_scope(db.query(PurchaseRequest).filter(PurchaseRequest.status == "submitted"),
+                            PurchaseRequest, "purchase_request", user, prof)
+                .order_by(PurchaseRequest.id.desc()).limit(300).all())
+        for pr in rows:
+            tasks.append({"type": "pr", "label": "YCMH chờ duyệt", "code": pr.code,
+                          "title": pr.purpose or "Yêu cầu mua hàng", "subtitle": pr.requester or "",
+                          "date": pr.request_date or "", "link": f"/purchase-requests/{pr.id}"})
+
+    if can("survey_request"):
+        rows = (apply_scope(db.query(SurveyRequest).filter(SurveyRequest.status == "submitted"),
+                            SurveyRequest, "survey_request", user, prof)
+                .order_by(SurveyRequest.id.desc()).limit(300).all())
+        for sr in rows:
+            tasks.append({"type": "sr", "label": "Khảo sát chờ duyệt", "code": sr.code,
+                          "title": sr.purpose or "Yêu cầu khảo sát", "subtitle": sr.requester or "",
+                          "date": sr.request_date or "", "link": f"/survey-requests/{sr.id}"})
+
+    if can("purchase_order"):
+        rows = (apply_scope(db.query(PurchaseOrder).filter(PurchaseOrder.status == "submitted"),
+                            PurchaseOrder, "purchase_order", user, prof)
+                .order_by(PurchaseOrder.id.desc()).limit(300).all())
+        for po in rows:
+            tasks.append({"type": "po", "label": "ĐMH chờ duyệt", "code": po.code,
+                          "title": po.supplier_name or po.supplier_code or "Đơn mua hàng", "subtitle": "",
+                          "date": po.order_date or "", "link": f"/purchase-orders/{po.id}"})
+        # Lô hàng giao trễ
+        scoped = apply_scope(db.query(PurchaseOrder), PurchaseOrder, "purchase_order", user, prof).all()
+        pomap = {p.id: p for p in scoped}
+        po_ids = list(pomap.keys())
+        if po_ids:
+            late = db.query(PODelivery).filter(PODelivery.po_id.in_(po_ids), PODelivery.received_qty <= 0).all()
+            for d in late:
+                exp = d.expected_date or d.promised_date
+                if exp and exp < today:
+                    po = pomap.get(d.po_id)
+                    tasks.append({"type": "late", "label": "Giao hàng trễ", "code": po.code if po else "",
+                                  "title": "Lô hàng quá hạn giao", "subtitle": f"Hạn giao {exp}",
+                                  "date": exp, "link": f"/purchase-orders/{d.po_id}"})
+
+    if can("payable"):
+        rows = (apply_scope(db.query(Payable).filter(Payable.status != "Đã TT", Payable.remaining > 0,
+                                                     Payable.due_date != "", Payable.due_date < today),
+                            Payable, "payable", user, prof)
+                .order_by(Payable.due_date).limit(300).all())
+        for p in rows:
+            tasks.append({"type": "payable", "label": "Công nợ quá hạn",
+                          "code": p.po_code or p.supplier_code, "title": p.supplier_name or p.supplier_code,
+                          "subtitle": f"Còn lại {float(p.remaining or 0):,.0f} · hạn {p.due_date}",
+                          "date": p.due_date, "link": f"/payables?supplier={p.supplier_code}"})
+
+    # Đếm theo loại (tính trên TOÀN BỘ, trước khi lọc — cho FE hiển thị số trong dropdown)
+    by_type = {}
+    for t in tasks:
+        by_type[t["type"]] = by_type.get(t["type"], 0) + 1
+
+    q = (request.query_params.get("q") or "").strip().lower()
+    if q:
+        tasks = [t for t in tasks
+                 if q in f"{t.get('code','')} {t.get('title','')} {t.get('subtitle','')}".lower()]
+    ftype = (request.query_params.get("type") or "").strip()
+    if ftype:
+        tasks = [t for t in tasks if t["type"] == ftype]
+
+    total = len(tasks)
+    try:
+        page = max(1, int(request.query_params.get("page") or 1))
+    except (ValueError, TypeError):
+        page = 1
+    try:
+        size = min(100, max(1, int(request.query_params.get("page_size") or 20)))
+    except (ValueError, TypeError):
+        size = 20
+    items = tasks[(page - 1) * size: page * size]
+    return success({"total": total, "by_type": by_type, "page": page, "page_size": size, "items": items})
