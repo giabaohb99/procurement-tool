@@ -51,7 +51,6 @@ export default function PurchaseRequestDetail() {
   const [files, setFiles] = useState<any[]>([])
   const [editIdx, setEditIdx] = useState<number | null>(null)   // dòng đang mở popup chi tiết
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [confirmSave, setConfirmSave] = useState(false)
   const [promptAction, setPromptAction] = useState<{type: 'reject'|'return'|'cancel', title: string, message: string, placeholder?: string} | null>(null)
   const [confirmAction, setConfirmAction] = useState<{type: 'complete'|'cancel_draft'|'copy', title: string, message: string, confirmText?: string} | null>(null)
   const [notFound, setNotFound] = useState(false)
@@ -229,8 +228,10 @@ export default function PurchaseRequestDetail() {
     const valid = items.filter((it: any) => it.product_name)
     if (valid.length === 0) return 'Cần ít nhất 1 sản phẩm'
     for (const it of valid) {
+      if (!it.product_code) return `Sản phẩm "${it.product_name}" cần chọn Mã hàng (chọn từ danh mục)`
       if (!(Number(it.qty) > 0)) return `Sản phẩm "${it.product_name}" cần Số lượng > 0`
       if (!it.warehouse) return `Sản phẩm "${it.product_name}" cần chọn Kho nhận`
+      if (!it.required_date) return `Sản phẩm "${it.product_name}" cần nhập Ngày cần hàng`
     }
     return ''
   }
@@ -355,7 +356,7 @@ export default function PurchaseRequestDetail() {
         {!isNew && <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--border)', margin: '2px 4px' }} />}
         {/* ── Nhóm workflow + chính (phải) ── */}
         {editable && (
-          <button className="btn secondary" onClick={() => setConfirmSave(true)}><i className="ti ti-device-floppy" />Lưu</button>
+          <button className="btn secondary" onClick={() => save(false)}><i className="ti ti-device-floppy" />Lưu</button>
         )}
         {editable && (
           <button className="btn" onClick={() => save(true)}><i className="ti ti-send" />Gửi duyệt</button>
@@ -413,17 +414,6 @@ export default function PurchaseRequestDetail() {
         variant="danger"
         onConfirm={() => { setConfirmDelete(false); handleDelete(); }}
         onCancel={() => setConfirmDelete(false)}
-      />
-
-      <ConfirmModal
-        open={confirmSave}
-        title="Gửi duyệt yêu cầu"
-        message="Bạn có muốn gửi duyệt phiếu này luôn không?"
-        confirmText="Gửi duyệt"
-        cancelText="Chỉ lưu"
-        variant="info"
-        onConfirm={() => { setConfirmSave(false); save(true); }}
-        onCancel={() => { setConfirmSave(false); save(false); }}
       />
 
       <div className={isLogShown ? 'detail-grid' : ''}>
@@ -497,7 +487,7 @@ export default function PurchaseRequestDetail() {
                 <thead>
                   <tr>
                     <th style={{ width: 34, textAlign: 'center' }}>No.</th>
-                    <th style={{ width: 150, textAlign: 'left' }}>Mã hàng</th>
+                    <th style={{ width: 150, textAlign: 'left' }}>Mã hàng *</th>
                     <th style={{ width: 230, textAlign: 'left' }}>Tên sản phẩm *</th>
                     <th style={{ width: 130, textAlign: 'left' }}>Kho nhận</th>
                     <th style={{ width: 140, textAlign: 'left' }}>Phân loại</th>
@@ -694,7 +684,7 @@ export default function PurchaseRequestDetail() {
             </div>
             <div className="form-grid">
               <div className="form-row">
-                <label>Mã vật tư</label>
+                <label>Mã vật tư <span className="req">*</span></label>
                 <ProductPicker code={edit.product_code} name={edit.product_name} disabled={!editable} onPick={(prod) => applyProduct(editIdx, prod)} />
               </div>
               <div className="form-row">
@@ -731,7 +721,7 @@ export default function PurchaseRequestDetail() {
                 <SearchSelect value={edit.warehouse || ''} options={warehouseOptions} disabled={!editable} placeholder="Chọn/tìm kho…" onChange={(v) => setItem(editIdx, 'warehouse', v)} />
               </div>
               <div className="form-row">
-                <label>Ngày cần hàng</label>
+                <label>Ngày cần hàng <span className="req">*</span></label>
                 <input type="date" value={edit.required_date || ''} disabled={!editable} onChange={(e) => setItem(editIdx, 'required_date', e.target.value)} />
               </div>
               {showAssigneeCol && (
