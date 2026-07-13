@@ -1,9 +1,14 @@
 from fastapi import HTTPException
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
 
 from .model import Survey, SurveyProductLine, SurveySupplierLine
+
+# Cột KHÔNG copy khi nhân bản dòng (id/khóa/nhật ký/kết quả duyệt → làm mới)
+_LINE_SKIP = {"id", "survey_id", "created_by", "updated_by", "created_at", "updated_at",
+              "line_approve", "approve_note"}
 
 ENTITY = "survey"
 FILTERABLE = ["code", "pr_code", "sr_code", "status", "item_group", "nspt", "main_content"]
@@ -85,10 +90,39 @@ def create_survey(db: Session, data, user_id: int) -> Survey:
     return s
 
 
+def copy_survey(db: Session, sid: int, user_id: int) -> Survey:
+    """Nhân bản phiếu khảo sát thành phiếu NHÁP mới: copy header + dòng NCC + dòng SP.
+    KHÔNG copy liên kết YCKS/PYC (survey_request_id/sr_code/pr_code) và kết quả duyệt → độc lập."""
+    src = get_survey(db, sid)
+    link_fields = {"pr_code", "survey_request_id", "sr_code"}
+    header = {f: getattr(src, f) for f in HEADER_FIELDS if f not in link_fields}
+    s = Survey(code="", survey_type="combined", status="draft",
+               created_by=user_id, updated_by=user_id, **header)
+    db.add(s)
+    db.commit()
+    db.refresh(s)
+    s.code = f"KS{s.id:05d}"
+    db.commit()
+
+    def _copy_line(ln, model):
+        data = {c.key: getattr(ln, c.key) for c in sa_inspect(ln).mapper.column_attrs
+                if c.key not in _LINE_SKIP}
+        db.add(model(survey_id=s.id, created_by=user_id, updated_by=user_id, **data))
+
+    for ln in supplier_lines_of(db, sid):
+        _copy_line(ln, SurveySupplierLine)
+    for ln in product_lines_of(db, sid):
+        _copy_line(ln, SurveyProductLine)
+    db.commit()
+    record(db, user_id, ENTITY, s.id, "create", f"Nhân bản từ {src.code}")
+    db.refresh(s)
+    return s
+
+
 def update_survey(db: Session, sid: int, data, user_id: int) -> Survey:
     s = get_survey(db, sid)
-    if s.status != "draft":
-        raise HTTPException(400, "Chỉ sửa được khi ở trạng thái Nháp")
+    if s.status not in ("draft", "rejected"):
+        raise HTTPException(400, "Chỉ sửa được khi phiếu ở trạng thái Nháp hoặc Bị trả lại")
     for k, v in data.model_dump(exclude_unset=True, exclude={"supplier_lines", "product_lines"}).items():
         setattr(s, k, v)
     s.updated_by = user_id

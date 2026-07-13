@@ -72,11 +72,17 @@ def update_(sid: int, data: SurveyUpdate, db: Session = Depends(get_db), user=De
     return success(_out(db, service.update_survey(db, sid, data, user.id)), "Đã cập nhật")
 
 
+@router.post("/{sid}/clone")
+def clone_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey", "create"))):
+    """Nhân bản phiếu khảo sát thành phiếu nháp mới."""
+    return success(_out(db, service.copy_survey(db, sid, user.id)), "Đã nhân bản thành phiếu Nháp mới", 201)
+
+
 @router.delete("/{sid}")
 def delete_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey", "delete"))):
     s = service.get_survey(db, sid)
-    if s.status not in ("draft", "cancelled"):
-        raise HTTPException(400, "Chỉ được xóa phiếu khảo sát ở trạng thái Nháp hoặc Đã hủy")
+    if s.status not in ("draft", "cancelled", "rejected"):
+        raise HTTPException(400, "Chỉ được xóa phiếu khảo sát ở trạng thái Nháp / Bị trả lại / Đã hủy")
     service.delete_survey(db, sid, user.id)
     return success(None, "Đã xóa")
 
@@ -89,8 +95,8 @@ def bulk_delete_surveys(ids: str, db: Session = Depends(get_db), user=Depends(re
     for sid in id_list:
         try:
             s = service.get_survey(db, sid)
-            if s.status not in ("draft", "cancelled"):
-                raise HTTPException(400, f"Phiếu {s.code} không ở trạng thái Nháp hoặc Đã hủy")
+            if s.status not in ("draft", "cancelled", "rejected"):
+                raise HTTPException(400, f"Phiếu {s.code} không ở trạng thái Nháp / Bị trả lại / Đã hủy")
             service.delete_survey(db, sid, user.id)
         except Exception as e:
             raise HTTPException(400, f"Lỗi khi xóa khảo sát ID {sid}: {str(e)}")
@@ -140,12 +146,13 @@ def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(
 @router.post("/{sid}/reject")
 def reject_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
             user=Depends(require("survey", "approve"))):
-    # "Trả lại" = đưa phiếu về NHÁP để NSPT sửa & gửi duyệt lại (bị trả lại xem như nháp)
-    s = service.set_status(db, sid, "draft", user.id, data.reason)
+    # "Trả lại" = đưa phiếu về trạng thái BỊ TRẢ LẠI (rejected) để NSPT sửa & gửi duyệt lại
+    # (đồng bộ với Yêu cầu khảo sát: rejected = sửa lại được, khác với cancelled = khóa hẳn).
+    s = service.set_status(db, sid, "rejected", user.id, data.reason)
     trigger_notification(db=db, event="survey_rejected", doc_type="survey", doc_code=s.code,
                          creator_id=s.created_by or user.id, background_tasks=background_tasks,
                          reason=data.reason or "", link=f"/surveys/{s.id}")
-    return success(_out(db, s), "Đã trả lại (về nháp)")
+    return success(_out(db, s), "Đã trả lại phiếu")
 
 
 @router.post("/{sid}/cancel")

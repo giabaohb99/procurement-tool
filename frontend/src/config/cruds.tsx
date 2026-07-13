@@ -448,7 +448,7 @@ export const cruds: Record<string, CrudConfig> = {
     fields: [],
   },
   'surveys': {
-    slug: 'surveys', entity: 'survey', title: 'Khảo sát (NCC + Sản phẩm)', apiPath: '/api/surveys', txn: true,
+    slug: 'surveys', entity: 'survey', title: 'Khảo sát (NCC + Sản phẩm)', apiPath: '/api/surveys', txn: true, cloneable: true,
     columns: [
       { key: 'code', label: 'Mã phiếu' }, { key: 'sr_code', label: 'Mã YCKS' },
       { key: 'main_content', label: 'Nội dung chính' },
@@ -463,7 +463,8 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'nspt', label: 'NSPT' },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
-        { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Từ chối' }] },
+        { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Bị trả lại' },
+        { value: 'cancelled', label: 'Đã từ chối' }] },
     ],
     fields: [],
   },

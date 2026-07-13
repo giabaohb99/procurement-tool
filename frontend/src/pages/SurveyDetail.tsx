@@ -822,7 +822,7 @@ export default function SurveyDetail() {
             </button>
           </>
         )}
-        {!isNew && can('survey', 'delete') && (sv.status === 'draft' || sv.status === 'cancelled') && (
+        {!isNew && can('survey', 'delete') && (sv.status === 'draft' || sv.status === 'cancelled' || sv.status === 'rejected') && (
           <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
             onClick={async () => { if (await askConfirm({ message: 'Xóa phiếu khảo sát này?' })) { try { await api.delete(`${API}/${id}`); navigate('/surveys') } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi xóa') } } }}>
             <i className="ti ti-trash" />Xóa
