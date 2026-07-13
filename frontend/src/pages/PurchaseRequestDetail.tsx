@@ -507,6 +507,12 @@ export default function PurchaseRequestDetail() {
                 <label>Mã phiếu yêu cầu</label>
                 <input placeholder="Để trống để tự động tạo" value={pr.code || ''} disabled={!isNew} onChange={(e) => setH('code', e.target.value)} />
               </div>
+              {!isNew && (
+                <div className="form-row">
+                  <label>Ngày tạo</label>
+                  <input value={fmtDateTime(pr.created_at) || '—'} disabled />
+                </div>
+              )}
               <div className="form-row">
                 <label>Ngày tiếp nhận <span className="req">*</span></label>
                 <input type="date" value={pr.request_date || ''} disabled={!editable} onChange={(e) => setH('request_date', e.target.value)} />

@@ -23,8 +23,11 @@ HEADER_COLS = ["id", "code", "company_id", "requester", "requester_position",
 
 
 def _out(db: Session, pr) -> dict:
+    from app.core.audit import resolve_actor
     d = {c: getattr(pr, c) for c in HEADER_COLS}
     d["vat_rate"] = float(pr.vat_rate or 0)
+    d["created_at"] = pr.created_at
+    d["created_by_name"] = resolve_actor(db, pr.created_by)
     
     # Fetch company name safely to avoid permission issues on the frontend
     d["company_name"] = ""
@@ -155,6 +158,11 @@ def create_pr(data: PRCreate, db: Session = Depends(get_db), user=Depends(requir
 
 @router.post("/{pid}/copy")
 def copy_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "create"))):
+    return success(_out(db, service.copy_pr(db, pid, user.id)), "Đã nhân bản thành phiếu Nháp mới", 201)
+
+
+@router.post("/{pid}/clone")   # alias để nút Nhân bản ở danh sách (CrudList) dùng chung 1 đường dẫn
+def clone_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "create"))):
     return success(_out(db, service.copy_pr(db, pid, user.id)), "Đã nhân bản thành phiếu Nháp mới", 201)
 
 

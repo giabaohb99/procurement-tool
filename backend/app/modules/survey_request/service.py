@@ -38,15 +38,41 @@ def _gen_code(db: Session) -> str:
     return f"{prefix}{n + 1:02d}"
 
 
-def _save_lines(db: Session, sid: int, lines, user_id: int):
-    db.query(SurveyRequestLine).filter(SurveyRequestLine.survey_request_id == sid).delete()
-    db.commit()
+def _save_lines(db: Session, sid: int, lines, user_id: int) -> list[int]:
+    """UPSERT dòng theo id (KHÔNG xóa+tạo lại) để đính kèm file (trỏ theo line id) không bị mất.
+    - dòng có id đã tồn tại: cập nhật tại chỗ.
+    - dòng id=0 (mới): thêm mới.
+    - dòng cũ không còn trong payload: xóa cả option + file đính kèm.
+    Trả danh sách id theo ĐÚNG thứ tự gửi lên (để FE map hình chờ upload)."""
+    existing = {ln.id: ln for ln in db.query(SurveyRequestLine)
+                .filter(SurveyRequestLine.survey_request_id == sid).all()}
+    seen: set[int] = set()
+    ordered_ids: list[int] = []
     for it in lines or []:
-        ln = SurveyRequestLine(survey_request_id=sid, created_by=user_id, updated_by=user_id, **it.model_dump())
-        db.add(ln)
-        db.flush()
-        ln.internal_line_code = f"YCKSL{ln.id:06d}"
+        data = it.model_dump()
+        lid = int(data.pop("id", 0) or 0)
+        if lid and lid in existing:
+            ln = existing[lid]
+            for k, v in data.items():
+                setattr(ln, k, v)
+            ln.updated_by = user_id
+            seen.add(lid)
+        else:
+            ln = SurveyRequestLine(survey_request_id=sid, created_by=user_id, updated_by=user_id, **data)
+            db.add(ln)
+            db.flush()
+            ln.internal_line_code = f"YCKSL{ln.id:06d}"
+        ordered_ids.append(ln.id)
+    stale = [lid for lid in existing if lid not in seen]
+    if stale:
+        db.query(SurveyRequestOption).filter(
+            SurveyRequestOption.survey_request_line_id.in_(stale)).delete(synchronize_session=False)
+        from app.modules.attachment.service import delete_attachments_for
+        delete_attachments_for(db, [("survey_request_line", lid) for lid in stale])
+        db.query(SurveyRequestLine).filter(
+            SurveyRequestLine.id.in_(stale)).delete(synchronize_session=False)
     db.commit()
+    return ordered_ids
 
 
 def create_sr(db: Session, data, user_id: int) -> SurveyRequest:
@@ -58,23 +84,64 @@ def create_sr(db: Session, data, user_id: int) -> SurveyRequest:
     if not s.code:
         s.code = _gen_code(db)
         db.commit()
-    _save_lines(db, s.id, data.lines, user_id)
+    ordered = _save_lines(db, s.id, data.lines, user_id)
     record(db, user_id, ENTITY, s.id, "create")
+    s._ordered_line_ids = ordered
     return s
 
 
 def update_sr(db: Session, sid: int, data, user_id: int) -> SurveyRequest:
     s = get_sr(db, sid)
     if s.status not in ("draft", "rejected"):
-        raise HTTPException(400, "Chỉ sửa được khi ở trạng thái Nháp/Từ chối")
+        raise HTTPException(400, "Chỉ sửa được khi phiếu ở trạng thái Nháp hoặc Bị trả lại "
+                                 "(phiếu Đã từ chối đã khóa — hãy Nhân bản thành phiếu mới).")
     for k, v in data.model_dump(exclude_unset=True, exclude={"lines"}).items():
         setattr(s, k, v)
     s.updated_by = user_id
     db.commit()
+    ordered = None
     if data.lines is not None:
-        _save_lines(db, sid, data.lines, user_id)
+        ordered = _save_lines(db, sid, data.lines, user_id)
     record(db, user_id, ENTITY, sid, "update")
     db.refresh(s)
+    if ordered is not None:
+        s._ordered_line_ids = ordered
+    return s
+
+
+def clone_sr(db: Session, sid: int, user, profile: dict) -> SurveyRequest:
+    """Nhân bản 1 YCKS thành phiếu NHÁP mới: sao chép header + các dòng (kèm ảnh đính kèm dòng,
+    dùng chung file). CHỈ copy dòng NGƯỜI DÙNG ĐƯỢC XEM (tránh lộ dòng của NSTM khác).
+    KHÔNG sao chép NSTM/option/PYC/tình trạng (làm mới hoàn toàn)."""
+    from app.modules.attachment.model import FileLink
+    user_id = getattr(user, "id", 0)
+    src = get_sr(db, sid)
+    s = SurveyRequest(code="", status="draft", created_by=user_id, updated_by=user_id,
+                      **{f: getattr(src, f) for f in HEADER_FIELDS})
+    db.add(s)
+    db.commit()
+    db.refresh(s)
+    s.code = _gen_code(db)
+    db.commit()
+    src_lines = visible_lines_for(db, src, lines_of(db, sid), user, profile)
+    for ln in src_lines:
+        nl = SurveyRequestLine(
+            survey_request_id=s.id, created_by=user_id, updated_by=user_id,
+            received_date="", result_due_date=ln.result_due_date or "",
+            department_requester=ln.department_requester or "", item_group=ln.item_group or "",
+            requirement_detail=ln.requirement_detail or "", other_requirement=ln.other_requirement or "",
+            request_qty=ln.request_qty or 0, uom=ln.uom or "", proposed_price=ln.proposed_price or 0,
+            image_file=ln.image_file or "")
+        db.add(nl)
+        db.flush()
+        nl.internal_line_code = f"YCKSL{nl.id:06d}"
+        # sao chép đính kèm của dòng (chỉ thêm liên kết mới, dùng chung file gốc)
+        for lk in (db.query(FileLink)
+                   .filter(FileLink.entity == "survey_request_line", FileLink.entity_id == ln.id).all()):
+            db.add(FileLink(file_id=lk.file_id, entity="survey_request_line", entity_id=nl.id,
+                            created_by=user_id, updated_by=user_id))
+    db.commit()
+    record(db, user_id, ENTITY, s.id, "create", f"Nhân bản từ {src.code}")
     return s
 
 

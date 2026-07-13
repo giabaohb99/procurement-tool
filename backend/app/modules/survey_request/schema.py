@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 
 class SurveyRequestLineIn(BaseModel):
+    id: int = 0          # >0 = dòng đã có (giữ nguyên ID để không mất file đính kèm); 0 = dòng mới
     received_date: str = ""
     result_due_date: str = ""
     department_requester: str = ""

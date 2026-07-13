@@ -5,6 +5,7 @@ import { toast } from '../components/toast'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
+import Pagination from '../components/Pagination'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const AGING_CLS: Record<string, string> = { 'Chưa đến hạn': 'gray', '1-30': 'warn', '31-60': 'warn', '61-90': 'err', '>90': 'err' }
@@ -35,6 +36,8 @@ export default function Payables() {
   })
   const [sel, setSel] = useState<number[]>([])
   const [err, setErr] = useState('')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const setFilter = (k: string, v: any) => setF((s: any) => ({ ...s, [k]: v }))
   const lbl = { fontSize: 12, color: 'var(--muted)' } as const
 
@@ -51,7 +54,7 @@ export default function Payables() {
       api.get('/api/payables', { params: params() }),
       api.get('/api/payables/summary', { params: params() }),
     ])
-    setRows(r.data.data.items); setSum(s.data.data); setSel([])
+    setRows(r.data.data.items); setSum(s.data.data); setSel([]); setPage(1)
   }
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items))
@@ -72,6 +75,7 @@ export default function Payables() {
   const toggle = (id: number) => setSel((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id])
 
   const selSuppliers = new Set(rows.filter((r) => sel.includes(r.id)).map((r) => r.supplier_code))
+  const paged = rows.slice((page - 1) * pageSize, page * pageSize)
 
   async function createRequest() {
     setErr('')
@@ -168,7 +172,7 @@ export default function Payables() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {paged.map((r) => (
                 <tr key={r.id} style={sel.includes(r.id) ? { background: '#f0f9ff' } : {}}>
                   <td style={{ textAlign: 'center' }}>
                     <input type="checkbox" disabled={!payable(r)} checked={sel.includes(r.id)} onChange={() => toggle(r.id)} />
@@ -190,6 +194,8 @@ export default function Payables() {
             </tbody>
           </table>
         </div>
+        <Pagination page={page} pageSize={pageSize} total={rows.length}
+          onChange={(p, s) => { setPage(p); setPageSize(s) }} />
       </div>
       <div style={{ marginTop: 8, fontSize: 12.5, color: 'var(--muted)' }}>
         * Chỉ chọn được khoản nợ <b>đã có Số hóa đơn</b> để tạo đề nghị thanh toán. (Công nợ hàng: nhập Số HĐ ở chi tiết sản phẩm trên đơn; Vận chuyển: tự lấy Mã MISA + Mã SP.)

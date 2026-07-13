@@ -30,6 +30,7 @@ export default function CrudList() {
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [sortField, setSortField] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [cloneMode, setCloneMode] = useState(false)   // bật/tắt cột "Thao tác" (nhân bản)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   function handleSort(field: string) {
@@ -170,6 +171,33 @@ export default function CrudList() {
   function applyFilters(f: Record<string, string>) { setFilters(f); setPage(1); load(1, pageSize, f) }
   function changePage(p: number, s: number) { setPage(p); setPageSize(s); load(p, s, filters) }
 
+  const cloneEnabled = !!cfg.cloneable && can(cfg.entity, 'create')
+  const showClone = cloneEnabled && cloneMode   // cột "Thao tác" chỉ hiện khi bật chế độ nhân bản
+  async function doClone(id: number) {
+    try {
+      const r = await api.post(`${cfg.apiPath}/${id}/clone`)
+      const created = r.data.data
+      toast.success(r.data.message || 'Đã nhân bản')
+      if (created?.id) navigate(`/${cfg.slug}/${created.id}`)   // nhảy thẳng vào chi tiết phiếu mới
+      else load(page, pageSize, filters)
+    } catch (e: any) {
+      toast.error(e.response?.data?.error?.message || e.response?.data?.message || 'Lỗi khi nhân bản')
+    }
+  }
+  function cloneRow(id: number, code?: string) {
+    setConfirmModal({
+      open: true,
+      title: 'Nhân bản phiếu',
+      message: `Bạn chắc chắn muốn nhân bản ${code ? `phiếu "${code}"` : 'phiếu này'}?\n\n`
+        + 'Hệ thống sẽ tạo một phiếu MỚI ở trạng thái Nháp. Phiếu mới độc lập, '
+        + 'KHÔNG giữ liên kết khảo sát / đơn mua hàng / phê duyệt của phiếu gốc.',
+      confirmText: 'Nhân bản',
+      cancelText: 'Hủy',
+      variant: 'info',
+      onConfirm: () => { setConfirmModal((prev) => ({ ...prev, open: false })); doClone(id) },
+    })
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -186,6 +214,12 @@ export default function CrudList() {
               <button className="btn outline" onClick={() => fileInputRef.current?.click()}><i className="ti ti-upload" />Import CSV</button>
               <input type="file" accept=".csv" ref={fileInputRef} style={{ display: 'none' }} onChange={handleImport} />
             </>
+          )}
+          {cloneEnabled && (
+            <button className={cloneMode ? 'btn' : 'btn outline'} onClick={() => setCloneMode((v) => !v)}
+              title="Bật chế độ nhân bản: hiện cột Thao tác để nhân bản từng phiếu">
+              <i className="ti ti-copy" />{cloneMode ? 'Xong' : 'Nhân bản'}
+            </button>
           )}
           {can(cfg.entity, 'create') && (
             <button className="btn" onClick={() => navigate(`/${cfg.slug}/new`)}><i className="ti ti-plus" />Thêm</button>
@@ -211,6 +245,7 @@ export default function CrudList() {
                   </div>
                 </th>
               ))}
+              {showClone && <th style={{ width: 110, textAlign: 'center' }}>Thao tác</th>}
             </tr>
           </thead>
           <tbody>
@@ -252,11 +287,19 @@ export default function CrudList() {
                       </td>
                     )
                   })}
+                  {showClone && (
+                    <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                      <button className="btn ghost" style={{ height: 30, padding: '0 10px' }}
+                        title="Nhân bản thành phiếu nháp mới" onClick={() => cloneRow(row.id, row.code)}>
+                        <i className="ti ti-copy" />Nhân bản
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ));
             })()}
             {items.length === 0 && (
-              <tr><td colSpan={cfg.columns.length + 1} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Không có dữ liệu</td></tr>
+              <tr><td colSpan={cfg.columns.length + 1 + (showClone ? 1 : 0)} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Không có dữ liệu</td></tr>
             )}
           </tbody>
         </table>

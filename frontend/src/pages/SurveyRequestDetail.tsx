@@ -558,9 +558,13 @@ export default function SurveyRequestDetail() {
               )}
 
               <div className="form-row">
-                <label>Ngày tạo <span className="req">*</span></label>
-                <input type="date" value={sv.request_date || ''} disabled={!editable}
-                  onChange={(e) => setH('request_date', e.target.value)} />
+                <label>Ngày tạo {isNew && <span className="req">*</span>}</label>
+                {isNew ? (
+                  <input type="date" value={sv.request_date || ''}
+                    onChange={(e) => setH('request_date', e.target.value)} />
+                ) : (
+                  <input value={fmtDateTime(sv.created_at) || sv.request_date || '—'} disabled />
+                )}
               </div>
 
               <div className="form-row">

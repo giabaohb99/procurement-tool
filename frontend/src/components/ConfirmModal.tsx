@@ -58,7 +58,7 @@ export default function ConfirmModal({
           <i className={iconMap[variant]} />
         </div>
         {title && <h3 className="confirm-modal-title">{title}</h3>}
-        <p className="confirm-modal-message">{message}</p>
+        <p className="confirm-modal-message" style={{ whiteSpace: 'pre-line' }}>{message}</p>
         <div className="confirm-modal-actions">
           {!hideCancel && (
             <button className="btn secondary" style={{ color: 'var(--muted)', borderColor: '#e2e8f0' }} onClick={onCancel}>

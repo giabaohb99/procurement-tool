@@ -30,6 +30,10 @@ def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
     from app.modules.employee.model import Employee
     base = _dict(s)
     lines = service.lines_of(db, s.id)
+    order = getattr(s, "_ordered_line_ids", None)   # sau create/update: giữ đúng thứ tự dòng đã gửi
+    if order:
+        pos = {lid: i for i, lid in enumerate(order)}
+        lines = sorted(lines, key=lambda ln: pos.get(ln.id, 10 ** 9))
     if user is not None and profile is not None:   # NSTM chỉ thấy dòng mình phụ trách
         lines = service.visible_lines_for(db, s, lines, user, profile)
     codes = {ln.assignee for ln in lines if ln.assignee}
@@ -125,6 +129,17 @@ def update_(sid: int, data: SurveyRequestUpdate, db: Session = Depends(get_db),
     return success(_out(db, service.update_sr(db, sid, data, user.id)), "Đã cập nhật")
 
 
+@router.post("/{sid}/clone")
+def clone_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey_request", "create"))):
+    """Nhân bản 1 YCKS thành phiếu nháp mới (sao chép header + dòng)."""
+    prof = get_perm_profile(db, user)
+    s = apply_scope(db.query(SurveyRequest).filter(SurveyRequest.id == sid),
+                    SurveyRequest, "survey_request", user, prof).first()
+    if not s:
+        raise HTTPException(403, "Ngoài phạm vi được phép xem")
+    return success(_out(db, service.clone_sr(db, sid, user, prof)), "Đã nhân bản phiếu", 201)
+
+
 @router.delete("/{sid}")
 def delete_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey_request", "delete"))):
     service.delete_sr(db, sid, user.id)
@@ -150,7 +165,7 @@ def submit_(sid: int, db: Session = Depends(get_db), user=Depends(require("surve
     if not _can_edit_own(db, s, user):
         raise HTTPException(403, "Không có quyền gửi duyệt phiếu này")
     if s.status not in ("draft", "rejected"):
-        raise HTTPException(400, "Chỉ gửi duyệt phiếu ở trạng thái Nháp/Từ chối")
+        raise HTTPException(400, "Chỉ gửi duyệt phiếu ở trạng thái Nháp hoặc Bị trả lại")
     s = service.set_status(db, sid, "submitted", user.id)
     from app.modules.notification.service import get_department_head_users
     _notify(db, get_department_head_users(db, s.department or ""),

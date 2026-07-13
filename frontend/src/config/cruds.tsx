@@ -23,6 +23,7 @@ export type CrudConfig = {
   importExport?: boolean
   rowStyle?: (row: any) => any   // tô màu dòng theo điều kiện (vd HĐ sắp hết hạn)
   txn?: boolean                  // chứng từ giao dịch (PYC/PO/khảo sát/YCTT): ai có 'read' là xem danh sách được
+  cloneable?: boolean            // hiện nút "Nhân bản" mỗi dòng → POST {apiPath}/{id}/clone tạo phiếu nháp mới
 }
 
 const badge = (v: any, on = 'Đang dùng', off = 'Ngừng') =>
@@ -249,7 +250,7 @@ export const cruds: Record<string, CrudConfig> = {
     ],
   },
   'purchase-requests': {
-    slug: 'purchase-requests', entity: 'purchase_request', title: 'Yêu cầu mua hàng (PYC)', apiPath: '/api/purchase-requests', txn: true,
+    slug: 'purchase-requests', entity: 'purchase_request', title: 'Yêu cầu mua hàng (PYC)', apiPath: '/api/purchase-requests', txn: true, cloneable: true,
     rowStyle: (r: any) => r.has_cancelled_line ? { background: '#fdecea' } : undefined,   // có dòng "Hủy đơn" → tô đỏ
     columns: [
       { key: 'code', label: 'Mã PYC' },
@@ -280,7 +281,7 @@ export const cruds: Record<string, CrudConfig> = {
     fields: [],  // chi tiết dùng trang riêng (PurchaseRequestDetail)
   },
   'survey-requests': {
-    slug: 'survey-requests', entity: 'survey_request', title: 'Yêu cầu khảo sát', apiPath: '/api/survey-requests', txn: true,
+    slug: 'survey-requests', entity: 'survey_request', title: 'Yêu cầu khảo sát', apiPath: '/api/survey-requests', txn: true, cloneable: true,
     columns: [
       { key: 'code', label: 'Mã phiếu' },
       { key: 'purpose', label: 'Mục đích' },
