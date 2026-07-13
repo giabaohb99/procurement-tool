@@ -720,14 +720,14 @@ export default function PurchaseRequestDetail() {
 
       {/* Popup danh sách Đơn mua hàng liên quan (cùng mã PYC) */}
       {showPoModal && pos && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(27,37,89,.3)', zIndex: 200, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '4vh 12px', overflowY: 'auto' }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(27,37,89,.3)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4vh 12px', overflowY: 'auto' }}
           onClick={() => setShowPoModal(false)}>
-          <div className="card" style={{ width: 720, maxWidth: '100%', padding: 20 }} onClick={(e) => e.stopPropagation()}>
+          <div className="card" style={{ width: 860, maxWidth: '100%', padding: 20 }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <h3 className="sec-title" style={{ margin: 0, border: 0, padding: 0 }}>Đơn mua hàng liên quan ({pos.length})</h3>
               <span className="clickable" style={{ color: '#94a3b8', fontSize: 18 }} onClick={() => setShowPoModal(false)}><i className="ti ti-x" /></span>
             </div>
-            <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+            <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
               <table className="items-table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
