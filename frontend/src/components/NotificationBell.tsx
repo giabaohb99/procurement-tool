@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
+import { fmtDateTime } from '../utils/datetime'
 
 type Notif = { id: number; title: string; body: string; link: string; is_read: boolean; at: string }
 type Alert = { type: string; level: string; title: string; link: string }
 
 const LV_COLOR: Record<string, string> = { danger: '#b91c1c', warn: '#d97706' }
-const fmtTime = (s: string) => { try { return new Date(s).toLocaleString('vi-VN') } catch { return '' } }
+// Dùng chung fmtDateTime (chuỗi UTC naive → +7 giờ VN), đồng bộ với Lịch sử thao tác
+const fmtTime = (s: string) => fmtDateTime(s)
 
 // Tiếng "tin-tin" khi có thông báo mới (Web Audio, không cần file)
 function playDing() {
