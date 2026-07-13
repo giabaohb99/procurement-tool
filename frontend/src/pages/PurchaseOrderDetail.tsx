@@ -13,7 +13,6 @@ import NotFound from '../components/NotFound'
 
 const API = '/api/purchase-orders'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
-const QC = ['', 'Đạt', 'Thiếu', 'Lỗi']
 const SHIP_UNITS = ['Kiện', 'Chuyến', 'm2', 'tấn']
 // Ô TIỀN (VNĐ) = số nguyên, dấu chấm ngăn nghìn. Dùng chung NumberInput.
 const CurrencyInput = ({ value, onChange, disabled, style, className }: any) =>
@@ -180,13 +179,32 @@ export default function PurchaseOrderDetail() {
     setPo((s: any) => ({ ...s, pr_code: code, ...(pr ? { department: pr.department || s.department, nspt: pr.requester || s.nspt, company_id: pr.company_id || s.company_id } : {}) }))
   }
 
+  // Sau khi lưu: upload tệp đã chọn cho các lần giao MỚI (chưa có id). Map theo vị trí vì
+  // backend giữ nguyên thứ tự deliveries (sort id asc, lần giao mới append cuối).
+  async function uploadPendingDeliveryFiles(sentItems: any[], fresh: any) {
+    for (let ii = 0; ii < sentItems.length; ii++) {
+      const dels = sentItems[ii].deliveries || []
+      for (let di = 0; di < dels.length; di++) {
+        const pf: FileList | undefined = dels[di]._pendingFiles
+        const newId = fresh?.items?.[ii]?.deliveries?.[di]?.id
+        if (pf && pf.length && newId) {
+          const fd = new FormData()
+          fd.append('entity', 'delivery'); fd.append('entity_id', String(newId)); fd.append('purchase_order_id', String(id))
+          Array.from(pf).forEach((f) => fd.append('files', f))
+          await api.post('/api/attachments', fd)
+        }
+      }
+    }
+  }
+
   async function save() {
+    const sentItems = items.filter((it: any) => it.product_name || it.product_code)
     const body: any = {
       misa_code: po.misa_code, pr_code: po.pr_code, survey_code: po.survey_code,
       company_id: Number(po.company_id) || 0, supplier_code: po.supplier_code, supplier_name: po.supplier_name,
       department: po.department, nspt: po.nspt, order_date: po.order_date,
       vat_rate: Number(po.vat_rate) || 0, payment_terms: po.payment_terms, is_urgent: po.is_urgent, note: po.note,
-      items: items.filter((it: any) => it.product_name || it.product_code).map((it: any) => ({
+      items: sentItems.map((it: any) => ({
         id: it.id, product_code: it.product_code, product_name: it.product_name, invoice_name: it.invoice_name,
         item_group: it.item_group, spec: it.spec, fg_code: it.fg_code, fg_name: it.fg_name, invoice_no: it.invoice_no,
         supplier_ready: !!it.supplier_ready,
@@ -206,7 +224,11 @@ export default function PurchaseOrderDetail() {
     }
     try {
       if (isNew) { const r = await api.post(API, body); navigate(`/purchase-orders/${r.data.data.id}`) }
-      else { await api.patch(`${API}/${id}`, body); toast.success('Đã lưu thành công'); loadAll() }
+      else {
+        const r = await api.patch(`${API}/${id}`, body)
+        await uploadPendingDeliveryFiles(sentItems, r.data.data)
+        toast.success('Đã lưu thành công'); loadAll()
+      }
     } catch { /* interceptor đã toast lỗi */ }
   }
 
@@ -583,7 +605,6 @@ export default function PurchaseOrderDetail() {
                       <th style={{ width: 110 }}>Trạng thái giao</th>
                       <th style={{ width: 100 }}>Đơn giá VC</th>
                       <th style={{ width: 110 }}>Thành tiền VC</th>
-                      <th style={{ width: 90 }}>QC</th>
                       <th style={{ width: 150 }}>Yêu cầu khác</th>
                       <th style={{ width: 140 }}>Phiếu giao</th>
                       {deliveryEditable && <th style={{ width: 40 }} />}
@@ -641,11 +662,6 @@ export default function PurchaseOrderDetail() {
                               onChange={(val: number) => setDelivery(ii, di, { shipping_amount: val })}
                             />
                           </td>
-                          <td>
-                            <select className="cell-input" style={{ width: 90 }} value={d.qc_result ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { qc_result: e.target.value })}>
-                              {QC.map((q) => <option key={q} value={q}>{q || '—'}</option>)}
-                            </select>
-                          </td>
                           <td><input className="cell-input" style={{ width: 140 }} value={d.extra_request ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { extra_request: e.target.value })} /></td>
                           <td style={{ fontSize: 12 }}>
                             {d.id ? (
@@ -661,7 +677,19 @@ export default function PurchaseOrderDetail() {
                                   </div>
                                 ))}
                               </div>
-                            ) : <span style={{ color: '#999' }}>Lưu để đính kèm</span>}
+                            ) : (
+                              deliveryEditable ? (
+                                <div>
+                                  <input type="file" multiple id={`ndatt-${ii}-${di}`} style={{ display: 'none' }} onChange={(e) => setDelivery(ii, di, { _pendingFiles: e.target.files })} />
+                                  <label htmlFor={`ndatt-${ii}-${di}`} className="btn ghost" style={{ cursor: 'pointer', height: 26, fontSize: 11, padding: '0 8px' }}><i className="ti ti-upload" /> Chọn tệp</label>
+                                  {d._pendingFiles && d._pendingFiles.length > 0 && (
+                                    <div style={{ fontSize: 11, marginTop: 3, color: 'var(--muted)' }}>
+                                      {Array.from(d._pendingFiles as FileList).map((f) => f.name).join(', ')} <span style={{ color: 'var(--amber, #d97706)' }}>(tải khi Lưu)</span>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : <span style={{ color: '#999' }}>Lưu để đính kèm</span>
+                            )}
                           </td>
                           {deliveryEditable && (
                             <td style={{ textAlign: 'center' }}><button className="icon-btn" onClick={() => delDelivery(ii, di)}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button></td>
