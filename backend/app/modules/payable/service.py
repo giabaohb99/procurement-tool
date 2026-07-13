@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from .model import Payable
 
-FILTERABLE = ["supplier_code", "po_code", "source_type", "status"]
+FILTERABLE = ["supplier_code", "po_code", "invoice_no", "source_type", "status"]
 
 
 def debt_days(payment_terms: str) -> int:

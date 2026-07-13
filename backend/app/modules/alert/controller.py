@@ -2,6 +2,7 @@
 
 Endpoint GET /api/alerts cho chuông/badge. Worker (Celery) sẽ gọi cùng logic để tạo notification + email (bước sau)."""
 from datetime import datetime, timedelta
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -50,7 +51,8 @@ def build(db: Session, user=None) -> dict:
         for p in db.query(Payable).filter(Payable.status != "Đã TT").all():
             if not p.due_date:
                 continue
-            link = "/payables"
+            # Click vào cảnh báo -> nhảy tới màn Công nợ, lọc sẵn theo NCC của khoản nợ
+            link = f"/payables?supplier={quote(p.supplier_code or '')}" if p.supplier_code else "/payables"
             who = p.supplier_name or p.supplier_code
             if p.due_date < tstr:
                 items.append({"type": "payable", "level": "danger", "title": f"Công nợ QUÁ HẠN: {who} · {p.po_code} (hạn {p.due_date})", "link": link})

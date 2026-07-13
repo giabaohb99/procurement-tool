@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { askConfirm } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
-import { contractExpiryBadge } from '../config/cruds'
+import { contractExpiryBadge, PAYMENT_TERMS_OPTIONS } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -194,7 +194,7 @@ export default function SupplierDetail() {
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Hình thức thanh toán</label>
-                <input value={sup.payment_terms || ''} placeholder="Ví dụ: Công nợ 30 ngày, Tiền mặt..." disabled={!canEdit} onChange={(e) => setH('payment_terms', e.target.value)} />
+                <SearchSelect value={sup.payment_terms || ''} options={PAYMENT_TERMS_OPTIONS} disabled={!canEdit} placeholder="Chọn hình thức thanh toán…" onChange={(v) => setH('payment_terms', v)} />
               </div>
               <div className="form-row">
                 <label>Số tài khoản ngân hàng</label>

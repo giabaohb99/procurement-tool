@@ -1,30 +1,49 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { toast } from '../components/toast'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
+import NumberInput from '../components/NumberInput'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const AGING_CLS: Record<string, string> = { 'Chưa đến hạn': 'gray', '1-30': 'warn', '31-60': 'warn', '61-90': 'err', '>90': 'err' }
 const agingBadge = (a: string) => <span className={'badge ' + (AGING_CLS[a] || 'gray')}>{a === 'Chưa đến hạn' ? a : a + ' ngày'}</span>
-const stBadge = (s: string) => <span className={'badge ' + (s === 'Đã TT' ? 'ok' : s === 'Trả một phần' ? 'warn' : 'gray')}>{s}</span>
+// Nhãn trạng thái đầy đủ (DB lưu viết tắt). Giá trị lọc gửi lên vẫn dùng mã DB.
+const ST_LABEL: Record<string, string> = { 'Chờ TT': 'Chờ thanh toán', 'Trả một phần': 'Thanh toán một phần', 'Đã TT': 'Đã thanh toán' }
+const ST_OPTIONS = [
+  { value: 'Chờ TT', label: 'Chờ thanh toán' },
+  { value: 'Trả một phần', label: 'Thanh toán một phần' },
+  { value: 'Đã TT', label: 'Đã thanh toán' },
+]
+const stBadge = (s: string) => <span className={'badge ' + (s === 'Đã TT' ? 'ok' : s === 'Trả một phần' ? 'warn' : 'gray')}>{ST_LABEL[s] || s}</span>
 
 export default function Payables() {
   const { can } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [rows, setRows] = useState<any[]>([])
   const [sum, setSum] = useState<any>({ total: 0, paid: 0, remaining: 0, overdue: 0 })
   const [companies, setCompanies] = useState<any[]>([])
   const [suppliers, setSuppliers] = useState<any[]>([])
   const thisYear = new Date().getFullYear()
-  const [f, setF] = useState<any>({ company_id: '', supplier_code: '', source_type: '', status: '', aging: '', year: String(thisYear) })
+  // supplier_code có thể được truyền qua ?supplier= (từ dashboard "Việc cần xử lý")
+  const [f, setF] = useState<any>({
+    company_id: '', supplier_code: searchParams.get('supplier') || '', po_code: '', invoice_no: '',
+    source_type: '', status: '', aging: '', incur_from: '', incur_to: '', amount_from: 0, amount_to: 0,
+    year: searchParams.get('supplier') ? 'all' : String(thisYear),   // vào từ dashboard: bỏ giới hạn năm để thấy đủ nợ NCC
+  })
   const [sel, setSel] = useState<number[]>([])
   const [err, setErr] = useState('')
+  const setFilter = (k: string, v: any) => setF((s: any) => ({ ...s, [k]: v }))
+  const lbl = { fontSize: 12, color: 'var(--muted)' } as const
 
   const params = () => {
     const p: any = { page_size: 1000 }
-    Object.entries(f).forEach(([k, v]) => { if (v) p[k] = v })
+    Object.entries(f).forEach(([k, v]) => {
+      const val = typeof v === 'string' ? v.trim() : v   // cắt space thừa để LIKE khớp
+      if (val) p[k] = val
+    })
     return p
   }
   async function load() {
@@ -37,8 +56,16 @@ export default function Payables() {
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items))
     api.get('/api/suppliers', { params: { page_size: 1000 } }).then((r) => setSuppliers(r.data.data.items))
-    load()
   }, [])
+
+  // Tự động tìm khi đổi bất kỳ filter nào (debounce 300ms) — không cần bấm nút Lọc
+  const timer = useRef<any>(null)
+  useEffect(() => {
+    clearTimeout(timer.current)
+    timer.current = setTimeout(load, 300)
+    return () => clearTimeout(timer.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f])
 
   const companyName = (cid: number) => companies.find((c) => c.id === cid)?.name || '—'
   const payable = (r: any) => r.status !== 'Đã TT' && r.remaining > 0 && !!(r.invoice_no || '').trim()
@@ -85,48 +112,57 @@ export default function Payables() {
       </div>
 
       <div className="card filters" style={{ padding: 14, marginBottom: 12, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <div style={{ minWidth: 180 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Công ty</label>
+        <div style={{ minWidth: 170 }}><label style={lbl}>Công ty</label>
           <SearchSelect value={f.company_id} placeholder="Tất cả"
             options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
-            onChange={(v) => setF((s: any) => ({ ...s, company_id: v }))} />
+            onChange={(v) => setFilter('company_id', v)} />
         </div>
-        <div style={{ minWidth: 180 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Nhà cung cấp</label>
+        <div style={{ minWidth: 190 }}><label style={lbl}>Nhà cung cấp</label>
           <SearchSelect value={f.supplier_code} placeholder="Tất cả"
             options={suppliers.map((c) => ({ value: c.code, label: c.name }))}
-            onChange={(v) => setF((s: any) => ({ ...s, supplier_code: v }))} />
+            onChange={(v) => setFilter('supplier_code', v)} />
         </div>
-        <div style={{ minWidth: 150 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Loại nợ</label>
+        <div style={{ minWidth: 120 }}><label style={lbl}>PO</label>
+          <input value={f.po_code} placeholder="Mã PO…" onChange={(e) => setFilter('po_code', e.target.value)} /></div>
+        <div style={{ minWidth: 120 }}><label style={lbl}>Số hóa đơn</label>
+          <input value={f.invoice_no} placeholder="Số HĐ…" onChange={(e) => setFilter('invoice_no', e.target.value)} /></div>
+        <div style={{ minWidth: 140 }}><label style={lbl}>Loại nợ</label>
           <SearchSelect value={f.source_type} placeholder="Tất cả"
             options={[{ value: 'goods', label: 'Hàng hóa' }, { value: 'shipping', label: 'Vận chuyển' }]}
-            onChange={(v) => setF((s: any) => ({ ...s, source_type: v }))} />
+            onChange={(v) => setFilter('source_type', v)} />
         </div>
-        <div style={{ minWidth: 150 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Trạng thái</label>
+        <div style={{ minWidth: 170 }}><label style={lbl}>Trạng thái</label>
           <SearchSelect value={f.status} placeholder="Tất cả"
-            options={['Chờ TT', 'Trả một phần', 'Đã TT']}
-            onChange={(v) => setF((s: any) => ({ ...s, status: v }))} />
+            options={ST_OPTIONS}
+            onChange={(v) => setFilter('status', v)} />
         </div>
-        <div style={{ minWidth: 150 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Tuổi nợ</label>
+        <div style={{ minWidth: 130 }}><label style={lbl}>Tuổi nợ</label>
           <SearchSelect value={f.aging} placeholder="Tất cả"
             options={['Chưa đến hạn', '1-30', '31-60', '61-90', '>90']}
-            onChange={(v) => setF((s: any) => ({ ...s, aging: v }))} />
+            onChange={(v) => setFilter('aging', v)} />
         </div>
-        <div style={{ minWidth: 120 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Năm</label>
+        <div style={{ minWidth: 110 }}><label style={lbl}>Năm</label>
           <SearchSelect value={String(f.year)} placeholder="Tất cả"
             options={[{ value: 'all', label: 'Tất cả' }, ...[thisYear, thisYear - 1, thisYear - 2].map((y) => ({ value: String(y), label: String(y) }))]}
-            onChange={(v) => setF((s: any) => ({ ...s, year: v }))} />
+            onChange={(v) => setFilter('year', v)} />
         </div>
-        <button className="btn" onClick={load}>Lọc</button>
+        <div><label style={lbl}>Ngày phát sinh từ</label><input type="date" value={f.incur_from} onChange={(e) => setFilter('incur_from', e.target.value)} /></div>
+        <div><label style={lbl}>đến</label><input type="date" value={f.incur_to} onChange={(e) => setFilter('incur_to', e.target.value)} /></div>
+        <div style={{ minWidth: 130 }}><label style={lbl}>Số tiền từ</label>
+          <NumberInput value={f.amount_from} onChange={(v) => setFilter('amount_from', v)} placeholder="" /></div>
+        <div style={{ minWidth: 130 }}><label style={lbl}>đến</label>
+          <NumberInput value={f.amount_to} onChange={(v) => setFilter('amount_to', v)} placeholder="" /></div>
       </div>
 
       {err && <div className="err" style={{ marginBottom: 8 }}>{err}</div>}
       <div className="card">
         <div className="items-scroll">
-          <table className="items-table" style={{ minWidth: 1100 }}>
+          <table className="items-table" style={{ minWidth: 1220 }}>
             <thead>
               <tr>
                 <th style={{ width: 34 }} />
-                <th>Nhà cung cấp</th><th>Loại</th><th>Công ty</th><th>PO</th><th>Số HĐ</th>
-                <th>Ngày PS</th><th>Hạn trả</th><th>Tuổi nợ</th>
+                <th>Nhà cung cấp</th><th>Mã NCC</th><th>Loại</th><th>Công ty</th><th>PO</th><th>Số hóa đơn</th>
+                <th>Ngày phát sinh</th><th>Hạn trả</th><th>Tuổi nợ</th>
                 <th style={{ textAlign: 'right' }}>Tổng nợ</th><th style={{ textAlign: 'right' }}>Đã trả</th>
                 <th style={{ textAlign: 'right' }}>Còn lại</th><th>Trạng thái</th>
               </tr>
@@ -138,6 +174,7 @@ export default function Payables() {
                     <input type="checkbox" disabled={!payable(r)} checked={sel.includes(r.id)} onChange={() => toggle(r.id)} />
                   </td>
                   <td>{r.supplier_name || r.supplier_code}</td>
+                  <td style={{ color: 'var(--muted)' }}>{r.supplier_code}</td>
                   <td>{r.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa'}</td>
                   <td>{companyName(r.company_id)}</td>
                   <td>{r.po_code}</td>
@@ -149,7 +186,7 @@ export default function Payables() {
                   <td>{stBadge(r.status)}</td>
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={13} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có công nợ</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={14} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có công nợ</td></tr>}
             </tbody>
           </table>
         </div>

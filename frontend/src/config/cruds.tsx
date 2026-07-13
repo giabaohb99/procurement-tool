@@ -37,6 +37,15 @@ const ACTIVE_OPTIONS = [
   { value: 'false', label: 'Ngừng / Ẩn' },
 ]
 
+export const PAYMENT_TERMS_OPTIONS = [
+  { value: 'Công nợ 60 ngày', label: 'Công nợ 60 ngày' },
+  { value: 'Thanh toán 100% khi nhận hàng', label: 'Thanh toán 100% khi nhận hàng' },
+  { value: 'Công nợ 30 ngày', label: 'Công nợ 30 ngày' },
+  { value: 'Thanh toán trước khi giao hàng', label: 'Thanh toán trước khi giao hàng' },
+  { value: 'Thanh toán 7 ngày sau khi nhận hàng', label: 'Thanh toán 7 ngày sau khi nhận hàng' },
+  { value: 'Công nợ 20 ngày', label: 'Công nợ 20 ngày' },
+]
+
 export const contractExpiryBadge = (e: string) => {
   if (!e) return '—'
   const c = e === 'Hết hạn' ? { bg: '#fee2e2', fg: '#b91c1c' } : e === 'Sắp hết hạn' ? { bg: '#fef3c7', fg: '#d97706' } : { bg: '#dcfce7', fg: '#15803d' }
@@ -138,7 +147,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã / viết tắt', readonlyOnEdit: true }, { key: 'name', label: 'Tên pháp lý' },
       { key: 'tax_code', label: 'MST' }, { key: 'address', label: 'Địa chỉ', type: 'textarea' },
       { key: 'supplier_type', label: 'Loại', type: 'select', options: SUP_TYPE },
-      { key: 'payment_terms', label: 'Hình thức thanh toán' }, { key: 'vat', label: 'VAT (vd 0.08)', type: 'number' },
+      { key: 'payment_terms', label: 'Hình thức thanh toán', type: 'select', options: PAYMENT_TERMS_OPTIONS }, { key: 'vat', label: 'VAT (vd 0.08)', type: 'number' },
       { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
     ],
   },

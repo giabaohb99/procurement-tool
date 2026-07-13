@@ -19,7 +19,8 @@ def apply_filters(query, model, request: Request, filterable: list[str]):
 
     Trường text -> LIKE %val%; có thể mở rộng so sánh khác sau.
     """
-    for key, val in request.query_params.items():
+    for key, raw in request.query_params.items():
+        val = raw.strip() if isinstance(raw, str) else raw   # cắt space thừa để LIKE khớp
         if key in filterable and val not in (None, ""):
             col = getattr(model, key, None)
             if col is not None:

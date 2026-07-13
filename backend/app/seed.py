@@ -41,11 +41,11 @@ SAMPLE_COMPANIES = [
 ]
 
 SAMPLE_SUPPLIERS = [
-    ("Cẩm Hùng", "CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI BAO BÌ CẨM HÙNG", "1801778241", "goods", "Công nợ 60 ngày", 0.08),
+    ("Cẩm Hùng", "CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI BAO BÌ CẨM HÙNG", "1801778241", "goods", "Công nợ 30 ngày", 0.08),
     ("Đông Tây", "CÔNG TY TNHH SẢN XUẤT BAO BÌ ĐÔNG TÂY", "0316254811", "goods", "Công nợ 30 ngày", 0.08),
-    ("Mộc Ấn", "CÔNG TY TNHH QUẢNG CÁO MỘC ẤN", "0312214688", "goods", "Thanh toán 100% khi nhận hàng", 0.10),
-    ("Mekong Logistics", "Mekong Logistics", "", "transport", "Công nợ theo chuyến", 0.08),
-    ("Sang Giàu", "Vận chuyển Sang Giàu", "", "transport", "Tiền mặt", 0.0),
+    ("Mộc Ấn", "CÔNG TY TNHH QUẢNG CÁO MỘC ẤN", "0312214688", "goods", "Công nợ 30 ngày", 0.10),
+    ("Mekong Logistics", "Mekong Logistics", "", "transport", "Công nợ 30 ngày", 0.08),
+    ("Sang Giàu", "Vận chuyển Sang Giàu", "", "transport", "Công nợ 30 ngày", 0.0),
 ]
 
 SAMPLE_PRODUCTS = [
@@ -459,6 +459,11 @@ def run():
         n_default = assign_default_roles(db)
         if n_default:
             print(f"Gán vai trò 'Nhân sự' mặc định cho {n_default} tài khoản.")
+
+        # Cập nhật hình thức thanh toán "Công nợ 30 ngày" cho toàn bộ nhà cung cấp hiện có
+        n_updated = db.query(Supplier).update({"payment_terms": "Công nợ 30 ngày"}, synchronize_session=False)
+        db.commit()
+        print(f"Đã cập nhật hình thức thanh toán 'Công nợ 30 ngày' cho {n_updated} nhà cung cấp.")
 
         print(f"Seed done. Admin login: {settings.ADMIN_CODE} / (mật khẩu trong .env)")
     finally:

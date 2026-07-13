@@ -45,6 +45,23 @@ def _filtered(db: Session, request: Request, user):
     if year and year != "all":
         q = q.filter(Payable.period == year)
 
+    # Khoảng ngày phát sinh (từ - đến)
+    incur_from = request.query_params.get("incur_from")
+    if incur_from:
+        q = q.filter(Payable.incur_date != "", Payable.incur_date >= incur_from)
+    incur_to = request.query_params.get("incur_to")
+    if incur_to:
+        q = q.filter(Payable.incur_date != "", Payable.incur_date <= incur_to)
+    # Khoảng số tiền theo TỔNG NỢ (từ A - đến B)
+    for key, op in (("amount_from", "ge"), ("amount_to", "le")):
+        val = request.query_params.get(key)
+        if val:
+            try:
+                v = float(val)
+                q = q.filter(Payable.total >= v if op == "ge" else Payable.total <= v)
+            except ValueError:
+                pass
+
     aging = request.query_params.get("aging")
     if aging:
         t = _today()

@@ -125,7 +125,7 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
     """Tính lại tổng dòng + sinh/cập nhật phiếu nhập kho ngầm, tồn kho, công nợ 2 luồng."""
     suppliers = _supplier_map(db)
     goods_sup = suppliers.get(po.supplier_code)
-    goods_days = pay_service.debt_days(goods_sup.payment_terms if goods_sup else "")
+    goods_days = pay_service.debt_days(po.payment_terms or (goods_sup.payment_terms if goods_sup else ""))
 
     def _int(x):
         return int("".join(ch for ch in str(x) if ch.isdigit()) or 0)

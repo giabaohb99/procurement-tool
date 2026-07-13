@@ -4,7 +4,7 @@ import { api } from '../api/client'
 import { fmtDateTime } from '../utils/datetime'
 import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
-import { poBadge } from '../config/cruds'
+import { poBadge, PAYMENT_TERMS_OPTIONS } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
 import ProductPicker from '../components/ProductPicker'
 import NumberInput from '../components/NumberInput'
@@ -348,7 +348,7 @@ export default function PurchaseOrderDetail() {
                   onChange={(v) => setH('nspt', v)} disabled={!headerEditable || !canPickNspt}
                   placeholder={canPickNspt ? 'Chọn nhân sự phụ trách' : ''} />
               </div>
-              <div className="form-row"><label>Hình thức thanh toán NCC</label><input value={po.payment_terms || ''} placeholder="Tự điền theo NCC (vd Công nợ 30 ngày)" disabled={!headerEditable} onChange={(e) => setH('payment_terms', e.target.value)} /></div>
+              <div className="form-row"><label>Hình thức thanh toán NCC</label><SearchSelect value={po.payment_terms || ''} options={PAYMENT_TERMS_OPTIONS} disabled={!headerEditable} placeholder="Chọn hình thức thanh toán…" onChange={(v) => setH('payment_terms', v)} /></div>
               <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                 <input type="checkbox" checked={!!po.is_urgent} disabled={!headerEditable} onChange={(e) => setH('is_urgent', e.target.checked)} style={{ width: 18, height: 18 }} /> Đơn gấp
               </label></div>
