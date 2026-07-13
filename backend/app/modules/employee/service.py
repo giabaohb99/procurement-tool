@@ -7,7 +7,7 @@ from app.core.utils import generate_code
 from .model import Employee
 from .schema import EmployeeCreate, EmployeeUpdate
 
-FILTERABLE = ["code", "full_name", "email", "is_active", "role_names"]
+FILTERABLE = ["code", "full_name", "email", "is_active", "role_names", "department_id"]
 ENTITY = "employee"
 
 

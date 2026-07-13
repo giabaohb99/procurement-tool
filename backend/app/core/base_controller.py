@@ -27,6 +27,10 @@ def apply_filters(query, model, request: Request, filterable: list[str]):
                 if key == 'is_active' or key.startswith('is_'):
                     is_true = val.lower() in ('true', '1', 'yes')
                     query = query.filter(col == is_true)
+                elif key == 'id' or key.endswith('_id'):
+                    # Khóa tham chiếu -> so khớp CHÍNH XÁC (tránh LIKE %21% khớp 121, 210…)
+                    if str(val).isdigit():
+                        query = query.filter(col == int(val))
                 else:
                     query = query.filter(col.like(f"%{val}%"))
         elif key.endswith("s") and key[:-1] in filterable and val not in (None, ""):
