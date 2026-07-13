@@ -57,6 +57,7 @@ export default function PurchaseRequestDetail() {
   const [pos, setPos] = useState<any[] | null>(null)   // ĐMH tạo từ phiếu này (cùng mã PYC); null = chưa tải/không quyền → ẩn khối
   const [orderedMap, setOrderedMap] = useState<Record<string, number>>({})   // SL đã đặt theo mã hàng (gộp mọi ĐMH cùng PYC)
   const [poExceed, setPoExceed] = useState<{ msg: string; normal: any[]; all: any[] } | null>(null)   // popup cảnh báo đặt vượt
+  const [showPoModal, setShowPoModal] = useState(false)   // popup danh sách ĐMH liên quan
 
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items)).catch(() => {})
@@ -371,6 +372,7 @@ export default function PurchaseRequestDetail() {
         <span style={{ flex: 1 }} />
         {/* ── Nhóm tiện ích + destructive (trái) ── */}
         {!isNew && <button className="btn ghost" onClick={() => window.open(`/print/purchase-request/${id}`, '_blank')}><i className="ti ti-printer" />In phiếu</button>}
+        {!isNew && pos && pos.length > 0 && <button className="btn ghost" onClick={() => setShowPoModal(true)}><i className="ti ti-shopping-cart" />ĐMH liên quan ({pos.length})</button>}
         {!isNew && can('purchase_request', 'create') && <button className="btn ghost" onClick={() => setConfirmAction({ type: 'copy', title: 'Nhân bản', message: 'Nhân bản phiếu này thành phiếu Nháp mới?', confirmText: 'Nhân bản' })}><i className="ti ti-copy" />Nhân bản</button>}
         {!isNew && pr.status === 'draft' && can('purchase_request', 'delete') && (
           <button className="btn ghost err" onClick={() => setConfirmDelete(true)}><i className="ti ti-trash" />Xóa phiếu</button>
@@ -457,43 +459,6 @@ export default function PurchaseRequestDetail() {
         onConfirm={() => { setConfirmDelete(false); handleDelete(); }}
         onCancel={() => setConfirmDelete(false)}
       />
-
-      {/* Đơn mua hàng liên quan (tạo từ phiếu này, cùng mã PYC). Không có đơn nào → ẩn khối */}
-      {!isNew && pos && pos.length > 0 && (
-        <div className="card" style={{ padding: 18, marginBottom: 16 }}>
-          <h3 className="sec-title">Đơn mua hàng liên quan</h3>
-          <table className="items-table" style={{ width: '100%' }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: 'left' }}>Mã PO</th>
-                  <th style={{ textAlign: 'left' }}>NCC</th>
-                  <th style={{ textAlign: 'right' }}>Tổng tiền</th>
-                  <th style={{ textAlign: 'center', width: 150 }}>Trạng thái</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pos.slice(0, 5).map((po: any) => (
-                  <tr key={po.id}>
-                    <td>
-                      <span className="clickable" style={{ color: 'var(--teal)', fontWeight: 500, cursor: 'pointer' }}
-                        onClick={() => navigate(`/purchase-orders/${po.id}`)}>{po.code || `#${po.id}`}</span>
-                    </td>
-                    <td>{po.supplier_name || po.supplier_code || ''}</td>
-                    <td style={{ textAlign: 'right' }}>{fmtBlank(po.amount)}</td>
-                    <td style={{ textAlign: 'center' }}>{poBadge(po.status)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          {pos.length > 5 && (
-            <div style={{ marginTop: 10, textAlign: 'center' }}>
-              <button className="btn ghost" onClick={() => navigate(`/purchase-orders?pr_code=${encodeURIComponent(pr.code)}`)}>
-                Xem thêm ({pos.length} đơn) <i className="ti ti-arrow-right" />
-              </button>
-            </div>
-          )}
-        </div>
-      )}
 
       <div className={isLogShown ? 'detail-grid' : ''}>
         <div>
@@ -752,6 +717,48 @@ export default function PurchaseRequestDetail() {
           </div>
         )}
       </div>
+
+      {/* Popup danh sách Đơn mua hàng liên quan (cùng mã PYC) */}
+      {showPoModal && pos && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(27,37,89,.3)', zIndex: 200, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '4vh 12px', overflowY: 'auto' }}
+          onClick={() => setShowPoModal(false)}>
+          <div className="card" style={{ width: 720, maxWidth: '100%', padding: 20 }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <h3 className="sec-title" style={{ margin: 0, border: 0, padding: 0 }}>Đơn mua hàng liên quan ({pos.length})</h3>
+              <span className="clickable" style={{ color: '#94a3b8', fontSize: 18 }} onClick={() => setShowPoModal(false)}><i className="ti ti-x" /></span>
+            </div>
+            <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+              <table className="items-table" style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left' }}>Mã PO</th>
+                    <th style={{ textAlign: 'left' }}>NCC</th>
+                    <th style={{ textAlign: 'right' }}>Tổng tiền</th>
+                    <th style={{ textAlign: 'center', width: 150 }}>Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pos.map((po: any) => (
+                    <tr key={po.id}>
+                      <td>
+                        <span className="clickable" style={{ color: 'var(--teal)', fontWeight: 500, cursor: 'pointer' }}
+                          onClick={() => navigate(`/purchase-orders/${po.id}`)}>{po.code || `#${po.id}`}</span>
+                      </td>
+                      <td>{po.supplier_name || po.supplier_code || ''}</td>
+                      <td style={{ textAlign: 'right' }}>{fmtBlank(po.amount)}</td>
+                      <td style={{ textAlign: 'center' }}>{poBadge(po.status)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+              <button className="btn ghost" onClick={() => navigate(`/purchase-orders?pr_code=${encodeURIComponent(pr.code)}`)}><i className="ti ti-external-link" />Mở trang Đơn mua hàng</button>
+              <button className="btn" onClick={() => setShowPoModal(false)}>Đóng</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Popup chi tiết dòng */}
       {edit && editIdx != null && (
