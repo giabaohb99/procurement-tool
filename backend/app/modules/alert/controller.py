@@ -52,7 +52,7 @@ def build(db: Session, user=None) -> dict:
             if not p.due_date:
                 continue
             # Click vào cảnh báo -> nhảy tới màn Công nợ, lọc sẵn theo NCC của khoản nợ
-            link = f"/payables?supplier={quote(p.supplier_code or '')}" if p.supplier_code else "/payables"
+            link = f"/payables?po_code={quote(p.po_code or '')}" if p.po_code else "/payables"
             who = p.supplier_name or p.supplier_code
             if p.due_date < tstr:
                 items.append({"type": "payable", "level": "danger", "title": f"Công nợ QUÁ HẠN: {who} · {p.po_code} (hạn {p.due_date})", "link": link})
@@ -64,7 +64,7 @@ def build(db: Session, user=None) -> dict:
         for c in db.query(Contract).filter(Contract.status != "Thanh lý").all():
             if not c.end_date:
                 continue
-            link = "/contracts"
+            link = f"/contracts/{c.id}"
             who = c.party_name or c.party_code
             if c.end_date < tstr:
                 items.append({"type": "contract", "level": "danger", "title": f"Hợp đồng HẾT HẠN: {c.code} · {who} ({c.end_date})", "link": link})

@@ -30,9 +30,12 @@ export default function Payables() {
   const thisYear = new Date().getFullYear()
   // supplier_code có thể được truyền qua ?supplier= (từ dashboard "Việc cần xử lý")
   const [f, setF] = useState<any>({
-    company_id: '', supplier_code: searchParams.get('supplier') || '', po_code: '', invoice_no: '',
+    company_id: '',
+    supplier_code: searchParams.get('supplier') || '',
+    po_code: searchParams.get('po_code') || '',
+    invoice_no: '',
     source_type: '', status: '', aging: '', incur_from: '', incur_to: '', amount_from: 0, amount_to: 0,
-    year: searchParams.get('supplier') ? 'all' : String(thisYear),   // vào từ dashboard: bỏ giới hạn năm để thấy đủ nợ NCC
+    year: (searchParams.get('supplier') || searchParams.get('po_code')) ? 'all' : String(thisYear),   // vào từ dashboard: bỏ giới hạn năm để thấy đủ nợ
   })
   const [sel, setSel] = useState<number[]>([])
   const [err, setErr] = useState('')
