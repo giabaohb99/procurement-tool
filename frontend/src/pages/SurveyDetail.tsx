@@ -621,10 +621,11 @@ export default function SurveyDetail() {
         options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
         onChange={(v) => { const sup = suppliers.find((s) => s.code === v); setLine(tbl, i, sup ? { supplier_code: sup.code, supplier_name: sup.name, tax_code: sup.tax_code, reg_address: sup.address } : { supplier_code: v }) }} />
     }
-    // Tên pháp lý NCC: chỉ hiển thị, tự tra từ NCC đã chọn (theo mã)
+    // Tên pháp lý NCC: tự tra từ NCC đã chọn làm mặc định, nhưng cho nhập/ghi đè tay
     if (t === 'legal') {
-      const nm = it.supplier_name || suppliers.find((s) => s.code === it.supplier_code)?.name || ''
-      return <input value={nm} disabled placeholder="—" />
+      const nm = it.supplier_name ?? (suppliers.find((s) => s.code === it.supplier_code)?.name || '')
+      return <input value={nm} disabled={!ce} placeholder="Nhập tên pháp lý NCC…"
+        onChange={(e) => setLine(tbl, i, { supplier_name: e.target.value })} />
     }
     if (t === 'unit') return <SearchSelect value={it[k] ?? ''} options={units} disabled={!ce} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setLine(tbl, i, { [k]: v })} />
     if (t === 'vat') return <SearchSelect value={String(it[k] ?? '')} options={VAT_OPTS} disabled={!ce} placeholder="Chọn VAT…" onChange={(v) => setLine(tbl, i, { [k]: Number(v) })} />
@@ -642,10 +643,13 @@ export default function SurveyDetail() {
       const st = it.line_approve || 'Chờ duyệt'; const c = APPROVE_COLOR[st] || '#64748b'
       return <span className="badge" style={{ background: `${c}1a`, color: c, border: `1px solid ${c}55` }}>{st}</span>
     }
-    // Tên pháp lý NCC: chỉ hiển thị, tự tra từ NCC đã chọn (theo mã)
+    // Tên pháp lý NCC: tự tra làm mặc định, cho nhập/ghi đè tay khi đang sửa
     if (col.type === 'legal') {
-      const nm = it.supplier_name || suppliers.find((s) => s.code === it.supplier_code)?.name || ''
-      return editable ? <input className="cell-input" style={{ width: '100%' }} value={nm} disabled /> : nm
+      const nm = it.supplier_name ?? (suppliers.find((s) => s.code === it.supplier_code)?.name || '')
+      return editable
+        ? <input className="cell-input" style={{ width: '100%' }} value={nm} placeholder="Nhập tên pháp lý NCC…"
+            onChange={(e) => setLine(tbl, i, { supplier_name: e.target.value })} />
+        : nm
     }
     // NCC sẵn có: mặc định TRUE (chưa set = có sẵn) → không lưu DB, chỉ đổi kiểu ô NCC
     const supplierAvail = it.supplier_available !== false
