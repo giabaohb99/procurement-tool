@@ -151,7 +151,14 @@ def trigger_notification(
     
     # Generate labels and messages based on event
     doc_type_label = "Yêu cầu mua hàng" if doc_type == "purchase_request" else "Phiếu khảo sát"
-    
+
+    # Nhãn loại chứng từ + động từ theo hành động (dùng cho fallback rõ nghĩa, vd Đơn mua hàng)
+    DOC_LABEL = {"purchase_request": "Yêu cầu mua hàng", "survey_request": "Phiếu khảo sát",
+                 "purchase_order": "Đơn mua hàng", "payment_request": "Đề nghị thanh toán"}
+    STATUS_VERB = {"submitted": "đã được gửi duyệt", "approved": "đã được duyệt",
+                   "rejected": "đã bị từ chối", "cancelled": "đã bị hủy",
+                   "completed": "đã hoàn thành", "paid": "đã ghi nhận thanh toán"}
+
     if event == "pr_submitted":
         subject = f"[Yêu cầu phê duyệt] PYC {doc_code}"
         body = f"Có một yêu cầu mua hàng mới (Mã số: {doc_code}) cần bạn phê duyệt."
@@ -171,8 +178,11 @@ def trigger_notification(
         subject = f"[Từ chối] Khảo sát {doc_code}"
         body = f"Phiếu khảo sát {doc_code} của bạn đã bị từ chối phê duyệt."
     else:
-        subject = f"Thông báo mới: {doc_code}"
-        body = f"Chứng từ {doc_code} vừa có thay đổi trạng thái."
+        # Fallback rõ nghĩa: suy nhãn loại + hành động từ event (vd "po_approved" → Đơn mua hàng … đã được duyệt)
+        label = DOC_LABEL.get(doc_type, "Chứng từ")
+        verb = STATUS_VERB.get(event.rsplit("_", 1)[-1], "vừa được cập nhật")
+        subject = f"{label} {doc_code}"
+        body = f"{label} {doc_code} {verb}."
 
     if is_urgent:
         subject = f"[GẤP] {subject}"
@@ -197,16 +207,36 @@ def trigger_notification(
 
     # CHỈ tạo thông báo trong app (chuông) — KHÔNG gửi email cho workflow.
     # Email chỉ dùng cho cấp tài khoản / reset mật khẩu (hàm riêng bên dưới).
+    # GỘP SỰ KIỆN: nếu người nhận đã có 1 thông báo CHƯA ĐỌC cùng chứng từ (link) trong
+    # COALESCE_MINUTES phút gần đây → cập nhật cái đó thay vì tạo mới (tránh spam vd submit→approve).
+    from datetime import datetime, timedelta
+    COALESCE_MINUTES = 5
+    now = datetime.utcnow()
+    cutoff = now - timedelta(minutes=COALESCE_MINUTES)
     for recipient in recipients:
         if not recipient:
             continue
-        db.add(Notification(
-            user_id=recipient.id,
-            title=subject,
-            body=body,
-            link=link,
-            created_by=creator_id,
-        ))
+        existing = None
+        if link:
+            existing = (db.query(Notification)
+                        .filter(Notification.user_id == recipient.id,
+                                Notification.link == link,
+                                Notification.is_read == False,
+                                Notification.created_at >= cutoff)
+                        .order_by(Notification.id.desc()).first())
+        if existing:
+            existing.title = subject
+            existing.body = body
+            existing.created_at = now      # đẩy lên mới nhất, không tăng số chưa đọc
+            existing.updated_by = creator_id
+        else:
+            db.add(Notification(
+                user_id=recipient.id,
+                title=subject,
+                body=body,
+                link=link,
+                created_by=creator_id,
+            ))
 
     db.commit()
 
