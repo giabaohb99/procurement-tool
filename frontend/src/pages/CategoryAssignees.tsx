@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { askConfirm } from '../components/confirm'
+import Pagination from '../components/Pagination'
 import { useAuth } from '../auth/AuthContext'
 
 type Row = {
@@ -9,6 +10,8 @@ type Row = {
   primary_employee_id: number; primary_name: string; primary_code: string
   backup_employee_id: number; backup_name: string; backup_code: string
 }
+
+type SortField = 'item_group_name' | 'primary_name' | 'backup_name'
 
 export default function CategoryAssignees() {
   const { can } = useAuth()
@@ -22,8 +25,14 @@ export default function CategoryAssignees() {
   const [fName, setFName] = useState('')   // filter tên NSTM
   const [fCode, setFCode] = useState('')   // filter mã NV
 
+  const [sortField, setSortField] = useState<SortField>('item_group_name')  // mặc định: Phân loại A→Z
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+
   async function load() {
-    const r = await api.get('/api/category-assignees')
+    // Tải hết (page_size lớn) để lọc/sort/phân trang phía client; API đã tối ưu JOIN nên nhanh
+    const r = await api.get('/api/category-assignees', { params: { page_size: 1000 } })
     setRows(r.data.data.items || [])
   }
   useEffect(() => {
@@ -36,11 +45,37 @@ export default function CategoryAssignees() {
     await api.delete(`/api/category-assignees/${id}`); await load()
   }
 
-  const filtered = rows.filter(r =>
+  function handleSort(field: SortField) {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortDir('asc') }
+    setPage(1)
+  }
+  const arrow = (f: SortField) => sortField === f ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ↕'
+
+  const filtered = useMemo(() => rows.filter(r =>
     (!fCat || String(r.item_group_id) === fCat) &&
     (!fName || `${r.primary_name || ''} ${r.backup_name || ''}`.toLowerCase().includes(fName.trim().toLowerCase())) &&
     (!fCode || `${r.primary_code || ''} ${r.backup_code || ''}`.toLowerCase().includes(fCode.trim().toLowerCase()))
-  )
+  ), [rows, fCat, fName, fCode])
+
+  const sorted = useMemo(() => {
+    const arr = [...filtered]
+    arr.sort((a, b) => {
+      const va = (a[sortField] || '').toString()
+      const vb = (b[sortField] || '').toString()
+      if (!va) return 1        // trống xuống cuối
+      if (!vb) return -1
+      return sortDir === 'asc' ? va.localeCompare(vb, 'vi') : vb.localeCompare(va, 'vi')
+    })
+    return arr
+  }, [filtered, sortField, sortDir])
+
+  // Kẹp trang khi số dòng lọc thay đổi
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize))
+  useEffect(() => { if (page > totalPages) setPage(1) }, [page, totalPages])
+  const paged = sorted.slice((page - 1) * pageSize, page * pageSize)
+
+  function resetFilters() { setFCat(''); setFName(''); setFCode(''); setPage(1) }
 
   return (
     <div>
@@ -51,21 +86,35 @@ export default function CategoryAssignees() {
 
       <div className="toolbar">
         <div className="toolbar-filter-item" style={{ maxWidth: 260 }}>
-          <select value={fCat} onChange={e => setFCat(e.target.value)}>
+          <select value={fCat} onChange={e => { setFCat(e.target.value); setPage(1) }}>
             <option value="">— Tất cả phân loại —</option>
             {cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
-        <div className="toolbar-filter-item"><input value={fName} onChange={e => setFName(e.target.value)} placeholder="Tìm theo tên NSTM…" /></div>
-        <div className="toolbar-filter-item"><input value={fCode} onChange={e => setFCode(e.target.value)} placeholder="Tìm theo mã NV…" /></div>
-        {(fCat || fName || fCode) && <button className="btn ghost" onClick={() => { setFCat(''); setFName(''); setFCode('') }}>Xóa lọc</button>}
+        <div className="toolbar-filter-item"><input value={fName} onChange={e => { setFName(e.target.value); setPage(1) }} placeholder="Tìm theo tên NSTM…" /></div>
+        <div className="toolbar-filter-item"><input value={fCode} onChange={e => { setFCode(e.target.value); setPage(1) }} placeholder="Tìm theo mã NV…" /></div>
+        {(fCat || fName || fCode) && <button className="btn ghost" onClick={resetFilters}>Xóa lọc</button>}
       </div>
 
       <div className="card">
-        <table>
-          <thead><tr><th>Phân loại</th><th>NSTM chính</th><th>NSTM dự phòng</th><th style={{ width: 100, textAlign: 'center' }}>Thao tác</th></tr></thead>
+        {/* table-layout fixed + colgroup: khóa bề rộng cột để sort/đổi trang không làm bảng giật */}
+        <table style={{ tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: '32%' }} />
+            <col style={{ width: '30%' }} />
+            <col style={{ width: '30%' }} />
+            <col style={{ width: 100 }} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('item_group_name')}>Phân loại{arrow('item_group_name')}</th>
+              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('primary_name')}>NSTM chính{arrow('primary_name')}</th>
+              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('backup_name')}>NSTM dự phòng{arrow('backup_name')}</th>
+              <th style={{ textAlign: 'center' }}>Thao tác</th>
+            </tr>
+          </thead>
           <tbody>
-            {filtered.map(r => (
+            {paged.map(r => (
               <tr key={r.id}>
                 <td><b>{r.item_group_name || '—'}</b></td>
                 <td>{r.primary_name || '—'}{r.primary_code ? <span style={{ color: '#94a3b8', fontSize: 12 }}> · {r.primary_code}</span> : ''}</td>
@@ -77,10 +126,13 @@ export default function CategoryAssignees() {
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Không có phân công nào khớp bộ lọc</td></tr>}
+            {sorted.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Không có phân công nào khớp bộ lọc</td></tr>}
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} pageSize={pageSize} total={sorted.length}
+        onChange={(p, s) => { setPage(p); setPageSize(s) }} />
     </div>
   )
 }

@@ -38,8 +38,9 @@ export default function SearchSelect({
     if (!disabled && !valStr && opts.length === 1) onChange(opts[0].value)
   }, [opts.length, valStr, disabled])
 
-  // Nếu value không có trong options (vd NCC/ĐVT chưa được tải) → vẫn hiện value, không để trắng
-  const cur = opts.find((o) => o.value === valStr) || (valStr ? { value: valStr, label: valStr } : null)
+  // Nếu value không có trong options (vd NCC/ĐVT chưa được tải) → vẫn hiện value, không để trắng.
+  // '0' là sentinel FK "chưa chọn" (phòng ban/công ty…) → để trống thay vì hiện số 0.
+  const cur = opts.find((o) => o.value === valStr) || (valStr && valStr !== '0' ? { value: valStr, label: valStr } : null)
   return (
     <Select
       classNamePrefix="rs"

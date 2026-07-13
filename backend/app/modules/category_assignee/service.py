@@ -1,8 +1,20 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.audit import record
+
 from .model import CategoryAssignee
 from .schema import CategoryAssigneeCreate, CategoryAssigneeUpdate
+
+ENTITY = "category_assignee"
+
+
+def _log_message(db: Session, primary_id: int, backup_id: int) -> str:
+    """Tóm tắt cặp NSTM cho dòng audit: 'Chính: X · Dự phòng: Y'."""
+    from app.modules.employee.model import Employee
+    p = db.get(Employee, primary_id) if primary_id else None
+    b = db.get(Employee, backup_id) if backup_id else None
+    return f"Chính: {p.full_name if p else '—'} · Dự phòng: {b.full_name if b else '—'}"
 
 
 def list_all(db: Session):
@@ -23,6 +35,7 @@ def create(db: Session, data: CategoryAssigneeCreate, user_id: int) -> CategoryA
     db.add(obj)
     db.commit()
     db.refresh(obj)
+    record(db, user_id, ENTITY, obj.id, "create", _log_message(db, obj.primary_employee_id, obj.backup_employee_id))
     return obj
 
 
@@ -33,17 +46,23 @@ def update(db: Session, cid: int, data: CategoryAssigneeUpdate, user_id: int) ->
     obj.updated_by = user_id
     db.commit()
     db.refresh(obj)
+    record(db, user_id, ENTITY, obj.id, "update", _log_message(db, obj.primary_employee_id, obj.backup_employee_id))
     return obj
 
 
 def delete(db: Session, cid: int, user_id: int) -> None:
-    db.delete(get(db, cid))
+    obj = get(db, cid)
+    oid = obj.id
+    db.delete(obj)
     db.commit()
+    record(db, user_id, ENTITY, oid, "delete", "Đã xóa phân công")
 
 
 def bulk_upsert(db: Session, item_group_ids: list[int], primary_id: int, backup_id: int, user_id: int) -> int:
     """Gán 1 cặp NSTM (chính + dự phòng) cho NHIỀU phân loại cùng lúc (upsert theo phân loại)."""
     n = 0
+    msg = _log_message(db, primary_id, backup_id)
+    logs: list[tuple[int, str]] = []   # (row_id, action) — ghi audit sau khi commit
     for gid in item_group_ids:
         if not gid:
             continue
@@ -52,11 +71,18 @@ def bulk_upsert(db: Session, item_group_ids: list[int], primary_id: int, backup_
             row.primary_employee_id = primary_id
             row.backup_employee_id = backup_id
             row.updated_by = user_id
+            action = "update"
         else:
-            db.add(CategoryAssignee(item_group_id=gid, primary_employee_id=primary_id,
-                                    backup_employee_id=backup_id, created_by=user_id, updated_by=user_id))
+            row = CategoryAssignee(item_group_id=gid, primary_employee_id=primary_id,
+                                   backup_employee_id=backup_id, created_by=user_id, updated_by=user_id)
+            db.add(row)
+            action = "create"
+        db.flush()   # lấy id cho dòng mới
+        logs.append((row.id, action))
         n += 1
     db.commit()
+    for rid, action in logs:
+        record(db, user_id, ENTITY, rid, action, msg)
     return n
 
 
