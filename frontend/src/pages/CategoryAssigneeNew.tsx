@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import Select from 'react-select'
 import { api } from '../api/client'
+import { fmtDateTime } from '../utils/datetime'
+import { toast } from '../components/toast'
 
 type Opt = { value: number; label: string }
 const selStyle = {
@@ -17,16 +19,35 @@ export default function CategoryAssigneeNew() {
   const [cats, setCats] = useState<Opt[]>([])
   const [emps, setEmps] = useState<Opt[]>([])
   const [configured, setConfigured] = useState<Set<number>>(new Set())
+  const [rowByCat, setRowByCat] = useState<Record<number, number>>({})   // item_group_id → id dòng phân công
   const [selCats, setSelCats] = useState<Opt[]>([])
   const [primary, setPrimary] = useState<Opt | null>(null)
   const [backup, setBackup] = useState<Opt | null>(null)
+  const [logs, setLogs] = useState<any[]>([])
   const [err, setErr] = useState(''); const [saving, setSaving] = useState(false)
+
+  // Tải danh sách phân công → cập nhật set "đã cấu hình" + map item_group_id→id dòng
+  async function loadAssignees() {
+    const r = await api.get('/api/category-assignees', { params: { page_size: 1000 } })
+    const items = r.data.data.items || []
+    setConfigured(new Set(items.map((x: any) => x.item_group_id)))
+    setRowByCat(Object.fromEntries(items.map((x: any) => [x.item_group_id, x.id])))
+  }
 
   useEffect(() => {
     api.get('/api/item-groups', { params: { page_size: 1000 } }).then(r => setCats((r.data.data.items || []).map((x: any) => ({ value: x.id, label: x.name }))))
     api.get('/api/employees', { params: { page_size: 1000 } }).then(r => setEmps((r.data.data.items || []).map((x: any) => ({ value: x.id, label: x.full_name + (x.code ? ` · ${x.code}` : '') }))))
-    api.get('/api/category-assignees', { params: { page_size: 1000 } }).then(r => setConfigured(new Set((r.data.data.items || []).map((x: any) => x.item_group_id))))
+    loadAssignees()
   }, [])
+
+  // Sửa 1 phân loại đã cấu hình (?cats=) → tải lịch sử thao tác của dòng phân công đó
+  const editCat = Number(sp.get('cats'))
+  const editRowId = editCat ? rowByCat[editCat] : undefined
+  useEffect(() => {
+    if (!editRowId) { setLogs([]); return }
+    api.get('/api/audit-logs', { params: { entity: 'category_assignee', entity_id: editRowId }, _silent: true } as any)
+      .then(r => setLogs(r.data.data || [])).catch(() => setLogs([]))
+  }, [editRowId])
 
   // Prefill khi Sửa/Copy từ danh sách (?cats=&primary=&backup=)
   useEffect(() => {
@@ -55,8 +76,15 @@ export default function CategoryAssigneeNew() {
         primary_employee_id: primary.value,
         backup_employee_id: backup?.value || 0,
       })
-      navigate('/category-assignees')
-    } catch (e: any) { setErr(e.response?.data?.message || 'Lỗi lưu'); setSaving(false) }
+      toast.success('Đã lưu phân công')
+      await loadAssignees()   // ở lại trang, cập nhật map (phân loại mới tạo có id)
+      // Sửa phân loại đã có: editRowId không đổi nên effect không tự chạy → refetch log ngay
+      if (editRowId) {
+        const lg = await api.get('/api/audit-logs', { params: { entity: 'category_assignee', entity_id: editRowId }, _silent: true } as any)
+        setLogs(lg.data.data || [])
+      }
+    } catch (e: any) { setErr(e.response?.data?.message || 'Lỗi lưu') }
+    finally { setSaving(false) }
   }
 
   return (
@@ -94,6 +122,28 @@ export default function CategoryAssigneeNew() {
           Cặp NSTM (chính + dự phòng) sẽ được gán cho <b>tất cả phân loại đã chọn</b>. Phân loại đã có sẽ được <b>ghi đè</b>.
         </p>
       </div>
+
+      {/* Lịch sử thao tác — chỉ hiện khi đang sửa 1 phân loại đã cấu hình */}
+      {editRowId && (
+        <div className="card" style={{ padding: 18, maxWidth: 760, marginTop: 14 }}>
+          <h3 style={{ fontSize: 14, color: 'var(--navy)', marginBottom: 12 }}><i className="ti ti-history" /> Lịch sử thao tác</h3>
+          {logs.length === 0 ? (
+            <div style={{ color: '#999', fontSize: 13 }}>Chưa có log.</div>
+          ) : (
+            <div className="timeline">
+              {logs.map((l, i) => (
+                <div key={i} className="tl-item">
+                  <span className={'tl-dot ' + l.action} />
+                  <div>
+                    <div style={{ fontSize: 13 }}><b>{l.by}</b> — {l.action_label}{l.message ? <span style={{ color: 'var(--muted)' }}> · {l.message}</span> : ''}</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{fmtDateTime(l.at)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
