@@ -428,10 +428,11 @@ export default function SurveyRequestProcess() {
                   </div>
                 ) : (
                   <div className="items-scroll">
-                    <table className="items-table" style={{ minWidth: 780 }}>
+                    <table className="items-table" style={{ minWidth: 900 }}>
                       <thead>
                         <tr>
                           <th style={{ width: 36 }}></th>
+                          <th style={{ textAlign: 'left' }}>NCC</th>
                           <th style={{ textAlign: 'left' }}>Tên SP</th>
                           <th style={{ textAlign: 'left' }}>Spec</th>
                           <th style={{ textAlign: 'left' }}>Xuất xứ</th>
@@ -461,6 +462,16 @@ export default function SurveyRequestProcess() {
                                   )
                                 }}
                               />
+                            </td>
+                            <td title={al.supplier_name || al.supplier_code} style={{ maxWidth: 180 }}>
+                              {al.supplier_code || al.supplier_name ? (
+                                <>
+                                  <div style={{ fontWeight: 600, color: 'var(--navy)' }}>{al.supplier_code || '—'}</div>
+                                  {al.supplier_name && (
+                                    <div style={{ fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>{al.supplier_name}</div>
+                                  )}
+                                </>
+                              ) : '—'}
                             </td>
                             <td title={al.product_name} style={{ maxWidth: 200 }}>
                               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: 160, verticalAlign: 'middle' }}>{al.product_name || '—'}</span>
