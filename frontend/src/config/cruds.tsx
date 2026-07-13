@@ -10,6 +10,7 @@ export type FieldDef = {
   source?: { url: string; value?: string; label?: string }
   onValueChange?: (val: any, form: any, setForm: (k: string, v: any) => void) => void
   colorMap?: Record<string, string>   // map giá trị option → màu chữ (vd trạng thái: true→xanh, false→đỏ)
+  zeroAsBlank?: boolean   // ô số FK-sentinel: giá trị 0 hiện rỗng (để trống = 0), tránh hiện "0" mặc định
 }
 // link?: trả URL → cell thành clickable, điều hướng tới URL đó (chặn click lan ra dòng)
 export type Column = { key: string; label: string; render?: (row: any) => any; link?: (row: any) => string }
@@ -127,7 +128,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã', readonlyOnEdit: true }, { key: 'name', label: 'Tên pháp nhân' },
       { key: 'tax_code', label: 'MST' }, { key: 'address', label: 'Địa chỉ', type: 'textarea' },
       { key: 'invoice_email', label: 'Email nhận hóa đơn' },
-      { key: 'parent', label: 'Thuộc công ty (ID cha, 0 = gốc)', type: 'number' },
+      { key: 'parent', label: 'Thuộc công ty (ID cha, để trống = gốc)', type: 'number', zeroAsBlank: true },
       { key: 'legal_representative_id', label: 'Người đại diện pháp lý', type: 'select', source: { url: '/api/employees', value: 'id', label: 'full_name' } },
       { key: 'legal_rep_title', label: 'Chức danh' },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
