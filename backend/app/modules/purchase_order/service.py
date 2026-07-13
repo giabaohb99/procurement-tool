@@ -28,7 +28,7 @@ def _days(a: str, b: str) -> int:
     da, db_ = _pdate(a), _pdate(b)
     return (da - db_).days if da and db_ else 0
 
-FILTERABLE = ["code", "status", "supplier_code", "pr_code"]
+FILTERABLE = ["code", "status", "supplier_code", "pr_code", "misa_code", "nspt", "is_urgent"]
 ENTITY = "purchase_order"
 
 

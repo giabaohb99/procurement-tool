@@ -5,7 +5,7 @@ import SearchSelect from './SearchSelect'
 export type FilterField = {
   key: string
   label: string
-  type?: 'text' | 'select'
+  type?: 'text' | 'select' | 'daterange'   // daterange -> gửi 2 param <key>_from / <key>_to
   options?: { value: string; label: string }[]
   // Nguồn option động từ API (vd suppliers, companies, item-groups...)
   source?: { url: string; value?: string; label?: string }
@@ -57,12 +57,19 @@ export default function FilterBar({
         {fields.map((f) => {
           const opts = f.options || dyn[f.key]
           return (
-            <div key={f.key} className="toolbar-filter-item">
+            <div key={f.key} className="toolbar-filter-item"
+                 style={f.type === 'daterange' ? { flex: '1 1 260px', maxWidth: 320 } : undefined}>
               <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', display: 'block', marginBottom: 6 }}>
                 {f.label}
               </label>
               {(f.type === 'select' || f.source) ? (
                 <SearchSelect value={vals[f.key] || ''} options={opts || []} placeholder="Tất cả" onChange={(v) => set(f.key, v)} />
+              ) : f.type === 'daterange' ? (
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input type="date" value={vals[f.key + '_from'] || ''} onChange={(e) => set(f.key + '_from', e.target.value)} style={{ minWidth: 0, flex: 1 }} />
+                  <span style={{ color: 'var(--muted)' }}>–</span>
+                  <input type="date" value={vals[f.key + '_to'] || ''} onChange={(e) => set(f.key + '_to', e.target.value)} style={{ minWidth: 0, flex: 1 }} />
+                </div>
               ) : (
                 <input placeholder={`Nhập ${f.label.toLowerCase()}…`} value={vals[f.key] || ''}
                        onChange={(e) => set(f.key, e.target.value)} />

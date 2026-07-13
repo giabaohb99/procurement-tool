@@ -1,18 +1,18 @@
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import inspect as sa_inspect
+from sqlalchemy import inspect as sa_inspect, select
 from sqlalchemy.orm import Session
 
 from app.core.auth import (get_current_user, get_perm_profile, require,
                            user_has_permission)
-from app.core.base_controller import apply_filters, pagination
+from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, pagination
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope
 
 from . import service
-from .model import SurveyRequest
+from .model import SurveyRequest, SurveyRequestLine
 from .schema import RejectIn, SurveyRequestCreate, SurveyRequestUpdate
 
 router = APIRouter(prefix="/api/survey-requests", tags=["survey_request"])
@@ -84,6 +84,16 @@ def dept_head_(department: str = "", db: Session = Depends(get_db),
 def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
           user=Depends(require("survey_request", "read"))):
     q = apply_filters(db.query(SurveyRequest), SurveyRequest, request, service.FILTERABLE)
+    q = apply_range_filters(q, SurveyRequest, request, ["request_date"])
+    q = apply_equals(q, SurveyRequest, request, ["company_id"])
+    item_group = (request.query_params.get("item_group") or "").strip()
+    if item_group:
+        sub = select(SurveyRequestLine.survey_request_id).where(SurveyRequestLine.item_group.like(f"%{item_group}%"))
+        q = q.filter(SurveyRequest.id.in_(sub))
+    assignee = (request.query_params.get("assignee") or "").strip()
+    if assignee:
+        sub2 = select(SurveyRequestLine.survey_request_id).where(SurveyRequestLine.assignee == assignee)
+        q = q.filter(SurveyRequest.id.in_(sub2))
     q = apply_scope(q, SurveyRequest, "survey_request", user, get_perm_profile(db, user))
     total = q.count()
     items = q.order_by(SurveyRequest.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()

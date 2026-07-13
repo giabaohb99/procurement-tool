@@ -30,6 +30,21 @@ def list_inventory(request: Request, pg: dict = Depends(pagination), db: Session
     company_id = request.query_params.get("company_id")
     if company_id:
         q = q.filter(Inventory.company_id == int(company_id))
+    
+    item_group = request.query_params.get("item_group")
+    if item_group:
+        from app.modules.product.model import Product
+        q = q.join(Product, Product.code == Inventory.product_code).filter(Product.item_group == item_group)
+        
+    qty_status = request.query_params.get("qty_status")
+    if qty_status:
+        if qty_status == "in_stock":
+            q = q.filter(Inventory.qty > 0)
+        elif qty_status == "out_of_stock":
+            q = q.filter(Inventory.qty == 0)
+        elif qty_status == "negative_stock":
+            q = q.filter(Inventory.qty < 0)
+
     total = q.count()
     items = q.order_by(Inventory.product_code.asc()).offset(pg["offset"]).limit(pg["limit"]).all()
     return success({"total": total, "items": [_out(i) for i in items]})
@@ -38,16 +53,38 @@ def list_inventory(request: Request, pg: dict = Depends(pagination), db: Session
 @router.get("/moves")
 def list_moves(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
                user=Depends(require("inventory", "read"))):
-    q = db.query(InventoryMove)
-    for k in ("warehouse_code", "product_code"):
+    from app.modules.user.model import User
+    from app.modules.employee.model import Employee
+
+    q = db.query(InventoryMove, Employee.full_name).\
+        outerjoin(User, User.id == InventoryMove.created_by).\
+        outerjoin(Employee, Employee.id == User.employee_id)
+
+    for k in ("warehouse_code", "product_code", "company_id"):
         v = request.query_params.get(k)
         if v:
-            q = q.filter(getattr(InventoryMove, k) == v)
+            if k == "company_id":
+                q = q.filter(InventoryMove.company_id == int(v))
+            else:
+                q = q.filter(getattr(InventoryMove, k) == v)
+
     total = q.count()
     rows = q.order_by(InventoryMove.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
-    items = [{"id": m.id, "company_id": m.company_id, "warehouse_code": m.warehouse_code,
-              "product_code": m.product_code, "qty": float(m.qty or 0), "ref_type": m.ref_type,
-              "ref_id": m.ref_id, "note": m.note, "at": m.created_at} for m in rows]
+    items = []
+    for m, emp_name in rows:
+        items.append({
+            "id": m.id,
+            "company_id": m.company_id,
+            "warehouse_code": m.warehouse_code,
+            "product_code": m.product_code,
+            "qty": float(m.qty or 0),
+            "unit_price": float(m.unit_price or 0),
+            "ref_type": m.ref_type,
+            "ref_id": m.ref_id,
+            "note": m.note,
+            "at": m.created_at,
+            "operator_name": emp_name or "Hệ thống"
+        })
     return success({"total": total, "items": items})
 
 
@@ -55,6 +92,7 @@ def list_moves(request: Request, pg: dict = Depends(pagination), db: Session = D
 def adjust(data: AdjustIn, db: Session = Depends(get_db), user=Depends(require("inventory", "write"))):
     row = service.adjust(db, company_id=data.company_id, warehouse_code=data.warehouse_code,
                          product_code=data.product_code, product_name=data.product_name,
-                         unit=data.unit, qty=data.qty, note=data.note, user_id=user.id)
+                         unit=data.unit, qty=data.qty, note=data.note, user_id=user.id,
+                         unit_price=data.unit_price)
     record(db, user.id, "inventory", row.id, "adjust", data.note)
     return success(_out(row), "Đã điều chỉnh tồn kho")

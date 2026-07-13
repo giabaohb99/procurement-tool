@@ -80,13 +80,16 @@ def remove_delivery(db: Session, delivery_id: int):
 
 
 def adjust(db: Session, *, company_id: int, warehouse_code: str, product_code: str,
-           product_name: str, unit: str, qty: float, note: str, user_id: int):
-    """Điều chỉnh tay (qty có thể âm/dương). Dùng đơn giá = giá BQ hiện tại để không lệch trị giá."""
+           product_name: str, unit: str, qty: float, note: str, user_id: int, unit_price: float = None):
+    """Điều chỉnh tay (qty có thể âm/dương). Dùng đơn giá truyền lên hoặc đơn giá BQ hiện tại."""
     cur = db.query(Inventory).filter(
         Inventory.company_id == company_id, Inventory.warehouse_code == warehouse_code,
         Inventory.product_code == product_code,
     ).first()
-    price = float(cur.avg_cost or 0) if cur else 0
+    if unit_price is not None and unit_price >= 0:
+        price = unit_price
+    else:
+        price = float(cur.avg_cost or 0) if cur else 0
     db.add(InventoryMove(company_id=company_id, warehouse_code=warehouse_code,
                          product_code=product_code, qty=qty, unit_price=price, ref_type="adjust",
                          note=note, created_by=user_id, updated_by=user_id))

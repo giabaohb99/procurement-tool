@@ -1,11 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
 from app.core.auth import require
-from app.core.base_controller import apply_filters, pagination
+from app.core.base_controller import apply_filters, apply_range_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
 from app.modules.supplier.model import Supplier
@@ -14,7 +14,7 @@ from .model import Contract
 from .schema import ContractCreate, ContractUpdate
 
 router = APIRouter(prefix="/api/contracts", tags=["contract"])
-FILTERABLE = ["code", "party_type", "party_code", "status", "contract_type", "title"]
+FILTERABLE = ["code", "party_type", "party_code", "party_name", "status", "contract_type", "title"]
 
 
 def expiry_state(end_date: str) -> str:
@@ -51,6 +51,22 @@ def _out(c: Contract) -> dict:
 def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
           user=Depends(require("contract", "read"))):
     q = apply_filters(db.query(Contract), Contract, request, FILTERABLE)
+    q = apply_range_filters(q, Contract, request, ["end_date"])   # khoảng ngày hết hạn
+    signed = request.query_params.get("signed")
+    if signed in ("true", "false"):
+        q = q.filter(Contract.signed == (signed == "true"))
+    # Tình trạng hết hạn (tính theo end_date so với hôm nay)
+    expiry = (request.query_params.get("expiry") or "").strip()
+    if expiry:
+        today = datetime.now().date()
+        tstr = today.strftime("%Y-%m-%d")
+        t30 = (today + timedelta(days=30)).strftime("%Y-%m-%d")
+        if expiry == "Hết hạn":
+            q = q.filter(Contract.end_date != "", Contract.end_date < tstr)
+        elif expiry == "Sắp hết hạn":
+            q = q.filter(Contract.end_date >= tstr, Contract.end_date <= t30)
+        elif expiry == "Còn hạn":
+            q = q.filter(Contract.end_date > t30)
     total = q.count()
     items = q.order_by(Contract.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
     return success({"total": total, "items": [_out(c) for c in items]})

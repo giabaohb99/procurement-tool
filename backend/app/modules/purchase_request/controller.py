@@ -3,12 +3,12 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_perm_profile, require, user_has_permission
 from app.core.scoping import apply_scope
-from app.core.base_controller import apply_filters, pagination
+from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, pagination
 from app.core.database import get_db
 from app.core.response import success
 from app.modules.notification.service import trigger_notification
 
-from sqlalchemy import func
+from sqlalchemy import func, select
 from . import service
 from .model import PurchaseRequest, PurchaseRequestItem
 from .schema import ApproveIn, AssignIn, ItemStatusIn, PRCreate, PRUpdate, ReasonIn, RejectIn
@@ -56,6 +56,16 @@ def list_pr(
     user=Depends(require("purchase_request", "read")),
 ):
     query = apply_filters(db.query(PurchaseRequest).filter(PurchaseRequest.is_deleted == False), PurchaseRequest, request, service.FILTERABLE)
+    query = apply_range_filters(query, PurchaseRequest, request, ["request_date", "need_date"])
+    query = apply_equals(query, PurchaseRequest, request, ["company_id"])
+    item_group = (request.query_params.get("item_group") or "").strip()
+    if item_group:
+        sub = select(PurchaseRequestItem.pr_id).where(PurchaseRequestItem.item_group.like(f"%{item_group}%"))
+        query = query.filter(PurchaseRequest.id.in_(sub))
+    assignee = (request.query_params.get("assignee") or "").strip()
+    if assignee:
+        sub2 = select(PurchaseRequestItem.pr_id).where(PurchaseRequestItem.assignee == assignee)
+        query = query.filter(PurchaseRequest.id.in_(sub2))
     query = apply_scope(query, PurchaseRequest, "purchase_request", user, get_perm_profile(db, user))
     total, items = service.list_pr(db, query, pg)
     

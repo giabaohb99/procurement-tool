@@ -8,4 +8,5 @@ class AdjustIn(BaseModel):
     product_name: str = ""
     unit: str = ""
     qty: float = 0          # delta: dương = tăng, âm = giảm
+    unit_price: float = 0   # đơn giá điều chỉnh (nếu muốn ghi nhận giá)
     note: str = ""

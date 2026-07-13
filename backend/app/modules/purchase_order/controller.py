@@ -1,8 +1,9 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_perm_profile, require
-from app.core.base_controller import apply_filters, pagination
+from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, pagination
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope
@@ -12,7 +13,7 @@ from app.modules.catalog.model import Warehouse
 from app.modules.notification.service import trigger_notification
 
 from . import service
-from .model import PurchaseOrder
+from .model import POItem, PurchaseOrder
 from .schema import POCreate, POUpdate, RejectIn
 
 router = APIRouter(prefix="/api/purchase-orders", tags=["purchase_order"])
@@ -76,6 +77,16 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
 def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
             user=Depends(require("purchase_order", "read"))):
     q = apply_filters(db.query(PurchaseOrder), PurchaseOrder, request, service.FILTERABLE)
+    q = apply_range_filters(q, PurchaseOrder, request, ["order_date"])
+    q = apply_equals(q, PurchaseOrder, request, ["company_id"])
+    item_group = (request.query_params.get("item_group") or "").strip()
+    if item_group:
+        sub = select(POItem.po_id).where(POItem.item_group.like(f"%{item_group}%"))
+        q = q.filter(PurchaseOrder.id.in_(sub))
+    invoice_no = (request.query_params.get("invoice_no") or "").strip()
+    if invoice_no:
+        sub2 = select(POItem.po_id).where(POItem.invoice_no.like(f"%{invoice_no}%"))
+        q = q.filter(PurchaseOrder.id.in_(sub2))
     q = apply_scope(q, PurchaseOrder, "purchase_order", user, get_perm_profile(db, user))
     total, items = service.list_po(db, q, pg)
     out = []

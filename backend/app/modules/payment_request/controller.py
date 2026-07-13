@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import resolve_actor
 from app.core.auth import get_perm_profile, require
-from app.core.base_controller import apply_filters, pagination
+from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, pagination
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope
@@ -32,6 +32,8 @@ def _line(db, ln) -> dict:
 def _out(db: Session, req: PaymentRequest) -> dict:
     d = {c: getattr(req, c) for c in HEADER}
     d["total"] = float(req.total or 0)
+    d["created_by_name"] = resolve_actor(db, req.created_by)
+    d["created_at"] = req.created_at
     d["lines"] = [_line(db, ln) for ln in service.lines_of(db, req.id)]
     return d
 
@@ -40,6 +42,8 @@ def _out(db: Session, req: PaymentRequest) -> dict:
 def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
           user=Depends(require("payment_request", "read"))):
     q = apply_filters(db.query(PaymentRequest), PaymentRequest, request, service.FILTERABLE)
+    q = apply_range_filters(q, PaymentRequest, request, ["request_date"])
+    q = apply_equals(q, PaymentRequest, request, ["company_id"])
     q = apply_scope(q, PaymentRequest, "payment_request", user, get_perm_profile(db, user))
     total = q.count()
     items = q.order_by(PaymentRequest.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()

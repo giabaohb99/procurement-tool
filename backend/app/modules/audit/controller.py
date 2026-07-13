@@ -10,7 +10,11 @@ from .model import AuditLog
 
 router = APIRouter(prefix="/api/audit-logs", tags=["audit"])
 
-ACTION_LABEL = {"create": "Tạo mới", "update": "Cập nhật", "delete": "Xóa"}
+ACTION_LABEL = {
+    "create": "Tạo mới", "update": "Cập nhật", "delete": "Xóa",
+    "submitted": "Gửi duyệt", "approved": "Duyệt", "rejected": "Từ chối",
+    "paid": "Ghi nhận đã chi", "cancelled": "Hủy",
+}
 
 
 @router.get("")

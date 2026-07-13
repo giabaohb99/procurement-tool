@@ -1,0 +1,261 @@
+PHÂN LOẠI VTBB	THỜI GIAN QUY ĐỊNH ( Ngày)	Ghi chú	Ngày áp dụng	QUY ĐỊNH THEO CÓ SẴN NCC
+Nhãn	7		01/03/2026	
+Nhãn Metalize	12		01/03/2026	
+Nhãn Thùng	7		01/03/2026	
+Túi flexo	15	"Nhãn túi (Tân Đức)
+<5.000 túi: 12 ngày
+> 5.000 túi: 15 ngày"	01/01/2026	
+Túi trục	21	"Làm trục: 12 - 15 ngày
+In túi: 3 -5 ngày
+Cắt: 1-2 ngày"	01/03/2026	                
+Hộp	15		01/03/2026	
+Can/Xô	5	Thông tin tham khảo từ Ms Ly/ Thu mua check lại	01/03/2026	TRUE
+Can/Xô	7	Thông tin tham khảo từ Ms Ly/ Thu mua check lại	01/03/2026	FALSE
+NL	10	Trong nước	01/03/2026	TRUE
+NL	14	Trong nước	01/03/2026	FALSE
+Thùng	18	"Thời gian Sx: 15 ngày
+Nhận hàng: 2 ngày"	01/03/2026	
+Chai Nhôm	8	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Nhận hàng 2 ngày
+(Thông tin tham khảo từ Ms Ly/ Thu mua check lại)"	01/03/2026	TRUE
+Chai Nhôm	33	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Nhập khẩu : 25 ngày
+- Thanh toán 5 ngày
+- Nhận hàng 2 ngày
+(Thông tin tham khảo từ Ms Ly/ Thu mua check lại)"	01/03/2026	FALSE
+Chai khác	7	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 0 ngày
+- Nhận hàng 2 ngày"	01/03/2026	TRUE
+Nắp	7	Nắp NCC giao chung hàng với chai.	01/03/2026	TRUE
+Cốc đong	7	Cốc đong NCC giao chung hàng với chai.	01/03/2026	TRUE
+Chai khác	15	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 7 ngày
+- Nhận hàng 2 ngày"	01/03/2026	FALSE
+Nắp	15	Nắp NCC giao chung hàng với chai.	01/03/2026	FALSE
+Cốc đong	15		01/03/2026	FALSE
+NL NK	59	"- Làm hợp đồng với NCC cũ: 5 ngày
+- Chuẩn bị hàng: 14 ngày
+- Giao hàng 20 ngày
+- Nhận hàng + thông quan: 20 ngày"	01/03/2026	TRUE
+NL Icare	4	Trong nước, công nợ	01/03/2026	
+Xốp ( bong bóng khí)	5		01/03/2026	
+Giấy nhiệt K100x150	5		01/03/2026	
+HDSD Antisol	10		01/03/2026	
+Tem phụ antisol	15		01/03/2026	
+Tem chống hàng giả 	10		01/03/2026	
+Chai Pet có vòi 	15		01/03/2026	
+Hộp trắng	10		01/03/2026	
+Màng co	20	NCC quá tải chưa tìm được NCC mới giá cạnh tranh	01/03/2026	
+NL NK	59	"- Làm hợp đồng với NCC mới: 5 ngày
+- Chuẩn bị hàng: 14 ngày
+- Giao hàng 20 ngày
+- Nhận hàng + thông quan: 20 ngày
+Đối với đường bay thì 41 ngày"	01/03/2026	FALSE
+Túi in cuộn màng	14	Nhãn túi	08/04/2026	
+Vận chuyển			18/04/2026	
+Băng keo	5		01/03/2026	
+Cuộn PE	7		01/05/2026	
+Lon	7	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 0 ngày
+- Nhận hàng 2 ngày"	01/06/2026	TRUE
+Lon	15	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 7 ngày
+- Nhận hàng 2 ngày"	01/06/2026	FALSE
+VTBB SX	7	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 0 ngày
+- Nhận hàng 2 ngày"	01/06/2026	TRUE
+VTBB SX	15	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 0 ngày
+- Nhận hàng 2 ngày"	01/06/2026	FALSE
+Túi Zip	7	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 0 ngày
+- Nhận hàng 2 ngày"	01/06/2026	
+Túi PA	7	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 0 ngày
+- Nhận hàng 2 ngày"	09/06/2026	
+Tank	7	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 0 ngày
+- Nhận hàng 2 ngày"	09/06/2026	TRUE
+Tank	15	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 0 ngày
+- Nhận hàng 2 ngày"	09/06/2026	FALSE
+Chai Pet	7	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 0 ngày
+- Nhận hàng 2 ngày"	01/03/2026	TRUE
+Chai Pet	15	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 7 ngày
+- Nhận hàng 2 ngày"	01/03/2026	FALSE
+Chai Hdpe	7	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 0 ngày
+- Nhận hàng 2 ngày"	01/03/2026	TRUE
+Chai Hdpe	15	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 7 ngày
+- Nhận hàng 2 ngày"	01/03/2026	FALSE
+Chai Pape	7	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 0 ngày
+- Nhận hàng 2 ngày"	01/03/2026	TRUE
+Chai Pape	15	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 7 ngày
+- Nhận hàng 2 ngày"	01/03/2026	FALSE
+Chai Nhôm	8	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Nhận hàng 2 ngày
+(Thông tin tham khảo từ Ms Ly/ Thu mua check lại)"	01/03/2026	TRUE
+Chai Nhôm	33	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Nhập khẩu : 25 ngày
+- Thanh toán 5 ngày
+- Nhận hàng 2 ngày
+(Thông tin tham khảo từ Ms Ly/ Thu mua check lại)"	01/03/2026	FALSE
+Chai Nhôm nhập khẩu	33	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Nhập khẩu : 25 ngày
+- Thanh toán 5 ngày
+- Nhận hàng 2 ngày
+(Thông tin tham khảo từ Ms Ly/ Thu mua check lại)"	01/03/2026	FALSE
+Chai Pet giả nhôm	7		01/03/2026	TRUE
+Chai Pet giả nhôm	15		01/03/2026	FALSE
+Chai HD giả nhôm	7		01/03/2026	TRUE
+Chai HD giả nhôm	15		01/03/2026	FALSE
+Chai Pape giả nhôm	7		01/03/2026	TRUE
+Chai Pape giả nhôm	15		01/03/2026	FALSE
+Chai Pet có vòi	10		01/03/2026	TRUE
+Chai Pet có vòi	15		01/03/2026	FALSE
+Nắp Hdpe	7	Nắp NCC giao chung hàng với chai.	01/03/2026	TRUE
+Nắp Hdpe	15	Nắp NCC giao chung hàng với chai.	01/03/2026	FALSE
+Nắp Pet	7	Nắp NCC giao chung hàng với chai.	01/03/2026	TRUE
+Nắp Pet	15	Nắp NCC giao chung hàng với chai.	01/03/2026	FALSE
+Can HDPE	5	Thông tin tham khảo từ Ms Ly/ Thu mua check lại	01/03/2026	TRUE
+Can HDPE	7	Thông tin tham khảo từ Ms Ly/ Thu mua check lại	01/03/2026	FALSE
+Xô HDPE	5	Thông tin tham khảo từ Ms Ly/ Thu mua check lại	01/03/2026	TRUE
+Xô HDPE	7	Thông tin tham khảo từ Ms Ly/ Thu mua check lại	01/03/2026	FALSE
+Nhãn giấy	7		01/03/2026	FALSE
+Nhãn Decal	7		01/03/2026	FALSE
+Nhãn Phụ	7		01/03/2026	FALSE
+Nhãn Metalize	12		01/03/2026	FALSE
+Nhãn dán thùng	7		01/03/2026	FALSE
+Cốc đong	7	Cốc đong NCC giao chung hàng với chai.	01/03/2026	TRUE
+Cốc đong	15	Cốc đong NCC giao chung hàng với chai.	01/03/2026	FALSE
+Túi rời	15	"Nhãn túi (Tân Đức)
+<5.000 túi: 12 ngày
+> 5.000 túi: 15 ngày"	01/01/2026	FALSE
+Túi trục	21	"Làm trục: 12 - 15 ngày
+In túi: 3 -5 ngày
+Cắt: 1-2 ngày"	01/03/2026	FALSE
+Túi in cuộn (không trục)	14	Nhãn túi	01/03/2026	FALSE
+Túi PE (Túi nilong)	7		01/03/2026	TRUE
+Túi PE (Túi nilong)	14		01/03/2026	FALSE
+Túi Zip	7		01/03/2026	TRUE
+Túi Zip	14		01/03/2026	FALSE
+Túi PA 3 biên	7		01/03/2026	TRUE
+Túi PA 3 biên	14		01/03/2026	FALSE
+Hộp carton 3 lớp	15		01/03/2026	FALSE
+Hộp giấy D	15		01/03/2026	FALSE
+Hộp đóng gói nâu	15		01/03/2026	FALSE
+Hộp carton 3 lớp	10		01/03/2026	FALSE
+Hộp giấy D	10		01/03/2026	FALSE
+Hộp đóng gói nâu	10		01/03/2026	FALSE
+Hộp icare: giấy Ivory	10		01/03/2026	FALSE
+Thùng carton 5 lớp	18	"Thời gian Sx: 15 ngày
+Nhận hàng: 2 ngày"	01/03/2026	TRUE
+Thùng carton 3 lớp	18	"Thời gian Sx: 15 ngày
+Nhận hàng: 2 ngày"	01/03/2026	FALSE
+Lon HDPE	7	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 4 ngày
+- Sản xuất 0 ngày
+- Nhận hàng 2 ngày"	01/06/2026	TRUE
+Lon HDPE	15	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 7 ngày
+- Nhận hàng 2 ngày"	01/06/2026	FALSE
+Bao PP	7		01/06/2026	TRUE
+Bao PP	15		01/06/2026	FALSE
+Bao PE	7		01/06/2026	TRUE
+Bao PE	15		01/06/2026	FALSE
+Tank	7	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 0 ngày
+- Nhận hàng 2 ngày"	09/06/2026	TRUE
+Tank	15	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 7 ngày
+- Nhận hàng 2 ngày"	09/06/2026	FALSE
+Phuy	15		01/06/2026	FALSE
+Màng co nhiệt	20	NCC quá tải chưa tìm được NCC mới giá cạnh tranh	01/03/2026	FALSE
+Màng PE cuộn	21		01/06/2026	FALSE
+Vận chuyển				
+Băng keo trong	7		01/06/2026	TRUE
+Băng keo trong	15		01/06/2026	FALSE
+Băng keo in logo	7		01/06/2026	TRUE
+Băng keo in logo	15		01/06/2026	FALSE
+Keo sữa	7		01/06/2026	TRUE
+Keo sữa	15		01/06/2026	FALSE
+Tem Hologram bạc (tem chống hàng giả icare)	12		01/06/2026	FALSE
+Tem decal vỡ (tem Asahi)	12		01/06/2026	FALSE
+Tem decal giấy	12		01/06/2026	FALSE
+NL Nhập khẩu	59	"- Làm hợp đồng với NCC mới: 5 ngày
+- Chuẩn bị hàng: 14 ngày
+- Giao hàng 20 ngày
+- Nhận hàng + thông quan: 20 ngày
+Đối với đường bay thì 41 ngày"	01/03/2026	FALSE
+NL Icare	4	Trong nước, công nợ	01/03/2026	FALSE
+Tag treo	10		01/03/2026	FALSE
+Hàng sẵn kho ncc				
+Hàng ko sẵn kho ncc				
+Xốp ( bong bóng khí)	5		01/03/2026	FALSE
+Giấy nhiệt K100x150	5		01/03/2026	FALSE
+HDSD Antisol	10		01/03/2026	FALSE
+Tem phụ antisol	15		01/03/2026	FALSE
+Tem chống hàng giả 	10		01/03/2026	FALSE
+NL	10	Trong nước	01/03/2026	TRUE
+NL	14	Trong nước	01/03/2026	FALSE
+VTBB SX	7	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 4 ngày
+- Sản xuất 0 ngày
+- Nhận hàng 2 ngày"	01/06/2026	TRUE
+VTBB SX	15	"Hàng cần thanh toán trước: 
+- Làm hồ sơ 1 ngày
+- Thanh toán 5 ngày
+- Sản xuất 7 ngày
+- Nhận hàng 2 ngày"	01/06/2026	FALSE

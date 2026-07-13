@@ -189,9 +189,13 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     filters: [
       { key: 'code', label: 'Mã HĐ' },
+      { key: 'party_name', label: 'Tên đối tượng' },
       { key: 'party_type', label: 'Đối tượng', type: 'select', options: ['Nhà cung cấp', 'Khách hàng', 'Khác'].map((x) => ({ value: x, label: x })) },
-      { key: 'status', label: 'Trạng thái', type: 'select', options: CONTRACT_STATUS },
       { key: 'contract_type', label: 'Loại', type: 'select', options: CONTRACT_TYPES },
+      { key: 'status', label: 'Trạng thái', type: 'select', options: CONTRACT_STATUS },
+      { key: 'expiry', label: 'Tình trạng hết hạn', type: 'select', options: ['Còn hạn', 'Sắp hết hạn', 'Hết hạn'].map((x) => ({ value: x, label: x })) },
+      { key: 'signed', label: 'Đã ký', type: 'select', options: [{ value: 'true', label: 'Đã ký' }, { value: 'false', label: 'Chưa ký' }] },
+      { key: 'end_date', label: 'Ngày hết hạn', type: 'daterange' },
     ],
     fields: [],  // chi tiết dùng trang riêng (ContractDetail) — có đính kèm file
   },
@@ -258,8 +262,13 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     filters: [
       { key: 'code', label: 'Mã PYC' },
+      { key: 'company_id', label: 'Công ty', source: { url: '/api/companies', value: 'id', label: 'name' } },
       { key: 'requester', label: 'Người yêu cầu' },
       { key: 'department', label: 'Bộ phận YC', source: { url: '/api/departments', value: 'name', label: 'name' } },
+      { key: 'assignee', label: 'NSTM phụ trách', source: { url: '/api/employees', value: 'code', label: 'full_name' } },
+      { key: 'item_group', label: 'Phân loại', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
+      { key: 'request_date', label: 'Ngày tạo', type: 'daterange' },
+      { key: 'need_date', label: 'Ngày cần hàng', type: 'daterange' },
       { key: 'is_urgent', label: 'Đơn gấp', type: 'select', options: [{ value: 'true', label: 'Gấp' }, { value: 'false', label: 'Thường' }] },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
@@ -281,8 +290,12 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     filters: [
       { key: 'code', label: 'Mã phiếu' },
+      { key: 'company_id', label: 'Công ty', source: { url: '/api/companies', value: 'id', label: 'name' } },
       { key: 'requester', label: 'Người yêu cầu' },
       { key: 'department', label: 'Bộ phận', source: { url: '/api/departments', value: 'name', label: 'name' } },
+      { key: 'assignee', label: 'NSTM phụ trách', source: { url: '/api/employees', value: 'code', label: 'full_name' } },
+      { key: 'item_group', label: 'Phân loại', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
+      { key: 'request_date', label: 'Ngày tạo', type: 'daterange' },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'processing', label: 'Đang xử lý' },
@@ -388,8 +401,15 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     filters: [
       { key: 'code', label: 'Mã PO' },
+      { key: 'misa_code', label: 'Mã MISA' },
+      { key: 'company_id', label: 'Công ty', source: { url: '/api/companies', value: 'id', label: 'name' } },
       { key: 'supplier_code', label: 'Nhà cung cấp', source: { url: '/api/suppliers', value: 'code', label: 'name' } },
+      { key: 'nspt', label: 'NSPT phụ trách', source: { url: '/api/employees', value: 'full_name', label: 'full_name' } },
       { key: 'pr_code', label: 'Mã PYC' },
+      { key: 'item_group', label: 'Phân loại', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
+      { key: 'invoice_no', label: 'Số hóa đơn' },
+      { key: 'order_date', label: 'Ngày đặt', type: 'daterange' },
+      { key: 'is_urgent', label: 'Đơn gấp', type: 'select', options: [{ value: 'true', label: 'Gấp' }, { value: 'false', label: 'Thường' }] },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'partial', label: 'Đang giao' },
@@ -409,7 +429,10 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     filters: [
       { key: 'code', label: 'Mã phiếu' },
+      { key: 'company_id', label: 'Công ty', source: { url: '/api/companies', value: 'id', label: 'name' } },
       { key: 'supplier_code', label: 'Nhà cung cấp', source: { url: '/api/suppliers', value: 'code', label: 'name' } },
+      { key: 'source_type', label: 'Loại', type: 'select', options: [{ value: 'goods', label: 'Hàng hóa' }, { value: 'shipping', label: 'Vận chuyển' }] },
+      { key: 'request_date', label: 'Ngày lập', type: 'daterange' },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'paid', label: 'Đã chi' }] },

@@ -4,6 +4,8 @@ import { api } from '../api/client'
 import { askConfirm } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import NotFound from '../components/NotFound'
+import NumberInput from '../components/NumberInput'
+import { fmtDateTime } from '../utils/datetime'
 
 const API = '/api/payment-requests'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -21,6 +23,7 @@ export default function PaymentRequestDetail() {
   const [req, setReq] = useState<any>(null)
   const [companies, setCompanies] = useState<any[]>([])
   const [files, setFiles] = useState<any[]>([])
+  const [logs, setLogs] = useState<any[]>([])
   const [err, setErr] = useState(''); const [msg, setMsg] = useState('')
   const [notFound, setNotFound] = useState(false)
 
@@ -28,6 +31,7 @@ export default function PaymentRequestDetail() {
     try {
       const r = await api.get(`${API}/${id}`); setReq(r.data.data)
       api.get('/api/attachments', { params: { entity: 'payment_request', entity_id: id } }).then((x) => setFiles(x.data.data))
+      api.get('/api/audit-logs', { params: { entity: 'payment_request', entity_id: id } }).then((x) => setLogs(x.data.data))
     } catch (ex: any) {
       if (ex?.response?.status === 403 || ex?.response?.status === 404) { setNotFound(true); return }
       throw ex
@@ -96,7 +100,8 @@ export default function PaymentRequestDetail() {
           <div className="form-row"><label>Nhà cung cấp</label><input value={req.supplier_name || req.supplier_code} disabled /></div>
           <div className="form-row"><label>Loại công nợ</label><input value={req.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa'} disabled /></div>
           <div className="form-row"><label>Công ty</label><input value={companyName} disabled /></div>
-          <div className="form-row"><label>Ngày lập</label><input type="date" value={req.request_date || ''} disabled={!editable} onChange={(e) => setReq((s: any) => ({ ...s, request_date: e.target.value }))} /></div>
+          <div className="form-row"><label>Người yêu cầu</label><input value={req.created_by_name || '—'} disabled /></div>
+          <div className="form-row"><label>Ngày lập</label><input value={fmtDateTime(req.created_at) || '—'} disabled /></div>
           <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><textarea value={req.note || ''} disabled={!editable} onChange={(e) => setReq((s: any) => ({ ...s, note: e.target.value }))} /></div>
         </div>
       </div>
@@ -113,7 +118,7 @@ export default function PaymentRequestDetail() {
                   <td style={{ textAlign: 'right' }}>{fmt(l.payable_total)}</td>
                   <td style={{ textAlign: 'right' }}>{fmt(l.payable_paid)}</td>
                   <td style={{ textAlign: 'right' }}>
-                    {editable ? <input className="cell-input" type="number" style={{ width: 120, textAlign: 'right' }} value={l.amount} onChange={(e) => setLineAmount(i, Number(e.target.value))} /> : fmt(l.amount)}
+                    {editable ? <NumberInput className="cell-input" style={{ width: 140, textAlign: 'right' }} value={l.amount} onChange={(v) => setLineAmount(i, v)} /> : fmt(l.amount)}
                   </td>
                 </tr>
               ))}
@@ -136,6 +141,21 @@ export default function PaymentRequestDetail() {
           {files.length === 0 && <span style={{ color: '#999', fontSize: 13 }}>Chưa có file nào.</span>}
         </div>
       </div>
+
+      {logs.length > 0 && (
+        <div className="card" style={{ padding: 18, marginBottom: 16 }}>
+          <h3 className="sec-title"><i className="ti ti-history" /> Lịch sử thao tác</h3>
+          <div className="timeline">
+            {logs.map((l, i) => (
+              <div key={i} className="tl-item">
+                <span className={'tl-dot ' + (l.action === 'approved' || l.action === 'paid' ? 'create' : l.action === 'rejected' || l.action === 'cancelled' ? 'delete' : l.action)} />
+                <div><div style={{ fontSize: 13 }}><b>{l.by}</b> — {l.action_label}{l.message ? `: ${l.message}` : ''}</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>{fmtDateTime(l.at)}</div></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {err && <div className="err">{err}</div>}
       {msg && <div style={{ color: 'var(--green)', fontSize: 13 }}>{msg}</div>}

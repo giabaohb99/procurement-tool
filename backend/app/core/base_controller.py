@@ -38,3 +38,32 @@ def apply_filters(query, model, request: Request, filterable: list[str]):
                 val_list = [v.strip() for v in val.split(",")]
                 query = query.filter(col.in_(val_list))
     return query
+
+
+def apply_range_filters(query, model, request: Request, fields: list[str]):
+    """Lọc khoảng cho cột (ngày YYYY-MM-DD lưu dạng String, so sánh chuỗi vẫn đúng thứ tự).
+    Mỗi field đọc 2 param: `<field>_from` (>=) và `<field>_to` (<=). Bỏ trống -> không lọc."""
+    for field in fields:
+        col = getattr(model, field, None)
+        if col is None:
+            continue
+        v_from = (request.query_params.get(f"{field}_from") or "").strip()
+        v_to = (request.query_params.get(f"{field}_to") or "").strip()
+        if v_from:
+            query = query.filter(col != "", col >= v_from)
+        if v_to:
+            query = query.filter(col != "", col <= v_to)
+    return query
+
+
+def apply_equals(query, model, request: Request, fields: list[str], cast=int):
+    """Lọc bằng (=) cho cột số/khóa ngoại (vd company_id). Bỏ trống -> không lọc."""
+    for field in fields:
+        col = getattr(model, field, None)
+        raw = (request.query_params.get(field) or "").strip()
+        if col is not None and raw:
+            try:
+                query = query.filter(col == cast(raw))
+            except (ValueError, TypeError):
+                pass
+    return query
