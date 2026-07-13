@@ -87,20 +87,20 @@ export default function PrintPurchaseRequest() {
   const SH = {
     background: "#e9edf1",
     fontWeight: 700,
-    padding: "3px 8px",
-    fontSize: 12,
-    margin: "7px 0 0",
+    padding: "5px 8px",
+    fontSize: 12.5,
+    margin: "12px 0 0",
     WebkitPrintColorAdjust: "exact",
     printColorAdjust: "exact",
     breakInside: "avoid",
   } as const;
   const cell = {
     border: "1px solid #999",
-    padding: "3px 6px",
+    padding: "5px 8px",
     fontSize: 12,
   } as const;
-  // Khối thông tin dưới mỗi tiêu đề — nén dòng cho vừa 1 trang khi in
-  const info = { fontSize: 12, padding: "2px 4px", lineHeight: 1.4 } as const;
+  // Khối thông tin dưới mỗi tiêu đề — giãn dòng cho dễ đọc (vẫn vừa 1 trang)
+  const info = { fontSize: 12, padding: "6px 4px", lineHeight: 1.75 } as const;
 
   return (
     <div style={{ background: "#f0f0f0", minHeight: "100vh", padding: 20 }}>
@@ -145,7 +145,7 @@ export default function PrintPurchaseRequest() {
           maxWidth: 820,
           margin: "0 auto",
           background: "#fff",
-          padding: "16px 28px",
+          padding: "22px 30px",
           fontFamily: "Inter, Arial, sans-serif",
           color: "#000",
         }}
@@ -201,7 +201,7 @@ export default function PrintPurchaseRequest() {
           </table>
         </div>
 
-        <h2 style={{ textAlign: "center", fontSize: 16, margin: "6px 0 2px" }}>
+        <h2 style={{ textAlign: "center", fontSize: 17, margin: "11px 0 3px" }}>
           PHIẾU ĐỀ XUẤT MUA HÀNG HÓA/DỊCH VỤ
         </h2>
         <div style={{ textAlign: "center", fontSize: 12 }}>Số: {pr.code}</div>
@@ -240,7 +240,7 @@ export default function PrintPurchaseRequest() {
         </div>
 
         <table
-          style={{ width: "100%", borderCollapse: "collapse", marginTop: 3 }}
+          style={{ width: "100%", borderCollapse: "collapse", marginTop: 6 }}
         >
           <thead>
             <tr style={{ background: "#e9edf1" }}>
@@ -333,7 +333,7 @@ export default function PrintPurchaseRequest() {
               justifyContent: "space-around",
               textAlign: "center",
               fontSize: 12,
-              marginTop: 8,
+              marginTop: 16,
             }}
           >
             {["Giám đốc", "TP/BP mua hàng", "TP/BP đề xuất", "Người lập"].map(
@@ -345,7 +345,7 @@ export default function PrintPurchaseRequest() {
                   </div>
                   <div
                     style={{
-                      height: 42,
+                      height: 58,
                       display: "flex",
                       alignItems: "flex-end",
                       justifyContent: "center",
