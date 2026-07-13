@@ -377,9 +377,6 @@ export default function PurchaseRequestDetail() {
         {!isNew && pr.status === 'draft' && can('purchase_request', 'delete') && (
           <button className="btn ghost err" onClick={() => setConfirmDelete(true)}><i className="ti ti-trash" />Xóa phiếu</button>
         )}
-        {!isNew && canManage && !['draft', 'submitted', 'cancelled', 'completed', 'done'].includes(pr.status) && (
-          <button className="btn ghost err" onClick={() => setPromptAction({ type: 'cancel', title: 'Hủy đơn', message: 'Vui lòng nhập lý do hủy đơn:' })}><i className="ti ti-ban" />Hủy đơn</button>
-        )}
         {!isNew && canManage && !['draft', 'cancelled', 'completed', 'done'].includes(pr.status) && (
           <button className="btn ghost" onClick={() => setPromptAction({ type: 'return', title: 'Trả phiếu về', message: 'Vui lòng nhập lý do trả phiếu về (Nháp):' })}><i className="ti ti-arrow-back-up" />Trả về</button>
         )}
@@ -402,6 +399,13 @@ export default function PurchaseRequestDetail() {
         )}
         {!isNew && canManage && ['approved', 'processing'].includes(pr.status) && (
           <button className="btn secondary" onClick={() => setConfirmAction({ type: 'complete', title: 'Hoàn thành', message: 'Đánh dấu phiếu HOÀN THÀNH?', confirmText: 'Đồng ý' })}><i className="ti ti-checks" />Hoàn thành</button>
+        )}
+        {/* ── Hủy đơn: tách riêng ra bìa phải cùng header ── */}
+        {!isNew && canManage && !['draft', 'submitted', 'cancelled', 'completed', 'done'].includes(pr.status) && (
+          <>
+            <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--border)', margin: '2px 4px' }} />
+            <button className="btn ghost err" onClick={() => setPromptAction({ type: 'cancel', title: 'Hủy đơn', message: 'Vui lòng nhập lý do hủy đơn:' })}><i className="ti ti-ban" />Hủy đơn</button>
+          </>
         )}
       </div>
 
