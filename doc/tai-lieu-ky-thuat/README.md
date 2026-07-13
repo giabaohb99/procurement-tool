@@ -10,6 +10,8 @@ Thư mục gom toàn bộ tài liệu mô tả kỹ thuật của hệ thống.
 | [thiet-ke-ky-thuat-chi-tiet.md](thiet-ke-ky-thuat-chi-tiet.md) | LLD (chi tiết) | Từ điển dữ liệu 39 bảng (cột + kiểu + liên kết) + RBAC chi tiết |
 | [so-do-ky-thuat.md](so-do-ky-thuat.md) | Sơ đồ | 9 sơ đồ chuẩn Mermaid: kiến trúc, use-case, luồng, state machine, ERD, sequence |
 | [quy-trinh-tai-lieu.md](quy-trinh-tai-lieu.md) | Quy trình | Logic các loại tài liệu (BRD/PRD/TDD/bàn giao) + kiểm soát thay đổi cho team nhỏ |
+| [change-log.md](change-log.md) | Change Log / CR | Nhật ký thay đổi + Decision log (quyết định đã chốt) |
+| [tdd-redesign-kho.md](tdd-redesign-kho.md) | TDD (1 phân hệ) | Thiết kế redesign phân hệ Kho — CR-001 (DRAFT, chờ duyệt) |
 
 ## Xuất PDF / PNG
 
