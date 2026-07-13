@@ -12,13 +12,14 @@ export type FilterField = {
 }
 
 export default function FilterBar({
-  fields, onApply, extra,
+  fields, onApply, extra, initial,
 }: {
   fields: FilterField[]
   onApply: (params: Record<string, string>) => void
   extra?: React.ReactNode
+  initial?: Record<string, string>   // giá trị lọc khởi tạo (vd điền sẵn từ URL query)
 }) {
-  const [vals, setVals] = useState<Record<string, string>>({})
+  const [vals, setVals] = useState<Record<string, string>>(initial || {})
   const [dyn, setDyn] = useState<Record<string, { value: string; label: string }[]>>({})
   const onApplyRef = useRef(onApply)
   onApplyRef.current = onApply

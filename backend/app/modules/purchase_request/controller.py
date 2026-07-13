@@ -120,6 +120,24 @@ def get_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purcha
     return success(data)
 
 
+@router.get("/{pid}/order-progress")
+def order_progress(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
+    """Tổng SL đã ĐẶT (qty_order) theo từng mã hàng, gộp từ mọi ĐMH cùng mã PYC (bỏ PO bị từ chối).
+    Dùng để prefill 'số lượng còn thiếu' khi tạo ĐMH mới + cảnh báo đặt vượt."""
+    profile = get_perm_profile(db, user)
+    pr = apply_scope(db.query(PurchaseRequest).filter(PurchaseRequest.id == pid),
+                     PurchaseRequest, "purchase_request", user, profile).first()
+    if not pr:
+        raise HTTPException(403, "Ngoài phạm vi được phép xem")
+    from app.modules.purchase_order.model import PurchaseOrder, POItem
+    rows = (db.query(POItem.product_code, func.coalesce(func.sum(POItem.qty_order), 0))
+            .join(PurchaseOrder, PurchaseOrder.id == POItem.po_id)
+            .filter(PurchaseOrder.pr_code == pr.code, PurchaseOrder.status != "rejected")
+            .group_by(POItem.product_code).all())
+    ordered = {code: float(qty or 0) for code, qty in rows if code}
+    return success({"ordered": ordered})
+
+
 @router.post("")
 def create_pr(data: PRCreate, db: Session = Depends(get_db), user=Depends(require("purchase_request", "create"))):
     return success(_out(db, service.create_pr(db, data, user.id)), "Đã tạo yêu cầu mua", 201)
