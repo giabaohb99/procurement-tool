@@ -405,6 +405,53 @@ def compute_request_range(db, kind, date_from, date_to, company_id, user) -> lis
     return sorted(agg.values(), key=lambda x: -x["total"])
 
 
+def compute_shipping_detail(db, year, company_id, carrier=None, month=None, page=1, page_size=50) -> dict:
+    """Chi tiết chi phí vận chuyển theo từng đơn hàng — PHÂN TRANG phía server (tránh tải full lag trang).
+    Trả kèm danh sách đơn vị VC + tháng (để đổ dropdown lọc) tính trên toàn bộ dữ liệu năm/công ty."""
+    poq = db.query(PurchaseOrder).filter(PurchaseOrder.status.in_(_REAL_PO))
+    if company_id:
+        poq = poq.filter(PurchaseOrder.company_id == int(company_id))
+    if year and year != "all":
+        poq = poq.filter(PurchaseOrder.order_date.like(f"{year}%"))
+    pos = poq.all()
+    po_ids = [p.id for p in pos]
+    empty = {"items": [], "total": 0, "page": 1, "page_size": page_size, "carriers": [], "months": []}
+    if not po_ids:
+        return empty
+    po_by = {p.id: p for p in pos}
+    item_by = {it.id: it for it in db.query(POItem).filter(POItem.po_id.in_(po_ids)).all()}
+    delivs = db.query(PODelivery).filter(PODelivery.po_id.in_(po_ids), PODelivery.received_qty > 0).all()
+
+    rows = []
+    for d in delivs:
+        if not (d.carrier_code and float(d.shipping_amount or 0) > 0):
+            continue
+        m = _mk(d.received_date)
+        if not m:
+            continue
+        po = po_by.get(d.po_id); it = item_by.get(d.po_item_id)
+        ov = _recv_amt(it) if it else 0
+        sc = float(d.shipping_amount or 0)
+        rows.append({
+            "carrier": d.carrier_name or d.carrier_code, "month": f"{m[5:7]}/{m[:4]}",
+            "product_code": it.product_code if it else "", "misa_code": po.misa_code if po else "",
+            "invoice_no": it.invoice_no if it else "", "received_date": d.received_date,
+            "qty_order": float(it.qty_order or 0) if it else 0, "qty_received": float(d.received_qty or 0),
+            "order_amount": ov, "ship_amount": sc, "rate": _rate(sc, ov),
+        })
+    rows.sort(key=lambda r: r["received_date"] or "", reverse=True)   # mới nhất trước
+    carriers = sorted({r["carrier"] for r in rows if r["carrier"]})
+    months = sorted({r["month"] for r in rows if r["month"]}, key=lambda mm: mm[3:] + mm[:2])
+
+    filtered = [r for r in rows
+                if (not carrier or r["carrier"] == carrier) and (not month or r["month"] == month)]
+    total = len(filtered)
+    page = max(1, int(page or 1)); page_size = max(1, int(page_size or 50))
+    off = (page - 1) * page_size
+    return {"items": filtered[off:off + page_size], "total": total,
+            "page": page, "page_size": page_size, "carriers": carriers, "months": months}
+
+
 def _key(year, company_id):
     return f"{year or 'all'}|{company_id or 'all'}"
 

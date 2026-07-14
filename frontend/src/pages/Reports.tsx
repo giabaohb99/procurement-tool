@@ -129,6 +129,8 @@ export default function Reports() {
   const [busy, setBusy] = useState(false)
   const [daily, setDaily] = useState<any>(null)  // {month, label, data} popup chi tiết theo ngày
   const [shipF, setShipF] = useState({ carrier: '', month: '' })  // lọc chi tiết VC theo đơn vị VC + tháng
+  const [shipPage, setShipPage] = useState(1)                     // phân trang chi tiết VC (server, 50/trang)
+  const [shipData, setShipData] = useState<any>({ items: [], total: 0, carriers: [], months: [], page: 1, page_size: 50 })
   const [reqMx, setReqMx] = useState<Record<string, any>>({})   // cache báo cáo YC: key `kind|year|company` -> {months,rows}
 
   // Tải ma trận Yêu cầu (PYC/YCKS) khi vào tab tương ứng (live + scope server)
@@ -142,6 +144,17 @@ export default function Reports() {
     if (f.company_id) params.company_id = f.company_id
     api.get('/api/reports/request-matrix', { params }).then((r) => setReqMx((s) => ({ ...s, [key]: r.data.data })))
   }, [tab, f.year, f.company_id])
+
+  // Chi tiết chi phí vận chuyển: phân trang phía server (50/trang) — tránh tải full lag trang
+  useEffect(() => {
+    if (tab !== 'shipping') return
+    const params: any = { page: shipPage, page_size: 50 }
+    if (f.year) params.year = f.year
+    if (f.company_id) params.company_id = f.company_id
+    if (shipF.carrier) params.carrier = shipF.carrier
+    if (shipF.month) params.month = shipF.month
+    api.get('/api/reports/shipping-detail', { params }).then((r) => setShipData(r.data.data)).catch(() => {})
+  }, [tab, f.year, f.company_id, shipF.carrier, shipF.month, shipPage])
 
   async function openDaily(m: any) {
     setDaily({ month: m.monthKey, label: m.month, data: null })
@@ -173,12 +186,7 @@ export default function Reports() {
   const months = mx.months || []
   const isMatrix = ['supplier', 'item_group', 'nspt', 'department', 'shipping'].includes(tab)
 
-  // Chi tiết VC: options lọc (suy từ data) + rows sau lọc theo đơn vị VC + tháng
-  const shipDetail: any[] = mx.shipping_detail || []
-  const shipCarriers = Array.from(new Set(shipDetail.map((r) => r.carrier).filter(Boolean))).sort()
-  const shipMonths = Array.from(new Set(shipDetail.map((r) => r.month).filter(Boolean)))
-    .sort((a: string, b: string) => (a.slice(3) + a.slice(0, 2)).localeCompare(b.slice(3) + b.slice(0, 2)))
-  const shipRows = shipDetail.filter((r) => (!shipF.carrier || r.carrier === shipF.carrier) && (!shipF.month || r.month === shipF.month))
+  const shipPages = Math.max(1, Math.ceil((shipData.total || 0) / (shipData.page_size || 50)))
 
   const Card = ({ label, val, sub, color }: any) => (
     <div className="card" style={{ padding: 16, flex: 1, minWidth: 165 }}>
@@ -214,20 +222,20 @@ export default function Reports() {
           <div style={{ minWidth: 180 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Công ty</label>
             <SearchSelect value={f.company_id} placeholder="Tất cả"
               options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
-              onChange={(v) => setF((s: any) => ({ ...s, company_id: v }))} /></div>
+              onChange={(v) => { setShipPage(1); setF((s: any) => ({ ...s, company_id: v })) }} /></div>
           <div style={{ minWidth: 120 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Năm</label>
             <SearchSelect value={String(f.year)} placeholder="Tất cả"
               options={[{ value: 'all', label: 'Tất cả' }, ...[thisYear, thisYear - 1, thisYear - 2].map((y) => ({ value: String(y), label: String(y) }))]}
-              onChange={(v) => setF((s: any) => ({ ...s, year: v }))} /></div>
+              onChange={(v) => { setShipPage(1); setF((s: any) => ({ ...s, year: v })) }} /></div>
           <button className="btn" disabled={busy} onClick={() => load(false)}>Lọc</button>
           <button className="btn secondary" disabled={busy} onClick={() => load(true)} title="Tính lại số liệu báo cáo"><i className="ti ti-refresh" />Cập nhật</button>
           <button className="btn ghost" onClick={() => window.print()}><i className="ti ti-printer" />In</button>
         </div>
       </div>
 
-      <div className="no-print" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8, borderBottom: '1px solid var(--border)' }}>
+      <div className="no-print" style={{ display: 'flex', gap: 6, flexWrap: 'nowrap', overflowX: 'auto', marginBottom: 8, borderBottom: '1px solid var(--border)' }}>
         {tabs.map((t) => (
-          <button key={t.key} onClick={() => setTab(t.key)} style={{ border: 'none', background: 'none', padding: '8px 12px', cursor: 'pointer', fontSize: 13.5, fontWeight: tab === t.key ? 700 : 500, color: tab === t.key ? 'var(--teal)' : 'var(--muted)', borderBottom: tab === t.key ? '2px solid var(--teal)' : '2px solid transparent' }}>{t.label}</button>
+          <button key={t.key} onClick={() => setTab(t.key)} style={{ border: 'none', background: 'none', padding: '8px 12px', cursor: 'pointer', fontSize: 13.5, fontWeight: tab === t.key ? 700 : 500, color: tab === t.key ? 'var(--teal)' : 'var(--muted)', borderBottom: tab === t.key ? '2px solid var(--teal)' : '2px solid transparent', whiteSpace: 'nowrap', flexShrink: 0 }}>{t.label}</button>
         ))}
       </div>
 
@@ -331,13 +339,13 @@ export default function Reports() {
             <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--muted)' }}>Lọc:
               <div style={{ minWidth: 180 }}>
                 <SearchSelect value={shipF.carrier} placeholder="Tất cả đơn vị vận chuyển"
-                  options={[{ value: '', label: 'Tất cả đơn vị vận chuyển' }, ...shipCarriers.map((c) => ({ value: c, label: c }))]}
-                  onChange={(v) => setShipF((s) => ({ ...s, carrier: v }))} />
+                  options={[{ value: '', label: 'Tất cả đơn vị vận chuyển' }, ...(shipData.carriers || []).map((c: string) => ({ value: c, label: c }))]}
+                  onChange={(v) => { setShipPage(1); setShipF((s) => ({ ...s, carrier: v })) }} />
               </div>
               <div style={{ minWidth: 130 }}>
                 <SearchSelect value={shipF.month} placeholder="Tất cả tháng"
-                  options={[{ value: '', label: 'Tất cả tháng' }, ...shipMonths.map((m) => ({ value: m, label: m }))]}
-                  onChange={(v) => setShipF((s) => ({ ...s, month: v }))} />
+                  options={[{ value: '', label: 'Tất cả tháng' }, ...(shipData.months || []).map((m: string) => ({ value: m, label: m }))]}
+                  onChange={(v) => { setShipPage(1); setShipF((s) => ({ ...s, month: v })) }} />
               </div>
             </div>
           </div>
@@ -345,14 +353,24 @@ export default function Reports() {
             <table className="items-table" style={{ minWidth: 1000 }}>
               <thead><tr><th>Đơn vị vận chuyển</th><th>Tháng</th><th>Mã vật tư bao bì / nguyên liệu</th><th>Mã MISA</th><th>Số hóa đơn</th><th>Ngày nhận</th><th style={{ textAlign: 'right' }}>Số lượng đặt</th><th style={{ textAlign: 'right' }}>Số lượng nhận</th><th style={{ textAlign: 'right' }}>Thành tiền đơn hàng</th><th style={{ textAlign: 'right' }}>Thành tiền vận chuyển</th><th style={{ textAlign: 'right' }}>Tỷ lệ</th></tr></thead>
               <tbody>
-                {shipRows.map((r: any, i: number) => (
+                {(shipData.items || []).map((r: any, i: number) => (
                   <tr key={i}><td>{r.carrier}</td><td>{r.month}</td><td>{r.product_code}</td><td>{r.misa_code}</td><td>{r.invoice_no}</td><td>{r.received_date}</td>
                     <td style={{ textAlign: 'right' }}>{fmt(r.qty_order)}</td><td style={{ textAlign: 'right' }}>{fmt(r.qty_received)}</td>
                     <td style={{ textAlign: 'right' }}>{fmt(r.order_amount)}</td><td style={{ textAlign: 'right' }}>{fmt(r.ship_amount)}</td><td style={{ textAlign: 'right' }}>{pctv(r.rate)}</td></tr>))}
-                {shipRows.length === 0 && <tr><td colSpan={11} style={{ textAlign: 'center', color: '#999', padding: 14 }}>{mx.shipping_detail.length === 0 ? 'Chưa có chi phí vận chuyển' : 'Không có dòng khớp bộ lọc'}</td></tr>}
+                {(shipData.total || 0) === 0 && <tr><td colSpan={11} style={{ textAlign: 'center', color: '#999', padding: 14 }}>{(shipF.carrier || shipF.month) ? 'Không có dòng khớp bộ lọc' : 'Chưa có chi phí vận chuyển'}</td></tr>}
               </tbody>
             </table>
           </div>
+          {shipData.total > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, fontSize: 13, color: 'var(--muted)', flexWrap: 'wrap', gap: 8 }}>
+              <span>Hiển thị {(shipData.page - 1) * shipData.page_size + 1}–{Math.min(shipData.page * shipData.page_size, shipData.total)} / {shipData.total}</span>
+              <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button className="btn ghost" disabled={shipData.page <= 1} onClick={() => setShipPage((p) => Math.max(1, p - 1))}><i className="ti ti-chevron-left" /></button>
+                <span>Trang {shipData.page}/{shipPages}</span>
+                <button className="btn ghost" disabled={shipData.page >= shipPages} onClick={() => setShipPage((p) => p + 1)}><i className="ti ti-chevron-right" /></button>
+              </div>
+            </div>
+          )}
         </div>
       </>}
 

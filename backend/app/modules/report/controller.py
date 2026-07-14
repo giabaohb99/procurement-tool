@@ -112,6 +112,21 @@ def sup_range(request: Request, db: Session = Depends(get_db), user=Depends(requ
     return success(rows)
 
 
+@router.get("/shipping-detail")
+def shipping_detail(request: Request, db: Session = Depends(get_db), user=Depends(require("report", "read"))):
+    """Chi tiết chi phí vận chuyển theo đơn hàng — phân trang server (page, page_size=50)."""
+    year = request.query_params.get("year") or str(datetime.now().year)
+    company_id = request.query_params.get("company_id")
+    carrier = request.query_params.get("carrier") or ""
+    month = request.query_params.get("month") or ""
+    try:
+        page = int(request.query_params.get("page") or 1)
+        page_size = int(request.query_params.get("page_size") or 50)
+    except ValueError:
+        page, page_size = 1, 50
+    return success(report_service.compute_shipping_detail(db, year, company_id, carrier, month, page, page_size))
+
+
 @router.get("/dept-range")
 def dept_range(request: Request, db: Session = Depends(get_db), user=Depends(require("report", "read"))):
     """Đặt hàng & đơn gấp theo Bộ phận trong khoảng NGÀY (date_from, date_to = YYYY-MM-DD). Tính realtime."""
