@@ -414,6 +414,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã PO' },
       { key: 'misa_code', label: 'Mã MISA' },
       { key: 'company_id', label: 'Công ty', source: { url: '/api/companies', value: 'id', label: 'name' } },
+      { key: 'department', label: 'Bộ phận YC', source: { url: '/api/departments', value: 'name', label: 'name' } },
       { key: 'supplier_code', label: 'Nhà cung cấp', source: { url: '/api/suppliers', value: 'code', label: 'name' } },
       { key: 'nspt', label: 'NSPT phụ trách', source: { url: '/api/employees', value: 'full_name', label: 'full_name' } },
       { key: 'pr_code', label: 'Mã PYC' },

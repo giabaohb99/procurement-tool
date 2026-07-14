@@ -124,6 +124,7 @@ def dept_range(request: Request, db: Session = Depends(get_db), user=Depends(req
     return success(rows)
 
 PO_STATUSES = ["draft", "submitted", "approved", "partial", "received", "completed", "cancelled", "rejected"]
+REAL_PO_STATUSES = {"approved", "partial", "received", "completed"}   # đơn hàng thật (bỏ nháp/chờ duyệt/hủy/từ chối)
 
 
 def _amt(it):
@@ -151,9 +152,14 @@ def procurement(request: Request, db: Session = Depends(get_db),
     if year and year != "all":
         poq = poq.filter(PurchaseOrder.order_date.like(f"{year}%"))
         payq = payq.filter(Payable.period == year)
-    pos = poq.all()
+    pos_all = poq.all()
+    # Đếm theo trạng thái: GIỮ tất cả (để thấy phân bố nháp/hủy…). Giá trị & breakdown: CHỈ đơn thật.
+    status_count = {s: 0 for s in PO_STATUSES}
+    for p in pos_all:
+        status_count[p.status] = status_count.get(p.status, 0) + 1
+    pos = [p for p in pos_all if p.status in REAL_PO_STATUSES]
     po_ids = [p.id for p in pos]
-    po_code = {p.id: p.code for p in pos}
+    po_code = {p.id: p.code for p in pos_all}
     pays = payq.all()
     items = db.query(POItem).filter(POItem.po_id.in_(po_ids)).all() if po_ids else []
     item_name = {it.id: it.product_name for it in items}
@@ -161,9 +167,6 @@ def procurement(request: Request, db: Session = Depends(get_db),
               if po_ids else [])
 
     # ---- Tổng quan ----
-    status_count = {s: 0 for s in PO_STATUSES}
-    for p in pos:
-        status_count[p.status] = status_count.get(p.status, 0) + 1
     order_value = sum(_amt(it) for it in items)
 
     def bucket(src):

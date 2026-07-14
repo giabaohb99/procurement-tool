@@ -11,6 +11,10 @@ from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 from .model import ReportSnapshot
 
 
+# "Đơn hàng thật" = đã duyệt trở đi (bỏ nháp/chờ duyệt/hủy/từ chối) — dùng cho mọi thống kê đặt hàng
+_REAL_PO = ("approved", "partial", "received", "completed")
+
+
 def _mk(s):
     return (s or "")[:7]  # 'YYYY-MM'
 
@@ -28,7 +32,7 @@ def _rate(part, whole):
 
 
 def compute(db: Session, year: str, company_id) -> dict:
-    poq = db.query(PurchaseOrder)
+    poq = db.query(PurchaseOrder).filter(PurchaseOrder.status.in_(_REAL_PO))
     if company_id:
         poq = poq.filter(PurchaseOrder.company_id == int(company_id))
     if year and year != "all":
@@ -193,7 +197,7 @@ def compute_nspt_range(db: Session, date_from: str, date_to: str, company_id) ->
     po_ids = list({d.po_id for d in delivs})
     if not po_ids:
         return []
-    poq = db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(po_ids))
+    poq = db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(po_ids), PurchaseOrder.status.in_(_REAL_PO))
     if company_id:
         poq = poq.filter(PurchaseOrder.company_id == int(company_id))
     po_by = {p.id: p for p in poq.all()}
@@ -201,7 +205,7 @@ def compute_nspt_range(db: Session, date_from: str, date_to: str, company_id) ->
     agg = {}
     for d in delivs:
         po = po_by.get(d.po_id)
-        if po is None:  # bị loại bởi filter công ty
+        if po is None:  # bị loại bởi filter công ty / đơn không hợp lệ
             continue
         key = po.nspt or "(Không rõ)"
         r = agg.setdefault(key, {"key": key, "orders": 0, "late": 0, "ontime": 0, "early": 0})
@@ -230,7 +234,7 @@ def compute_ig_range(db: Session, date_from: str, date_to: str, company_id) -> l
     po_ids = list({d.po_id for d in delivs})
     if not po_ids:
         return []
-    poq = db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(po_ids))
+    poq = db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(po_ids), PurchaseOrder.status.in_(_REAL_PO))
     if company_id:
         poq = poq.filter(PurchaseOrder.company_id == int(company_id))
     ok_po = {p.id for p in poq.all()}
@@ -260,7 +264,7 @@ def compute_sup_range(db: Session, date_from: str, date_to: str, company_id) -> 
     po_ids = list({d.po_id for d in delivs})
     if not po_ids:
         return []
-    poq = db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(po_ids))
+    poq = db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(po_ids), PurchaseOrder.status.in_(_REAL_PO))
     if company_id:
         poq = poq.filter(PurchaseOrder.company_id == int(company_id))
     po_by = {p.id: p for p in poq.all()}
@@ -268,7 +272,7 @@ def compute_sup_range(db: Session, date_from: str, date_to: str, company_id) -> 
     agg = {}
     for d in delivs:
         po = po_by.get(d.po_id)
-        if po is None:  # bị loại bởi filter công ty
+        if po is None:  # bị loại bởi filter công ty / đơn không hợp lệ
             continue
         key = po.supplier_name or po.supplier_code or "(Không rõ)"
         r = agg.setdefault(key, {"key": key, "trans": 0, "late": 0})
@@ -287,6 +291,7 @@ def compute_dept_range(db: Session, date_from: str, date_to: str, company_id) ->
     poq = db.query(PurchaseOrder).filter(
         PurchaseOrder.order_date >= date_from,
         PurchaseOrder.order_date <= date_to,
+        PurchaseOrder.status.in_(_REAL_PO),
     )
     if company_id:
         poq = poq.filter(PurchaseOrder.company_id == int(company_id))
@@ -322,18 +327,17 @@ def _req_model(kind):
 
 
 def _req_scoped_rows(db, kind, user, *, company_id=None, year=None, date_from=None, date_to=None):
-    """Lấy các phiếu (PYC/YCKS) đã áp scope theo user + lọc công ty/năm/khoảng ngày."""
-    from app.core.auth import get_perm_profile
-    from app.core.scoping import apply_scope
-    Model, entity = _req_model(kind)
+    """Lấy các phiếu (PYC/YCKS) theo công ty/năm/khoảng ngày. Báo cáo = TOÀN CÔNG TY (không áp scope user)."""
+    Model, _entity = _req_model(kind)
     q = db.query(Model)
+    if hasattr(Model, "is_deleted"):
+        q = q.filter(Model.is_deleted == False)   # BỎ phiếu đã xóa mềm (đồng bộ với danh sách)
     if company_id:
         q = q.filter(Model.company_id == int(company_id))
     if year and year != "all":
         q = q.filter(Model.request_date.like(f"{year}%"))
     if date_from and date_to:
         q = q.filter(Model.request_date >= date_from, Model.request_date <= date_to)
-    q = apply_scope(q, Model, entity, user, get_perm_profile(db, user))
     return q.all()
 
 

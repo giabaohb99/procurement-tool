@@ -8,13 +8,13 @@ import { useAuth } from '../auth/AuthContext'
 
 const TABS = [
   { key: 'overview', label: 'Tổng quan' },
-  { key: 'supplier', label: 'NCC (trễ giao)' },
-  { key: 'item_group', label: 'Phân loại VTBB/NL' },
-  { key: 'nspt', label: 'NSPT' },
+  { key: 'supplier', label: 'Nhà cung cấp' },
+  { key: 'item_group', label: 'Phân loại vật tư bao bì / nguyên liệu' },
+  { key: 'nspt', label: 'Nhân sự phụ trách' },
   { key: 'department', label: 'Bộ phận (đơn gấp)' },
   { key: 'shipping', label: 'Chi phí vận chuyển' },
-  { key: 'pyc_req', label: 'YC mua hàng', need: 'purchase_request' },   // theo phòng ban, có scope
-  { key: 'ycks_req', label: 'YC khảo sát', need: 'survey_request' },    // theo phòng ban, có scope
+  { key: 'pyc_req', label: 'Yêu cầu mua hàng', need: 'purchase_request' },   // theo phòng ban
+  { key: 'ycks_req', label: 'Yêu cầu khảo sát', need: 'survey_request' },    // theo phòng ban
   // { key: 'inventory', label: 'Tồn kho' },   // tạm ẩn tab Tồn kho
 ]
 
@@ -26,7 +26,7 @@ const PYC_METRICS = [
 ]
 const YCKS_METRICS = [
   { key: 'total', label: 'Tổng' }, { key: 'draft', label: 'Nháp' }, { key: 'submitted', label: 'Chờ duyệt' },
-  { key: 'processing', label: 'Đang KS' }, { key: 'survey_done', label: 'Đã KS' }, { key: 'pr_created', label: 'Đã tạo PYC' },
+  { key: 'processing', label: 'Đang khảo sát' }, { key: 'survey_done', label: 'Đã khảo sát' }, { key: 'pr_created', label: 'Đã tạo yêu cầu mua hàng' },
   { key: 'done', label: 'Hoàn tất' }, { key: 'cancelled', label: 'Đã hủy' },
 ]
 
@@ -248,7 +248,7 @@ export default function Reports() {
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
           <Card label="Số đơn mua hàng" val={fmt(d.po_count)} />
           <Card label="Giá trị đặt hàng" val={fmt(d.order_value)} color="var(--teal)" />
-          <Card label="Công nợ còn phải trả" val={fmt(remaining)} sub={`Hàng ${fmt(d.payable_goods.remaining)} · VC ${fmt(d.payable_shipping.remaining)}`} />
+          <Card label="Công nợ còn phải trả" val={fmt(remaining)} sub={`Hàng ${fmt(d.payable_goods.remaining)} · Vận chuyển ${fmt(d.payable_shipping.remaining)}`} />
           <Card label="Công nợ quá hạn" val={fmt(d.overdue)} color="var(--red)" />
           <Card label="Giá trị tồn kho" val={fmt(d.inventory_value)} color="var(--green)" />
         </div>
@@ -275,7 +275,7 @@ export default function Reports() {
       {tab === 'supplier' && (
         <MatrixPivotTab key={`sup-${f.year}-${f.company_id}`}
           rows={mx.supplier || []} months={months} companyId={f.company_id} nameWidth={260} nameFilter
-          nameLabel="Nhà cung cấp" title="Giao dịch NCC" warnHint="đỏ = tỷ lệ trễ > 30%"
+          nameLabel="Nhà cung cấp" title="Giao dịch nhà cung cấp" warnHint="đỏ = tỷ lệ trễ > 30%"
           yearLabel={f.year === 'all' ? 'Tất cả' : `Năm ${f.year}`} rangeEndpoint="/api/reports/sup-range"
           metrics={[{ key: 'trans', label: 'Số lần giao dịch' }, { key: 'late', label: 'Số lần trễ' }, { key: 'rate', label: 'Tỷ lệ trễ', pct: true }]} />
       )}
@@ -283,7 +283,7 @@ export default function Reports() {
       {tab === 'item_group' && (
         <MatrixPivotTab key={`ig-${f.year}-${f.company_id}`}
           rows={mx.item_group || []} months={months} companyId={f.company_id} nameWidth={200} nameFilter
-          nameLabel="Loại VTBB/NL" title="Tần suất mua theo loại VTBB/NL"
+          nameLabel="Loại vật tư bao bì / nguyên liệu" title="Tần suất mua theo loại vật tư bao bì / nguyên liệu"
           yearLabel={f.year === 'all' ? 'Tất cả' : `Năm ${f.year}`} rangeEndpoint="/api/reports/ig-range"
           metrics={[{ key: 'trans', label: 'Số lần mua' }, { key: 'cost', label: 'Tổng chi phí mua' }]} />
       )}
@@ -291,7 +291,7 @@ export default function Reports() {
       {tab === 'nspt' && (
         <MatrixPivotTab key={`nspt-${f.year}-${f.company_id}`}
           rows={mx.nspt || []} months={months} companyId={f.company_id}
-          nameLabel="NSPT" title="Giao hàng theo NSPT" warnHint="đỏ = tỷ lệ trễ > 30%"
+          nameLabel="Nhân sự phụ trách" title="Giao hàng theo nhân sự phụ trách" warnHint="đỏ = tỷ lệ trễ > 30%"
           yearLabel={f.year === 'all' ? 'Tất cả' : `Năm ${f.year}`} rangeEndpoint="/api/reports/nspt-range"
           metrics={[{ key: 'orders', label: 'Số lần giao' }, { key: 'late', label: 'Trễ quy định' }, { key: 'ontime', label: 'Đúng hạn' }, { key: 'early', label: 'Giao sớm' }, { key: 'rate', label: 'Tỷ lệ trễ', pct: true }]} />
       )}
@@ -321,7 +321,7 @@ export default function Reports() {
 
       {tab === 'shipping' && <>
         <div className="card" style={{ padding: 16, marginBottom: 14 }}>
-          <h3 className="sec-title">Chi phí vận chuyển theo đơn vị VC — {periodLabel} <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--muted)' }}>(Tỷ lệ = CP vận chuyển / Giá trị đơn hàng)</span></h3>
+          <h3 className="sec-title">Chi phí vận chuyển theo đơn vị vận chuyển — {periodLabel} <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--muted)' }}>(Tỷ lệ = Chi phí vận chuyển / Giá trị đơn hàng)</span></h3>
           <ReportTable rows={mx.shipping} period={period} nameLabel="Đơn vị vận chuyển"
             metrics={[{ key: 'freq', label: 'Tần suất' }, { key: 'order_value', label: 'Giá trị đơn hàng' }, { key: 'ship_cost', label: 'Chi phí vận chuyển' }, { key: 'rate', label: 'Tỷ lệ', pct: true }]} />
         </div>
@@ -330,8 +330,8 @@ export default function Reports() {
             <h3 className="sec-title" style={{ margin: 0 }}>Chi tiết theo đơn hàng</h3>
             <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--muted)' }}>Lọc:
               <div style={{ minWidth: 180 }}>
-                <SearchSelect value={shipF.carrier} placeholder="Tất cả đơn vị VC"
-                  options={[{ value: '', label: 'Tất cả đơn vị VC' }, ...shipCarriers.map((c) => ({ value: c, label: c }))]}
+                <SearchSelect value={shipF.carrier} placeholder="Tất cả đơn vị vận chuyển"
+                  options={[{ value: '', label: 'Tất cả đơn vị vận chuyển' }, ...shipCarriers.map((c) => ({ value: c, label: c }))]}
                   onChange={(v) => setShipF((s) => ({ ...s, carrier: v }))} />
               </div>
               <div style={{ minWidth: 130 }}>
@@ -343,7 +343,7 @@ export default function Reports() {
           </div>
           <div className="items-scroll">
             <table className="items-table" style={{ minWidth: 1000 }}>
-              <thead><tr><th>Đơn vị VC</th><th>Tháng</th><th>Mã VTBB/NL</th><th>Mã MISA</th><th>Số HĐ</th><th>Ngày nhận</th><th style={{ textAlign: 'right' }}>SL đặt</th><th style={{ textAlign: 'right' }}>SL nhận</th><th style={{ textAlign: 'right' }}>Thành tiền ĐH</th><th style={{ textAlign: 'right' }}>Thành tiền VC</th><th style={{ textAlign: 'right' }}>Tỷ lệ</th></tr></thead>
+              <thead><tr><th>Đơn vị vận chuyển</th><th>Tháng</th><th>Mã vật tư bao bì / nguyên liệu</th><th>Mã MISA</th><th>Số hóa đơn</th><th>Ngày nhận</th><th style={{ textAlign: 'right' }}>Số lượng đặt</th><th style={{ textAlign: 'right' }}>Số lượng nhận</th><th style={{ textAlign: 'right' }}>Thành tiền đơn hàng</th><th style={{ textAlign: 'right' }}>Thành tiền vận chuyển</th><th style={{ textAlign: 'right' }}>Tỷ lệ</th></tr></thead>
               <tbody>
                 {shipRows.map((r: any, i: number) => (
                   <tr key={i}><td>{r.carrier}</td><td>{r.month}</td><td>{r.product_code}</td><td>{r.misa_code}</td><td>{r.invoice_no}</td><td>{r.received_date}</td>
