@@ -1211,6 +1211,9 @@ tbody tr:hover {
 }
 
 /* ===== In ấn ===== */
+/* Chỉ hiện khi in (mặc định ẩn trên màn hình) */
+.print-only { display: none; }
+
 @media print {
 
   /* In cả màu nền tiêu đề/khung của phiếu (trình duyệt mặc định bỏ nền để tiết kiệm mực) */
@@ -1222,6 +1225,14 @@ tbody tr:hover {
 
   .no-print {
     display: none !important;
+  }
+
+  .screen-only {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
   }
 
   .sidebar,
@@ -1777,3 +1788,100 @@ input,
     transform: translateY(0) scale(1);
   }
 }
+/* ===== DateRangePicker (react-day-picker) ===== */
+.drp-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  height: 40px;                 /* khớp chiều cao .btn */
+  padding: 0 14px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 13.5px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  min-width: 220px;
+}
+.drp-trigger:hover { border-color: var(--teal); }
+.drp-pop {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+  padding: 10px;
+  /* accent theo theme */
+  --rdp-accent-color: var(--teal);
+  --rdp-accent-background-color: #e0f4fd;
+  --rdp-today-color: var(--teal-dark);
+  --rdp-day-width: 26px;
+  --rdp-day-height: 26px;
+  --rdp-day_button-width: 24px;
+  --rdp-day_button-height: 24px;
+  --rdp-nav_button-width: 22px;
+  --rdp-nav_button-height: 22px;
+  width: fit-content;
+}
+/* Bố cục: nút nhanh (trái) + lịch 2 tháng (phải) */
+.drp-body { display: flex; gap: 12px; }
+.drp-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 12px;
+  border-right: 1px solid var(--border);
+  min-width: 118px;
+}
+.drp-preset {
+  text-align: left;
+  border: 1px solid transparent;
+  background: none;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--navy);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+.drp-preset:hover { background: #e0f4fd; border-color: #bae6fd; color: var(--teal-dark); }
+.drp-pop .rdp-root { font-size: 11.5px; margin: 0; }
+.drp-pop .rdp-months { display: flex; flex-direction: row; gap: 12px; }
+.drp-pop table { margin: 0; border-collapse: collapse; border-spacing: 0; }
+.drp-pop thead th, .drp-pop tbody td { padding: 0 !important; border: none !important; background: transparent !important; }
+.drp-pop tbody tr:hover { background: transparent !important; }
+.drp-pop .rdp-month_caption { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+.drp-pop .rdp-weekday { font-size: 10px; font-weight: 600; padding: 2px 0; }
+.drp-pop .rdp-day, .drp-pop .rdp-day_button { font-size: 11.5px; }
+.drp-pop .rdp-dropdowns { gap: 6px; }
+.drp-pop .rdp-dropdown_root select,
+.drp-pop .rdp-dropdown {
+  box-sizing: border-box;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--navy);
+  cursor: pointer;
+}
+/* Footer: khoảng đang chọn + Áp dụng/Xóa */
+.drp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.drp-summary { font-size: 13px; color: var(--navy); }
+.drp-summary b { color: var(--teal-dark); }
+.drp-footer .btn { height: 34px; padding: 0 14px; font-size: 13px; }

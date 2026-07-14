@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { poBadge } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
-
-const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
-const pctv = (n: any) => `${Number(n || 0).toLocaleString('vi-VN')}%`
+import MatrixPivotTab from '../components/MatrixPivotTab'
+import { ReportTable, fmt, pctv } from '../components/report-table'
 
 const TABS = [
   { key: 'overview', label: 'Tổng quan' },
@@ -13,9 +12,8 @@ const TABS = [
   { key: 'nspt', label: 'NSPT' },
   { key: 'department', label: 'Bộ phận (đơn gấp)' },
   { key: 'shipping', label: 'Chi phí vận chuyển' },
-  { key: 'inventory', label: 'Tồn kho' },
+  // { key: 'inventory', label: 'Tồn kho' },   // tạm ẩn tab Tồn kho
 ]
-type Metric = { key: string; label: string; pct?: boolean }
 
 const shortNum = (n: any) => {
   n = Number(n || 0)
@@ -103,36 +101,6 @@ function LineChart({ days }: { days: any[] }) {
   )
 }
 
-// Bảng báo cáo gọn: dòng = đối tượng, cột = chỉ số (theo kỳ đã chọn)
-function ReportTable({ rows, metrics, period, warnMetric, nameLabel }:
-  { rows: any[]; metrics: Metric[]; period: string; warnMetric?: string; nameLabel: string }) {
-  const val = (r: any, k: string) => (period === 'all' ? (r[k] ?? 0) : (r.m?.[period]?.[k] ?? 0))
-  return (
-    <div className="items-scroll">
-      <table className="items-table" style={{ minWidth: 480 }}>
-        <thead><tr><th style={{ width: 40 }}>#</th><th style={{ textAlign: 'left', minWidth: 160 }}>{nameLabel}</th>
-          {metrics.map((m) => <th key={m.key} style={{ textAlign: 'right' }}>{m.label}</th>)}</tr></thead>
-        <tbody>
-          {rows.map((r, i) => {
-            const warn = warnMetric ? Number(val(r, warnMetric)) > 30 : false
-            return (
-              <tr key={i} style={warn ? { background: '#fdecea' } : {}}>
-                <td>{i + 1}</td><td style={{ textAlign: 'left', fontWeight: 500 }}>{r.key}</td>
-                {metrics.map((m) => (
-                  <td key={m.key} style={{ textAlign: 'right', fontWeight: m.key === warnMetric ? 600 : 400, color: (m.key === warnMetric && warn) ? 'var(--red)' : 'inherit' }}>
-                    {m.pct ? pctv(val(r, m.key)) : fmt(val(r, m.key))}
-                  </td>
-                ))}
-              </tr>
-            )
-          })}
-          {rows.length === 0 && <tr><td colSpan={2 + metrics.length} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Không có dữ liệu</td></tr>}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
 export default function Reports() {
   const thisYear = new Date().getFullYear()
   const [d, setD] = useState<any>(null)
@@ -143,6 +111,7 @@ export default function Reports() {
   const [period, setPeriod] = useState('all')   // 'all' | 'YYYY-MM'
   const [busy, setBusy] = useState(false)
   const [daily, setDaily] = useState<any>(null)  // {month, label, data} popup chi tiết theo ngày
+  const [shipF, setShipF] = useState({ carrier: '', month: '' })  // lọc chi tiết VC theo đơn vị VC + tháng
 
   async function openDaily(m: any) {
     setDaily({ month: m.monthKey, label: m.month, data: null })
@@ -163,6 +132,7 @@ export default function Reports() {
         api.get('/api/reports/matrix', { params: { ...params, ...(refresh ? { refresh: 1 } : {}) } }),
       ])
       setD(a.data.data); setMx(b.data.data)
+      setShipF({ carrier: '', month: '' })   // reset lọc chi tiết VC theo data mới
     } finally { setBusy(false) }
   }
   useEffect(() => {
@@ -172,6 +142,13 @@ export default function Reports() {
   if (!d || !mx) return <div style={{ padding: 20 }}>Đang tải...</div>
   const months = mx.months || []
   const isMatrix = ['supplier', 'item_group', 'nspt', 'department', 'shipping'].includes(tab)
+
+  // Chi tiết VC: options lọc (suy từ data) + rows sau lọc theo đơn vị VC + tháng
+  const shipDetail: any[] = mx.shipping_detail || []
+  const shipCarriers = Array.from(new Set(shipDetail.map((r) => r.carrier).filter(Boolean))).sort()
+  const shipMonths = Array.from(new Set(shipDetail.map((r) => r.month).filter(Boolean)))
+    .sort((a: string, b: string) => (a.slice(3) + a.slice(0, 2)).localeCompare(b.slice(3) + b.slice(0, 2)))
+  const shipRows = shipDetail.filter((r) => (!shipF.carrier || r.carrier === shipF.carrier) && (!shipF.month || r.month === shipF.month))
 
   const Card = ({ label, val, sub, color }: any) => (
     <div className="card" style={{ padding: 16, flex: 1, minWidth: 165 }}>
@@ -226,7 +203,7 @@ export default function Reports() {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
         <div style={{ fontSize: 12, color: 'var(--muted)' }}>Kỳ: {f.year === 'all' ? 'Tất cả' : `Năm ${f.year}`} · {f.company_id ? companies.find((c) => String(c.id) === String(f.company_id))?.name : 'Tất cả công ty'} · Tính lúc: {mx.computed_at}</div>
-        {isMatrix && (
+        {isMatrix && tab !== 'nspt' && tab !== 'department' && tab !== 'supplier' && tab !== 'item_group' && (
           <div className="no-print" style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>Xem theo:
             <div style={{ minWidth: 150 }}>
               <SearchSelect value={period} placeholder="Cả năm"
@@ -265,29 +242,37 @@ export default function Reports() {
         </div>
       </>)}
 
-      {tab === 'supplier' && <div className="card" style={{ padding: 16 }}>
-        <h3 className="sec-title">Giao dịch NCC — {periodLabel} <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--muted)' }}>(đỏ = tỷ lệ trễ &gt; 30%)</span></h3>
-        <ReportTable rows={mx.supplier} period={period} warnMetric="rate" nameLabel="Nhà cung cấp"
+      {tab === 'supplier' && (
+        <MatrixPivotTab key={`sup-${f.year}-${f.company_id}`}
+          rows={mx.supplier || []} months={months} companyId={f.company_id} nameWidth={260} nameFilter
+          nameLabel="Nhà cung cấp" title="Giao dịch NCC" warnHint="đỏ = tỷ lệ trễ > 30%"
+          yearLabel={f.year === 'all' ? 'Tất cả' : `Năm ${f.year}`} rangeEndpoint="/api/reports/sup-range"
           metrics={[{ key: 'trans', label: 'Số lần giao dịch' }, { key: 'late', label: 'Số lần trễ' }, { key: 'rate', label: 'Tỷ lệ trễ', pct: true }]} />
-      </div>}
+      )}
 
-      {tab === 'item_group' && <div className="card" style={{ padding: 16 }}>
-        <h3 className="sec-title">Tần suất mua theo loại VTBB/NL — {periodLabel}</h3>
-        <ReportTable rows={mx.item_group} period={period} nameLabel="Loại VTBB/NL"
+      {tab === 'item_group' && (
+        <MatrixPivotTab key={`ig-${f.year}-${f.company_id}`}
+          rows={mx.item_group || []} months={months} companyId={f.company_id} nameWidth={200} nameFilter
+          nameLabel="Loại VTBB/NL" title="Tần suất mua theo loại VTBB/NL"
+          yearLabel={f.year === 'all' ? 'Tất cả' : `Năm ${f.year}`} rangeEndpoint="/api/reports/ig-range"
           metrics={[{ key: 'trans', label: 'Số lần mua' }, { key: 'cost', label: 'Tổng chi phí mua' }]} />
-      </div>}
+      )}
 
-      {tab === 'nspt' && <div className="card" style={{ padding: 16 }}>
-        <h3 className="sec-title">Giao hàng theo NSPT — {periodLabel}</h3>
-        <ReportTable rows={mx.nspt} period={period} warnMetric="rate" nameLabel="NSPT"
+      {tab === 'nspt' && (
+        <MatrixPivotTab key={`nspt-${f.year}-${f.company_id}`}
+          rows={mx.nspt || []} months={months} companyId={f.company_id}
+          nameLabel="NSPT" title="Giao hàng theo NSPT" warnHint="đỏ = tỷ lệ trễ > 30%"
+          yearLabel={f.year === 'all' ? 'Tất cả' : `Năm ${f.year}`} rangeEndpoint="/api/reports/nspt-range"
           metrics={[{ key: 'orders', label: 'Số đơn' }, { key: 'late', label: 'Trễ quy định' }, { key: 'ontime', label: 'Đúng hạn' }, { key: 'early', label: 'Giao sớm' }, { key: 'rate', label: 'Tỷ lệ trễ', pct: true }]} />
-      </div>}
+      )}
 
-      {tab === 'department' && <div className="card" style={{ padding: 16 }}>
-        <h3 className="sec-title">Đặt hàng & đơn gấp theo bộ phận — {periodLabel} <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--muted)' }}>(đỏ = tỷ lệ gấp &gt; 30%)</span></h3>
-        <ReportTable rows={mx.department} period={period} warnMetric="rate" nameLabel="Bộ phận"
+      {tab === 'department' && (
+        <MatrixPivotTab key={`dept-${f.year}-${f.company_id}`}
+          rows={mx.department || []} months={months} companyId={f.company_id}
+          nameLabel="Bộ phận" title="Đặt hàng & đơn gấp theo bộ phận" warnHint="đỏ = tỷ lệ gấp > 30%"
+          yearLabel={f.year === 'all' ? 'Tất cả' : `Năm ${f.year}`} rangeEndpoint="/api/reports/dept-range"
           metrics={[{ key: 'orders', label: 'Số lần đặt' }, { key: 'urgent', label: 'Số lần gấp' }, { key: 'rate', label: 'Tỷ lệ gấp', pct: true }]} />
-      </div>}
+      )}
 
       {tab === 'shipping' && <>
         <div className="card" style={{ padding: 16, marginBottom: 14 }}>
@@ -296,16 +281,30 @@ export default function Reports() {
             metrics={[{ key: 'freq', label: 'Tần suất' }, { key: 'order_value', label: 'Giá trị đơn hàng' }, { key: 'ship_cost', label: 'Chi phí vận chuyển' }, { key: 'rate', label: 'Tỷ lệ', pct: true }]} />
         </div>
         <div className="card" style={{ padding: 16 }}>
-          <h3 className="sec-title">Chi tiết theo đơn hàng</h3>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+            <h3 className="sec-title" style={{ margin: 0 }}>Chi tiết theo đơn hàng</h3>
+            <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--muted)' }}>Lọc:
+              <div style={{ minWidth: 180 }}>
+                <SearchSelect value={shipF.carrier} placeholder="Tất cả đơn vị VC"
+                  options={[{ value: '', label: 'Tất cả đơn vị VC' }, ...shipCarriers.map((c) => ({ value: c, label: c }))]}
+                  onChange={(v) => setShipF((s) => ({ ...s, carrier: v }))} />
+              </div>
+              <div style={{ minWidth: 130 }}>
+                <SearchSelect value={shipF.month} placeholder="Tất cả tháng"
+                  options={[{ value: '', label: 'Tất cả tháng' }, ...shipMonths.map((m) => ({ value: m, label: m }))]}
+                  onChange={(v) => setShipF((s) => ({ ...s, month: v }))} />
+              </div>
+            </div>
+          </div>
           <div className="items-scroll">
             <table className="items-table" style={{ minWidth: 1000 }}>
               <thead><tr><th>Đơn vị VC</th><th>Tháng</th><th>Mã VTBB/NL</th><th>Mã MISA</th><th>Số HĐ</th><th>Ngày nhận</th><th style={{ textAlign: 'right' }}>SL đặt</th><th style={{ textAlign: 'right' }}>SL nhận</th><th style={{ textAlign: 'right' }}>Thành tiền ĐH</th><th style={{ textAlign: 'right' }}>Thành tiền VC</th><th style={{ textAlign: 'right' }}>Tỷ lệ</th></tr></thead>
               <tbody>
-                {mx.shipping_detail.map((r: any, i: number) => (
+                {shipRows.map((r: any, i: number) => (
                   <tr key={i}><td>{r.carrier}</td><td>{r.month}</td><td>{r.product_code}</td><td>{r.misa_code}</td><td>{r.invoice_no}</td><td>{r.received_date}</td>
                     <td style={{ textAlign: 'right' }}>{fmt(r.qty_order)}</td><td style={{ textAlign: 'right' }}>{fmt(r.qty_received)}</td>
                     <td style={{ textAlign: 'right' }}>{fmt(r.order_amount)}</td><td style={{ textAlign: 'right' }}>{fmt(r.ship_amount)}</td><td style={{ textAlign: 'right' }}>{pctv(r.rate)}</td></tr>))}
-                {mx.shipping_detail.length === 0 && <tr><td colSpan={11} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có chi phí vận chuyển</td></tr>}
+                {shipRows.length === 0 && <tr><td colSpan={11} style={{ textAlign: 'center', color: '#999', padding: 14 }}>{mx.shipping_detail.length === 0 ? 'Chưa có chi phí vận chuyển' : 'Không có dòng khớp bộ lọc'}</td></tr>}
               </tbody>
             </table>
           </div>
