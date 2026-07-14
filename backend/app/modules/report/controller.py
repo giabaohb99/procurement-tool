@@ -1,7 +1,7 @@
 """Báo cáo mua hàng — 1 endpoint trả đủ các chiều phân tích (số liệu thật)."""
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -45,14 +45,14 @@ def daily(request: Request, db: Session = Depends(get_db), user=Depends(require(
 
 
 @router.get("/matrix")
-def matrix(request: Request, db: Session = Depends(get_db), user=Depends(require("report", "read"))):
-    """Báo cáo ma trận (NCC/phân loại/NSPT/bộ phận/vận chuyển) — đọc snapshot đã tính sẵn.
+def matrix(request: Request, background: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("report", "read"))):
+    """Báo cáo ma trận (NCC/phân loại/NSPT/bộ phận/vận chuyển) — stale-while-revalidate.
 
-    refresh=1 -> tính lại + lưu snapshot (nút 'Cập nhật báo cáo')."""
+    Trả snapshot ngay (nhanh); nếu cũ > TTL thì tự tính lại ngầm. refresh=1 -> tính đồng bộ ngay (nút 'Cập nhật')."""
     year = request.query_params.get("year") or str(datetime.now().year)
     company_id = request.query_params.get("company_id")
     refresh = request.query_params.get("refresh") == "1"
-    return success(report_service.get_snapshot(db, year, company_id, refresh=refresh))
+    return success(report_service.get_snapshot(db, year, company_id, refresh=refresh, background=background))
 
 
 @router.get("/request-matrix")

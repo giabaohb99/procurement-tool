@@ -306,9 +306,10 @@ def compute_dept_range(db: Session, date_from: str, date_to: str, company_id) ->
 # ===== Báo cáo Yêu cầu mua hàng (PYC) / Yêu cầu khảo sát (YCKS) theo phòng ban =====
 # Tính live + apply_scope theo user (dept thấy phòng mình, company/all thấy toàn cty) — KHÔNG cache snapshot.
 
+# Bộ trạng thái đúng theo enum thật trong DB (để Tổng = tổng các cột)
 _REQ_STATUS = {
-    "pyc": ["draft", "submitted", "approved", "rejected"],
-    "ycks": ["draft", "submitted", "approved", "rejected", "processing", "survey_done"],
+    "pyc": ["draft", "submitted", "approved", "processing", "completed", "rejected", "cancelled"],
+    "ycks": ["draft", "submitted", "processing", "survey_done", "pr_created", "done", "cancelled"],
 }
 
 
@@ -394,19 +395,62 @@ def _key(year, company_id):
     return f"{year or 'all'}|{company_id or 'all'}"
 
 
-def get_snapshot(db: Session, year, company_id, refresh: bool = False) -> dict:
-    key = _key(year, company_id)
+def _persist_snapshot(db: Session, key: str, data: dict):
     snap = db.query(ReportSnapshot).filter(ReportSnapshot.key == key).first()
-    if snap and not refresh:
-        try:
-            return json.loads(snap.data)
-        except Exception:
-            pass
-    data = compute(db, year, company_id)
     if not snap:
         snap = ReportSnapshot(key=key)
         db.add(snap)
     snap.data = json.dumps(data, ensure_ascii=False)
     snap.computed_at = data["computed_at"]
     db.commit()
+
+
+# Stale-while-revalidate: đọc snapshot ngay (nhanh), nếu cũ hơn TTL thì tính lại ở background.
+_SNAP_TTL = 120           # giây — snapshot cũ hơn ngưỡng này sẽ được tính lại ngầm
+_recomputing: set = set()  # các key đang tính lại (chống thundering herd trong 1 tiến trình)
+
+
+def _is_stale(computed_at: str) -> bool:
+    try:
+        age = (datetime.now() - datetime.strptime(computed_at, "%Y-%m-%d %H:%M:%S")).total_seconds()
+        return age > _SNAP_TTL
+    except Exception:
+        return True
+
+
+def _recompute_key(year, company_id):
+    """Tính lại + lưu snapshot bằng session RIÊNG (chạy ngoài request, background)."""
+    key = _key(year, company_id)
+    from app.core.database import SessionLocal
+    db = SessionLocal()
+    try:
+        _persist_snapshot(db, key, compute(db, year, company_id))
+    except Exception:
+        pass
+    finally:
+        db.close()
+        _recomputing.discard(key)
+
+
+def get_snapshot(db: Session, year, company_id, refresh: bool = False, background=None) -> dict:
+    """SWR: refresh=1 -> tính đồng bộ (nút 'Cập nhật'). Ngược lại trả snapshot ngay,
+    tự tính lại ngầm nếu snapshot cũ hoặc chưa có (lần đầu phải tính đồng bộ)."""
+    key = _key(year, company_id)
+    snap = db.query(ReportSnapshot).filter(ReportSnapshot.key == key).first()
+
+    if not refresh and snap:
+        try:
+            data = json.loads(snap.data)
+        except Exception:
+            data = None
+        if data is not None:
+            # cũ hơn TTL -> đẩy tính lại ngầm (chỉ 1 lần/key), vẫn trả bản hiện có ngay
+            if background is not None and _is_stale(snap.computed_at) and key not in _recomputing:
+                _recomputing.add(key)
+                background.add_task(_recompute_key, year, company_id)
+            return data
+
+    # refresh tay HOẶC chưa có snapshot -> tính đồng bộ rồi trả
+    data = compute(db, year, company_id)
+    _persist_snapshot(db, key, data)
     return data
