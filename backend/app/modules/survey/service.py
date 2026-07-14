@@ -174,8 +174,8 @@ def approve_lines(db: Session, sid: int, data, user_id: int) -> Survey:
                 row.line_approve = it.line_approve
             if it.line_approve_note is not None:
                 row.line_approve_note = it.line_approve_note
-            if (row.line_approve or "") and row.line_approve != "Đã duyệt":
-                stale_product_ids.append(row.id)
+            if row.line_approve == "Không duyệt":   # chỉ TỪ CHỐI DỨT KHOÁT mới xóa cứng option
+                stale_product_ids.append(row.id)     # (trạng thái tạm để valid_options_of ẩn tạm)
     s.updated_by = user_id
     db.commit()
     _purge_yc_options(db, stale_product_ids)   # dòng bị Không duyệt -> gỡ option YCKS tham chiếu
