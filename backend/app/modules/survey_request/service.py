@@ -31,6 +31,25 @@ def options_of(db: Session, line_id: int):
             .order_by(SurveyRequestOption.public_id).all())
 
 
+def valid_options_of(db: Session, line_id: int):
+    """Chỉ các option có DÒNG KHẢO SÁT SP NGUỒN còn hợp lệ (line_approve='Đã duyệt').
+    Option của dòng đã bị 'Không duyệt' / phiếu khảo sát hủy sẽ bị LOẠI (không hiện, không cho chọn)
+    — phòng cả dữ liệu cũ còn kẹt trước khi có cascade gỡ."""
+    opts = options_of(db, line_id)
+    if not opts:
+        return opts
+    from app.modules.survey.model import SurveyProductLine
+    pids = [o.product_survey_line_id for o in opts if o.product_survey_line_id]
+    approved = set()
+    if pids:
+        rows = (db.query(SurveyProductLine.id)
+                .filter(SurveyProductLine.id.in_(pids),
+                        SurveyProductLine.line_approve == "Đã duyệt").all())
+        approved = {r[0] for r in rows}
+    # giữ option có nguồn Đã duyệt; option không gắn nguồn (product_survey_line_id=0) vẫn giữ
+    return [o for o in opts if (not o.product_survey_line_id) or (o.product_survey_line_id in approved)]
+
+
 def _gen_code(db: Session) -> str:
     ddmmyy = datetime.now().strftime("%d%m%y")
     prefix = f"YCKS{ddmmyy}"

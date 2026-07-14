@@ -44,7 +44,7 @@ def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
     for x in lines:
         d = _dict(x)
         d["assignee_name"] = name_by_code.get(x.assignee, "")
-        opts = service.options_of(db, x.id)
+        opts = service.valid_options_of(db, x.id)
         d["option_count"] = len(opts)
         d["has_chosen"] = any(o.is_chosen for o in opts)
         out_lines.append(d)
@@ -289,7 +289,7 @@ def _out_process(db: Session, s: SurveyRequest, user=None, profile=None) -> dict
     for ln in lines:
         d = _dict(ln)
         d["assignee_name"] = name_by_code.get(ln.assignee, "")
-        d["options"] = [_opt_internal(o) for o in service.options_of(db, ln.id)]
+        d["options"] = [_opt_internal(o) for o in service.valid_options_of(db, ln.id)]
         out_lines.append(d)
     base["lines"] = out_lines
     return base
@@ -441,7 +441,7 @@ def _out_result(db: Session, s: SurveyRequest) -> dict:
         d = {k: getattr(ln, k) for k in _LINE_PUBLIC_FIELDS}
         d["request_qty"] = float(d["request_qty"] or 0)
         d["proposed_price"] = float(d["proposed_price"] or 0)
-        d["options"] = [_opt_public(o, db) for o in service.options_of(db, ln.id)]
+        d["options"] = [_opt_public(o, db) for o in service.valid_options_of(db, ln.id)]
         out_lines.append(d)
     base["lines"] = out_lines
     return base
