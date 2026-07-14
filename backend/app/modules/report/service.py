@@ -303,6 +303,93 @@ def compute_dept_range(db: Session, date_from: str, date_to: str, company_id) ->
     return sorted(agg.values(), key=lambda x: -x["orders"])
 
 
+# ===== Báo cáo Yêu cầu mua hàng (PYC) / Yêu cầu khảo sát (YCKS) theo phòng ban =====
+# Tính live + apply_scope theo user (dept thấy phòng mình, company/all thấy toàn cty) — KHÔNG cache snapshot.
+
+_REQ_STATUS = {
+    "pyc": ["draft", "submitted", "approved", "rejected"],
+    "ycks": ["draft", "submitted", "approved", "rejected", "processing", "survey_done"],
+}
+
+
+def _req_model(kind):
+    if kind == "ycks":
+        from app.modules.survey_request.model import SurveyRequest
+        return SurveyRequest, "survey_request"
+    from app.modules.purchase_request.model import PurchaseRequest
+    return PurchaseRequest, "purchase_request"
+
+
+def _req_scoped_rows(db, kind, user, *, company_id=None, year=None, date_from=None, date_to=None):
+    """Lấy các phiếu (PYC/YCKS) đã áp scope theo user + lọc công ty/năm/khoảng ngày."""
+    from app.core.auth import get_perm_profile
+    from app.core.scoping import apply_scope
+    Model, entity = _req_model(kind)
+    q = db.query(Model)
+    if company_id:
+        q = q.filter(Model.company_id == int(company_id))
+    if year and year != "all":
+        q = q.filter(Model.request_date.like(f"{year}%"))
+    if date_from and date_to:
+        q = q.filter(Model.request_date >= date_from, Model.request_date <= date_to)
+    q = apply_scope(q, Model, entity, user, get_perm_profile(db, user))
+    return q.all()
+
+
+def _blank_cell(statuses):
+    d = {"total": 0}
+    for s in statuses:
+        d[s] = 0
+    return d
+
+
+def compute_request_matrix(db, kind, year, company_id, user) -> dict:
+    """Ma trận phòng ban × tháng, đếm phiếu theo trạng thái (+tổng). Shape khớp MatrixPivotTab."""
+    kind = "ycks" if kind == "ycks" else "pyc"
+    statuses = _REQ_STATUS[kind]
+    recs = _req_scoped_rows(db, kind, user, company_id=company_id, year=year)
+
+    if year and year != "all":
+        months = [f"{year}-{m:02d}" for m in range(1, 13)]
+    else:
+        months = sorted({(r.request_date or "")[:7] for r in recs if r.request_date})
+    mset = set(months)
+    month_out = [{"key": m, "label": f"{m[5:7]}/{m[:4]}"} for m in months]
+
+    agg = {}
+    for r in recs:
+        mo = (r.request_date or "")[:7]
+        if mo not in mset:
+            continue
+        dept = r.department or "(Không rõ)"
+        row = agg.setdefault(dept, {"key": dept, "m": {}, **_blank_cell(statuses)})
+        cell = row["m"].setdefault(mo, _blank_cell(statuses))
+        st = r.status if r.status in statuses else None
+        cell["total"] += 1
+        row["total"] += 1
+        if st:
+            cell[st] += 1
+            row[st] += 1
+    rows = sorted(agg.values(), key=lambda x: -x["total"])
+    return {"months": month_out, "rows": rows}
+
+
+def compute_request_range(db, kind, date_from, date_to, company_id, user) -> list:
+    """Bảng phẳng phòng ban trong khoảng ngày (có scope) — cho bộ lọc khoảng ngày."""
+    kind = "ycks" if kind == "ycks" else "pyc"
+    statuses = _REQ_STATUS[kind]
+    recs = _req_scoped_rows(db, kind, user, company_id=company_id, date_from=date_from, date_to=date_to)
+    agg = {}
+    for r in recs:
+        dept = r.department or "(Không rõ)"
+        row = agg.setdefault(dept, {"key": dept, **_blank_cell(statuses)})
+        st = r.status if r.status in statuses else None
+        row["total"] += 1
+        if st:
+            row[st] += 1
+    return sorted(agg.values(), key=lambda x: -x["total"])
+
+
 def _key(year, company_id):
     return f"{year or 'all'}|{company_id or 'all'}"
 

@@ -55,6 +55,27 @@ def matrix(request: Request, db: Session = Depends(get_db), user=Depends(require
     return success(report_service.get_snapshot(db, year, company_id, refresh=refresh))
 
 
+@router.get("/request-matrix")
+def request_matrix(request: Request, db: Session = Depends(get_db), user=Depends(require("report", "read"))):
+    """Ma trận phòng ban × tháng cho Yêu cầu mua hàng (kind=pyc) / khảo sát (kind=ycks). Có apply_scope theo user."""
+    kind = request.query_params.get("kind") or "pyc"
+    year = request.query_params.get("year") or str(datetime.now().year)
+    company_id = request.query_params.get("company_id")
+    return success(report_service.compute_request_matrix(db, kind, year, company_id, user))
+
+
+@router.get("/request-range")
+def request_range(request: Request, db: Session = Depends(get_db), user=Depends(require("report", "read"))):
+    """Bảng phẳng phòng ban theo khoảng ngày cho PYC/YCKS (có scope)."""
+    kind = request.query_params.get("kind") or "pyc"
+    date_from = request.query_params.get("date_from")
+    date_to = request.query_params.get("date_to")
+    company_id = request.query_params.get("company_id")
+    if not (date_from and date_to):
+        return success([])
+    return success(report_service.compute_request_range(db, kind, date_from, date_to, company_id, user))
+
+
 @router.get("/nspt-range")
 def nspt_range(request: Request, db: Session = Depends(get_db), user=Depends(require("report", "read"))):
     """Giao hàng theo NSPT trong khoảng NGÀY (date_from, date_to = YYYY-MM-DD). Tính realtime."""
