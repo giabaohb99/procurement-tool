@@ -145,7 +145,7 @@ def order_progress(pid: int, db: Session = Depends(get_db), user=Depends(require
     from app.modules.purchase_order.model import PurchaseOrder, POItem
     rows = (db.query(POItem.product_code, func.coalesce(func.sum(POItem.qty_order), 0))
             .join(PurchaseOrder, PurchaseOrder.id == POItem.po_id)
-            .filter(PurchaseOrder.pr_code == pr.code, PurchaseOrder.status != "rejected")
+            .filter(PurchaseOrder.pr_code == pr.code, PurchaseOrder.status.notin_(["rejected", "cancelled"]))
             .group_by(POItem.product_code).all())
     ordered = {code: float(qty or 0) for code, qty in rows if code}
     return success({"ordered": ordered})

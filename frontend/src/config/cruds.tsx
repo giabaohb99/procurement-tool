@@ -103,8 +103,8 @@ export const PO_STATUS: Record<string, { label: string; cls: string }> = {
   partial: { label: 'Đang giao', cls: 'warn' },
   received: { label: 'Đã nhận đủ', cls: 'ok' },
   completed: { label: 'Hoàn thành', cls: 'ok' },
-  rejected: { label: 'Từ chối', cls: 'err' },
-  cancelled: { label: 'Đã hủy', cls: 'err' },
+  rejected: { label: 'Bị trả lại', cls: 'warn' },
+  cancelled: { label: 'Đã từ chối', cls: 'err' },
   processing: { label: 'Đang xử lý', cls: 'warn' },
 }
 export const poBadge = (st: string) => {
@@ -400,7 +400,7 @@ export const cruds: Record<string, CrudConfig> = {
     ],
   },
   'purchase-orders': {
-    slug: 'purchase-orders', entity: 'purchase_order', title: 'Đơn mua hàng (PO)', apiPath: '/api/purchase-orders', txn: true,
+    slug: 'purchase-orders', entity: 'purchase_order', title: 'Đơn mua hàng (PO)', apiPath: '/api/purchase-orders', txn: true, cloneable: true,
     columns: [
       { key: 'code', label: 'Mã PO' },
       { key: 'order_date', label: 'Ngày đặt' },
@@ -424,7 +424,8 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'partial', label: 'Đang giao' },
-        { value: 'received', label: 'Đã nhận đủ' }, { value: 'rejected', label: 'Từ chối' }] },
+        { value: 'received', label: 'Đã nhận đủ' }, { value: 'rejected', label: 'Bị trả lại' },
+        { value: 'cancelled', label: 'Đã từ chối' }] },
     ],
     fields: [],  // chi tiết dùng trang riêng (PurchaseOrderDetail)
   },

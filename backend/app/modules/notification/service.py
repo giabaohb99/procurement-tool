@@ -156,7 +156,7 @@ def trigger_notification(
     DOC_LABEL = {"purchase_request": "Yêu cầu mua hàng", "survey_request": "Phiếu khảo sát",
                  "purchase_order": "Đơn mua hàng", "payment_request": "Đề nghị thanh toán"}
     STATUS_VERB = {"submitted": "đã được gửi duyệt", "approved": "đã được duyệt",
-                   "rejected": "đã bị từ chối", "cancelled": "đã bị hủy",
+                   "rejected": "đã bị từ chối", "cancelled": "đã bị hủy", "returned": "đã bị trả lại (cần sửa & gửi lại)",
                    "completed": "đã hoàn thành", "paid": "đã ghi nhận thanh toán"}
 
     if event == "pr_submitted":

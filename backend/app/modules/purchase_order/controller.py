@@ -150,6 +150,12 @@ def copy_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purch
     return success(_out(db, service.copy_po(db, pid, user.id)), "Đã nhân bản thành đơn Nháp mới", 201)
 
 
+@router.post("/{pid}/clone")
+def clone_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_order", "create"))):
+    """Alias của /copy — dùng cho nút Nhân bản ở danh sách (đồng bộ với YCMH/YCKS)."""
+    return success(_out(db, service.copy_po(db, pid, user.id)), "Đã nhân bản thành đơn Nháp mới", 201)
+
+
 @router.patch("/{pid}")
 def update_po(pid: int, data: POUpdate, db: Session = Depends(get_db), user=Depends(require("purchase_order", "write"))):
     return success(_out(db, service.update_po(db, pid, data, user.id)), "Đã cập nhật")
@@ -197,11 +203,23 @@ def approve_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depend
 @router.post("/{pid}/reject")
 def reject_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
               user=Depends(require("purchase_order", "approve"))):
-    po = service.set_status(db, pid, "rejected", user.id, data.reason)
+    # Từ chối = KHÓA đơn (Đã từ chối) — không sửa/gửi lại được, phải Nhân bản thành đơn mới.
+    po = service.set_status(db, pid, "cancelled", user.id, data.reason)
     trigger_notification(db=db, event="po_rejected", doc_type="purchase_order", doc_code=po.code,
                          creator_id=po.created_by or user.id, background_tasks=background_tasks,
                          reason=data.reason or "", link=f"/purchase-orders/{po.id}")
     return success(_out(db, po), "Đã từ chối")
+
+
+@router.post("/{pid}/return")
+def return_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
+              user=Depends(require("purchase_order", "approve"))):
+    # Trả về = Bị trả lại — người tạo SỬA & GỬI DUYỆT LẠI được (đồng bộ YCMH).
+    po = service.set_status(db, pid, "rejected", user.id, data.reason)
+    trigger_notification(db=db, event="po_returned", doc_type="purchase_order", doc_code=po.code,
+                         creator_id=po.created_by or user.id, background_tasks=background_tasks,
+                         reason=data.reason or "", link=f"/purchase-orders/{po.id}")
+    return success(_out(db, po), "Đã trả đơn về (Bị trả lại)")
 
 
 @router.post("/{pid}/cancel")

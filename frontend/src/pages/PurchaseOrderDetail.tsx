@@ -317,24 +317,25 @@ export default function PurchaseOrderDetail() {
           <button className="btn ghost" onClick={async () => { if (await askConfirm({ message: 'Nhân bản đơn này thành đơn Nháp mới?', confirmText: 'Nhân bản', danger: false })) copyDoc() }}><i className="ti ti-copy" />Nhân bản</button>
         )}
         {!isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'cancel') && (
-          <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { if (!(await askConfirm({ message: 'Hủy đơn mua hàng này?', confirmText: 'Hủy đơn' }))) return; const r = await askPrompt({ title: 'Hủy đơn', message: 'Lý do hủy:' }); action('cancel', { reason: r || '' }) }}><i className="ti ti-ban" />Hủy đơn</button>
+          <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { const r = await askPrompt({ title: 'Từ chối đơn', message: 'Lý do từ chối (khóa đơn, không sửa lại được):', confirmText: 'Từ chối' }); if (r !== null) action('cancel', { reason: r }) }}><i className="ti ti-ban" />Từ chối</button>
         )}
         {!isNew && canDelete && can('purchase_order', 'delete') && (
           <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { if (await askConfirm({ message: 'Xóa đơn mua hàng này?' })) { await api.delete(`${API}/${id}`); navigate('/purchase-orders') } }}><i className="ti ti-trash" />Xóa đơn</button>
         )}
         {!isNew && <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--border)', margin: '2px 4px' }} />}
         {/* ── Nhóm workflow + Lưu (phải) ── */}
-        {!isNew && po.status === 'draft' && can('purchase_order', 'write') && (
+        {!isNew && ['draft', 'rejected'].includes(po.status) && can('purchase_order', 'write') && (
           <button className="btn secondary" onClick={() => action('submit')}><i className="ti ti-send" />Gửi duyệt</button>
         )}
         {!isNew && po.status === 'submitted' && can('purchase_order', 'approve') && (
           <>
             <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>
-            <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { const r = await askPrompt({ title: 'Từ chối đơn', message: 'Lý do từ chối:', confirmText: 'Từ chối' }); if (r !== null) action('reject', { reason: r }) }}><i className="ti ti-ban" />Từ chối</button>
+            <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }} onClick={async () => { const r = await askPrompt({ title: 'Trả về', message: 'Lý do trả về (để người tạo sửa & gửi duyệt lại):', confirmText: 'Trả về' }); if (r !== null) action('return', { reason: r }) }}><i className="ti ti-corner-up-left" />Trả về</button>
+            <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { const r = await askPrompt({ title: 'Từ chối đơn', message: 'Lý do từ chối (khóa đơn, không sửa lại được):', confirmText: 'Từ chối' }); if (r !== null) action('reject', { reason: r }) }}><i className="ti ti-ban" />Từ chối</button>
           </>
         )}
         {!isNew && po.status === 'received' && can('purchase_order', 'write') && (
-          <button className="btn" onClick={() => action('complete')}><i className="ti ti-circle-check" />Hoàn thành</button>
+          <button className="btn" onClick={async () => { if (await askConfirm({ message: 'Xác nhận HOÀN THÀNH đơn mua hàng này? Sau khi hoàn thành sẽ khóa, không chỉnh sửa được nữa.', confirmText: 'Hoàn thành', danger: false })) action('complete') }}><i className="ti ti-circle-check" />Hoàn thành</button>
         )}
         {(headerEditable || deliveryEditable) && can('purchase_order', isNew ? 'create' : 'write') && (
           <button className="btn" onClick={save}>{isNew ? 'Tạo' : 'Lưu'}</button>
