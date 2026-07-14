@@ -268,7 +268,7 @@ export default function Reports() {
 
       {tab === 'department' && (
         <MatrixPivotTab key={`dept-${f.year}-${f.company_id}`}
-          rows={mx.department || []} months={months} companyId={f.company_id}
+          rows={mx.department || []} months={months} companyId={f.company_id} nameFilter
           nameLabel="Bộ phận" title="Đặt hàng & đơn gấp theo bộ phận" warnHint="đỏ = tỷ lệ gấp > 30%"
           yearLabel={f.year === 'all' ? 'Tất cả' : `Năm ${f.year}`} rangeEndpoint="/api/reports/dept-range"
           metrics={[{ key: 'orders', label: 'Số lần đặt' }, { key: 'urgent', label: 'Số lần gấp' }, { key: 'rate', label: 'Tỷ lệ gấp', pct: true }]} />
