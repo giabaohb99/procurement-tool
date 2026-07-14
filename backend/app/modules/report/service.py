@@ -60,9 +60,9 @@ def compute(db: Session, year: str, company_id) -> dict:
     dept = {}
     for p in pos:
         m = _mk(p.order_date)
-        if m not in mset:
+        if m not in mset or not p.department:   # bỏ dòng phòng ban rỗng ("(Không rõ)")
             continue
-        r = dept.setdefault(p.department or "(Không rõ)", {"key": p.department or "(Không rõ)", "m": {}, "orders": 0, "urgent": 0})
+        r = dept.setdefault(p.department, {"key": p.department, "m": {}, "orders": 0, "urgent": 0})
         c = r["m"].setdefault(m, {"orders": 0, "urgent": 0})
         c["orders"] += 1
         r["orders"] += 1
@@ -87,6 +87,8 @@ def compute(db: Session, year: str, company_id) -> dict:
             po = po_by.get(d.po_id)
             it = item_by.get(d.po_item_id)
             key = dimfn(po, it)
+            if not key or key == "(Không rõ)":   # bỏ dòng NSPT/NCC/loại rỗng
+                continue
             r = agg.setdefault(key, {"key": key, "m": {}})
             c = r["m"].setdefault(m, {})
             metricfn(c, r, d, it)
@@ -203,7 +205,9 @@ def compute_nspt_range(db: Session, date_from: str, date_to: str, company_id) ->
         po = po_by.get(d.po_id)
         if po is None:  # bị loại bởi filter công ty
             continue
-        key = po.nspt or "(Không rõ)"
+        if not po.nspt:   # bỏ NSPT rỗng
+            continue
+        key = po.nspt
         r = agg.setdefault(key, {"key": key, "orders": 0, "late": 0, "ontime": 0, "early": 0})
         dv = d.diff_regulated or 0
         r["orders"] += 1
@@ -241,7 +245,9 @@ def compute_ig_range(db: Session, date_from: str, date_to: str, company_id) -> l
         if d.po_id not in ok_po:  # bị loại bởi filter công ty
             continue
         it = item_by.get(d.po_item_id)
-        key = (it.item_group if it else None) or "(Không rõ)"
+        key = it.item_group if it else None
+        if not key:   # bỏ loại VTBB/NL rỗng
+            continue
         r = agg.setdefault(key, {"key": key, "trans": 0, "cost": 0.0})
         r["trans"] += 1
         r["cost"] = round(r["cost"] + (_recv_amt(it) if it else 0), 2)
@@ -270,7 +276,9 @@ def compute_sup_range(db: Session, date_from: str, date_to: str, company_id) -> 
         po = po_by.get(d.po_id)
         if po is None:  # bị loại bởi filter công ty
             continue
-        key = po.supplier_name or po.supplier_code or "(Không rõ)"
+        key = po.supplier_name or po.supplier_code
+        if not key:   # bỏ NCC rỗng
+            continue
         r = agg.setdefault(key, {"key": key, "trans": 0, "late": 0})
         r["trans"] += 1
         if (d.diff_regulated or 0) < 0:
@@ -293,8 +301,9 @@ def compute_dept_range(db: Session, date_from: str, date_to: str, company_id) ->
 
     agg = {}
     for p in poq.all():
-        key = p.department or "(Không rõ)"
-        r = agg.setdefault(key, {"key": key, "orders": 0, "urgent": 0})
+        if not p.department:   # bỏ phòng ban rỗng
+            continue
+        r = agg.setdefault(p.department, {"key": p.department, "orders": 0, "urgent": 0})
         r["orders"] += 1
         if p.is_urgent:
             r["urgent"] += 1
@@ -360,9 +369,9 @@ def compute_request_matrix(db, kind, year, company_id, user) -> dict:
     agg = {}
     for r in recs:
         mo = (r.request_date or "")[:7]
-        if mo not in mset:
+        if mo not in mset or not r.department:   # bỏ phòng ban rỗng
             continue
-        dept = r.department or "(Không rõ)"
+        dept = r.department
         row = agg.setdefault(dept, {"key": dept, "m": {}, **_blank_cell(statuses)})
         cell = row["m"].setdefault(mo, _blank_cell(statuses))
         st = r.status if r.status in statuses else None
@@ -382,8 +391,9 @@ def compute_request_range(db, kind, date_from, date_to, company_id, user) -> lis
     recs = _req_scoped_rows(db, kind, user, company_id=company_id, date_from=date_from, date_to=date_to)
     agg = {}
     for r in recs:
-        dept = r.department or "(Không rõ)"
-        row = agg.setdefault(dept, {"key": dept, **_blank_cell(statuses)})
+        if not r.department:   # bỏ phòng ban rỗng
+            continue
+        row = agg.setdefault(r.department, {"key": r.department, **_blank_cell(statuses)})
         st = r.status if r.status in statuses else None
         row["total"] += 1
         if st:
