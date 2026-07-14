@@ -4,6 +4,7 @@ import { poBadge } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
 import MatrixPivotTab from '../components/MatrixPivotTab'
 import { ReportTable, fmt, pctv } from '../components/report-table'
+import { useAuth } from '../auth/AuthContext'
 
 const TABS = [
   { key: 'overview', label: 'Tổng quan' },
@@ -12,8 +13,14 @@ const TABS = [
   { key: 'nspt', label: 'NSPT' },
   { key: 'department', label: 'Bộ phận (đơn gấp)' },
   { key: 'shipping', label: 'Chi phí vận chuyển' },
+  { key: 'pyc_req', label: 'YC mua hàng', need: 'purchase_request' },   // theo phòng ban, có scope
+  { key: 'ycks_req', label: 'YC khảo sát', need: 'survey_request' },    // theo phòng ban, có scope
   // { key: 'inventory', label: 'Tồn kho' },   // tạm ẩn tab Tồn kho
 ]
+
+// Cột trạng thái cho báo cáo yêu cầu
+const PYC_METRICS = [{ key: 'total', label: 'Tổng' }, { key: 'draft', label: 'Nháp' }, { key: 'submitted', label: 'Chờ duyệt' }, { key: 'approved', label: 'Đã duyệt' }, { key: 'rejected', label: 'Từ chối' }]
+const YCKS_METRICS = [...PYC_METRICS, { key: 'processing', label: 'Đang KS' }, { key: 'survey_done', label: 'Đã KS' }]
 
 const shortNum = (n: any) => {
   n = Number(n || 0)
@@ -103,6 +110,8 @@ function LineChart({ days }: { days: any[] }) {
 
 export default function Reports() {
   const thisYear = new Date().getFullYear()
+  const { can } = useAuth()
+  const tabs = TABS.filter((t) => !t.need || can(t.need, 'read'))   // gate tab YC theo quyền
   const [d, setD] = useState<any>(null)
   const [mx, setMx] = useState<any>(null)
   const [companies, setCompanies] = useState<any[]>([])
@@ -112,6 +121,19 @@ export default function Reports() {
   const [busy, setBusy] = useState(false)
   const [daily, setDaily] = useState<any>(null)  // {month, label, data} popup chi tiết theo ngày
   const [shipF, setShipF] = useState({ carrier: '', month: '' })  // lọc chi tiết VC theo đơn vị VC + tháng
+  const [reqMx, setReqMx] = useState<Record<string, any>>({})   // cache báo cáo YC: key `kind|year|company` -> {months,rows}
+
+  // Tải ma trận Yêu cầu (PYC/YCKS) khi vào tab tương ứng (live + scope server)
+  useEffect(() => {
+    const kind = tab === 'pyc_req' ? 'pyc' : tab === 'ycks_req' ? 'ycks' : null
+    if (!kind) return
+    const key = `${kind}|${f.year}|${f.company_id}`
+    if (reqMx[key]) return
+    const params: any = { kind }
+    if (f.year) params.year = f.year
+    if (f.company_id) params.company_id = f.company_id
+    api.get('/api/reports/request-matrix', { params }).then((r) => setReqMx((s) => ({ ...s, [key]: r.data.data })))
+  }, [tab, f.year, f.company_id])
 
   async function openDaily(m: any) {
     setDaily({ month: m.monthKey, label: m.month, data: null })
@@ -196,7 +218,7 @@ export default function Reports() {
       </div>
 
       <div className="no-print" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8, borderBottom: '1px solid var(--border)' }}>
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{ border: 'none', background: 'none', padding: '8px 12px', cursor: 'pointer', fontSize: 13.5, fontWeight: tab === t.key ? 700 : 500, color: tab === t.key ? 'var(--teal)' : 'var(--muted)', borderBottom: tab === t.key ? '2px solid var(--teal)' : '2px solid transparent' }}>{t.label}</button>
         ))}
       </div>
@@ -273,6 +295,21 @@ export default function Reports() {
           yearLabel={f.year === 'all' ? 'Tất cả' : `Năm ${f.year}`} rangeEndpoint="/api/reports/dept-range"
           metrics={[{ key: 'orders', label: 'Số lần đặt' }, { key: 'urgent', label: 'Số lần gấp' }, { key: 'rate', label: 'Tỷ lệ gấp', pct: true }]} />
       )}
+
+      {(tab === 'pyc_req' || tab === 'ycks_req') && (() => {
+        const kind = tab === 'pyc_req' ? 'pyc' : 'ycks'
+        const rmx = reqMx[`${kind}|${f.year}|${f.company_id}`]
+        if (!rmx) return <div className="card" style={{ padding: 16, color: '#999' }}>Đang tải…</div>
+        return (
+          <MatrixPivotTab key={`${kind}-${f.year}-${f.company_id}`}
+            rows={rmx.rows || []} months={rmx.months || []} companyId={f.company_id} nameFilter nameWidth={220}
+            nameLabel="Phòng ban"
+            title={kind === 'pyc' ? 'Yêu cầu mua hàng theo phòng ban' : 'Yêu cầu khảo sát theo phòng ban'}
+            yearLabel={f.year === 'all' ? 'Tất cả' : `Năm ${f.year}`}
+            rangeEndpoint={`/api/reports/request-range?kind=${kind}`}
+            metrics={kind === 'pyc' ? PYC_METRICS : YCKS_METRICS} />
+        )
+      })()}
 
       {tab === 'shipping' && <>
         <div className="card" style={{ padding: 16, marginBottom: 14 }}>

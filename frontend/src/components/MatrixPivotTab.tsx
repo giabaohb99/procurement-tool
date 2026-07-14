@@ -2,7 +2,7 @@ import { useState, type CSSProperties } from 'react'
 import { api } from '../api/client'
 import DateRangePicker from './DateRangePicker'
 import SearchSelect from './SearchSelect'
-import { ReportTable, fmt, pctv, type Metric } from './report-table'
+import { ReportTable, fmt, pctv, type Metric, type SortDir } from './report-table'
 
 // Tab báo cáo ma trận (đối tượng × tháng) dùng chung cho NSPT & Bộ phận.
 // 3 chế độ: lọc khoảng ngày (1 bảng phẳng) · Ngang (pivot 12 tháng + cột Tổng cả năm) · Dọc (khối Tổng + 12 khối tháng).
@@ -35,6 +35,12 @@ export default function MatrixPivotTab({
   const [data, setData] = useState<any[] | null>(null)   // kết quả lọc khoảng ngày (null = xem 12 tháng)
   const [busy, setBusy] = useState(false)
   const [pick, setPick] = useState('')   // lọc theo 1 đối tượng (key), '' = tất cả
+  const [sort, setSort] = useState<{ key: string; dir: SortDir } | null>(null)   // sort đồng bộ view Dọc + bảng khoảng ngày
+
+  // Bấm header: cột mới -> giảm dần; cùng cột: giảm -> tăng -> bỏ sort
+  function onSort(key: string) {
+    setSort((s) => (!s || s.key !== key) ? { key, dir: 'desc' } : s.dir === 'desc' ? { key, dir: 'asc' } : null)
+  }
 
   // Nguồn options + rows sau lọc theo đối tượng đã chọn
   const baseRows: any[] = data !== null ? data : rows
@@ -89,7 +95,7 @@ export default function MatrixPivotTab({
 
       {/* Trên màn hình: pivot Ngang/Dọc/khoảng ngày */}
       <div className="screen-only">
-        {renderBody({ view, data: data !== null ? shownRows : null, range, rows: data !== null ? rows : shownRows, months, metrics, nameLabel, title, warnHint, yearLabel, nameWidth })}
+        {renderBody({ view, data: data !== null ? shownRows : null, range, rows: data !== null ? rows : shownRows, months, metrics, nameLabel, title, warnHint, yearLabel, nameWidth, sort, onSort })}
       </div>
       {/* Khi IN: bản tổng hợp cả năm gọn (mỗi đối tượng 1 dòng = tổng cả năm / tổng khoảng ngày) */}
       <div className="print-only card" style={{ padding: 16 }}>
@@ -100,14 +106,15 @@ export default function MatrixPivotTab({
   )
 }
 
-function renderBody({ view, data, range, rows, months, metrics, nameLabel, title, warnHint, yearLabel, nameWidth }: any) {
+function renderBody({ view, data, range, rows, months, metrics, nameLabel, title, warnHint, yearLabel, nameWidth, sort, onSort }: any) {
+  const sortProps = { sortKey: sort?.key || '', sortDir: sort?.dir || 'desc', onSort }
   // ==== Chế độ lọc khoảng ngày → 1 bảng phẳng ====
   if (data !== null) {
     const dlbl = (s: string) => s ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}` : ''
     return (
       <div className="card" style={{ padding: 16 }}>
         <h3 className="sec-title">{title} — {dlbl(range.from)} → {dlbl(range.to)}</h3>
-        <ReportTable rows={data} period="all" warnMetric="rate" nameLabel={nameLabel} metrics={metrics} nameMinWidth={nameWidth} />
+        <ReportTable rows={data} period="all" warnMetric="rate" nameLabel={nameLabel} metrics={metrics} nameMinWidth={nameWidth} {...sortProps} />
       </div>
     )
   }
@@ -118,12 +125,12 @@ function renderBody({ view, data, range, rows, months, metrics, nameLabel, title
       <div className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div>
           <h3 className="sec-title" style={{ color: 'var(--teal)' }}><i className="ti ti-sigma" style={{ marginRight: 6 }} />Tổng cả năm — {yearLabel}{warnHint && <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--muted)' }}> ({warnHint})</span>}</h3>
-          <ReportTable rows={rows} period="all" warnMetric="rate" nameLabel={nameLabel} metrics={metrics} nameMinWidth={nameWidth} />
+          <ReportTable rows={rows} period="all" warnMetric="rate" nameLabel={nameLabel} metrics={metrics} nameMinWidth={nameWidth} {...sortProps} />
         </div>
         {months.map((mo: any) => (
           <div key={mo.key}>
             <h3 className="sec-title">Tháng {mo.label}</h3>
-            <ReportTable rows={rows.filter((r: any) => r.m?.[mo.key])} period={mo.key} warnMetric="rate" nameLabel={nameLabel} metrics={metrics} nameMinWidth={nameWidth} />
+            <ReportTable rows={rows.filter((r: any) => r.m?.[mo.key])} period={mo.key} warnMetric="rate" nameLabel={nameLabel} metrics={metrics} nameMinWidth={nameWidth} {...sortProps} />
           </div>
         ))}
         {months.length === 0 && <div style={{ color: '#999', textAlign: 'center', padding: 14 }}>Không có dữ liệu</div>}
