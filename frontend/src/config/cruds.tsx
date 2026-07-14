@@ -432,6 +432,7 @@ export const cruds: Record<string, CrudConfig> = {
     columns: [
       { key: 'code', label: 'Mã phiếu' },
       { key: 'request_date', label: 'Ngày lập' },
+      { key: 'created_by_name', label: 'Người yêu cầu' },
       { key: 'supplier_name', label: 'Nhà cung cấp', render: (r) => r.supplier_name || r.supplier_code },
       { key: 'source_type', label: 'Loại', render: (r) => (r.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa') },
       { key: 'total', label: 'Số tiền', render: (r) => (r.total ? Number(r.total).toLocaleString('vi-VN') + ' đ' : '0 đ') },

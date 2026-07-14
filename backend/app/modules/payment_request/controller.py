@@ -47,7 +47,9 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
     q = apply_scope(q, PaymentRequest, "payment_request", user, get_perm_profile(db, user))
     total = q.count()
     items = q.order_by(PaymentRequest.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
-    out = [{c: getattr(p, c) for c in HEADER} | {"total": float(p.total or 0)} for p in items]
+    out = [{c: getattr(p, c) for c in HEADER}
+           | {"total": float(p.total or 0), "created_by_name": resolve_actor(db, p.created_by)}
+           for p in items]
     return success({"total": total, "items": out})
 
 
