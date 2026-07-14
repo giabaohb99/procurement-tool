@@ -157,16 +157,6 @@ export default function PurchaseRequestDetail() {
     const arr = [...s.items]; arr.splice(i + 1, 0, src); return { ...s, items: arr }
   })
 
-  // Đổi trạng thái dòng ngay trên bảng ngoài
-  async function changeLineStatus(i: number, val: string) {
-    setItem(i, 'line_status', val)
-    const it = items[i]
-    if (!editable && it.id && canLineStatus(it)) {
-      try { await api.patch(`${API}/${id}/item-status`, { items: [{ id: it.id, line_status: val }] }); toast.success('Đã cập nhật trạng thái'); loadAll() }
-      catch { loadAll() /* interceptor đã toast lỗi */ }
-    }
-  }
-
   // Đổi NSTM phụ trách ngay trên bảng ngoài (chỉ người có quyền duyệt). Phiếu đã lưu -> auto-lưu; phiếu nháp -> theo nút Lưu.
   async function changeAssignee(i: number, val: string) {
     setItem(i, 'assignee', val)
@@ -538,6 +528,7 @@ export default function PurchaseRequestDetail() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <h3 className="sec-title" style={{ margin: 0, borderBottom: 'none', paddingBottom: 0 }}>Danh sách Sản phẩm Yêu cầu</h3>
               {editable && <button className="btn ghost" onClick={() => addItems(1)} style={{ height: 30, padding: '0 10px', fontSize: 13 }}><i className="ti ti-plus" /> Thêm SP</button>}
+              {!editable && !isNew && <span style={{ fontSize: 12, color: 'var(--muted)' }}><i className="ti ti-device-floppy" /> Trạng thái tự đồng bộ từ ĐMH · thay đổi phụ trách được lưu tự động</span>}
             </div>
             <div className="items-scroll">
               <table className="items-table" style={{ minWidth: showAssigneeCol ? 1220 : 1060, tableLayout: 'fixed' }}>
@@ -606,16 +597,8 @@ export default function PurchaseRequestDetail() {
                         ) : fmtBlank(it.price)}
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 500 }}>{fmtBlank((Number(it.qty) || 0) * (Number(it.price) || 0))}</td>
-                      <td>
-                        {canLineStatus(it) ? (
-                          <select className="cell-input" value={it.line_status || 'Chưa đặt hàng'}
-                            onChange={(e) => changeLineStatus(i, e.target.value)}
-                            style={{ width: '100%', color: LS_COLOR[it.line_status] || 'var(--ink)', fontWeight: 500 }}>
-                            {LINE_STATUS.map((s) => <option key={s} value={s} style={{ color: 'var(--ink)' }}>{s}</option>)}
-                          </select>
-                        ) : (
-                          <span className="badge" style={{ background: (LS_COLOR[it.line_status] || '#94a3b8') + '22', color: LS_COLOR[it.line_status] || '#64748b' }}>{it.line_status || 'Chưa đặt hàng'}</span>
-                        )}
+                      <td title="Trạng thái tự đồng bộ từ Đơn mua hàng — không sửa tay">
+                        <span className="badge" style={{ background: (LS_COLOR[it.line_status] || '#94a3b8') + '22', color: LS_COLOR[it.line_status] || '#64748b' }}>{it.line_status || 'Chưa đặt hàng'}</span>
                       </td>
                       {showAssigneeCol && (
                         <td style={{ overflow: 'hidden' }}>
@@ -832,10 +815,9 @@ export default function PurchaseRequestDetail() {
                 </div>
               )}
               <div className="form-row">
-                <label>Trạng thái xử lý</label>
-                <select value={edit.line_status || 'Chưa đặt hàng'} disabled={!canLineStatus(edit)} onChange={(e) => setItem(editIdx, 'line_status', e.target.value)}>
-                  {LINE_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <label title="Tự đồng bộ từ Đơn mua hàng — không sửa tay">Trạng thái xử lý</label>
+                <div><span className="badge" style={{ background: (LS_COLOR[edit.line_status] || '#94a3b8') + '22', color: LS_COLOR[edit.line_status] || '#64748b' }}>{edit.line_status || 'Chưa đặt hàng'}</span>
+                  <span style={{ fontSize: 11.5, color: 'var(--muted)', marginLeft: 8 }}>tự đồng bộ từ Đơn mua hàng</span></div>
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Chi tiết tiến độ</label>

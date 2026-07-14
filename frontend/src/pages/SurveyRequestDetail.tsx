@@ -200,7 +200,7 @@ export default function SurveyRequestDetail() {
   }
 
   async function assignPurchaser(lineId: number, code: string) {
-    try { await api.patch(`${API}/${id}/lines/${lineId}/assignee`, { assignee: code }); await loadAll() }
+    try { await api.patch(`${API}/${id}/lines/${lineId}/assignee`, { assignee: code }); toast.success('Đã cập nhật NSTM phụ trách'); await loadAll() }
     catch (e: any) { setErr(e.response?.data?.message || 'Lỗi gán nhân sự') }
   }
 
@@ -702,6 +702,7 @@ export default function SurveyRequestDetail() {
                   <i className="ti ti-plus" /> Thêm dòng
                 </button>
               )}
+              {!editable && !isNew && showNstmCols && <span style={{ fontSize: 12, color: 'var(--muted)' }}><i className="ti ti-device-floppy" /> Thay đổi phụ trách được lưu tự động</span>}
             </div>
 
             <div className="items-scroll">

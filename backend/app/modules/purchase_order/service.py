@@ -312,5 +312,88 @@ def set_status(db: Session, pid: int, status: str, user_id: int, message: str = 
     po.updated_by = user_id
     db.commit()
     record(db, user_id, ENTITY, pid, status, message)
+    # Hủy/từ chối đơn → cập nhật lại tiến độ dòng bên YCMH (dòng thuộc đơn này không còn tính)
+    if status in ("cancelled", "rejected"):
+        _sync_pr(db, po.pr_code)
     db.refresh(po)
     return po
+
+
+# ───────────────────────── Máy trạng thái TIẾN ĐỘ của DÒNG ĐMH (progress_status) ─────────────────────────
+# Luồng chính tuần tự (bỏ "Chưa gửi ĐMH cho KT"); Tạm ngưng/Hủy là ngoại lệ bấm nút, cần lý do.
+PROGRESS_ORDER = ["Chưa đặt hàng", "Đã đặt hàng", "Đã nhận hàng", "Đã gửi ĐMH cho KT", "Hoàn thành"]
+PROGRESS_EXCEPTIONS = ["Tạm ngưng", "Hủy đơn"]
+
+
+def is_line_paid(db: Session, po: PurchaseOrder, item: POItem) -> bool:
+    """Điều kiện 'đã thanh toán dòng' (NCC sản phẩm, không tính NCC vận chuyển).
+    Trước mắt trả True để cho phép chốt Hoàn thành thoải mái — sẽ mở tính toán thật sau."""
+    return True
+
+
+def validate_progress(db: Session, po: PurchaseOrder, item: POItem, target: str):
+    """Trả (ok, missing[]): missing là TÊN TRƯỜNG hiển thị còn thiếu. Điều kiện CỘNG DỒN theo bước."""
+    if target not in PROGRESS_ORDER:
+        return True, []
+    ti = PROGRESS_ORDER.index(target)
+    missing = []
+    if ti >= 1 and not (po.misa_code or "").strip():
+        missing.append("Mã đơn MISA (trên phiếu)")
+    if ti >= 2 and not (float(item.qty_received or 0) > 0):
+        missing.append("Có nhận hàng (số lượng nhận > 0)")
+    if ti >= 3 and not (item.invoice_no or "").strip():
+        missing.append("Số hóa đơn")
+    if ti >= 4 and not is_line_paid(db, po, item):
+        missing.append("Thanh toán cho dòng (NCC sản phẩm)")
+    return (len(missing) == 0), missing
+
+
+def set_item_progress(db: Session, pid: int, item_id: int, target: str, reason: str, user_id: int) -> PurchaseOrder:
+    po = get_po(db, pid)
+    if po.status not in ("approved", "partial", "received", "processing", "completed"):
+        raise HTTPException(400, "Chỉ cập nhật tiến độ dòng khi đơn đã được duyệt.")
+    item = db.query(POItem).filter(POItem.id == item_id, POItem.po_id == pid).first()
+    if not item:
+        raise HTTPException(404, "Không tìm thấy dòng hàng.")
+    if item.progress_status in ("Hủy đơn", "Hoàn thành"):
+        done = "hoàn thành" if item.progress_status == "Hoàn thành" else "hủy"
+        raise HTTPException(400, f"Dòng đã {done} — không thể đổi trạng thái (điểm cuối).")
+
+    if target == "__resume__":
+        # Tiếp tục đơn từ Tạm ngưng → khôi phục trạng thái trước đó
+        if item.progress_status != "Tạm ngưng":
+            raise HTTPException(400, "Dòng không ở trạng thái Tạm ngưng.")
+        item.progress_status = item.status_before_pause or "Chưa đặt hàng"
+        item.status_before_pause = ""
+    elif target in PROGRESS_EXCEPTIONS:
+        if not (reason or "").strip():
+            raise HTTPException(400, f"Cần nhập lý do {target.lower()}.")
+        if target == "Tạm ngưng":
+            item.status_before_pause = item.progress_status
+        item.pause_reason = reason.strip()
+        item.progress_status = target
+    elif target in PROGRESS_ORDER:
+        ok, missing = validate_progress(db, po, item, target)
+        if not ok:
+            raise HTTPException(400, f"Chưa đủ điều kiện chuyển '{target}'. Cần: " + "; ".join(missing))
+        item.progress_status = target
+    else:
+        raise HTTPException(400, "Trạng thái không hợp lệ.")
+
+    item.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, pid, "item_progress", f"{item.product_name}: {target if target != '__resume__' else 'Tiếp tục'}")
+    _sync_pr(db, po.pr_code)   # đồng bộ tiến độ sang YCMH nguồn
+    db.refresh(po)
+    return po
+
+
+def _sync_pr(db: Session, pr_code: str) -> None:
+    """Đồng bộ tiến độ dòng ĐMH → dòng YCMH nguồn (khớp product_code) + suy lại trạng thái phiếu."""
+    if not pr_code:
+        return
+    try:
+        from app.modules.purchase_request import service as pr_service
+        pr_service.sync_from_purchase_orders(db, pr_code)
+    except Exception:
+        pass  # sync không được phép làm hỏng thao tác chính

@@ -18,6 +18,14 @@ const SHIP_UNITS = ['Kiện', 'Chuyến', 'm2', 'tấn']
 const CurrencyInput = ({ value, onChange, disabled, style, className }: any) =>
   <NumberInput value={value} onChange={onChange} disabled={disabled} style={style} className={className ?? 'cell-input'} />
 
+// Máy trạng thái TIẾN ĐỘ của dòng ĐMH (progress_status) — chọn tay, backend gate điều kiện
+const PROGRESS_ORDER = ['Chưa đặt hàng', 'Đã đặt hàng', 'Đã nhận hàng', 'Đã gửi ĐMH cho KT', 'Hoàn thành']
+const PROGRESS_ALL = [...PROGRESS_ORDER, 'Tạm ngưng', 'Hủy đơn']
+const PG_COLOR: Record<string, string> = {
+  'Chưa đặt hàng': '#94a3b8', 'Đã đặt hàng': '#2563eb', 'Đã nhận hàng': '#0891b2',
+  'Đã gửi ĐMH cho KT': '#7c3aed', 'Hoàn thành': '#16a34a', 'Tạm ngưng': '#d97706', 'Hủy đơn': '#dc2626',
+}
+
 const emptyItem = {
   product_code: '', product_name: '', invoice_name: '', item_group: '', spec: '', fg_code: '', fg_name: '',
   supplier_ready: false, required_date: '', unit: '',
@@ -88,7 +96,7 @@ export default function PurchaseOrderDetail() {
       pr_code: fromPr.pr_code || '',
       company_id: fromPr.company_id || 0,
       department: fromPr.department || '',
-      nspt: fromPr.nspt || '',
+      // KHÔNG gán NSPT phụ trách từ YCMH — chỉ admin/người có quyền duyệt được giao
       supplier_name: fromPr.supplier_name || '',
       supplier_code: fromPr.supplier_code || '',
       vat_rate: fromPr.vat_rate || 0.08,
@@ -99,15 +107,6 @@ export default function PurchaseOrderDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNew])
 
-  // User thường (không có quyền duyệt) tạo đơn mới → tự điền NSPT = tên mình (không đè giá trị từ PR)
-  useEffect(() => {
-    if (!isNew || canPickNspt) return
-    const fromPr = (location.state as any)?.fromPr
-    if (po.nspt || fromPr?.nspt) return
-    if (user) setH('nspt', (user as any).full_name || '')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isNew, user])
-
   const goodsSuppliers = suppliers.filter((s) => s.supplier_type !== 'transport')
   const carriers = suppliers.filter((s) => s.supplier_type === 'transport')
 
@@ -117,7 +116,9 @@ export default function PurchaseOrderDetail() {
   const headerEditable = (isNew || !locked) && canWrite
   const deliveryEditable = !isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'write')
   const canDelete = isNew || ['draft', 'rejected'].includes(po.status)
-  // NSPT phụ trách: người có quyền duyệt = admin → chọn tự do; user thường bị khóa, auto-fill tên mình
+  // Tiến độ dòng: người phụ trách cập nhật khi đơn đã duyệt trở đi
+  const progressEditable = !isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'write')
+  // NSPT phụ trách CHỈ admin/người có quyền duyệt được giao (không auto-gán, không tự điền)
   const canPickNspt = can('purchase_order', 'approve')
   const employeeOptions = employees.map((e) => ({ value: e.full_name, label: e.full_name }))
 
@@ -237,8 +238,20 @@ export default function PurchaseOrderDetail() {
     catch { /* interceptor đã toast lỗi */ }
   }
 
-  async function copyDoc() {
-    try { const r = await api.post(`${API}/${id}/copy`); navigate(`/purchase-orders/${r.data.data.id}`) }
+  // Cập nhật trạng thái tiến độ 1 dòng (Hủy/Tạm ngưng cần lý do); backend gate điều kiện + toast cột thiếu
+  async function setProgress(item: any, status: string) {
+    if (status === (item.progress_status || 'Chưa đặt hàng')) return
+    let reason = ''
+    if (status === 'Tạm ngưng' || status === 'Hủy đơn') {
+      const r = await askPrompt({ title: status, message: `Lý do ${status.toLowerCase()}:`, confirmText: status })
+      if (r === null || !r.trim()) return
+      reason = r.trim()
+    }
+    try { await api.post(`${API}/${id}/items/${item.id}/progress`, { status, reason }); toast.success('Đã cập nhật trạng thái'); loadAll() }
+    catch { /* interceptor đã toast lỗi (kèm cột còn thiếu) */ }
+  }
+  async function resumeProgress(item: any) {
+    try { await api.post(`${API}/${id}/items/${item.id}/progress`, { status: '__resume__' }); toast.success('Đã tiếp tục đơn'); loadAll() }
     catch { /* interceptor đã toast lỗi */ }
   }
 
@@ -313,9 +326,6 @@ export default function PurchaseOrderDetail() {
             )}
           </div>
         )}
-        {!isNew && can('purchase_order', 'create') && (
-          <button className="btn ghost" onClick={async () => { if (await askConfirm({ message: 'Nhân bản đơn này thành đơn Nháp mới?', confirmText: 'Nhân bản', danger: false })) copyDoc() }}><i className="ti ti-copy" />Nhân bản</button>
-        )}
         {!isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'cancel') && (
           <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { const r = await askPrompt({ title: 'Từ chối đơn', message: 'Lý do từ chối (khóa đơn, không sửa lại được):', confirmText: 'Từ chối' }); if (r !== null) action('cancel', { reason: r }) }}><i className="ti ti-ban" />Từ chối</button>
         )}
@@ -338,7 +348,7 @@ export default function PurchaseOrderDetail() {
           <button className="btn" onClick={async () => { if (await askConfirm({ message: 'Xác nhận HOÀN THÀNH đơn mua hàng này? Sau khi hoàn thành sẽ khóa, không chỉnh sửa được nữa.', confirmText: 'Hoàn thành', danger: false })) action('complete') }}><i className="ti ti-circle-check" />Hoàn thành</button>
         )}
         {(headerEditable || deliveryEditable) && can('purchase_order', isNew ? 'create' : 'write') && (
-          <button className="btn" onClick={save}>{isNew ? 'Tạo' : 'Lưu'}</button>
+          <button className="btn" onClick={save} style={{ height: 40, padding: '0 22px', fontSize: 14.5, fontWeight: 700 }}><i className="ti ti-device-floppy" />{isNew ? 'Tạo' : 'Lưu'}</button>
         )}
       </div>
 
@@ -412,6 +422,7 @@ export default function PurchaseOrderDetail() {
                     <th style={{ width: 64 }}>VAT%</th>
                     <th style={{ width: 150, background: '#fff3cd' }}>Thành tiền đơn hàng</th>
                     <th style={{ width: 150 }}>Tiến độ giao</th>
+                    <th style={{ width: 170 }}>Trạng thái</th>
                     <th style={{ width: 120, textAlign: 'center' }}>Hành động</th>
                   </tr>
                 </thead>
@@ -441,6 +452,26 @@ export default function PurchaseOrderDetail() {
                         </div>
                       </td>
                       <td style={{ textAlign: 'center' }}>
+                        {progressEditable && !['Hủy đơn', 'Hoàn thành'].includes(it.progress_status) ? (
+                          it.progress_status === 'Tạm ngưng' ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                              <span className="badge" style={{ background: PG_COLOR['Tạm ngưng'] + '22', color: PG_COLOR['Tạm ngưng'] }}>Tạm ngưng</span>
+                              <button className="btn ghost" style={{ height: 26, fontSize: 11, padding: '0 8px' }} onClick={() => resumeProgress(it)}><i className="ti ti-player-play" />Tiếp tục</button>
+                            </div>
+                          ) : (
+                            <select className="cell-input" value={it.progress_status || 'Chưa đặt hàng'} onChange={(e) => setProgress(it, e.target.value)}
+                              style={{ width: 160, fontWeight: 600, color: PG_COLOR[it.progress_status] || 'var(--ink)' }}>
+                              {PROGRESS_ALL.map((s) => <option key={s} value={s} style={{ color: 'var(--ink)' }}>{s}</option>)}
+                            </select>
+                          )
+                        ) : (
+                          <span className="badge" style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{it.progress_status || 'Chưa đặt hàng'}</span>
+                        )}
+                        {it.pause_reason && ['Tạm ngưng', 'Hủy đơn'].includes(it.progress_status) && (
+                          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }} title={it.pause_reason}>Lý do: {it.pause_reason}</div>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
                         <div style={{ display: 'inline-flex', gap: 6 }}>
                           <button className="icon-btn" title={`Chi tiết & giao hàng (${it.deliveries?.length || 0} lần)`} onClick={() => openDetail(i)}>
                             <i className="ti ti-edit" style={{ fontSize: 16, color: 'var(--teal)' }} />
@@ -459,7 +490,7 @@ export default function PurchaseOrderDetail() {
                       </td>
                     </tr>
                   ))}
-                  {items.length === 0 && <tr><td colSpan={10} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có dòng nào</td></tr>}
+                  {items.length === 0 && <tr><td colSpan={11} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có dòng nào</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -556,6 +587,29 @@ export default function PurchaseOrderDetail() {
                     <div className="form-row"><label>Mã HH (thành phẩm)</label><input value={it.fg_code || ''} placeholder="Tự gắn khi chọn SP" disabled={de} onChange={(e) => setItem(ii, { fg_code: e.target.value })} /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên HH (thành phẩm)</label><input value={it.fg_name || ''} placeholder="Tự gắn khi chọn SP" disabled={de} onChange={(e) => setItem(ii, { fg_name: e.target.value })} /></div>
                     <div className="form-row"><label>Số hóa đơn</label><input value={it.invoice_no || ''} placeholder="Số HĐ theo sản phẩm" disabled={de} onChange={(e) => setItem(ii, { invoice_no: e.target.value })} /></div>
+                    <div className="form-row">
+                      <label>Trạng thái tiến độ</label>
+                      <div>
+                        {progressEditable && !['Hủy đơn', 'Hoàn thành'].includes(it.progress_status) ? (
+                          it.progress_status === 'Tạm ngưng' ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
+                              <span className="badge" style={{ background: PG_COLOR['Tạm ngưng'] + '22', color: PG_COLOR['Tạm ngưng'] }}>Tạm ngưng</span>
+                              <button className="btn ghost" style={{ height: 26, fontSize: 11, padding: '0 8px' }} onClick={() => resumeProgress(it)}><i className="ti ti-player-play" />Tiếp tục</button>
+                            </div>
+                          ) : (
+                            <select className="cell-input" value={it.progress_status || 'Chưa đặt hàng'} onChange={(e) => setProgress(it, e.target.value)}
+                              style={{ fontWeight: 600, color: PG_COLOR[it.progress_status] || 'var(--ink)' }}>
+                              {PROGRESS_ALL.map((s) => <option key={s} value={s} style={{ color: 'var(--ink)' }}>{s}</option>)}
+                            </select>
+                          )
+                        ) : (
+                          <span className="badge" style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{it.progress_status || 'Chưa đặt hàng'}</span>
+                        )}
+                        {it.pause_reason && ['Tạm ngưng', 'Hủy đơn'].includes(it.progress_status) && (
+                          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>Lý do: {it.pause_reason}</div>
+                        )}
+                      </div>
+                    </div>
                     <div className="form-row"><label>Ngày yêu cầu có hàng</label><input type="date" value={it.required_date || ''} disabled={de} onChange={(e) => setItem(ii, { required_date: e.target.value })} /></div>
                     <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={!!it.supplier_ready} disabled={de} onChange={(e) => setItem(ii, { supplier_ready: e.target.checked })} style={{ width: 16, height: 16 }} /> NCC có sẵn hàng</label></div>
                     <div className="form-row"><label>ĐVT</label>

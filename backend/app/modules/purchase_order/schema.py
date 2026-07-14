@@ -81,3 +81,8 @@ class POUpdate(BaseModel):
 
 class RejectIn(BaseModel):
     reason: str = ""
+
+
+class ItemProgressIn(BaseModel):
+    status: str                    # trạng thái tiến độ đích (hoặc "__resume__" để tiếp tục từ Tạm ngưng)
+    reason: str = ""               # bắt buộc khi Tạm ngưng / Hủy đơn

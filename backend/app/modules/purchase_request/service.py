@@ -40,15 +40,64 @@ def recompute_status(db: Session, pr: PurchaseRequest) -> None:
     if not st:
         return
     was_completed = pr.status == "completed"
-    if all(s == "Hoàn thành" for s in st):
+    # Dòng đã Hủy KHÔNG tính vào điều kiện hoàn thành (1 dòng hủy + các dòng còn lại đủ = vẫn hoàn thành)
+    active = [s for s in st if s != "Hủy đơn"]
+    if active and all(s == "Hoàn thành" for s in active):
         pr.status = "completed"
-    elif any(s != "Chưa đặt hàng" for s in st):
+    elif any(s not in ("Chưa đặt hàng", "Hủy đơn") for s in st):
         pr.status = "processing"
     else:
         pr.status = "approved"
     db.commit()
     if pr.status == "completed" and not was_completed:
         _notify_survey_request_done(db, pr.id, pr.updated_by or 0)
+
+
+# Thứ tự tiến độ dòng (đồng bộ với ĐMH); dòng YCMH = mức KÉM TIẾN NHẤT trong các dòng ĐMH liên kết
+_PROGRESS_ORDER = ["Chưa đặt hàng", "Đã đặt hàng", "Đã nhận hàng", "Đã gửi ĐMH cho KT", "Hoàn thành"]
+
+
+def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
+    """Suy trạng thái từng dòng YCMH từ các dòng ĐMH liên kết (khớp product_code), rồi suy lại trạng thái phiếu.
+    - Chỉ tính ĐMH đã duyệt trở đi (bỏ nháp/chờ duyệt/bị trả lại/đã từ chối).
+    - Bỏ dòng ĐMH đang Hủy/Tạm ngưng khi gom.
+    - Dòng YCMH bị Hủy/Tạm ngưng THỦ CÔNG thì giữ nguyên (không đè)."""
+    if not pr_code:
+        return
+    pr = db.query(PurchaseRequest).filter(PurchaseRequest.code == pr_code).first()
+    if not pr:
+        return
+    from app.modules.purchase_order.model import PurchaseOrder, POItem
+    lines = (db.query(POItem).join(PurchaseOrder, PurchaseOrder.id == POItem.po_id)
+             .filter(PurchaseOrder.pr_code == pr_code,
+                     PurchaseOrder.status.notin_(["draft", "submitted", "cancelled", "rejected"]))
+             .all())
+    active_idx: dict[str, int] = {}   # sp -> mức kém tiến nhất trong các dòng ĐANG chạy
+    has_cancel: set[str] = set()      # sp có dòng Hủy đơn
+    has_pause: set[str] = set()       # sp có dòng Tạm ngưng
+    for ln in lines:
+        ps = ln.progress_status or "Chưa đặt hàng"
+        if ps == "Hủy đơn":
+            has_cancel.add(ln.product_code); continue
+        if ps == "Tạm ngưng":
+            has_pause.add(ln.product_code); continue
+        idx = _PROGRESS_ORDER.index(ps) if ps in _PROGRESS_ORDER else 0
+        cur = active_idx.get(ln.product_code)
+        active_idx[ln.product_code] = idx if cur is None else min(cur, idx)
+    for it in items_of(db, pr.id):
+        if (it.line_status or "") in ("Hủy đơn", "Tạm ngưng"):
+            continue  # ngoại lệ đặt thủ công trên YCMH thì giữ nguyên
+        p = it.product_code
+        if p in active_idx:
+            it.line_status = _PROGRESS_ORDER[active_idx[p]]           # còn dòng đang chạy → mức kém tiến nhất
+        elif p in has_cancel:
+            it.line_status = "Hủy đơn"                                 # mọi dòng ĐMH của sp đều hủy
+        elif p in has_pause:
+            it.line_status = "Tạm ngưng"
+        else:
+            it.line_status = "Chưa đặt hàng"                           # chưa có ĐMH nào
+    db.commit()
+    recompute_status(db, pr)
 
 
 def update_item_status(db: Session, pid: int, data: ItemStatusIn, user_id: int, emp_code: str, is_manager: bool) -> PurchaseRequest:

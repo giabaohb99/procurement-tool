@@ -14,7 +14,7 @@ from app.modules.notification.service import trigger_notification
 
 from . import service
 from .model import POItem, PurchaseOrder
-from .schema import POCreate, POUpdate, RejectIn
+from .schema import POCreate, POUpdate, RejectIn, ItemProgressIn
 
 router = APIRouter(prefix="/api/purchase-orders", tags=["purchase_order"])
 
@@ -47,6 +47,8 @@ def _item(db, it) -> dict:
             "price": float(it.price or 0), "vat": float(it.vat or 0), "amount": float(it.amount or 0),
             "qty_received": float(it.qty_received or 0), "qty_remaining": float(it.qty_remaining or 0),
             "line_status": it.line_status, "warehouse_code": it.warehouse_code, "note": it.note,
+            "progress_status": it.progress_status or "Chưa đặt hàng",
+            "pause_reason": it.pause_reason or "", "status_before_pause": it.status_before_pause or "",
             # Giao thiếu: tổng SL đã nhận < SL đặt (dùng cho badge cảnh báo ở FE)
             "is_short_delivery": bool(qty_order > 0 and float(it.qty_received or 0) + 0.001 < qty_order),
             "deliveries": [_delivery(d) for d in dels]}
@@ -238,5 +240,13 @@ def complete_po(pid: int, db: Session = Depends(get_db),
 def reopen_po(pid: int, db: Session = Depends(get_db),
               user=Depends(require("purchase_order", "write"))):
     return success(_out(db, service.set_status(db, pid, "draft", user.id)), "Đã mở lại đơn (về nháp)")
+
+
+@router.post("/{pid}/items/{item_id}/progress")
+def set_item_progress(pid: int, item_id: int, data: ItemProgressIn, db: Session = Depends(get_db),
+                      user=Depends(require("purchase_order", "write"))):
+    """Người phụ trách cập nhật trạng thái tiến độ 1 dòng (có gate điều kiện) + đồng bộ sang YCMH."""
+    return success(_out(db, service.set_item_progress(db, pid, item_id, data.status, data.reason, user.id)),
+                   "Đã cập nhật trạng thái dòng")
 
 
