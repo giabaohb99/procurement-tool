@@ -32,6 +32,7 @@ services:
       dockerfile: docker/Dockerfile.web.prod
       args:
         VITE_API_URL: "https://thumua.degoholding.vn"
+        VITE_DEVELOPER_MODE: "${VITE_DEVELOPER_MODE:-}"   # bật chế độ Dev (đổi user) khi .env đặt =dev; mặc định tắt
     container_name: procurement-web
     restart: always
     depends_on:
