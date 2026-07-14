@@ -207,6 +207,15 @@ export default function SurveyRequestDetail() {
   // --- Phase 5C/5D: kết quả khảo sát (ẩn NCC) + sinh PYC ---
   const [result, setResult] = useState<any>(null)
   const [viewImg, setViewImg] = useState<string | null>(null)   // lightbox ảnh đính kèm
+  const [showPrModal, setShowPrModal] = useState(false)         // popup DS phiếu YCMH đã sinh
+
+  // Esc để đóng popup DS phiếu YCMH
+  useEffect(() => {
+    if (!showPrModal) return
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowPrModal(false) }
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
+  }, [showPrModal])
 
   // Đính kèm không phải ảnh → hỏi trước khi tải về
   async function openAtt(a: any) {
@@ -508,6 +517,13 @@ export default function SurveyRequestDetail() {
           </button>
         )}
 
+        {/* Nút mở popup danh sách PYC đã sinh */}
+        {createdPrs.length > 0 && (
+          <button className="btn ghost" style={{ color: '#15803d', borderColor: '#bbf7d0' }} onClick={() => setShowPrModal(true)}>
+            <i className="ti ti-file-check" />Đã tạo {createdPrs.length} phiếu YCMH
+          </button>
+        )}
+
         {/* Nút Xóa */}
         {!isNew && editable && can('survey_request', 'delete') && (
           <button
@@ -520,18 +536,46 @@ export default function SurveyRequestDetail() {
         )}
       </div>
 
-      {/* Banner PYC đã sinh — đưa lên đầu để dễ mở các phiếu vừa tạo */}
-      {createdPrs.length > 0 && (
-        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 13 }}>
-          <b style={{ color: '#15803d' }}><i className="ti ti-circle-check" /> Đã tạo {createdPrs.length} phiếu yêu cầu mua hàng: </b>
-          <ul style={{ margin: '8px 0 0 24px', padding: 0, color: '#15803d', lineHeight: 1.6 }}>
-            {createdPrs.map((p) => (
-              <li key={p.pid}>
-                <a className="clickable" style={{ color: 'var(--teal)', fontWeight: 600 }} onClick={() => navigate(`/purchase-requests/${p.pid}`)}>{p.code}</a>
-                {' '} — Bao gồm: <b>{p.items.join(', ')}</b>
-              </li>
-            ))}
-          </ul>
+      {/* Popup PYC đã sinh — mở từ nút "Đã tạo N phiếu YCMH" trên header */}
+      {showPrModal && createdPrs.length > 0 && (
+        <div className="confirm-modal-overlay" onClick={() => setShowPrModal(false)}>
+          <div className="confirm-modal" style={{ position: 'relative', maxWidth: 580, textAlign: 'left', padding: 0, overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+            {/* Nút X đóng — góc trên phải */}
+            <button
+              onClick={() => setShowPrModal(false)}
+              title="Đóng"
+              style={{ position: 'absolute', top: 12, right: 12, width: 30, height: 30, display: 'grid', placeItems: 'center', border: 'none', borderRadius: 8, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#475569' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#94a3b8' }}
+            >
+              <i className="ti ti-x" />
+            </button>
+
+            {/* Header xanh */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '18px 22px', background: '#f0fdf4', borderBottom: '1px solid #dcfce7' }}>
+              <span style={{ width: 38, height: 38, flexShrink: 0, display: 'grid', placeItems: 'center', borderRadius: '50%', background: '#dcfce7', color: '#16a34a', fontSize: 20 }}>
+                <i className="ti ti-circle-check" />
+              </span>
+              <div>
+                <div style={{ fontWeight: 700, color: '#15803d', fontSize: 15 }}>Đã tạo {createdPrs.length} phiếu yêu cầu mua hàng</div>
+                <div style={{ color: '#64748b', fontSize: 12, marginTop: 1 }}>Bấm mã phiếu để mở chi tiết</div>
+              </div>
+            </div>
+
+            {/* Danh sách PYC */}
+            <ul style={{ listStyle: 'none', margin: 0, padding: '10px 12px', minHeight: 120, maxHeight: '55vh', overflowY: 'auto' }}>
+              {createdPrs.map((p) => (
+                <li key={p.pid} style={{ padding: '10px 12px', borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 3 }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
+                  <a className="clickable" style={{ color: 'var(--teal)', fontWeight: 700, fontSize: 14 }} onClick={() => navigate(`/purchase-requests/${p.pid}`)}>
+                    <i className="ti ti-file-text" style={{ marginRight: 6 }} />{p.code}
+                  </a>
+                  <span style={{ color: '#64748b', fontSize: 12.5, paddingLeft: 22 }}>Bao gồm: <b style={{ color: '#334155' }}>{p.items.join(', ')}</b></span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       )}
 
