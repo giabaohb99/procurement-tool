@@ -17,8 +17,9 @@ class PaymentRequest(Base, AuditMixin):
     request_date: Mapped[str] = mapped_column(String(10), default="")
     total: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
     note: Mapped[str] = mapped_column(Text, default="")
+    reject_reason: Mapped[str] = mapped_column(Text, default="")   # lý do từ chối (khi cancelled)
     status: Mapped[str] = mapped_column(String(20), default="draft")
-    # draft | submitted | approved | paid
+    # draft | submitted | approved | paid | cancelled (Đã từ chối)
 
 
 class PaymentRequestLine(Base, AuditMixin):

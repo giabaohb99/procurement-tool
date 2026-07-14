@@ -233,7 +233,7 @@ def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
     if not _can_edit_own(db, pr, user):
         raise HTTPException(403, "Không có quyền gửi duyệt phiếu này")
     if pr.status not in ("draft", "rejected"):
-        raise HTTPException(400, "Chỉ gửi duyệt được phiếu ở trạng thái Nháp/Từ chối")
+        raise HTTPException(400, "Chỉ gửi duyệt được phiếu ở trạng thái Nháp hoặc Bị trả lại")
     pr = service.set_status(db, pid, "submitted", user.id)
     trigger_notification(
         db=db,

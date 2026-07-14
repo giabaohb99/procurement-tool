@@ -85,13 +85,14 @@ def cancel_pr(db: Session, pid: int, reason: str, user_id: int) -> PurchaseReque
 
 
 def return_pr(db: Session, pid: int, reason: str, user_id: int) -> PurchaseRequest:
-    """Trả phiếu về Nháp: xóa nhân sự phụ trách + reset trạng thái mọi dòng về 'Chưa đặt hàng'."""
+    """Trả phiếu về "Bị trả lại" (rejected) — người tạo SỬA & GỬI DUYỆT LẠI được (đồng bộ YCKS).
+    Xóa nhân sự phụ trách + reset trạng thái mọi dòng về 'Chưa đặt hàng'."""
     pr = get_pr(db, pid)
     for it in items_of(db, pid):
         it.assignee = ""
         it.line_status = "Chưa đặt hàng"
     pr.assignee_id = 0
-    pr.status = "draft"
+    pr.status = "rejected"
     pr.updated_by = user_id
     db.commit()
     record(db, user_id, ENTITY, pid, "returned", reason)
@@ -258,7 +259,8 @@ def create_pr(db: Session, data: PRCreate, user_id: int) -> PurchaseRequest:
 def update_pr(db: Session, pid: int, data: PRUpdate, user_id: int) -> PurchaseRequest:
     pr = get_pr(db, pid)
     if pr.status not in ("draft", "rejected"):
-        raise HTTPException(400, "Chỉ sửa được khi ở trạng thái Nháp/Từ chối")
+        raise HTTPException(400, "Chỉ sửa được khi phiếu ở trạng thái Nháp hoặc Bị trả lại "
+                                 "(phiếu Đã từ chối đã khóa — hãy Nhân bản thành phiếu mới).")
     for key, value in data.model_dump(exclude_unset=True, exclude={"items"}).items():
         setattr(pr, key, value)
     pr.updated_by = user_id

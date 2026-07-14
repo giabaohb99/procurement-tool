@@ -109,10 +109,12 @@ def delete_request(db: Session, rid: int, user_id: int):
     record(db, user_id, ENTITY, rid, "delete")
 
 
-def set_status(db: Session, rid: int, status: str, user_id: int) -> PaymentRequest:
+def set_status(db: Session, rid: int, status: str, user_id: int, reason: str = "") -> PaymentRequest:
     req = get_request(db, rid)
     req.status = status
     req.updated_by = user_id
+    if status == "cancelled":
+        req.reject_reason = reason
     if status == "paid":
         # cộng tiền đã trả vào từng khoản nợ
         for ln in lines_of(db, rid):
@@ -121,6 +123,6 @@ def set_status(db: Session, rid: int, status: str, user_id: int) -> PaymentReque
                 p.paid_amount = round(float(p.paid_amount or 0) + float(ln.amount or 0), 2)
                 recalc_status(p)
     db.commit()
-    record(db, user_id, ENTITY, rid, status)
+    record(db, user_id, ENTITY, rid, status, reason)
     db.refresh(req)
     return req

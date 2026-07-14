@@ -17,7 +17,7 @@ from .schema import PRequestCreate, PRequestUpdate
 router = APIRouter(prefix="/api/payment-requests", tags=["payment_request"])
 
 HEADER = ["id", "code", "supplier_code", "supplier_name", "company_id", "source_type",
-          "request_date", "total", "note", "status"]
+          "request_date", "total", "note", "reject_reason", "status"]
 
 
 def _line(db, ln) -> dict:
@@ -116,6 +116,14 @@ def submit_(rid: int, db: Session = Depends(get_db), user=Depends(require("payme
 @router.post("/{rid}/approve")
 def approve_(rid: int, db: Session = Depends(get_db), user=Depends(require("payment_request", "approve"))):
     return success(_out(db, service.set_status(db, rid, "approved", user.id)), "Đã duyệt")
+
+
+@router.post("/{rid}/reject")
+def reject_(rid: int, data: dict, db: Session = Depends(get_db),
+            user=Depends(require("payment_request", "approve"))):
+    """Từ chối phiếu yêu cầu thanh toán (khóa) — người duyệt thao tác. Body: {reason}."""
+    reason = (data.get("reason") or "").strip()
+    return success(_out(db, service.set_status(db, rid, "cancelled", user.id, reason)), "Đã từ chối")
 
 
 @router.post("/{rid}/pay")

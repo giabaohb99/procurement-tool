@@ -815,14 +815,16 @@ export default function SurveyDetail() {
         )}
         {!isNew && sv.status === 'submitted' && canApprove && (
           <>
-            <button className="btn" onClick={async () => { if (await askConfirm({ message: 'Duyệt cả phiếu khảo sát này?', confirmText: 'Duyệt phiếu', danger: false })) action('approve') }}><i className="ti ti-check" />Duyệt phiếu</button>
+            <button className="btn" onClick={async () => { if (await askConfirm({ message: 'Duyệt cả phiếu khảo sát này?', confirmText: 'Duyệt phiếu', danger: false })) action('approve') }}><i className="ti ti-check" />Duyệt</button>
+            <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }}
+              title="Trả về để người khảo sát sửa & gửi lại"
+              onClick={async () => { const r = await askPrompt({ title: 'Trả về', message: 'Lý do trả về (để sửa & gửi duyệt lại):', confirmText: 'Trả về' }); if (r !== null) action('reject', { reason: r }) }}>
+              <i className="ti ti-corner-up-left" />Trả về
+            </button>
             <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
+              title="Khóa phiếu — không sửa lại được"
               onClick={async () => { const r = await askPrompt({ title: 'Từ chối phiếu', message: 'Lý do từ chối (khóa phiếu):', danger: true, confirmText: 'Từ chối' }); if (r !== null) action('cancel', { reason: r }) }}>
               <i className="ti ti-ban" />Từ chối
-            </button>
-            <button className="btn ghost" style={{ color: 'var(--amber)', borderColor: 'var(--amber)' }}
-              onClick={async () => { const r = await askPrompt({ title: 'Trả lại phiếu', message: 'Lý do trả lại (để khảo sát lại):' }); if (r !== null) action('reject', { reason: r }) }}>
-              <i className="ti ti-arrow-back-up" />Trả lại
             </button>
           </>
         )}

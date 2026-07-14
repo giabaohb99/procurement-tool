@@ -66,13 +66,13 @@ export const PR_STATUS: Record<string, { label: string; cls: string }> = {
   draft: { label: 'Nháp', cls: 'gray' },
   submitted: { label: 'Chờ duyệt', cls: 'warn' },
   approved: { label: 'Đã duyệt', cls: 'ok' },
-  rejected: { label: 'Từ chối', cls: 'err' },
+  rejected: { label: 'Bị trả lại', cls: 'warn' },   // Trả về — sửa & gửi duyệt lại được
   processing: { label: 'Đang xử lý', cls: 'warn' },
   survey_done: { label: 'Đã khảo sát', cls: 'ok' },
   pr_created: { label: 'Đã tạo YCMH', cls: 'warn' },
   done: { label: 'Hoàn thành', cls: 'ok' },
   completed: { label: 'Hoàn thành', cls: 'ok' },
-  cancelled: { label: 'Đã hủy', cls: 'err' },
+  cancelled: { label: 'Đã từ chối', cls: 'err' },   // Từ chối — khóa phiếu
 }
 export const prBadge = (st: string) => {
   const s = PR_STATUS[String(st || '').toLowerCase()] || { label: st, cls: 'gray' }
@@ -279,7 +279,8 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'is_urgent', label: 'Đơn gấp', type: 'select', options: [{ value: 'true', label: 'Gấp' }, { value: 'false', label: 'Thường' }] },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
-        { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Từ chối' },
+        { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Bị trả lại' },
+        { value: 'cancelled', label: 'Đã từ chối' },
         { value: 'processing', label: 'Đang xử lý' }, { value: 'completed', label: 'Hoàn thành' },
       ] },
     ],
@@ -436,7 +437,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'supplier_name', label: 'Nhà cung cấp', render: (r) => r.supplier_name || r.supplier_code },
       { key: 'source_type', label: 'Loại', render: (r) => (r.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa') },
       { key: 'total', label: 'Số tiền', render: (r) => (r.total ? Number(r.total).toLocaleString('vi-VN') + ' đ' : '0 đ') },
-      { key: 'status', label: 'Trạng thái', render: (r) => poBadge(r.status === 'paid' ? 'received' : r.status) },
+      { key: 'status', label: 'Trạng thái', render: (r) => (r.status === 'cancelled' ? <span className="badge err">Đã từ chối</span> : poBadge(r.status === 'paid' ? 'received' : r.status)) },
     ],
     filters: [
       { key: 'code', label: 'Mã phiếu' },
@@ -446,7 +447,8 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'request_date', label: 'Ngày lập', type: 'daterange' },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
-        { value: 'approved', label: 'Đã duyệt' }, { value: 'paid', label: 'Đã chi' }] },
+        { value: 'approved', label: 'Đã duyệt' }, { value: 'paid', label: 'Đã chi' },
+        { value: 'cancelled', label: 'Đã từ chối' }] },
     ],
     fields: [],
   },

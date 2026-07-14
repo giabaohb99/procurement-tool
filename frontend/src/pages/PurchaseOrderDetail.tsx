@@ -330,7 +330,7 @@ export default function PurchaseOrderDetail() {
         {!isNew && po.status === 'submitted' && can('purchase_order', 'approve') && (
           <>
             <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>
-            <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { const r = await askPrompt({ title: 'Từ chối đơn', message: 'Lý do từ chối:', confirmText: 'Từ chối' }); if (r !== null) action('reject', { reason: r }) }}><i className="ti ti-x" />Từ chối</button>
+            <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { const r = await askPrompt({ title: 'Từ chối đơn', message: 'Lý do từ chối:', confirmText: 'Từ chối' }); if (r !== null) action('reject', { reason: r }) }}><i className="ti ti-ban" />Từ chối</button>
           </>
         )}
         {!isNew && po.status === 'received' && can('purchase_order', 'write') && (

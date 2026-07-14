@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
-import { askConfirm } from '../components/confirm'
+import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import NotFound from '../components/NotFound'
 import NumberInput from '../components/NumberInput'
@@ -12,6 +12,7 @@ const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const ST: Record<string, { label: string; cls: string }> = {
   draft: { label: 'Nháp', cls: 'gray' }, submitted: { label: 'Chờ duyệt', cls: 'warn' },
   approved: { label: 'Đã duyệt', cls: 'ok' }, paid: { label: 'Đã chi', cls: 'ok' },
+  cancelled: { label: 'Đã từ chối', cls: 'err' },
 }
 const stBadge = (s: string) => { const x = ST[s] || { label: s, cls: 'gray' }; return <span className={'badge ' + x.cls}>{x.label}</span> }
 
@@ -91,8 +92,20 @@ export default function PaymentRequestDetail() {
         {editable && can('payment_request', 'write') && <button className="btn" onClick={save}>Lưu</button>}
         {req.status === 'draft' && can('payment_request', 'write') && <button className="btn secondary" onClick={() => action('submit')}><i className="ti ti-send" />Gửi duyệt</button>}
         {req.status === 'submitted' && can('payment_request', 'approve') && <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>}
+        {req.status === 'submitted' && can('payment_request', 'approve') && (
+          <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
+            onClick={async () => { const r = await askPrompt({ title: 'Từ chối phiếu', message: 'Lý do từ chối (khóa phiếu):', confirmText: 'Từ chối' }); if (r !== null) { try { await api.post(`${API}/${id}/reject`, { reason: r }); loadAll() } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi từ chối') } } }}>
+            <i className="ti ti-ban" />Từ chối
+          </button>
+        )}
         {req.status === 'approved' && can('payment_request', 'write') && <button className="btn" onClick={async () => { if (await askConfirm({ message: 'Xác nhận đã chi tiền? Công nợ sẽ được trừ tương ứng.', confirmText: 'Ghi nhận đã chi', danger: false })) action('pay') }}><i className="ti ti-cash" />Ghi nhận đã chi</button>}
       </div>
+
+      {req.status === 'cancelled' && req.reject_reason && (
+        <div className="card" style={{ padding: 14, marginBottom: 16, borderLeft: '4px solid var(--red)' }}>
+          <b style={{ color: 'var(--red)' }}>Lý do từ chối:</b> {req.reject_reason}
+        </div>
+      )}
 
       <div className="card" style={{ padding: 18, marginBottom: 16 }}>
         <h3 className="sec-title">Thông tin phiếu</h3>

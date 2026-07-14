@@ -463,14 +463,14 @@ export default function SurveyRequestDetail() {
             </button>
             <button
               className="btn ghost"
-              style={{ color: 'var(--amber, #d97706)', borderColor: 'var(--amber, #d97706)' }}
+              style={{ color: '#d97706', borderColor: '#fcd34d' }}
               title="Trả về để người YC sửa & gửi lại"
               onClick={async () => {
-                const r = await askPrompt({ title: 'Trả đơn', message: 'Lý do trả đơn (để người YC sửa lại):', confirmText: 'Trả đơn' })
+                const r = await askPrompt({ title: 'Trả về', message: 'Lý do trả về (để người yêu cầu sửa & gửi duyệt lại):', confirmText: 'Trả về' })
                 if (r !== null) action('reject', { reason: r })
               }}
             >
-              <i className="ti ti-corner-up-left" />Trả đơn
+              <i className="ti ti-corner-up-left" />Trả về
             </button>
             <button
               className="btn ghost"
