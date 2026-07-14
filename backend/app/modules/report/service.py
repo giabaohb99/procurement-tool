@@ -180,6 +180,129 @@ def compute(db: Session, year: str, company_id) -> dict:
     }
 
 
+def compute_nspt_range(db: Session, date_from: str, date_to: str, company_id) -> list:
+    """Giao hàng theo NSPT trong khoảng NGÀY [date_from, date_to] (YYYY-MM-DD).
+
+    Tính realtime từ deliveries (không snapshot) — dùng cho bộ lọc khoảng ngày tab NSPT.
+    So sánh chuỗi ISO YYYY-MM-DD hợp lệ về thứ tự."""
+    dq = (db.query(PODelivery)
+          .filter(PODelivery.received_qty > 0,
+                  PODelivery.received_date >= date_from,
+                  PODelivery.received_date <= date_to))
+    delivs = dq.all()
+    po_ids = list({d.po_id for d in delivs})
+    if not po_ids:
+        return []
+    poq = db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(po_ids))
+    if company_id:
+        poq = poq.filter(PurchaseOrder.company_id == int(company_id))
+    po_by = {p.id: p for p in poq.all()}
+
+    agg = {}
+    for d in delivs:
+        po = po_by.get(d.po_id)
+        if po is None:  # bị loại bởi filter công ty
+            continue
+        key = po.nspt or "(Không rõ)"
+        r = agg.setdefault(key, {"key": key, "orders": 0, "late": 0, "ontime": 0, "early": 0})
+        dv = d.diff_regulated or 0
+        r["orders"] += 1
+        if dv < 0:
+            r["late"] += 1
+        elif dv == 0:
+            r["ontime"] += 1
+        else:
+            r["early"] += 1
+    for r in agg.values():
+        r["rate"] = _rate(r["late"], r["orders"])
+    return sorted(agg.values(), key=lambda x: -x["orders"])
+
+
+def compute_ig_range(db: Session, date_from: str, date_to: str, company_id) -> list:
+    """Tần suất mua & chi phí theo LOẠI VTBB/NL trong khoảng NGÀY [date_from, date_to] (YYYY-MM-DD).
+
+    Tính realtime từ deliveries theo received_date — dùng cho bộ lọc khoảng ngày tab Phân loại."""
+    delivs = (db.query(PODelivery)
+              .filter(PODelivery.received_qty > 0,
+                      PODelivery.received_date >= date_from,
+                      PODelivery.received_date <= date_to)
+              .all())
+    po_ids = list({d.po_id for d in delivs})
+    if not po_ids:
+        return []
+    poq = db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(po_ids))
+    if company_id:
+        poq = poq.filter(PurchaseOrder.company_id == int(company_id))
+    ok_po = {p.id for p in poq.all()}
+    item_by = {it.id: it for it in db.query(POItem).filter(POItem.po_id.in_(po_ids)).all()}
+
+    agg = {}
+    for d in delivs:
+        if d.po_id not in ok_po:  # bị loại bởi filter công ty
+            continue
+        it = item_by.get(d.po_item_id)
+        key = (it.item_group if it else None) or "(Không rõ)"
+        r = agg.setdefault(key, {"key": key, "trans": 0, "cost": 0.0})
+        r["trans"] += 1
+        r["cost"] = round(r["cost"] + (_recv_amt(it) if it else 0), 2)
+    return sorted(agg.values(), key=lambda x: -x["cost"])
+
+
+def compute_sup_range(db: Session, date_from: str, date_to: str, company_id) -> list:
+    """Giao dịch & trễ theo NCC trong khoảng NGÀY [date_from, date_to] (YYYY-MM-DD).
+
+    Tính realtime từ deliveries theo received_date — dùng cho bộ lọc khoảng ngày tab NCC."""
+    delivs = (db.query(PODelivery)
+              .filter(PODelivery.received_qty > 0,
+                      PODelivery.received_date >= date_from,
+                      PODelivery.received_date <= date_to)
+              .all())
+    po_ids = list({d.po_id for d in delivs})
+    if not po_ids:
+        return []
+    poq = db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(po_ids))
+    if company_id:
+        poq = poq.filter(PurchaseOrder.company_id == int(company_id))
+    po_by = {p.id: p for p in poq.all()}
+
+    agg = {}
+    for d in delivs:
+        po = po_by.get(d.po_id)
+        if po is None:  # bị loại bởi filter công ty
+            continue
+        key = po.supplier_name or po.supplier_code or "(Không rõ)"
+        r = agg.setdefault(key, {"key": key, "trans": 0, "late": 0})
+        r["trans"] += 1
+        if (d.diff_regulated or 0) < 0:
+            r["late"] += 1
+    for r in agg.values():
+        r["rate"] = _rate(r["late"], r["trans"])
+    return sorted(agg.values(), key=lambda x: -x["trans"])
+
+
+def compute_dept_range(db: Session, date_from: str, date_to: str, company_id) -> list:
+    """Đặt hàng & đơn gấp theo BỘ PHẬN trong khoảng NGÀY [date_from, date_to] (YYYY-MM-DD).
+
+    Tính realtime từ PurchaseOrder theo order_date — dùng cho bộ lọc khoảng ngày tab Bộ phận."""
+    poq = db.query(PurchaseOrder).filter(
+        PurchaseOrder.order_date >= date_from,
+        PurchaseOrder.order_date <= date_to,
+    )
+    if company_id:
+        poq = poq.filter(PurchaseOrder.company_id == int(company_id))
+
+    agg = {}
+    for p in poq.all():
+        key = p.department or "(Không rõ)"
+        r = agg.setdefault(key, {"key": key, "orders": 0, "urgent": 0})
+        r["orders"] += 1
+        if p.is_urgent:
+            r["urgent"] += 1
+    for r in agg.values():
+        r["rate"] = _rate(r["urgent"], r["orders"])
+    return sorted(agg.values(), key=lambda x: -x["orders"])
+
+
 def _key(year, company_id):
     return f"{year or 'all'}|{company_id or 'all'}"
 

@@ -54,6 +54,54 @@ def matrix(request: Request, db: Session = Depends(get_db), user=Depends(require
     refresh = request.query_params.get("refresh") == "1"
     return success(report_service.get_snapshot(db, year, company_id, refresh=refresh))
 
+
+@router.get("/nspt-range")
+def nspt_range(request: Request, db: Session = Depends(get_db), user=Depends(require("report", "read"))):
+    """Giao hàng theo NSPT trong khoảng NGÀY (date_from, date_to = YYYY-MM-DD). Tính realtime."""
+    date_from = request.query_params.get("date_from")
+    date_to = request.query_params.get("date_to")
+    company_id = request.query_params.get("company_id")
+    if not (date_from and date_to):
+        return success([])
+    rows = report_service.compute_nspt_range(db, date_from, date_to, company_id)
+    return success(rows)
+
+
+@router.get("/ig-range")
+def ig_range(request: Request, db: Session = Depends(get_db), user=Depends(require("report", "read"))):
+    """Tần suất mua & chi phí theo Loại VTBB/NL trong khoảng NGÀY (date_from, date_to = YYYY-MM-DD). Tính realtime."""
+    date_from = request.query_params.get("date_from")
+    date_to = request.query_params.get("date_to")
+    company_id = request.query_params.get("company_id")
+    if not (date_from and date_to):
+        return success([])
+    rows = report_service.compute_ig_range(db, date_from, date_to, company_id)
+    return success(rows)
+
+
+@router.get("/sup-range")
+def sup_range(request: Request, db: Session = Depends(get_db), user=Depends(require("report", "read"))):
+    """Giao dịch & trễ theo NCC trong khoảng NGÀY (date_from, date_to = YYYY-MM-DD). Tính realtime."""
+    date_from = request.query_params.get("date_from")
+    date_to = request.query_params.get("date_to")
+    company_id = request.query_params.get("company_id")
+    if not (date_from and date_to):
+        return success([])
+    rows = report_service.compute_sup_range(db, date_from, date_to, company_id)
+    return success(rows)
+
+
+@router.get("/dept-range")
+def dept_range(request: Request, db: Session = Depends(get_db), user=Depends(require("report", "read"))):
+    """Đặt hàng & đơn gấp theo Bộ phận trong khoảng NGÀY (date_from, date_to = YYYY-MM-DD). Tính realtime."""
+    date_from = request.query_params.get("date_from")
+    date_to = request.query_params.get("date_to")
+    company_id = request.query_params.get("company_id")
+    if not (date_from and date_to):
+        return success([])
+    rows = report_service.compute_dept_range(db, date_from, date_to, company_id)
+    return success(rows)
+
 PO_STATUSES = ["draft", "submitted", "approved", "partial", "received", "completed", "cancelled", "rejected"]
 
 
