@@ -159,9 +159,13 @@ export default function NotificationBell() {
               </div>
             ))}
 
-            {/* Cảnh báo hệ thống (chuông) */}
+            {/* Cảnh báo hệ thống (chuông) — là VIỆC CẦN LÀM, link sang /me?tab=tasks */}
             {alerts.length > 0 && (
-              <div style={{ padding: '8px 14px', fontSize: 11.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', background: '#f8fafc' }}>Cảnh báo</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', fontSize: 11.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', background: '#f8fafc' }}>
+                <span>Cảnh báo · việc cần làm</span>
+                <button className="clickable" style={{ background: 'none', border: 'none', color: 'var(--teal)', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', padding: 0, textTransform: 'none' }}
+                  onClick={() => { setOpen(false); nav('/me?tab=tasks') }}>Việc cần làm →</button>
+              </div>
             )}
             {alerts.map((a, i) => (
               <div key={i} onClick={() => { setOpen(false); if (a.link) nav(a.link) }} className="clickable"
