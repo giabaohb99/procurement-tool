@@ -180,14 +180,26 @@ def update_item_status(pid: int, data: ItemStatusIn, db: Session = Depends(get_d
     return success(_out(db, service.update_item_status(db, pid, data, user.id, emp_code, is_manager)), "Đã cập nhật trạng thái")
 
 
+def _ensure_can_return_or_reject(db: Session, user, pr: PurchaseRequest):
+    """Trả về / Từ chối: Quản lý (quyền cancel) làm được mọi giai đoạn;
+    Người duyệt (quyền approve) chỉ làm được ở bước Chờ duyệt (submitted)."""
+    if user_has_permission(db, user, "purchase_request", "cancel"):
+        return
+    if pr.status == "submitted" and user_has_permission(db, user, "purchase_request", "approve"):
+        return
+    raise HTTPException(403, "Bạn không có quyền trả về / từ chối phiếu này")
+
+
 @router.post("/{pid}/cancel")
-def cancel_pr(pid: int, data: ReasonIn, db: Session = Depends(get_db), user=Depends(require("purchase_request", "cancel"))):
+def cancel_pr(pid: int, data: ReasonIn, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
+    _ensure_can_return_or_reject(db, user, service.get_pr(db, pid))
     return success(_out(db, service.cancel_pr(db, pid, data.reason, user.id)), "Đã hủy phiếu")
 
 
 @router.post("/{pid}/return")
-def return_pr(pid: int, data: ReasonIn, db: Session = Depends(get_db), user=Depends(require("purchase_request", "cancel"))):
-    return success(_out(db, service.return_pr(db, pid, data.reason, user.id)), "Đã trả phiếu về (Nháp)")
+def return_pr(pid: int, data: ReasonIn, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
+    _ensure_can_return_or_reject(db, user, service.get_pr(db, pid))
+    return success(_out(db, service.return_pr(db, pid, data.reason, user.id)), "Đã trả phiếu về (Bị trả lại)")
 
 
 @router.post("/{pid}/complete")

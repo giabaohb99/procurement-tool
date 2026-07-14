@@ -391,7 +391,7 @@ export default function PurchaseRequestDetail() {
         {!isNew && pr.status === 'submitted' && can('purchase_request', 'approve') && (
           <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>
         )}
-        {!isNew && canManage && !['draft', 'rejected', 'cancelled', 'completed', 'done'].includes(pr.status) && (
+        {!isNew && (canManage || (pr.status === 'submitted' && can('purchase_request', 'approve'))) && !['draft', 'rejected', 'cancelled', 'completed', 'done'].includes(pr.status) && (
           <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }} onClick={() => setPromptAction({ type: 'return', title: 'Trả về', message: 'Lý do trả về (để người yêu cầu sửa & gửi duyệt lại):' })}><i className="ti ti-corner-up-left" />Trả về</button>
         )}
         {!isNew && pr.status === 'submitted' && can('purchase_request', 'approve') && (
