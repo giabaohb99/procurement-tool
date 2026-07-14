@@ -18,9 +18,17 @@ const TABS = [
   // { key: 'inventory', label: 'Tồn kho' },   // tạm ẩn tab Tồn kho
 ]
 
-// Cột trạng thái cho báo cáo yêu cầu
-const PYC_METRICS = [{ key: 'total', label: 'Tổng' }, { key: 'draft', label: 'Nháp' }, { key: 'submitted', label: 'Chờ duyệt' }, { key: 'approved', label: 'Đã duyệt' }, { key: 'rejected', label: 'Từ chối' }]
-const YCKS_METRICS = [...PYC_METRICS, { key: 'processing', label: 'Đang KS' }, { key: 'survey_done', label: 'Đã KS' }]
+// Cột trạng thái cho báo cáo yêu cầu — khớp enum thật trong DB (Tổng = tổng các cột)
+const PYC_METRICS = [
+  { key: 'total', label: 'Tổng' }, { key: 'draft', label: 'Nháp' }, { key: 'submitted', label: 'Chờ duyệt' },
+  { key: 'approved', label: 'Đã duyệt' }, { key: 'processing', label: 'Đang xử lý' }, { key: 'completed', label: 'Hoàn tất' },
+  { key: 'rejected', label: 'Từ chối' }, { key: 'cancelled', label: 'Đã hủy' },
+]
+const YCKS_METRICS = [
+  { key: 'total', label: 'Tổng' }, { key: 'draft', label: 'Nháp' }, { key: 'submitted', label: 'Chờ duyệt' },
+  { key: 'processing', label: 'Đang KS' }, { key: 'survey_done', label: 'Đã KS' }, { key: 'pr_created', label: 'Đã tạo PYC' },
+  { key: 'done', label: 'Hoàn tất' }, { key: 'cancelled', label: 'Đã hủy' },
+]
 
 const shortNum = (n: any) => {
   n = Number(n || 0)
@@ -285,7 +293,7 @@ export default function Reports() {
           rows={mx.nspt || []} months={months} companyId={f.company_id}
           nameLabel="NSPT" title="Giao hàng theo NSPT" warnHint="đỏ = tỷ lệ trễ > 30%"
           yearLabel={f.year === 'all' ? 'Tất cả' : `Năm ${f.year}`} rangeEndpoint="/api/reports/nspt-range"
-          metrics={[{ key: 'orders', label: 'Số đơn' }, { key: 'late', label: 'Trễ quy định' }, { key: 'ontime', label: 'Đúng hạn' }, { key: 'early', label: 'Giao sớm' }, { key: 'rate', label: 'Tỷ lệ trễ', pct: true }]} />
+          metrics={[{ key: 'orders', label: 'Số lần giao' }, { key: 'late', label: 'Trễ quy định' }, { key: 'ontime', label: 'Đúng hạn' }, { key: 'early', label: 'Giao sớm' }, { key: 'rate', label: 'Tỷ lệ trễ', pct: true }]} />
       )}
 
       {tab === 'department' && (
