@@ -224,10 +224,28 @@ def can_process_line(db: Session, line: SurveyRequestLine, profile: dict) -> boo
     return bool(row and emp_id in (row.primary_employee_id, row.backup_employee_id))
 
 
+def _see_all_lines(profile: dict, s, user) -> bool:
+    """Ai thấy HẾT dòng (để phân bổ): người TẠO / người DUYỆT (Admin·Quản lý TM) /
+    quản lý theo phạm vi dept·company·all. (Đồng bộ với purchase_request._see_all_items.)"""
+    if getattr(user, "id", 0) == getattr(s, "created_by", None):
+        return True
+    for g in profile.get("grants", []):
+        p = g["perms"].get("survey_request")
+        if not p:
+            continue
+        if p.get("approve"):
+            return True
+        if p.get("read") and p.get("scope") in ("dept", "company", "all"):
+            return True
+    return False
+
+
 def visible_lines_for(db: Session, s, lines, user, profile: dict):
-    """Lọc dòng theo NGƯỜI XEM: Quản lý/Admin TM (scope=all) & người TẠO phiếu -> thấy hết;
-    NSTM -> chỉ thấy dòng mình xử lý được (được giao / phụ trách phân loại)."""
-    if _has_scope_all(profile) or getattr(user, "id", 0) == getattr(s, "created_by", None):
+    """Lọc dòng theo NGƯỜI XEM:
+    - Người tạo / người duyệt (Admin·Quản lý TM) / quản lý dept·company·all -> thấy HẾT dòng
+      (để phân bổ NSTM cho từng dòng).
+    - NSTM -> chỉ thấy dòng mình xử lý được (được giao / phụ trách phân loại)."""
+    if _see_all_lines(profile, s, user):
         return list(lines)
     return [ln for ln in lines if can_process_line(db, ln, profile)]
 
