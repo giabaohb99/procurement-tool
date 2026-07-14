@@ -653,6 +653,9 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 5. Trường duyệt (`line_approve`, `line_approve_note`): chỉ TP/QL (`survey:approve`) sửa; NSPT chỉ xem. Chọn "Thiếu thông tin" cho phép NSPT mở dòng ở chế độ Bổ sung để sửa dù phiếu đã gửi.
 6. Đính kèm: mỗi dòng đính kèm file (PDF/ảnh/Excel, tối đa 10MB/file), lưu trên Cloudflare R2. Phiếu cũng có đính kèm ở cấp toàn phiếu (riêng với đính kèm theo dòng).
 7. Nhân bản (`POST /api/surveys/{id}/clone`): tạo phiếu Nháp mới từ phiếu nguồn — copy toàn bộ thông tin tiếp nhận (header) + dòng NCC + dòng SP. Phiếu mới được cấp mã tự động (KS…); trạng thái = Nháp; kết quả duyệt header và dòng bị reset về trống/Chờ duyệt. Liên kết YCKS/PYC (`sr_code`, `survey_request_id`, `pr_code`) KHÔNG được copy — phiếu nhân bản hoàn toàn độc lập. Nút "Nhân bản" hiển thị trong danh sách phiếu (người có quyền `survey:create`).
+8. Gỡ option YCKS khi dòng SP bị không duyệt (`_purge_yc_options`): hệ thống tự xóa các option Yêu cầu khảo sát (YCKS) đang tham chiếu dòng khảo sát SP không còn hợp lệ, tránh để option lỗi vẫn hiện hoặc chọn được trên form YCKS.
+   - **Duyệt từng dòng** (`approve_lines`): nếu dòng SP bị đặt `line_approve = "Không duyệt"` (từ chối dứt khoát) → hệ thống **xóa cứng** mọi option YCKS đang tham chiếu dòng đó ngay sau khi lưu kết quả duyệt. (Các trạng thái tạm "Chờ duyệt" / "Thiếu thông tin" KHÔNG xóa cứng — option chỉ bị **ẩn tạm** qua `valid_options_of`, để nếu dòng được duyệt lại thì option vẫn còn.)
+   - **Hủy cả phiếu** (`set_status` → `cancelled`): gỡ option YCKS của mọi dòng SP thuộc phiếu bị hủy.
 
 ## E. Quyền thao tác (RBAC)
 

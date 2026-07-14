@@ -55,6 +55,10 @@ Mở khi bấm chuông; đóng khi bấm ra ngoài.
 
 Phía dưới danh sách thông báo, hiển thị thêm các cảnh báo hệ thống (công nợ quá hạn, hàng giao trễ, hợp đồng sắp hết hạn) từ `/api/alerts`. Cảnh báo không có trạng thái đọc/chưa đọc — chỉ điều hướng khi bấm.
 
+Tiêu đề khu hiển thị là **"Cảnh báo · việc cần làm"**; phía phải tiêu đề có nút **"Việc cần làm →"** (chỉ xuất hiện khi `alerts.length > 0`) điều hướng đến `/me?tab=tasks`.
+
+Lưu ý: badge chuông = `unread + danger`, nên badge có thể tăng ngay cả khi không có thông báo cá nhân mới. Trong trường hợp đó, bấm "Xem tất cả →" ở chân dropdown (dẫn đến `/notifications`) sẽ thấy danh sách trống. Nút "Việc cần làm →" giúp điều hướng đúng đến tab xử lý cảnh báo, tránh nhầm lẫn.
+
 ---
 
 ### B. Trang `/notifications`

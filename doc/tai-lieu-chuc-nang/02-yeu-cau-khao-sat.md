@@ -173,7 +173,7 @@ Màn danh sách `/survey-requests` hỗ trợ các bộ lọc:
 
 Mỗi dòng = một sản phẩm / nhóm hàng cần khảo sát. Bảng tóm tắt hiển thị các cột chính; toàn bộ trường xem và sửa trong popup "Chi tiết dòng".
 
-**Hiển thị dòng theo người xem (`visible_lines_for`)**: Quản lý/Admin TM (scope `all`) và người tạo phiếu (`created_by`) luôn thấy tất cả dòng. NSTM (scope `proc`) chỉ thấy dòng được giao (`assignee == mã NV của mình`) hoặc dòng có phân loại mình phụ trách theo bảng `CategoryAssignee`. Quy tắc này áp dụng cho cả màn chi tiết, màn Xử lý, lẫn hàm Nhân bản (`clone`).
+**Hiển thị dòng theo người xem (`visible_lines_for`)**: Thấy **hết** dòng nếu là người **tạo phiếu** (`created_by`) HOẶC có quyền **duyệt** (`survey_request:approve`, tức Admin/Quản lý TM) HOẶC có phạm vi đọc `dept`/`company`/`all`. NSTM (scope `proc`, không có quyền duyệt) chỉ thấy dòng được giao (`assignee == mã NV của mình`) hoặc dòng có phân loại mình phụ trách theo bảng `CategoryAssignee`. Quy tắc này áp dụng cho cả màn chi tiết, màn Xử lý, lẫn hàm Nhân bản (`clone`).
 
 ### 1. Ngày tiếp nhận (`received_date`)
 
@@ -306,6 +306,8 @@ Mỗi dòng = một sản phẩm / nhóm hàng cần khảo sát. Bảng tóm t�
 ## C. Trường của Option (phương án) — `SurveyRequestOption`
 
 Mỗi option = một kết quả khảo sát sản phẩm đã duyệt, gắn vào một dòng YCKS. Bảng Options hiển thị đầy đủ trên màn Xử lý (NSTM). Người YC chỉ thấy các trường snapshot công khai qua endpoint `/result` (backend whitelist `_OPT_PUBLIC_FIELDS`).
+
+**Lọc option hợp lệ (`valid_options_of`)**: Tất cả view (màn chi tiết, màn Xử lý, màn kết quả) chỉ hiển thị option mà dòng khảo sát SP nguồn (`product_survey_line_id`) còn ở trạng thái `"Đã duyệt"`. Option của dòng đã bị "Không duyệt" hoặc phiếu khảo sát nguồn bị hủy (`cancelled`) sẽ bị **ẩn hoàn toàn** và **không cho chọn** — xử lý cả dữ liệu cũ còn kẹt trước khi có cascade xóa tự động. Option không gắn nguồn (`product_survey_line_id = 0`) vẫn được giữ.
 
 ### 1. ID ẩn danh trong dòng (`public_id`)
 
@@ -536,7 +538,9 @@ Các trường dưới đây KHÔNG có trong `_OPT_PUBLIC_FIELDS`. Backend endp
 
 14. Xóa phiếu: chỉ khi `draft` hoặc `rejected` (backend kiểm tra). Xóa cascade: xóa toàn bộ `SurveyRequestOption` của các dòng trước, rồi xóa `SurveyRequestLine`, cuối cùng xóa phiếu header.
 
-15. Hiển thị dòng theo người xem (`visible_lines_for`): Quản lý/Admin TM (scope `all`) và người tạo phiếu (`created_by`) luôn thấy tất cả dòng. NSTM (scope `proc`) chỉ thấy dòng được giao (`assignee == mã NV`) hoặc dòng có phân loại mình phụ trách theo bảng `CategoryAssignee` (primary/backup). Quy tắc áp dụng cho cả endpoint `GET /{id}` (màn chi tiết), `GET /{id}/process` (màn xử lý), hàm `complete_sr` (validate chỉ "dòng mình") và hàm `clone_sr` (chỉ sao chép "dòng mình").
+15. Hiển thị dòng theo người xem (`visible_lines_for`): Thấy **hết** dòng nếu là người **tạo phiếu** (`created_by`) HOẶC có quyền **duyệt** (`survey_request:approve`, tức Admin/Quản lý TM) HOẶC có phạm vi đọc `dept`/`company`/`all`. NSTM (scope `proc`, không có quyền duyệt) chỉ thấy dòng được giao (`assignee == mã NV`) hoặc dòng có phân loại mình phụ trách theo bảng `CategoryAssignee` (primary/backup). Quy tắc áp dụng cho cả endpoint `GET /{id}` (màn chi tiết), `GET /{id}/process` (màn xử lý), hàm `complete_sr` (validate chỉ "dòng mình") và hàm `clone_sr` (chỉ sao chép "dòng mình"). (Logic đồng bộ với `purchase_request._see_all_items`.)
+
+16. Lọc option hợp lệ (`valid_options_of`): Các view xử lý khảo sát (`_out_process`), kết quả (`_out_result`), và màn chi tiết (`_out`) đều dùng `valid_options_of` thay cho `options_of` thô. Hàm này **chỉ trả option** có dòng khảo sát SP nguồn (`product_survey_line_id`) còn trạng thái `"Đã duyệt"`. Option của dòng đã bị "Không duyệt" hoặc phiếu khảo sát nguồn bị `cancelled` sẽ **bị ẩn, không được tính** vào `option_count`/`has_chosen`, và không cho chọn — xử lý cả dữ liệu cũ còn kẹt. Option không gắn nguồn (`product_survey_line_id = 0`) vẫn được giữ.
 
 16. Nhân bản phiếu (`POST /{id}/clone`, quyền `survey_request:create`): Tạo phiếu Nháp mới — sao chép toàn bộ trường header (`company_id`, `requester`, `requester_position`, `department`, `head_of_dept`, `purpose`, `request_date`, `note`) và các dòng mà người dùng được xem (`visible_lines_for`). Sinh mã phiếu mới theo quy tắc `_gen_code`. Các thông tin sau KHÔNG được sao chép: `assignee` (NSTM phụ trách dòng; reset về rỗng), `received_date` (reset về rỗng), option, `pr_id`/`pr_code`, `is_completed`. Đính kèm file dòng được tái sử dụng (thêm `FileLink` mới trỏ cùng file gốc — không sao chép file vật lý). Có thể nhân bản từ bất kỳ trạng thái nào, kể cả phiếu `cancelled`.
 
