@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useState, useRef, useEffect, type CSSProperties } from 'react'
 import { api } from '../api/client'
 import DateRangePicker from './DateRangePicker'
 import SearchSelect from './SearchSelect'
@@ -11,6 +11,7 @@ import { ReportTable, fmt, pctv, type Metric, type SortDir } from './report-tabl
 // Nền xen kẽ theo cụm tháng cho dễ phân biệt (header đậm hơn body)
 const MONTH_HEAD = ['#e0edfb', '#e7f6ec', '#fdf1dc', '#f3e8fb', '#fde4e4', '#ddf3f6']
 const MONTH_BODY = ['#f4f9ff', '#f1faf4', '#fefaf0', '#faf5fe', '#fef3f3', '#f0fafc']
+const MONTH_ACCENT = ['#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#ef4444', '#06b6d4']   // viền trái card tháng (view Dọc)
 const TOTAL_HEAD = '#dbe2ea', TOTAL_BODY = '#eef2f7'   // nhóm Tổng cả năm — xám nổi bật
 
 const thisYear = new Date().getFullYear()
@@ -36,10 +37,33 @@ export default function MatrixPivotTab({
   const [busy, setBusy] = useState(false)
   const [pick, setPick] = useState('')   // lọc theo 1 đối tượng (key), '' = tất cả
   const [sort, setSort] = useState<{ key: string; dir: SortDir } | null>(null)   // sort đồng bộ view Dọc + bảng khoảng ngày
+  // Mặc định chỉ hiện các tháng tới tháng hiện tại (tháng sau ẩn, nhưng user vẫn tick được trong popup)
+  const [visMonths, setVisMonths] = useState<Set<string>>(() => {
+    const now = new Date()
+    const cur = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    return new Set(months.filter((m: any) => m.key <= cur).map((m: any) => m.key))
+  })
+  const [mOpen, setMOpen] = useState(false)
+  const mRef = useRef<HTMLDivElement>(null)
+
+  // Đóng popover chọn tháng khi bấm ngoài / Esc
+  useEffect(() => {
+    if (!mOpen) return
+    const onDoc = (e: MouseEvent) => { if (mRef.current && !mRef.current.contains(e.target as Node)) setMOpen(false) }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMOpen(false) }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey) }
+  }, [mOpen])
+
+  const shownMonths = months.filter((m: any) => visMonths.has(m.key))   // tháng sau lọc hiển thị
 
   // Bấm header: cột mới -> giảm dần; cùng cột: giảm -> tăng -> bỏ sort
   function onSort(key: string) {
     setSort((s) => (!s || s.key !== key) ? { key, dir: 'desc' } : s.dir === 'desc' ? { key, dir: 'asc' } : null)
+  }
+  function toggleMonth(k: string) {
+    setVisMonths((s) => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n })
   }
 
   // Nguồn options + rows sau lọc theo đối tượng đã chọn
@@ -78,6 +102,32 @@ export default function MatrixPivotTab({
             ))}
           </div>
         )}
+        {/* Chọn tháng hiển thị — chỉ ở chế độ xem 12 tháng */}
+        {data === null && months.length > 0 && (
+          <div ref={mRef} style={{ position: 'relative' }}>
+            <button className="btn ghost" onClick={() => setMOpen((o) => !o)} title="Chọn tháng hiển thị">
+              <i className="ti ti-calendar-month" />Tháng: {shownMonths.length}/{months.length}
+              <i className={`ti ti-chevron-${mOpen ? 'up' : 'down'}`} style={{ fontSize: 13 }} />
+            </button>
+            {mOpen && (
+              <div style={{ position: 'absolute', zIndex: 50, top: 'calc(100% + 6px)', left: 0, background: '#fff', border: '1px solid var(--border)', borderRadius: 10, boxShadow: '0 12px 32px rgba(15,23,42,0.16)', padding: 8, minWidth: 150 }}>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 6, paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>
+                  <button className="btn ghost" style={{ height: 28, padding: '0 8px', fontSize: 12 }} onClick={() => setVisMonths(new Set(months.map((m: any) => m.key)))}>Tất cả</button>
+                  <button className="btn ghost" style={{ height: 28, padding: '0 8px', fontSize: 12 }} onClick={() => setVisMonths(new Set())}>Bỏ chọn</button>
+                </div>
+                <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+                  {months.map((m: any) => (
+                    <label key={m.key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 6px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500, color: 'var(--navy)' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = '#f1f5f9')} onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
+                      <input type="checkbox" checked={visMonths.has(m.key)} onChange={() => toggleMonth(m.key)} style={{ width: 'auto', height: 'auto', margin: 0 }} />
+                      Tháng {m.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         {/* Nhóm lọc + chọn ngày đẩy sang phải */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginLeft: 'auto' }}>
           {nameFilter && (
@@ -95,7 +145,7 @@ export default function MatrixPivotTab({
 
       {/* Trên màn hình: pivot Ngang/Dọc/khoảng ngày */}
       <div className="screen-only">
-        {renderBody({ view, data: data !== null ? shownRows : null, range, rows: data !== null ? rows : shownRows, months, metrics, nameLabel, title, warnHint, yearLabel, nameWidth, sort, onSort })}
+        {renderBody({ view, data: data !== null ? shownRows : null, range, rows: data !== null ? rows : shownRows, months: shownMonths, metrics, nameLabel, title, warnHint, yearLabel, nameWidth, sort, onSort })}
       </div>
       {/* Khi IN: bản tổng hợp cả năm gọn (mỗi đối tượng 1 dòng = tổng cả năm / tổng khoảng ngày) */}
       <div className="print-only card" style={{ padding: 16 }}>
@@ -122,18 +172,19 @@ function renderBody({ view, data, range, rows, months, metrics, nameLabel, title
   // ==== View DỌC: khối Tổng cả năm + 12 khối tháng xếp chồng ====
   if (view === 'doc') {
     return (
-      <div className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="card" style={{ padding: 16, borderColor: '#bae6fd' }}>
           <h3 className="sec-title" style={{ color: 'var(--teal)' }}><i className="ti ti-sigma" style={{ marginRight: 6 }} />Tổng cả năm — {yearLabel}{warnHint && <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--muted)' }}> ({warnHint})</span>}</h3>
           <ReportTable rows={rows} period="all" warnMetric="rate" nameLabel={nameLabel} metrics={metrics} nameMinWidth={nameWidth} {...sortProps} />
         </div>
-        {months.map((mo: any) => (
-          <div key={mo.key}>
-            <h3 className="sec-title">Tháng {mo.label}</h3>
-            <ReportTable rows={rows.filter((r: any) => r.m?.[mo.key])} period={mo.key} warnMetric="rate" nameLabel={nameLabel} metrics={metrics} nameMinWidth={nameWidth} {...sortProps} />
+        {months.map((mo: any, ci: number) => (
+          <div key={mo.key} className="card" style={{ padding: 0, overflow: 'hidden', borderLeft: `4px solid ${MONTH_ACCENT[ci % MONTH_ACCENT.length]}` }}>
+            <h3 className="sec-title" style={{ margin: 0, padding: '12px 16px', background: MONTH_HEAD[ci % MONTH_HEAD.length] }}>Tháng {mo.label}</h3>
+            <div style={{ padding: 16 }}>
+              <ReportTable rows={rows.filter((r: any) => r.m?.[mo.key])} period={mo.key} warnMetric="rate" nameLabel={nameLabel} metrics={metrics} nameMinWidth={nameWidth} {...sortProps} />
+            </div>
           </div>
         ))}
-        {months.length === 0 && <div style={{ color: '#999', textAlign: 'center', padding: 14 }}>Không có dữ liệu</div>}
       </div>
     )
   }
@@ -193,7 +244,7 @@ function renderBody({ view, data, range, rows, months, metrics, nameLabel, title
                 </tr>
               )
             })}
-            {(rows.length === 0 || months.length === 0) && <tr><td colSpan={1 + (months.length + 1) * metrics.length} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Không có dữ liệu</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={1 + (months.length + 1) * metrics.length} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Không có dữ liệu</td></tr>}
           </tbody>
         </table>
       </div>
