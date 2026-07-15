@@ -178,9 +178,11 @@ export default function PurchaseOrderDetail() {
     const s = goodsSuppliers.find((x) => x.code === code)
     setPo((st: any) => ({ ...st, supplier_code: code, supplier_name: s ? s.name : '', vat_rate: s ? (Number(s.vat) || st.vat_rate) : st.vat_rate, payment_terms: s ? (s.payment_terms || st.payment_terms) : st.payment_terms }))
   }
-  const onPickCarrier = (ii: number, di: number, code: string) => {
-    const c = carriers.find((x) => x.code === code)
-    setDelivery(ii, di, { carrier_code: code, carrier_name: c ? c.name : (code ? 'NCC tự vận chuyển' : '') })
+  const onPickCarrier = (ii: number, di: number, val: string) => {
+    // 3 trạng thái: '' = chưa chọn (name rỗng); '__self__' = tự vận chuyển (đánh dấu name); còn lại = NCC thật
+    if (val === '__self__') { setDelivery(ii, di, { carrier_code: '', carrier_name: 'NCC tự vận chuyển' }); return }
+    const c = carriers.find((x) => x.code === val)
+    setDelivery(ii, di, { carrier_code: val, carrier_name: c ? c.name : '' })
   }
 
   // Tạo ĐMH từ YCMH: NCC ở YCMH là TEXT (đề xuất) → tự khớp với danh mục NCC (theo MST hoặc tên) để chọn sẵn dropdown
@@ -227,8 +229,8 @@ export default function PurchaseOrderDetail() {
         if ((Number(d.received_qty) || 0) > 0 && !(d.received_date || '').trim()) {
           toast.error(`Sản phẩm "${it.product_name}": lần giao có SL nhận thì phải nhập Ngày nhận`); return
         }
-        if ((Number(d.shipping_amount) || 0) > 0 && !(d.carrier_code || '').trim()) {
-          toast.error(`Sản phẩm "${it.product_name}": lần giao có cước vận chuyển thì phải chọn Đơn vị vận chuyển`); return
+        if ((Number(d.shipping_amount) || 0) > 0 && !(d.carrier_code || '').trim() && !(d.carrier_name || '').trim()) {
+          toast.error(`Sản phẩm "${it.product_name}": lần giao có cước thì phải chọn Đơn vị vận chuyển (hoặc chọn "NCC tự vận chuyển")`); return
         }
       }
     }
@@ -745,8 +747,10 @@ export default function PurchaseOrderDetail() {
                             </select>
                           </td>
                           <td>
-                            <select className="cell-input" style={{ width: 150 }} value={d.carrier_code ?? ''} disabled={dis} onChange={(e) => onPickCarrier(ii, di, e.target.value)}>
-                              <option value="">NCC tự vận chuyển</option>{carriers.map((c) => <option key={c.id} value={c.code}>{c.name}</option>)}
+                            <select className="cell-input" style={{ width: 150 }} value={d.carrier_code || (d.carrier_name ? '__self__' : '')} disabled={dis} onChange={(e) => onPickCarrier(ii, di, e.target.value)}>
+                              <option value="">— Chọn đơn vị VC —</option>
+                              <option value="__self__">NCC tự vận chuyển</option>
+                              {carriers.map((c) => <option key={c.id} value={c.code}>{c.name}</option>)}
                             </select>
                           </td>
                           <td><NumberInput decimals className="cell-input" style={{ width: 72 }} value={d.ship_qty} disabled={dis} onChange={(v) => setDelivery(ii, di, { ship_qty: v })} /></td>
