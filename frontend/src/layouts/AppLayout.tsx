@@ -4,6 +4,7 @@ import { useAuth } from "../auth/AuthContext";
 import { toast } from "../components/toast";
 import { api } from "../api/client";
 import NotificationBell from "../components/NotificationBell";
+import PwaInstallPrompt from "../components/PwaInstallPrompt";
 
 type NavItem = {
   to: string;
@@ -621,6 +622,7 @@ export default function AppLayout() {
           <Outlet />
         </div>
       </div>
+      <PwaInstallPrompt />
     </div>
   );
 }
