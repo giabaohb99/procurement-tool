@@ -296,6 +296,35 @@ def resync_role_perms(db, code: str, perms: dict):
     db.commit()
 
 
+def cleanup_legacy_staff_role(db):
+    """Gộp vai trò legacy 'Nhân viên' (code STAFF) vào 'Nhân sự (cơ bản)' (code employee) rồi XÓA.
+    Idempotent: chỉ chạy khi vẫn còn vai trò STAFF."""
+    staff = db.query(Role).filter(Role.code == "STAFF").first()
+    if not staff:
+        return
+    emp_role = db.query(Role).filter(Role.code == "employee").first()
+    if emp_role:
+        # 1) Nhân sự để role_name = tên STAFF → đổi sang tên 'Nhân sự (cơ bản)'
+        db.query(Employee).filter(Employee.role_name == staff.name).update(
+            {"role_name": emp_role.name}, synchronize_session=False)
+        # 2) Tài khoản đang gán vai trò STAFF → chuyển sang vai trò employee (khỏi mất quyền)
+        staff_uids = [ur.user_id for ur in db.query(UserRole).filter(UserRole.role_id == staff.id).all()]
+        for uid in staff_uids:
+            if db.query(UserRole).filter(UserRole.user_id == uid, UserRole.role_id == emp_role.id).first():
+                db.query(UserRole).filter(UserRole.user_id == uid, UserRole.role_id == staff.id).delete(
+                    synchronize_session=False)   # đã có vai trò employee → chỉ bỏ gán STAFF
+            else:
+                db.query(UserRole).filter(UserRole.user_id == uid, UserRole.role_id == staff.id).update(
+                    {"role_id": emp_role.id}, synchronize_session=False)
+    # 3) Dọn quyền + scope + gán còn sót của STAFF rồi xóa vai trò
+    from app.modules.user.model import UserScope
+    db.query(Permission).filter(Permission.role_id == staff.id).delete(synchronize_session=False)
+    db.query(UserScope).filter(UserScope.role_id == staff.id).delete(synchronize_session=False)
+    db.query(UserRole).filter(UserRole.role_id == staff.id).delete(synchronize_session=False)
+    db.delete(staff)
+    db.commit()
+
+
 def assign_default_roles(db):
     """Tài khoản nào CHƯA có vai trò → gán 'Nhân sự' (employee) để ai cũng tạo/xem PYC của mình.
     Không đụng tài khoản đã có vai trò (admin, đã gán tay...)."""
@@ -368,6 +397,9 @@ def run():
         #  - Admin thu mua: CRUD danh mục, nghiệp vụ chỉ đọc (proc)
         resync_role_perms(db, "pur_manager", STD_ROLES["pur_manager"]["perms"])
         resync_role_perms(db, "pur_admin", STD_ROLES["pur_admin"]["perms"])
+
+        # Gộp vai trò legacy 'Nhân viên' (STAFF) vào 'Nhân sự (cơ bản)' rồi xóa
+        cleanup_legacy_staff_role(db)
 
         # Deduplication tracking sets (using upper case for case-insensitivity)
         seen_companies = {c[0].upper() for c in db.query(Company.code).all()}

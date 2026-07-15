@@ -11,6 +11,7 @@ export type FieldDef = {
   onValueChange?: (val: any, form: any, setForm: (k: string, v: any) => void) => void
   colorMap?: Record<string, string>   // map giá trị option → màu chữ (vd trạng thái: true→xanh, false→đỏ)
   zeroAsBlank?: boolean   // ô số FK-sentinel: giá trị 0 hiện rỗng (để trống = 0), tránh hiện "0" mặc định
+  default?: any           // giá trị mặc định khi TẠO MỚI (bản ghi mới)
 }
 // link?: trả URL → cell thành clickable, điều hướng tới URL đó (chặn click lan ra dòng)
 export type Column = { key: string; label: string; render?: (row: any) => any; link?: (row: any) => string }
@@ -228,8 +229,8 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã NV', readonlyOnEdit: true }, { key: 'full_name', label: 'Họ tên' },
       { key: 'email', label: 'Email' }, { key: 'phone', label: 'Số điện thoại' },
       { key: 'department_id', label: 'Phòng ban', type: 'select', source: { url: '/api/departments', value: 'id', label: 'name' } },
-      { key: 'role_name', label: 'Vai trò', type: 'select', source: { url: '/api/roles', value: 'name', label: 'name' } },
-      { key: 'status', label: 'Trạng thái', type: 'select', options: [
+      { key: 'role_name', label: 'Vai trò', type: 'select', default: 'Nhân sự (cơ bản)', source: { url: '/api/roles', value: 'name', label: 'name' } },
+      { key: 'status', label: 'Trạng thái', type: 'select', default: 'Chính thức', options: [
         {value: 'Chính thức', label: 'Chính thức'},
         {value: 'Cộng tác viên', label: 'Cộng tác viên'},
         {value: 'Nghỉ thai sản', label: 'Nghỉ thai sản'},

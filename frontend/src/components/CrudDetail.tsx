@@ -52,7 +52,9 @@ export default function CrudDetail() {
     if (isNew) {
       const init: any = {}
       cfg.fields.forEach((f) => {
-        if (f.key === 'is_active') {
+        if ((f as any).default !== undefined) {
+          init[f.key] = (f as any).default
+        } else if (f.key === 'is_active') {
           init[f.key] = f.type === 'checkbox' ? true : 'true'
         } else {
           init[f.key] = f.type === 'checkbox' ? true : f.type === 'number' ? 0 : ''
