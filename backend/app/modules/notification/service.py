@@ -31,10 +31,11 @@ def render_template(html: str, context: dict) -> str:
     return html
 
 
-def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str, html_body: str):
+def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str, html_body: str, force: bool = False):
     """
     Sends SMTP email and updates the EmailLog status.
     Uses a new session to run safely in background tasks.
+    force=True: gửi bất kể công tắc email_enabled (dùng cho email thiết yếu như reset mật khẩu).
     """
     db = db_session_factory()
     try:
@@ -42,9 +43,10 @@ def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str
         if not log:
             return
 
-        # Tắt gửi email (cấu hình ở trang Cấu hình hệ thống / .env EMAIL_ENABLED)
+        # Tắt gửi email (cấu hình ở trang Cấu hình hệ thống / .env EMAIL_ENABLED).
+        # force=True bỏ qua công tắc này (email thiết yếu, người dùng chủ động yêu cầu).
         from app.core import app_settings
-        if not app_settings.get("email_enabled"):
+        if not force and not app_settings.get("email_enabled"):
             log.status = "disabled"
             log.error = "Email đang tắt (EMAIL_ENABLED=false)"
             db.commit()
@@ -316,7 +318,7 @@ def send_password_reset_email(db: Session, user_id: int, background_tasks, full_
         "email": email,
         "link": link
     })
-    
+
     from app.core.database import SessionLocal
     background_tasks.add_task(
         send_smtp_email,
@@ -324,6 +326,7 @@ def send_password_reset_email(db: Session, user_id: int, background_tasks, full_
         email_log.id,
         email,
         subject,
-        html_content
+        html_content,
+        True,   # force=True: reset mật khẩu vẫn gửi dù email_enabled=false
     )
     db.commit()
