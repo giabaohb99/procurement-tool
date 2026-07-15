@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
-from app.core.audit import resolve_actor
+from app.core.audit import resolve_actor, resolve_actor_profile
 from app.core.auth import get_perm_profile, require
 from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, pagination
 from app.core.database import get_db
@@ -9,6 +9,7 @@ from app.core.response import success
 from app.core.scoping import apply_scope
 from app.modules.company.model import Company
 from app.modules.payable.model import Payable
+from app.modules.supplier.model import Supplier
 
 from . import service
 from .model import PaymentRequest
@@ -70,7 +71,15 @@ def print_(rid: int, db: Session = Depends(get_db), user=Depends(require("paymen
     company = db.get(Company, req.company_id) if req.company_id else None
     data["company"] = {"name": company.name, "address": company.address,
                        "tax_code": company.tax_code} if company else {}
-    data["created_by_name"] = resolve_actor(db, req.created_by)
+    prof = resolve_actor_profile(db, req.created_by)
+    data["created_by_name"] = prof["name"]
+    data["created_by_position"] = prof["position"]     # Chức vụ
+    data["created_by_dept"] = prof["department"]        # Bộ phận
+    data["dept_manager"] = prof["manager"]              # Trưởng phòng ban/bộ phận
+    # Thông tin ngân hàng NCC (khớp theo mã NCC) để in mục HÌNH THỨC THANH TOÁN
+    sup = db.query(Supplier).filter(Supplier.code == req.supplier_code).first() if req.supplier_code else None
+    data["bank_account"] = sup.bank_account if sup else ""
+    data["bank_name"] = sup.bank_name if sup else ""
     data["period"] = (req.request_date or "")[:7]  # YYYY-MM
     return success(data)
 

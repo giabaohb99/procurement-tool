@@ -45,6 +45,10 @@ export default function PrintPaymentRequest() {
   const cell = { border: '1px solid #888', padding: '4px 8px', fontSize: 11.5 } as const
   const SH = { background: '#dbe5f1', fontWeight: 700, padding: '4px 8px', fontSize: 12, margin: '12px 0 0', border: '1px solid #c6d4e6' } as const
   const lbl = { fontSize: 11.5, padding: '2px 4px' } as const
+  // Ô cho bảng Mẫu/Phiên bản/Ngày update ở góc phải header — giữ font, chỉ thu HẸP width table
+  const hcell = { border: '1px solid #888', padding: '2px 5px', fontSize: 10, lineHeight: 1.4 } as const
+  const dots = '............................'
+  const dot = (v: any) => (v ? String(v) : dots)   // có data thì hiện, không thì để chấm điền tay
 
   return (
     <div style={{ background: '#eee', minHeight: '100vh', padding: 16 }}>
@@ -58,11 +62,11 @@ export default function PrintPaymentRequest() {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ fontWeight: 700, fontSize: 13 }}>{co.name || ''}</div>
-          <table style={{ borderCollapse: 'collapse', fontSize: 10 }}>
+          <table style={{ borderCollapse: 'collapse', width: 150, tableLayout: 'fixed' }}>
             <tbody>
-              <tr><td style={{ ...cell, fontWeight: 600 }}>Mẫu</td><td style={cell}>002/BM/PKT</td></tr>
-              <tr><td style={{ ...cell, fontWeight: 600 }}>Phiên bản</td><td style={cell}>062026</td></tr>
-              <tr><td style={{ ...cell, fontWeight: 600 }}>Ngày update</td><td style={cell}>17/6/2025</td></tr>
+              <tr><td style={{ ...hcell, fontWeight: 600, whiteSpace: 'nowrap' }}>Mẫu</td><td style={hcell}>002/BM/PKT</td></tr>
+              <tr><td style={{ ...hcell, fontWeight: 600, whiteSpace: 'nowrap' }}>Phiên bản</td><td style={hcell}>062026</td></tr>
+              <tr><td style={{ ...hcell, fontWeight: 600, whiteSpace: 'nowrap' }}>Ngày update</td><td style={hcell}>17/6/2025</td></tr>
             </tbody>
           </table>
         </div>
@@ -75,9 +79,9 @@ export default function PrintPaymentRequest() {
         <div style={SH}>THÔNG TIN CHUNG</div>
         <div style={{ lineHeight: 1.9 }}>
           <div style={lbl}><b>Người đề nghị thanh toán:</b> {req.created_by_name || ''}</div>
-          <div style={lbl}><b>Chức vụ:</b> ............................</div>
-          <div style={lbl}><b>Hiện công tác tại bộ phận:</b> ............................</div>
-          <div style={lbl}><b>Trưởng phòng ban/bộ phận:</b> ............................</div>
+          <div style={lbl}><b>Chức vụ:</b> {dot(req.created_by_position)}</div>
+          <div style={lbl}><b>Hiện công tác tại bộ phận:</b> {dot(req.created_by_dept)}</div>
+          <div style={lbl}><b>Trưởng phòng ban/bộ phận:</b> {dot(req.dept_manager)}</div>
         </div>
 
         {/* Nội dung thanh toán */}
@@ -129,8 +133,8 @@ export default function PrintPaymentRequest() {
         <div style={{ fontSize: 11.5, lineHeight: 1.9 }}>
           <div style={lbl}>☐ Tiền mặt &nbsp;&nbsp;&nbsp; ☐ Chuyển khoản</div>
           <div style={lbl}><b>Tên TK thụ hưởng:</b> {sup}</div>
-          <div style={lbl}><b>Số TK thụ hưởng:</b> ............................</div>
-          <div style={lbl}><b>Ngân hàng/CN:</b> ............................</div>
+          <div style={lbl}><b>Số TK thụ hưởng:</b> {dot(req.bank_account)}</div>
+          <div style={lbl}><b>Ngân hàng/CN:</b> {dot(req.bank_name)}</div>
           <div style={lbl}><b>Nội dung chuyển khoản:</b> {noiDung}</div>
         </div>
 
