@@ -172,6 +172,17 @@ def seed_demo_accounts(db, company_id):
 _CATALOG_READ = {e: (["read"], "all") for e in
                  ["supplier", "product", "warehouse", "unit", "item_group", "contract", "department", "company"]}
 
+# "Cụm danh mục" — Admin thu mua được toàn quyền thêm/sửa/xóa
+_CATALOG_CRUD = {e: (["read", "create", "write", "delete"], "all") for e in
+                 ["supplier", "product", "contract", "warehouse", "unit", "item_group",
+                  "brand", "company", "category_assignee"]}
+
+# Quản lý thu mua = toàn quyền như quản trị NGHIỆP VỤ: mọi entity TRỪ quản trị hệ thống
+# (user/role/setting) — full 8 hành động, phạm vi 'all'.
+_ALL_ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
+_SYS_ENTITIES = {"user", "role", "setting"}
+_PUR_MANAGER_PERMS = {e: (_ALL_ACTIONS, "all") for e in ENTITIES if e not in _SYS_ENTITIES}
+
 STD_ROLES = {
     "employee": {"name": "Nhân sự (cơ bản)", "perms": {
         # chỉ các danh mục cần cho form tạo yêu cầu (không có Hợp đồng/NCC)
@@ -207,38 +218,23 @@ STD_ROLES = {
         "payment_request": (["read", "create", "write", "print"], "company"),
         "report": (["read"], "company"),
     }},
-    "pur_manager": {"name": "Quản lý thu mua", "perms": {
-        **_CATALOG_READ,
-        "employee": (["read"], "dept"),
-        "purchase_request": (["read", "approve", "cancel"], "all"),
-        "survey_request": (["read", "approve"], "all"),
-        "survey": (["read", "approve"], "all"),
-        "purchase_order": (["read", "write", "approve", "cancel", "print", "export"], "all"),
+    # Quản lý thu mua: toàn quyền nghiệp vụ (như admin, trừ quản trị hệ thống user/role/setting)
+    "pur_manager": {"name": "Quản lý thu mua", "perms": _PUR_MANAGER_PERMS},
+    # Admin thu mua: CRUD toàn bộ danh mục; nghiệp vụ CHỈ ĐỌC, phạm vi 'proc'
+    # (chỉ thấy chứng từ sau khi đã được duyệt).
+    "pur_admin": {"name": "Admin thu mua", "perms": {
+        **_CATALOG_CRUD,
+        "department": (["read"], "all"),
+        "employee": (["read"], "all"),
+        "purchase_request": (["read"], "proc"),
+        "survey_request": (["read"], "proc"),
+        "purchase_order": (["read"], "proc"),
+        "survey": (["read"], "all"),
+        "goods_receipt": (["read"], "all"),
         "inventory": (["read"], "all"),
         "payable": (["read"], "all"),
-        "payment_request": (["read", "write", "approve", "print", "export"], "all"),   # write = ghi nhận đã chi
+        "payment_request": (["read"], "all"),
         "report": (["read", "export"], "all"),
-        "category_assignee": (["read", "create", "write", "delete"], "all"),
-    }},
-    "pur_admin": {"name": "Admin thu mua", "perms": {
-        "purchase_request": (["read", "create", "write", "delete", "approve", "cancel", "print", "export"], "proc"),
-        "survey_request": (["read", "create", "write", "delete", "approve"], "proc"),
-        "purchase_order": (["read", "create", "write", "delete", "approve", "cancel", "print", "export"], "all"),
-        "survey": (["read", "create", "write", "delete", "approve"], "all"),
-        "inventory": (["read", "write"], "all"),
-        "payable": (["read", "write"], "all"),
-        "payment_request": (["read", "create", "write", "delete", "approve", "print", "export"], "all"),
-        "report": (["read", "export"], "all"),
-        "supplier": (["read", "create", "write", "delete"], "all"),
-        "product": (["read", "create", "write", "delete"], "all"),
-        "contract": (["read", "create", "write", "delete"], "all"),
-        "warehouse": (["read", "create", "write"], "all"),
-        "unit": (["read", "create", "write"], "all"),
-        "item_group": (["read", "create", "write"], "all"),
-        "department": (["read"], "all"),
-        "company": (["read", "create", "write"], "all"),
-        "employee": (["read"], "all"),
-        "category_assignee": (["read", "create", "write", "delete"], "all"),
     }},
 }
 
@@ -279,6 +275,24 @@ def seed_standard_roles(db):
         db.query(Permission).filter(
             Permission.role_id == _ps.id, Permission.entity == "purchase_order"
         ).update({"scope": "assigned"}, synchronize_session=False)
+    db.commit()
+
+
+def resync_role_perms(db, code: str, perms: dict):
+    """Ghi ĐÈ toàn bộ ma trận quyền của 1 vai trò theo `perms` (xóa cũ → tạo lại).
+    Dùng cho vai trò CẦN cập nhật trên DB đã seed (seed_standard_roles là INSERT-only)."""
+    role = db.query(Role).filter(Role.code == code).first()
+    if not role:
+        return
+    db.query(Permission).filter(Permission.role_id == role.id).delete(synchronize_session=False)
+    for entity, (actions, scope) in perms.items():
+        db.add(Permission(
+            role_id=role.id, entity=entity, scope=scope,
+            can_read="read" in actions, can_create="create" in actions,
+            can_write="write" in actions, can_delete="delete" in actions,
+            can_approve="approve" in actions, can_cancel="cancel" in actions,
+            can_print="print" in actions, can_export="export" in actions,
+        ))
     db.commit()
 
 
@@ -336,7 +350,7 @@ def run():
         # Sửa phạm vi employee-read cho các vai trò đã seed trước đây (khi còn để "all").
         # Danh sách nhân sự phải giới hạn theo phòng ban/công ty của người xem.
         _EMP_READ_SCOPE = {"dept_head": "dept", "company_head": "company",
-                           "pur_staff": "dept", "pur_manager": "dept"}
+                           "pur_staff": "dept"}   # pur_manager giờ full (như admin) — không giới hạn employee
         for rcode, sc in _EMP_READ_SCOPE.items():
             r = db.query(Role).filter(Role.code == rcode).first()
             if r:
@@ -348,6 +362,12 @@ def run():
 
         # Vai trò chuẩn (Nhân sự / Trưởng phòng / Quản lý cty / NV thu mua / QL thu mua / Admin thu mua)
         seed_standard_roles(db)
+
+        # Cập nhật lại 2 vai trò thu mua theo phân quyền mới (áp cả DB đã seed trước đây):
+        #  - Quản lý thu mua: toàn quyền nghiệp vụ (như admin, trừ user/role/setting)
+        #  - Admin thu mua: CRUD danh mục, nghiệp vụ chỉ đọc (proc)
+        resync_role_perms(db, "pur_manager", STD_ROLES["pur_manager"]["perms"])
+        resync_role_perms(db, "pur_admin", STD_ROLES["pur_admin"]["perms"])
 
         # Deduplication tracking sets (using upper case for case-insensitivity)
         seen_companies = {c[0].upper() for c in db.query(Company.code).all()}
