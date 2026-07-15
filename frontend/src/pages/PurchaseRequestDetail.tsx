@@ -285,11 +285,12 @@ export default function PurchaseRequestDetail() {
 
   // Điều hướng sang form ĐMH mới với header từ phiếu + danh sách dòng đã tính sẵn
   function goPO(items: any[]) {
+    const firstAssignee = (items.find((it: any) => it.assignee) || {}).assignee
     const fromPr = {
       pr_code: pr.code,
       company_id: pr.company_id,
       department: pr.department,
-      nspt: pr.requester,                       // khớp cách onPickPr bên ĐMH lấy NSPT = người yêu cầu
+      nspt: firstAssignee ? empName(firstAssignee) : '',   // NSPT = người phụ trách dòng ở YCMH (rỗng → ĐMH tự lấy người tạo)
       supplier_name: pr.suggested_supplier || '',
       supplier_code: '',                        // PR chỉ có tên NCC đề xuất, không có mã
       supplier_tax_code: pr.suggested_supplier_tax_code || '',   // để ĐMH tự khớp NCC trong danh mục

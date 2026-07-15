@@ -100,7 +100,7 @@ export default function PurchaseOrderDetail() {
       pr_code: fromPr.pr_code || '',
       company_id: fromPr.company_id || 0,
       department: fromPr.department || '',
-      // KHÔNG gán NSPT phụ trách từ YCMH — chỉ admin/người có quyền duyệt được giao
+      nspt: fromPr.nspt || '',   // hiện sẵn người phụ trách dòng ở YCMH (backend vẫn tự suy nếu để trống)
       supplier_name: fromPr.supplier_name || '',
       supplier_code: fromPr.supplier_code || '',
       vat_rate: fromPr.vat_rate || 0.08,
