@@ -5,6 +5,7 @@ import { toast } from '../components/toast'
 import Pagination from '../components/Pagination'
 import SearchSelect from '../components/SearchSelect'
 import { useAuth } from '../auth/AuthContext'
+import { pushSupported, isPushSubscribed, subscribePush, unsubscribePush } from '../push'
 
 // Nhãn + màu + icon cho từng loại việc cần làm (cố định, không phụ thuộc dữ liệu đang lọc)
 const TASK_LABEL: Record<string, string> = {
@@ -77,6 +78,43 @@ function InfoTab({ me }: { me: any }) {
       <div className="card" style={{ padding: 20 }}>
         <ChangePassword />
       </div>
+
+      <PushToggle />
+    </div>
+  )
+}
+
+function PushToggle() {
+  const [supported, setSupported] = useState(true)
+  const [subscribed, setSubscribed] = useState(false)
+  const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    if (!pushSupported()) { setSupported(false); return }
+    isPushSubscribed().then(setSubscribed).catch(() => {})
+  }, [])
+  async function toggle() {
+    setBusy(true)
+    try {
+      if (subscribed) { await unsubscribePush(); setSubscribed(false); toast.success('Đã tắt thông báo trên thiết bị này') }
+      else { await subscribePush(); setSubscribed(true); toast.success('Đã bật thông báo trên thiết bị này') }
+    } catch (e: any) { toast.error(e?.message || 'Không bật được thông báo') }
+    finally { setBusy(false) }
+  }
+  return (
+    <div className="card" style={{ padding: 20 }}>
+      <h3 className="sec-title" style={{ marginTop: 0 }}>Thông báo đẩy (điện thoại / máy tính)</h3>
+      <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>
+        Bật để nhận thông báo (gửi duyệt, được phân công phụ trách…) đẩy về máy/điện thoại kể cả khi không mở app.
+        {' '}<b>Trên iPhone</b> cần "Thêm vào màn hình chính" trước khi bật.
+      </div>
+      {!supported ? (
+        <div style={{ fontSize: 13, color: 'var(--muted)' }}>Trình duyệt này không hỗ trợ thông báo đẩy.</div>
+      ) : (
+        <button className={subscribed ? 'btn ghost' : 'btn'} disabled={busy} onClick={toggle}>
+          <i className={subscribed ? 'ti ti-bell-off' : 'ti ti-bell'} />
+          {busy ? 'Đang xử lý…' : (subscribed ? 'Tắt thông báo trên thiết bị này' : 'Bật thông báo trên thiết bị này')}
+        </button>
+      )}
     </div>
   )
 }

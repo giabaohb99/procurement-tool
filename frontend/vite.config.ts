@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'prompt',              // có bản mới → hỏi user, không reload đột ngột
-      includeAssets: ['logo.svg'],
+      includeAssets: ['logo.svg', 'push-sw.js'],
       manifest: {
         name: 'DEGO Thu Mua',
         short_name: 'Thu Mua',
@@ -27,6 +27,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],  // chỉ precache asset tĩnh
         navigateFallbackDenylist: [/^\/api/],                     // /api không fallback về index.html
+        importScripts: ['push-sw.js'],                            // nạp handler Web Push vào SW
         runtimeCaching: [
           { urlPattern: /\/api\//, handler: 'NetworkOnly' },      // data luôn realtime, KHÔNG cache
         ],

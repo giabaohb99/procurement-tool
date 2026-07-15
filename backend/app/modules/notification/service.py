@@ -226,6 +226,20 @@ def trigger_notification(
 
     db.commit()
 
+    # Web Push (best-effort, chạy nền) — đẩy thông báo tới thiết bị đã bật của người nhận
+    try:
+        from app.modules.push import service as push_service
+        from app.core.database import SessionLocal
+        uids = [r.id for r in recipients if r]
+        if uids:
+            if background_tasks is not None:
+                background_tasks.add_task(push_service.send_to_users, SessionLocal, uids, subject, body, link)
+            else:
+                push_service.send_to_users(SessionLocal, uids, subject, body, link)
+    except Exception:
+        pass
+
+
 def send_account_creation_email(db: Session, user_id: int, background_tasks, full_name: str, email: str, link: str):
     from .email_templates import ACCOUNT_CREATION_TEMPLATE
     

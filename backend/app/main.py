@@ -34,6 +34,7 @@ from app.modules.supplier.controller import router as supplier_router
 from app.modules.user.controller import router as user_router
 from app.modules.setting.controller import router as setting_router
 from app.modules.notification.controller import router as notification_router
+from app.modules.push.controller import router as push_router
 from app.modules.category_assignee.controller import router as category_assignee_router
 from app.modules.survey_request.controller import router as survey_request_router
 
@@ -97,5 +98,6 @@ app.include_router(contract_router)
 app.include_router(alert_router)
 app.include_router(setting_router)
 app.include_router(notification_router)
+app.include_router(push_router)
 app.include_router(category_assignee_router)
 app.include_router(survey_request_router)
