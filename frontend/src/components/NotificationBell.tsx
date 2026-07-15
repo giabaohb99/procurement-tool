@@ -123,7 +123,7 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', width: 380, maxWidth: '92vw', background: '#fff', border: '1px solid var(--border)', borderRadius: 12, boxShadow: '0 12px 30px rgba(15,23,42,.15)', zIndex: 300, overflow: 'hidden' }}>
+        <div className="notif-pop" style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', width: 380, maxWidth: '92vw', background: '#fff', border: '1px solid var(--border)', borderRadius: 12, boxShadow: '0 12px 30px rgba(15,23,42,.15)', zIndex: 300, overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
             <b style={{ color: 'var(--navy)', fontSize: 14 }}>Thông báo{unread > 0 ? ` (${unread})` : ''}</b>
             <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 8, padding: 2 }}>

@@ -1,15 +1,10 @@
 // Banner mời cài PWA (chỉ hiện sau khi đăng nhập — mount trong AppLayout).
-// Chromium: bắt beforeinstallprompt → nút "Cài đặt". iOS Safari: hướng dẫn thủ công.
-// "Không hỏi lại" → lưu cờ localStorage vĩnh viễn. Đã cài (standalone) → không hiện.
+// Chromium: dùng event beforeinstallprompt (bắt sớm ở pwa-install.ts) → nút "Cài đặt".
+// iOS Safari: hướng dẫn thủ công. "Không hỏi lại" → cờ localStorage vĩnh viễn.
 import { useEffect, useState } from 'react'
+import { canInstall, onInstallChange, promptInstall } from '../pwa-install'
 
 const DISMISS_KEY = 'pwa-install-dismissed'
-
-// Sự kiện beforeinstallprompt (chỉ có trên Chromium) — không có sẵn trong lib.dom.d.ts
-type BIPEvent = Event & {
-  prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
-}
 
 const isStandalone = () =>
   window.matchMedia('(display-mode: standalone)').matches ||
@@ -18,7 +13,7 @@ const isStandalone = () =>
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent)
 
 export default function PwaInstallPrompt() {
-  const [deferred, setDeferred] = useState<BIPEvent | null>(null)
+  const [installable, setInstallable] = useState(false)
   const [showIOS, setShowIOS] = useState(false)
 
   useEffect(() => {
@@ -31,33 +26,22 @@ export default function PwaInstallPrompt() {
       return
     }
 
-    // Chromium: giữ event lại, hiện banner của mình thay vì mini-infobar
-    const onBIP = (e: Event) => {
-      e.preventDefault()
-      setDeferred(e as BIPEvent)
-    }
-    const onInstalled = () => { setDeferred(null); setShowIOS(false) }
-    window.addEventListener('beforeinstallprompt', onBIP)
-    window.addEventListener('appinstalled', onInstalled)
-    return () => {
-      window.removeEventListener('beforeinstallprompt', onBIP)
-      window.removeEventListener('appinstalled', onInstalled)
-    }
+    // Chromium: đọc trạng thái từ module (event có thể đã bắn trước khi mount)
+    setInstallable(canInstall())
+    return onInstallChange(() => setInstallable(canInstall()))
   }, [])
 
-  if (!deferred && !showIOS) return null
+  if (!installable && !showIOS) return null
 
   const dismissForever = () => {
     localStorage.setItem(DISMISS_KEY, '1')
-    setDeferred(null)
+    setInstallable(false)
     setShowIOS(false)
   }
 
   const install = async () => {
-    if (!deferred) return
-    await deferred.prompt()
-    await deferred.userChoice   // 'accepted' | 'dismissed' — dù chọn gì cũng ẩn banner
-    setDeferred(null)
+    await promptInstall()       // đồng ý hay không cũng ẩn banner (module tự clear event)
+    setInstallable(false)
   }
 
   return (
