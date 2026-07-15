@@ -202,7 +202,7 @@ export default function PurchaseOrderDetail() {
   }, [isNew, suppliers, po.supplier_code])
   const onPickPr = (code: string) => {
     const pr = prList.find((p) => p.code === code)
-    setPo((s: any) => ({ ...s, pr_code: code, ...(pr ? { department: pr.department || s.department, nspt: pr.requester || s.nspt, company_id: pr.company_id || s.company_id } : {}) }))
+    setPo((s: any) => ({ ...s, pr_code: code, ...(pr ? { department: pr.department || s.department, company_id: pr.company_id || s.company_id } : {}) }))
   }
 
   // Sau khi lưu: upload tệp đã chọn cho các lần giao MỚI (chưa có id). Map theo vị trí vì

@@ -257,11 +257,45 @@ def copy_po(db: Session, pid: int, user_id: int) -> PurchaseOrder:
     return po
 
 
+def _default_nspt(db: Session, data: POCreate, user_id: int) -> str:
+    """NSPT mặc định khi tạo ĐMH:
+    - Tạo TỪ YCMH (pr_code): lấy người phụ trách (assignee) của dòng trong đơn.
+    - Không qua YCMH: người tạo đơn.
+    """
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+    from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
+    if data.pr_code:
+        pr = db.query(PurchaseRequest).filter(PurchaseRequest.code == data.pr_code).first()
+        if pr:
+            po_codes = {(it.product_code or "").strip() for it in (data.items or []) if (it.product_code or "").strip()}
+            rows = db.query(PurchaseRequestItem).filter(PurchaseRequestItem.pr_id == pr.id).all()
+            emp_code = ""
+            for r in rows:   # ưu tiên dòng khớp sản phẩm trong đơn
+                if (r.assignee or "").strip() and (not po_codes or (r.product_code or "").strip() in po_codes):
+                    emp_code = r.assignee.strip(); break
+            if not emp_code:   # fallback: bất kỳ dòng nào có người phụ trách
+                for r in rows:
+                    if (r.assignee or "").strip():
+                        emp_code = r.assignee.strip(); break
+            if emp_code:
+                emp = db.query(Employee).filter(Employee.code == emp_code).first()
+                if emp:
+                    return emp.full_name
+    u = db.query(User).filter(User.id == user_id).first()   # người tạo
+    if u and u.employee_id:
+        emp = db.query(Employee).filter(Employee.id == u.employee_id).first()
+        if emp:
+            return emp.full_name
+    return ""
+
+
 def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
+    nspt = (data.nspt or "").strip() or _default_nspt(db, data, user_id)
     po = PurchaseOrder(
         code=data.code or "", misa_code=data.misa_code, pr_code=data.pr_code,
         survey_code=data.survey_code, company_id=data.company_id, supplier_code=data.supplier_code,
-        supplier_name=data.supplier_name, department=data.department, nspt=data.nspt,
+        supplier_name=data.supplier_name, department=data.department, nspt=nspt,
         order_date=data.order_date, vat_rate=data.vat_rate, payment_terms=data.payment_terms,
         is_urgent=data.is_urgent, note=data.note, status="draft", created_by=user_id, updated_by=user_id,
     )
