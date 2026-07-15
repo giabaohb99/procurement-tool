@@ -100,7 +100,7 @@ export const PO_STATUS: Record<string, { label: string; cls: string }> = {
   draft: { label: 'Nháp', cls: 'gray' },
   submitted: { label: 'Chờ duyệt', cls: 'warn' },
   approved: { label: 'Đã duyệt', cls: 'ok' },
-  partial: { label: 'Đang giao', cls: 'warn' },
+  partial: { label: 'Đã nhận (thiếu)', cls: 'warn' },
   received: { label: 'Đã nhận đủ', cls: 'ok' },
   completed: { label: 'Hoàn thành', cls: 'ok' },
   rejected: { label: 'Bị trả lại', cls: 'warn' },
@@ -424,7 +424,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'is_urgent', label: 'Đơn gấp', type: 'select', options: [{ value: 'true', label: 'Gấp' }, { value: 'false', label: 'Thường' }] },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
-        { value: 'approved', label: 'Đã duyệt' }, { value: 'partial', label: 'Đang giao' },
+        { value: 'approved', label: 'Đã duyệt' }, { value: 'partial', label: 'Đã nhận (thiếu)' },
         { value: 'received', label: 'Đã nhận đủ' }, { value: 'rejected', label: 'Bị trả lại' },
         { value: 'cancelled', label: 'Đã từ chối' }] },
     ],

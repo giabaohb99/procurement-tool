@@ -279,7 +279,7 @@ export default function PurchaseOrderDetail() {
       const r = await api.get('/api/payables', { params: { po_code: po.code, year: 'all', page_size: 500 } })
       const list = (r.data.data.items || []).filter((p: any) => (Number(p.remaining) || 0) > 0.01)
       setPayables(list)
-      setPaySel(list.map((p: any) => p.id))   // mặc định chọn hết
+      setPaySel(list.filter((p: any) => p.source_type === 'goods').map((p: any) => p.id))   // mặc định CHỈ tick NCC sản xuất; vận chuyển tự chọn thêm
       setPayTab((list.some((p: any) => p.source_type === 'goods')) ? 'goods' : 'shipping')
       setPayModal(true)
     } catch { /* interceptor đã toast lỗi */ }

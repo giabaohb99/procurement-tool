@@ -216,7 +216,7 @@ STD_ROLES = {
         "purchase_order": (["read", "write", "approve", "cancel", "print", "export"], "all"),
         "inventory": (["read"], "all"),
         "payable": (["read"], "all"),
-        "payment_request": (["read", "approve", "print", "export"], "all"),
+        "payment_request": (["read", "write", "approve", "print", "export"], "all"),   # write = ghi nhận đã chi
         "report": (["read", "export"], "all"),
         "category_assignee": (["read", "create", "write", "delete"], "all"),
     }},
@@ -319,6 +319,12 @@ def run():
         admin_role_ids = [r.id for r in db.query(Role).filter(Role.code.in_(["admin", "ADMINISTRATOR"])).all()]
         if admin_role_ids:
             db.query(Permission).filter(Permission.role_id.in_(admin_role_ids), Permission.can_cancel == False).update({"can_cancel": True}, synchronize_session=False)
+        # QL thu mua "Ghi nhận đã chi" (pay) cần quyền write trên payment_request — áp cả DB đã seed trước đây
+        _pm = db.query(Role).filter(Role.code == "pur_manager").first()
+        if _pm:
+            db.query(Permission).filter(
+                Permission.role_id == _pm.id, Permission.entity == "payment_request"
+            ).update({"can_write": True}, synchronize_session=False)
         db.commit()
 
         # Sửa phạm vi employee-read cho các vai trò đã seed trước đây (khi còn để "all").
