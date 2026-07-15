@@ -201,7 +201,7 @@ STD_ROLES = {
         "purchase_request": (["read", "create", "write"], "assigned"),
         "survey_request": (["read", "write"], "proc"),
         "survey": (["read", "create", "write"], "all"),
-        "purchase_order": (["read", "create", "write", "print"], "dept"),
+        "purchase_order": (["read", "create", "write", "print"], "assigned"),   # chỉ đơn mình tạo/NSPT là mình
         "inventory": (["read"], "company"),
         "payable": (["read"], "company"),
         "payment_request": (["read", "create", "write", "print"], "company"),
@@ -273,6 +273,12 @@ def seed_standard_roles(db):
             db.query(Permission).filter(
                 Permission.role_id == role.id, Permission.entity == "purchase_request"
             ).update({"scope": scope}, synchronize_session=False)
+    # ĐMH: NV thu mua chỉ thấy đơn mình tạo / NSPT là mình (assigned), giống YCMH — áp cả DB cũ
+    _ps = db.query(Role).filter(Role.code == "pur_staff").first()
+    if _ps:
+        db.query(Permission).filter(
+            Permission.role_id == _ps.id, Permission.entity == "purchase_order"
+        ).update({"scope": "assigned"}, synchronize_session=False)
     db.commit()
 
 

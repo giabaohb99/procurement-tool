@@ -72,6 +72,14 @@ def _role_scope_cond(model, entity, scope, user, profile):
                 conds.append(and_(model.status.notin_(["draft", "submitted", "rejected"]),
                                   or_(*work)))
             return or_(*conds)
+        if entity == "purchase_order":
+            # ĐMH: thấy đơn MÌNH tạo HOẶC đơn có NSPT phụ trách = mình (nspt lưu theo TÊN)
+            conds = [model.created_by == user.id]
+            if scope == "proc":
+                conds.append(model.status == "approved")
+            if profile.get("emp_name"):
+                conds.append(model.nspt == profile["emp_name"])
+            return or_(*conds)
         scope = "own"   # entity khác chưa có phân bổ → coi như của mình
 
     if scope == "own":

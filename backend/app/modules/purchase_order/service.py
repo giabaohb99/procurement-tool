@@ -70,6 +70,10 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
         iid = data.pop("id", None)
         if iid and iid in existing_items:
             it = existing_items[iid]
+            # Dòng đã Hoàn thành / Hủy đơn → KHÓA: giữ nguyên, không cho sửa (kể cả lần giao)
+            if (it.progress_status or "") in ("Hoàn thành", "Hủy đơn"):
+                keep_item_ids.add(it.id)
+                continue
             for k, v in data.items():
                 setattr(it, k, v)
             it.updated_by = user_id

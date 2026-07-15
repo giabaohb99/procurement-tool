@@ -122,6 +122,8 @@ export default function PurchaseOrderDetail() {
   const canDelete = isNew || ['draft', 'rejected'].includes(po.status)
   // Tiến độ dòng: người phụ trách cập nhật khi đơn đã duyệt trở đi
   const progressEditable = !isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'write')
+  // Dòng đã Hoàn thành / Hủy đơn → khóa HẲN dòng đó (kể cả bảng vận chuyển), không sửa gì được
+  const lineLocked = (it: any) => ['Hoàn thành', 'Hủy đơn'].includes(it?.progress_status || '')
   // NSPT phụ trách CHỈ admin/người có quyền duyệt được giao (không auto-gán, không tự điền)
   const canPickNspt = can('purchase_order', 'approve')
   const employeeOptions = employees.map((e) => ({ value: e.full_name, label: e.full_name }))
@@ -340,21 +342,22 @@ export default function PurchaseOrderDetail() {
 
   // inline cell helpers for item table
   const txt = (i: number, k: string, w: number | string = 120) => (
-    <input className="cell-input" style={{ width: w }} value={items[i][k] ?? ''} disabled={!headerEditable} onChange={(e) => setItem(i, { [k]: e.target.value })} />
+    <input className="cell-input" style={{ width: w }} value={items[i][k] ?? ''} disabled={!headerEditable || lineLocked(items[i])} onChange={(e) => setItem(i, { [k]: e.target.value })} />
   )
   const num = (i: number, k: string, w = 90) => {
+    const dis = !headerEditable || lineLocked(items[i])
     if (k === 'price') {
       return (
         <CurrencyInput
           style={{ width: w }}
           value={items[i][k] ?? 0}
-          disabled={!headerEditable}
+          disabled={dis}
           onChange={(val: number) => setItem(i, { [k]: val })}
         />
       )
     }
     return (
-      <NumberInput decimals className="cell-input" style={{ width: w }} value={items[i][k] ?? 0} disabled={!headerEditable} onChange={(v: number) => setItem(i, { [k]: v })} />
+      <NumberInput decimals className="cell-input" style={{ width: w }} value={items[i][k] ?? 0} disabled={dis} onChange={(v: number) => setItem(i, { [k]: v })} />
     )
   }
 
@@ -382,7 +385,7 @@ export default function PurchaseOrderDetail() {
             {printOpen && (
               <>
                 <div onClick={() => setPrintOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 50 }} />
-                <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: '#fff', border: '1px solid var(--border)', borderRadius: 8, boxShadow: '0 10px 30px rgba(27,37,89,.15)', zIndex: 51, minWidth: 190, overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: '#fff', border: '1px solid var(--border)', borderRadius: 8, boxShadow: '0 10px 30px rgba(27,37,89,.15)', zIndex: 51, minWidth: 190, whiteSpace: 'nowrap', overflow: 'hidden' }}>
                   <button className="btn ghost" style={{ display: 'flex', width: '100%', justifyContent: 'flex-start', border: 'none', borderRadius: 0 }} onClick={() => { window.open(`/print/purchase-order/${id}`, '_blank'); setPrintOpen(false) }}><i className="ti ti-printer" />In Đơn đặt hàng</button>
                   <button className="btn ghost" style={{ display: 'flex', width: '100%', justifyContent: 'flex-start', border: 'none', borderRadius: 0 }} onClick={() => { window.open(`/print/purchase-order-mh/${id}`, '_blank'); setPrintOpen(false) }}><i className="ti ti-file-invoice" />In Đơn mua hàng</button>
                 </div>
@@ -408,8 +411,8 @@ export default function PurchaseOrderDetail() {
             <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { const r = await askPrompt({ title: 'Từ chối đơn', message: 'Lý do từ chối (khóa đơn, không sửa lại được):', confirmText: 'Từ chối' }); if (r !== null) action('reject', { reason: r }) }}><i className="ti ti-ban" />Từ chối</button>
           </>
         )}
-        {!isNew && po.status === 'received' && can('purchase_order', 'write') && (
-          <button className="btn" onClick={async () => { if (await askConfirm({ message: 'Xác nhận HOÀN THÀNH đơn mua hàng này? Sau khi hoàn thành sẽ khóa, không chỉnh sửa được nữa.', confirmText: 'Hoàn thành', danger: false })) action('complete') }}><i className="ti ti-circle-check" />Hoàn thành</button>
+        {!isNew && ['received', 'partial'].includes(po.status) && can('purchase_order', 'write') && (
+          <button className="btn" onClick={async () => { if (await askConfirm({ message: po.status === 'partial' ? 'Đơn mới nhận MỘT PHẦN. Xác nhận HOÀN THÀNH (chốt đơn dù còn thiếu)? Sau khi hoàn thành sẽ khóa, không chỉnh sửa được nữa.' : 'Xác nhận HOÀN THÀNH đơn mua hàng này? Sau khi hoàn thành sẽ khóa, không chỉnh sửa được nữa.', confirmText: 'Hoàn thành', danger: false })) action('complete') }}><i className="ti ti-circle-check" />Hoàn thành</button>
         )}
         {(headerEditable || deliveryEditable) && can('purchase_order', isNew ? 'create' : 'write') && (
           <button className="btn" onClick={save} style={{ height: 40, padding: '0 22px', fontSize: 14.5, fontWeight: 700 }}><i className="ti ti-device-floppy" />{isNew ? 'Tạo' : 'Lưu'}</button>
@@ -448,7 +451,6 @@ export default function PurchaseOrderDetail() {
                   onChange={(v) => onPickSupplier(v)} />
               </div>
               <div className="form-row"><label>Ngày đặt hàng</label><input type="date" value={po.order_date || ''} disabled={!headerEditable} onChange={(e) => setH('order_date', e.target.value)} /></div>
-              <div className="form-row"><label>Bộ phận</label><input value={po.department || ''} disabled={!headerEditable} onChange={(e) => setH('department', e.target.value)} /></div>
               <div className="form-row"><label>NSPT phụ trách</label>
                 <SearchSelect value={po.nspt || ''} options={employeeOptions}
                   onChange={(v) => setH('nspt', v)} disabled={!headerEditable || !canPickNspt}
@@ -495,11 +497,11 @@ export default function PurchaseOrderDetail() {
                     <tr key={i}>
                       <td>{i + 1}</td>
                       <td style={{ minWidth: 190 }}>
-                        <ProductPicker code={it.product_code} name={it.product_name} disabled={!headerEditable} onPick={(prod) => applyProduct(i, prod)} />
+                        <ProductPicker code={it.product_code} name={it.product_name} disabled={!headerEditable || lineLocked(it)} onPick={(prod) => applyProduct(i, prod)} />
                       </td>
                       <td>{txt(i, 'product_name', '100%')}</td>
                       <td>
-                        <select className="cell-input" style={{ width: 80 }} value={it.unit ?? ''} disabled={!headerEditable} onChange={(e) => setItem(i, { unit: e.target.value })}>
+                        <select className="cell-input" style={{ width: 80 }} value={it.unit ?? ''} disabled={!headerEditable || lineLocked(it)} onChange={(e) => setItem(i, { unit: e.target.value })}>
                           <option value="">—</option>{units.map((u) => <option key={u} value={u}>{u}</option>)}
                         </select>
                       </td>
@@ -545,7 +547,7 @@ export default function PurchaseOrderDetail() {
                               <i className="ti ti-copy" style={{ fontSize: 16, color: 'var(--muted)' }} />
                             </button>
                           )}
-                          {headerEditable && (
+                          {headerEditable && !lineLocked(it) && (
                             <button className="icon-btn" title="Xóa dòng" onClick={async () => { if (await askConfirm({ message: 'Xóa dòng này?' })) delItem(i) }}>
                               <i className="ti ti-trash" style={{ fontSize: 16, color: 'var(--red)' }} />
                             </button>
@@ -640,7 +642,7 @@ export default function PurchaseOrderDetail() {
               {(() => {
                 const ii = editingItemIdx
                 const it = items[ii]
-                const de = !headerEditable
+                const de = !headerEditable || lineLocked(it)
                 return (
                   <div className="form-grid" style={{ marginBottom: 18 }}>
                     <div className="form-row"><label>Mã hàng (VTBB/NL)</label><ProductPicker code={it.product_code} name={it.product_name} disabled={de} onPick={(prod) => applyProduct(ii, prod)} /></div>
@@ -700,7 +702,8 @@ export default function PurchaseOrderDetail() {
               <h4 style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--navy)', borderTop: '1px solid var(--border)', paddingTop: 14 }}>Giao hàng (nhiều lần)</h4>
               {isNew && <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10 }}>Lưu đơn (Tạo) trước rồi mới thêm lần giao.</div>}
               {!isNew && !deliveryEditable && <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10 }}>Chỉ thêm/sửa lần giao khi đơn đã được duyệt.</div>}
-              {deliveryEditable && (
+              {lineLocked(items[editingItemIdx]) && <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10 }}>Dòng đã {items[editingItemIdx].progress_status === 'Hủy đơn' ? 'hủy' : 'hoàn thành'} — không sửa được lần giao.</div>}
+              {deliveryEditable && !lineLocked(items[editingItemIdx]) && (
                 <button className="btn ghost" style={{ height: 30, fontSize: 13, marginBottom: 10 }} onClick={() => addDelivery(editingItemIdx)}><i className="ti ti-plus" />Thêm lần giao</button>
               )}
               <div className="items-scroll">
@@ -731,13 +734,13 @@ export default function PurchaseOrderDetail() {
                       <th style={{ width: 110 }}>Thành tiền VC</th>
                       <th style={{ width: 150 }}>Yêu cầu khác</th>
                       <th style={{ width: 140 }}>Phiếu giao</th>
-                      {deliveryEditable && <th style={{ width: 40 }} />}
+                      {deliveryEditable && !lineLocked(items[editingItemIdx]) && <th style={{ width: 40 }} />}
                     </tr>
                   </thead>
                   <tbody>
                     {(items[editingItemIdx].deliveries || []).map((d: any, di: number) => {
                       const ii = editingItemIdx
-                      const dis = !deliveryEditable
+                      const dis = !deliveryEditable || lineLocked(items[ii])
                       return (
                         <tr key={di}>
                           <td><NumberInput className="cell-input" style={{ width: 44 }} value={d.delivery_no} disabled={dis} onChange={(v) => setDelivery(ii, di, { delivery_no: v })} /></td>
@@ -794,19 +797,19 @@ export default function PurchaseOrderDetail() {
                           <td style={{ fontSize: 12 }}>
                             {d.id ? (
                               <div>
-                                {deliveryEditable && <>
+                                {!dis && <>
                                   <input type="file" id={`datt-${d.id}`} style={{ display: 'none' }} onChange={(e) => uploadDeliveryAtt(d.id, e.target.files)} />
                                   <label htmlFor={`datt-${d.id}`} className="btn ghost" style={{ cursor: 'pointer', height: 26, fontSize: 11, padding: '0 8px' }}><i className="ti ti-upload" /> Tải</label>
                                 </>}
                                 {(attByDelivery[d.id] || []).map((f) => (
                                   <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
                                     <a href={f.url} target="_blank" style={{ color: 'var(--teal)', textDecoration: 'underline', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.filename}</a>
-                                    {deliveryEditable && <button className="icon-btn" onClick={async () => { await api.delete(`/api/attachments/${f.id}`); loadDeliveryAtt(d.id) }}><i className="ti ti-x" style={{ color: 'var(--red)', fontSize: 13 }} /></button>}
+                                    {!dis && <button className="icon-btn" onClick={async () => { await api.delete(`/api/attachments/${f.id}`); loadDeliveryAtt(d.id) }}><i className="ti ti-x" style={{ color: 'var(--red)', fontSize: 13 }} /></button>}
                                   </div>
                                 ))}
                               </div>
                             ) : (
-                              deliveryEditable ? (
+                              !dis ? (
                                 <div>
                                   <input type="file" multiple id={`ndatt-${ii}-${di}`} style={{ display: 'none' }} onChange={(e) => setDelivery(ii, di, { _pendingFiles: e.target.files })} />
                                   <label htmlFor={`ndatt-${ii}-${di}`} className="btn ghost" style={{ cursor: 'pointer', height: 26, fontSize: 11, padding: '0 8px' }}><i className="ti ti-upload" /> Chọn tệp</label>
@@ -819,7 +822,7 @@ export default function PurchaseOrderDetail() {
                               ) : <span style={{ color: '#999' }}>Lưu để đính kèm</span>
                             )}
                           </td>
-                          {deliveryEditable && (
+                          {!dis && (
                             <td style={{ textAlign: 'center' }}><button className="icon-btn" onClick={() => delDelivery(ii, di)}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button></td>
                           )}
                         </tr>
@@ -833,7 +836,7 @@ export default function PurchaseOrderDetail() {
 
             <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <button className="btn ghost" style={{ height: 36, fontSize: 13 }} onClick={() => setEditingItemIdx(null)}>Đóng</button>
-              {(headerEditable || deliveryEditable) && <button className="btn" style={{ height: 36, fontSize: 13 }} onClick={() => { setEditingItemIdx(null); save() }}>Lưu đơn</button>}
+              {(headerEditable || deliveryEditable) && !lineLocked(items[editingItemIdx]) && <button className="btn" style={{ height: 36, fontSize: 13 }} onClick={() => { setEditingItemIdx(null); save() }}>Lưu đơn</button>}
             </div>
           </div>
         </div>

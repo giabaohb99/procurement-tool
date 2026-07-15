@@ -146,7 +146,7 @@ def get_perm_profile(db: Session, user) -> dict:
     if is_purchaser:
         perms_union.setdefault("survey_request", {a: False for a in ACTIONS})["process"] = True
 
-    company_id, dept_name, emp_code, dept_id = 0, "", "", 0
+    company_id, dept_name, emp_code, dept_id, emp_name = 0, "", "", 0, ""
     if getattr(user, "employee_id", 0):
         from app.modules.employee.model import Employee
         from app.modules.department.model import Department
@@ -154,13 +154,14 @@ def get_perm_profile(db: Session, user) -> dict:
         if emp:
             company_id = emp.company_id or 0
             emp_code = emp.code or ""
+            emp_name = emp.full_name or ""   # dùng khớp NSPT (ĐMH lưu theo tên)
             dept_id = emp.department_id or 0
             if emp.department_id:
                 dep = db.get(Department, emp.department_id)
                 dept_name = dep.name if dep else ""
 
     profile = {"grants": grants, "perms_union": perms_union, "company_id": company_id,
-               "dept_name": dept_name, "dept_id": dept_id, "emp_code": emp_code,
+               "dept_name": dept_name, "dept_id": dept_id, "emp_code": emp_code, "emp_name": emp_name,
                "employee_id": getattr(user, "employee_id", 0) or 0}
     _PERM_CACHE[user.id] = (profile, now + _PERM_TTL)
     return profile
