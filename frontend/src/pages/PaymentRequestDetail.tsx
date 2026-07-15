@@ -5,6 +5,7 @@ import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import NotFound from '../components/NotFound'
 import NumberInput from '../components/NumberInput'
+import { toast } from '../components/toast'
 import { fmtDateTime } from '../utils/datetime'
 
 const API = '/api/payment-requests'
@@ -25,7 +26,6 @@ export default function PaymentRequestDetail() {
   const [companies, setCompanies] = useState<any[]>([])
   const [files, setFiles] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
-  const [err, setErr] = useState(''); const [msg, setMsg] = useState('')
   const [notFound, setNotFound] = useState(false)
 
   async function loadAll() {
@@ -62,15 +62,13 @@ export default function PaymentRequestDetail() {
     setReq((s: any) => ({ ...s, lines: s.lines.map((l: any, idx: number) => idx === i ? { ...l, amount: v } : l) }))
 
   async function save() {
-    setErr(''); setMsg('')
     try {
       await api.patch(`${API}/${id}`, { request_date: req.request_date, note: req.note, lines: req.lines.map((l: any) => ({ payable_id: l.payable_id, amount: Number(l.amount) || 0 })) })
-      setMsg('Đã lưu'); loadAll()
-    } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
+      toast.success('Đã lưu'); loadAll()
+    } catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
   }
   async function action(path: string) {
-    setErr('')
-    try { await api.post(`${API}/${id}/${path}`); loadAll() } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi') }
+    try { await api.post(`${API}/${id}/${path}`); loadAll() } catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi') }
   }
   async function uploadFiles(fl: FileList | null) {
     if (!fl?.length) return
@@ -94,7 +92,7 @@ export default function PaymentRequestDetail() {
         {req.status === 'submitted' && can('payment_request', 'approve') && <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>}
         {req.status === 'submitted' && can('payment_request', 'approve') && (
           <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
-            onClick={async () => { const r = await askPrompt({ title: 'Từ chối phiếu', message: 'Lý do từ chối (khóa phiếu):', confirmText: 'Từ chối' }); if (r !== null) { try { await api.post(`${API}/${id}/reject`, { reason: r }); loadAll() } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi từ chối') } } }}>
+            onClick={async () => { const r = await askPrompt({ title: 'Từ chối phiếu', message: 'Lý do từ chối (khóa phiếu):', confirmText: 'Từ chối' }); if (r !== null) { try { await api.post(`${API}/${id}/reject`, { reason: r }); loadAll() } catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi từ chối') } } }}>
             <i className="ti ti-ban" />Từ chối
           </button>
         )}
@@ -169,9 +167,6 @@ export default function PaymentRequestDetail() {
           </div>
         </div>
       )}
-
-      {err && <div className="err">{err}</div>}
-      {msg && <div style={{ color: 'var(--green)', fontSize: 13 }}>{msg}</div>}
 
       {editable && can('payment_request', 'delete') && (
         <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)', marginTop: 16 }}

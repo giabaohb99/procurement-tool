@@ -102,8 +102,6 @@ export default function SurveyRequestDetail() {
   const [itemGroups, setItemGroups] = useState<any[]>([])
   const [units, setUnits]           = useState<string[]>([])
   const [logs, setLogs]             = useState<any[]>([])
-  const [err, setErr]               = useState('')
-  const [msg, setMsg]               = useState('')
   const [editIdx, setEditIdx]       = useState<number | null>(null)
   const [notFound, setNotFound]     = useState(false)
 
@@ -201,7 +199,7 @@ export default function SurveyRequestDetail() {
 
   async function assignPurchaser(lineId: number, code: string) {
     try { await api.patch(`${API}/${id}/lines/${lineId}/assignee`, { assignee: code }); toast.success('Đã cập nhật NSTM phụ trách'); await loadAll() }
-    catch (e: any) { setErr(e.response?.data?.message || 'Lỗi gán nhân sự') }
+    catch (e: any) { toast.error(e.response?.data?.message || 'Lỗi gán nhân sự') }
   }
 
   // --- Phase 5C/5D: kết quả khảo sát (ẩn NCC) + sinh PYC ---
@@ -287,7 +285,7 @@ export default function SurveyRequestDetail() {
     const fd = new FormData(); fd.append('entity', 'survey_request_line'); fd.append('entity_id', String(lineId))
     Array.from(fl).forEach((f) => fd.append('files', f))
     try { await api.post('/api/attachments', fd); await loadLineFiles(lineId) }
-    catch (e: any) { setErr(e?.response?.data?.error?.message || e?.response?.data?.message || 'Lỗi tải file') }
+    catch (e: any) { toast.error(e?.response?.data?.error?.message || e?.response?.data?.message || 'Lỗi tải file') }
   }
   async function delLineFile(fid: number, lineId: number) {
     if (!(await askConfirm({ message: 'Xóa hình/tài liệu này?' }))) return
@@ -384,9 +382,8 @@ export default function SurveyRequestDetail() {
   }
 
   async function save(submitAfterSave = false) {
-    setErr(''); setMsg('')
     const v = validate()
-    if (v) { setErr(v); return }
+    if (v) { toast.error(v); return }
     const body = {
       company_id:         Number(sv.company_id) || 0,
       requester:          sv.requester,
@@ -409,22 +406,20 @@ export default function SurveyRequestDetail() {
         const r = await api.patch(`${API}/${id}`, body)
         await flushPending(r.data?.data?.lines || [])    // dòng mới thêm vào phiếu cũ
         if (submitAfterSave) await api.post(`${API}/${id}/submit`)
-        setMsg('Đã lưu'); loadAll()
+        toast.success(submitAfterSave ? 'Đã gửi duyệt' : 'Đã lưu'); loadAll()
       }
-    } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
+    } catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
   }
 
   async function action(path: string, payload: any = {}) {
-    setErr('')
     try { await api.post(`${API}/${id}/${path}`, payload); loadAll() }
-    catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi') }
+    catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi') }
   }
 
   async function deleteSv() {
     if (!(await askConfirm({ message: 'Xóa phiếu này?' }))) return
-    setErr('')
     try { await api.delete(`${API}/${id}`); navigate('/survey-requests') }
-    catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi xóa') }
+    catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi xóa') }
   }
 
   const isLogShown = !isNew && logs.length > 0
@@ -915,8 +910,6 @@ export default function SurveyRequestDetail() {
             </div>
           )}
 
-          {err && <div className="err" style={{ marginTop: 12 }}>{err}</div>}
-          {msg && <div style={{ color: 'var(--green)', fontSize: 13, marginTop: 8 }}>{msg}</div>}
         </div>
 
         {/* Lịch sử thao tác */}
