@@ -42,16 +42,36 @@ class SetPasswordIn(BaseModel):
 @router.post("/{eid}/set-password")
 def set_password(eid: int, data: SetPasswordIn, db: Session = Depends(get_db),
                  user=Depends(require("employee", "write"))):
-    """Người có quyền nhân sự đặt lại mật khẩu tài khoản của nhân sự này (nhập thẳng)."""
+    """Đặt mật khẩu tài khoản của nhân sự. Nếu nhân sự CHƯA có tài khoản đăng nhập
+    thì TỰ TẠO tài khoản (email + vai trò của nhân sự) rồi đặt luôn mật khẩu này."""
     from app.modules.user.model import User
     if not (data.password or "").strip() or len(data.password) < 4:
         raise HTTPException(400, "Mật khẩu tối thiểu 4 ký tự")
     u = db.query(User).filter(User.employee_id == eid).first()
-    if not u:
-        raise HTTPException(404, "Nhân sự này chưa có tài khoản đăng nhập")
-    u.password_hash = hash_password(data.password)
-    db.commit()
-    return success(None, "Đã đặt lại mật khẩu")
+    if u:
+        u.password_hash = hash_password(data.password)
+        db.commit()
+        return success(None, "Đã đặt lại mật khẩu")
+
+    # Chưa có tài khoản → tự tạo từ nhân sự rồi đặt mật khẩu
+    emp = db.get(service.Employee, eid)
+    if not emp:
+        raise HTTPException(404, "Không tìm thấy nhân sự")
+    if not (emp.email or "").strip():
+        raise HTTPException(400, "Nhân sự chưa có email — hãy nhập email trước để tạo tài khoản đăng nhập")
+    if db.query(User).filter(User.email == emp.email).first():
+        raise HTTPException(400, f"Email {emp.email} đã được dùng cho tài khoản khác")
+    from app.modules.role.model import Role
+    from app.modules.user import service as user_service
+    from app.modules.user.schema import UserProvision
+    role_ids = []
+    if (emp.role_name or "").strip():
+        role = db.query(Role).filter(Role.name == emp.role_name).first()
+        if role:
+            role_ids = [role.id]
+    user_service.provision_user(
+        db, UserProvision(employee_id=eid, email=emp.email, password=data.password, role_ids=role_ids), user.id)
+    return success(None, "Đã tạo tài khoản đăng nhập và đặt mật khẩu")
 
 
 @router.post("")
