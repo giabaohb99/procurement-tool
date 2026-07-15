@@ -398,9 +398,6 @@ def run():
         resync_role_perms(db, "pur_manager", STD_ROLES["pur_manager"]["perms"])
         resync_role_perms(db, "pur_admin", STD_ROLES["pur_admin"]["perms"])
 
-        # Gộp vai trò legacy 'Nhân viên' (STAFF) vào 'Nhân sự (cơ bản)' rồi xóa
-        cleanup_legacy_staff_role(db)
-
         # Deduplication tracking sets (using upper case for case-insensitivity)
         seen_companies = {c[0].upper() for c in db.query(Company.code).all()}
         seen_suppliers = {s[0].upper() for s in db.query(Supplier.code).all()}
@@ -523,6 +520,10 @@ def run():
         n_default = assign_default_roles(db)
         if n_default:
             print(f"Gán vai trò 'Nhân sự' mặc định cho {n_default} tài khoản.")
+
+        # Gộp vai trò 'Nhân viên' (STAFF/staff, kể cả demo — MariaDB không phân biệt hoa/thường)
+        # vào 'Nhân sự (cơ bản)' rồi xóa. CHẠY SAU seed_demo_accounts để dọn cả role demo vừa tạo.
+        cleanup_legacy_staff_role(db)
 
         # Cập nhật hình thức thanh toán "Công nợ 30 ngày" cho toàn bộ nhà cung cấp hiện có
         n_updated = db.query(Supplier).update({"payment_terms": "Công nợ 30 ngày"}, synchronize_session=False)
