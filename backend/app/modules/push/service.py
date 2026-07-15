@@ -9,10 +9,11 @@ from sqlalchemy.orm import Session
 
 from .model import PushSubscription
 
-# VAPID keys — public không bí mật (gửi cho trình duyệt); private nên đặt qua ENV ở prod.
+# VAPID keys. Public không bí mật (gửi cho trình duyệt) nên để mặc định được;
+# PRIVATE là bí mật → BẮT BUỘC đặt qua ENV (VAPID_PRIVATE_KEY) ở prod, không để trong source.
 VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY",
                              "BISns6RZMWCc9ZlK6hD47LsMmxWqFKsfCS4pC9U49nop3ZzLmQlI7BhztRVMRycOy2FAiU09et5VrhagKwdUe_k")
-VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "Hk2R7IrE6bk7zBXW7nN133AWGgAQZiYTOHeLUKeOD7M")
+VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "")
 VAPID_SUBJECT = os.getenv("VAPID_SUBJECT", "mailto:admin@degoholding.vn")
 
 
@@ -43,6 +44,8 @@ def send_to_users(db_factory, user_ids: list[int], title: str, body: str, url: s
     """Đẩy Web Push tới mọi thiết bị của các user. Chạy nền — tự mở session riêng."""
     if not user_ids:
         return
+    if not VAPID_PRIVATE_KEY:
+        return   # chưa cấu hình VAPID_PRIVATE_KEY (ENV) → bỏ qua đẩy push (chuông vẫn chạy)
     try:
         from pywebpush import webpush, WebPushException
     except Exception:

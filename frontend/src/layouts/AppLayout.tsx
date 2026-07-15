@@ -650,7 +650,7 @@ export default function AppLayout() {
           <Outlet />
         </div>
       </div>
-      <PwaInstallPrompt />
+      {import.meta.env.VITE_PWA_INSTALL_PROMPT === 'on' && <PwaInstallPrompt />}
     </div>
   );
 }
