@@ -243,6 +243,12 @@ def return_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: S
 @router.post("/{pid}/cancel")
 def cancel_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
               user=Depends(require("purchase_order", "cancel"))):
+    # Hủy phải có lý do
+    if not (data.reason or "").strip():
+        raise HTTPException(400, "Vui lòng nhập lý do hủy đơn")
+    # Có sản phẩm nào đã Hoàn thành → KHÔNG cho hủy
+    if db.query(POItem).filter(POItem.po_id == pid, POItem.progress_status == "Hoàn thành").first():
+        raise HTTPException(400, "Đơn có sản phẩm đã Hoàn thành — không thể hủy")
     return success(_out(db, service.set_status(db, pid, "cancelled", user.id, data.reason)), "Đã hủy đơn")
 
 

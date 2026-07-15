@@ -393,6 +393,9 @@ export default function PurchaseOrderDetail() {
             )}
           </div>
         )}
+        {!isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'cancel') && !items.some((it: any) => it.progress_status === 'Hoàn thành') && (
+          <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { const r = await askPrompt({ title: 'Hủy đơn', message: 'Lý do hủy đơn (bắt buộc — khóa đơn, không sửa lại được):', confirmText: 'Hủy đơn' }); if (r !== null) { if (!r.trim()) { toast.error('Vui lòng nhập lý do hủy'); return } action('cancel', { reason: r }) } }}><i className="ti ti-ban" />Hủy</button>
+        )}
         {!isNew && canDelete && can('purchase_order', 'delete') && (
           <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { if (await askConfirm({ message: 'Xóa đơn mua hàng này?' })) { await api.delete(`${API}/${id}`); navigate('/purchase-orders') } }}><i className="ti ti-trash" />Xóa đơn</button>
         )}
