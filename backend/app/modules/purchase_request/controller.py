@@ -208,15 +208,23 @@ def _ensure_can_return_or_reject(db: Session, user, pr: PurchaseRequest):
 
 
 @router.post("/{pid}/cancel")
-def cancel_pr(pid: int, data: ReasonIn, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
+def cancel_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
     _ensure_can_return_or_reject(db, user, service.get_pr(db, pid))
-    return success(_out(db, service.cancel_pr(db, pid, data.reason, user.id)), "Đã hủy phiếu")
+    pr = service.cancel_pr(db, pid, data.reason, user.id)
+    trigger_notification(db=db, event="pr_cancelled", doc_type="purchase_request", doc_code=pr.code,
+                         creator_id=pr.created_by or user.id, background_tasks=background_tasks,
+                         reason=data.reason or "", link=f"/purchase-requests/{pr.id}")
+    return success(_out(db, pr), "Đã hủy phiếu")
 
 
 @router.post("/{pid}/return")
-def return_pr(pid: int, data: ReasonIn, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
+def return_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
     _ensure_can_return_or_reject(db, user, service.get_pr(db, pid))
-    return success(_out(db, service.return_pr(db, pid, data.reason, user.id)), "Đã trả phiếu về (Bị trả lại)")
+    pr = service.return_pr(db, pid, data.reason, user.id)
+    trigger_notification(db=db, event="pr_returned", doc_type="purchase_request", doc_code=pr.code,
+                         creator_id=pr.created_by or user.id, background_tasks=background_tasks,
+                         reason=data.reason or "", link=f"/purchase-requests/{pr.id}")
+    return success(_out(db, pr), "Đã trả phiếu về (Bị trả lại)")
 
 
 @router.post("/{pid}/complete")

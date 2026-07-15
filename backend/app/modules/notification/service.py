@@ -154,7 +154,8 @@ def trigger_notification(
     doc_type_label = "Yêu cầu mua hàng" if doc_type == "purchase_request" else "Phiếu khảo sát"
 
     # Nhãn loại chứng từ + động từ theo hành động (dùng cho fallback rõ nghĩa, vd Đơn mua hàng)
-    DOC_LABEL = {"purchase_request": "Yêu cầu mua hàng", "survey_request": "Phiếu khảo sát",
+    DOC_LABEL = {"purchase_request": "Yêu cầu mua hàng", "survey_request": "Yêu cầu khảo sát",
+                 "survey": "Phiếu khảo sát",
                  "purchase_order": "Đơn mua hàng", "payment_request": "Đề nghị thanh toán"}
     STATUS_VERB = {"submitted": "đã được gửi duyệt", "approved": "đã được duyệt",
                    "rejected": "đã bị từ chối", "cancelled": "đã bị hủy", "returned": "đã bị trả lại (cần sửa & gửi lại)",
@@ -172,6 +173,24 @@ def trigger_notification(
     elif event == "pr_rejected":
         subject = f"[Từ chối] PYC {doc_code}"
         body = f"Yêu cầu mua hàng {doc_code} của bạn đã bị từ chối phê duyệt."
+    elif event == "pr_returned":
+        subject = f"[Bị trả lại] PYC {doc_code}"
+        body = f"Yêu cầu mua hàng {doc_code} của bạn bị trả lại — hãy chỉnh sửa và gửi duyệt lại."
+    elif event == "pr_cancelled":
+        subject = f"[Đã hủy] PYC {doc_code}"
+        body = f"Yêu cầu mua hàng {doc_code} của bạn đã bị hủy."
+    elif event == "sr_submitted":
+        subject = f"[Yêu cầu phê duyệt] YCKS {doc_code}"
+        body = f"Có một yêu cầu khảo sát mới (Mã số: {doc_code}) cần bạn phê duyệt."
+    elif event == "sr_approved":
+        subject = f"[Đã duyệt] YCKS {doc_code}"
+        body = f"Yêu cầu khảo sát {doc_code} của bạn đã được phê duyệt."
+    elif event == "sr_rejected":
+        subject = f"[Từ chối] YCKS {doc_code}"
+        body = f"Yêu cầu khảo sát {doc_code} của bạn đã bị từ chối phê duyệt."
+    elif event == "sr_returned":
+        subject = f"[Bị trả lại] YCKS {doc_code}"
+        body = f"Yêu cầu khảo sát {doc_code} của bạn bị trả lại — hãy chỉnh sửa và gửi duyệt lại."
     elif event == "survey_submitted":
         subject = f"[Yêu cầu phê duyệt] Khảo sát {doc_code}"
         body = f"Có một phiếu khảo sát mới (Mã số: {doc_code}) cần bạn phê duyệt."
@@ -201,6 +220,9 @@ def trigger_notification(
     elif event == "survey_submitted":
         # Khảo sát do Quản lý thu mua / Admin duyệt
         recipients = get_approvers_for_entity(db, doc_type)
+    elif event == "sr_submitted":
+        # Yêu cầu khảo sát (YCKS) do người có quyền duyệt survey_request duyệt
+        recipients = get_approvers_for_entity(db, "survey_request")
     elif event == "pr_approved":
         # DUYỆT XONG → báo người YC + Quản lý TM + Admin TM (để phân bổ nhân sự trên line)
         recipients = ([creator] if creator else []) + get_users_by_role_codes(db, ["pur_manager", "pur_admin"])
