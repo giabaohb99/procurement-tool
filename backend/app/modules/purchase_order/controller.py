@@ -14,6 +14,7 @@ from app.modules.notification.service import trigger_notification
 
 from . import service
 from .model import POItem, PurchaseOrder
+from app.modules.payable.model import Payable
 from .schema import POCreate, POUpdate, RejectIn, ItemProgressIn
 
 router = APIRouter(prefix="/api/purchase-orders", tags=["purchase_order"])
@@ -23,7 +24,7 @@ HEADER = ["id", "code", "misa_code", "pr_code", "survey_code", "company_id", "su
           "is_urgent", "status", "note", "approve_note"]
 
 
-def _delivery(d) -> dict:
+def _delivery(d, pay=None) -> dict:
     return {"id": d.id, "delivery_no": d.delivery_no, "warehouse_code": d.warehouse_code,
             "carrier_code": d.carrier_code, "carrier_name": d.carrier_name,
             "ship_qty": float(d.ship_qty or 0), "ship_unit": d.ship_unit,
@@ -33,12 +34,17 @@ def _delivery(d) -> dict:
             "diff_promise": d.diff_promise, "diff_regulated": d.diff_regulated, "diff_required": d.diff_required,
             "invoice_no": d.invoice_no, "shipping_unit_price": float(d.shipping_unit_price or 0),
             "shipping_amount": float(d.shipping_amount or 0), "qc_result": d.qc_result,
-            "status": d.status, "extra_request": d.extra_request, "progress_note": d.progress_note}
+            "status": d.status, "extra_request": d.extra_request, "progress_note": d.progress_note,
+            # Công nợ HÀNG của lần giao này (đã trả / còn lại)
+            "goods_total": float(pay.total or 0) if pay else 0.0,
+            "paid": float(pay.paid_amount or 0) if pay else 0.0,
+            "remaining": float(pay.remaining or 0) if pay else 0.0}
 
 
-def _item(db, it) -> dict:
+def _item(db, it, pay_by_del: dict) -> dict:
     dels = service.deliveries_of(db, it.id)
     qty_order = float(it.qty_order or 0)
+    del_out = [_delivery(d, pay_by_del.get(d.id)) for d in dels]
     return {"id": it.id, "product_code": it.product_code, "product_name": it.product_name,
             "invoice_name": it.invoice_name, "item_group": it.item_group, "spec": it.spec,
             "fg_code": it.fg_code, "fg_name": it.fg_name, "invoice_no": it.invoice_no,
@@ -51,13 +57,21 @@ def _item(db, it) -> dict:
             "pause_reason": it.pause_reason or "", "status_before_pause": it.status_before_pause or "",
             # Giao thiếu: tổng SL đã nhận < SL đặt (dùng cho badge cảnh báo ở FE)
             "is_short_delivery": bool(qty_order > 0 and float(it.qty_received or 0) + 0.001 < qty_order),
-            "deliveries": [_delivery(d) for d in dels]}
+            # Tiền theo DÒNG: đặt hàng (SL đặt) · tiền hàng đã nhận (có công nợ) · đã trả · còn lại
+            "order_total": round(qty_order * float(it.price or 0) * (1 + float(it.vat or 0) / 100), 2),
+            "goods_total": round(sum(x["goods_total"] for x in del_out), 2),
+            "paid_total": round(sum(x["paid"] for x in del_out), 2),
+            "remaining_total": round(sum(x["remaining"] for x in del_out), 2),
+            "deliveries": del_out}
 
 
 def _out(db: Session, po: PurchaseOrder) -> dict:
     d = {c: getattr(po, c) for c in HEADER}
     d["vat_rate"] = float(po.vat_rate or 0)
-    items = [_item(db, it) for it in service.items_of(db, po.id)]
+    # Công nợ theo lần giao: HÀNG (goods) hiện đã trả/còn lại trên dòng; gom cả VẬN CHUYỂN cho tổng chưa trả
+    all_pays = db.query(Payable).filter(Payable.po_id == po.id, Payable.ref_type == "delivery").all()
+    pay_by_del = {p.ref_id: p for p in all_pays if p.source_type == "goods"}
+    items = [_item(db, it, pay_by_del) for it in service.items_of(db, po.id)]
     d["items"] = items
     # Tổng theo SL THỰC NHẬN (thành tiền đơn hàng = đã chốt)
     subtotal = round(sum(i["qty_received"] * i["price"] for i in items), 2)
@@ -72,6 +86,8 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
     order_vat = round(sum(i["qty_order"] * i["price"] * (i["vat"] / 100) for i in items), 2)
     d["order_subtotal"] = order_sub
     d["order_total"] = round(order_sub + order_vat, 2)
+    # Tổng công nợ CHƯA TRẢ (hàng + vận chuyển) → dùng bật nút Tạo yêu cầu thanh toán
+    d["unpaid_total"] = round(sum(float(p.remaining or 0) for p in all_pays), 2)
     return d
 
 

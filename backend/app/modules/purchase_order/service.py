@@ -160,7 +160,7 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
                     db, source_type="goods", ref_id=d.id, company_id=po.company_id,
                     supplier_code=po.supplier_code, supplier_name=po.supplier_name,
                     po_id=po.id, po_code=po.code, invoice_no=it.invoice_no,
-                    incur_date=d.received_date, amount=amt, vat=amt * vat / 100,
+                    incur_date=d.received_date or po.order_date, amount=amt, vat=amt * vat / 100,
                     due_days=goods_days, user_id=user_id)
                 # Công nợ vận chuyển (carrier riêng) — chỉ khi có carrier + cước > 0
                 ship_amt = float(d.shipping_amount or 0)
@@ -174,7 +174,7 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
                         supplier_code=d.carrier_code,
                         supplier_name=d.carrier_name or (carrier.name if carrier else ""),
                         po_id=po.id, po_code=po.code, invoice_no=ship_inv,
-                        incur_date=d.received_date, amount=ship_amt, vat=0,
+                        incur_date=d.received_date or po.order_date, amount=ship_amt, vat=0,
                         due_days=c_days, user_id=user_id)
                 else:
                     pay_service.remove(db, "shipping", d.id)
@@ -326,9 +326,18 @@ PROGRESS_EXCEPTIONS = ["Tạm ngưng", "Hủy đơn"]
 
 
 def is_line_paid(db: Session, po: PurchaseOrder, item: POItem) -> bool:
-    """Điều kiện 'đã thanh toán dòng' (NCC sản phẩm, không tính NCC vận chuyển).
-    Trước mắt trả True để cho phép chốt Hoàn thành thoải mái — sẽ mở tính toán thật sau."""
-    return True
+    """Điều kiện 'đã thanh toán dòng' = MỌI khoản nợ HÀNG (goods, không tính vận chuyển)
+    của các lần giao đã nhận của dòng đều đã trả đủ (còn lại ≈ 0)."""
+    from app.modules.payable.model import Payable
+    ref_ids = [d.id for d in deliveries_of(db, item.id) if float(d.received_qty or 0) > 0]
+    if not ref_ids:
+        return False   # chưa nhận hàng thì chưa thể 'đã trả đủ'
+    pays = (db.query(Payable)
+            .filter(Payable.source_type == "goods", Payable.ref_type == "delivery",
+                    Payable.ref_id.in_(ref_ids)).all())
+    if not pays:
+        return False
+    return all(float(p.remaining or 0) <= 0.01 for p in pays)
 
 
 def validate_progress(db: Session, po: PurchaseOrder, item: POItem, target: str):

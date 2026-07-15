@@ -292,6 +292,7 @@ export default function PurchaseRequestDetail() {
       nspt: pr.requester,                       // khớp cách onPickPr bên ĐMH lấy NSPT = người yêu cầu
       supplier_name: pr.suggested_supplier || '',
       supplier_code: '',                        // PR chỉ có tên NCC đề xuất, không có mã
+      supplier_tax_code: pr.suggested_supplier_tax_code || '',   // để ĐMH tự khớp NCC trong danh mục
       vat_rate: Number(pr.vat_rate) || 0.08,
       is_urgent: !!pr.is_urgent,
       note: pr.note || '',

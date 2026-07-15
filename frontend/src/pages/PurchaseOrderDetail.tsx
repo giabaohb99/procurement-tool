@@ -61,6 +61,10 @@ export default function PurchaseOrderDetail() {
   const [editingItemIdx, setEditingItemIdx] = useState<number | null>(null)
   const [printOpen, setPrintOpen] = useState(false)   // dropdown chọn loại bản in
   const [notFound, setNotFound] = useState(false)
+  const [payModal, setPayModal] = useState(false)              // popup tạo yêu cầu thanh toán
+  const [payables, setPayables] = useState<any[]>([])          // các khoản nợ chưa trả đủ của đơn (hàng + vận chuyển)
+  const [paySel, setPaySel] = useState<number[]>([])           // id khoản nợ được chọn
+  const [payTab, setPayTab] = useState<'goods' | 'shipping'>('goods')
 
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items))
@@ -130,7 +134,10 @@ export default function PurchaseOrderDetail() {
   const delItem = (i: number) => setPo((s: any) => ({ ...s, items: s.items.filter((_: any, idx: number) => idx !== i) }))
   const dupItem = (i: number) => setPo((s: any) => {
     const src = s.items[i]
-    const copy = { ...src, id: undefined, qty_received: 0, qty_remaining: 0, line_status: '', deliveries: [] }
+    // Dòng mới: reset tiến độ + tiền + lần giao (chưa lưu nên chưa có id/công nợ)
+    const copy = { ...src, id: undefined, qty_received: 0, qty_remaining: 0, line_status: '', deliveries: [],
+      progress_status: 'Chưa đặt hàng', pause_reason: '', status_before_pause: '',
+      goods_total: 0, paid_total: 0, remaining_total: 0 }
     const items = [...s.items]; items.splice(i + 1, 0, copy); return { ...s, items }
   })
 
@@ -152,7 +159,7 @@ export default function PurchaseOrderDetail() {
   const addDelivery = (ii: number) =>
     setPo((s: any) => ({
       ...s, items: s.items.map((it: any, idx: number) => idx !== ii ? it : {
-        ...it, deliveries: [...(it.deliveries || []), { ...emptyDelivery, delivery_no: (it.deliveries?.length || 0) + 1, warehouse_code: it.warehouse_code, ship_unit: it.unit }],
+        ...it, deliveries: [...(it.deliveries || []), { ...emptyDelivery, delivery_no: (it.deliveries?.length || 0) + 1, warehouse_code: it.warehouse_code, ship_unit: it.unit, received_date: new Date().toISOString().slice(0, 10) }],
       }),
     }))
   const delDelivery = (ii: number, di: number) =>
@@ -175,6 +182,20 @@ export default function PurchaseOrderDetail() {
     const c = carriers.find((x) => x.code === code)
     setDelivery(ii, di, { carrier_code: code, carrier_name: c ? c.name : (code ? 'NCC tự vận chuyển' : '') })
   }
+
+  // Tạo ĐMH từ YCMH: NCC ở YCMH là TEXT (đề xuất) → tự khớp với danh mục NCC (theo MST hoặc tên) để chọn sẵn dropdown
+  useEffect(() => {
+    if (!isNew || suppliers.length === 0 || po.supplier_code) return
+    const fromPr = (location.state as any)?.fromPr
+    if (!fromPr) return
+    const goods = suppliers.filter((s) => s.supplier_type !== 'transport')
+    const tax = (fromPr.supplier_tax_code || '').trim()
+    const name = (fromPr.supplier_name || '').trim().toLowerCase()
+    const match = (tax && goods.find((s) => (s.tax_code || '').trim() === tax))
+      || (name && goods.find((s) => (s.name || '').trim().toLowerCase() === name))
+    if (match) onPickSupplier(match.code)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, suppliers, po.supplier_code])
   const onPickPr = (code: string) => {
     const pr = prList.find((p) => p.code === code)
     setPo((s: any) => ({ ...s, pr_code: code, ...(pr ? { department: pr.department || s.department, nspt: pr.requester || s.nspt, company_id: pr.company_id || s.company_id } : {}) }))
@@ -200,6 +221,17 @@ export default function PurchaseOrderDetail() {
 
   async function save() {
     const sentItems = items.filter((it: any) => it.product_name || it.product_code)
+    // Ràng buộc nhập liệu (để công nợ sinh đúng): có SL nhận thì phải có Ngày nhận; có cước thì phải chọn Đơn vị VC
+    for (const it of sentItems) {
+      for (const d of (it.deliveries || [])) {
+        if ((Number(d.received_qty) || 0) > 0 && !(d.received_date || '').trim()) {
+          toast.error(`Sản phẩm "${it.product_name}": lần giao có SL nhận thì phải nhập Ngày nhận`); return
+        }
+        if ((Number(d.shipping_amount) || 0) > 0 && !(d.carrier_code || '').trim()) {
+          toast.error(`Sản phẩm "${it.product_name}": lần giao có cước vận chuyển thì phải chọn Đơn vị vận chuyển`); return
+        }
+      }
+    }
     const body: any = {
       misa_code: po.misa_code, pr_code: po.pr_code, survey_code: po.survey_code,
       company_id: Number(po.company_id) || 0, supplier_code: po.supplier_code, supplier_name: po.supplier_name,
@@ -236,6 +268,31 @@ export default function PurchaseOrderDetail() {
   async function action(path: string, payload: any = {}) {
     try { await api.post(`${API}/${id}/${path}`, payload); loadAll() }
     catch { /* interceptor đã toast lỗi */ }
+  }
+
+  // Tạo yêu cầu thanh toán từ ĐMH: lấy các khoản nợ HÀNG chưa trả đủ của đơn → chọn hóa đơn → tạo YCTT
+  async function openPayModal() {
+    try {
+      // Lấy CẢ 2 luồng (hàng + vận chuyển), chỉ khoản chưa trả đủ
+      const r = await api.get('/api/payables', { params: { po_code: po.code, year: 'all', page_size: 500 } })
+      const list = (r.data.data.items || []).filter((p: any) => (Number(p.remaining) || 0) > 0.01)
+      setPayables(list)
+      setPaySel(list.map((p: any) => p.id))   // mặc định chọn hết
+      setPayTab((list.some((p: any) => p.source_type === 'goods')) ? 'goods' : 'shipping')
+      setPayModal(true)
+    } catch { /* interceptor đã toast lỗi */ }
+  }
+  async function createPaymentRequest() {
+    const lines = payables.filter((p) => paySel.includes(p.id)).map((p) => ({ payable_id: p.id, amount: Number(p.remaining) || 0 }))
+    if (lines.length === 0) { toast.error('Chưa chọn hóa đơn nào'); return }
+    try {
+      const r = await api.post('/api/payment-requests', { request_date: new Date().toISOString().slice(0, 10), lines })
+      const created = r.data.data
+      toast.success('Đã tạo yêu cầu thanh toán')
+      setPayModal(false)
+      if (created?.length === 1) navigate(`/payment-requests/${created[0].id}`)
+      else navigate('/payment-requests')
+    } catch { /* interceptor đã toast lỗi */ }
   }
 
   // Cập nhật trạng thái tiến độ 1 dòng (Hủy/Tạm ngưng cần lý do); backend gate điều kiện + toast cột thiếu
@@ -311,6 +368,11 @@ export default function PurchaseOrderDetail() {
         <h2 className="page-title" style={{ margin: 0 }}>{title}</h2>
         {!isNew && poBadge(po.status)}
         <span style={{ flex: 1 }} />
+        {/* Tạo yêu cầu thanh toán: khi đơn đã duyệt + còn công nợ hàng chưa trả đủ */}
+        {!isNew && ['approved', 'partial', 'received', 'completed'].includes(po.status) && can('payment_request', 'create')
+          && (Number(po.unpaid_total) || 0) > 0.01 && (
+          <button className="btn secondary" onClick={openPayModal}><i className="ti ti-receipt" />Tạo yêu cầu thanh toán</button>
+        )}
         {/* ── Nhóm tiện ích + destructive (trái) ── */}
         {!isNew && can('purchase_order', 'print') && (
           <div style={{ position: 'relative' }}>
@@ -452,7 +514,7 @@ export default function PurchaseOrderDetail() {
                         </div>
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        {progressEditable && !['Hủy đơn', 'Hoàn thành'].includes(it.progress_status) ? (
+                        {progressEditable && it.id && !['Hủy đơn', 'Hoàn thành'].includes(it.progress_status) ? (
                           it.progress_status === 'Tạm ngưng' ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
                               <span className="badge" style={{ background: PG_COLOR['Tạm ngưng'] + '22', color: PG_COLOR['Tạm ngưng'] }}>Tạm ngưng</span>
@@ -465,7 +527,7 @@ export default function PurchaseOrderDetail() {
                             </select>
                           )
                         ) : (
-                          <span className="badge" style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{it.progress_status || 'Chưa đặt hàng'}</span>
+                          <span className="badge" title={!it.id ? 'Lưu đơn để cập nhật trạng thái cho dòng mới' : undefined} style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{it.progress_status || 'Chưa đặt hàng'}</span>
                         )}
                         {it.pause_reason && ['Tạm ngưng', 'Hủy đơn'].includes(it.progress_status) && (
                           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }} title={it.pause_reason}>Lý do: {it.pause_reason}</div>
@@ -590,7 +652,7 @@ export default function PurchaseOrderDetail() {
                     <div className="form-row">
                       <label>Trạng thái tiến độ</label>
                       <div>
-                        {progressEditable && !['Hủy đơn', 'Hoàn thành'].includes(it.progress_status) ? (
+                        {progressEditable && it.id && !['Hủy đơn', 'Hoàn thành'].includes(it.progress_status) ? (
                           it.progress_status === 'Tạm ngưng' ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
                               <span className="badge" style={{ background: PG_COLOR['Tạm ngưng'] + '22', color: PG_COLOR['Tạm ngưng'] }}>Tạm ngưng</span>
@@ -603,7 +665,7 @@ export default function PurchaseOrderDetail() {
                             </select>
                           )
                         ) : (
-                          <span className="badge" style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{it.progress_status || 'Chưa đặt hàng'}</span>
+                          <span className="badge" title={!it.id ? 'Lưu đơn để cập nhật trạng thái cho dòng mới' : undefined} style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{it.progress_status || 'Chưa đặt hàng'}</span>
                         )}
                         {it.pause_reason && ['Tạm ngưng', 'Hủy đơn'].includes(it.progress_status) && (
                           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>Lý do: {it.pause_reason}</div>
@@ -624,7 +686,10 @@ export default function PurchaseOrderDetail() {
                     <div className="form-row"><label>SL đặt NCC</label><NumberInput decimals value={it.qty_order} disabled={de} onChange={(v) => setItem(ii, { qty_order: v })} /></div>
                     <div className="form-row"><label>Đơn giá</label><CurrencyInput className="" value={it.price ?? 0} disabled={de} onChange={(val: number) => setItem(ii, { price: val })} /></div>
                     <div className="form-row"><label>VAT (%)</label><NumberInput value={it.vat} disabled={de} onChange={(v) => setItem(ii, { vat: v })} /></div>
-                    <div className="form-row"><label>Thành tiền đơn hàng</label><input value={fmt(orderAmount(it))} disabled /></div>
+                    <div className="form-row"><label>Tổng tiền đặt hàng</label><input value={fmt(it.order_total ?? orderAmount(it))} disabled /></div>
+                    <div className="form-row"><label>Tổng tiền hàng (đã nhận)</label><input value={fmt(it.goods_total || 0)} disabled /></div>
+                    <div className="form-row"><label>Tổng đã trả</label><input value={fmt(it.paid_total || 0)} disabled style={{ color: 'var(--green)', fontWeight: 600 }} /></div>
+                    <div className="form-row"><label>Còn lại</label><input value={fmt(it.remaining_total || 0)} disabled style={{ color: (it.remaining_total || 0) > 0 ? 'var(--red)' : 'var(--muted)', fontWeight: 600 }} /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><input value={it.note || ''} disabled={de} onChange={(e) => setItem(ii, { note: e.target.value })} /></div>
                   </div>
                 )
@@ -650,6 +715,8 @@ export default function PurchaseOrderDetail() {
                       <th style={{ width: 100 }}>Đơn giá</th>
                       <th style={{ width: 64 }}>VAT%</th>
                       <th style={{ width: 130, background: '#fff3cd' }}>Thành tiền (nhận)</th>
+                      <th style={{ width: 110 }}>Đã trả</th>
+                      <th style={{ width: 110 }}>Còn lại</th>
                       <th style={{ width: 110 }}>Cam kết giao</th>
                       <th style={{ width: 110 }}>Ngày nhận</th>
                       <th style={{ width: 70 }}>Số ngày QĐ</th>
@@ -693,6 +760,8 @@ export default function PurchaseOrderDetail() {
                           <td style={{ textAlign: 'right', color: 'var(--muted)' }}>{fmt(items[ii].price)}</td>
                           <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{Number(items[ii].vat) || 0}%</td>
                           <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmt((Number(d.received_qty) || 0) * (Number(items[ii].price) || 0) * (1 + (Number(items[ii].vat) || 0) / 100))}</td>
+                          <td style={{ textAlign: 'right', color: 'var(--green)', fontWeight: 600 }}>{d.id ? fmt(d.paid || 0) : '—'}</td>
+                          <td style={{ textAlign: 'right', color: (Number(d.remaining) || 0) > 0 ? 'var(--red)' : 'var(--muted)', fontWeight: 600 }}>{d.id ? fmt(d.remaining || 0) : '—'}</td>
                           <td><input className="cell-input" type="date" style={{ width: 100 }} value={d.promised_date ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { promised_date: e.target.value })} /></td>
                           <td><input className="cell-input" type="date" style={{ width: 100 }} value={d.received_date ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { received_date: e.target.value })} /></td>
                           <td><NumberInput className="cell-input" style={{ width: 60 }} value={d.std_days} disabled={dis} onChange={(v) => setDelivery(ii, di, { std_days: v })} /></td>
@@ -752,7 +821,7 @@ export default function PurchaseOrderDetail() {
                         </tr>
                       )
                     })}
-                    {(items[editingItemIdx].deliveries || []).length === 0 && <tr><td colSpan={24} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có lần giao nào</td></tr>}
+                    {(items[editingItemIdx].deliveries || []).length === 0 && <tr><td colSpan={26} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có lần giao nào</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -761,6 +830,67 @@ export default function PurchaseOrderDetail() {
             <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <button className="btn ghost" style={{ height: 36, fontSize: 13 }} onClick={() => setEditingItemIdx(null)}>Đóng</button>
               {(headerEditable || deliveryEditable) && <button className="btn" style={{ height: 36, fontSize: 13 }} onClick={() => { setEditingItemIdx(null); save() }}>Lưu đơn</button>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Popup chọn hóa đơn để tạo Yêu cầu thanh toán */}
+      {payModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }} onClick={() => setPayModal(false)}>
+          <div className="modal-card" style={{ width: 780, maxWidth: '96vw', background: '#fff', borderRadius: 12, boxShadow: '0 20px 25px -5px rgba(0,0,0,.15)', display: 'flex', flexDirection: 'column', maxHeight: '90vh', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
+              <h3 style={{ margin: 0, fontSize: 16, color: 'var(--navy)' }}>Tạo yêu cầu thanh toán — chọn hóa đơn</h3>
+              <button className="icon-btn" onClick={() => setPayModal(false)}><i className="ti ti-x" style={{ fontSize: 18 }} /></button>
+            </div>
+            {/* Tab: NCC sản xuất (hàng) · NCC vận chuyển */}
+            <div style={{ display: 'flex', gap: 6, padding: '10px 18px 0', borderBottom: '1px solid var(--border)' }}>
+              {([['goods', 'NCC sản xuất (hàng)'], ['shipping', 'NCC vận chuyển']] as const).map(([k, lbl]) => {
+                const n = payables.filter((p) => p.source_type === k).length
+                return (
+                  <button key={k} onClick={() => setPayTab(k)} style={{ border: 'none', background: 'none', padding: '8px 12px', cursor: 'pointer', fontSize: 13.5, fontWeight: payTab === k ? 700 : 500, color: payTab === k ? 'var(--teal)' : 'var(--muted)', borderBottom: payTab === k ? '2px solid var(--teal)' : '2px solid transparent', whiteSpace: 'nowrap' }}>{lbl}{n ? ` (${n})` : ''}</button>
+                )
+              })}
+            </div>
+            <div style={{ padding: '12px 18px', overflowY: 'auto', flex: 1 }}>
+              {(() => {
+                const rows = payables.filter((p) => p.source_type === payTab)
+                const rowIds = rows.map((p) => p.id)
+                const allSel = rows.length > 0 && rowIds.every((id) => paySel.includes(id))
+                return (<>
+                  <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>
+                    {payTab === 'goods' ? 'Công nợ hàng (NCC sản xuất)' : 'Công nợ vận chuyển'} chưa trả đủ của đơn <b>{po.code}</b> — mỗi lần nhận là 1 dòng (cùng số HĐ có thể nhiều dòng). Bỏ tick nếu chưa thanh toán.
+                  </div>
+                  <table className="items-table" style={{ width: '100%' }}>
+                    <thead><tr>
+                      <th style={{ width: 36, textAlign: 'center' }}><input type="checkbox" checked={allSel} onChange={(e) => setPaySel((s) => e.target.checked ? Array.from(new Set([...s, ...rowIds])) : s.filter((x) => !rowIds.includes(x)))} /></th>
+                      <th>{payTab === 'goods' ? 'Nhà cung cấp' : 'Đơn vị vận chuyển'}</th>
+                      <th>Số hóa đơn</th><th>Ngày phát sinh</th>
+                      <th style={{ textAlign: 'right' }}>Phải trả</th><th style={{ textAlign: 'right' }}>Đã trả</th><th style={{ textAlign: 'right' }}>Còn lại</th>
+                    </tr></thead>
+                    <tbody>
+                      {rows.map((p) => (
+                        <tr key={p.id}>
+                          <td style={{ textAlign: 'center' }}><input type="checkbox" checked={paySel.includes(p.id)} onChange={(e) => setPaySel((s) => e.target.checked ? [...s, p.id] : s.filter((x) => x !== p.id))} /></td>
+                          <td>{p.supplier_name || p.supplier_code || '—'}</td>
+                          <td>{p.invoice_no || '—'}</td><td>{p.incur_date}</td>
+                          <td style={{ textAlign: 'right' }}>{fmt(p.total)}</td>
+                          <td style={{ textAlign: 'right', color: 'var(--green)' }}>{fmt(p.paid_amount)}</td>
+                          <td style={{ textAlign: 'right', color: 'var(--red)', fontWeight: 600 }}>{fmt(p.remaining)}</td>
+                        </tr>
+                      ))}
+                      {rows.length === 0 && <tr><td colSpan={7} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Không có khoản nợ nào cần thanh toán</td></tr>}
+                    </tbody>
+                  </table>
+                </>)
+              })()}
+            </div>
+            <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13.5, color: 'var(--navy)' }}>Đã chọn {paySel.length} khoản · Tổng đề nghị: <b>{fmt(payables.filter((p) => paySel.includes(p.id)).reduce((s, p) => s + (Number(p.remaining) || 0), 0))}</b></span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn ghost" onClick={() => setPayModal(false)}>Đóng</button>
+                <button className="btn" disabled={paySel.length === 0} onClick={createPaymentRequest}><i className="ti ti-receipt" />Tạo yêu cầu thanh toán</button>
+              </div>
             </div>
           </div>
         </div>
