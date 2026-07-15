@@ -167,8 +167,25 @@ def clone_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purc
 
 
 @router.patch("/{pid}/assign")
-def assign_pr(pid: int, data: AssignIn, db: Session = Depends(get_db), user=Depends(require("purchase_request", "approve"))):
-    return success(_out(db, service.assign(db, pid, data, user.id)), "Đã lưu phân bổ NSTM")
+def assign_pr(pid: int, data: AssignIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "approve"))):
+    pr = service.assign(db, pid, data, user.id)
+    # Thông báo "được phân công phụ trách" cho NSTM (NSTM header + NSTM từng dòng)
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User as _User
+    emp_ids = set()
+    if pr.assignee_id:
+        emp_ids.add(pr.assignee_id)
+    codes = [it.assignee for it in service.items_of(db, pid) if it.assignee]
+    if codes:
+        emp_ids.update(e.id for e in db.query(Employee).filter(Employee.code.in_(codes)).all())
+    if emp_ids:
+        uids = [u.id for u in db.query(_User).filter(_User.employee_id.in_(emp_ids), _User.is_active == True).all()
+                if u.id != user.id]   # không tự báo mình
+        if uids:
+            trigger_notification(db=db, event="pr_assigned", doc_type="purchase_request", doc_code=pr.code,
+                                 creator_id=user.id, background_tasks=background_tasks,
+                                 link=f"/purchase-requests/{pr.id}", recipient_ids=uids)
+    return success(_out(db, pr), "Đã lưu phân bổ NSTM")
 
 
 @router.patch("/{pid}/item-status")

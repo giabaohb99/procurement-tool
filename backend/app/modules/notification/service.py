@@ -142,6 +142,7 @@ def trigger_notification(
     is_urgent: bool = False,
     link: str = "",
     department: str = "",
+    recipient_ids: list | None = None,   # chỉ định thẳng người nhận (vd phân bổ NSTM)
 ):
     """
     Creates an in-app notification and sends an email notification asynchronously.
@@ -159,7 +160,10 @@ def trigger_notification(
                    "rejected": "đã bị từ chối", "cancelled": "đã bị hủy", "returned": "đã bị trả lại (cần sửa & gửi lại)",
                    "completed": "đã hoàn thành", "paid": "đã ghi nhận thanh toán"}
 
-    if event == "pr_submitted":
+    if event == "pr_assigned":
+        subject = f"[Phân công] PYC {doc_code}"
+        body = f"Bạn được phân công phụ trách yêu cầu mua hàng {doc_code}."
+    elif event == "pr_submitted":
         subject = f"[Yêu cầu phê duyệt] PYC {doc_code}"
         body = f"Có một yêu cầu mua hàng mới (Mã số: {doc_code}) cần bạn phê duyệt."
     elif event == "pr_approved":
@@ -188,7 +192,9 @@ def trigger_notification(
         subject = f"[GẤP] {subject}"
 
     # Xác định người nhận chuông
-    if event == "pr_submitted":
+    if recipient_ids:
+        recipients = db.query(User).filter(User.id.in_(recipient_ids), User.is_active == True).all()
+    elif event == "pr_submitted":
         # CHỈ Trưởng bộ phận của phòng — KHÔNG fallback sang quản lý/admin (tránh spam, ~300 phiếu/ngày).
         # Chưa gán trưởng phòng thì không báo ai; quản lý vẫn thấy phiếu trong danh sách (scope all).
         recipients = get_department_head_users(db, department)
@@ -206,37 +212,17 @@ def trigger_notification(
     recipients = [r for r in recipients if r and not (r.id in seen_ids or seen_ids.add(r.id))]
 
     # CHỈ tạo thông báo trong app (chuông) — KHÔNG gửi email cho workflow.
-    # Email chỉ dùng cho cấp tài khoản / reset mật khẩu (hàm riêng bên dưới).
-    # GỘP SỰ KIỆN: nếu người nhận đã có 1 thông báo CHƯA ĐỌC cùng chứng từ (link) trong
-    # COALESCE_MINUTES phút gần đây → cập nhật cái đó thay vì tạo mới (tránh spam vd submit→approve).
-    from datetime import datetime, timedelta
-    COALESCE_MINUTES = 5
-    now = datetime.utcnow()
-    cutoff = now - timedelta(minutes=COALESCE_MINUTES)
+    # MỖI SỰ KIỆN = 1 THÔNG BÁO RIÊNG (không gộp) — theo yêu cầu.
     for recipient in recipients:
         if not recipient:
             continue
-        existing = None
-        if link:
-            existing = (db.query(Notification)
-                        .filter(Notification.user_id == recipient.id,
-                                Notification.link == link,
-                                Notification.is_read == False,
-                                Notification.created_at >= cutoff)
-                        .order_by(Notification.id.desc()).first())
-        if existing:
-            existing.title = subject
-            existing.body = body
-            existing.created_at = now      # đẩy lên mới nhất, không tăng số chưa đọc
-            existing.updated_by = creator_id
-        else:
-            db.add(Notification(
-                user_id=recipient.id,
-                title=subject,
-                body=body,
-                link=link,
-                created_by=creator_id,
-            ))
+        db.add(Notification(
+            user_id=recipient.id,
+            title=subject,
+            body=body,
+            link=link,
+            created_by=creator_id,
+        ))
 
     db.commit()
 
