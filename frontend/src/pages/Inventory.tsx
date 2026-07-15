@@ -31,6 +31,8 @@ export default function Inventory() {
   const [msg, setMsg] = useState(''); const [err, setErr] = useState('')
   const [selectedItem, setSelectedItem] = useState<any>(null)
   const [history, setHistory] = useState<any[]>([])
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
 
   const companyName = (cid: number) => companies.find((c) => c.id === cid)?.name || cid || '—'
 
@@ -97,6 +99,10 @@ export default function Inventory() {
   useEffect(() => {
     load()
   }, [f.company_id, f.warehouse_code, f.item_group, f.qty_status, f.product_code, f.product_name])
+
+  useEffect(() => {
+    setPage(1)
+  }, [f.company_id, f.warehouse_code, f.item_group, f.qty_status, f.product_code, f.product_name, sortField, sortAsc])
 
   async function submitAdjust() {
     setErr('')
@@ -179,6 +185,12 @@ export default function Inventory() {
           }
         })
 
+        const totalRows = sortedRows.length
+        const totalPages = Math.max(1, Math.ceil(totalRows / pageSize))
+        const pagedRows = sortedRows.slice((page - 1) * pageSize, page * pageSize)
+        const startIdx = totalRows === 0 ? 0 : (page - 1) * pageSize + 1
+        const endIdx = Math.min(page * pageSize, totalRows)
+
         return (
           <div className="card">
             <table>
@@ -195,7 +207,7 @@ export default function Inventory() {
                 </tr>
               </thead>
               <tbody>
-                {sortedRows.map((r) => (
+                {pagedRows.map((r) => (
                   <tr key={r.id} onClick={() => viewDetail(r)} style={{ cursor: 'pointer' }} className="hoverable-row">
                     <td>{companyName(r.company_id)}</td><td>{r.warehouse_code}</td><td>{r.product_code}</td>
                     <td>{r.product_name}</td><td>{r.unit}</td>
@@ -204,9 +216,32 @@ export default function Inventory() {
                     <td style={{ textAlign: 'right', fontWeight: 600, whiteSpace: 'nowrap' }}>{fmt(r.value)}</td>
                   </tr>
                 ))}
-                {sortedRows.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có tồn kho</td></tr>}
+                {totalRows === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có tồn kho</td></tr>}
               </tbody>
             </table>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderTop: '1px solid #f1f5f9', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13, color: 'var(--muted)' }}>Hiển thị {startIdx}–{endIdx} / {totalRows}</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1) }}
+                  style={{ fontSize: 13, padding: '2px 6px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer' }}
+                >
+                  <option value={20}>20 / trang</option>
+                  <option value={50}>50 / trang</option>
+                  <option value={100}>100 / trang</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button className="btn ghost" style={{ padding: '4px 8px' }} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+                  <i className="ti ti-chevron-left" />
+                </button>
+                <span style={{ fontSize: 13, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Trang {page}/{totalPages}</span>
+                <button className="btn ghost" style={{ padding: '4px 8px' }} disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+                  <i className="ti ti-chevron-right" />
+                </button>
+              </div>
+            </div>
           </div>
         )
       })()}

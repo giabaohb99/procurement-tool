@@ -12,6 +12,8 @@ export const NAME_SORT_KEY = '__name__'   // khoá sort cho cột tên
 export function ReportTable({ rows, metrics, period, warnMetric, nameLabel, nameMinWidth = 160, sortKey = '', sortDir = 'desc', onSort }:
   { rows: any[]; metrics: Metric[]; period: string; warnMetric?: string; nameLabel: string; nameMinWidth?: number; sortKey?: string; sortDir?: SortDir; onSort?: (key: string) => void }) {
   const val = (r: any, k: string) => (period === 'all' ? (r[k] ?? 0) : (r.m?.[period]?.[k] ?? 0))
+  // Cột tên ghim: rộng tối đa nameMinWidth (desktop) NHƯNG chỉ ~45% màn hình trên mobile (chừa chỗ cho cột dữ liệu)
+  const nameW = `min(${nameMinWidth}px, 45vw)`
 
   // Sắp xếp theo cột đang chọn (cột tên = A→Z; chỉ số = theo số)
   let view = rows
@@ -36,15 +38,18 @@ export function ReportTable({ rows, metrics, period, warnMetric, nameLabel, name
   return (
     <div className="items-scroll">
       <table className="items-table" style={{ minWidth: 480 }}>
-        <thead><tr><th style={{ width: 40 }}>#</th>
-          <th style={{ textAlign: 'left', minWidth: nameMinWidth }}>{thBtn(NAME_SORT_KEY, nameLabel, 'left')}</th>
+        <thead><tr>
+          <th style={{ width: 40, minWidth: 40, boxSizing: 'border-box', position: 'sticky', left: 0, zIndex: 3, background: '#fff' }}>#</th>
+          <th style={{ textAlign: 'left', minWidth: nameW, maxWidth: nameW, width: nameW, boxSizing: 'border-box', position: 'sticky', left: 40, zIndex: 3, background: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{thBtn(NAME_SORT_KEY, nameLabel, 'left')}</th>
           {metrics.map((m) => <th key={m.key} style={{ textAlign: 'right' }}>{thBtn(m.key, m.label, 'right')}</th>)}</tr></thead>
         <tbody>
           {view.map((r, i) => {
             const warn = warnMetric ? Number(val(r, warnMetric)) > 30 : false
+            const stickyBg = warn ? '#fdecea' : '#fff'
             return (
               <tr key={i} style={warn ? { background: '#fdecea' } : {}}>
-                <td>{i + 1}</td><td style={{ textAlign: 'left', fontWeight: 500 }}>{r.key}</td>
+                <td style={{ width: 40, minWidth: 40, boxSizing: 'border-box', position: 'sticky', left: 0, zIndex: 2, background: stickyBg }}>{i + 1}</td>
+                <td style={{ textAlign: 'left', fontWeight: 500, minWidth: nameW, maxWidth: nameW, width: nameW, boxSizing: 'border-box', position: 'sticky', left: 40, zIndex: 2, background: stickyBg, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.key}</td>
                 {metrics.map((m) => (
                   <td key={m.key} style={{ textAlign: 'right', fontWeight: m.key === warnMetric ? 600 : 400, color: (m.key === warnMetric && warn) ? 'var(--red)' : 'inherit' }}>
                     {m.pct ? pctv(val(r, m.key)) : fmt(val(r, m.key))}
