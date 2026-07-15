@@ -193,6 +193,18 @@ def trigger_notification(
     elif event == "sr_returned":
         subject = f"[Bị trả lại] YCKS {doc_code}"
         body = f"Yêu cầu khảo sát {doc_code} của bạn bị trả lại — hãy chỉnh sửa và gửi duyệt lại."
+    elif event == "pay_submitted":
+        subject = f"[Yêu cầu phê duyệt] YCTT {doc_code}"
+        body = f"Có một yêu cầu thanh toán mới ({doc_code}) cần bạn phê duyệt."
+    elif event == "pay_approved":
+        subject = f"[Đã duyệt] YCTT {doc_code}"
+        body = f"Yêu cầu thanh toán {doc_code} của bạn đã được phê duyệt."
+    elif event == "pay_rejected":
+        subject = f"[Từ chối] YCTT {doc_code}"
+        body = f"Yêu cầu thanh toán {doc_code} của bạn đã bị từ chối."
+    elif event == "pay_paid":
+        subject = f"[Đã chi] YCTT {doc_code}"
+        body = f"Yêu cầu thanh toán {doc_code} đã được ghi nhận đã chi."
     elif event == "survey_submitted":
         subject = f"[Yêu cầu phê duyệt] Khảo sát {doc_code}"
         body = f"Có một phiếu khảo sát mới (Mã số: {doc_code}) cần bạn phê duyệt."
@@ -225,6 +237,9 @@ def trigger_notification(
     elif event == "sr_submitted":
         # Yêu cầu khảo sát (YCKS) do người có quyền duyệt survey_request duyệt
         recipients = get_approvers_for_entity(db, "survey_request")
+    elif event == "pay_submitted":
+        # Yêu cầu thanh toán do người có quyền duyệt payment_request duyệt (QL/Admin TM)
+        recipients = get_approvers_for_entity(db, "payment_request")
     elif event == "pr_approved":
         # DUYỆT XONG → báo người YC + Quản lý TM + Admin TM (để phân bổ nhân sự trên line)
         recipients = ([creator] if creator else []) + get_users_by_role_codes(db, ["pur_manager", "pur_admin"])

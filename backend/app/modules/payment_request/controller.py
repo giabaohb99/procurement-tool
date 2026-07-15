@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from sqlalchemy.orm import Session
+
+from app.modules.notification.service import trigger_notification
 
 from app.core.audit import resolve_actor, resolve_actor_profile
 from app.core.auth import get_perm_profile, require
@@ -117,24 +119,41 @@ def bulk_delete_requests(ids: str, db: Session = Depends(get_db), user=Depends(r
     return success(None, f"Đã xóa {len(id_list)} bản ghi")
 
 
+def _notify_pay(db, background_tasks, r, event, reason=""):
+    trigger_notification(db=db, event=event, doc_type="payment_request", doc_code=r.code,
+                         creator_id=r.created_by or 0, background_tasks=background_tasks,
+                         reason=reason, link=f"/payment-requests/{r.id}")
+
+
 @router.post("/{rid}/submit")
-def submit_(rid: int, db: Session = Depends(get_db), user=Depends(require("payment_request", "write"))):
-    return success(_out(db, service.set_status(db, rid, "submitted", user.id)), "Đã gửi duyệt")
+def submit_(rid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
+            user=Depends(require("payment_request", "write"))):
+    r = service.set_status(db, rid, "submitted", user.id)
+    _notify_pay(db, background_tasks, r, "pay_submitted")
+    return success(_out(db, r), "Đã gửi duyệt")
 
 
 @router.post("/{rid}/approve")
-def approve_(rid: int, db: Session = Depends(get_db), user=Depends(require("payment_request", "approve"))):
-    return success(_out(db, service.set_status(db, rid, "approved", user.id)), "Đã duyệt")
+def approve_(rid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
+             user=Depends(require("payment_request", "approve"))):
+    r = service.set_status(db, rid, "approved", user.id)
+    _notify_pay(db, background_tasks, r, "pay_approved")
+    return success(_out(db, r), "Đã duyệt")
 
 
 @router.post("/{rid}/reject")
-def reject_(rid: int, data: dict, db: Session = Depends(get_db),
+def reject_(rid: int, data: dict, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
             user=Depends(require("payment_request", "approve"))):
     """Từ chối phiếu yêu cầu thanh toán (khóa) — người duyệt thao tác. Body: {reason}."""
     reason = (data.get("reason") or "").strip()
-    return success(_out(db, service.set_status(db, rid, "cancelled", user.id, reason)), "Đã từ chối")
+    r = service.set_status(db, rid, "cancelled", user.id, reason)
+    _notify_pay(db, background_tasks, r, "pay_rejected", reason)
+    return success(_out(db, r), "Đã từ chối")
 
 
 @router.post("/{rid}/pay")
-def pay_(rid: int, db: Session = Depends(get_db), user=Depends(require("payment_request", "write"))):
-    return success(_out(db, service.set_status(db, rid, "paid", user.id)), "Đã ghi nhận chi")
+def pay_(rid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
+         user=Depends(require("payment_request", "write"))):
+    r = service.set_status(db, rid, "paid", user.id)
+    _notify_pay(db, background_tasks, r, "pay_paid")
+    return success(_out(db, r), "Đã ghi nhận chi")
