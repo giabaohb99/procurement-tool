@@ -901,6 +901,16 @@ tbody tr:hover {
     flex: 1 1 140px;
     min-width: 0;
   }
+
+  /* Chuông thông báo: trên mobile neo theo viewport (fixed) để không bị .main overflow-x cắt mất */
+  .notif-pop {
+    position: fixed !important;
+    left: 8px !important;
+    right: 8px !important;
+    top: 54px !important;
+    width: auto !important;
+    max-width: none !important;
+  }
 }
 
 /* ===== Chi tiết (drawer) + phân trang ===== */

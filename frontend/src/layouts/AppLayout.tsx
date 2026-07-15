@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { toast } from "../components/toast";
 import { api } from "../api/client";
 import NotificationBell from "../components/NotificationBell";
 import PwaInstallPrompt from "../components/PwaInstallPrompt";
+import { canInstall, onInstallChange, promptInstall } from "../pwa-install";
 
 type NavItem = {
   to: string;
@@ -229,6 +230,9 @@ export default function AppLayout() {
   const loc = useLocation();
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  // Nút "Cài ứng dụng" trong menu — hiện khi trình duyệt cho cài (Edge/Chrome/Android)
+  const [installable, setInstallable] = useState(canInstall());
+  useEffect(() => onInstallChange(() => setInstallable(canInstall())), []);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
     try {
@@ -554,6 +558,30 @@ export default function AppLayout() {
                   </div>
                 </div>
                 <div style={{ borderTop: "1px solid #eee", padding: 8 }}>
+                  {installable && (
+                    <button
+                      style={{
+                        width: "100%",
+                        textAlign: "left",
+                        padding: "8px 8px",
+                        backgroundColor: "transparent",
+                        border: "none",
+                        color: "var(--teal)",
+                        cursor: "pointer",
+                        borderRadius: 4,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        fontSize: 13,
+                        fontWeight: 500,
+                      }}
+                      onClick={async () => { setProfileOpen(false); await promptInstall(); setInstallable(canInstall()); }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f1f5f9")}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                    >
+                      <i className="ti ti-download" style={{ fontSize: 16 }} /> Cài ứng dụng
+                    </button>
+                  )}
                   <button
                     style={{
                       width: "100%",
