@@ -13,6 +13,7 @@ class SurveyRequest(Base, AuditMixin):
     code: Mapped[str] = mapped_column(String(50), unique=True, default="")   # YCKS + DDMMYY + seq
     company_id: Mapped[int] = mapped_column(BigInteger, default=0)           # pháp nhân nhận hóa đơn
     requester: Mapped[str] = mapped_column(String(255), default="")
+    requester_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)   # id nhân sự người yêu cầu (để so scope)
     requester_position: Mapped[str] = mapped_column(String(100), default="")
     department: Mapped[str] = mapped_column(String(255), default="", index=True)
     head_of_dept: Mapped[str] = mapped_column(String(255), default="")       # trưởng bộ phận

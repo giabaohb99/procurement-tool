@@ -18,6 +18,7 @@ class SurveyRequestLineIn(BaseModel):
 class _Header(BaseModel):
     company_id: int = 0
     requester: str = ""
+    requester_id: int = 0
     requester_position: str = ""
     department: str = ""
     head_of_dept: str = ""
@@ -34,6 +35,7 @@ class SurveyRequestCreate(_Header):
 class SurveyRequestUpdate(BaseModel):
     company_id: int | None = None
     requester: str | None = None
+    requester_id: int | None = None
     requester_position: str | None = None
     department: str | None = None
     head_of_dept: str | None = None

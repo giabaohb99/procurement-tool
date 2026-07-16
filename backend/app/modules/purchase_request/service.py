@@ -223,6 +223,7 @@ def copy_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
     src = get_pr(db, pid)
     pr = PurchaseRequest(
         code="", company_id=src.company_id, requester=src.requester,
+        requester_id=src.requester_id,
         requester_position=src.requester_position, department=src.department,
         head_of_dept=src.head_of_dept, purpose=src.purpose, request_date=src.request_date,
         need_date=src.need_date, is_urgent=src.is_urgent, note=src.note,
@@ -263,6 +264,7 @@ def copy_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
 def create_pr(db: Session, data: PRCreate, user_id: int) -> PurchaseRequest:
     pr = PurchaseRequest(
         code=data.code or "", company_id=data.company_id, requester=data.requester,
+        requester_id=data.requester_id,
         requester_position=data.requester_position, department=data.department,
         head_of_dept=data.head_of_dept, purpose=data.purpose, request_date=data.request_date,
         need_date=data.need_date, is_urgent=data.is_urgent, vat_rate=data.vat_rate,

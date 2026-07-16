@@ -37,6 +37,8 @@ def _role_scope_cond(model, entity, scope, user, profile):
         if entity == "purchase_request":
             from app.modules.purchase_request.model import PurchaseRequestItem
             conds = [model.created_by == user.id]
+            if profile.get("employee_id"):
+                conds.append(model.requester_id == profile["employee_id"])   # phiếu mình là người yêu cầu
             # "proc" (NV/Admin thu mua): thấy thêm MỌI phiếu đã duyệt để nhặt việc + phân bổ
             if scope == "proc":
                 conds.append(model.status == "approved")
@@ -55,6 +57,8 @@ def _role_scope_cond(model, entity, scope, user, profile):
             # (bỏ nháp/chờ duyệt/từ chối) — NSTM không thấy phiếu người khác khi chưa qua duyệt.
             work = []
             emp_id = profile.get("employee_id") or 0
+            if emp_id:
+                conds.append(model.requester_id == emp_id)   # phiếu mình là người yêu cầu → thấy mọi trạng thái
             if emp_id:
                 work.append(model.assignee_id == emp_id)
                 # phiếu có dòng thuộc phân loại mình là NSTM chính HOẶC phụ
@@ -84,7 +88,12 @@ def _role_scope_cond(model, entity, scope, user, profile):
 
     if scope == "own":
         if f.get("owner"):
-            return getattr(model, f["owner"]) == user.id
+            cond = getattr(model, f["owner"]) == user.id
+            # Người YÊU CẦU cũng thấy phiếu của mình dù người khác (admin) tạo giùm
+            rid = profile.get("employee_id") or 0
+            if rid and hasattr(model, "requester_id"):
+                cond = or_(cond, model.requester_id == rid)
+            return cond
         if f.get("self"):   # entity không có owner (vd. employee) → chỉ chính mình
             return getattr(model, f["self"]) == (profile.get("employee_id") or 0)
         scope = "company"

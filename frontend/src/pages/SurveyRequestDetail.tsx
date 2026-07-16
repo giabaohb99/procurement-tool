@@ -146,6 +146,7 @@ export default function SurveyRequestDetail() {
       setSv((s: any) => ({
         ...s,
         requester: (user as any).full_name || '',
+        requester_id: (user as any).employee_id || 0,
         requester_position: user.role_name || user.position || s.requester_position,
         department: (user as any).department_name || s.department,
         company_id: (user as any).company_id || s.company_id,
@@ -361,13 +362,14 @@ export default function SurveyRequestDetail() {
       setSv((s: any) => ({
         ...s,
         requester:          empName,
+        requester_id:       emp.id || 0,
         requester_position: isAutoFill && s.requester_position ? s.requester_position : (emp.position || emp.role_name || ''),
         department:         isAutoFill && s.department ? s.department : deptName,
         head_of_dept:       isAutoFill && s.head_of_dept ? s.head_of_dept : (head ? head.full_name : s.head_of_dept || ''),
         company_id:         (isAutoFill && s.company_id) ? s.company_id : (emp.company_id || s.company_id),
       }))
     } else {
-      setSv((s: any) => ({ ...s, requester: empName }))
+      setSv((s: any) => ({ ...s, requester: empName, requester_id: 0 }))
     }
   }
 
@@ -388,6 +390,7 @@ export default function SurveyRequestDetail() {
     const body = {
       company_id:         Number(sv.company_id) || 0,
       requester:          sv.requester,
+      requester_id:       Number(sv.requester_id) || 0,
       requester_position: sv.requester_position,
       department:         sv.department,
       head_of_dept:       sv.head_of_dept,

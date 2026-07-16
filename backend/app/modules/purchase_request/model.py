@@ -12,6 +12,7 @@ class PurchaseRequest(Base, AuditMixin):
     code: Mapped[str] = mapped_column(String(50), unique=True, default="")
     company_id: Mapped[int] = mapped_column(BigInteger, default=0)        # pháp nhân nhận hóa đơn
     requester: Mapped[str] = mapped_column(String(255), default="")        # người yêu cầu
+    requester_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)   # id nhân sự người yêu cầu (để so scope)
     requester_position: Mapped[str] = mapped_column(String(100), default="")  # chức vụ
     department: Mapped[str] = mapped_column(String(255), default="")       # phòng ban/thương hiệu
     head_of_dept: Mapped[str] = mapped_column(String(255), default="")     # trưởng bộ phận

@@ -10,7 +10,7 @@ from .model import SurveyRequest, SurveyRequestLine, SurveyRequestOption
 ENTITY = "survey_request"
 FILTERABLE = ["code", "status", "requester", "department"]
 MAX_OPTIONS_PER_LINE = 5   # mỗi sản phẩm (dòng YCKS) tối đa 5 phương án khảo sát
-HEADER_FIELDS = ["company_id", "requester", "requester_position", "department",
+HEADER_FIELDS = ["company_id", "requester", "requester_id", "requester_position", "department",
                  "head_of_dept", "purpose", "request_date", "note"]
 
 
@@ -496,6 +496,7 @@ def create_prs(db: Session, sid: int, user_id: int):
         first_opt = items[0][1]
         pr = PurchaseRequest(
             code=_gen_pr_code(db, today), company_id=s.company_id, requester=s.requester,
+            requester_id=s.requester_id,
             requester_position=s.requester_position, department=s.department,
             head_of_dept=s.head_of_dept or find_dept_head(db, s.department or ""),
             purpose=s.purpose, request_date=today, status="draft",

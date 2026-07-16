@@ -15,7 +15,7 @@ from .schema import ApproveIn, AssignIn, ItemStatusIn, PRCreate, PRUpdate, Reaso
 
 router = APIRouter(prefix="/api/purchase-requests", tags=["purchase_request"])
 
-HEADER_COLS = ["id", "code", "company_id", "requester", "requester_position",
+HEADER_COLS = ["id", "code", "company_id", "requester", "requester_id", "requester_position",
                "department", "head_of_dept", "purpose", "request_date", "need_date",
                "status", "is_urgent", "vat_rate", "assignee_id", "note",
                "show_code_on_print", "suggested_supplier", "suggested_supplier_tax_code",

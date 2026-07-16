@@ -102,7 +102,7 @@ export default function PurchaseRequestDetail() {
     // Không có quyền xem DS nhân sự → điền theo tài khoản đăng nhập
     if (isStaff) {
       setPr((s: any) => ({
-        ...s, requester: (user as any).full_name || '',
+        ...s, requester: (user as any).full_name || '', requester_id: (user as any).employee_id || 0,
         department: (user as any).department_name || s.department,
         company_id: (user as any).company_id || s.company_id,
       }))
@@ -194,13 +194,14 @@ export default function PurchaseRequestDetail() {
       setPr((s: any) => ({
         ...s,
         requester: emp.full_name,
+        requester_id: emp.id || 0,
         requester_position: isAutoFill && s.requester_position ? s.requester_position : (emp.position || emp.role_name || ''),
         department: isAutoFill && s.department ? s.department : deptName,
         head_of_dept: isAutoFill && s.head_of_dept ? s.head_of_dept : (head ? head.full_name : s.head_of_dept || ''),
         company_id: (isAutoFill && s.company_id) ? s.company_id : (emp.company_id || s.company_id),
       }))
     } else {
-      setPr((s: any) => ({ ...s, requester: empName }))
+      setPr((s: any) => ({ ...s, requester: empName, requester_id: 0 }))
     }
   }
 
@@ -250,7 +251,7 @@ export default function PurchaseRequestDetail() {
     const v = validate(submitAfterSave)
     if (v) { toast.error(v); return false }
     const body = {
-      company_id: Number(pr.company_id) || 0, requester: pr.requester, requester_position: pr.requester_position,
+      company_id: Number(pr.company_id) || 0, requester: pr.requester, requester_id: Number(pr.requester_id) || 0, requester_position: pr.requester_position,
       department: pr.department, head_of_dept: pr.head_of_dept, purpose: pr.purpose,
       request_date: pr.request_date, need_date: pr.need_date, is_urgent: pr.is_urgent, note: pr.note,
       show_code_on_print: pr.show_code_on_print,
