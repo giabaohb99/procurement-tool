@@ -48,7 +48,7 @@ def google_login(db: Session, credential: str) -> User:
     # 1. Check if employee exists
     emp = db.query(Employee).filter(Employee.email == email).first()
     if not emp:
-        raise HTTPException(403, "Email này chưa được phân quyền trong hệ thống")
+        raise HTTPException(403, "Email không hợp lệ, vui lòng liên hệ Admin để được hỗ trợ")
 
     if not emp.is_active:
         raise HTTPException(403, "Nhân sự đã ngừng hoạt động")
