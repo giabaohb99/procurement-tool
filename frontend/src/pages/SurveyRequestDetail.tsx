@@ -521,7 +521,7 @@ export default function SurveyRequestDetail() {
         )}
 
         {/* Nút Xóa */}
-        {!isNew && editable && can('survey_request', 'delete') && (
+        {!isNew && ['draft', 'rejected', 'cancelled'].includes(sv.status) && can('survey_request', 'delete') && (
           <button
             className="btn ghost"
             style={{ color: 'var(--red)', borderColor: 'var(--red)' }}

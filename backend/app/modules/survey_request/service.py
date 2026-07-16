@@ -166,6 +166,8 @@ def clone_sr(db: Session, sid: int, user, profile: dict) -> SurveyRequest:
 
 def delete_sr(db: Session, sid: int, user_id: int):
     s = get_sr(db, sid)
+    if s.status not in ("draft", "rejected", "cancelled"):
+        raise HTTPException(400, "Chỉ xóa được phiếu ở trạng thái Nháp, Bị trả lại hoặc Đã từ chối")
     line_ids = [ln.id for ln in lines_of(db, sid)]
     if line_ids:
         db.query(SurveyRequestOption).filter(SurveyRequestOption.survey_request_line_id.in_(line_ids)).delete(synchronize_session=False)
