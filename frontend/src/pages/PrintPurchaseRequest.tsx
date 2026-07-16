@@ -59,8 +59,13 @@ export default function PrintPurchaseRequest() {
   const { id } = useParams();
   const [pr, setPr] = useState<any>(null);
   const [company, setCompany] = useState("");
+  const [warehouses, setWarehouses] = useState<{ code: string; name: string }[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [taxMode, setTaxMode] = useState(false); // Mẫu thuế: để trống thông tin người yêu cầu
+
+  // Map tên đầy đủ kho -> mã kho (tên viết tắt) để in cột "Nơi giao"
+  const whCode = (name: string) =>
+    warehouses.find((w) => w.name === name)?.code || name;
 
   useEffect(() => {
     api
@@ -76,6 +81,14 @@ export default function PrintPurchaseRequest() {
         }
       })
       .catch(() => setNotFound(true));
+    api
+      .get(`/api/warehouses`, { params: { page_size: 200 } })
+      .then((r) =>
+        setWarehouses(
+          r.data.data.items.map((x: any) => ({ code: x.code, name: x.name })),
+        ),
+      )
+      .catch(() => {});
   }, [id]);
 
   if (notFound)
@@ -251,6 +264,7 @@ export default function PrintPurchaseRequest() {
               <td style={cell}>SL yêu cầu</td>
               <td style={cell}>Đơn giá</td>
               <td style={cell}>Thành tiền</td>
+              <td style={cell}>Nơi giao</td>
               <td style={cell}>Ghi chú</td>
             </tr>
           </thead>
@@ -266,6 +280,7 @@ export default function PrintPurchaseRequest() {
                 <td style={{ ...cell, textAlign: "right" }}>
                   {fmt(it.amount)}
                 </td>
+                <td style={cell}>{whCode(it.warehouse)}</td>
                 <td style={cell}>{it.note}</td>
               </tr>
             ))}
@@ -276,7 +291,7 @@ export default function PrintPurchaseRequest() {
               <td style={{ ...cell, textAlign: "right", fontWeight: 700 }}>
                 {fmt(pr.subtotal)}
               </td>
-              <td style={cell} />
+              <td style={cell} colSpan={2} />
             </tr>
             <tr>
               <td colSpan={6} style={{ border: "none", textAlign: "right", padding: "8px 8px 4px", fontSize: 13 }}>
@@ -285,7 +300,7 @@ export default function PrintPurchaseRequest() {
               <td style={{ border: "none", textAlign: "right", padding: "8px 8px 4px", fontSize: 13, fontWeight: 700 }}>
                 {Number(pr.vat) ? fmt(pr.vat) : ""}
               </td>
-              <td style={{ border: "none" }} />
+              <td style={{ border: "none" }} colSpan={2} />
             </tr>
             <tr>
               <td colSpan={6} style={{ border: "none", textAlign: "right", padding: "4px 8px 8px", fontSize: 13 }}>
@@ -294,7 +309,7 @@ export default function PrintPurchaseRequest() {
               <td style={{ border: "none", textAlign: "right", padding: "4px 8px 8px", fontSize: 13, fontWeight: 700 }}>
                 {fmt(pr.total)}
               </td>
-              <td style={{ border: "none" }} />
+              <td style={{ border: "none" }} colSpan={2} />
             </tr>
           </tbody>
         </table>
