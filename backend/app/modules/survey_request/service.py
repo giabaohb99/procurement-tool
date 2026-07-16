@@ -95,14 +95,11 @@ def _save_lines(db: Session, sid: int, lines, user_id: int) -> list[int]:
 
 
 def create_sr(db: Session, data, user_id: int) -> SurveyRequest:
-    s = SurveyRequest(code=data.code or "", status="draft", created_by=user_id, updated_by=user_id,
+    s = SurveyRequest(code=(data.code or _gen_code(db)), status="draft", created_by=user_id, updated_by=user_id,
                       **{f: getattr(data, f) for f in HEADER_FIELDS})
     db.add(s)
     db.commit()
     db.refresh(s)
-    if not s.code:
-        s.code = _gen_code(db)
-        db.commit()
     ordered = _save_lines(db, s.id, data.lines, user_id)
     record(db, user_id, ENTITY, s.id, "create")
     s._ordered_line_ids = ordered
@@ -135,13 +132,11 @@ def clone_sr(db: Session, sid: int, user, profile: dict) -> SurveyRequest:
     from app.modules.attachment.model import FileLink
     user_id = getattr(user, "id", 0)
     src = get_sr(db, sid)
-    s = SurveyRequest(code="", status="draft", created_by=user_id, updated_by=user_id,
+    s = SurveyRequest(code=_gen_code(db), status="draft", created_by=user_id, updated_by=user_id,
                       **{f: getattr(src, f) for f in HEADER_FIELDS})
     db.add(s)
     db.commit()
     db.refresh(s)
-    s.code = _gen_code(db)
-    db.commit()
     src_lines = visible_lines_for(db, src, lines_of(db, sid), user, profile)
     for ln in src_lines:
         nl = SurveyRequestLine(
