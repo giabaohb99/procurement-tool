@@ -174,8 +174,8 @@ def _notify_survey_request_done(db: Session, pr_id: int, user_id: int) -> None:
 def assign(db: Session, pid: int, data: AssignIn, user_id: int) -> PurchaseRequest:
     """Phân bổ NSTM cho từng dòng — chạy được cả khi phiếu đã gửi duyệt (không bị khóa như sửa)."""
     pr = get_pr(db, pid)
-    if pr.status == "cancelled":
-        raise HTTPException(400, "Phiếu đã hủy, không phân bổ được")
+    if pr.status in ("cancelled", "completed", "done"):
+        raise HTTPException(400, "Phiếu đã bị từ chối/hoàn thành — không phân bổ được")
     if data.assignee_id:
         pr.assignee_id = data.assignee_id
     rows = {i.id: i for i in items_of(db, pid)}
@@ -325,8 +325,8 @@ def update_pr(db: Session, pid: int, data: PRUpdate, user_id: int) -> PurchaseRe
 
 def delete_pr(db: Session, pid: int, user_id: int) -> None:
     pr = get_pr(db, pid)
-    if pr.status != "draft":
-        raise HTTPException(400, "Chỉ được xóa phiếu ở trạng thái Nháp")
+    if pr.status not in ("draft", "rejected", "cancelled"):
+        raise HTTPException(400, "Chỉ xóa được phiếu ở trạng thái Nháp, Bị trả lại hoặc Đã từ chối")
     pr.is_deleted = True
     pr.updated_by = user_id
     db.commit()

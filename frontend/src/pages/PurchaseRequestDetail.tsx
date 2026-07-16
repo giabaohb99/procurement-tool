@@ -119,7 +119,8 @@ export default function PurchaseRequestDetail() {
 
   const editable = isNew || pr.status === 'draft' || pr.status === 'rejected'
   const isStaff = !can('purchase_request', 'approve') && !can('purchase_request', 'delete')
-  const canAssignPurchaser = can('purchase_request', 'approve')   // phân bổ NSTM
+  const prLocked = ['cancelled', 'completed', 'done'].includes(pr.status)   // đã từ chối/hoàn thành → khóa thao tác
+  const canAssignPurchaser = can('purchase_request', 'approve') && !prLocked   // phân bổ NSTM (chặn khi phiếu đã kết thúc)
   const canManage = can('purchase_request', 'cancel')             // admin/quản lý: hủy/trả/hoàn thành
   // Nút "Tạo ĐMH" chỉ hiện cho phòng thu mua / quản lý / admin (và có quyền tạo ĐMH)
   const isPurchaserDept = ((user as any)?.department_name || '').toLowerCase().includes('thu mua')
@@ -369,7 +370,7 @@ export default function PurchaseRequestDetail() {
         {!isNew && <button className="btn ghost" onClick={() => window.open(`/print/purchase-request/${id}`, '_blank')}><i className="ti ti-printer" />In phiếu</button>}
         {!isNew && pos && pos.length > 0 && <button className="btn ghost" onClick={() => setShowPoModal(true)}><i className="ti ti-shopping-cart" />ĐMH liên quan ({pos.length})</button>}
         {!isNew && can('purchase_request', 'create') && <button className="btn ghost" onClick={() => setConfirmAction({ type: 'copy', title: 'Nhân bản', message: 'Nhân bản phiếu này thành phiếu Nháp mới?', confirmText: 'Nhân bản' })}><i className="ti ti-copy" />Nhân bản</button>}
-        {!isNew && pr.status === 'draft' && can('purchase_request', 'delete') && (
+        {!isNew && ['draft', 'rejected', 'cancelled'].includes(pr.status) && can('purchase_request', 'delete') && (
           <button className="btn ghost err" onClick={() => setConfirmDelete(true)}><i className="ti ti-trash" />Xóa phiếu</button>
         )}
         {!isNew && <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--border)', margin: '2px 4px' }} />}
