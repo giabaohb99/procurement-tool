@@ -22,15 +22,15 @@ Bảng DB: `tab_purchase_order` (header), `tab_po_item` (dòng hàng), `tab_po_d
 | Giá trị DB | Nhãn hiển thị | Ý nghĩa | Nút thao tác hiển thị |
 |------------|---------------|---------|----------------------|
 | `draft` | Nháp | Đang soạn hoặc vừa mở lại | Lưu, Gửi duyệt, Xóa, Nhân bản |
-| `submitted` | Chờ duyệt | Đã gửi, đợi TP/QL duyệt | Duyệt, Từ chối (TP/QL), Nhân bản |
+| `submitted` | Chờ duyệt | Đã gửi, đợi TP/QL duyệt | Duyệt, Trả về, Từ chối (TP/QL), Nhân bản |
 | `approved` | Đã duyệt | TP/QL đã duyệt, cho phép nhập giao hàng | Thêm lần giao, Hủy đơn, Nhân bản |
-| `partial` | Đang giao | Đã nhận một phần (tự động khi `received > 0` và `received < total`) | Hủy đơn, Nhân bản |
+| `partial` | Đã nhận một phần | Đã nhận một phần (tự động khi SL nhận > 0 và < SL đặt) | Hoàn thành, Hủy đơn, Nhân bản |
 | `received` | Đã nhận đủ | Toàn bộ SL đã nhận | Hoàn thành, Hủy đơn, Nhân bản |
 | `completed` | Hoàn thành | Đã đóng đơn (khóa sửa hoàn toàn) | Nhân bản |
-| `rejected` | Từ chối | TP/QL từ chối (khóa sửa) | Xóa, Nhân bản |
-| `cancelled` | Đã hủy | Bị hủy bởi người có quyền cancel (khóa sửa) | Nhân bản |
+| `rejected` | Bị trả lại | TP/QL trả về để người tạo sửa và gửi duyệt lại (không khóa sửa) | Lưu, Gửi duyệt, Xóa, Nhân bản |
+| `cancelled` | Đã từ chối / Đã hủy | Bị từ chối hẳn (từ `submitted` qua nút Từ chối) hoặc bị hủy thủ công (từ `approved`/`partial`/`received` qua nút Hủy) — khóa sửa; badge hiển thị "Đã từ chối" | Nhân bản |
 
-Luồng trạng thái chính: `draft` → `submitted` → `approved` → `partial` → `received` → `completed`.
+Luồng trạng thái chính: `draft` → `submitted` → `approved` → `partial` → `received` → `completed`. Ngoài ra từ `partial` cũng có thể chuyển thẳng sang `completed` (nút Hoàn thành khi muốn chốt đơn dù chưa nhận đủ).
 
 Trạng thái `partial` và `received` được cập nhật tự động sau mỗi lần lưu khi đơn đang ở `approved/partial/received`. Đơn ở `completed` hoặc `cancelled` không cho phép sửa; dùng "Nhân bản" để tạo đơn Nháp mới.
 
@@ -130,12 +130,12 @@ Nút "Mở lại" (`reopen`) chuyển đơn về `draft` (endpoint `POST /{id}/r
 
 ### 9. NSPT phụ trách (`nspt`)
 
-- Kiểu nhập: Nhập tay (tự điền từ PYC hoặc nhập trực tiếp)
-- Mặc định: trống (tự điền từ `purchase_request.requester` khi chọn PYC)
+- Kiểu nhập: Chọn từ danh sách nhân sự (SearchSelect); điền tự động khi tạo đơn
+- Mặc định: Tự sinh khi tạo — (a) nếu tạo từ YCMH (`pr_code`): lấy tên đầy đủ người phụ trách dòng (`assignee.full_name`) trong YCMH, ưu tiên dòng khớp sản phẩm với đơn; (b) nếu tạo trực tiếp (không qua YCMH): lấy tên đầy đủ của người tạo đơn (`Employee.full_name`). Nếu payload đã truyền `nspt` thì giữ giá trị đó, không tự sinh. Khi tạo từ YCMH qua nút "Tạo đơn mua hàng", giá trị này được điền sẵn trên form trước khi người dùng bấm lưu.
 - Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: —
-- Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
-- Logic đặc biệt: Hiển thị trên bản in Đơn mua hàng (MH) như "Nhân viên mua hàng".
+- Nguồn dữ liệu / liên kết: Bảng Nhân sự (`/api/employees`); giá trị lưu theo tên đầy đủ (`full_name`)
+- Người sửa: Chỉ người có quyền `purchase_order:approve`; các vai trò khác thấy trường ở chế độ chỉ đọc (disable)
+- Logic đặc biệt: Hiển thị trên bản in Đơn mua hàng (MH) như "Nhân viên mua hàng". Dùng làm tiêu chí lọc phạm vi dữ liệu (scoping): người dùng với scope `assigned`/`proc` thấy đơn mình tạo (`created_by = user.id`) VÀ đơn có `nspt` khớp tên đầy đủ của mình (`emp_name`); scope `proc` ngoài ra còn thấy mọi đơn ở trạng thái `approved`.
 
 ### 10. Ngày đặt hàng (`order_date`)
 
@@ -427,6 +427,42 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 - Người sửa: Hệ thống (ghi tự động khi tạm ngưng dòng)
 - Logic đặc biệt: Snapshot `progress_status` của dòng trước khi tạm ngưng, dùng để phục hồi khi mở lại dòng. **Trạng thái hiện tại**: tồn tại trong DB và model; chưa expose qua API thông thường.
 
+### 26. Giá trị đặt hàng theo dòng (`order_total` — tính phía server)
+
+- Kiểu nhập: Tự tính
+- Mặc định: 0
+- Bắt buộc: — (hệ thống tính, không lưu DB)
+- Nguồn dữ liệu / liên kết: `qty_order × price × (1 + vat/100)` — theo SL đặt
+- Người sửa: Hệ thống (tính trong `_item()` mỗi lần trả response)
+- Logic đặc biệt: Hiển thị cột "Thành tiền đơn hàng" trên bảng dòng hàng UI; dùng bật nút Tạo yêu cầu thanh toán khi có công nợ còn lại.
+
+### 27. Tiền hàng đã phát sinh công nợ theo dòng (`goods_total` — tính phía server)
+
+- Kiểu nhập: Tự tính
+- Mặc định: 0
+- Bắt buộc: — (hệ thống tính)
+- Nguồn dữ liệu / liên kết: Tổng `payable.total` của các khoản công nợ hàng (`source_type='goods'`) thuộc các lần giao của dòng
+- Người sửa: Hệ thống
+- Logic đặc biệt: Phản ánh tiền hàng theo SL thực nhận đã tạo công nợ. Hiển thị trong popup chi tiết dòng.
+
+### 28. Đã trả theo dòng (`paid_total` — tính phía server)
+
+- Kiểu nhập: Tự tính
+- Mặc định: 0
+- Bắt buộc: — (hệ thống tính)
+- Nguồn dữ liệu / liên kết: Tổng `payable.paid_amount` của các khoản nợ hàng thuộc dòng
+- Người sửa: Hệ thống (tăng lên khi YCTT ghi nhận đã chi)
+- Logic đặc biệt: Hiển thị cột "Đã trả" trong popup chi tiết dòng.
+
+### 29. Còn lại chưa trả theo dòng (`remaining_total` — tính phía server)
+
+- Kiểu nhập: Tự tính
+- Mặc định: 0
+- Bắt buộc: — (hệ thống tính)
+- Nguồn dữ liệu / liên kết: Tổng `payable.remaining` của các khoản nợ hàng thuộc dòng
+- Người sửa: Hệ thống
+- Logic đặc biệt: `remaining_total > 0` khi còn nợ chưa trả; tổng `remaining_total` của tất cả dòng (cộng thêm công nợ vận chuyển) tạo thành `unpaid_total` trên header đơn — khi `unpaid_total > 0` mới bật nút Tạo yêu cầu thanh toán.
+
 ---
 
 ## C. Lần giao hàng (`tab_po_delivery`) — popup chi tiết dòng
@@ -455,11 +491,11 @@ Mỗi lần lưu đơn khi đơn đang giao, hệ thống gọi `recompute_effec
 ### 3. Đơn vị vận chuyển (`carrier_code`)
 
 - Kiểu nhập: Chọn (select)
-- Mặc định: trống (hiển thị "NCC tự vận chuyển")
+- Mặc định: trống. Trường này có **3 trạng thái giao diện**: (1) **Chưa chọn** — `carrier_code=''` và `carrier_name` trống; (2) **NCC tự vận chuyển** — chọn option "_NCC tự vận chuyển_", lưu `carrier_code=''` + `carrier_name='NCC tự vận chuyển'`; (3) **Đơn vị vận chuyển thật** — chọn NCC loại `transport`, lưu `carrier_code=mã` + `carrier_name` tự điền từ NCC.
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Bảng NCC (`/api/suppliers`) — chỉ NCC có `supplier_type = 'transport'`
 - Người sửa: Người có quyền `purchase_order:write` khi đơn đang giao
-- Logic đặc biệt: Khi chọn carrier, tự điền `carrier_name`. Khi có carrier và `shipping_amount > 0`, hệ thống tạo công nợ vận chuyển riêng (`payable` loại `shipping`) với số ngày nợ của carrier.
+- Logic đặc biệt: Khi chọn carrier thật, tự điền `carrier_name`. Khi có `carrier_code` khác rỗng và `shipping_amount > 0`, hệ thống tạo công nợ vận chuyển riêng (`payable` loại `shipping`) với số ngày nợ của carrier. Trạng thái "NCC tự vận chuyển" không tạo công nợ carrier riêng (carrier_code trống).
 
 ### 4. Tên đơn vị vận chuyển (`carrier_name`)
 
@@ -651,6 +687,8 @@ Cả hai mẫu gọi cùng endpoint `GET /api/purchase-orders/{id}/print` (yêu 
 | Đơn đặt hàng (gửi NCC) | `PrintPurchaseOrder.tsx` | A4 ngang (landscape) | Bảng hàng theo SL đặt, đơn giá chưa/đã VAT, kho nhận, tên trên HĐ; điều khoản giao nhận + thông tin HĐ | `order_total` (theo SL đặt) |
 | Đơn mua hàng (nội bộ) | `PrintPurchaseOrderMH.tsx` | A4 dọc (portrait) | Bảng hàng theo SL yêu cầu + SL thực nhập, tiền thuế GTGT riêng; số tiền bằng chữ; điều khoản NCC | `order_total` (theo SL đặt) + `order_subtotal` tách thuế riêng |
 
+Ngoài 2 mẫu trên, phiếu liên quan là **Phiếu đề xuất mua hàng hóa/dịch vụ** (Mẫu 003/BM/PKT, file `PrintPurchaseRequest.tsx`) — là bản in của phiếu YCMH nguồn, mở từ trang chi tiết YCMH (không phải từ trang PO). Bảng hàng hóa trên phiếu đề xuất đã có cột **Nơi giao** hiển thị mã kho nhận (`warehouse_code`) thay vì tên đầy đủ kho (dùng hàm `whCode` tra ngược từ danh mục kho).
+
 ---
 
 ## F. Quy tắc nghiệp vụ
@@ -665,7 +703,13 @@ Cả hai mẫu gọi cùng endpoint `GET /api/purchase-orders/{id}/print` (yêu 
 8. Tổng tiền trên header: `subtotal` = SL nhận × đơn giá; `vat` = tiền thuế từ thực nhận; `total` = subtotal + vat; `order_subtotal`/`order_total` = theo SL đặt (dùng cho bản in).
 9. Công nợ hàng: sinh khi `received_qty > 0`; xóa khi `received_qty` về 0. Không có VAT riêng ở cấp đơn vị giao — VAT tính từ `po_item.vat`.
 10. Công nợ vận chuyển: sinh khi carrier được chọn VÀ `shipping_amount > 0`; xóa khi carrier xóa hoặc `shipping_amount = 0`.
-11. Lọc danh sách: hỗ trợ các bộ lọc sau:
+11. Tạo yêu cầu thanh toán từ đơn: khi đơn ở `approved`/`partial`/`received`/`completed` và tổng công nợ còn lại (`unpaid_total`) > 0, người dùng có quyền `payment_request:create` thấy nút "Tạo yêu cầu thanh toán". Popup hiện 2 tab: **NCC sản xuất** (hàng hóa, `source_type='goods'`) và **NCC vận chuyển** (`source_type='shipping'`). Mặc định chọn sẵn (tick) toàn bộ khoản nợ hàng hóa; khoản nợ vận chuyển người dùng tự chọn thêm. Gửi lên `POST /api/payment-requests`.
+
+12. Khóa dòng hoàn thành: dòng hàng có `progress_status = 'Hoàn thành'` hoặc `'Hủy đơn'` bị khóa hoàn toàn — không sửa thông tin sản phẩm, không thêm/sửa/xóa lần giao trong popup chi tiết dòng. Backend bỏ qua (skip) dòng bị khóa khi lưu đơn (không cho phép sửa kể cả qua API).
+
+13. Phạm vi xem đơn theo NSPT: người dùng với scope `assigned` hoặc `proc` thấy đơn mình tạo (`created_by = user.id`) VÀ đơn có `nspt` khớp tên đầy đủ của mình (`emp_name`). Riêng scope `proc` còn thấy thêm mọi đơn đang ở trạng thái `approved` (để nhặt việc phân bổ).
+
+14. Lọc danh sách: hỗ trợ các bộ lọc sau:
     - LIKE trên header PO: `code`, `status`, `supplier_code`, `pr_code`, `misa_code`, `nspt`, `is_urgent`
     - Exact match: `company_id`
     - Khoảng ngày: `order_date` (từ–đến)
@@ -680,16 +724,17 @@ Entity: `purchase_order`.
 
 | Thao tác | Quyền yêu cầu | Điều kiện trạng thái |
 |----------|---------------|----------------------|
-| Xem danh sách / chi tiết | `purchase_order:read` | Mọi trạng thái (theo phạm vi dữ liệu scope) |
+| Xem danh sách / chi tiết | `purchase_order:read` | Mọi trạng thái (theo phạm vi dữ liệu scope — xem quy tắc 13) |
 | Tạo mới / Nhân bản | `purchase_order:create` | — |
-| Sửa header, dòng hàng | `purchase_order:write` | Đơn chưa `completed` / `cancelled` |
-| Thêm / sửa lần giao | `purchase_order:write` | Đơn ở `approved` / `partial` / `received` |
-| Gửi duyệt | `purchase_order:write` | Đơn `draft` |
+| Sửa header, dòng hàng | `purchase_order:write` | Đơn chưa `completed` / `cancelled`; dòng có `progress_status = 'Hoàn thành'/'Hủy đơn'` bị khóa riêng |
+| Thêm / sửa lần giao | `purchase_order:write` | Đơn ở `approved` / `partial` / `received`; lần giao thuộc dòng đã khóa không sửa được |
+| Gửi duyệt | `purchase_order:write` | Đơn `draft` hoặc `rejected` (Bị trả lại) |
 | Mở lại (về nháp) | `purchase_order:write` | Mọi trạng thái (qua `/reopen`) |
-| Đóng đơn (hoàn thành) | `purchase_order:write` | Đơn `received` |
+| Đóng đơn (hoàn thành) | `purchase_order:write` | Đơn `received` hoặc `partial` (nút Hoàn thành xuất hiện ở cả hai) |
 | Duyệt | `purchase_order:approve` | Đơn `submitted` |
-| Từ chối | `purchase_order:approve` | Đơn `submitted` |
-| Hủy đơn | `purchase_order:cancel` | Đơn `approved` / `partial` / `received` |
+| Trả về (Bị trả lại) | `purchase_order:approve` | Đơn `submitted`; cần nhập lý do |
+| Từ chối (khóa hẳn) | `purchase_order:approve` | Đơn `submitted`; cần nhập lý do; status → `cancelled` |
+| Hủy đơn | `purchase_order:cancel` | Đơn `approved` / `partial` / `received`; bắt buộc nhập lý do; bị chặn nếu có dòng đã "Hoàn thành" |
 | Xóa | `purchase_order:delete` | Đơn `draft` / `rejected` (kiểm tra ở FE) |
 | In (cả 2 mẫu) | `purchase_order:print` | Mọi trạng thái |
 | Tải lên đính kèm / xóa đính kèm | `purchase_order:write` | Đơn chưa khóa |

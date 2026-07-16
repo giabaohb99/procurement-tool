@@ -297,7 +297,7 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Danh sách nhân sự phòng thu mua (`employee.department` chứa "thu mua"), API `/api/employees`
 - Người sửa: Người có `approve` (trực tiếp trong popup chi tiết dòng hoặc qua endpoint `PATCH /{pid}/assign`); tự động gán khi duyệt phiếu
-- Logic đặc biệt: Lưu mã NV (`employee.code`), hiển thị tên (`employee.full_name`). NSTM chỉ thấy dòng mà `assignee` trùng với `emp_code` của mình (khi không có quyền `approve`/`read` dept+).
+- Logic đặc biệt: Lưu mã NV (`employee.code`), hiển thị **tên đầy đủ** nhân sự (`employee.full_name`, không phải tên đăng nhập). NSTM chỉ thấy dòng mà `assignee` trùng với `emp_code` của mình (khi không có quyền `approve`/`read` dept+).
 
 ### 12. Trạng thái xử lý dòng (`line_status`)
 
@@ -340,9 +340,11 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 10. Trạng thái phiếu tự tính lại: sau mỗi lần NSTM cập nhật `line_status`, hàm `recompute_status` xét lại trạng thái phiếu (chỉ khi phiếu đang ở `approved`/`processing`/`completed`).
 11. Nhân bản phiếu: `POST /api/purchase-requests/{id}/copy` (và alias `/clone`) tạo phiếu `draft` mới — copy toàn bộ header và dòng hàng (reset `assignee_id = 0`, `assignee = ""`, `line_status = "Chưa đặt hàng"`, `progress_note = ""`); mã mới tự sinh theo ngày tạo bản sao. Nút "Nhân bản" có trên trang chi tiết (cần `purchase_request:create`) và trên danh sách (cấu hình `cloneable = true`, endpoint `/clone`).
 12. Xóa mềm: phiếu xóa được đánh dấu `is_deleted = true`, không xóa vật lý; chỉ xóa được khi `status = draft`.
-13. Thông báo: gửi khi gửi duyệt (`pr_submitted`), duyệt (`pr_approved`), và từ chối (`pr_rejected`). Thông báo gồm thông tin người tạo, mã phiếu, link, cờ gấp.
+13. Thông báo và Web Push: mỗi sự kiện tạo chuông trong app **và** đẩy **Web Push** (best-effort) tới thiết bị đã đăng ký của người nhận. Người nhận: Gửi duyệt (`pr_submitted`) → Trưởng bộ phận của người YC (chỉ TBP — không fallback QL/Admin). Duyệt (`pr_approved`) → người tạo + Quản lý TM + Admin TM. Từ chối (`pr_rejected`), Trả về (`pr_returned`), Hủy (`pr_cancelled`) → người tạo. Phân bổ NSTM (`pr_assigned`) → NSTM được gán (không tự báo mình).
 14. Đính kèm tài liệu: mỗi phiếu có thể đính kèm nhiều file (entity `purchase_request`); riêng báo giá NCC đề xuất dùng entity riêng `purchase_request_quote` (chỉ 1 file). Cả hai lưu trên Cloudflare R2 qua API `/api/attachments`.
 15. Dòng "Hủy đơn": khi ít nhất 1 dòng có `line_status = "Hủy đơn"`, danh sách tô đỏ toàn bộ hàng đó (`rowStyle`, qua field `has_cancelled_line` trong response).
+16. Nút "Tạo đơn mua hàng": Hiển thị khi phiếu ở `approved` hoặc `processing`, người dùng có quyền `purchase_order:create` và thuộc phòng thu mua / có quyền `approve` / `cancel`, đồng thời còn ít nhất 1 dòng có `line_status = "Chưa đặt hàng"`. Khi bấm, tự điền header ĐMH từ phiếu (mã PYC nguồn, công ty, bộ phận...) và điền **NSPT của ĐMH = tên đầy đủ** (`full_name`) của người phụ trách dòng đầu tiên có `assignee` trong YCMH; nếu không có dòng nào có `assignee` thì để trống (ĐMH tự lấy người tạo làm NSPT). Số lượng từng dòng được prefill theo "còn thiếu" (yêu cầu − đã đặt trong các ĐMH cùng mã PYC); dòng đã đặt đủ/vượt hiện cảnh báo trước khi cho mua thêm.
+17. Điều hướng PYC ↔ ĐMH: Trên trang chi tiết YCMH, nút **"ĐMH liên quan (N)"** xuất hiện khi có ít nhất 1 đơn mua hàng cùng mã PYC; bấm mã ĐMH trong popup điều hướng sang trang chi tiết ĐMH tương ứng (`/purchase-orders/{id}`). Trên trang chi tiết ĐMH, trường "Mã PYC nguồn" có biểu tượng liên kết ngoài; bấm biểu tượng điều hướng ngược về trang YCMH tương ứng (`/purchase-requests/{id}`).
 
 ## D. Quyền thao tác (RBAC)
 

@@ -516,7 +516,7 @@ Các trường dưới đây KHÔNG có trong `_OPT_PUBLIC_FIELDS`. Backend endp
 
 3. Sửa nội dung phiếu chỉ cho phép khi `status = draft` hoặc `rejected`. Backend trả HTTP 400 "Chỉ sửa được khi phiếu ở trạng thái Nháp hoặc Bị trả lại" nếu cố sửa ở trạng thái khác. Phiếu `cancelled` ("Đã từ chối") bị khóa vĩnh viễn — hệ thống gợi ý Nhân bản (`clone`) thành phiếu nháp mới.
 
-4. Sau khi Duyệt: hàm `auto_assign` tự gán NSTM cho từng dòng theo bảng `CategoryAssignee` (khớp `item_group`), cập nhật `received_date`, và đặt `SurveyRequest.assignee_id`. Phiếu chuyển `processing` trong cùng một request. Gửi thông báo đến NSTM được gán và Admin/QL TM.
+4. Sau khi Duyệt: hàm `auto_assign` tự gán NSTM cho từng dòng theo bảng `CategoryAssignee` (khớp `item_group`), cập nhật `received_date`, và đặt `SurveyRequest.assignee_id`. Phiếu chuyển `processing` trong cùng một request. Gửi hai thông báo riêng: (a) **Đã duyệt** — tới người tạo + Quản lý TM + Admin TM; (b) **Phân công khảo sát** — tới NSTM vừa được tự gán theo phân loại (nếu có).
 
 5. Cơ chế ẩn NCC: endpoint `GET /{id}/result` (dành cho người YC) chỉ trả các field trong `_OPT_PUBLIC_FIELDS` và `_LINE_PUBLIC_FIELDS`. Các field `supplier_code`, `supplier_name`, `snap_internal_code`, `nstm_note`, `supplier_survey_id`, `product_survey_line_id` bị loại ở tầng Python trước khi trả response — không thể lấy được kể cả gọi API trực tiếp với token người YC.
 
@@ -542,7 +542,21 @@ Các trường dưới đây KHÔNG có trong `_OPT_PUBLIC_FIELDS`. Backend endp
 
 16. Lọc option hợp lệ (`valid_options_of`): Các view xử lý khảo sát (`_out_process`), kết quả (`_out_result`), và màn chi tiết (`_out`) đều dùng `valid_options_of` thay cho `options_of` thô. Hàm này **chỉ trả option** có dòng khảo sát SP nguồn (`product_survey_line_id`) còn trạng thái `"Đã duyệt"`. Option của dòng đã bị "Không duyệt" hoặc phiếu khảo sát nguồn bị `cancelled` sẽ **bị ẩn, không được tính** vào `option_count`/`has_chosen`, và không cho chọn — xử lý cả dữ liệu cũ còn kẹt. Option không gắn nguồn (`product_survey_line_id = 0`) vẫn được giữ.
 
-16. Nhân bản phiếu (`POST /{id}/clone`, quyền `survey_request:create`): Tạo phiếu Nháp mới — sao chép toàn bộ trường header (`company_id`, `requester`, `requester_position`, `department`, `head_of_dept`, `purpose`, `request_date`, `note`) và các dòng mà người dùng được xem (`visible_lines_for`). Sinh mã phiếu mới theo quy tắc `_gen_code`. Các thông tin sau KHÔNG được sao chép: `assignee` (NSTM phụ trách dòng; reset về rỗng), `received_date` (reset về rỗng), option, `pr_id`/`pr_code`, `is_completed`. Đính kèm file dòng được tái sử dụng (thêm `FileLink` mới trỏ cùng file gốc — không sao chép file vật lý). Có thể nhân bản từ bất kỳ trạng thái nào, kể cả phiếu `cancelled`.
+17. Nhân bản phiếu (`POST /{id}/clone`, quyền `survey_request:create`): Tạo phiếu Nháp mới — sao chép toàn bộ trường header (`company_id`, `requester`, `requester_position`, `department`, `head_of_dept`, `purpose`, `request_date`, `note`) và các dòng mà người dùng được xem (`visible_lines_for`). Sinh mã phiếu mới theo quy tắc `_gen_code`. Các thông tin sau KHÔNG được sao chép: `assignee` (NSTM phụ trách dòng; reset về rỗng), `received_date` (reset về rỗng), option, `pr_id`/`pr_code`, `is_completed`. Đính kèm file dòng được tái sử dụng (thêm `FileLink` mới trỏ cùng file gốc — không sao chép file vật lý). Có thể nhân bản từ bất kỳ trạng thái nào, kể cả phiếu `cancelled`.
+
+18. Thông báo và Web Push: mỗi sự kiện dưới đây tạo chuông trong app **và** đẩy **Web Push** (best-effort) tới thiết bị đã đăng ký của người nhận, không chỉ chuông trong app.
+
+| Sự kiện | Người nhận thông báo |
+|---------|---------------------|
+| Gửi duyệt (`submit`) | Người có quyền `survey_request:approve` (Quản lý/Admin TM) + Trưởng bộ phận của người YC |
+| Duyệt (`approve`) | Người tạo + Quản lý TM + Admin TM |
+| Phân công NSTM tự động (ngay sau duyệt) | NSTM vừa được gán theo phân loại |
+| Phân công dòng thủ công (`set_line_assignee`) | NSTM được gán vào dòng |
+| Trả đơn (`reject` → `rejected`) | Người tạo |
+| Từ chối (`cancel` → `cancelled`) | Người tạo |
+| Chốt hoàn thành khảo sát (`complete` → `survey_done`) | Người tạo |
+| Tạo YCMH từ phương án (`create-prs`) | Quản lý TM + Admin TM |
+| Chuyển Hoàn thành (`finalize`) | Người tạo |
 
 ---
 

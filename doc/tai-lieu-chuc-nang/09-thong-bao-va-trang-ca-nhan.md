@@ -157,7 +157,8 @@ Hàm `trigger_notification` được các controller gọi sau mỗi thao tác t
 | `doc_type` | Nhãn hiển thị |
 |---|---|
 | `purchase_request` | Yêu cầu mua hàng |
-| `survey_request` | Phiếu khảo sát |
+| `survey_request` | Yêu cầu khảo sát |
+| `survey` | Phiếu khảo sát |
 | `purchase_order` | Đơn mua hàng |
 | `payment_request` | Đề nghị thanh toán |
 
@@ -165,12 +166,23 @@ Hàm `trigger_notification` được các controller gọi sau mỗi thao tác t
 
 | Sự kiện (`event`) | Tiêu đề | Nội dung |
 |---|---|---|
-| `pr_submitted` | `[Yêu cầu phê duyệt] PYC {code}` | "Có một yêu cầu mua hàng mới … cần bạn phê duyệt." |
-| `pr_approved` | `[Đã duyệt] PYC {code}` | "Yêu cầu mua hàng … đã được phê duyệt." |
-| `pr_rejected` | `[Từ chối] PYC {code}` | "Yêu cầu mua hàng … đã bị từ chối phê duyệt." |
-| `survey_submitted` | `[Yêu cầu phê duyệt] Khảo sát {code}` | "Có một phiếu khảo sát mới … cần bạn phê duyệt." |
-| `survey_approved` | `[Đã duyệt] Khảo sát {code}` | "Phiếu khảo sát … đã được phê duyệt." |
-| `survey_rejected` | `[Từ chối] Khảo sát {code}` | "Phiếu khảo sát … đã bị từ chối phê duyệt." |
+| `pr_assigned` | `[Phân công] PYC {code}` | "Bạn được phân công phụ trách yêu cầu mua hàng {code}." |
+| `pr_submitted` | `[Yêu cầu phê duyệt] PYC {code}` | "Có một yêu cầu mua hàng mới ({code}) cần bạn phê duyệt." |
+| `pr_approved` | `[Đã duyệt] PYC {code}` | "Yêu cầu mua hàng {code} của bạn đã được phê duyệt." |
+| `pr_rejected` | `[Từ chối] PYC {code}` | "Yêu cầu mua hàng {code} của bạn đã bị từ chối phê duyệt." |
+| `pr_returned` | `[Bị trả lại] PYC {code}` | "Yêu cầu mua hàng {code} của bạn bị trả lại — hãy chỉnh sửa và gửi duyệt lại." |
+| `pr_cancelled` | `[Đã hủy] PYC {code}` | "Yêu cầu mua hàng {code} của bạn đã bị hủy." |
+| `sr_submitted` | `[Yêu cầu phê duyệt] YCKS {code}` | "Có một yêu cầu khảo sát mới ({code}) cần bạn phê duyệt." |
+| `sr_approved` | `[Đã duyệt] YCKS {code}` | "Yêu cầu khảo sát {code} của bạn đã được phê duyệt." |
+| `sr_rejected` | `[Từ chối] YCKS {code}` | "Yêu cầu khảo sát {code} của bạn đã bị từ chối phê duyệt." |
+| `sr_returned` | `[Bị trả lại] YCKS {code}` | "Yêu cầu khảo sát {code} của bạn bị trả lại — hãy chỉnh sửa và gửi duyệt lại." |
+| `pay_submitted` | `[Yêu cầu phê duyệt] YCTT {code}` | "Có một yêu cầu thanh toán mới ({code}) cần bạn phê duyệt." |
+| `pay_approved` | `[Đã duyệt] YCTT {code}` | "Yêu cầu thanh toán {code} của bạn đã được phê duyệt." |
+| `pay_rejected` | `[Từ chối] YCTT {code}` | "Yêu cầu thanh toán {code} của bạn đã bị từ chối." |
+| `pay_paid` | `[Đã chi] YCTT {code}` | "Yêu cầu thanh toán {code} đã được ghi nhận đã chi." |
+| `survey_submitted` | `[Yêu cầu phê duyệt] Khảo sát {code}` | "Có một phiếu khảo sát mới ({code}) cần bạn phê duyệt." |
+| `survey_approved` | `[Đã duyệt] Khảo sát {code}` | "Phiếu khảo sát {code} của bạn đã được phê duyệt." |
+| `survey_rejected` | `[Từ chối] Khảo sát {code}` | "Phiếu khảo sát {code} của bạn đã bị từ chối phê duyệt." |
 | Khác (fallback) | `{Nhãn loại} {code}` | `"{Nhãn loại} {code} {động từ}."` (ví dụ: "Đơn mua hàng PO00001 đã được duyệt.") |
 
 Nếu `is_urgent=True` → tiêu đề thêm tiền tố `[GẤP]`.
@@ -183,18 +195,54 @@ Nếu `is_urgent=True` → tiêu đề thêm tiền tố `[GẤP]`.
 |---|---|
 | `pr_submitted` | Trưởng bộ phận của phòng ban người yêu cầu (theo `Department.manager_id`). Nếu chưa gán trưởng phòng → không gửi ai. |
 | `survey_submitted` | Người có quyền `approve` trên entity `survey` (Quản lý / Admin thu mua). |
+| `sr_submitted` | Người có quyền `approve` trên entity `survey_request` (Quản lý / Admin thu mua). |
+| `pay_submitted` | Người có quyền `approve` trên entity `payment_request` (Quản lý / Admin thu mua). |
 | `pr_approved` | Người tạo YCMH + tất cả người thuộc vai trò `pur_manager` và `pur_admin`. |
 | Các sự kiện còn lại | Người tạo chứng từ (`creator_id`). |
 
 Danh sách người nhận được khử trùng (mỗi `user_id` chỉ nhận 1 thông báo).
 
-#### Gộp sự kiện (coalescing)
-
-Trước khi tạo thông báo mới, hàm kiểm tra: nếu người nhận đã có **1 thông báo chưa đọc** cùng `link` trong vòng **5 phút** gần đây → cập nhật thông báo đó (tiêu đề, nội dung, `created_at`) thay vì tạo mới. Mục đích: tránh spam khi nhiều sự kiện liên tiếp xảy ra trên cùng 1 chứng từ (ví dụ submit → approve trong vài giây).
+Lưu ý: mỗi sự kiện tạo **1 thông báo riêng** cho mỗi người nhận — không gộp ở phía backend. Dropdown chuông gộp các thông báo cùng `link` thành 1 dòng để hiển thị gọn (hàm `groupByDoc` ở frontend).
 
 ---
 
-### E. Model dữ liệu
+### E. Web Push (thông báo đẩy thiết bị)
+
+Sau khi tạo thông báo trong app (chuông), `trigger_notification` đẩy thêm Web Push tới **tất cả thiết bị đã đăng ký** của người nhận qua thư viện `pywebpush` (VAPID). Đây là best-effort: lỗi push không ảnh hưởng luồng chính.
+
+#### Cách người dùng bật nhận thông báo đẩy
+
+1. Vào **Trang cá nhân** (`/me`) → card "Thông báo đẩy (điện thoại / máy tính)".
+2. Bấm **"Bật thông báo trên thiết bị này"** → trình duyệt hỏi cấp quyền → sau khi đồng ý, frontend lấy VAPID public key từ `GET /api/push/vapid-public-key`, tạo subscription và gửi lên `POST /api/push/subscribe`.
+3. Mỗi thiết bị/trình duyệt là một subscription riêng (một người dùng có thể đăng ký nhiều thiết bị).
+4. Bấm **"Tắt thông báo trên thiết bị này"** → gọi `POST /api/push/unsubscribe` và hủy subscription trên trình duyệt.
+
+**Lưu ý:**
+- Chức năng Web Push chỉ hoạt động ở bản **build prod** (cần service worker). Ở bản dev (`npm run dev`) service worker không được tải.
+- Trên iPhone cần cài PWA ("Thêm vào màn hình chính") trước khi bật.
+- Backend cần biến môi trường `VAPID_PRIVATE_KEY` (đặt trong `.env`/VPS). Nếu chưa cấu hình, Web Push bỏ qua; chuông in-app vẫn hoạt động bình thường.
+- Endpoint hết hạn (HTTP 404/410) → backend tự xóa subscription đó.
+
+#### API Web Push
+
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| `GET` | `/api/push/vapid-public-key` | Lấy VAPID public key để trình duyệt subscribe |
+| `POST` | `/api/push/subscribe` | Lưu subscription của thiết bị hiện tại |
+| `POST` | `/api/push/unsubscribe` | Hủy subscription theo `endpoint` |
+
+#### Model dữ liệu — `tab_push_subscription`
+
+| Cột | Kiểu | Mô tả |
+|---|---|---|
+| `user_id` | BigInteger | ID người dùng (có index) |
+| `endpoint` | Text | URL push service (mỗi thiết bị 1 endpoint) |
+| `p256dh` | String(255) | Khóa công khai ECDH của trình duyệt |
+| `auth` | String(255) | Bí mật xác thực (16 byte, base64url) |
+
+---
+
+### F. Model dữ liệu — thông báo
 
 Bảng: `tab_notification`
 
@@ -238,6 +286,18 @@ Gọi `GET /api/auth/me` khi trang tải. Hiển thị các trường sau (chỉ
 | Chức vụ | `position` hoặc `role_name` (từ `Employee`) | Ưu tiên `position`, fallback sang `role_name`; hiển thị `—` nếu cả hai trống |
 
 Nút "Thông báo" ở đầu trang → điều hướng sang `/notifications`.
+
+#### Card "Thông báo đẩy"
+
+Card thứ ba trong Tab Thông tin cá nhân — hiển thị trạng thái đăng ký Web Push của thiết bị hiện tại và nút bật/tắt:
+
+| Trạng thái | Nút hiển thị |
+|---|---|
+| Chưa bật | "Bật thông báo trên thiết bị này" (primary) |
+| Đã bật | "Tắt thông báo trên thiết bị này" (ghost) |
+| Trình duyệt không hỗ trợ | Thông báo tĩnh, không có nút |
+
+Mỗi thiết bị (trình duyệt) đăng ký độc lập — bật trên điện thoại không ảnh hưởng máy tính và ngược lại.
 
 #### API: `GET /api/auth/me`
 
@@ -362,7 +422,41 @@ Không có entity RBAC riêng cho trang `/me`. Quyền áp dụng gián tiếp:
 | Chức năng | Điều kiện |
 |---|---|
 | Xem thông tin cá nhân & đổi mật khẩu | Đã đăng nhập (không cần quyền riêng) |
+| Bật/tắt Web Push | Đã đăng nhập (không cần quyền riêng) |
 | Thấy loại việc `pr` trong Tab Việc cần làm | Có `purchase_request:read` |
 | Thấy loại việc `sr` | Có `survey_request:read` |
 | Thấy loại việc `po` và `late` | Có `purchase_order:read` |
 | Thấy loại việc `payable` | Có `payable:read` |
+
+---
+
+## Phần III: PWA (Progressive Web App)
+
+### Mục đích
+
+Cho phép cài ứng dụng lên màn hình chính thiết bị (điện thoại hoặc máy tính) để mở nhanh như app, hiển thị toàn màn hình (không có thanh địa chỉ trình duyệt).
+
+### Banner mời cài ("Cài ứng dụng")
+
+Banner xuất hiện ở góc dưới màn hình sau khi đăng nhập (`AppLayout`). Chỉ hiện khi:
+- Trình duyệt Chromium (Chrome/Edge) đã phát sự kiện `beforeinstallprompt` (app đủ điều kiện cài).
+- Safari trên iPhone/iPad (hướng dẫn thủ công vì không có `beforeinstallprompt`).
+- Người dùng chưa bấm "Không hỏi lại" (`localStorage` key `pwa-install-dismissed`).
+- Chưa đang chạy ở chế độ standalone (đã cài rồi).
+
+| Nền tảng | Hành động |
+|---|---|
+| Chromium | Nút **"Cài đặt"** → hiển thị dialog cài của trình duyệt |
+| iOS Safari | Hướng dẫn: Bấm **Chia sẻ** → **Thêm vào MH chính** |
+| Nút "Không hỏi lại" | Ẩn banner vĩnh viễn (cờ `localStorage`) |
+
+### Bật/tắt banner qua cấu hình build
+
+Biến môi trường `VITE_PWA_INSTALL_PROMPT` kiểm soát việc hiển thị banner:
+- `VITE_PWA_INSTALL_PROMPT=false` (hoặc không đặt) → banner không hiển thị.
+- `VITE_PWA_INSTALL_PROMPT=true` → banner hiển thị khi đủ điều kiện.
+
+### Lưu ý kỹ thuật
+
+- Service worker (Vite PWA plugin) chỉ được đăng ký ở bản build prod. Ở môi trường dev (`npm run dev`), service worker không chạy, do đó Web Push và cài PWA không hoạt động.
+- PWA cache tài nguyên tĩnh; khi có bản cập nhật mới, hệ thống nhắc người dùng tải lại.

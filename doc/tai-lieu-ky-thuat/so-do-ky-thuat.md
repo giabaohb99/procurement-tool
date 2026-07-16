@@ -3,8 +3,8 @@
 
 | | |
 |---|---|
-| **Phiên bản** | v1.0 |
-| **Ngày** | 2026-07-08 |
+| **Phiên bản** | v1.1 |
+| **Ngày** | 2026-07-15 (cập nhật từ v1.0 2026-07-08) |
 | **Chuẩn dùng** | Mermaid (diagram-as-code) — render trên GitHub / VS Code / Mermaid Live; dạng chữ ai cũng đọc được |
 | **Đi kèm** | [technical-design.md](technical-design.md) · [quy-trinh-tai-lieu.md](quy-trinh-tai-lieu.md) |
 
@@ -17,17 +17,24 @@
 
 ```mermaid
 flowchart LR
-    U["👤 Người dùng<br/>(trình duyệt)"]
+    U["👤 Người dùng<br/>(trình duyệt + PWA)"]
+    SW["⚙️ Service Worker<br/>(push-sw.js — Web Push)"]
     CF["☁️ Cloudflare Tunnel<br/>thumua.degoholding.vn"]
     WEB["🌐 Web / Nginx<br/>React (giao diện)"]
     API["⚙️ API — FastAPI<br/>(xử lý nghiệp vụ)"]
     DB[("🗄️ MariaDB<br/>DB: procurement")]
+    PUSH["📡 Push Service<br/>(VAPID / pywebpush)"]
 
     U -->|HTTPS| CF --> WEB
     WEB -->|gọi API /api/...| API
     API -->|SQLAlchemy| DB
     API -.->|JWT + Fernet| API
+    U -.-|đăng ký SW| SW
+    API -.->|BackgroundTask| PUSH
+    PUSH -.->|Web Push| SW
 ```
+
+> **PWA**: `vite-plugin-pwa` bake service worker vào bản build prod (`registerType: prompt`; SW tắt ở dev). Workbox precache asset tĩnh; `/api/*` luôn `NetworkOnly`. Handler push: `public/push-sw.js` được `importScripts` vào SW. Toggle banner "Cài ứng dụng": build arg `VITE_PWA_INSTALL_PROMPT=on`.
 
 ---
 
@@ -315,6 +322,7 @@ flowchart LR
 
 - **Sơ đồ 1–5, 8, 9** dễ cho **người ngoài** (phòng Thu mua) đọc để nắm luồng & quyết định.
 - **Sơ đồ 6–7** thiên về **kỹ thuật** (data model đầy đủ + trình tự xử lý).
+- **Sơ đồ 1** (v1.1): cập nhật thêm lớp PWA/Service Worker + Web Push (VAPID) — xem CR-002 trong [change-log.md](change-log.md).
 - Mọi sơ đồ khớp hệ thống thật (trạng thái, bảng, hàm đúng tên). Khi luồng đổi → cập nhật sơ đồ **kèm Change Request** trong [change-log.md](change-log.md).
 
 *Hết. Chi tiết mô tả xem [technical-design.md](technical-design.md).*

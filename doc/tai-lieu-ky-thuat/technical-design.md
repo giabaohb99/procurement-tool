@@ -51,13 +51,17 @@ Số hóa quy trình thu mua của DEGO Holding: từ **yêu cầu khảo sát**
 
 ## 2. Vai trò người dùng (Actors)
 
-| Vai trò | Mô tả | Phạm vi dữ liệu điển hình |
-|---|---|---|
-| **Người yêu cầu** (NV cơ bản) | Tạo yêu cầu khảo sát / yêu cầu mua của mình | `own` (của mình) |
-| **Trưởng phòng** | Duyệt yêu cầu của phòng | `dept` (phòng) |
-| **Nhân sự thu mua (NSTM)** | Khảo sát, xử lý yêu cầu khảo sát, tạo PO | `proc`/`assigned` (được giao) |
-| **Quản lý thu mua** | Duyệt, phân bổ, hủy, hoàn thành | `all` |
-| **Admin hệ thống** | Toàn quyền + cấu hình, phân quyền | `all` |
+| Mã vai trò | Tên hiển thị | Mô tả | Phạm vi dữ liệu điển hình |
+|---|---|---|---|
+| `employee` | Nhân sự (cơ bản) | Tạo yêu cầu khảo sát / yêu cầu mua của mình | `own` |
+| `dept_head` | Trưởng phòng (duyệt PYC) | Duyệt yêu cầu của phòng | `dept` |
+| `company_head` | Quản lý công ty | Xem tổng hợp theo pháp nhân | `company` |
+| `pur_staff` | Nhân viên thu mua | Khảo sát, xử lý YCKS, tạo PO — chỉ thấy đơn được giao | `assigned`/`proc` |
+| `pur_manager` | Quản lý thu mua | Toàn quyền nghiệp vụ (8 hành động, mọi entity trừ `user/role/setting`) | `all` |
+| `pur_admin` | Admin thu mua | CRUD toàn bộ danh mục; nghiệp vụ chỉ đọc phạm vi `proc` | `all` (danh mục), `proc` (nghiệp vụ) |
+| `admin` / `ADMINISTRATOR` | Quản trị hệ thống | Toàn quyền + cấu hình, phân quyền | `all` |
+
+> Vai trò legacy "Nhân viên" (code `STAFF`) đã được gộp vào `employee` và xóa qua `cleanup_legacy_staff_role()` khi seed.
 
 ---
 
@@ -76,9 +80,10 @@ flowchart LR
 | Lớp | Công nghệ |
 |---|---|
 | Frontend | React 18 + Vite + TypeScript; danh sách/chi tiết cấu hình hóa (`cruds.tsx`); `AuthContext.can(entity, action)`; react-select (autocomplete) |
+| PWA / Push | `vite-plugin-pwa` (`registerType: prompt`, workbox precache + `importScripts: push-sw.js`); Service Worker chỉ bật bản build prod; Web Push qua VAPID (`pywebpush`); toggle banner cài ứng dụng: build arg `VITE_PWA_INSTALL_PROMPT=on` |
 | Backend | FastAPI + Uvicorn; SQLAlchemy 2.0 (`Mapped`/`mapped_column`); Pydantic v2; Alembic (migration) |
 | DB | MariaDB/MySQL (dùng chung với hệ ERP, DB riêng `procurement`) |
-| Auth | JWT; khóa mã hóa Fernet (`JWT_SECRET`); đăng nhập bằng **Mã nhân viên** hoặc **Email** |
+| Auth | JWT; khóa mã hóa Fernet (`JWT_SECRET`); đăng nhập bằng **Mã nhân viên** hoặc **Email**; **Đăng nhập Google OAuth** (build arg `VITE_GOOGLE_CLIENT_ID`, verify phía backend qua `settings.GOOGLE_CLIENT_ID`) |
 | Hạ tầng | Docker Compose (dev: mount code + hot reload; prod: image build sẵn); Cloudflare Tunnel; domain `thumua.degoholding.vn` |
 
 **Cấu trúc mã nguồn (chuẩn module):** mỗi nghiệp vụ 1 thư mục `app/modules/<feature>/` gồm `model.py` (bảng), `schema.py` (Pydantic in/out), `service.py` (logic), `controller.py` (route API).
@@ -153,10 +158,32 @@ flowchart TD
 ## 7. Phân quyền (RBAC)
 
 - **Mô hình:** `require(entity, action)` chặn ở API; `apply_scope(query, model, entity, user, profile)` lọc dữ liệu theo phạm vi.
-- **Hành động:** `read, create, write, approve, cancel, delete`.
-- **Cấp phạm vi (scope):** `own` (của mình) < `dept` (phòng) < `company` (pháp nhân) < `proc` (thu mua) < `all` (tất cả).
+- **Hành động (8 cờ):** `read, create, write, delete, approve, cancel, print, export` (định nghĩa trong `core/permissions.py → ACTIONS`).
+- **Cấp phạm vi (scope):** `own` < `assigned` ≈ `proc` < `dept` < `company` < `all` (xem `SCOPES` trong `permissions.py`).
 - **Người thu mua** (`is_purchaser`): có scope `proc`/`all` trên `survey_request` → thấy NCC; người thường bị **ẩn NCC** ở màn kết quả khảo sát.
 - Quyền lưu trong DB theo vai trò; FE cache ở `localStorage`. **Đổi quyền → phải đăng nhập lại.**
+
+### Hai vai trò thu mua chính (seed bằng `resync_role_perms`)
+
+| Vai trò | Entity được phép | Hành động | Phạm vi |
+|---|---|---|---|
+| `pur_manager` (Quản lý thu mua) | Mọi entity **trừ** `user`, `role`, `setting` | 8 hành động đầy đủ (`read/create/write/delete/approve/cancel/print/export`) | `all` |
+| `pur_admin` (Admin thu mua) | `supplier`, `product`, `contract`, `warehouse`, `unit`, `item_group`, `brand`, `company`, `category_assignee` (danh mục) | `read/create/write/delete` | `all` |
+| `pur_admin` | `purchase_request`, `survey_request`, `purchase_order` (nghiệp vụ) | `read` | `proc` (chỉ thấy đã duyệt) |
+| `pur_admin` | `survey`, `goods_receipt`, `inventory`, `payable`, `payment_request` | `read` | `all` |
+| `pur_admin` | `report` | `read`, `export` | `all` |
+| `pur_admin` | `department`, `employee` | `read` | `all` |
+
+> **`resync_role_perms(db, code, perms)`** — xóa toàn bộ quyền cũ của vai trò rồi tạo lại theo `perms`. Khác với `seed_standard_roles()` chỉ INSERT các entity chưa có (INSERT-only). Hàm này áp dụng mỗi lần seed chạy, đảm bảo DB đã triển khai luôn khớp với định nghĩa mới nhất.
+
+### Dọn vai trò legacy (`cleanup_legacy_staff_role`)
+
+Hàm `cleanup_legacy_staff_role(db)` (chạy cuối `run()`, sau `seed_demo_accounts()`):
+1. Tìm vai trò code `STAFF` (MariaDB không phân biệt hoa/thường → khớp cả `staff` demo).
+2. Nhân sự có `role_name == STAFF.name` → đổi sang tên `Nhân sự (cơ bản)`.
+3. User gán `STAFF` → chuyển sang vai trò `employee`; nếu đã có `employee` thì chỉ bỏ gán `STAFF`.
+4. Xóa quyền/scope/gán còn sót → xóa vai trò `STAFF`.
+Idempotent: bỏ qua nếu không còn vai trò `STAFF`.
 
 ---
 
@@ -183,8 +210,10 @@ flowchart TD
 
 | Nhóm | Yêu cầu |
 |---|---|
-| Bảo mật | JWT + Fernet; `JWT_SECRET` là khóa master (không đổi); secret chỉ trong `.env`/DB mã hóa, không đưa vào repo |
+| Bảo mật | JWT + Fernet; `JWT_SECRET` là khóa master (không đổi); secret chỉ trong `.env`/DB mã hóa, không đưa vào repo; `VAPID_PRIVATE_KEY` bắt buộc từ ENV (không commit source) |
 | Hiệu năng | Danh mục lớn (6.760+ SP) → chọn SP bằng **autocomplete tìm server-side**, không đổ toàn bộ dropdown |
+| PWA & Web Push | App cài được trên thiết bị di động/desktop; thông báo đẩy đến thiết bị qua VAPID; timeout push 10 s; endpoint 404/410 tự xóa; push best-effort (lỗi không ảnh hưởng luồng chính) |
+| Email | Công tắc `email_enabled` tắt toàn bộ email ngoại trừ email thiết yếu (`force=True`, VD reset mật khẩu); cấu hình SMTP/secret lưu DB mã hóa, `.env` là fallback |
 | Ghi vết | Audit log các thao tác chính |
 | Sao lưu | DB chung hệ ERP, theo chính sách backup hạ tầng |
 | Ngôn ngữ | Tiếng Việt (UTF-8) toàn hệ thống |
@@ -195,10 +224,21 @@ flowchart TD
 
 | Môi trường | Chi tiết |
 |---|---|
-| Dev (local) | Docker Compose, mount code + hot reload; DB `mysql:8` container |
+| Dev (local) | Docker Compose, mount code + hot reload; DB `mysql:8` container; Service Worker tắt (`devOptions.enabled: false` trong `vite.config.ts`) |
 | Production (VPS) | `docker-compose.production.yml` (image build sẵn); MariaDB dùng chung; Cloudflare Tunnel; domain `thumua.degoholding.vn` |
 | Quy trình deploy | `git pull origin bao` → `docker compose -f docker-compose.production.yml up -d --build` → migration Alembic chạy khi khởi động |
 | Nhánh git | `flow-v2` (làm việc) → merge `bao` (deploy) → push origin |
+
+**Biến môi trường quan trọng (`.env` VPS):**
+
+| Biến | Bắt buộc | Mô tả |
+|---|---|---|
+| `JWT_SECRET` | Bắt buộc | Khóa Fernet master — không đổi sau khi đã có dữ liệu mã hóa |
+| `VAPID_PRIVATE_KEY` | Bắt buộc để gửi Web Push | Khóa VAPID private; rỗng → bỏ qua push, chuông vẫn chạy |
+| `VAPID_PUBLIC_KEY` | Tùy chọn | Mặc định đã có trong source (public key, không bí mật) |
+| `VITE_GOOGLE_CLIENT_ID` | Tùy chọn (build arg) | Client ID đăng nhập Google OAuth; baked vào web lúc build |
+| `VITE_PWA_INSTALL_PROMPT` | Tùy chọn (build arg) | `=on` để hiển thị banner "Cài ứng dụng"; mặc định ẩn |
+| `VITE_DEVELOPER_MODE` | Tùy chọn (build arg) | `=dev` để bật chế độ đổi user (test); mặc định tắt |
 
 ---
 
@@ -208,10 +248,10 @@ flowchart TD
 
 | Version | Ngày | Nội dung | Người duyệt |
 |---|---|---|---|
-| v1.0 | 2026-07-08 | Baseline đầu tiên (tài liệu hiện tại) | ☐ chờ ký |
+| v1.0 | 2026-07-08 | Baseline đầu tiên | ☐ chờ ký |
+| v1.1 | 2026-07-15 | CR-002→006: PWA + Web Push; phân quyền pur_manager/pur_admin; tạo tài khoản từ nhân sự; thông báo tái cơ cấu; email force flag; Google OAuth | ☐ chờ ký |
 
-**Ví dụ Change Request đã xảy ra (cần đưa vào change-log khi chốt):**
-- *CR-001:* Đổi input quy trình từ **Yêu cầu mua** → **Yêu cầu khảo sát** (phòng TM muốn khảo sát trước khi mua). Ảnh hưởng: thêm module Yêu cầu khảo sát (5A–5D), 3+ màn, tự gán NSTM, cơ chế ẩn NCC.
+**Change Request đã xảy ra — xem chi tiết tại [change-log.md](change-log.md).**
 
 ---
 

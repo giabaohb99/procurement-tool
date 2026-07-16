@@ -55,7 +55,7 @@
 
 ---
 
-## 2. Tổng quan 39 bảng (theo nhóm)
+## 2. Tổng quan 40 bảng (theo nhóm)
 
 | Nhóm | Bảng |
 |---|---|
@@ -66,7 +66,7 @@
 | **Đơn mua hàng** | `tab_purchase_order`, `tab_po_item`, `tab_po_delivery` |
 | **Nhận hàng · Tồn kho** | `tab_goods_receipt`, `tab_inventory`, `tab_inventory_move` |
 | **Công nợ · Thanh toán** | `tab_payable`, `tab_payment_request`, `tab_payment_request_line` |
-| **Hệ thống & Phân quyền** | `tab_user`, `tab_role`, `tab_permission`, `tab_user_role`, `tab_user_scope`, `tab_audit_log`, `tab_notification`, `tab_attachment`, `tab_setting`, `tab_email_log`, `tab_report_snapshot` |
+| **Hệ thống & Phân quyền** | `tab_user`, `tab_role`, `tab_permission`, `tab_user_role`, `tab_user_scope`, `tab_audit_log`, `tab_notification`, `tab_attachment`, `tab_setting`, `tab_email_log`, `tab_report_snapshot`, **`tab_push_subscription`** |
 
 ---
 
@@ -446,7 +446,17 @@ Nguồn dữ liệu cho **option**. Cột chính:
 | value | VARCHAR(100) | Giá trị được cấp (id công ty / tên phòng / id NV) |
 | is_exclude | BOOLEAN | True = **loại trừ** giá trị này |
 
-> **Các bảng hệ thống khác:** `tab_audit_log` (ghi vết), `tab_notification` (thông báo bell), `tab_attachment` (file đính kèm), `tab_setting` (cấu hình key-value), `tab_email_log` (log email), `tab_report_snapshot` (ảnh chụp báo cáo).
+#### `tab_push_subscription` — Đăng ký Web Push theo thiết bị ⭐
+| Cột | Kiểu | Mô tả |
+|---|---|---|
+| user_id | BIGINT INDEX | → `tab_user.id` |
+| endpoint | TEXT | URL push service của trình duyệt (mỗi thiết bị 1 dòng; dedup ở code) |
+| p256dh | VARCHAR(255) | Khóa công khai thiết bị (mã hóa payload) |
+| auth | VARCHAR(255) | Auth secret thiết bị |
+
+> Endpoint 404/410 khi gửi push → bản ghi tự xóa (`push_service.send_to_users`). Lưu/cập nhật qua `push_service.save_subscription`; xóa thủ công qua `push_service.remove_subscription`.
+
+> **Các bảng hệ thống khác:** `tab_audit_log` (ghi vết), `tab_notification` (thông báo bell), `tab_attachment` (file đính kèm), `tab_setting` (cấu hình key-value, secret mã hóa Fernet), `tab_email_log` (log email), `tab_report_snapshot` (ảnh chụp báo cáo).
 
 ---
 
@@ -524,14 +534,21 @@ User ──(tab_user_role)── Role ──(tab_permission)── Quyền theo 
 - **Chỉ purchaser** mới thấy field NCC ở kết quả khảo sát; người khác nhận bản **đã lọc** (whitelist — xem 3.2).
 
 ### 5.6 Ma trận quyền mẫu (theo vai trò điển hình)
-| Entity | Người YC | Trưởng phòng | NSTM | QL thu mua | Admin |
-|---|:--:|:--:|:--:|:--:|:--:|
-| survey_request | R,C (own) | R,C,**A** (dept) | R (proc)+process | R,C,W,A,X (all) | full |
-| purchase_request | R,C (own) | R,C,**A** (dept) | R,C,W (assigned) | R,C,W,A,cancel (all) | full |
-| purchase_order | – | – | R,C,W | R,C,W,A | full |
-| payable/payment | – | – | R | R,C,A | full |
 
-*(R=read, C=create, W=write, A=approve, X=export; scope trong ngoặc)*
+| Entity | `employee` (NV cơ bản) | `dept_head` | `pur_staff` (NSTM) | `pur_manager` (QL TM) | `pur_admin` (Admin TM) |
+|---|:--:|:--:|:--:|:--:|:--:|
+| survey_request | R,C,W (own) | R,**A** (dept) | R,W (proc) | **Full 8** (all) | R (proc) |
+| purchase_request | R,C (own) | R,**A** (dept) | R,C,W (assigned) | **Full 8** (all) | R (proc) |
+| purchase_order | – | – | R,C,W,**print** (assigned) | **Full 8** (all) | R (proc) |
+| payable | – | – | R (company) | **Full 8** (all) | R (all) |
+| payment_request | – | – | R,C,W,**print** (company) | **Full 8** (all) | R (all) |
+| supplier/product/…(danh mục) | – | R (all) | R (all) | **Full 8** (all) | **R,C,W,D** (all) |
+| user/role/setting | – | – | – | – | – |
+| admin | full | full | – | – | – |
+
+*(R=read, C=create, W=write, D=delete, A=approve, print=in; scope trong ngoặc; Full 8 = read/create/write/delete/approve/cancel/print/export)*
+
+> `pur_manager` và `pur_admin` được seed qua `resync_role_perms()` — phản ánh `STD_ROLES` trong `seed.py` và **luôn ghi đè** trên DB đã tồn tại.
 
 ### 5.7 Lưu ý vận hành
 - Quyền được **cache ở trình duyệt (localStorage)** sau đăng nhập → **đổi phân quyền phải ĐĂNG NHẬP LẠI** mới có hiệu lực.
@@ -563,6 +580,7 @@ Khi ghi `received_date` cho 1 `po_delivery`, gọi **`po_service.recompute_effec
 | Version | Ngày | Nội dung | Người duyệt |
 |---|---|---|---|
 | v1.0 | 2026-07-08 | Bản LLD đầu tiên (39 bảng + RBAC) | ☐ chờ ký |
+| v1.1 | 2026-07-15 | Thêm `tab_push_subscription` (40 bảng); cập nhật RBAC `pur_manager`/`pur_admin` (resync); thêm `tab_setting` ghi chú mã hóa Fernet | ☐ chờ ký |
 
 > Mọi thay đổi cấu trúc bảng/quyền → ghi **Change Request** ở [change-log.md](change-log.md) + cập nhật tài liệu này.
 

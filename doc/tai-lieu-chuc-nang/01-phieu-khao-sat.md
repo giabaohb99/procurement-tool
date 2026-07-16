@@ -656,6 +656,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 8. Gỡ option YCKS khi dòng SP bị không duyệt (`_purge_yc_options`): hệ thống tự xóa các option Yêu cầu khảo sát (YCKS) đang tham chiếu dòng khảo sát SP không còn hợp lệ, tránh để option lỗi vẫn hiện hoặc chọn được trên form YCKS.
    - **Duyệt từng dòng** (`approve_lines`): nếu dòng SP bị đặt `line_approve = "Không duyệt"` (từ chối dứt khoát) → hệ thống **xóa cứng** mọi option YCKS đang tham chiếu dòng đó ngay sau khi lưu kết quả duyệt. (Các trạng thái tạm "Chờ duyệt" / "Thiếu thông tin" KHÔNG xóa cứng — option chỉ bị **ẩn tạm** qua `valid_options_of`, để nếu dòng được duyệt lại thì option vẫn còn.)
    - **Hủy cả phiếu** (`set_status` → `cancelled`): gỡ option YCKS của mọi dòng SP thuộc phiếu bị hủy.
+9. Thông báo và Web Push: mỗi sự kiện trong luồng phiếu tạo chuông trong app **và** đẩy **Web Push** (best-effort) tới thiết bị đã đăng ký của người nhận. Người nhận theo từng sự kiện: Gửi duyệt → người có quyền `survey:approve` (Quản lý/Admin TM). Duyệt phiếu → người tạo. Từ chối (`cancelled`) hoặc Trả lại (`rejected`) → người tạo.
 
 ## E. Quyền thao tác (RBAC)
 

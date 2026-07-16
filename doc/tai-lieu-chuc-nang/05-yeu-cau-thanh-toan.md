@@ -10,8 +10,9 @@ Ràng buộc cốt lõi: mỗi phiếu chỉ thuộc về một NCC và một lo
 
 ## Vai trò tham gia
 
-- Kế toán / Người tạo phiếu (`payment_request:create`, `payment_request:write`): khởi tạo phiếu từ màn Công nợ, chỉnh sửa khi Nháp, gửi duyệt, ghi nhận đã chi, đính kèm chứng từ.
-- TP/QL / Người duyệt (`payment_request:approve`): duyệt phiếu ở trạng thái Chờ duyệt.
+- Người tạo / nhân sự phụ trách (`payment_request:create`, `payment_request:write`): khởi tạo phiếu từ màn Công nợ, chỉnh sửa khi Nháp, gửi duyệt, đính kèm chứng từ. Quyền `payment_request:write` hiện tại được cấp cho **Quản lý thu mua** và **nhân viên được gán** (scope phù hợp).
+- TP/QL / Người duyệt (`payment_request:approve`): duyệt hoặc từ chối phiếu ở trạng thái Chờ duyệt.
+- Ghi nhận đã chi (`payment_request:write`, endpoint `/pay`): xác nhận tiền đã xuất, trừ công nợ tương ứng. Thao tác này yêu cầu cùng quyền `payment_request:write` — **Quản lý thu mua** và **nhân viên được gán**.
 - Người in (`payment_request:print`): mở trang in phiếu.
 
 ## Vòng đời trạng thái
@@ -26,6 +27,17 @@ Ràng buộc cốt lõi: mỗi phiếu chỉ thuộc về một NCC và một lo
 Chỉ trạng thái Nháp (`draft`) cho phép sửa nội dung phiếu và các dòng. Phiếu đã chi (`paid`) không sửa và không xóa được.
 
 Luồng chuyển trạng thái: `draft` -> `submitted` (Gửi duyệt) -> `approved` (Duyệt) -> `paid` (Ghi nhận đã chi).
+
+### Thông báo theo bước
+
+| Sự kiện | Người nhận thông báo |
+|---------|----------------------|
+| Gửi duyệt (`submitted`) | Người có quyền duyệt YCTT — `payment_request:approve` (Quản lý thu mua / Admin TM) |
+| Duyệt (`approved`) | Người tạo phiếu |
+| Từ chối (`cancelled`) | Người tạo phiếu |
+| Ghi nhận đã chi (`paid`) | Người tạo phiếu |
+
+Thông báo gửi qua chuông trong app (và Web Push nếu thiết bị đã đăng ký). Không gửi email cho workflow YCTT.
 
 ---
 
@@ -231,7 +243,7 @@ Entity: `payment_request`
 | Sửa nội dung phiếu và dòng | `payment_request:write` | `draft` |
 | Gửi duyệt | `payment_request:write` | `draft` |
 | Duyệt | `payment_request:approve` | `submitted` |
-| Ghi nhận đã chi | `payment_request:write` | `approved` |
+| Ghi nhận đã chi | `payment_request:write` | `approved`; thực hiện bởi Quản lý thu mua / nhân viên được gán |
 | Xóa | `payment_request:delete` | không phải `paid` |
 | Xóa nhiều (bulk) | `payment_request:delete` | không phải `paid` |
 | In phiếu | `payment_request:print` | mọi trạng thái |

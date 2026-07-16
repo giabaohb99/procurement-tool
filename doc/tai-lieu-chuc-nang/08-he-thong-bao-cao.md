@@ -404,21 +404,23 @@ Cung cấp cái nhìn tổng thể và phân tích đa chiều về hoạt độ
 
 | Chỉ tiêu | Nguồn |
 |----------|-------|
-| Số đơn mua hàng (`po_count`) | Đếm PO trong kỳ (theo `order_date`) |
-| Giá trị đặt hàng | Tổng `qty_order * price * (1 + vat/100)` trên toàn bộ dòng PO |
+| Số đơn mua hàng (`po_count`) | Đếm PO "đơn thật" trong kỳ (theo `order_date`) |
+| Giá trị đặt hàng | Tổng `qty_order * price * (1 + vat/100)` trên toàn bộ dòng PO đơn thật |
 | Công nợ còn phải trả | Tổng `remaining` từ bảng Công nợ (tách riêng hàng hóa / vận chuyển) |
 | Công nợ quá hạn | Công nợ chưa TT có `due_date` < ngày hôm nay |
 | Giá trị tồn kho | Tổng `value` từ bảng Tồn kho (`tab_inventory`) |
 
-**Đơn theo trạng thái**: đếm PO theo từng trạng thái (draft / submitted / approved / partial / received / completed / cancelled / rejected).
+"Đơn thật" = PO có trạng thái `approved`, `partial`, `received` hoặc `completed` (loại bỏ nháp, chờ duyệt, hủy, từ chối và bản ghi đã xóa mềm).
 
-**Tiến độ giao hàng**: số lần giao đúng hạn vs. trễ (theo `diff_regulated < 0`). Danh sách tối đa 20 lần giao trễ gần nhất kèm thông tin: mã PO, sản phẩm, ngày hứa, ngày nhận, số ngày lệch.
+**Đơn theo trạng thái**: đếm PO đơn thật theo từng trạng thái (approved / partial / received / completed và các trạng thái khác có dữ liệu > 0).
 
-**Chi phí mua theo tháng**: biểu đồ cột 12 tháng (từ bảng Công nợ `tab_payable`, trường `incur_date`). Bấm vào cột tháng mở popup "Chi phí theo ngày" với biểu đồ đường và bảng chi tiết (hàng hóa / vận chuyển / tổng).
+**Tiến độ giao hàng**: số lần giao đúng hạn vs. trễ (theo `diff_regulated < 0`). Hiển thị thanh tiến độ và tỷ lệ phần trăm đúng hạn.
+
+**Chi phí mua theo tháng**: biểu đồ cột 12 tháng. Bấm vào cột tháng mở popup "Chi phí theo ngày" với biểu đồ đường và bảng chi tiết (hàng hóa / vận chuyển / tổng).
 
 ### Tab NCC (trễ giao)
 
-Dữ liệu từ snapshot `matrix.supplier`. Ma trận: NCC x tháng.
+Dữ liệu từ snapshot `matrix.supplier`. Ma trận: NCC x tháng. Loại bỏ các dòng không có tên NCC (rỗng hoặc "(Không rõ)").
 
 | Cột | Nội dung |
 |-----|---------|
@@ -429,23 +431,23 @@ Dữ liệu từ snapshot `matrix.supplier`. Ma trận: NCC x tháng.
 
 Dòng tô đỏ nhẹ khi `rate > 30%`. Chọn kỳ "Xem theo": cả năm hoặc theo tháng cụ thể.
 
-### Tab Phân loại VTBB/NL
+### Tab Phân loại vật tư bao bì / nguyên liệu
 
-Dữ liệu từ snapshot `matrix.item_group`. Ma trận: phân loại x tháng.
+Dữ liệu từ snapshot `matrix.item_group`. Ma trận: phân loại x tháng. Loại bỏ các dòng không có phân loại (rỗng hoặc "(Không rõ)").
 
 | Cột | Nội dung |
 |-----|---------|
-| Loại VTBB/NL | `item_group` của dòng PO |
+| Loại vật tư bao bì / nguyên liệu | `item_group` của dòng PO |
 | Số lần mua (`trans`) | Số lần giao hàng |
 | Tổng chi phí mua (`cost`) | Tổng `qty_received * price * (1 + vat/100)` |
 
-### Tab NSPT
+### Tab Nhân sự phụ trách
 
-Dữ liệu từ snapshot `matrix.nspt`. Ma trận: NSPT x tháng.
+Dữ liệu từ snapshot `matrix.nspt`. Ma trận: nhân sự phụ trách x tháng. Loại bỏ các dòng không có NSPT (rỗng hoặc "(Không rõ)").
 
 | Cột | Nội dung |
 |-----|---------|
-| NSPT | Tên nhân sự phụ trách (`po.nspt`) |
+| Nhân sự phụ trách | Tên nhân sự phụ trách (`po.nspt`) |
 | Số đơn (`orders`) | Số lần giao hàng phụ trách |
 | Trễ quy định (`late`) | `diff_regulated < 0` |
 | Đúng hạn (`ontime`) | `diff_regulated == 0` |
@@ -454,7 +456,7 @@ Dữ liệu từ snapshot `matrix.nspt`. Ma trận: NSPT x tháng.
 
 ### Tab Bộ phận (đơn gấp)
 
-Dữ liệu từ snapshot `matrix.department`. Ma trận: phòng ban x tháng.
+Dữ liệu từ snapshot `matrix.department`. Ma trận: phòng ban x tháng. Loại bỏ các dòng không có phòng ban (trường `department` trống).
 
 | Cột | Nội dung |
 |-----|---------|
@@ -477,17 +479,53 @@ Dòng tô đỏ nhẹ khi `rate > 30%`.
 | Chi phí vận chuyển (`ship_cost`) | Tổng `shipping_amount` |
 | Tỷ lệ (`rate`) | `ship_cost / order_value * 100` (%) |
 
-**Bảng chi tiết** (tối đa 300 dòng đầu): mỗi dòng = một lần giao hàng có phí vận chuyển, gồm các cột: Đơn vị VC, Tháng, Mã VTBB/NL, Mã MISA, Số HĐ, Ngày nhận, SL đặt, SL nhận, Thành tiền ĐH, Thành tiền VC, Tỷ lệ.
+**Bảng chi tiết**: mỗi dòng = một lần giao hàng có phí vận chuyển. Phân trang phía server, 50 dòng/trang. Có bộ lọc theo đơn vị vận chuyển và tháng. Các cột: Đơn vị vận chuyển, Tháng, Mã vật tư bao bì / nguyên liệu, Mã MISA, Số hóa đơn, Ngày nhận, Số lượng đặt, Số lượng nhận, Thành tiền đơn hàng, Thành tiền vận chuyển, Tỷ lệ.
+
+### Tab Yêu cầu mua hàng (theo phòng ban)
+
+Dữ liệu tính realtime từ `/api/reports/request-matrix?kind=pyc`. Ma trận: phòng ban × tháng. Chỉ hiển thị với người dùng có quyền `purchase_request:read`.
+
+| Cột | Nội dung |
+|-----|---------|
+| Phòng ban | Phòng ban yêu cầu |
+| Tổng | Tổng số phiếu YCMH |
+| Nháp | Đang nháp |
+| Chờ duyệt | Đã gửi, chờ TBP duyệt |
+| Đã duyệt | TBP đã duyệt |
+| Đang xử lý | Đang trong quy trình mua hàng |
+| Hoàn tất | Hoàn thành |
+| Từ chối | Bị từ chối |
+| Đã hủy | Đã hủy |
+
+### Tab Yêu cầu khảo sát (theo phòng ban)
+
+Dữ liệu tính realtime từ `/api/reports/request-matrix?kind=ycks`. Ma trận: phòng ban × tháng. Chỉ hiển thị với người dùng có quyền `survey_request:read`.
+
+| Cột | Nội dung |
+|-----|---------|
+| Phòng ban | Phòng ban yêu cầu |
+| Tổng | Tổng số phiếu YCKS |
+| Nháp | Đang nháp |
+| Chờ duyệt | Đã gửi, chờ duyệt |
+| Đang khảo sát | Đang trong quy trình khảo sát |
+| Đã khảo sát | Khảo sát xong, chờ chốt |
+| Đã tạo yêu cầu mua hàng | Đã chốt và tạo PYC |
+| Hoàn tất | Hoàn thành |
+| Đã hủy | Đã hủy |
 
 ### Tab Tồn kho
 
-Tính tổng từ bảng `tab_inventory` theo công ty.
+> Tạm ẩn trong phiên bản hiện tại (tab không hiển thị trên UI). Dữ liệu tồn kho được trình bày tóm tắt trong thẻ số liệu Tab Tổng quan.
 
-| Chỉ tiêu | Nội dung |
-|----------|---------|
-| Tổng giá trị tồn | Tổng `value` toàn bộ dòng tồn kho |
-| Theo kho | Tổng `value` gom theo `warehouse_code` (biểu đồ thanh ngang) |
-| Top sản phẩm | 20 dòng tồn giá trị cao nhất: mã SP, tên, kho, tồn, đơn giá BQ, giá trị |
+---
+
+### Tính năng giao diện & mobile
+
+| Tính năng | Mô tả |
+|---|---|
+| Tab cuộn ngang | Thanh tab sử dụng `overflow-x: auto` — cuộn ngang khi quá nhiều tab không vừa màn hình nhỏ |
+| Cột đầu ghim (sticky) | Cột STT (`#`) và cột tên ghim bên trái (`position: sticky`) khi cuộn bảng ngang — cột tên tối đa `nameMinWidth` trên desktop, tối đa 45vw trên mobile |
+| Bộ lọc wrap | Khu bộ lọc trên sử dụng `flexWrap: wrap` — tự xuống hàng trên màn hình hẹp |
 
 ---
 
