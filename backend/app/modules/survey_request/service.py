@@ -250,6 +250,10 @@ def _see_all_lines(profile: dict, s, user) -> bool:
     quản lý theo phạm vi dept·company·all. (Đồng bộ với purchase_request._see_all_items.)"""
     if getattr(user, "id", 0) == getattr(s, "created_by", None):
         return True
+    # Người YÊU CẦU (dù admin tạo giùm) cũng thấy HẾT dòng của phiếu mình
+    rid = getattr(user, "employee_id", 0) or 0
+    if rid and getattr(s, "requester_id", 0) == rid:
+        return True
     for g in profile.get("grants", []):
         p = g["perms"].get("survey_request")
         if not p:

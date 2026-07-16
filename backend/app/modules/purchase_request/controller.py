@@ -102,6 +102,10 @@ def _see_all_items(profile: dict, pr, user) -> bool:
     Nhân viên thu mua (được giao) → chỉ thấy dòng phân bổ cho mình."""
     if pr.created_by == user.id:
         return True
+    # Người YÊU CẦU (dù admin tạo giùm) cũng thấy mọi dòng của phiếu mình
+    rid = getattr(user, "employee_id", 0) or 0
+    if rid and getattr(pr, "requester_id", 0) == rid:
+        return True
     for g in profile.get("grants", []):
         p = g["perms"].get("purchase_request")
         if not p:
