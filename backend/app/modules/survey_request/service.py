@@ -53,8 +53,13 @@ def valid_options_of(db: Session, line_id: int):
 def _gen_code(db: Session) -> str:
     ddmmyy = datetime.now().strftime("%d%m%y")
     prefix = f"YCKS{ddmmyy}"
-    n = db.query(SurveyRequest).filter(SurveyRequest.code.like(prefix + "%")).count()
-    return f"{prefix}{n + 1:02d}"
+    # Lấy MAX hậu tố hiện có + 1 (không dùng count để tránh trùng khi có khoảng trống do xóa)
+    mx = 0
+    for (c,) in db.query(SurveyRequest.code).filter(SurveyRequest.code.like(prefix + "%")).all():
+        suf = (c or "")[len(prefix):]
+        if suf.isdigit():
+            mx = max(mx, int(suf))
+    return f"{prefix}{mx + 1:02d}"
 
 
 def _save_lines(db: Session, sid: int, lines, user_id: int) -> list[int]:
