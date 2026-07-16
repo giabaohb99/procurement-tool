@@ -56,6 +56,14 @@ def _can_edit_own(db, s, user) -> bool:
     return s.created_by == user.id or user_has_permission(db, user, "survey_request", "write")
 
 
+_SR_LOCKED = ("cancelled", "done")   # Đã từ chối / Hoàn thành → khóa, KHÔNG cập nhật (kể cả QL/Admin)
+
+
+def _ensure_sr_editable(s):
+    if s.status in _SR_LOCKED:
+        raise HTTPException(400, "Phiếu đã bị từ chối/hoàn thành — không thể cập nhật")
+
+
 def _notify(db, users, title, body, link, creator_id, background_tasks=None):
     from app.modules.notification.model import Notification
     seen = set()
@@ -241,6 +249,7 @@ def cancel_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Ses
 def set_line_assignee_(sid: int, line_id: int, data: dict, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
                        user=Depends(require("survey_request", "process"))):
     """Gán/đổi NSTM phụ trách 1 dòng — CHỈ thu mua side (NSTM/QL/Admin TM). Người YC không được. Body: {assignee: mã NV}."""
+    _ensure_sr_editable(service.get_sr(db, sid))
     from .model import SurveyRequestLine
     ln = db.query(SurveyRequestLine).filter(SurveyRequestLine.id == line_id,
                                             SurveyRequestLine.survey_request_id == sid).first()
@@ -267,7 +276,8 @@ def set_line_assignee_(sid: int, line_id: int, data: dict, background_tasks: Bac
 @router.patch("/{sid}/lines/{line_id}/status")
 def set_line_status_(sid: int, line_id: int, data: dict, db: Session = Depends(get_db),
                      user=Depends(require("survey_request", "write"))):
-    """Đổi Tình trạng dòng (is_completed). Hoạt động ở mọi trạng thái phiếu. Body: {is_completed: bool}."""
+    """Đổi Tình trạng dòng (is_completed). Body: {is_completed: bool}. Chặn khi phiếu đã từ chối/hoàn thành."""
+    _ensure_sr_editable(service.get_sr(db, sid))
     ln = service.get_line(db, sid, line_id)
     ln.is_completed = bool(data.get("is_completed"))
     ln.updated_by = user.id

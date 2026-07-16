@@ -157,6 +157,8 @@ def approve_lines(db: Session, sid: int, data, user_id: int) -> Survey:
     """Quản lý/Admin duyệt TỪNG dòng (cả 2 bảng) khi phiếu đã gửi duyệt.
     Dòng SP chuyển sang KHÔNG duyệt -> gỡ mọi option YCKS đang tham chiếu dòng đó."""
     s = get_survey(db, sid)
+    if s.status in ("cancelled", "rejected"):
+        raise HTTPException(400, "Phiếu đã bị từ chối/trả lại — không thể duyệt dòng")
     sup = {r.id: r for r in supplier_lines_of(db, sid)}
     prod = {r.id: r for r in product_lines_of(db, sid)}
     for it in data.supplier_lines:

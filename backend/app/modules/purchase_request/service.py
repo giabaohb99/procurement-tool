@@ -102,6 +102,8 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
 
 def update_item_status(db: Session, pid: int, data: ItemStatusIn, user_id: int, emp_code: str, is_manager: bool) -> PurchaseRequest:
     pr = get_pr(db, pid)
+    if pr.status in ("cancelled", "completed"):
+        raise HTTPException(400, "Phiếu đã bị từ chối/hoàn thành — không thể cập nhật")
     rows = {i.id: i for i in items_of(db, pid)}
     for it in data.items:
         row = rows.get(it.id)
