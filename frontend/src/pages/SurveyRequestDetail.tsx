@@ -527,7 +527,7 @@ export default function SurveyRequestDetail() {
             style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
             onClick={deleteSv}
           >
-            <i className="ti ti-trash" />Xóa
+            <i className="ti ti-trash" />Xóa phiếu
           </button>
         )}
       </div>
