@@ -535,10 +535,10 @@ def create_prs(db: Session, sid: int, user_id: int):
 
 
 def finalize_sr(db: Session, sid: int, user_id: int) -> SurveyRequest:
-    """Admin/QL chuyển Hoàn thành (dừng hẳn). pr_created → done."""
+    """Admin/QL chuyển Hoàn thành (dừng hẳn). Cho phép từ 'Đã khảo sát' hoặc 'Đã tạo YCMH'."""
     s = get_sr(db, sid)
-    if s.status != "pr_created":
-        raise HTTPException(400, "Chỉ hoàn thành phiếu đã tạo Yêu cầu mua hàng")
+    if s.status not in ("survey_done", "pr_created"):
+        raise HTTPException(400, "Chỉ hoàn thành phiếu ở trạng thái Đã khảo sát hoặc Đã tạo Yêu cầu mua hàng")
     return set_status(db, sid, "done", user_id)
 
 

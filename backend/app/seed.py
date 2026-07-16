@@ -296,6 +296,28 @@ def resync_role_perms(db, code: str, perms: dict):
     db.commit()
 
 
+def sync_requester_ids(db):
+    """Đồng bộ `requester_id` (id nhân sự người yêu cầu) theo TÊN cho Yêu cầu khảo sát + Yêu cầu
+    mua hàng đang bỏ trống. Idempotent: chỉ điền dòng requester_id=0/None, khớp Employee.full_name.
+    (Chạy sau mỗi lần seed/sync data để không mất liên kết người yêu cầu.)"""
+    from app.modules.survey_request.model import SurveyRequest
+    from app.modules.purchase_request.model import PurchaseRequest
+    by_name = {}
+    for e in db.query(Employee).order_by(Employee.id).all():   # trùng tên → lấy id nhỏ nhất
+        by_name.setdefault((e.full_name or "").strip(), e.id)
+    total = 0
+    for Model in (SurveyRequest, PurchaseRequest):
+        rows = db.query(Model).filter((Model.requester_id == 0) | (Model.requester_id.is_(None))).all()
+        for r in rows:
+            eid = by_name.get((r.requester or "").strip())
+            if eid:
+                r.requester_id = eid
+                total += 1
+    db.commit()
+    if total:
+        print(f"Đồng bộ requester_id cho {total} phiếu (YCKS + YCMH).")
+
+
 def cleanup_legacy_staff_role(db):
     """Gộp vai trò legacy 'Nhân viên' (code STAFF) vào 'Nhân sự (cơ bản)' (code employee) rồi XÓA.
     Idempotent: chỉ chạy khi vẫn còn vai trò STAFF."""
@@ -524,6 +546,9 @@ def run():
         # Gộp vai trò 'Nhân viên' (STAFF/staff, kể cả demo — MariaDB không phân biệt hoa/thường)
         # vào 'Nhân sự (cơ bản)' rồi xóa. CHẠY SAU seed_demo_accounts để dọn cả role demo vừa tạo.
         cleanup_legacy_staff_role(db)
+
+        # Đồng bộ requester_id (người yêu cầu → id nhân sự) cho YCKS/YCMH còn bỏ trống
+        sync_requester_ids(db)
 
         # Cập nhật hình thức thanh toán "Công nợ 30 ngày" cho toàn bộ nhà cung cấp hiện có
         n_updated = db.query(Supplier).update({"payment_terms": "Công nợ 30 ngày"}, synchronize_session=False)

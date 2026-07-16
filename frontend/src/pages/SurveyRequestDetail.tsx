@@ -509,8 +509,8 @@ export default function SurveyRequestDetail() {
           </button>
         )}
 
-        {/* Nút Chuyển Hoàn thành (Quản lý/Admin TM) */}
-        {!isNew && sv.status === 'pr_created' && canFinalize && (
+        {/* Nút Chuyển Hoàn thành (Quản lý/Admin TM) — từ Đã khảo sát hoặc Đã tạo YCMH */}
+        {!isNew && ['survey_done', 'pr_created'].includes(sv.status) && canFinalize && (
           <button className="btn" onClick={finalizeSr}>
             <i className="ti ti-flag-check" />Chuyển Hoàn thành
           </button>
