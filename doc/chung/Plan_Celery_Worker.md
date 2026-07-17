@@ -44,6 +44,38 @@ Nền tảng **chạy ngầm + theo lịch** cho procurement-tool: nhắc chủ 
 
 ---
 
+## Bổ sung — rà thêm (đặc thù mua hàng, dễ quên)
+
+### B1. Nhắc / leo thang theo SLA (workflow bị TREO) ⭐
+- [ ] Phiếu **chờ duyệt** (PYC / YCKS / YCTT) quá **X ngày** chưa xử lý → nhắc người duyệt; (tùy) **leo thang** lên cấp trên
+- [ ] YCKS đã duyệt nhưng NSTM **chưa khảo sát** quá lâu (đang xử lý, chưa có phương án) → nhắc NSTM
+- [ ] ĐMH/PYC còn dòng **"Chưa đặt hàng"** tồn quá lâu sau khi duyệt → nhắc người phụ trách
+
+### B2. Nhắc theo NGÀY CẦN HÀNG / giao hàng ⭐ (đặc thù, quan trọng)
+- [ ] PYC/ĐMH **sắp tới `need_date` / `required_date`** mà **chưa nhận đủ** (`qty_received < qty`) → nhắc
+- [ ] **Quá** ngày cần hàng vẫn chưa nhận đủ → cảnh báo **trễ** (không chỉ trễ theo `expected_date` lần giao)
+
+### B3. Nhắc THANH TOÁN
+- [ ] YCTT `approved` nhưng **chưa `paid`** quá lâu → nhắc QLTM ghi nhận chi
+- [ ] Công nợ (payable) **sắp tới hạn / quá hạn** trả NCC → nhắc chủ động theo lịch
+
+### B4. Email log — RETRY
+- [ ] Quét `tab_email_log` status `pending` / `failed` → **gửi lại** (khi `email_enabled`), giới hạn số lần retry
+
+### B5. Sao lưu DB tự động (ops)
+- [ ] Beat job **`mariadb-dump`** hằng đêm + **xoay vòng** giữ N bản; (tùy) đẩy offsite (R2)
+
+### B6. Xuất Excel báo cáo BẤT ĐỒNG BỘ (gắn issue #62)
+- [ ] Báo cáo lớn → worker **sinh file nền** → xong thì thông báo/cho tải (tránh timeout request)
+
+### B7. Precompute Dashboard / dọn dẹp (tùy chọn)
+- [ ] Precompute **Dashboard overview** + KPI theo lịch (giống report snapshot) → mở trang nhanh
+- [ ] Quét **push subscription chết** định kỳ (ngoài việc xóa khi gửi lỗi 404/410)
+
+> Nhiều mục B1–B3 là **mở rộng của Phase 2** (cùng cơ chế beat quét → sinh thông báo + push), chỉ khác tiêu chí quét. Nên gộp chung 1 khung "job cảnh báo theo lịch" rồi thêm dần từng loại tiêu chí.
+
+---
+
 ## Lưu ý kỹ thuật cần nhớ
 - **Timezone**: cron theo `Asia/Ho_Chi_Minh` (không để UTC lệch 7h).
 - **Idempotent**: job cảnh báo phải chống tạo thông báo trùng khi chạy lại (đánh dấu "đã báo hôm nay").
