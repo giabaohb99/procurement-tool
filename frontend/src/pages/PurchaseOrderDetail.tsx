@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { fmtDateTime } from '../utils/datetime'
@@ -30,13 +30,38 @@ const PG_COLOR: Record<string, string> = {
 
 const emptyItem = {
   product_code: '', product_name: '', invoice_name: '', item_group: '', spec: '', fg_code: '', fg_name: '',
-  supplier_ready: false, required_date: '', unit: '',
+  supplier_ready: true, required_date: '', unit: '',   // NCC có sẵn hàng — mặc định check cho dòng mới
   qty_request: 0, qty_order: 0, price: 0, vat: 8, warehouse_code: '', note: '', deliveries: [],
 }
 const emptyDelivery = {
   delivery_no: 1, warehouse_code: '', carrier_code: '', carrier_name: '', ship_qty: 0, ship_unit: '',
   received_qty: 0, promised_date: '', expected_date: '', received_date: '', invoice_no: '',
   shipping_unit_price: 0, shipping_amount: 0, qc_result: '', progress_note: '',
+}
+
+// Số ngày giữa 2 mốc "YYYY-MM-DD" (a − b); null nếu thiếu/không hợp lệ
+function daysBetween(a: string, b: string): number | null {
+  if (!a || !b) return null
+  const da = new Date(a + 'T00:00:00').getTime(), db = new Date(b + 'T00:00:00').getTime()
+  if (isNaN(da) || isNaN(db)) return null
+  return Math.round((da - db) / 86400000)
+}
+
+// Đơn gấp = có ≥1 dòng mà thời gian giao (ngày yêu cầu − ngày đặt) NHỎ HƠN số ngày quy định của phân loại VTBB/NL
+// (mốc 'sẵn hàng' std / 'không sẵn' stdUn — chọn theo checkbox NCC có sẵn hàng).
+function computeUrgent(items: any[], orderDate: string,
+  groupMap: Record<string, { std: number; stdUn: number }>): boolean {
+  if (!orderDate) return false
+  for (const it of items || []) {
+    const g = groupMap[it.item_group]
+    if (!g) continue
+    const std = it.supplier_ready ? g.std : g.stdUn
+    if (std <= 0) continue
+    const lead = daysBetween(it.required_date, orderDate)
+    if (lead === null) continue
+    if (lead < std) return true
+  }
+  return false
 }
 
 export default function PurchaseOrderDetail() {
@@ -56,6 +81,7 @@ export default function PurchaseOrderDetail() {
   const [units, setUnits] = useState<string[]>([])
   const [warehouses, setWarehouses] = useState<any[]>([])
   const [prList, setPrList] = useState<any[]>([])
+  const [itemGroups, setItemGroups] = useState<any[]>([])   // danh mục phân loại VTBB/NL (có ngày QĐ) để tự tính đơn gấp
   const [employees, setEmployees] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [files, setFiles] = useState<any[]>([])
@@ -76,6 +102,7 @@ export default function PurchaseOrderDetail() {
     api.get('/api/units', { params: { page_size: 300 } }).then((r) => setUnits(r.data.data.items.map((x: any) => x.name)))
     api.get('/api/warehouses', { params: { page_size: 300 } }).then((r) => setWarehouses(r.data.data.items))
     api.get('/api/purchase-requests', { params: { page_size: 1000 } }).then((r) => setPrList(r.data.data.items))
+    api.get('/api/item-groups', { params: { page_size: 1000 } }).then((r) => setItemGroups(r.data.data.items)).catch(() => {})
     // Danh sách nhân sự cho dropdown NSPT phụ trách (admin); user thường có thể bị 403 → bỏ qua
     api.get('/api/employees', { params: { page_size: 1000 } }).then((r) => setEmployees(r.data.data.items)).catch(() => {})
   }, [])
@@ -139,19 +166,40 @@ export default function PurchaseOrderDetail() {
   const canPickNspt = can('purchase_order', 'approve')
   const employeeOptions = employees.map((e) => ({ value: e.full_name, label: e.full_name }))
 
-  const setH = (k: string, v: any) => setPo((s: any) => ({ ...s, [k]: v }))
+  // Map tra ngày QĐ theo tên phân loại (parse số từ chuỗi; 'không sẵn' rỗng thì fallback về 'sẵn hàng' — khớp backend)
+  const groupMap = useMemo(() => {
+    const toInt = (s: any) => parseInt(String(s ?? '').replace(/[^\d]/g, ''), 10) || 0
+    const m: Record<string, { std: number; stdUn: number }> = {}
+    for (const g of itemGroups) { const std = toInt(g.std_days); m[g.name] = { std, stdUn: toInt(g.std_days_unavail) || std } }
+    return m
+  }, [itemGroups])
+  // Tự tính lại cờ Đơn gấp khi dữ liệu nguồn (ngày đặt / dòng hàng) đổi. KHÔNG chạy lúc mở đơn (loadAll không qua đây) → giữ đè tay.
+  const recalcUrgent = (next: any) => {
+    if (Object.keys(groupMap).length === 0) return next   // chưa nạp danh mục → chưa tính
+    const u = computeUrgent(next.items || [], next.order_date, groupMap)
+    return u === !!next.is_urgent ? next : { ...next, is_urgent: u }
+  }
+  // Đơn MỚI: tự tính cờ gấp khi có đủ dữ liệu (kể cả tạo từ YCMH, sau khi danh mục QĐ nạp xong). Đơn cũ dùng setter khi user sửa.
+  useEffect(() => {
+    if (!isNew || Object.keys(groupMap).length === 0) return
+    setPo((s: any) => { const u = computeUrgent(s.items || [], s.order_date, groupMap); return s.is_urgent === u ? s : { ...s, is_urgent: u } })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, groupMap, po.order_date, po.items])
+
+  const setH = (k: string, v: any) =>
+    setPo((s: any) => (k === 'order_date' ? recalcUrgent({ ...s, order_date: v }) : { ...s, [k]: v }))
   const items = po.items || []
   const setItem = (i: number, patch: any) =>
-    setPo((s: any) => ({ ...s, items: s.items.map((it: any, idx: number) => idx === i ? { ...it, ...patch } : it) }))
-  const addItems = (n = 1) => setPo((s: any) => ({ ...s, items: [...(s.items || []), ...Array.from({ length: n }, () => ({ ...emptyItem }))] }))
-  const delItem = (i: number) => setPo((s: any) => ({ ...s, items: s.items.filter((_: any, idx: number) => idx !== i) }))
+    setPo((s: any) => recalcUrgent({ ...s, items: s.items.map((it: any, idx: number) => idx === i ? { ...it, ...patch } : it) }))
+  const addItems = (n = 1) => setPo((s: any) => recalcUrgent({ ...s, items: [...(s.items || []), ...Array.from({ length: n }, () => ({ ...emptyItem }))] }))
+  const delItem = (i: number) => setPo((s: any) => recalcUrgent({ ...s, items: s.items.filter((_: any, idx: number) => idx !== i) }))
   const dupItem = (i: number) => setPo((s: any) => {
     const src = s.items[i]
     // Dòng mới: reset tiến độ + tiền + lần giao (chưa lưu nên chưa có id/công nợ)
     const copy = { ...src, id: undefined, qty_received: 0, qty_remaining: 0, line_status: '', deliveries: [],
       progress_status: 'Chưa đặt hàng', pause_reason: '', status_before_pause: '',
       goods_total: 0, paid_total: 0, remaining_total: 0 }
-    const items = [...s.items]; items.splice(i + 1, 0, copy); return { ...s, items }
+    const items = [...s.items]; items.splice(i + 1, 0, copy); return recalcUrgent({ ...s, items })
   })
 
   // Thành tiền đơn hàng = SL đặt × đơn giá × (1+VAT) — cập nhật ngay khi nhập SL/đơn giá

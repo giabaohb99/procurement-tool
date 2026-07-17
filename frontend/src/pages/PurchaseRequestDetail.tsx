@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { fmtDateTime } from '../utils/datetime'
@@ -27,6 +27,28 @@ const LS_COLOR: Record<string, string> = {
 const emptyItem = {
   product_code: '', product_name: '', item_group: '', group_desc: '', qty: 0, unit: '',
   price: 0, warehouse: '', required_date: '', assignee: '', line_status: 'Chưa đặt hàng', progress_note: '', note: '',
+}
+
+// Số ngày giữa 2 mốc "YYYY-MM-DD" (a − b); null nếu thiếu/không hợp lệ
+function daysBetween(a: string, b: string): number | null {
+  if (!a || !b) return null
+  const da = new Date(a + 'T00:00:00').getTime(), db = new Date(b + 'T00:00:00').getTime()
+  if (isNaN(da) || isNaN(db)) return null
+  return Math.round((da - db) / 86400000)
+}
+
+// Đơn gấp = có ≥1 dòng mà thời gian chuẩn bị (ngày cần hàng − ngày tạo phiếu) NHỎ HƠN số ngày QĐ của phân loại VTBB/NL.
+// YCMH không có checkbox 'NCC có sẵn hàng' -> luôn dùng mốc 'có sẵn' (std_days).
+function computeUrgentPR(items: any[], baseDate: string, stdMap: Record<string, number>): boolean {
+  if (!baseDate) return false
+  for (const it of items || []) {
+    const std = stdMap[it.item_group]
+    if (!std || std <= 0) continue
+    const lead = daysBetween(it.required_date, baseDate)
+    if (lead === null) continue
+    if (lead < std) return true
+  }
+  return false
 }
 
 export default function PurchaseRequestDetail() {
@@ -158,15 +180,36 @@ export default function PurchaseRequestDetail() {
   // Nhãn hiển thị "MÃ - Tên" cho kho đã lưu (giá trị lưu vẫn là name); fallback name nếu không tìm thấy
   const whLabel = (name: string) => { const w = warehouses.find(w => w.name === name); return w ? `${w.code} - ${w.name}` : name }
 
-  const setH = (k: string, v: any) => setPr((s: any) => ({ ...s, [k]: v }))
+  // Map tên phân loại -> số ngày QĐ khi NCC CÓ sẵn hàng (parse số từ chuỗi)
+  const stdMap = useMemo(() => {
+    const toInt = (s: any) => parseInt(String(s ?? '').replace(/[^\d]/g, ''), 10) || 0
+    const m: Record<string, number> = {}
+    for (const g of itemGroups) m[g.name] = toInt(g.std_days)
+    return m
+  }, [itemGroups])
+  // Tự tính lại cờ Đơn gấp khi dữ liệu nguồn (ngày tạo / dòng hàng) đổi. KHÔNG chạy lúc mở phiếu (loadAll không qua đây) -> giữ đè tay.
+  const recalcUrgent = (next: any) => {
+    if (Object.keys(stdMap).length === 0) return next
+    const u = computeUrgentPR(next.items || [], next.request_date, stdMap)
+    return u === !!next.is_urgent ? next : { ...next, is_urgent: u }
+  }
+  // Phiếu MỚI: tự tính cờ gấp khi có đủ dữ liệu (kể cả tạo từ khảo sát), sau khi danh mục QĐ nạp xong.
+  useEffect(() => {
+    if (!isNew || Object.keys(stdMap).length === 0) return
+    setPr((s: any) => { const u = computeUrgentPR(s.items || [], s.request_date, stdMap); return s.is_urgent === u ? s : { ...s, is_urgent: u } })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, stdMap, pr.request_date, pr.items])
+
+  const setH = (k: string, v: any) =>
+    setPr((s: any) => (k === 'request_date' ? recalcUrgent({ ...s, request_date: v }) : { ...s, [k]: v }))
   const items = pr.items || []
   const setItem = (i: number, k: string, v: any) =>
-    setPr((s: any) => ({ ...s, items: s.items.map((it: any, idx: number) => idx === i ? { ...it, [k]: v } : it) }))
-  const addItems = (n = 1) => setPr((s: any) => ({ ...s, items: [...(s.items || []), ...Array.from({ length: n }, () => ({ ...emptyItem }))] }))
-  const delItem = (i: number) => setPr((s: any) => ({ ...s, items: s.items.filter((_: any, idx: number) => idx !== i) }))
+    setPr((s: any) => recalcUrgent({ ...s, items: s.items.map((it: any, idx: number) => idx === i ? { ...it, [k]: v } : it) }))
+  const addItems = (n = 1) => setPr((s: any) => recalcUrgent({ ...s, items: [...(s.items || []), ...Array.from({ length: n }, () => ({ ...emptyItem }))] }))
+  const delItem = (i: number) => setPr((s: any) => recalcUrgent({ ...s, items: s.items.filter((_: any, idx: number) => idx !== i) }))
   const copyItem = (i: number) => setPr((s: any) => {
     const src = { ...s.items[i] }; delete src.id
-    const arr = [...s.items]; arr.splice(i + 1, 0, src); return { ...s, items: arr }
+    const arr = [...s.items]; arr.splice(i + 1, 0, src); return recalcUrgent({ ...s, items: arr })
   })
 
   // Đổi NSTM phụ trách ngay trên bảng ngoài (chỉ người có quyền duyệt). Phiếu đã lưu -> auto-lưu; phiếu nháp -> theo nút Lưu.
@@ -219,7 +262,7 @@ export default function PurchaseRequestDetail() {
   // Chọn SP từ ô tìm kiếm (nhận cả object) → tự điền tên/ĐVT/phân loại
   const applyProduct = (i: number, prod: any) => {
     if (!prod) { setItem(i, 'product_code', ''); return }
-    setPr((s: any) => ({
+    setPr((s: any) => recalcUrgent({
       ...s,
       items: s.items.map((it: any, idx: number) => idx === i ? {
         ...it, product_code: prod.code, product_name: prod.name,
