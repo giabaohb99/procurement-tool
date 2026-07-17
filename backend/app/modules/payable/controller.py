@@ -21,7 +21,7 @@ def _out(p: Payable) -> dict:
         "id": p.id, "company_id": p.company_id, "supplier_code": p.supplier_code,
         "supplier_name": p.supplier_name, "source_type": p.source_type,
         "po_id": p.po_id, "po_code": p.po_code, "invoice_no": p.invoice_no,
-        "incur_date": p.incur_date, "due_date": p.due_date,
+        "incur_date": p.incur_date, "due_date": p.due_date, "created_at": p.created_at,
         "amount": float(p.amount or 0), "vat": float(p.vat or 0), "total": float(p.total or 0),
         "paid_amount": float(p.paid_amount or 0), "remaining": float(p.remaining or 0),
         "status": p.status, "aging": service.aging_bucket(p.due_date),

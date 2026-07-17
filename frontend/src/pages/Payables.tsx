@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
 import Pagination from '../components/Pagination'
+import { fmtDateTime } from '../utils/datetime'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const AGING_CLS: Record<string, string> = { 'Chưa đến hạn': 'gray', '1-30': 'warn', '31-60': 'warn', '61-90': 'err', '>90': 'err' }
@@ -186,7 +187,7 @@ export default function Payables() {
                   <td>{companyName(r.company_id)}</td>
                   <td>{r.po_code}</td>
                   <td>{r.invoice_no ? r.invoice_no : <span style={{ color: 'var(--red)', fontSize: 12 }}>chưa có HĐ</span>}</td>
-                  <td>{r.incur_date}</td><td>{r.due_date}</td><td>{agingBadge(r.aging)}</td>
+                  <td>{fmtDateTime(r.created_at) || r.incur_date}</td><td>{r.due_date}</td><td>{agingBadge(r.aging)}</td>
                   <td style={{ textAlign: 'right' }}>{fmt(r.total)}</td>
                   <td style={{ textAlign: 'right' }}>{fmt(r.paid_amount)}</td>
                   <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(r.remaining)}</td>

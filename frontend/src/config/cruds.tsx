@@ -1,5 +1,6 @@
 import { FilterField } from '../components/FilterBar'
 import DepartmentMembers from '../components/DepartmentMembers'
+import { fmtDateTime } from '../utils/datetime'
 
 export type FieldDef = {
   key: string
@@ -260,7 +261,7 @@ export const cruds: Record<string, CrudConfig> = {
     rowStyle: (r: any) => r.has_cancelled_line ? { background: '#fdecea' } : undefined,   // có dòng "Hủy đơn" → tô đỏ
     columns: [
       { key: 'code', label: 'Mã PYC' },
-      { key: 'request_date', label: 'Ngày tạo' },
+      { key: 'created_at', label: 'Ngày tạo', render: (r) => fmtDateTime(r.created_at) || '—' },
       { key: 'requester', label: 'Người yêu cầu' },
       { key: 'department', label: 'Bộ phận' },
       { key: 'need_date', label: 'Cần hàng' },
@@ -294,7 +295,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'purpose', label: 'Mục đích' },
       { key: 'requester', label: 'Người yêu cầu' },
       { key: 'department', label: 'Bộ phận' },
-      { key: 'request_date', label: 'Ngày tạo' },
+      { key: 'created_at', label: 'Ngày tạo', render: (r) => fmtDateTime(r.created_at) || '—' },
       { key: 'status', label: 'Trạng thái', render: (r) => srBadge(r.status) },
     ],
     filters: [
@@ -404,7 +405,7 @@ export const cruds: Record<string, CrudConfig> = {
     slug: 'purchase-orders', entity: 'purchase_order', title: 'Đơn mua hàng (PO)', apiPath: '/api/purchase-orders', txn: true, cloneable: true,
     columns: [
       { key: 'code', label: 'Mã PO' },
-      { key: 'order_date', label: 'Ngày đặt' },
+      { key: 'created_at', label: 'Ngày đặt', render: (r) => fmtDateTime(r.created_at) || '—' },
       { key: 'note', label: 'Ghi chú', render: (r) => {
         const t = String(r.note || '').trim();
         return t
@@ -466,6 +467,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã phiếu' }, { key: 'sr_code', label: 'Mã YCKS' },
       { key: 'main_content', label: 'Nội dung chính' },
       { key: 'item_group', label: 'Nhóm hàng' }, { key: 'nspt', label: 'NSPT' },
+      { key: 'created_at', label: 'Ngày tạo', render: (r) => fmtDateTime(r.created_at) || '—' },
       { key: 'status', label: 'Trạng thái', render: (r) => srBadge(r.status) },
     ],
     filters: [

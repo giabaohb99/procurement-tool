@@ -90,6 +90,7 @@ def list_pr(
     out_items = []
     for p in items:
         d = {c: getattr(p, c) for c in HEADER_COLS}
+        d["created_at"] = p.created_at   # thời điểm tạo (có giờ) — hiển thị giờ VN ở list
         d["total"] = round(subtotals.get(p.id, 0.0), 2)   # Yêu cầu mua không tính VAT
         d["has_cancelled_line"] = p.id in cancelled_ids
         out_items.append(d)

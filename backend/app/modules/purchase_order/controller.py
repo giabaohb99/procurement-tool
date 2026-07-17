@@ -110,6 +110,7 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
     out = []
     for p in items:
         row = {c: getattr(p, c) for c in HEADER}
+        row["created_at"] = p.created_at   # thời điểm tạo (có giờ) — hiển thị giờ VN ở list
         # Tiền hàng ở danh sách = GIÁ TRỊ ĐẶT HÀNG (SL đặt × đơn giá × VAT) — ổn định, không về 0
         # khi dòng chuyển "Đã đặt hàng" mà chưa nhận (it.amount tính theo SL thực nhận).
         row["amount"] = round(sum(
