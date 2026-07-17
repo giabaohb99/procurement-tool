@@ -229,7 +229,7 @@ STD_ROLES = {
         "purchase_request": (["read"], "proc"),
         "survey_request": (["read"], "proc"),
         "purchase_order": (["read"], "proc"),
-        "survey": (["read"], "all"),
+        "survey": (["read", "create", "write", "delete", "approve"], "all"),   # Admin TM thao tác được phiếu khảo sát
         "goods_receipt": (["read"], "all"),
         "inventory": (["read"], "all"),
         "payable": (["read"], "all"),
