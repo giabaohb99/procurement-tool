@@ -175,16 +175,17 @@ export default function PurchaseOrderDetail() {
   }, [itemGroups])
   // Tự tính lại cờ Đơn gấp khi dữ liệu nguồn (ngày đặt / dòng hàng) đổi. KHÔNG chạy lúc mở đơn (loadAll không qua đây) → giữ đè tay.
   const recalcUrgent = (next: any) => {
+    if (next.pr_code) return next                          // ĐMH từ YCMH → cờ gấp do YCMH làm chủ, không auto-tính đè
     if (Object.keys(groupMap).length === 0) return next   // chưa nạp danh mục → chưa tính
     const u = computeUrgent(next.items || [], next.order_date, groupMap)
     return u === !!next.is_urgent ? next : { ...next, is_urgent: u }
   }
-  // Đơn MỚI: tự tính cờ gấp khi có đủ dữ liệu (kể cả tạo từ YCMH, sau khi danh mục QĐ nạp xong). Đơn cũ dùng setter khi user sửa.
+  // Đơn MỚI (KHÔNG từ YCMH): tự tính cờ gấp khi có đủ dữ liệu. Đơn cũ dùng setter khi user sửa.
   useEffect(() => {
-    if (!isNew || Object.keys(groupMap).length === 0) return
+    if (!isNew || po.pr_code || Object.keys(groupMap).length === 0) return
     setPo((s: any) => { const u = computeUrgent(s.items || [], s.order_date, groupMap); return s.is_urgent === u ? s : { ...s, is_urgent: u } })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isNew, groupMap, po.order_date, po.items])
+  }, [isNew, po.pr_code, groupMap, po.order_date, po.items])
 
   const setH = (k: string, v: any) =>
     setPo((s: any) => (k === 'order_date' ? recalcUrgent({ ...s, order_date: v }) : { ...s, [k]: v }))

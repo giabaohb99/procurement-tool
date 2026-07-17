@@ -315,6 +315,7 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
     po = get_po(db, pid)
     if po.status in ("completed", "cancelled"):
         raise HTTPException(400, "Đơn đã hoàn thành/đã hủy — không sửa được. Dùng 'Nhân bản' để tạo đơn mới.")
+    old_urgent = bool(po.is_urgent)
     for k, v in data.model_dump(exclude_unset=True, exclude={"items"}).items():
         setattr(po, k, v)
     po.updated_by = user_id
@@ -322,6 +323,9 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
     recompute_effects(db, po, user_id)
     db.commit()
     db.refresh(po)
+    # Cờ Đơn gấp đổi → đồng bộ ngược về YCMH + các ĐMH anh em cùng pr_code (hai chiều)
+    if bool(po.is_urgent) != old_urgent and po.pr_code:
+        sync_urgent_group(db, po.pr_code, bool(po.is_urgent), exclude_po_id=po.id)
     record(db, user_id, ENTITY, pid, "update")
     return po
 
@@ -451,6 +455,23 @@ def set_item_progress(db: Session, pid: int, item_id: int, target: str, reason: 
     _sync_pr(db, po.pr_code)   # đồng bộ tiến độ sang YCMH nguồn
     db.refresh(po)
     return po
+
+
+def sync_urgent_group(db: Session, pr_code: str, is_urgent: bool, *, exclude_po_id: int | None = None) -> None:
+    """Đồng bộ cờ Đơn gấp cho cả NHÓM: YCMH + mọi ĐMH cùng pr_code = is_urgent.
+
+    Dùng UPDATE trực tiếp (không đi qua endpoint) nên không gây vòng lặp sync.
+    exclude_po_id: bỏ qua chính ĐMH vừa lưu (đã set giá trị rồi)."""
+    if not pr_code:
+        return
+    from app.modules.purchase_request.model import PurchaseRequest
+    q = db.query(PurchaseOrder).filter(PurchaseOrder.pr_code == pr_code)
+    if exclude_po_id:
+        q = q.filter(PurchaseOrder.id != exclude_po_id)
+    q.update({PurchaseOrder.is_urgent: is_urgent}, synchronize_session=False)
+    db.query(PurchaseRequest).filter(PurchaseRequest.code == pr_code).update(
+        {PurchaseRequest.is_urgent: is_urgent}, synchronize_session=False)
+    db.commit()
 
 
 def _sync_pr(db: Session, pr_code: str) -> None:
