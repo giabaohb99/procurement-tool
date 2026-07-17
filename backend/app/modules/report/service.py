@@ -31,7 +31,8 @@ def _rate(part, whole):
     return round(part / whole * 100, 2) if whole else 0
 
 
-def compute(db: Session, year: str, company_id) -> dict:
+def compute(db: Session, year: str, company_id, full_detail: bool = False) -> dict:
+    """full_detail=True: KHÔNG cắt shipping_detail[:300] (dùng cho xuất Excel)."""
     poq = db.query(PurchaseOrder).filter(PurchaseOrder.status.in_(_REAL_PO))
     if company_id:
         poq = poq.filter(PurchaseOrder.company_id == int(company_id))
@@ -182,7 +183,8 @@ def compute(db: Session, year: str, company_id) -> dict:
         "computed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "year": year, "months": month_out,
         "department": department, "supplier": supplier, "nspt": nspt,
-        "item_group": item_group, "shipping": shipping, "shipping_detail": ship_detail[:300],
+        "item_group": item_group, "shipping": shipping,
+        "shipping_detail": ship_detail if full_detail else ship_detail[:300],
     }
 
 

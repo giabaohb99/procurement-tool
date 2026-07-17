@@ -1,13 +1,15 @@
 """Báo cáo mua hàng — 1 endpoint trả đủ các chiều phân tích (số liệu thật)."""
 from datetime import datetime
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
 from app.core.database import get_db
 from app.core.response import success
+from .excel import build_report_workbook
 from app.modules.inventory.model import Inventory
 from app.modules.payable.model import Payable
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
@@ -42,6 +44,34 @@ def daily(request: Request, db: Session = Depends(get_db), user=Depends(require(
              "shipping": round(v["shipping"], 2), "amount": round(v["amount"], 2)}
             for k, v in sorted(agg.items())]
     return success({"month": month, "days": days, "total": round(sum(d["amount"] for d in days), 2)})
+
+
+_EXPORT_SHEETS = {"nspt", "item_group", "supplier", "department", "shipping", "all"}
+_XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+@router.get("/export")
+def export_excel(request: Request, db: Session = Depends(get_db),
+                 user=Depends(require("report", "export"))):
+    """Xuất báo cáo mua hàng ra Excel (khớp form thumua1 sheet 12–16).
+
+    sheet=all -> 1 workbook 5 sheet; hoặc 1 trong nspt/item_group/supplier/department/shipping.
+    Luôn xuất theo 1 NĂM cụ thể (mặc định năm hiện tại nếu để trống/'all')."""
+    sheet = (request.query_params.get("sheet") or "all").strip()
+    if sheet not in _EXPORT_SHEETS:
+        raise HTTPException(status_code=400, detail=f"sheet không hợp lệ: {sheet}")
+    year = request.query_params.get("year")
+    if not year or year == "all":
+        year = str(datetime.now().year)
+    company_id = request.query_params.get("company_id")
+
+    data = report_service.compute(db, year, company_id, full_detail=True)
+    buf = build_report_workbook(data, sheet)
+    filename = f"bao-cao-mua-hang-{sheet}-{year}.xlsx"
+    return StreamingResponse(
+        buf, media_type=_XLSX_MIME,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/matrix")

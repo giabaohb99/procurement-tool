@@ -133,6 +133,24 @@ export default function Reports() {
   const [shipPage, setShipPage] = useState(1)                     // phân trang chi tiết VC (server, 50/trang)
   const [shipData, setShipData] = useState<any>({ items: [], total: 0, carriers: [], months: [], page: 1, page_size: 50 })
   const [reqMx, setReqMx] = useState<Record<string, any>>({})   // cache báo cáo YC: key `kind|year|company` -> {months,rows}
+  const [xlsMenu, setXlsMenu] = useState(false)   // popup chọn báo cáo để xuất Excel
+
+  // Xuất Excel 1 form (hoặc tất cả) — khớp form thumua1 sheet 12–16. Luôn theo 1 năm cụ thể.
+  async function exportExcel(sheet: string) {
+    setXlsMenu(false)
+    const year = f.year === 'all' ? String(thisYear) : String(f.year)
+    const params: any = { sheet, year }
+    if (f.company_id) params.company_id = f.company_id
+    try {
+      const r = await api.get('/api/reports/export', { params, responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([r.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `bao-cao-mua-hang-${sheet}-${year}.xlsx`)
+      document.body.appendChild(link); link.click(); link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch { /* interceptor tự toast lỗi */ }
+  }
 
   // Tải ma trận Yêu cầu (PYC/YCKS) khi vào tab tương ứng (live + scope server)
   useEffect(() => {
@@ -231,6 +249,35 @@ export default function Reports() {
           <button className="btn" disabled={busy} onClick={() => load(false)}>Lọc</button>
           <button className="btn secondary" disabled={busy} onClick={() => load(true)} title="Tính lại số liệu báo cáo"><i className="ti ti-refresh" />Cập nhật</button>
           <button className="btn ghost" onClick={() => window.print()}><i className="ti ti-printer" />In</button>
+          {can('report', 'export') && (
+            <div style={{ position: 'relative' }}>
+              <button className="btn ghost" onClick={() => setXlsMenu((v) => !v)} title="Xuất báo cáo ra Excel">
+                <i className="ti ti-file-spreadsheet" />Xuất Excel<i className="ti ti-chevron-down" style={{ marginLeft: 4 }} />
+              </button>
+              {xlsMenu && (
+                <>
+                  <div style={{ position: 'fixed', inset: 0, zIndex: 20 }} onClick={() => setXlsMenu(false)} />
+                  <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 21, background: '#fff', border: '1px solid var(--border)', borderRadius: 8, boxShadow: '0 6px 20px rgba(0,0,0,.12)', minWidth: 230, overflow: 'hidden' }}>
+                    {[
+                      { sheet: 'all', label: 'Tất cả (5 báo cáo)', icon: 'ti-stack-2' },
+                      { sheet: 'nspt', label: 'Nhân sự phụ trách', icon: 'ti-user' },
+                      { sheet: 'item_group', label: 'Phân loại VTBB/NL', icon: 'ti-package' },
+                      { sheet: 'supplier', label: 'Nhà cung cấp', icon: 'ti-building-store' },
+                      { sheet: 'department', label: 'Bộ phận (đơn gấp)', icon: 'ti-users' },
+                      { sheet: 'shipping', label: 'Chi phí vận chuyển', icon: 'ti-truck' },
+                    ].map((o, i) => (
+                      <button key={o.sheet} onClick={() => exportExcel(o.sheet)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', border: 'none', borderTop: i === 1 ? '1px solid var(--border)' : 'none', background: 'none', padding: '9px 14px', cursor: 'pointer', fontSize: 13.5, textAlign: 'left', fontWeight: o.sheet === 'all' ? 700 : 500 }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = '#f4f6f8')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}>
+                        <i className={`ti ${o.icon}`} />{o.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
