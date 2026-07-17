@@ -503,8 +503,11 @@ def create_prs_(sid: int, background_tasks: BackgroundTasks, db: Session = Depen
                 user=Depends(require("survey_request", "write"))):
     """Người YC tạo Yêu cầu mua hàng từ các phương án đã chọn (gom theo NCC)."""
     s = service.get_sr(db, sid)
-    # Chỉ NGƯỜI YÊU CẦU (người tạo phiếu) hoặc Admin TM (quyền delete) được tạo YCMH — NSTM thì không.
-    if not (s.created_by == user.id or user_has_permission(db, user, "survey_request", "delete")):
+    # Chỉ NGƯỜI YÊU CẦU (người tạo phiếu HOẶC người yêu cầu dù admin tạo giùm) hoặc Admin TM
+    # (quyền delete) được tạo YCMH — NSTM thì không.
+    rid = getattr(user, "employee_id", 0) or 0
+    is_requester = s.created_by == user.id or (rid and s.requester_id == rid)
+    if not (is_requester or user_has_permission(db, user, "survey_request", "delete")):
         raise HTTPException(403, "Chỉ người yêu cầu mới được tạo Yêu cầu mua hàng")
     prs = service.create_prs(db, sid, user.id)
     from app.modules.notification.service import get_users_by_role_codes

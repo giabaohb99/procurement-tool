@@ -272,7 +272,9 @@ export default function SurveyRequestDetail() {
   const allChosen = (result?.lines || []).length > 0 && (result?.lines || []).every((l: any) => (l.options || []).some((o: any) => o.is_chosen))
   const canFinalize = can('survey_request', 'process') && can('survey_request', 'approve')
   // Chỉ NGƯỜI YÊU CẦU (người tạo) hoặc Admin TM (delete) được tạo YCMH
-  const canCreatePr = String((sv as any).created_by) === String(user?.id) || can('survey_request', 'delete')
+  const canCreatePr = String((sv as any).created_by) === String(user?.id)
+    || (!!(sv as any).requester_id && String((sv as any).requester_id) === String((user as any)?.employee_id))
+    || can('survey_request', 'delete')
 
   // --- Đính kèm hình/tài liệu theo dòng ---
   const [lineFiles, setLineFiles] = useState<any[]>([])
