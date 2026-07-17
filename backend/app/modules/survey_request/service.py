@@ -479,7 +479,9 @@ def create_prs(db: Session, sid: int, user_id: int):
     from app.modules.purchase_request.service import find_dept_head
     from app.modules.supplier.model import Supplier
     s = get_sr(db, sid)
-    if s.status != "survey_done":
+    # Cho tạo YCMH khi: Đã khảo sát, Đã tạo YCMH (tạo thêm cho dòng mới), và Hoàn thành
+    # (tính năng: phiếu đã hoàn thành vẫn tạo được YCMH cho các dòng chưa chốt).
+    if s.status not in ("survey_done", "pr_created", "done"):
         raise HTTPException(400, "Chỉ tạo YCMH khi phiếu đã khảo sát xong")
 
     groups: dict[str, list] = {}
@@ -531,7 +533,9 @@ def create_prs(db: Session, sid: int, user_id: int):
         db.commit()
         created.append(pr)
 
-    s.status = "pr_created"
+    # Chỉ nâng cấp từ 'Đã khảo sát' → 'Đã tạo YCMH'; KHÔNG hạ cấp phiếu đã Hoàn thành (done).
+    if s.status == "survey_done":
+        s.status = "pr_created"
     s.updated_by = user_id
     db.commit()
     record(db, user_id, ENTITY, sid, "pr_created")

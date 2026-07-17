@@ -342,6 +342,24 @@ def delete_po(db: Session, pid: int, user_id: int):
     record(db, user_id, ENTITY, pid, "delete")
 
 
+def reopen_po(db: Session, pid: int, user_id: int) -> PurchaseOrder:
+    """Mở lại đơn (từ Hoàn thành) để xử lý tiếp — trả về trạng thái theo TIẾN ĐỘ NHẬN,
+    KHÔNG hạ về Nháp (giữ 'đã duyệt' để sửa/nhập Số HĐ + cập nhật tiến độ dòng ngay)."""
+    po = get_po(db, pid)
+    if po.status != "completed":
+        raise HTTPException(400, "Chỉ mở lại đơn đã Hoàn thành.")
+    items = items_of(db, pid)
+    total_order = sum(float(i.qty_order or 0) for i in items)
+    total_recv = sum(float(i.qty_received or 0) for i in items)
+    if total_order > 0 and total_recv + 0.001 >= total_order:
+        st = "received"
+    elif total_recv > 0:
+        st = "partial"
+    else:
+        st = "approved"
+    return set_status(db, pid, st, user_id)
+
+
 def set_status(db: Session, pid: int, status: str, user_id: int, message: str = "") -> PurchaseOrder:
     po = get_po(db, pid)
     po.status = status

@@ -405,7 +405,13 @@ export const cruds: Record<string, CrudConfig> = {
     columns: [
       { key: 'code', label: 'Mã PO' },
       { key: 'order_date', label: 'Ngày đặt' },
-      { key: 'supplier_name', label: 'Nhà cung cấp', render: (r) => r.supplier_name || r.supplier_code },
+      { key: 'note', label: 'Ghi chú', render: (r) => {
+        const t = String(r.note || '').trim();
+        return t
+          ? <span title={t} style={{ display: 'inline-block', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>{t}</span>
+          : '—';
+      } },
+      { key: 'supplier_code', label: 'Nhà cung cấp', render: (r) => r.supplier_code || r.supplier_name || '—' },
       { key: 'pr_code', label: 'Mã PYC', link: (r) => (r.pr_id ? `/purchase-requests/${r.pr_id}` : '') },
       { key: 'amount', label: 'Tiền hàng', render: (r) => (r.amount ? Number(r.amount).toLocaleString('vi-VN') + ' đ' : '0 đ') },
       { key: 'is_urgent', label: 'Gấp', render: (r) => (r.is_urgent ? <span className="badge warn">Gấp</span> : '—') },

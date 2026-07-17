@@ -504,8 +504,8 @@ export default function SurveyRequestDetail() {
           </button>
         )}
 
-        {/* Nút Tạo yêu cầu mua (người YC) — góc phải như Xử lý khảo sát */}
-        {!isNew && sv.status === 'survey_done' && canCreatePr && (
+        {/* Nút Tạo yêu cầu mua (người YC) — hiện cả khi Hoàn thành để tạo thêm cho dòng chưa chốt */}
+        {!isNew && ['survey_done', 'pr_created', 'done'].includes(sv.status) && canCreatePr && (
           <button className="btn" onClick={createPrs}>
             <i className="ti ti-file-plus" />Tạo yêu cầu mua
           </button>

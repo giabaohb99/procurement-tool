@@ -414,6 +414,9 @@ export default function PurchaseOrderDetail() {
         {!isNew && ['received', 'partial'].includes(po.status) && can('purchase_order', 'write') && (
           <button className="btn" onClick={async () => { if (await askConfirm({ message: po.status === 'partial' ? 'Đơn mới nhận MỘT PHẦN. Xác nhận HOÀN THÀNH (chốt đơn dù còn thiếu)? Sau khi hoàn thành sẽ khóa, không chỉnh sửa được nữa.' : 'Xác nhận HOÀN THÀNH đơn mua hàng này? Sau khi hoàn thành sẽ khóa, không chỉnh sửa được nữa.', confirmText: 'Hoàn thành', danger: false })) action('complete') }}><i className="ti ti-circle-check" />Hoàn thành</button>
         )}
+        {!isNew && po.status === 'completed' && can('purchase_order', 'write') && (
+          <button className="btn ghost" onClick={async () => { if (await askConfirm({ message: 'Mở lại đơn đã hoàn thành để xử lý tiếp (nhập Số HĐ, tạo yêu cầu thanh toán, cập nhật tiến độ)? Đơn trở về trạng thái theo tiến độ nhận hàng.', confirmText: 'Mở lại' })) action('reopen') }}><i className="ti ti-lock-open" />Mở lại</button>
+        )}
         {(headerEditable || deliveryEditable) && can('purchase_order', isNew ? 'create' : 'write') && (
           <button className="btn" onClick={save} style={{ height: 40, padding: '0 22px', fontSize: 14.5, fontWeight: 700 }}><i className="ti ti-device-floppy" />{isNew ? 'Tạo' : 'Lưu'}</button>
         )}

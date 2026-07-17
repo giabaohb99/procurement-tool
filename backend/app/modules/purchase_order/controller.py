@@ -110,7 +110,11 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
     out = []
     for p in items:
         row = {c: getattr(p, c) for c in HEADER}
-        row["amount"] = round(sum(float(i.amount or 0) for i in service.items_of(db, p.id)), 2)
+        # Tiền hàng ở danh sách = GIÁ TRỊ ĐẶT HÀNG (SL đặt × đơn giá × VAT) — ổn định, không về 0
+        # khi dòng chuyển "Đã đặt hàng" mà chưa nhận (it.amount tính theo SL thực nhận).
+        row["amount"] = round(sum(
+            float(i.qty_order or 0) * float(i.price or 0) * (1 + float(i.vat or 0) / 100)
+            for i in service.items_of(db, p.id)), 2)
         out.append(row)
     # Gắn pr_id (id phiếu YCMH theo mã PYC) để FE điều hướng sang chi tiết PYC khi click Mã PYC
     codes = {r["pr_code"] for r in out if r.get("pr_code")}
@@ -255,13 +259,27 @@ def cancel_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
 @router.post("/{pid}/complete")
 def complete_po(pid: int, db: Session = Depends(get_db),
                 user=Depends(require("purchase_order", "write"))):
+    # Chỉ cho Hoàn thành ĐƠN khi MỌI dòng đã ở điểm cuối ("Hoàn thành"/"Hủy đơn") —
+    # giữ header nhất quán với tiến độ dòng (tránh đơn "Hoàn thành" mà dòng chưa nhập
+    # Số HĐ / chưa thanh toán, dẫn tới không tạo được Yêu cầu thanh toán).
+    lines = db.query(POItem).filter(POItem.po_id == pid).all()
+    pending = [it for it in lines if (it.progress_status or "") not in ("Hoàn thành", "Hủy đơn")]
+    if pending:
+        names = ", ".join((it.product_name or it.product_code or f"#{it.id}") for it in pending[:5])
+        more = f" (+{len(pending) - 5} dòng nữa)" if len(pending) > 5 else ""
+        raise HTTPException(
+            400,
+            f"Còn {len(pending)} dòng chưa Hoàn thành/Hủy: {names}{more}. "
+            "Hãy hoàn tất tiến độ từng dòng (nhập Số HĐ → tạo & chi Yêu cầu thanh toán → Hoàn thành dòng) "
+            "trước khi hoàn thành đơn.")
     return success(_out(db, service.set_status(db, pid, "completed", user.id)), "Đã hoàn thành đơn")
 
 
 @router.post("/{pid}/reopen")
 def reopen_po(pid: int, db: Session = Depends(get_db),
               user=Depends(require("purchase_order", "write"))):
-    return success(_out(db, service.set_status(db, pid, "draft", user.id)), "Đã mở lại đơn (về nháp)")
+    po = service.reopen_po(db, pid, user.id)
+    return success(_out(db, po), "Đã mở lại đơn để xử lý tiếp")
 
 
 @router.post("/{pid}/items/{item_id}/progress")
