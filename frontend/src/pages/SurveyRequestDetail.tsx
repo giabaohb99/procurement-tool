@@ -825,11 +825,11 @@ export default function SurveyRequestDetail() {
           {/* Phase 5C/5D: Kết quả khảo sát (ẩn NCC) — khi đã khảo sát / đã tạo YCMH / hoàn thành */}
           {!isNew && ['survey_done', 'pr_created', 'done'].includes(sv.status) && result && (
             <div className="card" style={{ padding: 18, marginBottom: 16 }}>
-              <h3 className="sec-title"><i className="ti ti-clipboard-check" /> Kết quả khảo sát {sv.status === 'survey_done' ? '— chọn phương án' : ''}</h3>
+              <h3 className="sec-title"><i className="ti ti-clipboard-check" /> Kết quả khảo sát {['survey_done', 'pr_created', 'done'].includes(sv.status) ? '— chọn phương án' : ''}</h3>
 
-              {sv.status === 'survey_done' && (
+              {['survey_done', 'pr_created', 'done'].includes(sv.status) && (
                 <p style={{ color: 'var(--muted)', fontSize: 12.5, marginTop: -6, marginBottom: 14 }}>
-                  Với mỗi sản phẩm, nhấn chọn 1 phương án phù hợp nhất. (Thông tin nhà cung cấp được ẩn theo chính sách.)
+                  Với mỗi sản phẩm, nhấn chọn 1 phương án phù hợp nhất (đổi lại được cho tới khi dòng đã tạo YCMH). (Thông tin nhà cung cấp được ẩn theo chính sách.)
                 </p>
               )}
               {(result.lines || []).map((ln: any, li: number) => (
@@ -845,7 +845,7 @@ export default function SurveyRequestDetail() {
                   ) : (
                     <div className="options-container">
                       {ln.options.map((o: any) => {
-                        const canChoose = sv.status === 'survey_done'
+                        const canChoose = ['survey_done', 'pr_created', 'done'].includes(sv.status) && !ln.is_completed && canCreatePr
                         return (
                         <div key={o.id} onClick={() => { if (canChoose) chooseOption(ln.id, o.id) }}
                           className="option-card"

@@ -493,9 +493,12 @@ def choose_option_(sid: int, line_id: int, oid: int, db: Session = Depends(get_d
     s = service.get_sr(db, sid)
     if not _can_edit_own(db, s, user):
         raise HTTPException(403, "Không có quyền chọn phương án cho phiếu này")
-    if s.status != "survey_done":
-        raise HTTPException(400, "Chỉ chọn phương án khi khảo sát đã hoàn thành")
-    service.get_line(db, sid, line_id)
+    # Cho chọn/đổi phương án khi: Đã khảo sát, Đã tạo YCMH, Hoàn thành (để còn tạo YCMH bổ sung).
+    if s.status not in ("survey_done", "pr_created", "done"):
+        raise HTTPException(400, "Chỉ chọn phương án khi phiếu đã khảo sát / đã tạo YCMH / hoàn thành")
+    ln = service.get_line(db, sid, line_id)
+    if ln.is_completed:
+        raise HTTPException(400, "Dòng đã tạo Yêu cầu mua hàng — không đổi phương án được.")
     service.choose_option(db, line_id, oid, user.id)
     return success(_out_result(db, s), "Đã chọn phương án")
 
