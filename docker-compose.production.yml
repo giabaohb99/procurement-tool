@@ -43,6 +43,45 @@ services:
       - procurement-internal
       - proxy-tier              # để cloudflare_tunnel (cùng net) gọi http://procurement-web:80
 
+  # --- Celery / Redis (chạy tác vụ ngầm + theo lịch). KHÔNG có RedisInsight ở prod. ---
+  redis:
+    image: redis:7.2-alpine
+    restart: always
+    command: redis-server --save 60 1
+    volumes:
+      - redis_data:/data
+    networks:
+      - procurement-internal
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    env_file: .env
+    restart: always
+    command: celery -A app.core.celery_app worker -l info -c 2
+    depends_on:
+      - redis
+      - api
+    networks:
+      - dego-erp_default        # tới MariaDB dego-erp-db-1
+      - procurement-internal    # tới redis
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    env_file: .env
+    restart: always
+    command: celery -A app.core.celery_app beat -l info --scheduler celery.beat:PersistentScheduler --schedule /app/beatdata/celerybeat-schedule
+    depends_on:
+      - redis
+      - celery-worker
+    volumes:
+      - beat_data:/app/beatdata   # giữ mốc lịch (celerybeat-schedule) qua các lần dựng lại
+    networks:
+      - procurement-internal
+
 networks:
   dego-erp_default:
     external: true
@@ -50,3 +89,7 @@ networks:
     external: true
   procurement-internal:
     driver: bridge
+
+volumes:
+  redis_data:
+  beat_data:

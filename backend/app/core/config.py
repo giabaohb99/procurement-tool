@@ -39,6 +39,18 @@ class Settings(BaseSettings):
     EMAIL_ENABLED: bool = False   # Tắt gửi email (thông báo/reset...) — bật lại khi làm phần email
     EMAIL_TEST_OVERRIDE: str = ""  # Nếu đặt: MỌI email gửi ra chuyển hướng tới địa chỉ này (an toàn khi test)
 
+    # --- Celery / Redis ---
+    # Broker + result backend dùng chung 1 Redis (đủ cho quy mô ~20-100 user).
+    REDIS_URL: str = "redis://redis:6379/0"
+
+    @property
+    def CELERY_BROKER_URL(self) -> str:
+        return self.REDIS_URL
+
+    @property
+    def CELERY_RESULT_BACKEND(self) -> str:
+        return self.REDIS_URL
+
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
