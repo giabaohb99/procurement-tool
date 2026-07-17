@@ -237,8 +237,11 @@ def complete_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("p
 
 
 def _can_edit_own(db: Session, pr, user) -> bool:
-    """Chủ phiếu (người tạo) được sửa/gửi duyệt phiếu của mình; hoặc người có quyền write."""
-    return pr.created_by == user.id or user_has_permission(db, user, "purchase_request", "write")
+    """Người TẠO / người YÊU CẦU (admin tạo giùm) / người có quyền write được sửa & gửi duyệt."""
+    rid = getattr(user, "employee_id", 0) or 0
+    if pr.created_by == user.id or (rid and getattr(pr, "requester_id", 0) == rid):
+        return True
+    return user_has_permission(db, user, "purchase_request", "write")
 
 
 @router.patch("/{pid}")

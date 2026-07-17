@@ -53,7 +53,11 @@ def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
 
 
 def _can_edit_own(db, s, user) -> bool:
-    return s.created_by == user.id or user_has_permission(db, user, "survey_request", "write")
+    """Người TẠO / người YÊU CẦU (admin tạo giùm) / người có quyền write."""
+    rid = getattr(user, "employee_id", 0) or 0
+    if s.created_by == user.id or (rid and getattr(s, "requester_id", 0) == rid):
+        return True
+    return user_has_permission(db, user, "survey_request", "write")
 
 
 _SR_LOCKED = ("cancelled", "done")   # Đã từ chối / Hoàn thành → khóa, KHÔNG cập nhật (kể cả QL/Admin)
