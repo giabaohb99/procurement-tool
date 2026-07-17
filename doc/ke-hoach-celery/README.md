@@ -44,6 +44,25 @@ Ngoài ra `task_acks_late=True` + `task_reject_on_worker_lost=True`: worker ch�
 - **Trạng thái beat** (mốc "đã chạy lần cuối" để biết khi nào chạy tiếp) = **file `celerybeat-schedule`** do `PersistentScheduler` ghi trong container beat. → Prod cần **volume persist** (`beat_data`), nếu mất chỉ mất mốc chạy cuối (beat tính lại), không mất định nghĩa.
 - Muốn **lưu lịch trong Redis** (đổi lịch không cần deploy, hoặc chạy nhiều beat) → dùng **`celery-redbeat`** (nêu ở [Phase 0 §7](phase-0-ha-tang.md)). Hiện plan chọn `PersistentScheduler` (đơn giản, đủ dùng vì lịch cố định).
 
+## Mẫu lịch cron (crontab) thường dùng
+
+Celery `crontab` có 5 trường: `minute`, `hour`, `day_of_week`, `day_of_month`, `month_of_year`.
+
+| Lịch | Cấu hình |
+|---|---|
+| Mỗi ngày 8h sáng | `crontab(hour=8, minute=0)` |
+| **Ngày 15 hằng tháng, 8h** | `crontab(day_of_month=15, hour=8, minute=0)` |
+| Ngày 1 hằng tháng, 0h30 | `crontab(day_of_month=1, hour=0, minute=30)` |
+| Mỗi quý (tháng 1/4/7/10, ngày 1) | `crontab(day_of_month=1, month_of_year="1,4,7,10", hour=0)` |
+| Thứ 2 hằng tuần, 9h | `crontab(day_of_week=1, hour=9, minute=0)` |
+| Mỗi 15 phút | `crontab(minute="*/15")` |
+| **Cuối tháng** (không có sẵn) | chạy **hằng ngày** + trong task check `if (date.today()+timedelta(days=1)).day == 1: ...` |
+
+### ⚠️ Lưu ý QUAN TRỌNG cho lịch tháng (vd tính công nợ ngày 15)
+- **Beat KHÔNG chạy bù**: nếu đúng ngày 15 mà `celery-beat` đang tắt/deploy, crontab sẽ **bỏ lỡ** lần đó (chỉ chạy vào lần khớp tiếp theo — tháng sau). Với việc quan trọng theo tháng (công nợ, chốt sổ) → **KHÔNG dựa hoàn toàn vào crontab**.
+- **Giải pháp an toàn (khuyến nghị)**: đặt task chạy **hằng ngày**, trong task **tự kiểm tra** "đã chạy tháng này chưa" (đánh dấu marker `tab_alert_sent`/bảng riêng theo `YYYY-MM`) và điều kiện ngày (vd `today.day >= 15`) → nếu đủ điều kiện và chưa chạy thì làm → **tự bù** khi beat từng tắt. Idempotent, không sợ lỡ.
+- Kết hợp cả hai: crontab `day_of_month=15` để chạy đúng ngày, + guard marker để không chạy trùng nếu vì lý do gì task được kích lại.
+
 ## Khung mỗi file phase (mục chuẩn)
 1. **Mục tiêu** — làm gì, vì sao.
 2. **Phạm vi & việc cụ thể** — checklist.
