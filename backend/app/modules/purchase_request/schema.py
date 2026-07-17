@@ -82,6 +82,11 @@ class AssignIn(BaseModel):
     items: list[AssignItemIn] = []
 
 
+class UrgentIn(BaseModel):
+    """Bật/tắt cờ Đơn gấp trực tiếp (chạy được cả khi phiếu đã duyệt) + đồng bộ xuống ĐMH."""
+    is_urgent: bool
+
+
 class ItemStatusItem(BaseModel):
     id: int
     line_status: str | None = None

@@ -330,6 +330,21 @@ def update_pr(db: Session, pid: int, data: PRUpdate, user_id: int) -> PurchaseRe
     return pr
 
 
+def set_urgent(db: Session, pid: int, is_urgent: bool, user_id: int) -> PurchaseRequest:
+    """Bật/tắt cờ Đơn gấp trực tiếp (mọi trạng thái trừ đã hủy) + đồng bộ xuống các ĐMH cùng pr_code."""
+    pr = get_pr(db, pid)
+    if pr.status == "cancelled":
+        raise HTTPException(400, "Phiếu đã hủy — không đổi được cờ Đơn gấp.")
+    pr.is_urgent = bool(is_urgent)
+    pr.updated_by = user_id
+    db.commit()
+    from app.modules.purchase_order.service import sync_urgent_group
+    sync_urgent_group(db, pr.code, bool(is_urgent))
+    record(db, user_id, ENTITY, pid, "update", f"Đơn gấp = {is_urgent}")
+    db.refresh(pr)
+    return pr
+
+
 def delete_pr(db: Session, pid: int, user_id: int) -> None:
     pr = get_pr(db, pid)
     if pr.status not in ("draft", "rejected", "cancelled"):

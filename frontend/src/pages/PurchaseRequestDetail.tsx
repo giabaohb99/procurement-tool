@@ -222,6 +222,15 @@ export default function PurchaseRequestDetail() {
     }
   }
 
+  // Bật/tắt Đơn gấp. Phiếu còn sửa (nháp/mới) -> cập nhật local, lưu theo nút Lưu. Phiếu đã duyệt -> auto-lưu ngay + đồng bộ ĐMH.
+  async function toggleUrgent(v: boolean) {
+    setH('is_urgent', v)
+    if (!isNew && !editable && pr.id) {
+      try { await api.patch(`${API}/${id}/urgent`, { is_urgent: v }); toast.success('Đã cập nhật Đơn gấp'); loadAll() }
+      catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi cập nhật Đơn gấp'); loadAll() }
+    }
+  }
+
   const subtotal = items.reduce((s: number, it: any) => s + (Number(it.qty) || 0) * (Number(it.price) || 0), 0)
 
   const groupDesc = (name: string) => {
@@ -557,7 +566,7 @@ export default function PurchaseRequestDetail() {
                 <label>Tùy chọn phiếu</label>
                 <div style={{ display: 'flex', gap: 20, alignItems: 'center', height: 40 }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', margin: 0, color: 'var(--red)' }}>
-                    <input type="checkbox" checked={!!pr.is_urgent} disabled={!editable} onChange={(e) => setH('is_urgent', e.target.checked)} style={{ width: 18, height: 18 }} />
+                    <input type="checkbox" checked={!!pr.is_urgent} disabled={prLocked} onChange={(e) => toggleUrgent(e.target.checked)} style={{ width: 18, height: 18 }} />
                     Đơn gấp
                   </label>
                 </div>

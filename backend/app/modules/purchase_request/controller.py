@@ -11,7 +11,7 @@ from app.modules.notification.service import trigger_notification
 from sqlalchemy import func, select
 from . import service
 from .model import PurchaseRequest, PurchaseRequestItem
-from .schema import ApproveIn, AssignIn, ItemStatusIn, PRCreate, PRUpdate, ReasonIn, RejectIn
+from .schema import ApproveIn, AssignIn, ItemStatusIn, PRCreate, PRUpdate, ReasonIn, RejectIn, UrgentIn
 
 router = APIRouter(prefix="/api/purchase-requests", tags=["purchase_request"])
 
@@ -191,6 +191,13 @@ def assign_pr(pid: int, data: AssignIn, background_tasks: BackgroundTasks, db: S
                                  creator_id=user.id, background_tasks=background_tasks,
                                  link=f"/purchase-requests/{pr.id}", recipient_ids=uids)
     return success(_out(db, pr), "Đã lưu phân bổ NSTM")
+
+
+@router.patch("/{pid}/urgent")
+def set_urgent(pid: int, data: UrgentIn, db: Session = Depends(get_db), user=Depends(require("purchase_request", "write"))):
+    """Bật/tắt cờ Đơn gấp (cả khi phiếu đã duyệt) + đồng bộ xuống ĐMH cùng pr_code."""
+    pr = service.set_urgent(db, pid, data.is_urgent, user.id)
+    return success(_out(db, pr))
 
 
 @router.patch("/{pid}/item-status")
