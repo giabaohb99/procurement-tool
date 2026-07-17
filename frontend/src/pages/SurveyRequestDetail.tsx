@@ -9,6 +9,7 @@ import Select from 'react-select'
 import SearchSelect from '../components/SearchSelect'
 import { toast } from '../components/toast'
 import NotFound from '../components/NotFound'
+import FileDropzone from '../components/FileDropzone'
 
 const API = '/api/survey-requests'
 
@@ -1076,12 +1077,8 @@ export default function SurveyRequestDetail() {
                         })}
                       </div>
                     )}
-                    <input type="file" id="sr-line-upload" multiple accept="image/*,.pdf" style={{ display: 'none' }}
-                      onChange={(e) => { uploadLineFiles(e.target.files, edit.id); e.currentTarget.value = '' }} />
-                    <label htmlFor="sr-line-upload" className="btn ghost" style={{ cursor: 'pointer', height: 32, fontSize: 13, width: 'fit-content' }}>
-                      <i className="ti ti-upload" /> Thêm hình / file
-                    </label>
-                    {lineFiles.length === 0 && <div style={{ color: '#999', fontSize: 12.5, marginTop: 6 }}>Chưa có hình. Tải nhiều hình (jpg/png/webp/pdf) để người khảo sát tham khảo.</div>}
+                    <FileDropzone accept="image/*,.pdf" hint="jpg / png / webp / pdf — có thể nhiều hình"
+                      onFiles={(list) => uploadLineFiles(list, edit.id)} />
                   </div>
                 ) : (
                   <div>
@@ -1103,11 +1100,8 @@ export default function SurveyRequestDetail() {
                         })}
                       </div>
                     )}
-                    <input type="file" id="sr-line-pending" multiple accept="image/*,.pdf" style={{ display: 'none' }}
-                      onChange={(e) => { addPending(editIdx, e.target.files); e.currentTarget.value = '' }} />
-                    <label htmlFor="sr-line-pending" className="btn ghost" style={{ cursor: 'pointer', height: 32, fontSize: 13, width: 'fit-content' }}>
-                      <i className="ti ti-upload" /> Thêm hình / file
-                    </label>
+                    <FileDropzone accept="image/*,.pdf" hint="jpg / png / webp / pdf"
+                      onFiles={(list) => addPending(editIdx, list)} />
                     <div style={{ color: '#0b6bcb', fontSize: 12.5, marginTop: 6 }}>
                       Chọn hình bây giờ — sẽ được <b>lưu cùng khi bạn bấm Lưu</b>.
                     </div>

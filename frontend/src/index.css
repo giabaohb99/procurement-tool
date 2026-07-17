@@ -1651,6 +1651,22 @@ input,
   overflow-x: auto;
 }
 
+/* ===== Trang chứng từ: dòng file (thẻ viền, hover rõ) ===== */
+.doc-file-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.doc-file-row:hover {
+  background: #f4f7fe;
+  border-color: #cbd5e1;
+}
+
 .cell-input {
   height: 30px;
   border: 1px solid var(--border);

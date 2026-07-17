@@ -10,6 +10,8 @@ import ProductPicker from '../components/ProductPicker'
 import NumberInput from '../components/NumberInput'
 import { toast } from '../components/toast'
 import NotFound from '../components/NotFound'
+import DocumentUploadModal from '../components/DocumentUploadModal'
+import { fmtSize, fileIcon } from '../utils/file-type'
 
 const API = '/api/purchase-orders'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -57,6 +59,8 @@ export default function PurchaseOrderDetail() {
   const [employees, setEmployees] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [files, setFiles] = useState<any[]>([])
+  const [docModal, setDocModal] = useState(false)
+  const [docTypeLabels, setDocTypeLabels] = useState<Record<string, string>>({})
   const [attByDelivery, setAttByDelivery] = useState<Record<number, any[]>>({})
   const [editingItemIdx, setEditingItemIdx] = useState<number | null>(null)
   const [printOpen, setPrintOpen] = useState(false)   // dropdown chọn loại bản in
@@ -89,6 +93,13 @@ export default function PurchaseOrderDetail() {
     }
   }
   useEffect(() => { if (!isNew) { setNotFound(false); loadAll() } }, [id])
+
+  // nạp nhãn loại chứng từ 1 lần để hiện badge cạnh file
+  useEffect(() => {
+    api.get('/api/attachments/doc-types')
+      .then((x) => setDocTypeLabels(Object.fromEntries((x.data.data || []).map((t: any) => [t.value, t.label]))))
+      .catch(() => {})
+  }, [])
 
   // Điền sẵn khi tạo ĐMH từ phiếu YCMH đã duyệt (điều hướng kèm state.fromPr). Chưa lưu — user xem lại rồi bấm Tạo.
   useEffect(() => {
@@ -317,13 +328,6 @@ export default function PurchaseOrderDetail() {
   }
 
   // Đổi tiến độ 1 dòng theo máy trạng thái (chỉ qua các endpoint riêng, không qua form Lưu thường)
-  async function uploadFiles(fl: FileList | null) {
-    if (!fl?.length) return
-    const fd = new FormData(); fd.append('entity', 'purchase_order'); fd.append('entity_id', String(id))
-    Array.from(fl).forEach((f) => fd.append('files', f))
-    try { await api.post('/api/attachments', fd); loadAll() } catch { /* interceptor đã toast lỗi */ }
-  }
-
   async function loadDeliveryAtt(deliveryId: number) {
     const r = await api.get('/api/attachments', { params: { entity: 'delivery', entity_id: deliveryId } })
     setAttByDelivery((s) => ({ ...s, [deliveryId]: r.data.data }))
@@ -589,16 +593,29 @@ export default function PurchaseOrderDetail() {
           {/* Chứng từ chung */}
           {!isNew && (
             <div className="card" style={{ padding: 18, marginBottom: 16 }}>
-              <h3 className="sec-title"><i className="ti ti-paperclip" /> Chứng từ đính kèm (báo giá, HĐ…)</h3>
-              {can('purchase_order', 'write') && <input type="file" multiple onChange={(e) => uploadFiles(e.target.files)} />}
-              <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {files.map((f) => (
-                  <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-                    <i className="ti ti-file" /><a href={f.url} target="_blank" style={{ color: 'var(--teal)', flex: 1, textDecoration: 'underline' }}>{f.filename}</a>
-                    {can('purchase_order', 'write') && <button className="icon-btn" onClick={async () => { if (await askConfirm({ message: 'Xóa file?' })) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
-                  </div>
-                ))}
-                {files.length === 0 && <span style={{ color: '#999', fontSize: 13 }}>Chưa có file nào.</span>}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 4 }}>
+                <h3 className="sec-title" style={{ margin: 0, border: 'none', paddingBottom: 0 }}><i className="ti ti-paperclip" /> Chứng từ đính kèm (báo giá, HĐ…)</h3>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {can('purchase_order', 'write') && (
+                    <button className="btn secondary" style={{ height: 32, padding: '0 12px', fontSize: 12.5 }} onClick={() => setDocModal(true)}><i className="ti ti-upload" /> Upload chứng từ</button>
+                  )}
+                  <button className="btn ghost" style={{ height: 32, padding: '0 12px', fontSize: 12.5 }} onClick={() => navigate(`/documents?po=${id}`)}><i className="ti ti-list-details" /> Chi tiết</button>
+                </div>
+              </div>
+              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {files.map((f) => {
+                  const ic = fileIcon(f.filename, f.content_type)
+                  return (
+                    <div key={f.id} className="doc-file-row">
+                      <i className={'ti ' + ic.icon} style={{ fontSize: 24, color: ic.color, flexShrink: 0 }} />
+                      {f.doc_type && <span className="badge" style={{ background: '#eef2ff', color: '#3730a3', fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, flexShrink: 0 }}>{docTypeLabels[f.doc_type] || f.doc_type}</span>}
+                      <a href={f.url} target="_blank" style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 500, color: 'var(--navy)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.filename}</a>
+                      <span style={{ color: 'var(--muted)', fontSize: 12, flexShrink: 0 }}>{fmtSize(f.size)}</span>
+                      {can('purchase_order', 'write') && <button className="icon-btn" style={{ flexShrink: 0 }} onClick={async () => { if (await askConfirm({ message: 'Xóa file?' })) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
+                    </div>
+                  )
+                })}
+                {files.length === 0 && <span style={{ color: 'var(--muted)', fontSize: 13 }}>Chưa có file nào.</span>}
               </div>
             </div>
           )}
@@ -621,6 +638,14 @@ export default function PurchaseOrderDetail() {
           </div>
         )}
       </div>
+
+      {/* Popup upload chứng từ theo loại */}
+      {docModal && (
+        <DocumentUploadModal
+          entity="purchase_order" entityId={Number(id)} purchaseOrderId={Number(id)}
+          onClose={() => setDocModal(false)} onDone={loadAll}
+        />
+      )}
 
       {/* Popup giao hàng nhiều lần của 1 dòng */}
       {editingItemIdx !== null && items[editingItemIdx] && (

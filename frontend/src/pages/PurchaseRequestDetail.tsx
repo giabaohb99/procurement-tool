@@ -12,6 +12,8 @@ import ConfirmModal from '../components/ConfirmModal'
 import PromptModal from '../components/PromptModal'
 import NotFound from '../components/NotFound'
 import { toast } from '../components/toast'
+import DocumentUploadModal from '../components/DocumentUploadModal'
+import { fmtSize, fileIcon } from '../utils/file-type'
 
 const API = '/api/purchase-requests'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -49,6 +51,8 @@ export default function PurchaseRequestDetail() {
   const [departments, setDepartments] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [files, setFiles] = useState<any[]>([])
+  const [docModal, setDocModal] = useState(false)
+  const [docTypeLabels, setDocTypeLabels] = useState<Record<string, string>>({})
   const [editIdx, setEditIdx] = useState<number | null>(null)   // dòng đang mở popup chi tiết
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [promptAction, setPromptAction] = useState<{type: 'reject'|'return'|'cancel', title: string, message: string, placeholder?: string} | null>(null)
@@ -80,6 +84,13 @@ export default function PurchaseRequestDetail() {
     api.get('/api/attachments', { params: { entity: 'purchase_request', entity_id: id } }).then((x) => setFiles(x.data.data)).catch(() => {})
   }
   useEffect(() => { if (!isNew) { setNotFound(false); loadAll() } }, [id])
+
+  // nhãn loại chứng từ để hiện badge cạnh file (đồng bộ đơn mua hàng)
+  useEffect(() => {
+    api.get('/api/attachments/doc-types')
+      .then((x) => setDocTypeLabels(Object.fromEntries((x.data.data || []).map((t: any) => [t.value, t.label]))))
+      .catch(() => {})
+  }, [])
 
   // Tải danh sách ĐMH tạo từ phiếu này (lọc theo mã PYC). Lỗi/không quyền xem ĐMH → ẩn khối.
   useEffect(() => {
@@ -345,14 +356,6 @@ export default function PurchaseRequestDetail() {
         await api.patch(`${API}/${id}/assign`, { items: [{ id: it.id, assignee: it.assignee || '' }] })
       toast.success('Đã cập nhật dòng'); setEditIdx(null); loadAll()
     } catch { /* interceptor đã toast lỗi */ }
-  }
-
-  async function uploadFiles(fl: FileList | null) {
-    if (!fl?.length) return
-    const fd = new FormData(); fd.append('entity', 'purchase_request'); fd.append('entity_id', String(id))
-    Array.from(fl).forEach((f) => fd.append('files', f))
-    try { await api.post('/api/attachments', fd); loadAll() }
-    catch { /* interceptor đã toast lỗi */ }
   }
 
   const isLogShown = !isNew && logs.length > 0
@@ -678,20 +681,29 @@ export default function PurchaseRequestDetail() {
             {!isNew ? (
               <div>
                 {editable && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                    <input type="file" id="file-upload" multiple style={{ display: 'none' }} disabled={!editable} onChange={(e) => uploadFiles(e.target.files)} />
-                    <label htmlFor="file-upload" className="btn ghost" style={{ cursor: 'pointer', height: 32, fontSize: 13 }}><i className="ti ti-upload" /> Chọn file</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                    <button className="btn secondary" style={{ height: 32, padding: '0 12px', fontSize: 12.5 }} onClick={() => setDocModal(true)}><i className="ti ti-upload" /> Upload chứng từ</button>
                   </div>
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {files.map((f) => (
-                    <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-                      <i className="ti ti-file" /><a href={f.url} target="_blank" style={{ color: 'var(--teal)', flex: 1, textDecoration: 'underline' }}>{f.filename}</a>
-                      {editable && <button className="icon-btn" onClick={async () => { if (await askConfirm({ message: 'Xóa file?' })) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
-                    </div>
-                  ))}
-                  {files.length === 0 && <span style={{ color: '#999', fontSize: 13 }}>Chưa có tài liệu.</span>}
+                  {files.map((f) => {
+                    const ic = fileIcon(f.filename, f.content_type)
+                    return (
+                      <div key={f.id} className="doc-file-row">
+                        <i className={'ti ' + ic.icon} style={{ fontSize: 24, color: ic.color, flexShrink: 0 }} />
+                        {f.doc_type && <span className="badge" style={{ background: '#eef2ff', color: '#3730a3', fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, flexShrink: 0 }}>{docTypeLabels[f.doc_type] || f.doc_type}</span>}
+                        <a href={f.url} target="_blank" style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 500, color: 'var(--navy)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.filename}</a>
+                        <span style={{ color: 'var(--muted)', fontSize: 12, flexShrink: 0 }}>{fmtSize(f.size)}</span>
+                        {editable && <button className="icon-btn" style={{ flexShrink: 0 }} onClick={async () => { if (await askConfirm({ message: 'Xóa file?' })) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
+                      </div>
+                    )
+                  })}
+                  {files.length === 0 && <span style={{ color: 'var(--muted)', fontSize: 13 }}>Chưa có tài liệu.</span>}
                 </div>
+                {docModal && (
+                  <DocumentUploadModal entity="purchase_request" entityId={Number(id)}
+                    onClose={() => setDocModal(false)} onDone={loadAll} />
+                )}
               </div>
             ) : <span style={{ color: '#999', fontSize: 13 }}><i>(Tạo phiếu để đính kèm tài liệu)</i></span>}
           </div>

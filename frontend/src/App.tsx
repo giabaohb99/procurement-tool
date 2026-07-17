@@ -32,6 +32,7 @@ import PrintPaymentRequest from './pages/PrintPaymentRequest'
 import Settings from './pages/Settings'
 import SurveyRequestDetail from './pages/SurveyRequestDetail'
 import SurveyRequestProcess from './pages/SurveyRequestProcess'
+import Documents from './pages/Documents'
 
 function Protected({ children }: { children: JSX.Element }) {
   const { user } = useAuth()
@@ -61,6 +62,7 @@ export default function App() {
             <Route path="surveys-product/:id" element={<SurveyDetail />} />
             <Route path="purchase-orders/:id" element={<PurchaseOrderDetail />} />
             <Route path="payment-requests/:id" element={<PaymentRequestDetail />} />
+            <Route path="documents" element={<Documents />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="payables" element={<Payables />} />
             <Route path="notifications" element={<Notifications />} />
