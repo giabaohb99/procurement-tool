@@ -207,6 +207,17 @@ Thêm 3 service sau vào `docker-compose.yml` (đặt sau service `api`):
     # Không expose port ra host (chỉ dùng nội bộ)
     # Nếu muốn inspect từ host: thêm ports: ["6379:6379"] tạm thời
 
+  # GUI quản lý Redis (xem key/queue/task, memory, monitor). Chỉ dùng ở DEV.
+  redisinsight:
+    image: redis/redisinsight:latest
+    restart: unless-stopped
+    ports:
+      - "5540:5540"        # mở http://localhost:5540
+    depends_on:
+      - redis
+    volumes:
+      - redisinsight_data:/data
+
   celery-worker:
     build:
       context: .
@@ -236,6 +247,14 @@ Thêm 3 service sau vào `docker-compose.yml` (đặt sau service `api`):
 - Worker concurrency `-c 2` — đủ cho dev, tránh tốn RAM.
 - `celery-beat` dùng `PersistentScheduler` (lưu lịch vào file `celerybeat-schedule` trong `/app`) — đơn giản, không cần DB thêm.
 - Volume mount `./backend:/app` giữ cho code tasks hot-reload khi sửa (worker cần restart thủ công: `docker compose restart celery-worker`).
+- Nhớ khai báo volume ở cuối `docker-compose.yml`: thêm `redisinsight_data:` vào block `volumes:` (cạnh `db_data`).
+
+**Dùng RedisInsight (GUI quản lý Redis):**
+1. Mở `http://localhost:5540` → **Add Redis database** → Host = `redis`, Port = `6379` (kết nối trong mạng docker).
+2. Xem được: các **queue Celery** (`celery` key), số task đang chờ, **kết quả task** (`celery-task-meta-*`), memory, monitor lệnh realtime.
+3. Xóa/kiểm tra key khi debug (vd task kẹt trong queue, kết quả lỗi).
+
+> ⚠️ **Chỉ chạy RedisInsight ở DEV.** KHÔNG đưa lên prod (mở cổng GUI ra ngoài là rủi ro bảo mật). Trên prod muốn xem thì SSH tunnel tạm rồi dùng `redis-cli` hoặc bật RedisInsight tạm thời.
 
 ---
 
