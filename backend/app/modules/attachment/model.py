@@ -26,3 +26,4 @@ class FileLink(Base, AuditMixin):
     entity: Mapped[str] = mapped_column(String(50), index=True)
     entity_id: Mapped[int] = mapped_column(BigInteger, index=True)
     purchase_order_id: Mapped[int] = mapped_column(BigInteger, default=0)   # gom bộ chứng từ theo đơn
+    doc_type: Mapped[str] = mapped_column(String(50), default="", index=True)  # loại chứng từ (cố định trong code)

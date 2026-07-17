@@ -45,6 +45,19 @@ def upload_fileobj(fileobj, key: str, content_type: str = "") -> str:
     return f"/api/uploads/{key}"
 
 
+def download_bytes(key: str) -> bytes:
+    """Đọc lại nội dung file từ storage (R2 hoặc local) để tải/nén ZIP."""
+    s3 = _client()
+    if s3:
+        obj = s3.get_object(Bucket=_eff("r2_bucket"), Key=key)
+        return obj["Body"].read()
+    local_path = os.path.join("uploads", key)
+    if not os.path.exists(local_path):
+        raise HTTPException(404, "File không tồn tại trên storage")
+    with open(local_path, "rb") as f:
+        return f.read()
+
+
 def delete_key(key: str):
     s3 = _client()
     if s3:
