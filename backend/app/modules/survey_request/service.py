@@ -32,22 +32,27 @@ def options_of(db: Session, line_id: int):
 
 
 def valid_options_of(db: Session, line_id: int):
-    """Chỉ các option có DÒNG KHẢO SÁT SP NGUỒN còn hợp lệ (line_approve='Đã duyệt').
-    Option của dòng đã bị 'Không duyệt' / phiếu khảo sát hủy sẽ bị LOẠI (không hiện, không cho chọn)
-    — phòng cả dữ liệu cũ còn kẹt trước khi có cascade gỡ."""
+    """Option hợp lệ để hiển thị/chọn. Option là SNAPSHOT tự đủ (đã copy thông số).
+    Chỉ LOẠI option khi dòng khảo sát nguồn CÒN TỒN TẠI nhưng bị 'Không duyệt'
+    (line_approve != 'Đã duyệt'). Nguồn đã BỊ XÓA (phiếu KS xóa) → GIỮ snapshot,
+    vì snapshot vẫn đầy đủ và có thể đã được chọn/tạo YCMH. Option không gắn nguồn cũng giữ."""
     opts = options_of(db, line_id)
     if not opts:
         return opts
     from app.modules.survey.model import SurveyProductLine
     pids = [o.product_survey_line_id for o in opts if o.product_survey_line_id]
-    approved = set()
+    existing: set[int] = set()
+    approved: set[int] = set()
     if pids:
-        rows = (db.query(SurveyProductLine.id)
-                .filter(SurveyProductLine.id.in_(pids),
-                        SurveyProductLine.line_approve == "Đã duyệt").all())
-        approved = {r[0] for r in rows}
-    # giữ option có nguồn Đã duyệt; option không gắn nguồn (product_survey_line_id=0) vẫn giữ
-    return [o for o in opts if (not o.product_survey_line_id) or (o.product_survey_line_id in approved)]
+        for pid, appr in (db.query(SurveyProductLine.id, SurveyProductLine.line_approve)
+                          .filter(SurveyProductLine.id.in_(pids)).all()):
+            existing.add(pid)
+            if appr == "Đã duyệt":
+                approved.add(pid)
+    return [o for o in opts
+            if (not o.product_survey_line_id)              # option nhập tay, không gắn nguồn
+            or (o.product_survey_line_id not in existing)  # nguồn đã bị xóa → giữ snapshot
+            or (o.product_survey_line_id in approved)]     # nguồn còn & Đã duyệt
 
 
 def _gen_code(db: Session) -> str:
