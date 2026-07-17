@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
+import Pagination from '../components/Pagination'
 import { toast } from '../components/toast'
 
 const LINE_APPROVE_COLOR: Record<string, string> = {
@@ -275,6 +276,7 @@ export default function SurveyReport() {
           <table className="items-table" style={{ minWidth: 900 }}>
             <thead>
               <tr>
+                <th style={{ width: 48, textAlign: 'center' }}>STT</th>
                 <th style={{ width: 130, textAlign: 'left' }}>Mã phiếu</th>
                 <th style={{ width: 70, textAlign: 'center' }}>Loại</th>
                 <th style={{ textAlign: 'left', minWidth: 200 }}>Nội dung</th>
@@ -286,8 +288,9 @@ export default function SurveyReport() {
               </tr>
             </thead>
             <tbody>
-              {items.map((it) => (
+              {items.map((it, i) => (
                 <tr key={`${it.survey_id}-${it.kind}-${it.line_id}`}>
+                  <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
                   <td>
                     <Link to={`/surveys/${it.survey_id}`} style={{ color: 'var(--teal)', fontWeight: 500, textDecoration: 'none' }}>
                       {it.survey_code}
@@ -304,7 +307,7 @@ export default function SurveyReport() {
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', color: '#999', padding: 24 }}>
+                  <td colSpan={9} style={{ textAlign: 'center', color: '#999', padding: 24 }}>
                     {busy ? 'Đang tải...' : 'Không có dữ liệu'}
                   </td>
                 </tr>
@@ -313,31 +316,9 @@ export default function SurveyReport() {
           </table>
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 18px', borderTop: '1px solid var(--border)' }}>
-            <span style={{ fontSize: 13, color: 'var(--muted)' }}>
-              Tổng {total} dòng · Trang {page}/{totalPages}
-            </span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn ghost" disabled={page <= 1} onClick={() => setPage(1)} style={{ padding: '0 10px', height: 32, fontSize: 12 }}>«</button>
-              <button className="btn ghost" disabled={page <= 1} onClick={() => setPage(page - 1)} style={{ padding: '0 10px', height: 32, fontSize: 12 }}>‹</button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const start = Math.max(1, Math.min(page - 2, totalPages - 4))
-                const pg = start + i
-                if (pg > totalPages) return null
-                return (
-                  <button key={pg} className={'btn' + (pg === page ? '' : ' ghost')} onClick={() => setPage(pg)} style={{ padding: '0 10px', height: 32, fontSize: 12, minWidth: 32 }}>{pg}</button>
-                )
-              })}
-              <button className="btn ghost" disabled={page >= totalPages} onClick={() => setPage(page + 1)} style={{ padding: '0 10px', height: 32, fontSize: 12 }}>›</button>
-              <button className="btn ghost" disabled={page >= totalPages} onClick={() => setPage(totalPages)} style={{ padding: '0 10px', height: 32, fontSize: 12 }}>»</button>
-            </div>
-          </div>
-        )}
-        {totalPages <= 1 && total > 0 && (
-          <div style={{ padding: '8px 18px', borderTop: '1px solid var(--border)', fontSize: 13, color: 'var(--muted)' }}>
-            Tổng {total} dòng
+        {total > 0 && (
+          <div style={{ padding: '10px 18px', borderTop: '1px solid var(--border)' }}>
+            <Pagination page={page} pageSize={PAGE_SIZE} total={total} hideSize onChange={(p) => setPage(p)} />
           </div>
         )}
       </div>

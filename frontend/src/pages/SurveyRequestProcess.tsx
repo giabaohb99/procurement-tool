@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import Pagination from '../components/Pagination'
 import { askConfirm } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import { toast } from '../components/toast'
@@ -508,14 +509,9 @@ export default function SurveyRequestProcess() {
                       </tbody>
                     </table>
                     {availTotalPages > 1 && (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 8, fontSize: 13 }}>
-                        <button className="btn ghost" style={{ height: 28, padding: '0 10px' }} disabled={availPage <= 0} onClick={() => setAvailPage(availPage - 1)}>
-                          <i className="ti ti-chevron-left" />
-                        </button>
-                        <span style={{ color: 'var(--muted)' }}>Trang {availPage + 1}/{availTotalPages} ({availShown.length} dòng)</span>
-                        <button className="btn ghost" style={{ height: 28, padding: '0 10px' }} disabled={availPage >= availTotalPages - 1} onClick={() => setAvailPage(availPage + 1)}>
-                          <i className="ti ti-chevron-right" />
-                        </button>
+                      <div style={{ marginTop: 8 }}>
+                        <Pagination page={availPage + 1} pageSize={AVAIL_PAGE_SIZE} total={availShown.length}
+                          hideSize onChange={(p) => setAvailPage(p - 1)} />
                       </div>
                     )}
                   </div>

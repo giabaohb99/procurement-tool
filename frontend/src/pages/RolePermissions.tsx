@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
+import Pagination from '../components/Pagination'
 import { askConfirm } from '../components/confirm'
 
 type Opt = { key: string; label: string }
@@ -133,10 +134,8 @@ export default function RolePermissions() {
               {users.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--muted)', padding: 20 }}>Chưa có tài khoản</td></tr>}
             </tbody>
           </table>
-          <div className="pager" style={{ padding: '10px 16px' }}>
-            <button className="btn ghost" disabled={uPage <= 1} onClick={() => setUPage((p) => Math.max(1, p - 1))}>Trước</button>
-            <span>Trang {uPage} / {uPages}</span>
-            <button className="btn ghost" disabled={uPage >= uPages} onClick={() => setUPage((p) => Math.min(uPages, p + 1))}>Sau</button>
+          <div style={{ padding: '10px 16px' }}>
+            <Pagination page={uPage} pageSize={PAGE} total={uTotal} hideSize onChange={(p) => setUPage(p)} />
           </div>
         </div>
       ) : (

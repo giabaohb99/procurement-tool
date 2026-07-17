@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
+import Pagination from '../components/Pagination'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
 import { fmtDateTime } from '../utils/datetime'
@@ -219,28 +220,9 @@ export default function Inventory() {
                 {totalRows === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có tồn kho</td></tr>}
               </tbody>
             </table>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderTop: '1px solid #f1f5f9', flexWrap: 'wrap', gap: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 13, color: 'var(--muted)' }}>Hiển thị {startIdx}–{endIdx} / {totalRows}</span>
-                <select
-                  value={pageSize}
-                  onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1) }}
-                  style={{ fontSize: 13, padding: '2px 6px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer' }}
-                >
-                  <option value={20}>20 / trang</option>
-                  <option value={50}>50 / trang</option>
-                  <option value={100}>100 / trang</option>
-                </select>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <button className="btn ghost" style={{ padding: '4px 8px' }} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-                  <i className="ti ti-chevron-left" />
-                </button>
-                <span style={{ fontSize: 13, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Trang {page}/{totalPages}</span>
-                <button className="btn ghost" style={{ padding: '4px 8px' }} disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-                  <i className="ti ti-chevron-right" />
-                </button>
-              </div>
+            <div style={{ borderTop: '1px solid #f1f5f9', padding: '10px 12px' }}>
+              <Pagination page={page} pageSize={pageSize} total={totalRows}
+                onChange={(p, s) => { setPage(p); setPageSize(s) }} />
             </div>
           </div>
         )

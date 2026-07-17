@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
+import Pagination from '../components/Pagination'
 import { poBadge } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
 import MatrixPivotTab from '../components/MatrixPivotTab'
@@ -362,13 +363,9 @@ export default function Reports() {
             </table>
           </div>
           {shipData.total > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, fontSize: 13, color: 'var(--muted)', flexWrap: 'wrap', gap: 8 }}>
-              <span>Hiển thị {(shipData.page - 1) * shipData.page_size + 1}–{Math.min(shipData.page * shipData.page_size, shipData.total)} / {shipData.total}</span>
-              <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <button className="btn ghost" disabled={shipData.page <= 1} onClick={() => setShipPage((p) => Math.max(1, p - 1))}><i className="ti ti-chevron-left" /></button>
-                <span>Trang {shipData.page}/{shipPages}</span>
-                <button className="btn ghost" disabled={shipData.page >= shipPages} onClick={() => setShipPage((p) => p + 1)}><i className="ti ti-chevron-right" /></button>
-              </div>
+            <div className="no-print" style={{ marginTop: 10 }}>
+              <Pagination page={shipData.page} pageSize={shipData.page_size} total={shipData.total}
+                hideSize onChange={(p) => setShipPage(p)} />
             </div>
           )}
         </div>

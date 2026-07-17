@@ -1,10 +1,11 @@
 export default function Pagination({
-  page, pageSize, total, onChange,
+  page, pageSize, total, onChange, hideSize = false,
 }: {
   page: number
   pageSize: number
   total: number
   onChange: (page: number, pageSize: number) => void
+  hideSize?: boolean   // ẩn ô chọn "n/trang" (nơi cỡ trang cố định / pager con)
 }) {
   const pages = Math.max(1, Math.ceil(total / pageSize))
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1
@@ -14,9 +15,11 @@ export default function Pagination({
     <div className="pager">
       <span>Hiển thị {from}–{to} / {total}</span>
       <span style={{ flex: 1 }} />
-      <select value={pageSize} onChange={(e) => onChange(1, Number(e.target.value))}>
-        {[10, 20, 50, 100].map((s) => <option key={s} value={s}>{s}/trang</option>)}
-      </select>
+      {!hideSize && (
+        <select value={pageSize} onChange={(e) => onChange(1, Number(e.target.value))}>
+          {[10, 20, 50, 100].map((s) => <option key={s} value={s}>{s}/trang</option>)}
+        </select>
+      )}
       <button className="btn ghost" disabled={page <= 1} onClick={() => onChange(page - 1, pageSize)}>
         <i className="ti ti-chevron-left" />
       </button>
