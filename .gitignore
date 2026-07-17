@@ -22,3 +22,7 @@ doc/tai-lieu-ky-thuat/export/mermaid.min.js
 doc/tai-lieu-ky-thuat/export/*.pdf
 doc/tai-lieu-ky-thuat/export/*.png
 doc/tai-lieu-ky-thuat/export/*.html
+
+# Celery beat schedule (dev)
+backend/celerybeat-schedule*
+celerybeat-schedule*
