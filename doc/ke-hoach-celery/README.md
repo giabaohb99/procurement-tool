@@ -39,6 +39,11 @@ Ngoài ra `task_acks_late=True` + `task_reject_on_worker_lost=True`: worker ch�
 
 **4. Quản lý Redis dễ hơn** — đã thêm **RedisInsight** (GUI) vào [Phase 0](phase-0-ha-tang.md) (dev, `http://localhost:5540`): xem queue Celery, task đang chờ, kết quả task, memory, monitor. (Chỉ dev — không đưa lên prod.)
 
+**5. Task chạy hằng ngày ĐĂNG KÝ / LƯU ở đâu?** — Cần tách **2 lớp**:
+- **Định nghĩa lịch** (task nào, mấy giờ) = **CODE** trong `beat_schedule` của `celery_app.py` (mỗi phase thêm entry, vd `crontab(hour=8)`). → Nằm trong **git**, deploy theo app. Đây là "nguồn sự thật"; đổi lịch = sửa code + deploy lại beat. **KHÔNG lưu ở DB/Redis** (với `PersistentScheduler`).
+- **Trạng thái beat** (mốc "đã chạy lần cuối" để biết khi nào chạy tiếp) = **file `celerybeat-schedule`** do `PersistentScheduler` ghi trong container beat. → Prod cần **volume persist** (`beat_data`), nếu mất chỉ mất mốc chạy cuối (beat tính lại), không mất định nghĩa.
+- Muốn **lưu lịch trong Redis** (đổi lịch không cần deploy, hoặc chạy nhiều beat) → dùng **`celery-redbeat`** (nêu ở [Phase 0 §7](phase-0-ha-tang.md)). Hiện plan chọn `PersistentScheduler` (đơn giản, đủ dùng vì lịch cố định).
+
 ## Khung mỗi file phase (mục chuẩn)
 1. **Mục tiêu** — làm gì, vì sao.
 2. **Phạm vi & việc cụ thể** — checklist.
