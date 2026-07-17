@@ -92,6 +92,8 @@ class ItemStatusItem(BaseModel):
     line_status: str | None = None
     progress_note: str | None = None
     note: str | None = None
+    expected_date: str | None = None          # thời gian dự kiến có hàng (NSTM cập nhật)
+    expected_date_reason: str | None = None    # lý do — BẮT BUỘC khi đổi giá trị đã có
 
 
 class ItemStatusIn(BaseModel):

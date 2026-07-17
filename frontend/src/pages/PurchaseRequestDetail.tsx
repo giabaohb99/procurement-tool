@@ -76,6 +76,7 @@ export default function PurchaseRequestDetail() {
   const [docModal, setDocModal] = useState(false)
   const [docTypeLabels, setDocTypeLabels] = useState<Record<string, string>>({})
   const [editIdx, setEditIdx] = useState<number | null>(null)   // dòng đang mở popup chi tiết
+  const [origExp, setOrigExp] = useState('')   // giá trị 'thời gian dự kiến có hàng' lúc mở popup (để bắt lý do khi đổi)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [promptAction, setPromptAction] = useState<{type: 'reject'|'return'|'cancel', title: string, message: string, placeholder?: string} | null>(null)
   const [confirmAction, setConfirmAction] = useState<{type: 'complete'|'cancel_draft'|'copy', title: string, message: string, confirmText?: string} | null>(null)
@@ -106,6 +107,8 @@ export default function PurchaseRequestDetail() {
     api.get('/api/attachments', { params: { entity: 'purchase_request', entity_id: id } }).then((x) => setFiles(x.data.data)).catch(() => {})
   }
   useEffect(() => { if (!isNew) { setNotFound(false); loadAll() } }, [id])
+  // Chụp lại giá trị 'thời gian dự kiến có hàng' gốc khi MỞ popup dòng (để so khi lưu → bắt lý do nếu đổi)
+  useEffect(() => { if (editIdx != null) setOrigExp(((pr.items || [])[editIdx]?.expected_date || '').trim()) }, [editIdx])
 
   // nhãn loại chứng từ để hiện badge cạnh file (đồng bộ đơn mua hàng)
   useEffect(() => {
@@ -350,7 +353,9 @@ export default function PurchaseRequestDetail() {
 
   // Điều hướng sang form ĐMH mới với header từ phiếu + danh sách dòng đã tính sẵn
   function goPO(items: any[]) {
-    const firstAssignee = (items.find((it: any) => it.assignee) || {}).assignee
+    // NSPT = người phụ trách dòng ở YCMH. Lấy từ pr.items (có 'assignee'); items truyền vào
+    // đã map lại KHÔNG kèm assignee nên phải dò trên phiếu gốc → hiện sẵn trước khi bấm Tạo.
+    const firstAssignee = ((pr.items || []).find((it: any) => it.assignee) || {}).assignee
     const fromPr = {
       pr_code: pr.code,
       company_id: pr.company_id,
@@ -402,8 +407,18 @@ export default function PurchaseRequestDetail() {
   // Lưu popup chi tiết dòng khi phiếu KHÔNG còn ở trạng thái sửa (đã gửi duyệt trở đi)
   async function savePopupLine(it: any) {
     try {
-      if (canLineStatus(it))
-        await api.patch(`${API}/${id}/item-status`, { items: [{ id: it.id, line_status: it.line_status, progress_note: it.progress_note, note: it.note }] })
+      if (canLineStatus(it)) {
+        // Thời gian dự kiến có hàng: đổi giá trị ĐÃ CÓ phải kèm lý do (rỗng → cập nhật tự do).
+        const newExp = (it.expected_date || '').trim()
+        let expReason = ''
+        if (origExp && newExp !== origExp) {
+          const r = await askPrompt({ title: 'Đổi thời gian dự kiến có hàng', message: `Đổi từ ${origExp} sang ${newExp || '(để trống)'} — nhập lý do (bắt buộc):`, confirmText: 'Lưu' })
+          if (r === null) return
+          if (!r.trim()) { toast.error('Vui lòng nhập lý do thay đổi'); return }
+          expReason = r.trim()
+        }
+        await api.patch(`${API}/${id}/item-status`, { items: [{ id: it.id, line_status: it.line_status, progress_note: it.progress_note, note: it.note, expected_date: it.expected_date || '', expected_date_reason: expReason }] })
+      }
       if (canAssignPurchaser)
         await api.patch(`${API}/${id}/assign`, { items: [{ id: it.id, assignee: it.assignee || '' }] })
       toast.success('Đã cập nhật dòng'); setEditIdx(null); loadAll()
@@ -873,6 +888,10 @@ export default function PurchaseRequestDetail() {
               <div className="form-row">
                 <label>Ngày cần hàng <span className="req">*</span></label>
                 <input type="date" value={edit.required_date || ''} disabled={!editable} onChange={(e) => setItem(editIdx, 'required_date', e.target.value)} />
+              </div>
+              <div className="form-row">
+                <label title="NSTM phụ trách cập nhật — đổi giá trị đã có phải kèm lý do">Thời gian dự kiến có hàng</label>
+                <input type="date" value={edit.expected_date || ''} disabled={!canLineStatus(edit)} onChange={(e) => setItem(editIdx, 'expected_date', e.target.value)} />
               </div>
               {showAssigneeCol && (
                 <div className="form-row">

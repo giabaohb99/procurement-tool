@@ -273,6 +273,8 @@ export default function SurveyRequestDetail() {
     return Array.from(prMap.entries()).map(([pid, data]) => ({ pid, ...data }))
   })()
   const allChosen = (result?.lines || []).length > 0 && (result?.lines || []).every((l: any) => (l.options || []).some((o: any) => o.is_chosen))
+  // Còn dòng CHƯA tạo YCMH (is_completed=false) mới cho tạo YCMH — nếu mọi dòng đã tạo thì ẩn nút.
+  const hasPendingLines = (result?.lines || []).some((l: any) => !l.is_completed)
   const canFinalize = can('survey_request', 'process') && can('survey_request', 'approve')
   // Chỉ NGƯỜI YÊU CẦU (người tạo) hoặc Admin TM (delete) được tạo YCMH
   const canCreatePr = isRequester || can('survey_request', 'delete')
@@ -505,8 +507,8 @@ export default function SurveyRequestDetail() {
           </button>
         )}
 
-        {/* Nút Tạo yêu cầu mua (người YC) — hiện cả khi Hoàn thành để tạo thêm cho dòng chưa chốt */}
-        {!isNew && ['survey_done', 'pr_created', 'done'].includes(sv.status) && canCreatePr && (
+        {/* Nút Tạo yêu cầu mua (người YC) — chỉ khi CÒN dòng chưa tạo YCMH (ẩn khi mọi dòng đã chốt) */}
+        {!isNew && ['survey_done', 'pr_created', 'done'].includes(sv.status) && canCreatePr && hasPendingLines && (
           <button className="btn" onClick={createPrs}>
             <i className="ti ti-file-plus" />Tạo yêu cầu mua
           </button>

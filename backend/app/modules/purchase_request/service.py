@@ -105,6 +105,7 @@ def update_item_status(db: Session, pid: int, data: ItemStatusIn, user_id: int, 
     if pr.status in ("cancelled", "completed"):
         raise HTTPException(400, "Phiếu đã bị từ chối/hoàn thành — không thể cập nhật")
     rows = {i.id: i for i in items_of(db, pid)}
+    _expected_changes: list[str] = []
     for it in data.items:
         row = rows.get(it.id)
         if row is None:
@@ -117,10 +118,24 @@ def update_item_status(db: Session, pid: int, data: ItemStatusIn, user_id: int, 
             row.progress_note = it.progress_note
         if it.note is not None:
             row.note = it.note
+        # Thời gian dự kiến có hàng: rỗng → cập nhật tự do; ĐÃ có giá trị → đổi phải kèm lý do.
+        if it.expected_date is not None:
+            old = (row.expected_date or "").strip()
+            new = (it.expected_date or "").strip()
+            if new != old:
+                reason = (it.expected_date_reason or "").strip()
+                if old and not reason:
+                    raise HTTPException(400, f"Đổi 'thời gian dự kiến có hàng' của '{row.product_name}' "
+                                             f"(từ {old}) phải kèm lý do.")
+                row.expected_date = new
+                _expected_changes.append(f"{row.product_name}: {old or '—'} → {new or '—'}"
+                                         + (f" · lý do: {reason}" if reason else ""))
     pr.updated_by = user_id
     db.commit()
     recompute_status(db, pr)
     record(db, user_id, ENTITY, pid, "line_status", "Cập nhật trạng thái dòng")
+    for msg in _expected_changes:
+        record(db, user_id, ENTITY, pid, "expected_date", msg)
     db.refresh(pr)
     return pr
 

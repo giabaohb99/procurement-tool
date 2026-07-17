@@ -53,6 +53,7 @@ class PurchaseRequestItem(Base, AuditMixin):
     amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)       # thành tiền = qty*price
     warehouse: Mapped[str] = mapped_column(String(100), default="")        # kho nhận
     required_date: Mapped[str] = mapped_column(String(10), default="")     # ngày cần hàng (theo dòng)
+    expected_date: Mapped[str] = mapped_column(String(10), default="")     # thời gian dự kiến có hàng (NSTM cập nhật; đổi giá trị đã có phải kèm lý do)
     assignee: Mapped[str] = mapped_column(String(100), default="")         # NSTM phụ trách (mã NV)
     line_status: Mapped[str] = mapped_column(String(30), default="Chưa đặt hàng")  # trạng thái xử lý dòng
     progress_note: Mapped[str] = mapped_column(Text, default="")           # chi tiết tiến độ

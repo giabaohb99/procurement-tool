@@ -43,6 +43,7 @@ def _out(db: Session, pr) -> dict:
          "item_group": i.item_group, "group_desc": i.group_desc, "qty": float(i.qty or 0),
          "unit": i.unit, "price": float(i.price or 0), "amount": float(i.amount or 0),
          "warehouse": i.warehouse, "required_date": i.required_date, "assignee": i.assignee,
+         "expected_date": i.expected_date,
          "line_status": i.line_status, "progress_note": i.progress_note, "note": i.note}
         for i in items
     ]
