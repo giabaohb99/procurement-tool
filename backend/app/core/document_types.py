@@ -9,7 +9,7 @@ DOCUMENT_TYPES = [
     {"value": "acceptance_report", "label": "Biên bản nghiệm thu"},
     {"value": "goods_receipt", "label": "Phiếu nhập kho"},
     {"value": "payment_document", "label": "Chứng từ thanh toán"},
-    {"value": "co_cq", "label": "CO / CQ"},
+    {"value": "co_cq", "label": "CO/CQ (Chứng nhận xuất xứ / chất lượng)"},
     {"value": "other", "label": "Khác"},
 ]
 
