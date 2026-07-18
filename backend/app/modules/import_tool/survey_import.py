@@ -193,8 +193,9 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
     batch.sheet_info = json.dumps({"sheet_ncc": ws3.title if ws3 else None, "rows_ncc": n3,
                                    "sheet_sp": ws4.title if ws4 else None, "rows_sp": n4}, ensure_ascii=False)
 
-    def get_survey(item_group, supplier_code, hdr):
-        key = _norm_key(item_group, supplier_code)
+    def get_survey(item_group, product, hdr):
+        # Gom theo (Phân loại + Sản phẩm) -> 1 phiếu = 1 sản phẩm, chứa NHIỀU NCC.
+        key = _norm_key(item_group, product)
         if key in survey_cache:
             return survey_cache[key]
         s = db.query(Survey).filter(Survey.import_key == key).first()
@@ -203,7 +204,7 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
                        approve_status="Duyệt", item_group=item_group,
                        received_date=hdr["received"], result_due_date=hdr["due"],
                        requirement_detail=hdr["detail"],
-                       main_content=(f"{supplier_code} - {hdr['detail'] or item_group}")[:500],
+                       main_content=(product or item_group)[:500],
                        request_qty=hdr["qty"], uom=hdr["uom"], proposed_rate=hdr["rate"],
                        nspt=hdr["nspt"], pr_code=hdr["req_code"],
                        created_by=batch.created_by, updated_by=batch.created_by)
@@ -211,7 +212,7 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
             s.code = f"KS{s.id:05d}"
         else:
             # re-import: cập nhật lại header (không đụng status/approve/code)
-            s.main_content = (f"{supplier_code} - {hdr['detail'] or item_group}")[:500]
+            s.main_content = (product or item_group)[:500]
             s.received_date = hdr["received"]; s.result_due_date = hdr["due"]
             s.requirement_detail = hdr["detail"]; s.request_qty = hdr["qty"]
             s.uom = hdr["uom"]; s.proposed_rate = hdr["rate"]
@@ -235,7 +236,7 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
             code = _canon_code(db, code, tax)   # đưa về mã danh mục để UI khớp tên pháp lý
             # upsert Supplier + phát hiện MST xung đột
             _upsert_supplier(db, batch, code, tax, ws3, r, log)
-            s = get_survey(ig, code, hdr)
+            s = get_survey(ig, hdr["detail"], hdr)
             row_key = tax or code
             line = None
             for ln in db.query(SurveySupplierLine).filter(SurveySupplierLine.survey_id == s.id).all():
@@ -289,7 +290,7 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
             if not db.query(Supplier).filter(Supplier.code == code).first():
                 log("4.KS-SP", r, LogLevel.REVIEW, "ncc_text_only",
                     f"NCC '{code}' không có trong danh mục (KS SP không có MST) — giữ text", ref_key=code)
-            s = get_survey(ig, code, hdr)
+            s = get_survey(ig, hdr["detail"], hdr)
             internal = _s(_cell(ws4, r, "P"))
             pname = _s(_cell(ws4, r, "Q")) or _s(_cell(ws4, r, "R"))
             # Khoá dòng SP = NCC + Mã VTBB + Tên SP (AND). Tên khác nhau -> dòng KHÁC (giữ đủ biến thể).
