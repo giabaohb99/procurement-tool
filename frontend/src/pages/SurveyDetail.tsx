@@ -805,7 +805,7 @@ export default function SurveyDetail() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
         <button className="btn ghost" onClick={() => navigate('/surveys')}><i className="ti ti-arrow-left" /></button>
         <h2 className="page-title" style={{ margin: 0 }}>{isNew ? 'Tạo Phiếu Khảo sát' : `Phiếu Khảo sát ${sv.code || ''}`}</h2>
-        {!isNew && sv.status !== 'draft' && srBadge(sv.status)}
+        {!isNew && srBadge(sv.status)}
         <span style={{ flex: 1 }} />
         {editable && can('survey', isNew ? 'create' : 'write') && (
           <button className="btn" onClick={save}>Lưu</button>

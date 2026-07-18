@@ -173,9 +173,10 @@ export default function CrudDetail() {
               <button className="btn ghost" onClick={async () => {
                 setErr('')
                 try {
-                  const r = await api.get('/api/users', { params: { search: form.code || form.email || form.full_name, page_size: 20 } })
-                  const u = (r.data.data.items || []).find((x: any) => x.employee_id === Number(id))
-                  if (u) navigate(`/users/${u.id}`); else setErr('Nhân sự này chưa có tài khoản để phân quyền')
+                  // Tra CHÍNH XÁC theo employee_id (không dựa fuzzy-search dễ sai)
+                  const r = await api.get('/api/users', { params: { employee_id: id, page_size: 1 } })
+                  const u = (r.data.data.items || [])[0]
+                  if (u) navigate(`/users/${u.id}`); else setErr('Nhân sự này chưa có tài khoản — bấm "Đặt lại mật khẩu" để tạo tài khoản đăng nhập trước.')
                 } catch { setErr('Không mở được phân quyền') }
               }}><i className="ti ti-shield" />Phân quyền tài khoản</button>
             )}

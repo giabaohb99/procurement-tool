@@ -163,6 +163,8 @@ export default function PurchaseRequestDetail() {
   const canCreatePO = can('purchase_order', 'create') && (isPurchaserDept || canManage || canAssignPurchaser)
   // Còn dòng nào chưa đặt hàng → vẫn cho tạo ĐMH (không ẩn khi mới hoàn thành 1 dòng)
   const hasUnorderedItem = (pr.items || []).some((it: any) => (it.line_status || 'Chưa đặt hàng') === 'Chưa đặt hàng')
+  // Chỉ cho Hoàn thành phiếu khi MỌI dòng đã ở điểm cuối (Hoàn thành/Hủy đơn)
+  const allItemsDone = (pr.items || []).length > 0 && (pr.items || []).every((it: any) => ['Hoàn thành', 'Hủy đơn'].includes(it.line_status || 'Chưa đặt hàng'))
   // Cột/trường "NSTM phụ trách" chỉ cho phía thu mua (is_purchaser = có quyền xử lý khảo sát).
   // Ẩn hoàn toàn với người yêu cầu (NSYC/employee) & trưởng bộ phận của họ (dept_head).
   const showAssigneeCol = can('survey_request', 'process')
@@ -465,7 +467,7 @@ export default function PurchaseRequestDetail() {
           <button className="btn" onClick={createPO}><i className="ti ti-shopping-cart" />Tạo đơn mua hàng</button>
         )}
         {!isNew && canManage && ['approved', 'processing'].includes(pr.status) && (
-          <button className="btn secondary" onClick={() => setConfirmAction({ type: 'complete', title: 'Hoàn thành', message: 'Đánh dấu phiếu HOÀN THÀNH?', confirmText: 'Đồng ý' })}><i className="ti ti-checks" />Hoàn thành</button>
+          <button className="btn secondary" onClick={() => { if (!allItemsDone) { toast.error('Chưa có sản phẩm đặt hàng hoàn tất — chỉ hoàn thành khi mọi sản phẩm đã Hoàn thành/Hủy.'); return } setConfirmAction({ type: 'complete', title: 'Hoàn thành', message: 'Đánh dấu phiếu HOÀN THÀNH?', confirmText: 'Đồng ý' }) }}><i className="ti ti-checks" />Hoàn thành</button>
         )}
         {/* ── Từ chối (khóa phiếu) ở giai đoạn đã duyệt/đang xử lý ── */}
         {!isNew && canManage && !['draft', 'submitted', 'rejected', 'cancelled', 'completed', 'done'].includes(pr.status) && (

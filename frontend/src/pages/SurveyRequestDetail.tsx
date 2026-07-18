@@ -184,7 +184,7 @@ export default function SurveyRequestDetail() {
   })()
   const canViewNstm = can('survey_request', 'process') // Ai xử lý được thì xem được cột NSTM
   const srLocked = sv.status === 'cancelled' || sv.status === 'done'   // Đã từ chối / Hoàn thành → khóa, không sửa
-  const canAssignNstm = can('survey_request', 'approve') && !srLocked // Chỉ QL/Admin mới được gán NSTM (và phiếu chưa khóa)
+  const canAssignNstm = can('survey_request', 'process') && !srLocked // Thu mua side (NSTM/QL/Admin TM) gán NSTM — khớp quyền backend (process), phiếu chưa khóa
   // Cột NSTM (Ngày tiếp nhận, Nhân sự phụ trách): CHỈ hiện với quản lý/thu mua, KHÔNG hiện với người YC & lúc tạo
   const showNstmCols = canViewNstm && !isNew
   // Trạng thái dòng: ẩn khi TẠO mới (mọi dòng đều "Chưa xong" → rối mắt)

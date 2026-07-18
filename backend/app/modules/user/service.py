@@ -12,8 +12,10 @@ def _role_ids(db: Session, user_id: int) -> list[int]:
     return [ur.role_id for ur in db.query(UserRole).filter(UserRole.user_id == user_id).all()]
 
 
-def list_users(db: Session, pg: dict, search: str = "", department: str = "", role_id: int = 0, sort: str = ""):
+def list_users(db: Session, pg: dict, search: str = "", department: str = "", role_id: int = 0, sort: str = "", employee_id: int = 0):
     query = db.query(User)
+    if employee_id:   # tra CHÍNH XÁC tài khoản của 1 nhân sự (dùng cho nút "Phân quyền tài khoản")
+        query = query.filter(User.employee_id == employee_id)
     if search:
         like = f"%{search.strip()}%"
         emp_ids = [e.id for e in db.query(Employee).filter(

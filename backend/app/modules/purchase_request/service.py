@@ -168,6 +168,12 @@ def return_pr(db: Session, pid: int, reason: str, user_id: int) -> PurchaseReque
 
 def complete_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
     pr = get_pr(db, pid)
+    # Chỉ hoàn thành phiếu khi MỌI dòng đã ở điểm cuối ("Hoàn thành"/"Hủy đơn") —
+    # tránh bấm Hoàn thành khi sản phẩm còn chưa đặt hàng/đang xử lý.
+    items = items_of(db, pid)
+    pending = [it for it in items if (it.line_status or "Chưa đặt hàng") not in ("Hoàn thành", "Hủy đơn")]
+    if not items or pending:
+        raise HTTPException(400, "Chưa có sản phẩm đặt hàng hoàn tất — chỉ hoàn thành phiếu khi mọi sản phẩm đã Hoàn thành hoặc Hủy.")
     pr.status = "completed"
     pr.updated_by = user_id
     db.commit()

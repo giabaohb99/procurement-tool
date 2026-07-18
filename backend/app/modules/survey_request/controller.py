@@ -380,7 +380,7 @@ def sync_options_(sid: int, db: Session = Depends(get_db), up=Depends(_purchaser
     if s.status not in ("processing", "survey_done"):
         raise HTTPException(400, "Chỉ lấy phương án khi phiếu đang xử lý hoặc đã khảo sát")
     n = service.sync_options_from_surveys(db, sid, user.id)
-    return success(_out_process(db, s), f"Đã lấy {n} phương án từ khảo sát" if n else "Chưa có phương án mới từ khảo sát")
+    return success(_out_process(db, s), f"Đã lấy {n} phương án mới từ khảo sát" if n else "Đã lấy phương án từ khảo sát xong")
 
 
 @router.delete("/{sid}/lines/{line_id}/options/{oid}")
