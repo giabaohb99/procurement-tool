@@ -19,8 +19,8 @@ docker compose exec celery-worker python -c "from app.tasks.debug import ping; p
 | TT | Việc | Ghi chú |
 |---|---|---|
 | [x] | Merge Celery (redis/worker/beat) vào `bao` | đã cherry-pick |
-| [ ] | Model `import_batch` + `import_log` (+ IntEnum level/status/module/mode) | §5 quan-ly-import.md |
-| [ ] | Migration 2 bảng | |
+| [x] | Model `import_batch` + `import_log` (+ IntEnum level/status/module/mode) | module `import_tool`, verify ORM OK |
+| [x] | Migration 2 bảng | `2bad028f037a` — đã dọn drift, apply local OK |
 | [ ] | Lưu file .xlsx qua StoredFile (`file_id`) | |
 | [ ] | API upload + tạo batch + đẩy Celery task (trả `batch_id` ngay) | |
 | [ ] | Trang **Quản lý Import**: list (tên file text) + chi tiết (tải file + tab log) | |
