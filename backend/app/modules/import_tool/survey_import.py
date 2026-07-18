@@ -66,6 +66,21 @@ def _b(v) -> bool:
     return _s(v).lower() in ("true", "1", "x", "có", "co", "yes")
 
 
+def _approve(v):
+    """Map cột 'Duyệt (TP/QL)' của data cũ về bộ chuẩn của app.
+    Trả (line_approve, note_fallback) — text tự do (vd 'Tìm thêm/Trao đổi lại') coi là
+    'Thiếu thông tin' + giữ nguyên text làm ghi chú nếu ô ghi chú trống."""
+    s = _s(v)
+    low = s.lower()
+    if not s:
+        return "Chờ duyệt", ""
+    if "không" in low or "ko duyệt" in low or "không đạt" in low:
+        return "Không duyệt", ""
+    if low in ("duyệt", "đã duyệt", "đạt", "duyet", "ok"):
+        return "Đã duyệt", ""
+    return "Thiếu thông tin", s
+
+
 def _find_sheet(wb, prefix: str):
     for ws in wb.worksheets:
         if ws.title.strip().startswith(prefix):
@@ -183,6 +198,10 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
             data, trunc = _fit(SurveySupplierLine, data)
             if trunc:
                 log("3.KS-NCC", r, LogLevel.WARNING, "value_truncated", f"Cắt bớt do quá dài: {', '.join(trunc)}", ref_key=code)
+            appr, appr_note = _approve(_cell(ws3, r, "AI"))
+            data["line_approve"] = appr
+            if not (data.get("line_approve_note") or "").strip():
+                data["line_approve_note"] = appr_note
             if line:
                 for k, v in data.items():
                     setattr(line, k, v)
@@ -226,6 +245,10 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
             data, trunc = _fit(SurveyProductLine, data)
             if trunc:
                 log("4.KS-SP", r, LogLevel.WARNING, "value_truncated", f"Cắt bớt do quá dài: {', '.join(trunc)}", ref_key=code)
+            appr, appr_note = _approve(_cell(ws4, r, "AL"))
+            data["line_approve"] = appr
+            if not (data.get("line_approve_note") or "").strip():
+                data["line_approve_note"] = appr_note
             if line:
                 for k, v in data.items():
                     setattr(line, k, v)
