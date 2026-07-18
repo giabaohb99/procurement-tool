@@ -120,6 +120,12 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
         elif level == LogLevel.ERROR:
             counts["error"] += 1
 
+    # File khảo sát chuẩn PHẢI có cả 2 sheet — thiếu 1 sheet là dấu hiệu file sai/thiếu.
+    if ws3 is None:
+        log("-", 0, LogLevel.WARNING, "missing_sheet", "Không thấy sheet '3. KHẢO SÁT ... N' (đánh giá NCC)")
+    if ws4 is None:
+        log("-", 0, LogLevel.WARNING, "missing_sheet", "Không thấy sheet '4. KHẢO SÁT ... S' (báo giá SP)")
+
     survey_cache: dict[str, Survey] = {}
     n3 = _last_row(ws3) - HEADER_ROW if ws3 else 0
     n4 = _last_row(ws4) - HEADER_ROW if ws4 else 0
