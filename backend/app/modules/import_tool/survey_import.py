@@ -12,6 +12,7 @@ from openpyxl.utils import column_index_from_string
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.orm import Session
 
+from app.modules.catalog.model import ItemGroup, Unit
 from app.modules.supplier.model import Supplier
 from app.modules.survey.model import Survey, SurveyProductLine, SurveySupplierLine
 
@@ -166,6 +167,25 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
     if ws4 is None:
         log("-", 0, LogLevel.WARNING, "missing_sheet", "Không thấy sheet '4. KHẢO SÁT ... S' (báo giá SP)")
 
+    # Đối chiếu ĐVT / Phân loại về ĐÚNG text trong danh mục (để search/lọc khớp chính xác).
+    ig_map = {_ncode(g.name): g.name for g in db.query(ItemGroup).all()}
+    unit_map = {_ncode(u.name): u.name for u in db.query(Unit).all()}
+    _seen_unmatched: set = set()
+
+    def cat(value, cmap, label, sheet, row_no):
+        v = _s(value)
+        if not v:
+            return ""
+        canon = cmap.get(_ncode(v))
+        if canon:
+            return canon
+        key = (label, _ncode(v))
+        if key not in _seen_unmatched:
+            _seen_unmatched.add(key)
+            log(sheet, row_no, LogLevel.REVIEW, "value_unmatched",
+                f"{label} '{v}' không có trong danh mục — giữ text (khó tìm/lọc)", ref_key=v)
+        return v
+
     survey_cache: dict[str, Survey] = {}
     n3 = _last_row(ws3) - HEADER_ROW if ws3 else 0
     n4 = _last_row(ws4) - HEADER_ROW if ws4 else 0
@@ -201,7 +221,8 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
     # ----- Pass 1: sheet 3 (NCC) -----
     if ws3:
         for r in range(DATA_START, _last_row(ws3) + 1):
-            ig, code, tax = _s(_cell(ws3, r, "F")), _s(_cell(ws3, r, "O")), _s(_cell(ws3, r, "Q"))
+            ig = cat(_cell(ws3, r, "F"), ig_map, "Phân loại", "3.KS-NCC", r)
+            code, tax = _s(_cell(ws3, r, "O")), _s(_cell(ws3, r, "Q"))
             if not ig or not code:
                 if _s(_cell(ws3, r, "A")):
                     log("3.KS-NCC", r, LogLevel.ERROR, "missing_key", "Thiếu Phân loại hoặc NCC", ref_key=code)
@@ -209,7 +230,7 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
                 continue
             hdr = {"received": _d(_cell(ws3, r, "B")), "due": _d(_cell(ws3, r, "C")), "bp": _s(_cell(ws3, r, "D")),
                    "req_code": _s(_cell(ws3, r, "E")), "detail": _s(_cell(ws3, r, "G")), "qty": _n(_cell(ws3, r, "H")),
-                   "uom": _s(_cell(ws3, r, "I")), "rate": _n(_cell(ws3, r, "J")), "nspt": _s(_cell(ws3, r, "K"))}
+                   "uom": cat(_cell(ws3, r, "I"), unit_map, "ĐVT", "3.KS-NCC", r), "rate": _n(_cell(ws3, r, "J")), "nspt": _s(_cell(ws3, r, "K"))}
             code = _canon_code(db, code, tax)   # đưa về mã danh mục để UI khớp tên pháp lý
             # upsert Supplier + phát hiện MST xung đột
             _upsert_supplier(db, batch, code, tax, ws3, r, log)
@@ -247,7 +268,8 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
     # ----- Pass 2: sheet 4 (SP) -----
     if ws4:
         for r in range(DATA_START, _last_row(ws4) + 1):
-            ig, code = _s(_cell(ws4, r, "F")), _s(_cell(ws4, r, "O"))
+            ig = cat(_cell(ws4, r, "F"), ig_map, "Phân loại", "4.KS-SP", r)
+            code = _s(_cell(ws4, r, "O"))
             if not ig or not code:
                 if _s(_cell(ws4, r, "A")):
                     log("4.KS-SP", r, LogLevel.ERROR, "missing_key", "Thiếu Phân loại hoặc NCC", ref_key=code)
@@ -255,7 +277,7 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
                 continue
             hdr = {"received": _d(_cell(ws4, r, "B")), "due": _d(_cell(ws4, r, "C")), "bp": _s(_cell(ws4, r, "D")),
                    "req_code": _s(_cell(ws4, r, "E")), "detail": _s(_cell(ws4, r, "G")), "qty": _n(_cell(ws4, r, "H")),
-                   "uom": _s(_cell(ws4, r, "I")), "rate": _n(_cell(ws4, r, "J")), "nspt": _s(_cell(ws4, r, "K"))}
+                   "uom": cat(_cell(ws4, r, "I"), unit_map, "ĐVT", "4.KS-SP", r), "rate": _n(_cell(ws4, r, "J")), "nspt": _s(_cell(ws4, r, "K"))}
             code = _canon_code(db, code, "")   # đưa về mã danh mục để UI khớp tên pháp lý
             if not db.query(Supplier).filter(Supplier.code == code).first():
                 log("4.KS-SP", r, LogLevel.REVIEW, "ncc_text_only",
@@ -270,9 +292,9 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
             data = dict(
                 contact_date=_d(_cell(ws4, r, "L")), reply_date=_d(_cell(ws4, r, "M")), result_date=_d(_cell(ws4, r, "N")),
                 supplier_code=code, internal_code=internal, product_name=pname, spec=_s(_cell(ws4, r, "S")),
-                origin=_s(_cell(ws4, r, "T")), quote_unit=_s(_cell(ws4, r, "U")), moq=_n(_cell(ws4, r, "V")),
+                origin=_s(_cell(ws4, r, "T")), quote_unit=cat(_cell(ws4, r, "U"), unit_map, "ĐVT", "4.KS-SP", r), moq=_n(_cell(ws4, r, "V")),
                 price_by_volume=_n(_cell(ws4, r, "W")), volume_range=_s(_cell(ws4, r, "X")), vat=_vat(_cell(ws4, r, "Y")),
-                amount=_n(_cell(ws4, r, "Z")), internal_unit=_s(_cell(ws4, r, "AA")), amount_converted=_n(_cell(ws4, r, "AB")),
+                amount=_n(_cell(ws4, r, "Z")), internal_unit=cat(_cell(ws4, r, "AA"), unit_map, "ĐVT", "4.KS-SP", r), amount_converted=_n(_cell(ws4, r, "AB")),
                 shipping_cost=_n(_cell(ws4, r, "AC")), delivery_time=_s(_cell(ws4, r, "AD")), delivery_place=_s(_cell(ws4, r, "AE")),
                 quote_file=_s(_cell(ws4, r, "AF")), sample_ready=_b(_cell(ws4, r, "AG")), sample_date=_d(_cell(ws4, r, "AH")),
                 sample_qty=_n(_cell(ws4, r, "AI")), lab_result=_s(_cell(ws4, r, "AJ")), nspt_note=_s(_cell(ws4, r, "AK")),
