@@ -96,8 +96,13 @@ def _last_row(ws) -> int:
     return last
 
 
+def _ncode(s: str) -> str:
+    """Chuẩn hoá mã/tên viết tắt NCC để so sánh: bỏ khoảng trắng thừa + không phân biệt hoa/thường."""
+    return " ".join((s or "").split()).upper()
+
+
 def _norm_key(item_group: str, supplier_code: str) -> str:
-    return f"{' '.join(item_group.split()).upper()}::{' '.join(supplier_code.split()).upper()}"
+    return f"{' '.join(item_group.split()).upper()}::{_ncode(supplier_code)}"
 
 
 _LEN_CACHE: dict = {}
@@ -269,7 +274,8 @@ def _upsert_supplier(db, batch, code, tax, ws, r, log):
     """Tạo/điền NCC theo code; MST khớp NCC khác code -> log review (không đè catalog)."""
     if tax:
         by_tax = db.query(Supplier).filter(Supplier.tax_code == tax).first()
-        if by_tax and by_tax.code != code:
+        # Chỉ là XUNG ĐỘT khi mã KHÁC HẲN (không tính khác hoa/thường/khoảng trắng — cùng NCC).
+        if by_tax and _ncode(by_tax.code) != _ncode(code):
             log("3.KS-NCC", r, LogLevel.REVIEW, "mst_conflict",
                 f"MST {tax} đang thuộc NCC '{by_tax.code}' khác tên viết tắt '{code}' — giữ text", ref_key=code)
             return
