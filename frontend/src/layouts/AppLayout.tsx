@@ -184,6 +184,12 @@ const NAV_GROUPS: NavGroup[] = [
         icon: "ti-settings",
         entity: "setting",
       },
+      {
+        to: "/import-batches",
+        label: "Quản lý Import",
+        icon: "ti-file-import",
+        entity: "survey",
+      },
     ],
   },
 ];

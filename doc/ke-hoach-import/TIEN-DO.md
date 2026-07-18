@@ -23,7 +23,7 @@ docker compose exec celery-worker python -c "from app.tasks.debug import ping; p
 | [x] | Migration 2 bảng | `2bad028f037a` — đã dọn drift, apply local OK |
 | [x] | Lưu file .xlsx qua StoredFile (`file_id`) | service.save_upload |
 | [x] | API upload + tạo batch + đẩy Celery task (trả `batch_id` ngay) | controller + router `/api/imports` |
-| [~] | Trang **Quản lý Import**: list (tên file text) + chi tiết (tải file + tab log) | đang làm FE |
+| [x] | Trang **Quản lý Import**: list (tên file text) + chi tiết (tải file + tab log) | ImportBatches + ImportBatchDetail + menu Hệ thống |
 | [x] | Chuông báo khi worker xong -> link `/import-batches/{id}` | task `_notify` |
 
 ## PHA 1 — Import KHẢO SÁT
@@ -34,8 +34,8 @@ docker compose exec celery-worker python -c "from app.tasks.debug import ping; p
 | [x] | Upsert Supplier (tạo mới / điền field trống) | _upsert_supplier |
 | [x] | Gom (Phân loại + NCC) -> upsert Survey + supplier_lines + product_lines | import_key idempotent |
 | [x] | Celery task `import_survey` (dry-run + apply) + ghi import_log | dùng chung run_import |
-| [~] | Nút "Import Excel" ở trang Phiếu khảo sát (dry-run -> xác nhận) | đang làm FE |
-| [x] | Test end-to-end với file mẫu | dry/apply/re-import OK; +cắt field dài, ngày rác |
+| [x] | Nút "Import Excel" (modal chọn chức năng/chế độ/file) | ở trang Quản lý Import — dùng chung Khảo sát + ĐMH |
+| [x] | Test end-to-end với file mẫu | dry/apply/re-import + qua worker thật + chuông OK |
 
 ## PHA 2 — Import ĐƠN MUA HÀNG
 | TT | Việc | Ghi chú |

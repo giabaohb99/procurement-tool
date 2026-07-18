@@ -25,6 +25,8 @@ import SurveyReport from './pages/SurveyReport'
 import CategoryAssignees from './pages/CategoryAssignees'
 import CategoryAssigneeNew from './pages/CategoryAssigneeNew'
 import SupplierDetail from './pages/SupplierDetail'
+import ImportBatches from './pages/ImportBatches'
+import ImportBatchDetail from './pages/ImportBatchDetail'
 import ContractDetail from './pages/ContractDetail'
 import RolePermissions from './pages/RolePermissions'
 import UserPermissionDetail from './pages/UserPermissionDetail'
@@ -65,6 +67,8 @@ export default function App() {
             <Route path="documents" element={<Documents />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="payables" element={<Payables />} />
+            <Route path="import-batches" element={<ImportBatches />} />
+            <Route path="import-batches/:id" element={<ImportBatchDetail />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="me" element={<Me />} />
             <Route path="reports" element={<Reports />} />
