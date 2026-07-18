@@ -21,21 +21,21 @@ docker compose exec celery-worker python -c "from app.tasks.debug import ping; p
 | [x] | Merge Celery (redis/worker/beat) vào `bao` | đã cherry-pick |
 | [x] | Model `import_batch` + `import_log` (+ IntEnum level/status/module/mode) | module `import_tool`, verify ORM OK |
 | [x] | Migration 2 bảng | `2bad028f037a` — đã dọn drift, apply local OK |
-| [ ] | Lưu file .xlsx qua StoredFile (`file_id`) | |
-| [ ] | API upload + tạo batch + đẩy Celery task (trả `batch_id` ngay) | |
-| [ ] | Trang **Quản lý Import**: list (tên file text) + chi tiết (tải file + tab log) | |
-| [ ] | Chuông báo khi worker xong -> link `/import-batches/{id}` | dùng trigger_notification |
+| [x] | Lưu file .xlsx qua StoredFile (`file_id`) | service.save_upload |
+| [x] | API upload + tạo batch + đẩy Celery task (trả `batch_id` ngay) | controller + router `/api/imports` |
+| [~] | Trang **Quản lý Import**: list (tên file text) + chi tiết (tải file + tab log) | đang làm FE |
+| [x] | Chuông báo khi worker xong -> link `/import-batches/{id}` | task `_notify` |
 
 ## PHA 1 — Import KHẢO SÁT
 | TT | Việc | Ghi chú |
 |---|---|---|
-| [ ] | Parser openpyxl sheet 3+4 (header dòng 5) + chuẩn hoá ngày/số/text | |
-| [ ] | Resolve NCC: SP->tên viết tắt, NCC->MST; xung đột->text-only+log | |
-| [ ] | Upsert Supplier (tạo mới / điền field trống) | |
-| [ ] | Gom (Phân loại + NCC) -> upsert Survey + supplier_lines + product_lines | khoá dòng: MST / (NCC+Mã VTBB) |
-| [ ] | Celery task `import_survey` (dry-run + apply) + ghi import_log | |
-| [ ] | Nút "Import Excel" ở trang Phiếu khảo sát (dry-run -> xác nhận) | |
-| [ ] | Test end-to-end với file mẫu | |
+| [x] | Parser openpyxl sheet 3+4 (header dòng 5) + chuẩn hoá ngày/số/text | survey_import.py |
+| [x] | Resolve NCC: SP->tên viết tắt, NCC->MST; xung đột->text-only+log | mst_conflict/ncc_text_only |
+| [x] | Upsert Supplier (tạo mới / điền field trống) | _upsert_supplier |
+| [x] | Gom (Phân loại + NCC) -> upsert Survey + supplier_lines + product_lines | import_key idempotent |
+| [x] | Celery task `import_survey` (dry-run + apply) + ghi import_log | dùng chung run_import |
+| [~] | Nút "Import Excel" ở trang Phiếu khảo sát (dry-run -> xác nhận) | đang làm FE |
+| [x] | Test end-to-end với file mẫu | dry/apply/re-import OK; +cắt field dài, ngày rác |
 
 ## PHA 2 — Import ĐƠN MUA HÀNG
 | TT | Việc | Ghi chú |

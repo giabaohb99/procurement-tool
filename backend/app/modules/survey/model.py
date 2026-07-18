@@ -30,6 +30,7 @@ class Survey(Base, AuditMixin):
     approve_status: Mapped[str] = mapped_column(String(20), default="")   # Duyệt|Không duyệt
     approve_note: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(30), default="draft")
+    import_key: Mapped[str] = mapped_column(String(160), default="", index=True)  # khoá idempotent khi import (phân loại::NCC)
 
 
 class SurveySupplierLine(Base, AuditMixin):

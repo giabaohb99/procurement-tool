@@ -21,10 +21,10 @@ celery_app.conf.update(
 
     # Liệt kê task tường minh (không autodiscover mù). Thêm module khi làm phase sau:
     imports=[
-        "app.tasks.debug",          # Phase 0 — smoke test ping
-        # "app.tasks.notifications",  # Phase 1 — gửi push/email
-        # "app.tasks.alerts",         # Phase 2 — cảnh báo theo lịch
-        # "app.tasks.report_tasks",   # Phase 3 — refresh báo cáo
+        "app.tasks.debug",              # Phase 0 — smoke test ping
+        "app.modules.import_tool.tasks",  # Import Khảo sát / Đơn mua hàng (chạy nền)
+        # "app.tasks.alerts",           # Phase 2 — cảnh báo theo lịch
+        # "app.tasks.report_tasks",     # Phase 3 — refresh báo cáo
     ],
 
     # Serialization JSON (an toàn hơn pickle)
