@@ -20,9 +20,8 @@ const SHIP_UNITS = ['Kiện', 'Chuyến', 'm2', 'tấn']
 const CurrencyInput = ({ value, onChange, disabled, style, className }: any) =>
   <NumberInput value={value} onChange={onChange} disabled={disabled} style={style} className={className ?? 'cell-input'} />
 
-// Máy trạng thái TIẾN ĐỘ của dòng ĐMH (progress_status) — chọn tay, backend gate điều kiện
-const PROGRESS_ORDER = ['Chưa đặt hàng', 'Đã đặt hàng', 'Đã nhận hàng', 'Đã gửi ĐMH cho KT', 'Hoàn thành']
-const PROGRESS_ALL = [...PROGRESS_ORDER, 'Tạm ngưng', 'Hủy đơn']
+// Màu badge TIẾN ĐỘ dòng ĐMH (progress_status). 4 bước thường TỰ ĐỘNG theo dữ liệu (backend);
+// tay chỉ còn Tạm ngưng / Hủy đơn / Tiếp tục.
 const PG_COLOR: Record<string, string> = {
   'Chưa đặt hàng': '#94a3b8', 'Đã đặt hàng': '#2563eb', 'Đã nhận hàng': '#0891b2',
   'Đã gửi ĐMH cho KT': '#7c3aed', 'Hoàn thành': '#16a34a', 'Tạm ngưng': '#d97706', 'Hủy đơn': '#dc2626',
@@ -580,10 +579,13 @@ export default function PurchaseOrderDetail() {
                               <button className="btn ghost" style={{ height: 26, fontSize: 11, padding: '0 8px' }} onClick={() => resumeProgress(it)}><i className="ti ti-player-play" />Tiếp tục</button>
                             </div>
                           ) : (
-                            <select className="cell-input" value={it.progress_status || 'Chưa đặt hàng'} onChange={(e) => setProgress(it, e.target.value)}
-                              style={{ width: 160, fontWeight: 600, color: PG_COLOR[it.progress_status] || 'var(--ink)' }}>
-                              {PROGRESS_ALL.map((s) => <option key={s} value={s} style={{ color: 'var(--ink)' }}>{s}</option>)}
-                            </select>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                              <span className="badge" title="Trạng thái tự động theo dữ liệu" style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{it.progress_status || 'Chưa đặt hàng'}</span>
+                              <div style={{ display: 'flex', gap: 4 }}>
+                                <button className="btn ghost" style={{ height: 24, fontSize: 11, padding: '0 6px' }} onClick={() => setProgress(it, 'Tạm ngưng')}><i className="ti ti-player-pause" />Tạm ngưng</button>
+                                <button className="btn ghost" style={{ height: 24, fontSize: 11, padding: '0 6px', color: 'var(--red)' }} onClick={() => setProgress(it, 'Hủy đơn')}>Hủy</button>
+                              </div>
+                            </div>
                           )
                         ) : (
                           <span className="badge" title={!it.id ? 'Lưu đơn để cập nhật trạng thái cho dòng mới' : undefined} style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{it.progress_status || 'Chưa đặt hàng'}</span>
@@ -739,10 +741,13 @@ export default function PurchaseOrderDetail() {
                               <button className="btn ghost" style={{ height: 26, fontSize: 11, padding: '0 8px' }} onClick={() => resumeProgress(it)}><i className="ti ti-player-play" />Tiếp tục</button>
                             </div>
                           ) : (
-                            <select className="cell-input" value={it.progress_status || 'Chưa đặt hàng'} onChange={(e) => setProgress(it, e.target.value)}
-                              style={{ fontWeight: 600, color: PG_COLOR[it.progress_status] || 'var(--ink)' }}>
-                              {PROGRESS_ALL.map((s) => <option key={s} value={s} style={{ color: 'var(--ink)' }}>{s}</option>)}
-                            </select>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
+                              <span className="badge" title="Trạng thái tự động theo dữ liệu" style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{it.progress_status || 'Chưa đặt hàng'}</span>
+                              <div style={{ display: 'flex', gap: 4 }}>
+                                <button className="btn ghost" style={{ height: 24, fontSize: 11, padding: '0 6px' }} onClick={() => setProgress(it, 'Tạm ngưng')}><i className="ti ti-player-pause" />Tạm ngưng</button>
+                                <button className="btn ghost" style={{ height: 24, fontSize: 11, padding: '0 6px', color: 'var(--red)' }} onClick={() => setProgress(it, 'Hủy đơn')}>Hủy</button>
+                              </div>
+                            </div>
                           )
                         ) : (
                           <span className="badge" title={!it.id ? 'Lưu đơn để cập nhật trạng thái cho dòng mới' : undefined} style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{it.progress_status || 'Chưa đặt hàng'}</span>

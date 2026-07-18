@@ -327,6 +327,11 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
     if bool(po.is_urgent) != old_urgent and po.pr_code:
         sync_urgent_group(db, po.pr_code, bool(po.is_urgent), exclude_po_id=po.id)
     record(db, user_id, ENTITY, pid, "update")
+    try:
+        apply_auto_progress(db, po, user_id)   # tự tiến trạng thái dòng + đồng bộ YCMH (chỉ khi có đổi)
+    except Exception:
+        db.rollback()   # auto-progress không được phép làm hỏng thao tác chính (đã commit)
+    db.refresh(po)
     return po
 
 
@@ -400,21 +405,74 @@ def is_line_paid(db: Session, po: PurchaseOrder, item: POItem) -> bool:
     return all(float(p.remaining or 0) <= 0.01 for p in pays)
 
 
+# Tên trường hiển thị còn thiếu cho từng bước tiến độ (index theo PROGRESS_ORDER)
+_STEP_MISSING = {
+    1: "Mã đơn MISA (trên phiếu)",
+    2: "Có nhận hàng (số lượng nhận > 0)",
+    3: "Số hóa đơn",
+    4: "Thanh toán cho dòng (NCC sản phẩm)",
+}
+
+
+def _step_ok(db: Session, po: PurchaseOrder, item: POItem, ti: int) -> bool:
+    """Điều kiện ĐỦ để dòng đạt bước index ti (dùng chung cho auto-advance + validate_progress)."""
+    if ti <= 0:
+        return True
+    if ti == 1:
+        return bool((po.misa_code or "").strip())
+    if ti == 2:
+        return float(item.qty_received or 0) > 0
+    if ti == 3:
+        return bool((item.invoice_no or "").strip())
+    if ti == 4:
+        return is_line_paid(db, po, item)
+    return False
+
+
 def validate_progress(db: Session, po: PurchaseOrder, item: POItem, target: str):
     """Trả (ok, missing[]): missing là TÊN TRƯỜNG hiển thị còn thiếu. Điều kiện CỘNG DỒN theo bước."""
     if target not in PROGRESS_ORDER:
         return True, []
     ti = PROGRESS_ORDER.index(target)
-    missing = []
-    if ti >= 1 and not (po.misa_code or "").strip():
-        missing.append("Mã đơn MISA (trên phiếu)")
-    if ti >= 2 and not (float(item.qty_received or 0) > 0):
-        missing.append("Có nhận hàng (số lượng nhận > 0)")
-    if ti >= 3 and not (item.invoice_no or "").strip():
-        missing.append("Số hóa đơn")
-    if ti >= 4 and not is_line_paid(db, po, item):
-        missing.append("Thanh toán cho dòng (NCC sản phẩm)")
+    missing = [_STEP_MISSING[s] for s in range(1, ti + 1) if not _step_ok(db, po, item, s)]
     return (len(missing) == 0), missing
+
+
+def highest_satisfied_step(db: Session, po: PurchaseOrder, item: POItem) -> int:
+    """Bước cao nhất LIÊN TỤC thỏa (dừng ở bước hụt đầu tiên — gate cộng dồn)."""
+    ti = 0
+    for s in range(1, len(PROGRESS_ORDER)):
+        if _step_ok(db, po, item, s):
+            ti = s
+        else:
+            break
+    return ti
+
+
+def auto_advance_line(db: Session, po: PurchaseOrder, item: POItem) -> bool:
+    """Chỉ TIẾN (forward-only). Bỏ qua dòng ở điểm cuối/tạm ngưng. Trả True nếu có đổi."""
+    if item.progress_status in ("Hoàn thành", "Hủy đơn", "Tạm ngưng"):
+        return False
+    cur = PROGRESS_ORDER.index(item.progress_status) if item.progress_status in PROGRESS_ORDER else 0
+    target = highest_satisfied_step(db, po, item)
+    if target > cur:
+        item.progress_status = PROGRESS_ORDER[target]
+        return True
+    return False
+
+
+def apply_auto_progress(db: Session, po: PurchaseOrder, user_id: int | None = None) -> bool:
+    """Duyệt mọi dòng → auto tiến; nếu có đổi thì commit + đồng bộ YCMH. Trả True nếu có đổi."""
+    changed = False
+    for item in db.query(POItem).filter(POItem.po_id == po.id).all():
+        if auto_advance_line(db, po, item):
+            changed = True
+            record(db, user_id or 0, ENTITY, po.id, "item_progress_auto",
+                   f"{item.product_name}: {item.progress_status}")
+    if changed:
+        db.commit()
+        _sync_pr(db, po.pr_code)
+    return changed
 
 
 def set_item_progress(db: Session, pid: int, item_id: int, target: str, reason: str, user_id: int) -> PurchaseOrder:
@@ -442,10 +500,7 @@ def set_item_progress(db: Session, pid: int, item_id: int, target: str, reason: 
         item.pause_reason = reason.strip()
         item.progress_status = target
     elif target in PROGRESS_ORDER:
-        ok, missing = validate_progress(db, po, item, target)
-        if not ok:
-            raise HTTPException(400, f"Chưa đủ điều kiện chuyển '{target}'. Cần: " + "; ".join(missing))
-        item.progress_status = target
+        raise HTTPException(400, "Trạng thái tiến độ tự động theo dữ liệu — không đặt tay. Chỉ dùng Tạm ngưng/Hủy đơn/Tiếp tục.")
     else:
         raise HTTPException(400, "Trạng thái không hợp lệ.")
 

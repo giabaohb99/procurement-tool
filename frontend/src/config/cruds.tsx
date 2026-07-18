@@ -1,5 +1,6 @@
 import { FilterField } from '../components/FilterBar'
 import DepartmentMembers from '../components/DepartmentMembers'
+import ProductImages from '../components/ProductImages'
 import { fmtDateTime } from '../utils/datetime'
 
 export type FieldDef = {
@@ -161,7 +162,11 @@ export const cruds: Record<string, CrudConfig> = {
   },
   products: {
     slug: 'products', entity: 'product', title: 'Sản phẩm / Hàng hóa', apiPath: '/api/products', importExport: true,
+    detailExtra: (row) => <ProductImages productId={row.id} />,
     columns: [
+      { key: 'thumbnail', label: 'Ảnh', render: (r) => r.thumbnail_url
+          ? <img src={r.thumbnail_url} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6 }} />
+          : <span style={{ color: '#cbd5e1' }}><i className="ti ti-photo" /></span> },
       { key: 'code', label: 'Mã VTBB/NL' }, { key: 'name', label: 'Tên VTBB/NL' }, { key: 'item_group', label: 'Phân loại' },
       { key: 'unit', label: 'ĐVT' },
       { key: 'hh_code', label: 'Mã HH' }, { key: 'hh_name', label: 'Tên SP (HH)' },

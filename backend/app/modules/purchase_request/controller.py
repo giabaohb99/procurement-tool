@@ -38,15 +38,35 @@ def _out(db: Session, pr) -> dict:
             d["company_name"] = comp.name
 
     items = service.items_of(db, pr.id)
-    d["items"] = [
-        {"id": i.id, "product_code": i.product_code, "product_name": i.product_name,
-         "item_group": i.item_group, "group_desc": i.group_desc, "qty": float(i.qty or 0),
-         "unit": i.unit, "price": float(i.price or 0), "amount": float(i.amount or 0),
-         "warehouse": i.warehouse, "required_date": i.required_date, "assignee": i.assignee,
-         "expected_date": i.expected_date,
-         "line_status": i.line_status, "progress_note": i.progress_note, "note": i.note}
-        for i in items
-    ]
+    # Batch resolve ảnh gốc theo product_code (2 query/phiếu, tránh N+1).
+    from app.modules.product.model import Product
+    from app.modules.attachment.model import FileLink, StoredFile
+    codes = {i.product_code for i in items if i.product_code}
+    prod_by_code: dict[str, int] = {}
+    if codes:
+        for pid_, code_ in db.query(Product.id, Product.code).filter(Product.code.in_(codes)):
+            prod_by_code.setdefault(code_, pid_)   # code catalog duy nhất
+    thumb_by_pid: dict[int, str] = {}
+    if prod_by_code:
+        q = (db.query(FileLink.entity_id, StoredFile.url)
+             .join(StoredFile, StoredFile.id == FileLink.file_id)
+             .filter(FileLink.entity == "product", FileLink.entity_id.in_(prod_by_code.values()))
+             .order_by(FileLink.entity_id, FileLink.sort_order.asc(), FileLink.id.desc()))
+        for eid, url in q:
+            thumb_by_pid.setdefault(eid, url)      # ảnh sort_order nhỏ nhất mỗi SP
+    d["items"] = []
+    for i in items:
+        pid_ = prod_by_code.get(i.product_code or "")
+        d["items"].append(
+            {"id": i.id, "product_code": i.product_code, "product_name": i.product_name,
+             "item_group": i.item_group, "group_desc": i.group_desc, "qty": float(i.qty or 0),
+             "unit": i.unit, "price": float(i.price or 0), "amount": float(i.amount or 0),
+             "warehouse": i.warehouse, "required_date": i.required_date, "assignee": i.assignee,
+             "expected_date": i.expected_date,
+             "line_status": i.line_status, "progress_note": i.progress_note, "note": i.note,
+             "product_id": pid_ or 0,                          # 0 = code không khớp catalog
+             "product_thumbnail_url": thumb_by_pid.get(pid_, "") if pid_ else ""}
+        )
     subtotal = round(sum(x["amount"] for x in d["items"]), 2)
     d["subtotal"] = subtotal
     d["vat"] = 0            # Yêu cầu mua KHÔNG tính VAT (thuế tính ở PO/hóa đơn)

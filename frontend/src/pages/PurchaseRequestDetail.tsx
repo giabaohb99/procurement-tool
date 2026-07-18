@@ -13,6 +13,8 @@ import PromptModal from '../components/PromptModal'
 import NotFound from '../components/NotFound'
 import { toast } from '../components/toast'
 import DocumentUploadModal from '../components/DocumentUploadModal'
+import AttachmentGallery from '../components/AttachmentGallery'
+import Lightbox from '../components/Lightbox'
 import { fmtSize, fileIcon } from '../utils/file-type'
 
 const API = '/api/purchase-requests'
@@ -85,6 +87,20 @@ export default function PurchaseRequestDetail() {
   const [orderedMap, setOrderedMap] = useState<Record<string, number>>({})   // SL đã đặt theo mã hàng (gộp mọi ĐMH cùng PYC)
   const [poExceed, setPoExceed] = useState<{ msg: string; normal: any[]; all: any[] } | null>(null)   // popup cảnh báo đặt vượt
   const [showPoModal, setShowPoModal] = useState(false)   // popup danh sách ĐMH liên quan
+  const [origLightbox, setOrigLightbox] = useState<{ imgs: any[]; idx: number } | null>(null)   // lightbox ảnh GỐC của SP
+  const [compareModal, setCompareModal] = useState<{ lineId: number; productId: number } | null>(null)   // modal đối chiếu theo dòng
+
+  // Mở lightbox xem ảnh GỐC của SP (lazy-load theo product_id)
+  async function openOrig(pid: number) {
+    if (!pid) return
+    try {
+      const r = await api.get('/api/attachments', { params: { entity: 'product', entity_id: pid }, _silent: true } as any)
+      const imgs = (r.data.data || []).filter((a: any) =>
+        (a.content_type || '').startsWith('image/') || /\.(jpe?g|png|webp|gif)$/i.test(a.filename || ''))
+      if (!imgs.length) { toast.info('Sản phẩm chưa có ảnh gốc'); return }
+      setOrigLightbox({ imgs, idx: 0 })
+    } catch { toast.error('Không tải được ảnh gốc (thiếu quyền xem sản phẩm hoặc lỗi mạng)') }
+  }
 
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items)).catch(() => {})
@@ -607,12 +623,14 @@ export default function PurchaseRequestDetail() {
               {!editable && !isNew && <span style={{ fontSize: 12, color: 'var(--muted)' }}><i className="ti ti-device-floppy" /> Trạng thái tự đồng bộ từ ĐMH · thay đổi phụ trách được lưu tự động</span>}
             </div>
             <div className="items-scroll">
-              <table className="items-table" style={{ minWidth: showAssigneeCol ? 1220 : 1060, tableLayout: 'fixed' }}>
+              <table className="items-table" style={{ minWidth: showAssigneeCol ? 1360 : 1200, tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
                     <th style={{ width: 34, textAlign: 'center' }}>No.</th>
                     <th style={{ width: 150, textAlign: 'left' }}>Mã hàng *</th>
                     <th style={{ width: 230, textAlign: 'left' }}>Tên sản phẩm *</th>
+                    <th style={{ width: 58, textAlign: 'center' }}>Ảnh gốc</th>
+                    <th style={{ width: 82, textAlign: 'center' }}>Ảnh đối chiếu</th>
                     <th style={{ width: 130, textAlign: 'left' }}>Kho nhận</th>
                     <th style={{ width: 140, textAlign: 'left' }}>Phân loại</th>
                     <th style={{ width: 80, textAlign: 'left' }}>ĐVT</th>
@@ -637,6 +655,20 @@ export default function PurchaseRequestDetail() {
                         {editable ? (
                           <input className="cell-input" value={it.product_name || ''} placeholder="Nhập tên sản phẩm" onChange={(e) => setItem(i, 'product_name', e.target.value)} style={{ width: '100%' }} />
                         ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{it.product_name || ''}</span>}
+                      </td>
+                      <td style={{ textAlign: 'center' }} title={it.product_id ? 'Ảnh gốc của sản phẩm' : 'Mã hàng không khớp catalog'}>
+                        {it.product_thumbnail_url
+                          ? <img src={it.product_thumbnail_url} alt="" onClick={() => openOrig(it.product_id)}
+                              style={{ width: 38, height: 38, objectFit: 'cover', borderRadius: 6, cursor: 'zoom-in', verticalAlign: 'middle' }} />
+                          : <span style={{ color: '#cbd5e1' }}><i className="ti ti-photo" /></span>}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        {it.id ? (
+                          <button className="btn ghost" style={{ height: 26, padding: '0 8px', fontSize: 12 }}
+                            onClick={() => setCompareModal({ lineId: it.id, productId: it.product_id || 0 })}>
+                            <i className="ti ti-photo-plus" /> Đối chiếu
+                          </button>
+                        ) : <span style={{ color: '#cbd5e1', fontSize: 11.5 }}>Lưu phiếu trước</span>}
                       </td>
                       <td>
                         {editable ? (
@@ -693,7 +725,7 @@ export default function PurchaseRequestDetail() {
                       </td>
                     </tr>
                   ))}
-                  {items.length === 0 && <tr><td colSpan={showAssigneeCol ? 12 : 11} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có sản phẩm nào</td></tr>}
+                  {items.length === 0 && <tr><td colSpan={showAssigneeCol ? 14 : 13} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có sản phẩm nào</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -839,6 +871,34 @@ export default function PurchaseRequestDetail() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal đối chiếu ảnh theo dòng SP: trên = ảnh gốc read-only, dưới = ảnh đối chiếu upload/xóa/kéo-thả */}
+      {compareModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(27,37,89,.3)', zIndex: 200, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '4vh 12px', overflowY: 'auto' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setCompareModal(null) }}>
+          <div className="card" style={{ width: 720, maxWidth: '100%', padding: 20 }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <h3 className="sec-title" style={{ margin: 0, border: 0, padding: 0 }}>Đối chiếu ảnh sản phẩm</h3>
+              <span className="clickable" style={{ color: '#94a3b8', fontSize: 18 }} onClick={() => setCompareModal(null)}><i className="ti ti-x" /></span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <AttachmentGallery entity="product" entityId={compareModal.productId} readOnly title="Ảnh gốc (tham chiếu)" />
+              <AttachmentGallery entity="purchase_request_line_image" entityId={compareModal.lineId}
+                permEntity="purchase_request" title="Ảnh đối chiếu" maxHint="Ảnh chụp thực tế để so với ảnh gốc · tối đa 5MB/ảnh" />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+              <button className="btn" onClick={() => setCompareModal(null)}>Đóng</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox ảnh GỐC của SP (mở từ cột "Ảnh gốc") */}
+      {origLightbox && (
+        <Lightbox images={origLightbox.imgs} index={origLightbox.idx}
+          onClose={() => setOrigLightbox(null)}
+          onNav={(i) => setOrigLightbox((s) => (s ? { ...s, idx: i } : s))} />
       )}
 
       {/* Popup chi tiết dòng */}

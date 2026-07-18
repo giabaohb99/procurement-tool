@@ -28,10 +28,21 @@ def list_products(
         query = query.filter(or_(Product.code.like(kw), Product.name.like(kw),
                                  Product.hh_code.like(kw), Product.hh_name.like(kw)))
     total, items = service.list_products(db, query, pg)
-    return success({
-        "total": total,
-        "items": [ProductOut.model_validate(i).model_dump() for i in items],
-    })
+    rows = [ProductOut.model_validate(i).model_dump() for i in items]
+    # Gắn thumbnail_url = ảnh sort_order nhỏ nhất mỗi SP (batch 1 query/trang, không N+1)
+    from app.modules.attachment.model import FileLink, StoredFile
+    ids = [r["id"] for r in rows]
+    thumb: dict[int, str] = {}
+    if ids:
+        q = (db.query(FileLink.entity_id, StoredFile.url)
+             .join(StoredFile, StoredFile.id == FileLink.file_id)
+             .filter(FileLink.entity == "product", FileLink.entity_id.in_(ids))
+             .order_by(FileLink.entity_id, FileLink.sort_order.asc(), FileLink.id.desc()))
+        for eid, url in q:
+            thumb.setdefault(eid, url)   # dòng đầu mỗi SP = ảnh sort_order nhỏ nhất
+    for r in rows:
+        r["thumbnail_url"] = thumb.get(r["id"], "")
+    return success({"total": total, "items": rows})
 
 
 @router.get("/{pid}")

@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, String
+from sqlalchemy import BigInteger, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
@@ -27,3 +27,4 @@ class FileLink(Base, AuditMixin):
     entity_id: Mapped[int] = mapped_column(BigInteger, index=True)
     purchase_order_id: Mapped[int] = mapped_column(BigInteger, default=0)   # gom bộ chứng từ theo đơn
     doc_type: Mapped[str] = mapped_column(String(50), default="", index=True)  # loại chứng từ (cố định trong code)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, server_default="0")  # thứ tự hiển thị (ảnh SP); nhỏ = trước

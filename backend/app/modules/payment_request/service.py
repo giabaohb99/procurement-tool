@@ -115,6 +115,7 @@ def set_status(db: Session, rid: int, status: str, user_id: int, reason: str = "
     req.updated_by = user_id
     if status == "cancelled":
         req.reject_reason = reason
+    affected_po_ids: set[int] = set()
     if status == "paid":
         # cộng tiền đã trả vào từng khoản nợ
         for ln in lines_of(db, rid):
@@ -122,7 +123,25 @@ def set_status(db: Session, rid: int, status: str, user_id: int, reason: str = "
             if p:
                 p.paid_amount = round(float(p.paid_amount or 0) + float(ln.amount or 0), 2)
                 recalc_status(p)
+                # gom ĐMH liên quan (goods → delivery → PO) để tự tiến trạng thái sau commit
+                if p.source_type == "goods" and p.ref_type == "delivery":
+                    from app.modules.purchase_order.model import PODelivery
+                    d = db.get(PODelivery, p.ref_id)
+                    if d:
+                        affected_po_ids.add(d.po_id)   # PODelivery mang sẵn po_id
     db.commit()
     record(db, user_id, ENTITY, rid, status, reason)
+    if status == "paid" and affected_po_ids:
+        # tự tiến trạng thái dòng ĐMH; KHÔNG được làm hỏng thao tác chi tiền (đã commit)
+        try:
+            # LAZY import tránh circular (purchase_order ↔ payment/payable)
+            from app.modules.purchase_order import service as po_service
+            from app.modules.purchase_order.model import PurchaseOrder
+            for po_id in affected_po_ids:
+                po = db.get(PurchaseOrder, po_id)
+                if po:
+                    po_service.apply_auto_progress(db, po, user_id)
+        except Exception:
+            db.rollback()
     db.refresh(req)
     return req

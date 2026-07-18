@@ -10,6 +10,7 @@ _IMG = {"jpg", "jpeg", "png", "webp"}
 FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
     "purchase_request":       ("purchase_request", _DOC, 20),
     "purchase_request_quote": ("purchase_request", _DOC, 20),
+    "purchase_request_line_image": ("purchase_request", _IMG, 5),  # ảnh đối chiếu theo dòng PYC, entity_id = PurchaseRequestItem.id
     "survey":                 ("survey", {"pdf", "jpg", "jpeg", "png", "xlsx", "xls"}, 10),
     "survey_line":            ("survey", {"pdf", "jpg", "jpeg", "png", "xlsx", "xls"}, 10),
     "survey_request":         ("survey_request", _DOC, 10),
@@ -18,6 +19,7 @@ FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
     "delivery":               ("purchase_order", _DOC, 20),
     "contract":               ("contract", {"pdf", "jpg", "jpeg", "png", "docx", "doc"}, 30),
     "payment_request":        ("payment_request", {"pdf", "jpg", "jpeg", "png"}, 20),
+    "product":                ("product", _IMG, 5),   # ảnh sản phẩm, ≤5MB, cần write/create trên product
     "avatar":                 ("__self__", _IMG, 5),   # __self__ = chỉ cần đăng nhập (ảnh của chính mình)
 }
 

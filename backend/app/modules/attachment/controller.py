@@ -29,7 +29,7 @@ def _link_out(link: FileLink, f: StoredFile) -> dict:
     return {"id": link.id, "file_id": f.id, "filename": f.filename, "url": f.url,
             "content_type": f.content_type, "size": f.size,
             "entity": link.entity, "entity_id": link.entity_id,
-            "doc_type": link.doc_type}
+            "doc_type": link.doc_type, "sort_order": link.sort_order}
 
 
 def _file_out(f: StoredFile) -> dict:
@@ -94,8 +94,26 @@ def list_attachments(
     rows = (db.query(FileLink, StoredFile)
             .join(StoredFile, StoredFile.id == FileLink.file_id)
             .filter(FileLink.entity == entity, FileLink.entity_id == entity_id)
-            .order_by(FileLink.id.desc()).all())
+            .order_by(FileLink.sort_order.asc(), FileLink.id.desc()).all())
     return success([_link_out(lk, f) for lk, f in rows])
+
+
+class ReorderIn(BaseModel):
+    entity: str
+    entity_id: int
+    ordered_link_ids: list[int] = []   # thứ tự mong muốn (index = sort_order)
+
+
+@router.patch("/reorder")
+def reorder(data: ReorderIn, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Cập nhật thứ tự hiển thị các đính kèm của 1 record (dùng cho ảnh sản phẩm)."""
+    _check(db, user, data.entity, "manage")
+    for idx, lid in enumerate(data.ordered_link_ids):
+        lk = db.get(FileLink, lid)
+        if lk and lk.entity == data.entity and lk.entity_id == data.entity_id:
+            lk.sort_order = idx
+    db.commit()
+    return success(None, "Đã cập nhật thứ tự")
 
 
 @router.post("")

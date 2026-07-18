@@ -1,0 +1,135 @@
+import { useEffect, useState } from 'react'
+import { api } from '../api/client'
+import { useAuth } from '../auth/AuthContext'
+import { askConfirm } from './confirm'
+import FileDropzone from './FileDropzone'
+import Lightbox from './Lightbox'
+
+// Gallery ẢNH đính kèm tổng quát (tái dùng cho product, purchase_request_line_image, …).
+// Upload nhiều ảnh, xóa, kéo-thả sắp thứ tự, click ảnh mở lightbox next/prev.
+// Ảnh đầu (sort_order nhỏ nhất) = thumbnail. readOnly ép chỉ xem (bỏ upload/xóa/kéo-thả).
+type Att = { id: number; url: string; filename?: string; content_type?: string }
+
+const isImg = (a: Att) =>
+  (a.content_type || '').startsWith('image/') ||
+  /\.(jpe?g|png|webp|gif)$/i.test(a.filename || '')
+
+type Props = {
+  entity: string          // vd 'product' | 'purchase_request_line_image'
+  entityId: number
+  permEntity?: string     // entity để check quyền (mặc định = entity)
+  readOnly?: boolean      // ép chỉ xem bất kể quyền
+  title?: string          // tiêu đề <h3>; mặc định 'Ảnh'
+  maxHint?: string        // dòng hint dropzone
+}
+
+export default function AttachmentGallery({ entity, entityId, permEntity, readOnly, title, maxHint }: Props) {
+  const { can } = useAuth()
+  const pe = permEntity || entity
+  // Backend đính kèm chỉ xét mode "manage" = write|create trên entity CHA (KHÔNG xét delete).
+  const canManage = !readOnly && (can(pe, 'write') || can(pe, 'create'))
+  const canDelete = canManage
+
+  const [imgs, setImgs] = useState<Att[]>([])
+  const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
+  const [dragIdx, setDragIdx] = useState<number | null>(null)
+
+  async function load() {
+    setLoading(true)
+    try {
+      const r = await api.get('/api/attachments', { params: { entity, entity_id: entityId }, _silent: true } as any)
+      setImgs((r.data.data || []).filter(isImg))
+    } catch { setImgs([]) }
+    finally { setLoading(false) }
+  }
+
+  useEffect(() => { if (entityId) load() }, [entity, entityId])
+
+  async function onUpload(files: FileList) {
+    if (!files.length) return
+    const fd = new FormData()
+    fd.append('entity', entity)
+    fd.append('entity_id', String(entityId))
+    Array.from(files).forEach((f) => fd.append('files', f))   // doc_type để rỗng
+    setUploading(true)
+    try { await api.post('/api/attachments', fd); await load() }
+    finally { setUploading(false) }
+  }
+
+  async function onDelete(a: Att) {
+    if (!(await askConfirm({ message: `Xóa ảnh "${a.filename || ''}"?` }))) return
+    await api.delete(`/api/attachments/${a.id}`)
+    await load()
+  }
+
+  async function onDrop(toIdx: number) {
+    if (dragIdx === null || dragIdx === toIdx) { setDragIdx(null); return }
+    const next = [...imgs]
+    const [moved] = next.splice(dragIdx, 1)
+    next.splice(toIdx, 0, moved)
+    setDragIdx(null)
+    setImgs(next)   // optimistic
+    try {
+      await api.patch('/api/attachments/reorder', {
+        entity, entity_id: entityId, ordered_link_ids: next.map((x) => x.id),
+      })
+    } catch { await load() }   // lỗi → đồng bộ lại thứ tự thật
+  }
+
+  return (
+    <div className="card" style={{ padding: 18 }}>
+      <h3 style={{ fontSize: 14, color: 'var(--navy)', marginBottom: 12 }}>
+        <i className="ti ti-photo" /> {title || 'Ảnh'} ({imgs.length})
+      </h3>
+
+      {canManage && (
+        <div style={{ marginBottom: 12 }}>
+          <FileDropzone onFiles={onUpload} accept="image/*" hint={maxHint || 'JPG, PNG, WEBP · tối đa 5MB/ảnh · có thể chọn nhiều'} />
+          {uploading && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>Đang tải lên…</div>}
+        </div>
+      )}
+
+      {loading ? (
+        <div style={{ color: '#999', fontSize: 13 }}>Đang tải…</div>
+      ) : imgs.length === 0 ? (
+        <div style={{ color: '#999', fontSize: 13 }}>Chưa có ảnh nào.</div>
+      ) : (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+          {imgs.map((a, i) => (
+            <div key={a.id}
+              draggable={canManage}
+              onDragStart={() => setDragIdx(i)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => onDrop(i)}
+              style={{ position: 'relative', width: 92, height: 92, borderRadius: 8, overflow: 'hidden',
+                border: '1px solid var(--border)', background: '#fff',
+                cursor: canManage ? 'grab' : 'zoom-in', opacity: dragIdx === i ? 0.4 : 1 }}
+              title={a.filename || ''}>
+              <img src={a.url} alt={a.filename || ''} onClick={() => setLightboxIdx(i)}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'zoom-in' }} />
+              {i === 0 && (
+                <span style={{ position: 'absolute', left: 4, bottom: 4, fontSize: 10, padding: '1px 5px',
+                  borderRadius: 4, background: 'rgba(0,0,0,.6)', color: '#fff' }}>Thumbnail</span>
+              )}
+              {canDelete && (
+                <button onClick={(e) => { e.stopPropagation(); onDelete(a) }} title="Xóa ảnh"
+                  style={{ position: 'absolute', top: 3, right: 3, width: 22, height: 22, borderRadius: '50%',
+                    border: 'none', cursor: 'pointer', background: 'rgba(220,38,38,.92)', color: '#fff', fontSize: 13, lineHeight: 1 }}>✕</button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {canManage && imgs.length > 1 && (
+        <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 8 }}>Kéo-thả để sắp xếp — ảnh đầu tiên là thumbnail.</div>
+      )}
+
+      {lightboxIdx !== null && (
+        <Lightbox images={imgs} index={lightboxIdx} onClose={() => setLightboxIdx(null)} onNav={setLightboxIdx} />
+      )}
+    </div>
+  )
+}
