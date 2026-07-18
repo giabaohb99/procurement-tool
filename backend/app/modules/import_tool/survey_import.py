@@ -171,6 +171,7 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
     ig_map = {_ncode(g.name): g.name for g in db.query(ItemGroup).all()}
     unit_map = {_ncode(u.name): u.name for u in db.query(Unit).all()}
     _seen_unmatched: set = set()
+    _seen_product: set = set()   # (survey_id, NCC, Mã VTBB, tên SP) đã xử lý trong lần chạy này
 
     def cat(value, cmap, label, sheet, row_no):
         v = _s(value)
@@ -285,9 +286,15 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
             s = get_survey(ig, code, hdr)
             internal = _s(_cell(ws4, r, "P"))
             pname = _s(_cell(ws4, r, "Q")) or _s(_cell(ws4, r, "R"))
+            # Khoá dòng SP = NCC + Mã VTBB + Tên SP (AND). Tên khác nhau -> dòng KHÁC (giữ đủ biến thể).
+            pkey = (s.id, code, internal, pname)
+            if pkey in _seen_product:
+                log("4.KS-SP", r, LogLevel.WARNING, "duplicate_in_file",
+                    f"Trùng trong file: NCC {code} · {internal or pname} — dòng sau đè dòng trước", ref_key=code)
+            _seen_product.add(pkey)
             line = None
             for ln in db.query(SurveyProductLine).filter(SurveyProductLine.survey_id == s.id).all():
-                if ln.supplier_code == code and ((internal and ln.internal_code == internal) or ln.product_name == pname):
+                if ln.supplier_code == code and (ln.internal_code or "") == internal and ln.product_name == pname:
                     line = ln; break
             data = dict(
                 contact_date=_d(_cell(ws4, r, "L")), reply_date=_d(_cell(ws4, r, "M")), result_date=_d(_cell(ws4, r, "N")),
