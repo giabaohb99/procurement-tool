@@ -12,31 +12,33 @@ type Props = {
 }
 
 function Side({ imgs, label, empty }: { imgs: Img[]; label: string; empty: string }) {
-  const [idx, setIdx] = useState(0)   // ảnh đang chọn xem lớn ở bên này
+  const [idx, setIdx] = useState(0)   // ảnh đang xem lớn ở bên này
   const n = imgs.length
-  const i = n ? Math.min(idx, n - 1) : 0
+  const i = n ? ((idx % n) + n) % n : 0   // vòng lại khi vượt biên
+  const go = (d: number) => setIdx((x) => x + d)
   const img = n ? imgs[i] : null
+
+  const nav: React.CSSProperties = {
+    position: 'absolute', top: '50%', transform: 'translateY(-50%)', width: 40, height: 40, borderRadius: '50%',
+    border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,.9)', color: '#111', fontSize: 24, lineHeight: 1, zIndex: 1,
+  }
 
   return (
     <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
       <div style={{ color: '#e5e7eb', fontSize: 13, fontWeight: 600 }}>{label}</div>
       {img ? (
         <>
-          <img src={img.url} alt={img.filename || ''}
-            style={{ maxWidth: '44vw', maxHeight: '64vh', objectFit: 'contain', borderRadius: 8, boxShadow: '0 8px 40px rgba(0,0,0,.5)' }} />
+          {/* Khung cao cố định 70vh; ảnh absolute-center KHÔNG đổi kích thước khung → nút ‹ › ghim cứng tâm khung (hết giật) */}
+          <div style={{ position: 'relative', width: '100%', height: '70vh' }}>
+            {n > 1 && <button onClick={() => go(-1)} title="Ảnh trước" style={{ ...nav, left: 6 }}>‹</button>}
+            <img src={img.url} alt={img.filename || ''}
+              style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, margin: 'auto',
+                maxWidth: '40vw', maxHeight: '100%', objectFit: 'contain', borderRadius: 8, boxShadow: '0 8px 40px rgba(0,0,0,.5)' }} />
+            {n > 1 && <button onClick={() => go(1)} title="Ảnh sau" style={{ ...nav, right: 6 }}>›</button>}
+          </div>
           <div style={{ color: '#e5e7eb', fontSize: 12.5 }}>
             {img.filename ? `${img.filename} — ` : ''}{i + 1}/{n}
           </div>
-          {/* Dải thumbnail: bấm để chọn ảnh so sánh */}
-          {n > 1 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', maxWidth: '44vw' }}>
-              {imgs.map((a, k) => (
-                <img key={k} src={a.url} alt={a.filename || ''} title={a.filename || ''} onClick={() => setIdx(k)}
-                  style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 6, cursor: 'pointer',
-                    border: k === i ? '2px solid #38bdf8' : '2px solid transparent', opacity: k === i ? 1 : 0.6 }} />
-              ))}
-            </div>
-          )}
         </>
       ) : (
         <div style={{ color: '#9ca3af', fontSize: 13, padding: '40px 12px' }}>{empty}</div>
