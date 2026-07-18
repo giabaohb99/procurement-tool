@@ -12,6 +12,9 @@ docker compose up -d redis celery-worker
 docker compose exec celery-worker python -c "from app.tasks.debug import ping; print(ping.delay().get(timeout=15))"
 # Web: http://localhost:8080  ·  API: http://localhost:8000/docs
 ```
+> LƯU Ý: Celery worker KHÔNG auto-reload code (khác uvicorn --reload). Sau khi
+> sửa `survey_import.py` / `tasks.py` hoặc bất kỳ task module nào, PHẢI chạy
+> `docker compose restart celery-worker` để worker tải code mới.
 
 ---
 
