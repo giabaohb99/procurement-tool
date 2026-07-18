@@ -66,6 +66,12 @@ def _b(v) -> bool:
     return _s(v).lower() in ("true", "1", "x", "có", "co", "yes")
 
 
+def _vat(v) -> float:
+    """VAT về dạng PHẦN TRĂM của app (8, 10...). Excel ghi thập phân 0.08 -> 8; nếu đã là 8 thì giữ."""
+    x = _n(v)
+    return round(x * 100, 2) if 0 < x <= 1 else x
+
+
 def _approve(v):
     """Map cột 'Duyệt (TP/QL)' của data cũ về bộ chuẩn của app.
     Trả (line_approve, note_fallback) — text tự do (vd 'Tìm thêm/Trao đổi lại') coi là
@@ -265,7 +271,7 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
                 contact_date=_d(_cell(ws4, r, "L")), reply_date=_d(_cell(ws4, r, "M")), result_date=_d(_cell(ws4, r, "N")),
                 supplier_code=code, internal_code=internal, product_name=pname, spec=_s(_cell(ws4, r, "S")),
                 origin=_s(_cell(ws4, r, "T")), quote_unit=_s(_cell(ws4, r, "U")), moq=_n(_cell(ws4, r, "V")),
-                price_by_volume=_n(_cell(ws4, r, "W")), volume_range=_s(_cell(ws4, r, "X")), vat=_n(_cell(ws4, r, "Y")),
+                price_by_volume=_n(_cell(ws4, r, "W")), volume_range=_s(_cell(ws4, r, "X")), vat=_vat(_cell(ws4, r, "Y")),
                 amount=_n(_cell(ws4, r, "Z")), internal_unit=_s(_cell(ws4, r, "AA")), amount_converted=_n(_cell(ws4, r, "AB")),
                 shipping_cost=_n(_cell(ws4, r, "AC")), delivery_time=_s(_cell(ws4, r, "AD")), delivery_place=_s(_cell(ws4, r, "AE")),
                 quote_file=_s(_cell(ws4, r, "AF")), sample_ready=_b(_cell(ws4, r, "AG")), sample_date=_d(_cell(ws4, r, "AH")),
