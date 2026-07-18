@@ -21,9 +21,12 @@ type Props = {
   readOnly?: boolean      // ép chỉ xem bất kể quyền
   title?: string          // tiêu đề <h3>; mặc định 'Ảnh'
   maxHint?: string        // dòng hint dropzone
+  onImages?: (imgs: Att[]) => void   // báo danh sách ảnh sau mỗi lần load (để cha đối chiếu/gate nút)
+  headerRight?: React.ReactNode      // nội dung phụ bên phải tiêu đề (vd nút "So sánh")
+  compact?: boolean                  // thu gọn: thumbnail nhỏ + padding hẹp (dùng khi nhúng trên đầu popup)
 }
 
-export default function AttachmentGallery({ entity, entityId, permEntity, readOnly, title, maxHint }: Props) {
+export default function AttachmentGallery({ entity, entityId, permEntity, readOnly, title, maxHint, onImages, headerRight, compact }: Props) {
   const { can } = useAuth()
   const pe = permEntity || entity
   // Backend đính kèm chỉ xét mode "manage" = write|create trên entity CHA (KHÔNG xét delete).
@@ -40,8 +43,9 @@ export default function AttachmentGallery({ entity, entityId, permEntity, readOn
     setLoading(true)
     try {
       const r = await api.get('/api/attachments', { params: { entity, entity_id: entityId }, _silent: true } as any)
-      setImgs((r.data.data || []).filter(isImg))
-    } catch { setImgs([]) }
+      const list = (r.data.data || []).filter(isImg)
+      setImgs(list); onImages?.(list)
+    } catch { setImgs([]); onImages?.([]) }
     finally { setLoading(false) }
   }
 
@@ -78,11 +82,16 @@ export default function AttachmentGallery({ entity, entityId, permEntity, readOn
     } catch { await load() }   // lỗi → đồng bộ lại thứ tự thật
   }
 
+  const thumb = compact ? 64 : 92   // cạnh ô ảnh (px)
+
   return (
-    <div className="card" style={{ padding: 18 }}>
-      <h3 style={{ fontSize: 14, color: 'var(--navy)', marginBottom: 12 }}>
-        <i className="ti ti-photo" /> {title || 'Ảnh'} ({imgs.length})
-      </h3>
+    <div className="card" style={{ padding: compact ? 12 : 18 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: compact ? 8 : 12 }}>
+        <h3 style={{ fontSize: 14, color: 'var(--navy)', margin: 0 }}>
+          <i className="ti ti-photo" /> {title || 'Ảnh'} ({imgs.length})
+        </h3>
+        {headerRight}
+      </div>
 
       {canManage && (
         <div style={{ marginBottom: 12 }}>
@@ -103,7 +112,7 @@ export default function AttachmentGallery({ entity, entityId, permEntity, readOn
               onDragStart={() => setDragIdx(i)}
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => onDrop(i)}
-              style={{ position: 'relative', width: 92, height: 92, borderRadius: 8, overflow: 'hidden',
+              style={{ position: 'relative', width: thumb, height: thumb, borderRadius: 8, overflow: 'hidden',
                 border: '1px solid var(--border)', background: '#fff',
                 cursor: canManage ? 'grab' : 'zoom-in', opacity: dragIdx === i ? 0.4 : 1 }}
               title={a.filename || ''}>
