@@ -251,6 +251,11 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
                 invoice_policy=_s(_cell(ws3, r, "AC")), reliability=_s(_cell(ws3, r, "AD")), delivery_policy=_s(_cell(ws3, r, "AE")),
                 debt_policy=_s(_cell(ws3, r, "AF")), defect_return=_s(_cell(ws3, r, "AG")), nspt_reason=_s(_cell(ws3, r, "AH")),
                 line_approve=_s(_cell(ws3, r, "AI")), line_approve_note=_s(_cell(ws3, r, "AJ")))
+            catsup = db.query(Supplier).filter(Supplier.code == code).first()  # điền tên/MST/địa chỉ từ danh mục khi file trống
+            if catsup:
+                data["supplier_name"] = data["supplier_name"] or (catsup.name or "")
+                data["tax_code"] = data["tax_code"] or (catsup.tax_code or "")
+                data["reg_address"] = data["reg_address"] or (catsup.address or "")
             data, trunc = _fit(SurveySupplierLine, data)
             if trunc:
                 log("3.KS-NCC", r, LogLevel.WARNING, "value_truncated", f"Cắt bớt do quá dài: {', '.join(trunc)}", ref_key=code)
@@ -264,6 +269,7 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
                 counts["updated"] += 1
             else:
                 db.add(SurveySupplierLine(survey_id=s.id, created_by=batch.created_by, updated_by=batch.created_by, **data))
+                db.flush()   # autoflush=False -> phải flush để dòng kế thấy được (tránh tạo trùng trong cùng lần chạy)
                 counts["created"] += 1
 
     # ----- Pass 2: sheet 4 (SP) -----
@@ -319,6 +325,7 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
                 counts["updated"] += 1
             else:
                 db.add(SurveyProductLine(survey_id=s.id, created_by=batch.created_by, updated_by=batch.created_by, **data))
+                db.flush()   # autoflush=False -> flush để dòng kế thấy (tránh tạo trùng trong cùng lần chạy)
                 counts["created"] += 1
 
     # ----- kết thúc: apply commit, dry-run rollback; rồi persist batch + logs -----
