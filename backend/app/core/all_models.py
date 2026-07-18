@@ -3,6 +3,7 @@ from app.core.base_model import Base  # noqa: F401
 
 from app.modules.attachment import model as _attachment  # noqa: F401
 from app.modules.audit import model as _audit  # noqa: F401
+from app.modules.comment import model as _comment  # noqa: F401
 from app.modules.catalog import model as _catalog  # noqa: F401
 from app.modules.company import model as _company  # noqa: F401
 from app.modules.department import model as _department  # noqa: F401

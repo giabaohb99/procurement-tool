@@ -12,6 +12,7 @@ from app.core.response import error
 from app.modules.attachment.controller import router as attachment_router
 from app.modules.audit.controller import router as audit_router
 from app.modules.auth.controller import router as auth_router
+from app.modules.comment.controller import router as comment_router
 from app.modules.catalog.controller import (brand_router, item_group_router,
                                             unit_router, warehouse_router)
 from app.modules.dashboard.controller import router as dashboard_router
@@ -80,6 +81,7 @@ app.include_router(product_router)
 app.include_router(role_router)
 app.include_router(user_router)
 app.include_router(audit_router)
+app.include_router(comment_router)
 app.include_router(dashboard_router)
 app.include_router(pr_router)
 app.include_router(attachment_router)

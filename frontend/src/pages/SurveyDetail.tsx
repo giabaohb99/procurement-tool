@@ -10,6 +10,7 @@ import { toast } from '../components/toast'
 import { fmtDateTime } from '../utils/datetime'
 import { askConfirm, askPrompt } from '../components/confirm'
 import NotFound from '../components/NotFound'
+import CommentSection from '../components/CommentSection'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const VAT_OPTS = ['0', '2', '4', '6', '8', '10']
@@ -233,6 +234,8 @@ export default function SurveyDetail() {
   // Ô bắt buộc còn trống khi Gửi duyệt (key = `${tbl}-${index}-${fieldKey}`) → tô đỏ.
   const [invalidCells, setInvalidCells] = useState<Set<string>>(new Set())
   const [notFound, setNotFound] = useState(false)
+  // Số bình luận theo từng dòng (badge 💬) — key = line id.
+  const [lineCommentCounts, setLineCommentCounts] = useState<Record<string, number>>({})
 
   // Popup state: which table ('supplier'|'product') + which row index
   const [editingTable, setEditingTable] = useState<'supplier' | 'product' | null>(null)
@@ -264,6 +267,14 @@ export default function SurveyDetail() {
     }))
   }
 
+  // Đếm bình luận theo dòng (badge). Nhận data tường minh vì setSv là bất đồng bộ.
+  function loadLineCommentCounts(d: any = sv) {
+    const ids = [...(d?.supplier_lines || []), ...(d?.product_lines || [])].map((l: any) => l.id).filter(Boolean)
+    if (!ids.length) { setLineCommentCounts({}); return }
+    api.get('/api/comments/counts', { params: { entity: 'survey_line', entity_ids: ids.join(',') }, _silent: true } as any)
+      .then((r) => setLineCommentCounts(r.data.data || {})).catch(() => {})
+  }
+
   async function loadAll() {
     try {
       const r = await api.get(`${API}/${id}`)
@@ -271,6 +282,7 @@ export default function SurveyDetail() {
       data.supplier_lines = (data.supplier_lines || []).map((l: any) => ({ ...l, line_approve: l.line_approve || 'Chờ duyệt' }))
       data.product_lines = (data.product_lines || []).map((l: any) => ({ ...l, line_approve: l.line_approve || 'Chờ duyệt' }))
       setSv(data)
+      loadLineCommentCounts(data)
       api.get('/api/audit-logs', { params: { entity: 'survey', entity_id: id } }).then((x) => setLogs(x.data.data))
       api.get('/api/attachments', { params: { entity: 'survey', entity_id: id } }).then((x) => setFiles(x.data.data))
     } catch (ex: any) {
@@ -753,6 +765,19 @@ export default function SurveyDetail() {
                   })}
                   <td style={{ textAlign: 'center' }}>
                     <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'nowrap' }}>
+                      {(() => {
+                        const lid = getLines(tbl)[i]?.id
+                        const n = lid ? (lineCommentCounts[lid] || 0) : 0
+                        return (
+                          <button className="icon-btn" title="Bình luận" style={{ position: 'relative' }}
+                            onClick={() => { setFillMode(false); openLine(tbl, i) }}>
+                            <i className="ti ti-message-2" style={{ fontSize: 16, color: n ? 'var(--teal)' : 'var(--muted)' }} />
+                            {n > 0 && (
+                              <span style={{ position: 'absolute', top: -4, right: -4, background: 'var(--teal)', color: '#fff', fontSize: 9, fontWeight: 700, minWidth: 14, height: 14, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px' }}>{n}</span>
+                            )}
+                          </button>
+                        )
+                      })()}
                       <button className="icon-btn" title="Chỉnh sửa chi tiết" onClick={() => { setFillMode(false); openLine(tbl, i) }}>
                         <i className="ti ti-edit" style={{ fontSize: 16, color: 'var(--teal)' }} />
                       </button>
@@ -788,6 +813,7 @@ export default function SurveyDetail() {
   }
 
   const isLogShown = !isNew && logs.length > 0
+  const showSide = !isNew   // cột phải luôn hiện (Lịch sử + Bình luận) khi đã lưu phiếu
 
   if (notFound) return <NotFound backTo="/surveys" message="Không tìm thấy phiếu khảo sát này hoặc bạn không có quyền truy cập." />
 
@@ -836,7 +862,7 @@ export default function SurveyDetail() {
         )}
       </div>
 
-      <div className={isLogShown ? 'detail-grid' : ''}>
+      <div className={showSide ? 'detail-grid' : ''}>
         <div>
           {/* Header: Thông tin tiếp nhận */}
           <div className="card" style={{ padding: 18, marginBottom: 16 }}>
@@ -923,19 +949,27 @@ export default function SurveyDetail() {
 
         </div>
 
-        {isLogShown && (
-          <div className="card" style={{ padding: 18 }}>
-            <h3 className="sec-title"><i className="ti ti-history" /> Lịch sử thao tác</h3>
-            <div className="timeline">
-              {logs.map((l, i) => (
-                <div key={i} className="tl-item">
-                  <span className={'tl-dot ' + (l.action === 'approved' ? 'create' : l.action === 'rejected' ? 'delete' : l.action)} />
-                  <div>
-                    <div style={{ fontSize: 13 }}><b>{l.by}</b> — {l.action_label}{l.message ? `: ${l.message}` : ''}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{fmtDateTime(l.at)}</div>
-                  </div>
+        {showSide && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {isLogShown && (
+              <div className="card" style={{ padding: 18 }}>
+                <h3 className="sec-title"><i className="ti ti-history" /> Lịch sử thao tác</h3>
+                <div className="timeline">
+                  {logs.map((l, i) => (
+                    <div key={i} className="tl-item">
+                      <span className={'tl-dot ' + (l.action === 'approved' ? 'create' : l.action === 'rejected' ? 'delete' : l.action)} />
+                      <div>
+                        <div style={{ fontSize: 13 }}><b>{l.by}</b> — {l.action_label}{l.message ? `: ${l.message}` : ''}</div>
+                        <div style={{ fontSize: 12, color: 'var(--muted)' }}>{fmtDateTime(l.at)}</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+            )}
+            <div className="card" style={{ padding: 18 }}>
+              <h3 className="sec-title"><i className="ti ti-messages" /> Bình luận</h3>
+              <CommentSection entity="survey" entityId={id!} surveyId={id!} surveyCode={sv.code} />
             </div>
           </div>
         )}
@@ -1036,6 +1070,17 @@ export default function SurveyDetail() {
                       {activeAtts.length === 0 && activePending.length === 0 && <span style={{ color: '#999', fontSize: 13 }}>Chưa có file nào.</span>}
                     </div>
                   </div>
+                </div>
+
+                {/* Bình luận theo dòng */}
+                <div style={{ marginBottom: 4 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: .3, marginBottom: 10, paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>Bình luận (theo dòng)</div>
+                  {activeLid ? (
+                    <CommentSection entity="survey_line" entityId={activeLid} surveyId={id!} surveyCode={sv.code}
+                      onChanged={() => loadLineCommentCounts()} />
+                  ) : (
+                    <div style={{ color: '#999', fontSize: 13 }}>Lưu phiếu trước để bình luận theo dòng.</div>
+                  )}
                 </div>
               </div>
 

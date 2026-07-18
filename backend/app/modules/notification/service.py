@@ -214,6 +214,9 @@ def trigger_notification(
     elif event == "survey_rejected":
         subject = f"[Từ chối] Khảo sát {doc_code}"
         body = f"Phiếu khảo sát {doc_code} của bạn đã bị từ chối phê duyệt."
+    elif event == "survey_commented":
+        subject = f"[Bình luận] Khảo sát {doc_code}"
+        body = f"{creator_name} vừa bình luận trên phiếu khảo sát {doc_code}."
     else:
         # Fallback rõ nghĩa: suy nhãn loại + hành động từ event (vd "po_approved" → Đơn mua hàng … đã được duyệt)
         label = DOC_LABEL.get(doc_type, "Chứng từ")
