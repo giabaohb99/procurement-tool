@@ -105,6 +105,20 @@ def _norm_key(item_group: str, supplier_code: str) -> str:
     return f"{' '.join(item_group.split()).upper()}::{_ncode(supplier_code)}"
 
 
+def _canon_code(db: Session, code: str, tax: str) -> str:
+    """Trả mã NCC ĐÚNG theo danh mục (để UI khớp tên pháp lý). Ưu tiên MST, rồi mã
+    (DB so không phân biệt hoa/thường). Không có trong danh mục -> giữ nguyên."""
+    if tax:
+        st = db.query(Supplier).filter(Supplier.tax_code == tax).first()
+        if st and (st.code or "").strip():
+            return st.code
+    if code:
+        sc = db.query(Supplier).filter(Supplier.code == code).first()
+        if sc and (sc.code or "").strip():
+            return sc.code
+    return code
+
+
 _LEN_CACHE: dict = {}
 
 
@@ -161,12 +175,20 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
             s = Survey(import_key=key, survey_type="supplier", status="approved",
                        approve_status="Duyệt", item_group=item_group,
                        received_date=hdr["received"], result_due_date=hdr["due"],
-                       requirement_detail=hdr["detail"], main_content=hdr["bp"],
+                       requirement_detail=hdr["detail"],
+                       main_content=(f"{supplier_code} - {hdr['detail'] or item_group}")[:500],
                        request_qty=hdr["qty"], uom=hdr["uom"], proposed_rate=hdr["rate"],
                        nspt=hdr["nspt"], pr_code=hdr["req_code"],
                        created_by=batch.created_by, updated_by=batch.created_by)
             db.add(s); db.flush()
             s.code = f"KS{s.id:05d}"
+        else:
+            # re-import: cập nhật lại header (không đụng status/approve/code)
+            s.main_content = (f"{supplier_code} - {hdr['detail'] or item_group}")[:500]
+            s.received_date = hdr["received"]; s.result_due_date = hdr["due"]
+            s.requirement_detail = hdr["detail"]; s.request_qty = hdr["qty"]
+            s.uom = hdr["uom"]; s.proposed_rate = hdr["rate"]
+            s.nspt = hdr["nspt"]; s.pr_code = hdr["req_code"]; s.updated_by = batch.created_by
         survey_cache[key] = s
         return s
 
@@ -182,6 +204,7 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
             hdr = {"received": _d(_cell(ws3, r, "B")), "due": _d(_cell(ws3, r, "C")), "bp": _s(_cell(ws3, r, "D")),
                    "req_code": _s(_cell(ws3, r, "E")), "detail": _s(_cell(ws3, r, "G")), "qty": _n(_cell(ws3, r, "H")),
                    "uom": _s(_cell(ws3, r, "I")), "rate": _n(_cell(ws3, r, "J")), "nspt": _s(_cell(ws3, r, "K"))}
+            code = _canon_code(db, code, tax)   # đưa về mã danh mục để UI khớp tên pháp lý
             # upsert Supplier + phát hiện MST xung đột
             _upsert_supplier(db, batch, code, tax, ws3, r, log)
             s = get_survey(ig, code, hdr)
@@ -227,6 +250,7 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
             hdr = {"received": _d(_cell(ws4, r, "B")), "due": _d(_cell(ws4, r, "C")), "bp": _s(_cell(ws4, r, "D")),
                    "req_code": _s(_cell(ws4, r, "E")), "detail": _s(_cell(ws4, r, "G")), "qty": _n(_cell(ws4, r, "H")),
                    "uom": _s(_cell(ws4, r, "I")), "rate": _n(_cell(ws4, r, "J")), "nspt": _s(_cell(ws4, r, "K"))}
+            code = _canon_code(db, code, "")   # đưa về mã danh mục để UI khớp tên pháp lý
             if not db.query(Supplier).filter(Supplier.code == code).first():
                 log("4.KS-SP", r, LogLevel.REVIEW, "ncc_text_only",
                     f"NCC '{code}' không có trong danh mục (KS SP không có MST) — giữ text", ref_key=code)

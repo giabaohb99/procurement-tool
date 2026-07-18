@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.audit import resolve_actor
 from app.core.auth import get_current_user, user_has_permission
 from app.core.base_controller import pagination
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.response import success
 from app.core.storage import download_bytes
@@ -83,6 +84,26 @@ def get_import_logs(bid: int, level: int | None = Query(None),
     _guard_view(db, user)
     total, items = service.get_logs(db, bid, level, pg)
     return success({"total": total, "items": [_log_out(x) for x in items]})
+
+
+@router.delete("/dev/surveys")
+def dev_delete_surveys(ids: str = Query(""), all_imported: bool = Query(False),
+                       db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """DEV-ONLY: xóa phiếu khảo sát theo ids (vd '97,98,99') hoặc toàn bộ phiếu do import tạo
+    (all_imported=true). Chỉ chạy khi DEV_MODE=true — bỏ qua guard trạng thái để dọn data test."""
+    if not settings.DEV_MODE:
+        raise HTTPException(403, "API dev-only — DEV_MODE đang tắt")
+    from app.modules.survey import service as survey_service
+    from app.modules.survey.model import Survey
+    if all_imported:
+        sids = [s.id for s in db.query(Survey).filter(Survey.import_key != "").all()]
+    else:
+        sids = [int(x) for x in ids.split(",") if x.strip().isdigit()]
+    n = 0
+    for sid in sids:
+        if db.get(Survey, sid):
+            survey_service.delete_survey(db, sid, user.id); n += 1
+    return success({"deleted": n, "ids": sids}, f"Đã xóa {n} phiếu (dev)")
 
 
 @router.get("/{bid}/file")

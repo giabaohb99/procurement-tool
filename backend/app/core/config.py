@@ -20,6 +20,8 @@ class Settings(BaseSettings):
 
     ADMIN_CODE: str = "degoadmin"
     ADMIN_PASSWORD: str = "dego2026"
+
+    DEV_MODE: bool = False   # bật ở .env local (=true) để mở các API dev-only (vd xóa data test)
     
     FRONTEND_URL: str = "https://thumuatool.degoholding.vn"
     
