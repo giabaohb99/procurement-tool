@@ -65,6 +65,7 @@ class SurveySupplierLine(Base, AuditMixin):
     line_approve: Mapped[str] = mapped_column(String(255), default="")
     line_approve_note: Mapped[str] = mapped_column(Text, default="")
     note: Mapped[str] = mapped_column(Text, default="")                     # Ghi chú nội bộ (KHÔNG show ra Yêu cầu khảo sát)
+    import_line_key: Mapped[str] = mapped_column(String(200), default="", index=True)  # khoá idempotent khi import (Mã yêu cầu + MST)
 
 
 class SurveyProductLine(Base, AuditMixin):
@@ -103,3 +104,4 @@ class SurveyProductLine(Base, AuditMixin):
     line_approve: Mapped[str] = mapped_column(String(255), default="")
     line_approve_note: Mapped[str] = mapped_column(Text, default="")
     note: Mapped[str] = mapped_column(Text, default="")                     # Ghi chú nội bộ (KHÔNG show ra Yêu cầu khảo sát)
+    import_line_key: Mapped[str] = mapped_column(String(200), default="", index=True)  # khoá idempotent khi import (Mã yêu cầu + MST)

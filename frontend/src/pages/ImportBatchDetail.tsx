@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
 import { api } from '../api/client'
 import { toast } from '../components/toast'
 import Pagination from '../components/Pagination'
@@ -18,6 +19,7 @@ const TABS = [
 export default function ImportBatchDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { can } = useAuth()
   const [b, setB] = useState<any>(null)
   const [tab, setTab] = useState('')
   const [logs, setLogs] = useState<any[]>([])
@@ -52,6 +54,17 @@ export default function ImportBatchDetail() {
     } catch { toast.error('Không tải được file') }
   }
 
+  const [reverting, setReverting] = useState(false)
+  async function revert() {
+    if (!window.confirm('Hoàn tác lần import này? Phiếu do lần này TẠO sẽ bị xoá, phiếu bị SỬA sẽ khôi phục về trước khi import.')) return
+    setReverting(true)
+    try {
+      const r = await api.post(`/api/imports/${id}/revert`)
+      toast.success(r.data.message || 'Đã hoàn tác')
+      loadBatch()
+    } catch { /* toast */ } finally { setReverting(false) }
+  }
+
   if (!b) return <div style={{ padding: 20, color: 'var(--muted)' }}>Đang tải…</div>
   const Stat = ({ label, val, color }: any) => (
     <div style={{ padding: '8px 14px', border: '1px solid var(--border)', borderRadius: 10, minWidth: 92, textAlign: 'center' }}>
@@ -66,6 +79,11 @@ export default function ImportBatchDetail() {
         <h2 className="page-title" style={{ margin: 0 }}>Import #{b.id} — {IMPORT_MODULE[b.module]}</h2>
         {statusBadge(b.status)}
         <span style={{ flex: 1 }} />
+        {b.status === 2 && b.mode === 1 && can('import', 'delete') && (
+          <button className="btn ghost" style={{ color: '#dc2626' }} onClick={revert} disabled={reverting}>
+            <i className="ti ti-arrow-back-up" />{reverting ? 'Đang hoàn tác…' : 'Hoàn tác'}
+          </button>
+        )}
         <button className="btn ghost" onClick={downloadFile}><i className="ti ti-download" />Tải file</button>
       </div>
 

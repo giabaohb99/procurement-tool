@@ -338,7 +338,15 @@ export default function SurveyDetail() {
   const lineKey = (tbl: 'supplier' | 'product') => tbl === 'supplier' ? 'supplier_lines' : 'product_lines'
 
   const setLine = (tbl: 'supplier' | 'product', i: number, patch: any) => {
-    setSv((s: any) => ({ ...s, [lineKey(tbl)]: s[lineKey(tbl)].map((it: any, idx: number) => idx === i ? { ...it, ...patch } : it) }))
+    setSv((s: any) => ({ ...s, [lineKey(tbl)]: s[lineKey(tbl)].map((it: any, idx: number) => {
+      if (idx !== i) return it
+      const merged = { ...it, ...patch }
+      // Dòng SP: sửa Giá/MOQ/VAT thì tính lại Thành tiền (ghi đè số cũ, kể cả số từ import)
+      if (tbl === 'product' && ('price_by_volume' in patch || 'moq' in patch || 'vat' in patch)) {
+        merged.amount = (Number(merged.price_by_volume) || 0) * (Number(merged.moq) || 0) * (1 + (Number(merged.vat) || 0) / 100)
+      }
+      return merged
+    }) }))
     // Sửa ô nào thì bỏ tô đỏ ô đó
     setInvalidCells((prev) => {
       if (!prev.size) return prev
@@ -370,8 +378,10 @@ export default function SurveyDetail() {
     setSv((s: any) => ({ ...s, [lineKey(tbl)]: [...s[lineKey(tbl)], cloned] }))
   }
 
-  // Thành tiền = Giá theo sản lượng × MOQ tối thiểu × (1+VAT%) — tự chạy, khóa không cho sửa
-  const rowAmount = (it: any) => (Number(it.price_by_volume) || 0) * (Number(it.moq) || 0) * (1 + (Number(it.vat) || 0) / 100)
+  // Thành tiền tự tính = Giá theo sản lượng × MOQ × (1+VAT%)
+  const calcAmount = (it: any) => (Number(it.price_by_volume) || 0) * (Number(it.moq) || 0) * (1 + (Number(it.vat) || 0) / 100)
+  // Hiển thị: ưu tiên số đã lưu (từ import / đã tính khi sửa); trống thì tự tính
+  const rowAmount = (it: any) => (Number(it.amount) > 0 ? Number(it.amount) : calcAmount(it))
 
   // Giữ dòng nếu có BẤT KỲ nội dung (nháp cho lưu dở dang) — chỉ bỏ dòng RỖNG hẳn.
   // (KHÔNG bắt buộc chọn NCC/tên SP khi Lưu — cái đó chỉ bắt khi Gửi duyệt.)
@@ -402,7 +412,7 @@ export default function SurveyDetail() {
       has_product_code: !!sv.has_product_code, item_code: sv.item_code, item_name: sv.item_name,
       request_qty: Number(sv.request_qty) || 0, uom: sv.uom, proposed_rate: Number(sv.proposed_rate) || 0,
       supplier_lines: (sv.supplier_lines || []).filter(supHasContent).map((it: any) => coerceNums(it, SUP_NUM_KEYS)),
-      product_lines: (sv.product_lines || []).filter(prodHasContent).map((it: any) => coerceNums(it, PROD_NUM_KEYS)),
+      product_lines: (sv.product_lines || []).filter(prodHasContent).map((it: any) => ({ ...coerceNums(it, PROD_NUM_KEYS), amount: rowAmount(it) })),
     }
   }
 
@@ -805,6 +815,9 @@ export default function SurveyDetail() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
         <button className="btn ghost" onClick={() => navigate('/surveys')}><i className="ti ti-arrow-left" /></button>
         <h2 className="page-title" style={{ margin: 0 }}>{isNew ? 'Tạo Phiếu Khảo sát' : `Phiếu Khảo sát ${sv.code || ''}`}</h2>
+        {!isNew && sv.pr_code && (
+          <span className="badge" style={{ background: '#eef2ff', color: '#4338ca' }} title="Mã yêu cầu khảo sát">{sv.pr_code}</span>
+        )}
         {!isNew && srBadge(sv.status)}
         <span style={{ flex: 1 }} />
         {editable && can('survey', isNew ? 'create' : 'write') && (

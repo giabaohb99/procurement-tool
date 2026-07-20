@@ -45,8 +45,9 @@ def _save_product_lines(db: Session, sid: int, lines, user_id: int):
     db.query(SurveyProductLine).filter(SurveyProductLine.survey_id == sid).delete()
     for it in lines or []:
         data = it.model_dump()
-        amount = round((data.get("request_qty") or 0) * (data.get("price_by_volume") or 0)
-                       * (1 + (data.get("vat") or 0) / 100), 2)
+        # amount = giá trị FE gửi (Thành tiền hiển thị / số từ file import); trống thì tự tính dự phòng.
+        amount = data.get("amount") or round((data.get("request_qty") or 0) * (data.get("price_by_volume") or 0)
+                                             * (1 + (data.get("vat") or 0) / 100), 2)
         data["amount"] = amount
         if not data.get("amount_converted"):
             data["amount_converted"] = amount

@@ -29,6 +29,7 @@ class ImportStatus(IntEnum):
     RUNNING = 1
     DONE = 2
     FAILED = 3
+    REVERTED = 4     # đã hoàn tác (revert)
 
 
 class LogLevel(IntEnum):
@@ -78,3 +79,14 @@ class ImportLog(Base, AuditMixin):
     ref_key: Mapped[str] = mapped_column(String(120), default="")         # Mã yêu cầu / Misa / Số HĐ / NCC
     target_code: Mapped[str] = mapped_column(String(50), default="")      # KS##### / PO##### tạo/cập nhật
     raw: Mapped[str] = mapped_column(Text, default="")                    # JSON vài cột gốc
+
+
+class ImportChange(Base, AuditMixin):
+    """Ảnh chụp PHIẾU trước khi 1 batch Apply sửa — để REVERT (hoàn tác)."""
+
+    __tablename__ = "tab_import_change"
+
+    batch_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    survey_id: Mapped[int] = mapped_column(BigInteger, default=0)          # phiếu bị đụng (hoặc PO sau này)
+    was_new: Mapped[bool] = mapped_column(SmallInteger, default=0)         # 1 = phiếu do batch này tạo -> revert xoá
+    snapshot: Mapped[str] = mapped_column(Text, default="")               # JSON phiếu + dòng TRƯỚC khi sửa (rỗng nếu was_new)

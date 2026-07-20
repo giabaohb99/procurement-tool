@@ -47,6 +47,12 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
     q = apply_filters(db.query(PaymentRequest), PaymentRequest, request, service.FILTERABLE)
     q = apply_range_filters(q, PaymentRequest, request, ["request_date"])
     q = apply_equals(q, PaymentRequest, request, ["company_id"])
+    po_code = (request.query_params.get("po_code") or "").strip()
+    if po_code:
+        from sqlalchemy import select
+        from .model import PaymentRequestLine
+        sub = select(PaymentRequestLine.request_id).where(PaymentRequestLine.po_code.like(f"%{po_code}%"))
+        q = q.filter(PaymentRequest.id.in_(sub))
     q = apply_scope(q, PaymentRequest, "payment_request", user, get_perm_profile(db, user))
     total = q.count()
     items = q.order_by(PaymentRequest.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()

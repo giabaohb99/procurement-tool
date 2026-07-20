@@ -1,57 +1,52 @@
-# MÔ TẢ CHỨC NĂNG: IMPORT KHẢO SÁT (Phiếu khảo sát)
+# MÔ TẢ CHỨC NĂNG: IMPORT KHẢO SÁT (Phiếu khảo sát) — BẢN CHỐT
 
-Nguồn: `[Data Chuẩn] 3. THU MUA_MR TIÊN.xlsx` — sheet **3** (Đánh giá NCC) + sheet **4** (Đánh giá SP/lấy mẫu).
+Nguồn: sheet **3** (Đánh giá NCC) + sheet **4** (Đánh giá SP/lấy mẫu). Header dòng 5, data từ dòng 6.
 
 ## 1. Mục tiêu
-Nạp dữ liệu khảo sát cũ vào **Phiếu khảo sát (Survey)**. Chạy **nền (Celery)**, **upsert theo dòng** (có → cập nhật, chưa → tạo), xong **báo chuông** cho người import, có **màn hình quản lý + log lỗi**.
+Nạp khảo sát cũ vào **Phiếu khảo sát (Survey)**. Chạy nền (Celery), upsert theo khoá tái tạo,
+báo chuông khi xong, có màn quản lý + log, và **revert (hoàn tác) một lần import**.
 
-## 2. Input
-- Upload **1 file .xlsx** (cả workbook). Tool tự nhận 2 sheet theo tên `3. KHẢO SÁT ... N` và `4. KHẢO SÁT ... S`.
-- Header dòng **5**, data từ dòng **6**; dừng khi cột A (Stt) và E (Mã yêu cầu) đều trống.
-- 2 chế độ: **Dry-run** (xem trước, không ghi) và **Apply** (ghi, chạy nền).
+## 2. Tái tạo "Mã yêu cầu" (khoá liên kết)
+Data cũ không có Mã yêu cầu → **tự sinh** cho mỗi dòng:
+- `viết_tắt` = map(`BP/Người YC` cột D) theo bảng:
+  `Nhà máy Dego→NM · SX - Ms Ly→SX · Lab→LAB · KD ABA→AB · KD ICARE→IC · KD DR XANH→DR · KD IDA→ID · SX - Ms Hương→SX · TM - Ms Quyên→TM · KD N2SBIO→N2 · QLTM_Ms Ngân→QLTM_MS NGÂN`. Không khớp → **`KC`**.
+- `ngày` = Ngày tiếp nhận (cột B) → `ddmmyyyy`.
+- `seq` = STT của (Phân loại + Chi tiết thông số) duy nhất trong ngày → **CHỈ hiển thị**.
+- **Mã hiển thị** = `PYC.{viết_tắt}.{ddmmyyyy}.{seq}`.
+- **KHOÁ THẬT (so khớp)** = chuẩn hoá `(viết_tắt + ngày + Phân_loại + Chi_tiết_thông_số)` (bỏ khoảng trắng thừa, không phân biệt hoa/thường).
 
-## 3. Khoá gom — 1 Phiếu = (Phân loại F + NCC O)
-- Cùng **Phân loại (F)** + cùng **NCC (O)** → CHUNG 1 phiếu khảo sát.
-- Trong 1 phiếu: 1 dòng đánh giá NCC (sheet 3) + các dòng báo giá SP của NCC đó (sheet 4).
-- Định danh phiếu (để re-import): `import_key = norm("{phân_loại}::{ncc_code}")`.
-- (Mã yêu cầu E chỉ lưu tham khảo vào `pr_code`, không dùng để gom.)
+> BP là một phần khoá: cùng ngày + cùng SP nhưng khác BP = 2 yêu cầu riêng.
 
-## 4. Định danh NCC (resolve về danh mục Supplier)
-| Nguồn | Khoá tra | Không thấy / xung đột |
-|---|---|---|
-| KS Sản phẩm (sheet 4) | Tên viết tắt (O) | không khớp supplier_code → **NCC text-only** + log |
-| KS NCC (sheet 3) | MST (Q) | MST là NCC khác tên viết tắt → **NCC text-only** ("NCC không có sẵn, nhập text") + log |
-- Không thấy hẳn → **tạo NCC mới** từ sheet 3 (tên P, MST Q, địa chỉ R, liên hệ U/V, công nợ AF). Đã có → chỉ **điền field trống**, không đè.
+## 3. Gom phiếu — 2 loại
+Từ khảo sát SP (sheet 4), nhóm theo Mã yêu cầu:
+- **Loại 1** — `Mã VTBB/NL/BTP (nội bộ)` (cột P) **CÓ** trong danh mục sản phẩm → gom thành phiếu theo **Mã VTBB** (`import_key = "VTBB::<mã>"`). Nhiều yêu cầu/NCC cùng Mã VTBB → **1 phiếu** (so sánh NCC).
+- **Loại 2** — **không** có Mã VTBB (hoặc không khớp danh mục) → **phiếu riêng theo Mã yêu cầu** (`import_key = "REQ::<mã yêu cầu>"`).
 
-## 5. Check trùng / Upsert (idempotent)
-- **Phiếu**: tìm theo `import_key (Phân loại + NCC)`. Có → dùng lại; chưa → tạo (status=**approved**).
-- **Dòng NCC** (SurveySupplierLine): khoá **MST** (fallback supplier_code). Có → cập nhật; chưa → tạo.
-- **Dòng SP** (SurveyProductLine): khoá **NCC + Mã VTBB nội bộ (P)** (fallback NCC + tên SP). Có → cập nhật; chưa → tạo.
-- 2 dòng cùng khoá trong 1 file → dòng sau đè dòng trước + cảnh báo.
-- Chạy lại cùng file ⇒ chỉ cập nhật, KHÔNG nhân đôi.
+NCC (theo tên viết tắt/MST) **chưa có trong danh mục → tự tạo NCC** (từ data sheet 3).
 
-## 6. Mapping cột → field
-**Survey header** (từ A–N): `pr_code=E · received_date=B · result_due_date=C · item_group=F · requirement_detail=G · request_qty=H · uom=I · proposed_rate=J · nspt=K · main_content=D · status=approved · code=KS#####(tự sinh)`
+## 4. Dòng trong phiếu — khoá `(Mã yêu cầu + MST)`
+- **Dòng SP** (SurveyProductLine) và **dòng NCC** (SurveySupplierLine): khoá idempotent = `(Mã yêu cầu + MST của NCC)`.
+- Nhờ vậy: **cùng NCC + cùng SP nhưng khảo sát nhiều lần** (khác ngày/BP → khác Mã yêu cầu) → **giữ riêng từng dòng**, không gộp.
+- **Phân phối dòng NCC** (sheet 3) vào phiếu: gen Mã yêu cầu như trên → tìm phiếu chứa dòng SP có `(MST + Mã yêu cầu)` khớp:
+  - đúng 1 phiếu → bỏ vào;
+  - nhiều phiếu → bỏ **phiếu đầu** + log cảnh báo;
+  - không có → tạo **phiếu trống riêng** (chỉ có dòng NCC) + log.
 
-**SurveySupplierLine** (O→AJ): `supplier_code=O · supplier_name=P · tax_code=Q · reg_address=R · warehouse_address=S · google_maps=T · contact_person=U · contact_phone=V · supply_group=W · quote_folder=X · source_of_information=Y · production_tech=Z · production_time=AA · nvkd_eval=AB · invoice_policy=AC · reliability=AD · delivery_policy=AE · debt_policy=AF · defect_return=AG · nspt_reason=AH · line_approve=AI · line_approve_note=AJ · contact_date=L · reply_date=M · result_date=N`
+## 5. Chuẩn hoá giá trị (đối chiếu danh mục)
+- `Phân loại`, `ĐVT` → về đúng text danh mục (khớp không phân biệt hoa/thường); lạ → giữ text + log `value_unmatched`.
+- `VAT` thập phân (0.08) → phần trăm (8). Cột Duyệt → bộ chuẩn (Đã duyệt/Không duyệt/Chờ duyệt/Thiếu thông tin).
+- `supplier_code` → về đúng mã danh mục (để UI khớp tên pháp lý). Ngày/số rác → trống/0.
 
-**SurveyProductLine** (O→AM): `supplier_code=O · internal_code=P · product_name=Q/R · spec=S · origin=T · quote_unit=U · moq=V · price_by_volume=W · volume_range=X · vat=Y · amount=Z · internal_unit=AA · amount_converted=AB · shipping_cost=AC · delivery_time=AD · delivery_place=AE · quote_file=AF · sample_ready=AG · sample_date=AH · sample_qty=AI · lab_result=AJ · nspt_note=AK · line_approve=AL · line_approve_note=AM · contact_date=L · reply_date=M · result_date=N`
+## 6. Chạy nền + chuông + log
+Upload → `ImportBatch(running)` → Celery `run_import` → parse/gom/phân phối/upsert → ghi `import_log` → xong `done` + **chuông** cho người import. Dry-run: tính + log nhưng rollback (không ghi).
 
-## 7. Xử lý ngoại lệ (try/catch, không chặn cả file)
-- Ngày/số sai (kể cả serial rác) → để trống/0 + cảnh báo.
-- Thiếu Phân loại (F) hoặc NCC (O) → bỏ dòng + ghi lỗi.
-- NCC text-only / MST xung đột → vẫn tạo dòng (text) + log để rà tay.
-- Mã VTBB (P) không có trong danh mục Product → giữ text (internal_code), log.
+## 7. Revert (hoàn tác 1 lần import)  ← MỚI
+- Mỗi lần **Apply**, ghi lại thay đổi ở mức PHIẾU vào `tab_import_change`: mỗi phiếu bị đụng → `was_new` (phiếu mới do batch tạo) + `snapshot` (JSON phiếu + dòng NCC + dòng SP TRƯỚC khi sửa, rỗng nếu was_new).
+- Nút **"Hoàn tác"** ở trang chi tiết Import (chỉ batch Apply chưa revert):
+  - phiếu `was_new` → **xoá** phiếu (+ dòng);
+  - phiếu cũ → **khôi phục** từ snapshot (xoá dòng hiện tại, dựng lại theo snapshot);
+  - xong → batch `status = reverted`.
+- Ràng buộc: nên revert theo thứ tự **mới→cũ**; nếu phiếu đã bị batch sau sửa tiếp thì cảnh báo (revert best-effort). Quyền: vai trò có `survey delete`/admin (hoặc DEV_MODE).
 
-## 8. Chạy nền + chuông
-1. Upload → lưu file tạm → tạo `ImportBatch(status=running)` → đẩy **Celery task** → trả `batch_id` ngay.
-2. Task: parse → upsert theo lô → ghi warning/lỗi vào log → cập nhật đếm.
-3. Xong → `status=done` + **chuông** cho người import: "Import khảo sát xong: X tạo · Y cập nhật · Z lỗi".
-
-## 9. Màn hình Quản lý Import + Log
-Bảng `tab_import_batch`: `id · module='survey' · filename · uploaded_by · started_at · finished_at · status · created · updated · skipped · warnings · errors · log_detail(JSON)`.
-- Trang riêng: danh sách các lần import (khi nào · ai · file · trạng thái · số liệu) → bấm xem **log chi tiết từng dòng** (NCC text-only, MST xung đột, ngày/số sai, Mã VTBB thiếu…).
-
-## 10. Output
-- Dry-run: thống kê + preview + danh sách cảnh báo/lỗi (không ghi).
-- Apply: như trên + danh sách `code` phiếu tạo/cập nhật, lưu vào ImportBatch.
+## 8. Update (re-import)
+Tìm lại phiếu theo `(Mã VTBB | Mã yêu cầu)`, dòng theo `(Mã yêu cầu + MST)` → cập nhật đúng, không nhân đôi.

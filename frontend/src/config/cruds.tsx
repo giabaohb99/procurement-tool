@@ -410,17 +410,18 @@ export const cruds: Record<string, CrudConfig> = {
     slug: 'purchase-orders', entity: 'purchase_order', title: 'Đơn mua hàng (PO)', apiPath: '/api/purchase-orders', txn: true, cloneable: true,
     columns: [
       { key: 'code', label: 'Mã PO' },
-      { key: 'created_at', label: 'Ngày đặt', render: (r) => fmtDateTime(r.created_at) || '—' },
+      { key: 'misa_code', label: 'Mã MISA', render: (r) => r.misa_code || '' },
+      { key: 'created_at', label: 'Ngày đặt', render: (r) => fmtDateTime(r.created_at) || '' },
       { key: 'note', label: 'Ghi chú', render: (r) => {
         const t = String(r.note || '').trim();
         return t
           ? <span title={t} style={{ display: 'inline-block', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>{t}</span>
-          : '—';
+          : '';
       } },
-      { key: 'supplier_code', label: 'Nhà cung cấp', render: (r) => r.supplier_code || r.supplier_name || '—' },
+      { key: 'supplier_code', label: 'Nhà cung cấp', render: (r) => r.supplier_code || r.supplier_name || '' },
       { key: 'pr_code', label: 'Mã PYC', link: (r) => (r.pr_id ? `/purchase-requests/${r.pr_id}` : '') },
       { key: 'amount', label: 'Tiền hàng', render: (r) => (r.amount ? Number(r.amount).toLocaleString('vi-VN') + ' đ' : '0 đ') },
-      { key: 'is_urgent', label: 'Gấp', render: (r) => (r.is_urgent ? <span className="badge warn">Gấp</span> : '—') },
+      { key: 'is_urgent', label: 'Gấp', render: (r) => (r.is_urgent ? <span className="badge warn">Gấp</span> : '') },
       { key: 'status', label: 'Trạng thái', render: (r) => poBadge(r.status) },
     ],
     filters: [
@@ -455,6 +456,7 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     filters: [
       { key: 'code', label: 'Mã phiếu' },
+      { key: 'po_code', label: 'Mã PO' },
       { key: 'company_id', label: 'Công ty', source: { url: '/api/companies', value: 'id', label: 'name' } },
       { key: 'supplier_code', label: 'Nhà cung cấp', source: { url: '/api/suppliers', value: 'code', label: 'name' } },
       { key: 'source_type', label: 'Loại', type: 'select', options: [{ value: 'goods', label: 'Hàng hóa' }, { value: 'shipping', label: 'Vận chuyển' }] },

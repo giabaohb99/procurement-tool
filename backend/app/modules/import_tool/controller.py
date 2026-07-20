@@ -11,25 +11,19 @@ from app.core.storage import download_bytes
 from app.modules.attachment.model import StoredFile
 
 from . import service
-from .model import ImportModule
 from .tasks import run_import
 
 router = APIRouter(prefix="/api/imports", tags=["import"])
 
 
-def _ent(module: int) -> str:
-    return "survey" if module == ImportModule.SURVEY else "purchase_order"
-
-
-def _guard(db, user, module: int, action: str):
-    if not user_has_permission(db, user, _ent(module), action):
-        raise HTTPException(403, "Không có quyền import mục này")
+def _guard(db, user, action: str):
+    if not user_has_permission(db, user, "import", action):
+        raise HTTPException(403, "Không có quyền thao tác Import")
 
 
 def _guard_view(db, user):
-    if not (user_has_permission(db, user, "survey", "read")
-            or user_has_permission(db, user, "purchase_order", "read")):
-        raise HTTPException(403, "Không có quyền xem import")
+    if not user_has_permission(db, user, "import", "read"):
+        raise HTTPException(403, "Không có quyền xem Import")
 
 
 def _batch_out(db, b) -> dict:
@@ -52,7 +46,7 @@ def _log_out(lg) -> dict:
 def upload_import(module: int = Form(...), mode: int = Form(0), file: UploadFile = File(...),
                   db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Upload .xlsx -> lưu file -> tạo batch -> đẩy Celery task (trả batch_id ngay)."""
-    _guard(db, user, module, "create")
+    _guard(db, user, "create")
     if not (file.filename or "").lower().endswith(".xlsx"):
         raise HTTPException(400, "Chỉ nhận file .xlsx")
     sf = service.save_upload(db, file, user.id)
@@ -63,10 +57,14 @@ def upload_import(module: int = Form(...), mode: int = Form(0), file: UploadFile
 
 @router.get("")
 def list_imports(module: int | None = Query(None), status: int | None = Query(None),
+                 mode: int | None = Query(None),
+                 date_from: str | None = Query(None), date_to: str | None = Query(None),
+                 created_by_name: str | None = Query(None), filename: str | None = Query(None),
                  pg: dict = Depends(pagination), db: Session = Depends(get_db), user=Depends(get_current_user)):
     _guard_view(db, user)
-    total, items = service.list_batches(db, module, status, pg)
-    return success({"total": total, "items": [_batch_out(db, b) for b in items]})
+    total, items = service.list_batches(db, module, status, mode, date_from, date_to, created_by_name, filename, pg)
+    creators = service.distinct_creators(db)
+    return success({"total": total, "items": [_batch_out(db, b) for b in items], "creators": creators})
 
 
 @router.get("/{bid}")
@@ -104,6 +102,19 @@ def dev_delete_surveys(ids: str = Query(""), all_imported: bool = Query(False),
         if db.get(Survey, sid):
             survey_service.delete_survey(db, sid, user.id); n += 1
     return success({"deleted": n, "ids": sids}, f"Đã xóa {n} phiếu (dev)")
+
+
+@router.post("/{bid}/revert")
+def revert_import(bid: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Hoàn tác 1 batch đã ghi: phiếu mới -> xoá, phiếu cũ -> khôi phục snapshot."""
+    b = service.get_batch(db, bid)
+    if not b:
+        raise HTTPException(404, "Không tìm thấy lần import")
+    _guard(db, user, "delete")
+    res = service.revert_batch(db, b, user.id)
+    if not res.get("ok"):
+        raise HTTPException(400, res.get("message", "Không thể hoàn tác"))
+    return success(_batch_out(db, b), res["message"])
 
 
 @router.get("/{bid}/file")

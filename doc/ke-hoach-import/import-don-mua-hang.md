@@ -12,14 +12,21 @@ Nạp lịch sử mua hàng vào **Đơn mua hàng (PO) + dòng hàng + lần gi
 
 ## 3. Khoá gom 3 tầng
 ```
-Mã Misa (J)              → 1 ĐƠN MUA HÀNG (PurchaseOrder)
-  └ Số hóa đơn (AE)      → 1 DÒNG HÀNG   (POItem)
-      └ mỗi dòng sheet   → 1 LẦN GIAO    (PODelivery)
+Mã Misa (J)                       → 1 ĐƠN MUA HÀNG (PurchaseOrder)
+  └ (Mã SP L + Số hóa đơn AE)    → 1 DÒNG HÀNG   (POItem)   [số HĐ thuộc dòng hàng]
+      └ mỗi dòng sheet            → 1 LẦN GIAO    (PODelivery)
 ```
 - **PO** = gom theo `misa_code (J)`.
-- **Dòng hàng** = trong 1 Misa, gom theo `Số hóa đơn (AE)` (1 số HĐ = 1 line item). *(Giả định: các dòng cùng Misa+HĐ cùng 1 sản phẩm — nếu lệch product_code sẽ log cảnh báo.)*
-- **Lần giao** = mỗi dòng trong sheet = 1 lần giao của dòng hàng đó.
-- Định danh để re-import: PO theo `misa_code`; dòng hàng theo `(misa, invoice_no)`; lần giao theo `(misa, invoice_no, thứ tự / received_date)`.
+- **Dòng hàng (POItem)** = gom theo `(Mã SP L + Số hóa đơn AE)`. Số hóa đơn là **thuộc tính của dòng hàng** (model: `POItem.invoice_no` — "Số hóa đơn theo sản phẩm").
+  - **Cùng sản phẩm, KHÁC số HĐ → 2 dòng hàng riêng.** (Vd ĐMH01705 → 2 dòng THC0077 với HĐ 1215 và 1216.)
+  - **Cùng (sản phẩm + số HĐ) → 1 dòng hàng.**
+- **Lần giao (PODelivery)** = mỗi dòng sheet = 1 lần nhận (SL nhận Y, ngày nhận E, kho R, đơn vị VC S). Khoá lần giao = `(dòng hàng + số HĐ + ngày nhận + KHO + VẬN CHUYỂN)`.
+  - **Cùng số HĐ vẫn có thể giao NHIỀU LẦN** (khác kho / khác đơn vị VC) → là các lần giao riêng, KHÔNG phải trùng. `POItem.qty_received = Σ các lần giao`. Vd ĐMH01497/THC0247/HĐ158: SL đặt 150, giao 2 lần (147 Dego Cần Thơ/Mekong + 150 Hà Long/NCC tự VC) → tổng nhận 297.
+  - Chỉ khi trùng CẢ (số HĐ + ngày + kho + vận chuyển) mới là trùng thật → ghi đè + log WARNING `duplicate_line`.
+- **Số HĐ KHÔNG duy nhất toàn cục** (vd 158 xuất hiện ở nhiều Misa/SP) → khoá luôn phải kèm Misa + sản phẩm.
+- Định danh để re-import: PO theo `misa_code`; dòng hàng theo `(misa, product_code, invoice_no)`; lần giao theo `(misa, product_code, invoice_no, received_date, warehouse, carrier)`.
+
+**Edge-case SL đặt (X) lệch:** nếu cùng `(misa + SP + số HĐ)` mà các dòng ghi X khác nhau → lấy X của dòng đầu làm SL đặt của POItem + log REVIEW "SL đặt lệch — cần rà".
 
 ## 4. Trạng thái → done + Công nợ + Thanh toán
 Theo cột **Trạng thái (P)** của dòng:
@@ -52,8 +59,14 @@ Theo cột **Trạng thái (P)** của dòng:
 
 ## 8. Check trùng / Upsert (idempotent)
 - PO theo `misa_code`: có → cập nhật header + dòng; chưa → tạo.
-- Dòng hàng theo `(misa, invoice_no)`; lần giao theo `(misa, invoice_no, received_date)`.
+- Dòng hàng theo `(misa, product_code, invoice_no)`; lần giao theo `(misa, product_code, invoice_no, received_date, warehouse, carrier)`.
 - Re-import cùng file/cụm ⇒ cập nhật, không nhân đôi.
+- Trùng hết khoá lần giao (số HĐ + ngày + kho + VC giống hệt) ⇒ dedup + log WARNING "duplicate_line".
+
+## 8b. Đồng bộ với hạ tầng Import Khảo sát (tái dùng)
+- Parser số kiểu VN (`_n`: "20.600"→20600), sinh log INFO `po_new`/`po_update` để soi phiếu mới vs cập nhật, cảnh báo `duplicate_line`.
+- **Revert**: snapshot PO+dòng+lần giao (+ payable/payment đã sinh) vào `tab_import_change` khi Apply → hoàn tác được như khảo sát.
+- **Phân quyền**: dùng chung entity `import` (create/read/delete) đã seed.
 
 ## 9. Chạy nền + chuông + màn hình quản lý
 - Giống Import Khảo sát: `ImportBatch(module='purchase_order')` → **Celery task** → xong **chuông** + trang **Quản lý Import** xem log chi tiết từng dòng.

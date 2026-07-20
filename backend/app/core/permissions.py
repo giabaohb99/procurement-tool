@@ -9,7 +9,7 @@ ENTITIES = [
     "supplier", "product", "contract",
     "purchase_request", "survey", "purchase_order", "goods_receipt",
     "inventory", "payable", "payment", "payment_request",
-    "report", "setting", "category_assignee", "survey_request",
+    "report", "setting", "category_assignee", "survey_request", "import",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -40,6 +40,7 @@ ENTITY_LABELS = {
     "setting": "Cấu hình hệ thống",
     "category_assignee": "Phân công phụ trách (theo phân loại)",
     "survey_request": "Yêu cầu khảo sát",
+    "import": "Nhập dữ liệu (Import)",
 }
 
 ACTION_LABELS = {

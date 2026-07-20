@@ -10,7 +10,7 @@ from app.core.storage import download_bytes
 from app.modules.attachment.model import StoredFile
 from app.modules.notification.model import Notification
 
-from . import survey_import
+from . import po_import, survey_import
 from .model import ImportBatch, ImportMode, ImportModule, ImportStatus
 
 _MODULE_LABEL = {ImportModule.SURVEY: "Khảo sát", ImportModule.PURCHASE_ORDER: "Đơn mua hàng"}
@@ -35,8 +35,10 @@ def run_import(batch_id: int) -> dict:
 
         if batch.module == ImportModule.SURVEY:
             survey_import.run(db, batch, wb, apply=(batch.mode == ImportMode.APPLY))
+        elif batch.module == ImportModule.PURCHASE_ORDER:
+            po_import.run(db, batch, wb, apply=(batch.mode == ImportMode.APPLY))
         else:
-            raise RuntimeError("Module import chưa hỗ trợ (PHA 2)")
+            raise RuntimeError("Module import chưa hỗ trợ")
 
         db.refresh(batch)
         _notify(db, batch, ok=True)

@@ -188,7 +188,7 @@ const NAV_GROUPS: NavGroup[] = [
         to: "/import-batches",
         label: "Quản lý Import",
         icon: "ti-file-import",
-        entity: "survey",
+        entity: "import",
       },
     ],
   },

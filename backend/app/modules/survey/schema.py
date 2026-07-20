@@ -46,6 +46,7 @@ class ProductLineIn(BaseModel):
     volume_range: str = ""
     vat: float = 0
     request_qty: float = 0
+    amount: float = 0
     internal_unit: str = ""
     amount_converted: float = 0
     shipping_cost: float = 0
