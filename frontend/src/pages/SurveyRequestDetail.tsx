@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
-import { fmtDateTime } from '../utils/datetime'
+import { fmtDate, fmtDateTime } from '../utils/datetime'
 import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import { prBadge } from '../config/cruds'
@@ -210,6 +210,7 @@ export default function SurveyRequestDetail() {
   // --- Phase 5C/5D: kết quả khảo sát (ẩn NCC) + sinh PYC ---
   const [result, setResult] = useState<any>(null)
   const [viewImg, setViewImg] = useState<string | null>(null)   // lightbox ảnh đính kèm
+  const [ycmhPopup, setYcmhPopup] = useState<{ label: string; prs: { code: string; id: number; date?: string; status?: string }[] } | null>(null)
   const [showPrModal, setShowPrModal] = useState(false)         // popup DS phiếu YCMH đã sinh
 
   // Esc để đóng popup DS phiếu YCMH
@@ -234,17 +235,18 @@ export default function SurveyRequestDetail() {
   }, [sv.status])
   async function chooseOption(lineId: number, oid: number) {
     try {
-      await api.patch(`${API}/${id}/lines/${lineId}/options/${oid}/choose`)
+      const res = await api.patch(`${API}/${id}/lines/${lineId}/options/${oid}/choose`)
+      const fresh = res.data?.data                        // endpoint trả luôn /result mới
+      if (fresh) setResult(fresh)
       await loadAll()                                     // refresh badge bảng + trạng thái phiếu
-      const r = await api.get(`${API}/${id}/result`)      // refresh thẻ Kết quả (đánh dấu đã chọn)
-      setResult(r.data.data)
-      toast.success('Đã chọn phương án')
+      const opt = (fresh?.lines || []).flatMap((l: any) => l.options || []).find((o: any) => o.id === oid)
+      toast.success(opt?.is_chosen ? 'Đã chọn phương án' : 'Đã bỏ chọn phương án')
     } catch { /* lỗi đã hiện popup từ interceptor */ }
   }
-  // 5D: người YC sinh Yêu cầu mua hàng từ phương án đã chọn
+  // 5D: người YC sinh Yêu cầu mua hàng từ phương án đã chọn (chỉ các dòng đã chọn; dòng chưa chọn bỏ qua)
   async function createPrs() {
-    if (!allChosen) { toast.error('Vui lòng chọn phương án đề xuất mua hàng'); return }
-    if (!(await askConfirm({ title: 'Tạo Yêu cầu mua hàng', message: 'Tạo Yêu cầu mua hàng từ các phương án đã chọn?', confirmText: 'Tạo YCMH', danger: false }))) return
+    if (!anyChosen) { toast.error('Hãy chọn ít nhất 1 phương án để tạo YCMH'); return }
+    if (!(await askConfirm({ title: 'Tạo Yêu cầu mua hàng', message: 'Tạo YCMH từ các phương án đã chọn? (dòng chưa chọn sẽ bỏ qua)', confirmText: 'Tạo YCMH', danger: false }))) return
     try {
       const r = await api.post(`${API}/${id}/create-prs`)
       const codes = (r.data.data.created_prs || []).map((p: any) => p.code).join(', ')
@@ -273,8 +275,8 @@ export default function SurveyRequestDetail() {
     return Array.from(prMap.entries()).map(([pid, data]) => ({ pid, ...data }))
   })()
   const allChosen = (result?.lines || []).length > 0 && (result?.lines || []).every((l: any) => (l.options || []).some((o: any) => o.is_chosen))
-  // Còn dòng CHƯA tạo YCMH (is_completed=false) mới cho tạo YCMH — nếu mọi dòng đã tạo thì ẩn nút.
-  const hasPendingLines = (result?.lines || []).some((l: any) => !l.is_completed)
+  // Có ít nhất 1 dòng đã chọn PA -> cho tạo YCMH (dòng tái sử dụng: kể cả dòng đã từng tạo YCMH)
+  const anyChosen = (result?.lines || []).some((l: any) => (l.options || []).some((o: any) => o.is_chosen))
   const canFinalize = can('survey_request', 'process') && can('survey_request', 'approve')
   // Chỉ NGƯỜI YÊU CẦU (người tạo) hoặc Admin TM (delete) được tạo YCMH
   const canCreatePr = isRequester || can('survey_request', 'delete')
@@ -507,9 +509,11 @@ export default function SurveyRequestDetail() {
           </button>
         )}
 
-        {/* Nút Tạo yêu cầu mua (người YC) — chỉ khi CÒN dòng chưa tạo YCMH (ẩn khi mọi dòng đã chốt) */}
-        {!isNew && ['survey_done', 'pr_created', 'done'].includes(sv.status) && canCreatePr && hasPendingLines && (
-          <button className="btn" onClick={createPrs}>
+        {/* Nút Tạo yêu cầu mua (người YC) — luôn hiện khi có quyền (dòng tái sử dụng, kể cả đã Hoàn thành);
+            bấm mà chưa chọn PA sẽ nhắc chọn. */}
+        {!isNew && ['survey_done', 'pr_created', 'done'].includes(sv.status) && canCreatePr && (
+          <button className="btn" onClick={createPrs} disabled={!anyChosen}
+            title={anyChosen ? '' : 'Chọn ít nhất 1 phương án ở phần Kết quả khảo sát'}>
             <i className="ti ti-file-plus" />Tạo yêu cầu mua
           </button>
         )}
@@ -831,7 +835,7 @@ export default function SurveyRequestDetail() {
 
               {['survey_done', 'pr_created', 'done'].includes(sv.status) && (
                 <p style={{ color: 'var(--muted)', fontSize: 12.5, marginTop: -6, marginBottom: 14 }}>
-                  Với mỗi sản phẩm, nhấn chọn 1 phương án phù hợp nhất (đổi lại được cho tới khi dòng đã tạo YCMH). (Thông tin nhà cung cấp được ẩn theo chính sách.)
+                  Với mỗi sản phẩm, nhấn chọn 1 phương án phù hợp nhất; bấm lại phương án đang chọn để BỎ CHỌN. Không bắt buộc chọn hết — dòng không chọn sẽ không tạo YCMH. Đổi/bỏ được cho tới khi dòng đã tạo YCMH. (Tên NCC ẩn theo chính sách; "NCC #" cùng số là cùng nhà cung cấp.)
                 </p>
               )}
               {(result.lines || []).map((ln: any, li: number) => (
@@ -847,17 +851,26 @@ export default function SurveyRequestDetail() {
                   ) : (
                     <div className="options-container">
                       {ln.options.map((o: any) => {
-                        const canChoose = ['survey_done', 'pr_created', 'done'].includes(sv.status) && !ln.is_completed && canCreatePr
+                        const canChoose = ['survey_done', 'pr_created', 'done'].includes(sv.status) && canCreatePr
                         return (
                         <div key={o.id} onClick={() => { if (canChoose) chooseOption(ln.id, o.id) }}
                           className="option-card"
                           style={{ border: `2px solid ${o.is_chosen ? 'var(--teal)' : '#E9EDF7'}`, borderRadius: 12, padding: 14, cursor: canChoose ? 'pointer' : 'default', opacity: (!canChoose && !o.is_chosen) ? 0.55 : 1, background: o.is_chosen ? 'rgba(20,184,166,.06)' : '#fff' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 8 }}>
                             <span style={{ fontWeight: 700 }}>
                               <input type="radio" checked={!!o.is_chosen} readOnly style={{ marginRight: 6, verticalAlign: 'middle' }} />
                               {o.display_label || `Option ${o.public_id}`}
                             </span>
-                            {o.is_chosen && <span className="badge ok">Đã chọn</span>}
+                            <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                              {o.ycmh_count > 0 && (
+                                <span className="badge" style={{ background: '#eef2ff', color: '#4338ca', cursor: 'pointer' }}
+                                  title="Xem các Yêu cầu mua hàng đã tạo từ phương án này"
+                                  onClick={() => setYcmhPopup({ label: o.display_label || `Option ${o.public_id}`, prs: o.ycmh_list || [] })}>
+                                  <i className="ti ti-file-invoice" /> YCMH: {o.ycmh_count}
+                                </span>
+                              )}
+                              {o.is_chosen && <span className="badge ok">Đã chọn</span>}
+                            </span>
                           </div>
                           <div style={{ fontWeight: 600, marginBottom: 8 }}>{o.snap_product_name || '—'}</div>
                           <div className="option-fields">
@@ -903,18 +916,15 @@ export default function SurveyRequestDetail() {
               ))}
 
               {/* Ghi chú trạng thái 5D (nút hành động ở góc phải header) */}
-              {sv.status === 'survey_done' && !allChosen && (
+              {['survey_done', 'pr_created', 'done'].includes(sv.status) && canCreatePr && !anyChosen && (
                 <div style={{ color: 'var(--muted)', fontSize: 12.5, marginTop: 4 }}>
-                  Hãy chọn phương án cho tất cả sản phẩm, rồi bấm <b>“Tạo yêu cầu mua”</b> ở góc phải trên.
+                  Chọn phương án cho (những) sản phẩm muốn mua, rồi bấm <b>“Tạo yêu cầu mua”</b> ở góc phải trên. Có thể tạo YCMH nhiều lần (mua lại) kể cả khi phiếu đã Hoàn thành.
                 </div>
               )}
               {sv.status === 'pr_created' && !canFinalize && (
                 <div style={{ color: 'var(--muted)', fontSize: 12.5, marginTop: 4 }}>
                   Đã tạo YCMH — chờ Quản lý/Admin thu mua chuyển Hoàn thành.
                 </div>
-              )}
-              {sv.status === 'done' && (
-                <div style={{ marginTop: 4 }}><span className="badge ok">Phiếu đã Hoàn thành</span></div>
               )}
             </div>
           )}
@@ -1164,6 +1174,67 @@ export default function SurveyRequestDetail() {
           </button>
           <img src={viewImg} onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '92vw', maxHeight: '88vh', objectFit: 'contain', borderRadius: 8 }} />
+        </div>
+      )}
+
+      {/* Popup: Yêu cầu mua hàng đã tạo từ 1 phương án */}
+      {ycmhPopup && (
+        <div className="confirm-modal-overlay" onClick={() => setYcmhPopup(null)} style={{ zIndex: 320 }}>
+          <div className="confirm-modal" style={{ position: 'relative', maxWidth: 420, textAlign: 'left', padding: 0, overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+            {/* Nút X đóng */}
+            <button
+              onClick={() => setYcmhPopup(null)}
+              title="Đóng"
+              style={{ position: 'absolute', top: 12, right: 12, width: 30, height: 30, display: 'grid', placeItems: 'center', border: 'none', borderRadius: 8, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#475569' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#94a3b8' }}
+            >
+              <i className="ti ti-x" />
+            </button>
+
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '20px 24px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+              <span style={{ width: 42, height: 42, flexShrink: 0, display: 'grid', placeItems: 'center', borderRadius: '50%', background: '#e0f2fe', color: '#0284c7', fontSize: 22 }}>
+                <i className="ti ti-file-invoice" />
+              </span>
+              <div>
+                <h3 style={{ margin: 0, fontWeight: 700, color: '#0f172a', fontSize: 16 }}>{ycmhPopup.label}</h3>
+                <div style={{ color: '#64748b', fontSize: 12.5, marginTop: 2 }}>{ycmhPopup.prs.length} yêu cầu mua hàng từ tùy chọn này</div>
+              </div>
+            </div>
+
+            {/* Content — cuộn khi nhiều phiếu */}
+            <div style={{ padding: '16px 24px 24px', background: '#fff' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '52vh', overflowY: 'auto' }}>
+                {ycmhPopup.prs.map((p) => (
+                  <button key={p.id}
+                    onClick={() => { setYcmhPopup(null); navigate(`/purchase-requests/${p.id}`) }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '12px 16px',
+                      background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, cursor: 'pointer',
+                      textAlign: 'left', transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#bae6fd'; e.currentTarget.style.background = '#f0f9ff' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#fff' }}
+                  >
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: '#f1f5f9', display: 'grid', placeItems: 'center', color: '#64748b', flexShrink: 0 }}>
+                      <i className="ti ti-receipt" style={{ fontSize: 16 }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 600, color: '#0ea5e9', fontSize: 14 }}>{p.code}</span>
+                        {p.status && prBadge(p.status)}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                        {p.date ? `Ngày tạo: ${fmtDate(p.date)}` : 'Nhấn để xem chi tiết phiếu YCMH'}
+                      </div>
+                    </div>
+                    <i className="ti ti-chevron-right" style={{ color: '#cbd5e1', fontSize: 18 }} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

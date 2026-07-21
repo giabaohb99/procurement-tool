@@ -84,3 +84,16 @@ class SurveyRequestOption(Base, AuditMixin):
     supplier_name: Mapped[str] = mapped_column(String(255), default="")
     supplier_survey_id: Mapped[int] = mapped_column(BigInteger, default=0)
     nstm_note: Mapped[str] = mapped_column(Text, default="")
+
+
+class SurveyRequestPr(Base, AuditMixin):
+    """Liên kết mỗi lần tạo YCMH từ 1 option của 1 dòng YCKS (1 dòng có thể tạo NHIỀU YCMH — mua lại)."""
+
+    __tablename__ = "tab_survey_request_pr"
+
+    survey_request_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    survey_request_line_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    option_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    product_survey_line_id: Mapped[int] = mapped_column(BigInteger, default=0)  # nguồn khảo sát (đếm toàn hệ thống sau này)
+    pr_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    pr_code: Mapped[str] = mapped_column(String(50), default="")

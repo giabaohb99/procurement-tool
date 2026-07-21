@@ -464,12 +464,47 @@ def _opt_public(o, db: Session) -> dict:
 
 def _out_result(db: Session, s: SurveyRequest) -> dict:
     base = _dict(s)
+    # Mã NCC ẩn danh: đánh số theo thứ tự xuất hiện, cùng NCC -> cùng số (KHÔNG lộ tên/mã thật).
+    # Dùng chung toàn phiếu để so được "cùng 1 NCC" giữa các sản phẩm.
+    ncc_seq: dict = {}
+
+    def _ncc_ref(code: str) -> int:
+        c = (code or "").strip()
+        if not c:
+            return 0
+        if c not in ncc_seq:
+            ncc_seq[c] = len(ncc_seq) + 1
+        return ncc_seq[c]
+
+    # YCMH đã tạo theo option (đếm nhiều lần) — trong phạm vi phiếu này
+    from .model import SurveyRequestPr
+    from app.modules.purchase_request.model import PurchaseRequest
+    links = db.query(SurveyRequestPr).filter(SurveyRequestPr.survey_request_id == s.id).order_by(SurveyRequestPr.id).all()
+    pr_ids = {ln.pr_id for ln in links}
+    pr_map = {p.id: p for p in db.query(PurchaseRequest).filter(PurchaseRequest.id.in_(pr_ids)).all()} if pr_ids else {}
+    ycmh_by_opt: dict = {}
+    for link in links:
+        pr = pr_map.get(link.pr_id)
+        ycmh_by_opt.setdefault(link.option_id, []).append({
+            "id": link.pr_id, "code": link.pr_code,
+            "date": (pr.request_date if pr else ""), "status": (pr.status if pr else ""),
+        })
+
     out_lines = []
     for ln in service.lines_of(db, s.id):
         d = {k: getattr(ln, k) for k in _LINE_PUBLIC_FIELDS}
         d["request_qty"] = float(d["request_qty"] or 0)
         d["proposed_price"] = float(d["proposed_price"] or 0)
-        d["options"] = [_opt_public(o, db) for o in service.valid_options_of(db, ln.id)]
+        opts = []
+        for o in service.valid_options_of(db, ln.id):
+            od = _opt_public(o, db)
+            ref = _ncc_ref(o.supplier_code)
+            od["ncc_ref"] = ref
+            od["display_label"] = f"Option {o.public_id} — NCC #{ref}" if ref else f"Option {o.public_id}"
+            od["ycmh_list"] = ycmh_by_opt.get(o.id, [])
+            od["ycmh_count"] = len(od["ycmh_list"])
+            opts.append(od)
+        d["options"] = opts
         out_lines.append(d)
     base["lines"] = out_lines
     return base
@@ -493,12 +528,10 @@ def choose_option_(sid: int, line_id: int, oid: int, db: Session = Depends(get_d
     s = service.get_sr(db, sid)
     if not _can_edit_own(db, s, user):
         raise HTTPException(403, "Không có quyền chọn phương án cho phiếu này")
-    # Cho chọn/đổi phương án khi: Đã khảo sát, Đã tạo YCMH, Hoàn thành (để còn tạo YCMH bổ sung).
+    # Cho chọn/đổi/bỏ chọn khi: Đã khảo sát, Đã tạo YCMH, Hoàn thành (dòng tái sử dụng — tạo YCMH nhiều lần).
     if s.status not in ("survey_done", "pr_created", "done"):
         raise HTTPException(400, "Chỉ chọn phương án khi phiếu đã khảo sát / đã tạo YCMH / hoàn thành")
-    ln = service.get_line(db, sid, line_id)
-    if ln.is_completed:
-        raise HTTPException(400, "Dòng đã tạo Yêu cầu mua hàng — không đổi phương án được.")
+    service.get_line(db, sid, line_id)   # xác thực dòng thuộc phiếu
     service.choose_option(db, line_id, oid, user.id)
     return success(_out_result(db, s), "Đã chọn phương án")
 

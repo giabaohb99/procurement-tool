@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record
 
-from .model import SurveyRequest, SurveyRequestLine, SurveyRequestOption
+from .model import (SurveyRequest, SurveyRequestLine, SurveyRequestOption,
+                    SurveyRequestPr)
 
 ENTITY = "survey_request"
 FILTERABLE = ["code", "status", "requester", "department"]
@@ -437,15 +438,16 @@ def set_option_fields(db: Session, line_id: int, oid: int, user_id: int, **field
 
 
 def choose_option(db: Session, line_id: int, oid: int, user_id: int) -> SurveyRequestOption:
-    """Người YC chọn 1 option cho 1 dòng (bỏ chọn các option khác cùng dòng)."""
+    """Người YC chọn 1 option cho 1 dòng. Bấm lại đúng option đang chọn -> BỎ CHỌN (toggle)."""
     target = (db.query(SurveyRequestOption)
               .filter(SurveyRequestOption.id == oid,
                       SurveyRequestOption.survey_request_line_id == line_id).first())
     if not target:
         raise HTTPException(404, "Không tìm thấy option")
+    already = bool(target.is_chosen)
     for o in options_of(db, line_id):
-        o.is_chosen = (o.id == oid)
-        if o.id == oid:
+        o.is_chosen = (o.id == oid) and not already   # bấm lại option đang chọn -> bỏ chọn cả dòng
+        if o.is_chosen:
             o.chosen_by = user_id
             o.updated_by = user_id
     db.commit()
@@ -489,16 +491,16 @@ def create_prs(db: Session, sid: int, user_id: int):
     if s.status not in ("survey_done", "pr_created", "done"):
         raise HTTPException(400, "Chỉ tạo YCMH khi phiếu đã khảo sát xong")
 
+    # Dòng TÁI SỬ DỤNG: 1 dòng có thể tạo NHIỀU YCMH (mua lại). KHÔNG bỏ qua dòng đã completed;
+    # chỉ tạo cho dòng ĐANG chọn PA. Sau khi tạo sẽ tự bỏ chọn (tránh tạo trùng lần sau).
     groups: dict[str, list] = {}
     for ln in lines_of(db, sid):
-        if ln.is_completed:
-            continue
         chosen = [o for o in options_of(db, ln.id) if o.is_chosen]
         if not chosen:
-            raise HTTPException(400, f"Sản phẩm '{ln.item_group or ln.id}' chưa chọn phương án")
+            continue
         groups.setdefault(chosen[0].supplier_code or "", []).append((ln, chosen[0]))
     if not groups:
-        raise HTTPException(400, "Không có phương án nào để tạo YCMH")
+        raise HTTPException(400, "Chưa chọn phương án nào để tạo YCMH")
 
     today = datetime.now().strftime("%Y-%m-%d")
     created = []
@@ -531,9 +533,15 @@ def create_prs(db: Session, sid: int, user_id: int):
                 price=price, amount=qty * price, note="",
                 line_status="Chưa đặt hàng", created_by=user_id, updated_by=user_id,
             ))
-            ln.pr_id = pr.id
+            # Liên kết YCKS-dòng <-> YCMH (đếm được nhiều lần tạo) + tự BỎ CHỌN option
+            db.add(SurveyRequestPr(
+                survey_request_id=sid, survey_request_line_id=ln.id, option_id=opt.id,
+                product_survey_line_id=opt.product_survey_line_id or 0,
+                pr_id=pr.id, pr_code=pr.code, created_by=user_id, updated_by=user_id))
+            opt.is_chosen = False          # tự bỏ chọn sau khi tạo
+            ln.pr_id = pr.id               # giữ YCMH gần nhất (tương thích + auto-complete)
             ln.pr_code = pr.code
-            ln.is_completed = True
+            ln.is_completed = True         # cờ "đã từng tạo YCMH" (KHÔNG còn khoá tạo thêm)
             ln.updated_by = user_id
         db.commit()
         created.append(pr)
@@ -559,15 +567,14 @@ def auto_complete_from_pr(db: Session, pr_id: int, user_id: int = 0) -> None:
     """Khi 1 Yêu cầu mua hàng (PR) hoàn thành: nếu Yêu cầu khảo sát liên quan (qua line.pr_id)
     đang ở 'pr_created' VÀ tất cả các PR sinh ra từ nó đều đã 'completed' -> tự chuyển YCKS sang 'done'."""
     from app.modules.purchase_request.model import PurchaseRequest
-    sr_ids = [r[0] for r in db.query(SurveyRequestLine.survey_request_id)
-              .filter(SurveyRequestLine.pr_id == pr_id).distinct().all()]
+    sr_ids = [r[0] for r in db.query(SurveyRequestPr.survey_request_id)
+              .filter(SurveyRequestPr.pr_id == pr_id).distinct().all()]
     for sid in sr_ids:
         s = db.get(SurveyRequest, sid)
         if not s or s.status != "pr_created":
             continue
-        pr_ids = [r[0] for r in db.query(SurveyRequestLine.pr_id)
-                  .filter(SurveyRequestLine.survey_request_id == sid,
-                          SurveyRequestLine.pr_id != 0).distinct().all()]
+        pr_ids = [r[0] for r in db.query(SurveyRequestPr.pr_id)
+                  .filter(SurveyRequestPr.survey_request_id == sid).distinct().all()]
         prs = [db.get(PurchaseRequest, pid) for pid in pr_ids]
         prs = [p for p in prs if p]
         if prs and all(p.status == "completed" for p in prs):
