@@ -46,6 +46,7 @@ class SurveyRequestLine(Base, AuditMixin):
     pr_id: Mapped[int] = mapped_column(BigInteger, default=0)                 # PYC sinh ra từ dòng
     pr_code: Mapped[str] = mapped_column(String(50), default="")
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    no_option: Mapped[bool] = mapped_column(Boolean, default=False)           # chốt rỗng: khảo sát nhưng không có phương án phù hợp
 
 
 class SurveyRequestOption(Base, AuditMixin):

@@ -349,6 +349,7 @@ def create_option(db: Session, line: SurveyRequestLine, psl_id: int, user_id: in
         nstm_note=psl.nspt_reason or "",
     )
     db.add(o)
+    line.no_option = False   # đã có phương án -> bỏ cờ chốt rỗng (nếu trước đó chốt rỗng)
     db.commit()
     db.refresh(o)
     o.display_label = f"Option {public_id} — ID {o.id}"
@@ -486,10 +487,9 @@ def create_prs(db: Session, sid: int, user_id: int):
     from app.modules.purchase_request.service import find_dept_head
     from app.modules.supplier.model import Supplier
     s = get_sr(db, sid)
-    # Cho tạo YCMH khi: Đã khảo sát, Đã tạo YCMH (tạo thêm cho dòng mới), và Hoàn thành
-    # (tính năng: phiếu đã hoàn thành vẫn tạo được YCMH cho các dòng chưa chốt).
-    if s.status not in ("survey_done", "pr_created", "done"):
-        raise HTTPException(400, "Chỉ tạo YCMH khi phiếu đã khảo sát xong")
+    # Cho tạo YCMH khi: Đang xử lý (mua trước dòng đã khảo sát xong), Đã khảo sát, Đã tạo YCMH, Hoàn thành.
+    if s.status not in ("processing", "survey_done", "pr_created", "done"):
+        raise HTTPException(400, "Chỉ tạo YCMH khi phiếu đang xử lý trở đi")
 
     # Dòng TÁI SỬ DỤNG: 1 dòng có thể tạo NHIỀU YCMH (mua lại). KHÔNG bỏ qua dòng đã completed;
     # chỉ tạo cho dòng ĐANG chọn PA. Sau khi tạo sẽ tự bỏ chọn (tránh tạo trùng lần sau).
@@ -583,10 +583,11 @@ def auto_complete_from_pr(db: Session, pr_id: int, user_id: int = 0) -> None:
                    "Tự hoàn thành: mọi Yêu cầu mua hàng liên quan đã hoàn thành")
 
 
-def complete_sr(db: Session, sid: int, user, profile: dict):
-    """Chốt PHẦN KHẢO SÁT CỦA NGƯỜI GỌI: chỉ validate các dòng MÌNH phụ trách phải có option.
-    Phiếu chỉ chuyển 'survey_done' khi TẤT CẢ dòng (mọi NSTM) đã có option.
-    Cho phép chốt lại khi đã 'survey_done'. Trả (phiếu, fully_done)."""
+def complete_sr(db: Session, sid: int, user, profile: dict, empty_line_ids=None):
+    """Chốt PHẦN KHẢO SÁT CỦA NGƯỜI GỌI. Dòng phụ trách phải có option HOẶC được 'chốt rỗng'
+    (no_option, không có NCC phù hợp). Phiếu -> 'survey_done' khi MỌI dòng có option hoặc chốt rỗng.
+    empty_line_ids: các dòng (mình phụ trách, chưa option) tick chốt rỗng. Trả (phiếu, fully_done)."""
+    empty_ids = {int(x) for x in (empty_line_ids or [])}
     s = get_sr(db, sid)
     if s.status not in ("processing", "survey_done"):
         raise HTTPException(400, "Chỉ chốt được phiếu đang xử lý hoặc đã khảo sát")
@@ -596,10 +597,19 @@ def complete_sr(db: Session, sid: int, user, profile: dict):
     # Quản lý/Admin TM (scope all) & người tạo -> chốt cả phiếu; NSTM -> chỉ dòng mình phụ trách
     see_all = _has_scope_all(profile) or getattr(user, "id", 0) == s.created_by
     my_lines = lns if see_all else [ln for ln in lns if can_process_line(db, ln, profile)]
-    missing_mine = [ln.internal_line_code or str(ln.id) for ln in my_lines if not options_of(db, ln.id)]
+    # Cập nhật cờ chốt rỗng: có option -> bỏ cờ; không option + được tick -> chốt rỗng.
+    for ln in my_lines:
+        if options_of(db, ln.id):
+            ln.no_option = False
+        elif ln.id in empty_ids:
+            ln.no_option = True
+            ln.updated_by = getattr(user, "id", 0)
+    db.flush()
+    missing_mine = [ln.internal_line_code or str(ln.id) for ln in my_lines
+                    if not options_of(db, ln.id) and not ln.no_option]
     if missing_mine:
-        raise HTTPException(400, f"Còn {len(missing_mine)} dòng của bạn chưa có option — không thể chốt")
-    all_done = all(options_of(db, ln.id) for ln in lns)   # đủ mọi dòng của mọi NSTM?
+        raise HTTPException(400, f"Còn {len(missing_mine)} dòng chưa có phương án — hãy khảo sát hoặc chốt rỗng")
+    all_done = all(options_of(db, ln.id) or ln.no_option for ln in lns)   # đủ mọi dòng của mọi NSTM?
     if all_done:
         if s.status != "survey_done":
             s = set_status(db, sid, "survey_done", getattr(user, "id", 0))

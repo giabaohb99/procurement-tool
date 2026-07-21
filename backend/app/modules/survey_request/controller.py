@@ -408,12 +408,14 @@ def edit_option_(sid: int, line_id: int, oid: int, data: dict, db: Session = Dep
 
 
 @router.post("/{sid}/complete")
-def complete_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
-              up=Depends(_purchaser)):
+def complete_(sid: int, background_tasks: BackgroundTasks, data: dict | None = None,
+              db: Session = Depends(get_db), up=Depends(_purchaser)):
     """Chốt hoàn thành khảo sát — NSTM chốt PHẦN DÒNG CỦA MÌNH; phiếu -> survey_done khi
-    MỌI dòng (mọi NSTM) đã có option."""
+    MỌI dòng (mọi NSTM) đã có option HOẶC được chốt rỗng.
+    Body tùy chọn: {empty_line_ids: [...]} — các dòng chưa có option, chốt rỗng (không có NCC phù hợp)."""
     user, prof = up
-    s, fully = service.complete_sr(db, sid, user, prof)
+    empty_ids = (data or {}).get("empty_line_ids") or []
+    s, fully = service.complete_sr(db, sid, user, prof, empty_ids)
     if fully:   # cả phiếu xong -> báo người yêu cầu vào chọn phương án
         from app.modules.user.model import User
         reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
@@ -437,7 +439,7 @@ _OPT_PUBLIC_FIELDS = [
 ]
 _LINE_PUBLIC_FIELDS = [
     "id", "item_group", "requirement_detail", "other_requirement",
-    "request_qty", "uom", "proposed_price", "is_completed", "pr_id", "pr_code",
+    "request_qty", "uom", "proposed_price", "is_completed", "pr_id", "pr_code", "no_option",
 ]
 
 
@@ -462,7 +464,7 @@ def _opt_public(o, db: Session) -> dict:
     return out
 
 
-def _out_result(db: Session, s: SurveyRequest) -> dict:
+def _out_result(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
     base = _dict(s)
     # Mã NCC ẩn danh: đánh số theo thứ tự xuất hiện, cùng NCC -> cùng số (KHÔNG lộ tên/mã thật).
     # Dùng chung toàn phiếu để so được "cùng 1 NCC" giữa các sản phẩm.
@@ -490,8 +492,12 @@ def _out_result(db: Session, s: SurveyRequest) -> dict:
             "date": (pr.request_date if pr else ""), "status": (pr.status if pr else ""),
         })
 
+    # Lọc dòng theo NGƯỜI XEM: NSTM chỉ thấy dòng mình phụ trách; người tạo/Admin/QL TM thấy hết.
+    lines = service.lines_of(db, s.id)
+    if user is not None and profile is not None:
+        lines = service.visible_lines_for(db, s, lines, user, profile)
     out_lines = []
-    for ln in service.lines_of(db, s.id):
+    for ln in lines:
         d = {k: getattr(ln, k) for k in _LINE_PUBLIC_FIELDS}
         d["request_qty"] = float(d["request_qty"] or 0)
         d["proposed_price"] = float(d["proposed_price"] or 0)
@@ -514,11 +520,12 @@ def _out_result(db: Session, s: SurveyRequest) -> dict:
 def result_view_(sid: int, db: Session = Depends(get_db),
                  user=Depends(require("survey_request", "read"))):
     """Kết quả khảo sát cho người YC — ẩn NCC ở tầng backend (whitelist field)."""
+    prof = get_perm_profile(db, user)
     s = apply_scope(db.query(SurveyRequest).filter(SurveyRequest.id == sid),
-                    SurveyRequest, "survey_request", user, get_perm_profile(db, user)).first()
+                    SurveyRequest, "survey_request", user, prof).first()
     if not s:
         raise HTTPException(403, "Ngoài phạm vi được phép xem")
-    return success(_out_result(db, s))
+    return success(_out_result(db, s, user, prof))
 
 
 @router.patch("/{sid}/lines/{line_id}/options/{oid}/choose")
@@ -528,12 +535,12 @@ def choose_option_(sid: int, line_id: int, oid: int, db: Session = Depends(get_d
     s = service.get_sr(db, sid)
     if not _can_edit_own(db, s, user):
         raise HTTPException(403, "Không có quyền chọn phương án cho phiếu này")
-    # Cho chọn/đổi/bỏ chọn khi: Đã khảo sát, Đã tạo YCMH, Hoàn thành (dòng tái sử dụng — tạo YCMH nhiều lần).
-    if s.status not in ("survey_done", "pr_created", "done"):
-        raise HTTPException(400, "Chỉ chọn phương án khi phiếu đã khảo sát / đã tạo YCMH / hoàn thành")
+    # Cho chọn/đổi/bỏ chọn khi: Đang xử lý (chốt từng dòng), Đã khảo sát, Đã tạo YCMH, Hoàn thành.
+    if s.status not in ("processing", "survey_done", "pr_created", "done"):
+        raise HTTPException(400, "Chỉ chọn phương án khi phiếu đang xử lý trở đi")
     service.get_line(db, sid, line_id)   # xác thực dòng thuộc phiếu
     service.choose_option(db, line_id, oid, user.id)
-    return success(_out_result(db, s), "Đã chọn phương án")
+    return success(_out_result(db, s, user, get_perm_profile(db, user)), "Đã chọn phương án")
 
 
 # ─────────────── Phase 5D: sinh PYC + hoàn thành ───────────────

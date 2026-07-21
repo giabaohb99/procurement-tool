@@ -145,6 +145,8 @@ export default function SurveyRequestProcess() {
   const [forbidden, setForbidden] = useState(false)
   const [completing, setCompleting] = useState(false)
   const [attempted, setAttempted] = useState(false)
+  const [emptyPrompt, setEmptyPrompt] = useState<ProcessLine[] | null>(null)   // dòng chưa có PA -> hỏi chốt rỗng
+  const [emptyChecked, setEmptyChecked] = useState<Set<number>>(new Set())
 
   const supplierOptions = suppliers.map((s) => ({
     value: s.code,
@@ -260,12 +262,23 @@ export default function SurveyRequestProcess() {
       toast.error('Vui lòng chọn Mã SP hệ thống cho tất cả Option trước khi chốt')
       return
     }
+    // Dòng chưa có phương án -> hỏi chốt rỗng (không có NCC phù hợp)
+    const emptyLines = lines.filter((l) => (l.options || []).length === 0)
+    if (emptyLines.length > 0) {
+      setEmptyChecked(new Set())
+      setEmptyPrompt(emptyLines)
+      return
+    }
+    if (!(await askConfirm({ title: 'Chốt hoàn thành', message: 'Chốt hoàn thành khảo sát?', confirmText: 'Chốt hoàn thành', danger: false }))) return
+    await doComplete([])
+  }
 
-    if (!(await askConfirm({ title: 'Chốt hoàn thành', message: 'Chốt hoàn thành khảo sát? Hành động này không thể hoàn tác.', confirmText: 'Chốt hoàn thành', danger: false }))) return
+  async function doComplete(emptyLineIds: number[]) {
     setCompleting(true)
     try {
-      const r = await api.post(`${API}/${id}/complete`)
+      const r = await api.post(`${API}/${id}/complete`, { empty_line_ids: emptyLineIds })
       toast.success(r.data?.message || 'Đã chốt hoàn thành khảo sát')
+      setEmptyPrompt(null)
       navigate(`/survey-requests/${id}`)
     } catch { /* lỗi đã hiện popup từ interceptor */
     } finally {
@@ -627,18 +640,50 @@ export default function SurveyRequestProcess() {
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 12, alignItems: 'center' }}>
           {!allHaveOptions && (
             <span style={{ fontSize: 13, color: 'var(--muted)' }}>
-              Còn dòng sản phẩm chưa có option
+              Còn dòng chưa có phương án — khi chốt sẽ hỏi “chốt rỗng”
             </span>
           )}
           <button
             className="btn"
-            disabled={!allHaveOptions || completing}
+            disabled={completing}
             onClick={complete}
-            style={{ opacity: allHaveOptions ? 1 : 0.5 }}
+            style={{ opacity: completing ? 0.5 : 1 }}
           >
             <i className="ti ti-check" />
             Chốt hoàn thành khảo sát
           </button>
+        </div>
+      )}
+
+      {/* Dialog: chốt rỗng các dòng chưa có phương án */}
+      {emptyPrompt && (
+        <div onClick={() => setEmptyPrompt(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(27,37,89,.3)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div className="card" onClick={(e) => e.stopPropagation()} style={{ width: 520, maxWidth: '100%', padding: 20 }}>
+            <h3 className="sec-title" style={{ marginTop: 0 }}>Chốt rỗng sản phẩm chưa có phương án</h3>
+            <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>
+              Các sản phẩm sau <b>chưa có phương án</b>. Tick những sản phẩm <b>không tìm được NCC phù hợp</b> để <b>chốt rỗng</b> (coi như không có phương án).
+              Sản phẩm KHÔNG tick + chưa có phương án sẽ chặn chốt (cần khảo sát tiếp).
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '48vh', overflowY: 'auto' }}>
+              {emptyPrompt.map((l) => (
+                <label key={l.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
+                  <input type="checkbox" style={{ marginTop: 3 }} checked={emptyChecked.has(l.id)}
+                    onChange={(e) => setEmptyChecked((prev) => { const n = new Set(prev); if (e.target.checked) n.add(l.id); else n.delete(l.id); return n })} />
+                  <span>
+                    <div style={{ fontWeight: 600 }}>{l.item_group || 'Sản phẩm'}</div>
+                    <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>{l.requirement_detail || '—'}</div>
+                  </span>
+                </label>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+              <button className="btn ghost" onClick={() => setEmptyPrompt(null)}>Hủy</button>
+              <button className="btn" disabled={completing} onClick={() => doComplete([...emptyChecked])}>
+                <i className="ti ti-check" />Chốt ({emptyChecked.size} chốt rỗng)
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

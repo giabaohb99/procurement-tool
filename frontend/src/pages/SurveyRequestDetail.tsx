@@ -229,7 +229,7 @@ export default function SurveyRequestDetail() {
     document.body.appendChild(el); el.click(); el.remove()
   }
   useEffect(() => {
-    if (!isNew && ['survey_done', 'pr_created', 'done'].includes(sv.status)) {
+    if (!isNew && ['processing', 'survey_done', 'pr_created', 'done'].includes(sv.status)) {
       api.get(`${API}/${id}/result`).then((r) => setResult(r.data.data)).catch(() => setResult(null))
     }
   }, [sv.status])
@@ -277,6 +277,7 @@ export default function SurveyRequestDetail() {
   const allChosen = (result?.lines || []).length > 0 && (result?.lines || []).every((l: any) => (l.options || []).some((o: any) => o.is_chosen))
   // Có ít nhất 1 dòng đã chọn PA -> cho tạo YCMH (dòng tái sử dụng: kể cả dòng đã từng tạo YCMH)
   const anyChosen = (result?.lines || []).some((l: any) => (l.options || []).some((o: any) => o.is_chosen))
+  const hasAnyOptions = (result?.lines || []).some((l: any) => (l.options || []).length > 0)
   const canFinalize = can('survey_request', 'process') && can('survey_request', 'approve')
   // Chỉ NGƯỜI YÊU CẦU (người tạo) hoặc Admin TM (delete) được tạo YCMH
   const canCreatePr = isRequester || can('survey_request', 'delete')
@@ -511,7 +512,7 @@ export default function SurveyRequestDetail() {
 
         {/* Nút Tạo yêu cầu mua (người YC) — luôn hiện khi có quyền (dòng tái sử dụng, kể cả đã Hoàn thành);
             bấm mà chưa chọn PA sẽ nhắc chọn. */}
-        {!isNew && ['survey_done', 'pr_created', 'done'].includes(sv.status) && canCreatePr && (
+        {!isNew && ['processing', 'survey_done', 'pr_created', 'done'].includes(sv.status) && canCreatePr && (
           <button className="btn" onClick={createPrs} disabled={!anyChosen}
             title={anyChosen ? '' : 'Chọn ít nhất 1 phương án ở phần Kết quả khảo sát'}>
             <i className="ti ti-file-plus" />Tạo yêu cầu mua
@@ -828,12 +829,13 @@ export default function SurveyRequestDetail() {
             </div>
           </div>
 
-          {/* Phase 5C/5D: Kết quả khảo sát (ẩn NCC) — khi đã khảo sát / đã tạo YCMH / hoàn thành */}
-          {!isNew && ['survey_done', 'pr_created', 'done'].includes(sv.status) && result && (
+          {/* Kết quả khảo sát (ẩn NCC) — dòng đã lọc theo viewer ở backend (NSTM chỉ thấy dòng mình phụ trách).
+              Hiện khi đã khảo sát/tạo YCMH/hoàn thành, HOẶC đang xử lý mà đã có ≥1 dòng có phương án (mua trước từng dòng). */}
+          {!isNew && result && (['survey_done', 'pr_created', 'done'].includes(sv.status) || (sv.status === 'processing' && hasAnyOptions)) && (
             <div className="card" style={{ padding: 18, marginBottom: 16 }}>
-              <h3 className="sec-title"><i className="ti ti-clipboard-check" /> Kết quả khảo sát {['survey_done', 'pr_created', 'done'].includes(sv.status) ? '— chọn phương án' : ''}</h3>
+              <h3 className="sec-title"><i className="ti ti-clipboard-check" /> Kết quả khảo sát {['processing', 'survey_done', 'pr_created', 'done'].includes(sv.status) ? '— chọn phương án' : ''}</h3>
 
-              {['survey_done', 'pr_created', 'done'].includes(sv.status) && (
+              {['processing', 'survey_done', 'pr_created', 'done'].includes(sv.status) && (
                 <p style={{ color: 'var(--muted)', fontSize: 12.5, marginTop: -6, marginBottom: 14 }}>
                   Với mỗi sản phẩm, nhấn chọn 1 phương án phù hợp nhất; bấm lại phương án đang chọn để BỎ CHỌN. Không bắt buộc chọn hết — dòng không chọn sẽ không tạo YCMH. Đổi/bỏ được cho tới khi dòng đã tạo YCMH. (Tên NCC ẩn theo chính sách; "NCC #" cùng số là cùng nhà cung cấp.)
                 </p>
@@ -847,11 +849,19 @@ export default function SurveyRequestDetail() {
                     Phân loại: <b>{ln.item_group || '—'}</b> · SL dự kiến: <b>{fmtBlank(ln.request_qty) || '—'}</b> {ln.uom} · Giá đề xuất của bạn: <b>{fmtBlank(ln.proposed_price) || '—'}</b>
                   </div>
                   {(ln.options || []).length === 0 ? (
-                    <div style={{ color: '#999', fontSize: 13 }}>Chưa có phương án nào cho sản phẩm này.</div>
+                    ln.no_option ? (
+                      <div style={{ color: '#64748b', fontSize: 13, background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px' }}>
+                        <i className="ti ti-ban" style={{ marginRight: 6 }} />Không có phương án phù hợp (đã chốt rỗng) — sản phẩm này không mua được từ phiếu khảo sát.
+                      </div>
+                    ) : (
+                      <div style={{ color: '#b45309', fontSize: 13, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 12px' }}>
+                        <i className="ti ti-clock" style={{ marginRight: 6 }} />Đang khảo sát — chưa có phương án. Sản phẩm này chưa mua được, chờ NSTM khảo sát xong.
+                      </div>
+                    )
                   ) : (
                     <div className="options-container">
                       {ln.options.map((o: any) => {
-                        const canChoose = ['survey_done', 'pr_created', 'done'].includes(sv.status) && canCreatePr
+                        const canChoose = ['processing', 'survey_done', 'pr_created', 'done'].includes(sv.status) && canCreatePr
                         return (
                         <div key={o.id} onClick={() => { if (canChoose) chooseOption(ln.id, o.id) }}
                           className="option-card"
@@ -916,7 +926,7 @@ export default function SurveyRequestDetail() {
               ))}
 
               {/* Ghi chú trạng thái 5D (nút hành động ở góc phải header) */}
-              {['survey_done', 'pr_created', 'done'].includes(sv.status) && canCreatePr && !anyChosen && (
+              {['processing', 'survey_done', 'pr_created', 'done'].includes(sv.status) && canCreatePr && !anyChosen && (
                 <div style={{ color: 'var(--muted)', fontSize: 12.5, marginTop: 4 }}>
                   Chọn phương án cho (những) sản phẩm muốn mua, rồi bấm <b>“Tạo yêu cầu mua”</b> ở góc phải trên. Có thể tạo YCMH nhiều lần (mua lại) kể cả khi phiếu đã Hoàn thành.
                 </div>
