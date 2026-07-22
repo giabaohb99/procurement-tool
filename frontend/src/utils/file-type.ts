@@ -12,7 +12,7 @@ export const isImageFile = (filename = "", contentType = "") =>
 export const isPdfFile = (filename = "", contentType = "") =>
   contentType === "application/pdf" || /\.pdf$/i.test(filename);
 
-// Icon + màu theo định dạng → nhận diện nhanh (PDF đỏ · ảnh teal · Excel xanh lá · Word xanh dương)
+// Icon + màu theo định dạng → nhận diện nhanh (PDF đỏ · ảnh teal · Excel xanh lá · Word xanh dương · Zip/Rar cam · TXT xám · XML tím)
 export function fileIcon(
   filename = "",
   contentType = "",
@@ -26,5 +26,13 @@ export function fileIcon(
     return { icon: "ti-file-type-xls", color: "#16a34a" };
   if (/\.(docx?)$/.test(n))
     return { icon: "ti-file-type-docx", color: "#2563eb" };
+  if (/\.(zip|rar|7z)$/.test(n))
+    return { icon: "ti-file-zip", color: "#d97706" };
+  if (/\.(xml)$/.test(n))
+    return { icon: "ti-file-code", color: "#9333ea" };
+  if (/\.(txt)$/.test(n))
+    return { icon: "ti-file-text", color: "#4b5563" };
+  if (/\.(msg|eml)$/.test(n))
+    return { icon: "ti-mail", color: "#0284c7" };
   return { icon: "ti-file", color: "var(--muted)" };
 }

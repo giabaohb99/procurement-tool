@@ -47,3 +47,8 @@ class SurveyRequestUpdate(BaseModel):
 
 class RejectIn(BaseModel):
     reason: str = ""
+
+
+class LineStatusIn(BaseModel):
+    # "" chưa xác định · "can_khao_sat_lai" cần khảo sát lại · "hoan_thanh" hoàn thành
+    line_status: str = ""

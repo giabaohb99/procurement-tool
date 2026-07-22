@@ -13,7 +13,7 @@ from app.core.scoping import apply_scope
 
 from . import service
 from .model import SurveyRequest, SurveyRequestLine
-from .schema import RejectIn, SurveyRequestCreate, SurveyRequestUpdate
+from .schema import LineStatusIn, RejectIn, SurveyRequestCreate, SurveyRequestUpdate
 
 router = APIRouter(prefix="/api/survey-requests", tags=["survey_request"])
 
@@ -58,6 +58,38 @@ def _can_edit_own(db, s, user) -> bool:
     if s.created_by == user.id or (rid and getattr(s, "requester_id", 0) == rid):
         return True
     return user_has_permission(db, user, "survey_request", "write")
+
+
+def _is_requester(s, user) -> bool:
+    rid = getattr(user, "employee_id", 0) or 0
+    return s.created_by == user.id or (rid and getattr(s, "requester_id", 0) == rid)
+
+
+def _same_dept_as_requester(db, s, user) -> bool:
+    """True nếu user CÙNG phòng ban với người yêu cầu của phiếu.
+    Ưu tiên so `department_id` (qua Employee); fallback so tên phòng ban với `s.department`."""
+    from app.modules.employee.model import Employee
+    uid_emp = getattr(user, "employee_id", 0) or 0
+    if not uid_emp:
+        return False
+    ue = db.get(Employee, uid_emp)
+    if not ue:
+        return False
+    req_dept_id = 0
+    if getattr(s, "requester_id", 0):
+        re = db.get(Employee, s.requester_id)
+        if re:
+            req_dept_id = re.department_id or 0
+    if req_dept_id and ue.department_id:
+        return ue.department_id == req_dept_id
+    return bool(s.department) and (ue.department_name or "") == s.department
+
+
+def _can_act_as_requester_side(db, s, user) -> bool:
+    """Quyền phía NGƯỜI YÊU CẦU: là người YC, hoặc cùng phòng ban người YC,
+    hoặc Admin TM (quyền delete) để không khóa quản trị. Dùng cho Task 2/3."""
+    return (_is_requester(s, user) or _same_dept_as_requester(db, s, user)
+            or user_has_permission(db, user, "survey_request", "delete"))
 
 
 _SR_LOCKED = ("cancelled", "done")   # Đã từ chối / Hoàn thành → khóa, KHÔNG cập nhật (kể cả QL/Admin)
@@ -195,8 +227,8 @@ def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(g
     from app.modules.notification.service import get_department_head_users, get_approvers_for_entity
     recips = get_approvers_for_entity(db, "survey_request") + get_department_head_users(db, s.department or "")
     _notify(db, recips,
-            f"[Yêu cầu duyệt] Yêu cầu khảo sát {s.code}",
-            f"Có yêu cầu khảo sát mới ({s.code}) cần bạn duyệt.",
+            f"[Yêu cầu duyệt] Yêu cầu báo giá {s.code}",
+            f"Có yêu cầu báo giá mới ({s.code}) cần bạn duyệt.",
             f"/survey-requests/{s.id}", s.created_by or user.id, background_tasks)
     return success(_out(db, s), "Đã gửi duyệt")
 
@@ -210,8 +242,8 @@ def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(
     from app.modules.user.model import User
     reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
     _notify(db, reqs + get_users_by_role_codes(db, ["pur_manager", "pur_admin"]),
-            f"[Đã duyệt] Yêu cầu khảo sát {s.code}",
-            f"Yêu cầu khảo sát {s.code} của bạn đã được duyệt, chuyển sang xử lý khảo sát.",
+            f"[Đã duyệt] Yêu cầu báo giá {s.code}",
+            f"Yêu cầu báo giá {s.code} của bạn đã được duyệt, chuyển sang xử lý khảo sát.",
             f"/survey-requests/{s.id}", s.created_by or user.id, background_tasks)
     # Báo cho các NSTM vừa được TỰ GÁN theo phân loại
     codes = {ln.assignee for ln in service.lines_of(db, s.id) if ln.assignee}
@@ -230,8 +262,8 @@ def reject_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Ses
     s = service.set_status(db, sid, "rejected", user.id, data.reason)
     from app.modules.user.model import User
     reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
-    _notify(db, reqs, f"[Trả đơn] Yêu cầu khảo sát {s.code}",
-            f"Yêu cầu khảo sát {s.code} của bạn bị TRẢ LẠI để chỉnh sửa. Lý do: {data.reason or '(không nêu)'}",
+    _notify(db, reqs, f"[Trả đơn] Yêu cầu báo giá {s.code}",
+            f"Yêu cầu báo giá {s.code} của bạn bị TRẢ LẠI để chỉnh sửa. Lý do: {data.reason or '(không nêu)'}",
             f"/survey-requests/{s.id}", s.created_by or user.id, background_tasks)
     return success(_out(db, s), "Đã trả đơn")
 
@@ -243,8 +275,8 @@ def cancel_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Ses
     s = service.set_status(db, sid, "cancelled", user.id, data.reason)
     from app.modules.user.model import User
     reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
-    _notify(db, reqs, f"[Từ chối] Yêu cầu khảo sát {s.code}",
-            f"Yêu cầu khảo sát {s.code} của bạn bị TỪ CHỐI (khóa đơn). Lý do: {data.reason or '(không nêu)'}",
+    _notify(db, reqs, f"[Từ chối] Yêu cầu báo giá {s.code}",
+            f"Yêu cầu báo giá {s.code} của bạn bị TỪ CHỐI (khóa đơn). Lý do: {data.reason or '(không nêu)'}",
             f"/survey-requests/{s.id}", s.created_by or user.id, background_tasks)
     return success(_out(db, s), "Đã từ chối (khóa đơn)")
 
@@ -566,12 +598,31 @@ def create_prs_(sid: int, background_tasks: BackgroundTasks, db: Session = Depen
                    f"Đã tạo {len(prs)} phiếu yêu cầu mua hàng")
 
 
+@router.patch("/{sid}/lines/{line_id}/line-status")
+def set_line_status_(sid: int, line_id: int, body: LineStatusIn,
+                     db: Session = Depends(get_db),
+                     user=Depends(require("survey_request", "write"))):
+    """Task 2: người YC / cùng phòng ban đổi trạng thái dòng khảo sát
+    ("" chưa xác định · cần khảo sát lại · hoàn thành)."""
+    s = service.get_sr(db, sid)
+    _ensure_sr_editable(s)
+    if not _can_act_as_requester_side(db, s, user):
+        raise HTTPException(403, "Chỉ người yêu cầu hoặc cùng phòng ban được đổi trạng thái dòng")
+    service.set_line_status(db, sid, line_id, body.line_status, user.id)
+    return success(_out(db, s, user, get_perm_profile(db, user)), "Đã cập nhật trạng thái dòng")
+
+
 @router.post("/{sid}/finalize")
 def finalize_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
-              user=Depends(require("survey_request", "approve"))):
-    """Admin/Quản lý thu mua chuyển Hoàn thành (pr_created → done)."""
-    if not service.is_purchaser(get_perm_profile(db, user)):
-        raise HTTPException(403, "Chỉ Quản lý / Admin thu mua được chuyển Hoàn thành")
+              user=Depends(require("survey_request", "write"))):
+    """Chuyển Hoàn thành (pr_created/survey_done → done). Cho phép Quản lý/Admin thu mua
+    (purchaser + quyền approve) HOẶC người yêu cầu / cùng phòng ban người yêu cầu (Task 3).
+    Lưu ý: NSTM thường (purchaser nhưng không có approve) KHÔNG được đóng phiếu."""
+    s = service.get_sr(db, sid)
+    prof = get_perm_profile(db, user)
+    is_mgr = service.is_purchaser(prof) and user_has_permission(db, user, "survey_request", "approve")
+    if not (is_mgr or _can_act_as_requester_side(db, s, user)):
+        raise HTTPException(403, "Chỉ Quản lý/Admin thu mua hoặc phòng ban yêu cầu được chuyển Hoàn thành")
     s = service.finalize_sr(db, sid, user.id)
     from app.modules.user.model import User
     reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()

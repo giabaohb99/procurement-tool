@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Boolean, Numeric, String, Text
+from sqlalchemy import BigInteger, Boolean, Index, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
@@ -8,15 +8,17 @@ class PurchaseOrder(Base, AuditMixin):
     """Đơn mua hàng (PO) — header. Là module trung tâm của vòng đời mua hàng."""
 
     __tablename__ = "tab_purchase_order"
+    # created_by nằm ở AuditMixin — index qua __table_args__ (apply_scope lọc theo cột này ở MỌI list)
+    __table_args__ = (Index("ix_po_created_by", "created_by"),)
 
     code: Mapped[str] = mapped_column(String(50), unique=True, default="")     # PO00045
     misa_code: Mapped[str] = mapped_column(String(50), default="")
-    pr_code: Mapped[str] = mapped_column(String(50), default="")               # nguồn PYC
+    pr_code: Mapped[str] = mapped_column(String(50), default="", index=True)   # nguồn PYC — cross-ref nóng (sync/tiến độ/list theo PYC)
     survey_code: Mapped[str] = mapped_column(String(50), default="")
-    company_id: Mapped[int] = mapped_column(BigInteger, default=0)             # pháp nhân nhận HĐ
+    company_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True) # pháp nhân nhận HĐ — apply_scope lọc theo cột này
     supplier_code: Mapped[str] = mapped_column(String(50), default="")         # NCC bán hàng
     supplier_name: Mapped[str] = mapped_column(String(255), default="")
-    department: Mapped[str] = mapped_column(String(255), default="")
+    department: Mapped[str] = mapped_column(String(255), default="", index=True)
     nspt: Mapped[str] = mapped_column(String(100), default="")
     order_date: Mapped[str] = mapped_column(String(10), default="", index=True)
     vat_rate: Mapped[float] = mapped_column(Numeric(5, 4), default=0.08)
@@ -24,6 +26,9 @@ class PurchaseOrder(Base, AuditMixin):
     is_urgent: Mapped[bool] = mapped_column(Boolean, default=False)
     status: Mapped[str] = mapped_column(String(30), default="draft")
     # draft | submitted | approved | partial | received | cancelled
+    # Trạng thái hồ sơ chứng từ — người dùng cập nhật TAY (Task 10b):
+    #   "chưa có chứng từ" · "đã có thông tin chứng từ" · "đã đủ chứng từ"
+    document_status: Mapped[str] = mapped_column(String(30), default="chưa có chứng từ", index=True)
     note: Mapped[str] = mapped_column(Text, default="")
     approve_note: Mapped[str] = mapped_column(Text, default="")
 
@@ -42,6 +47,7 @@ class POItem(Base, AuditMixin):
     fg_code: Mapped[str] = mapped_column(String(50), default="")           # Mã HH / thành phẩm (col42)
     fg_name: Mapped[str] = mapped_column(String(255), default="")          # Tên HH / thành phẩm (theo master SP)
     invoice_no: Mapped[str] = mapped_column(String(50), default="")        # Số hóa đơn (theo sản phẩm, col31)
+    document_delivery_date: Mapped[str] = mapped_column(String(10), default="")  # Ngày giao chứng từ cho KT (Task 8)
     supplier_ready: Mapped[bool] = mapped_column(Boolean, default=False)    # NCC có sẵn hàng (col17)
     required_date: Mapped[str] = mapped_column(String(10), default="")      # ngày yêu cầu có hàng (col3)
     unit: Mapped[str] = mapped_column(String(25), default="")
@@ -55,7 +61,7 @@ class POItem(Base, AuditMixin):
     line_status: Mapped[str] = mapped_column(String(30), default="")        # Chưa giao/Đang giao/Đủ
     warehouse_code: Mapped[str] = mapped_column(String(50), default="")     # kho mặc định cho dòng
     note: Mapped[str] = mapped_column(String(255), default="")
-    progress_status: Mapped[str] = mapped_column(String(40), default="Chưa đặt hàng")  # cột P — máy trạng thái tiến độ
+    progress_status: Mapped[str] = mapped_column(String(40), default="Chưa đặt hàng", index=True)  # cột P — máy trạng thái tiến độ (lọc ở màn Tiến độ mua hàng)
     pay_confirm_date: Mapped[str] = mapped_column(String(10), default="")   # AU — Ngày KT xác nhận thanh toán
     pause_reason: Mapped[str] = mapped_column(String(500), default="")      # AV — Lý do hủy/tạm ngưng
     status_before_pause: Mapped[str] = mapped_column(String(40), default="")  # AW — trạng thái trước khi tạm ngưng

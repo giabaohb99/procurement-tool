@@ -9,8 +9,8 @@ import SearchSelect from '../components/SearchSelect'
 import ProductPicker from '../components/ProductPicker'
 import NumberInput from '../components/NumberInput'
 import { toast } from '../components/toast'
-import NotFound from '../components/NotFound'
 import DocumentUploadModal from '../components/DocumentUploadModal'
+import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
 import { fmtSize, fileIcon } from '../utils/file-type'
 
 const API = '/api/purchase-orders'
@@ -24,12 +24,19 @@ const CurrencyInput = ({ value, onChange, disabled, style, className }: any) =>
 // tay chỉ còn Tạm ngưng / Hủy đơn / Tiếp tục.
 const PG_COLOR: Record<string, string> = {
   'Chưa đặt hàng': '#94a3b8', 'Đã đặt hàng': '#2563eb', 'Đã nhận hàng': '#0891b2',
-  'Đã gửi ĐMH cho KT': '#7c3aed', 'Hoàn thành': '#16a34a', 'Tạm ngưng': '#d97706', 'Hủy đơn': '#dc2626',
+  'Chưa gửi ĐMH cho KT': '#db2777', 'Đã gửi ĐMH cho KT': '#7c3aed',
+  'Hoàn thành': '#16a34a', 'Tạm ngưng': '#d97706', 'Hủy đơn': '#dc2626',
+}
+
+// Trạng thái hồ sơ chứng từ (cập nhật tay, Task 10b)
+const DOC_STATUS_OPTS = ['chưa có chứng từ', 'đã có thông tin chứng từ', 'đã đủ chứng từ']
+const DOC_STATUS_COLOR: Record<string, string> = {
+  'chưa có chứng từ': '#dc2626', 'đã có thông tin chứng từ': '#d97706', 'đã đủ chứng từ': '#16a34a',
 }
 
 const emptyItem = {
   product_code: '', product_name: '', invoice_name: '', item_group: '', spec: '', fg_code: '', fg_name: '',
-  supplier_ready: true, required_date: '', unit: '',   // NCC có sẵn hàng — mặc định check cho dòng mới
+  supplier_ready: true, required_date: '', unit: '', invoice_no: '', document_delivery_date: '',   // NCC có sẵn hàng — mặc định check cho dòng mới
   qty_request: 0, qty_order: 0, price: 0, vat: 8, warehouse_code: '', note: '', deliveries: [],
 }
 const emptyDelivery = {
@@ -156,6 +163,9 @@ export default function PurchaseOrderDetail() {
   const canWrite = can('purchase_order', isNew ? 'create' : 'write')
   const headerEditable = (isNew || !locked) && canWrite
   const deliveryEditable = !isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'write')
+  // Đính kèm chứng từ vào lần giao: cho phép CẢ khi đơn đã 'Hoàn thành' (chỉ chặn khi Hủy / chưa lưu).
+  // Chỉ mở nút gắn/xóa file — KHÔNG mở các field khác (SL nhận, ngày nhận...). Task 10a.
+  const deliveryAttachEditable = !isNew && ['approved', 'partial', 'received', 'completed'].includes(po.status) && can('purchase_order', 'write')
   const canDelete = isNew || ['draft', 'rejected'].includes(po.status)
   // Tiến độ dòng: người phụ trách cập nhật khi đơn đã duyệt trở đi
   const progressEditable = !isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'write')
@@ -219,7 +229,7 @@ export default function PurchaseOrderDetail() {
   const addDelivery = (ii: number) =>
     setPo((s: any) => ({
       ...s, items: s.items.map((it: any, idx: number) => idx !== ii ? it : {
-        ...it, deliveries: [...(it.deliveries || []), { ...emptyDelivery, delivery_no: (it.deliveries?.length || 0) + 1, warehouse_code: it.warehouse_code, ship_unit: it.unit, received_date: new Date().toISOString().slice(0, 10) }],
+        ...it, deliveries: [...(it.deliveries || []), { ...emptyDelivery, delivery_no: (it.deliveries?.length || 0) + 1, warehouse_code: it.warehouse_code, ship_unit: it.unit }],
       }),
     }))
   const delDelivery = (ii: number, di: number) =>
@@ -302,6 +312,7 @@ export default function PurchaseOrderDetail() {
       items: sentItems.map((it: any) => ({
         id: it.id, product_code: it.product_code, product_name: it.product_name, invoice_name: it.invoice_name,
         item_group: it.item_group, spec: it.spec, fg_code: it.fg_code, fg_name: it.fg_name, invoice_no: it.invoice_no,
+        document_delivery_date: it.document_delivery_date || '',
         supplier_ready: !!it.supplier_ready,
         required_date: it.required_date, unit: it.unit, qty_request: Number(it.qty_request) || 0,
         qty_order: Number(it.qty_order) || 0,
@@ -371,6 +382,11 @@ export default function PurchaseOrderDetail() {
   }
   async function resumeProgress(item: any) {
     try { await api.post(`${API}/${id}/items/${item.id}/progress`, { status: '__resume__' }); toast.success('Đã tiếp tục đơn'); loadAll() }
+    catch { /* interceptor đã toast lỗi */ }
+  }
+  // Trạng thái hồ sơ chứng từ (Task 10b) — cập nhật tay, cho phép CẢ khi đơn đã Hoàn thành.
+  async function setDocStatus(value: string) {
+    try { await api.patch(`${API}/${id}/document-status`, { document_status: value }); toast.success('Đã cập nhật hồ sơ chứng từ'); loadAll() }
     catch { /* interceptor đã toast lỗi */ }
   }
 
@@ -642,32 +658,18 @@ export default function PurchaseOrderDetail() {
 
           {/* Chứng từ chung */}
           {!isNew && (
-            <div className="card" style={{ padding: 18, marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 4 }}>
-                <h3 className="sec-title" style={{ margin: 0, border: 'none', paddingBottom: 0 }}><i className="ti ti-paperclip" /> Chứng từ đính kèm (báo giá, HĐ…)</h3>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {can('purchase_order', 'write') && (
-                    <button className="btn secondary" style={{ height: 32, padding: '0 12px', fontSize: 12.5 }} onClick={() => setDocModal(true)}><i className="ti ti-upload" /> Upload chứng từ</button>
-                  )}
-                  <button className="btn ghost" style={{ height: 32, padding: '0 12px', fontSize: 12.5 }} onClick={() => navigate(`/documents?po=${id}`)}><i className="ti ti-list-details" /> Chi tiết</button>
-                </div>
-              </div>
-              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {files.map((f) => {
-                  const ic = fileIcon(f.filename, f.content_type)
-                  return (
-                    <div key={f.id} className="doc-file-row">
-                      <i className={'ti ' + ic.icon} style={{ fontSize: 24, color: ic.color, flexShrink: 0 }} />
-                      {f.doc_type && <span className="badge" style={{ background: '#eef2ff', color: '#3730a3', fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, flexShrink: 0 }}>{docTypeLabels[f.doc_type] || f.doc_type}</span>}
-                      <a href={f.url} target="_blank" style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 500, color: 'var(--navy)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.filename}</a>
-                      <span style={{ color: 'var(--muted)', fontSize: 12, flexShrink: 0 }}>{fmtSize(f.size)}</span>
-                      {can('purchase_order', 'write') && <button className="icon-btn" style={{ flexShrink: 0 }} onClick={async () => { if (await askConfirm({ message: 'Xóa file?' })) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
-                    </div>
-                  )
-                })}
-                {files.length === 0 && <span style={{ color: 'var(--muted)', fontSize: 13 }}>Chưa có file nào.</span>}
-              </div>
-            </div>
+            <DocumentAttachmentSection
+              entity="purchase_order"
+              entityId={Number(id)}
+              files={files}
+              editable={headerEditable}
+              isNew={isNew}
+              showDocumentStatus={true}
+              documentStatus={po.document_status || 'chưa có chứng từ'}
+              onDocumentStatusChange={setDocStatus}
+              showChainDetailButton={true}
+              onRefresh={loadAll}
+            />
           )}
 
           {po.approve_note && <div className="card" style={{ padding: 14, marginBottom: 16 }}><b>Ghi chú duyệt:</b> {po.approve_note}</div>}
@@ -731,6 +733,7 @@ export default function PurchaseOrderDetail() {
                     <div className="form-row"><label>Mã HH (thành phẩm)</label><input value={it.fg_code || ''} placeholder="Tự gắn khi chọn SP" disabled={de} onChange={(e) => setItem(ii, { fg_code: e.target.value })} /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên HH (thành phẩm)</label><input value={it.fg_name || ''} placeholder="Tự gắn khi chọn SP" disabled={de} onChange={(e) => setItem(ii, { fg_name: e.target.value })} /></div>
                     <div className="form-row"><label>Số hóa đơn</label><input value={it.invoice_no || ''} placeholder="Số HĐ theo sản phẩm" disabled={de} onChange={(e) => setItem(ii, { invoice_no: e.target.value })} /></div>
+                    <div className="form-row"><label title="Có ngày này → dòng chuyển 'Đã gửi ĐMH cho KT'">Ngày giao chứng từ cho KT</label><input type="date" value={it.document_delivery_date || ''} disabled={de} onChange={(e) => setItem(ii, { document_delivery_date: e.target.value })} /></div>
                     <div className="form-row">
                       <label>Trạng thái tiến độ</label>
                       <div>
@@ -834,7 +837,8 @@ export default function PurchaseOrderDetail() {
                             <select className="cell-input" style={{ width: 150 }} value={d.carrier_code || (d.carrier_name ? '__self__' : '')} disabled={dis} onChange={(e) => onPickCarrier(ii, di, e.target.value)}>
                               <option value="">— Chọn đơn vị VC —</option>
                               <option value="__self__">NCC tự vận chuyển</option>
-                              {carriers.map((c) => <option key={c.id} value={c.code}>{c.name}</option>)}
+                              {carriers.filter((c) => (c.name || '').trim().toLowerCase() !== 'ncc tự vận chuyển')
+                                .map((c) => <option key={c.id} value={c.code}>{c.name}</option>)}
                             </select>
                           </td>
                           <td><NumberInput decimals className="cell-input" style={{ width: 72 }} value={d.ship_qty} disabled={dis} onChange={(v) => setDelivery(ii, di, { ship_qty: v })} /></td>
@@ -878,14 +882,14 @@ export default function PurchaseOrderDetail() {
                           <td style={{ fontSize: 12 }}>
                             {d.id ? (
                               <div>
-                                {!dis && <>
+                                {deliveryAttachEditable && <>
                                   <input type="file" id={`datt-${d.id}`} style={{ display: 'none' }} onChange={(e) => uploadDeliveryAtt(d.id, e.target.files)} />
                                   <label htmlFor={`datt-${d.id}`} className="btn ghost" style={{ cursor: 'pointer', height: 26, fontSize: 11, padding: '0 8px' }}><i className="ti ti-upload" /> Tải</label>
                                 </>}
                                 {(attByDelivery[d.id] || []).map((f) => (
                                   <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
                                     <a href={f.url} target="_blank" style={{ color: 'var(--teal)', textDecoration: 'underline', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.filename}</a>
-                                    {!dis && <button className="icon-btn" onClick={async () => { await api.delete(`/api/attachments/${f.id}`); loadDeliveryAtt(d.id) }}><i className="ti ti-x" style={{ color: 'var(--red)', fontSize: 13 }} /></button>}
+                                    {deliveryAttachEditable && <button className="icon-btn" onClick={async () => { await api.delete(`/api/attachments/${f.id}`); loadDeliveryAtt(d.id) }}><i className="ti ti-x" style={{ color: 'var(--red)', fontSize: 13 }} /></button>}
                                   </div>
                                 ))}
                               </div>

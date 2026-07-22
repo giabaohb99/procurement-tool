@@ -263,6 +263,7 @@ export default function PrintPurchaseRequest() {
               <td style={cell}>ĐVT</td>
               <td style={cell}>SL yêu cầu</td>
               <td style={cell}>Đơn giá</td>
+              <td style={cell}>VAT%</td>
               <td style={cell}>Thành tiền</td>
               <td style={cell}>Nơi giao</td>
               <td style={cell}>Ghi chú</td>
@@ -277,16 +278,17 @@ export default function PrintPurchaseRequest() {
                 <td style={cell}>{it.unit}</td>
                 <td style={{ ...cell, textAlign: "right" }}>{fmt(it.qty)}</td>
                 <td style={{ ...cell, textAlign: "right" }}>{fmt(it.price)}</td>
+                <td style={{ ...cell, textAlign: "right" }}>{Number(it.vat_pct) || 0}%</td>
                 <td style={{ ...cell, textAlign: "right" }}>
-                  {fmt(it.amount)}
+                  {fmt((Number(it.qty) || 0) * (Number(it.price) || 0))}
                 </td>
                 <td style={cell}>{whCode(it.warehouse)}</td>
                 <td style={cell}>{it.note}</td>
               </tr>
             ))}
             <tr>
-              <td style={{ ...cell, fontWeight: 700 }} colSpan={6}>
-                Tổng cộng
+              <td style={{ ...cell, fontWeight: 700 }} colSpan={7}>
+                Tiền hàng (chưa VAT)
               </td>
               <td style={{ ...cell, textAlign: "right", fontWeight: 700 }}>
                 {fmt(pr.subtotal)}
@@ -294,17 +296,17 @@ export default function PrintPurchaseRequest() {
               <td style={cell} colSpan={2} />
             </tr>
             <tr>
-              <td colSpan={6} style={{ border: "none", textAlign: "right", padding: "8px 8px 4px", fontSize: 13 }}>
-                VAT:
+              <td colSpan={7} style={{ border: "none", textAlign: "right", padding: "8px 8px 4px", fontSize: 13 }}>
+                Tiền VAT:
               </td>
               <td style={{ border: "none", textAlign: "right", padding: "8px 8px 4px", fontSize: 13, fontWeight: 700 }}>
-                {Number(pr.vat) ? fmt(pr.vat) : ""}
+                {Number(pr.vat) ? fmt(pr.vat) : "0"}
               </td>
               <td style={{ border: "none" }} colSpan={2} />
             </tr>
             <tr>
-              <td colSpan={6} style={{ border: "none", textAlign: "right", padding: "4px 8px 8px", fontSize: 13 }}>
-                Tổng cộng thanh toán:
+              <td colSpan={7} style={{ border: "none", textAlign: "right", padding: "4px 8px 8px", fontSize: 13 }}>
+                Tổng cộng thanh toán (gồm VAT):
               </td>
               <td style={{ border: "none", textAlign: "right", padding: "4px 8px 8px", fontSize: 13, fontWeight: 700 }}>
                 {fmt(pr.total)}
@@ -314,6 +316,8 @@ export default function PrintPurchaseRequest() {
           </tbody>
         </table>
 
+        {/* Task 5: LUÔN hiện khối NCC để phiếu in thống nhất bố cục; người không có
+            supplier.read thì BE trả 3 trường rỗng -> chỉ để TRỐNG giá trị, không ẩn khối. */}
         <div style={SH}>THÔNG TIN NHÀ CUNG CẤP</div>
         <div style={info}>
           <div>

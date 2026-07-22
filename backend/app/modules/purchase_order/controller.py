@@ -15,13 +15,13 @@ from app.modules.notification.service import trigger_notification
 from . import service
 from .model import POItem, PurchaseOrder
 from app.modules.payable.model import Payable
-from .schema import POCreate, POUpdate, RejectIn, ItemProgressIn
+from .schema import POCreate, POUpdate, RejectIn, ItemProgressIn, DocumentStatusIn
 
 router = APIRouter(prefix="/api/purchase-orders", tags=["purchase_order"])
 
 HEADER = ["id", "code", "misa_code", "pr_code", "survey_code", "company_id", "supplier_code",
           "supplier_name", "department", "nspt", "order_date", "vat_rate", "payment_terms",
-          "is_urgent", "status", "note", "approve_note"]
+          "is_urgent", "status", "document_status", "note", "approve_note"]
 
 
 def _delivery(d, pay=None) -> dict:
@@ -48,6 +48,7 @@ def _item(db, it, pay_by_del: dict) -> dict:
     return {"id": it.id, "product_code": it.product_code, "product_name": it.product_name,
             "invoice_name": it.invoice_name, "item_group": it.item_group, "spec": it.spec,
             "fg_code": it.fg_code, "fg_name": it.fg_name, "invoice_no": it.invoice_no,
+            "document_delivery_date": it.document_delivery_date or "",
             "supplier_ready": bool(it.supplier_ready), "required_date": it.required_date,
             "unit": it.unit, "qty_request": float(it.qty_request or 0), "qty_order": qty_order,
             "price": float(it.price or 0), "vat": float(it.vat or 0), "amount": float(it.amount or 0),
@@ -182,6 +183,14 @@ def clone_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purc
 @router.patch("/{pid}")
 def update_po(pid: int, data: POUpdate, db: Session = Depends(get_db), user=Depends(require("purchase_order", "write"))):
     return success(_out(db, service.update_po(db, pid, data, user.id)), "Đã cập nhật")
+
+
+@router.patch("/{pid}/document-status")
+def set_document_status(pid: int, body: DocumentStatusIn, db: Session = Depends(get_db),
+                        user=Depends(require("purchase_order", "write"))):
+    """Task 10b: cập nhật tay trạng thái hồ sơ chứng từ (cho phép cả khi đơn đã hoàn thành)."""
+    po = service.set_document_status(db, pid, body.document_status, user.id)
+    return success(_out(db, po), "Đã cập nhật hồ sơ chứng từ")
 
 
 @router.delete("/{pid}")

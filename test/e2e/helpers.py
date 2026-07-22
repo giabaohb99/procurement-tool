@@ -250,8 +250,8 @@ def get_current_sr_id(page: Page) -> str:
 
 
 def get_sr_code(page: Page) -> str:
-    """Lấy mã phiếu YCKS... từ tiêu đề trang."""
-    el = page.get_by_text(re.compile(r"YCKS"), exact=False).first
+    """Lấy mã phiếu YCBG... từ tiêu đề trang."""
+    el = page.get_by_text(re.compile(r"YCBG"), exact=False).first
     return el.text_content() or ""
 
 

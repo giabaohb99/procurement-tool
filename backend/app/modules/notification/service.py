@@ -156,7 +156,7 @@ def trigger_notification(
     doc_type_label = "Yêu cầu mua hàng" if doc_type == "purchase_request" else "Phiếu khảo sát"
 
     # Nhãn loại chứng từ + động từ theo hành động (dùng cho fallback rõ nghĩa, vd Đơn mua hàng)
-    DOC_LABEL = {"purchase_request": "Yêu cầu mua hàng", "survey_request": "Yêu cầu khảo sát",
+    DOC_LABEL = {"purchase_request": "Yêu cầu mua hàng", "survey_request": "Yêu cầu báo giá",
                  "survey": "Phiếu khảo sát",
                  "purchase_order": "Đơn mua hàng", "payment_request": "Đề nghị thanh toán"}
     STATUS_VERB = {"submitted": "đã được gửi duyệt", "approved": "đã được duyệt",
@@ -182,17 +182,17 @@ def trigger_notification(
         subject = f"[Đã hủy] PYC {doc_code}"
         body = f"Yêu cầu mua hàng {doc_code} của bạn đã bị hủy."
     elif event == "sr_submitted":
-        subject = f"[Yêu cầu phê duyệt] YCKS {doc_code}"
-        body = f"Có một yêu cầu khảo sát mới (Mã số: {doc_code}) cần bạn phê duyệt."
+        subject = f"[Yêu cầu phê duyệt] YCBG {doc_code}"
+        body = f"Có một yêu cầu báo giá mới (Mã số: {doc_code}) cần bạn phê duyệt."
     elif event == "sr_approved":
-        subject = f"[Đã duyệt] YCKS {doc_code}"
-        body = f"Yêu cầu khảo sát {doc_code} của bạn đã được phê duyệt."
+        subject = f"[Đã duyệt] YCBG {doc_code}"
+        body = f"Yêu cầu báo giá {doc_code} của bạn đã được phê duyệt."
     elif event == "sr_rejected":
-        subject = f"[Từ chối] YCKS {doc_code}"
-        body = f"Yêu cầu khảo sát {doc_code} của bạn đã bị từ chối phê duyệt."
+        subject = f"[Từ chối] YCBG {doc_code}"
+        body = f"Yêu cầu báo giá {doc_code} của bạn đã bị từ chối phê duyệt."
     elif event == "sr_returned":
-        subject = f"[Bị trả lại] YCKS {doc_code}"
-        body = f"Yêu cầu khảo sát {doc_code} của bạn bị trả lại — hãy chỉnh sửa và gửi duyệt lại."
+        subject = f"[Bị trả lại] YCBG {doc_code}"
+        body = f"Yêu cầu báo giá {doc_code} của bạn bị trả lại — hãy chỉnh sửa và gửi duyệt lại."
     elif event == "pay_submitted":
         subject = f"[Yêu cầu phê duyệt] YCTT {doc_code}"
         body = f"Có một yêu cầu thanh toán mới ({doc_code}) cần bạn phê duyệt."

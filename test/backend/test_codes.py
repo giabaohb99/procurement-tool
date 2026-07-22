@@ -1,7 +1,7 @@
 """
 test_codes.py — Kiểm tra _gen_code và _gen_pr_code.
 
-Test 1: _gen_code → khớp regex ^YCKS\\d{6}\\d{2}$.
+Test 1: _gen_code → khớp regex ^YCBG\\d{6}\\d{2}$.
 Test 2: 2 SR liên tiếp → seq tăng (seq thứ 2 > seq thứ 1).
 Test 3: _gen_pr_code → khớp regex ^PYC\\d{6}\\d{2}$.
 Test 4: 2 PR code liên tiếp → seq tăng.
@@ -13,22 +13,22 @@ from app.modules.survey_request.model import SurveyRequest
 from app.modules.purchase_request.model import PurchaseRequest
 
 
-YCKS_PATTERN = re.compile(r"^YCKS\d{6}\d{2}$")
+YCKS_PATTERN = re.compile(r"^YCBG\d{6}\d{2}$")
 PYC_PATTERN = re.compile(r"^PYC\d{6}\d{2}$")
 
 
 class TestGenCode:
     def test_gen_code_format(self, db, seed):
-        """_gen_code → format YCKS + DDMMYY + 2-digit seq."""
+        """_gen_code → format YCBG + DDMMYY + 2-digit seq."""
         code = S._gen_code(db)
         assert YCKS_PATTERN.match(code), (
             f"_gen_code trả '{code}' không khớp pattern {YCKS_PATTERN.pattern}"
         )
 
     def test_gen_code_starts_with_ycks(self, db, seed):
-        """_gen_code → bắt đầu bằng 'YCKS'."""
+        """_gen_code → bắt đầu bằng 'YCBG'."""
         code = S._gen_code(db)
-        assert code.startswith("YCKS")
+        assert code.startswith("YCBG")
 
     def test_gen_code_seq_increments(self, db, seed):
         """Tạo 2 SR liên tiếp → seq tăng dần."""

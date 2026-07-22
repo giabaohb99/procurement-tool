@@ -10,13 +10,17 @@ interface ConfirmModalProps {
   variant?: 'danger' | 'warn' | 'info'
   onConfirm: () => void
   onCancel: () => void
+  // Đóng thuần (không kích hoạt hành động của nút nào) — hiện nút X + cho bấm nền/Esc để thoát.
+  // Dùng khi CẢ hai nút đều có tác dụng phụ (vd điều hướng) nên onCancel không phải là "đóng".
+  onClose?: () => void
 }
 
 export default function ConfirmModal({
   open, title, message, confirmText = 'Xác nhận', cancelText = 'Hủy',
-  hideCancel = false, variant = 'danger', onConfirm, onCancel,
+  hideCancel = false, variant = 'danger', onConfirm, onCancel, onClose,
 }: ConfirmModalProps) {
   const confirmRef = useRef<HTMLButtonElement>(null)
+  const dismiss = onClose || onCancel
 
   useEffect(() => {
     if (open) {
@@ -31,11 +35,11 @@ export default function ConfirmModal({
   useEffect(() => {
     if (!open) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel()
+      if (e.key === 'Escape') dismiss()
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [open, onCancel])
+  }, [open, dismiss])
 
   if (!open) return null
 
@@ -52,8 +56,14 @@ export default function ConfirmModal({
   const colors = colorMap[variant]
 
   return (
-    <div className="confirm-modal-overlay">
-      <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="confirm-modal-overlay" onClick={() => dismiss()}>
+      <div className="confirm-modal" onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
+        {onClose && (
+          <button type="button" aria-label="Đóng" onClick={onClose}
+            style={{ position: 'absolute', top: 10, right: 10, width: 30, height: 30, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 18, color: 'var(--muted)', lineHeight: 1 }}>
+            <i className="ti ti-x" />
+          </button>
+        )}
         <div className="confirm-modal-icon" style={{ color: colors.icon }}>
           <i className={iconMap[variant]} />
         </div>

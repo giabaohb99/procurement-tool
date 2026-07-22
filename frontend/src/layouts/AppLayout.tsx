@@ -13,6 +13,7 @@ type NavItem = {
   icon: string;
   entity?: string;
   manage?: boolean;
+  anyEntity?: string[];   // hiện nếu có read trên BẤT KỲ entity nào (OR)
 };
 type NavGroup = {
   title?: string;
@@ -38,7 +39,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         to: "/survey-requests",
-        label: "Yêu cầu khảo sát",
+        label: "Yêu cầu báo giá",
         icon: "ti-clipboard-list",
         entity: "survey_request",
       },
@@ -53,6 +54,12 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Đơn mua hàng",
         icon: "ti-shopping-cart",
         entity: "purchase_order",
+      },
+      {
+        to: "/purchase-progress",
+        label: "Tiến độ mua hàng",
+        icon: "ti-truck-delivery",
+        anyEntity: ["purchase_order", "purchase_request"],
       },
     ],
   },
@@ -230,7 +237,8 @@ export default function AppLayout() {
   const visibleItems = (items: NavItem[]) =>
     items.filter(
       (n) =>
-        !n.entity || (n.manage ? canManage(n.entity) : can(n.entity, "read")),
+        (n.anyEntity ? n.anyEntity.some((e) => can(e, "read")) : true) &&
+        (!n.entity || (n.manage ? canManage(n.entity) : can(n.entity, "read"))),
     );
   const nav = useNavigate();
   const loc = useLocation();

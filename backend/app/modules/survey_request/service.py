@@ -18,7 +18,7 @@ HEADER_FIELDS = ["company_id", "requester", "requester_id", "requester_position"
 def get_sr(db: Session, sid: int) -> SurveyRequest:
     o = db.get(SurveyRequest, sid)
     if not o:
-        raise HTTPException(404, "Không tìm thấy phiếu yêu cầu khảo sát")
+        raise HTTPException(404, "Không tìm thấy phiếu yêu cầu báo giá")
     return o
 
 
@@ -58,7 +58,7 @@ def valid_options_of(db: Session, line_id: int):
 
 def _gen_code(db: Session) -> str:
     ddmmyy = datetime.now().strftime("%d%m%y")
-    prefix = f"YCKS{ddmmyy}"
+    prefix = f"YCBG{ddmmyy}"
     # Lấy MAX hậu tố hiện có + 1 (không dùng count để tránh trùng khi có khoảng trống do xóa)
     mx = 0
     for (c,) in db.query(SurveyRequest.code).filter(SurveyRequest.code.like(prefix + "%")).all():
@@ -91,7 +91,7 @@ def _save_lines(db: Session, sid: int, lines, user_id: int) -> list[int]:
             ln = SurveyRequestLine(survey_request_id=sid, created_by=user_id, updated_by=user_id, **data)
             db.add(ln)
             db.flush()
-            ln.internal_line_code = f"YCKSL{ln.id:06d}"
+            ln.internal_line_code = f"YCBGL{ln.id:06d}"
         ordered_ids.append(ln.id)
     stale = [lid for lid in existing if lid not in seen]
     if stale:
@@ -159,7 +159,7 @@ def clone_sr(db: Session, sid: int, user, profile: dict) -> SurveyRequest:
             image_file=ln.image_file or "")
         db.add(nl)
         db.flush()
-        nl.internal_line_code = f"YCKSL{nl.id:06d}"
+        nl.internal_line_code = f"YCBGL{nl.id:06d}"
         # sao chép đính kèm của dòng (chỉ thêm liên kết mới, dùng chung file gốc)
         for lk in (db.query(FileLink)
                    .filter(FileLink.entity == "survey_request_line", FileLink.entity_id == ln.id).all()):
@@ -202,6 +202,29 @@ def get_line(db: Session, sid: int, line_id: int) -> SurveyRequestLine:
           .filter(SurveyRequestLine.id == line_id, SurveyRequestLine.survey_request_id == sid).first())
     if not ln:
         raise HTTPException(404, "Không tìm thấy dòng khảo sát")
+    return ln
+
+
+LINE_STATUSES = ("", "can_khao_sat_lai", "hoan_thanh")   # Task 2: trạng thái dòng do người YC/phòng ban cập nhật
+
+
+def set_line_status(db: Session, sid: int, line_id: int, new_status: str, user_id: int) -> SurveyRequestLine:
+    """Đổi trạng thái 1 dòng khảo sát (người YC / cùng phòng ban). Đồng bộ is_completed."""
+    new_status = (new_status or "").strip()
+    if new_status not in LINE_STATUSES:
+        raise HTTPException(400, "Trạng thái dòng không hợp lệ")
+    ln = get_line(db, sid, line_id)
+    # Chỉ được chốt Hoàn thành / Cần khảo sát lại SAU khi dòng đã chọn 1 phương án (Đã chọn PA)
+    if new_status in ("hoan_thanh", "can_khao_sat_lai"):
+        if not any(o.is_chosen for o in options_of(db, line_id)):
+            raise HTTPException(400, "Cần chọn 1 phương án (Đã chọn PA) trước khi chốt Hoàn thành / Cần khảo sát lại")
+    ln.line_status = new_status
+    ln.is_completed = (new_status == "hoan_thanh")
+    ln.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, sid, "line_status",
+           f"Dòng #{line_id} -> {new_status or 'chưa xác định'}")
+    db.refresh(ln)
     return ln
 
 
@@ -513,7 +536,7 @@ def create_prs(db: Session, sid: int, user_id: int):
             requester_position=s.requester_position, department=s.department,
             head_of_dept=s.head_of_dept or find_dept_head(db, s.department or ""),
             purpose=s.purpose, request_date=today, status="draft",
-            note=f"Sinh tự động từ Yêu cầu khảo sát {s.code}",
+            note=f"Sinh tự động từ Yêu cầu báo giá {s.code}",
             suggested_supplier=first_opt.supplier_name or "",
             suggested_supplier_tax_code=(sup.tax_code if sup else ""),
             suggested_supplier_contact=(sup.address if sup else ""),   # Liên hệ NCC lấy Địa chỉ từ bảng NCC

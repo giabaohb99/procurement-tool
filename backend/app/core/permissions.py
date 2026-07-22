@@ -39,7 +39,7 @@ ENTITY_LABELS = {
     "report": "Báo cáo",
     "setting": "Cấu hình hệ thống",
     "category_assignee": "Phân công phụ trách (theo phân loại)",
-    "survey_request": "Yêu cầu khảo sát",
+    "survey_request": "Yêu cầu báo giá",
     "import": "Nhập dữ liệu (Import)",
 }
 

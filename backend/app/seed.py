@@ -399,6 +399,15 @@ def run():
         resync_role_perms(db, "pur_manager", STD_ROLES["pur_manager"]["perms"])
         resync_role_perms(db, "pur_admin", STD_ROLES["pur_admin"]["perms"])
 
+        # Task 5 (CR-007): gỡ quyền xem NCC (supplier.read) khỏi vai trò nhân viên cơ bản.
+        # seed_standard_roles là INSERT-only nên phải xóa tay trên DB đã seed trước đây.
+        from app.modules.role.model import Role as _Role, Permission as _Perm
+        _basic_role_ids = [r.id for r in db.query(_Role).filter(_Role.code.in_(["employee", "staff"])).all()]
+        if _basic_role_ids:
+            db.query(_Perm).filter(_Perm.role_id.in_(_basic_role_ids),
+                                   _Perm.entity == "supplier").delete(synchronize_session=False)
+            db.commit()
+
         # Deduplication tracking sets (using upper case for case-insensitivity)
         seen_companies = {c[0].upper() for c in db.query(Company.code).all()}
         seen_suppliers = {s[0].upper() for s in db.query(Supplier.code).all()}

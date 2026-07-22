@@ -28,7 +28,7 @@ def _days(a: str, b: str) -> int:
     da, db_ = _pdate(a), _pdate(b)
     return (da - db_).days if da and db_ else 0
 
-FILTERABLE = ["code", "status", "supplier_code", "pr_code", "misa_code", "nspt", "is_urgent", "department"]
+FILTERABLE = ["code", "status", "supplier_code", "pr_code", "misa_code", "nspt", "is_urgent", "department", "document_status"]
 ENTITY = "purchase_order"
 
 
@@ -331,6 +331,28 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
         apply_auto_progress(db, po, user_id)   # tự tiến trạng thái dòng + đồng bộ YCMH (chỉ khi có đổi)
     except Exception:
         db.rollback()   # auto-progress không được phép làm hỏng thao tác chính (đã commit)
+    # LUÔN đồng bộ lại YCMH sau khi lưu ĐMH — kể cả khi trạng thái dòng KHÔNG đổi nhưng
+    # SL đặt/nhận thay đổi (vd sửa SL nhận 1800→1900). apply_auto_progress chỉ sync khi có
+    # đổi trạng thái nên nếu thiếu bước này, tiến độ SL bên YCMH sẽ bị cũ.
+    _sync_pr(db, po.pr_code)
+    db.refresh(po)
+    return po
+
+
+DOCUMENT_STATUSES = ("chưa có chứng từ", "đã có thông tin chứng từ", "đã đủ chứng từ")
+
+
+def set_document_status(db: Session, pid: int, value: str, user_id: int) -> PurchaseOrder:
+    """Task 10b: cập nhật TAY trạng thái hồ sơ chứng từ. Cho phép cả khi đơn đã hoàn thành
+    (chứng từ có thể bổ sung sau khi đơn xong)."""
+    value = (value or "").strip()
+    if value not in DOCUMENT_STATUSES:
+        raise HTTPException(400, "Trạng thái hồ sơ chứng từ không hợp lệ")
+    po = get_po(db, pid)
+    po.document_status = value
+    po.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, pid, "document_status", value)
     db.refresh(po)
     return po
 
@@ -377,16 +399,18 @@ def set_status(db: Session, pid: int, status: str, user_id: int, message: str = 
     po.updated_by = user_id
     db.commit()
     record(db, user_id, ENTITY, pid, status, message)
-    # Hủy/từ chối đơn → cập nhật lại tiến độ dòng bên YCMH (dòng thuộc đơn này không còn tính)
-    if status in ("cancelled", "rejected"):
-        _sync_pr(db, po.pr_code)
+    # Mọi đổi trạng thái ĐƠN đều ảnh hưởng việc đơn có được TÍNH vào YCMH hay không
+    # (duyệt → bắt đầu tính; hủy/từ chối → thôi tính) nên luôn đồng bộ lại tiến độ dòng YCMH.
+    _sync_pr(db, po.pr_code)
     db.refresh(po)
     return po
 
 
 # ───────────────────────── Máy trạng thái TIẾN ĐỘ của DÒNG ĐMH (progress_status) ─────────────────────────
-# Luồng chính tuần tự (bỏ "Chưa gửi ĐMH cho KT"); Tạm ngưng/Hủy là ngoại lệ bấm nút, cần lý do.
-PROGRESS_ORDER = ["Chưa đặt hàng", "Đã đặt hàng", "Đã nhận hàng", "Đã gửi ĐMH cho KT", "Hoàn thành"]
+# Luồng chính tuần tự; Tạm ngưng/Hủy là ngoại lệ bấm nút, cần lý do.
+# Task 8: tách "Chưa gửi ĐMH cho KT" (có số hóa đơn) → "Đã gửi ĐMH cho KT" (có ngày giao chứng từ).
+PROGRESS_ORDER = ["Chưa đặt hàng", "Đã đặt hàng", "Đã nhận hàng",
+                  "Chưa gửi ĐMH cho KT", "Đã gửi ĐMH cho KT", "Hoàn thành"]
 PROGRESS_EXCEPTIONS = ["Tạm ngưng", "Hủy đơn"]
 
 
@@ -410,7 +434,8 @@ _STEP_MISSING = {
     1: "Mã đơn MISA (trên phiếu)",
     2: "Có nhận hàng (số lượng nhận > 0)",
     3: "Số hóa đơn",
-    4: "Thanh toán cho dòng (NCC sản phẩm)",
+    4: "Ngày giao chứng từ cho KT",
+    5: "Thanh toán cho dòng (NCC sản phẩm)",
 }
 
 
@@ -422,9 +447,11 @@ def _step_ok(db: Session, po: PurchaseOrder, item: POItem, ti: int) -> bool:
         return bool((po.misa_code or "").strip())
     if ti == 2:
         return float(item.qty_received or 0) > 0
-    if ti == 3:
+    if ti == 3:   # Chưa gửi ĐMH cho KT — đã có số hóa đơn
         return bool((item.invoice_no or "").strip())
-    if ti == 4:
+    if ti == 4:   # Đã gửi ĐMH cho KT — đã có ngày giao chứng từ
+        return bool((item.document_delivery_date or "").strip())
+    if ti == 5:   # Hoàn thành — đã thanh toán dòng
         return is_line_paid(db, po, item)
     return False
 

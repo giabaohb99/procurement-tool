@@ -55,8 +55,8 @@ class TestSurveyRequestCreate:
         fill_sr_header(page_req, purpose=f"E2E Tạo nháp {ts}")
         add_line_popup(page_req, item_group="Nhãn", detail=f"SP test {ts}", qty="5")
         save_as_draft(page_req)
-        # Thấy mã phiếu YCKS...
-        expect(page_req.get_by_text("YCKS", exact=False)).to_be_visible(timeout=8000)
+        # Thấy mã phiếu YCBG...
+        expect(page_req.get_by_text("YCBG", exact=False)).to_be_visible(timeout=8000)
 
     def test_add_multiple_lines_then_delete(self, page_req: Page):
         """Thêm 2 dòng, xóa 1 → còn 1 dòng."""

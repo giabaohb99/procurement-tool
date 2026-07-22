@@ -66,13 +66,22 @@ const srBadge = (st: string) => {
   return <span className={'badge ' + s.cls}>{s.label}</span>
 }
 
-// Tình trạng DÒNG — tự suy theo tiến trình (không chỉnh tay)
+// Tình trạng DÒNG — ưu tiên trạng thái do người YC/phòng ban chốt (Task 2),
+// còn lại tự suy theo tiến trình khảo sát.
 const srLineStatus = (l: any): { label: string; cls: string } => {
-  if (l.is_completed) return { label: 'Hoàn thành', cls: 'ok' }
+  if (l.line_status === 'hoan_thanh' || l.is_completed) return { label: 'Hoàn thành', cls: 'ok' }
+  if (l.line_status === 'can_khao_sat_lai') return { label: 'Cần khảo sát lại', cls: 'err' }
   if (l.has_chosen)   return { label: 'Đã chọn PA', cls: 'ok' }
   if ((l.option_count || 0) > 0) return { label: 'Đã khảo sát', cls: 'warn' }
   return { label: 'Chưa xong', cls: 'gray' }
 }
+
+// Nhãn cho ô chọn trạng thái dòng (người YC / phòng ban)
+const LINE_STATUS_OPTS = [
+  { value: '', label: '— Chưa xác định —' },
+  { value: 'can_khao_sat_lai', label: 'Cần khảo sát lại' },
+  { value: 'hoan_thanh', label: 'Hoàn thành' },
+]
 
 const emptyLine = {
   received_date: '',
@@ -261,6 +270,13 @@ export default function SurveyRequestDetail() {
     try { await api.post(`${API}/${id}/finalize`); toast.success('Đã chuyển Hoàn thành'); await loadAll() }
     catch { /* interceptor toast */ }
   }
+  // Task 2: người YC / cùng phòng ban chốt trạng thái từng dòng (cần khảo sát lại / hoàn thành)
+  async function setLineStatus(lineId: number, val: string) {
+    try {
+      await api.patch(`${API}/${id}/lines/${lineId}/line-status`, { line_status: val })
+      toast.success('Đã cập nhật trạng thái dòng'); await loadAll()
+    } catch { /* interceptor toast */ }
+  }
   // PYC đã sinh (duy nhất theo pr_id) để hiện link
   const createdPrs = (() => {
     const prMap = new Map<number, { code: string; items: string[] }>()
@@ -278,9 +294,14 @@ export default function SurveyRequestDetail() {
   // Có ít nhất 1 dòng đã chọn PA -> cho tạo YCMH (dòng tái sử dụng: kể cả dòng đã từng tạo YCMH)
   const anyChosen = (result?.lines || []).some((l: any) => (l.options || []).some((o: any) => o.is_chosen))
   const hasAnyOptions = (result?.lines || []).some((l: any) => (l.options || []).length > 0)
-  const canFinalize = can('survey_request', 'process') && can('survey_request', 'approve')
+  // Task 3: ngoài Quản lý/Admin TM, phòng ban yêu cầu (người YC) cũng được chuyển Hoàn thành
+  const canFinalize = (can('survey_request', 'process') && can('survey_request', 'approve'))
+    || isRequester || can('survey_request', 'delete')
   // Chỉ NGƯỜI YÊU CẦU (người tạo) hoặc Admin TM (delete) được tạo YCMH
   const canCreatePr = isRequester || can('survey_request', 'delete')
+  // Task 2: chỉ người YC / Admin TM được chốt trạng thái dòng, khi phiếu đang xử lý trở đi & chưa khóa
+  const canSetLineStatus = (isRequester || can('survey_request', 'delete'))
+    && ['processing', 'survey_done', 'pr_created'].includes(sv.status)
 
   // --- Đính kèm hình/tài liệu theo dòng ---
   const [lineFiles, setLineFiles] = useState<any[]>([])
@@ -437,7 +458,7 @@ export default function SurveyRequestDetail() {
   const isLogShown = !isNew && logs.length > 0
   const edit = editIdx != null ? lines[editIdx] : null
 
-  if (notFound) return <NotFound backTo="/survey-requests" message="Không tìm thấy yêu cầu khảo sát này hoặc bạn không có quyền truy cập." />
+  if (notFound) return <NotFound backTo="/survey-requests" message="Không tìm thấy yêu cầu báo giá này hoặc bạn không có quyền truy cập." />
 
   return (
     <div>
@@ -519,7 +540,7 @@ export default function SurveyRequestDetail() {
           </button>
         )}
 
-        {/* Nút Chuyển Hoàn thành (Quản lý/Admin TM) — từ Đã khảo sát hoặc Đã tạo YCMH */}
+        {/* Nút Chuyển Hoàn thành (Quản lý/Admin TM hoặc phòng ban YC — Task 3) — từ Đã khảo sát hoặc Đã tạo YCMH */}
         {!isNew && ['survey_done', 'pr_created'].includes(sv.status) && canFinalize && (
           <button className="btn" onClick={finalizeSr}>
             <i className="ti ti-flag-check" />Chuyển Hoàn thành
@@ -1059,7 +1080,7 @@ export default function SurveyRequestDetail() {
                 />
               </div>
 
-              {/* Trạng thái dòng — tự suy theo tiến trình (ẩn khi tạo mới) */}
+              {/* Trạng thái dòng — badge tự suy + (Task 2) ô chọn cho người YC/phòng ban (ẩn khi tạo mới) */}
               {showStatus && (
                 <div className="form-row">
                   <label>Trạng thái</label>
@@ -1069,6 +1090,24 @@ export default function SurveyRequestDetail() {
                       <span style={{ color: 'var(--muted)', fontSize: 12, marginLeft: 8 }}>
                         ({edit.option_count || 0} phương án{edit.has_chosen ? ', đã chọn' : ''})
                       </span>
+                    )}
+                    {/* Người YC chốt: chỉ hiện SAU khi dòng đã "Đã chọn PA" (has_chosen).
+                        Từ lúc đó người yêu cầu mới chuyển được sang Hoàn thành / Cần khảo sát lại. */}
+                    {canSetLineStatus && edit.id && (
+                      edit.has_chosen ? (
+                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>Người YC chốt:</span>
+                          <select className="cell-input" style={{ width: 200 }} value={edit.line_status || ''}
+                            onChange={(e) => { const v = e.target.value; setLine(editIdx, 'line_status', v); setLineStatus(edit.id, v) }}>
+                            {LINE_STATUS_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                          </select>
+                        </div>
+                      ) : (
+                        <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>
+                          <i className="ti ti-info-circle" style={{ verticalAlign: '-1px', marginRight: 4 }} />
+                          Chọn 1 phương án (Đã chọn PA) trước, rồi mới chốt Hoàn thành / Cần khảo sát lại.
+                        </div>
+                      )
                     )}
                   </div>
                 </div>

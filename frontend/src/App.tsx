@@ -35,6 +35,7 @@ import Settings from './pages/Settings'
 import SurveyRequestDetail from './pages/SurveyRequestDetail'
 import SurveyRequestProcess from './pages/SurveyRequestProcess'
 import Documents from './pages/Documents'
+import PurchaseProgress from './pages/PurchaseProgress'
 
 function Protected({ children }: { children: JSX.Element }) {
   const { user } = useAuth()
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="surveys-supplier/:id" element={<SurveyDetail />} />
             <Route path="surveys-product/:id" element={<SurveyDetail />} />
             <Route path="purchase-orders/:id" element={<PurchaseOrderDetail />} />
+            <Route path="purchase-progress" element={<PurchaseProgress />} />
             <Route path="payment-requests/:id" element={<PaymentRequestDetail />} />
             <Route path="documents" element={<Documents />} />
             <Route path="inventory" element={<Inventory />} />

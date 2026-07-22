@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Boolean, Numeric, String, Text
+from sqlalchemy import BigInteger, Boolean, Index, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
@@ -8,9 +8,11 @@ class PurchaseRequest(Base, AuditMixin):
     """Yêu cầu mua (PYC) — header."""
 
     __tablename__ = "tab_purchase_request"
+    # created_by nằm ở AuditMixin — index qua __table_args__ (apply_scope lọc theo cột này ở MỌI list)
+    __table_args__ = (Index("ix_pr_created_by", "created_by"),)
 
     code: Mapped[str] = mapped_column(String(50), unique=True, default="")
-    company_id: Mapped[int] = mapped_column(BigInteger, default=0)        # pháp nhân nhận hóa đơn
+    company_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)  # pháp nhân nhận hóa đơn — apply_scope lọc theo cột này
     requester: Mapped[str] = mapped_column(String(255), default="")        # người yêu cầu
     requester_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)   # id nhân sự người yêu cầu (để so scope)
     requester_position: Mapped[str] = mapped_column(String(100), default="")  # chức vụ
@@ -49,12 +51,15 @@ class PurchaseRequestItem(Base, AuditMixin):
     group_desc: Mapped[str] = mapped_column(String(255), default="")       # mô tả phân loại (vd thời gian SX)
     qty: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
     unit: Mapped[str] = mapped_column(String(25), default="")
-    price: Mapped[float] = mapped_column(Numeric(18, 2), default=0)        # giá đề xuất
-    amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)       # thành tiền = qty*price
+    price: Mapped[float] = mapped_column(Numeric(18, 2), default=0)        # giá đề xuất (chưa VAT)
+    vat_pct: Mapped[float] = mapped_column(Numeric(5, 2), default=0)       # % VAT theo dòng (Task 4)
+    amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)       # thành tiền = qty*price*(1+vat_pct%)
     warehouse: Mapped[str] = mapped_column(String(100), default="")        # kho nhận
     required_date: Mapped[str] = mapped_column(String(10), default="")     # ngày cần hàng (theo dòng)
     expected_date: Mapped[str] = mapped_column(String(10), default="")     # thời gian dự kiến có hàng (NSTM cập nhật; đổi giá trị đã có phải kèm lý do)
-    assignee: Mapped[str] = mapped_column(String(100), default="")         # NSTM phụ trách (mã NV)
+    assignee: Mapped[str] = mapped_column(String(100), default="", index=True)  # NSTM phụ trách (mã NV) — scope "được giao" lọc theo cột này
     line_status: Mapped[str] = mapped_column(String(30), default="Chưa đặt hàng")  # trạng thái xử lý dòng
+    qty_ordered: Mapped[float] = mapped_column(Numeric(18, 3), default=0)   # tổng SL đã đặt (đồng bộ từ ĐMH liên kết)
+    qty_received: Mapped[float] = mapped_column(Numeric(18, 3), default=0)  # tổng SL đã nhận (đồng bộ từ ĐMH liên kết)
     progress_note: Mapped[str] = mapped_column(Text, default="")           # chi tiết tiến độ
     note: Mapped[str] = mapped_column(String(255), default="")

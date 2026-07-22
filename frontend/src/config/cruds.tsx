@@ -115,6 +115,17 @@ export const poBadge = (st: string) => {
   return <span className={'badge ' + s.cls}>{s.label}</span>
 }
 
+// Hồ sơ chứng từ (Task 10b) — trạng thái cập nhật tay
+const DOC_STATUS_BADGE: Record<string, string> = {
+  'chưa có chứng từ': 'err',
+  'đã có thông tin chứng từ': 'warn',
+  'đã đủ chứng từ': 'ok',
+}
+export const docStatusBadge = (st: string) => {
+  const v = String(st || 'chưa có chứng từ')
+  return <span className={'badge ' + (DOC_STATUS_BADGE[v] || 'gray')}>{v}</span>
+}
+
 export const cruds: Record<string, CrudConfig> = {
   companies: {
     slug: 'companies', entity: 'company', title: 'Công ty', apiPath: '/api/companies', importExport: true,
@@ -294,7 +305,7 @@ export const cruds: Record<string, CrudConfig> = {
     fields: [],  // chi tiết dùng trang riêng (PurchaseRequestDetail)
   },
   'survey-requests': {
-    slug: 'survey-requests', entity: 'survey_request', title: 'Yêu cầu khảo sát', apiPath: '/api/survey-requests', txn: true, cloneable: true,
+    slug: 'survey-requests', entity: 'survey_request', title: 'Yêu cầu báo giá', apiPath: '/api/survey-requests', txn: true, cloneable: true,
     columns: [
       { key: 'code', label: 'Mã phiếu' },
       { key: 'purpose', label: 'Mục đích' },
@@ -422,11 +433,16 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'pr_code', label: 'Mã PYC', link: (r) => (r.pr_id ? `/purchase-requests/${r.pr_id}` : '') },
       { key: 'amount', label: 'Tiền hàng', render: (r) => (r.amount ? Number(r.amount).toLocaleString('vi-VN') + ' đ' : '0 đ') },
       { key: 'is_urgent', label: 'Gấp', render: (r) => (r.is_urgent ? <span className="badge warn">Gấp</span> : '') },
+      { key: 'document_status', label: 'Hồ sơ chứng từ', render: (r) => docStatusBadge(r.document_status) },
       { key: 'status', label: 'Trạng thái', render: (r) => poBadge(r.status) },
     ],
     filters: [
       { key: 'code', label: 'Mã PO' },
       { key: 'misa_code', label: 'Mã MISA' },
+      { key: 'document_status', label: 'Hồ sơ chứng từ', type: 'select', options: [
+        { value: 'chưa có chứng từ', label: 'Chưa có chứng từ' },
+        { value: 'đã có thông tin chứng từ', label: 'Đã có thông tin chứng từ' },
+        { value: 'đã đủ chứng từ', label: 'Đã đủ chứng từ' }] },
       { key: 'company_id', label: 'Công ty', source: { url: '/api/companies', value: 'id', label: 'name' } },
       { key: 'supplier_code', label: 'Nhà cung cấp', source: { url: '/api/suppliers', value: 'code', label: 'name' } },
       { key: 'nspt', label: 'NSPT phụ trách', source: { url: '/api/employees', value: 'full_name', label: 'full_name' } },
@@ -471,7 +487,7 @@ export const cruds: Record<string, CrudConfig> = {
   'surveys': {
     slug: 'surveys', entity: 'survey', title: 'Khảo sát (NCC + Sản phẩm)', apiPath: '/api/surveys', txn: true, cloneable: true,
     columns: [
-      { key: 'code', label: 'Mã phiếu' }, { key: 'sr_code', label: 'Mã YCKS' },
+      { key: 'code', label: 'Mã phiếu' }, { key: 'sr_code', label: 'Mã YCBG' },
       { key: 'main_content', label: 'Nội dung chính' },
       { key: 'item_group', label: 'Nhóm hàng' }, { key: 'nspt', label: 'NSPT' },
       { key: 'created_at', label: 'Ngày tạo', render: (r) => fmtDateTime(r.created_at) || '—' },
@@ -479,7 +495,7 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     filters: [
       { key: 'code', label: 'Mã phiếu' },
-      { key: 'sr_code', label: 'Mã YCKS' },
+      { key: 'sr_code', label: 'Mã YCBG' },
       { key: 'main_content', label: 'Nội dung chính' },
       { key: 'item_group', label: 'Nhóm hàng', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
       { key: 'nspt', label: 'NSPT' },

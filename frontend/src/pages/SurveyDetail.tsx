@@ -10,6 +10,7 @@ import { toast } from '../components/toast'
 import { fmtDateTime } from '../utils/datetime'
 import { askConfirm, askPrompt } from '../components/confirm'
 import NotFound from '../components/NotFound'
+import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const VAT_OPTS = ['0', '2', '4', '6', '8', '10']
@@ -856,13 +857,13 @@ export default function SurveyDetail() {
             <h3 className="sec-title">Thông tin tiếp nhận</h3>
             <div className="form-grid">
               <div className="form-row">
-                <label>Yêu cầu khảo sát <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(nếu có)</span></label>
-                <input list="ycks-list" placeholder="Nhập/chọn mã YCKS để tự điền…" value={sv.sr_code || ''} disabled={!editable} onChange={(e) => onPickPr(e.target.value)} />
+                <label>Yêu cầu báo giá <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(nếu có)</span></label>
+                <input list="ycks-list" placeholder="Nhập/chọn mã YCBG để tự điền…" value={sv.sr_code || ''} disabled={!editable} onChange={(e) => onPickPr(e.target.value)} />
                 <datalist id="ycks-list">{prList.map((p) => <option key={p.id} value={p.code}>{p.purpose || ''}</option>)}</datalist>
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Nội dung chính</label>
-                <input value={sv.main_content || ''} disabled={!editable} placeholder="Nội dung chính của phiếu khảo sát (tự điền từ Mục đích khi tạo từ YCKS)…" onChange={(e) => setH('main_content', e.target.value)} />
+                <input value={sv.main_content || ''} disabled={!editable} placeholder="Nội dung chính của phiếu khảo sát (tự điền từ Mục đích khi tạo từ YCBG)…" onChange={(e) => setH('main_content', e.target.value)} />
               </div>
               <div className="form-row"><label>Ngày tiếp nhận</label><input type="date" value={sv.received_date || ''} disabled={!editable} onChange={(e) => setH('received_date', e.target.value)} /></div>
               <div className="form-row"><label>Ngày dự kiến trả KQ</label><input type="date" value={sv.result_due_date || ''} disabled={!editable} onChange={(e) => setH('result_due_date', e.target.value)} /></div>
@@ -909,29 +910,14 @@ export default function SurveyDetail() {
 
           {/* Đính kèm file (survey-level) */}
           {!isNew && (
-            <div className="card" style={{ padding: 18, marginBottom: 16 }}>
-              <h3 className="sec-title"><i className="ti ti-paperclip" /> Chứng từ đính kèm</h3>
-              {can('survey', 'write') && (
-                <div style={{ marginBottom: 8 }}>
-                  <input type="file" id="survey-file-upload" multiple style={{ display: 'none' }} onChange={(e) => uploadFiles(e.target.files)} />
-                  <label htmlFor="survey-file-upload" className="btn ghost" style={{ cursor: 'pointer', height: 32, fontSize: 13 }}><i className="ti ti-upload" /> Tải file lên</label>
-                </div>
-              )}
-              <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {files.map((f) => (
-                  <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-                    <i className="ti ti-file" />
-                    <a href={f.url} target="_blank" style={{ color: 'var(--teal)', flex: 1, textDecoration: 'underline' }}>{f.filename}</a>
-                    {can('survey', 'write') && (
-                      <button className="icon-btn" onClick={async () => { if (await askConfirm({ message: 'Xóa file?' })) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}>
-                        <i className="ti ti-trash" style={{ color: 'var(--red)' }} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {files.length === 0 && <span style={{ color: '#999', fontSize: 13 }}>Chưa có file nào.</span>}
-              </div>
-            </div>
+            <DocumentAttachmentSection
+              entity="survey"
+              entityId={Number(id)}
+              files={files}
+              editable={can('survey', 'write')}
+              isNew={isNew}
+              onRefresh={loadAll}
+            />
           )}
 
         </div>

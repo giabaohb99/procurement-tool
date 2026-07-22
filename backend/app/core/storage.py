@@ -13,17 +13,25 @@ def _eff(key: str):
     return app_settings.get(key)
 
 
-def _client():
+def _r2_ready() -> bool:
+    """R2 chỉ 'sẵn sàng' khi có ĐỦ endpoint + access key + public_url.
+    Thiếu public_url thì không thể sinh URL công khai hợp lệ → coi như chưa cấu hình
+    và fallback lưu local (tránh lưu URL vỡ dạng '/file/...' làm file 'upload lên không hiện').
+    Quyết định tập trung ở đây để upload/download/delete luôn đồng bộ cùng 1 nơi lưu."""
     endpoint = _eff("r2_endpoint")
     akey = _eff("r2_access_key_id")
-    skey = _eff("r2_secret_access_key")
-    if not endpoint or not akey:
+    pub = (_eff("r2_public_url") or "").strip()
+    return bool(endpoint and akey and pub)
+
+
+def _client():
+    if not _r2_ready():
         return None
     return boto3.client(
         "s3",
-        endpoint_url=endpoint,
-        aws_access_key_id=akey,
-        aws_secret_access_key=skey,
+        endpoint_url=_eff("r2_endpoint"),
+        aws_access_key_id=_eff("r2_access_key_id"),
+        aws_secret_access_key=_eff("r2_secret_access_key"),
         region_name="auto",
     )
 

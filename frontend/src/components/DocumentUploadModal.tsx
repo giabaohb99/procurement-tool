@@ -37,12 +37,14 @@ export default function DocumentUploadModal({ entity, entityId, purchaseOrderId,
   const delRow = (i: number) => setRows((rs) => (rs.length === 1 ? rs : rs.filter((_, k) => k !== i)))
 
   // Gộp file mới vào dòng, chống trùng theo tên+size
-  const addFiles = (i: number, list: FileList | null) => {
-    if (!list?.length) return
+  const addFiles = (i: number, list: File[] | FileList | null) => {
+    if (!list) return
+    const arr = Array.isArray(list) ? list : Array.from(list)
+    if (!arr.length) return
     setRows((rs) => rs.map((r, k) => {
       if (k !== i) return r
       const seen = new Set(r.files.map((f) => f.name + f.size))
-      const merged = [...r.files, ...Array.from(list).filter((f) => !seen.has(f.name + f.size))]
+      const merged = [...r.files, ...arr.filter((f) => !seen.has(f.name + f.size))]
       return { ...r, files: merged }
     }))
   }
@@ -50,10 +52,9 @@ export default function DocumentUploadModal({ entity, entityId, purchaseOrderId,
     setRows((rs) => rs.map((r, k) => (k === i ? { ...r, files: r.files.filter((_, x) => x !== fi) } : r)))
 
   async function submit() {
-    // Dòng có file BẮT BUỘC chọn loại; dòng rỗng (không file) → bỏ qua.
+    // Dòng có file: nếu chưa chọn loại chứng từ → tự động mặc định là "other" (Khác); dòng rỗng (không file) → bỏ qua.
     const active = rows.filter((r) => r.files.length)
     if (!active.length) { toast.error('Chưa chọn file nào'); return }
-    if (active.some((r) => !r.doc_type)) { toast.error('Mỗi dòng có file phải chọn loại chứng từ'); return }
 
     setSaving(true)
     try {
@@ -61,7 +62,7 @@ export default function DocumentUploadModal({ entity, entityId, purchaseOrderId,
         const fd = new FormData()
         fd.append('entity', entity)
         fd.append('entity_id', String(entityId))
-        fd.append('doc_type', r.doc_type)
+        fd.append('doc_type', r.doc_type || 'other')
         if (purchaseOrderId) fd.append('purchase_order_id', String(purchaseOrderId))
         r.files.forEach((f) => fd.append('files', f))
         await api.post('/api/attachments', fd)
@@ -95,7 +96,7 @@ export default function DocumentUploadModal({ entity, entityId, purchaseOrderId,
                     {docTypes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
 
-                  <FileDropzone hint="PDF, ảnh, Excel, Word…" onFiles={(list) => addFiles(i, list)} />
+                  <FileDropzone hint="PDF, ảnh, Word, Excel, XML (hóa đơn), TXT…" onFiles={(list) => addFiles(i, list)} />
 
                   {/* Danh sách file đã chọn */}
                   {r.files.length > 0 && (

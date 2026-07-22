@@ -75,6 +75,25 @@
 - [x] Trang chủ "dày thông tin": 6 KPI (đơn chờ duyệt/PO chạy/nợ đến hạn/nợ quá hạn/HĐ sắp hết/mặt hàng hết) + biểu đồ chi phí 12 tháng + donut cơ cấu phân loại + Top NCC + Cảnh báo + Tồn thấp — endpoint `GET /api/dashboard/overview`
 - [x] Fix bug `alert.build` còn tham chiếu `Contract.supplier_name` (đã đổi generic → `party_name`)
 
+## Cập nhật Thu mua đợt 2026-07 (CR-007 — xem doc/yeu-cau/Plan_CapNhat_ThuMua_2026_07.md)
+Đợt A — nhanh + bugfix:
+- [x] Task 1 — Đổi nhãn "Yêu cầu khảo sát"→"Yêu cầu báo giá" (BE+FE) + đổi prefix mã phiếu `YCKS`→`YCBG` (mã dòng `YCKSL`→`YCBGL`), cập nhật test
+- [x] Task 10a — Fix bug upload file không hiện (`core/storage.py` R2 URL khi `r2_public_url` rỗng) + cho phép upload chứng từ khi PO `completed`
+- [x] Task 6 — Thêm cột "Thời gian dự kiến có hàng" (`expected_date`) ra bảng dòng YCMH (không migration)
+
+Đợt B — luồng khảo sát:
+- [x] Task 2 — Trạng thái theo dòng khảo sát: thêm `line_status` (chưa xác định / cần khảo sát lại / hoàn thành) + guard người YC/cùng phòng ban (migration `a2c4e6f8b1d3`)
+- [x] Task 3 — Phòng ban người YC được đóng/hoàn thành phiếu khảo sát (nới guard `finalize` → purchaser+approve HOẶC người YC/cùng phòng ban)
+
+Đợt C — đơn mua hàng:
+- [x] Task 8 — Thêm trạng thái "Chưa gửi ĐMH cho KT" + trường `document_delivery_date` (dòng); tách bước máy trạng thái tiến độ (PROGRESS_ORDER 6 bước) — migration `b4d6f8a0c2e5`
+- [x] Task 10b — Trạng thái hồ sơ chứng từ `document_status` (chưa có / đã có thông tin / đã đủ) cập nhật tay (endpoint `PATCH /{pid}/document-status`, sửa được cả khi Hoàn thành) + hiện ở list ĐMH — migration `b4d6f8a0c2e5`
+
+Đợt D — nghiệp vụ + màn lớn:
+- [x] Task 4 — Thêm lại VAT theo dòng YCMH (`vat_pct`, thành tiền gồm VAT tự tính; tổng = tiền hàng + VAT) + phiếu in tách Tiền hàng/VAT/Tổng + chuyển VAT theo dòng khi tạo ĐMH — migration `c6e8a0b2d4f7`
+- [x] Task 5 — Ẩn NCC đề xuất theo `supplier.read`: BE che 3 trường `suggested_supplier*` ở list + chi tiết (`_out(db,pr,user)`) · FE ẩn card NCC + khối in khi thiếu quyền · seed xóa `supplier.read` khỏi role `employee`/`staff` (không migration)
+- [x] Task 7 — Trang "Tiến độ mua hàng" (bản 1 cột sẵn có; ẩn NCC + chi phí VC cho phòng YC; theo lần giao) — module `purchase_progress` (`GET /api/purchase-progress`, join PO→POItem→PODelivery, gate OR `purchase_order.read`/`purchase_request.read`, `apply_scope` PO cho phòng thu mua / lọc theo bộ phận cho phòng YC, ẩn NCC+VC khi thiếu `purchase_order.read`) · FE `pages/PurchaseProgress.tsx` + route + menu `anyEntity`. KHÔNG migration. Bản 2 (tạm bỏ): `product.legal_name` + các cột master còn thiếu theo Mapping
+
 ## Phase 5 — Quản trị nâng cao
 - [ ] Cấu hình duyệt theo ngưỡng · mẫu in · audit log UI · sao lưu
 - [ ] Đính kèm R2 + xem bộ chứng từ theo đơn

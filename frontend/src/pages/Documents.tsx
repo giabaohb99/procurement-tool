@@ -13,7 +13,7 @@ type ChainItem = {
 
 const SRC_ORDER = ['PO', 'PYC', 'PKS', 'YCKS']
 const SRC_LABEL: Record<string, string> = {
-  PO: 'Đơn mua hàng', PYC: 'Yêu cầu mua hàng', PKS: 'Phiếu khảo sát', YCKS: 'Yêu cầu khảo sát',
+  PO: 'Đơn mua hàng', PYC: 'Yêu cầu mua hàng', PKS: 'Phiếu khảo sát', YCKS: 'Yêu cầu báo giá',
 }
 const isImage = (it: ChainItem) => /^image\//.test(it.content_type || '')
 const isPdf = (it: ChainItem) => it.content_type === 'application/pdf' || /\.pdf$/i.test(it.filename)

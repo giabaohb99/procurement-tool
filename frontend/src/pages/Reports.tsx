@@ -15,7 +15,7 @@ const TABS = [
   { key: 'department', label: 'Bộ phận (đơn gấp)' },
   { key: 'shipping', label: 'Chi phí vận chuyển' },
   { key: 'pyc_req', label: 'Yêu cầu mua hàng', need: 'purchase_request' },   // theo phòng ban
-  { key: 'ycks_req', label: 'Yêu cầu khảo sát', need: 'survey_request' },    // theo phòng ban
+  { key: 'ycks_req', label: 'Yêu cầu báo giá', need: 'survey_request' },    // theo phòng ban
   // { key: 'inventory', label: 'Tồn kho' },   // tạm ẩn tab Tồn kho
 ]
 
@@ -368,7 +368,7 @@ export default function Reports() {
           <MatrixPivotTab key={`${kind}-${f.year}-${f.company_id}`}
             rows={rmx.rows || []} months={rmx.months || []} companyId={f.company_id} nameFilter nameWidth={220}
             nameLabel="Phòng ban"
-            title={kind === 'pyc' ? 'Yêu cầu mua hàng theo phòng ban' : 'Yêu cầu khảo sát theo phòng ban'}
+            title={kind === 'pyc' ? 'Yêu cầu mua hàng theo phòng ban' : 'Yêu cầu báo giá theo phòng ban'}
             yearLabel={f.year === 'all' ? 'Tất cả' : `Năm ${f.year}`}
             rangeEndpoint={`/api/reports/request-range?kind=${kind}`}
             metrics={kind === 'pyc' ? PYC_METRICS : YCKS_METRICS} />

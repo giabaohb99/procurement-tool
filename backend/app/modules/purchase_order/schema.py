@@ -32,6 +32,7 @@ class POItemIn(BaseModel):
     fg_code: str = ""
     fg_name: str = ""
     invoice_no: str = ""
+    document_delivery_date: str = ""   # Ngày giao chứng từ cho KT (Task 8)
     supplier_ready: bool = False
     required_date: str = ""
     unit: str = ""
@@ -75,6 +76,7 @@ class POUpdate(BaseModel):
     vat_rate: float | None = None
     payment_terms: str | None = None
     is_urgent: bool | None = None
+    document_status: str | None = None   # Trạng thái hồ sơ chứng từ, cập nhật tay (Task 10b)
     note: str | None = None
     items: list[POItemIn] | None = None
 
@@ -86,3 +88,7 @@ class RejectIn(BaseModel):
 class ItemProgressIn(BaseModel):
     status: str                    # trạng thái tiến độ đích (hoặc "__resume__" để tiếp tục từ Tạm ngưng)
     reason: str = ""               # bắt buộc khi Tạm ngưng / Hủy đơn
+
+
+class DocumentStatusIn(BaseModel):
+    document_status: str           # chưa có chứng từ | đã có thông tin chứng từ | đã đủ chứng từ

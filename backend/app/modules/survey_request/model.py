@@ -46,6 +46,10 @@ class SurveyRequestLine(Base, AuditMixin):
     pr_id: Mapped[int] = mapped_column(BigInteger, default=0)                 # PYC sinh ra từ dòng
     pr_code: Mapped[str] = mapped_column(String(50), default="")
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Trạng thái dòng do người YC / phòng ban YC cập nhật (Task 2):
+    #   "" chưa xác định · "can_khao_sat_lai" cần khảo sát lại · "hoan_thanh" hoàn thành
+    # Đồng bộ: is_completed = (line_status == "hoan_thanh").
+    line_status: Mapped[str] = mapped_column(String(30), default="", index=True)
     no_option: Mapped[bool] = mapped_column(Boolean, default=False)           # chốt rỗng: khảo sát nhưng không có phương án phù hợp
 
 

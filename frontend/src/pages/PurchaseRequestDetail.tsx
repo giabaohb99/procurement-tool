@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
-import { fmtDateTime } from '../utils/datetime'
+import { fmtDateTime, fmtDate } from '../utils/datetime'
 import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import { prBadge, poBadge } from '../config/cruds'
@@ -11,8 +11,8 @@ import NumberInput from '../components/NumberInput'
 import ConfirmModal from '../components/ConfirmModal'
 import PromptModal from '../components/PromptModal'
 import NotFound from '../components/NotFound'
-import { toast } from '../components/toast'
 import DocumentUploadModal from '../components/DocumentUploadModal'
+import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
 import AttachmentGallery from '../components/AttachmentGallery'
 import CompareLightbox from '../components/CompareLightbox'
 import { fmtSize, fileIcon } from '../utils/file-type'
@@ -21,15 +21,20 @@ const API = '/api/purchase-requests'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 // Hiển thị số: để TRỐNG nếu chưa nhập (0/rỗng) để tránh hiểu lầm "đã nhập = 0"
 const fmtBlank = (n: any) => { const v = Number(n || 0); return v ? v.toLocaleString('vi-VN') : '' }
-const LINE_STATUS = ['Chưa đặt hàng', 'Đã đặt hàng', 'Đã gửi ĐMH cho KT', 'Đã nhận hàng', 'Hoàn thành', 'Hủy đơn', 'Tạm ngưng']
+const LINE_STATUS = ['Chưa đặt hàng', 'Đã đặt hàng', 'Đã nhận hàng', 'Hoàn thành', 'Hủy đơn']
 const LS_COLOR: Record<string, string> = {
-  'Chưa đặt hàng': '#94a3b8', 'Đã đặt hàng': '#00AEEF', 'Đã gửi ĐMH cho KT': '#7c3aed',
-  'Đã nhận hàng': '#0d9488', 'Hoàn thành': '#16a34a', 'Hủy đơn': '#b91c1c', 'Tạm ngưng': '#d97706',
+  'Chưa đặt hàng': '#94a3b8', 'Đã đặt hàng': '#00AEEF',
+  'Đã nhận hàng': '#0d9488', 'Hoàn thành': '#16a34a', 'Hủy đơn': '#b91c1c',
 }
 const emptyItem = {
   product_code: '', product_name: '', item_group: '', group_desc: '', qty: 0, unit: '',
-  price: 0, warehouse: '', required_date: '', assignee: '', line_status: 'Chưa đặt hàng', progress_note: '', note: '',
+  price: 0, vat_pct: 8, warehouse: '', required_date: '', assignee: '', line_status: 'Chưa đặt hàng', progress_note: '', note: '',
+  qty_ordered: 0, qty_received: 0,
 }
+// Các mức VAT chọn được (Task 4) — VN: 0/5/8/10%
+const VAT_OPTS = [0, 5, 8, 10]
+// Thành tiền dòng GỒM VAT (Task 4)
+const lineAmount = (it: any) => (Number(it.qty) || 0) * (Number(it.price) || 0) * (1 + (Number(it.vat_pct) || 0) / 100)
 
 // Số ngày giữa 2 mốc "YYYY-MM-DD" (a − b); null nếu thiếu/không hợp lệ
 function daysBetween(a: string, b: string): number | null {
@@ -236,6 +241,29 @@ export default function PurchaseRequestDetail() {
     }
   }
 
+  // Task 6: sửa "Thời gian dự kiến có hàng" ngay trên bảng ngoài (nếu có quyền dòng).
+  // Phiếu nháp/mới -> chỉ đổi state, lưu theo nút Lưu. Phiếu đã gửi duyệt trở đi ->
+  // auto-lưu qua item-status; đổi giá trị ĐÃ CÓ bắt nhập lý do (giống popup chi tiết dòng).
+  const inlineExpOrig = useRef('')
+  async function commitExpectedDate(i: number) {
+    const it = items[i]
+    if (editable || !it.id || !canLineStatus(it)) return   // nháp: theo nút Lưu; không quyền: bỏ qua
+    const orig = (inlineExpOrig.current || '').trim()
+    const newExp = (it.expected_date || '').trim()
+    if (newExp === orig) return                            // không đổi
+    let reason = ''
+    if (orig) {
+      const r = await askPrompt({ title: 'Đổi thời gian dự kiến có hàng', message: `Đổi từ ${orig} sang ${newExp || '(để trống)'} — nhập lý do (bắt buộc):`, confirmText: 'Lưu' })
+      if (r === null) { setItem(i, 'expected_date', orig); return }
+      if (!r.trim()) { toast.error('Vui lòng nhập lý do thay đổi'); setItem(i, 'expected_date', orig); return }
+      reason = r.trim()
+    }
+    try {
+      await api.patch(`${API}/${id}/item-status`, { items: [{ id: it.id, line_status: it.line_status, progress_note: it.progress_note, note: it.note, expected_date: newExp, expected_date_reason: reason }] })
+      toast.success('Đã cập nhật thời gian dự kiến'); loadAll()
+    } catch { loadAll() }
+  }
+
   // Bật/tắt Đơn gấp. Phiếu còn sửa (nháp/mới) -> cập nhật local, lưu theo nút Lưu. Phiếu đã duyệt -> auto-lưu ngay + đồng bộ ĐMH.
   async function toggleUrgent(v: boolean) {
     setH('is_urgent', v)
@@ -245,7 +273,9 @@ export default function PurchaseRequestDetail() {
     }
   }
 
-  const subtotal = items.reduce((s: number, it: any) => s + (Number(it.qty) || 0) * (Number(it.price) || 0), 0)
+  const subtotal = items.reduce((s: number, it: any) => s + (Number(it.qty) || 0) * (Number(it.price) || 0), 0)  // tiền hàng chưa VAT
+  const totalWithVat = items.reduce((s: number, it: any) => s + lineAmount(it), 0)                                // tổng gồm VAT
+  const vatAmount = totalWithVat - subtotal
 
   const groupDesc = (name: string) => {
     const g = itemGroups.find(x => x.name === name)
@@ -294,18 +324,6 @@ export default function PurchaseRequestDetail() {
       } : it),
     }))
   }
-
-  async function uploadQuoteFile(fl: FileList | null) {
-    if (!fl?.length) return
-    const fd = new FormData(); fd.append('entity', 'purchase_request_quote'); fd.append('entity_id', String(id || 0)); fd.append('files', fl[0])
-    try {
-      const r = await api.post('/api/attachments', fd)
-      const f = r.data.data[0]
-      setPr((s: any) => ({ ...s, quote_filename: f.filename, quote_file_url: f.url }))
-      toast.success('Đã tải lên báo giá')
-    } catch { /* interceptor đã toast lỗi */ }
-  }
-  const clearQuoteFile = () => setPr((s: any) => ({ ...s, quote_filename: '', quote_file_url: '' }))
 
   function validate(forSubmit: boolean): string {
     if (!pr.company_id) return 'Vui lòng chọn Công ty'
@@ -386,12 +404,11 @@ export default function PurchaseRequestDetail() {
   // Tạo ĐMH từ phiếu đã duyệt: prefill SL theo 'còn thiếu' (yêu cầu − đã đặt), cảnh báo dòng đã đặt đủ/vượt
   function createPO() {
     const whCode = (name: string) => warehouses.find((w) => w.name === name)?.code || ''
-    const vatPct = Math.round((Number(pr.vat_rate) || 0.08) * 100)   // PR chỉ có vat_rate ở header → quy về % cho từng dòng ĐMH
     const mk = (it: any, qty: number) => ({
       product_code: it.product_code, product_name: it.product_name,
       item_group: it.item_group, unit: it.unit,
       qty_request: qty, qty_order: qty,
-      price: Number(it.price) || 0, vat: vatPct,
+      price: Number(it.price) || 0, vat: Number(it.vat_pct) || 0,   // Task 4: VAT theo TỪNG DÒNG PYC
       warehouse_code: whCode(it.warehouse), note: it.note || '',
     })
     const lines = (pr.items || []).filter((it: any) => it.product_name && it.line_status !== 'Hủy đơn')
@@ -526,9 +543,10 @@ export default function PurchaseRequestDetail() {
         message={`Các sản phẩm sau đã đặt đủ hoặc vượt số lượng yêu cầu: ${poExceed?.msg || ''}. Bạn vẫn muốn tạo đơn mua hàng?`}
         confirmText="Vẫn mua thêm"
         cancelText="Chỉ SP còn thiếu"
-        variant="warn"
+        variant="info"
         onConfirm={() => { const p = poExceed; setPoExceed(null); if (p) goPO(p.all) }}
         onCancel={() => { const p = poExceed; setPoExceed(null); if (p) { if (p.normal.length) goPO(p.normal); else toast.info('Không còn sản phẩm cần đặt') } }}
+        onClose={() => setPoExceed(null)}
       />
 
       <ConfirmModal
@@ -616,7 +634,7 @@ export default function PurchaseRequestDetail() {
               {!editable && !isNew && <span style={{ fontSize: 12, color: 'var(--muted)' }}><i className="ti ti-device-floppy" /> Trạng thái tự đồng bộ từ ĐMH · thay đổi phụ trách được lưu tự động</span>}
             </div>
             <div className="items-scroll">
-              <table className="items-table" style={{ minWidth: showAssigneeCol ? 1220 : 1060, tableLayout: 'fixed' }}>
+              <table className="items-table" style={{ minWidth: showAssigneeCol ? 1552 : 1392, tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
                     <th style={{ width: 34, textAlign: 'center' }}>No.</th>
@@ -627,8 +645,11 @@ export default function PurchaseRequestDetail() {
                     <th style={{ width: 80, textAlign: 'left' }}>ĐVT</th>
                     <th style={{ width: 70, textAlign: 'right' }}>SL</th>
                     <th style={{ width: 100, textAlign: 'right' }}>Đơn giá</th>
-                    <th style={{ width: 110, textAlign: 'right' }}>Thành tiền</th>
+                    <th style={{ width: 64, textAlign: 'right' }} title="% VAT theo dòng">VAT%</th>
+                    <th style={{ width: 120, textAlign: 'right' }} title="Thành tiền gồm VAT">Thành tiền</th>
                     <th style={{ width: 150, textAlign: 'center' }}>Trạng thái</th>
+                    <th style={{ width: 118, textAlign: 'center' }} title="Tiến độ: tổng SL đã nhận / tổng SL đã đặt (đồng bộ từ Đơn mua hàng)">Tiến độ<br /><span style={{ fontWeight: 400, fontSize: 10.5, color: 'var(--muted)' }}>nhận / đặt</span></th>
+                    <th style={{ width: 130, textAlign: 'center' }} title="Thời gian dự kiến có hàng (sửa trực tiếp nếu có quyền, hoặc trong Chi tiết dòng)">TG dự kiến có hàng</th>
                     {showAssigneeCol && <th style={{ width: 160, textAlign: 'left' }}>NSTM phụ trách</th>}
                     <th style={{ width: 96, textAlign: 'center' }}>Thao tác</th>
                   </tr>
@@ -681,9 +702,29 @@ export default function PurchaseRequestDetail() {
                           <NumberInput value={it.price} onChange={(v) => setItem(i, 'price', v)} className="cell-input" style={{ width: '100%', textAlign: 'right' }} placeholder="0" />
                         ) : fmtBlank(it.price)}
                       </td>
-                      <td style={{ textAlign: 'right', fontWeight: 500 }}>{fmtBlank((Number(it.qty) || 0) * (Number(it.price) || 0))}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        {editable ? (
+                          <select className="cell-input" value={it.vat_pct ?? 8} onChange={(e) => setItem(i, 'vat_pct', Number(e.target.value))} style={{ width: '100%' }}>
+                            {VAT_OPTS.map((v) => <option key={v} value={v}>{v}%</option>)}
+                          </select>
+                        ) : (it.vat_pct != null ? Number(it.vat_pct) + '%' : '')}
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 500 }} title="Thành tiền gồm VAT">{fmtBlank(lineAmount(it))}</td>
                       <td title="Trạng thái tự đồng bộ từ Đơn mua hàng — không sửa tay">
                         <span className="badge" style={{ background: (LS_COLOR[it.line_status] || '#94a3b8') + '22', color: LS_COLOR[it.line_status] || '#64748b' }}>{it.line_status || 'Chưa đặt hàng'}</span>
+                      </td>
+                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }} title="SL đã nhận / SL đã đặt (đồng bộ từ Đơn mua hàng)">
+                        {(Number(it.qty_ordered) || Number(it.qty_received)) ? (
+                          <span><b style={{ color: '#0d9488' }}>{fmt(it.qty_received)}</b><span style={{ color: 'var(--muted)' }}> / {fmt(it.qty_ordered)}</span></span>
+                        ) : <span style={{ color: 'var(--muted)' }}>—</span>}
+                      </td>
+                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap', color: 'var(--muted)' }} title="Thời gian dự kiến có hàng (chỉ NSTM phụ trách/quản lý sửa)">
+                        {canLineStatus(it) ? (
+                          <input type="date" className="cell-input" style={{ width: '100%' }} value={it.expected_date || ''}
+                            onFocus={() => { inlineExpOrig.current = (it.expected_date || '').trim() }}
+                            onChange={(e) => setItem(i, 'expected_date', e.target.value)}
+                            onBlur={() => commitExpectedDate(i)} />
+                        ) : (it.expected_date ? fmtDate(it.expected_date) : '—')}
                       </td>
                       {showAssigneeCol && (
                         <td style={{ overflow: 'hidden' }}>
@@ -702,7 +743,7 @@ export default function PurchaseRequestDetail() {
                       </td>
                     </tr>
                   ))}
-                  {items.length === 0 && <tr><td colSpan={showAssigneeCol ? 12 : 11} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có sản phẩm nào</td></tr>}
+                  {items.length === 0 && <tr><td colSpan={showAssigneeCol ? 15 : 14} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có sản phẩm nào</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -711,80 +752,44 @@ export default function PurchaseRequestDetail() {
                 <button className="btn ghost" onClick={async () => { const n = await askPrompt({ message: 'Thêm bao nhiêu dòng?', defaultValue: '5' }); if (n !== null) addItems(Math.max(1, parseInt(n || '0') || 0)) }} style={{ height: 30, padding: '0 8px', fontSize: 12 }}><i className="ti ti-rows" /> Thêm nhiều dòng</button>
               </div>
             )}
-            <div style={{ marginTop: 14, textAlign: 'right', fontSize: 15 }}>
-              Tổng tiền hàng: <b style={{ color: 'var(--navy)' }}>{fmt(subtotal)} đ</b>
+            <div style={{ marginTop: 14, textAlign: 'right', fontSize: 14, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+              <div>Tiền hàng (chưa VAT): <b style={{ color: 'var(--navy)' }}>{fmt(subtotal)} đ</b></div>
+              <div style={{ color: 'var(--muted)' }}>Tiền VAT: <b>{fmt(vatAmount)} đ</b></div>
+              <div style={{ fontSize: 15 }}>Tổng cộng (gồm VAT): <b style={{ color: 'var(--navy)' }}>{fmt(totalWithVat)} đ</b></div>
             </div>
           </div>
 
-          {/* Nhà cung cấp đề xuất */}
+          {/* Nhà cung cấp đề xuất — Task 5: LUÔN hiện card để bố cục thống nhất; người không có
+              supplier.read thì BE trả rỗng -> chỉ để TRỐNG + KHOÁ nhập (không ẩn card). */}
+          {(() => { const canSup = can('supplier', 'read'); return (
           <div className="card" style={{ padding: 18, marginBottom: 16 }}>
             <h3 className="sec-title">Nhà cung cấp đề xuất (Nếu có)</h3>
             <div className="form-grid" style={{ marginBottom: 14 }}>
               <div className="form-row">
                 <label>Tên nhà cung cấp đề xuất</label>
-                <input value={pr.suggested_supplier || ''} placeholder="Nhập tên nhà cung cấp..." disabled={!editable} onChange={(e) => setH('suggested_supplier', e.target.value)} />
+                <input value={pr.suggested_supplier || ''} placeholder="Nhập tên nhà cung cấp..." disabled={!editable || !canSup} onChange={(e) => setH('suggested_supplier', e.target.value)} />
               </div>
               <div className="form-row">
                 <label>Mã số thuế NCC</label>
-                <input value={pr.suggested_supplier_tax_code || ''} placeholder="Mã số thuế NCC" disabled={!editable} onChange={(e) => setH('suggested_supplier_tax_code', e.target.value)} />
+                <input value={pr.suggested_supplier_tax_code || ''} placeholder="Mã số thuế NCC" disabled={!editable || !canSup} onChange={(e) => setH('suggested_supplier_tax_code', e.target.value)} />
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Liên hệ NCC (SĐT / Email / Địa chỉ...)</label>
-                <input value={pr.suggested_supplier_contact || ''} placeholder="Thông tin liên hệ nhà cung cấp..." disabled={!editable} onChange={(e) => setH('suggested_supplier_contact', e.target.value)} />
+                <input value={pr.suggested_supplier_contact || ''} placeholder="Thông tin liên hệ nhà cung cấp..." disabled={!editable || !canSup} onChange={(e) => setH('suggested_supplier_contact', e.target.value)} />
               </div>
             </div>
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-              <label style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 500, display: 'block', marginBottom: 6 }}>Báo giá đính kèm (Nếu có)</label>
-              {!isNew ? (
-                !pr.quote_file_url ? (
-                  editable ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <input type="file" id="quote-upload" style={{ display: 'none' }} disabled={!editable} onChange={(e) => uploadQuoteFile(e.target.files)} />
-                      <label htmlFor="quote-upload" className="btn ghost" style={{ cursor: 'pointer', height: 32, fontSize: 13 }}><i className="ti ti-upload" /> Chọn báo giá</label>
-                    </div>
-                  ) : <span style={{ color: '#999', fontSize: 13 }}><i>(Chưa có báo giá)</i></span>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-                    <i className="ti ti-file" /><a href={pr.quote_file_url} target="_blank" style={{ color: 'var(--teal)', flex: 1, textDecoration: 'underline' }}>{pr.quote_filename}</a>
-                    {editable && <button className="icon-btn" onClick={clearQuoteFile}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
-                  </div>
-                )
-              ) : <span style={{ color: '#999', fontSize: 13 }}><i>(Tạo phiếu để đính kèm báo giá)</i></span>}
-            </div>
           </div>
+          ) })()}
 
-          {/* Chứng từ khác */}
-          <div className="card" style={{ padding: 18, marginBottom: 16 }}>
-            <h3 className="sec-title"><i className="ti ti-paperclip" /> Chứng từ/Tài liệu đính kèm khác</h3>
-            {!isNew ? (
-              <div>
-                {editable && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                    <button className="btn secondary" style={{ height: 32, padding: '0 12px', fontSize: 12.5 }} onClick={() => setDocModal(true)}><i className="ti ti-upload" /> Upload chứng từ</button>
-                  </div>
-                )}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {files.map((f) => {
-                    const ic = fileIcon(f.filename, f.content_type)
-                    return (
-                      <div key={f.id} className="doc-file-row">
-                        <i className={'ti ' + ic.icon} style={{ fontSize: 24, color: ic.color, flexShrink: 0 }} />
-                        {f.doc_type && <span className="badge" style={{ background: '#eef2ff', color: '#3730a3', fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, flexShrink: 0 }}>{docTypeLabels[f.doc_type] || f.doc_type}</span>}
-                        <a href={f.url} target="_blank" style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 500, color: 'var(--navy)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.filename}</a>
-                        <span style={{ color: 'var(--muted)', fontSize: 12, flexShrink: 0 }}>{fmtSize(f.size)}</span>
-                        {editable && <button className="icon-btn" style={{ flexShrink: 0 }} onClick={async () => { if (await askConfirm({ message: 'Xóa file?' })) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
-                      </div>
-                    )
-                  })}
-                  {files.length === 0 && <span style={{ color: 'var(--muted)', fontSize: 13 }}>Chưa có tài liệu.</span>}
-                </div>
-                {docModal && (
-                  <DocumentUploadModal entity="purchase_request" entityId={Number(id)}
-                    onClose={() => setDocModal(false)} onDone={loadAll} />
-                )}
-              </div>
-            ) : <span style={{ color: '#999', fontSize: 13 }}><i>(Tạo phiếu để đính kèm tài liệu)</i></span>}
-          </div>
+          {/* Chứng từ/Tài liệu đính kèm khác */}
+          <DocumentAttachmentSection
+            entity="purchase_request"
+            entityId={Number(id)}
+            files={files}
+            editable={editable}
+            isNew={isNew}
+            onRefresh={loadAll}
+          />
 
 
 
@@ -896,16 +901,22 @@ export default function PurchaseRequestDetail() {
                 <NumberInput decimals value={edit.qty} onChange={(v) => setItem(editIdx, 'qty', v)} disabled={!editable} placeholder="Nhập số lượng" />
               </div>
               <div className="form-row">
-                <label>Giá đề xuất</label>
+                <label>Giá đề xuất (chưa VAT)</label>
                 <NumberInput value={edit.price} onChange={(v) => setItem(editIdx, 'price', v)} disabled={!editable} placeholder="Để trống nếu chưa có giá" />
+              </div>
+              <div className="form-row">
+                <label title="% VAT theo dòng">VAT (%)</label>
+                <select value={edit.vat_pct ?? 8} disabled={!editable} onChange={(e) => setItem(editIdx, 'vat_pct', Number(e.target.value))}>
+                  {VAT_OPTS.map((v) => <option key={v} value={v}>{v}%</option>)}
+                </select>
               </div>
               <div className="form-row">
                 <label>ĐVT</label>
                 <SearchSelect value={edit.unit || ''} options={units} disabled={!editable} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setItem(editIdx, 'unit', v)} />
               </div>
               <div className="form-row">
-                <label>Thành tiền</label>
-                <input value={(() => { const v = (Number(edit.qty) || 0) * (Number(edit.price) || 0); return v ? fmt(v) + ' đ' : '' })()} placeholder="—" disabled />
+                <label>Thành tiền (gồm VAT)</label>
+                <input value={(() => { const v = lineAmount(edit); return v ? fmt(v) + ' đ' : '' })()} placeholder="—" disabled />
               </div>
               <div className="form-row">
                 <label>Kho nhận <span className="req">*</span></label>
@@ -931,6 +942,14 @@ export default function PurchaseRequestDetail() {
                 <label title="Tự đồng bộ từ Đơn mua hàng — không sửa tay">Trạng thái xử lý</label>
                 <div><span className="badge" style={{ background: (LS_COLOR[edit.line_status] || '#94a3b8') + '22', color: LS_COLOR[edit.line_status] || '#64748b' }}>{edit.line_status || 'Chưa đặt hàng'}</span>
                   <span style={{ fontSize: 11.5, color: 'var(--muted)', marginLeft: 8 }}>tự đồng bộ từ Đơn mua hàng</span></div>
+              </div>
+              <div className="form-row">
+                <label title="Tổng SL đã nhận / đã đặt, đồng bộ từ Đơn mua hàng">Tiến độ (nhận / đặt)</label>
+                <div style={{ fontSize: 13 }}>
+                  <b style={{ color: '#0d9488' }}>{fmt(edit.qty_received)}</b>
+                  <span style={{ color: 'var(--muted)' }}> / {fmt(edit.qty_ordered)}</span>
+                  <span style={{ color: 'var(--muted)' }}> {edit.unit || ''}</span>
+                </div>
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Chi tiết tiến độ</label>

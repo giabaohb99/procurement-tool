@@ -7,6 +7,7 @@ import NotFound from '../components/NotFound'
 import NumberInput from '../components/NumberInput'
 import { toast } from '../components/toast'
 import { fmtDateTime } from '../utils/datetime'
+import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
 
 const API = '/api/payment-requests'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -139,19 +140,15 @@ export default function PaymentRequestDetail() {
         <div style={{ textAlign: 'right', fontSize: 16, color: 'var(--navy)', marginTop: 12 }}>Tổng đề nghị thanh toán: <b>{fmt(total)}</b></div>
       </div>
 
-      <div className="card" style={{ padding: 18, marginBottom: 16 }}>
-        <h3 className="sec-title"><i className="ti ti-paperclip" /> Chứng từ thanh toán (ủy nhiệm chi…)</h3>
-        {can('payment_request', 'write') && <input type="file" multiple onChange={(e) => uploadFiles(e.target.files)} />}
-        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {files.map((f) => (
-            <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-              <i className="ti ti-file" /><a href={f.url} target="_blank" style={{ color: 'var(--teal)', flex: 1, textDecoration: 'underline' }}>{f.filename}</a>
-              {can('payment_request', 'write') && <button className="icon-btn" onClick={async () => { if (await askConfirm({ message: 'Xóa file?' })) { await api.delete(`/api/attachments/${f.id}`); loadAll() } }}><i className="ti ti-trash" style={{ color: 'var(--red)' }} /></button>}
-            </div>
-          ))}
-          {files.length === 0 && <span style={{ color: '#999', fontSize: 13 }}>Chưa có file nào.</span>}
-        </div>
-      </div>
+      <DocumentAttachmentSection
+        entity="payment_request"
+        entityId={Number(id)}
+        files={files}
+        editable={can('payment_request', 'write')}
+        isNew={isNew}
+        title="Chứng từ thanh toán (Ủy nhiệm chi, biên lai…)"
+        onRefresh={loadAll}
+      />
 
       {logs.length > 0 && (
         <div className="card" style={{ padding: 18, marginBottom: 16 }}>

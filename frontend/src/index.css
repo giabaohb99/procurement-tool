@@ -1221,6 +1221,15 @@ tbody tr:hover {
   border: 1px solid #dde3ea;
 }
 
+/* Bảng rộng nhiều cột (vd Tiến độ mua hàng): cho tiêu đề xuống dòng thay vì
+   tràn ra ngoài ô đè lên cột bên cạnh. */
+.wide-table th {
+  white-space: normal;
+  line-height: 1.15;
+  vertical-align: middle;
+  padding: 6px 6px;
+}
+
 .items-table tbody tr:nth-child(even) {
   background: #fafbfc;
 }

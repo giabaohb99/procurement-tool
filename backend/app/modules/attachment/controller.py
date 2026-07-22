@@ -193,9 +193,9 @@ def _resolve_chain(db: Session, user, entity: str, entity_id: int):
         raise HTTPException(403, "Không có quyền xem chứng từ")
 
     # import trong hàm để tránh circular import với các module nghiệp vụ
-    from app.modules.purchase_order.model import PODelivery, PurchaseOrder
-    from app.modules.purchase_request.model import PurchaseRequest
-    from app.modules.survey.model import Survey
+    from app.modules.purchase_order.model import PODelivery, PurchaseOrder, PurchaseOrderItem
+    from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
+    from app.modules.survey.model import Survey, SurveySupplierLine, SurveyProductLine
     from app.modules.survey_request.model import (SurveyRequest,
                                                   SurveyRequestLine)
 
@@ -213,21 +213,32 @@ def _resolve_chain(db: Session, user, entity: str, entity_id: int):
     del_ids = _ids(PODelivery.id, PODelivery.po_id, po.id)
     if del_ids:
         groups.append(("delivery", del_ids, "PO", po.code))
+    poi_ids = _ids(PurchaseOrderItem.id, PurchaseOrderItem.purchase_order_id, po.id)
+    if poi_ids:
+        groups.append(("po_item", poi_ids, "PO", po.code))
+        groups.append(("purchase_order_item", poi_ids, "PO", po.code))
 
     if po.pr_code:
         pr = db.query(PurchaseRequest).filter(PurchaseRequest.code == po.pr_code).first()
         if pr:
             groups.append(("purchase_request", [pr.id], "PYC", pr.code))
             groups.append(("purchase_request_quote", [pr.id], "PYC", pr.code))
+            pri_ids = _ids(PurchaseRequestItem.id, PurchaseRequestItem.purchase_request_id, pr.id)
+            if pri_ids:
+                groups.append(("purchase_request_item", pri_ids, "PYC", pr.code))
 
     if po.survey_code:
         sv = db.query(Survey).filter(Survey.code == po.survey_code).first()
         if sv:
             groups.append(("survey", [sv.id], "PKS", sv.code))
-            # CỐ TÌNH KHÔNG gom file theo TỪNG DÒNG khảo sát (entity="survey_line"):
-            # dòng NCC (SurveySupplierLine) & dòng SP (SurveyProductLine) là 2 bảng riêng
-            # nhưng dùng chung nhãn "survey_line" với id trùng nhau → gom cả 2 id-space có thể
-            # lẫn file của khảo sát khác. Chỉ gom file cấp phiếu khảo sát cho chắc chắn đúng.
+            ssl_ids = _ids(SurveySupplierLine.id, SurveySupplierLine.survey_id, sv.id)
+            if ssl_ids:
+                groups.append(("survey_supplier_line", ssl_ids, "PKS", sv.code))
+                groups.append(("survey_line", ssl_ids, "PKS", sv.code))
+            spl_ids = _ids(SurveyProductLine.id, SurveyProductLine.survey_id, sv.id)
+            if spl_ids:
+                groups.append(("survey_product_line", spl_ids, "PKS", sv.code))
+                groups.append(("survey_line", spl_ids, "PKS", sv.code))
             if sv.sr_code:
                 sr = db.query(SurveyRequest).filter(SurveyRequest.code == sv.sr_code).first()
                 if sr:

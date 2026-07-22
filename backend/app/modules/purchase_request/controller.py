@@ -22,10 +22,22 @@ HEADER_COLS = ["id", "code", "company_id", "requester", "requester_id", "request
                "suggested_supplier_contact", "quote_filename", "quote_file_url"]
 
 
-def _out(db: Session, pr) -> dict:
+_SUPPLIER_FIELDS = ("suggested_supplier", "suggested_supplier_tax_code", "suggested_supplier_contact")
+
+
+def _blank_supplier(d: dict) -> None:
+    """Task 5: che NCC đề xuất khi user không có quyền supplier.read."""
+    for k in _SUPPLIER_FIELDS:
+        d[k] = ""
+
+
+def _out(db: Session, pr, user=None) -> dict:
     from app.core.audit import resolve_actor
     d = {c: getattr(pr, c) for c in HEADER_COLS}
     d["vat_rate"] = float(pr.vat_rate or 0)
+    # Task 5: ẩn NCC đề xuất nếu user không có supplier.read (enforcement ở BE)
+    if user is not None and not user_has_permission(db, user, "supplier", "read"):
+        _blank_supplier(d)
     d["created_at"] = pr.created_at
     d["created_by_name"] = resolve_actor(db, pr.created_by)
     
@@ -60,17 +72,21 @@ def _out(db: Session, pr) -> dict:
         d["items"].append(
             {"id": i.id, "product_code": i.product_code, "product_name": i.product_name,
              "item_group": i.item_group, "group_desc": i.group_desc, "qty": float(i.qty or 0),
-             "unit": i.unit, "price": float(i.price or 0), "amount": float(i.amount or 0),
+             "unit": i.unit, "price": float(i.price or 0), "vat_pct": float(i.vat_pct or 0),
+             "amount": float(i.amount or 0),
              "warehouse": i.warehouse, "required_date": i.required_date, "assignee": i.assignee,
              "expected_date": i.expected_date,
              "line_status": i.line_status, "progress_note": i.progress_note, "note": i.note,
+             "qty_ordered": float(i.qty_ordered or 0), "qty_received": float(i.qty_received or 0),
              "product_id": pid_ or 0,                          # 0 = code không khớp catalog
              "product_thumbnail_url": thumb_by_pid.get(pid_, "") if pid_ else ""}
         )
-    subtotal = round(sum(x["amount"] for x in d["items"]), 2)
+    # Task 4: PYC tính VAT lại theo dòng — tiền hàng (chưa VAT) · VAT · tổng cộng (gồm VAT)
+    subtotal = round(sum(x["qty"] * x["price"] for x in d["items"]), 2)   # chưa VAT
+    total = round(sum(x["amount"] for x in d["items"]), 2)                # gồm VAT
     d["subtotal"] = subtotal
-    d["vat"] = 0            # Yêu cầu mua KHÔNG tính VAT (thuế tính ở PO/hóa đơn)
-    d["total"] = subtotal
+    d["vat"] = round(total - subtotal, 2)
+    d["total"] = total
     return d
 
 
@@ -108,12 +124,15 @@ def list_pr(
         cancelled_ids = {r[0] for r in db.query(PurchaseRequestItem.pr_id).filter(
             PurchaseRequestItem.pr_id.in_(pr_ids), PurchaseRequestItem.line_status == "Hủy đơn").distinct().all()}
 
+    can_see_supplier = user_has_permission(db, user, "supplier", "read")   # Task 5
     out_items = []
     for p in items:
         d = {c: getattr(p, c) for c in HEADER_COLS}
         d["created_at"] = p.created_at   # thời điểm tạo (có giờ) — hiển thị giờ VN ở list
-        d["total"] = round(subtotals.get(p.id, 0.0), 2)   # Yêu cầu mua không tính VAT
+        d["total"] = round(subtotals.get(p.id, 0.0), 2)   # gồm VAT (tính từ amount dòng)
         d["has_cancelled_line"] = p.id in cancelled_ids
+        if not can_see_supplier:
+            _blank_supplier(d)   # ẩn NCC đề xuất
         out_items.append(d)
 
     return success({"total": total, "items": out_items})
@@ -152,7 +171,7 @@ def get_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purcha
                      PurchaseRequest, "purchase_request", user, profile).first()
     if not pr:
         raise HTTPException(403, "Ngoài phạm vi được phép xem")
-    data = _out(db, pr)
+    data = _out(db, pr, user)
     if not _see_all_items(profile, pr, user):
         code = profile.get("emp_code") or ""
         data["items"] = [it for it in data["items"] if (it.get("assignee") or "") == code]
@@ -161,7 +180,9 @@ def get_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purcha
 
 @router.get("/{pid}/order-progress")
 def order_progress(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
-    """Tổng SL đã ĐẶT (qty_order) theo từng mã hàng, gộp từ mọi ĐMH cùng mã PYC (bỏ PO bị từ chối).
+    """Tổng SL đã ĐẶT (qty_order) theo từng mã hàng, gộp từ các ĐMH cùng mã PYC.
+    CHỈ tính ĐMH đã duyệt trở đi (bỏ nháp/chờ duyệt/hủy/từ chối) — phiếu nháp KHÔNG tính là đã đặt,
+    khớp với logic đồng bộ trạng thái dòng (sync_from_purchase_orders).
     Dùng để prefill 'số lượng còn thiếu' khi tạo ĐMH mới + cảnh báo đặt vượt."""
     profile = get_perm_profile(db, user)
     pr = apply_scope(db.query(PurchaseRequest).filter(PurchaseRequest.id == pid),
@@ -171,7 +192,9 @@ def order_progress(pid: int, db: Session = Depends(get_db), user=Depends(require
     from app.modules.purchase_order.model import PurchaseOrder, POItem
     rows = (db.query(POItem.product_code, func.coalesce(func.sum(POItem.qty_order), 0))
             .join(PurchaseOrder, PurchaseOrder.id == POItem.po_id)
-            .filter(PurchaseOrder.pr_code == pr.code, PurchaseOrder.status.notin_(["rejected", "cancelled"]))
+            .filter(PurchaseOrder.pr_code == pr.code,
+                    PurchaseOrder.status.notin_(["draft", "submitted", "cancelled", "rejected"]),
+                    POItem.progress_status.notin_(["Chưa đặt hàng", "Hủy đơn"]))
             .group_by(POItem.product_code).all())
     ordered = {code: float(qty or 0) for code, qty in rows if code}
     return success({"ordered": ordered})
@@ -179,17 +202,17 @@ def order_progress(pid: int, db: Session = Depends(get_db), user=Depends(require
 
 @router.post("")
 def create_pr(data: PRCreate, db: Session = Depends(get_db), user=Depends(require("purchase_request", "create"))):
-    return success(_out(db, service.create_pr(db, data, user.id)), "Đã tạo yêu cầu mua", 201)
+    return success(_out(db, service.create_pr(db, data, user.id), user), "Đã tạo yêu cầu mua", 201)
 
 
 @router.post("/{pid}/copy")
 def copy_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "create"))):
-    return success(_out(db, service.copy_pr(db, pid, user.id)), "Đã nhân bản thành phiếu Nháp mới", 201)
+    return success(_out(db, service.copy_pr(db, pid, user.id), user), "Đã nhân bản thành phiếu Nháp mới", 201)
 
 
 @router.post("/{pid}/clone")   # alias để nút Nhân bản ở danh sách (CrudList) dùng chung 1 đường dẫn
 def clone_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "create"))):
-    return success(_out(db, service.copy_pr(db, pid, user.id)), "Đã nhân bản thành phiếu Nháp mới", 201)
+    return success(_out(db, service.copy_pr(db, pid, user.id), user), "Đã nhân bản thành phiếu Nháp mới", 201)
 
 
 @router.patch("/{pid}/assign")
@@ -211,14 +234,14 @@ def assign_pr(pid: int, data: AssignIn, background_tasks: BackgroundTasks, db: S
             trigger_notification(db=db, event="pr_assigned", doc_type="purchase_request", doc_code=pr.code,
                                  creator_id=user.id, background_tasks=background_tasks,
                                  link=f"/purchase-requests/{pr.id}", recipient_ids=uids)
-    return success(_out(db, pr), "Đã lưu phân bổ NSTM")
+    return success(_out(db, pr, user), "Đã lưu phân bổ NSTM")
 
 
 @router.patch("/{pid}/urgent")
 def set_urgent(pid: int, data: UrgentIn, db: Session = Depends(get_db), user=Depends(require("purchase_request", "write"))):
     """Bật/tắt cờ Đơn gấp (cả khi phiếu đã duyệt) + đồng bộ xuống ĐMH cùng pr_code."""
     pr = service.set_urgent(db, pid, data.is_urgent, user.id)
-    return success(_out(db, pr))
+    return success(_out(db, pr, user))
 
 
 @router.patch("/{pid}/item-status")
@@ -227,7 +250,7 @@ def update_item_status(pid: int, data: ItemStatusIn, db: Session = Depends(get_d
     pr_perm = prof["perms_union"].get("purchase_request", {})
     is_manager = bool(pr_perm.get("cancel") or pr_perm.get("approve"))   # quản lý/admin sửa mọi dòng
     emp_code = prof.get("emp_code") or ""
-    return success(_out(db, service.update_item_status(db, pid, data, user.id, emp_code, is_manager)), "Đã cập nhật trạng thái")
+    return success(_out(db, service.update_item_status(db, pid, data, user.id, emp_code, is_manager), user), "Đã cập nhật trạng thái")
 
 
 def _ensure_can_return_or_reject(db: Session, user, pr: PurchaseRequest):
@@ -247,7 +270,7 @@ def cancel_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: S
     trigger_notification(db=db, event="pr_cancelled", doc_type="purchase_request", doc_code=pr.code,
                          creator_id=pr.created_by or user.id, background_tasks=background_tasks,
                          reason=data.reason or "", link=f"/purchase-requests/{pr.id}")
-    return success(_out(db, pr), "Đã hủy phiếu")
+    return success(_out(db, pr, user), "Đã hủy phiếu")
 
 
 @router.post("/{pid}/return")
@@ -257,12 +280,12 @@ def return_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: S
     trigger_notification(db=db, event="pr_returned", doc_type="purchase_request", doc_code=pr.code,
                          creator_id=pr.created_by or user.id, background_tasks=background_tasks,
                          reason=data.reason or "", link=f"/purchase-requests/{pr.id}")
-    return success(_out(db, pr), "Đã trả phiếu về (Bị trả lại)")
+    return success(_out(db, pr, user), "Đã trả phiếu về (Bị trả lại)")
 
 
 @router.post("/{pid}/complete")
 def complete_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "cancel"))):
-    return success(_out(db, service.complete_pr(db, pid, user.id)), "Đã hoàn thành phiếu")
+    return success(_out(db, service.complete_pr(db, pid, user.id), user), "Đã hoàn thành phiếu")
 
 
 def _can_edit_own(db: Session, pr, user) -> bool:
@@ -278,7 +301,7 @@ def update_pr(pid: int, data: PRUpdate, db: Session = Depends(get_db), user=Depe
     pr = service.get_pr(db, pid)
     if not _can_edit_own(db, pr, user):
         raise HTTPException(403, "Không có quyền sửa phiếu này")
-    return success(_out(db, service.update_pr(db, pid, data, user.id)), "Đã cập nhật")
+    return success(_out(db, service.update_pr(db, pid, data, user.id), user), "Đã cập nhật")
 
 
 @router.delete("/{pid}")
@@ -319,7 +342,7 @@ def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
         link=f"/purchase-requests/{pr.id}",
         department=pr.department or "",
     )
-    return success(_out(db, pr), "Đã gửi duyệt")
+    return success(_out(db, pr, user), "Đã gửi duyệt")
 
 
 @router.post("/{pid}/approve")
@@ -342,7 +365,7 @@ def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db:
         approve_note=pr.note or "",
         link=f"/purchase-requests/{pr.id}"
     )
-    return success(_out(db, pr), "Đã duyệt")
+    return success(_out(db, pr, user), "Đã duyệt")
 
 
 @router.post("/{pid}/reject")
@@ -359,4 +382,4 @@ def reject_pr(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: S
         reason=data.reason or "",
         link=f"/purchase-requests/{pr.id}"
     )
-    return success(_out(db, pr), "Đã từ chối")
+    return success(_out(db, pr, user), "Đã từ chối")

@@ -141,7 +141,7 @@ export default function Dashboard() {
   const kpis = [
     { entity: 'purchase_order', label: 'Tổng chi tiêu', value: full(totalSpendVal), icon: 'ti-coin', color: '#00AEEF', tint: '#E5F7FF', to: '/purchase-orders', trend: `Số liệu năm ${yr}`, trendColor: 'var(--hz-muted)' },
     { entity: 'purchase_request', label: 'Yêu cầu chờ duyệt (PRs)', value: k.pr_pending ?? 0, icon: 'ti-file-alert', color: '#D97706', tint: '#FFF6E5', to: '/purchase-requests?status=submitted', trend: 'Cần phê duyệt gấp', trendColor: '#E24B4A' },
-    { entity: 'survey_request', label: 'YC khảo sát chờ duyệt', value: k.sr_pending ?? 0, icon: 'ti-clipboard-check', color: '#0891b2', tint: '#e0f7fb', to: '/survey-requests?status=submitted', trend: (k.sr_pending ?? 0) > 0 ? 'Chờ trưởng bộ phận' : 'Không tồn đọng', trendColor: (k.sr_pending ?? 0) > 0 ? '#0891b2' : '#16a34a' },
+    { entity: 'survey_request', label: 'YC báo giá chờ duyệt', value: k.sr_pending ?? 0, icon: 'ti-clipboard-check', color: '#0891b2', tint: '#e0f7fb', to: '/survey-requests?status=submitted', trend: (k.sr_pending ?? 0) > 0 ? 'Chờ trưởng bộ phận' : 'Không tồn đọng', trendColor: (k.sr_pending ?? 0) > 0 ? '#0891b2' : '#16a34a' },
     { entity: 'purchase_order', label: 'Đơn hàng hoạt động (POs)', value: k.po_ordered ?? 0, icon: 'ti-shopping-cart', color: '#0d9488', tint: '#e3f6f3', to: '/purchase-orders', trend: 'Đang theo dõi tiến độ', trendColor: '#0d9488' },
     { entity: 'payable', label: 'Công nợ quá hạn', value: full(k.overdue ?? 0), icon: 'ti-alert-triangle', color: '#E24B4A', tint: '#FEECEC', to: '/payables', trend: (k.overdue ?? 0) > 0 ? 'Cần đối soát thanh toán' : 'Không có nợ xấu', trendColor: (k.overdue ?? 0) > 0 ? '#E24B4A' : '#16a34a' },
   ].filter((m) => can(m.entity))
