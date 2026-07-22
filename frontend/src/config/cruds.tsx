@@ -121,9 +121,15 @@ const DOC_STATUS_BADGE: Record<string, string> = {
   'đã có thông tin chứng từ': 'warn',
   'đã đủ chứng từ': 'ok',
 }
+// Nhãn hiển thị (giá trị lưu DB giữ nguyên "đã có thông tin chứng từ")
+const DOC_STATUS_LABEL: Record<string, string> = {
+  'chưa có chứng từ': 'Chưa có chứng từ',
+  'đã có thông tin chứng từ': 'Đã có chứng từ',
+  'đã đủ chứng từ': 'Đã đủ chứng từ',
+}
 export const docStatusBadge = (st: string) => {
   const v = String(st || 'chưa có chứng từ')
-  return <span className={'badge ' + (DOC_STATUS_BADGE[v] || 'gray')}>{v}</span>
+  return <span className={'badge ' + (DOC_STATUS_BADGE[v] || 'gray')}>{DOC_STATUS_LABEL[v] || v}</span>
 }
 
 export const cruds: Record<string, CrudConfig> = {
@@ -441,7 +447,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'misa_code', label: 'Mã MISA' },
       { key: 'document_status', label: 'Hồ sơ chứng từ', type: 'select', options: [
         { value: 'chưa có chứng từ', label: 'Chưa có chứng từ' },
-        { value: 'đã có thông tin chứng từ', label: 'Đã có thông tin chứng từ' },
+        { value: 'đã có thông tin chứng từ', label: 'Đã có chứng từ' },
         { value: 'đã đủ chứng từ', label: 'Đã đủ chứng từ' }] },
       { key: 'company_id', label: 'Công ty', source: { url: '/api/companies', value: 'id', label: 'name' } },
       { key: 'supplier_code', label: 'Nhà cung cấp', source: { url: '/api/suppliers', value: 'code', label: 'name' } },

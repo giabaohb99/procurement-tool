@@ -30,7 +30,7 @@ const DOC_STATUS_MAP: Record<string, { label: string; bg: string; color: string;
     icon: 'ti-alert-circle',
   },
   'đã có thông tin chứng từ': {
-    label: 'Đã có thông tin chứng từ',
+    label: 'Đã có chứng từ',
     bg: '#fffbe6',
     color: '#b45309',
     border: '#fde68a',
