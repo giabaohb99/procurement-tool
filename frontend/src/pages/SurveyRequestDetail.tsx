@@ -76,13 +76,6 @@ const srLineStatus = (l: any): { label: string; cls: string } => {
   return { label: 'Chưa xong', cls: 'gray' }
 }
 
-// Nhãn cho ô chọn trạng thái dòng (người YC / phòng ban)
-const LINE_STATUS_OPTS = [
-  { value: '', label: '— Chưa xác định —' },
-  { value: 'can_khao_sat_lai', label: 'Cần khảo sát lại' },
-  { value: 'hoan_thanh', label: 'Hoàn thành' },
-]
-
 const emptyLine = {
   received_date: '',
   result_due_date: '',
@@ -274,19 +267,43 @@ export default function SurveyRequestDetail() {
   async function setLineStatus(lineId: number, val: string) {
     try {
       await api.patch(`${API}/${id}/lines/${lineId}/line-status`, { line_status: val })
-      toast.success('Đã cập nhật trạng thái dòng'); await loadAll()
+      toast.success('Đã cập nhật trạng thái dòng')
+      await loadAll()
+      // Phải nạp lại /result: "Cần khảo sát lại" bỏ chọn phương án ở backend, nếu không
+      // refresh thì khu Kết quả khảo sát vẫn hiện option "Đã chọn" cũ (lệch với bảng trên).
+      const rr = await api.get(`${API}/${id}/result`); setResult(rr.data.data)
     } catch { /* interceptor toast */ }
   }
-  // PYC đã sinh (duy nhất theo pr_id) để hiện link
+  // Nút "Cần khảo sát lại" ở dòng kết quả khảo sát (hướng B: gắn cờ sẽ tự bỏ chọn phương án).
+  async function requestResurvey(ln: any, on: boolean) {
+    if (on) {
+      const hasChosen = (ln.options || []).some((o: any) => o.is_chosen)
+      const msg = hasChosen
+        ? 'Dòng này đang chọn 1 phương án. Đánh dấu "Cần khảo sát lại" sẽ BỎ CHỌN phương án đó và chờ NSTM khảo sát lại. Tiếp tục?'
+        : 'Đánh dấu dòng này "Cần khảo sát lại"? NSTM sẽ khảo sát lại phương án cho sản phẩm này.'
+      if (!(await askConfirm({ title: 'Cần khảo sát lại', message: msg, confirmText: 'Cần khảo sát lại', danger: true }))) return
+      await setLineStatus(ln.id, 'can_khao_sat_lai')
+    } else {
+      await setLineStatus(ln.id, '')
+    }
+  }
+  // PYC đã sinh — tổng hợp từ ycmh_list của mọi phương án (nguồn đầy đủ, ghi nhận nhiều lần tạo YCMH từ cùng 1 phương án).
+  // Dedupe theo pr_id để YCMH gom nhiều sản phẩm (nhiều NCC) chỉ xuất hiện 1 lần trong danh sách.
   const createdPrs = (() => {
-    const prMap = new Map<number, { code: string; items: string[] }>()
+    const prMap = new Map<number, { code: string; date?: string; status?: string; items: string[] }>()
     ;(result?.lines || []).forEach((l: any, i: number) => {
-      if (l.pr_id) {
-        if (!prMap.has(l.pr_id)) prMap.set(l.pr_id, { code: l.pr_code, items: [] })
-        const chosen = (l.options || []).find((o: any) => o.is_chosen)
-        const optLabel = chosen ? (chosen.display_label || `Option ${chosen.public_id}`) : ''
-        prMap.get(l.pr_id)!.items.push(`SP ${i + 1} (${optLabel})`)
-      }
+      ;(l.options || []).forEach((o: any) => {
+        ;(o.ycmh_list || []).forEach((pr: any) => {
+          if (!prMap.has(pr.id)) {
+            prMap.set(pr.id, { code: pr.code, date: pr.date, status: pr.status, items: [] })
+          }
+          const optLabel = o.display_label || `Option ${o.public_id}`
+          const itemDesc = `SP ${i + 1} (${optLabel})`
+          if (!prMap.get(pr.id)!.items.includes(itemDesc)) {
+            prMap.get(pr.id)!.items.push(itemDesc)
+          }
+        })
+      })
     })
     return Array.from(prMap.entries()).map(([pid, data]) => ({ pid, ...data }))
   })()
@@ -869,6 +886,44 @@ export default function SurveyRequestDetail() {
                   <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 10 }}>
                     Phân loại: <b>{ln.item_group || '—'}</b> · SL dự kiến: <b>{fmtBlank(ln.request_qty) || '—'}</b> {ln.uom} · Giá đề xuất của bạn: <b>{fmtBlank(ln.proposed_price) || '—'}</b>
                   </div>
+                  {/* Người YC chốt trạng thái NGAY trên dòng kết quả khảo sát (không mở popup).
+                      1 nút đỏ "Cần khảo sát lại" — bấm sẽ tự BỎ CHỌN phương án (hướng B).
+                      Đang gắn cờ thì hiện nút "Bỏ khảo sát lại" để gỡ. Chọn lại 1 PA cũng tự gỡ cờ. */}
+                  {(() => {
+                    const optCount = (ln.options || []).length
+                    const lineHasChosen = (ln.options || []).some((o: any) => o.is_chosen)
+                    const s = srLineStatus({ ...ln, has_chosen: lineHasChosen, option_count: optCount })
+                    const flagged = ln.line_status === 'can_khao_sat_lai'
+                    return (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                        <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>Trạng thái dòng:</span>
+                        <span className={'badge ' + s.cls}>{s.label}</span>
+                        {canSetLineStatus && optCount > 0 && (
+                          flagged ? (
+                            <button type="button" className="btn ghost"
+                              style={{ height: 24, padding: '0 8px', fontSize: 11.5, lineHeight: 1, color: 'var(--muted)' }}
+                              title="Gỡ cờ — dòng này không cần khảo sát lại nữa"
+                              onClick={() => requestResurvey(ln, false)}>
+                              <i className="ti ti-arrow-back-up" /> Bỏ khảo sát lại
+                            </button>
+                          ) : (
+                            <button type="button" className="btn ghost"
+                              style={{ height: 24, padding: '0 8px', fontSize: 11.5, lineHeight: 1, color: '#dc2626', borderColor: '#fca5a5' }}
+                              title="Đánh dấu dòng này cần khảo sát lại (sẽ bỏ chọn phương án đang chọn)"
+                              onClick={() => requestResurvey(ln, true)}>
+                              <i className="ti ti-refresh" /> Cần khảo sát lại
+                            </button>
+                          )
+                        )}
+                      </div>
+                    )
+                  })()}
+                  {ln.line_status === 'can_khao_sat_lai' && (
+                    <div style={{ color: '#b91c1c', fontSize: 12.5, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', marginBottom: 10 }}>
+                      <i className="ti ti-alert-triangle" style={{ marginRight: 6 }} />
+                      Dòng này đang yêu cầu <b>khảo sát lại</b> — chờ NSTM cập nhật phương án. Chọn 1 phương án bên dưới sẽ tự gỡ cờ.
+                    </div>
+                  )}
                   {(ln.options || []).length === 0 ? (
                     ln.no_option ? (
                       <div style={{ color: '#64748b', fontSize: 13, background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px' }}>
@@ -1091,24 +1146,8 @@ export default function SurveyRequestDetail() {
                         ({edit.option_count || 0} phương án{edit.has_chosen ? ', đã chọn' : ''})
                       </span>
                     )}
-                    {/* Người YC chốt: chỉ hiện SAU khi dòng đã "Đã chọn PA" (has_chosen).
-                        Từ lúc đó người yêu cầu mới chuyển được sang Hoàn thành / Cần khảo sát lại. */}
-                    {canSetLineStatus && edit.id && (
-                      edit.has_chosen ? (
-                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>Người YC chốt:</span>
-                          <select className="cell-input" style={{ width: 200 }} value={edit.line_status || ''}
-                            onChange={(e) => { const v = e.target.value; setLine(editIdx, 'line_status', v); setLineStatus(edit.id, v) }}>
-                            {LINE_STATUS_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                          </select>
-                        </div>
-                      ) : (
-                        <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>
-                          <i className="ti ti-info-circle" style={{ verticalAlign: '-1px', marginRight: 4 }} />
-                          Chọn 1 phương án (Đã chọn PA) trước, rồi mới chốt Hoàn thành / Cần khảo sát lại.
-                        </div>
-                      )
-                    )}
+                    {/* Chuyển trạng thái dòng (Cần khảo sát lại / Hoàn thành) đã chuyển ra khu
+                        "Kết quả khảo sát" — ở đây chỉ hiển thị badge cho gọn, không thao tác. */}
                   </div>
                 </div>
               )}

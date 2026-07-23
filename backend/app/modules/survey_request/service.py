@@ -214,12 +214,21 @@ def set_line_status(db: Session, sid: int, line_id: int, new_status: str, user_i
     if new_status not in LINE_STATUSES:
         raise HTTPException(400, "Trạng thái dòng không hợp lệ")
     ln = get_line(db, sid, line_id)
-    # Chỉ được chốt Hoàn thành / Cần khảo sát lại SAU khi dòng đã chọn 1 phương án (Đã chọn PA)
-    if new_status in ("hoan_thanh", "can_khao_sat_lai"):
+    # Chỉ được chốt HOÀN THÀNH sau khi dòng đã chọn 1 phương án (Đã chọn PA).
+    # "Cần khảo sát lại" thì KHÔNG cần chọn phương án — đây là lúc kết quả khảo sát
+    # chưa đạt, người YC muốn yêu cầu khảo sát lại mà không phải chọn phương án nào.
+    if new_status == "hoan_thanh":
         if not any(o.is_chosen for o in options_of(db, line_id)):
-            raise HTTPException(400, "Cần chọn 1 phương án (Đã chọn PA) trước khi chốt Hoàn thành / Cần khảo sát lại")
+            raise HTTPException(400, "Cần chọn 1 phương án (Đã chọn PA) trước khi chốt Hoàn thành")
     ln.line_status = new_status
     ln.is_completed = (new_status == "hoan_thanh")
+    # Hướng B: gắn cờ "Cần khảo sát lại" thì TỰ BỎ CHỌN mọi phương án — cờ khảo sát lại
+    # và "đã chọn PA" là hai trạng thái loại trừ nhau (không cho vừa chê vừa tạo YCMH).
+    if new_status == "can_khao_sat_lai":
+        for o in options_of(db, line_id):
+            if o.is_chosen:
+                o.is_chosen = False
+                o.updated_by = user_id
     ln.updated_by = user_id
     db.commit()
     record(db, user_id, ENTITY, sid, "line_status",
@@ -474,6 +483,13 @@ def choose_option(db: Session, line_id: int, oid: int, user_id: int) -> SurveyRe
         if o.is_chosen:
             o.chosen_by = user_id
             o.updated_by = user_id
+    # Hướng B: vừa chọn 1 PA (not already) thì TỰ GỠ cờ "Cần khảo sát lại" nếu đang bật —
+    # coi như người YC đã đồng ý phương án, không còn yêu cầu khảo sát lại.
+    if not already:
+        ln = db.query(SurveyRequestLine).filter(SurveyRequestLine.id == line_id).first()
+        if ln and ln.line_status == "can_khao_sat_lai":
+            ln.line_status = ""
+            ln.updated_by = user_id
     db.commit()
     db.refresh(target)
     return target
