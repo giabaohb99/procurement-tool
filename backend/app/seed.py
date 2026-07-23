@@ -212,7 +212,7 @@ STD_ROLES = {
         "purchase_request": (["read", "create", "write"], "assigned"),
         "survey_request": (["read", "write"], "proc"),
         "survey": (["read", "create", "write"], "all"),
-        "purchase_order": (["read", "create", "write", "print"], "assigned"),   # chỉ đơn mình tạo/NSPT là mình
+        "purchase_order": (["read", "create", "write", "delete", "print"], "assigned"),   # chỉ đơn mình tạo/NSPT là mình; xóa được đơn NHÁP của mình
         "inventory": (["read"], "company"),
         "payable": (["read"], "company"),
         "payment_request": (["read", "create", "write", "print"], "company"),
@@ -275,7 +275,7 @@ def seed_standard_roles(db):
     if _ps:
         db.query(Permission).filter(
             Permission.role_id == _ps.id, Permission.entity == "purchase_order"
-        ).update({"scope": "assigned"}, synchronize_session=False)
+        ).update({"scope": "assigned", "can_delete": True}, synchronize_session=False)  # xóa được đơn NHÁP của mình
     db.commit()
 
 

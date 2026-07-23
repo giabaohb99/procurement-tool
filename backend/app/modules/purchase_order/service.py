@@ -359,6 +359,8 @@ def set_document_status(db: Session, pid: int, value: str, user_id: int) -> Purc
 
 def delete_po(db: Session, pid: int, user_id: int):
     po = get_po(db, pid)
+    if po.status not in ("draft", "rejected"):
+        raise HTTPException(400, "Chỉ xóa được đơn ở trạng thái Nháp hoặc Bị từ chối. Đơn đã duyệt/xử lý hãy dùng Hủy đơn.")
     from app.modules.attachment.service import delete_attachments_for
     pairs = [("purchase_order", pid)]
     for it in items_of(db, pid):
