@@ -447,14 +447,21 @@ def complete_(sid: int, background_tasks: BackgroundTasks, data: dict | None = N
     Body tùy chọn: {empty_line_ids: [...]} — các dòng chưa có option, chốt rỗng (không có NCC phù hợp)."""
     user, prof = up
     empty_ids = (data or {}).get("empty_line_ids") or []
-    s, fully = service.complete_sr(db, sid, user, prof, empty_ids)
+    s, fully, resurveyed = service.complete_sr(db, sid, user, prof, empty_ids)
     if fully:   # cả phiếu xong -> báo người yêu cầu vào chọn phương án
         from app.modules.user.model import User
         reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
-        _notify(db, reqs, f"[Khảo sát xong] Phiếu {s.code}",
-                f"Kết quả khảo sát cho phiếu {s.code} đã sẵn sàng — vào chọn phương án.",
+        # Phân biệt khảo sát LẦN ĐẦU vs KHẢO SÁT LẠI để người YC hiểu vì sao được gọi vào lại
+        if resurveyed:
+            title = f"[Đã khảo sát lại] Phiếu {s.code}"
+            body = f"NSTM đã khảo sát lại {resurveyed} dòng của phiếu {s.code} — vào chọn lại phương án."
+        else:
+            title = f"[Khảo sát xong] Phiếu {s.code}"
+            body = f"Kết quả khảo sát cho phiếu {s.code} đã sẵn sàng — vào chọn phương án."
+        _notify(db, reqs, title, body,
                 f"/survey-requests/{s.id}", s.created_by or user.id, background_tasks)
-        return success(_out(db, s, user, prof), "Đã chốt hoàn thành khảo sát")
+        msg = "Đã chốt khảo sát lại — đã báo người yêu cầu" if resurveyed else "Đã chốt hoàn thành khảo sát"
+        return success(_out(db, s, user, prof), msg)
     return success(_out(db, s, user, prof), "Đã chốt phần khảo sát của bạn. Còn dòng của NSTM khác chưa xong.")
 
 
@@ -471,7 +478,8 @@ _OPT_PUBLIC_FIELDS = [
 ]
 _LINE_PUBLIC_FIELDS = [
     "id", "item_group", "requirement_detail", "other_requirement",
-    "request_qty", "uom", "proposed_price", "is_completed", "pr_id", "pr_code", "no_option",
+    "request_qty", "uom", "proposed_price", "is_completed", "line_status",
+    "pr_id", "pr_code", "no_option",
 ]
 
 

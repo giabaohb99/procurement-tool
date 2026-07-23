@@ -237,13 +237,29 @@ def assign(db: Session, pid: int, data: AssignIn, user_id: int) -> PurchaseReque
 
 
 def _save_items(db: Session, pr_id: int, items, user_id: int):
-    db.query(PurchaseRequestItem).filter(PurchaseRequestItem.pr_id == pr_id).delete()
+    """Upsert dòng THEO id — dòng có id thì cập nhật TẠI CHỖ (giữ nguyên id), dòng không id
+    thêm mới, dòng cũ không còn trong danh sách thì xóa. GIỮ id để ảnh đối chiếu
+    (đính kèm entity 'purchase_request_line_image' theo id dòng) không bị mồ côi khi lưu lại phiếu."""
+    existing = {i.id: i for i in db.query(PurchaseRequestItem)
+                .filter(PurchaseRequestItem.pr_id == pr_id).all()}
+    keep: set[int] = set()
     for it in items or []:
         data = it.model_dump()
+        rid = data.pop("id", None)
         # Task 4: thành tiền dòng GỒM VAT (qty × giá × (1 + vat%/100))
         _vp = data.get("vat_pct") or 0
         data["amount"] = round((data.get("qty") or 0) * (data.get("price") or 0) * (1 + _vp / 100), 2)
-        db.add(PurchaseRequestItem(pr_id=pr_id, created_by=user_id, updated_by=user_id, **data))
+        row = existing.get(rid) if rid else None
+        if row is not None:                       # cập nhật tại chỗ -> id không đổi
+            for k, v in data.items():
+                setattr(row, k, v)
+            row.updated_by = user_id
+            keep.add(row.id)
+        else:                                     # dòng mới
+            db.add(PurchaseRequestItem(pr_id=pr_id, created_by=user_id, updated_by=user_id, **data))
+    for rid, row in existing.items():             # dòng bị bỏ khỏi danh sách -> xóa
+        if rid not in keep:
+            db.delete(row)
     db.commit()
 
 

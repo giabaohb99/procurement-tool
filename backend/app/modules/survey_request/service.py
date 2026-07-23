@@ -229,6 +229,12 @@ def set_line_status(db: Session, sid: int, line_id: int, new_status: str, user_i
             if o.is_chosen:
                 o.is_chosen = False
                 o.updated_by = user_id
+        # Phiếu đã "Đã khảo sát" mà 1 dòng cần khảo sát lại thì phiếu chưa xong khảo sát
+        # → hạ về "Đang xử lý" (KHÔNG hạ phiếu đã tạo YCMH/hoàn thành). Chốt lại sẽ đưa về Đã khảo sát.
+        sr = get_sr(db, sid)
+        if sr.status == "survey_done":
+            sr.status = "processing"
+            sr.updated_by = user_id
     ln.updated_by = user_id
     db.commit()
     record(db, user_id, ENTITY, sid, "line_status",
@@ -637,9 +643,16 @@ def complete_sr(db: Session, sid: int, user, profile: dict, empty_line_ids=None)
     see_all = _has_scope_all(profile) or getattr(user, "id", 0) == s.created_by
     my_lines = lns if see_all else [ln for ln in lns if can_process_line(db, ln, profile)]
     # Cập nhật cờ chốt rỗng: có option -> bỏ cờ; không option + được tick -> chốt rỗng.
+    # Đồng thời: dòng đang "Cần khảo sát lại" mà NSTM đã khảo sát lại xong (nay có option)
+    # -> GỠ cờ, dòng về "Đã khảo sát". (Trước đây cờ chỉ gỡ khi người YC bấm chọn PA.)
+    resurveyed = 0
     for ln in my_lines:
         if options_of(db, ln.id):
             ln.no_option = False
+            if ln.line_status == "can_khao_sat_lai":
+                ln.line_status = ""
+                ln.updated_by = getattr(user, "id", 0)
+                resurveyed += 1
         elif ln.id in empty_ids:
             ln.no_option = True
             ln.updated_by = getattr(user, "id", 0)
@@ -652,9 +665,9 @@ def complete_sr(db: Session, sid: int, user, profile: dict, empty_line_ids=None)
     if all_done:
         if s.status != "survey_done":
             s = set_status(db, sid, "survey_done", getattr(user, "id", 0))
-        return s, True
+        return s, True, resurveyed
     db.refresh(s)
-    return s, False   # phần của mình xong, còn dòng NSTM khác
+    return s, False, resurveyed   # phần của mình xong, còn dòng NSTM khác
 
 
 def auto_assign(db: Session, s: SurveyRequest) -> int:

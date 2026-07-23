@@ -900,11 +900,12 @@ export default function SurveyRequestDetail() {
                         <span className={'badge ' + s.cls}>{s.label}</span>
                         {canSetLineStatus && optCount > 0 && (
                           flagged ? (
-                            <button type="button" className="btn ghost"
-                              style={{ height: 24, padding: '0 8px', fontSize: 11.5, lineHeight: 1, color: 'var(--muted)' }}
-                              title="Gỡ cờ — dòng này không cần khảo sát lại nữa"
-                              onClick={() => requestResurvey(ln, false)}>
-                              <i className="ti ti-arrow-back-up" /> Bỏ khảo sát lại
+                            // Đang cần khảo sát lại → KHÓA nút (không cho bấm lại). Cờ tự gỡ khi
+                            // NSTM khảo sát lại và người YC chọn 1 phương án bên dưới.
+                            <button type="button" className="btn ghost" disabled
+                              style={{ height: 24, padding: '0 8px', fontSize: 11.5, lineHeight: 1, color: 'var(--muted)', cursor: 'not-allowed', opacity: 0.7 }}
+                              title="Dòng đang cần khảo sát lại — chọn 1 phương án bên dưới để gỡ cờ">
+                              <i className="ti ti-lock" /> Cần khảo sát lại
                             </button>
                           ) : (
                             <button type="button" className="btn ghost"

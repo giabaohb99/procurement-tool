@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 
 
 class PRItemIn(BaseModel):
+    id: int | None = None            # id dòng đã có -> cập nhật tại chỗ (GIỮ id để ảnh đối chiếu không mồ côi)
     product_code: str = ""
     product_name: str
     item_group: str = ""
