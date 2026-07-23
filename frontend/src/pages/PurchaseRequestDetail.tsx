@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { fmtDateTime, fmtDate } from '../utils/datetime'
+import { toast } from '../components/toast'
 import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import { prBadge, poBadge } from '../config/cruds'
@@ -649,7 +650,7 @@ export default function PurchaseRequestDetail() {
                     <th style={{ width: 120, textAlign: 'right' }} title="Thành tiền gồm VAT">Thành tiền</th>
                     <th style={{ width: 150, textAlign: 'center' }}>Trạng thái</th>
                     <th style={{ width: 118, textAlign: 'center' }} title="Tiến độ: tổng SL đã nhận / tổng SL đã đặt (đồng bộ từ Đơn mua hàng)">Tiến độ<br /><span style={{ fontWeight: 400, fontSize: 10.5, color: 'var(--muted)' }}>nhận / đặt</span></th>
-                    <th style={{ width: 130, textAlign: 'center' }} title="Thời gian dự kiến có hàng (sửa trực tiếp nếu có quyền, hoặc trong Chi tiết dòng)">TG dự kiến có hàng</th>
+                    <th style={{ width: 130, textAlign: 'center', whiteSpace: 'normal', lineHeight: 1.3 }} title="Thời gian dự kiến có hàng (sửa trực tiếp nếu có quyền, hoặc trong Chi tiết dòng)">TG dự kiến<br />có hàng</th>
                     {showAssigneeCol && <th style={{ width: 160, textAlign: 'left' }}>NSTM phụ trách</th>}
                     <th style={{ width: 96, textAlign: 'center' }}>Thao tác</th>
                   </tr>
@@ -718,9 +719,9 @@ export default function PurchaseRequestDetail() {
                           <span><b style={{ color: '#0d9488' }}>{fmt(it.qty_received)}</b><span style={{ color: 'var(--muted)' }}> / {fmt(it.qty_ordered)}</span></span>
                         ) : <span style={{ color: 'var(--muted)' }}>—</span>}
                       </td>
-                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap', color: 'var(--muted)' }} title="Thời gian dự kiến có hàng (chỉ NSTM phụ trách/quản lý sửa)">
+                      <td style={{ textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', color: 'var(--muted)' }} title="Thời gian dự kiến có hàng (chỉ NSTM phụ trách/quản lý sửa)">
                         {canLineStatus(it) ? (
-                          <input type="date" className="cell-input" style={{ width: '100%' }} value={it.expected_date || ''}
+                          <input type="date" className="cell-input" style={{ width: '100%', boxSizing: 'border-box', minWidth: 0 }} value={it.expected_date || ''}
                             onFocus={() => { inlineExpOrig.current = (it.expected_date || '').trim() }}
                             onChange={(e) => setItem(i, 'expected_date', e.target.value)}
                             onBlur={() => commitExpectedDate(i)} />
