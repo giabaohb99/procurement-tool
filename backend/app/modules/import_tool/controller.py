@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile
 from sqlalchemy.orm import Session
 
@@ -14,6 +16,13 @@ from . import service
 from .tasks import run_import
 
 router = APIRouter(prefix="/api/imports", tags=["import"])
+
+
+def _content_disposition(filename: str) -> str:
+    """Content-Disposition attachment an toàn cho tên file có dấu tiếng Việt (RFC 5987).
+    Header HTTP chỉ nhận Latin-1 → tên có ký tự tiếng Việt phải encode, nếu không sẽ 500."""
+    ascii_name = (filename or "").encode("ascii", "ignore").decode() or "download.xlsx"
+    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(filename or 'download.xlsx')}"
 
 
 def _guard(db, user, action: str):
@@ -126,7 +135,12 @@ def download_import_file(bid: int, db: Session = Depends(get_db), user=Depends(g
     sf = db.get(StoredFile, b.file_id)
     if not sf:
         raise HTTPException(404, "Không tìm thấy file đã lưu")
-    data = download_bytes(sf.file_key)
+    try:
+        data = download_bytes(sf.file_key)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(404, "Không đọc được file từ kho lưu trữ")
     return Response(content=data,
                     media_type=sf.content_type or "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    headers={"Content-Disposition": f'attachment; filename="{sf.filename}"'})
+                    headers={"Content-Disposition": _content_disposition(sf.filename)})
