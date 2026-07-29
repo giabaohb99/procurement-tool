@@ -1,6 +1,6 @@
 """Đơn mua hàng: lưu header + dòng hàng + các lần giao; mỗi lần lưu reconcile side-effect
 (phiếu nhập kho ngầm, tồn kho, công nợ 2 luồng). Idempotent theo id của dòng giao."""
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -67,6 +67,10 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
     for raw in items:
         delivs = raw.deliveries or []
         data = raw.model_dump(exclude={"deliveries"})
+        # Ngày hóa đơn: có Số hóa đơn mà chưa có Ngày hóa đơn -> tự lấy ngày hôm nay.
+        # Sửa tay được: nếu payload đã có invoice_date thì giữ nguyên (không ghi đè).
+        if (data.get("invoice_no") or "").strip() and not (data.get("invoice_date") or "").strip():
+            data["invoice_date"] = date.today().isoformat()
         iid = data.pop("id", None)
         if iid and iid in existing_items:
             it = existing_items[iid]
@@ -228,9 +232,10 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
     db.flush()
 
 
-# Các cột dòng hàng được sao chép khi Nhân bản (KHÔNG copy số đã nhận / lần giao / trạng thái)
+# Các cột dòng hàng được sao chép khi Nhân bản (KHÔNG copy số đã nhận / lần giao / trạng thái;
+# KHÔNG copy Số hóa đơn / Ngày hóa đơn — chứng từ riêng từng đơn, phải nhập lại ở bản sao)
 _ITEM_COPY_FIELDS = ["product_code", "product_name", "invoice_name", "item_group", "spec",
-                     "fg_code", "fg_name", "invoice_no", "supplier_ready", "required_date", "unit",
+                     "fg_code", "fg_name", "supplier_ready", "required_date", "unit",
                      "qty_request", "qty_order", "price", "vat", "warehouse_code", "note"]
 
 

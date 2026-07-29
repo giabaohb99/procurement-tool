@@ -49,25 +49,16 @@ def _role_scope_cond(model, entity, scope, user, profile):
                 conds.append(model.id.in_(sub))
             return or_(*conds)
         if entity == "survey_request":
-            from app.modules.catalog.model import ItemGroup
-            from app.modules.category_assignee.model import CategoryAssignee
             from app.modules.survey_request.model import SurveyRequestLine
             conds = [model.created_by == user.id]   # phiếu MÌNH tạo → thấy mọi trạng thái
-            # "Việc thu mua của tôi" (được giao / phụ trách phân loại) CHỈ áp cho phiếu ĐÃ DUYỆT
-            # (bỏ nháp/chờ duyệt/từ chối) — NSTM không thấy phiếu người khác khi chưa qua duyệt.
+            # "Việc thu mua của tôi" CHỈ áp cho phiếu ĐÃ DUYỆT (bỏ nháp/chờ duyệt/từ chối).
+            # NSTM chỉ thấy phiếu khi ĐƯỢC GIAO thật (assignee đầu phiếu HOẶC dòng gán mã mình) —
+            # KHÔNG còn thấy chỉ vì là NSTM chính/phụ của phân loại (bỏ cat_sub theo yêu cầu).
             work = []
             emp_id = profile.get("employee_id") or 0
             if emp_id:
                 conds.append(model.requester_id == emp_id)   # phiếu mình là người yêu cầu → thấy mọi trạng thái
-            if emp_id:
                 work.append(model.assignee_id == emp_id)
-                # phiếu có dòng thuộc phân loại mình là NSTM chính HOẶC phụ
-                cat_sub = (select(SurveyRequestLine.survey_request_id)
-                           .join(ItemGroup, ItemGroup.name == SurveyRequestLine.item_group)
-                           .join(CategoryAssignee, CategoryAssignee.item_group_id == ItemGroup.id)
-                           .where(or_(CategoryAssignee.primary_employee_id == emp_id,
-                                      CategoryAssignee.backup_employee_id == emp_id)))
-                work.append(model.id.in_(cat_sub))
             if profile.get("emp_code"):
                 code_sub = (select(SurveyRequestLine.survey_request_id)
                             .where(SurveyRequestLine.assignee == profile["emp_code"]))

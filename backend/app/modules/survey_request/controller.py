@@ -386,6 +386,8 @@ def available_survey_lines_(sid: int, line_id: int, supplier_code: str = "", ite
         sv = _sv_cache[r.survey_id]
         d["survey_item_group"] = sv.item_group if sv else ""   # để FE cảnh báo khi khác phân loại dòng
         d["survey_code"] = sv.code if sv else ""
+        d["survey_item_code"] = sv.item_code if sv else ""     # Mã VTBB/VL (lấy từ header phiếu khảo sát)
+        # result_date (Ngày trả KQ của dòng NCC) đã có sẵn trong d -> FE dùng làm "Ngày khảo sát"
         out.append(d)
     return success(out)
 
@@ -475,6 +477,7 @@ def complete_(sid: int, background_tasks: BackgroundTasks, data: dict | None = N
 # nstm_note, supplier_survey_id, product_survey_line_id → không lộ NCC).
 _OPT_PUBLIC_FIELDS = [
     "id", "public_id", "display_label", "is_chosen",
+    "system_product_code",   # Mã VTBB/VL hệ thống (mã vật tư của chính người YC — KHÔNG lộ NCC)
     "snap_product_name", "snap_spec", "snap_origin", "snap_quote_unit",
     "snap_moq", "snap_price_by_volume", "snap_volume_range", "snap_vat",
     "snap_delivery_time", "snap_delivery_place", "snap_shipping_cost",
@@ -505,6 +508,13 @@ def _opt_public(o, db: Session) -> dict:
     d = _dict(o)
     out = {k: d.get(k) for k in _OPT_PUBLIC_FIELDS}
     out["attachments"] = _opt_attachments(db, o.product_survey_line_id)
+    # Ngày khảo sát = Ngày trả KQ của dòng khảo sát NCC nguồn (không lộ NCC nào).
+    out["survey_result_date"] = ""
+    if o.product_survey_line_id:
+        from app.modules.survey.model import SurveyProductLine
+        psl = db.get(SurveyProductLine, o.product_survey_line_id)
+        if psl:
+            out["survey_result_date"] = psl.result_date or ""
     return out
 
 

@@ -35,8 +35,17 @@ def _out(db: Session, pr, user=None) -> dict:
     from app.core.audit import resolve_actor
     d = {c: getattr(pr, c) for c in HEADER_COLS}
     d["vat_rate"] = float(pr.vat_rate or 0)
-    # Task 5: ẩn NCC đề xuất nếu user không có supplier.read (enforcement ở BE)
-    if user is not None and not user_has_permission(db, user, "supplier", "read"):
+    # Task 4: NCC 2 cụm. Cụm 'req' (bộ phận đề xuất) MỌI người xem/sửa được — sửa bug người
+    # yêu cầu không nhập nổi NCC của chính mình. Cụm 'pur' (khảo sát/thu mua) cần supplier.read
+    # để xem, supplier.write để sửa.
+    can_sup_read = user is None or user_has_permission(db, user, "supplier", "read")
+    cl = service.clusters_of(pr)
+    d["supplier_req"] = cl["req"]
+    d["supplier_pur"] = cl["pur"] if can_sup_read else service._empty_cluster()
+    d["supplier_from_survey"] = cl["from_survey"]
+    d["can_edit_supplier_pur"] = user is not None and user_has_permission(db, user, "supplier", "write")
+    # NCC "hiệu lực" ở cột cũ (suggested_supplier*) — che nếu không có supplier.read (giữ Task 5).
+    if not can_sup_read:
         _blank_supplier(d)
     d["created_at"] = pr.created_at
     d["created_by_name"] = resolve_actor(db, pr.created_by)
@@ -202,7 +211,8 @@ def order_progress(pid: int, db: Session = Depends(get_db), user=Depends(require
 
 @router.post("")
 def create_pr(data: PRCreate, db: Session = Depends(get_db), user=Depends(require("purchase_request", "create"))):
-    return success(_out(db, service.create_pr(db, data, user.id), user), "Đã tạo yêu cầu mua", 201)
+    can_pur = user_has_permission(db, user, "supplier", "write")   # Task 4: chỉ QL/Admin sửa cụm NCC thu mua
+    return success(_out(db, service.create_pr(db, data, user.id, can_pur), user), "Đã tạo yêu cầu mua", 201)
 
 
 @router.post("/{pid}/copy")
@@ -301,7 +311,8 @@ def update_pr(pid: int, data: PRUpdate, db: Session = Depends(get_db), user=Depe
     pr = service.get_pr(db, pid)
     if not _can_edit_own(db, pr, user):
         raise HTTPException(403, "Không có quyền sửa phiếu này")
-    return success(_out(db, service.update_pr(db, pid, data, user.id), user), "Đã cập nhật")
+    can_pur = user_has_permission(db, user, "supplier", "write")   # Task 4: cụm NCC thu mua chỉ QL/Admin sửa
+    return success(_out(db, service.update_pr(db, pid, data, user.id, can_pur), user), "Đã cập nhật")
 
 
 @router.delete("/{pid}")

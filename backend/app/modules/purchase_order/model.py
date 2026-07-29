@@ -47,6 +47,7 @@ class POItem(Base, AuditMixin):
     fg_code: Mapped[str] = mapped_column(String(50), default="")           # Mã HH / thành phẩm (col42)
     fg_name: Mapped[str] = mapped_column(String(255), default="")          # Tên HH / thành phẩm (theo master SP)
     invoice_no: Mapped[str] = mapped_column(String(50), default="")        # Số hóa đơn (theo sản phẩm, col31)
+    invoice_date: Mapped[str] = mapped_column(String(10), default="")       # Ngày hóa đơn — tự set = hôm nay khi nhập số hóa đơn, sửa tay được
     document_delivery_date: Mapped[str] = mapped_column(String(10), default="")  # Ngày giao chứng từ cho KT (Task 8)
     supplier_ready: Mapped[bool] = mapped_column(Boolean, default=False)    # NCC có sẵn hàng (col17)
     required_date: Mapped[str] = mapped_column(String(10), default="")      # ngày yêu cầu có hàng (col3)

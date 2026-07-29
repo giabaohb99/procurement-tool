@@ -961,6 +961,8 @@ export default function SurveyRequestDetail() {
                           </div>
                           <div style={{ fontWeight: 600, marginBottom: 8 }}>{o.snap_product_name || '—'}</div>
                           <div className="option-fields">
+                            <Field label="Mã VTBB" value={o.system_product_code} />
+                            <Field label="Ngày khảo sát" value={o.survey_result_date ? new Date(o.survey_result_date).toLocaleDateString('vi-VN') : ''} />
                             <Field label="Đơn giá" value={o.snap_price_by_volume ? fmtBlank(o.snap_price_by_volume) + ' đ' : ''} strong />
                             <Field label="ĐVT báo giá" value={o.snap_quote_unit} />
                             <Field label="MOQ" value={fmtBlank(o.snap_moq)} />

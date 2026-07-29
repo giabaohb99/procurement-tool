@@ -48,6 +48,7 @@ def _item(db, it, pay_by_del: dict) -> dict:
     return {"id": it.id, "product_code": it.product_code, "product_name": it.product_name,
             "invoice_name": it.invoice_name, "item_group": it.item_group, "spec": it.spec,
             "fg_code": it.fg_code, "fg_name": it.fg_name, "invoice_no": it.invoice_no,
+            "invoice_date": it.invoice_date or "",
             "document_delivery_date": it.document_delivery_date or "",
             "supplier_ready": bool(it.supplier_ready), "required_date": it.required_date,
             "unit": it.unit, "qty_request": float(it.qty_request or 0), "qty_order": qty_order,

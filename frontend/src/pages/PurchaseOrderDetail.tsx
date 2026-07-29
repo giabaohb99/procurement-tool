@@ -36,7 +36,7 @@ const DOC_STATUS_COLOR: Record<string, string> = {
 
 const emptyItem = {
   product_code: '', product_name: '', invoice_name: '', item_group: '', spec: '', fg_code: '', fg_name: '',
-  supplier_ready: true, required_date: '', unit: '', invoice_no: '', document_delivery_date: '',   // NCC có sẵn hàng — mặc định check cho dòng mới
+  supplier_ready: true, required_date: '', unit: '', invoice_no: '', invoice_date: '', document_delivery_date: '',   // NCC có sẵn hàng — mặc định check cho dòng mới
   qty_request: 0, qty_order: 0, price: 0, vat: 8, warehouse_code: '', note: '', deliveries: [],
 }
 const emptyDelivery = {
@@ -312,7 +312,7 @@ export default function PurchaseOrderDetail() {
       items: sentItems.map((it: any) => ({
         id: it.id, product_code: it.product_code, product_name: it.product_name, invoice_name: it.invoice_name,
         item_group: it.item_group, spec: it.spec, fg_code: it.fg_code, fg_name: it.fg_name, invoice_no: it.invoice_no,
-        document_delivery_date: it.document_delivery_date || '',
+        invoice_date: it.invoice_date || '', document_delivery_date: it.document_delivery_date || '',
         supplier_ready: !!it.supplier_ready,
         required_date: it.required_date, unit: it.unit, qty_request: Number(it.qty_request) || 0,
         qty_order: Number(it.qty_order) || 0,
@@ -732,7 +732,8 @@ export default function PurchaseOrderDetail() {
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Xuất xứ / TSKT / chất liệu</label><input value={it.spec || ''} disabled={de} onChange={(e) => setItem(ii, { spec: e.target.value })} /></div>
                     <div className="form-row"><label>Mã HH (thành phẩm)</label><input value={it.fg_code || ''} placeholder="Tự gắn khi chọn SP" disabled={de} onChange={(e) => setItem(ii, { fg_code: e.target.value })} /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên HH (thành phẩm)</label><input value={it.fg_name || ''} placeholder="Tự gắn khi chọn SP" disabled={de} onChange={(e) => setItem(ii, { fg_name: e.target.value })} /></div>
-                    <div className="form-row"><label>Số hóa đơn</label><input value={it.invoice_no || ''} placeholder="Số HĐ theo sản phẩm" disabled={de} onChange={(e) => setItem(ii, { invoice_no: e.target.value })} /></div>
+                    <div className="form-row"><label>Số hóa đơn</label><input value={it.invoice_no || ''} placeholder="Số HĐ theo sản phẩm" disabled={de} onChange={(e) => { const v = e.target.value; setItem(ii, { invoice_no: v, ...(v && !(it.invoice_date || '').trim() ? { invoice_date: new Date().toISOString().slice(0, 10) } : {}) }) }} /></div>
+                    <div className="form-row"><label title="Tự điền ngày hôm nay khi nhập Số hóa đơn — sửa tay được">Ngày hóa đơn</label><input type="date" value={it.invoice_date || ''} disabled={de} onChange={(e) => setItem(ii, { invoice_date: e.target.value })} /></div>
                     <div className="form-row"><label title="Có ngày này → dòng chuyển 'Đã gửi ĐMH cho KT'">Ngày giao chứng từ cho KT</label><input type="date" value={it.document_delivery_date || ''} disabled={de} onChange={(e) => setItem(ii, { document_delivery_date: e.target.value })} /></div>
                     <div className="form-row">
                       <label>Trạng thái tiến độ</label>

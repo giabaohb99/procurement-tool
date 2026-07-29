@@ -32,6 +32,7 @@ class POItemIn(BaseModel):
     fg_code: str = ""
     fg_name: str = ""
     invoice_no: str = ""
+    invoice_date: str = ""             # Ngày hóa đơn (tự set hôm nay khi có số hóa đơn, sửa tay được)
     document_delivery_date: str = ""   # Ngày giao chứng từ cho KT (Task 8)
     supplier_ready: bool = False
     required_date: str = ""

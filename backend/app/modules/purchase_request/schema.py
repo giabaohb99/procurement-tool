@@ -1,6 +1,13 @@
 from pydantic import BaseModel, Field
 
 
+class SupplierClusterIn(BaseModel):
+    """1 cụm NCC (Task 4). req = bộ phận đề xuất · pur = khảo sát/thu mua."""
+    name: str = ""
+    tax_code: str = ""
+    contact: str = ""
+
+
 class PRItemIn(BaseModel):
     id: int | None = None            # id dòng đã có -> cập nhật tại chỗ (GIỮ id để ảnh đối chiếu không mồ côi)
     product_code: str = ""
@@ -39,6 +46,8 @@ class PRCreate(BaseModel):
     suggested_supplier_contact: str = ""
     quote_filename: str = ""
     quote_file_url: str = ""
+    supplier_req: SupplierClusterIn | None = None   # Task 4: NCC bộ phận đề xuất
+    supplier_pur: SupplierClusterIn | None = None   # Task 4: NCC khảo sát/thu mua (cần supplier.write)
     items: list[PRItemIn] = []
 
 
@@ -62,6 +71,8 @@ class PRUpdate(BaseModel):
     suggested_supplier_contact: str | None = None
     quote_filename: str | None = None
     quote_file_url: str | None = None
+    supplier_req: SupplierClusterIn | None = None   # Task 4: NCC bộ phận đề xuất
+    supplier_pur: SupplierClusterIn | None = None   # Task 4: NCC khảo sát/thu mua (cần supplier.write)
     items: list[PRItemIn] | None = None
 
 

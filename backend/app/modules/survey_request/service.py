@@ -141,10 +141,25 @@ def clone_sr(db: Session, sid: int, user, profile: dict) -> SurveyRequest:
     dùng chung file). CHỈ copy dòng NGƯỜI DÙNG ĐƯỢC XEM (tránh lộ dòng của NSTM khác).
     KHÔNG sao chép NSTM/option/PYC/tình trạng (làm mới hoàn toàn)."""
     from app.modules.attachment.model import FileLink
+    from app.modules.employee.model import Employee
     user_id = getattr(user, "id", 0)
     src = get_sr(db, sid)
+    header = {f: getattr(src, f) for f in HEADER_FIELDS}
+    # NGƯỜI YÊU CẦU của bản sao = người BẤM NHÂN BẢN (KHÔNG giữ người yêu cầu phiếu gốc).
+    # Nếu giữ nguyên: created_by=người clone + requester_id=người gốc -> CẢ HAI đều có quyền phía
+    # yêu cầu, và phiếu hiển thị sai người yêu cầu. Đặt lại theo hồ sơ NV của người clone.
+    emp = db.get(Employee, getattr(user, "employee_id", 0) or 0) if getattr(user, "employee_id", 0) else None
+    if emp:
+        header["requester"] = emp.full_name or ""
+        header["requester_id"] = emp.id
+        header["requester_position"] = emp.position or ""
+        header["department"] = emp.department_name or ""
+        header["head_of_dept"] = emp.manager_name or ""
+    else:
+        header["requester"] = getattr(user, "full_name", "") or ""
+        header["requester_id"] = 0
     s = SurveyRequest(code=_gen_code(db), status="draft", created_by=user_id, updated_by=user_id,
-                      **{f: getattr(src, f) for f in HEADER_FIELDS})
+                      **header)
     db.add(s)
     db.commit()
     db.refresh(s)
@@ -533,7 +548,8 @@ def create_prs(db: Session, sid: int, user_id: int):
     Cập nhật dòng: pr_id/pr_code/is_completed; phiếu KS → 'pr_created'."""
     from app.modules.purchase_request.model import (PurchaseRequest,
                                                     PurchaseRequestItem)
-    from app.modules.purchase_request.service import find_dept_head
+    from app.modules.purchase_request.service import (apply_supplier_info,
+                                                     find_dept_head)
     from app.modules.supplier.model import Supplier
     s = get_sr(db, sid)
     # Cho tạo YCMH khi: Đang xử lý (mua trước dòng đã khảo sát xong), Đã khảo sát, Đã tạo YCMH, Hoàn thành.
@@ -568,6 +584,14 @@ def create_prs(db: Session, sid: int, user_id: int):
             suggested_supplier_contact=(sup.address if sup else ""),   # Liên hệ NCC lấy Địa chỉ từ bảng NCC
             created_by=user_id, updated_by=user_id,
         )
+        # Task 4: NCC từ khảo sát -> cụm 'pur' (khóa với người yêu cầu; QL/Admin thu mua sửa được)
+        apply_supplier_info(pr, {
+            "req": {"name": "", "tax_code": "", "contact": ""},
+            "pur": {"name": first_opt.supplier_name or "",
+                    "tax_code": (sup.tax_code if sup else ""),
+                    "contact": (sup.address if sup else "")},
+            "from_survey": True,
+        })
         db.add(pr)
         db.commit()
         db.refresh(pr)

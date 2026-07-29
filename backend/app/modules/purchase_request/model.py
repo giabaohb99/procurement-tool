@@ -34,6 +34,11 @@ class PurchaseRequest(Base, AuditMixin):
     suggested_supplier_contact: Mapped[str] = mapped_column(String(255), default="")
     quote_filename: Mapped[str] = mapped_column(String(255), default="")
     quote_file_url: Mapped[str] = mapped_column(String(1000), default="")
+    # Task 4: NCC lưu 2 cụm dạng JSON {"req":{name,tax_code,contact}, "pur":{...}, "from_survey":bool}
+    #   req = NCC do BỘ PHẬN yêu cầu đề xuất (người yêu cầu tự điền, KHÔNG cần quyền supplier.read)
+    #   pur = NCC từ khảo sát/thu mua (chỉ supplier.read mới thấy, supplier.write mới sửa)
+    # Các cột suggested_supplier* ở trên GIỮ LẠI = "NCC hiệu lực" (đồng bộ để ĐMH/list/in cũ dùng).
+    supplier_info: Mapped[str] = mapped_column(Text, default="")
 
     # Soft delete
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)

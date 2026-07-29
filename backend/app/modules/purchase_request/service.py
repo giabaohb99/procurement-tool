@@ -1,3 +1,5 @@
+import json
+
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
@@ -8,6 +10,67 @@ from .schema import AssignIn, ItemStatusIn, PRCreate, PRUpdate
 
 FILTERABLE = ["code", "status", "requester", "department", "is_urgent"]
 ENTITY = "purchase_request"
+
+# Task 4 — NCC 2 cụm (req = bộ phận đề xuất · pur = khảo sát/thu mua) lưu JSON ở cột supplier_info.
+_AUTO_NOTE_PREFIX = "Sinh tự động từ Yêu cầu báo giá"   # dấu hiệu phiếu tạo từ YCKS (fallback dữ liệu cũ)
+
+
+def _empty_cluster() -> dict:
+    return {"name": "", "tax_code": "", "contact": ""}
+
+
+def _norm_cluster(c) -> dict:
+    """Chuẩn hóa 1 cụm về đúng 3 khóa string (chống dữ liệu JSON lỗi)."""
+    c = c if isinstance(c, dict) else {}
+    return {"name": (c.get("name") or ""), "tax_code": (c.get("tax_code") or ""),
+            "contact": (c.get("contact") or "")}
+
+
+def clusters_of(pr) -> dict:
+    """Trả về {req, pur, from_survey}. Ưu tiên supplier_info JSON; nếu trống thì suy từ dữ liệu cũ:
+    phiếu sinh từ YCKS -> cụm 'pur', còn lại -> cụm 'req' (giữ nguyên cột suggested_supplier*)."""
+    raw = (getattr(pr, "supplier_info", "") or "").strip()
+    if raw:
+        try:
+            d = json.loads(raw)
+            if isinstance(d, dict):
+                return {"req": _norm_cluster(d.get("req")), "pur": _norm_cluster(d.get("pur")),
+                        "from_survey": bool(d.get("from_survey"))}
+        except Exception:
+            pass
+    # Dữ liệu cũ (trước Task 4): cột suggested_supplier* xưa CHỈ phía thu mua/nhập liệu điền được
+    # (người yêu cầu bị khóa ở Task 5) -> luôn đưa vào cụm 'pur', KHÔNG cho bộ phận yêu cầu thấy.
+    legacy = {"name": getattr(pr, "suggested_supplier", "") or "",
+              "tax_code": getattr(pr, "suggested_supplier_tax_code", "") or "",
+              "contact": getattr(pr, "suggested_supplier_contact", "") or ""}
+    from_survey = (getattr(pr, "note", "") or "").startswith(_AUTO_NOTE_PREFIX)
+    return {"req": _empty_cluster(), "pur": legacy, "from_survey": from_survey}
+
+
+def apply_supplier_info(pr, clusters: dict) -> None:
+    """Ghi supplier_info (JSON) + đồng bộ 'NCC hiệu lực' xuống cột suggested_supplier* cũ
+    (ĐMH/list/mẫu in cũ vẫn dùng). Hiệu lực = cụm pur nếu có tên, ngược lại cụm req."""
+    req = _norm_cluster(clusters.get("req"))
+    pur = _norm_cluster(clusters.get("pur"))
+    fs = bool(clusters.get("from_survey"))
+    pr.supplier_info = json.dumps({"req": req, "pur": pur, "from_survey": fs}, ensure_ascii=False)
+    eff = pur if pur["name"] else req
+    pr.suggested_supplier = eff["name"]
+    pr.suggested_supplier_tax_code = eff["tax_code"]
+    pr.suggested_supplier_contact = eff["contact"]
+
+
+def build_clusters(prev: dict, data, can_write_pur: bool, from_survey=None) -> dict:
+    """Ghép cụm NCC khi lưu: cụm req ai sửa cũng được; cụm pur chỉ khi có quyền supplier.write.
+    Cụm không được gửi/không đủ quyền -> giữ nguyên giá trị cũ (prev)."""
+    req = _norm_cluster(prev.get("req"))
+    pur = _norm_cluster(prev.get("pur"))
+    fs = bool(prev.get("from_survey")) if from_survey is None else bool(from_survey)
+    if getattr(data, "supplier_req", None) is not None:
+        req = _norm_cluster(data.supplier_req.model_dump())
+    if getattr(data, "supplier_pur", None) is not None and can_write_pur:
+        pur = _norm_cluster(data.supplier_pur.model_dump())
+    return {"req": req, "pur": pur, "from_survey": fs}
 
 # Trạng thái xử lý theo DÒNG hàng (rút gọn — CR-007 #3): gộp 2 mức chứng từ kế toán
 # ("Chưa gửi ĐMH cho KT"/"Đã gửi ĐMH cho KT") vào "Đã nhận hàng"; bỏ "Tạm ngưng".
@@ -286,17 +349,31 @@ def list_pr(db: Session, base_query, pg: dict):
 def copy_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
     """Nhân bản phiếu thành 1 phiếu Nháp mới: giữ dòng hàng, reset mã/trạng thái/NSTM/trạng thái dòng."""
     src = get_pr(db, pid)
+    # NGƯỜI YÊU CẦU của bản sao = người BẤM NHÂN BẢN (không giữ người yêu cầu phiếu gốc): nếu giữ
+    # nguyên thì created_by=người clone + requester=người gốc -> lệch danh + cả hai đều có quyền YC.
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+    _u = db.get(User, user_id) if user_id else None
+    _emp = db.get(Employee, getattr(_u, "employee_id", 0) or 0) if _u and getattr(_u, "employee_id", 0) else None
+    if _emp:
+        _requester, _requester_id = (_emp.full_name or ""), _emp.id
+        _requester_position, _department = (_emp.position or ""), (_emp.department_name or "")
+        _head_of_dept = _emp.manager_name or ""
+    else:
+        _requester, _requester_id = "", 0
+        _requester_position, _department, _head_of_dept = "", src.department, src.head_of_dept
     pr = PurchaseRequest(
-        code="", company_id=src.company_id, requester=src.requester,
-        requester_id=src.requester_id,
-        requester_position=src.requester_position, department=src.department,
-        head_of_dept=src.head_of_dept, purpose=src.purpose, request_date=src.request_date,
+        code="", company_id=src.company_id, requester=_requester,
+        requester_id=_requester_id,
+        requester_position=_requester_position, department=_department,
+        head_of_dept=_head_of_dept, purpose=src.purpose, request_date=src.request_date,
         need_date=src.need_date, is_urgent=src.is_urgent, note=src.note,
         status="draft", assignee_id=0, created_by=user_id, updated_by=user_id,
         show_code_on_print=src.show_code_on_print, suggested_supplier=src.suggested_supplier,
         suggested_supplier_tax_code=src.suggested_supplier_tax_code,
         suggested_supplier_contact=src.suggested_supplier_contact,
         quote_filename=src.quote_filename, quote_file_url=src.quote_file_url,
+        supplier_info=src.supplier_info or "",   # Task 4: giữ 2 cụm NCC khi nhân bản
     )
     db.add(pr)
     db.commit()
@@ -326,7 +403,7 @@ def copy_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
     return pr
 
 
-def create_pr(db: Session, data: PRCreate, user_id: int) -> PurchaseRequest:
+def create_pr(db: Session, data: PRCreate, user_id: int, can_write_pur: bool = False) -> PurchaseRequest:
     pr = PurchaseRequest(
         code=data.code or "", company_id=data.company_id, requester=data.requester,
         requester_id=data.requester_id,
@@ -335,12 +412,14 @@ def create_pr(db: Session, data: PRCreate, user_id: int) -> PurchaseRequest:
         need_date=data.need_date, is_urgent=data.is_urgent, vat_rate=data.vat_rate,
         note=data.note, status="draft", created_by=user_id, updated_by=user_id,
         show_code_on_print=data.show_code_on_print,
-        suggested_supplier=data.suggested_supplier,
-        suggested_supplier_tax_code=data.suggested_supplier_tax_code,
-        suggested_supplier_contact=data.suggested_supplier_contact,
         quote_filename=data.quote_filename,
         quote_file_url=data.quote_file_url,
     )
+    # Task 4: NCC 2 cụm. Back-compat: body cũ gửi suggested_supplier* -> vào cụm 'req'.
+    prev = {"req": {"name": data.suggested_supplier, "tax_code": data.suggested_supplier_tax_code,
+                    "contact": data.suggested_supplier_contact},
+            "pur": _empty_cluster(), "from_survey": False}
+    apply_supplier_info(pr, build_clusters(prev, data, can_write_pur, from_survey=False))
     # Tự điền Trưởng bộ phận theo phòng ban của người yêu cầu (nếu phòng có trưởng)
     if not pr.head_of_dept and pr.department:
         pr.head_of_dept = find_dept_head(db, pr.department)
@@ -374,14 +453,19 @@ def create_pr(db: Session, data: PRCreate, user_id: int) -> PurchaseRequest:
     return pr
 
 
-def update_pr(db: Session, pid: int, data: PRUpdate, user_id: int) -> PurchaseRequest:
+def update_pr(db: Session, pid: int, data: PRUpdate, user_id: int, can_write_pur: bool = False) -> PurchaseRequest:
     pr = get_pr(db, pid)
     if pr.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ sửa được khi phiếu ở trạng thái Nháp hoặc Bị trả lại "
                                  "(phiếu Đã từ chối đã khóa — hãy Nhân bản thành phiếu mới).")
     old_urgent = bool(pr.is_urgent)
-    for key, value in data.model_dump(exclude_unset=True, exclude={"items"}).items():
+    # supplier_req/supplier_pur xử lý riêng bên dưới (không phải cột của model)
+    for key, value in data.model_dump(exclude_unset=True,
+                                      exclude={"items", "supplier_req", "supplier_pur"}).items():
         setattr(pr, key, value)
+    # Task 4: cập nhật cụm NCC (req do người yêu cầu · pur cần quyền supplier.write)
+    if data.supplier_req is not None or data.supplier_pur is not None:
+        apply_supplier_info(pr, build_clusters(clusters_of(pr), data, can_write_pur))
     pr.updated_by = user_id
     db.commit()
     if data.items is not None:

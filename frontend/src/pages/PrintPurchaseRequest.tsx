@@ -316,23 +316,43 @@ export default function PrintPurchaseRequest() {
           </tbody>
         </table>
 
-        {/* Task 5: LUÔN hiện khối NCC để phiếu in thống nhất bố cục; người không có
-            supplier.read thì BE trả 3 trường rỗng -> chỉ để TRỐNG giá trị, không ẩn khối. */}
-        <div style={SH}>THÔNG TIN NHÀ CUNG CẤP</div>
+        {/* Task 4: NCC 2 cụm — theo quyền. Cụm 'req' (bộ phận đề xuất) luôn in.
+            Cụm 'pur' (khảo sát/thu mua) chỉ có dữ liệu khi người in có quyền xem NCC
+            (BE trả rỗng nếu không) -> in theo quyền, không cần kiểm tra ở FE. */}
+        <div style={SH}>NHÀ CUNG CẤP DO BỘ PHẬN ĐỀ XUẤT</div>
         <div style={info}>
           <div>
-            <b>Tên nhà cung cấp:</b> {pr.suggested_supplier || ""}
+            <b>Tên nhà cung cấp:</b> {pr.supplier_req?.name || "Nhà cung cấp tối ưu nhất"}
           </div>
           <div>
-            <b>Mã số thuế:</b> {pr.suggested_supplier_tax_code || ""}
+            <b>Mã số thuế:</b> {pr.supplier_req?.tax_code || ""}
           </div>
           <div>
-            <b>Liên hệ:</b> {pr.suggested_supplier_contact || ""}
+            <b>Liên hệ:</b> {pr.supplier_req?.contact || ""}
           </div>
           <div>
             <b>Báo giá đính kèm:</b> {pr.quote_file_url ? "☑" : "☐"} Có &nbsp;&nbsp; {pr.quote_file_url ? "☐" : "☑"} Không
           </div>
         </div>
+
+        {(pr.supplier_pur?.name || pr.supplier_pur?.tax_code || pr.supplier_pur?.contact) && (
+          <>
+            <div style={SH}>
+              NHÀ CUNG CẤP TỪ KHẢO SÁT / THU MUA{pr.supplier_from_survey ? " (nguồn: Yêu cầu báo giá)" : ""}
+            </div>
+            <div style={info}>
+              <div>
+                <b>Tên nhà cung cấp:</b> {pr.supplier_pur?.name || ""}
+              </div>
+              <div>
+                <b>Mã số thuế:</b> {pr.supplier_pur?.tax_code || ""}
+              </div>
+              <div>
+                <b>Liên hệ:</b> {pr.supplier_pur?.contact || ""}
+              </div>
+            </div>
+          </>
+        )}
 
         <div style={SH}>PHẦN DÀNH CHO BỘ PHẬN MUA HÀNG</div>
         <div style={info}>

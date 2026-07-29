@@ -648,6 +648,9 @@ export default function SurveyDetail() {
   function cell(col: Col, tbl: 'supplier' | 'product', i: number) {
     const lines = getLines(tbl)
     const it = lines[i]
+    // Ô CHỈ XEM: chặn text dài tràn sang cột bên (ellipsis) + tooltip xem đầy đủ.
+    const ro = (v: any) => <div title={typeof v === 'string' && v ? v : undefined}
+      style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v}</div>
     if (col.key === 'line_approve') {
       if (canEditApprove)
         return <div style={{ width: '100%' }}><SearchSelect variant="table" colorMap={APPROVE_COLOR} value={it[col.key] || 'Chờ duyệt'} options={APPROVE_OPTS} placeholder="Duyệt…" onChange={(v) => changeLineApprove(tbl, i, v)} /></div>
@@ -660,16 +663,16 @@ export default function SurveyDetail() {
       return editable
         ? <input className="cell-input" style={{ width: '100%' }} value={nm} placeholder="Nhập tên pháp lý NCC…"
             onChange={(e) => setLine(tbl, i, { supplier_name: e.target.value })} />
-        : nm
+        : ro(nm)
     }
     // NCC sẵn có: mặc định TRUE (chưa set = có sẵn) → không lưu DB, chỉ đổi kiểu ô NCC
     const supplierAvail = it.supplier_available !== false
     if (!editable) {
-      if (col.type === 'computed') return fmt(rowAmount(it))
+      if (col.type === 'computed') return ro(fmt(rowAmount(it)))
       if (col.key === 'supplier_available') return supplierAvail ? '✓' : ''
       if (col.type === 'check') return it[col.key] ? '✓' : ''
-      if (col.type === 'num') return it[col.key] ? fmt(it[col.key]) : ''
-      return it[col.key] ?? ''
+      if (col.type === 'num') return ro(it[col.key] ? fmt(it[col.key]) : '')
+      return ro(it[col.key] ?? '')
     }
     if (col.type === 'computed') return <span style={{ fontWeight: 500 }}>{fmt(rowAmount(it))}</span>
     if (col.key === 'supplier_available') return <input type="checkbox" checked={supplierAvail} onChange={(e) => setLine(tbl, i, { supplier_available: e.target.checked })} />

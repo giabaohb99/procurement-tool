@@ -14,6 +14,8 @@ const fmtNum = (n: any) => {
   const v = Number(n || 0)
   return v ? v.toLocaleString('vi-VN') : '—'
 }
+// YYYY-MM-DD -> DD/MM/YYYY (rỗng thì '—')
+const dmy = (d: any) => { const s = String(d || ''); if (!s) return '—'; const [y, m, dd] = s.split('-'); return dd ? `${dd}/${m}/${y}` : s }
 
 const SR_STATUS: Record<string, { label: string; cls: string }> = {
   draft:        { label: 'Nháp',          cls: 'gray' },
@@ -94,6 +96,8 @@ interface AvailSurveyLine {
   line_approve: string
   survey_item_group?: string   // phân loại của Phiếu khảo sát cha (để cảnh báo khi khác phân loại dòng)
   survey_code?: string
+  survey_item_code?: string     // Mã VTBB/VL (lấy từ header phiếu khảo sát)
+  result_date?: string          // Ngày trả KQ của dòng NCC → hiển thị làm "Ngày khảo sát"
 }
 
 interface ProcessData {
@@ -448,11 +452,13 @@ export default function SurveyRequestProcess() {
                   </div>
                 ) : (
                   <div className="items-scroll">
-                    <table className="items-table" style={{ minWidth: 1092, tableLayout: 'fixed' }}>
+                    <table className="items-table" style={{ minWidth: 1322, tableLayout: 'fixed' }}>
                       <colgroup>
                         <col style={{ width: 40 }} />{/* chọn */}
                         <col style={{ width: 190 }} />{/* NCC */}
                         <col style={{ width: 230 }} />{/* Tên SP */}
+                        <col style={{ width: 120 }} />{/* Mã VTBB */}
+                        <col style={{ width: 110 }} />{/* Ngày khảo sát */}
                         <col style={{ width: 160 }} />{/* Spec */}
                         <col style={{ width: 90 }} />{/* Xuất xứ */}
                         <col style={{ width: 96 }} />{/* Giá */}
@@ -466,6 +472,8 @@ export default function SurveyRequestProcess() {
                           <th></th>
                           <th style={{ textAlign: 'left' }}>NCC</th>
                           <th style={{ textAlign: 'left' }}>Tên SP</th>
+                          <th style={{ textAlign: 'left' }}>Mã VTBB</th>
+                          <th style={{ textAlign: 'center' }}>Ngày khảo sát</th>
                           <th style={{ textAlign: 'left' }}>Spec</th>
                           <th style={{ textAlign: 'left' }}>Xuất xứ</th>
                           <th style={{ textAlign: 'right' }}>Giá</th>
@@ -513,6 +521,11 @@ export default function SurveyRequestProcess() {
                                   title={`Khác phân loại dòng — khảo sát thuộc: ${al.survey_item_group}`}>≠ {al.survey_item_group}</span>
                               )}
                             </td>
+                            <td title={al.survey_item_code}
+                              style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {al.survey_item_code || '—'}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>{dmy(al.result_date)}</td>
                             <td title={al.spec}
                               style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {al.spec || '—'}

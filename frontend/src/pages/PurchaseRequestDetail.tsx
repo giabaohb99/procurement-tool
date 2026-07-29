@@ -71,6 +71,10 @@ export default function PurchaseRequestDetail() {
     need_date: '', is_urgent: false, note: '', status: 'draft', items: [],
     show_code_on_print: true, suggested_supplier: '', suggested_supplier_tax_code: '', suggested_supplier_contact: '',
     quote_filename: '', quote_file_url: '',
+    // Task 4: NCC 2 cụm — req (bộ phận đề xuất) · pur (khảo sát/thu mua)
+    supplier_req: { name: '', tax_code: '', contact: '' },
+    supplier_pur: { name: '', tax_code: '', contact: '' },
+    supplier_from_survey: false, can_edit_supplier_pur: false,
   })
   const [companies, setCompanies] = useState<any[]>([])
   const [itemGroups, setItemGroups] = useState<any[]>([])
@@ -222,6 +226,9 @@ export default function PurchaseRequestDetail() {
 
   const setH = (k: string, v: any) =>
     setPr((s: any) => (k === 'request_date' ? recalcUrgent({ ...s, request_date: v }) : { ...s, [k]: v }))
+  // Task 4: set 1 trường trong 1 cụm NCC (supplier_req | supplier_pur)
+  const setSup = (cluster: 'supplier_req' | 'supplier_pur', field: string, v: string) =>
+    setPr((s: any) => ({ ...s, [cluster]: { ...(s[cluster] || {}), [field]: v } }))
   const items = pr.items || []
   const setItem = (i: number, k: string, v: any) =>
     setPr((s: any) => recalcUrgent({ ...s, items: s.items.map((it: any, idx: number) => idx === i ? { ...it, [k]: v } : it) }))
@@ -351,9 +358,10 @@ export default function PurchaseRequestDetail() {
       department: pr.department, head_of_dept: pr.head_of_dept, purpose: pr.purpose,
       request_date: pr.request_date, need_date: pr.need_date, is_urgent: pr.is_urgent, note: pr.note,
       show_code_on_print: pr.show_code_on_print,
-      suggested_supplier: pr.suggested_supplier, suggested_supplier_tax_code: pr.suggested_supplier_tax_code,
-      suggested_supplier_contact: pr.suggested_supplier_contact,
       quote_filename: pr.quote_filename, quote_file_url: pr.quote_file_url,
+      // Task 4: gửi 2 cụm NCC (BE tự chặn cụm 'pur' nếu không có quyền supplier.write)
+      supplier_req: { name: pr.supplier_req?.name || '', tax_code: pr.supplier_req?.tax_code || '', contact: pr.supplier_req?.contact || '' },
+      supplier_pur: { name: pr.supplier_pur?.name || '', tax_code: pr.supplier_pur?.tax_code || '', contact: pr.supplier_pur?.contact || '' },
       items: items.filter((it: any) => it.product_name),
     }
     try {
@@ -760,25 +768,59 @@ export default function PurchaseRequestDetail() {
             </div>
           </div>
 
-          {/* Nhà cung cấp đề xuất — Task 5: LUÔN hiện card để bố cục thống nhất; người không có
-              supplier.read thì BE trả rỗng -> chỉ để TRỐNG + KHOÁ nhập (không ẩn card). */}
-          {(() => { const canSup = can('supplier', 'read'); return (
+          {/* Nhà cung cấp — Task 4: 2 cụm.
+              · Cụm 'Bộ phận đề xuất' (req): AI CŨNG nhập/xem được (kể cả người yêu cầu không có
+                quyền xem NCC) — sửa bug người yêu cầu không đề xuất nổi NCC của mình.
+              · Cụm 'Khảo sát / Thu mua' (pur): chỉ hiện khi có quyền xem NCC (supplier.read);
+                chỉ Quản lý/Admin thu mua (supplier.write) mới sửa được. */}
+          {(() => {
+            const canSupRead = can('supplier', 'read')
+            const canWritePur = isNew ? can('supplier', 'write') : (pr.can_edit_supplier_pur ?? can('supplier', 'write'))
+            const req = pr.supplier_req || {}
+            const pur = pr.supplier_pur || {}
+            return (
           <div className="card" style={{ padding: 18, marginBottom: 16 }}>
-            <h3 className="sec-title">Nhà cung cấp đề xuất (Nếu có)</h3>
-            <div className="form-grid" style={{ marginBottom: 14 }}>
+            <h3 className="sec-title">Nhà cung cấp</h3>
+
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--navy)', marginBottom: 8 }}>NCC do bộ phận đề xuất (nếu có)</div>
+            <div className="form-grid" style={{ marginBottom: canSupRead ? 18 : 4 }}>
               <div className="form-row">
                 <label>Tên nhà cung cấp đề xuất</label>
-                <input value={pr.suggested_supplier || ''} placeholder="Nhập tên nhà cung cấp..." disabled={!editable || !canSup} onChange={(e) => setH('suggested_supplier', e.target.value)} />
+                <input value={req.name || ''} placeholder="Nhà cung cấp tối ưu nhất" disabled={!editable} onChange={(e) => setSup('supplier_req', 'name', e.target.value)} />
               </div>
               <div className="form-row">
                 <label>Mã số thuế NCC</label>
-                <input value={pr.suggested_supplier_tax_code || ''} placeholder="Mã số thuế NCC" disabled={!editable || !canSup} onChange={(e) => setH('suggested_supplier_tax_code', e.target.value)} />
+                <input value={req.tax_code || ''} placeholder="Mã số thuế NCC" disabled={!editable} onChange={(e) => setSup('supplier_req', 'tax_code', e.target.value)} />
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Liên hệ NCC (SĐT / Email / Địa chỉ...)</label>
-                <input value={pr.suggested_supplier_contact || ''} placeholder="Thông tin liên hệ nhà cung cấp..." disabled={!editable || !canSup} onChange={(e) => setH('suggested_supplier_contact', e.target.value)} />
+                <input value={req.contact || ''} placeholder="Thông tin liên hệ nhà cung cấp..." disabled={!editable} onChange={(e) => setSup('supplier_req', 'contact', e.target.value)} />
               </div>
             </div>
+
+            {canSupRead && (
+              <>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--teal)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  NCC từ khảo sát / thu mua
+                  {pr.supplier_from_survey && <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--muted)' }}>(nguồn: Yêu cầu báo giá)</span>}
+                  {!canWritePur && <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--muted)' }}>· chỉ xem</span>}
+                </div>
+                <div className="form-grid">
+                  <div className="form-row">
+                    <label>Tên nhà cung cấp</label>
+                    <input value={pur.name || ''} placeholder="Nhà cung cấp tối ưu nhất" disabled={!editable || !canWritePur} onChange={(e) => setSup('supplier_pur', 'name', e.target.value)} />
+                  </div>
+                  <div className="form-row">
+                    <label>Mã số thuế NCC</label>
+                    <input value={pur.tax_code || ''} placeholder="Mã số thuế NCC" disabled={!editable || !canWritePur} onChange={(e) => setSup('supplier_pur', 'tax_code', e.target.value)} />
+                  </div>
+                  <div className="form-row" style={{ gridColumn: '1 / -1' }}>
+                    <label>Liên hệ NCC (SĐT / Email / Địa chỉ...)</label>
+                    <input value={pur.contact || ''} placeholder="Thông tin liên hệ nhà cung cấp..." disabled={!editable || !canWritePur} onChange={(e) => setSup('supplier_pur', 'contact', e.target.value)} />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
           ) })()}
 
