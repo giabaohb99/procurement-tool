@@ -9,11 +9,11 @@ import { useAuth } from '../auth/AuthContext'
 
 const TABS = [
   { key: 'overview', label: 'Tổng quan' },
-  { key: 'supplier', label: 'Nhà cung cấp' },
+  { key: 'supplier', label: 'Nhà cung cấp', need: 'purchase_order' },   // NCC nhạy cảm -> ẩn với phòng ban YC (không có quyền xem ĐMH)
   { key: 'item_group', label: 'Phân loại vật tư bao bì / nguyên liệu' },
-  { key: 'nspt', label: 'Nhân sự phụ trách' },
-  { key: 'department', label: 'Bộ phận (đơn gấp)' },
-  { key: 'shipping', label: 'Chi phí vận chuyển' },
+  { key: 'nspt', label: 'Nhân sự phụ trách', need: 'purchase_order' },        // phía thu mua -> ẩn với phòng ban YC
+  { key: 'department', label: 'Bộ phận (đơn gấp)' },                          // phòng ban YC chỉ thấy phòng mình (scope BE)
+  { key: 'shipping', label: 'Chi phí vận chuyển', need: 'purchase_order' },   // phía thu mua -> ẩn với phòng ban YC
   { key: 'pyc_req', label: 'Yêu cầu mua hàng', need: 'purchase_request' },   // theo phòng ban
   { key: 'ycks_req', label: 'Yêu cầu báo giá', need: 'survey_request' },    // theo phòng ban
   // { key: 'inventory', label: 'Tồn kho' },   // tạm ẩn tab Tồn kho
@@ -188,9 +188,10 @@ export default function Reports() {
     const params: any = {}
     if (f.year) params.year = f.year
     if (f.company_id) params.company_id = f.company_id
+    const procParams = { ...params, ...(period !== 'all' ? { month: period } : {}) }   // giữ lọc phụ theo tháng khi bấm Lọc
     try {
       const [a, b] = await Promise.all([
-        api.get('/api/reports/procurement', { params }),
+        api.get('/api/reports/procurement', { params: procParams }),
         api.get('/api/reports/matrix', { params: { ...params, ...(refresh ? { refresh: 1 } : {}) } }),
       ])
       setD(a.data.data); setMx(b.data.data)
@@ -201,9 +202,19 @@ export default function Reports() {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items))
     load()
   }, [])
+
+  // Tab Tổng quan — lọc phụ theo THÁNG (áp dụng ngay như "Xem theo:" các tab khác).
+  // Chỉ nạp lại số liệu tổng quan; year/company vẫn dùng giá trị đang áp dụng. Bỏ qua lần đầu (đợi load()).
+  useEffect(() => {
+    if (tab !== 'overview' || !d) return
+    const params: any = {}
+    if (f.year) params.year = f.year
+    if (f.company_id) params.company_id = f.company_id
+    if (period !== 'all') params.month = period
+    api.get('/api/reports/procurement', { params }).then((r) => setD(r.data.data)).catch(() => {})
+  }, [tab, period])
   if (!d || !mx) return <div style={{ padding: 20 }}>Đang tải...</div>
   const months = mx.months || []
-  const isMatrix = ['supplier', 'item_group', 'nspt', 'department', 'shipping'].includes(tab)
 
   const shipPages = Math.max(1, Math.ceil((shipData.total || 0) / (shipData.page_size || 50)))
 
@@ -289,7 +300,7 @@ export default function Reports() {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
         <div style={{ fontSize: 12, color: 'var(--muted)' }}>Kỳ: {f.year === 'all' ? 'Tất cả' : `Năm ${f.year}`} · {f.company_id ? companies.find((c) => String(c.id) === String(f.company_id))?.name : 'Tất cả công ty'} · Tính lúc: {mx.computed_at}</div>
-        {isMatrix && tab !== 'nspt' && tab !== 'department' && tab !== 'supplier' && tab !== 'item_group' && (
+        {(tab === 'overview' || tab === 'shipping') && (
           <div className="no-print" style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>Xem theo:
             <div style={{ minWidth: 150 }}>
               <SearchSelect value={period} placeholder="Cả năm"
@@ -301,6 +312,11 @@ export default function Reports() {
       </div>
 
       {tab === 'overview' && (<>
+        <div className="no-print" style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10, background: '#f6f8fa', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', lineHeight: 1.55 }}>
+          <i className="ti ti-info-circle" style={{ marginRight: 5, color: 'var(--teal)' }} />
+          <b>Lưu ý cách đọc số:</b> "Giá trị đặt hàng" = tổng giá trị các đơn <b>ĐẶT</b> theo <b>ngày đặt</b>. Biểu đồ "Chi phí mua theo tháng" = <b>công nợ phát sinh</b> (tiền hàng + vận chuyển, gồm VAT, theo lượng thực nhận) theo <b>ngày nhận hàng</b>. Hai con số đo khác nhau nên <b>không bằng nhau</b>. Mọi số liệu chỉ tính <b>đơn thật</b> (đã duyệt trở đi) — đã loại trừ đơn nháp / chờ duyệt / hủy / từ chối.
+          {period !== 'all' && <><br /><i className="ti ti-filter" style={{ marginRight: 4 }} />Đang lọc theo <b>{periodLabel}</b>: các thẻ số &amp; tình hình đơn/giao hàng tính theo tháng này; riêng biểu đồ "Chi phí mua theo tháng" vẫn hiển thị cả năm.</>}
+        </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
           <Card label="Số đơn mua hàng" val={fmt(d.po_count)} />
           <Card label="Giá trị đặt hàng" val={fmt(d.order_value)} color="var(--teal)" />
@@ -322,7 +338,7 @@ export default function Reports() {
             <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>Đúng hạn {onTimePct}%</div>
           </div>
           <div className="card" style={{ padding: 18 }}>
-            <h3 className="sec-title">Chi phí mua theo tháng <span style={{ fontSize: 11.5, fontWeight: 400, color: 'var(--muted)' }}>(rê xem số tiền · bấm cột để xem theo ngày)</span></h3>
+            <h3 className="sec-title">Chi phí mua theo tháng <span style={{ fontSize: 11.5, fontWeight: 400, color: 'var(--muted)' }}>(công nợ phát sinh theo ngày nhận · rê xem số tiền · bấm cột để xem theo ngày)</span></h3>
             <BarChart data={spendSeries} color="var(--teal)" onBar={openDaily} />
           </div>
         </div>

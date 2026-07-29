@@ -43,6 +43,7 @@ interface ProcessLine {
   assignee: string
   assignee_name: string
   options: ProcessOption[]
+  can_process?: boolean   // dòng này người xem có được gắn/xóa phương án không (Admin TM đọc-chỉ -> false ở dòng người khác)
 }
 
 interface ProcessOption {
@@ -389,8 +390,13 @@ export default function SurveyRequestProcess() {
               </div>
             )}
 
-            {/* Bộ lọc: Phân loại (mặc định theo dòng, đổi được) + NCC (tùy chọn) + Tìm mã/tên SP */}
-            <div style={{ marginBottom: 14 }}>
+            {!line.can_process && (
+              <div style={{ fontSize: 12.5, color: 'var(--muted)', fontStyle: 'italic', margin: '4px 0 12px' }}>
+                <i className="ti ti-lock" style={{ marginRight: 4 }} />Dòng do NSTM khác phụ trách — bạn chỉ xem, không gắn/xóa phương án.
+              </div>
+            )}
+            {/* Bộ lọc: Phân loại + NCC + Tìm mã/tên SP — CHỈ dòng mình phụ trách mới gắn được option */}
+            {line.can_process && (<div style={{ marginBottom: 14 }}>
               <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>
                 <i className="ti ti-filter" style={{ marginRight: 4 }} />Tìm kết quả khảo sát để thêm option
               </div>
@@ -422,10 +428,10 @@ export default function SurveyRequestProcess() {
                   </button>
                 )}
               </div>
-            </div>
+            </div>)}
 
-            {/* Bảng dòng khảo sát khả dụng theo bộ lọc */}
-            {(ls.supplierCode || ls.filterGroup || (ls.search || '').trim() || ls.loading || availShown.length > 0) && (
+            {/* Bảng dòng khảo sát khả dụng theo bộ lọc — chỉ dòng mình phụ trách */}
+            {line.can_process && (ls.supplierCode || ls.filterGroup || (ls.search || '').trim() || ls.loading || availShown.length > 0) && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
                   Kết quả khảo sát đã duyệt
@@ -442,10 +448,22 @@ export default function SurveyRequestProcess() {
                   </div>
                 ) : (
                   <div className="items-scroll">
-                    <table className="items-table" style={{ minWidth: 900 }}>
+                    <table className="items-table" style={{ minWidth: 1092, tableLayout: 'fixed' }}>
+                      <colgroup>
+                        <col style={{ width: 40 }} />{/* chọn */}
+                        <col style={{ width: 190 }} />{/* NCC */}
+                        <col style={{ width: 230 }} />{/* Tên SP */}
+                        <col style={{ width: 160 }} />{/* Spec */}
+                        <col style={{ width: 90 }} />{/* Xuất xứ */}
+                        <col style={{ width: 96 }} />{/* Giá */}
+                        <col style={{ width: 80 }} />{/* MOQ */}
+                        <col style={{ width: 64 }} />{/* ĐVT */}
+                        <col style={{ width: 70 }} />{/* Lab */}
+                        <col style={{ width: 72 }} />{/* Thêm */}
+                      </colgroup>
                       <thead>
                         <tr>
-                          <th style={{ width: 36 }}></th>
+                          <th></th>
                           <th style={{ textAlign: 'left' }}>NCC</th>
                           <th style={{ textAlign: 'left' }}>Tên SP</th>
                           <th style={{ textAlign: 'left' }}>Spec</th>
@@ -454,7 +472,7 @@ export default function SurveyRequestProcess() {
                           <th style={{ textAlign: 'right' }}>MOQ</th>
                           <th style={{ textAlign: 'left' }}>ĐVT</th>
                           <th style={{ textAlign: 'center' }}>Lab</th>
-                          <th style={{ width: 80, textAlign: 'center' }}>Thêm</th>
+                          <th style={{ textAlign: 'center' }}>Thêm</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -477,18 +495,18 @@ export default function SurveyRequestProcess() {
                                 }}
                               />
                             </td>
-                            <td title={al.supplier_name || al.supplier_code} style={{ maxWidth: 180 }}>
+                            <td title={al.supplier_name || al.supplier_code}>
                               {al.supplier_code || al.supplier_name ? (
                                 <>
-                                  <div style={{ fontWeight: 600, color: 'var(--navy)' }}>{al.supplier_code || '—'}</div>
+                                  <div style={{ fontWeight: 600, color: 'var(--navy)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{al.supplier_code || '—'}</div>
                                   {al.supplier_name && (
-                                    <div style={{ fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>{al.supplier_name}</div>
+                                    <div style={{ fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{al.supplier_name}</div>
                                   )}
                                 </>
                               ) : '—'}
                             </td>
-                            <td title={al.product_name} style={{ maxWidth: 200 }}>
-                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: 160, verticalAlign: 'middle' }}>{al.product_name || '—'}</span>
+                            <td title={al.product_name}>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: '100%', verticalAlign: 'middle' }}>{al.product_name || '—'}</span>
                               {al.internal_code && <span style={{ color: 'var(--muted)', fontSize: 11, marginLeft: 4 }}>({al.internal_code})</span>}
                               {al.survey_item_group && al.survey_item_group !== line.item_group && (
                                 <span className="badge warn" style={{ fontSize: 10, marginLeft: 6 }}
@@ -496,13 +514,13 @@ export default function SurveyRequestProcess() {
                               )}
                             </td>
                             <td title={al.spec}
-                              style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {al.spec || '—'}
                             </td>
-                            <td>{al.origin || '—'}</td>
+                            <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{al.origin || '—'}</td>
                             <td style={{ textAlign: 'right' }}>{fmtNum(al.price_by_volume)}</td>
                             <td style={{ textAlign: 'right' }}>{fmtNum(al.moq)}</td>
-                            <td>{al.quote_unit || '—'}</td>
+                            <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{al.quote_unit || '—'}</td>
                             <td style={{ textAlign: 'center' }}>
                               {al.lab_result
                                 ? <span className="badge ok" style={{ fontSize: 11 }}>Có</span>
@@ -565,50 +583,71 @@ export default function SurveyRequestProcess() {
                 </div>
               ) : (
                 <div className="items-scroll">
-                  <table className="items-table" style={{ minWidth: 760 }}>
+                  <table className="items-table" style={{ minWidth: 1450, tableLayout: 'fixed' }}>
+                    <colgroup>
+                      <col style={{ width: 120 }} />{/* Option */}
+                      <col style={{ width: 190 }} />{/* NCC (nội bộ) */}
+                      <col style={{ width: 230 }} />{/* Tên SP */}
+                      <col style={{ width: 160 }} />{/* Spec */}
+                      <col style={{ width: 90 }} />{/* Xuất xứ */}
+                      <col style={{ width: 96 }} />{/* Giá */}
+                      <col style={{ width: 80 }} />{/* MOQ */}
+                      <col style={{ width: 64 }} />{/* ĐVT */}
+                      <col style={{ width: 230 }} />{/* Mã SP hệ thống */}
+                      <col style={{ width: 130 }} />{/* Trạng thái */}
+                      <col style={{ width: 60 }} />{/* Xóa */}
+                    </colgroup>
                     <thead>
                       <tr>
                         <th style={{ textAlign: 'left' }}>Option</th>
+                        <th style={{ textAlign: 'left' }}>NCC (nội bộ)</th>
                         <th style={{ textAlign: 'left' }}>Tên SP</th>
                         <th style={{ textAlign: 'left' }}>Spec</th>
+                        <th style={{ textAlign: 'left' }}>Xuất xứ</th>
                         <th style={{ textAlign: 'right' }}>Giá</th>
                         <th style={{ textAlign: 'right' }}>MOQ</th>
-                        <th style={{ textAlign: 'left' }}>NCC (nội bộ)</th>
-                        <th style={{ textAlign: 'left', minWidth: 200 }}>Mã SP hệ thống</th>
+                        <th style={{ textAlign: 'left' }}>ĐVT</th>
+                        <th style={{ textAlign: 'left' }}>Mã SP hệ thống</th>
                         <th style={{ textAlign: 'center' }}>Trạng thái</th>
-                        <th style={{ width: 60, textAlign: 'center' }}>Xóa</th>
+                        <th style={{ textAlign: 'center' }}>Xóa</th>
                       </tr>
                     </thead>
                     <tbody>
                       {options.map((opt) => (
                         <tr key={opt.id}>
-                          <td style={{ whiteSpace: 'nowrap', fontSize: 12.5, color: 'var(--muted)' }}>
+                          <td style={{ whiteSpace: 'nowrap', fontSize: 12.5, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {opt.display_label || `Option #${opt.id}`}
                           </td>
-                          <td title={opt.snap_product_name}
-                            style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {opt.snap_product_name || '—'}
-                          </td>
-                          <td title={opt.snap_spec}
-                            style={{ maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {opt.snap_spec || '—'}
-                          </td>
-                          <td style={{ textAlign: 'right' }}>{fmtNum(opt.snap_price_by_volume)}</td>
-                          <td style={{ textAlign: 'right' }}>{fmtNum(opt.snap_moq)}</td>
                           <td>
                             <span
                               className="badge warn"
-                              style={{ fontSize: 11 }}
+                              style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', display: 'inline-block', verticalAlign: 'middle' }}
                               title="Thông tin nội bộ — không hiển thị với người YC"
                             >
                               {opt.supplier_name || opt.supplier_code || '—'}
                             </span>
                           </td>
-                          <td style={{ minWidth: 200 }}>
-                            <div style={{ border: attempted && !opt.system_product_code ? '1px solid var(--red)' : 'none', borderRadius: 4 }}>
-                              <ProductPicker code={opt.system_product_code}
-                                onPick={(prod) => setOptionProduct(line.id, opt.id, prod?.code || '')} />
-                            </div>
+                          <td title={opt.snap_product_name}
+                            style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {opt.snap_product_name || '—'}
+                          </td>
+                          <td title={opt.snap_spec}
+                            style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {opt.snap_spec || '—'}
+                          </td>
+                          <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{opt.snap_origin || '—'}</td>
+                          <td style={{ textAlign: 'right' }}>{fmtNum(opt.snap_price_by_volume)}</td>
+                          <td style={{ textAlign: 'right' }}>{fmtNum(opt.snap_moq)}</td>
+                          <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{opt.snap_quote_unit || '—'}</td>
+                          <td>
+                            {line.can_process ? (
+                              <div style={{ border: attempted && !opt.system_product_code ? '1px solid var(--red)' : 'none', borderRadius: 4 }}>
+                                <ProductPicker code={opt.system_product_code}
+                                  onPick={(prod) => setOptionProduct(line.id, opt.id, prod?.code || '')} />
+                              </div>
+                            ) : (
+                              <span style={{ color: 'var(--muted)', fontSize: 12.5 }}>{opt.system_product_code || '—'}</span>
+                            )}
                           </td>
                           <td style={{ textAlign: 'center' }}>
                             {opt.is_chosen
@@ -616,13 +655,15 @@ export default function SurveyRequestProcess() {
                               : <span className="badge gray" style={{ fontSize: 11 }}>Chưa chọn</span>}
                           </td>
                           <td style={{ textAlign: 'center' }}>
-                            <button
-                              className="icon-btn"
-                              title="Xóa option"
-                              onClick={() => removeOption(line.id, opt.id)}
-                            >
-                              <i className="ti ti-trash" style={{ color: 'var(--red)' }} />
-                            </button>
+                            {line.can_process ? (
+                              <button
+                                className="icon-btn"
+                                title="Xóa option"
+                                onClick={() => removeOption(line.id, opt.id)}
+                              >
+                                <i className="ti ti-trash" style={{ color: 'var(--red)' }} />
+                              </button>
+                            ) : <span style={{ color: 'var(--muted)' }}>—</span>}
                           </td>
                         </tr>
                       ))}

@@ -350,6 +350,10 @@ def _out_process(db: Session, s: SurveyRequest, user=None, profile=None) -> dict
         d = _dict(ln)
         d["assignee_name"] = name_by_code.get(ln.assignee, "")
         d["options"] = [_opt_internal(o) for o in service.valid_options_of(db, ln.id)]
+        # Cờ cho FE: dòng này người xem có được GẮN/XÓA phương án không. Admin TM (đọc-chỉ)
+        # thấy hết dòng nhưng chỉ sửa được dòng mình phụ trách -> dòng khác hiển thị read-only.
+        d["can_process"] = (service.can_process_line(db, ln, profile)
+                            if profile is not None else True)
         out_lines.append(d)
     base["lines"] = out_lines
     return base
@@ -401,7 +405,7 @@ def add_option_(sid: int, line_id: int, data: dict, db: Session = Depends(get_db
     if not psl_id:
         raise HTTPException(400, "Thiếu product_survey_line_id")
     service.create_option(db, ln, psl_id, user.id)
-    return success(_out_process(db, s), "Đã thêm option", 201)
+    return success(_out_process(db, s, user, prof), "Đã thêm option", 201)
 
 
 @router.post("/{sid}/sync-options")
@@ -412,7 +416,7 @@ def sync_options_(sid: int, db: Session = Depends(get_db), up=Depends(_purchaser
     if s.status not in ("processing", "survey_done"):
         raise HTTPException(400, "Chỉ lấy phương án khi phiếu đang xử lý hoặc đã khảo sát")
     n = service.sync_options_from_surveys(db, sid, user.id)
-    return success(_out_process(db, s), f"Đã lấy {n} phương án mới từ khảo sát" if n else "Đã lấy phương án từ khảo sát xong")
+    return success(_out_process(db, s, user, _prof), f"Đã lấy {n} phương án mới từ khảo sát" if n else "Đã lấy phương án từ khảo sát xong")
 
 
 @router.delete("/{sid}/lines/{line_id}/options/{oid}")
@@ -424,7 +428,7 @@ def del_option_(sid: int, line_id: int, oid: int, db: Session = Depends(get_db),
     if not service.can_process_line(db, ln, prof):
         raise HTTPException(403, "Bạn không phụ trách dòng này")
     service.delete_option(db, line_id, oid)
-    return success(_out_process(db, service.get_sr(db, sid)), "Đã xóa option")
+    return success(_out_process(db, service.get_sr(db, sid), user, prof), "Đã xóa option")
 
 
 @router.patch("/{sid}/lines/{line_id}/options/{oid}")
@@ -436,7 +440,7 @@ def edit_option_(sid: int, line_id: int, oid: int, data: dict, db: Session = Dep
     service.set_option_fields(db, line_id, oid, user.id,
                               nstm_note=data.get("nstm_note"),
                               system_product_code=data.get("system_product_code"))
-    return success(_out_process(db, service.get_sr(db, sid)), "Đã cập nhật")
+    return success(_out_process(db, service.get_sr(db, sid), user, prof), "Đã cập nhật")
 
 
 @router.post("/{sid}/complete")

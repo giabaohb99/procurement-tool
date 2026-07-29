@@ -306,6 +306,10 @@ def _see_all_lines(profile: dict, s, user) -> bool:
             return True
         if p.get("read") and p.get("scope") in ("dept", "company", "all"):
             return True
+        # Admin thu mua = đọc-chỉ phạm vi 'proc' (KHÔNG có 'write') -> giám sát toàn quá trình,
+        # thấy HẾT dòng. NSTM (có 'write', 'proc') vẫn chỉ thấy dòng được giao để xử lý.
+        if p.get("read") and p.get("scope") == "proc" and not p.get("write"):
+            return True
     return False
 
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
+import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
 import Pagination from '../components/Pagination'
 import { fmtDate } from '../utils/datetime'
@@ -16,7 +17,7 @@ const PG_COLOR: Record<string, string> = {
 }
 const PG_OPTS = Object.keys(PG_COLOR)
 const pgBadge = (s: string) =>
-  <span className="badge" style={{ background: (PG_COLOR[s] || '#94a3b8') + '22', color: PG_COLOR[s] || '#64748b' }}>{s || '—'}</span>
+  <span className="badge" style={{ background: (PG_COLOR[s] || '#94a3b8') + '22', color: PG_COLOR[s] || '#64748b', whiteSpace: 'nowrap' }}>{s || '—'}</span>
 
 // CL quy định − nhận: <0 = trễ (đỏ), >=0 = đúng/sớm (xanh)
 const diffCell = (n: number) =>
@@ -24,6 +25,8 @@ const diffCell = (n: number) =>
 
 export default function PurchaseProgress() {
   const navigate = useNavigate()
+  const { can } = useAuth()
+  const canOpenPO = can('purchase_order', 'read')   // không có quyền xem ĐMH -> KHÔNG cho click (tránh ra trang trắng)
   const [rows, setRows] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [showSupplier, setShowSupplier] = useState(true)
@@ -104,7 +107,7 @@ export default function PurchaseProgress() {
 
       <div className="card">
         <div className="items-scroll">
-          <table className="items-table wide-table" style={{ minWidth: showSupplier ? 5138 : 4258, tableLayout: 'fixed' }}>
+          <table className="items-table wide-table" style={{ minWidth: showSupplier ? 5294 : 4414, tableLayout: 'fixed' }}>
             <colgroup>
               <col style={{ width: 44 }} />{/* STT */}
               <col style={{ width: 150 }} />{/* Mã ĐMH */}
@@ -121,7 +124,7 @@ export default function PurchaseProgress() {
               <col style={{ width: 120 }} />{/* Nhóm hàng */}
               <col style={{ width: 190 }} />{/* Quy cách */}
               <col style={{ width: 84 }} />{/* Mã HH */}
-              <col style={{ width: 92 }} />{/* Số HĐ */}
+              <col style={{ width: 160 }} />{/* Số HĐ — nới cho đủ ~20 ký tự */}
               <col style={{ width: 88 }} />{/* Ngày cần */}
               <col style={{ width: 56 }} />{/* ĐVT */}
               <col style={{ width: 76 }} />{/* SL YC */}
@@ -129,7 +132,7 @@ export default function PurchaseProgress() {
               <col style={{ width: 96 }} />{/* Đơn giá */}
               <col style={{ width: 60 }} />{/* VAT% */}
               <col style={{ width: 128 }} />{/* Thành tiền ĐH */}
-              <col style={{ width: 140 }} />{/* Tiến độ */}
+              <col style={{ width: 176 }} />{/* Tiến độ — nới cho vừa badge "Chưa gửi ĐMH cho KT" */}
               <col style={{ width: 72 }} />{/* Lần giao */}
               <col style={{ width: 96 }} />{/* Kho */}
               {showSupplier && <><col style={{ width: 160 }} />{/* Mã ĐVVC */}<col style={{ width: 160 }} />{/* Đơn vị VC */}</>}
@@ -143,7 +146,7 @@ export default function PurchaseProgress() {
               <col style={{ width: 84 }} />{/* CL cam kết */}
               <col style={{ width: 84 }} />{/* CL quy định */}
               <col style={{ width: 76 }} />{/* CL vs YC */}
-              <col style={{ width: 108 }} />{/* Số HĐ (giao) */}
+              <col style={{ width: 160 }} />{/* Số HĐ (giao) — nới cho đủ ~20 ký tự */}
               {showSupplier && <><col style={{ width: 96 }} /><col style={{ width: 108 }} /></>}
               <col style={{ width: 64 }} />{/* QC */}
               <col style={{ width: 108 }} />{/* TT giao */}
@@ -180,10 +183,14 @@ export default function PurchaseProgress() {
               {rows.map((r, i) => (
                 <tr key={`${r.item_id}-${r.delivery_id ?? 'x'}-${i}`}>
                   <td style={{ textAlign: 'right', color: 'var(--muted)' }}>{r.stt ?? (page - 1) * pageSize + i + 1}</td>
-                  <td style={NOWRAP}><a href={`/purchase-orders/${r.po_id}`}
-                    onClick={(e) => { e.preventDefault(); navigate(`/purchase-orders/${r.po_id}`) }}
-                    style={{ cursor: 'pointer', color: 'var(--navy)', fontWeight: 600, textDecoration: 'underline' }}
-                    title="Mở đơn mua hàng">{r.po_code}</a></td>
+                  <td style={NOWRAP}>{canOpenPO ? (
+                    <a href={`/purchase-orders/${r.po_id}`}
+                      onClick={(e) => { e.preventDefault(); navigate(`/purchase-orders/${r.po_id}`) }}
+                      style={{ cursor: 'pointer', color: 'var(--navy)', fontWeight: 600, textDecoration: 'underline' }}
+                      title="Mở đơn mua hàng">{r.po_code}</a>
+                  ) : (
+                    <span style={{ fontWeight: 600, color: 'var(--navy)' }} title="Bạn không có quyền xem chi tiết đơn mua hàng">{r.po_code}</span>
+                  )}</td>
                   <td style={{ ...NOWRAP, color: 'var(--muted)' }}>{r.misa_code}</td>
                   <td style={{ ...NOWRAP, color: 'var(--muted)' }}>{r.pr_code}</td>
                   <td>{companyName(r.company_id)}</td><td>{r.department}</td>

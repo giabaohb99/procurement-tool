@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.core.auth import require
+from app.core.auth import require, get_perm_profile
 from app.core.database import get_db
 from app.core.response import success
 from .excel import build_report_workbook
@@ -16,6 +16,14 @@ from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 from . import service as report_service
 
 router = APIRouter(prefix="/api/reports", tags=["report"])
+
+
+def _can_see_ncc(db: Session, user) -> bool:
+    """Được xem báo cáo NCC (nhà cung cấp) không? Dữ liệu NCC là nhạy cảm, chỉ dành cho
+    thu mua / quản lý — lấy quyền xem ĐMH (nguồn số liệu NCC) làm mốc. Trưởng bộ phận /
+    phòng ban YÊU CẦU không có 'purchase_order' read -> KHÔNG thấy báo cáo NCC."""
+    pu = get_perm_profile(db, user).get("perms_union", {})
+    return bool(pu.get("purchase_order", {}).get("read"))
 
 
 @router.get("/daily")
@@ -28,8 +36,17 @@ def daily(request: Request, db: Session = Depends(get_db), user=Depends(require(
         q = q.filter(Payable.incur_date.like(f"{month}%"))
     if company_id:
         q = q.filter(Payable.company_id == int(company_id))
+    pays = q.all()
+    # LOẠI TRỪ công nợ thuộc ĐMH nháp/chờ duyệt/hủy/từ chối — khớp biểu đồ "Chi phí mua theo tháng".
+    pay_po_ids = {p.po_id for p in pays if p.po_id}
+    if pay_po_ids:
+        bad_po_ids = {pid for pid, st in db.query(PurchaseOrder.id, PurchaseOrder.status)
+                      .filter(PurchaseOrder.id.in_(pay_po_ids)).all()
+                      if st not in REAL_PO_STATUSES}
+        if bad_po_ids:
+            pays = [p for p in pays if p.po_id not in bad_po_ids]
     agg = {}
-    for p in q.all():
+    for p in pays:
         day = p.incur_date or ""
         if not day:
             continue
@@ -82,7 +99,19 @@ def matrix(request: Request, background: BackgroundTasks, db: Session = Depends(
     year = request.query_params.get("year") or str(datetime.now().year)
     company_id = request.query_params.get("company_id")
     refresh = request.query_params.get("refresh") == "1"
-    return success(report_service.get_snapshot(db, year, company_id, refresh=refresh, background=background))
+    snap = report_service.get_snapshot(db, year, company_id, refresh=refresh, background=background)
+    # snapshot là dict tươi (json.loads/compute mỗi lần) nên gán lại field không đụng cache dùng chung.
+    patch = {}
+    # Ẩn báo cáo NCC với phòng ban yêu cầu (không có quyền xem ĐMH).
+    if not _can_see_ncc(db, user):
+        patch["supplier"] = []
+    # Báo cáo Bộ phận (đơn gấp): phòng ban YÊU CẦU chỉ thấy phòng của mình.
+    allow = report_service.report_dept_scope(db, user)
+    if allow is not None:
+        patch["department"] = [r for r in snap.get("department", []) if r.get("key") in allow]
+    if patch:
+        snap = {**snap, **patch}
+    return success(snap)
 
 
 @router.get("/request-matrix")
@@ -133,6 +162,8 @@ def ig_range(request: Request, db: Session = Depends(get_db), user=Depends(requi
 @router.get("/sup-range")
 def sup_range(request: Request, db: Session = Depends(get_db), user=Depends(require("report", "read"))):
     """Giao dịch & trễ theo NCC trong khoảng NGÀY (date_from, date_to = YYYY-MM-DD). Tính realtime."""
+    if not _can_see_ncc(db, user):   # phòng ban yêu cầu không xem báo cáo NCC
+        return success([])
     date_from = request.query_params.get("date_from")
     date_to = request.query_params.get("date_to")
     company_id = request.query_params.get("company_id")
@@ -185,6 +216,7 @@ def procurement(request: Request, db: Session = Depends(get_db),
                 user=Depends(require("report", "read"))):
     year = request.query_params.get("year") or str(datetime.now().year)
     company_id = request.query_params.get("company_id")
+    month = (request.query_params.get("month") or "").strip()   # 'YYYY-MM' — lọc phụ theo tháng (tab Tổng quan)
     today = datetime.now().date().strftime("%Y-%m-%d")
 
     poq = db.query(PurchaseOrder)
@@ -197,7 +229,24 @@ def procurement(request: Request, db: Session = Depends(get_db),
     if year and year != "all":
         poq = poq.filter(PurchaseOrder.order_date.like(f"{year}%"))
         payq = payq.filter(Payable.period == year)
-    pos_all = poq.all()
+    pos_year = poq.all()
+    pays_year = payq.all()
+    # LOẠI TRỪ công nợ thuộc ĐMH nháp/chờ duyệt/hủy/từ chối — chỉ tính "đơn thật" (approved trở đi).
+    # (ĐMH không có soft-delete; "xóa" = hủy/từ chối, đã nằm ngoài REAL_PO_STATUSES.)
+    pay_po_ids = {p.po_id for p in pays_year if p.po_id}
+    if pay_po_ids:
+        bad_po_ids = {pid for pid, st in db.query(PurchaseOrder.id, PurchaseOrder.status)
+                      .filter(PurchaseOrder.id.in_(pay_po_ids)).all()
+                      if st not in REAL_PO_STATUSES}
+        if bad_po_ids:
+            pays_year = [p for p in pays_year if p.po_id not in bad_po_ids]
+    # Lọc phụ theo THÁNG: thu hẹp các chỉ số tổng quan (thẻ số / trạng thái / tiến độ giao) về 1 tháng.
+    # Riêng biểu đồ "Chi phí mua theo tháng" LUÔN theo cả năm (tính từ pays_year) để giữ đường xu hướng.
+    if month:
+        pos_all = [p for p in pos_year if (p.order_date or "").startswith(month)]
+        pays = [p for p in pays_year if (p.incur_date or "").startswith(month)]
+    else:
+        pos_all, pays = pos_year, pays_year
     # Đếm theo trạng thái: GIỮ tất cả (để thấy phân bố nháp/hủy…). Giá trị & breakdown: CHỈ đơn thật.
     status_count = {s: 0 for s in PO_STATUSES}
     for p in pos_all:
@@ -205,7 +254,6 @@ def procurement(request: Request, db: Session = Depends(get_db),
     pos = [p for p in pos_all if p.status in REAL_PO_STATUSES]
     po_ids = [p.id for p in pos]
     po_code = {p.id: p.code for p in pos_all}
-    pays = payq.all()
     items = db.query(POItem).filter(POItem.po_id.in_(po_ids)).all() if po_ids else []
     item_name = {it.id: it.product_name for it in items}
     delivs = (db.query(PODelivery).filter(PODelivery.po_id.in_(po_ids), PODelivery.received_qty > 0).all()
@@ -232,7 +280,7 @@ def procurement(request: Request, db: Session = Depends(get_db),
                       .filter(*( [Inventory.company_id == int(company_id)] if company_id else [] )).scalar() or 0)
 
     spend = {}
-    for p in pays:
+    for p in pays_year:   # LUÔN cả năm (không theo lọc phụ 'month') để giữ đường xu hướng 12 tháng
         mo = (p.incur_date or "")[:7]
         if mo:
             spend[mo] = spend.get(mo, 0) + float(p.total or 0)

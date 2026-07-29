@@ -337,6 +337,28 @@ def _req_model(kind):
     return PurchaseRequest, "purchase_request"
 
 
+def report_dept_scope(db, user):
+    """Phạm vi PHÒNG BAN cho báo cáo Bộ phận / Yêu cầu mua hàng / Yêu cầu báo giá.
+
+    None  -> xem MỌI phòng ban (thu mua / quản lý công ty: report scope company|all).
+    set() -> chỉ các phòng ban được xem (phòng ban YÊU CẦU / trưởng bộ phận: report scope dept)
+             = phòng ban của chính mình + 'Phòng ban được xem' cấp thêm."""
+    from app.core.auth import get_perm_profile
+    prof = get_perm_profile(db, user)
+    allow: set = set()
+    for g in prof.get("grants", []):
+        p = g["perms"].get("report")
+        if not p or not p.get("read"):
+            continue
+        if p.get("scope", "own") in ("all", "company"):
+            return None   # thấy hết
+        if prof.get("dept_name"):
+            allow.add(prof["dept_name"])
+        for d in ((g.get("scope") or {}).get("inc") or {}).get("department", []) or []:
+            allow.add(d)
+    return allow
+
+
 def _req_scoped_rows(db, kind, user, *, company_id=None, year=None, date_from=None, date_to=None):
     """Lấy các phiếu (PYC/YCKS) theo công ty/năm/khoảng ngày. Báo cáo = TOÀN CÔNG TY (không áp scope user)."""
     Model, _entity = _req_model(kind)
@@ -387,6 +409,9 @@ def compute_request_matrix(db, kind, year, company_id, user) -> dict:
             cell[st] += 1
             row[st] += 1
     rows = sorted(agg.values(), key=lambda x: -x["total"])
+    allow = report_dept_scope(db, user)   # phòng ban YÊU CẦU chỉ thấy phòng của mình
+    if allow is not None:
+        rows = [r for r in rows if r["key"] in allow]
     return {"months": month_out, "rows": rows}
 
 
@@ -404,7 +429,11 @@ def compute_request_range(db, kind, date_from, date_to, company_id, user) -> lis
         row["total"] += 1
         if st:
             row[st] += 1
-    return sorted(agg.values(), key=lambda x: -x["total"])
+    rows = sorted(agg.values(), key=lambda x: -x["total"])
+    allow = report_dept_scope(db, user)   # phòng ban YÊU CẦU chỉ thấy phòng của mình
+    if allow is not None:
+        rows = [r for r in rows if r["key"] in allow]
+    return rows
 
 
 def compute_shipping_detail(db, year, company_id, carrier=None, month=None, page=1, page_size=50) -> dict:
