@@ -93,7 +93,12 @@ export default function PrintPaymentRequest() {
         </div>
 
         <div style={{ ...lbl, fontWeight: 700 }}>Đề nghị thanh toán:</div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: '6%' }} /><col style={{ width: '11%' }} />
+            <col style={{ width: '47%' }} /><col style={{ width: '15%' }} />
+            <col style={{ width: '13%' }} /><col style={{ width: '8%' }} />
+          </colgroup>
           <thead>
             <tr style={{ background: '#eef2f6' }}>
               <td style={{ ...cell, fontWeight: 700, textAlign: 'center' }} colSpan={2}>Chứng từ</td>
@@ -111,7 +116,7 @@ export default function PrintPaymentRequest() {
             {req.lines.map((l: any, i: number) => (
               <tr key={i}>
                 <td style={{ ...cell, textAlign: 'center' }}>{l.invoice_no}</td>
-                <td style={{ ...cell, textAlign: 'center' }}>{dmy(l.incur_date)}</td>
+                <td style={{ ...cell, textAlign: 'center' }}>{dmy(l.invoice_date || l.incur_date)}</td>
                 {/* Diễn giải GỘP cho mọi dòng (rowSpan) — chỉ render ở dòng đầu */}
                 {i === 0 && (
                   <td style={{ ...cell, verticalAlign: 'middle' }} rowSpan={req.lines.length || 1}>{noiDung}</td>
@@ -134,7 +139,12 @@ export default function PrintPaymentRequest() {
 
         {/* Đã tạm ứng/thanh toán — để trống điền tay (theo mẫu 002/BM/PKT) */}
         <div style={{ ...lbl, fontWeight: 700, marginTop: 10 }}>Đã tạm ứng/thanh toán:</div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: '6%' }} /><col style={{ width: '11%' }} />
+            <col style={{ width: '33%' }} /><col style={{ width: '20%' }} />
+            <col style={{ width: '18%' }} /><col style={{ width: '12%' }} />
+          </colgroup>
           <thead>
             <tr style={{ background: '#eef2f6' }}>
               <td style={{ ...cell, fontWeight: 700, textAlign: 'center' }} colSpan={2}>Chứng từ</td>
@@ -161,20 +171,16 @@ export default function PrintPaymentRequest() {
           </tbody>
         </table>
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
-          <tbody>
-            <tr>
-              <td style={{ ...cell, width: 28, textAlign: 'center', fontSize: 14 }}>☑</td>
-              <td style={{ ...cell, fontWeight: 600, width: 200 }}>Còn lại phải thanh toán</td>
-              <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{fmt(req.total)}</td>
-            </tr>
-            <tr>
-              <td style={{ ...cell, width: 28, textAlign: 'center', fontSize: 14 }}>☐</td>
-              <td style={{ ...cell, fontWeight: 600 }}>Phải hoàn lại cho Công ty</td>
-              <td style={cell} />
-            </tr>
-          </tbody>
-        </table>
+        <div style={{ marginTop: 8, border: '1px solid #888', fontSize: 11 }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid #888' }}>
+            <div style={{ padding: '4px 8px', borderRight: '1px solid #888', width: 230, fontWeight: 600 }}>☑&nbsp; Còn lại phải thanh toán</div>
+            <div style={{ padding: '4px 8px', flex: 1, textAlign: 'right', fontWeight: 700 }}>{fmt(req.total)}</div>
+          </div>
+          <div style={{ display: 'flex' }}>
+            <div style={{ padding: '4px 8px', borderRight: '1px solid #888', width: 230, fontWeight: 600 }}>☐&nbsp; Phải hoàn lại cho Công ty</div>
+            <div style={{ padding: '4px 8px', flex: 1 }} />
+          </div>
+        </div>
         <div style={{ ...lbl, marginTop: 4 }}><b>Bằng chữ:</b> <i>{docTien(req.total)}</i></div>
 
         {/* Hình thức thanh toán — 2 cột: trái (đơn vị + hình thức) / phải (thông tin chuyển khoản) */}
@@ -185,12 +191,12 @@ export default function PrintPaymentRequest() {
             <div style={lbl}>☐ &nbsp;Tiền mặt</div>
             <div style={lbl}>☐ &nbsp;Chuyển khoản</div>
           </div>
-          <div style={{ width: '52%' }}>
-            <div style={lbl}><b>Thông tin chuyển khoản:</b></div>
-            <div style={lbl}><b>Tên TK thụ hưởng:</b> {sup}</div>
-            <div style={lbl}><b>Số TK thụ hưởng:</b> {dot(req.bank_account)}</div>
-            <div style={lbl}><b>Ngân hàng:</b> {dot(req.bank_name)}</div>
-            <div style={lbl}><b>Nội dung chuyển khoản:</b> {noiDung}</div>
+          <div style={{ width: '52%', fontWeight: 700 }}>
+            <div style={lbl}>Thông tin chuyển khoản:</div>
+            <div style={lbl}>Tên TK thụ hưởng: {sup}</div>
+            <div style={lbl}>Số TK thụ hưởng: {dot(req.bank_account)}</div>
+            <div style={lbl}>Ngân hàng: {dot(req.bank_name)}</div>
+            <div style={lbl}>Nội dung chuyển khoản: {noiDung}</div>
           </div>
         </div>
 
@@ -221,9 +227,9 @@ export default function PrintPaymentRequest() {
             </tr>
             {['Nhận hồ sơ:', 'Chứng từ hạch toán:', 'Hồ sơ trả về:'].map((r) => (
               <tr key={r}>
-                <td style={{ fontWeight: 700, padding: '4px 4px', whiteSpace: 'nowrap' }}>{r}</td>
-                <td style={{ padding: '4px 8px' }}><div style={{ borderBottom: '1px solid #000', height: 14 }} /></td>
-                <td style={{ padding: '4px 8px' }}><div style={{ borderBottom: '1px solid #000', height: 14 }} /></td>
+                <td style={{ fontWeight: 700, padding: '2px 4px', whiteSpace: 'nowrap' }}>{r}</td>
+                <td style={{ padding: '2px 8px' }}><div style={{ borderBottom: '1px solid #000', height: 11 }} /></td>
+                <td style={{ padding: '2px 8px' }}><div style={{ borderBottom: '1px solid #000', height: 11 }} /></td>
               </tr>
             ))}
           </tbody>

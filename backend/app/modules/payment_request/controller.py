@@ -25,8 +25,11 @@ HEADER = ["id", "code", "supplier_code", "supplier_name", "company_id", "source_
 
 def _line(db, ln) -> dict:
     p = db.get(Payable, ln.payable_id)
+    # Ngày hóa đơn (cột Chứng từ) = ngày tạo dòng line item trong phiếu (created_at)
+    invoice_date = ln.created_at.date().isoformat() if getattr(ln, "created_at", None) else ""
     return {"id": ln.id, "payable_id": ln.payable_id, "po_code": ln.po_code,
             "invoice_no": ln.invoice_no, "amount": float(ln.amount or 0),
+            "invoice_date": invoice_date,
             "due_date": p.due_date if p else "", "incur_date": p.incur_date if p else "",
             "payable_total": float(p.total or 0) if p else 0,
             "payable_paid": float(p.paid_amount or 0) if p else 0}
