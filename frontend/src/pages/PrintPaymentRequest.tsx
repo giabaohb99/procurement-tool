@@ -133,12 +133,15 @@ export default function PrintPaymentRequest() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: '#eef2f6' }}>
+              <td style={{ ...cell, fontWeight: 700, textAlign: 'center' }} colSpan={2}>Chứng từ</td>
+              <td style={{ ...cell, fontWeight: 700, textAlign: 'center', verticalAlign: 'middle' }} rowSpan={2}>Diễn giải</td>
+              <td style={{ ...cell, fontWeight: 700, textAlign: 'center', verticalAlign: 'middle' }} rowSpan={2}>Số tiền đề nghị tạm ứng</td>
+              <td style={{ ...cell, fontWeight: 700, textAlign: 'center', verticalAlign: 'middle' }} rowSpan={2}>Số tiền đã tạm ứng</td>
+              <td style={{ ...cell, fontWeight: 700, textAlign: 'center', verticalAlign: 'middle' }} rowSpan={2}>Ghi chú</td>
+            </tr>
+            <tr style={{ background: '#eef2f6' }}>
               <td style={{ ...cell, fontWeight: 700, textAlign: 'center' }}>Số</td>
               <td style={{ ...cell, fontWeight: 700, textAlign: 'center' }}>Ngày</td>
-              <td style={{ ...cell, fontWeight: 700 }}>Diễn giải</td>
-              <td style={{ ...cell, fontWeight: 700, textAlign: 'center' }}>Số tiền đề nghị tạm ứng</td>
-              <td style={{ ...cell, fontWeight: 700, textAlign: 'center' }}>Số tiền đã tạm ứng</td>
-              <td style={{ ...cell, fontWeight: 700, textAlign: 'center' }}>Ghi chú</td>
             </tr>
           </thead>
           <tbody>
@@ -154,18 +157,20 @@ export default function PrintPaymentRequest() {
           </tbody>
         </table>
 
-        <div style={{ marginTop: 8, border: '1px solid #888' }}>
-          <div style={{ display: 'flex', borderBottom: '1px solid #888' }}>
-            <div style={{ ...cell, border: 'none', borderRight: '1px solid #888', width: 26, textAlign: 'center' }}>☑</div>
-            <div style={{ ...cell, border: 'none', borderRight: '1px solid #888', fontWeight: 600, width: 190 }}>Còn lại phải thanh toán</div>
-            <div style={{ ...cell, border: 'none', textAlign: 'right', flex: 1, fontWeight: 700 }}>{fmt(req.total)}</div>
-          </div>
-          <div style={{ display: 'flex' }}>
-            <div style={{ ...cell, border: 'none', borderRight: '1px solid #888', width: 26, textAlign: 'center' }}>☐</div>
-            <div style={{ ...cell, border: 'none', borderRight: '1px solid #888', fontWeight: 600, width: 190 }}>Phải hoàn lại cho Công ty</div>
-            <div style={{ ...cell, border: 'none', flex: 1 }} />
-          </div>
-        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
+          <tbody>
+            <tr>
+              <td style={{ ...cell, width: 28, textAlign: 'center', fontSize: 14 }}>☑</td>
+              <td style={{ ...cell, fontWeight: 600, width: 200 }}>Còn lại phải thanh toán</td>
+              <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{fmt(req.total)}</td>
+            </tr>
+            <tr>
+              <td style={{ ...cell, width: 28, textAlign: 'center', fontSize: 14 }}>☐</td>
+              <td style={{ ...cell, fontWeight: 600 }}>Phải hoàn lại cho Công ty</td>
+              <td style={cell} />
+            </tr>
+          </tbody>
+        </table>
         <div style={{ ...lbl, marginTop: 4 }}><b>Bằng chữ:</b> <i>{docTien(req.total)}</i></div>
 
         {/* Hình thức thanh toán */}
