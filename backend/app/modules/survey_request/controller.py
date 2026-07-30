@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import (get_current_user, get_perm_profile, require,
                            user_has_permission)
-from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, pagination
+from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, apply_sort_from_request, pagination
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope
@@ -156,7 +156,8 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
         q = q.filter(SurveyRequest.id.in_(sub2))
     q = apply_scope(q, SurveyRequest, "survey_request", user, get_perm_profile(db, user))
     total = q.count()
-    items = q.order_by(SurveyRequest.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
+    q = apply_sort_from_request(q, SurveyRequest, request, default=SurveyRequest.id.desc())
+    items = q.offset(pg["offset"]).limit(pg["limit"]).all()
     return success({"total": total, "items": [_dict(x) for x in items]})
 
 
@@ -368,14 +369,18 @@ def process_view_(sid: int, db: Session = Depends(get_db), up=Depends(_purchaser
 
 @router.get("/{sid}/lines/{line_id}/available-survey-lines")
 def available_survey_lines_(sid: int, line_id: int, supplier_code: str = "", item_group: str = "",
-                            search: str = "", db: Session = Depends(get_db), up=Depends(_purchaser)):
+                            search: str = "", page: int = 1, page_size: int = 8,
+                            sort_by: str = "", sort_dir: str = "desc",
+                            db: Session = Depends(get_db), up=Depends(_purchaser)):
     from app.modules.survey.model import Survey
     ln = service.get_line(db, sid, line_id)
     # Lọc MỞ (chọn NCC thủ công) — KHÔNG giới hạn liên kết YCKS: option có thể đã có khảo sát sẵn.
     # Phân loại mặc định = của dòng (FE gửi sẵn); có thể đổi hoặc để trống. Cần ≥1 tiêu chí.
     if not (supplier_code or (item_group or "").strip() or (search or "").strip()):
-        return success([])
-    rows = service.available_survey_lines(db, supplier_code=supplier_code, item_group=item_group, search=search)
+        return success({"items": [], "total": 0})
+    rows, total = service.available_survey_lines(
+        db, supplier_code=supplier_code, item_group=item_group, search=search,
+        page=page, page_size=page_size, sort_by=sort_by, sort_dir=sort_dir)
     _sv_cache: dict = {}
     out = []
     for r in rows:
@@ -389,7 +394,7 @@ def available_survey_lines_(sid: int, line_id: int, supplier_code: str = "", ite
         d["survey_item_code"] = sv.item_code if sv else ""     # Mã VTBB/VL (lấy từ header phiếu khảo sát)
         # result_date (Ngày trả KQ của dòng NCC) đã có sẵn trong d -> FE dùng làm "Ngày khảo sát"
         out.append(d)
-    return success(out)
+    return success({"items": out, "total": total})
 
 
 @router.post("/{sid}/lines/{line_id}/options")

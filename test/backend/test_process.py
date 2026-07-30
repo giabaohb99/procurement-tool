@@ -44,7 +44,8 @@ def _make_processing_line(db, seed, item_group="Nhãn"):
 class TestAvailableSurveyLines:
     def test_returns_approved_lines_for_supplier(self, db, seed):
         """available_survey_lines("NX", "Nhãn") → ≥1 dòng."""
-        lines = S.available_survey_lines(db, "NX", "Nhãn")
+        lines, total = S.available_survey_lines(db, "NX", "Nhãn")
+        assert total >= 1
         assert len(lines) >= 1
         for ln in lines:
             assert ln.supplier_code == "NX"
@@ -52,8 +53,8 @@ class TestAvailableSurveyLines:
 
     def test_filters_by_item_group(self, db, seed):
         """Lọc theo item_group → không trộn Nhãn với Thùng."""
-        nhan_lines = S.available_survey_lines(db, "NX", "Nhãn")
-        thung_lines = S.available_survey_lines(db, "NX", "Thùng")
+        nhan_lines, _ = S.available_survey_lines(db, "NX", "Nhãn")
+        thung_lines, _ = S.available_survey_lines(db, "NX", "Thùng")
         assert len(nhan_lines) > 0
         assert len(thung_lines) > 0
         nhan_ids = {ln.id for ln in nhan_lines}
@@ -62,7 +63,7 @@ class TestAvailableSurveyLines:
 
     def test_unapproved_line_excluded(self, db, seed):
         """Đổi 1 line thành line_approve khác → biến mất khỏi kết quả."""
-        before = S.available_survey_lines(db, "NX", "Nhãn")
+        before, _ = S.available_survey_lines(db, "NX", "Nhãn")
         assert len(before) >= 2
 
         # Đổi psl_nhan_2 sang không duyệt
@@ -70,7 +71,7 @@ class TestAvailableSurveyLines:
         psl.line_approve = "Không duyệt"
         db.commit()
 
-        after = S.available_survey_lines(db, "NX", "Nhãn")
+        after, _ = S.available_survey_lines(db, "NX", "Nhãn")
         after_ids = {ln.id for ln in after}
         assert seed.psl_nhan_2_id not in after_ids
 
@@ -80,8 +81,29 @@ class TestAvailableSurveyLines:
 
     def test_no_result_for_unknown_supplier(self, db, seed):
         """NCC không tồn tại → list rỗng."""
-        lines = S.available_survey_lines(db, "UNKNOWN_SUP", "Nhãn")
+        lines, total = S.available_survey_lines(db, "UNKNOWN_SUP", "Nhãn")
         assert lines == []
+        assert total == 0
+
+    def test_sort_by_price_asc_desc(self, db, seed):
+        """sort_by='price_by_volume' → asc tăng dần, desc giảm dần."""
+        asc, _ = S.available_survey_lines(db, "NX", "Nhãn", page_size=100,
+                                          sort_by="price_by_volume", sort_dir="asc")
+        prices_asc = [float(ln.price_by_volume or 0) for ln in asc]
+        assert prices_asc == sorted(prices_asc)
+
+        desc, _ = S.available_survey_lines(db, "NX", "Nhãn", page_size=100,
+                                           sort_by="price_by_volume", sort_dir="desc")
+        prices_desc = [float(ln.price_by_volume or 0) for ln in desc]
+        assert prices_desc == sorted(prices_desc, reverse=True)
+
+    def test_invalid_sort_col_falls_back(self, db, seed):
+        """sort_by không hợp lệ → không lỗi, dùng mặc định (id desc)."""
+        lines, total = S.available_survey_lines(db, "NX", "Nhãn", page_size=100,
+                                                sort_by="drop table; --", sort_dir="asc")
+        assert total >= 1
+        ids = [ln.id for ln in lines]
+        assert ids == sorted(ids, reverse=True)
 
 
 class TestCreateOption:

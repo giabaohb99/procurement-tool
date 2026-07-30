@@ -72,8 +72,8 @@ class TestPipeline:
         # Bước 1: auto_assign (đã có assignee, đếm = 0 vì đã set tay)
         # auto_assign chỉ gán nếu line.assignee rỗng — ở đây đã có nên không đếm
         # Kiểm tra available_survey_lines
-        avail_nhan = S.available_survey_lines(db, "NX", "Nhãn")
-        avail_thung = S.available_survey_lines(db, "NX", "Thùng")
+        avail_nhan, _ = S.available_survey_lines(db, "NX", "Nhãn")
+        avail_thung, _ = S.available_survey_lines(db, "NX", "Thùng")
         assert len(avail_nhan) >= 1
         assert len(avail_thung) >= 1
 
@@ -184,8 +184,8 @@ class TestPipeline:
         """2 line cùng NCC → 1 PR với 2 items."""
         sr, ln_nhan, ln_thung = _make_sr_2lines(db, seed)
 
-        avail_nhan = S.available_survey_lines(db, "NX", "Nhãn")
-        avail_thung = S.available_survey_lines(db, "NX", "Thùng")
+        avail_nhan, _ = S.available_survey_lines(db, "NX", "Nhãn")
+        avail_thung, _ = S.available_survey_lines(db, "NX", "Thùng")
         opt1 = S.create_option(db, ln_nhan, avail_nhan[0].id, seed.u_nstm_id)
         opt2 = S.create_option(db, ln_thung, avail_thung[0].id, seed.u_nstm_id)
 

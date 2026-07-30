@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthContext'
 import { toast } from '../components/toast'
 import Select from 'react-select'
 import ProductPicker from '../components/ProductPicker'
+import { useResizableColumns, ResizeHandle } from '../hooks/useResizableColumns'
 
 const API = '/api/survey-requests'
 
@@ -122,10 +123,13 @@ interface LineState {
   supplierCode: string
   filterGroup: string   // phân loại đang lọc (mặc định = phân loại dòng, đổi được)
   search: string        // tìm theo mã/tên SP
-  availLines: AvailSurveyLine[]
+  availLines: AvailSurveyLine[]   // CHỈ chứa dòng của trang hiện tại (phân trang phía server)
+  availTotal: number              // tổng số dòng khớp bộ lọc (cho phân trang)
   loading: boolean
   selectedAvailIds: Set<number>
-  availPage: number   // trang hiện tại của danh sách dòng khảo sát khả dụng
+  availPage: number   // trang hiện tại (0-based) của danh sách dòng khảo sát khả dụng
+  availSortBy: string          // cột đang sắp xếp phía server ('' = mặc định mới nhất trước)
+  availSortDir: 'asc' | 'desc' // hướng sắp xếp
 }
 
 const AVAIL_PAGE_SIZE = 8   // số dòng khảo sát khả dụng mỗi trang
@@ -139,6 +143,9 @@ export default function SurveyRequestProcess() {
   const { id } = useParams()
   const { can } = useAuth()
   const navigate = useNavigate()
+
+  // Kéo giãn cột — dùng CHUNG cho mọi bảng "Kết quả khảo sát đã duyệt" (nhớ độ rộng qua localStorage)
+  const { startResize, colW } = useResizableColumns('colw:survey-avail')
 
   const [data, setData]           = useState<ProcessData | null>(null)
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -170,9 +177,12 @@ export default function SurveyRequestProcess() {
           filterGroup:  prev[i]?.filterGroup ?? (ln.item_group || ''),
           search:       prev[i]?.search || '',
           availLines:   prev[i]?.availLines   || [],
+          availTotal:   prev[i]?.availTotal   || 0,
           loading:      false,
           selectedAvailIds: new Set<number>(),
           availPage:    prev[i]?.availPage || 0,
+          availSortBy:  prev[i]?.availSortBy || '',
+          availSortDir: prev[i]?.availSortDir || 'desc',
         }))
       )
     } catch (e: any) {
@@ -202,28 +212,53 @@ export default function SurveyRequestProcess() {
   }, [data?.id])
 
   // Tìm dòng khảo sát khả dụng theo bộ lọc (NCC / phân loại / mã-tên SP). patch = phần filter thay đổi.
-  async function fetchAvail(lineIdx: number, lineId: number, patch: Partial<Pick<LineState, 'supplierCode' | 'filterGroup' | 'search'>>) {
+  // page (0-based): đổi bộ lọc -> về trang 0; bấm phân trang -> giữ bộ lọc, đổi trang. Phân trang phía server.
+  async function fetchAvail(lineIdx: number, lineId: number, patch: Partial<Pick<LineState, 'supplierCode' | 'filterGroup' | 'search'>>, page = 0,
+                            sortOverride?: { by: string; dir: 'asc' | 'desc' }) {
     const cur = lineStates[lineIdx] || ({} as LineState)
     const merged = {
       supplierCode: patch.supplierCode ?? cur.supplierCode ?? '',
       filterGroup: patch.filterGroup ?? cur.filterGroup ?? '',
       search: patch.search ?? cur.search ?? '',
     }
+    // Sort: dùng override (khi bấm tiêu đề cột) hoặc giữ nguyên sort hiện tại của dòng
+    const sortBy = sortOverride ? sortOverride.by : (cur.availSortBy || '')
+    const sortDir = sortOverride ? sortOverride.dir : (cur.availSortDir || 'desc')
     setLineStates((prev) => prev.map((s, i) => i === lineIdx
-      ? { ...s, ...patch, loading: true, availPage: 0, selectedAvailIds: new Set<number>() } : s))
+      ? { ...s, ...patch, loading: true, availPage: page, selectedAvailIds: new Set<number>(),
+          availSortBy: sortBy, availSortDir: sortDir } : s))
     // Cần ít nhất 1 tiêu chí -> nếu rỗng hết thì xóa kết quả
     if (!merged.supplierCode && !merged.filterGroup && !merged.search.trim()) {
-      setLineStates((prev) => prev.map((s, i) => i === lineIdx ? { ...s, availLines: [], loading: false } : s))
+      setLineStates((prev) => prev.map((s, i) => i === lineIdx ? { ...s, availLines: [], availTotal: 0, loading: false } : s))
       return
     }
     try {
       const r = await api.get(`${API}/${id}/lines/${lineId}/available-survey-lines`, {
-        params: { supplier_code: merged.supplierCode, item_group: merged.filterGroup, search: merged.search.trim() },
+        params: {
+          supplier_code: merged.supplierCode, item_group: merged.filterGroup, search: merged.search.trim(),
+          page: page + 1, page_size: AVAIL_PAGE_SIZE,
+          sort_by: sortBy, sort_dir: sortDir,
+        },
       })
-      setLineStates((prev) => prev.map((s, i) => i === lineIdx ? { ...s, loading: false, availLines: r.data.data || [] } : s))
+      const d = r.data.data || {}
+      setLineStates((prev) => prev.map((s, i) => i === lineIdx
+        ? { ...s, loading: false, availLines: d.items || [], availTotal: d.total || 0 } : s))
     } catch {
-      setLineStates((prev) => prev.map((s, i) => i === lineIdx ? { ...s, loading: false, availLines: [] } : s))
+      setLineStates((prev) => prev.map((s, i) => i === lineIdx ? { ...s, loading: false, availLines: [], availTotal: 0 } : s))
     }
+  }
+
+  // Bấm tiêu đề cột -> sắp xếp phía server (đổi hướng nếu cùng cột), về trang 0
+  function handleAvailSort(lineIdx: number, lineId: number, colKey: string) {
+    const cur = lineStates[lineIdx] || ({} as LineState)
+    const nextDir: 'asc' | 'desc' = (cur.availSortBy === colKey && cur.availSortDir === 'asc') ? 'desc' : 'asc'
+    fetchAvail(lineIdx, lineId, {}, 0, { by: colKey, dir: nextDir })
+  }
+
+  // Mũi tên chỉ hướng sort trên tiêu đề cột
+  function sortArrow(ls: LineState, colKey: string) {
+    if (ls.availSortBy !== colKey) return ' ↕'
+    return ls.availSortDir === 'asc' ? ' ▲' : ' ▼'
   }
 
   // Ô tìm có debounce 400ms (cập nhật input ngay, gọi API sau)
@@ -361,19 +396,16 @@ export default function SurveyRequestProcess() {
       )}
 
       {lines.map((line, lineIdx) => {
-        const ls = lineStates[lineIdx] || { supplierCode: '', filterGroup: line.item_group || '', search: '', availLines: [], loading: false, selectedAvailIds: new Set(), availPage: 0 }
+        const ls = lineStates[lineIdx] || { supplierCode: '', filterGroup: line.item_group || '', search: '', availLines: [], availTotal: 0, loading: false, selectedAvailIds: new Set(), availPage: 0, availSortBy: '', availSortDir: 'desc' as const }
         const shortName = line.requirement_detail
           ? (line.requirement_detail.length > 60 ? line.requirement_detail.slice(0, 57) + '...' : line.requirement_detail)
           : line.item_group || `Sản phẩm ${lineIdx + 1}`
         const options = line.options || []
-        // Ẩn khỏi bảng trên những dòng khảo sát đã được gắn làm option (tránh trùng)
+        // Ẩn khỏi bảng trên những dòng khảo sát đã được gắn làm option (tránh trùng).
+        // Lưu ý: chỉ lọc trong PHẠM VI trang hiện tại (đã phân trang phía server); tối đa 5 option/dòng
+        // nên số dòng bị ẩn không đáng kể.
         const usedPsl = new Set(options.map((o: any) => o.product_survey_line_id))
         const availShown = (ls.availLines || []).filter((al: any) => !usedPsl.has(al.id))
-        // Phân trang danh sách dòng khảo sát khả dụng
-        const availTotalPages = Math.max(1, Math.ceil(availShown.length / AVAIL_PAGE_SIZE))
-        const availPage = Math.min(ls.availPage || 0, availTotalPages - 1)
-        const availPaged = availShown.slice(availPage * AVAIL_PAGE_SIZE, availPage * AVAIL_PAGE_SIZE + AVAIL_PAGE_SIZE)
-        const setAvailPage = (p: number) => setLineStates((prev) => prev.map((s, i) => i === lineIdx ? { ...s, availPage: p } : s))
 
         return (
           <div key={line.id} className="card" style={{ padding: 18, marginBottom: 16 }}>
@@ -440,7 +472,8 @@ export default function SurveyRequestProcess() {
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
                   Kết quả khảo sát đã duyệt
                   {ls.filterGroup && <> · phân loại <span style={{ color: 'var(--teal)' }}>{ls.filterGroup}</span></>}
-                  {ls.supplierCode && <> · NCC <span style={{ color: 'var(--teal)' }}>{ls.supplierCode}</span></>}:
+                  {ls.supplierCode && <> · NCC <span style={{ color: 'var(--teal)' }}>{ls.supplierCode}</span></>}
+                  {ls.availTotal > 0 && <span style={{ color: 'var(--muted)', fontWeight: 400 }}> · {ls.availTotal} kết quả</span>}:
                 </div>
                 {ls.loading ? (
                   <div style={{ color: 'var(--muted)', fontSize: 13 }}>Đang tải...</div>
@@ -454,37 +487,49 @@ export default function SurveyRequestProcess() {
                   <div className="items-scroll">
                     <table className="items-table" style={{ minWidth: 1322, tableLayout: 'fixed' }}>
                       <colgroup>
-                        <col style={{ width: 40 }} />{/* chọn */}
-                        <col style={{ width: 190 }} />{/* NCC */}
-                        <col style={{ width: 230 }} />{/* Tên SP */}
-                        <col style={{ width: 120 }} />{/* Mã VTBB */}
-                        <col style={{ width: 110 }} />{/* Ngày khảo sát */}
-                        <col style={{ width: 160 }} />{/* Spec */}
-                        <col style={{ width: 90 }} />{/* Xuất xứ */}
-                        <col style={{ width: 96 }} />{/* Giá */}
-                        <col style={{ width: 80 }} />{/* MOQ */}
-                        <col style={{ width: 64 }} />{/* ĐVT */}
-                        <col style={{ width: 70 }} />{/* Lab */}
-                        <col style={{ width: 72 }} />{/* Thêm */}
+                        <col style={{ width: colW(0, 40) }} />{/* chọn */}
+                        <col style={{ width: colW(1, 190) }} />{/* NCC */}
+                        <col style={{ width: colW(2, 230) }} />{/* Tên SP */}
+                        <col style={{ width: colW(3, 120) }} />{/* Mã VTBB */}
+                        <col style={{ width: colW(4, 110) }} />{/* Ngày khảo sát */}
+                        <col style={{ width: colW(5, 160) }} />{/* Spec */}
+                        <col style={{ width: colW(6, 90) }} />{/* Xuất xứ */}
+                        <col style={{ width: colW(7, 96) }} />{/* Giá */}
+                        <col style={{ width: colW(8, 80) }} />{/* MOQ */}
+                        <col style={{ width: colW(9, 64) }} />{/* ĐVT */}
+                        <col style={{ width: colW(10, 70) }} />{/* Lab */}
+                        <col style={{ width: colW(11, 72) }} />{/* Thêm */}
                       </colgroup>
                       <thead>
                         <tr>
-                          <th></th>
-                          <th style={{ textAlign: 'left' }}>NCC</th>
-                          <th style={{ textAlign: 'left' }}>Tên SP</th>
-                          <th style={{ textAlign: 'left' }}>Mã VTBB</th>
-                          <th style={{ textAlign: 'center' }}>Ngày khảo sát</th>
-                          <th style={{ textAlign: 'left' }}>Spec</th>
-                          <th style={{ textAlign: 'left' }}>Xuất xứ</th>
-                          <th style={{ textAlign: 'right' }}>Giá</th>
-                          <th style={{ textAlign: 'right' }}>MOQ</th>
-                          <th style={{ textAlign: 'left' }}>ĐVT</th>
-                          <th style={{ textAlign: 'center' }}>Lab</th>
-                          <th style={{ textAlign: 'center' }}>Thêm</th>
+                          <th style={{ position: 'relative' }}><ResizeHandle onMouseDown={(e) => startResize(0, e)} /></th>
+                          {([
+                            [1, 'supplier_code', 'NCC', 'left'],
+                            [2, 'product_name', 'Tên SP', 'left'],
+                            [3, 'survey_item_code', 'Mã VTBB', 'left'],
+                            [4, 'result_date', 'Ngày khảo sát', 'center'],
+                            [5, 'spec', 'Spec', 'left'],
+                            [6, 'origin', 'Xuất xứ', 'left'],
+                            [7, 'price_by_volume', 'Giá', 'right'],
+                            [8, 'moq', 'MOQ', 'right'],
+                            [9, 'quote_unit', 'ĐVT', 'left'],
+                            [10, 'lab_result', 'Lab', 'center'],
+                          ] as [number, string, string, 'left' | 'center' | 'right'][]).map(([idx, key, label, align]) => (
+                            <th key={key}
+                              style={{ position: 'relative', textAlign: align, cursor: 'pointer', userSelect: 'none' }}
+                              onClick={() => handleAvailSort(lineIdx, line.id, key)}
+                              title="Bấm để sắp xếp">
+                              {label}<span style={{ color: 'var(--muted)', fontSize: 11 }}>{sortArrow(ls, key)}</span>
+                              <ResizeHandle onMouseDown={(e) => startResize(idx, e)} />
+                            </th>
+                          ))}
+                          <th style={{ position: 'relative', textAlign: 'center' }}>Thêm
+                            <ResizeHandle onMouseDown={(e) => startResize(11, e)} />
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
-                        {availPaged.map((al) => (
+                        {availShown.map((al) => (
                           <tr key={al.id}>
                             <td style={{ textAlign: 'center' }}>
                               <input
@@ -552,10 +597,10 @@ export default function SurveyRequestProcess() {
                         ))}
                       </tbody>
                     </table>
-                    {availTotalPages > 1 && (
+                    {ls.availTotal > 0 && (
                       <div style={{ marginTop: 8 }}>
-                        <Pagination page={availPage + 1} pageSize={AVAIL_PAGE_SIZE} total={availShown.length}
-                          hideSize onChange={(p) => setAvailPage(p - 1)} />
+                        <Pagination page={(ls.availPage || 0) + 1} pageSize={AVAIL_PAGE_SIZE} total={ls.availTotal}
+                          hideSize onChange={(p) => fetchAvail(lineIdx, line.id, {}, p - 1)} />
                       </div>
                     )}
                   </div>

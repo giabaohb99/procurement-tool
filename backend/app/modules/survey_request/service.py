@@ -338,13 +338,16 @@ def visible_lines_for(db: Session, s, lines, user, profile: dict):
     return [ln for ln in lines if can_process_line(db, ln, profile)]
 
 
-def available_survey_lines(db: Session, supplier_code: str = "", item_group: str = "", search: str = ""):
+def available_survey_lines(db: Session, supplier_code: str = "", item_group: str = "",
+                           search: str = "", page: int = 1, page_size: int = 8,
+                           sort_by: str = "", sort_dir: str = "desc"):
     """Dòng khảo sát SẢN PHẨM đã DUYỆT (line_approve='Đã duyệt') — nguồn để tạo option.
     Dùng cho CHỌN NCC THỦ CÔNG: lọc mở theo nhiều tiêu chí (tùy chọn, KHÔNG giới hạn liên kết YCKS):
     - supplier_code: theo NCC (tùy chọn).
     - item_group: theo PHÂN LOẠI của Survey cha (mặc định = phân loại dòng, đổi được).
     - search: khớp Tên SP hoặc Mã SP theo NCC (LIKE).
-    Cần ít nhất 1 tiêu chí (controller đã chặn rỗng). Giới hạn 100 dòng."""
+    Cần ít nhất 1 tiêu chí (controller đã chặn rỗng).
+    Phân trang phía server (kết quả có thể vài trăm dòng) -> trả (items, total)."""
     from sqlalchemy import or_
     from app.modules.survey.model import Survey, SurveyProductLine
     q = (db.query(SurveyProductLine)
@@ -359,7 +362,30 @@ def available_survey_lines(db: Session, supplier_code: str = "", item_group: str
         like = f"%{search.strip()}%"
         q = q.filter(or_(SurveyProductLine.product_name.ilike(like),
                          SurveyProductLine.internal_code.ilike(like)))
-    return q.order_by(SurveyProductLine.id.desc()).limit(100).all()
+    total = q.count()
+    page = max(1, page)
+    page_size = max(1, min(page_size, 100))
+    # Sắp xếp theo cột (whitelist khớp các cột hiển thị ở FE; Mã VTBB nằm ở Survey cha)
+    sort_cols = {
+        "supplier_code": SurveyProductLine.supplier_code,
+        "product_name": SurveyProductLine.product_name,
+        "result_date": SurveyProductLine.result_date,
+        "spec": SurveyProductLine.spec,
+        "origin": SurveyProductLine.origin,
+        "price_by_volume": SurveyProductLine.price_by_volume,
+        "moq": SurveyProductLine.moq,
+        "quote_unit": SurveyProductLine.quote_unit,
+        "lab_result": SurveyProductLine.lab_result,
+        "survey_item_code": Survey.item_code,
+    }
+    col = sort_cols.get(sort_by or "")
+    if col is not None:
+        order = col.desc() if str(sort_dir).lower() == "desc" else col.asc()
+    else:
+        order = SurveyProductLine.id.desc()   # mặc định: mới nhất trước
+    items = (q.order_by(order)
+             .offset((page - 1) * page_size).limit(page_size).all())
+    return items, total
 
 
 def create_option(db: Session, line: SurveyRequestLine, psl_id: int, user_id: int) -> SurveyRequestOption:
