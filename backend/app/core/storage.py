@@ -66,6 +66,17 @@ def download_bytes(key: str) -> bytes:
         return f.read()
 
 
+def presigned_url(key: str, expires: int = 600, download_name: str = "") -> str:
+    """Sinh URL tải tạm thời (R2 private). Fallback local trả về đường dẫn API tĩnh."""
+    s3 = _client()
+    if s3:
+        params = {"Bucket": _eff("r2_bucket"), "Key": key}
+        if download_name:
+            params["ResponseContentDisposition"] = f'attachment; filename="{download_name}"'
+        return s3.generate_presigned_url("get_object", Params=params, ExpiresIn=expires)
+    return f"/api/uploads/{key}"
+
+
 def delete_key(key: str):
     s3 = _client()
     if s3:

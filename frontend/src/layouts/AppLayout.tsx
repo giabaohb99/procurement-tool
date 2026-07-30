@@ -197,6 +197,12 @@ const NAV_GROUPS: NavGroup[] = [
         icon: "ti-file-import",
         entity: "import",
       },
+      {
+        to: "/backups",
+        label: "Sao lưu CSDL",
+        icon: "ti-database-export",
+        entity: "backup",
+      },
     ],
   },
 ];

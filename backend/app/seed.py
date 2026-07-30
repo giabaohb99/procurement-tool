@@ -180,7 +180,7 @@ _CATALOG_CRUD = {e: (["read", "create", "write", "delete"], "all") for e in
 # Quản lý thu mua = toàn quyền như quản trị NGHIỆP VỤ: mọi entity TRỪ quản trị hệ thống
 # (user/role/setting) — full 8 hành động, phạm vi 'all'.
 _ALL_ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
-_SYS_ENTITIES = {"user", "role", "setting"}
+_SYS_ENTITIES = {"user", "role", "setting", "backup"}
 _PUR_MANAGER_PERMS = {e: (_ALL_ACTIONS, "all") for e in ENTITIES if e not in _SYS_ENTITIES}
 
 STD_ROLES = {

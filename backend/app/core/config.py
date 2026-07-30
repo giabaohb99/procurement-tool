@@ -41,6 +41,12 @@ class Settings(BaseSettings):
     EMAIL_ENABLED: bool = False   # Tắt gửi email (thông báo/reset...) — bật lại khi làm phần email
     EMAIL_TEST_OVERRIDE: str = ""  # Nếu đặt: MỌI email gửi ra chuyển hướng tới địa chỉ này (an toàn khi test)
 
+    # --- Sao lưu CSDL ---
+    BACKUP_KEEP: int = 30   # số bản backup giữ lại (2 lần/ngày -> ~15 ngày)
+
+    # --- Dọn dẹp ---
+    NOTIFICATION_KEEP_DAYS: int = 10   # thông báo cũ hơn N ngày sẽ tự xóa
+
     # --- Celery / Redis ---
     # Broker + result backend dùng chung 1 Redis (đủ cho quy mô ~20-100 user).
     REDIS_URL: str = "redis://redis:6379/0"

@@ -27,6 +27,7 @@ import CategoryAssigneeNew from './pages/CategoryAssigneeNew'
 import SupplierDetail from './pages/SupplierDetail'
 import ImportBatches from './pages/ImportBatches'
 import ImportBatchDetail from './pages/ImportBatchDetail'
+import Backups from './pages/Backups'
 import ContractDetail from './pages/ContractDetail'
 import RolePermissions from './pages/RolePermissions'
 import UserPermissionDetail from './pages/UserPermissionDetail'
@@ -71,6 +72,7 @@ export default function App() {
             <Route path="payables" element={<Payables />} />
             <Route path="import-batches" element={<ImportBatches />} />
             <Route path="import-batches/:id" element={<ImportBatchDetail />} />
+            <Route path="backups" element={<Backups />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="me" element={<Me />} />
             <Route path="reports" element={<Reports />} />

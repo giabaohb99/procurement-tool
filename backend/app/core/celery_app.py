@@ -5,6 +5,7 @@ Chạy worker:       celery -A app.core.celery_app worker -l info
 Chạy beat:         celery -A app.core.celery_app beat -l info
 """
 from celery import Celery
+from celery.schedules import crontab
 
 from app.core.config import settings
 
@@ -23,6 +24,8 @@ celery_app.conf.update(
     imports=[
         "app.tasks.debug",              # Phase 0 — smoke test ping
         "app.modules.import_tool.tasks",  # Import Khảo sát / Đơn mua hàng (chạy nền)
+        "app.modules.backup.tasks",       # Sao lưu CSDL định kỳ (2 lần/ngày)
+        "app.modules.notification.tasks", # Dọn thông báo cũ (mỗi ngày)
         # "app.tasks.alerts",           # Phase 2 — cảnh báo theo lịch
         # "app.tasks.report_tasks",     # Phase 3 — refresh báo cáo
     ],
@@ -39,6 +42,21 @@ celery_app.conf.update(
     task_acks_late=True,
     task_reject_on_worker_lost=True,
 
-    # Lịch beat — các phase sau điền vào
-    beat_schedule={},
+    # Lịch beat — giờ Hà Nội (enable_utc=False). Sao lưu CSDL 2 lần/ngày.
+    beat_schedule={
+        "backup-db-sang": {
+            "task": "backup.run",
+            "schedule": crontab(hour=1, minute=0),   # 01:00 VN
+            "kwargs": {"source": "auto", "actor_id": 0},
+        },
+        "backup-db-chieu": {
+            "task": "backup.run",
+            "schedule": crontab(hour=13, minute=0),  # 13:00 VN
+            "kwargs": {"source": "auto", "actor_id": 0},
+        },
+        "cleanup-notifications": {
+            "task": "notification.cleanup",
+            "schedule": crontab(hour=2, minute=30),  # 02:30 VN, mỗi ngày
+        },
+    },
 )
