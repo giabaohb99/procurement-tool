@@ -171,14 +171,15 @@ export default function PrintPaymentRequest() {
           </tbody>
         </table>
 
-        <div style={{ marginTop: 8, border: '1px solid #888', fontSize: 11 }}>
-          <div style={{ display: 'flex', borderBottom: '1px solid #888' }}>
-            <div style={{ padding: '4px 8px', borderRight: '1px solid #888', width: 230, fontWeight: 600 }}>☑&nbsp; Còn lại phải thanh toán</div>
-            <div style={{ padding: '4px 8px', flex: 1, textAlign: 'right', fontWeight: 700 }}>{fmt(req.total)}</div>
-          </div>
+        <div style={{ marginTop: 8, fontSize: 11 }}>
           <div style={{ display: 'flex' }}>
-            <div style={{ padding: '4px 8px', borderRight: '1px solid #888', width: 230, fontWeight: 600 }}>☐&nbsp; Phải hoàn lại cho Công ty</div>
-            <div style={{ padding: '4px 8px', flex: 1 }} />
+            <div style={{ width: '3%' }} />
+            <div style={{ width: '47%' }}>☑&nbsp; Còn lại phải thanh toán:</div>
+            <div style={{ width: '20%', textAlign: 'left', fontWeight: 700 }}>{fmt(req.total)}</div>
+          </div>
+          <div style={{ display: 'flex', marginTop: 3 }}>
+            <div style={{ width: '3%' }} />
+            <div style={{ width: '47%' }}>☐&nbsp; Phải hoàn lại cho Công ty:</div>
           </div>
         </div>
         <div style={{ ...lbl, marginTop: 4 }}><b>Bằng chữ:</b> <i>{docTien(req.total)}</i></div>
@@ -191,12 +192,12 @@ export default function PrintPaymentRequest() {
             <div style={lbl}>☐ &nbsp;Tiền mặt</div>
             <div style={lbl}>☐ &nbsp;Chuyển khoản</div>
           </div>
-          <div style={{ width: '52%', fontWeight: 700 }}>
-            <div style={lbl}>Thông tin chuyển khoản:</div>
-            <div style={lbl}>Tên TK thụ hưởng: {sup}</div>
-            <div style={lbl}>Số TK thụ hưởng: {dot(req.bank_account)}</div>
-            <div style={lbl}>Ngân hàng: {dot(req.bank_name)}</div>
-            <div style={lbl}>Nội dung chuyển khoản: {noiDung}</div>
+          <div style={{ width: '52%' }}>
+            <div style={{ ...lbl, fontWeight: 700 }}>Thông tin chuyển khoản:</div>
+            <div style={lbl}><b>Tên TK thụ hưởng:</b> {sup}</div>
+            <div style={lbl}><b>Số TK thụ hưởng:</b> {dot(req.bank_account)}</div>
+            <div style={lbl}><b>Ngân hàng:</b> {dot(req.bank_name)}</div>
+            <div style={lbl}><b>Nội dung chuyển khoản:</b> {noiDung}</div>
           </div>
         </div>
 
@@ -214,26 +215,24 @@ export default function PrintPaymentRequest() {
         </div>
 
         {/* Cụm ký nhận Kế toán — Thanh toán / Công nợ (điền tay) */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 6, fontSize: 11 }}>
-          <tbody>
-            <tr>
-              <td style={{ width: '22%' }} />
-              {['KT Thanh toán', 'KT Công nợ'].map((r) => (
-                <td key={r} style={{ width: '39%', textAlign: 'center', padding: '2px 8px' }}>
-                  <b>{r}</b>
-                  <div style={{ fontStyle: 'italic', fontSize: 10 }}>(Thời gian, ký tên)</div>
-                </td>
-              ))}
-            </tr>
-            {['Nhận hồ sơ:', 'Chứng từ hạch toán:', 'Hồ sơ trả về:'].map((r) => (
-              <tr key={r}>
-                <td style={{ fontWeight: 700, padding: '2px 4px', whiteSpace: 'nowrap' }}>{r}</td>
-                <td style={{ padding: '2px 8px' }}><div style={{ borderBottom: '1px solid #000', height: 11 }} /></td>
-                <td style={{ padding: '2px 8px' }}><div style={{ borderBottom: '1px solid #000', height: 11 }} /></td>
-              </tr>
+        <div style={{ marginTop: 12, fontSize: 11 }}>
+          <div style={{ display: 'flex', textAlign: 'center', fontWeight: 700 }}>
+            <div style={{ width: '24%' }} />
+            {['KT Thanh toán', 'KT Công nợ'].map((r) => (
+              <div key={r} style={{ flex: 1 }}>
+                {r}
+                <div style={{ fontStyle: 'italic', fontSize: 10, fontWeight: 400 }}>(Thời gian, ký tên)</div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+          {['Nhận hồ sơ:', 'Chứng từ hạch toán:', 'Hồ sơ trả về:'].map((r) => (
+            <div key={r} style={{ display: 'flex', alignItems: 'flex-end', marginTop: 9 }}>
+              <div style={{ width: '24%', fontWeight: 700, whiteSpace: 'nowrap' }}>{r}</div>
+              <div style={{ flex: 1, borderBottom: '1px solid #000', margin: '0 10px' }} />
+              <div style={{ flex: 1, borderBottom: '1px solid #000', margin: '0 10px' }} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
