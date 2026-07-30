@@ -195,6 +195,28 @@ export default function PrintPaymentRequest() {
         <div style={{ fontSize: 11.5, padding: '4px 8px', lineHeight: 1.8 }}>
           {[1, 2, 3, 4, 5].map((i) => <div key={i}>{i}. ............................................</div>)}
         </div>
+
+        {/* Cụm ký nhận Kế toán — Thanh toán / Công nợ (điền tay) */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 16, fontSize: 11.5 }}>
+          <tbody>
+            <tr>
+              <td style={{ width: '25%' }} />
+              {['KT Thanh toán', 'KT Công nợ'].map((r) => (
+                <td key={r} style={{ width: '37.5%', textAlign: 'center', padding: '2px 8px' }}>
+                  <b>{r}</b>
+                  <div style={{ fontStyle: 'italic', fontSize: 10.5 }}>(Thời gian, ký tên)</div>
+                </td>
+              ))}
+            </tr>
+            {['Nhận hồ sơ:', 'Chứng từ hạch toán:', 'Hồ sơ trả về:'].map((r) => (
+              <tr key={r}>
+                <td style={{ fontWeight: 700, padding: '6px 4px', whiteSpace: 'nowrap' }}>{r}</td>
+                <td style={{ padding: '6px 8px' }}><div style={{ borderBottom: '1px solid #000', height: 16 }} /></td>
+                <td style={{ padding: '6px 8px' }}><div style={{ borderBottom: '1px solid #000', height: 16 }} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )
