@@ -5,7 +5,7 @@ from app.modules.notification.service import trigger_notification
 
 from app.core.audit import resolve_actor, resolve_actor_profile
 from app.core.auth import get_perm_profile, require
-from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, pagination
+from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, apply_sort_from_request, pagination
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope
@@ -58,7 +58,8 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
         q = q.filter(PaymentRequest.id.in_(sub))
     q = apply_scope(q, PaymentRequest, "payment_request", user, get_perm_profile(db, user))
     total = q.count()
-    items = q.order_by(PaymentRequest.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
+    q = apply_sort_from_request(q, PaymentRequest, request, default=PaymentRequest.id.desc())
+    items = q.offset(pg["offset"]).limit(pg["limit"]).all()
     out = [{c: getattr(p, c) for c in HEADER}
            | {"total": float(p.total or 0), "created_by_name": resolve_actor(db, p.created_by)}
            for p in items]

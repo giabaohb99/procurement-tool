@@ -7,6 +7,7 @@ import { cruds } from '../config/cruds'
 import ConfirmModal from './ConfirmModal'
 import FilterBar from './FilterBar'
 import Pagination from './Pagination'
+import { useResizableColumns, ResizeHandle } from '../hooks/useResizableColumns'
 
 export default function CrudList() {
   const { entity } = useParams()
@@ -30,16 +31,18 @@ export default function CrudList() {
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [sortField, setSortField] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [serverPaged, setServerPaged] = useState(true)   // API trả mảng thô (vd /roles) -> sort client
   const [cloneMode, setCloneMode] = useState(false)   // bật/tắt cột "Thao tác" (nhân bản)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { startResize, thStyle } = useResizableColumns(`colw:crud:${entity || ''}`)
 
   function handleSort(field: string) {
-    if (sortField === field) {
-      setSortDir(prev => prev === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortDir('asc')
-    }
+    // Sort phía server: đổi hướng nếu cùng cột, ngược lại asc; luôn về trang 1
+    const nextDir: 'asc' | 'desc' = (sortField === field && sortDir === 'asc') ? 'desc' : 'asc'
+    setSortField(field)
+    setSortDir(nextDir)
+    setPage(1)
+    load(1, pageSize, filters, field, nextDir)
   }
 
   async function handleExport() {
@@ -129,22 +132,40 @@ export default function CrudList() {
     }
   }
 
-  async function load(p = 1, s = 20, f: Record<string, string> = {}) {
-    const r = await api.get(cfg.apiPath, { params: { ...f, page: p, page_size: s } })
+  async function load(p = 1, s = 20, f: Record<string, string> = {},
+                      sf: string | null = sortField, sd: 'asc' | 'desc' = sortDir) {
+    const params: any = { ...f, page: p, page_size: s }
+    if (sf) { params.sort_by = sf; params.sort_dir = sd }   // sort phía server
+    const r = await api.get(cfg.apiPath, { params })
     const data = r.data.data
     if (Array.isArray(data)) {
       setItems(data)
       setTotal(data.length)
+      setServerPaged(false)
     } else {
       setItems(data.items || [])
       setTotal(data.total || 0)
+      setServerPaged(true)
     }
     setSelectedIds([])
   }
+
+  // API phân trang -> backend đã sort; API trả mảng thô (vd /roles) -> sort tại client
+  const displayItems = useMemo(() => {
+    if (serverPaged || !sortField) return items
+    const dir = sortDir === 'asc' ? 1 : -1
+    return [...items].sort((a, b) => {
+      const av = a[sortField!], bv = b[sortField!]
+      if (av == null) return 1
+      if (bv == null) return -1
+      if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir
+      return String(av).localeCompare(String(bv), 'vi') * dir
+    })
+  }, [items, serverPaged, sortField, sortDir])
   useEffect(() => {
     if (!cfg) return
     setPage(1); setPageSize(20); setFilters(urlFilters); setSortField(null); setSortDir('asc')
-    load(1, 20, urlFilters)
+    load(1, 20, urlFilters, null, 'asc')
   }, [cfg?.slug])
 
   if (!cfg) return <div>Không tìm thấy trang.</div>
@@ -233,46 +254,26 @@ export default function CrudList() {
         <table>
           <thead>
             <tr>
-              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('id')}>
+              <th style={{ position: 'relative', cursor: 'pointer', userSelect: 'none', ...thStyle(0) }} onClick={() => handleSort('id')}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   ID {sortField === 'id' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ↕'}
                 </div>
+                <ResizeHandle onMouseDown={(e) => startResize(0, e)} />
               </th>
-              {cfg.columns.map((c) => (
-                <th key={c.key} style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort(c.key)}>
+              {cfg.columns.map((c, i) => (
+                <th key={c.key} style={{ position: 'relative', cursor: 'pointer', userSelect: 'none', ...thStyle(i + 1) }} onClick={() => handleSort(c.key)}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                     {c.label} {sortField === c.key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ↕'}
                   </div>
+                  <ResizeHandle onMouseDown={(e) => startResize(i + 1, e)} />
                 </th>
               ))}
               {showClone && <th style={{ width: 110, textAlign: 'center' }}>Thao tác</th>}
             </tr>
           </thead>
           <tbody>
-            {(() => {
-              const sortedItems = [...items].sort((a, b) => {
-                if (!sortField) return 0;
-                let valA = a[sortField];
-                let valB = b[sortField];
-
-                if (valA == null) return 1;
-                if (valB == null) return -1;
-
-                if (typeof valA === 'string' && typeof valB === 'string') {
-                  return sortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                } else {
-                  const numA = Number(valA);
-                  const numB = Number(valB);
-                  if (!isNaN(numA) && !isNaN(numB)) {
-                    return sortDir === 'asc' ? numA - numB : numB - numA;
-                  }
-                  return sortDir === 'asc'
-                    ? String(valA).localeCompare(String(valB))
-                    : String(valB).localeCompare(String(valA));
-                }
-              });
-
-              return sortedItems.map((row) => (
+            {/* Sort phía server (danh sách phân trang) / phía client (mảng thô) */}
+            {displayItems.map((row) => (
                 <tr key={row.id} className="clickable" onClick={() => navigate(`/${cfg.slug}/${row.id}`)}>
                   <td>{row.id}</td>
                   {cfg.columns.map((c) => {
@@ -296,8 +297,7 @@ export default function CrudList() {
                     </td>
                   )}
                 </tr>
-              ));
-            })()}
+              ))}
             {items.length === 0 && (
               <tr><td colSpan={cfg.columns.length + 1 + (showClone ? 1 : 0)} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Không có dữ liệu</td></tr>
             )}

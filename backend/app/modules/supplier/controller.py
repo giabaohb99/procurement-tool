@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request, UploadFile, File
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
-from app.core.base_controller import apply_filters, pagination
+from app.core.base_controller import apply_filters, apply_sort_from_request, pagination
 from app.core.database import get_db
 from app.core.response import success
 
@@ -21,6 +21,7 @@ def list_suppliers(
     user=Depends(require("supplier", "read")),
 ):
     query = apply_filters(db.query(Supplier), Supplier, request, service.FILTERABLE)
+    query = apply_sort_from_request(query, Supplier, request)
     total, items = service.list_suppliers(db, query, pg)
     return success({
         "total": total,

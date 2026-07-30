@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
 import Pagination from '../components/Pagination'
 import { fmtDate } from '../utils/datetime'
+import { useResizableColumns, ResizeHandle } from '../hooks/useResizableColumns'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const NOWRAP = { whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }
+const MUTED = { color: 'var(--muted)' } as const
+const R = { textAlign: 'right' as const }
 
 // Trạng thái tiến độ dòng (đồng bộ ĐMH) — dùng cho filter + badge màu
 const PG_COLOR: Record<string, string> = {
@@ -23,6 +27,84 @@ const pgBadge = (s: string) =>
 const diffCell = (n: number) =>
   <span style={{ color: n < 0 ? 'var(--red)' : n > 0 ? 'var(--green)' : 'var(--muted)' }}>{n || 0}</span>
 
+type Ctx = {
+  companyName: (id: number) => string
+  canOpenPO: boolean
+  navigate: (p: string) => void
+  page: number
+  pageSize: number
+}
+
+type Col = {
+  key: string
+  label: string
+  w: number
+  sort?: string          // key gửi lên backend (cột thật) — không có => không sort được
+  sup?: boolean          // chỉ hiện khi có quyền xem NCC/vận chuyển
+  td?: CSSProperties     // style riêng cho <td>
+  cell: (r: any, ctx: Ctx, i: number) => ReactNode
+}
+
+// Khai báo 1 lần: dùng chung cho <colgroup>, <thead> và <tbody> nên index luôn khớp.
+const COLS: Col[] = [
+  { key: 'stt', label: 'STT', w: 44, td: { ...R, ...MUTED }, cell: (r, c, i) => r.stt ?? (c.page - 1) * c.pageSize + i + 1 },
+  {
+    key: 'po_code', label: 'Mã ĐMH', w: 150, sort: 'po_code', td: NOWRAP,
+    cell: (r, c) => c.canOpenPO ? (
+      <a href={`/purchase-orders/${r.po_id}`}
+        onClick={(e) => { e.preventDefault(); c.navigate(`/purchase-orders/${r.po_id}`) }}
+        style={{ cursor: 'pointer', color: 'var(--navy)', fontWeight: 600, textDecoration: 'underline' }}
+        title="Mở đơn mua hàng">{r.po_code}</a>
+    ) : (
+      <span style={{ fontWeight: 600, color: 'var(--navy)' }} title="Bạn không có quyền xem chi tiết đơn mua hàng">{r.po_code}</span>
+    ),
+  },
+  { key: 'misa_code', label: 'Mã MISA', w: 92, sort: 'misa_code', td: { ...NOWRAP, ...MUTED }, cell: (r) => r.misa_code },
+  { key: 'pr_code', label: 'Mã PYC', w: 104, sort: 'pr_code', td: { ...NOWRAP, ...MUTED }, cell: (r) => r.pr_code },
+  { key: 'company', label: 'Công ty', w: 180, cell: (r, c) => c.companyName(r.company_id) },
+  { key: 'department', label: 'Bộ phận', w: 124, sort: 'department', cell: (r) => r.department },
+  { key: 'supplier_code', label: 'Mã NCC', w: 130, sort: 'supplier_code', sup: true, td: { ...NOWRAP, ...MUTED }, cell: (r) => r.supplier_code },
+  { key: 'supplier_name', label: 'Nhà cung cấp', w: 230, sort: 'supplier_name', sup: true, cell: (r) => r.supplier_name },
+  { key: 'nspt', label: 'NSPT', w: 150, sort: 'nspt', cell: (r) => r.nspt },
+  { key: 'order_date', label: 'Ngày ĐH', w: 88, sort: 'order_date', td: NOWRAP, cell: (r) => fmtDate(r.order_date) },
+  { key: 'product_code', label: 'Mã SP', w: 140, sort: 'product_code', td: { ...NOWRAP, ...MUTED }, cell: (r) => r.product_code },
+  { key: 'product_name', label: 'Tên SP', w: 220, sort: 'product_name', td: { fontWeight: 500 }, cell: (r) => r.product_name },
+  { key: 'invoice_name', label: 'Tên hóa đơn', w: 150, sort: 'invoice_name', cell: (r) => r.invoice_name },
+  { key: 'item_group', label: 'Nhóm hàng', w: 120, sort: 'item_group', cell: (r) => r.item_group },
+  { key: 'spec', label: 'Quy cách', w: 190, sort: 'spec', cell: (r) => r.spec },
+  { key: 'fg_code', label: 'Mã HH', w: 84, sort: 'fg_code', td: { ...NOWRAP, ...MUTED }, cell: (r) => r.fg_code },
+  { key: 'invoice_no', label: 'Số HĐ', w: 160, sort: 'invoice_no', td: NOWRAP, cell: (r) => r.invoice_no },
+  { key: 'required_date', label: 'Ngày cần', w: 88, sort: 'required_date', td: NOWRAP, cell: (r) => fmtDate(r.required_date) },
+  { key: 'unit', label: 'ĐVT', w: 56, sort: 'unit', cell: (r) => r.unit },
+  { key: 'qty_request', label: 'SL YC', w: 76, sort: 'qty_request', td: R, cell: (r) => fmt(r.qty_request) },
+  { key: 'qty_order', label: 'SL đặt', w: 76, sort: 'qty_order', td: R, cell: (r) => fmt(r.qty_order) },
+  { key: 'price', label: 'Đơn giá', w: 96, sort: 'price', td: R, cell: (r) => fmt(r.price) },
+  { key: 'vat', label: 'VAT%', w: 60, sort: 'vat', td: R, cell: (r) => r.vat || 0 },
+  { key: 'order_amount', label: 'Thành tiền ĐH', w: 128, td: { ...R, fontWeight: 600 }, cell: (r) => fmt(r.order_amount) },
+  { key: 'progress_status', label: 'Tiến độ', w: 176, sort: 'progress_status', cell: (r) => pgBadge(r.progress_status) },
+  { key: 'delivery_no', label: 'Lần giao', w: 72, sort: 'delivery_no', td: R, cell: (r) => r.delivery_no ?? '—' },
+  { key: 'warehouse_code', label: 'Kho', w: 96, sort: 'warehouse_code', td: NOWRAP, cell: (r) => r.warehouse_code },
+  { key: 'carrier_code', label: 'Mã ĐVVC', w: 160, sort: 'carrier_code', sup: true, td: { ...NOWRAP, ...MUTED }, cell: (r) => r.carrier_code },
+  { key: 'carrier_name', label: 'Đơn vị VC', w: 160, sort: 'carrier_name', sup: true, cell: (r) => r.carrier_name },
+  { key: 'ship_qty', label: 'SL giao', w: 84, sort: 'ship_qty', td: R, cell: (r) => fmt(r.ship_qty) },
+  { key: 'received_qty', label: 'SL nhận', w: 84, sort: 'received_qty', td: R, cell: (r) => fmt(r.received_qty) },
+  { key: 'promised_date', label: 'Cam kết giao', w: 100, sort: 'promised_date', td: NOWRAP, cell: (r) => fmtDate(r.promised_date) },
+  { key: 'expected_date', label: 'Dự kiến nhận', w: 100, sort: 'expected_date', td: NOWRAP, cell: (r) => fmtDate(r.expected_date) },
+  { key: 'received_date', label: 'Ngày nhận', w: 100, sort: 'received_date', td: NOWRAP, cell: (r) => fmtDate(r.received_date) },
+  { key: 'std_days', label: 'Ngày QĐ', w: 76, sort: 'std_days', td: R, cell: (r) => r.std_days || 0 },
+  { key: 'regulated_date', label: 'Ngày quy định', w: 108, sort: 'regulated_date', td: NOWRAP, cell: (r) => fmtDate(r.regulated_date) },
+  { key: 'diff_promise', label: 'CL cam kết', w: 84, sort: 'diff_promise', td: R, cell: (r) => diffCell(r.diff_promise) },
+  { key: 'diff_regulated', label: 'CL quy định', w: 84, sort: 'diff_regulated', td: R, cell: (r) => diffCell(r.diff_regulated) },
+  { key: 'diff_required', label: 'CL vs YC', w: 76, sort: 'diff_required', td: R, cell: (r) => diffCell(r.diff_required) },
+  { key: 'delivery_invoice_no', label: 'Số HĐ (giao)', w: 160, sort: 'delivery_invoice_no', td: NOWRAP, cell: (r) => r.delivery_invoice_no },
+  { key: 'shipping_unit_price', label: 'Đơn giá VC', w: 96, sort: 'shipping_unit_price', sup: true, td: R, cell: (r) => fmt(r.shipping_unit_price) },
+  { key: 'shipping_amount', label: 'Tiền VC', w: 108, sort: 'shipping_amount', sup: true, td: R, cell: (r) => fmt(r.shipping_amount) },
+  { key: 'qc_result', label: 'QC', w: 64, sort: 'qc_result', cell: (r) => r.qc_result },
+  { key: 'delivery_status', label: 'TT giao', w: 108, sort: 'delivery_status', cell: (r) => r.delivery_status },
+  { key: 'amount', label: 'Thành tiền nhận', w: 128, td: { ...R, fontWeight: 600 }, cell: (r) => fmt(r.amount) },
+  { key: 'document_status', label: 'Hồ sơ CT', w: 150, sort: 'document_status', cell: (r) => r.document_status },
+]
+
 export default function PurchaseProgress() {
   const navigate = useNavigate()
   const { can } = useAuth()
@@ -34,6 +116,9 @@ export default function PurchaseProgress() {
   const [departments, setDepartments] = useState<any[]>([])
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
+  const [sortBy, setSortBy] = useState('')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const { startResize, colW } = useResizableColumns('colw:purchase-progress')
   const [f, setF] = useState<any>({
     company_id: '', department: '', month: '', status: '', q: '',
     order_date_from: '', order_date_to: '', received_date_from: '', received_date_to: '',
@@ -41,9 +126,15 @@ export default function PurchaseProgress() {
   const setFilter = (k: string, v: any) => { setF((s: any) => ({ ...s, [k]: v })); setPage(1) }
   const lbl = { fontSize: 12, color: 'var(--muted)' } as const
 
+  function handleSort(key: string) {
+    const nextDir: 'asc' | 'desc' = (sortBy === key && sortDir === 'asc') ? 'desc' : 'asc'
+    setSortBy(key); setSortDir(nextDir); setPage(1)
+  }
+
   async function load() {
     const p: any = { page, page_size: pageSize }
     Object.entries(f).forEach(([k, v]) => { const val = typeof v === 'string' ? v.trim() : v; if (val) p[k] = val })
+    if (sortBy) { p.sort_by = sortBy; p.sort_dir = sortDir }
     const r = await api.get('/api/purchase-progress', { params: p })
     const d = r.data.data
     setRows(d.items); setTotal(d.total); setShowSupplier(d.show_supplier)
@@ -53,16 +144,20 @@ export default function PurchaseProgress() {
     api.get('/api/departments', { params: { page_size: 500 } }).then((r) => setDepartments(r.data.data.items)).catch(() => {})
   }, [])
 
-  // Tự tìm khi đổi filter (debounce) hoặc đổi trang
+  // Tự tìm khi đổi filter (debounce) / đổi trang / đổi sort
   const timer = useRef<any>(null)
   useEffect(() => {
     clearTimeout(timer.current)
     timer.current = setTimeout(load, 300)
     return () => clearTimeout(timer.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f, page, pageSize])
+  }, [f, page, pageSize, sortBy, sortDir])
 
   const companyName = (cid: number) => companies.find((c) => c.id === cid)?.name || '—'
+  const ctx: Ctx = { companyName, canOpenPO, navigate, page, pageSize }
+
+  const cols = COLS.filter((c) => !c.sup || showSupplier)
+  const minW = cols.reduce((s, c) => s + c.w, 0)
 
   return (
     <div>
@@ -107,123 +202,41 @@ export default function PurchaseProgress() {
 
       <div className="card">
         <div className="items-scroll">
-          <table className="items-table wide-table" style={{ minWidth: showSupplier ? 5294 : 4414, tableLayout: 'fixed' }}>
+          <table className="items-table wide-table" style={{ minWidth: minW, tableLayout: 'fixed' }}>
             <colgroup>
-              <col style={{ width: 44 }} />{/* STT */}
-              <col style={{ width: 150 }} />{/* Mã ĐMH */}
-              <col style={{ width: 92 }} />{/* Mã MISA */}
-              <col style={{ width: 104 }} />{/* Mã PYC */}
-              <col style={{ width: 180 }} />{/* Công ty */}
-              <col style={{ width: 124 }} />{/* Bộ phận */}
-              {showSupplier && <><col style={{ width: 130 }} />{/* Mã NCC */}<col style={{ width: 230 }} />{/* Nhà cung cấp */}</>}
-              <col style={{ width: 150 }} />{/* NSPT */}
-              <col style={{ width: 88 }} />{/* Ngày ĐH */}
-              <col style={{ width: 140 }} />{/* Mã SP */}
-              <col style={{ width: 220 }} />{/* Tên SP */}
-              <col style={{ width: 150 }} />{/* Tên hóa đơn */}
-              <col style={{ width: 120 }} />{/* Nhóm hàng */}
-              <col style={{ width: 190 }} />{/* Quy cách */}
-              <col style={{ width: 84 }} />{/* Mã HH */}
-              <col style={{ width: 160 }} />{/* Số HĐ — nới cho đủ ~20 ký tự */}
-              <col style={{ width: 88 }} />{/* Ngày cần */}
-              <col style={{ width: 56 }} />{/* ĐVT */}
-              <col style={{ width: 76 }} />{/* SL YC */}
-              <col style={{ width: 76 }} />{/* SL đặt */}
-              <col style={{ width: 96 }} />{/* Đơn giá */}
-              <col style={{ width: 60 }} />{/* VAT% */}
-              <col style={{ width: 128 }} />{/* Thành tiền ĐH */}
-              <col style={{ width: 176 }} />{/* Tiến độ — nới cho vừa badge "Chưa gửi ĐMH cho KT" */}
-              <col style={{ width: 72 }} />{/* Lần giao */}
-              <col style={{ width: 96 }} />{/* Kho */}
-              {showSupplier && <><col style={{ width: 160 }} />{/* Mã ĐVVC */}<col style={{ width: 160 }} />{/* Đơn vị VC */}</>}
-              <col style={{ width: 84 }} />{/* SL giao */}
-              <col style={{ width: 84 }} />{/* SL nhận */}
-              <col style={{ width: 100 }} />{/* Cam kết giao */}
-              <col style={{ width: 100 }} />{/* Dự kiến nhận */}
-              <col style={{ width: 100 }} />{/* Ngày nhận */}
-              <col style={{ width: 76 }} />{/* Ngày QĐ */}
-              <col style={{ width: 108 }} />{/* Ngày quy định */}
-              <col style={{ width: 84 }} />{/* CL cam kết */}
-              <col style={{ width: 84 }} />{/* CL quy định */}
-              <col style={{ width: 76 }} />{/* CL vs YC */}
-              <col style={{ width: 160 }} />{/* Số HĐ (giao) — nới cho đủ ~20 ký tự */}
-              {showSupplier && <><col style={{ width: 96 }} /><col style={{ width: 108 }} /></>}
-              <col style={{ width: 64 }} />{/* QC */}
-              <col style={{ width: 108 }} />{/* TT giao */}
-              <col style={{ width: 128 }} />{/* Thành tiền nhận */}
-              <col style={{ width: 150 }} />{/* Hồ sơ CT */}
+              {cols.map((c, idx) => <col key={c.key} style={{ width: colW(idx, c.w) }} />)}
             </colgroup>
             <thead>
               <tr>
-                <th style={{ textAlign: 'right' }}>STT</th>
-                <th>Mã ĐMH</th><th>Mã MISA</th><th>Mã PYC</th><th>Công ty</th><th>Bộ phận</th>
-                {showSupplier && <><th>Mã NCC</th><th>Nhà cung cấp</th></>}
-                <th>NSPT</th><th>Ngày ĐH</th>
-                <th>Mã SP</th><th>Tên SP</th><th>Tên hóa đơn</th><th>Nhóm hàng</th><th>Quy cách</th>
-                <th>Mã HH</th><th>Số HĐ</th><th>Ngày cần</th><th>ĐVT</th>
-                <th style={{ textAlign: 'right' }}>SL YC</th><th style={{ textAlign: 'right' }}>SL đặt</th>
-                <th style={{ textAlign: 'right' }}>Đơn giá</th><th style={{ textAlign: 'right' }}>VAT%</th>
-                <th style={{ textAlign: 'right' }}>Thành tiền ĐH</th>
-                <th>Tiến độ</th>
-                <th style={{ textAlign: 'right' }}>Lần giao</th><th>Kho</th>
-                {showSupplier && <><th>Mã ĐVVC</th><th>Đơn vị VC</th></>}
-                <th style={{ textAlign: 'right' }}>SL giao</th><th style={{ textAlign: 'right' }}>SL nhận</th>
-                <th>Cam kết giao</th><th>Dự kiến nhận</th><th>Ngày nhận</th>
-                <th style={{ textAlign: 'right' }}>Ngày QĐ</th><th>Ngày quy định</th>
-                <th style={{ textAlign: 'right' }}>CL cam kết</th><th style={{ textAlign: 'right' }}>CL quy định</th>
-                <th style={{ textAlign: 'right' }}>CL vs YC</th>
-                <th>Số HĐ (giao)</th>
-                {showSupplier && <><th style={{ textAlign: 'right' }}>Đơn giá VC</th><th style={{ textAlign: 'right' }}>Tiền VC</th></>}
-                <th>QC</th><th>TT giao</th>
-                <th style={{ textAlign: 'right' }}>Thành tiền nhận</th>
-                <th>Hồ sơ CT</th>
+                {cols.map((c, idx) => {
+                  const sortable = !!c.sort
+                  const active = sortable && sortBy === c.sort
+                  const arrow = active ? (sortDir === 'asc' ? ' ▲' : ' ▼') : (sortable ? ' ↕' : '')
+                  const right = c.td?.textAlign === 'right'
+                  return (
+                    <th key={c.key}
+                      onClick={sortable ? () => handleSort(c.sort!) : undefined}
+                      style={{
+                        position: 'relative', paddingRight: 12,
+                        textAlign: right ? 'right' : 'left',
+                        cursor: sortable ? 'pointer' : 'default', userSelect: 'none',
+                      }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        {c.label}<span style={{ color: active ? 'var(--teal)' : '#cbd5e1' }}>{arrow}</span>
+                      </span>
+                      <ResizeHandle onMouseDown={(e) => startResize(idx, e)} />
+                    </th>
+                  )
+                })}
               </tr>
             </thead>
             <tbody>
               {rows.map((r, i) => (
                 <tr key={`${r.item_id}-${r.delivery_id ?? 'x'}-${i}`}>
-                  <td style={{ textAlign: 'right', color: 'var(--muted)' }}>{r.stt ?? (page - 1) * pageSize + i + 1}</td>
-                  <td style={NOWRAP}>{canOpenPO ? (
-                    <a href={`/purchase-orders/${r.po_id}`}
-                      onClick={(e) => { e.preventDefault(); navigate(`/purchase-orders/${r.po_id}`) }}
-                      style={{ cursor: 'pointer', color: 'var(--navy)', fontWeight: 600, textDecoration: 'underline' }}
-                      title="Mở đơn mua hàng">{r.po_code}</a>
-                  ) : (
-                    <span style={{ fontWeight: 600, color: 'var(--navy)' }} title="Bạn không có quyền xem chi tiết đơn mua hàng">{r.po_code}</span>
-                  )}</td>
-                  <td style={{ ...NOWRAP, color: 'var(--muted)' }}>{r.misa_code}</td>
-                  <td style={{ ...NOWRAP, color: 'var(--muted)' }}>{r.pr_code}</td>
-                  <td>{companyName(r.company_id)}</td><td>{r.department}</td>
-                  {showSupplier && <><td style={{ ...NOWRAP, color: 'var(--muted)' }}>{r.supplier_code}</td><td>{r.supplier_name}</td></>}
-                  <td>{r.nspt}</td><td style={NOWRAP}>{fmtDate(r.order_date)}</td>
-                  <td style={{ ...NOWRAP, color: 'var(--muted)' }}>{r.product_code}</td>
-                  <td style={{ fontWeight: 500 }}>{r.product_name}</td>
-                  <td>{r.invoice_name}</td><td>{r.item_group}</td><td>{r.spec}</td>
-                  <td style={{ ...NOWRAP, color: 'var(--muted)' }}>{r.fg_code}</td><td style={NOWRAP}>{r.invoice_no}</td>
-                  <td style={NOWRAP}>{fmtDate(r.required_date)}</td><td>{r.unit}</td>
-                  <td style={{ textAlign: 'right' }}>{fmt(r.qty_request)}</td>
-                  <td style={{ textAlign: 'right' }}>{fmt(r.qty_order)}</td>
-                  <td style={{ textAlign: 'right' }}>{fmt(r.price)}</td>
-                  <td style={{ textAlign: 'right' }}>{r.vat || 0}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(r.order_amount)}</td>
-                  <td>{pgBadge(r.progress_status)}</td>
-                  <td style={{ textAlign: 'right' }}>{r.delivery_no ?? '—'}</td><td style={NOWRAP}>{r.warehouse_code}</td>
-                  {showSupplier && <><td style={{ ...NOWRAP, color: 'var(--muted)' }}>{r.carrier_code}</td><td>{r.carrier_name}</td></>}
-                  <td style={{ textAlign: 'right' }}>{fmt(r.ship_qty)}</td>
-                  <td style={{ textAlign: 'right' }}>{fmt(r.received_qty)}</td>
-                  <td style={NOWRAP}>{fmtDate(r.promised_date)}</td><td style={NOWRAP}>{fmtDate(r.expected_date)}</td><td style={NOWRAP}>{fmtDate(r.received_date)}</td>
-                  <td style={{ textAlign: 'right' }}>{r.std_days || 0}</td><td style={NOWRAP}>{fmtDate(r.regulated_date)}</td>
-                  <td style={{ textAlign: 'right' }}>{diffCell(r.diff_promise)}</td>
-                  <td style={{ textAlign: 'right' }}>{diffCell(r.diff_regulated)}</td>
-                  <td style={{ textAlign: 'right' }}>{diffCell(r.diff_required)}</td>
-                  <td style={NOWRAP}>{r.delivery_invoice_no}</td>
-                  {showSupplier && <><td style={{ textAlign: 'right' }}>{fmt(r.shipping_unit_price)}</td><td style={{ textAlign: 'right' }}>{fmt(r.shipping_amount)}</td></>}
-                  <td>{r.qc_result}</td><td>{r.delivery_status}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(r.amount)}</td>
-                  <td>{r.document_status}</td>
+                  {cols.map((c) => <td key={c.key} style={c.td}>{c.cell(r, ctx, i)}</td>)}
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={showSupplier ? 46 : 40} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có dữ liệu tiến độ</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={cols.length} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có dữ liệu tiến độ</td></tr>}
             </tbody>
           </table>
         </div>

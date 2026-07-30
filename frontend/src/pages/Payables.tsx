@@ -7,6 +7,7 @@ import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
 import Pagination from '../components/Pagination'
 import { fmtDateTime } from '../utils/datetime'
+import { useResizableColumns, ResizeHandle } from '../hooks/useResizableColumns'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const AGING_CLS: Record<string, string> = { 'Chưa đến hạn': 'gray', '1-30': 'warn', '31-60': 'warn', '61-90': 'err', '>90': 'err' }
@@ -42,8 +43,18 @@ export default function Payables() {
   const [err, setErr] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
+  const [sortField, setSortField] = useState<string>('')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const { startResize, thStyle } = useResizableColumns('colw:payables')
   const setFilter = (k: string, v: any) => setF((s: any) => ({ ...s, [k]: v }))
   const lbl = { fontSize: 12, color: 'var(--muted)' } as const
+
+  function handleSort(field: string) {
+    if (sortField === field) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    else { setSortField(field); setSortDir('asc') }
+    setPage(1)
+  }
+  const arrow = (f: string) => (sortField === f ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ↕')
 
   const params = () => {
     const p: any = { page_size: 1000 }
@@ -79,7 +90,30 @@ export default function Payables() {
   const toggle = (id: number) => setSel((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id])
 
   const selSuppliers = new Set(rows.filter((r) => sel.includes(r.id)).map((r) => r.supplier_code))
-  const paged = rows.slice((page - 1) * pageSize, page * pageSize)
+
+  // Sort phía client (dữ liệu đã tải hết); cột "company" sort theo tên công ty
+  const sortedRows = (() => {
+    if (!sortField) return rows
+    const dir = sortDir === 'asc' ? 1 : -1
+    const val = (r: any) => (sortField === 'company' ? companyName(r.company_id) : r[sortField])
+    return [...rows].sort((a, b) => {
+      const av = val(a), bv = val(b)
+      if (av == null || av === '') return 1
+      if (bv == null || bv === '') return -1
+      if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir
+      return String(av).localeCompare(String(bv), 'vi') * dir
+    })
+  })()
+  const paged = sortedRows.slice((page - 1) * pageSize, page * pageSize)
+
+  // th vừa sort vừa kéo giãn
+  const sortTh = (i: number, field: string, label: string, right = false) => (
+    <th onClick={() => handleSort(field)}
+      style={{ position: 'relative', cursor: 'pointer', userSelect: 'none', textAlign: right ? 'right' : 'left', paddingRight: 12, ...thStyle(i) }}>
+      {label}{arrow(field)}
+      <ResizeHandle onMouseDown={(e) => startResize(i, e)} />
+    </th>
+  )
 
   async function createRequest() {
     setErr('')
@@ -169,10 +203,19 @@ export default function Payables() {
             <thead>
               <tr>
                 <th style={{ width: 34 }} />
-                <th>Nhà cung cấp</th><th>Mã NCC</th><th>Loại</th><th>Công ty</th><th>PO</th><th>Số hóa đơn</th>
-                <th>Ngày phát sinh</th><th>Hạn trả</th><th>Tuổi nợ</th>
-                <th style={{ textAlign: 'right' }}>Tổng nợ</th><th style={{ textAlign: 'right' }}>Đã trả</th>
-                <th style={{ textAlign: 'right' }}>Còn lại</th><th>Trạng thái</th>
+                {sortTh(1, 'supplier_name', 'Nhà cung cấp')}
+                {sortTh(2, 'supplier_code', 'Mã NCC')}
+                {sortTh(3, 'source_type', 'Loại')}
+                {sortTh(4, 'company', 'Công ty')}
+                {sortTh(5, 'po_code', 'PO')}
+                {sortTh(6, 'invoice_no', 'Số hóa đơn')}
+                {sortTh(7, 'created_at', 'Ngày phát sinh')}
+                {sortTh(8, 'due_date', 'Hạn trả')}
+                {sortTh(9, 'aging', 'Tuổi nợ')}
+                {sortTh(10, 'total', 'Tổng nợ', true)}
+                {sortTh(11, 'paid_amount', 'Đã trả', true)}
+                {sortTh(12, 'remaining', 'Còn lại', true)}
+                {sortTh(13, 'status', 'Trạng thái')}
               </tr>
             </thead>
             <tbody>

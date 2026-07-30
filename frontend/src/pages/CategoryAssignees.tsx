@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import { askConfirm } from '../components/confirm'
 import Pagination from '../components/Pagination'
 import { useAuth } from '../auth/AuthContext'
+import { useResizableColumns, ResizeHandle } from '../hooks/useResizableColumns'
 
 type Row = {
   id: number; item_group_id: number; item_group_name: string
@@ -29,6 +30,7 @@ export default function CategoryAssignees() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
+  const { startResize, colW } = useResizableColumns('colw:category-assignees')
 
   async function load() {
     // Tải hết (page_size lớn) để lọc/sort/phân trang phía client; API đã tối ưu JOIN nên nhanh
@@ -100,16 +102,16 @@ export default function CategoryAssignees() {
         {/* table-layout fixed + colgroup: khóa bề rộng cột để sort/đổi trang không làm bảng giật */}
         <table style={{ tableLayout: 'fixed' }}>
           <colgroup>
-            <col style={{ width: '32%' }} />
-            <col style={{ width: '30%' }} />
-            <col style={{ width: '30%' }} />
-            <col style={{ width: 100 }} />
+            <col style={{ width: colW(0, '32%') }} />
+            <col style={{ width: colW(1, '30%') }} />
+            <col style={{ width: colW(2, '30%') }} />
+            <col style={{ width: colW(3, 100) }} />
           </colgroup>
           <thead>
             <tr>
-              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('item_group_name')}>Phân loại{arrow('item_group_name')}</th>
-              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('primary_name')}>NSTM chính{arrow('primary_name')}</th>
-              <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('backup_name')}>NSTM dự phòng{arrow('backup_name')}</th>
+              <th style={{ position: 'relative', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('item_group_name')}>Phân loại{arrow('item_group_name')}<ResizeHandle onMouseDown={(e) => startResize(0, e)} /></th>
+              <th style={{ position: 'relative', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('primary_name')}>NSTM chính{arrow('primary_name')}<ResizeHandle onMouseDown={(e) => startResize(1, e)} /></th>
+              <th style={{ position: 'relative', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('backup_name')}>NSTM dự phòng{arrow('backup_name')}<ResizeHandle onMouseDown={(e) => startResize(2, e)} /></th>
               <th style={{ textAlign: 'center' }}>Thao tác</th>
             </tr>
           </thead>

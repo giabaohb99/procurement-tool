@@ -16,11 +16,13 @@ router = APIRouter(prefix="/api/departments", tags=["department"])
 def list_departments(
     q: str | None = Query(None),
     is_active: bool | None = Query(None),
+    sort_by: str = Query(""),
+    sort_dir: str = Query("asc"),
     pg: dict = Depends(pagination),
     db: Session = Depends(get_db),
     user=Depends(require("department", "read")),
 ):
-    total, items = service.list_departments(db, q, pg, is_active)
+    total, items = service.list_departments(db, q, pg, is_active, sort_by, sort_dir)
     # manager_id (chọn cứng) + manager_name (property của model) tự lấy qua model_validate
     res = [DepartmentOut.model_validate(i).model_dump() for i in items]
     return success({

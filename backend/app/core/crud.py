@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record
 from app.core.auth import require
-from app.core.base_controller import apply_filters, pagination
+from app.core.base_controller import apply_filters, apply_sort, pagination
 from app.core.database import get_db
 from app.core.response import success
 
@@ -18,10 +18,12 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
 
     @router.get("")
     def list_items(request: Request, pg: dict = Depends(pagination),
+                   sort_by: str | None = None, sort_dir: str = "asc",
                    db: Session = Depends(get_db), user=Depends(require(entity, "read"))):
         q = apply_filters(db.query(Model), Model, request, filterable)
         total = q.count()
-        items = q.order_by(Model.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
+        q = apply_sort(q, Model, sort_by, sort_dir)   # whitelist cột; mặc định id desc
+        items = q.offset(pg["offset"]).limit(pg["limit"]).all()
         return success({"total": total, "items": [out(i) for i in items]})
 
     @router.get("/{oid}")

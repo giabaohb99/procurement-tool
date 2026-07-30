@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import Pagination from '../components/Pagination'
 import { toast } from '../components/toast'
+import { useResizableColumns, ResizeHandle } from '../hooks/useResizableColumns'
 
 const LINE_APPROVE_COLOR: Record<string, string> = {
   'Chờ duyệt': '#d97706',
@@ -88,6 +89,35 @@ export default function SurveyReport() {
   const [page, setPage] = useState(1)
   const [busy, setBusy] = useState(false)
   const [itemGroups, setItemGroups] = useState<string[]>([])
+  const [sortBy, setSortBy] = useState('')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const { startResize, thStyle } = useResizableColumns('colw:survey-report')
+
+  function handleSort(field: string) {
+    if (sortBy === field) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    else { setSortBy(field); setSortDir('asc') }
+    setPage(1)
+  }
+  const arrow = (f: string) => (sortBy === f ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ↕')
+
+  function hCol(idx: number, field: string, label: string,
+                opts: { w?: number; minW?: number; center?: boolean; sortable?: boolean } = {}) {
+    const sortable = opts.sortable !== false
+    const style: React.CSSProperties = {
+      position: 'relative', paddingRight: 12,
+      ...(opts.w ? { width: opts.w } : {}),
+      ...(opts.minW ? { minWidth: opts.minW } : {}),
+      ...(opts.center ? { textAlign: 'center' } : { textAlign: 'left' }),
+      ...(sortable ? { cursor: 'pointer', userSelect: 'none' } : {}),
+      ...thStyle(idx),
+    }
+    return (
+      <th style={style} onClick={sortable ? () => handleSort(field) : undefined}>
+        {label}{sortable ? arrow(field) : ''}
+        <ResizeHandle onMouseDown={(e) => startResize(idx, e)} />
+      </th>
+    )
+  }
 
   useEffect(() => {
     api.get('/api/item-groups', { params: { page_size: 500 } })
@@ -107,6 +137,7 @@ export default function SurveyReport() {
       if (f.nspt) params.nspt = f.nspt
       if (f.date_from) params.date_from = f.date_from
       if (f.date_to) params.date_to = f.date_to
+      if (sortBy) { params.sort_by = sortBy; params.sort_dir = sortDir }
       const r = await api.get('/api/survey-report/lines', { params })
       const d = r.data.data || {}
       setItems(d.items || [])
@@ -127,7 +158,8 @@ export default function SurveyReport() {
 
   useEffect(() => {
     load(debouncedFilters, page)
-  }, [debouncedFilters, page])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedFilters, page, sortBy, sortDir])
 
   function resetFilters() {
     setFilters(EMPTY_FILTERS)
@@ -276,15 +308,15 @@ export default function SurveyReport() {
           <table className="items-table" style={{ minWidth: 900 }}>
             <thead>
               <tr>
-                <th style={{ width: 48, textAlign: 'center' }}>STT</th>
-                <th style={{ width: 130, textAlign: 'left' }}>Mã phiếu</th>
-                <th style={{ width: 70, textAlign: 'center' }}>Loại</th>
-                <th style={{ textAlign: 'left', minWidth: 200 }}>Nội dung</th>
-                <th style={{ width: 130, textAlign: 'left' }}>Phân loại</th>
-                <th style={{ width: 120, textAlign: 'left' }}>NSPT</th>
-                <th style={{ width: 100, textAlign: 'center' }}>Ngày</th>
-                <th style={{ width: 130, textAlign: 'center' }}>Trạng thái duyệt</th>
-                <th style={{ minWidth: 160, textAlign: 'left' }}>Ghi chú duyệt</th>
+                {hCol(0, '', 'STT', { w: 48, center: true, sortable: false })}
+                {hCol(1, 'survey_code', 'Mã phiếu', { w: 130 })}
+                {hCol(2, 'kind', 'Loại', { w: 70, center: true })}
+                {hCol(3, 'content', 'Nội dung', { minW: 200 })}
+                {hCol(4, 'item_group', 'Phân loại', { w: 130 })}
+                {hCol(5, 'nspt', 'NSPT', { w: 120 })}
+                {hCol(6, 'date', 'Ngày', { w: 100, center: true })}
+                {hCol(7, 'line_approve', 'Trạng thái duyệt', { w: 130, center: true })}
+                {hCol(8, 'line_approve_note', 'Ghi chú duyệt', { minW: 160 })}
               </tr>
             </thead>
             <tbody>

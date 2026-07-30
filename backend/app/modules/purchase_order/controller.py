@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_perm_profile, require
-from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, pagination
+from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, apply_sort_from_request, pagination
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope
@@ -108,6 +108,7 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
         sub2 = select(POItem.po_id).where(POItem.invoice_no.like(f"%{invoice_no}%"))
         q = q.filter(PurchaseOrder.id.in_(sub2))
     q = apply_scope(q, PurchaseOrder, "purchase_order", user, get_perm_profile(db, user))
+    q = apply_sort_from_request(q, PurchaseOrder, request)   # sort theo cột; 'amount' tính toán -> bỏ qua
     total, items = service.list_po(db, q, pg)
     out = []
     for p in items:

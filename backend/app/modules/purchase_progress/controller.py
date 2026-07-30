@@ -26,6 +26,38 @@ _SUPPLIER_HIDDEN = ("supplier_code", "supplier_name", "carrier_code", "carrier_n
                     "shipping_unit_price", "shipping_amount", "ship_unit")
 
 
+def _sort_map():
+    """Key cột (FE) -> cột DB thật để sort tại server. Các cột tính toán
+    (STT, thành tiền, tên công ty) không có ở đây -> bỏ qua, dùng thứ tự mặc định."""
+    return {
+        # Đơn mua hàng
+        "po_code": PurchaseOrder.code, "misa_code": PurchaseOrder.misa_code,
+        "pr_code": PurchaseOrder.pr_code, "company_id": PurchaseOrder.company_id,
+        "department": PurchaseOrder.department, "supplier_code": PurchaseOrder.supplier_code,
+        "supplier_name": PurchaseOrder.supplier_name, "nspt": PurchaseOrder.nspt,
+        "order_date": PurchaseOrder.order_date, "document_status": PurchaseOrder.document_status,
+        # Dòng hàng
+        "product_code": POItem.product_code, "product_name": POItem.product_name,
+        "invoice_name": POItem.invoice_name, "item_group": POItem.item_group,
+        "spec": POItem.spec, "fg_code": POItem.fg_code, "invoice_no": POItem.invoice_no,
+        "required_date": POItem.required_date, "unit": POItem.unit,
+        "qty_request": POItem.qty_request, "qty_order": POItem.qty_order,
+        "price": POItem.price, "vat": POItem.vat, "progress_status": POItem.progress_status,
+        # Lần giao
+        "delivery_no": PODelivery.delivery_no, "warehouse_code": PODelivery.warehouse_code,
+        "carrier_code": PODelivery.carrier_code, "carrier_name": PODelivery.carrier_name,
+        "ship_qty": PODelivery.ship_qty, "received_qty": PODelivery.received_qty,
+        "promised_date": PODelivery.promised_date, "expected_date": PODelivery.expected_date,
+        "received_date": PODelivery.received_date, "std_days": PODelivery.std_days,
+        "regulated_date": PODelivery.regulated_date, "diff_promise": PODelivery.diff_promise,
+        "diff_regulated": PODelivery.diff_regulated, "diff_required": PODelivery.diff_required,
+        "delivery_invoice_no": PODelivery.invoice_no,
+        "shipping_unit_price": PODelivery.shipping_unit_price,
+        "shipping_amount": PODelivery.shipping_amount, "qc_result": PODelivery.qc_result,
+        "delivery_status": PODelivery.status,
+    }
+
+
 def _require_progress(user=Depends(get_current_user), db: Session = Depends(get_db)):
     """Gate OR: purchase_order.read HOẶC purchase_request.read."""
     if (user_has_permission(db, user, "purchase_order", "read")
@@ -147,6 +179,13 @@ def list_progress(request: Request, pg: dict = Depends(pagination),
         codes = [c for (c,) in pr_q.all() if c]
         q = q.filter(PurchaseOrder.pr_code.in_(codes)) if codes else q.filter(PurchaseOrder.id == -1)
 
+    # ----- Sort -----
+    # Cột do người dùng chọn (nếu là cột thật) đứng trước, thứ tự mặc định làm tiebreak
+    sort_by = (request.query_params.get("sort_by") or "").strip()
+    sort_dir = (request.query_params.get("sort_dir") or "asc").strip().lower()
+    col = _sort_map().get(sort_by)
+    if col is not None:
+        q = q.order_by(col.desc() if sort_dir == "desc" else col.asc())
     q = q.order_by(PurchaseOrder.code, POItem.id, PODelivery.delivery_no)
     total = q.count()
     rows = q.offset(pg["offset"]).limit(pg["limit"]).all()

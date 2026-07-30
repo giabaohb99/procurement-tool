@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_perm_profile, hash_password, require
-from app.core.base_controller import apply_filters, pagination
+from app.core.base_controller import apply_filters, apply_sort_from_request, pagination
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope
@@ -23,6 +23,7 @@ def list_employees(
 ):
     query = apply_filters(db.query(service.Employee), service.Employee, request, service.FILTERABLE)
     query = apply_scope(query, service.Employee, "employee", user, get_perm_profile(db, user))
+    query = apply_sort_from_request(query, service.Employee, request)
     total, items = service.list_employees(db, query, pg)
     return success({
         "total": total,

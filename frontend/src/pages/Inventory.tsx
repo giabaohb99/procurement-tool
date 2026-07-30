@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
 import { fmtDateTime } from '../utils/datetime'
 import NumberInput from '../components/NumberInput'
+import { useResizableColumns, ResizeHandle } from '../hooks/useResizableColumns'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 
@@ -34,6 +35,7 @@ export default function Inventory() {
   const [history, setHistory] = useState<any[]>([])
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
+  const { startResize, thStyle } = useResizableColumns('colw:inventory')
 
   const companyName = (cid: number) => companies.find((c) => c.id === cid)?.name || cid || '—'
 
@@ -84,15 +86,16 @@ export default function Inventory() {
     }
   }
 
-  const renderHeader = (label: string, field: string, alignRight = false) => {
+  const renderHeader = (label: string, field: string, alignRight = false, idx = 0) => {
     const isSorted = sortField === field
     const icon = isSorted ? (sortAsc ? 'ti ti-chevron-up' : 'ti ti-chevron-down') : 'ti ti-arrows-sort'
     return (
-      <th onClick={() => handleSort(field)} style={{ cursor: 'pointer', userSelect: 'none', textAlign: alignRight ? 'right' : 'left' }}>
+      <th onClick={() => handleSort(field)} style={{ position: 'relative', cursor: 'pointer', userSelect: 'none', textAlign: alignRight ? 'right' : 'left', paddingRight: 12, ...thStyle(idx) }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, justifyContent: alignRight ? 'flex-end' : 'flex-start', width: '100%' }}>
           {label}
           <i className={icon} style={{ fontSize: 13, opacity: isSorted ? 1 : 0.4 }} />
         </div>
+        <ResizeHandle onMouseDown={(e) => startResize(idx, e)} />
       </th>
     )
   }
@@ -197,14 +200,14 @@ export default function Inventory() {
             <table>
               <thead>
                 <tr>
-                  {renderHeader('Công ty', 'company_name')}
-                  {renderHeader('Kho', 'warehouse_code')}
-                  {renderHeader('Mã SP', 'product_code')}
-                  {renderHeader('Tên sản phẩm', 'product_name')}
-                  {renderHeader('ĐVT', 'unit')}
-                  {renderHeader('Tồn hiện tại', 'qty', true)}
-                  {renderHeader('Đơn giá BQ', 'avg_cost', true)}
-                  {renderHeader('Giá trị tồn', 'value', true)}
+                  {renderHeader('Công ty', 'company_name', false, 0)}
+                  {renderHeader('Kho', 'warehouse_code', false, 1)}
+                  {renderHeader('Mã SP', 'product_code', false, 2)}
+                  {renderHeader('Tên sản phẩm', 'product_name', false, 3)}
+                  {renderHeader('ĐVT', 'unit', false, 4)}
+                  {renderHeader('Tồn hiện tại', 'qty', true, 5)}
+                  {renderHeader('Đơn giá BQ', 'avg_cost', true, 6)}
+                  {renderHeader('Giá trị tồn', 'value', true, 7)}
                 </tr>
               </thead>
               <tbody>

@@ -32,11 +32,18 @@ def _out(db: Session, obj) -> dict:
 def list_(
     sort: str = Query("item_group_name"),
     order: str = Query("asc"),
+    sort_by: str = Query(""),
+    sort_dir: str = Query(""),
     pg: dict = Depends(pagination),
     db: Session = Depends(get_db),
     user=Depends(require("category_assignee", "read")),
 ):
     """Danh sách phân công NSTM — 1 query JOIN (hết N+1), phân trang + sort tại DB."""
+    # CrudList gửi sort_by/sort_dir; giữ tương thích tham số cũ sort/order
+    if sort_by:
+        sort = sort_by
+    if sort_dir:
+        order = sort_dir
     from app.modules.catalog.model import ItemGroup
     from app.modules.employee.model import Employee
 

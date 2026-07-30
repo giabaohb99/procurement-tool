@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record
 from app.core.auth import require
-from app.core.base_controller import apply_filters, apply_range_filters, pagination
+from app.core.base_controller import apply_filters, apply_range_filters, apply_sort_from_request, pagination
 from app.core.database import get_db
 from app.core.response import success
 from app.modules.supplier.model import Supplier
@@ -68,7 +68,8 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
         elif expiry == "Còn hạn":
             q = q.filter(Contract.end_date > t30)
     total = q.count()
-    items = q.order_by(Contract.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
+    q = apply_sort_from_request(q, Contract, request, default=Contract.id.desc())
+    items = q.offset(pg["offset"]).limit(pg["limit"]).all()
     return success({"total": total, "items": [_out(c) for c in items]})
 
 

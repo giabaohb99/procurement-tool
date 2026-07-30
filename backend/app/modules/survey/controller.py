@@ -7,7 +7,7 @@ from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_perm_profile, require
-from app.core.base_controller import apply_filters, pagination
+from app.core.base_controller import apply_filters, apply_sort_from_request, pagination
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope
@@ -49,6 +49,7 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
           user=Depends(require("survey", "read"))):
     q = apply_filters(db.query(Survey), Survey, request, service.FILTERABLE)
     q = apply_scope(q, Survey, "survey", user, get_perm_profile(db, user))
+    q = apply_sort_from_request(q, Survey, request)
     total, items = service.list_surveys(db, q, pg)
     return success({"total": total, "items": [_dict(x) for x in items]})
 
@@ -185,6 +186,7 @@ def report_lines_(kind: str | None = Query(None), line_approve: str | None = Que
                   item_group: str | None = Query(None), supplier: str | None = Query(None),
                   code: str | None = Query(None), nspt: str | None = Query(None),
                   date_from: str | None = Query(None), date_to: str | None = Query(None),
+                  sort_by: str = Query(""), sort_dir: str = Query("asc"),
                   pg: dict = Depends(pagination), db: Session = Depends(get_db),
                   user=Depends(require("survey", "read"))):
     base = apply_scope(db.query(Survey), Survey, "survey", user, get_perm_profile(db, user))
@@ -212,7 +214,12 @@ def report_lines_(kind: str | None = Query(None), line_approve: str | None = Que
     summary = {k: cnt.get(k, 0) for k in ("Chờ duyệt", "Đã duyệt", "Không duyệt", "Thiếu thông tin")}
     if line_approve:
         rows = [r for r in rows if r["line_approve"] == line_approve]
-    rows.sort(key=lambda r: (-r["survey_id"], r["kind"], r["line_id"]))
+    rows.sort(key=lambda r: (-r["survey_id"], r["kind"], r["line_id"]))   # thứ tự mặc định
+    # Sort theo cột người dùng chọn (sort ổn định -> thứ tự mặc định làm tiebreak)
+    _allow = {"survey_code", "kind", "content", "supplier_code", "item_group",
+              "nspt", "date", "line_approve", "line_approve_note"}
+    if sort_by in _allow:
+        rows.sort(key=lambda r: (r.get(sort_by) or ""), reverse=str(sort_dir).lower() == "desc")
     total = len(rows)
     items = rows[pg["offset"]: pg["offset"] + pg["limit"]]
     return success({"total": total, "items": items, "summary": summary})

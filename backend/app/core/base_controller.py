@@ -44,6 +44,40 @@ def apply_filters(query, model, request: Request, filterable: list[str]):
     return query
 
 
+def apply_sort(query, model, sort_by: str | None, sort_dir: str = "asc", default=None):
+    """Sắp xếp phía server theo cột — CHỈ nhận cột thật của bảng (whitelist chống SQL injection).
+
+    - sort_by: tên cột (khớp cột model). Không hợp lệ -> bỏ qua, dùng `default`.
+    - sort_dir: 'asc' / 'desc' (mặc định asc).
+    - default: mệnh đề order_by mặc định (vd Model.id.desc()); None -> id desc.
+    """
+    col = getattr(model, sort_by, None) if sort_by else None
+    # chỉ cho phép cột vật lý trong bảng, tránh sort theo relationship/hybrid/method
+    valid = col is not None and sort_by in model.__table__.columns.keys()
+    if valid:
+        is_desc = str(sort_dir).lower() == "desc"
+        return query.order_by(col.desc() if is_desc else col.asc())
+    if default is not None:
+        return query.order_by(default)
+    return query.order_by(model.id.desc())
+
+
+def apply_sort_from_request(query, model, request: Request, default=None, allow: dict | None = None):
+    """Như apply_sort nhưng đọc `sort_by`/`sort_dir` trực tiếp từ query params của request.
+
+    - allow: map tùy chọn {key_FE: cột SQLAlchemy} cho cột KHÔNG trùng tên DB (vd cột join/computed).
+      Nếu key nằm trong allow -> dùng cột đó; ngược lại thử cột thật của model.
+    Tiện để gắn vào các controller tự viết mà không phải đổi chữ ký hàm.
+    """
+    sort_by = (request.query_params.get("sort_by") or "").strip()
+    sort_dir = (request.query_params.get("sort_dir") or "asc").strip()
+    if sort_by and allow and sort_by in allow:
+        col = allow[sort_by]
+        is_desc = str(sort_dir).lower() == "desc"
+        return query.order_by(col.desc() if is_desc else col.asc())
+    return apply_sort(query, model, sort_by, sort_dir, default=default)
+
+
 def apply_range_filters(query, model, request: Request, fields: list[str]):
     """Lọc khoảng cho cột (ngày YYYY-MM-DD lưu dạng String, so sánh chuỗi vẫn đúng thứ tự).
     Mỗi field đọc 2 param: `<field>_from` (>=) và `<field>_to` (<=). Bỏ trống -> không lọc."""

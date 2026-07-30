@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request, Query, UploadFile, File
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
-from app.core.base_controller import apply_filters, pagination
+from app.core.base_controller import apply_filters, apply_sort_from_request, pagination
 from app.core.database import get_db
 from app.core.response import success
 
@@ -27,6 +27,7 @@ def list_products(
         kw = f"%{search.strip()}%"
         query = query.filter(or_(Product.code.like(kw), Product.name.like(kw),
                                  Product.hh_code.like(kw), Product.hh_name.like(kw)))
+    query = apply_sort_from_request(query, Product, request)
     total, items = service.list_products(db, query, pg)
     rows = [ProductOut.model_validate(i).model_dump() for i in items]
     # Gắn thumbnail_url = ảnh sort_order nhỏ nhất mỗi SP (batch 1 query/trang, không N+1)

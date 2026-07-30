@@ -6,7 +6,9 @@ from .model import Department
 from .schema import DepartmentCreate, DepartmentUpdate
 
 
-def list_departments(db: Session, q: str | None, pg: dict, is_active: bool | None = None):
+def list_departments(db: Session, q: str | None, pg: dict, is_active: bool | None = None,
+                     sort_by: str = "", sort_dir: str = "asc"):
+    from app.core.base_controller import apply_sort
     query = db.query(Department)
     if q:
         # Tìm chung 1 ô: theo tên phòng ban HOẶC tên trưởng bộ phận (manager)
@@ -17,7 +19,8 @@ def list_departments(db: Session, q: str | None, pg: dict, is_active: bool | Non
     if is_active is not None:
         query = query.filter(Department.is_active == is_active)
     total = query.count()
-    items = query.order_by(Department.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
+    query = apply_sort(query, Department, sort_by, sort_dir, default=Department.id.desc())
+    items = query.offset(pg["offset"]).limit(pg["limit"]).all()
     return total, items
 
 
