@@ -10,6 +10,7 @@ Bản 1: CHỈ dùng cột đã có trong DB. Các cột theo Mapping còn thi�
 `doc/yeu-cau/Mapping_Sheet06_TienDoMuaHang.md`.
 """
 from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user, get_perm_profile, user_has_permission
@@ -166,6 +167,32 @@ def list_progress(request: Request, pg: dict = Depends(pagination),
         like = f"%{kw}%"
         q = q.filter((PurchaseOrder.code.like(like)) | (PurchaseOrder.pr_code.like(like))
                      | (POItem.product_code.like(like)) | (POItem.product_name.like(like)))
+
+    # ----- Lọc theo SỐ LƯỢNG NHẬN (tổng đã nhận trên MỌI lần giao của dòng hàng) -----
+    # Mục đích: sáng lọc nhanh đơn "chưa giao" / "giao thiếu" để hối thúc NCC.
+    # Dùng tổng theo DÒNG (không theo từng lần giao) để không đếm sót khi có nhiều lần giao.
+    recv_sum = (db.query(func.coalesce(func.sum(PODelivery.received_qty), 0))
+                .filter(PODelivery.po_item_id == POItem.id)
+                .correlate(POItem).scalar_subquery())
+    recv_state = (request.query_params.get("recv_state") or "").strip()
+    if recv_state == "unreceived":       # Chưa giao: đã đặt nhưng chưa nhận gì
+        q = q.filter(POItem.qty_order > 0, recv_sum == 0)
+    elif recv_state == "under":          # Chưa đủ: nhận < đặt (gồm cả chưa giao)
+        q = q.filter(POItem.qty_order > 0, recv_sum < POItem.qty_order)
+    elif recv_state == "full":           # Đã đủ: nhận >= đặt
+        q = q.filter(POItem.qty_order > 0, recv_sum >= POItem.qty_order)
+
+    def _num(s):
+        try:
+            return float(s)
+        except (TypeError, ValueError):
+            return None
+    rmin = _num(request.query_params.get("recv_min"))
+    rmax = _num(request.query_params.get("recv_max"))
+    if rmin is not None:
+        q = q.filter(recv_sum >= rmin)
+    if rmax is not None:
+        q = q.filter(recv_sum <= rmax)
 
     # ----- Phạm vi dữ liệu -----
     if show_supplier:

@@ -122,6 +122,7 @@ export default function PurchaseProgress() {
   const [f, setF] = useState<any>({
     company_id: '', department: '', month: '', status: '', q: '',
     order_date_from: '', order_date_to: '', received_date_from: '', received_date_to: '',
+    recv_state: '',
   })
   const setFilter = (k: string, v: any) => { setF((s: any) => ({ ...s, [k]: v })); setPage(1) }
   const lbl = { fontSize: 12, color: 'var(--muted)' } as const
@@ -184,6 +185,14 @@ export default function PurchaseProgress() {
             options={PG_OPTS.map((s) => ({ value: s, label: s }))}
             onChange={(v) => setFilter('status', v)} />
         </div>
+        <div style={{ minWidth: 190 }}><label style={lbl}>Tình trạng nhận</label>
+          <select value={f.recv_state} onChange={(e) => setFilter('recv_state', e.target.value)}>
+            <option value="">Tất cả</option>
+            <option value="unreceived">Chưa giao (SL nhận = 0)</option>
+            <option value="under">Chưa đủ (nhận &lt; đặt)</option>
+            <option value="full">Đã đủ (nhận ≥ đặt)</option>
+          </select>
+        </div>
         <div><label style={lbl}>Ngày ĐH từ</label>
           <input type="date" value={f.order_date_from} onChange={(e) => setFilter('order_date_from', e.target.value)} /></div>
         <div><label style={lbl}>đến</label>
@@ -197,6 +206,7 @@ export default function PurchaseProgress() {
         <button className="btn ghost" onClick={() => setF({
           company_id: '', department: '', month: '', status: '', q: '',
           order_date_from: '', order_date_to: '', received_date_from: '', received_date_to: '',
+          recv_state: '',
         })}>Xóa lọc</button>
       </div>
 
