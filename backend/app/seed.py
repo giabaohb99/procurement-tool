@@ -184,7 +184,7 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup"}
 _PUR_MANAGER_PERMS = {e: (_ALL_ACTIONS, "all") for e in ENTITIES if e not in _SYS_ENTITIES}
 
 STD_ROLES = {
-    "employee": {"name": "Nhân sự (cơ bản)", "perms": {
+    "employee": {"name": "Nhân sự", "perms": {
         # chỉ các danh mục cần cho form tạo yêu cầu (không có Hợp đồng/NCC)
         "product": (["read"], "all"), "unit": (["read"], "all"),
         "item_group": (["read"], "all"), "warehouse": (["read"], "all"),
@@ -298,14 +298,14 @@ def resync_role_perms(db, code: str, perms: dict):
 
 
 def cleanup_legacy_staff_role(db):
-    """Gộp vai trò legacy 'Nhân viên' (code STAFF) vào 'Nhân sự (cơ bản)' (code employee) rồi XÓA.
+    """Gộp vai trò legacy 'Nhân viên' (code STAFF) vào 'Nhân sự' (code employee) rồi XÓA.
     Idempotent: chỉ chạy khi vẫn còn vai trò STAFF."""
     staff = db.query(Role).filter(Role.code == "STAFF").first()
     if not staff:
         return
     emp_role = db.query(Role).filter(Role.code == "employee").first()
     if emp_role:
-        # 1) Nhân sự để role_name = tên STAFF → đổi sang tên 'Nhân sự (cơ bản)'
+        # 1) Nhân sự để role_name = tên STAFF → đổi sang tên 'Nhân sự'
         db.query(Employee).filter(Employee.role_name == staff.name).update(
             {"role_name": emp_role.name}, synchronize_session=False)
         # 2) Tài khoản đang gán vai trò STAFF → chuyển sang vai trò employee (khỏi mất quyền)
@@ -532,7 +532,7 @@ def run():
             print(f"Gán vai trò 'Nhân sự' mặc định cho {n_default} tài khoản.")
 
         # Gộp vai trò 'Nhân viên' (STAFF/staff, kể cả demo — MariaDB không phân biệt hoa/thường)
-        # vào 'Nhân sự (cơ bản)' rồi xóa. CHẠY SAU seed_demo_accounts để dọn cả role demo vừa tạo.
+        # vào 'Nhân sự' rồi xóa. CHẠY SAU seed_demo_accounts để dọn cả role demo vừa tạo.
         cleanup_legacy_staff_role(db)
 
         # Cập nhật hình thức thanh toán "Công nợ 30 ngày" cho toàn bộ nhà cung cấp hiện có
