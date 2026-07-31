@@ -73,22 +73,40 @@ def run():
         suppliers = db.query(Supplier).all()
         by_name = {_norm(s.name): s for s in suppliers}
 
-        updated, skipped = 0, []
+        # Đồng bộ sạch: xoá TK cũ của TẤT CẢ NCC trước, sau đó chỉ nạp lại các dòng khớp
+        # trong file (nguồn dữ liệu TK NCB duy nhất). Tránh sót dữ liệu khớp sai lần trước.
+        for s in suppliers:
+            s.bank_account_name = ""
+            s.bank_account = ""
+            s.bank_name = ""
+
+        updated, skipped, fuzzy = 0, [], []
         for name, acc, bank in rows:  # last-wins: dòng sau ghi đè dòng trùng trước
             k = _norm(name)
-            sup = by_name.get(k) or _best_fuzzy(k, by_name)
+            sup = by_name.get(k)
+            kind = "EXACT"
+            if not sup:
+                sup = _best_fuzzy(k, by_name)
+                kind = "FUZZY"
             if not sup:
                 skipped.append(name)
-                print(f"SKIP (no match): {name}")
+                print(f"SKIP  (no match): {name}")
                 continue
+            sup.bank_account_name = name.strip()  # Tên TK thụ hưởng (cột 1 của file)
             sup.bank_account = acc
             sup.bank_name = bank
             updated += 1
-            print(f"UPDATE {sup.code:<20} | {sup.name[:45]:<45} | {acc:<20} | {bank}")
+            if kind == "FUZZY":
+                fuzzy.append((name.strip(), sup.code, sup.name))
+            print(f"{kind} {sup.code:<20} | {sup.name[:45]:<45} | {acc:<20} | {bank}")
 
         db.commit()
         print("-" * 60)
-        print(f"Xong: cập nhật {updated} NCC, bỏ qua {len(skipped)} dòng.")
+        print(f"Xong: cập nhật {updated} NCC ({len(fuzzy)} khớp mờ), bỏ qua {len(skipped)} dòng.")
+        if fuzzy:
+            print("KHỚP MỜ (fuzzy) — kiểm tra lại xem đúng NCC chưa:")
+            for fname, code, sname in fuzzy:
+                print(f"  - '{fname}'  ->  [{code}] {sname}")
         if skipped:
             print("Các dòng KHÔNG khớp (điền tay hoặc sửa tên trong file rồi chạy lại):")
             for s in skipped:

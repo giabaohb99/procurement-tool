@@ -1,6 +1,6 @@
 Tên TK thụ hưởng: 	Số TK thụ hưởng:	Ngân hàng/Chi nhánh: 
 CÔNG TY CỔ PHẦN VIỆT MỸ CẦN THƠ	111000293216	Vietcombank - CN Cần Thơ
-CÔNG TY TNHH THƯƠNG MẠI HIỀN PHAN LONG AN	1027554287	Ngân hàng Vietcombank
+CÔNG TY TNHH TM HIỀN PHAN LONG AN	1027554287	Ngân hàng Vietcombank
 CHI NHÁNH CÔNG TY TNHH SGN MIỀN NAM	37397989	Ngân hàng Techcombank
 CÔNG TY TNHH HOÁ SINH NTK	118002908288	Ngân Hàng Vietinbank - CN 4 - PGD Văn Thánh
 CÔNG TY TNHH VĨNH NAM ANH	3180355787	Ngân hàng Đầu Tư Và Phát Triển Việt Nam CN Hóc Môn
