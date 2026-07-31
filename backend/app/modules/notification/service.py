@@ -104,10 +104,18 @@ def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str
 
 
 def get_approvers_for_entity(db: Session, entity: str) -> list[User]:
-    """Gets all active users who have approval permission for the given entity."""
+    """Gets all active users who have approval permission for the given entity,
+    EXCLUDING system admin roles (admin, ADMINISTRATOR)."""
+    # 1. Lấy role_ids có quyền approve
     role_ids = [p.role_id for p in db.query(Permission).filter(Permission.entity == entity, Permission.can_approve == True).all()]
+    
+    # 2. Loại trừ các vai trò Quản trị viên hệ thống (admin / ADMINISTRATOR)
+    admin_roles = db.query(Role).filter(Role.code.in_(["admin", "ADMINISTRATOR", "admin_system"])).all()
+    admin_role_ids = {r.id for r in admin_roles}
+    role_ids = [rid for rid in role_ids if rid not in admin_role_ids]
+
     if not role_ids:
-        qltm_role = db.query(Role).filter(Role.code == "qltm").first()
+        qltm_role = db.query(Role).filter(Role.code == "pur_manager").first()
         if qltm_role:
             role_ids = [qltm_role.id]
             
@@ -118,7 +126,11 @@ def get_approvers_for_entity(db: Session, entity: str) -> list[User]:
     if not user_ids:
         return []
 
-    return db.query(User).filter(User.id.in_(user_ids), User.is_active == True).all()
+    users = db.query(User).filter(User.id.in_(user_ids), User.is_active == True).all()
+    if admin_role_ids:
+        admin_uids = {ur.user_id for ur in db.query(UserRole).filter(UserRole.role_id.in_(admin_role_ids)).all()}
+        users = [u for u in users if u.id not in admin_uids]
+    return users
 
 
 def get_department_head_users(db: Session, department_name: str) -> list[User]:
@@ -162,14 +174,35 @@ def _role_codes_of(db: Session, user_id: int) -> set[str]:
 
 def _test_route_email(db: Session, user: User) -> str:
     """Địa chỉ hộp thư test theo NHÓM VAI TRÒ của người nhận (khi EMAIL_TEST_MANAGER/STAFF được đặt).
-    Có vai trò quản lý → hộp quản lý; ngược lại → hộp nhân viên. Trống cấu hình → email thật của user."""
+    Có vai trò quản lý / Trưởng bộ phận → hộp quản lý; ngược lại → hộp nhân viên. Trống cấu hình → email thật của user."""
     mgr = (settings.EMAIL_TEST_MANAGER or "").strip()
     stf = (settings.EMAIL_TEST_STAFF or "").strip()
     if not mgr and not stf:
         return user.email or ""
     codes = _role_codes_of(db, user.id)
     is_manager = bool(codes & _MANAGER_ROLE_CODES)
+    if not is_manager and getattr(user, "employee_id", 0):
+        try:
+            from app.modules.department.model import Department
+            is_manager = db.query(Department).filter(Department.manager_id == user.employee_id).first() is not None
+        except Exception:
+            pass
     return (mgr if is_manager else stf) or user.email or ""
+
+
+def get_user_display_name(db: Session, user: User | None) -> str:
+    """Trả về Họ tên nhân sự của User (nếu có); fallback về email hoặc mã tài khoản."""
+    if not user:
+        return ""
+    if getattr(user, "employee_id", 0):
+        try:
+            from app.modules.employee.model import Employee
+            emp = db.get(Employee, user.employee_id)
+            if emp and emp.full_name:
+                return emp.full_name
+        except Exception:
+            pass
+    return user.email or f"Tài khoản #{user.id}"
 
 
 def _send_workflow_emails(db: Session, background_tasks, recipients: list, subject: str, body: str,
@@ -180,14 +213,16 @@ def _send_workflow_emails(db: Session, background_tasks, recipients: list, subje
     if not getattr(settings, "EMAIL_WORKFLOW_ENABLED", False):
         return
     from app.core.database import SessionLocal
+    import re
+    # Tự động trích xuất mã chứng từ nếu doc_code bị rỗng
+    if not doc_code:
+        m = re.search(r'([A-Z]{2,6}\d+)', subject + " " + body)
+        if m:
+            doc_code = m.group(1)
+
     label = {"purchase_request": "Yêu cầu mua hàng", "survey_request": "Yêu cầu báo giá",
              "survey": "Phiếu khảo sát", "purchase_order": "Đơn mua hàng",
              "payment_request": "Đề nghị thanh toán"}.get(doc_type, "Chứng từ")
-    html = render_template(HTML_LAYOUT, {
-        "subject": subject, "intro_message": body, "doc_type": label, "doc_code": doc_code,
-        "creator": creator_name, "reason": reason, "approve_note": approve_note,
-        "is_urgent": is_urgent, "link": link,
-    })
     jobs = []
     for r in recipients:
         if not r:
@@ -195,13 +230,19 @@ def _send_workflow_emails(db: Session, background_tasks, recipients: list, subje
         target = _test_route_email(db, r)
         if not target:
             continue
+        recipient_name = get_user_display_name(db, r)
+        html = render_template(HTML_LAYOUT, {
+            "subject": subject, "intro_message": body, "doc_type": label, "doc_code": doc_code,
+            "creator": creator_name, "recipient_name": recipient_name, "reason": reason,
+            "approve_note": approve_note, "is_urgent": is_urgent, "link": link,
+        })
         log = EmailLog(event=f"workflow_{doc_type}", to_email=target, subject=subject,
                        status="pending", created_by=r.id)
         db.add(log); db.flush()
-        jobs.append((log.id, target))
+        jobs.append((log.id, target, html))
     db.commit()  # bảo đảm EmailLog tồn tại trước khi task nền (session mới) đọc
     # force=True: bỏ qua công tắc email_enabled; apply_override=False: giữ địa chỉ đã định tuyến.
-    for log_id, target in jobs:
+    for log_id, target, html in jobs:
         if background_tasks is not None:
             background_tasks.add_task(send_smtp_email, SessionLocal, log_id, target, subject, html, True, False)
         else:
@@ -226,7 +267,7 @@ def trigger_notification(
     Creates an in-app notification and sends an email notification asynchronously.
     """
     creator = db.query(User).filter(User.id == creator_id).first()
-    creator_name = creator.email if creator else "Hệ thống"
+    creator_name = get_user_display_name(db, creator) if creator else "Hệ thống"
     
     # Generate labels and messages based on event
     doc_type_label = "Yêu cầu mua hàng" if doc_type == "purchase_request" else "Phiếu khảo sát"
@@ -240,55 +281,61 @@ def trigger_notification(
                    "completed": "đã hoàn thành", "paid": "đã ghi nhận thanh toán"}
 
     if event == "pr_assigned":
-        subject = f"[Phân công] PYC {doc_code}"
+        subject = f"{doc_code} — Phân công phụ trách PYC"
         body = f"Bạn được phân công phụ trách yêu cầu mua hàng {doc_code}."
     elif event == "pr_submitted":
-        subject = f"[Yêu cầu phê duyệt] PYC {doc_code}"
+        subject = f"{doc_code} — Yêu cầu phê duyệt PYC"
         body = f"Có một yêu cầu mua hàng mới (Mã số: {doc_code}) cần bạn phê duyệt."
     elif event == "pr_approved":
-        subject = f"[Đã duyệt] PYC {doc_code}"
+        subject = f"{doc_code} — Đã duyệt PYC"
         body = f"Yêu cầu mua hàng {doc_code} của bạn đã được phê duyệt."
     elif event == "pr_rejected":
-        subject = f"[Từ chối] PYC {doc_code}"
+        subject = f"{doc_code} — Từ chối PYC"
         body = f"Yêu cầu mua hàng {doc_code} của bạn đã bị từ chối phê duyệt."
     elif event == "pr_returned":
-        subject = f"[Bị trả lại] PYC {doc_code}"
+        subject = f"{doc_code} — Bị trả lại PYC"
         body = f"Yêu cầu mua hàng {doc_code} của bạn bị trả lại — hãy chỉnh sửa và gửi duyệt lại."
     elif event == "pr_cancelled":
-        subject = f"[Đã hủy] PYC {doc_code}"
+        subject = f"{doc_code} — Đã hủy PYC"
         body = f"Yêu cầu mua hàng {doc_code} của bạn đã bị hủy."
+    elif event == "pr_items_received":
+        subject = f"{doc_code} — Đã nhận hàng"
+        body = f"Yêu cầu mua hàng {doc_code} của bạn đã được cập nhật tiến độ giao nhận hàng."
+    elif event == "pr_completed":
+        subject = f"{doc_code} — Hoàn thành YCMH"
+        body = f"Yêu cầu mua hàng {doc_code} của bạn đã hoàn thành (tất cả hàng hóa đã được giao nhận đủ)."
     elif event == "sr_submitted":
-        subject = f"[Yêu cầu phê duyệt] YCBG {doc_code}"
+        subject = f"{doc_code} — Yêu cầu phê duyệt YCBG"
         body = f"Có một yêu cầu báo giá mới (Mã số: {doc_code}) cần bạn phê duyệt."
     elif event == "sr_approved":
-        subject = f"[Đã duyệt] YCBG {doc_code}"
-        body = f"Yêu cầu báo giá {doc_code} của bạn đã được phê duyệt."
+        subject = f"{doc_code} — Đã duyệt YCBG"
+        body = f"Yêu cầu báo giá {doc_code} đã được duyệt, chuyển sang xử lý khảo sát."
     elif event == "sr_rejected":
-        subject = f"[Từ chối] YCBG {doc_code}"
+        subject = f"{doc_code} — Từ chối YCBG"
         body = f"Yêu cầu báo giá {doc_code} của bạn đã bị từ chối phê duyệt."
     elif event == "sr_returned":
-        subject = f"[Bị trả lại] YCBG {doc_code}"
+        subject = f"{doc_code} — Bị trả lại YCBG"
         body = f"Yêu cầu báo giá {doc_code} của bạn bị trả lại — hãy chỉnh sửa và gửi duyệt lại."
     elif event == "pay_submitted":
-        subject = f"[Yêu cầu phê duyệt] YCTT {doc_code}"
+        subject = f"{doc_code} — Yêu cầu phê duyệt YCTT"
         body = f"Có một yêu cầu thanh toán mới ({doc_code}) cần bạn phê duyệt."
     elif event == "pay_approved":
-        subject = f"[Đã duyệt] YCTT {doc_code}"
+        subject = f"{doc_code} — Đã duyệt YCTT"
         body = f"Yêu cầu thanh toán {doc_code} của bạn đã được phê duyệt."
     elif event == "pay_rejected":
-        subject = f"[Từ chối] YCTT {doc_code}"
+        subject = f"{doc_code} — Từ chối YCTT"
         body = f"Yêu cầu thanh toán {doc_code} của bạn đã bị từ chối."
     elif event == "pay_paid":
-        subject = f"[Đã chi] YCTT {doc_code}"
+        subject = f"{doc_code} — Đã chi YCTT"
         body = f"Yêu cầu thanh toán {doc_code} đã được ghi nhận đã chi."
     elif event == "survey_submitted":
-        subject = f"[Yêu cầu phê duyệt] Khảo sát {doc_code}"
+        subject = f"{doc_code} — Yêu cầu phê duyệt khảo sát"
         body = f"Có một phiếu khảo sát mới (Mã số: {doc_code}) cần bạn phê duyệt."
     elif event == "survey_approved":
-        subject = f"[Đã duyệt] Khảo sát {doc_code}"
+        subject = f"{doc_code} — Đã duyệt khảo sát"
         body = f"Phiếu khảo sát {doc_code} của bạn đã được phê duyệt."
     elif event == "survey_rejected":
-        subject = f"[Từ chối] Khảo sát {doc_code}"
+        subject = f"{doc_code} — Từ chối khảo sát"
         body = f"Phiếu khảo sát {doc_code} của bạn đã bị từ chối phê duyệt."
     else:
         # Fallback rõ nghĩa: suy nhãn loại + hành động từ event (vd "po_approved" → Đơn mua hàng … đã được duyệt)
@@ -303,22 +350,18 @@ def trigger_notification(
     # Xác định người nhận chuông
     if recipient_ids:
         recipients = db.query(User).filter(User.id.in_(recipient_ids), User.is_active == True).all()
-    elif event == "pr_submitted":
-        # CHỈ Trưởng bộ phận của phòng — KHÔNG fallback sang quản lý/admin (tránh spam, ~300 phiếu/ngày).
-        # Chưa gán trưởng phòng thì không báo ai; quản lý vẫn thấy phiếu trong danh sách (scope all).
+    elif event in ("pr_submitted", "sr_submitted"):
+        # CHỈ Trưởng bộ phận của phòng YC (1 người duyệt)
         recipients = get_department_head_users(db, department)
-    elif event == "survey_submitted":
-        # Khảo sát do Quản lý thu mua / Admin duyệt
-        recipients = get_approvers_for_entity(db, doc_type)
-    elif event == "sr_submitted":
-        # Yêu cầu khảo sát (YCKS) do người có quyền duyệt survey_request duyệt
-        recipients = get_approvers_for_entity(db, "survey_request")
     elif event == "pay_submitted":
         # Yêu cầu thanh toán do người có quyền duyệt payment_request duyệt (QL/Admin TM)
         recipients = get_approvers_for_entity(db, "payment_request")
+    elif event == "po_submitted":
+        # Đơn mua hàng (ĐMH) gửi duyệt → báo người có quyền duyệt PO (QL/Admin TM)
+        recipients = get_approvers_for_entity(db, "purchase_order")
     elif event == "pr_approved":
-        # DUYỆT XONG → báo người YC + Quản lý TM + Admin TM (để phân bổ nhân sự trên line)
-        recipients = ([creator] if creator else []) + get_users_by_role_codes(db, ["pur_manager", "pur_admin"])
+        # DUYỆT XONG PYC → báo người YC + Admin TM (theo yêu cầu: người tạo + Admin TM)
+        recipients = ([creator] if creator else []) + get_users_by_role_codes(db, ["pur_admin"])
     else:
         recipients = [creator] if creator else []
 

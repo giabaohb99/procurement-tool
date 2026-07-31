@@ -114,6 +114,14 @@ def recompute_status(db: Session, pr: PurchaseRequest) -> None:
     db.commit()
     if pr.status == "completed" and not was_completed:
         _notify_survey_request_done(db, pr.id, pr.updated_by or 0)
+        # Thông báo cho Người tạo PYC khi YCMH hoàn thành toàn bộ
+        if pr.created_by:
+            from app.modules.notification.service import trigger_notification
+            trigger_notification(
+                db=db, event="pr_completed", doc_type="purchase_request", doc_code=pr.code,
+                creator_id=pr.created_by, background_tasks=None, link=f"/purchase-requests/{pr.id}",
+                recipient_ids=[pr.created_by]
+            )
 
 
 # Thứ tự tiến độ dòng (đồng bộ với ĐMH); dòng YCMH = mức KÉM TIẾN NHẤT trong các dòng ĐMH liên kết
@@ -121,6 +129,7 @@ def recompute_status(db: Session, pr: PurchaseRequest) -> None:
 # sync đặt nhầm dòng về "Chưa đặt hàng".
 _PROGRESS_ORDER = ["Chưa đặt hàng", "Đã đặt hàng", "Đã nhận hàng",
                    "Chưa gửi ĐMH cho KT", "Đã gửi ĐMH cho KT", "Hoàn thành"]
+
 
 def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
     """Suy trạng thái + tiến độ SL từng dòng YCMH từ các dòng ĐMH liên kết (khớp product_code),
@@ -168,12 +177,17 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
         cur = ordered_min.get(p)
         ordered_min[p] = idx if cur is None else min(cur, idx)
     _DONE = _PROGRESS_ORDER.index("Hoàn thành")
+    
+    prev_statuses = {it.id: (it.line_status or "") for it in items_of(db, pr.id)}
+    new_receives = False
+
     for it in items_of(db, pr.id):
         p = it.product_code
         ordered = ordered_by_prod.get(p, 0.0)
         received = received_by_prod.get(p, 0.0)
         it.qty_ordered = round(ordered, 3)
         it.qty_received = round(received, 3)
+        old_st = prev_statuses.get(it.id, "")
         if (it.line_status or "") == "Hủy đơn":
             continue  # ngoại lệ đặt thủ công trên YCMH thì giữ nguyên
         # Suy trạng thái theo SL/tiến độ THỰC (không bị dòng ĐMH chưa đặt làm sai):
@@ -185,8 +199,21 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
             it.line_status = "Đã nhận hàng"      # đã nhận (một phần trở lên)
         else:
             it.line_status = "Đã đặt hàng"       # đã đặt, chưa nhận
+
+        if (it.line_status in ("Đã nhận hàng", "Hoàn thành")) and (old_st not in ("Đã nhận hàng", "Hoàn thành")):
+            new_receives = True
+
     db.commit()
     recompute_status(db, pr)
+
+    # Thông báo cho Người tạo PYC khi dòng hàng vừa được nhận đủ / hoàn thành
+    if new_receives and pr.created_by:
+        from app.modules.notification.service import trigger_notification
+        trigger_notification(
+            db=db, event="pr_items_received", doc_type="purchase_request", doc_code=pr.code,
+            creator_id=pr.created_by, background_tasks=None, link=f"/purchase-requests/{pr.id}",
+            recipient_ids=[pr.created_by]
+        )
 
 
 def update_item_status(db: Session, pid: int, data: ItemStatusIn, user_id: int, emp_code: str, is_manager: bool) -> PurchaseRequest:

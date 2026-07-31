@@ -378,6 +378,22 @@ def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db:
         approve_note=pr.note or "",
         link=f"/purchase-requests/{pr.id}"
     )
+
+    # Thông báo "được phân công phụ trách" cho NSTM tự động gán
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User as _User
+    emp_ids = set()
+    if pr.assignee_id:
+        emp_ids.add(pr.assignee_id)
+    codes = [it.assignee for it in service.items_of(db, pid) if it.assignee]
+    if codes:
+        emp_ids.update(e.id for e in db.query(Employee).filter(Employee.code.in_(codes)).all())
+    if emp_ids:
+        uids = [u.id for u in db.query(_User).filter(_User.employee_id.in_(emp_ids), _User.is_active == True).all()]
+        if uids:
+            trigger_notification(db=db, event="pr_assigned", doc_type="purchase_request", doc_code=pr.code,
+                                 creator_id=user.id, background_tasks=background_tasks,
+                                 link=f"/purchase-requests/{pr.id}", recipient_ids=uids)
     return success(_out(db, pr, user), "Đã duyệt")
 
 

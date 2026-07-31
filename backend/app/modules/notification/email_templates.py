@@ -53,6 +53,12 @@ HTML_LAYOUT = """
                 {{ subject }}
               </h2>
 
+              {% if recipient_name %}
+              <p style="margin:0 0 16px 0; font-size:15px; font-weight:600; color:#1e293b;">
+                Kính gửi {{ recipient_name }},
+              </p>
+              {% endif %}
+
               <p style="margin:0 0 24px 0; font-size:14px; line-height:1.6; color:#475569;">
                 {{ intro_message }}
               </p>
@@ -108,12 +114,12 @@ HTML_LAYOUT = """
               </p>
 
               <!-- CTA Button -->
-              <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 28px auto;">
                 <tr>
-                  <td style="background-color:#0098db; border-radius:4px;">
+                  <td align="center" style="background-color:#0098db; border-radius:4px;">
                     <a href="{{ link }}" target="_blank"
                        style="display:inline-block; padding:12px 32px; font-size:14px; font-weight:700; color:#ffffff; text-decoration:none; letter-spacing:0.5px; border-radius:4px;">
-                      XEM CHI TIẾT CHỨNG TỪ
+                      XEM CHI TIẾT TẠI ĐÂY
                     </a>
                   </td>
                 </tr>

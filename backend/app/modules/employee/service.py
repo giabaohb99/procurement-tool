@@ -43,13 +43,39 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
     obj = get_employee(db, eid)
     if data.role_name is not None and not data.role_name.strip():
         raise HTTPException(400, "Bắt buộc chọn vai trò cho nhân sự")
+    old_role_name = (obj.role_name or "").strip()
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(obj, key, value)
     obj.updated_by = user_id
     db.commit()
     db.refresh(obj)
     record(db, user_id, ENTITY, obj.id, "update")
+
+    # Đồng bộ vai trò sang tài khoản đăng nhập (UserRole) KHI "Vai trò" ở màn Nhân sự thực sự ĐỔI.
+    # Chỉ chạy khi role_name đổi (không đụng các lần sửa field khác) và nhân sự đã có tài khoản +
+    # tên vai trò map được sang 1 Role → tránh ghi đè nhầm cấu hình đa vai trò/phạm vi đã gán tay.
+    new_role_name = (obj.role_name or "").strip()
+    if new_role_name and new_role_name != old_role_name:
+        _sync_user_role_from_employee(db, obj, new_role_name, user_id)
     return obj
+
+
+def _sync_user_role_from_employee(db: Session, emp: Employee, role_name: str, actor_id: int) -> None:
+    """Set lại UserRole của tài khoản gắn với nhân sự = đúng 1 vai trò vừa chọn ở màn Nhân sự.
+    Bỏ qua nếu nhân sự chưa có tài khoản (vai trò sẽ suy khi tạo tài khoản) hoặc tên vai trò
+    không khớp Role nào (nhãn tự do)."""
+    from app.modules.role.model import Role
+    from app.modules.user.model import User
+    from app.modules.user.schema import RoleAssign
+    from app.modules.user.service import assign_roles
+
+    user = db.query(User).filter(User.employee_id == emp.id).first()
+    if not user:
+        return
+    role = db.query(Role).filter(Role.name == role_name).first()
+    if not role:
+        return
+    assign_roles(db, user.id, RoleAssign(role_ids=[role.id]), actor_id)
 
 
 def delete_employee(db: Session, eid: int, user_id: int) -> None:
