@@ -1,4 +1,6 @@
-# Yêu cầu khảo sát (YCKS)
+# Yêu cầu báo giá (YCBG)
+
+Ghi chú: tên cũ trong tài liệu và một số comment code là "Yêu cầu khảo sát (YCKS)". Tên hiển thị trên menu hiện tại là **"Yêu cầu báo giá"**; mã phiếu đổi prefix thành `YCBG`; entity/bảng DB vẫn giữ tên `survey_request` / `tab_survey_request`.
 
 ## Mục đích
 
@@ -10,7 +12,8 @@ Màn chi tiết hiển thị phần **Lịch sử thao tác** (audit log) ở c�
 
 ## Vai trò tham gia
 
-- Người yêu cầu — scope `own` (`survey_request:create` / `write`): lập phiếu, gửi duyệt, chọn phương án, tạo YCMH.
+- Người yêu cầu — scope `own` (`survey_request:create` / `write`): lập phiếu, gửi duyệt, chọn phương án, tạo YCMH, đổi trạng thái dòng.
+- Cùng phòng ban người yêu cầu: đổi trạng thái dòng (`line-status`), chuyển Hoàn thành (finalize).
 - Trưởng bộ phận / Quản lý — (`survey_request:approve`): duyệt phiếu, trả đơn hoặc từ chối.
 - NSTM — scope `proc` (`survey_request:process`): vào màn Xử lý (NCC được hiển thị đầy đủ), gắn option, đặt mã SP hệ thống, chốt hoàn thành khảo sát.
 - Admin / Quản lý TM — scope `all` (`survey_request:approve` + `process`): toàn quyền; chuyển phiếu sang Hoàn thành (finalize).
@@ -26,8 +29,8 @@ Màn chi tiết hiển thị phần **Lịch sử thao tác** (audit log) ở c�
 | Đã từ chối | `cancelled` | TP/QL từ chối — khóa vĩnh viễn, không sửa được | — |
 | Đang xử lý | `processing` | NSTM đang thực hiện khảo sát | Xử lý khảo sát, Tạo phiếu khảo sát, Lấy từ khảo sát |
 | Đã khảo sát | `survey_done` | NSTM đã chốt — người YC chọn phương án | Xử lý khảo sát (vẫn mở), Tạo yêu cầu mua |
-| Đã tạo YCMH | `pr_created` | PYC đã sinh, chờ Admin/QL chốt | Chuyển Hoàn thành (Admin/QL TM) |
-| Hoàn thành | `done` | Khép kín — không chỉnh sửa | — |
+| Đã tạo YCMH | `pr_created` | PYC đã sinh, chờ Admin/QL chốt | Tạo yêu cầu mua (tái sử dụng), Chuyển Hoàn thành |
+| Hoàn thành | `done` | Khép kín — không chỉnh sửa | Tạo yêu cầu mua (tái sử dụng vẫn cho phép) |
 
 Các chuyển tiếp trạng thái:
 
@@ -36,10 +39,10 @@ Các chuyển tiếp trạng thái:
 - `submitted` → `rejected` — endpoint `POST /{id}/reject`; quyền `approve`; phiếu quay về trạng thái có thể sửa.
 - `submitted` → `cancelled` — endpoint `POST /{id}/cancel`; quyền `approve`; khóa vĩnh viễn.
 - `rejected` → `submitted` — người YC sửa rồi gửi duyệt lại.
-- `processing` → `survey_done` — endpoint `POST /{id}/complete`; quyền `process` + `is_purchaser`; mỗi NSTM validate dòng mình phụ trách; phiếu chuyển khi TẤT CẢ dòng (mọi NSTM) đã có option. Mọi option phải có Mã SP hệ thống (kiểm tra phía FE). Có thể gọi lại từ `survey_done`.
-- `survey_done` → `pr_created` — endpoint `POST /{id}/create-prs`; người YC (`created_by`) hoặc Admin TM (quyền `delete`).
-- `pr_created` → `done` (thủ công) — endpoint `POST /{id}/finalize`; Admin/QL TM (scope `all` + quyền `approve`).
-- `pr_created` → `done` (tự động) — hàm `auto_complete_from_pr` kích hoạt khi PYC liên quan chuyển `completed`; nếu mọi PYC của YCKS đều `completed` thì YCKS tự sang `done`.
+- `processing` → `survey_done` — endpoint `POST /{id}/complete`; quyền `process` + `is_purchaser`; mỗi NSTM validate dòng mình phụ trách (hoặc dòng "chốt rỗng" `no_option`); phiếu chuyển khi TẤT CẢ dòng (mọi NSTM) đã có option hoặc được chốt rỗng. Có thể gọi lại từ `survey_done`.
+- `survey_done` → `pr_created` — endpoint `POST /{id}/create-prs`; chỉ nâng cấp status từ `survey_done`; nếu phiếu đang `pr_created` hoặc `done` thì tạo YCMH nhưng không hạ status. Xem mục E.12.
+- `survey_done` hoặc `pr_created` → `done` (thủ công) — endpoint `POST /{id}/finalize`; Admin/QL TM (scope `all` + quyền `approve`) HOẶC người yêu cầu / cùng phòng ban người yêu cầu.
+- `pr_created` → `done` (tự động) — hàm `auto_complete_from_pr` kích hoạt khi PYC liên quan chuyển `completed`; nếu mọi PYC của YCBG đều `completed` thì YCBG tự sang `done`.
 
 ## Bộ lọc danh sách
 
@@ -58,16 +61,16 @@ Màn danh sách `/survey-requests` hỗ trợ các bộ lọc:
 
 ---
 
-## A. Trường header phiếu YCKS
+## A. Trường header phiếu YCBG
 
 ### 1. Mã phiếu (`code`)
 
 - Kiểu nhập: Tự động — không nhập tay
-- Mặc định: Sinh ngay sau khi tạo theo quy tắc `YCKS{DDMMYY}{seq:02d}` (VD: `YCKS10072601`). Số thứ tự đếm theo prefix ngày, đặt lại từ 01 mỗi ngày.
+- Mặc định: Sinh ngay sau khi tạo theo quy tắc `YCBG{DDMMYY}{seq:02d}` (VD: `YCBG10072601`). Số thứ tự lấy MAX hậu tố hiện có + 1 (không dùng COUNT để tránh trùng khi có khoảng trống do xóa). Nguồn: `service._gen_code()`.
 - Bắt buộc: Hệ thống điền, không sửa được
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Hệ thống (trường khóa)
-- Logic đặc biệt: Chỉ hiển thị trên màn xem (không hiện khi tạo mới). Đặt sau `db.commit()` đầu tiên để dùng được `id` trong công thức đếm.
+- Logic đặc biệt: Chỉ hiển thị trên màn xem (không hiện khi tạo mới). Prefix cũ (`YCKS`) không còn được dùng — phiếu cũ đã tồn tại giữ nguyên mã cũ, phiếu mới sinh từ `YCBG`.
 
 ### 2. Công ty nhận hóa đơn (`company_id`)
 
@@ -121,7 +124,7 @@ Màn danh sách `/survey-requests` hỗ trợ các bộ lọc:
 - Bắt buộc: Có — "Vui lòng nhập Mục đích khảo sát"
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người YC khi phiếu `draft` / `rejected`
-- Logic đặc biệt: Khi chọn YCKS trên màn tạo Phiếu khảo sát, trường **Nội dung chính** (`main_content`) của phiếu khảo sát tự điền từ đây. Khi tạo PYC sao chép sang `PurchaseRequest.purpose`.
+- Logic đặc biệt: Khi chọn YCBG trên màn tạo Phiếu khảo sát, trường **Nội dung chính** (`main_content`) của phiếu khảo sát tự điền từ đây. Khi tạo PYC sao chép sang `PurchaseRequest.purpose`.
 
 ### 8. Ngày tạo (`request_date` / `created_at`)
 
@@ -173,7 +176,9 @@ Màn danh sách `/survey-requests` hỗ trợ các bộ lọc:
 
 Mỗi dòng = một sản phẩm / nhóm hàng cần khảo sát. Bảng tóm tắt hiển thị các cột chính; toàn bộ trường xem và sửa trong popup "Chi tiết dòng".
 
-**Hiển thị dòng theo người xem (`visible_lines_for`)**: Thấy **hết** dòng nếu là người **tạo phiếu** (`created_by`) HOẶC có quyền **duyệt** (`survey_request:approve`, tức Admin/Quản lý TM) HOẶC có phạm vi đọc `dept`/`company`/`all`. NSTM (scope `proc`, không có quyền duyệt) chỉ thấy dòng được giao (`assignee == mã NV của mình`) hoặc dòng có phân loại mình phụ trách theo bảng `CategoryAssignee`. Quy tắc này áp dụng cho cả màn chi tiết, màn Xử lý, lẫn hàm Nhân bản (`clone`).
+**Hiển thị dòng theo người xem (`visible_lines_for`)**: Thấy **hết** dòng nếu là người **tạo phiếu** (`created_by`) HOẶC là **người yêu cầu** (`requester_id == user.employee_id`, kể cả khi admin tạo giùm) HOẶC có quyền **duyệt** (`survey_request:approve`, tức Admin/Quản lý TM) HOẶC có phạm vi đọc `dept`/`company`/`all` HOẶC là Admin thu mua đọc-chỉ (scope `proc` nhưng KHÔNG có `write`). NSTM (scope `proc` + có `write`) chỉ thấy dòng được giao (`assignee == mã NV của mình`) hoặc dòng có phân loại mình phụ trách theo bảng `CategoryAssignee`. Quy tắc này áp dụng cho cả màn chi tiết, màn Xử lý, lẫn hàm Nhân bản (`clone`).
+
+**Các trường trong `_LINE_PUBLIC_FIELDS`** (endpoint `/result` trả cho người YC): `id`, `item_group`, `requirement_detail`, `other_requirement`, `request_qty`, `uom`, `proposed_price`, `is_completed`, `line_status`, `pr_id`, `pr_code`, `no_option`.
 
 ### 1. Ngày tiếp nhận (`received_date`)
 
@@ -200,7 +205,7 @@ Mỗi dòng = một sản phẩm / nhóm hàng cần khảo sát. Bảng tóm t�
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: —
-- Logic đặc biệt: Có trong model `tab_survey_request_line` nhưng chưa có ô nhập tương ứng trên frontend. Dùng cho tương lai khi một phiếu YCKS có nhiều dòng từ các bộ phận khác nhau.
+- Logic đặc biệt: Có trong model `tab_survey_request_line` nhưng chưa có ô nhập tương ứng trên frontend. Dùng cho tương lai khi một phiếu YCBG có nhiều dòng từ các bộ phận khác nhau.
 
 ### 4. Phân loại (`item_group`)
 
@@ -280,8 +285,8 @@ Mỗi dòng = một sản phẩm / nhóm hàng cần khảo sát. Bảng tóm t�
 - Mặc định: `0`
 - Bắt buộc: —
 - Nguồn dữ liệu / liên kết: Bảng `tab_purchase_request`
-- Người sửa: Hệ thống — điền khi `create_prs` sinh PYC từ dòng này
-- Logic đặc biệt: Nằm trong `_LINE_PUBLIC_FIELDS` — người YC được xem. Dùng trong `auto_complete_from_pr` để tra mọi PYC của YCKS. Khi `pr_id != 0`, dòng bị khóa: không thêm/xóa option được.
+- Người sửa: Hệ thống — cập nhật sang YCMH gần nhất mỗi khi `create_prs` sinh PYC từ dòng này (1 dòng có thể tạo nhiều YCMH — xem mục E.12)
+- Logic đặc biệt: Nằm trong `_LINE_PUBLIC_FIELDS` — người YC được xem. Dùng trong `auto_complete_from_pr` để tham chiếu YCMH gần nhất. Lịch sử đầy đủ (mọi lần tạo) lưu trong bảng `tab_survey_request_pr`.
 
 ### 13. Mã Yêu cầu mua hàng liên kết (`pr_code`)
 
@@ -289,7 +294,7 @@ Mỗi dòng = một sản phẩm / nhóm hàng cần khảo sát. Bảng tóm t�
 - Mặc định: trống
 - Bắt buộc: —
 - Nguồn dữ liệu / liên kết: Bảng `tab_purchase_request`
-- Người sửa: Hệ thống — điền cùng lúc với `pr_id` khi tạo PYC
+- Người sửa: Hệ thống — cập nhật cùng lúc với `pr_id` mỗi khi tạo PYC
 - Logic đặc biệt: Hiển thị trong popup chi tiết dòng làm nhãn liên kết tra cứu. Nằm trong `_LINE_PUBLIC_FIELDS`.
 
 ### 14. Đã hoàn thành (`is_completed`)
@@ -298,16 +303,49 @@ Mỗi dòng = một sản phẩm / nhóm hàng cần khảo sát. Bảng tóm t�
 - Mặc định: `false`
 - Bắt buộc: —
 - Nguồn dữ liệu / liên kết: —
-- Người sửa: Hệ thống tự đặt `true` khi tạo PYC; NSTM/QL có thể đổi thủ công qua `PATCH /{id}/lines/{line_id}/status` (quyền `write`)
-- Logic đặc biệt: Khi `true`: dòng không được đưa vào `create_prs` lần nữa; không thêm/xóa option được; hiển thị badge "Hoàn thành" (xanh lá). Tình trạng dòng hiển thị trên badge bảng được tính từ: `is_completed` → "Hoàn thành"; `has_chosen` → "Đã chọn PA"; `option_count > 0` → "Đã khảo sát"; còn lại → "Chưa xong".
+- Người sửa: Hệ thống tự đặt `true` khi tạo PYC lần đầu; NSTM/QL có thể đổi thủ công qua `PATCH /{id}/lines/{line_id}/status` (quyền `write`)
+- Logic đặc biệt: Khi `true`: hiển thị badge "Hoàn thành" (xanh lá); không thêm/xóa option được (`add_option_` kiểm tra và trả HTTP 400). Lưu ý: cờ `is_completed = True` chỉ đánh dấu "đã từng tạo YCMH" — KHÔNG còn ngăn tạo thêm YCMH lần sau (tái sử dụng dòng). Đồng bộ với `line_status`: `line_status = "hoan_thanh"` kéo `is_completed = true` và ngược lại.
+
+### 15. Mã yêu cầu dòng (`internal_line_code`)
+
+- Kiểu nhập: Tự động
+- Mặc định: Sinh sau khi tạo dòng: `YCBGL{id:06d}` (VD: `YCBGL000042`)
+- Bắt buộc: —
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Hệ thống (không sửa sau khi tạo)
+- Logic đặc biệt: KHÔNG hiển thị với người YC — chỉ dùng nội bộ trong thông báo lỗi `complete_sr` ("Còn N dòng chưa có phương án") và tra cứu NSTM. Không nằm trong `_LINE_PUBLIC_FIELDS`.
+
+### 16. Trạng thái dòng (`line_status`)
+
+- Kiểu nhập: Hệ thống — thay đổi qua endpoint `PATCH /{id}/lines/{line_id}/line-status`
+- Mặc định: `""` (chưa xác định)
+- Giá trị cho phép: `""` / `"can_khao_sat_lai"` / `"hoan_thanh"`
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Người YC hoặc cùng phòng ban người YC (`_can_act_as_requester_side`) hoặc Admin TM (quyền `delete`). Chặn khi phiếu ở trạng thái `cancelled` / `done`.
+- Logic đặc biệt: Nằm trong `_LINE_PUBLIC_FIELDS` — người YC được xem. Đồng bộ hai chiều với `is_completed`: `"hoan_thanh"` đặt `is_completed = true`; `""` / `"can_khao_sat_lai"` đặt `is_completed = false`. Khi đặt `"can_khao_sat_lai"`: tự hủy chọn (`is_chosen = false`) mọi option của dòng; nếu phiếu đang `survey_done` thì hạ về `processing`. Khi chọn một phương án (PA): tự gỡ cờ `can_khao_sat_lai` về `""`. Chốt `"hoan_thanh"` yêu cầu dòng phải có option đang được chọn (`is_chosen = true`). Badge trên FE tính theo ưu tiên: `line_status == "hoan_thanh"` hoặc `is_completed` → "Hoàn thành"; `line_status == "can_khao_sat_lai"` → "Cần khảo sát lại"; `has_chosen` → "Đã chọn PA"; `option_count > 0` → "Đã khảo sát"; còn lại → "Chưa xong".
+
+### 17. Không có phương án phù hợp (`no_option`)
+
+- Kiểu nhập: Hệ thống — đặt khi NSTM "chốt rỗng" qua endpoint `POST /{id}/complete` với body `{empty_line_ids: [...]}`
+- Mặc định: `false`
+- Bắt buộc: —
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Hệ thống — đặt `true` khi NSTM gửi `empty_line_ids` chứa `line_id` này; đặt về `false` khi sau đó có option được gắn vào dòng
+- Logic đặc biệt: Nằm trong `_LINE_PUBLIC_FIELDS` — người YC được xem. FE hiển thị banner "Không có phương án phù hợp (đã chốt rỗng) — sản phẩm này không mua được từ phiếu khảo sát" thay cho danh sách option. Dòng được chốt rỗng được tính là "xong" trong `complete_sr` — phiếu vẫn chuyển `survey_done` khi mọi dòng hoặc có option hoặc `no_option = true`.
 
 ---
 
 ## C. Trường của Option (phương án) — `SurveyRequestOption`
 
-Mỗi option = một kết quả khảo sát sản phẩm đã duyệt, gắn vào một dòng YCKS. Bảng Options hiển thị đầy đủ trên màn Xử lý (NSTM). Người YC chỉ thấy các trường snapshot công khai qua endpoint `/result` (backend whitelist `_OPT_PUBLIC_FIELDS`).
+Mỗi option = một kết quả khảo sát sản phẩm đã duyệt, gắn vào một dòng YCBG. Bảng Options hiển thị đầy đủ trên màn Xử lý (NSTM). Người YC chỉ thấy các trường snapshot công khai qua endpoint `/result` (backend whitelist `_OPT_PUBLIC_FIELDS`).
 
-**Lọc option hợp lệ (`valid_options_of`)**: Tất cả view (màn chi tiết, màn Xử lý, màn kết quả) chỉ hiển thị option mà dòng khảo sát SP nguồn (`product_survey_line_id`) còn ở trạng thái `"Đã duyệt"`. Option của dòng đã bị "Không duyệt" hoặc phiếu khảo sát nguồn bị hủy (`cancelled`) sẽ bị **ẩn hoàn toàn** và **không cho chọn** — xử lý cả dữ liệu cũ còn kẹt trước khi có cascade xóa tự động. Option không gắn nguồn (`product_survey_line_id = 0`) vẫn được giữ.
+**Lọc option hợp lệ (`valid_options_of`)**: Tất cả view (màn chi tiết, màn Xử lý, màn kết quả) chỉ hiển thị option hợp lệ theo quy tắc sau:
+- Nếu dòng khảo sát SP nguồn (`product_survey_line_id`) **còn tồn tại** trong DB: chỉ giữ option có `line_approve == "Đã duyệt"`. Option có nguồn còn tồn tại nhưng bị "Không duyệt" sẽ bị ẩn và không cho chọn.
+- Nếu dòng khảo sát SP nguồn **đã bị xóa** (phiếu khảo sát bị xóa): giữ nguyên snapshot, vì snapshot đã tự đủ thông tin và có thể đã được chọn / tạo YCMH trước đó.
+- Option không gắn nguồn (`product_survey_line_id = 0`): giữ nguyên.
+
+Ghi chú: so với phiên bản cũ, hàm không còn kiểm tra `Survey.status == "cancelled"` — chỉ quan tâm đến trạng thái của từng dòng SP nguồn (`line_approve`).
 
 ### 1. ID ẩn danh trong dòng (`public_id`)
 
@@ -321,11 +359,11 @@ Mỗi option = một kết quả khảo sát sản phẩm đã duyệt, gắn v�
 ### 2. Nhãn hiển thị (`display_label`)
 
 - Kiểu nhập: Tự động
-- Mặc định: `"Option {public_id} — ID {id}"` (VD: `"Option 1 — ID 42"`)
+- Mặc định: `"Option {public_id}"` khi tạo, ngay sau khi `db.commit()` cập nhật thành `"Option {public_id} — ID {id}"` (VD: `"Option 1 — ID 42"`)
 - Bắt buộc: —
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Hệ thống (cập nhật ngay sau `db.commit()` để có `id`)
-- Logic đặc biệt: Nằm trong `_OPT_PUBLIC_FIELDS`. Phần "ID 42" giúp NSTM tham chiếu nhanh.
+- Logic đặc biệt: Nằm trong `_OPT_PUBLIC_FIELDS`. Phần "ID 42" giúp NSTM tham chiếu nhanh. Trên endpoint `/result`, nhãn được FE đổi thành `"Option {public_id} — NCC #{ncc_ref}"` (số NCC ẩn danh theo thứ tự xuất hiện toàn phiếu).
 
 ### 3. Đã chọn (`is_chosen`)
 
@@ -333,8 +371,8 @@ Mỗi option = một kết quả khảo sát sản phẩm đã duyệt, gắn v�
 - Mặc định: `false`
 - Bắt buộc: Cần chọn 1 option cho mỗi dòng trước khi "Tạo yêu cầu mua"
 - Nguồn dữ liệu / liên kết: —
-- Người sửa: Người YC hoặc người sửa được phiếu, endpoint `PATCH /{id}/lines/{line_id}/options/{oid}/choose` (quyền `write`), chỉ khi phiếu `survey_done`
-- Logic đặc biệt: Radio trong dòng — chọn option này tự hủy chọn (`is_chosen = false`) mọi option khác của cùng dòng. Ghi `chosen_by = user.id`. Frontend kiểm tra `allChosen` trước khi bật nút "Tạo yêu cầu mua". Nằm trong `_OPT_PUBLIC_FIELDS`.
+- Người sửa: Người YC hoặc người sửa được phiếu, endpoint `PATCH /{id}/lines/{line_id}/options/{oid}/choose` (quyền `write`), khi phiếu ở trạng thái `processing`, `survey_done`, `pr_created`, hoặc `done`
+- Logic đặc biệt: Radio trong dòng — chọn option này tự hủy chọn (`is_chosen = false`) mọi option khác của cùng dòng; bấm lại option đang chọn → bỏ chọn (toggle). Ghi `chosen_by = user.id`. Frontend kiểm tra `allChosen` trước khi bật nút "Tạo yêu cầu mua". Nằm trong `_OPT_PUBLIC_FIELDS`. Sau khi `create_prs` tạo YCMH, option tự bỏ chọn (`is_chosen = false`).
 
 ### 4. Mã SP hệ thống (`system_product_code`)
 
@@ -508,13 +546,32 @@ Các trường dưới đây KHÔNG có trong `_OPT_PUBLIC_FIELDS`. Backend endp
 
 ---
 
-## D. Quy tắc nghiệp vụ
+## D. Bảng liên kết lịch sử YCMH (`SurveyRequestPr`)
 
-1. Mã phiếu tự sinh ngay sau khi tạo theo `YCKS{DDMMYY}{seq:02d}`. Số thứ tự đếm theo prefix ngày trong cùng ngày, đặt lại từ 01 mỗi ngày (không đặt lại theo tháng/năm).
+Bảng `tab_survey_request_pr` lưu lịch sử mỗi lần sinh YCMH từ một option của một dòng YCBG. Cho phép 1 dòng tạo nhiều YCMH ở các thời điểm khác nhau (tái sử dụng dòng — mua lại).
+
+| Trường | Kiểu | Ý nghĩa |
+|--------|------|---------|
+| `survey_request_id` | BigInt | FK phiếu YCBG |
+| `survey_request_line_id` | BigInt | FK dòng YCBG |
+| `option_id` | BigInt | FK option được chọn |
+| `product_survey_line_id` | BigInt | FK dòng khảo sát SP nguồn (đếm toàn hệ thống) |
+| `pr_id` | BigInt | FK PYC được sinh |
+| `pr_code` | String | Mã PYC |
+
+Dữ liệu trong bảng này được dùng để:
+- Hiển thị `ycmh_list` trên màn kết quả (endpoint `/result`): mỗi option có danh sách PYC đã sinh kèm ngày và trạng thái.
+- `auto_complete_from_pr`: tra mọi `pr_id` thuộc YCBG qua bảng này; nếu tất cả đều `completed` thì YCBG tự chuyển `done`.
+
+---
+
+## E. Quy tắc nghiệp vụ
+
+1. Mã phiếu tự sinh ngay sau khi tạo theo `YCBG{DDMMYY}{seq:02d}`. Số thứ tự lấy MAX hậu tố hiện có + 1 (tránh trùng khi có khoảng trống do xóa). Đặt lại từ 01 mỗi ngày (không đặt lại theo tháng/năm). Mã dòng nội bộ: `YCBGL{id:06d}`.
 
 2. Validate khi Lưu/Gửi duyệt (phía FE): phải có Công ty (`company_id`), Người yêu cầu (`requester`), Mục đích (`purpose`), và ít nhất 1 dòng có `item_group` hoặc `requirement_detail`.
 
-3. Sửa nội dung phiếu chỉ cho phép khi `status = draft` hoặc `rejected`. Backend trả HTTP 400 "Chỉ sửa được khi phiếu ở trạng thái Nháp hoặc Bị trả lại" nếu cố sửa ở trạng thái khác. Phiếu `cancelled` ("Đã từ chối") bị khóa vĩnh viễn — hệ thống gợi ý Nhân bản (`clone`) thành phiếu nháp mới.
+3. Sửa nội dung phiếu chỉ cho phép khi `status = draft` hoặc `rejected`. Backend trả HTTP 400 "Chỉ sửa được khi phiếu ở trạng thái Nháp hoặc Bị trả lại (phiếu Đã từ chối đã khóa — hãy Nhân bản thành phiếu mới)" nếu cố sửa ở trạng thái khác. Phiếu `cancelled` bị khóa vĩnh viễn — hệ thống gợi ý Nhân bản (`clone`) thành phiếu nháp mới.
 
 4. Sau khi Duyệt: hàm `auto_assign` tự gán NSTM cho từng dòng theo bảng `CategoryAssignee` (khớp `item_group`), cập nhật `received_date`, và đặt `SurveyRequest.assignee_id`. Phiếu chuyển `processing` trong cùng một request. Gửi hai thông báo riêng: (a) **Đã duyệt** — tới người tạo + Quản lý TM + Admin TM; (b) **Phân công khảo sát** — tới NSTM vừa được tự gán theo phân loại (nếu có).
 
@@ -524,27 +581,27 @@ Các trường dưới đây KHÔNG có trong `_OPT_PUBLIC_FIELDS`. Backend endp
 
 7. NSTM scope `proc` chỉ gắn/xóa/sửa option cho dòng mình phụ trách (`can_process_line`): hoặc `assignee == emp_code`, hoặc phân loại dòng thuộc `CategoryAssignee.primary_employee_id` / `backup_employee_id` của NSTM đó. Admin/QL TM (scope `all`) xử lý được mọi dòng.
 
-8. Gắn option thủ công: NSTM chọn NCC → gọi `GET /{id}/lines/{line_id}/available-survey-lines?supplier_code=...` lấy dòng khảo sát SP đã duyệt (`line_approve = "Đã duyệt"`, `Survey.status` bất kỳ trừ `cancelled`) khớp phân loại → chọn 1 hoặc nhiều dòng → `POST /{id}/lines/{line_id}/options`. Không thể gắn cùng 1 `product_survey_line_id` hai lần cho cùng 1 dòng YCKS.
+8. Gắn option thủ công: NSTM chọn NCC → gọi `GET /{id}/lines/{line_id}/available-survey-lines?supplier_code=...` lấy dòng khảo sát SP đã duyệt (`line_approve = "Đã duyệt"`, phiếu khảo sát không phải `cancelled`) khớp phân loại → chọn 1 hoặc nhiều dòng → `POST /{id}/lines/{line_id}/options`. Không thể gắn cùng 1 `product_survey_line_id` hai lần cho cùng 1 dòng YCBG. Tối đa 5 option mỗi dòng (`MAX_OPTIONS_PER_LINE = 5`).
 
-9. Nút "Tạo phiếu khảo sát" (chỉ hiển thị khi `status = processing`, với người có quyền `process`): điều hướng sang `/surveys/new?sr={id}&sr_code={code}`, truyền sẵn liên kết YCKS để Phiếu khảo sát mới tự gắn `survey_request_id`. Khi Phiếu khảo sát được duyệt, hệ thống có thể dùng nút "Lấy từ khảo sát" để tự gắn option.
+9. Nút "Tạo phiếu khảo sát" (chỉ hiển thị khi `status = processing`, với người có quyền `process`): điều hướng sang `/surveys/new?sr={id}&sr_code={code}`, truyền sẵn liên kết YCBG để Phiếu khảo sát mới tự gắn `survey_request_id`. Khi Phiếu khảo sát được duyệt, hệ thống có thể dùng nút "Lấy từ khảo sát" để tự gắn option.
 
-10. Nút "Lấy từ khảo sát" (`POST /{id}/sync-options`): hàm `sync_options_from_surveys` tìm mọi Phiếu khảo sát (`status` bất kỳ trừ `cancelled`) đã liên kết YCKS qua `survey.survey_request_id = sid`, lấy dòng SP `line_approve = "Đã duyệt"`, khớp `item_group` với dòng YCKS để gắn option. Nếu YCKS chỉ có 1 dòng nhưng phân loại không khớp thì cũng tự gắn vào dòng đó. Bỏ qua dòng đã có option nguồn đó. Trả về số option mới thêm. Chỉ hoạt động khi `status = processing` hoặc `survey_done`. (Lưu ý: frontend chỉ hiện nút "Lấy từ khảo sát" khi `processing`, nhưng backend cho phép cả `survey_done`.)
+10. Nút "Lấy từ khảo sát" (`POST /{id}/sync-options`): hàm `sync_options_from_surveys` tìm mọi Phiếu khảo sát (`status` bất kỳ trừ `cancelled`) đã liên kết YCBG qua `survey.survey_request_id = sid`, lấy dòng SP `line_approve = "Đã duyệt"`, khớp `item_group` với dòng YCBG để gắn option. Nếu YCBG chỉ có 1 dòng nhưng phân loại không khớp thì cũng tự gắn vào dòng đó. Bỏ qua dòng đã có option nguồn đó. Trả về số option mới thêm. Chỉ hoạt động khi `status = processing` hoặc `survey_done`. (Lưu ý: frontend chỉ hiện nút "Lấy từ khảo sát" khi `processing`, nhưng backend cho phép cả `survey_done`.)
 
-11. Chốt hoàn thành khảo sát (`POST /{id}/complete`, chấp nhận `processing` hoặc `survey_done`): Backend chỉ validate rằng các dòng người gọi phụ trách (`my_lines`) đều có ít nhất 1 option — Quản lý/Admin TM (scope `all`) và người tạo phiếu (`created_by`) validate toàn bộ dòng. Phiếu chuyển `survey_done` chỉ khi TẤT CẢ dòng (mọi NSTM) đã có option; nếu còn dòng của NSTM khác chưa xong thì phiếu giữ nguyên `processing` (backend trả thông báo "còn dòng chưa xong"). Frontend kiểm tra thêm trước khi gọi API: mọi dòng hiển thị phải có option VÀ mọi option phải có `system_product_code`. Khi phiếu chuyển sang `survey_done`, gửi thông báo cho người YC.
+11. Chốt hoàn thành khảo sát (`POST /{id}/complete`, chấp nhận `processing` hoặc `survey_done`): Backend validate rằng các dòng người gọi phụ trách (`my_lines`) đều có ít nhất 1 option HOẶC được "chốt rỗng" (`no_option = true`). Body tùy chọn: `{empty_line_ids: [...]}` — danh sách dòng chưa có option nhưng NSTM muốn chốt rỗng (không có NCC phù hợp). Phiếu chuyển `survey_done` chỉ khi TẤT CẢ dòng (mọi NSTM) đã có option hoặc được chốt rỗng; nếu còn dòng của NSTM khác chưa xong thì phiếu giữ nguyên `processing`. Quản lý/Admin TM (scope `all`) và người tạo phiếu validate toàn bộ dòng cùng lúc. Frontend kiểm tra thêm trước khi gọi API: mọi option hiển thị phải có `system_product_code`. Khi phiếu chuyển sang `survey_done`, gửi thông báo cho người YC (phân biệt 2 nội dung: "Khảo sát xong" vs "Đã khảo sát lại" nếu có dòng vừa khảo sát lại sau cờ `can_khao_sat_lai`).
 
-12. Tạo PYC (`POST /{id}/create-prs`, `survey_done → pr_created`): gom option đã chọn (`is_chosen = true`) theo `supplier_code` → mỗi NCC 1 PYC Nháp. Dữ liệu PYC lấy từ snapshot option. Đặt `is_completed = true` và điền `pr_id`/`pr_code` cho dòng. Chỉ người YC (`created_by`) hoặc Admin TM (quyền `delete`) được gọi.
+12. Tạo YCMH (`POST /{id}/create-prs`): Được phép gọi khi phiếu ở trạng thái `processing`, `survey_done`, `pr_created`, hoặc `done`. Gom option đang được chọn (`is_chosen = true`) theo `supplier_code` → mỗi NCC 1 PYC Nháp. Sau khi tạo: option tự bỏ chọn (`is_chosen = false`); dòng cập nhật `pr_id`/`pr_code` (YCMH gần nhất) và `is_completed = true` (cờ "đã từng tạo"); ghi bản ghi vào `tab_survey_request_pr`. Cờ `is_completed` KHÔNG ngăn tạo thêm YCMH lần sau — người YC chọn lại option và bấm "Tạo yêu cầu mua" lần nữa là được (tái sử dụng dòng, mua lại). Chỉ nâng status `survey_done → pr_created`; không thay đổi nếu phiếu đang `pr_created` / `done`. Ghi vào bảng `tab_survey_request_pr` để theo dõi toàn bộ lịch sử YCMH. Chỉ người YC (`created_by` hoặc `requester_id == user.employee_id`) hoặc Admin TM (quyền `delete`) được gọi.
 
-13. Tự hoàn thành (`auto_complete_from_pr`): khi 1 PYC liên quan chuyển sang `completed`, hàm tra tất cả PYC (`pr_id`) sinh từ YCKS đó. Nếu tất cả đều `completed` và YCKS đang `pr_created` → tự chuyển YCKS sang `done` và ghi audit log "Tự hoàn thành".
+13. Tự hoàn thành (`auto_complete_from_pr`): khi 1 PYC liên quan chuyển sang `completed`, hàm tra tất cả `pr_id` trong `tab_survey_request_pr` của YCBG đó. Nếu tất cả đều `completed` và YCBG đang `pr_created` → tự chuyển YCBG sang `done` và ghi audit log "Tự hoàn thành".
 
-14. Xóa phiếu: chỉ khi `draft` hoặc `rejected` (backend kiểm tra). Xóa cascade: xóa toàn bộ `SurveyRequestOption` của các dòng trước, rồi xóa `SurveyRequestLine`, cuối cùng xóa phiếu header.
+14. Xóa phiếu: chỉ khi `draft`, `rejected`, hoặc `cancelled` (backend kiểm tra). Xóa cascade: xóa toàn bộ `SurveyRequestOption` của các dòng trước, rồi xóa `SurveyRequestLine`, cuối cùng xóa phiếu header. Hỗ trợ xóa hàng loạt qua `DELETE /api/survey-requests?ids=1,2,3`.
 
-15. Hiển thị dòng theo người xem (`visible_lines_for`): Thấy **hết** dòng nếu là người **tạo phiếu** (`created_by`) HOẶC có quyền **duyệt** (`survey_request:approve`, tức Admin/Quản lý TM) HOẶC có phạm vi đọc `dept`/`company`/`all`. NSTM (scope `proc`, không có quyền duyệt) chỉ thấy dòng được giao (`assignee == mã NV`) hoặc dòng có phân loại mình phụ trách theo bảng `CategoryAssignee` (primary/backup). Quy tắc áp dụng cho cả endpoint `GET /{id}` (màn chi tiết), `GET /{id}/process` (màn xử lý), hàm `complete_sr` (validate chỉ "dòng mình") và hàm `clone_sr` (chỉ sao chép "dòng mình"). (Logic đồng bộ với `purchase_request._see_all_items`.)
+15. Hiển thị dòng theo người xem (`visible_lines_for`): Thấy **hết** dòng nếu là người **tạo phiếu** (`created_by`) HOẶC là **người yêu cầu** (`requester_id == user.employee_id`) HOẶC có quyền **duyệt** (`survey_request:approve`) HOẶC có phạm vi đọc `dept`/`company`/`all` HOẶC là Admin thu mua đọc-chỉ (scope `proc` + không có quyền `write`). NSTM thường (scope `proc` + có `write`) chỉ thấy dòng được giao hoặc phân loại mình phụ trách theo bảng `CategoryAssignee`. Quy tắc áp dụng cho cả endpoint `GET /{id}`, `GET /{id}/process`, hàm `complete_sr` và hàm `clone_sr`.
 
-16. Lọc option hợp lệ (`valid_options_of`): Các view xử lý khảo sát (`_out_process`), kết quả (`_out_result`), và màn chi tiết (`_out`) đều dùng `valid_options_of` thay cho `options_of` thô. Hàm này **chỉ trả option** có dòng khảo sát SP nguồn (`product_survey_line_id`) còn trạng thái `"Đã duyệt"`. Option của dòng đã bị "Không duyệt" hoặc phiếu khảo sát nguồn bị `cancelled` sẽ **bị ẩn, không được tính** vào `option_count`/`has_chosen`, và không cho chọn — xử lý cả dữ liệu cũ còn kẹt. Option không gắn nguồn (`product_survey_line_id = 0`) vẫn được giữ.
+16. Lọc option hợp lệ (`valid_options_of`): Xem phần C — logic bảo toàn snapshot khi nguồn bị xóa, ẩn option khi nguồn còn tồn tại nhưng bị "Không duyệt".
 
-17. Nhân bản phiếu (`POST /{id}/clone`, quyền `survey_request:create`): Tạo phiếu Nháp mới — sao chép toàn bộ trường header (`company_id`, `requester`, `requester_position`, `department`, `head_of_dept`, `purpose`, `request_date`, `note`) và các dòng mà người dùng được xem (`visible_lines_for`). Sinh mã phiếu mới theo quy tắc `_gen_code`. Các thông tin sau KHÔNG được sao chép: `assignee` (NSTM phụ trách dòng; reset về rỗng), `received_date` (reset về rỗng), option, `pr_id`/`pr_code`, `is_completed`. Đính kèm file dòng được tái sử dụng (thêm `FileLink` mới trỏ cùng file gốc — không sao chép file vật lý). Có thể nhân bản từ bất kỳ trạng thái nào, kể cả phiếu `cancelled`.
+17. Nhân bản phiếu (`POST /{id}/clone`, quyền `survey_request:create`): Tạo phiếu Nháp mới — sao chép toàn bộ trường header (`company_id`, `requester`, `requester_position`, `department`, `head_of_dept`, `purpose`, `request_date`, `note`) và các dòng mà người dùng được xem (`visible_lines_for`). Người yêu cầu của bản sao = người bấm nhân bản (không giữ người yêu cầu phiếu gốc) — hệ thống tra hồ sơ nhân viên của người clone để điền lại. Sinh mã phiếu mới theo quy tắc `_gen_code`. Các thông tin sau KHÔNG được sao chép: `assignee` (reset về rỗng), `received_date` (reset về rỗng), option, `pr_id`/`pr_code`, `is_completed`, `line_status`, `no_option`. Đính kèm file dòng được tái sử dụng (thêm `FileLink` mới trỏ cùng file gốc — không sao chép file vật lý). Có thể nhân bản từ bất kỳ trạng thái nào, kể cả phiếu `cancelled`.
 
-18. Thông báo và Web Push: mỗi sự kiện dưới đây tạo chuông trong app **và** đẩy **Web Push** (best-effort) tới thiết bị đã đăng ký của người nhận, không chỉ chuông trong app.
+18. Thông báo và Web Push: mỗi sự kiện dưới đây tạo chuông trong app **và** đẩy **Web Push** (best-effort) tới thiết bị đã đăng ký của người nhận.
 
 | Sự kiện | Người nhận thông báo |
 |---------|---------------------|
@@ -554,13 +611,14 @@ Các trường dưới đây KHÔNG có trong `_OPT_PUBLIC_FIELDS`. Backend endp
 | Phân công dòng thủ công (`set_line_assignee`) | NSTM được gán vào dòng |
 | Trả đơn (`reject` → `rejected`) | Người tạo |
 | Từ chối (`cancel` → `cancelled`) | Người tạo |
-| Chốt hoàn thành khảo sát (`complete` → `survey_done`) | Người tạo |
+| Chốt hoàn thành khảo sát lần đầu (`complete` → `survey_done`) | Người tạo (nội dung: "Kết quả khảo sát đã sẵn sàng — vào chọn phương án") |
+| Chốt khảo sát lại (`complete` sau `can_khao_sat_lai`) | Người tạo (nội dung: "NSTM đã khảo sát lại N dòng — vào chọn lại phương án") |
 | Tạo YCMH từ phương án (`create-prs`) | Quản lý TM + Admin TM |
 | Chuyển Hoàn thành (`finalize`) | Người tạo |
 
 ---
 
-## E. Quyền thao tác (RBAC)
+## F. Quyền thao tác (RBAC)
 
 Entity: `survey_request`. Actions: `read`, `create`, `write`, `approve`, `cancel`, `delete`, `process`.
 
@@ -568,21 +626,23 @@ Entity: `survey_request`. Actions: `read`, `create`, `write`, `approve`, `cancel
 |----------|---------------|----------------------|---------------|
 | Xem danh sách / chi tiết | `survey_request:read` | mọi trạng thái | `own` → chỉ phiếu mình tạo; `dept` → phòng ban; `proc` → NSTM phụ trách (theo dòng `assignee` hoặc phân loại); `all` → toàn bộ |
 | Tạo phiếu mới | `survey_request:create` | — | — |
-| Sửa nội dung phiếu | `survey_request:read` + (`created_by == user.id` hoặc `survey_request:write`) | `draft`, `rejected` | Backend kiểm tra `_can_edit_own` |
+| Sửa nội dung phiếu | `survey_request:read` + (`created_by == user.id` hoặc `requester_id == user.employee_id` hoặc `survey_request:write`) | `draft`, `rejected` | Backend kiểm tra `_can_edit_own` |
 | Gửi duyệt | như Sửa | `draft`, `rejected` | — |
 | Duyệt phiếu | `survey_request:approve` | `submitted` | Tự chuyển sang `processing` sau khi duyệt; tự gán NSTM |
 | Trả đơn (`reject`) | `survey_request:approve` | `submitted` | Phiếu về `rejected`, người YC sửa và gửi lại được |
 | Từ chối (`cancel`) | `survey_request:approve` | `submitted` | Phiếu về `cancelled`, khóa vĩnh viễn |
-| Vào màn Xử lý khảo sát | `survey_request:read` + `is_purchaser` (scope `proc`/`all`) | `processing`, `survey_done` | Người YC (scope `own`/`dept`) bị chặn tại backend (HTTP 403) |
-| Gán NSTM cho dòng | `survey_request:process` | mọi trạng thái | NSTM / QL / Admin TM |
+| Vào màn Xử lý khảo sát | `survey_request:read` + `is_purchaser` (scope `proc`/`all`) | mọi trạng thái | Người YC (scope `own`/`dept`) bị chặn tại backend (HTTP 403) |
+| Gán NSTM cho dòng | `survey_request:process` | mọi trạng thái (trừ `cancelled`/`done`) | NSTM / QL / Admin TM |
 | Gắn option cho dòng | `survey_request:process` + `can_process_line` | `processing`, `survey_done` | NSTM scope `proc`: chỉ dòng mình phụ trách; Admin/QL scope `all`: mọi dòng |
 | Xóa option | `survey_request:process` + `can_process_line` + dòng chưa `is_completed` | `processing`, `survey_done` | — |
 | Đặt Mã SP hệ thống cho option | `survey_request:process` + `can_process_line` | mọi trạng thái | — |
 | Cập nhật ghi chú NSTM cho option | `survey_request:process` + `can_process_line` | mọi trạng thái | — |
 | Lấy từ khảo sát (`sync-options`) | `survey_request:process` + `is_purchaser` | `processing`, `survey_done` | `POST /{id}/sync-options` |
-| Chốt hoàn thành khảo sát | `survey_request:process` + `is_purchaser` | `processing`, `survey_done` | Backend validate dòng người gọi phụ trách; phiếu chuyển `survey_done` khi mọi dòng đủ option |
-| Chọn phương án (người YC) | `survey_request:write` + `created_by == user.id` hoặc `write` | `survey_done` | Endpoint `PATCH /{id}/lines/{line_id}/options/{oid}/choose` |
-| Tạo YCMH từ phương án | `created_by == user.id` hoặc `survey_request:delete` | `survey_done` | Gom theo NCC; chỉ người YC hoặc Admin TM |
-| Chuyển Hoàn thành (finalize) | `survey_request:approve` + `is_purchaser` (scope `all`) | `pr_created` | Admin / QL TM |
-| Đổi trạng thái dòng thủ công | `survey_request:write` | mọi trạng thái | `PATCH /{id}/lines/{line_id}/status` |
-| Xóa phiếu | `survey_request:delete` | `draft`, `rejected` | Xóa cascade dòng và option |
+| Chốt hoàn thành khảo sát | `survey_request:process` + `is_purchaser` | `processing`, `survey_done` | Backend validate dòng người gọi phụ trách; phiếu chuyển `survey_done` khi mọi dòng đủ option hoặc chốt rỗng |
+| Chọn phương án (người YC) | `survey_request:write` + (`created_by == user.id` hoặc `requester_id == user.employee_id` hoặc `write`) | `processing`, `survey_done`, `pr_created`, `done` | Endpoint `PATCH /{id}/lines/{line_id}/options/{oid}/choose` |
+| Đổi trạng thái dòng (`line-status`) | `survey_request:write` + `_can_act_as_requester_side` (người YC, cùng phòng ban, hoặc Admin TM) | mọi trạng thái (trừ `cancelled`/`done`) | `PATCH /{id}/lines/{line_id}/line-status`; body: `{line_status: ""}` |
+| Đổi `is_completed` thủ công | `survey_request:write` | mọi trạng thái (trừ `cancelled`/`done`) | `PATCH /{id}/lines/{line_id}/status`; body: `{is_completed: bool}` |
+| Tạo YCMH từ phương án | `created_by == user.id` hoặc `requester_id == user.employee_id` hoặc `survey_request:delete` | `processing`, `survey_done`, `pr_created`, `done` | Gom theo NCC; chỉ người YC hoặc Admin TM |
+| Chuyển Hoàn thành (finalize) | (`survey_request:approve` + `is_purchaser`) HOẶC `_can_act_as_requester_side` (người YC, cùng phòng ban, Admin TM) | `survey_done`, `pr_created` | Admin/QL TM hoặc phía người yêu cầu |
+| Nhân bản phiếu | `survey_request:create` | mọi trạng thái | `POST /{id}/clone` |
+| Xóa phiếu | `survey_request:delete` | `draft`, `rejected`, `cancelled` | Xóa cascade dòng và option |

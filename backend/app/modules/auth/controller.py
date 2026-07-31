@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import (create_access_token, create_refresh_token,
                            decode_token, get_current_user, get_user_permissions,
                            hash_password, verify_password)
+from app.core.audit import record as audit_record
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.limiter import limiter
@@ -16,6 +17,14 @@ from . import service
 from . import schema, service
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+
+def _client_ip(request: Request) -> str:
+    """IP người gọi — ưu tiên X-Forwarded-For (đứng sau nginx/Cloudflare), fallback IP kết nối."""
+    xff = request.headers.get("x-forwarded-for", "") if request else ""
+    if xff:
+        return xff.split(",")[0].strip()[:60]
+    return (request.client.host if request and request.client else "")[:60]
 
 
 def _me_payload(db: Session, user) -> dict:
@@ -39,7 +48,15 @@ def _me_payload(db: Session, user) -> dict:
 @router.post("/login")
 @limiter.limit(settings.LOGIN_RATE_LIMIT)
 def login(request: Request, data: schema.LoginInput, db: Session = Depends(get_db)):
-    user = service.authenticate(db, data.username, data.password)
+    ip = _client_ip(request)
+    try:
+        user = service.authenticate(db, data.username, data.password)
+    except HTTPException as e:
+        # Ghi log ĐĂNG NHẬP THẤT BẠI (chống tranh chấp/dò mật khẩu). entity_id=0 vì chưa xác định user.
+        audit_record(db, 0, "auth", 0, "login_failed",
+                     f"Đăng nhập thất bại: tài khoản '{data.username}' — {e.detail} (IP {ip})")
+        raise
+    audit_record(db, user.id, "auth", user.id, "login", f"Đăng nhập thành công (IP {ip})")
     return success({
         "access_token": create_access_token(user.id),
         "refresh_token": create_refresh_token(user.id),
@@ -50,11 +67,19 @@ def login(request: Request, data: schema.LoginInput, db: Session = Depends(get_d
 @limiter.limit(settings.LOGIN_RATE_LIMIT)
 def login_google(request: Request, data: schema.GoogleLoginInput, db: Session = Depends(get_db)):
     user = service.google_login(db, data.credential)
+    audit_record(db, user.id, "auth", user.id, "login", f"Đăng nhập Google (IP {_client_ip(request)})")
     return success({
         "access_token": create_access_token(user.id),
         "refresh_token": create_refresh_token(user.id),
         "user": _me_payload(db, user),
     }, "Đăng nhập Google thành công")
+
+
+@router.post("/logout")
+def logout(request: Request, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Ghi log ĐĂNG XUẤT. JWT không có phiên phía server nên chỉ ghi nhận thao tác + xóa token ở client."""
+    audit_record(db, user.id, "auth", user.id, "logout", f"Đăng xuất (IP {_client_ip(request)})")
+    return success(None, "Đã đăng xuất")
 
 
 @router.post("/refresh")

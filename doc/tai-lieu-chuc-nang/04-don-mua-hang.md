@@ -34,7 +34,7 @@ Luồng trạng thái chính: `draft` → `submitted` → `approved` → `partia
 
 Trạng thái `partial` và `received` được cập nhật tự động sau mỗi lần lưu khi đơn đang ở `approved/partial/received`. Đơn ở `completed` hoặc `cancelled` không cho phép sửa; dùng "Nhân bản" để tạo đơn Nháp mới.
 
-Nút "Mở lại" (`reopen`) chuyển đơn về `draft` (endpoint `POST /{id}/reopen` tồn tại ở backend; nút UI chưa hiển thị trong trang chi tiết hiện tại).
+Nút "Mở lại" (`reopen`) chuyển đơn từ `completed` về trạng thái theo tiến độ nhận thực tế: `received` (đã nhận đủ), `partial` (đã nhận một phần), hoặc `approved` (chưa nhận gì) — không hạ về `draft`. Endpoint: `POST /{id}/reopen`; chỉ áp dụng cho đơn `completed`, hiển thị nút trên trang chi tiết.
 
 ### Trạng thái dòng hàng (`line_status` — tự động)
 
@@ -200,6 +200,15 @@ Nút "Mở lại" (`reopen`) chuyển đơn về `draft` (endpoint `POST /{id}/r
 - Người sửa: Hệ thống (ghi tự động từ payload khi từ chối/hủy)
 - Logic đặc biệt: Hiển thị dưới dạng thẻ cảnh báo riêng trên trang chi tiết.
 
+### 17. Trạng thái hồ sơ chứng từ (`document_status`)
+
+- Kiểu nhập: Chọn thủ công từ danh sách cố định (qua endpoint riêng `PATCH /{id}/document-status`)
+- Mặc định: `"chưa có chứng từ"` khi tạo mới
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: 3 giá trị cố định: `"chưa có chứng từ"` / `"đã có thông tin chứng từ"` / `"đã đủ chứng từ"`
+- Người sửa: Người có quyền `purchase_order:write`; cho phép cập nhật kể cả khi đơn đã `completed` (chứng từ có thể bổ sung sau)
+- Logic đặc biệt: Phản ánh tình trạng hồ sơ chứng từ vật lý (hóa đơn, phiếu giao nhận...) — không liên kết với luồng tiến độ `progress_status` của dòng hàng. Hiển thị trên màn hình Tiến độ mua hàng (`/purchase-progress`) dưới dạng cột "Hồ sơ CT". Endpoint riêng `PATCH /{id}/document-status`, body `{document_status}`.
+
 ---
 
 ## B. Dòng hàng (`tab_po_item`)
@@ -274,7 +283,25 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
-- Logic đặc biệt: Dùng làm `invoice_no` khi hệ thống sinh công nợ hàng (`payable` loại `goods`) cho các lần giao của dòng này.
+- Logic đặc biệt: Dùng làm `invoice_no` khi hệ thống sinh công nợ hàng (`payable` loại `goods`) cho các lần giao của dòng này. Khi người dùng nhập `invoice_no` mà `invoice_date` còn trống, hệ thống tự đặt `invoice_date` = ngày hôm nay.
+
+### 8b. Ngày hóa đơn (`invoice_date`)
+
+- Kiểu nhập: Chọn ngày; hoặc tự đặt ngày hôm nay khi nhập `invoice_no` lần đầu (sửa tay được)
+- Mặc định: trống; tự điền khi `invoice_no` có giá trị và `invoice_date` còn trống
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
+- Logic đặc biệt: Nếu payload đã gửi `invoice_date` không trống, giá trị đó được giữ nguyên (không bị ghi đè). Trả về trong response `_item()` dưới key `invoice_date`.
+
+### 8c. Ngày giao chứng từ cho KT (`document_delivery_date`)
+
+- Kiểu nhập: Chọn ngày
+- Mặc định: trống
+- Bắt buộc: Không (nhưng là điều kiện bắt buộc để dòng tự động tiến sang bước "Đã gửi ĐMH cho KT")
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
+- Logic đặc biệt: Khi trường này có giá trị, hệ thống tự động nâng `progress_status` của dòng từ "Chưa gửi ĐMH cho KT" lên "Đã gửi ĐMH cho KT" (bước 4 trong máy trạng thái tiến độ). Xem mục H để biết chi tiết cơ chế. Trả về trong response `_item()` dưới key `document_delivery_date`.
 
 ### 9. NCC có sẵn hàng (`supplier_ready`)
 
@@ -393,12 +420,12 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 
 ### 22. Tiến độ đặt hàng dòng (`progress_status`)
 
-- Kiểu nhập: Thao tác qua endpoint chuyên biệt (không thay đổi qua form Lưu thông thường)
-- Mặc định: `"Chưa đặt hàng"` (gán cho mọi dòng khi tạo hoặc migrate)
+- Kiểu nhập: Tự động (hệ thống nâng khi đủ điều kiện); thao tác tay chỉ qua endpoint riêng `POST /api/purchase-orders/{pid}/items/{item_id}/progress`
+- Mặc định: `"Chưa đặt hàng"` (gán khi tạo dòng mới)
 - Bắt buộc: — (hệ thống/nghiệp vụ quản lý)
-- Nguồn dữ liệu / liên kết: Giá trị chuỗi cố định theo luồng nghiệp vụ
-- Người sửa: Qua endpoint riêng (không phải payload PATCH thông thường)
-- Logic đặc biệt: Máy trạng thái tiến độ riêng của dòng hàng — **khác với `status` của phiếu PO**. Chuyển tiếp thủ công theo luồng đặt hàng; không tự động nâng theo `qty_received`. Khi dòng bị tạm ngưng/hủy: `progress_status` hiện tại được snapshot vào `status_before_pause` để phục hồi sau, còn lý do ghi vào `pause_reason`. **Trạng thái hiện tại**: cột tồn tại trong DB và model (migration `5ad008ca924e`); chưa được đưa vào schema API (`POItemIn`) và chưa trả về trong response `_item()` — cần endpoint riêng (dự kiến v1, chưa triển khai trong controller hiện tại).
+- Nguồn dữ liệu / liên kết: Giá trị chuỗi theo máy trạng thái — xem mục H
+- Người sửa: Hệ thống (tự động); người dùng có quyền `purchase_order:write` chỉ đặt được "Tạm ngưng" / "Hủy đơn" / "Tiếp tục" qua endpoint riêng
+- Logic đặc biệt: Máy trạng thái tiến độ riêng của dòng hàng — **khác hoàn toàn với `status` của phiếu PO**. Sau mỗi lần lưu đơn (`PATCH`), backend gọi `apply_auto_progress` để tự động nâng dòng lên bước cao nhất thỏa điều kiện cộng dồn (forward-only, không hạ ngược). Trả về trong response `_item()` dưới key `progress_status`. Khi dòng bị tạm ngưng / hủy: `progress_status` trước đó được snapshot vào `status_before_pause` để phục hồi sau, lý do ghi vào `pause_reason`. Xem mục H để biết đầy đủ máy trạng thái, điều kiện từng bước, và cơ chế liên kết ngược về YCMH.
 
 ### 23. Ngày KT xác nhận thanh toán (`pay_confirm_date`)
 
@@ -411,21 +438,21 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 
 ### 24. Lý do hủy / tạm ngưng dòng (`pause_reason`)
 
-- Kiểu nhập: Nhập tay qua endpoint tạm ngưng/hủy dòng
+- Kiểu nhập: Nhập tay qua endpoint tiến độ dòng (`POST /api/purchase-orders/{pid}/items/{item_id}/progress`, body `{status: "Tạm ngưng"/"Hủy đơn", reason}`)
 - Mặc định: trống
-- Bắt buộc: Không (bắt buộc khi gọi endpoint tạm ngưng)
+- Bắt buộc: Bắt buộc nhập khi chuyển dòng sang "Tạm ngưng" hoặc "Hủy đơn"
 - Nguồn dữ liệu / liên kết: —
-- Người sửa: Qua endpoint tạm ngưng/hủy dòng
-- Logic đặc biệt: Ghi lý do khi dòng hàng bị tạm ngưng hoặc hủy (tối đa 500 ký tự). Kết hợp với `status_before_pause` để hỗ trợ khôi phục trạng thái tiến độ sau khi mở lại dòng. **Trạng thái hiện tại**: tồn tại trong DB và model; chưa expose qua API thông thường.
+- Người sửa: Người có quyền `purchase_order:write` qua endpoint riêng
+- Logic đặc biệt: Ghi lý do khi dòng bị tạm ngưng hoặc hủy (tối đa 500 ký tự). Kết hợp với `status_before_pause` để hỗ trợ khôi phục tiến độ khi mở lại dòng. Trả về trong response `_item()` dưới key `pause_reason`; hiển thị chú thích dưới badge trạng thái khi dòng ở "Tạm ngưng" hoặc "Hủy đơn".
 
 ### 25. Trạng thái tiến độ trước khi tạm ngưng (`status_before_pause`)
 
-- Kiểu nhập: Tự động (hệ thống ghi khi gọi endpoint tạm ngưng dòng)
+- Kiểu nhập: Tự động (hệ thống ghi khi dòng chuyển sang "Tạm ngưng")
 - Mặc định: trống
 - Bắt buộc: — (hệ thống ghi)
 - Nguồn dữ liệu / liên kết: Giá trị `progress_status` tại thời điểm tạm ngưng
-- Người sửa: Hệ thống (ghi tự động khi tạm ngưng dòng)
-- Logic đặc biệt: Snapshot `progress_status` của dòng trước khi tạm ngưng, dùng để phục hồi khi mở lại dòng. **Trạng thái hiện tại**: tồn tại trong DB và model; chưa expose qua API thông thường.
+- Người sửa: Hệ thống (ghi tự động khi tạm ngưng dòng); bị xóa khi dòng phục hồi (Tiếp tục)
+- Logic đặc biệt: Snapshot `progress_status` của dòng trước khi tạm ngưng. Khi gọi endpoint với `status = "__resume__"` (Tiếp tục), hệ thống khôi phục `progress_status = status_before_pause` và xóa `status_before_pause`. Dùng để `sync_from_purchase_orders` biết mức tiến độ thực của dòng đang tạm ngưng (không về "Chưa đặt hàng"). Trả về trong response `_item()` dưới key `status_before_pause`.
 
 ### 26. Giá trị đặt hàng theo dòng (`order_total` — tính phía server)
 
@@ -698,8 +725,8 @@ Ngoài 2 mẫu trên, phiếu liên quan là **Phiếu đề xuất mua hàng h�
 3. Duyệt đơn: bắt buộc `misa_code` không trống (kiểm tra ở BE).
 4. Từ chối / Hủy: yêu cầu nhập lý do (`reason`); lý do lưu vào `approve_note`.
 5. Khóa sửa: đơn `completed` hoặc `cancelled` trả lỗi 400 khi `PATCH`; chỉ cho phép Nhân bản.
-6. Nhân bản: tạo đơn Nháp mới từ đơn gốc; giữ dòng hàng nhưng xóa toàn bộ lần giao, số đã nhận, và trạng thái dòng; reset `code`, `misa_code`, `status`.
-7. Xóa đơn: BE xóa theo thứ tự deliveries → side-effect → items → attachments → header. Chỉ cho phép khi đơn ở `draft` hoặc `rejected` (kiểm tra ở FE; BE không chặn theo trạng thái ở delete endpoint).
+6. Nhân bản: tạo đơn Nháp mới từ đơn gốc; giữ dòng hàng nhưng xóa toàn bộ lần giao, số đã nhận, và trạng thái dòng; reset `code`, `misa_code`, `status`, `invoice_no`, `invoice_date` (chứng từ riêng từng đơn, phải nhập lại ở bản sao). `progress_status` của mọi dòng được reset về `"Chưa đặt hàng"`.
+7. Xóa đơn: BE xóa theo thứ tự deliveries → side-effect → items → attachments → header. Chỉ cho phép khi đơn ở `draft` hoặc `rejected`; BE trả 400 nếu đơn ở trạng thái khác (không chỉ FE kiểm tra).
 8. Tổng tiền trên header: `subtotal` = SL nhận × đơn giá; `vat` = tiền thuế từ thực nhận; `total` = subtotal + vat; `order_subtotal`/`order_total` = theo SL đặt (dùng cho bản in).
 9. Công nợ hàng: sinh khi `received_qty > 0`; xóa khi `received_qty` về 0. Không có VAT riêng ở cấp đơn vị giao — VAT tính từ `po_item.vat`.
 10. Công nợ vận chuyển: sinh khi carrier được chọn VÀ `shipping_amount > 0`; xóa khi carrier xóa hoặc `shipping_amount = 0`.
@@ -710,11 +737,13 @@ Ngoài 2 mẫu trên, phiếu liên quan là **Phiếu đề xuất mua hàng h�
 13. Phạm vi xem đơn theo NSPT: người dùng với scope `assigned` hoặc `proc` thấy đơn mình tạo (`created_by = user.id`) VÀ đơn có `nspt` khớp tên đầy đủ của mình (`emp_name`). Riêng scope `proc` còn thấy thêm mọi đơn đang ở trạng thái `approved` (để nhặt việc phân bổ).
 
 14. Lọc danh sách: hỗ trợ các bộ lọc sau:
-    - LIKE trên header PO: `code`, `status`, `supplier_code`, `pr_code`, `misa_code`, `nspt`, `is_urgent`
+    - LIKE trên header PO: `code`, `status`, `supplier_code`, `pr_code`, `misa_code`, `nspt`, `is_urgent`, `department`, `document_status`
     - Exact match: `company_id`
     - Khoảng ngày: `order_date` (từ–đến)
     - Lọc qua dòng hàng `tab_po_item` (trả về PO có ít nhất một dòng khớp): `item_group` (LIKE), `invoice_no` (LIKE)
     - Danh sách PO còn gắn kèm `pr_id` (ID phiếu YCMH tương ứng `pr_code`) để frontend tạo deep-link điều hướng thẳng sang chi tiết PYC khi click cột "Mã PYC" trong danh sách.
+
+15. Hoàn thành đơn: endpoint `POST /{id}/complete` chỉ chấp nhận khi MỌI dòng hàng đều ở trạng thái tiến độ `"Hoàn thành"` hoặc `"Hủy đơn"`. Nếu còn dòng chưa đạt điểm cuối, BE trả 400 và liệt kê tên sản phẩm còn chưa hoàn thành. Điều này đảm bảo đơn chỉ được đóng khi toàn bộ quy trình (nhập hóa đơn → thanh toán) đã xong cho mọi dòng.
 
 ---
 
@@ -738,3 +767,93 @@ Entity: `purchase_order`.
 | Xóa | `purchase_order:delete` | Đơn `draft` / `rejected` (kiểm tra ở FE) |
 | In (cả 2 mẫu) | `purchase_order:print` | Mọi trạng thái |
 | Tải lên đính kèm / xóa đính kèm | `purchase_order:write` | Đơn chưa khóa |
+| Cập nhật tiến độ dòng (Tạm ngưng / Hủy đơn / Tiếp tục) | `purchase_order:write` | Đơn `approved`/`partial`/`received`/`completed`; dòng chưa ở điểm cuối |
+| Cập nhật trạng thái hồ sơ chứng từ | `purchase_order:write` | Mọi trạng thái (kể cả `completed`) |
+
+---
+
+## H. Tiến độ mua hàng dòng (`progress_status`) — cơ chế tự động và liên kết ngược về YCMH
+
+### H.1 Máy trạng thái tiến độ dòng
+
+Mỗi dòng hàng (`tab_po_item`) có trường `progress_status` riêng, độc lập với `status` của phiếu PO. Máy trạng thái gồm hai nhóm:
+
+**Nhóm tuần tự (tự động, forward-only):**
+
+| Bước | Giá trị `progress_status` | Điều kiện bắt buộc tích lũy (cộng dồn) |
+|------|--------------------------|----------------------------------------|
+| 0 | `"Chưa đặt hàng"` | — (trạng thái khởi đầu) |
+| 1 | `"Đã đặt hàng"` | PO có `misa_code` không trống |
+| 2 | `"Đã nhận hàng"` | Bước 1 thỏa VÀ `qty_received > 0` |
+| 3 | `"Chưa gửi ĐMH cho KT"` | Bước 2 thỏa VÀ dòng có `invoice_no` không trống |
+| 4 | `"Đã gửi ĐMH cho KT"` | Bước 3 thỏa VÀ dòng có `document_delivery_date` không trống |
+| 5 | `"Hoàn thành"` | Bước 4 thỏa VÀ mọi công nợ hàng (`payable.remaining`) của dòng <= 0 |
+
+Điều kiện mang tính **cộng dồn**: để đạt bước N, tất cả các bước từ 1 đến N đều phải thỏa. Hệ thống tìm bước cao nhất liên tục thỏa rồi cập nhật `progress_status` lên bước đó.
+
+**Nhóm ngoại lệ (thủ công, cần lý do):**
+
+| Giá trị | Hành động | Điều kiện | Phục hồi |
+|---------|-----------|-----------|----------|
+| `"Tạm ngưng"` | Người dùng bấm nút | Cần nhập lý do; lưu vào `pause_reason`; snapshot bước hiện tại vào `status_before_pause` | Bấm "Tiếp tục" (`status = "__resume__"`) → khôi phục `progress_status = status_before_pause` |
+| `"Hủy đơn"` | Người dùng bấm nút | Cần nhập lý do; điểm cuối — không phục hồi được | — |
+
+`"Hoàn thành"` và `"Hủy đơn"` là hai điểm cuối; không thể thay đổi trạng thái sau khi đạt một trong hai. Hệ thống khóa toàn bộ dòng đó (không cho sửa sản phẩm, không cho thêm/sửa lần giao).
+
+### H.2 Cơ chế tự động nâng bước (`apply_auto_progress`)
+
+Sau mỗi lần lưu đơn (`PATCH`), backend chạy `apply_auto_progress`:
+1. Duyệt mọi dòng hàng của PO.
+2. Với mỗi dòng chưa ở điểm cuối và chưa tạm ngưng, tính `highest_satisfied_step` — bước cao nhất liên tục thỏa điều kiện.
+3. Nếu bước đó cao hơn bước hiện tại, cập nhật `progress_status` và ghi audit log `item_progress_auto`.
+4. Nếu có bất kỳ dòng nào đổi bước, commit và kích hoạt đồng bộ sang YCMH (`_sync_pr`).
+
+Logic là **forward-only**: chỉ tiến lên, không hạ ngược dù dữ liệu thay đổi (ví dụ xóa `invoice_no` sau khi dòng đã đạt bước 3 không kéo dòng về bước 2).
+
+Ngoài ra, khi người dùng cập nhật thủ công qua endpoint `POST /{pid}/items/{item_id}/progress` (chỉ dùng cho "Tạm ngưng", "Hủy đơn", "__resume__"), hệ thống cũng gọi `_sync_pr` sau khi cập nhật.
+
+### H.3 Cập nhật thủ công tiến độ dòng
+
+Endpoint: `POST /api/purchase-orders/{pid}/items/{item_id}/progress`
+
+Body `{status, reason}`:
+- `status = "Tạm ngưng"`: bắt buộc có `reason`; lưu bước hiện tại vào `status_before_pause`.
+- `status = "Hủy đơn"`: bắt buộc có `reason`; điểm cuối — dòng bị khóa hoàn toàn.
+- `status = "__resume__"`: phục hồi từ "Tạm ngưng" về `status_before_pause` (hoặc về "Chưa đặt hàng" nếu không có snapshot).
+- Mọi giá trị trong `PROGRESS_ORDER` (bước tuần tự): bị từ chối 400 — các bước đó chỉ được nâng tự động, không đặt tay.
+
+Điều kiện áp dụng: đơn phải ở trạng thái `approved`/`partial`/`received`/`completed`; dòng chưa ở "Hoàn thành"/"Hủy đơn".
+
+### H.4 Liên kết ngược từ PO về YCMH nguồn (`_sync_pr`)
+
+Khi PO có `pr_code` (liên kết YCMH), mọi thao tác làm thay đổi tiến độ hoặc trạng thái PO đều kích hoạt `_sync_pr(db, po.pr_code)` → `sync_from_purchase_orders(db, pr_code)`.
+
+**Quy tắc đồng bộ:**
+
+- Chỉ tính các PO có `status` trong `("approved", "partial", "received", "completed")` — bỏ qua nháp, chờ duyệt, bị trả, đã từ chối.
+- Với mỗi `product_code`, tổng hợp tất cả các dòng PO tương ứng:
+  - Cộng `qty_order` → `pr_item.qty_ordered`
+  - Cộng `qty_received` (từ các lần giao) → `pr_item.qty_received`
+  - Tính `ordered_min`: mức tiến độ KÉM NHẤT trong các dòng đã đặt (index >= 1)
+- Quy tắc đặc biệt:
+  - Dòng PO `"Hủy đơn"`: không cộng SL, đánh dấu sản phẩm có dòng hủy.
+  - Dòng PO `"Tạm ngưng"`: dùng `status_before_pause` thay cho `progress_status` (dùng mức thực trước khi tạm ngưng).
+  - Dòng PO `"Chưa đặt hàng"`: bỏ qua hoàn toàn (không kéo tiến độ YCMH xuống).
+
+**Kết quả cập nhật trên YCMH (`line_status` của dòng YCMH):**
+
+| Điều kiện | `line_status` YCMH |
+|-----------|-------------------|
+| Không có dòng PO đã đặt; sản phẩm có dòng hủy | `"Hủy đơn"` |
+| Không có dòng PO đã đặt; không có dòng hủy | `"Chưa đặt hàng"` |
+| Có dòng đặt, `ordered_min` >= bước "Hoàn thành" | `"Hoàn thành"` |
+| Có dòng đặt, đã nhận hàng (`qty_received > 0`) | `"Đã nhận hàng"` |
+| Có dòng đặt, chưa nhận gì | `"Đã đặt hàng"` |
+
+Nếu dòng YCMH đã được đặt thủ công thành `"Hủy đơn"` trên YCMH, hệ thống giữ nguyên và không ghi đè.
+
+Sau khi cập nhật toàn bộ dòng, hệ thống gọi lại `recompute_status` để suy lại trạng thái tổng của phiếu YCMH.
+
+### H.5 Màn hình Tiến độ mua hàng (`/purchase-progress`)
+
+Màn hình riêng tại đường dẫn `/purchase-progress` (nhãn menu "Tiến độ mua hàng"), sử dụng endpoint `GET /api/purchase-progress`. Hiển thị dạng bảng phẳng, mỗi dòng = 1 dòng hàng (`po_item`) kèm thông tin lần giao tương ứng. Các cột chính: Mã ĐMH, Mã MISA, Mã PYC, Công ty, Bộ phận, NCC, NSPT, Ngày đặt, Mã SP, Tên SP, Tên hóa đơn, Nhóm hàng, Mã HH, Số HĐ, Ngày cần, ĐVT, SL đặt, Đơn giá, Thành tiền đặt, **Tiến độ** (`progress_status`), Lần giao, Kho, Ngày nhận, Ngày quy định, CL cam kết, CL quy định, CL vs YC, Hồ sơ CT (`document_status`). Hỗ trợ lọc theo công ty, bộ phận, tháng, trạng thái tiến độ, khoảng ngày đặt/nhận; sắp xếp theo cột; phân trang.

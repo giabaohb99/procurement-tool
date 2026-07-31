@@ -18,11 +18,11 @@ Ghi nhận kết quả khảo sát giá/nhà cung cấp cho một nhu cầu mua 
 
 | Trạng thái | Ý nghĩa | Nút thao tác hiển thị |
 |-----------|---------|-----------------------|
-| Nháp | Đang soạn (ẩn nhãn trạng thái) | Lưu, Gửi duyệt, Xóa |
-| Chờ duyệt | Đã gửi, đợi TP/QL | Duyệt phiếu, Từ chối, Trả lại |
-| Đã duyệt | TP/QL đã duyệt | (chỉ xem) |
-| Bị trả lại | TP/QL trả về (`rejected`) để NSPT sửa & gửi lại | Lưu, Gửi duyệt, Xóa |
-| Đã từ chối | TP/QL từ chối (khóa) | Xóa |
+| Nháp (`draft`) | Đang soạn (ẩn nhãn trạng thái) | Lưu, Gửi duyệt, Xóa |
+| Chờ duyệt (`submitted`) | Đã gửi, đợi TP/QL | Duyệt phiếu, Từ chối, Trả lại |
+| Đã duyệt (`approved`) | TP/QL đã duyệt | (chỉ xem) |
+| Bị trả lại (`rejected`) | TP/QL trả về để NSPT sửa & gửi lại | Lưu, Gửi duyệt, Xóa |
+| Đã từ chối (`cancelled`) | TP/QL từ chối (khóa) | Xóa |
 
 Chỉ trạng thái Nháp (`draft`) và Bị trả lại (`rejected`) mới cho phép sửa nội dung và xóa phiếu. Trạng thái Đã từ chối (`cancelled`) cũng cho phép xóa nhưng không cho sửa. Riêng dòng bị đánh dấu "Thiếu thông tin" có thể mở ở chế độ Bổ sung để sửa dù phiếu đang ở trạng thái Chờ duyệt hoặc Đã duyệt.
 
@@ -30,23 +30,23 @@ Chỉ trạng thái Nháp (`draft`) và Bị trả lại (`rejected`) mới cho 
 
 ## A. Thông tin tiếp nhận (phần đầu phiếu)
 
-### 1. Yêu cầu khảo sát (`sr_code` + `survey_request_id`)
+### 1. Yêu cầu báo giá (YCBG) (`sr_code` + `survey_request_id`)
 
-- Kiểu nhập: Nhập/chọn — ô gõ tự do với gợi ý danh sách Yêu cầu khảo sát (datalist)
-- Mặc định: trống (tự gắn sẵn nếu mở phiếu từ nút "Tạo phiếu khảo sát" trên Yêu cầu khảo sát)
+- Kiểu nhập: Nhập/chọn — ô gõ tự do với gợi ý danh sách Yêu cầu báo giá (datalist), placeholder "Nhập/chọn mã YCBG để tự điền…"
+- Mặc định: trống (tự gắn sẵn nếu mở phiếu từ nút "Tạo phiếu khảo sát" trên Yêu cầu báo giá)
 - Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: Danh sách Yêu cầu khảo sát (YCKS) — hiển thị theo phạm vi người dùng (NSTM chỉ thấy phiếu được gán, admin/quản lý thấy hết). Lưu cả `survey_request_id` (id) và `sr_code` (mã)
+- Nguồn dữ liệu / liên kết: Danh sách Yêu cầu báo giá (YCBG, module `survey_request`) — hiển thị theo phạm vi người dùng (NSTM chỉ thấy phiếu được gán, admin/quản lý thấy hết). Lưu cả `survey_request_id` (id) và `sr_code` (mã)
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
-- Logic đặc biệt: Chọn YCKS tự điền Nội dung chính (trường `main_content`) từ "Mục đích" của YCKS. Là liên kết để hệ thống tự gắn phương án (option) ngược lại cho dòng YCKS khớp phân loại khi phiếu khảo sát được duyệt. (Trường `pr_code` cũ vẫn còn trong dữ liệu để tương thích ngược, không còn dùng trên form.)
+- Logic đặc biệt: Chọn YCBG tự điền Nội dung chính (trường `main_content`) từ trường "Mục đích" (`purpose`) của YCBG. Là liên kết để hệ thống tự gắn phương án (option) ngược lại cho dòng YCBG khớp phân loại — kích hoạt mỗi khi duyệt dòng khảo sát (`PATCH /line-approve`) hoặc duyệt cả phiếu (`POST /approve`). (Trường `pr_code` cũ vẫn còn trong dữ liệu để tương thích ngược, không còn dùng trên form.)
 
 ### 2. Nội dung chính (`main_content`)
 
 - Kiểu nhập: Nhập văn bản (một dòng)
-- Mặc định: trống; tự điền từ "Mục đích" của Yêu cầu khảo sát khi chọn YCKS
+- Mặc định: trống; tự điền từ trường "Mục đích" (`purpose`) của Yêu cầu báo giá (YCBG) khi chọn YCBG
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
-- Logic đặc biệt: Hiển thị trong danh sách phiếu và bộ lọc. Tự điền một lần từ trường "Mục đích" của YCKS khi chọn liên kết YCKS; có thể sửa thủ công sau đó. Tối đa 500 ký tự.
+- Logic đặc biệt: Hiển thị trong danh sách phiếu và bộ lọc. Tự điền một lần từ trường "Mục đích" (`purpose`) của YCBG khi chọn liên kết YCBG; có thể sửa thủ công sau đó. Tối đa 500 ký tự.
 
 ### 3. Ngày tiếp nhận (`received_date`)
 
@@ -175,7 +175,7 @@ Mỗi dòng = một NCC. Bảng tóm tắt hiện các cột chính; toàn bộ 
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Bảng Nhà cung cấp (`supplier`)
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
-- Logic đặc biệt: Chọn NCC tự điền Tên nhà cung cấp, Mã số thuế, Địa chỉ theo giấy đăng kí. Dòng chỉ bị kiểm tra bắt buộc khi Gửi duyệt nếu trường này không trống
+- Logic đặc biệt: Chọn NCC tự điền Tên nhà cung cấp, Mã số thuế, Địa chỉ theo giấy đăng kí. Dòng chỉ bị kiểm tra bắt buộc khi Gửi duyệt nếu trường này không trống. Trong cả bảng tóm tắt và popup chi tiết dòng có thêm ô "NCC sẵn có" (checkbox, không lưu vào DB): khi bỏ tích, ô Tên viết tắt NCC chuyển sang nhập text tự do để ghi NCC chưa có trong danh mục.
 
 ### 5. Tên nhà cung cấp (`supplier_name`)
 
@@ -411,6 +411,16 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Bảng Nhà cung cấp (`supplier`)
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
+- Logic đặc biệt: Trong cả bảng tóm tắt và popup chi tiết dòng có thêm ô "NCC sẵn có" (checkbox, không lưu vào DB): khi bỏ tích, ô Tên viết tắt NCC chuyển sang nhập text tự do để ghi NCC chưa có trong danh mục.
+
+### 4a. Tên pháp lý NCC (`supplier_name`) — chỉ hiển thị FE
+
+- Kiểu nhập: Nhập tay (tự điền từ danh mục khi chọn NCC theo `supplier_code`, cho phép sửa thủ công)
+- Mặc định: trống; tự tra từ `supplier.name` theo `supplier_code` đã chọn
+- Bắt buộc: Không (kiểu trường 'legal' bỏ qua khi kiểm tra Gửi duyệt)
+- Nguồn dữ liệu / liên kết: Tự tra từ danh mục Nhà cung cấp; có thể sửa tay tạm thời
+- Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
+- Logic đặc biệt: Hiển thị trong cả bảng tóm tắt (cột "Tên pháp lý") và popup chi tiết dòng (nhãn "Tên pháp lý NCC"). Lưu ý: trường này KHÔNG có trong model `SurveyProductLine` và không được lưu vào DB — mỗi lần tải lại trang sẽ hiển thị lại theo danh mục NCC.
 
 ### 5. Mã SP (theo NCC) (`internal_code`)
 
@@ -580,7 +590,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 
-### 25. Đánh giá chất lượng LAB (`lab_result`)
+### 25. Đánh giá chất lượng từ LAB (`lab_result`)
 
 - Kiểu nhập: Nhập nhiều dòng
 - Mặc định: trống
@@ -609,7 +619,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 
 **Nhóm: Đánh giá & Phê duyệt**
 
-### 28. Nhận xét NSPT (`nspt_note`)
+### 28. NSPT Đánh giá (`nspt_note`)
 
 - Kiểu nhập: Nhập nhiều dòng
 - Mặc định: trống
@@ -647,16 +657,17 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 ## D. Quy tắc nghiệp vụ
 
 1. Lưu (nháp): giữ mọi dòng có nội dung, kể cả dòng dở dang; chỉ bỏ dòng trống hoàn toàn. Không bắt buộc chọn NCC hoặc Tên SP khi Lưu.
-2. Gửi duyệt: kiểm tra các trường "Bắt buộc = khi Gửi duyệt". Trường thiếu được tô đỏ nhẹ (ô bảng và trong popup chi tiết), kèm thông báo liệt kê dòng nào còn thiếu.
+2. Gửi duyệt: kiểm tra các trường "Bắt buộc = khi Gửi duyệt". Phải có ít nhất 1 dòng NCC (đã chọn Tên viết tắt NCC) hoặc 1 dòng Sản phẩm (đã nhập Tên SP); thiếu cả hai thì không cho gửi. Các trường bắt buộc còn trống được tô đỏ nhẹ (ô bảng và trong popup chi tiết), kèm thông báo liệt kê dòng nào còn thiếu. Lưu ý: một dòng NCC chỉ bị kiểm tra khi `supplier_code` không trống; một dòng SP chỉ bị kiểm tra khi `product_name` không trống.
 3. Chọn NCC: chọn `supplier_code` tự điền `supplier_name`, `tax_code`, `reg_address`.
 4. Trường số: hiển thị trống khi bằng 0, gửi về BE là giá trị số (0 nếu để trống).
 5. Trường duyệt (`line_approve`, `line_approve_note`): chỉ TP/QL (`survey:approve`) sửa; NSPT chỉ xem. Chọn "Thiếu thông tin" cho phép NSPT mở dòng ở chế độ Bổ sung để sửa dù phiếu đã gửi.
 6. Đính kèm: mỗi dòng đính kèm file (PDF/ảnh/Excel, tối đa 10MB/file), lưu trên Cloudflare R2. Phiếu cũng có đính kèm ở cấp toàn phiếu (riêng với đính kèm theo dòng).
-7. Nhân bản (`POST /api/surveys/{id}/clone`): tạo phiếu Nháp mới từ phiếu nguồn — copy toàn bộ thông tin tiếp nhận (header) + dòng NCC + dòng SP. Phiếu mới được cấp mã tự động (KS…); trạng thái = Nháp; kết quả duyệt header và dòng bị reset về trống/Chờ duyệt. Liên kết YCKS/PYC (`sr_code`, `survey_request_id`, `pr_code`) KHÔNG được copy — phiếu nhân bản hoàn toàn độc lập. Nút "Nhân bản" hiển thị trong danh sách phiếu (người có quyền `survey:create`).
-8. Gỡ option YCKS khi dòng SP bị không duyệt (`_purge_yc_options`): hệ thống tự xóa các option Yêu cầu khảo sát (YCKS) đang tham chiếu dòng khảo sát SP không còn hợp lệ, tránh để option lỗi vẫn hiện hoặc chọn được trên form YCKS.
-   - **Duyệt từng dòng** (`approve_lines`): nếu dòng SP bị đặt `line_approve = "Không duyệt"` (từ chối dứt khoát) → hệ thống **xóa cứng** mọi option YCKS đang tham chiếu dòng đó ngay sau khi lưu kết quả duyệt. (Các trạng thái tạm "Chờ duyệt" / "Thiếu thông tin" KHÔNG xóa cứng — option chỉ bị **ẩn tạm** qua `valid_options_of`, để nếu dòng được duyệt lại thì option vẫn còn.)
-   - **Hủy cả phiếu** (`set_status` → `cancelled`): gỡ option YCKS của mọi dòng SP thuộc phiếu bị hủy.
-9. Thông báo và Web Push: mỗi sự kiện trong luồng phiếu tạo chuông trong app **và** đẩy **Web Push** (best-effort) tới thiết bị đã đăng ký của người nhận. Người nhận theo từng sự kiện: Gửi duyệt → người có quyền `survey:approve` (Quản lý/Admin TM). Duyệt phiếu → người tạo. Từ chối (`cancelled`) hoặc Trả lại (`rejected`) → người tạo.
+7. Nhân bản (`POST /api/surveys/{id}/clone`): tạo phiếu Nháp mới từ phiếu nguồn — copy toàn bộ thông tin tiếp nhận (header) + dòng NCC + dòng SP. Phiếu mới được cấp mã tự động (KS…); trạng thái = Nháp; kết quả duyệt header và dòng bị reset về trống/Chờ duyệt. Liên kết YCBG/PYC (`sr_code`, `survey_request_id`, `pr_code`) KHÔNG được copy — phiếu nhân bản hoàn toàn độc lập. Nút "Nhân bản" hiển thị trong danh sách phiếu (người có quyền `survey:create`).
+8. Gỡ option YCBG khi dòng SP bị không duyệt (`_purge_yc_options`): hệ thống tự xóa các option Yêu cầu báo giá (YCBG) đang tham chiếu dòng khảo sát SP không còn hợp lệ, tránh để option lỗi vẫn hiện hoặc chọn được trên form YCBG.
+   - **Duyệt từng dòng** (`approve_lines`): nếu dòng SP bị đặt `line_approve = "Không duyệt"` (từ chối dứt khoát) → hệ thống **xóa cứng** mọi option YCBG đang tham chiếu dòng đó ngay sau khi lưu kết quả duyệt. (Các trạng thái tạm "Chờ duyệt" / "Thiếu thông tin" KHÔNG xóa cứng — option chỉ bị **ẩn tạm** qua `valid_options_of`, để nếu dòng được duyệt lại thì option vẫn còn.)
+   - **Hủy cả phiếu** (`set_status` → `cancelled`): gỡ option YCBG của mọi dòng SP thuộc phiếu bị hủy.
+9. Đồng bộ option YCBG khi duyệt (`_sync_ycks_options` → `sync_options_from_surveys`): sau mỗi thao tác duyệt dòng (`PATCH /{sid}/line-approve`) hoặc duyệt cả phiếu (`POST /{sid}/approve`), nếu phiếu có liên kết với một YCBG (`survey_request_id` > 0), hệ thống tự gọi `sync_options_from_surveys` để gắn/cập nhật phương án (option) vào các dòng YCBG khớp phân loại. Thao tác này chạy đồng bộ trong cùng request (không phải background). Nếu lỗi, request vẫn thành công (exception bị bắt và bỏ qua).
+10. Thông báo và Web Push: mỗi sự kiện trong luồng phiếu tạo chuông trong app **và** đẩy **Web Push** (best-effort) tới thiết bị đã đăng ký của người nhận. Người nhận theo từng sự kiện: Gửi duyệt → người có quyền `survey:approve` (Quản lý/Admin TM). Duyệt phiếu → người tạo. Từ chối (`cancelled`) hoặc Trả lại (`rejected`) → người tạo.
 
 ## E. Quyền thao tác (RBAC)
 

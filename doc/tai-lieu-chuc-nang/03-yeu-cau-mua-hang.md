@@ -10,7 +10,7 @@ Ghi nhận nhu cầu mua vật tư, hàng hóa, dịch vụ từ các bộ phậ
 
 - Người yêu cầu / Nhân viên (`purchase_request:create`, `purchase_request:read`): tạo và gửi duyệt phiếu của mình.
 - TP/QL / Người duyệt (`purchase_request:approve`): duyệt hoặc từ chối; phân bổ NSTM phụ trách.
-- Admin / Quản lý thu mua (`purchase_request:cancel`): hủy đơn, trả phiếu về Nháp, đánh dấu Hoàn thành.
+- Admin / Quản lý thu mua (`purchase_request:cancel`): Từ chối phiếu (→ `cancelled`), Trả về (→ `rejected`), đánh dấu Hoàn thành.
 - Nhân sự thu mua (NSTM) (`purchase_request:read`, được giao dòng): cập nhật trạng thái và tiến độ các dòng được phân công.
 - Người có `purchase_request:write`: sửa nội dung phiếu của người khác (ngoài chủ phiếu).
 
@@ -19,22 +19,23 @@ Ghi nhận nhu cầu mua vật tư, hàng hóa, dịch vụ từ các bộ phậ
 | Mã trạng thái | Tên hiển thị | Ý nghĩa | Nút thao tác hiển thị |
 |--------------|--------------|---------|----------------------|
 | `draft` | Nháp | Đang soạn, chưa gửi | Lưu, Gửi duyệt, Xóa (nếu có `delete`) |
-| `submitted` | Chờ duyệt | Đã gửi, đợi TP/QL | Duyệt, Từ chối (nếu có `approve`) |
-| `approved` | Đã duyệt | TP/QL đã duyệt, chờ NSTM xử lý | Trả về, Hủy đơn (nếu có `cancel`) |
-| `processing` | Đang xử lý | Ít nhất 1 dòng đã bắt đầu xử lý | Trả về, Hủy đơn, Hoàn thành (nếu có `cancel`) |
+| `submitted` | Chờ duyệt | Đã gửi, đợi TP/QL | Duyệt, Trả về, Từ chối phiếu (nếu có `approve`) |
+| `approved` | Đã duyệt | TP/QL đã duyệt, chờ NSTM xử lý | Trả về, Từ chối phiếu, Hoàn thành (nếu có `cancel`) |
+| `processing` | Đang xử lý | Ít nhất 1 dòng đã bắt đầu xử lý | Trả về, Từ chối phiếu, Hoàn thành (nếu có `cancel`) |
 | `completed` | Hoàn thành | Tất cả dòng Hoàn thành hoặc đánh dấu thủ công | (chỉ xem) |
-| `rejected` | Từ chối | TP/QL từ chối; vẫn cho sửa và gửi lại | Lưu, Gửi duyệt lại |
-| `cancelled` | Đã hủy | Phiếu bị hủy (khóa) | (chỉ xem) |
+| `rejected` | Bị trả lại | Phiếu bị trả về để sửa lại; người tạo/người yêu cầu được sửa như Nháp | Lưu, Gửi duyệt lại, Xóa (nếu có `delete`) |
+| `cancelled` | Đã từ chối | Phiếu bị từ chối hoàn toàn (khóa); vẫn xóa được (nếu có `delete`) | Xóa |
 
 **Điều kiện chuyển trạng thái:**
 
-- `draft` / `rejected` → `submitted`: người tạo hoặc có `write` nhấn "Gửi duyệt"; yêu cầu pass `validate()`.
+- `draft` / `rejected` → `submitted`: người tạo, người yêu cầu (khớp `requester_id`) hoặc có `write` nhấn "Gửi duyệt"; yêu cầu pass `validate()`.
 - `submitted` → `approved`: người có `approve` nhấn "Duyệt"; tự động phân công NSTM theo phân loại (`auto_assign_by_category`).
-- `submitted` → `rejected`: người có `approve` nhấn "Từ chối" và nhập lý do.
-- `approved` / `processing` / `completed` → `draft`: người có `cancel` nhấn "Trả về" (reset toàn bộ NSTM và trạng thái dòng về "Chưa đặt hàng").
-- `approved` / `processing` → `cancelled`: người có `cancel` nhấn "Hủy đơn" và nhập lý do.
-- `approved` / `processing` → `completed`: thủ công qua nút "Hoàn thành" (người có `cancel`); hoặc tự động khi tất cả dòng đều là "Hoàn thành".
-- `approved` → `processing`: tự động khi ít nhất 1 dòng có trạng thái khác "Chưa đặt hàng" (hàm `recompute_status`).
+- `submitted` → `rejected`: người có `approve` nhấn "Trả về" và nhập lý do; xóa nhân sự phụ trách (`assignee_id = 0`) + reset trạng thái mọi dòng về "Chưa đặt hàng".
+- `submitted` → `cancelled`: người có `approve` nhấn "Từ chối phiếu" và nhập lý do; phiếu bị khóa hoàn toàn (không sửa được, chỉ xóa).
+- `approved` / `processing` → `rejected`: người có `cancel` nhấn "Trả về"; reset toàn bộ NSTM và trạng thái dòng về "Chưa đặt hàng".
+- `approved` / `processing` → `cancelled`: người có `cancel` nhấn "Từ chối phiếu" và nhập lý do.
+- `approved` / `processing` → `completed`: thủ công qua nút "Hoàn thành" (người có `cancel`); BE kiểm tra mọi dòng phải ở "Hoàn thành" hoặc "Hủy đơn" — sẽ báo lỗi nếu còn dòng chưa xong; hoặc tự động khi `recompute_status` xét thấy tất cả dòng đã ở điểm cuối.
+- `approved` → `processing`: tự động khi ít nhất 1 dòng có trạng thái khác "Chưa đặt hàng" và "Hủy đơn" (hàm `recompute_status`).
 
 Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và dòng hàng. Sau khi duyệt, chỉ NSTM phụ trách (hoặc người có `approve`/`cancel`) cập nhật được trạng thái/tiến độ dòng qua endpoint `/item-status` và `/assign`.
 
@@ -78,14 +79,14 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Tên công ty (`company_name`) được tra cứu và gắn vào response để hiển thị; không lưu riêng.
 
-### 5. Nhân sự yêu cầu (`requester`)
+### 5. Nhân sự yêu cầu (`requester` + `requester_id`)
 
-- Kiểu nhập: Chọn (SearchSelect, tìm theo tên đầy đủ)
+- Kiểu nhập: Chọn (SearchSelect, tìm theo tên đầy đủ); lưu tên vào `requester`, ID nhân sự vào `requester_id`
 - Mặc định: Tự điền tên người đang đăng nhập (khớp email hoặc full_name với danh sách nhân sự)
 - Bắt buộc: Có (`validate()` kiểm tra: "Vui lòng chọn Nhân sự yêu cầu")
 - Nguồn dữ liệu / liên kết: Bảng Nhân sự (`employee`), API `/api/employees`
 - Người sửa: Người có `write` (TP/QL); nhân viên thường (`isStaff`) bị khóa trường này — chỉ điền tên mình
-- Logic đặc biệt: Chọn nhân sự tự điền `requester_position`, `department`, `head_of_dept`, `company_id` theo dữ liệu nhân sự đó.
+- Logic đặc biệt: Chọn nhân sự tự điền `requester_position`, `department`, `head_of_dept`, `company_id` theo dữ liệu nhân sự đó. `requester_id` (ID nhân sự, ẩn trên UI) dùng để xác định quyền: người yêu cầu (khớp `employee_id` của tài khoản đăng nhập với `requester_id` trên phiếu) được sửa, gửi duyệt và xem toàn bộ dòng hàng của phiếu, kể cả khi admin tạo phiếu giùm.
 
 ### 6. Chức vụ (`requester_position`)
 
@@ -108,8 +109,8 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Kiểu nhập: Tự động (trường bị khóa `disabled`)
 - Mặc định: trống; tự điền từ trưởng phòng của bộ phận
 - Bắt buộc: Có (đánh dấu `*` trên UI); điền tự động nên ít khi trống nếu phòng ban đã có trưởng
-- Nguồn dữ liệu / liên kết: Tìm nhân sự cùng phòng có chức danh chứa "trưởng" / "manager" / "head"; hoặc qua API `/api/purchase-requests/meta/dept-head`
-- Người sửa: Hệ thống (cập nhật khi đổi Nhân sự YC; phía BE cũng tự điền khi tạo qua `find_dept_head`)
+- Nguồn dữ liệu / liên kết: Tra qua `Department.manager_id` → `Employee.full_name`; hoặc qua API `/api/purchase-requests/meta/dept-head` (người không có quyền xem DS nhân sự cũng tra được)
+- Người sửa: Hệ thống (cập nhật khi đổi Nhân sự YC; BE cũng tự điền khi tạo qua `find_dept_head`)
 
 ### 9. Đơn gấp (`is_urgent`)
 
@@ -155,31 +156,32 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Kiểm soát việc hiển thị mã PYC trên bản in (`/print/purchase-request/:id`).
 
-### 14. Tên nhà cung cấp đề xuất (`suggested_supplier`)
+### 14. Nhà cung cấp đề xuất — 2 cụm (`supplier_req` / `supplier_pur`)
 
-- Kiểu nhập: Nhập tay
+Thông tin NCC được lưu theo 2 cụm trong cột `supplier_info` (JSON). Mỗi cụm gồm 3 trường: `name` (tên NCC), `tax_code` (mã số thuế), `contact` (SĐT / email / địa chỉ).
+
+**Cụm req — Bộ phận yêu cầu đề xuất (`supplier_req`):**
+
+- Kiểu nhập: Nhập tay (3 ô: tên / MST / liên hệ)
 - Mặc định: trống
 - Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: —
-- Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
+- Người sửa: Ai cũng sửa được (kể cả người yêu cầu không có quyền xem NCC), khi phiếu ở `draft` hoặc `rejected`
+- Logic đặc biệt: Cụm do bộ phận người dùng tự điền trước khi gửi duyệt. Không yêu cầu quyền `supplier.read`.
 
-### 15. Mã số thuế NCC đề xuất (`suggested_supplier_tax_code`)
+**Cụm pur — Khảo sát / Thu mua (`supplier_pur`):**
 
-- Kiểu nhập: Nhập tay
+- Kiểu nhập: Nhập tay (3 ô: tên / MST / liên hệ)
 - Mặc định: trống
 - Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: —
-- Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
+- Người sửa: Chỉ người có `supplier.write` (Quản lý / Admin thu mua), khi phiếu ở `draft` hoặc `rejected`; cũng cập nhật khi nhập từ khảo sát
+- Quyền xem: Chỉ người có `supplier.read` mới thấy cụm này; người khác nhận về cụm rỗng
+- Logic đặc biệt: Cụm này được ghi vào khi nhập liệu từ kết quả khảo sát NCC (`supplier_from_survey = true`).
 
-### 16. Liên hệ NCC đề xuất (`suggested_supplier_contact`)
+**NCC hiệu lực (cột cũ `suggested_supplier*`):**
 
-- Kiểu nhập: Nhập tay (SĐT / Email / Địa chỉ)
-- Mặc định: trống
-- Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: —
-- Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
+Các cột `suggested_supplier`, `suggested_supplier_tax_code`, `suggested_supplier_contact` được giữ lại và tự động đồng bộ: nếu `supplier_pur.name` có giá trị thì hiệu lực = cụm `pur`, ngược lại = cụm `req`. Các cột này dùng trong danh sách, bản in, và prefill ĐMH. Người không có `supplier.read` nhận về chuỗi rỗng cho cả 3 cột này.
 
-### 17. Báo giá đính kèm (`quote_filename` + `quote_file_url`)
+### 15. Báo giá đính kèm (`quote_filename` + `quote_file_url`)
 
 - Kiểu nhập: Upload file (1 file, chọn qua nút "Chọn báo giá")
 - Mặc định: trống
@@ -188,14 +190,14 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Chỉ upload được sau khi phiếu đã được tạo (`!isNew`). Xóa file chỉ xóa tham chiếu (reset về trống), không xóa file trên R2.
 
-### 18. Tỷ lệ VAT (`vat_rate`)
+### 16. Tỷ lệ VAT mặc định (`vat_rate`)
 
 - Kiểu nhập: Số (không hiển thị trên form UI hiện tại)
 - Mặc định: `0.08` (8%)
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Qua API (không có ô nhập trực tiếp trên form)
-- Logic đặc biệt: Trường được lưu nhưng KHÔNG dùng để tính tổng tiền ở PYC (`vat = 0`, `total = subtotal`). Thuế chỉ tính ở giai đoạn PO / hóa đơn. Lưu lại để tham khảo hoặc dùng ở chức năng khác.
+- Logic đặc biệt: Được dùng làm VAT mặc định khi prefill dòng ĐMH từ phiếu (trường `vat` trong ĐMH). VAT thực tế của từng dòng PYC được lưu theo trường `vat_pct` cấp dòng (chọn 0/5/8/10%). Giá trị `vat_rate` header vẫn được truyền sang ĐMH khi tạo từ phiếu.
 
 ---
 
@@ -245,7 +247,7 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 - Bắt buộc: Có (`validate()` yêu cầu `qty > 0` cho mỗi dòng có `product_name`)
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
-- Logic đặc biệt: Dùng trong công thức tính Thành tiền: `qty × price`.
+- Logic đặc biệt: Dùng trong công thức tính Thành tiền: `qty × price × (1 + vat_pct / 100)`.
 
 ### 6. ĐVT (`unit`)
 
@@ -262,18 +264,27 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 - Bắt buộc: Không ("Để trống nếu chưa có giá")
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
-- Logic đặc biệt: Dùng trong công thức tính Thành tiền: `qty × price`. Nếu để trống, Thành tiền bằng 0.
+- Logic đặc biệt: Dùng trong công thức tính Thành tiền cùng với `vat_pct`.
 
-### 8. Thành tiền (`amount`)
+### 8. % VAT theo dòng (`vat_pct`)
+
+- Kiểu nhập: Chọn (select các mức 0 / 5 / 8 / 10%)
+- Mặc định: 8 (tức 8%)
+- Bắt buộc: Không (có giá trị mặc định)
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
+- Logic đặc biệt: Được dùng để tính Thành tiền gồm VAT: `qty × price × (1 + vat_pct / 100)`.
+
+### 9. Thành tiền (`amount`)
 
 - Kiểu nhập: Tự tính
 - Mặc định: 0
 - Bắt buộc: — (hệ thống tính, không sửa)
-- Nguồn dữ liệu / liên kết: `qty × price` (tính ở FE và lưu vào DB tại hàm `_save_items`: `data["amount"] = round(qty * price, 2)`)
+- Nguồn dữ liệu / liên kết: `qty × price × (1 + vat_pct / 100)` (tính ở FE và lưu vào DB tại hàm `_save_items`)
 - Người sửa: Hệ thống (chỉ hiển thị)
-- Logic đặc biệt: PYC KHÔNG tính VAT — `total = subtotal = sum(amount)` (VAT chỉ tính ở PO/hóa đơn).
+- Logic đặc biệt: Thành tiền GỒM VAT. Phiếu hiển thị 3 dòng tổng kết: Tiền hàng chưa VAT (`subtotal = sum(qty × price)`), Tiền VAT (`vat = total − subtotal`), Tổng cộng gồm VAT (`total = sum(amount)`).
 
-### 9. Kho nhận (`warehouse`)
+### 10. Kho nhận (`warehouse`)
 
 - Kiểu nhập: Chọn (select từ danh sách kho) trong bảng; hoặc SearchSelect trong popup chi tiết
 - Mặc định: trống
@@ -281,34 +292,52 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 - Nguồn dữ liệu / liên kết: Bảng Kho (`warehouse`), API `/api/warehouses`
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 
-### 10. Ngày cần hàng (theo dòng) (`required_date`)
+### 11. Ngày cần hàng (theo dòng) (`required_date`)
 
 - Kiểu nhập: Chọn ngày (date input)
 - Mặc định: trống
 - Bắt buộc: Có (đánh dấu `*`; `validate()` yêu cầu cho mỗi dòng có `product_name`: "cần nhập Ngày cần hàng")
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
-- Logic đặc biệt: Trường cấp dòng, khác với `need_date` ở header phiếu (cấp phiếu toàn bộ, hiện chưa hiển thị trên form).
+- Logic đặc biệt: Trường cấp dòng, khác với `need_date` ở header phiếu (cấp phiếu toàn bộ, hiện chưa hiển thị trên form chi tiết nhưng là cột hiển thị trên trang danh sách).
 
-### 11. Nhân sự phụ trách dòng (`assignee`)
+### 12. Thời gian dự kiến có hàng (`expected_date`)
 
-- Kiểu nhập: Chọn (SearchSelect, chỉ hiện cho người có `approve`); lưu Mã NV
+- Kiểu nhập: Chọn ngày (date input) — sửa trực tiếp trên bảng (nếu có quyền dòng) hoặc trong popup chi tiết dòng
+- Mặc định: trống
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: NSTM được giao dòng hoặc người có `approve`/`cancel` (qua endpoint `PATCH /{pid}/item-status`, trường `expected_date`)
+- Logic đặc biệt: Khi đổi giá trị ĐÃ CÓ (tức `expected_date` trước đó không trống), BE yêu cầu kèm `expected_date_reason`; thiếu lý do sẽ trả về HTTP 400. Nếu giá trị cũ trống thì cập nhật tự do. Thay đổi được ghi vào audit log.
+
+### 13. SL đã đặt / SL đã nhận (`qty_ordered` / `qty_received`)
+
+- Kiểu nhập: Chỉ đọc (hệ thống đồng bộ từ ĐMH)
+- Mặc định: 0
+- Bắt buộc: — (hệ thống điền)
+- Nguồn dữ liệu / liên kết: Đồng bộ từ các ĐMH cùng mã PYC (gộp theo `product_code`); chạy khi ĐMH thay đổi trạng thái dòng (`sync_from_purchase_orders`)
+- Người sửa: Hệ thống (khóa hoàn toàn)
+- Logic đặc biệt: Hiển thị trên bảng cột "Tiến độ nhận / đặt". `qty_ordered` = tổng SL đã đặt từ các ĐMH đã duyệt trở đi; `qty_received` = tổng SL đã nhận (từ chứng từ nhận hàng). Dùng để tính "còn thiếu" khi tạo ĐMH mới.
+
+### 14. Nhân sự phụ trách dòng (`assignee`)
+
+- Kiểu nhập: Chọn (SearchSelect, chỉ hiện cho người có quyền duyệt); lưu Mã NV
 - Mặc định: trống
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Danh sách nhân sự phòng thu mua (`employee.department` chứa "thu mua"), API `/api/employees`
 - Người sửa: Người có `approve` (trực tiếp trong popup chi tiết dòng hoặc qua endpoint `PATCH /{pid}/assign`); tự động gán khi duyệt phiếu
-- Logic đặc biệt: Lưu mã NV (`employee.code`), hiển thị **tên đầy đủ** nhân sự (`employee.full_name`, không phải tên đăng nhập). NSTM chỉ thấy dòng mà `assignee` trùng với `emp_code` của mình (khi không có quyền `approve`/`read` dept+).
+- Logic đặc biệt: Lưu mã NV (`employee.code`), hiển thị tên đầy đủ nhân sự (`employee.full_name`). Cột "NSTM phụ trách" chỉ hiển thị trên bảng khi người dùng có quyền xử lý khảo sát (`survey_request:process`). NSTM chỉ thấy dòng mà `assignee` trùng với `emp_code` của mình (khi không có quyền `approve`/`read` dept+).
 
-### 12. Trạng thái xử lý dòng (`line_status`)
+### 15. Trạng thái xử lý dòng (`line_status`)
 
-- Kiểu nhập: Chọn (select từ danh sách cố định) — hiển thị ngay trên bảng hoặc trong popup chi tiết
+- Kiểu nhập: Chỉ đọc trên bảng (tự đồng bộ từ ĐMH); hoặc chọn trong popup chi tiết khi chưa có ĐMH
 - Mặc định: `Chưa đặt hàng`
 - Bắt buộc: Không (có giá trị mặc định)
-- Nguồn dữ liệu / liên kết: Danh sách cố định: `Chưa đặt hàng / Đã đặt hàng / Đã gửi ĐMH cho KT / Đã nhận hàng / Hoàn thành / Hủy đơn / Tạm ngưng`
-- Người sửa: NSTM được giao dòng, hoặc người có `approve`/`cancel`; cập nhật trực tiếp trên bảng hoặc qua popup (endpoint `PATCH /{pid}/item-status`)
-- Logic đặc biệt: Khi phiếu ở `approved`/`processing`/`completed`, thay đổi trạng thái dòng kích hoạt `recompute_status` tự điều chỉnh trạng thái phiếu. Dòng "Hủy đơn" tô đỏ toàn bộ hàng trong danh sách. Khi trả phiếu về Nháp, tất cả dòng reset về "Chưa đặt hàng".
+- Nguồn dữ liệu / liên kết: Danh sách 5 mức cố định: `Chưa đặt hàng / Đã đặt hàng / Đã nhận hàng / Hoàn thành / Hủy đơn`
+- Người sửa: NSTM được giao dòng, hoặc người có `approve`/`cancel`; cập nhật qua popup (endpoint `PATCH /{pid}/item-status`). Sau khi phiếu có ĐMH liên kết, trạng thái tự đồng bộ theo tiến độ ĐMH.
+- Logic đặc biệt: Thay đổi trạng thái dòng kích hoạt `recompute_status` tự điều chỉnh trạng thái phiếu. Dòng "Hủy đơn" tô đỏ toàn bộ hàng trong danh sách phiếu (`has_cancelled_line`). Khi trả phiếu về ("Bị trả lại"), tất cả dòng reset về "Chưa đặt hàng". Dòng YCMH thủ công đặt "Hủy đơn" sẽ được giữ nguyên khi đồng bộ từ ĐMH.
 
-### 13. Chi tiết tiến độ (`progress_note`)
+### 16. Chi tiết tiến độ (`progress_note`)
 
 - Kiểu nhập: Nhập nhiều dòng (textarea, trong popup chi tiết dòng)
 - Mặc định: trống
@@ -316,7 +345,7 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSTM được giao dòng hoặc người có `approve`/`cancel`; cả khi phiếu đang ở các trạng thái không phải draft (qua endpoint `PATCH /{pid}/item-status`)
 
-### 14. Ghi chú khác (`note`, cấp dòng)
+### 17. Ghi chú khác (`note`, cấp dòng)
 
 - Kiểu nhập: Nhập nhiều dòng (textarea, trong popup chi tiết dòng)
 - Mặc định: trống
@@ -328,23 +357,26 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 
 ## C. Quy tắc nghiệp vụ
 
-1. Lưu (Nháp): lọc bỏ dòng không có `product_name`; dòng còn lại được lưu toàn bộ (xóa dòng cũ và ghi lại — `_save_items` dùng `DELETE` rồi `INSERT`).
+1. Lưu (Nháp): lọc bỏ dòng không có `product_name`; dòng còn lại được lưu theo cơ chế upsert — dòng có `id` thì cập nhật tại chỗ (giữ nguyên `id`), dòng không có `id` thêm mới, dòng cũ không còn trong danh sách thì xóa (`_save_items`). Cơ chế upsert thay cho DELETE+INSERT cũ, giữ nguyên `id` để ảnh đính kèm theo dòng (`purchase_request_line_image`) không bị mồ côi.
 2. Gửi duyệt: kiểm tra `validate()` — phải có `company_id`, `requester`, ít nhất 1 dòng có `product_name`; mỗi dòng đó phải có `product_code` (chọn từ danh mục), `qty > 0`, `warehouse` và `required_date`. Nếu không pass, thông báo lỗi cụ thể từng trường.
 3. Mã phiếu tự sinh: định dạng `PYC{ddmmyy}{seq:02d}`, trong đó `ddmmyy` lấy từ `request_date` (không có thì lấy ngày hiện tại), `seq` là số thứ tự tăng dần trong ngày.
-4. Chọn Nhân sự YC: tự điền `requester_position` (chức vụ), `department` (phòng ban), `head_of_dept` (trưởng bộ phận tìm theo chức danh), `company_id`.
+4. Chọn Nhân sự YC: tự điền `requester_position` (chức vụ), `department` (phòng ban), `head_of_dept` (trưởng bộ phận theo `manager_id` của phòng ban), `company_id`. Trưởng bộ phận tra qua API `/api/purchase-requests/meta/dept-head` (với người không có quyền xem DS nhân sự).
 5. Chọn Mã hàng: tự điền `product_name`, `unit`, `item_group`, `group_desc`.
 6. Chọn Phân loại: tự điền `group_desc` với thời gian sản xuất tiêu chuẩn từ `item_group.std_days` và `item_group.std_days_unavail`.
-7. Thành tiền: tính ở FE (`qty × price`), lưu vào DB. PYC không tính VAT; tổng phiếu = tổng `amount` các dòng.
-8. Phân quyền xem dòng: người tạo phiếu và người có `approve` hoặc scope `dept`/`company`/`all` xem được mọi dòng; NSTM (scope nhỏ hơn) chỉ thấy dòng có `assignee` trùng với mã NV của mình.
+7. Thành tiền: `amount = qty × price × (1 + vat_pct / 100)` (gồm VAT theo dòng). Tổng kết phiếu gồm 3 dòng: Tiền hàng chưa VAT (`subtotal = sum(qty × price)`), Tiền VAT (`vat = total − subtotal`), Tổng cộng gồm VAT (`total = sum(amount)`).
+8. Phân quyền xem dòng: người tạo phiếu, người yêu cầu (khớp `requester_id`), và người có `approve` hoặc scope `dept`/`company`/`all` xem được mọi dòng; NSTM (scope nhỏ hơn) chỉ thấy dòng có `assignee` trùng với mã NV của mình.
 9. Tự phân công NSTM khi duyệt: hàm `auto_assign_by_category` gán NSTM cho từng dòng theo bảng phân công phụ trách (`category_assignee`).
 10. Trạng thái phiếu tự tính lại: sau mỗi lần NSTM cập nhật `line_status`, hàm `recompute_status` xét lại trạng thái phiếu (chỉ khi phiếu đang ở `approved`/`processing`/`completed`).
-11. Nhân bản phiếu: `POST /api/purchase-requests/{id}/copy` (và alias `/clone`) tạo phiếu `draft` mới — copy toàn bộ header và dòng hàng (reset `assignee_id = 0`, `assignee = ""`, `line_status = "Chưa đặt hàng"`, `progress_note = ""`); mã mới tự sinh theo ngày tạo bản sao. Nút "Nhân bản" có trên trang chi tiết (cần `purchase_request:create`) và trên danh sách (cấu hình `cloneable = true`, endpoint `/clone`).
-12. Xóa mềm: phiếu xóa được đánh dấu `is_deleted = true`, không xóa vật lý; chỉ xóa được khi `status = draft`.
-13. Thông báo và Web Push: mỗi sự kiện tạo chuông trong app **và** đẩy **Web Push** (best-effort) tới thiết bị đã đăng ký của người nhận. Người nhận: Gửi duyệt (`pr_submitted`) → Trưởng bộ phận của người YC (chỉ TBP — không fallback QL/Admin). Duyệt (`pr_approved`) → người tạo + Quản lý TM + Admin TM. Từ chối (`pr_rejected`), Trả về (`pr_returned`), Hủy (`pr_cancelled`) → người tạo. Phân bổ NSTM (`pr_assigned`) → NSTM được gán (không tự báo mình).
-14. Đính kèm tài liệu: mỗi phiếu có thể đính kèm nhiều file (entity `purchase_request`); riêng báo giá NCC đề xuất dùng entity riêng `purchase_request_quote` (chỉ 1 file). Cả hai lưu trên Cloudflare R2 qua API `/api/attachments`.
-15. Dòng "Hủy đơn": khi ít nhất 1 dòng có `line_status = "Hủy đơn"`, danh sách tô đỏ toàn bộ hàng đó (`rowStyle`, qua field `has_cancelled_line` trong response).
-16. Nút "Tạo đơn mua hàng": Hiển thị khi phiếu ở `approved` hoặc `processing`, người dùng có quyền `purchase_order:create` và thuộc phòng thu mua / có quyền `approve` / `cancel`, đồng thời còn ít nhất 1 dòng có `line_status = "Chưa đặt hàng"`. Khi bấm, tự điền header ĐMH từ phiếu (mã PYC nguồn, công ty, bộ phận...) và điền **NSPT của ĐMH = tên đầy đủ** (`full_name`) của người phụ trách dòng đầu tiên có `assignee` trong YCMH; nếu không có dòng nào có `assignee` thì để trống (ĐMH tự lấy người tạo làm NSPT). Số lượng từng dòng được prefill theo "còn thiếu" (yêu cầu − đã đặt trong các ĐMH cùng mã PYC); dòng đã đặt đủ/vượt hiện cảnh báo trước khi cho mua thêm.
-17. Điều hướng PYC ↔ ĐMH: Trên trang chi tiết YCMH, nút **"ĐMH liên quan (N)"** xuất hiện khi có ít nhất 1 đơn mua hàng cùng mã PYC; bấm mã ĐMH trong popup điều hướng sang trang chi tiết ĐMH tương ứng (`/purchase-orders/{id}`). Trên trang chi tiết ĐMH, trường "Mã PYC nguồn" có biểu tượng liên kết ngoài; bấm biểu tượng điều hướng ngược về trang YCMH tương ứng (`/purchase-requests/{id}`).
+11. Nhân bản phiếu: `POST /api/purchase-requests/{id}/copy` (và alias `/clone`) tạo phiếu `draft` mới — copy toàn bộ header và dòng hàng (bao gồm `vat_pct` và `supplier_info`); người yêu cầu của bản sao = người bấm Nhân bản (không giữ người yêu cầu phiếu gốc); reset `assignee_id = 0`, `assignee = ""`, `line_status = "Chưa đặt hàng"`, `progress_note = ""`; mã mới tự sinh theo ngày tạo bản sao. Nút "Nhân bản" có trên trang chi tiết (cần `purchase_request:create`) và trên danh sách (cấu hình `cloneable = true`, endpoint `/clone`).
+12. Xóa mềm: phiếu xóa được đánh dấu `is_deleted = true`, không xóa vật lý; xóa được khi `status` là `draft`, `rejected` (Bị trả lại) hoặc `cancelled` (Đã từ chối). Xóa hàng loạt qua `DELETE /api/purchase-requests?ids=...`.
+13. Cờ Đơn gấp ngoài luồng sửa: endpoint riêng `PATCH /{pid}/urgent` cho phép bật/tắt `is_urgent` ngay cả khi phiếu đã duyệt (mọi trạng thái trừ `cancelled`), yêu cầu `purchase_request:write`; tự động đồng bộ xuống các ĐMH cùng `pr_code`.
+14. Đồng bộ tiến độ từ ĐMH: khi ĐMH thay đổi trạng thái dòng, hàm `sync_from_purchase_orders` cập nhật `line_status`, `qty_ordered`, `qty_received` trên các dòng YCMH khớp `product_code`, rồi gọi `recompute_status`. Dòng YCMH thủ công đặt "Hủy đơn" thì giữ nguyên (không bị ghi đè từ ĐMH).
+15. Tự hoàn thành Yêu cầu khảo sát liên quan: khi YCMH đạt trạng thái `completed`, hệ thống tự gọi `sr_service.auto_complete_from_pr` để tự động hoàn thành Yêu cầu khảo sát nếu mọi YCMH của nó đã xong.
+16. Thông báo và Web Push: mỗi sự kiện tạo chuông trong app và đẩy Web Push (best-effort) tới thiết bị đã đăng ký của người nhận. Người nhận: Gửi duyệt (`pr_submitted`) → Trưởng bộ phận của người YC (chỉ TBP — không fallback QL/Admin). Duyệt (`pr_approved`) → người tạo + Quản lý TM + Admin TM. Từ chối (`pr_rejected`), Trả về (`pr_returned`), Hủy (`pr_cancelled`) → người tạo. Phân bổ NSTM (`pr_assigned`) → NSTM được gán (không tự báo mình).
+17. Đính kèm tài liệu: mỗi phiếu có thể đính kèm nhiều file (entity `purchase_request`); riêng báo giá NCC đề xuất dùng entity riêng `purchase_request_quote` (chỉ 1 file). Cả hai lưu trên Cloudflare R2 qua API `/api/attachments`.
+18. Dòng "Hủy đơn": khi ít nhất 1 dòng có `line_status = "Hủy đơn"`, danh sách tô đỏ toàn bộ hàng đó (`rowStyle`, qua field `has_cancelled_line` trong response).
+19. Nút "Tạo đơn mua hàng": Hiển thị khi phiếu ở `approved` hoặc `processing`, người dùng có quyền `purchase_order:create` và thuộc phòng thu mua / có quyền `approve` / `cancel`, đồng thời còn ít nhất 1 dòng có `line_status = "Chưa đặt hàng"`. Khi bấm, tự điền header ĐMH từ phiếu (mã PYC nguồn, công ty, bộ phận...) và điền NSPT của ĐMH = tên đầy đủ (`full_name`) của người phụ trách dòng đầu tiên có `assignee` trong YCMH; nếu không có dòng nào có `assignee` thì để trống (ĐMH tự lấy người tạo làm NSPT). Số lượng từng dòng được prefill theo "còn thiếu" (yêu cầu − đã đặt trong các ĐMH cùng mã PYC); dòng đã đặt đủ/vượt hiện cảnh báo trước khi cho mua thêm.
+20. Điều hướng PYC ↔ ĐMH: Trên trang chi tiết YCMH, nút "ĐMH liên quan (N)" xuất hiện khi có ít nhất 1 đơn mua hàng cùng mã PYC; bấm mã ĐMH trong popup điều hướng sang trang chi tiết ĐMH tương ứng (`/purchase-orders/{id}`). Trên trang chi tiết ĐMH, trường "Mã PYC nguồn" có biểu tượng liên kết ngoài; bấm biểu tượng điều hướng ngược về trang YCMH tương ứng (`/purchase-requests/{id}`).
 
 ## D. Quyền thao tác (RBAC)
 
@@ -354,18 +386,18 @@ Entity: `purchase_request`
 |----------|---------------|----------------------|
 | Xem danh sách | `purchase_request:read` | mọi trạng thái (theo phạm vi dữ liệu của grant) |
 | Xem chi tiết phiếu | `purchase_request:read` | mọi trạng thái (theo phạm vi) |
-| Xem chi tiết dòng | `purchase_request:read` + là người tạo / có `approve` / scope dept+ | xem tất cả dòng; NSTM chỉ thấy dòng được giao |
+| Xem chi tiết dòng (tất cả dòng) | `purchase_request:read` + là người tạo, người yêu cầu (khớp `requester_id`), có `approve`, hoặc scope `dept`/`company`/`all` | mọi trạng thái; NSTM chỉ thấy dòng được giao |
 | Tạo mới / Nhân bản | `purchase_request:create` | — |
-| Sửa nội dung header + dòng | `purchase_request:write` hoặc là người tạo phiếu | `draft`, `rejected` |
-| Gửi duyệt | `purchase_request:write` hoặc là người tạo phiếu | `draft`, `rejected` |
+| Sửa nội dung header + dòng | `purchase_request:write` hoặc là người tạo phiếu hoặc người yêu cầu (khớp `requester_id`) | `draft`, `rejected` |
+| Gửi duyệt | `purchase_request:write` hoặc là người tạo phiếu hoặc người yêu cầu (khớp `requester_id`) | `draft`, `rejected` |
 | Duyệt | `purchase_request:approve` | `submitted` |
-| Từ chối | `purchase_request:approve` | `submitted` |
-| Phân bổ NSTM | `purchase_request:approve` | mọi trạng thái trừ `cancelled` |
-| Cập nhật trạng thái / tiến độ dòng | `purchase_request:read` + là NSTM phụ trách hoặc có `approve`/`cancel` | mọi trạng thái sau duyệt |
-| Hủy đơn | `purchase_request:cancel` | trạng thái khác `draft`, `submitted`, `cancelled`, `completed` |
-| Trả phiếu về (Nháp) | `purchase_request:cancel` | trạng thái khác `draft`, `cancelled` |
-| Hoàn thành | `purchase_request:cancel` | `approved`, `processing` |
-| Xóa | `purchase_request:delete` | `draft` |
+| Trả về (→ `rejected`) | `purchase_request:approve` (tại `submitted`) hoặc `purchase_request:cancel` | `submitted`, `approved`, `processing` |
+| Từ chối phiếu (→ `cancelled`) | `purchase_request:approve` (tại `submitted`) hoặc `purchase_request:cancel` | `submitted`, `approved`, `processing` |
+| Phân bổ NSTM | `purchase_request:approve` | mọi trạng thái trừ `cancelled`, `completed` |
+| Cập nhật trạng thái / tiến độ / `expected_date` dòng | `purchase_request:read` + là NSTM phụ trách hoặc có `approve`/`cancel` | mọi trạng thái sau duyệt (trừ `cancelled`, `completed`) |
+| Bật / tắt cờ Đơn gấp ngoài luồng sửa | `purchase_request:write` | mọi trạng thái trừ `cancelled` |
+| Hoàn thành | `purchase_request:cancel` | `approved`, `processing` (yêu cầu mọi dòng ở "Hoàn thành"/"Hủy đơn") |
+| Xóa | `purchase_request:delete` | `draft`, `rejected`, `cancelled` |
 | In phiếu | `purchase_request:read` (hoặc `print` nếu cấu hình riêng) | mọi trạng thái |
 
 ## E. Bộ lọc danh sách
@@ -383,6 +415,6 @@ Trang danh sách `/purchase-requests` hỗ trợ các bộ lọc sau (khai báo 
 | `request_date` | Ngày tạo | Khoảng ngày (daterange) | Tham số `request_date_from` / `request_date_to` |
 | `need_date` | Ngày cần hàng | Khoảng ngày (daterange) | Tham số `need_date_from` / `need_date_to` |
 | `is_urgent` | Đơn gấp | Chọn (`true`/`false`) | Lọc đơn gấp / thường |
-| `status` | Trạng thái | Chọn | `draft`, `submitted`, `approved`, `rejected`, `processing`, `completed` |
+| `status` | Trạng thái | Chọn | `draft` (Nháp), `submitted` (Chờ duyệt), `approved` (Đã duyệt), `rejected` (Bị trả lại), `cancelled` (Đã từ chối), `processing` (Đang xử lý), `completed` (Hoàn thành) |
 
 Tất cả bộ lọc kết hợp với nhau theo AND và áp dụng thêm `apply_scope` theo phân quyền dữ liệu của người dùng.
