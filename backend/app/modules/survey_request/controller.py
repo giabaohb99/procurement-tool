@@ -100,12 +100,15 @@ def _ensure_sr_editable(s):
         raise HTTPException(400, "Phiếu đã bị từ chối/hoàn thành — không thể cập nhật")
 
 
-def _notify(db, users, title, body, link, creator_id, background_tasks=None):
+def _notify(db, users, title, body, link, creator_id, background_tasks=None, doc_code=""):
     from app.modules.notification.model import Notification
+    from app.modules.user.model import User
+    recipients = []
     seen = set()
     for u in users:
         if u and u.id not in seen:
             seen.add(u.id)
+            recipients.append(u)
             db.add(Notification(user_id=u.id, title=title, body=body, link=link, created_by=creator_id))
     db.commit()
     # Web Push (best-effort) — đẩy thông báo tới thiết bị đã bật của người nhận (parity với PYC)
@@ -118,6 +121,16 @@ def _notify(db, users, title, body, link, creator_id, background_tasks=None):
                 background_tasks.add_task(push_service.send_to_users, SessionLocal, uids, title, body, link)
             else:
                 push_service.send_to_users(SessionLocal, uids, title, body, link)
+    except Exception:
+        pass
+
+    # EMAIL workflow (chỉ dev/UAT khi EMAIL_WORKFLOW_ENABLED)
+    try:
+        from app.modules.notification.service import _send_workflow_emails
+        creator = db.query(User).filter(User.id == creator_id).first()
+        creator_name = creator.email if creator else "Hệ thống"
+        _send_workflow_emails(db, background_tasks, recipients, title, body,
+                              "survey_request", doc_code, creator_name, "", "", False, link)
     except Exception:
         pass
 
@@ -224,13 +237,13 @@ def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(g
     if s.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ gửi duyệt phiếu ở trạng thái Nháp hoặc Bị trả lại")
     s = service.set_status(db, sid, "submitted", user.id)
-    # Người duyệt YCKS (Quản lý/Admin TM), + Trưởng bộ phận nếu có gán
-    from app.modules.notification.service import get_department_head_users, get_approvers_for_entity
-    recips = get_approvers_for_entity(db, "survey_request") + get_department_head_users(db, s.department or "")
+    # CHỈ Trưởng bộ phận của phòng YC (1 người duyệt)
+    from app.modules.notification.service import get_department_head_users
+    recips = get_department_head_users(db, s.department or "")
     _notify(db, recips,
-            f"[Yêu cầu duyệt] Yêu cầu báo giá {s.code}",
+            f"{s.code} — Yêu cầu phê duyệt YCBG",
             f"Có yêu cầu báo giá mới ({s.code}) cần bạn duyệt.",
-            f"/survey-requests/{s.id}", s.created_by or user.id, background_tasks)
+            f"/survey-requests/{s.id}", s.created_by or user.id, background_tasks, doc_code=s.code)
     return success(_out(db, s), "Đã gửi duyệt")
 
 
@@ -239,20 +252,31 @@ def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(
     s = service.set_status(db, sid, "approved", user.id)
     service.auto_assign(db, s)                       # tự gán NSTM theo phân loại (Task 4)
     s = service.set_status(db, sid, "processing", user.id)   # duyệt xong -> chuyển sang Đang xử lý
-    from app.modules.notification.service import get_users_by_role_codes
+    from app.modules.notification.service import get_users_by_role_codes, get_user_display_name
     from app.modules.user.model import User
-    reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
-    _notify(db, reqs + get_users_by_role_codes(db, ["pur_manager", "pur_admin"]),
-            f"[Đã duyệt] Yêu cầu báo giá {s.code}",
-            f"Yêu cầu báo giá {s.code} của bạn đã được duyệt, chuyển sang xử lý khảo sát.",
-            f"/survey-requests/{s.id}", s.created_by or user.id, background_tasks)
+    creator_user = db.query(User).filter(User.id == (s.created_by or user.id)).first()
+    creator_name = get_user_display_name(db, creator_user) if creator_user else "Hệ thống"
+
+    # 1. Báo cho Người tạo (nội dung 'của bạn')
+    if creator_user:
+        _notify(db, [creator_user],
+                f"{s.code} — Đã duyệt YCBG",
+                f"Yêu cầu báo giá {s.code} của bạn đã được duyệt, chuyển sang xử lý khảo sát.",
+                f"/survey-requests/{s.id}", s.created_by or user.id, background_tasks, doc_code=s.code)
+
+    # 2. Báo cho Admin TM (nội dung 'tạo bởi {creator_name}')
+    admins = get_users_by_role_codes(db, ["pur_admin"])
+    _notify(db, admins,
+            f"{s.code} — Thông báo đã duyệt YCBG",
+            f"Yêu cầu báo giá {s.code} (tạo bởi {creator_name}) đã được duyệt, chuyển sang xử lý khảo sát.",
+            f"/survey-requests/{s.id}", s.created_by or user.id, background_tasks, doc_code=s.code)
     # Báo cho các NSTM vừa được TỰ GÁN theo phân loại
     codes = {ln.assignee for ln in service.lines_of(db, s.id) if ln.assignee}
     if codes:
         _notify(db, _users_of_codes(db, list(codes)),
-                f"[Phân công khảo sát] {s.code}",
+                f"{s.code} — Phân công khảo sát giá",
                 f"Bạn được phân công khảo sát trong phiếu {s.code} (vừa được duyệt).",
-                f"/survey-requests/{s.id}/process", user.id, background_tasks)
+                f"/survey-requests/{s.id}/process", user.id, background_tasks, doc_code=s.code)
     return success(_out(db, s), "Đã duyệt — chuyển sang xử lý")
 
 
@@ -263,9 +287,9 @@ def reject_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Ses
     s = service.set_status(db, sid, "rejected", user.id, data.reason)
     from app.modules.user.model import User
     reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
-    _notify(db, reqs, f"[Trả đơn] Yêu cầu báo giá {s.code}",
+    _notify(db, reqs, f"{s.code} — Bị trả lại YCBG",
             f"Yêu cầu báo giá {s.code} của bạn bị TRẢ LẠI để chỉnh sửa. Lý do: {data.reason or '(không nêu)'}",
-            f"/survey-requests/{s.id}", s.created_by or user.id, background_tasks)
+            f"/survey-requests/{s.id}", s.created_by or user.id, background_tasks, doc_code=s.code)
     return success(_out(db, s), "Đã trả đơn")
 
 
@@ -276,9 +300,9 @@ def cancel_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Ses
     s = service.set_status(db, sid, "cancelled", user.id, data.reason)
     from app.modules.user.model import User
     reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
-    _notify(db, reqs, f"[Từ chối] Yêu cầu báo giá {s.code}",
+    _notify(db, reqs, f"{s.code} — Từ chối YCBG",
             f"Yêu cầu báo giá {s.code} của bạn bị TỪ CHỐI (khóa đơn). Lý do: {data.reason or '(không nêu)'}",
-            f"/survey-requests/{s.id}", s.created_by or user.id, background_tasks)
+            f"/survey-requests/{s.id}", s.created_by or user.id, background_tasks, doc_code=s.code)
     return success(_out(db, s), "Đã từ chối (khóa đơn)")
 
 
@@ -304,9 +328,9 @@ def set_line_assignee_(sid: int, line_id: int, data: dict, background_tasks: Bac
     if ln.assignee:                                   # báo cho NSTM vừa được gán
         s = service.get_sr(db, sid)
         _notify(db, _users_of_codes(db, [ln.assignee]),
-                f"[Phân công khảo sát] {s.code}",
+                f"{s.code} — Phân công khảo sát giá",
                 f"Bạn được phân công phụ trách khảo sát trong phiếu {s.code}.",
-                f"/survey-requests/{sid}/process", user.id, background_tasks)
+                f"/survey-requests/{sid}/process", user.id, background_tasks, doc_code=s.code)
     return success(_out(db, service.get_sr(db, sid)), "Đã gán nhân sự phụ trách")
 
 
@@ -616,17 +640,13 @@ def create_prs_(sid: int, background_tasks: BackgroundTasks, db: Session = Depen
     if not (is_requester or user_has_permission(db, user, "survey_request", "delete")):
         raise HTTPException(403, "Chỉ người yêu cầu mới được tạo Yêu cầu mua hàng")
     prs = service.create_prs(db, sid, user.id)
-    from app.modules.notification.service import get_users_by_role_codes
-    _notify(db, get_users_by_role_codes(db, ["pur_manager", "pur_admin"]),
-            f"[YCMH mới] Từ khảo sát {s.code}",
-            f"Phiếu khảo sát {s.code} đã sinh {len(prs)} yêu cầu mua hàng: {', '.join(p.code for p in prs)}.",
-            f"/survey-requests/{s.id}", s.created_by or user.id, background_tasks)
     return success({"created_prs": [{"id": p.id, "code": p.code} for p in prs], "sr": _out(db, s)},
                    f"Đã tạo {len(prs)} phiếu yêu cầu mua hàng")
 
 
 @router.patch("/{sid}/lines/{line_id}/line-status")
 def set_line_status_(sid: int, line_id: int, body: LineStatusIn,
+                     background_tasks: BackgroundTasks = None,
                      db: Session = Depends(get_db),
                      user=Depends(require("survey_request", "write"))):
     """Task 2: người YC / cùng phòng ban đổi trạng thái dòng khảo sát
@@ -636,6 +656,16 @@ def set_line_status_(sid: int, line_id: int, body: LineStatusIn,
     if not _can_act_as_requester_side(db, s, user):
         raise HTTPException(403, "Chỉ người yêu cầu hoặc cùng phòng ban được đổi trạng thái dòng")
     service.set_line_status(db, sid, line_id, body.line_status, user.id)
+    if (body.line_status or "").strip().lower() == "cần khảo sát lại":
+        ln = service.get_line(db, sid, line_id)
+        recips = []
+        if ln and ln.assignee:
+            recips += _users_of_codes(db, [ln.assignee])
+        from app.modules.notification.service import get_users_by_role_codes
+        recips += get_users_by_role_codes(db, ["pur_admin"])
+        _notify(db, recips, f"[Khảo sát lại] YCBG {s.code}",
+                f"Người yêu cầu đặt trạng thái dòng '{ln.item_group or 'sản phẩm'}' thành Cần khảo sát lại.",
+                f"/survey-requests/{s.id}/process", user.id, background_tasks, doc_code=s.code)
     return success(_out(db, s, user, get_perm_profile(db, user)), "Đã cập nhật trạng thái dòng")
 
 
