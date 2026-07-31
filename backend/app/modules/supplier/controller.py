@@ -100,6 +100,9 @@ def export_suppliers_csv(
         "supplier_type": "Loại (goods/transport)",
         "payment_terms": "Thanh toán",
         "vat": "VAT",
+        "bank_account_name": "Tên TK thụ hưởng",
+        "bank_account": "Số TK thụ hưởng",
+        "bank_name": "Ngân hàng/Chi nhánh",
     }
     return export_csv_response(items, headers_map, "suppliers")
 
@@ -134,6 +137,9 @@ def import_suppliers_csv(
         stype = row.get("Loại (goods/transport)", "").strip() or "goods"
         terms = row.get("Thanh toán", "").strip()
         vat_str = row.get("VAT", "").strip()
+        bank_account_name = row.get("Tên TK thụ hưởng", "").strip()
+        bank_account = row.get("Số TK thụ hưởng", "").strip()
+        bank_name = row.get("Ngân hàng/Chi nhánh", "").strip()
         
         if not db_id and not code and not name:
             continue
@@ -162,6 +168,9 @@ def import_suppliers_csv(
                 existing.vat = vat
                 existing.is_active = is_active
                 existing.updated_by = user.id
+                existing.bank_account_name = bank_account_name
+                existing.bank_account = bank_account
+                existing.bank_name = bank_name
                 if not is_active:
                     deleted += 1
                 else:
@@ -172,7 +181,8 @@ def import_suppliers_csv(
             new_sup = Supplier(
                 code=code, name=name, tax_code=tax_code, address=address,
                 supplier_type=stype, payment_terms=terms,
-                vat=vat, is_active=is_active, created_by=user.id, updated_by=user.id
+                vat=vat, is_active=is_active, created_by=user.id, updated_by=user.id,
+                bank_account_name=bank_account_name, bank_account=bank_account, bank_name=bank_name,
             )
             db.add(new_sup)
             created += 1

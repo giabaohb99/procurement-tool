@@ -13,6 +13,7 @@ class SupplierBase(BaseModel):
     payment_terms: str = ""
     bank_account: str = ""
     bank_name: str = ""
+    bank_account_name: str = ""
     vat: float = 0.08
     is_active: bool = True
 
@@ -32,6 +33,7 @@ class SupplierUpdate(BaseModel):
     payment_terms: str | None = None
     bank_account: str | None = None
     bank_name: str | None = None
+    bank_account_name: str | None = None
     vat: float | None = None
     is_active: bool | None = None
 
