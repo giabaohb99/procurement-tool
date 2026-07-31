@@ -51,6 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function logout() {
+    // Ghi log đăng xuất (best-effort) trước khi xóa token — không chặn nếu lỗi mạng.
+    api.post("/api/auth/logout", null, { _silent: true } as any).catch(() => {});
     localStorage.removeItem("token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
