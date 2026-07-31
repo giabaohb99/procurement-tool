@@ -276,7 +276,9 @@ def is_purchaser(profile: dict) -> bool:
     return False
 
 
-def _has_scope_all(profile: dict) -> bool:
+def _has_scope_all(profile: dict | None) -> bool:
+    if not profile or not isinstance(profile, dict):
+        return True
     for g in profile.get("grants", []):
         p = g["perms"].get("survey_request")
         if p and p.get("read") and p.get("scope") == "all":
@@ -682,7 +684,7 @@ def auto_complete_from_pr(db: Session, pr_id: int, user_id: int = 0) -> None:
                    "Tự hoàn thành: mọi Yêu cầu mua hàng liên quan đã hoàn thành")
 
 
-def complete_sr(db: Session, sid: int, user, profile: dict, empty_line_ids=None):
+def complete_sr(db: Session, sid: int, user, profile: dict = None, empty_line_ids=None):
     """Chốt PHẦN KHẢO SÁT CỦA NGƯỜI GỌI. Dòng phụ trách phải có option HOẶC được 'chốt rỗng'
     (no_option, không có NCC phù hợp). Phiếu -> 'survey_done' khi MỌI dòng có option hoặc chốt rỗng.
     empty_line_ids: các dòng (mình phụ trách, chưa option) tick chốt rỗng. Trả (phiếu, fully_done)."""

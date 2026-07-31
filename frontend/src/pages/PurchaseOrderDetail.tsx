@@ -732,8 +732,6 @@ export default function PurchaseOrderDetail() {
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Xuất xứ / TSKT / chất liệu</label><input value={it.spec || ''} disabled={de} onChange={(e) => setItem(ii, { spec: e.target.value })} /></div>
                     <div className="form-row"><label>Mã HH (thành phẩm)</label><input value={it.fg_code || ''} placeholder="Tự gắn khi chọn SP" disabled={de} onChange={(e) => setItem(ii, { fg_code: e.target.value })} /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên HH (thành phẩm)</label><input value={it.fg_name || ''} placeholder="Tự gắn khi chọn SP" disabled={de} onChange={(e) => setItem(ii, { fg_name: e.target.value })} /></div>
-                    <div className="form-row"><label>Số hóa đơn</label><input value={it.invoice_no || ''} placeholder="Số HĐ theo sản phẩm" disabled={de} onChange={(e) => { const v = e.target.value; setItem(ii, { invoice_no: v, ...(v && !(it.invoice_date || '').trim() ? { invoice_date: new Date().toISOString().slice(0, 10) } : {}) }) }} /></div>
-                    <div className="form-row"><label title="Tự điền ngày hôm nay khi nhập Số hóa đơn — sửa tay được">Ngày hóa đơn</label><input type="date" value={it.invoice_date || ''} disabled={de} onChange={(e) => setItem(ii, { invoice_date: e.target.value })} /></div>
                     <div className="form-row"><label title="Có ngày này → dòng chuyển 'Đã gửi ĐMH cho KT'">Ngày giao chứng từ cho KT</label><input type="date" value={it.document_delivery_date || ''} disabled={de} onChange={(e) => setItem(ii, { document_delivery_date: e.target.value })} /></div>
                     <div className="form-row">
                       <label>Trạng thái tiến độ</label>
@@ -805,6 +803,8 @@ export default function PurchaseOrderDetail() {
                       <th style={{ width: 100 }}>Đơn giá</th>
                       <th style={{ width: 64 }}>VAT%</th>
                       <th style={{ width: 130, background: '#fff3cd' }}>Thành tiền (nhận)</th>
+                      <th style={{ width: 130 }}>Số hóa đơn</th>
+                      <th style={{ width: 110 }}>Ngày hóa đơn</th>
                       <th style={{ width: 110 }}>Đã trả</th>
                       <th style={{ width: 110 }}>Còn lại</th>
                       <th style={{ width: 110 }}>Cam kết giao</th>
@@ -853,6 +853,8 @@ export default function PurchaseOrderDetail() {
                           <td style={{ textAlign: 'right', color: 'var(--muted)' }}>{fmt(items[ii].price)}</td>
                           <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{Number(items[ii].vat) || 0}%</td>
                           <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmt((Number(d.received_qty) || 0) * (Number(items[ii].price) || 0) * (1 + (Number(items[ii].vat) || 0) / 100))}</td>
+                          <td><input className="cell-input" style={{ width: 120 }} value={d.invoice_no || ''} placeholder="Số HĐ đợt này" disabled={dis} onChange={(e) => { const v = e.target.value; setDelivery(ii, di, { invoice_no: v, ...(v && !(d.invoice_date || '').trim() ? { invoice_date: new Date().toISOString().slice(0, 10) } : {}) }) }} /></td>
+                          <td><input className="cell-input" type="date" style={{ width: 105 }} value={d.invoice_date || ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { invoice_date: e.target.value })} /></td>
                           <td style={{ textAlign: 'right', color: 'var(--green)', fontWeight: 600 }}>{d.id ? fmt(d.paid || 0) : '—'}</td>
                           <td style={{ textAlign: 'right', color: (Number(d.remaining) || 0) > 0 ? 'var(--red)' : 'var(--muted)', fontWeight: 600 }}>{d.id ? fmt(d.remaining || 0) : '—'}</td>
                           <td><input className="cell-input" type="date" style={{ width: 100 }} value={d.promised_date ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { promised_date: e.target.value })} /></td>

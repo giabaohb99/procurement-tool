@@ -91,6 +91,7 @@ class PODelivery(Base, AuditMixin):
     diff_regulated: Mapped[int] = mapped_column(BigInteger, default=0)      # CL quy định−nhận (AM)
     diff_required: Mapped[int] = mapped_column(BigInteger, default=0)       # CL quy định−KD yêu cầu (AN)
     invoice_no: Mapped[str] = mapped_column(String(50), default="")
+    invoice_date: Mapped[str] = mapped_column(String(10), default="")
     shipping_unit_price: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
     shipping_amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
     qc_result: Mapped[str] = mapped_column(String(20), default="")          # Đạt | Thiếu | Lỗi

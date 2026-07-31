@@ -86,7 +86,7 @@ class TestPipeline:
         assert opt_thung.public_id == 1
 
         # Bước 3: complete_sr (cả 2 line có option)
-        sr_done = S.complete_sr(db, sr.id, seed.u_nstm_id)
+        sr_done, *_ = S.complete_sr(db, sr.id, seed.u_nstm_id)
         assert sr_done.status == "survey_done"
 
         # Bước 4: choose_option
