@@ -523,8 +523,11 @@ def run():
             db.add(UserRole(user_id=user2.id, role_id=admin_role.id))
             db.commit()
 
-        # Seed demo accounts
-        seed_demo_accounts(db, company.id)
+        # Seed demo accounts (chỉ khi bật — prod đặt SEED_DEMO_ACCOUNTS=false để bỏ qua)
+        if getattr(settings, "SEED_DEMO_ACCOUNTS", True):
+            seed_demo_accounts(db, company.id)
+        else:
+            print("Bỏ qua seed tài khoản demo (SEED_DEMO_ACCOUNTS=false).")
 
         # Gán vai trò mặc định "Nhân sự" cho tài khoản chưa có vai trò
         n_default = assign_default_roles(db)

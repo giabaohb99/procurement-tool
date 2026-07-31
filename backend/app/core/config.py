@@ -56,6 +56,10 @@ class Settings(BaseSettings):
     EMAIL_TEST_MANAGER: str = ""
     EMAIL_TEST_STAFF: str = ""
 
+    # Tạo cụm tài khoản DEMO_* (dùng cho E2E test ở local/dev). Mặc định BẬT để local/dev
+    # không đổi hành vi. PROD đặt =false (trong .env) để KHÔNG seed lại tài khoản demo.
+    SEED_DEMO_ACCOUNTS: bool = True
+
     # --- Sao lưu CSDL ---
     BACKUP_KEEP: int = 30   # số bản backup giữ lại (2 lần/ngày -> ~15 ngày)
 
