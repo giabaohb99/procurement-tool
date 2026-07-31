@@ -144,7 +144,11 @@ Tất cả endpoint đều lọc theo `user_id` của người đang đăng nh�
 
 #### Tự dọn thông báo cũ
 
-Mỗi lần gọi `GET /api/notifications`, hệ thống tự xóa thông báo **đã đọc** của user đó có `created_at` cũ hơn **90 ngày** (chặn phình bảng `tab_notification`). Thông báo chưa đọc không bao giờ bị xóa tự động.
+Hệ thống có hai cơ chế xóa thông báo cũ:
+
+**Cơ chế 1 — theo yêu cầu (khi GET):** Mỗi lần gọi `GET /api/notifications`, hàm `_prune_old` tự xóa thông báo **đã đọc** của chính user đó có `created_at` cũ hơn **90 ngày** (`RETENTION_DAYS = 90` trong controller). Thông báo chưa đọc không bị ảnh hưởng bởi cơ chế này.
+
+**Cơ chế 2 — theo lịch (Celery beat):** Task `notification.cleanup` chạy tự động lúc **02:30 VN mỗi ngày** qua Celery beat. Task xóa **tất cả** thông báo (đã đọc lẫn chưa đọc) của mọi user có `created_at` cũ hơn `NOTIFICATION_KEEP_DAYS` ngày (mặc định **10 ngày**, cấu hình trong `app/core/config.py`). Mục đích: chặn phình bảng `tab_notification` không phụ thuộc vào việc user có mở trang hay không.
 
 ---
 
@@ -157,7 +161,7 @@ Hàm `trigger_notification` được các controller gọi sau mỗi thao tác t
 | `doc_type` | Nhãn hiển thị |
 |---|---|
 | `purchase_request` | Yêu cầu mua hàng |
-| `survey_request` | Yêu cầu khảo sát |
+| `survey_request` | Yêu cầu báo giá |
 | `survey` | Phiếu khảo sát |
 | `purchase_order` | Đơn mua hàng |
 | `payment_request` | Đề nghị thanh toán |
@@ -167,27 +171,27 @@ Hàm `trigger_notification` được các controller gọi sau mỗi thao tác t
 | Sự kiện (`event`) | Tiêu đề | Nội dung |
 |---|---|---|
 | `pr_assigned` | `[Phân công] PYC {code}` | "Bạn được phân công phụ trách yêu cầu mua hàng {code}." |
-| `pr_submitted` | `[Yêu cầu phê duyệt] PYC {code}` | "Có một yêu cầu mua hàng mới ({code}) cần bạn phê duyệt." |
+| `pr_submitted` | `[Yêu cầu phê duyệt] PYC {code}` | "Có một yêu cầu mua hàng mới (Mã số: {code}) cần bạn phê duyệt." |
 | `pr_approved` | `[Đã duyệt] PYC {code}` | "Yêu cầu mua hàng {code} của bạn đã được phê duyệt." |
 | `pr_rejected` | `[Từ chối] PYC {code}` | "Yêu cầu mua hàng {code} của bạn đã bị từ chối phê duyệt." |
 | `pr_returned` | `[Bị trả lại] PYC {code}` | "Yêu cầu mua hàng {code} của bạn bị trả lại — hãy chỉnh sửa và gửi duyệt lại." |
 | `pr_cancelled` | `[Đã hủy] PYC {code}` | "Yêu cầu mua hàng {code} của bạn đã bị hủy." |
-| `sr_submitted` | `[Yêu cầu phê duyệt] YCKS {code}` | "Có một yêu cầu khảo sát mới ({code}) cần bạn phê duyệt." |
-| `sr_approved` | `[Đã duyệt] YCKS {code}` | "Yêu cầu khảo sát {code} của bạn đã được phê duyệt." |
-| `sr_rejected` | `[Từ chối] YCKS {code}` | "Yêu cầu khảo sát {code} của bạn đã bị từ chối phê duyệt." |
-| `sr_returned` | `[Bị trả lại] YCKS {code}` | "Yêu cầu khảo sát {code} của bạn bị trả lại — hãy chỉnh sửa và gửi duyệt lại." |
+| `sr_submitted` | `[Yêu cầu phê duyệt] YCBG {code}` | "Có một yêu cầu báo giá mới (Mã số: {code}) cần bạn phê duyệt." |
+| `sr_approved` | `[Đã duyệt] YCBG {code}` | "Yêu cầu báo giá {code} của bạn đã được phê duyệt." |
+| `sr_rejected` | `[Từ chối] YCBG {code}` | "Yêu cầu báo giá {code} của bạn đã bị từ chối phê duyệt." |
+| `sr_returned` | `[Bị trả lại] YCBG {code}` | "Yêu cầu báo giá {code} của bạn bị trả lại — hãy chỉnh sửa và gửi duyệt lại." |
 | `pay_submitted` | `[Yêu cầu phê duyệt] YCTT {code}` | "Có một yêu cầu thanh toán mới ({code}) cần bạn phê duyệt." |
 | `pay_approved` | `[Đã duyệt] YCTT {code}` | "Yêu cầu thanh toán {code} của bạn đã được phê duyệt." |
 | `pay_rejected` | `[Từ chối] YCTT {code}` | "Yêu cầu thanh toán {code} của bạn đã bị từ chối." |
 | `pay_paid` | `[Đã chi] YCTT {code}` | "Yêu cầu thanh toán {code} đã được ghi nhận đã chi." |
-| `survey_submitted` | `[Yêu cầu phê duyệt] Khảo sát {code}` | "Có một phiếu khảo sát mới ({code}) cần bạn phê duyệt." |
+| `survey_submitted` | `[Yêu cầu phê duyệt] Khảo sát {code}` | "Có một phiếu khảo sát mới (Mã số: {code}) cần bạn phê duyệt." |
 | `survey_approved` | `[Đã duyệt] Khảo sát {code}` | "Phiếu khảo sát {code} của bạn đã được phê duyệt." |
 | `survey_rejected` | `[Từ chối] Khảo sát {code}` | "Phiếu khảo sát {code} của bạn đã bị từ chối phê duyệt." |
 | Khác (fallback) | `{Nhãn loại} {code}` | `"{Nhãn loại} {code} {động từ}."` (ví dụ: "Đơn mua hàng PO00001 đã được duyệt.") |
 
 Nếu `is_urgent=True` → tiêu đề thêm tiền tố `[GẤP]`.
 
-Động từ fallback lấy từ phần cuối của `event` (cách `_`) theo bảng: `submitted` → "đã được gửi duyệt", `approved` → "đã được duyệt", `rejected` → "đã bị từ chối", `cancelled` → "đã bị hủy", `completed` → "đã hoàn thành", `paid` → "đã ghi nhận thanh toán".
+Động từ fallback lấy từ phần cuối của `event` (cách `_`) theo bảng: `submitted` → "đã được gửi duyệt", `approved` → "đã được duyệt", `rejected` → "đã bị từ chối", `cancelled` → "đã bị hủy", `returned` → "đã bị trả lại (cần sửa & gửi lại)", `completed` → "đã hoàn thành", `paid` → "đã ghi nhận thanh toán".
 
 #### Người nhận theo sự kiện
 

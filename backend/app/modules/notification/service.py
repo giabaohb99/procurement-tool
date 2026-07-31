@@ -31,11 +31,13 @@ def render_template(html: str, context: dict) -> str:
     return html
 
 
-def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str, html_body: str, force: bool = False):
+def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str, html_body: str, force: bool = False, apply_override: bool = True):
     """
     Sends SMTP email and updates the EmailLog status.
     Uses a new session to run safely in background tasks.
     force=True: gửi bất kể công tắc email_enabled (dùng cho email thiết yếu như reset mật khẩu).
+    apply_override=False: KHÔNG áp email_test_override (dùng cho email workflow đã tự định tuyến
+      sẵn về hộp thư test theo vai trò — tránh bị gộp hết về 1 địa chỉ override).
     """
     db = db_session_factory()
     try:
@@ -69,8 +71,9 @@ def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str
             db.commit()
             return
 
-        # Nếu đặt EMAIL_TEST_OVERRIDE → chuyển hướng mọi email ra địa chỉ test (an toàn khi test)
-        target = app_settings.get("email_test_override") or to_email
+        # Nếu đặt EMAIL_TEST_OVERRIDE → chuyển hướng mọi email ra địa chỉ test (an toàn khi test).
+        # apply_override=False: email workflow đã tự định tuyến theo vai trò → giữ nguyên địa chỉ.
+        target = (app_settings.get("email_test_override") if apply_override else "") or to_email
 
         msg = MIMEMultipart()
         msg["From"] = app_settings.get("smtp_from") or smtp_user
@@ -139,6 +142,70 @@ def get_users_by_role_codes(db: Session, codes: list[str]) -> list[User]:
     if not user_ids:
         return []
     return db.query(User).filter(User.id.in_(user_ids), User.is_active == True).all()
+
+
+# Nhóm vai trò "quản lý/duyệt" — dùng để định tuyến email test về hộp thư quản lý.
+# Ngoài danh sách này (vd nhân viên yêu cầu, nhân viên thu mua) coi là nhóm "nhân viên".
+_MANAGER_ROLE_CODES = {
+    "admin", "ADMINISTRATOR", "pur_manager", "pur_admin",
+    "dept_head", "manager", "MANAGER", "manager_purchase", "company_head",
+}
+
+
+def _role_codes_of(db: Session, user_id: int) -> set[str]:
+    """Tập mã vai trò của 1 user (rỗng nếu chưa gán)."""
+    role_ids = [ur.role_id for ur in db.query(UserRole).filter(UserRole.user_id == user_id).all()]
+    if not role_ids:
+        return set()
+    return {r.code for r in db.query(Role).filter(Role.id.in_(role_ids)).all()}
+
+
+def _test_route_email(db: Session, user: User) -> str:
+    """Địa chỉ hộp thư test theo NHÓM VAI TRÒ của người nhận (khi EMAIL_TEST_MANAGER/STAFF được đặt).
+    Có vai trò quản lý → hộp quản lý; ngược lại → hộp nhân viên. Trống cấu hình → email thật của user."""
+    mgr = (settings.EMAIL_TEST_MANAGER or "").strip()
+    stf = (settings.EMAIL_TEST_STAFF or "").strip()
+    if not mgr and not stf:
+        return user.email or ""
+    codes = _role_codes_of(db, user.id)
+    is_manager = bool(codes & _MANAGER_ROLE_CODES)
+    return (mgr if is_manager else stf) or user.email or ""
+
+
+def _send_workflow_emails(db: Session, background_tasks, recipients: list, subject: str, body: str,
+                          doc_type: str, doc_code: str, creator_name: str,
+                          reason: str, approve_note: str, is_urgent: bool, link: str):
+    """Gửi EMAIL cho từng người nhận của luồng duyệt — CHỈ khi EMAIL_WORKFLOW_ENABLED (dev/UAT).
+    Định tuyến về hộp thư test theo vai trò; dùng template HTML_LAYOUT. Gửi nền, không chặn luồng."""
+    if not getattr(settings, "EMAIL_WORKFLOW_ENABLED", False):
+        return
+    from app.core.database import SessionLocal
+    label = {"purchase_request": "Yêu cầu mua hàng", "survey_request": "Yêu cầu báo giá",
+             "survey": "Phiếu khảo sát", "purchase_order": "Đơn mua hàng",
+             "payment_request": "Đề nghị thanh toán"}.get(doc_type, "Chứng từ")
+    html = render_template(HTML_LAYOUT, {
+        "subject": subject, "intro_message": body, "doc_type": label, "doc_code": doc_code,
+        "creator": creator_name, "reason": reason, "approve_note": approve_note,
+        "is_urgent": is_urgent, "link": link,
+    })
+    jobs = []
+    for r in recipients:
+        if not r:
+            continue
+        target = _test_route_email(db, r)
+        if not target:
+            continue
+        log = EmailLog(event=f"workflow_{doc_type}", to_email=target, subject=subject,
+                       status="pending", created_by=r.id)
+        db.add(log); db.flush()
+        jobs.append((log.id, target))
+    db.commit()  # bảo đảm EmailLog tồn tại trước khi task nền (session mới) đọc
+    # force=True: bỏ qua công tắc email_enabled; apply_override=False: giữ địa chỉ đã định tuyến.
+    for log_id, target in jobs:
+        if background_tasks is not None:
+            background_tasks.add_task(send_smtp_email, SessionLocal, log_id, target, subject, html, True, False)
+        else:
+            send_smtp_email(SessionLocal, log_id, target, subject, html, force=True, apply_override=False)
 
 
 def trigger_notification(
@@ -284,6 +351,13 @@ def trigger_notification(
                 background_tasks.add_task(push_service.send_to_users, SessionLocal, uids, subject, body, link)
             else:
                 push_service.send_to_users(SessionLocal, uids, subject, body, link)
+    except Exception:
+        pass
+
+    # EMAIL workflow (chỉ dev/UAT khi EMAIL_WORKFLOW_ENABLED) — best-effort, không chặn luồng.
+    try:
+        _send_workflow_emails(db, background_tasks, recipients, subject, body,
+                              doc_type, doc_code, creator_name, reason, approve_note, is_urgent, link)
     except Exception:
         pass
 

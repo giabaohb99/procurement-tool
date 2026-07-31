@@ -46,6 +46,15 @@ class Settings(BaseSettings):
     # Chặn CỨNG mọi email ở môi trường này, kể cả email force (reset mật khẩu, cấp tài khoản).
     # Đọc từ .env (không qua tab_setting dùng chung) → dev đặt =true để không bao giờ gửi mail thật.
     EMAIL_HARD_OFF: bool = False
+    # Bật gửi EMAIL cho luồng duyệt (workflow). Mặc định TẮT — prod chỉ báo chuông + web push.
+    # Dev/UAT đặt =true để test nội dung email thông báo (dùng template HTML_LAYOUT).
+    EMAIL_WORKFLOW_ENABLED: bool = False
+    # Định tuyến email workflow theo NHÓM VAI TRÒ về hộp thư test (chỉ khi có giá trị):
+    #   nhóm quản lý/duyệt (quản lý/admin thu mua, trưởng phòng duyệt, admin) → EMAIL_TEST_MANAGER
+    #   nhóm nhân viên (nhân viên yêu cầu, nhân viên thu mua)                  → EMAIL_TEST_STAFF
+    # Để trống cả hai → gửi tới email THẬT của người nhận (không định tuyến).
+    EMAIL_TEST_MANAGER: str = ""
+    EMAIL_TEST_STAFF: str = ""
 
     # --- Sao lưu CSDL ---
     BACKUP_KEEP: int = 30   # số bản backup giữ lại (2 lần/ngày -> ~15 ngày)
