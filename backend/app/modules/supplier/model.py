@@ -20,5 +20,6 @@ class Supplier(Base, AuditMixin):
     payment_terms: Mapped[str] = mapped_column(String(255), default="")  # hình thức thanh toán
     bank_account: Mapped[str] = mapped_column(String(50), default="")    # số TK
     bank_name: Mapped[str] = mapped_column(String(255), default="")      # ngân hàng
+    bank_account_name: Mapped[str] = mapped_column(String(255), default="")  # tên TK thụ hưởng
     vat: Mapped[float] = mapped_column(Float, default=0.08)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
