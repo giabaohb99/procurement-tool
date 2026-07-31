@@ -169,7 +169,7 @@ def compute(db: Session, year: str, company_id, full_detail: bool = False) -> di
         ship_detail.append({
             "carrier": key, "month": f"{m[5:7]}/{m[:4]}",
             "product_code": it.product_code if it else "", "misa_code": po.misa_code if po else "",
-            "invoice_no": it.invoice_no if it else "", "received_date": d.received_date,
+            "invoice_no": (d.invoice_no or (it.invoice_no if it else "")), "received_date": d.received_date,
             "qty_order": float(it.qty_order or 0) if it else 0, "qty_received": float(d.received_qty or 0),
             "order_amount": ov, "ship_amount": sc, "rate": _rate(sc, ov),
         })
@@ -466,7 +466,7 @@ def compute_shipping_detail(db, year, company_id, carrier=None, month=None, page
         rows.append({
             "carrier": d.carrier_name or d.carrier_code, "month": f"{m[5:7]}/{m[:4]}",
             "product_code": it.product_code if it else "", "misa_code": po.misa_code if po else "",
-            "invoice_no": it.invoice_no if it else "", "received_date": d.received_date,
+            "invoice_no": (d.invoice_no or (it.invoice_no if it else "")), "received_date": d.received_date,
             "qty_order": float(it.qty_order or 0) if it else 0, "qty_received": float(d.received_qty or 0),
             "order_amount": ov, "ship_amount": sc, "rate": _rate(sc, ov),
         })

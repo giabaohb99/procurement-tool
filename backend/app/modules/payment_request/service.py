@@ -25,7 +25,8 @@ def lines_of(db: Session, rid: int):
 
 
 def create_requests(db: Session, data: PRequestCreate, user_id: int) -> list[PaymentRequest]:
-    """Tạo phiếu; nếu các khoản nợ thuộc nhiều NCC -> tách mỗi NCC 1 phiếu."""
+    """Tạo phiếu; nếu các khoản nợ thuộc nhiều NCC -> tách mỗi NCC 1 phiếu;
+    Gom các khoản nợ cùng (mã PO + Số HĐ) thành 1 dòng duy nhất trên phiếu thanh toán."""
     if not data.lines:
         raise HTTPException(400, "Chưa chọn khoản công nợ nào")
 
@@ -51,6 +52,12 @@ def create_requests(db: Session, data: PRequestCreate, user_id: int) -> list[Pay
     created = []
     for (supplier_code, source_type), items in groups.items():
         first = items[0][0]
+        # Gom các item có cùng (po_code, invoice_no) thành 1 dòng
+        sub_groups: dict[tuple, list] = {}
+        for p, amt in items:
+            key = (p.po_code or "", (p.invoice_no or "").strip())
+            sub_groups.setdefault(key, []).append((p, amt))
+
         req = PaymentRequest(
             supplier_code=supplier_code, supplier_name=first.supplier_name,
             company_id=first.company_id, source_type=source_type,
@@ -59,9 +66,12 @@ def create_requests(db: Session, data: PRequestCreate, user_id: int) -> list[Pay
         db.add(req)
         db.flush()
         req.code = f"YCTT{req.id:05d}"
-        for p, amt in items:
-            db.add(PaymentRequestLine(request_id=req.id, payable_id=p.id, po_code=p.po_code,
-                                      invoice_no=p.invoice_no, amount=amt,
+
+        for (po_code, inv_no), sub_items in sub_groups.items():
+            lead_p = sub_items[0][0]
+            line_amt = round(sum(a for _, a in sub_items), 2)
+            db.add(PaymentRequestLine(request_id=req.id, payable_id=lead_p.id, po_code=po_code,
+                                      invoice_no=inv_no, amount=line_amt,
                                       created_by=user_id, updated_by=user_id))
         db.flush()
         created.append(req)
@@ -79,15 +89,26 @@ def update_request(db: Session, rid: int, data: PRequestUpdate, user_id: int) ->
         setattr(req, k, v)
     if data.lines is not None:
         db.query(PaymentRequestLine).filter(PaymentRequestLine.request_id == rid).delete()
-        total = 0.0
+        raw_items = []
         for ln in data.lines:
             p = db.get(Payable, ln.payable_id)
             if not p or p.supplier_code != req.supplier_code:
                 continue
             amt = ln.amount if ln.amount > 0 else round(float(p.total or 0) - float(p.paid_amount or 0), 2)
-            total += amt
-            db.add(PaymentRequestLine(request_id=rid, payable_id=p.id, po_code=p.po_code,
-                                      invoice_no=p.invoice_no, amount=amt,
+            raw_items.append((p, amt))
+
+        sub_groups: dict[tuple, list] = {}
+        for p, amt in raw_items:
+            key = (p.po_code or "", (p.invoice_no or "").strip())
+            sub_groups.setdefault(key, []).append((p, amt))
+
+        total = 0.0
+        for (po_code, inv_no), sub_items in sub_groups.items():
+            lead_p = sub_items[0][0]
+            line_amt = round(sum(a for _, a in sub_items), 2)
+            total += line_amt
+            db.add(PaymentRequestLine(request_id=rid, payable_id=lead_p.id, po_code=po_code,
+                                      invoice_no=inv_no, amount=line_amt,
                                       created_by=user_id, updated_by=user_id))
         req.total = round(total, 2)
     req.updated_by = user_id
@@ -117,18 +138,36 @@ def set_status(db: Session, rid: int, status: str, user_id: int, reason: str = "
         req.reject_reason = reason
     affected_po_ids: set[int] = set()
     if status == "paid":
-        # cộng tiền đã trả vào từng khoản nợ
+        # cộng tiền đã trả vào các khoản nợ (phân bổ theo po_code + invoice_no)
         for ln in lines_of(db, rid):
-            p = db.get(Payable, ln.payable_id)
-            if p:
-                p.paid_amount = round(float(p.paid_amount or 0) + float(ln.amount or 0), 2)
+            rem_to_pay = float(ln.amount or 0)
+            if rem_to_pay <= 0:
+                continue
+            matched_payables = db.query(Payable).filter(
+                Payable.supplier_code == req.supplier_code,
+                Payable.source_type == req.source_type,
+                Payable.po_code == ln.po_code,
+                Payable.invoice_no == ln.invoice_no
+            ).all()
+            if not matched_payables and ln.payable_id:
+                p_single = db.get(Payable, ln.payable_id)
+                if p_single:
+                    matched_payables = [p_single]
+
+            for p in matched_payables:
+                if rem_to_pay <= 0:
+                    break
+                p_rem = max(0.0, float(p.total or 0) - float(p.paid_amount or 0))
+                pay_part = min(rem_to_pay, p_rem) if p_rem > 0 else rem_to_pay
+                p.paid_amount = round(float(p.paid_amount or 0) + pay_part, 2)
                 recalc_status(p)
-                # gom ĐMH liên quan (goods → delivery → PO) để tự tiến trạng thái sau commit
+                rem_to_pay = round(rem_to_pay - pay_part, 2)
+
                 if p.source_type == "goods" and p.ref_type == "delivery":
                     from app.modules.purchase_order.model import PODelivery
                     d = db.get(PODelivery, p.ref_id)
                     if d:
-                        affected_po_ids.add(d.po_id)   # PODelivery mang sẵn po_id
+                        affected_po_ids.add(d.po_id)
     db.commit()
     record(db, user_id, ENTITY, rid, status, reason)
     if status == "paid" and affected_po_ids:

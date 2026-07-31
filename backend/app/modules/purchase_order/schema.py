@@ -15,6 +15,7 @@ class DeliveryIn(BaseModel):
     received_date: str = ""
     std_days: int = 0
     invoice_no: str = ""
+    invoice_date: str = ""
     shipping_unit_price: float = 0
     shipping_amount: float = 0
     qc_result: str = ""

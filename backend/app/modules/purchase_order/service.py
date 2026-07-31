@@ -103,6 +103,8 @@ def _save_deliveries(db: Session, po: PurchaseOrder, item: POItem, delivs, user_
     keep = set()
     for raw in delivs:
         data = raw.model_dump()
+        if (data.get("invoice_no") or "").strip() and not (data.get("invoice_date") or "").strip():
+            data["invoice_date"] = date.today().isoformat()
         did = data.pop("id", None)
         if did and did in existing:
             d = existing[did]
@@ -167,7 +169,7 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
                 pay_service.upsert(
                     db, source_type="goods", ref_id=d.id, company_id=po.company_id,
                     supplier_code=po.supplier_code, supplier_name=po.supplier_name,
-                    po_id=po.id, po_code=po.code, invoice_no=it.invoice_no,
+                    po_id=po.id, po_code=po.code, invoice_no=(d.invoice_no or it.invoice_no or "").strip(),
                     incur_date=d.received_date or po.order_date, amount=amt, vat=amt * vat / 100,
                     due_days=goods_days, user_id=user_id)
                 # Công nợ vận chuyển (carrier riêng) — chỉ khi có carrier + cước > 0
@@ -454,8 +456,9 @@ def _step_ok(db: Session, po: PurchaseOrder, item: POItem, ti: int) -> bool:
         return bool((po.misa_code or "").strip())
     if ti == 2:
         return float(item.qty_received or 0) > 0
-    if ti == 3:   # Chưa gửi ĐMH cho KT — đã có số hóa đơn
-        return bool((item.invoice_no or "").strip())
+    if ti == 3:   # Chưa gửi ĐMH cho KT — đã có số hóa đơn (ở lần giao hoặc ở dòng sản phẩm)
+        has_deliv_inv = any(bool((d.invoice_no or "").strip()) for d in deliveries_of(db, item.id))
+        return has_deliv_inv or bool((item.invoice_no or "").strip())
     if ti == 4:   # Đã gửi ĐMH cho KT — đã có ngày giao chứng từ
         return bool((item.document_delivery_date or "").strip())
     if ti == 5:   # Hoàn thành — đã thanh toán dòng

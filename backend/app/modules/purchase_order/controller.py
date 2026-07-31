@@ -1,5 +1,5 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_perm_profile, require
@@ -13,7 +13,7 @@ from app.modules.catalog.model import Warehouse
 from app.modules.notification.service import trigger_notification
 
 from . import service
-from .model import POItem, PurchaseOrder
+from .model import POItem, PODelivery, PurchaseOrder
 from app.modules.payable.model import Payable
 from .schema import POCreate, POUpdate, RejectIn, ItemProgressIn, DocumentStatusIn
 
@@ -32,7 +32,8 @@ def _delivery(d, pay=None) -> dict:
             "expected_date": d.expected_date, "received_date": d.received_date,
             "std_days": d.std_days, "regulated_date": d.regulated_date,
             "diff_promise": d.diff_promise, "diff_regulated": d.diff_regulated, "diff_required": d.diff_required,
-            "invoice_no": d.invoice_no, "shipping_unit_price": float(d.shipping_unit_price or 0),
+            "invoice_no": d.invoice_no, "invoice_date": getattr(d, "invoice_date", "") or "",
+            "shipping_unit_price": float(d.shipping_unit_price or 0),
             "shipping_amount": float(d.shipping_amount or 0), "qc_result": d.qc_result,
             "status": d.status, "extra_request": d.extra_request, "progress_note": d.progress_note,
             # Công nợ HÀNG của lần giao này (đã trả / còn lại)
@@ -105,8 +106,9 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
         q = q.filter(PurchaseOrder.id.in_(sub))
     invoice_no = (request.query_params.get("invoice_no") or "").strip()
     if invoice_no:
-        sub2 = select(POItem.po_id).where(POItem.invoice_no.like(f"%{invoice_no}%"))
-        q = q.filter(PurchaseOrder.id.in_(sub2))
+        sub2_item = select(POItem.po_id).where(POItem.invoice_no.like(f"%{invoice_no}%"))
+        sub2_deliv = select(PODelivery.po_id).where(PODelivery.invoice_no.like(f"%{invoice_no}%"))
+        q = q.filter(or_(PurchaseOrder.id.in_(sub2_item), PurchaseOrder.id.in_(sub2_deliv)))
     q = apply_scope(q, PurchaseOrder, "purchase_order", user, get_perm_profile(db, user))
     q = apply_sort_from_request(q, PurchaseOrder, request)   # sort theo cột; 'amount' tính toán -> bỏ qua
     total, items = service.list_po(db, q, pg)
