@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     R2_BUCKET: str = "nexterp-storage"
     R2_ACCESS_KEY_ID: str = ""
     R2_SECRET_ACCESS_KEY: str = ""
+    # Thư mục gốc trên R2/storage để TÁCH môi trường (prod dùng chung bucket với dev).
+    # prod = "prod", dev đặt STORAGE_PREFIX=dev trong .env.dev → file/backup không lẫn nhau.
+    STORAGE_PREFIX: str = "prod"
 
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
@@ -40,6 +43,9 @@ class Settings(BaseSettings):
     SMTP_FROM: str = ""
     EMAIL_ENABLED: bool = False   # Tắt gửi email (thông báo/reset...) — bật lại khi làm phần email
     EMAIL_TEST_OVERRIDE: str = ""  # Nếu đặt: MỌI email gửi ra chuyển hướng tới địa chỉ này (an toàn khi test)
+    # Chặn CỨNG mọi email ở môi trường này, kể cả email force (reset mật khẩu, cấp tài khoản).
+    # Đọc từ .env (không qua tab_setting dùng chung) → dev đặt =true để không bao giờ gửi mail thật.
+    EMAIL_HARD_OFF: bool = False
 
     # --- Sao lưu CSDL ---
     BACKUP_KEEP: int = 30   # số bản backup giữ lại (2 lần/ngày -> ~15 ngày)

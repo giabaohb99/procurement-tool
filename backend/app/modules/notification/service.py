@@ -43,6 +43,15 @@ def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str
         if not log:
             return
 
+        # Chặn CỨNG theo môi trường (.env EMAIL_HARD_OFF) — vượt cả force. Dùng cho dev/UAT
+        # để không bao giờ gửi mail thật kể cả reset mật khẩu / cấp tài khoản.
+        from app.core.config import settings as _cfg
+        if getattr(_cfg, "EMAIL_HARD_OFF", False):
+            log.status = "disabled"
+            log.error = "Email bị chặn cứng ở môi trường này (EMAIL_HARD_OFF=true)"
+            db.commit()
+            return
+
         # Tắt gửi email (cấu hình ở trang Cấu hình hệ thống / .env EMAIL_ENABLED).
         # force=True bỏ qua công tắc này (email thiết yếu, người dùng chủ động yêu cầu).
         from app.core import app_settings

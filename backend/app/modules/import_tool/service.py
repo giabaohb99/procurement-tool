@@ -5,7 +5,7 @@ import uuid
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.orm import Session
 
-from app.core.storage import upload_fileobj
+from app.core.storage import dated_key, upload_fileobj
 from app.modules.attachment.model import StoredFile
 
 from .model import (ImportBatch, ImportChange, ImportLog, ImportMode,
@@ -23,7 +23,7 @@ def save_upload(db: Session, upload_file, user_id: int) -> StoredFile:
     """Lưu file .xlsx lên storage (dùng chung StoredFile) — worker đọc lại qua file_key."""
     f = upload_file
     f.file.seek(0, 2); size = f.file.tell(); f.file.seek(0)
-    key = f"import/{uuid.uuid4().hex}_{f.filename}"
+    key = dated_key("import", f.filename or "import.xlsx", uuid.uuid4().hex[:12])
     url = upload_fileobj(f.file, key, f.content_type or "")
     sf = StoredFile(filename=f.filename or "import.xlsx", file_key=key, url=url,
                     content_type=f.content_type or "", size=size,

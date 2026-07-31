@@ -5,12 +5,35 @@ from app.core.config import settings
 
 
 import os
+import re
 import shutil
+from datetime import datetime
+
 from fastapi import HTTPException
 
 def _eff(key: str):
     from app.core import app_settings
     return app_settings.get(key)
+
+
+def env_prefix() -> str:
+    """Thư mục gốc tách môi trường trên storage (prod/dev...). Lấy từ .env STORAGE_PREFIX."""
+    p = (getattr(settings, "STORAGE_PREFIX", "") or "prod").strip().strip("/")
+    return p or "prod"
+
+
+def safe_name(name: str) -> str:
+    """Làm sạch tên file để ghép vào key: bỏ đường dẫn, ký tự điều khiển, khoảng trắng thừa."""
+    name = (name or "file").replace("\\", "/").split("/")[-1]
+    name = re.sub(r"[\r\n\t]+", "", name).strip().replace(" ", "_")
+    return name or "file"
+
+
+def dated_key(category: str, filename: str, ident, when: datetime | None = None) -> str:
+    """Key có cấu trúc dễ quản lý: {env}/{category}/{YYYY}/{MM}/{ident}-{tên file}.
+    Ví dụ: prod/attachment/2026/07/123-hop_dong.pdf."""
+    when = when or datetime.now()
+    return f"{env_prefix()}/{category}/{when:%Y}/{when:%m}/{ident}-{safe_name(filename)}"
 
 
 def _r2_ready() -> bool:

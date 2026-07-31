@@ -1,5 +1,4 @@
 import io
-import uuid
 import zipfile
 from urllib.parse import quote
 
@@ -16,7 +15,8 @@ from app.core.document_types import (DOC_TYPE_LABEL, DOC_TYPE_VALUES,
 from app.core.file_registry import ext_of, policy
 from app.core.response import success
 from app.core.scoping import apply_scope
-from app.core.storage import delete_key, download_bytes, upload_fileobj
+from app.core.storage import (dated_key, delete_key, download_bytes,
+                              upload_fileobj)
 
 from .model import FileLink, StoredFile
 from .service import _delete_file_if_orphan
@@ -73,15 +73,19 @@ def _store_one(db: Session, f: UploadFile, exts: set, max_mb: int, user_id: int)
     f.file.seek(0, 2); size = f.file.tell(); f.file.seek(0)
     if size > max_mb * 1024 * 1024:
         raise HTTPException(400, f"File '{f.filename}' vượt {max_mb}MB")
-    key = f"file/{uuid.uuid4().hex}_{f.filename}"
+    # Tạo bản ghi trước (flush lấy id) để đặt key theo cấu trúc {env}/attachment/{năm}/{tháng}/{id}-tên.
+    sf = StoredFile(filename=f.filename, file_key="", url="",
+                    content_type=f.content_type or "", size=size,
+                    created_by=user_id, updated_by=user_id)
+    db.add(sf); db.flush()
+    key = dated_key("attachment", f.filename or "file", sf.id)
     try:
         url = upload_fileobj(f.file, key, f.content_type or "")
     except RuntimeError as e:
+        db.rollback()
         raise HTTPException(400, str(e))
-    sf = StoredFile(filename=f.filename, file_key=key, url=url,
-                    content_type=f.content_type or "", size=size,
-                    created_by=user_id, updated_by=user_id)
-    db.add(sf); db.commit(); db.refresh(sf)
+    sf.file_key = key; sf.url = url
+    db.commit(); db.refresh(sf)
     return sf
 
 

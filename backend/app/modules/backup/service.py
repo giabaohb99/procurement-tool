@@ -10,7 +10,7 @@ import subprocess
 from datetime import datetime
 
 from app.core.config import settings
-from app.core.storage import upload_fileobj, delete_key
+from app.core.storage import env_prefix, upload_fileobj, delete_key
 
 # Số bản backup giữ lại (cũ hơn -> xóa). Đọc từ .env, mặc định 30 (~15 ngày với 2 lần/ngày).
 KEEP = getattr(settings, "BACKUP_KEEP", 30)
@@ -67,7 +67,8 @@ def run_backup(db, actor_id: int = 0, source: str = "auto"):
     try:
         raw = _dump_sql()
         gz = gzip.compress(raw, compresslevel=6)
-        key = f"backups/procurement-{started.strftime('%Y%m%d-%H%M%S')}.sql.gz"
+        # {env}/backup/{tên DB}-{thời điểm}.sql.gz → prod và dev không lẫn file backup.
+        key = f"{env_prefix()}/backup/{settings.DB_NAME}-{started.strftime('%Y%m%d-%H%M%S')}.sql.gz"
         upload_fileobj(io.BytesIO(gz), key, "application/gzip")
         rec.file_key = key
         rec.size_bytes = len(gz)
