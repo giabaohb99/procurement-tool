@@ -620,6 +620,28 @@ export default function AppLayout() {
                       fontSize: 13,
                       fontWeight: 500,
                     }}
+                    onClick={() => { setProfileOpen(false); nav("/hdsd"); }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f1f5f9")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                  >
+                    <i className="ti ti-help" style={{ fontSize: 16 }} /> Hướng dẫn sử dụng
+                  </button>
+                  <button
+                    style={{
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "8px 8px",
+                      backgroundColor: "transparent",
+                      border: "none",
+                      color: "var(--navy)",
+                      cursor: "pointer",
+                      borderRadius: 4,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      fontSize: 13,
+                      fontWeight: 500,
+                    }}
                     onClick={() => { setProfileOpen(false); nav("/me"); }}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f1f5f9")}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}

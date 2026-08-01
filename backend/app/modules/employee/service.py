@@ -44,7 +44,9 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
     if data.role_name is not None and not data.role_name.strip():
         raise HTTPException(400, "Bắt buộc chọn vai trò cho nhân sự")
     old_role_name = (obj.role_name or "").strip()
-    for key, value in data.model_dump(exclude_unset=True).items():
+    old_email = (obj.email or "").strip()
+    fields = data.model_dump(exclude_unset=True)
+    for key, value in fields.items():
         setattr(obj, key, value)
     obj.updated_by = user_id
     db.commit()
@@ -57,7 +59,40 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
     new_role_name = (obj.role_name or "").strip()
     if new_role_name and new_role_name != old_role_name:
         _sync_user_role_from_employee(db, obj, new_role_name, user_id)
+
+    # Đồng bộ email sang tài khoản đăng nhập (User.email) để đăng nhập bằng email được.
+    # CHỈ khớp trong 2 trường hợp an toàn (tránh ghi đè "handle đăng nhập" như admin/TESTREQ mà
+    # ai đó cố tình đặt khác email nhân sự):
+    #   (a) User.email đang RỖNG → điền email nhân sự (đúng ca bug: tạo TK khi chưa có email, sau đó
+    #       thêm email vào nhân sự — kể cả email đã nhập TRƯỚC bản vá, lần lưu sau tự khớp);
+    #   (b) admin THỰC SỰ đổi field email trong lần lưu này (old != new) → đẩy email mới sang.
+    email_changed = "email" in fields and (obj.email or "").strip() != old_email
+    _sync_user_email_from_employee(db, obj, email_changed)
     return obj
+
+
+def _sync_user_email_from_employee(db: Session, emp: Employee, email_changed: bool) -> None:
+    """Khớp email đăng nhập (User.email) = email nhân sự khi tài khoản đang RỖNG email, hoặc khi admin
+    vừa đổi email ở lần lưu này. Bỏ qua nếu nhân sự chưa có email (không xoá email đăng nhập đang có),
+    hoặc email đã bị tài khoản KHÁC dùng (tránh 2 tài khoản trùng email → đăng nhập nhập nhằng)."""
+    from app.modules.user.model import User
+
+    new_email = (emp.email or "").strip()
+    if not new_email:
+        return
+    user = db.query(User).filter(User.employee_id == emp.id).first()
+    if not user:
+        return
+    cur = (user.email or "").strip()
+    if cur == new_email:
+        return
+    if cur and not email_changed:
+        return  # giữ nguyên handle/email khác khi admin không chủ động đổi email
+    dup = db.query(User).filter(User.email == new_email, User.id != user.id).first()
+    if dup:
+        raise HTTPException(400, "Email này đã được một tài khoản khác sử dụng")
+    user.email = new_email
+    db.commit()
 
 
 def _sync_user_role_from_employee(db: Session, emp: Employee, role_name: str, actor_id: int) -> None:
