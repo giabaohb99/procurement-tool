@@ -26,6 +26,8 @@ const NAV_GROUPS: NavGroup[] = [
   {
     items: [
       { to: "/", label: "Trang chủ", icon: "ti-layout-dashboard" },
+      // Trung tâm HDSD dùng layout riêng (/hdsd) — mọi user đăng nhập đều xem được
+      { to: "/hdsd", label: "Hướng dẫn sử dụng", icon: "ti-help" },
       {
         to: "/reports",
         label: "Báo cáo mua hàng",

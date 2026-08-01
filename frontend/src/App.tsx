@@ -37,6 +37,9 @@ import SurveyRequestDetail from './pages/SurveyRequestDetail'
 import SurveyRequestProcess from './pages/SurveyRequestProcess'
 import Documents from './pages/Documents'
 import PurchaseProgress from './pages/PurchaseProgress'
+import HelpLayout from './layouts/HelpLayout'
+import HelpCenterHome from './pages/HelpCenterHome'
+import HelpArticleDetail from './pages/HelpArticleDetail'
 
 function Protected({ children }: { children: JSX.Element }) {
   const { user } = useAuth()
@@ -55,6 +58,11 @@ export default function App() {
           <Route path="/print/purchase-order/:id" element={<Protected><PrintPurchaseOrder /></Protected>} />
           <Route path="/print/purchase-order-mh/:id" element={<Protected><PrintPurchaseOrderMH /></Protected>} />
           <Route path="/print/payment-request/:id" element={<Protected><PrintPaymentRequest /></Protected>} />
+          {/* Trung tâm Hướng dẫn sử dụng — layout riêng (sidebar cây tài liệu) */}
+          <Route path="/hdsd" element={<Protected><HelpLayout /></Protected>}>
+            <Route index element={<HelpCenterHome />} />
+            <Route path=":id" element={<HelpArticleDetail />} />
+          </Route>
           <Route path="/" element={<Protected><AppLayout /></Protected>}>
             <Route index element={<Dashboard />} />
             <Route path="purchase-requests/:id" element={<PurchaseRequestDetail />} />
