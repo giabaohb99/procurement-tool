@@ -44,9 +44,7 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
     if data.role_name is not None and not data.role_name.strip():
         raise HTTPException(400, "Bắt buộc chọn vai trò cho nhân sự")
     old_role_name = (obj.role_name or "").strip()
-    old_email = (obj.email or "").strip()
-    fields = data.model_dump(exclude_unset=True)
-    for key, value in fields.items():
+    for key, value in data.model_dump(exclude_unset=True).items():
         setattr(obj, key, value)
     obj.updated_by = user_id
     db.commit()
@@ -60,26 +58,25 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
     if new_role_name and new_role_name != old_role_name:
         _sync_user_role_from_employee(db, obj, new_role_name, user_id)
 
-    # Đồng bộ email sang tài khoản đăng nhập (User.email) KHI "Email" ở màn Nhân sự ĐỔI.
-    # Lúc tạo tài khoản nếu nhân sự chưa có email thì User.email rỗng; cập nhật email sau đó phải
-    # đẩy sang User để đăng nhập bằng email được. Chỉ chạy khi field email nằm trong payload và
-    # giá trị thực sự đổi → không đụng các lần sửa field khác.
-    new_email = (obj.email or "").strip()
-    if "email" in fields and new_email != old_email:
-        _sync_user_email_from_employee(db, obj, new_email)
+    # Đồng bộ email sang tài khoản đăng nhập (User.email) để đăng nhập bằng email được.
+    # RECONCILE mỗi lần lưu: nếu nhân sự có email mà tài khoản gắn với nó đang LỆCH (rỗng/khác)
+    # thì khớp lại — KHÔNG phụ thuộc email có đổi trong lần lưu này hay không. Nhờ vậy vẫn vá được
+    # các nhân sự đã nhập email TRƯỚC khi có bản này (User.email còn rỗng): chỉ cần lưu lại là khớp.
+    _sync_user_email_from_employee(db, obj)
     return obj
 
 
-def _sync_user_email_from_employee(db: Session, emp: Employee, new_email: str) -> None:
-    """Cập nhật email đăng nhập của tài khoản gắn với nhân sự = email vừa nhập ở màn Nhân sự.
-    Bỏ qua nếu nhân sự chưa có tài khoản (email sẽ lấy từ nhân sự khi tạo tài khoản) hoặc email
-    mới đã bị tài khoản KHÁC dùng (tránh 2 tài khoản trùng email → đăng nhập nhập nhằng)."""
+def _sync_user_email_from_employee(db: Session, emp: Employee) -> None:
+    """Khớp email đăng nhập (User.email) của tài khoản gắn với nhân sự = email hiện tại ở màn Nhân sự.
+    Bỏ qua nếu nhân sự chưa có email (không xoá email đăng nhập đang có), chưa có tài khoản, đã khớp,
+    hoặc email đã bị tài khoản KHÁC dùng (tránh 2 tài khoản trùng email → đăng nhập nhập nhằng)."""
     from app.modules.user.model import User
 
-    user = db.query(User).filter(User.employee_id == emp.id).first()
-    if not user:
-        return
+    new_email = (emp.email or "").strip()
     if not new_email:
+        return
+    user = db.query(User).filter(User.employee_id == emp.id).first()
+    if not user or (user.email or "").strip() == new_email:
         return
     dup = db.query(User).filter(User.email == new_email, User.id != user.id).first()
     if dup:
