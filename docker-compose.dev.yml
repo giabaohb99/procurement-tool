@@ -1,0 +1,65 @@
+# Dev-UAT — dùng CHUNG MariaDB dego-erp-db-1, database RIÊNG 'procurement_dev'.
+# Chạy: docker compose -p procurement-dev --env-file .env.dev -f docker-compose.dev.yml up -d --build
+# Khác prod: KHÔNG celery-beat, KHÔNG db-forward; web build cho domain devthumua.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    env_file: .env.dev
+    restart: always
+    command: ["sh", "start.prod.sh"]
+    networks:
+      - dego-erp_default
+      - procurement-internal
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web.prod
+      args:
+        VITE_API_URL: "https://devthumua.degoholding.vn"
+        VITE_GOOGLE_CLIENT_ID: "${VITE_GOOGLE_CLIENT_ID:-}"
+        VITE_DEVELOPER_MODE: "${VITE_DEVELOPER_MODE:-}"
+        VITE_PWA_INSTALL_PROMPT: "${VITE_PWA_INSTALL_PROMPT:-}"
+    container_name: procurement-web-dev
+    restart: always
+    depends_on:
+      - api
+    networks:
+      - procurement-internal
+      - proxy-tier
+
+  redis:
+    image: redis:7.2-alpine
+    restart: always
+    command: redis-server --save 60 1
+    volumes:
+      - redis_data:/data
+    networks:
+      - procurement-internal
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    env_file: .env.dev
+    restart: always
+    command: celery -A app.core.celery_app worker -l info -c 1
+    depends_on:
+      - redis
+      - api
+    networks:
+      - dego-erp_default
+      - procurement-internal
+
+networks:
+  dego-erp_default:
+    external: true
+  proxy-tier:
+    external: true
+  procurement-internal:
+    driver: bridge
+
+volumes:
+  redis_data:
