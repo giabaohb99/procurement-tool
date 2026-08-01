@@ -12,6 +12,18 @@ from .model import Notification, EmailLog
 from .email_templates import HTML_LAYOUT
 
 
+def _abs_link(link: str) -> str:
+    """Chuyển link tương đối (vd '/purchase-requests/83') thành URL tuyệt đối theo FRONTEND_URL
+    để nút trong email bấm được. Link đã là http(s) thì giữ nguyên (vd link reset mật khẩu)."""
+    link = (link or "").strip()
+    base = (getattr(settings, "FRONTEND_URL", "") or "").rstrip("/")
+    if not link:
+        return base
+    if link.startswith("http://") or link.startswith("https://"):
+        return link
+    return f"{base}/{link.lstrip('/')}"
+
+
 def render_template(html: str, context: dict) -> str:
     """A self-contained custom template engine replacing Jinja2 with regex matching."""
     # Process {% if cond %} ... {% endif %}
@@ -234,7 +246,7 @@ def _send_workflow_emails(db: Session, background_tasks, recipients: list, subje
         html = render_template(HTML_LAYOUT, {
             "subject": subject, "intro_message": body, "doc_type": label, "doc_code": doc_code,
             "creator": creator_name, "recipient_name": recipient_name, "reason": reason,
-            "approve_note": approve_note, "is_urgent": is_urgent, "link": link,
+            "approve_note": approve_note, "is_urgent": is_urgent, "link": _abs_link(link),
         })
         log = EmailLog(event=f"workflow_{doc_type}", to_email=target, subject=subject,
                        status="pending", created_by=r.id)
@@ -425,7 +437,7 @@ def send_account_creation_email(db: Session, user_id: int, background_tasks, ful
         "full_name": full_name,
         "email": email,
         "login_url": login_url,
-        "link": link
+        "link": _abs_link(link)
     })
     
     from app.core.database import SessionLocal
@@ -457,7 +469,7 @@ def send_password_reset_email(db: Session, user_id: int, background_tasks, full_
     html_content = render_template(PASSWORD_RESET_TEMPLATE, {
         "full_name": full_name,
         "email": email,
-        "link": link
+        "link": _abs_link(link)
     })
 
     from app.core.database import SessionLocal
