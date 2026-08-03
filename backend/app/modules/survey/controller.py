@@ -14,7 +14,7 @@ from app.core.scoping import apply_scope
 from app.modules.notification.service import trigger_notification
 
 from . import service
-from .model import Survey
+from .model import Survey, SurveyProductLine
 from .schema import LineApproveCombined, RejectIn, SurveyCreate, SurveyUpdate
 
 
@@ -48,6 +48,12 @@ router = APIRouter(prefix="/api/surveys", tags=["survey"])
 def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
           user=Depends(require("survey", "read"))):
     q = apply_filters(db.query(Survey), Survey, request, service.FILTERABLE)
+    # Lọc theo Mã SP (NCC) = mã SP theo NCC nhập ở DÒNG sản phẩm (không phải cột header) -> subquery.
+    product_code = (request.query_params.get("product_code") or "").strip()
+    if product_code:
+        sub = (db.query(SurveyProductLine.survey_id)
+               .filter(SurveyProductLine.internal_code.like(f"%{product_code}%")).subquery())
+        q = q.filter(Survey.id.in_(sub))
     q = apply_scope(q, Survey, "survey", user, get_perm_profile(db, user))
     q = apply_sort_from_request(q, Survey, request)
     total, items = service.list_surveys(db, q, pg)
@@ -185,6 +191,7 @@ report_router = APIRouter(prefix="/api/survey-report", tags=["survey_report"])
 def report_lines_(kind: str | None = Query(None), line_approve: str | None = Query(None),
                   item_group: str | None = Query(None), supplier: str | None = Query(None),
                   code: str | None = Query(None), nspt: str | None = Query(None),
+                  item_code: str | None = Query(None), main_content: str | None = Query(None),
                   date_from: str | None = Query(None), date_to: str | None = Query(None),
                   sort_by: str = Query(""), sort_dir: str = Query("asc"),
                   pg: dict = Depends(pagination), db: Session = Depends(get_db),
@@ -203,6 +210,10 @@ def report_lines_(kind: str | None = Query(None), line_approve: str | None = Que
             return False
         if nspt and nspt.lower() not in (r["nspt"] or "").lower():
             return False
+        if item_code and item_code.lower() not in (r["item_code"] or "").lower():
+            return False
+        if main_content and main_content.lower() not in (r["main_content"] or "").lower():
+            return False
         if date_from and (r["date"] or "") < date_from:
             return False
         if date_to and (r["date"] or "") > date_to:
@@ -217,7 +228,7 @@ def report_lines_(kind: str | None = Query(None), line_approve: str | None = Que
     rows.sort(key=lambda r: (-r["survey_id"], r["kind"], r["line_id"]))   # thứ tự mặc định
     # Sort theo cột người dùng chọn (sort ổn định -> thứ tự mặc định làm tiebreak)
     _allow = {"survey_code", "kind", "content", "supplier_code", "item_group",
-              "nspt", "date", "line_approve", "line_approve_note"}
+              "nspt", "item_code", "main_content", "date", "line_approve", "line_approve_note"}
     if sort_by in _allow:
         rows.sort(key=lambda r: (r.get(sort_by) or ""), reverse=str(sort_dir).lower() == "desc")
     total = len(rows)

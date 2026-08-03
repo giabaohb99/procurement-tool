@@ -11,7 +11,7 @@ _LINE_SKIP = {"id", "survey_id", "created_by", "updated_by", "created_at", "upda
               "line_approve", "approve_note"}
 
 ENTITY = "survey"
-FILTERABLE = ["code", "pr_code", "sr_code", "status", "item_group", "nspt", "main_content"]
+FILTERABLE = ["code", "pr_code", "sr_code", "status", "item_group", "nspt", "main_content", "item_code"]
 HEADER_FIELDS = ["pr_code", "survey_request_id", "sr_code", "received_date", "result_due_date", "item_group",
                  "main_content", "requirement_detail", "request_qty", "market_price", "nspt",
                  "has_product_code", "item_code", "item_name", "uom", "proposed_rate"]
@@ -250,6 +250,7 @@ def report_rows(db: Session, base_survey_query):
         rows.append({"survey_id": s.id, "survey_code": s.code, "kind": "supplier", "line_id": x.id,
                      "content": x.supplier_name or x.supplier_code or "", "supplier_code": x.supplier_code or "",
                      "item_group": s.item_group or "", "nspt": s.nspt or "",
+                     "item_code": s.item_code or "", "main_content": s.main_content or "",
                      "date": x.contact_date or s.received_date or "",
                      "line_approve": x.line_approve or "Chờ duyệt", "line_approve_note": x.line_approve_note or "",
                      "survey_status": s.status})
@@ -258,6 +259,7 @@ def report_rows(db: Session, base_survey_query):
         rows.append({"survey_id": s.id, "survey_code": s.code, "kind": "product", "line_id": x.id,
                      "content": x.product_name or "", "supplier_code": x.supplier_code or "",
                      "item_group": s.item_group or "", "nspt": s.nspt or "",
+                     "item_code": s.item_code or "", "main_content": s.main_content or "",
                      "date": x.contact_date or s.received_date or "",
                      "line_approve": x.line_approve or "Chờ duyệt", "line_approve_note": x.line_approve_note or "",
                      "survey_status": s.status})

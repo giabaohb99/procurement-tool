@@ -495,6 +495,7 @@ export const cruds: Record<string, CrudConfig> = {
     columns: [
       { key: 'code', label: 'Mã phiếu' }, { key: 'sr_code', label: 'Mã YCBG' },
       { key: 'main_content', label: 'Nội dung chính' },
+      { key: 'item_code', label: 'Mã hàng' },
       { key: 'item_group', label: 'Nhóm hàng' }, { key: 'nspt', label: 'NSPT' },
       { key: 'created_at', label: 'Ngày tạo', render: (r) => fmtDateTime(r.created_at) || '—' },
       { key: 'status', label: 'Trạng thái', render: (r) => srBadge(r.status) },
@@ -503,6 +504,8 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã phiếu' },
       { key: 'sr_code', label: 'Mã YCBG' },
       { key: 'main_content', label: 'Nội dung chính' },
+      { key: 'item_code', label: 'Mã hàng' },
+      { key: 'product_code', label: 'Mã SP (NCC)' },
       { key: 'item_group', label: 'Nhóm hàng', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
       { key: 'nspt', label: 'NSPT' },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [

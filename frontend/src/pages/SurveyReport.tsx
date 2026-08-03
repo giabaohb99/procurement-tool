@@ -50,6 +50,8 @@ interface SurveyReportItem {
   supplier_code: string
   item_group: string
   nspt: string
+  item_code: string
+  main_content: string
   date: string
   line_approve: string
   line_approve_note: string
@@ -70,12 +72,15 @@ interface FiltersState {
   supplier: string
   code: string
   nspt: string
+  item_code: string
+  main_content: string
   date_from: string
   date_to: string
 }
 
 const EMPTY_FILTERS: FiltersState = {
-  kind: '', line_approve: '', item_group: '', supplier: '', code: '', nspt: '', date_from: '', date_to: '',
+  kind: '', line_approve: '', item_group: '', supplier: '', code: '', nspt: '',
+  item_code: '', main_content: '', date_from: '', date_to: '',
 }
 
 const SUMMARY_KEYS: (keyof SummaryMap)[] = ['Chờ duyệt', 'Đã duyệt', 'Không duyệt', 'Thiếu thông tin']
@@ -135,6 +140,8 @@ export default function SurveyReport() {
       if (f.supplier) params.supplier = f.supplier
       if (f.code) params.code = f.code
       if (f.nspt) params.nspt = f.nspt
+      if (f.item_code) params.item_code = f.item_code
+      if (f.main_content) params.main_content = f.main_content
       if (f.date_from) params.date_from = f.date_from
       if (f.date_to) params.date_to = f.date_to
       if (sortBy) { params.sort_by = sortBy; params.sort_dir = sortDir }
@@ -174,9 +181,10 @@ export default function SurveyReport() {
 
   function exportCsv() {
     if (items.length === 0) { toast.error('Không có dữ liệu để xuất.'); return }
-    const headers = ['Mã phiếu', 'Loại', 'Nội dung', 'Phân loại', 'NSPT', 'Ngày', 'Trạng thái duyệt', 'Ghi chú duyệt']
+    const headers = ['Mã phiếu', 'Loại', 'Nội dung', 'Mã hàng', 'Nội dung chính', 'Phân loại', 'NSPT', 'Ngày', 'Trạng thái duyệt', 'Ghi chú duyệt']
     const rows = items.map((it) => [
       it.survey_code, KIND_LABEL[it.kind] || it.kind, it.content || '',
+      it.item_code || '', it.main_content || '',
       it.item_group || '', it.nspt || '', it.date || '',
       it.line_approve || '', it.line_approve_note || '',
     ])
@@ -286,6 +294,14 @@ export default function SurveyReport() {
             <input value={filters.nspt} placeholder="NSPT" onChange={(e) => { setFilters((d) => ({ ...d, nspt: e.target.value })); setPage(1); }} />
           </div>
           <div className="toolbar-filter-item">
+            <label>Mã hàng</label>
+            <input value={filters.item_code} placeholder="Mã hàng hóa" onChange={(e) => { setFilters((d) => ({ ...d, item_code: e.target.value })); setPage(1); }} />
+          </div>
+          <div className="toolbar-filter-item">
+            <label>Nội dung chính</label>
+            <input value={filters.main_content} placeholder="Tìm nội dung chính" onChange={(e) => { setFilters((d) => ({ ...d, main_content: e.target.value })); setPage(1); }} />
+          </div>
+          <div className="toolbar-filter-item">
             <label>Từ ngày</label>
             <input type="date" value={filters.date_from} onChange={(e) => { setFilters((d) => ({ ...d, date_from: e.target.value })); setPage(1); }} />
           </div>
@@ -312,11 +328,12 @@ export default function SurveyReport() {
                 {hCol(1, 'survey_code', 'Mã phiếu', { w: 130 })}
                 {hCol(2, 'kind', 'Loại', { w: 70, center: true })}
                 {hCol(3, 'content', 'Nội dung', { minW: 200 })}
-                {hCol(4, 'item_group', 'Phân loại', { w: 130 })}
-                {hCol(5, 'nspt', 'NSPT', { w: 120 })}
-                {hCol(6, 'date', 'Ngày', { w: 100, center: true })}
-                {hCol(7, 'line_approve', 'Trạng thái duyệt', { w: 130, center: true })}
-                {hCol(8, 'line_approve_note', 'Ghi chú duyệt', { minW: 160 })}
+                {hCol(4, 'item_code', 'Mã hàng', { w: 120 })}
+                {hCol(5, 'item_group', 'Phân loại', { w: 130 })}
+                {hCol(6, 'nspt', 'NSPT', { w: 120 })}
+                {hCol(7, 'date', 'Ngày', { w: 100, center: true })}
+                {hCol(8, 'line_approve', 'Trạng thái duyệt', { w: 130, center: true })}
+                {hCol(9, 'line_approve_note', 'Ghi chú duyệt', { minW: 160 })}
               </tr>
             </thead>
             <tbody>
@@ -330,6 +347,7 @@ export default function SurveyReport() {
                   </td>
                   <td style={{ textAlign: 'center' }}>{kindBadge(it.kind)}</td>
                   <td style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={it.content}>{it.content || ''}</td>
+                  <td title={it.main_content}>{it.item_code || ''}</td>
                   <td>{it.item_group || ''}</td>
                   <td>{it.nspt || ''}</td>
                   <td style={{ textAlign: 'center' }}>{it.date || ''}</td>
@@ -339,7 +357,7 @@ export default function SurveyReport() {
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', color: '#999', padding: 24 }}>
+                  <td colSpan={10} style={{ textAlign: 'center', color: '#999', padding: 24 }}>
                     {busy ? 'Đang tải...' : 'Không có dữ liệu'}
                   </td>
                 </tr>
