@@ -150,8 +150,8 @@ def list_pr(
 
 
 def _see_all_items(profile: dict, pr, user) -> bool:
-    """Người tạo / quản lý (dept/company/all) / người duyệt → thấy mọi dòng.
-    Nhân viên thu mua (được giao) → chỉ thấy dòng phân bổ cho mình."""
+    """Người tạo / người duyệt / xem toàn bộ chứng từ thu mua (scope proc/dept/company/all)
+    → thấy mọi dòng. Nhân viên thu mua scope 'assigned/own' → chỉ thấy dòng phân bổ cho mình."""
     if pr.created_by == user.id:
         return True
     # Người YÊU CẦU (dù admin tạo giùm) cũng thấy mọi dòng của phiếu mình
@@ -164,7 +164,7 @@ def _see_all_items(profile: dict, pr, user) -> bool:
             continue
         if p.get("approve"):
             return True
-        if p.get("read") and p.get("scope") in ("dept", "company", "all"):
+        if p.get("read") and p.get("scope") in ("proc", "dept", "company", "all"):
             return True
     return False
 
