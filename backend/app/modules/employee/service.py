@@ -58,7 +58,7 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
     # tên vai trò map được sang 1 Role → tránh ghi đè nhầm cấu hình đa vai trò/phạm vi đã gán tay.
     new_role_name = (obj.role_name or "").strip()
     if new_role_name and new_role_name != old_role_name:
-        _sync_user_role_from_employee(db, obj, new_role_name, user_id)
+        _sync_user_role_from_employee(db, obj, new_role_name, user_id, old_role_name)
 
     # Đồng bộ email sang tài khoản đăng nhập (User.email) để đăng nhập bằng email được.
     # CHỈ khớp trong 2 trường hợp an toàn (tránh ghi đè "handle đăng nhập" như admin/TESTREQ mà
@@ -95,22 +95,45 @@ def _sync_user_email_from_employee(db: Session, emp: Employee, email_changed: bo
     db.commit()
 
 
-def _sync_user_role_from_employee(db: Session, emp: Employee, role_name: str, actor_id: int) -> None:
-    """Set lại UserRole của tài khoản gắn với nhân sự = đúng 1 vai trò vừa chọn ở màn Nhân sự.
-    Bỏ qua nếu nhân sự chưa có tài khoản (vai trò sẽ suy khi tạo tài khoản) hoặc tên vai trò
-    không khớp Role nào (nhãn tự do)."""
+def _sync_user_role_from_employee(db: Session, emp: Employee, role_name: str,
+                                  actor_id: int, old_role_name: str = "") -> None:
+    """Đồng bộ vai trò "chính" (ô Vai trò ở màn Nhân sự) sang tài khoản đăng nhập — AN TOÀN:
+    HOÁN ĐỔI vai trò cũ → vai trò mới, GIỮ NGUYÊN các vai trò khác đã gán tay (đa vai trò/phạm vi
+    riêng ở màn Phân quyền, vd "Giá vốn nhà máy"). Không còn xóa sạch rồi gán đúng 1 vai trò.
+    Bỏ qua nếu nhân sự chưa có tài khoản hoặc tên vai trò mới không khớp Role nào (nhãn tự do)."""
+    from app.core.auth import perm_cache_clear
     from app.modules.role.model import Role
-    from app.modules.user.model import User
-    from app.modules.user.schema import RoleAssign
-    from app.modules.user.service import assign_roles
+    from app.modules.user.model import User, UserRole
 
     user = db.query(User).filter(User.employee_id == emp.id).first()
     if not user:
         return
-    role = db.query(Role).filter(Role.name == role_name).first()
-    if not role:
-        return
-    assign_roles(db, user.id, RoleAssign(role_ids=[role.id]), actor_id)
+    new_role = db.query(Role).filter(Role.name == role_name).first()
+    if not new_role:
+        return  # nhãn tự do không map được Role → không đụng vai trò hiện có
+
+    current = {ur.role_id for ur in db.query(UserRole).filter(UserRole.user_id == user.id).all()}
+    changed = False
+
+    # Gỡ vai trò "chính" CŨ (nếu có) để phản ánh việc đổi/hạ vai trò — KHÔNG đụng các vai trò khác.
+    old_role = (db.query(Role).filter(Role.name == old_role_name).first()
+                if (old_role_name or "").strip() else None)
+    if old_role and old_role.id in current and old_role.id != new_role.id:
+        db.query(UserRole).filter(
+            UserRole.user_id == user.id, UserRole.role_id == old_role.id
+        ).delete(synchronize_session=False)
+        current.discard(old_role.id)
+        changed = True
+
+    # Đảm bảo có vai trò "chính" MỚI.
+    if new_role.id not in current:
+        db.add(UserRole(user_id=user.id, role_id=new_role.id,
+                        created_by=actor_id, updated_by=actor_id))
+        changed = True
+
+    if changed:
+        db.commit()
+        perm_cache_clear(user.id)
 
 
 def delete_employee(db: Session, eid: int, user_id: int) -> None:
