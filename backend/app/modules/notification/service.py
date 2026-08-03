@@ -157,6 +157,39 @@ def get_department_head_users(db: Session, department_name: str) -> list[User]:
     return db.query(User).filter(User.employee_id == dep.manager_id, User.is_active == True).all()
 
 
+def get_dept_approver_recipients(db: Session, department_name: str) -> list[User]:
+    """Người nhận thông báo "cần duyệt" của 1 phòng ban — GỘP 2 nguồn:
+      (1) Trưởng bộ phận đặt cứng ở ô Department.manager_id (1 người);
+      (2) MỌI tài khoản có vai trò dept_head thuộc chính phòng đó (theo Employee.department_id).
+    Union + khử trùng lặp. Dùng cho pr_submitted/sr_submitted để cả trưởng phòng chính lẫn
+    người được tạm quyền trưởng phòng (gán vai trò dept_head + cùng phòng) đều nhận báo."""
+    if not department_name:
+        return []
+    from app.modules.department.model import Department
+    from app.modules.employee.model import Employee
+
+    dep = db.query(Department).filter(Department.name == department_name).first()
+    if not dep:
+        return []
+
+    out: dict[int, User] = {}
+    # (1) Trưởng bộ phận chỉ định (manager_id)
+    for u in get_department_head_users(db, department_name):
+        out[u.id] = u
+
+    # (2) Tài khoản có vai trò dept_head và nhân sự thuộc phòng này
+    dh_role_ids = [r.id for r in db.query(Role).filter(Role.code == "dept_head").all()]
+    if dh_role_ids:
+        uids = [ur.user_id for ur in db.query(UserRole).filter(UserRole.role_id.in_(dh_role_ids)).all()]
+        emp_ids = [e.id for e in db.query(Employee).filter(Employee.department_id == dep.id).all()]
+        if uids and emp_ids:
+            for u in (db.query(User)
+                      .filter(User.id.in_(uids), User.employee_id.in_(emp_ids), User.is_active == True)
+                      .all()):
+                out[u.id] = u
+    return list(out.values())
+
+
 def get_users_by_role_codes(db: Session, codes: list[str]) -> list[User]:
     """Tài khoản thuộc các vai trò theo mã (vd Quản lý TM / Admin TM)."""
     role_ids = [r.id for r in db.query(Role).filter(Role.code.in_(codes)).all()]
@@ -363,8 +396,9 @@ def trigger_notification(
     if recipient_ids:
         recipients = db.query(User).filter(User.id.in_(recipient_ids), User.is_active == True).all()
     elif event in ("pr_submitted", "sr_submitted"):
-        # CHỈ Trưởng bộ phận của phòng YC (1 người duyệt)
-        recipients = get_department_head_users(db, department)
+        # Trưởng bộ phận của phòng YC + mọi tk có vai trò dept_head thuộc phòng đó
+        # (để người tạm quyền trưởng phòng cũng nhận báo duyệt)
+        recipients = get_dept_approver_recipients(db, department)
     elif event == "pay_submitted":
         # Yêu cầu thanh toán do người có quyền duyệt payment_request duyệt (QL/Admin TM)
         recipients = get_approvers_for_entity(db, "payment_request")
