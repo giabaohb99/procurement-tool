@@ -220,15 +220,16 @@ STD_ROLES = {
     }},
     # Quản lý thu mua: toàn quyền nghiệp vụ (như admin, trừ quản trị hệ thống user/role/setting)
     "pur_manager": {"name": "Quản lý thu mua", "perms": _PUR_MANAGER_PERMS},
-    # Admin thu mua: CRUD toàn bộ danh mục; nghiệp vụ CHỈ ĐỌC, phạm vi 'proc'
-    # (chỉ thấy chứng từ sau khi đã được duyệt).
+    # Admin thu mua: CRUD toàn bộ danh mục; nghiệp vụ CHỈ ĐỌC.
+    # PYC/YCKS phạm vi 'proc' (chỉ thấy chứng từ đã duyệt); ĐMH phạm vi 'all'
+    # (thấy MỌI đơn của phòng kể cả nháp/chờ duyệt — chỉ xem, KHÔNG duyệt).
     "pur_admin": {"name": "Admin thu mua", "perms": {
         **_CATALOG_CRUD,
         "department": (["read"], "all"),
         "employee": (["read"], "all"),
         "purchase_request": (["read"], "proc"),
         "survey_request": (["read"], "proc"),
-        "purchase_order": (["read"], "proc"),
+        "purchase_order": (["read"], "all"),
         "survey": (["read", "create", "write", "delete", "approve"], "all"),   # Admin TM thao tác được phiếu khảo sát
         "import": (["read", "create", "delete"], "all"),   # nạp data cũ + hoàn tác
         "goods_receipt": (["read"], "all"),
