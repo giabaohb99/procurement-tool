@@ -10,6 +10,7 @@ from app.core.scoping import apply_scope
 from app.modules.company.model import Company
 from app.modules.supplier.model import Supplier
 from app.modules.catalog.model import Warehouse
+from app.modules.product.model import Product
 from app.modules.notification.service import trigger_notification
 
 from . import service
@@ -42,12 +43,16 @@ def _delivery(d, pay=None) -> dict:
             "remaining": float(pay.remaining or 0) if pay else 0.0}
 
 
-def _item(db, it, pay_by_del: dict) -> dict:
+def _item(db, it, pay_by_del: dict, inv_by_code: dict | None = None) -> dict:
     dels = service.deliveries_of(db, it.id)
     qty_order = float(it.qty_order or 0)
     del_out = [_delivery(d, pay_by_del.get(d.id)) for d in dels]
+    # Tên trên hóa đơn: ưu tiên giá trị lưu trên DÒNG; nếu dòng trống (phiếu tạo trước khi có
+    # field / copy từ YCMH) thì suy từ SẢN PHẨM master theo product_code để modal + phiếu in
+    # hiện đúng "tên trên hóa đơn" thay vì rơi về tên hàng hóa.
+    inv_name = (it.invoice_name or "").strip() or (inv_by_code or {}).get((it.product_code or "").strip(), "")
     return {"id": it.id, "product_code": it.product_code, "product_name": it.product_name,
-            "invoice_name": it.invoice_name, "item_group": it.item_group, "spec": it.spec,
+            "invoice_name": inv_name, "item_group": it.item_group, "spec": it.spec,
             "fg_code": it.fg_code, "fg_name": it.fg_name, "invoice_no": it.invoice_no,
             "invoice_date": it.invoice_date or "",
             "document_delivery_date": it.document_delivery_date or "",
@@ -74,7 +79,13 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
     # Công nợ theo lần giao: HÀNG (goods) hiện đã trả/còn lại trên dòng; gom cả VẬN CHUYỂN cho tổng chưa trả
     all_pays = db.query(Payable).filter(Payable.po_id == po.id, Payable.ref_type == "delivery").all()
     pay_by_del = {p.ref_id: p for p in all_pays if p.source_type == "goods"}
-    items = [_item(db, it, pay_by_del) for it in service.items_of(db, po.id)]
+    it_list = service.items_of(db, po.id)
+    # Nạp sẵn "tên trên hóa đơn" từ sản phẩm master cho các dòng đang trống (tránh N+1)
+    need_codes = {(it.product_code or "").strip() for it in it_list
+                  if not (it.invoice_name or "").strip() and (it.product_code or "").strip()}
+    inv_by_code = {p.code: (p.invoice_name or "")
+                   for p in db.query(Product).filter(Product.code.in_(need_codes)).all()} if need_codes else {}
+    items = [_item(db, it, pay_by_del, inv_by_code) for it in it_list]
     d["items"] = items
     # Tổng theo SL THỰC NHẬN (thành tiền đơn hàng = đã chốt)
     subtotal = round(sum(i["qty_received"] * i["price"] for i in items), 2)
