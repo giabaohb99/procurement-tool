@@ -1,0 +1,130 @@
+/* Kiểu chữ cho HTML do trình soạn thảo Quill sinh ra (.hc-content) và cho chính trình soạn thảo.
+   Không dùng được utility Tailwind vì HTML này render bằng dangerouslySetInnerHTML. */
+
+.hc-content {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--navy);
+}
+
+.hc-content img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.hc-content h1,
+.hc-content h2,
+.hc-content h3 {
+  margin-top: 24px;
+  margin-bottom: 8px;
+  font-weight: 700;
+  scroll-margin-top: 6rem;
+}
+
+.hc-content h1:first-child {
+  margin-top: 0;
+}
+
+.hc-content h1 {
+  font-size: 26px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.hc-content h2 {
+  font-size: 20px;
+}
+
+.hc-content h3 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.hc-content p {
+  margin: 0 0 10px;
+}
+
+.hc-content p:empty,
+.hc-content p:has(br:only-child) {
+  display: none;
+}
+
+.hc-content ul,
+.hc-content ol {
+  margin: 0 0 12px;
+  padding-left: 24px;
+}
+
+.hc-content ul {
+  list-style: disc;
+}
+
+.hc-content ol {
+  list-style: decimal;
+}
+
+.hc-content li {
+  margin-bottom: 6px;
+}
+
+.hc-content li::marker {
+  color: var(--primary);
+  font-weight: bold;
+}
+
+.hc-content a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.hc-content strong {
+  color: var(--navy);
+  font-weight: 700;
+}
+
+.hc-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 24px;
+}
+
+.hc-content th,
+.hc-content td {
+  border: 1px solid var(--border);
+  padding: 12px;
+}
+
+.hc-content th {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  text-align: left;
+}
+
+.hc-content tr:nth-child(even) {
+  background: var(--muted);
+}
+
+/* ---------- Trình soạn thảo Quill ở khu quản trị ---------- */
+
+.hc-editor .ql-toolbar {
+  border: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 9;
+}
+
+.hc-editor .ql-container {
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  font-size: 15px;
+  font-family: inherit;
+}
+
+.hc-editor .ql-editor {
+  min-height: 420px;
+}

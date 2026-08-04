@@ -7,6 +7,10 @@ import NotificationBell from "../components/NotificationBell";
 import PwaInstallPrompt from "../components/PwaInstallPrompt";
 import { canInstall, onInstallChange, promptInstall } from "../pwa-install";
 
+// Trung tâm Hướng dẫn sử dụng là app riêng (thư mục help-center/, cổng 8082) — mở ở tab mới.
+export const HELP_URL =
+  (import.meta as any).env?.VITE_HELP_URL || "http://localhost:8082";
+
 type NavItem = {
   to: string;
   label: string;
@@ -14,6 +18,7 @@ type NavItem = {
   entity?: string;
   manage?: boolean;
   anyEntity?: string[];   // hiện nếu có read trên BẤT KỲ entity nào (OR)
+  external?: boolean;     // link ra ngoài app (mở tab mới) thay vì route nội bộ
 };
 type NavGroup = {
   title?: string;
@@ -26,8 +31,8 @@ const NAV_GROUPS: NavGroup[] = [
   {
     items: [
       { to: "/", label: "Trang chủ", icon: "ti-layout-dashboard" },
-      // Trung tâm HDSD dùng layout riêng (/hdsd) — mọi user đăng nhập đều xem được
-      { to: "/hdsd", label: "Hướng dẫn sử dụng", icon: "ti-help" },
+      // Trung tâm HDSD là app riêng — mọi user đăng nhập đều xem được
+      { to: HELP_URL, label: "Hướng dẫn sử dụng", icon: "ti-help", external: true },
       {
         to: "/reports",
         label: "Báo cáo mua hàng",
@@ -330,20 +335,34 @@ export default function AppLayout() {
                   <div className="nav-group-title">{g.title}</div>
                 ))}
               {!isCol &&
-                items.map((n) => (
-                  <Link
-                    key={n.to}
-                    to={n.to}
-                    onClick={() => setOpen(false)}
-                    className={
-                      "nav-item" +
-                      (isActive(loc.pathname, n.to) ? " active" : "")
-                    }
-                  >
-                    <i className={"ti " + n.icon} />
-                    {n.label}
-                  </Link>
-                ))}
+                items.map((n) =>
+                  n.external ? (
+                    <a
+                      key={n.to}
+                      href={n.to}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setOpen(false)}
+                      className="nav-item"
+                    >
+                      <i className={"ti " + n.icon} />
+                      {n.label}
+                    </a>
+                  ) : (
+                    <Link
+                      key={n.to}
+                      to={n.to}
+                      onClick={() => setOpen(false)}
+                      className={
+                        "nav-item" +
+                        (isActive(loc.pathname, n.to) ? " active" : "")
+                      }
+                    >
+                      <i className={"ti " + n.icon} />
+                      {n.label}
+                    </Link>
+                  ),
+                )}
             </div>
           );
         })}
@@ -620,7 +639,7 @@ export default function AppLayout() {
                       fontSize: 13,
                       fontWeight: 500,
                     }}
-                    onClick={() => { setProfileOpen(false); nav("/hdsd"); }}
+                    onClick={() => { setProfileOpen(false); window.open(HELP_URL, "_blank", "noopener"); }}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f1f5f9")}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                   >

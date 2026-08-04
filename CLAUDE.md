@@ -16,8 +16,9 @@ Stack: FastAPI 0.115 · SQLAlchemy 2.0 · Pydantic v2 · MySQL 8 · Alembic · R
 Everything runs in Docker; there is no local venv/npm workflow.
 
 ```bash
-docker compose up --build           # start db + api + web + adminer
-# Web http://localhost:8080 · API http://localhost:8000/docs · Adminer http://localhost:8081
+docker compose up --build           # start db + api + web + help + adminer
+# Web http://localhost:8080 · Help Center http://localhost:8082
+# API http://localhost:8000/docs · Adminer http://localhost:8081
 ```
 
 On `api` startup, `backend/start.sh` runs automatically: wait for DB → `alembic upgrade head` → `python -m app.seed` (idempotent) → uvicorn with `--reload`. Code is bind-mounted, so backend and frontend hot-reload without rebuilds.
@@ -71,6 +72,8 @@ A typical list endpoint composes both: `require(...)` as the route dependency, t
 **Config-driven CRUD.** Most list/detail screens are declared as data in `src/config/cruds.tsx` (`CrudConfig`: columns, fields, filters, entity, apiPath) and rendered generically by `components/CrudList.tsx` + `components/CrudDetail.tsx`. Routing in `App.tsx`: the catch-all `:entity` / `:entity/:id` routes drive these; anything needing bespoke logic (PurchaseRequestDetail, SurveyDetail, PurchaseOrderDetail, Reports, RolePermissions, print pages, …) gets an explicit route + a page in `src/pages/`. **To add a simple screen, add a config entry; only write a page when behavior is genuinely custom.**
 
 **Auth & gating.** `auth/AuthContext.tsx` exposes `can(entity, action)` backed by the permissions map returned at login. Use it to hide menu items / action buttons and lock fields. This is UI-only convenience — the backend `require`/`apply_scope` is the real enforcement, so never rely on `can()` for security.
+
+**Help Center is a separate app.** `help-center/` (React 18 + Vite + **Tailwind v4 + shadcn/ui** — KHÁC stack plain-CSS của `frontend/`) chạy độc lập ở cổng 8082, **dùng chung backend + tài khoản**. Menu "Hướng dẫn sử dụng" trong `frontend/` chỉ là link ra ngoài (`VITE_HELP_URL`) — không còn route `/hdsd`. Quyền ghi tài liệu = entity `help_article` (vai trò `help_admin` seed sẵn, đăng nhập `helpadmin`). Chi tiết: `help-center/README.md`.
 
 **API client.** `src/api/client.ts` — axios instance with a request interceptor injecting the Bearer token and a response interceptor that auto-refreshes the access token once on 401 (via `/api/auth/refresh`) then retries, logging out on failure. Non-GET errors auto-toast unless `config._silent` is set.
 

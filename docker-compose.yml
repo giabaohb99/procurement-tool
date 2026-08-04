@@ -53,11 +53,27 @@ services:
       VITE_API_URL: ${VITE_API_URL}
       VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
       VITE_DEVELOPER_MODE: ${VITE_DEVELOPER_MODE}
+      VITE_HELP_URL: ${VITE_HELP_URL:-http://localhost:8082}
     volumes:
       - ./frontend:/app # mount code -> HMR
       - /app/node_modules # giữ node_modules trong container
     ports:
       - "8080:5173"
+    depends_on:
+      - api
+
+  # App Hướng dẫn sử dụng (tách riêng khỏi web, dùng chung backend api)
+  help:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.help
+    environment:
+      VITE_API_URL: ${VITE_API_URL}
+    volumes:
+      - ./help-center:/app # mount code -> HMR
+      - /app/node_modules # giữ node_modules trong container
+    ports:
+      - "8082:5173"
     depends_on:
       - api
 

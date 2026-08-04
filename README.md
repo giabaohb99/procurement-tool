@@ -36,7 +36,7 @@ Kèm hệ thống **phân quyền RBAC + phạm vi dữ liệu (data scope)**, b
 | **Auth** | JWT (access + refresh) · bcrypt · Google OAuth (tùy chọn) |
 | **File đính kèm** | Cloudflare R2 (S3-compatible, qua boto3) |
 | **Rate limit** | slowapi |
-| **Chạy** | Docker Compose (db · api · web · adminer) |
+| **Chạy** | Docker Compose (db · api · web · help · adminer) |
 
 Backend theo mô-đun: mỗi feature là 1 thư mục `app/modules/<feature>/` gồm `model.py` (SQLAlchemy) · `schema.py` (Pydantic) · `service.py` (nghiệp vụ) · `controller.py` (route).
 
@@ -62,8 +62,9 @@ procurement-tool/
 │     ├─ config/cruds.tsx  # khai báo các màn CRUD theo cấu hình
 │     ├─ auth/          # AuthContext (can(entity, action))
 │     └─ App.tsx        # định tuyến
+├─ help-center/         # app Hướng dẫn sử dụng (React riêng, dùng chung API) — xem help-center/README.md
 ├─ doc/                 # tài liệu yêu cầu, thiết kế, phân quyền (xem doc/README.md)
-├─ docker/              # Dockerfile.api, Dockerfile.web
+├─ docker/              # Dockerfile.api, Dockerfile.web, Dockerfile.help
 ├─ docker-compose.yml
 ├─ .env.example
 └─ TASKS.md             # checklist tiến độ
@@ -81,6 +82,7 @@ docker compose up --build
 | Dịch vụ | URL | Ghi chú |
 |---|---|---|
 | **Web** | http://localhost:8080 | Giao diện chính |
+| **Hướng dẫn sử dụng** | http://localhost:8082 | App tài liệu HDSD (dùng chung tài khoản) |
 | **API** | http://localhost:8000/api/health | Swagger docs: `/docs` |
 | **Adminer** | http://localhost:8081 | Xem/sửa DB trực quan |
 
@@ -100,8 +102,10 @@ System **MySQL** · Server **db** · Username/Password theo `.env` (`DB_USER`/`D
 | `CORS_ORIGINS` | Origin FE được phép gọi API |
 | `LOGIN_RATE_LIMIT` | Giới hạn đăng nhập (mặc định `10/minute`) |
 | `ADMIN_CODE`, `ADMIN_PASSWORD` | Tài khoản admin seed |
+| `HELP_ADMIN_PASSWORD` | Mật khẩu tài khoản quản trị HDSD (`helpadmin`) |
 | `R2_*` | Cloudflare R2 cho file đính kèm |
 | `VITE_API_URL`, `VITE_GOOGLE_CLIENT_ID` | FE (Vite đọc lúc dev) |
+| `VITE_HELP_URL` | URL app HDSD — menu trong app Thu mua trỏ sang (mặc định `http://localhost:8082`) |
 
 > ⚠️ **Không commit `.env`** (đã nằm trong `.gitignore`). Khóa/secret R2, JWT chỉ để trong `.env`, tuyệt đối không hard-code vào source. Nếu secret từng lộ, **rotate** ngay trên Cloudflare.
 
@@ -112,6 +116,7 @@ System **MySQL** · Server **db** · Username/Password theo `.env` (`DB_USER`/`D
 - **Đăng nhập bằng Email HOẶC Mã nhân viên** + mật khẩu.
 - Mọi nhân sự đều có tài khoản: mặc định **username = mật khẩu = mã nhân viên** (đổi mật khẩu sau).
 - **Admin mặc định:** mã `degoadmin` · mật khẩu theo `ADMIN_PASSWORD` trong `.env` (mẫu: `dego2026`).
+- **Quản trị Hướng dẫn sử dụng:** `helpadmin` (hoặc mã `HDSD0001`) · mật khẩu theo `HELP_ADMIN_PASSWORD` (mẫu: `helpadmin`) — chỉ quản trị tài liệu ở http://localhost:8082.
 
 ---
 
@@ -126,7 +131,7 @@ Hai trục độc lập:
 
 - **Backend:** `require(entity, action)` chặn theo hành động; `apply_scope(query, model, entity, user, profile)` lọc dữ liệu theo phạm vi (HỢP các grant). Hồ sơ quyền cache in-process 60s.
 - **Frontend:** `AuthContext.can(entity, action)` để ẩn menu và nút hành động; field bị khóa khi không có quyền ghi.
-- **Vai trò chuẩn** (seed): Nhân sự cơ bản · Trưởng phòng · Quản lý công ty · NV thu mua · Quản lý thu mua · Admin thu mua · Admin hệ thống.
+- **Vai trò chuẩn** (seed): Nhân sự cơ bản · Trưởng phòng · Quản lý công ty · NV thu mua · Quản lý thu mua · Admin thu mua · Quản trị Hướng dẫn sử dụng · Admin hệ thống.
 
 Chi tiết thiết kế: [`doc/phan-quyen/Thiet_Ke_Phan_Quyen.md`](doc/phan-quyen/Thiet_Ke_Phan_Quyen.md).
 

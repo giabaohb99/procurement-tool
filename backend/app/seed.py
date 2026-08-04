@@ -180,7 +180,9 @@ _CATALOG_CRUD = {e: (["read", "create", "write", "delete"], "all") for e in
 # Quản lý thu mua = toàn quyền như quản trị NGHIỆP VỤ: mọi entity TRỪ quản trị hệ thống
 # (user/role/setting) — full 8 hành động, phạm vi 'all'.
 _ALL_ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
-_SYS_ENTITIES = {"user", "role", "setting", "backup"}
+# help_article nằm ở đây để nghiệp vụ thu mua KHÔNG tự động sửa được tài liệu HDSD —
+# quyền này chỉ cấp cho admin hệ thống và vai trò 'help_admin'.
+_SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article"}
 _PUR_MANAGER_PERMS = {e: (_ALL_ACTIONS, "all") for e in ENTITIES if e not in _SYS_ENTITIES}
 
 STD_ROLES = {
@@ -237,6 +239,11 @@ STD_ROLES = {
         "payable": (["read"], "all"),
         "payment_request": (["read"], "all"),
         "report": (["read", "export"], "all"),
+    }},
+    # Quản trị Trung tâm Hướng dẫn sử dụng (app help-center chạy riêng, cổng 8082).
+    # CHỈ có quyền trên tài liệu HDSD — không đụng tới nghiệp vụ / cấu hình hệ thống.
+    "help_admin": {"name": "Quản trị Hướng dẫn sử dụng", "perms": {
+        "help_article": (["read", "create", "write", "delete"], "all"),
     }},
 }
 
@@ -296,6 +303,40 @@ def resync_role_perms(db, code: str, perms: dict):
             can_print="print" in actions, can_export="export" in actions,
         ))
     db.commit()
+
+
+def seed_help_admin(db, company_id):
+    """Tài khoản quản trị riêng cho app Help Center (idempotent).
+
+    Đăng nhập bằng mã nhân viên HDSD0001 hoặc username 'helpadmin'.
+    Mật khẩu mặc định 'helpadmin' — đổi qua biến môi trường HELP_ADMIN_PASSWORD.
+    """
+    role = db.query(Role).filter(Role.code == "help_admin").first()
+    if not role:
+        return  # seed_standard_roles chưa chạy — không nên xảy ra
+
+    emp = db.query(Employee).filter(Employee.code == "HDSD0001").first()
+    if not emp:
+        emp = Employee(code="HDSD0001", full_name="Quản trị Hướng dẫn sử dụng",
+                       company_id=company_id, position="Quản trị HDSD", is_active=True)
+        db.add(emp)
+        db.commit()
+        db.refresh(emp)
+
+    user = db.query(User).filter(User.employee_id == emp.id).first()
+    if not user:
+        user = User(email="helpadmin", employee_id=emp.id,
+                    password_hash=hash_password(os.getenv("HELP_ADMIN_PASSWORD", "helpadmin")),
+                    is_active=True)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    if not db.query(UserRole).filter(UserRole.user_id == user.id,
+                                     UserRole.role_id == role.id).first():
+        db.add(UserRole(user_id=user.id, role_id=role.id))
+        db.commit()
+    print("Help Center admin: helpadmin (hoặc HDSD0001)")
 
 
 def cleanup_legacy_staff_role(db):
@@ -529,6 +570,9 @@ def run():
             seed_demo_accounts(db, company.id)
         else:
             print("Bỏ qua seed tài khoản demo (SEED_DEMO_ACCOUNTS=false).")
+
+        # Tài khoản quản trị Trung tâm Hướng dẫn sử dụng (app help-center)
+        seed_help_admin(db, company.id)
 
         # Gán vai trò mặc định "Nhân sự" cho tài khoản chưa có vai trò
         n_default = assign_default_roles(db)

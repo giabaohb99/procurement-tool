@@ -1,14 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useOutletContext, useParams } from 'react-router-dom'
+import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
+import { Eye, FileX2, Pencil, Save, Trash2, X } from 'lucide-react'
+import { toast } from 'sonner'
 
-import { api } from '../api/client'
-import { askConfirm } from '../components/confirm'
-import HelpAuditTimeline, { type HelpAuditLog } from '../components/HelpAuditTimeline'
-import { HelpSlideGallery, HelpSlideManager, uploadHelpImage, type HelpSlide } from '../components/HelpArticleSlides'
-import { toast } from '../components/toast'
-import type { HelpOutletContext } from '../layouts/HelpLayout'
+import { api } from '@/api/client'
+import { useAuth } from '@/auth/auth-context'
+import { askConfirm } from '@/components/confirm-dialog'
+import HelpArticleToc from '@/components/help-article-toc'
+import { HelpSlideGallery, HelpSlideManager, uploadHelpImage, type HelpSlide } from '@/components/help-article-slides'
+import HelpAuditTimeline, { type HelpAuditLog } from '@/components/help-audit-timeline'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useHeadingToc } from '@/hooks/use-heading-toc'
+import type { AdminOutletContext } from '@/layouts/admin-layout'
+
+// Bài viết ở khu QUẢN TRỊ — xem, sửa nội dung, quản lý slide, xem lịch sử chỉnh sửa.
 
 interface HelpArticle {
   id: number
@@ -19,27 +29,25 @@ interface HelpArticle {
   slides: HelpSlide[]
 }
 
-interface TocItem {
-  id: string
-  text: string
-  level: number
-}
-
-export default function HelpArticleDetail() {
+export default function AdminArticle() {
   const { id } = useParams()
   const nav = useNavigate()
-  const { loadTree, canEdit } = useOutletContext<HelpOutletContext>()
+  const { can } = useAuth()
+  const { loadTree } = useOutletContext<AdminOutletContext>()
+  const canDelete = can('help_article', 'delete')
 
   const [article, setArticle] = useState<HelpArticle | null>(null)
   const [notFound, setNotFound] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const [editContent, setEditContent] = useState('')
-  const [toc, setToc] = useState<TocItem[]>([])
   const [auditLogs, setAuditLogs] = useState<HelpAuditLog[]>([])
 
   const quillRef = useRef<ReactQuill>(null)
   const contentRef = useRef<HTMLDivElement>(null)
+  const { items: toc, activeId } = useHeadingToc(
+    contentRef, [article, isEditing], !isEditing && !!article?.content,
+  )
 
   const fetchArticle = async () => {
     try {
@@ -68,27 +76,10 @@ export default function HelpArticleDetail() {
   useEffect(() => {
     if (!id) return
     setIsEditing(false)
-    setToc([])
     fetchArticle()
     fetchLogs()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
-
-  // Sinh mục lục từ các heading trong nội dung đã render
-  useEffect(() => {
-    if (isEditing || !article?.content || !contentRef.current) {
-      setToc([])
-      return
-    }
-    const headings = Array.from(contentRef.current.querySelectorAll('h1, h2, h3'))
-    setToc(headings.map((heading, index) => {
-      if (!heading.id) heading.id = `hc-heading-${index}`
-      return {
-        id: heading.id,
-        text: heading.textContent || '',
-        level: parseInt(heading.tagName.substring(1), 10),
-      }
-    }))
-  }, [article, isEditing])
 
   const handleSave = async () => {
     if (!editTitle.trim()) {
@@ -116,7 +107,7 @@ export default function HelpArticleDetail() {
       await api.delete(`/api/v1/help-center/${id}`)
       toast.success('Đã xóa bài viết')
       await loadTree()
-      nav('/hdsd')
+      nav('/admin')
     } catch {
       // interceptor đã toast lỗi (vd thư mục còn bài con)
     }
@@ -161,36 +152,43 @@ export default function HelpArticleDetail() {
 
   if (notFound) {
     return (
-      <div style={{ padding: 48, textAlign: 'center', color: 'var(--muted)' }}>
-        <i className="ti ti-file-off" style={{ fontSize: 48, display: 'block', marginBottom: 12 }} />
+      <div className="mx-auto max-w-3xl px-8 py-12 text-center text-muted-foreground">
+        <FileX2 className="mx-auto mb-3 size-12" />
         Bài viết này không tồn tại hoặc đã bị xóa.
       </div>
     )
   }
-  if (!article) return <div style={{ padding: 32, color: 'var(--muted)' }}>Đang tải...</div>
+
+  if (!article) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-4 px-8 py-8">
+        <Skeleton className="h-9 w-3/4" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-5/6" />
+      </div>
+    )
+  }
 
   return (
-    <div className="hc-article-body">
-      <div style={{ flex: 1, minWidth: 0 }}>
+    <div className="flex items-start gap-8 px-8 py-6 pb-16">
+      <div className="min-w-0 flex-1">
         {isEditing ? (
           <>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16 }}>
-              <input
+            <div className="mb-4 flex items-center gap-2">
+              <Input
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
                 placeholder="Tiêu đề bài viết..."
-                style={{ flex: 1, fontSize: 16, fontWeight: 600 }}
+                className="h-10 flex-1 font-semibold"
               />
-              <button className="btn" onClick={handleSave}>
-                <i className="ti ti-device-floppy" /> Lưu lại
-              </button>
-              <button className="btn secondary" onClick={() => {
+              <Button onClick={handleSave}><Save /> Lưu lại</Button>
+              <Button variant="outline" onClick={() => {
                 setIsEditing(false)
                 setEditTitle(article.title)
                 setEditContent(article.content || '')
               }}>
-                <i className="ti ti-x" /> Hủy
-              </button>
+                <X /> Hủy
+              </Button>
             </div>
 
             <div className="hc-editor">
@@ -202,63 +200,43 @@ export default function HelpArticleDetail() {
           </>
         ) : (
           <>
-            <h1 style={{ fontSize: 30, fontWeight: 700, lineHeight: 1.35, marginTop: 0, marginBottom: 20,
-                         color: 'var(--navy)' }}>
-              {article.title}
-            </h1>
+            <div className="mb-5 flex items-center gap-3">
+              <h1 className="flex-1 text-[1.8rem] font-bold leading-tight text-navy">{article.title}</h1>
+              <Button variant="outline" size="sm" asChild>
+                <Link to={`/${article.id}`} title="Xem như người dùng"><Eye /> Xem</Link>
+              </Button>
+            </div>
 
             <div ref={contentRef} className="hc-content"
                  dangerouslySetInnerHTML={{ __html: article.content || '' }} />
 
-            {article.content
-              ? null
-              : <p style={{ color: 'var(--muted)' }}>Bài viết chưa có nội dung.</p>}
+            {!article.content && <p className="text-muted-foreground">Bài viết chưa có nội dung.</p>}
 
             <HelpSlideGallery slides={article.slides} />
 
-            <div style={{ marginTop: 64, padding: 20, borderRadius: 12, background: '#f8fafc',
-                          border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 24 }}>
-              {canEdit && (
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  <button className="btn secondary" onClick={() => setIsEditing(true)}>
-                    <i className="ti ti-edit" /> Sửa bài viết
-                  </button>
-                  <button className="btn err" onClick={handleDelete}>
-                    <i className="ti ti-trash" /> Xóa bài viết
-                  </button>
+            <Card className="mt-16 gap-6 bg-muted/50 py-5">
+              <CardContent className="space-y-6 px-5">
+                <div className="flex flex-wrap gap-3">
+                  <Button variant="outline" onClick={() => setIsEditing(true)}>
+                    <Pencil /> Sửa bài viết
+                  </Button>
+                  {canDelete && (
+                    <Button variant="outline" onClick={handleDelete}
+                            className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                      <Trash2 /> Xóa bài viết
+                    </Button>
+                  )}
                 </div>
-              )}
-              <HelpAuditTimeline logs={auditLogs} />
-            </div>
+                <HelpAuditTimeline logs={auditLogs} />
+              </CardContent>
+            </Card>
           </>
         )}
       </div>
 
       {!isEditing && toc.length > 0 && (
-        <aside className="hc-toc">
-          <div className="hc-toc-inner">
-            <h4 style={{ fontSize: 12, fontWeight: 600, color: 'var(--navy)', marginTop: 0, marginBottom: 14,
-                         textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Trong bài viết này
-            </h4>
-            <ul>
-              {toc.map((item) => (
-                <li key={item.id} style={{ marginBottom: 8 }}>
-                  <a
-                    href={`#${item.id}`}
-                    style={{ paddingLeft: (item.level - 1) * 12 + 12 }}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      const el = document.getElementById(item.id)
-                      el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                    }}
-                  >
-                    {item.text}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <aside className="sticky top-6 hidden w-64 shrink-0 xl:block">
+          <HelpArticleToc items={toc} activeId={activeId} title="Trong bài viết này" />
         </aside>
       )}
     </div>

@@ -28,6 +28,26 @@ export function buildTree(nodes: HelpNode[]): HelpNode[] {
   return tree
 }
 
+/** Tìm 1 node theo id trong cây. null nếu không có. */
+export function findNode(tree: HelpNode[], targetId: number): HelpNode | null {
+  for (const node of tree) {
+    if (node.id === targetId) return node
+    const found = node.children?.length ? findNode(node.children, targetId) : null
+    if (found) return found
+  }
+  return null
+}
+
+/** Node cha của targetId. null nếu targetId là node gốc hoặc không tồn tại. */
+export function findParent(tree: HelpNode[], targetId: number): HelpNode | null {
+  for (const node of tree) {
+    if (node.children?.some((c) => c.id === targetId)) return node
+    const found = node.children?.length ? findParent(node.children, targetId) : null
+    if (found) return found
+  }
+  return null
+}
+
 /** Đường dẫn từ gốc tới node targetId (dùng cho breadcrumb). null nếu không tìm thấy. */
 export function findPath(
   tree: HelpNode[],
@@ -43,4 +63,9 @@ export function findPath(
     }
   }
   return null
+}
+
+/** Tổng số bài viết trong 1 nhánh (không tính chính node). */
+export function countDescendants(node: HelpNode): number {
+  return (node.children || []).reduce((sum, c) => sum + 1 + countDescendants(c), 0)
 }

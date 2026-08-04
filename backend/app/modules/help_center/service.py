@@ -1,4 +1,6 @@
 import json
+import re
+import unicodedata
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -93,16 +95,87 @@ def delete_article(db: Session, article_id: int, user_id: int):
     record(db, user_id, AUDIT_ENTITY, article_id, "delete", f"Xóa bài viết {title}")
 
 
+SEARCH_LIMIT = 20
+SNIPPET_BEFORE = 60      # số ký tự lấy trước từ khóa
+SNIPPET_AFTER = 130      # số ký tự lấy sau từ khóa
+
+
+def _strip_html(html: str) -> str:
+    """Bỏ thẻ HTML, gộp khoảng trắng — để trích đoạn hiển thị được ở dropdown."""
+    text = re.sub(r"<[^>]+>", " ", html or "")
+    text = text.replace("&nbsp;", " ").replace("&amp;", "&")
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _fold_char(ch: str) -> str:
+    """Bỏ dấu 1 ký tự, giữ ĐÚNG 1 ký tự để chỉ số vẫn ánh xạ được về chuỗi gốc."""
+    if ch in "đĐ":
+        return "d"
+    base = "".join(c for c in unicodedata.normalize("NFD", ch) if not unicodedata.combining(c))
+    return (base or ch).lower()
+
+
+def _fold(text: str) -> str:
+    """Chuẩn hóa không dấu + chữ thường (khớp cách so sánh của MySQL utf8mb4_general_ci)."""
+    return "".join(_fold_char(c) for c in text)
+
+
+def _snippet(content: str, kw: str) -> tuple[str, int, int]:
+    """Đoạn trích quanh từ khóa trong nội dung.
+
+    Trả (đoạn trích, vị trí khớp trong đoạn, độ dài khớp).
+    Vị trí = -1 nếu từ khóa không nằm trong nội dung (chỉ khớp tiêu đề).
+    """
+    text = _strip_html(content)
+    if not text:
+        return "", -1, 0
+
+    pos = _fold(text).find(_fold(kw))
+    if pos < 0:
+        head = text[:SNIPPET_AFTER]
+        return (head + "…" if len(text) > SNIPPET_AFTER else head), -1, 0
+
+    start = max(0, pos - SNIPPET_BEFORE)
+    end = min(len(text), pos + len(kw) + SNIPPET_AFTER)
+    piece = text[start:end]
+
+    prefix = "…" if start > 0 else ""
+    suffix = "…" if end < len(text) else ""
+    return prefix + piece + suffix, pos - start + len(prefix), len(kw)
+
+
 def search_articles(db: Session, keyword: str):
+    """Tìm theo tiêu đề HOẶC nội dung. Bài khớp tiêu đề xếp trước, kèm đoạn trích quanh từ khóa."""
     kw = (keyword or "").strip()
     if not kw:
         return []
-    return (
-        db.query(HelpArticle.id, HelpArticle.title)
-        .filter(HelpArticle.title.ilike(f"%{kw}%") | HelpArticle.content.ilike(f"%{kw}%"))
-        .limit(10)
+
+    like = f"%{kw}%"
+    rows = (
+        db.query(HelpArticle.id, HelpArticle.title, HelpArticle.content, HelpArticle.parent_id)
+        .filter(HelpArticle.title.ilike(like) | HelpArticle.content.ilike(like))
+        .limit(SEARCH_LIMIT)
         .all()
     )
+
+    folded_kw = _fold(kw)
+    results = []
+    for row in rows:
+        in_title = folded_kw in _fold(row.title or "")
+        snippet, match_at, match_len = _snippet(row.content or "", kw)
+        results.append({
+            "id": row.id,
+            "title": row.title,
+            "parent_id": row.parent_id,
+            "in_title": in_title,
+            "snippet": snippet,
+            "match_at": match_at,
+            "match_len": match_len,
+        })
+
+    # Khớp tiêu đề lên trước, rồi tới khớp nội dung
+    results.sort(key=lambda r: (not r["in_title"], r["title"]))
+    return results
 
 
 # ---------- Slide ảnh hướng dẫn ----------
