@@ -10,6 +10,7 @@ ENTITIES = [
     "purchase_request", "survey", "purchase_order", "goods_receipt",
     "inventory", "payable", "payment", "payment_request",
     "report", "setting", "category_assignee", "survey_request", "import", "backup",
+    "ticket",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -42,6 +43,7 @@ ENTITY_LABELS = {
     "survey_request": "Yêu cầu báo giá",
     "import": "Nhập dữ liệu (Import)",
     "backup": "Sao lưu CSDL",
+    "ticket": "Phiếu hỗ trợ",
 }
 
 ACTION_LABELS = {

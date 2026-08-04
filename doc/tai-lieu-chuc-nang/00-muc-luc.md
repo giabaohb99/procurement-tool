@@ -10,7 +10,8 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 | # | Chức năng | Đường dẫn | Tài liệu chức năng |
 |---|-----------|-----------|-------------------|
 | 1 | Trang chủ (Dashboard) | `/` | chưa có tài liệu |
-| 2 | Báo cáo mua hàng | `/reports` | [08-he-thong-bao-cao.md](08-he-thong-bao-cao.md) — đã có tài liệu |
+| 2 | Hỗ trợ (Phiếu hỗ trợ / Ticket) | `/tickets` | [10-ho-tro-ticket.md](10-ho-tro-ticket.md) — đã có tài liệu |
+| 3 | Báo cáo mua hàng | `/reports` | [08-he-thong-bao-cao.md](08-he-thong-bao-cao.md) — đã có tài liệu |
 
 ## Nhóm: Mua hàng
 

@@ -5,6 +5,7 @@ import { toast } from "../components/toast";
 import { api } from "../api/client";
 import NotificationBell from "../components/NotificationBell";
 import PwaInstallPrompt from "../components/PwaInstallPrompt";
+import { TICKET_ENABLED } from "../config/features";
 import { canInstall, onInstallChange, promptInstall } from "../pwa-install";
 
 type NavItem = {
@@ -28,6 +29,11 @@ const NAV_GROUPS: NavGroup[] = [
       { to: "/", label: "Trang chủ", icon: "ti-layout-dashboard" },
       // Trung tâm HDSD dùng layout riêng (/hdsd) — mọi user đăng nhập đều xem được
       { to: "/hdsd", label: "Hướng dẫn sử dụng", icon: "ti-help" },
+      // Phiếu hỗ trợ — mọi nhân viên đăng nhập đều có quyền 'ticket' (scope own).
+      // Ẩn hoàn toàn khi tính năng tắt (prod) — xem config/features.ts
+      ...(TICKET_ENABLED
+        ? [{ to: "/tickets", label: "Hỗ trợ", icon: "ti-headset", entity: "ticket" }]
+        : []),
       {
         to: "/reports",
         label: "Báo cáo mua hàng",
@@ -255,6 +261,12 @@ export default function AppLayout() {
   // Nút "Cài ứng dụng" trong menu — hiện khi trình duyệt cho cài (Edge/Chrome/Android)
   const [installable, setInstallable] = useState(canInstall());
   useEffect(() => onInstallChange(() => setInstallable(canInstall())), []);
+  // Luôn ghi nhớ trang gần nhất (ngoài phân hệ Hỗ trợ) để đính link vào phiếu khi tạo — dễ debug
+  useEffect(() => {
+    if (TICKET_ENABLED && !loc.pathname.startsWith("/tickets")) {
+      sessionStorage.setItem("support_origin", loc.pathname + loc.search);
+    }
+  }, [loc.pathname, loc.search]);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
     try {
@@ -620,11 +632,21 @@ export default function AppLayout() {
                       fontSize: 13,
                       fontWeight: 500,
                     }}
-                    onClick={() => { setProfileOpen(false); nav("/hdsd"); }}
+                    onClick={() => {
+                      setProfileOpen(false);
+                      if (!TICKET_ENABLED) { nav("/hdsd"); return; }
+                      // Ghi nhớ trang đang đứng để đính vào phiếu hỗ trợ (debug), rồi mở form tạo phiếu
+                      sessionStorage.setItem("support_origin", loc.pathname + loc.search);
+                      nav("/tickets/new");
+                    }}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f1f5f9")}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                   >
-                    <i className="ti ti-help" style={{ fontSize: 16 }} /> Hướng dẫn sử dụng
+                    {TICKET_ENABLED ? (
+                      <><i className="ti ti-headset" style={{ fontSize: 16 }} /> Hỗ trợ</>
+                    ) : (
+                      <><i className="ti ti-help" style={{ fontSize: 16 }} /> Hướng dẫn sử dụng</>
+                    )}
                   </button>
                   <button
                     style={{

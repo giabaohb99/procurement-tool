@@ -40,6 +40,10 @@ import PurchaseProgress from './pages/PurchaseProgress'
 import HelpLayout from './layouts/HelpLayout'
 import HelpCenterHome from './pages/HelpCenterHome'
 import HelpArticleDetail from './pages/HelpArticleDetail'
+import TicketList from './pages/TicketList'
+import TicketCreate from './pages/TicketCreate'
+import TicketDetail from './pages/TicketDetail'
+import { TICKET_ENABLED } from './config/features'
 
 function Protected({ children }: { children: JSX.Element }) {
   const { user } = useAuth()
@@ -81,6 +85,10 @@ export default function App() {
             <Route path="import-batches" element={<ImportBatches />} />
             <Route path="import-batches/:id" element={<ImportBatchDetail />} />
             <Route path="backups" element={<Backups />} />
+            {/* Phiếu hỗ trợ — tắt hẳn route khi tính năng off (prod), xem config/features.ts */}
+            {TICKET_ENABLED && <Route path="tickets" element={<TicketList />} />}
+            {TICKET_ENABLED && <Route path="tickets/new" element={<TicketCreate />} />}
+            {TICKET_ENABLED && <Route path="tickets/:id" element={<TicketDetail />} />}
             <Route path="notifications" element={<Notifications />} />
             <Route path="me" element={<Me />} />
             <Route path="reports" element={<Reports />} />
