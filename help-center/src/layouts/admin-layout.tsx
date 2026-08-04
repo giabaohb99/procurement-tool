@@ -5,7 +5,7 @@ import { ChevronRight, Eye, FilePlus2, FolderPlus, LayoutList, LogOut, PanelLeft
 import { api } from '@/api/client'
 import { useAuth } from '@/auth/auth-context'
 import HelpSearchBox from '@/components/help-search-box'
-import HelpTreeNav from '@/components/help-tree-nav'
+import AdminSidebarNav from '@/components/admin-sidebar-nav'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -34,7 +34,6 @@ export default function AdminLayout() {
   const canCreate = can('help_article', 'create')
 
   const [tree, setTree] = useState<HelpNode[]>([])
-  const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   const match = loc.pathname.match(/^\/admin\/(\d+)/)
@@ -51,26 +50,7 @@ export default function AdminLayout() {
 
   useEffect(() => { loadTree() }, [loadTree])
 
-  // Mở sẵn các thư mục cha của bài đang sửa
-  useEffect(() => {
-    if (!activeId || tree.length === 0) return
-    const path = findPath(tree, activeId)
-    if (!path) return
-    setExpanded((prev) => {
-      const next = new Set(prev)
-      path.slice(0, -1).forEach((c) => next.add(c.id))
-      return next
-    })
-  }, [activeId, tree])
-
   if (!canWrite) return <Navigate to="/" replace />
-
-  const toggleExpand = (id: number) =>
-    setExpanded((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
 
   /** Tạo bài mới rồi mở luôn. parentId = null -> mục gốc. */
   const addArticle = async (parentId: number | null) => {
@@ -78,7 +58,6 @@ export default function AdminLayout() {
     const depth = parentId ? (findPath(tree, parentId)?.length ?? 1) : 0
     const id = await createArticle(parentId, parent?.children?.length ?? tree.length, depth)
     if (!id) return
-    if (parentId) setExpanded((prev) => new Set(prev).add(parentId))
     await loadTree()
     nav(`/admin/${id}`)
   }
@@ -112,23 +91,8 @@ export default function AdminLayout() {
             )}
           </div>
 
-          <div className="border-b p-2">
-            <Link
-              to="/admin"
-              className={cn(
-                'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors',
-                loc.pathname === '/admin'
-                  ? 'bg-accent text-accent-foreground'
-                  : 'text-navy hover:bg-secondary',
-              )}
-            >
-              <LayoutList className="size-4" /> Quản lý bài viết
-            </Link>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-2">
-            <HelpTreeNav tree={tree} activeId={activeId} expanded={expanded}
-                         onToggle={toggleExpand} basePath="/admin" />
+          <div className="flex-1 overflow-y-auto">
+            <AdminSidebarNav tree={tree} activeId={activeId} pathname={loc.pathname} />
           </div>
         </aside>
       )}
