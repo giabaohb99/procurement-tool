@@ -145,7 +145,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Bảng Nhân sự (`employee`)
 - Người sửa: Người có `approve` (qua endpoint `PATCH /{pid}/assign`); tự động điền khi duyệt nếu truyền `assignee_id` vào `ApproveIn`
-- Logic đặc biệt: Ảnh hưởng đến data scope — nhân viên thu mua chỉ thấy phiếu được giao cho mình (theo cấu hình scope `assigned`).
+- Logic đặc biệt: Ảnh hưởng đến data scope + lọc DÒNG hàng (`_see_all_items` trong `purchase_request/controller.py`). Nhân viên thu mua scope `assigned`/`own` **chỉ thấy dòng có `assignee` = mã NV mình**. Người tạo phiếu / người yêu cầu (`requester_id`) / người có `approve` / người có scope `proc`/`dept`/`company`/`all` **thấy mọi dòng** của phiếu — trong đó **Admin thu mua (`pur_admin`) scope `proc` thấy đủ mọi dòng** (bổ sung `proc` vào `_see_all_items` ở CR-013, 2026-08-04; trước đó admin bị coi như NV được giao nên thấy trống). Hàm không đọc `assignee`, nên admin dù được giao 1 dòng vẫn thấy full.
 
 ### 13. Hiện mã trên bản in (`show_code_on_print`)
 
