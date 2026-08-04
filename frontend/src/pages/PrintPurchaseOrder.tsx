@@ -68,7 +68,7 @@ export default function PrintPurchaseOrder() {
                   <td style={{ ...cell, textAlign: 'right' }}>{fmt(priceVat)}</td>
                   <td style={{ ...cell, textAlign: 'right' }}>{fmt(it.qty_order * priceVat)}</td>
                   <td style={cell}>{it.warehouse_code}</td>
-                  <td style={cell}>{it.invoice_name || it.product_name}</td>
+                  <td style={cell}>{it.invoice_name}</td>
                   <td style={cell}>{it.note}</td>
                 </tr>
               )

@@ -241,7 +241,7 @@ export default function PurchaseOrderDetail() {
 
   const applyProduct = (i: number, p: any) => {
     setItem(i, p
-      ? { product_code: p.code, product_name: p.name, invoice_name: p.invoice_name || p.name, unit: p.unit || '', item_group: p.item_group || '', fg_code: p.hh_code || '', fg_name: p.hh_name || '' }
+      ? { product_code: p.code, product_name: p.name, invoice_name: p.invoice_name || '', unit: p.unit || '', item_group: p.item_group || '', fg_code: p.hh_code || '', fg_name: p.hh_name || '' }
       : { product_code: '', product_name: '', invoice_name: '', item_group: '', fg_code: '', fg_name: '' })
   }
   const onPickSupplier = (code: string) => {
