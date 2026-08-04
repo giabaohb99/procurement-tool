@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronRight, Eye, FilePlus2, FolderPlus, LogOut, PanelLeft } from 'lucide-react'
-import { toast } from 'sonner'
+import { ChevronRight, Eye, FilePlus2, FolderPlus, LayoutList, LogOut, PanelLeft } from 'lucide-react'
 
 import { api } from '@/api/client'
 import { useAuth } from '@/auth/auth-context'
-import { askPrompt } from '@/components/confirm-dialog'
 import HelpSearchBox from '@/components/help-search-box'
 import HelpTreeNav from '@/components/help-tree-nav'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -16,7 +14,9 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
-import { buildTree, findPath, type HelpNode } from '@/lib/help-tree'
+import { cn } from '@/lib/utils'
+import { createArticle } from '@/lib/help-article-actions'
+import { buildTree, findNode, findPath, type HelpNode } from '@/lib/help-tree'
 
 // Khu QUẢN TRỊ (/admin) — sidebar cây tài liệu + trình soạn thảo.
 // Chỉ user có quyền help_article/write vào được; user thường bị đẩy về khu người dùng.
@@ -72,27 +72,15 @@ export default function AdminLayout() {
       return next
     })
 
-  const createArticle = async (parentId: number | null) => {
-    const title = await askPrompt({
-      title: parentId ? 'Thêm bài viết con' : 'Thêm mục gốc',
-      message: 'Nhập tiêu đề thư mục / bài viết mới:',
-      placeholder: 'VD: Hướng dẫn tạo Yêu cầu mua hàng',
-      required: true,
-    })
-    if (!title) return
-    try {
-      const res = await api.post('/api/v1/help-center', {
-        title,
-        parent_id: parentId,
-        sort_order: parentId ? 0 : tree.length,
-      })
-      if (parentId) setExpanded((prev) => new Set(prev).add(parentId))
-      await loadTree()
-      toast.success('Đã tạo bài viết')
-      nav(`/admin/${res.data.data.id}`)
-    } catch {
-      // lỗi đã được toast ở interceptor
-    }
+  /** Tạo bài mới rồi mở luôn. parentId = null -> mục gốc. */
+  const addArticle = async (parentId: number | null) => {
+    const parent = parentId ? findNode(tree, parentId) : null
+    const depth = parentId ? (findPath(tree, parentId)?.length ?? 1) : 0
+    const id = await createArticle(parentId, parent?.children?.length ?? tree.length, depth)
+    if (!id) return
+    if (parentId) setExpanded((prev) => new Set(prev).add(parentId))
+    await loadTree()
+    nav(`/admin/${id}`)
   }
 
   const breadcrumbs = activeId ? findPath(tree, activeId) : null
@@ -110,18 +98,32 @@ export default function AdminLayout() {
             </Link>
             {canCreate && (
               <div className="flex gap-1">
-                {activeId && (
+                {activeId && (findPath(tree, activeId)?.length ?? 3) < 3 && (
                   <Button variant="ghost" size="icon" title="Thêm bài viết con"
-                          onClick={() => createArticle(activeId)}>
+                          onClick={() => addArticle(activeId)}>
                     <FilePlus2 />
                   </Button>
                 )}
                 <Button variant="ghost" size="icon" title="Thêm mục gốc"
-                        onClick={() => createArticle(null)}>
+                        onClick={() => addArticle(null)}>
                   <FolderPlus />
                 </Button>
               </div>
             )}
+          </div>
+
+          <div className="border-b p-2">
+            <Link
+              to="/admin"
+              className={cn(
+                'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors',
+                loc.pathname === '/admin'
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-navy hover:bg-secondary',
+              )}
+            >
+              <LayoutList className="size-4" /> Quản lý bài viết
+            </Link>
           </div>
 
           <div className="flex-1 overflow-y-auto p-2">
