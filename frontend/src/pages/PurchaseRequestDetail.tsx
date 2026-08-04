@@ -9,6 +9,7 @@ import { prBadge, poBadge } from '../config/cruds'
 import ProductPicker from '../components/ProductPicker'
 import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
+import DateInput from '../components/DateInput'
 import ConfirmModal from '../components/ConfirmModal'
 import PromptModal from '../components/PromptModal'
 import NotFound from '../components/NotFound'
@@ -589,7 +590,7 @@ export default function PurchaseRequestDetail() {
               )}
               <div className="form-row">
                 <label>Ngày tiếp nhận <span className="req">*</span></label>
-                <input type="date" value={pr.request_date || ''} disabled={!editable} onChange={(e) => setH('request_date', e.target.value)} />
+                <DateInput value={pr.request_date || ''} disabled={!editable} onChange={(v) => setH('request_date', v)} />
               </div>
               <div className="form-row">
                 <label>Công ty nhận hóa đơn <span className="req">*</span></label>
@@ -729,9 +730,9 @@ export default function PurchaseRequestDetail() {
                       </td>
                       <td style={{ textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', color: 'var(--muted)' }} title="Thời gian dự kiến có hàng (chỉ NSTM phụ trách/quản lý sửa)">
                         {canLineStatus(it) ? (
-                          <input type="date" className="cell-input" style={{ width: '100%', boxSizing: 'border-box', minWidth: 0 }} value={it.expected_date || ''}
+                          <DateInput className="cell-input" style={{ width: '100%', boxSizing: 'border-box', minWidth: 0 }} value={it.expected_date || ''}
                             onFocus={() => { inlineExpOrig.current = (it.expected_date || '').trim() }}
-                            onChange={(e) => setItem(i, 'expected_date', e.target.value)}
+                            onChange={(v) => setItem(i, 'expected_date', v)}
                             onBlur={() => commitExpectedDate(i)} />
                         ) : (it.expected_date ? fmtDate(it.expected_date) : '—')}
                       </td>
@@ -967,11 +968,11 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Ngày cần hàng <span className="req">*</span></label>
-                <input type="date" value={edit.required_date || ''} disabled={!editable} onChange={(e) => setItem(editIdx, 'required_date', e.target.value)} />
+                <DateInput value={edit.required_date || ''} disabled={!editable} onChange={(v) => setItem(editIdx, 'required_date', v)} />
               </div>
               <div className="form-row">
                 <label title="NSTM phụ trách cập nhật — đổi giá trị đã có phải kèm lý do">Thời gian dự kiến có hàng</label>
-                <input type="date" value={edit.expected_date || ''} disabled={!canLineStatus(edit)} onChange={(e) => setItem(editIdx, 'expected_date', e.target.value)} />
+                <DateInput value={edit.expected_date || ''} disabled={!canLineStatus(edit)} onChange={(v) => setItem(editIdx, 'expected_date', v)} />
               </div>
               {showAssigneeCol && (
                 <div className="form-row">

@@ -5,6 +5,7 @@ import { askConfirm } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import { contractExpiryBadge } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
+import DateInput from '../components/DateInput'
 import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
 
 const PARTY_TYPES = ['Nhà cung cấp', 'Khách hàng', 'Khác']
@@ -95,8 +96,8 @@ export default function ContractDetail() {
             <SearchSelect value={c.contract_type || ''} options={C_TYPES} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('contract_type', v)} />
           </div>
           <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Trích yếu hợp đồng</label><input value={c.title || ''} disabled={!canEdit} onChange={(e) => setH('title', e.target.value)} /></div>
-          <div className="form-row"><label>Từ ngày</label><input type="date" value={c.start_date || ''} disabled={!canEdit} onChange={(e) => setH('start_date', e.target.value)} /></div>
-          <div className="form-row"><label>Đến ngày</label><input type="date" value={c.end_date || ''} disabled={!canEdit} onChange={(e) => setH('end_date', e.target.value)} /></div>
+          <div className="form-row"><label>Từ ngày</label><DateInput value={c.start_date || ''} disabled={!canEdit} onChange={(v) => setH('start_date', v)} /></div>
+          <div className="form-row"><label>Đến ngày</label><DateInput value={c.end_date || ''} disabled={!canEdit} onChange={(v) => setH('end_date', v)} /></div>
           <div className="form-row"><label>Trạng thái</label>
             <SearchSelect value={c.status} options={C_STATUS} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('status', v)} />
           </div>

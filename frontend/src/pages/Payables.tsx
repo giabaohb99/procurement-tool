@@ -5,6 +5,7 @@ import { toast } from '../components/toast'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
+import DateInput from '../components/DateInput'
 import Pagination from '../components/Pagination'
 import { fmtDateTime } from '../utils/datetime'
 import { useResizableColumns, ResizeHandle } from '../hooks/useResizableColumns'
@@ -188,8 +189,8 @@ export default function Payables() {
             options={[{ value: 'all', label: 'Tất cả' }, ...[thisYear, thisYear - 1, thisYear - 2].map((y) => ({ value: String(y), label: String(y) }))]}
             onChange={(v) => setFilter('year', v)} />
         </div>
-        <div><label style={lbl}>Ngày phát sinh từ</label><input type="date" value={f.incur_from} onChange={(e) => setFilter('incur_from', e.target.value)} /></div>
-        <div><label style={lbl}>đến</label><input type="date" value={f.incur_to} onChange={(e) => setFilter('incur_to', e.target.value)} /></div>
+        <div><label style={lbl}>Ngày phát sinh từ</label><DateInput value={f.incur_from} onChange={(v) => setFilter('incur_from', v)} /></div>
+        <div><label style={lbl}>đến</label><DateInput value={f.incur_to} onChange={(v) => setFilter('incur_to', v)} /></div>
         <div style={{ minWidth: 130 }}><label style={lbl}>Số tiền từ</label>
           <NumberInput value={f.amount_from} onChange={(v) => setFilter('amount_from', v)} placeholder="" /></div>
         <div style={{ minWidth: 130 }}><label style={lbl}>đến</label>

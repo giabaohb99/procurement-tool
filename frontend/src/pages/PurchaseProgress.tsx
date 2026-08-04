@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
+import DateInput from '../components/DateInput'
 import Pagination from '../components/Pagination'
 import { fmtDate } from '../utils/datetime'
 import { useResizableColumns, ResizeHandle } from '../hooks/useResizableColumns'
@@ -194,13 +195,13 @@ export default function PurchaseProgress() {
           </select>
         </div>
         <div><label style={lbl}>Ngày ĐH từ</label>
-          <input type="date" value={f.order_date_from} onChange={(e) => setFilter('order_date_from', e.target.value)} /></div>
+          <DateInput value={f.order_date_from} onChange={(v) => setFilter('order_date_from', v)} /></div>
         <div><label style={lbl}>đến</label>
-          <input type="date" value={f.order_date_to} onChange={(e) => setFilter('order_date_to', e.target.value)} /></div>
+          <DateInput value={f.order_date_to} onChange={(v) => setFilter('order_date_to', v)} /></div>
         <div><label style={lbl}>Ngày nhận từ</label>
-          <input type="date" value={f.received_date_from} onChange={(e) => setFilter('received_date_from', e.target.value)} /></div>
+          <DateInput value={f.received_date_from} onChange={(v) => setFilter('received_date_from', v)} /></div>
         <div><label style={lbl}>đến</label>
-          <input type="date" value={f.received_date_to} onChange={(e) => setFilter('received_date_to', e.target.value)} /></div>
+          <DateInput value={f.received_date_to} onChange={(v) => setFilter('received_date_to', v)} /></div>
         <div style={{ minWidth: 200, flex: 1 }}><label style={lbl}>Tìm kiếm</label>
           <input value={f.q} placeholder="Mã ĐMH / PYC / mã, tên SP…" onChange={(e) => setFilter('q', e.target.value)} /></div>
         <button className="btn ghost" onClick={() => setF({

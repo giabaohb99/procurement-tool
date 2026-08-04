@@ -84,7 +84,7 @@ export default function PrintPurchaseOrder() {
         {/* Thỏa thuận khác */}
         <div style={{ fontSize: 11.5, marginTop: 12, lineHeight: 1.7 }}>
           <div style={{ fontStyle: 'italic', fontWeight: 700 }}>* Thoả thuận khác:</div>
-          <div><b>1. Thời gian thanh toán/ Số ngày công nợ:</b> {sup.payment_terms || '............'}</div>
+          <div><b>1. Thời gian thanh toán/ Số ngày công nợ:</b> {po.payment_terms || sup.payment_terms || '............'}</div>
           <div><b>2. Thời gian nhận hóa đơn:</b> Chậm nhất 24h kể từ khi nhận hàng</div>
           <div><b>3. Thông tin nhận hàng:</b></div>
           <div style={{ paddingLeft: 16 }}>- Phương thức giao nhận:</div>
