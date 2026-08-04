@@ -9,6 +9,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { releaseBodyLock } from '@/lib/release-body-lock'
 
 // Hộp thoại xác nhận / nhập một dòng dùng chung (singleton, promise-based) —
 // thay confirm()/prompt() của trình duyệt. Gắn <ConfirmHost /> một lần ở main.tsx.
@@ -89,6 +90,7 @@ export function ConfirmHost() {
     const resolve = req.resolve
     current = null   // cho phép askConfirm/askPrompt kế tiếp
     setOpen(false)   // để Radix tự gỡ khóa pointer-events
+    releaseBodyLock()  // chốt chặn: gỡ khóa còn sót nếu Radix lỡ nhịp
     resolve(result)
   }
 

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronDown, ChevronUp, Eye, MessageCircleQuestion, Pencil, Plus, Trash2 } from 'lucide-react'
 
-import FaqEditorDialog from '@/components/faq-editor-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -13,8 +12,6 @@ import { deleteFaq, fetchFaqs, reorderFaq, updateFaq, type Faq } from '@/lib/faq
 
 export default function AdminFaq() {
   const [faqs, setFaqs] = useState<Faq[] | null>(null)
-  const [editing, setEditing] = useState<Faq | null>(null)
-  const [dialogOpen, setDialogOpen] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -28,11 +25,6 @@ export default function AdminFaq() {
 
   const run = async (fn: () => Promise<boolean>) => {
     if (await fn()) await load()
-  }
-
-  const openEditor = (faq: Faq | null) => {
-    setEditing(faq)
-    setDialogOpen(true)
   }
 
   const list = faqs || []
@@ -53,7 +45,7 @@ export default function AdminFaq() {
           <Button variant="outline" asChild>
             <Link to="/cau-hoi-thuong-gap"><Eye /> Xem trang người dùng</Link>
           </Button>
-          <Button onClick={() => openEditor(null)}><Plus /> Thêm câu hỏi</Button>
+          <Button asChild><Link to="/admin/faq/moi"><Plus /> Thêm câu hỏi</Link></Button>
         </div>
       </div>
 
@@ -75,7 +67,10 @@ export default function AdminFaq() {
             <li key={faq.id} className="flex items-center gap-3 border-b px-4 py-3 last:border-b-0 hover:bg-secondary/60">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="truncate text-sm font-semibold text-navy">{faq.question}</span>
+                  <Link to={`/admin/faq/${faq.id}`}
+                        className="truncate text-sm font-semibold text-navy hover:text-primary hover:underline">
+                    {faq.question}
+                  </Link>
                   {!faq.is_active && (
                     <Badge variant="outline" className="shrink-0 font-normal text-muted-foreground">
                       Đang ẩn
@@ -106,9 +101,8 @@ export default function AdminFaq() {
                         onClick={() => run(() => reorderFaq(list, index, 1))}>
                   <ChevronDown className="size-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="size-7" title="Sửa"
-                        onClick={() => openEditor(faq)}>
-                  <Pencil className="size-4" />
+                <Button variant="ghost" size="icon" className="size-7" title="Sửa" asChild>
+                  <Link to={`/admin/faq/${faq.id}`}><Pencil className="size-4" /></Link>
                 </Button>
                 <Button variant="ghost" size="icon" title="Xóa"
                         className="size-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
@@ -121,13 +115,6 @@ export default function AdminFaq() {
         </ul>
       )}
 
-      <FaqEditorDialog
-        faq={editing}
-        nextSortOrder={list.length}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onSaved={load}
-      />
     </div>
   )
 }

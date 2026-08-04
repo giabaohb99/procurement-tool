@@ -25,6 +25,7 @@ import { buildTree, findNode, findPath, type HelpNode } from '@/lib/help-tree'
 const STATIC_PAGE_TITLES: Record<string, string> = {
   '/admin/lich-su': 'Lịch sử thay đổi',
   '/admin/faq': 'Câu hỏi thường gặp',
+  '/admin/faq/moi': 'Thêm câu hỏi',
 }
 
 export interface AdminOutletContext {
@@ -116,10 +117,13 @@ export default function AdminLayout() {
               <li className="shrink-0">
                 <Link to="/admin" className="hover:text-primary">Quản trị tài liệu</Link>
               </li>
-              {STATIC_PAGE_TITLES[loc.pathname] && (
+              {(STATIC_PAGE_TITLES[loc.pathname]
+                || (loc.pathname.startsWith('/admin/faq/') && 'Câu hỏi thường gặp')) && (
                 <li className="flex items-center gap-1.5">
                   <ChevronRight className="size-3.5 shrink-0" />
-                  <span className="text-navy">{STATIC_PAGE_TITLES[loc.pathname]}</span>
+                  <span className="text-navy">
+                    {STATIC_PAGE_TITLES[loc.pathname] || 'Câu hỏi thường gặp'}
+                  </span>
                 </li>
               )}
               {breadcrumbs?.map((b, i) => (

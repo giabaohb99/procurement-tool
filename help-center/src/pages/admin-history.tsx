@@ -4,19 +4,22 @@ import { History } from 'lucide-react'
 
 import { api } from '@/api/client'
 import type { HelpAuditLog } from '@/components/help-audit-timeline'
+import { fetchFaqs, type Faq } from '@/lib/faq-api'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { AdminOutletContext } from '@/layouts/admin-layout'
 import { findNode } from '@/lib/help-tree'
 
-// /admin/lich-su — nhật ký thay đổi của MỌI bài viết hướng dẫn.
-// Backend: GET /api/audit-logs?entity=help_article (bỏ entity_id = lấy toàn bộ).
+// /admin/lich-su — nhật ký thay đổi của MỌI bài viết hướng dẫn VÀ câu hỏi thường gặp.
+// Backend: GET /api/audit-logs?entity=... (bỏ entity_id = lấy toàn bộ của entity đó).
+// API chỉ nhận 1 entity mỗi lần nên gọi 2 lượt rồi trộn theo thời gian.
 
 const LIMIT = 200
 
 interface GlobalAuditLog extends HelpAuditLog {
   entity_id: number
+  entity: 'help_article' | 'faq'
 }
 
 /** message của update_article là JSON {"Tiêu đề": "...", ...} — parse để hiện cho dễ đọc. */
@@ -46,12 +49,27 @@ function LogMessage({ message }: { message: string }) {
 export default function AdminHistory() {
   const { tree } = useOutletContext<AdminOutletContext>()
   const [logs, setLogs] = useState<GlobalAuditLog[] | null>(null)
+  const [faqs, setFaqs] = useState<Faq[]>([])
 
   useEffect(() => {
     let cancelled = false
-    api.get('/api/audit-logs', { params: { entity: 'help_article', limit: LIMIT } })
-      .then((res) => { if (!cancelled) setLogs(res.data.data) })
-      .catch(() => { if (!cancelled) setLogs([]) })
+
+    const load = (entity: 'help_article' | 'faq') =>
+      api.get('/api/audit-logs', { params: { entity, limit: LIMIT } })
+        .then((res) => (res.data.data as GlobalAuditLog[]).map((l) => ({ ...l, entity })))
+        .catch(() => [] as GlobalAuditLog[])
+
+    Promise.all([load('help_article'), load('faq'), fetchFaqs().catch(() => [] as Faq[])])
+      .then(([articleLogs, faqLogs, faqList]) => {
+        if (cancelled) return
+        setFaqs(faqList)
+        setLogs(
+          [...articleLogs, ...faqLogs]
+            .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+            .slice(0, LIMIT),
+        )
+      })
+
     return () => { cancelled = true }
   }, [])
 
@@ -59,8 +77,8 @@ export default function AdminHistory() {
     <div className="mx-auto max-w-4xl px-8 py-7 pb-16">
       <h1 className="text-xl font-bold text-navy">Lịch sử thay đổi</h1>
       <p className="mb-6 mt-1 text-sm text-muted-foreground">
-        Toàn bộ thao tác tạo / sửa / xóa trên tài liệu hướng dẫn, mới nhất trước
-        (tối đa {LIMIT} bản ghi).
+        Toàn bộ thao tác tạo / sửa / xóa trên bài viết hướng dẫn và câu hỏi thường gặp,
+        mới nhất trước (tối đa {LIMIT} bản ghi).
       </p>
 
       {!logs ? (
@@ -78,8 +96,13 @@ export default function AdminHistory() {
       ) : (
         <ul className="overflow-hidden rounded-md border">
           {logs.map((log, idx) => {
-            // Bài đã xóa sẽ không còn trong cây — vẫn giữ log nhưng không link được
-            const article = findNode(tree, log.entity_id)
+            // Bản ghi đã xóa sẽ không còn trong cây / danh sách — vẫn giữ log nhưng không link được
+            const isFaq = log.entity === 'faq'
+            const target = isFaq
+              ? faqs.find((f) => f.id === log.entity_id)
+              : findNode(tree, log.entity_id)
+            const label = isFaq ? (target as Faq)?.question : (target as any)?.title
+            const href = isFaq ? `/admin/faq/${log.entity_id}` : `/admin/${log.entity_id}`
             return (
               <li key={idx} className="flex gap-3.5 border-b p-4 last:border-b-0">
                 <Avatar className="size-8 shrink-0">
@@ -90,20 +113,17 @@ export default function AdminHistory() {
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    {article ? (
-                      <Link
-                        to={`/admin/${article.id}`}
-                        className="truncate font-semibold text-navy hover:text-primary hover:underline"
-                      >
-                        {article.title}
+                    {label ? (
+                      <Link to={href} className="truncate font-semibold text-navy hover:text-primary hover:underline">
+                        {label}
                       </Link>
                     ) : (
                       <span className="truncate font-semibold text-muted-foreground line-through">
-                        Bài viết #{log.entity_id}
+                        {isFaq ? 'Câu hỏi' : 'Bài viết'} #{log.entity_id}
                       </span>
                     )}
                     <Badge variant="outline" className="font-normal text-muted-foreground">
-                      {log.action_label}
+                      {isFaq ? 'Câu hỏi' : 'Bài viết'} · {log.action_label}
                     </Badge>
                   </div>
 

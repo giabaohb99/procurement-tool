@@ -20,6 +20,11 @@ def list_faqs(active_only: bool = False, db: Session = Depends(get_db), user=Dep
     return success([FaqOut.model_validate(i).model_dump() for i in items])
 
 
+@router.get("/{faq_id}")
+def get_faq(faq_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    return success(FaqOut.model_validate(service.get_faq(db, faq_id)).model_dump())
+
+
 @router.post("")
 def create_faq(data: FaqCreate, db: Session = Depends(get_db),
                user=Depends(require("help_article", "create"))):

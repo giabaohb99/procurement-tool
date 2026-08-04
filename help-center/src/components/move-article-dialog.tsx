@@ -9,6 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { moveArticle } from '@/lib/help-article-actions'
+import { releaseBodyLock } from '@/lib/release-body-lock'
 import { articleHeight, findNode, flattenTree, type HelpNode } from '@/lib/help-tree'
 
 // Hộp thoại chuyển bài viết sang thư mục cha khác.
@@ -72,7 +73,7 @@ export default function MoveArticleDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(next) => { onOpenChange(next); if (!next) releaseBodyLock() }}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

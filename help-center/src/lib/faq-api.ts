@@ -19,13 +19,19 @@ export async function fetchFaqs(activeOnly = false): Promise<Faq[]> {
   return res.data.data
 }
 
-export async function createFaq(data: Partial<Faq>): Promise<boolean> {
+export async function fetchFaq(id: number): Promise<Faq> {
+  const res = await api.get(`/api/v1/faq/${id}`)
+  return res.data.data
+}
+
+/** Trả id câu hỏi vừa tạo, null nếu lỗi. */
+export async function createFaq(data: Partial<Faq>): Promise<number | null> {
   try {
-    await api.post('/api/v1/faq', data)
+    const res = await api.post('/api/v1/faq', data)
     toast.success('Đã thêm câu hỏi')
-    return true
+    return res.data.data.id
   } catch {
-    return false // interceptor đã toast lỗi
+    return null // interceptor đã toast lỗi
   }
 }
 

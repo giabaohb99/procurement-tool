@@ -6,6 +6,7 @@ import AdminLayout from '@/layouts/admin-layout'
 import PortalLayout from '@/layouts/portal-layout'
 import AdminArticle from '@/pages/admin-article'
 import AdminFaq from '@/pages/admin-faq'
+import AdminFaqEditor from '@/pages/admin-faq-editor'
 import AdminHistory from '@/pages/admin-history'
 import AdminHome from '@/pages/admin-home'
 import Login from '@/pages/login'
@@ -29,6 +30,8 @@ export default function App() {
         <Route index element={<AdminHome />} />
         <Route path="lich-su" element={<AdminHistory />} />
         <Route path="faq" element={<AdminFaq />} />
+        <Route path="faq/moi" element={<AdminFaqEditor />} />
+        <Route path="faq/:faqId" element={<AdminFaqEditor />} />
         <Route path=":id" element={<AdminArticle />} />
       </Route>
 
