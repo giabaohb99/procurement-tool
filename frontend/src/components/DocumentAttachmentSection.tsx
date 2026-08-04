@@ -241,7 +241,9 @@ export default function DocumentAttachmentSection({
   const navigate = useNavigate()
   const { can } = useAuth()
   const pe = permEntity || entity
-  const canWrite = editable && can(pe, 'write')
+  // Đính kèm: cần write HOẶC create trên phiếu cha (khớp backend _check) — người yêu cầu
+  // (vai trò chỉ có 'create') vẫn đính được chứng từ cho phiếu của mình.
+  const canWrite = editable && (can(pe, 'write') || can(pe, 'create'))
 
   const [docModal, setDocModal] = useState(false)
   const [docTypeLabels, setDocTypeLabels] = useState<Record<string, string>>(_docTypeLabelsCache || {})
