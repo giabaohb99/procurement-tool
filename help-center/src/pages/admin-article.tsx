@@ -1,27 +1,27 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
-import { Eye, FileX2, History, Images, ListTree, Pencil, Save, Trash2, X } from 'lucide-react'
+import { Eye, FileX2, History, Images, ListTree, Save, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { api } from '@/api/client'
 import { useAuth } from '@/auth/auth-context'
-import HelpArticleToc from '@/components/help-article-toc'
-import { HelpSlideGallery, HelpSlideManager, uploadHelpImage, type HelpSlide } from '@/components/help-article-slides'
+import { HelpSlideManager, uploadHelpImage, type HelpSlide } from '@/components/help-article-slides'
 import HelpAuditTimeline, { type HelpAuditLog } from '@/components/help-audit-timeline'
 import HelpChildArticles from '@/components/help-child-articles'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useHeadingToc } from '@/hooks/use-heading-toc'
 import type { AdminOutletContext } from '@/layouts/admin-layout'
-import { deleteArticle, levelLabel, renameArticle } from '@/lib/help-article-actions'
+import { deleteArticle, levelLabel } from '@/lib/help-article-actions'
 import { findNode, findPath } from '@/lib/help-tree'
 
-// /admin/:id — chi tiết 1 bài viết, chia tab: Nội dung · Bài viết con · Ảnh từng bước · Lịch sử.
+// /admin/:id — soạn bài viết trên MỘT trang, không dùng tab:
+//   cột trái  : tiêu đề (sửa inline) · trình soạn thảo luôn mở · ảnh từng bước
+//   cột phải  : bài viết con · lịch sử chỉnh sửa
+// Tiêu đề + nội dung lưu chung bằng 1 nút (bật khi có thay đổi, hoặc Ctrl/Cmd+S).
 
 interface HelpArticleData {
   id: number
@@ -41,30 +41,30 @@ export default function AdminArticle() {
 
   const [article, setArticle] = useState<HelpArticleData | null>(null)
   const [notFound, setNotFound] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
-  const [editTitle, setEditTitle] = useState('')
-  const [editContent, setEditContent] = useState('')
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [saving, setSaving] = useState(false)
+  // Quill chuẩn hóa lại HTML ngay khi mount (thêm <p><br></p>...) nên KHÔNG so sánh chuỗi
+  // để biết đã sửa hay chưa — chỉ đánh dấu khi onChange đến từ thao tác của người dùng.
+  const [contentTouched, setContentTouched] = useState(false)
   const [auditLogs, setAuditLogs] = useState<HelpAuditLog[]>([])
-  const [tab, setTab] = useState('content')
 
   const quillRef = useRef<ReactQuill>(null)
-  const contentRef = useRef<HTMLDivElement>(null)
-  const { items: toc, activeId } = useHeadingToc(
-    contentRef, [article, isEditing, tab], !isEditing && tab === 'content' && !!article?.content,
-  )
 
   const nodeId = id ? parseInt(id, 10) : null
   const node = nodeId ? findNode(tree, nodeId) : null
-  const path = nodeId ? findPath(tree, nodeId) : null
-  const depth = path ? path.length - 1 : 0
+  const depth = nodeId ? (findPath(tree, nodeId)?.length ?? 1) - 1 : 0
   const childCount = node?.children?.length || 0
+
+  const dirty = !!article && (title !== article.title || contentTouched)
 
   const fetchArticle = async () => {
     try {
       const res = await api.get(`/api/v1/help-center/${id}`)
       setArticle(res.data.data)
-      setEditTitle(res.data.data.title)
-      setEditContent(res.data.data.content || '')
+      setTitle(res.data.data.title)
+      setContent(res.data.data.content || '')
+      setContentTouched(false)
       setNotFound(false)
     } catch {
       setArticle(null)
@@ -85,40 +85,54 @@ export default function AdminArticle() {
 
   useEffect(() => {
     if (!id) return
-    setIsEditing(false)
-    setTab('content')
     fetchArticle()
     fetchLogs()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
-  const handleSave = async () => {
-    if (!editTitle.trim()) {
+  const handleSave = useCallback(async () => {
+    if (!title.trim()) {
       toast.error('Tiêu đề không được để trống')
       return
     }
+    setSaving(true)
     try {
-      await api.put(`/api/v1/help-center/${id}`, { title: editTitle, content: editContent })
+      await api.put(`/api/v1/help-center/${id}`, { title, content })
       toast.success('Đã lưu bài viết')
-      setIsEditing(false)
       await Promise.all([fetchArticle(), fetchLogs(), loadTree()])
     } catch {
       // interceptor đã toast lỗi
+    } finally {
+      setSaving(false)
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, title, content, loadTree])
+
+  // Ctrl/Cmd + S để lưu nhanh khi đang soạn
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        if (dirty && !saving) handleSave()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [dirty, saving, handleSave])
+
+  // Cảnh báo khi đóng tab lúc còn thay đổi chưa lưu
+  useEffect(() => {
+    if (!dirty) return
+    const onLeave = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', onLeave)
+    return () => window.removeEventListener('beforeunload', onLeave)
+  }, [dirty])
 
   const handleDelete = async () => {
     if (!node) return
     if (await deleteArticle(node)) {
       await loadTree()
       nav(node.parent_id ? `/admin/${node.parent_id}` : '/admin')
-    }
-  }
-
-  const handleRename = async () => {
-    if (!node) return
-    if (await renameArticle(node)) {
-      await Promise.all([fetchArticle(), fetchLogs(), loadTree()])
     }
   }
 
@@ -170,138 +184,119 @@ export default function AdminArticle() {
 
   if (!article) {
     return (
-      <div className="mx-auto max-w-5xl space-y-4 px-8 py-7">
-        <Skeleton className="h-8 w-3/5" />
-        <Skeleton className="h-9 w-72" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-5/6" />
+      <div className="mx-auto max-w-6xl space-y-4 px-8 py-6">
+        <Skeleton className="h-10 w-3/5" />
+        <Skeleton className="h-72 w-full" />
       </div>
     )
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-8 py-7 pb-16">
-      {/* Tiêu đề + hành động */}
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="mb-1.5 flex items-center gap-2">
-            <Badge variant="outline" className="font-normal text-muted-foreground">
-              {levelLabel(depth)}
+    <div className="mx-auto max-w-[86rem] px-6 py-5 pb-16">
+      {/* Thanh tiêu đề + hành động — dính khi cuộn để nút Lưu luôn trong tầm tay */}
+      <div className="sticky top-0 z-20 -mx-6 mb-5 border-b bg-background/95 px-6 pb-4 pt-1 backdrop-blur">
+        <div className="mb-2 flex items-center gap-2">
+          <Badge variant="outline" className="font-normal text-muted-foreground">
+            {levelLabel(depth)}
+          </Badge>
+          {childCount > 0 && (
+            <span className="text-xs text-muted-foreground">{childCount} bài viết con</span>
+          )}
+          {dirty && (
+            <Badge variant="outline" className="border-amber-300 bg-amber-50 font-normal text-amber-700">
+              Chưa lưu
             </Badge>
-            {childCount > 0 && (
-              <span className="text-xs text-muted-foreground">{childCount} bài viết con</span>
-            )}
-          </div>
-          <h1 className="text-2xl font-bold leading-tight text-navy">{article.title}</h1>
+          )}
         </div>
 
-        <div className="flex shrink-0 flex-wrap gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link to={`/${article.id}`} title="Xem như người dùng"><Eye /> Xem</Link>
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleRename}>
-            <Pencil /> Đổi tiêu đề
-          </Button>
-          {canDelete && (
-            <Button
-              variant="outline" size="sm"
-              className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={handleDelete}
-            >
-              <Trash2 /> Xóa
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Tiêu đề bài viết..."
+            className="h-11 min-w-0 flex-1 border-transparent bg-transparent px-2 text-xl font-bold text-navy shadow-none hover:border-input focus-visible:border-input md:text-xl"
+          />
+          <div className="flex shrink-0 items-center gap-2">
+            <Button size="sm" disabled={!dirty || saving} onClick={handleSave}>
+              <Save /> {saving ? 'Đang lưu…' : 'Lưu thay đổi'}
             </Button>
-          )}
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/${article.id}`} title="Xem như người dùng"><Eye /> Xem</Link>
+            </Button>
+            {canDelete && (
+              <Button
+                variant="outline" size="icon" title="Xóa bài viết"
+                className="size-8 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={handleDelete}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="content"><Pencil /> Nội dung</TabsTrigger>
-          <TabsTrigger value="children">
-            <ListTree /> Bài viết con {childCount > 0 && `(${childCount})`}
-          </TabsTrigger>
-          <TabsTrigger value="slides">
-            <Images /> Ảnh từng bước {article.slides.length > 0 && `(${article.slides.length})`}
-          </TabsTrigger>
-          <TabsTrigger value="history"><History /> Lịch sử</TabsTrigger>
-        </TabsList>
-
-        {/* ---------- Nội dung ---------- */}
-        <TabsContent value="content" className="mt-5">
-          {isEditing ? (
-            <>
-              <div className="mb-4 flex items-center gap-2">
-                <Input
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  placeholder="Tiêu đề bài viết..."
-                  className="h-9 flex-1 font-semibold"
-                />
-                <Button size="sm" onClick={handleSave}><Save /> Lưu lại</Button>
-                <Button variant="outline" size="sm" onClick={() => {
-                  setIsEditing(false)
-                  setEditTitle(article.title)
-                  setEditContent(article.content || '')
-                }}>
-                  <X /> Hủy
-                </Button>
-              </div>
-
-              <div className="hc-editor">
-                <ReactQuill ref={quillRef} theme="snow" value={editContent}
-                            onChange={setEditContent} modules={modules} />
-              </div>
-            </>
-          ) : (
-            <div className="flex items-start gap-8">
-              <div className="min-w-0 flex-1">
-                <div className="mb-4">
-                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                    <Pencil /> Sửa nội dung
-                  </Button>
-                </div>
-
-                <div ref={contentRef} className="hc-content"
-                     dangerouslySetInnerHTML={{ __html: article.content || '' }} />
-
-                {!article.content && (
-                  <div className="rounded-md border border-dashed px-6 py-10 text-center">
-                    <Pencil className="mx-auto mb-2 size-8 text-muted-foreground" strokeWidth={1.5} />
-                    <strong className="block text-navy">Bài viết chưa có nội dung</strong>
-                    <span className="text-sm text-muted-foreground">
-                      Bấm "Sửa nội dung" để bắt đầu soạn.
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {toc.length > 0 && (
-                <aside className="sticky top-6 hidden w-60 shrink-0 xl:block">
-                  <HelpArticleToc items={toc} activeId={activeId} title="Trong bài viết này" />
-                </aside>
-              )}
+      <div className="flex flex-col items-start gap-5 xl:flex-row">
+        {/* Cột trái: soạn nội dung + ảnh từng bước */}
+        <div className="min-w-0 flex-1 space-y-5">
+          <Panel title="Nội dung bài viết" hint="Ctrl/⌘ + S để lưu nhanh">
+            <div className="hc-editor">
+              <ReactQuill
+                ref={quillRef}
+                theme="snow"
+                value={content}
+                onChange={(value, _delta, source) => {
+                  setContent(value)
+                  if (source === 'user') setContentTouched(true)
+                }}
+                modules={modules}
+              />
             </div>
-          )}
-        </TabsContent>
+          </Panel>
 
-        {/* ---------- Bài viết con ---------- */}
-        <TabsContent value="children" className="mt-5">
-          {node && <HelpChildArticles parent={node} depth={depth} onChanged={loadTree} />}
-        </TabsContent>
+          <Panel
+            icon={Images}
+            title="Ảnh hướng dẫn từng bước"
+            hint={article.slides.length ? `${article.slides.length} ảnh` : 'Chưa có ảnh'}
+          >
+            <HelpSlideManager articleId={id!} slides={article.slides} onChange={fetchArticle} />
+          </Panel>
+        </div>
 
-        {/* ---------- Ảnh từng bước ---------- */}
-        <TabsContent value="slides" className="mt-5">
-          <HelpSlideManager articleId={id!} slides={article.slides} onChange={fetchArticle} />
-          <HelpSlideGallery slides={article.slides} />
-        </TabsContent>
+        {/* Cột phải: bài con + lịch sử */}
+        <aside className="w-full shrink-0 space-y-5 xl:sticky xl:top-28 xl:w-[22rem]">
+          <Panel icon={ListTree} title="Bài viết con" hint={childCount ? `${childCount} bài` : undefined}>
+            {node && <HelpChildArticles parent={node} depth={depth} onChanged={loadTree} compact />}
+          </Panel>
 
-        {/* ---------- Lịch sử ---------- */}
-        <TabsContent value="history" className="mt-5">
-          <div className="rounded-md border bg-card p-5">
-            <HelpAuditTimeline logs={auditLogs} />
-          </div>
-        </TabsContent>
-      </Tabs>
+          <Panel icon={History} title="Lịch sử chỉnh sửa">
+            <div className="max-h-[26rem] overflow-y-auto">
+              <HelpAuditTimeline logs={auditLogs} hideHeading />
+            </div>
+          </Panel>
+        </aside>
+      </div>
     </div>
+  )
+}
+
+/** Khối nội dung có tiêu đề — thay cho tab, mọi phần đều thấy ngay trên 1 trang. */
+function Panel({
+  icon: Icon, title, hint, children,
+}: {
+  icon?: typeof Images
+  title: string
+  hint?: string
+  children: React.ReactNode
+}) {
+  return (
+    <section className="overflow-hidden rounded-md border bg-card">
+      <header className="flex items-center gap-2 border-b bg-secondary px-4 py-2.5">
+        {Icon && <Icon className="size-4 text-primary" strokeWidth={1.75} />}
+        <h2 className="text-sm font-semibold text-navy">{title}</h2>
+        {hint && <span className="ml-auto text-xs text-muted-foreground">{hint}</span>}
+      </header>
+      <div className="p-4">{children}</div>
+    </section>
   )
 }

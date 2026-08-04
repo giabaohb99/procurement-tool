@@ -36,12 +36,20 @@ function LogMessage({ message }: { message: string }) {
   return <div>{message}</div>
 }
 
-export default function HelpAuditTimeline({ logs }: { logs: HelpAuditLog[] }) {
+export default function HelpAuditTimeline({
+  logs, hideHeading = false,
+}: {
+  logs: HelpAuditLog[]
+  /** Ẩn tiêu đề khi khối bao ngoài đã có tiêu đề riêng. */
+  hideHeading?: boolean
+}) {
   return (
     <div>
-      <h3 className="mb-4 flex items-center gap-2 text-base font-semibold text-navy">
-        <History className="size-4" /> Lịch sử chỉnh sửa
-      </h3>
+      {!hideHeading && (
+        <h3 className="mb-4 flex items-center gap-2 text-base font-semibold text-navy">
+          <History className="size-4" /> Lịch sử chỉnh sửa
+        </h3>
+      )}
 
       {logs.length === 0 ? (
         <div className="py-4 text-center text-muted-foreground">Chưa có lịch sử chỉnh sửa nào.</div>

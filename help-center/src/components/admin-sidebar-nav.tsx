@@ -2,13 +2,13 @@ import { Link } from 'react-router-dom'
 import { CornerLeftUp, Eye, FileText, Folder, LayoutList } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
-import { levelLabel } from '@/lib/help-article-actions'
-import { findNode, findParent, findPath, type HelpNode } from '@/lib/help-tree'
+import { findNode, findParent, type HelpNode } from '@/lib/help-tree'
 import { cn } from '@/lib/utils'
 
-// Sidebar khu quản trị: (1) các trang quản lý, (2) điều hướng giữa các bài viết
-// liên quan tới bài đang mở — cha, anh em cùng cấp, bài con.
-// Cây đầy đủ đã có ở bảng trang "Quản lý bài viết" nên không lặp lại ở đây.
+// Sidebar khu quản trị: (1) các trang quản lý, (2) điều hướng tới bài cha và các bài
+// cùng cấp với bài đang mở.
+// Cây đầy đủ đã có ở bảng "Quản lý bài viết"; danh sách bài CON đã có ở cột phải
+// trang soạn bài — nên cả hai đều không lặp lại ở đây.
 
 export default function AdminSidebarNav({
   tree, activeId, pathname,
@@ -19,11 +19,9 @@ export default function AdminSidebarNav({
 }) {
   const node = activeId ? findNode(tree, activeId) : null
   const parent = activeId ? findParent(tree, activeId) : null
-  const depth = activeId ? (findPath(tree, activeId)?.length ?? 1) - 1 : 0
 
   // Anh em cùng cấp: con của cha, hoặc các mục gốc nếu bài đang mở là mục gốc
   const siblings = parent ? parent.children || [] : tree
-  const children = node?.children || []
 
   return (
     <div className="flex flex-col gap-5 p-3">
@@ -54,14 +52,6 @@ export default function AdminSidebarNav({
             items={siblings}
             activeId={activeId}
           />
-
-          {children.length > 0 && (
-            <SiblingList
-              label={`${levelLabel(depth + 1)} bên trong (${children.length})`}
-              items={children}
-              activeId={null}
-            />
-          )}
         </NavGroup>
       )}
     </div>
