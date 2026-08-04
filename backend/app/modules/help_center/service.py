@@ -54,6 +54,29 @@ def create_article(db: Session, data: HelpArticleCreate, user_id: int) -> HelpAr
     return article
 
 
+def _validate_new_parent(db: Session, article: HelpArticle, new_parent_id: int | None):
+    """Chặn chuyển bài vào chính nó hoặc vào một bài CON/CHÁU của nó (sẽ tạo vòng lặp cây)."""
+    if new_parent_id is None:
+        return  # đưa về mục gốc — luôn hợp lệ
+    if new_parent_id == article.id:
+        raise HTTPException(400, "Không thể đặt bài viết làm thư mục cha của chính nó")
+
+    parent = db.get(HelpArticle, new_parent_id)
+    if not parent:
+        raise HTTPException(404, "Không tìm thấy thư mục cha")
+
+    # Đi ngược lên gốc từ cha mới: gặp lại chính bài này nghĩa là cha mới nằm trong nhánh con
+    seen = set()
+    cursor = parent
+    while cursor is not None:
+        if cursor.id == article.id:
+            raise HTTPException(400, "Không thể chuyển bài viết vào bên trong bài con của chính nó")
+        if cursor.id in seen:
+            break  # dữ liệu cũ lỡ có vòng lặp — dừng để không lặp vô hạn
+        seen.add(cursor.id)
+        cursor = db.get(HelpArticle, cursor.parent_id) if cursor.parent_id else None
+
+
 def update_article(db: Session, article_id: int, data: HelpArticleUpdate, user_id: int) -> HelpArticle:
     article = get_article(db, article_id)
     changes = {}
@@ -61,10 +84,12 @@ def update_article(db: Session, article_id: int, data: HelpArticleUpdate, user_i
     if data.title is not None and article.title != data.title:
         changes["Tiêu đề"] = data.title
         article.title = data.title
-    if data.parent_id is not None and article.parent_id != data.parent_id:
-        if data.parent_id == article.id:
-            raise HTTPException(400, "Không thể đặt bài viết làm thư mục cha của chính nó")
-        changes["Thư mục cha"] = data.parent_id
+    # "parent_id" phải kiểm bằng model_fields_set: gửi null = ĐƯA VỀ MỤC GỐC,
+    # còn không gửi = giữ nguyên. Nếu chỉ so `is not None` thì không đưa về gốc được.
+    if "parent_id" in data.model_fields_set and article.parent_id != data.parent_id:
+        _validate_new_parent(db, article, data.parent_id)
+        new_parent = db.get(HelpArticle, data.parent_id) if data.parent_id else None
+        changes["Thư mục cha"] = new_parent.title if new_parent else "Mục gốc"
         article.parent_id = data.parent_id
     if data.content is not None and article.content != data.content:
         changes["Nội dung bài viết"] = "Đã cập nhật nội dung mới"
@@ -83,16 +108,38 @@ def update_article(db: Session, article_id: int, data: HelpArticleUpdate, user_i
     return article
 
 
-def delete_article(db: Session, article_id: int, user_id: int):
-    article = get_article(db, article_id)
-    has_child = db.query(HelpArticle).filter(HelpArticle.parent_id == article.id).count()
-    if has_child:
-        raise HTTPException(400, "Không thể xóa thư mục đang có chứa bài viết con.")
+def count_branch(db: Session, article_id: int) -> int:
+    """Tổng số bài trong nhánh, tính cả chính nó — dùng để cảnh báo trước khi xóa."""
+    total = 1
+    for child in db.query(HelpArticle.id).filter(HelpArticle.parent_id == article_id).all():
+        total += count_branch(db, child.id)
+    return total
 
-    title = article.title
+
+def _delete_branch(db: Session, article: HelpArticle):
+    """Xóa đệ quy từ lá lên gốc — FK parent_id không có ON DELETE CASCADE.
+
+    Phải flush sau MỖI lần xóa: nếu để dồn tới commit, SQLAlchemy gom các lệnh DELETE
+    thành một batch theo thứ tự id (cha trước con) và MySQL sẽ báo lỗi khóa ngoại 1451.
+    """
+    for child in db.query(HelpArticle).filter(HelpArticle.parent_id == article.id).all():
+        _delete_branch(db, child)
     db.delete(article)
+    db.flush()
+
+
+def delete_article(db: Session, article_id: int, user_id: int):
+    """Xóa bài viết CÙNG toàn bộ bài con/cháu bên trong."""
+    article = get_article(db, article_id)
+    title = article.title
+    total = count_branch(db, article.id)
+
+    _delete_branch(db, article)
     db.commit()
-    record(db, user_id, AUDIT_ENTITY, article_id, "delete", f"Xóa bài viết {title}")
+
+    message = (f"Xóa bài viết {title} cùng {total - 1} bài viết con"
+               if total > 1 else f"Xóa bài viết {title}")
+    record(db, user_id, AUDIT_ENTITY, article_id, "delete", message)
 
 
 SEARCH_LIMIT = 20

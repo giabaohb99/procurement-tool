@@ -35,8 +35,20 @@ chỉ có quyền trên entity `help_article` — không đụng nghiệp vụ /
 
 | Khu | Đường dẫn | Giao diện | Ai vào được |
 |---|---|---|---|
-| **Người dùng** | `/`, `/:id` | Portal 3 tầng (xem dưới). **Chỉ đọc**. | Mọi user đăng nhập |
-| **Quản trị** | `/admin`, `/admin/:id` | Sidebar cây + trình soạn thảo, quản lý slide, lịch sử chỉnh sửa | Cần `help_article/write` |
+| **Người dùng** | `/`, `/:id`, `/cau-hoi-thuong-gap` | Portal 3 tầng (xem dưới) + Câu hỏi thường gặp. **Chỉ đọc**. | Mọi user đăng nhập |
+| **Quản trị** | `/admin`, `/admin/:id`, `/admin/faq`, `/admin/lich-su` | Quản lý bài viết · soạn bài · câu hỏi thường gặp · lịch sử thay đổi | Cần `help_article/write` |
+
+### Khu quản trị
+
+| Trang | Chức năng |
+|---|---|
+| `/admin` | Bảng cây 3 cấp: thêm/sửa/xóa, đổi thứ tự (lên/xuống), **chuyển sang mục cha khác**, lọc theo tiêu đề |
+| `/admin/:id` | Soạn bài trên 1 trang: tiêu đề inline · trình soạn thảo luôn mở · ảnh từng bước · bài viết con · lịch sử. Ctrl/⌘+S để lưu |
+| `/admin/faq` | Câu hỏi thường gặp: thêm/sửa/xóa, bật-tắt hiển thị, đổi thứ tự |
+| `/admin/lich-su` | Nhật ký thay đổi của **mọi** bài viết |
+
+**Xóa bài viết sẽ xóa luôn toàn bộ bài con/cháu bên trong** — hộp thoại xác nhận báo rõ số bài sẽ mất.
+Chuyển bài viết bị chặn nếu tạo vòng lặp cây hoặc làm cấu trúc vượt quá 3 cấp.
 
 Nút **Quản trị** chỉ hiện ở header khi user có quyền ghi; vào thẳng `/admin` mà không có quyền sẽ bị đẩy về `/`.
 
@@ -79,6 +91,12 @@ src/
 ```bash
 npx shadcn@latest add <tên-component>
 ```
+
+## Câu hỏi thường gặp
+
+Bảng `tab_faq` (`question` · `answer` HTML · `sort_order` · `is_active`), API `/api/v1/faq`.
+Dùng chung quyền `help_article` với bài viết nên **không phát sinh entity quyền mới**.
+Trang người dùng gọi `?active_only=true` để bỏ câu đang ẩn.
 
 ## Tìm kiếm
 

@@ -128,3 +128,9 @@
 .hc-editor .ql-editor {
   min-height: 420px;
 }
+
+/* Trình soạn thảo rút gọn dùng trong hộp thoại (câu trả lời FAQ) */
+.hc-editor-sm .ql-editor {
+  min-height: 160px;
+  max-height: 320px;
+}

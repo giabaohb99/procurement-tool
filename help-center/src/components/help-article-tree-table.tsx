@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  ChevronDown, ChevronRight, ChevronUp, FilePlus2, FileText, Folder, FolderOpen,
+  ChevronDown, ChevronRight, ChevronUp, FilePlus2, FileText, Folder, FolderInput, FolderOpen,
   MoreHorizontal, Pencil, SquareArrowOutUpRight, Trash2,
 } from 'lucide-react'
 
+import MoveArticleDialog from '@/components/move-article-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -90,6 +91,7 @@ export default function HelpArticleTreeTable({ tree, onChanged, filter = '' }: T
             siblings={shown}
             index={index}
             depth={0}
+            tree={tree}
             expanded={kw ? null : expanded}
             onToggle={toggle}
             onChanged={onChanged}
@@ -105,13 +107,16 @@ interface TreeRowProps {
   siblings: HelpNode[]
   index: number
   depth: number
+  /** Cây ĐẦY ĐỦ (không lọc) — hộp thoại chuyển bài cần để liệt kê thư mục cha hợp lệ. */
+  tree: HelpNode[]
   /** null = đang lọc, mở hết mọi nhánh. */
   expanded: Set<number> | null
   onToggle: (id: number) => void
   onChanged: () => Promise<void> | void
 }
 
-function TreeRow({ node, siblings, index, depth, expanded, onToggle, onChanged }: TreeRowProps) {
+function TreeRow({ node, siblings, index, depth, tree, expanded, onToggle, onChanged }: TreeRowProps) {
+  const [moveOpen, setMoveOpen] = useState(false)
   const children = node.children || []
   const hasChildren = children.length > 0
   const isOpen = expanded === null ? true : expanded.has(node.id)
@@ -204,6 +209,9 @@ function TreeRow({ node, siblings, index, depth, expanded, onToggle, onChanged }
               <DropdownMenuItem onClick={() => run(() => renameArticle(node))}>
                 <Pencil /> Đổi tiêu đề
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setMoveOpen(true)}>
+                <FolderInput /> Chuyển sang mục khác
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" onClick={() => run(() => deleteArticle(node))}>
                 <Trash2 /> Xóa
@@ -212,6 +220,14 @@ function TreeRow({ node, siblings, index, depth, expanded, onToggle, onChanged }
           </DropdownMenu>
         </div>
       </div>
+
+      <MoveArticleDialog
+        tree={tree}
+        node={node}
+        open={moveOpen}
+        onOpenChange={setMoveOpen}
+        onMoved={onChanged}
+      />
 
       {hasChildren && isOpen && (
         <ul className="border-t bg-secondary/30">
@@ -222,6 +238,7 @@ function TreeRow({ node, siblings, index, depth, expanded, onToggle, onChanged }
               siblings={children}
               index={i}
               depth={depth + 1}
+              tree={tree}
               expanded={expanded}
               onToggle={onToggle}
               onChanged={onChanged}

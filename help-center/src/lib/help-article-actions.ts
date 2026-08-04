@@ -56,13 +56,19 @@ export async function renameArticle(node: HelpNode): Promise<boolean> {
   }
 }
 
-/** Xóa bài viết (có xác nhận). Backend chặn nếu còn bài con. */
+/** Tổng số bài trong nhánh, tính cả chính nó — để cảnh báo trước khi xóa. */
+function countBranch(node: HelpNode): number {
+  return 1 + (node.children || []).reduce((sum, c) => sum + countBranch(c), 0)
+}
+
+/** Xóa bài viết CÙNG toàn bộ bài con/cháu bên trong (có xác nhận). */
 export async function deleteArticle(node: HelpNode): Promise<boolean> {
-  const childCount = node.children?.length || 0
+  const total = countBranch(node)
   const ok = await askConfirm({
     title: 'Xóa bài viết',
-    message: childCount
-      ? `"${node.title}" đang chứa ${childCount} bài viết con. Phải xóa hết bài con trước.`
+    message: total > 1
+      ? `Xóa "${node.title}" sẽ xóa luôn ${total - 1} bài viết con/cháu bên trong `
+        + `(tổng ${total} bài). Thao tác này không thể hoàn tác.`
       : `Xóa "${node.title}"? Thao tác này không thể hoàn tác.`,
     confirmText: 'Xóa',
   })
@@ -73,6 +79,17 @@ export async function deleteArticle(node: HelpNode): Promise<boolean> {
     return true
   } catch {
     return false
+  }
+}
+
+/** Chuyển bài viết sang thư mục cha khác. parentId = null -> đưa về mục gốc. */
+export async function moveArticle(nodeId: number, parentId: number | null): Promise<boolean> {
+  try {
+    await api.put(`/api/v1/help-center/${nodeId}`, { parent_id: parentId })
+    toast.success('Đã chuyển bài viết')
+    return true
+  } catch {
+    return false // interceptor đã toast lỗi (vd chuyển vào chính bài con của nó)
   }
 }
 

@@ -28,3 +28,4 @@ from app.modules.survey_request import model as _survey_request  # noqa: F401
 from app.modules.import_tool import model as _import_tool  # noqa: F401
 from app.modules.backup import model as _backup  # noqa: F401
 from app.modules.help_center import model as _help_center  # noqa: F401
+from app.modules.faq import model as _faq  # noqa: F401

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
-import { Eye, FileX2, History, Images, ListTree, Save, Trash2 } from 'lucide-react'
+import { Eye, FileX2, FolderInput, History, Images, ListTree, MoreHorizontal, Save, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { api } from '@/api/client'
@@ -10,8 +10,13 @@ import { useAuth } from '@/auth/auth-context'
 import { HelpSlideManager, uploadHelpImage, type HelpSlide } from '@/components/help-article-slides'
 import HelpAuditTimeline, { type HelpAuditLog } from '@/components/help-audit-timeline'
 import HelpChildArticles from '@/components/help-child-articles'
+import MoveArticleDialog from '@/components/move-article-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { AdminOutletContext } from '@/layouts/admin-layout'
@@ -48,6 +53,7 @@ export default function AdminArticle() {
   // để biết đã sửa hay chưa — chỉ đánh dấu khi onChange đến từ thao tác của người dùng.
   const [contentTouched, setContentTouched] = useState(false)
   const [auditLogs, setAuditLogs] = useState<HelpAuditLog[]>([])
+  const [moveOpen, setMoveOpen] = useState(false)
 
   const quillRef = useRef<ReactQuill>(null)
 
@@ -193,48 +199,63 @@ export default function AdminArticle() {
 
   return (
     <div className="mx-auto max-w-[86rem] px-6 py-5 pb-16">
-      {/* Thanh tiêu đề + hành động — dính khi cuộn để nút Lưu luôn trong tầm tay */}
-      <div className="sticky top-0 z-20 -mx-6 mb-5 border-b bg-background/95 px-6 pb-4 pt-1 backdrop-blur">
-        <div className="mb-2 flex items-center gap-2">
-          <Badge variant="outline" className="font-normal text-muted-foreground">
-            {levelLabel(depth)}
-          </Badge>
-          {childCount > 0 && (
-            <span className="text-xs text-muted-foreground">{childCount} bài viết con</span>
-          )}
-          {dirty && (
-            <Badge variant="outline" className="border-amber-300 bg-amber-50 font-normal text-amber-700">
-              Chưa lưu
-            </Badge>
-          )}
-        </div>
+      {/* Thanh tiêu đề + hành động — gói trên MỘT hàng, dính khi cuộn để nút Lưu luôn trong tầm tay */}
+      <div className="sticky top-0 z-10 -mx-6 mb-5 flex flex-wrap items-center gap-2 border-b bg-background/95 px-6 py-2.5 backdrop-blur">
+        <Badge variant="outline" className="shrink-0 font-normal text-muted-foreground">
+          {levelLabel(depth)}
+        </Badge>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Tiêu đề bài viết..."
-            className="h-11 min-w-0 flex-1 border-transparent bg-transparent px-2 text-xl font-bold text-navy shadow-none hover:border-input focus-visible:border-input md:text-xl"
-          />
-          <div className="flex shrink-0 items-center gap-2">
-            <Button size="sm" disabled={!dirty || saving} onClick={handleSave}>
-              <Save /> {saving ? 'Đang lưu…' : 'Lưu thay đổi'}
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link to={`/${article.id}`} title="Xem như người dùng"><Eye /> Xem</Link>
-            </Button>
-            {canDelete && (
-              <Button
-                variant="outline" size="icon" title="Xóa bài viết"
-                className="size-8 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                onClick={handleDelete}
-              >
-                <Trash2 className="size-4" />
+        <Input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Tiêu đề bài viết..."
+          className="h-9 min-w-[12rem] flex-1 border-transparent bg-transparent px-2 text-lg font-bold text-navy shadow-none hover:border-input focus-visible:border-input md:text-lg"
+        />
+
+        {dirty && (
+          <span className="shrink-0 text-xs font-medium text-amber-600">Chưa lưu</span>
+        )}
+
+        <div className="flex shrink-0 items-center gap-2">
+          <Button size="sm" disabled={!dirty || saving} onClick={handleSave}>
+            <Save /> {saving ? 'Đang lưu…' : 'Lưu'}
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link to={`/${article.id}`} title="Xem như người dùng"><Eye /> Xem</Link>
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="size-8" title="Thao tác khác">
+                <MoreHorizontal className="size-4" />
               </Button>
-            )}
-          </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem onClick={() => setMoveOpen(true)}>
+                <FolderInput /> Chuyển sang mục khác
+              </DropdownMenuItem>
+              {canDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem variant="destructive" onClick={handleDelete}>
+                    <Trash2 /> Xóa bài viết
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
+
+      {node && (
+        <MoveArticleDialog
+          tree={tree}
+          node={node}
+          open={moveOpen}
+          onOpenChange={setMoveOpen}
+          onMoved={async () => { await Promise.all([fetchArticle(), fetchLogs(), loadTree()]) }}
+        />
+      )}
 
       <div className="flex flex-col items-start gap-5 xl:flex-row">
         {/* Cột trái: soạn nội dung + ảnh từng bước */}

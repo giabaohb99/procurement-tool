@@ -1,5 +1,5 @@
 import { Link, useOutletContext } from 'react-router-dom'
-import { ArrowRight, BookOpen, Images, Search } from 'lucide-react'
+import { ArrowRight, BookOpen, Images, MessageCircleQuestion, Search } from 'lucide-react'
 
 import HelpCategoryTiles, { iconOf } from '@/components/help-category-tiles'
 import HelpSearchBox from '@/components/help-search-box'
@@ -86,6 +86,25 @@ export default function PortalHome() {
               </span>
             </div>
           )}
+        </Section>
+
+        {/* Câu hỏi thường gặp */}
+        <Section title="Không tìm thấy điều bạn cần?">
+          <Link
+            to="/cau-hoi-thuong-gap"
+            className="group flex items-center gap-3.5 rounded-md border bg-card p-5 transition-colors hover:border-primary/50 hover:bg-secondary"
+          >
+            <span className="grid size-9 shrink-0 place-items-center rounded-md border bg-secondary text-primary">
+              <MessageCircleQuestion className="size-[1.125rem]" strokeWidth={1.75} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[0.9375rem] font-semibold text-navy">Câu hỏi thường gặp</span>
+              <span className="mt-0.5 block text-[0.8125rem] text-muted-foreground">
+                Giải đáp nhanh những thắc mắc hay gặp nhất khi dùng hệ thống.
+              </span>
+            </span>
+            <ArrowRight className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+          </Link>
         </Section>
 
         {/* Mẹo tra cứu */}

@@ -69,3 +69,17 @@ export function findPath(
 export function countDescendants(node: HelpNode): number {
   return (node.children || []).reduce((sum, c) => sum + 1 + countDescendants(c), 0)
 }
+
+/** Chiều cao nhánh tính từ node (0 = node lá, 1 = có con, 2 = có cháu). */
+export function articleHeight(node: HelpNode): number {
+  const children = node.children || []
+  return children.length === 0 ? 0 : 1 + Math.max(...children.map(articleHeight))
+}
+
+/** Duỗi cây thành danh sách phẳng kèm độ sâu — dùng cho ô chọn thư mục cha. */
+export function flattenTree(nodes: HelpNode[], depth = 0): { node: HelpNode; depth: number }[] {
+  return nodes.flatMap((node) => [
+    { node, depth },
+    ...flattenTree(node.children || [], depth + 1),
+  ])
+}

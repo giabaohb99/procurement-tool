@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
-import { LogOut, Settings } from 'lucide-react'
+import { LogOut, MessageCircleQuestion, Settings } from 'lucide-react'
 
 import { api } from '@/api/client'
 import { useAuth } from '@/auth/auth-context'
@@ -46,6 +46,12 @@ export default function PortalLayout() {
         </Link>
 
         <div className="ml-auto flex shrink-0 items-center gap-3">
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/cau-hoi-thuong-gap">
+              <MessageCircleQuestion /> <span className="hidden sm:inline">Câu hỏi thường gặp</span>
+            </Link>
+          </Button>
+
           {canManage && (
             <Button variant="outline" size="sm" asChild>
               <Link to="/admin" title="Khu quản trị tài liệu">

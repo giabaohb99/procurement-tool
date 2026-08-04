@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { CornerLeftUp, Eye, FileText, Folder, LayoutList } from 'lucide-react'
+import { CornerLeftUp, Eye, FileText, Folder, History, LayoutList, MessageCircleQuestion } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { findNode, findParent, type HelpNode } from '@/lib/help-tree'
@@ -28,6 +28,12 @@ export default function AdminSidebarNav({
       <NavGroup title="Trang quản lý">
         <NavLink to="/admin" active={pathname === '/admin'} icon={LayoutList}>
           Quản lý bài viết
+        </NavLink>
+        <NavLink to="/admin/faq" active={pathname === '/admin/faq'} icon={MessageCircleQuestion}>
+          Câu hỏi thường gặp
+        </NavLink>
+        <NavLink to="/admin/lich-su" active={pathname === '/admin/lich-su'} icon={History}>
+          Lịch sử thay đổi
         </NavLink>
         <NavLink to="/" icon={Eye}>Xem trang người dùng</NavLink>
       </NavGroup>

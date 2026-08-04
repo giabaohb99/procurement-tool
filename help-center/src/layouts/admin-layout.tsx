@@ -21,6 +21,12 @@ import { buildTree, findNode, findPath, type HelpNode } from '@/lib/help-tree'
 // Khu QUẢN TRỊ (/admin) — sidebar cây tài liệu + trình soạn thảo.
 // Chỉ user có quyền help_article/write vào được; user thường bị đẩy về khu người dùng.
 
+/** Tiêu đề breadcrumb cho các trang quản lý cố định (không phải bài viết). */
+const STATIC_PAGE_TITLES: Record<string, string> = {
+  '/admin/lich-su': 'Lịch sử thay đổi',
+  '/admin/faq': 'Câu hỏi thường gặp',
+}
+
 export interface AdminOutletContext {
   loadTree: () => Promise<void>
   tree: HelpNode[]
@@ -98,7 +104,7 @@ export default function AdminLayout() {
       )}
 
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
           <Button variant="ghost" size="icon" title="Ẩn/hiện danh mục"
                   onClick={() => setSidebarOpen((v) => !v)}>
             <PanelLeft />
@@ -110,6 +116,12 @@ export default function AdminLayout() {
               <li className="shrink-0">
                 <Link to="/admin" className="hover:text-primary">Quản trị tài liệu</Link>
               </li>
+              {STATIC_PAGE_TITLES[loc.pathname] && (
+                <li className="flex items-center gap-1.5">
+                  <ChevronRight className="size-3.5 shrink-0" />
+                  <span className="text-navy">{STATIC_PAGE_TITLES[loc.pathname]}</span>
+                </li>
+              )}
               {breadcrumbs?.map((b, i) => (
                 <li key={b.id} className="flex min-w-0 items-center gap-1.5">
                   <ChevronRight className="size-3.5 shrink-0" />

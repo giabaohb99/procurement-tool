@@ -66,15 +66,29 @@ export function askPrompt(opts: {
 
 export function ConfirmHost() {
   const [req, setReq] = useState<Req | null>(null)
+  const [open, setOpen] = useState(false)
   const [value, setValue] = useState('')
 
-  useEffect(() => { listeners.add(setReq); return () => { listeners.delete(setReq) } }, [])
+  // CHỈ nhận yêu cầu mới, KHÔNG xóa req khi đóng: Radix đặt pointer-events:none lên <body>
+  // lúc mở modal và chỉ gỡ khi đóng đúng quy trình. Unmount đột ngột sẽ để lại khóa đó
+  // và toàn bộ trang mất click.
+  useEffect(() => {
+    const onReq = (r: Req | null) => {
+      if (!r) return
+      setReq(r)
+      setOpen(true)
+    }
+    listeners.add(onReq)
+    return () => { listeners.delete(onReq) }
+  }, [])
+
   useEffect(() => { if (req) setValue(req.defaultValue) }, [req?.id])
 
   const close = (result: boolean | string) => {
-    const resolve = req!.resolve
-    current = null
-    emit()
+    if (!req) return
+    const resolve = req.resolve
+    current = null   // cho phép askConfirm/askPrompt kế tiếp
+    setOpen(false)   // để Radix tự gỡ khóa pointer-events
     resolve(result)
   }
 
@@ -82,7 +96,7 @@ export function ConfirmHost() {
 
   if (req.withInput) {
     return (
-      <Dialog open onOpenChange={(open) => { if (!open) close(false) }}>
+      <Dialog open={open} onOpenChange={(next) => { if (!next) close(false) }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{req.title}</DialogTitle>
@@ -109,7 +123,7 @@ export function ConfirmHost() {
   }
 
   return (
-    <AlertDialog open onOpenChange={(open) => { if (!open) close(false) }}>
+    <AlertDialog open={open} onOpenChange={(next) => { if (!next) close(false) }}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{req.title}</AlertDialogTitle>
