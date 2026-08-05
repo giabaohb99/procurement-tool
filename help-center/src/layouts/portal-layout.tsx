@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
-import { LogOut, MessageCircleQuestion, Settings } from 'lucide-react'
+import { LogIn, LogOut, MessageCircleQuestion, Settings } from 'lucide-react'
 
 import { api } from '@/api/client'
 import { useAuth } from '@/auth/auth-context'
@@ -58,11 +58,19 @@ export default function PortalLayout() {
           {canManage && (
             <Button variant="outline" size="sm" asChild>
               <Link to="/admin" title="Khu quản trị tài liệu">
-                <Settings /> Quản trị
+                <Settings /> Truy cập quản trị
               </Link>
             </Button>
           )}
 
+          {/* Khách (chưa đăng nhập) vẫn đọc được tài liệu — chỉ mời đăng nhập khi cần quản trị */}
+          {!user ? (
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/login" title="Đăng nhập để quản trị tài liệu">
+                <LogIn /> <span className="hidden sm:inline">Đăng nhập</span>
+              </Link>
+            </Button>
+          ) : (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full" title="Tài khoản">
@@ -87,6 +95,7 @@ export default function PortalLayout() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          )}
         </div>
       </header>
 

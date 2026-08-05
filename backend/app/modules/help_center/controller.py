@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from app.core.auth import get_current_user, require
+from app.core.auth import require
 from app.core.database import get_db
 from app.core.file_registry import ext_of
 from app.core.response import success
@@ -21,23 +21,24 @@ IMAGE_EXTS = {"jpg", "jpeg", "png", "gif", "webp", "svg"}
 MAX_IMAGE_SIZE = 10 * 1024 * 1024
 
 
-# ---------- Đọc: mọi user đã đăng nhập đều xem được HDSD ----------
+# ---------- Đọc: CÔNG KHAI (không cần đăng nhập) ----------
+# HDSD là tài liệu hướng dẫn dùng chung cho nhân viên → khu người dùng của Help Center
+# mở public, khỏi bắt đăng nhập. Mọi endpoint GHI bên dưới vẫn cần quyền help_article.
 
 @router.get("/tree")
-def get_help_tree(db: Session = Depends(get_db), user=Depends(get_current_user)):
+def get_help_tree(db: Session = Depends(get_db)):
     """Danh sách phẳng bài viết để client dựng cây thư mục."""
     return success(service.get_tree(db))
 
 
 @router.get("/search")
-def search_help_articles(q: str = "", db: Session = Depends(get_db), user=Depends(get_current_user)):
+def search_help_articles(q: str = "", db: Session = Depends(get_db)):
     """Tìm kiếm bài viết theo tiêu đề HOẶC nội dung, kèm đoạn trích quanh từ khóa."""
     return success(service.search_articles(db, q))
 
 
 @router.get("/home")
-def get_help_home_sections(db: Session = Depends(get_db),
-                           user=Depends(require("help_article", "read"))):
+def get_help_home_sections(db: Session = Depends(get_db)):
     """Danh sách 4 khung trang chủ sắp theo sort_order, kèm bài viết đã gắn (nếu có).
 
     PHẢI khai báo TRƯỚC route "/{article_id}" bên dưới — nếu không, "/home" (1 segment)
@@ -47,7 +48,7 @@ def get_help_home_sections(db: Session = Depends(get_db),
 
 
 @router.get("/{article_id}")
-def get_help_article(article_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+def get_help_article(article_id: int, db: Session = Depends(get_db)):
     """Chi tiết 1 bài viết gồm nội dung HTML và danh sách slide."""
     article = service.get_article(db, article_id)
     return success(HelpArticleOut.model_validate(article).model_dump())

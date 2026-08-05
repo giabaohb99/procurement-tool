@@ -15,7 +15,7 @@ const HIGHLIGHTS = [
 ]
 
 export default function Login() {
-  const { login } = useAuth()
+  const { login, can } = useAuth()
   const nav = useNavigate()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -27,8 +27,9 @@ export default function Login() {
     setErr('')
     setBusy(true)
     try {
-      await login(username, password)
-      nav('/')
+      const u = await login(username, password)
+      // Khu người dùng vốn công khai → người có quyền quản trị vào thẳng khu quản trị
+      nav(u?.permissions?.help_article?.write ? '/admin' : '/')
     } catch (ex: any) {
       setErr(ex?.response?.data?.error?.message || 'Đăng nhập thất bại')
       setBusy(false)
