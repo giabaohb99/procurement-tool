@@ -528,6 +528,22 @@ tbody tr:hover {
   padding: 28px 12px !important;
 }
 
+/* Ô đầu/cuối lùi vào 18px cho khớp lề của .table-tools và .table-foot,
+   nếu không bảng sẽ dính sát mép card (rõ nhất ở bảng .dense chỉ padding 12px) */
+.table-card thead th:first-child,
+.table-card tbody td:first-child {
+  padding-left: 18px;
+}
+
+.table-card tbody td:last-child {
+  padding-right: 18px;
+}
+
+/* th cuối: 22px = vừa đủ lề mép card vừa chừa chỗ tay nắm kéo giãn cột */
+.table-card thead th:last-child {
+  padding-right: 22px;
+}
+
 /* Bảng nhiều cột (Tiến độ mua hàng, Công nợ…): ô gọn hơn, tiêu đề được xuống dòng */
 table.dense thead th {
   padding: 10px 12px;
