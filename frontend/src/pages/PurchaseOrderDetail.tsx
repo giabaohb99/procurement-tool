@@ -11,6 +11,7 @@ import NumberInput from '../components/NumberInput'
 import { toast } from '../components/toast'
 import DocumentUploadModal from '../components/DocumentUploadModal'
 import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
+import NotFound from '../components/NotFound'
 import { fmtSize, fileIcon } from '../utils/file-type'
 
 const API = '/api/purchase-orders'
