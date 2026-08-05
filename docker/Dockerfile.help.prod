@@ -1,0 +1,17 @@
+# Help Center production — build static (Vite) rồi phục vụ + proxy /api bằng nginx.
+# Khác Dockerfile.help (dev): không chạy vite dev server, không HMR.
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY help-center/package.json /app/package.json
+RUN npm install
+COPY help-center/ /app/
+# Để RỖNG => axios gọi cùng origin (/api/...) và nginx dưới đây proxy sang api:8000.
+# Nhờ vậy không dính CORS dù Help Center nằm ở subdomain khác app nghiệp vụ.
+ARG VITE_API_URL=""
+ENV VITE_API_URL=$VITE_API_URL
+RUN npm run build
+
+FROM nginx:alpine
+COPY docker/nginx.help.prod.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
