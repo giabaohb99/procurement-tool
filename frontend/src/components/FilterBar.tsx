@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
 import SearchSelect from './SearchSelect'
 import DateRangePicker from './DateRangePicker'
+import FilterPanel, { FilterItem } from './FilterPanel'
 
 export type FilterField = {
   key: string
@@ -12,8 +13,8 @@ export type FilterField = {
   source?: { url: string; value?: string; label?: string }
 }
 
-/** Số trường luôn hiển thị; phần còn lại ẩn sau nút toggle */
-const VISIBLE_COUNT = 2
+/** Số trường luôn hiển thị; phần còn lại ẩn sau nút "Thêm bộ lọc" */
+const VISIBLE_COUNT = 3
 
 export default function FilterBar({
   fields, onApply, extra, initial,
@@ -28,28 +29,6 @@ export default function FilterBar({
   const onApplyRef = useRef(onApply)
   onApplyRef.current = onApply
   const first = useRef(true)
-
-  // Chia fields thành phần luôn hiện và phần ẩn
-  const visibleFields = fields.slice(0, VISIBLE_COUNT)
-  const hiddenFields  = fields.slice(VISIBLE_COUNT)
-
-  // Lazy-init expanded: tự mở nếu initial đã có filter ở phần ẩn
-  const [expanded, setExpanded] = useState(() => {
-    if (!initial || !hiddenFields.length) return false
-    return hiddenFields.some((f) =>
-      f.type === 'daterange'
-        ? !!(initial[f.key + '_from'] || initial[f.key + '_to'])
-        : !!initial[f.key]
-    )
-  })
-
-  // Đếm số trường ẩn đang có giá trị lọc (để hiện badge)
-  const hiddenActiveCount = hiddenFields.reduce((acc, f) => {
-    const active = f.type === 'daterange'
-      ? !!(vals[f.key + '_from'] || vals[f.key + '_to'])
-      : !!vals[f.key]
-    return acc + (active ? 1 : 0)
-  }, 0)
 
   useEffect(() => {
     fields.filter((f) => f.source).forEach((f) => {
@@ -82,17 +61,17 @@ export default function FilterBar({
   }
   function clear() { setVals({}) }
 
-  function renderField(f: FilterField) {
+  /** Trường thứ VISIBLE_COUNT trở đi là bộ lọc phụ → FilterPanel tự ẩn sau nút "Thêm bộ lọc" */
+  function renderField(f: FilterField, idx: number) {
     const opts = f.options || dyn[f.key]
+    const isRange = f.type === 'daterange'
+    const active = isRange ? !!(vals[f.key + '_from'] || vals[f.key + '_to']) : !!vals[f.key]
     return (
-      <div key={f.key} className="toolbar-filter-item"
-           style={f.type === 'daterange' ? { flex: '1 1 260px', maxWidth: 320 } : undefined}>
-        <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', display: 'block', marginBottom: 6 }}>
-          {f.label}
-        </label>
+      <FilterItem key={f.key} label={f.label} width={isRange ? 260 : undefined}
+                  secondary={idx >= VISIBLE_COUNT} active={active}>
         {(f.type === 'select' || f.source) ? (
           <SearchSelect value={vals[f.key] || ''} options={opts || []} placeholder="Tất cả" onChange={(v) => set(f.key, v)} />
-        ) : f.type === 'daterange' ? (
+        ) : isRange ? (
           <DateRangePicker block
             value={{ from: vals[f.key + '_from'] || '', to: vals[f.key + '_to'] || '' }}
             onChange={(v) => setRange(f.key, v)} />
@@ -100,43 +79,13 @@ export default function FilterBar({
           <input placeholder={`Nhập ${f.label.toLowerCase()}…`} value={vals[f.key] || ''}
                  onChange={(e) => set(f.key, e.target.value)} />
         )}
-      </div>
+      </FilterItem>
     )
   }
 
   return (
-    <div className="card" style={{ padding: 18, marginBottom: 14 }}>
-      <div className="toolbar" style={{ marginBottom: 0, alignItems: 'flex-end' }}>
-        {/* Trường luôn hiển thị (VISIBLE_COUNT trường đầu) */}
-        {visibleFields.map(renderField)}
-
-        {/* Trường ẩn — chỉ render khi đã mở rộng */}
-        {expanded && hiddenFields.map(renderField)}
-
-        {/* Nút toggle thu gọn / mở rộng (chỉ xuất hiện khi có ít nhất 1 trường bị ẩn) */}
-        {hiddenFields.length > 0 && (
-          <button
-            className="btn ghost"
-            onClick={() => setExpanded((e) => !e)}
-            style={{ height: 40, borderRadius: 12, whiteSpace: 'nowrap', alignSelf: 'flex-end' }}
-          >
-            {expanded
-              ? 'Thu gọn'
-              : hiddenActiveCount > 0
-                ? `Thêm bộ lọc · ${hiddenActiveCount} đang lọc`
-                : `Thêm bộ lọc (${hiddenFields.length})`}
-          </button>
-        )}
-
-        {/* Nút Xóa lọc — luôn hiện khi có bất kỳ giá trị nào */}
-        {Object.values(vals).some((v) => v) && (
-          <button className="btn ghost" onClick={clear} style={{ height: 40, borderRadius: 12 }}>
-            Xóa lọc
-          </button>
-        )}
-        <span style={{ flex: 1 }} />
-        {extra}
-      </div>
-    </div>
+    <FilterPanel onClear={clear} canClear={Object.values(vals).some((v) => v)} extra={extra}>
+      {fields.map(renderField)}
+    </FilterPanel>
   )
 }

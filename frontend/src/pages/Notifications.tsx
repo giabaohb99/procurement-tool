@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import { fmtDateTime } from '../utils/datetime'
 import { askConfirm } from '../components/confirm'
 import { toast } from '../components/toast'
+import FilterPanel, { FilterItem } from '../components/FilterPanel'
 import Pagination from '../components/Pagination'
 
 type Notif = { id: number; title: string; body: string; link: string; is_read: boolean; at: string }
@@ -65,8 +66,6 @@ export default function Notifications() {
     setPage(1); load(1, pageSize)
   }
 
-  const lbl = { fontSize: 12, color: 'var(--muted)' } as const
-
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
@@ -77,25 +76,23 @@ export default function Notifications() {
         </div>
       </div>
 
-      <div className="card" style={{ padding: 14, marginBottom: 12, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <div>
-          <label style={lbl}>Trạng thái</label>
-          <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 8, padding: 3, marginTop: 4 }}>
+      <FilterPanel onClear={() => { setTab('all'); setQ('') }} canClear={tab !== 'all' || !!q}>
+        <FilterItem label="Trạng thái" width={200}>
+          <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 8, padding: 3, height: 40, boxSizing: 'border-box' }}>
             {(['all', 'unread'] as const).map((t) => (
               <button key={t} onClick={() => setTab(t)}
-                style={{ border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: '6px 14px', borderRadius: 6,
+                style={{ flex: 1, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: '0 12px', borderRadius: 6,
                   background: tab === t ? '#fff' : 'transparent', color: tab === t ? 'var(--navy)' : 'var(--muted)',
                   boxShadow: tab === t ? '0 1px 2px rgba(15,23,42,.12)' : 'none' }}>
                 {t === 'all' ? 'Tất cả' : 'Chưa đọc'}
               </button>
             ))}
           </div>
-        </div>
-        <div style={{ flex: '1 1 260px', maxWidth: 360 }}>
-          <label style={lbl}>Tìm kiếm</label>
+        </FilterItem>
+        <FilterItem label="Tìm kiếm" grow>
           <input value={q} placeholder="Tìm theo tiêu đề / nội dung…" onChange={(e) => setQ(e.target.value)} />
-        </div>
-      </div>
+        </FilterItem>
+      </FilterPanel>
 
       <div className="card">
         {items.length === 0 && (
