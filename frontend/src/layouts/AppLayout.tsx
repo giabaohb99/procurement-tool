@@ -214,7 +214,7 @@ const NAV_GROUPS: NavGroup[] = [
       },
       {
         to: "/roles",
-        label: "Vai trò",
+        label: "Phân quyền tài khoản",
         icon: "ti-shield",
         entity: "role",
         manage: true,

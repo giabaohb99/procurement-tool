@@ -14,6 +14,7 @@ export type FieldDef = {
   colorMap?: Record<string, string>   // map giá trị option → màu chữ (vd trạng thái: true→xanh, false→đỏ)
   zeroAsBlank?: boolean   // ô số FK-sentinel: giá trị 0 hiện rỗng (để trống = 0), tránh hiện "0" mặc định
   default?: any           // giá trị mặc định khi TẠO MỚI (bản ghi mới)
+  hint?: string           // dòng chú thích nhỏ dưới ô nhập (giải thích ý nghĩa field)
 }
 // link?: trả URL → cell thành clickable, điều hướng tới URL đó (chặn click lan ra dòng)
 export type Column = { key: string; label: string; render?: (row: any) => any; link?: (row: any) => string }
@@ -236,7 +237,7 @@ export const cruds: Record<string, CrudConfig> = {
     columns: [
       { key: 'code', label: 'Mã NV' }, { key: 'full_name', label: 'Họ tên' }, { key: 'email', label: 'Email' },
       { key: 'department_name', label: 'Phòng ban' },
-      { key: 'role_name', label: 'Vai trò' },
+      { key: 'position', label: 'Vị trí' },
       { key: 'status', label: 'Trạng thái', render: (r) => badge(r.status === 'Chính thức', r.status, r.status) },
     ],
     filters: [
@@ -252,7 +253,9 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã NV', readonlyOnEdit: true }, { key: 'full_name', label: 'Họ tên' },
       { key: 'email', label: 'Email' }, { key: 'phone', label: 'Số điện thoại' },
       { key: 'department_id', label: 'Phòng ban', type: 'select', source: { url: '/api/departments', value: 'id', label: 'name' } },
-      { key: 'role_name', label: 'Vai trò', type: 'select', default: 'Nhân sự', source: { url: '/api/roles', value: 'name', label: 'name' } },
+      // CR-022: đây là CHỨC DANH để hiển thị/in phiếu, KHÔNG cấp quyền cho tài khoản đăng nhập.
+      { key: 'position', label: 'Vị trí / Chức vụ',
+        hint: 'Chỉ là chức danh hiển thị trên phiếu — không phải phân quyền. Quyền thật của tài khoản đặt ở màn "Phân quyền tài khoản".' },
       { key: 'status', label: 'Trạng thái', type: 'select', default: 'Chính thức', options: [
         {value: 'Chính thức', label: 'Chính thức'},
         {value: 'Cộng tác viên', label: 'Cộng tác viên'},
@@ -262,7 +265,7 @@ export const cruds: Record<string, CrudConfig> = {
     ],
   },
   roles: {
-    slug: 'roles', entity: 'role', title: 'Vai trò', apiPath: '/api/roles',
+    slug: 'roles', entity: 'role', title: 'Phân quyền tài khoản', apiPath: '/api/roles',
     columns: [
       { key: 'code', label: 'Mã Vai trò' },
       { key: 'name', label: 'Tên Vai trò' },

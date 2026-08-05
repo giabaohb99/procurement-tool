@@ -72,7 +72,7 @@ function InfoTab({ me }: { me: any }) {
   const rows: [string, any][] = [
     ['Họ và tên', me.full_name], ['Mã nhân viên', me.emp_code || '—'], ['Email', me.email],
     ['Số điện thoại', me.phone || '—'], ['Phòng ban', me.department_name || '—'],
-    ['Chức vụ', me.position || me.role_name || '—'],
+    ['Vị trí / Chức vụ', me.position || '—'],
   ]
 
   return (

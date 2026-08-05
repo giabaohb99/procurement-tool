@@ -154,6 +154,7 @@ export default function CrudDetail() {
                            value={f.zeroAsBlank && form[f.key] === 0 ? '' : (form[f.key] ?? '')} disabled={ro}
                            onChange={(e) => set(f.key, f.type === 'number' ? Number(e.target.value) : e.target.value)} />
                   )}
+                  {f.hint && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4, fontWeight: 'normal' }}>{f.hint}</div>}
                 </div>
               )
             })}

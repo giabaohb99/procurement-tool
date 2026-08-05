@@ -287,7 +287,7 @@ Gọi `GET /api/auth/me` khi trang tải. Hiển thị các trường sau (chỉ
 | Email | `email` (từ `User`) | Email đăng nhập |
 | Số điện thoại | `phone` (từ `Employee`) | Hiển thị `—` nếu trống |
 | Phòng ban | `department_name` (từ `Employee`) | Hiển thị `—` nếu trống |
-| Chức vụ | `position` hoặc `role_name` (từ `Employee`) | Ưu tiên `position`, fallback sang `role_name`; hiển thị `—` nếu cả hai trống |
+| Vị trí / Chức vụ | `position` (từ `Employee`) | Chỉ là chức danh hiển thị, không phải phân quyền (CR-022); hiển thị `—` nếu trống |
 
 Nút "Thông báo" ở đầu trang → điều hướng sang `/notifications`.
 

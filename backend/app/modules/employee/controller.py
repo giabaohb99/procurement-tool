@@ -62,17 +62,13 @@ def set_password(eid: int, data: SetPasswordIn, db: Session = Depends(get_db),
         raise HTTPException(400, "Nhân sự chưa có email — hãy nhập email trước để tạo tài khoản đăng nhập")
     if db.query(User).filter(User.email == emp.email).first():
         raise HTTPException(400, f"Email {emp.email} đã được dùng cho tài khoản khác")
-    from app.modules.role.model import Role
     from app.modules.user import service as user_service
     from app.modules.user.schema import UserProvision
-    role_ids = []
-    if (emp.role_name or "").strip():
-        role = db.query(Role).filter(Role.name == emp.role_name).first()
-        if role:
-            role_ids = [role.id]
+    # CR-022: tài khoản mới tạo ra KHÔNG kèm vai trò nào. Hồ sơ nhân sự chỉ còn "Vị trí / Chức vụ"
+    # (chữ hiển thị), không cấp quyền. Admin phải vào "Phân quyền tài khoản" gán vai trò/phạm vi.
     user_service.provision_user(
-        db, UserProvision(employee_id=eid, email=emp.email, password=data.password, role_ids=role_ids), user.id)
-    return success(None, "Đã tạo tài khoản đăng nhập và đặt mật khẩu")
+        db, UserProvision(employee_id=eid, email=emp.email, password=data.password, role_ids=[]), user.id)
+    return success(None, "Đã tạo tài khoản đăng nhập. Hãy vào Phân quyền tài khoản để gán vai trò.")
 
 
 @router.post("")
@@ -123,7 +119,7 @@ def export_employees_csv(
         "email": "Email",
         "phone": "Số điện thoại",
         "department_name": "Phòng ban",
-        "role_name": "Vai trò",
+        "position": "Vị trí",          # CR-022: chức danh hiển thị, KHÔNG phải phân quyền
         "status": "Trạng thái NS",
     }
     return export_csv_response(items, headers_map, "employees")
@@ -161,7 +157,9 @@ def import_employees_csv(
         email = (row.get("Email") or "").strip()
         phone = (row.get("Số điện thoại") or row.get("SĐT") or "").strip()
         department_name = (row.get("Phòng ban") or "").strip()
-        role_name = (row.get("Vai trò") or "").strip()
+        # CR-022: cột "Vai trò" cũ nay là "Vị trí" (chức danh). Vẫn đọc tên cột cũ để file CSV
+        # xuất trước đây import lại được, nhưng đổ vào `position` — KHÔNG cấp quyền cho tài khoản.
+        position = (row.get("Vị trí") or row.get("Chức vụ") or row.get("Vai trò") or "").strip()
         status = (row.get("Trạng thái NS") or row.get("Trạng thái") or "Chính thức").strip()
         
         if not code and not full_name:
@@ -186,7 +184,7 @@ def import_employees_csv(
                 existing.email = email
                 existing.phone = phone
                 if department_id: existing.department_id = department_id
-                existing.role_name = role_name
+                existing.position = position
                 existing.status = status
                 existing.is_active = is_active
                 existing.updated_by = user.id
@@ -197,7 +195,7 @@ def import_employees_csv(
             if not code: code = generate_code(db, Employee, "NSU")
             new_obj = Employee(
                 code=code, full_name=full_name, email=email, phone=phone,
-                department_id=department_id, role_name=role_name, status=status,
+                department_id=department_id, position=position, status=status,
                 is_active=is_active, created_by=user.id, updated_by=user.id
             )
             db.add(new_obj)

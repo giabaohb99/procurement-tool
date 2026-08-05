@@ -18,8 +18,10 @@
 - Ràng buộc: **Kho nhận bắt buộc**, Tên vật tư bắt buộc, Số lượng > 0. Ghi chú/Chi tiết tiến độ = textarea.
 
 ## 3. Fix auto-điền "Trưởng bộ phận (TBP)/Người liên hệ"
-- Hiện tìm theo `position` chứa "trưởng" → dữ liệu thật để ở `role_name` → không ra.
-- **Sửa:** khi chọn người yêu cầu → lấy phòng ban mặc định của nhân sự đó → tìm nhân sự cùng phòng có `role_name`/`position` là **Trưởng bộ phận** → tự điền TBP. (Nếu phòng có nhiều, lấy người đầu.)
+> **ĐÃ THAY BẰNG CR-018 / D-016 (2026-08-05).** Cách dò dưới đây (tìm nhân sự cùng phòng có chữ "trưởng" trong `role_name`/`position`) **đã gỡ bỏ** vì cho kết quả SAI — chức danh trong hồ sơ nhân sự không có nghĩa là người đó là trưởng phòng. Nguồn duy nhất nay là `Department.manager_id` (API `meta/dept-head`).
+
+- ~~Hiện tìm theo `position` chứa "trưởng" → dữ liệu thật để ở `role_name` → không ra.~~
+- ~~**Sửa:** khi chọn người yêu cầu → lấy phòng ban mặc định của nhân sự đó → tìm nhân sự cùng phòng có `role_name`/`position` là **Trưởng bộ phận** → tự điền TBP. (Nếu phòng có nhiều, lấy người đầu.)~~
 
 ## 4. NCC đề xuất — nhập tay (bỏ select)
 - Người yêu cầu KHÔNG có quyền xem danh sách NCC → **Tên NCC** đổi từ dropdown sang **ô nhập tay**.
@@ -60,4 +62,4 @@
 **Trường form dòng:** thêm **Ngày cần hàng** (`required_date`).
 **"Mô tả phân loại"** = tự sinh từ Phân loại: "Hàng NCC có sẵn: X ngày; không sẵn: Y ngày" (ẩn phần thiếu). Lấy `std_days` / `std_days_unavail` của ItemGroup.
 **NCC đề xuất:** tên NCC = ô nhập tay (bỏ dropdown).
-**Auto TBP:** sửa lấy trưởng phòng theo phòng ban của người yêu cầu (dò theo `role_name`/`position`).
+**Auto TBP:** lấy trưởng phòng theo phòng ban của người yêu cầu — **theo `Department.manager_id`** (CR-018), KHÔNG dò theo `role_name`/`position` nữa.

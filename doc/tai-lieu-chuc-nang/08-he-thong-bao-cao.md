@@ -56,22 +56,19 @@ Quản lý danh sách nhân viên thuộc các công ty/phòng ban. Hồ sơ nh�
 - Người sửa: Người có quyền `employee:write`
 - Logic đặc biệt: Phòng ban xác định `dept_name` và `dept_id` trong hồ sơ phân quyền; ảnh hưởng đến phạm vi `dept` của các vai trò gán cho tài khoản liên kết
 
-### 6. Chức vụ (`position`)
+### 6. Vị trí / Chức vụ (`position`)
 
 - Kiểu nhập: Nhập tay (tối đa 100 ký tự)
 - Mặc định: rỗng
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người có quyền `employee:write`
+- Logic đặc biệt: **Chỉ là chức danh hiển thị** (in lên YCBG/YCMH ở ô "Chức vụ"), KHÔNG phải phân quyền. Quyền thật của tài khoản chỉ gán ở màn **Phân quyền tài khoản** (xem CR-022 / D-019). Form có sẵn dòng chú thích nhắc điều này
 
-### 7. Vai trò nghiệp vụ (`role_name`)
+### 7. ~~Vai trò nghiệp vụ (`role_name`)~~ — ĐÃ BỎ (CR-022)
 
-- Kiểu nhập: Chọn (từ danh sách vai trò hệ thống)
-- Mặc định: rỗng
-- Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: Bảng Vai trò (`tab_role`); lấy trường `name`
-- Người sửa: Người có quyền `employee:write`
-- Logic đặc biệt: Trường thông tin mô tả nghiệp vụ trên hồ sơ nhân sự; KHÔNG tự động gán quyền — việc gán quyền thực hiện ở màn Người dùng
+- Ô "Vai trò" trên hồ sơ nhân sự đã bị gỡ khỏi form và danh sách; giá trị cũ được chép sang `position` bằng migration `c8d1f6b3a92e`
+- Cột `role_name` vẫn còn trong DB để giữ dữ liệu lịch sử nhưng **không còn được đọc/ghi ở bất kỳ luồng nào**
 
 ### 8. Trạng thái (`status`)
 

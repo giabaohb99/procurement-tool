@@ -63,14 +63,8 @@ def google_login(db: Session, credential: str) -> User:
         user = User(email=email, employee_id=emp.id, is_active=True, google_sub=idinfo.get("sub", ""), avatar=idinfo.get("picture", ""))
         db.add(user)
         db.flush()
-        
-        # Assign role to new user based on emp.role_name
-        from app.modules.role.model import Role
-        from app.modules.user.model import UserRole
-        if emp.role_name:
-            role = db.query(Role).filter(Role.name == emp.role_name).first()
-            if role:
-                db.add(UserRole(user_id=user.id, role_id=role.id))
+        # CR-022: KHÔNG tự gán vai trò theo hồ sơ nhân sự nữa (ô đó nay là "Vị trí", chỉ là chữ).
+        # Tài khoản mới đăng nhập lần đầu chưa có quyền gì — admin gán ở "Phân quyền tài khoản".
     else:
         if not user.google_sub:
             user.google_sub = idinfo.get("sub", "")

@@ -15,7 +15,9 @@ Việc nó làm — đúng phần tối thiểu để hệ thống chạy đư�
   2. Tạo vai trò chuẩn nào CHƯA có (STD_ROLES). Vai trò đã có thì GIỮ NGUYÊN quyền đang chạy.
   3. Tài khoản quản trị đầu tiên — chỉ khi DB chưa có tài khoản admin nào (cài mới).
   4. Tài khoản quản trị Help Center + 4 khung cấu hình trang chủ HDSD (insert-only).
-  5. Gán vai trò 'Nhân sự' cho tài khoản chưa có vai trò nào.
+
+KHÔNG tự gán vai trò 'Nhân sự' cho tài khoản chưa có vai trò (CR-022): quyền của tài khoản chỉ
+được cấp ở màn "Phân quyền tài khoản", không có đường tự cấp ngầm nào.
 
 Muốn áp LẠI phân quyền chuẩn theo file seed (vd sau khi đổi STD_ROLES): đặt SEED_FORCE_SYNC=true
 trong .env, restart api MỘT lần, rồi trả về false trước lần deploy sau.
@@ -28,7 +30,7 @@ from app.modules.employee.model import Employee
 from app.modules.role.model import Role, Permission  # noqa: F401
 from app.modules.user.model import User, UserRole
 
-from app.seed import (assign_default_roles, ensure_admin_role, force_resync_roles,
+from app.seed import (ensure_admin_role, force_resync_roles,
                       seed_help_admin, seed_help_home_sections, seed_standard_roles)
 
 
@@ -81,10 +83,6 @@ def run():
         _company = db.query(Company).order_by(Company.id).first()   # 4
         seed_help_admin(db, _company.id if _company else None)
         seed_help_home_sections(db)
-
-        n_default = assign_default_roles(db)   # 5
-        if n_default:
-            print(f"Gán vai trò 'Nhân sự' mặc định cho {n_default} tài khoản.")
 
         print("Seed prod done (không nạp dữ liệu mẫu, không ghi đè dữ liệu đã có).")
     finally:

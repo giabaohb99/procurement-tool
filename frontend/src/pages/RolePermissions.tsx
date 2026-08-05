@@ -84,7 +84,7 @@ export default function RolePermissions() {
 
   return (
     <div>
-      <h2 className="page-title">Phân quyền</h2>
+      <h2 className="page-title">Phân quyền tài khoản</h2>
       <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
         <button className={'btn ' + (tab === 'roles' ? '' : 'ghost')} onClick={() => setTab('roles')}>Vai trò &amp; quyền</button>
         <button className={'btn ' + (tab === 'users' ? '' : 'ghost')} onClick={() => setTab('users')}>Người dùng</button>

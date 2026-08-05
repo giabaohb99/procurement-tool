@@ -91,7 +91,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 ### 6. Chức vụ (`requester_position`)
 
 - Kiểu nhập: Nhập tay (tự điền khi chọn Nhân sự YC)
-- Mặc định: trống; tự điền từ `employee.position` hoặc `employee.role_name`
+- Mặc định: trống; tự điền từ `employee.position` (Vị trí / Chức vụ trong hồ sơ nhân sự)
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Tự điền từ `employee.position`; có thể sửa thủ công sau
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`

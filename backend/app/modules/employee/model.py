@@ -15,7 +15,9 @@ class Employee(Base, AuditMixin):
     phone: Mapped[str] = mapped_column(String(25), default="")
     company_id: Mapped[int] = mapped_column(BigInteger, default=0)
     department_id: Mapped[int] = mapped_column(BigInteger, default=0)
-    position: Mapped[str] = mapped_column(String(100), default="")
+    position: Mapped[str] = mapped_column(String(100), default="")   # Vị trí / Chức vụ — CHỈ là chữ
+    # CR-022: KHÔNG dùng nữa. Trước đây ô "Vai trò" ở màn Nhân sự tự cấp quyền cho tài khoản; nay
+    # quyền chỉ gán ở "Phân quyền tài khoản" (tab_user_role). Cột giữ lại để không mất dữ liệu cũ.
     role_name: Mapped[str] = mapped_column(String(100), default="")
     status: Mapped[str] = mapped_column(String(50), default="Chính thức")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

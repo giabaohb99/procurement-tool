@@ -93,7 +93,7 @@ Màn danh sách `/survey-requests` hỗ trợ các bộ lọc:
 ### 4. Chức vụ (`requester_position`)
 
 - Kiểu nhập: Nhập tay (tự điền từ nhân viên, có thể sửa sau)
-- Mặc định: Tự điền từ `employee.position` hoặc `employee.role_name`
+- Mặc định: Tự điền từ `employee.position` (Vị trí / Chức vụ trong hồ sơ nhân sự)
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Tự điền từ danh sách nhân viên
 - Người sửa: Người YC khi phiếu `draft` / `rejected`
