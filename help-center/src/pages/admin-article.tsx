@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
-import { Eye, FileX2, FolderInput, History, Images, ListTree, MoreHorizontal, Save, Trash2 } from 'lucide-react'
+import {
+  Eye, FileX2, FolderInput, History, Images, LayoutGrid, ListTree, MoreHorizontal, Save, Trash2,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 import { api } from '@/api/client'
@@ -10,6 +12,7 @@ import { useAuth } from '@/auth/auth-context'
 import { HelpSlideManager, uploadHelpImage, type HelpSlide } from '@/components/help-article-slides'
 import HelpAuditTimeline, { type HelpAuditLog } from '@/components/help-audit-timeline'
 import HelpChildArticles from '@/components/help-child-articles'
+import HelpIconPicker from '@/components/help-icon-picker'
 import MoveArticleDialog from '@/components/move-article-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -32,6 +35,8 @@ interface HelpArticleData {
   id: number
   title: string
   content: string
+  summary: string | null
+  icon: string | null
   parent_id: number | null
   sort_order: number
   slides: HelpSlide[]
@@ -48,6 +53,8 @@ export default function AdminArticle() {
   const [notFound, setNotFound] = useState(false)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const [summary, setSummary] = useState('')
+  const [icon, setIcon] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   // Quill chuẩn hóa lại HTML ngay khi mount (thêm <p><br></p>...) nên KHÔNG so sánh chuỗi
   // để biết đã sửa hay chưa — chỉ đánh dấu khi onChange đến từ thao tác của người dùng.
@@ -62,7 +69,12 @@ export default function AdminArticle() {
   const depth = nodeId ? (findPath(tree, nodeId)?.length ?? 1) - 1 : 0
   const childCount = node?.children?.length || 0
 
-  const dirty = !!article && (title !== article.title || contentTouched)
+  const dirty = !!article && (
+    title !== article.title
+    || summary !== (article.summary || '')
+    || icon !== article.icon
+    || contentTouched
+  )
 
   const fetchArticle = async () => {
     try {
@@ -70,6 +82,8 @@ export default function AdminArticle() {
       setArticle(res.data.data)
       setTitle(res.data.data.title)
       setContent(res.data.data.content || '')
+      setSummary(res.data.data.summary || '')
+      setIcon(res.data.data.icon ?? null)
       setContentTouched(false)
       setNotFound(false)
     } catch {
@@ -103,7 +117,10 @@ export default function AdminArticle() {
     }
     setSaving(true)
     try {
-      await api.put(`/api/v1/help-center/${id}`, { title, content })
+      // summary gửi null (không phải chuỗi rỗng) để backend xóa hẳn mô tả cũ
+      await api.put(`/api/v1/help-center/${id}`, {
+        title, content, summary: summary.trim() || null, icon,
+      })
       toast.success('Đã lưu bài viết')
       await Promise.all([fetchArticle(), fetchLogs(), loadTree()])
     } catch {
@@ -112,7 +129,7 @@ export default function AdminArticle() {
       setSaving(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, title, content, loadTree])
+  }, [id, title, content, summary, icon, loadTree])
 
   // Ctrl/Cmd + S để lưu nhanh khi đang soạn
   useEffect(() => {
@@ -260,6 +277,32 @@ export default function AdminArticle() {
       <div className="flex flex-col items-start gap-5 xl:flex-row">
         {/* Cột trái: soạn nội dung + ảnh từng bước */}
         <div className="min-w-0 flex-1 space-y-5">
+          <Panel
+            icon={LayoutGrid}
+            title="Hiển thị ngoài trang chủ"
+            hint="Mô tả ngắn + icon trên thẻ khu người dùng"
+          >
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-navy">Mô tả ngắn</label>
+                <Input
+                  value={summary}
+                  maxLength={255}
+                  placeholder="VD: Cách lập và gửi duyệt phiếu yêu cầu mua hàng."
+                  onChange={(e) => setSummary(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Bỏ trống thì thẻ sẽ tự hiện số bài viết bên trong.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-navy">Icon</label>
+                <HelpIconPicker value={icon} onChange={setIcon} />
+              </div>
+            </div>
+          </Panel>
+
           <Panel title="Nội dung bài viết" hint="Ctrl/⌘ + S để lưu nhanh">
             <div className="hc-editor">
               <ReactQuill

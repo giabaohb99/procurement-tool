@@ -30,6 +30,8 @@ class HelpArticleCreate(BaseModel):
     parent_id: Optional[int] = None
     content: str = ""
     sort_order: int = 0
+    summary: Optional[str] = None
+    icon: Optional[str] = None
 
 
 class HelpArticleUpdate(BaseModel):
@@ -37,6 +39,8 @@ class HelpArticleUpdate(BaseModel):
     parent_id: Optional[int] = None
     content: Optional[str] = None
     sort_order: Optional[int] = None
+    summary: Optional[str] = None
+    icon: Optional[str] = None
 
 
 class HelpArticleOut(BaseModel):
@@ -46,6 +50,8 @@ class HelpArticleOut(BaseModel):
     title: str
     parent_id: Optional[int] = None
     sort_order: int
+    summary: Optional[str] = None
+    icon: Optional[str] = None
 
     # Chỉ có ở màn chi tiết, danh sách cây bỏ qua cho nhẹ
     content: Optional[str] = None

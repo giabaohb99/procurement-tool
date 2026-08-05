@@ -2,34 +2,38 @@ import { toast } from 'sonner'
 
 import { api } from '@/api/client'
 import { askConfirm, askPrompt } from '@/components/confirm-dialog'
-import type { HelpNode } from '@/lib/help-tree'
+import { askNewArticle } from '@/components/create-article-dialog'
+import { findNode, type HelpNode } from '@/lib/help-tree'
+import type { DropPosition } from '@/lib/help-tree-dnd'
 
 // Thao tác CRUD + sắp xếp bài viết, dùng chung cho bảng cây (/admin) và danh sách bài con (/admin/:id).
 // Mọi hàm trả về id/boolean và KHÔNG tự nạp lại cây — nơi gọi tự quyết định lúc nào refresh.
 
-/** Nhãn cấp bậc theo độ sâu trong cây. */
-export const LEVEL_LABELS = ['Mục gốc', 'Bài viết', 'Bài chi tiết'] as const
+/** Nhãn cấp bậc theo độ sâu trong cây. Cấp 1 và cấp 2 đều gọi chung là "Bài viết". */
+export const LEVEL_LABELS = ['Mục gốc', 'Bài viết', 'Bài viết'] as const
 
 export function levelLabel(depth: number): string {
   return LEVEL_LABELS[depth] ?? `Cấp ${depth + 1}`
 }
 
-/** Tạo bài viết mới (hỏi tiêu đề). Trả id bài vừa tạo, hoặc null nếu hủy/lỗi. */
+/** Tạo bài viết mới (hỏi tiêu đề + mô tả ngắn + icon). Trả id bài vừa tạo, hoặc null nếu hủy/lỗi. */
 export async function createArticle(
   parentId: number | null,
   sortOrder: number,
   depth: number,
 ): Promise<number | null> {
-  const title = await askPrompt({
+  const draft = await askNewArticle({
     title: parentId === null ? 'Thêm mục gốc' : `Thêm ${levelLabel(depth).toLowerCase()}`,
-    message: 'Nhập tiêu đề cho bài viết mới:',
-    placeholder: 'VD: Hướng dẫn tạo Yêu cầu mua hàng',
-    required: true,
+    description: 'Mô tả ngắn và icon sẽ hiển thị trên thẻ ở khu người dùng.',
   })
-  if (!title) return null
+  if (!draft) return null
   try {
     const res = await api.post('/api/v1/help-center', {
-      title, parent_id: parentId, sort_order: sortOrder,
+      title: draft.title,
+      summary: draft.summary,
+      icon: draft.icon,
+      parent_id: parentId,
+      sort_order: sortOrder,
     })
     toast.success('Đã tạo bài viết')
     return res.data.data.id as number
@@ -90,6 +94,67 @@ export async function moveArticle(nodeId: number, parentId: number | null): Prom
     return true
   } catch {
     return false // interceptor đã toast lỗi (vd chuyển vào chính bài con của nó)
+  }
+}
+
+/**
+ * Kéo-thả 1 bài viết tới vị trí mới: đổi thứ tự trong cùng mục HOẶC chuyển sang mục cha khác.
+ *
+ * Gọi sau khi `canDrop` đã xác nhận nước thả hợp lệ. Trả false khi không có gì thay đổi.
+ * Cách đánh lại sort_order giống `reorderSibling`: dữ liệu cũ có thể để 0 hết nên phải
+ * ghi lại theo đúng vị trí cho MỌI phần tử bị lệch.
+ */
+export async function dropArticle(
+  tree: HelpNode[],
+  dragId: number,
+  targetId: number,
+  position: DropPosition,
+): Promise<boolean> {
+  const drag = findNode(tree, dragId)
+  const target = findNode(tree, targetId)
+  if (!drag || !target) return false
+
+  const newParentId = position === 'inside' ? target.id : target.parent_id
+  const newParent = newParentId !== null ? findNode(tree, newParentId) : null
+
+  // Danh sách anh em mới, đã bỏ chính node đang kéo ra
+  const siblings = (newParent ? newParent.children || [] : tree).filter((n) => n.id !== dragId)
+
+  let index = siblings.length
+  if (position !== 'inside') {
+    const at = siblings.findIndex((n) => n.id === targetId)
+    index = position === 'before' ? at : at + 1
+  }
+
+  const next = [...siblings.slice(0, index), drag, ...siblings.slice(index)]
+
+  const payloads = next
+    .map((node, i) => ({ node, i }))
+    .filter(({ node, i }) =>
+      node.sort_order !== i || (node.id === dragId && node.parent_id !== newParentId))
+    .map(({ node, i }) => ({
+      id: node.id,
+      // Chỉ node đang kéo mới đổi cha; các node còn lại chỉ cần đánh lại thứ tự
+      body: node.id === dragId ? { parent_id: newParentId, sort_order: i } : { sort_order: i },
+    }))
+
+  if (payloads.length === 0) return false
+
+  try {
+    await Promise.all(
+      payloads.map(({ id, body }) =>
+        api.put(`/api/v1/help-center/${id}`, body, { _silent: true } as any),
+      ),
+    )
+    toast.success(
+      drag.parent_id === newParentId
+        ? 'Đã đổi thứ tự hiển thị'
+        : `Đã chuyển "${drag.title}" sang ${newParent ? `"${newParent.title}"` : 'mục gốc'}`,
+    )
+    return true
+  } catch {
+    toast.error('Không chuyển được bài viết, vui lòng thử lại')
+    return false
   }
 }
 

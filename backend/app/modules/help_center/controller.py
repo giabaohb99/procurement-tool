@@ -9,7 +9,8 @@ from app.core.file_registry import ext_of
 from app.core.response import success
 from app.core.storage import dated_key, upload_fileobj
 
-from . import service
+from . import home_service, service
+from .home_schema import HelpHomeItemCreate, HelpHomeItemUpdate, HelpHomeSectionUpdate
 from .schema import (HelpArticleCreate, HelpArticleOut, HelpArticleSlideCreate,
                      HelpArticleSlideOut, HelpArticleSlideUpdate,
                      HelpArticleUpdate)
@@ -32,6 +33,17 @@ def get_help_tree(db: Session = Depends(get_db), user=Depends(get_current_user))
 def search_help_articles(q: str = "", db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Tìm kiếm bài viết theo tiêu đề HOẶC nội dung, kèm đoạn trích quanh từ khóa."""
     return success(service.search_articles(db, q))
+
+
+@router.get("/home")
+def get_help_home_sections(db: Session = Depends(get_db),
+                           user=Depends(require("help_article", "read"))):
+    """Danh sách 4 khung trang chủ sắp theo sort_order, kèm bài viết đã gắn (nếu có).
+
+    PHẢI khai báo TRƯỚC route "/{article_id}" bên dưới — nếu không, "/home" (1 segment)
+    sẽ khớp với "/{article_id}" trước và FastAPI trả 422 vì không convert được "home" sang int.
+    """
+    return success(home_service.get_home_sections(db))
 
 
 @router.get("/{article_id}")
@@ -104,3 +116,33 @@ def delete_article_slide(slide_id: int, db: Session = Depends(get_db),
                          user=Depends(require("help_article", "delete"))):
     service.delete_slide(db, slide_id, user.id)
     return success(None, "Đã xóa slide")
+
+
+# ---------- Cấu hình hiển thị trang chủ (4 khung cố định: quick_start/categories/faq/tips) ----------
+
+@router.put("/home/sections/{section_id}")
+def update_help_home_section(section_id: int, data: HelpHomeSectionUpdate, db: Session = Depends(get_db),
+                             user=Depends(require("help_article", "write"))):
+    section = home_service.update_home_section(db, section_id, data, user.id)
+    return success(section, "Đã cập nhật khung trang chủ")
+
+
+@router.post("/home/sections/{section_id}/items")
+def add_help_home_item(section_id: int, data: HelpHomeItemCreate, db: Session = Depends(get_db),
+                       user=Depends(require("help_article", "write"))):
+    item = home_service.add_home_item(db, section_id, data, user.id)
+    return success(item, "Đã thêm bài viết vào khung")
+
+
+@router.put("/home/items/{item_id}")
+def update_help_home_item(item_id: int, data: HelpHomeItemUpdate, db: Session = Depends(get_db),
+                          user=Depends(require("help_article", "write"))):
+    item = home_service.update_home_item(db, item_id, data, user.id)
+    return success(item, "Đã cập nhật bài viết trong khung")
+
+
+@router.delete("/home/items/{item_id}")
+def delete_help_home_item(item_id: int, db: Session = Depends(get_db),
+                          user=Depends(require("help_article", "write"))):
+    home_service.delete_home_item(db, item_id, user.id)
+    return success(None, "Đã bỏ bài viết khỏi khung")

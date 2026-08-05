@@ -9,13 +9,14 @@ import type { AdminOutletContext } from '@/layouts/admin-layout'
 import { createArticle } from '@/lib/help-article-actions'
 import { countDescendants, type HelpNode } from '@/lib/help-tree'
 
-// /admin — Quản lý bài viết: thống kê theo cấp + bảng cây có đủ thao tác.
+// /admin — Quản lý bài viết: thống kê + bảng cây có đủ thao tác.
 
-/** Đếm số bài ở từng cấp (0 = mục gốc, 1 = bài viết, 2 = bài chi tiết). */
-function countByDepth(nodes: HelpNode[], depth = 0, acc: number[] = [0, 0, 0]): number[] {
+/** Đếm số mục gốc (cấp 0) và số bài viết (mọi cấp bên dưới gộp chung). */
+function countByLevel(nodes: HelpNode[], depth = 0, acc = { roots: 0, articles: 0 }) {
   for (const node of nodes) {
-    if (depth < acc.length) acc[depth] += 1
-    countByDepth(node.children || [], depth + 1, acc)
+    if (depth === 0) acc.roots += 1
+    else acc.articles += 1
+    countByLevel(node.children || [], depth + 1, acc)
   }
   return acc
 }
@@ -25,7 +26,7 @@ export default function AdminHome() {
   const nav = useNavigate()
   const [filter, setFilter] = useState('')
 
-  const [roots, children, details] = countByDepth(tree)
+  const { roots, articles } = countByLevel(tree)
   const total = tree.reduce((sum, n) => sum + 1 + countDescendants(n), 0)
 
   const handleAddRoot = async () => {
@@ -41,7 +42,7 @@ export default function AdminHome() {
         <div>
           <h1 className="text-xl font-bold text-navy">Quản lý bài viết</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Cấu trúc tài liệu 3 cấp: <b>Mục gốc</b> → <b>Bài viết</b> → <b>Bài chi tiết</b>.
+            Cấu trúc tài liệu tối đa 3 cấp: <b>Mục gốc</b> → <b>Bài viết</b> → <b>Bài viết</b>.
             Mục gốc hiển thị thành thẻ danh mục ở trang người dùng.
           </p>
         </div>
@@ -53,10 +54,9 @@ export default function AdminHome() {
         </div>
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-3 gap-3">
         <Stat value={roots} label="Mục gốc" />
-        <Stat value={children} label="Bài viết" />
-        <Stat value={details} label="Bài chi tiết" />
+        <Stat value={articles} label="Bài viết" />
         <Stat value={total} label="Tổng cộng" highlight />
       </div>
 

@@ -3,8 +3,11 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy import text
 
-from app.modules.help_center import service
-from app.modules.help_center.model import HelpArticle
+from app.modules.help_center import home_service, service
+from app.modules.help_center.home_schema import (HelpHomeItemCreate,
+                                                  HelpHomeItemUpdate,
+                                                  HelpHomeSectionUpdate)
+from app.modules.help_center.model import HelpArticle, HelpHomeItem, HelpHomeSection
 from app.modules.help_center.schema import HelpArticleCreate, HelpArticleUpdate
 
 
@@ -144,3 +147,139 @@ def test_tim_kiem_uu_tien_khop_tieu_de(db):
     hits = service.search_articles(db, "cong no")
 
     assert [h["in_title"] for h in hits] == [True, False]
+
+
+# ── Cấu hình hiển thị trang chủ (4 khung cố định) ────────────────────────────────
+
+@pytest.fixture
+def home_sections(db):
+    """4 khung giống seed thật, trả dict key -> HelpHomeSection."""
+    sections = {
+        key: HelpHomeSection(key=key, title=title, is_visible=True, sort_order=i)
+        for i, (key, title) in enumerate([
+            ("quick_start", "Bắt đầu ngay"), ("categories", "Các Phân hệ"),
+            ("faq", "Không tìm thấy điều bạn cần?"), ("tips", "Mẹo tra cứu"),
+        ])
+    }
+    db.add_all(sections.values())
+    db.commit()
+    for s in sections.values():
+        db.refresh(s)
+    return sections
+
+
+def test_them_bai_viet_vao_khung_quick_start(db, home_sections):
+    article = service.create_article(db, HelpArticleCreate(title="Bat dau", summary="Mo ta"), user_id=1)
+
+    item = home_service.add_home_item(
+        db, home_sections["quick_start"].id,
+        HelpHomeItemCreate(article_id=article.id, background_image="/x.png", gradient="blue"),
+        user_id=1,
+    )
+
+    assert item["article_id"] == article.id
+    assert item["article_title"] == "Bat dau"
+    assert item["article_summary"] == "Mo ta"
+    assert item["background_image"] == "/x.png"
+    assert item["gradient"] == "blue"
+
+
+def test_chan_them_trung_bai_viet_trong_cung_khung(db, home_sections):
+    article = service.create_article(db, HelpArticleCreate(title="Bat dau"), user_id=1)
+    home_service.add_home_item(db, home_sections["quick_start"].id,
+                               HelpHomeItemCreate(article_id=article.id), user_id=1)
+
+    with pytest.raises(HTTPException) as e:
+        home_service.add_home_item(db, home_sections["quick_start"].id,
+                                   HelpHomeItemCreate(article_id=article.id), user_id=1)
+    assert e.value.status_code == 400
+
+
+def test_khong_chan_bai_viet_trung_o_khung_khac(db, home_sections):
+    """Cùng 1 bài viết vẫn được gắn vào khung categories dù đã có ở quick_start."""
+    article = service.create_article(db, HelpArticleCreate(title="Bat dau"), user_id=1)
+    home_service.add_home_item(db, home_sections["quick_start"].id,
+                               HelpHomeItemCreate(article_id=article.id), user_id=1)
+
+    item = home_service.add_home_item(db, home_sections["categories"].id,
+                                      HelpHomeItemCreate(article_id=article.id), user_id=1)
+
+    assert item["article_id"] == article.id
+
+
+@pytest.mark.parametrize("section_key", ["faq", "tips"])
+def test_chan_them_bai_viet_vao_khung_faq_tips(db, home_sections, section_key):
+    article = service.create_article(db, HelpArticleCreate(title="Bat dau"), user_id=1)
+
+    with pytest.raises(HTTPException) as e:
+        home_service.add_home_item(db, home_sections[section_key].id,
+                                   HelpHomeItemCreate(article_id=article.id), user_id=1)
+    assert e.value.status_code == 400
+
+
+def test_xoa_duoc_background_image_ve_null(db, home_sections):
+    article = service.create_article(db, HelpArticleCreate(title="Bat dau"), user_id=1)
+    item = home_service.add_home_item(
+        db, home_sections["quick_start"].id,
+        HelpHomeItemCreate(article_id=article.id, background_image="/x.png", gradient="blue"),
+        user_id=1,
+    )
+
+    updated = home_service.update_home_item(
+        db, item["id"], HelpHomeItemUpdate(background_image=None), user_id=1
+    )
+
+    assert updated["background_image"] is None
+    assert updated["gradient"] == "blue"   # không gửi -> giữ nguyên
+
+
+def test_khong_gui_field_thi_giu_nguyen(db, home_sections):
+    article = service.create_article(db, HelpArticleCreate(title="Bat dau"), user_id=1)
+    item = home_service.add_home_item(
+        db, home_sections["quick_start"].id,
+        HelpHomeItemCreate(article_id=article.id, background_image="/x.png"),
+        user_id=1,
+    )
+
+    updated = home_service.update_home_item(db, item["id"], HelpHomeItemUpdate(sort_order=5), user_id=1)
+
+    assert updated["background_image"] == "/x.png"
+    assert updated["sort_order"] == 5
+
+
+def test_xoa_item_khoi_khung(db, home_sections):
+    article = service.create_article(db, HelpArticleCreate(title="Bat dau"), user_id=1)
+    item = home_service.add_home_item(db, home_sections["quick_start"].id,
+                                      HelpHomeItemCreate(article_id=article.id), user_id=1)
+
+    home_service.delete_home_item(db, item["id"], user_id=1)
+
+    assert db.get(HelpHomeItem, item["id"]) is None
+
+
+def test_xoa_bai_viet_thi_item_bien_mat_khoi_khung(db, home_sections):
+    """FK CASCADE: xóa bài viết gốc phải tự động dọn luôn item gắn ở trang chủ."""
+    article = service.create_article(db, HelpArticleCreate(title="Bat dau"), user_id=1)
+    home_service.add_home_item(db, home_sections["quick_start"].id,
+                               HelpHomeItemCreate(article_id=article.id), user_id=1)
+
+    service.delete_article(db, article.id, user_id=1)
+
+    sections = home_service.get_home_sections(db)
+    quick_start = next(s for s in sections if s["key"] == "quick_start")
+    assert quick_start["items"] == []
+
+
+def test_cap_nhat_khung_doi_tieu_de_va_an_hien(db, home_sections):
+    updated = home_service.update_home_section(
+        db, home_sections["tips"].id,
+        HelpHomeSectionUpdate(title="Meo moi", is_visible=False), user_id=1,
+    )
+
+    assert updated["title"] == "Meo moi"
+    assert updated["is_visible"] is False
+
+
+def test_get_home_sections_sap_theo_sort_order(db, home_sections):
+    sections = home_service.get_home_sections(db)
+    assert [s["key"] for s in sections] == ["quick_start", "categories", "faq", "tips"]

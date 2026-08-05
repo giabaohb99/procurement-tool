@@ -1,53 +1,40 @@
 import { Link } from 'react-router-dom'
-import {
-  ArrowRight, Banknote, BarChart3, FileText, Rocket, Settings, ShieldCheck, ShoppingCart, Truck,
-  type LucideIcon,
-} from 'lucide-react'
 
-import { countDescendants, type HelpNode } from '@/lib/help-tree'
+import HelpArticleIcon from '@/components/help-article-icon'
+import type { HelpNode } from '@/lib/help-tree'
 
-// Thẻ danh mục: icon vuông nhỏ bên trái, tiêu đề + số bài bên phải.
-// Một tông accent duy nhất (teal thương hiệu) — không dùng bảng pastel nhiều màu.
-// DB chưa có cột icon nên xoay vòng bộ icon theo vị trí mục (deterministic).
-
-const ICONS: LucideIcon[] = [
-  Rocket, FileText, BarChart3, ShoppingCart, Truck, Banknote, Settings, ShieldCheck,
-]
-
-export function iconOf(index: number): LucideIcon {
-  return ICONS[index % ICONS.length]
-}
+// Thẻ danh mục: icon vuông 48px nền teal nhạt bên trái, tiêu đề + mô tả ngắn bên phải.
+// Nền trắng, không viền, đổ bóng mảnh — đồng bộ với lưới "Các Phân hệ" của hệ Văn thư.
+// Icon và mô tả đều lấy từ bài viết (người soạn nhập ở khu quản trị).
+// Bài chưa chọn icon -> icon mặc định theo vị trí; bài chưa nhập mô tả -> bỏ trống dòng mô tả,
+// KHÔNG chèn câu đếm số bài con thay thế (đó là chữ độn, không mang thông tin cho người đọc).
 
 export default function HelpCategoryTiles({ nodes }: { nodes: HelpNode[] }) {
   if (nodes.length === 0) return null
 
   return (
-    <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {nodes.map((node, index) => {
-        const Icon = iconOf(index)
-        const total = countDescendants(node)
-
-        return (
-          <Link
-            key={node.id}
-            to={`/${node.id}`}
-            className="group flex h-full items-start gap-3.5 rounded-md border bg-card p-5 transition-colors hover:border-primary/50 hover:bg-secondary"
-          >
-            <span className="grid size-9 shrink-0 place-items-center rounded-md border bg-secondary text-primary">
-              <Icon className="size-[1.125rem]" strokeWidth={1.75} />
+    <div className="grid grid-cols-1 items-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {nodes.map((node, index) => (
+        <Link
+          key={node.id}
+          to={`/${node.id}`}
+          className="flex h-full items-start gap-4 rounded-xl bg-card p-6 shadow-[0_4px_12px_rgba(0,0,0,0.03)] transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(0,0,0,0.07)]"
+        >
+          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/8 text-primary">
+            <HelpArticleIcon icon={node.icon} index={index} className="size-6" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-base font-semibold leading-snug text-ink">
+              {node.title}
             </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[0.9375rem] font-semibold leading-snug text-navy">
-                {node.title}
+            {node.summary && (
+              <span className="mt-1 block text-sm leading-relaxed text-ink-muted">
+                {node.summary}
               </span>
-              <span className="mt-0.5 block text-[0.8125rem] text-muted-foreground">
-                {total > 0 ? `${total} bài viết` : 'Bài viết đơn'}
-              </span>
-            </span>
-            <ArrowRight className="mt-1 size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-          </Link>
-        )
-      })}
+            )}
+          </span>
+        </Link>
+      ))}
     </div>
   )
 }

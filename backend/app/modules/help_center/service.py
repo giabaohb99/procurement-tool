@@ -17,14 +17,23 @@ AUDIT_ENTITY = "help_article"
 # ---------- Bài viết ----------
 
 def get_tree(db: Session):
-    """Danh sách phẳng (client tự dựng cây). Bỏ cột content cho API nhẹ."""
+    """Danh sách phẳng (client tự dựng cây). Bỏ cột content cho API nhẹ.
+
+    Trả kèm summary/icon để trang chủ portal dựng thẻ danh mục mà không cần gọi thêm N+1 request.
+    """
     items = (
-        db.query(HelpArticle.id, HelpArticle.parent_id, HelpArticle.title, HelpArticle.sort_order)
+        db.query(
+            HelpArticle.id, HelpArticle.parent_id, HelpArticle.title, HelpArticle.sort_order,
+            HelpArticle.summary, HelpArticle.icon,
+        )
         .order_by(HelpArticle.sort_order.asc(), HelpArticle.id.asc())
         .all()
     )
     return [
-        {"id": i.id, "parent_id": i.parent_id, "title": i.title, "sort_order": i.sort_order}
+        {
+            "id": i.id, "parent_id": i.parent_id, "title": i.title, "sort_order": i.sort_order,
+            "summary": i.summary, "icon": i.icon,
+        }
         for i in items
     ]
 
@@ -44,6 +53,8 @@ def create_article(db: Session, data: HelpArticleCreate, user_id: int) -> HelpAr
         parent_id=data.parent_id,
         content=data.content,
         sort_order=data.sort_order,
+        summary=data.summary,
+        icon=data.icon,
         created_by=user_id,
         updated_by=user_id,
     )
@@ -97,6 +108,14 @@ def update_article(db: Session, article_id: int, data: HelpArticleUpdate, user_i
     if data.sort_order is not None and article.sort_order != data.sort_order:
         changes["Thứ tự hiển thị"] = data.sort_order
         article.sort_order = data.sort_order
+    # "summary"/"icon" phải kiểm bằng model_fields_set: gửi null = XÓA mô tả/icon,
+    # còn không gửi = giữ nguyên. Nếu chỉ so `is not None` thì không xóa được.
+    if "summary" in data.model_fields_set and article.summary != data.summary:
+        changes["Mô tả ngắn"] = data.summary
+        article.summary = data.summary
+    if "icon" in data.model_fields_set and article.icon != data.icon:
+        changes["Icon"] = data.icon
+        article.icon = data.icon
 
     article.updated_by = user_id
     db.commit()

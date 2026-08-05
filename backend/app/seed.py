@@ -339,6 +339,26 @@ def seed_help_admin(db, company_id):
     print("Help Center admin: helpadmin (hoặc HDSD0001)")
 
 
+_HOME_SECTIONS = [
+    ("quick_start", "Bắt đầu ngay", 0),
+    ("categories", "Các Phân hệ", 1),
+    ("faq", "Không tìm thấy điều bạn cần?", 2),
+    ("tips", "Mẹo tra cứu", 3),
+]
+
+
+def seed_help_home_sections(db):
+    """4 khung cấu hình trang chủ Help Center (idempotent — chỉ tạo nếu chưa có `key` đó,
+    KHÔNG ghi đè title mà người dùng đã tự sửa qua trang quản trị)."""
+    from app.modules.help_center.model import HelpHomeSection
+
+    existing = {s.key for s in db.query(HelpHomeSection).all()}
+    for key, title, sort_order in _HOME_SECTIONS:
+        if key not in existing:
+            db.add(HelpHomeSection(key=key, title=title, is_visible=True, sort_order=sort_order))
+    db.commit()
+
+
 def cleanup_legacy_staff_role(db):
     """Gộp vai trò legacy 'Nhân viên' (code STAFF) vào 'Nhân sự' (code employee) rồi XÓA.
     Idempotent: chỉ chạy khi vẫn còn vai trò STAFF."""
@@ -573,6 +593,9 @@ def run():
 
         # Tài khoản quản trị Trung tâm Hướng dẫn sử dụng (app help-center)
         seed_help_admin(db, company.id)
+
+        # 4 khung cấu hình trang chủ Help Center (Bắt đầu ngay/Phân hệ/Câu hỏi/Mẹo)
+        seed_help_home_sections(db)
 
         # Gán vai trò mặc định "Nhân sự" cho tài khoản chưa có vai trò
         n_default = assign_default_roles(db)

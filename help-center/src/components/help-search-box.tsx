@@ -95,7 +95,7 @@ export default function HelpSearchBox({
       <Search
         className={cn(
           'pointer-events-none absolute top-1/2 -translate-y-1/2 text-muted-foreground',
-          isLarge ? 'left-4 size-[1.125rem]' : 'left-3 size-4',
+          isLarge ? 'left-6 size-5' : 'left-3 size-4',
         )}
       />
       <Input
@@ -105,7 +105,10 @@ export default function HelpSearchBox({
         onFocus={() => { if (query.trim()) setOpen(true) }}
         className={cn(
           'bg-background',
-          isLarge ? 'h-12 pl-11 pr-5 text-[0.9375rem] md:text-[0.9375rem]' : 'h-9 pl-9 pr-4',
+          isLarge
+            // Ô tìm kiếm lớn ở trang chủ: cao, bo tròn, bóng mềm, không viền cứng
+            ? 'h-16 rounded-2xl border-transparent pl-14 pr-6 text-[1.125rem] shadow-[0_4px_24px_rgba(0,0,0,0.06)] md:text-[1.125rem]'
+            : 'h-9 pl-9 pr-4',
         )}
       />
       {searching && (

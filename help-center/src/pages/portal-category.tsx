@@ -6,17 +6,9 @@ import HelpTopBar from '@/components/help-topbar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { PortalOutletContext } from '@/layouts/portal-layout'
 import { findPath, type HelpNode } from '@/lib/help-tree'
+import { excerptFromHtml } from '@/lib/utils'
 
 // Trang DANH MỤC — danh sách bài viết (tiêu đề + trích đoạn) bên trái, box điều hướng bên phải.
-
-const EXCERPT_LEN = 150
-
-/** Bỏ thẻ HTML, rút gọn nội dung làm trích đoạn 1–2 dòng. */
-function excerpt(html: string): string {
-  const text = (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-  if (!text) return ''
-  return text.length > EXCERPT_LEN ? text.slice(0, EXCERPT_LEN) + '…' : text
-}
 
 export default function PortalCategory({ node }: { node: HelpNode }) {
   const { tree } = useOutletContext<PortalOutletContext>()
@@ -38,10 +30,11 @@ export default function PortalCategory({ node }: { node: HelpNode }) {
       .then((res) => { if (!cancelled) setIntro(res.data.data.content || '') })
       .catch(() => {})
 
+    // Chỉ bài nào CHƯA có mô tả ngắn mới cần tải nội dung về để cắt trích đoạn
     Promise.all(
-      children.map((c) =>
+      children.filter((c) => !c.summary).map((c) =>
         api.get(`/api/v1/help-center/${c.id}`)
-          .then((res) => [c.id, excerpt(res.data.data.content)] as const)
+          .then((res) => [c.id, excerptFromHtml(res.data.data.content)] as const)
           .catch(() => [c.id, ''] as const),
       ),
     ).then((pairs) => { if (!cancelled) setExcerpts(Object.fromEntries(pairs)) })
@@ -72,10 +65,9 @@ export default function PortalCategory({ node }: { node: HelpNode }) {
                     {child.title}
                   </Link>
                 </h2>
+                {/* Ưu tiên mô tả ngắn người soạn nhập; chưa có thì lấy tạm trích đoạn nội dung */}
                 <p className="text-[15px] leading-relaxed text-muted-foreground">
-                  {child.children?.length
-                    ? `${child.children.length} bài viết bên trong danh mục này.`
-                    : excerpts[child.id] || 'Xem hướng dẫn chi tiết.'}
+                  {child.summary || excerpts[child.id] || 'Xem hướng dẫn chi tiết.'}
                 </p>
               </article>
             ))}

@@ -6,6 +6,10 @@ export interface HelpNode {
   parent_id: number | null
   title: string
   sort_order: number
+  /** Mô tả ngắn hiện dưới tiêu đề ở thẻ khu người dùng. null = chưa nhập. */
+  summary?: string | null
+  /** Slug icon do người soạn chọn (xem lib/help-icons.ts). null = dùng icon mặc định. */
+  icon?: string | null
   children?: HelpNode[]
 }
 

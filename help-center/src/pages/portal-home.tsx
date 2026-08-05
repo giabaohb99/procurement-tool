@@ -1,17 +1,28 @@
+import { useEffect, useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
-import { ArrowRight, BookOpen, Images, MessageCircleQuestion, Search } from 'lucide-react'
+import { BookOpen, ChevronRight, Images, MessageCircleQuestion, Search } from 'lucide-react'
 
-import HelpCategoryTiles, { iconOf } from '@/components/help-category-tiles'
+import { api } from '@/api/client'
+import HelpCategoryTiles from '@/components/help-category-tiles'
 import HelpSearchBox from '@/components/help-search-box'
 import type { PortalOutletContext } from '@/layouts/portal-layout'
 import type { HelpNode } from '@/lib/help-tree'
+import { excerptFromHtml } from '@/lib/utils'
 
-// Trang chủ khu người dùng — tông tài liệu kỹ thuật: hero phẳng, khối thông tin viền mảnh,
-// tiêu đề canh trái, một accent teal duy nhất.
+// Trang chủ khu người dùng — đồng bộ tông với Trung tâm trợ giúp của hệ Văn thư:
+// nền gradient sáng, tiêu đề lớn canh giữa, tile "bắt đầu ngay" gradient có ảnh minh họa,
+// lưới thẻ phân hệ nền trắng không viền (đổ bóng mảnh).
 
 const QUICK_COUNT = 3
 
-/** Duyệt cây theo chiều sâu, lấy các bài viết lá đầu tiên làm lối tắt "bắt đầu nhanh". */
+/** Nền + ảnh minh họa cho 3 tile "Bắt đầu ngay", xoay vòng theo vị trí. */
+const QUICK_SKINS = [
+  { gradient: 'linear-gradient(135deg, #e4f7ff 0%, #bde1ff 100%)', image: '/hc_overview.png' },
+  { gradient: 'linear-gradient(135deg, #e6e6ff 0%, #cccdff 100%)', image: '/hc_new_user.png' },
+  { gradient: 'linear-gradient(135deg, #fae6ff 0%, #efc2ff 100%)', image: '/hc_admin.png' },
+]
+
+/** Duyệt cây theo chiều sâu, lấy các bài viết lá đầu tiên làm lối tắt "bắt đầu ngay". */
 function firstLeaves(nodes: HelpNode[], limit: number, acc: HelpNode[] = []): HelpNode[] {
   for (const node of nodes) {
     if (acc.length >= limit) break
@@ -31,41 +42,69 @@ export default function PortalHome() {
   const { tree } = useOutletContext<PortalOutletContext>()
   const quick = firstLeaves(tree, QUICK_COUNT)
 
+  // Bài nào chưa có mô tả ngắn thì lấy tạm trích đoạn đầu nội dung để tile không trống.
+  const needExcerpt = quick.filter((n) => !n.summary).map((n) => n.id)
+  const excerptKey = needExcerpt.join(',')
+
+  const [excerpts, setExcerpts] = useState<Record<number, string>>({})
+  useEffect(() => {
+    if (!excerptKey) return
+    let cancelled = false
+    Promise.all(
+      excerptKey.split(',').map((raw) => {
+        const id = Number(raw)
+        return api.get(`/api/v1/help-center/${id}`)
+          .then((res) => [id, excerptFromHtml(res.data.data.content, 90)] as const)
+          .catch(() => [id, ''] as const)
+      }),
+    ).then((pairs) => { if (!cancelled) setExcerpts(Object.fromEntries(pairs)) })
+    return () => { cancelled = true }
+  }, [excerptKey])
+
   return (
-    <>
-      {/* Hero phẳng, không gradient rực, không vòm cong */}
-      <section className="border-b bg-navy-deep px-6 py-14">
-        <div className="mx-auto max-w-3xl text-center">
-          <h1 className="mb-2 text-[1.75rem] font-bold tracking-tight text-white md:text-[2rem]">
-            Trung tâm Hướng dẫn Sử dụng
+    <div className="bg-[linear-gradient(#f0f4ff_0%,#ffffff_500px,#ffffff_100%)]">
+      {/* Hero nền sáng — tiêu đề lớn + ô tìm kiếm canh giữa */}
+      <section className="px-6 pb-20 pt-16">
+        <div className="mx-auto max-w-4xl text-center">
+          <h1 className="mb-10 text-[2rem] font-bold leading-tight tracking-[-0.02em] text-ink md:text-[3rem]">
+            Chúng tôi có thể giúp gì cho bạn?
           </h1>
-          <p className="mx-auto mb-7 max-w-xl text-sm text-white/65">
-            Nhập tên nghiệp vụ hoặc tính năng của phần mềm để tìm kiếm
-          </p>
-          <HelpSearchBox size="lg" placeholder="Nhập nội dung tìm kiếm..." />
+          <HelpSearchBox
+            size="lg"
+            className="mx-auto max-w-[41.25rem]"
+            placeholder="Tìm kiếm tài liệu, hướng dẫn..."
+          />
         </div>
       </section>
 
-      <div className="mx-auto max-w-6xl px-6">
-        {/* Lối tắt bắt đầu nhanh */}
+      <div className="mx-auto max-w-[71.25rem] px-6">
+        {/* Bắt đầu ngay — tile gradient có ảnh minh họa */}
         {quick.length > 0 && (
-          <Section title="Bắt đầu nhanh" desc="Những bài hay được tra cứu nhất.">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Section title="Bắt đầu ngay">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {quick.map((node, i) => {
-                const Icon = iconOf(i)
+                const skin = QUICK_SKINS[i % QUICK_SKINS.length]
                 return (
                   <Link
                     key={node.id}
                     to={`/${node.id}`}
-                    className="group flex items-center gap-3 rounded-md border bg-card p-4 transition-colors hover:border-primary/50 hover:bg-secondary"
+                    style={{ background: skin.gradient }}
+                    className="relative block h-60 overflow-hidden rounded-2xl transition-all hover:-translate-y-0.5 hover:shadow-lg"
                   >
-                    <span className="grid size-9 shrink-0 place-items-center rounded-md border bg-secondary text-primary">
-                      <Icon className="size-[1.125rem]" strokeWidth={1.75} />
-                    </span>
-                    <span className="min-w-0 flex-1 text-sm font-medium leading-snug text-navy">
-                      {node.title}
-                    </span>
-                    <ArrowRight className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                    <div className="relative z-[2] p-7">
+                      <h3 className="mb-2 flex items-center gap-1 text-xl font-semibold text-ink">
+                        {node.title} <ChevronRight className="size-4" />
+                      </h3>
+                      <p className="line-clamp-3 max-w-[65%] text-sm leading-relaxed text-ink-muted">
+                        {node.summary || excerpts[node.id] || 'Mở hướng dẫn chi tiết cho nghiệp vụ này.'}
+                      </p>
+                    </div>
+                    <img
+                      src={skin.image}
+                      alt=""
+                      aria-hidden
+                      className="pointer-events-none absolute -bottom-5 -right-2.5 z-[1] size-[11.25rem] object-contain"
+                    />
                   </Link>
                 )
               })}
@@ -73,15 +112,15 @@ export default function PortalHome() {
           </Section>
         )}
 
-        {/* Hướng dẫn theo nghiệp vụ */}
-        <Section title="Hướng dẫn theo nghiệp vụ" desc="Chọn nhóm nghiệp vụ để xem tài liệu chi tiết.">
+        {/* Các phân hệ */}
+        <Section title="Các Phân hệ">
           {tree.length > 0 ? (
             <HelpCategoryTiles nodes={tree} />
           ) : (
-            <div className="rounded-md border border-dashed px-6 py-12 text-center">
-              <BookOpen className="mx-auto mb-2 size-8 text-muted-foreground" strokeWidth={1.5} />
-              <strong className="block text-navy">Chưa có tài liệu nào</strong>
-              <span className="text-sm text-muted-foreground">
+            <div className="rounded-xl border border-dashed border-hairline px-6 py-12 text-center">
+              <BookOpen className="mx-auto mb-2 size-8 text-ink-muted" strokeWidth={1.5} />
+              <strong className="block text-ink">Chưa có tài liệu nào</strong>
+              <span className="text-sm text-ink-muted">
                 Quản trị viên chưa đăng tài liệu hướng dẫn. Vui lòng quay lại sau.
               </span>
             </div>
@@ -92,54 +131,54 @@ export default function PortalHome() {
         <Section title="Không tìm thấy điều bạn cần?">
           <Link
             to="/cau-hoi-thuong-gap"
-            className="group flex items-center gap-3.5 rounded-md border bg-card p-5 transition-colors hover:border-primary/50 hover:bg-secondary"
+            className="mx-auto flex max-w-2xl items-center gap-4 rounded-xl bg-card p-6 shadow-[0_4px_12px_rgba(0,0,0,0.03)] transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(0,0,0,0.07)]"
           >
-            <span className="grid size-9 shrink-0 place-items-center rounded-md border bg-secondary text-primary">
-              <MessageCircleQuestion className="size-[1.125rem]" strokeWidth={1.75} />
+            <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/8 text-primary">
+              <MessageCircleQuestion className="size-6" strokeWidth={1.75} />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-[0.9375rem] font-semibold text-navy">Câu hỏi thường gặp</span>
-              <span className="mt-0.5 block text-[0.8125rem] text-muted-foreground">
+              <span className="block text-base font-semibold text-ink">Câu hỏi thường gặp</span>
+              <span className="mt-1 block text-sm leading-relaxed text-ink-muted">
                 Giải đáp nhanh những thắc mắc hay gặp nhất khi dùng hệ thống.
               </span>
             </span>
-            <ArrowRight className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+            <ChevronRight className="size-5 shrink-0 text-ink-muted" />
           </Link>
         </Section>
 
         {/* Mẹo tra cứu */}
-        <Section title="Mẹo tra cứu" className="pb-16">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Section title="Mẹo tra cứu" className="pb-20">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
             {TIPS.map(({ Icon, title, desc }) => (
-              <div key={title} className="rounded-md border bg-card p-5">
-                <Icon className="mb-2.5 size-[1.125rem] text-primary" strokeWidth={1.75} />
-                <strong className="block text-[0.9375rem] font-semibold text-navy">{title}</strong>
-                <span className="mt-1 block text-[0.8125rem] leading-relaxed text-muted-foreground">
-                  {desc}
+              <div
+                key={title}
+                className="rounded-xl bg-card p-6 shadow-[0_4px_12px_rgba(0,0,0,0.03)]"
+              >
+                <span className="mb-3 grid size-12 place-items-center rounded-xl bg-primary/8 text-primary">
+                  <Icon className="size-6" strokeWidth={1.75} />
                 </span>
+                <strong className="block text-base font-semibold text-ink">{title}</strong>
+                <span className="mt-1 block text-sm leading-relaxed text-ink-muted">{desc}</span>
               </div>
             ))}
           </div>
         </Section>
       </div>
-    </>
+    </div>
   )
 }
 
-/** Khối nội dung: tiêu đề canh trái + mô tả ngắn, không trang trí. */
+/** Khối nội dung: tiêu đề lớn canh giữa, cách nhau 80px như bản tham chiếu. */
 function Section({
-  title, desc, className = '', children,
+  title, className = '', children,
 }: {
   title: string
-  desc?: string
   className?: string
   children: React.ReactNode
 }) {
   return (
-    <section className={`py-10 ${className}`}>
-      <h2 className="text-lg font-bold text-navy">{title}</h2>
-      {desc && <p className="mb-5 mt-1 text-sm text-muted-foreground">{desc}</p>}
-      {!desc && <div className="mb-5" />}
+    <section className={`mb-20 ${className}`}>
+      <h2 className="mb-8 text-center text-[1.75rem] font-bold text-ink">{title}</h2>
       {children}
     </section>
   )

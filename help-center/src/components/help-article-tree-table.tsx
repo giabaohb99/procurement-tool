@@ -1,28 +1,17 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import {
-  ChevronDown, ChevronRight, ChevronUp, FilePlus2, FileText, Folder, FolderInput, FolderOpen,
-  MoreHorizontal, Pencil, SquareArrowOutUpRight, Trash2,
-} from 'lucide-react'
+import { useCallback, useState } from 'react'
+import { FileText } from 'lucide-react'
 
-import MoveArticleDialog from '@/components/move-article-dialog'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuSeparator, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  createArticle, deleteArticle, levelLabel, renameArticle, reorderSibling,
-} from '@/lib/help-article-actions'
+import TreeRow, { type TreeDnd } from '@/components/help-article-tree-row'
+import { dropArticle } from '@/lib/help-article-actions'
 import type { HelpNode } from '@/lib/help-tree'
-import { cn } from '@/lib/utils'
+import {
+  canDrop, depthOf, MAX_DEPTH, positionFromPointer, type DropTarget,
+} from '@/lib/help-tree-dnd'
 
 // Bảng cây quản lý bài viết ở /admin — 3 cấp: Mục gốc > Bài viết > Bài chi tiết.
-// Mỗi dòng có thao tác: mở, thêm bài con, đổi tên, đổi thứ tự, xóa.
-
-/** Cấp sâu nhất được phép tạo con (0-based) — cấp 2 là bài chi tiết, không thêm con nữa. */
-const MAX_DEPTH = 2
+// File này giữ khung bảng + trạng thái kéo-thả; phần hiển thị 1 dòng nằm ở help-article-tree-row.
+// Kéo-thả bị TẮT khi đang lọc: danh sách hiển thị lúc đó là cây đã cắt bớt,
+// tính lại thứ tự trên đó sẽ ghi sai sort_order của các bài bị ẩn.
 
 interface TreeTableProps {
   tree: HelpNode[]
@@ -49,16 +38,63 @@ function filterTree(nodes: HelpNode[], kw: string): HelpNode[] {
 
 export default function HelpArticleTreeTable({ tree, onChanged, filter = '' }: TreeTableProps) {
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
+  const [dragId, setDragId] = useState<number | null>(null)
+  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null)
 
   const kw = fold(filter.trim())
   const shown = kw ? filterTree(tree, kw) : tree
 
-  const toggle = (id: number) =>
+  const toggle = useCallback((id: number) =>
     setExpanded((prev) => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
       return next
-    })
+    }), [])
+
+  const resetDrag = useCallback(() => {
+    setDragId(null)
+    setDropTarget(null)
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent, node: HelpNode) => {
+    if (dragId === null) return
+    // Chỉ gợi ý "thả vào trong" khi mục đích còn chỗ chứa con (cây tối đa 3 cấp)
+    const allowInside = depthOf(tree, node.id) < MAX_DEPTH
+    const position = positionFromPointer(e.currentTarget.getBoundingClientRect(), e.clientY, allowInside)
+
+    if (!canDrop(tree, dragId, node.id, position)) {
+      setDropTarget(null)
+      return
+    }
+    // preventDefault mới cho phép thả — không gọi thì trình duyệt từ chối drop
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDropTarget((prev) =>
+      prev?.id === node.id && prev.position === position ? prev : { id: node.id, position })
+  }, [dragId, tree])
+
+  const handleDrop = useCallback(async (e: React.DragEvent, node: HelpNode) => {
+    e.preventDefault()
+    const target = dropTarget
+    const id = dragId
+    resetDrag()
+    if (id === null || target?.id !== node.id) return
+
+    if (await dropArticle(tree, id, node.id, target.position)) {
+      // Mở sẵn mục vừa nhận bài để thấy ngay kết quả
+      if (target.position === 'inside') setExpanded((prev) => new Set(prev).add(node.id))
+      await onChanged()
+    }
+  }, [dragId, dropTarget, tree, onChanged, resetDrag])
+
+  const dnd: TreeDnd | null = kw ? null : {
+    dragId,
+    target: dropTarget,
+    onDragStart: setDragId,
+    onDragOver: handleDragOver,
+    onDrop: handleDrop,
+    onDragEnd: resetDrag,
+  }
 
   if (shown.length === 0) {
     return (
@@ -75,177 +111,40 @@ export default function HelpArticleTreeTable({ tree, onChanged, filter = '' }: T
   }
 
   return (
-    <div className="overflow-hidden rounded-md border">
-      <div className="flex items-center gap-3 border-b bg-secondary px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        <span className="flex-1">Tiêu đề</span>
-        <span className="w-28 shrink-0">Cấp</span>
-        <span className="w-20 shrink-0 text-right">Bài con</span>
-        <span className="w-[6.5rem] shrink-0" />
-      </div>
+    <>
+      <p className="mb-2 text-xs text-muted-foreground">
+        {kw
+          ? 'Đang lọc — xóa từ khóa để kéo-thả sắp xếp lại.'
+          : 'Kéo biểu tượng ⠿ để đổi thứ tự; thả vào GIỮA một mục để chuyển bài vào trong mục đó.'}
+      </p>
 
-      <ul>
-        {shown.map((node, index) => (
-          <TreeRow
-            key={node.id}
-            node={node}
-            siblings={shown}
-            index={index}
-            depth={0}
-            tree={tree}
-            expanded={kw ? null : expanded}
-            onToggle={toggle}
-            onChanged={onChanged}
-          />
-        ))}
-      </ul>
-    </div>
-  )
-}
-
-interface TreeRowProps {
-  node: HelpNode
-  siblings: HelpNode[]
-  index: number
-  depth: number
-  /** Cây ĐẦY ĐỦ (không lọc) — hộp thoại chuyển bài cần để liệt kê thư mục cha hợp lệ. */
-  tree: HelpNode[]
-  /** null = đang lọc, mở hết mọi nhánh. */
-  expanded: Set<number> | null
-  onToggle: (id: number) => void
-  onChanged: () => Promise<void> | void
-}
-
-function TreeRow({ node, siblings, index, depth, tree, expanded, onToggle, onChanged }: TreeRowProps) {
-  const [moveOpen, setMoveOpen] = useState(false)
-  const children = node.children || []
-  const hasChildren = children.length > 0
-  const isOpen = expanded === null ? true : expanded.has(node.id)
-  const canAddChild = depth < MAX_DEPTH
-
-  const run = async (fn: () => Promise<boolean | number | null>) => {
-    const changed = await fn()
-    if (changed) await onChanged()
-  }
-
-  return (
-    <li className="border-b last:border-b-0">
-      <div className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-secondary/60">
-        <div className="flex min-w-0 flex-1 items-center gap-1.5" style={{ paddingLeft: depth * 22 }}>
-          {hasChildren ? (
-            <button
-              type="button"
-              onClick={() => onToggle(node.id)}
-              aria-label={isOpen ? 'Thu gọn' : 'Mở rộng'}
-              className="grid size-5 shrink-0 place-items-center rounded-sm text-muted-foreground hover:bg-border"
-            >
-              {isOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-            </button>
-          ) : (
-            <span className="w-5 shrink-0" />
-          )}
-
-          {hasChildren
-            ? (isOpen
-                ? <FolderOpen className="size-4 shrink-0 text-primary" strokeWidth={1.75} />
-                : <Folder className="size-4 shrink-0 text-primary" strokeWidth={1.75} />)
-            : <FileText className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />}
-
-          <Link
-            to={`/admin/${node.id}`}
-            className={cn(
-              'truncate text-sm text-navy hover:text-primary hover:underline',
-              depth === 0 && 'font-semibold',
-            )}
-          >
-            {node.title}
-          </Link>
+      {/* KHÔNG gắn onDragLeave ở đây: sự kiện bubble từ từng dòng con, rê qua dòng khác
+          sẽ xóa mất trạng thái đang kéo. Việc dọn trạng thái do onDragEnd của tay cầm lo. */}
+      <div className="overflow-hidden rounded-md border">
+        <div className="flex items-center gap-3 border-b bg-secondary px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="flex-1">Tiêu đề</span>
+          <span className="w-28 shrink-0">Cấp</span>
+          <span className="w-20 shrink-0 text-right">Bài con</span>
+          <span className="w-[6.5rem] shrink-0" />
         </div>
 
-        <span className="w-28 shrink-0">
-          <Badge variant="outline" className="font-normal text-muted-foreground">
-            {levelLabel(depth)}
-          </Badge>
-        </span>
-
-        <span className="w-20 shrink-0 text-right text-sm text-muted-foreground">
-          {hasChildren ? children.length : '—'}
-        </span>
-
-        <div className="flex w-[6.5rem] shrink-0 items-center justify-end gap-0.5">
-          <Button
-            variant="ghost" size="icon" className="size-7" title="Lên"
-            disabled={index === 0}
-            onClick={() => run(() => reorderSibling(siblings, index, -1))}
-          >
-            <ChevronUp className="size-4" />
-          </Button>
-          <Button
-            variant="ghost" size="icon" className="size-7" title="Xuống"
-            disabled={index === siblings.length - 1}
-            onClick={() => run(() => reorderSibling(siblings, index, 1))}
-          >
-            <ChevronDown className="size-4" />
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="size-7" title="Thao tác khác">
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuItem asChild>
-                <Link to={`/admin/${node.id}`}>
-                  <SquareArrowOutUpRight /> Mở bài viết
-                </Link>
-              </DropdownMenuItem>
-              {canAddChild && (
-                <DropdownMenuItem
-                  onClick={() => run(() => createArticle(node.id, children.length, depth + 1))}
-                >
-                  <FilePlus2 /> Thêm {levelLabel(depth + 1).toLowerCase()}
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={() => run(() => renameArticle(node))}>
-                <Pencil /> Đổi tiêu đề
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setMoveOpen(true)}>
-                <FolderInput /> Chuyển sang mục khác
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onClick={() => run(() => deleteArticle(node))}>
-                <Trash2 /> Xóa
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      <MoveArticleDialog
-        tree={tree}
-        node={node}
-        open={moveOpen}
-        onOpenChange={setMoveOpen}
-        onMoved={onChanged}
-      />
-
-      {hasChildren && isOpen && (
-        <ul className="border-t bg-secondary/30">
-          {children.map((child, i) => (
+        <ul>
+          {shown.map((node, index) => (
             <TreeRow
-              key={child.id}
-              node={child}
-              siblings={children}
-              index={i}
-              depth={depth + 1}
+              key={node.id}
+              node={node}
+              siblings={shown}
+              index={index}
+              depth={0}
               tree={tree}
-              expanded={expanded}
-              onToggle={onToggle}
+              expanded={kw ? null : expanded}
+              onToggle={toggle}
               onChanged={onChanged}
+              dnd={dnd}
             />
           ))}
         </ul>
-      )}
-    </li>
+      </div>
+    </>
   )
 }

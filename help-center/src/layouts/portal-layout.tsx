@@ -41,8 +41,11 @@ export default function PortalLayout() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-40 flex h-[4.25rem] items-center gap-6 border-b bg-background px-6 md:px-8">
-        <Link to="/" title="Trung tâm Hướng dẫn Sử dụng" className="shrink-0">
+        {/* Logo + gạch dọc + tên trang, giống header Trung tâm trợ giúp của hệ Văn thư */}
+        <Link to="/" title="Trung tâm trợ giúp" className="flex shrink-0 items-center gap-4">
           <img src="/logo.svg" alt="DEGO Holding" className="h-8 w-auto" />
+          <span aria-hidden className="h-[1.125rem] w-px bg-border" />
+          <span className="text-lg font-semibold text-navy">Trung tâm trợ giúp</span>
         </Link>
 
         <div className="ml-auto flex shrink-0 items-center gap-3">
