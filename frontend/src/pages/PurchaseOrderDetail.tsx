@@ -8,10 +8,12 @@ import { poBadge, PAYMENT_TERMS_OPTIONS } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
 import ProductPicker from '../components/ProductPicker'
 import NumberInput from '../components/NumberInput'
+import DateInput from '../components/DateInput'
+import TextAreaAuto from '../components/TextAreaAuto'
+import NotFound from '../components/NotFound'
 import { toast } from '../components/toast'
 import DocumentUploadModal from '../components/DocumentUploadModal'
 import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
-import NotFound from '../components/NotFound'
 import { fmtSize, fileIcon } from '../utils/file-type'
 
 const API = '/api/purchase-orders'
@@ -20,6 +22,9 @@ const SHIP_UNITS = ['Kiện', 'Chuyến', 'm2', 'tấn']
 // Ô TIỀN (VNĐ) = số nguyên, dấu chấm ngăn nghìn. Dùng chung NumberInput.
 const CurrencyInput = ({ value, onChange, disabled, style, className }: any) =>
   <NumberInput value={value} onChange={onChange} disabled={disabled} style={style} className={className ?? 'cell-input'} />
+
+// Ô chữ dài trong popup chi tiết dòng: cao vừa 1 dòng rồi tự giãn khi nội dung dài
+const POPUP_TEXT = { minHeight: 40, fontSize: 14 }
 
 // Màu badge TIẾN ĐỘ dòng ĐMH (progress_status). 4 bước thường TỰ ĐỘNG theo dữ liệu (backend);
 // tay chỉ còn Tạm ngưng / Hủy đơn / Tiếp tục.
@@ -172,6 +177,10 @@ export default function PurchaseOrderDetail() {
   const progressEditable = !isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'write')
   // Dòng đã Hoàn thành / Hủy đơn → khóa HẲN dòng đó (kể cả bảng vận chuyển), không sửa gì được
   const lineLocked = (it: any) => ['Hoàn thành', 'Hủy đơn'].includes(it?.progress_status || '')
+  // Dòng ĐÃ NHẬN HÀNG → khóa nhận diện sản phẩm (Mã hàng, ĐVT). Đổi lúc này sẽ dời
+  // phiếu nhập kho + tồn kho đã ghi theo mã cũ sang mã khác. Backend cũng chặn.
+  const lineReceived = (it: any) => Number(it?.qty_received || 0) > 0
+  const PRODUCT_LOCK_HINT = 'Dòng đã nhận hàng — không đổi được Mã hàng / Tên hàng / ĐVT (đã ghi nhận nhập kho theo hàng này). Hủy dòng rồi thêm dòng mới nếu cần.'
   // NSPT phụ trách CHỈ admin/người có quyền duyệt được giao (không auto-gán, không tự điền)
   const canPickNspt = can('purchase_order', 'approve')
   const employeeOptions = employees.map((e) => ({ value: e.full_name, label: e.full_name }))
@@ -412,6 +421,17 @@ export default function PurchaseOrderDetail() {
   const txt = (i: number, k: string, w: number | string = 120) => (
     <input className="cell-input" style={{ width: w }} value={items[i][k] ?? ''} disabled={!headerEditable || lineLocked(items[i])} onChange={(e) => setItem(i, { [k]: e.target.value })} />
   )
+  // Ô chữ dài (tên hàng…): xuống dòng + cao theo nội dung để đọc đủ, không cắt cụt
+  const txtWrap = (i: number, k: string, w: number | string = '100%', lockOnReceived = false) => (
+    <TextAreaAuto
+      className="cell-input cell-textarea"
+      style={{ width: w }}
+      title={lockOnReceived && lineReceived(items[i]) ? PRODUCT_LOCK_HINT : undefined}
+      value={items[i][k] ?? ''}
+      disabled={!headerEditable || lineLocked(items[i]) || (lockOnReceived && lineReceived(items[i]))}
+      onChange={(v) => setItem(i, { [k]: v })}
+    />
+  )
   const num = (i: number, k: string, w = 90) => {
     const dis = !headerEditable || lineLocked(items[i])
     if (k === 'price') {
@@ -521,7 +541,7 @@ export default function PurchaseOrderDetail() {
                   options={goodsSuppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
                   onChange={(v) => onPickSupplier(v)} />
               </div>
-              <div className="form-row"><label>Ngày đặt hàng</label><input type="date" value={po.order_date || ''} disabled={!headerEditable} onChange={(e) => setH('order_date', e.target.value)} /></div>
+              <div className="form-row"><label>Ngày đặt hàng</label><DateInput value={po.order_date || ''} disabled={!headerEditable} onChange={(v) => setH('order_date', v)} /></div>
               <div className="form-row"><label>NSPT phụ trách</label>
                 <SearchSelect value={po.nspt || ''} options={employeeOptions}
                   onChange={(v) => setH('nspt', v)} disabled={!headerEditable || !canPickNspt}
@@ -551,8 +571,8 @@ export default function PurchaseOrderDetail() {
                 <thead>
                   <tr>
                     <th style={{ width: 36 }}>#</th>
-                    <th style={{ width: 130 }}>Mã hàng</th>
-                    <th style={{ minWidth: 220 }}>Tên hàng <span style={{ color: 'var(--red)' }}>*</span></th>
+                    <th style={{ width: 215 }}>Mã hàng</th>
+                    <th style={{ minWidth: 265 }}>Tên hàng <span style={{ color: 'var(--red)' }}>*</span></th>
                     <th style={{ width: 90 }}>ĐVT</th>
                     <th style={{ width: 90 }}>SL đặt</th>
                     <th style={{ width: 105 }}>Đơn giá</th>
@@ -567,12 +587,12 @@ export default function PurchaseOrderDetail() {
                   {items.map((it: any, i: number) => (
                     <tr key={i}>
                       <td>{i + 1}</td>
-                      <td style={{ minWidth: 190 }}>
-                        <ProductPicker code={it.product_code} name={it.product_name} disabled={!headerEditable || lineLocked(it)} onPick={(prod) => applyProduct(i, prod)} />
+                      <td style={{ minWidth: 215 }} title={lineReceived(it) ? PRODUCT_LOCK_HINT : undefined}>
+                        <ProductPicker compact code={it.product_code} name={it.product_name} disabled={!headerEditable || lineLocked(it) || lineReceived(it)} onPick={(prod) => applyProduct(i, prod)} />
                       </td>
-                      <td>{txt(i, 'product_name', '100%')}</td>
+                      <td>{txtWrap(i, 'product_name', '100%', true)}</td>
                       <td>
-                        <select className="cell-input" style={{ width: 80 }} value={it.unit ?? ''} disabled={!headerEditable || lineLocked(it)} onChange={(e) => setItem(i, { unit: e.target.value })}>
+                        <select className="cell-input" style={{ width: 80 }} title={lineReceived(it) ? PRODUCT_LOCK_HINT : undefined} value={it.unit ?? ''} disabled={!headerEditable || lineLocked(it) || lineReceived(it)} onChange={(e) => setItem(i, { unit: e.target.value })}>
                           <option value="">—</option>{units.map((u) => <option key={u} value={u}>{u}</option>)}
                         </select>
                       </td>
@@ -726,14 +746,18 @@ export default function PurchaseOrderDetail() {
                 const de = !headerEditable || lineLocked(it)
                 return (
                   <div className="form-grid" style={{ marginBottom: 18 }}>
-                    <div className="form-row"><label>Mã hàng (VTBB/NL)</label><ProductPicker code={it.product_code} name={it.product_name} disabled={de} onPick={(prod) => applyProduct(ii, prod)} /></div>
+                    <div className="form-row" title={lineReceived(it) ? PRODUCT_LOCK_HINT : undefined}>
+                      <label>Mã hàng (VTBB/NL)</label>
+                      <ProductPicker code={it.product_code} name={it.product_name} disabled={de || lineReceived(it)} onPick={(prod) => applyProduct(ii, prod)} />
+                      {lineReceived(it) && <span style={{ fontSize: 12, color: 'var(--muted)' }}><i className="ti ti-lock" /> Đã nhận hàng — khóa mã hàng / tên hàng / ĐVT</span>}
+                    </div>
                     <div className="form-row"><label>Phân loại</label><input value={it.item_group || ''} disabled={de} onChange={(e) => setItem(ii, { item_group: e.target.value })} /></div>
-                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên hàng</label><input value={it.product_name || ''} disabled={de} onChange={(e) => setItem(ii, { product_name: e.target.value })} /></div>
-                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên trên hóa đơn</label><input value={it.invoice_name || ''} disabled={de} onChange={(e) => setItem(ii, { invoice_name: e.target.value })} /></div>
-                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Xuất xứ / TSKT / chất liệu</label><input value={it.spec || ''} disabled={de} onChange={(e) => setItem(ii, { spec: e.target.value })} /></div>
+                    <div className="form-row" style={{ gridColumn: '1 / -1' }} title={lineReceived(it) ? PRODUCT_LOCK_HINT : undefined}><label>Tên hàng</label><TextAreaAuto style={POPUP_TEXT} value={it.product_name || ''} disabled={de || lineReceived(it)} onChange={(v) => setItem(ii, { product_name: v })} /></div>
+                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên trên hóa đơn</label><TextAreaAuto style={POPUP_TEXT} value={it.invoice_name || ''} disabled={de} onChange={(v) => setItem(ii, { invoice_name: v })} /></div>
+                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Xuất xứ / TSKT / chất liệu</label><TextAreaAuto style={POPUP_TEXT} value={it.spec || ''} disabled={de} onChange={(v) => setItem(ii, { spec: v })} /></div>
                     <div className="form-row"><label>Mã HH (thành phẩm)</label><input value={it.fg_code || ''} placeholder="Tự gắn khi chọn SP" disabled={de} onChange={(e) => setItem(ii, { fg_code: e.target.value })} /></div>
-                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên HH (thành phẩm)</label><input value={it.fg_name || ''} placeholder="Tự gắn khi chọn SP" disabled={de} onChange={(e) => setItem(ii, { fg_name: e.target.value })} /></div>
-                    <div className="form-row"><label title="Có ngày này → dòng chuyển 'Đã gửi ĐMH cho KT'">Ngày giao chứng từ cho KT</label><input type="date" value={it.document_delivery_date || ''} disabled={de} onChange={(e) => setItem(ii, { document_delivery_date: e.target.value })} /></div>
+                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên HH (thành phẩm)</label><TextAreaAuto style={POPUP_TEXT} value={it.fg_name || ''} placeholder="Tự gắn khi chọn SP" disabled={de} onChange={(v) => setItem(ii, { fg_name: v })} /></div>
+                    <div className="form-row"><label title="Có ngày này → dòng chuyển 'Đã gửi ĐMH cho KT'">Ngày giao chứng từ cho KT</label><DateInput value={it.document_delivery_date || ''} disabled={de} onChange={(v) => setItem(ii, { document_delivery_date: v })} /></div>
                     <div className="form-row">
                       <label>Trạng thái tiến độ</label>
                       <div>
@@ -760,7 +784,7 @@ export default function PurchaseOrderDetail() {
                         )}
                       </div>
                     </div>
-                    <div className="form-row"><label>Ngày yêu cầu có hàng</label><input type="date" value={it.required_date || ''} disabled={de} onChange={(e) => setItem(ii, { required_date: e.target.value })} /></div>
+                    <div className="form-row"><label>Ngày yêu cầu có hàng</label><DateInput value={it.required_date || ''} disabled={de} onChange={(v) => setItem(ii, { required_date: v })} /></div>
                     <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={!!it.supplier_ready} disabled={de} onChange={(e) => setItem(ii, { supplier_ready: e.target.checked })} style={{ width: 16, height: 16 }} /> NCC có sẵn hàng</label></div>
                     <div className="form-row"><label>ĐVT</label>
                       <SearchSelect value={it.unit ?? ''} options={units} disabled={de} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setItem(ii, { unit: v })} />
@@ -855,11 +879,11 @@ export default function PurchaseOrderDetail() {
                           <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{Number(items[ii].vat) || 0}%</td>
                           <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmt((Number(d.received_qty) || 0) * (Number(items[ii].price) || 0) * (1 + (Number(items[ii].vat) || 0) / 100))}</td>
                           <td><input className="cell-input" style={{ width: 120 }} value={d.invoice_no || ''} placeholder="Số HĐ đợt này" disabled={dis} onChange={(e) => { const v = e.target.value; setDelivery(ii, di, { invoice_no: v, ...(v && !(d.invoice_date || '').trim() ? { invoice_date: new Date().toISOString().slice(0, 10) } : {}) }) }} /></td>
-                          <td><input className="cell-input" type="date" style={{ width: 105 }} value={d.invoice_date || ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { invoice_date: e.target.value })} /></td>
+                          <td><DateInput className="cell-input" style={{ width: 110 }} value={d.invoice_date || ''} disabled={dis} onChange={(v) => setDelivery(ii, di, { invoice_date: v })} /></td>
                           <td style={{ textAlign: 'right', color: 'var(--green)', fontWeight: 600 }}>{d.id ? fmt(d.paid || 0) : '—'}</td>
                           <td style={{ textAlign: 'right', color: (Number(d.remaining) || 0) > 0 ? 'var(--red)' : 'var(--muted)', fontWeight: 600 }}>{d.id ? fmt(d.remaining || 0) : '—'}</td>
-                          <td><input className="cell-input" type="date" style={{ width: 100 }} value={d.promised_date ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { promised_date: e.target.value })} /></td>
-                          <td><input className="cell-input" type="date" style={{ width: 100 }} value={d.received_date ?? ''} disabled={dis} onChange={(e) => setDelivery(ii, di, { received_date: e.target.value })} /></td>
+                          <td><DateInput className="cell-input" style={{ width: 110 }} value={d.promised_date ?? ''} disabled={dis} onChange={(v) => setDelivery(ii, di, { promised_date: v })} /></td>
+                          <td><DateInput className="cell-input" style={{ width: 110 }} value={d.received_date ?? ''} disabled={dis} onChange={(v) => setDelivery(ii, di, { received_date: v })} /></td>
                           <td><NumberInput className="cell-input" style={{ width: 60 }} value={d.std_days} disabled={dis} onChange={(v) => setDelivery(ii, di, { std_days: v })} /></td>
                           <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{d.regulated_date || '—'}</td>
                           <td style={{ textAlign: 'center', color: (d.diff_promise < 0 ? 'var(--red)' : 'var(--muted)'), fontWeight: d.diff_promise < 0 ? 600 : 400 }}>{d.received_date ? (d.diff_promise ?? 0) : '—'}</td>

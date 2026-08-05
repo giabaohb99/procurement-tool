@@ -35,6 +35,7 @@ services:
         VITE_GOOGLE_CLIENT_ID: "${VITE_GOOGLE_CLIENT_ID:-}"   # Client ID đăng nhập Google (baked lúc build web)
         VITE_DEVELOPER_MODE: "${VITE_DEVELOPER_MODE:-}"   # bật chế độ Dev (đổi user) khi .env đặt =dev; mặc định tắt
         VITE_PWA_INSTALL_PROMPT: "${VITE_PWA_INSTALL_PROMPT:-}"   # hiện banner "Cài ứng dụng" khi .env đặt =on; mặc định ẩn
+        VITE_FEATURE_TICKET: "${VITE_FEATURE_TICKET:-off}"   # Phiếu hỗ trợ (ticket): prod mặc định TẮT; đặt =on trong .env để bật
     container_name: procurement-web
     restart: always
     depends_on:

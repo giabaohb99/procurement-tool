@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import Pagination from '../components/Pagination'
+import DateInput from '../components/DateInput'
 import { toast } from '../components/toast'
 import { useResizableColumns, ResizeHandle } from '../hooks/useResizableColumns'
 
@@ -303,11 +304,11 @@ export default function SurveyReport() {
           </div>
           <div className="toolbar-filter-item">
             <label>Từ ngày</label>
-            <input type="date" value={filters.date_from} onChange={(e) => { setFilters((d) => ({ ...d, date_from: e.target.value })); setPage(1); }} />
+            <DateInput value={filters.date_from} onChange={(v) => { setFilters((d) => ({ ...d, date_from: v })); setPage(1); }} />
           </div>
           <div className="toolbar-filter-item">
             <label>Đến ngày</label>
-            <input type="date" value={filters.date_to} onChange={(e) => { setFilters((d) => ({ ...d, date_to: e.target.value })); setPage(1); }} />
+            <DateInput value={filters.date_to} onChange={(v) => { setFilters((d) => ({ ...d, date_to: v })); setPage(1); }} />
           </div>
           
           {Object.values(filters).some((v) => v) && (

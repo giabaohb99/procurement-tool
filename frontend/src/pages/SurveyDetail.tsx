@@ -6,6 +6,7 @@ import { srBadge } from '../config/cruds'
 import ProductPicker from '../components/ProductPicker'
 import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
+import DateInput from '../components/DateInput'
 import { toast } from '../components/toast'
 import { fmtDateTime } from '../utils/datetime'
 import { askConfirm, askPrompt } from '../components/confirm'
@@ -619,7 +620,7 @@ export default function SurveyDetail() {
         <input type="checkbox" checked={!!it[k]} disabled={!ce} onChange={(e) => setLine(tbl, i, { [k]: e.target.checked })} style={{ width: 18, height: 18 }} /> {f.label}
       </label>
     )
-    if (t === 'date') return <input type="date" value={it[k] ?? ''} disabled={!ce} onChange={(e) => setLine(tbl, i, { [k]: e.target.value })} />
+    if (t === 'date') return <DateInput value={it[k] ?? ''} disabled={!ce} onChange={(v) => setLine(tbl, i, { [k]: v })} />
     // Thành tiền (đã quy đổi): mặc định = Thành tiền (VNĐ) tự chạy, nhưng cho ghi đè
     if (k === 'amount_converted') return <NumberInput value={it.amount_converted || rowAmount(it)} disabled={!ce} onChange={(v: number) => setLine(tbl, i, { amount_converted: v })} />
     if (t === 'num') return <NumberInput value={it[k]} disabled={!ce} onChange={(v: number) => setLine(tbl, i, { [k]: v })} />
@@ -678,7 +679,7 @@ export default function SurveyDetail() {
     if (col.key === 'supplier_available') return <input type="checkbox" checked={supplierAvail} onChange={(e) => setLine(tbl, i, { supplier_available: e.target.checked })} />
     if (col.type === 'check') return <input type="checkbox" checked={!!it[col.key]} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.checked })} />
     if (col.type === 'num') return <NumberInput className="cell-input" style={{ width: '100%' }} value={it[col.key]} onChange={(v: number) => setLine(tbl, i, { [col.key]: v })} />
-    if (col.type === 'date') return <input className="cell-input" type="date" style={{ width: '100%' }} value={it[col.key] ?? ''} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.value })} />
+    if (col.type === 'date') return <DateInput className="cell-input" style={{ width: '100%' }} value={it[col.key] ?? ''} onChange={(v) => setLine(tbl, i, { [col.key]: v })} />
     if (col.type === 'select') return (
       <div style={{ width: '100%' }}><SearchSelect variant="table" colorMap={col.key === 'line_approve' ? APPROVE_COLOR : undefined}
         value={String(it[col.key] ?? '')} options={col.options!.filter((o) => o !== '')} placeholder="Chọn…"
@@ -868,8 +869,8 @@ export default function SurveyDetail() {
                 <label>Nội dung chính</label>
                 <input value={sv.main_content || ''} disabled={!editable} placeholder="Nội dung chính của phiếu khảo sát (tự điền từ Mục đích khi tạo từ YCBG)…" onChange={(e) => setH('main_content', e.target.value)} />
               </div>
-              <div className="form-row"><label>Ngày tiếp nhận</label><input type="date" value={sv.received_date || ''} disabled={!editable} onChange={(e) => setH('received_date', e.target.value)} /></div>
-              <div className="form-row"><label>Ngày dự kiến trả KQ</label><input type="date" value={sv.result_due_date || ''} disabled={!editable} onChange={(e) => setH('result_due_date', e.target.value)} /></div>
+              <div className="form-row"><label>Ngày tiếp nhận</label><DateInput value={sv.received_date || ''} disabled={!editable} onChange={(v) => setH('received_date', v)} /></div>
+              <div className="form-row"><label>Ngày dự kiến trả KQ</label><DateInput value={sv.result_due_date || ''} disabled={!editable} onChange={(v) => setH('result_due_date', v)} /></div>
               <div className="form-row">
                 <label>Phân loại</label>
                 <SearchSelect value={sv.item_group} options={groups} disabled={!editable} placeholder="Chọn/tìm phân loại…" onChange={(v) => setH('item_group', v)} />

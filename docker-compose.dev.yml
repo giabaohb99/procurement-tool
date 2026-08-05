@@ -22,6 +22,7 @@ services:
         VITE_GOOGLE_CLIENT_ID: "${VITE_GOOGLE_CLIENT_ID:-}"
         VITE_DEVELOPER_MODE: "${VITE_DEVELOPER_MODE:-}"
         VITE_PWA_INSTALL_PROMPT: "${VITE_PWA_INSTALL_PROMPT:-}"
+        VITE_FEATURE_TICKET: "${VITE_FEATURE_TICKET:-on}"   # Phiếu hỗ trợ (ticket): dev mặc định BẬT
     container_name: procurement-web-dev
     restart: always
     depends_on:

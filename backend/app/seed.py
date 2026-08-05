@@ -193,12 +193,14 @@ STD_ROLES = {
         "department": (["read"], "all"), "company": (["read"], "all"),
         "purchase_request": (["read", "create"], "own"),
         "survey_request": (["read", "create", "write"], "own"),
+        "ticket": (["read", "create", "write"], "own"),
     }},
     "dept_head": {"name": "Trưởng phòng (duyệt PYC)", "perms": {
         **_CATALOG_READ,
         "employee": (["read"], "dept"),
         "purchase_request": (["read", "approve"], "dept"),
         "survey_request": (["read", "approve"], "dept"),
+        "ticket": (["read", "create", "write"], "own"),
         "report": (["read"], "dept"),
     }},
     "company_head": {"name": "Quản lý công ty", "perms": {
@@ -206,6 +208,7 @@ STD_ROLES = {
         "employee": (["read"], "company"),
         "purchase_request": (["read"], "company"),
         "purchase_order": (["read"], "company"),
+        "ticket": (["read", "create", "write"], "own"),
         "report": (["read"], "company"),
     }},
     "pur_staff": {"name": "Nhân viên thu mua", "perms": {
@@ -213,6 +216,7 @@ STD_ROLES = {
         "employee": (["read"], "dept"),
         "purchase_request": (["read", "create", "write"], "assigned"),
         "survey_request": (["read", "write"], "proc"),
+        "ticket": (["read", "create", "write"], "own"),
         "survey": (["read", "create", "write"], "all"),
         "purchase_order": (["read", "create", "write", "delete", "print"], "assigned"),   # chỉ đơn mình tạo/NSPT là mình; xóa được đơn NHÁP của mình
         "inventory": (["read"], "company"),
@@ -231,6 +235,7 @@ STD_ROLES = {
         "employee": (["read"], "all"),
         "purchase_request": (["read"], "proc"),
         "survey_request": (["read"], "proc"),
+        "ticket": (["read", "create", "write"], "own"),
         "purchase_order": (["read", "print"], "all"),
         "survey": (["read", "create", "write", "delete", "approve"], "all"),   # Admin TM thao tác được phiếu khảo sát
         "import": (["read", "create", "delete"], "all"),   # nạp data cũ + hoàn tác
@@ -244,6 +249,10 @@ STD_ROLES = {
     # CHỈ có quyền trên tài liệu HDSD — không đụng tới nghiệp vụ / cấu hình hệ thống.
     "help_admin": {"name": "Quản trị Hướng dẫn sử dụng", "perms": {
         "help_article": (["read", "create", "write", "delete"], "all"),
+    }},
+    # Nhóm Hỗ trợ: xử lý tập trung MỌI phiếu hỗ trợ (đọc/trả lời/đổi trạng thái/đóng), phạm vi all.
+    "support": {"name": "Nhân viên hỗ trợ", "perms": {
+        "ticket": (["read", "create", "write", "delete"], "all"),
     }},
 }
 

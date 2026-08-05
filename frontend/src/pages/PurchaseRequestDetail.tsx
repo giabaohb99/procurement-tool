@@ -9,6 +9,8 @@ import { prBadge, poBadge } from '../config/cruds'
 import ProductPicker from '../components/ProductPicker'
 import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
+import DateInput from '../components/DateInput'
+import TextAreaAuto from '../components/TextAreaAuto'
 import ConfirmModal from '../components/ConfirmModal'
 import PromptModal from '../components/PromptModal'
 import NotFound from '../components/NotFound'
@@ -416,6 +418,7 @@ export default function PurchaseRequestDetail() {
     const mk = (it: any, qty: number) => ({
       product_code: it.product_code, product_name: it.product_name,
       item_group: it.item_group, unit: it.unit,
+      required_date: it.required_date || '',   // Ngày cần hàng ở YCMH → Ngày yêu cầu có hàng ở ĐMH
       qty_request: qty, qty_order: qty,
       price: Number(it.price) || 0, vat: Number(it.vat_pct) || 0,   // Task 4: VAT theo TỪNG DÒNG PYC
       warehouse_code: whCode(it.warehouse), note: it.note || '',
@@ -589,7 +592,7 @@ export default function PurchaseRequestDetail() {
               )}
               <div className="form-row">
                 <label>Ngày tiếp nhận <span className="req">*</span></label>
-                <input type="date" value={pr.request_date || ''} disabled={!editable} onChange={(e) => setH('request_date', e.target.value)} />
+                <DateInput value={pr.request_date || ''} disabled={!editable} onChange={(v) => setH('request_date', v)} />
               </div>
               <div className="form-row">
                 <label>Công ty nhận hóa đơn <span className="req">*</span></label>
@@ -643,12 +646,12 @@ export default function PurchaseRequestDetail() {
               {!editable && !isNew && <span style={{ fontSize: 12, color: 'var(--muted)' }}><i className="ti ti-device-floppy" /> Trạng thái tự đồng bộ từ ĐMH · thay đổi phụ trách được lưu tự động</span>}
             </div>
             <div className="items-scroll">
-              <table className="items-table" style={{ minWidth: showAssigneeCol ? 1552 : 1392, tableLayout: 'fixed' }}>
+              <table className="items-table" style={{ minWidth: showAssigneeCol ? 1652 : 1492, tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
                     <th style={{ width: 34, textAlign: 'center' }}>No.</th>
-                    <th style={{ width: 150, textAlign: 'left' }}>Mã hàng *</th>
-                    <th style={{ width: 230, textAlign: 'left' }}>Tên sản phẩm *</th>
+                    <th style={{ width: 215, textAlign: 'left' }}>Mã hàng *</th>
+                    <th style={{ width: 265, textAlign: 'left' }}>Tên sản phẩm *</th>
                     <th style={{ width: 130, textAlign: 'left' }}>Kho nhận</th>
                     <th style={{ width: 140, textAlign: 'left' }}>Phân loại</th>
                     <th style={{ width: 80, textAlign: 'left' }}>ĐVT</th>
@@ -669,13 +672,14 @@ export default function PurchaseRequestDetail() {
                       <td>{i + 1}</td>
                       <td>
                         {editable ? (
-                          <ProductPicker code={it.product_code} name={it.product_name} onPick={(prod) => applyProduct(i, prod)} />
-                        ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{it.product_code || '—'}</span>}
+                          <ProductPicker compact code={it.product_code} name={it.product_name} onPick={(prod) => applyProduct(i, prod)} />
+                        ) : <span style={{ display: 'block', whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{it.product_code || '—'}</span>}
                       </td>
-                      <td style={{ overflow: 'hidden' }} title={it.product_name}>
+                      {/* Tên sản phẩm: hiện đủ, dài thì xuống dòng (đọc thiếu dễ hiểu lầm) */}
+                      <td title={it.product_name}>
                         {editable ? (
-                          <input className="cell-input" value={it.product_name || ''} placeholder="Nhập tên sản phẩm" onChange={(e) => setItem(i, 'product_name', e.target.value)} style={{ width: '100%' }} />
-                        ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{it.product_name || ''}</span>}
+                          <TextAreaAuto className="cell-input cell-textarea" value={it.product_name || ''} placeholder="Nhập tên sản phẩm" onChange={(v) => setItem(i, 'product_name', v)} style={{ width: '100%' }} />
+                        ) : <span style={{ display: 'block', whiteSpace: 'normal', overflowWrap: 'anywhere', lineHeight: 1.45 }}>{it.product_name || ''}</span>}
                       </td>
                       <td>
                         {editable ? (
@@ -729,9 +733,9 @@ export default function PurchaseRequestDetail() {
                       </td>
                       <td style={{ textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', color: 'var(--muted)' }} title="Thời gian dự kiến có hàng (chỉ NSTM phụ trách/quản lý sửa)">
                         {canLineStatus(it) ? (
-                          <input type="date" className="cell-input" style={{ width: '100%', boxSizing: 'border-box', minWidth: 0 }} value={it.expected_date || ''}
+                          <DateInput className="cell-input" style={{ width: '100%', boxSizing: 'border-box', minWidth: 0 }} value={it.expected_date || ''}
                             onFocus={() => { inlineExpOrig.current = (it.expected_date || '').trim() }}
-                            onChange={(e) => setItem(i, 'expected_date', e.target.value)}
+                            onChange={(v) => setItem(i, 'expected_date', v)}
                             onBlur={() => commitExpectedDate(i)} />
                         ) : (it.expected_date ? fmtDate(it.expected_date) : '—')}
                       </td>
@@ -928,7 +932,7 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Tên vật tư <span className="req">*</span></label>
-                <input value={edit.product_name || ''} disabled={!editable} onChange={(e) => setItem(editIdx, 'product_name', e.target.value)} />
+                <TextAreaAuto style={{ minHeight: 40, fontSize: 14 }} value={edit.product_name || ''} disabled={!editable} onChange={(v) => setItem(editIdx, 'product_name', v)} />
               </div>
               <div className="form-row">
                 <label>Phân loại</label>
@@ -967,11 +971,11 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Ngày cần hàng <span className="req">*</span></label>
-                <input type="date" value={edit.required_date || ''} disabled={!editable} onChange={(e) => setItem(editIdx, 'required_date', e.target.value)} />
+                <DateInput value={edit.required_date || ''} disabled={!editable} onChange={(v) => setItem(editIdx, 'required_date', v)} />
               </div>
               <div className="form-row">
                 <label title="NSTM phụ trách cập nhật — đổi giá trị đã có phải kèm lý do">Thời gian dự kiến có hàng</label>
-                <input type="date" value={edit.expected_date || ''} disabled={!canLineStatus(edit)} onChange={(e) => setItem(editIdx, 'expected_date', e.target.value)} />
+                <DateInput value={edit.expected_date || ''} disabled={!canLineStatus(edit)} onChange={(v) => setItem(editIdx, 'expected_date', v)} />
               </div>
               {showAssigneeCol && (
                 <div className="form-row">

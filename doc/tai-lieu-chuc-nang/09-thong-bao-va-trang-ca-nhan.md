@@ -197,9 +197,9 @@ Nếu `is_urgent=True` → tiêu đề thêm tiền tố `[GẤP]`.
 
 | Sự kiện | Người nhận |
 |---|---|
-| `pr_submitted` | Trưởng bộ phận của phòng ban người yêu cầu (theo `Department.manager_id`). Nếu chưa gán trưởng phòng → không gửi ai. |
+| `pr_submitted` | **Người duyệt của phòng ban người yêu cầu — GỘP 2 nguồn** (`get_dept_approver_recipients`): (a) người là `Department.manager_id` của phòng, **và** (b) mọi user mang vai trò `dept_head` có `Employee.department_id` khớp phòng. Khử trùng theo `user.id`. Nếu cả hai nguồn đều rỗng → không gửi ai. |
 | `survey_submitted` | Người có quyền `approve` trên entity `survey` (Quản lý / Admin thu mua). |
-| `sr_submitted` | Người có quyền `approve` trên entity `survey_request` (Quản lý / Admin thu mua). |
+| `sr_submitted` | **Người duyệt của phòng ban người yêu cầu — GỘP 2 nguồn** (`get_dept_approver_recipients`, giống `pr_submitted`): `Department.manager_id` + mọi user vai trò `dept_head` trong phòng, khử trùng theo `user.id`. |
 | `pay_submitted` | Người có quyền `approve` trên entity `payment_request` (Quản lý / Admin thu mua). |
 | `pr_approved` | Người tạo YCMH + tất cả người thuộc vai trò `pur_manager` và `pur_admin`. |
 | Các sự kiện còn lại | Người tạo chứng từ (`creator_id`). |

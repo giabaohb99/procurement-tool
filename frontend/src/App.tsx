@@ -37,6 +37,9 @@ import SurveyRequestDetail from './pages/SurveyRequestDetail'
 import SurveyRequestProcess from './pages/SurveyRequestProcess'
 import Documents from './pages/Documents'
 import PurchaseProgress from './pages/PurchaseProgress'
+import TicketList from './pages/TicketList'
+import TicketDetail from './pages/TicketDetail'
+import { TICKET_ENABLED } from './config/features'
 
 function Protected({ children }: { children: JSX.Element }) {
   const { user } = useAuth()
@@ -73,6 +76,10 @@ export default function App() {
             <Route path="import-batches" element={<ImportBatches />} />
             <Route path="import-batches/:id" element={<ImportBatchDetail />} />
             <Route path="backups" element={<Backups />} />
+            {/* Phiếu hỗ trợ — tắt hẳn route khi tính năng off (prod), xem config/features.ts */}
+            {/* Tạo phiếu = popup ở AppLayout / Trang cá nhân, không còn trang riêng /tickets/new */}
+            {TICKET_ENABLED && <Route path="tickets" element={<TicketList />} />}
+            {TICKET_ENABLED && <Route path="tickets/:id" element={<TicketDetail />} />}
             <Route path="notifications" element={<Notifications />} />
             <Route path="me" element={<Me />} />
             <Route path="reports" element={<Reports />} />

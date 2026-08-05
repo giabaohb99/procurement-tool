@@ -95,8 +95,8 @@ export default function PrintPaymentRequest() {
         <div style={{ ...lbl, fontWeight: 700 }}>Đề nghị thanh toán:</div>
         <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
           <colgroup>
-            <col style={{ width: '6%' }} /><col style={{ width: '11%' }} />
-            <col style={{ width: '47%' }} /><col style={{ width: '15%' }} />
+            <col style={{ width: '13%' }} /><col style={{ width: '11%' }} />
+            <col style={{ width: '40%' }} /><col style={{ width: '15%' }} />
             <col style={{ width: '13%' }} /><col style={{ width: '8%' }} />
           </colgroup>
           <thead>
@@ -115,7 +115,7 @@ export default function PrintPaymentRequest() {
           <tbody>
             {req.lines.map((l: any, i: number) => (
               <tr key={i}>
-                <td style={{ ...cell, textAlign: 'center' }}>{l.invoice_no}</td>
+                <td style={{ ...cell, textAlign: 'center', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{l.invoice_no}</td>
                 <td style={{ ...cell, textAlign: 'center' }}>{dmy(l.invoice_date || l.incur_date)}</td>
                 {/* Diễn giải GỘP cho mọi dòng (rowSpan) — chỉ render ở dòng đầu */}
                 {i === 0 && (

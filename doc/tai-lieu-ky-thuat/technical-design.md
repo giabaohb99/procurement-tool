@@ -239,6 +239,7 @@ Idempotent: bỏ qua nếu không còn vai trò `STAFF`.
 | `VITE_GOOGLE_CLIENT_ID` | Tùy chọn (build arg) | Client ID đăng nhập Google OAuth; baked vào web lúc build |
 | `VITE_PWA_INSTALL_PROMPT` | Tùy chọn (build arg) | `=on` để hiển thị banner "Cài ứng dụng"; mặc định ẩn |
 | `VITE_DEVELOPER_MODE` | Tùy chọn (build arg) | `=dev` để bật chế độ đổi user (test); mặc định tắt |
+| `VITE_FEATURE_TICKET` | Tùy chọn (build arg) | `=off` để ẩn phân hệ Phiếu hỗ trợ (menu + route). **prod mặc định `off`**, dev mặc định `on` |
 
 ---
 

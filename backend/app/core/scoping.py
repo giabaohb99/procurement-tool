@@ -18,6 +18,7 @@ SCOPE_FIELDS = {
     "inventory":        {"company": "company_id"},
     "survey":           {"owner": "created_by"},
     "employee":         {"company": "company_id", "dept_id": "department_id", "self": "id"},
+    "ticket":           {"company": "company_id", "owner": "created_by"},
 }
 
 

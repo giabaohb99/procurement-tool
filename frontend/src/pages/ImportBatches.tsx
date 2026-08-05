@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext'
 import { api } from '../api/client'
 import { toast } from '../components/toast'
 import Pagination from '../components/Pagination'
+import DateInput from '../components/DateInput'
 import { fmtDateTime } from '../utils/datetime'
 
 export const IMPORT_MODULE: Record<number, string> = { 1: 'Khảo sát', 2: 'Đơn mua hàng' }
@@ -171,13 +172,13 @@ export default function ImportBatches() {
           {/* Từ ngày */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <label style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Từ:</label>
-            <input type="date" value={fDateFrom} onChange={(e) => { setFDateFrom(e.target.value); setPage(1) }}
+            <DateInput value={fDateFrom} onChange={(v) => { setFDateFrom(v); setPage(1) }}
               style={{ width: 135, fontSize: 13 }} />
           </div>
           {/* Đến ngày */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <label style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Đến:</label>
-            <input type="date" value={fDateTo} onChange={(e) => { setFDateTo(e.target.value); setPage(1) }}
+            <DateInput value={fDateTo} onChange={(v) => { setFDateTo(v); setPage(1) }}
               style={{ width: 135, fontSize: 13 }} />
           </div>
           {/* Tên file */}

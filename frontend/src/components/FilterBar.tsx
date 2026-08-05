@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
 import SearchSelect from './SearchSelect'
+import DateInput from './DateInput'
 
 export type FilterField = {
   key: string
@@ -89,9 +90,9 @@ export default function FilterBar({
           <SearchSelect value={vals[f.key] || ''} options={opts || []} placeholder="Tất cả" onChange={(v) => set(f.key, v)} />
         ) : f.type === 'daterange' ? (
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <input type="date" value={vals[f.key + '_from'] || ''} onChange={(e) => set(f.key + '_from', e.target.value)} style={{ minWidth: 0, flex: 1 }} />
+            <DateInput value={vals[f.key + '_from'] || ''} onChange={(v) => set(f.key + '_from', v)} style={{ minWidth: 0, flex: 1 }} />
             <span style={{ color: 'var(--muted)' }}>–</span>
-            <input type="date" value={vals[f.key + '_to'] || ''} onChange={(e) => set(f.key + '_to', e.target.value)} style={{ minWidth: 0, flex: 1 }} />
+            <DateInput value={vals[f.key + '_to'] || ''} onChange={(v) => set(f.key + '_to', v)} style={{ minWidth: 0, flex: 1 }} />
           </div>
         ) : (
           <input placeholder={`Nhập ${f.label.toLowerCase()}…`} value={vals[f.key] || ''}

@@ -6,6 +6,10 @@ import Pagination from '../components/Pagination'
 import SearchSelect from '../components/SearchSelect'
 import { useAuth } from '../auth/AuthContext'
 import { pushSupported, isPushSubscribed, subscribePush, unsubscribePush } from '../push'
+import { TICKET_ENABLED } from '../config/features'
+import TicketCreateModal from '../components/TicketCreateModal'
+import { PriorityBadge, StatusBadge, Ticket, TICKET_STATUS_TABS } from '../config/ticketMeta'
+import { fmtDateTime } from '../utils/datetime'
 
 // Nhãn + màu + icon cho từng loại việc cần làm (cố định, không phụ thuộc dữ liệu đang lọc)
 const TASK_LABEL: Record<string, string> = {
@@ -20,11 +24,19 @@ const TASK_META: Record<string, { color: string; icon: string }> = {
   payable: { color: '#dc2626', icon: 'ti-cash' },
 }
 
+type MeTab = 'info' | 'tasks' | 'tickets'
+
 export default function Me() {
   const nav = useNavigate()
   const [sp, setSp] = useSearchParams()
-  const tab: 'info' | 'tasks' = sp.get('tab') === 'tasks' ? 'tasks' : 'info'
-  const setTab = (t: 'info' | 'tasks') => setSp(t === 'tasks' ? { tab: 'tasks' } : {})
+  const TABS: { key: MeTab; label: string }[] = [
+    { key: 'info', label: 'Thông tin cá nhân' },
+    { key: 'tasks', label: 'Việc cần làm' },
+    ...(TICKET_ENABLED ? [{ key: 'tickets' as MeTab, label: 'Yêu cầu hỗ trợ của tôi' }] : []),
+  ]
+  const raw = sp.get('tab') || ''
+  const tab: MeTab = TABS.some((t) => t.key === raw) ? (raw as MeTab) : 'info'
+  const setTab = (t: MeTab) => setSp(t === 'info' ? {} : { tab: t })
 
   const [me, setMe] = useState<any>(null)
   useEffect(() => { api.get('/api/auth/me').then((r) => setMe(r.data.data)).catch(() => {}) }, [])
@@ -38,17 +50,19 @@ export default function Me() {
       </div>
 
       <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 10, padding: 4, marginBottom: 16, width: 'fit-content' }}>
-        {(['info', 'tasks'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            style={{ border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 700, padding: '8px 18px', borderRadius: 8,
-              background: tab === t ? '#fff' : 'transparent', color: tab === t ? 'var(--navy)' : 'var(--muted)',
-              boxShadow: tab === t ? '0 1px 3px rgba(15,23,42,.14)' : 'none' }}>
-            {t === 'info' ? 'Thông tin cá nhân' : 'Việc cần làm'}
+        {TABS.map((t) => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            style={{ border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5, fontWeight: 700, padding: '8px 18px', borderRadius: 8,
+              background: tab === t.key ? '#fff' : 'transparent', color: tab === t.key ? 'var(--navy)' : 'var(--muted)',
+              boxShadow: tab === t.key ? '0 1px 3px rgba(15,23,42,.14)' : 'none' }}>
+            {t.label}
           </button>
         ))}
       </div>
 
-      {tab === 'info' ? <InfoTab me={me} /> : <TasksTab />}
+      {tab === 'info' && <InfoTab me={me} />}
+      {tab === 'tasks' && <TasksTab />}
+      {tab === 'tickets' && <MyTicketsTab />}
     </div>
   )
 }
@@ -151,6 +165,85 @@ function ChangePassword() {
           <i className="ti ti-lock" />Đổi mật khẩu
         </button>
       </div>
+    </div>
+  )
+}
+
+// Tab "Yêu cầu hỗ trợ của tôi" — CHỈ phiếu do chính mình gửi (mine=1),
+// kể cả người thuộc nhóm Hỗ trợ (họ xem phiếu cả công ty ở màn quản lý /tickets).
+function MyTicketsTab() {
+  const nav = useNavigate()
+  const [items, setItems] = useState<Ticket[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [status, setStatus] = useState('')
+  const [openForm, setOpenForm] = useState(false)
+
+  async function load(p = page, s = pageSize, st = status) {
+    const params: any = { page: p, page_size: s, mine: 1 }
+    if (st) params.status = st
+    const r = await api.get('/api/tickets', { params })
+    const d = r.data.data
+    setItems(d.items || []); setTotal(d.total || 0)
+  }
+  useEffect(() => { setPage(1); load(1, pageSize, status) /* eslint-disable-next-line */ }, [status])
+  function changePage(p: number, s: number) { setPage(p); setPageSize(s); load(p, s, status) }
+
+  return (
+    <div>
+      <div className="card" style={{ padding: 14, marginBottom: 12, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 8, padding: 3, flexWrap: 'wrap' }}>
+          {TICKET_STATUS_TABS.map((t) => (
+            <button key={t.key} onClick={() => setStatus(t.key)}
+              style={{ border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600, padding: '6px 14px', borderRadius: 6,
+                background: status === t.key ? '#fff' : 'transparent', color: status === t.key ? 'var(--navy)' : 'var(--muted)',
+                boxShadow: status === t.key ? '0 1px 2px rgba(15,23,42,.12)' : 'none' }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <button className="btn" onClick={() => setOpenForm(true)}><i className="ti ti-plus" /> Gửi yêu cầu hỗ trợ</button>
+      </div>
+
+      <div className="card" style={{ overflowX: 'auto' }}>
+        <table className="table">
+          <thead>
+            <tr>
+              <th style={{ minWidth: 240 }}>Chủ đề</th>
+              <th>Bộ phận</th>
+              <th>Ưu tiên</th>
+              <th>Trạng thái</th>
+              <th>Người xử lý</th>
+              <th>Cập nhật</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((t) => (
+              <tr key={t.id} className="clickable" style={{ cursor: 'pointer' }} onClick={() => nav(`/tickets/${t.id}`)}>
+                <td>
+                  <div style={{ fontWeight: 600, color: 'var(--navy)' }}>{t.subject || '(Không có chủ đề)'}</div>
+                  <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 2 }}>{t.code}</div>
+                </td>
+                <td style={{ fontSize: 13, color: 'var(--muted)' }}>{t.department || '—'}</td>
+                <td><PriorityBadge priority={t.priority} /></td>
+                <td><StatusBadge status={t.status} /></td>
+                <td style={{ fontSize: 13, color: t.assignee_name ? 'var(--navy)' : 'var(--muted)' }}>{t.assignee_name || 'Chưa nhận'}</td>
+                <td style={{ fontSize: 12.5, color: 'var(--muted)', whiteSpace: 'nowrap' }}>{fmtDateTime(t.updated_at)}</td>
+              </tr>
+            ))}
+            {items.length === 0 && (
+              <tr><td colSpan={6} style={{ padding: 30, textAlign: 'center', color: '#94a3b8', fontSize: 13.5 }}>
+                Bạn chưa gửi yêu cầu hỗ trợ nào. Bấm <b>Gửi yêu cầu hỗ trợ</b> khi cần trợ giúp.
+              </td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <Pagination page={page} pageSize={pageSize} total={total} onChange={changePage} />
+
+      <TicketCreateModal open={openForm} onClose={() => setOpenForm(false)} originUrl="/me?tab=tickets" />
     </div>
   )
 }

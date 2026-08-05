@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthContext'
 import { prBadge } from '../config/cruds'
 import Select from 'react-select'
 import SearchSelect from '../components/SearchSelect'
+import DateInput from '../components/DateInput'
 import { toast } from '../components/toast'
 import NotFound from '../components/NotFound'
 import FileDropzone from '../components/FileDropzone'
@@ -651,8 +652,8 @@ export default function SurveyRequestDetail() {
               <div className="form-row">
                 <label>Ngày tạo {isNew && <span className="req">*</span>}</label>
                 {isNew ? (
-                  <input type="date" value={sv.request_date || ''}
-                    onChange={(e) => setH('request_date', e.target.value)} />
+                  <DateInput value={sv.request_date || ''}
+                    onChange={(v) => setH('request_date', v)} />
                 ) : (
                   <input value={fmtDateTime(sv.created_at) || sv.request_date || '—'} disabled />
                 )}
@@ -782,7 +783,7 @@ export default function SurveyRequestDetail() {
                       {/* Ngày YC trả KQ — sửa inline được */}
                       <td>
                         {editable
-                          ? <input type="date" className="cell-input" value={l.result_due_date || ''} onChange={(e) => setLine(i, 'result_due_date', e.target.value)} />
+                          ? <DateInput className="cell-input" value={l.result_due_date || ''} onChange={(v) => setLine(i, 'result_due_date', v)} />
                           : <span style={{ color: l.result_due_date ? 'inherit' : '#bbb' }}>{l.result_due_date ? new Date(l.result_due_date).toLocaleDateString('vi-VN') : '—'}</span>}
                       </td>
 
@@ -1081,8 +1082,8 @@ export default function SurveyRequestDetail() {
 
               <div className="form-row">
                 <label>Ngày yêu cầu trả kết quả</label>
-                <input type="date" value={edit.result_due_date || ''} disabled={!editable}
-                  onChange={(e) => setLine(editIdx, 'result_due_date', e.target.value)} />
+                <DateInput value={edit.result_due_date || ''} disabled={!editable}
+                  onChange={(v) => setLine(editIdx, 'result_due_date', v)} />
               </div>
 
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>

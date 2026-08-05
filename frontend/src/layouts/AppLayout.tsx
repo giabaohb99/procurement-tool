@@ -5,6 +5,8 @@ import { toast } from "../components/toast";
 import { api } from "../api/client";
 import NotificationBell from "../components/NotificationBell";
 import PwaInstallPrompt from "../components/PwaInstallPrompt";
+import TicketCreateModal from "../components/TicketCreateModal";
+import { TICKET_ENABLED } from "../config/features";
 import { canInstall, onInstallChange, promptInstall } from "../pwa-install";
 
 // Trung tâm Hướng dẫn sử dụng là app riêng (thư mục help-center/, cổng 8082) — mở ở tab mới.
@@ -17,6 +19,7 @@ type NavItem = {
   icon: string;
   entity?: string;
   manage?: boolean;
+  action?: string;        // hiện khi có ĐÚNG action này trên entity (dùng cho menu riêng của 1 nhóm)
   anyEntity?: string[];   // hiện nếu có read trên BẤT KỲ entity nào (OR)
   external?: boolean;     // link ra ngoài app (mở tab mới) thay vì route nội bộ
 };
@@ -31,8 +34,15 @@ const NAV_GROUPS: NavGroup[] = [
   {
     items: [
       { to: "/", label: "Trang chủ", icon: "ti-layout-dashboard" },
-      // Trung tâm HDSD là app riêng — mọi user đăng nhập đều xem được
+      // Trung tâm HDSD là app riêng (cổng 8082) — mọi user đăng nhập đều xem được
       { to: HELP_URL, label: "Hướng dẫn sử dụng", icon: "ti-help", external: true },
+      // Màn QUẢN LÝ phiếu hỗ trợ — chỉ nhóm Hỗ trợ (quyền 'delete' làm proxy handler,
+      // vì mọi nhân viên đều có ticket read/write/create nên không lọc được bằng manage).
+      // Người dùng thường gửi phiếu qua icon tai nghe + xem ở Trang cá nhân.
+      // Ẩn hoàn toàn khi tính năng tắt (prod) — xem config/features.ts
+      ...(TICKET_ENABLED
+        ? [{ to: "/tickets", label: "Hỗ trợ", icon: "ti-headset", entity: "ticket", action: "delete" }]
+        : []),
       {
         to: "/reports",
         label: "Báo cáo mua hàng",
@@ -251,7 +261,12 @@ export default function AppLayout() {
     items.filter(
       (n) =>
         (n.anyEntity ? n.anyEntity.some((e) => can(e, "read")) : true) &&
-        (!n.entity || (n.manage ? canManage(n.entity) : can(n.entity, "read"))),
+        (!n.entity ||
+          (n.action
+            ? can(n.entity, n.action)
+            : n.manage
+              ? canManage(n.entity)
+              : can(n.entity, "read"))),
     );
   const nav = useNavigate();
   const loc = useLocation();
@@ -260,6 +275,9 @@ export default function AppLayout() {
   // Nút "Cài ứng dụng" trong menu — hiện khi trình duyệt cho cài (Edge/Chrome/Android)
   const [installable, setInstallable] = useState(canInstall());
   useEffect(() => onInstallChange(() => setInstallable(canInstall())), []);
+  // Popup "Gửi yêu cầu hỗ trợ" (icon tai nghe ở menu avatar) — mở ngay tại trang đang đứng
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [supportOrigin, setSupportOrigin] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
     try {
@@ -639,11 +657,22 @@ export default function AppLayout() {
                       fontSize: 13,
                       fontWeight: 500,
                     }}
-                    onClick={() => { setProfileOpen(false); window.open(HELP_URL, "_blank", "noopener"); }}
+                    onClick={() => {
+                      setProfileOpen(false);
+                      // Tắt phiếu hỗ trợ → nút này quay về link Trung tâm HDSD (app riêng, cổng 8082)
+                      if (!TICKET_ENABLED) { window.open(HELP_URL, "_blank", "noopener"); return; }
+                      // Mở popup gửi yêu cầu hỗ trợ ngay tại chỗ, đính kèm trang đang đứng (để debug)
+                      setSupportOrigin(loc.pathname + loc.search);
+                      setSupportOpen(true);
+                    }}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f1f5f9")}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                   >
-                    <i className="ti ti-help" style={{ fontSize: 16 }} /> Hướng dẫn sử dụng
+                    {TICKET_ENABLED ? (
+                      <><i className="ti ti-headset" style={{ fontSize: 16 }} /> Gửi yêu cầu hỗ trợ</>
+                    ) : (
+                      <><i className="ti ti-help" style={{ fontSize: 16 }} /> Hướng dẫn sử dụng</>
+                    )}
                   </button>
                   <button
                     style={{
@@ -714,6 +743,13 @@ export default function AppLayout() {
         </div>
       </div>
       {import.meta.env.VITE_PWA_INSTALL_PROMPT === 'on' && <PwaInstallPrompt />}
+      {TICKET_ENABLED && (
+        <TicketCreateModal
+          open={supportOpen}
+          onClose={() => setSupportOpen(false)}
+          originUrl={supportOrigin}
+        />
+      )}
     </div>
   );
 }
