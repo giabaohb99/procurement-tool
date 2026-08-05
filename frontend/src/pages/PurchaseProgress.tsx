@@ -60,8 +60,7 @@ type Col = {
 // Khai báo 1 lần: dùng chung cho <colgroup>, <thead> và <tbody> nên index luôn khớp.
 // Bảng có ~46 cột → chỉ bày sẵn cột chính, cột phụ đánh dấu `hide` cho gọn.
 const COLS: Col[] = [
-  // w rộng hơn các cột số khác vì là cột đầu → có thêm 18px lề trái của card
-  { key: 'stt', label: 'STT', w: 62, td: { ...R, ...MUTED }, cell: (r, c, i) => r.stt ?? (c.page - 1) * c.pageSize + i + 1 },
+  { key: 'stt', label: 'STT', w: 44, td: { ...R, ...MUTED }, cell: (r, c, i) => r.stt ?? (c.page - 1) * c.pageSize + i + 1 },
   {
     key: 'po_code', label: 'Mã ĐMH', w: 150, sort: 'po_code', td: NOWRAP,
     cell: (r, c) => c.canOpenPO ? (
