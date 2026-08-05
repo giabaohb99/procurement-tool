@@ -10,8 +10,25 @@ import { TICKET_ENABLED } from "../config/features";
 import { canInstall, onInstallChange, promptInstall } from "../pwa-install";
 
 // Trung tâm Hướng dẫn sử dụng là app riêng (thư mục help-center/, cổng 8082) — mở ở tab mới.
+// Khu người dùng bên đó CÔNG KHAI, không cần đăng nhập.
 export const HELP_URL =
   (import.meta as any).env?.VITE_HELP_URL || "http://localhost:8082";
+
+/**
+ * Link sang Help Center. Người quản trị tài liệu (help_article/write) được "bàn giao" phiên
+ * qua HASH `#t=...&r=...` để bên đó hiện nút "Truy cập quản trị" mà không phải đăng nhập lại
+ * (2 app khác cổng → không dùng chung localStorage).
+ * Hash KHÔNG được trình duyệt gửi lên server, và help-center xóa nó khỏi URL ngay khi nạp.
+ * User thường không kèm token — khu người dùng vốn công khai.
+ */
+export function helpCenterUrl(canManageHelp: boolean): string {
+  if (!canManageHelp) return HELP_URL;
+  const t = localStorage.getItem("token");
+  if (!t) return HELP_URL;
+  const r = localStorage.getItem("refresh_token");
+  const q = new URLSearchParams({ t, ...(r ? { r } : {}) });
+  return `${HELP_URL}#${q.toString()}`;
+}
 
 type NavItem = {
   to: string;
@@ -357,7 +374,7 @@ export default function AppLayout() {
                   n.external ? (
                     <a
                       key={n.to}
-                      href={n.to}
+                      href={n.to === HELP_URL ? helpCenterUrl(can("help_article", "write")) : n.to}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => setOpen(false)}
@@ -659,8 +676,11 @@ export default function AppLayout() {
                     }}
                     onClick={() => {
                       setProfileOpen(false);
-                      // Tắt phiếu hỗ trợ → nút này quay về link Trung tâm HDSD (app riêng, cổng 8082)
-                      if (!TICKET_ENABLED) { window.open(HELP_URL, "_blank", "noopener"); return; }
+                      // Tắt phiếu hỗ trợ → nút này quay về Trung tâm HDSD (app riêng, cổng 8082)
+                      if (!TICKET_ENABLED) {
+                        window.open(helpCenterUrl(can("help_article", "write")), "_blank", "noopener");
+                        return;
+                      }
                       // Mở popup gửi yêu cầu hỗ trợ ngay tại chỗ, đính kèm trang đang đứng (để debug)
                       setSupportOrigin(loc.pathname + loc.search);
                       setSupportOpen(true);

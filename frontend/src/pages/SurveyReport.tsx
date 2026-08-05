@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import Pagination from '../components/Pagination'
-import DateInput from '../components/DateInput'
+import DateRangePicker from '../components/DateRangePicker'
 import { toast } from '../components/toast'
-import { useResizableColumns, ResizeHandle } from '../hooks/useResizableColumns'
+import TableHead, { TableCells } from '../components/TableHead'
+import TableToolbar from '../components/TableToolbar'
+import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 
 const LINE_APPROVE_COLOR: Record<string, string> = {
   'Chờ duyệt': '#d97706',
@@ -97,33 +99,49 @@ export default function SurveyReport() {
   const [itemGroups, setItemGroups] = useState<string[]>([])
   const [sortBy, setSortBy] = useState('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-  const { startResize, thStyle } = useResizableColumns('colw:survey-report')
-
   function handleSort(field: string) {
     if (sortBy === field) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
     else { setSortBy(field); setSortDir('asc') }
     setPage(1)
   }
-  const arrow = (f: string) => (sortBy === f ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ↕')
 
-  function hCol(idx: number, field: string, label: string,
-                opts: { w?: number; minW?: number; center?: boolean; sortable?: boolean } = {}) {
-    const sortable = opts.sortable !== false
-    const style: React.CSSProperties = {
-      position: 'relative', paddingRight: 12,
-      ...(opts.w ? { width: opts.w } : {}),
-      ...(opts.minW ? { minWidth: opts.minW } : {}),
-      ...(opts.center ? { textAlign: 'center' } : { textAlign: 'left' }),
-      ...(sortable ? { cursor: 'pointer', userSelect: 'none' } : {}),
-      ...thStyle(idx),
-    }
-    return (
-      <th style={style} onClick={sortable ? () => handleSort(field) : undefined}>
-        {label}{sortable ? arrow(field) : ''}
-        <ResizeHandle onMouseDown={(e) => startResize(idx, e)} />
-      </th>
-    )
-  }
+  // Ô nội dung dài: cắt bớt bằng ellipsis, xem đủ qua tooltip
+  const ELLIPSIS: React.CSSProperties = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
+  const COLS = useMemo<TableColumn<SurveyReportItem>[]>(() => [
+    {
+      key: 'stt', label: 'STT', width: 48, align: 'center', fixed: true,
+      th: { width: 48 }, td: { color: 'var(--muted)' },
+      cell: (_it, i) => (page - 1) * PAGE_SIZE + i + 1,
+    },
+    {
+      key: 'survey_code', label: 'Mã phiếu', sort: 'survey_code', width: 130, th: { width: 130 },
+      cell: (it) => (
+        <Link to={`/surveys/${it.survey_id}`} style={{ color: 'var(--teal)', fontWeight: 500, textDecoration: 'none' }}>
+          {it.survey_code}
+        </Link>
+      ),
+    },
+    { key: 'kind', label: 'Loại', sort: 'kind', width: 70, align: 'center', th: { width: 70 }, cell: (it) => kindBadge(it.kind) },
+    {
+      key: 'content', label: 'Nội dung', sort: 'content', th: { minWidth: 200 },
+      td: { ...ELLIPSIS, maxWidth: 260 },
+      cell: (it) => <span title={it.content}>{it.content || ''}</span>,
+    },
+    { key: 'item_code', label: 'Mã hàng', sort: 'item_code', width: 120, th: { width: 120 }, cell: (it) => <span title={it.main_content}>{it.item_code || ''}</span> },
+    { key: 'item_group', label: 'Phân loại', sort: 'item_group', width: 130, th: { width: 130 }, cell: (it) => it.item_group || '' },
+    { key: 'nspt', label: 'NSPT', sort: 'nspt', width: 120, th: { width: 120 }, cell: (it) => it.nspt || '' },
+    { key: 'date', label: 'Ngày', sort: 'date', width: 100, align: 'center', th: { width: 100 }, cell: (it) => it.date || '' },
+    {
+      key: 'line_approve', label: 'Trạng thái duyệt', sort: 'line_approve', width: 130, align: 'center',
+      th: { width: 130 }, cell: (it) => lineApproveBadge(it.line_approve),
+    },
+    {
+      key: 'line_approve_note', label: 'Ghi chú duyệt', sort: 'line_approve_note', th: { minWidth: 160 },
+      td: { ...ELLIPSIS, maxWidth: 220 },
+      cell: (it) => <span title={it.line_approve_note}>{it.line_approve_note || ''}</span>,
+    },
+  ], [page])
+  const table = useTableColumns('survey-report', COLS)
 
   useEffect(() => {
     api.get('/api/item-groups', { params: { page_size: 500 } })
@@ -302,13 +320,10 @@ export default function SurveyReport() {
             <label>Nội dung chính</label>
             <input value={filters.main_content} placeholder="Tìm nội dung chính" onChange={(e) => { setFilters((d) => ({ ...d, main_content: e.target.value })); setPage(1); }} />
           </div>
-          <div className="toolbar-filter-item">
-            <label>Từ ngày</label>
-            <DateInput value={filters.date_from} onChange={(v) => { setFilters((d) => ({ ...d, date_from: v })); setPage(1); }} />
-          </div>
-          <div className="toolbar-filter-item">
-            <label>Đến ngày</label>
-            <DateInput value={filters.date_to} onChange={(v) => { setFilters((d) => ({ ...d, date_to: v })); setPage(1); }} />
+          <div className="toolbar-filter-item" style={{ maxWidth: 300 }}>
+            <label>Khoảng ngày</label>
+            <DateRangePicker block value={{ from: filters.date_from, to: filters.date_to }}
+              onChange={(v) => { setFilters((d) => ({ ...d, date_from: v.from, date_to: v.to })); setPage(1) }} />
           </div>
           
           {Object.values(filters).some((v) => v) && (
@@ -320,45 +335,20 @@ export default function SurveyReport() {
       </div>
 
       {/* Table */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="items-scroll">
-          <table className="items-table" style={{ minWidth: 900 }}>
-            <thead>
-              <tr>
-                {hCol(0, '', 'STT', { w: 48, center: true, sortable: false })}
-                {hCol(1, 'survey_code', 'Mã phiếu', { w: 130 })}
-                {hCol(2, 'kind', 'Loại', { w: 70, center: true })}
-                {hCol(3, 'content', 'Nội dung', { minW: 200 })}
-                {hCol(4, 'item_code', 'Mã hàng', { w: 120 })}
-                {hCol(5, 'item_group', 'Phân loại', { w: 130 })}
-                {hCol(6, 'nspt', 'NSPT', { w: 120 })}
-                {hCol(7, 'date', 'Ngày', { w: 100, center: true })}
-                {hCol(8, 'line_approve', 'Trạng thái duyệt', { w: 130, center: true })}
-                {hCol(9, 'line_approve_note', 'Ghi chú duyệt', { minW: 160 })}
-              </tr>
-            </thead>
+      <div className="card table-card">
+        <TableToolbar {...table} onRefresh={() => load(debouncedFilters, page)} />
+        <div className="table-scroll">
+          <table style={{ minWidth: 900 }}>
+            <TableHead {...table} sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
             <tbody>
               {items.map((it, i) => (
                 <tr key={`${it.survey_id}-${it.kind}-${it.line_id}`}>
-                  <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
-                  <td>
-                    <Link to={`/surveys/${it.survey_id}`} style={{ color: 'var(--teal)', fontWeight: 500, textDecoration: 'none' }}>
-                      {it.survey_code}
-                    </Link>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>{kindBadge(it.kind)}</td>
-                  <td style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={it.content}>{it.content || ''}</td>
-                  <td title={it.main_content}>{it.item_code || ''}</td>
-                  <td>{it.item_group || ''}</td>
-                  <td>{it.nspt || ''}</td>
-                  <td style={{ textAlign: 'center' }}>{it.date || ''}</td>
-                  <td style={{ textAlign: 'center' }}>{lineApproveBadge(it.line_approve)}</td>
-                  <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={it.line_approve_note}>{it.line_approve_note || ''}</td>
+                  <TableCells columns={table.columns} row={it} index={i} />
                 </tr>
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: 'center', color: '#999', padding: 24 }}>
+                  <td colSpan={table.columns.length} className="table-empty">
                     {busy ? 'Đang tải...' : 'Không có dữ liệu'}
                   </td>
                 </tr>
@@ -368,7 +358,7 @@ export default function SurveyReport() {
         </div>
 
         {total > 0 && (
-          <div style={{ padding: '10px 18px', borderTop: '1px solid var(--border)' }}>
+          <div className="table-foot">
             <Pagination page={page} pageSize={PAGE_SIZE} total={total} hideSize onChange={(p) => setPage(p)} />
           </div>
         )}

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.core.auth import get_current_user, require
+from app.core.auth import require
 from app.core.database import get_db
 from app.core.response import success
 
@@ -14,14 +14,14 @@ router = APIRouter(prefix="/api/v1/faq", tags=["faq"])
 
 
 @router.get("")
-def list_faqs(active_only: bool = False, db: Session = Depends(get_db), user=Depends(get_current_user)):
+def list_faqs(active_only: bool = False, db: Session = Depends(get_db)):
     """Danh sách câu hỏi. Trang người dùng gọi với active_only=true để bỏ câu đang ẩn."""
     items = service.list_faqs(db, active_only)
     return success([FaqOut.model_validate(i).model_dump() for i in items])
 
 
 @router.get("/{faq_id}")
-def get_faq(faq_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+def get_faq(faq_id: int, db: Session = Depends(get_db)):
     return success(FaqOut.model_validate(service.get_faq(db, faq_id)).model_dump())
 
 

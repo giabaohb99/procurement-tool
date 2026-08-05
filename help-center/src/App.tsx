@@ -14,7 +14,7 @@ import PortalHome from '@/pages/portal-home'
 import PortalFaq from '@/pages/portal-faq'
 import PortalNode from '@/pages/portal-node'
 
-/** Chặn truy cập khi chưa đăng nhập — API help-center yêu cầu token. */
+/** Chặn khu QUẢN TRỊ khi chưa đăng nhập. Khu người dùng để công khai. */
 function Protected({ children }: { children: JSX.Element }) {
   const { user } = useAuth()
   return user ? children : <Navigate to="/login" replace />
@@ -35,8 +35,8 @@ export default function App() {
         <Route path=":id" element={<AdminArticle />} />
       </Route>
 
-      {/* Khu NGƯỜI DÙNG — chỉ đọc. /:id tự phân nhánh danh mục / bài viết (xem portal-node) */}
-      <Route path="/" element={<Protected><PortalLayout /></Protected>}>
+      {/* Khu NGƯỜI DÙNG — CÔNG KHAI, chỉ đọc. /:id tự phân nhánh danh mục / bài viết (xem portal-node) */}
+      <Route path="/" element={<PortalLayout />}>
         <Route index element={<PortalHome />} />
         <Route path="cau-hoi-thuong-gap" element={<PortalFaq />} />
         <Route path=":id" element={<PortalNode />} />

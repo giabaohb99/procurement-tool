@@ -27,7 +27,7 @@ Vite proxy `/api` → `api:8000`, nên không dính CORS. Production build đặ
 |---|---|---|
 | Quản trị HDSD | `helpadmin` (hoặc mã NV `HDSD0001`) · mật khẩu `helpadmin` | CRUD bài viết + slide |
 | Admin hệ thống | tài khoản admin sẵn có | CRUD bài viết + slide |
-| User còn lại | tài khoản nội bộ bất kỳ | Chỉ đọc |
+| User còn lại | *không cần đăng nhập* | Chỉ đọc khu người dùng |
 
 Mật khẩu seed đổi qua biến môi trường `HELP_ADMIN_PASSWORD`. Vai trò `help_admin`
 chỉ có quyền trên entity `help_article` — không đụng nghiệp vụ / cấu hình hệ thống.
@@ -36,8 +36,21 @@ chỉ có quyền trên entity `help_article` — không đụng nghiệp vụ /
 
 | Khu | Đường dẫn | Giao diện | Ai vào được |
 |---|---|---|---|
-| **Người dùng** | `/`, `/:id`, `/cau-hoi-thuong-gap` | Portal 3 tầng (xem dưới) + Câu hỏi thường gặp. **Chỉ đọc**. | Mọi user đăng nhập |
+| **Người dùng** | `/`, `/:id`, `/cau-hoi-thuong-gap` | Portal 3 tầng (xem dưới) + Câu hỏi thường gặp. **Chỉ đọc**. | **Công khai — không cần đăng nhập** |
 | **Quản trị** | `/admin`, `/admin/:id`, `/admin/faq`, `/admin/lich-su` | Quản lý bài viết · soạn bài · câu hỏi thường gặp · lịch sử thay đổi | Cần `help_article/write` |
+
+Các endpoint ĐỌC ở backend (`GET /api/v1/help-center/*`, `GET /api/v1/faq`) không yêu cầu token;
+mọi endpoint GHI vẫn cần quyền trên entity `help_article`.
+
+### Bàn giao phiên từ app Thu mua
+
+Hai app khác cổng (8080 / 8082) nên **không dùng chung localStorage**. Khi người có quyền
+`help_article/write` bấm "Hướng dẫn sử dụng" trong app Thu mua, link được gắn thêm token ở
+**hash**: `http://localhost:8082#t=<access>&r=<refresh>` (xem `helpCenterUrl()` trong
+`frontend/src/layouts/AppLayout.tsx`). Help Center nạp token vào localStorage, gọi `/api/auth/me`
+lấy quyền rồi **xóa hash khỏi URL ngay** — nhờ vậy hiện được nút "Truy cập quản trị" mà admin
+không phải đăng nhập lần hai. Hash không được trình duyệt gửi lên server. User thường không kèm
+token vì khu người dùng vốn công khai.
 
 ### Khu quản trị
 

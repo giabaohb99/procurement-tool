@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
-import DateInput from '../components/DateInput'
+import DateRangePicker from '../components/DateRangePicker'
 import Pagination from '../components/Pagination'
 import { fmtDate } from '../utils/datetime'
-import { useResizableColumns, ResizeHandle } from '../hooks/useResizableColumns'
+import TableHead, { TableCells, TableColGroup } from '../components/TableHead'
+import TableToolbar from '../components/TableToolbar'
+import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const NOWRAP = { whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }
@@ -42,11 +44,13 @@ type Col = {
   w: number
   sort?: string          // key gửi lên backend (cột thật) — không có => không sort được
   sup?: boolean          // chỉ hiện khi có quyền xem NCC/vận chuyển
+  hide?: boolean         // cột phụ: mặc định ẩn, bật lại ở menu "Cột"
   td?: CSSProperties     // style riêng cho <td>
   cell: (r: any, ctx: Ctx, i: number) => ReactNode
 }
 
 // Khai báo 1 lần: dùng chung cho <colgroup>, <thead> và <tbody> nên index luôn khớp.
+// Bảng có ~46 cột → chỉ bày sẵn cột chính, cột phụ đánh dấu `hide` cho gọn.
 const COLS: Col[] = [
   { key: 'stt', label: 'STT', w: 44, td: { ...R, ...MUTED }, cell: (r, c, i) => r.stt ?? (c.page - 1) * c.pageSize + i + 1 },
   {
@@ -60,48 +64,48 @@ const COLS: Col[] = [
       <span style={{ fontWeight: 600, color: 'var(--navy)' }} title="Bạn không có quyền xem chi tiết đơn mua hàng">{r.po_code}</span>
     ),
   },
-  { key: 'misa_code', label: 'Mã MISA', w: 92, sort: 'misa_code', td: { ...NOWRAP, ...MUTED }, cell: (r) => r.misa_code },
+  { key: 'misa_code', hide: true, label: 'Mã MISA', w: 92, sort: 'misa_code', td: { ...NOWRAP, ...MUTED }, cell: (r) => r.misa_code },
   { key: 'pr_code', label: 'Mã PYC', w: 104, sort: 'pr_code', td: { ...NOWRAP, ...MUTED }, cell: (r) => r.pr_code },
   { key: 'company', label: 'Công ty', w: 180, cell: (r, c) => c.companyName(r.company_id) },
   { key: 'department', label: 'Bộ phận', w: 124, sort: 'department', cell: (r) => r.department },
-  { key: 'supplier_code', label: 'Mã NCC', w: 130, sort: 'supplier_code', sup: true, td: { ...NOWRAP, ...MUTED }, cell: (r) => r.supplier_code },
+  { key: 'supplier_code', hide: true, label: 'Mã NCC', w: 130, sort: 'supplier_code', sup: true, td: { ...NOWRAP, ...MUTED }, cell: (r) => r.supplier_code },
   { key: 'supplier_name', label: 'Nhà cung cấp', w: 230, sort: 'supplier_name', sup: true, cell: (r) => r.supplier_name },
   { key: 'nspt', label: 'NSPT', w: 150, sort: 'nspt', cell: (r) => r.nspt },
   { key: 'order_date', label: 'Ngày ĐH', w: 88, sort: 'order_date', td: NOWRAP, cell: (r) => fmtDate(r.order_date) },
   { key: 'product_code', label: 'Mã SP', w: 140, sort: 'product_code', td: { ...NOWRAP, ...MUTED }, cell: (r) => r.product_code },
   { key: 'product_name', label: 'Tên SP', w: 220, sort: 'product_name', td: { fontWeight: 500 }, cell: (r) => r.product_name },
-  { key: 'invoice_name', label: 'Tên hóa đơn', w: 150, sort: 'invoice_name', cell: (r) => r.invoice_name },
-  { key: 'item_group', label: 'Nhóm hàng', w: 120, sort: 'item_group', cell: (r) => r.item_group },
-  { key: 'spec', label: 'Quy cách', w: 190, sort: 'spec', cell: (r) => r.spec },
-  { key: 'fg_code', label: 'Mã HH', w: 84, sort: 'fg_code', td: { ...NOWRAP, ...MUTED }, cell: (r) => r.fg_code },
-  { key: 'invoice_no', label: 'Số HĐ', w: 160, sort: 'invoice_no', td: NOWRAP, cell: (r) => r.invoice_no },
-  { key: 'required_date', label: 'Ngày cần', w: 88, sort: 'required_date', td: NOWRAP, cell: (r) => fmtDate(r.required_date) },
+  { key: 'invoice_name', hide: true, label: 'Tên hóa đơn', w: 150, sort: 'invoice_name', cell: (r) => r.invoice_name },
+  { key: 'item_group', hide: true, label: 'Nhóm hàng', w: 120, sort: 'item_group', cell: (r) => r.item_group },
+  { key: 'spec', hide: true, label: 'Quy cách', w: 190, sort: 'spec', cell: (r) => r.spec },
+  { key: 'fg_code', hide: true, label: 'Mã HH', w: 84, sort: 'fg_code', td: { ...NOWRAP, ...MUTED }, cell: (r) => r.fg_code },
+  { key: 'invoice_no', hide: true, label: 'Số HĐ', w: 160, sort: 'invoice_no', td: NOWRAP, cell: (r) => r.invoice_no },
+  { key: 'required_date', hide: true, label: 'Ngày cần', w: 88, sort: 'required_date', td: NOWRAP, cell: (r) => fmtDate(r.required_date) },
   { key: 'unit', label: 'ĐVT', w: 56, sort: 'unit', cell: (r) => r.unit },
-  { key: 'qty_request', label: 'SL YC', w: 76, sort: 'qty_request', td: R, cell: (r) => fmt(r.qty_request) },
+  { key: 'qty_request', hide: true, label: 'SL YC', w: 76, sort: 'qty_request', td: R, cell: (r) => fmt(r.qty_request) },
   { key: 'qty_order', label: 'SL đặt', w: 76, sort: 'qty_order', td: R, cell: (r) => fmt(r.qty_order) },
   { key: 'price', label: 'Đơn giá', w: 96, sort: 'price', td: R, cell: (r) => fmt(r.price) },
-  { key: 'vat', label: 'VAT%', w: 60, sort: 'vat', td: R, cell: (r) => r.vat || 0 },
+  { key: 'vat', hide: true, label: 'VAT%', w: 60, sort: 'vat', td: R, cell: (r) => r.vat || 0 },
   { key: 'order_amount', label: 'Thành tiền ĐH', w: 128, td: { ...R, fontWeight: 600 }, cell: (r) => fmt(r.order_amount) },
   { key: 'progress_status', label: 'Tiến độ', w: 176, sort: 'progress_status', cell: (r) => pgBadge(r.progress_status) },
-  { key: 'delivery_no', label: 'Lần giao', w: 72, sort: 'delivery_no', td: R, cell: (r) => r.delivery_no ?? '—' },
-  { key: 'warehouse_code', label: 'Kho', w: 96, sort: 'warehouse_code', td: NOWRAP, cell: (r) => r.warehouse_code },
-  { key: 'carrier_code', label: 'Mã ĐVVC', w: 160, sort: 'carrier_code', sup: true, td: { ...NOWRAP, ...MUTED }, cell: (r) => r.carrier_code },
-  { key: 'carrier_name', label: 'Đơn vị VC', w: 160, sort: 'carrier_name', sup: true, cell: (r) => r.carrier_name },
-  { key: 'ship_qty', label: 'SL giao', w: 84, sort: 'ship_qty', td: R, cell: (r) => fmt(r.ship_qty) },
+  { key: 'delivery_no', hide: true, label: 'Lần giao', w: 72, sort: 'delivery_no', td: R, cell: (r) => r.delivery_no ?? '—' },
+  { key: 'warehouse_code', hide: true, label: 'Kho', w: 96, sort: 'warehouse_code', td: NOWRAP, cell: (r) => r.warehouse_code },
+  { key: 'carrier_code', hide: true, label: 'Mã ĐVVC', w: 160, sort: 'carrier_code', sup: true, td: { ...NOWRAP, ...MUTED }, cell: (r) => r.carrier_code },
+  { key: 'carrier_name', hide: true, label: 'Đơn vị VC', w: 160, sort: 'carrier_name', sup: true, cell: (r) => r.carrier_name },
+  { key: 'ship_qty', hide: true, label: 'SL giao', w: 84, sort: 'ship_qty', td: R, cell: (r) => fmt(r.ship_qty) },
   { key: 'received_qty', label: 'SL nhận', w: 84, sort: 'received_qty', td: R, cell: (r) => fmt(r.received_qty) },
-  { key: 'promised_date', label: 'Cam kết giao', w: 100, sort: 'promised_date', td: NOWRAP, cell: (r) => fmtDate(r.promised_date) },
-  { key: 'expected_date', label: 'Dự kiến nhận', w: 100, sort: 'expected_date', td: NOWRAP, cell: (r) => fmtDate(r.expected_date) },
+  { key: 'promised_date', hide: true, label: 'Cam kết giao', w: 100, sort: 'promised_date', td: NOWRAP, cell: (r) => fmtDate(r.promised_date) },
+  { key: 'expected_date', hide: true, label: 'Dự kiến nhận', w: 100, sort: 'expected_date', td: NOWRAP, cell: (r) => fmtDate(r.expected_date) },
   { key: 'received_date', label: 'Ngày nhận', w: 100, sort: 'received_date', td: NOWRAP, cell: (r) => fmtDate(r.received_date) },
-  { key: 'std_days', label: 'Ngày QĐ', w: 76, sort: 'std_days', td: R, cell: (r) => r.std_days || 0 },
-  { key: 'regulated_date', label: 'Ngày quy định', w: 108, sort: 'regulated_date', td: NOWRAP, cell: (r) => fmtDate(r.regulated_date) },
-  { key: 'diff_promise', label: 'CL cam kết', w: 84, sort: 'diff_promise', td: R, cell: (r) => diffCell(r.diff_promise) },
-  { key: 'diff_regulated', label: 'CL quy định', w: 84, sort: 'diff_regulated', td: R, cell: (r) => diffCell(r.diff_regulated) },
-  { key: 'diff_required', label: 'CL vs YC', w: 76, sort: 'diff_required', td: R, cell: (r) => diffCell(r.diff_required) },
-  { key: 'delivery_invoice_no', label: 'Số HĐ (giao)', w: 160, sort: 'delivery_invoice_no', td: NOWRAP, cell: (r) => r.delivery_invoice_no },
-  { key: 'shipping_unit_price', label: 'Đơn giá VC', w: 96, sort: 'shipping_unit_price', sup: true, td: R, cell: (r) => fmt(r.shipping_unit_price) },
-  { key: 'shipping_amount', label: 'Tiền VC', w: 108, sort: 'shipping_amount', sup: true, td: R, cell: (r) => fmt(r.shipping_amount) },
-  { key: 'qc_result', label: 'QC', w: 64, sort: 'qc_result', cell: (r) => r.qc_result },
-  { key: 'delivery_status', label: 'TT giao', w: 108, sort: 'delivery_status', cell: (r) => r.delivery_status },
+  { key: 'std_days', hide: true, label: 'Ngày QĐ', w: 76, sort: 'std_days', td: R, cell: (r) => r.std_days || 0 },
+  { key: 'regulated_date', hide: true, label: 'Ngày quy định', w: 108, sort: 'regulated_date', td: NOWRAP, cell: (r) => fmtDate(r.regulated_date) },
+  { key: 'diff_promise', hide: true, label: 'CL cam kết', w: 84, sort: 'diff_promise', td: R, cell: (r) => diffCell(r.diff_promise) },
+  { key: 'diff_regulated', hide: true, label: 'CL quy định', w: 84, sort: 'diff_regulated', td: R, cell: (r) => diffCell(r.diff_regulated) },
+  { key: 'diff_required', hide: true, label: 'CL vs YC', w: 76, sort: 'diff_required', td: R, cell: (r) => diffCell(r.diff_required) },
+  { key: 'delivery_invoice_no', hide: true, label: 'Số HĐ (giao)', w: 160, sort: 'delivery_invoice_no', td: NOWRAP, cell: (r) => r.delivery_invoice_no },
+  { key: 'shipping_unit_price', hide: true, label: 'Đơn giá VC', w: 96, sort: 'shipping_unit_price', sup: true, td: R, cell: (r) => fmt(r.shipping_unit_price) },
+  { key: 'shipping_amount', hide: true, label: 'Tiền VC', w: 108, sort: 'shipping_amount', sup: true, td: R, cell: (r) => fmt(r.shipping_amount) },
+  { key: 'qc_result', hide: true, label: 'QC', w: 64, sort: 'qc_result', cell: (r) => r.qc_result },
+  { key: 'delivery_status', hide: true, label: 'TT giao', w: 108, sort: 'delivery_status', cell: (r) => r.delivery_status },
   { key: 'amount', label: 'Thành tiền nhận', w: 128, td: { ...R, fontWeight: 600 }, cell: (r) => fmt(r.amount) },
   { key: 'document_status', label: 'Hồ sơ CT', w: 150, sort: 'document_status', cell: (r) => r.document_status },
 ]
@@ -119,7 +123,6 @@ export default function PurchaseProgress() {
   const [pageSize, setPageSize] = useState(20)
   const [sortBy, setSortBy] = useState('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-  const { startResize, colW } = useResizableColumns('colw:purchase-progress')
   const [f, setF] = useState<any>({
     company_id: '', department: '', month: '', status: '', q: '',
     order_date_from: '', order_date_to: '', received_date_from: '', received_date_to: '',
@@ -156,10 +159,24 @@ export default function PurchaseProgress() {
   }, [f, page, pageSize, sortBy, sortDir])
 
   const companyName = (cid: number) => companies.find((c) => c.id === cid)?.name || '—'
-  const ctx: Ctx = { companyName, canOpenPO, navigate, page, pageSize }
 
-  const cols = COLS.filter((c) => !c.sup || showSupplier)
-  const minW = cols.reduce((s, c) => s + c.w, 0)
+  // Chuyển khai báo cột nội bộ sang TableColumn dùng chung (ẩn/hiện cột + kéo giãn + header thống nhất)
+  const tableColumns = useMemo<TableColumn<any>[]>(() => {
+    const ctx: Ctx = { companyName, canOpenPO, navigate, page, pageSize }
+    return COLS.filter((c) => !c.sup || showSupplier).map((c) => ({
+      key: c.key,
+      label: c.label,
+      sort: c.sort,
+      width: c.w,
+      align: c.td?.textAlign === 'right' ? 'right' : 'left',
+      defaultHidden: c.hide,
+      td: c.td,
+      cell: (r: any, i: number) => c.cell(r, ctx, i),
+    }))
+  }, [showSupplier, companies, canOpenPO, page, pageSize])
+
+  const table = useTableColumns('purchase-progress', tableColumns)
+  const minW = table.columns.reduce((s, c) => s + (typeof c.width === 'number' ? c.width : 100), 0)
 
   return (
     <div>
@@ -194,14 +211,14 @@ export default function PurchaseProgress() {
             <option value="full">Đã đủ (nhận ≥ đặt)</option>
           </select>
         </div>
-        <div><label style={lbl}>Ngày ĐH từ</label>
-          <DateInput value={f.order_date_from} onChange={(v) => setFilter('order_date_from', v)} /></div>
-        <div><label style={lbl}>đến</label>
-          <DateInput value={f.order_date_to} onChange={(v) => setFilter('order_date_to', v)} /></div>
-        <div><label style={lbl}>Ngày nhận từ</label>
-          <DateInput value={f.received_date_from} onChange={(v) => setFilter('received_date_from', v)} /></div>
-        <div><label style={lbl}>đến</label>
-          <DateInput value={f.received_date_to} onChange={(v) => setFilter('received_date_to', v)} /></div>
+        <div style={{ minWidth: 250 }}><label style={lbl}>Ngày đặt hàng</label>
+          <DateRangePicker block value={{ from: f.order_date_from, to: f.order_date_to }}
+            onChange={(v) => { setF((s: any) => ({ ...s, order_date_from: v.from, order_date_to: v.to })); setPage(1) }} />
+        </div>
+        <div style={{ minWidth: 250 }}><label style={lbl}>Ngày nhận</label>
+          <DateRangePicker block value={{ from: f.received_date_from, to: f.received_date_to }}
+            onChange={(v) => { setF((s: any) => ({ ...s, received_date_from: v.from, received_date_to: v.to })); setPage(1) }} />
+        </div>
         <div style={{ minWidth: 200, flex: 1 }}><label style={lbl}>Tìm kiếm</label>
           <input value={f.q} placeholder="Mã ĐMH / PYC / mã, tên SP…" onChange={(e) => setFilter('q', e.target.value)} /></div>
         <button className="btn ghost" onClick={() => setF({
@@ -211,48 +228,27 @@ export default function PurchaseProgress() {
         })}>Xóa lọc</button>
       </div>
 
-      <div className="card">
-        <div className="items-scroll">
-          <table className="items-table wide-table" style={{ minWidth: minW, tableLayout: 'fixed' }}>
-            <colgroup>
-              {cols.map((c, idx) => <col key={c.key} style={{ width: colW(idx, c.w) }} />)}
-            </colgroup>
-            <thead>
-              <tr>
-                {cols.map((c, idx) => {
-                  const sortable = !!c.sort
-                  const active = sortable && sortBy === c.sort
-                  const arrow = active ? (sortDir === 'asc' ? ' ▲' : ' ▼') : (sortable ? ' ↕' : '')
-                  const right = c.td?.textAlign === 'right'
-                  return (
-                    <th key={c.key}
-                      onClick={sortable ? () => handleSort(c.sort!) : undefined}
-                      style={{
-                        position: 'relative', paddingRight: 12,
-                        textAlign: right ? 'right' : 'left',
-                        cursor: sortable ? 'pointer' : 'default', userSelect: 'none',
-                      }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        {c.label}<span style={{ color: active ? 'var(--teal)' : '#cbd5e1' }}>{arrow}</span>
-                      </span>
-                      <ResizeHandle onMouseDown={(e) => startResize(idx, e)} />
-                    </th>
-                  )
-                })}
-              </tr>
-            </thead>
+      <div className="card table-card">
+        <TableToolbar {...table} onRefresh={load} />
+        <div className="table-scroll">
+          <table className="dense" style={{ minWidth: minW, tableLayout: 'fixed' }}>
+            <TableColGroup columns={table.columns} colW={table.colW} />
+            <TableHead columns={table.columns} startResize={table.startResize}
+              sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
             <tbody>
               {rows.map((r, i) => (
                 <tr key={`${r.item_id}-${r.delivery_id ?? 'x'}-${i}`}>
-                  {cols.map((c) => <td key={c.key} style={c.td}>{c.cell(r, ctx, i)}</td>)}
+                  <TableCells columns={table.columns} row={r} index={i} />
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={cols.length} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có dữ liệu tiến độ</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={table.columns.length} className="table-empty">Chưa có dữ liệu tiến độ</td></tr>}
             </tbody>
           </table>
         </div>
-        <Pagination page={page} pageSize={pageSize} total={total}
-          onChange={(p, s) => { setPage(p); setPageSize(s) }} />
+        <div className="table-foot">
+          <Pagination page={page} pageSize={pageSize} total={total}
+            onChange={(p, s) => { setPage(p); setPageSize(s) }} />
+        </div>
       </div>
       <div style={{ marginTop: 8, fontSize: 12.5, color: 'var(--muted)' }}>
         * Mỗi dòng = 1 lần giao của 1 sản phẩm trên đơn mua hàng.

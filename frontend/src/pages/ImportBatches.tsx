@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthContext'
 import { api } from '../api/client'
 import { toast } from '../components/toast'
 import Pagination from '../components/Pagination'
-import DateInput from '../components/DateInput'
+import DateRangePicker from '../components/DateRangePicker'
 import { fmtDateTime } from '../utils/datetime'
 
 export const IMPORT_MODULE: Record<number, string> = { 1: 'Khảo sát', 2: 'Đơn mua hàng' }
@@ -169,17 +169,11 @@ export default function ImportBatches() {
               {creators.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
-          {/* Từ ngày */}
+          {/* Khoảng ngày */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <label style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Từ:</label>
-            <DateInput value={fDateFrom} onChange={(v) => { setFDateFrom(v); setPage(1) }}
-              style={{ width: 135, fontSize: 13 }} />
-          </div>
-          {/* Đến ngày */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <label style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Đến:</label>
-            <DateInput value={fDateTo} onChange={(v) => { setFDateTo(v); setPage(1) }}
-              style={{ width: 135, fontSize: 13 }} />
+            <label style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Ngày:</label>
+            <DateRangePicker value={{ from: fDateFrom, to: fDateTo }}
+              onChange={(v) => { setFDateFrom(v.from); setFDateTo(v.to); setPage(1) }} />
           </div>
           {/* Tên file */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>

@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { DayPicker, type DateRange } from 'react-day-picker'
 import { vi } from 'date-fns/locale'
 import 'react-day-picker/style.css'
 
 // Bộ chọn KHOẢNG NGÀY: nút -> popover (nút nhanh + lịch 2 tháng, react-day-picker).
+// Dùng CHUNG cho mọi bộ lọc "từ ngày → đến ngày" (thay cho 2 ô <input type="date">).
+// Popover render qua portal (position: fixed) để không bị `overflow` của card cắt.
 // captionLayout="dropdown" => header lịch có dropdown Tháng + Năm.
 // Chọn đủ from+to (hoặc bấm nút nhanh) -> tự đóng + gọi onApply (chạy luôn, đỡ 1 bước).
 // Value in/out dạng chuỗi ISO 'YYYY-MM-DD' để khớp state phía dùng (không phụ thuộc timezone).
@@ -48,7 +51,8 @@ function buildPresets(): { label: string; from: Date; to: Date }[] {
 }
 
 export default function DateRangePicker({
-  value, onChange, onApply, placeholder = 'Chọn khoảng ngày', startYear = 2020, endYear,
+  value, onChange, onApply, placeholder = 'Chọn khoảng ngày', startYear = 2020, endYear, block,
+  presets = true, disabled,
 }: {
   value: Val
   onChange: (v: Val) => void
@@ -56,24 +60,50 @@ export default function DateRangePicker({
   placeholder?: string
   startYear?: number
   endYear?: number
+  block?: boolean              // chiếm trọn bề ngang ô lọc (dùng trong FilterBar / thanh lọc)
+  presets?: boolean            // nút nhanh (7 ngày qua…) — tắt khi nhập kỳ hạn tương lai (vd hợp đồng)
+  disabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState({ top: 0, left: 0 })
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const popRef = useRef<HTMLDivElement>(null)
   const endY = endYear ?? new Date().getFullYear() + 1
   const has = !!(value.from || value.to)
 
-  // Đóng khi bấm ra ngoài / nhấn Esc
-  useEffect(() => {
+  // Đặt popover bám theo nút; tự lật lên trên / thụt vào nếu tràn màn hình
+  useLayoutEffect(() => {
     if (!open) return
+    function place() {
+      const r = btnRef.current?.getBoundingClientRect()
+      if (!r) return
+      const w = popRef.current?.offsetWidth ?? 640
+      const h = popRef.current?.offsetHeight ?? 400
+      const left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8))
+      const top = r.bottom + 6 + h > window.innerHeight - 8
+        ? Math.max(8, r.top - 6 - h)
+        : r.bottom + 6
+      setPos({ top, left })
+    }
+    place()
+    function onScroll(e: Event) {
+      if (popRef.current?.contains(e.target as Node)) return
+      place()
+    }
     const onDoc = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      const t = e.target as Node
+      if (!popRef.current?.contains(t) && !btnRef.current?.contains(t)) setOpen(false)
     }
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
     document.addEventListener('mousedown', onDoc)
     document.addEventListener('keydown', onKey)
+    window.addEventListener('resize', place)
+    window.addEventListener('scroll', onScroll, true)
     return () => {
       document.removeEventListener('mousedown', onDoc)
       document.removeEventListener('keydown', onKey)
+      window.removeEventListener('resize', place)
+      window.removeEventListener('scroll', onScroll, true)
     }
   }, [open])
 
@@ -91,24 +121,31 @@ export default function DateRangePicker({
   const defaultMonth = toDate(value.from) || new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button type="button" className="drp-trigger" onClick={() => setOpen((o) => !o)}>
+    <>
+      <button type="button" ref={btnRef} className={'drp-trigger' + (block ? ' block' : '')}
+        disabled={disabled} onClick={() => setOpen((o) => !o)}>
         <i className="ti ti-calendar-event" style={{ color: 'var(--teal)', fontSize: 16 }} />
-        <span style={{ color: has ? 'var(--navy)' : 'var(--muted)', fontWeight: has ? 600 : 400 }}>
+        <span className="drp-value" style={{ color: has ? 'var(--navy)' : 'var(--muted)', fontWeight: has ? 600 : 400 }}>
           {has ? `${fmtVN(value.from) || '…'} → ${fmtVN(value.to) || '…'}` : placeholder}
         </span>
-        <i className={`ti ti-chevron-${open ? 'up' : 'down'}`} style={{ color: '#94a3b8', fontSize: 14, marginLeft: 6 }} />
+        {has && !disabled && (
+          <i className="ti ti-x drp-clear" title="Xóa khoảng ngày"
+            onClick={(e) => { e.stopPropagation(); apply({ from: '', to: '' }) }} />
+        )}
+        <i className={`ti ti-chevron-${open ? 'up' : 'down'}`} style={{ color: '#94a3b8', fontSize: 14, marginLeft: 'auto' }} />
       </button>
-      {open && (
-        <div className="drp-pop">
+      {open && createPortal(
+        <div className="drp-pop" ref={popRef} style={{ top: pos.top, left: pos.left }}>
           <div className="drp-body">
-            {/* Nút nhanh */}
-            <div className="drp-presets">
-              {buildPresets().map((p) => (
-                <button key={p.label} type="button" className="drp-preset"
-                  onClick={() => apply({ from: toISO(p.from), to: toISO(p.to) })}>{p.label}</button>
-              ))}
-            </div>
+            {/* Nút nhanh (tắt được qua prop `presets`) */}
+            {presets && (
+              <div className="drp-presets">
+                {buildPresets().map((p) => (
+                  <button key={p.label} type="button" className="drp-preset"
+                    onClick={() => apply({ from: toISO(p.from), to: toISO(p.to) })}>{p.label}</button>
+                ))}
+              </div>
+            )}
             {/* Lịch 2 tháng — chọn tay KHÔNG tự đóng, chờ bấm "Áp dụng" */}
             <div>
               <DayPicker
@@ -140,8 +177,9 @@ export default function DateRangePicker({
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
-    </div>
+    </>
   )
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import Pagination from '../components/Pagination'
@@ -6,7 +6,9 @@ import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
 import { fmtDateTime } from '../utils/datetime'
 import NumberInput from '../components/NumberInput'
-import { useResizableColumns, ResizeHandle } from '../hooks/useResizableColumns'
+import TableHead, { TableCells } from '../components/TableHead'
+import TableToolbar from '../components/TableToolbar'
+import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 
@@ -35,9 +37,21 @@ export default function Inventory() {
   const [history, setHistory] = useState<any[]>([])
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const { startResize, thStyle } = useResizableColumns('colw:inventory')
 
   const companyName = (cid: number) => companies.find((c) => c.id === cid)?.name || cid || '—'
+
+  const R = { textAlign: 'right', whiteSpace: 'nowrap' } as React.CSSProperties
+  const COLS = useMemo<TableColumn<any>[]>(() => [
+    { key: 'company_name', label: 'Công ty', sort: 'company_name', cell: (r) => companyName(r.company_id) },
+    { key: 'warehouse_code', label: 'Kho', sort: 'warehouse_code' },
+    { key: 'product_code', label: 'Mã SP', sort: 'product_code' },
+    { key: 'product_name', label: 'Tên sản phẩm', sort: 'product_name' },
+    { key: 'unit', label: 'ĐVT', sort: 'unit' },
+    { key: 'qty', label: 'Tồn hiện tại', sort: 'qty', align: 'right', td: { ...R, fontWeight: 600 }, cell: (r) => fmt(r.qty) },
+    { key: 'avg_cost', label: 'Đơn giá BQ', sort: 'avg_cost', align: 'right', td: R, cell: (r) => fmt(r.avg_cost) },
+    { key: 'value', label: 'Giá trị tồn', sort: 'value', align: 'right', td: { ...R, fontWeight: 600 }, cell: (r) => fmt(r.value) },
+  ], [companies])
+  const table = useTableColumns('inventory', COLS)
 
   async function viewDetail(item: any) {
     setSelectedItem(item)
@@ -84,20 +98,6 @@ export default function Inventory() {
       setSortField(field)
       setSortAsc(true)
     }
-  }
-
-  const renderHeader = (label: string, field: string, alignRight = false, idx = 0) => {
-    const isSorted = sortField === field
-    const icon = isSorted ? (sortAsc ? 'ti ti-chevron-up' : 'ti ti-chevron-down') : 'ti ti-arrows-sort'
-    return (
-      <th onClick={() => handleSort(field)} style={{ position: 'relative', cursor: 'pointer', userSelect: 'none', textAlign: alignRight ? 'right' : 'left', paddingRight: 12, ...thStyle(idx) }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, justifyContent: alignRight ? 'flex-end' : 'flex-start', width: '100%' }}>
-          {label}
-          <i className={icon} style={{ fontSize: 13, opacity: isSorted ? 1 : 0.4 }} />
-        </div>
-        <ResizeHandle onMouseDown={(e) => startResize(idx, e)} />
-      </th>
-    )
   }
 
   useEffect(() => {
@@ -196,34 +196,22 @@ export default function Inventory() {
         const endIdx = Math.min(page * pageSize, totalRows)
 
         return (
-          <div className="card">
-            <table>
-              <thead>
-                <tr>
-                  {renderHeader('Công ty', 'company_name', false, 0)}
-                  {renderHeader('Kho', 'warehouse_code', false, 1)}
-                  {renderHeader('Mã SP', 'product_code', false, 2)}
-                  {renderHeader('Tên sản phẩm', 'product_name', false, 3)}
-                  {renderHeader('ĐVT', 'unit', false, 4)}
-                  {renderHeader('Tồn hiện tại', 'qty', true, 5)}
-                  {renderHeader('Đơn giá BQ', 'avg_cost', true, 6)}
-                  {renderHeader('Giá trị tồn', 'value', true, 7)}
-                </tr>
-              </thead>
-              <tbody>
-                {pagedRows.map((r) => (
-                  <tr key={r.id} onClick={() => viewDetail(r)} style={{ cursor: 'pointer' }} className="hoverable-row">
-                    <td>{companyName(r.company_id)}</td><td>{r.warehouse_code}</td><td>{r.product_code}</td>
-                    <td>{r.product_name}</td><td>{r.unit}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, whiteSpace: 'nowrap' }}>{fmt(r.qty)}</td>
-                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{fmt(r.avg_cost)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, whiteSpace: 'nowrap' }}>{fmt(r.value)}</td>
-                  </tr>
-                ))}
-                {totalRows === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có tồn kho</td></tr>}
-              </tbody>
-            </table>
-            <div style={{ borderTop: '1px solid #f1f5f9', padding: '10px 12px' }}>
+          <div className="card table-card">
+            <TableToolbar {...table} onRefresh={load} />
+            <div className="table-scroll">
+              <table>
+                <TableHead {...table} sortBy={sortField} sortDir={sortAsc ? 'asc' : 'desc'} onSort={handleSort} />
+                <tbody>
+                  {pagedRows.map((r, i) => (
+                    <tr key={r.id} className="clickable" onClick={() => viewDetail(r)}>
+                      <TableCells columns={table.columns} row={r} index={i} />
+                    </tr>
+                  ))}
+                  {totalRows === 0 && <tr><td colSpan={table.columns.length} className="table-empty">Chưa có tồn kho</td></tr>}
+                </tbody>
+              </table>
+            </div>
+            <div className="table-foot">
               <Pagination page={page} pageSize={pageSize} total={totalRows}
                 onChange={(p, s) => { setPage(p); setPageSize(s) }} />
             </div>

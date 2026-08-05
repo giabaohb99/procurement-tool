@@ -1,14 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { toast } from '../components/toast'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
-import DateInput from '../components/DateInput'
+import DateRangePicker from '../components/DateRangePicker'
 import Pagination from '../components/Pagination'
 import { fmtDateTime } from '../utils/datetime'
-import { useResizableColumns, ResizeHandle } from '../hooks/useResizableColumns'
+import TableHead, { TableCells } from '../components/TableHead'
+import TableToolbar from '../components/TableToolbar'
+import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const AGING_CLS: Record<string, string> = { 'Chưa đến hạn': 'gray', '1-30': 'warn', '31-60': 'warn', '61-90': 'err', '>90': 'err' }
@@ -46,7 +48,6 @@ export default function Payables() {
   const [pageSize, setPageSize] = useState(20)
   const [sortField, setSortField] = useState<string>('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-  const { startResize, thStyle } = useResizableColumns('colw:payables')
   const setFilter = (k: string, v: any) => setF((s: any) => ({ ...s, [k]: v }))
   const lbl = { fontSize: 12, color: 'var(--muted)' } as const
 
@@ -55,8 +56,6 @@ export default function Payables() {
     else { setSortField(field); setSortDir('asc') }
     setPage(1)
   }
-  const arrow = (f: string) => (sortField === f ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ↕')
-
   const params = () => {
     const p: any = { page_size: 1000 }
     Object.entries(f).forEach(([k, v]) => {
@@ -107,14 +106,31 @@ export default function Payables() {
   })()
   const paged = sortedRows.slice((page - 1) * pageSize, page * pageSize)
 
-  // th vừa sort vừa kéo giãn
-  const sortTh = (i: number, field: string, label: string, right = false) => (
-    <th onClick={() => handleSort(field)}
-      style={{ position: 'relative', cursor: 'pointer', userSelect: 'none', textAlign: right ? 'right' : 'left', paddingRight: 12, ...thStyle(i) }}>
-      {label}{arrow(field)}
-      <ResizeHandle onMouseDown={(e) => startResize(i, e)} />
-    </th>
-  )
+  const R: React.CSSProperties = { textAlign: 'right' }
+  const COLS = useMemo<TableColumn<any>[]>(() => [
+    // Cột chọn: luôn hiện (không cho ẩn) vì là chỗ tick tạo yêu cầu thanh toán
+    {
+      key: 'sel', label: '', width: 34, align: 'center', fixed: true,
+      cell: (r) => <input type="checkbox" disabled={!payable(r)} checked={sel.includes(r.id)} onChange={() => toggle(r.id)} />,
+    },
+    { key: 'supplier_name', label: 'Nhà cung cấp', sort: 'supplier_name', cell: (r) => r.supplier_name || r.supplier_code },
+    { key: 'supplier_code', label: 'Mã NCC', sort: 'supplier_code', td: { color: 'var(--muted)' } },
+    { key: 'source_type', label: 'Loại', sort: 'source_type', cell: (r) => (r.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa') },
+    { key: 'company', label: 'Công ty', sort: 'company', cell: (r) => companyName(r.company_id) },
+    { key: 'po_code', label: 'PO', sort: 'po_code' },
+    {
+      key: 'invoice_no', label: 'Số hóa đơn', sort: 'invoice_no',
+      cell: (r) => (r.invoice_no ? r.invoice_no : <span style={{ color: 'var(--red)', fontSize: 12 }}>chưa có HĐ</span>),
+    },
+    { key: 'created_at', label: 'Ngày phát sinh', sort: 'created_at', cell: (r) => fmtDateTime(r.created_at) || r.incur_date },
+    { key: 'due_date', label: 'Hạn trả', sort: 'due_date' },
+    { key: 'aging', label: 'Tuổi nợ', sort: 'aging', cell: (r) => agingBadge(r.aging) },
+    { key: 'total', label: 'Tổng nợ', sort: 'total', align: 'right', td: R, cell: (r) => fmt(r.total) },
+    { key: 'paid_amount', label: 'Đã trả', sort: 'paid_amount', align: 'right', td: R, cell: (r) => fmt(r.paid_amount) },
+    { key: 'remaining', label: 'Còn lại', sort: 'remaining', align: 'right', td: { ...R, fontWeight: 600 }, cell: (r) => fmt(r.remaining) },
+    { key: 'status', label: 'Trạng thái', sort: 'status', cell: (r) => stBadge(r.status) },
+  ], [sel, companies])
+  const table = useTableColumns('payables', COLS)
 
   async function createRequest() {
     setErr('')
@@ -189,8 +205,10 @@ export default function Payables() {
             options={[{ value: 'all', label: 'Tất cả' }, ...[thisYear, thisYear - 1, thisYear - 2].map((y) => ({ value: String(y), label: String(y) }))]}
             onChange={(v) => setFilter('year', v)} />
         </div>
-        <div><label style={lbl}>Ngày phát sinh từ</label><DateInput value={f.incur_from} onChange={(v) => setFilter('incur_from', v)} /></div>
-        <div><label style={lbl}>đến</label><DateInput value={f.incur_to} onChange={(v) => setFilter('incur_to', v)} /></div>
+        <div style={{ minWidth: 250 }}><label style={lbl}>Ngày phát sinh</label>
+          <DateRangePicker block value={{ from: f.incur_from, to: f.incur_to }}
+            onChange={(v) => setF((s: any) => ({ ...s, incur_from: v.from, incur_to: v.to }))} />
+        </div>
         <div style={{ minWidth: 130 }}><label style={lbl}>Số tiền từ</label>
           <NumberInput value={f.amount_from} onChange={(v) => setFilter('amount_from', v)} placeholder="" /></div>
         <div style={{ minWidth: 130 }}><label style={lbl}>đến</label>
@@ -198,52 +216,25 @@ export default function Payables() {
       </div>
 
       {err && <div className="err" style={{ marginBottom: 8 }}>{err}</div>}
-      <div className="card">
-        <div className="items-scroll">
-          <table className="items-table" style={{ minWidth: 1220 }}>
-            <thead>
-              <tr>
-                <th style={{ width: 34 }} />
-                {sortTh(1, 'supplier_name', 'Nhà cung cấp')}
-                {sortTh(2, 'supplier_code', 'Mã NCC')}
-                {sortTh(3, 'source_type', 'Loại')}
-                {sortTh(4, 'company', 'Công ty')}
-                {sortTh(5, 'po_code', 'PO')}
-                {sortTh(6, 'invoice_no', 'Số hóa đơn')}
-                {sortTh(7, 'created_at', 'Ngày phát sinh')}
-                {sortTh(8, 'due_date', 'Hạn trả')}
-                {sortTh(9, 'aging', 'Tuổi nợ')}
-                {sortTh(10, 'total', 'Tổng nợ', true)}
-                {sortTh(11, 'paid_amount', 'Đã trả', true)}
-                {sortTh(12, 'remaining', 'Còn lại', true)}
-                {sortTh(13, 'status', 'Trạng thái')}
-              </tr>
-            </thead>
+      <div className="card table-card">
+        <TableToolbar {...table} onRefresh={load} />
+        <div className="table-scroll">
+          <table className="dense" style={{ minWidth: 1220 }}>
+            <TableHead {...table} sortBy={sortField} sortDir={sortDir} onSort={handleSort} />
             <tbody>
-              {paged.map((r) => (
+              {paged.map((r, i) => (
                 <tr key={r.id} style={sel.includes(r.id) ? { background: '#f0f9ff' } : {}}>
-                  <td style={{ textAlign: 'center' }}>
-                    <input type="checkbox" disabled={!payable(r)} checked={sel.includes(r.id)} onChange={() => toggle(r.id)} />
-                  </td>
-                  <td>{r.supplier_name || r.supplier_code}</td>
-                  <td style={{ color: 'var(--muted)' }}>{r.supplier_code}</td>
-                  <td>{r.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa'}</td>
-                  <td>{companyName(r.company_id)}</td>
-                  <td>{r.po_code}</td>
-                  <td>{r.invoice_no ? r.invoice_no : <span style={{ color: 'var(--red)', fontSize: 12 }}>chưa có HĐ</span>}</td>
-                  <td>{fmtDateTime(r.created_at) || r.incur_date}</td><td>{r.due_date}</td><td>{agingBadge(r.aging)}</td>
-                  <td style={{ textAlign: 'right' }}>{fmt(r.total)}</td>
-                  <td style={{ textAlign: 'right' }}>{fmt(r.paid_amount)}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(r.remaining)}</td>
-                  <td>{stBadge(r.status)}</td>
+                  <TableCells columns={table.columns} row={r} index={i} />
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={14} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có công nợ</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={table.columns.length} className="table-empty">Chưa có công nợ</td></tr>}
             </tbody>
           </table>
         </div>
-        <Pagination page={page} pageSize={pageSize} total={rows.length}
-          onChange={(p, s) => { setPage(p); setPageSize(s) }} />
+        <div className="table-foot">
+          <Pagination page={page} pageSize={pageSize} total={rows.length}
+            onChange={(p, s) => { setPage(p); setPageSize(s) }} />
+        </div>
       </div>
       <div style={{ marginTop: 8, fontSize: 12.5, color: 'var(--muted)' }}>
         * Chỉ chọn được khoản nợ <b>đã có Số hóa đơn</b> để tạo đề nghị thanh toán. (Công nợ hàng: nhập Số HĐ ở chi tiết sản phẩm trên đơn; Vận chuyển: tự lấy Mã MISA + Mã SP.)

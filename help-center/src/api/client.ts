@@ -50,9 +50,11 @@ api.interceptors.response.use(
   },
 )
 
+// Dọn phiên hỏng. Chỉ đá về /login khi đang ở khu QUẢN TRỊ — khu người dùng là công khai,
+// mất phiên vẫn phải đọc được tài liệu.
 function logout() {
   localStorage.removeItem('token')
   localStorage.removeItem('refresh_token')
   localStorage.removeItem('user')
-  if (location.pathname !== '/login') location.href = '/login'
+  if (location.pathname.startsWith('/admin')) location.href = '/login'
 }
