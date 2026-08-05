@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { askConfirm } from '../components/confirm'
+import FilterPanel, { FilterItem } from '../components/FilterPanel'
 import Pagination from '../components/Pagination'
 import { useAuth } from '../auth/AuthContext'
 import TableHead, { TableCells, TableColGroup } from '../components/TableHead'
@@ -111,17 +112,20 @@ export default function CategoryAssignees() {
         {canCreate && <button className="btn" onClick={() => navigate('/category-assignees/new')}><i className="ti ti-plus" />Gán phân công</button>}
       </div>
 
-      <div className="toolbar">
-        <div className="toolbar-filter-item" style={{ maxWidth: 260 }}>
+      <FilterPanel onClear={resetFilters} canClear={!!(fCat || fName || fCode)}>
+        <FilterItem label="Phân loại" width={240}>
           <select value={fCat} onChange={e => { setFCat(e.target.value); setPage(1) }}>
-            <option value="">— Tất cả phân loại —</option>
+            <option value="">Tất cả</option>
             {cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
-        </div>
-        <div className="toolbar-filter-item"><input value={fName} onChange={e => { setFName(e.target.value); setPage(1) }} placeholder="Tìm theo tên NSTM…" /></div>
-        <div className="toolbar-filter-item"><input value={fCode} onChange={e => { setFCode(e.target.value); setPage(1) }} placeholder="Tìm theo mã NV…" /></div>
-        {(fCat || fName || fCode) && <button className="btn ghost" onClick={resetFilters}>Xóa lọc</button>}
-      </div>
+        </FilterItem>
+        <FilterItem label="Tên NSTM" grow>
+          <input value={fName} onChange={e => { setFName(e.target.value); setPage(1) }} placeholder="Tìm theo tên NSTM…" />
+        </FilterItem>
+        <FilterItem label="Mã nhân viên" grow>
+          <input value={fCode} onChange={e => { setFCode(e.target.value); setPage(1) }} placeholder="Tìm theo mã NV…" />
+        </FilterItem>
+      </FilterPanel>
 
       <div className="card table-card">
         <TableToolbar {...table} onRefresh={load} />

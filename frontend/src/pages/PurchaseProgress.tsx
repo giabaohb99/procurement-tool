@@ -5,6 +5,7 @@ import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
 import DateRangePicker from '../components/DateRangePicker'
+import FilterPanel, { FilterItem } from '../components/FilterPanel'
 import Pagination from '../components/Pagination'
 import { fmtDate } from '../utils/datetime'
 import TableHead, { TableCells, TableColGroup } from '../components/TableHead'
@@ -23,6 +24,13 @@ const PG_COLOR: Record<string, string> = {
   'Hoàn thành': '#16a34a', 'Tạm ngưng': '#d97706', 'Hủy đơn': '#dc2626',
 }
 const PG_OPTS = Object.keys(PG_COLOR)
+
+/** Bộ lọc rỗng — dùng cho khởi tạo và nút "Xóa lọc" */
+const EMPTY_FILTERS = {
+  company_id: '', department: '', month: '', status: '', q: '',
+  order_date_from: '', order_date_to: '', received_date_from: '', received_date_to: '',
+  recv_state: '',
+}
 const pgBadge = (s: string) =>
   <span className="badge" style={{ background: (PG_COLOR[s] || '#94a3b8') + '22', color: PG_COLOR[s] || '#64748b', whiteSpace: 'nowrap' }}>{s || '—'}</span>
 
@@ -123,13 +131,8 @@ export default function PurchaseProgress() {
   const [pageSize, setPageSize] = useState(20)
   const [sortBy, setSortBy] = useState('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-  const [f, setF] = useState<any>({
-    company_id: '', department: '', month: '', status: '', q: '',
-    order_date_from: '', order_date_to: '', received_date_from: '', received_date_to: '',
-    recv_state: '',
-  })
+  const [f, setF] = useState<any>(EMPTY_FILTERS)
   const setFilter = (k: string, v: any) => { setF((s: any) => ({ ...s, [k]: v })); setPage(1) }
-  const lbl = { fontSize: 12, color: 'var(--muted)' } as const
 
   function handleSort(key: string) {
     const nextDir: 'asc' | 'desc' = (sortBy === key && sortDir === 'asc') ? 'desc' : 'asc'
@@ -185,48 +188,46 @@ export default function PurchaseProgress() {
         <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Theo từng lần giao hàng · {fmt(total)} dòng</div>
       </div>
 
-      <div className="card filters" style={{ padding: 14, marginBottom: 12, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <div style={{ minWidth: 180 }}><label style={lbl}>Công ty</label>
+      <FilterPanel onClear={() => setF(EMPTY_FILTERS)} canClear={Object.values(f).some((v) => v)}>
+        <FilterItem label="Công ty">
           <SearchSelect value={f.company_id} placeholder="Tất cả"
             options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
             onChange={(v) => setFilter('company_id', v)} />
-        </div>
-        <div style={{ minWidth: 180 }}><label style={lbl}>Bộ phận</label>
+        </FilterItem>
+        <FilterItem label="Bộ phận">
           <SearchSelect value={f.department} placeholder="Tất cả"
             options={departments.map((d) => ({ value: d.name, label: d.name }))}
             onChange={(v) => setFilter('department', v)} />
-        </div>
-        <div style={{ minWidth: 140 }}><label style={lbl}>Tháng (đặt hàng)</label>
-          <input type="month" value={f.month} onChange={(e) => setFilter('month', e.target.value)} /></div>
-        <div style={{ minWidth: 180 }}><label style={lbl}>Trạng thái tiến độ</label>
+        </FilterItem>
+        <FilterItem label="Tìm kiếm" grow>
+          <input value={f.q} placeholder="Mã ĐMH / PYC / mã, tên SP…" onChange={(e) => setFilter('q', e.target.value)} />
+        </FilterItem>
+
+        <FilterItem label="Tháng (đặt hàng)" width={150} secondary active={!!f.month}>
+          <input type="month" value={f.month} onChange={(e) => setFilter('month', e.target.value)} />
+        </FilterItem>
+        <FilterItem label="Trạng thái tiến độ" secondary active={!!f.status}>
           <SearchSelect value={f.status} placeholder="Tất cả"
             options={PG_OPTS.map((s) => ({ value: s, label: s }))}
             onChange={(v) => setFilter('status', v)} />
-        </div>
-        <div style={{ minWidth: 190 }}><label style={lbl}>Tình trạng nhận</label>
+        </FilterItem>
+        <FilterItem label="Tình trạng nhận" width={200} secondary active={!!f.recv_state}>
           <select value={f.recv_state} onChange={(e) => setFilter('recv_state', e.target.value)}>
             <option value="">Tất cả</option>
             <option value="unreceived">Chưa giao (SL nhận = 0)</option>
             <option value="under">Chưa đủ (nhận &lt; đặt)</option>
             <option value="full">Đã đủ (nhận ≥ đặt)</option>
           </select>
-        </div>
-        <div style={{ minWidth: 250 }}><label style={lbl}>Ngày đặt hàng</label>
+        </FilterItem>
+        <FilterItem label="Ngày đặt hàng" width={260} secondary active={!!(f.order_date_from || f.order_date_to)}>
           <DateRangePicker block value={{ from: f.order_date_from, to: f.order_date_to }}
             onChange={(v) => { setF((s: any) => ({ ...s, order_date_from: v.from, order_date_to: v.to })); setPage(1) }} />
-        </div>
-        <div style={{ minWidth: 250 }}><label style={lbl}>Ngày nhận</label>
+        </FilterItem>
+        <FilterItem label="Ngày nhận" width={260} secondary active={!!(f.received_date_from || f.received_date_to)}>
           <DateRangePicker block value={{ from: f.received_date_from, to: f.received_date_to }}
             onChange={(v) => { setF((s: any) => ({ ...s, received_date_from: v.from, received_date_to: v.to })); setPage(1) }} />
-        </div>
-        <div style={{ minWidth: 200, flex: 1 }}><label style={lbl}>Tìm kiếm</label>
-          <input value={f.q} placeholder="Mã ĐMH / PYC / mã, tên SP…" onChange={(e) => setFilter('q', e.target.value)} /></div>
-        <button className="btn ghost" onClick={() => setF({
-          company_id: '', department: '', month: '', status: '', q: '',
-          order_date_from: '', order_date_to: '', received_date_from: '', received_date_to: '',
-          recv_state: '',
-        })}>Xóa lọc</button>
-      </div>
+        </FilterItem>
+      </FilterPanel>
 
       <div className="card table-card">
         <TableToolbar {...table} onRefresh={load} />

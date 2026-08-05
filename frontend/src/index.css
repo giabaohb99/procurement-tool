@@ -207,22 +207,62 @@ button.nav-group-title:hover {
   margin-bottom: 16px;
 }
 
-.toolbar {
+/* ── Thanh lọc dùng chung (FilterPanel/FilterItem) ─────────────────────────── */
+.filter-panel {
+  padding: 14px 16px;
+  margin-bottom: 12px;
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.filter-item {
+  flex: 0 1 180px;
+  min-width: 150px;
+}
+
+.filter-item.grow {
+  flex: 1 1 220px;
+  min-width: 200px;
+}
+
+.filter-item>label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.filter-item input,
+.filter-item select {
+  width: 100%;
+}
+
+/* Cụm 2 ô "từ → đến" (khoảng số tiền) nằm chung 1 trường */
+.filter-item .filter-pair {
+  display: flex;
   align-items: center;
-  margin-bottom: 16px;
+  gap: 6px;
+}
+
+.filter-item .filter-pair input {
+  min-width: 0;
+}
+
+.filter-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
   flex-wrap: wrap;
 }
 
-.toolbar-filter-item {
-  flex: 1 1 200px;
-  min-width: 160px;
-  max-width: 260px;
-}
-
-.toolbar-filter-item input {
-  width: 100% !important;
+.filter-actions .btn {
+  height: 40px;
+  border-radius: 12px;
+  white-space: nowrap;
 }
 
 input,
@@ -1155,12 +1195,6 @@ thead th {
     font-size: 18px;
   }
 
-  .toolbar input,
-  .toolbar select {
-    flex: 1 1 140px;
-    min-width: 0;
-  }
-
   /* Chuông thông báo: trên mobile neo theo viewport (fixed) để không bị .main overflow-x cắt mất */
   .notif-pop {
     position: fixed !important;
@@ -1358,14 +1392,27 @@ thead th {
     grid-template-columns: 1fr;
   }
 
-  /* Thanh lọc tùy biến (Tồn kho / Công nợ): mỗi ô full hàng cho dễ bấm trên điện thoại */
-  .filters>div {
+  /* Thanh lọc: mỗi ô full hàng cho dễ bấm trên điện thoại */
+  .filters>div,
+  .filter-item,
+  .filter-item.grow {
     flex: 1 1 100% !important;
   }
 
   .filters select,
-  .filters input {
+  .filters input,
+  .filter-item select,
+  .filter-item input {
     width: 100% !important;
+  }
+
+  .filter-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .filter-actions .btn {
+    flex: 1 1 auto;
   }
 
   /* Popup/modal: gần full màn hình trên điện thoại */

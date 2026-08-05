@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import Pagination from '../components/Pagination'
 import DateRangePicker from '../components/DateRangePicker'
+import FilterPanel, { FilterItem } from '../components/FilterPanel'
 import { toast } from '../components/toast'
 import TableHead, { TableCells } from '../components/TableHead'
 import TableToolbar from '../components/TableToolbar'
@@ -273,66 +274,50 @@ export default function SurveyReport() {
       </div>
 
       {/* Filters */}
-      <div className="card" style={{ padding: 18, marginBottom: 14 }}>
-        <div className="toolbar" style={{ marginBottom: 0 }}>
-          <div className="toolbar-filter-item">
-            <label>Loại dòng</label>
-            <select value={filters.kind} onChange={(e) => { setFilters((d) => ({ ...d, kind: e.target.value })); setPage(1); }}>
-              <option value="">Tất cả</option>
-              <option value="supplier">NCC</option>
-              <option value="product">Sản phẩm</option>
-            </select>
-          </div>
-          <div className="toolbar-filter-item">
-            <label>Trạng thái dòng</label>
-            <select value={filters.line_approve} onChange={(e) => { setFilters((d) => ({ ...d, line_approve: e.target.value })); setPage(1); }}>
-              <option value="">Tất cả</option>
-              <option value="Chờ duyệt">Chờ duyệt</option>
-              <option value="Đã duyệt">Đã duyệt</option>
-              <option value="Không duyệt">Không duyệt</option>
-              <option value="Thiếu thông tin">Thiếu thông tin</option>
-            </select>
-          </div>
-          <div className="toolbar-filter-item">
-            <label>Phân loại</label>
-            <select value={filters.item_group} onChange={(e) => { setFilters((d) => ({ ...d, item_group: e.target.value })); setPage(1); }}>
-              <option value="">Tất cả</option>
-              {itemGroups.map((g) => <option key={g} value={g}>{g}</option>)}
-            </select>
-          </div>
-          <div className="toolbar-filter-item">
-            <label>NCC</label>
-            <input value={filters.supplier} placeholder="Mã / tên NCC" onChange={(e) => { setFilters((d) => ({ ...d, supplier: e.target.value })); setPage(1); }} />
-          </div>
-          <div className="toolbar-filter-item">
-            <label>Mã phiếu</label>
-            <input value={filters.code} placeholder="Mã khảo sát" onChange={(e) => { setFilters((d) => ({ ...d, code: e.target.value })); setPage(1); }} />
-          </div>
-          <div className="toolbar-filter-item">
-            <label>NSPT</label>
-            <input value={filters.nspt} placeholder="NSPT" onChange={(e) => { setFilters((d) => ({ ...d, nspt: e.target.value })); setPage(1); }} />
-          </div>
-          <div className="toolbar-filter-item">
-            <label>Mã hàng</label>
-            <input value={filters.item_code} placeholder="Mã hàng hóa" onChange={(e) => { setFilters((d) => ({ ...d, item_code: e.target.value })); setPage(1); }} />
-          </div>
-          <div className="toolbar-filter-item">
-            <label>Nội dung chính</label>
-            <input value={filters.main_content} placeholder="Tìm nội dung chính" onChange={(e) => { setFilters((d) => ({ ...d, main_content: e.target.value })); setPage(1); }} />
-          </div>
-          <div className="toolbar-filter-item" style={{ maxWidth: 300 }}>
-            <label>Khoảng ngày</label>
-            <DateRangePicker block value={{ from: filters.date_from, to: filters.date_to }}
-              onChange={(v) => { setFilters((d) => ({ ...d, date_from: v.from, date_to: v.to })); setPage(1) }} />
-          </div>
-          
-          {Object.values(filters).some((v) => v) && (
-            <button className="btn ghost" onClick={resetFilters} style={{ height: 40, borderRadius: 12 }}>
-              Xóa lọc
-            </button>
-          )}
-        </div>
-      </div>
+      <FilterPanel onClear={resetFilters} canClear={Object.values(filters).some((v) => v)}>
+        <FilterItem label="Trạng thái dòng">
+          <select value={filters.line_approve} onChange={(e) => { setFilters((d) => ({ ...d, line_approve: e.target.value })); setPage(1); }}>
+            <option value="">Tất cả</option>
+            <option value="Chờ duyệt">Chờ duyệt</option>
+            <option value="Đã duyệt">Đã duyệt</option>
+            <option value="Không duyệt">Không duyệt</option>
+            <option value="Thiếu thông tin">Thiếu thông tin</option>
+          </select>
+        </FilterItem>
+        <FilterItem label="NCC">
+          <input value={filters.supplier} placeholder="Mã / tên NCC" onChange={(e) => { setFilters((d) => ({ ...d, supplier: e.target.value })); setPage(1); }} />
+        </FilterItem>
+        <FilterItem label="Mã phiếu">
+          <input value={filters.code} placeholder="Mã khảo sát" onChange={(e) => { setFilters((d) => ({ ...d, code: e.target.value })); setPage(1); }} />
+        </FilterItem>
+
+        <FilterItem label="Loại dòng" width={150} secondary active={!!filters.kind}>
+          <select value={filters.kind} onChange={(e) => { setFilters((d) => ({ ...d, kind: e.target.value })); setPage(1); }}>
+            <option value="">Tất cả</option>
+            <option value="supplier">NCC</option>
+            <option value="product">Sản phẩm</option>
+          </select>
+        </FilterItem>
+        <FilterItem label="Phân loại" secondary active={!!filters.item_group}>
+          <select value={filters.item_group} onChange={(e) => { setFilters((d) => ({ ...d, item_group: e.target.value })); setPage(1); }}>
+            <option value="">Tất cả</option>
+            {itemGroups.map((g) => <option key={g} value={g}>{g}</option>)}
+          </select>
+        </FilterItem>
+        <FilterItem label="NSPT" width={150} secondary active={!!filters.nspt}>
+          <input value={filters.nspt} placeholder="NSPT" onChange={(e) => { setFilters((d) => ({ ...d, nspt: e.target.value })); setPage(1); }} />
+        </FilterItem>
+        <FilterItem label="Mã hàng" width={150} secondary active={!!filters.item_code}>
+          <input value={filters.item_code} placeholder="Mã hàng hóa" onChange={(e) => { setFilters((d) => ({ ...d, item_code: e.target.value })); setPage(1); }} />
+        </FilterItem>
+        <FilterItem label="Nội dung chính" secondary active={!!filters.main_content}>
+          <input value={filters.main_content} placeholder="Tìm nội dung chính" onChange={(e) => { setFilters((d) => ({ ...d, main_content: e.target.value })); setPage(1); }} />
+        </FilterItem>
+        <FilterItem label="Khoảng ngày" width={260} secondary active={!!(filters.date_from || filters.date_to)}>
+          <DateRangePicker block value={{ from: filters.date_from, to: filters.date_to }}
+            onChange={(v) => { setFilters((d) => ({ ...d, date_from: v.from, date_to: v.to })); setPage(1) }} />
+        </FilterItem>
+      </FilterPanel>
 
       {/* Table */}
       <div className="card table-card">

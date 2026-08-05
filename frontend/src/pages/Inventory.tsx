@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import Pagination from '../components/Pagination'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
+import FilterPanel, { FilterItem } from '../components/FilterPanel'
 import { fmtDateTime } from '../utils/datetime'
 import NumberInput from '../components/NumberInput'
 import TableHead, { TableCells } from '../components/TableHead'
@@ -139,23 +140,27 @@ export default function Inventory() {
         {can('inventory', 'write') && <button className="btn" onClick={openAdjustNew}><i className="ti ti-adjustments" />Điều chỉnh tồn</button>}
       </div>
 
-      <div className="card filters" style={{ padding: 14, marginBottom: 12, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <div style={{ minWidth: 160, flex: 1 }}><label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>Công ty</label>
+      <FilterPanel onClear={() => setF({})} canClear={Object.values(f).some((v) => v)}>
+        <FilterItem label="Công ty">
           <SearchSelect value={f.company_id || ''} placeholder="Tất cả"
             options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
             onChange={(v) => setF((s) => ({ ...s, company_id: v }))} />
-        </div>
-        <div style={{ minWidth: 160, flex: 1 }}><label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>Kho</label>
+        </FilterItem>
+        <FilterItem label="Kho">
           <SearchSelect value={f.warehouse_code || ''} placeholder="Tất cả"
             options={warehouses.map((w) => ({ value: w.code, label: `${w.code} — ${w.name}` }))}
             onChange={(v) => setF((s) => ({ ...s, warehouse_code: v }))} />
-        </div>
-        <div style={{ minWidth: 160, flex: 1 }}><label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>Phân loại</label>
+        </FilterItem>
+        <FilterItem label="Tên sản phẩm" grow>
+          <input value={f.product_name || ''} onChange={(e) => setF((s) => ({ ...s, product_name: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && load()} placeholder="Tên sản phẩm…" />
+        </FilterItem>
+
+        <FilterItem label="Phân loại" secondary active={!!f.item_group}>
           <SearchSelect value={f.item_group || ''} placeholder="Tất cả"
             options={groups.map((g) => ({ value: g.name, label: g.name }))}
             onChange={(v) => setF((s) => ({ ...s, item_group: v }))} />
-        </div>
-        <div style={{ minWidth: 160, flex: 1 }}><label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>Trạng thái tồn</label>
+        </FilterItem>
+        <FilterItem label="Trạng thái tồn" secondary active={!!f.qty_status}>
           <SearchSelect value={f.qty_status || ''} placeholder="Tất cả"
             options={[
               { value: 'in_stock', label: 'Có tồn (> 0)' },
@@ -163,15 +168,11 @@ export default function Inventory() {
               { value: 'negative_stock', label: 'Âm kho (< 0)' },
             ]}
             onChange={(v) => setF((s) => ({ ...s, qty_status: v }))} />
-        </div>
-        <div style={{ minWidth: 120, flex: 1 }}><label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>Mã SP</label>
-          <input className="input" style={{ width: '100%', height: 38 }} value={f.product_code || ''} onChange={(e) => setF((s) => ({ ...s, product_code: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && load()} placeholder="Mã SP…" />
-        </div>
-        <div style={{ minWidth: 150, flex: 1 }}><label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>Tên sản phẩm</label>
-          <input className="input" style={{ width: '100%', height: 38 }} value={f.product_name || ''} onChange={(e) => setF((s) => ({ ...s, product_name: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && load()} placeholder="Tên sản phẩm…" />
-        </div>
-        <button className="btn ghost" onClick={() => setF({})} style={{ height: 38 }} title="Xóa tất cả bộ lọc"><i className="ti ti-rotate" />Xóa bộ lọc</button>
-      </div>
+        </FilterItem>
+        <FilterItem label="Mã SP" width={150} secondary active={!!f.product_code}>
+          <input value={f.product_code || ''} onChange={(e) => setF((s) => ({ ...s, product_code: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && load()} placeholder="Mã SP…" />
+        </FilterItem>
+      </FilterPanel>
 
       {msg && <div style={{ color: 'var(--green)', fontSize: 13, marginBottom: 8 }}>{msg}</div>}
       {(() => {

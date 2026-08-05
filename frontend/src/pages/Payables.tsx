@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
 import DateRangePicker from '../components/DateRangePicker'
+import FilterPanel, { FilterItem } from '../components/FilterPanel'
 import Pagination from '../components/Pagination'
 import { fmtDateTime } from '../utils/datetime'
 import TableHead, { TableCells } from '../components/TableHead'
@@ -24,6 +25,13 @@ const ST_OPTIONS = [
 ]
 const stBadge = (s: string) => <span className={'badge ' + (s === 'Đã TT' ? 'ok' : s === 'Trả một phần' ? 'warn' : 'gray')}>{ST_LABEL[s] || s}</span>
 
+/** Bộ lọc mặc định — năm hiện tại, các ô còn lại trống. Dùng cho nút "Xóa lọc". */
+const EMPTY_FILTERS = (year: number) => ({
+  company_id: '', supplier_code: '', po_code: '', invoice_no: '',
+  source_type: '', status: '', aging: '', incur_from: '', incur_to: '',
+  amount_from: 0, amount_to: 0, year: String(year),
+})
+
 export default function Payables() {
   const { can } = useAuth()
   const navigate = useNavigate()
@@ -35,11 +43,9 @@ export default function Payables() {
   const thisYear = new Date().getFullYear()
   // supplier_code có thể được truyền qua ?supplier= (từ dashboard "Việc cần xử lý")
   const [f, setF] = useState<any>({
-    company_id: '',
+    ...EMPTY_FILTERS(thisYear),
     supplier_code: searchParams.get('supplier') || '',
     po_code: searchParams.get('po_code') || '',
-    invoice_no: '',
-    source_type: '', status: '', aging: '', incur_from: '', incur_to: '', amount_from: 0, amount_to: 0,
     year: (searchParams.get('supplier') || searchParams.get('po_code')) ? 'all' : String(thisYear),   // vào từ dashboard: bỏ giới hạn năm để thấy đủ nợ
   })
   const [sel, setSel] = useState<number[]>([])
@@ -49,7 +55,11 @@ export default function Payables() {
   const [sortField, setSortField] = useState<string>('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const setFilter = (k: string, v: any) => setF((s: any) => ({ ...s, [k]: v }))
-  const lbl = { fontSize: 12, color: 'var(--muted)' } as const
+  // Có khác bộ lọc mặc định không → quyết định hiện nút "Xóa lọc"
+  const dirty = useMemo(() => {
+    const d: any = EMPTY_FILTERS(thisYear)
+    return Object.keys(d).some((k) => String(f[k] ?? '') !== String(d[k]))
+  }, [f, thisYear])
 
   function handleSort(field: string) {
     if (sortField === field) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
@@ -170,50 +180,56 @@ export default function Payables() {
         <Card label="Quá hạn" val={sum.overdue} color="var(--red)" />
       </div>
 
-      <div className="card filters" style={{ padding: 14, marginBottom: 12, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <div style={{ minWidth: 170 }}><label style={lbl}>Công ty</label>
+      <FilterPanel onClear={() => setF(EMPTY_FILTERS(thisYear))} canClear={dirty}>
+        <FilterItem label="Công ty">
           <SearchSelect value={f.company_id} placeholder="Tất cả"
             options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
             onChange={(v) => setFilter('company_id', v)} />
-        </div>
-        <div style={{ minWidth: 190 }}><label style={lbl}>Nhà cung cấp</label>
+        </FilterItem>
+        <FilterItem label="Nhà cung cấp" width={200}>
           <SearchSelect value={f.supplier_code} placeholder="Tất cả"
             options={suppliers.map((c) => ({ value: c.code, label: c.name }))}
             onChange={(v) => setFilter('supplier_code', v)} />
-        </div>
-        <div style={{ minWidth: 120 }}><label style={lbl}>PO</label>
-          <input value={f.po_code} placeholder="Mã PO…" onChange={(e) => setFilter('po_code', e.target.value)} /></div>
-        <div style={{ minWidth: 120 }}><label style={lbl}>Số hóa đơn</label>
-          <input value={f.invoice_no} placeholder="Số HĐ…" onChange={(e) => setFilter('invoice_no', e.target.value)} /></div>
-        <div style={{ minWidth: 140 }}><label style={lbl}>Loại nợ</label>
-          <SearchSelect value={f.source_type} placeholder="Tất cả"
-            options={[{ value: 'goods', label: 'Hàng hóa' }, { value: 'shipping', label: 'Vận chuyển' }]}
-            onChange={(v) => setFilter('source_type', v)} />
-        </div>
-        <div style={{ minWidth: 170 }}><label style={lbl}>Trạng thái</label>
+        </FilterItem>
+        <FilterItem label="Trạng thái">
           <SearchSelect value={f.status} placeholder="Tất cả"
             options={ST_OPTIONS}
             onChange={(v) => setFilter('status', v)} />
-        </div>
-        <div style={{ minWidth: 130 }}><label style={lbl}>Tuổi nợ</label>
+        </FilterItem>
+
+        <FilterItem label="PO" width={140} secondary active={!!f.po_code}>
+          <input value={f.po_code} placeholder="Mã PO…" onChange={(e) => setFilter('po_code', e.target.value)} />
+        </FilterItem>
+        <FilterItem label="Số hóa đơn" width={140} secondary active={!!f.invoice_no}>
+          <input value={f.invoice_no} placeholder="Số HĐ…" onChange={(e) => setFilter('invoice_no', e.target.value)} />
+        </FilterItem>
+        <FilterItem label="Loại nợ" width={150} secondary active={!!f.source_type}>
+          <SearchSelect value={f.source_type} placeholder="Tất cả"
+            options={[{ value: 'goods', label: 'Hàng hóa' }, { value: 'shipping', label: 'Vận chuyển' }]}
+            onChange={(v) => setFilter('source_type', v)} />
+        </FilterItem>
+        <FilterItem label="Tuổi nợ" width={150} secondary active={!!f.aging}>
           <SearchSelect value={f.aging} placeholder="Tất cả"
             options={['Chưa đến hạn', '1-30', '31-60', '61-90', '>90']}
             onChange={(v) => setFilter('aging', v)} />
-        </div>
-        <div style={{ minWidth: 110 }}><label style={lbl}>Năm</label>
+        </FilterItem>
+        <FilterItem label="Năm" width={120} secondary active={String(f.year) !== String(thisYear)}>
           <SearchSelect value={String(f.year)} placeholder="Tất cả"
             options={[{ value: 'all', label: 'Tất cả' }, ...[thisYear, thisYear - 1, thisYear - 2].map((y) => ({ value: String(y), label: String(y) }))]}
             onChange={(v) => setFilter('year', v)} />
-        </div>
-        <div style={{ minWidth: 250 }}><label style={lbl}>Ngày phát sinh</label>
+        </FilterItem>
+        <FilterItem label="Ngày phát sinh" width={260} secondary active={!!(f.incur_from || f.incur_to)}>
           <DateRangePicker block value={{ from: f.incur_from, to: f.incur_to }}
             onChange={(v) => setF((s: any) => ({ ...s, incur_from: v.from, incur_to: v.to }))} />
-        </div>
-        <div style={{ minWidth: 130 }}><label style={lbl}>Số tiền từ</label>
-          <NumberInput value={f.amount_from} onChange={(v) => setFilter('amount_from', v)} placeholder="" /></div>
-        <div style={{ minWidth: 130 }}><label style={lbl}>đến</label>
-          <NumberInput value={f.amount_to} onChange={(v) => setFilter('amount_to', v)} placeholder="" /></div>
-      </div>
+        </FilterItem>
+        <FilterItem label="Số tiền (từ → đến)" width={230} secondary active={!!(f.amount_from || f.amount_to)}>
+          <div className="filter-pair">
+            <NumberInput value={f.amount_from} onChange={(v) => setFilter('amount_from', v)} placeholder="Từ…" />
+            <span style={{ color: 'var(--muted)' }}>→</span>
+            <NumberInput value={f.amount_to} onChange={(v) => setFilter('amount_to', v)} placeholder="Đến…" />
+          </div>
+        </FilterItem>
+      </FilterPanel>
 
       {err && <div className="err" style={{ marginBottom: 8 }}>{err}</div>}
       <div className="card table-card">

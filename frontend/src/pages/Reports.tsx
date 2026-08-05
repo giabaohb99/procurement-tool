@@ -249,11 +249,12 @@ export default function Reports() {
       <div className="no-print" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
         <h2 className="page-title" style={{ margin: 0 }}>Báo cáo mua hàng</h2>
         <div className="filters" style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div style={{ minWidth: 180 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Công ty</label>
+          {/* Dùng .filter-item để nhãn/kích thước ô lọc giống các trang danh sách */}
+          <div className="filter-item" style={{ flex: '0 0 190px' }}><label>Công ty</label>
             <SearchSelect value={f.company_id} placeholder="Tất cả"
               options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
               onChange={(v) => { setShipPage(1); setF((s: any) => ({ ...s, company_id: v })) }} /></div>
-          <div style={{ minWidth: 120 }}><label style={{ fontSize: 12, color: 'var(--muted)' }}>Năm</label>
+          <div className="filter-item" style={{ flex: '0 0 150px', minWidth: 150 }}><label>Năm</label>
             <SearchSelect value={String(f.year)} placeholder="Tất cả"
               options={[{ value: 'all', label: 'Tất cả' }, ...[thisYear, thisYear - 1, thisYear - 2].map((y) => ({ value: String(y), label: String(y) }))]}
               onChange={(v) => { setShipPage(1); setF((s: any) => ({ ...s, year: v })) }} /></div>
