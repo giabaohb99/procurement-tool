@@ -4,7 +4,7 @@
 
 Lập phiếu đề nghị thanh toán cho một nhà cung cấp, gom nhiều khoản công nợ (nhiều PO) vào một phiếu duy nhất. Phiếu hỗ trợ in theo mẫu biểu nội bộ (002/BM/PKT). Khi "Ghi nhận đã chi", hệ thống tự động cộng số tiền vào `paid_amount` của từng khoản công nợ tương ứng và tính lại trạng thái công nợ.
 
-Ràng buộc cốt lõi: mỗi phiếu chỉ thuộc về một NCC và một loại công nợ (`source_type`). Phiếu không tạo trực tiếp — người dùng chọn các khoản công nợ trên màn Công nợ rồi bấm "Tạo yêu cầu thanh toán"; hệ thống tự tách mỗi NCC thành một phiếu riêng.
+Ràng buộc cốt lõi: mỗi phiếu chỉ thuộc về một NCC và một loại công nợ (`source_type`). Phiếu không tạo từ menu — người dùng chọn các khoản công nợ trên màn Công nợ (hoặc trong Đơn mua hàng) rồi bấm "Tạo yêu cầu thanh toán"; hệ thống mở màn nhập liệu để soát lại, và chỉ ghi phiếu khi bấm **Tạo phiếu** — tự tách mỗi NCC thành một phiếu riêng.
 
 Đường dẫn: `/payment-requests` (danh sách), `/payment-requests/:id` (chi tiết), `/print/payment-request/:id` (in phiếu).
 
@@ -204,7 +204,11 @@ Mỗi dòng tương ứng với một khoản công nợ (`Payable`) được đ
 
 ## C. Quy tắc nghiệp vụ
 
-1. Tạo phiếu từ màn Công nợ: không có UI tạo phiếu trực tiếp. Người dùng vào `/payables`, chọn các dòng công nợ (có thể thuộc nhiều NCC), bấm "Tạo yêu cầu thanh toán". Server nhận `PRequestCreate` với danh sách `lines` (mảng `{payable_id, amount}`), gom theo cặp `(supplier_code, source_type)`, tạo mỗi nhóm thành một `PaymentRequest` riêng.
+1. Tạo phiếu từ màn Công nợ: người dùng vào `/payables`, chọn các dòng công nợ (có thể thuộc nhiều NCC), bấm "Tạo yêu cầu thanh toán". Lối vào thứ hai: nút "Tạo yêu cầu thanh toán" trong chi tiết Đơn mua hàng (chọn hóa đơn còn nợ của chính đơn đó).
+
+   **CR-025 — không sinh phiếu nháp:** hai lối vào trên **không gọi API ngay**. Các khoản đã tick được chuyển sang màn `/payment-requests/new` qua URL (`?payables=1,2,3`) kèm `location.state.rows`; màn này cho soát lại và **sửa số tiền đề nghị từng dòng**, **bỏ bớt khoản** (có nút khôi phục), nhập **Ngày lập** + **Ghi chú**, hiển thị trước **số phiếu sẽ tách ra** và cảnh báo khoản **chưa có số hóa đơn**. Chỉ khi bấm **Tạo phiếu** mới `POST /api/payment-requests`; **thoát giữa chừng thì không bản ghi nào được tạo**. Mở lại link / F5 vẫn đúng danh sách nhờ `GET /api/payables?ids=…&year=all`.
+
+   Server nhận `PRequestCreate` với danh sách `lines` (mảng `{payable_id, amount}`), gom theo cặp `(supplier_code, source_type)`, tạo mỗi nhóm thành một `PaymentRequest` riêng.
 
 2. Điều kiện tiên quyết khi tạo: mỗi `Payable` trong danh sách gửi lên phải có `invoice_no` không rỗng. Các khoản nợ chưa có số hóa đơn bị liệt kê trong thông báo lỗi 400 và toàn bộ yêu cầu tạo bị từ chối.
 

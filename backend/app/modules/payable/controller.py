@@ -39,9 +39,15 @@ def _filtered(db: Session, request: Request, user):
     company_id = request.query_params.get("company_id")
     if company_id:
         q = q.filter(Payable.company_id == int(company_id))
+    # CR-025: lấy đúng các khoản đã tick (màn "Tạo yêu cầu thanh toán" mở lại sau F5).
+    # Có `ids` thì bỏ luôn giới hạn theo năm — khoản được tick có thể là nợ năm trước.
+    ids = request.query_params.get("ids")
+    if ids:
+        id_list = [int(x) for x in ids.split(",") if x.strip().isdigit()]
+        q = q.filter(Payable.id.in_(id_list or [-1]))
     year = request.query_params.get("year")
     if year is None:
-        year = str(_today().year)
+        year = "all" if ids else str(_today().year)
     if year and year != "all":
         q = q.filter(Payable.period == year)
 

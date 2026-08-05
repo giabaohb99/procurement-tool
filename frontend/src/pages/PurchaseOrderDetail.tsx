@@ -365,17 +365,12 @@ export default function PurchaseOrderDetail() {
       setPayModal(true)
     } catch { /* interceptor đã toast lỗi */ }
   }
-  async function createPaymentRequest() {
-    const lines = payables.filter((p) => paySel.includes(p.id)).map((p) => ({ payable_id: p.id, amount: Number(p.remaining) || 0 }))
-    if (lines.length === 0) { toast.error('Chưa chọn hóa đơn nào'); return }
-    try {
-      const r = await api.post('/api/payment-requests', { request_date: new Date().toISOString().slice(0, 10), lines })
-      const created = r.data.data
-      toast.success('Đã tạo yêu cầu thanh toán')
-      setPayModal(false)
-      if (created?.length === 1) navigate(`/payment-requests/${created[0].id}`)
-      else navigate('/payment-requests')
-    } catch { /* interceptor đã toast lỗi */ }
+  // CR-025: chuyển sang màn "Tạo yêu cầu thanh toán" (dữ liệu đi kèm URL/state), chưa ghi DB.
+  function createPaymentRequest() {
+    const picked = payables.filter((p) => paySel.includes(p.id))
+    if (picked.length === 0) { toast.error('Chưa chọn hóa đơn nào'); return }
+    setPayModal(false)
+    navigate(`/payment-requests/new?payables=${picked.map((p) => p.id).join(',')}`, { state: { rows: picked } })
   }
 
   // Cập nhật trạng thái tiến độ 1 dòng (Hủy/Tạm ngưng cần lý do); backend gate điều kiện + toast cột thiếu

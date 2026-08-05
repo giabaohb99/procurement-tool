@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
-import { toast } from '../components/toast'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
@@ -142,17 +141,13 @@ export default function Payables() {
   ], [sel, companies])
   const table = useTableColumns('payables', COLS)
 
-  async function createRequest() {
+  // CR-025: KHÔNG tạo phiếu ngay nữa — chuyển các khoản đã tick sang màn "Tạo yêu cầu thanh toán"
+  // qua URL/state; chỉ khi bấm "Tạo phiếu" ở màn đó mới ghi DB (tránh đẻ phiếu nháp).
+  function createRequest() {
     setErr('')
-    const lines = rows.filter((r) => sel.includes(r.id)).map((r) => ({ payable_id: r.id, amount: r.remaining }))
-    if (!lines.length) return
-    try {
-      const r = await api.post('/api/payment-requests', { request_date: new Date().toISOString().slice(0, 10), lines })
-      const created = r.data.data
-      toast.success(`Đã tạo ${created.length} phiếu yêu cầu thanh toán (mỗi nhà cung cấp 1 phiếu).`)
-      if (created.length === 1) navigate(`/payment-requests/${created[0].id}`)
-      else navigate('/payment-requests')
-    } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi tạo yêu cầu thanh toán') }
+    const picked = rows.filter((r) => sel.includes(r.id))
+    if (!picked.length) return
+    navigate(`/payment-requests/new?payables=${picked.map((r) => r.id).join(',')}`, { state: { rows: picked } })
   }
 
   const Card = ({ label, val, color }: any) => (

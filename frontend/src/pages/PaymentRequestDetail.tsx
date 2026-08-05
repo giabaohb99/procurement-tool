@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
+import DateInput from '../components/DateInput'
 import NotFound from '../components/NotFound'
 import NumberInput from '../components/NumberInput'
 import { toast } from '../components/toast'
@@ -20,7 +21,165 @@ const stBadge = (s: string) => { const x = ST[s] || { label: s, cls: 'gray' }; r
 
 export default function PaymentRequestDetail() {
   const { id } = useParams()
-  const isNew = id === 'new'
+  // CR-025: `/payment-requests/new` KHÔNG còn là "phiếu đã tạo" — là màn nhập liệu, chỉ ghi DB khi bấm Tạo.
+  return id === 'new' ? <PaymentRequestCreate /> : <PaymentRequestView key={id} />
+}
+
+/** Màn TẠO phiếu: nhận danh sách khoản nợ đã tick qua URL (`?payables=1,2,3`), cho soát/sửa
+ *  số tiền đề nghị + bỏ bớt khoản, rồi mới POST. Thoát giữa chừng = không sinh phiếu nháp nào. */
+function PaymentRequestCreate() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [sp] = useSearchParams()
+  const idsParam = sp.get('payables') || ''
+  const ids = useMemo(() => idsParam.split(',').map(Number).filter(Boolean), [idsParam])
+
+  const [rows, setRows] = useState<any[]>(() => (location.state as any)?.rows || [])
+  const [loading, setLoading] = useState(false)
+  const [requestDate, setRequestDate] = useState(new Date().toISOString().slice(0, 10))
+  const [note, setNote] = useState('')
+  const [amounts, setAmounts] = useState<Record<number, number>>({})
+  const [dropped, setDropped] = useState<number[]>([])
+  const [saving, setSaving] = useState(false)
+
+  // Mở lại bằng link/F5 (không còn state điều hướng) → nạp lại đúng các khoản đã tick
+  useEffect(() => {
+    if (!ids.length || rows.length) return
+    setLoading(true)
+    api.get('/api/payables', { params: { ids: ids.join(','), year: 'all', page_size: 500 } })
+      .then((r) => setRows(r.data.data.items || []))
+      .finally(() => setLoading(false))
+  }, [idsParam])
+
+  // Số tiền đề nghị mặc định = còn phải trả
+  useEffect(() => {
+    setAmounts((prev) => {
+      const next = { ...prev }
+      rows.forEach((r) => { if (next[r.id] === undefined) next[r.id] = Number(r.remaining) || 0 })
+      return next
+    })
+  }, [rows])
+
+  const kept = rows.filter((r) => !dropped.includes(r.id))
+  // Server tách mỗi (NCC × loại công nợ) thành 1 phiếu — hiện trước để người dùng biết sẽ ra mấy phiếu
+  const groups = useMemo(() => {
+    const m = new Map<string, any[]>()
+    kept.forEach((r) => {
+      const k = `${r.supplier_code}||${r.source_type}`
+      m.set(k, [...(m.get(k) || []), r])
+    })
+    return Array.from(m.values())
+  }, [kept, dropped])
+  const noInvoice = kept.filter((r) => !String(r.invoice_no || '').trim())
+  const total = kept.reduce((s, r) => s + (Number(amounts[r.id]) || 0), 0)
+
+  async function create() {
+    if (!kept.length) { toast.error('Chưa chọn khoản công nợ nào'); return }
+    setSaving(true)
+    try {
+      const lines = kept.map((r) => ({ payable_id: r.id, amount: Number(amounts[r.id]) || 0 }))
+      const r = await api.post(API, { request_date: requestDate, note, lines })
+      const created = r.data.data || []
+      toast.success(created.length === 1 ? 'Đã tạo yêu cầu thanh toán'
+        : `Đã tạo ${created.length} phiếu yêu cầu thanh toán (mỗi nhà cung cấp 1 phiếu).`)
+      if (created.length === 1) navigate(`/payment-requests/${created[0].id}`, { replace: true })
+      else navigate('/payment-requests', { replace: true })
+    } catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi tạo yêu cầu thanh toán') }
+    finally { setSaving(false) }
+  }
+
+  if (!ids.length) return (
+    <div style={{ padding: 20 }}>
+      <h2 className="page-title">Tạo yêu cầu thanh toán</h2>
+      <div className="card" style={{ padding: 20 }}>
+        Phiếu yêu cầu thanh toán được tạo từ màn <b>Công nợ</b>: chọn các khoản nợ (cùng/khác NCC) rồi bấm
+        <i> "Tạo yêu cầu thanh toán"</i> — hệ thống tự tách mỗi nhà cung cấp 1 phiếu.
+        <div style={{ marginTop: 14 }}><button className="btn" onClick={() => navigate('/payables')}><i className="ti ti-cash" />Tới màn Công nợ</button></div>
+      </div>
+    </div>
+  )
+  if (loading) return <div style={{ padding: 40 }}>Đang tải...</div>
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+        <button className="btn ghost" onClick={() => navigate(-1)}><i className="ti ti-arrow-left" /></button>
+        <h2 className="page-title" style={{ margin: 0 }}>Tạo yêu cầu thanh toán</h2>
+        <span className="badge gray">Chưa lưu</span>
+        <span style={{ flex: 1 }} />
+        <button className="btn" disabled={saving || !kept.length} onClick={create}>
+          <i className="ti ti-check" />{saving ? 'Đang tạo…' : `Tạo ${groups.length > 1 ? `${groups.length} phiếu` : 'phiếu'}`}
+        </button>
+      </div>
+
+      <div className="card" style={{ padding: 14, marginBottom: 16, borderLeft: '4px solid var(--teal)' }}>
+        Soát lại số tiền đề nghị rồi bấm <b>Tạo phiếu</b>. Rời màn này mà chưa bấm thì <b>không phiếu nháp nào được sinh ra</b>.
+        {groups.length > 1 && <> Hệ thống sẽ tách thành <b>{groups.length} phiếu</b> (mỗi nhà cung cấp / loại công nợ 1 phiếu).</>}
+      </div>
+
+      {noInvoice.length > 0 && (
+        <div className="card" style={{ padding: 14, marginBottom: 16, borderLeft: '4px solid var(--red)' }}>
+          <b style={{ color: 'var(--red)' }}>{noInvoice.length} khoản chưa có Số hóa đơn</b> — bỏ các khoản này ra thì mới tạo được phiếu:
+          {' '}{noInvoice.map((r) => r.po_code || `#${r.id}`).join(', ')}
+        </div>
+      )}
+
+      <div className="card" style={{ padding: 18, marginBottom: 16 }}>
+        <h3 className="sec-title">Thông tin phiếu</h3>
+        <div className="form-grid">
+          <div className="form-row"><label>Ngày lập</label><DateInput value={requestDate} onChange={setRequestDate} /></div>
+          <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label>
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ghi chú áp dụng cho các phiếu được tạo…" /></div>
+        </div>
+      </div>
+
+      <div className="card" style={{ padding: 18, marginBottom: 16 }}>
+        <h3 className="sec-title">Các khoản công nợ sẽ thanh toán ({kept.length})</h3>
+        <div className="items-scroll">
+          <table className="items-table" style={{ minWidth: 1000 }}>
+            <thead><tr><th style={{ width: 36 }}>#</th><th>Nhà cung cấp</th><th>Loại</th><th>PO</th><th>Số HĐ</th><th>Hạn trả</th>
+              <th style={{ textAlign: 'right' }}>Tổng nợ</th><th style={{ textAlign: 'right' }}>Đã trả</th>
+              <th style={{ textAlign: 'right' }}>Còn lại</th><th style={{ textAlign: 'right' }}>Đề nghị trả</th>
+              <th style={{ width: 50, textAlign: 'center' }}>Bỏ</th></tr></thead>
+            <tbody>
+              {kept.map((r, i) => (
+                <tr key={r.id}>
+                  <td>{i + 1}</td>
+                  <td>{r.supplier_name || r.supplier_code}</td>
+                  <td>{r.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa'}</td>
+                  <td>{r.po_code}</td>
+                  <td>{r.invoice_no || <span style={{ color: 'var(--red)', fontSize: 12 }}>chưa có HĐ</span>}</td>
+                  <td>{r.due_date}</td>
+                  <td style={{ textAlign: 'right' }}>{fmt(r.total)}</td>
+                  <td style={{ textAlign: 'right' }}>{fmt(r.paid_amount)}</td>
+                  <td style={{ textAlign: 'right' }}>{fmt(r.remaining)}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    <NumberInput className="cell-input" style={{ width: 140, textAlign: 'right' }}
+                      value={amounts[r.id] ?? 0} onChange={(v) => setAmounts((s) => ({ ...s, [r.id]: v }))} />
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <button className="icon-btn" title="Bỏ khoản này khỏi phiếu" onClick={() => setDropped((s) => [...s, r.id])}>
+                      <i className="ti ti-x" style={{ fontSize: 16, color: 'var(--red)' }} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ textAlign: 'right', fontSize: 16, color: 'var(--navy)', marginTop: 12 }}>Tổng đề nghị thanh toán: <b>{fmt(total)}</b></div>
+        {dropped.length > 0 && (
+          <div style={{ marginTop: 10 }}>
+            <button className="btn ghost" onClick={() => setDropped([])}><i className="ti ti-arrow-back-up" />Khôi phục {dropped.length} khoản đã bỏ</button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function PaymentRequestView() {
+  const { id } = useParams()
   const { can } = useAuth()
   const navigate = useNavigate()
   const [req, setReq] = useState<any>(null)
@@ -41,19 +200,9 @@ export default function PaymentRequestDetail() {
   }
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items))
-    if (!isNew) { setNotFound(false); loadAll() }
+    setNotFound(false); loadAll()
   }, [id])
 
-  if (isNew) return (
-    <div style={{ padding: 20 }}>
-      <h2 className="page-title">Tạo yêu cầu thanh toán</h2>
-      <div className="card" style={{ padding: 20 }}>
-        Phiếu yêu cầu thanh toán được tạo từ màn <b>Công nợ</b>: chọn các khoản nợ (cùng/khác NCC) rồi bấm
-        <i> "Tạo yêu cầu thanh toán"</i> — hệ thống tự tách mỗi nhà cung cấp 1 phiếu.
-        <div style={{ marginTop: 14 }}><button className="btn" onClick={() => navigate('/payables')}><i className="ti ti-cash" />Tới màn Công nợ</button></div>
-      </div>
-    </div>
-  )
   if (notFound) return <NotFound backTo="/payment-requests" message="Không tìm thấy yêu cầu thanh toán này hoặc bạn không có quyền truy cập." />
   if (!req) return <div style={{ padding: 40 }}>Đang tải...</div>
 
@@ -145,7 +294,7 @@ export default function PaymentRequestDetail() {
         entityId={Number(id)}
         files={files}
         editable={can('payment_request', 'write')}
-        isNew={isNew}
+        isNew={false}
         title="Chứng từ thanh toán (Ủy nhiệm chi, biên lai…)"
         onRefresh={loadAll}
       />
