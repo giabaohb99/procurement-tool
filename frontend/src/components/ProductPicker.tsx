@@ -3,7 +3,9 @@ import AsyncSelect from 'react-select/async'
 import { api } from '../api/client'
 
 // Ô chọn sản phẩm có tìm kiếm (gõ mã hoặc tên → LIKE trên server). Dùng cho DS cả ngàn SP.
-export default function ProductPicker({ code, name, disabled, onPick }: { code?: string; name?: string; disabled?: boolean; onPick: (prod: any) => void }) {
+// compact: chỉ hiện MÃ ở ô đã chọn (dùng trong bảng, nơi cột kế bên đã có tên hàng)
+//          → mã hiện đủ, không bị cắt cụt bằng "…".
+export default function ProductPicker({ code, name, disabled, compact, onPick }: { code?: string; name?: string; disabled?: boolean; compact?: boolean; onPick: (prod: any) => void }) {
   const t = useRef<any>(null)
   const loadOptions = (input: string) =>
     new Promise<any[]>((resolve) => {
@@ -15,7 +17,7 @@ export default function ProductPicker({ code, name, disabled, onPick }: { code?:
         } catch { resolve([]) }
       }, 250)
     })
-  const cur = code ? { value: code, label: name ? `${code} — ${name}` : code } : null
+  const cur = code ? { value: code, label: compact || !name ? code : `${code} — ${name}` } : null
   return (
     <AsyncSelect
       classNamePrefix="rs"
@@ -29,7 +31,7 @@ export default function ProductPicker({ code, name, disabled, onPick }: { code?:
         control: (b, state: any) => ({
           ...b,
           minHeight: 40,
-          height: 40,
+          height: 'auto',   // cao theo nội dung: tên dài thì xuống dòng, không cắt cụt
           borderRadius: 12,
           borderColor: state.isFocused ? 'var(--teal)' : '#E9EDF7',
           boxShadow: state.isFocused ? '0 0 0 3px rgba(0,174,239,.15)' : 'none',
@@ -43,21 +45,24 @@ export default function ProductPicker({ code, name, disabled, onPick }: { code?:
         }),
         valueContainer: (b) => ({
           ...b,
-          padding: '0 16px',
-          height: 38,
+          padding: compact ? '5px 8px' : '7px 14px',
+          minHeight: 38,
         }),
         singleValue: (b, state: any) => ({
           ...b,
           margin: 0,
           color: state.isDisabled ? 'var(--ink)' : 'var(--navy)',
-          position: 'absolute',
-          top: '50%',
-          transform: 'translateY(-50%)',
+          position: 'static',
+          transform: 'none',
+          // compact (trong bảng): mã ngắn — giữ 1 dòng, KHÔNG ngắt chữ cho xấu
+          whiteSpace: compact ? 'nowrap' : 'normal',
+          overflowWrap: compact ? 'normal' : 'anywhere',
+          lineHeight: 1.35,
         }),
         input: (b) => ({ ...b, margin: 0, padding: 0 }),
-        indicatorsContainer: (b) => ({ ...b, height: 38 }),
-        dropdownIndicator: (b) => ({ ...b, color: '#94a3b8', padding: '0 8px' }),
-        clearIndicator: (b) => ({ ...b, color: '#94a3b8', padding: '0 8px' }),
+        indicatorsContainer: (b) => ({ ...b, alignSelf: 'stretch' }),
+        dropdownIndicator: (b) => ({ ...b, color: '#94a3b8', padding: compact ? '0 4px' : '0 8px' }),
+        clearIndicator: (b) => ({ ...b, color: '#94a3b8', padding: compact ? '0 4px' : '0 8px' }),
         menu: (b) => ({ ...b, fontSize: 14, minWidth: 160 }),
         menuPortal: (b) => ({ ...b, zIndex: 9999 }),
         option: (b, state: any) => ({

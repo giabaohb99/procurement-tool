@@ -1695,6 +1695,16 @@ input,
   color: var(--ink);
 }
 
+/* Ô trong bảng cho phép xuống dòng, cao theo nội dung (dùng với TextAreaAuto).
+   Giữ nguyên diện mạo .cell-input, chỉ bỏ chiều cao cố định. */
+.cell-textarea {
+  height: auto;
+  min-height: 30px;
+  padding: 5px 6px;
+  font-family: inherit;
+  display: block;
+}
+
 .items-table td {
   padding: 5px 6px;
   vertical-align: middle;

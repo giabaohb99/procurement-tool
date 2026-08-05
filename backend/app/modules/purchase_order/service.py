@@ -78,6 +78,19 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
             if (it.progress_status or "") in ("Hoàn thành", "Hủy đơn"):
                 keep_item_ids.add(it.id)
                 continue
+            # Dòng ĐÃ NHẬN HÀNG → khóa nhận diện sản phẩm. Đổi mã hàng/tên hàng/ĐVT lúc này
+            # sẽ dời phiếu nhập kho + tồn kho đã ghi nhận sang hàng khác (sai số liệu kho).
+            if float(it.qty_received or 0) > 0:
+                ten_dong = (it.product_name or "").strip() or (it.product_code or "").strip() or f"#{it.id}"
+                for f, label in (("product_code", "Mã hàng"), ("product_name", "Tên hàng"), ("unit", "ĐVT")):
+                    new_v = (data.get(f) or "").strip()
+                    old_v = (getattr(it, f, "") or "").strip()
+                    if new_v != old_v:
+                        raise HTTPException(
+                            400,
+                            f"Dòng '{ten_dong}' đã nhận hàng — không đổi được {label} "
+                            f"('{old_v}' → '{new_v}'). Hãy hủy dòng này rồi thêm dòng mới.",
+                        )
             for k, v in data.items():
                 setattr(it, k, v)
             it.updated_by = user_id
