@@ -13,6 +13,21 @@
   margin-bottom: 12px;
 }
 
+/* Nhúng iframe (video YouTube, demo tương tác Guideflow...) — chèn bằng nút "video" trên thanh
+   công cụ, dán URL nhúng. KHÔNG dán cả đoạn <div>+<iframe>+<script> của nhà cung cấp: Quill lột
+   hết thẻ lạ, mà <script> chèn qua innerHTML thì trình duyệt cũng không chạy.
+   Mặc định iframe chỉ 300x150 nên phải tự ép khổ ở đây. */
+.hc-content iframe,
+.hc-editor .ql-editor iframe {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 8px;
+  margin: 0 0 12px;
+}
+
 .hc-content h1,
 .hc-content h2,
 .hc-content h3 {
@@ -145,4 +160,48 @@
 .hc-editor-sm .ql-editor {
   min-height: 160px;
   max-height: 320px;
+}
+
+/* Ô "dán URL" (bấm nút liên kết / nhúng video): Quill đặt `left` bằng inline style tính theo vị trí
+   con trỏ, nên hay lòi ra ngoài khung và bị cắt mất đầu URL. Ghim vào trong khung soạn thảo. */
+.hc-editor .ql-container {
+  position: relative;
+}
+
+.hc-editor .ql-tooltip {
+  left: 12px !important;
+  max-width: calc(100% - 24px);
+  z-index: 20;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.hc-editor .ql-tooltip input[type='text'] {
+  width: 22rem;
+  max-width: 100%;
+}
+
+/* Nhãn mặc định của Quill là tiếng Anh (Enter link / Visit URL / Save / Remove) */
+.hc-editor .ql-snow .ql-tooltip::before {
+  content: 'Liên kết:';
+}
+
+.hc-editor .ql-snow .ql-tooltip[data-mode='link']::before {
+  content: 'Dán liên kết:';
+}
+
+.hc-editor .ql-snow .ql-tooltip[data-mode='video']::before {
+  content: 'Dán URL nhúng:';
+}
+
+.hc-editor .ql-snow .ql-tooltip a.ql-action::after {
+  content: 'Sửa';
+}
+
+.hc-editor .ql-snow .ql-tooltip.ql-editing a.ql-action::after {
+  content: 'Lưu';
+}
+
+.hc-editor .ql-snow .ql-tooltip a.ql-remove::before {
+  content: 'Xóa';
 }

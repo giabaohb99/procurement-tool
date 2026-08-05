@@ -9,6 +9,7 @@ import { api } from '@/api/client'
 import HelpAuditTimeline, { type HelpAuditLog } from '@/components/help-audit-timeline'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { applyQuillVietnameseLabels } from '@/lib/quill-vietnamese-labels'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { createFaq, deleteFaq, fetchFaq, updateFaq, type Faq } from '@/lib/faq-api'
@@ -68,6 +69,9 @@ export default function AdminFaqEditor() {
     fetchLogs()
     return () => { cancelled = true }
   }, [faqId, isNew, fetchLogs])
+
+  // Quill không tự gắn tooltip cho nút nào -> gắn sau khi thanh công cụ dựng xong
+  useEffect(() => { applyQuillVietnameseLabels() }, [faq, isNew])
 
   const modules = useMemo(() => ({
     toolbar: [

@@ -247,6 +247,7 @@ src/
 │                          # portal-article · admin-home · admin-article
 ├─ hooks/use-heading-toc.ts   # sinh mục lục + theo dõi heading đang đọc
 ├─ lib/help-slug.tsx       # slug từ tiêu đề + tra ngược slug -> id (đường dẫn khu người dùng)
+├─ lib/quill-vietnamese-labels.ts  # tooltip + gợi ý tiếng Việt cho thanh công cụ soạn thảo
 ├─ lib/help-tree.ts        # dựng cây · breadcrumb · tìm node/cha
 ├─ lib/help-tree-dnd.ts    # logic thuần cho kéo-thả: vị trí thả + kiểm tra hợp lệ
 ├─ lib/help-icons.ts       # bộ icon dựng sẵn (slug -> component) + isImageIcon
@@ -264,11 +265,44 @@ src/
 npx shadcn@latest add <tên-component>
 ```
 
+#### Thanh công cụ soạn thảo
+
+Quill không tự gắn tooltip cho nút nào và nhãn ô dán URL là tiếng Anh — đã bù cả hai:
+
+- `lib/quill-vietnamese-labels.ts` gắn `title` cho từng nút + đổi gợi ý trong ô dán URL
+  (gọi ở `useEffect` của `admin-article` và `admin-faq-editor`, chạy lại được nhiều lần).
+- Nhãn còn lại của ô dán URL (`Dán URL nhúng:` · `Lưu` · `Sửa` · `Xóa`) đổi bằng CSS trong
+  `styles/article-content.css`; file này cũng **ghim ô đó vào trong khung soạn thảo** —
+  Quill đặt `left` theo vị trí con trỏ nên ô hay lòi ra ngoài và bị cắt mất đầu URL.
+
+#### Nhúng video / demo tương tác (Guideflow, YouTube…)
+
+Dùng nút **video (▶)** trên thanh công cụ của trình soạn thảo, dán **URL nhúng**
+(vd `https://app.guideflow.com/embed/qp71yw8sxp`) — Quill chèn `<iframe class="ql-video">`,
+CSS `.hc-content iframe` ép khổ 16:9 co theo bề ngang cột nội dung.
+
+**KHÔNG dán cả đoạn `<div>` + `<iframe>` + `<script>`** mà nhà cung cấp đưa:
+
+- Quill chỉ giữ format đã đăng ký nên thẻ/thuộc tính lạ bị lột sạch khi dán.
+- Nội dung bài render bằng `dangerouslySetInnerHTML`, mà **`<script>` chèn qua innerHTML thì
+  trình duyệt không chạy** — script của nhà cung cấp sẽ nằm im dù có lưu được vào DB.
+
+Riêng Guideflow, `opt.js` chỉ làm auto-resize chiều cao nên bỏ đi vẫn xem được bình thường.
+
 ## Câu hỏi thường gặp
 
 Bảng `tab_faq` (`question` · `answer` HTML · `sort_order` · `is_active`), API `/api/v1/faq`.
 Dùng chung quyền `help_article` với bài viết nên **không phát sinh entity quyền mới**.
 Trang người dùng gọi `?active_only=true` để bỏ câu đang ẩn.
+
+## Khi có lỗi
+
+| Tình huống | Người dùng thấy gì |
+|---|---|
+| Slug không khớp bài nào (đổi tiêu đề, bài bị xóa) | Thẻ "Không tìm thấy bài viết" — vẫn còn header, menu, ô tìm kiếm để đi tiếp |
+| URL hỏng (vd dán thiếu ký tự: `/bao-cao-mua-hang%`) | **Prod**: nginx `error_page 400 404 = /index.html` trả SPA -> hiện như trên. **Dev**: Vite dev server tự ném "URI malformed", không sửa được từ app (chỉ có ở môi trường dev) |
+| Lỗi render bất kỳ | `components/app-error-boundary.tsx` — thẻ "Trang gặp sự cố" + nội dung lỗi + nút Tải lại / Về trang chủ. **Không bao giờ để trang trắng** |
+| Lỗi gọi API | Interceptor ở `api/client.ts` tự toast (trừ khi đặt `config._silent`) |
 
 ## Tìm kiếm
 

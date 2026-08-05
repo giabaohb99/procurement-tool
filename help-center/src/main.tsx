@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 
 import App from '@/App'
 import { AuthProvider } from '@/auth/auth-context'
+import AppErrorBoundary from '@/components/app-error-boundary'
 import { ConfirmHost } from '@/components/confirm-dialog'
 import { NewArticleHost } from '@/components/create-article-dialog'
 import { Toaster } from '@/components/ui/sonner'
@@ -12,13 +13,16 @@ import '@/styles/article-content.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AuthProvider>
-      <BrowserRouter>
-        <App />
-        <Toaster position="top-right" richColors />
-        <ConfirmHost />
-        <NewArticleHost />
-      </BrowserRouter>
-    </AuthProvider>
+    {/* Bọc ngoài cùng: lỗi render ở bất kỳ đâu cũng ra thông báo, không để trang trắng */}
+    <AppErrorBoundary>
+      <AuthProvider>
+        <BrowserRouter>
+          <App />
+          <Toaster position="top-right" richColors />
+          <ConfirmHost />
+          <NewArticleHost />
+        </BrowserRouter>
+      </AuthProvider>
+    </AppErrorBoundary>
   </React.StrictMode>,
 )

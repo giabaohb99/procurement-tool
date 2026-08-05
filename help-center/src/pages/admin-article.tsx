@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { AdminOutletContext } from '@/layouts/admin-layout'
 import { deleteArticle, levelLabel } from '@/lib/help-article-actions'
+import { applyQuillVietnameseLabels } from '@/lib/quill-vietnamese-labels'
 import { findNode, findPath } from '@/lib/help-tree'
 
 // /admin/:id — soạn bài viết trên MỘT trang, không dùng tab:
@@ -142,6 +143,9 @@ export default function AdminArticle() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [dirty, saving, handleSave])
+
+  // Quill dựng thanh công cụ xong mới gắn được tooltip; editor chỉ render sau khi tải xong bài
+  useEffect(() => { applyQuillVietnameseLabels() }, [article])
 
   // Cảnh báo khi đóng tab lúc còn thay đổi chưa lưu
   useEffect(() => {
