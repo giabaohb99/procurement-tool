@@ -51,8 +51,8 @@ const NAV_GROUPS: NavGroup[] = [
   {
     items: [
       { to: "/", label: "Trang chủ", icon: "ti-layout-dashboard" },
-      // Trung tâm HDSD là app riêng (cổng 8082) — mọi user đăng nhập đều xem được
-      { to: HELP_URL, label: "Hướng dẫn sử dụng", icon: "ti-help", external: true },
+      // Trung tâm HDSD KHÔNG còn ở menu trái — lối vào duy nhất là nút "?" cạnh
+      // chuông thông báo trên thanh trên cùng (mở app riêng ở tab mới).
       // Màn QUẢN LÝ phiếu hỗ trợ — chỉ nhóm Hỗ trợ (quyền 'delete' làm proxy handler,
       // vì mọi nhân viên đều có ticket read/write/create nên không lọc được bằng manage).
       // Người dùng thường gửi phiếu qua icon tai nghe + xem ở Trang cá nhân.
@@ -374,7 +374,7 @@ export default function AppLayout() {
                   n.external ? (
                     <a
                       key={n.to}
-                      href={n.to === HELP_URL ? helpCenterUrl(can("help_article", "write")) : n.to}
+                      href={n.to}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => setOpen(false)}
@@ -450,6 +450,18 @@ export default function AppLayout() {
                 ))}
               </select>
             )}
+            {/* Lối vào Trung tâm Hướng dẫn sử dụng (app riêng, tab mới) */}
+            <a
+              className="icon-btn"
+              href={helpCenterUrl(can("help_article", "write"))}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Hướng dẫn sử dụng"
+              aria-label="Hướng dẫn sử dụng"
+              style={{ display: "flex", alignItems: "center", textDecoration: "none" }}
+            >
+              <i className="ti ti-help" />
+            </a>
             <NotificationBell />
             <div
               style={{

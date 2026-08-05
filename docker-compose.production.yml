@@ -36,7 +36,7 @@ services:
         VITE_DEVELOPER_MODE: "${VITE_DEVELOPER_MODE:-}"   # bật chế độ Dev (đổi user) khi .env đặt =dev; mặc định tắt
         VITE_PWA_INSTALL_PROMPT: "${VITE_PWA_INSTALL_PROMPT:-}"   # hiện banner "Cài ứng dụng" khi .env đặt =on; mặc định ẩn
         VITE_FEATURE_TICKET: "${VITE_FEATURE_TICKET:-off}"   # Phiếu hỗ trợ (ticket): prod mặc định TẮT; đặt =on trong .env để bật
-        VITE_HELP_URL: "https://hdsd.degoholding.vn"          # Trung tâm HDSD là app riêng (subdomain riêng)
+        VITE_HELP_URL: "https://help.degoholding.vn"          # Trung tâm HDSD là app riêng (subdomain riêng)
     container_name: procurement-web
     restart: always
     depends_on:
@@ -46,7 +46,7 @@ services:
       - proxy-tier              # để cloudflare_tunnel (cùng net) gọi http://procurement-web:80
 
   # Trung tâm Hướng dẫn sử dụng — app riêng, dùng chung backend + tài khoản.
-  # Cloudflare tunnel trỏ hdsd.degoholding.vn -> http://procurement-help:80
+  # Cloudflare tunnel trỏ help.degoholding.vn -> http://procurement-help:80
   help:
     build:
       context: .

@@ -23,7 +23,7 @@ services:
         VITE_DEVELOPER_MODE: "${VITE_DEVELOPER_MODE:-}"
         VITE_PWA_INSTALL_PROMPT: "${VITE_PWA_INSTALL_PROMPT:-}"
         VITE_FEATURE_TICKET: "${VITE_FEATURE_TICKET:-on}"   # Phiếu hỗ trợ (ticket): dev mặc định BẬT
-        VITE_HELP_URL: "https://devhdsd.degoholding.vn"      # Trung tâm HDSD là app riêng (subdomain riêng)
+        VITE_HELP_URL: "https://devhelp.degoholding.vn"      # Trung tâm HDSD là app riêng (subdomain riêng)
     container_name: procurement-web-dev
     restart: always
     depends_on:
@@ -32,7 +32,7 @@ services:
       - procurement-internal
       - proxy-tier
 
-  # Trung tâm Hướng dẫn sử dụng — bản dev. Tunnel trỏ devhdsd.degoholding.vn -> http://procurement-help-dev:80
+  # Trung tâm Hướng dẫn sử dụng — bản dev. Tunnel trỏ devhelp.degoholding.vn -> http://procurement-help-dev:80
   help:
     build:
       context: .
