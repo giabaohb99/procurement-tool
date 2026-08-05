@@ -49,8 +49,13 @@ def provision_user(db: Session, data: UserProvision, actor_id: int) -> User:
         raise HTTPException(404, "Không tìm thấy nhân viên")
     if db.query(User).filter(User.employee_id == data.employee_id).first():
         raise HTTPException(400, "Nhân viên này đã có tài khoản")
+    email = (data.email or emp.email or "").strip()
+    # CR-023: 2 tài khoản đang hoạt động trùng email = đăng nhập nhập nhằng (cái nào cũng có thể
+    # được chọn trước). Chặn ngay từ lúc tạo. Tài khoản đã khoá thì không tính.
+    if email and db.query(User).filter(User.email == email, User.is_active.is_(True)).first():
+        raise HTTPException(400, f"Email {email} đã được một tài khoản khác sử dụng")
     user = User(
-        email=data.email or emp.email,
+        email=email,
         employee_id=data.employee_id,
         password_hash=hash_password(data.password),
         created_by=actor_id,
@@ -121,6 +126,14 @@ def set_active(db: Session, user_id: int, active: bool, actor_id: int) -> None:
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(404, "Không tìm thấy tài khoản")
+    email = (user.email or "").strip()
+    # CR-023: mở khoá lại mà email trùng một tài khoản đang hoạt động thì lại nhập nhằng đăng nhập
+    if active and not user.is_active and email:
+        dup = db.query(User).filter(User.email == email, User.id != user.id,
+                                    User.is_active.is_(True)).first()
+        if dup:
+            raise HTTPException(400, f"Email {email} đang được tài khoản #{dup.id} sử dụng. "
+                                     "Hãy sửa email trước khi mở khoá tài khoản này.")
     user.is_active = active
     user.updated_by = actor_id
     db.commit()

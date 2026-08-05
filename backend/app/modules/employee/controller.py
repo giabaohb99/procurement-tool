@@ -93,8 +93,9 @@ def update_employee(
 def delete_employee(
     eid: int, db: Session = Depends(get_db), user=Depends(require("employee", "delete"))
 ):
-    service.delete_employee(db, eid, user.id)
-    return success(None, "Đã xóa")
+    locked = service.delete_employee(db, eid, user.id)
+    msg = "Đã xóa" if not locked else f"Đã xóa. Đã khoá {locked} tài khoản đăng nhập của nhân sự này."
+    return success(None, msg)
 
 @router.get("/export/csv")
 def export_employees_csv(
@@ -177,6 +178,7 @@ def import_employees_csv(
         existing = db.query(Employee).filter(Employee.code == code).first() if code else None
         if existing:
             if action in ["xóa", "delete"]:
+                service.detach_users(db, existing.id, user.id)   # CR-023: khoá tài khoản kèm theo
                 db.delete(existing)
                 deleted += 1
             else:

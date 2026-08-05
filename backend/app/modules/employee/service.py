@@ -80,15 +80,42 @@ def _sync_user_email_from_employee(db: Session, emp: Employee, email_changed: bo
         return
     if cur and not email_changed:
         return  # giữ nguyên handle/email khác khi admin không chủ động đổi email
-    dup = db.query(User).filter(User.email == new_email, User.id != user.id).first()
+    # CR-023: tài khoản đã khoá không còn giữ chỗ email nữa (chỉ tài khoản đang hoạt động mới tính)
+    dup = db.query(User).filter(User.email == new_email, User.id != user.id,
+                                User.is_active.is_(True)).first()
     if dup:
         raise HTTPException(400, "Email này đã được một tài khoản khác sử dụng")
     user.email = new_email
     db.commit()
 
 
-def delete_employee(db: Session, eid: int, user_id: int) -> None:
+def detach_users(db: Session, eid: int, actor_id: int) -> int:
+    """CR-023: xoá hồ sơ nhân sự thì phải KHOÁ + GỠ LIÊN KẾT tài khoản đăng nhập của người đó.
+
+    Trước đây xoá nhân sự là xoá cứng, không đụng gì tới `tab_user` → còn lại "tài khoản mồ côi":
+    vẫn đăng nhập được, không còn hồ sơ nhân sự nên hệ thống hiển thị thông tin lấy từ bản ghi tài
+    khoản, và nếu trùng email với tài khoản thật thì còn che mất tài khoản thật khi đăng nhập.
+
+    Không xoá tài khoản (giữ lại để truy vết ai đã làm gì), chỉ `is_active = 0` + `employee_id = 0`.
+    Trả về số tài khoản đã khoá. KHÔNG commit — để chung transaction với thao tác xoá nhân sự.
+    """
+    from app.core.auth import perm_cache_clear
+    from app.modules.user.model import User
+
+    users = db.query(User).filter(User.employee_id == eid).all()
+    for u in users:
+        u.is_active = False
+        u.employee_id = 0
+        u.updated_by = actor_id
+        perm_cache_clear(u.id)
+    return len(users)
+
+
+def delete_employee(db: Session, eid: int, user_id: int) -> int:
     obj = get_employee(db, eid)
+    locked = detach_users(db, eid, user_id)
     db.delete(obj)
     db.commit()
-    record(db, user_id, ENTITY, eid, "delete")
+    msg = f"Khoá {locked} tài khoản đăng nhập kèm theo" if locked else ""
+    record(db, user_id, ENTITY, eid, "delete", msg)
+    return locked

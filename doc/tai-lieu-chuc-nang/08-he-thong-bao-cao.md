@@ -87,6 +87,19 @@ Quản lý danh sách nhân viên thuộc các công ty/phòng ban. Hồ sơ nh�
 - Người sửa: Người có quyền `employee:write`
 - Logic đặc biệt: Nhân sự không hoạt động không được chọn trong các trường liên kết (phân công, người đại diện pháp lý, NSTM...)
 
+### Xóa hồ sơ nhân sự (CR-023)
+
+Xóa hồ sơ nhân sự là **xóa cứng** bản ghi trong `tab_employee`. Từ CR-023, thao tác này **kéo theo tài khoản đăng nhập**:
+
+- Mọi `tab_user` đang gắn nhân sự đó bị **khóa** (`is_active = 0`) và **gỡ liên kết** (`employee_id = 0`).
+- Tài khoản **không bị xóa** — giữ lại để còn truy vết ai đã tạo/duyệt chứng từ cũ.
+- Thông báo trả về ghi rõ số tài khoản bị khóa; nhật ký thao tác ghi kèm dòng "Khoá N tài khoản đăng nhập kèm theo".
+- Áp dụng cho cả nhánh "xóa" của **Nhập file CSV** (cột *Hành động* = `xóa`).
+
+Trước CR-023 tài khoản vẫn sống sau khi hồ sơ nhân sự bị xóa ("tài khoản mồ côi"): đăng nhập được, hiển thị thông tin
+lấy từ bản ghi tài khoản, và nếu trùng email với người thật thì còn làm người thật không đăng nhập được.
+Muốn giữ tài khoản thì **đừng xóa hồ sơ nhân sự** — bỏ tick *Hoạt động* (`is_active`) là đủ.
+
 ---
 
 ## Nguoi dung (Tài khoản)
@@ -107,6 +120,7 @@ Quản lý tài khoản đăng nhập và liên kết tài khoản với hồ s�
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Admin (`user:write`)
 - Logic đặc biệt: Email dùng để xác thực bằng mật khẩu hoặc SSO Google (`google_sub`); hai cơ chế này cùng tồn tại
+- Logic đặc biệt (CR-023): không tạo được tài khoản mới với email đã có ở một tài khoản **đang hoạt động**
 
 ### 2. Mật khẩu (`password_hash`)
 
@@ -142,6 +156,10 @@ Quản lý tài khoản đăng nhập và liên kết tài khoản với hồ s�
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Admin (`user:write`)
 - Logic đặc biệt: Tài khoản bị tắt (`is_active = false`) không thể đăng nhập; token cũ vẫn còn hiệu lực cho đến khi hết hạn nếu không invalidate
+- Logic đặc biệt (CR-023): tài khoản đã khóa **không giữ chỗ email** — người khác vẫn tạo được tài khoản với email đó.
+  Đăng nhập (cả mật khẩu lẫn Google) luôn **ưu tiên tài khoản đang hoạt động**, nên một tài khoản đã khóa trùng email
+  không thể che mất tài khoản thật. Đổi lại, **mở khóa** một tài khoản mà email của nó đang trùng với một tài khoản
+  đang hoạt động sẽ bị từ chối — phải sửa email trước.
 
 ### 6. Vai trò được gán (`role_ids` — bảng `tab_user_role`)
 
