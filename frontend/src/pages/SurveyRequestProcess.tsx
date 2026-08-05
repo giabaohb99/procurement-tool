@@ -255,10 +255,11 @@ export default function SurveyRequestProcess() {
     fetchAvail(lineIdx, lineId, {}, 0, { by: colKey, dir: nextDir })
   }
 
-  // Mũi tên chỉ hướng sort trên tiêu đề cột
-  function sortArrow(ls: LineState, colKey: string) {
-    if (ls.availSortBy !== colKey) return ' ↕'
-    return ls.availSortDir === 'asc' ? ' ▲' : ' ▼'
+  // Icon chỉ hướng sort trên tiêu đề cột (dùng chung style với các bảng danh sách)
+  function sortIcon(ls: LineState, colKey: string) {
+    const active = ls.availSortBy === colKey
+    const icon = active ? (ls.availSortDir === 'asc' ? 'ti-chevron-up' : 'ti-chevron-down') : 'ti-arrows-sort'
+    return <i className={`ti ${icon} th-sort-ico${active ? ' active' : ''}`} />
   }
 
   // Ô tìm có debounce 400ms (cập nhật input ngay, gọi API sau)
@@ -502,7 +503,7 @@ export default function SurveyRequestProcess() {
                       </colgroup>
                       <thead>
                         <tr>
-                          <th style={{ position: 'relative' }}><ResizeHandle onMouseDown={(e) => startResize(0, e)} /></th>
+                          <th className="th-resizable"><ResizeHandle onMouseDown={(e) => startResize(0, e)} /></th>
                           {([
                             [1, 'supplier_code', 'NCC', 'left'],
                             [2, 'product_name', 'Tên SP', 'left'],
@@ -515,15 +516,17 @@ export default function SurveyRequestProcess() {
                             [9, 'quote_unit', 'ĐVT', 'left'],
                             [10, 'lab_result', 'Lab', 'center'],
                           ] as [number, string, string, 'left' | 'center' | 'right'][]).map(([idx, key, label, align]) => (
-                            <th key={key}
-                              style={{ position: 'relative', textAlign: align, cursor: 'pointer', userSelect: 'none' }}
+                            <th key={key} className="th-resizable th-sortable"
+                              style={{ textAlign: align }}
                               onClick={() => handleAvailSort(lineIdx, line.id, key)}
                               title="Bấm để sắp xếp">
-                              {label}<span style={{ color: 'var(--muted)', fontSize: 11 }}>{sortArrow(ls, key)}</span>
+                              <span className="th-inner">
+                                <span className="th-label">{label}</span>{sortIcon(ls, key)}
+                              </span>
                               <ResizeHandle onMouseDown={(e) => startResize(idx, e)} />
                             </th>
                           ))}
-                          <th style={{ position: 'relative', textAlign: 'center' }}>Thêm
+                          <th className="th-resizable" style={{ textAlign: 'center' }}>Thêm
                             <ResizeHandle onMouseDown={(e) => startResize(11, e)} />
                           </th>
                         </tr>

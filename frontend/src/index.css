@@ -444,6 +444,238 @@ tbody tr:hover {
   background: #f4f7fe !important;
 }
 
+/* ===== Bảng danh sách: khuôn chung cho MỌI trang danh sách =====
+   Cấu trúc chuẩn:
+   <div class="card table-card">
+     <TableToolbar/>                     → chọn cột + tải lại
+     <div class="table-scroll"><table>…  → vùng cuộn ngang
+     <div class="table-foot"><Pagination → chân bảng
+   </div>                                                              */
+.table-card {
+  padding: 0;
+  overflow: hidden;   /* bo góc cắt gọn mép bảng; cuộn ngang do .table-scroll lo */
+}
+
+.table-card > .table-tools {
+  padding: 14px 18px 0;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.table-foot {
+  padding: 10px 18px;
+  border-top: 1px solid #e9edf7;
+}
+
+.table-empty {
+  text-align: center;
+  color: #94a3b8;
+  padding: 28px 12px !important;
+}
+
+/* Bảng nhiều cột (Tiến độ mua hàng, Công nợ…): ô gọn hơn, tiêu đề được xuống dòng */
+table.dense thead th {
+  padding: 10px 12px;
+  font-size: 11.5px;
+}
+
+table.dense .th-label {
+  white-space: normal;
+  overflow: visible;
+  line-height: 1.2;
+}
+
+table.dense tbody td {
+  padding: 9px 12px;
+  font-size: 13px;
+}
+
+/* ===== Bảng danh sách: header sắp xếp · kéo giãn cột · thanh công cụ ===== */
+
+/* th luôn relative để đặt được tay nắm kéo giãn ở mép phải */
+thead th {
+  position: relative;
+}
+
+.th-resizable {
+  padding-right: 22px;
+}
+
+.th-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.th-sortable:hover {
+  background: #eaf0fb;
+}
+
+.th-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.th-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.th-sort-ico {
+  flex: none;
+  font-size: 13px;
+  color: #b9c4d6;
+  transition: color 0.15s;
+}
+
+.th-sortable:hover .th-sort-ico {
+  color: #7f8ca5;
+}
+
+.th-sort-ico.active {
+  color: var(--teal);
+}
+
+/* Tay nắm kéo giãn: vạch chia mờ ở mép phải cột, đậm lên khi rê chuột */
+.col-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 9px;
+  z-index: 2;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.col-resizer::after {
+  content: "";
+  display: block;
+  width: 2px;
+  height: 58%;
+  border-radius: 2px;
+  background: rgba(148, 163, 184, 0.55);
+  transition:
+    background 0.12s,
+    width 0.12s;
+}
+
+.col-resizer:hover::after {
+  width: 3px;
+  background: var(--teal);
+}
+
+/* Thanh công cụ bảng: đặt ngay TRÊN bảng, căn phải (chọn cột + tải lại) */
+.table-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+/* Nút trong thanh công cụ nhỏ hơn nút hành động chính để không tranh chú ý */
+.table-tools .btn {
+  height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+  border-radius: 10px;
+}
+
+.table-tools .ti-refresh.spin {
+  animation: lgSpin 0.8s linear infinite;
+}
+
+/* Menu chọn cột: render qua portal ra body nên dùng position: fixed */
+.col-menu {
+  position: fixed;
+  z-index: 200;
+  min-width: 240px;
+  background: #fff;
+  border: 1px solid #e9edf7;
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(112, 144, 176, 0.22);
+  padding: 6px;
+  text-align: left;
+}
+
+.col-menu-head,
+.col-menu-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.col-menu-foot {
+  border-top: 1px solid #f1f5f9;
+  justify-content: flex-start;
+  text-transform: none;
+  letter-spacing: 0;
+  padding-bottom: 4px;
+}
+
+.col-menu-link {
+  background: none;
+  border: none;
+  padding: 0;
+  height: auto;
+  cursor: pointer;
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.col-menu-link:disabled {
+  color: #cbd5e1;
+  cursor: default;
+}
+
+.col-menu-list {
+  max-height: 300px;
+  overflow: auto;
+}
+
+.col-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--navy);
+  cursor: pointer;
+}
+
+.col-menu-item:hover {
+  background: #f4f7fe;
+}
+
+.col-menu-item input {
+  cursor: pointer;
+  accent-color: var(--teal);
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -1854,11 +2086,21 @@ input,
   min-width: 220px;
 }
 .drp-trigger:hover { border-color: var(--teal); }
+/* Dùng trong ô lọc: chiếm trọn bề ngang, chữ cắt gọn nếu chật */
+.drp-trigger.block { display: flex; width: 100%; min-width: 0; }
+.drp-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drp-clear {
+  font-size: 14px;
+  color: #94a3b8;
+  border-radius: 6px;
+  padding: 2px;
+  margin-left: auto;
+}
+.drp-clear:hover { color: var(--red); background: #fee2e2; }
+.drp-clear + .ti { margin-left: 4px !important; }
 .drp-pop {
-  position: absolute;
-  z-index: 50;
-  top: calc(100% + 6px);
-  right: 0;
+  position: fixed;
+  z-index: 200;
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -1903,8 +2145,35 @@ input,
 .drp-pop .rdp-root { font-size: 11.5px; margin: 0; }
 .drp-pop .rdp-months { display: flex; flex-direction: row; gap: 12px; }
 .drp-pop table { margin: 0; border-collapse: collapse; border-spacing: 0; }
-.drp-pop thead th, .drp-pop tbody td { padding: 0 !important; border: none !important; background: transparent !important; }
+/* Vô hiệu style bảng chung của app bên trong lịch (padding/viền/zebra/hover dòng).
+   KHÔNG đặt background trên <td> — nếu không sẽ đè mất màu tô khoảng ngày bên dưới. */
+.drp-pop thead th, .drp-pop tbody td { padding: 0 !important; border: none !important; }
+.drp-pop tbody tr,
+.drp-pop tbody tr:nth-child(even),
 .drp-pop tbody tr:hover { background: transparent !important; }
+
+/* Khoảng đang chọn: 2 đầu là chấm tròn teal, các ngày ở giữa tô nền nhạt liền mạch */
+.drp-pop .rdp-day { background: transparent; }
+.drp-pop .rdp-range_middle { background: #e0f4fd; }
+.drp-pop .rdp-range_start { background: linear-gradient(to right, transparent 50%, #e0f4fd 50%); }
+.drp-pop .rdp-range_end { background: linear-gradient(to left, transparent 50%, #e0f4fd 50%); }
+.drp-pop .rdp-range_start.rdp-range_end { background: transparent; }   /* chọn đúng 1 ngày */
+.drp-pop .rdp-day_button { border: none; border-radius: 50%; }
+.drp-pop .rdp-day_button:hover { background: #cdeefb; }
+.drp-pop .rdp-selected .rdp-day_button {
+  background: var(--teal);
+  color: #fff;
+  font-weight: 700;
+}
+/* Ngày giữa khoảng: giữ nền nhạt của ô, chữ đậm màu teal */
+.drp-pop .rdp-range_middle .rdp-day_button {
+  background: transparent;
+  color: var(--teal-dark);
+  font-weight: 600;
+}
+.drp-pop .rdp-range_middle .rdp-day_button:hover { background: #cdeefb; }
+.drp-pop .rdp-today:not(.rdp-selected) .rdp-day_button { color: var(--teal-dark); font-weight: 700; }
+.drp-pop .rdp-outside .rdp-day_button { color: #cbd5e1; }
 .drp-pop .rdp-month_caption { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
 .drp-pop .rdp-weekday { font-size: 10px; font-weight: 600; padding: 2px 0; }
 .drp-pop .rdp-day, .drp-pop .rdp-day_button { font-size: 11.5px; }

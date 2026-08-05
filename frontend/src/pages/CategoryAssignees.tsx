@@ -4,7 +4,9 @@ import { api } from '../api/client'
 import { askConfirm } from '../components/confirm'
 import Pagination from '../components/Pagination'
 import { useAuth } from '../auth/AuthContext'
-import { useResizableColumns, ResizeHandle } from '../hooks/useResizableColumns'
+import TableHead, { TableCells, TableColGroup } from '../components/TableHead'
+import TableToolbar from '../components/TableToolbar'
+import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 
 type Row = {
   id: number; item_group_id: number; item_group_name: string
@@ -30,7 +32,31 @@ export default function CategoryAssignees() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const { startResize, colW } = useResizableColumns('colw:category-assignees')
+
+  const COLS = useMemo<TableColumn<Row>[]>(() => [
+    { key: 'item_group_name', label: 'Phân loại', sort: 'item_group_name', width: '32%', cell: (r) => <b>{r.item_group_name || '—'}</b> },
+    {
+      key: 'primary_name', label: 'NSTM chính', sort: 'primary_name', width: '30%',
+      cell: (r) => <>{r.primary_name || '—'}{r.primary_code ? <span style={{ color: '#94a3b8', fontSize: 12 }}> · {r.primary_code}</span> : ''}</>,
+    },
+    {
+      key: 'backup_name', label: 'NSTM dự phòng', sort: 'backup_name', width: '30%',
+      cell: (r) => (r.backup_name
+        ? <>{r.backup_name}{r.backup_code ? <span style={{ color: '#94a3b8', fontSize: 12 }}> · {r.backup_code}</span> : ''}</>
+        : <span style={{ color: '#94a3b8' }}>—</span>),
+    },
+    {
+      key: 'actions', label: 'Thao tác', width: 120, align: 'center', fixed: true, td: { whiteSpace: 'nowrap' },
+      cell: (r) => (
+        <>
+          {canCreate && <button className="btn ghost" style={{ height: 30, padding: '0 8px', marginRight: 6 }} title="Sửa phân công"
+            onClick={() => navigate(`/category-assignees/new?cats=${r.item_group_id}&primary=${r.primary_employee_id}&backup=${r.backup_employee_id}`)}><i className="ti ti-pencil" />Sửa</button>}
+          {canDelete && <button className="btn err" style={{ height: 30, padding: '0 8px' }} onClick={() => del(r.id)}><i className="ti ti-trash" /></button>}
+        </>
+      ),
+    },
+  ], [canCreate, canDelete])
+  const table = useTableColumns('category-assignees', COLS)
 
   async function load() {
     // Tải hết (page_size lớn) để lọc/sort/phân trang phía client; API đã tối ưu JOIN nên nhanh
@@ -47,12 +73,11 @@ export default function CategoryAssignees() {
     await api.delete(`/api/category-assignees/${id}`); await load()
   }
 
-  function handleSort(field: SortField) {
+  function handleSort(field: string) {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
-    else { setSortField(field); setSortDir('asc') }
+    else { setSortField(field as SortField); setSortDir('asc') }
     setPage(1)
   }
-  const arrow = (f: SortField) => sortField === f ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ↕'
 
   const filtered = useMemo(() => rows.filter(r =>
     (!fCat || String(r.item_group_id) === fCat) &&
@@ -98,43 +123,29 @@ export default function CategoryAssignees() {
         {(fCat || fName || fCode) && <button className="btn ghost" onClick={resetFilters}>Xóa lọc</button>}
       </div>
 
-      <div className="card">
-        {/* table-layout fixed + colgroup: khóa bề rộng cột để sort/đổi trang không làm bảng giật */}
-        <table style={{ tableLayout: 'fixed' }}>
-          <colgroup>
-            <col style={{ width: colW(0, '32%') }} />
-            <col style={{ width: colW(1, '30%') }} />
-            <col style={{ width: colW(2, '30%') }} />
-            <col style={{ width: colW(3, 100) }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th style={{ position: 'relative', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('item_group_name')}>Phân loại{arrow('item_group_name')}<ResizeHandle onMouseDown={(e) => startResize(0, e)} /></th>
-              <th style={{ position: 'relative', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('primary_name')}>NSTM chính{arrow('primary_name')}<ResizeHandle onMouseDown={(e) => startResize(1, e)} /></th>
-              <th style={{ position: 'relative', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('backup_name')}>NSTM dự phòng{arrow('backup_name')}<ResizeHandle onMouseDown={(e) => startResize(2, e)} /></th>
-              <th style={{ textAlign: 'center' }}>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paged.map(r => (
-              <tr key={r.id}>
-                <td><b>{r.item_group_name || '—'}</b></td>
-                <td>{r.primary_name || '—'}{r.primary_code ? <span style={{ color: '#94a3b8', fontSize: 12 }}> · {r.primary_code}</span> : ''}</td>
-                <td>{r.backup_name ? <>{r.backup_name}{r.backup_code ? <span style={{ color: '#94a3b8', fontSize: 12 }}> · {r.backup_code}</span> : ''}</> : <span style={{ color: '#94a3b8' }}>—</span>}</td>
-                <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                  {canCreate && <button className="btn ghost" style={{ height: 30, padding: '0 8px', marginRight: 6 }} title="Sửa phân công"
-                    onClick={() => navigate(`/category-assignees/new?cats=${r.item_group_id}&primary=${r.primary_employee_id}&backup=${r.backup_employee_id}`)}><i className="ti ti-pencil" />Sửa</button>}
-                  {canDelete && <button className="btn err" style={{ height: 30, padding: '0 8px' }} onClick={() => del(r.id)}><i className="ti ti-trash" /></button>}
-                </td>
-              </tr>
-            ))}
-            {sorted.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Không có phân công nào khớp bộ lọc</td></tr>}
-          </tbody>
-        </table>
+      <div className="card table-card">
+        <TableToolbar {...table} onRefresh={load} />
+        <div className="table-scroll">
+          {/* table-layout fixed + colgroup: khóa bề rộng cột để sort/đổi trang không làm bảng giật */}
+          <table style={{ tableLayout: 'fixed' }}>
+            <TableColGroup columns={table.columns} colW={table.colW} />
+            <TableHead columns={table.columns} startResize={table.startResize}
+              sortBy={sortField} sortDir={sortDir} onSort={handleSort} />
+            <tbody>
+              {paged.map((r, i) => (
+                <tr key={r.id}>
+                  <TableCells columns={table.columns} row={r} index={i} />
+                </tr>
+              ))}
+              {sorted.length === 0 && <tr><td colSpan={table.columns.length} className="table-empty">Không có phân công nào khớp bộ lọc</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <div className="table-foot">
+          <Pagination page={page} pageSize={pageSize} total={sorted.length}
+            onChange={(p, s) => { setPage(p); setPageSize(s) }} />
+        </div>
       </div>
-
-      <Pagination page={page} pageSize={pageSize} total={sorted.length}
-        onChange={(p, s) => { setPage(p); setPageSize(s) }} />
     </div>
   )
 }

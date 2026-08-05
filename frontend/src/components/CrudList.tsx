@@ -7,7 +7,9 @@ import { cruds } from '../config/cruds'
 import ConfirmModal from './ConfirmModal'
 import FilterBar from './FilterBar'
 import Pagination from './Pagination'
-import { useResizableColumns, ResizeHandle } from '../hooks/useResizableColumns'
+import TableHead, { TableCells } from './TableHead'
+import TableToolbar from './TableToolbar'
+import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 
 export default function CrudList() {
   const { entity } = useParams()
@@ -34,7 +36,46 @@ export default function CrudList() {
   const [serverPaged, setServerPaged] = useState(true)   // API trả mảng thô (vd /roles) -> sort client
   const [cloneMode, setCloneMode] = useState(false)   // bật/tắt cột "Thao tác" (nhân bản)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { startResize, thStyle } = useResizableColumns(`colw:crud:${entity || ''}`)
+
+  const cloneEnabled = !!cfg?.cloneable && can(cfg.entity, 'create')
+  const showClone = cloneEnabled && cloneMode   // cột "Thao tác" chỉ hiện khi bật chế độ nhân bản
+
+  // Khai báo cột 1 lần: dùng chung cho header (sort + kéo giãn) và các ô dữ liệu
+  const tableColumns = useMemo<TableColumn<any>[]>(() => {
+    if (!cfg) return []
+    const list: TableColumn<any>[] = [
+      { key: 'id', label: 'ID', sort: 'id', width: 80 },
+      ...cfg.columns.map((c): TableColumn<any> => ({
+        key: c.key,
+        label: c.label,
+        sort: c.key,
+        cell: (row) => {
+          const content = c.render ? c.render(row) : (row[c.key] ?? '')
+          const href = c.link?.(row)
+          return href ? (
+            <span className="clickable" style={{ color: 'var(--teal)', fontWeight: 500 }}
+              onClick={(e) => { e.stopPropagation(); navigate(href) }}>{content}</span>
+          ) : content
+        },
+      })),
+    ]
+    if (showClone) {
+      list.push({
+        key: '__clone', label: 'Thao tác', width: 110, align: 'center', fixed: true,
+        cell: (row) => (
+          <span onClick={(e) => e.stopPropagation()}>
+            <button className="btn ghost" style={{ height: 30, padding: '0 10px' }}
+              title="Nhân bản thành phiếu nháp mới" onClick={() => cloneRow(row.id, row.code)}>
+              <i className="ti ti-copy" />Nhân bản
+            </button>
+          </span>
+        ),
+      })
+    }
+    return list
+  }, [cfg?.slug, showClone])
+
+  const table = useTableColumns(`crud:${entity || ''}`, tableColumns)
 
   function handleSort(field: string) {
     // Sort phía server: đổi hướng nếu cùng cột, ngược lại asc; luôn về trang 1
@@ -192,8 +233,6 @@ export default function CrudList() {
   function applyFilters(f: Record<string, string>) { setFilters(f); setPage(1); load(1, pageSize, f) }
   function changePage(p: number, s: number) { setPage(p); setPageSize(s); load(p, s, filters) }
 
-  const cloneEnabled = !!cfg.cloneable && can(cfg.entity, 'create')
-  const showClone = cloneEnabled && cloneMode   // cột "Thao tác" chỉ hiện khi bật chế độ nhân bản
   async function doClone(id: number) {
     try {
       const r = await api.post(`${cfg.apiPath}/${id}/clone`)
@@ -250,62 +289,28 @@ export default function CrudList() {
 
       <FilterBar key={cfg.slug} fields={cfg.filters} initial={urlFilters} onApply={applyFilters} />
 
-      <div className="card">
-        <table>
-          <thead>
-            <tr>
-              <th style={{ position: 'relative', cursor: 'pointer', userSelect: 'none', ...thStyle(0) }} onClick={() => handleSort('id')}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  ID {sortField === 'id' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ↕'}
-                </div>
-                <ResizeHandle onMouseDown={(e) => startResize(0, e)} />
-              </th>
-              {cfg.columns.map((c, i) => (
-                <th key={c.key} style={{ position: 'relative', cursor: 'pointer', userSelect: 'none', ...thStyle(i + 1) }} onClick={() => handleSort(c.key)}>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    {c.label} {sortField === c.key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ↕'}
-                  </div>
-                  <ResizeHandle onMouseDown={(e) => startResize(i + 1, e)} />
-                </th>
-              ))}
-              {showClone && <th style={{ width: 110, textAlign: 'center' }}>Thao tác</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {/* Sort phía server (danh sách phân trang) / phía client (mảng thô) */}
-            {displayItems.map((row) => (
+      <div className="card table-card">
+        <TableToolbar {...table} onRefresh={() => load(page, pageSize, filters)} />
+        <div className="table-scroll">
+          <table>
+            <TableHead {...table} sortBy={sortField} sortDir={sortDir} onSort={handleSort} />
+            <tbody>
+              {/* Sort phía server (danh sách phân trang) / phía client (mảng thô) */}
+              {displayItems.map((row, i) => (
                 <tr key={row.id} className="clickable" onClick={() => navigate(`/${cfg.slug}/${row.id}`)}>
-                  <td>{row.id}</td>
-                  {cfg.columns.map((c) => {
-                    const content = c.render ? c.render(row) : (row[c.key] ?? '')
-                    const href = c.link?.(row)
-                    return (
-                      <td key={c.key}>
-                        {href ? (
-                          <span className="clickable" style={{ color: 'var(--teal)', fontWeight: 500 }}
-                            onClick={(e) => { e.stopPropagation(); navigate(href) }}>{content}</span>
-                        ) : content}
-                      </td>
-                    )
-                  })}
-                  {showClone && (
-                    <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                      <button className="btn ghost" style={{ height: 30, padding: '0 10px' }}
-                        title="Nhân bản thành phiếu nháp mới" onClick={() => cloneRow(row.id, row.code)}>
-                        <i className="ti ti-copy" />Nhân bản
-                      </button>
-                    </td>
-                  )}
+                  <TableCells columns={table.columns} row={row} index={i} />
                 </tr>
               ))}
-            {items.length === 0 && (
-              <tr><td colSpan={cfg.columns.length + 1 + (showClone ? 1 : 0)} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Không có dữ liệu</td></tr>
-            )}
-          </tbody>
-        </table>
+              {items.length === 0 && (
+                <tr><td colSpan={table.columns.length} className="table-empty">Không có dữ liệu</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="table-foot">
+          <Pagination page={page} pageSize={pageSize} total={total} onChange={changePage} />
+        </div>
       </div>
-
-      <Pagination page={page} pageSize={pageSize} total={total} onChange={changePage} />
 
       <ConfirmModal
         open={confirmModal.open}
