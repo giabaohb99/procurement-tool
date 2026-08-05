@@ -53,62 +53,61 @@ export default function PortalArticle({ nodeId }: { nodeId: number | null }) {
     return () => { cancelled = true }
   }, [nodeId])
 
+  // px-6/md:px-8 = ĐÚNG lề của header, để sidebar thẳng hàng với logo và mục lục thẳng hàng với
+  // cụm tài khoản. Chiều rộng dễ đọc do cột giữa tự giới hạn.
+  // KHÔNG bọc thêm div border-t: header đã có border-b, thêm nữa là 2 vạch chồng nhau.
   return (
-    <div className="border-t">
-      {/* px-6/md:px-8 = ĐÚNG lề của header, để sidebar thẳng hàng với logo và mục lục
-          thẳng hàng với cụm tài khoản. Chiều rộng dễ đọc do cột giữa tự giới hạn. */}
-      <div className="flex w-full items-start gap-8 px-6 md:px-8">
-        {/* Cột trái: cây tài liệu của mục đang đọc */}
-        <aside className="sticky top-[4.25rem] hidden max-h-[calc(100vh-4.25rem)] w-64 shrink-0 overflow-y-auto border-r py-8 pr-4 lg:block">
-          <HelpSectionNav tree={tree} activeId={nodeId} />
-        </aside>
+    <div className="flex w-full items-start gap-8 px-6 md:px-8">
+      {/* Cột trái: cây tài liệu của mục đang đọc */}
+      <aside className="sticky top-[4.25rem] hidden h-[calc(100vh-4.25rem)] w-64 shrink-0 overflow-y-auto border-r py-8 pr-4 lg:block">
+        <HelpSectionNav tree={tree} activeId={nodeId} />
+      </aside>
 
-        <main className="min-w-0 max-w-3xl flex-1 pb-16 pt-8">
-          <div className="mb-5">
-            <HelpBreadcrumb crumbs={crumbs} />
+      <main className="min-w-0 max-w-3xl flex-1 pb-16 pt-8">
+        <div className="mb-5">
+          <HelpBreadcrumb crumbs={crumbs} />
+        </div>
+
+        {notFound ? (
+          <Card className="items-center gap-1.5 border-dashed py-12 text-center">
+            <FileX2 className="mb-1.5 size-9 text-muted-foreground" />
+            <strong className="text-navy">Không tìm thấy bài viết</strong>
+            <span className="text-sm text-muted-foreground">
+              Bài viết này không tồn tại hoặc đã bị xóa.
+            </span>
+          </Card>
+        ) : !article ? (
+          <div className="space-y-4">
+            <Skeleton className="h-9 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-11/12" />
+            <Skeleton className="h-4 w-4/6" />
           </div>
+        ) : (
+          <>
+            <h1 className="mb-2.5 border-b pb-4 text-[1.8rem] font-bold leading-tight text-navy">
+              {article.title}
+            </h1>
 
-          {notFound ? (
-            <Card className="items-center gap-1.5 border-dashed py-12 text-center">
-              <FileX2 className="mb-1.5 size-9 text-muted-foreground" />
-              <strong className="text-navy">Không tìm thấy bài viết</strong>
-              <span className="text-sm text-muted-foreground">
-                Bài viết này không tồn tại hoặc đã bị xóa.
-              </span>
-            </Card>
-          ) : !article ? (
-            <div className="space-y-4">
-              <Skeleton className="h-9 w-3/4" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-11/12" />
-              <Skeleton className="h-4 w-4/6" />
-            </div>
-          ) : (
-            <>
-              <h1 className="mb-2.5 border-b pb-4 text-[1.8rem] font-bold leading-tight text-navy">
-                {article.title}
-              </h1>
+            <div ref={contentRef} className="hc-content"
+                 dangerouslySetInnerHTML={{ __html: article.content || '' }} />
 
-              <div ref={contentRef} className="hc-content"
-                   dangerouslySetInnerHTML={{ __html: article.content || '' }} />
+            {!article.content && (
+              <p className="text-muted-foreground">Bài viết chưa có nội dung.</p>
+            )}
 
-              {!article.content && (
-                <p className="text-muted-foreground">Bài viết chưa có nội dung.</p>
-              )}
+            <HelpSlideGallery slides={article.slides} />
 
-              <HelpSlideGallery slides={article.slides} />
+            <HelpArticleNav prev={prev} next={next} />
+          </>
+        )}
+      </main>
 
-              <HelpArticleNav prev={prev} next={next} />
-            </>
-          )}
-        </main>
-
-        {/* Cột phải: mục lục bài viết. Danh sách bài cùng nhóm đã có ở sidebar trái nên
-            không lặp lại box "Bài viết liên quan" nữa. */}
-        <aside className="sticky top-[4.25rem] ml-auto hidden max-h-[calc(100vh-4.25rem)] w-64 shrink-0 overflow-y-auto py-8 xl:block">
-          <HelpArticleToc items={toc} activeId={activeId} />
-        </aside>
-      </div>
+      {/* Cột phải: mục lục bài viết. Danh sách bài cùng nhóm đã có ở sidebar trái nên
+          không lặp lại box "Bài viết liên quan" nữa. */}
+      <aside className="sticky top-[4.25rem] ml-auto hidden max-h-[calc(100vh-4.25rem)] w-64 shrink-0 overflow-y-auto py-8 xl:block">
+        <HelpArticleToc items={toc} activeId={activeId} />
+      </aside>
     </div>
   )
 }
