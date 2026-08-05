@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 
 import { api } from '@/api/client'
+import HelpArticleNav from '@/components/help-article-nav'
 import HelpTopBar from '@/components/help-topbar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { PortalOutletContext } from '@/layouts/portal-layout'
-import { findPath, type HelpNode } from '@/lib/help-tree'
+import { findPath, findReadingNeighbors, type HelpNode } from '@/lib/help-tree'
 import { excerptFromHtml } from '@/lib/utils'
 
 // Trang DANH MỤC — danh sách bài viết (tiêu đề + trích đoạn) bên trái, box điều hướng bên phải.
@@ -18,6 +19,7 @@ export default function PortalCategory({ node }: { node: HelpNode }) {
   const children = node.children || []
   const crumbs = findPath(tree, node.id)
   const otherRoots = tree.filter((n) => n.id !== crumbs?.[0]?.id)
+  const { prev, next } = findReadingNeighbors(tree, node.id)
 
   // Nội dung mở đầu của chính danh mục + trích đoạn của từng bài con
   useEffect(() => {
@@ -72,6 +74,8 @@ export default function PortalCategory({ node }: { node: HelpNode }) {
               </article>
             ))}
           </div>
+
+          <HelpArticleNav prev={prev} next={next} />
         </main>
 
         <aside className="w-full shrink-0 space-y-4 lg:sticky lg:top-24 lg:w-[19rem]">

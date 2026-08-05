@@ -87,3 +87,15 @@ export function flattenTree(nodes: HelpNode[], depth = 0): { node: HelpNode; dep
     ...flattenTree(node.children || [], depth + 1),
   ])
 }
+
+/** Bài liền trước / liền sau theo THỨ TỰ ĐỌC (duyệt cây theo chiều sâu, như lật trang sách):
+ *  danh mục -> các bài con của nó -> danh mục kế tiếp. Trả null ở đầu/cuối tài liệu. */
+export function findReadingNeighbors(
+  tree: HelpNode[],
+  targetId: number,
+): { prev: HelpNode | null; next: HelpNode | null } {
+  const order = flattenTree(tree).map((f) => f.node)
+  const idx = order.findIndex((n) => n.id === targetId)
+  if (idx === -1) return { prev: null, next: null }
+  return { prev: order[idx - 1] ?? null, next: order[idx + 1] ?? null }
+}

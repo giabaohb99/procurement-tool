@@ -3,6 +3,7 @@ import { Link, useOutletContext, useParams } from 'react-router-dom'
 import { ArrowLeft, FileText, FileX2 } from 'lucide-react'
 
 import { api } from '@/api/client'
+import HelpArticleNav from '@/components/help-article-nav'
 import HelpArticleToc from '@/components/help-article-toc'
 import { HelpSlideGallery, type HelpSlide } from '@/components/help-article-slides'
 import HelpTopBar from '@/components/help-topbar'
@@ -10,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useHeadingToc } from '@/hooks/use-heading-toc'
 import type { PortalOutletContext } from '@/layouts/portal-layout'
-import { findParent, findPath } from '@/lib/help-tree'
+import { findParent, findPath, findReadingNeighbors } from '@/lib/help-tree'
 
 // Trang CHI TIẾT bài viết — nội dung bên trái, cột phải là mục lục (sticky) + bài liên quan.
 
@@ -38,6 +39,9 @@ export default function PortalArticle() {
   const crumbs = nodeId ? findPath(tree, nodeId) : null
   const parent = nodeId ? findParent(tree, nodeId) : null
   const related = (parent?.children || []).filter((c) => c.id !== nodeId).slice(0, MAX_RELATED)
+  const { prev, next } = nodeId
+    ? findReadingNeighbors(tree, nodeId)
+    : { prev: null, next: null }
 
   useEffect(() => {
     if (!id) return
@@ -86,6 +90,8 @@ export default function PortalArticle() {
               )}
 
               <HelpSlideGallery slides={article.slides} />
+
+              <HelpArticleNav prev={prev} next={next} />
             </>
           )}
         </main>
