@@ -60,6 +60,14 @@ class Settings(BaseSettings):
     # không đổi hành vi. PROD đặt =false (trong .env) để KHÔNG seed lại tài khoản demo.
     SEED_DEMO_ACCOUNTS: bool = True
 
+    # Cho phép seed GHI ĐÈ dữ liệu đã có: ma trận quyền của các vai trò chuẩn (STD_ROLES),
+    # phạm vi (scope) và hình thức thanh toán mặc định của NCC.
+    # Mặc định TẮT — seed chạy mỗi lần khởi động container, nếu bật thì mọi chỉnh sửa phân quyền
+    # làm tay trên màn "Phân quyền" sẽ bị xóa và ghi lại theo app/seed.py sau mỗi lần deploy.
+    # Cách dùng: khi CỐ Ý áp lại phân quyền chuẩn -> đặt SEED_FORCE_SYNC=true, restart api 1 lần,
+    # rồi trả về false (hoặc bỏ dòng đó) trước lần deploy sau.
+    SEED_FORCE_SYNC: bool = False
+
     # --- Sao lưu CSDL ---
     BACKUP_KEEP: int = 30   # số bản backup giữ lại (2 lần/ngày -> ~15 ngày)
 

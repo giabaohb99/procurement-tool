@@ -252,7 +252,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã NV', readonlyOnEdit: true }, { key: 'full_name', label: 'Họ tên' },
       { key: 'email', label: 'Email' }, { key: 'phone', label: 'Số điện thoại' },
       { key: 'department_id', label: 'Phòng ban', type: 'select', source: { url: '/api/departments', value: 'id', label: 'name' } },
-      { key: 'role_name', label: 'Vai trò', type: 'select', default: 'Nhân sự (cơ bản)', source: { url: '/api/roles', value: 'name', label: 'name' } },
+      { key: 'role_name', label: 'Vai trò', type: 'select', default: 'Nhân sự', source: { url: '/api/roles', value: 'name', label: 'name' } },
       { key: 'status', label: 'Trạng thái', type: 'select', default: 'Chính thức', options: [
         {value: 'Chính thức', label: 'Chính thức'},
         {value: 'Cộng tác viên', label: 'Cộng tác viên'},

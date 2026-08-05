@@ -41,8 +41,10 @@ else:
     command.upgrade(cfg, "head")
 PY
 
-echo "Seeding data..."
-python -m app.seed
+# Seed cho môi trường thật: KHÔNG nạp dữ liệu mẫu, KHÔNG ghi đè dữ liệu đã có
+# (phân quyền vai trò, danh mục, NCC...). Bản seed đầy đủ app/seed.py chỉ dùng cho LOCAL.
+echo "Seeding data (prod)..."
+python -m app.seed_prod
 
 echo "Starting API (production, no reload)..."
 exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2

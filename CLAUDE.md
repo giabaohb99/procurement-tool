@@ -23,12 +23,18 @@ docker compose up --build           # start db + api + web + help + adminer
 
 On `api` startup, `backend/start.sh` runs automatically: wait for DB → `alembic upgrade head` → `python -m app.seed` (idempotent) → uvicorn with `--reload`. Code is bind-mounted, so backend and frontend hot-reload without rebuilds.
 
+⚠️ **Hai bản seed.** `app/seed.py` = bản đầy đủ, CÓ dữ liệu mẫu — chỉ dùng cho LOCAL (`start.sh`).
+Prod/dev-UAT (`start.prod.sh`) chạy `app/seed_prod.py`: không nạp dữ liệu mẫu, không tạo tài khoản demo,
+và **không ghi đè** phân quyền/danh mục người dùng đã sửa trên UI — vì seed chạy lại mỗi lần deploy.
+Khi đổi `STD_ROLES`, phân quyền cũ trên DB thật KHÔNG tự đổi theo; muốn áp lại phải đặt
+`SEED_FORCE_SYNC=true` trong `.env`, restart api một lần rồi trả về `false`.
+
 ```bash
 # DB migrations (after editing any app/modules/*/model.py)
 docker compose exec api alembic revision --autogenerate -m "mo_ta"   # then review file in backend/migrations/versions/
 docker compose exec api alembic upgrade head
 
-# Reseed data + roles/permissions
+# Reseed data + roles/permissions (LOCAL — có dữ liệu mẫu)
 docker compose exec api python -m app.seed
 
 # Backend tests (pytest, SQLite in-memory — never touches real DB)

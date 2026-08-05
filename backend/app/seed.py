@@ -1,4 +1,9 @@
-"""Tạo bảng + seed dữ liệu khởi tạo (idempotent). Chạy: python -m app.seed"""
+"""Tạo bảng + seed dữ liệu khởi tạo (idempotent). Chạy: python -m app.seed
+
+NGUYÊN TẮC: seed chạy TỰ ĐỘNG mỗi lần api khởi động (start.prod.sh / start.sh) nên nó chỉ được
+THÊM dữ liệu còn thiếu, TUYỆT ĐỐI không ghi đè dữ liệu người dùng đã sửa (phân quyền vai trò,
+danh mục, NCC...). Mọi khối ghi đè phải đặt sau cờ FORCE_SYNC (biến .env SEED_FORCE_SYNC).
+"""
 import json
 import os
 
@@ -32,6 +37,14 @@ from app.modules.survey.model import (Survey, SurveyProductLine,  # noqa: F401
                                       SurveySupplierLine)
 from app.modules.user.model import User, UserRole
 from app.modules.notification.model import Notification, EmailLog  # noqa: F401
+
+
+# Seed chạy MỖI LẦN api khởi động (start.prod.sh: alembic upgrade -> python -m app.seed -> uvicorn).
+# Vì vậy seed CHỈ ĐƯỢC THÊM dữ liệu còn thiếu; mọi khối GHI ĐÈ dữ liệu đã có (ma trận quyền vai trò
+# chuẩn, scope, hình thức thanh toán NCC) phải nằm sau cờ này, nếu không mỗi lần deploy sẽ xóa sạch
+# phần admin chỉnh tay trên màn "Phân quyền".
+# Bật 1 lần khi cố ý áp lại chuẩn: SEED_FORCE_SYNC=true trong .env -> restart api -> trả về false.
+FORCE_SYNC = bool(getattr(settings, "SEED_FORCE_SYNC", False))
 
 
 SAMPLE_COMPANIES = [
@@ -258,14 +271,23 @@ STD_ROLES = {
 
 
 def seed_standard_roles(db):
-    """Tạo các vai trò chuẩn + ma trận quyền (idempotent). Không tạo user; gán cho nhân sự ở màn Phân quyền."""
+    """Tạo các vai trò chuẩn + ma trận quyền. Không tạo user; gán cho nhân sự ở màn Phân quyền.
+
+    QUAN TRỌNG — seed chạy MỖI LẦN khởi động container (start.prod.sh), nên ma trận quyền chỉ
+    được nạp cho vai trò VỪA ĐƯỢC TẠO. Vai trò đã tồn tại thì GIỮ NGUYÊN quyền trên DB: người
+    quản trị sửa gì ở màn "Phân quyền" thì lần deploy sau vẫn còn.
+    Muốn áp lại đúng theo STD_ROLES: đặt SEED_FORCE_SYNC=true trong .env, restart api, rồi tắt.
+    """
     for code, info in STD_ROLES.items():
         role = db.query(Role).filter(Role.code == code).first()
-        if not role:
+        is_new = role is None
+        if is_new:
             role = Role(code=code, name=info["name"])
             db.add(role)
             db.commit()
             db.refresh(role)
+        if not is_new and not FORCE_SYNC:
+            continue   # vai trò đã có trên DB -> KHÔNG đụng vào quyền đã chỉnh tay
         existing = {p.entity for p in db.query(Permission).filter(Permission.role_id == role.id).all()}
         for entity, (actions, scope) in info["perms"].items():
             if entity in existing:
@@ -278,6 +300,9 @@ def seed_standard_roles(db):
                 can_print="print" in actions, can_export="export" in actions,
             ))
         db.commit()
+
+    if not FORCE_SYNC:
+        return   # phần dưới GHI ĐÈ scope trên DB — chỉ chạy khi cố ý đồng bộ lại
 
     # Ép scope PYC theo mô hình mới: NV thu mua = 'assigned' (chỉ phiếu của mình / được gán,
     # KHÔNG thấy mọi phiếu đã duyệt — khớp tài liệu); Admin thu mua giữ 'proc'.
@@ -298,7 +323,8 @@ def seed_standard_roles(db):
 
 def resync_role_perms(db, code: str, perms: dict):
     """Ghi ĐÈ toàn bộ ma trận quyền của 1 vai trò theo `perms` (xóa cũ → tạo lại).
-    Dùng cho vai trò CẦN cập nhật trên DB đã seed (seed_standard_roles là INSERT-only)."""
+
+    NGUY HIỂM: xóa sạch phân quyền admin đã chỉnh trên UI. CHỈ gọi trong nhánh FORCE_SYNC."""
     role = db.query(Role).filter(Role.code == code).first()
     if not role:
         return
@@ -414,70 +440,87 @@ def assign_default_roles(db):
     return n
 
 
+def ensure_admin_role(db):
+    """Vai trò 'admin' (quản trị hệ thống) + quyền đầy đủ cho MỌI entity.
+
+    CỐ Ý chạy mỗi lần khởi động: đây là vai trò "chìa khóa dự phòng" — không được để phân hệ mới
+    ra đời mà admin hệ thống không vào được. Chỉ THÊM entity còn thiếu, KHÔNG sửa dòng có sẵn."""
+    admin_role = db.query(Role).filter(Role.code == "admin").first()
+    if not admin_role:
+        admin_role = Role(code="admin", name="Quản trị hệ thống")
+        db.add(admin_role)
+        db.commit()
+        db.refresh(admin_role)
+
+    for _ar in db.query(Role).filter(Role.code.in_(["admin", "ADMINISTRATOR"])).all():
+        existing = {p.entity for p in db.query(Permission).filter(Permission.role_id == _ar.id).all()}
+        for entity in ENTITIES:
+            if entity not in existing:
+                db.add(Permission(
+                     role_id=_ar.id, entity=entity, can_read=True, can_create=True,
+                     can_write=True, can_delete=True, can_approve=True, can_cancel=True,
+                     can_print=True, can_export=True, scope="all",
+                ))
+    db.commit()
+    return admin_role
+
+
+def force_resync_roles(db):
+    """GHI ĐÈ phân quyền các vai trò chuẩn về đúng STD_ROLES (chỉ chạy khi SEED_FORCE_SYNC=true).
+
+    Gồm các bản vá dữ liệu một lần cho DB seed từ đời trước; đã áp xong ở local/dev/prod.
+    Mặc định KHÔNG chạy để deploy không xóa phân quyền admin chỉnh tay trên màn "Phân quyền"."""
+    if not FORCE_SYNC:
+        return
+    # Bổ sung can_cancel cho các vai trò quản trị (admin, ADMINISTRATOR) tạo trước khi có action 'cancel'
+    admin_role_ids = [r.id for r in db.query(Role).filter(Role.code.in_(["admin", "ADMINISTRATOR"])).all()]
+    if admin_role_ids:
+        db.query(Permission).filter(Permission.role_id.in_(admin_role_ids), Permission.can_cancel == False).update({"can_cancel": True}, synchronize_session=False)
+    # QL thu mua "Ghi nhận đã chi" (pay) cần quyền write trên payment_request — áp cả DB đã seed trước đây
+    _pm = db.query(Role).filter(Role.code == "pur_manager").first()
+    if _pm:
+        db.query(Permission).filter(
+            Permission.role_id == _pm.id, Permission.entity == "payment_request"
+        ).update({"can_write": True}, synchronize_session=False)
+    db.commit()
+
+    # Sửa phạm vi employee-read cho các vai trò đã seed trước đây (khi còn để "all").
+    # Danh sách nhân sự phải giới hạn theo phòng ban/công ty của người xem.
+    _EMP_READ_SCOPE = {"dept_head": "dept", "company_head": "company",
+                       "pur_staff": "dept"}   # pur_manager giờ full (như admin) — không giới hạn employee
+    for rcode, sc in _EMP_READ_SCOPE.items():
+        r = db.query(Role).filter(Role.code == rcode).first()
+        if r:
+            db.query(Permission).filter(
+                Permission.role_id == r.id, Permission.entity == "employee",
+                Permission.scope == "all",
+            ).update({"scope": sc}, synchronize_session=False)
+    db.commit()
+
+    # Cập nhật lại 2 vai trò thu mua theo phân quyền mới:
+    #  - Quản lý thu mua: toàn quyền nghiệp vụ (như admin, trừ user/role/setting)
+    #  - Admin thu mua: CRUD danh mục, nghiệp vụ chỉ đọc (proc)
+    resync_role_perms(db, "pur_manager", STD_ROLES["pur_manager"]["perms"])
+    resync_role_perms(db, "pur_admin", STD_ROLES["pur_admin"]["perms"])
+
+    # Task 5 (CR-007): gỡ quyền xem NCC (supplier.read) khỏi vai trò nhân viên cơ bản.
+    _basic_role_ids = [r.id for r in db.query(Role).filter(Role.code.in_(["employee", "staff"])).all()]
+    if _basic_role_ids:
+        db.query(Permission).filter(Permission.role_id.in_(_basic_role_ids),
+                                    Permission.entity == "supplier").delete(synchronize_session=False)
+        db.commit()
+    print("SEED_FORCE_SYNC=true: đã ghi đè ma trận quyền các vai trò chuẩn theo app/seed.py.")
+
+
 def run():
     # Schema do Alembic quản lý (start.sh chạy `alembic upgrade head` trước). Seed chỉ nạp DATA.
     db = SessionLocal()
     try:
-        admin_role = db.query(Role).filter(Role.code == "admin").first()
-        if not admin_role:
-            admin_role = Role(code="admin", name="Quản trị hệ thống")
-            db.add(admin_role)
-            db.commit()
-            db.refresh(admin_role)
-
-        # Đảm bảo MỌI vai trò quản trị (admin + ADMINISTRATOR) có quyền đầy đủ cho MỌI entity
-        # (thêm entity mới sẽ tự được cấp cho cả 2 role admin).
-        for _ar in db.query(Role).filter(Role.code.in_(["admin", "ADMINISTRATOR"])).all():
-            existing = {p.entity for p in db.query(Permission).filter(Permission.role_id == _ar.id).all()}
-            for entity in ENTITIES:
-                if entity not in existing:
-                    db.add(Permission(
-                         role_id=_ar.id, entity=entity, can_read=True, can_create=True,
-                         can_write=True, can_delete=True, can_approve=True, can_cancel=True,
-                         can_print=True, can_export=True, scope="all",
-                    ))
-        # Bổ sung can_cancel cho các vai trò quản trị (admin, ADMINISTRATOR) tạo trước khi có action 'cancel'
-        admin_role_ids = [r.id for r in db.query(Role).filter(Role.code.in_(["admin", "ADMINISTRATOR"])).all()]
-        if admin_role_ids:
-            db.query(Permission).filter(Permission.role_id.in_(admin_role_ids), Permission.can_cancel == False).update({"can_cancel": True}, synchronize_session=False)
-        # QL thu mua "Ghi nhận đã chi" (pay) cần quyền write trên payment_request — áp cả DB đã seed trước đây
-        _pm = db.query(Role).filter(Role.code == "pur_manager").first()
-        if _pm:
-            db.query(Permission).filter(
-                Permission.role_id == _pm.id, Permission.entity == "payment_request"
-            ).update({"can_write": True}, synchronize_session=False)
-        db.commit()
-
-        # Sửa phạm vi employee-read cho các vai trò đã seed trước đây (khi còn để "all").
-        # Danh sách nhân sự phải giới hạn theo phòng ban/công ty của người xem.
-        _EMP_READ_SCOPE = {"dept_head": "dept", "company_head": "company",
-                           "pur_staff": "dept"}   # pur_manager giờ full (như admin) — không giới hạn employee
-        for rcode, sc in _EMP_READ_SCOPE.items():
-            r = db.query(Role).filter(Role.code == rcode).first()
-            if r:
-                db.query(Permission).filter(
-                    Permission.role_id == r.id, Permission.entity == "employee",
-                    Permission.scope == "all",
-                ).update({"scope": sc}, synchronize_session=False)
-        db.commit()
+        admin_role = ensure_admin_role(db)
 
         # Vai trò chuẩn (Nhân sự / Trưởng phòng / Quản lý cty / NV thu mua / QL thu mua / Admin thu mua)
         seed_standard_roles(db)
-
-        # Cập nhật lại 2 vai trò thu mua theo phân quyền mới (áp cả DB đã seed trước đây):
-        #  - Quản lý thu mua: toàn quyền nghiệp vụ (như admin, trừ user/role/setting)
-        #  - Admin thu mua: CRUD danh mục, nghiệp vụ chỉ đọc (proc)
-        resync_role_perms(db, "pur_manager", STD_ROLES["pur_manager"]["perms"])
-        resync_role_perms(db, "pur_admin", STD_ROLES["pur_admin"]["perms"])
-
-        # Task 5 (CR-007): gỡ quyền xem NCC (supplier.read) khỏi vai trò nhân viên cơ bản.
-        # seed_standard_roles là INSERT-only nên phải xóa tay trên DB đã seed trước đây.
-        from app.modules.role.model import Role as _Role, Permission as _Perm
-        _basic_role_ids = [r.id for r in db.query(_Role).filter(_Role.code.in_(["employee", "staff"])).all()]
-        if _basic_role_ids:
-            db.query(_Perm).filter(_Perm.role_id.in_(_basic_role_ids),
-                                   _Perm.entity == "supplier").delete(synchronize_session=False)
-            db.commit()
+        force_resync_roles(db)
 
         # Deduplication tracking sets (using upper case for case-insensitivity)
         seen_companies = {c[0].upper() for c in db.query(Company.code).all()}
@@ -488,38 +531,41 @@ def run():
         seen_item_groups = {g[0].upper() for g in db.query(ItemGroup.name).all()}
         seen_brands = {b[0].upper() for b in db.query(Brand.code).all()}
 
-        for code, name, mst in SAMPLE_COMPANIES:
-            if code.upper() not in seen_companies:
-                db.add(Company(code=code, name=name, tax_code=mst, is_active=True))
-                seen_companies.add(code.upper())
+        # Danh mục mẫu + master data JSON CHỈ nạp khi bảng còn RỖNG (cài mới / DB test).
+        # DB đang chạy thì bỏ qua: nếu không, mỗi lần deploy sẽ dựng lại đúng những bản ghi
+        # mà người dùng đã XÓA trên màn danh mục.
+        for code, name, mst in (SAMPLE_COMPANIES if not seen_companies else []):
+            db.add(Company(code=code, name=name, tax_code=mst, is_active=True))
+            seen_companies.add(code.upper())
         db.commit()
-        company = db.query(Company).filter(Company.code == "DEGO").first()
+        company = (db.query(Company).filter(Company.code == "DEGO").first()
+                   or db.query(Company).order_by(Company.id).first())
 
-        for code, name, mst, stype, terms, vat in SAMPLE_SUPPLIERS:
-            if code.upper() not in seen_suppliers:
-                db.add(Supplier(code=code, name=name, tax_code=mst, supplier_type=stype,
-                                payment_terms=terms, vat=vat, is_active=True))
-                seen_suppliers.add(code.upper())
-        for code, name, group, unit in SAMPLE_PRODUCTS:
-            if code.upper() not in seen_products:
-                db.add(Product(code=code, name=name, item_group=group, unit=unit, is_active=True))
-                seen_products.add(code.upper())
+        for code, name, mst, stype, terms, vat in (SAMPLE_SUPPLIERS if not seen_suppliers else []):
+            db.add(Supplier(code=code, name=name, tax_code=mst, supplier_type=stype,
+                            payment_terms=terms, vat=vat, is_active=True))
+            seen_suppliers.add(code.upper())
+        for code, name, group, unit in (SAMPLE_PRODUCTS if not seen_products else []):
+            db.add(Product(code=code, name=name, item_group=group, unit=unit, is_active=True))
+            seen_products.add(code.upper())
         db.commit()
 
-        # Đồng bộ master data thật từ JSON (sinh từ doc/datamau)
+        # Master data thật từ JSON (sinh từ doc/datamau) — cũng chỉ nạp cho bảng còn rỗng.
         seed_dir = os.path.join(os.path.dirname(__file__), "seed_data")
 
-        def _load(n):
+        def _load(n, skip=False):
+            if skip:
+                return []
             p = os.path.join(seed_dir, n)
             return json.load(open(p, encoding="utf-8")) if os.path.exists(p) else []
 
-        for c in _load("companies.json"):
+        for c in _load("companies.json", skip=bool(seen_companies)):
             code = (c.get("code") or "")[:25]
             if code and code.upper() not in seen_companies:
                 db.add(Company(code=code, name=c.get("name", ""), address=c.get("address", ""),
                                tax_code=c.get("tax_code", ""), is_active=True))
                 seen_companies.add(code.upper())
-        for s in _load("suppliers.json"):
+        for s in _load("suppliers.json", skip=bool(seen_suppliers)):
             code = (s.get("code") or "")[:25]
             if code and code.upper() not in seen_suppliers:
                 db.add(Supplier(code=code, name=s.get("name", ""), address=s.get("address", ""),
@@ -529,19 +575,19 @@ def run():
         db.commit()
 
         # Danh mục: kho, ĐVT, phân loại, thương hiệu
-        for w in _load("warehouses.json"):
+        for w in _load("warehouses.json", skip=bool(seen_warehouses)):
             code = (w.get("code") or "")[:25]
             if code and code.upper() not in seen_warehouses:
                 db.add(Warehouse(code=code, name=w.get("name", ""), address=w.get("address", ""), is_active=True))
                 seen_warehouses.add(code.upper())
-        for u in _load("units.json"):
+        for u in _load("units.json", skip=bool(seen_units)):
             nm = (u.get("name") or "").strip()
             code = nm[:25]
             if code and code.upper() not in seen_units:
                 db.add(Unit(code=code, name=nm[:100], is_active=True))
                 seen_units.add(code.upper())
         ig_seq = db.query(ItemGroup).count()
-        for g in _load("item_groups.json"):
+        for g in _load("item_groups.json", skip=bool(seen_item_groups)):
             nm = (g.get("name") or "").strip()
             if nm and nm[:100].upper() not in seen_item_groups:
                 ig_seq += 1
@@ -550,7 +596,7 @@ def run():
                                  std_days_unavail=str(g.get("std_days_unavail", "")),
                                  note=g.get("note", ""), apply_date=g.get("apply_date", ""), is_active=True))
                 seen_item_groups.add(nm[:100].upper())
-        for b in _load("brands.json"):
+        for b in _load("brands.json", skip=bool(seen_brands)):
             code = (b.get("code") or "")[:25]
             if code and code.upper() not in seen_brands:
                 db.add(Brand(code=code, department=b.get("department", ""), is_active=True))
@@ -615,10 +661,15 @@ def run():
         # vào 'Nhân sự' rồi xóa. CHẠY SAU seed_demo_accounts để dọn cả role demo vừa tạo.
         cleanup_legacy_staff_role(db)
 
-        # Cập nhật hình thức thanh toán "Công nợ 30 ngày" cho toàn bộ nhà cung cấp hiện có
-        n_updated = db.query(Supplier).update({"payment_terms": "Công nợ 30 ngày"}, synchronize_session=False)
+        # Hình thức thanh toán mặc định "Công nợ 30 ngày": CHỈ điền cho NCC đang BỎ TRỐNG.
+        # (Trước đây ghi đè TOÀN BỘ NCC mỗi lần khởi động -> xóa sạch điều khoản riêng của từng NCC.)
+        _q = db.query(Supplier).filter((Supplier.payment_terms == None) | (Supplier.payment_terms == ""))  # noqa: E711
+        if FORCE_SYNC:
+            _q = db.query(Supplier)   # cố ý áp lại cho toàn bộ NCC
+        n_updated = _q.update({"payment_terms": "Công nợ 30 ngày"}, synchronize_session=False)
         db.commit()
-        print(f"Đã cập nhật hình thức thanh toán 'Công nợ 30 ngày' cho {n_updated} nhà cung cấp.")
+        if n_updated:
+            print(f"Đã điền hình thức thanh toán 'Công nợ 30 ngày' cho {n_updated} nhà cung cấp.")
 
         print(f"Seed done. Admin login: {settings.ADMIN_CODE} / (mật khẩu trong .env)")
     finally:

@@ -39,7 +39,9 @@ def update_role(db: Session, rid: int, data: RoleUpdate, user_id: int) -> Role:
 
 def delete_role(db: Session, rid: int, user_id: int) -> None:
     obj = get_role(db, rid)
-    if obj.code in ["ADMIN", "ADMINISTRATOR"]:
+    # So sánh KHÔNG phân biệt hoa/thường: vai trò chuẩn trên DB có code là 'admin' (chữ thường),
+    # danh sách chặn trước đây viết hoa nên không khớp -> vẫn xóa được vai trò quản trị hệ thống.
+    if (obj.code or "").strip().upper() in ("ADMIN", "ADMINISTRATOR"):
         raise HTTPException(400, "Không được xóa vai trò mặc định của hệ thống")
     db.query(Permission).filter(Permission.role_id == rid).delete()
     db.delete(obj)
