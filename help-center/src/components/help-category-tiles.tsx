@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 
 import HelpArticleIcon from '@/components/help-article-icon'
+import { useArticlePath } from '@/lib/help-slug'
 import type { HelpNode } from '@/lib/help-tree'
 
 // Thẻ danh mục: icon vuông 48px nền teal nhạt bên trái, tiêu đề + mô tả ngắn bên phải.
@@ -10,6 +11,8 @@ import type { HelpNode } from '@/lib/help-tree'
 // KHÔNG chèn câu đếm số bài con thay thế (đó là chữ độn, không mang thông tin cho người đọc).
 
 export default function HelpCategoryTiles({ nodes }: { nodes: HelpNode[] }) {
+  const pathOf = useArticlePath()
+
   if (nodes.length === 0) return null
 
   return (
@@ -17,7 +20,7 @@ export default function HelpCategoryTiles({ nodes }: { nodes: HelpNode[] }) {
       {nodes.map((node, index) => (
         <Link
           key={node.id}
-          to={`/${node.id}`}
+          to={pathOf(node.id)}
           className="flex h-full items-start gap-4 rounded-xl bg-card p-6 shadow-[0_4px_12px_rgba(0,0,0,0.03)] transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(0,0,0,0.07)]"
         >
           <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/8 text-primary">

@@ -5,11 +5,14 @@ import {
   Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList,
   BreadcrumbPage, BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import { useArticlePath } from '@/lib/help-slug'
 import type { HelpCrumb } from '@/lib/help-tree'
 
 // Breadcrumb "Trang chủ > Danh mục > Bài viết" cho khu người dùng.
 
 export default function HelpBreadcrumb({ crumbs }: { crumbs: HelpCrumb[] | null }) {
+  const pathOf = useArticlePath()
+
   return (
     <Breadcrumb>
       <BreadcrumbList className="sm:gap-2">
@@ -27,7 +30,7 @@ export default function HelpBreadcrumb({ crumbs }: { crumbs: HelpCrumb[] | null 
                 <BreadcrumbPage className="truncate font-medium text-navy">{c.title}</BreadcrumbPage>
               ) : (
                 <BreadcrumbLink asChild className="truncate">
-                  <Link to={`/${c.id}`}>{c.title}</Link>
+                  <Link to={pathOf(c.id)}>{c.title}</Link>
                 </BreadcrumbLink>
               )}
             </BreadcrumbItem>

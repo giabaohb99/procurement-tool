@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 
+import { useArticlePath } from '@/lib/help-slug'
 import type { HelpNode } from '@/lib/help-tree'
 
 // Cụm nút "Bài trước / Bài tiếp theo" ở cuối bài viết — để đọc tài liệu xuyên suốt như lật trang sách.
@@ -26,9 +27,10 @@ export default function HelpArticleNav({
 
 function NavCard({ node, dir }: { node: HelpNode; dir: 'prev' | 'next' }) {
   const isNext = dir === 'next'
+  const pathOf = useArticlePath()
   return (
     <Link
-      to={`/${node.id}`}
+      to={pathOf(node.id)}
       className={`group flex flex-col gap-1 rounded-lg border px-4 py-3 transition-colors hover:border-primary hover:bg-muted/50 ${
         isNext ? 'sm:items-end sm:text-right' : ''
       }`}

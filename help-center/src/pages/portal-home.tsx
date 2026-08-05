@@ -5,8 +5,9 @@ import { BookOpen, ChevronRight, Images, MessageCircleQuestion, Search } from 'l
 import { api } from '@/api/client'
 import HelpCategoryTiles from '@/components/help-category-tiles'
 import HelpSearchBox from '@/components/help-search-box'
-import type { PortalOutletContext } from '@/layouts/portal-layout'
-import type { HelpNode } from '@/lib/help-tree'
+import { HERO_SEARCH_ID, type PortalOutletContext } from '@/layouts/portal-layout'
+import { useArticlePath } from '@/lib/help-slug'
+import { firstLeaves } from '@/lib/help-tree'
 import { excerptFromHtml } from '@/lib/utils'
 
 // Trang chủ khu người dùng — đồng bộ tông với Trung tâm trợ giúp của hệ Văn thư:
@@ -22,16 +23,6 @@ const QUICK_SKINS = [
   { gradient: 'linear-gradient(135deg, #fae6ff 0%, #efc2ff 100%)', image: '/hc_admin.png' },
 ]
 
-/** Duyệt cây theo chiều sâu, lấy các bài viết lá đầu tiên làm lối tắt "bắt đầu ngay". */
-function firstLeaves(nodes: HelpNode[], limit: number, acc: HelpNode[] = []): HelpNode[] {
-  for (const node of nodes) {
-    if (acc.length >= limit) break
-    if (node.children?.length) firstLeaves(node.children, limit, acc)
-    else acc.push(node)
-  }
-  return acc
-}
-
 const TIPS = [
   { Icon: Search, title: 'Tìm kiếm nhanh', desc: 'Gõ từ khóa để tra theo tiêu đề hoặc nội dung bài viết.' },
   { Icon: BookOpen, title: 'Duyệt theo danh mục', desc: 'Mở một nhóm nghiệp vụ để xem toàn bộ bài viết bên trong.' },
@@ -40,6 +31,7 @@ const TIPS = [
 
 export default function PortalHome() {
   const { tree } = useOutletContext<PortalOutletContext>()
+  const pathOf = useArticlePath()
   const quick = firstLeaves(tree, QUICK_COUNT)
 
   // Bài nào chưa có mô tả ngắn thì lấy tạm trích đoạn đầu nội dung để tile không trống.
@@ -69,11 +61,14 @@ export default function PortalHome() {
           <h1 className="mb-10 text-[2rem] font-bold leading-tight tracking-[-0.02em] text-ink md:text-[3rem]">
             Chúng tôi có thể giúp gì cho bạn?
           </h1>
-          <HelpSearchBox
-            size="lg"
-            className="mx-auto max-w-[41.25rem]"
-            placeholder="Tìm kiếm tài liệu, hướng dẫn..."
-          />
+          {/* id để header biết ô này đã cuộn khuất chưa mà tự hiện ô tìm kiếm nhỏ */}
+          <div id={HERO_SEARCH_ID}>
+            <HelpSearchBox
+              size="lg"
+              className="mx-auto max-w-[41.25rem]"
+              placeholder="Tìm kiếm tài liệu, hướng dẫn..."
+            />
+          </div>
         </div>
       </section>
 
@@ -87,7 +82,7 @@ export default function PortalHome() {
                 return (
                   <Link
                     key={node.id}
-                    to={`/${node.id}`}
+                    to={pathOf(node.id)}
                     style={{ background: skin.gradient }}
                     className="relative block h-60 overflow-hidden rounded-2xl transition-all hover:-translate-y-0.5 hover:shadow-lg"
                   >

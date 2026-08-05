@@ -35,11 +35,11 @@ export default function App() {
         <Route path=":id" element={<AdminArticle />} />
       </Route>
 
-      {/* Khu NGƯỜI DÙNG — CÔNG KHAI, chỉ đọc. /:id tự phân nhánh danh mục / bài viết (xem portal-node) */}
+      {/* Khu NGƯỜI DÙNG — CÔNG KHAI, chỉ đọc. /:slug tự phân nhánh danh mục / bài viết (xem portal-node) */}
       <Route path="/" element={<PortalLayout />}>
         <Route index element={<PortalHome />} />
         <Route path="cau-hoi-thuong-gap" element={<PortalFaq />} />
-        <Route path=":id" element={<PortalNode />} />
+        <Route path=":slug" element={<PortalNode />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

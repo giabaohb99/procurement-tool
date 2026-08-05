@@ -1,21 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useOutletContext, useParams } from 'react-router-dom'
-import { ArrowLeft, FileText, FileX2 } from 'lucide-react'
+import { useOutletContext } from 'react-router-dom'
+import { FileX2 } from 'lucide-react'
 
 import { api } from '@/api/client'
 import HelpArticleNav from '@/components/help-article-nav'
 import HelpArticleToc from '@/components/help-article-toc'
 import { HelpSlideGallery, type HelpSlide } from '@/components/help-article-slides'
-import HelpTopBar from '@/components/help-topbar'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import HelpBreadcrumb from '@/components/help-breadcrumb'
+import HelpSectionNav from '@/components/help-section-nav'
+import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useHeadingToc } from '@/hooks/use-heading-toc'
 import type { PortalOutletContext } from '@/layouts/portal-layout'
-import { findParent, findPath, findReadingNeighbors } from '@/lib/help-tree'
+import { findPath, findReadingNeighbors } from '@/lib/help-tree'
 
-// Trang CHI TIẾT bài viết — nội dung bên trái, cột phải là mục lục (sticky) + bài liên quan.
-
-const MAX_RELATED = 6
+// Trang CHI TIẾT bài viết — bố cục 3 cột như khu quản trị:
+// sidebar cây tài liệu (trái) · nội dung (giữa) · mục lục bài viết (phải).
+// Cả hai cột hai bên đều sticky và tự cuộn riêng; ẩn dần ở màn hẹp (trái < lg, phải < xl).
 
 interface PortalArticleData {
   id: number
@@ -25,8 +26,7 @@ interface PortalArticleData {
   slides: HelpSlide[]
 }
 
-export default function PortalArticle() {
-  const { id } = useParams()
+export default function PortalArticle({ nodeId }: { nodeId: number | null }) {
   const { tree } = useOutletContext<PortalOutletContext>()
 
   const [article, setArticle] = useState<PortalArticleData | null>(null)
@@ -35,32 +35,39 @@ export default function PortalArticle() {
   const contentRef = useRef<HTMLDivElement>(null)
   const { items: toc, activeId } = useHeadingToc(contentRef, [article], !!article)
 
-  const nodeId = id ? parseInt(id, 10) : null
   const crumbs = nodeId ? findPath(tree, nodeId) : null
-  const parent = nodeId ? findParent(tree, nodeId) : null
-  const related = (parent?.children || []).filter((c) => c.id !== nodeId).slice(0, MAX_RELATED)
   const { prev, next } = nodeId
     ? findReadingNeighbors(tree, nodeId)
     : { prev: null, next: null }
 
   useEffect(() => {
-    if (!id) return
     let cancelled = false
     setArticle(null)
     setNotFound(false)
-    api.get(`/api/v1/help-center/${id}`)
+    // Slug không tra ra bài nào -> báo không tìm thấy luôn, khỏi gọi API
+    if (!nodeId) { setNotFound(true); return }
+    api.get(`/api/v1/help-center/${nodeId}`)
       .then((res) => { if (!cancelled) setArticle(res.data.data) })
       .catch(() => { if (!cancelled) setNotFound(true) })
     window.scrollTo({ top: 0 })
     return () => { cancelled = true }
-  }, [id])
+  }, [nodeId])
 
   return (
-    <>
-      <HelpTopBar crumbs={crumbs} />
+    <div className="border-t">
+      {/* px-6/md:px-8 = ĐÚNG lề của header, để sidebar thẳng hàng với logo và mục lục
+          thẳng hàng với cụm tài khoản. Chiều rộng dễ đọc do cột giữa tự giới hạn. */}
+      <div className="flex w-full items-start gap-8 px-6 md:px-8">
+        {/* Cột trái: cây tài liệu của mục đang đọc */}
+        <aside className="sticky top-[4.25rem] hidden max-h-[calc(100vh-4.25rem)] w-64 shrink-0 overflow-y-auto border-r py-8 pr-4 lg:block">
+          <HelpSectionNav tree={tree} activeId={nodeId} />
+        </aside>
 
-      <div className="mx-auto flex max-w-7xl flex-col items-start gap-10 px-6 pb-16 pt-8 lg:flex-row">
-        <main className="min-w-0 flex-1">
+        <main className="min-w-0 max-w-3xl flex-1 pb-16 pt-8">
+          <div className="mb-5">
+            <HelpBreadcrumb crumbs={crumbs} />
+          </div>
+
           {notFound ? (
             <Card className="items-center gap-1.5 border-dashed py-12 text-center">
               <FileX2 className="mb-1.5 size-9 text-muted-foreground" />
@@ -96,38 +103,12 @@ export default function PortalArticle() {
           )}
         </main>
 
-        <aside className="w-full shrink-0 space-y-4 lg:sticky lg:top-24 lg:w-[19rem]">
+        {/* Cột phải: mục lục bài viết. Danh sách bài cùng nhóm đã có ở sidebar trái nên
+            không lặp lại box "Bài viết liên quan" nữa. */}
+        <aside className="sticky top-[4.25rem] ml-auto hidden max-h-[calc(100vh-4.25rem)] w-64 shrink-0 overflow-y-auto py-8 xl:block">
           <HelpArticleToc items={toc} activeId={activeId} />
-
-          {related.length > 0 && (
-            <Card className="gap-3 border bg-muted/50 py-4">
-              <CardHeader className="px-5">
-                <CardTitle className="text-[15px] font-bold text-navy">Bài viết liên quan</CardTitle>
-              </CardHeader>
-              <CardContent className="px-5">
-                <ul className="space-y-1">
-                  {related.map((r) => (
-                    <li key={r.id}>
-                      <Link to={`/${r.id}`}
-                            className="flex items-start gap-2 py-1.5 text-sm leading-snug text-slate-600 transition-colors hover:text-primary">
-                        <FileText className="mt-0.5 size-4 shrink-0 text-primary" />
-                        {r.title}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
-
-          {parent && (
-            <Link to={`/${parent.id}`}
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
-              <ArrowLeft className="size-4" /> Về "{parent.title}"
-            </Link>
-          )}
         </aside>
       </div>
-    </>
+    </div>
   )
 }

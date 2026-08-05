@@ -113,12 +113,104 @@ Trang danh mục / bài viết tham khảo bố cục help center của MISA (`h
 | Tầng | Đường dẫn | Nội dung |
 |---|---|---|
 | **Trang chủ** | `/` | Hero nền sáng (gradient `#f0f4ff → #fff`) + tiêu đề lớn canh giữa + ô tìm kiếm bo tròn · 3 tile "Bắt đầu ngay" nền gradient kèm ảnh minh họa · lưới thẻ "Các Phân hệ" · câu hỏi thường gặp · mẹo tra cứu |
-| **Danh mục** | `/:id` khi node **có bài con** | Thanh breadcrumb nền xám + ô tìm kiếm · 2 cột: danh sách bài viết (tiêu đề + trích đoạn) · box "Bài viết trong mục" / "Nhóm nghiệp vụ khác" |
-| **Bài viết** | `/:id` khi node **không có con** | Thanh breadcrumb + tìm kiếm · 2 cột: nội dung · box "Nội dung" (mục lục sticky, mục đang đọc tô nền primary) + "Bài viết liên quan" |
+| **Danh mục** | `/:id` khi node **có bài con** | Cùng khung với trang bài viết, bỏ cột mục lục: sidebar trái + (breadcrumb · tiêu đề · nội dung mở đầu · **danh sách bài viết dạng thẻ**) |
+| **Bài viết** | `/:id` khi node **không có con** | Breadcrumb + **3 cột** (xem dưới) |
 
-`/:id` tự phân nhánh giữa 2 loại trang trong `pages/portal-node.tsx` dựa vào cây tài liệu.
-Header: logo + gạch dọc + **"Trung tâm trợ giúp"** (18px, in đậm) bên trái; bên phải là
-Câu hỏi thường gặp + nút Quản trị (nếu có quyền) + menu tài khoản.
+`/:slug` tự phân nhánh giữa 2 loại trang trong `pages/portal-node.tsx` dựa vào cây tài liệu.
+
+#### Đường dẫn dạng slug (`lib/help-slug.tsx`)
+
+Khu người dùng đi bằng **slug sinh từ tiêu đề** — `/bao-cao-mua-hang` thay vì `/7`. Slug tính ngay
+trên client (cây tài liệu vốn đã tải sẵn ở `PortalLayout`) nên **không cần thêm cột ở DB**;
+`SlugIndexProvider` bọc ngoài khu người dùng, mọi chỗ render `<Link>` lấy đường dẫn qua
+`useArticlePath()`.
+
+- Trùng slug (hai bài cùng tiêu đề) hoặc đụng đường dẫn cố định (`login` · `admin` ·
+  `cau-hoi-thuong-gap`) thì gắn thêm id: `bao-cao-mua-hang-7`.
+- Link cũ dạng số vẫn vào đúng bài và **tự đổi sang slug** trên thanh địa chỉ (`Navigate replace`),
+  nên nút "Xem trang người dùng" bên khu quản trị (`/{id}`) không cần sửa.
+- Khu quản trị vẫn đi theo id (`/admin/:id`) — id ổn định, không đổi khi sửa tiêu đề.
+- Đánh đổi: **đổi tiêu đề là đổi đường dẫn**, link cũ gãy. Chấp nhận được vì đây là tài liệu nội bộ,
+  người dùng vào bằng menu/tìm kiếm. Muốn đường dẫn cố định thì phải thêm cột `slug` ở backend.
+
+Các trang trong **không còn dải breadcrumb + tìm kiếm nền xám** ở đầu trang (component
+`help-topbar` đã xóa): breadcrumb nằm ngay trên tiêu đề trong cột nội dung, ô tìm kiếm dời hẳn
+lên header. Khung trang danh mục / bài viết chạy hết chiều ngang với đúng lề của header
+(`px-6 md:px-8`, KHÔNG `max-w` + canh giữa) để sidebar thẳng hàng với logo và mục lục thẳng hàng
+với cụm tài khoản; chiều rộng dễ đọc do cột giữa tự giới hạn `max-w-3xl`.
+
+#### Trang bài viết — bố cục 3 cột
+
+Bố cục giống khu quản trị (sidebar + nội dung), tham khảo help center của Lark:
+
+| Cột | Thành phần | Ẩn khi |
+|---|---|---|
+| Trái (`w-64`) | `help-section-nav` — cây tài liệu của **mục gốc đang đọc** | `< lg` |
+| Giữa | tiêu đề · nội dung · ảnh từng bước · bài trước/tiếp theo | — |
+| Phải (`w-64`) | `help-article-toc` — "Trong bài viết này" | `< xl` |
+
+Hai cột hai bên `sticky top-[4.25rem]` (bằng chiều cao header) và tự cuộn riêng khi dài.
+
+- **Sidebar trái** (`help-section-nav`, dùng chung cho cả trang danh mục): luôn bám theo **mục gốc**
+  của trang đang mở và liệt kê **trọn** các bài bên trong nó, nên đi lại trong cùng một cụm thì
+  sidebar không đổi. Bài đang đọc tô nền `accent` + chữ primary, nhánh chứa nó **tự bung**; mũi tên
+  bên trái để đóng/mở thư mục. Mục gốc là **bài đơn** (không có bài con) thì sidebar chỉ hiện đúng
+  bài đó — KHÔNG đôn các mục gốc khác vào cho đầy, vì như vậy bấm sang cụm khác sidebar sẽ đổi
+  hoàn toàn, người đọc mất phương hướng.
+- **Mục lục phải**: một đường kẻ dọc chạy dọc danh sách, mục đang đọc tô primary + vạch đậm
+  (bỏ kiểu khung/nền thẻ cũ).
+- Box "Bài viết liên quan" / "Bài viết trong mục" / "Nhóm nghiệp vụ khác" và link "Về mục cha" đã
+  **bỏ** — sidebar trái đã liệt kê đúng các bài cùng cụm, giữ lại là lặp nội dung.
+
+Ở **trang danh mục**, danh sách bài con để dạng **thẻ bấm được** (icon + tiêu đề + trích đoạn cắt
+2 dòng) dưới nhãn "BÀI VIẾT TRONG MỤC", tách hẳn khỏi phần văn bản mở đầu; nội dung mở đầu dùng
+thêm class `hc-content--intro` để hạ cỡ `h1/h2` xuống dưới tiêu đề mục. Trước đây cả hai đều là
+chữ đậm + gạch ngang cỡ gần bằng nhau nên không phân biệt được đâu là nội dung, đâu là link
+sang bài khác.
+Header: logo + gạch dọc + **"Trung tâm trợ giúp"** (18px, in đậm) bên trái; kế đó là **thanh nav
+chính**; bên phải là Câu hỏi thường gặp + nút Quản trị (nếu có quyền) + menu tài khoản.
+
+#### Thanh nav chính (`components/help-main-nav.tsx`)
+
+Nhãn nav là **nhóm ngắn gọn** khai báo trong hằng `NAV_GROUPS`, các **mục gốc** nằm trong menu
+xổ xuống. KHÔNG lấy tiêu đề mục gốc làm nhãn nav — tiêu đề kiểu "2. Dành cho Phòng ban (Người
+Yêu Cầu)" đưa ngang lên header sẽ bị cắt cụt, đọc không ra.
+
+| Nhóm | Mục gốc thuộc nhóm | Menu xổ xuống hiện gì |
+|---|---|---|
+| Bắt đầu | `Bắt đầu` · `1.` … | **3 lối tắt của khối "Bắt đầu ngay"** ở trang chủ (`quickStart: true`) |
+| Sử dụng | `2.` · `3.` · `4.` … | các mục gốc của nhóm |
+| Tài nguyên khác | `5.` · `6.` … | các mục gốc + link tĩnh **Câu hỏi thường gặp** |
+
+Nhóm "Bắt đầu" và tile "Bắt đầu ngay" dùng chung `firstLeaves()` (`lib/help-tree.ts`) nên luôn
+trỏ tới đúng một bộ bài — sửa cây tài liệu là cả hai đổi theo.
+
+- Menu mở khi **rê chuột** (bấm vẫn mở được), đóng trễ `CLOSE_DELAY = 150ms` để chuột kịp đi từ
+  nhãn xuống menu — Radix DropdownMenu vốn chỉ mở bằng click nên `open` được điều khiển tay.
+  Hai điều kiện bắt buộc để hover không bị giật:
+  - **`modal={false}`** — ở chế độ modal (mặc định), Radix đặt `pointer-events: none` lên `<body>`
+    khi menu mở, nút nav mất hover ngay → `mouseleave` → menu đóng → body được trả lại →
+    chuột vẫn nằm trên nút → `mouseenter` → mở lại… lặp vô hạn, menu nhấp nháy ~3 lần/giây.
+  - **`openLabel` giữ ở cấp thanh nav**, không phải trong từng mục — nếu mỗi mục tự giữ state,
+    rê ngang sang nhóm khác sẽ có ~150ms hai menu cùng mở, chồng lên nhau.
+- Gom theo **tiền tố tiêu đề** (`prefixes`), không theo id — để local và prod dùng chung cấu hình.
+- Mục gốc không khớp nhóm nào **rơi vào nhóm cuối**, nên thêm mục gốc mới ở `/admin` vẫn lên nav;
+  muốn xếp đúng nhóm thì bổ sung tiền tố vào `NAV_GROUPS`.
+- Nav **không** đánh dấu mục đang đọc: breadcrumb + sidebar trái đã chỉ rõ đang ở đâu, nav chỉ để
+  nhảy nhanh sang nhóm khác.
+- Menu rộng rãi hơn mặc định shadcn (`w-72`, item `px-4 py-2.5`, chữ 15px, cho **xuống dòng**
+  thay vì cắt cụt) để khớp mẫu của hệ Văn thư.
+- Ẩn dưới breakpoint `xl`; ở màn nhỏ người dùng dùng lưới thẻ "Các Phân hệ" ở trang chủ.
+
+#### Ô tìm kiếm trên header
+
+Đây là ô tìm kiếm **duy nhất** của khu người dùng, luôn hiện (từ `md`) — trừ khi đang ở **đầu
+trang chủ**, vì lúc đó ô lớn giữa hero đang hiển thị. `portal-layout` dùng `IntersectionObserver`
+theo dõi `#hc-hero-search` (hằng `HERO_SEARCH_ID`) với `rootMargin` bằng chiều cao header, nên ô
+trên header xuất hiện đúng lúc ô lớn chui xuống dưới header. Trang không có ô lớn thì hiện luôn.
+
+Ô này `flex-1 max-w-64 min-w-32` (co giãn theo chỗ trống) nên khi header chật nó tự hẹp lại thay
+vì đẩy tràn. Thanh nav chỉ hiện từ `xl` cũng vì lý do này.
 
 #### Token giao diện trang chủ
 
@@ -141,6 +233,8 @@ khoảng cách giữa các mục `80px`. Ảnh minh họa 3 tile ở `public/hc_
 src/
 ├─ components/ui/          # component shadcn (npx shadcn@latest add ...)
 ├─ components/             # component nghiệp vụ: help-search-box · help-breadcrumb ·
+│                          # help-main-nav (nav chính ở header: NAV_GROUPS + mục gốc) ·
+│                          # help-section-nav (sidebar cây tài liệu ở trang bài viết) ·
 │                          # help-topbar · help-category-tiles · help-article-toc ·
 │                          # help-article-slides · help-audit-timeline · help-tree-nav ·
 │                          # help-article-tree-table + help-article-tree-row (bảng cây + kéo-thả) ·
@@ -152,6 +246,7 @@ src/
 ├─ pages/                  # login · portal-home · portal-node · portal-category ·
 │                          # portal-article · admin-home · admin-article
 ├─ hooks/use-heading-toc.ts   # sinh mục lục + theo dõi heading đang đọc
+├─ lib/help-slug.tsx       # slug từ tiêu đề + tra ngược slug -> id (đường dẫn khu người dùng)
 ├─ lib/help-tree.ts        # dựng cây · breadcrumb · tìm node/cha
 ├─ lib/help-tree-dnd.ts    # logic thuần cho kéo-thả: vị trí thả + kiểm tra hợp lệ
 ├─ lib/help-icons.ts       # bộ icon dựng sẵn (slug -> component) + isImageIcon

@@ -4,6 +4,7 @@ import { FileText, Loader2, Search } from 'lucide-react'
 
 import { api } from '@/api/client'
 import { Input } from '@/components/ui/input'
+import { useArticlePath } from '@/lib/help-slug'
 import { cn } from '@/lib/utils'
 
 // Ô tìm kiếm tài liệu — debounce 300ms. Backend tìm theo CẢ tiêu đề lẫn nội dung
@@ -55,6 +56,8 @@ export default function HelpSearchBox({
   const [searching, setSearching] = useState(false)
   const [open, setOpen] = useState(false)
   const boxRef = useRef<HTMLDivElement>(null)
+  // basePath rỗng = khu người dùng -> đường dẫn dạng slug; có basePath (/admin) -> vẫn theo id
+  const pathOf = useArticlePath()
 
   useEffect(() => {
     const kw = query.trim()
@@ -124,7 +127,7 @@ export default function HelpSearchBox({
             results.map((hit) => (
               <Link
                 key={hit.id}
-                to={`${basePath}/${hit.id}`}
+                to={basePath ? `${basePath}/${hit.id}` : pathOf(hit.id)}
                 onClick={() => { setOpen(false); setQuery('') }}
                 className="flex gap-3 rounded-sm px-3 py-2.5 transition-colors hover:bg-secondary"
               >

@@ -41,6 +41,18 @@
   font-weight: 600;
 }
 
+/* Nội dung mở đầu ở trang danh mục: heading trong bài phải NHỎ hơn tiêu đề mục, nếu không
+   trang sẽ có 2 tiêu đề to ngang nhau kèm 2 đường kẻ, nhìn không biết cái nào là tiêu đề trang. */
+.hc-content--intro h1 {
+  font-size: 19px;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.hc-content--intro h2 {
+  font-size: 17px;
+}
+
 .hc-content p {
   margin: 0 0 10px;
 }

@@ -80,6 +80,17 @@ export function articleHeight(node: HelpNode): number {
   return children.length === 0 ? 0 : 1 + Math.max(...children.map(articleHeight))
 }
 
+/** Duyệt cây theo chiều sâu, lấy `limit` bài viết lá đầu tiên — dùng cho các lối tắt
+ *  "Bắt đầu ngay" (tile ở trang chủ và menu "Bắt đầu" trên thanh nav). */
+export function firstLeaves(nodes: HelpNode[], limit: number, acc: HelpNode[] = []): HelpNode[] {
+  for (const node of nodes) {
+    if (acc.length >= limit) break
+    if (node.children?.length) firstLeaves(node.children, limit, acc)
+    else acc.push(node)
+  }
+  return acc
+}
+
 /** Duỗi cây thành danh sách phẳng kèm độ sâu — dùng cho ô chọn thư mục cha. */
 export function flattenTree(nodes: HelpNode[], depth = 0): { node: HelpNode; depth: number }[] {
   return nodes.flatMap((node) => [

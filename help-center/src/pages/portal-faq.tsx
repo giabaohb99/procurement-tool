@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { MessageCircleQuestion, Search } from 'lucide-react'
 
-import HelpTopBar from '@/components/help-topbar'
+import HelpBreadcrumb from '@/components/help-breadcrumb'
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from '@/components/ui/accordion'
@@ -35,10 +35,12 @@ export default function PortalFaq() {
   )
 
   return (
-    <>
-      <HelpTopBar crumbs={[{ id: 0, title: 'Câu hỏi thường gặp' }]} />
+    <div className="border-t">
+      <div className="mx-auto max-w-3xl px-6 pb-16 pt-8 md:px-8">
+        <div className="mb-5">
+          <HelpBreadcrumb crumbs={[{ id: 0, title: 'Câu hỏi thường gặp' }]} />
+        </div>
 
-      <div className="mx-auto max-w-3xl px-6 pb-16 pt-8">
         <h1 className="mb-2.5 border-b pb-4 text-[1.8rem] font-bold leading-tight text-navy">
           Câu hỏi thường gặp
         </h1>
@@ -92,6 +94,6 @@ export default function PortalFaq() {
           </>
         )}
       </div>
-    </>
+    </div>
   )
 }
