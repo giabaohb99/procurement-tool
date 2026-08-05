@@ -624,6 +624,10 @@ Dữ liệu trong bảng này được dùng để:
 
 ---
 
+### Lối vào từ YCMH bị trả lại / từ chối (CR-026)
+
+Ngoài lối tạo YCBG thông thường, màn `/survey-requests/new` còn nhận dữ liệu điền sẵn từ nút **"Tạo yêu cầu báo giá"** trên phiếu YCMH ở trạng thái `rejected` (Bị trả lại) hoặc `cancelled` (Đã từ chối). Dữ liệu đi kèm điều hướng (`location.state`), **chưa ghi DB**; tiêu đề phiếu hiện nhãn `Từ {mã YCMH}` để biết nguồn. Chi tiết ánh xạ trường xem [03-yeu-cau-mua-hang.md](03-yeu-cau-mua-hang.md) §C.21.
+
 ## F. Quyền thao tác (RBAC)
 
 Entity: `survey_request`. Actions: `read`, `create`, `write`, `approve`, `cancel`, `delete`, `process`.

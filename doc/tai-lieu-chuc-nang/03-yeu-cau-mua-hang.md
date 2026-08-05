@@ -378,6 +378,12 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 19. Nút "Tạo đơn mua hàng": Hiển thị khi phiếu ở `approved` hoặc `processing`, người dùng có quyền `purchase_order:create` và thuộc phòng thu mua / có quyền `approve` / `cancel`, đồng thời còn ít nhất 1 dòng có `line_status = "Chưa đặt hàng"`. Khi bấm, tự điền header ĐMH từ phiếu (mã PYC nguồn, công ty, bộ phận...) và điền NSPT của ĐMH = tên đầy đủ (`full_name`) của người phụ trách dòng đầu tiên có `assignee` trong YCMH; nếu không có dòng nào có `assignee` thì để trống (ĐMH tự lấy người tạo làm NSPT). Số lượng từng dòng được prefill theo "còn thiếu" (yêu cầu − đã đặt trong các ĐMH cùng mã PYC); dòng đã đặt đủ/vượt hiện cảnh báo trước khi cho mua thêm.
 20. Điều hướng PYC ↔ ĐMH: Trên trang chi tiết YCMH, nút "ĐMH liên quan (N)" xuất hiện khi có ít nhất 1 đơn mua hàng cùng mã PYC; bấm mã ĐMH trong popup điều hướng sang trang chi tiết ĐMH tương ứng (`/purchase-orders/{id}`). Trên trang chi tiết ĐMH, trường "Mã PYC nguồn" có biểu tượng liên kết ngoài; bấm biểu tượng điều hướng ngược về trang YCMH tương ứng (`/purchase-requests/{id}`).
 
+21. Nút "Tạo yêu cầu báo giá" (CR-026): hiện trên trang chi tiết YCMH khi phiếu ở trạng thái `rejected` (Bị trả lại) hoặc `cancelled` (Đã từ chối) và người dùng có quyền `survey_request:create`. Bấm nút sẽ mở màn **tạo YCBG** (`/survey-requests/new`) đã điền sẵn từ phiếu này — **không tạo bản ghi nào** cho tới khi người dùng bấm Lưu / Gửi duyệt (cùng cơ chế với CR-025).
+    - Header chép sang: công ty, người yêu cầu (kèm `requester_id`), chức vụ, phòng ban, trưởng bộ phận, mục đích. Ghi chú được nối thêm dòng `(Tạo từ YCMH {code})` để giữ vết phiếu nguồn.
+    - Dòng chép sang (bỏ dòng "Hủy đơn" và dòng trống tên hàng): `item_group` → Phân loại · `qty` → SL dự kiến · `unit` → ĐVT · `price` → Giá đề xuất · `note` → Yêu cầu khác. YCBG **không có ô mã/tên hàng**, nên `product_name` (nối thêm `group_desc` nếu có) được gộp vào **Chi tiết thông số** để không mất thông tin.
+    - Không chép sang: mã phiếu, trạng thái, NSTM phụ trách, ngày tiếp nhận / ngày YC trả KQ (do thu mua và người YC nhập lại theo đợt khảo sát mới).
+    - Phiếu YCMH gốc **giữ nguyên** trạng thái để truy vết; hệ thống không đánh dấu "đã thay thế".
+
 ## D. Quyền thao tác (RBAC)
 
 Entity: `purchase_request`

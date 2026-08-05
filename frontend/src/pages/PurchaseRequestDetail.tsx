@@ -439,6 +439,37 @@ export default function PurchaseRequestDetail() {
     setPoExceed({ msg: exceededMsg.join('; '), normal, all: [...normal, ...exceeded] })
   }
 
+  // CR-026: YCMH bị trả lại / từ chối → mở màn tạo Yêu cầu báo giá điền sẵn từ phiếu này.
+  // Dữ liệu đi kèm điều hướng (state), KHÔNG tạo bản ghi nào cho tới khi người dùng bấm Lưu.
+  // YCBG không có ô mã/tên hàng nên tên hàng được gộp vào "Chi tiết thông số" để khỏi mất thông tin.
+  function createSurveyRequest() {
+    const lines = (pr.items || [])
+      .filter((it: any) => it.product_name && it.line_status !== 'Hủy đơn')
+      .map((it: any) => ({
+        received_date: '', result_due_date: '',
+        item_group: it.item_group || '',
+        requirement_detail: [it.product_name, it.group_desc].filter(Boolean).join(' — '),
+        other_requirement: it.note || '',
+        request_qty: Number(it.qty) || 0,
+        uom: it.unit || '',
+        proposed_price: Number(it.price) || 0,
+      }))
+    if (!lines.length) { toast.error('Phiếu không còn dòng sản phẩm nào để khảo sát'); return }
+    navigate('/survey-requests/new', {
+      state: {
+        fromPr: {
+          pr_code: pr.code,
+          company_id: pr.company_id || 0,
+          requester: pr.requester || '', requester_id: pr.requester_id || 0,
+          requester_position: pr.requester_position || '',
+          department: pr.department || '', head_of_dept: pr.head_of_dept || '',
+          purpose: pr.purpose || '', note: pr.note || '',
+          lines,
+        },
+      },
+    })
+  }
+
   async function handleDelete() {
     try {
       await api.delete(`${API}?ids=${id}`)
@@ -483,6 +514,10 @@ export default function PurchaseRequestDetail() {
         {!isNew && <button className="btn ghost" onClick={() => window.open(`/print/purchase-request/${id}`, '_blank')}><i className="ti ti-printer" />In phiếu</button>}
         {!isNew && pos && pos.length > 0 && <button className="btn ghost" onClick={() => setShowPoModal(true)}><i className="ti ti-shopping-cart" />ĐMH liên quan ({pos.length})</button>}
         {!isNew && can('purchase_request', 'create') && <button className="btn ghost" onClick={() => setConfirmAction({ type: 'copy', title: 'Nhân bản', message: 'Nhân bản phiếu này thành phiếu Nháp mới?', confirmText: 'Nhân bản' })}><i className="ti ti-copy" />Nhân bản</button>}
+        {/* CR-026: phiếu bị trả lại / từ chối → chuyển hướng đi khảo sát lại, không phải gõ lại từ đầu */}
+        {!isNew && ['rejected', 'cancelled'].includes(pr.status) && can('survey_request', 'create') && (
+          <button className="btn ghost" onClick={createSurveyRequest}><i className="ti ti-clipboard-list" />Tạo yêu cầu báo giá</button>
+        )}
         {!isNew && ['draft', 'rejected', 'cancelled'].includes(pr.status) && can('purchase_request', 'delete') && (
           <button className="btn ghost err" onClick={() => setConfirmDelete(true)}><i className="ti ti-trash" />Xóa phiếu</button>
         )}

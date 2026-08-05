@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { fmtDate, fmtDateTime } from '../utils/datetime'
 import { askConfirm, askPrompt } from '../components/confirm'
@@ -93,13 +93,26 @@ export default function SurveyRequestDetail() {
   const isNew = id === 'new'
   const { user, can } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  // CR-026: mở từ nút "Tạo yêu cầu báo giá" trên YCMH bị trả lại/từ chối — dữ liệu đi kèm
+  // điều hướng, chưa có bản ghi nào trong DB. Ghi chú giữ lại vết phiếu nguồn.
+  const fromPr = isNew ? (location.state as any)?.fromPr : null
 
-  const [sv, setSv] = useState<any>({
+  const [sv, setSv] = useState<any>(() => ({
     code: '', company_id: 0, requester: '', requester_position: '',
     department: '', head_of_dept: '', purpose: '',
     request_date: new Date().toISOString().slice(0, 10),
     note: '', status: 'draft', reject_reason: '', lines: [],
-  })
+    ...(fromPr ? {
+      company_id: fromPr.company_id || 0,
+      requester: fromPr.requester || '', requester_id: fromPr.requester_id || 0,
+      requester_position: fromPr.requester_position || '',
+      department: fromPr.department || '', head_of_dept: fromPr.head_of_dept || '',
+      purpose: fromPr.purpose || '',
+      note: [fromPr.note, `(Tạo từ YCMH ${fromPr.pr_code})`].filter(Boolean).join('\n'),
+      lines: (fromPr.lines || []).map((l: any) => ({ ...emptyLine, ...l })),
+    } : {}),
+  }))
   const [companies, setCompanies]   = useState<any[]>([])
   const [departments, setDepartments] = useState<any[]>([])
   const [employees, setEmployees]   = useState<any[]>([])
@@ -489,6 +502,7 @@ export default function SurveyRequestDetail() {
           {isNew ? 'Tạo Phiếu Yêu cầu Khảo sát mới' : (sv.code || 'Phiếu Yêu cầu Khảo sát')}
         </h2>
         {!isNew && srBadge(sv.status)}
+        {fromPr && <span className="badge gray" title={`Điền sẵn từ YCMH ${fromPr.pr_code} — chưa lưu`}>Từ {fromPr.pr_code}</span>}
         <span style={{ flex: 1 }} />
 
         {/* Lưu (riêng) + Gửi duyệt (riêng) — góc trên phải, khi đang soạn/nháp */}
