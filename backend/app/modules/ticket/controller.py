@@ -11,7 +11,8 @@ from app.core.scoping import apply_scope
 
 from . import service
 from .model import Ticket
-from .schema import MessageCreate, StatusIn, TicketCreate, TicketUpdate
+from .schema import (AssignIn, MessageCreate, StatusIn, TicketCreate,
+                     TicketUpdate)
 
 router = APIRouter(prefix="/api/tickets", tags=["ticket"])
 
@@ -45,6 +46,23 @@ def _name_of_user(db: Session, uid: int, cache: dict) -> str:
     return cache[uid]
 
 
+def _msg_files(db: Session, msg_ids: list[int]) -> dict:
+    """Đính kèm của từng tin nhắn (entity 'ticket_message') — gom 1 query cho cả luồng."""
+    if not msg_ids:
+        return {}
+    from app.modules.attachment.model import FileLink, StoredFile
+    out: dict = {}
+    rows = (db.query(FileLink, StoredFile)
+            .join(StoredFile, StoredFile.id == FileLink.file_id)
+            .filter(FileLink.entity == "ticket_message", FileLink.entity_id.in_(msg_ids))
+            .order_by(FileLink.id.asc()).all())
+    for lk, f in rows:
+        out.setdefault(lk.entity_id, []).append(
+            {"id": lk.id, "file_id": f.id, "filename": f.filename, "url": f.url,
+             "content_type": f.content_type, "size": f.size})
+    return out
+
+
 def _out(db: Session, t: Ticket, with_messages: bool = False) -> dict:
     cache: dict = {}
     d = {
@@ -58,11 +76,13 @@ def _out(db: Session, t: Ticket, with_messages: bool = False) -> dict:
         "created_at": t.created_at, "updated_at": t.updated_at, "closed_at": t.closed_at,
     }
     if with_messages:
+        msgs = service.messages_of(db, t.id)
+        fmap = _msg_files(db, [m.id for m in msgs])
         d["messages"] = [{
             "id": m.id, "body": m.body, "is_staff": m.is_staff,
             "author_id": m.created_by, "author_name": _name_of_user(db, m.created_by, cache),
-            "created_at": m.created_at,
-        } for m in service.messages_of(db, t.id)]
+            "created_at": m.created_at, "files": fmap.get(m.id, []),
+        } for m in msgs]
     return d
 
 
@@ -99,9 +119,11 @@ def _notify(db, users, title, body, link, creator_id, background_tasks=None, doc
 
 
 def _support_users(db):
-    """Người nhận việc hỗ trợ: nhóm 'support' (+ QL thu mua); fallback quản trị nếu chưa gán ai."""
+    """Người nhận việc hỗ trợ: CHỈ vai trò 'support'.
+    Không lấy QL thu mua nữa — họ không phải người xử lý phiếu, gửi vào là spam.
+    Fallback quản trị chỉ để phiếu không rơi vào hư không khi chưa gán ai vai trò Hỗ trợ."""
     from app.modules.notification.service import get_users_by_role_codes
-    users = get_users_by_role_codes(db, ["support", "pur_manager"])
+    users = get_users_by_role_codes(db, ["support"])
     if not users:
         users = get_users_by_role_codes(db, ["admin", "ADMINISTRATOR"])
     return users
@@ -119,6 +141,18 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
           user=Depends(require("ticket", "read"))):
     q = apply_filters(db.query(Ticket), Ticket, request, service.FILTERABLE)
     q = apply_scope(q, Ticket, "ticket", user, get_perm_profile(db, user))
+    # mine=1: CHỈ phiếu do tôi gửi (tab "Yêu cầu hỗ trợ của tôi" ở trang cá nhân).
+    # Cần vì nhóm Hỗ trợ có scope 'all' — không lọc thì tab cá nhân hiện phiếu của cả công ty.
+    if (request.query_params.get("mine") or "") in ("1", "true"):
+        q = q.filter(Ticket.created_by == user.id)
+    # assignee=unassigned | me | <user_id>: bộ lọc của màn quản lý
+    asg = (request.query_params.get("assignee") or "").strip()
+    if asg == "unassigned":
+        q = q.filter((Ticket.assignee_id == 0) | (Ticket.assignee_id.is_(None)))
+    elif asg == "me":
+        q = q.filter(Ticket.assignee_id == user.id)
+    elif asg.isdigit():
+        q = q.filter(Ticket.assignee_id == int(asg))
     total = q.count()
     q = apply_sort_from_request(q, Ticket, request, default=Ticket.id.desc())
     items = q.offset(pg["offset"]).limit(pg["limit"]).all()
@@ -187,6 +221,25 @@ def reply_(tid: int, data: MessageCreate, background_tasks: BackgroundTasks,
                 f"Người gửi vừa phản hồi phiếu hỗ trợ {t.code}.",
                 f"/tickets/{t.id}", user.id, background_tasks, doc_code=t.code)
     return success(_out(db, t, with_messages=True), "Đã gửi trả lời", 201)
+
+
+@router.post("/{tid}/assign")
+def assign_(tid: int, data: AssignIn, background_tasks: BackgroundTasks,
+            db: Session = Depends(get_db), user=Depends(require("ticket", "read"))):
+    """Nhận phiếu / giao phiếu — chỉ nhóm Hỗ trợ."""
+    prof = get_perm_profile(db, user)
+    if not _is_handler(prof):
+        raise HTTPException(403, "Chỉ nhóm Hỗ trợ mới nhận/giao được phiếu")
+    t = service.assign(db, tid, data.assignee_id, user.id)
+    # Giao cho NGƯỜI KHÁC thì phải báo họ; tự nhận phiếu thì _notify cũng tự loại người thao tác.
+    if data.assignee_id and data.assignee_id != user.id:
+        from app.modules.user.model import User
+        _notify(db, db.query(User).filter(User.id == data.assignee_id).all(),
+                f"{t.code} — Bạn được giao phiếu hỗ trợ",
+                f"Bạn vừa được giao xử lý phiếu {t.code}: {t.subject}",
+                f"/tickets/{t.id}", user.id, background_tasks, doc_code=t.code)
+    return success(_out(db, t, with_messages=True),
+                   "Đã nhận phiếu" if data.assignee_id else "Đã trả phiếu về hàng chờ")
 
 
 @router.post("/{tid}/status")

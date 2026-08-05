@@ -41,7 +41,6 @@ import HelpLayout from './layouts/HelpLayout'
 import HelpCenterHome from './pages/HelpCenterHome'
 import HelpArticleDetail from './pages/HelpArticleDetail'
 import TicketList from './pages/TicketList'
-import TicketCreate from './pages/TicketCreate'
 import TicketDetail from './pages/TicketDetail'
 import { TICKET_ENABLED } from './config/features'
 
@@ -86,8 +85,8 @@ export default function App() {
             <Route path="import-batches/:id" element={<ImportBatchDetail />} />
             <Route path="backups" element={<Backups />} />
             {/* Phiếu hỗ trợ — tắt hẳn route khi tính năng off (prod), xem config/features.ts */}
+            {/* Tạo phiếu = popup ở AppLayout / Trang cá nhân, không còn trang riêng /tickets/new */}
             {TICKET_ENABLED && <Route path="tickets" element={<TicketList />} />}
-            {TICKET_ENABLED && <Route path="tickets/new" element={<TicketCreate />} />}
             {TICKET_ENABLED && <Route path="tickets/:id" element={<TicketDetail />} />}
             <Route path="notifications" element={<Notifications />} />
             <Route path="me" element={<Me />} />

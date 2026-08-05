@@ -232,6 +232,9 @@ textarea {
   padding: 0 16px;
   border: 1px solid #e9edf7;
   border-radius: 12px;
+  /* Không khai báo font-family thì textarea rơi về font monospace mặc định của trình duyệt
+     -> form bị lệch phông so với input/select. Ép theo font chung của app. */
+  font-family: inherit;
   font-size: 13.5px;
   color: var(--navy);
   background: #fff;
@@ -243,6 +246,16 @@ textarea {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+/* textarea nhiều dòng: bỏ chiều cao cố định 40px + padding kiểu ô 1 dòng của input.
+   KHÔNG đặt min-height ở đây — chiều cao để rows / class riêng (.cell-textarea,
+   .form-row textarea) hoặc style inline quyết định. */
+textarea {
+  height: auto;
+  padding: 9px 14px;
+  line-height: 1.55;
+  resize: vertical;
 }
 
 input[type="checkbox"],

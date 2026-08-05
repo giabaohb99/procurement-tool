@@ -25,3 +25,7 @@ class MessageCreate(BaseModel):
 class StatusIn(BaseModel):
     status: str                          # in_progress | answered | closed | open
     assignee_id: int | None = None       # tùy chọn: nhóm hỗ trợ nhận việc
+
+
+class AssignIn(BaseModel):
+    assignee_id: int = 0                 # 0 = bỏ nhận (trả phiếu về hàng chờ)

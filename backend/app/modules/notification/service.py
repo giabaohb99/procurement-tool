@@ -267,7 +267,8 @@ def _send_workflow_emails(db: Session, background_tasks, recipients: list, subje
 
     label = {"purchase_request": "Yêu cầu mua hàng", "survey_request": "Yêu cầu báo giá",
              "survey": "Phiếu khảo sát", "purchase_order": "Đơn mua hàng",
-             "payment_request": "Đề nghị thanh toán"}.get(doc_type, "Chứng từ")
+             "payment_request": "Đề nghị thanh toán",
+             "ticket": "Phiếu hỗ trợ"}.get(doc_type, "Chứng từ")
     jobs = []
     for r in recipients:
         if not r:

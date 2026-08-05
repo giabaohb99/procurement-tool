@@ -2,11 +2,18 @@
 
 Tài liệu mô tả phân hệ **Hỗ trợ nội bộ** — kênh để mọi nhân viên gửi yêu cầu hỗ trợ (kỹ thuật, tài khoản, quy trình, dữ liệu…) và trao đổi qua lại với nhóm Hỗ trợ ngay trong ứng dụng, thay cho email/chat rời rạc.
 
-Đường dẫn: `/tickets` (danh sách "Yêu cầu hỗ trợ của tôi"), `/tickets/:id` (chi tiết một phiếu).
+Đường dẫn: `/tickets` (màn **quản lý** — chỉ nhóm Hỗ trợ), `/tickets/:id` (chi tiết một phiếu), `/me?tab=tickets` (tab **"Yêu cầu hỗ trợ của tôi"** ở Trang cá nhân).
 
 > **Trạng thái triển khai:** phân hệ này bật ở **dev**, **tắt ở prod** (chờ nghiệm thu). Điều khiển bằng build arg `VITE_FEATURE_TICKET` — prod mặc định `off` (ẩn cả menu lẫn route), dev mặc định `on`. Bật ở prod: đặt `VITE_FEATURE_TICKET=on` trong `.env` rồi build lại `web`.
 
-Lối vào: menu **"Hỗ trợ"** ở sidebar (nhóm Tổng quan) **và** mục **"Hỗ trợ"** trong menu thả xuống ở avatar (góc phải, thay cho "Hướng dẫn sử dụng" — HDSD vẫn còn ở sidebar). Vào từ menu avatar sẽ mở thẳng **màn hình tạo phiếu riêng** (`/tickets/new`) và **tự ghi lại trang đang đứng** (xem §Trang lúc tạo). Danh sách "Yêu cầu hỗ trợ của tôi" (`/tickets`) và form tạo (`/tickets/new`) là hai màn hình tách biệt.
+### Lối vào theo vai trò
+
+| Vai trò | Gửi phiếu | Xem phiếu |
+|---|---|---|
+| **Nhân viên thường** | Icon **tai nghe** ("Gửi yêu cầu hỗ trợ") trong menu thả xuống ở avatar → mở **popup** ngay tại trang đang đứng; hoặc nút trong tab cá nhân | Trang cá nhân → tab **"Yêu cầu hỗ trợ của tôi"** (`/me?tab=tickets`) |
+| **Nhóm Hỗ trợ** | Như trên (popup) | Menu **"Hỗ trợ"** ở sidebar → màn **Quản lý phiếu hỗ trợ** (`/tickets`); phiếu do chính họ gửi vẫn nằm ở tab cá nhân |
+
+Menu sidebar **"Hỗ trợ"** chỉ hiện với nhóm Hỗ trợ (gate bằng `can('ticket','delete')` — xem §2), nhân viên thường **không thấy**. Không còn trang tạo phiếu riêng `/tickets/new`; form tạo là popup dùng chung `components/TicketCreateModal.tsx`.
 
 ---
 
@@ -31,66 +38,77 @@ Vai trò **`support` ("Nhân viên hỗ trợ")** được thêm vào seed với
 
 ---
 
-## 3. Danh sách phiếu — `/tickets`
+## 3. Ba màn hình của phân hệ
 
-Tiêu đề **"Yêu cầu hỗ trợ của tôi"**. Nút **"Mở phiếu hỗ trợ"** ở góc phải.
+### 3.1. Tab "Yêu cầu hỗ trợ của tôi" — `/me?tab=tickets`
 
-### Bộ lọc & tìm kiếm
+Tab thứ ba ở Trang cá nhân (cạnh "Thông tin cá nhân" và "Việc cần làm"), chỉ hiện khi bật `VITE_FEATURE_TICKET`.
 
-| Trường | Mô tả |
+- Gọi `GET /api/tickets?mine=1` → **chỉ phiếu do chính mình gửi** (`created_by = user.id`). Tham số `mine` cần thiết vì người thuộc nhóm Hỗ trợ có scope `all` — không lọc thì tab cá nhân sẽ hiện phiếu của cả công ty.
+- Bộ lọc: tab trạng thái (Tất cả / Mới / Đang xử lý / Đã trả lời / Đã đóng).
+- Cột: Chủ đề (+ mã phiếu) · Bộ phận · Ưu tiên · Trạng thái · **Người xử lý** ("Chưa nhận" nếu chưa ai nhận) · Cập nhật.
+- Nút **"Gửi yêu cầu hỗ trợ"** mở popup tạo phiếu (§3.3). Phân trang 10 dòng/trang.
+
+### 3.2. Màn quản lý — `/tickets` (chỉ nhóm Hỗ trợ)
+
+Tiêu đề **"Quản lý phiếu hỗ trợ"** — toàn bộ phiếu người dùng gửi lên (vẫn qua `apply_scope`).
+
+| Bộ lọc | Mô tả |
 |---|---|
-| Tab Trạng thái | Tất cả / Mới / Đang xử lý / Đã trả lời / Đã đóng — đổi tab nạp lại ngay |
+| Trạng thái | Tất cả / Mới / Đang xử lý / Đã trả lời / Đã đóng |
+| Người xử lý | Tất cả / **Chưa ai nhận** (`assignee=unassigned`) / **Tôi đang xử lý** (`assignee=me`) |
 | Ưu tiên | Dropdown: Tất cả / Thấp / Trung bình / Cao / Khẩn |
 | Ô tìm kiếm | Tìm theo **chủ đề** (`subject`, LIKE); debounce 350 ms |
 
-### Cột bảng
+Cột: Chủ đề (+ mã phiếu) · **Người gửi** · Bộ phận · Ưu tiên · Trạng thái · **Người xử lý** · Cập nhật · nút **"Nhận"**.
 
-| Cột | Nội dung |
-|---|---|
-| Chủ đề | Chủ đề phiếu + mã phiếu (`TKddmmyyNN`) ở dòng phụ |
-| Bộ phận | Nhãn bộ phận/nhóm |
-| Ưu tiên | Badge màu theo mức |
-| Trạng thái | Badge màu theo trạng thái |
-| Cập nhật | Thời điểm cập nhật gần nhất (giờ VN) |
+Nút **"Nhận"** chỉ hiện ở dòng **chưa ai nhận và chưa đóng**; bấm → `POST /api/tickets/{id}/assign` với `assignee_id` = chính mình. Bấm vào dòng → mở chi tiết. Phân trang 20 dòng/trang.
 
-Bấm một dòng → mở chi tiết `/tickets/:id`. Phân trang bằng component `Pagination` (mặc định 20 dòng/trang).
+### 3.3. Popup "Gửi yêu cầu hỗ trợ" (`components/TicketCreateModal.tsx`)
 
-Người gửi chỉ thấy phiếu của mình (lọc qua `apply_scope`, scope `own` = `created_by`). Nhóm Hỗ trợ thấy toàn bộ.
-
-### Màn hình "Mở phiếu hỗ trợ" (`/tickets/new`)
+Mở từ **icon tai nghe** ở menu avatar (mọi trang) hoặc nút trong tab cá nhân. Không còn trang riêng.
 
 | Trường | Bắt buộc | Ghi chú |
 |---|---|---|
-| Chủ đề | Có | Tóm tắt vấn đề |
+| Chủ đề | Có | Tóm tắt vấn đề (nút Gửi khóa khi để trống) |
 | Bộ phận / Nhóm | — | Chọn từ danh sách cố định (xem §7) |
-| Mức ưu tiên | — | Mặc định "Trung bình" |
-| Nội dung | — | Mô tả chi tiết; trở thành **tin nhắn đầu tiên** của phiếu |
+| Mức ưu tiên | — | Dải nút Thấp / Trung bình / Cao / Khẩn, mặc định "Trung bình" |
+| Nội dung | — | Mô tả chi tiết; trở thành **tin nhắn đầu tiên** của phiếu. Dán ảnh chụp màn hình thẳng vào ô này bằng **Ctrl/⌘ + V** |
+| Tệp đính kèm | — | Kéo-thả / bấm chọn ngay trong popup, nhiều tệp, ≤ **10 MB**/tệp |
 
-Tệp đính kèm được thêm **sau khi tạo phiếu** (ở màn chi tiết) — vì hệ thống đính kèm cần `entity_id` của phiếu đã lưu. Gửi thành công → điều hướng thẳng vào chi tiết phiếu.
+**Đính kèm ngay lúc tạo:** file được upload **ngay khi chọn** qua `POST /api/attachments/upload-file` (entity `ticket`) → trả `file_id`, chưa gắn vào phiếu. Danh sách tệp hiện bên dưới, gỡ được bằng nút X. Lúc bấm Gửi, các `file_ids` đi kèm request tạo phiếu và `service.create_ticket` gắn chúng vào phiếu (`_register_files`). Nút Gửi khóa trong lúc đang upload. Vẫn đính kèm thêm được ở màn chi tiết sau đó.
 
-**Trang lúc tạo (`origin_url`) — hỗ trợ debug.** Khi người dùng bấm "Hỗ trợ" (menu avatar) hoặc điều hướng trong app, `AppLayout` ghi lại **đường dẫn trang đang đứng** vào `sessionStorage` (`support_origin`, bỏ qua các trang `/tickets`). Lúc tạo phiếu, đường dẫn này được gửi kèm (`origin_url`) và **hiển thị nhắc trong form** ("Sẽ đính kèm trang bạn đang gặp vấn đề: …"). Ở màn chi tiết, nhóm Hỗ trợ thấy dòng **"Trang lúc tạo"** là **link bấm được** để nhảy thẳng tới đúng màn hình người dùng gặp lỗi.
+Đóng popup bằng nút X, nút Hủy, phím **Esc** hoặc bấm ra nền. Mỗi lần mở là form trắng. Gửi thành công → điều hướng thẳng vào chi tiết phiếu.
+
+**Trang lúc tạo (`origin_url`) — hỗ trợ debug.** Lúc bấm icon tai nghe, `AppLayout` lấy **đường dẫn trang đang đứng** và truyền vào popup qua prop `originUrl`; popup gửi kèm khi tạo phiếu và **hiển thị nhắc trong form** ("Đính kèm trang bạn đang xem: …"). Ở màn chi tiết, nhóm Hỗ trợ thấy dòng **"Trang lúc tạo"** là **link bấm được** để nhảy thẳng tới đúng màn hình người dùng gặp lỗi.
+
+> Hằng số và badge dùng chung (trạng thái, ưu tiên, danh sách bộ phận) nằm ở `frontend/src/config/ticketMeta.tsx` để 3 màn hình + chi tiết cùng một nguồn.
 
 ---
 
 ## 4. Chi tiết phiếu — `/tickets/:id`
 
-Bố cục hai cột:
+Bố cục **hai khối xếp dọc** (thông tin trước — trao đổi sau), không còn cột phải:
 
-### Cột trái — Trao đổi & đính kèm
+### Khối trên — Yêu cầu hỗ trợ
 
-- **Luồng tin nhắn**: mỗi tin hiển thị avatar (chữ cái đầu), tên người gửi, thời gian, nội dung. Tin của **nhóm Hỗ trợ** (`is_staff = true`) căn phải, nền xanh, kèm badge **"Hỗ trợ"**; tin người gửi căn trái, nền trắng. Khung tự cuộn xuống tin mới nhất.
-- **Ô trả lời**: textarea + nút Gửi. Phím tắt **Ctrl/⌘ + Enter** để gửi nhanh. Khi phiếu **đã đóng**, ô trả lời ẩn đi (phải mở lại phiếu để tiếp tục).
-- **Tệp đính kèm**: dùng component chung `DocumentAttachmentSection` với `entity="ticket"`, kéo-thả trực tiếp, tối đa **10 MB/tệp**. Khóa khi phiếu đã đóng.
+- **Đầu khối**: nút "Danh sách", **tiêu đề phiếu** (chủ đề) kèm badge trạng thái + mức ưu tiên, dòng phụ `mã phiếu · người gửi · thời điểm gửi`, và **cụm nút hành động** nằm bên phải (xem bảng dưới).
+- **Lưới thông tin**: mã phiếu, bộ phận/nhóm, mức ưu tiên, trạng thái, người gửi, người xử lý (hoặc "Chưa ai nhận"), ngày tạo, cập nhật, ngày đóng (nếu có), trang lúc tạo (link bấm được). Lưới tự xuống dòng theo bề rộng màn hình.
+- **Nội dung yêu cầu**: chính là **tin nhắn đầu tiên của người gửi** — được tách khỏi luồng trao đổi và đưa lên đây (kiểu trang issue). Kèm bên dưới là **tệp gửi kèm lúc tạo phiếu** (`entity=ticket`): ảnh xem ngay dạng thumbnail, tệp khác là thẻ bấm để mở/tải.
 
-### Cột phải — Thông tin & hành động
+### Khối dưới — Trao đổi (kiểu nhắn tin)
 
-- **Thông tin phiếu**: mã, bộ phận/nhóm, ưu tiên, trạng thái, người gửi, người xử lý (hoặc "Chưa nhận"), ngày tạo, cập nhật, ngày đóng (nếu có).
-- **Hành động** (khác nhau theo vai trò):
+- **Luồng tin nhắn**: chỉ còn các lượt qua lại thực sự (đã bỏ tin đầu tiên vì nằm ở khối trên). Mỗi tin có avatar (chữ cái đầu), tên người gửi, thời gian, nội dung. Tin của **nhóm Hỗ trợ** (`is_staff = true`) căn phải, nền xanh, kèm badge **"Hỗ trợ"**; tin người gửi căn trái, nền trắng. Ảnh/tệp đính kèm của tin hiển thị **ngay trong bong bóng tin đó**. Khung tự cuộn xuống tin mới nhất. Chưa có lượt nào thì hiện trạng thái rỗng.
+- **Ô trả lời gộp chung với đính kèm** — không còn khu upload riêng: một khung duy nhất gồm textarea + nút **kẹp giấy** để chọn tệp + **kéo-thả tệp vào ô** + **dán ảnh chụp màn hình bằng Ctrl/⌘ + V**. Tệp được upload ngay khi chọn (`POST /api/attachments/upload-file` với `entity=ticket_message`), hiện thành chip có nút bỏ, rồi gắn vào tin nhắn qua `file_ids` lúc bấm **Gửi**. Gửi **chỉ tệp không kèm chữ** cũng hợp lệ. Phím tắt **Ctrl/⌘ + Enter**; nút Gửi khóa khi đang tải tệp. Khi phiếu **đã đóng**, cả khung ẩn đi (phải mở lại phiếu để tiếp tục).
+
+### Hành động (khác nhau theo vai trò)
 
 | Vai trò | Nút hiển thị |
 |---|---|
-| Nhóm Hỗ trợ | Đánh dấu **đang xử lý** / **đã trả lời** / **Đóng phiếu**; khi đã đóng → **Mở lại phiếu** |
+| Nhóm Hỗ trợ | **Nhận phiếu** (hoặc "Nhận lại phiếu" nếu người khác đang giữ / "Trả phiếu" nếu chính mình đang giữ); **Đang xử lý** / **Đã trả lời** / **Đóng phiếu**; khi đã đóng → **Mở lại phiếu** |
 | Người gửi | **Đóng phiếu** (khi chưa đóng) / **Mở lại phiếu** (khi đã đóng) |
+
+Nút **"Danh sách"** quay về `/tickets` với nhóm Hỗ trợ, về `/me?tab=tickets` với người gửi thường.
 
 ---
 
@@ -108,6 +126,7 @@ Quy tắc tự chuyển (service `add_message` / `set_status`):
 - Nhóm Hỗ trợ trả lời → trạng thái = **`answered`**, xóa `closed_at`.
 - Người gửi phản hồi khi phiếu đang `answered`/`closed` → trạng thái quay lại **`in_progress`**.
 - Đặt trạng thái `closed` → ghi `closed_at`; các trạng thái khác → xóa `closed_at`.
+- **Nhận phiếu** (`assign`) khi phiếu còn `open` → tự chuyển **`in_progress`** (khỏi phải bấm 2 lần). Phiếu đã ở trạng thái khác thì giữ nguyên; **trả phiếu** về hàng chờ không đổi trạng thái.
 - **Người gửi chỉ được đặt** `closed` (đóng) hoặc `in_progress` (mở lại) trên phiếu của mình; nhóm Hỗ trợ đặt được mọi trạng thái + gán người xử lý.
 
 Mức ưu tiên: `low` (Thấp) · `normal` (Trung bình) · `high` (Cao) · `urgent` (Khẩn).
@@ -120,12 +139,17 @@ Dùng helper `_notify` riêng của module (chuông in-app + Web Push nền best
 
 | Sự kiện | Người nhận | Tiêu đề / Nội dung |
 |---|---|---|
-| Tạo phiếu mới | Nhóm Hỗ trợ (`support` + `pur_manager`; fallback quản trị) | `{code} — Phiếu hỗ trợ mới` |
+| Tạo phiếu mới | **Nhóm Hỗ trợ = vai trò `support`** (fallback quản trị nếu chưa gán ai) | `{code} — Phiếu hỗ trợ mới` |
 | Hỗ trợ trả lời | Người gửi phiếu | `{code} — Hỗ trợ đã trả lời` |
 | Người gửi phản hồi | Người xử lý (nếu đã gán) hoặc nhóm Hỗ trợ | `{code} — Người gửi phản hồi` |
+| **Giao phiếu cho người khác** | Người được giao (tự nhận phiếu thì không báo) | `{code} — Bạn được giao phiếu hỗ trợ` |
 | Đóng phiếu | Hỗ trợ đóng → báo người gửi; người gửi đóng → báo nhóm Hỗ trợ | `{code} — Đã đóng phiếu hỗ trợ` |
 
 Mọi thông báo có `link = /tickets/{id}`.
+
+**Nhóm nhận việc chỉ gồm vai trò `support`** — Quản lý thu mua (`pur_manager`) đã được **bỏ khỏi** danh sách nhận vì họ không phải người xử lý phiếu (nhận vào chỉ là spam). Vì vậy **phải gán vai trò "Nhân viên hỗ trợ" cho người phụ trách**; chưa gán ai thì phiếu rơi về quản trị (`admin`/`ADMINISTRATOR`) để không mất phiếu.
+
+Email workflow dùng nhãn loại chứng từ **"Phiếu hỗ trợ"** (`doc_type = ticket`).
 
 ---
 
@@ -147,14 +171,15 @@ Prefix: `/api/tickets`. Mọi endpoint yêu cầu đăng nhập; danh sách/chi 
 
 | Method | Endpoint | Quyền | Mô tả |
 |---|---|---|---|
-| `GET` | `/api/tickets` | `ticket:read` | Danh sách (lọc `code/subject/status/priority/department` + phân trang) |
+| `GET` | `/api/tickets` | `ticket:read` | Danh sách (lọc `code/subject/status/priority/department` + phân trang). Tham số riêng: `mine=1` (chỉ phiếu mình gửi), `assignee=unassigned\|me\|<user_id>` |
 | `GET` | `/api/tickets/{id}` | `ticket:read` + trong phạm vi | Chi tiết kèm toàn bộ tin nhắn |
 | `POST` | `/api/tickets` | `ticket:create` | Tạo phiếu (chủ đề, bộ phận, ưu tiên, nội dung) |
 | `PATCH` | `/api/tickets/{id}` | chủ phiếu hoặc handler | Sửa chủ đề/bộ phận/ưu tiên (chặn khi đã đóng) |
-| `POST` | `/api/tickets/{id}/messages` | chủ phiếu hoặc handler | Gửi tin trả lời (`is_staff` tự suy theo handler) |
+| `POST` | `/api/tickets/{id}/messages` | chủ phiếu hoặc handler | Gửi tin trả lời (`is_staff` tự suy theo handler) + `file_ids` đính kèm cho chính tin đó |
+| `POST` | `/api/tickets/{id}/assign` | **chỉ handler** | Nhận phiếu (`assignee_id` = user) / trả về hàng chờ (`assignee_id = 0`). Nhận phiếu đang `open` → tự chuyển `in_progress`; giao cho người khác thì báo cho họ |
 | `POST` | `/api/tickets/{id}/status` | handler = mọi trạng thái; chủ phiếu = `closed`/`in_progress` | Đổi trạng thái (+ gán người xử lý nếu handler) |
 
-Đính kèm dùng API chung `/api/attachments` với `entity=ticket` (và `ticket_message` cho tệp theo tin nhắn) — quyền upload gate theo entity cha `ticket` (`write` HOẶC `create`).
+Đính kèm dùng API chung `/api/attachments` với `entity=ticket` (tệp gửi kèm lúc tạo phiếu) và `entity=ticket_message` (tệp gắn vào một tin trả lời) — quyền upload gate theo entity cha `ticket` (`write` HOẶC `create`), giới hạn 10 MB/tệp. Cả hai chỗ đều **upload trước** qua `POST /api/attachments/upload-file` lấy `file_id`, rồi gửi `file_ids` kèm `POST /api/tickets` (popup tạo) hoặc `POST /api/tickets/{id}/messages` (ô trả lời). `GET /api/tickets/{id}` trả kèm mảng `files` cho **từng tin nhắn** để hiển thị ngay trong bong bóng.
 
 ---
 

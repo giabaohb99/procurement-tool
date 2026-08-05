@@ -120,6 +120,20 @@ def add_message(db: Session, tid: int, body: str, user_id: int, is_staff: bool,
     return m
 
 
+def assign(db: Session, tid: int, assignee_id: int, user_id: int) -> Ticket:
+    """Nhóm Hỗ trợ nhận phiếu (assignee_id = user) hoặc trả phiếu về hàng chờ (0).
+    Nhận phiếu mà phiếu còn 'Mới' thì chuyển luôn sang 'Đang xử lý' cho khỏi phải bấm 2 lần."""
+    t = get_ticket(db, tid)
+    t.assignee_id = assignee_id or 0
+    if assignee_id and t.status == "open":
+        t.status = "in_progress"
+    t.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, tid, "assign" if assignee_id else "unassign")
+    db.refresh(t)
+    return t
+
+
 def set_status(db: Session, tid: int, status: str, user_id: int,
                assignee_id: int | None = None) -> Ticket:
     if status not in STATUSES:
