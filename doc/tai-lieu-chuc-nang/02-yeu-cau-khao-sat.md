@@ -628,6 +628,11 @@ Dữ liệu trong bảng này được dùng để:
 
 Ngoài lối tạo YCBG thông thường, màn `/survey-requests/new` còn nhận dữ liệu điền sẵn từ nút **"Tạo yêu cầu báo giá"** trên phiếu YCMH ở trạng thái `rejected` (Bị trả lại) hoặc `cancelled` (Đã từ chối). Dữ liệu đi kèm điều hướng (`location.state`), **chưa ghi DB**; tiêu đề phiếu hiện nhãn `Từ {mã YCMH}` để biết nguồn. Chi tiết ánh xạ trường xem [03-yeu-cau-mua-hang.md](03-yeu-cau-mua-hang.md) §C.21.
 
+Bổ sung ở CR-027:
+
+- **Ảnh đối chiếu theo dòng được kéo sang.** Mỗi dòng điền sẵn mang thêm `src_pr_item_id`; `POST /api/survey-requests` (và `PATCH` khi thêm dòng mới) đọc trường này rồi chép **liên kết file** từ `("purchase_request_line_image", id dòng YCMH)` sang `("survey_request_line", id dòng YCBG)` — cùng `file_id`, không upload lại. Chỉ chép dòng thuộc YCMH mà người dùng có quyền xem. Trường này **không phải cột DB**, chỉ dùng lúc tạo dòng; sửa phiếu lần sau không chép lại lần nữa.
+- **Nút quay lại** (mũi tên góc trái) khi mở từ YCMH sẽ về **đúng phiếu YCMH nguồn** (`/purchase-requests/{id}`) thay vì nhảy ra danh sách YCBG.
+
 ## F. Quyền thao tác (RBAC)
 
 Entity: `survey_request`. Actions: `read`, `create`, `write`, `approve`, `cancel`, `delete`, `process`.

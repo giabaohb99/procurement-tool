@@ -13,6 +13,7 @@ class SurveyRequestLineIn(BaseModel):
     uom: str = ""
     proposed_price: float = 0
     image_file: str = ""
+    src_pr_item_id: int = 0   # CR-027: dòng YCMH nguồn — chỉ dùng lúc TẠO dòng mới để kéo ảnh sang
 
 
 class _Header(BaseModel):

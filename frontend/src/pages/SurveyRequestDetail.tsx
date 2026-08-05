@@ -497,7 +497,11 @@ export default function SurveyRequestDetail() {
     <div>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-        <button className="btn ghost" onClick={() => navigate('/survey-requests')}><i className="ti ti-arrow-left" /></button>
+        {/* CR-027: mở từ YCMH thì quay lại ĐÚNG phiếu nguồn, không văng ra danh sách */}
+        <button className="btn ghost" title={fromPr?.pr_id ? `Quay lại YCMH ${fromPr.pr_code}` : 'Quay lại danh sách'}
+                onClick={() => navigate(fromPr?.pr_id ? `/purchase-requests/${fromPr.pr_id}` : '/survey-requests')}>
+          <i className="ti ti-arrow-left" />
+        </button>
         <h2 className="page-title" style={{ margin: 0 }}>
           {isNew ? 'Tạo Phiếu Yêu cầu Khảo sát mới' : (sv.code || 'Phiếu Yêu cầu Khảo sát')}
         </h2>
@@ -1224,6 +1228,8 @@ export default function SurveyRequestDetail() {
                       onFiles={(list) => addPending(editIdx, list)} />
                     <div style={{ color: '#0b6bcb', fontSize: 12.5, marginTop: 6 }}>
                       Chọn hình bây giờ — sẽ được <b>lưu cùng khi bạn bấm Lưu</b>.
+                      {/* CR-027: dòng lấy từ YCMH — ảnh đối chiếu bên đó tự kéo sang lúc lưu */}
+                      {edit?.src_pr_item_id ? <> Ảnh đính kèm ở dòng tương ứng trên <b>{fromPr?.pr_code || 'YCMH'}</b> cũng được kéo sang.</> : null}
                     </div>
                   </div>
                 )}

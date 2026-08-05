@@ -68,7 +68,40 @@ def _gen_code(db: Session) -> str:
     return f"{prefix}{mx + 1:02d}"
 
 
-def _save_lines(db: Session, sid: int, lines, user_id: int) -> list[int]:
+def _copy_pr_line_images(db: Session, pairs: list[tuple[int, int]], user_id: int,
+                         user=None, profile=None) -> int:
+    """CR-027: kéo ảnh đối chiếu từ DÒNG YCMH nguồn sang DÒNG YCBG vừa tạo.
+    `pairs` = [(id dòng YCMH, id dòng YCBG)]. Chỉ thêm FileLink mới trỏ vào CÙNG file gốc
+    (không tải lại lên R2). Chỉ chép dòng thuộc YCMH mà người dùng có quyền xem."""
+    pairs = [(a, b) for a, b in pairs if a and b]
+    if not pairs:
+        return 0
+    from app.core.scoping import apply_scope
+    from app.modules.attachment.model import FileLink
+    from app.modules.purchase_request.model import (PurchaseRequest,
+                                                    PurchaseRequestItem)
+    q = (db.query(PurchaseRequestItem.id)
+         .join(PurchaseRequest, PurchaseRequest.id == PurchaseRequestItem.pr_id)
+         .filter(PurchaseRequestItem.id.in_({a for a, _ in pairs})))
+    if user is not None and profile is not None:
+        q = apply_scope(q, PurchaseRequest, "purchase_request", user, profile)
+    allowed = {r[0] for r in q.all()}
+    n = 0
+    for src_id, new_id in pairs:
+        if src_id not in allowed:
+            continue
+        for lk in (db.query(FileLink)
+                   .filter(FileLink.entity == "purchase_request_line_image",
+                           FileLink.entity_id == src_id).all()):
+            db.add(FileLink(file_id=lk.file_id, entity="survey_request_line", entity_id=new_id,
+                            created_by=user_id, updated_by=user_id))
+            n += 1
+    if n:
+        db.commit()
+    return n
+
+
+def _save_lines(db: Session, sid: int, lines, user_id: int, user=None, profile=None) -> list[int]:
     """UPSERT dòng theo id (KHÔNG xóa+tạo lại) để đính kèm file (trỏ theo line id) không bị mất.
     - dòng có id đã tồn tại: cập nhật tại chỗ.
     - dòng id=0 (mới): thêm mới.
@@ -78,9 +111,11 @@ def _save_lines(db: Session, sid: int, lines, user_id: int) -> list[int]:
                 .filter(SurveyRequestLine.survey_request_id == sid).all()}
     seen: set[int] = set()
     ordered_ids: list[int] = []
+    img_pairs: list[tuple[int, int]] = []     # (dòng YCMH nguồn, dòng YCBG mới) — xem _copy_pr_line_images
     for it in lines or []:
         data = it.model_dump()
         lid = int(data.pop("id", 0) or 0)
+        src_pr_item = int(data.pop("src_pr_item_id", 0) or 0)   # không phải cột — chỉ dùng để kéo ảnh
         if lid and lid in existing:
             ln = existing[lid]
             for k, v in data.items():
@@ -92,6 +127,8 @@ def _save_lines(db: Session, sid: int, lines, user_id: int) -> list[int]:
             db.add(ln)
             db.flush()
             ln.internal_line_code = f"YCBGL{ln.id:06d}"
+            if src_pr_item:
+                img_pairs.append((src_pr_item, ln.id))
         ordered_ids.append(ln.id)
     stale = [lid for lid in existing if lid not in seen]
     if stale:
@@ -102,10 +139,11 @@ def _save_lines(db: Session, sid: int, lines, user_id: int) -> list[int]:
         db.query(SurveyRequestLine).filter(
             SurveyRequestLine.id.in_(stale)).delete(synchronize_session=False)
     db.commit()
+    _copy_pr_line_images(db, img_pairs, user_id, user, profile)
     return ordered_ids
 
 
-def create_sr(db: Session, data, user_id: int) -> SurveyRequest:
+def create_sr(db: Session, data, user_id: int, user=None, profile=None) -> SurveyRequest:
     from app.modules.purchase_request.service import find_dept_head
     header = {f: getattr(data, f) for f in HEADER_FIELDS}
     # Tự điền Trưởng bộ phận theo Department.manager_id (parity với PYC).
@@ -117,13 +155,13 @@ def create_sr(db: Session, data, user_id: int) -> SurveyRequest:
     db.add(s)
     db.commit()
     db.refresh(s)
-    ordered = _save_lines(db, s.id, data.lines, user_id)
+    ordered = _save_lines(db, s.id, data.lines, user_id, user, profile)
     record(db, user_id, ENTITY, s.id, "create")
     s._ordered_line_ids = ordered
     return s
 
 
-def update_sr(db: Session, sid: int, data, user_id: int) -> SurveyRequest:
+def update_sr(db: Session, sid: int, data, user_id: int, user=None, profile=None) -> SurveyRequest:
     from app.modules.purchase_request.service import find_dept_head
     s = get_sr(db, sid)
     if s.status not in ("draft", "rejected"):
@@ -138,7 +176,7 @@ def update_sr(db: Session, sid: int, data, user_id: int) -> SurveyRequest:
     db.commit()
     ordered = None
     if data.lines is not None:
-        ordered = _save_lines(db, sid, data.lines, user_id)
+        ordered = _save_lines(db, sid, data.lines, user_id, user, profile)
     record(db, user_id, ENTITY, sid, "update")
     db.refresh(s)
     if ordered is not None:

@@ -192,7 +192,8 @@ def get_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey_r
 @router.post("")
 def create_(data: SurveyRequestCreate, db: Session = Depends(get_db),
             user=Depends(require("survey_request", "create"))):
-    return success(_out(db, service.create_sr(db, data, user.id)), "Đã tạo", 201)
+    # user/profile: để kéo ảnh từ dòng YCMH nguồn sang (CR-027) đúng phạm vi dữ liệu người dùng thấy
+    return success(_out(db, service.create_sr(db, data, user.id, user, get_perm_profile(db, user))), "Đã tạo", 201)
 
 
 @router.patch("/{sid}")
@@ -201,7 +202,8 @@ def update_(sid: int, data: SurveyRequestUpdate, db: Session = Depends(get_db),
     s = service.get_sr(db, sid)
     if not _can_edit_own(db, s, user):
         raise HTTPException(403, "Không có quyền sửa phiếu này")
-    return success(_out(db, service.update_sr(db, sid, data, user.id)), "Đã cập nhật")
+    return success(_out(db, service.update_sr(db, sid, data, user.id, user, get_perm_profile(db, user))),
+                   "Đã cập nhật")
 
 
 @router.post("/{sid}/clone")

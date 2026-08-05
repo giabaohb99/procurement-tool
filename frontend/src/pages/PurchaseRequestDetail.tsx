@@ -453,12 +453,13 @@ export default function PurchaseRequestDetail() {
         request_qty: Number(it.qty) || 0,
         uom: it.unit || '',
         proposed_price: Number(it.price) || 0,
+        src_pr_item_id: it.id || 0,   // CR-027: ảnh đối chiếu của dòng này sẽ được kéo sang khi Lưu
       }))
     if (!lines.length) { toast.error('Phiếu không còn dòng sản phẩm nào để khảo sát'); return }
     navigate('/survey-requests/new', {
       state: {
         fromPr: {
-          pr_code: pr.code,
+          pr_id: Number(id) || 0, pr_code: pr.code,
           company_id: pr.company_id || 0,
           requester: pr.requester || '', requester_id: pr.requester_id || 0,
           requester_position: pr.requester_position || '',
@@ -514,9 +515,14 @@ export default function PurchaseRequestDetail() {
         {!isNew && <button className="btn ghost" onClick={() => window.open(`/print/purchase-request/${id}`, '_blank')}><i className="ti ti-printer" />In phiếu</button>}
         {!isNew && pos && pos.length > 0 && <button className="btn ghost" onClick={() => setShowPoModal(true)}><i className="ti ti-shopping-cart" />ĐMH liên quan ({pos.length})</button>}
         {!isNew && can('purchase_request', 'create') && <button className="btn ghost" onClick={() => setConfirmAction({ type: 'copy', title: 'Nhân bản', message: 'Nhân bản phiếu này thành phiếu Nháp mới?', confirmText: 'Nhân bản' })}><i className="ti ti-copy" />Nhân bản</button>}
-        {/* CR-026: phiếu bị trả lại / từ chối → chuyển hướng đi khảo sát lại, không phải gõ lại từ đầu */}
+        {/* CR-026: phiếu bị trả lại / từ chối → chuyển hướng đi khảo sát lại, không phải gõ lại từ đầu.
+            Màu (CR-027): phiếu ĐÃ TỪ CHỐI bị khóa, không còn nút workflow nào → đây là việc cần làm tiếp,
+            để nút đặc cho nổi. Phiếu BỊ TRẢ LẠI vẫn sửa & "Gửi duyệt" lại được (nút đặc bên phải) nên
+            nút này để dạng nhạt hơn, tránh 2 nút chính đá nhau. */}
         {!isNew && ['rejected', 'cancelled'].includes(pr.status) && can('survey_request', 'create') && (
-          <button className="btn ghost" onClick={createSurveyRequest}><i className="ti ti-clipboard-list" />Tạo yêu cầu báo giá</button>
+          <button className={pr.status === 'cancelled' ? 'btn' : 'btn secondary'} onClick={createSurveyRequest}>
+            <i className="ti ti-clipboard-list" />Tạo yêu cầu báo giá
+          </button>
         )}
         {!isNew && ['draft', 'rejected', 'cancelled'].includes(pr.status) && can('purchase_request', 'delete') && (
           <button className="btn ghost err" onClick={() => setConfirmDelete(true)}><i className="ti ti-trash" />Xóa phiếu</button>

@@ -382,6 +382,8 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
     - Header chép sang: công ty, người yêu cầu (kèm `requester_id`), chức vụ, phòng ban, trưởng bộ phận, mục đích. Ghi chú được nối thêm dòng `(Tạo từ YCMH {code})` để giữ vết phiếu nguồn.
     - Dòng chép sang (bỏ dòng "Hủy đơn" và dòng trống tên hàng): `item_group` → Phân loại · `qty` → SL dự kiến · `unit` → ĐVT · `price` → Giá đề xuất · `note` → Yêu cầu khác. YCBG **không có ô mã/tên hàng**, nên `product_name` (nối thêm `group_desc` nếu có) được gộp vào **Chi tiết thông số** để không mất thông tin.
     - Không chép sang: mã phiếu, trạng thái, NSTM phụ trách, ngày tiếp nhận / ngày YC trả KQ (do thu mua và người YC nhập lại theo đợt khảo sát mới).
+    - **Ảnh đối chiếu của dòng (CR-027):** mỗi dòng mang theo `src_pr_item_id` (id dòng YCMH nguồn); khi bấm **Lưu**, backend tự **kéo ảnh đối chiếu** của dòng YCMH đó sang dòng YCBG mới. Chỉ **thêm liên kết** (`tab_file_link`) trỏ vào **cùng file gốc** — không tải file lên lần nữa, không nhân bản dung lượng. Ảnh chỉ được kéo nếu người bấm **có quyền xem** phiếu YCMH nguồn (lọc bằng `apply_scope` trên `purchase_request`). Xóa dòng/phiếu YCBG chỉ gỡ liên kết của nó, **ảnh bên YCMH vẫn còn nguyên**.
+    - **Không** tạo liên kết YCMH ↔ YCBG trong `tab_survey_request_pr`: bảng đó chỉ ghi chiều **YCBG → YCMH** (YCMH sinh ra từ phương án khảo sát) và được dùng để tự hoàn thành YCBG khi mọi YCMH con đã xong; gắn ngược một YCMH đã bị từ chối vào đó sẽ làm YCBG không bao giờ tự hoàn thành. Vết phiếu nguồn giữ ở **ghi chú** + nhãn `Từ {mã YCMH}` trên tiêu đề.
     - Phiếu YCMH gốc **giữ nguyên** trạng thái để truy vết; hệ thống không đánh dấu "đã thay thế".
 
 ## D. Quyền thao tác (RBAC)
