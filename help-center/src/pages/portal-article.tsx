@@ -58,9 +58,14 @@ export default function PortalArticle({ nodeId }: { nodeId: number | null }) {
   // KHÔNG bọc thêm div border-t: header đã có border-b, thêm nữa là 2 vạch chồng nhau.
   return (
     <div className="flex w-full items-start gap-8 px-6 md:px-8">
-      {/* Cột trái: cây tài liệu của mục đang đọc */}
-      <aside className="sticky top-[4.25rem] hidden h-[calc(100vh-4.25rem)] w-64 shrink-0 overflow-y-auto border-r py-8 pr-4 lg:block">
-        <HelpSectionNav tree={tree} activeId={nodeId} />
+      {/* Cột trái: cây tài liệu của mục đang đọc.
+          <aside> chỉ giữ chỗ rộng 16rem; khung bên trong để "fixed" nên đứng yên khi cuộn kể cả khi
+          bài viết ngắn hơn sidebar (sticky sẽ tuột theo trang vì thẻ cha không đủ cao). Không đặt
+          "left" -> trình duyệt giữ nguyên vị trí ngang vốn có, vẫn thẳng lề với header. */}
+      <aside className="hidden w-64 shrink-0 lg:block">
+        <div className="fixed top-[4.25rem] h-[calc(100vh-4.25rem)] w-64 overflow-y-auto border-r py-8 pr-4">
+          <HelpSectionNav tree={tree} activeId={nodeId} />
+        </div>
       </aside>
 
       <main className="min-w-0 max-w-3xl flex-1 pb-16 pt-8">

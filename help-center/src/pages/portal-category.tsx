@@ -52,8 +52,11 @@ export default function PortalCategory({ node }: { node: HelpNode }) {
 
   return (
     <div className="flex w-full items-start gap-8 px-6 md:px-8">
-      <aside className="sticky top-[4.25rem] hidden h-[calc(100vh-4.25rem)] w-64 shrink-0 overflow-y-auto border-r py-8 pr-4 lg:block">
-        <HelpSectionNav tree={tree} activeId={node.id} />
+      {/* Sidebar đứng yên khi cuộn — xem chú thích cùng khối ở portal-article.tsx */}
+      <aside className="hidden w-64 shrink-0 lg:block">
+        <div className="fixed top-[4.25rem] h-[calc(100vh-4.25rem)] w-64 overflow-y-auto border-r py-8 pr-4">
+          <HelpSectionNav tree={tree} activeId={node.id} />
+        </div>
       </aside>
 
       <main className="min-w-0 max-w-3xl flex-1 pb-16 pt-8">

@@ -43,7 +43,8 @@ export default function Login() {
         aria-hidden
         className="relative hidden flex-col justify-between overflow-hidden bg-[radial-gradient(1100px_520px_at_12%_8%,rgba(0,174,239,0.28),transparent_60%),radial-gradient(900px_600px_at_100%_100%,rgba(0,174,239,0.2),transparent_55%),linear-gradient(155deg,#14224f_0%,#1b2559_42%,#0f2b52_100%)] p-12 text-white lg:flex"
       >
-        <img src="/logo.svg" alt="DEGO Holding" className="relative z-10 h-11 w-auto drop-shadow-lg" />
+        {/* self-start: aside là flex-col nên mặc định con bị kéo rộng hết cột, logo trông như căn giữa */}
+        <img src="/logo.svg" alt="DEGO Holding" className="relative z-10 h-11 w-auto self-start drop-shadow-lg" />
 
         <div className="relative z-10 max-w-md">
           <h1 className="mb-3.5 text-4xl font-extrabold leading-tight tracking-tight">
