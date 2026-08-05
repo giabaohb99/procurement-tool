@@ -7,7 +7,10 @@ from app.core.utils import generate_code
 from .model import Employee
 from .schema import EmployeeCreate, EmployeeUpdate
 
-FILTERABLE = ["code", "full_name", "email", "is_active", "position", "role_names", "department_id"]
+# "status" (Chính thức / Cộng tác viên / Nghỉ việc…) trước đây thiếu trong whitelist nên ô lọc
+# Trạng thái trên UI không ăn — bổ sung vào đây để cả lọc cơ bản lẫn lọc điều kiện đều chạy.
+FILTERABLE = ["code", "full_name", "email", "is_active", "position", "role_names", "department_id",
+              "status"]
 ENTITY = "employee"
 
 

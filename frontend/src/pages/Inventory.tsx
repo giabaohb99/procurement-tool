@@ -1,10 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import Pagination from '../components/Pagination'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
 import FilterPanel, { FilterItem } from '../components/FilterPanel'
+import {
+  ConditionalFilter, ConditionalFilterButton, RestQueryParams,
+} from '../components/conditional-filter'
+import { INVENTORY_COND_FILTERS } from '../config/conditional-filters'
 import { fmtDateTime } from '../utils/datetime'
 import NumberInput from '../components/NumberInput'
 import TableHead, { TableCells } from '../components/TableHead'
@@ -27,6 +31,10 @@ export default function Inventory() {
     item_group?: string
     qty_status?: string
   }>({})
+  // Điều kiện từ BỘ LỌC ĐIỀU KIỆN — giữ thêm bản ref để load() đọc được giá trị mới nhất
+  const [condParams, setCondParams] = useState<RestQueryParams>({})
+  const condRef = useRef<RestQueryParams>({})
+  condRef.current = condParams
   const [groups, setGroups] = useState<any[]>([])
   const [units, setUnits] = useState<any[]>([])
   const [sortField, setSortField] = useState<string>('product_code')
@@ -73,7 +81,8 @@ export default function Inventory() {
   }
 
   async function load() {
-    const params: any = { page_size: 500 }
+    // Gộp điều kiện của BỘ LỌC ĐIỀU KIỆN (`<field>__<op>`) vào cùng request với lọc cơ bản
+    const params: any = { page_size: 500, ...condRef.current }
     if (f.company_id) params.company_id = f.company_id
     if (f.warehouse_code) params.warehouse_code = f.warehouse_code
     if (f.product_code) params.product_code = f.product_code
@@ -103,7 +112,8 @@ export default function Inventory() {
 
   useEffect(() => {
     load()
-  }, [f.company_id, f.warehouse_code, f.item_group, f.qty_status, f.product_code, f.product_name])
+  }, [f.company_id, f.warehouse_code, f.item_group, f.qty_status, f.product_code, f.product_name,
+      condParams])
 
   useEffect(() => {
     setPage(1)
@@ -140,7 +150,9 @@ export default function Inventory() {
         {can('inventory', 'write') && <button className="btn" onClick={openAdjustNew}><i className="ti ti-adjustments" />Điều chỉnh tồn</button>}
       </div>
 
-      <FilterPanel onClear={() => setF({})} canClear={Object.values(f).some((v) => v)}>
+      <ConditionalFilter fields={INVENTORY_COND_FILTERS} onChange={setCondParams}>
+      <FilterPanel onClear={() => setF({})} canClear={Object.values(f).some((v) => v)}
+                   extra={<ConditionalFilterButton />}>
         <FilterItem label="Công ty">
           <SearchSelect value={f.company_id || ''} placeholder="Tất cả"
             options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
@@ -173,6 +185,7 @@ export default function Inventory() {
           <input value={f.product_code || ''} onChange={(e) => setF((s) => ({ ...s, product_code: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && load()} placeholder="Mã SP…" />
         </FilterItem>
       </FilterPanel>
+      </ConditionalFilter>
 
       {msg && <div style={{ color: 'var(--green)', fontSize: 13, marginBottom: 8 }}>{msg}</div>}
       {(() => {

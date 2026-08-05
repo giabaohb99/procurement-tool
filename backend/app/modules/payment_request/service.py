@@ -9,7 +9,8 @@ from app.modules.payable.service import recalc_status
 from .model import PaymentRequest, PaymentRequestLine
 from .schema import PRequestCreate, PRequestUpdate
 
-FILTERABLE = ["code", "supplier_code", "status", "source_type"]
+# request_date: cho bộ lọc điều kiện lọc theo ngày (apply_range_filters vẫn lo _from/_to)
+FILTERABLE = ["code", "supplier_code", "status", "source_type", "request_date"]
 ENTITY = "payment_request"
 
 

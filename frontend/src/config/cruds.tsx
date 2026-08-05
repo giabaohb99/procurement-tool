@@ -1,4 +1,6 @@
 import { FilterField } from '../components/FilterBar'
+import type { FilterFieldDefinition } from '../components/conditional-filter'
+import { condDate, condSelect, condSource, condText } from './conditional-filters'
 import DepartmentMembers from '../components/DepartmentMembers'
 import ProductImages from '../components/ProductImages'
 import { fmtDateTime } from '../utils/datetime'
@@ -27,6 +29,9 @@ export type CrudConfig = {
   columns: Column[]
   fields: FieldDef[]
   filters: FilterField[]
+  /** Bộ lọc ĐIỀU KIỆN (chứa / bằng / lớn hơn / trong khoảng… + VÀ/HOẶC) — không khai báo thì
+   *  màn hình chỉ có thanh lọc cơ bản. `name` PHẢI nằm trong FILTERABLE của controller. */
+  condFilters?: FilterFieldDefinition[]
   importExport?: boolean
   rowStyle?: (row: any) => any   // tô màu dòng theo điều kiện (vd HĐ sắp hết hạn)
   txn?: boolean                  // chứng từ giao dịch (PYC/PO/khảo sát/YCTT): ai có 'read' là xem danh sách được
@@ -41,6 +46,15 @@ const SUP_TYPE = [
   { value: 'goods', label: 'NCC bán hàng' },
   { value: 'transport', label: 'Đơn vị vận chuyển' },
 ]
+
+const EMPLOYEE_STATUS = [
+  { value: 'Chính thức', label: 'Chính thức' },
+  { value: 'Cộng tác viên', label: 'Cộng tác viên' },
+  { value: 'Nghỉ thai sản', label: 'Nghỉ thai sản' },
+  { value: 'Nghỉ việc', label: 'Nghỉ việc' },
+]
+
+const DEPT_ACTIVE = [{ value: 'true', label: 'Hoạt động' }, { value: 'false', label: 'Đã ẩn' }]
 
 const ACTIVE_OPTIONS = [
   { value: 'true', label: 'Đang dùng / Hiện' },
@@ -145,6 +159,10 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên' }, { key: 'tax_code', label: 'MST' },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
     ],
+    condFilters: [
+      condText('code', 'Mã'), condText('name', 'Tên'), condText('tax_code', 'MST'),
+      condSelect('is_active', 'Trạng thái', ACTIVE_OPTIONS, ['eq']),
+    ],
     fields: [
       { key: 'code', label: 'Mã', readonlyOnEdit: true }, { key: 'name', label: 'Tên pháp nhân' },
       { key: 'tax_code', label: 'MST' }, { key: 'address', label: 'Địa chỉ', type: 'textarea' },
@@ -169,6 +187,12 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'legal_type', label: 'Loại NCC', type: 'select', options: ['Công ty', 'Cá nhân', 'Hợp danh', 'Hộ kinh doanh'].map((x) => ({ value: x, label: x })) },
       { key: 'supplier_type', label: 'Vai trò', type: 'select', options: SUP_TYPE },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
+    ],
+    // legal_type không nằm trong FILTERABLE của supplier nên không đưa vào đây
+    condFilters: [
+      condText('code', 'Mã / viết tắt'), condText('name', 'Tên NCC'), condText('tax_code', 'MST'),
+      condSelect('supplier_type', 'Vai trò', SUP_TYPE),
+      condSelect('is_active', 'Trạng thái', ACTIVE_OPTIONS, ['eq']),
     ],
     fields: [
       { key: 'code', label: 'Mã / viết tắt', readonlyOnEdit: true }, { key: 'name', label: 'Tên pháp lý' },
@@ -196,6 +220,13 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'hh_code', label: 'Mã HH (sản phẩm)' },
       { key: 'unit', label: 'ĐVT', source: { url: '/api/units', value: 'name', label: 'name' } },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
+    ],
+    condFilters: [
+      condText('code', 'Mã VTBB/NL'), condText('name', 'Tên VTBB/NL'),
+      condSource('item_group', 'Phân loại', { url: '/api/item-groups', value: 'name', label: 'name' }),
+      condSource('unit', 'ĐVT', { url: '/api/units', value: 'name', label: 'name' }),
+      condText('hh_code', 'Mã HH (sản phẩm)'), condText('hh_name', 'Tên SP (HH)'),
+      condSelect('is_active', 'Trạng thái', ACTIVE_OPTIONS, ['eq']),
     ],
     fields: [
       { key: 'code', label: 'Mã VTBB/NL', readonlyOnEdit: true }, { key: 'name', label: 'Tên VTBB/NL' },
@@ -229,6 +260,16 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'signed', label: 'Đã ký', type: 'select', options: [{ value: 'true', label: 'Đã ký' }, { value: 'false', label: 'Chưa ký' }] },
       { key: 'end_date', label: 'Ngày hết hạn', type: 'daterange' },
     ],
+    // `expiry` / `signed` là cột tính toán, không lọc điều kiện được -> chỉ có ở thanh lọc cơ bản
+    condFilters: [
+      condText('code', 'Mã HĐ'), condText('title', 'Trích yếu'),
+      condText('party_name', 'Tên đối tượng'), condText('party_code', 'Mã đối tượng'),
+      condSelect('party_type', 'Đối tượng',
+        ['Nhà cung cấp', 'Khách hàng', 'Khác'].map((x) => ({ value: x, label: x }))),
+      condSelect('contract_type', 'Loại HĐ', CONTRACT_TYPES),
+      condSelect('status', 'Trạng thái', CONTRACT_STATUS),
+      condDate('end_date', 'Ngày hết hạn'),
+    ],
     fields: [],  // chi tiết dùng trang riêng (ContractDetail) — có đính kèm file
   },
   employees: {
@@ -242,12 +283,14 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     filters: [
       { key: 'code', label: 'Mã NV' }, { key: 'full_name', label: 'Họ tên' }, { key: 'email', label: 'Email' },
-      { key: 'status', label: 'Trạng thái', type: 'select', options: [
-        {value: 'Chính thức', label: 'Chính thức'},
-        {value: 'Cộng tác viên', label: 'Cộng tác viên'},
-        {value: 'Nghỉ thai sản', label: 'Nghỉ thai sản'},
-        {value: 'Nghỉ việc', label: 'Nghỉ việc'}
-      ] },
+      { key: 'status', label: 'Trạng thái', type: 'select', options: EMPLOYEE_STATUS },
+    ],
+    condFilters: [
+      condText('code', 'Mã NV'), condText('full_name', 'Họ tên'), condText('email', 'Email'),
+      condSource('department_id', 'Phòng ban', { url: '/api/departments', value: 'id', label: 'name' }),
+      condText('position', 'Vị trí / Chức vụ'),
+      condSelect('status', 'Trạng thái', EMPLOYEE_STATUS),
+      condSelect('is_active', 'Đang dùng', ACTIVE_OPTIONS, ['eq']),
     ],
     fields: [
       { key: 'code', label: 'Mã NV', readonlyOnEdit: true }, { key: 'full_name', label: 'Họ tên' },
@@ -256,12 +299,7 @@ export const cruds: Record<string, CrudConfig> = {
       // CR-022: đây là CHỨC DANH để hiển thị/in phiếu, KHÔNG cấp quyền cho tài khoản đăng nhập.
       { key: 'position', label: 'Vị trí / Chức vụ',
         hint: 'Chỉ là chức danh hiển thị trên phiếu — không phải phân quyền. Quyền thật của tài khoản đặt ở màn "Phân quyền tài khoản".' },
-      { key: 'status', label: 'Trạng thái', type: 'select', default: 'Chính thức', options: [
-        {value: 'Chính thức', label: 'Chính thức'},
-        {value: 'Cộng tác viên', label: 'Cộng tác viên'},
-        {value: 'Nghỉ thai sản', label: 'Nghỉ thai sản'},
-        {value: 'Nghỉ việc', label: 'Nghỉ việc'}
-      ] },
+      { key: 'status', label: 'Trạng thái', type: 'select', default: 'Chính thức', options: EMPLOYEE_STATUS },
     ],
   },
   roles: {
@@ -275,6 +313,8 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã' },
       { key: 'name', label: 'Tên' }
     ],
+    // Danh sách vai trò dùng trang riêng (pages/RolePermissions — ma trận phân quyền, có ô
+    // "Tìm vai trò" sẵn) nên không gắn bộ lọc điều kiện; entry này chỉ phục vụ trang chi tiết.
     fields: [
       { key: 'code', label: 'Mã Vai trò', readonlyOnEdit: true },
       { key: 'name', label: 'Tên Vai trò' },
@@ -311,6 +351,18 @@ export const cruds: Record<string, CrudConfig> = {
         { value: 'processing', label: 'Đang xử lý' }, { value: 'completed', label: 'Hoàn thành' },
       ] },
     ],
+    // company_id / assignee / item_group lọc qua bảng con hoặc scope -> không có trong FILTERABLE
+    condFilters: [
+      condText('code', 'Mã PYC'), condText('requester', 'Người yêu cầu'),
+      condSource('department', 'Bộ phận YC', { url: '/api/departments', value: 'name', label: 'name' }),
+      condDate('request_date', 'Ngày tạo'), condDate('need_date', 'Ngày cần hàng'),
+      { name: 'is_urgent', label: 'Đơn gấp', type: 'boolean' },
+      condSelect('status', 'Trạng thái', [
+        { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
+        { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Bị trả lại' },
+        { value: 'cancelled', label: 'Đã từ chối' },
+        { value: 'processing', label: 'Đang xử lý' }, { value: 'completed', label: 'Hoàn thành' }]),
+    ],
     fields: [],  // chi tiết dùng trang riêng (PurchaseRequestDetail)
   },
   'survey-requests': {
@@ -338,6 +390,17 @@ export const cruds: Record<string, CrudConfig> = {
         { value: 'done', label: 'Hoàn thành' }, { value: 'rejected', label: 'Bị trả lại' },
         { value: 'cancelled', label: 'Đã từ chối' }] },
     ],
+    condFilters: [
+      condText('code', 'Mã phiếu'), condText('requester', 'Người yêu cầu'),
+      condSource('department', 'Bộ phận', { url: '/api/departments', value: 'name', label: 'name' }),
+      condDate('request_date', 'Ngày tạo'),
+      condSelect('status', 'Trạng thái', [
+        { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
+        { value: 'approved', label: 'Đã duyệt' }, { value: 'processing', label: 'Đang xử lý' },
+        { value: 'survey_done', label: 'Đã khảo sát' }, { value: 'pr_created', label: 'Đã tạo YCMH' },
+        { value: 'done', label: 'Hoàn thành' }, { value: 'rejected', label: 'Bị trả lại' },
+        { value: 'cancelled', label: 'Đã từ chối' }]),
+    ],
     fields: [],
   },
   warehouses: {
@@ -350,6 +413,10 @@ export const cruds: Record<string, CrudConfig> = {
     filters: [
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên kho' },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
+    ],
+    condFilters: [
+      condText('code', 'Mã'), condText('name', 'Tên kho'),
+      condSelect('is_active', 'Trạng thái', ACTIVE_OPTIONS, ['eq']),
     ],
     fields: [
       { key: 'code', label: 'Mã', readonlyOnEdit: true }, { key: 'name', label: 'Tên kho' },
@@ -367,6 +434,10 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên' },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
     ],
+    condFilters: [
+      condText('code', 'Mã'), condText('name', 'Tên ĐVT'),
+      condSelect('is_active', 'Trạng thái', ACTIVE_OPTIONS, ['eq']),
+    ],
     fields: [
       { key: 'code', label: 'Mã', readonlyOnEdit: true }, { key: 'name', label: 'Tên ĐVT' },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, colorMap: { 'true': '#16a34a', 'false': '#dc2626' } },
@@ -383,6 +454,10 @@ export const cruds: Record<string, CrudConfig> = {
     filters: [
       { key: 'name', label: 'Phân loại' },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
+    ],
+    condFilters: [
+      condText('code', 'Mã'), condText('name', 'Phân loại'),
+      condSelect('is_active', 'Trạng thái', ACTIVE_OPTIONS, ['eq']),
     ],
     fields: [
       { key: 'name', label: 'Phân loại', readonlyOnEdit: true },
@@ -402,13 +477,18 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     filters: [
       { key: 'q', label: 'Tìm kiếm' },   // tìm chung: tên phòng ban / trưởng bộ phận
-      { key: 'is_active', label: 'Trạng thái', type: 'select', options: [{value: 'true', label: 'Hoạt động'}, {value: 'false', label: 'Đã ẩn'}] },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: DEPT_ACTIVE },
+    ],
+    // manager_name là cột join (trưởng bộ phận) -> tìm qua ô "Tìm kiếm" chung, không lọc điều kiện được
+    condFilters: [
+      condText('code', 'Mã phòng ban'), condText('name', 'Tên phòng ban'),
+      condSelect('is_active', 'Trạng thái', DEPT_ACTIVE, ['eq']),
     ],
     fields: [
       { key: 'code', label: 'Mã Phòng ban', readonlyOnEdit: true },
       { key: 'name', label: 'Tên Phòng ban' },
       { key: 'manager_id', label: 'Trưởng bộ phận', type: 'select', source: { url: '/api/employees', value: 'id', label: 'full_name' } },
-      { key: 'is_active', label: 'Trạng thái', type: 'select', options: [{value: 'true', label: 'Hoạt động'}, {value: 'false', label: 'Đã ẩn'}] },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: DEPT_ACTIVE },
     ],
     detailExtra: (row) => <DepartmentMembers departmentId={row.id} managerId={row.manager_id} />,
   },
@@ -419,6 +499,8 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'primary_name', label: 'NSTM chính' },
       { key: 'backup_name', label: 'NSTM dự phòng' },
     ],
+    // Màn danh sách dùng trang riêng (pages/CategoryAssignees) — bộ lọc điều kiện khai báo ở
+    // config/conditional-filters.ts (CATEGORY_ASSIGNEE_COND_FILTERS); ở đây chỉ dùng cho trang chi tiết.
     filters: [],
     fields: [
       { key: 'item_group_id', label: 'Phân loại VTBB', type: 'select', source: { url: '/api/item-groups', value: 'id', label: 'name' } },
@@ -466,6 +548,25 @@ export const cruds: Record<string, CrudConfig> = {
         { value: 'received', label: 'Đã nhận đủ' }, { value: 'completed', label: 'Hoàn thành' },
         { value: 'rejected', label: 'Bị trả lại' }, { value: 'cancelled', label: 'Đã từ chối' }] },
     ],
+    // Chỉ khai báo cột có trong service.FILTERABLE của purchase_order — cột ngoài whitelist
+    // (item_group, invoice_no… lọc qua bảng con) backend sẽ bỏ qua.
+    condFilters: [
+      condText('code', 'Mã PO'), condText('misa_code', 'Mã MISA'), condText('pr_code', 'Mã PYC'),
+      condSource('supplier_code', 'Nhà cung cấp', { url: '/api/suppliers', value: 'code', label: 'name' }),
+      condSource('nspt', 'NSPT phụ trách', { url: '/api/employees', value: 'full_name', label: 'full_name' }),
+      condText('department', 'Bộ phận'),
+      condDate('order_date', 'Ngày đặt'),
+      { name: 'is_urgent', label: 'Đơn gấp', type: 'boolean' },
+      condSelect('document_status', 'Hồ sơ chứng từ', [
+        { value: 'chưa có chứng từ', label: 'Chưa có chứng từ' },
+        { value: 'đã có thông tin chứng từ', label: 'Đã có chứng từ' },
+        { value: 'đã đủ chứng từ', label: 'Đã đủ chứng từ' }]),
+      condSelect('status', 'Trạng thái', [
+        { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
+        { value: 'approved', label: 'Đã duyệt' }, { value: 'partial', label: 'Đã nhận một phần' },
+        { value: 'received', label: 'Đã nhận đủ' }, { value: 'completed', label: 'Hoàn thành' },
+        { value: 'rejected', label: 'Bị trả lại' }, { value: 'cancelled', label: 'Đã từ chối' }]),
+    ],
     fields: [],  // chi tiết dùng trang riêng (PurchaseOrderDetail)
   },
   'payment-requests': {
@@ -491,6 +592,18 @@ export const cruds: Record<string, CrudConfig> = {
         { value: 'approved', label: 'Đã duyệt' }, { value: 'paid', label: 'Đã chi' },
         { value: 'cancelled', label: 'Đã từ chối' }] },
     ],
+    // po_code / company_id lọc qua bảng con hoặc scope -> không có trong FILTERABLE
+    condFilters: [
+      condText('code', 'Mã phiếu'),
+      condSource('supplier_code', 'Nhà cung cấp', { url: '/api/suppliers', value: 'code', label: 'name' }),
+      condSelect('source_type', 'Loại',
+        [{ value: 'goods', label: 'Hàng hóa' }, { value: 'shipping', label: 'Vận chuyển' }]),
+      condDate('request_date', 'Ngày lập'),
+      condSelect('status', 'Trạng thái', [
+        { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
+        { value: 'approved', label: 'Đã duyệt' }, { value: 'paid', label: 'Đã chi' },
+        { value: 'cancelled', label: 'Đã từ chối' }]),
+    ],
     fields: [],
   },
   'surveys': {
@@ -515,6 +628,17 @@ export const cruds: Record<string, CrudConfig> = {
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Bị trả lại' },
         { value: 'cancelled', label: 'Đã từ chối' }] },
+    ],
+    // product_code nằm ở dòng khảo sát (bảng con) -> không có trong FILTERABLE của survey
+    condFilters: [
+      condText('code', 'Mã phiếu'), condText('sr_code', 'Mã YCBG'), condText('pr_code', 'Mã PYC'),
+      condText('main_content', 'Nội dung chính'), condText('item_code', 'Mã hàng'),
+      condSource('item_group', 'Nhóm hàng', { url: '/api/item-groups', value: 'name', label: 'name' }),
+      condText('nspt', 'NSPT'),
+      condSelect('status', 'Trạng thái', [
+        { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
+        { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Bị trả lại' },
+        { value: 'cancelled', label: 'Đã từ chối' }]),
     ],
     fields: [],
   },

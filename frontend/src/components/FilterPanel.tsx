@@ -1,29 +1,30 @@
-import { Children, isValidElement, ReactNode, useState } from 'react'
+import { ReactNode } from 'react'
 
 // Khung thanh lọc DÙNG CHUNG cho mọi trang danh sách.
 //
 // Trước đây mỗi trang tự dựng `<div className="card filters" style={{...}}>` với label/kích thước
 // khác nhau → UI lộn xộn. Nay mọi trang khai báo:
 //
-//   <FilterPanel canClear={...} onClear={...}>
+//   <FilterPanel canClear={...} onClear={...} extra={<ConditionalFilterButton />}>
 //     <FilterItem label="Công ty">…</FilterItem>
-//     <FilterItem label="Tuổi nợ" secondary active={!!f.aging}>…</FilterItem>
+//     <FilterItem label="Tuổi nợ">…</FilterItem>
 //   </FilterPanel>
 //
-// Trường `secondary` là bộ lọc PHỤ: mặc định ẩn sau nút "Thêm bộ lọc (N)"; nếu đang có giá trị
-// (`active`) thì panel tự mở sẵn và hiện badge số lượng để người dùng biết đang lọc gì.
+// Cơ chế "bộ lọc phụ" (nút "Thêm bộ lọc (N)" gập/mở) đã BỎ: nay mọi ô lọc hiện thẳng, còn các
+// điều kiện phức tạp (chứa / lớn hơn / trong khoảng / VÀ-HOẶC) do BỘ LỌC ĐIỀU KIỆN lo
+// (components/conditional-filter). Prop `secondary`/`active` của FilterItem vẫn nhận để khỏi
+// phải sửa hàng loạt trang, nhưng không còn tác dụng gì.
 
 export function FilterItem({
-  label, children, width, grow, secondary, active,
+  label, children, width, grow,
 }: {
   label?: string
   children: ReactNode
   width?: number          // bề rộng cơ sở (px); mặc định 180
   grow?: boolean          // chiếm phần dư còn lại (dùng cho ô tìm kiếm)
-  secondary?: boolean     // bộ lọc phụ — ẩn sau nút "Thêm bộ lọc"
-  active?: boolean        // đang có giá trị lọc (chỉ dùng cho secondary, để đếm badge)
+  secondary?: boolean     // (bỏ dùng) trước đây: ẩn sau nút "Thêm bộ lọc"
+  active?: boolean        // (bỏ dùng) trước đây: đếm badge cho bộ lọc phụ
 }) {
-  void secondary; void active   // do FilterPanel đọc, không dùng ở đây
   return (
     <div className={'filter-item' + (grow ? ' grow' : '')} style={width ? { flexBasis: width } : undefined}>
       {label && <label>{label}</label>}
@@ -38,31 +39,13 @@ export default function FilterPanel({
   children: ReactNode
   onClear?: () => void
   canClear?: boolean      // có giá trị lọc nào không → hiện nút "Xóa lọc"
-  extra?: ReactNode       // nút phụ bên phải (vd Xuất CSV)
+  extra?: ReactNode       // nút phụ bên phải (vd nút Bộ lọc điều kiện, Xuất CSV)
 }) {
-  const items = Children.toArray(children).filter(isValidElement) as any[]
-  const primary = items.filter((c) => !c.props?.secondary)
-  const secondary = items.filter((c) => c.props?.secondary)
-  const activeCount = secondary.filter((c) => c.props?.active).length
-
-  const [expanded, setExpanded] = useState(() => activeCount > 0)
-
   return (
     <div className="card filter-panel">
-      {primary}
-      {expanded && secondary}
+      {children}
 
       <div className="filter-actions">
-        {secondary.length > 0 && (
-          <button className="btn ghost" onClick={() => setExpanded((e) => !e)}>
-            <i className={`ti ${expanded ? 'ti-chevron-up' : 'ti-adjustments-horizontal'}`} />
-            {expanded
-              ? 'Thu gọn'
-              : activeCount > 0
-                ? `Thêm bộ lọc · ${activeCount} đang lọc`
-                : `Thêm bộ lọc (${secondary.length})`}
-          </button>
-        )}
         {canClear && onClear && (
           <button className="btn ghost" onClick={onClear} title="Xóa tất cả bộ lọc">
             <i className="ti ti-rotate" />Xóa lọc

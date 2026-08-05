@@ -217,6 +217,13 @@ button.nav-group-title:hover {
   align-items: flex-end;
 }
 
+/* .card khai báo overflow:auto SAU .filter-panel (cùng specificity -> đè ngược lại) nên phải
+   dùng .card.filter-panel. Không cho cắt: bảng thả xuống của "Bộ lọc điều kiện" nằm tràn ra
+   ngoài thẻ, mà thanh lọc thì không bao giờ cần cuộn. */
+.card.filter-panel {
+  overflow: visible;
+}
+
 .filter-item {
   flex: 0 1 180px;
   min-width: 150px;

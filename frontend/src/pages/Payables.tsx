@@ -6,6 +6,10 @@ import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
 import DateRangePicker from '../components/DateRangePicker'
 import FilterPanel, { FilterItem } from '../components/FilterPanel'
+import {
+  ConditionalFilter, ConditionalFilterButton, RestQueryParams,
+} from '../components/conditional-filter'
+import { PAYABLE_COND_FILTERS } from '../config/conditional-filters'
 import Pagination from '../components/Pagination'
 import { fmtDateTime } from '../utils/datetime'
 import TableHead, { TableCells } from '../components/TableHead'
@@ -65,8 +69,13 @@ export default function Payables() {
     else { setSortField(field); setSortDir('asc') }
     setPage(1)
   }
+  // Điều kiện từ BỘ LỌC ĐIỀU KIỆN (`<field>__<op>`), gộp chung request với lọc cơ bản
+  const [condParams, setCondParams] = useState<RestQueryParams>({})
+  const condRef = useRef<RestQueryParams>({})
+  condRef.current = condParams
+
   const params = () => {
-    const p: any = { page_size: 1000 }
+    const p: any = { page_size: 1000, ...condRef.current }
     Object.entries(f).forEach(([k, v]) => {
       const val = typeof v === 'string' ? v.trim() : v   // cắt space thừa để LIKE khớp
       if (val) p[k] = val
@@ -92,7 +101,7 @@ export default function Payables() {
     timer.current = setTimeout(load, 300)
     return () => clearTimeout(timer.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f])
+  }, [f, condParams])
 
   const companyName = (cid: number) => companies.find((c) => c.id === cid)?.name || '—'
   const payable = (r: any) => r.status !== 'Đã TT' && r.remaining > 0 && !!(r.invoice_no || '').trim()
@@ -175,7 +184,9 @@ export default function Payables() {
         <Card label="Quá hạn" val={sum.overdue} color="var(--red)" />
       </div>
 
-      <FilterPanel onClear={() => setF(EMPTY_FILTERS(thisYear))} canClear={dirty}>
+      <ConditionalFilter fields={PAYABLE_COND_FILTERS} onChange={setCondParams}>
+      <FilterPanel onClear={() => setF(EMPTY_FILTERS(thisYear))} canClear={dirty}
+                   extra={<ConditionalFilterButton />}>
         <FilterItem label="Công ty">
           <SearchSelect value={f.company_id} placeholder="Tất cả"
             options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
@@ -225,6 +236,7 @@ export default function Payables() {
           </div>
         </FilterItem>
       </FilterPanel>
+      </ConditionalFilter>
 
       {err && <div className="err" style={{ marginBottom: 8 }}>{err}</div>}
       <div className="card table-card">

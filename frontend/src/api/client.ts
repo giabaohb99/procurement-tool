@@ -6,7 +6,10 @@ import { toast } from '../components/toast'
 // Production set VITE_API_URL lúc build (domain thật) nên vẫn dùng URL tuyệt đối.
 const baseURL = (import.meta as any).env?.VITE_API_URL || ''
 
-export const api = axios.create({ baseURL })
+// indexes: null -> tham số dạng mảng serialize thành `key=a&key=b` (LẶP key, không có `[]`).
+// Bộ lọc điều kiện cần điều này khi 1 cột có nhiều điều kiện (vd name__contains 2 lần);
+// backend đọc bằng request.query_params.multi_items() nên nhận đủ cả hai.
+export const api = axios.create({ baseURL, paramsSerializer: { indexes: null } })
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')

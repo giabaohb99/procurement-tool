@@ -8,7 +8,9 @@ from app.core.audit import record
 from .model import PurchaseRequest, PurchaseRequestItem
 from .schema import AssignIn, ItemStatusIn, PRCreate, PRUpdate
 
-FILTERABLE = ["code", "status", "requester", "department", "is_urgent"]
+# request_date/need_date nằm trong whitelist để bộ lọc điều kiện lọc theo ngày; lọc khoảng kiểu cũ
+# (<field>_from/_to) vẫn do apply_range_filters lo.
+FILTERABLE = ["code", "status", "requester", "department", "is_urgent", "request_date", "need_date"]
 ENTITY = "purchase_request"
 
 # Task 4 — NCC 2 cụm (req = bộ phận đề xuất · pur = khảo sát/thu mua) lưu JSON ở cột supplier_info.
