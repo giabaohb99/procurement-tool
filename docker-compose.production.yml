@@ -1,6 +1,11 @@
 # Production — dùng CHUNG MariaDB của dego-erp (container 'dego-erp-db-1', network 'dego-erp_default'),
 # database riêng 'procurement'. Web (nginx static + proxy /api) join 'proxy-tier' để Cloudflare Tunnel gọi tới.
 # KHÔNG có service db (tái dùng MariaDB sẵn có).
+#
+# ⚠ ~/procurement-tool (prod) và ~/procurement-tool-dev là HAI WORKTREE của cùng 1 repo git —
+#   prod giữ nhánh `main`, dev giữ nhánh `bao`, KHÔNG được để chung nhánh. Cập nhật code bằng:
+#       cd ~/procurement-tool && git fetch origin && git reset --hard origin/main
+#   rồi kiểm `git status --short` phải RỖNG trước khi build (xem chú thích trong compose dev).
 
 services:
   api:
