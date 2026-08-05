@@ -153,7 +153,7 @@ Người YC ──► [Tạo PYC thẳng] ──► draft ──► submitted �
 | `purpose` | String(255) | No | `""` | Mục đích khảo sát / mua hàng |
 | `request_date` | String(10) | No | `""` | Ngày tạo phiếu (YYYY-MM-DD) |
 | `status` | String(30) | No | `"draft"` | Trạng thái phiếu: `draft` / `submitted` / `approved` / `rejected` / `processing` / `survey_done` |
-| `assignee_id` | BigInteger FK→employee | No | `0` | NSTM chính phụ trách toàn phiếu (tự gán khi approve, AdminTM gán lại được) |
+| ~~`assignee_id`~~ | BigInteger FK→employee | No | `0` | ~~NSTM chính phụ trách toàn phiếu (tự gán khi approve, AdminTM gán lại được)~~ — **ĐÃ BỎ (CR-018)**: việc khảo sát thuộc về DÒNG (`line.assignee`), cột đã drop khỏi DB |
 | `note` | Text | Yes | `""` | Ghi chú chung |
 | `reject_reason` | Text | Yes | `""` | Lý do từ chối (khi status=rejected) |
 | `survey_request_id_origin` | BigInteger | Yes | `null` | Liên kết ngược: nếu phiếu này sinh ra từ 1 phiếu khảo sát khác (dự phòng mở rộng sau) |

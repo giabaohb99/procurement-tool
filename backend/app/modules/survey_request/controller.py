@@ -29,6 +29,11 @@ def _dict(obj) -> dict:
 def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
     from app.modules.employee.model import Employee
     base = _dict(s)
+    # Trưởng bộ phận: phiếu lập lúc phòng chưa gán trưởng sẽ lưu rỗng và ở rỗng vĩnh viễn.
+    # Rỗng thì lấy theo Department.manager_id hiện tại để HIỂN THỊ (không ghi đè dữ liệu đã lưu).
+    if not base.get("head_of_dept") and s.department:
+        from app.modules.purchase_request.service import find_dept_head
+        base["head_of_dept"] = find_dept_head(db, s.department)
     lines = service.lines_of(db, s.id)
     order = getattr(s, "_ordered_line_ids", None)   # sau create/update: giữ đúng thứ tự dòng đã gửi
     if order:

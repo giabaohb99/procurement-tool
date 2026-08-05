@@ -106,8 +106,14 @@ def _save_lines(db: Session, sid: int, lines, user_id: int) -> list[int]:
 
 
 def create_sr(db: Session, data, user_id: int) -> SurveyRequest:
+    from app.modules.purchase_request.service import find_dept_head
+    header = {f: getattr(data, f) for f in HEADER_FIELDS}
+    # Tự điền Trưởng bộ phận theo Department.manager_id (parity với PYC).
+    # Phòng chưa gán trưởng thì để rỗng — lúc đọc sẽ tự lấy lại (xem `_out` ở controller).
+    if not header.get("head_of_dept") and header.get("department"):
+        header["head_of_dept"] = find_dept_head(db, header["department"])
     s = SurveyRequest(code=(data.code or _gen_code(db)), status="draft", created_by=user_id, updated_by=user_id,
-                      **{f: getattr(data, f) for f in HEADER_FIELDS})
+                      **header)
     db.add(s)
     db.commit()
     db.refresh(s)
@@ -118,12 +124,16 @@ def create_sr(db: Session, data, user_id: int) -> SurveyRequest:
 
 
 def update_sr(db: Session, sid: int, data, user_id: int) -> SurveyRequest:
+    from app.modules.purchase_request.service import find_dept_head
     s = get_sr(db, sid)
     if s.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ sửa được khi phiếu ở trạng thái Nháp hoặc Bị trả lại "
                                  "(phiếu Đã từ chối đã khóa — hãy Nhân bản thành phiếu mới).")
     for k, v in data.model_dump(exclude_unset=True, exclude={"lines"}).items():
         setattr(s, k, v)
+    # Đổi Bộ phận YC ở bản nháp → cập nhật lại Trưởng bộ phận (ô này người dùng không tự nhập).
+    if s.department:
+        s.head_of_dept = find_dept_head(db, s.department) or s.head_of_dept
     s.updated_by = user_id
     db.commit()
     ordered = None
@@ -727,11 +737,10 @@ def complete_sr(db: Session, sid: int, user, profile: dict = None, empty_line_id
 
 
 def auto_assign(db: Session, s: SurveyRequest) -> int:
-    """Sau khi trưởng phòng duyệt: tự gán NSTM cho từng dòng theo phân loại (tái dùng Task 4).
-    Header.assignee_id = NSTM của dòng đầu tiên có phân loại được cấu hình."""
+    """Sau khi trưởng phòng duyệt: tự gán NSTM cho TỪNG DÒNG theo phân loại (tái dùng Task 4).
+    KHÔNG ghi NSTM ở đầu phiếu — một phiếu có thể do nhiều NSTM khảo sát, việc thuộc về dòng."""
     from app.modules.category_assignee.service import resolve_for_group
     assigned = 0
-    header_emp = None
     for ln in lines_of(db, s.id):
         if ln.assignee:
             continue
@@ -741,10 +750,6 @@ def auto_assign(db: Session, s: SurveyRequest) -> int:
             if not ln.received_date:                          # Ngày tiếp nhận = ngày NSTM được gán
                 ln.received_date = datetime.now().strftime("%Y-%m-%d")
             assigned += 1
-            if header_emp is None:
-                header_emp = emp
-    if header_emp and not s.assignee_id:
-        s.assignee_id = header_emp.id
-    if assigned or header_emp:
+    if assigned:
         db.commit()
     return assigned

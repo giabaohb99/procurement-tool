@@ -296,30 +296,32 @@ export default function PurchaseRequestDetail() {
     return p.join(' · ')
   }
 
+  /** Trưởng bộ phận LẤY THEO `Department.manager_id` (nguồn duy nhất) — hỏi server, không đoán
+   *  theo chức danh nhân sự cùng phòng. Phòng chưa gán trưởng → để trống. */
+  const fetchDeptHead = (deptName: string) => {
+    if (!deptName) { setH('head_of_dept', ''); return }
+    api.get(`${API}/meta/dept-head`, { params: { department: deptName } })
+      .then((r) => setH('head_of_dept', r.data.data.head_of_dept || ''))
+      .catch(() => {})
+  }
+
   const handleRequesterChange = (empName: string, isAutoFill = false) => {
     const emp = employees.find(e => e.full_name === empName)
-    if (emp) {
-      const dept = departments.find(d => d.id === emp.department_id)
-      const deptName = dept ? dept.name : ''
-      // Trưởng bộ phận = nhân sự cùng phòng có chức danh "trưởng" (role_name/position)
-      const head = employees.find(e => e.department_id === emp.department_id && e.id !== emp.id && (
-        (e.role_name || '').toLowerCase().includes('trưởng') ||
-        (e.position || '').toLowerCase().includes('trưởng') ||
-        (e.role_name || '').toLowerCase().includes('manager') ||
-        (e.position || '').toLowerCase().includes('head')
-      ))
-      setPr((s: any) => ({
-        ...s,
-        requester: emp.full_name,
-        requester_id: emp.id || 0,
-        requester_position: isAutoFill && s.requester_position ? s.requester_position : (emp.position || emp.role_name || ''),
-        department: isAutoFill && s.department ? s.department : deptName,
-        head_of_dept: isAutoFill && s.head_of_dept ? s.head_of_dept : (head ? head.full_name : s.head_of_dept || ''),
-        company_id: (isAutoFill && s.company_id) ? s.company_id : (emp.company_id || s.company_id),
-      }))
-    } else {
-      setPr((s: any) => ({ ...s, requester: empName, requester_id: 0 }))
-    }
+    if (!emp) { setPr((s: any) => ({ ...s, requester: empName, requester_id: 0 })); return }
+    const dept = departments.find(d => d.id === emp.department_id)
+    const deptName = dept ? dept.name : ''
+    const keepDept = isAutoFill && pr.department ? pr.department : ''
+    setPr((s: any) => ({
+      ...s,
+      requester: emp.full_name,
+      requester_id: emp.id || 0,
+      // Chức vụ = chức danh trong hồ sơ nhân sự. KHÔNG lấy `role_name` — đó là VAI TRÒ dùng
+      // phần mềm (vd. "Điều phối"), không phải chức vụ.
+      requester_position: isAutoFill && s.requester_position ? s.requester_position : (emp.position || ''),
+      department: keepDept || deptName,
+      company_id: (isAutoFill && s.company_id) ? s.company_id : (emp.company_id || s.company_id),
+    }))
+    fetchDeptHead(keepDept || deptName)
   }
 
   // Chọn SP từ ô tìm kiếm (nhận cả object) → tự điền tên/ĐVT/phân loại
@@ -615,8 +617,9 @@ export default function PurchaseRequestDetail() {
                 <input value={pr.requester_position || ''} placeholder="Tự động theo Nhân sự" disabled={!editable} onChange={(e) => setH('requester_position', e.target.value)} />
               </div>
               <div className="form-row">
-                <label>Trưởng bộ phận (TBP) / Người liên hệ <span className="req">*</span></label>
-                <input value={pr.head_of_dept || ''} placeholder="Tự động theo phòng ban của người yêu cầu" disabled />
+                <label>Trưởng bộ phận (TBP) / Người liên hệ</label>
+                <input value={pr.head_of_dept || ''} placeholder="Tự động theo phòng ban của người yêu cầu" disabled
+                  title="Lấy theo Trưởng bộ phận đã gán ở màn hình Phòng ban" />
               </div>
               <div className="form-row">
                 <label>Tùy chọn phiếu</label>

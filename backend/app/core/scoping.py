@@ -53,20 +53,17 @@ def _role_scope_cond(model, entity, scope, user, profile):
             from app.modules.survey_request.model import SurveyRequestLine
             conds = [model.created_by == user.id]   # phiếu MÌNH tạo → thấy mọi trạng thái
             # "Việc thu mua của tôi" CHỈ áp cho phiếu ĐÃ DUYỆT (bỏ nháp/chờ duyệt/từ chối).
-            # NSTM chỉ thấy phiếu khi ĐƯỢC GIAO thật (assignee đầu phiếu HOẶC dòng gán mã mình) —
-            # KHÔNG còn thấy chỉ vì là NSTM chính/phụ của phân loại (bỏ cat_sub theo yêu cầu).
-            work = []
+            # NSTM chỉ thấy phiếu khi CÓ DÒNG gán mã mình — việc khảo sát nằm ở DÒNG.
+            # (Bỏ điều kiện theo `assignee_id` đầu phiếu: trường đó chỉ ghi 1 lần lúc duyệt và
+            #  không đồng bộ khi đổi NSTM dòng → người cũ vẫn thấy phiếu không còn phần việc nào.)
             emp_id = profile.get("employee_id") or 0
             if emp_id:
                 conds.append(model.requester_id == emp_id)   # phiếu mình là người yêu cầu → thấy mọi trạng thái
-                work.append(model.assignee_id == emp_id)
             if profile.get("emp_code"):
                 code_sub = (select(SurveyRequestLine.survey_request_id)
                             .where(SurveyRequestLine.assignee == profile["emp_code"]))
-                work.append(model.id.in_(code_sub))
-            if work:
                 conds.append(and_(model.status.notin_(["draft", "submitted", "rejected"]),
-                                  or_(*work)))
+                                  model.id.in_(code_sub)))
             return or_(*conds)
         if entity == "purchase_order":
             # ĐMH: thấy đơn MÌNH tạo HOẶC đơn có NSPT phụ trách = mình (nspt lưu theo TÊN)

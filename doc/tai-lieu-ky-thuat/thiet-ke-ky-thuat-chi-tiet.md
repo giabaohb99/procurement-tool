@@ -176,7 +176,7 @@
 | purpose | VARCHAR(255) | Mục đích | |
 | request_date | VARCHAR(10) | | |
 | **status** | VARCHAR(30) INDEX | `draft→submitted→approved→processing→survey_done→pr_created→done`; `rejected` | |
-| assignee_id | BIGINT | NSTM chính toàn phiếu | → `tab_employee.id` |
+| ~~assignee_id~~ | — | **ĐÃ BỎ (CR-018)** — NSTM chính toàn phiếu; cột đã drop khỏi DB (migration `a3f5c81d7e64`). NSTM chỉ còn ở **dòng** (`tab_survey_request_line.assignee`). | — |
 | note, reject_reason | TEXT | | |
 
 #### `tab_survey_request_line` — Dòng (1 SP/nhóm cần khảo sát)
@@ -472,7 +472,7 @@ Nguồn dữ liệu cho **option**. Cột chính:
 | `po_item.fg_code/fg_name` | `tab_product.hh_code/hh_name` | Mã/Tên HH (snapshot khi chọn SP) |
 | `*.department` | `tab_department.name` | Phòng (theo tên) |
 | `*.assignee` (mã NV) | `tab_employee.code` | NSTM phụ trách dòng |
-| `*.assignee_id` | `tab_employee.id` | NSTM chính |
+| `purchase_request.assignee_id` | `tab_employee.id` | NSTM chính toàn phiếu YCMH (YCBG đã bỏ trường này — CR-018) |
 | `category_assignee.item_group_id` | `tab_item_group.id` | Phân loại → NSTM |
 | `survey_request_line.survey_request_id` | `tab_survey_request.id` | Dòng ↔ phiếu YCKS |
 | `survey_request_option.survey_request_line_id` | `tab_survey_request_line.id` | Option ↔ dòng |

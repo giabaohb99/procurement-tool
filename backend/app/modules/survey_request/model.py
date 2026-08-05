@@ -20,7 +20,10 @@ class SurveyRequest(Base, AuditMixin):
     purpose: Mapped[str] = mapped_column(String(255), default="")
     request_date: Mapped[str] = mapped_column(String(10), default="")
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)  # draft|submitted|approved|rejected|processing|survey_done
-    assignee_id: Mapped[int] = mapped_column(BigInteger, default=0)          # NSTM chính toàn phiếu
+    # BỎ: `assignee_id` (NSTM chính toàn phiếu). Việc khảo sát thuộc về DÒNG
+    # (`SurveyRequestLine.assignee`) — xem CR-018 trong doc/tai-lieu-ky-thuat/change-log.md.
+    # Cột đã drop khỏi DB bằng migration `a3f5c81d7e64`. ĐỪNG nhầm với
+    # `PurchaseRequest.assignee_id` (YCMH) — trùng tên nhưng vẫn đang dùng.
     note: Mapped[str] = mapped_column(Text, default="")
     reject_reason: Mapped[str] = mapped_column(Text, default="")
 

@@ -135,14 +135,20 @@ Màn danh sách `/survey-requests` hỗ trợ các bộ lọc:
 - Người sửa: Người YC khi phiếu `draft` / `rejected` (chỉ ảnh hưởng đến `request_date`; `created_at` do hệ thống ghi lúc tạo và không thay đổi)
 - Logic đặc biệt: `request_date` dùng làm ngày tham chiếu khi sinh mã PYC (`_gen_pr_code`). `created_at` là timestamp tạo phiếu thực tế và được ưu tiên hiển thị trên giao diện.
 
-### 9. NSTM chính (`assignee_id`)
+### 9. NSTM chính (`assignee_id`) — ĐÃ BỎ (CR-018)
 
-- Kiểu nhập: Tự động
-- Mặc định: `0` (chưa gán)
-- Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: Bảng Nhân viên (`tab_employee.id`)
-- Người sửa: Hệ thống — gán qua `auto_assign` sau khi duyệt phiếu
-- Logic đặc biệt: Được lấy từ NSTM của dòng đầu tiên có phân loại được cấu hình trong bảng `CategoryAssignee`. Không hiển thị trực tiếp trên form header; dùng để lập báo cáo và lọc theo scope. Nếu không có cấu hình phân loại thì giữ nguyên `0`.
+Trường này **không còn tồn tại** trong hệ thống. Trước đây `auto_assign` ghi vào đây NSTM của **dòng
+đầu tiên** có phân loại được cấu hình, và `apply_scope` dùng nó làm một điều kiện xem phiếu.
+
+Lý do bỏ: một phiếu có thể do **nhiều NSTM** khảo sát, việc thuộc về **dòng** chứ không thuộc về
+phiếu. Trường header chỉ được ghi **một lần** lúc duyệt và không đồng bộ khi đổi NSTM ở dòng → NSTM
+cũ vẫn thấy phiếu mình không còn phần việc nào. Ô này cũng đã bị gỡ khỏi giao diện từ trước.
+
+Người phụ trách khảo sát nay chỉ có **một nguồn duy nhất**: `SurveyRequestLine.assignee` (mã NV) —
+xem mục Dòng sản phẩm. Cột `assignee_id` đã được **drop khỏi DB** bằng migration `a3f5c81d7e64`.
+
+> Không nhầm với `PurchaseRequest.assignee_id` (YCMH) — trường đó **vẫn dùng**, người duyệt gán qua
+> `PATCH /{pid}/assign`.
 
 ### 10. Ghi chú (`note`)
 
@@ -573,7 +579,7 @@ Dữ liệu trong bảng này được dùng để:
 
 3. Sửa nội dung phiếu chỉ cho phép khi `status = draft` hoặc `rejected`. Backend trả HTTP 400 "Chỉ sửa được khi phiếu ở trạng thái Nháp hoặc Bị trả lại (phiếu Đã từ chối đã khóa — hãy Nhân bản thành phiếu mới)" nếu cố sửa ở trạng thái khác. Phiếu `cancelled` bị khóa vĩnh viễn — hệ thống gợi ý Nhân bản (`clone`) thành phiếu nháp mới.
 
-4. Sau khi Duyệt: hàm `auto_assign` tự gán NSTM cho từng dòng theo bảng `CategoryAssignee` (khớp `item_group`), cập nhật `received_date`, và đặt `SurveyRequest.assignee_id`. Phiếu chuyển `processing` trong cùng một request. Gửi hai thông báo riêng: (a) **Đã duyệt** — tới người tạo + Quản lý TM + Admin TM; (b) **Phân công khảo sát** — tới NSTM vừa được tự gán theo phân loại (nếu có).
+4. Sau khi Duyệt: hàm `auto_assign` tự gán NSTM cho từng dòng theo bảng `CategoryAssignee` (khớp `item_group`) và cập nhật `received_date`. **Chỉ gán ở dòng — không ghi NSTM nào ở đầu phiếu** (CR-018). Phiếu chuyển `processing` trong cùng một request. Gửi hai thông báo riêng: (a) **Đã duyệt** — tới người tạo + Quản lý TM + Admin TM; (b) **Phân công khảo sát** — tới NSTM vừa được tự gán theo phân loại (nếu có).
 
 5. Cơ chế ẩn NCC: endpoint `GET /{id}/result` (dành cho người YC) chỉ trả các field trong `_OPT_PUBLIC_FIELDS` và `_LINE_PUBLIC_FIELDS`. Các field `supplier_code`, `supplier_name`, `snap_internal_code`, `nstm_note`, `supplier_survey_id`, `product_survey_line_id` bị loại ở tầng Python trước khi trả response — không thể lấy được kể cả gọi API trực tiếp với token người YC.
 

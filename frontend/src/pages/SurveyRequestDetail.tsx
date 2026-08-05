@@ -151,7 +151,7 @@ export default function SurveyRequestDetail() {
         ...s,
         requester: (user as any).full_name || '',
         requester_id: (user as any).employee_id || 0,
-        requester_position: user.role_name || user.position || s.requester_position,
+        requester_position: (user as any).position || s.requester_position,
         department: (user as any).department_name || s.department,
         company_id: (user as any).company_id || s.company_id,
       }))
@@ -394,30 +394,32 @@ export default function SurveyRequestDetail() {
     })
   }
 
+  /** Trưởng bộ phận LẤY THEO `Department.manager_id` (nguồn duy nhất) — hỏi server, không đoán
+   *  theo chức danh nhân sự cùng phòng. Phòng chưa gán trưởng → để trống. */
+  function fetchDeptHead(deptName: string) {
+    if (!deptName) { setH('head_of_dept', ''); return }
+    api.get(`${API}/meta/dept-head`, { params: { department: deptName } })
+      .then((r) => setH('head_of_dept', r.data.data.head_of_dept || ''))
+      .catch(() => {})
+  }
+
   function handleRequesterChange(empName: string, isAutoFill = false) {
     const emp = employees.find((e) => e.full_name === empName)
-    if (emp) {
-      const dept = departments.find((d) => d.id === emp.department_id)
-      const deptName = dept ? dept.name : ''
-      const head = employees.find((e) =>
-        e.department_id === emp.department_id && e.id !== emp.id && (
-          (e.role_name || '').toLowerCase().includes('trưởng') ||
-          (e.position  || '').toLowerCase().includes('trưởng') ||
-          (e.role_name || '').toLowerCase().includes('manager') ||
-          (e.position  || '').toLowerCase().includes('head')
-        ))
-      setSv((s: any) => ({
-        ...s,
-        requester:          empName,
-        requester_id:       emp.id || 0,
-        requester_position: isAutoFill && s.requester_position ? s.requester_position : (emp.position || emp.role_name || ''),
-        department:         isAutoFill && s.department ? s.department : deptName,
-        head_of_dept:       isAutoFill && s.head_of_dept ? s.head_of_dept : (head ? head.full_name : s.head_of_dept || ''),
-        company_id:         (isAutoFill && s.company_id) ? s.company_id : (emp.company_id || s.company_id),
-      }))
-    } else {
-      setSv((s: any) => ({ ...s, requester: empName, requester_id: 0 }))
-    }
+    if (!emp) { setSv((s: any) => ({ ...s, requester: empName, requester_id: 0 })); return }
+    const dept = departments.find((d) => d.id === emp.department_id)
+    const deptName = dept ? dept.name : ''
+    const keepDept = isAutoFill && sv.department ? sv.department : ''
+    setSv((s: any) => ({
+      ...s,
+      requester:          empName,
+      requester_id:       emp.id || 0,
+      // Chức vụ = chức danh trong hồ sơ nhân sự. KHÔNG lấy `role_name` — đó là VAI TRÒ dùng
+      // phần mềm (vd. "Điều phối"), không phải chức vụ.
+      requester_position: isAutoFill && s.requester_position ? s.requester_position : (emp.position || ''),
+      department:         keepDept || deptName,
+      company_id:         (isAutoFill && s.company_id) ? s.company_id : (emp.company_id || s.company_id),
+    }))
+    fetchDeptHead(keepDept || deptName)
   }
 
   function validate(): string {
@@ -701,7 +703,7 @@ export default function SurveyRequestDetail() {
                     options={deptOptions}
                     disabled={!editable}
                     placeholder="Chọn bộ phận…"
-                    onChange={(v) => setH('department', v)}
+                    onChange={(v) => { setH('department', v); fetchDeptHead(v) }}
                   />
                 ) : (
                   <input value={sv.department || ''} disabled />
@@ -709,9 +711,9 @@ export default function SurveyRequestDetail() {
               </div>
 
               <div className="form-row">
-                <label>Trưởng bộ phận <span className="req">*</span></label>
+                <label>Trưởng bộ phận</label>
                 <input value={sv.head_of_dept || ''} placeholder="Tự động theo phòng ban"
-                  disabled />
+                  disabled title="Lấy theo Trưởng bộ phận đã gán ở màn hình Phòng ban" />
               </div>
 
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>

@@ -35,6 +35,10 @@ def _out(db: Session, pr, user=None) -> dict:
     from app.core.audit import resolve_actor
     d = {c: getattr(pr, c) for c in HEADER_COLS}
     d["vat_rate"] = float(pr.vat_rate or 0)
+    # Trưởng bộ phận: phiếu lập lúc phòng chưa gán trưởng sẽ lưu rỗng và ở rỗng vĩnh viễn.
+    # Rỗng thì lấy theo Department.manager_id hiện tại để HIỂN THỊ (không ghi đè dữ liệu đã lưu).
+    if not d.get("head_of_dept") and pr.department:
+        d["head_of_dept"] = service.find_dept_head(db, pr.department)
     # Task 4: NCC 2 cụm. Cụm 'req' (bộ phận đề xuất) MỌI người xem/sửa được — sửa bug người
     # yêu cầu không nhập nổi NCC của chính mình. Cụm 'pur' (khảo sát/thu mua) cần supplier.read
     # để xem, supplier.write để sửa.

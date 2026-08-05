@@ -55,7 +55,8 @@ Mục tiêu: phát hiện phiếu bị "kẹt" ở trạng thái chờ quá lâu
 - [ ] **YCKS chờ duyệt quá 2 ngày**: `SurveyRequest.status = "submitted"` + `updated_at < today - 2 ngày`  
   → Nhắc người có quyền duyệt `survey_request`
 - [ ] **YCKS đã duyệt nhưng chưa có phương án quá 5 ngày**: `SurveyRequest.status IN ("approved","processing")` + `updated_at < today - 5 ngày` + chưa sang `survey_done`  
-  → Nhắc `SurveyRequest.assignee_id` (NSTM phụ trách)
+  → Nhắc NSTM phụ trách **theo từng dòng** (`SurveyRequestLine.assignee`, mã NV → tài khoản).
+  KHÔNG dùng `SurveyRequest.assignee_id` — trường header đã bỏ (CR-018); mỗi dòng có hạn trả kết quả riêng nên nhắc theo dòng mới đúng.
 - [ ] **YCTT chờ duyệt quá 2 ngày**: `PaymentRequest.status = "submitted"` + `updated_at < today - 2 ngày`  
   → Nhắc người có quyền duyệt `payment_request`
 - [ ] **Dòng PYC "Chưa đặt hàng" tồn quá 5 ngày sau khi PYC được duyệt**: `PurchaseRequestItem.line_status = "Chưa đặt hàng"` + PYC cha `status = "approved"` + PYC `updated_at < today - 5 ngày`  

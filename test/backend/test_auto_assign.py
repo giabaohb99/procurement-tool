@@ -4,7 +4,7 @@ test_auto_assign.py — Kiểm tra resolve_for_group và auto_assign.
 Test 1: resolve_for_group("Nhãn") → trả về emp_nstm (primary active).
 Test 2: khi primary inactive → fallback về backup.
 Test 3: auto_assign đặt đúng line.assignee.
-Test 4: auto_assign đặt sr.assignee_id cho dòng đầu tiên.
+Test 4: auto_assign KHÔNG ghi NSTM ở đầu phiếu (việc khảo sát thuộc về dòng — CR-018).
 """
 import pytest
 from app.modules.category_assignee.service import resolve_for_group
@@ -88,14 +88,12 @@ class TestAutoAssign:
         db.refresh(lines[0])
         assert lines[0].assignee == seed.emp_nstm_code
 
-    def test_auto_assign_sets_header_assignee_id(self, db, seed):
-        """auto_assign → sr.assignee_id = emp_nstm.id (dòng đầu tiên)."""
+    def test_auto_assign_khong_ghi_nstm_dau_phieu(self, db, seed):
+        """CR-018: phiếu KHÔNG còn trường NSTM ở header — chỉ dòng mới có người phụ trách."""
         sr = _make_sr_with_lines(db, seed, item_groups=("Nhãn",))
-        assert sr.assignee_id == 0 or sr.assignee_id is None
-
         S.auto_assign(db, sr)
         db.refresh(sr)
-        assert sr.assignee_id == seed.emp_nstm_id
+        assert not hasattr(sr, "assignee_id")
 
     def test_auto_assign_skips_already_assigned(self, db, seed):
         """Dòng đã có assignee → auto_assign không ghi đè."""

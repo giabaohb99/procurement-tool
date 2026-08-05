@@ -170,7 +170,6 @@ erDiagram
         string requester
         string department
         string status "draft..done"
-        int assignee_id "NSTM chính"
     }
     SR_LINE {
         string internal_line_code "ẩn với người YC"
