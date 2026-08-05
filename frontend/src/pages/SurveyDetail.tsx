@@ -358,9 +358,31 @@ export default function SurveyDetail() {
     })
   }
 
+  // CR-024: dòng khảo sát mới tự điền theo phần "Thông tin tiếp nhận" ở đầu phiếu, để NSPT
+  // không phải gõ lại ngày/mã/tên/ĐVT cho từng NCC. Chỉ điền ô nào header có dữ liệu; người dùng
+  // vẫn sửa lại thoải mái (mã SP của NCC thường khác mã nội bộ nên đây chỉ là giá trị mồi).
+  const prefillFromHeader = (tbl: 'supplier' | 'product', s: any) => {
+    const p: Record<string, any> = {}
+    const put = (k: string, v: any) => { if (v !== undefined && v !== null && String(v).trim() !== '') p[k] = v }
+    put('contact_date', s.received_date)          // Ngày tiếp nhận -> Ngày liên hệ
+    put('result_date', s.result_due_date)         // Ngày dự kiến trả KQ
+    if (tbl === 'supplier') {
+      put('supply_group', s.item_group)           // Nhóm SP/dịch vụ cung ứng
+    } else {
+      put('internal_code', s.item_code)           // Mã SP nội bộ -> mồi cho "Mã SP (NCC)"
+      put('product_name', s.item_name)
+      put('quote_unit', s.uom)
+      put('internal_unit', s.uom)
+    }
+    return p
+  }
+
   const addLines = (tbl: 'supplier' | 'product', n = 1) => {
     const empty = tbl === 'supplier' ? emptySupplierLine : emptyProductLine
-    setSv((s: any) => ({ ...s, [lineKey(tbl)]: [...(s[lineKey(tbl)] || []), ...Array.from({ length: n }, () => ({ ...empty }))] }))
+    setSv((s: any) => {
+      const seed = prefillFromHeader(tbl, s)
+      return { ...s, [lineKey(tbl)]: [...(s[lineKey(tbl)] || []), ...Array.from({ length: n }, () => ({ ...empty, ...seed }))] }
+    })
   }
 
   const delLine = (tbl: 'supplier' | 'product', i: number) => {

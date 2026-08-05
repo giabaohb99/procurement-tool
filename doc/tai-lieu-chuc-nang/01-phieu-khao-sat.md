@@ -140,12 +140,17 @@ Chỉ trạng thái Nháp (`draft`) và Bị trả lại (`rejected`) mới cho 
 
 Mỗi dòng = một NCC. Bảng tóm tắt hiện các cột chính; toàn bộ trường xem và sửa trong popup "Chi tiết dòng".
 
+> **Tự điền khi thêm dòng (CR-024).** Bấm "Thêm dòng" / "Thêm nhiều" thì dòng mới được mồi sẵn theo phần
+> **A. Thông tin tiếp nhận**: Ngày tiếp nhận → Ngày liên hệ, Ngày dự kiến trả KQ → Ngày trả KQ, Phân loại → Nhóm SP cung ứng
+> (dòng NCC); Mã VTBB/VL → Mã SP (NCC), Tên VTBB/VL → Tên SP theo NCC, ĐVT → ĐVT báo giá + ĐVT quy đổi (dòng SP).
+> Chỉ điền ô nào đầu phiếu đã có dữ liệu; NSPT sửa lại thoải mái. Dòng đã lưu KHÔNG bị đụng tới.
+
 **Nhóm: Lịch làm việc với NCC**
 
 ### 1. Ngày liên hệ NCC (`contact_date`)
 
 - Kiểu nhập: Chọn ngày
-- Mặc định: trống
+- Mặc định: **tự điền = Ngày tiếp nhận** ở đầu phiếu khi thêm dòng mới (CR-024) — sửa đè được
 - Bắt buộc: Không bắt buộc khi Nháp, bắt buộc khi Gửi duyệt
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
@@ -161,7 +166,7 @@ Mỗi dòng = một NCC. Bảng tóm tắt hiện các cột chính; toàn bộ 
 ### 3. Ngày dự kiến trả KQ (`result_date`)
 
 - Kiểu nhập: Chọn ngày
-- Mặc định: trống
+- Mặc định: **tự điền = Ngày dự kiến trả KQ** ở đầu phiếu khi thêm dòng mới (CR-024) — sửa đè được
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
@@ -238,7 +243,7 @@ Mỗi dòng = một NCC. Bảng tóm tắt hiện các cột chính; toàn bộ 
 ### 12. Nhóm SP/dịch vụ cung ứng (`supply_group`)
 
 - Kiểu nhập: Nhập nhiều dòng
-- Mặc định: trống
+- Mặc định: **tự điền = Phân loại** ở đầu phiếu khi thêm dòng mới (CR-024) — sửa đè được
 - Bắt buộc: Không bắt buộc khi Nháp, bắt buộc khi Gửi duyệt
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
@@ -376,12 +381,15 @@ Mỗi dòng = một NCC. Bảng tóm tắt hiện các cột chính; toàn bộ 
 
 Mỗi dòng = một sản phẩm / báo giá theo NCC.
 
+> **Tự điền khi thêm dòng (CR-024)** — xem ghi chú ở mục B. Dòng SP mới mồi sẵn: Ngày tiếp nhận → Ngày liên hệ,
+> Ngày dự kiến trả KQ → Ngày trả KQ, Mã VTBB/VL → Mã SP (NCC), Tên VTBB/VL → Tên SP theo NCC, ĐVT → ĐVT báo giá + ĐVT quy đổi.
+
 **Nhóm: Lịch làm việc**
 
 ### 1. Ngày liên hệ (`contact_date`)
 
 - Kiểu nhập: Chọn ngày
-- Mặc định: trống
+- Mặc định: **tự điền = Ngày tiếp nhận** ở đầu phiếu khi thêm dòng mới (CR-024) — sửa đè được
 - Bắt buộc: Không bắt buộc khi Nháp, bắt buộc khi Gửi duyệt
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
@@ -397,7 +405,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 ### 3. Ngày dự kiến trả KQ (`result_date`)
 
 - Kiểu nhập: Chọn ngày
-- Mặc định: trống
+- Mặc định: **tự điền = Ngày dự kiến trả KQ** ở đầu phiếu khi thêm dòng mới (CR-024) — sửa đè được
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
@@ -425,7 +433,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 ### 5. Mã SP (theo NCC) (`internal_code`)
 
 - Kiểu nhập: Nhập tay
-- Mặc định: trống
+- Mặc định: **tự điền = Mã VTBB/VL** ở đầu phiếu khi thêm dòng mới (CR-024) — chỉ là giá trị mồi vì NCC thường có mã riêng, sửa đè được
 - Bắt buộc: Không bắt buộc khi Nháp, bắt buộc khi Gửi duyệt
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
@@ -433,7 +441,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 ### 6. Tên SP (tên NCC đặt) (`product_name`)
 
 - Kiểu nhập: Nhập tay
-- Mặc định: trống
+- Mặc định: **tự điền = Tên VTBB/VL** ở đầu phiếu khi thêm dòng mới (CR-024) — sửa đè được
 - Bắt buộc: Không bắt buộc khi Nháp, bắt buộc khi Gửi duyệt
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
@@ -460,7 +468,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 ### 9. ĐVT báo giá (`quote_unit`)
 
 - Kiểu nhập: Chọn (ô tìm kiếm, gõ để lọc)
-- Mặc định: trống
+- Mặc định: **tự điền = ĐVT** ở đầu phiếu khi thêm dòng mới (CR-024) — sửa đè được
 - Bắt buộc: Không bắt buộc khi Nháp, bắt buộc khi Gửi duyệt
 - Nguồn dữ liệu / liên kết: Bảng Đơn vị tính (`unit`)
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
@@ -518,7 +526,7 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 ### 16. ĐVT quy đổi về Cty (`internal_unit`)
 
 - Kiểu nhập: Chọn (ô tìm kiếm, gõ để lọc)
-- Mặc định: trống
+- Mặc định: **tự điền = ĐVT** ở đầu phiếu khi thêm dòng mới (CR-024) — sửa đè được
 - Bắt buộc: Không bắt buộc khi Nháp, bắt buộc khi Gửi duyệt
 - Nguồn dữ liệu / liên kết: Bảng Đơn vị tính (`unit`)
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
