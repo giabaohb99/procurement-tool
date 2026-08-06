@@ -372,7 +372,7 @@ export default function TicketDetail() {
                 <input ref={pickRef} type="file" multiple style={{ display: 'none' }}
                   onChange={(e) => { upload(Array.from(e.target.files || [])); e.target.value = '' }} />
                 <span style={{ flex: 1, fontSize: 11.5, color: '#94a3b8' }}>
-                  {uploading ? 'Đang tải tệp lên…' : 'Ctrl/⌘ + Enter để gửi nhanh · tối đa 10MB mỗi tệp'}
+                  {uploading ? 'Đang tải tệp lên…' : 'Ctrl/⌘ + Enter để gửi nhanh · tối đa 20MB mỗi tệp'}
                 </span>
                 <button className="btn" onClick={sendReply} disabled={sending || uploading || (!reply.trim() && !draft.length)}>
                   {sending ? <i className="ti ti-loader spin" /> : <><i className="ti ti-send" /> Gửi</>}

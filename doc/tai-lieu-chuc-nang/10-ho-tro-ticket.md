@@ -74,7 +74,7 @@ Mở từ **icon tai nghe** ở menu avatar (mọi trang) hoặc nút trong tab 
 | Bộ phận / Nhóm | — | Chọn từ danh sách cố định (xem §7) |
 | Mức ưu tiên | — | Dải nút Thấp / Trung bình / Cao / Khẩn, mặc định "Trung bình" |
 | Nội dung | — | Mô tả chi tiết; trở thành **tin nhắn đầu tiên** của phiếu. Dán ảnh chụp màn hình thẳng vào ô này bằng **Ctrl/⌘ + V** |
-| Tệp đính kèm | — | Kéo-thả / bấm chọn ngay trong popup, nhiều tệp, ≤ **10 MB**/tệp |
+| Tệp đính kèm | — | Kéo-thả / bấm chọn ngay trong popup, nhiều tệp, ≤ **20 MB**/tệp |
 
 **Đính kèm ngay lúc tạo:** file được upload **ngay khi chọn** qua `POST /api/attachments/upload-file` (entity `ticket`) → trả `file_id`, chưa gắn vào phiếu. Danh sách tệp hiện bên dưới, gỡ được bằng nút X. Lúc bấm Gửi, các `file_ids` đi kèm request tạo phiếu và `service.create_ticket` gắn chúng vào phiếu (`_register_files`). Nút Gửi khóa trong lúc đang upload. Vẫn đính kèm thêm được ở màn chi tiết sau đó.
 
@@ -179,7 +179,7 @@ Prefix: `/api/tickets`. Mọi endpoint yêu cầu đăng nhập; danh sách/chi 
 | `POST` | `/api/tickets/{id}/assign` | **chỉ handler** | Nhận phiếu (`assignee_id` = user) / trả về hàng chờ (`assignee_id = 0`). Nhận phiếu đang `open` → tự chuyển `in_progress`; giao cho người khác thì báo cho họ |
 | `POST` | `/api/tickets/{id}/status` | handler = mọi trạng thái; chủ phiếu = `closed`/`in_progress` | Đổi trạng thái (+ gán người xử lý nếu handler) |
 
-Đính kèm dùng API chung `/api/attachments` với `entity=ticket` (tệp gửi kèm lúc tạo phiếu) và `entity=ticket_message` (tệp gắn vào một tin trả lời) — quyền upload gate theo entity cha `ticket` (`write` HOẶC `create`), giới hạn 10 MB/tệp. Cả hai chỗ đều **upload trước** qua `POST /api/attachments/upload-file` lấy `file_id`, rồi gửi `file_ids` kèm `POST /api/tickets` (popup tạo) hoặc `POST /api/tickets/{id}/messages` (ô trả lời). `GET /api/tickets/{id}` trả kèm mảng `files` cho **từng tin nhắn** để hiển thị ngay trong bong bóng.
+Đính kèm dùng API chung `/api/attachments` với `entity=ticket` (tệp gửi kèm lúc tạo phiếu) và `entity=ticket_message` (tệp gắn vào một tin trả lời) — quyền upload gate theo entity cha `ticket` (`write` HOẶC `create`), giới hạn 20 MB/tệp. Cả hai chỗ đều **upload trước** qua `POST /api/attachments/upload-file` lấy `file_id`, rồi gửi `file_ids` kèm `POST /api/tickets` (popup tạo) hoặc `POST /api/tickets/{id}/messages` (ô trả lời). `GET /api/tickets/{id}` trả kèm mảng `files` cho **từng tin nhắn** để hiển thị ngay trong bong bóng.
 
 ---
 

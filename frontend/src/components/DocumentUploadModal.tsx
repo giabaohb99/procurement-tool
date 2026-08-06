@@ -96,7 +96,7 @@ export default function DocumentUploadModal({ entity, entityId, purchaseOrderId,
                     {docTypes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
 
-                  <FileDropzone hint="PDF, ảnh, Word, Excel, XML (hóa đơn), TXT…" onFiles={(list) => addFiles(i, list)} />
+                  <FileDropzone hint="PDF, ảnh, Word, Excel, XML (hóa đơn), TXT, CDR…" onFiles={(list) => addFiles(i, list)} />
 
                   {/* Danh sách file đã chọn */}
                   {r.files.length > 0 && (
