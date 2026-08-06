@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select'
 import { HELP_ICONS } from '@/lib/help-icons'
 import {
-  addHomeItem, deleteHomeItem, reorderHome, updateHomeItem,
+  addHomeItem, deleteHomeItem, MAX_HOME_ITEMS, reorderHome, updateHomeItem,
   type HelpHomeItem, type HelpHomeSection,
 } from '@/lib/help-home-api'
 import { gradientCss, HOME_GRADIENTS, HOME_ILLUSTRATIONS, illustrationUrl } from '@/lib/help-home-skins'
@@ -42,6 +42,7 @@ export default function HelpHomeItemList({
   const [dropAt, setDropAt] = useState<number | null>(null)
 
   const items = section.items
+  const isFull = items.length >= MAX_HOME_ITEMS
 
   const run = async (fn: () => Promise<boolean>) => {
     setBusy(true)
@@ -77,6 +78,11 @@ export default function HelpHomeItemList({
     if (!payload) return
 
     if (payload.kind === 'article' || payload.kind === 'faq') {
+      // Chỉ chặn khi THÊM mới; kéo đổi thứ tự phần tử sẵn có vẫn phải chạy dù khung đã đầy
+      if (isFull) {
+        toast.error(`Mỗi khung tối đa ${MAX_HOME_ITEMS} mục — bỏ bớt rồi thêm lại`)
+        return
+      }
       if (payload.kind !== section.item_kind) {
         toast.error(section.item_kind === 'faq'
           ? 'Khung này chỉ nhận câu hỏi thường gặp'
@@ -134,6 +140,10 @@ export default function HelpHomeItemList({
           <span className="text-xs">Để trống thì trang chủ dùng nội dung mặc định.</span>
         </p>
       ) : (
+        <>
+        <p className={cn('text-right text-xs', isFull ? 'text-amber-600' : 'text-muted-foreground')}>
+          {items.length}/{MAX_HOME_ITEMS} mục{isFull && ' — đã đầy'}
+        </p>
         <ul className="overflow-hidden rounded-md border bg-card">
           {items.map((item, index) => (
             <li
@@ -182,16 +192,17 @@ export default function HelpHomeItemList({
             </li>
           ))}
         </ul>
+        </>
       )}
 
       {section.item_kind === 'custom' && (
         <Button
-          variant="outline" size="sm" className="w-full" disabled={busy}
+          variant="outline" size="sm" className="w-full" disabled={busy || isFull}
           onClick={() => run(() => addHomeItem(section.id, {
             title: 'Thẻ mới', description: '', icon: HELP_ICONS[0].slug, sort_order: items.length,
           }))}
         >
-          <Plus /> Thêm thẻ
+          <Plus /> {isFull ? `Tối đa ${MAX_HOME_ITEMS} thẻ` : 'Thêm thẻ'}
         </Button>
       )}
     </div>

@@ -119,6 +119,9 @@ nếu gửi sai loại (`SECTION_ITEM_KIND` trong `home_service.py`):
 - Cột nguồn có 2 tab **Bài viết / Câu hỏi**. Kéo một dòng thả vào khung; kéo tay cầm ⠿ trong khung
   để đổi thứ tự. Nút lên/xuống vẫn giữ để dùng được bằng bàn phím. Kéo-thả dùng `dataTransfer` với
   MIME riêng (`application/x-help-home`) nên không lẫn với kéo-thả cây tài liệu.
+- Mỗi khung **tối đa `MAX_HOME_ITEMS` = 6 mục** (vừa đúng 2 hàng lưới 3 cột). Đầy rồi thì thả thêm
+  bị từ chối kèm toast và nút "Thêm thẻ" tắt — nhưng **kéo đổi thứ tự vẫn chạy**. Giới hạn này chỉ
+  đặt ở frontend: đây là cấu hình hiển thị, chỉ quản trị viên sửa được.
 - Mọi thay đổi **ghi ngay xuống server**, không có nút Lưu — đây là cấu hình hiển thị. Riêng ô
   tiêu đề/mô tả thẻ chỉ ghi khi **rời ô**, gõ tới đâu gọi API tới đó thì spam request.
 - Khung để trống thì trang chủ dùng **nội dung mặc định** như trước (`firstLeaves` · các mục gốc ·

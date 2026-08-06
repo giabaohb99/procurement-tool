@@ -22,6 +22,13 @@ export const HOME_SECTION = {
  */
 export type HomeItemKind = 'article' | 'faq' | 'custom'
 
+/**
+ * Số phần tử tối đa của MỘT khung trang chủ.
+ * 6 = vừa đúng 2 hàng lưới 3 cột; nhiều hơn thì trang chủ dài lê thê và mất tác dụng
+ * "chỉ lối vào nhanh" của các khung này.
+ */
+export const MAX_HOME_ITEMS = 6
+
 export interface HelpHomeItem {
   id: number
   article_id: number | null
