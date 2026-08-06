@@ -12,25 +12,19 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
 import {
-  createArticle, deleteArticle, levelLabel, renameArticle, reorderSibling,
+  createArticle, deleteArticle, levelLabel, reorderSibling, saveArticleTitle,
 } from '@/lib/help-article-actions'
 import type { HelpNode } from '@/lib/help-tree'
-import { MAX_DEPTH, type DropTarget } from '@/lib/help-tree-dnd'
+import { MAX_DEPTH } from '@/lib/help-tree-dnd'
+import type { TreeDnd } from '@/lib/use-help-tree-dnd'
 import { cn } from '@/lib/utils'
 
 // Một dòng của bảng cây /admin — mở, thêm bài con, đổi tên, đổi thứ tự, xóa,
 // và kéo-thả (đổi thứ tự / chuyển sang mục cha khác).
-
-/** Bộ điều khiển kéo-thả do bảng cây cấp xuống; null = đang lọc nên tắt kéo-thả. */
-export interface TreeDnd {
-  dragId: number | null
-  target: DropTarget | null
-  onDragStart: (id: number) => void
-  onDragOver: (e: React.DragEvent, node: HelpNode) => void
-  onDrop: (e: React.DragEvent, node: HelpNode) => void
-  onDragEnd: () => void
-}
+// Đổi tiêu đề sửa NGAY TẠI DÒNG (bấm nút bút chì hoặc nhấp đúp): sửa cả loạt tiêu đề bằng
+// hộp thoại hỏi-đáp từng bài rất chậm, mà đây là thao tác hay dùng nhất khi dọn cây tài liệu.
 
 export interface TreeRowProps {
   node: HelpNode
@@ -50,6 +44,9 @@ export default function TreeRow({
   node, siblings, index, depth, tree, expanded, onToggle, onChanged, dnd,
 }: TreeRowProps) {
   const [moveOpen, setMoveOpen] = useState(false)
+  /** null = không sửa; chuỗi = tiêu đề đang gõ dở. */
+  const [draftTitle, setDraftTitle] = useState<string | null>(null)
+  const [savingTitle, setSavingTitle] = useState(false)
   const rowRef = useRef<HTMLDivElement>(null)
 
   const children = node.children || []
@@ -65,6 +62,20 @@ export default function TreeRow({
     if (changed) await onChanged()
   }
 
+  const commitTitle = async () => {
+    const next = (draftTitle ?? '').trim()
+    if (savingTitle) return
+    if (!next || next === node.title) {
+      setDraftTitle(null)
+      return
+    }
+    setSavingTitle(true)
+    const ok = await saveArticleTitle(node.id, next)
+    setSavingTitle(false)
+    setDraftTitle(null)
+    if (ok) await onChanged()
+  }
+
   return (
     <li className="border-b last:border-b-0">
       <div
@@ -72,7 +83,7 @@ export default function TreeRow({
         onDragOver={dnd ? (e) => dnd.onDragOver(e, node) : undefined}
         onDrop={dnd ? (e) => dnd.onDrop(e, node) : undefined}
         className={cn(
-          'relative flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-secondary/60',
+          'group/row relative flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-secondary/60',
           isDragging && 'opacity-40',
           // Vạch chỉ chỗ chèn khi thả cùng cấp; nền + viền khi thả VÀO TRONG thành bài con
           drop === 'before' && 'before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-primary',
@@ -120,15 +131,40 @@ export default function TreeRow({
                 : <Folder className="size-4 shrink-0 text-primary" strokeWidth={1.75} />)
             : <FileText className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />}
 
-          <Link
-            to={`/admin/${node.id}`}
-            className={cn(
-              'truncate text-sm text-navy hover:text-primary hover:underline',
-              depth === 0 && 'font-semibold',
-            )}
-          >
-            {node.title}
-          </Link>
+          {draftTitle === null ? (
+            <>
+              <Link
+                to={`/admin/${node.id}`}
+                onDoubleClick={(e) => { e.preventDefault(); setDraftTitle(node.title) }}
+                className={cn(
+                  'truncate text-sm text-navy hover:text-primary hover:underline',
+                  depth === 0 && 'font-semibold',
+                )}
+              >
+                {node.title}
+              </Link>
+              <Button
+                variant="ghost" size="icon" title="Sửa nhanh tiêu đề"
+                className="size-6 shrink-0 text-muted-foreground opacity-0 transition-opacity focus-visible:opacity-100 group-hover/row:opacity-100"
+                onClick={() => setDraftTitle(node.title)}
+              >
+                <Pencil className="size-3.5" />
+              </Button>
+            </>
+          ) : (
+            <Input
+              autoFocus
+              value={draftTitle}
+              disabled={savingTitle}
+              onChange={(e) => setDraftTitle(e.target.value)}
+              onBlur={commitTitle}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); commitTitle() }
+                if (e.key === 'Escape') { e.preventDefault(); setDraftTitle(null) }
+              }}
+              className="h-7 min-w-0 flex-1 text-sm"
+            />
+          )}
         </div>
 
         <span className="w-28 shrink-0">
@@ -176,7 +212,7 @@ export default function TreeRow({
                   <FilePlus2 /> Thêm {levelLabel(depth + 1).toLowerCase()}
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem onClick={() => run(() => renameArticle(node))}>
+              <DropdownMenuItem onClick={() => setDraftTitle(node.title)}>
                 <Pencil /> Đổi tiêu đề
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setMoveOpen(true)}>

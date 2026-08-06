@@ -1,12 +1,9 @@
 import { useCallback, useState } from 'react'
 import { FileText } from 'lucide-react'
 
-import TreeRow, { type TreeDnd } from '@/components/help-article-tree-row'
-import { dropArticle } from '@/lib/help-article-actions'
+import TreeRow from '@/components/help-article-tree-row'
 import type { HelpNode } from '@/lib/help-tree'
-import {
-  canDrop, depthOf, MAX_DEPTH, positionFromPointer, type DropTarget,
-} from '@/lib/help-tree-dnd'
+import { useHelpTreeDnd } from '@/lib/use-help-tree-dnd'
 
 // Bảng cây quản lý bài viết ở /admin — 3 cấp: Mục gốc > Bài viết > Bài chi tiết.
 // File này giữ khung bảng + trạng thái kéo-thả; phần hiển thị 1 dòng nằm ở help-article-tree-row.
@@ -38,8 +35,6 @@ function filterTree(nodes: HelpNode[], kw: string): HelpNode[] {
 
 export default function HelpArticleTreeTable({ tree, onChanged, filter = '' }: TreeTableProps) {
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
-  const [dragId, setDragId] = useState<number | null>(null)
-  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null)
 
   const kw = fold(filter.trim())
   const shown = kw ? filterTree(tree, kw) : tree
@@ -51,50 +46,16 @@ export default function HelpArticleTreeTable({ tree, onChanged, filter = '' }: T
       return next
     }), [])
 
-  const resetDrag = useCallback(() => {
-    setDragId(null)
-    setDropTarget(null)
-  }, [])
+  // Mở sẵn mục vừa nhận bài để thấy ngay kết quả
+  const expandAfterDrop = useCallback(
+    (parentId: number) => setExpanded((prev) => new Set(prev).add(parentId)), [])
 
-  const handleDragOver = useCallback((e: React.DragEvent, node: HelpNode) => {
-    if (dragId === null) return
-    // Chỉ gợi ý "thả vào trong" khi mục đích còn chỗ chứa con (cây tối đa 3 cấp)
-    const allowInside = depthOf(tree, node.id) < MAX_DEPTH
-    const position = positionFromPointer(e.currentTarget.getBoundingClientRect(), e.clientY, allowInside)
-
-    if (!canDrop(tree, dragId, node.id, position)) {
-      setDropTarget(null)
-      return
-    }
-    // preventDefault mới cho phép thả — không gọi thì trình duyệt từ chối drop
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    setDropTarget((prev) =>
-      prev?.id === node.id && prev.position === position ? prev : { id: node.id, position })
-  }, [dragId, tree])
-
-  const handleDrop = useCallback(async (e: React.DragEvent, node: HelpNode) => {
-    e.preventDefault()
-    const target = dropTarget
-    const id = dragId
-    resetDrag()
-    if (id === null || target?.id !== node.id) return
-
-    if (await dropArticle(tree, id, node.id, target.position)) {
-      // Mở sẵn mục vừa nhận bài để thấy ngay kết quả
-      if (target.position === 'inside') setExpanded((prev) => new Set(prev).add(node.id))
-      await onChanged()
-    }
-  }, [dragId, dropTarget, tree, onChanged, resetDrag])
-
-  const dnd: TreeDnd | null = kw ? null : {
-    dragId,
-    target: dropTarget,
-    onDragStart: setDragId,
-    onDragOver: handleDragOver,
-    onDrop: handleDrop,
-    onDragEnd: resetDrag,
-  }
+  const dnd = useHelpTreeDnd({
+    tree,
+    enabled: !kw,
+    onChanged,
+    onDroppedInside: expandAfterDrop,
+  })
 
   if (shown.length === 0) {
     return (

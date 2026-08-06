@@ -3,12 +3,12 @@ import { Link } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 
 import { useArticlePath } from '@/lib/help-slug'
-import { findNode, findPath, type HelpNode } from '@/lib/help-tree'
+import { findPath, type HelpNode } from '@/lib/help-tree'
 import { cn } from '@/lib/utils'
 
-// Sidebar trái ở trang chi tiết bài viết: cây tài liệu của MỤC GỐC đang đọc.
-// Bài đang mở được tô sáng, nhánh chứa nó tự bung ra. Cùng vai trò với sidebar khu quản trị
-// nhưng trỏ về đường dẫn khu người dùng (/:id).
+// Sidebar trái ở trang danh mục / bài viết: liệt kê TOÀN BỘ mục gốc (giống help center của Lark),
+// chỉ bung nhánh chứa bài đang đọc. Trước đây sidebar chỉ hiện đúng cụm của mục gốc đang mở nên
+// người đọc không thấy hệ thống tài liệu còn những phần nào và phải quay về trang chủ để đi tiếp.
 
 export default function HelpSectionNav({
   tree,
@@ -21,39 +21,29 @@ export default function HelpSectionNav({
   const pathOf = useArticlePath()
 
   const path = activeId ? findPath(tree, activeId) : null
-  // Luôn bám theo MỤC GỐC của trang đang mở (crumb đầu tiên) và liệt kê TRỌN các bài bên trong nó
-  // — kể cả khi đang đứng ở chính trang danh mục của mục gốc đó. Nhờ vậy người đọc đi lại trong
-  // cùng một cụm mà sidebar không đổi.
-  // Mục gốc là BÀI ĐƠN (không có bài con) thì chỉ hiện đúng bài đó — KHÔNG đôn toàn bộ mục gốc
-  // khác vào cho đầy, vì như vậy sidebar sẽ thay đổi hoàn toàn khi bấm sang cụm khác.
-  const root = path?.length ? findNode(tree, path[0].id) : null
-  const children = root?.children ?? []
-  const items = children.length > 0 ? children : root ? [root] : tree
 
-  // Tự bung nhánh chứa bài đang đọc (người dùng vẫn tự đóng/mở lại được sau đó).
+  // Chỉ bung đúng nhánh chứa bài đang đọc và ĐÓNG các nhánh còn lại mỗi lần chuyển bài —
+  // gộp thêm vào trạng thái cũ thì đọc vài bài là cả cây bung hết, sidebar dài không tra được.
+  // Trong cùng một trang, người đọc vẫn tự đóng/mở tay thoải mái.
   useEffect(() => {
-    if (!path) return
-    setExpanded((prev) => ({
-      ...prev,
-      ...Object.fromEntries(path.map((crumb) => [crumb.id, true])),
-    }))
+    setExpanded(path ? Object.fromEntries(path.map((crumb) => [crumb.id, true])) : {})
     // path là mảng mới mỗi lần render -> chỉ theo dõi id bài đang đọc
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId])
 
-  if (items.length === 0) return null
+  if (tree.length === 0) return null
 
   return (
     <nav aria-label="Danh mục tài liệu" className="text-sm">
       <Link
-        to={children.length > 0 ? pathOf(root!.id) : '/'}
+        to="/"
         className="mb-3 block px-3 text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:text-primary"
       >
-        {children.length > 0 ? root!.title : 'Danh mục tài liệu'}
+        Danh mục tài liệu
       </Link>
 
       <ul className="space-y-0.5">
-        {items.map((item) => (
+        {tree.map((item) => (
           <NavNode
             key={item.id}
             node={item}

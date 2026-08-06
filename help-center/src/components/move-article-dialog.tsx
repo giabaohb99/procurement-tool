@@ -16,7 +16,7 @@ import { articleHeight, findNode, flattenTree, type HelpNode } from '@/lib/help-
 // Chỉ liệt kê thư mục cha HỢP LỆ để không phá cấu trúc 3 cấp và không tạo vòng lặp.
 
 /** Cấp sâu nhất (0-based) — 0 mục gốc, 1 bài viết, 2 bài chi tiết. */
-const MAX_DEPTH = 2
+export const MAX_DEPTH = 2
 
 const ROOT_VALUE = 'root'
 
@@ -64,7 +64,9 @@ export default function MoveArticleDialog({
       return
     }
     setSaving(true)
-    const ok = await moveArticle(node.id, parentId)
+    // Đưa xuống cuối mục đích để không trùng sort_order với anh em sẵn có
+    const targetSiblings = parentId === null ? tree : (findNode(tree, parentId)?.children || [])
+    const ok = await moveArticle(node.id, parentId, targetSiblings.length)
     setSaving(false)
     if (ok) {
       await onMoved()

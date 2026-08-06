@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { LogIn, LogOut, MessageCircleQuestion, Settings } from 'lucide-react'
+import { LogIn, LogOut, Menu, MessageCircleQuestion, PanelLeft, Settings } from 'lucide-react'
 
 import { api } from '@/api/client'
 import { useAuth } from '@/auth/auth-context'
@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import HelpMainNav from '@/components/help-main-nav'
 import HelpSearchBox from '@/components/help-search-box'
 import { Button } from '@/components/ui/button'
+import { DESKTOP_QUERY, useMediaQuery } from '@/hooks/use-media-query'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -20,6 +21,19 @@ import { buildTree, type HelpNode } from '@/lib/help-tree'
 
 export interface PortalOutletContext {
   tree: HelpNode[]
+  sidebar: PortalSidebarState
+}
+
+/** Trạng thái danh mục bên trái — header giữ, trang con (help-portal-shell) dùng lại. */
+export interface PortalSidebarState {
+  /** Màn rộng: cột danh mục đang hiện. Màn hẹp: ngăn kéo đang mở. */
+  open: boolean
+  toggle: () => void
+  close: () => void
+  /** Bề ngang đủ cho danh mục dạng cột hay chưa (< 1024px thì phải dùng ngăn kéo). */
+  isDesktop: boolean
+  /** Trang đang mở có danh mục hay không — trang chủ/FAQ thì không, nên ẩn nút ☰. */
+  setAvailable: (value: boolean) => void
 }
 
 /** id của ô tìm kiếm lớn giữa trang chủ — header theo dõi nó để biết khi nào cần tự hiện ô của mình. */
@@ -61,6 +75,24 @@ export default function PortalLayout() {
 
   useEffect(() => { loadTree() }, [loadTree])
 
+  // ---- Danh mục bên trái ----
+  // Màn rộng: mở sẵn thành một cột. Màn hẹp (< 1024): là ngăn kéo phủ lên nên phải đóng sẵn,
+  // và đóng lại mỗi lần chuyển trang — nếu không, bấm một bài trong ngăn kéo xong nó vẫn che nội dung.
+  const isDesktop = useMediaQuery(DESKTOP_QUERY)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarAvailable, setSidebarAvailable] = useState(false)
+
+  useEffect(() => { setSidebarOpen(isDesktop) }, [isDesktop])
+  useEffect(() => { if (!isDesktop) setSidebarOpen(false) }, [pathname, isDesktop])
+
+  const sidebar = useMemo(() => ({
+    open: sidebarOpen,
+    toggle: () => setSidebarOpen((v) => !v),
+    close: () => setSidebarOpen(false),
+    isDesktop,
+    setAvailable: setSidebarAvailable,
+  }), [sidebarOpen, isDesktop])
+
   const displayName = user?.full_name || 'Người dùng'
   const initials = displayName.trim().split(' ').slice(-1)[0]?.[0]?.toUpperCase() || 'U'
 
@@ -69,12 +101,26 @@ export default function PortalLayout() {
     // <Link> tới bài viết cũng lấy được đường dẫn dạng slug.
     <SlugIndexProvider tree={tree}>
     <div className="flex min-h-screen flex-col bg-background">
-      <header className="sticky top-0 z-40 flex h-[4.25rem] items-center gap-6 border-b bg-background px-6 md:px-8">
+      <header className="sticky top-0 z-[60] flex h-[4.25rem] items-center gap-4 border-b bg-background px-6 md:px-8 lg:gap-6">
+        {/* Bật/tắt danh mục — chỉ hiện ở trang CÓ danh mục (không phải trang chủ / câu hỏi thường gặp).
+            Màn hẹp là nút ☰ mở ngăn kéo; màn rộng là nút thu/mở cột, thu lại thì mục lục hiện ra. */}
+        {sidebarAvailable && (
+          <Button
+            variant="ghost" size="icon" className="-ml-2 shrink-0"
+            aria-expanded={sidebarOpen}
+            title={sidebarOpen ? 'Ẩn danh mục tài liệu' : 'Hiện danh mục tài liệu'}
+            onClick={sidebar.toggle}
+          >
+            {isDesktop ? <PanelLeft /> : <Menu />}
+          </Button>
+        )}
+
         {/* Logo + gạch dọc + tên trang, giống header Trung tâm trợ giúp của hệ Văn thư */}
         <Link to="/" title="Trung tâm trợ giúp" className="flex shrink-0 items-center gap-4">
           <img src="/logo.svg" alt="DEGO Holding" className="h-8 w-auto" />
-          <span aria-hidden className="h-[1.125rem] w-px bg-border" />
-          <span className="text-lg font-semibold text-navy">Trung tâm trợ giúp</span>
+          {/* Dưới lg bỏ chữ, chỉ giữ logo — có thêm nút ☰ rồi thì header không đủ chỗ */}
+          <span aria-hidden className="hidden h-[1.125rem] w-px bg-border lg:block" />
+          <span className="hidden text-lg font-semibold text-navy lg:inline">Trung tâm trợ giúp</span>
         </Link>
 
         {/* Nav chính: mỗi mục gốc của cây tài liệu là một menu xổ xuống */}
@@ -87,17 +133,19 @@ export default function PortalLayout() {
           </div>
         )}
 
-        <div className="ml-auto flex shrink-0 items-center gap-3">
+        {/* Dưới lg các nút chỉ còn icon (nhãn vẫn nằm ở title để rê chuột đọc được) — bày đủ chữ
+            thì header tràn ngang ngay ở khổ máy tính bảng */}
+        <div className="ml-auto flex shrink-0 items-center gap-1 lg:gap-3">
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/cau-hoi-thuong-gap">
-              <MessageCircleQuestion /> <span className="hidden sm:inline">Câu hỏi thường gặp</span>
+            <Link to="/cau-hoi-thuong-gap" title="Câu hỏi thường gặp">
+              <MessageCircleQuestion /> <span className="hidden lg:inline">Câu hỏi thường gặp</span>
             </Link>
           </Button>
 
           {canManage && (
             <Button variant="outline" size="sm" asChild>
               <Link to="/admin" title="Khu quản trị tài liệu">
-                <Settings /> Truy cập quản trị
+                <Settings /> <span className="hidden lg:inline">Truy cập quản trị</span>
               </Link>
             </Button>
           )}
@@ -106,7 +154,7 @@ export default function PortalLayout() {
           {!user ? (
             <Button variant="ghost" size="sm" asChild>
               <Link to="/login" title="Đăng nhập để quản trị tài liệu">
-                <LogIn /> <span className="hidden sm:inline">Đăng nhập</span>
+                <LogIn /> <span className="hidden lg:inline">Đăng nhập</span>
               </Link>
             </Button>
           ) : (
@@ -139,7 +187,7 @@ export default function PortalLayout() {
       </header>
 
       <div className="flex-1">
-        <Outlet context={{ tree } satisfies PortalOutletContext} />
+        <Outlet context={{ tree, sidebar } satisfies PortalOutletContext} />
       </div>
 
       <footer className="border-t bg-background px-6 py-6 text-center text-xs text-muted-foreground">

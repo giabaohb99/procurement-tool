@@ -37,7 +37,7 @@ export default function AdminHome() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-8 py-7 pb-16">
+    <div className="w-full px-8 py-7 pb-16">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-navy">Quản lý bài viết</h1>

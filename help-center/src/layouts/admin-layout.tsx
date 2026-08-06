@@ -23,6 +23,7 @@ import { buildTree, findNode, findPath, type HelpNode } from '@/lib/help-tree'
 
 /** Tiêu đề breadcrumb cho các trang quản lý cố định (không phải bài viết). */
 const STATIC_PAGE_TITLES: Record<string, string> = {
+  '/admin/trang-chu': 'Bố cục trang chủ',
   '/admin/lich-su': 'Lịch sử thay đổi',
   '/admin/faq': 'Câu hỏi thường gặp',
   '/admin/faq/moi': 'Thêm câu hỏi',
@@ -99,7 +100,12 @@ export default function AdminLayout() {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            <AdminSidebarNav tree={tree} activeId={activeId} pathname={loc.pathname} />
+            <AdminSidebarNav
+              tree={tree}
+              activeId={activeId}
+              pathname={loc.pathname}
+              onTreeChanged={loadTree}
+            />
           </div>
         </aside>
       )}
