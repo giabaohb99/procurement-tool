@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { askConfirm } from '../components/confirm'
 import FilterPanel, { FilterItem } from '../components/FilterPanel'
+import {
+  ConditionalFilter, ConditionalFilterButton, RestQueryParams,
+} from '../components/conditional-filter'
+import { CATEGORY_ASSIGNEE_COND_FILTERS } from '../config/conditional-filters'
 import Pagination from '../components/Pagination'
 import { useAuth } from '../auth/AuthContext'
 import TableHead, { TableCells, TableColGroup } from '../components/TableHead'
@@ -59,15 +63,18 @@ export default function CategoryAssignees() {
   ], [canCreate, canDelete])
   const table = useTableColumns('category-assignees', COLS)
 
-  async function load() {
+  // Điều kiện từ BỘ LỌC ĐIỀU KIỆN — lọc ở SERVER, các ô lọc phía trên vẫn lọc tiếp ở client
+  const [condParams, setCondParams] = useState<RestQueryParams>({})
+
+  async function load(cond: RestQueryParams = condParams) {
     // Tải hết (page_size lớn) để lọc/sort/phân trang phía client; API đã tối ưu JOIN nên nhanh
-    const r = await api.get('/api/category-assignees', { params: { page_size: 1000 } })
+    const r = await api.get('/api/category-assignees', { params: { page_size: 1000, ...cond } })
     setRows(r.data.data.items || [])
   }
   useEffect(() => {
     api.get('/api/item-groups', { params: { page_size: 1000 } }).then(r => setCats(r.data.data.items || []))
-    load()
   }, [])
+  useEffect(() => { load(condParams); setPage(1) }, [condParams])
 
   async function del(id: number) {
     if (!(await askConfirm({ message: 'Xóa phân công này?' }))) return
@@ -112,7 +119,9 @@ export default function CategoryAssignees() {
         {canCreate && <button className="btn" onClick={() => navigate('/category-assignees/new')}><i className="ti ti-plus" />Gán phân công</button>}
       </div>
 
-      <FilterPanel onClear={resetFilters} canClear={!!(fCat || fName || fCode)}>
+      <ConditionalFilter fields={CATEGORY_ASSIGNEE_COND_FILTERS} onChange={setCondParams}>
+      <FilterPanel onClear={resetFilters} canClear={!!(fCat || fName || fCode)}
+                   extra={<ConditionalFilterButton />}>
         <FilterItem label="Phân loại" width={240}>
           <select value={fCat} onChange={e => { setFCat(e.target.value); setPage(1) }}>
             <option value="">Tất cả</option>
@@ -126,6 +135,7 @@ export default function CategoryAssignees() {
           <input value={fCode} onChange={e => { setFCode(e.target.value); setPage(1) }} placeholder="Tìm theo mã NV…" />
         </FilterItem>
       </FilterPanel>
+      </ConditionalFilter>
 
       <div className="card table-card">
         <TableToolbar {...table} onRefresh={load} />

@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session, aliased
 
 from app.core.auth import require
 from app.core.base_controller import pagination
+from app.core.filter_operators import apply_operator_filters
 from app.core.database import get_db
 from app.core.response import success
 
@@ -28,8 +29,12 @@ def _out(db: Session, obj) -> dict:
     return d
 
 
+FILTERABLE = ["item_group_id", "primary_employee_id", "backup_employee_id"]
+
+
 @router.get("")
 def list_(
+    request: Request,
     sort: str = Query("item_group_name"),
     order: str = Query("asc"),
     sort_by: str = Query(""),
@@ -60,6 +65,8 @@ def list_(
         .outerjoin(Pr, Pr.id == CategoryAssignee.primary_employee_id)
         .outerjoin(Bk, Bk.id == CategoryAssignee.backup_employee_id)
     )
+    # Bộ lọc điều kiện theo phân loại / NSTM chính / NSTM dự phòng (xem core/filter_operators.py)
+    q = apply_operator_filters(q, CategoryAssignee, request, FILTERABLE)
 
     sort_map = {
         "id": CategoryAssignee.id,

@@ -13,15 +13,12 @@ export type FilterField = {
   source?: { url: string; value?: string; label?: string }
 }
 
-/** Số trường luôn hiển thị; phần còn lại ẩn sau nút "Thêm bộ lọc" */
-const VISIBLE_COUNT = 3
-
 export default function FilterBar({
   fields, onApply, extra, initial,
 }: {
   fields: FilterField[]
   onApply: (params: Record<string, string>) => void
-  extra?: React.ReactNode
+  extra?: React.ReactNode            // nút phụ bên phải (vd nút "Bộ lọc điều kiện")
   initial?: Record<string, string>   // giá trị lọc khởi tạo (vd điền sẵn từ URL query)
 }) {
   const [vals, setVals] = useState<Record<string, string>>(initial || {})
@@ -61,14 +58,11 @@ export default function FilterBar({
   }
   function clear() { setVals({}) }
 
-  /** Trường thứ VISIBLE_COUNT trở đi là bộ lọc phụ → FilterPanel tự ẩn sau nút "Thêm bộ lọc" */
-  function renderField(f: FilterField, idx: number) {
+  function renderField(f: FilterField) {
     const opts = f.options || dyn[f.key]
     const isRange = f.type === 'daterange'
-    const active = isRange ? !!(vals[f.key + '_from'] || vals[f.key + '_to']) : !!vals[f.key]
     return (
-      <FilterItem key={f.key} label={f.label} width={isRange ? 260 : undefined}
-                  secondary={idx >= VISIBLE_COUNT} active={active}>
+      <FilterItem key={f.key} label={f.label} width={isRange ? 260 : undefined}>
         {(f.type === 'select' || f.source) ? (
           <SearchSelect value={vals[f.key] || ''} options={opts || []} placeholder="Tất cả" onChange={(v) => set(f.key, v)} />
         ) : isRange ? (

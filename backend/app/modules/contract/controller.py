@@ -14,7 +14,10 @@ from .model import Contract
 from .schema import ContractCreate, ContractUpdate
 
 router = APIRouter(prefix="/api/contracts", tags=["contract"])
-FILTERABLE = ["code", "party_type", "party_code", "party_name", "status", "contract_type", "title"]
+# end_date nằm trong whitelist để bộ lọc điều kiện lọc theo ngày hết hạn (end_date__lte/between…);
+# lọc khoảng kiểu cũ (end_date_from/_to) vẫn do apply_range_filters lo.
+FILTERABLE = ["code", "party_type", "party_code", "party_name", "status", "contract_type", "title",
+              "end_date"]
 
 
 def expiry_state(end_date: str) -> str:

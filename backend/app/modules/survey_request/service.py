@@ -9,7 +9,8 @@ from .model import (SurveyRequest, SurveyRequestLine, SurveyRequestOption,
                     SurveyRequestPr)
 
 ENTITY = "survey_request"
-FILTERABLE = ["code", "status", "requester", "department"]
+# request_date: cho bộ lọc điều kiện lọc theo ngày (apply_range_filters vẫn lo _from/_to)
+FILTERABLE = ["code", "status", "requester", "department", "request_date"]
 MAX_OPTIONS_PER_LINE = 5   # mỗi sản phẩm (dòng YCKS) tối đa 5 phương án khảo sát
 HEADER_FIELDS = ["company_id", "requester", "requester_id", "requester_position", "department",
                  "head_of_dept", "purpose", "request_date", "note"]
