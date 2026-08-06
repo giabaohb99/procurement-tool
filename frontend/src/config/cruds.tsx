@@ -186,7 +186,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
     ],
     filters: [
-      { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên' }, { key: 'tax_code', label: 'MST' },
+      { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên' },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
     ],
     condFilters: [
@@ -219,9 +219,9 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
     ],
     filters: [
-      { key: 'code', label: 'Mã / viết tắt' }, { key: 'name', label: 'Tên NCC' }, { key: 'tax_code', label: 'MST' },
-      { key: 'legal_type', label: 'Loại NCC', type: 'select', options: ['Công ty', 'Cá nhân', 'Hợp danh', 'Hộ kinh doanh'].map((x) => ({ value: x, label: x })) },
-      { key: 'supplier_type', label: 'Vai trò', type: 'select', options: SUP_TYPE },
+      // 'legal_type' đã bỏ: backend KHÔNG xử lý param này ở đâu (không có trong FILTERABLE,
+      // cũng không có nhánh riêng) nên ô lọc đó xưa nay không có tác dụng.
+      { key: 'code', label: 'Mã / viết tắt' }, { key: 'name', label: 'Tên NCC' },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
     ],
     // legal_type không nằm trong FILTERABLE của supplier nên không đưa vào đây
@@ -253,8 +253,6 @@ export const cruds: Record<string, CrudConfig> = {
     filters: [
       { key: 'code', label: 'Mã VTBB/NL' }, { key: 'name', label: 'Tên' },
       { key: 'item_group', label: 'Phân loại', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
-      { key: 'hh_code', label: 'Mã HH (sản phẩm)' },
-      { key: 'unit', label: 'ĐVT', source: { url: '/api/units', value: 'name', label: 'name' } },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
     ],
     condFilters: [
@@ -289,12 +287,11 @@ export const cruds: Record<string, CrudConfig> = {
     filters: [
       { key: 'code', label: 'Mã HĐ' },
       { key: 'party_name', label: 'Tên đối tượng' },
-      { key: 'party_type', label: 'Đối tượng', type: 'select', options: ['Nhà cung cấp', 'Khách hàng', 'Khác'].map((x) => ({ value: x, label: x })) },
-      { key: 'contract_type', label: 'Loại', type: 'select', options: CONTRACT_TYPES },
       { key: 'status', label: 'Trạng thái', type: 'select', options: CONTRACT_STATUS },
+      // 'expiry' và 'signed' KHÔNG đưa xuống bộ lọc điều kiện được: controller tính riêng
+      // (expiry so end_date với hôm nay, signed là cột bool xử lý ngoài apply_filters).
       { key: 'expiry', label: 'Tình trạng hết hạn', type: 'select', options: ['Còn hạn', 'Sắp hết hạn', 'Hết hạn'].map((x) => ({ value: x, label: x })) },
       { key: 'signed', label: 'Đã ký', type: 'select', options: [{ value: 'true', label: 'Đã ký' }, { value: 'false', label: 'Chưa ký' }] },
-      { key: 'end_date', label: 'Ngày hết hạn', type: 'daterange' },
     ],
     // `expiry` / `signed` là cột tính toán, không lọc điều kiện được -> chỉ có ở thanh lọc cơ bản
     condFilters: [
@@ -340,7 +337,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'status', label: 'Trạng thái', render: (r) => badge(r.status === 'Chính thức', r.status, r.status) },
     ],
     filters: [
-      { key: 'code', label: 'Mã NV' }, { key: 'full_name', label: 'Họ tên' }, { key: 'email', label: 'Email' },
+      { key: 'code', label: 'Mã NV' }, { key: 'full_name', label: 'Họ tên' },
       { key: 'status', label: 'Trạng thái', type: 'select', options: EMPLOYEE_STATUS },
     ],
     condFilters: [
@@ -396,15 +393,12 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'status', label: 'Trạng thái', render: (r) => prBadge(r.status) },
     ],
     filters: [
+      // Chỉ giữ ô tìm nhanh + các bộ lọc KHÔNG đưa xuống bộ lọc điều kiện được
+      // (company_id / assignee / item_group lọc qua bảng con, không nằm trong FILTERABLE).
       { key: 'code', label: 'Mã PYC' },
       { key: 'company_id', label: 'Công ty', source: { url: '/api/companies', value: 'id', label: 'name' } },
-      { key: 'requester', label: 'Người yêu cầu' },
-      { key: 'department', label: 'Bộ phận YC', source: { url: '/api/departments', value: 'name', label: 'name' } },
       { key: 'assignee', label: 'NSTM phụ trách', source: { url: '/api/employees', value: 'code', label: 'full_name' } },
       { key: 'item_group', label: 'Phân loại', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
-      { key: 'request_date', label: 'Ngày tạo', type: 'daterange' },
-      { key: 'need_date', label: 'Ngày cần hàng', type: 'daterange' },
-      { key: 'is_urgent', label: 'Đơn gấp', type: 'select', options: [{ value: 'true', label: 'Gấp' }, { value: 'false', label: 'Thường' }] },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Bị trả lại' },
@@ -437,13 +431,11 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'status', label: 'Trạng thái', render: (r) => srBadge(r.status) },
     ],
     filters: [
+      // company_id / assignee / item_group lọc qua bảng con → không đưa xuống bộ lọc điều kiện được
       { key: 'code', label: 'Mã phiếu' },
       { key: 'company_id', label: 'Công ty', source: { url: '/api/companies', value: 'id', label: 'name' } },
-      { key: 'requester', label: 'Người yêu cầu' },
-      { key: 'department', label: 'Bộ phận', source: { url: '/api/departments', value: 'name', label: 'name' } },
       { key: 'assignee', label: 'NSTM phụ trách', source: { url: '/api/employees', value: 'code', label: 'full_name' } },
       { key: 'item_group', label: 'Phân loại', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
-      { key: 'request_date', label: 'Ngày tạo', type: 'daterange' },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'processing', label: 'Đang xử lý' },
@@ -589,20 +581,13 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'status', label: 'Trạng thái', render: (r) => poBadge(r.status) },
     ],
     filters: [
+      // company_id / item_group / invoice_no lọc qua bảng con hoặc scope → không đưa xuống
+      // bộ lọc điều kiện được. Phần còn lại (mã MISA, NCC, NSPT, mã PYC, ngày đặt, hồ sơ
+      // chứng từ, đơn gấp) đã có trong "Bộ lọc điều kiện".
       { key: 'code', label: 'Mã PO' },
-      { key: 'misa_code', label: 'Mã MISA' },
-      { key: 'document_status', label: 'Hồ sơ chứng từ', type: 'select', options: [
-        { value: 'chưa có chứng từ', label: 'Chưa có chứng từ' },
-        { value: 'đã có thông tin chứng từ', label: 'Đã có chứng từ' },
-        { value: 'đã đủ chứng từ', label: 'Đã đủ chứng từ' }] },
       { key: 'company_id', label: 'Công ty', source: { url: '/api/companies', value: 'id', label: 'name' } },
-      { key: 'supplier_code', label: 'Nhà cung cấp', source: { url: '/api/suppliers', value: 'code', label: 'name' } },
-      { key: 'nspt', label: 'NSPT phụ trách', source: { url: '/api/employees', value: 'full_name', label: 'full_name' } },
-      { key: 'pr_code', label: 'Mã PYC' },
       { key: 'item_group', label: 'Phân loại', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
       { key: 'invoice_no', label: 'Số hóa đơn' },
-      { key: 'order_date', label: 'Ngày đặt', type: 'daterange' },
-      { key: 'is_urgent', label: 'Đơn gấp', type: 'select', options: [{ value: 'true', label: 'Gấp' }, { value: 'false', label: 'Thường' }] },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'partial', label: 'Đã nhận một phần' },
@@ -642,12 +627,10 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'status', label: 'Trạng thái', render: (r) => (r.status === 'cancelled' ? <span className="badge err">Đã từ chối</span> : poBadge(r.status === 'paid' ? 'received' : r.status)) },
     ],
     filters: [
+      // po_code / company_id lọc qua bảng con hoặc scope → không đưa xuống bộ lọc điều kiện được
       { key: 'code', label: 'Mã phiếu' },
       { key: 'po_code', label: 'Mã PO' },
       { key: 'company_id', label: 'Công ty', source: { url: '/api/companies', value: 'id', label: 'name' } },
-      { key: 'supplier_code', label: 'Nhà cung cấp', source: { url: '/api/suppliers', value: 'code', label: 'name' } },
-      { key: 'source_type', label: 'Loại', type: 'select', options: [{ value: 'goods', label: 'Hàng hóa' }, { value: 'shipping', label: 'Vận chuyển' }] },
-      { key: 'request_date', label: 'Ngày lập', type: 'daterange' },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'paid', label: 'Đã chi' },
@@ -678,13 +661,10 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'status', label: 'Trạng thái', render: (r) => srBadge(r.status) },
     ],
     filters: [
+      // product_code nằm ở dòng khảo sát (bảng con) → không đưa xuống bộ lọc điều kiện được
       { key: 'code', label: 'Mã phiếu' },
-      { key: 'sr_code', label: 'Mã YCBG' },
-      { key: 'main_content', label: 'Nội dung chính' },
-      { key: 'item_code', label: 'Mã hàng' },
       { key: 'product_code', label: 'Mã SP (NCC)' },
       { key: 'item_group', label: 'Nhóm hàng', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
-      { key: 'nspt', label: 'NSPT' },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Bị trả lại' },
