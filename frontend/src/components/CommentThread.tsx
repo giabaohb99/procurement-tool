@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext'
 import { toast } from './toast'
 import { fmtDateTime, fmtRelative } from '../utils/datetime'
 import MentionInput, { initials, MentionHandle, Person } from './MentionInput'
+import Lightbox from './Lightbox'
 
 /**
  * Khối trao đổi gắn vào trang chi tiết chứng từ (CR-029, mở rộng ở CR-030 và CR-031).
@@ -22,7 +23,21 @@ import MentionInput, { initials, MentionHandle, Person } from './MentionInput'
  *
  * Bố cục: MỖI LUỒNG GỐC LÀ MỘT THẺ RIÊNG (gốc + nhánh phản hồi của nó nằm trong cùng thẻ),
  * để nhìn ra ngay đâu là một mạch trao đổi thay vì một danh sách dài dính liền.
+ *
+ * Đính kèm (CR-033): mỗi bài kèm tối đa 5 tệp, cùng danh sách đuôi với ô chứng từ của phiếu.
+ * Ảnh hiện thẳng ra ô xem trước (bấm mở lightbox), tệp khác chỉ hiện TÊN màu xanh — bấm mới tải.
+ * File tải lên ngay lúc chọn nhưng chỉ gắn vào phiếu khi bấm Gửi.
  */
+
+type CommentFile = {
+  link_id: number
+  file_id: number
+  filename: string
+  url: string
+  content_type: string
+  size: number
+  is_image: boolean
+}
 
 type CommentItem = {
   id: number
@@ -39,6 +54,7 @@ type CommentItem = {
   reply_to_user_id: number
   reply_to_name: string
   mentions: { user_id: number; name: string }[]
+  files?: CommentFile[]
   reply_count?: number
 }
 
@@ -47,6 +63,79 @@ const MOI_LAN = 10
 const MUTED = '#94a3b8'
 const LINE = '#eaeef4'
 const DANGER = '#e11d48'
+// Số tệp mỗi bài — phải khớp MAX_FILES ở backend (comment/service.py).
+const MAX_FILE = 5
+const XANH = '#2563eb'   // màu chữ tên tệp: xanh nước biển, nhìn là biết bấm được
+// Đuôi + dung lượng phải khớp `_DOC` và trần MB của entity "comment" trong core/file_registry.py.
+// Lọc trước ở đây chỉ để báo lỗi cho gọn: kéo 4 tệp mà 1 tệp sai đuôi thì backend trả 400 cho CẢ
+// request, người dùng mất luôn 3 tệp hợp lệ. Backend vẫn là nơi chặn thật.
+const DUOI_OK = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'xlsx', 'xls', 'docx', 'doc', 'txt',
+                 'csv', 'xml', 'msg', 'eml', 'cdr']
+const MB_MAX = 20
+
+function coChu(n: number): string {
+  if (!n) return ''
+  if (n < 1024) return `${n} B`
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`
+  return `${(n / 1024 / 1024).toFixed(1)} MB`
+}
+
+function luuBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click()
+  a.remove(); URL.revokeObjectURL(url)
+}
+
+/** Tải 1 tệp đính kèm qua API (không mở thẳng URL storage — để backend còn kiểm quyền). */
+async function taiTep(f: CommentFile) {
+  try {
+    const r = await api.get(`/api/attachments/${f.link_id}/download`, { responseType: 'blob' })
+    luuBlob(r.data, f.filename)
+  } catch { toast.error('Tải tệp thất bại') }
+}
+
+/** Đính kèm của một bài: ảnh xem trước theo lưới, tệp khác là dòng tên bấm để tải. */
+function FileList({ files }: { files: CommentFile[] }) {
+  const [xemAnh, setXemAnh] = useState<number | null>(null)
+  if (!files.length) return null
+  const anh = files.filter((f) => f.is_image)
+  const khac = files.filter((f) => !f.is_image)
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      {anh.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {anh.map((f, i) => (
+            <img key={f.link_id} src={f.url} alt={f.filename} title={f.filename}
+                 onClick={() => setXemAnh(i)}
+                 style={{ width: 104, height: 104, objectFit: 'cover', borderRadius: 10,
+                          border: `1px solid ${LINE}`, cursor: 'zoom-in', background: '#fff' }} />
+          ))}
+        </div>
+      )}
+      {khac.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4,
+                      marginTop: anh.length ? 8 : 0 }}>
+          {khac.map((f) => (
+            <button key={f.link_id} type="button" onClick={() => taiTep(f)}
+                    title={`Tải "${f.filename}"`}
+                    style={{ ...linkBtn(XANH, 13.5), display: 'inline-flex', alignItems: 'center',
+                             gap: 6, textAlign: 'left', maxWidth: '100%' }}>
+              <i className="ti ti-paperclip" style={{ fontSize: 16, flexShrink: 0 }} />
+              <span style={{ textDecoration: 'underline', overflow: 'hidden',
+                             textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.filename}</span>
+              <span style={{ color: MUTED, fontWeight: 400, flexShrink: 0 }}>{coChu(f.size)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {xemAnh !== null && (
+        <Lightbox images={anh} index={xemAnh} onClose={() => setXemAnh(null)} onNav={setXemAnh} />
+      )}
+    </div>
+  )
+}
 
 function linkBtn(color = MUTED, size = 13.5): React.CSSProperties {
   return { border: 'none', background: 'none', padding: 0, cursor: 'pointer', color,
@@ -100,53 +189,195 @@ function renderBody(body: string, mentions: { user_id: number; name: string }[])
   return ra
 }
 
+/** Tệp đã tải lên nhưng CHƯA gắn vào bài nào — chỉ có trong ô soạn. */
+type TepCho = { file_id: number; filename: string; size: number; is_image: boolean; url: string }
+
 /** Ô nhập bo tròn có gõ `@` để nhắc tên; tự quản nội dung, cha chỉ nhận chuỗi lúc gửi. */
 function Composer({ meName, meAvatar, placeholder, search, onSend, onCancel, initial, compact }: {
   meName: string
   meAvatar?: string
   placeholder: string
   search: (q: string) => Promise<Person[]>
-  onSend: (body: string) => Promise<void>
+  onSend: (body: string, fileIds: number[]) => Promise<void>
   onCancel?: () => void
   initial?: Person | null
   compact?: boolean
 }) {
   const h = useRef<MentionHandle>(null)
+  const oTep = useRef<HTMLInputElement>(null)
   const [rong, setRong] = useState(!initial)
   const [dangGui, setDangGui] = useState(false)
+  const [tep, setTep] = useState<TepCho[]>([])
+  // Đang tải: giữ TÊN từng tệp để hiện chip mờ + % để hiện thanh chạy. Kéo 3–4 tệp nặng vào là
+  // chờ vài giây, không có gì nhúc nhích thì người dùng tưởng treo rồi bấm lại lần nữa.
+  const [dangLen, setDangLen] = useState<string[]>([])
+  const [pct, setPct] = useState(0)
+  const dangTai = dangLen.length > 0
+  const [keo, setKeo] = useState(false)
+  // dragenter/dragleave bắn cả khi chuột đi qua từng thẻ con -> đếm vào/ra mới không nhấp nháy.
+  const demKeo = useRef(0)
+
+  /** Tải tệp lên NGAY khi chọn để người viết thấy kết quả liền; gắn vào phiếu lúc bấm Gửi. */
+  async function themTep(fs: File[]) {
+    // Loại tệp sai đuôi / quá nặng và nói rõ tên tệp nào — kéo cả nắm vào mà báo chung chung
+    // thì không biết bỏ cái nào ra.
+    const sai = fs.filter((f) => !DUOI_OK.includes((f.name.split('.').pop() || '').toLowerCase()))
+    const nang = fs.filter((f) => !sai.includes(f) && f.size > MB_MAX * 1024 * 1024)
+    if (sai.length) toast.error(`Không nhận: ${sai.map((f) => f.name).join(', ')} — chỉ cho ${DUOI_OK.join(', ')}`)
+    if (nang.length) toast.error(`Quá ${MB_MAX}MB: ${nang.map((f) => f.name).join(', ')}`)
+    fs = fs.filter((f) => !sai.includes(f) && !nang.includes(f))
+    if (!fs.length) return
+
+    const con = MAX_FILE - tep.length
+    if (con <= 0) { toast.error(`Mỗi bình luận tối đa ${MAX_FILE} tệp`); return }
+    if (fs.length > con) toast.error(`Mỗi bình luận tối đa ${MAX_FILE} tệp — chỉ nhận thêm ${con}, phần dư bị bỏ`)
+    const nhan = fs.slice(0, con)
+    const fd = new FormData()
+    fd.append('entity', 'comment')
+    nhan.forEach((f) => fd.append('files', f))
+    setDangLen(nhan.map((f) => f.name))
+    setPct(0)
+    try {
+      const r = await api.post('/api/attachments/upload-file', fd, {
+        // Tải xong 100% là lúc server BẮT ĐẦU cất lên R2, chưa xong việc -> dừng ở 99 cho
+        // khỏi hiện "100%" rồi vẫn ngồi chờ thêm mấy giây.
+        onUploadProgress: (e: any) => { if (e.total) setPct(Math.min(99, Math.round((e.loaded * 100) / e.total))) },
+      })
+      const moi: TepCho[] = (r.data?.data || []).map((x: any) => ({
+        file_id: x.file_id, filename: x.filename, size: x.size, url: x.url,
+        is_image: (x.content_type || '').startsWith('image/'),
+      }))
+      setTep((prev) => [...prev, ...moi])
+    } finally { setDangLen([]); setPct(0) }
+  }
 
   async function gui() {
     const b = (h.current?.getValue() || '').trim()
-    if (!b || dangGui) return
+    // Gửi mỗi tệp không kèm chữ vẫn được — backend chấp nhận bài chỉ có đính kèm.
+    if ((!b && !tep.length) || dangGui) return
     setDangGui(true)
     try {
-      await onSend(b)
+      await onSend(b, tep.map((t) => t.file_id))
       h.current?.clear()      // gửi lỗi thì KHÔNG xóa, người viết còn giữ lại được bài
+      setTep([])
     } finally {
       setDangGui(false)
     }
   }
 
+  const chuaCoGi = rong && !tep.length
+  const coTep = (e: React.DragEvent) => Array.from(e.dataTransfer?.types || []).includes('Files')
+
   return (
     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
       <Avatar name={meName} src={meAvatar} size={compact ? 32 : 36} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <MentionInput ref={h} placeholder={placeholder} search={search} onSubmit={gui}
-                      onCancel={onCancel} onEmptyChange={setRong} initial={initial}
-                      compact={compact} />
-        {/* Ô trả lời để trống thì không bày nút — giữ luồng gọn, đúng bản vẽ. */}
-        {(!compact || !rong) && (
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+      {/* Kéo tệp thả vào BẤT KỲ chỗ nào của ô soạn (kể cả ô trả lời) là nhận — thả trúng mỗi
+          nút kẹp giấy thì khó. `preventDefault` ở đây chặn luôn việc trình duyệt tự chèn ảnh
+          vào vùng contenteditable hoặc mở tệp ra tab mới. */}
+      <div style={{ flex: 1, minWidth: 0, borderRadius: 12,
+                    outline: keo ? `2px dashed ${XANH}` : 'none', outlineOffset: 4 }}
+           onDragEnter={(e) => { if (!coTep(e)) return; e.preventDefault(); demKeo.current++; setKeo(true) }}
+           onDragOver={(e) => { if (coTep(e)) e.preventDefault() }}
+           onDragLeave={() => { demKeo.current = Math.max(0, demKeo.current - 1); if (!demKeo.current) setKeo(false) }}
+           onDrop={(e) => {
+             if (!coTep(e)) return
+             e.preventDefault(); demKeo.current = 0; setKeo(false)
+             const fs = Array.from(e.dataTransfer.files || [])
+             if (fs.length) themTep(fs)
+           }}>
+        <div
+          // Dán ảnh từ clipboard (Ctrl+V sau khi chụp màn hình) — nhanh hơn lưu ra file rồi chọn.
+          onPaste={(e) => {
+            const fs = Array.from(e.clipboardData?.files || [])
+            if (fs.length) { e.preventDefault(); themTep(fs) }
+          }}>
+          <MentionInput ref={h} placeholder={placeholder} search={search} onSubmit={gui}
+                        onCancel={onCancel} onEmptyChange={setRong} initial={initial}
+                        compact={compact} />
+        </div>
+
+        {(tep.length > 0 || dangTai) && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+            {tep.map((t) => (
+              <span key={t.file_id}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, maxWidth: 260,
+                             border: `1px solid ${LINE}`, borderRadius: 8, padding: '4px 8px',
+                             fontSize: 12.5, background: '#f8fafc' }}>
+                {t.is_image
+                  ? <img src={t.url} alt="" style={{ width: 24, height: 24, borderRadius: 4, objectFit: 'cover' }} />
+                  : <i className="ti ti-file" style={{ fontSize: 16, color: MUTED }} />}
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                               color: 'var(--navy)', fontWeight: 600 }}>{t.filename}</span>
+                <span style={{ color: MUTED, flexShrink: 0 }}>{coChu(t.size)}</span>
+                <i className="ti ti-x" title="Bỏ tệp này"
+                   style={{ fontSize: 14, cursor: 'pointer', color: MUTED, flexShrink: 0 }}
+                   onClick={() => setTep((prev) => prev.filter((x) => x.file_id !== t.file_id))} />
+              </span>
+            ))}
+            {/* Chip mờ cho tệp đang lên: thấy ĐÚNG tệp nào đang chờ, không phải một dòng
+                "đang tải" chung chung khi kéo vào 4 cái. */}
+            {dangLen.map((ten, i) => (
+              <span key={`len-${i}`}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, maxWidth: 260,
+                             border: `1px dashed ${XANH}`, borderRadius: 8, padding: '4px 8px',
+                             fontSize: 12.5, background: '#f8fafc', color: XANH, opacity: 0.85 }}>
+                <i className="ti ti-loader spin" style={{ fontSize: 16 }} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                               fontWeight: 600 }}>{ten}</span>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {dangTai && (
+          <div style={{ marginTop: 6 }}>
+            <div style={{ height: 4, background: '#e5e7eb', borderRadius: 4, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${pct}%`, background: XANH, transition: 'width .15s' }} />
+            </div>
+            <div style={{ fontSize: 12, color: XANH, marginTop: 4 }}>
+              Đang tải {dangLen.length > 1 ? `${dangLen.length} tệp` : 'tệp'} lên… {pct}%
+            </div>
+          </div>
+        )}
+
+        {/* Ô trả lời chỉ hiện khi người dùng bấm "Phản hồi", nên bày nút luôn: giấu cái kẹp
+            giấy tới lúc gõ chữ thì không ai biết phản hồi cũng đính kèm được tệp. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+          <input ref={oTep} type="file" multiple hidden
+                 onChange={(e) => {
+                   const fs = Array.from(e.target.files || [])
+                   e.target.value = ''          // chọn lại đúng tệp vừa bỏ vẫn phải kêu
+                   if (fs.length) themTep(fs)
+                 }} />
+          <button type="button" onClick={() => oTep.current?.click()}
+                  disabled={dangTai || tep.length >= MAX_FILE}
+                  title={tep.length >= MAX_FILE ? `Tối đa ${MAX_FILE} tệp` : 'Đính kèm tệp'}
+                  style={{ ...linkBtn(MUTED), display: 'inline-flex', alignItems: 'center', gap: 5,
+                           opacity: dangTai || tep.length >= MAX_FILE ? 0.5 : 1 }}>
+            <i className={dangTai ? 'ti ti-loader spin' : 'ti ti-paperclip'}
+               style={{ fontSize: 18, verticalAlign: -3 }} />
+            {dangTai ? `Đang tải ${pct}%…` : 'Đính kèm'}
+          </button>
+          {/* Ghi rõ luật ngay cạnh nút: người dùng biết trần TRƯỚC khi kéo cả chục tệp vào rồi
+              mới ăn báo lỗi. Đang kéo thì đổi thành lời mời thả cho khỏi phải nhìn đâu khác. */}
+          {!dangTai && (   // đang tải thì đã có thanh chạy + % ở trên, nhắc lại luật chỉ làm rối
+            <span style={{ fontSize: 12, color: keo ? XANH : MUTED, minWidth: 0,
+                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {keo ? 'Thả tệp vào đây' : `Kéo thả hoặc dán ảnh · tối đa ${MAX_FILE} tệp · ${MB_MAX}MB mỗi tệp`}
+            </span>
+          )}
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexShrink: 0 }}>
             {!!onCancel && (
               <button type="button" className="btn ghost" onClick={onCancel}
                       style={{ padding: '6px 14px', fontSize: 13.5 }}>Hủy</button>
             )}
-            <button type="button" className="btn" onClick={gui} disabled={rong || dangGui}
-                    style={{ padding: '6px 16px', fontSize: 13.5, opacity: rong || dangGui ? 0.5 : 1 }}>
+            <button type="button" className="btn" onClick={gui} disabled={chuaCoGi || dangGui || dangTai}
+                    style={{ padding: '6px 16px', fontSize: 13.5,
+                             opacity: chuaCoGi || dangGui || dangTai ? 0.5 : 1 }}>
               {dangGui ? 'Đang gửi…' : 'Gửi'}
             </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )
@@ -184,6 +415,7 @@ function Row({ c, likers, onLike, onLikers, onReply, onRemove }: {
           {!!c.reply_to_name && !c.body.includes('@[') && <Chip name={c.reply_to_name} />}
           {renderBody(c.body, c.mentions || [])}
         </div>
+        <FileList files={c.files || []} />
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginTop: 8 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -327,17 +559,19 @@ export default function CommentThread({
     openReplies(rootId)
   }
 
-  async function send(text: string) {
-    const r = await api.post('/api/comments', { entity, entity_id: entityId, body: text })
+  async function send(text: string, fileIds: number[] = []) {
+    const r = await api.post('/api/comments', {
+      entity, entity_id: entityId, body: text, file_ids: fileIds,
+    })
     setRoots((prev) => [...prev, { ...r.data.data, reply_count: 0 }])
     setTotal((n) => n + 1)
   }
 
-  async function sendReply(rootId: number, text: string) {
+  async function sendReply(rootId: number, text: string, fileIds: number[] = []) {
     // Không gửi reply_to_user_id nữa: người được nhắc nằm ngay trong nội dung dưới dạng thẻ @[id],
     // nên xóa chip đi là thật sự không nhắc ai, không còn cái "ẩn" báo lén sau lưng.
     const r = await api.post('/api/comments', {
-      entity, entity_id: entityId, body: text, parent_id: rootId,
+      entity, entity_id: entityId, body: text, parent_id: rootId, file_ids: fileIds,
     })
     const c: CommentItem = r.data.data
     setReplies((prev) => ({ ...prev, [rootId]: [...(prev[rootId] || []), c] }))
@@ -493,7 +727,7 @@ export default function CommentThread({
                           meName={meName} meAvatar={user?.avatar}
                           placeholder="Viết phản hồi… (gõ @ để nhắc tên)"
                           search={timNguoi}
-                          onSend={(t) => sendReply(c.id, t)}
+                          onSend={(t, ids) => sendReply(c.id, t, ids)}
                           onCancel={() => setActive(null)}
                           initial={act.nguoi}
                           compact

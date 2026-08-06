@@ -9,3 +9,6 @@ class CommentIn(BaseModel):
     parent_id: int = 0
     # Người được nhắc (@). Để 0 thì backend tự suy: trả lời phản hồi của ai thì nhắc người đó.
     reply_to_user_id: int = 0
+    # File đã tải sẵn qua POST /api/attachments/upload-file (entity="comment") — gắn lúc gửi bài.
+    # Tải trước, gắn sau: người viết thấy ngay file đã lên, và bài chưa gửi thì chưa treo vào phiếu.
+    file_ids: list[int] = []

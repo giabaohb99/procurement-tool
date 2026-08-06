@@ -33,7 +33,7 @@ def _authors(db: Session, ids: list[int]) -> dict:
 
 
 def _out(c: Comment, authors: dict, user_id: int, likes: dict, replies: dict | None = None,
-         mentions: dict | None = None) -> dict:
+         mentions: dict | None = None, files: dict | None = None) -> dict:
     a = authors.get(c.created_by) or {}
     lk = likes.get(c.id) or {}
     d = {
@@ -54,6 +54,8 @@ def _out(c: Comment, authors: dict, user_id: int, likes: dict, replies: dict | N
         # đổi tên thì bình luận cũ cũng hiện tên mới.
         "mentions": [{"user_id": u, "name": (authors.get(u) or {}).get("name", "")}
                      for u in (mentions or {}).get(c.id, [])],
+        # Đính kèm của bài (CR-033); `is_image` do backend quyết để mọi nơi hiển thị giống nhau.
+        "files": (files or {}).get(c.id, []),
     }
     if replies is not None:
         d["reply_count"] = replies.get(c.id, 0)
@@ -66,8 +68,9 @@ def _pack(db: Session, rows: list[Comment], user, with_reply_count: bool) -> lis
     authors = _authors(db, [c.created_by for c in rows] + [c.reply_to_user_id for c in rows]
                        + [u for lst in mentions.values() for u in lst])
     likes = service.like_map(db, ids, user.id)
+    files = service.file_map(db, ids)
     counts = service.reply_counts(db, ids) if with_reply_count else None
-    return [_out(c, authors, user.id, likes, counts, mentions) for c in rows]
+    return [_out(c, authors, user.id, likes, counts, mentions, files) for c in rows]
 
 
 def _push(db: Session, uids: list[int], title: str, text: str, link: str, author_id: int,
@@ -108,6 +111,10 @@ def _notify_new(db: Session, doc, label: str, route: str, c: Comment, user, back
     # Chuông là chữ thuần, không render được chip -> đổi thẻ "@[12]" thành "@Tên"
     noi_dung = service.strip_mentions(db, c.body)
     excerpt = noi_dung if len(noi_dung) <= 140 else noi_dung[:140].rstrip() + "…"
+    # Bài chỉ có file thì chuông trống trơn, người nhận không biết có gì -> ghi rõ số tệp.
+    so_tep = len(service.file_map(db, [c.id]).get(c.id, []))
+    if so_tep:
+        excerpt = (excerpt + " " if excerpt else "") + f"[đính kèm {so_tep} tệp]"
     link = f"{route}/{c.entity_id}"
 
     # Người được nhắc = chip "đang trả lời ai" + mọi người bị @ giữa câu (CR-031)
@@ -176,7 +183,7 @@ def create_comment(data: schema.CommentIn, background_tasks: BackgroundTasks,
                    db: Session = Depends(get_db), user=Depends(get_current_user)):
     doc, label, route = service.resolve_doc(db, user, data.entity, data.entity_id)
     c = service.create_comment(db, data.entity, data.entity_id, data.body, user.id,
-                               data.parent_id, data.reply_to_user_id)
+                               data.parent_id, data.reply_to_user_id, data.file_ids)
     _notify_new(db, doc, label, route, c, user, background_tasks)
     return success(_pack(db, [c], user, with_reply_count=False)[0], "Đã gửi bình luận", 201)
 

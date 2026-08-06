@@ -369,3 +369,128 @@ def test_nhac_qua_nhieu_nguoi_bi_cat_bot(db, seed):
     c = service.create_comment(db, "purchase_request", pr.id, body, user_id=999)
     # Chỉ những ID vừa có thật vừa nằm trong ngưỡng mới được ghi
     assert len(service.mention_map(db, [c.id]).get(c.id, [])) <= service.MAX_MENTIONS
+
+
+# ── CR-033: đính kèm tệp trong bình luận ────────────────────────────────────────
+
+def _file(db, user_id: int, name: str = "baogia.pdf", ctype: str = "application/pdf"):
+    """Một dòng tab_file như vừa upload xong qua /api/attachments/upload-file."""
+    from app.modules.attachment.model import StoredFile
+    f = StoredFile(filename=name, file_key=f"test/{name}", url=f"http://x/{name}",
+                   content_type=ctype, size=1024, created_by=user_id, updated_by=user_id)
+    db.add(f)
+    db.commit()
+    return f
+
+
+def test_gan_tep_vao_binh_luan(db, seed):
+    """Tệp gắn theo bài, đọc ra qua file_map — ảnh được đánh dấu để hiện thẳng ra."""
+    pr = _pr(db, seed, user_id=10)
+    pdf = _file(db, 10)
+    anh = _file(db, 10, "mau-bao-bi.jpg", "image/jpeg")
+    c = service.create_comment(db, "purchase_request", pr.id, "Gửi anh xem", user_id=10,
+                               file_ids=[pdf.id, anh.id])
+
+    ra = service.file_map(db, [c.id])[c.id]
+    assert [f["filename"] for f in ra] == ["baogia.pdf", "mau-bao-bi.jpg"]
+    assert [f["is_image"] for f in ra] == [False, True]
+
+
+def test_bai_chi_co_tep_van_gui_duoc(db, seed):
+    """Kéo file vào rồi bấm Gửi mà không gõ chữ là chuyện thường — không bắt phải viết."""
+    pr = _pr(db, seed, user_id=10)
+    f = _file(db, 10)
+    c = service.create_comment(db, "purchase_request", pr.id, "", user_id=10, file_ids=[f.id])
+    assert c.body == ""
+    assert len(service.file_map(db, [c.id])[c.id]) == 1
+
+    # Không chữ mà cũng không tệp thì vẫn là bài trống
+    with pytest.raises(HTTPException) as e:
+        service.create_comment(db, "purchase_request", pr.id, "", user_id=10, file_ids=[])
+    assert e.value.status_code == 400
+
+
+def test_khong_gan_duoc_tep_cua_nguoi_khac(db, seed):
+    """Chỉ gắn được tệp CHÍNH MÌNH vừa tải lên — chống đoán file_id để lôi file người khác ra."""
+    pr = _pr(db, seed, user_id=10)
+    cua_nguoi_khac = _file(db, 99, "mat.pdf")
+    c = service.create_comment(db, "purchase_request", pr.id, "thử", user_id=10,
+                               file_ids=[cua_nguoi_khac.id])
+    assert service.file_map(db, [c.id]) == {}
+
+
+def test_khong_gan_duoc_tep_dang_dung_cho_khac(db, seed):
+    """Tệp đã gắn ở chứng từ khác thì không kéo sang bình luận được.
+
+    Nếu cho phép, link mới sẽ mang quyền của phiếu đang bình luận — hở file sang người
+    chỉ được xem phiếu này mà không được xem phiếu gốc.
+    """
+    from app.modules.attachment.model import FileLink
+    pr = _pr(db, seed, user_id=10)
+    f = _file(db, 10, "hopdong.pdf")
+    db.add(FileLink(file_id=f.id, entity="contract", entity_id=555,
+                    created_by=10, updated_by=10))
+    db.commit()
+
+    c = service.create_comment(db, "purchase_request", pr.id, "thử", user_id=10, file_ids=[f.id])
+    assert service.file_map(db, [c.id]) == {}
+
+
+def test_qua_so_tep_cho_phep_bi_chan(db, seed):
+    pr = _pr(db, seed, user_id=10)
+    ids = [_file(db, 10, f"f{i}.pdf").id for i in range(service.MAX_FILES + 1)]
+    with pytest.raises(HTTPException) as e:
+        service.create_comment(db, "purchase_request", pr.id, "nhiều quá", user_id=10, file_ids=ids)
+    assert e.value.status_code == 400
+
+
+def test_xoa_binh_luan_go_luon_dinh_kem(db, seed):
+    """Xóa gốc là cuốn theo phản hồi, nên tệp của cả nhánh phải đi theo, không để rác."""
+    from app.modules.attachment.model import FileLink, StoredFile
+    pr = _pr(db, seed, user_id=10)
+    f1, f2 = _file(db, 10, "a.pdf"), _file(db, 10, "b.pdf")
+    root = service.create_comment(db, "purchase_request", pr.id, "gốc", user_id=10, file_ids=[f1.id])
+    service.create_comment(db, "purchase_request", pr.id, "phản hồi", user_id=10,
+                           parent_id=root.id, file_ids=[f2.id])
+    assert db.query(FileLink).filter(FileLink.entity == "comment").count() == 2
+
+    service.delete_comment(db, root)
+    assert db.query(FileLink).filter(FileLink.entity == "comment").count() == 0
+    # Không còn ai dùng -> dọn luôn file, khỏi để rác trên storage
+    assert db.query(StoredFile).filter(StoredFile.id.in_([f1.id, f2.id])).count() == 0
+
+
+def test_chinh_sach_tep_binh_luan_giong_o_chung_tu(db, seed):
+    """Đuôi cho phép của bình luận phải bằng ô đính kèm chứng từ — người dùng khỏi phải nhớ 2 luật."""
+    from app.core.file_registry import policy
+    parent, exts, max_mb = policy("comment")
+    _, exts_pyc, max_pyc = policy("purchase_request")
+    assert exts == exts_pyc and max_mb == max_pyc
+    # Cha là __self__: quyền thật do API bình luận kiểm theo chứng từ đang treo
+    assert parent == "__self__"
+
+
+def test_tep_binh_luan_kiem_quyen_theo_chung_tu_cha(db, seed):
+    """Tải tệp trong bình luận phải qua cửa quyền của CHÍNH chứng từ đang treo.
+
+    `FILE_POLICY["comment"]` để `__self__` (chỉ cần đăng nhập) cho bước tải tệp tạm, nên nếu
+    endpoint tải về không hỏi lại chứng từ cha thì ai đăng nhập cũng đọc được tệp trong bình
+    luận của phiếu người khác — đây là chốt chặn đó.
+    """
+    from app.modules.attachment.controller import _check_comment
+    from app.modules.user.model import User
+
+    pr = _pr(db, seed, user_id=10)
+    f = _file(db, 10)
+    c = service.create_comment(db, "purchase_request", pr.id, "gửi anh", user_id=10, file_ids=[f.id])
+
+    nguoi_la = User(email="NGUOILA", password_hash="x", is_active=True)   # không có vai trò nào
+    db.add(nguoi_la)
+    db.commit()
+    with pytest.raises(HTTPException) as e:
+        _check_comment(db, nguoi_la, c.id, "read")
+    assert e.value.status_code == 403
+
+    with pytest.raises(HTTPException) as e:
+        _check_comment(db, nguoi_la, 999999, "read")
+    assert e.value.status_code == 404

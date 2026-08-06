@@ -718,8 +718,22 @@ thead th {
   border-radius: 10px;
 }
 
-.table-tools .ti-refresh.spin {
-  animation: lgSpin 0.8s linear infinite;
+/* Vòng xoay "đang xử lý" — dùng chung cho MỌI màn hình.
+   Trước đây lớp `.spin` chỉ khai báo trong `.table-tools`, nên 6 chỗ gọi `ti-loader spin`
+   (đính kèm chứng từ, phiếu hỗ trợ, bình luận) hiện biểu tượng đứng im mà không ai để ý.
+   `.lg-spin` là tên cũ của khối màn đăng nhập, giữ làm bí danh cho khỏi phải sửa markup. */
+.spin,
+.lg-spin {
+  /* transform KHÔNG có tác dụng trên thẻ inline — icon `<i>` mặc định là inline nên thiếu
+     dòng này thì animation vẫn "running" mà biểu tượng đứng yên. */
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Menu chọn cột: render qua portal ra body nên dùng position: fixed */
@@ -1148,15 +1162,7 @@ thead th {
   transform: none;
 }
 
-.lg-spin {
-  animation: lgSpin 0.8s linear infinite;
-}
-
-@keyframes lgSpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* .lg-spin khai báo chung với .spin ở phần trên — đừng thêm lại keyframes riêng ở đây. */
 
 .lg-or {
   display: flex;

@@ -13,6 +13,7 @@ from .model import Comment, CommentMention, CommentReaction
 MAX_BODY = 5000
 PAGE_SIZE = 10   # số bình luận GỐC tải mỗi lần; phản hồi luôn tải đủ khi bung
 MAX_MENTIONS = 20   # nhắc quá nhiều người một lúc là spam chuông, không phải trao đổi
+MAX_FILES = 5    # đính kèm mỗi bình luận; nhiều hơn thì nên gắn vào ô chứng từ của phiếu
 
 # Thẻ nhắc tên nằm ngay trong nội dung: "@[12] xem giúp mình" (CR-031).
 # Lưu ID chứ không lưu chữ "@Tên" vì tên tiếng Việt trùng nhiều và người ta đổi tên được;
@@ -140,6 +141,34 @@ def mention_map(db: Session, comment_ids: list[int]) -> dict[int, list[int]]:
     return out
 
 
+def file_map(db: Session, comment_ids: list[int]) -> dict[int, list[dict]]:
+    """{comment_id: [file]} — 1 query cho cả trang, dùng chung bảng `tab_file_link`.
+
+    Không đẻ bảng riêng: link đính kèm vốn đã là (entity, entity_id) tổng quát, ở đây
+    entity = "comment" và entity_id = id bình luận, y như mọi chỗ đính kèm khác.
+    """
+    from app.core.file_registry import is_image
+    from app.modules.attachment.model import FileLink, StoredFile
+
+    ids = [i for i in comment_ids if i]
+    if not ids:
+        return {}
+    rows = (db.query(FileLink, StoredFile)
+            .join(StoredFile, StoredFile.id == FileLink.file_id)
+            .filter(FileLink.entity == "comment", FileLink.entity_id.in_(ids))
+            .order_by(FileLink.id.asc()).all())
+    out: dict[int, list[dict]] = {}
+    for lk, f in rows:
+        out.setdefault(lk.entity_id, []).append({
+            "link_id": lk.id, "file_id": f.id, "filename": f.filename, "url": f.url,
+            "content_type": f.content_type, "size": f.size,
+            # Ảnh -> hiện luôn ra; file khác -> chỉ hiện tên, bấm mới tải. Quyết ở backend
+            # để mọi chỗ hiển thị cùng một luật, FE khỏi tự đoán theo đuôi file.
+            "is_image": is_image(f.filename, f.content_type),
+        })
+    return out
+
+
 def mentionable(db: Session, doc, entity: str, entity_id: int, me_id: int,
                 q: str = "", limit: int = 8) -> list[dict]:
     """Người có thể `@` trong phiếu này.
@@ -193,12 +222,17 @@ def mentionable(db: Session, doc, entity: str, entity_id: int, me_id: int,
 # ── Ghi ─────────────────────────────────────────────────────────────────────────
 
 def create_comment(db: Session, entity: str, entity_id: int, body: str, user_id: int,
-                   parent_id: int = 0, reply_to_user_id: int = 0) -> Comment:
+                   parent_id: int = 0, reply_to_user_id: int = 0,
+                   file_ids: list[int] | None = None) -> Comment:
     body = (body or "").strip()
-    if not body:
+    file_ids = [int(i) for i in (file_ids or []) if i]
+    # Gửi mỗi file không kèm chữ vẫn hợp lệ — "đây, bản báo giá NCC vừa gửi" là một câu trọn nghĩa.
+    if not body and not file_ids:
         raise HTTPException(400, "Nội dung bình luận không được để trống")
     if len(body) > MAX_BODY:
         raise HTTPException(400, f"Bình luận tối đa {MAX_BODY} ký tự")
+    if len(file_ids) > MAX_FILES:
+        raise HTTPException(400, f"Mỗi bình luận đính kèm tối đa {MAX_FILES} tệp")
 
     parent_id = int(parent_id or 0)
     if parent_id:
@@ -224,7 +258,35 @@ def create_comment(db: Session, entity: str, entity_id: int, body: str, user_id:
     db.commit()
     db.refresh(c)
     save_mentions(db, c, user_id)
+    attach_files(db, c, file_ids, user_id)
     return c
+
+
+def attach_files(db: Session, c: Comment, file_ids: list[int], user_id: int) -> int:
+    """Gắn các file ĐÃ tải lên (POST /api/attachments/upload-file) vào bình luận vừa tạo.
+
+    Chỉ nhận file do CHÍNH người này vừa tải lên và CHƯA gắn vào đâu. Nếu không, người ta
+    đoán `file_id` của chứng từ mật rồi gắn vào bình luận của mình là lộ file cho mọi người
+    xem được phiếu — link mới sẽ mang quyền của phiếu này chứ không phải của file gốc.
+    """
+    from app.modules.attachment.model import FileLink, StoredFile
+
+    if not file_ids:
+        return 0
+    hop_le = {f.id for f in db.query(StoredFile.id)
+              .filter(StoredFile.id.in_(file_ids), StoredFile.created_by == user_id).all()}
+    da_gan = {fid for (fid,) in db.query(FileLink.file_id)
+              .filter(FileLink.file_id.in_(file_ids)).all()}
+    n = 0
+    for fid in file_ids:                      # giữ đúng thứ tự người dùng chọn
+        if fid not in hop_le or fid in da_gan:
+            continue
+        db.add(FileLink(file_id=fid, entity="comment", entity_id=c.id, sort_order=n,
+                        created_by=user_id, updated_by=user_id))
+        n += 1
+    if n:
+        db.commit()
+    return n
 
 
 def save_mentions(db: Session, c: Comment, user_id: int) -> list[int]:
@@ -253,10 +315,16 @@ def delete_comment(db: Session, c: Comment) -> int:
 
     Trả về tổng số dòng đã xóa (để báo lại cho người bấm). Giữ phản hồi mồ côi khi gốc
     biến mất chỉ làm luồng khó đọc, không ai hiểu đang trả lời cái gì.
+
+    File đính kèm đi theo bình luận: xóa bài là gỡ link, file trên storage chỉ bị xóa khi
+    không còn chỗ nào dùng (`delete_attachments_for`) — tránh xóa nhầm file dùng chung.
     """
+    from app.modules.attachment.service import delete_attachments_for
+
     ids = [c.id]
     if not c.parent_id:
         ids += [i for (i,) in db.query(Comment.id).filter(Comment.parent_id == c.id).all()]
+    delete_attachments_for(db, [("comment", i) for i in ids])
     db.query(CommentReaction).filter(CommentReaction.comment_id.in_(ids)).delete(synchronize_session=False)
     db.query(CommentMention).filter(CommentMention.comment_id.in_(ids)).delete(synchronize_session=False)
     db.query(Comment).filter(Comment.id.in_(ids)).delete(synchronize_session=False)

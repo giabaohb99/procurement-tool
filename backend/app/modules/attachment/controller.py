@@ -65,6 +65,36 @@ def _check(db: Session, user, entity: str, mode: str):
     return exts, max_mb
 
 
+def _check_comment(db: Session, user, comment_id: int, mode: str):
+    """Quyền với đính kèm của MỘT bình luận (CR-033).
+
+    `FILE_POLICY["comment"]` để `__self__` vì bình luận treo được vào nhiều loại chứng từ,
+    không có entity cha cố định. Nên ở đây phải hỏi lại đúng chứng từ mà bình luận đang treo:
+    `resolve_doc` kiểm cả quyền đọc lẫn phạm vi dữ liệu, y như khi mở trang phiếu.
+    Thiếu bước này thì ai đăng nhập cũng tải được file trong bình luận của phiếu người khác.
+    """
+    from app.modules.comment.model import Comment
+    from app.modules.comment.service import resolve_doc
+
+    c = db.get(Comment, comment_id)
+    if not c:
+        raise HTTPException(404, "Bình luận không tồn tại")
+    resolve_doc(db, user, c.entity, c.entity_id)
+    if mode == "manage" and c.created_by != user.id:
+        raise HTTPException(403, "Chỉ người viết mới gỡ được đính kèm của bình luận")
+    return c
+
+
+def _deny_comment(entity: str):
+    """Chặn các lối gắn link chung chung vào bình luận.
+
+    Đính kèm bình luận CHỈ được gắn khi gửi bài (POST /api/comments với `file_ids`) — đi cửa
+    khác thì bỏ qua kiểm quyền theo chứng từ cha, và sinh ra file treo vào bình luận không có thật.
+    """
+    if entity == "comment":
+        raise HTTPException(400, "Đính kèm bình luận phải gửi kèm khi tạo bình luận")
+
+
 def _store_one(db: Session, f: UploadFile, exts: set, max_mb: int, user_id: int) -> StoredFile:
     """Upload 1 file lên storage + tạo dòng tab_file. Chưa gắn link."""
     ext = ext_of(f.filename or "")
@@ -94,7 +124,10 @@ def list_attachments(
     entity: str = Query(...), entity_id: int = Query(...),
     db: Session = Depends(get_db), user=Depends(get_current_user),
 ):
-    _check(db, user, entity, "read")
+    if entity == "comment":
+        _check_comment(db, user, entity_id, "read")
+    else:
+        _check(db, user, entity, "read")
     rows = (db.query(FileLink, StoredFile)
             .join(StoredFile, StoredFile.id == FileLink.file_id)
             .filter(FileLink.entity == entity, FileLink.entity_id == entity_id)
@@ -111,6 +144,7 @@ class ReorderIn(BaseModel):
 @router.patch("/reorder")
 def reorder(data: ReorderIn, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Cập nhật thứ tự hiển thị các đính kèm của 1 record (dùng cho ảnh sản phẩm)."""
+    _deny_comment(data.entity)
     _check(db, user, data.entity, "manage")
     for idx, lid in enumerate(data.ordered_link_ids):
         lk = db.get(FileLink, lid)
@@ -129,6 +163,7 @@ def upload(
     db: Session = Depends(get_db), user=Depends(get_current_user),
 ):
     """Upload + gắn luôn (record đã có id) — tương thích FE cũ."""
+    _deny_comment(entity)
     exts, max_mb = _check(db, user, entity, "manage")
     _valid_doc_type(doc_type)
     out = []
@@ -165,6 +200,7 @@ class RegisterIn(BaseModel):
 @router.post("/register")
 def register_files(data: RegisterIn, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Gắn các file ĐÃ upload (theo file_id) vào 1 record — khi record vừa có id."""
+    _deny_comment(data.entity)
     _check(db, user, data.entity, "manage")
     _valid_doc_type(data.doc_type)
     out = []
@@ -326,7 +362,10 @@ def download_one(link_id: int, db: Session = Depends(get_db), user=Depends(get_c
     lk = db.get(FileLink, link_id)
     if not lk:
         raise HTTPException(404, "Không tìm thấy file")
-    _check(db, user, lk.entity, "read")
+    if lk.entity == "comment":
+        _check_comment(db, user, lk.entity_id, "read")
+    else:
+        _check(db, user, lk.entity, "read")
     f = db.get(StoredFile, lk.file_id)
     if not f:
         raise HTTPException(404, "File không tồn tại")
@@ -340,7 +379,10 @@ def remove(link_id: int, db: Session = Depends(get_db), user=Depends(get_current
     lk = db.get(FileLink, link_id)
     if not lk:
         raise HTTPException(404, "Không tìm thấy file")
-    _check(db, user, lk.entity, "manage")
+    if lk.entity == "comment":
+        _check_comment(db, user, lk.entity_id, "manage")
+    else:
+        _check(db, user, lk.entity, "manage")
     fid = lk.file_id
     db.delete(lk); db.flush()
     _delete_file_if_orphan(db, fid)      # còn dùng chỗ khác thì giữ file
