@@ -34,17 +34,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // CR-028: hồ sơ trong localStorage chỉ được ghi lúc ĐĂNG NHẬP nên cứ đứng yên mãi —
   // đổi tên/phòng ban/gắn lại nhân sự hay sửa phân quyền đều không thấy cho tới khi đăng xuất.
-  // Mỗi lần mở app (còn token) hỏi lại /auth/me một phát, lỗi thì im lặng dùng bản cũ.
+  // Bản mới lấy hồ sơ kèm theo /auth/refresh (xem api/client.ts) — không gọi thêm API lúc mở
+  // app; ở đây chỉ nghe sự kiện để đồng bộ state với localStorage.
   useEffect(() => {
-    if (!localStorage.getItem("token")) return;
-    api.get("/api/auth/me", { _silent: true } as any)
-      .then((r) => {
-        const fresh = r.data?.data;
-        if (!fresh) return;
-        localStorage.setItem("user", JSON.stringify(fresh));
-        setUser(fresh);
-      })
-      .catch(() => {});
+    const onFresh = (e: Event) => {
+      const fresh = (e as CustomEvent).detail;
+      if (fresh) setUser(fresh);
+    };
+    window.addEventListener("auth:user", onFresh);
+    return () => window.removeEventListener("auth:user", onFresh);
   }, []);
 
   async function login(username: string, password: string) {

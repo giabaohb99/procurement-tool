@@ -27,7 +27,17 @@ api.interceptors.response.use(
       try {
         if (!refreshing) {
           refreshing = axios.post(`${baseURL}/api/auth/refresh`, { refresh_token: rt })
-            .then((res) => res.data.data.access_token)
+            .then((res) => {
+              // CR-028: /auth/refresh trả kèm hồ sơ + phân quyền mới nhất. Cập nhật luôn ở đây
+              // (khoảng 60 phút một lần, đúng nhịp access token hết hạn) thay vì gọi /auth/me
+              // riêng mỗi lần mở app. AuthContext nghe sự kiện dưới để đổi state.
+              const d = res.data.data
+              if (d.user) {
+                localStorage.setItem('user', JSON.stringify(d.user))
+                window.dispatchEvent(new CustomEvent('auth:user', { detail: d.user }))
+              }
+              return d.access_token
+            })
             .finally(() => { refreshing = null })
         }
         const newToken = await refreshing

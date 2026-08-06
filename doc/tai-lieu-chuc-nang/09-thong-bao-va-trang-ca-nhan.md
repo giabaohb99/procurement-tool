@@ -281,7 +281,17 @@ Màn hẹp (`max-width` theo media query của `.user-name`) chỉ còn avatar +
 - Giữa: Phòng ban, Số điện thoại (thiếu thì hiện "Chưa có phòng ban" / "Chưa cập nhật SĐT").
 - Cuối: Cài ứng dụng (khi cài được) · Gửi yêu cầu hỗ trợ (hoặc Hướng dẫn sử dụng khi tắt ticket) · Trang cá nhân · Đăng xuất.
 
-**Làm mới hồ sơ.** `AuthProvider` gọi `GET /api/auth/me` **mỗi lần mở app** (khi còn token) rồi ghi đè `localStorage.user`. Trước CR-028 hồ sơ chỉ được ghi lúc đăng nhập nên đổi tên / gắn lại hồ sơ nhân sự / sửa phân quyền đều **không hiện ra cho tới khi đăng xuất rồi đăng nhập lại** — đó là lý do góc phải còn hiện tên cũ ("Quản trị viên") dù tài khoản đã gắn sang hồ sơ nhân sự khác. Lỗi mạng thì im lặng dùng bản đã lưu.
+**Làm mới hồ sơ.** Trước CR-028 hồ sơ chỉ được ghi vào `localStorage` lúc đăng nhập rồi dùng mãi, nên đổi tên / gắn lại hồ sơ nhân sự / sửa phân quyền đều **không hiện ra cho tới khi đăng xuất rồi đăng nhập lại** — đó là lý do góc phải còn hiện tên cũ ("Quản trị viên") dù tài khoản đã gắn sang hồ sơ nhân sự khác.
+
+Từ CR-028, hồ sơ đi **kèm theo nhịp gia hạn token**, không có request riêng nào:
+
+1. Access token sống 60 phút. Hết hạn, request kế tiếp trả 401 → `api/client.ts` tự gọi `POST /api/auth/refresh` (cơ chế đã có sẵn từ trước).
+2. `/auth/refresh` nay trả **`{access_token, user}`** — `user` là payload y hệt `GET /api/auth/me` (họ tên, mã NV, chức vụ, phòng ban, SĐT, ma trận quyền).
+3. `client.ts` ghi đè `localStorage.user` rồi phát sự kiện `auth:user`; `AuthProvider` nghe sự kiện này để cập nhật state — tên ở góc phải và menu theo quyền đổi ngay, không cần tải lại trang.
+
+Nghĩa là thay đổi trên hồ sơ nhân sự hoặc phân quyền có hiệu lực chậm nhất sau khoảng 60 phút sử dụng. Cần thấy ngay lập tức thì đăng xuất rồi đăng nhập lại.
+
+`GET /api/auth/me` vẫn còn, dùng cho Trang cá nhân (Phần II).
 
 ---
 

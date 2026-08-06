@@ -89,7 +89,11 @@ def refresh(data: schema.RefreshInput, db: Session = Depends(get_db)):
     if not user or not user.is_active:
         from fastapi import HTTPException
         raise HTTPException(401, "Tài khoản không hợp lệ")
-    return success({"access_token": create_access_token(user.id)})
+    # Trả kèm hồ sơ + phân quyền mới nhất (CR-028): client đằng nào cũng gọi refresh
+    # mỗi khi access token hết hạn, gửi kèm ở đây thì không tốn thêm request nào,
+    # mà đổi tên/gắn nhân sự/sửa quyền vẫn có hiệu lực không cần đăng xuất.
+    return success({"access_token": create_access_token(user.id),
+                    "user": _me_payload(db, user)})
 
 
 @router.get("/me")
