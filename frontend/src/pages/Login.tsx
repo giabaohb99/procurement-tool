@@ -10,6 +10,9 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  // Máy local không có VITE_GOOGLE_CLIENT_ID -> GSI bắn liên tục "Missing required parameter:
+  // client_id", nút Google trả 400 và One Tap gọi initialize() lặp, làm console đầy lỗi giả.
+  const coGoogle = !!import.meta.env.VITE_GOOGLE_CLIENT_ID
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -75,6 +78,7 @@ export default function Login() {
             </button>
           </form>
 
+          {coGoogle && <>
           <div className="lg-or"><span>HOẶC</span></div>
 
           <div className="lg-google">
@@ -94,6 +98,7 @@ export default function Login() {
               useOneTap
             />
           </div>
+          </>}
 
           <p className="lg-foot-m">© {new Date().getFullYear()} DEGO Holding · Hệ thống nội bộ</p>
         </div>
