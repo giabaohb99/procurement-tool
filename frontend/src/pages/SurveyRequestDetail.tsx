@@ -11,6 +11,8 @@ import DateInput from '../components/DateInput'
 import { toast } from '../components/toast'
 import NotFound from '../components/NotFound'
 import FileDropzone from '../components/FileDropzone'
+import CommentThread from '../components/CommentThread'
+import AuditTimeline from '../components/AuditTimeline'
 
 const API = '/api/survey-requests'
 
@@ -1039,30 +1041,16 @@ export default function SurveyRequestDetail() {
             </div>
           )}
 
+          {/* CR-029: trao đổi trong phiếu — chỉ có khi phiếu đã lưu (cần id) */}
+          {!isNew && <CommentThread entity="survey_request" entityId={Number(id)} />}
+
         </div>
 
         {/* Lịch sử thao tác */}
         {isLogShown && (
           <div className="card" style={{ padding: 18 }}>
             <h3 className="sec-title"><i className="ti ti-history" /> Lịch sử thao tác</h3>
-            <div className="timeline">
-              {logs.map((l, i) => (
-                <div key={i} className="tl-item">
-                  <span className={'tl-dot ' + (
-                    l.action === 'approved' ? 'create' :
-                    (l.action === 'rejected') ? 'delete' : 'update'
-                  )} />
-                  <div>
-                    <div style={{ fontSize: 13 }}>
-                      <b>{l.by}</b> — {l.action_label}{l.message ? `: ${l.message}` : ''}
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
-                      {fmtDateTime(l.at)}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <AuditTimeline logs={logs} />
           </div>
         )}
       </div>

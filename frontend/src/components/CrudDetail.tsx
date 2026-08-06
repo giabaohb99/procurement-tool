@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { askConfirm } from './confirm'
-import { fmtDateTime } from '../utils/datetime'
 import { useAuth } from '../auth/AuthContext'
 import { cruds } from '../config/cruds'
 import SearchSelect from './SearchSelect'
 import NotFound from './NotFound'
+import AuditTimeline from './AuditTimeline'
 
 export default function CrudDetail() {
   const { entity, id } = useParams()
@@ -217,17 +217,7 @@ export default function CrudDetail() {
           <div className="card" style={{ padding: 18 }}>
             <h3 style={{ fontSize: 14, color: 'var(--navy)', marginBottom: 12 }}><i className="ti ti-history" /> Lịch sử thao tác</h3>
             {logs.length === 0 && <div style={{ color: '#999', fontSize: 13 }}>Chưa có log.</div>}
-            <div className="timeline">
-              {logs.map((l, i) => (
-                <div key={i} className="tl-item">
-                  <span className={'tl-dot ' + l.action} />
-                  <div>
-                    <div style={{ fontSize: 13 }}><b>{l.by}</b> — {l.action_label}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{fmtDateTime(l.at)}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <AuditTimeline logs={logs} showMessage={false} />
           </div>
          </div>
         )}

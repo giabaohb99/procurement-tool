@@ -8,7 +8,7 @@ Ghi nhận nhu cầu khảo sát giá / nhà cung cấp do bộ phận nghiệp 
 
 Đường dẫn: `/survey-requests` (danh sách), `/survey-requests/:id` (chi tiết + kết quả khảo sát), `/survey-requests/:id/process` (màn xử lý dành riêng NSTM).
 
-Màn chi tiết hiển thị phần **Lịch sử thao tác** (audit log) ở cột bên phải khi phiếu đã có thao tác được ghi nhận — gọi `GET /api/audit-logs?entity=survey_request&entity_id={id}`.
+Màn chi tiết hiển thị phần **Lịch sử thao tác** (audit log) ở cột bên phải khi phiếu đã có thao tác được ghi nhận — gọi `GET /api/audit-logs?entity=survey_request&entity_id={id}`. Khối này dùng chung `components/AuditTimeline.tsx`: hiện **10 thao tác gần nhất**, còn nữa thì có nút **"Xem thêm N thao tác"** và **"Thu gọn"**.
 
 ## Vai trò tham gia
 

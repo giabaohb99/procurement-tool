@@ -43,6 +43,7 @@ from app.modules.backup.controller import router as backup_router
 from app.modules.help_center.controller import router as help_center_router
 from app.modules.faq.controller import router as faq_router
 from app.modules.ticket.controller import router as ticket_router
+from app.modules.comment.controller import router as comment_router
 
 app = FastAPI(title="Procurement Tool API", version="0.1.0")
 
@@ -113,3 +114,4 @@ app.include_router(backup_router)
 app.include_router(help_center_router)
 app.include_router(faq_router)
 app.include_router(ticket_router)
+app.include_router(comment_router)

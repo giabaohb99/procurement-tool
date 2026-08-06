@@ -9,6 +9,7 @@ import NumberInput from '../components/NumberInput'
 import { toast } from '../components/toast'
 import { fmtDateTime } from '../utils/datetime'
 import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
+import AuditTimeline from '../components/AuditTimeline'
 
 const API = '/api/payment-requests'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -302,15 +303,7 @@ function PaymentRequestView() {
       {logs.length > 0 && (
         <div className="card" style={{ padding: 18, marginBottom: 16 }}>
           <h3 className="sec-title"><i className="ti ti-history" /> Lịch sử thao tác</h3>
-          <div className="timeline">
-            {logs.map((l, i) => (
-              <div key={i} className="tl-item">
-                <span className={'tl-dot ' + (l.action === 'approved' || l.action === 'paid' ? 'create' : l.action === 'rejected' || l.action === 'cancelled' ? 'delete' : l.action)} />
-                <div><div style={{ fontSize: 13 }}><b>{l.by}</b> — {l.action_label}{l.message ? `: ${l.message}` : ''}</div>
-                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>{fmtDateTime(l.at)}</div></div>
-              </div>
-            ))}
-          </div>
+          <AuditTimeline logs={logs} />
         </div>
       )}
 

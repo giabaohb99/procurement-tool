@@ -30,3 +30,4 @@ from app.modules.backup import model as _backup  # noqa: F401
 from app.modules.help_center import model as _help_center  # noqa: F401
 from app.modules.faq import model as _faq  # noqa: F401
 from app.modules.ticket import model as _ticket  # noqa: F401
+from app.modules.comment import model as _comment  # noqa: F401

@@ -18,6 +18,8 @@ import DocumentUploadModal from '../components/DocumentUploadModal'
 import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
 import AttachmentGallery from '../components/AttachmentGallery'
 import CompareLightbox from '../components/CompareLightbox'
+import CommentThread from '../components/CommentThread'
+import AuditTimeline from '../components/AuditTimeline'
 import { fmtSize, fileIcon } from '../utils/file-type'
 
 const API = '/api/purchase-requests'
@@ -882,24 +884,15 @@ export default function PurchaseRequestDetail() {
             onRefresh={loadAll}
           />
 
-
+          {/* CR-029: trao đổi trong phiếu — chỉ có khi phiếu đã lưu (cần id) */}
+          {!isNew && <CommentThread entity="purchase_request" entityId={Number(id)} />}
 
         </div>
 
         {isLogShown && (
           <div className="card" style={{ padding: 18 }}>
             <h3 className="sec-title"><i className="ti ti-history" /> Lịch sử thao tác</h3>
-            <div className="timeline">
-              {logs.map((l, i) => (
-                <div key={i} className="tl-item">
-                  <span className={'tl-dot ' + (l.action === 'approved' ? 'create' : (l.action === 'rejected' || l.action === 'cancelled') ? 'delete' : 'update')} />
-                  <div>
-                    <div style={{ fontSize: 13 }}><b>{l.by}</b> — {l.action_label}{l.message ? `: ${l.message}` : ''}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{fmtDateTime(l.at)}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <AuditTimeline logs={logs} />
           </div>
         )}
       </div>

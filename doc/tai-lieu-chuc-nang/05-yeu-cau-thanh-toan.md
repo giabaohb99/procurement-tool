@@ -231,7 +231,7 @@ Mỗi dòng tương ứng với một khoản công nợ (`Payable`) được đ
 
 10. Tổng hiển thị cuối bảng dòng trên UI được tính phía client (`req.lines.reduce(sum, 0)`) và có thể khác `req.total` nếu người dùng đang chỉnh sửa chưa lưu. Sau khi lưu, `req.total` từ server là giá trị chính xác.
 
-11. Lịch sử thao tác (audit log): mỗi hành động thay đổi trạng thái (tạo — `create`, cập nhật — `update`, gửi duyệt — `submitted`, duyệt — `approved`, ghi nhận đã chi — `paid`, xóa — `delete`) được ghi vào bảng audit log (`entity = "payment_request"`, `entity_id = id`). Trang chi tiết hiển thị khối "Lịch sử thao tác" khi có ít nhất 1 bản ghi (API `/api/audit-logs?entity=payment_request&entity_id=<id>`).
+11. Lịch sử thao tác (audit log): mỗi hành động thay đổi trạng thái (tạo — `create`, cập nhật — `update`, gửi duyệt — `submitted`, duyệt — `approved`, ghi nhận đã chi — `paid`, xóa — `delete`) được ghi vào bảng audit log (`entity = "payment_request"`, `entity_id = id`). Trang chi tiết hiển thị khối "Lịch sử thao tác" khi có ít nhất 1 bản ghi (API `/api/audit-logs?entity=payment_request&entity_id=<id>`). Khối dùng chung `components/AuditTimeline.tsx`: hiện **10 thao tác gần nhất**, còn nữa thì có nút **"Xem thêm N thao tác"** và **"Thu gọn"**; API mặc định chỉ trả **100 dòng gần nhất** (`limit`, tối đa 500) nên chạm ngưỡng thì khối ghi rõ ở cuối.
 
 ---
 

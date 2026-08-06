@@ -8,10 +8,11 @@ import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
 import DateInput from '../components/DateInput'
 import { toast } from '../components/toast'
-import { fmtDateTime } from '../utils/datetime'
 import { askConfirm, askPrompt } from '../components/confirm'
 import NotFound from '../components/NotFound'
 import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
+import CommentThread from '../components/CommentThread'
+import AuditTimeline from '../components/AuditTimeline'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const VAT_OPTS = ['0', '2', '4', '6', '8', '10']
@@ -946,22 +947,15 @@ export default function SurveyDetail() {
             />
           )}
 
+          {/* CR-029: trao đổi trong phiếu — chỉ có khi phiếu đã lưu (cần id) */}
+          {!isNew && <CommentThread entity="survey" entityId={Number(id)} />}
+
         </div>
 
         {isLogShown && (
           <div className="card" style={{ padding: 18 }}>
             <h3 className="sec-title"><i className="ti ti-history" /> Lịch sử thao tác</h3>
-            <div className="timeline">
-              {logs.map((l, i) => (
-                <div key={i} className="tl-item">
-                  <span className={'tl-dot ' + (l.action === 'approved' ? 'create' : l.action === 'rejected' ? 'delete' : l.action)} />
-                  <div>
-                    <div style={{ fontSize: 13 }}><b>{l.by}</b> — {l.action_label}{l.message ? `: ${l.message}` : ''}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{fmtDateTime(l.at)}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <AuditTimeline logs={logs} />
           </div>
         )}
       </div>

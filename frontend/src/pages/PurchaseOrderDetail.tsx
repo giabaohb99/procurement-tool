@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
-import { fmtDateTime } from '../utils/datetime'
 import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import { poBadge, PAYMENT_TERMS_OPTIONS } from '../config/cruds'
@@ -14,6 +13,8 @@ import NotFound from '../components/NotFound'
 import { toast } from '../components/toast'
 import DocumentUploadModal from '../components/DocumentUploadModal'
 import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
+import CommentThread from '../components/CommentThread'
+import AuditTimeline from '../components/AuditTimeline'
 import { fmtSize, fileIcon } from '../utils/file-type'
 
 const API = '/api/purchase-orders'
@@ -689,20 +690,15 @@ export default function PurchaseOrderDetail() {
           )}
 
           {po.approve_note && <div className="card" style={{ padding: 14, marginBottom: 16 }}><b>Ghi chú duyệt:</b> {po.approve_note}</div>}
+
+          {/* CR-029: trao đổi trong đơn — chỉ có khi đơn đã lưu (cần id) */}
+          {!isNew && <CommentThread entity="purchase_order" entityId={Number(id)} />}
         </div>
 
         {isLogShown && (
           <div className="card" style={{ padding: 18 }}>
             <h3 className="sec-title"><i className="ti ti-history" /> Lịch sử thao tác</h3>
-            <div className="timeline">
-              {logs.map((l, i) => (
-                <div key={i} className="tl-item">
-                  <span className={'tl-dot ' + (l.action === 'approved' ? 'create' : l.action === 'rejected' ? 'delete' : l.action)} />
-                  <div><div style={{ fontSize: 13 }}><b>{l.by}</b> — {l.action_label}{l.message ? `: ${l.message}` : ''}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{fmtDateTime(l.at)}</div></div>
-                </div>
-              ))}
-            </div>
+            <AuditTimeline logs={logs} />
           </div>
         )}
       </div>

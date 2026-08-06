@@ -65,6 +65,12 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 | 23 | Thông báo (chuông + trang) | `/notifications` | [09-thong-bao-va-trang-ca-nhan.md](09-thong-bao-va-trang-ca-nhan.md) — đã có tài liệu |
 | 24 | Trang cá nhân (thông tin + việc cần làm) | `/me` | [09-thong-bao-va-trang-ca-nhan.md](09-thong-bao-va-trang-ca-nhan.md) — đã có tài liệu |
 
+## Nhóm: Khối dùng chung (không có mục menu riêng)
+
+| # | Chức năng | Đường dẫn | Tài liệu chức năng |
+|---|-----------|-----------|-------------------|
+| 25 | Bình luận / Trao đổi trên chứng từ (2 cấp · @nhắc tên · lượt thích) | cuối trang chi tiết YCMH · YCBG · Phiếu khảo sát · ĐMH | [11-binh-luan-tren-chung-tu.md](11-binh-luan-tren-chung-tu.md) — đã có tài liệu |
+
 ---
 
 ## Ghi chú
