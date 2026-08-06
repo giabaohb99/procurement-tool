@@ -4,8 +4,8 @@ App React độc lập cho tài liệu hướng dẫn sử dụng hệ thống T
 Tách khỏi `frontend/` nhưng **dùng chung backend** (`/api/v1/help-center`) và **chung tài khoản**.
 
 Stack: React 18 · Vite 5 · TypeScript · **Tailwind CSS v4 + shadcn/ui** · React Router 6 · axios ·
-react-quill (trình soạn thảo khu quản trị) · react-easy-crop (cắt ảnh icon) · sonner (toast) ·
-lucide-react (icon).
+react-quill + quill1-table (trình soạn thảo khu quản trị) · react-easy-crop (cắt ảnh icon) ·
+sonner (toast) · lucide-react (icon).
 
 > Giữ React **18** (không lên 19) vì `react-quill@2` chưa hỗ trợ React 19; shadcn/Radix chạy tốt trên React 18.
 
@@ -56,10 +56,23 @@ token vì khu người dùng vốn công khai.
 
 | Trang | Chức năng |
 |---|---|
-| `/admin` | Bảng cây: thêm/sửa/xóa, **kéo-thả** đổi thứ tự + chuyển mục cha, đổi thứ tự bằng nút lên/xuống, lọc theo tiêu đề |
-| `/admin/:id` | Soạn bài trên 1 trang: tiêu đề inline · **mô tả ngắn + icon** · trình soạn thảo luôn mở · ảnh từng bước · bài viết con · lịch sử. Ctrl/⌘+S để lưu |
+| `/admin` | Bảng cây: thêm/xóa, **sửa nhanh tiêu đề tại chỗ** (nút bút chì hoặc nhấp đúp), **kéo-thả** đổi thứ tự + chuyển mục cha, đổi thứ tự bằng nút lên/xuống, lọc theo tiêu đề |
+| `/admin/:id` | Soạn bài trên 1 trang: tiêu đề inline · **mô tả ngắn + icon** · trình soạn thảo luôn mở · ảnh từng bước · bài viết con (**chuyển mục cha từng bài**) · lịch sử. Ctrl/⌘+S để lưu |
 | `/admin/faq` | Câu hỏi thường gặp: thêm/sửa/xóa, bật-tắt hiển thị, đổi thứ tự |
+| `/admin/trang-chu` | **Bố cục trang chủ**: sắp thứ tự / đổi tiêu đề / ẩn-hiện 4 khung, kéo-thả chọn bài viết cho khung, xem trước |
 | `/admin/lich-su` | Nhật ký thay đổi của **mọi** bài viết |
+
+Sidebar khu quản trị (`admin-sidebar-nav` + `admin-sidebar-tree-item`): ngoài các trang quản lý còn
+có khối "Bài viết liên quan" — bài cha + các bài **cùng cấp**, mỗi bài có bài con thì **sổ xuống**
+xem ngay tại đây, và **kéo-thả** đổi mục cha / thứ tự ngay trên sidebar. Nhánh chứa bài đang mở
+bung sẵn; trạng thái bung tính **trực tiếp lúc render** (không nhét vào state qua `useEffect`) vì
+cây tài liệu tải xong sau lần render đầu — effect chạy trên cây rỗng sẽ ra tập rỗng và không bao
+giờ tính lại.
+
+Kéo-thả ở sidebar và ở bảng cây `/admin` dùng chung hook `lib/use-help-tree-dnd.ts` (state + handler
+DOM) trên nền logic thuần `lib/help-tree-dnd.ts`. Thứ tự mới luôn tính trên cây **đầy đủ**, nên
+sidebar chỉ hiện một phần cây vẫn ghi `sort_order` đúng. Thẻ `<a>` trong dòng phải đặt
+`draggable={false}`, nếu không trình duyệt kéo cái link thay vì kéo bài viết.
 
 Cây tài liệu sâu **tối đa 3 cấp**, nhưng chỉ phân biệt 2 loại: **Mục gốc** (cấp 0, hiện thành thẻ
 danh mục ở trang người dùng) và **Bài viết** (mọi cấp bên dưới, cấp 1 lẫn cấp 2 đều gọi chung
@@ -84,6 +97,58 @@ trên thẻ ở khu người dùng:
   Chưa chọn thì khu người dùng tự gán icon mặc định xoay vòng theo vị trí.
 
 Vì `icon` chứa được cả URL nên cột là `String(500)`.
+
+#### Bố cục trang chủ (`/admin/trang-chu`)
+
+Trang 3 cột: **nguồn** (kéo) · **4 khung** (thả) · **xem trước**.
+
+Mỗi khung nhận đúng MỘT loại phần tử — backend quyết định qua `item_kind` và chặn thẳng (400)
+nếu gửi sai loại (`SECTION_ITEM_KIND` trong `home_service.py`):
+
+| Khung | `item_kind` | Sửa được gì |
+|---|---|---|
+| Bắt đầu ngay | `article` | tiêu đề · ẩn/hiện · thứ tự · **kéo bài viết** + nền gradient + ảnh minh họa từng tile |
+| Các Phân hệ | `article` | tiêu đề · ẩn/hiện · thứ tự · **kéo bài viết** |
+| Không tìm thấy điều bạn cần? | `faq` | tiêu đề · ẩn/hiện · thứ tự · **kéo câu hỏi thường gặp** |
+| Mẹo tra cứu | `custom` | tiêu đề · ẩn/hiện · thứ tự · **thẻ tự nhập** (icon + tiêu đề + mô tả) |
+
+- 4 khung là **cố định** (backend seed sẵn ở `tab_help_home_section`), không thêm/xóa khung được.
+- `tab_help_home_item` phục vụ cả 3 loại nên `article_id` · `faq_id` · `title/description/icon`
+  đều nullable; service bắt buộc đúng nhóm cột theo `item_kind`. Phần tử trỏ tới bài/câu hỏi đã
+  xóa bị loại khỏi kết quả; thẻ tự do không tham chiếu gì nên luôn giữ.
+- Cột nguồn có 2 tab **Bài viết / Câu hỏi**. Kéo một dòng thả vào khung; kéo tay cầm ⠿ trong khung
+  để đổi thứ tự. Nút lên/xuống vẫn giữ để dùng được bằng bàn phím. Kéo-thả dùng `dataTransfer` với
+  MIME riêng (`application/x-help-home`) nên không lẫn với kéo-thả cây tài liệu.
+- Mỗi khung **tối đa `MAX_HOME_ITEMS` = 6 mục** (vừa đúng 2 hàng lưới 3 cột). Đầy rồi thì thả thêm
+  bị từ chối kèm toast và nút "Thêm thẻ" tắt — nhưng **kéo đổi thứ tự vẫn chạy**. Giới hạn này chỉ
+  đặt ở frontend: đây là cấu hình hiển thị, chỉ quản trị viên sửa được.
+- Mọi thay đổi **ghi ngay xuống server**, không có nút Lưu — đây là cấu hình hiển thị. Riêng ô
+  tiêu đề/mô tả thẻ chỉ ghi khi **rời ô**, gõ tới đâu gọi API tới đó thì spam request.
+- Khung để trống thì trang chủ dùng **nội dung mặc định** như trước (`firstLeaves` · các mục gốc ·
+  thẻ dẫn sang trang FAQ · 3 mẹo trong code), nên hệ mới cài vẫn có nội dung ngay. Gọi API lỗi
+  cũng rơi về bố cục mặc định — trang chủ không bao giờ trắng.
+- Nền gradient lưu ở backend dưới dạng **slug** (`lib/help-home-skins.ts` ánh xạ sang CSS), đổi
+  bảng màu sau này không phải chạy migration.
+- Khung xem trước (`help-home-preview.tsx`) dựng lại markup **rút gọn**, không tái dùng `PortalHome`
+  (trang thật cần router/slug/trích đoạn nội dung — kéo cả bộ vào khu quản trị chỉ để xem trước là
+  quá nặng). Đánh đổi: sửa giao diện trang chủ thì phải sửa cả ở đây cho khớp.
+
+#### Chuyển bài sang mục cha khác
+
+| Chuyển bài nào | Ở đâu |
+|---|---|
+| Chính bài đang mở | Menu `…` trên đầu trang → **Chuyển sang mục khác** |
+| Từng **bài con** | Menu `…` trên mỗi dòng ở khối "Bài viết con" (cột phải) → **Chọn mục cha khác** — khỏi phải mở bài con ra rồi mới chuyển |
+| Bài bất kỳ | Kéo-thả ở bảng cây `/admin` hoặc ở sidebar khu quản trị |
+
+Dòng bài con để **một hàng**: icon + tiêu đề (cắt bớt) + hai nút đổi thứ tự + menu `…`. Chỉ để lộ
+hai nút lên/xuống vì đó là thao tác cần bấm liên tục; bày đủ 5 nút ra thì cột phải hẹp không đủ chỗ,
+tiêu đề bị đẩy xuống hàng riêng và danh sách cao gần gấp đôi.
+
+Tất cả dùng chung `MoveArticleDialog` — chỉ liệt kê nơi hợp lệ qua `validParents`. Thao tác chuyển
+**ghi ngay xuống server**, không chờ nút Lưu (đây là thuộc tính cây, không phải nội dung bài), và
+bài được đặt xuống **cuối** mục đích (`moveArticle` nhận thêm `sortOrder`) — không thì trùng
+`sort_order` với anh em sẵn có ở đó.
 
 #### Kéo-thả ở bảng cây
 
@@ -139,24 +204,48 @@ lên header. Khung trang danh mục / bài viết chạy hết chiều ngang v�
 (`px-6 md:px-8`, KHÔNG `max-w` + canh giữa) để sidebar thẳng hàng với logo và mục lục thẳng hàng
 với cụm tài khoản; chiều rộng dễ đọc do cột giữa tự giới hạn `max-w-3xl`.
 
-#### Trang bài viết — bố cục 3 cột
+#### Trang bài viết — bố cục 3 cột (`components/help-portal-shell.tsx`)
 
-Bố cục giống khu quản trị (sidebar + nội dung), tham khảo help center của Lark:
+Khung 3 cột dùng chung cho **trang danh mục lẫn trang bài viết**, tham khảo help center của Lark:
 
-| Cột | Thành phần | Ẩn khi |
+| Cột | Thành phần |
+|---|---|
+| Trái (`w-64`) | `help-section-nav` — toàn bộ mục gốc, bung nhánh đang đọc |
+| Giữa | tiêu đề · nội dung · ảnh từng bước · bài trước/tiếp theo |
+| Phải (`w-64`) | `help-article-toc` — "Trong bài viết này" |
+
+Cột giữa `mx-auto max-w-3xl flex-1` — **canh giữa** chỗ trống còn lại chứ không dính sát danh mục;
+nếu không, màn rộng mà bài không có heading (không dựng cột mục lục) sẽ chừa một dải trắng rất lớn
+bên phải. Hai cột bên bám `top-[4.25rem]` (bằng chiều cao header) và tự cuộn riêng khi dài.
+
+**Ba mức bề ngang** (dùng `hooks/use-media-query.ts` — phải biết bề ngang trong JS vì hành vi đổi
+hẳn, không chỉ ẩn/hiện bằng class):
+
+| Bề ngang | Danh mục | Mục lục |
 |---|---|---|
-| Trái (`w-64`) | `help-section-nav` — cây tài liệu của **mục gốc đang đọc** | `< lg` |
-| Giữa | tiêu đề · nội dung · ảnh từng bước · bài trước/tiếp theo | — |
-| Phải (`w-64`) | `help-article-toc` — "Trong bài viết này" | `< xl` |
+| ≥ 1280 (`xl`) | cột, bật/tắt được | luôn hiện |
+| 1024–1279 (`lg`) | cột, bật/tắt được | **chỉ hiện khi tắt danh mục** |
+| < 1024 | **ngăn kéo** phủ lên, mở bằng nút ☰ ở header | ẩn hẳn |
 
-Hai cột hai bên `sticky top-[4.25rem]` (bằng chiều cao header) và tự cuộn riêng khi dài.
+Ở mức `lg` không thể để cả hai: 1024 − 256×2 − lề − khoảng cách còn chưa tới 400px cho nội dung,
+đọc không nổi. Nên mục lục "nhường chỗ" cho danh mục và chỉ hiện khi người đọc tự tắt danh mục.
+Dưới 1024 danh mục thành ngăn kéo **phủ lên** thay vì đẩy — đẩy thì nội dung chỉ còn vài trăm px.
 
-- **Sidebar trái** (`help-section-nav`, dùng chung cho cả trang danh mục): luôn bám theo **mục gốc**
-  của trang đang mở và liệt kê **trọn** các bài bên trong nó, nên đi lại trong cùng một cụm thì
-  sidebar không đổi. Bài đang đọc tô nền `accent` + chữ primary, nhánh chứa nó **tự bung**; mũi tên
-  bên trái để đóng/mở thư mục. Mục gốc là **bài đơn** (không có bài con) thì sidebar chỉ hiện đúng
-  bài đó — KHÔNG đôn các mục gốc khác vào cho đầy, vì như vậy bấm sang cụm khác sidebar sẽ đổi
-  hoàn toàn, người đọc mất phương hướng.
+- Trạng thái đóng/mở nằm ở `portal-layout` (header giữ nút), trang con lấy qua outlet context
+  `sidebar`. Trang chủ / câu hỏi thường gặp không có danh mục nên **ẩn luôn nút** — khung 3 cột tự
+  báo `setAvailable(true)` lúc mount và `false` lúc unmount.
+- Đổi qua màn hẹp thì ngăn kéo tự đóng, và **đóng lại mỗi lần chuyển trang** — không thì bấm một
+  bài trong ngăn kéo xong nó vẫn che nội dung vừa mở.
+- Dưới `lg` các nút ở header rút còn icon (nhãn giữ trong `title`) — bày đủ chữ thì header tràn
+  ngang ngay ở khổ máy tính bảng.
+
+- **Sidebar trái** (`help-section-nav`, dùng chung cho cả trang danh mục): liệt kê **toàn bộ mục
+  gốc** (bám theo help center của Lark) và **chỉ bung nhánh chứa bài đang đọc**. Bài đang đọc tô
+  nền `accent` + chữ primary; mũi tên bên trái để đóng/mở tay.
+  Mỗi lần chuyển bài, trạng thái bung được **đặt lại** theo đúng nhánh mới chứ không gộp thêm vào
+  cái cũ — gộp thì đọc vài bài là cả cây bung hết, sidebar dài không tra được.
+  (Trước đây sidebar chỉ hiện đúng cụm của mục gốc đang mở; đổi vì người đọc không thấy hệ thống
+  tài liệu còn những phần nào và phải quay về trang chủ mới đi tiếp được.)
 - **Mục lục phải**: một đường kẻ dọc chạy dọc danh sách, mục đang đọc tô primary + vạch đậm
   (bỏ kiểu khung/nền thẻ cũ).
 - Box "Bài viết liên quan" / "Bài viết trong mục" / "Nhóm nghiệp vụ khác" và link "Về mục cha" đã
@@ -238,8 +327,16 @@ src/
 │                          # help-topbar · help-category-tiles · help-article-toc ·
 │                          # help-article-slides · help-audit-timeline · help-tree-nav ·
 │                          # help-article-tree-table + help-article-tree-row (bảng cây + kéo-thả) ·
+│                          # admin-sidebar-nav + admin-sidebar-tree-item (sidebar quản trị:
+│                          #   sổ xuống xem bài con + kéo-thả đổi mục cha) ·
 │                          # help-icon-picker (chọn icon / tải ảnh + cắt) ·
 │                          # help-article-icon (render icon: component lucide hoặc <img>) ·
+│                          # help-rich-editor (Quill dùng chung) + help-editor-extras
+│                          #   (3 nút portal vào thanh công cụ: Bảng · Nhúng mã · Mã HTML) ·
+│                          # embed-code-dialog (dán mã nhúng + xem trước) ·
+│                          # help-portal-shell (khung 3 cột khu người dùng + ngăn kéo danh mục) ·
+│                          # help-home-source-panel + help-home-item-list + help-home-preview
+│                          #   (trang Bố cục trang chủ: kéo-thả bài/câu hỏi + thẻ tự do + xem trước) ·
 │                          # confirm-dialog (askConfirm/askPrompt) ·
 │                          # create-article-dialog (askNewArticle: tiêu đề + mô tả ngắn + icon)
 ├─ layouts/                # portal-layout (khu người dùng) · admin-layout (khu quản trị)
@@ -248,6 +345,13 @@ src/
 ├─ hooks/use-heading-toc.ts   # sinh mục lục + theo dõi heading đang đọc
 ├─ lib/help-slug.tsx       # slug từ tiêu đề + tra ngược slug -> id (đường dẫn khu người dùng)
 ├─ lib/quill-vietnamese-labels.ts  # tooltip + gợi ý tiếng Việt cho thanh công cụ soạn thảo
+├─ lib/quill-table-actions.ts  # đăng ký + gọi module bảng quill1-table (lệnh, phím tắt bắt buộc)
+├─ lib/quill-table-column-resize.ts  # kéo giãn cột + nới blot ô để LƯU được độ rộng
+├─ lib/use-help-tree-dnd.ts    # state kéo-thả cây, dùng chung bảng cây /admin + sidebar quản trị
+├─ lib/help-home-api.ts        # gọi API cấu hình 4 khung trang chủ (/api/v1/help-center/home)
+├─ lib/help-home-skins.ts      # slug nền gradient + ảnh minh họa cho tile "Bắt đầu ngay"
+├─ hooks/use-media-query.ts    # bề ngang màn hình trong JS (sidebar cột hay ngăn kéo)
+├─ lib/quill-html-embed.ts     # blot "mã nhúng": bọc code nhà cung cấp vào iframe srcdoc
 ├─ lib/help-tree.ts        # dựng cây · breadcrumb · tìm node/cha
 ├─ lib/help-tree-dnd.ts    # logic thuần cho kéo-thả: vị trí thả + kiểm tra hợp lệ
 ├─ lib/help-icons.ts       # bộ icon dựng sẵn (slug -> component) + isImageIcon
@@ -265,6 +369,62 @@ src/
 npx shadcn@latest add <tên-component>
 ```
 
+#### Trình soạn thảo dùng chung (`components/help-rich-editor.tsx`)
+
+Bài viết (`/admin/:id`) và câu trả lời FAQ (`/admin/faq/:id`) dùng **cùng một** component; khác
+nhau đúng ở prop `compact` (thanh công cụ rút gọn cho FAQ). Trước đây mỗi trang tự dựng Quill nên
+thêm tính năng phải sửa hai chỗ.
+
+Ba nút riêng — **Bảng · Nhúng mã · Mã HTML** — được `createPortal` thẳng vào thanh công cụ do
+Quill dựng, nên tất cả nằm trên **một hàng** (`.hc-editor-extras` ở cuối `.ql-toolbar`). Không tự
+dựng lại toàn bộ thanh công cụ (Quill có hỗ trợ truyền container tự viết) vì như vậy phải chép lại
+toàn bộ markup picker của Quill. Quill bỏ qua mọi phần tử không mang class `ql-*` nên nút shadcn
+nằm trong đó vẫn an toàn — nhưng **CSS thì không**: `quill.snow.css` áp cho mọi `<button>` trong
+`.ql-toolbar` ba thứ phải gỡ hết trong `article-content.css`, nếu không nút sẽ hỏng theo kiểu khó
+đoán:
+
+| Quy tắc của Quill | Hậu quả nếu không gỡ |
+|---|---|
+| `width: 28px; height: 24px` | nhãn/khổ nút bị bóp |
+| `background: none` | nút đang bật mất nền → chữ trắng trên nền trắng, tưởng như biến mất |
+| `svg { float: left; height: 100% }` | `height:100%` không có mốc → nút cao đúng 16px |
+
+Vì `background: none` (2 lớp + thẻ) thắng class tiện ích `bg-primary` (1 lớp), trạng thái **đang
+bật** của nút Mã HTML tô bằng CSS qua `button[data-active='true']` chứ không dùng
+`variant="default"` của shadcn.
+
+**Bảng** — Quill 1.3.7 (bản `react-quill@2` dùng) **không** có module bảng: bật
+`modules: { table: true }` sẽ ném `moduleClass is not a constructor`. Dùng **`quill1-table`** (port
+của quill-better-table sang Quill 1, không kéo theo dependency runtime). Menu Bảng gọi thẳng
+handler `table` mà module tự đăng ký vào thanh công cụ, nhờ vậy giữ được giao diện shadcn + nhãn
+tiếng Việt (xem `lib/quill-table-actions.ts`). Có lưới chọn nhanh tới 6×6, ô nhập số hàng/cột cho
+bảng lớn hơn, thêm/xóa hàng cột, gộp/tách ô.
+
+- `TABLE_KEYBOARD_BINDINGS` là **bắt buộc** — Quill gắn handler mặc định ngay lúc khởi tạo nên chỉ
+  chặn được bằng cách khai báo từ đầu; thiếu nó thì Backspace/Delete trong ô phá cấu trúc bảng và
+  Ctrl+Z không hoàn tác đúng.
+- Thư viện chỉ sinh `<td>`, **không có `<th>`** — hàng đầu tiên được tô như dòng tiêu đề bằng CSS
+  (`table tr:first-child td`). Bảng viết tay bằng `<th>` không bị ảnh hưởng.
+- Ô đang chọn tô `#cce0f8` + viền trong màu primary, đặt SAU quy tắc hàng tiêu đề để thắng độ ưu
+  tiên — nếu không, gộp ô ở hàng đầu thành ra mò mẫm.
+- **Kéo giãn cột** (`lib/quill-table-column-resize.ts`): rê tới mép phải một ô, con trỏ đổi thành
+  `col-resize` rồi kéo. Blot của thư viện chỉ round-trip đúng 7 thuộc tính
+  (`table_id|row_id|cell_id|merge_id|colspan|rowspan|hide_border`) — mọi `style`/`class` khác đặt
+  lên `<td>` đều **mất khi tải lại bài**. Nên phải: (a) nới blot ô thêm **trường thứ 8** = độ rộng,
+  (b) thêm matcher `TD, TH` đọc lại độ rộng khi nạp HTML. Matcher này **phải gắn theo từng
+  instance sau khi module bảng dựng xong** — matcher của thư viện ghi đè thuộc tính `td` bằng đúng
+  7 trường, cái nào chạy trước sẽ bị xoá mất phần độ rộng. Gắn trong `useEffect` lúc mount là kịp,
+  vì lúc đó `value` còn rỗng, nội dung bài tải xong mới được dán vào.
+  Độ rộng ghi lên **mọi ô cùng cột** (không chỉ hàng đầu) để xoá hàng nào cũng không mất.
+  ⚠️ Đây là chỗ bám vào cấu trúc bên trong quill1-table — nâng cấp thư viện thì kiểm tra lại
+  `TableCellBlot.formats()` và matcher `TD, TH` trong `index.js` của nó.
+- ⚠️ **Chưa làm** tô màu nền ô cố định: cũng vướng đúng giới hạn round-trip ở trên.
+
+**Mã HTML** — bật/tắt giữa soạn trực quan và sửa mã nguồn. Ở chế độ mã HTML, Quill **vẫn nằm
+nguyên trong DOM** (chỉ ẩn `.ql-container` + các nhóm nút) và nhận một giá trị **đông cứng**: đẩy
+từng ký tự đang gõ vào Quill thì nó chuẩn hóa lại và nuốt mất thẻ lạ ngay trong lúc gõ. Lưu ở chế
+độ này thì HTML giữ nguyên; bấm *Soạn trực quan* mới để Quill dựng lại (và bỏ thẻ nó không hiểu).
+
 #### Thanh công cụ soạn thảo
 
 Quill không tự gắn tooltip cho nút nào và nhãn ô dán URL là tiếng Anh — đã bù cả hai:
@@ -277,17 +437,28 @@ Quill không tự gắn tooltip cho nút nào và nhãn ô dán URL là tiếng 
 
 #### Nhúng video / demo tương tác (Guideflow, YouTube…)
 
-Dùng nút **video (▶)** trên thanh công cụ của trình soạn thảo, dán **URL nhúng**
-(vd `https://app.guideflow.com/embed/qp71yw8sxp`) — Quill chèn `<iframe class="ql-video">`,
-CSS `.hc-content iframe` ép khổ 16:9 co theo bề ngang cột nội dung.
+Hai đường, chọn theo thứ người ta đưa cho:
 
-**KHÔNG dán cả đoạn `<div>` + `<iframe>` + `<script>`** mà nhà cung cấp đưa:
+| Có gì trong tay | Dùng nút | Kết quả |
+|---|---|---|
+| Chỉ **URL nhúng** (vd `https://app.guideflow.com/embed/qp71yw8sxp`) | **video (▶)** | `<iframe class="ql-video">`, CSS `.hc-content iframe` ép khổ 16:9 |
+| **Cả đoạn code** `<div>` + `<iframe>` + `<script>` | **Nhúng mã (`</>`)** | Khối `div.hc-embed` chứa iframe `srcdoc` |
 
-- Quill chỉ giữ format đã đăng ký nên thẻ/thuộc tính lạ bị lột sạch khi dán.
+Nút **Nhúng mã** mở hộp thoại dán code, xem trước tại chỗ rồi mới chèn (`embed-code-dialog.tsx`).
+Dán đúng 1 thẻ `<iframe>` và không ép chiều cao thì nó tự đi đường nhẹ hơn (embed `video` sẵn có
+của Quill); còn lại mới bọc `srcdoc`.
+
+Vì sao phải bọc `srcdoc` (`lib/quill-html-embed.ts`) thay vì chèn thẳng HTML:
+
+- Quill chỉ giữ format đã đăng ký nên thẻ/thuộc tính lạ bị lột sạch khi dán vào editor.
 - Nội dung bài render bằng `dangerouslySetInnerHTML`, mà **`<script>` chèn qua innerHTML thì
   trình duyệt không chạy** — script của nhà cung cấp sẽ nằm im dù có lưu được vào DB.
 
-Riêng Guideflow, `opt.js` chỉ làm auto-resize chiều cao nên bỏ đi vẫn xem được bình thường.
+Đưa cả đoạn code vào `srcdoc` giải quyết cả hai: trình duyệt dựng một tài liệu con hoàn chỉnh nên
+script chạy được, đồng thời CSS/JS của bên thứ ba bị nhốt trong iframe (`sandbox` bật đủ quyền cho
+embed thương mại — nội dung do quản trị viên tự dán nên tin được). Mã gốc lưu base64 ở `data-embed`
+để mở lại bài vẫn dựng lại và sửa được; khung mặc định 16:9, nhập chiều cao thì đè bằng inline
+style. Chỉ nhận URL `http(s)` — chặn `javascript:`/`data:` lọt vào `src`.
 
 ## Câu hỏi thường gặp
 

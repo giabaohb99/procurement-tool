@@ -6,8 +6,13 @@ from .model import Permission, Role
 from .schema import PermissionUpdate, RoleCreate, RoleUpdate
 
 
+def list_roles_query(db: Session):
+    """Query thô để controller còn gắn thêm bộ lọc (apply_filters) trước khi .all()."""
+    return db.query(Role).order_by(Role.id)
+
+
 def list_roles(db: Session):
-    return db.query(Role).order_by(Role.id).all()
+    return list_roles_query(db).all()
 
 
 def get_role(db: Session, rid: int) -> Role:

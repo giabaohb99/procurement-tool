@@ -1,15 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import ReactQuill from 'react-quill'
-import 'react-quill/dist/quill.snow.css'
 import { ArrowLeft, Eye, History, Save, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { api } from '@/api/client'
 import HelpAuditTimeline, { type HelpAuditLog } from '@/components/help-audit-timeline'
+import HelpRichEditor from '@/components/help-rich-editor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { applyQuillVietnameseLabels } from '@/lib/quill-vietnamese-labels'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { createFaq, deleteFaq, fetchFaq, updateFaq, type Faq } from '@/lib/faq-api'
@@ -69,19 +67,6 @@ export default function AdminFaqEditor() {
     fetchLogs()
     return () => { cancelled = true }
   }, [faqId, isNew, fetchLogs])
-
-  // Quill không tự gắn tooltip cho nút nào -> gắn sau khi thanh công cụ dựng xong
-  useEffect(() => { applyQuillVietnameseLabels() }, [faq, isNew])
-
-  const modules = useMemo(() => ({
-    toolbar: [
-      [{ header: [2, 3, false] }],
-      ['bold', 'italic', 'underline'],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      ['link'],
-      ['clean'],
-    ],
-  }), [])
 
   const handleSave = async () => {
     if (!question.trim()) {
@@ -177,17 +162,14 @@ export default function AdminFaqEditor() {
         </Panel>
 
         <Panel title="Câu trả lời">
-          <div className="hc-editor hc-editor-sm">
-            <ReactQuill
-              theme="snow"
-              value={answer}
-              onChange={(value, _delta, source) => {
-                setAnswer(value)
-                if (source === 'user') setAnswerTouched(true)
-              }}
-              modules={modules}
-            />
-          </div>
+          <HelpRichEditor
+            compact
+            value={answer}
+            onChange={(html, fromUser) => {
+              setAnswer(html)
+              if (fromUser) setAnswerTouched(true)
+            }}
+          />
         </Panel>
 
         {!isNew && (

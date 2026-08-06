@@ -64,16 +64,32 @@ class HelpHomeSection(Base, AuditMixin):
 
 
 class HelpHomeItem(Base, AuditMixin):
-    """Bài viết được chọn gắn vào 1 khung trang chủ — chỉ dùng cho khung quick_start/categories."""
+    """Một phần tử bên trong 1 khung trang chủ.
+
+    Mỗi khung chỉ nhận đúng MỘT loại phần tử (xem SECTION_ITEM_KIND ở home_service):
+      - quick_start / categories -> trỏ tới bài viết  (article_id)
+      - faq                      -> trỏ tới câu hỏi thường gặp (faq_id)
+      - tips                     -> thẻ tự do, nội dung nhập tay (title/description/icon)
+    Ba nhóm cột dưới đây vì vậy đều nullable; service chịu trách nhiệm bắt buộc đúng cột
+    theo loại khung.
+    """
 
     __tablename__ = "tab_help_home_item"
 
     section_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("tab_help_home_section.id", ondelete="CASCADE")
     )
-    article_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("tab_help_article.id", ondelete="CASCADE")
+    article_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("tab_help_article.id", ondelete="CASCADE"), nullable=True
     )
+    faq_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("tab_faq.id", ondelete="CASCADE"), nullable=True
+    )
+    # Thẻ tự do (khung "Mẹo tra cứu") — không gắn với bài viết hay câu hỏi nào
+    title: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Slug icon dựng sẵn ở frontend (vd 'search'), backend chỉ lưu chuỗi
+    icon: Mapped[str | None] = mapped_column(String(50), nullable=True)
     # Ảnh minh họa góc phải của tile — chỉ khung quick_start dùng
     background_image: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # Slug nền gradient dựng sẵn (frontend tự ánh xạ sang CSS, backend chỉ lưu chuỗi)

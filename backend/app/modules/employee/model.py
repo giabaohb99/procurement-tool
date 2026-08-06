@@ -29,6 +29,15 @@ class Employee(Base, AuditMixin):
         viewonly=True
     )
 
+    # Tài khoản đăng nhập gắn với nhân sự (nếu đã được cấp). Ảnh đại diện chỉ lưu MỘT chỗ
+    # là tab_user.avatar — nhân sự đọc ké qua đây để khỏi có 2 nguồn dữ liệu lệch nhau.
+    user = relationship(
+        "User",
+        primaryjoin="foreign(User.employee_id) == Employee.id",
+        uselist=False,
+        viewonly=True
+    )
+
     @property
     def department_name(self) -> str | None:
         return self.department.name if self.department else None
@@ -36,3 +45,11 @@ class Employee(Base, AuditMixin):
     @property
     def manager_name(self) -> str | None:
         return self.department.manager_name if self.department else None
+
+    @property
+    def user_id(self) -> int:
+        return self.user.id if self.user else 0
+
+    @property
+    def avatar(self) -> str:
+        return (self.user.avatar or "") if self.user else ""

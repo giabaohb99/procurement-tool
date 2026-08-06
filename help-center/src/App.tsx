@@ -8,6 +8,7 @@ import AdminArticle from '@/pages/admin-article'
 import AdminFaq from '@/pages/admin-faq'
 import AdminFaqEditor from '@/pages/admin-faq-editor'
 import AdminHistory from '@/pages/admin-history'
+import AdminHomeLayout from '@/pages/admin-home-layout'
 import AdminHome from '@/pages/admin-home'
 import Login from '@/pages/login'
 import PortalHome from '@/pages/portal-home'
@@ -28,6 +29,7 @@ export default function App() {
       {/* Khu QUẢN TRỊ — AdminLayout tự chặn user không có quyền help_article/write */}
       <Route path="/admin" element={<Protected><AdminLayout /></Protected>}>
         <Route index element={<AdminHome />} />
+        <Route path="trang-chu" element={<AdminHomeLayout />} />
         <Route path="lich-su" element={<AdminHistory />} />
         <Route path="faq" element={<AdminFaq />} />
         <Route path="faq/moi" element={<AdminFaqEditor />} />

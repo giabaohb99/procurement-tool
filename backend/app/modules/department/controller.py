@@ -14,6 +14,7 @@ router = APIRouter(prefix="/api/departments", tags=["department"])
 
 @router.get("")
 def list_departments(
+    request: Request,
     q: str | None = Query(None),
     is_active: bool | None = Query(None),
     sort_by: str = Query(""),
@@ -22,7 +23,8 @@ def list_departments(
     db: Session = Depends(get_db),
     user=Depends(require("department", "read")),
 ):
-    total, items = service.list_departments(db, q, pg, is_active, sort_by, sort_dir)
+    # request đi kèm để service gắn BỘ LỌC ĐIỀU KIỆN (`<field>__<op>`), xem core/filter_operators.py
+    total, items = service.list_departments(db, q, pg, is_active, sort_by, sort_dir, request)
     # manager_id (chọn cứng) + manager_name (property của model) tự lấy qua model_validate
     res = [DepartmentOut.model_validate(i).model_dump() for i in items]
     return success({

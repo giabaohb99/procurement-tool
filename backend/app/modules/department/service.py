@@ -6,10 +6,17 @@ from .model import Department
 from .schema import DepartmentCreate, DepartmentUpdate
 
 
+FILTERABLE = ["code", "name", "is_active"]
+
+
 def list_departments(db: Session, q: str | None, pg: dict, is_active: bool | None = None,
-                     sort_by: str = "", sort_dir: str = "asc"):
+                     sort_by: str = "", sort_dir: str = "asc", request=None):
     from app.core.base_controller import apply_sort
+    from app.core.filter_operators import apply_operator_filters
     query = db.query(Department)
+    # Bộ lọc điều kiện (`name__contains=...`) — ô "Tìm kiếm" chung `q` bên dưới vẫn giữ nguyên
+    if request is not None:
+        query = apply_operator_filters(query, Department, request, FILTERABLE)
     if q:
         # Tìm chung 1 ô: theo tên phòng ban HOẶC tên trưởng bộ phận (manager)
         from app.modules.employee.model import Employee

@@ -1,5 +1,7 @@
 from fastapi import Query, Request
 
+from app.core.filter_operators import apply_operator_filters
+
 
 def pagination(
     page: int = Query(1, ge=1),
@@ -17,7 +19,12 @@ def pagination(
 def apply_filters(query, model, request: Request, filterable: list[str]):
     """Filter động: đọc query params, chỉ áp dụng các trường nằm trong whitelist.
 
-    Trường text -> LIKE %val%; có thể mở rộng so sánh khác sau.
+    Hai loại param cùng chạy qua đây:
+
+    1. Param TRẦN `<field>=<val>` — hành vi cũ, giữ nguyên: text -> LIKE %val%, `is_*` -> bool,
+       `id`/`*_id` -> so khớp chính xác. Luôn nối bằng AND.
+    2. Param CÓ OPERATOR `<field>__<op>=<val>` (+ `conjunction=and|or`) — bộ lọc điều kiện,
+       xem `app/core/filter_operators.py`.
     """
     for key, raw in request.query_params.items():
         val = raw.strip() if isinstance(raw, str) else raw   # cắt space thừa để LIKE khớp
@@ -41,7 +48,7 @@ def apply_filters(query, model, request: Request, filterable: list[str]):
                 col = getattr(model, db_col_name)
                 val_list = [v.strip() for v in val.split(",")]
                 query = query.filter(col.in_(val_list))
-    return query
+    return apply_operator_filters(query, model, request, filterable)
 
 
 def apply_sort(query, model, sort_by: str | None, sort_dir: str = "asc", default=None):

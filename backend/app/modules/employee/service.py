@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.audit import record
 from app.core.utils import generate_code
@@ -7,13 +7,24 @@ from app.core.utils import generate_code
 from .model import Employee
 from .schema import EmployeeCreate, EmployeeUpdate
 
-FILTERABLE = ["code", "full_name", "email", "is_active", "position", "role_names", "department_id"]
+# "status" (Chính thức / Cộng tác viên / Nghỉ việc…) trước đây thiếu trong whitelist nên ô lọc
+# Trạng thái trên UI không ăn — bổ sung vào đây để cả lọc cơ bản lẫn lọc điều kiện đều chạy.
+FILTERABLE = ["code", "full_name", "email", "is_active", "position", "role_names", "department_id",
+              "status"]
 ENTITY = "employee"
 
 
 def list_employees(db: Session, base_query, pg: dict):
     total = base_query.count()
-    items = base_query.order_by(Employee.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
+    # selectinload(user): danh sách có cột ảnh đại diện (lưu ở tab_user.avatar) — nạp gộp
+    # 1 truy vấn cho cả trang, không để mỗi dòng tự lazy-load thành N+1.
+    items = (
+        base_query.options(selectinload(Employee.user))
+        .order_by(Employee.id.desc())
+        .offset(pg["offset"])
+        .limit(pg["limit"])
+        .all()
+    )
     return total, items
 
 

@@ -5,7 +5,8 @@ import { useArticlePath } from '@/lib/help-slug'
 import type { HelpNode } from '@/lib/help-tree'
 
 // Thẻ danh mục: icon vuông 48px nền teal nhạt bên trái, tiêu đề + mô tả ngắn bên phải.
-// Nền trắng, không viền, đổ bóng mảnh — đồng bộ với lưới "Các Phân hệ" của hệ Văn thư.
+// Nền xám rất nhạt (--surface-soft), không viền, đổ bóng mảnh — đồng bộ với lưới "Các Phân hệ"
+// của hệ Văn thư. Nền trắng trên trang cũng trắng thì thẻ gần như chìm mất.
 // Icon và mô tả đều lấy từ bài viết (người soạn nhập ở khu quản trị).
 // Bài chưa chọn icon -> icon mặc định theo vị trí; bài chưa nhập mô tả -> bỏ trống dòng mô tả,
 // KHÔNG chèn câu đếm số bài con thay thế (đó là chữ độn, không mang thông tin cho người đọc).
@@ -21,7 +22,7 @@ export default function HelpCategoryTiles({ nodes }: { nodes: HelpNode[] }) {
         <Link
           key={node.id}
           to={pathOf(node.id)}
-          className="flex h-full items-start gap-4 rounded-xl bg-card p-6 shadow-[0_4px_12px_rgba(0,0,0,0.03)] transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(0,0,0,0.07)]"
+          className="flex h-full items-start gap-4 rounded-xl bg-surface-soft p-6 shadow-[0_4px_12px_rgba(0,0,0,0.03)] transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(0,0,0,0.07)]"
         >
           <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/8 text-primary">
             <HelpArticleIcon icon={node.icon} index={index} className="size-6" />

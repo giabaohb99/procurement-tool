@@ -60,6 +60,21 @@ export async function renameArticle(node: HelpNode): Promise<boolean> {
   }
 }
 
+/** Ghi thẳng tiêu đề mới (dùng cho sửa nhanh tại chỗ ở bảng cây). Trả true nếu đã đổi. */
+export async function saveArticleTitle(nodeId: number, title: string): Promise<boolean> {
+  if (!title.trim()) {
+    toast.error('Tiêu đề không được để trống')
+    return false
+  }
+  try {
+    await api.put(`/api/v1/help-center/${nodeId}`, { title: title.trim() })
+    toast.success('Đã đổi tiêu đề')
+    return true
+  } catch {
+    return false
+  }
+}
+
 /** Tổng số bài trong nhánh, tính cả chính nó — để cảnh báo trước khi xóa. */
 function countBranch(node: HelpNode): number {
   return 1 + (node.children || []).reduce((sum, c) => sum + countBranch(c), 0)
@@ -86,10 +101,20 @@ export async function deleteArticle(node: HelpNode): Promise<boolean> {
   }
 }
 
-/** Chuyển bài viết sang thư mục cha khác. parentId = null -> đưa về mục gốc. */
-export async function moveArticle(nodeId: number, parentId: number | null): Promise<boolean> {
+/**
+ * Chuyển bài viết sang thư mục cha khác. parentId = null -> đưa về mục gốc.
+ * Truyền `sortOrder` để bài rơi vào đúng chỗ trong mục mới — không truyền thì bài giữ nguyên
+ * sort_order cũ và có thể trùng thứ tự với anh em ở mục đích.
+ */
+export async function moveArticle(
+  nodeId: number,
+  parentId: number | null,
+  sortOrder?: number,
+): Promise<boolean> {
   try {
-    await api.put(`/api/v1/help-center/${nodeId}`, { parent_id: parentId })
+    const body: Record<string, unknown> = { parent_id: parentId }
+    if (sortOrder !== undefined) body.sort_order = sortOrder
+    await api.put(`/api/v1/help-center/${nodeId}`, body)
     toast.success('Đã chuyển bài viết')
     return true
   } catch {

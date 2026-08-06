@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { toast } from "../components/toast";
@@ -8,6 +8,7 @@ import PwaInstallPrompt from "../components/PwaInstallPrompt";
 import TicketCreateModal from "../components/TicketCreateModal";
 import { TICKET_ENABLED } from "../config/features";
 import { canInstall, onInstallChange, promptInstall } from "../pwa-install";
+import { initialsOf } from "../utils/name";
 
 // Trung tâm Hướng dẫn sử dụng là app riêng (thư mục help-center/, cổng 8082) — mở ở tab mới.
 // Khu người dùng bên đó CÔNG KHAI, không cần đăng nhập.
@@ -40,10 +41,13 @@ type NavItem = {
   anyEntity?: string[];   // hiện nếu có read trên BẤT KỲ entity nào (OR)
   external?: boolean;     // link ra ngoài app (mở tab mới) thay vì route nội bộ
 };
+// Mọi nhóm CÓ tiêu đề đều thu/mở được (đồng bộ trên toàn menu trái).
+// `key` là khóa lưu trạng thái thu/mở trong localStorage — đặt cố định, KHÔNG suy ra từ
+// tiêu đề để đổi tên hiển thị không làm mất trạng thái người dùng đã lưu.
+// Nhóm đầu (không tiêu đề) luôn hiện.
 type NavGroup = {
   title?: string;
   key?: string;
-  collapsible?: boolean;
   items: NavItem[];
 };
 
@@ -70,6 +74,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     title: "Mua hàng",
+    key: "muahang",
     items: [
       {
         to: "/survey-requests",
@@ -99,6 +104,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     title: "Khảo sát",
+    key: "khaosat",
     items: [
       {
         to: "/surveys",
@@ -116,6 +122,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     title: "Kho & Công nợ",
+    key: "khocongno",
     items: [
       {
         to: "/inventory",
@@ -135,7 +142,6 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "Danh mục",
     key: "danhmuc",
-    collapsible: true,
     items: [
       {
         to: "/suppliers",
@@ -197,6 +203,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     title: "Hệ thống",
+    key: "hethong",
     items: [
       {
         to: "/companies",
@@ -241,6 +248,11 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
+
+// Bề rộng menu trái: kéo được trong khoảng NAV_W_MIN..NAV_W_MAX, nháy đúp tay kéo về mặc định.
+const NAV_W_MIN = 180;
+const NAV_W_MAX = 400;
+const NAV_W_DEFAULT = 222;
 
 const isActive = (path: string, to: string) =>
   to === "/" ? path === "/" : path.startsWith(to);
@@ -309,6 +321,52 @@ export default function AppLayout() {
       localStorage.setItem("nav_collapsed", JSON.stringify(n));
       return n;
     });
+
+  // ── Ẩn/hiện + kéo giãn menu trái (chỉ áp dụng màn rộng; màn hẹp dùng drawer + hamburger) ──
+  const [navHidden, setNavHidden] = useState(
+    () => localStorage.getItem("nav_hidden") === "1",
+  );
+  const toggleNav = () =>
+    setNavHidden((v) => {
+      localStorage.setItem("nav_hidden", v ? "0" : "1");
+      return !v;
+    });
+  const [navWidth, setNavWidth] = useState(() => {
+    const w = Number(localStorage.getItem("nav_width"));
+    return w >= NAV_W_MIN && w <= NAV_W_MAX ? w : NAV_W_DEFAULT;
+  });
+  const [resizing, setResizing] = useState(false);
+  // Bề rộng mới nhất trong lúc kéo — cập nhật NGAY trong onMove (không đợi React render lại)
+  // để lúc thả chuột ghi đúng giá trị vào localStorage, kể cả khi kéo rất nhanh.
+  const navWidthRef = useRef(navWidth);
+
+  function startResize(e: React.MouseEvent) {
+    e.preventDefault();
+    setResizing(true);
+    document.body.classList.add("col-resizing");
+    // Sidebar bám mép trái nên clientX chính là bề rộng cần đặt
+    const onMove = (ev: MouseEvent) => {
+      const w = Math.min(NAV_W_MAX, Math.max(NAV_W_MIN, ev.clientX));
+      navWidthRef.current = w;
+      setNavWidth(w);
+    };
+    const onUp = () => {
+      setResizing(false);
+      document.body.classList.remove("col-resizing");
+      localStorage.setItem("nav_width", String(navWidthRef.current));
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }
+
+  function resetNavWidth() {
+    navWidthRef.current = NAV_W_DEFAULT;
+    setNavWidth(NAV_W_DEFAULT);
+    localStorage.setItem("nav_width", String(NAV_W_DEFAULT));
+  }
+
   const current = [...ALL_ITEMS]
     .reverse()
     .find((n) => isActive(loc.pathname, n.to));
@@ -316,8 +374,7 @@ export default function AppLayout() {
     g.items.some((n) => n.to === current?.to),
   );
   const name = user?.full_name || "Người dùng";
-  const initials =
-    name.trim().split(" ").slice(-1)[0]?.[0]?.toUpperCase() || "U";
+  const initials = initialsOf(name);
   // CR-028: dòng phụ dưới tên ở góc phải — mã NV · chức vụ (bỏ phần nào rỗng).
   // Tài khoản chưa gắn hồ sơ nhân sự thì không có mã, để trống chứ không bịa.
   const subLabel = [user?.emp_code, user?.position].filter(Boolean).join(" · ");
@@ -341,7 +398,10 @@ export default function AppLayout() {
   }
 
   return (
-    <div className="app">
+    <div
+      className={"app" + (navHidden ? " nav-hidden" : "")}
+      style={{ ["--sidebar-w" as any]: navWidth + "px" }}
+    >
       {open && <div className="backdrop" onClick={() => setOpen(false)} />}
       <aside className={"sidebar" + (open ? " open" : "")}>
         <div className="brand">
@@ -352,26 +412,25 @@ export default function AppLayout() {
         {NAV_GROUPS.map((g, gi) => {
           const items = visibleItems(g.items);
           if (items.length === 0) return null;
-          const isCol = g.collapsible && g.key && collapsed[g.key];
+          const isCol = !!g.key && !!collapsed[g.key];
           return (
             <div key={gi}>
-              {g.title &&
-                (g.collapsible ? (
-                  <button
-                    className="nav-group-title toggle"
-                    onClick={() => toggle(g.key!)}
-                  >
-                    <i
-                      className={
-                        "ti " + (isCol ? "ti-chevron-right" : "ti-chevron-down")
-                      }
-                      style={{ fontSize: 13 }}
-                    />
-                    {g.title}
-                  </button>
-                ) : (
-                  <div className="nav-group-title">{g.title}</div>
-                ))}
+              {g.title && (
+                <button
+                  className="nav-group-title toggle"
+                  onClick={() => toggle(g.key!)}
+                  aria-expanded={!isCol}
+                  title={isCol ? `Mở ${g.title}` : `Thu gọn ${g.title}`}
+                >
+                  <i
+                    className={
+                      "ti " + (isCol ? "ti-chevron-right" : "ti-chevron-down")
+                    }
+                    style={{ fontSize: 13 }}
+                  />
+                  {g.title}
+                </button>
+              )}
               {!isCol &&
                 items.map((n) =>
                   n.external ? (
@@ -405,6 +464,15 @@ export default function AppLayout() {
           );
         })}
       </aside>
+      {/* Tay kéo đổi bề rộng menu — nháy đúp để về mặc định */}
+      <div
+        className={"sidebar-resizer" + (resizing ? " dragging" : "")}
+        onMouseDown={startResize}
+        onDoubleClick={resetNavWidth}
+        role="separator"
+        aria-orientation="vertical"
+        title="Kéo để đổi bề rộng menu (nháy đúp để về mặc định)"
+      />
       <div className="main">
         <div className="topbar">
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -414,6 +482,21 @@ export default function AppLayout() {
               aria-label="Menu"
             >
               <i className="ti ti-menu-2" />
+            </button>
+            <button
+              className="icon-btn nav-toggle"
+              onClick={toggleNav}
+              aria-label={navHidden ? "Hiện menu" : "Ẩn menu"}
+              title={navHidden ? "Hiện menu" : "Ẩn menu"}
+            >
+              <i
+                className={
+                  "ti " +
+                  (navHidden
+                    ? "ti-layout-sidebar-left-expand"
+                    : "ti-layout-sidebar-left-collapse")
+                }
+              />
             </button>
             <div className="crumb">
               {currentGroup?.title ? `${currentGroup.title} / ` : ""}

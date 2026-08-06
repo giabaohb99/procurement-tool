@@ -6,6 +6,9 @@ import { useAuth } from '../auth/AuthContext'
 import { cruds } from '../config/cruds'
 import ConfirmModal from './ConfirmModal'
 import FilterBar from './FilterBar'
+import {
+  ConditionalFilter, ConditionalFilterButton, readParamsFromUrl, RestQueryParams,
+} from './conditional-filter'
 import Pagination from './Pagination'
 import TableHead, { TableCells } from './TableHead'
 import TableToolbar from './TableToolbar'
@@ -25,11 +28,19 @@ export default function CrudList() {
     return o
   }, [cfg?.slug, searchParams])
 
+  // Bộ lọc điều kiện (`<field>__<op>`) cũng nằm trên URL — đọc sẵn để lần nạp đầu tiên
+  // (mở link chia sẻ / F5) đã đúng bộ lọc, không phải đợi provider bắn onChange.
+  const urlCondParams = useMemo<RestQueryParams>(
+    () => (cfg?.condFilters ? readParamsFromUrl(searchParams, cfg.condFilters) : {}),
+    [cfg?.slug, searchParams],
+  )
+
   const [items, setItems] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [filters, setFilters] = useState<Record<string, string>>(urlFilters)
+  const [condParams, setCondParams] = useState<RestQueryParams>(urlCondParams)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [sortField, setSortField] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
@@ -174,8 +185,10 @@ export default function CrudList() {
   }
 
   async function load(p = 1, s = 20, f: Record<string, string> = {},
-                      sf: string | null = sortField, sd: 'asc' | 'desc' = sortDir) {
-    const params: any = { ...f, page: p, page_size: s }
+                      sf: string | null = sortField, sd: 'asc' | 'desc' = sortDir,
+                      c: RestQueryParams = condParams) {
+    // Lọc cơ bản (LIKE) + lọc điều kiện (`<field>__<op>`) gộp chung vào 1 request
+    const params: any = { ...f, ...c, page: p, page_size: s }
     if (sf) { params.sort_by = sf; params.sort_dir = sd }   // sort phía server
     const r = await api.get(cfg.apiPath, { params })
     const data = r.data.data
@@ -206,7 +219,8 @@ export default function CrudList() {
   useEffect(() => {
     if (!cfg) return
     setPage(1); setPageSize(20); setFilters(urlFilters); setSortField(null); setSortDir('asc')
-    load(1, 20, urlFilters, null, 'asc')
+    setCondParams(urlCondParams)
+    load(1, 20, urlFilters, null, 'asc', urlCondParams)
   }, [cfg?.slug])
 
   if (!cfg) return <div>Không tìm thấy trang.</div>
@@ -231,6 +245,10 @@ export default function CrudList() {
   )
 
   function applyFilters(f: Record<string, string>) { setFilters(f); setPage(1); load(1, pageSize, f) }
+  // Bộ lọc điều kiện đổi (áp dụng / bỏ chip / bấm back) -> nạp lại từ trang 1
+  function applyCondFilters(c: RestQueryParams) {
+    setCondParams(c); setPage(1); load(1, pageSize, filters, sortField, sortDir, c)
+  }
   function changePage(p: number, s: number) { setPage(p); setPageSize(s); load(p, s, filters) }
 
   async function doClone(id: number) {
@@ -287,7 +305,19 @@ export default function CrudList() {
         </div>
       </div>
 
-      <FilterBar key={cfg.slug} fields={cfg.filters} initial={urlFilters} onApply={applyFilters} />
+      {/* Nút mở bảng điều kiện nằm chung hàng với thanh lọc cơ bản (slot `extra`) */}
+      {(() => {
+        const bar = (
+          <FilterBar key={cfg.slug} fields={cfg.filters} initial={urlFilters} onApply={applyFilters}
+            extra={cfg.condFilters ? <ConditionalFilterButton /> : undefined} />
+        )
+        if (!cfg.condFilters) return bar
+        return (
+          <ConditionalFilter key={cfg.slug} fields={cfg.condFilters} onChange={applyCondFilters}>
+            {bar}
+          </ConditionalFilter>
+        )
+      })()}
 
       <div className="card table-card">
         <TableToolbar {...table} onRefresh={() => load(page, pageSize, filters)} />

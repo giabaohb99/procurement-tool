@@ -110,16 +110,22 @@
   font-weight: 700;
 }
 
-.hc-content table {
+/* Bảng — dùng chung cho nội dung đã xuất bản (.hc-content) và cho chính trình soạn thảo,
+   vì module bảng của Quill chỉ sinh <table><tbody><tr><td> trần không kèm class nào. */
+.hc-content table,
+.hc-editor .ql-editor table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 24px;
+  table-layout: fixed;
 }
 
 .hc-content th,
-.hc-content td {
+.hc-content td,
+.hc-editor .ql-editor td {
   border: 1px solid var(--border);
   padding: 12px;
+  word-break: break-word;
 }
 
 .hc-content th {
@@ -129,12 +135,56 @@
   text-align: left;
 }
 
+/* quill1-table KHÔNG tạo được <th>, nên hàng đầu tiên toàn <td> được tô như dòng tiêu đề.
+   Bảng viết tay bằng <th> không bị ảnh hưởng (bộ chọn này chỉ khớp <td>). */
+.hc-content table tr:first-child td,
+.hc-editor .ql-editor table tr:first-child td {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Ô đang chọn (bấm/kéo qua nhiều ô) phải THẤY RÕ kể cả ở hàng tiêu đề nền xanh đậm —
+   nếu không, thao tác gộp ô thành ra mò mẫm. Đặt sau quy tắc hàng tiêu đề để thắng độ ưu tiên. */
+.hc-editor .ql-editor table td.ql-cell-selected,
+.hc-editor .ql-editor table tr:first-child td.ql-cell-selected {
+  background-color: #cce0f8;
+  color: var(--navy);
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
+
 .hc-content tr:nth-child(even) {
   background: var(--muted);
 }
 
+/* Khối "Nhúng mã" — iframe srcdoc chứa nguyên đoạn code của nhà cung cấp (xem lib/quill-html-embed).
+   Chiều cao mặc định theo tỉ lệ 16:9; dán mã có ép chiều cao thì inline style trên iframe đè lên. */
+.hc-content .hc-embed,
+.hc-editor .ql-editor .hc-embed {
+  margin: 0 0 12px;
+}
+
+.hc-content .hc-embed-frame,
+.hc-editor .ql-editor .hc-embed-frame {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 8px;
+  background: var(--muted);
+}
+
+/* Trong lúc soạn: viền đứt để phân biệt khối nhúng với nội dung gõ tay */
+.hc-editor .ql-editor .hc-embed {
+  outline: 1px dashed var(--border);
+  outline-offset: 2px;
+}
+
 /* ---------- Trình soạn thảo Quill ở khu quản trị ---------- */
 
+/* Thanh công cụ gộp làm MỘT hàng: nhóm nút gốc của Quill bên trái, ba nút riêng
+   (Bảng · Nhúng mã · Mã HTML) portal vào cuối và đẩy sang phải. Phải chuyển sang flex vì
+   Quill mặc định cho .ql-formats float: left, mà float thì không canh phải được. */
 .hc-editor .ql-toolbar {
   border: 1px solid var(--border);
   border-radius: var(--radius) var(--radius) 0 0;
@@ -142,6 +192,67 @@
   position: sticky;
   top: 0;
   z-index: 9;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.hc-editor .ql-toolbar .ql-formats {
+  float: none;
+  display: inline-flex;
+  align-items: center;
+  /* Quill mặc định 15px — hẹp lại để cả nhóm nút gốc lẫn ba nút riêng đủ chỗ trên MỘT hàng
+     ở bề ngang cột soạn thảo thực tế (~666px khi mở cột phải). */
+  margin-right: 6px;
+}
+
+/* Chảy ngay sau nhóm nút cuối của Quill (KHÔNG margin-left:auto) — đẩy sang mép phải thì ở bề
+   ngang thường gặp ba nút bị rớt xuống hàng thứ hai, nhìn như hai thanh công cụ chồng nhau. */
+.hc-editor .hc-editor-extras {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-left: 10px;
+  border-left: 1px solid var(--border);
+}
+
+/* quill.snow.css áp cho MỌI <button> trong .ql-toolbar: khổ cố định 28×24, `background: none`
+   và `svg { float:left; height:100% }`. Ba thứ đó phải gỡ hết, nếu không nút shadcn sẽ:
+   mất nền (chữ trắng trên nền trắng = tưởng như biến mất) và cao đúng 16px vì `height:100%`
+   của svg không có mốc để tính. */
+.hc-editor .ql-toolbar .hc-editor-extras button {
+  float: none;
+  width: auto;
+  height: 1.75rem;
+  padding: 0 0.5rem;
+}
+
+.hc-editor .ql-toolbar .hc-editor-extras button svg {
+  float: none;
+  height: auto;
+}
+
+.hc-editor .ql-toolbar .hc-editor-extras button:hover {
+  color: inherit;
+}
+
+/* Nút đang bật (chế độ mã HTML). Tô nền bằng CSS chứ KHÔNG dùng variant="default" của shadcn:
+   class tiện ích `bg-primary` chỉ 1 lớp, thua `background: none` của Quill (2 lớp + thẻ). */
+.hc-editor .ql-toolbar .hc-editor-extras button[data-active='true'],
+.hc-editor .ql-toolbar .hc-editor-extras button[data-active='true']:hover {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* Chế độ sửa mã HTML: giữ nguyên thanh công cụ (để còn nút quay lại) nhưng ẩn khung soạn
+   của Quill và các nhóm nút định dạng — lúc này chúng không tác dụng gì. */
+.hc-editor--html .ql-container,
+.hc-editor--html .ql-toolbar .ql-formats {
+  display: none;
+}
+
+.hc-editor--html .ql-toolbar {
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 
 .hc-editor .ql-container {

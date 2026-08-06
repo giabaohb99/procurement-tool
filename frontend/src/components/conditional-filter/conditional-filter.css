@@ -1,0 +1,189 @@
+/* Bộ lọc điều kiện (conditional-filter) — plain CSS, dùng lại design token của app.
+   Tách riêng khỏi index.css để phần lọc điều kiện gói gọn trong 1 thư mục. */
+
+.cf-anchor {
+  position: relative;
+}
+
+/* ── Bảng dựng điều kiện ──────────────────────────────────────────────────── */
+/* Nút mở nằm ở mép PHẢI thanh lọc nên bảng thả xuống canh phải cho khỏi tràn màn hình */
+.cf-popover {
+  position: absolute;
+  z-index: 2000;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(720px, calc(100vw - 48px));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--hz-radius);
+  box-shadow: var(--hz-shadow);
+  padding: 14px 16px;
+}
+
+.cf-popover-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--navy);
+  font-size: 14px;
+}
+
+.cf-close {
+  margin-left: auto;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.cf-close:hover {
+  color: var(--navy);
+}
+
+/* Chuyển VÀ / HOẶC */
+.cf-conj-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cf-conj-toggle button {
+  border: 0;
+  background: transparent;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.cf-conj-toggle button.on {
+  background: var(--teal);
+  color: #fff;
+}
+
+/* ── Dòng điều kiện ───────────────────────────────────────────────────────── */
+.cf-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  max-height: 52vh;
+  overflow-y: auto;
+}
+
+.cf-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cf-conj {
+  flex: 0 0 56px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: right;
+}
+
+.cf-conj-word {
+  color: var(--teal);
+}
+
+.cf-field {
+  flex: 0 0 160px;
+}
+
+/* đủ rộng cho nhãn dài nhất ("lớn hơn hoặc bằng", "không thuộc") khỏi bị cắt */
+.cf-operator {
+  flex: 0 0 172px;
+}
+
+.cf-value {
+  flex: 1 1 180px;
+  min-width: 150px;
+}
+
+.cf-value input {
+  width: 100%;
+}
+
+.cf-value-empty {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.cf-value-pair {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cf-value-pair input {
+  min-width: 0;
+}
+
+.cf-dash {
+  color: var(--muted);
+}
+
+.cf-remove {
+  flex: 0 0 auto;
+  height: 34px;
+  padding: 0 10px;
+  color: var(--muted);
+}
+
+.cf-remove:hover {
+  color: var(--red);
+}
+
+.cf-empty {
+  padding: 18px 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.cf-popover-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.cf-foot-right {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+/* Chưa sửa gì thì "Áp dụng" mờ đi cho biết là chưa có gì để áp */
+.cf-popover-foot .btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+/* Màn hẹp: xếp dọc từng dòng điều kiện cho đỡ vỡ layout */
+@media (max-width: 820px) {
+  .cf-row {
+    flex-wrap: wrap;
+  }
+
+  .cf-conj {
+    flex-basis: 100%;
+    text-align: left;
+  }
+
+  .cf-field,
+  .cf-operator,
+  .cf-value {
+    flex: 1 1 100%;
+  }
+}

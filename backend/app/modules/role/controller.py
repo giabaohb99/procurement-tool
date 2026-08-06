@@ -1,13 +1,15 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
+from app.core.base_controller import apply_filters
 from app.core.database import get_db
 from app.core.permissions import (ACTION_LABELS, ACTIONS, ENTITIES,
                                   ENTITY_LABELS, SCOPE_LABELS, SCOPES)
 from app.core.response import success
 
 from . import service
+from .model import Role
 from .schema import PermissionUpdate, RoleCreate, RoleOut, RoleUpdate
 
 router = APIRouter(prefix="/api/roles", tags=["role"])
@@ -23,9 +25,15 @@ def permission_meta(db: Session = Depends(get_db), user=Depends(require("role", 
     })
 
 
+FILTERABLE = ["code", "name", "description"]
+
+
 @router.get("")
-def list_roles(db: Session = Depends(get_db), user=Depends(require("role", "read"))):
-    return success([RoleOut.model_validate(r).model_dump() for r in service.list_roles(db)])
+def list_roles(request: Request, db: Session = Depends(get_db),
+               user=Depends(require("role", "read"))):
+    # Trả mảng thô (không phân trang) — CrudList tự sort/phân trang phía client.
+    q = apply_filters(service.list_roles_query(db), Role, request, FILTERABLE)
+    return success([RoleOut.model_validate(r).model_dump() for r in q.all()])
 
 
 @router.post("")

@@ -28,7 +28,10 @@ def _days(a: str, b: str) -> int:
     da, db_ = _pdate(a), _pdate(b)
     return (da - db_).days if da and db_ else 0
 
-FILTERABLE = ["code", "status", "supplier_code", "pr_code", "misa_code", "nspt", "is_urgent", "department", "document_status"]
+# order_date nằm trong whitelist để BỘ LỌC ĐIỀU KIỆN lọc theo ngày (order_date__between/gte…).
+# Lọc khoảng kiểu cũ (order_date_from/_to của thanh lọc cơ bản) vẫn do apply_range_filters lo.
+FILTERABLE = ["code", "status", "supplier_code", "pr_code", "misa_code", "nspt", "is_urgent",
+              "department", "document_status", "order_date"]
 ENTITY = "purchase_order"
 
 

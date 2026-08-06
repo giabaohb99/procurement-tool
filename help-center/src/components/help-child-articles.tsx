@@ -1,10 +1,17 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  ChevronDown, ChevronUp, FilePlus2, FileText, Pencil, SquareArrowOutUpRight, Trash2,
+  ChevronDown, ChevronUp, FilePlus2, FileText, FolderInput, MoreHorizontal, Pencil,
+  SquareArrowOutUpRight, Trash2,
 } from 'lucide-react'
 
+import MoveArticleDialog from '@/components/move-article-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   createArticle, deleteArticle, levelLabel, renameArticle, reorderSibling,
 } from '@/lib/help-article-actions'
@@ -13,18 +20,23 @@ import { cn } from '@/lib/utils'
 
 // Danh sách bài viết CON của bài đang mở.
 // compact = true: dạng cột hẹp (sidebar trang soạn bài) — tiêu đề 1 dòng, nút thao tác xuống dưới.
+// Mỗi bài con chuyển được sang mục cha khác ngay tại đây, khỏi phải mở bài đó ra rồi mới chuyển.
 
 const MAX_DEPTH = 2
 
 export default function HelpChildArticles({
-  parent, depth, onChanged, compact = false,
+  parent, depth, tree, onChanged, compact = false,
 }: {
   parent: HelpNode
   /** Độ sâu của CHÍNH bài đang mở (0 = mục gốc). */
   depth: number
+  /** Cây ĐẦY ĐỦ — hộp thoại chuyển bài cần để liệt kê mục cha hợp lệ. */
+  tree: HelpNode[]
   onChanged: () => Promise<void> | void
   compact?: boolean
 }) {
+  /** Bài con đang mở hộp thoại chuyển mục cha. */
+  const [moving, setMoving] = useState<HelpNode | null>(null)
   const children = parent.children || []
   const childDepth = depth + 1
   const canAddChild = depth < MAX_DEPTH
@@ -53,6 +65,9 @@ export default function HelpChildArticles({
     </Button>
   )
 
+  // Chỉ để LỘ hai nút đổi thứ tự (thao tác hay dùng nhất, cần bấm liên tục); phần còn lại gom vào
+  // menu "…" — giống dòng ở bảng cây /admin. Bày cả 5 nút ra thì cột phải hẹp không đủ chỗ,
+  // tiêu đề bị đẩy xuống hàng riêng, đọc danh sách rất rối.
   const actions = (child: HelpNode, index: number) => (
     <div className="flex shrink-0 items-center gap-0.5">
       <Button variant="ghost" size="icon" className="size-7" title="Lên"
@@ -65,18 +80,31 @@ export default function HelpChildArticles({
               onClick={() => run(() => reorderSibling(children, index, 1))}>
         <ChevronDown className="size-4" />
       </Button>
-      <Button variant="ghost" size="icon" className="size-7" title="Đổi tiêu đề"
-              onClick={() => run(() => renameArticle(child))}>
-        <Pencil className="size-4" />
-      </Button>
-      <Button variant="ghost" size="icon" className="size-7" title="Mở bài viết" asChild>
-        <Link to={`/admin/${child.id}`}><SquareArrowOutUpRight className="size-4" /></Link>
-      </Button>
-      <Button variant="ghost" size="icon" title="Xóa"
-              className="size-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => run(() => deleteArticle(child))}>
-        <Trash2 className="size-4" />
-      </Button>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="size-7" title="Thao tác khác">
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-52">
+          <DropdownMenuItem asChild>
+            <Link to={`/admin/${child.id}`}>
+              <SquareArrowOutUpRight /> Mở bài viết
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => run(() => renameArticle(child))}>
+            <Pencil /> Đổi tiêu đề
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setMoving(child)}>
+            <FolderInput /> Chọn mục cha khác
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant="destructive" onClick={() => run(() => deleteArticle(child))}>
+            <Trash2 /> Xóa
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 
@@ -106,43 +134,26 @@ export default function HelpChildArticles({
           {children.map((child, index) => {
             const grandChildren = child.children?.length || 0
 
-            if (compact) {
-              return (
-                <li key={child.id} className="border-b px-3 py-2 last:border-b-0 hover:bg-secondary/60">
-                  <div className="flex items-center gap-2">
-                    <FileText className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
-                    <Link
-                      to={`/admin/${child.id}`}
-                      className="min-w-0 flex-1 truncate text-sm text-navy hover:text-primary hover:underline"
-                    >
-                      {child.title}
-                    </Link>
-                    {grandChildren > 0 && (
-                      <Badge variant="outline" className="shrink-0 px-1.5 font-normal text-muted-foreground">
-                        {grandChildren}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="-mr-1 mt-0.5 flex justify-end">{actions(child, index)}</div>
-                </li>
-              )
-            }
-
+            // Cùng một bố cục MỘT hàng cho cả hai kiểu; chỉ khác lề và nhãn của badge
             return (
               <li
                 key={child.id}
-                className="flex items-center gap-3 border-b px-4 py-2.5 last:border-b-0 hover:bg-secondary/60"
+                className={cn(
+                  'flex items-center gap-2 border-b last:border-b-0 hover:bg-secondary/60',
+                  compact ? 'py-1 pl-3 pr-1.5' : 'gap-3 px-4 py-1.5',
+                )}
               >
                 <FileText className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
                 <Link
                   to={`/admin/${child.id}`}
+                  title={child.title}
                   className="min-w-0 flex-1 truncate text-sm text-navy hover:text-primary hover:underline"
                 >
                   {child.title}
                 </Link>
                 {grandChildren > 0 && (
-                  <Badge variant="outline" className="shrink-0 font-normal text-muted-foreground">
-                    {grandChildren} bài chi tiết
+                  <Badge variant="outline" className="shrink-0 px-1.5 font-normal text-muted-foreground">
+                    {compact ? grandChildren : `${grandChildren} bài chi tiết`}
                   </Badge>
                 )}
                 {actions(child, index)}
@@ -153,6 +164,16 @@ export default function HelpChildArticles({
       )}
 
       {compact && addButton}
+
+      {moving && (
+        <MoveArticleDialog
+          tree={tree}
+          node={moving}
+          open
+          onOpenChange={(next) => { if (!next) setMoving(null) }}
+          onMoved={onChanged}
+        />
+      )}
     </div>
   )
 }

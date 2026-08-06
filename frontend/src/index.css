@@ -58,8 +58,9 @@ h3 {
   min-height: 100vh;
 }
 
+/* Bề rộng menu trái do người dùng kéo (AppLayout đặt biến --sidebar-w inline, lưu localStorage) */
 .sidebar {
-  width: 222px;
+  width: var(--sidebar-w, 222px);
   flex: none;
   background: #ffffff;
   border-right: 1px solid #eef1f8;
@@ -72,6 +73,45 @@ h3 {
   height: 100vh;
   align-self: flex-start;
   overflow-y: auto;
+}
+
+/* Ẩn hẳn menu trái (nút thu/mở trên thanh trên cùng) — chỉ áp dụng ở màn rộng;
+   màn hẹp menu vốn là drawer trượt nên được trả lại bề rộng ở media query cuối file. */
+.app.nav-hidden .sidebar {
+  width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  border-right: 0;
+  overflow: hidden;
+}
+
+.app.nav-hidden .sidebar-resizer {
+  display: none;
+}
+
+/* Thanh kéo đổi bề rộng — là phần tử flex riêng (không position:absolute trong .sidebar
+   vì sidebar cuộn dọc, tay kéo sẽ trôi theo nội dung). */
+.sidebar-resizer {
+  flex: none;
+  width: 5px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.15s;
+  z-index: 5;
+}
+
+.sidebar-resizer:hover,
+.sidebar-resizer.dragging {
+  background: rgba(0, 174, 239, 0.35);
+}
+
+/* Khi đang kéo: chặn bôi đen chữ và giữ con trỏ col-resize trên toàn trang */
+body.col-resizing {
+  user-select: none;
+  cursor: col-resize;
 }
 
 .brand {
@@ -224,6 +264,13 @@ button.nav-group-title:hover {
   gap: 12px;
   flex-wrap: wrap;
   align-items: flex-end;
+}
+
+/* .card khai báo overflow:auto SAU .filter-panel (cùng specificity -> đè ngược lại) nên phải
+   dùng .card.filter-panel. Không cho cắt: bảng thả xuống của "Bộ lọc điều kiện" nằm tràn ra
+   ngoài thẻ, mà thanh lọc thì không bao giờ cần cuộn. */
+.card.filter-panel {
+  overflow: visible;
 }
 
 .filter-item {
@@ -452,6 +499,12 @@ input[role="combobox"] {
 
 .hamburger {
   display: none;
+}
+
+/* Nút ẩn/hiện menu trái — chỉ có ở màn rộng (màn hẹp đã có nút hamburger) */
+.nav-toggle {
+  display: inline-flex;
+  align-items: center;
 }
 
 .backdrop {
@@ -1190,6 +1243,20 @@ thead th {
     transform: translateX(0);
   }
 
+  /* Màn hẹp: menu là drawer trượt, luôn giữ bề rộng cố định — bỏ qua trạng thái
+     ẩn/kéo-rộng của màn hình lớn để hamburger vẫn mở được menu bình thường. */
+  .app.nav-hidden .sidebar {
+    width: 250px;
+    padding: 14px 10px;
+    border-right: 1px solid #eef1f8;
+    overflow-y: auto;
+  }
+
+  .sidebar-resizer,
+  .nav-toggle {
+    display: none;
+  }
+
   .backdrop {
     display: block;
     position: fixed;
@@ -1313,7 +1380,8 @@ thead th {
 }
 
 .form-row textarea {
-  min-height: 64px;
+  /* 84px ≈ 4 dòng — địa chỉ pháp nhân thường dài, 64px cắt ngang chữ trông như lỗi */
+  min-height: 84px;
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -1365,6 +1433,24 @@ thead th {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
+}
+
+/* Tiêu đề nhóm field trong form chi tiết (FieldDef.group) — chiếm trọn 1 dòng của lưới.
+   Nhóm đầu tiên không cần khoảng đệm trên vì đã sát mép thẻ. */
+.form-group-title {
+  grid-column: 1 / -1;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8592ae;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  margin-top: 8px;
+}
+
+.form-group-title:first-child {
+  margin-top: 0;
 }
 
 .timeline {
@@ -1581,6 +1667,7 @@ thead th {
   }
 
   .sidebar,
+  .sidebar-resizer,
   .topbar {
     display: none !important;
   }
@@ -1956,6 +2043,253 @@ input,
   .hz-name {
     font-size: 22px;
   }
+}
+
+/* ===== Trang cá nhân (/me) =====
+   Thẻ danh tính + dải tab dính liền thành MỘT khối, để danh tính và các mục
+   (Thông tin / Việc cần làm / Yêu cầu hỗ trợ) nhìn là biết thuộc về cùng người. */
+.hero-card {
+  padding: 0;
+  margin-bottom: 16px;
+  overflow: visible;
+}
+
+.hero-body {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 22px 24px;
+  flex-wrap: wrap;
+}
+
+/* Ảnh đại diện — bấm vào là đổi ảnh ngay tại trang cá nhân */
+.hero-avatar {
+  position: relative;
+  flex: none;
+  cursor: pointer;
+  display: block;
+}
+
+.hero-avatar>img,
+.hero-avatar>.hero-avatar-fallback {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e5f7ff;
+  color: var(--teal);
+  font-size: 30px;
+  font-weight: 700;
+  border: 3px solid #fff;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+}
+
+.hero-avatar-edit {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--teal);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.hero-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--navy);
+  line-height: 1.2;
+}
+
+/* Hàng "chip" dưới tên: mã NV, chức vụ, phòng ban, vai trò */
+.hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: #f4f7fe;
+  border: 1px solid #e9edf7;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.hero-chip.code {
+  color: var(--teal);
+  background: #e5f7ff;
+  border-color: #c7ecfb;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.hero-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Dải tab dính đáy thẻ danh tính */
+.me-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 16px;
+  border-top: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.me-tab {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 13px 14px;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.me-tab:hover {
+  color: var(--navy);
+}
+
+.me-tab.active {
+  color: var(--teal);
+  border-bottom-color: var(--teal);
+}
+
+/* Số lượng trên tab — cho biết có việc đang chờ mà không cần bấm vào */
+.me-tab-count {
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #eef2f8;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.me-tab.active .me-tab-count {
+  background: #e5f7ff;
+  color: var(--teal);
+}
+
+.me-tab-count.alert {
+  background: var(--red-bg);
+  color: var(--red);
+}
+
+/* Bố cục 2 cột cố định: cột trái thông tin, cột phải tài khoản & bảo mật.
+   Mỗi cột là 1 stack riêng nên thẻ không bị "rơi" lệch như grid phẳng. */
+.detail-2cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.detail-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .detail-2cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+/* Dòng thông tin: icon + nhãn + giá trị, có kẻ mờ ngăn cách cho dễ dò mắt */
+.me-field {
+  display: grid;
+  grid-template-columns: 22px 132px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px dashed #eef1f8;
+}
+
+.me-field:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.me-field>.ti {
+  color: #b6c2d9;
+  font-size: 16px;
+  justify-self: center;
+}
+
+.me-field-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.me-field-value {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--navy);
+  word-break: break-word;
+}
+
+.me-field-value.empty {
+  color: #b6c2d9;
+  font-weight: 500;
+  font-style: italic;
+}
+
+/* Ghi chú cuối thẻ (ai sửa được dữ liệu này) */
+.me-note {
+  margin-top: 14px;
+  font-size: 12.5px;
+  color: var(--muted);
+  background: #f8fafc;
+  border: 1px solid #eef1f8;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.me-note .ti {
+  color: #94a3b8;
+  font-size: 15px;
+  flex: none;
+  margin-top: 1px;
 }
 
 /* ===== Trang chi tiết: section + bảng inline kéo ngang ===== */

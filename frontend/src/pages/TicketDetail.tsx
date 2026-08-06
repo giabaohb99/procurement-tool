@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { fmtDateTime } from '../utils/datetime'
+import { initialsOf } from '../utils/name'
 import { toast } from '../components/toast'
 import { askConfirm } from '../components/confirm'
 import { fileIcon, fmtSize, isImageFile } from '../utils/file-type'
@@ -29,9 +30,6 @@ type Ticket = {
   messages: Message[]
 }
 
-function initialsOf(name: string) {
-  return (name || '?').trim().split(' ').slice(-1)[0]?.[0]?.toUpperCase() || '?'
-}
 
 /** 1 tệp đính kèm trong bong bóng tin nhắn / phần mô tả: ảnh xem luôn, tệp khác là thẻ bấm mở. */
 function FileChip({ f, compact }: { f: TFile; compact?: boolean }) {
