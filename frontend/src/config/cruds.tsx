@@ -1,7 +1,11 @@
 import { FilterField } from '../components/FilterBar'
 import DepartmentMembers from '../components/DepartmentMembers'
 import ProductImages from '../components/ProductImages'
+import EmployeeAccountCard from '../components/employee-account-card'
+import EmployeeAvatar from '../components/employee-avatar'
+import CompanyLogo from '../components/company-logo'
 import { fmtDateTime } from '../utils/datetime'
+import { initialsOf } from '../utils/name'
 
 export type FieldDef = {
   key: string
@@ -15,6 +19,8 @@ export type FieldDef = {
   zeroAsBlank?: boolean   // ô số FK-sentinel: giá trị 0 hiện rỗng (để trống = 0), tránh hiện "0" mặc định
   default?: any           // giá trị mặc định khi TẠO MỚI (bản ghi mới)
   hint?: string           // dòng chú thích nhỏ dưới ô nhập (giải thích ý nghĩa field)
+  group?: string          // tên nhóm — form chi tiết chèn tiêu đề nhóm trước field đầu tiên của nhóm.
+                          // Không đặt group thì form giữ nguyên dạng phẳng như cũ.
 }
 // link?: trả URL → cell thành clickable, điều hướng tới URL đó (chặn click lan ra dòng)
 export type Column = { key: string; label: string; render?: (row: any) => any; link?: (row: any) => string }
@@ -32,6 +38,10 @@ export type CrudConfig = {
   txn?: boolean                  // chứng từ giao dịch (PYC/PO/khảo sát/YCTT): ai có 'read' là xem danh sách được
   cloneable?: boolean            // hiện nút "Nhân bản" mỗi dòng → POST {apiPath}/{id}/clone tạo phiếu nháp mới
   detailExtra?: (row: any) => any  // section tùy biến render dưới form ở trang chi tiết (chỉ khi đã có bản ghi)
+  detailHeader?: (row: any) => any // chèn vào ĐẦU thanh tiêu đề trang chi tiết (vd ảnh đại diện nhân sự)
+  // Chip mô tả dưới tên ở thẻ đầu trang chi tiết (mã, chức vụ, trạng thái…)
+  detailChips?: (row: any) => { icon?: string; text: string; cls?: string }[]
+  detailTwoCols?: boolean          // trang chi tiết chia 2 cột: form trái, thẻ phụ + lịch sử phải
 }
 
 const badge = (v: any, on = 'Đang dùng', off = 'Ngừng') =>
@@ -136,8 +146,28 @@ export const docStatusBadge = (st: string) => {
 export const cruds: Record<string, CrudConfig> = {
   companies: {
     slug: 'companies', entity: 'company', title: 'Công ty', apiPath: '/api/companies', importExport: true,
+    detailHeader: (row) => (
+      <CompanyLogo companyId={row.id} code={row.code} name={row.name} logo={row.logo} />
+    ),
+    // KHÔNG bật detailTwoCols: công ty không có thẻ phụ nào bên phải, để 2 cột sẽ
+    // bóp hẹp form và chừa một khoảng trống lớn. Form full chiều ngang, lịch sử xuống dưới.
+    detailChips: (row) => [
+      ...(row.code ? [{ icon: 'ti-hash', text: row.code, cls: 'code' }] : []),
+      ...(row.tax_code ? [{ icon: 'ti-receipt-tax', text: `MST ${row.tax_code}` }] : []),
+      ...(row.legal_rep_name ? [{ icon: 'ti-user-shield', text: row.legal_rep_name }] : []),
+      { icon: row.is_active ? 'ti-circle-check' : 'ti-circle-x', text: row.is_active ? 'Đang dùng' : 'Ngừng' },
+    ],
     columns: [
-      { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên' }, { key: 'tax_code', label: 'MST' },
+      // Logo đi kèm luôn trong ô Tên (không tách cột riêng)
+      { key: 'name', label: 'Tên', render: (r) => (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          {r.logo
+            ? <img src={r.logo} alt="" className="avatar" style={{ objectFit: 'contain', background: '#fff', flex: 'none' }} />
+            : <span className="avatar" style={{ flex: 'none' }}>{((r.code || r.name || '?')[0] || '?').toUpperCase()}</span>}
+          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</span>
+        </span>
+      ) },
+      { key: 'code', label: 'Mã' }, { key: 'tax_code', label: 'MST' },
       { key: 'legal_rep_name', label: 'Người đại diện' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
     ],
@@ -146,13 +176,19 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
     ],
     fields: [
-      { key: 'code', label: 'Mã', readonlyOnEdit: true }, { key: 'name', label: 'Tên pháp nhân' },
-      { key: 'tax_code', label: 'MST' }, { key: 'address', label: 'Địa chỉ', type: 'textarea' },
-      { key: 'invoice_email', label: 'Email nhận hóa đơn' },
-      { key: 'parent', label: 'Thuộc công ty (ID cha, để trống = gốc)', type: 'number', zeroAsBlank: true },
-      { key: 'legal_representative_id', label: 'Người đại diện pháp lý', type: 'select', source: { url: '/api/employees', value: 'id', label: 'full_name' } },
-      { key: 'legal_rep_title', label: 'Chức danh' },
-      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
+      { key: 'code', label: 'Mã', readonlyOnEdit: true, group: 'Định danh' },
+      { key: 'name', label: 'Tên pháp nhân', group: 'Định danh' },
+      { key: 'tax_code', label: 'MST', group: 'Định danh' },
+      { key: 'invoice_email', label: 'Email nhận hóa đơn', group: 'Hóa đơn & Liên hệ',
+        hint: 'Nơi nhận hóa đơn điện tử của pháp nhân này.' },
+      { key: 'address', label: 'Địa chỉ', type: 'textarea', group: 'Hóa đơn & Liên hệ' },
+      { key: 'legal_representative_id', label: 'Người đại diện pháp lý', type: 'select', group: 'Đại diện pháp lý',
+        source: { url: '/api/employees', value: 'id', label: 'full_name' } },
+      { key: 'legal_rep_title', label: 'Chức danh', group: 'Đại diện pháp lý',
+        hint: 'Chức danh in trên hợp đồng / chứng từ, vd "Giám đốc".' },
+      { key: 'parent', label: 'Công ty mẹ (ID)', type: 'number', zeroAsBlank: true, group: 'Tổ chức',
+        hint: 'Nhập ID pháp nhân cấp trên; để trống nếu đây là công ty gốc.' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, group: 'Tổ chức' },
     ],
   },
   suppliers: {
@@ -234,8 +270,30 @@ export const cruds: Record<string, CrudConfig> = {
   employees: {
     slug: 'employees', entity: 'employee', apiPath: '/api/employees',
     title: 'Nhân sự', importExport: true,
+    detailHeader: (row) => (
+      <EmployeeAvatar employeeId={row.id} fullName={row.full_name} avatar={row.avatar} hasAccount={!!row.user_id} />
+    ),
+    detailTwoCols: true,
+    detailChips: (row) => [
+      ...(row.code ? [{ icon: 'ti-id-badge-2', text: row.code, cls: 'code' }] : []),
+      ...(row.position ? [{ icon: 'ti-briefcase', text: row.position }] : []),
+      ...(row.department_name ? [{ icon: 'ti-building', text: row.department_name }] : []),
+      ...(row.status ? [{ icon: 'ti-user-check', text: row.status }] : []),
+    ],
+    detailExtra: (row) => <EmployeeAccountCard employeeId={row.id} email={row.email} />,
     columns: [
-      { key: 'code', label: 'Mã NV' }, { key: 'full_name', label: 'Họ tên' }, { key: 'email', label: 'Email' },
+      // Ảnh đại diện đi kèm luôn trong ô Họ tên (không tách cột riêng).
+      // Ảnh lấy từ tài khoản đăng nhập; chưa có ảnh thì hiện chữ cái đầu của tên.
+      { key: 'full_name', label: 'Họ tên', render: (r) => (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          {r.avatar
+            ? <img src={r.avatar} alt="" className="avatar" style={{ objectFit: 'cover', flex: 'none' }} />
+            : <span className="avatar" style={{ flex: 'none' }}>{initialsOf(r.full_name)}</span>}
+          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.full_name}</span>
+        </span>
+      ) },
+      { key: 'code', label: 'Mã NV' },
+      { key: 'email', label: 'Email' },
       { key: 'department_name', label: 'Phòng ban' },
       { key: 'position', label: 'Vị trí' },
       { key: 'status', label: 'Trạng thái', render: (r) => badge(r.status === 'Chính thức', r.status, r.status) },
@@ -250,13 +308,16 @@ export const cruds: Record<string, CrudConfig> = {
       ] },
     ],
     fields: [
-      { key: 'code', label: 'Mã NV', readonlyOnEdit: true }, { key: 'full_name', label: 'Họ tên' },
-      { key: 'email', label: 'Email' }, { key: 'phone', label: 'Số điện thoại' },
-      { key: 'department_id', label: 'Phòng ban', type: 'select', source: { url: '/api/departments', value: 'id', label: 'name' } },
+      { key: 'code', label: 'Mã NV', readonlyOnEdit: true, group: 'Định danh' },
+      { key: 'full_name', label: 'Họ tên', group: 'Định danh' },
+      { key: 'email', label: 'Email', group: 'Liên hệ',
+        hint: 'Cũng là tên đăng nhập của tài khoản — đổi email sẽ KHÔNG tự đổi tài khoản đã cấp.' },
+      { key: 'phone', label: 'Số điện thoại', group: 'Liên hệ' },
+      { key: 'department_id', label: 'Phòng ban', type: 'select', group: 'Công việc', source: { url: '/api/departments', value: 'id', label: 'name' } },
       // CR-022: đây là CHỨC DANH để hiển thị/in phiếu, KHÔNG cấp quyền cho tài khoản đăng nhập.
-      { key: 'position', label: 'Vị trí / Chức vụ',
+      { key: 'position', label: 'Vị trí / Chức vụ', group: 'Công việc',
         hint: 'Chỉ là chức danh hiển thị trên phiếu — không phải phân quyền. Quyền thật của tài khoản đặt ở màn "Phân quyền tài khoản".' },
-      { key: 'status', label: 'Trạng thái', type: 'select', default: 'Chính thức', options: [
+      { key: 'status', label: 'Trạng thái', type: 'select', default: 'Chính thức', group: 'Công việc', options: [
         {value: 'Chính thức', label: 'Chính thức'},
         {value: 'Cộng tác viên', label: 'Cộng tác viên'},
         {value: 'Nghỉ thai sản', label: 'Nghỉ thai sản'},

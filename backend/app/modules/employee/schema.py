@@ -37,4 +37,13 @@ class EmployeeOut(EmployeeBase):
     department_name: str | None = None
     manager_name: str | None = None
     created_at: datetime | None = None
+    # Ảnh đại diện lấy từ tài khoản đăng nhập (tab_user.avatar). Danh sách phải
+    # selectinload(Employee.user) — xem service.list_employees — để không thành N+1.
+    avatar: str = ""
     model_config = {"from_attributes": True}
+
+
+class EmployeeDetailOut(EmployeeOut):
+    """Bản dùng cho MÀN CHI TIẾT — kèm id tài khoản đăng nhập để biết đã cấp tài khoản chưa."""
+
+    user_id: int = 0

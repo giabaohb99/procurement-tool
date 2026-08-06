@@ -1,7 +1,10 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.core.audit import record as audit_record
 from app.core.auth import get_perm_profile, hash_password, require
 from app.core.base_controller import apply_filters, apply_sort_from_request, pagination
 from app.core.database import get_db
@@ -9,7 +12,7 @@ from app.core.response import success
 from app.core.scoping import apply_scope
 
 from . import service
-from .schema import EmployeeCreate, EmployeeOut, EmployeeUpdate
+from .schema import EmployeeCreate, EmployeeDetailOut, EmployeeOut, EmployeeUpdate
 
 router = APIRouter(prefix="/api/employees", tags=["employee"])
 
@@ -33,7 +36,31 @@ def list_employees(
 
 @router.get("/{eid}")
 def get_employee(eid: int, db: Session = Depends(get_db), user=Depends(require("employee", "read"))):
-    return success(EmployeeOut.model_validate(service.get_employee(db, eid)).model_dump())
+    return success(EmployeeDetailOut.model_validate(service.get_employee(db, eid)).model_dump())
+
+
+@router.post("/{eid}/avatar")
+def update_employee_avatar(eid: int, file: UploadFile = File(...), db: Session = Depends(get_db),
+                           user=Depends(require("employee", "write"))):
+    """Đổi ảnh đại diện của nhân sự. Ảnh lưu vào TÀI KHOẢN đăng nhập của nhân sự đó
+    (tab_user.avatar) — cùng chỗ với ảnh người dùng tự đổi ở Trang cá nhân, tránh 2 nguồn lệch nhau.
+    Nhân sự chưa có tài khoản thì chưa có chỗ lưu ảnh → yêu cầu tạo tài khoản trước."""
+    from app.core.storage import env_prefix, safe_name, upload_fileobj
+    from app.modules.user.model import User
+
+    emp = service.get_employee(db, eid)
+    u = db.query(User).filter(User.employee_id == eid).first()
+    if not u:
+        raise HTTPException(400, "Nhân sự chưa có tài khoản đăng nhập — hãy tạo tài khoản trước khi đặt ảnh đại diện")
+    try:
+        key = f"{env_prefix()}/avatar/{u.id}/{uuid.uuid4().hex[:12]}-{safe_name(file.filename or 'avatar')}"
+        url = upload_fileobj(file.file, key, file.content_type or "")
+    except Exception as e:
+        raise HTTPException(400, f"Lỗi tải ảnh: {str(e)}")
+    u.avatar = url
+    db.commit()
+    audit_record(db, user.id, "employee", eid, "update", f"Đổi ảnh đại diện nhân sự {emp.code}")
+    return success({"avatar": url}, "Đã cập nhật ảnh đại diện")
 
 
 class SetPasswordIn(BaseModel):

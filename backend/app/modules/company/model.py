@@ -14,6 +14,7 @@ class Company(Base, AuditMixin):
     tax_code: Mapped[str] = mapped_column(String(25), default="")
     address: Mapped[str] = mapped_column(Text, default="")
     invoice_email: Mapped[str] = mapped_column(String(255), default="")
+    logo: Mapped[str] = mapped_column(String(500), default="")   # URL ảnh đại diện / logo pháp nhân
     parent: Mapped[int] = mapped_column(BigInteger, default=0)  # 0 = gốc
     legal_representative_id: Mapped[int] = mapped_column(BigInteger, nullable=True)
     legal_rep_title: Mapped[str] = mapped_column(String(100), default="")

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { askConfirm } from './confirm'
@@ -21,8 +21,6 @@ export default function CrudDetail() {
   const [msg, setMsg] = useState('')
   const [notFound, setNotFound] = useState(false)
   const [dynOpts, setDynOpts] = useState<Record<string, { value: string; label: string }[]>>({})
-  const [pwOpen, setPwOpen] = useState(false)
-  const [pw1, setPw1] = useState(''); const [pw2, setPw2] = useState('')
 
   async function loadLogs() {
     if (isNew || !cfg) return
@@ -103,20 +101,75 @@ export default function CrudDetail() {
     catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi xóa') }
   }
 
+  // Tiêu đề trang lấy TÊN bản ghi thay vì "#id" vô nghĩa; mã + id đẩy xuống dòng phụ.
+  const recordName = form.full_name || form.name || form.title || form.code || ''
+  const heading = isNew ? `Thêm ${cfg.title}` : recordName || `${cfg.title} #${id}`
+  // Chip mô tả dưới tên (mã, chức vụ, trạng thái…) — entity nào khai báo thì mới có,
+  // còn lại hiện dòng phụ "Loại · Mã · #id" như mặc định.
+  const chips: { icon?: string; text: string; cls?: string }[] =
+    (!isNew && cfg.detailChips ? cfg.detailChips(form) : []) || []
+  const twoCols = !!cfg.detailTwoCols && !isNew
+
+  let lastGroup = ''   // theo dõi nhóm field đang render để chèn tiêu đề nhóm
+
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-        <button className="btn ghost" onClick={() => navigate(`/${cfg.slug}`)}><i className="ti ti-arrow-left" /></button>
-        <h2 className="page-title" style={{ margin: 0 }}>{isNew ? `Thêm ${cfg.title}` : `${cfg.title} #${id}`}</h2>
+      {/* Thanh thao tác trên cùng: quay lại bên trái, Lưu/Xóa bên phải — tách khỏi thẻ danh tính
+          để luôn ở vị trí quen thuộc và form dài không phải cuộn xuống cuối mới Lưu được. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+        <button className="btn ghost" onClick={() => navigate(`/${cfg.slug}`)} title={`Về danh sách ${cfg.title}`}>
+          <i className="ti ti-arrow-left" />
+        </button>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {canSave && <button className="btn" onClick={save}>{isNew ? 'Tạo' : 'Lưu'}</button>}
+          {!isNew && can(cfg.entity, 'delete') && (
+            <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={remove}>
+              <i className="ti ti-trash" />Xóa
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="detail-grid">
+      {/* Thẻ danh tính (cùng kiểu Trang cá nhân): ảnh + tên + chip mô tả */}
+      <div className="card hero-card" style={{ marginBottom: 16 }}>
+        <div className="hero-body">
+          {!isNew && cfg.detailHeader && cfg.detailHeader(form)}
+          <div style={{ minWidth: 0 }}>
+            <div className="hero-name">{heading}</div>
+            {!isNew && (
+              chips.length > 0 ? (
+                <div className="hero-chips">
+                  {chips.map((c: any, i: number) => (
+                    <span key={i} className={'hero-chip ' + (c.cls || '')}>
+                      {c.icon && <i className={'ti ' + c.icon} />}{c.text}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 6 }}>
+                  {cfg.title}
+                  {form.code && recordName !== form.code ? ` · ${form.code}` : ''} · #{id}
+                </div>
+              )
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* twoCols: form bên trái, các thẻ phụ (tài khoản, lịch sử…) bên phải — kiểu Trang cá nhân.
+          Mặc định vẫn 1 cột để các màn danh mục cũ (ảnh sản phẩm, thành viên phòng ban) không bị bóp hẹp. */}
+      <div className={twoCols ? 'detail-2cols' : 'detail-grid'}>
         <div className="card" style={{ padding: 18 }}>
           <div className="form-grid">
             {cfg.fields.map((f) => {
               const ro = (!isNew && f.readonlyOnEdit) || !canSave   // không có quyền lưu → khóa field
+              const newGroup = f.group && f.group !== lastGroup ? f.group : ''
+              if (f.group) lastGroup = f.group
               return (
-                <div key={f.key} className="form-row">
+                <Fragment key={f.key}>
+                {/* Tiêu đề nhóm chiếm trọn 1 dòng của lưới, field vẫn xếp 2 cột như cũ */}
+                {newGroup && <div className="form-group-title">{newGroup}</div>}
+                <div className="form-row">
                   <label>{f.label}</label>
                   {f.type === 'textarea' ? (
                     <textarea value={form[f.key] ?? ''} disabled={ro} onChange={(e) => set(f.key, e.target.value)} />
@@ -156,67 +209,30 @@ export default function CrudDetail() {
                   )}
                   {f.hint && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4, fontWeight: 'normal' }}>{f.hint}</div>}
                 </div>
+                </Fragment>
               )
             })}
           </div>
           {err && <div className="err" style={{ marginTop: 12 }}>{err}</div>}
-          {msg && <div style={{ color: 'var(--green)', marginTop: 12, fontSize: 13 }}>{msg}</div>}
-          <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
-            {canSave && <button className="btn" onClick={save}>{isNew ? 'Tạo' : 'Lưu'}</button>}
-
-            {!isNew && cfg.slug === 'employees' && can(cfg.entity, 'write') && (
-              <button className="btn outline" style={{ color: 'var(--teal)', borderColor: 'var(--teal)', background: '#fff' }}
-                onClick={() => { setPwOpen((o) => !o); setErr(''); setMsg('') }}>
-                <i className="ti ti-key" />Đặt lại mật khẩu
-              </button>
-            )}
-            {!isNew && cfg.slug === 'employees' && can('user', 'read') && (
-              <button className="btn ghost" onClick={async () => {
-                setErr('')
-                try {
-                  // Tra CHÍNH XÁC theo employee_id (không dựa fuzzy-search dễ sai)
-                  const r = await api.get('/api/users', { params: { employee_id: id, page_size: 1 } })
-                  const u = (r.data.data.items || [])[0]
-                  if (u) navigate(`/users/${u.id}`); else setErr('Nhân sự này chưa có tài khoản — bấm "Đặt lại mật khẩu" để tạo tài khoản đăng nhập trước.')
-                } catch { setErr('Không mở được phân quyền') }
-              }}><i className="ti ti-shield" />Phân quyền tài khoản</button>
-            )}
-
-            {!isNew && can(cfg.entity, 'delete') && (
-              <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={remove}>
-                <i className="ti ti-trash" />Xóa
-              </button>
-            )}
-          </div>
-
-          {/* Ô đặt lại mật khẩu trực tiếp (pass1/pass2) */}
-          {pwOpen && !isNew && cfg.slug === 'employees' && (
-            <div style={{ marginTop: 14, padding: 14, border: '1px solid var(--border)', borderRadius: 10, background: '#f8fafc' }}>
-              <div style={{ fontWeight: 600, color: 'var(--navy)', marginBottom: 10 }}>Đặt lại mật khẩu tài khoản</div>
-              <div className="form-grid">
-                <div className="form-row"><label>Mật khẩu mới</label><input type="password" autoComplete="new-password" value={pw1} onChange={(e) => setPw1(e.target.value)} /></div>
-                <div className="form-row"><label>Nhập lại mật khẩu</label><input type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></div>
-              </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                <button className="btn" onClick={async () => {
-                  setErr(''); setMsg('')
-                  if (pw1.length < 4) { setErr('Mật khẩu tối thiểu 4 ký tự'); return }
-                  if (pw1 !== pw2) { setErr('Hai mật khẩu không khớp'); return }
-                  try { await api.post(`/api/employees/${id}/set-password`, { password: pw1 }); setMsg('Đã đặt lại mật khẩu'); setPw1(''); setPw2(''); setPwOpen(false) }
-                  catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi đặt lại mật khẩu') }
-                }}><i className="ti ti-check" />Xác nhận</button>
-                <button className="btn ghost" onClick={() => { setPwOpen(false); setPw1(''); setPw2('') }}>Hủy</button>
-              </div>
+          {msg && (
+            <div style={{ marginTop: 12, fontSize: 13, fontWeight: 600, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <i className="ti ti-circle-check" />{msg}
             </div>
           )}
         </div>
 
         {!isNew && (
-         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+         <div className="detail-col">
           {cfg.detailExtra && cfg.detailExtra(form)}
           <div className="card" style={{ padding: 18 }}>
-            <h3 style={{ fontSize: 14, color: 'var(--navy)', marginBottom: 12 }}><i className="ti ti-history" /> Lịch sử thao tác</h3>
-            {logs.length === 0 && <div style={{ color: '#999', fontSize: 13 }}>Chưa có log.</div>}
+            <h3 className="sec-title" style={{ marginTop: 0 }}>
+              <i className="ti ti-history" style={{ marginRight: 8, color: '#b6c2d9' }} />Lịch sử thao tác
+            </h3>
+            {logs.length === 0 && (
+              <div style={{ color: 'var(--muted)', fontSize: 13 }}>
+                Chưa có thao tác nào được ghi nhận. Mọi lần sửa/xóa sẽ hiện ở đây kèm người thực hiện và thời điểm.
+              </div>
+            )}
             <div className="timeline">
               {logs.map((l, i) => (
                 <div key={i} className="tl-item">

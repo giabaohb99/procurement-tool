@@ -8,6 +8,7 @@ import PwaInstallPrompt from "../components/PwaInstallPrompt";
 import TicketCreateModal from "../components/TicketCreateModal";
 import { TICKET_ENABLED } from "../config/features";
 import { canInstall, onInstallChange, promptInstall } from "../pwa-install";
+import { initialsOf } from "../utils/name";
 
 // Trung tâm Hướng dẫn sử dụng là app riêng (thư mục help-center/, cổng 8082) — mở ở tab mới.
 // Khu người dùng bên đó CÔNG KHAI, không cần đăng nhập.
@@ -373,8 +374,7 @@ export default function AppLayout() {
     g.items.some((n) => n.to === current?.to),
   );
   const name = user?.full_name || "Người dùng";
-  const initials =
-    name.trim().split(" ").slice(-1)[0]?.[0]?.toUpperCase() || "U";
+  const initials = initialsOf(name);
   // CR-028: dòng phụ dưới tên ở góc phải — mã NV · chức vụ (bỏ phần nào rỗng).
   // Tài khoản chưa gắn hồ sơ nhân sự thì không có mã, để trống chứ không bịa.
   const subLabel = [user?.emp_code, user?.position].filter(Boolean).join(" · ");
