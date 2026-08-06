@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import Select from 'react-select'
 import { api } from '../api/client'
-import { fmtDateTime } from '../utils/datetime'
 import { toast } from '../components/toast'
+import AuditTimeline from '../components/AuditTimeline'
 
 type Opt = { value: number; label: string }
 const selStyle = {
@@ -130,17 +130,7 @@ export default function CategoryAssigneeNew() {
           {logs.length === 0 ? (
             <div style={{ color: '#999', fontSize: 13 }}>Chưa có log.</div>
           ) : (
-            <div className="timeline">
-              {logs.map((l, i) => (
-                <div key={i} className="tl-item">
-                  <span className={'tl-dot ' + l.action} />
-                  <div>
-                    <div style={{ fontSize: 13 }}><b>{l.by}</b> — {l.action_label}{l.message ? <span style={{ color: 'var(--muted)' }}> · {l.message}</span> : ''}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{fmtDateTime(l.at)}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <AuditTimeline logs={logs} />
           )}
         </div>
       )}
