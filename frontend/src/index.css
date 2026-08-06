@@ -58,8 +58,9 @@ h3 {
   min-height: 100vh;
 }
 
+/* Bề rộng menu trái do người dùng kéo (AppLayout đặt biến --sidebar-w inline, lưu localStorage) */
 .sidebar {
-  width: 222px;
+  width: var(--sidebar-w, 222px);
   flex: none;
   background: #ffffff;
   border-right: 1px solid #eef1f8;
@@ -72,6 +73,45 @@ h3 {
   height: 100vh;
   align-self: flex-start;
   overflow-y: auto;
+}
+
+/* Ẩn hẳn menu trái (nút thu/mở trên thanh trên cùng) — chỉ áp dụng ở màn rộng;
+   màn hẹp menu vốn là drawer trượt nên được trả lại bề rộng ở media query cuối file. */
+.app.nav-hidden .sidebar {
+  width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  border-right: 0;
+  overflow: hidden;
+}
+
+.app.nav-hidden .sidebar-resizer {
+  display: none;
+}
+
+/* Thanh kéo đổi bề rộng — là phần tử flex riêng (không position:absolute trong .sidebar
+   vì sidebar cuộn dọc, tay kéo sẽ trôi theo nội dung). */
+.sidebar-resizer {
+  flex: none;
+  width: 5px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.15s;
+  z-index: 5;
+}
+
+.sidebar-resizer:hover,
+.sidebar-resizer.dragging {
+  background: rgba(0, 174, 239, 0.35);
+}
+
+/* Khi đang kéo: chặn bôi đen chữ và giữ con trỏ col-resize trên toàn trang */
+body.col-resizing {
+  user-select: none;
+  cursor: col-resize;
 }
 
 .brand {
@@ -452,6 +492,12 @@ input[role="combobox"] {
 
 .hamburger {
   display: none;
+}
+
+/* Nút ẩn/hiện menu trái — chỉ có ở màn rộng (màn hẹp đã có nút hamburger) */
+.nav-toggle {
+  display: inline-flex;
+  align-items: center;
 }
 
 .backdrop {
@@ -1190,6 +1236,20 @@ thead th {
     transform: translateX(0);
   }
 
+  /* Màn hẹp: menu là drawer trượt, luôn giữ bề rộng cố định — bỏ qua trạng thái
+     ẩn/kéo-rộng của màn hình lớn để hamburger vẫn mở được menu bình thường. */
+  .app.nav-hidden .sidebar {
+    width: 250px;
+    padding: 14px 10px;
+    border-right: 1px solid #eef1f8;
+    overflow-y: auto;
+  }
+
+  .sidebar-resizer,
+  .nav-toggle {
+    display: none;
+  }
+
   .backdrop {
     display: block;
     position: fixed;
@@ -1581,6 +1641,7 @@ thead th {
   }
 
   .sidebar,
+  .sidebar-resizer,
   .topbar {
     display: none !important;
   }
