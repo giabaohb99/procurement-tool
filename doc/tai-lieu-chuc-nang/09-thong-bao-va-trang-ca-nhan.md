@@ -262,6 +262,29 @@ Bảng: `tab_notification`
 
 ---
 
+## Phần I-B: Khối tài khoản góc phải header (CR-028)
+
+Nằm cạnh chuông thông báo, mở/đóng khi bấm.
+
+**Nút thu gọn** hiển thị 2 dòng:
+
+| Dòng | Nội dung | Nguồn |
+|---|---|---|
+| 1 | Họ tên nhân sự | `full_name` — `Employee.full_name` của hồ sơ gắn với tài khoản; tài khoản chưa gắn nhân sự thì lấy email |
+| 2 | `Mã NV · Chức vụ` | `emp_code` · `position`; phần nào rỗng thì bỏ, cả hai rỗng thì ẩn luôn dòng 2 |
+
+Màn hẹp (`max-width` theo media query của `.user-name`) chỉ còn avatar + mũi tên.
+
+**Dropdown** (rộng 288px):
+
+- Đầu: avatar (bấm để đổi ảnh) · họ tên · **chip mã NV** (nền xanh nhạt) hoặc chữ "Chưa gắn hồ sơ nhân sự" · chức vụ · email đăng nhập.
+- Giữa: Phòng ban, Số điện thoại (thiếu thì hiện "Chưa có phòng ban" / "Chưa cập nhật SĐT").
+- Cuối: Cài ứng dụng (khi cài được) · Gửi yêu cầu hỗ trợ (hoặc Hướng dẫn sử dụng khi tắt ticket) · Trang cá nhân · Đăng xuất.
+
+**Làm mới hồ sơ.** `AuthProvider` gọi `GET /api/auth/me` **mỗi lần mở app** (khi còn token) rồi ghi đè `localStorage.user`. Trước CR-028 hồ sơ chỉ được ghi lúc đăng nhập nên đổi tên / gắn lại hồ sơ nhân sự / sửa phân quyền đều **không hiện ra cho tới khi đăng xuất rồi đăng nhập lại** — đó là lý do góc phải còn hiện tên cũ ("Quản trị viên") dù tài khoản đã gắn sang hồ sơ nhân sự khác. Lỗi mạng thì im lặng dùng bản đã lưu.
+
+---
+
 ## Phần II: Trang cá nhân `/me`
 
 ### Mục đích

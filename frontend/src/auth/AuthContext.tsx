@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { api } from "../api/client";
 
 type Perms = Record<string, Record<string, boolean | string>>;
@@ -7,6 +7,7 @@ type User = {
   full_name: string;
   email: string;
   emp_code?: string;
+  employee_id?: number;
   phone?: string;
   department_name?: string;
   role_name?: string;
@@ -30,6 +31,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const s = localStorage.getItem("user");
     return s ? JSON.parse(s) : null;
   });
+
+  // CR-028: hồ sơ trong localStorage chỉ được ghi lúc ĐĂNG NHẬP nên cứ đứng yên mãi —
+  // đổi tên/phòng ban/gắn lại nhân sự hay sửa phân quyền đều không thấy cho tới khi đăng xuất.
+  // Mỗi lần mở app (còn token) hỏi lại /auth/me một phát, lỗi thì im lặng dùng bản cũ.
+  useEffect(() => {
+    if (!localStorage.getItem("token")) return;
+    api.get("/api/auth/me", { _silent: true } as any)
+      .then((r) => {
+        const fresh = r.data?.data;
+        if (!fresh) return;
+        localStorage.setItem("user", JSON.stringify(fresh));
+        setUser(fresh);
+      })
+      .catch(() => {});
+  }, []);
 
   async function login(username: string, password: string) {
     const r = await api.post("/api/auth/login", { username, password });

@@ -182,6 +182,15 @@ button.nav-group-title:hover {
   line-height: 1;
 }
 
+/* Khối tên ở góc phải header: dòng 1 tên nhân sự, dòng 2 mã NV · chức vụ (CR-028).
+   Đặt display ở CSS (không phải style inline) để media query dưới còn ẩn được khi màn hẹp. */
+.user-name {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
 .avatar {
   width: 30px;
   height: 30px;

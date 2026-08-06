@@ -318,6 +318,9 @@ export default function AppLayout() {
   const name = user?.full_name || "Người dùng";
   const initials =
     name.trim().split(" ").slice(-1)[0]?.[0]?.toUpperCase() || "U";
+  // CR-028: dòng phụ dưới tên ở góc phải — mã NV · chức vụ (bỏ phần nào rỗng).
+  // Tài khoản chưa gắn hồ sơ nhân sự thì không có mã, để trống chứ không bịa.
+  const subLabel = [user?.emp_code, user?.position].filter(Boolean).join(" · ");
 
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -482,11 +485,17 @@ export default function AppLayout() {
               ) : (
                 <span className="avatar">{initials}</span>
               )}
-              <span
-                className="user-name"
-                style={{ fontSize: 13, whiteSpace: "nowrap" }}
-              >
-                {name}
+              {/* CR-028: hiện TÊN NHÂN SỰ + MÃ NV (trước chỉ có mỗi tên hiển thị của tài khoản,
+                  nhìn vào không biết đang đăng nhập bằng ai). Dòng 2 gộp mã NV · chức vụ. */}
+              <span className="user-name">
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--navy)", whiteSpace: "nowrap" }}>
+                  {name}
+                </span>
+                {subLabel && (
+                  <span style={{ fontSize: 11, color: "#7b8aa5", whiteSpace: "nowrap" }}>
+                    {subLabel}
+                  </span>
+                )}
               </span>
               <i
                 className="ti ti-chevron-down"
@@ -503,8 +512,8 @@ export default function AppLayout() {
                   marginTop: 8,
                   backgroundColor: "white",
                   borderRadius: 8,
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                  width: 250,
+                  boxShadow: "0 12px 28px rgba(15,23,42,0.16)",
+                  width: 288,
                   zIndex: 100,
                   overflow: "hidden",
                   border: "1px solid #e2e8f0",
@@ -595,21 +604,46 @@ export default function AppLayout() {
                       disabled={uploadingAvatar}
                     />
                   </label>
-                  <div>
+                  {/* CR-028: tên nhân sự + MÃ NV ngay dưới, để biết chắc đang đăng nhập bằng hồ sơ nào */}
+                  <div style={{ minWidth: 0 }}>
                     <div
                       style={{
-                        fontWeight: 600,
+                        fontWeight: 700,
                         fontSize: 14,
                         color: "#1e293b",
+                        lineHeight: 1.3,
                       }}
                     >
-                      {user?.full_name}
+                      {name}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5, flexWrap: "wrap" }}>
+                      {user?.emp_code ? (
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            letterSpacing: 0.3,
+                            color: "var(--teal)",
+                            background: "#e5f7ff",
+                            border: "1px solid #c7ecfb",
+                            borderRadius: 999,
+                            padding: "1px 8px",
+                          }}
+                        >
+                          {user.emp_code}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 11, color: "#94a3b8" }}>Chưa gắn hồ sơ nhân sự</span>
+                      )}
+                      {user?.position && (
+                        <span style={{ fontSize: 11.5, color: "#64748b" }}>{user.position}</span>
+                      )}
                     </div>
                     <div
                       style={{
-                        fontSize: 13,
+                        fontSize: 12.5,
                         color: "#64748b",
-                        marginTop: 4,
+                        marginTop: 5,
                         wordBreak: "break-all",
                       }}
                     >
@@ -628,8 +662,8 @@ export default function AppLayout() {
                       gap: 8,
                     }}
                   >
-                    <i className="ti ti-phone" style={{ fontSize: 15 }} />{" "}
-                    {user?.phone || "Chưa cập nhật SĐT"}
+                    <i className="ti ti-building" style={{ fontSize: 15, color: "#94a3b8", flexShrink: 0 }} />{" "}
+                    {user?.department_name || "Chưa có phòng ban"}
                   </div>
                   <div
                     style={{
@@ -641,8 +675,8 @@ export default function AppLayout() {
                       gap: 8,
                     }}
                   >
-                    <i className="ti ti-building" style={{ fontSize: 15 }} />{" "}
-                    {user?.department_name || "Chưa có phòng ban"}
+                    <i className="ti ti-phone" style={{ fontSize: 15, color: "#94a3b8", flexShrink: 0 }} />{" "}
+                    {user?.phone || "Chưa cập nhật SĐT"}
                   </div>
                 </div>
                 <div style={{ borderTop: "1px solid #eee", padding: 8 }}>
