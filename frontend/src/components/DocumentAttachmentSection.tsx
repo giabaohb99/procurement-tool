@@ -607,7 +607,7 @@ export default function DocumentAttachmentSection({
           {canWrite && (
             <div style={{ marginTop: files.length > 0 ? 4 : 0 }}>
               <FileDropzone
-                hint="Tải nhanh: Kéo thả file trực tiếp vào đây hoặc bấm chọn file (PDF, Ảnh, Word, Excel, XML, TXT…)"
+                hint="Tải nhanh: Kéo thả file trực tiếp vào đây hoặc bấm chọn file (PDF, Ảnh, Word, Excel, XML, TXT, CDR…)"
                 onFiles={handleDirectDrop}
               />
               {uploadingDirect && (
@@ -621,7 +621,7 @@ export default function DocumentAttachmentSection({
           {/* Thông tin giới hạn dung lượng file nhỏ ở dưới */}
           <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
             <i className="ti ti-info-circle" style={{ fontSize: 13 }} />
-            <span>Mỗi file dung lượng tối đa <b>{maxSizeMb} MB</b>. Hỗ trợ định dạng: PDF, Ảnh (JPG, PNG, WEBP), Word, Excel, XML (Hóa đơn), TXT, CSV, Email (MSG, EML).</span>
+            <span>Mỗi file dung lượng tối đa <b>{maxSizeMb} MB</b>. Hỗ trợ định dạng: PDF, Ảnh (JPG, PNG, WEBP), Word, Excel, XML (Hóa đơn), TXT, CSV, Email (MSG, EML), CorelDRAW (CDR).</span>
           </div>
 
           {!canWrite && files.length === 0 && (

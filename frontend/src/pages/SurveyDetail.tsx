@@ -1031,7 +1031,7 @@ export default function SurveyDetail() {
                             <div style={{ height: '100%', width: `${attProgress}%`, background: 'var(--teal)', transition: 'width .15s' }} />
                           </div>
                         )}
-                        <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 4 }}>Tối đa 10MB/file · pdf, ảnh, excel{!activeLid ? ' · sẽ lưu cùng phiếu' : ''}</div>
+                        <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 4 }}>Tối đa 20MB/file · pdf, ảnh, excel, cdr{!activeLid ? ' · sẽ lưu cùng phiếu' : ''}</div>
                       </div>
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

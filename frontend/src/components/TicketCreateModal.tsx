@@ -161,7 +161,7 @@ export default function TicketCreateModal({ open, onClose, originUrl = '' }: Pro
               Tệp đính kèm
               {uploading && <span style={{ color: 'var(--teal)', fontWeight: 600, marginLeft: 8 }}><i className="ti ti-loader spin" /> Đang tải lên…</span>}
             </label>
-            <FileDropzone hint="Ảnh chụp màn hình, PDF, Word, Excel… tối đa 10MB mỗi tệp" onFiles={upload} />
+            <FileDropzone hint="Ảnh chụp màn hình, PDF, Word, Excel… tối đa 20MB mỗi tệp" onFiles={upload} />
             {files.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
                 {files.map((f) => {

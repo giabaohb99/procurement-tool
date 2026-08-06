@@ -31,6 +31,24 @@ def test_file_policy_extensions():
     assert "dll" not in exts
 
 
+def test_cdr_allowed_for_documents():
+    """File thiết kế CorelDRAW (.cdr) — NCC hay gửi kèm mẫu bao bì/nhãn."""
+    for entity in ("purchase_request", "purchase_order", "survey", "contract", "ticket_message"):
+        _, exts, _ = policy(entity)
+        assert "cdr" in exts, entity
+    # Ô chỉ nhận ảnh thì vẫn chỉ ảnh
+    for entity in ("product", "avatar", "purchase_request_line_image"):
+        _, exts, _ = policy(entity)
+        assert "cdr" not in exts, entity
+
+
+def test_document_size_floor_20mb():
+    """Mọi ô đính kèm chứng từ tối thiểu 20MB — file .cdr thường nặng."""
+    for entity, (_, exts, max_mb) in FILE_POLICY.items():
+        if "pdf" in exts:                       # ô chứng từ (khác ô chỉ nhận ảnh)
+            assert max_mb >= 20, f"{entity} = {max_mb}MB"
+
+
 def test_doc_type_validation():
     assert _valid_doc_type("") == ""
     assert _valid_doc_type("quotation") == "quotation"
