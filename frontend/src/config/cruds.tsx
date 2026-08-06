@@ -3,6 +3,7 @@ import type { FilterFieldDefinition } from '../components/conditional-filter'
 import { condDate, condSelect, condSource, condText } from './conditional-filters'
 import DepartmentMembers from '../components/DepartmentMembers'
 import ProductImages from '../components/ProductImages'
+import PurchaseHistoryTable from '../components/PurchaseHistoryTable'
 import EmployeeAccountCard from '../components/employee-account-card'
 import EmployeeAvatar from '../components/employee-avatar'
 import CompanyLogo from '../components/company-logo'
@@ -43,6 +44,9 @@ export type CrudConfig = {
   txn?: boolean                  // chứng từ giao dịch (PYC/PO/khảo sát/YCTT): ai có 'read' là xem danh sách được
   cloneable?: boolean            // hiện nút "Nhân bản" mỗi dòng → POST {apiPath}/{id}/clone tạo phiếu nháp mới
   detailExtra?: (row: any) => any  // section tùy biến render dưới form ở trang chi tiết (chỉ khi đã có bản ghi)
+  // Tab phụ ở trang chi tiết (chỉ khi đã có bản ghi). Tab "Thông tin" luôn tự có, không cần khai báo.
+  // Dùng khi nội dung phụ đủ lớn để tách khỏi form (vd Lịch sử mua hàng của sản phẩm).
+  detailTabs?: { key: string; label: string; render: (row: any) => any }[]
   detailHeader?: (row: any) => any // chèn vào ĐẦU thanh tiêu đề trang chi tiết (vd ảnh đại diện nhân sự)
   // Chip mô tả dưới tên ở thẻ đầu trang chi tiết (mã, chức vụ, trạng thái…)
   detailChips?: (row: any) => { icon?: string; text: string; cls?: string }[]
@@ -241,6 +245,9 @@ export const cruds: Record<string, CrudConfig> = {
   products: {
     slug: 'products', entity: 'product', title: 'Sản phẩm / Hàng hóa', apiPath: '/api/products', importExport: true,
     detailExtra: (row) => <ProductImages productId={row.id} />,
+    detailTabs: [
+      { key: 'history', label: 'Lịch sử mua hàng', render: (row) => <PurchaseHistoryTable productCode={row.code} /> },
+    ],
     columns: [
       { key: 'thumbnail', label: 'Ảnh', render: (r) => r.thumbnail_url
           ? <img src={r.thumbnail_url} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6 }} />

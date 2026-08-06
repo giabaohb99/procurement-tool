@@ -7,6 +7,7 @@ import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import { prBadge, poBadge } from '../config/cruds'
 import ProductPicker from '../components/ProductPicker'
+import PurchaseHistoryPickerModal, { HistoryPick } from '../components/PurchaseHistoryPickerModal'
 import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
 import DateInput from '../components/DateInput'
@@ -92,6 +93,7 @@ export default function PurchaseRequestDetail() {
   const [docModal, setDocModal] = useState(false)
   const [docTypeLabels, setDocTypeLabels] = useState<Record<string, string>>({})
   const [editIdx, setEditIdx] = useState<number | null>(null)   // dòng đang mở popup chi tiết
+  const [historyIdx, setHistoryIdx] = useState<number | null>(null)   // dòng đang mở popup lịch sử mua hàng
   const [origExp, setOrigExp] = useState('')   // giá trị 'thời gian dự kiến có hàng' lúc mở popup (để bắt lý do khi đổi)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [promptAction, setPromptAction] = useState<{type: 'reject'|'return'|'cancel', title: string, message: string, placeholder?: string} | null>(null)
@@ -327,6 +329,19 @@ export default function PurchaseRequestDetail() {
   }
 
   // Chọn SP từ ô tìm kiếm (nhận cả object) → tự điền tên/ĐVT/phân loại
+  // Chọn 1 lần mua trước từ popup lịch sử → CHỈ điền vào state dòng, KHÔNG tự lưu.
+  // VAT là <select> giới hạn VAT_OPTS nên chỉ nhận giá trị hợp lệ, tránh select rơi vào rỗng.
+  const applyHistory = (i: number, h: HistoryPick) => {
+    setPr((s: any) => recalcUrgent({
+      ...s,
+      items: s.items.map((it: any, idx: number) => idx === i ? {
+        ...it, unit: h.unit || it.unit, qty: h.qty_order, price: h.price,
+        vat_pct: VAT_OPTS.includes(h.vat) ? h.vat : it.vat_pct,
+      } : it),
+    }))
+    toast.success('Đã điền giá từ lịch sử — bấm Lưu để ghi nhận')
+  }
+
   const applyProduct = (i: number, prod: any) => {
     if (!prod) { setItem(i, 'product_code', ''); return }
     setPr((s: any) => recalcUrgent({
@@ -718,7 +733,17 @@ export default function PurchaseRequestDetail() {
                       <td>{i + 1}</td>
                       <td>
                         {editable ? (
-                          <ProductPicker compact code={it.product_code} name={it.product_name} onPick={(prod) => applyProduct(i, prod)} />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <ProductPicker compact code={it.product_code} name={it.product_name} onPick={(prod) => applyProduct(i, prod)} />
+                            </div>
+                            {/* Tham chiếu giá đã mua trước đó — chỉ hiện khi đã chọn mã hàng */}
+                            {it.product_code && (
+                              <button className="icon-btn" style={{ flexShrink: 0 }} title="Lịch sử mua hàng gần nhất của mã hàng này" onClick={() => setHistoryIdx(i)}>
+                                <i className="ti ti-history" style={{ fontSize: 16, color: 'var(--muted)' }} />
+                              </button>
+                            )}
+                          </div>
                         ) : <span style={{ display: 'block', whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{it.product_code || '—'}</span>}
                       </td>
                       {/* Tên sản phẩm: hiện đủ, dài thì xuống dòng (đọc thiếu dễ hiểu lầm) */}
@@ -1065,6 +1090,16 @@ export default function PurchaseRequestDetail() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Popup tham chiếu giá đã mua trước đó của 1 dòng — chọn xong chỉ FILL, không lưu */}
+      {historyIdx !== null && items[historyIdx] && (
+        <PurchaseHistoryPickerModal
+          productCode={items[historyIdx].product_code}
+          productName={items[historyIdx].product_name}
+          onPick={(h) => applyHistory(historyIdx, h)}
+          onClose={() => setHistoryIdx(null)}
+        />
       )}
 
       {/* Lightbox chia đôi: trái = ảnh gốc SP, phải = ảnh đối chiếu của dòng */}

@@ -21,6 +21,8 @@ export default function CrudDetail() {
   const [msg, setMsg] = useState('')
   const [notFound, setNotFound] = useState(false)
   const [dynOpts, setDynOpts] = useState<Record<string, { value: string; label: string }[]>>({})
+  // Tab phụ khai báo trong cruds.tsx (`detailTabs`). 'info' = tab mặc định (form + detailExtra + nhật ký).
+  const [tab, setTab] = useState('info')
 
   async function loadLogs() {
     if (isNew || !cfg) return
@@ -121,8 +123,9 @@ export default function CrudDetail() {
           <i className="ti ti-arrow-left" />
         </button>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {canSave && <button className="btn" onClick={save}>{isNew ? 'Tạo' : 'Lưu'}</button>}
-          {!isNew && can(cfg.entity, 'delete') && (
+          {/* Lưu/Xóa chỉ thuộc về tab thông tin — các tab phụ đều là dữ liệu chỉ đọc */}
+          {tab === 'info' && canSave && <button className="btn" onClick={save}>{isNew ? 'Tạo' : 'Lưu'}</button>}
+          {tab === 'info' && !isNew && can(cfg.entity, 'delete') && (
             <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={remove}>
               <i className="ti ti-trash" />Xóa
             </button>
@@ -156,9 +159,23 @@ export default function CrudDetail() {
         </div>
       </div>
 
+      {/* Tab phụ (chỉ khi bản ghi đã tồn tại) — cùng kiểu tab với trang chi tiết NCC */}
+      {!isNew && (cfg.detailTabs?.length ?? 0) > 0 && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14, borderBottom: '1px solid var(--border)' }}>
+          {[{ key: 'info', label: 'Thông tin' }, ...cfg.detailTabs!].map((t) => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              style={{ border: 'none', background: 'none', padding: '8px 12px', cursor: 'pointer', fontSize: 13.5,
+                fontWeight: tab === t.key ? 700 : 500, color: tab === t.key ? 'var(--teal)' : 'var(--muted)',
+                borderBottom: tab === t.key ? '2px solid var(--teal)' : '2px solid transparent' }}>{t.label}</button>
+          ))}
+        </div>
+      )}
+
+      {tab !== 'info' && cfg.detailTabs?.find((t) => t.key === tab)?.render(form)}
+
       {/* twoCols: form bên trái, các thẻ phụ (tài khoản, lịch sử…) bên phải — kiểu Trang cá nhân.
           Mặc định vẫn 1 cột để các màn danh mục cũ (ảnh sản phẩm, thành viên phòng ban) không bị bóp hẹp. */}
-      <div className={twoCols ? 'detail-2cols' : 'detail-grid'}>
+      <div className={twoCols ? 'detail-2cols' : 'detail-grid'} style={{ display: tab === 'info' ? undefined : 'none' }}>
         <div className="card" style={{ padding: 18 }}>
           <div className="form-grid">
             {cfg.fields.map((f) => {

@@ -5,6 +5,7 @@ import { askConfirm } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import { contractExpiryBadge, PAYMENT_TERMS_OPTIONS } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
+import PurchaseHistoryTable from '../components/PurchaseHistoryTable'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const SUP_TYPE = [{ value: 'goods', label: 'NCC bán hàng' }, { value: 'transport', label: 'Đơn vị vận chuyển' }]
@@ -14,6 +15,7 @@ const TABS = [
   { key: 'eval', label: 'Đánh giá' },
   { key: 'contracts', label: 'Hợp đồng' },
   { key: 'payables', label: 'Công nợ' },
+  { key: 'history', label: 'Lịch sử mua hàng' },
   { key: 'surveys', label: 'Khảo sát của NCC' },
 ]
 const AP_COLOR: Record<string, [string, string]> = {
@@ -288,6 +290,8 @@ export default function SupplierDetail() {
           </div>
         </div>
       )}
+
+      {tab === 'history' && <PurchaseHistoryTable supplierCode={sup.code} />}
 
       {tab === 'surveys' && (() => {
         const q = surveyQ.trim().toLowerCase()

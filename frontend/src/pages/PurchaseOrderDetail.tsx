@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext'
 import { poBadge, PAYMENT_TERMS_OPTIONS } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
 import ProductPicker from '../components/ProductPicker'
+import PurchaseHistoryPickerModal, { HistoryPick } from '../components/PurchaseHistoryPickerModal'
 import NumberInput from '../components/NumberInput'
 import DateInput from '../components/DateInput'
 import TextAreaAuto from '../components/TextAreaAuto'
@@ -102,6 +103,7 @@ export default function PurchaseOrderDetail() {
   const [docTypeLabels, setDocTypeLabels] = useState<Record<string, string>>({})
   const [attByDelivery, setAttByDelivery] = useState<Record<number, any[]>>({})
   const [editingItemIdx, setEditingItemIdx] = useState<number | null>(null)
+  const [historyIdx, setHistoryIdx] = useState<number | null>(null)   // dòng đang mở popup lịch sử mua hàng
   const [printOpen, setPrintOpen] = useState(false)   // dropdown chọn loại bản in
   const [notFound, setNotFound] = useState(false)
   const [payModal, setPayModal] = useState(false)              // popup tạo yêu cầu thanh toán
@@ -255,6 +257,13 @@ export default function PurchaseOrderDetail() {
       ? { product_code: p.code, product_name: p.name, invoice_name: p.invoice_name || '', unit: p.unit || '', item_group: p.item_group || '', fg_code: p.hh_code || '', fg_name: p.hh_name || '' }
       : { product_code: '', product_name: '', invoice_name: '', item_group: '', fg_code: '', fg_name: '' })
   }
+  // Chọn 1 lần mua trước từ popup lịch sử → CHỈ điền vào state dòng hàng, KHÔNG tự lưu.
+  // Không đụng NCC ở header: người dùng chủ động tham chiếu giá của bất kỳ NCC nào.
+  const applyHistory = (i: number, h: HistoryPick) => {
+    setItem(i, { unit: h.unit, qty_order: h.qty_order, price: h.price, vat: h.vat })
+    toast.success('Đã điền giá từ lịch sử — bấm Lưu để ghi nhận')
+  }
+
   const onPickSupplier = (code: string) => {
     const s = goodsSuppliers.find((x) => x.code === code)
     setPo((st: any) => ({ ...st, supplier_code: code, supplier_name: s ? s.name : '', vat_rate: s ? (Number(s.vat) || st.vat_rate) : st.vat_rate, payment_terms: s ? (s.payment_terms || st.payment_terms) : st.payment_terms }))
@@ -584,7 +593,17 @@ export default function PurchaseOrderDetail() {
                     <tr key={i}>
                       <td>{i + 1}</td>
                       <td style={{ minWidth: 215 }} title={lineReceived(it) ? PRODUCT_LOCK_HINT : undefined}>
-                        <ProductPicker compact code={it.product_code} name={it.product_name} disabled={!headerEditable || lineLocked(it) || lineReceived(it)} onPick={(prod) => applyProduct(i, prod)} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <ProductPicker compact code={it.product_code} name={it.product_name} disabled={!headerEditable || lineLocked(it) || lineReceived(it)} onPick={(prod) => applyProduct(i, prod)} />
+                          </div>
+                          {/* Tham chiếu giá đã mua trước đó — chỉ hiện khi đã chọn mã hàng và dòng còn sửa được */}
+                          {headerEditable && !lineLocked(it) && it.product_code && (
+                            <button className="icon-btn" style={{ flexShrink: 0 }} title="Lịch sử mua hàng gần nhất của mã hàng này" onClick={() => setHistoryIdx(i)}>
+                              <i className="ti ti-history" style={{ fontSize: 16, color: 'var(--muted)' }} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td>{txtWrap(i, 'product_name', '100%', true)}</td>
                       <td>
@@ -708,6 +727,16 @@ export default function PurchaseOrderDetail() {
         <DocumentUploadModal
           entity="purchase_order" entityId={Number(id)} purchaseOrderId={Number(id)}
           onClose={() => setDocModal(false)} onDone={loadAll}
+        />
+      )}
+
+      {/* Popup tham chiếu giá đã mua trước đó của 1 dòng — chọn xong chỉ FILL, không lưu */}
+      {historyIdx !== null && items[historyIdx] && (
+        <PurchaseHistoryPickerModal
+          productCode={items[historyIdx].product_code}
+          productName={items[historyIdx].product_name}
+          onPick={(h) => applyHistory(historyIdx, h)}
+          onClose={() => setHistoryIdx(null)}
         />
       )}
 
