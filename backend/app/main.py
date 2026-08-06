@@ -28,6 +28,7 @@ from app.modules.company.controller import router as company_router
 from app.modules.department.controller import router as department_router
 from app.modules.employee.controller import router as employee_router
 from app.modules.product.controller import router as product_router
+from app.modules.purchase_history.controller import router as purchase_history_router
 from app.modules.role.controller import router as role_router
 from app.modules.survey.controller import router as survey_router
 from app.modules.survey.controller import report_router as survey_report_router
@@ -98,6 +99,7 @@ app.include_router(survey_router)
 app.include_router(survey_report_router)
 app.include_router(po_router)
 app.include_router(purchase_progress_router)
+app.include_router(purchase_history_router)
 app.include_router(inventory_router)
 app.include_router(payable_router)
 app.include_router(payment_request_router)

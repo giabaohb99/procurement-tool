@@ -510,6 +510,13 @@ def auto_advance_line(db: Session, po: PurchaseOrder, item: POItem) -> bool:
     target = highest_satisfied_step(db, po, item)
     if target > cur:
         item.progress_status = PROGRESS_ORDER[target]
+        if item.progress_status == "Hoàn thành":
+            # Chốt LỊCH SỬ MUA HÀNG: đây là chỗ DUY NHẤT dòng vào "Hoàn thành"
+            # (set_item_progress chặn set tay các trạng thái trong PROGRESS_ORDER), và hàm này
+            # bỏ qua dòng đã ở điểm cuối → mỗi dòng chỉ ghi snapshot đúng 1 lần.
+            # Chỉ add(), caller commit cùng transaction với việc đổi progress_status.
+            from app.modules.purchase_history.service import snapshot_line_safe
+            snapshot_line_safe(db, po, item)
         return True
     return False
 
