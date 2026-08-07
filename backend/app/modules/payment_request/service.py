@@ -10,8 +10,16 @@ from .model import PaymentRequest, PaymentRequestLine
 from .schema import PRequestCreate, PRequestUpdate
 
 # request_date: cho bộ lọc điều kiện lọc theo ngày (apply_range_filters vẫn lo _from/_to)
-FILTERABLE = ["code", "supplier_code", "status", "source_type", "request_date"]
+FILTERABLE = ["code", "supplier_code", "status", "source_type", "request_date", "payment_method"]
 ENTITY = "payment_request"
+
+# CR-035 — hình thức thanh toán. Mặc định 'transfer' để phiếu cũ giữ nguyên bản in (có chuyển khoản).
+PAYMENT_METHODS = ("transfer", "cash")
+
+
+def norm_method(v) -> str:
+    """Chuẩn hóa hình thức thanh toán; giá trị lạ -> 'transfer' (không để bản in mất thông tin NCC)."""
+    return v if v in PAYMENT_METHODS else "transfer"
 
 
 def get_request(db: Session, rid: int) -> PaymentRequest:
@@ -63,6 +71,7 @@ def create_requests(db: Session, data: PRequestCreate, user_id: int) -> list[Pay
             supplier_code=supplier_code, supplier_name=first.supplier_name,
             company_id=first.company_id, source_type=source_type,
             request_date=data.request_date, note=data.note, status="draft",
+            payment_method=norm_method(data.payment_method),
             total=round(sum(a for _, a in items), 2), created_by=user_id, updated_by=user_id)
         db.add(req)
         db.flush()
@@ -87,7 +96,7 @@ def update_request(db: Session, rid: int, data: PRequestUpdate, user_id: int) ->
     if req.status == "paid":
         raise HTTPException(400, "Phiếu đã chi, không sửa được")
     for k, v in data.model_dump(exclude_unset=True, exclude={"lines"}).items():
-        setattr(req, k, v)
+        setattr(req, k, norm_method(v) if k == "payment_method" else v)
     if data.lines is not None:
         db.query(PaymentRequestLine).filter(PaymentRequestLine.request_id == rid).delete()
         raw_items = []

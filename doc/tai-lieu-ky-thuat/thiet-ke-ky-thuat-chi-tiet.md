@@ -400,6 +400,7 @@ Nguồn dữ liệu cho **option**. Cột chính:
 | company_id | BIGINT | | → company |
 | source_type | VARCHAR(20) | goods \| shipping | |
 | request_date, total | | | |
+| payment_method | VARCHAR(20) | `transfer` (Chuyển khoản, mặc định) \| `cash` (Tiền mặt) — CR-035; `cash` thì bản in bỏ cụm Thông tin chuyển khoản | |
 | status | VARCHAR(20) | `draft\|submitted\|approved\|paid` | |
 
 #### `tab_payment_request_line` — Dòng (gom nhiều khoản nợ)

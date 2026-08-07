@@ -20,6 +20,13 @@ const ST: Record<string, { label: string; cls: string }> = {
 }
 const stBadge = (s: string) => { const x = ST[s] || { label: s, cls: 'gray' }; return <span className={'badge ' + x.cls}>{x.label}</span> }
 
+// CR-035: hình thức thanh toán — quyết định bản in có in cụm "Thông tin chuyển khoản" hay để trống
+const PM: Record<string, string> = { transfer: 'Chuyển khoản', cash: 'Tiền mặt' }
+const pmHint = (m: string) => m === 'cash'
+  ? 'Bản in để TRỐNG cụm "Thông tin chuyển khoản".'
+  : 'Bản in lấy số tài khoản / ngân hàng của nhà cung cấp.'
+const hintStyle = { fontSize: 12, color: 'var(--muted)', marginTop: 4 } as const
+
 export default function PaymentRequestDetail() {
   const { id } = useParams()
   // CR-025: `/payment-requests/new` KHÔNG còn là "phiếu đã tạo" — là màn nhập liệu, chỉ ghi DB khi bấm Tạo.
@@ -38,6 +45,7 @@ function PaymentRequestCreate() {
   const [rows, setRows] = useState<any[]>(() => (location.state as any)?.rows || [])
   const [loading, setLoading] = useState(false)
   const [requestDate, setRequestDate] = useState(new Date().toISOString().slice(0, 10))
+  const [paymentMethod, setPaymentMethod] = useState('transfer')
   const [note, setNote] = useState('')
   const [amounts, setAmounts] = useState<Record<number, number>>({})
   const [dropped, setDropped] = useState<number[]>([])
@@ -79,7 +87,7 @@ function PaymentRequestCreate() {
     setSaving(true)
     try {
       const lines = kept.map((r) => ({ payable_id: r.id, amount: Number(amounts[r.id]) || 0 }))
-      const r = await api.post(API, { request_date: requestDate, note, lines })
+      const r = await api.post(API, { request_date: requestDate, note, payment_method: paymentMethod, lines })
       const created = r.data.data || []
       toast.success(created.length === 1 ? 'Đã tạo yêu cầu thanh toán'
         : `Đã tạo ${created.length} phiếu yêu cầu thanh toán (mỗi nhà cung cấp 1 phiếu).`)
@@ -129,6 +137,14 @@ function PaymentRequestCreate() {
         <h3 className="sec-title">Thông tin phiếu</h3>
         <div className="form-grid">
           <div className="form-row"><label>Ngày lập</label><DateInput value={requestDate} onChange={setRequestDate} /></div>
+          <div className="form-row">
+            <label>Hình thức thanh toán</label>
+            <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+              <option value="transfer">Chuyển khoản</option>
+              <option value="cash">Tiền mặt</option>
+            </select>
+            <div style={hintStyle}>{pmHint(paymentMethod)}</div>
+          </div>
           <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label>
             <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ghi chú áp dụng cho các phiếu được tạo…" /></div>
         </div>
@@ -214,7 +230,7 @@ function PaymentRequestView() {
 
   async function save() {
     try {
-      await api.patch(`${API}/${id}`, { request_date: req.request_date, note: req.note, lines: req.lines.map((l: any) => ({ payable_id: l.payable_id, amount: Number(l.amount) || 0 })) })
+      await api.patch(`${API}/${id}`, { request_date: req.request_date, note: req.note, payment_method: req.payment_method || 'transfer', lines: req.lines.map((l: any) => ({ payable_id: l.payable_id, amount: Number(l.amount) || 0 })) })
       toast.success('Đã lưu'); loadAll()
     } catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
   }
@@ -264,6 +280,17 @@ function PaymentRequestView() {
           <div className="form-row"><label>Công ty</label><input value={companyName} disabled /></div>
           <div className="form-row"><label>Người yêu cầu</label><input value={req.created_by_name || '—'} disabled /></div>
           <div className="form-row"><label>Ngày lập</label><input value={fmtDateTime(req.created_at) || '—'} disabled /></div>
+          <div className="form-row">
+            <label>Hình thức thanh toán</label>
+            {editable ? (
+              <select value={req.payment_method || 'transfer'}
+                      onChange={(e) => setReq((s: any) => ({ ...s, payment_method: e.target.value }))}>
+                <option value="transfer">Chuyển khoản</option>
+                <option value="cash">Tiền mặt</option>
+              </select>
+            ) : <input value={PM[req.payment_method] || PM.transfer} disabled />}
+            <div style={hintStyle}>{pmHint(req.payment_method || 'transfer')}{editable ? ' Nhớ bấm Lưu sau khi đổi.' : ''}</div>
+          </div>
           <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><textarea value={req.note || ''} disabled={!editable} onChange={(e) => setReq((s: any) => ({ ...s, note: e.target.value }))} /></div>
         </div>
       </div>

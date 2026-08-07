@@ -15,6 +15,9 @@ class PaymentRequest(Base, AuditMixin):
     company_id: Mapped[int] = mapped_column(BigInteger, default=0)
     source_type: Mapped[str] = mapped_column(String(20), default="goods")  # goods | shipping
     request_date: Mapped[str] = mapped_column(String(10), default="")
+    # CR-035 — hình thức thanh toán do người lập phiếu chọn; quyết định bản in có in
+    # cụm "Thông tin chuyển khoản" hay để trống. transfer = Chuyển khoản, cash = Tiền mặt.
+    payment_method: Mapped[str] = mapped_column(String(20), default="transfer")
     total: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
     note: Mapped[str] = mapped_column(Text, default="")
     reject_reason: Mapped[str] = mapped_column(Text, default="")   # lý do từ chối (khi cancelled)

@@ -41,6 +41,7 @@ export default function PrintPaymentRequest() {
   const sup = req.supplier_name || req.supplier_code
   const period = (req.period || '').split('-').reverse().join('/')  // YYYY-MM -> MM/YYYY
   const noiDung = `Thanh toán công nợ ${sup}${period ? ' ' + period : ''}`
+  const isCash = req.payment_method === 'cash'   // CR-035 — chi tiền mặt thì bỏ cụm chuyển khoản
 
   const cell = { border: '1px solid #888', padding: '3px 6px', fontSize: 11 } as const
   const SH = { background: '#dbe5f1', fontWeight: 700, padding: '3px 8px', fontSize: 11.5, margin: '9px 0 3px', border: '1px solid #c6d4e6' } as const
@@ -184,20 +185,25 @@ export default function PrintPaymentRequest() {
         </div>
         <div style={{ ...lbl, marginTop: 4 }}><b>Bằng chữ:</b> <i>{docTien(req.total)}</i></div>
 
-        {/* Hình thức thanh toán — 2 cột: trái (đơn vị + hình thức) / phải (thông tin chuyển khoản) */}
+        {/* Hình thức thanh toán — 2 cột: trái (đơn vị + hình thức) / phải (thông tin chuyển khoản).
+            CR-035: người lập phiếu chọn Tiền mặt thì cột phải để TRỐNG. */}
         <div style={SH}>HÌNH THỨC THANH TOÁN</div>
         <div style={{ display: 'flex', fontSize: 11, lineHeight: 1.55 }}>
           <div style={{ width: '48%', paddingRight: 8 }}>
             <div style={lbl}><b>Mã đơn vị:</b> {co.name || ''}</div>
-            <div style={lbl}>☐ &nbsp;Tiền mặt</div>
-            <div style={lbl}>☐ &nbsp;Chuyển khoản</div>
+            <div style={lbl}>{isCash ? '☑' : '☐'} &nbsp;Tiền mặt</div>
+            <div style={lbl}>{isCash ? '☐' : '☑'} &nbsp;Chuyển khoản</div>
           </div>
           <div style={{ width: '52%' }}>
-            <div style={{ ...lbl, fontWeight: 700 }}>Thông tin chuyển khoản:</div>
-            <div style={lbl}><b>Tên TK thụ hưởng:</b> {sup}</div>
-            <div style={lbl}><b>Số TK thụ hưởng:</b> {dot(req.bank_account)}</div>
-            <div style={lbl}><b>Ngân hàng:</b> {dot(req.bank_name)}</div>
-            <div style={lbl}><b>Nội dung chuyển khoản:</b> {noiDung}</div>
+            {!isCash && (
+              <>
+                <div style={{ ...lbl, fontWeight: 700 }}>Thông tin chuyển khoản:</div>
+                <div style={lbl}><b>Tên TK thụ hưởng:</b> {sup}</div>
+                <div style={lbl}><b>Số TK thụ hưởng:</b> {dot(req.bank_account)}</div>
+                <div style={lbl}><b>Ngân hàng:</b> {dot(req.bank_name)}</div>
+                <div style={lbl}><b>Nội dung chuyển khoản:</b> {noiDung}</div>
+              </>
+            )}
           </div>
         </div>
 

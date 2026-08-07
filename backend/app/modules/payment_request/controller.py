@@ -20,7 +20,7 @@ from .schema import PRequestCreate, PRequestUpdate
 router = APIRouter(prefix="/api/payment-requests", tags=["payment_request"])
 
 HEADER = ["id", "code", "supplier_code", "supplier_name", "company_id", "source_type",
-          "request_date", "total", "note", "reject_reason", "status"]
+          "request_date", "payment_method", "total", "note", "reject_reason", "status"]
 
 
 def _line(db, ln) -> dict:
@@ -107,10 +107,14 @@ def print_(rid: int, db: Session = Depends(get_db), user=Depends(require("paymen
     data["created_by_position"] = prof["position"]     # Chức vụ
     data["created_by_dept"] = prof["department"]        # Bộ phận
     data["dept_manager"] = prof["manager"]              # Trưởng phòng ban/bộ phận
-    # Thông tin ngân hàng NCC (khớp theo mã NCC) để in mục HÌNH THỨC THANH TOÁN
+    # Thông tin ngân hàng NCC (khớp theo mã NCC) để in mục HÌNH THỨC THANH TOÁN.
+    # CR-035: phiếu chi TIỀN MẶT thì cụm chuyển khoản để trống — chặn ngay từ server,
+    # không gửi số TK ra bản in.
+    method = service.norm_method(req.payment_method)
+    data["payment_method"] = method
     sup = db.query(Supplier).filter(Supplier.code == req.supplier_code).first() if req.supplier_code else None
-    data["bank_account"] = sup.bank_account if sup else ""
-    data["bank_name"] = sup.bank_name if sup else ""
+    data["bank_account"] = (sup.bank_account if sup else "") if method == "transfer" else ""
+    data["bank_name"] = (sup.bank_name if sup else "") if method == "transfer" else ""
     data["period"] = (req.request_date or "")[:7]  # YYYY-MM
     return success(data)
 

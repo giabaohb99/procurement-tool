@@ -114,7 +114,16 @@ Thông báo gửi qua chuông trong app (và Web Push nếu thiết bị đã đ
 - Người sửa: Hệ thống (cập nhật tự động mỗi khi PATCH thay đổi dòng)
 - Logic đặc biệt: Hiển thị trên phiếu in cả dạng số (`fmt`) lẫn dạng chữ (`docTien`)
 
-### 9. Ghi chú (`note`)
+### 9. Hình thức thanh toán (`payment_method`) — CR-035
+
+- Kiểu nhập: Chọn 1 trong 2 (dropdown) — **Chuyển khoản** (`transfer`) / **Tiền mặt** (`cash`)
+- Mặc định: `transfer` (Chuyển khoản) — mọi phiếu tạo trước CR-035 cũng mang giá trị này nên bản in giữ nguyên như cũ
+- Bắt buộc: Không (không chọn = Chuyển khoản)
+- Nguồn dữ liệu / liên kết: — (giá trị tự do trong 2 lựa chọn; giá trị lạ bị `norm_method()` đưa về `transfer`)
+- Người sửa: Người lập phiếu (quyền `payment_request:write`) khi phiếu còn **Nháp**; chọn ngay ở màn tạo phiếu `/payment-requests/new`, sửa lại được ở màn chi tiết rồi bấm Lưu
+- Logic đặc biệt: Quyết định cụm **HÌNH THỨC THANH TOÁN** trên phiếu in — xem quy tắc C.8. Cột "Hình thức TT" cũng hiện ở màn danh sách và lọc được trong Bộ lọc điều kiện.
+
+### 10. Ghi chú (`note`)
 
 - Kiểu nhập: Nhập nhiều dòng (textarea)
 - Mặc định: trống
@@ -206,7 +215,7 @@ Mỗi dòng tương ứng với một khoản công nợ (`Payable`) được đ
 
 1. Tạo phiếu từ màn Công nợ: người dùng vào `/payables`, chọn các dòng công nợ (có thể thuộc nhiều NCC), bấm "Tạo yêu cầu thanh toán". Lối vào thứ hai: nút "Tạo yêu cầu thanh toán" trong chi tiết Đơn mua hàng (chọn hóa đơn còn nợ của chính đơn đó).
 
-   **CR-025 — không sinh phiếu nháp:** hai lối vào trên **không gọi API ngay**. Các khoản đã tick được chuyển sang màn `/payment-requests/new` qua URL (`?payables=1,2,3`) kèm `location.state.rows`; màn này cho soát lại và **sửa số tiền đề nghị từng dòng**, **bỏ bớt khoản** (có nút khôi phục), nhập **Ngày lập** + **Ghi chú**, hiển thị trước **số phiếu sẽ tách ra** và cảnh báo khoản **chưa có số hóa đơn**. Chỉ khi bấm **Tạo phiếu** mới `POST /api/payment-requests`; **thoát giữa chừng thì không bản ghi nào được tạo**. Mở lại link / F5 vẫn đúng danh sách nhờ `GET /api/payables?ids=…&year=all`.
+   **CR-025 — không sinh phiếu nháp:** hai lối vào trên **không gọi API ngay**. Các khoản đã tick được chuyển sang màn `/payment-requests/new` qua URL (`?payables=1,2,3`) kèm `location.state.rows`; màn này cho soát lại và **sửa số tiền đề nghị từng dòng**, **bỏ bớt khoản** (có nút khôi phục), nhập **Ngày lập** + **Hình thức thanh toán** (CR-035) + **Ghi chú**, hiển thị trước **số phiếu sẽ tách ra** và cảnh báo khoản **chưa có số hóa đơn**. Chỉ khi bấm **Tạo phiếu** mới `POST /api/payment-requests`; **thoát giữa chừng thì không bản ghi nào được tạo**. Mở lại link / F5 vẫn đúng danh sách nhờ `GET /api/payables?ids=…&year=all`.
 
    Server nhận `PRequestCreate` với danh sách `lines` (mảng `{payable_id, amount}`), gom theo cặp `(supplier_code, source_type)`, tạo mỗi nhóm thành một `PaymentRequest` riêng.
 
@@ -226,6 +235,11 @@ Mỗi dòng tương ứng với một khoản công nợ (`Payable`) được đ
 7. Số tiền dòng: nếu `LineIn.amount > 0` dùng giá trị người nhập; nếu `<= 0` server tự tính phần còn lại chưa trả.
 
 8. Phiếu in: endpoint `GET /{rid}/print` yêu cầu quyền `payment_request:print`; trả thêm `company` (tên, địa chỉ, MST), `created_by_name`, `period` (7 ký tự đầu `request_date`). Trang in (`PrintPaymentRequest.tsx`) đọc số tiền thành chữ tiếng Việt bằng hàm `docTien`.
+
+   **CR-035 — cụm HÌNH THỨC THANH TOÁN theo `payment_method`:**
+   - `transfer` (Chuyển khoản): tick ô "Chuyển khoản"; cột phải in đủ **Thông tin chuyển khoản** — Tên TK thụ hưởng (= tên NCC), Số TK, Ngân hàng (lấy từ hồ sơ NCC `supplier.bank_account` / `bank_name`), Nội dung chuyển khoản.
+   - `cash` (Tiền mặt): tick ô "Tiền mặt"; **cột phải để trống hoàn toàn**. Server không gửi số TK / tên ngân hàng ra bản in (`bank_account = bank_name = ""`), nên dù có xem API cũng không lộ.
+   - NCC chưa khai số TK thì chỗ đó vẫn in dấu chấm để điền tay như trước.
 
 9. Đính kèm file: sử dụng module `attachment` với `entity = "payment_request"`, `entity_id = <id>`. Không giới hạn số file; file xóa kèm khi phiếu bị xóa.
 
