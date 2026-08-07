@@ -14,6 +14,9 @@ import NotFound from '../components/NotFound'
 import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
+// ĐƠN GIÁ cho lẻ tới 4 chữ số (vd 1.668,182 đ/cái) — cắt bớt là lệch tiền khi nhân sản lượng
+const PRICE_DECIMALS = 4
+const PRICE_KEYS = ['price_by_volume', 'proposed_rate']
 const VAT_OPTS = ['0', '2', '4', '6', '8', '10']
 const APPROVE_OPTS = ['Chờ duyệt', 'Đã duyệt', 'Không duyệt', 'Thiếu thông tin']
 const APPROVE_COLOR: Record<string, string> = { 'Chờ duyệt': '#d97706', 'Đã duyệt': '#16a34a', 'Không duyệt': '#b91c1c', 'Thiếu thông tin': '#ea580c' }
@@ -645,7 +648,7 @@ export default function SurveyDetail() {
     if (t === 'date') return <DateInput value={it[k] ?? ''} disabled={!ce} onChange={(v) => setLine(tbl, i, { [k]: v })} />
     // Thành tiền (đã quy đổi): mặc định = Thành tiền (VNĐ) tự chạy, nhưng cho ghi đè
     if (k === 'amount_converted') return <NumberInput value={it.amount_converted || rowAmount(it)} disabled={!ce} onChange={(v: number) => setLine(tbl, i, { amount_converted: v })} />
-    if (t === 'num') return <NumberInput value={it[k]} disabled={!ce} onChange={(v: number) => setLine(tbl, i, { [k]: v })} />
+    if (t === 'num') return <NumberInput value={it[k]} disabled={!ce} maxDecimals={PRICE_KEYS.includes(k) ? PRICE_DECIMALS : undefined} onChange={(v: number) => setLine(tbl, i, { [k]: v })} />
     if (t === 'textarea') return <textarea value={it[k] ?? ''} disabled={!ce} style={{ minHeight: 64 }} onChange={(e) => setLine(tbl, i, { [k]: e.target.value })} />
     if (t === 'supplier') {
       // Bỏ check "NCC sẵn có" → ô thành text tự do (NCC chưa có trong danh mục)
@@ -700,7 +703,7 @@ export default function SurveyDetail() {
     if (col.type === 'computed') return <span style={{ fontWeight: 500 }}>{fmt(rowAmount(it))}</span>
     if (col.key === 'supplier_available') return <input type="checkbox" checked={supplierAvail} onChange={(e) => setLine(tbl, i, { supplier_available: e.target.checked })} />
     if (col.type === 'check') return <input type="checkbox" checked={!!it[col.key]} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.checked })} />
-    if (col.type === 'num') return <NumberInput className="cell-input" style={{ width: '100%' }} value={it[col.key]} onChange={(v: number) => setLine(tbl, i, { [col.key]: v })} />
+    if (col.type === 'num') return <NumberInput className="cell-input" style={{ width: '100%' }} value={it[col.key]} maxDecimals={PRICE_KEYS.includes(col.key) ? PRICE_DECIMALS : undefined} onChange={(v: number) => setLine(tbl, i, { [col.key]: v })} />
     if (col.type === 'date') return <DateInput className="cell-input" style={{ width: '100%' }} value={it[col.key] ?? ''} onChange={(v) => setLine(tbl, i, { [col.key]: v })} />
     if (col.type === 'select') return (
       <div style={{ width: '100%' }}><SearchSelect variant="table" colorMap={col.key === 'line_approve' ? APPROVE_COLOR : undefined}
@@ -918,7 +921,7 @@ export default function SurveyDetail() {
                   <div className="form-row"><label>ĐVT</label>
                     <SearchSelect value={sv.uom} options={units} disabled={!editable} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setH('uom', v)} />
                   </div>
-                  <div className="form-row"><label>Giá đề xuất (VNĐ)</label><NumberInput value={sv.proposed_rate} disabled={!editable} onChange={(v) => setH('proposed_rate', v)} /></div>
+                  <div className="form-row"><label>Giá đề xuất (VNĐ)</label><NumberInput value={sv.proposed_rate} disabled={!editable} maxDecimals={PRICE_DECIMALS} onChange={(v) => setH('proposed_rate', v)} /></div>
                 </>
               )}
             </div>

@@ -30,7 +30,7 @@ def _recompute(db: Session, company_id: int, warehouse_code: str, product_code: 
                         product_code=product_code, product_name=product_name, unit=unit)
         db.add(row)
     row.qty = round(total, 3)
-    row.avg_cost = round(value / total, 2) if total else 0
+    row.avg_cost = round(value / total, 4) if total else 0   # đơn giá: 4 số lẻ như cột DB
     row.value = round(value, 2)
     if product_name:
         row.product_name = product_name

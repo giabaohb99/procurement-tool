@@ -26,7 +26,7 @@ class Survey(Base, AuditMixin):
     item_code: Mapped[str] = mapped_column(String(50), default="")          # Mã VTBB/VL nội bộ
     item_name: Mapped[str] = mapped_column(String(255), default="")         # Tên VTBB (tự điền theo mã)
     uom: Mapped[str] = mapped_column(String(25), default="")               # ĐVT
-    proposed_rate: Mapped[float] = mapped_column(Numeric(18, 2), default=0)  # Giá đề xuất
+    proposed_rate: Mapped[float] = mapped_column(Numeric(18, 4), default=0)  # Giá đề xuất — đơn giá giữ 4 số lẻ
     approve_status: Mapped[str] = mapped_column(String(20), default="")   # Duyệt|Không duyệt
     approve_note: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(30), default="draft")
@@ -83,7 +83,7 @@ class SurveyProductLine(Base, AuditMixin):
     origin: Mapped[str] = mapped_column(String(100), default="")
     quote_unit: Mapped[str] = mapped_column(String(25), default="")
     moq: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
-    price_by_volume: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    price_by_volume: Mapped[float] = mapped_column(Numeric(18, 4), default=0)   # đơn giá theo sản lượng — 4 số lẻ
     volume_range: Mapped[str] = mapped_column(String(100), default="")
     vat: Mapped[float] = mapped_column(Numeric(5, 2), default=0)
     request_qty: Mapped[float] = mapped_column(Numeric(18, 3), default=0)

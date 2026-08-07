@@ -15,6 +15,11 @@ const fmtNum = (n: any) => {
   const v = Number(n || 0)
   return v ? v.toLocaleString('vi-VN') : '—'
 }
+// ĐƠN GIÁ hiện đủ 4 số lẻ — mặc định toLocaleString chỉ cho 3, cắt mất chữ số cuối
+const fmtPriceNum = (n: any) => {
+  const v = Number(n || 0)
+  return v ? v.toLocaleString('vi-VN', { maximumFractionDigits: 4 }) : '—'
+}
 // YYYY-MM-DD -> DD/MM/YYYY (rỗng thì '—')
 const dmy = (d: any) => { const s = String(d || ''); if (!s) return '—'; const [y, m, dd] = s.split('-'); return dd ? `${dd}/${m}/${y}` : s }
 
@@ -417,7 +422,7 @@ export default function SurveyRequestProcess() {
             <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 4 }}>
               Phân loại: <b style={{ color: 'var(--navy)' }}>{line.item_group || '—'}</b>
               {' · '}SL dự kiến: <b style={{ color: 'var(--navy)' }}>{fmtNum(line.request_qty)} {line.uom || ''}</b>
-              {' · '}Giá đề xuất: <b style={{ color: 'var(--navy)' }}>{fmtNum(line.proposed_price)}</b>
+              {' · '}Giá đề xuất: <b style={{ color: 'var(--navy)' }}>{fmtPriceNum(line.proposed_price)}</b>
               {' · '}NSTM: <b style={{ color: 'var(--navy)' }}>{line.assignee_name || line.assignee || '—'}</b>
             </div>
             {(line.requirement_detail || line.other_requirement) && (
@@ -579,7 +584,7 @@ export default function SurveyRequestProcess() {
                               {al.spec || '—'}
                             </td>
                             <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{al.origin || '—'}</td>
-                            <td style={{ textAlign: 'right' }}>{fmtNum(al.price_by_volume)}</td>
+                            <td style={{ textAlign: 'right' }}>{fmtPriceNum(al.price_by_volume)}</td>
                             <td style={{ textAlign: 'right' }}>{fmtNum(al.moq)}</td>
                             <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{al.quote_unit || '—'}</td>
                             <td style={{ textAlign: 'center' }}>
@@ -697,7 +702,7 @@ export default function SurveyRequestProcess() {
                             {opt.snap_spec || '—'}
                           </td>
                           <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{opt.snap_origin || '—'}</td>
-                          <td style={{ textAlign: 'right' }}>{fmtNum(opt.snap_price_by_volume)}</td>
+                          <td style={{ textAlign: 'right' }}>{fmtPriceNum(opt.snap_price_by_volume)}</td>
                           <td style={{ textAlign: 'right' }}>{fmtNum(opt.snap_moq)}</td>
                           <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{opt.snap_quote_unit || '—'}</td>
                           <td>

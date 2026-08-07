@@ -16,7 +16,7 @@ class PRItemIn(BaseModel):
     group_desc: str = ""
     qty: float = Field(0, ge=0)      # SL không âm; cho số lẻ (BE Numeric(18,3))
     unit: str = ""
-    price: float = Field(0, ge=0)    # giá không âm; cho số lẻ (BE Numeric(18,2))
+    price: float = Field(0, ge=0)    # giá không âm; cho số lẻ (BE Numeric(18,4))
     vat_pct: float = Field(0, ge=0)  # % VAT theo dòng (Task 4)
     warehouse: str = ""
     required_date: str = ""

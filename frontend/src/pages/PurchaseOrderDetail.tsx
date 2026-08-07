@@ -17,11 +17,21 @@ import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
 import { fmtSize, fileIcon } from '../utils/file-type'
 
 const API = '/api/purchase-orders'
+// Ô/cột ĐƠN GIÁ cho lẻ tới 4 chữ số thập phân — giá quy đổi hay lẻ tới phần nghìn đồng
+// (vd 1.668,182 đ/cái); làm tròn ở đây là lệch tiền khi nhân với số lượng lớn.
+const PRICE_DECIMALS = 4
+// SỐ LƯỢNG và các số chung
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
+// TIỀN thì LÀM TRÒN VỀ ĐỒNG khi hiển thị: đơn giá lẻ 4 chữ số kéo theo thành tiền có đuôi
+// lẻ (733.999,2 · 4.760.000,08) mà kế toán chỉ ghi nhận tới đồng. Vẫn tính toán và lưu ở
+// độ chính xác đầy đủ, chỉ làm tròn lúc in ra màn hình.
+const fmtVND = (n: any) => Math.round(Number(n) || 0).toLocaleString('vi-VN')
+// ĐƠN GIÁ thì ngược lại — phải hiện đủ 4 chữ số lẻ, cắt bớt là người dùng tưởng bị mất số
+const fmtPrice = (n: any) => Number(n || 0).toLocaleString('vi-VN', { maximumFractionDigits: PRICE_DECIMALS })
 const SHIP_UNITS = ['Kiện', 'Chuyến', 'm2', 'tấn']
-// Ô TIỀN (VNĐ) = số nguyên, dấu chấm ngăn nghìn. Dùng chung NumberInput.
 const CurrencyInput = ({ value, onChange, disabled, style, className }: any) =>
-  <NumberInput value={value} onChange={onChange} disabled={disabled} style={style} className={className ?? 'cell-input'} />
+  <NumberInput value={value} onChange={onChange} disabled={disabled} style={style}
+    maxDecimals={PRICE_DECIMALS} className={className ?? 'cell-input'} />
 
 // Ô chữ dài trong popup chi tiết dòng: cao vừa 1 dòng rồi tự giãn khi nội dung dài
 const POPUP_TEXT = { minHeight: 40, fontSize: 14 }
@@ -594,7 +604,7 @@ export default function PurchaseOrderDetail() {
                       <td>{num(i, 'qty_order', 80)}</td>
                       <td>{num(i, 'price', 95)}</td>
                       <td style={{ textAlign: 'center' }}>{(Number(it.vat) || 0)}%</td>
-                      <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmt(orderAmount(it))}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmtVND(orderAmount(it))}</td>
                       <td style={{ textAlign: 'center', fontSize: 12 }}>
                         <div style={{ color: 'var(--muted)' }}>
                           {fmt(it.qty_received || 0)}/{fmt(it.qty_order || 0)}
@@ -654,19 +664,19 @@ export default function PurchaseOrderDetail() {
               <div style={{ minWidth: 320, fontSize: 13.5 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, padding: '3px 0' }}>
                   <span style={{ color: 'var(--muted)' }}>Giá trị đặt hàng (trước thuế)</span>
-                  <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmt(orderBeforeTax)}</span>
+                  <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtVND(orderBeforeTax)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, padding: '3px 0' }}>
                   <span style={{ color: 'var(--muted)' }}>Tổng tiền thuế</span>
-                  <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmt(orderTax)}</span>
+                  <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtVND(orderTax)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, alignItems: 'baseline', borderTop: '1px solid var(--border)', marginTop: 6, paddingTop: 8, fontSize: 15.5, color: 'var(--navy)' }}>
                   <span style={{ fontWeight: 600 }}>Tổng cộng (sau thuế)</span>
-                  <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(orderTotal)}</span>
+                  <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmtVND(orderTotal)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, marginTop: 8, fontSize: 13.5, color: 'var(--muted)' }}>
                   <span>Tổng cước vận chuyển (riêng)</span>
-                  <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmt(shippingTotal)}</span>
+                  <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtVND(shippingTotal)}</span>
                 </div>
               </div>
             </div>
@@ -793,10 +803,10 @@ export default function PurchaseOrderDetail() {
                     <div className="form-row"><label>SL đặt NCC</label><NumberInput decimals value={it.qty_order} disabled={de} onChange={(v) => setItem(ii, { qty_order: v })} /></div>
                     <div className="form-row"><label>Đơn giá</label><CurrencyInput className="" value={it.price ?? 0} disabled={de} onChange={(val: number) => setItem(ii, { price: val })} /></div>
                     <div className="form-row"><label>VAT (%)</label><NumberInput value={it.vat} disabled={de} onChange={(v) => setItem(ii, { vat: v })} /></div>
-                    <div className="form-row"><label>Tổng tiền đặt hàng</label><input value={fmt(it.order_total ?? orderAmount(it))} disabled /></div>
-                    <div className="form-row"><label>Tổng tiền hàng (đã nhận)</label><input value={fmt(it.goods_total || 0)} disabled /></div>
-                    <div className="form-row"><label>Tổng đã trả</label><input value={fmt(it.paid_total || 0)} disabled style={{ color: 'var(--green)', fontWeight: 600 }} /></div>
-                    <div className="form-row"><label>Còn lại</label><input value={fmt(it.remaining_total || 0)} disabled style={{ color: (it.remaining_total || 0) > 0 ? 'var(--red)' : 'var(--muted)', fontWeight: 600 }} /></div>
+                    <div className="form-row"><label>Tổng tiền đặt hàng</label><input value={fmtVND(it.order_total ?? orderAmount(it))} disabled /></div>
+                    <div className="form-row"><label>Tổng tiền hàng (đã nhận)</label><input value={fmtVND(it.goods_total || 0)} disabled /></div>
+                    <div className="form-row"><label>Tổng đã trả</label><input value={fmtVND(it.paid_total || 0)} disabled style={{ color: 'var(--green)', fontWeight: 600 }} /></div>
+                    <div className="form-row"><label>Còn lại</label><input value={fmtVND(it.remaining_total || 0)} disabled style={{ color: (it.remaining_total || 0) > 0 ? 'var(--red)' : 'var(--muted)', fontWeight: 600 }} /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><input value={it.note || ''} disabled={de} onChange={(e) => setItem(ii, { note: e.target.value })} /></div>
                   </div>
                 )
@@ -870,13 +880,13 @@ export default function PurchaseOrderDetail() {
                           </td>
                           <td style={{ textAlign: 'right', color: 'var(--muted)' }}>{fmt(items[ii].qty_order)}</td>
                           <td><NumberInput decimals className="cell-input" style={{ width: 80 }} value={d.received_qty} disabled={dis} onChange={(v) => setDelivery(ii, di, { received_qty: v })} /></td>
-                          <td style={{ textAlign: 'right', color: 'var(--muted)' }}>{fmt(items[ii].price)}</td>
+                          <td style={{ textAlign: 'right', color: 'var(--muted)' }}>{fmtPrice(items[ii].price)}</td>
                           <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{Number(items[ii].vat) || 0}%</td>
-                          <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmt((Number(d.received_qty) || 0) * (Number(items[ii].price) || 0) * (1 + (Number(items[ii].vat) || 0) / 100))}</td>
+                          <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmtVND((Number(d.received_qty) || 0) * (Number(items[ii].price) || 0) * (1 + (Number(items[ii].vat) || 0) / 100))}</td>
                           <td><input className="cell-input" style={{ width: 120 }} value={d.invoice_no || ''} placeholder="Số HĐ đợt này" disabled={dis} onChange={(e) => { const v = e.target.value; setDelivery(ii, di, { invoice_no: v, ...(v && !(d.invoice_date || '').trim() ? { invoice_date: new Date().toISOString().slice(0, 10) } : {}) }) }} /></td>
                           <td><DateInput className="cell-input" style={{ width: 110 }} value={d.invoice_date || ''} disabled={dis} onChange={(v) => setDelivery(ii, di, { invoice_date: v })} /></td>
-                          <td style={{ textAlign: 'right', color: 'var(--green)', fontWeight: 600 }}>{d.id ? fmt(d.paid || 0) : '—'}</td>
-                          <td style={{ textAlign: 'right', color: (Number(d.remaining) || 0) > 0 ? 'var(--red)' : 'var(--muted)', fontWeight: 600 }}>{d.id ? fmt(d.remaining || 0) : '—'}</td>
+                          <td style={{ textAlign: 'right', color: 'var(--green)', fontWeight: 600 }}>{d.id ? fmtVND(d.paid || 0) : '—'}</td>
+                          <td style={{ textAlign: 'right', color: (Number(d.remaining) || 0) > 0 ? 'var(--red)' : 'var(--muted)', fontWeight: 600 }}>{d.id ? fmtVND(d.remaining || 0) : '—'}</td>
                           <td><DateInput className="cell-input" style={{ width: 110 }} value={d.promised_date ?? ''} disabled={dis} onChange={(v) => setDelivery(ii, di, { promised_date: v })} /></td>
                           <td><DateInput className="cell-input" style={{ width: 110 }} value={d.received_date ?? ''} disabled={dis} onChange={(v) => setDelivery(ii, di, { received_date: v })} /></td>
                           <td><NumberInput className="cell-input" style={{ width: 60 }} value={d.std_days} disabled={dis} onChange={(v) => setDelivery(ii, di, { std_days: v })} /></td>
@@ -989,9 +999,9 @@ export default function PurchaseOrderDetail() {
                           <td style={{ textAlign: 'center' }}><input type="checkbox" checked={paySel.includes(p.id)} onChange={(e) => setPaySel((s) => e.target.checked ? [...s, p.id] : s.filter((x) => x !== p.id))} /></td>
                           <td>{p.supplier_name || p.supplier_code || '—'}</td>
                           <td>{p.invoice_no || '—'}</td><td>{p.incur_date}</td>
-                          <td style={{ textAlign: 'right' }}>{fmt(p.total)}</td>
-                          <td style={{ textAlign: 'right', color: 'var(--green)' }}>{fmt(p.paid_amount)}</td>
-                          <td style={{ textAlign: 'right', color: 'var(--red)', fontWeight: 600 }}>{fmt(p.remaining)}</td>
+                          <td style={{ textAlign: 'right' }}>{fmtVND(p.total)}</td>
+                          <td style={{ textAlign: 'right', color: 'var(--green)' }}>{fmtVND(p.paid_amount)}</td>
+                          <td style={{ textAlign: 'right', color: 'var(--red)', fontWeight: 600 }}>{fmtVND(p.remaining)}</td>
                         </tr>
                       ))}
                       {rows.length === 0 && <tr><td colSpan={7} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Không có khoản nợ nào cần thanh toán</td></tr>}
@@ -1001,7 +1011,7 @@ export default function PurchaseOrderDetail() {
               })()}
             </div>
             <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 13.5, color: 'var(--navy)' }}>Đã chọn {paySel.length} khoản · Tổng đề nghị: <b>{fmt(payables.filter((p) => paySel.includes(p.id)).reduce((s, p) => s + (Number(p.remaining) || 0), 0))}</b></span>
+              <span style={{ fontSize: 13.5, color: 'var(--navy)' }}>Đã chọn {paySel.length} khoản · Tổng đề nghị: <b>{fmtVND(payables.filter((p) => paySel.includes(p.id)).reduce((s, p) => s + (Number(p.remaining) || 0), 0))}</b></span>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn ghost" onClick={() => setPayModal(false)}>Đóng</button>
                 <button className="btn" disabled={paySel.length === 0} onClick={createPaymentRequest}><i className="ti ti-receipt" />Tạo yêu cầu thanh toán</button>

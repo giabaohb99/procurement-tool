@@ -3,6 +3,9 @@ import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
+// ĐƠN GIÁ in đủ 4 số lẻ; TIỀN in làm tròn về đồng (kế toán chỉ ghi nhận tới đồng)
+const fmtPrice = (n: any) => Number(n || 0).toLocaleString('vi-VN', { maximumFractionDigits: 4 })
+const fmtVND = (n: any) => Math.round(Number(n) || 0).toLocaleString('vi-VN')
 function dmy(d: string) { if (!d) return ''; const [y, m, dd] = d.split('-'); return `${dd}/${m}/${y}` }
 
 function docTien(amount: number): string {
@@ -102,19 +105,19 @@ export default function PrintPurchaseOrderMH() {
                 <td style={{ ...cell, textAlign: 'center' }}>{it.unit}</td>
                 <td style={{ ...cell, textAlign: 'right' }}>{fmt(it.qty_order)}</td>
                 <td style={{ ...cell, textAlign: 'right' }}>{it.qty_received ? fmt(it.qty_received) : '-'}</td>
-                <td style={{ ...cell, textAlign: 'right' }}>{fmt(it.price)}</td>
-                <td style={{ ...cell, textAlign: 'right' }}>{fmt(it.qty_order * it.price)}</td>
+                <td style={{ ...cell, textAlign: 'right' }}>{fmtPrice(it.price)}</td>
+                <td style={{ ...cell, textAlign: 'right' }}>{fmtVND(it.qty_order * it.price)}</td>
                 <td style={cell}>{it.note}</td>
               </tr>
             ))}
             <tr>
               <td style={{ ...cell, fontWeight: 700 }} colSpan={9}>Tiền thuế GTGT:</td>
-              <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{fmt(tax)}</td>
+              <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{fmtVND(tax)}</td>
               <td style={cell} />
             </tr>
             <tr>
               <td style={{ ...cell, fontWeight: 700 }} colSpan={9}>Tổng tiền thanh toán:</td>
-              <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{fmt(total)}</td>
+              <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{fmtVND(total)}</td>
               <td style={cell} />
             </tr>
           </tbody>

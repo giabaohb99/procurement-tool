@@ -12,6 +12,8 @@ import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
+// ĐƠN GIÁ hiện đủ 4 số lẻ — mặc định toLocaleString chỉ cho 3, cắt mất chữ số cuối
+const fmtPrice = (n: any) => Number(n || 0).toLocaleString('vi-VN', { maximumFractionDigits: 4 })
 
 export default function Inventory() {
   const { can } = useAuth()
@@ -49,7 +51,7 @@ export default function Inventory() {
     { key: 'product_name', label: 'Tên sản phẩm', sort: 'product_name' },
     { key: 'unit', label: 'ĐVT', sort: 'unit' },
     { key: 'qty', label: 'Tồn hiện tại', sort: 'qty', align: 'right', td: { ...R, fontWeight: 600 }, cell: (r) => fmt(r.qty) },
-    { key: 'avg_cost', label: 'Đơn giá BQ', sort: 'avg_cost', align: 'right', td: R, cell: (r) => fmt(r.avg_cost) },
+    { key: 'avg_cost', label: 'Đơn giá BQ', sort: 'avg_cost', align: 'right', td: R, cell: (r) => fmtPrice(r.avg_cost) },
     { key: 'value', label: 'Giá trị tồn', sort: 'value', align: 'right', td: { ...R, fontWeight: 600 }, cell: (r) => fmt(r.value) },
   ], [companies])
   const table = useTableColumns('inventory', COLS)
@@ -269,7 +271,7 @@ export default function Inventory() {
                     </div>
                     <div>
                       <span style={{ color: 'var(--muted)' }}>Đơn giá bình quân hiện tại: </span>
-                      <strong>{currentInv ? `${fmt(currentInv.avg_cost)} đ` : '0 đ'}</strong>
+                      <strong>{currentInv ? `${fmtPrice(currentInv.avg_cost)} đ` : '0 đ'}</strong>
                     </div>
                   </div>
                 )
@@ -281,7 +283,7 @@ export default function Inventory() {
                 </div>
                 <div>
                   <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Đơn giá điều chỉnh (đ)</label>
-                  <NumberInput className="input" style={{ width: '100%', height: 38 }} value={Number(adj.unit_price) || 0} onChange={(n) => setAdj((s: any) => ({ ...s, unit_price: n }))} placeholder="Mặc định theo giá hiện tại" />
+                  <NumberInput className="input" style={{ width: '100%', height: 38 }} value={Number(adj.unit_price) || 0} maxDecimals={4} onChange={(n) => setAdj((s: any) => ({ ...s, unit_price: n }))} placeholder="Mặc định theo giá hiện tại" />
                 </div>
               </div>
               <div>
@@ -336,7 +338,7 @@ export default function Inventory() {
               </div>
               <div>
                 <span style={{ fontSize: 12, color: 'var(--muted)', display: 'block' }}>Đơn giá bình quân</span>
-                <strong style={{ whiteSpace: 'nowrap' }}>{fmt(selectedItem.avg_cost)} đ</strong>
+                <strong style={{ whiteSpace: 'nowrap' }}>{fmtPrice(selectedItem.avg_cost)} đ</strong>
               </div>
               <div>
                 <span style={{ fontSize: 12, color: 'var(--muted)', display: 'block' }}>Giá trị tồn kho</span>
@@ -372,7 +374,7 @@ export default function Inventory() {
                       <td style={{ textAlign: 'right', fontWeight: 600, color: h.qty >= 0 ? 'var(--green)' : 'var(--red)' }}>
                         {h.qty >= 0 ? `+${fmt(h.qty)}` : fmt(h.qty)}
                       </td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{h.unit_price > 0 ? `${fmt(h.unit_price)} đ` : '—'}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{h.unit_price > 0 ? `${fmtPrice(h.unit_price)} đ` : '—'}</td>
                       <td style={{ textAlign: 'right', fontWeight: 500, whiteSpace: 'nowrap' }}>
                         {h.qty * h.unit_price !== 0 ? `${fmt(Math.abs(h.qty * h.unit_price))} đ` : '—'}
                       </td>

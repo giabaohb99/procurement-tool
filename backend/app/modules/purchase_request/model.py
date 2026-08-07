@@ -56,7 +56,7 @@ class PurchaseRequestItem(Base, AuditMixin):
     group_desc: Mapped[str] = mapped_column(String(255), default="")       # mô tả phân loại (vd thời gian SX)
     qty: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
     unit: Mapped[str] = mapped_column(String(25), default="")
-    price: Mapped[float] = mapped_column(Numeric(18, 2), default=0)        # giá đề xuất (chưa VAT)
+    price: Mapped[float] = mapped_column(Numeric(18, 4), default=0)        # giá đề xuất (chưa VAT) — đơn giá giữ 4 số lẻ
     vat_pct: Mapped[float] = mapped_column(Numeric(5, 2), default=0)       # % VAT theo dòng (Task 4)
     amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)       # thành tiền = qty*price*(1+vat_pct%)
     warehouse: Mapped[str] = mapped_column(String(100), default="")        # kho nhận
