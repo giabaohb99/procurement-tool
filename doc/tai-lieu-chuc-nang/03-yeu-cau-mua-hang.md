@@ -448,6 +448,10 @@ Hai mẫu chọn bằng nút gạt ở đầu trang:
 - **Mẫu thường** — in đầy đủ thông tin người yêu cầu.
 - **Mẫu thuế** — để trống toàn bộ thông tin người yêu cầu (tên, chức vụ, ô ký).
 
+Riêng **Mẫu thường** có thêm nút **Có chữ ký / Không chữ ký** (CR-036): "Không chữ ký" bỏ ảnh chữ ký số
+nhưng **vẫn in họ tên** dưới ô — dành cho bản đem đi ký tay, đúng nghĩa dòng *"(Ký, ghi rõ họ tên)"*.
+Mẫu thuế không có nút này vì vốn để trống toàn bộ.
+
 ### Khối XÉT DUYỆT — tự điền chữ ký
 
 Khối cuối phiếu có 4 ô ký: **Giám đốc · TP/BP mua hàng · TP/BP đề xuất · Người lập**.
@@ -462,7 +466,8 @@ Khối cuối phiếu có 4 ô ký: **Giám đốc · TP/BP mua hàng · TP/BP �
 | Giám đốc | Không có bước duyệt tương ứng → **để trống, ký tay** | — |
 
 Chữ ký lấy từ ảnh người dùng tự tải lên ở Trang cá nhân (`tab_user.signature`, xem
-`09-thong-bao-va-trang-ca-nhan.md`). Ảnh in giới hạn 40×150px, nằm ngay trên dòng họ tên.
+`09-thong-bao-va-trang-ca-nhan.md`). Ảnh in giới hạn 56×180px, cách dòng họ tên 10px
+(CR-036 — cỡ cũ 40×150px in ra giấy quá nhỏ, tên lại dính sát nét ký).
 Ai chưa tải chữ ký thì ô đó chỉ có họ tên, ký tay như cũ.
 
 **Cách tra chữ ký Người lập** (`requester_signature`):
@@ -485,4 +490,17 @@ Ai chưa tải chữ ký thì ô đó chỉ có họ tên, ký tay như cũ.
 Helper dùng chung: `resolve_signature_by_employee()`, `resolve_signature()`, `resolve_actor()` trong
 `app/core/audit.py`.
 
-Dưới cùng khối chữ ký in dòng ghi chú nhỏ *"Phiếu này được in từ hệ thống thu mua"* (cả 2 mẫu).
+### Khổ giấy và cách xuống trang (CR-036)
+
+- `@page { margin: 0 }` — bỏ lề khổ giấy nên trình duyệt **không còn chỗ vẽ** ngày giờ / tên tab /
+  đường dẫn / số trang. Người dùng không phải tự tắt "Headers and footers" trong hộp thoại In.
+  Lề thật (10mm trên/dưới, 12mm trái/phải) chuyển vào padding của `.print-doc`.
+- `box-decoration-break: clone` — phiếu nhiều dòng hàng tràn sang trang 2 thì **mỗi trang vẫn đủ lề**.
+  Không có nó, trang 1 chạy sát mép giấy (máy in cắt mất dòng cuối) và trang 2 bắt đầu ngay mép trên.
+- Dải tiêu đề mục đặt `break-after: avoid` — không để tiêu đề đứng trơ cuối trang còn nội dung của nó
+  lật sang trang sau.
+- Khối XÉT DUYỆT đặt `break-inside: avoid` — 4 ô ký luôn nằm trọn trên một trang.
+
+Dòng ghi chú nhỏ *"Phiếu đề xuất này được in từ hệ thống thu mua"* in ở **góc phải dưới của mọi trang**
+(cả 2 mẫu). Khi in nó chuyển sang `position: fixed` nên trình duyệt lặp lại ở đúng góc từng tờ giấy;
+neo theo khối phiếu (`absolute`) thì phiếu dài 2 trang sẽ rơi xuống giữa trang cuối.

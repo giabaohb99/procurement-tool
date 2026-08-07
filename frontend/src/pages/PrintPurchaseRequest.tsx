@@ -62,6 +62,9 @@ export default function PrintPurchaseRequest() {
   const [warehouses, setWarehouses] = useState<{ code: string; name: string }[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [taxMode, setTaxMode] = useState(false); // Mẫu thuế: để trống thông tin người yêu cầu
+  // Có/không in ảnh chữ ký (mẫu thường). Bản ký tay vẫn giữ họ tên dưới ô cho đúng
+  // "(Ký, ghi rõ họ tên)" — chỉ bỏ ảnh chữ ký số đi.
+  const [showSign, setShowSign] = useState(true);
 
   // Map tên đầy đủ kho -> mã kho (tên viết tắt) để in cột "Nơi giao"
   const whCode = (name: string) =>
@@ -106,6 +109,10 @@ export default function PrintPurchaseRequest() {
     WebkitPrintColorAdjust: "exact",
     printColorAdjust: "exact",
     breakInside: "avoid",
+    // Phiếu dài sang trang 2: đừng để dải tiêu đề mục nằm trơ cuối trang 1 còn nội dung
+    // của nó lật sang trang sau.
+    breakAfter: "avoid",
+    pageBreakAfter: "avoid",
   } as const;
   const cell = {
     border: "1px solid #999",
@@ -116,8 +123,31 @@ export default function PrintPurchaseRequest() {
   const info = { fontSize: 12, padding: "6px 4px", lineHeight: 1.75 } as const;
 
   return (
-    <div style={{ background: "#f0f0f0", minHeight: "100vh", padding: 20 }}>
-      <style>{`@media print { @page { margin: 10mm; } .sign-block { break-inside: avoid; page-break-inside: avoid; } }`}</style>
+    <div className="print-wrap" style={{ background: "#f0f0f0", minHeight: "100vh", padding: 20 }}>
+      {/* `@page { margin: 0 }`: trình duyệt vẽ ngày giờ / tên tab / đường dẫn / số trang vào
+          đúng dải lề của khổ giấy — bỏ lề đi thì không còn chỗ cho mấy dòng đó, bản in sạch
+          mà người dùng không phải tự tắt "Headers and footers" trong hộp thoại In.
+          Lề thật của phiếu chuyển xuống padding của .print-doc (dùng !important vì padding
+          hiện đặt bằng style inline). */}
+      <style>{`@media print {
+        @page { size: A4 portrait; margin: 0; }
+        html, body { margin: 0 !important; background: #fff !important; }
+        .print-wrap { padding: 0 !important; background: #fff !important; min-height: 0 !important; }
+        /* min-height 297mm chỉ để dựng tờ giấy giả lập trên màn hình; giữ lại lúc in thì
+           phiếu ngắn cũng bị đẩy dư ra tờ thứ hai vì phần padding cộng thêm.
+           box-decoration-break: clone -> phiếu tràn sang trang 2 thì MỖI mảnh đều có đủ
+           lề trên/dưới; không có nó, trang 1 chạy sát mép giấy (máy in cắt mất dòng cuối)
+           và trang 2 bắt đầu ngay mép trên. */
+        .print-doc {
+          padding: 10mm 12mm !important; min-height: 0 !important;
+          -webkit-box-decoration-break: clone; box-decoration-break: clone;
+        }
+        .sign-block { break-inside: avoid; page-break-inside: avoid; }
+        /* Phiếu nhiều dòng hàng thì tràn sang trang 2 và khối XÉT DUYỆT đi theo. Neo ghi chú
+           theo .print-doc (absolute) sẽ khiến nó rơi vào giữa trang cuối; đổi sang fixed để
+           trình duyệt in lại ở đúng góc phải dưới của MỌI tờ giấy. */
+        .print-note { position: fixed !important; right: 12mm; bottom: 6mm; }
+      }`}</style>
       <div
         className="no-print"
         style={{
@@ -135,6 +165,27 @@ export default function PrintPurchaseRequest() {
           Đóng
         </button>
         <span style={{ flex: 1 }} />
+        {/* Chỉ mẫu thường mới có chữ ký sẵn để mà tắt/bật — mẫu thuế vốn để trống toàn bộ. */}
+        {!taxMode && (
+          <div style={{ display: "inline-flex", border: "1px solid #d9e0ea", borderRadius: 8, overflow: "hidden" }}>
+            {[{ v: true, t: "Có chữ ký" }, { v: false, t: "Không chữ ký" }].map((tab) => (
+              <button
+                key={tab.t}
+                onClick={() => setShowSign(tab.v)}
+                title={tab.v
+                  ? "In kèm ảnh chữ ký đã lưu trong hệ thống"
+                  : "Để trống ô chữ ký (chỉ in họ tên) — dành cho bản in ký tay"}
+                style={{
+                  padding: "7px 16px", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500,
+                  background: showSign === tab.v ? "#00AEEF" : "#fff",
+                  color: showSign === tab.v ? "#fff" : "#475569",
+                }}
+              >
+                {tab.t}
+              </button>
+            ))}
+          </div>
+        )}
         <div style={{ display: "inline-flex", border: "1px solid #d9e0ea", borderRadius: 8, overflow: "hidden" }}>
           {[{ v: false, t: "Mẫu thường" }, { v: true, t: "Mẫu thuế" }].map((tab) => (
             <button
@@ -158,9 +209,16 @@ export default function PrintPurchaseRequest() {
           maxWidth: 820,
           margin: "0 auto",
           background: "#fff",
-          padding: "22px 30px",
+          // Chừa thêm đáy 46px: bản xem trên màn hình neo ghi chú vào đáy khối này (bottom 7mm
+          // ~ 26px + chiều cao dòng), phiếu nhiều dòng hàng mà không chừa chỗ thì chữ ghi chú
+          // đè lên họ tên người ký.
+          padding: "22px 30px 46px",
           fontFamily: "Inter, Arial, sans-serif",
           color: "#000",
+          // Cao tối thiểu bằng 1 tờ A4 + mốc định vị: để dòng ghi chú neo được xuống đúng
+          // góc phải DƯỚI của tờ giấy, thay vì bám ngay dưới khối chữ ký giữa trang.
+          position: "relative",
+          minHeight: "297mm",
         }}
       >
         <div
@@ -390,7 +448,8 @@ export default function PrintPurchaseRequest() {
                       "TP/BP đề xuất": { sign: pr.approver_signature, name: pr.approver_name },
                       "TP/BP mua hàng": { sign: pr.dispatcher_signature, name: pr.dispatcher_name },
                     };
-                const sign = filled[r]?.sign || "";
+                // Chọn "Không chữ ký" -> bỏ ảnh, giữ họ tên để người ký tự ký tay lên trên.
+                const sign = showSign ? filled[r]?.sign || "" : "";
                 const name = filled[r]?.name || "";
                 return (
                   <div key={r}>
@@ -403,12 +462,14 @@ export default function PrintPurchaseRequest() {
                         Ô trống (Giám đốc) vẫn giữ nguyên chiều cao để ký tay. */}
                     <div
                       style={{
-                        height: 78,
+                        height: 94,
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
                         justifyContent: "center",
-                        gap: 2,
+                        // Giãn khoảng cách chữ ký -> họ tên: in ra bản giấy thì tên dính sát
+                        // nét ký, đọc rối.
+                        gap: 10,
                         marginTop: 4,
                         fontWeight: 700,
                       }}
@@ -417,7 +478,8 @@ export default function PrintPurchaseRequest() {
                         <img
                           src={sign}
                           alt=""
-                          style={{ maxHeight: 40, maxWidth: 150, objectFit: "contain" }}
+                          // 40px in ra giấy nhỏ quá không rõ nét ký -> nâng lên 56px.
+                          style={{ maxHeight: 56, maxWidth: 180, objectFit: "contain" }}
                         />
                       )}
                       {name}
@@ -428,18 +490,24 @@ export default function PrintPurchaseRequest() {
             )}
           </div>
 
-          {/* Ghi chú nguồn gốc bản in — nằm dưới cùng khối chữ ký, in ở cả 2 mẫu */}
-          <div
-            style={{
-              textAlign: "center",
-              fontStyle: "italic",
-              fontSize: 10,
-              color: "#666",
-              marginTop: 10,
-            }}
-          >
-            Phiếu này được in từ hệ thống thu mua
-          </div>
+        </div>
+
+        {/* Ghi chú nguồn gốc bản in. Trên màn hình: neo vào đáy tờ giấy giả lập (.print-doc có
+            position: relative + cao tối thiểu 1 trang A4). Khi IN: đổi sang position: fixed
+            (xem thẻ <style> đầu trang) — neo tuyệt đối vào cuối .print-doc thì phiếu dài 2 trang
+            sẽ đẩy nó xuống giữa trang 2 chứ không nằm ở góc giấy. In ở cả 2 mẫu. */}
+        <div
+          className="print-note"
+          style={{
+            position: "absolute",
+            right: "12mm",
+            bottom: "7mm",
+            fontStyle: "italic",
+            fontSize: 8,
+            color: "#8a8a8a",
+          }}
+        >
+          Phiếu đề xuất này được in từ hệ thống thu mua
         </div>
       </div>
     </div>

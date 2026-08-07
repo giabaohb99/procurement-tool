@@ -238,7 +238,7 @@ Mỗi dòng tương ứng với một khoản công nợ (`Payable`) được đ
 
    **CR-035 — cụm HÌNH THỨC THANH TOÁN theo `payment_method`:**
    - `transfer` (Chuyển khoản): tick ô "Chuyển khoản"; cột phải in đủ **Thông tin chuyển khoản** — Tên TK thụ hưởng (= tên NCC), Số TK, Ngân hàng (lấy từ hồ sơ NCC `supplier.bank_account` / `bank_name`), Nội dung chuyển khoản.
-   - `cash` (Tiền mặt): tick ô "Tiền mặt"; **cột phải để trống hoàn toàn**. Server không gửi số TK / tên ngân hàng ra bản in (`bank_account = bank_name = ""`), nên dù có xem API cũng không lộ.
+   - `cash` (Tiền mặt): tick ô "Tiền mặt"; cột phải **vẫn in đủ nhãn** (tiêu đề "Thông tin chuyển khoản:" và 4 dòng Tên TK / Số TK / Ngân hàng / Nội dung CK) nhưng **phần nội dung để trống thành dòng chấm** — giữ nguyên khung mẫu 002/BM/PKT và điền tay được khi cần. Server vẫn không gửi số TK / tên ngân hàng ra bản in (`bank_account = bank_name = ""`), nên dù có xem API cũng không lộ.
    - NCC chưa khai số TK thì chỗ đó vẫn in dấu chấm để điền tay như trước.
 
 9. Đính kèm file: sử dụng module `attachment` với `entity = "payment_request"`, `entity_id = <id>`. Không giới hạn số file; file xóa kèm khi phiếu bị xóa.

@@ -61,8 +61,21 @@ export default function PrintPurchaseOrderMH() {
   const head = { ...cell, background: '#eef2f6', fontWeight: 700, textAlign: 'center' as const }
 
   return (
-    <div style={{ background: '#eee', minHeight: '100vh', padding: 16 }}>
-      <style>{`@media print { .no-print { display:none } body { background:#fff } } @page { size: A4 portrait; margin: 12mm }`}</style>
+    <div className="print-wrap" style={{ background: '#eee', minHeight: '100vh', padding: 16 }}>
+      {/* `@page { margin: 0 }`: xem chú thích ở PrintPurchaseOrder — bỏ lề khổ giấy để trình duyệt
+          không còn chỗ in ngày giờ / đường dẫn / số trang; lề thật dời vào .print-doc. */}
+      <style>{`@media print {
+        @page { size: A4 portrait; margin: 0; }
+        html, body { margin: 0 !important; background: #fff !important; }
+        .no-print { display: none !important; }
+        .print-wrap { padding: 0 !important; background: #fff !important; min-height: 0 !important; }
+        /* box-decoration-break: clone -> đơn nhiều dòng hàng tràn sang trang 2 thì mỗi mảnh
+           vẫn đủ lề trên/dưới, không chạy sát mép giấy. */
+        .print-doc {
+          padding: 10mm 12mm !important;
+          -webkit-box-decoration-break: clone; box-decoration-break: clone;
+        }
+      }`}</style>
       <div className="no-print" style={{ maxWidth: 800, margin: '0 auto 12px', display: 'flex', gap: 8 }}>
         <button className="btn" onClick={() => window.print()}>In / Lưu PDF</button>
         <button className="btn ghost" onClick={() => window.close()}>Đóng</button>

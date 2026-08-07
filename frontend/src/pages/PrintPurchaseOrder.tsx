@@ -36,8 +36,23 @@ export default function PrintPurchaseOrder() {
   const head = { ...cell, background: '#dfe7df', fontWeight: 700, textAlign: 'center' as const }
 
   return (
-    <div style={{ background: '#eee', minHeight: '100vh', padding: 16 }}>
-      <style>{`@media print { .no-print { display:none } body { background:#fff } } @page { size: A4 landscape; margin: 10mm }`}</style>
+    <div className="print-wrap" style={{ background: '#eee', minHeight: '100vh', padding: 16 }}>
+      {/* `@page { margin: 0 }`: trình duyệt vẽ ngày giờ / tên tab / đường dẫn / số trang vào đúng
+          dải lề của khổ giấy — bỏ lề đi thì không còn chỗ cho mấy dòng đó. Lề thật của đơn
+          chuyển xuống padding của .print-doc (!important vì padding đang đặt bằng style inline). */}
+      <style>{`@media print {
+        @page { size: A4 landscape; margin: 0; }
+        html, body { margin: 0 !important; background: #fff !important; }
+        .no-print { display: none !important; }
+        .print-wrap { padding: 0 !important; background: #fff !important; min-height: 0 !important; }
+        /* Lề trên/dưới 8mm: đơn ngang vốn cao sát mép khổ A4, để 10mm là tràn sang tờ thứ hai
+           chỉ vì vài milimet. box-decoration-break: clone -> đơn nhiều dòng hàng phải sang
+           trang 2 thì mỗi mảnh vẫn đủ lề, không chạy sát mép giấy. */
+        .print-doc {
+          padding: 8mm 12mm !important;
+          -webkit-box-decoration-break: clone; box-decoration-break: clone;
+        }
+      }`}</style>
       <div className="no-print" style={{ maxWidth: 1100, margin: '0 auto 12px', display: 'flex', gap: 8 }}>
         <button className="btn" onClick={() => window.print()}>In / Lưu PDF</button>
         <button className="btn ghost" onClick={() => window.close()}>Đóng</button>

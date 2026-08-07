@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import { ToastHost } from './components/toast'
 import { ConfirmHost } from './components/confirm'
+import PwaReloadPrompt from './components/PwaReloadPrompt'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
@@ -98,6 +99,10 @@ export default function App() {
       </BrowserRouter>
       <ToastHost />
       <ConfirmHost />
+      {/* Nhắc cập nhật khi deploy bản mới. Trước đây component này viết ra rồi quên gắn vào cây
+          React, nên vite-plugin-pwa tự chèn registerSW.js: service worker bản mới cài xong chỉ
+          nằm chờ, người dùng vẫn xem bundle cũ trong cache — deploy xong mà máy khách không đổi. */}
+      <PwaReloadPrompt />
     </AuthProvider>
   )
 }
