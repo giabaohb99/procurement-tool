@@ -322,9 +322,10 @@ export default function PrintPurchaseRequest() {
               <td style={cell}>Tên hàng hóa/dịch vụ</td>
               <td style={cell}>Mã hàng</td>
               <td style={cell}>ĐVT</td>
-              <td style={cell}>SL yêu cầu</td>
+              <td style={cell}>Số lượng</td>
               <td style={cell}>Đơn giá</td>
-              <td style={cell}>VAT%</td>
+              {/* Mẫu kế toán 003/BM/PKT KHÔNG có cột VAT trên dòng hàng — VAT chỉ hiện ở
+                  phần tổng cuối bảng. Không thêm cột vào đây. */}
               <td style={cell}>Thành tiền</td>
               <td style={cell}>Nơi giao</td>
               <td style={cell}>Ghi chú</td>
@@ -339,7 +340,6 @@ export default function PrintPurchaseRequest() {
                 <td style={cell}>{it.unit}</td>
                 <td style={{ ...cell, textAlign: "right" }}>{fmt(it.qty)}</td>
                 <td style={{ ...cell, textAlign: "right" }}>{fmtPrice(it.price)}</td>
-                <td style={{ ...cell, textAlign: "right" }}>{Number(it.vat_pct) || 0}%</td>
                 <td style={{ ...cell, textAlign: "right" }}>
                   {fmtVND((Number(it.qty) || 0) * (Number(it.price) || 0))}
                 </td>
@@ -348,8 +348,8 @@ export default function PrintPurchaseRequest() {
               </tr>
             ))}
             <tr>
-              <td style={{ ...cell, fontWeight: 700 }} colSpan={7}>
-                Tiền hàng (chưa VAT)
+              <td style={{ ...cell, fontWeight: 700 }} colSpan={6}>
+                Tổng cộng
               </td>
               <td style={{ ...cell, textAlign: "right", fontWeight: 700 }}>
                 {fmtVND(pr.subtotal)}
@@ -357,7 +357,7 @@ export default function PrintPurchaseRequest() {
               <td style={cell} colSpan={2} />
             </tr>
             <tr>
-              <td colSpan={7} style={{ border: "none", textAlign: "right", padding: "8px 8px 4px", fontSize: 13 }}>
+              <td colSpan={6} style={{ border: "none", textAlign: "right", padding: "8px 8px 4px", fontSize: 13 }}>
                 Tiền VAT:
               </td>
               <td style={{ border: "none", textAlign: "right", padding: "8px 8px 4px", fontSize: 13, fontWeight: 700 }}>
@@ -366,7 +366,7 @@ export default function PrintPurchaseRequest() {
               <td style={{ border: "none" }} colSpan={2} />
             </tr>
             <tr>
-              <td colSpan={7} style={{ border: "none", textAlign: "right", padding: "4px 8px 8px", fontSize: 13 }}>
+              <td colSpan={6} style={{ border: "none", textAlign: "right", padding: "4px 8px 8px", fontSize: 13 }}>
                 Tổng cộng thanh toán (gồm VAT):
               </td>
               <td style={{ border: "none", textAlign: "right", padding: "4px 8px 8px", fontSize: 13, fontWeight: 700 }}>
@@ -377,43 +377,37 @@ export default function PrintPurchaseRequest() {
           </tbody>
         </table>
 
-        {/* Task 4: NCC 2 cụm — theo quyền. Cụm 'req' (bộ phận đề xuất) luôn in.
-            Cụm 'pur' (khảo sát/thu mua) chỉ có dữ liệu khi người in có quyền xem NCC
-            (BE trả rỗng nếu không) -> in theo quyền, không cần kiểm tra ở FE. */}
-        <div style={SH}>NHÀ CUNG CẤP DO BỘ PHẬN ĐỀ XUẤT</div>
-        <div style={info}>
-          <div>
-            <b>Tên nhà cung cấp:</b> {pr.supplier_req?.name || "Nhà cung cấp tối ưu nhất"}
-          </div>
-          <div>
-            <b>Mã số thuế:</b> {pr.supplier_req?.tax_code || ""}
-          </div>
-          <div>
-            <b>Liên hệ:</b> {pr.supplier_req?.contact || ""}
-          </div>
-          <div>
-            <b>Báo giá đính kèm:</b> {pr.quote_file_url ? "☑" : "☐"} Có &nbsp;&nbsp; {pr.quote_file_url ? "☐" : "☑"} Không
-          </div>
-        </div>
-
-        {(pr.supplier_pur?.name || pr.supplier_pur?.tax_code || pr.supplier_pur?.contact) && (
-          <>
-            <div style={SH}>
-              NHÀ CUNG CẤP TỪ KHẢO SÁT / THU MUA{pr.supplier_from_survey ? " (nguồn: Yêu cầu báo giá)" : ""}
-            </div>
-            <div style={info}>
-              <div>
-                <b>Tên nhà cung cấp:</b> {pr.supplier_pur?.name || ""}
+        {/* Task 4: hệ thống lưu NCC theo 2 cụm (req = bộ phận đề xuất, pur = khảo sát/thu mua)
+            nhưng MẪU KẾ TOÁN 003/BM/PKT chỉ có ĐÚNG MỘT cụm NCC — không được thêm cụm thứ hai
+            vào bản in. Nên chỉ đổ dữ liệu vào cụm sẵn có:
+              - Có quyền xem NCC -> BE trả `supplier_pur`, ưu tiên in cụm này (dữ liệu thu mua
+                chốt sau khảo sát, sát thực tế mua hơn).
+              - Không có quyền  -> BE trả rỗng, tự lùi về NCC do bộ phận đề xuất ghi.
+            Không kiểm tra quyền ở FE: cứ có dữ liệu là in, BE đã lọc. */}
+        {(() => {
+          const sup = (pr.supplier_pur?.name || pr.supplier_pur?.tax_code || pr.supplier_pur?.contact)
+            ? pr.supplier_pur
+            : pr.supplier_req;
+          return (
+            <>
+              <div style={SH}>NHÀ CUNG CẤP DO BỘ PHẬN ĐỀ XUẤT</div>
+              <div style={info}>
+                <div>
+                  <b>Tên nhà cung cấp:</b> {sup?.name || "Nhà cung cấp tối ưu nhất"}
+                </div>
+                <div>
+                  <b>Mã số thuế:</b> {sup?.tax_code || ""}
+                </div>
+                <div>
+                  <b>Liên hệ:</b> {sup?.contact || ""}
+                </div>
+                <div>
+                  <b>Báo giá đính kèm:</b> {pr.quote_file_url ? "☑" : "☐"} Có &nbsp;&nbsp; {pr.quote_file_url ? "☐" : "☑"} Không
+                </div>
               </div>
-              <div>
-                <b>Mã số thuế:</b> {pr.supplier_pur?.tax_code || ""}
-              </div>
-              <div>
-                <b>Liên hệ:</b> {pr.supplier_pur?.contact || ""}
-              </div>
-            </div>
-          </>
-        )}
+            </>
+          );
+        })()}
 
         <div style={SH}>PHẦN DÀNH CHO BỘ PHẬN MUA HÀNG</div>
         <div style={info}>
