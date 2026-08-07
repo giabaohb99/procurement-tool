@@ -23,6 +23,8 @@ export default function RolePermissions() {
   const [uPage, setUPage] = useState(1)
   const [uSearch, setUSearch] = useState('')
   const [uDept, setUDept] = useState(''); const [uRole, setURole] = useState(''); const [uSort, setUSort] = useState('')
+  // Tình trạng tài khoản: '' = tất cả | no_role = chưa gán vai trò | orphan = không còn hồ sơ nhân sự
+  const [uFlag, setUFlag] = useState('')
   const [depts, setDepts] = useState<any[]>([])
   const PAGE = 20
 
@@ -32,11 +34,35 @@ export default function RolePermissions() {
   }, [])
   function loadRoles() { api.get('/api/roles').then((r) => setRoles(r.data.data)) }
   function loadUsers() {
-    api.get('/api/users', { params: { search: uSearch, department: uDept, role_id: uRole || 0, sort: uSort, page: uPage, page_size: PAGE } })
+    api.get('/api/users', { params: { search: uSearch, department: uDept, role_id: uRole || 0, sort: uSort,
+      no_role: uFlag === 'no_role', orphan: uFlag === 'orphan', page: uPage, page_size: PAGE } })
       .then((r) => { setUsers(r.data.data.items); setUTotal(r.data.data.total) })
   }
-  useEffect(() => { if (tab !== 'users') return; const t = setTimeout(loadUsers, 300); return () => clearTimeout(t) }, [tab, uPage, uSearch, uDept, uRole, uSort])
-  useEffect(() => { setUPage(1) }, [uSearch, uDept, uRole, uSort])
+  useEffect(() => { if (tab !== 'users') return; const t = setTimeout(loadUsers, 300); return () => clearTimeout(t) }, [tab, uPage, uSearch, uDept, uRole, uSort, uFlag])
+  useEffect(() => { setUPage(1) }, [uSearch, uDept, uRole, uSort, uFlag])
+
+  async function delUser(u: any) {
+    const ten = u.full_name || u.email || `#${u.id}`
+    if (!(await askConfirm({
+      title: 'Xóa tài khoản',
+      message: `Xóa hẳn tài khoản "${ten}"? Nhật ký thao tác cũ vẫn được giữ lại. Không khôi phục được.`,
+      confirmText: 'Xóa',
+    }))) return
+    setErr('')
+    try { await api.delete(`/api/users/${u.id}`); setMsg(`Đã xóa tài khoản ${ten}`); loadUsers() }
+    catch (e: any) { setErr(e?.response?.data?.error?.message || 'Không xóa được tài khoản') }
+  }
+
+  async function toggleActive(u: any) {
+    const ten = u.full_name || u.email || `#${u.id}`
+    if (!(await askConfirm({
+      message: u.is_active ? `Khóa tài khoản "${ten}"?` : `Mở khóa tài khoản "${ten}"?`,
+      confirmText: u.is_active ? 'Khóa' : 'Mở khóa', danger: !!u.is_active,
+    }))) return
+    setErr('')
+    try { await api.put(`/api/users/${u.id}/active`, { is_active: !u.is_active }); loadUsers() }
+    catch (e: any) { setErr(e?.response?.data?.error?.message || 'Không đổi được trạng thái') }
+  }
   const uPages = Math.max(1, Math.ceil(uTotal / PAGE))
   const roleName = (id: number) => roles.find((r) => r.id === id)?.name || String(id)
 
@@ -91,6 +117,9 @@ export default function RolePermissions() {
       </div>
 
       {tab === 'users' ? (
+        <>
+        {err && <div className="err">{err}</div>}
+        {msg && <div style={{ color: 'var(--green)', fontSize: 13, marginBottom: 8 }}>{msg}</div>}
         <div className="hz-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'center', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
             <input placeholder="Tìm theo tên / email / mã NV…" value={uSearch}
@@ -103,20 +132,30 @@ export default function RolePermissions() {
               <option value="">— Vai trò —</option>
               {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
+            <select value={uFlag} onChange={(e) => setUFlag(e.target.value)} style={{ minWidth: 190 }}>
+              <option value="">— Tình trạng —</option>
+              <option value="no_role">Chưa gán vai trò</option>
+              <option value="orphan">Mồ côi (không có hồ sơ nhân sự)</option>
+            </select>
             <select value={uSort} onChange={(e) => setUSort(e.target.value)} style={{ minWidth: 130 }}>
               <option value="">Mặc định</option>
               <option value="name_asc">Tên A→Z</option>
               <option value="name_desc">Tên Z→A</option>
             </select>
-            {(uSearch || uDept || uRole || uSort) && <button className="btn ghost" style={{ height: 34 }} onClick={() => { setUSearch(''); setUDept(''); setURole(''); setUSort('') }}>Xóa lọc</button>}
+            {(uSearch || uDept || uRole || uSort || uFlag) && <button className="btn ghost" style={{ height: 34 }} onClick={() => { setUSearch(''); setUDept(''); setURole(''); setUSort(''); setUFlag('') }}>Xóa lọc</button>}
             <span style={{ fontSize: 12.5, color: 'var(--muted)', marginLeft: 'auto' }}>{uTotal} tài khoản</span>
           </div>
           <table>
-            <thead><tr><th>Người dùng</th><th>Phòng ban</th><th>Vai trò</th><th style={{ width: 90 }}></th></tr></thead>
+            <thead><tr><th>Người dùng</th><th>Phòng ban</th><th>Vai trò</th><th style={{ width: 150 }}></th></tr></thead>
             <tbody>
               {users.map((u) => (
                 <tr key={u.id} className="clickable" onClick={() => navigate(`/users/${u.id}`)}>
-                  <td>{u.full_name || u.email}<div style={{ fontSize: 11, color: 'var(--muted)' }}>{u.email}</div></td>
+                  <td>
+                    {u.full_name || u.email || `#${u.id}`}
+                    {u.is_orphan && <span className="badge err" style={{ marginLeft: 6 }} title="Tài khoản không gắn với hồ sơ nhân sự nào">Mồ côi</span>}
+                    {!u.is_active && <span className="badge gray" style={{ marginLeft: 6 }}>Đã khóa</span>}
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>{u.email || '(chưa có email)'}</div>
+                  </td>
                   <td>{u.department_name || '—'}</td>
                   <td>
                     {(u.role_ids || []).length ? (
@@ -126,8 +165,14 @@ export default function RolePermissions() {
                       </div>
                     ) : <span style={{ color: 'var(--muted)' }}>Chưa gán</span>}
                   </td>
-                  <td style={{ textAlign: 'right' }}>
+                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button className="btn ghost" style={{ height: 28, padding: '0 10px' }} onClick={(e) => { e.stopPropagation(); navigate(`/users/${u.id}`) }}>Sửa</button>
+                    <button className="btn ghost" style={{ height: 28, padding: '0 8px', marginLeft: 4 }} title={u.is_active ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
+                      onClick={(e) => { e.stopPropagation(); toggleActive(u) }}><i className={'ti ' + (u.is_active ? 'ti-lock' : 'ti-lock-open')} /></button>
+                    {(u.is_orphan || !u.is_active) && (
+                      <button className="btn ghost" style={{ height: 28, padding: '0 8px', marginLeft: 4, color: 'var(--red)', borderColor: 'var(--red)' }}
+                        title="Xóa hẳn tài khoản" onClick={(e) => { e.stopPropagation(); delUser(u) }}><i className="ti ti-trash" /></button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -138,6 +183,7 @@ export default function RolePermissions() {
             <Pagination page={uPage} pageSize={PAGE} total={uTotal} hideSize onChange={(p) => setUPage(p)} />
           </div>
         </div>
+        </>
       ) : (
         <div className="grid-1-2" style={{ gridTemplateColumns: '260px 1fr' }}>
           <div className="hz-card" style={{ padding: 14 }}>

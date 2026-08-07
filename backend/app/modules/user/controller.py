@@ -7,7 +7,7 @@ from app.core.database import get_db
 from app.core.response import success
 
 from . import service
-from .schema import PasswordReset, RoleAssign, ScopeUpdate, UserOut, UserProvision
+from .schema import ActiveUpdate, PasswordReset, RoleAssign, ScopeUpdate, UserOut, UserProvision
 
 router = APIRouter(prefix="/api/users", tags=["user"])
 
@@ -15,11 +15,13 @@ router = APIRouter(prefix="/api/users", tags=["user"])
 @router.get("")
 def list_users(
     search: str = "", department: str = "", role_id: int = 0, sort: str = "", employee_id: int = 0,
+    no_role: bool = False, orphan: bool = False,
     pg: dict = Depends(pagination), db: Session = Depends(get_db),
     user=Depends(require("user", "read")),
 ):
     from app.modules.employee.model import Employee
-    total, items = service.list_users(db, pg, search, department, role_id, sort, employee_id)
+    total, items = service.list_users(db, pg, search, department, role_id, sort, employee_id,
+                                      no_role, orphan)
     out = []
     for u in items:
         d = UserOut.model_validate(u).model_dump()
@@ -27,6 +29,7 @@ def list_users(
         emp = db.get(Employee, u.employee_id) if u.employee_id else None
         d["full_name"] = (emp.full_name if emp else "") or u.email or ""
         d["department_name"] = (emp.department_name if emp else "") or ""
+        d["is_orphan"] = emp is None      # không còn hồ sơ nhân sự -> tài khoản mồ côi
         out.append(d)
     return success({"total": total, "items": out})
 
@@ -55,6 +58,21 @@ def assign_roles(
 ):
     service.assign_roles(db, user_id, data, user.id)
     return success(None, "Đã gán vai trò")
+
+
+@router.put("/{user_id}/active")
+def set_active(
+    user_id: int, data: ActiveUpdate, db: Session = Depends(get_db),
+    user=Depends(require("user", "write")),
+):
+    service.set_active(db, user_id, data.is_active, user.id)
+    return success(None, "Đã mở khóa tài khoản" if data.is_active else "Đã khóa tài khoản")
+
+
+@router.delete("/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db), user=Depends(require("user", "delete"))):
+    service.delete_user(db, user_id, user.id)
+    return success(None, "Đã xóa tài khoản")
 
 
 @router.get("/{user_id}")

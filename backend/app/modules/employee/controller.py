@@ -91,11 +91,13 @@ def set_password(eid: int, data: SetPasswordIn, db: Session = Depends(get_db),
         raise HTTPException(400, f"Email {emp.email} đã được dùng cho tài khoản khác")
     from app.modules.user import service as user_service
     from app.modules.user.schema import UserProvision
-    # CR-022: tài khoản mới tạo ra KHÔNG kèm vai trò nào. Hồ sơ nhân sự chỉ còn "Vị trí / Chức vụ"
-    # (chữ hiển thị), không cấp quyền. Admin phải vào "Phân quyền tài khoản" gán vai trò/phạm vi.
+    # CR-022: quyền KHÔNG lấy theo ô "Vai trò" của hồ sơ nhân sự (ô đó nay là "Vị trí / Chức vụ",
+    # chỉ là chữ). CR-037: nhưng để trắng vai trò thì người mới đăng nhập vào không thấy gì —
+    # provision_user tự gán vai trò mặc định 'Nhân sự'; quyền cao hơn admin vẫn gán tay.
     user_service.provision_user(
         db, UserProvision(employee_id=eid, email=emp.email, password=data.password, role_ids=[]), user.id)
-    return success(None, "Đã tạo tài khoản đăng nhập. Hãy vào Phân quyền tài khoản để gán vai trò.")
+    return success(None, "Đã tạo tài khoản đăng nhập (vai trò mặc định: Nhân sự). "
+                         "Vào Phân quyền tài khoản để cấp thêm quyền.")
 
 
 @router.post("")

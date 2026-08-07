@@ -18,6 +18,10 @@ class RoleAssign(BaseModel):
     role_ids: list[int]
 
 
+class ActiveUpdate(BaseModel):
+    is_active: bool
+
+
 class ScopeUpdate(BaseModel):
     """Phạm vi tổng theo user (Lớp B). Trống = không giới hạn chiều đó."""
 
