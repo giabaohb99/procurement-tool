@@ -19,6 +19,13 @@ FIELDS = [
     {"key": "r2_endpoint", "group": "storage", "label": "Endpoint (R2/S3)", "type": "str"},
     {"key": "r2_bucket", "group": "storage", "label": "Bucket", "type": "str"},
     {"key": "r2_public_url", "group": "storage", "label": "Public URL", "type": "str"},
+    {"key": "pr_dispatch_enabled", "group": "workflow", "type": "bool",
+     "label": "Yêu cầu mua hàng: bắt buộc thu mua duyệt lần 2 (điều phối)",
+     "hint": "BẬT: trưởng bộ phận duyệt xong phiếu dừng ở \"Đã duyệt\" — chưa có nhân sự phụ trách, "
+             "chưa tạo được đơn mua hàng; Admin/Quản lý thu mua bấm Duyệt lần nữa thì hệ thống mới "
+             "tự phân bổ nhân sự (phiếu sang \"Đã điều phối\"). "
+             "TẮT: quay về luồng cũ — trưởng bộ phận duyệt là phân bổ nhân sự ngay, bỏ hẳn bước thứ 2. "
+             "Đổi lúc nào cũng được, có hiệu lực ngay, không ảnh hưởng phiếu đã xử lý xong."},
 ]
 # Trường bí mật: NHẬP được (mã hóa lưu DB), KHÔNG hiển thị lại
 SECRET_FIELDS = [

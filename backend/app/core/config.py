@@ -68,6 +68,14 @@ class Settings(BaseSettings):
     # rồi trả về false (hoặc bỏ dòng đó) trước lần deploy sau.
     SEED_FORCE_SYNC: bool = False
 
+    # --- Quy trình duyệt YCMH (CR-034) ---
+    # BẬT (mặc định): trưởng bộ phận duyệt xong phiếu dừng ở "Đã duyệt", phải có Admin/Quản lý
+    # thu mua bấm Duyệt lần 2 thì hệ thống mới phân bổ nhân sự phụ trách (→ "Đã điều phối").
+    # TẮT: quay về luồng cũ — trưởng bộ phận duyệt là phân bổ nhân sự luôn, không cần bước thứ 2.
+    # Đây chỉ là giá trị DỰ PHÒNG; công tắc thật nằm ở màn "Cấu hình hệ thống" (key
+    # `pr_dispatch_enabled`, lưu DB, đổi có hiệu lực ngay, không cần deploy).
+    PR_DISPATCH_ENABLED: bool = True
+
     # --- Sao lưu CSDL ---
     BACKUP_KEEP: int = 30   # số bản backup giữ lại (2 lần/ngày -> ~15 ngày)
 

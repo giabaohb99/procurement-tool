@@ -97,7 +97,7 @@ export default function PurchaseRequestDetail() {
   const [origExp, setOrigExp] = useState('')   // giá trị 'thời gian dự kiến có hàng' lúc mở popup (để bắt lý do khi đổi)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [promptAction, setPromptAction] = useState<{type: 'reject'|'return'|'cancel', title: string, message: string, placeholder?: string} | null>(null)
-  const [confirmAction, setConfirmAction] = useState<{type: 'complete'|'cancel_draft'|'copy', title: string, message: string, confirmText?: string} | null>(null)
+  const [confirmAction, setConfirmAction] = useState<{type: 'complete'|'cancel_draft'|'copy'|'dispatch', title: string, message: string, confirmText?: string} | null>(null)
   const [notFound, setNotFound] = useState(false)
   const [pos, setPos] = useState<any[] | null>(null)   // ĐMH tạo từ phiếu này (cùng mã PYC); null = chưa tải/không quyền → ẩn khối
   const [orderedMap, setOrderedMap] = useState<Record<string, number>>({})   // SL đã đặt theo mã hàng (gộp mọi ĐMH cùng PYC)
@@ -186,6 +186,11 @@ export default function PurchaseRequestDetail() {
   // Nút "Tạo ĐMH" chỉ hiện cho phòng thu mua / quản lý / admin (và có quyền tạo ĐMH)
   const isPurchaserDept = ((user as any)?.department_name || '').toLowerCase().includes('thu mua')
   const canCreatePO = can('purchase_order', 'create') && (isPurchaserDept || canManage || canAssignPurchaser)
+  // CR-034: các trạng thái "làm việc được" (tạo ĐMH / hoàn thành phiếu). Bình thường phải qua
+  // bước duyệt điều phối; nếu công tắc điều phối bị TẮT thì "Đã duyệt" cũng làm việc được
+  // (phiếu cũ còn kẹt ở đó từ lúc công tắc còn bật).
+  const workableStatuses = pr.dispatch_enabled === false
+    ? ['approved', 'dispatched', 'processing'] : ['dispatched', 'processing']
   // Còn dòng nào chưa đặt hàng → vẫn cho tạo ĐMH (không ẩn khi mới hoàn thành 1 dòng)
   const hasUnorderedItem = (pr.items || []).some((it: any) => (it.line_status || 'Chưa đặt hàng') === 'Chưa đặt hàng')
   // Chỉ cho Hoàn thành phiếu khi MỌI dòng đã ở điểm cuối (Hoàn thành/Hủy đơn)
@@ -401,7 +406,12 @@ export default function PurchaseRequestDetail() {
   }
 
   async function action(path: string, payload: any = {}) {
-    try { await api.post(`${API}/${id}/${path}`, payload); loadAll() }
+    try {
+      const r = await api.post(`${API}/${id}/${path}`, payload)
+      // Điều phối: báo luôn kết quả tự động phân bổ — còn dòng nào chưa có người thì phải chọn tay
+      if (path === 'dispatch' && r?.data?.message) toast.success(r.data.message)
+      loadAll()
+    }
     catch { /* interceptor đã toast lỗi */ }
   }
 
@@ -552,19 +562,26 @@ export default function PurchaseRequestDetail() {
         {editable && (
           <button className="btn" onClick={() => save(true)}><i className="ti ti-send" />Gửi duyệt</button>
         )}
-        {!isNew && pr.status === 'submitted' && can('purchase_request', 'approve') && (
+        {/* Duyệt bước 1 (trưởng bộ phận). Dùng cờ can_approve của server chứ không dùng can() —
+            Admin thu mua cũng có quyền approve nhưng PHẠM VI của họ không duyệt được bước này. */}
+        {!isNew && pr.can_approve && (
           <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>
         )}
-        {!isNew && (canManage || (pr.status === 'submitted' && can('purchase_request', 'approve'))) && !['draft', 'rejected', 'cancelled', 'completed', 'done'].includes(pr.status) && (
+        {!isNew && (canManage || pr.can_approve) && !['draft', 'rejected', 'cancelled', 'completed', 'done'].includes(pr.status) && (
           <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }} onClick={() => setPromptAction({ type: 'return', title: 'Trả về', message: 'Lý do trả về (để người yêu cầu sửa & gửi duyệt lại):' })}><i className="ti ti-corner-up-left" />Trả về</button>
         )}
-        {!isNew && pr.status === 'submitted' && can('purchase_request', 'approve') && (
+        {!isNew && pr.can_approve && (
           <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => setPromptAction({ type: 'cancel', title: 'Từ chối phiếu', message: 'Lý do từ chối (khóa phiếu, không sửa lại được):' })}><i className="ti ti-ban" />Từ chối</button>
         )}
-        {!isNew && canCreatePO && ['approved', 'processing'].includes(pr.status) && hasUnorderedItem && (
+        {/* CR-034: duyệt lần 2 phía thu mua (điều phối — tự động phân bổ NSTM). Cờ can_dispatch do
+            server tính vì FE không biết PHẠM VI của grant (trưởng phòng cũng có quyền approve). */}
+        {!isNew && pr.can_dispatch && (
+          <button className="btn" onClick={() => setConfirmAction({ type: 'dispatch', title: 'Duyệt điều phối', message: 'Duyệt và điều phối phiếu này? Hệ thống sẽ tự động phân bổ nhân sự thu mua phụ trách theo phân loại hàng, sau đó mới tạo được đơn mua hàng.', confirmText: 'Duyệt' })}><i className="ti ti-check" />Duyệt</button>
+        )}
+        {!isNew && canCreatePO && workableStatuses.includes(pr.status) && hasUnorderedItem && (
           <button className="btn" onClick={createPO}><i className="ti ti-shopping-cart" />Tạo đơn mua hàng</button>
         )}
-        {!isNew && canManage && ['approved', 'processing'].includes(pr.status) && (
+        {!isNew && canManage && workableStatuses.includes(pr.status) && (
           <button className="btn secondary" onClick={() => { if (!allItemsDone) { toast.error('Chưa có sản phẩm đặt hàng hoàn tất — chỉ hoàn thành khi mọi sản phẩm đã Hoàn thành/Hủy.'); return } setConfirmAction({ type: 'complete', title: 'Hoàn thành', message: 'Đánh dấu phiếu HOÀN THÀNH?', confirmText: 'Đồng ý' }) }}><i className="ti ti-checks" />Hoàn thành</button>
         )}
         {/* ── Từ chối (khóa phiếu) ở giai đoạn đã duyệt/đang xử lý ── */}
@@ -575,6 +592,19 @@ export default function PurchaseRequestDetail() {
           </>
         )}
       </div>
+
+      {/* CR-034: phiếu "Đã duyệt" trông như xong việc nhưng thật ra chưa — nói rõ để khỏi nhầm.
+          Công tắc điều phối TẮT thì không còn bước này nên cũng không hiện dòng nào. */}
+      {!isNew && pr.status === 'approved' && pr.dispatch_enabled !== false && (
+        <div className="card" style={{ padding: '10px 14px', marginBottom: 14, background: '#fffbeb', border: '1px solid #fde68a' }}>
+          <div style={{ fontSize: 13, color: '#92400e' }}>
+            <i className="ti ti-info-circle" /> <b>Trưởng bộ phận đã duyệt — còn chờ thu mua duyệt lần 2 (điều phối).</b>{' '}
+            {pr.can_dispatch
+              ? 'Bấm Duyệt để hệ thống tự phân bổ nhân sự thu mua phụ trách; trước đó phiếu chưa tạo được đơn mua hàng.'
+              : 'Admin / Quản lý thu mua duyệt lần nữa thì hệ thống mới phân bổ nhân sự phụ trách và mở khóa tạo đơn mua hàng.'}
+          </div>
+        </div>
+      )}
 
       <PromptModal
         open={!!promptAction}
@@ -602,6 +632,7 @@ export default function PurchaseRequestDetail() {
         variant={confirmAction?.type === 'complete' ? 'info' : 'warn'}
         onConfirm={() => {
           if (confirmAction?.type === 'complete') action('complete')
+          if (confirmAction?.type === 'dispatch') action('dispatch')
           if (confirmAction?.type === 'cancel_draft') action('cancel', { reason: '' })
           if (confirmAction?.type === 'copy') copyDoc()
           setConfirmAction(null)

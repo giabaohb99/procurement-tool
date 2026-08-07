@@ -98,8 +98,15 @@ def has_cancelled_line(db: Session, pr_id: int) -> bool:
 
 
 def recompute_status(db: Session, pr: PurchaseRequest) -> None:
-    """Tự suy trạng thái phiếu từ trạng thái các dòng (chỉ khi đã duyệt / đang xử lý / hoàn thành)."""
-    if pr.status not in ("approved", "processing", "completed"):
+    """Tự suy trạng thái phiếu từ trạng thái các dòng (chỉ khi đã điều phối / đang xử lý / hoàn thành).
+
+    CR-034: 'approved' (TP duyệt xong) KHÔNG nằm ở đây — lúc đó phiếu chưa có NSTM, chưa đặt
+    hàng được nên không có gì để suy. Mốc "làm việc được" giờ là 'dispatched'.
+    Ngoại lệ: công tắc điều phối TẮT thì 'approved' cũng là mốc làm việc (phiếu cũ còn kẹt lại)."""
+    moc = ["dispatched", "processing", "completed"]
+    if not dispatch_enabled():
+        moc.append("approved")
+    if pr.status not in moc:
         return
     st = [(i.line_status or "Chưa đặt hàng") for i in items_of(db, pr.id)]
     if not st:
@@ -112,7 +119,7 @@ def recompute_status(db: Session, pr: PurchaseRequest) -> None:
     elif any(s not in ("Chưa đặt hàng", "Hủy đơn") for s in st):
         pr.status = "processing"
     else:
-        pr.status = "approved"
+        pr.status = "dispatched"   # mọi dòng lùi về "Chưa đặt hàng" → về lại mốc đã điều phối
     db.commit()
     if pr.status == "completed" and not was_completed:
         _notify_survey_request_done(db, pr.id, pr.updated_by or 0)
@@ -308,6 +315,42 @@ def _notify_survey_request_done(db: Session, pr_id: int, user_id: int) -> None:
         sr_service.auto_complete_from_pr(db, pr_id, user_id)
     except Exception:
         pass
+
+
+def dispatch_enabled() -> bool:
+    """CR-034 — CÔNG TẮC bước duyệt lần 2 (điều phối).
+
+    BẬT (mặc định): phiếu dừng ở 'approved' cho tới khi thu mua bấm duyệt lần 2.
+    TẮT: quay về luồng cũ — duyệt phát là phân bổ NSTM luôn, phiếu đi thẳng sang 'dispatched'.
+    Nguồn: màn Cấu hình hệ thống (key `pr_dispatch_enabled`, lưu DB) → fallback .env
+    (`PR_DISPATCH_ENABLED`). Đổi có hiệu lực ngay, không cần deploy."""
+    from app.core import app_settings
+    return bool(app_settings.get("pr_dispatch_enabled"))
+
+
+def dispatch_pr(db: Session, pid: int, user_id: int) -> tuple[PurchaseRequest, int, int]:
+    """CR-034 — ĐIỀU PHỐI (duyệt lần 2, phía thu mua).
+
+    Trưởng phòng duyệt xong phiếu chỉ dừng ở 'approved' và CHƯA có nhân sự phụ trách.
+    Quản lý/Admin thu mua xem lại rồi bấm Điều phối: lúc này mới tự động phân bổ NSTM theo
+    phân loại (logic cũ giữ nguyên, chỉ dời thời điểm) và phiếu chuyển sang 'dispatched' —
+    mốc duy nhất cho phép tạo Đơn mua hàng.
+
+    Trả về (phiếu, số dòng vừa gán tự động, số dòng vẫn chưa có người)."""
+    pr = get_pr(db, pid)
+    if pr.status != "approved":
+        raise HTTPException(400, "Chỉ điều phối được phiếu ở trạng thái Đã duyệt "
+                                 "(trưởng phòng duyệt xong, chưa điều phối).")
+    from app.modules.category_assignee.service import auto_assign_by_category
+    n = auto_assign_by_category(db, pr)
+    con_trong = sum(1 for it in items_of(db, pid) if not (it.assignee or "").strip())
+    pr.status = "dispatched"
+    pr.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, pid, "dispatched",
+           f"Điều phối — tự động phân bổ {n} dòng" + (f", còn {con_trong} dòng chưa có người" if con_trong else ""))
+    db.refresh(pr)
+    return pr, n, con_trong
 
 
 def assign(db: Session, pid: int, data: AssignIn, user_id: int) -> PurchaseRequest:

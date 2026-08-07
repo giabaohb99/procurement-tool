@@ -246,7 +246,11 @@ STD_ROLES = {
         **_CATALOG_CRUD,
         "department": (["read"], "all"),
         "employee": (["read"], "all"),
-        "purchase_request": (["read"], "proc"),
+        # CR-034: 'approve' ở đây KHÔNG phải duyệt thay trưởng phòng (phạm vi 'proc' không thấy
+        # phiếu Chờ duyệt) — nó mở nút DUYỆT ĐIỀU PHỐI + phân bổ NSTM cho Admin thu mua.
+        # Dòng này chỉ áp cho cài mới; môi trường đang chạy được vá bằng migration d2e6f4b81a37
+        # (D-018: seed không ghi đè phân quyền trên DB thật).
+        "purchase_request": (["read", "approve"], "proc"),
         "survey_request": (["read"], "proc"),
         "ticket": (["read", "create", "write"], "own"),
         "purchase_order": (["read", "print"], "all"),

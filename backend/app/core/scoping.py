@@ -40,9 +40,11 @@ def _role_scope_cond(model, entity, scope, user, profile):
             conds = [model.created_by == user.id]
             if profile.get("employee_id"):
                 conds.append(model.requester_id == profile["employee_id"])   # phiếu mình là người yêu cầu
-            # "proc" (NV/Admin thu mua): thấy thêm MỌI phiếu đã duyệt để nhặt việc + phân bổ
+            # "proc" (NV/Admin thu mua): thấy thêm MỌI phiếu đã duyệt để nhặt việc + phân bổ.
+            # CR-034: gồm cả 'approved' (TP duyệt xong, ĐANG CHỜ ĐIỀU PHỐI) — thiếu trạng thái này
+            # thì chính người phải điều phối lại không nhìn thấy phiếu.
             if scope == "proc":
-                conds.append(model.status == "approved")
+                conds.append(model.status.in_(["approved", "dispatched"]))
             if profile.get("employee_id"):
                 conds.append(model.assignee_id == profile["employee_id"])
             if profile.get("emp_code"):

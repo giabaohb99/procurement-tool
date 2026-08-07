@@ -22,7 +22,8 @@ const TABS = [
 // Cột trạng thái cho báo cáo yêu cầu — khớp enum thật trong DB (Tổng = tổng các cột)
 const PYC_METRICS = [
   { key: 'total', label: 'Tổng' }, { key: 'draft', label: 'Nháp' }, { key: 'submitted', label: 'Chờ duyệt' },
-  { key: 'approved', label: 'Đã duyệt' }, { key: 'processing', label: 'Đang xử lý' }, { key: 'completed', label: 'Hoàn tất' },
+  { key: 'approved', label: 'Đã duyệt' }, { key: 'dispatched', label: 'Đã điều phối' },
+  { key: 'processing', label: 'Đang xử lý' }, { key: 'completed', label: 'Hoàn tất' },
   { key: 'rejected', label: 'Từ chối' }, { key: 'cancelled', label: 'Đã hủy' },
 ]
 const YCKS_METRICS = [

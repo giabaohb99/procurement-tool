@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import { askConfirm, askPrompt } from '../components/confirm'
 import { toast } from '../components/toast'
 import { useAuth } from '../auth/AuthContext'
+import { prBadge } from '../config/cruds'
 
 const money = (v: number) => {
   const n = Math.abs(v || 0)
@@ -364,12 +365,10 @@ export default function Dashboard() {
                       <td>{r.department}</td>
                       <td style={{ textAlign: 'right', fontWeight: 700 }}>{full(r.total)}</td>
                       <td>
-                        <span className="badge" style={{
-                          background: r.status === 'submitted' ? '#fff6e5' : r.status === 'approved' ? '#e7f8ec' : r.status === 'rejected' ? '#fdecea' : '#f1f5f9',
-                          color: r.status === 'submitted' ? '#d97706' : r.status === 'approved' ? '#16a34a' : r.status === 'rejected' ? '#b91c1c' : '#64748b'
-                        }}>
-                          {r.status === 'submitted' ? 'Chờ duyệt' : r.status === 'approved' ? 'Đã duyệt' : r.status === 'rejected' ? 'Từ chối' : 'Nháp'}
-                        </span>
+                        {/* Dùng chung nhãn với danh sách YCMH — bảng tự liệt kê trước đây gọi mọi
+                            trạng thái ngoài submitted/approved/rejected là "Nháp" (sai với
+                            Đang xử lý/Hoàn thành, và với Đã điều phối của CR-034). */}
+                        {prBadge(r.status)}
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         {r.status === 'submitted' && authCan('purchase_request', 'approve') ? (

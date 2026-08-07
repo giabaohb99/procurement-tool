@@ -23,6 +23,7 @@ REGISTRY = {
     "r2_endpoint": ("str", "R2_ENDPOINT"),
     "r2_bucket": ("str", "R2_BUCKET"),
     "r2_public_url": ("str", "R2_PUBLIC_URL"),
+    "pr_dispatch_enabled": ("bool", "PR_DISPATCH_ENABLED"),
 }
 
 # key bí mật → thuộc tính fallback .env — NHẬP được nhưng không hiển thị lại

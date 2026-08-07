@@ -9,7 +9,8 @@ Ghi nhận nhu cầu mua vật tư, hàng hóa, dịch vụ từ các bộ phậ
 ## Vai trò tham gia
 
 - Người yêu cầu / Nhân viên (`purchase_request:create`, `purchase_request:read`): tạo và gửi duyệt phiếu của mình.
-- TP/QL / Người duyệt (`purchase_request:approve`): duyệt hoặc từ chối; phân bổ NSTM phụ trách.
+- Trưởng bộ phận / Người duyệt bước 1 (`purchase_request:approve` phạm vi `dept`): duyệt hoặc từ chối phiếu của phòng mình. **KHÔNG điều phối** (xem CR-034).
+- Admin / Quản lý thu mua — người ĐIỀU PHỐI (`purchase_request:approve` phạm vi `proc` hoặc `all`): duyệt lần 2 (nút **Duyệt** trên phiếu đang ở "Đã duyệt") — đây là lúc hệ thống tự động phân bổ NSTM phụ trách. Quyền này trên môi trường đang chạy do migration `d2e6f4b81a37` cấp cho vai trò `pur_admin`; `seed.py` chỉ áp cho cài mới.
 - Admin / Quản lý thu mua (`purchase_request:cancel`): Từ chối phiếu (→ `cancelled`), Trả về (→ `rejected`), đánh dấu Hoàn thành.
 - Nhân sự thu mua (NSTM) (`purchase_request:read`, được giao dòng): cập nhật trạng thái và tiến độ các dòng được phân công.
 - Người có `purchase_request:write`: sửa nội dung phiếu của người khác (ngoài chủ phiếu).
@@ -20,7 +21,8 @@ Ghi nhận nhu cầu mua vật tư, hàng hóa, dịch vụ từ các bộ phậ
 |--------------|--------------|---------|----------------------|
 | `draft` | Nháp | Đang soạn, chưa gửi | Lưu, Gửi duyệt, Xóa (nếu có `delete`) |
 | `submitted` | Chờ duyệt | Đã gửi, đợi TP/QL | Duyệt, Trả về, Từ chối phiếu (nếu có `approve`) |
-| `approved` | Đã duyệt | TP/QL đã duyệt, chờ NSTM xử lý | Trả về, Từ chối phiếu, Hoàn thành (nếu có `cancel`) |
+| `approved` | Đã duyệt | Trưởng bộ phận đã duyệt, **chờ thu mua điều phối**. Phiếu CHƯA có NSTM phụ trách và CHƯA tạo được ĐMH | **Duyệt** (lần 2 — Admin/QL thu mua), Trả về, Từ chối phiếu (nếu có `cancel`) |
+| `dispatched` | Đã điều phối | Thu mua đã duyệt lần 2; hệ thống đã tự động phân bổ NSTM — mốc bắt đầu làm việc thật (tạo được ĐMH) | Tạo ĐMH, Trả về, Từ chối phiếu, Hoàn thành (nếu có `cancel`) |
 | `processing` | Đang xử lý | Ít nhất 1 dòng đã bắt đầu xử lý | Trả về, Từ chối phiếu, Hoàn thành (nếu có `cancel`) |
 | `completed` | Hoàn thành | Tất cả dòng Hoàn thành hoặc đánh dấu thủ công | (chỉ xem) |
 | `rejected` | Bị trả lại | Phiếu bị trả về để sửa lại; người tạo/người yêu cầu được sửa như Nháp | Lưu, Gửi duyệt lại, Xóa (nếu có `delete`) |
@@ -29,15 +31,25 @@ Ghi nhận nhu cầu mua vật tư, hàng hóa, dịch vụ từ các bộ phậ
 **Điều kiện chuyển trạng thái:**
 
 - `draft` / `rejected` → `submitted`: người tạo, người yêu cầu (khớp `requester_id`) hoặc có `write` nhấn "Gửi duyệt"; yêu cầu pass `validate()`.
-- `submitted` → `approved`: người có `approve` nhấn "Duyệt"; tự động phân công NSTM theo phân loại (`auto_assign_by_category`).
+- `submitted` → `approved`: người có `approve` **trong phạm vi phiếu** nhấn "Duyệt". **KHÔNG phân công NSTM ở bước này** (CR-034) — phiếu chỉ dừng ở hàng chờ của phòng thu mua.
+- `approved` → `dispatched`: Admin / Quản lý thu mua nhấn **"Duyệt"** lần 2 ở phiếu Đã duyệt (`POST /api/purchase-requests/{id}/dispatch`); hệ thống chạy `auto_assign_by_category` phân bổ NSTM theo phân loại, rồi báo lại số dòng đã gán và số dòng còn trống (phân loại chưa cấu hình người phụ trách → chọn tay). Thông báo `pr_assigned` gửi cho NSTM ở bước này. Chỉ điều phối được đúng 1 lần, đúng từ `approved`.
 - `submitted` → `rejected`: người có `approve` nhấn "Trả về" và nhập lý do; xóa nhân sự phụ trách (`assignee_id = 0`) + reset trạng thái mọi dòng về "Chưa đặt hàng".
 - `submitted` → `cancelled`: người có `approve` nhấn "Từ chối phiếu" và nhập lý do; phiếu bị khóa hoàn toàn (không sửa được, chỉ xóa).
-- `approved` / `processing` → `rejected`: người có `cancel` nhấn "Trả về"; reset toàn bộ NSTM và trạng thái dòng về "Chưa đặt hàng".
-- `approved` / `processing` → `cancelled`: người có `cancel` nhấn "Từ chối phiếu" và nhập lý do.
-- `approved` / `processing` → `completed`: thủ công qua nút "Hoàn thành" (người có `cancel`); BE kiểm tra mọi dòng phải ở "Hoàn thành" hoặc "Hủy đơn" — sẽ báo lỗi nếu còn dòng chưa xong; hoặc tự động khi `recompute_status` xét thấy tất cả dòng đã ở điểm cuối.
-- `approved` → `processing`: tự động khi ít nhất 1 dòng có trạng thái khác "Chưa đặt hàng" và "Hủy đơn" (hàm `recompute_status`).
+- `approved` / `dispatched` / `processing` → `rejected`: người có `cancel` nhấn "Trả về"; reset toàn bộ NSTM và trạng thái dòng về "Chưa đặt hàng" (trả về thì phải điều phối lại từ đầu).
+- `approved` / `dispatched` / `processing` → `cancelled`: người có `cancel` nhấn "Từ chối phiếu" và nhập lý do.
+- `dispatched` / `processing` → `completed`: thủ công qua nút "Hoàn thành" (người có `cancel`); BE kiểm tra mọi dòng phải ở "Hoàn thành" hoặc "Hủy đơn" — sẽ báo lỗi nếu còn dòng chưa xong; hoặc tự động khi `recompute_status` xét thấy tất cả dòng đã ở điểm cuối.
+- `dispatched` → `processing`: tự động khi ít nhất 1 dòng có trạng thái khác "Chưa đặt hàng" và "Hủy đơn" (hàm `recompute_status`).
 
 Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và dòng hàng. Sau khi duyệt, chỉ NSTM phụ trách (hoặc người có `approve`/`cancel`) cập nhật được trạng thái/tiến độ dòng qua endpoint `/item-status` và `/assign`.
+
+**Công tắc bật/tắt bước duyệt lần 2 (CR-034a):** màn **Cấu hình hệ thống → Quy trình duyệt → "Yêu cầu mua hàng: bắt buộc thu mua duyệt lần 2 (điều phối)"** (key `pr_dispatch_enabled`, lưu DB, đổi có hiệu lực ngay, không cần deploy; `.env PR_DISPATCH_ENABLED` là giá trị dự phòng).
+
+- **BẬT (mặc định):** đúng luồng 2 chặng mô tả ở trên.
+- **TẮT:** bỏ hẳn chặng 2 — trưởng bộ phận nhấn Duyệt là hệ thống phân bổ NSTM ngay và phiếu đi thẳng sang `dispatched` (đúng luồng cũ trước CR-034). Nút duyệt lần 2 biến mất, `POST /dispatch` trả lỗi 400. Những phiếu đang kẹt ở `approved` từ lúc công tắc còn bật vẫn tạo được ĐMH / hoàn thành / tự suy trạng thái bình thường (nếu không sẽ không ai gỡ được cho chúng).
+
+Người dùng ở màn chi tiết thấy **dòng nhắc màu vàng** khi phiếu ở `approved`: người có quyền điều phối được nhắc bấm Duyệt, người khác được cho biết phiếu còn chờ thu mua duyệt lần nữa. Công tắc TẮT thì không hiện dòng này.
+
+**Chốt chặn tạo Đơn mua hàng (CR-034):** backend `_ensure_pr_dispatched` chặn tạo/sửa ĐMH tham chiếu YCMH đang ở `draft` · `submitted` · `approved` · `rejected` ("YCMH … chưa được điều phối (chưa có nhân sự phụ trách)") và `cancelled` ("đã bị từ chối"). Ẩn nút ở FE chỉ là tiện ích — chặn thật nằm ở backend. Mã YCMH gõ tay không khớp phiếu nào (dữ liệu cũ) thì không chặn.
 
 ---
 
@@ -144,7 +156,7 @@ Chỉ trạng thái `draft` và `rejected` cho phép sửa nội dung header và
 - Mặc định: 0 (chưa gán)
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Bảng Nhân sự (`employee`)
-- Người sửa: Người có `approve` (qua endpoint `PATCH /{pid}/assign`); tự động điền khi duyệt nếu truyền `assignee_id` vào `ApproveIn`
+- Người sửa: Người có `approve` (qua endpoint `PATCH /{pid}/assign`); tự động điền khi duyệt nếu truyền `assignee_id` vào `ApproveIn` (CR-034: bước "Duyệt" không còn tự phân bổ NSTM dòng — việc đó chuyển sang bước **Điều phối**)
 - Logic đặc biệt: Ảnh hưởng đến data scope + lọc DÒNG hàng (`_see_all_items` trong `purchase_request/controller.py`). Nhân viên thu mua scope `assigned`/`own` **chỉ thấy dòng có `assignee` = mã NV mình**. Người tạo phiếu / người yêu cầu (`requester_id`) / người có `approve` / người có scope `proc`/`dept`/`company`/`all` **thấy mọi dòng** của phiếu — trong đó **Admin thu mua (`pur_admin`) scope `proc` thấy đủ mọi dòng** (bổ sung `proc` vào `_see_all_items` ở CR-013, 2026-08-04; trước đó admin bị coi như NV được giao nên thấy trống). Hàm không đọc `assignee`, nên admin dù được giao 1 dòng vẫn thấy full.
 
 ### 13. Hiện mã trên bản in (`show_code_on_print`)
@@ -230,7 +242,7 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Bảng Phân loại (`item_group`), API `/api/item-groups`
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
-- Logic đặc biệt: Khi chọn Phân loại, tự điền `group_desc` với thông tin thời gian sản xuất tiêu chuẩn. Phân loại cũng được dùng để tự phân công NSTM khi duyệt phiếu (`auto_assign_by_category`).
+- Logic đặc biệt: Khi chọn Phân loại, tự điền `group_desc` với thông tin thời gian sản xuất tiêu chuẩn. Phân loại cũng được dùng để tự phân công NSTM khi **điều phối** phiếu (`auto_assign_by_category`) — CR-034 chuyển bước này từ "Duyệt" sang "Điều phối".
 
 ### 4. Mô tả phân loại (`group_desc`)
 
@@ -325,7 +337,7 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 - Mặc định: trống
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Danh sách nhân sự phòng thu mua (`employee.department` chứa "thu mua"), API `/api/employees`
-- Người sửa: Người có `approve` (trực tiếp trong popup chi tiết dòng hoặc qua endpoint `PATCH /{pid}/assign`); tự động gán khi duyệt phiếu
+- Người sửa: Người có `approve` (trực tiếp trong popup chi tiết dòng hoặc qua endpoint `PATCH /{pid}/assign`); **tự động gán khi ĐIỀU PHỐI phiếu** (CR-034 — trước đây gán ngay lúc TP duyệt). Dòng đã chọn tay trước khi điều phối thì giữ nguyên, không bị ghi đè.
 - Logic đặc biệt: Lưu mã NV (`employee.code`), hiển thị tên đầy đủ nhân sự (`employee.full_name`). Cột "NSTM phụ trách" chỉ hiển thị trên bảng khi người dùng có quyền xử lý khảo sát (`survey_request:process`). NSTM chỉ thấy dòng mà `assignee` trùng với `emp_code` của mình (khi không có quyền `approve`/`read` dept+).
 
 ### 15. Trạng thái xử lý dòng (`line_status`)

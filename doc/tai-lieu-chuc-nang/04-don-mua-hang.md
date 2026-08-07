@@ -82,7 +82,7 @@ Nút "Mở lại" (`reopen`) chuyển đơn từ `completed` về trạng thái 
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Danh sách Yêu cầu mua hàng (`/api/purchase-requests`)
 - Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
-- Logic đặc biệt: Khi chọn mã PYC từ gợi ý, tự điền `department`, `nspt`, `company_id` từ PYC tương ứng (nếu còn trống).
+- Logic đặc biệt: Khi chọn mã PYC từ gợi ý, tự điền `department`, `nspt`, `company_id` từ PYC tương ứng (nếu còn trống). **CR-034 — chốt chặn theo trạng thái YCMH:** backend (`_ensure_pr_dispatched`) từ chối tạo đơn (và từ chối đổi `pr_code`) nếu YCMH đang ở `draft` / `submitted` / `approved` / `rejected` — báo *"YCMH … chưa được điều phối (chưa có nhân sự phụ trách)"* — hoặc ở `cancelled` (đã bị từ chối). Chỉ YCMH từ **Đã điều phối** trở đi mới lập được ĐMH. Mã gõ tay không khớp phiếu nào trong hệ thống (dữ liệu cũ) thì không bị chặn.
 
 ### 4. Mã phiếu khảo sát (`survey_code`)
 

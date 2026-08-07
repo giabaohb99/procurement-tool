@@ -313,7 +313,32 @@ def _default_nspt(db: Session, data: POCreate, user_id: int) -> str:
     return ""
 
 
+def _ensure_pr_dispatched(db: Session, pr_code: str) -> None:
+    """CR-034 — chỉ tạo được ĐMH từ YCMH ĐÃ ĐIỀU PHỐI trở đi.
+    Chặn ở đây chứ không chỉ ẩn nút bên giao diện: form ĐMH cho gõ thẳng mã YCMH.
+    Mã không khớp phiếu nào (dữ liệu cũ / nhập tay) thì bỏ qua, không chặn."""
+    if not pr_code:
+        return
+    from app.modules.purchase_request.model import PurchaseRequest
+    pr = db.query(PurchaseRequest).filter(PurchaseRequest.code == pr_code,
+                                          PurchaseRequest.is_deleted == False).first()
+    if not pr:
+        return
+    # Công tắc điều phối TẮT → không còn bước duyệt lần 2, phiếu "Đã duyệt" (phiếu cũ còn kẹt lại
+    # từ lúc công tắc còn bật) coi như làm việc được, nếu không sẽ không ai gỡ được cho nó.
+    from app.modules.purchase_request.service import dispatch_enabled
+    chua_lam_viec_duoc = ["draft", "submitted", "rejected"]
+    if dispatch_enabled():
+        chua_lam_viec_duoc.append("approved")
+    if pr.status in chua_lam_viec_duoc:
+        raise HTTPException(400, f"YCMH {pr_code} chưa được điều phối (chưa có nhân sự phụ trách) "
+                                 f"— chưa tạo được đơn mua hàng.")
+    if pr.status == "cancelled":
+        raise HTTPException(400, f"YCMH {pr_code} đã bị từ chối — không tạo được đơn mua hàng.")
+
+
 def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
+    _ensure_pr_dispatched(db, (data.pr_code or "").strip())
     nspt = (data.nspt or "").strip() or _default_nspt(db, data, user_id)
     po = PurchaseOrder(
         code=data.code or "", misa_code=data.misa_code, pr_code=data.pr_code,
@@ -338,6 +363,9 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
     po = get_po(db, pid)
     if po.status in ("completed", "cancelled"):
         raise HTTPException(400, "Đơn đã hoàn thành/đã hủy — không sửa được. Dùng 'Nhân bản' để tạo đơn mới.")
+    _new_pr_code = (data.model_dump(exclude_unset=True).get("pr_code") or "").strip()
+    if _new_pr_code and _new_pr_code != (po.pr_code or ""):
+        _ensure_pr_dispatched(db, _new_pr_code)   # CR-034: đổi sang YCMH khác cũng phải đã điều phối
     old_urgent = bool(po.is_urgent)
     for k, v in data.model_dump(exclude_unset=True, exclude={"items"}).items():
         setattr(po, k, v)

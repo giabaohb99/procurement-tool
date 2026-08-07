@@ -324,7 +324,7 @@ def compute_dept_range(db: Session, date_from: str, date_to: str, company_id) ->
 
 # Bộ trạng thái đúng theo enum thật trong DB (để Tổng = tổng các cột)
 _REQ_STATUS = {
-    "pyc": ["draft", "submitted", "approved", "processing", "completed", "rejected", "cancelled"],
+    "pyc": ["draft", "submitted", "approved", "dispatched", "processing", "completed", "rejected", "cancelled"],
     "ycks": ["draft", "submitted", "processing", "survey_done", "pr_created", "done", "cancelled"],
 }
 

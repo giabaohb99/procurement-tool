@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 
-type Field = { key: string; group: string; label: string; type: string; value: any }
+type Field = { key: string; group: string; label: string; type: string; value: any; hint?: string }
 type Secret = { key: string; group: string; label: string; configured: boolean }
 
-const GROUP_TITLE: Record<string, string> = { email: 'Email (SMTP)', storage: 'Lưu trữ (R2 / S3)' }
+const GROUP_TITLE: Record<string, string> = {
+  workflow: 'Quy trình duyệt', email: 'Email (SMTP)', storage: 'Lưu trữ (R2 / S3)',
+}
 
 export default function Settings() {
   const { can } = useAuth()
@@ -48,7 +50,7 @@ export default function Settings() {
     finally { setBusy('') }
   }
 
-  const groups = ['email', 'storage']
+  const groups = ['workflow', 'email', 'storage']
   const gFields = (g: string) => fields.filter((f) => f.group === g)
   const gSecrets = (g: string) => secrets.filter((s) => s.group === g)
 
@@ -68,7 +70,7 @@ export default function Settings() {
           <h3 className="sec-title">{GROUP_TITLE[g]}</h3>
           <div className="form-grid">
             {gFields(g).map((f) => (
-              <div className="form-row" key={f.key}>
+              <div className="form-row" key={f.key} style={f.hint ? { gridColumn: '1 / -1' } : undefined}>
                 <label>{f.label}</label>
                 {f.type === 'bool' ? (
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: canWrite ? 'pointer' : 'default', height: 40 }}>
@@ -79,11 +81,14 @@ export default function Settings() {
                   <input type={f.type === 'int' ? 'number' : 'text'} value={f.value ?? ''} disabled={!canWrite}
                     onChange={(e) => setVal(f.key, f.type === 'int' ? Number(e.target.value) : e.target.value)} />
                 )}
+                {/* Giải thích công tắc — tránh bật/tắt nhầm rồi đổi luôn quy trình duyệt */}
+                {f.hint && <div style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5, marginTop: 2 }}>{f.hint}</div>}
               </div>
             ))}
           </div>
 
-          {/* Khóa bí mật — nhập được, không hiển thị lại */}
+          {/* Khóa bí mật — nhập được, không hiển thị lại (nhóm nào không có thì bỏ hẳn khối này) */}
+          {gSecrets(g).length > 0 && (
           <div style={{ marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
             <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>
               <i className="ti ti-key" /> Khóa bí mật (mã hóa khi lưu, không hiển thị lại) — để trống nếu không đổi:
@@ -102,6 +107,7 @@ export default function Settings() {
               ))}
             </div>
           </div>
+          )}
 
           {/* Nút test */}
           {canWrite && (

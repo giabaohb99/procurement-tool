@@ -31,6 +31,45 @@ def _blank_supplier(d: dict) -> None:
         d[k] = ""
 
 
+def _can_dispatch(profile: dict) -> bool:
+    """CR-034 — ai được ĐIỀU PHỐI (duyệt lần 2). Điều kiện: có quyền `approve` trên YCMH VỚI
+    phạm vi thu mua/toàn bộ ('proc'/'all'). Trưởng phòng có approve nhưng phạm vi 'dept' →
+    chỉ duyệt lần 1, không điều phối. Cùng lối đọc grant với `_see_all_items`."""
+    for g in profile.get("grants", []):
+        p = g["perms"].get("purchase_request")
+        if p and p.get("approve") and p.get("scope") in ("proc", "all"):
+            return True
+    return False
+
+
+def _in_approve_scope(db: Session, user, pid: int) -> bool:
+    """Phiếu có nằm trong phạm vi DUYỆT của người này không.
+    CR-034: Admin thu mua có `approve` phạm vi 'proc' (để duyệt điều phối) — phạm vi đó không
+    thấy phiếu 'submitted' nên họ tự động bị loại khỏi bước duyệt 1, không cần luật riêng."""
+    return apply_scope(db.query(PurchaseRequest).filter(PurchaseRequest.id == pid),
+                       PurchaseRequest, "purchase_request", user, get_perm_profile(db, user)).first() is not None
+
+
+def _notify_assigned(db: Session, pr, user, background_tasks: BackgroundTasks) -> None:
+    """Báo "được phân công phụ trách" cho NSTM vừa được gán tự động.
+    Gọi ở bước điều phối (công tắc BẬT) hoặc ngay khi duyệt (công tắc TẮT) — nội dung y như nhau."""
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User as _User
+    emp_ids = set()
+    if pr.assignee_id:
+        emp_ids.add(pr.assignee_id)
+    codes = [it.assignee for it in service.items_of(db, pr.id) if it.assignee]
+    if codes:
+        emp_ids.update(e.id for e in db.query(Employee).filter(Employee.code.in_(codes)).all())
+    if not emp_ids:
+        return
+    uids = [u.id for u in db.query(_User).filter(_User.employee_id.in_(emp_ids), _User.is_active == True).all()]
+    if uids:
+        trigger_notification(db=db, event="pr_assigned", doc_type="purchase_request", doc_code=pr.code,
+                             creator_id=user.id, background_tasks=background_tasks,
+                             link=f"/purchase-requests/{pr.id}", recipient_ids=uids)
+
+
 def _out(db: Session, pr, user=None) -> dict:
     from app.core.audit import resolve_actor
     d = {c: getattr(pr, c) for c in HEADER_COLS}
@@ -48,6 +87,16 @@ def _out(db: Session, pr, user=None) -> dict:
     d["supplier_pur"] = cl["pur"] if can_sup_read else service._empty_cluster()
     d["supplier_from_survey"] = cl["from_survey"]
     d["can_edit_supplier_pur"] = user is not None and user_has_permission(db, user, "supplier", "write")
+    # CR-034: nút duyệt lần 2 (điều phối) — quyền tính ở server (phạm vi grant không có ở map
+    # quyền phía FE). Công tắc tắt thì không ai thấy nút, vì phiếu không dừng ở 'approved' nữa.
+    d["dispatch_enabled"] = service.dispatch_enabled()
+    d["can_dispatch"] = bool(user is not None and pr.status == "approved" and d["dispatch_enabled"]
+                             and _can_dispatch(get_perm_profile(db, user)))
+    # Duyệt bước 1: cũng phải tính ở server vì có quyền `approve` chưa chắc đúng PHẠM VI —
+    # Admin thu mua (phạm vi 'proc') có approve để duyệt điều phối nhưng không duyệt bước 1.
+    d["can_approve"] = bool(user is not None and pr.status == "submitted"
+                            and user_has_permission(db, user, "purchase_request", "approve")
+                            and _in_approve_scope(db, user, pr.id))
     # NCC "hiệu lực" ở cột cũ (suggested_supplier*) — che nếu không có supplier.read (giữ Task 5).
     if not can_sup_read:
         _blank_supplier(d)
@@ -271,10 +320,11 @@ def update_item_status(pid: int, data: ItemStatusIn, db: Session = Depends(get_d
 
 def _ensure_can_return_or_reject(db: Session, user, pr: PurchaseRequest):
     """Trả về / Từ chối: Quản lý (quyền cancel) làm được mọi giai đoạn;
-    Người duyệt (quyền approve) chỉ làm được ở bước Chờ duyệt (submitted)."""
+    Người duyệt (quyền approve) chỉ làm được ở bước Chờ duyệt (submitted) VÀ trong phạm vi của mình."""
     if user_has_permission(db, user, "purchase_request", "cancel"):
         return
-    if pr.status == "submitted" and user_has_permission(db, user, "purchase_request", "approve"):
+    if pr.status == "submitted" and user_has_permission(db, user, "purchase_request", "approve") \
+            and _in_approve_scope(db, user, pr.id):
         return
     raise HTTPException(403, "Bạn không có quyền trả về / từ chối phiếu này")
 
@@ -364,13 +414,21 @@ def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
 
 @router.post("/{pid}/approve")
 def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "approve"))):
+    # Duyệt lần 1 (trưởng phòng) — chỉ trong phạm vi được phép duyệt. Phạm vi 'proc' (Admin thu mua)
+    # không thấy phiếu 'submitted' nên tự động bị loại: họ chỉ điều phối, không duyệt thay trưởng phòng.
+    if not _in_approve_scope(db, user, pid):
+        raise HTTPException(403, "Ngoài phạm vi được phép duyệt")
     pr = service.set_status(db, pid, "approved", user.id)
     if data.assignee_id:
         pr.assignee_id = data.assignee_id
         db.commit()
-    # Tự động phân bổ NSTM phụ trách cho từng dòng theo phân loại (Task 4)
-    from app.modules.category_assignee.service import auto_assign_by_category
-    auto_assign_by_category(db, pr)
+    # CR-034: mặc định KHÔNG tự động phân bổ NSTM ở đây — phiếu dừng ở "Đã duyệt", chờ Quản lý/Admin
+    # thu mua duyệt lần 2 (/dispatch). Nếu công tắc `pr_dispatch_enabled` bị TẮT thì chạy luôn bước
+    # điều phối ngay tại đây (luồng cũ: duyệt phát là có nhân sự phụ trách).
+    n = con_trong = 0
+    if not service.dispatch_enabled():
+        pr, n, con_trong = service.dispatch_pr(db, pid, user.id)
+        _notify_assigned(db, pr, user, background_tasks)
     trigger_notification(
         db=db,
         event="pr_approved",
@@ -382,23 +440,30 @@ def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db:
         approve_note=pr.note or "",
         link=f"/purchase-requests/{pr.id}"
     )
+    if not service.dispatch_enabled():
+        msg = f"Đã duyệt — tự động phân bổ {n} dòng"
+        if con_trong:
+            msg += f" · còn {con_trong} dòng chưa có người phụ trách, hãy chọn tay"
+        return success(_out(db, pr, user), msg)
+    return success(_out(db, pr, user), "Đã duyệt — phiếu chờ thu mua duyệt điều phối")
 
-    # Thông báo "được phân công phụ trách" cho NSTM tự động gán
-    from app.modules.employee.model import Employee
-    from app.modules.user.model import User as _User
-    emp_ids = set()
-    if pr.assignee_id:
-        emp_ids.add(pr.assignee_id)
-    codes = [it.assignee for it in service.items_of(db, pid) if it.assignee]
-    if codes:
-        emp_ids.update(e.id for e in db.query(Employee).filter(Employee.code.in_(codes)).all())
-    if emp_ids:
-        uids = [u.id for u in db.query(_User).filter(_User.employee_id.in_(emp_ids), _User.is_active == True).all()]
-        if uids:
-            trigger_notification(db=db, event="pr_assigned", doc_type="purchase_request", doc_code=pr.code,
-                                 creator_id=user.id, background_tasks=background_tasks,
-                                 link=f"/purchase-requests/{pr.id}", recipient_ids=uids)
-    return success(_out(db, pr, user), "Đã duyệt")
+
+@router.post("/{pid}/dispatch")
+def dispatch_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
+                user=Depends(require("purchase_request", "approve"))):
+    """CR-034 — Duyệt lần 2 phía thu mua (điều phối): tự động phân bổ NSTM rồi mở khóa tạo ĐMH."""
+    if not service.dispatch_enabled():
+        raise HTTPException(400, "Bước duyệt điều phối đang TẮT — phiếu được phân bổ nhân sự "
+                                 "ngay khi trưởng bộ phận duyệt.")
+    if not _can_dispatch(get_perm_profile(db, user)):
+        raise HTTPException(403, "Chỉ Quản lý / Admin thu mua mới duyệt điều phối được phiếu")
+    pr, n, con_trong = service.dispatch_pr(db, pid, user.id)
+    # Thông báo "được phân công phụ trách" cho NSTM vừa được gán (trước CR-034 nằm ở bước duyệt)
+    _notify_assigned(db, pr, user, background_tasks)
+    msg = f"Đã duyệt điều phối — tự động phân bổ {n} dòng"
+    if con_trong:
+        msg += f" · còn {con_trong} dòng chưa có người phụ trách, hãy chọn tay"
+    return success(_out(db, pr, user), msg)
 
 
 @router.post("/{pid}/reject")

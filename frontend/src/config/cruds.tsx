@@ -98,6 +98,9 @@ export const PR_STATUS: Record<string, { label: string; cls: string }> = {
   draft: { label: 'Nháp', cls: 'gray' },
   submitted: { label: 'Chờ duyệt', cls: 'warn' },
   approved: { label: 'Đã duyệt', cls: 'ok' },
+  // CR-034: TP duyệt xong phiếu dừng ở 'Đã duyệt' (chưa có NSTM, chưa tạo được ĐMH);
+  // thu mua bấm Điều phối mới sang 'Đã điều phối' — mốc bắt đầu làm việc thật.
+  dispatched: { label: 'Đã điều phối', cls: 'ok' },
   rejected: { label: 'Bị trả lại', cls: 'warn' },   // Trả về — sửa & gửi duyệt lại được
   processing: { label: 'Đang xử lý', cls: 'warn' },
   survey_done: { label: 'Đã khảo sát', cls: 'ok' },
@@ -408,7 +411,8 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'item_group', label: 'Phân loại', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
-        { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Bị trả lại' },
+        { value: 'approved', label: 'Đã duyệt' }, { value: 'dispatched', label: 'Đã điều phối' },
+        { value: 'rejected', label: 'Bị trả lại' },
         { value: 'cancelled', label: 'Đã từ chối' },
         { value: 'processing', label: 'Đang xử lý' }, { value: 'completed', label: 'Hoàn thành' },
       ] },
@@ -421,7 +425,8 @@ export const cruds: Record<string, CrudConfig> = {
       { name: 'is_urgent', label: 'Đơn gấp', type: 'boolean' },
       condSelect('status', 'Trạng thái', [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
-        { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Bị trả lại' },
+        { value: 'approved', label: 'Đã duyệt' }, { value: 'dispatched', label: 'Đã điều phối' },
+        { value: 'rejected', label: 'Bị trả lại' },
         { value: 'cancelled', label: 'Đã từ chối' },
         { value: 'processing', label: 'Đang xử lý' }, { value: 'completed', label: 'Hoàn thành' }]),
     ],

@@ -40,7 +40,8 @@ def stats(days: str = "30", db: Session = Depends(get_db), user=Depends(get_curr
     pr_query = db.query(PurchaseRequest)
     pr_total = filter_since(pr_query, PurchaseRequest).count()
     pr_pending = filter_since(pr_query.filter(PurchaseRequest.status == "submitted"), PurchaseRequest).count()
-    pr_approved = filter_since(pr_query.filter(PurchaseRequest.status == "approved"), PurchaseRequest).count()
+    # CR-034: "đã duyệt" gồm cả phiếu chờ điều phối lẫn đã điều phối (khỏi tụt số so với trước)
+    pr_approved = filter_since(pr_query.filter(PurchaseRequest.status.in_(["approved", "dispatched"])), PurchaseRequest).count()
 
     # Survey stats (Real data)
     survey_query = db.query(Survey)

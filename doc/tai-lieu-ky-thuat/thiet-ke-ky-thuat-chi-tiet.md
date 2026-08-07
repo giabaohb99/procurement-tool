@@ -261,7 +261,7 @@ Nguồn dữ liệu cho **option**. Cột chính:
 | company_id | BIGINT | | → `tab_company.id` |
 | requester, requester_position, department, head_of_dept | | | department → tên phòng |
 | purpose, request_date, need_date | | | |
-| status | VARCHAR(30) | `draft\|submitted\|approved\|rejected` | |
+| status | VARCHAR(30) | `draft\|submitted\|approved\|dispatched\|processing\|completed\|rejected\|cancelled`. `approved` = TP duyệt xong, CHƯA có NSTM; `dispatched` ("Đã điều phối", CR-034) = thu mua duyệt lần 2, đã tự phân bổ NSTM — mốc bắt đầu tạo được ĐMH | |
 | is_urgent | BOOLEAN | | |
 | vat_rate | NUMERIC(5,4) | | |
 | assignee_id | BIGINT | | → `tab_employee.id` |

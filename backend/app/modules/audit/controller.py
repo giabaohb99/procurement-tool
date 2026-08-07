@@ -13,6 +13,7 @@ router = APIRouter(prefix="/api/audit-logs", tags=["audit"])
 ACTION_LABEL = {
     "create": "Tạo mới", "update": "Cập nhật", "delete": "Xóa",
     "submitted": "Gửi duyệt", "approved": "Duyệt", "rejected": "Từ chối",
+    "dispatched": "Điều phối",
     "paid": "Ghi nhận đã chi", "cancelled": "Hủy",
 }
 
