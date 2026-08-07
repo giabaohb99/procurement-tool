@@ -12,6 +12,8 @@ class User(Base, AuditMixin):
     password_hash: Mapped[str] = mapped_column(String(255), default="")
     employee_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     avatar: Mapped[str] = mapped_column(String(500), default="")
+    # Ảnh chữ ký cá nhân (URL trên storage) — người dùng tự tải lên ở Trang cá nhân
+    signature: Mapped[str] = mapped_column(String(500), default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 

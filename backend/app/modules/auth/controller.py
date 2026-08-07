@@ -37,6 +37,7 @@ def _me_payload(db: Session, user) -> dict:
         "company_id": emp.company_id if emp else 0,
         "full_name": emp.full_name if emp else user.email,
         "avatar": getattr(user, 'avatar', ''),
+        "signature": getattr(user, 'signature', ''),
         "phone": emp.phone if emp else "",
         "department_name": emp.department_name if emp else "",
         "role_name": emp.role_name if emp else "",
@@ -127,6 +128,34 @@ def update_avatar(file: UploadFile = File(...), user=Depends(get_current_user), 
         return success({"avatar": url}, "Đã cập nhật ảnh đại diện")
     except Exception as e:
         raise HTTPException(400, f"Lỗi tải ảnh: {str(e)}")
+
+
+@router.post("/signature")
+def update_signature(file: UploadFile = File(...), user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Tải ảnh chữ ký cá nhân (PNG nền trong là đẹp nhất). Mỗi lần tải ghi đè URL cũ."""
+    from app.core.storage import env_prefix, safe_name, upload_fileobj
+    if not (file.content_type or "").startswith("image/"):
+        raise HTTPException(400, "Chữ ký phải là file ảnh (PNG, JPG…).")
+    try:
+        key = f"{env_prefix()}/signature/{user.id}/{uuid.uuid4().hex[:12]}-{safe_name(file.filename or 'signature')}"
+        url = upload_fileobj(file.file, key, file.content_type or "")
+        user.signature = url
+        db.commit()
+        audit_record(db, user.id, "user", user.id, "write", "Cập nhật ảnh chữ ký cá nhân")
+        return success({"signature": url}, "Đã cập nhật chữ ký")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(400, f"Lỗi tải ảnh chữ ký: {str(e)}")
+
+
+@router.delete("/signature")
+def delete_signature(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Gỡ chữ ký khỏi hồ sơ. Chỉ xóa liên kết, file trên storage giữ nguyên (không phá phiếu đã in)."""
+    user.signature = ""
+    db.commit()
+    audit_record(db, user.id, "user", user.id, "write", "Gỡ ảnh chữ ký cá nhân")
+    return success({"signature": ""}, "Đã gỡ chữ ký")
 
 
 @router.post("/forgot-password")

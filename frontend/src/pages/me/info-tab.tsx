@@ -3,6 +3,7 @@ import { useAuth } from '../../auth/AuthContext'
 import { TICKET_ENABLED } from '../../config/features'
 import ChangePasswordCard from './change-password-card'
 import PushNotificationCard from './push-notification-card'
+import SignatureCard from './signature-card'
 import type { MeProfile } from './profile-hero'
 
 // Hồ sơ nhân sự do bộ phận Nhân sự quản lý — trang này chỉ HIỂN THỊ, không sửa được.
@@ -78,6 +79,7 @@ export default function InfoTab({ me }: { me: MeProfile | null }) {
       </div>
 
       <div className="detail-col">
+        <SignatureCard signature={me.signature} />
         <ChangePasswordCard />
         <PushNotificationCard />
       </div>
