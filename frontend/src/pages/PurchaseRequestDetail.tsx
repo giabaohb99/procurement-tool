@@ -27,6 +27,12 @@ const API = '/api/purchase-requests'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 // Hiển thị số: để TRỐNG nếu chưa nhập (0/rỗng) để tránh hiểu lầm "đã nhập = 0"
 const fmtBlank = (n: any) => { const v = Number(n || 0); return v ? v.toLocaleString('vi-VN') : '' }
+// ĐƠN GIÁ cho lẻ tới 4 chữ số (vd 1.668,182 đ/cái); TIỀN thì làm tròn về đồng vì đơn giá lẻ
+// kéo theo thành tiền có đuôi lẻ (4.760.000,08) mà kế toán chỉ ghi nhận tới đồng.
+const PRICE_DECIMALS = 4
+const fmtPriceBlank = (n: any) => { const v = Number(n || 0); return v ? v.toLocaleString('vi-VN', { maximumFractionDigits: PRICE_DECIMALS }) : '' }
+const fmtVND = (n: any) => Math.round(Number(n) || 0).toLocaleString('vi-VN')
+const fmtVNDBlank = (n: any) => { const v = Math.round(Number(n) || 0); return v ? v.toLocaleString('vi-VN') : '' }
 const LINE_STATUS = ['Chưa đặt hàng', 'Đã đặt hàng', 'Đã nhận hàng', 'Hoàn thành', 'Hủy đơn']
 const LS_COLOR: Record<string, string> = {
   'Chưa đặt hàng': '#94a3b8', 'Đã đặt hàng': '#00AEEF',
@@ -814,8 +820,8 @@ export default function PurchaseRequestDetail() {
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         {editable ? (
-                          <NumberInput value={it.price} onChange={(v) => setItem(i, 'price', v)} className="cell-input" style={{ width: '100%', textAlign: 'right' }} placeholder="0" />
-                        ) : fmtBlank(it.price)}
+                          <NumberInput value={it.price} maxDecimals={PRICE_DECIMALS} onChange={(v) => setItem(i, 'price', v)} className="cell-input" style={{ width: '100%', textAlign: 'right' }} placeholder="0" />
+                        ) : fmtPriceBlank(it.price)}
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         {editable ? (
@@ -824,7 +830,7 @@ export default function PurchaseRequestDetail() {
                           </select>
                         ) : (it.vat_pct != null ? Number(it.vat_pct) + '%' : '')}
                       </td>
-                      <td style={{ textAlign: 'right', fontWeight: 500 }} title="Thành tiền gồm VAT">{fmtBlank(lineAmount(it))}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 500 }} title="Thành tiền gồm VAT">{fmtVNDBlank(lineAmount(it))}</td>
                       <td title="Trạng thái tự đồng bộ từ Đơn mua hàng — không sửa tay">
                         <span className="badge" style={{ background: (LS_COLOR[it.line_status] || '#94a3b8') + '22', color: LS_COLOR[it.line_status] || '#64748b' }}>{it.line_status || 'Chưa đặt hàng'}</span>
                       </td>
@@ -868,9 +874,9 @@ export default function PurchaseRequestDetail() {
               </div>
             )}
             <div style={{ marginTop: 14, textAlign: 'right', fontSize: 14, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
-              <div>Tiền hàng (chưa VAT): <b style={{ color: 'var(--navy)' }}>{fmt(subtotal)} đ</b></div>
-              <div style={{ color: 'var(--muted)' }}>Tiền VAT: <b>{fmt(vatAmount)} đ</b></div>
-              <div style={{ fontSize: 15 }}>Tổng cộng (gồm VAT): <b style={{ color: 'var(--navy)' }}>{fmt(totalWithVat)} đ</b></div>
+              <div>Tiền hàng (chưa VAT): <b style={{ color: 'var(--navy)' }}>{fmtVND(subtotal)} đ</b></div>
+              <div style={{ color: 'var(--muted)' }}>Tiền VAT: <b>{fmtVND(vatAmount)} đ</b></div>
+              <div style={{ fontSize: 15 }}>Tổng cộng (gồm VAT): <b style={{ color: 'var(--navy)' }}>{fmtVND(totalWithVat)} đ</b></div>
             </div>
           </div>
 
@@ -980,7 +986,7 @@ export default function PurchaseRequestDetail() {
                           onClick={() => navigate(`/purchase-orders/${po.id}`)}>{po.code || `#${po.id}`}</span>
                       </td>
                       <td>{po.supplier_name || po.supplier_code || ''}</td>
-                      <td style={{ textAlign: 'right' }}>{fmtBlank(po.amount)}</td>
+                      <td style={{ textAlign: 'right' }}>{fmtVNDBlank(po.amount)}</td>
                       <td style={{ textAlign: 'center' }}>{poBadge(po.status)}</td>
                     </tr>
                   ))}
@@ -1042,7 +1048,7 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Giá đề xuất (chưa VAT)</label>
-                <NumberInput value={edit.price} onChange={(v) => setItem(editIdx, 'price', v)} disabled={!editable} placeholder="Để trống nếu chưa có giá" />
+                <NumberInput value={edit.price} maxDecimals={PRICE_DECIMALS} onChange={(v) => setItem(editIdx, 'price', v)} disabled={!editable} placeholder="Để trống nếu chưa có giá" />
               </div>
               <div className="form-row">
                 <label title="% VAT theo dòng">VAT (%)</label>

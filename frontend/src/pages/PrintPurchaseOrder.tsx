@@ -4,6 +4,9 @@ import { api } from '../api/client'
 import NotFound from '../components/NotFound'
 
 const fmt = (n: any) => (Number(n) ? Number(n).toLocaleString('vi-VN') : '')
+// ĐƠN GIÁ in đủ 4 số lẻ; TIỀN in làm tròn về đồng (kế toán chỉ ghi nhận tới đồng)
+const fmtPrice = (n: any) => (Number(n) ? Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 4 }) : '')
+const fmtVND = (n: any) => (Number(n) ? Math.round(Number(n)).toLocaleString('vi-VN') : '')
 function viDate(d: string) {
   if (!d) return ''
   const [y, m, dd] = d.split('-')
@@ -89,10 +92,10 @@ export default function PrintPurchaseOrder() {
                   <td style={cell}>{it.spec}</td>
                   <td style={{ ...cell, textAlign: 'center' }}>{it.unit}</td>
                   <td style={{ ...cell, textAlign: 'right' }}>{fmt(it.qty_order)}</td>
-                  <td style={{ ...cell, textAlign: 'right' }}>{fmt(it.price)}</td>
+                  <td style={{ ...cell, textAlign: 'right' }}>{fmtPrice(it.price)}</td>
                   <td style={{ ...cell, textAlign: 'center' }}>{it.vat ? it.vat + '%' : ''}</td>
-                  <td style={{ ...cell, textAlign: 'right' }}>{fmt(priceVat)}</td>
-                  <td style={{ ...cell, textAlign: 'right' }}>{fmt(it.qty_order * priceVat)}</td>
+                  <td style={{ ...cell, textAlign: 'right' }}>{fmtPrice(priceVat)}</td>
+                  <td style={{ ...cell, textAlign: 'right' }}>{fmtVND(it.qty_order * priceVat)}</td>
                   <td style={cell}>{it.warehouse_code}</td>
                   <td style={cell}>{it.invoice_name}</td>
                   <td style={cell}>{it.note}</td>
@@ -101,7 +104,7 @@ export default function PrintPurchaseOrder() {
             })}
             <tr>
               <td style={{ ...cell, fontWeight: 700, textAlign: 'center' }} colSpan={9}>TỔNG CỘNG</td>
-              <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{fmt(po.order_total)}</td>
+              <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{fmtVND(po.order_total)}</td>
               <td style={cell} colSpan={3} />
             </tr>
           </tbody>

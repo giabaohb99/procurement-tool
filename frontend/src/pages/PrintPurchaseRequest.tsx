@@ -3,6 +3,9 @@ import { useParams } from "react-router-dom";
 import { api } from "../api/client";
 
 const fmt = (n: any) => Number(n || 0).toLocaleString("vi-VN");
+// ĐƠN GIÁ in đủ 4 số lẻ; TIỀN in làm tròn về đồng (kế toán chỉ ghi nhận tới đồng)
+const fmtPrice = (n: any) => Number(n || 0).toLocaleString("vi-VN", { maximumFractionDigits: 4 });
+const fmtVND = (n: any) => Math.round(Number(n) || 0).toLocaleString("vi-VN");
 function viDate(d: string) {
   if (!d) return "............";
   const [y, m, dd] = d.split("-");
@@ -335,10 +338,10 @@ export default function PrintPurchaseRequest() {
                 <td style={cell}>{it.product_code}</td>
                 <td style={cell}>{it.unit}</td>
                 <td style={{ ...cell, textAlign: "right" }}>{fmt(it.qty)}</td>
-                <td style={{ ...cell, textAlign: "right" }}>{fmt(it.price)}</td>
+                <td style={{ ...cell, textAlign: "right" }}>{fmtPrice(it.price)}</td>
                 <td style={{ ...cell, textAlign: "right" }}>{Number(it.vat_pct) || 0}%</td>
                 <td style={{ ...cell, textAlign: "right" }}>
-                  {fmt((Number(it.qty) || 0) * (Number(it.price) || 0))}
+                  {fmtVND((Number(it.qty) || 0) * (Number(it.price) || 0))}
                 </td>
                 <td style={cell}>{whCode(it.warehouse)}</td>
                 <td style={cell}>{it.note}</td>
@@ -349,7 +352,7 @@ export default function PrintPurchaseRequest() {
                 Tiền hàng (chưa VAT)
               </td>
               <td style={{ ...cell, textAlign: "right", fontWeight: 700 }}>
-                {fmt(pr.subtotal)}
+                {fmtVND(pr.subtotal)}
               </td>
               <td style={cell} colSpan={2} />
             </tr>
@@ -358,7 +361,7 @@ export default function PrintPurchaseRequest() {
                 Tiền VAT:
               </td>
               <td style={{ border: "none", textAlign: "right", padding: "8px 8px 4px", fontSize: 13, fontWeight: 700 }}>
-                {Number(pr.vat) ? fmt(pr.vat) : "0"}
+                {Number(pr.vat) ? fmtVND(pr.vat) : "0"}
               </td>
               <td style={{ border: "none" }} colSpan={2} />
             </tr>
@@ -367,7 +370,7 @@ export default function PrintPurchaseRequest() {
                 Tổng cộng thanh toán (gồm VAT):
               </td>
               <td style={{ border: "none", textAlign: "right", padding: "4px 8px 8px", fontSize: 13, fontWeight: 700 }}>
-                {fmt(pr.total)}
+                {fmtVND(pr.total)}
               </td>
               <td style={{ border: "none" }} colSpan={2} />
             </tr>

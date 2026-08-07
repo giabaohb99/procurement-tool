@@ -8,6 +8,8 @@ import SearchSelect from '../components/SearchSelect'
 import PurchaseHistoryTable from '../components/PurchaseHistoryTable'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
+// ĐƠN GIÁ hiện đủ 4 số lẻ — mặc định toLocaleString chỉ cho 3, cắt mất chữ số cuối
+const fmtPrice = (n: any) => Number(n || 0).toLocaleString('vi-VN', { maximumFractionDigits: 4 })
 const SUP_TYPE = [{ value: 'goods', label: 'NCC bán hàng' }, { value: 'transport', label: 'Đơn vị vận chuyển' }]
 const LEGAL_TYPE = ['Công ty', 'Cá nhân', 'Hợp danh', 'Hộ kinh doanh']
 const TABS = [
@@ -338,7 +340,7 @@ export default function SupplierDetail() {
                     <tr key={x.line_id} className="clickable" onClick={() => navigate(`/surveys/${x.survey_id}`)}>
                       <td style={{ color: 'var(--teal)', fontWeight: 600 }}>{x.survey_code}</td><td>{x.internal_code}</td>
                       <td>{x.product_name}</td><td>{x.quote_unit}</td>
-                      <td style={{ textAlign: 'right' }}>{fmt(x.price_by_volume)}</td><td style={{ textAlign: 'right' }}>{fmt(x.moq)}</td>
+                      <td style={{ textAlign: 'right' }}>{fmtPrice(x.price_by_volume)}</td><td style={{ textAlign: 'right' }}>{fmt(x.moq)}</td>
                       <td><span style={apStyle(x.line_approve)}>{x.line_approve}</span></td>
                     </tr>
                   ))}

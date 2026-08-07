@@ -13,6 +13,8 @@ import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
+// ĐƠN GIÁ hiện đủ 4 số lẻ — mặc định toLocaleString chỉ cho 3, cắt mất chữ số cuối
+const fmtPrice = (n: any) => Number(n || 0).toLocaleString('vi-VN', { maximumFractionDigits: 4 })
 const NOWRAP = { whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }
 const MUTED = { color: 'var(--muted)' } as const
 const R = { textAlign: 'right' as const }
@@ -91,7 +93,7 @@ const COLS: Col[] = [
   { key: 'unit', label: 'ĐVT', w: 56, sort: 'unit', cell: (r) => r.unit },
   { key: 'qty_request', hide: true, label: 'SL YC', w: 76, sort: 'qty_request', td: R, cell: (r) => fmt(r.qty_request) },
   { key: 'qty_order', label: 'SL đặt', w: 76, sort: 'qty_order', td: R, cell: (r) => fmt(r.qty_order) },
-  { key: 'price', label: 'Đơn giá', w: 96, sort: 'price', td: R, cell: (r) => fmt(r.price) },
+  { key: 'price', label: 'Đơn giá', w: 96, sort: 'price', td: R, cell: (r) => fmtPrice(r.price) },
   { key: 'vat', hide: true, label: 'VAT%', w: 60, sort: 'vat', td: R, cell: (r) => r.vat || 0 },
   { key: 'order_amount', label: 'Thành tiền ĐH', w: 128, td: { ...R, fontWeight: 600 }, cell: (r) => fmt(r.order_amount) },
   { key: 'progress_status', label: 'Tiến độ', w: 176, sort: 'progress_status', cell: (r) => pgBadge(r.progress_status) },
@@ -110,7 +112,7 @@ const COLS: Col[] = [
   { key: 'diff_regulated', hide: true, label: 'CL quy định', w: 84, sort: 'diff_regulated', td: R, cell: (r) => diffCell(r.diff_regulated) },
   { key: 'diff_required', hide: true, label: 'CL vs YC', w: 76, sort: 'diff_required', td: R, cell: (r) => diffCell(r.diff_required) },
   { key: 'delivery_invoice_no', hide: true, label: 'Số HĐ (giao)', w: 160, sort: 'delivery_invoice_no', td: NOWRAP, cell: (r) => r.delivery_invoice_no },
-  { key: 'shipping_unit_price', hide: true, label: 'Đơn giá VC', w: 96, sort: 'shipping_unit_price', sup: true, td: R, cell: (r) => fmt(r.shipping_unit_price) },
+  { key: 'shipping_unit_price', hide: true, label: 'Đơn giá VC', w: 96, sort: 'shipping_unit_price', sup: true, td: R, cell: (r) => fmtPrice(r.shipping_unit_price) },
   { key: 'shipping_amount', hide: true, label: 'Tiền VC', w: 108, sort: 'shipping_amount', sup: true, td: R, cell: (r) => fmt(r.shipping_amount) },
   { key: 'qc_result', hide: true, label: 'QC', w: 64, sort: 'qc_result', cell: (r) => r.qc_result },
   { key: 'delivery_status', hide: true, label: 'TT giao', w: 108, sort: 'delivery_status', cell: (r) => r.delivery_status },

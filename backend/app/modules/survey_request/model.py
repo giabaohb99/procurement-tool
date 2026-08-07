@@ -43,7 +43,7 @@ class SurveyRequestLine(Base, AuditMixin):
     other_requirement: Mapped[str] = mapped_column(Text, default="")
     request_qty: Mapped[float] = mapped_column(Numeric(18, 3), default=0)     # SL dự kiến mua
     uom: Mapped[str] = mapped_column(String(25), default="")
-    proposed_price: Mapped[float] = mapped_column(Numeric(18, 2), default=0)  # giá đề xuất VNĐ
+    proposed_price: Mapped[float] = mapped_column(Numeric(18, 4), default=0)  # giá đề xuất VNĐ — đơn giá giữ 4 số lẻ
     image_file: Mapped[str] = mapped_column(String(500), default="")
     assignee: Mapped[str] = mapped_column(String(100), default="")           # mã NSTM phụ trách dòng
     pr_id: Mapped[int] = mapped_column(BigInteger, default=0)                 # PYC sinh ra từ dòng
@@ -77,7 +77,7 @@ class SurveyRequestOption(Base, AuditMixin):
     snap_origin: Mapped[str] = mapped_column(String(100), default="")
     snap_quote_unit: Mapped[str] = mapped_column(String(25), default="")
     snap_moq: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
-    snap_price_by_volume: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    snap_price_by_volume: Mapped[float] = mapped_column(Numeric(18, 4), default=0)   # snapshot đơn giá — 4 số lẻ
     snap_volume_range: Mapped[str] = mapped_column(String(100), default="")
     snap_vat: Mapped[float] = mapped_column(Numeric(5, 2), default=0)
     snap_delivery_time: Mapped[str] = mapped_column(String(100), default="")

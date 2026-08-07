@@ -18,23 +18,27 @@ const API = '/api/survey-requests'
 
 // Hiển thị số: để TRỐNG nếu chưa nhập (0/rỗng)
 const fmtBlank = (n: any) => { const v = Number(n || 0); return v ? v.toLocaleString('vi-VN') : '' }
+// Riêng ĐƠN GIÁ hiện đủ 4 số lẻ (mặc định toLocaleString chỉ cho 3, cắt mất chữ số cuối)
+const fmtPriceBlank = (n: any) => { const v = Number(n || 0); return v ? v.toLocaleString('vi-VN', { maximumFractionDigits: 4 }) : '' }
 
 // Parse chuỗi số kiểu VN (bỏ dấu chấm ngăn nghìn, dấu phẩy = thập phân)
 const parseVN = (s: string) => {
   const c = String(s).replace(/\./g, '').replace(/\s/g, '').replace(',', '.').replace(/[^\d.]/g, '')
   return c === '' ? 0 : Number(c)
 }
+// ĐƠN GIÁ cho lẻ tới 4 chữ số (vd 1.668,182 đ/cái) — mặc định các ô số khác vẫn 3
+const PRICE_DECIMALS = 4
 // Ô nhập số: hiển thị 3.000 khi không focus, cho gõ tự do khi focus
-function NumberInput({ value, onChange, disabled, placeholder, className, style }: any) {
+function NumberInput({ value, onChange, disabled, placeholder, className, style, maxDecimals = 3 }: any) {
   const [foc, setFoc] = useState(false)
   const [raw, setRaw] = useState('')
-  const shown = foc ? raw : (Number(value) ? Number(value).toLocaleString('vi-VN') : '')
+  const shown = foc ? raw : (Number(value) ? Number(value).toLocaleString('vi-VN', { maximumFractionDigits: maxDecimals }) : '')
   return (
     <input type="text" inputMode="decimal" disabled={disabled} placeholder={placeholder} value={shown}
       className={className} style={style}
       onFocus={() => { setRaw(value ? String(value).replace('.', ',') : ''); setFoc(true) }}
       onBlur={() => setFoc(false)}
-      onChange={(e) => { setRaw(e.target.value); onChange(parseVN(e.target.value)) }} />
+      onChange={(e) => { setRaw(e.target.value); onChange(Number(parseVN(e.target.value).toFixed(maxDecimals))) }} />
   )
 }
 
@@ -840,8 +844,8 @@ export default function SurveyRequestDetail() {
                       {/* Giá đề xuất */}
                       <td style={{ textAlign: 'right' }}>
                         {editable
-                          ? <NumberInput className="cell-input" style={{ textAlign: 'right' }} value={l.proposed_price} placeholder="—" onChange={(v: number) => setLine(i, 'proposed_price', v)} />
-                          : fmtBlank(l.proposed_price)}
+                          ? <NumberInput className="cell-input" style={{ textAlign: 'right' }} maxDecimals={PRICE_DECIMALS} value={l.proposed_price} placeholder="—" onChange={(v: number) => setLine(i, 'proposed_price', v)} />
+                          : fmtPriceBlank(l.proposed_price)}
                       </td>
 
                       {/* Nhân sự phụ trách — chỉ view NSTM/QL */}
@@ -907,7 +911,7 @@ export default function SurveyRequestDetail() {
                     Sản phẩm {li + 1}: {ln.requirement_detail || ln.item_group || '—'}
                   </div>
                   <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 10 }}>
-                    Phân loại: <b>{ln.item_group || '—'}</b> · SL dự kiến: <b>{fmtBlank(ln.request_qty) || '—'}</b> {ln.uom} · Giá đề xuất của bạn: <b>{fmtBlank(ln.proposed_price) || '—'}</b>
+                    Phân loại: <b>{ln.item_group || '—'}</b> · SL dự kiến: <b>{fmtBlank(ln.request_qty) || '—'}</b> {ln.uom} · Giá đề xuất của bạn: <b>{fmtPriceBlank(ln.proposed_price) || '—'}</b>
                   </div>
                   {/* Người YC chốt trạng thái NGAY trên dòng kết quả khảo sát (không mở popup).
                       1 nút đỏ "Cần khảo sát lại" — bấm sẽ tự BỎ CHỌN phương án (hướng B).
@@ -986,7 +990,7 @@ export default function SurveyRequestDetail() {
                           <div className="option-fields">
                             <Field label="Mã VTBB" value={o.system_product_code} />
                             <Field label="Ngày khảo sát" value={o.survey_result_date ? new Date(o.survey_result_date).toLocaleDateString('vi-VN') : ''} />
-                            <Field label="Đơn giá" value={o.snap_price_by_volume ? fmtBlank(o.snap_price_by_volume) + ' đ' : ''} strong />
+                            <Field label="Đơn giá" value={o.snap_price_by_volume ? fmtPriceBlank(o.snap_price_by_volume) + ' đ' : ''} strong />
                             <Field label="ĐVT báo giá" value={o.snap_quote_unit} />
                             <Field label="MOQ" value={fmtBlank(o.snap_moq)} />
                             <Field label="Khoảng SL áp giá" value={o.snap_volume_range} />
@@ -1141,6 +1145,7 @@ export default function SurveyRequestDetail() {
                 <label>Giá đề xuất VNĐ</label>
                 <NumberInput
                   value={edit.proposed_price}
+                  maxDecimals={PRICE_DECIMALS}
                   placeholder="Để trống nếu chưa có"
                   disabled={!editable}
                   onChange={(v: number) => setLine(editIdx, 'proposed_price', v)}

@@ -54,7 +54,7 @@ class POItem(Base, AuditMixin):
     unit: Mapped[str] = mapped_column(String(25), default="")
     qty_request: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
     qty_order: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
-    price: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    price: Mapped[float] = mapped_column(Numeric(18, 4), default=0)        # ĐƠN GIÁ giữ 4 số lẻ (giá quy đổi hay lẻ tới phần nghìn đồng)
     vat: Mapped[float] = mapped_column(Numeric(5, 2), default=0)            # % VAT của dòng
     amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)        # qty_order*price*(1+vat%)
     qty_received: Mapped[float] = mapped_column(Numeric(18, 3), default=0)  # auto = Σ giao đã nhận
@@ -92,7 +92,7 @@ class PODelivery(Base, AuditMixin):
     diff_required: Mapped[int] = mapped_column(BigInteger, default=0)       # CL quy định−KD yêu cầu (AN)
     invoice_no: Mapped[str] = mapped_column(String(50), default="")
     invoice_date: Mapped[str] = mapped_column(String(10), default="")
-    shipping_unit_price: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    shipping_unit_price: Mapped[float] = mapped_column(Numeric(18, 4), default=0)   # đơn giá vận chuyển — cũng cho 4 số lẻ
     shipping_amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
     qc_result: Mapped[str] = mapped_column(String(20), default="")          # Đạt | Thiếu | Lỗi
     status: Mapped[str] = mapped_column(String(30), default="")            # trạng thái giao (P)
