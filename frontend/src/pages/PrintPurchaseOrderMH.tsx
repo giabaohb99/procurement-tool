@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import NotFound from '../components/NotFound'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 function dmy(d: string) { if (!d) return ''; const [y, m, dd] = d.split('-'); return `${dd}/${m}/${y}` }
@@ -33,7 +34,19 @@ function docTien(amount: number): string {
 export default function PrintPurchaseOrderMH() {
   const { id } = useParams()
   const [po, setPo] = useState<any>(null)
-  useEffect(() => { api.get(`/api/purchase-orders/${id}/print`).then((r) => setPo(r.data.data)) }, [id])
+  // Đơn đã bị xóa / không có quyền in -> API trả 404·403. Không bắt lỗi thì trang kẹt
+  // "Đang tải..." vĩnh viễn, người dùng tưởng hệ thống treo.
+  const [notFound, setNotFound] = useState(false)
+  useEffect(() => {
+    setNotFound(false)
+    api.get(`/api/purchase-orders/${id}/print`, { _silent: true } as any)
+      .then((r) => setPo(r.data.data))
+      .catch(() => setNotFound(true))
+  }, [id])
+  if (notFound) return (
+    <NotFound backTo="/purchase-orders"
+              message="Đơn mua hàng này không tồn tại, đã bị xóa hoặc bạn không có quyền in." />
+  )
   if (!po) return <div style={{ padding: 40 }}>Đang tải...</div>
   const co = po.company || {}
   const sup = po.supplier || {}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import NotFound from '../components/NotFound'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 function dmy(d: string) { if (!d) return ''; const [y, m, dd] = d.split('-'); return `${dd}/${m}/${y}` }
@@ -35,7 +36,19 @@ function docTien(amount: number): string {
 export default function PrintPaymentRequest() {
   const { id } = useParams()
   const [req, setReq] = useState<any>(null)
-  useEffect(() => { api.get(`/api/payment-requests/${id}/print`).then((r) => setReq(r.data.data)) }, [id])
+  // Phiếu đã bị xóa / không có quyền in -> API trả 404·403. Không bắt lỗi thì trang kẹt
+  // "Đang tải..." vĩnh viễn, người dùng tưởng hệ thống treo.
+  const [notFound, setNotFound] = useState(false)
+  useEffect(() => {
+    setNotFound(false)
+    api.get(`/api/payment-requests/${id}/print`, { _silent: true } as any)
+      .then((r) => setReq(r.data.data))
+      .catch(() => setNotFound(true))
+  }, [id])
+  if (notFound) return (
+    <NotFound backTo="/payment-requests"
+              message="Phiếu yêu cầu thanh toán này không tồn tại, đã bị xóa hoặc bạn không có quyền in." />
+  )
   if (!req) return <div style={{ padding: 40 }}>Đang tải...</div>
   const co = req.company || {}
   const sup = req.supplier_name || req.supplier_code
