@@ -646,8 +646,12 @@ export default function CommentThread({
   )
 
   return (
-    <div ref={khung}>
+    // Nằm trong thẻ trắng như các khối khác của trang chi tiết (đính kèm, lịch sử thao tác) —
+    // trước đây khối này trôi thẳng trên nền trang nên nhìn lạc lõng so với phần còn lại.
+    <div ref={khung} className="card" style={{ padding: 18, marginBottom: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 9,
+                    borderBottom: gapKhoi ? 'none' : '1px solid var(--border)',
+                    paddingBottom: gapKhoi ? 0 : 12,
                     marginBottom: gapKhoi ? 0 : 14 }}>
         {/* Bấm vào tiêu đề để gập/mở cả khối — phiếu dài, có lúc chỉ muốn xem nội dung phiếu */}
         <button type="button" onClick={() => setGapKhoi((v) => !v)}
@@ -655,11 +659,11 @@ export default function CommentThread({
                 style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer',
                          fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center',
                          gap: 9 }}>
-          <i className="ti ti-message-circle" style={{ color: 'var(--teal)', fontSize: 21 }} />
-          <span style={{ fontWeight: 700, color: 'var(--navy)', fontSize: 17 }}>{title}</span>
+          <i className="ti ti-message-circle" style={{ color: 'var(--teal)', fontSize: 18 }} />
+          <span style={{ fontWeight: 600, color: 'var(--navy)', fontSize: 15 }}>{title}</span>
           {total > 0 && (
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#475569', background: '#eef2f7',
-                           borderRadius: 999, padding: '2px 10px' }}>
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', background: '#f1f5f9',
+                           borderRadius: 999, padding: '2px 8px' }}>
               {total}
             </span>
           )}
@@ -693,8 +697,10 @@ export default function CommentThread({
             const open = openIds.includes(c.id)
             const n = c.reply_count || 0
             const act = active && active.rootId === c.id ? active : null
+            // Nền xám nhạt: từ khi cả khối nằm trong thẻ trắng, luồng nền trắng viền mỏng
+            // gần như tàng hình — không nhìn ra đâu là ranh giới giữa hai mạch trao đổi.
             return (
-              <div key={c.id} style={{ background: '#fff', border: `1px solid ${LINE}`,
+              <div key={c.id} style={{ background: '#f8fafc', border: `1px solid ${LINE}`,
                                        borderRadius: 14, padding: 18 }}>
                 <Row c={c} likers={likers[c.id]} onLike={like} onLikers={showLikers}
                      onReply={(x) => startReply(c.id, x)} onRemove={remove} />
