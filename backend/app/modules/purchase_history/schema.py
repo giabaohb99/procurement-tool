@@ -5,8 +5,10 @@ class PurchaseHistoryOut(BaseModel):
     """Chỉ đọc — bảng snapshot không có API tạo/sửa/xóa."""
 
     id: int
-    po_item_id: int
-    po_id: int
+    # Dòng DỮ LIỆU CŨ (nhập từ file lịch sử) không có ĐMH nên 2 cột này rỗng.
+    po_item_id: int | None = None
+    source: str = "system"
+    po_id: int = 0
     po_code: str = ""
     product_code: str = ""
     product_name: str = ""

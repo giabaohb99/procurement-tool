@@ -58,9 +58,12 @@ export default function PurchaseHistoryTable({
           </thead>
           <tbody>
             {rows.map((h) => (
-              <tr key={h.id} className="clickable" onClick={() => navigate(`/purchase-orders/${h.po_id}`)}>
-                <td>{h.order_date}</td>
-                <td>{h.po_code}</td>
+              // Dòng DỮ LIỆU CŨ (nhập từ file lịch sử trước khi có hệ thống) không có ĐMH
+              // để mở → không cho click, cột Mã PO ghi rõ nguồn thay vì để trống.
+              <tr key={h.id} className={h.po_id ? 'clickable' : undefined}
+                  onClick={h.po_id ? () => navigate(`/purchase-orders/${h.po_id}`) : undefined}>
+                <td>{h.order_date || '—'}</td>
+                <td>{h.po_code || <span style={{ color: '#999' }}>Dữ liệu cũ</span>}</td>
                 <td>{byProduct ? (h.supplier_name || h.supplier_code) : (h.product_name || h.product_code)}</td>
                 <td>{h.unit}</td>
                 <td style={{ textAlign: 'right' }}>{fmt(h.qty_order)}</td>

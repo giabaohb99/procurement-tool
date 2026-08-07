@@ -5,7 +5,7 @@ Khoá gom:
     └ (Mã SP L + Số HĐ AE)       -> POItem  (số HĐ thuộc dòng hàng)
         └ mỗi dòng Excel         -> PODelivery
 Sau khi dựng PO+dòng+lần giao -> recompute_effects() tự sinh nhập kho + tồn + công nợ.
-Dòng "Hoàn thành" -> tạo YCTT + ghi ĐÃ CHI (chỉ ở chế độ Ghi).
+Dòng "Hoàn thành" -> tạo YCTT + ghi ĐÃ CHI + chốt LỊCH SỬ MUA HÀNG (chỉ ở chế độ Ghi).
 """
 import json
 from datetime import datetime
@@ -18,6 +18,7 @@ from app.modules.payable.model import Payable
 from app.modules.payment_request import service as pr_service
 from app.modules.payment_request.schema import LineIn, PRequestCreate
 from app.modules.product.model import Product
+from app.modules.purchase_history import service as ph_service
 from app.modules.purchase_order import service as po_service
 from app.modules.purchase_order.model import POItem, PODelivery, PurchaseOrder
 from app.modules.supplier.model import Supplier
@@ -297,6 +298,13 @@ def run(db, batch: ImportBatch, wb, apply: bool, default_nspt: str = "") -> None
         # Dòng đã auto-pay đã được set_status đẩy lên 'Hoàn thành'; các dòng còn lại tiến tới bước đạt được.
         for it in po_service.items_of(db, po.id):
             po_service.auto_advance_line(db, po, it)
+            # File import mang sẵn cột tiến độ 'Hoàn thành' -> upsert_item gán thẳng, mà
+            # auto_advance_line thì bỏ qua dòng đã ở điểm cuối (forward-only) nên KHÔNG có
+            # chỗ nào chốt lịch sử mua hàng. Chốt tại đây, sau recompute_effects để
+            # số lượng/thành tiền trong snapshot là số đã tính lại. snapshot_line_safe
+            # idempotent theo po_item_id nên dòng vừa được auto_advance chốt rồi không ghi trùng.
+            if it.progress_status == "Hoàn thành":
+                ph_service.snapshot_line_safe(db, po, it)
         changes.append({"survey_id": po.id, "was_new": was_new, "snapshot": snap})
 
     if apply:

@@ -14,6 +14,9 @@ class PurchaseHistory(Base, AuditMixin):
     khóa sửa (purchase_order/service.py) — `auto_advance_line` bỏ qua dòng đã ở điểm cuối nên
     hook ghi chỉ chạy đúng 1 lần cho mỗi dòng. `po_item_id` unique là lớp bảo hiểm.
 
+    Ngoài ra bảng còn chứa DỮ LIỆU CŨ (`source='legacy'`) nhập từ file Excel lịch sử mua hàng
+    của giai đoạn trước khi có hệ thống: không có ĐMH nên `po_item_id`/`po_code` rỗng.
+
     Cột PHẲNG = thứ được lọc/sắp xếp/hiển thị trên bảng. Phần "thông tin chung" còn lại chỉ để
     tham khảo → gói vào `extra` (chuỗi JSON, theo quy ước repo: import_tool/report dùng Text).
     """
@@ -25,7 +28,15 @@ class PurchaseHistory(Base, AuditMixin):
     )
 
     # ── Khóa & truy vấn ────────────────────────────────────────────────
-    po_item_id: Mapped[int] = mapped_column(BigInteger, unique=True)          # chống ghi trùng
+    # NULL cho dòng DỮ LIỆU CŨ (nhập từ file Excel, không có ĐMH trong hệ thống).
+    # MySQL cho phép nhiều NULL trong unique index nên vẫn giữ được lớp chống ghi trùng
+    # cho dòng sinh từ luồng chạy thật.
+    po_item_id: Mapped[int | None] = mapped_column(BigInteger, unique=True, nullable=True)
+    # system = chốt tự động khi dòng ĐMH "Hoàn thành" | legacy = nhập từ file lịch sử cũ
+    source: Mapped[str] = mapped_column(String(10), default="system", index=True)
+    # Khóa nguồn của dòng dữ liệu cũ (file + sheet + số dòng) — để truy ngược và chống nhập trùng.
+    # NULL với dòng sinh từ hệ thống.
+    legacy_key: Mapped[str | None] = mapped_column(String(190), unique=True, nullable=True)
     po_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     po_code: Mapped[str] = mapped_column(String(50), default="")
     # 2 cột dưới KHÔNG cần index đơn — composite ix_ph_*_date đã phủ (leftmost prefix)
