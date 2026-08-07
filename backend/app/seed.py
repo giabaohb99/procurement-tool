@@ -19,7 +19,7 @@ from app.modules.audit.model import AuditLog  # noqa: F401
 from app.modules.catalog.model import (Brand, ItemGroup,  # noqa: F401
                                        Unit, Warehouse)
 from app.modules.company.model import Company
-from app.modules.department.model import Department  # noqa: F401
+from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 from app.modules.product.model import Product
 from app.modules.purchase_request.model import (PurchaseRequest,  # noqa: F401
@@ -59,6 +59,20 @@ SAMPLE_SUPPLIERS = [
     ("Mộc Ấn", "CÔNG TY TNHH QUẢNG CÁO MỘC ẤN", "0312214688", "goods", "Công nợ 30 ngày", 0.10),
     ("Mekong Logistics", "Mekong Logistics", "", "transport", "Công nợ 30 ngày", 0.08),
     ("Sang Giàu", "Vận chuyển Sang Giàu", "", "transport", "Công nợ 30 ngày", 0.0),
+]
+
+# Phòng ban mẫu (mã theo quy ước generate_code prefix "PBA": PBA001, PBA002…).
+# Trưởng bộ phận để trống — gán trên UI vì phụ thuộc danh sách nhân sự thật.
+SAMPLE_DEPARTMENTS = [
+    ("PBA001", "Phòng Thu mua"),
+    ("PBA002", "Phòng Kế toán"),
+    ("PBA003", "Phòng Kinh doanh"),
+    ("PBA004", "Phòng Kho vận"),
+    ("PBA005", "Phòng Sản xuất"),
+    ("PBA006", "Phòng Marketing"),
+    ("PBA007", "Phòng Nhân sự - Hành chính"),
+    ("PBA008", "Phòng Công nghệ thông tin"),
+    ("PBA009", "Ban Giám đốc"),
 ]
 
 SAMPLE_PRODUCTS = [
@@ -534,6 +548,7 @@ def run():
         seen_units = {u[0].upper() for u in db.query(Unit.code).all()}
         seen_item_groups = {g[0].upper() for g in db.query(ItemGroup.name).all()}
         seen_brands = {b[0].upper() for b in db.query(Brand.code).all()}
+        seen_departments = {d[0].upper() for d in db.query(Department.code).all() if d[0]}
 
         # Danh mục mẫu + master data JSON CHỈ nạp khi bảng còn RỖNG (cài mới / DB test).
         # DB đang chạy thì bỏ qua: nếu không, mỗi lần deploy sẽ dựng lại đúng những bản ghi
@@ -552,6 +567,10 @@ def run():
         for code, name, group, unit in (SAMPLE_PRODUCTS if not seen_products else []):
             db.add(Product(code=code, name=name, item_group=group, unit=unit, is_active=True))
             seen_products.add(code.upper())
+        # Phòng ban: cũng chỉ nạp khi bảng còn rỗng, tránh dựng lại phòng ban đã bị xóa trên UI.
+        for code, name in (SAMPLE_DEPARTMENTS if not seen_departments else []):
+            db.add(Department(code=code, name=name, company_id=company.id, is_active=True))
+            seen_departments.add(code.upper())
         db.commit()
 
         # Master data thật từ JSON (sinh từ doc/datamau) — cũng chỉ nạp cho bảng còn rỗng.

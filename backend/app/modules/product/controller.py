@@ -117,6 +117,7 @@ def export_products_csv(
         "unit": "ĐVT",
         "hh_code": "Mã HH",
         "hh_name": "Tên Sản phẩm (HH)",
+        "specs": "Thông số kỹ thuật",
     }
     return export_csv_response(items, headers_map, "products")
 
@@ -198,6 +199,7 @@ def import_products_csv(
         unit = pick(row, "ĐVT", "Đơn vị tính")
         hh_code = pick(row, "Mã HH") or pick_has(row, "mã", "hh")
         hh_name = pick(row, "Tên Sản phẩm (HH)", "Tên Sản phẩm HH", "Tên HH") or pick_has(row, "sản phẩm", "hh")
+        specs = pick(row, "Thông số kỹ thuật", "TSKT") or pick_has(row, "thông số")
 
         if not db_id and not code:
             continue                          # dòng rỗng
@@ -229,6 +231,7 @@ def import_products_csv(
                 if unit: existing.unit = unit
                 if hh_code: existing.hh_code = hh_code
                 if hh_name: existing.hh_name = hh_name
+                if specs: existing.specs = specs
                 existing.is_active = is_active
                 existing.updated_by = user.id
                 if dup_in_file:
@@ -243,7 +246,7 @@ def import_products_csv(
             obj = Product(
                 code=code, name=name, invoice_name=invoice_name, legal_name=legal_name,
                 item_group=item_group, unit=unit, hh_code=hh_code, hh_name=hh_name,
-                is_active=is_active, created_by=user.id, updated_by=user.id)
+                specs=specs, is_active=is_active, created_by=user.id, updated_by=user.id)
             db.add(obj)
             by_code[code] = obj               # đăng ký để dòng trùng sau gộp vào đây
             created += 1

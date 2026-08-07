@@ -278,6 +278,8 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'item_group', label: 'Phân loại', type: 'select', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
       { key: 'unit', label: 'ĐVT' },
       { key: 'hh_code', label: 'Mã HH (sản phẩm)' }, { key: 'hh_name', label: 'Tên Sản phẩm (HH)' },
+      { key: 'specs', label: 'Thông số kỹ thuật', type: 'textarea',
+        hint: 'Tự điền vào ô "Xuất xứ / TSKT / chất liệu" của dòng hàng khi chọn SP này trong Đơn mua hàng.' },
       { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, colorMap: { 'true': '#16a34a', 'false': '#dc2626' } },
     ],
   },
@@ -535,6 +537,15 @@ export const cruds: Record<string, CrudConfig> = {
   departments: {
     slug: 'departments', entity: 'department', apiPath: '/api/departments',
     title: 'Phòng Ban', importExport: true,
+    // KHÔNG khai báo detailHeader: phòng ban không có ảnh/logo, thẻ danh tính chỉ
+    // gồm tên + chip mô tả (khác trang Công ty có logo tải lên được).
+    // KHÔNG bật detailTwoCols: bảng nhân sự thuộc phòng cần trọn chiều ngang,
+    // để 2 cột sẽ bóp hẹp cả form lẫn bảng. Form full ngang, nhân sự + lịch sử xuống dưới.
+    detailChips: (row) => [
+      ...(row.code ? [{ icon: 'ti-hash', text: row.code, cls: 'code' }] : []),
+      ...(row.manager_name ? [{ icon: 'ti-user-star', text: `Trưởng BP: ${row.manager_name}` }] : []),
+      { icon: row.is_active ? 'ti-circle-check' : 'ti-circle-x', text: row.is_active ? 'Hoạt động' : 'Đã ẩn' },
+    ],
     columns: [
       { key: 'name', label: 'Phòng ban' },
       { key: 'manager_name', label: 'Trưởng bộ phận' },
@@ -550,10 +561,13 @@ export const cruds: Record<string, CrudConfig> = {
       condSelect('is_active', 'Trạng thái', DEPT_ACTIVE, ['eq']),
     ],
     fields: [
-      { key: 'code', label: 'Mã Phòng ban', readonlyOnEdit: true },
-      { key: 'name', label: 'Tên Phòng ban' },
-      { key: 'manager_id', label: 'Trưởng bộ phận', type: 'select', source: { url: '/api/employees', value: 'id', label: 'full_name' } },
-      { key: 'is_active', label: 'Trạng thái', type: 'select', options: DEPT_ACTIVE },
+      { key: 'code', label: 'Mã Phòng ban', readonlyOnEdit: true, group: 'Định danh' },
+      { key: 'name', label: 'Tên Phòng ban', group: 'Định danh' },
+      { key: 'manager_id', label: 'Trưởng bộ phận', type: 'select', group: 'Phụ trách',
+        source: { url: '/api/employees', value: 'id', label: 'full_name' },
+        hint: 'Người duyệt/ký thay mặt phòng ban trong luồng mua hàng.' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: DEPT_ACTIVE, group: 'Tổ chức',
+        hint: 'Ẩn phòng ban đã giải thể; dữ liệu cũ vẫn giữ nguyên.' },
     ],
     detailExtra: (row) => <DepartmentMembers departmentId={row.id} managerId={row.manager_id} />,
   },

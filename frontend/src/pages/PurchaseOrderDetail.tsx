@@ -252,10 +252,12 @@ export default function PurchaseOrderDetail() {
       }),
     }))
 
+  // Chọn SP → điền luôn các trường lấy từ danh mục, gồm "Xuất xứ / TSKT / chất liệu"
+  // (spec) lấy từ Thông số kỹ thuật của sản phẩm; vẫn sửa tay lại được sau khi điền.
   const applyProduct = (i: number, p: any) => {
     setItem(i, p
-      ? { product_code: p.code, product_name: p.name, invoice_name: p.invoice_name || '', unit: p.unit || '', item_group: p.item_group || '', fg_code: p.hh_code || '', fg_name: p.hh_name || '' }
-      : { product_code: '', product_name: '', invoice_name: '', item_group: '', fg_code: '', fg_name: '' })
+      ? { product_code: p.code, product_name: p.name, invoice_name: p.invoice_name || '', unit: p.unit || '', item_group: p.item_group || '', spec: p.specs || '', fg_code: p.hh_code || '', fg_name: p.hh_name || '' }
+      : { product_code: '', product_name: '', invoice_name: '', item_group: '', spec: '', fg_code: '', fg_name: '' })
   }
   // Chọn 1 lần mua trước từ popup lịch sử → CHỈ điền vào state dòng hàng, KHÔNG tự lưu.
   // Không đụng NCC ở header: người dùng chủ động tham chiếu giá của bất kỳ NCC nào.

@@ -10,6 +10,7 @@ class ProductBase(BaseModel):
     unit: str = ""
     hh_code: str = ""
     hh_name: str = ""
+    specs: str = ""
     is_active: bool = True
 
 
@@ -25,6 +26,7 @@ class ProductUpdate(BaseModel):
     unit: str | None = None
     hh_code: str | None = None
     hh_name: str | None = None
+    specs: str | None = None
     is_active: bool | None = None
 
 

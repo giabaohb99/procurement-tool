@@ -17,4 +17,7 @@ class Product(Base, AuditMixin):
     unit: Mapped[str] = mapped_column(String(25), default="")           # ĐVT
     hh_code: Mapped[str] = mapped_column(String(50), default="", index=True)  # Mã HH (sản phẩm/hàng hóa) — liên kết
     hh_name: Mapped[str] = mapped_column(String(255), default="")       # Tên Sản phẩm (HH)
+    # Thông số kỹ thuật — tự điền vào ô "Xuất xứ / TSKT / chất liệu" của dòng hàng ĐMH khi chọn SP.
+    # Giới hạn 255 khớp POItem.spec để không bị cắt cụt khi copy sang đơn.
+    specs: Mapped[str] = mapped_column(String(255), default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

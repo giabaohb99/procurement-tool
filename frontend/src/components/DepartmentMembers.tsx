@@ -29,8 +29,10 @@ export default function DepartmentMembers({ departmentId, managerId }: { departm
 
   return (
     <div className="card" style={{ padding: 18 }}>
-      <h3 style={{ fontSize: 14, color: 'var(--navy)', marginBottom: 12 }}>
-        <i className="ti ti-users" /> Nhân sự thuộc phòng ({rows.length})
+      {/* Cùng kiểu tiêu đề section với thẻ "Lịch sử thao tác" ở CrudDetail */}
+      <h3 className="sec-title" style={{ marginTop: 0 }}>
+        <i className="ti ti-users" style={{ marginRight: 8, color: '#b6c2d9' }} />
+        Nhân sự thuộc phòng ({rows.length})
       </h3>
       {loading ? (
         <div style={{ color: '#999', fontSize: 13 }}>Đang tải…</div>

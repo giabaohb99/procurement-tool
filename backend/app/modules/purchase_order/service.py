@@ -61,12 +61,25 @@ def _supplier_map(db: Session) -> dict:
     return {s.code: s for s in db.query(Supplier).all()}
 
 
+def _product_specs_map(db: Session, items) -> dict:
+    """Thông số kỹ thuật của các SP xuất hiện trong payload (1 query, không N+1).
+    Dùng để tự điền "Xuất xứ / TSKT / chất liệu" cho dòng hàng MỚI còn bỏ trống."""
+    from app.modules.product.model import Product
+    codes = {(getattr(r, "product_code", "") or "").strip() for r in (items or [])}
+    codes.discard("")
+    if not codes:
+        return {}
+    rows = db.query(Product.code, Product.specs).filter(Product.code.in_(codes)).all()
+    return {c: (s or "") for c, s in rows if s}
+
+
 def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
     """Upsert dòng hàng + các lần giao theo id (giữ id ổn định để side-effect idempotent)."""
     if items is None:
         return
     existing_items = {it.id: it for it in items_of(db, po.id)}
     keep_item_ids = set()
+    specs_by_code = _product_specs_map(db, items)
     for raw in items:
         delivs = raw.deliveries or []
         data = raw.model_dump(exclude={"deliveries"})
@@ -74,6 +87,10 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
         # Sửa tay được: nếu payload đã có invoice_date thì giữ nguyên (không ghi đè).
         if (data.get("invoice_no") or "").strip() and not (data.get("invoice_date") or "").strip():
             data["invoice_date"] = date.today().isoformat()
+        # Dòng MỚI chưa có "Xuất xứ / TSKT / chất liệu" -> lấy Thông số kỹ thuật của SP.
+        # Chỉ điền lúc TẠO dòng: dòng đang sửa mà người dùng cố ý xóa trắng thì giữ trắng.
+        if not (data.get("spec") or "").strip() and not data.get("id"):
+            data["spec"] = specs_by_code.get((data.get("product_code") or "").strip(), "")
         iid = data.pop("id", None)
         if iid and iid in existing_items:
             it = existing_items[iid]
