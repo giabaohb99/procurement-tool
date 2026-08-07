@@ -12,6 +12,7 @@ import { useAuth } from '../auth/AuthContext'
 import TableHead, { TableCells, TableColGroup } from '../components/TableHead'
 import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
+import { useUrlFilters } from '../hooks/use-url-filters'
 
 type Row = {
   id: number; item_group_id: number; item_group_name: string
@@ -29,9 +30,12 @@ export default function CategoryAssignees() {
 
   const [rows, setRows] = useState<Row[]>([])
   const [cats, setCats] = useState<{ id: number; name: string }[]>([])
-  const [fCat, setFCat] = useState('')     // filter phân loại (id)
-  const [fName, setFName] = useState('')   // filter tên NSTM
-  const [fCode, setFCode] = useState('')   // filter mã NV
+  // Bộ lọc lưu trên URL (?cat=&name=&code=) → F5 / gửi link giữ nguyên bộ lọc
+  const [f, setF] = useUrlFilters({ cat: '', name: '', code: '' })
+  const { cat: fCat, name: fName, code: fCode } = f
+  const setFCat = (v: string) => setF((s) => ({ ...s, cat: v }))
+  const setFName = (v: string) => setF((s) => ({ ...s, name: v }))
+  const setFCode = (v: string) => setF((s) => ({ ...s, code: v }))
 
   const [sortField, setSortField] = useState<SortField>('item_group_name')  // mặc định: Phân loại A→Z
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
@@ -110,7 +114,7 @@ export default function CategoryAssignees() {
   useEffect(() => { if (page > totalPages) setPage(1) }, [page, totalPages])
   const paged = sorted.slice((page - 1) * pageSize, page * pageSize)
 
-  function resetFilters() { setFCat(''); setFName(''); setFCode(''); setPage(1) }
+  function resetFilters() { setF({ cat: '', name: '', code: '' }); setPage(1) }
 
   return (
     <div>

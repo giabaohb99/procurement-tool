@@ -14,8 +14,15 @@ import NumberInput from '../components/NumberInput'
 import TableHead, { TableCells } from '../components/TableHead'
 import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
+import { useUrlFilters } from '../hooks/use-url-filters'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
+
+/** Bộ lọc rỗng — vừa là giá trị khởi tạo, vừa là danh sách key được lưu trên URL */
+const EMPTY_FILTERS = {
+  company_id: '', warehouse_code: '', product_code: '', product_name: '',
+  item_group: '', qty_status: '',
+}
 
 export default function Inventory() {
   const { can } = useAuth()
@@ -23,14 +30,7 @@ export default function Inventory() {
   const [companies, setCompanies] = useState<any[]>([])
   const [warehouses, setWarehouses] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
-  const [f, setF] = useState<{
-    company_id?: string
-    warehouse_code?: string
-    product_code?: string
-    product_name?: string
-    item_group?: string
-    qty_status?: string
-  }>({})
+  const [f, setF] = useUrlFilters({ ...EMPTY_FILTERS })
   // Điều kiện từ BỘ LỌC ĐIỀU KIỆN — giữ thêm bản ref để load() đọc được giá trị mới nhất
   const [condParams, setCondParams] = useState<RestQueryParams>({})
   const condRef = useRef<RestQueryParams>({})
@@ -151,7 +151,7 @@ export default function Inventory() {
       </div>
 
       <ConditionalFilter fields={INVENTORY_COND_FILTERS} onChange={setCondParams}>
-      <FilterPanel onClear={() => setF({})} canClear={Object.values(f).some((v) => v)}
+      <FilterPanel onClear={() => setF({ ...EMPTY_FILTERS })} canClear={Object.values(f).some((v) => v)}
                    extra={<ConditionalFilterButton />}>
         <FilterItem label="Công ty">
           <SearchSelect value={f.company_id || ''} placeholder="Tất cả"

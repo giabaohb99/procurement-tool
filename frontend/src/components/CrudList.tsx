@@ -13,6 +13,7 @@ import Pagination from './Pagination'
 import TableHead, { TableCells } from './TableHead'
 import TableToolbar from './TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
+import { useFilterUrlWriter } from '../hooks/use-url-filters'
 
 export default function CrudList() {
   const { entity } = useParams()
@@ -21,12 +22,26 @@ export default function CrudList() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
+  // Các key query mà thanh lọc cơ bản quản lý. Ô "daterange" sinh 2 param <key>_from / <key>_to
+  // nên phải liệt kê cả hai, nếu không F5 sẽ mất khoảng ngày đang lọc.
+  const filterKeys = useMemo(() => {
+    const ks: string[] = []
+    cfg?.filters?.forEach((f: any) => {
+      if (f.type === 'daterange') ks.push(`${f.key}_from`, `${f.key}_to`)
+      else ks.push(f.key)
+    })
+    return ks
+  }, [cfg?.slug])
+
   // Filter khởi tạo từ URL query (chỉ nhận key khớp cfg.filters) — vd /purchase-orders?pr_code=PYC-001
   const urlFilters = useMemo(() => {
     const o: Record<string, string> = {}
-    cfg?.filters?.forEach((f: any) => { const v = searchParams.get(f.key); if (v) o[f.key] = v })
+    filterKeys.forEach((k) => { const v = searchParams.get(k); if (v) o[k] = v })
     return o
-  }, [cfg?.slug, searchParams])
+  }, [filterKeys, searchParams])
+
+  // Ghi ngược bộ lọc lên URL để F5 / gửi link giữ nguyên bộ lọc đang xem
+  const writeFilterUrl = useFilterUrlWriter(filterKeys)
 
   // Bộ lọc điều kiện (`<field>__<op>`) cũng nằm trên URL — đọc sẵn để lần nạp đầu tiên
   // (mở link chia sẻ / F5) đã đúng bộ lọc, không phải đợi provider bắn onChange.
@@ -244,7 +259,9 @@ export default function CrudList() {
     </div>
   )
 
-  function applyFilters(f: Record<string, string>) { setFilters(f); setPage(1); load(1, pageSize, f) }
+  function applyFilters(f: Record<string, string>) {
+    setFilters(f); setPage(1); writeFilterUrl(f); load(1, pageSize, f)
+  }
   // Bộ lọc điều kiện đổi (áp dụng / bỏ chip / bấm back) -> nạp lại từ trang 1
   function applyCondFilters(c: RestQueryParams) {
     setCondParams(c); setPage(1); load(1, pageSize, filters, sortField, sortDir, c)

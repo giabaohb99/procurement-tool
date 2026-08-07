@@ -11,6 +11,7 @@ import { fmtDate } from '../utils/datetime'
 import TableHead, { TableCells, TableColGroup } from '../components/TableHead'
 import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
+import { useUrlFilters } from '../hooks/use-url-filters'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const NOWRAP = { whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }
@@ -131,7 +132,7 @@ export default function PurchaseProgress() {
   const [pageSize, setPageSize] = useState(20)
   const [sortBy, setSortBy] = useState('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-  const [f, setF] = useState<any>(EMPTY_FILTERS)
+  const [f, setF] = useUrlFilters<any>({ ...EMPTY_FILTERS })
   const setFilter = (k: string, v: any) => { setF((s: any) => ({ ...s, [k]: v })); setPage(1) }
 
   function handleSort(key: string) {
@@ -188,7 +189,7 @@ export default function PurchaseProgress() {
         <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Theo từng lần giao hàng · {fmt(total)} dòng</div>
       </div>
 
-      <FilterPanel onClear={() => setF(EMPTY_FILTERS)} canClear={Object.values(f).some((v) => v)}>
+      <FilterPanel onClear={() => setF({ ...EMPTY_FILTERS })} canClear={Object.values(f).some((v) => v)}>
         <FilterItem label="Công ty">
           <SearchSelect value={f.company_id} placeholder="Tất cả"
             options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
