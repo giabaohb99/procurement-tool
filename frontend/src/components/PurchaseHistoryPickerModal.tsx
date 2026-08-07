@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { fmtPrice, fmtVND } from '../utils/money'
 import Pagination from './Pagination'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -121,9 +122,9 @@ export default function PurchaseHistoryPickerModal({
                   <td>{h.supplier_name || h.supplier_code}</td>
                   <td>{h.unit}</td>
                   <td style={{ textAlign: 'right' }}>{fmt(h.qty_order)}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(h.price)}</td>
+                  <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmtPrice(h.price)}</td>
                   <td style={{ textAlign: 'right' }}>{fmt(h.vat)}</td>
-                  <td style={{ textAlign: 'right' }}>{fmt(h.amount)}</td>
+                  <td style={{ textAlign: 'right' }}>{fmtVND(h.amount)}</td>
                   <td>{h.company_name}</td>
                   <td style={{ textAlign: 'center' }}>
                     <button className="btn ghost" style={{ height: 26, fontSize: 11, padding: '0 8px' }}

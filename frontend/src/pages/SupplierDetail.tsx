@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext'
 import { contractExpiryBadge, PAYMENT_TERMS_OPTIONS } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
 import PurchaseHistoryTable from '../components/PurchaseHistoryTable'
+import { fmtVND } from '../utils/money'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 // ĐƠN GIÁ hiện đủ 4 số lẻ — mặc định toLocaleString chỉ cho 3, cắt mất chữ số cuối
@@ -237,9 +238,9 @@ export default function SupplierDetail() {
           <div className="card" style={{ padding: 18 }}>
             <h3 className="sec-title">Tổng quan công nợ</h3>
             <div style={{ fontSize: 14, lineHeight: 2 }}>
-              <div>Tổng nợ: <b>{fmt(payTotal)}</b></div>
-              <div>Đã trả: <b style={{ color: 'var(--green)' }}>{fmt(payPaid)}</b></div>
-              <div>Còn phải trả: <b style={{ color: 'var(--teal)' }}>{fmt(payRemain)}</b></div>
+              <div>Tổng nợ: <b>{fmtVND(payTotal)}</b></div>
+              <div>Đã trả: <b style={{ color: 'var(--green)' }}>{fmtVND(payPaid)}</b></div>
+              <div>Còn phải trả: <b style={{ color: 'var(--teal)' }}>{fmtVND(payRemain)}</b></div>
               <div>Số hợp đồng: <b>{contracts.length}</b></div>
             </div>
           </div>
@@ -272,7 +273,7 @@ export default function SupplierDetail() {
 
       {tab === 'payables' && (
         <div className="card" style={{ padding: 18 }}>
-          <h3 className="sec-title">Công nợ (Tổng {fmt(payTotal)} · Còn lại {fmt(payRemain)})</h3>
+          <h3 className="sec-title">Công nợ (Tổng {fmt(payTotal)} · Còn lại {fmtVND(payRemain)})</h3>
           <div className="items-scroll">
             <table className="items-table" style={{ minWidth: 760 }}>
               <thead><tr><th>Loại</th><th>PO</th><th>Số HĐ</th><th>Ngày PS</th><th>Hạn trả</th><th style={{ textAlign: 'right' }}>Tổng</th><th style={{ textAlign: 'right' }}>Đã trả</th><th style={{ textAlign: 'right' }}>Còn lại</th><th>Trạng thái</th></tr></thead>
@@ -281,8 +282,8 @@ export default function SupplierDetail() {
                   <tr key={p.id}>
                     <td>{p.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa'}</td><td>{p.po_code}</td><td>{p.invoice_no}</td>
                     <td>{p.incur_date}</td><td>{p.due_date}</td>
-                    <td style={{ textAlign: 'right' }}>{fmt(p.total)}</td><td style={{ textAlign: 'right' }}>{fmt(p.paid_amount)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(p.remaining)}</td>
+                    <td style={{ textAlign: 'right' }}>{fmtVND(p.total)}</td><td style={{ textAlign: 'right' }}>{fmtVND(p.paid_amount)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmtVND(p.remaining)}</td>
                     <td><span className={'badge ' + (p.status === 'Đã TT' ? 'ok' : 'err')}>{p.status}</span></td>
                   </tr>
                 ))}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { fmtPrice, fmtVND } from '../utils/money'
 import Pagination from '../components/Pagination'
 import { poBadge } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
@@ -63,7 +64,7 @@ function BarChart({ data, color, onBar }: { data: any[]; color?: string; onBar?:
                    style={{ width: 30, flex: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%', position: 'relative', cursor: m.amount && onBar ? 'pointer' : 'default' }}>
                 {hi === i && (
                   <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 4, background: 'var(--navy)', color: '#fff', fontSize: 10.5, padding: '3px 6px', borderRadius: 5, whiteSpace: 'nowrap', zIndex: 5 }}>
-                    {m.month}: {fmt(m.amount)}
+                    {m.month}: {fmtVND(m.amount)}
                   </div>
                 )}
                 <div style={{ background: m.amount ? (color || 'var(--teal)') : '#e6ebf0', borderRadius: '3px 3px 0 0', height: `${(m.amount / max) * 100}%`, minHeight: m.amount ? 4 : 2, outline: hi === i ? '2px solid var(--navy)' : 'none' }} />
@@ -110,7 +111,7 @@ function LineChart({ days }: { days: any[] }) {
       <polyline points={pts} fill="none" stroke="var(--teal)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
       {days.map((d, i) => (
         <g key={i}>
-          <circle cx={X(i)} cy={Y(d.amount)} r="3.5" fill="var(--teal)"><title>{`Ngày ${d.day}: ${fmt(d.amount)}`}</title></circle>
+          <circle cx={X(i)} cy={Y(d.amount)} r="3.5" fill="var(--teal)"><title>{`Ngày ${d.day}: ${fmtVND(d.amount)}`}</title></circle>
           <text x={X(i)} y={H - pb + 14} textAnchor="middle" fontSize="9" fill="#8a97a5">{d.day}</text>
         </g>
       ))}
@@ -321,10 +322,10 @@ export default function Reports() {
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
           <Card label="Số đơn mua hàng" val={fmt(d.po_count)} />
-          <Card label="Giá trị đặt hàng" val={fmt(d.order_value)} color="var(--teal)" />
-          <Card label="Công nợ còn phải trả" val={fmt(remaining)} sub={`Hàng ${fmt(d.payable_goods.remaining)} · Vận chuyển ${fmt(d.payable_shipping.remaining)}`} />
-          <Card label="Công nợ quá hạn" val={fmt(d.overdue)} color="var(--red)" />
-          <Card label="Giá trị tồn kho" val={fmt(d.inventory_value)} color="var(--green)" />
+          <Card label="Giá trị đặt hàng" val={fmtVND(d.order_value)} color="var(--teal)" />
+          <Card label="Công nợ còn phải trả" val={fmtVND(remaining)} sub={`Hàng ${fmtVND(d.payable_goods.remaining)} · Vận chuyển ${fmtVND(d.payable_shipping.remaining)}`} />
+          <Card label="Công nợ quá hạn" val={fmtVND(d.overdue)} color="var(--red)" />
+          <Card label="Giá trị tồn kho" val={fmtVND(d.inventory_value)} color="var(--green)" />
         </div>
         <div className="grid-2">
           <div className="card" style={{ padding: 18 }}>
@@ -422,7 +423,7 @@ export default function Reports() {
                 {(shipData.items || []).map((r: any, i: number) => (
                   <tr key={i}><td>{r.carrier}</td><td>{r.month}</td><td>{r.product_code}</td><td>{r.misa_code}</td><td>{r.invoice_no}</td><td>{r.received_date}</td>
                     <td style={{ textAlign: 'right' }}>{fmt(r.qty_order)}</td><td style={{ textAlign: 'right' }}>{fmt(r.qty_received)}</td>
-                    <td style={{ textAlign: 'right' }}>{fmt(r.order_amount)}</td><td style={{ textAlign: 'right' }}>{fmt(r.ship_amount)}</td><td style={{ textAlign: 'right' }}>{pctv(r.rate)}</td></tr>))}
+                    <td style={{ textAlign: 'right' }}>{fmtVND(r.order_amount)}</td><td style={{ textAlign: 'right' }}>{fmtVND(r.ship_amount)}</td><td style={{ textAlign: 'right' }}>{pctv(r.rate)}</td></tr>))}
                 {(shipData.total || 0) === 0 && <tr><td colSpan={11} style={{ textAlign: 'center', color: '#999', padding: 14 }}>{(shipF.carrier || shipF.month) ? 'Không có dòng khớp bộ lọc' : 'Chưa có chi phí vận chuyển'}</td></tr>}
               </tbody>
             </table>
@@ -437,7 +438,7 @@ export default function Reports() {
       </>}
 
       {tab === 'inventory' && <>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}><Card label="Tổng giá trị tồn" val={fmt(d.inventory.total)} color="var(--green)" /></div>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}><Card label="Tổng giá trị tồn" val={fmtVND(d.inventory.total)} color="var(--green)" /></div>
         <div className="grid-1-2">
           <div className="card" style={{ padding: 18 }}>
             <h3 className="sec-title">Giá trị tồn theo kho</h3>
@@ -452,7 +453,7 @@ export default function Reports() {
                 <tbody>
                   {d.inventory.top.map((r: any, i: number) => (
                     <tr key={i}><td>{r.product_code}</td><td>{r.product_name}</td><td>{r.warehouse}</td>
-                      <td style={{ textAlign: 'right' }}>{fmt(r.qty)}</td><td style={{ textAlign: 'right' }}>{fmt(r.avg_cost)}</td><td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(r.value)}</td></tr>))}
+                      <td style={{ textAlign: 'right' }}>{fmt(r.qty)}</td><td style={{ textAlign: 'right' }}>{fmtPrice(r.avg_cost)}</td><td style={{ textAlign: 'right', fontWeight: 600 }}>{fmtVND(r.value)}</td></tr>))}
                   {d.inventory.top.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có tồn</td></tr>}
                 </tbody>
               </table>

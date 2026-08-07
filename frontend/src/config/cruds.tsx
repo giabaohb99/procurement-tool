@@ -8,6 +8,7 @@ import EmployeeAccountCard from '../components/employee-account-card'
 import EmployeeAvatar from '../components/employee-avatar'
 import CompanyLogo from '../components/company-logo'
 import { fmtDateTime } from '../utils/datetime'
+import { fmtVND } from '../utils/money'
 import { initialsOf } from '../utils/name'
 
 export type FieldDef = {
@@ -402,7 +403,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'requester', label: 'Người yêu cầu' },
       { key: 'department', label: 'Bộ phận' },
       { key: 'need_date', label: 'Cần hàng' },
-      { key: 'total', label: 'Tổng tiền', render: (r) => (r.total ? Number(r.total).toLocaleString('vi-VN') + ' đ' : '0 đ') },
+      { key: 'total', label: 'Tổng tiền', render: (r) => (r.total ? fmtVND(r.total) + ' đ' : '0 đ') },
       { key: 'is_urgent', label: 'Gấp', render: (r) => (r.is_urgent ? <span className="badge warn">Gấp</span> : '—') },
       { key: 'status', label: 'Trạng thái', render: (r) => prBadge(r.status) },
     ],
@@ -644,7 +645,7 @@ export const cruds: Record<string, CrudConfig> = {
       } },
       { key: 'supplier_code', label: 'Nhà cung cấp', render: (r) => r.supplier_code || r.supplier_name || '' },
       { key: 'pr_code', label: 'Mã PYC', link: (r) => (r.pr_id ? `/purchase-requests/${r.pr_id}` : '') },
-      { key: 'amount', label: 'Tiền hàng', render: (r) => (r.amount ? Number(r.amount).toLocaleString('vi-VN') + ' đ' : '0 đ') },
+      { key: 'amount', label: 'Tiền hàng', render: (r) => (r.amount ? fmtVND(r.amount) + ' đ' : '0 đ') },
       { key: 'is_urgent', label: 'Gấp', render: (r) => (r.is_urgent ? <span className="badge warn">Gấp</span> : '') },
       { key: 'document_status', label: 'Hồ sơ chứng từ', render: (r) => docStatusBadge(r.document_status) },
       { key: 'status', label: 'Trạng thái', render: (r) => poBadge(r.status) },
@@ -693,7 +694,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'supplier_name', label: 'Nhà cung cấp', render: (r) => r.supplier_name || r.supplier_code },
       { key: 'source_type', label: 'Loại', render: (r) => (r.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa') },
       { key: 'payment_method', label: 'Hình thức TT', render: (r) => (r.payment_method === 'cash' ? 'Tiền mặt' : 'Chuyển khoản') },
-      { key: 'total', label: 'Số tiền', render: (r) => (r.total ? Number(r.total).toLocaleString('vi-VN') + ' đ' : '0 đ') },
+      { key: 'total', label: 'Số tiền', render: (r) => (r.total ? fmtVND(r.total) + ' đ' : '0 đ') },
       { key: 'status', label: 'Trạng thái', render: (r) => (r.status === 'cancelled' ? <span className="badge err">Đã từ chối</span> : poBadge(r.status === 'paid' ? 'received' : r.status)) },
     ],
     filters: [

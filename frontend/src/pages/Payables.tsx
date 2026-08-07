@@ -12,12 +12,14 @@ import {
 import { PAYABLE_COND_FILTERS } from '../config/conditional-filters'
 import Pagination from '../components/Pagination'
 import { fmtDateTime } from '../utils/datetime'
+import { fmtVND } from '../utils/money'
 import TableHead, { TableCells } from '../components/TableHead'
 import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 import { useUrlFilters } from '../hooks/use-url-filters'
 
-const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
+// Công nợ toàn là TIỀN -> làm tròn về đồng, không để lòi ra số lẻ của đơn giá 4 chữ số
+const fmt = fmtVND
 const AGING_CLS: Record<string, string> = { 'Chưa đến hạn': 'gray', '1-30': 'warn', '31-60': 'warn', '61-90': 'err', '>90': 'err' }
 const agingBadge = (a: string) => <span className={'badge ' + (AGING_CLS[a] || 'gray')}>{a === 'Chưa đến hạn' ? a : a + ' ngày'}</span>
 // Nhãn trạng thái đầy đủ (DB lưu viết tắt). Giá trị lọc gửi lên vẫn dùng mã DB.

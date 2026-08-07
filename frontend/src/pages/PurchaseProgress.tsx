@@ -12,6 +12,7 @@ import TableHead, { TableCells, TableColGroup } from '../components/TableHead'
 import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 import { useUrlFilters } from '../hooks/use-url-filters'
+import { fmtVND } from '../utils/money'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 // ĐƠN GIÁ hiện đủ 4 số lẻ — mặc định toLocaleString chỉ cho 3, cắt mất chữ số cuối
@@ -96,7 +97,7 @@ const COLS: Col[] = [
   { key: 'qty_order', label: 'SL đặt', w: 76, sort: 'qty_order', td: R, cell: (r) => fmt(r.qty_order) },
   { key: 'price', label: 'Đơn giá', w: 96, sort: 'price', td: R, cell: (r) => fmtPrice(r.price) },
   { key: 'vat', hide: true, label: 'VAT%', w: 60, sort: 'vat', td: R, cell: (r) => r.vat || 0 },
-  { key: 'order_amount', label: 'Thành tiền ĐH', w: 128, td: { ...R, fontWeight: 600 }, cell: (r) => fmt(r.order_amount) },
+  { key: 'order_amount', label: 'Thành tiền ĐH', w: 128, td: { ...R, fontWeight: 600 }, cell: (r) => fmtVND(r.order_amount) },
   { key: 'progress_status', label: 'Tiến độ', w: 176, sort: 'progress_status', cell: (r) => pgBadge(r.progress_status) },
   { key: 'delivery_no', hide: true, label: 'Lần giao', w: 72, sort: 'delivery_no', td: R, cell: (r) => r.delivery_no ?? '—' },
   { key: 'warehouse_code', hide: true, label: 'Kho', w: 96, sort: 'warehouse_code', td: NOWRAP, cell: (r) => r.warehouse_code },
@@ -114,10 +115,10 @@ const COLS: Col[] = [
   { key: 'diff_required', hide: true, label: 'CL vs YC', w: 76, sort: 'diff_required', td: R, cell: (r) => diffCell(r.diff_required) },
   { key: 'delivery_invoice_no', hide: true, label: 'Số HĐ (giao)', w: 160, sort: 'delivery_invoice_no', td: NOWRAP, cell: (r) => r.delivery_invoice_no },
   { key: 'shipping_unit_price', hide: true, label: 'Đơn giá VC', w: 96, sort: 'shipping_unit_price', sup: true, td: R, cell: (r) => fmtPrice(r.shipping_unit_price) },
-  { key: 'shipping_amount', hide: true, label: 'Tiền VC', w: 108, sort: 'shipping_amount', sup: true, td: R, cell: (r) => fmt(r.shipping_amount) },
+  { key: 'shipping_amount', hide: true, label: 'Tiền VC', w: 108, sort: 'shipping_amount', sup: true, td: R, cell: (r) => fmtVND(r.shipping_amount) },
   { key: 'qc_result', hide: true, label: 'QC', w: 64, sort: 'qc_result', cell: (r) => r.qc_result },
   { key: 'delivery_status', hide: true, label: 'TT giao', w: 108, sort: 'delivery_status', cell: (r) => r.delivery_status },
-  { key: 'amount', label: 'Thành tiền nhận', w: 128, td: { ...R, fontWeight: 600 }, cell: (r) => fmt(r.amount) },
+  { key: 'amount', label: 'Thành tiền nhận', w: 128, td: { ...R, fontWeight: 600 }, cell: (r) => fmtVND(r.amount) },
   { key: 'document_status', label: 'Hồ sơ CT', w: 150, sort: 'document_status', cell: (r) => r.document_status },
 ]
 

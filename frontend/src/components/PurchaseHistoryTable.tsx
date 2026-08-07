@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import Pagination from './Pagination'
+import { fmtPrice, fmtVND } from '../utils/money'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 
@@ -67,9 +68,9 @@ export default function PurchaseHistoryTable({
                 <td>{byProduct ? (h.supplier_name || h.supplier_code) : (h.product_name || h.product_code)}</td>
                 <td>{h.unit}</td>
                 <td style={{ textAlign: 'right' }}>{fmt(h.qty_order)}</td>
-                <td style={{ textAlign: 'right' }}>{fmt(h.price)}</td>
+                <td style={{ textAlign: 'right' }}>{fmtPrice(h.price)}</td>
                 <td style={{ textAlign: 'right' }}>{fmt(h.vat)}</td>
-                <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(h.amount)}</td>
+                <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmtVND(h.amount)}</td>
                 <td>{h.company_name}</td>
               </tr>
             ))}

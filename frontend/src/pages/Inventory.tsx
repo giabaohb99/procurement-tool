@@ -15,6 +15,7 @@ import TableHead, { TableCells } from '../components/TableHead'
 import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 import { useUrlFilters } from '../hooks/use-url-filters'
+import { fmtVND } from '../utils/money'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 // ĐƠN GIÁ hiện đủ 4 số lẻ — mặc định toLocaleString chỉ cho 3, cắt mất chữ số cuối
@@ -60,7 +61,7 @@ export default function Inventory() {
     { key: 'unit', label: 'ĐVT', sort: 'unit' },
     { key: 'qty', label: 'Tồn hiện tại', sort: 'qty', align: 'right', td: { ...R, fontWeight: 600 }, cell: (r) => fmt(r.qty) },
     { key: 'avg_cost', label: 'Đơn giá BQ', sort: 'avg_cost', align: 'right', td: R, cell: (r) => fmtPrice(r.avg_cost) },
-    { key: 'value', label: 'Giá trị tồn', sort: 'value', align: 'right', td: { ...R, fontWeight: 600 }, cell: (r) => fmt(r.value) },
+    { key: 'value', label: 'Giá trị tồn', sort: 'value', align: 'right', td: { ...R, fontWeight: 600 }, cell: (r) => fmtVND(r.value) },
   ], [companies])
   const table = useTableColumns('inventory', COLS)
 
@@ -355,7 +356,7 @@ export default function Inventory() {
               </div>
               <div>
                 <span style={{ fontSize: 12, color: 'var(--muted)', display: 'block' }}>Giá trị tồn kho</span>
-                <strong style={{ color: 'var(--primary)', whiteSpace: 'nowrap' }}>{fmt(selectedItem.value)} đ</strong>
+                <strong style={{ color: 'var(--primary)', whiteSpace: 'nowrap' }}>{fmtVND(selectedItem.value)} đ</strong>
               </div>
             </div>
 
