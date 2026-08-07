@@ -125,10 +125,17 @@ def delete_user(db: Session, user_id: int, actor_id: int) -> None:
     if user_id == actor_id:
         raise HTTPException(400, "Không thể xóa tài khoản đang đăng nhập")
 
+    # Còn gắn hồ sơ nhân sự -> KHÔNG phải tài khoản mồ côi, không cho xóa (kể cả khi đã khóa):
+    # xóa đi thì nhân sự đó mất đường đăng nhập mà hồ sơ vẫn nằm đó, không ai biết vì sao.
+    # Muốn ngưng dùng thì KHÓA; muốn bỏ hẳn thì xóa hồ sơ nhân sự trước (CR-023 tự khóa tài khoản,
+    # lúc đó tài khoản mới thành mồ côi và xóa được).
     emp = db.get(Employee, user.employee_id) if user.employee_id else None
-    if user.is_active and emp:
-        raise HTTPException(400, f"Tài khoản đang hoạt động của nhân sự {emp.full_name} — "
-                                 "hãy khóa tài khoản thay vì xóa.")
+    if emp:
+        ten = " ".join(x for x in [emp.code, emp.full_name] if x)
+        raise HTTPException(400, f"Tài khoản này thuộc hồ sơ nhân sự {ten}"
+                                 f"{'' if user.is_active else ' (tài khoản đã khóa)'} — "
+                                 "chỉ xóa được tài khoản mồ côi. Hãy khóa tài khoản, "
+                                 "hoặc xóa hồ sơ nhân sự trước rồi xóa tài khoản.")
 
     from app.modules.role.model import Role
     admin_role = db.query(Role).filter(Role.code == "admin").first()

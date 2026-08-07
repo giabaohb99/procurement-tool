@@ -91,6 +91,20 @@ class TestXoaTaiKhoan:
         assert ex.value.status_code == 400
         assert db.get(User, seed.u_req_id) is not None
 
+    def test_khong_xoa_tai_khoan_da_khoa_nhung_con_ho_so_nhan_su(self, db, seed):
+        """Đã khóa mà hồ sơ nhân sự vẫn còn thì KHÔNG phải mồ côi — vẫn cấm xóa."""
+        u = db.get(User, seed.u_req_id)
+        u.is_active = False
+        db.commit()
+        emp = db.get(Employee, u.employee_id)
+
+        with pytest.raises(HTTPException) as ex:
+            user_service.delete_user(db, u.id, u.id + 1000)   # người xóa là admin khác
+
+        assert ex.value.status_code == 400
+        assert emp.full_name in ex.value.detail
+        assert db.get(User, u.id) is not None
+
     def test_khong_xoa_chinh_minh(self, db, seed):
         u = User(email="", employee_id=0, password_hash="x", is_active=False)
         db.add(u)

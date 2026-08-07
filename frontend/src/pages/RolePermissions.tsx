@@ -45,7 +45,8 @@ export default function RolePermissions() {
     const ten = u.full_name || u.email || `#${u.id}`
     if (!(await askConfirm({
       title: 'Xóa tài khoản',
-      message: `Xóa hẳn tài khoản "${ten}"? Nhật ký thao tác cũ vẫn được giữ lại. Không khôi phục được.`,
+      message: `Xóa hẳn tài khoản "${ten}"? Tài khoản này không còn gắn hồ sơ nhân sự nào. `
+        + 'Nhật ký thao tác cũ vẫn được giữ lại. Không khôi phục được.',
       confirmText: 'Xóa',
     }))) return
     setErr('')
@@ -169,7 +170,8 @@ export default function RolePermissions() {
                     <button className="btn ghost" style={{ height: 28, padding: '0 10px' }} onClick={(e) => { e.stopPropagation(); navigate(`/users/${u.id}`) }}>Sửa</button>
                     <button className="btn ghost" style={{ height: 28, padding: '0 8px', marginLeft: 4 }} title={u.is_active ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
                       onClick={(e) => { e.stopPropagation(); toggleActive(u) }}><i className={'ti ' + (u.is_active ? 'ti-lock' : 'ti-lock-open')} /></button>
-                    {(u.is_orphan || !u.is_active) && (
+                    {/* Chỉ tài khoản MỒ CÔI mới xóa được — còn hồ sơ nhân sự thì khóa, đừng xóa */}
+                    {u.is_orphan && (
                       <button className="btn ghost" style={{ height: 28, padding: '0 8px', marginLeft: 4, color: 'var(--red)', borderColor: 'var(--red)' }}
                         title="Xóa hẳn tài khoản" onClick={(e) => { e.stopPropagation(); delUser(u) }}><i className="ti ti-trash" /></button>
                     )}
