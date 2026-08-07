@@ -192,7 +192,20 @@ Danh mục vật tư bao bì / nguyên liệu / hàng hóa nội bộ (VTBB/NL).
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người dùng có quyền `product:write`
 
-### 9. Đang dùng (`is_active`)
+### 9. Thông số kỹ thuật (`specs`)
+
+- Kiểu nhập: Nhập nhiều dòng (textarea, tối đa 255 ký tự)
+- Mặc định: trống
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Người dùng có quyền `product:write`
+- Logic: Khi chọn sản phẩm này ở dòng hàng Đơn mua hàng, giá trị được tự điền vào ô
+  **Xuất xứ / TSKT / chất liệu** (`spec`) của dòng — xem `04-don-mua-hang.md` mục "Dòng hàng → 5".
+  Backend còn tự điền lần nữa lúc LƯU đơn cho các dòng MỚI còn bỏ trống (áp cho cả ĐMH tạo từ PYC).
+  Giới hạn 255 ký tự để khớp `po_item.spec`, tránh bị cắt cụt khi sao chép sang đơn.
+- Import/Export CSV: cột **"Thông số kỹ thuật"** (import chấp nhận cả tiêu đề "TSKT")
+
+### 10. Đang dùng (`is_active`)
 
 - Kiểu nhập: Chọn (danh sách cố định: Đang dùng / Ngừng)
 - Mặc định: Đang dùng
@@ -539,6 +552,20 @@ Cơ cấu tổ chức các phòng ban / bộ phận. Tham chiếu từ PYC (bộ
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Hoạt động / Đã ẩn
 - Người sửa: Người dùng có quyền `department:write`
+
+### Màn chi tiết phòng ban
+
+Bố cục theo cùng mẫu trang chi tiết **Công ty** (`CrudDetail`):
+
+- **Thẻ danh tính đầu trang**: tên phòng ban + dải chip `# mã` · `Trưởng BP: <tên>` · trạng thái.
+  Không có ảnh đại diện — phòng ban không có logo để tải lên.
+- **Form chia nhóm có tiêu đề**: ĐỊNH DANH (mã, tên) · PHỤ TRÁCH (trưởng bộ phận) · TỔ CHỨC (trạng thái).
+  `company_id` và `parent` có trong CSDL + file CSV nhưng **chưa đưa lên form**, chỉ sửa được qua Import CSV.
+- **Full chiều ngang, không chia 2 cột** — bên dưới form là thẻ "Nhân sự thuộc phòng" (bảng nhân sự thuộc
+  phòng ban, trưởng BP xếp đầu kèm huy hiệu) rồi tới "Lịch sử thao tác". Bảng nhân sự cần trọn bề ngang.
+
+Dữ liệu mẫu: `app/seed.py` (bản LOCAL) nạp sẵn 9 phòng ban `PBA001`–`PBA009` khi bảng còn rỗng —
+chạy lại seed không dựng lại phòng ban đã bị xóa trên UI. Bản `seed_prod.py` **không** nạp dữ liệu mẫu này.
 
 ---
 

@@ -222,7 +222,7 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 - Bắt buộc: Không (trường xác định dòng là `product_name`)
 - Nguồn dữ liệu / liên kết: Danh mục Sản phẩm (`product`)
 - Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa `completed`/`cancelled`
-- Logic đặc biệt: Chọn sản phẩm tự điền `product_name`, `invoice_name`, `unit`, `item_group`, `fg_code`, `fg_name`. Dùng làm tham chiếu trong phiếu nhập kho ngầm và tồn kho.
+- Logic đặc biệt: Chọn sản phẩm tự điền `product_name`, `invoice_name`, `unit`, `item_group`, `spec`, `fg_code`, `fg_name`. Dùng làm tham chiếu trong phiếu nhập kho ngầm và tồn kho.
 
 ### 2. Tên hàng (`product_name`)
 
@@ -252,12 +252,19 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 
 ### 5. Xuất xứ / TSKT / chất liệu (`spec`)
 
-- Kiểu nhập: Nhập tay
+- Kiểu nhập: Nhập nhiều dòng (tự điền khi chọn SP), sửa tay đè lên được
 - Mặc định: trống
 - Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: —
+- Nguồn dữ liệu / liên kết: Tự điền từ **Thông số kỹ thuật** của sản phẩm (`product.specs`)
 - Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
-- Logic đặc biệt: Hiển thị trên bản in Đơn đặt hàng (cột "Xuất xứ/TSKT/chất liệu").
+- Logic đặc biệt:
+  - **Tự điền 2 lớp.** (a) Ngay khi chọn sản phẩm trên giao diện (ô chọn SP ở bảng dòng hàng hoặc trong popup
+    "Chi tiết dòng") → điền `product.specs` vào ô này. (b) Lúc **lưu đơn**, backend điền lại cho những
+    **dòng MỚI** còn để trống, tra theo `product_code`. Lớp (b) là để ĐMH tạo từ **PYC** cũng có TSKT —
+    dòng PYC không có trường `spec` nên nếu chỉ dựa vào (a) thì đơn tạo từ PYC sẽ trống.
+  - Backend **chỉ** điền lúc tạo dòng. Sửa đơn mà người dùng cố ý xóa trắng ô này thì giữ nguyên trắng,
+    không bị điền đè lại.
+  - Hiển thị trên bản in Đơn đặt hàng (cột "Xuất xứ/TSKT/chất liệu").
 
 ### 6. Mã HH / thành phẩm (`fg_code`)
 

@@ -438,3 +438,51 @@ Trang danh sách `/purchase-requests` hỗ trợ các bộ lọc sau (khai báo 
 | `status` | Trạng thái | Chọn | `draft` (Nháp), `submitted` (Chờ duyệt), `approved` (Đã duyệt), `rejected` (Bị trả lại), `cancelled` (Đã từ chối), `processing` (Đang xử lý), `completed` (Hoàn thành) |
 
 Tất cả bộ lọc kết hợp với nhau theo AND và áp dụng thêm `apply_scope` theo phân quyền dữ liệu của người dùng.
+
+---
+
+## F. Bản in phiếu đề xuất (`/print/purchase-request/:id`)
+
+Hai mẫu chọn bằng nút gạt ở đầu trang:
+
+- **Mẫu thường** — in đầy đủ thông tin người yêu cầu.
+- **Mẫu thuế** — để trống toàn bộ thông tin người yêu cầu (tên, chức vụ, ô ký).
+
+### Khối XÉT DUYỆT — tự điền chữ ký
+
+Khối cuối phiếu có 4 ô ký: **Giám đốc · TP/BP mua hàng · TP/BP đề xuất · Người lập**.
+
+Ở **Mẫu thường**, 3 trong 4 ô tự điền **ảnh chữ ký + họ tên**; **Mẫu thuế để trống toàn bộ**.
+
+| Ô ký | Người ký | Trường API |
+|---|---|---|
+| Người lập | Người yêu cầu trên phiếu | `requester_signature` + `requester` |
+| TP/BP đề xuất | Người bấm **Duyệt** (bước 1) | `approver_signature` + `approver_name` |
+| TP/BP mua hàng | Người bấm **Điều phối** (bước 2, CR-034) | `dispatcher_signature` + `dispatcher_name` |
+| Giám đốc | Không có bước duyệt tương ứng → **để trống, ký tay** | — |
+
+Chữ ký lấy từ ảnh người dùng tự tải lên ở Trang cá nhân (`tab_user.signature`, xem
+`09-thong-bao-va-trang-ca-nhan.md`). Ảnh in giới hạn 40×150px, nằm ngay trên dòng họ tên.
+Ai chưa tải chữ ký thì ô đó chỉ có họ tên, ký tay như cũ.
+
+**Cách tra chữ ký Người lập** (`requester_signature`):
+
+1. Tra theo **nhân sự người yêu cầu** (`requester_id`) → tài khoản đang hoạt động của nhân sự đó → `signature`.
+2. Phiếu cũ chưa có `requester_id`: chỉ lấy chữ ký **người tạo phiếu** khi tên người tạo **trùng** với
+   `requester`. Ràng buộc này để tránh in chữ ký người A dưới tên người B trong trường hợp thu mua
+   lập phiếu hộ bộ phận khác.
+
+**Cách tra chữ ký 2 ô duyệt** (`_approval_signers()` trong controller):
+
+1. Tra **nhật ký thao tác** (audit log) của phiếu: bản ghi `action='approved'` gần nhất → người duyệt
+   bước 1; `action='dispatched'` gần nhất → người điều phối bước 2.
+2. **Chỉ in từ mốc trạng thái tương ứng trở đi**: ô "TP/BP đề xuất" cần trạng thái ≥ Đã duyệt,
+   ô "TP/BP mua hàng" cần ≥ Đã điều phối. Phiếu bị **trả về / từ chối** thì cả hai ô rỗng lại —
+   không in chữ ký duyệt của lần trước.
+3. Công tắc `pr_dispatch_enabled` **tắt** (luồng 1 bước): một người làm cả 2 bước → hai ô cùng một
+   chữ ký, đúng thực tế.
+
+Helper dùng chung: `resolve_signature_by_employee()`, `resolve_signature()`, `resolve_actor()` trong
+`app/core/audit.py`.
+
+Dưới cùng khối chữ ký in dòng ghi chú nhỏ *"Phiếu này được in từ hệ thống thu mua"* (cả 2 mẫu).

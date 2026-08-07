@@ -6,6 +6,12 @@ Ghi theo ngày (mới nhất trên cùng) + tổng hợp công việc theo **Git
 
 ## Nhật ký theo ngày
 
+### 2026-08-07
+- **Sản phẩm → Đơn mua hàng**: thêm trường **Thông số kỹ thuật** (`product.specs`) cho danh mục Sản phẩm (kèm cột Import/Export CSV); tự điền vào ô **Xuất xứ / TSKT / chất liệu** của dòng hàng ĐMH — điền ngay khi chọn SP trên giao diện, và điền lại ở backend lúc lưu cho dòng MỚI còn trống (để ĐMH tạo từ PYC cũng có TSKT).
+- **Trang cá nhân** `/me`: thêm thẻ **Chữ ký cá nhân** — tải ảnh chữ ký lên (`tab_user.signature`), xem trước trên nền carô, đổi / gỡ. Ảnh được **tự tách nền trắng** (tùy chọn, mặc định bật) và **thu nhỏ về tối đa 800×400px** ngay tại trình duyệt trước khi tải lên để tiết kiệm dung lượng storage.
+- **In phiếu PYC** (mẫu thường): tự chèn ảnh chữ ký + họ tên cho 3 ô — "Người lập" (người yêu cầu, tra theo `requester_id`), "TP/BP đề xuất" (người bấm Duyệt bước 1), "TP/BP mua hàng" (người bấm Điều phối bước 2, theo luồng CR-034); tra người duyệt từ audit log và chỉ in từ mốc trạng thái tương ứng trở đi (phiếu bị trả về thì rỗng lại). Ô "Giám đốc" để trống ký tay. Mẫu thuế không áp dụng. Thêm dòng ghi chú "Phiếu này được in từ hệ thống thu mua".
+- **Phòng ban**: dựng lại bố cục màn chi tiết theo mẫu trang Công ty (thẻ danh tính + chip, form chia nhóm ĐỊNH DANH / PHỤ TRÁCH / TỔ CHỨC); seed LOCAL nạp sẵn 9 phòng ban mẫu `PBA001`–`PBA009`.
+
 ### 2026-07-15
 - **PWA & Web Push** (#85): PWA cài được (installable, cache, nhắc cập nhật) + banner mời cài; Web Push (VAPID + pywebpush) đẩy thông báo tới thiết bị; toggle banner qua `VITE_PWA_INSTALL_PROMPT`; VAPID private key chuyển sang ENV.
 - **Thông báo** (#77): chia theo cấp nhân sự + bỏ gộp; bổ sung thông báo cho **YCKS** và **YCTT** (trước thiếu hẳn); PYC trả về/hủy báo người tạo; chuyển sang toast.

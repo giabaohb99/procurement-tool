@@ -324,6 +324,41 @@ Gọi `GET /api/auth/me` khi trang tải. Hiển thị các trường sau (chỉ
 
 Nút "Thông báo" ở đầu trang → điều hướng sang `/notifications`.
 
+#### Card "Chữ ký cá nhân"
+
+Card đầu tiên ở cột phải Tab Thông tin cá nhân (`frontend/src/pages/me/signature-card.tsx`).
+Mỗi người dùng tự tải lên **ảnh chữ ký** của mình; ảnh lưu ở `tab_user.signature` (URL trên storage).
+
+| Thành phần | Mô tả |
+|---|---|
+| Khung xem trước | Nền ô carô để nhìn rõ ảnh nền trong suốt; trống thì hiện "Chưa có chữ ký" |
+| Checkbox "Tự động xóa nền trắng của ảnh" | Mặc định **bật** |
+| Nút "Tải chữ ký lên" / "Đổi chữ ký" | Mở hộp chọn file, chỉ nhận `image/*` |
+| Nút "Gỡ chữ ký" | Có hộp xác nhận; chỉ hiện khi đã có chữ ký |
+
+**Xử lý ảnh trước khi tải lên** — làm hoàn toàn ở trình duyệt bằng canvas, không thêm thư viện
+(`frontend/src/utils/prepare-signature-image.ts`):
+
+1. **Thu nhỏ** về tối đa **800×400px**, giữ tỉ lệ, không phóng to ảnh vốn đã nhỏ. Mục đích: ảnh chụp
+   điện thoại 4000px nặng vài MB không chiếm dung lượng storage vô ích (đo thực tế: 4000×2200 / 205KB
+   → 727×400 / ~30KB khi tách nền, ~11KB khi không tách).
+2. **Tách nền** (nếu bật): xét độ sáng từng điểm ảnh — sáng hơn 225 → trong suốt (nền giấy);
+   tối hơn 110 → giữ nguyên (nét mực); ở giữa → alpha mờ dần để viền nét mượt, không răng cưa.
+3. **Định dạng ra**: có tách nền → PNG (cần kênh alpha); không tách nền → JPEG q=0.85 cho nhẹ,
+   **trừ khi** ảnh gốc là PNG (đổi sang JPEG sẽ biến nền trong thành nền đen).
+4. **Không đụng vào ảnh đã tối ưu**: ảnh nhỏ sẵn + không cần tách nền → giữ nguyên file gốc;
+   bản xử lý mà nặng hơn bản gốc cũng giữ bản gốc.
+5. Xử lý lỗi (ảnh hỏng, canvas bị chặn) → vẫn gửi ảnh gốc kèm cảnh báo, không chặn người dùng.
+
+Lưu ý: việc thu nhỏ nằm ở **client**, gọi API trực tiếp vẫn đẩy được ảnh lớn.
+
+#### API chữ ký
+
+| Method | Đường dẫn | Mô tả |
+|---|---|---|
+| POST | `/api/auth/signature` | Tải ảnh chữ ký (multipart `file`). Từ chối file không phải ảnh (400). Key lưu: `{env}/signature/{user_id}/{uuid}-{tên file}`. Trả `{ signature: url }`. Ghi audit `user:write` |
+| DELETE | `/api/auth/signature` | Gỡ chữ ký khỏi hồ sơ — chỉ xóa liên kết, **giữ file trên storage** (không phá phiếu đã in). Ghi audit `user:write` |
+
 #### Card "Thông báo đẩy"
 
 Card thứ ba trong Tab Thông tin cá nhân — hiển thị trạng thái đăng ký Web Push của thiết bị hiện tại và nút bật/tắt:
@@ -339,7 +374,7 @@ Mỗi thiết bị (trình duyệt) đăng ký độc lập — bật trên đi�
 #### API: `GET /api/auth/me`
 
 - Không nhận tham số.
-- Trả về: `id`, `email`, `employee_id`, `emp_code`, `company_id`, `full_name`, `avatar`, `phone`, `department_name`, `role_name`, `position`, `permissions` (ma trận quyền đầy đủ của user).
+- Trả về: `id`, `email`, `employee_id`, `emp_code`, `company_id`, `full_name`, `avatar`, `signature`, `phone`, `department_name`, `role_name`, `position`, `permissions` (ma trận quyền đầy đủ của user).
 
 ---
 
