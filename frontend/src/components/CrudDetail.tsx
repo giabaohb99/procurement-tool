@@ -186,7 +186,7 @@ export default function CrudDetail() {
                 <Fragment key={f.key}>
                 {/* Tiêu đề nhóm chiếm trọn 1 dòng của lưới, field vẫn xếp 2 cột như cũ */}
                 {newGroup && <div className="form-group-title">{newGroup}</div>}
-                <div className="form-row">
+                <div className={'form-row' + (f.fullWidth ? ' full' : '')}>
                   <label>{f.label}</label>
                   {f.type === 'textarea' ? (
                     <textarea value={form[f.key] ?? ''} disabled={ro} onChange={(e) => set(f.key, e.target.value)} />

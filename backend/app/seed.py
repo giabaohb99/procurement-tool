@@ -75,6 +75,32 @@ SAMPLE_DEPARTMENTS = [
     ("PBA009", "Ban Giám đốc"),
 ]
 
+# Phân công NSTM phụ trách theo phân loại VTBB — dữ liệu MẪU để thử màn
+# /category-assignees (chỉ nạp khi bảng còn rỗng, xem seed_category_assignees).
+# Tham chiếu bằng TÊN phân loại + MÃ nhân sự vì id khác nhau giữa các môi trường.
+# Dự phòng để "" = phân loại đó chỉ có NSTM chính (chủ ý, để test cả 2 trường hợp).
+SAMPLE_CATEGORY_ASSIGNEES = [
+    # Nhóm chai / nắp / can — NSTM chính là nhân viên thu mua
+    ("Chai Pet", "DEMO_PURCHASER", "DEMO_MANAGER_PURCHASE"),
+    ("Chai Hdpe", "DEMO_PURCHASER", "DEMO_MANAGER_PURCHASE"),
+    ("Chai Nhôm", "DEMO_PURCHASER", ""),
+    ("Nắp Pet", "DEMO_PURCHASER", "DEMO_MANAGER_PURCHASE"),
+    ("Nắp Hdpe", "DEMO_PURCHASER", ""),
+    # Nhóm nhãn / tem — trưởng phòng thu mua ôm chính, nhân viên dự phòng
+    ("Nhãn giấy", "DEMO_MANAGER_PURCHASE", "DEMO_PURCHASER"),
+    ("Nhãn Decal", "DEMO_MANAGER_PURCHASE", "DEMO_PURCHASER"),
+    ("Tem chống hàng giả", "DEMO_MANAGER_PURCHASE", ""),
+    # Nhóm thùng / hộp carton
+    ("Thùng carton 3 lớp", "DEMO_PURCHASER", "DEMO_MANAGER_PURCHASE"),
+    ("Thùng carton 5 lớp", "DEMO_PURCHASER", "DEMO_MANAGER_PURCHASE"),
+    ("Hộp carton 3 lớp", "DEMO_MANAGER_PURCHASE", ""),
+    # Nhóm túi / màng / băng keo
+    ("Túi PE (Túi nilong)", "DEMO_PURCHASER", "DEMO_MANAGER_PURCHASE"),
+    ("Màng PE cuộn", "DEMO_PURCHASER", ""),
+    ("Băng keo trong", "DEMO_MANAGER_PURCHASE", "DEMO_PURCHASER"),
+    ("Vận chuyển", "DEMO_MANAGER_PURCHASE", ""),
+]
+
 SAMPLE_PRODUCTS = [
     ("THI0002", "Thùng IDA Chai Pet Vuông 35 450ml-500ml - Xanh lá", "Thùng", "Cái"),
     ("THC0003", "Thùng DC Chai Pet Vuông 35 450ml-500ml - Trắng viền đen", "Thùng", "Cái"),
@@ -412,6 +438,35 @@ def seed_help_home_sections(db):
     db.commit()
 
 
+def seed_category_assignees(db):
+    """Nạp phân công NSTM mẫu (SAMPLE_CATEGORY_ASSIGNEES) — CHỈ khi bảng còn RỖNG.
+
+    Giống phòng ban mẫu: seed chạy lại mỗi lần khởi động, nên nếu nạp vô điều kiện thì
+    mỗi lần deploy sẽ dựng lại đúng những dòng người dùng vừa xóa trên UI.
+
+    Bỏ qua dòng nào không tìm thấy phân loại/nhân sự tương ứng (môi trường khác có thể
+    chưa nạp danh mục đó, hoặc đã tắt tài khoản demo bằng SEED_DEMO_ACCOUNTS=false).
+    """
+    from app.modules.category_assignee.model import CategoryAssignee
+
+    if db.query(CategoryAssignee).count():
+        return 0
+
+    groups = {g.name.strip().upper(): g.id for g in db.query(ItemGroup).all() if g.name}
+    emps = {e.code.strip().upper(): e.id for e in db.query(Employee).all() if e.code}
+    n = 0
+    for group_name, primary_code, backup_code in SAMPLE_CATEGORY_ASSIGNEES:
+        gid = groups.get(group_name.upper())
+        pid = emps.get(primary_code.upper())
+        if not gid or not pid:
+            continue
+        db.add(CategoryAssignee(item_group_id=gid, primary_employee_id=pid,
+                                backup_employee_id=emps.get(backup_code.upper(), 0) if backup_code else 0))
+        n += 1
+    db.commit()
+    return n
+
+
 def cleanup_legacy_staff_role(db):
     """Gộp vai trò legacy 'Nhân viên' (code STAFF) vào 'Nhân sự' (code employee) rồi XÓA.
     Idempotent: chỉ chạy khi vẫn còn vai trò STAFF."""
@@ -668,6 +723,11 @@ def run():
             seed_demo_accounts(db, company.id)
         else:
             print("Bỏ qua seed tài khoản demo (SEED_DEMO_ACCOUNTS=false).")
+
+        # Phân công NSTM mẫu — CHẠY SAU seed_demo_accounts vì tham chiếu mã nhân sự demo
+        n_assign = seed_category_assignees(db)
+        if n_assign:
+            print(f"Nạp {n_assign} dòng phân công NSTM mẫu.")
 
         # Tài khoản quản trị Trung tâm Hướng dẫn sử dụng (app help-center)
         seed_help_admin(db, company.id)

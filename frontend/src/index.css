@@ -1397,6 +1397,19 @@ thead th {
   outline: none;
 }
 
+/* Field khai báo `fullWidth` trong cruds.tsx: chiếm trọn 1 dòng của lưới 2 cột.
+   Dành cho ô mô tả dài (địa chỉ kho, ghi chú phân loại) — nằm nửa cột thì gõ
+   vài chữ đã xuống dòng. */
+.form-row.full {
+  grid-column: 1 / -1;
+}
+
+/* Ô dài này hay có 5–6 dòng (trụ sở + chi nhánh + người nhận), 84px cắt ngang
+   dòng thứ 4 trông như lỗi hiển thị. */
+.form-row.full textarea {
+  min-height: 132px;
+}
+
 .form-row textarea:focus {
   border-color: var(--teal);
 }

@@ -677,15 +677,18 @@ export default function PurchaseRequestDetail() {
           <div className="card" style={{ padding: 18, marginBottom: 16 }}>
             <h3 className="sec-title">Thông tin chung</h3>
             <div className="form-grid">
-              <div className="form-row">
-                <label>Mã phiếu yêu cầu</label>
-                <input placeholder="Để trống để tự động tạo" value={pr.code || ''} disabled={!isNew} onChange={(e) => setH('code', e.target.value)} />
-              </div>
+              {/* Mã phiếu do hệ thống tự sinh khi lưu → chỉ hiện khi xem chi tiết, ẩn lúc tạo mới */}
               {!isNew && (
-                <div className="form-row">
-                  <label>Ngày tạo</label>
-                  <input value={fmtDateTime(pr.created_at) || '—'} disabled />
-                </div>
+                <>
+                  <div className="form-row">
+                    <label>Mã phiếu yêu cầu</label>
+                    <input value={pr.code || ''} disabled />
+                  </div>
+                  <div className="form-row">
+                    <label>Ngày tạo</label>
+                    <input value={fmtDateTime(pr.created_at) || '—'} disabled />
+                  </div>
+                </>
               )}
               <div className="form-row">
                 <label>Ngày tiếp nhận <span className="req">*</span></label>

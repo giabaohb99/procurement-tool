@@ -87,53 +87,101 @@ export default function CategoryAssigneeNew() {
     finally { setSaving(false) }
   }
 
+  // Sửa 1 phân loại đã có -> tên phân loại làm tiêu đề; thêm mới thì dùng tên chức năng.
+  const editCatLabel = editCat ? cats.find(c => c.value === editCat)?.label : ''
+  const heading = editCatLabel || 'Gán phân công phụ trách'
+
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-        <button className="btn ghost" style={{ height: 36 }} onClick={() => navigate('/category-assignees')}><i className="ti ti-arrow-left" /></button>
-        <h2 className="page-title" style={{ margin: 0 }}>Gán phân công phụ trách</h2>
-      </div>
-
-      <div className="card" style={{ padding: 22, maxWidth: 760 }}>
-        <div className="form-row" style={{ marginBottom: 16 }}>
-          <label>Phân loại VTBB <span style={{ color: '#94a3b8', fontWeight: 400 }}>(chọn nhiều)</span></label>
-          <Select isMulti classNamePrefix="rs" value={selCats} options={cats} onChange={(v: any) => setSelCats(v || [])}
-            placeholder="Chọn/tìm phân loại…" styles={selStyle} menuPortalTarget={portal} menuPosition="fixed" closeMenuOnSelect={false}
-            formatOptionLabel={(o: any) => <span>{o.label}{configured.has(o.value) ? <span style={{ color: '#d97706', fontSize: 11 }}> · đã có, sẽ ghi đè</span> : ''}</span>} />
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
-          <div className="form-row">
-            <label>NSTM chính <span className="req" style={{ color: '#dc2626' }}>*</span></label>
-            <Select classNamePrefix="rs" value={primary} options={emps} onChange={(v: any) => setPrimary(v)} isClearable placeholder="Chọn/tìm NSTM…" styles={selStyle} menuPortalTarget={portal} menuPosition="fixed" />
-          </div>
-          <div className="form-row">
-            <label>NSTM dự phòng</label>
-            <Select classNamePrefix="rs" value={backup} options={emps} onChange={(v: any) => setBackup(v)} isClearable placeholder="Chọn/tìm NSTM…" styles={selStyle} menuPortalTarget={portal} menuPosition="fixed" />
-          </div>
-        </div>
-
-        {err && <div className="err" style={{ marginBottom: 12 }}>{err}</div>}
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn" disabled={saving} onClick={save}><i className="ti ti-check" />{saving ? 'Đang lưu…' : 'Lưu phân công'}</button>
+      {/* Thanh thao tác trên cùng — cùng bố cục trang chi tiết Phòng ban:
+          quay lại bên trái, Lưu/Hủy bên phải để form dài không phải cuộn xuống cuối. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+        <button className="btn ghost" onClick={() => navigate('/category-assignees')} title="Về danh sách Phân công phụ trách">
+          <i className="ti ti-arrow-left" />
+        </button>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button className="btn" disabled={saving} onClick={save}>{saving ? 'Đang lưu…' : 'Lưu'}</button>
           <button className="btn ghost" onClick={() => navigate('/category-assignees')}>Hủy</button>
         </div>
-        <p style={{ color: 'var(--muted)', fontSize: 12.5, marginTop: 14 }}>
-          Cặp NSTM (chính + dự phòng) sẽ được gán cho <b>tất cả phân loại đã chọn</b>. Phân loại đã có sẽ được <b>ghi đè</b>.
-        </p>
       </div>
 
-      {/* Lịch sử thao tác — chỉ hiện khi đang sửa 1 phân loại đã cấu hình */}
-      {editRowId && (
-        <div className="card" style={{ padding: 18, maxWidth: 760, marginTop: 14 }}>
-          <h3 style={{ fontSize: 14, color: 'var(--navy)', marginBottom: 12 }}><i className="ti ti-history" /> Lịch sử thao tác</h3>
-          {logs.length === 0 ? (
-            <div style={{ color: '#999', fontSize: 13 }}>Chưa có log.</div>
-          ) : (
-            <AuditTimeline logs={logs} />
-          )}
+      {/* Thẻ danh tính: KHÔNG có ảnh (phân công không gắn với người/logo cụ thể),
+          chỉ tên + chip mô tả — giống trang chi tiết Phòng ban. */}
+      <div className="card hero-card" style={{ marginBottom: 16 }}>
+        <div className="hero-body">
+          <div style={{ minWidth: 0 }}>
+            <div className="hero-name">{heading}</div>
+            {/* Tên phân loại đã làm tiêu đề nên chip chỉ mô tả phần còn lại: ai đang phụ trách */}
+            {editCatLabel ? (
+              <div className="hero-chips">
+                <span className="hero-chip code">
+                  <i className="ti ti-user-star" />NSTM chính: {primary ? primary.label : 'chưa có'}
+                </span>
+                <span className="hero-chip">
+                  <i className="ti ti-user-shield" />NSTM dự phòng: {backup ? backup.label : 'chưa có'}
+                </span>
+              </div>
+            ) : (
+              <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 6 }}>
+                Phân công phụ trách (theo phân loại) · Thêm mới
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
+
+      <div className="detail-grid">
+        <div className="card" style={{ padding: 18 }}>
+          <div className="form-grid">
+            <div className="form-group-title">Phân loại</div>
+            {/* Ô chọn nhiều cần trọn chiều ngang, không bó trong 1 nửa lưới 2 cột */}
+            <div className="form-row" style={{ gridColumn: '1 / -1' }}>
+              <label>Phân loại VTBB <span style={{ color: '#94a3b8', fontWeight: 400 }}>(chọn nhiều)</span></label>
+              <Select isMulti classNamePrefix="rs" value={selCats} options={cats} onChange={(v: any) => setSelCats(v || [])}
+                placeholder="Chọn/tìm phân loại…" styles={selStyle} menuPortalTarget={portal} menuPosition="fixed" closeMenuOnSelect={false}
+                formatOptionLabel={(o: any) => <span>{o.label}{configured.has(o.value) ? <span style={{ color: '#d97706', fontSize: 11 }}> · đã có, sẽ ghi đè</span> : ''}</span>} />
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4, fontWeight: 'normal' }}>
+                Cặp NSTM bên dưới sẽ được gán cho <b>tất cả phân loại đã chọn</b>. Phân loại đã có sẽ được <b>ghi đè</b>.
+              </div>
+            </div>
+
+            <div className="form-group-title">Người phụ trách</div>
+            <div className="form-row">
+              <label>NSTM chính <span className="req" style={{ color: '#dc2626' }}>*</span></label>
+              <Select classNamePrefix="rs" value={primary} options={emps} onChange={(v: any) => setPrimary(v)} isClearable placeholder="Chọn/tìm NSTM…" styles={selStyle} menuPortalTarget={portal} menuPosition="fixed" />
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4, fontWeight: 'normal' }}>
+                Người nhận yêu cầu mua hàng thuộc các phân loại này.
+              </div>
+            </div>
+            <div className="form-row">
+              <label>NSTM dự phòng</label>
+              <Select classNamePrefix="rs" value={backup} options={emps} onChange={(v: any) => setBackup(v)} isClearable placeholder="Chọn/tìm NSTM…" styles={selStyle} menuPortalTarget={portal} menuPosition="fixed" />
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4, fontWeight: 'normal' }}>
+                Người thay thế khi NSTM chính vắng mặt. Có thể bỏ trống.
+              </div>
+            </div>
+          </div>
+          {err && <div className="err" style={{ marginTop: 12 }}>{err}</div>}
+        </div>
+
+        {/* Lịch sử thao tác — chỉ hiện khi đang sửa 1 phân loại đã cấu hình */}
+        {editRowId && (
+          <div className="detail-col">
+            <div className="card" style={{ padding: 18 }}>
+              <h3 className="sec-title" style={{ marginTop: 0 }}>
+                <i className="ti ti-history" style={{ marginRight: 8, color: '#b6c2d9' }} />Lịch sử thao tác
+              </h3>
+              {logs.length === 0 ? (
+                <div style={{ color: 'var(--muted)', fontSize: 13 }}>
+                  Chưa có thao tác nào được ghi nhận. Mọi lần sửa/xóa sẽ hiện ở đây kèm người thực hiện và thời điểm.
+                </div>
+              ) : (
+                <AuditTimeline logs={logs} showMessage={false} />
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -15,6 +15,7 @@ import { fmtDateTime } from '../utils/datetime'
 import TableHead, { TableCells } from '../components/TableHead'
 import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
+import { useUrlFilters } from '../hooks/use-url-filters'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 const AGING_CLS: Record<string, string> = { 'Chưa đến hạn': 'gray', '1-30': 'warn', '31-60': 'warn', '61-90': 'err', '>90': 'err' }
@@ -44,8 +45,10 @@ export default function Payables() {
   const [companies, setCompanies] = useState<any[]>([])
   const [suppliers, setSuppliers] = useState<any[]>([])
   const thisYear = new Date().getFullYear()
-  // supplier_code có thể được truyền qua ?supplier= (từ dashboard "Việc cần xử lý")
-  const [f, setF] = useState<any>({
+  // supplier_code có thể được truyền qua ?supplier= (từ dashboard "Việc cần xử lý").
+  // Đây là MẶC ĐỊNH của trang; useUrlFilters sẽ đè tiếp bằng param cùng tên trên URL (nếu có)
+  // và ghi ngược mọi thay đổi lên URL để F5 không mất bộ lọc.
+  const [f, setF] = useUrlFilters<any>({
     ...EMPTY_FILTERS(thisYear),
     supplier_code: searchParams.get('supplier') || '',
     po_code: searchParams.get('po_code') || '',

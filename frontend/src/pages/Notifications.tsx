@@ -6,6 +6,7 @@ import { askConfirm } from '../components/confirm'
 import { toast } from '../components/toast'
 import FilterPanel, { FilterItem } from '../components/FilterPanel'
 import Pagination from '../components/Pagination'
+import { useUrlFilters } from '../hooks/use-url-filters'
 
 type Notif = { id: number; title: string; body: string; link: string; is_read: boolean; at: string }
 
@@ -16,8 +17,11 @@ export default function Notifications() {
   const [unread, setUnread] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [tab, setTab] = useState<'all' | 'unread'>('all')
-  const [q, setQ] = useState('')
+  // Tab + ô tìm kiếm lưu trên URL (?tab=&q=) → F5 không mất bộ lọc
+  const [f, setF] = useUrlFilters({ tab: 'all' as 'all' | 'unread', q: '' })
+  const { tab, q } = f
+  const setTab = (v: 'all' | 'unread') => setF((s) => ({ ...s, tab: v }))
+  const setQ = (v: string) => setF((s) => ({ ...s, q: v }))
   const timer = useRef<any>(null)
 
   async function load(p = page, s = pageSize) {

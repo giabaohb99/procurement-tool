@@ -8,6 +8,7 @@ import { toast } from '../components/toast'
 import TableHead, { TableCells } from '../components/TableHead'
 import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
+import { useUrlFilters } from '../hooks/use-url-filters'
 
 const LINE_APPROVE_COLOR: Record<string, string> = {
   'Chờ duyệt': '#d97706',
@@ -93,8 +94,9 @@ export default function SurveyReport() {
   const [items, setItems] = useState<SurveyReportItem[]>([])
   const [total, setTotal] = useState(0)
   const [summary, setSummary] = useState<SummaryMap>({ 'Chờ duyệt': 0, 'Đã duyệt': 0, 'Không duyệt': 0, 'Thiếu thông tin': 0 })
-  const [filters, setFilters] = useState<FiltersState>(EMPTY_FILTERS)
-  const [debouncedFilters, setDebouncedFilters] = useState<FiltersState>(EMPTY_FILTERS)
+  const [filters, setFilters] = useUrlFilters<FiltersState>({ ...EMPTY_FILTERS })
+  // Khởi tạo bằng chính bộ lọc đọc từ URL → lần nạp đầu đã đúng, không phải gọi API 2 lần
+  const [debouncedFilters, setDebouncedFilters] = useState<FiltersState>(filters)
   const [page, setPage] = useState(1)
   const [busy, setBusy] = useState(false)
   const [itemGroups, setItemGroups] = useState<string[]>([])
@@ -189,7 +191,7 @@ export default function SurveyReport() {
   }, [debouncedFilters, page, sortBy, sortDir])
 
   function resetFilters() {
-    setFilters(EMPTY_FILTERS)
+    setFilters({ ...EMPTY_FILTERS })
     setPage(1)
   }
 

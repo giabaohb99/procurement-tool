@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
+import { useUrlFilters } from '../hooks/use-url-filters'
 import { fmtDateTime } from '../utils/datetime'
 import { toast } from '../components/toast'
 import Pagination from '../components/Pagination'
@@ -25,10 +26,13 @@ export default function TicketList() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [status, setStatus] = useState('')
-  const [priority, setPriority] = useState('')
-  const [assignee, setAssignee] = useState('')
-  const [q, setQ] = useState('')
+  // Bộ lọc lưu trên URL (?status=&priority=&assignee=&q=) → F5 không mất bộ lọc
+  const [f, setF] = useUrlFilters({ status: '', priority: '', assignee: '', q: '' })
+  const { status, priority, assignee, q } = f
+  const setStatus = (v: string) => setF((s) => ({ ...s, status: v }))
+  const setPriority = (v: string) => setF((s) => ({ ...s, priority: v }))
+  const setAssignee = (v: string) => setF((s) => ({ ...s, assignee: v }))
+  const setQ = (v: string) => setF((s) => ({ ...s, q: v }))
   const [busyId, setBusyId] = useState(0)
   const timer = useRef<any>(null)
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { useUrlFilters } from '../hooks/use-url-filters'
 import { api } from '../api/client'
 import { toast } from '../components/toast'
 import Pagination from '../components/Pagination'
@@ -35,13 +36,18 @@ export default function ImportBatches() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [fModule, setFModule] = useState('')
-  const [fStatus, setFStatus] = useState('')
-  const [fMode, setFMode] = useState('')
-  const [fDateFrom, setFDateFrom] = useState('')
-  const [fDateTo, setFDateTo] = useState('')
-  const [fCreator, setFCreator] = useState('')
-  const [fFilename, setFFilename] = useState('')
+  // Bộ lọc lưu trên URL → F5 / gửi link giữ nguyên bộ lọc đang xem
+  const [f, setF] = useUrlFilters({
+    module: '', status: '', mode: '', date_from: '', date_to: '', creator: '', filename: '',
+  })
+  const { module: fModule, status: fStatus, mode: fMode, date_from: fDateFrom,
+          date_to: fDateTo, creator: fCreator, filename: fFilename } = f
+  const setFModule = (v: string) => setF((s) => ({ ...s, module: v }))
+  const setFStatus = (v: string) => setF((s) => ({ ...s, status: v }))
+  const setFMode = (v: string) => setF((s) => ({ ...s, mode: v }))
+  const setFCreator = (v: string) => setF((s) => ({ ...s, creator: v }))
+  const setFFilename = (v: string) => setF((s) => ({ ...s, filename: v }))
+  const setFDateRange = (from: string, to: string) => setF((s) => ({ ...s, date_from: from, date_to: to }))
   const [showModal, setShowModal] = useState(false)
   const [upModule, setUpModule] = useState(1)
   const [upMode, setUpMode] = useState(0)
@@ -76,7 +82,7 @@ export default function ImportBatches() {
   }, [rows])
 
   // Debounce filename search
-  const [fnInput, setFnInput] = useState('')
+  const [fnInput, setFnInput] = useState(fFilename)
   useEffect(() => {
     const t = setTimeout(() => { setFFilename(fnInput); setPage(1) }, 400)
     return () => clearTimeout(t)
@@ -110,7 +116,8 @@ export default function ImportBatches() {
   }
 
   function clearFilters() {
-    setFModule(''); setFStatus(''); setFMode(''); setFDateFrom(''); setFDateTo(''); setFCreator(''); setFnInput(''); setFFilename(''); setPage(1)
+    setF({ module: '', status: '', mode: '', date_from: '', date_to: '', creator: '', filename: '' })
+    setFnInput(''); setPage(1)
   }
 
   const hasActiveFilters = fModule || fStatus || fMode || fDateFrom || fDateTo || fCreator || fFilename
@@ -173,7 +180,7 @@ export default function ImportBatches() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <label style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Ngày:</label>
             <DateRangePicker value={{ from: fDateFrom, to: fDateTo }}
-              onChange={(v) => { setFDateFrom(v.from); setFDateTo(v.to); setPage(1) }} />
+              onChange={(v) => { setFDateRange(v.from, v.to); setPage(1) }} />
           </div>
           {/* Tên file */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
