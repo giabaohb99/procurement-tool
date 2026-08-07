@@ -369,6 +369,19 @@ def build_supplier_matcher(db):
     return match
 
 
+def is_typo_of(a, b):
+    """`a` có phải là `b` bị gõ sai đúng MỘT ký tự không (thừa / thiếu / gõ nhầm)?"""
+    a, b = a.upper(), b.upper()
+    if a == b:
+        return True
+    if abs(len(a) - len(b)) > 1:
+        return False
+    if len(a) == len(b):                         # gõ nhầm 1 ký tự
+        return sum(x != y for x, y in zip(a, b)) == 1
+    lo, hi = (a, b) if len(a) < len(b) else (b, a)   # thừa/thiếu 1 ký tự
+    return any(hi[:i] + hi[i + 1:] == lo for i in range(len(hi)))
+
+
 def guess_from_prefix(code, prods, field):
     """Suy `item_group` / `unit` cho mã hàng mới theo các mã cùng tiền tố.
 
@@ -443,9 +456,11 @@ def main():
               f"khớp gần đúng: {how_of['fuzzy']} | tạo mới: {len(to_create)}")
 
         # ---- Đối chiếu mã sản phẩm ----
-        # Thứ tự: khớp MÃ -> khớp TÊN -> tạo mã mới. Bước khớp tên là để cứu dòng gõ sai mã
-        # (NTLT0309 gõ nhầm của NLT0309: tên hàng trong file trùng khít, và chỉ trùng ĐÚNG
-        # MỘT mã trong danh mục nên không có chuyện gán nhầm).
+        # Thứ tự: khớp MÃ -> khớp TÊN (chỉ khi mã LỆCH 1 KÝ TỰ) -> tạo mã mới.
+        # Bước khớp tên là để cứu dòng gõ sai mã: NTLT0309 gõ nhầm của NLT0309 — tên hàng
+        # trùng khít VÀ mã chỉ thừa một chữ 'T'. KHÔNG được khớp tên suông: danh mục có
+        # nhiều mã TRÙNG TÊN nhau (NLT0330 và NLT0323 cùng tên) nên khớp tên suông sẽ gán
+        # lịch sử của mã này sang mã khác — đó là hai mặt hàng khác nhau, phải tạo mã mới.
         prods = db.query(Product).all()
         by_code = {p.code: p for p in prods}
         by_name = {}
@@ -455,7 +470,8 @@ def main():
         for r in rows:
             if r["code"] in by_code:
                 continue
-            same = by_name.get(name_key(r["name"]), [])
+            same = [p for p in by_name.get(name_key(r["name"]), [])
+                    if is_typo_of(r["code"], p.code)]
             if len(same) == 1:
                 code_fix[r["code"]] = same[0].code
                 continue
