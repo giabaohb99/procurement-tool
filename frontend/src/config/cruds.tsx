@@ -24,6 +24,8 @@ export type FieldDef = {
   hint?: string           // dòng chú thích nhỏ dưới ô nhập (giải thích ý nghĩa field)
   group?: string          // tên nhóm — form chi tiết chèn tiêu đề nhóm trước field đầu tiên của nhóm.
                           // Không đặt group thì form giữ nguyên dạng phẳng như cũ.
+  fullWidth?: boolean     // chiếm trọn 1 dòng của lưới 2 cột + textarea cao hơn (CSS .form-row.full).
+                          // Dành cho ô mô tả dài (địa chỉ kho, ghi chú), nằm nửa cột thì quá chật.
 }
 // link?: trả URL → cell thành clickable, điều hướng tới URL đó (chặn click lan ra dòng)
 export type Column = { key: string; label: string; render?: (row: any) => any; link?: (row: any) => string }
@@ -485,10 +487,24 @@ export const cruds: Record<string, CrudConfig> = {
       condText('code', 'Mã'), condText('name', 'Tên kho'),
       condSelect('is_active', 'Trạng thái', ACTIVE_OPTIONS, ['eq']),
     ],
+    // KHÔNG khai báo detailHeader: kho không có ảnh/logo (giống trang Phòng ban).
+    // Địa chỉ KHÔNG làm chip: nhiều kho ghi địa chỉ dài 150+ ký tự, có cả xuống dòng
+    // (trụ sở + nhà máy + người nhận) -> nhét vào chip sẽ vỡ thẻ danh tính.
+    detailChips: (row) => [
+      ...(row.code && row.code !== row.name ? [{ icon: 'ti-hash', text: row.code, cls: 'code' }] : []),
+      { icon: row.is_active ? 'ti-circle-check' : 'ti-circle-x', text: row.is_active ? 'Đang dùng' : 'Ngừng / Ẩn' },
+    ],
     fields: [
-      { key: 'code', label: 'Mã', readonlyOnEdit: true }, { key: 'name', label: 'Tên kho' },
-      { key: 'address', label: 'Địa chỉ', type: 'textarea' },
-      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, colorMap: { 'true': '#16a34a', 'false': '#dc2626' } },
+      { key: 'code', label: 'Mã', readonlyOnEdit: true, group: 'Định danh',
+        hint: 'Mã kho dùng khi import/export và khi chọn kho nhập ở dòng hàng. Không sửa được sau khi tạo.' },
+      { key: 'name', label: 'Tên kho', group: 'Định danh',
+        hint: 'Tên đầy đủ, hiện trên đơn mua hàng và phiếu nhập.' },
+      // Địa chỉ thường dài / nhiều dòng -> cho trọn chiều ngang
+      { key: 'address', label: 'Địa chỉ', type: 'textarea', group: 'Vị trí', fullWidth: true,
+        hint: 'Nơi giao hàng thực tế. Ghi thêm người nhận / số điện thoại nếu cần.' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, group: 'Tổ chức',
+        colorMap: { 'true': '#16a34a', 'false': '#dc2626' },
+        hint: 'Ngừng dùng sẽ ẩn khỏi ô chọn kho; dữ liệu cũ vẫn giữ nguyên.' },
     ],
   },
   units: {
@@ -505,9 +521,20 @@ export const cruds: Record<string, CrudConfig> = {
       condText('code', 'Mã'), condText('name', 'Tên ĐVT'),
       condSelect('is_active', 'Trạng thái', ACTIVE_OPTIONS, ['eq']),
     ],
+    // KHÔNG khai báo detailHeader: ĐVT không có ảnh/logo (giống trang Phòng ban).
+    // Nhiều ĐVT có mã TRÙNG tên ("Hộp"/"Hộp") -> chip mã lặp lại tiêu đề, chỉ hiện khi khác nhau.
+    detailChips: (row) => [
+      ...(row.code && row.code !== row.name ? [{ icon: 'ti-hash', text: row.code, cls: 'code' }] : []),
+      { icon: row.is_active ? 'ti-circle-check' : 'ti-circle-x', text: row.is_active ? 'Đang dùng' : 'Ngừng / Ẩn' },
+    ],
     fields: [
-      { key: 'code', label: 'Mã', readonlyOnEdit: true }, { key: 'name', label: 'Tên ĐVT' },
-      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, colorMap: { 'true': '#16a34a', 'false': '#dc2626' } },
+      { key: 'code', label: 'Mã', readonlyOnEdit: true, group: 'Định danh',
+        hint: 'Mã dùng khi import/export và khi tham chiếu ĐVT ở dòng hàng. Không sửa được sau khi tạo.' },
+      { key: 'name', label: 'Tên ĐVT', group: 'Định danh',
+        hint: 'Tên hiển thị trong ô chọn ĐVT (Cái, Thùng, Kg…).' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, group: 'Tổ chức',
+        colorMap: { 'true': '#16a34a', 'false': '#dc2626' },
+        hint: 'Ngừng dùng sẽ ẩn khỏi ô chọn ĐVT; dữ liệu cũ vẫn giữ nguyên.' },
     ],
   },
   'item-groups': {
@@ -526,12 +553,28 @@ export const cruds: Record<string, CrudConfig> = {
       condText('code', 'Mã'), condText('name', 'Phân loại'),
       condSelect('is_active', 'Trạng thái', ACTIVE_OPTIONS, ['eq']),
     ],
+    // KHÔNG khai báo detailHeader: phân loại không có ảnh/logo (giống trang Phòng ban).
+    detailChips: (row) => [
+      ...(row.code ? [{ icon: 'ti-hash', text: row.code, cls: 'code' }] : []),
+      ...(row.std_days || row.std_days_unavail
+        ? [{ icon: 'ti-clock', text: `Ngày QĐ: ${row.std_days || '—'} (sẵn hàng) · ${row.std_days_unavail || '—'} (không sẵn)` }]
+        : []),
+      ...(row.apply_date ? [{ icon: 'ti-calendar', text: `Áp dụng từ ${row.apply_date}` }] : []),
+      { icon: row.is_active ? 'ti-circle-check' : 'ti-circle-x', text: row.is_active ? 'Đang dùng' : 'Ngừng / Ẩn' },
+    ],
     fields: [
-      { key: 'name', label: 'Phân loại', readonlyOnEdit: true },
-      { key: 'std_days', label: 'Số ngày QĐ khi NCC CÓ sẵn hàng' },
-      { key: 'std_days_unavail', label: 'Số ngày QĐ khi KHÔNG sẵn hàng' },
-      { key: 'note', label: 'Ghi chú', type: 'textarea' }, { key: 'apply_date', label: 'Ngày áp dụng' },
-      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, colorMap: { 'true': '#16a34a', 'false': '#dc2626' } },
+      { key: 'name', label: 'Phân loại', readonlyOnEdit: true, group: 'Định danh' },
+      { key: 'std_days', label: 'Số ngày QĐ khi NCC CÓ sẵn hàng', group: 'Thời gian quy định',
+        hint: 'Số ngày chuẩn từ lúc đặt tới lúc nhận, dùng để tính hạn giao và cảnh báo trễ.' },
+      { key: 'std_days_unavail', label: 'Số ngày QĐ khi KHÔNG sẵn hàng', group: 'Thời gian quy định',
+        hint: 'Áp dụng khi NCC phải sản xuất/nhập thêm mới có hàng.' },
+      { key: 'apply_date', label: 'Ngày áp dụng', group: 'Thời gian quy định',
+        hint: 'Mốc bắt đầu áp dụng số ngày quy định ở trên.' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, group: 'Khác',
+        colorMap: { 'true': '#16a34a', 'false': '#dc2626' },
+        hint: 'Ngừng dùng sẽ ẩn khỏi ô chọn phân loại; dữ liệu cũ vẫn giữ nguyên.' },
+      // Ghi chú dài -> cho trọn chiều ngang, nằm nửa cột thì gõ vài chữ đã xuống dòng
+      { key: 'note', label: 'Ghi chú', type: 'textarea', group: 'Khác', fullWidth: true },
     ],
   },
   departments: {
