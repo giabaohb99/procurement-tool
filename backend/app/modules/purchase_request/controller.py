@@ -70,8 +70,47 @@ def _notify_assigned(db: Session, pr, user, background_tasks: BackgroundTasks) -
                              link=f"/purchase-requests/{pr.id}", recipient_ids=uids)
 
 
+# Chữ ký 2 bước duyệt trên phiếu in chỉ có hiệu lực từ mốc trạng thái tương ứng trở đi.
+# Phiếu bị TRẢ VỀ (Nháp / Chờ duyệt) sẽ KHÔNG in lại chữ ký duyệt của lần trước.
+_AFTER_APPROVE = ("approved", "dispatched", "processing", "completed", "done")
+_AFTER_DISPATCH = ("dispatched", "processing", "completed", "done")
+
+
+def _approval_signers(db: Session, pr) -> dict:
+    """Người ký 2 bước duyệt của phiếu — tra từ nhật ký thao tác (audit log).
+
+    Bước 1 `approved`  (trưởng phòng duyệt)  -> ô "TP/BP đề xuất" trên phiếu in.
+    Bước 2 `dispatched` (thu mua điều phối)  -> ô "TP/BP mua hàng".
+    Công tắc `pr_dispatch_enabled` TẮT: một người làm cả 2 bước -> 2 ô cùng một chữ ký, đúng thực tế.
+    """
+    from app.core.audit import resolve_actor, resolve_signature
+    from app.modules.audit.model import AuditLog
+
+    out = {"approver_name": "", "approver_signature": "",
+           "dispatcher_name": "", "dispatcher_signature": ""}
+    want = ([("approved", "approver")] if pr.status in _AFTER_APPROVE else []) + \
+           ([("dispatched", "dispatcher")] if pr.status in _AFTER_DISPATCH else [])
+    if not want:
+        return out
+    actions = [a for a, _ in want]
+    rows = (db.query(AuditLog.action, AuditLog.created_by)
+            .filter(AuditLog.entity == service.ENTITY, AuditLog.entity_id == pr.id,
+                    AuditLog.action.in_(actions))
+            .order_by(AuditLog.id.desc()).all())
+    latest: dict[str, int] = {}
+    for action, uid in rows:
+        latest.setdefault(action, uid)        # dòng đầu = lần duyệt GẦN NHẤT
+    for action, key in want:
+        uid = latest.get(action)
+        if uid:
+            out[f"{key}_name"] = resolve_actor(db, uid)
+            out[f"{key}_signature"] = resolve_signature(db, uid)
+    return out
+
+
 def _out(db: Session, pr, user=None) -> dict:
-    from app.core.audit import resolve_actor
+    from app.core.audit import (resolve_actor, resolve_signature,
+                                resolve_signature_by_employee)
     d = {c: getattr(pr, c) for c in HEADER_COLS}
     d["vat_rate"] = float(pr.vat_rate or 0)
     # Trưởng bộ phận: phiếu lập lúc phòng chưa gán trưởng sẽ lưu rỗng và ở rỗng vĩnh viễn.
@@ -102,7 +141,16 @@ def _out(db: Session, pr, user=None) -> dict:
         _blank_supplier(d)
     d["created_at"] = pr.created_at
     d["created_by_name"] = resolve_actor(db, pr.created_by)
-    
+    # Chữ ký ô "Người lập" trên phiếu in. Tra theo NHÂN SỰ người yêu cầu (đúng cái TÊN đang in);
+    # phiếu cũ chưa có requester_id thì mới lấy chữ ký người tạo, và chỉ khi tên trùng nhau —
+    # tránh in chữ ký người A dưới tên người B khi thu mua lập phiếu hộ bộ phận khác.
+    d["requester_signature"] = resolve_signature_by_employee(db, pr.requester_id)
+    if not d["requester_signature"] and not pr.requester_id:
+        if (d["created_by_name"] or "").strip() == (pr.requester or "").strip():
+            d["requester_signature"] = resolve_signature(db, pr.created_by)
+    # Chữ ký + họ tên 2 ô duyệt trên phiếu in (TP/BP đề xuất · TP/BP mua hàng)
+    d.update(_approval_signers(db, pr))
+
     # Fetch company name safely to avoid permission issues on the frontend
     d["company_name"] = ""
     if pr.company_id:

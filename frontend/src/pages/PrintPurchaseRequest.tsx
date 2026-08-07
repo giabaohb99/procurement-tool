@@ -376,26 +376,69 @@ export default function PrintPurchaseRequest() {
             }}
           >
             {["Giám đốc", "TP/BP mua hàng", "TP/BP đề xuất", "Người lập"].map(
-              (r) => (
-                <div key={r}>
-                  <b>{r}</b>
-                  <div style={{ fontStyle: "italic", fontSize: 11 }}>
-                    (Ký, ghi rõ họ tên)
+              (r) => {
+                // Mẫu thường: tự chèn ảnh chữ ký + họ tên cho 3 ô có dữ liệu trong hệ thống.
+                //   Người lập      = người yêu cầu trên phiếu
+                //   TP/BP đề xuất  = người bấm Duyệt (bước 1)
+                //   TP/BP mua hàng = người bấm Điều phối (bước 2, CR-034)
+                // Ô "Giám đốc" không có bước duyệt tương ứng -> để trống, ký tay.
+                // Mẫu thuế để trống toàn bộ như cũ.
+                const filled: Record<string, { sign?: string; name?: string }> = taxMode
+                  ? {}
+                  : {
+                      "Người lập": { sign: pr.requester_signature, name: pr.requester },
+                      "TP/BP đề xuất": { sign: pr.approver_signature, name: pr.approver_name },
+                      "TP/BP mua hàng": { sign: pr.dispatcher_signature, name: pr.dispatcher_name },
+                    };
+                const sign = filled[r]?.sign || "";
+                const name = filled[r]?.name || "";
+                return (
+                  <div key={r}>
+                    <b>{r}</b>
+                    <div style={{ fontStyle: "italic", fontSize: 11 }}>
+                      (Ký, ghi rõ họ tên)
+                    </div>
+                    {/* Cụm chữ ký + họ tên căn GIỮA theo chiều dọc: dồn xuống đáy (flex-end)
+                        sẽ tách rời khỏi dòng "(Ký, ghi rõ họ tên)" trông như bị rớt xuống.
+                        Ô trống (Giám đốc) vẫn giữ nguyên chiều cao để ký tay. */}
+                    <div
+                      style={{
+                        height: 78,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 2,
+                        marginTop: 4,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {sign && (
+                        <img
+                          src={sign}
+                          alt=""
+                          style={{ maxHeight: 40, maxWidth: 150, objectFit: "contain" }}
+                        />
+                      )}
+                      {name}
+                    </div>
                   </div>
-                  <div
-                    style={{
-                      height: 58,
-                      display: "flex",
-                      alignItems: "flex-end",
-                      justifyContent: "center",
-                      fontWeight: 700,
-                    }}
-                  >
-                    {r === "Người lập" && !taxMode ? pr.requester : ""}
-                  </div>
-                </div>
-              ),
+                );
+              },
             )}
+          </div>
+
+          {/* Ghi chú nguồn gốc bản in — nằm dưới cùng khối chữ ký, in ở cả 2 mẫu */}
+          <div
+            style={{
+              textAlign: "center",
+              fontStyle: "italic",
+              fontSize: 10,
+              color: "#666",
+              marginTop: 10,
+            }}
+          >
+            Phiếu này được in từ hệ thống thu mua
           </div>
         </div>
       </div>

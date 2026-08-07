@@ -23,6 +23,29 @@ def resolve_actor(db: Session, user_id: int) -> str:
     return emp.full_name if emp else (user.email or f"User #{user_id}")
 
 
+def resolve_signature_by_employee(db: Session, employee_id: int) -> str:
+    """URL ảnh chữ ký của một NHÂN SỰ (qua tài khoản đăng nhập gắn với nhân sự đó).
+    Trả "" nếu nhân sự chưa có tài khoản hoặc tài khoản chưa tải chữ ký lên.
+    Dùng cho phiếu in: chữ ký phải khớp đúng TÊN đang in, nên tra theo nhân sự chứ không theo
+    người bấm nút."""
+    from app.modules.user.model import User
+
+    if not employee_id:
+        return ""
+    user = (db.query(User)
+            .filter(User.employee_id == employee_id, User.is_active == True)  # noqa: E712
+            .order_by(User.id).first())
+    return (user.signature or "") if user else ""
+
+
+def resolve_signature(db: Session, user_id: int) -> str:
+    """URL ảnh chữ ký của một TÀI KHOẢN. Trả "" nếu chưa tải chữ ký lên."""
+    from app.modules.user.model import User
+
+    user = db.get(User, user_id) if user_id else None
+    return (user.signature or "") if user else ""
+
+
 def resolve_actor_profile(db: Session, user_id: int) -> dict:
     """Thông tin nhân sự của người dùng để in phiếu: họ tên, chức vụ, bộ phận, trưởng BP."""
     from app.modules.department.model import Department
