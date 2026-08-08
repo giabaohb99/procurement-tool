@@ -89,7 +89,14 @@ def _delete_dup(db, apply: bool, max_days: int, match_qty: bool, csv_path: str, 
     Cùng một lần mua bị đếm 2 lần (1 dòng nhập từ Excel + 1 dòng hệ thống chốt khi ĐMH
     "Hoàn thành") thì bảng lịch sử hiện 2 dòng giống nhau, tham chiếu giá đọc ra sai.
     Bản hệ thống mới là bản đúng (gắn với ĐMH thật) nên giữ lại, bỏ bản legacy.
+
+    LUÔN ép trùng SỐ LƯỢNG **và** ĐƠN GIÁ, bất kể cờ --match-qty. Lý do rút từ dữ liệu thật
+    (dev, 6.418 dòng legacy): chỉ khớp NCC + sản phẩm + ngày thì ra 61 dòng, nhưng phần lớn là
+    file cũ ghi TỪNG LẦN NHẬP KHO (210 + 210 + 210 + 216…) cùng trỏ về MỘT dòng đặt hàng —
+    xóa đi là mất chi tiết từng lần nhận. Ép trùng cả SL lẫn giá thì còn 7 dòng, đúng nghĩa
+    bản sao. Xóa là không hoàn tác nên nhánh này phải chặt nhất có thể.
     """
+    match_qty = True                # bỏ qua cờ người dùng — xem lý do ở docstring
     legacy = (db.query(PurchaseHistory).filter(PurchaseHistory.source == "legacy")
               .order_by(PurchaseHistory.order_date.asc()).all())
     cands: dict[tuple, list] = defaultdict(list)
@@ -110,6 +117,11 @@ def _delete_dup(db, apply: bool, max_days: int, match_qty: bool, csv_path: str, 
         dd, _qd, po, it = best
         if it.id not in has_system:
             continue                      # khớp nhưng chưa có bản hệ thống → KHÔNG phải trùng
+        # Giá cũng phải khớp: cùng NCC + cùng SP thì giá hay giống nhau, nhưng lệch giá nghĩa là
+        # hai lần mua khác nhau chứ không phải bản sao
+        gia_h, gia_i = float(h.price or 0), float(it.price or 0)
+        if abs(gia_i - gia_h) > max(0.01, gia_h * 0.01):
+            continue
         dup.append(h)
         plan.append({"history_id": h.id, "product_code": h.product_code,
                      "supplier_code": h.supplier_code, "ngay_lich_su": h.order_date,
