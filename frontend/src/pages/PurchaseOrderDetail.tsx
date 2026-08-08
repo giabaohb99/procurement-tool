@@ -276,9 +276,17 @@ export default function PurchaseOrderDetail() {
   }
   // Chọn 1 lần mua trước từ popup lịch sử → CHỈ điền vào state dòng hàng, KHÔNG tự lưu.
   // Không đụng NCC ở header: người dùng chủ động tham chiếu giá của bất kỳ NCC nào.
+  // Ngoài giá, điền luôn phần "Chi tiết dòng" của lần mua đó; ô nào lịch sử để trống thì
+  // GIỮ NGUYÊN giá trị đang có (đã điền từ danh mục SP hoặc người dùng tự gõ), không xóa trắng.
   const applyHistory = (i: number, h: HistoryPick) => {
-    setItem(i, { unit: h.unit, qty_order: h.qty_order, price: h.price, vat: h.vat })
-    toast.success('Đã điền giá từ lịch sử — bấm Lưu để ghi nhận')
+    const patch: any = { unit: h.unit, qty_order: h.qty_order, price: h.price, vat: h.vat }
+    const detail: Record<string, string> = {
+      invoice_name: h.invoice_name, item_group: h.item_group, spec: h.spec,
+      fg_code: h.fg_code, fg_name: h.fg_name, warehouse_code: h.warehouse_code, note: h.note,
+    }
+    Object.entries(detail).forEach(([k, v]) => { if ((v || '').trim()) patch[k] = v })
+    setItem(i, patch)
+    toast.success('Đã điền giá + thông tin chi tiết dòng từ lịch sử — bấm Lưu để ghi nhận')
   }
 
   const onPickSupplier = (code: string) => {

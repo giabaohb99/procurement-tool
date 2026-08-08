@@ -11,12 +11,23 @@ export type HistoryPick = {
   qty_order: number
   price: number
   vat: number
+  // Phần "Chi tiết dòng" lấy từ `extra` của lần mua cũ — trang cha chỉ điền khi có giá trị
+  invoice_name: string
+  item_group: string
+  spec: string
+  fg_code: string
+  fg_name: string
+  warehouse_code: string
+  note: string
 }
 
 /**
  * Popup "Lịch sử mua hàng gần nhất" — mở từ dòng hàng khi lập ĐMH.
  * Liệt kê các lần mua đã HOÀN THÀNH của đúng mã hàng đó (20 dòng/trang, có ô tìm kiếm).
- * Chọn 1 dòng → trả về ĐVT/SL đặt/Đơn giá/VAT% để trang cha FILL vào dòng hàng.
+ * Chọn 1 dòng → trả về ĐVT/SL/Đơn giá/VAT% + thông tin Chi tiết dòng để trang cha FILL.
+ *
+ * KHÔNG lấy theo lần mua cũ: ngày yêu cầu có hàng, số/ngày hóa đơn, SL đã nhận — đó là
+ * dữ liệu riêng của lần mua đó, bê sang đơn mới là sai.
  *
  * KHÔNG lọc theo NCC của đơn đang lập — mục đích chính là so giá giữa các NCC.
  * Trang cha chỉ fill vào state, KHÔNG tự lưu.
@@ -60,11 +71,19 @@ export default function PurchaseHistoryPickerModal({
   }, [productCode, page, kw])
 
   const chon = (h: any) => {
+    const ex = h.extra || {}      // dòng dữ liệu cũ (legacy) không có extra → chỉ điền giá
     onPick({
       unit: h.unit || '',
       qty_order: Number(h.qty_order) || 0,
       price: Number(h.price) || 0,
       vat: Number(h.vat) || 0,
+      invoice_name: ex.invoice_name || '',
+      item_group: ex.item_group || '',
+      spec: ex.spec || '',
+      fg_code: ex.fg_code || '',
+      fg_name: ex.fg_name || '',
+      warehouse_code: ex.warehouse_code || '',
+      note: ex.item_note || '',
     })
     onClose()
   }
@@ -149,7 +168,8 @@ export default function PurchaseHistoryPickerModal({
           <Pagination page={page} pageSize={PAGE_SIZE} total={total} hideSize
             onChange={(p) => setPage(p)} />
           <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
-            Chọn 1 dòng để điền ĐVT · SL đặt · Đơn giá · VAT% vào dòng hàng. Đơn chưa được lưu — bấm Lưu để ghi nhận.
+            Chọn 1 dòng để điền ĐVT · SL đặt · Đơn giá · VAT% và thông tin Chi tiết dòng (tên trên hóa đơn,
+            xuất xứ/TSKT, mã & tên HH, phân loại, kho nhận, ghi chú). Đơn chưa được lưu — bấm Lưu để ghi nhận.
           </div>
         </div>
       </div>
