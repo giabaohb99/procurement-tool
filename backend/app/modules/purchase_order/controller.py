@@ -1,5 +1,5 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
-from sqlalchemy import select, or_
+from sqlalchemy import case, func, select, or_
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_perm_profile, require
@@ -142,6 +142,70 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
         for r in out:
             r["pr_id"] = id_by_code.get(r.get("pr_code"))
     return success({"total": total, "items": out})
+
+
+# PHẢI khai báo TRƯỚC `/{pid}`, nếu không "lines" sẽ rơi vào route đó và lỗi ép kiểu int.
+@router.get("/lines")
+def list_po_lines(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
+                  user=Depends(require("purchase_order", "read"))):
+    """Danh sách DÒNG HÀNG của các đơn mua hàng — dùng cho trang chi tiết Kho.
+
+    `warehouse_code`: lấy dòng có "Kho nhận mặc định" là kho này, HOẶC có lần giao về kho này
+    (lần giao đổi kho so với mặc định vẫn là hàng thực về kho → không được bỏ sót).
+    `qty_received_here` = SL đã nhận riêng ở kho đang xem (khác qty_received là tổng mọi kho):
+    tổng SL nhận của các lần giao ghi rõ kho này, cộng phần đã nhận CHƯA gắn kho nào —
+    phần đó quy về kho mặc định của dòng (dữ liệu nhập lịch sử chỉ có SL nhận trên dòng,
+    không tách lần giao, nếu bỏ qua thì kho nào cũng hiện 0).
+    """
+    wh = (request.query_params.get("warehouse_code") or "").strip()
+    q = db.query(PurchaseOrder, POItem).join(POItem, POItem.po_id == PurchaseOrder.id)
+    if wh:
+        by_delivery = select(PODelivery.po_item_id).where(PODelivery.warehouse_code == wh)
+        q = q.filter(or_(POItem.warehouse_code == wh, POItem.id.in_(by_delivery)))
+    kw = (request.query_params.get("q") or "").strip()
+    if kw:
+        like = f"%{kw}%"
+        q = q.filter(or_(PurchaseOrder.code.like(like), POItem.product_code.like(like),
+                         POItem.product_name.like(like)))
+    progress = (request.query_params.get("progress_status") or "").strip()
+    if progress:
+        q = q.filter(POItem.progress_status == progress)
+    q = apply_scope(q, PurchaseOrder, "purchase_order", user, get_perm_profile(db, user))
+
+    total = q.count()
+    rows = (q.order_by(PurchaseOrder.order_date.desc(), PurchaseOrder.id.desc(), POItem.id.asc())
+            .offset(pg["offset"]).limit(pg["limit"]).all())
+
+    # SL nhận theo lần giao, gom theo dòng: (nhận tại kho đang xem, nhận đã gắn kho bất kỳ)
+    recv: dict[int, tuple[float, float]] = {}
+    if wh and rows:
+        item_ids = [it.id for _, it in rows]
+        recv = {
+            iid: (float(here or 0), float(assigned or 0)) for iid, here, assigned in
+            db.query(
+                PODelivery.po_item_id,
+                func.sum(case((PODelivery.warehouse_code == wh, PODelivery.received_qty), else_=0)),
+                func.sum(case((PODelivery.warehouse_code != "", PODelivery.received_qty), else_=0)),
+            ).filter(PODelivery.po_item_id.in_(item_ids)).group_by(PODelivery.po_item_id).all()
+        }
+
+    def _recv_here(it: POItem) -> float:
+        here, assigned = recv.get(it.id, (0.0, 0.0))
+        if it.warehouse_code == wh:   # phần đã nhận chưa gắn lần giao/kho nào → về kho mặc định
+            here += max(0.0, float(it.qty_received or 0) - assigned)
+        return round(here, 3)
+
+    items = [{
+        "po_id": po.id, "po_code": po.code, "order_date": po.order_date, "po_status": po.status,
+        "supplier_code": po.supplier_code, "supplier_name": po.supplier_name,
+        "item_id": it.id, "product_code": it.product_code, "product_name": it.product_name,
+        "unit": it.unit, "required_date": it.required_date, "warehouse_code": it.warehouse_code,
+        "qty_order": float(it.qty_order or 0), "qty_received": float(it.qty_received or 0),
+        "qty_remaining": float(it.qty_remaining or 0),
+        "qty_received_here": _recv_here(it) if wh else 0.0,
+        "line_status": it.line_status, "progress_status": it.progress_status or "Chưa đặt hàng",
+    } for po, it in rows]
+    return success({"total": total, "items": items})
 
 
 @router.get("/{pid}")

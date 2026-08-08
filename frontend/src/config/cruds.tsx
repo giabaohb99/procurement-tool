@@ -7,6 +7,7 @@ import PurchaseHistoryTable from '../components/PurchaseHistoryTable'
 import EmployeeAccountCard from '../components/employee-account-card'
 import EmployeeAvatar from '../components/employee-avatar'
 import CompanyLogo from '../components/company-logo'
+import WarehousePurchaseLines from '../components/warehouse-purchase-lines'
 import { fmtDateTime } from '../utils/datetime'
 import { fmtVND } from '../utils/money'
 import { initialsOf } from '../utils/name'
@@ -475,6 +476,9 @@ export const cruds: Record<string, CrudConfig> = {
   },
   warehouses: {
     slug: 'warehouses', entity: 'warehouse', title: 'Kho', apiPath: '/api/warehouses', importExport: true,
+    detailTabs: [
+      { key: 'po-lines', label: 'Đơn hàng về kho', render: (row) => <WarehousePurchaseLines warehouseCode={row.code} /> },
+    ],
     columns: [
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên kho' },
       { key: 'address', label: 'Địa chỉ', render: (r) => <div style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.address}>{r.address || '—'}</div> },
