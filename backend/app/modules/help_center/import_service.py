@@ -29,8 +29,10 @@ ALLOWED_TAGS = {
     "iframe",
 }
 VOID_TAGS = {"br", "hr", "img", "col"}
+# KHÔNG có `srcdoc`: đó là cả một trang HTML nhét vào thuộc tính, chạy CÙNG ORIGIN với trang
+# cha — cho qua là mở đường cho <iframe srcdoc="<script>…">. Nhúng video chỉ cần `src`.
 ALLOWED_ATTRS = {
-    "href", "src", "srcdoc", "alt", "title", "class", "style", "width", "height",
+    "href", "src", "alt", "title", "class", "style", "width", "height",
     "colspan", "rowspan", "span", "target", "rel", "start", "type",
     "allow", "allowfullscreen", "frameborder", "loading", "data-lang",
 }
@@ -110,15 +112,26 @@ def _text_of(html: str) -> str:
     return " ".join(re.sub(r"<[^>]+>", " ", html or "").split())
 
 
+_TITLE_RE = re.compile(r"<title[^>]*>(.*?)</title>", re.I | re.S)
+
+
 def _extract_title(html: str) -> tuple[str, str]:
     """Trả (tiêu đề, nội dung đã bỏ thẻ tiêu đề). Không tìm thấy thì tiêu đề rỗng."""
     m = re.search(r"<h1[^>]*>(.*?)</h1>", html, re.I | re.S)
     if m:
         return _text_of(m.group(1)), (html[:m.start()] + html[m.end():])
-    m = re.search(r"<title[^>]*>(.*?)</title>", html, re.I | re.S)
-    if m:
-        return _text_of(m.group(1)), html
     return "", html
+
+
+def _pop_doc_title(html: str) -> tuple[str, str]:
+    """Tách <title> ra khỏi nội dung. Phải gọi TRƯỚC _body_only vì <title> nằm trong <head>
+    (gọi sau thì <head> đã bị cắt, tiêu đề mất trắng). Và phải bỏ hẳn thẻ đó khỏi nội dung:
+    <title> không nằm trong danh sách thẻ cho phép nên bộ lọc chỉ bỏ thẻ mà GIỮ chữ, tiêu đề
+    sẽ lọt vào đầu bài viết thành một dòng trống nghĩa."""
+    m = _TITLE_RE.search(html)
+    if not m:
+        return "", html
+    return _text_of(m.group(1)), _TITLE_RE.sub("", html)
 
 
 def _body_only(html: str) -> str:
@@ -148,14 +161,17 @@ def parse_file(filename: str, raw: bytes) -> dict:
         else:
             raise ValueError("Không đọc được nội dung file (mã hóa lạ)")
 
+    doc_title = ""
     if ext in MD_EXTS:
         # tables: bảng Markdown | --- | ; fenced_code: khối ```; nl2br: xuống dòng giữ nguyên
         html = markdown.markdown(text, extensions=["tables", "fenced_code", "nl2br", "sane_lists"])
     else:
+        doc_title, text = _pop_doc_title(text)
         html = _body_only(text)
 
     title, html = _extract_title(html)
     content = sanitize_html(html)
+    title = title or doc_title
     if not title:
         title = re.sub(r"\.(html?|md|markdown)$", "", filename, flags=re.I).strip() or "Bài viết mới"
     summary = _text_of(content)[:250] or None
