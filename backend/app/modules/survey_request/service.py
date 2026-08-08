@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.utils import assert_unique_product_codes
 
 from .model import (SurveyRequest, SurveyRequestLine, SurveyRequestOption,
                     SurveyRequestPr)
@@ -643,6 +644,15 @@ def create_prs(db: Session, sid: int, user_id: int):
         groups.setdefault(chosen[0].supplier_code or "", []).append((ln, chosen[0]))
     if not groups:
         raise HTTPException(400, "Chưa chọn phương án nào để tạo YCMH")
+    # Mỗi NCC ra 1 YCMH → 2 dòng khảo sát cùng gắn 1 mã VTBB sẽ đẻ ra 2 dòng trùng mã trên
+    # YCMH, làm sai tiến độ SL khi đồng bộ từ ĐMH. Chặn TRƯỚC vòng lặp vì vòng lặp commit theo
+    # từng NCC — báo lỗi giữa chừng sẽ để lại vài YCMH đã tạo dở.
+    for group_items in groups.values():
+        assert_unique_product_codes(
+            [(o.system_product_code or "") for _, o in group_items],
+            message=("Nhiều dòng khảo sát của cùng một nhà cung cấp đang gắn trùng mã VTBB: "
+                     "{codes}. Mỗi mã chỉ được 1 dòng trên YCMH — hãy gắn lại mã cho đúng "
+                     "hoặc gộp các dòng khảo sát đó làm một."))
 
     today = datetime.now().strftime("%Y-%m-%d")
     created = []

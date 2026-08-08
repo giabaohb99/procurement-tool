@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { askConfirm, askPrompt } from '../components/confirm'
@@ -17,6 +17,7 @@ import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
 import CommentThread from '../components/CommentThread'
 import AuditTimeline from '../components/AuditTimeline'
 import { fmtSize, fileIcon } from '../utils/file-type'
+import { newDupCodes } from '../utils/lines'
 
 const API = '/api/purchase-orders'
 // Ô/cột ĐƠN GIÁ cho lẻ tới 4 chữ số thập phân — giá quy đổi hay lẻ tới phần nghìn đồng
@@ -135,6 +136,7 @@ export default function PurchaseOrderDetail() {
   async function loadAll() {
     try {
       const r = await api.get(`${API}/${id}`); setPo(r.data.data)
+      savedCodes.current = (r.data.data.items || []).map((it: any) => it.product_code || '')
       api.get('/api/audit-logs', { params: { entity: 'purchase_order', entity_id: id } }).then((x) => setLogs(x.data.data))
       api.get('/api/attachments', { params: { entity: 'purchase_order', entity_id: id } }).then((x) => setFiles(x.data.data))
     } catch (ex: any) {
@@ -221,6 +223,9 @@ export default function PurchaseOrderDetail() {
   const setH = (k: string, v: any) =>
     setPo((s: any) => (k === 'order_date' ? recalcUrgent({ ...s, order_date: v }) : { ...s, [k]: v }))
   const items = po.items || []
+  // Mã hàng đang lưu trên server — mốc để chỉ chặn TRÙNG MỚI (xem utils/lines.newDupCodes)
+  const savedCodes = useRef<string[]>([])
+  const dupCodes = useMemo(() => newDupCodes(items.map((it: any) => it.product_code || ''), savedCodes.current), [items])
   const setItem = (i: number, patch: any) =>
     setPo((s: any) => recalcUrgent({ ...s, items: s.items.map((it: any, idx: number) => idx === i ? { ...it, ...patch } : it) }))
   const addItems = (n = 1) => setPo((s: any) => recalcUrgent({ ...s, items: [...(s.items || []), ...Array.from({ length: n }, () => ({ ...emptyItem }))] }))
@@ -325,6 +330,10 @@ export default function PurchaseOrderDetail() {
 
   async function save() {
     const sentItems = items.filter((it: any) => it.product_name || it.product_code)
+    // Mã hàng duy nhất trên đơn: dòng ĐMH nối về dòng YCMH bằng mã, trùng mã làm tiến độ SL sai
+    if (dupCodes.length) {
+      toast.error(`Mã hàng bị trùng: ${dupCodes.join(', ')}. Mỗi mã chỉ được 1 dòng — gộp số lượng vào một dòng hoặc đổi mã.`); return
+    }
     // Ràng buộc nhập liệu (để công nợ sinh đúng): có SL nhận thì phải có Ngày nhận; có cước thì phải chọn Đơn vị VC
     for (const it of sentItems) {
       for (const d of (it.deliveries || [])) {
@@ -604,7 +613,13 @@ export default function PurchaseOrderDetail() {
                   {items.map((it: any, i: number) => (
                     <tr key={i}>
                       <td>{i + 1}</td>
-                      <td style={{ minWidth: 215 }} title={lineReceived(it) ? PRODUCT_LOCK_HINT : undefined}>
+                      <td
+                        style={dupCodes.includes((it.product_code || '').trim())
+                          ? { minWidth: 215, background: 'var(--red-bg)', boxShadow: 'inset 3px 0 0 var(--red)' } : { minWidth: 215 }}
+                        title={dupCodes.includes((it.product_code || '').trim())
+                          ? 'Mã hàng này đã có ở dòng khác — mỗi mã chỉ được 1 dòng'
+                          : (lineReceived(it) ? PRODUCT_LOCK_HINT : undefined)}
+                      >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <ProductPicker compact code={it.product_code} name={it.product_name} disabled={!headerEditable || lineLocked(it) || lineReceived(it)} onPick={(prod) => applyProduct(i, prod)} />

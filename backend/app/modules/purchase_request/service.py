@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.utils import assert_unique_product_codes
 
 from .model import PurchaseRequest, PurchaseRequestItem
 from .schema import AssignIn, ItemStatusIn, PRCreate, PRUpdate
@@ -377,6 +378,9 @@ def _save_items(db: Session, pr_id: int, items, user_id: int):
     (đính kèm entity 'purchase_request_line_image' theo id dòng) không bị mồ côi khi lưu lại phiếu."""
     existing = {i.id: i for i in db.query(PurchaseRequestItem)
                 .filter(PurchaseRequestItem.pr_id == pr_id).all()}
+    # Mã hàng duy nhất trên phiếu — xem app/core/utils.assert_unique_product_codes
+    assert_unique_product_codes([getattr(it, "product_code", "") for it in (items or [])],
+                                [r.product_code for r in existing.values()])
     keep: set[int] = set()
     for it in items or []:
         data = it.model_dump()

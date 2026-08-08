@@ -22,6 +22,7 @@ import CompareLightbox from '../components/CompareLightbox'
 import CommentThread from '../components/CommentThread'
 import AuditTimeline from '../components/AuditTimeline'
 import { fmtSize, fileIcon } from '../utils/file-type'
+import { newDupCodes } from '../utils/lines'
 
 const API = '/api/purchase-requests'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -126,6 +127,7 @@ export default function PurchaseRequestDetail() {
     try {
       const r = await api.get(`${API}/${id}`)
       setPr(r.data.data)
+      savedCodes.current = (r.data.data.items || []).map((it: any) => it.product_code || '')
     } catch (ex: any) {
       if ([403, 404].includes(ex?.response?.status)) { setNotFound(true); return }
       throw ex
@@ -270,6 +272,9 @@ export default function PurchaseRequestDetail() {
   // Phiếu nháp/mới -> chỉ đổi state, lưu theo nút Lưu. Phiếu đã gửi duyệt trở đi ->
   // auto-lưu qua item-status; đổi giá trị ĐÃ CÓ bắt nhập lý do (giống popup chi tiết dòng).
   const inlineExpOrig = useRef('')
+  // Mã hàng đang lưu trên server — mốc để chỉ chặn TRÙNG MỚI (xem utils/lines.newDupCodes)
+  const savedCodes = useRef<string[]>([])
+  const dupCodes = useMemo(() => newDupCodes(items.map((it: any) => it.product_code || ''), savedCodes.current), [items])
   async function commitExpectedDate(i: number) {
     const it = items[i]
     if (editable || !it.id || !canLineStatus(it)) return   // nháp: theo nút Lưu; không quyền: bỏ qua
@@ -370,6 +375,7 @@ export default function PurchaseRequestDetail() {
     if (!pr.requester) return 'Vui lòng chọn Nhân sự yêu cầu'
     const valid = items.filter((it: any) => it.product_name)
     if (valid.length === 0) return 'Cần ít nhất 1 sản phẩm'
+    if (dupCodes.length) return `Mã hàng bị trùng: ${dupCodes.join(', ')}. Mỗi mã chỉ được 1 dòng — gộp số lượng vào một dòng hoặc đổi mã.`
     // Chi tiết bắt buộc (mã hàng/SL/kho/ngày cần hàng) CHỈ khi Gửi duyệt — lưu nháp / đóng popup dòng thì không bắt
     if (forSubmit) {
       for (const it of valid) {
@@ -771,7 +777,10 @@ export default function PurchaseRequestDetail() {
                   {items.map((it: any, i: number) => (
                     <tr key={i}>
                       <td>{i + 1}</td>
-                      <td>
+                      <td
+                        style={dupCodes.includes((it.product_code || '').trim()) ? { background: 'var(--red-bg)', boxShadow: 'inset 3px 0 0 var(--red)' } : undefined}
+                        title={dupCodes.includes((it.product_code || '').trim()) ? 'Mã hàng này đã có ở dòng khác — mỗi mã chỉ được 1 dòng' : undefined}
+                      >
                         {editable ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
