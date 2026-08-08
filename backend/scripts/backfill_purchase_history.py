@@ -1,14 +1,29 @@
 """Backfill LỊCH SỬ MUA HÀNG cho các dòng ĐMH đã "Hoàn thành" từ trước.
 
-Chạy TRONG container api:
-    docker compose exec -T api python -m scripts.backfill_purchase_history          # chạy thử (chỉ in)
-    docker compose exec -T api python -m scripts.backfill_purchase_history --apply  # ghi vào DB
+Chạy TRONG container api (LUÔN chạy thử trước, chỉ ghi khi có --apply):
+    # 1. Xem đơn cũ đang nằm ở tiến độ nào, thiếu bao nhiêu bản ghi lịch sử
+    docker compose exec -T api python -m scripts.backfill_purchase_history --stats
+
+    # 2. Mặc định: chỉ dòng "Hoàn thành"
+    docker compose exec -T api python -m scripts.backfill_purchase_history
+    docker compose exec -T api python -m scripts.backfill_purchase_history --apply
+
+    # 3. Đơn PO CŨ chưa được chuyển tiến độ chuẩn — lấy theo THỰC TẾ ĐÃ NHẬN HÀNG
+    docker compose exec -T api python -m scripts.backfill_purchase_history --include-received
+    docker compose exec -T api python -m scripts.backfill_purchase_history --include-received --apply
+
+    # 4. Hoặc tự chỉ định trạng thái nào được tính là đã mua xong
+    docker compose exec -T api python -m scripts.backfill_purchase_history \
+        --status "Hoàn thành,Đã gửi ĐMH cho KT" --apply
 
 Vì sao cần: bảng `tab_purchase_history` chỉ được ghi tại đúng 1 chỗ —
 `purchase_order.service.auto_advance_line` khi dòng CHUYỂN sang "Hoàn thành". Những dòng
 đã ở "Hoàn thành" trước khi có tính năng (hoặc do import Misa gán thẳng cột tiến độ) không
 đi qua chỗ đó nên chưa có snapshot. Script dựng lại phần thiếu, dùng chính
 `purchase_history.service.snapshot_line` để record giống hệt luồng chạy thật.
+
+Dòng ĐÃ HỦY (tiến độ/line_status "Hủy đơn", hoặc đơn `status = cancelled`) luôn bị loại,
+kể cả khi đã lỡ nhận hàng — lịch sử mua hàng không tính đơn hủy.
 
 Ngày chốt (`completed_at`) suy ra theo thứ tự ưu tiên, KHÔNG đóng dấu ngày chạy script:
   1. Ngày YCTT đã chi gần nhất của dòng (đúng nghĩa "hoàn thành" = đã thanh toán)
@@ -18,8 +33,11 @@ Ngày chốt (`completed_at`) suy ra theo thứ tự ưu tiên, KHÔNG đóng d�
 
 An toàn khi chạy lại: `snapshot_line` bỏ qua dòng đã có snapshot (`po_item_id` là UNIQUE).
 """
-import sys
+import argparse
+import csv
 from datetime import date
+
+from sqlalchemy import and_, case, func, or_
 
 import app.core.all_models  # noqa: F401 — nạp đủ model để SQLAlchemy dựng được mapper
 from app.core.database import SessionLocal
@@ -58,30 +76,102 @@ def _completed_at(db, po: PurchaseOrder, item: POItem) -> tuple[str, str]:
     return date.today().strftime("%Y-%m-%d"), "hôm nay"
 
 
-def main(apply: bool) -> None:
+def _print_stats(db) -> None:
+    """Phân bố tiến độ dòng × đã có lịch sử chưa — chạy trên DB thật để biết còn thiếu ở đâu."""
+    rows = (db.query(POItem.progress_status,
+                     func.count(POItem.id),
+                     func.sum(case((PurchaseHistory.id.is_(None), 1), else_=0)),
+                     func.sum(case((POItem.qty_received > 0, 1), else_=0)))
+            .outerjoin(PurchaseHistory, PurchaseHistory.po_item_id == POItem.id)
+            .group_by(POItem.progress_status).all())
+    print(f"{'Tiến độ dòng':<26}{'Tổng':>8}{'Thiếu LS':>10}{'Đã nhận':>10}")
+    for st, total, missing, received in sorted(rows, key=lambda r: -r[1]):
+        print(f"{(st or '(trống)'):<26}{total:>8}{int(missing or 0):>10}{int(received or 0):>10}")
+    print("\nCột 'Thiếu LS' = số dòng chưa có bản ghi lịch sử mua hàng.")
+
+
+def _write_csv(path: str, plan: list[dict], applied: bool) -> None:
+    """Xuất danh sách dòng đã/sẽ ghi. Khi --apply, file này CHÍNH LÀ vé hoàn tác (--undo)."""
+    if not path or not plan:
+        return
+    with open(path, "w", newline="", encoding="utf-8-sig") as f:
+        w = csv.DictWriter(f, fieldnames=list(plan[0].keys()))
+        w.writeheader()
+        w.writerows(plan)
+    print(f"Đã xuất {len(plan)} dòng ra {path}"
+          + (" — GIỮ FILE NÀY để hoàn tác bằng --undo nếu cần." if applied else " (rà trước khi --apply)."))
+
+
+def _undo(db, path: str, apply: bool) -> None:
+    """Xóa đúng các bản ghi lịch sử do lần chạy trước tạo ra, theo cột history_id trong file CSV."""
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        ids = [int(r["history_id"]) for r in csv.DictReader(f) if (r.get("history_id") or "").strip()]
+    if not ids:
+        print(f"{path} không có cột history_id nào — file này là bản chạy thử, không có gì để hoàn tác.")
+        return
+    found = db.query(PurchaseHistory).filter(PurchaseHistory.id.in_(ids)).all()
+    print(f"File ghi {len(ids)} bản ghi; còn trong DB: {len(found)}")
+    if not apply:
+        print("(chạy thử) thêm --apply để xóa thật.")
+        return
+    for h in found:
+        db.delete(h)
+    db.commit()
+    print(f"Đã xóa {len(found)} bản ghi lịch sử. Tổng bảng còn: {db.query(PurchaseHistory.id).count()}")
+
+
+def main(apply: bool, statuses: list[str], include_received: bool, stats: bool,
+         csv_path: str, undo: str) -> None:
     db = SessionLocal()
     try:
-        done = (db.query(POItem.id)
-                .filter(POItem.progress_status == "Hoàn thành").count())
+        if undo:
+            _undo(db, undo, apply)
+            return
+        if stats:
+            _print_stats(db)
+            return
+
+        # Dòng ĐỦ ĐIỀU KIỆN vào lịch sử: tiến độ nằm trong `statuses`, hoặc (nếu bật
+        # --include-received) đã nhận hàng thực tế dù cột tiến độ chưa chuẩn — đơn cũ
+        # import từ Misa hay rơi vào ca này.
+        eligible = POItem.progress_status.in_(statuses)
+        if include_received:
+            eligible = or_(eligible, POItem.qty_received > 0)
+        # Không đưa dòng đã hủy vào lịch sử mua hàng dù có phát sinh nhận hàng
+        not_cancelled = and_(POItem.progress_status != "Hủy đơn",
+                             func.coalesce(POItem.line_status, "") != "Hủy đơn",
+                             PurchaseOrder.status != "cancelled")
+
+        base = (db.query(POItem, PurchaseOrder)
+                .join(PurchaseOrder, PurchaseOrder.id == POItem.po_id)
+                .filter(eligible, not_cancelled))
+        done = base.count()
         have = db.query(PurchaseHistory.id).count()
 
-        rows = (db.query(POItem, PurchaseOrder)
-                .join(PurchaseOrder, PurchaseOrder.id == POItem.po_id)
-                .outerjoin(PurchaseHistory, PurchaseHistory.po_item_id == POItem.id)
-                .filter(POItem.progress_status == "Hoàn thành", PurchaseHistory.id.is_(None))
+        rows = (base.outerjoin(PurchaseHistory, PurchaseHistory.po_item_id == POItem.id)
+                .filter(PurchaseHistory.id.is_(None))
                 .order_by(POItem.id.asc()).all())
 
-        print(f"Dòng ĐMH 'Hoàn thành': {done} | đã có lịch sử: {have} | THIẾU: {len(rows)}\n")
+        print(f"Điều kiện: tiến độ ∈ {statuses}"
+              + (" HOẶC đã nhận hàng (qty_received > 0)" if include_received else ""))
+        print(f"Dòng đủ điều kiện: {done} | đã có lịch sử (toàn bảng): {have} | THIẾU: {len(rows)}\n")
         if not rows:
             print("Không có gì để đồng bộ.")
             return
 
         src_count: dict[str, int] = {}
         written = 0
+        plan: list[dict] = []          # để xuất CSV rà trước khi ghi
+        new_objs: list = []            # để lấy id sau commit → file hoàn tác
         for item, po in rows:
             day, src = _completed_at(db, po, item)
             src_count[src] = src_count.get(src, 0) + 1
             written += 1
+            plan.append({"po_code": po.code, "product_code": item.product_code,
+                         "product_name": item.product_name, "supplier_code": po.supplier_code,
+                         "qty_order": float(item.qty_order or 0), "price": float(item.price or 0),
+                         "progress_status": item.progress_status, "completed_at": day,
+                         "nguon_ngay": src, "po_item_id": item.id, "history_id": ""})
             if written <= 20 or written % 100 == 0:
                 print(f"  [{written:>4}] {po.code} / {item.product_code} — {day} ({src})")
             if apply:
@@ -91,18 +181,35 @@ def main(apply: bool) -> None:
                 obj = snapshot_line(db, po, item)
                 if obj is not None:
                     obj.completed_at = day
+                    new_objs.append((len(plan) - 1, obj))
                 if written % BATCH == 0:
                     db.commit()
 
         if apply:
             db.commit()
+            for idx, obj in new_objs:   # sau commit mới có id — ghi vào file để hoàn tác được
+                plan[idx]["history_id"] = obj.id
             print(f"\nĐã ghi {written} dòng lịch sử. Tổng bảng: {db.query(PurchaseHistory.id).count()}")
         else:
             print(f"\n(chạy thử) sẽ ghi {written} dòng — thêm --apply để ghi thật.")
+        _write_csv(csv_path, plan, apply)
         print("Nguồn ngày chốt: " + ", ".join(f"{k}={v}" for k, v in sorted(src_count.items())))
     finally:
         db.close()
 
 
 if __name__ == "__main__":
-    main(apply="--apply" in sys.argv)
+    ap = argparse.ArgumentParser(description="Đồng bộ lịch sử mua hàng cho đơn ĐMH cũ")
+    ap.add_argument("--apply", action="store_true", help="Ghi vào DB (mặc định chỉ chạy thử, in ra)")
+    ap.add_argument("--stats", action="store_true", help="Chỉ in phân bố tiến độ dòng × thiếu lịch sử")
+    ap.add_argument("--status", default="Hoàn thành",
+                    help='Các tiến độ được coi là đã mua xong, cách nhau bằng dấu phẩy '
+                         '(mặc định "Hoàn thành")')
+    ap.add_argument("--include-received", action="store_true",
+                    help="Lấy thêm mọi dòng ĐÃ NHẬN HÀNG dù cột tiến độ chưa chuẩn (đơn cũ/import Misa)")
+    ap.add_argument("--csv", default="/app/backfill_purchase_history.csv",
+                    help="File CSV liệt kê dòng sẽ/đã ghi (mặc định /app/backfill_purchase_history.csv)")
+    ap.add_argument("--undo", default="", help="Hoàn tác: xóa các bản ghi ghi trong file CSV của lần chạy --apply")
+    a = ap.parse_args()
+    main(a.apply, [s.strip() for s in a.status.split(",") if s.strip()],
+         a.include_received, a.stats, a.csv, a.undo)
