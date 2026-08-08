@@ -121,6 +121,22 @@ def import_articles(
     return success({"results": results}, f"Đã nhập {ok}/{len(files)} file")
 
 
+@router.post("/import/parse")
+def parse_import_file(
+    file: UploadFile = File(..., description="1 file .html/.htm/.md/.markdown"),
+    user=Depends(require("help_article", "write")),
+):
+    """Đọc 1 file → trả {title, summary, content} đã lọc, KHÔNG ghi DB.
+
+    Dùng cho nút "Nhập từ file" ngay trong trang soạn bài: người dùng đang mở bài viết và
+    muốn đổ nội dung file vào trình soạn thảo, xem lại rồi mới bấm Lưu.
+    """
+    try:
+        return success(import_service.parse_file(file.filename or "khong-ten", file.file.read()))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
 @router.post("/upload-image")
 def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db),
                  user=Depends(require("help_article", "write"))):

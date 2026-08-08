@@ -12,6 +12,7 @@ import HelpAuditTimeline, { type HelpAuditLog } from '@/components/help-audit-ti
 import HelpChildArticles from '@/components/help-child-articles'
 import HelpIconPicker from '@/components/help-icon-picker'
 import HelpRichEditor from '@/components/help-rich-editor'
+import ImportContentDialog from '@/components/import-content-dialog'
 import MoveArticleDialog from '@/components/move-article-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -201,6 +202,12 @@ export default function AdminArticle() {
         )}
 
         <div className="flex shrink-0 items-center gap-2">
+          {/* Đổ nội dung file vào trình soạn thảo — chỉ ghi vào state, người dùng tự bấm Lưu */}
+          <ImportContentDialog onApply={({ content: html, replace, title: fileTitle }) => {
+            setContent((cur) => (replace ? html : `${cur || ''}\n${html}`))
+            setContentTouched(true)
+            if (fileTitle) setTitle(fileTitle)
+          }} />
           <Button size="sm" disabled={!dirty || saving} onClick={handleSave}>
             <Save /> {saving ? 'Đang lưu…' : 'Lưu'}
           </Button>
