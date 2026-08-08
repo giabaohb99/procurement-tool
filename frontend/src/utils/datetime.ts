@@ -24,6 +24,18 @@ export function fmtDate(v: any): string {
 }
 
 /**
+ * Cột ngày lưu dạng CHUỖI 'YYYY-MM-DD' (ngày đặt, hạn trả, ngày nhận…) → 'DD/MM/YYYY'.
+ *
+ * Cố ý KHÔNG đi qua `new Date`: chuỗi ngày trần không mang timezone, quy đổi múi giờ dễ làm
+ * lệch mất 1 ngày. Giá trị lạ thì trả nguyên văn để không nuốt mất dữ liệu.
+ */
+export function fmtDateStr(v: any): string {
+  const s = String(v || '').trim()
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s)
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : s
+}
+
+/**
  * Khoảng cách tới hiện tại, kiểu "5 phút trước" / "2 ngày trước" — dùng cho dòng trao đổi,
  * nơi "cách đây bao lâu" đáng quan tâm hơn mốc giờ chính xác.
  *

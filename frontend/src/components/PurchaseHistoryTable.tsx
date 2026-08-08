@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import Pagination from './Pagination'
 import { fmtPrice, fmtVND } from '../utils/money'
+import { fmtDateStr } from '../utils/datetime'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 
@@ -76,14 +77,14 @@ export default function PurchaseHistoryTable({
               // để mở → không cho click, cột Mã PO ghi rõ nguồn thay vì để trống.
               <tr key={h.id} className={h.po_id ? 'clickable' : undefined}
                   onClick={h.po_id ? () => navigate(`/purchase-orders/${h.po_id}`) : undefined}>
-                <td>{h.order_date || '—'}</td>
+                <td>{fmtDateStr(h.order_date) || '—'}</td>
                 <td>{h.po_code || (
                   // Không phải thiếu dữ liệu: lần mua này diễn ra TRƯỚC khi có hệ thống nên
                   // không hề tồn tại đơn để trỏ tới — ghi rõ để không ai đi tìm mã PO.
                   // Tooltip chỉ ra đúng dòng trong file Excel gốc: không truy được sang đơn
                   // nhưng vẫn truy được NGUỒN, đủ để đối chiếu khi cần.
                   <span className="badge gray" title={legacyOrigin(h)}
-                    style={{ fontSize: 11, fontWeight: 500 }}>Trước hệ thống</span>
+                    style={{ fontSize: 11, fontWeight: 500 }}>Dữ liệu cũ</span>
                 )}</td>
                 <td>{byProduct ? (h.supplier_name || h.supplier_code) : (h.product_name || h.product_code)}</td>
                 <td>{h.unit}</td>

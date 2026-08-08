@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { fmtPrice, fmtVND } from '../utils/money'
+import { fmtDateStr } from '../utils/datetime'
 import Pagination from './Pagination'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -136,9 +137,9 @@ export default function PurchaseHistoryPickerModal({
             <tbody>
               {rows.map((h) => (
                 <tr key={h.id} className="clickable" onClick={() => chon(h)}>
-                  <td>{h.order_date}</td>
+                  <td>{fmtDateStr(h.order_date)}</td>
                   {/* Dòng dữ liệu cũ không có ĐMH — ghi rõ như bảng lịch sử, đừng để ô trống */}
-                  <td>{h.po_code || <span style={{ color: '#999', fontSize: 12 }}>Trước hệ thống</span>}</td>
+                  <td>{h.po_code || <span style={{ color: '#999', fontSize: 12 }}>Dữ liệu cũ</span>}</td>
                   <td>{h.supplier_name || h.supplier_code}</td>
                   <td>{h.unit}</td>
                   <td style={{ textAlign: 'right' }}>{fmt(h.qty_order)}</td>
