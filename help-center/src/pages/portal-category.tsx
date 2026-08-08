@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import { ChevronRight, FileText } from 'lucide-react'
 
 import { api } from '@/api/client'
 import HelpArticleNav from '@/components/help-article-nav'
+import HelpArticleToc from '@/components/help-article-toc'
 import HelpBreadcrumb from '@/components/help-breadcrumb'
 import HelpPortalShell from '@/components/help-portal-shell'
+import { useHeadingToc } from '@/hooks/use-heading-toc'
 import type { PortalOutletContext } from '@/layouts/portal-layout'
 import { useArticlePath } from '@/lib/help-slug'
 import { findPath, findReadingNeighbors, type HelpNode } from '@/lib/help-tree'
@@ -15,6 +17,14 @@ import { excerptFromHtml } from '@/lib/utils'
 // Thứ tự đọc trong cột giữa: tiêu đề mục -> mô tả/nội dung mở đầu -> DANH SÁCH bài viết bên trong.
 // Danh sách để dạng thẻ bấm được, tách hẳn khỏi phần văn bản mở đầu — trước đây cả hai đều là
 // chữ đậm + gạch ngang nên nhìn lẫn lộn, không biết đâu là nội dung đâu là link sang bài khác.
+//
+// MỤC LỤC: mục cấp 2 (thư mục con) thường có phần mở đầu dài mấy màn hình, cuộn mãi mới tới
+// danh sách bài con. Nên cột phải cũng có mục lục như trang bài viết, cộng thêm một mục cuối
+// nhảy thẳng xuống danh sách — mục lục chỉ hiện khi phần mở đầu có ÍT NHẤT 2 heading, tránh
+// dựng cả cột phải cho mục chỉ có vài dòng chữ.
+
+/** Neo của khối danh sách bài con — mục lục dùng để nhảy thẳng xuống. */
+const CHILDREN_SECTION_ID = 'bai-viet-trong-muc'
 
 export default function PortalCategory({ node }: { node: HelpNode }) {
   const { tree } = useOutletContext<PortalOutletContext>()
@@ -22,7 +32,19 @@ export default function PortalCategory({ node }: { node: HelpNode }) {
   const [intro, setIntro] = useState('')
   const [excerpts, setExcerpts] = useState<Record<number, string>>({})
 
+  const contentRef = useRef<HTMLDivElement>(null)
+  const { items: headings, activeId } = useHeadingToc(contentRef, [intro, node.id], !!intro)
+
   const children = node.children || []
+  // Ghép thêm mục trỏ tới danh sách bài con: đó mới là thứ người đọc tìm ở trang danh mục
+  const toc = useMemo(() => {
+    if (headings.length < 2) return []
+    const min = Math.min(...headings.map((h) => h.level))
+    return children.length > 0
+      ? [...headings, { id: CHILDREN_SECTION_ID, text: `Bài viết trong mục (${children.length})`, level: min }]
+      : headings
+  }, [headings, children.length])
+
   const crumbs = findPath(tree, node.id)
   const { prev, next } = findReadingNeighbors(tree, node.id)
 
@@ -51,8 +73,11 @@ export default function PortalCategory({ node }: { node: HelpNode }) {
   }, [node.id])
 
   return (
-    // Trang danh mục KHÔNG có mục lục (nội dung mở đầu thường ngắn) -> không truyền prop toc
-    <HelpPortalShell tree={tree} activeId={node.id}>
+    <HelpPortalShell
+      tree={tree}
+      activeId={node.id}
+      toc={toc.length > 0 ? <HelpArticleToc items={toc} activeId={activeId} title="Trong mục này" /> : undefined}
+    >
       <div className="mb-5">
         <HelpBreadcrumb crumbs={crumbs} />
       </div>
@@ -64,12 +89,12 @@ export default function PortalCategory({ node }: { node: HelpNode }) {
 
       {/* hc-content--intro hạ cỡ heading trong nội dung mở đầu để không đấu với tiêu đề mục */}
       {intro && (
-        <div className="hc-content hc-content--intro mt-6"
+        <div ref={contentRef} className="hc-content hc-content--intro mt-6"
              dangerouslySetInnerHTML={{ __html: intro }} />
       )}
 
       {children.length > 0 && (
-        <section className="mt-10">
+        <section id={CHILDREN_SECTION_ID} className="mt-10 scroll-mt-24">
           <h2 className="mb-4 border-b pb-2 text-xs font-bold uppercase tracking-wide text-ink-muted">
             Bài viết trong mục ({children.length})
           </h2>
