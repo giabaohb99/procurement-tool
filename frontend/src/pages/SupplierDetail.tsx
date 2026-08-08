@@ -6,7 +6,7 @@ import { useAuth } from '../auth/AuthContext'
 import { contractExpiryBadge, PAYMENT_TERMS_OPTIONS } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
 import PurchaseHistoryTable from '../components/PurchaseHistoryTable'
-import { fmtVND } from '../utils/money'
+import SupplierPayablesDashboard from '../components/supplier-payables-dashboard'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 // ĐƠN GIÁ hiện đủ 4 số lẻ — mặc định toLocaleString chỉ cho 3, cắt mất chữ số cuối
@@ -15,9 +15,9 @@ const SUP_TYPE = [{ value: 'goods', label: 'NCC bán hàng' }, { value: 'transpo
 const LEGAL_TYPE = ['Công ty', 'Cá nhân', 'Hợp danh', 'Hộ kinh doanh']
 const TABS = [
   { key: 'info', label: 'Thông tin' },
-  { key: 'eval', label: 'Đánh giá' },
   { key: 'contracts', label: 'Hợp đồng' },
-  { key: 'payables', label: 'Công nợ' },
+  // CR: gộp tab "Đánh giá" vào đây — KPI giao hàng nằm chung với báo cáo công nợ
+  { key: 'payables', label: 'Công nợ & Đánh giá' },
   { key: 'history', label: 'Lịch sử mua hàng' },
   { key: 'surveys', label: 'Khảo sát của NCC' },
 ]
@@ -38,7 +38,6 @@ export default function SupplierDetail() {
   const [sup, setSup] = useState<any>({ code: '', name: '', legal_type: '', tax_code: '', address: '', supplier_type: 'goods', contact_person: '', phone: '', payment_terms: '', bank_account: '', bank_name: '', vat: 8, is_active: true })
   const [tab, setTab] = useState('info')
   const [contracts, setContracts] = useState<any[]>([])
-  const [payables, setPayables] = useState<any[]>([])
   const [surveySup, setSurveySup] = useState<any[]>([])
   const [surveyProd, setSurveyProd] = useState<any[]>([])
   const [surveySub, setSurveySub] = useState<'ncc' | 'sp'>('ncc')
@@ -53,7 +52,6 @@ export default function SupplierDetail() {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items))
     if (!s?.code) return
     api.get('/api/contracts', { params: { party_code: s.code, page_size: 500 } }).then((r) => setContracts(r.data.data.items))
-    api.get('/api/payables', { params: { supplier_code: s.code, year: 'all', page_size: 500 } }).then((r) => setPayables(r.data.data.items))
     api.get('/api/survey-report/by-supplier', { params: { tax_code: s.tax_code || '', supplier_code: s.code } }).then((r) => {
       setSurveySup(r.data.data.supplier_lines || []); setSurveyProd(r.data.data.product_lines || [])
     }).catch(() => {})
@@ -106,10 +104,6 @@ export default function SupplierDetail() {
     try { await api.delete(`/api/suppliers/${id}`); navigate('/suppliers') }
     catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi xóa') }
   }
-
-  const payTotal = payables.reduce((s, p) => s + (p.total || 0), 0)
-  const payPaid = payables.reduce((s, p) => s + (p.paid_amount || 0), 0)
-  const payRemain = payables.reduce((s, p) => s + (p.remaining || 0), 0)
 
   return (
     <div>
@@ -222,31 +216,6 @@ export default function SupplierDetail() {
         </div>
       )}
 
-      {tab === 'eval' && (
-        <div className="grid-2">
-          <div className="card" style={{ padding: 18 }}>
-            <h3 className="sec-title">KPI giao hàng (cả kỳ)</h3>
-            {kpi ? (
-              <div style={{ fontSize: 14, lineHeight: 2 }}>
-                <div>Số lần giao dịch: <b>{fmt(kpi.trans)}</b></div>
-                <div>Số lần trễ: <b style={{ color: 'var(--red)' }}>{fmt(kpi.late)}</b></div>
-                <div>Tỷ lệ trễ: <b style={{ color: kpi.rate > 30 ? 'var(--red)' : 'var(--ink)' }}>{fmt(kpi.rate)}%</b></div>
-                {kpi.rate > 30 && <div style={{ color: 'var(--red)', fontSize: 13 }}>Cảnh báo: tỷ lệ trễ cao (&gt;30%)</div>}
-              </div>
-            ) : <span style={{ color: '#999' }}>Chưa có dữ liệu giao dịch.</span>}
-          </div>
-          <div className="card" style={{ padding: 18 }}>
-            <h3 className="sec-title">Tổng quan công nợ</h3>
-            <div style={{ fontSize: 14, lineHeight: 2 }}>
-              <div>Tổng nợ: <b>{fmtVND(payTotal)}</b></div>
-              <div>Đã trả: <b style={{ color: 'var(--green)' }}>{fmtVND(payPaid)}</b></div>
-              <div>Còn phải trả: <b style={{ color: 'var(--teal)' }}>{fmtVND(payRemain)}</b></div>
-              <div>Số hợp đồng: <b>{contracts.length}</b></div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {tab === 'contracts' && (
         <div className="card" style={{ padding: 18 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -271,28 +240,8 @@ export default function SupplierDetail() {
         </div>
       )}
 
-      {tab === 'payables' && (
-        <div className="card" style={{ padding: 18 }}>
-          <h3 className="sec-title">Công nợ (Tổng {fmt(payTotal)} · Còn lại {fmtVND(payRemain)})</h3>
-          <div className="items-scroll">
-            <table className="items-table" style={{ minWidth: 760 }}>
-              <thead><tr><th>Loại</th><th>PO</th><th>Số HĐ</th><th>Ngày PS</th><th>Hạn trả</th><th style={{ textAlign: 'right' }}>Tổng</th><th style={{ textAlign: 'right' }}>Đã trả</th><th style={{ textAlign: 'right' }}>Còn lại</th><th>Trạng thái</th></tr></thead>
-              <tbody>
-                {payables.map((p) => (
-                  <tr key={p.id}>
-                    <td>{p.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa'}</td><td>{p.po_code}</td><td>{p.invoice_no}</td>
-                    <td>{p.incur_date}</td><td>{p.due_date}</td>
-                    <td style={{ textAlign: 'right' }}>{fmtVND(p.total)}</td><td style={{ textAlign: 'right' }}>{fmtVND(p.paid_amount)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmtVND(p.remaining)}</td>
-                    <td><span className={'badge ' + (p.status === 'Đã TT' ? 'ok' : 'err')}>{p.status}</span></td>
-                  </tr>
-                ))}
-                {payables.length === 0 && <tr><td colSpan={9} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có công nợ</td></tr>}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {/* Tab tự tải công nợ theo bộ lọc riêng; KPI giao hàng + số hợp đồng truyền từ page xuống */}
+      {tab === 'payables' && <SupplierPayablesDashboard supplierCode={sup.code} kpi={kpi} contractCount={contracts.length} />}
 
       {tab === 'history' && <PurchaseHistoryTable supplierCode={sup.code} />}
 

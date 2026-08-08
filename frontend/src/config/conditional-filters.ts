@@ -44,6 +44,10 @@ export const PAYABLE_COND_FILTERS: FilterFieldDefinition[] = [
     { value: 'Đã TT', label: 'Đã thanh toán' }]),
 ]
 
+/** Công nợ trong tab NCC — như trên nhưng BỎ cột "Nhà cung cấp" vì màn đã khóa theo 1 NCC. */
+export const SUPPLIER_PAYABLE_COND_FILTERS: FilterFieldDefinition[] =
+  PAYABLE_COND_FILTERS.filter((f) => f.name !== 'supplier_code')
+
 /** Tồn kho (/api/inventory) — theo inventory/service.py FILTERABLE */
 export const INVENTORY_COND_FILTERS: FilterFieldDefinition[] = [
   condSource('warehouse_code', 'Kho', { url: '/api/warehouses', value: 'code', label: 'name' }),
