@@ -7,6 +7,19 @@ import { fmtPrice, fmtVND } from '../utils/money'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 
 /**
+ * Chú thích cho dòng DỮ LIỆU CŨ: chỉ ra đúng dòng trong file Excel gốc.
+ * Lần mua trước khi có hệ thống thì không có ĐMH để mở, nhưng `extra` vẫn giữ nguồn
+ * (file + sheet + số dòng) — đủ để đối chiếu lại bản gốc khi ai đó thắc mắc con số.
+ */
+function legacyOrigin(h: any): string {
+  const e = h.extra || {}
+  const parts = [e.nguon, e.sheet, e.dong_excel ? `dòng ${e.dong_excel}` : ''].filter(Boolean)
+  return parts.length
+    ? `Lần mua trước khi dùng hệ thống — không có đơn mua hàng.\nNguồn: ${parts.join(' · ')}`
+    : 'Lần mua trước khi dùng hệ thống — không có đơn mua hàng để mở'
+}
+
+/**
  * Bảng LỊCH SỬ MUA HÀNG — 1 dòng = 1 lần mua (1 dòng hàng của ĐMH đã "Hoàn thành").
  * Dùng chung 2 màn: chi tiết Sản phẩm (truyền `productCode`) và chi tiết NCC (truyền `supplierCode`).
  * Cột thứ 3 đổi theo ngữ cảnh: ở màn SP hiện NCC, ở màn NCC hiện Sản phẩm.
@@ -67,7 +80,9 @@ export default function PurchaseHistoryTable({
                 <td>{h.po_code || (
                   // Không phải thiếu dữ liệu: lần mua này diễn ra TRƯỚC khi có hệ thống nên
                   // không hề tồn tại đơn để trỏ tới — ghi rõ để không ai đi tìm mã PO.
-                  <span className="badge gray" title="Lần mua trước khi dùng hệ thống — không có đơn mua hàng để mở"
+                  // Tooltip chỉ ra đúng dòng trong file Excel gốc: không truy được sang đơn
+                  // nhưng vẫn truy được NGUỒN, đủ để đối chiếu khi cần.
+                  <span className="badge gray" title={legacyOrigin(h)}
                     style={{ fontSize: 11, fontWeight: 500 }}>Trước hệ thống</span>
                 )}</td>
                 <td>{byProduct ? (h.supplier_name || h.supplier_code) : (h.product_name || h.product_code)}</td>
