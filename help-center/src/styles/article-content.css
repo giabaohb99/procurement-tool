@@ -122,13 +122,15 @@
 
 .hc-content th,
 .hc-content td,
+.hc-editor .ql-editor th,
 .hc-editor .ql-editor td {
   border: 1px solid var(--border);
   padding: 12px;
   word-break: break-word;
 }
 
-.hc-content th {
+.hc-content th,
+.hc-editor .ql-editor th {
   background: var(--primary);
   color: #fff;
   font-weight: 600;
@@ -136,9 +138,11 @@
 }
 
 /* quill1-table KHÔNG tạo được <th>, nên hàng đầu tiên toàn <td> được tô như dòng tiêu đề.
-   Bảng viết tay bằng <th> không bị ảnh hưởng (bộ chọn này chỉ khớp <td>). */
-.hc-content table tr:first-child td,
-.hc-editor .ql-editor table tr:first-child td {
+   `:not(:has(th))` là bắt buộc: bảng dán từ file soạn tay có <thead><th>, mà `tr:first-child`
+   khi đó lại khớp hàng ĐẦU CỦA TBODY (tr đầu của thead chứa <th> nên không dính) → hàng dữ
+   liệu đầu tiên bị tô xanh y như tiêu đề, thành 2 hàng xanh liền nhau. */
+.hc-content table:not(:has(th)) tr:first-child td,
+.hc-editor .ql-editor table:not(:has(th)) tr:first-child td {
   background: var(--primary);
   color: #fff;
   font-weight: 600;
