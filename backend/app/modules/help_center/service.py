@@ -3,6 +3,7 @@ import re
 import unicodedata
 
 from fastapi import HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
@@ -43,6 +44,19 @@ def get_article(db: Session, article_id: int) -> HelpArticle:
     if not article:
         raise HTTPException(404, "Không tìm thấy bài viết")
     return article
+
+
+def find_by_title(db: Session, title: str) -> HelpArticle | None:
+    """Tìm bài theo ĐÚNG tiêu đề — dùng cho nhập file ở chế độ ghi đè bài trùng."""
+    return db.query(HelpArticle).filter(HelpArticle.title == title).first()
+
+
+def next_sort_order(db: Session, parent_id: int | None) -> int:
+    """Thứ tự kế tiếp trong cùng một mục — để bài nhập vào nằm cuối danh sách, không chen giữa."""
+    q = db.query(func.max(HelpArticle.sort_order))
+    q = q.filter(HelpArticle.parent_id.is_(None) if parent_id is None
+                 else HelpArticle.parent_id == parent_id)
+    return int((q.scalar() or 0) + 1)
 
 
 def create_article(db: Session, data: HelpArticleCreate, user_id: int) -> HelpArticle:

@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
@@ -9,7 +9,7 @@ from app.core.file_registry import ext_of
 from app.core.response import success
 from app.core.storage import dated_key, upload_fileobj
 
-from . import home_service, service
+from . import home_service, import_service, service
 from .home_schema import HelpHomeItemCreate, HelpHomeItemUpdate, HelpHomeSectionUpdate
 from .schema import (HelpArticleCreate, HelpArticleOut, HelpArticleSlideCreate,
                      HelpArticleSlideOut, HelpArticleSlideUpdate,
@@ -75,6 +75,50 @@ def delete_help_article(article_id: int, db: Session = Depends(get_db),
                         user=Depends(require("help_article", "delete"))):
     service.delete_article(db, article_id, user.id)
     return success(None, "Đã xóa bài viết")
+
+
+@router.post("/import")
+def import_articles(
+    files: list[UploadFile] = File(..., description="File .html/.htm/.md/.markdown"),
+    parent_id: int | None = Form(None, description="Đưa vào mục này; bỏ trống = mục gốc"),
+    overwrite: bool = Form(False, description="Trùng tiêu đề thì cập nhật thay vì tạo bài mới"),
+    db: Session = Depends(get_db),
+    user=Depends(require("help_article", "create")),
+):
+    """Nhập bài viết từ file HTML / Markdown — mỗi file thành 1 bài.
+
+    Trả kết quả TỪNG FILE (created / updated / error) chứ không dừng ở file lỗi đầu tiên:
+    nhập cả chục file mà hỏng 1 cái thì người dùng vẫn giữ được phần còn lại.
+    """
+    if len(files) > import_service.MAX_FILES:
+        raise HTTPException(400, f"Tối đa {import_service.MAX_FILES} file mỗi lần")
+    if parent_id is not None:
+        service.get_article(db, parent_id)      # chặn parent_id rác trước khi đọc file
+
+    results = []
+    for f in files:
+        name = f.filename or "khong-ten"
+        try:
+            parsed = import_service.parse_file(name, f.file.read())
+        except ValueError as e:
+            results.append({"file": name, "action": "error", "message": str(e)})
+            continue
+
+        existing = service.find_by_title(db, parsed["title"]) if overwrite else None
+        if existing:
+            article = service.update_article(db, existing.id, HelpArticleUpdate(
+                content=parsed["content"], summary=parsed["summary"]), user.id)
+            action = "updated"
+        else:
+            article = service.create_article(db, HelpArticleCreate(
+                title=parsed["title"], parent_id=parent_id, content=parsed["content"],
+                summary=parsed["summary"], sort_order=service.next_sort_order(db, parent_id),
+            ), user.id)
+            action = "created"
+        results.append({"file": name, "action": action, "id": article.id, "title": article.title})
+
+    ok = sum(1 for r in results if r["action"] in ("created", "updated"))
+    return success({"results": results}, f"Đã nhập {ok}/{len(files)} file")
 
 
 @router.post("/upload-image")

@@ -3,6 +3,7 @@ import { Link, useNavigate, useOutletContext } from 'react-router-dom'
 import { Eye, FolderPlus, Search } from 'lucide-react'
 
 import HelpArticleTreeTable from '@/components/help-article-tree-table'
+import ImportArticleDialog from '@/components/import-article-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { AdminOutletContext } from '@/layouts/admin-layout'
@@ -50,6 +51,7 @@ export default function AdminHome() {
           <Button variant="outline" asChild>
             <Link to="/"><Eye /> Xem trang người dùng</Link>
           </Button>
+          <ImportArticleDialog tree={tree} onImported={loadTree} />
           <Button onClick={handleAddRoot}><FolderPlus /> Thêm mục gốc</Button>
         </div>
       </div>
