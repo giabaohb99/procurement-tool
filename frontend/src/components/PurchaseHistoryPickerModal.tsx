@@ -137,7 +137,8 @@ export default function PurchaseHistoryPickerModal({
               {rows.map((h) => (
                 <tr key={h.id} className="clickable" onClick={() => chon(h)}>
                   <td>{h.order_date}</td>
-                  <td>{h.po_code}</td>
+                  {/* Dòng dữ liệu cũ không có ĐMH — ghi rõ như bảng lịch sử, đừng để ô trống */}
+                  <td>{h.po_code || <span style={{ color: '#999', fontSize: 12 }}>Trước hệ thống</span>}</td>
                   <td>{h.supplier_name || h.supplier_code}</td>
                   <td>{h.unit}</td>
                   <td style={{ textAlign: 'right' }}>{fmt(h.qty_order)}</td>

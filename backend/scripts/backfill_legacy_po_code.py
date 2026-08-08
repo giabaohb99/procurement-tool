@@ -83,11 +83,70 @@ def _clear(db, apply: bool) -> None:
         print("(chạy thử) thêm --apply để gỡ thật.")
 
 
-def main(apply: bool, max_days: int, match_qty: bool, clear: bool, limit: int, csv_path: str) -> None:
+def _delete_dup(db, apply: bool, max_days: int, match_qty: bool, csv_path: str, limit: int) -> None:
+    """XÓA dòng legacy TRÙNG với lịch sử hệ thống đã tự chốt.
+
+    Cùng một lần mua bị đếm 2 lần (1 dòng nhập từ Excel + 1 dòng hệ thống chốt khi ĐMH
+    "Hoàn thành") thì bảng lịch sử hiện 2 dòng giống nhau, tham chiếu giá đọc ra sai.
+    Bản hệ thống mới là bản đúng (gắn với ĐMH thật) nên giữ lại, bỏ bản legacy.
+    """
+    legacy = (db.query(PurchaseHistory).filter(PurchaseHistory.source == "legacy")
+              .order_by(PurchaseHistory.order_date.asc()).all())
+    cands: dict[tuple, list] = defaultdict(list)
+    for po, it in (db.query(PurchaseOrder, POItem)
+                   .join(POItem, POItem.po_id == PurchaseOrder.id)
+                   .filter(PurchaseOrder.status != "cancelled").all()):
+        cands[(po.supplier_code or "", it.product_code or "")].append((po, it))
+    has_system = {i for (i,) in db.query(PurchaseHistory.po_item_id)
+                  .filter(PurchaseHistory.source == "system",
+                          PurchaseHistory.po_item_id.isnot(None)).all()}
+
+    dup, plan = [], []
+    for h in legacy:
+        best, why = _pick(h, cands.get((h.supplier_code or "", h.product_code or ""), []),
+                          max_days, match_qty)
+        if why != "khớp":
+            continue
+        dd, _qd, po, it = best
+        if it.id not in has_system:
+            continue                      # khớp nhưng chưa có bản hệ thống → KHÔNG phải trùng
+        dup.append(h)
+        plan.append({"history_id": h.id, "product_code": h.product_code,
+                     "supplier_code": h.supplier_code, "ngay_lich_su": h.order_date,
+                     "sl": float(h.qty_order or 0), "gia": float(h.price or 0),
+                     "po_code": po.code, "ngay_don": po.order_date, "lech_ngay": dd})
+        if len(dup) <= limit:
+            print(f"  {h.product_code:<14} {h.order_date} ≡ {po.code} (lệch {dd} ngày)")
+
+    if csv_path and plan:
+        with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
+            w = csv.DictWriter(f, fieldnames=list(plan[0].keys()))
+            w.writeheader()
+            w.writerows(plan)
+        print(f"\nĐã xuất {len(plan)} dòng nghi trùng ra {csv_path}")
+
+    print(f"\nDòng legacy TRÙNG với lịch sử hệ thống: {len(dup)}")
+    if not dup:
+        return
+    if not apply:
+        print("(chạy thử) thêm --apply để XÓA thật. XÓA LÀ KHÔNG HOÀN TÁC — sao lưu CSDL trước.")
+        return
+    for h in dup:
+        db.delete(h)
+    db.commit()
+    print(f"Đã xóa {len(dup)} dòng legacy trùng. Còn lại: "
+          f"{db.query(PurchaseHistory.id).filter(PurchaseHistory.source == 'legacy').count()} dòng legacy")
+
+
+def main(apply: bool, max_days: int, match_qty: bool, clear: bool, limit: int, csv_path: str,
+         delete_dup: bool = False) -> None:
     db = SessionLocal()
     try:
         if clear:
             _clear(db, apply)
+            return
+        if delete_dup:
+            _delete_dup(db, apply, max_days, match_qty, csv_path, limit)
             return
 
         legacy = (db.query(PurchaseHistory)
@@ -174,5 +233,7 @@ if __name__ == "__main__":
     ap.add_argument("--limit", type=int, default=30, help="Số dòng khớp in ra để kiểm (mặc định 30)")
     ap.add_argument("--csv", default="/app/backfill_legacy_po_code.csv",
                     help="File CSV đối chiếu từng cặp legacy ↔ ĐMH (mặc định /app/backfill_legacy_po_code.csv)")
+    ap.add_argument("--delete-dup", action="store_true",
+                    help="XÓA dòng legacy trùng với lịch sử hệ thống đã tự chốt (thay vì gán mã PO)")
     a = ap.parse_args()
-    main(a.apply, a.days, a.match_qty, a.clear, a.limit, a.csv)
+    main(a.apply, a.days, a.match_qty, a.clear, a.limit, a.csv, a.delete_dup)

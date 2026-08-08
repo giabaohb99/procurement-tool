@@ -64,7 +64,12 @@ export default function PurchaseHistoryTable({
               <tr key={h.id} className={h.po_id ? 'clickable' : undefined}
                   onClick={h.po_id ? () => navigate(`/purchase-orders/${h.po_id}`) : undefined}>
                 <td>{h.order_date || '—'}</td>
-                <td>{h.po_code || <span style={{ color: '#999' }}>Dữ liệu cũ</span>}</td>
+                <td>{h.po_code || (
+                  // Không phải thiếu dữ liệu: lần mua này diễn ra TRƯỚC khi có hệ thống nên
+                  // không hề tồn tại đơn để trỏ tới — ghi rõ để không ai đi tìm mã PO.
+                  <span className="badge gray" title="Lần mua trước khi dùng hệ thống — không có đơn mua hàng để mở"
+                    style={{ fontSize: 11, fontWeight: 500 }}>Trước hệ thống</span>
+                )}</td>
                 <td>{byProduct ? (h.supplier_name || h.supplier_code) : (h.product_name || h.product_code)}</td>
                 <td>{h.unit}</td>
                 <td style={{ textAlign: 'right' }}>{fmt(h.qty_order)}</td>
