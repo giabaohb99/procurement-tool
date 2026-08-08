@@ -51,7 +51,9 @@ class PurchaseHistory(Base, AuditMixin):
     company_name: Mapped[str] = mapped_column(String(255), default="")
     unit: Mapped[str] = mapped_column(String(25), default="")
     qty_order: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
-    price: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    # ĐƠN GIÁ 4 số lẻ (migration c1f7b9d34e02) — khớp `tab_po_item.price`, nếu để 2 số lẻ
+    # thì MySQL làm tròn ngay lúc chụp snapshot và mất số lẻ vĩnh viễn.
+    price: Mapped[float] = mapped_column(Numeric(18, 4), default=0)
     vat: Mapped[float] = mapped_column(Numeric(5, 2), default=0)              # % VAT của dòng
     amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
     completed_at: Mapped[str] = mapped_column(String(10), default="")         # ngày dòng vào "Hoàn thành"
