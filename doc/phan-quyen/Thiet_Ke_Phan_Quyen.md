@@ -128,6 +128,24 @@ Chọn 1 người → màn gồm:
 > Đúng ý anh: cài phạm vi tổng 1 lần; chức năng nào cần khác thì ✏️ chỉnh riêng (bao gồm + loại trừ),
 > không đụng thì tự lấy theo phạm vi tổng.
 
+### Tab 4 — Người dùng (vòng đời tài khoản) — bổ sung theo CR-037, 2026-08-07
+
+Danh sách tài khoản kèm bộ lọc **Tình trạng**: `Chưa gán vai trò` · `Mồ côi`. Mỗi dòng có nhãn
+**"Mồ côi"** / **"Đã khóa"**, nút khóa–mở khóa, và nút xóa (**chỉ hiện với dòng mồ côi**).
+
+- **Mồ côi** = tài khoản **không còn gắn hồ sơ nhân sự** (`employee_id` rỗng hoặc trỏ vào hồ sơ đã xóa).
+  Sinh ra từ CR-023: xóa hồ sơ nhân sự thì hệ thống **chỉ khóa** tài khoản chứ không xóa.
+- **Khóa ≠ xóa.** Ngưng cho một người dùng hệ thống thì **KHÓA**. Xóa hẳn chỉ dành cho tài khoản mồ côi.
+- **Rào chắn khi xóa** (backend, không phải chỉ ẩn nút): không xóa chính mình · **không xóa tài khoản còn
+  gắn hồ sơ nhân sự, kể cả khi đã khóa** (báo lỗi kèm đúng mã + tên nhân sự) · không xóa tài khoản quản trị
+  duy nhất · không xóa nếu còn bảng nghiệp vụ nào ghi `created_by` = tài khoản đó (bắt buộc khóa thay vì xóa).
+  Muốn bỏ hẳn thì **xóa hồ sơ nhân sự trước** — tài khoản tự khóa và thành mồ côi, lúc đó mới xóa được.
+- **Nhật ký thao tác giữ nguyên** khi xóa tài khoản (lịch sử bất biến, chỗ hiển thị tên ghi "User #id");
+  vai trò / phạm vi / thông báo / đăng ký push xóa theo.
+- **Tài khoản mới không chọn vai trò thì tự nhận vai trò `employee` ("Nhân sự")** — áp cho cả 3 đường tạo:
+  cấp tài khoản từ màn Nhân sự, `POST /api/users`, đăng nhập Google lần đầu. Vai trò cao hơn vẫn phải gán tay.
+  (Trước CR-037 tài khoản mới không có quyền gì, đăng nhập vào thấy màn trắng.)
+
 ---
 
 ## 5b. Luồng thao tác (mô phỏng) — làm sao cho GỌN

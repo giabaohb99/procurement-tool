@@ -21,6 +21,33 @@ npm install && npm run dev
 
 Vite proxy `/api` → `api:8000`, nên không dính CORS. Production build đặt `VITE_API_URL` (domain API thật).
 
+| Môi trường | Tên miền | Container |
+|---|---|---|
+| local | http://localhost:8082 | `help` |
+| dev (UAT) | https://devhelp.degoholding.vn | `procurement-help-dev` |
+| prod | https://help.degoholding.vn | `procurement-help` |
+
+Bản dựng prod là **nginx phục vụ file tĩnh** và tự proxy `/api` → `api:8000` (cùng origin, không CORS),
+nên deploy phải **`--build` lại container `help`**, restart không ăn thua.
+
+## Nội dung nằm trong CSDL — cách mang sang môi trường khác
+
+Bài hướng dẫn và câu hỏi thường gặp là **dữ liệu trong DB của từng môi trường**, không phải file trong
+repo — soạn ở local xong thì dev/prod **không tự có**. Bản mang đi là `backend/app/seed_data/help-center-content.json`;
+nạp bằng script (chạy trong container api của môi trường đích):
+
+```bash
+docker exec -w /app <container api> python -m scripts.import_help_content          # chạy thử, không ghi gì
+docker exec -w /app <container api> python -m scripts.import_help_content --nap    # ghi thật
+```
+
+Khớp **bài viết theo tiêu đề**, **FAQ theo câu hỏi**: có rồi thì cập nhật nội dung/mô tả/icon/thứ tự/mục cha,
+chưa có thì tạo mới, **không xóa gì**. Bài chỉ có trong DB mà file không có sẽ được liệt kê ra để tự quyết.
+`parent_id` trong file trỏ tới id **của chính file**, script tạo mục cha trước rồi ánh xạ sang id thật.
+
+> Cố ý **không** nhét nội dung vào seed: seed chạy lại mỗi lần deploy, sẽ đè mất bài người dùng vừa sửa
+> trên giao diện (xem D-018/D-024 trong `doc/tai-lieu-ky-thuat/change-log.md`).
+
 ## Tài khoản
 
 | Loại | Đăng nhập | Quyền |
@@ -172,8 +199,8 @@ Nút **Quản trị** chỉ hiện ở header khi user có quyền ghi; vào th�
 ### Khu người dùng — 3 tầng
 
 Trang danh mục / bài viết tham khảo bố cục help center của MISA (`helpamis.misa.vn`).
-**Trang chủ** thì bám theo Trung tâm trợ giúp của hệ Văn thư (`frontvanthu.degoholding.vn/hdsd`)
-để hai hệ nhìn đồng bộ — xem bảng token bên dưới.
+**Trang chủ** dùng lại bộ token của hệ Trung tâm trợ giúp nội bộ để các hệ nhìn đồng bộ
+— xem bảng token bên dưới.
 
 | Tầng | Đường dẫn | Nội dung |
 |---|---|---|

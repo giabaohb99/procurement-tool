@@ -6,7 +6,7 @@ Nhóm màn hình quản lý danh mục dùng chung trong toàn hệ thống. M�
 
 ## Nhà cung cấp
 
-Lưu trữ thông tin pháp lý, liên lạc và tài chính của các đối tác cung ứng hàng hóa (`goods`) và đơn vị vận chuyển (`transport`). Mỗi nhà cung cấp được định danh bằng mã viết tắt duy nhất, được tham chiếu từ phiếu khảo sát, hợp đồng, đơn mua hàng và công nợ. Trang chi tiết có nhiều tab: Thông tin / Đánh giá / Hợp đồng / Công nợ / Khảo sát của NCC.
+Lưu trữ thông tin pháp lý, liên lạc và tài chính của các đối tác cung ứng hàng hóa (`goods`) và đơn vị vận chuyển (`transport`). Mỗi nhà cung cấp được định danh bằng mã viết tắt duy nhất, được tham chiếu từ phiếu khảo sát, hợp đồng, đơn mua hàng và công nợ. Trang chi tiết có nhiều tab: Thông tin / Đánh giá / Hợp đồng / Công nợ / Khảo sát của NCC / **Lịch sử mua hàng** (từng bán những gì, giá bao nhiêu — xem `04-don-mua-hang.md` mục I).
 
 Đường dẫn: `/suppliers` (danh sách), `/suppliers/:id` (trang riêng `SupplierDetail`).
 
@@ -122,7 +122,7 @@ Lưu trữ thông tin pháp lý, liên lạc và tài chính của các đối t
 
 ## Sản phẩm
 
-Danh mục vật tư bao bì / nguyên liệu / hàng hóa nội bộ (VTBB/NL). Mỗi sản phẩm có mã nội bộ duy nhất và có thể liên kết với mã hàng hóa (HH) trong hệ thống kế toán/bán hàng. Được tham chiếu từ phiếu khảo sát (chọn Mã VTBB/VL) và PYC.
+Danh mục vật tư bao bì / nguyên liệu / hàng hóa nội bộ (VTBB/NL). Mỗi sản phẩm có mã nội bộ duy nhất và có thể liên kết với mã hàng hóa (HH) trong hệ thống kế toán/bán hàng. Được tham chiếu từ phiếu khảo sát (chọn Mã VTBB/VL) và PYC. Trang chi tiết có tab **Lịch sử mua hàng** — mặt hàng này từng mua của NCC nào, giá bao nhiêu, lần nào (xem `04-don-mua-hang.md` mục I).
 
 Đường dẫn: `/products`.
 

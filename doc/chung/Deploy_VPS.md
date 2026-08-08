@@ -82,8 +82,42 @@ docker compose exec -T db mysqldump -uroot -p"$DB_ROOT_PASSWORD" procurement > /
 - ☐ Chuông hiển thị thông báo/cảnh báo.
 
 ## 10. Cập nhật phiên bản mới
+
+VPS hiện chạy **2 môi trường trên cùng một máy**, mỗi môi trường một thư mục và một nhánh:
+
+| Môi trường | Thư mục | Nhánh | Lệnh compose |
+|---|---|---|---|
+| **prod** | `~/procurement-tool` | `main` | `docker compose -f docker-compose.production.yml …` |
+| **dev (UAT)** | `~/procurement-tool-dev` | `bao` | `docker compose -p procurement-dev --env-file .env.dev -f docker-compose.dev.yml …` |
+
 ```bash
-cd /opt/procurement-tool
-git pull
-docker compose up --build -d   # tự chạy migration mới
+cd ~/procurement-tool
+git fetch origin && git reset --hard origin/main
+git status --short          # PHẢI rỗng mới build
+docker compose -f docker-compose.production.yml up --build -d api web
+docker compose -f docker-compose.production.yml logs -f api    # chờ "alembic upgrade" + "startup complete"
 ```
+
+Ba cái dễ sai, sai là mất buổi:
+
+- **KHÔNG `git pull`** trên VPS — có file sinh ra lúc chạy sẽ kẹt merge; luôn `fetch` + `reset --hard` về đúng nhánh.
+- **Prod bắt buộc `-f docker-compose.production.yml`.** Thiếu cờ này là compose lấy file mặc định (bản dev) → web chạy vite dev server, nginx trả **502**.
+- **Sao lưu DB trước khi có migration**: DB là MariaDB nên dùng `mariadb-dump`, không phải `mysqldump`:
+  ```bash
+  docker exec dego-erp-db-1 mariadb-dump -uroot -p"$DB_ROOT_PASSWORD" \
+      --single-transaction --routines procurement > ~/backups/prod_truoc_<mã CR>_$(date +%Y%m%d).sql
+  ```
+- **Đổi gì thì build lại cái đó**: sửa FE → build lại `web`; sửa backend → `api`; sửa Trung tâm Hướng dẫn (`help-center/`) → `help`. Cả `web` và `help` đều build tĩnh nên **restart không ăn thua, phải `--build`**.
+
+Sau khi lên, ghi **1 dòng vào [Nhật ký deploy](../tai-lieu-ky-thuat/change-log.md#nhật-ký-deploy-môi-trường-thật)**: đẩy gì, migration tới head nào, file sao lưu tên gì, hành vi nào người dùng thấy đổi ngay.
+
+### 10.1. Nội dung Trung tâm Hướng dẫn sử dụng
+
+Bài hướng dẫn **nằm trong CSDL của từng môi trường**, không đi theo code. Soạn ở local xong, xuất ra `backend/app/seed_data/help-center-content.json`, rồi nạp ở môi trường đích:
+
+```bash
+docker exec -w /app <container api> python -m scripts.import_help_content          # chạy thử, không ghi gì
+docker exec -w /app <container api> python -m scripts.import_help_content --nap    # ghi thật
+```
+
+Khớp bài theo **tiêu đề**, FAQ theo **câu hỏi** — có thì cập nhật, chưa có thì tạo, **không xóa bài nào**; bài chỉ có trong DB mà file không có sẽ được liệt kê ra để tự quyết.

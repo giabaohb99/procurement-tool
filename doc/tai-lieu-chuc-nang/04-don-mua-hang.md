@@ -223,6 +223,7 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 - Nguồn dữ liệu / liên kết: Danh mục Sản phẩm (`product`)
 - Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa `completed`/`cancelled`
 - Logic đặc biệt: Chọn sản phẩm tự điền `product_name`, `invoice_name`, `unit`, `item_group`, `spec`, `fg_code`, `fg_name`. Dùng làm tham chiếu trong phiếu nhập kho ngầm và tồn kho.
+- **DUY NHẤT trên đơn (CR-047)**: mỗi mã hàng chỉ được đứng ở **1 dòng**. Đặt thêm cùng một mã thì **cộng số lượng vào một dòng**. Ô mã trùng tô đỏ ngay khi nhập, bấm Lưu báo `Mã hàng bị trùng: <mã>`. Xem quy tắc 16 mục F.
 
 ### 2. Tên hàng (`product_name`)
 
@@ -363,6 +364,7 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
 - Logic đặc biệt: Dùng tính `amount` (SL thực nhận × đơn giá × (1+VAT/100)) và công nợ hàng (`payable.amount = received_qty × price`).
+- Số lẻ: đơn giá lưu và hiển thị **tối đa 4 số thập phân** (đơn giá theo gram / mét hay lẻ tới phần nghìn); ô nhập tự cắt phần lẻ vượt quá 4 số trước khi gửi lên server. **Các cột TIỀN (thành tiền, tổng cộng, công nợ) hiển thị làm tròn về đồng** — kế toán chỉ ghi nhận tới đồng — nhưng giá trị lưu trong CSDL giữ nguyên độ chính xác.
 
 ### 15. VAT % của dòng (`vat`)
 
@@ -752,6 +754,12 @@ Ngoài 2 mẫu trên, phiếu liên quan là **Phiếu đề xuất mua hàng h�
 
 15. Hoàn thành đơn: endpoint `POST /{id}/complete` chỉ chấp nhận khi MỌI dòng hàng đều ở trạng thái tiến độ `"Hoàn thành"` hoặc `"Hủy đơn"`. Nếu còn dòng chưa đạt điểm cuối, BE trả 400 và liệt kê tên sản phẩm còn chưa hoàn thành. Điều này đảm bảo đơn chỉ được đóng khi toàn bộ quy trình (nhập hóa đơn → thanh toán) đã xong cho mọi dòng.
 
+16. **Mã hàng duy nhất trên đơn (CR-047)**: một `product_code` chỉ được xuất hiện ở **1 dòng** của đơn. Dòng để trống mã không bị tính trùng.
+    - **Vì sao**: dòng ĐMH nối ngược về dòng YCMH bằng **chuỗi `product_code`** chứ không có khóa dòng (mục H.4). `sync_from_purchase_orders` cộng dồn SL đặt/nhận **theo mã** rồi ghi **cùng một con số** vào **mọi** dòng YCMH trùng mã → tiến độ nhân đôi, `line_status` và trạng thái phiếu sai. Ví dụ thật: ĐMH 141 có 8 dòng THC0005 làm dòng YCMH tương ứng hiện "đã đặt 8.000" trong khi chỉ yêu cầu 1.000.
+    - **Chỉ chặn TRÙNG MỚI** (số lần một mã xuất hiện **tăng** so với dữ liệu đang lưu): đơn cũ đã lỡ trùng vẫn sửa và lưu lại được. Chặn cứng sẽ khóa chết những đơn đó — dòng ở `Hoàn thành`/`Hủy đơn` bị khóa theo quy tắc 12 và **không có nút xóa**, nên không ai gỡ được dòng trùng ra để lưu.
+    - Cài đặt tại `app/core/utils.assert_unique_product_codes`, gọi trong `_save_items` của cả ĐMH lẫn YCMH. Không migration, không sửa dữ liệu cũ — các dòng đã trùng phải **gộp tay**.
+    - Muốn bỏ ràng buộc này (hỗ trợ cùng một mã nhận ở **hai Kho** khác nhau) thì phải thêm khóa dòng `tab_po_item.pr_item_id` — xem việc còn nợ **N-004** trong `../tai-lieu-ky-thuat/change-log.md`.
+
 ---
 
 ## G. Quyền thao tác (RBAC)
@@ -835,6 +843,8 @@ Body `{status, reason}`:
 
 Khi PO có `pr_code` (liên kết YCMH), mọi thao tác làm thay đổi tiến độ hoặc trạng thái PO đều kích hoạt `_sync_pr(db, po.pr_code)` → `sync_from_purchase_orders(db, pr_code)`.
 
+> **Ghép theo CHUỖI mã hàng, không theo khóa dòng.** Vì vậy mã hàng phải **duy nhất trên mỗi phiếu/đơn** (quy tắc 16 mục F, CR-047): nếu một mã đứng ở 2 dòng thì tổng SL cộng dồn được ghi vào **cả hai** dòng → tiến độ nhân đôi. Việc còn nợ **N-004** là thay cách ghép này bằng khóa dòng `tab_po_item.pr_item_id`.
+
 **Quy tắc đồng bộ:**
 
 - Chỉ tính các PO có `status` trong `("approved", "partial", "received", "completed")` — bỏ qua nháp, chờ duyệt, bị trả, đã từ chối.
@@ -864,3 +874,38 @@ Sau khi cập nhật toàn bộ dòng, hệ thống gọi lại `recompute_statu
 ### H.5 Màn hình Tiến độ mua hàng (`/purchase-progress`)
 
 Màn hình riêng tại đường dẫn `/purchase-progress` (nhãn menu "Tiến độ mua hàng"), sử dụng endpoint `GET /api/purchase-progress`. Hiển thị dạng bảng phẳng, mỗi dòng = 1 dòng hàng (`po_item`) kèm thông tin lần giao tương ứng. Các cột chính: Mã ĐMH, Mã MISA, Mã PYC, Công ty, Bộ phận, NCC, NSPT, Ngày đặt, Mã SP, Tên SP, Tên hóa đơn, Nhóm hàng, Mã HH, Số HĐ, Ngày cần, ĐVT, SL đặt, Đơn giá, Thành tiền đặt, **Tiến độ** (`progress_status`), Lần giao, Kho, Ngày nhận, Ngày quy định, CL cam kết, CL quy định, CL vs YC, Hồ sơ CT (`document_status`). Hỗ trợ lọc theo công ty, bộ phận, tháng, trạng thái tiến độ, khoảng ngày đặt/nhận; sắp xếp theo cột; phân trang.
+
+---
+
+## I. Lịch sử mua hàng (`tab_purchase_history`)
+
+Mỗi lần một **dòng hàng vào trạng thái "Hoàn thành"**, hệ thống **chụp lại (snapshot)** dòng đó thành một bản ghi lịch sử mua hàng: mã/tên hàng, NCC, ĐVT, số lượng, đơn giá, VAT, thành tiền, ngày đặt, mã ĐMH… (phần Thông tin chung còn lại giữ trong cột `extra` dạng JSON).
+
+Vì sao chụp lại thay vì đọc thẳng đơn cũ: đơn hàng còn sửa được về sau (đổi giá, đổi số lượng, hủy dòng), còn lịch sử phải là **giá tại thời điểm mua** thì lần sau tham chiếu mới có nghĩa.
+
+**Cách hoạt động**
+
+- Chốt ngay trong bước tự nâng tiến độ dòng nên **phủ cả luồng nhập Excel**, không chỉ thao tác trên giao diện.
+- **Một dòng ĐMH chỉ sinh một bản ghi** (`po_item_id` là khóa duy nhất) — chạy lại không nhân đôi.
+- Lỗi khi chốt lịch sử **không chặn** luồng tiến độ mua hàng: dòng vẫn Hoàn thành bình thường.
+- Dòng chỉ vào "Hoàn thành" khi **công nợ đã trả đủ** → công nợ phân bổ sai thì lịch sử cũng không được chốt (xem CR-044 trong `change-log.md`).
+
+**Xem ở đâu**
+
+| Nơi xem | Nội dung |
+|---|---|
+| Chi tiết **Sản phẩm** → tab *Lịch sử mua hàng* | Mặt hàng này từng mua của những NCC nào, giá bao nhiêu, lần nào |
+| Chi tiết **Nhà cung cấp** → tab *Lịch sử mua hàng* | NCC này từng bán những gì, giá bao nhiêu |
+| **Ô Mã hàng** trên dòng ĐMH và dòng YCMH | Nút mở popup lịch sử để **tham chiếu giá lúc lập đơn** |
+
+Popup tham chiếu giá: 20 dòng/trang, có tìm kiếm + phân trang; chọn 1 dòng thì **điền ĐVT / SL / đơn giá / VAT vào dòng hàng nhưng KHÔNG tự lưu** — người lập đơn còn soát lại rồi mới Lưu. Nút chỉ hiện khi dòng **đã chọn mã hàng** và **còn sửa được**.
+
+**Dữ liệu cũ (trước khi có hệ thống)**
+
+Lịch sử còn được nạp thêm từ file khảo sát cũ, đánh dấu **nguồn `legacy`**:
+
+- Cột ĐMH hiển thị **"Dữ liệu cũ"** và **không bấm vào được** — vì không có đơn thật trong hệ thống để mở.
+- Có khóa chống nạp trùng, chạy lại script không nhân đôi dữ liệu.
+- Dữ liệu nguồn có lỗi đã được xử lý khi nạp: giá ghi bằng nghìn đồng, số lượng vô lý, ngày gõ sai/đảo ngày-tháng, NCC và mã hàng chưa có trong danh mục.
+
+**Quyền xem**: theo quyền đọc của danh mục tương ứng — `product.read` cho lịch sử theo sản phẩm, `supplier.read` cho lịch sử theo nhà cung cấp.

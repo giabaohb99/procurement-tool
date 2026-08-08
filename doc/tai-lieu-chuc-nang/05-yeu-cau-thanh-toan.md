@@ -228,9 +228,13 @@ Mỗi dòng tương ứng với một khoản công nợ (`Payable`) được đ
 5. Xóa phiếu: chỉ cho phép khi `status != "paid"`. Khi xóa, server gọi `delete_attachments_for` để xóa file đính kèm, xóa toàn bộ dòng, rồi xóa phiếu.
 
 6. Luồng "Ghi nhận đã chi" (`/pay`): khi chuyển sang `paid`, với mỗi `PaymentRequestLine`:
-   - Lấy `Payable` tương ứng qua `payable_id`.
-   - Cộng `PaymentRequestLine.amount` vào `payable.paid_amount`.
-   - Gọi `recalc_status(p)` để cập nhật `payable.status` (Chờ TT / Trả một phần / Đã TT) và `payable.remaining`.
+   - Tìm **tập** khoản nợ cùng `(supplier_code, source_type, po_code, invoice_no)` với dòng phiếu; nếu không có khoản nào khớp thì lùi về đúng `payable_id` của dòng.
+   - Rải số tiền của dòng vào tập đó, **chỉ rải vào khoản còn nợ** — xem quy tắc 6a.
+   - Mỗi lần cộng tiền: `payable.paid_amount += phần được rải`, rồi gọi `recalc_status(p)` để cập nhật `payable.status` (Chờ TT / Trả một phần / Đã TT) và `payable.remaining`. Nếu khoản nợ sinh từ phiếu giao hàng (`source_type = goods`, `ref_type = delivery`) thì đơn mua hàng tương ứng được xếp hàng để tự tiến trạng thái dòng sau khi commit.
+
+   **6a. Bỏ qua khoản đã tất toán (CR-044).** Một số hóa đơn có thể ứng với **nhiều** khoản nợ (mỗi lần giao hàng sinh một khoản). Khi rải tiền, server **bỏ qua mọi khoản có `remaining = 0`** và chỉ trả tối đa bằng phần còn nợ của từng khoản. Nếu trả **dư** so với tổng nợ khớp được (chi thêm, làm tròn…), phần dư ghi vào đúng khoản của dòng phiếu (`payable_id`), không rải tiếp.
+
+   Lý do: trước bản sửa, tiền dồn hết vào khoản đầu danh sách — kể cả khoản đã trả xong — làm **công nợ âm**, trong khi khoản thật sự còn nợ vẫn treo. Hệ quả dây chuyền là dòng Đơn mua hàng **không bao giờ đủ điều kiện "Hoàn thành"**, nên cũng **không sinh được bản ghi Lịch sử mua hàng** (xem `04-don-mua-hang.md` mục I). Bản sửa chỉ chặn dữ liệu sai **phát sinh mới**; công nợ đã âm từ trước phải sửa tay.
 
 7. Số tiền dòng: nếu `LineIn.amount > 0` dùng giá trị người nhập; nếu `<= 0` server tự tính phần còn lại chưa trả.
 

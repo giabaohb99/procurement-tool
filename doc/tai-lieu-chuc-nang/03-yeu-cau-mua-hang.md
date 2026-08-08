@@ -225,6 +225,8 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 - Nguồn dữ liệu / liên kết: Danh mục Sản phẩm (`product`), API `/api/products`
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Chọn mã tự điền `product_name`, `unit`, `item_group`, `group_desc`. Nhập thủ công `product_name` mà không chọn mã sẽ bị chặn khi gửi duyệt.
+- **DUY NHẤT trên phiếu (CR-047)**: mỗi mã hàng chỉ được đứng ở **1 dòng**. Cần mua thêm cùng một mã thì **cộng số lượng vào một dòng**, đừng thêm dòng thứ hai. Ô mã trùng được tô đỏ ngay khi nhập; bấm Lưu sẽ báo `Mã hàng bị trùng: <mã>`. Xem quy tắc 22 mục C.
+- **Tham chiếu giá cũ**: sau khi chọn mã hàng, trong ô có nút mở **Lịch sử mua hàng** của mặt hàng đó (từng mua của NCC nào, giá bao nhiêu). Chọn 1 dòng lịch sử sẽ điền ĐVT / SL / đơn giá / VAT vào dòng, **không tự lưu**. Nút chỉ hiện khi dòng còn sửa được — xem `04-don-mua-hang.md` mục I.
 
 ### 2. Tên sản phẩm (`product_name`)
 
@@ -397,6 +399,13 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
     - **Ảnh đối chiếu của dòng (CR-027):** mỗi dòng mang theo `src_pr_item_id` (id dòng YCMH nguồn); khi bấm **Lưu**, backend tự **kéo ảnh đối chiếu** của dòng YCMH đó sang dòng YCBG mới. Chỉ **thêm liên kết** (`tab_file_link`) trỏ vào **cùng file gốc** — không tải file lên lần nữa, không nhân bản dung lượng. Ảnh chỉ được kéo nếu người bấm **có quyền xem** phiếu YCMH nguồn (lọc bằng `apply_scope` trên `purchase_request`). Xóa dòng/phiếu YCBG chỉ gỡ liên kết của nó, **ảnh bên YCMH vẫn còn nguyên**.
     - **Không** tạo liên kết YCMH ↔ YCBG trong `tab_survey_request_pr`: bảng đó chỉ ghi chiều **YCBG → YCMH** (YCMH sinh ra từ phương án khảo sát) và được dùng để tự hoàn thành YCBG khi mọi YCMH con đã xong; gắn ngược một YCMH đã bị từ chối vào đó sẽ làm YCBG không bao giờ tự hoàn thành. Vết phiếu nguồn giữ ở **ghi chú** + nhãn `Từ {mã YCMH}` trên tiêu đề.
     - Phiếu YCMH gốc **giữ nguyên** trạng thái để truy vết; hệ thống không đánh dấu "đã thay thế".
+
+22. **Mã hàng duy nhất trên phiếu (CR-047)**: một `product_code` chỉ được xuất hiện ở **1 dòng** của phiếu. Dòng chưa chọn mã (để trống) không bị tính trùng.
+    - **Vì sao**: dòng ĐMH nối ngược về dòng YCMH bằng **chuỗi `product_code`**, không có khóa dòng. `sync_from_purchase_orders` (quy tắc 14) cộng dồn SL đặt/nhận **theo mã** rồi ghi **cùng một con số** vào **mọi** dòng trùng mã → tiến độ nhân đôi, kéo theo `line_status` và `recompute_status` sai. Ví dụ thật: PYC 143 có 2 dòng NLT0330, cả hai đều hiện `2.109 / 2.000`.
+    - **Chặn ở 3 chỗ**: `_save_items` của YCMH và của ĐMH (`app/core/utils.assert_unique_product_codes`), và `survey_request.create_prs` — 2 phương án khảo sát của **cùng một NCC** gắn trùng mã VTBB thì chặn **trước** vòng lặp tạo phiếu (vòng lặp commit theo từng NCC, báo lỗi giữa chừng sẽ để lại vài YCMH tạo dở).
+    - **Chỉ chặn TRÙNG MỚI** (số lần xuất hiện của một mã **tăng** so với dữ liệu đang lưu): phiếu/đơn cũ đã lỡ trùng vẫn sửa và lưu lại được. Nếu chặn cứng thì các ĐMH cũ sẽ khóa chết — dòng ĐMH ở "Hoàn thành"/"Hủy đơn" bị khóa và giao diện **không có nút xóa**, không ai gỡ được dòng trùng ra để lưu.
+    - Không migration, không sửa dữ liệu cũ. Các dòng đã trùng phải **gộp tay**.
+    - Muốn bỏ hẳn ràng buộc này (để hỗ trợ cùng một mã nhận ở **hai Kho** khác nhau) thì phải nối dòng bằng khóa dòng — xem việc còn nợ **N-004** trong `../tai-lieu-ky-thuat/change-log.md`.
 
 ## D. Quyền thao tác (RBAC)
 

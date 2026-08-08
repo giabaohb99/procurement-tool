@@ -1,6 +1,21 @@
 # Tài liệu dự án — Mini Tool Thu Mua
 
-Đã gom nhóm cho dễ quản lý:
+Đã gom nhóm cho dễ quản lý. **Vào lần đầu thì đọc 3 file này trước:**
+
+| Muốn biết | Đọc |
+|---|---|
+| Hệ thống làm được gì, màn nào chạy ra sao | [tai-lieu-chuc-nang/00-muc-luc.md](tai-lieu-chuc-nang/00-muc-luc.md) |
+| Ai đổi gì, khi nào, ảnh hưởng ra sao (+ nhật ký deploy, quyết định đã chốt) | [tai-lieu-ky-thuat/change-log.md](tai-lieu-ky-thuat/change-log.md) |
+| Xây bằng cách nào (kiến trúc, DB, API, phân quyền) | [tai-lieu-ky-thuat/technical-design.md](tai-lieu-ky-thuat/technical-design.md) |
+
+## tai-lieu-chuc-nang/ — Tài liệu chức năng (nghiệp vụ, cho người dùng & BA)
+- `00-muc-luc.md` — mục lục; `01`…`11` theo từng phân hệ (Phiếu khảo sát, YCBG, YCMH, ĐMH, YCTT, Tồn kho & Công nợ, Danh mục, Báo cáo, Thông báo & Trang cá nhân, Phiếu hỗ trợ, Bình luận)
+
+## tai-lieu-ky-thuat/ — Tài liệu kỹ thuật
+- `change-log.md` — **sổ CR** (mỗi thay đổi 1 dòng) + việc còn nợ + quyết định đã chốt (D-xxx) + **nhật ký deploy**
+- `technical-design.md`, `thiet-ke-ky-thuat-chi-tiet.md`, `so-do-ky-thuat.md` — TDD
+- `mo-hinh-du-lieu-san-pham.md` — **đọc trước khi đụng vào cấu trúc Sản phẩm**: vì sao `tab_product` là bảng variant, thuộc tính động, tầng họ sản phẩm, hợp đồng "chọn mã VTBB → tự động điền", và danh sách việc CẤM làm
+- `quy-trinh-tai-lieu.md` — quy trình tài liệu & kiểm soát thay đổi (tài liệu nào ra đời khi nào)
 
 ## yeu-cau/ — Yêu cầu nghiệp vụ
 - `Requirement_Mini_Tool_Thu_Mua.md` — tổng quan hệ thống
@@ -24,9 +39,14 @@
 - `Plan_Dashboard_Menu_Quyen.md` — quyền → menu → dashboard
 - `Test_PhanQuyen_PYC.md` — kịch bản test + tài khoản mẫu
 
-## chung/ — Tham chiếu dev
-- `FEATURE_CHECKLIST.md`, `NAMING_CONVENTIONS.md`
+## chung/ — Tham chiếu dev & vận hành
+- `Deploy_VPS.md` — runbook deploy prod/dev trên VPS (kèm cách nạp nội dung Trung tâm Hướng dẫn)
+- `Go_Live_Checklist.md` — checklist trước khi chạy thật
+- `CHANGELOG.md` — nhật ký theo ngày (bản ngắn, đọc nhanh)
+- `FEATURE_CHECKLIST.md`, `NAMING_CONVENTIONS.md`, `Plan_Celery_Worker.md`
 
 ## Khác
+- `testcase/` — kịch bản test tay; `ke-hoach-import/`, `ke-hoach-celery/` — kế hoạch từng mảng
 - `datamau/`, `sheet/` — dữ liệu mẫu / bảng gốc
 - `../TASKS.md` — tiến độ triển khai
+- `../help-center/README.md` — Trung tâm Hướng dẫn sử dụng (app riêng)

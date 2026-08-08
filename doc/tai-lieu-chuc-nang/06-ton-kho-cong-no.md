@@ -513,6 +513,7 @@ Hàm `recompute_effects` trong `purchase_order/service.py` được gọi mỗi 
 8. Tuổi nợ (`aging`) được tính thời điểm đọc, không lưu DB.
 9. Deep-link từ cảnh báo: cảnh báo công nợ quá hạn/sắp hạn tạo link `/payables?po_code=<mã_PO>`; dashboard cũng có thể link `/payables?supplier=<mã_NCC>`. Payables đọc cả hai URL param khi load trang.
 10. Phân trang phía FE: API lấy tối đa 1 000 dòng mỗi lần gọi (`page_size=1000`); FE phân trang cục bộ với cỡ trang mặc định 20 dòng.
+11. **Ghi tiền chi vào công nợ (CR-044):** một số hóa đơn có thể ứng với **nhiều** khoản nợ (mỗi lần giao hàng một khoản). Khi phiếu thanh toán chuyển "Đã chi", tiền được rải theo `(NCC, loại nợ, PO, số hóa đơn)` và **chỉ rải vào khoản còn `remaining > 0`**; khoản đã tất toán bị bỏ qua, phần trả dư ghi vào đúng khoản của dòng phiếu. Nếu không có quy tắc này thì `paid_amount` vượt `total` làm **`remaining` âm** trong khi khoản còn nợ thật vẫn treo, kéo theo dòng Đơn mua hàng không đạt "Hoàn thành". Chi tiết: `05-yeu-cau-thanh-toan.md` mục C, quy tắc 6a.
 
 ## G. Quyền thao tác (RBAC)
 
