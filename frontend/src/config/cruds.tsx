@@ -245,7 +245,9 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã / viết tắt', readonlyOnEdit: true }, { key: 'name', label: 'Tên pháp lý' },
       { key: 'tax_code', label: 'MST' }, { key: 'address', label: 'Địa chỉ', type: 'textarea' },
       { key: 'supplier_type', label: 'Loại', type: 'select', options: SUP_TYPE },
-      { key: 'payment_terms', label: 'Hình thức thanh toán', type: 'select', options: PAYMENT_TERMS_OPTIONS }, { key: 'vat', label: 'VAT (vd 0.08)', type: 'number' },
+      { key: 'payment_terms', label: 'Hình thức thanh toán', type: 'select', options: PAYMENT_TERMS_OPTIONS },       // Ô này gửi thẳng TỈ LỆ lên API (khác trang chi tiết NCC — ở đó nhập theo % rồi chia 100).
+      // BE chặn 0 ≤ vat < 1 (CR-058), nên nhãn phải nói rõ đơn vị kẻo người dùng gõ 8 rồi ăn 422.
+      { key: 'vat', label: 'VAT — tỉ lệ, dưới 1 (0.08 = 8%)', type: 'number' },
       { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
     ],
   },

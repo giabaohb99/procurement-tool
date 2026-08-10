@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class DeliveryIn(BaseModel):
@@ -41,7 +41,8 @@ class POItemIn(BaseModel):
     qty_request: float = 0
     qty_order: float = 0
     price: float = 0
-    vat: float = 0
+    # % VAT theo dòng, nhập tay từ CR-058 → chặn 0 ≤ VAT < 100 (cột DB Numeric(5,2)).
+    vat: float = Field(0, ge=0, lt=100)
     warehouse_code: str = ""
     note: str = ""
     deliveries: list[DeliveryIn] = []

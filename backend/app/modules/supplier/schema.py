@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class SupplierBase(BaseModel):
@@ -14,7 +14,9 @@ class SupplierBase(BaseModel):
     bank_account: str = ""
     bank_name: str = ""
     bank_account_name: str = ""
-    vat: float = 0.08
+    # VAT mặc định của NCC lưu dạng TỈ LỆ (0.08 = 8%), KHÁC vat/vat_pct cấp dòng (lưu %).
+    # Chặn dưới 1 = dưới 100% (CR-058). Trang chi tiết NCC nhập theo % rồi chia 100 trước khi gửi.
+    vat: float = Field(0.08, ge=0, lt=1)
     is_active: bool = True
 
 
@@ -34,7 +36,7 @@ class SupplierUpdate(BaseModel):
     bank_account: str | None = None
     bank_name: str | None = None
     bank_account_name: str | None = None
-    vat: float | None = None
+    vat: float | None = Field(None, ge=0, lt=1)   # tỉ lệ, dưới 1 = dưới 100% (CR-058)
     is_active: bool | None = None
 
 

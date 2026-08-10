@@ -78,12 +78,12 @@ Lưu trữ thông tin pháp lý, liên lạc và tài chính của các đối t
 
 ### 9. VAT mặc định (`vat`)
 
-- Kiểu nhập: Nhập số (%), từ 0 đến 100
+- Kiểu nhập: Nhập số (%), từ 0 đến **dưới 100** (CR-058)
 - Mặc định: 8 (tức 8%)
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người dùng có quyền `supplier:write`
-- Logic: Lưu vào DB dưới dạng thập phân (ví dụ 0.08 cho 8%); frontend hiển thị và nhận nhập theo phần trăm (8)
+- Logic: Lưu vào DB dưới dạng **tỉ lệ** (ví dụ 0.08 cho 8%); **trang chi tiết NCC** hiển thị và nhận nhập theo phần trăm (8) rồi tự chia 100 khi lưu. Cẩn thận: **form NCC ở màn hình danh mục chung** (và **cột VAT trong file import CSV**) gửi thẳng **tỉ lệ**, không nhân/chia — gõ `8` ở đó nghĩa là 800%. Server chặn `0 ≤ vat < 1`, import CSV báo lỗi rõ nếu ngoài khoảng.
 
 ### 10. Hình thức thanh toán (`payment_terms`)
 

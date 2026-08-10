@@ -6,7 +6,7 @@ Test 1: Pipeline hoàn chỉnh:
   - Gắn option từ available_survey_lines cho từng line.
   - choose_option cho cả 2.
   - complete_sr → survey_done.
-  - create_prs → 1 PR (cùng NCC "NX"), 2 items, amount = qty*price đúng.
+  - create_prs → 1 PR (cùng NCC "NX"), 2 items, VAT theo sang từ phương án, amount = qty*price*(1+VAT%).
   - line.is_completed=True, pr_code set, sr.status="pr_created".
   - finalize_sr → "done".
 
@@ -112,9 +112,17 @@ class TestPipeline:
         items = db.query(PurchaseRequestItem).filter(PurchaseRequestItem.pr_id == pr.id).all()
         assert len(items) == 2
 
-        # Kiểm tra amount = qty * price
+        # VAT của phương án đã chọn phải theo sang dòng YCMH (CR-058) — trước đây bị bỏ,
+        # dòng nhận mặc định 0% dù NCC báo giá có thuế.
+        for item, opt in zip(sorted(items, key=lambda x: x.id), (opt_nhan, opt_thung)):
+            assert float(item.vat_pct) == float(opt.snap_vat), (
+                f"VAT không theo sang YCMH: {float(item.vat_pct)} != {float(opt.snap_vat)}"
+            )
+
+        # Kiểm tra amount = qty * price * (1 + VAT%) — thành tiền GỒM VAT, cùng công thức
+        # với khi lưu YCMH bằng tay
         for item in items:
-            expected_amount = float(item.qty) * float(item.price)
+            expected_amount = float(item.qty) * float(item.price) * (1 + float(item.vat_pct) / 100)
             assert abs(float(item.amount) - expected_amount) < 0.01, (
                 f"amount không khớp: {float(item.amount)} != {expected_amount}"
             )

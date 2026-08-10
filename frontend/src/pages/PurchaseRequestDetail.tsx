@@ -10,6 +10,7 @@ import ProductPicker from '../components/ProductPicker'
 import PurchaseHistoryPickerModal, { HistoryPick } from '../components/PurchaseHistoryPickerModal'
 import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
+import { VAT_MAX, VAT_DECIMALS } from '../utils/vat'
 import DateInput from '../components/DateInput'
 import TextAreaAuto from '../components/TextAreaAuto'
 import ConfirmModal from '../components/ConfirmModal'
@@ -44,8 +45,6 @@ const emptyItem = {
   price: 0, vat_pct: 8, warehouse: '', required_date: '', assignee: '', line_status: 'Chưa đặt hàng', progress_note: '', note: '',
   qty_ordered: 0, qty_received: 0,
 }
-// Các mức VAT chọn được (Task 4) — VN: 0/5/8/10%
-const VAT_OPTS = [0, 5, 8, 10]
 // Thành tiền dòng GỒM VAT (Task 4)
 const lineAmount = (it: any) => (Number(it.qty) || 0) * (Number(it.price) || 0) * (1 + (Number(it.vat_pct) || 0) / 100)
 
@@ -346,13 +345,16 @@ export default function PurchaseRequestDetail() {
 
   // Chọn SP từ ô tìm kiếm (nhận cả object) → tự điền tên/ĐVT/phân loại
   // Chọn 1 lần mua trước từ popup lịch sử → CHỈ điền vào state dòng, KHÔNG tự lưu.
-  // VAT là <select> giới hạn VAT_OPTS nên chỉ nhận giá trị hợp lệ, tránh select rơi vào rỗng.
+  // VAT giờ là ô nhập số nên nhận thẳng mọi thuế suất trong lịch sử (CR-058); trước đây phải
+  // lọc qua VAT_OPTS vì <select> không có option tương ứng thì rơi về rỗng. Chỉ chặn số rác
+  // (âm / ≥ 100 / không phải số) — dòng legacy nhập từ Excel có VAT bẩn thì giữ giá trị cũ.
   const applyHistory = (i: number, h: HistoryPick) => {
+    const vatHopLe = Number.isFinite(Number(h.vat)) && Number(h.vat) >= 0 && Number(h.vat) < 100
     setPr((s: any) => recalcUrgent({
       ...s,
       items: s.items.map((it: any, idx: number) => idx === i ? {
         ...it, unit: h.unit || it.unit, qty: h.qty_order, price: h.price,
-        vat_pct: VAT_OPTS.includes(h.vat) ? h.vat : it.vat_pct,
+        vat_pct: vatHopLe ? Number(h.vat) : it.vat_pct,
       } : it),
     }))
     toast.success('Đã điền giá từ lịch sử — bấm Lưu để ghi nhận')
@@ -837,9 +839,7 @@ export default function PurchaseRequestDetail() {
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         {editable ? (
-                          <select className="cell-input" value={it.vat_pct ?? 8} onChange={(e) => setItem(i, 'vat_pct', Number(e.target.value))} style={{ width: '100%' }}>
-                            {VAT_OPTS.map((v) => <option key={v} value={v}>{v}%</option>)}
-                          </select>
+                          <NumberInput value={it.vat_pct ?? 8} max={VAT_MAX} maxDecimals={VAT_DECIMALS} onChange={(v) => setItem(i, 'vat_pct', v)} className="cell-input" style={{ width: '100%', textAlign: 'right' }} placeholder="% VAT" />
                         ) : (it.vat_pct != null ? Number(it.vat_pct) + '%' : '')}
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 500 }} title="Thành tiền gồm VAT">{fmtVNDBlank(lineAmount(it))}</td>
@@ -1064,9 +1064,7 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label title="% VAT theo dòng">VAT (%)</label>
-                <select value={edit.vat_pct ?? 8} disabled={!editable} onChange={(e) => setItem(editIdx, 'vat_pct', Number(e.target.value))}>
-                  {VAT_OPTS.map((v) => <option key={v} value={v}>{v}%</option>)}
-                </select>
+                <NumberInput value={edit.vat_pct ?? 8} max={VAT_MAX} maxDecimals={VAT_DECIMALS} disabled={!editable} onChange={(v) => setItem(editIdx, 'vat_pct', v)} placeholder="Nhập % VAT (0 – 99,99)" />
               </div>
               <div className="form-row">
                 <label>ĐVT</label>

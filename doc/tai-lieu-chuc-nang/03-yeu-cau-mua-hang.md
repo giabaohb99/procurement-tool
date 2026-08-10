@@ -209,7 +209,7 @@ Các cột `suggested_supplier`, `suggested_supplier_tax_code`, `suggested_suppl
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Qua API (không có ô nhập trực tiếp trên form)
-- Logic đặc biệt: Được dùng làm VAT mặc định khi prefill dòng ĐMH từ phiếu (trường `vat` trong ĐMH). VAT thực tế của từng dòng PYC được lưu theo trường `vat_pct` cấp dòng (chọn 0/5/8/10%). Giá trị `vat_rate` header vẫn được truyền sang ĐMH khi tạo từ phiếu.
+- Logic đặc biệt: Được dùng làm VAT mặc định khi prefill dòng ĐMH từ phiếu (trường `vat` trong ĐMH). VAT thực tế của từng dòng PYC được lưu theo trường `vat_pct` cấp dòng (nhập số, dưới 100% — xem mục 8 phần C). **Lưu ý đơn vị:** `vat_rate` header lưu dạng **tỉ lệ** (0.08), còn `vat_pct` cấp dòng lưu dạng **phần trăm** (8). Giá trị `vat_rate` header vẫn được truyền sang ĐMH khi tạo từ phiếu.
 
 ---
 
@@ -226,7 +226,7 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Chọn mã tự điền `product_name`, `unit`, `item_group`, `group_desc`. Nhập thủ công `product_name` mà không chọn mã sẽ bị chặn khi gửi duyệt.
 - **DUY NHẤT trên phiếu (CR-047)**: mỗi mã hàng chỉ được đứng ở **1 dòng**. Cần mua thêm cùng một mã thì **cộng số lượng vào một dòng**, đừng thêm dòng thứ hai. Ô mã trùng được tô đỏ ngay khi nhập; bấm Lưu sẽ báo `Mã hàng bị trùng: <mã>`. Xem quy tắc 22 mục C.
-- **Tham chiếu giá cũ**: sau khi chọn mã hàng, trong ô có nút mở **Lịch sử mua hàng** của mặt hàng đó (từng mua của NCC nào, giá bao nhiêu). Chọn 1 dòng lịch sử sẽ điền ĐVT / SL / đơn giá / VAT vào dòng, **không tự lưu**. Nút chỉ hiện khi dòng còn sửa được — xem `04-don-mua-hang.md` mục I.
+- **Tham chiếu giá cũ**: sau khi chọn mã hàng, trong ô có nút mở **Lịch sử mua hàng** của mặt hàng đó (từng mua của NCC nào, giá bao nhiêu). Chọn 1 dòng lịch sử sẽ điền ĐVT / SL / đơn giá / VAT vào dòng, **không tự lưu**. Nút chỉ hiện khi dòng còn sửa được — xem `04-don-mua-hang.md` mục I. Từ CR-058, VAT của lần mua trước được điền **nguyên giá trị** (trước đây chỉ điền khi trùng một trong các mức 0/5/8/10, không trùng thì âm thầm bỏ qua); chỉ số rác (âm hoặc ≥ 100) mới bị bỏ để giữ VAT đang có của dòng.
 
 ### 2. Tên sản phẩm (`product_name`)
 
@@ -282,12 +282,12 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 
 ### 8. % VAT theo dòng (`vat_pct`)
 
-- Kiểu nhập: Chọn (select các mức 0 / 5 / 8 / 10%)
+- Kiểu nhập: Nhập số (%) — **0 ≤ VAT < 100**, tối đa 2 số thập phân (sửa được cả trong bảng dòng hàng lẫn popup chi tiết dòng)
 - Mặc định: 8 (tức 8%)
 - Bắt buộc: Không (có giá trị mặc định)
-- Nguồn dữ liệu / liên kết: —
+- Nguồn dữ liệu / liên kết: `tab_survey_request_option.snap_vat` khi phiếu sinh từ **Yêu cầu báo giá**
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
-- Logic đặc biệt: Được dùng để tính Thành tiền gồm VAT: `qty × price × (1 + vat_pct / 100)`.
+- Logic đặc biệt: Được dùng để tính Thành tiền gồm VAT: `qty × price × (1 + vat_pct / 100)`. Trước CR-058 ô này là select cố định 0/5/8/10% nên thuế suất khác (vd 3,5%) không nhập được; nay nhập số tự do, ô nhập **kẹp về 99,99 ngay khi gõ** quá và server chặn lại (`ge=0, lt=100`). Phiếu tạo từ **Yêu cầu báo giá** (`create_prs`) lấy VAT theo phương án đã chọn — **trước CR-058 bước này bị bỏ sót**, dòng nhận 0% và `amount` thiếu thuế; YCMH tạo theo lối cũ cần kiểm lại cột VAT trước khi tạo ĐMH.
 
 ### 9. Thành tiền (`amount`)
 

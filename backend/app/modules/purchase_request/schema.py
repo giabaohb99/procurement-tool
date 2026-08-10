@@ -17,7 +17,9 @@ class PRItemIn(BaseModel):
     qty: float = Field(0, ge=0)      # SL không âm; cho số lẻ (BE Numeric(18,3))
     unit: str = ""
     price: float = Field(0, ge=0)    # giá không âm; cho số lẻ (BE Numeric(18,4))
-    vat_pct: float = Field(0, ge=0)  # % VAT theo dòng (Task 4)
+    # % VAT theo dòng (Task 4). Nhập tay từ CR-058 → phải chặn ở BE: 0 ≤ VAT < 100.
+    # Cột DB là Numeric(5,2), trên 999,99 là MySQL báo lỗi tràn thay vì trả 422 tử tế.
+    vat_pct: float = Field(0, ge=0, lt=100)
     warehouse: str = ""
     required_date: str = ""
     assignee: str = ""

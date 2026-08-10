@@ -368,7 +368,7 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 
 ### 15. VAT % của dòng (`vat`)
 
-- Kiểu nhập: Nhập số (%)
+- Kiểu nhập: Nhập số (%) — **0 ≤ VAT < 100** (CR-058), tối đa 2 số thập phân; ô nhập kẹp về 99,99 ngay khi gõ quá, server chặn lại (`ge=0, lt=100`)
 - Mặc định: 8 (khởi tạo từ frontend `emptyItem`)
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —

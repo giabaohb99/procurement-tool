@@ -12,6 +12,8 @@ import type { CSSProperties } from 'react'
  *  hay lẻ tới phần nghìn đồng (vd 1.668,182 đ/cái), để 3 như mặc định là làm tròn mất tiền
  *  khi nhân với số lượng lớn.
  *
+ *  `max`: chặn TRÊN, kẹp giá trị ngay khi gõ (vd ô VAT: tối đa 99,99%). Không đặt = không chặn.
+ *
  *  Hiển thị: khi KHÔNG focus -> định dạng VN (vd 1.250,5 hoặc 10.500).
  *            khi ĐANG focus  -> giữ đúng chuỗi người dùng đang gõ.
  */
@@ -47,18 +49,22 @@ type Props = {
   onChange: (n: number) => void
   decimals?: boolean
   maxDecimals?: number
+  max?: number
   disabled?: boolean
   placeholder?: string
   className?: string
   style?: CSSProperties
 }
 
-export default function NumberInput({ value, onChange, decimals = true, maxDecimals = 3, disabled, placeholder, className, style }: Props) {
+export default function NumberInput({ value, onChange, decimals = true, maxDecimals = 3, max, disabled, placeholder, className, style }: Props) {
   const [focused, setFocused] = useState(false)
   const [raw, setRaw] = useState('')
 
   const shown = focused ? raw : formatVN(Number(value) || 0, decimals, maxDecimals)
   const allow = decimals ? /[^\d.,]/g : /[^\d.]/g
+  // Kẹp NGAY lúc gõ (không đợi blur): người dùng thấy con số bị chặn lại thay vì gõ xong
+  // mới bị server trả 422. Kẹp cả chuỗi đang gõ để ô không hiện một đằng, state một nẻo.
+  const kep = (n: number) => (max != null && n > max ? max : n)
 
   return (
     <input
@@ -70,8 +76,13 @@ export default function NumberInput({ value, onChange, decimals = true, maxDecim
       placeholder={placeholder}
       value={shown}
       onFocus={() => { const v = Number(value) || 0; setRaw(v ? formatVN(v, decimals, maxDecimals) : ''); setFocused(true) }}
-      onBlur={() => { setFocused(false); onChange(parseVN(raw, decimals, maxDecimals)) }}
-      onChange={(e) => { const cleaned = e.target.value.replace(allow, ''); setRaw(cleaned); onChange(parseVN(cleaned, decimals, maxDecimals)) }}
+      onBlur={() => { setFocused(false); onChange(kep(parseVN(raw, decimals, maxDecimals))) }}
+      onChange={(e) => {
+        const cleaned = e.target.value.replace(allow, '')
+        const n = kep(parseVN(cleaned, decimals, maxDecimals))
+        setRaw(max != null && parseVN(cleaned, decimals, maxDecimals) > max ? formatVN(n, decimals, maxDecimals) : cleaned)
+        onChange(n)
+      }}
     />
   )
 }

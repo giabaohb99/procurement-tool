@@ -6,6 +6,7 @@ import { srBadge } from '../config/cruds'
 import ProductPicker from '../components/ProductPicker'
 import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
+import { VAT_MAX, VAT_DECIMALS } from '../utils/vat'
 import DateInput from '../components/DateInput'
 import { toast } from '../components/toast'
 import { askConfirm, askPrompt } from '../components/confirm'
@@ -18,11 +19,10 @@ const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 // ĐƠN GIÁ cho lẻ tới 4 chữ số (vd 1.668,182 đ/cái) — cắt bớt là lệch tiền khi nhân sản lượng
 const PRICE_DECIMALS = 4
 const PRICE_KEYS = ['price_by_volume', 'proposed_rate']
-const VAT_OPTS = ['0', '2', '4', '6', '8', '10']
 const APPROVE_OPTS = ['Chờ duyệt', 'Đã duyệt', 'Không duyệt', 'Thiếu thông tin']
 const APPROVE_COLOR: Record<string, string> = { 'Chờ duyệt': '#d97706', 'Đã duyệt': '#16a34a', 'Không duyệt': '#b91c1c', 'Thiếu thông tin': '#ea580c' }
 
-// Kiểu trường: date | text | textarea | num | check | computed | unit(chọn) | vat(chọn) | approve(chọn)
+// Kiểu trường: date | text | textarea | num | check | computed | unit(chọn) | vat(nhập %) | approve(chọn)
 type SecField = { k: string; label: string; type?: string; full?: boolean }
 type Section = { title: string; fields: SecField[] }
 
@@ -159,7 +159,7 @@ const PRODUCT_COLS: Col[] = [
   { key: 'moq', label: 'MOQ', w: 90, type: 'num' },
   { key: 'price_by_volume', label: 'Giá theo khung', w: 120, type: 'num' },
   { key: 'volume_range', label: 'Khung SL', w: 110 },
-  { key: 'vat', label: 'VAT(%)', w: 90, type: 'select', options: ['0', '2', '4', '6', '8', '10'] },
+  { key: 'vat', label: 'VAT(%)', w: 90, type: 'vat' },
   { key: 'request_qty', label: 'SL YC', w: 90, type: 'num' },
   { key: 'amount', label: 'Thành tiền', w: 120, type: 'computed' },
   { key: 'internal_unit', label: 'ĐVT quy đổi', w: 120, type: 'unit' },
@@ -666,7 +666,8 @@ export default function SurveyDetail() {
         onChange={(e) => setLine(tbl, i, { supplier_name: e.target.value })} />
     }
     if (t === 'unit') return <SearchSelect value={it[k] ?? ''} options={units} disabled={!ce} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setLine(tbl, i, { [k]: v })} />
-    if (t === 'vat') return <SearchSelect value={String(it[k] ?? '')} options={VAT_OPTS} disabled={!ce} placeholder="Chọn VAT…" onChange={(v) => setLine(tbl, i, { [k]: Number(v) })} />
+    // VAT: nhập tay theo % (0 ≤ VAT < 100), không còn khoá vào danh sách mức cố định
+    if (t === 'vat') return <NumberInput value={it[k]} disabled={!ce} max={VAT_MAX} maxDecimals={VAT_DECIMALS} placeholder="Nhập % VAT…" onChange={(v: number) => setLine(tbl, i, { [k]: v })} />
     if (t === 'approve') return <SearchSelect value={it[k] || 'Chờ duyệt'} options={APPROVE_OPTS} colorMap={APPROVE_COLOR} disabled={!canEditApprove} placeholder="Chọn…" onChange={(v) => setLine(tbl, i, { [k]: v })} />
     return <input value={it[k] ?? ''} disabled={!ce} onChange={(e) => setLine(tbl, i, { [k]: e.target.value })} />
   }
@@ -705,11 +706,13 @@ export default function SurveyDetail() {
     if (col.key === 'supplier_available') return <input type="checkbox" checked={supplierAvail} onChange={(e) => setLine(tbl, i, { supplier_available: e.target.checked })} />
     if (col.type === 'check') return <input type="checkbox" checked={!!it[col.key]} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.checked })} />
     if (col.type === 'num') return <NumberInput className="cell-input" style={{ width: '100%' }} value={it[col.key]} maxDecimals={PRICE_KEYS.includes(col.key) ? PRICE_DECIMALS : undefined} onChange={(v: number) => setLine(tbl, i, { [col.key]: v })} />
+    // VAT: nhập tay theo % (0 ≤ VAT < 100), không còn khoá vào danh sách mức cố định
+    if (col.type === 'vat') return <NumberInput className="cell-input" style={{ width: '100%' }} value={it[col.key]} max={VAT_MAX} maxDecimals={VAT_DECIMALS} placeholder="% VAT" onChange={(v: number) => setLine(tbl, i, { [col.key]: v })} />
     if (col.type === 'date') return <DateInput className="cell-input" style={{ width: '100%' }} value={it[col.key] ?? ''} onChange={(v) => setLine(tbl, i, { [col.key]: v })} />
     if (col.type === 'select') return (
       <div style={{ width: '100%' }}><SearchSelect variant="table" colorMap={col.key === 'line_approve' ? APPROVE_COLOR : undefined}
         value={String(it[col.key] ?? '')} options={col.options!.filter((o) => o !== '')} placeholder="Chọn…"
-        onChange={(v) => setLine(tbl, i, { [col.key]: col.key === 'vat' ? Number(v) : v })} /></div>
+        onChange={(v) => setLine(tbl, i, { [col.key]: v })} /></div>
     )
     if (col.type === 'unit') return (
       <div style={{ width: '100%' }}><SearchSelect variant="table" value={it[col.key] ?? ''} options={units} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setLine(tbl, i, { [col.key]: v })} /></div>
