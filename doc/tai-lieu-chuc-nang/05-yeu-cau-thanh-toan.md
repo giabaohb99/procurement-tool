@@ -270,3 +270,9 @@ Entity: `payment_request`
 | Xóa nhiều (bulk) | `payment_request:delete` | không phải `paid` |
 | In phiếu | `payment_request:print` | mọi trạng thái |
 | Đính kèm / xóa file | `payment_request:write` | không giới hạn trạng thái |
+
+---
+
+## E. Phiếu in (`/print/payment-request/:id`)
+
+**Tên file khi lưu PDF (CR-057).** Trang in đặt `document.title` = **`<Mã YCTT>-DDMMYYYY`** (ví dụ `YCTT00190-07082026`) qua hook `usePrintTitle` — trình duyệt và máy in ảo (Foxit, Microsoft Print to PDF) lấy đúng chuỗi đó làm tên file gợi ý, thay cho `Thu Mua Tool` mặc định. Ngày lấy `request_date` (ngày yêu cầu), **không** lấy ngày bấm in, nên in lại lúc nào cũng ra cùng một tên. Đây cũng chính là cột đang dùng để tính `period` in trên phiếu. Chi tiết cách làm: xem mục E của [04-don-mua-hang.md](04-don-mua-hang.md).

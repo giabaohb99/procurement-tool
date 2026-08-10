@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import NotFound from '../components/NotFound'
+import { tenFileIn, usePrintTitle } from '../hooks/usePrintTitle'
 
 const fmt = (n: any) => (Number(n) ? Number(n).toLocaleString('vi-VN') : '')
 // ĐƠN GIÁ in đủ 4 số lẻ; TIỀN in làm tròn về đồng (kế toán chỉ ghi nhận tới đồng)
@@ -26,6 +27,10 @@ export default function PrintPurchaseOrder() {
       .then((r) => setPo(r.data.data))
       .catch(() => setNotFound(true))
   }, [id])
+  // Tên file gợi ý khi lưu PDF = Mã PO + ngày đơn, thay cho "Thu Mua Tool" mặc định.
+  // Lấy `code` chứ không lấy `misa_code`: mã MISA là mã của hệ thống cũ, chỉ một phần đơn
+  // có, và trùng nhau giữa các đơn nhập lại — đặt tên file theo nó thì đè file của nhau.
+  usePrintTitle(po ? tenFileIn(po.code, po.order_date) : '')
 
   if (notFound) return (
     <NotFound backTo="/purchase-orders"

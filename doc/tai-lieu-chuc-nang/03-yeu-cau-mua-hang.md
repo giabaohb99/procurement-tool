@@ -461,6 +461,8 @@ Riêng **Mẫu thường** có thêm nút **Có chữ ký / Không chữ ký** (
 nhưng **vẫn in họ tên** dưới ô — dành cho bản đem đi ký tay, đúng nghĩa dòng *"(Ký, ghi rõ họ tên)"*.
 Mẫu thuế không có nút này vì vốn để trống toàn bộ.
 
+**Tên file khi lưu PDF (CR-057).** Trang in đặt `document.title` = **`<Mã PYC>-DDMMYYYY`** (ví dụ `PYC07082601-31072026`) qua hook `usePrintTitle` — trình duyệt và máy in ảo lấy đúng chuỗi đó làm tên file gợi ý, thay cho `Thu Mua Tool` mặc định. Ngày lấy `request_date` (ngày yêu cầu), không lấy ngày bấm in. Không phụ thuộc `show_code_on_print`: cờ đó chỉ chi phối việc **in mã lên giấy**, còn tên file thì luôn cần mã để phân biệt. Chi tiết cách làm: xem mục E của [04-don-mua-hang.md](04-don-mua-hang.md).
+
 ### Khối XÉT DUYỆT — tự điền chữ ký
 
 Khối cuối phiếu có 4 ô ký: **Giám đốc · TP/BP mua hàng · TP/BP đề xuất · Người lập**.

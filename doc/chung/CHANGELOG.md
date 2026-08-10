@@ -7,6 +7,7 @@ Ghi theo ngày (mới nhất trên cùng) + tổng hợp công việc theo **Git
 ## Nhật ký theo ngày
 
 ### 2026-08-10
+- **Lưu phiếu in ra PDF đã tự đặt tên theo chứng từ** (CR-057): trước đây bấm *Phiếu in* rồi Lưu PDF thì hộp thoại lưu điền sẵn **"Thu Mua Tool"** cho mọi phiếu — phải gõ tay tên từng file, lưu nhiều phiếu vào một thư mục là đè lên nhau. Nay tên gợi ý là **mã chứng từ + ngày chứng từ**: `PO00353-31072026` (Đơn mua hàng), `PYC07082601-31072026` (Yêu cầu mua hàng), `YCTT00190-07082026` (Yêu cầu thanh toán). Áp dụng cho **cả 4 phiếu in**: *In Đơn đặt hàng*, *In Đơn mua hàng*, phiếu đề xuất mua hàng và phiếu yêu cầu thanh toán. Ngày lấy theo **ngày của chứng từ**, không phải ngày bấm in, nên in lại lúc nào cũng ra đúng một tên file. Vẫn sửa được tên trước khi bấm Save như bình thường; tờ giấy in ra không đổi gì.
 - **Trung tâm Hướng dẫn sử dụng trên bản chính thức đã có đủ nội dung mới** (CR-056): bộ hướng dẫn soạn trên bản thử nghiệm được chuyển sang bản chính thức — từ **35 bài** lên **55 bài**, thêm hai mục lớn *Dành cho TBP phê duyệt yêu cầu* và *Các chức năng khác*, phần **Yêu cầu báo giá / Yêu cầu mua hàng** được viết dày hơn nhiều (có thêm bài riêng về trạng thái phiếu và cách xử lý). Tên các mục lớn bỏ tiền tố số cho gọn. Ảnh minh hoạ từng bước giữ nguyên, không có bài nào bị nhân đôi.
 
 ### 2026-08-08
