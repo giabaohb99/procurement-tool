@@ -16,6 +16,16 @@ from app.core.storage import env_prefix, upload_fileobj, delete_key
 KEEP = getattr(settings, "BACKUP_KEEP", 30)
 
 
+def _la_client_mariadb(exe: str) -> bool:
+    """Client trong image là MariaDB hay MySQL thật? Quyết định cờ SSL dùng được."""
+    try:
+        r = subprocess.run([exe, "--version"], stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT, timeout=10)
+        return b"mariadb" in (r.stdout or b"").lower()
+    except Exception:
+        return False
+
+
 def _dump_sql() -> bytes:
     """Chạy mysqldump và trả về nội dung .sql (bytes). Ném lỗi nếu dump thất bại."""
     # Ưu tiên mysqldump; image dùng mariadb-client (có symlink mysqldump). Fallback mariadb-dump.
@@ -27,6 +37,14 @@ def _dump_sql() -> bytes:
         exe,
         "--single-transaction", "--no-tablespaces", "--skip-lock-tables",
         "--default-character-set=utf8mb4",
+    ]
+    # Server MySQL 8 bật TLS sẵn với chứng chỉ tự ký; client MariaDB mặc định lại đòi
+    # xác thực chứng chỉ nên dump chết với "self-signed certificate in certificate chain".
+    # Tắt phần XÁC THỰC (kết nối vẫn mã hoá), và chỉ thêm khi đúng là client MariaDB
+    # vì MySQL 8 đã bỏ cờ này.
+    if _la_client_mariadb(exe):
+        cmd.append("--ssl-verify-server-cert=0")
+    cmd += [
         "-h", settings.DB_HOST, "-P", str(settings.DB_PORT),
         "-u", settings.DB_USER, settings.DB_NAME,
     ]
@@ -38,7 +56,19 @@ def _dump_sql() -> bytes:
         raise RuntimeError(f"{exe} lỗi (mã {p.returncode}): {err}")
     if not p.stdout:
         raise RuntimeError("Dump rỗng — không nhận được dữ liệu")
-    return p.stdout
+    return _bo_dong_sandbox(p.stdout)
+
+
+def _bo_dong_sandbox(sql: bytes) -> bytes:
+    """Bỏ dòng '/*!999999\\- enable the sandbox mode */' do mariadb-dump chèn ở đầu file.
+
+    MySQL không hiểu dòng này và sẽ báo lỗi cú pháp khi phục hồi, nên phải cắt bỏ
+    ngay lúc dump — nếu không thì bản backup coi như không phục hồi được.
+    """
+    if b"enable the sandbox mode" not in sql[:512]:
+        return sql
+    dong = sql.split(b"\n")
+    return b"\n".join(d for d in dong if b"enable the sandbox mode" not in d)
 
 
 def _prune(db) -> int:
