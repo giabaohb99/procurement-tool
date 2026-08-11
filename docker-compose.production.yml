@@ -1,6 +1,10 @@
-# Production — dùng CHUNG MariaDB của dego-erp (container 'dego-erp-db-1', network 'dego-erp_default'),
-# database riêng 'procurement'. Web (nginx static + proxy /api) join 'proxy-tier' để Cloudflare Tunnel gọi tới.
-# KHÔNG có service db (tái dùng MariaDB sẵn có).
+# Production — CSDL là MySQL 8.4 chạy riêng (container 'procurement-mysql', network 'dego-db',
+# định nghĩa ở ~/procurement-db/ trên VPS, NGOÀI repo này), database 'procurement'.
+# Web (nginx static + proxy /api) join 'proxy-tier' để Cloudflare Tunnel gọi tới.
+# KHÔNG có service db ở đây — CSDL cố ý tách ra bộ compose riêng để deploy app không đụng tới nó.
+#
+# Lịch sử: trước 2026-08-11 dùng chung MariaDB của bộ ERPNext ('dego-erp-db-1', net 'dego-erp_default');
+# đã chuyển sang MySQL 8.4 và xoá bộ ERPNext (CR-059).
 #
 # ⚠ ~/procurement-tool (prod) và ~/procurement-tool-dev là HAI WORKTREE của cùng 1 repo git —
 #   prod giữ nhánh `main`, dev giữ nhánh `bao`, KHÔNG được để chung nhánh. Cập nhật code bằng:
@@ -16,7 +20,7 @@ services:
     restart: always
     command: ["sh", "start.prod.sh"]
     networks:
-      - dego-erp_default        # để tới MariaDB dego-erp-db-1:3306
+      - dego-db                 # để tới MySQL procurement-mysql:3306
       - procurement-internal    # để web (nginx) proxy /api tới
 
   # Forwarder chỉ để truy cập DB 'procurement' từ máy local QUA SSH TUNNEL.
@@ -25,11 +29,11 @@ services:
     image: alpine/socat
     container_name: procurement-db-forward
     restart: always
-    command: TCP-LISTEN:3306,fork,reuseaddr TCP:dego-erp-db-1:3306
+    command: TCP-LISTEN:3306,fork,reuseaddr TCP:procurement-mysql:3306
     ports:
       - "127.0.0.1:13306:3306"
     networks:
-      - dego-erp_default
+      - dego-db
 
   web:
     build:
@@ -87,7 +91,7 @@ services:
       - redis
       - api
     networks:
-      - dego-erp_default        # tới MariaDB dego-erp-db-1
+      - dego-db                 # tới MySQL procurement-mysql
       - procurement-internal    # tới redis
 
   celery-beat:
@@ -106,7 +110,7 @@ services:
       - procurement-internal
 
 networks:
-  dego-erp_default:
+  dego-db:                    # do ~/procurement-db/ tạo (docker network create dego-db)
     external: true
   proxy-tier:
     external: true
