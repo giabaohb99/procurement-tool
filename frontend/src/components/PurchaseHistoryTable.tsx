@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
+import { useAuth } from '../auth/AuthContext'
 import Pagination from './Pagination'
 import { fmtPrice, fmtVND } from '../utils/money'
 import { fmtDateStr } from '../utils/datetime'
@@ -24,6 +25,10 @@ function legacyOrigin(h: any): string {
  * Bảng LỊCH SỬ MUA HÀNG — 1 dòng = 1 lần mua (1 dòng hàng của ĐMH đã "Hoàn thành").
  * Dùng chung 2 màn: chi tiết Sản phẩm (truyền `productCode`) và chi tiết NCC (truyền `supplierCode`).
  * Cột thứ 3 đổi theo ngữ cảnh: ở màn SP hiện NCC, ở màn NCC hiện Sản phẩm.
+ *
+ * Ở màn SP, cột NCC chỉ hiện với người có `supplier.read` — màn SP chỉ đòi `product.read`
+ * nên người yêu cầu cũng vào được, mà NCC là thông tin riêng của khối thu mua (backend
+ * cũng đã xóa NCC khỏi payload). Màn NCC không cần chặn: vào được là đã có `supplier.read`.
  */
 export default function PurchaseHistoryTable({
   productCode, supplierCode,
@@ -32,6 +37,7 @@ export default function PurchaseHistoryTable({
   supplierCode?: string
 }) {
   const navigate = useNavigate()
+  const { can } = useAuth()
   const [rows, setRows] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -39,6 +45,8 @@ export default function PurchaseHistoryTable({
   const [loading, setLoading] = useState(false)
 
   const byProduct = !!productCode
+  // Ở màn SP: chỉ hiện cột NCC khi có quyền. Ở màn NCC: cột 3 là Sản phẩm, luôn hiện.
+  const hienCot3 = !byProduct || can('supplier', 'read')
   const url = byProduct
     ? `/api/products/${encodeURIComponent(productCode!)}/purchase-history`
     : `/api/suppliers/${encodeURIComponent(supplierCode || '')}/purchase-history`
@@ -62,7 +70,7 @@ export default function PurchaseHistoryTable({
             <tr>
               <th>Ngày đặt</th>
               <th>Mã PO</th>
-              <th>{byProduct ? 'Nhà cung cấp' : 'Sản phẩm'}</th>
+              {hienCot3 && <th>{byProduct ? 'Nhà cung cấp' : 'Sản phẩm'}</th>}
               <th>ĐVT</th>
               <th style={{ textAlign: 'right' }}>SL đặt</th>
               <th style={{ textAlign: 'right' }}>Đơn giá</th>
@@ -86,7 +94,9 @@ export default function PurchaseHistoryTable({
                   <span className="badge gray" title={legacyOrigin(h)}
                     style={{ fontSize: 11, fontWeight: 500 }}>Dữ liệu cũ</span>
                 )}</td>
-                <td>{byProduct ? (h.supplier_name || h.supplier_code) : (h.product_name || h.product_code)}</td>
+                {hienCot3 && (
+                  <td>{byProduct ? (h.supplier_name || h.supplier_code) : (h.product_name || h.product_code)}</td>
+                )}
                 <td>{h.unit}</td>
                 <td style={{ textAlign: 'right' }}>{fmt(h.qty_order)}</td>
                 <td style={{ textAlign: 'right' }}>{fmtPrice(h.price)}</td>
@@ -97,7 +107,7 @@ export default function PurchaseHistoryTable({
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={9} style={{ textAlign: 'center', color: '#999', padding: 14 }}>
+                <td colSpan={hienCot3 ? 9 : 8} style={{ textAlign: 'center', color: '#999', padding: 14 }}>
                   {loading ? 'Đang tải…' : 'Chưa có lịch sử mua hàng'}
                 </td>
               </tr>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { useAuth } from '../auth/AuthContext'
 import { fmtPrice, fmtVND } from '../utils/money'
 import { fmtDateStr } from '../utils/datetime'
 import Pagination from './Pagination'
@@ -32,6 +33,11 @@ export type HistoryPick = {
  *
  * KHÔNG lọc theo NCC của đơn đang lập — mục đích chính là so giá giữa các NCC.
  * Trang cha chỉ fill vào state, KHÔNG tự lưu.
+ *
+ * Cột NCC chỉ hiện với người có quyền `supplier.read`: popup này mở được cả từ YÊU CẦU
+ * MUA HÀNG (người yêu cầu chỉ cần `product.read`), mà NCC là thông tin riêng của khối
+ * thu mua. Backend cũng đã xóa tên/mã NCC khỏi payload cho người không có quyền — ẩn cột
+ * ở đây chỉ để bảng khỏi thừa một cột rỗng.
  */
 export default function PurchaseHistoryPickerModal({
   productCode, productName, onPick, onClose,
@@ -41,6 +47,8 @@ export default function PurchaseHistoryPickerModal({
   onPick: (v: HistoryPick) => void
   onClose: () => void
 }) {
+  const { can } = useAuth()
+  const xemNcc = can('supplier', 'read')
   const [rows, setRows] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -114,7 +122,7 @@ export default function PurchaseHistoryPickerModal({
 
         <div style={{ padding: '12px 18px 0' }}>
           <input value={search} onChange={(e) => setSearch(e.target.value)} autoFocus
-            placeholder="Tìm theo Mã PO / Nhà cung cấp / Công ty…"
+            placeholder={xemNcc ? 'Tìm theo Mã PO / Nhà cung cấp / Công ty…' : 'Tìm theo Mã PO / Công ty…'}
             style={{ width: '100%', fontFamily: 'inherit', fontSize: 13.5 }} />
         </div>
 
@@ -124,7 +132,7 @@ export default function PurchaseHistoryPickerModal({
               <tr>
                 <th>Ngày đặt</th>
                 <th>Mã PO</th>
-                <th>Nhà cung cấp</th>
+                {xemNcc && <th>Nhà cung cấp</th>}
                 <th>ĐVT</th>
                 <th style={{ textAlign: 'right' }}>SL đặt</th>
                 <th style={{ textAlign: 'right' }}>Đơn giá</th>
@@ -140,7 +148,7 @@ export default function PurchaseHistoryPickerModal({
                   <td>{fmtDateStr(h.order_date)}</td>
                   {/* Dòng dữ liệu cũ không có ĐMH — ghi rõ như bảng lịch sử, đừng để ô trống */}
                   <td>{h.po_code || <span style={{ color: '#999', fontSize: 12 }}>Dữ liệu cũ</span>}</td>
-                  <td>{h.supplier_name || h.supplier_code}</td>
+                  {xemNcc && <td>{h.supplier_name || h.supplier_code}</td>}
                   <td>{h.unit}</td>
                   <td style={{ textAlign: 'right' }}>{fmt(h.qty_order)}</td>
                   <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmtPrice(h.price)}</td>
@@ -157,7 +165,7 @@ export default function PurchaseHistoryPickerModal({
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: 'center', color: '#999', padding: 18 }}>
+                  <td colSpan={xemNcc ? 10 : 9} style={{ textAlign: 'center', color: '#999', padding: 18 }}>
                     {loading ? 'Đang tải…' : kw ? 'Không có kết quả khớp từ khóa' : 'Mã hàng này chưa có lịch sử mua hàng'}
                   </td>
                 </tr>

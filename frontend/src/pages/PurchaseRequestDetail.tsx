@@ -45,6 +45,10 @@ const emptyItem = {
   price: 0, vat_pct: 8, warehouse: '', required_date: '', assignee: '', line_status: 'Chưa đặt hàng', progress_note: '', note: '',
   qty_ordered: 0, qty_received: 0,
 }
+// Hằng số dùng chung cho dòng CHƯA có ảnh chờ: phải là CÙNG một mảng qua mọi lần render,
+// vì AttachmentGallery theo dõi `pendingFiles` theo tham chiếu — viết `|| []` tại chỗ sẽ
+// tạo mảng mới mỗi render và làm effect chạy lặp vô hạn.
+const KHONG_CO_FILE: File[] = []
 // Thành tiền dòng GỒM VAT (Task 4)
 const lineAmount = (it: any) => (Number(it.qty) || 0) * (Number(it.price) || 0) * (1 + (Number(it.vat_pct) || 0) / 100)
 
@@ -253,7 +257,9 @@ export default function PurchaseRequestDetail() {
   const addItems = (n = 1) => setPr((s: any) => recalcUrgent({ ...s, items: [...(s.items || []), ...Array.from({ length: n }, () => ({ ...emptyItem }))] }))
   const delItem = (i: number) => setPr((s: any) => recalcUrgent({ ...s, items: s.items.filter((_: any, idx: number) => idx !== i) }))
   const copyItem = (i: number) => setPr((s: any) => {
-    const src = { ...s.items[i] }; delete src.id
+    // Bỏ id VÀ ảnh chờ: dòng nhân bản là dòng khác, ảnh đối chiếu không đi theo (dòng đã lưu
+    // cũng không được copy đính kèm) — giữ lại thì cùng bộ ảnh bị tải lên cho 2 dòng.
+    const src = { ...s.items[i] }; delete src.id; delete src._pendingImgs
     const arr = [...s.items]; arr.splice(i + 1, 0, src); return recalcUrgent({ ...s, items: arr })
   })
 
@@ -390,9 +396,54 @@ export default function PurchaseRequestDetail() {
     return ''
   }
 
+  /**
+   * Ghép dòng vừa GỬI với dòng SERVER TRẢ VỀ để biết id thật của dòng mới tạo.
+   * KHÔNG dựa vào thứ tự: server trả dòng cũ (giữ nguyên id) lẫn dòng mới (id vừa cấp)
+   * không theo thứ tự đã gửi. Ưu tiên khớp id, rồi MÃ HÀNG (backend chặn trùng mã trên
+   * cùng phiếu nên mã là khóa chắc chắn), cuối cùng mới tới tên — cho dòng chưa có mã.
+   */
+  function mapLineIds(sent: any[], returned: any[]): (number | null)[] {
+    const conLai = [...(returned || [])]
+    const ket: (number | null)[] = new Array(sent.length).fill(null)
+    const lay = (dk: (r: any) => boolean) => {
+      const i = conLai.findIndex(dk)
+      return i < 0 ? null : conLai.splice(i, 1)[0]
+    }
+    sent.forEach((it, i) => { if (it.id) { const r = lay((x) => x.id === it.id); if (r) ket[i] = r.id } })
+    sent.forEach((it, i) => {
+      if (ket[i] || !it.product_code) return
+      const r = lay((x) => (x.product_code || '') === it.product_code)
+      if (r) ket[i] = r.id
+    })
+    sent.forEach((it, i) => {
+      if (ket[i]) return
+      const r = lay((x) => (x.product_name || '') === (it.product_name || ''))
+      if (r) ket[i] = r.id
+    })
+    return ket
+  }
+
+  // Tải ảnh đối chiếu đang giữ ở client lên NGAY SAU khi dòng đã có id thật.
+  // Lỗi 1 dòng không được làm hỏng việc lưu phiếu — chỉ báo để người dùng đính kèm lại.
+  async function uploadPendingLineImgs(sent: any[], returned: any[]) {
+    if (!sent.some((it) => (it._pendingImgs || []).length)) return
+    const ids = mapLineIds(sent, returned)
+    for (let i = 0; i < sent.length; i++) {
+      const fs: File[] = sent[i]._pendingImgs || []
+      if (!fs.length || !ids[i]) continue
+      const fd = new FormData()
+      fd.append('entity', 'purchase_request_line_image')
+      fd.append('entity_id', String(ids[i]))
+      fs.forEach((f) => fd.append('files', f))
+      try { await api.post('/api/attachments', fd) }
+      catch { toast.error(`Chưa tải được ảnh đối chiếu của dòng "${sent[i].product_name || i + 1}" — vui lòng đính kèm lại`) }
+    }
+  }
+
   async function save(submitAfterSave = false): Promise<boolean> {
     const v = validate(submitAfterSave)
     if (v) { toast.error(v); return false }
+    const guiItems = items.filter((it: any) => it.product_name)
     const body = {
       company_id: Number(pr.company_id) || 0, requester: pr.requester, requester_id: Number(pr.requester_id) || 0, requester_position: pr.requester_position,
       department: pr.department, head_of_dept: pr.head_of_dept, purpose: pr.purpose,
@@ -402,16 +453,20 @@ export default function PurchaseRequestDetail() {
       // Task 4: gửi 2 cụm NCC (BE tự chặn cụm 'pur' nếu không có quyền supplier.write)
       supplier_req: { name: pr.supplier_req?.name || '', tax_code: pr.supplier_req?.tax_code || '', contact: pr.supplier_req?.contact || '' },
       supplier_pur: { name: pr.supplier_pur?.name || '', tax_code: pr.supplier_pur?.tax_code || '', contact: pr.supplier_pur?.contact || '' },
-      items: items.filter((it: any) => it.product_name),
+      // `_pendingImgs` là File giữ ở client (ảnh đối chiếu của dòng chưa lưu) — không phải
+      // dữ liệu phiếu, phải bỏ khỏi body rồi upload riêng sau khi có id dòng.
+      items: guiItems.map((it: any) => { const { _pendingImgs, ...rest } = it; return rest }),
     }
     try {
       if (isNew) {
         const r = await api.post(API, body)
         const nid = r.data.data.id
+        await uploadPendingLineImgs(guiItems, r.data.data?.items || [])
         if (submitAfterSave) await api.post(`${API}/${nid}/submit`)
         navigate(`/purchase-requests/${nid}`)
       } else {
-        await api.patch(`${API}/${id}`, body)
+        const r = await api.patch(`${API}/${id}`, body)
+        await uploadPendingLineImgs(guiItems, r.data.data?.items || [])
         if (submitAfterSave) await api.post(`${API}/${id}/submit`)
         toast.success('Đã lưu'); loadAll()
       }
@@ -1117,16 +1172,17 @@ export default function PurchaseRequestDetail() {
               </div>
             </div>
 
-            {/* Cụm ẢNH ĐỐI CHIẾU của dòng (upload/xóa/kéo-thả) — dưới form */}
-            {edit.id ? (
-              <div style={{ marginTop: 16 }}>
-                <AttachmentGallery entity="purchase_request_line_image" entityId={edit.id}
-                  permEntity="purchase_request" title="File đính kèm (đối chiếu)" onImages={setCompareImgs}
-                  maxHint="Ảnh chụp thực tế để so với ảnh gốc · tối đa 5MB/ảnh · có thể chọn nhiều" />
-              </div>
-            ) : (
-              <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 16 }}><i className="ti ti-info-circle" /> Lưu phiếu trước để đính kèm ảnh đối chiếu cho dòng.</div>
-            )}
+            {/* Cụm ẢNH ĐỐI CHIẾU của dòng (upload/xóa/kéo-thả) — dưới form.
+                Dòng CHƯA LƯU (phiếu mới hoặc dòng vừa thêm) vẫn chọn được ảnh: gallery giữ
+                File ở `_pendingImgs` của dòng, `save()` tải lên ngay sau khi dòng có id thật.
+                Trước đây chặn "Lưu phiếu trước để đính kèm" -> người dùng phải làm 2 lượt. */}
+            <div style={{ marginTop: 16 }}>
+              <AttachmentGallery entity="purchase_request_line_image" entityId={edit.id || 0}
+                permEntity="purchase_request" title="File đính kèm (đối chiếu)" onImages={setCompareImgs}
+                pendingFiles={edit._pendingImgs || KHONG_CO_FILE}
+                onPendingChange={(fs) => setItem(editIdx, '_pendingImgs', fs)}
+                maxHint="Ảnh chụp thực tế để so với ảnh gốc · tối đa 5MB/ảnh · có thể chọn nhiều" />
+            </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
               <button className="btn ghost" onClick={() => setEditIdx(null)}>{editable ? 'Đóng' : 'Hủy'}</button>

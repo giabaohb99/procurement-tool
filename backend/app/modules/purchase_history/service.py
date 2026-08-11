@@ -81,11 +81,15 @@ def snapshot_line_safe(db: Session, po, item) -> None:
 
 
 def list_history(db: Session, pg: dict, product_code: str = "", supplier_code: str = "",
-                 search: str = "") -> tuple[int, list]:
+                 search: str = "", tim_theo_ncc: bool = True) -> tuple[int, list]:
     """Danh sách lịch sử, mới nhất trước. Lọc theo mã SP hoặc mã NCC (dùng chung cho 2 màn).
 
     `search`: tìm gần đúng trên Mã PO / Tên NCC / Tên SP / Tên công ty — phục vụ ô tìm kiếm
     của popup chọn lịch sử khi lập ĐMH.
+
+    `tim_theo_ncc=False`: BỎ tên NCC khỏi vế tìm kiếm — dùng cho người không có quyền
+    `supplier.read`. Nếu vẫn cho tìm theo tên NCC thì dù đã ẩn cột, gõ tên một NCC rồi
+    xem có ra dòng nào không là suy ra được ai bán mã hàng đó — che cột thôi chưa đủ.
     """
     query = db.query(PurchaseHistory)
     if product_code:
@@ -95,12 +99,12 @@ def list_history(db: Session, pg: dict, product_code: str = "", supplier_code: s
     if search.strip():
         from sqlalchemy import or_
         kw = f"%{search.strip()}%"
-        query = query.filter(or_(
-            PurchaseHistory.po_code.like(kw),
-            PurchaseHistory.supplier_name.like(kw),
-            PurchaseHistory.product_name.like(kw),
-            PurchaseHistory.company_name.like(kw),
-        ))
+        ve = [PurchaseHistory.po_code.like(kw),
+              PurchaseHistory.product_name.like(kw),
+              PurchaseHistory.company_name.like(kw)]
+        if tim_theo_ncc:
+            ve.append(PurchaseHistory.supplier_name.like(kw))
+        query = query.filter(or_(*ve))
     total = query.count()
     items = (query.order_by(PurchaseHistory.order_date.desc(), PurchaseHistory.id.desc())
              .offset(pg["offset"]).limit(pg["limit"]).all())

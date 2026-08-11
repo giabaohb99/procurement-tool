@@ -182,3 +182,44 @@ def test_sap_xep_moi_nhat_truoc(db):
 
     _, items = list_history(db, PG, product_code="SP001")
     assert [i.po_code for i in items] == ["PO_MOI", "PO_CU"]
+
+
+# ── Che NCC với người không có quyền `supplier.read` ───────────────────────────
+# Popup "Lịch sử mua hàng gần nhất" mở được từ YÊU CẦU MUA HÀNG, nơi người yêu cầu chỉ cần
+# `product.read` — nhưng NCC là thông tin riêng của khối thu mua. Che ở giao diện là chưa đủ:
+# gọi thẳng API vẫn đọc được, và ô tìm kiếm vẫn dò ra được ai bán mã hàng đó.
+def test_khong_co_quyen_ncc_thi_khong_tim_duoc_theo_ten_ncc(db):
+    po1 = _po(db, code="PO_ALPHA", supplier_code="NCC01", supplier_name="NCC Một")
+    po2 = _po(db, code="PO_BETA", supplier_code="NCC02", supplier_name="Bao bì Đông Tây")
+    snapshot_line(db, po1, _item(db, po1, product_code="SP001"))
+    snapshot_line(db, po2, _item(db, po2, product_code="SP001"))
+    db.commit()
+
+    # Có quyền: gõ tên NCC ra đúng 1 dòng (mốc để so sánh)
+    total, _ = list_history(db, PG, product_code="SP001", search="Đông Tây")
+    assert total == 1
+
+    # Không quyền: tên NCC không còn là vế tìm kiếm -> không suy ngược ra được NCC nào
+    total, _ = list_history(db, PG, product_code="SP001", search="Đông Tây", tim_theo_ncc=False)
+    assert total == 0
+
+    # Các vế còn lại (mã PO / tên SP / công ty) vẫn tìm bình thường
+    total, items = list_history(db, PG, product_code="SP001", search="ALPHA", tim_theo_ncc=False)
+    assert (total, [i.po_code for i in items]) == (1, ["PO_ALPHA"])
+
+
+def test_payload_xoa_ten_va_ma_ncc_khi_khong_co_quyen(db):
+    from app.modules.purchase_history.controller import _payload
+
+    po = _po(db, supplier_code="NCC01", supplier_name="NCC Một")
+    snapshot_line(db, po, _item(db, po))
+    db.commit()
+    items = db.query(PurchaseHistory).all()
+
+    co = _payload(1, items)["items"][0]
+    assert (co["supplier_code"], co["supplier_name"]) == ("NCC01", "NCC Một")
+
+    khong = _payload(1, items, hien_ncc=False)["items"][0]
+    assert (khong["supplier_code"], khong["supplier_name"]) == ("", "")
+    # Chỉ che NCC — phần giá/số lượng vẫn phải còn để người yêu cầu tham chiếu
+    assert khong["po_code"] == "PO0001" and khong["price"]
