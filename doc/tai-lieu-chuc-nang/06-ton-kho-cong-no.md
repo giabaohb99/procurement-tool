@@ -184,6 +184,52 @@ Phạm vi dữ liệu (`apply_scope`): entity `inventory` chỉ có chiều `com
 
 ---
 
+## F. Tab "Đơn hàng về kho" trên trang chi tiết Kho
+
+Bổ sung 2026-08-08. Màn Tồn kho chỉ trả lời "kho đang có gì"; tab này trả lời câu hỏi còn lại của thủ kho — **"sắp có gì về"**. Đây là tab thứ hai của trang chi tiết Kho (`/warehouses/:id`), khai báo bằng `detailTabs` của `CrudDetail` chứ không viết trang riêng.
+
+### Người dùng thấy gì
+
+Một thẻ trắng, bên trên là ô tìm kiếm và ô lọc tiến độ, bên dưới là bảng phân trang. Mỗi dòng của bảng là **một dòng hàng của một đơn mua hàng** (không phải cả đơn) — vì một đơn có thể chia hàng về nhiều kho, gộp theo đơn sẽ hiện cả hàng của kho khác.
+
+| Cột | Nội dung |
+|-----|----------|
+| Ngày đặt | `PurchaseOrder.order_date` |
+| Mã PO | mã đơn — bấm vào dòng mở chi tiết đơn mua hàng |
+| Nhà cung cấp | tên NCC của đơn |
+| Mã SP / Tên sản phẩm | `POItem.product_code` / `product_name` |
+| ĐVT | đơn vị tính của dòng |
+| SL đặt | `qty_order` |
+| **Đã nhận (kho này)** | `qty_received_here` — phần thực về ĐÚNG kho đang xem |
+| **Đã nhận (tất cả)** | `qty_received` — tổng mọi kho của dòng đó |
+| Còn lại | `qty_remaining` của dòng |
+| Tiến độ | `progress_status` — badge màu theo 8 trạng thái tiến độ của dòng hàng |
+
+Hai cột "Đã nhận" tách đôi là có chủ đích: thủ kho cần biết kho mình đã nhận bao nhiêu, còn người điều phối cần biết dòng hàng đó **đã về đủ chưa trên toàn hệ thống** — nhìn một cột thì luôn thiếu một nửa câu chuyện.
+
+Ô tìm kiếm gõ tới đâu chờ **300 ms** rồi mới gọi API (khỏi bắn request mỗi ký tự), tìm theo Mã PO · Mã SP · Tên sản phẩm. Trạng thái rỗng phân biệt hai tình huống: đang có bộ lọc thì báo "không khớp bộ lọc", không lọc mà vẫn rỗng thì báo kho chưa có đơn nào về.
+
+Người không có `purchase_order:read` thấy thẻ "Bạn không có quyền xem đơn mua hàng." thay cho bảng — tab vẫn hiện nhưng không rò dữ liệu đơn.
+
+### API và cách khớp kho
+
+`GET /api/purchase-orders/lines?warehouse_code=&page=&page_size=&q=&progress_status=`
+
+Route này **phải khai báo trước `/{pid}`** trong `purchase_order/controller.py`; nếu đứng sau, chuỗi `"lines"` rơi vào route `/{pid}` và lỗi ép kiểu int.
+
+**Dòng nào thuộc kho này** — điều kiện `OR` hai vế:
+
+1. `POItem.warehouse_code = <kho>` (kho nhận mặc định của dòng), **hoặc**
+2. dòng có ít nhất một lần giao (`PODelivery`) ghi `warehouse_code = <kho>`.
+
+Vế 2 không được bỏ: lần giao đổi kho so với mặc định vẫn là **hàng thực về kho này**, bỏ sót là báo cáo sai.
+
+**`qty_received_here` tính thế nào** — tổng SL nhận của các lần giao ghi rõ kho này, **cộng** phần đã nhận trên dòng mà chưa gắn vào lần giao/kho nào (`qty_received − tổng SL nhận đã gắn kho`, chặn không âm), phần dư đó quy về **kho mặc định của dòng**. Không có vế cộng thêm này thì toàn bộ dữ liệu nhập lịch sử — vốn chỉ có SL nhận ở mức dòng, không tách lần giao — sẽ hiện **0 ở mọi kho**.
+
+Quyền: `require("purchase_order", "read")` + `apply_scope(...)` giống mọi màn đơn mua hàng khác — tab này không mở thêm cửa nào.
+
+---
+
 ---
 
 # Công nợ
@@ -525,3 +571,80 @@ Hàm `recompute_effects` trong `purchase_order/service.py` được gọi mỗi 
 | Sinh/cập nhật/xóa công nợ tự động | Không cần quyền riêng | Gọi từ service PO nội bộ, kế thừa user_id người lưu PO |
 
 Phạm vi dữ liệu (`apply_scope`): entity `payable` có hai chiều — `company` (`company_id`) và `owner` (`created_by`). Scope `own` lọc theo `created_by = user.id`. Scope `company` lọc theo `company_id` của user. Scope `all` không lọc thêm.
+
+---
+
+## H. Dashboard "Công nợ & Đánh giá" trên trang chi tiết NCC
+
+Đổi 2026-08-08. Trước đó trang chi tiết NCC có hai tab rời: "Công nợ" là một **bảng phẳng** liệt kê khoản nợ, và "Đánh giá" là vài con số KPI giao hàng. Người dùng phải tự cộng nhẩm để trả lời câu hỏi thật sự của họ — "NCC này mình còn nợ bao nhiêu, có khoản nào quá hạn không". Nay gộp thành **một tab báo cáo** tên "Công nợ & Đánh giá".
+
+Thành phần: `frontend/src/components/supplier-payables-dashboard.tsx` (phần vẽ) + `supplier-payables-stats.ts` (phần tính, tách riêng cho thuần hàm) + `supplier-payables-filters.tsx` (thanh lọc).
+
+### 1. Thứ tự các khối trên tab
+
+1. **Thẻ "Đánh giá nhà cung cấp"** — số lần giao dịch · số lần giao trễ · tỷ lệ trễ · số hợp đồng. Đặt **trên** thanh lọc và **không chịu ảnh hưởng bộ lọc**: đây là số của cả kỳ, lọc theo khoản nợ sẽ làm sai ý nghĩa. Có ghi chú "· cả kỳ, không theo bộ lọc bên dưới" ngay cạnh tiêu đề để không ai hiểu nhầm. Tỷ lệ trễ > 30% hiện thêm badge đỏ "Tỷ lệ giao trễ cao". KPI lấy 1 dòng từ `/api/reports/matrix`, số hợp đồng lấy từ tab Hợp đồng của cùng trang.
+2. **Thanh lọc** — xem mục 3.
+3. **Hàng KPI công nợ** — Tổng phát sinh · Đã thanh toán · Còn phải trả · Quá hạn, cộng thẻ thứ năm "Trả dư / ghi có" **chỉ hiện khi có phát sinh**.
+4. **Tiến độ thanh toán** — một thanh ngang xanh/đỏ với dòng chữ "Đã trả X / Y — còn Z". Phần chưa trả tô **hồng đỏ khi có khoản quá hạn**, xanh nhạt khi chưa tới hạn.
+5. **Ba thẻ ngang hàng** — Tuổi nợ (còn phải trả) · Cơ cấu nợ theo loại (Hàng hóa / Vận chuyển) · Trạng thái khoản nợ.
+6. **Biểu đồ cột "Nợ phát sinh theo tháng"** — 6 tháng gần nhất **có dữ liệu** (không phải 6 tháng liên tiếp tính lùi), cạnh nó là **"Khoản nợ cần chú ý"** — tối đa 6 khoản, sắp quá hạn nặng nhất trước rồi tới số tiền còn lại lớn nhất, kèm nút "Mở trang công nợ" deep-link sang `/payables?supplier=<mã>`.
+7. **Bảng chi tiết** — vẫn còn nguyên nhưng **gập lại** mặc định, mở bằng nút "Chi tiết N khoản công nợ".
+
+Thẻ "Tổng quan công nợ" cũ đã bỏ vì trùng hàng KPI.
+
+### 2. Xử lý CÔNG NỢ ÂM (trả dư / ghi có)
+
+`remaining < 0` là chuyện có thật: trả dư cho NCC, hoặc hóa đơn điều chỉnh giảm / trả hàng làm `total` âm. Nếu tính gộp như nợ thường thì tổng nợ bị trừ khống và người đọc tưởng đã trả bớt. Quy ước:
+
+| Khái niệm | Định nghĩa |
+|-----------|-----------|
+| `debt` | **chỉ** phần `remaining > 0` — dùng cho tuổi nợ, quá hạn, danh sách cần chú ý |
+| `credit` | tổng phần `remaining < 0`, đã đổi dấu nên luôn ≥ 0 — tách thành chỉ số "Trả dư / ghi có" riêng |
+| `remainNet` | `debt − credit` — số dư thực còn nợ NCC, **có thể âm** |
+
+Hệ quả:
+
+- Khoản âm **không** được xếp vào bất kỳ mốc tuổi nợ nào — không thể "quá hạn" một khoản mình không nợ. Thẻ Tuổi nợ ghi chú riêng "N khoản trả dư (-X đ) không xếp mốc tuổi nợ".
+- Bar biểu đồ vẽ theo **trị tuyệt đối** (`Math.abs`) để cột âm vẫn nhìn thấy; số tiền âm hiện dấu trừ và tô xanh dương (`#0284c7`) để không đọc nhầm thành nợ phải trả.
+- **Trạng thái hiển thị ghi đè**: khoản có `remaining < 0` hiện "Trả dư" dù DB lưu gì. Cần thiết vì backend `recalc_status` viết `"Chờ TT"` khi `paid <= 0` — với phiếu điều chỉnh giảm thì đọc lên sẽ hiểu nhầm là **vẫn còn nợ**.
+- Nhóm "Trả dư" trong thẻ Trạng thái đo bằng **số dư âm**, không phải `total` — tổng phát sinh của phiếu điều chỉnh giảm không nói lên điều gì.
+- Tỉ lệ đã trả chặn trong khoảng 0–100%; `total <= 0` (toàn phiếu điều chỉnh giảm) thì coi như 0% vì không có gì để chia.
+
+### 3. Bộ lọc — hai tầng
+
+**Thanh lọc chính** giữ đúng 3 ô hay dùng nhất khi đọc báo cáo:
+
+| Ô | Giá trị | Lọc ở đâu |
+|---|---------|-----------|
+| Xem nhanh | Còn phải trả (`remaining > 0`) · Đang quá hạn (`remaining > 0` và `aging ≠ Chưa đến hạn`) · Trả dư / ghi có (`remaining < 0`) | **client** — backend không có tham số tương ứng cho "trả dư" |
+| Tuổi nợ | Chưa đến hạn · 1-30 · 31-60 · 61-90 · >90 | API (`aging`) |
+| Ngày phát sinh | khoảng ngày | API (`incur_from` / `incur_to`) |
+
+**Bộ lọc điều kiện** (nút bên phải thanh lọc) chứa mã PO · số hóa đơn · loại nợ · trạng thái — **lọc tại DB**, cấu hình ở `SUPPLIER_PAYABLE_COND_FILTERS` trong `config/conditional-filters.ts` (= bộ lọc của màn `/payables` trừ ô `supplier_code`, vì đang đứng trong trang của chính NCC đó). Chia hai tầng để thanh lọc khỏi dài mà vẫn đủ điều kiện.
+
+Cạnh nút lọc luôn hiện "Đang xem **N**/M khoản" — N sau khi áp Xem nhanh, M là số API trả về theo các điều kiện còn lại.
+
+Mọi khối KPI/biểu đồ đều tính trên **phần đã lọc**, không phải toàn bộ dữ liệu.
+
+### 4. Cách tab lấy dữ liệu
+
+Tab **tự gọi** `GET /api/payables?supplier_code=&year=all&page_size=500&…` chứ không nhận sẵn danh sách từ trang cha — vì bộ lọc điều kiện sinh query param cho backend. Gõ trong bảng lọc làm param đổi liên tục nên có **debounce 300 ms** trước khi gọi API.
+
+Đổi lại, `SupplierDetail` đã **bỏ state `payables`** — mở trang chi tiết NCC nay ít hơn một request; công nợ chỉ tải khi thật sự bấm vào tab.
+
+---
+
+## I. Lần rà soát gần nhất
+
+Rà 2026-08-11. Đối chiếu tài liệu với mã nguồn:
+
+| Nội dung kiểm | Đối chiếu với | Kết quả |
+|---------------|---------------|---------|
+| Tab "Đơn hàng về kho" | `frontend/src/components/warehouse-purchase-lines.tsx` | đúng |
+| Endpoint `/api/purchase-orders/lines` (thứ tự khai báo, khớp kho, `qty_received_here`) | `backend/app/modules/purchase_order/controller.py` | đúng |
+| Dashboard công nợ NCC — bố cục, KPI, biểu đồ | `frontend/src/components/supplier-payables-dashboard.tsx` | đúng |
+| Quy ước nợ âm (`debt` / `credit` / `remainNet`, `rowStatus`) | `frontend/src/components/supplier-payables-stats.ts` | đúng |
+| Bộ lọc 2 tầng | `supplier-payables-filters.tsx` + `config/conditional-filters.ts` | đúng |
+| Tab NCC gộp "Công nợ & Đánh giá" | `frontend/src/pages/SupplierDetail.tsx` (`TABS`) | đúng |
+
+Hai tính năng ở mục F và H do `minhduoc-tran` phát triển (commit `1a2a3bd` và `6917d77`, ngày 2026-08-08) và **chưa từng được đưa vào tài liệu chức năng** cho tới lần rà này. Phần Tồn kho A–E và Công nợ A–G không đổi kể từ bản 2026-08-08.

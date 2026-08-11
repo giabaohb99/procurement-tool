@@ -27,7 +27,8 @@ Khối chỉ hiện khi phiếu **đã lưu** (đã có `id`). Ở màn tạo m�
 
 Cuối trang chi tiết là một thẻ **"Trao đổi"** kèm số lượng bình luận (đếm **cả gốc lẫn phản hồi**):
 
-- **Mỗi luồng gốc là một thẻ trắng riêng** (bo góc, viền mảnh) — gốc và toàn bộ phản hồi của nó nằm chung trong thẻ đó, nên nhìn ra ngay đâu là một mạch trao đổi thay vì một danh sách dài dính liền.
+- **Cả khối nằm trong một thẻ trắng** (`.card`) đúng thông số của các khối khác trên trang chi tiết — "Chứng từ & Tài liệu đính kèm", "Lịch sử thao tác". Tiêu đề cùng cỡ với tiêu đề các khối đó (icon 18, chữ 15/600, chip đếm nhỏ như chip số tệp), có **đường kẻ dưới tiêu đề**; gập khối lại thì kẻ tự ẩn. *(Trước 2026-08-07 khối trôi thẳng trên nền trang, nhìn lạc lõng so với phần còn lại của phiếu.)*
+- **Mỗi luồng gốc là một khối riêng** (bo góc, viền mảnh, **nền xám nhạt** `#f8fafc`) — gốc và toàn bộ phản hồi của nó nằm chung trong khối đó, nên nhìn ra ngay đâu là một mạch trao đổi thay vì một danh sách dài dính liền. Nền xám chứ không trắng: từ khi cả khối nằm trong thẻ trắng, luồng nền trắng viền mỏng gần như tàng hình.
 - Mỗi bình luận: **ảnh đại diện** (hoặc vòng tròn chữ cái đầu của **tên gọi** — chữ cuối trong họ tên, đúng cách gọi tên tiếng Việt), **họ tên người viết**, **mã nhân sự**, **thời điểm**, nội dung giữ nguyên xuống dòng.
 - **Mã nhân sự** (`DEMONV`, `TESTREQ`…) chỉ hiện ở **bình luận gốc** — tên tiếng Việt trùng nhau rất nhiều nên cần mã để biết chắc là ai; nhánh phản hồi bỏ đi cho đỡ rối.
 - **Thời điểm hiển thị tương đối**: "Vừa xong", "25 phút trước", "3 giờ trước", "2 ngày trước", "3 tuần trước", "2 tháng trước". Quá **60 ngày** thì đổi sang **ngày tháng** (`12/03/2026`) — đọc "14 tháng trước" không hình dung được gì. Rê chuột lên luôn hiện **mốc giờ đầy đủ** theo giờ Việt Nam.
@@ -279,6 +280,7 @@ CR-033 **không có migration** — dùng lại `tab_file` / `tab_file_link` đa
 | Xóa gốc thì cuốn theo phản hồi | Phản hồi mồ côi làm luồng không ai hiểu đang trả lời cái gì |
 | Chưa làm màn hình quản lý bình luận tập trung | Khách chốt ở CR-030: cần dọn thì vào thẳng phiếu; chưa có nhu cầu thống kê/kiểm duyệt |
 | Mỗi luồng gốc một thẻ riêng thay vì một danh sách chung | Trang chi tiết phiếu vốn đã dày; tách thẻ mới nhìn ra ranh giới giữa các mạch trao đổi |
+| Cả khối "Trao đổi" bọc trong `.card`, luồng đổi sang nền xám (2026-08-07) | Khối này là phần cuối của trang chi tiết, phải đứng cùng hàng với "Đính kèm" / "Lịch sử thao tác" chứ không trôi trên nền trang. Đổi nền luồng sang xám là hệ quả bắt buộc: trắng-trên-trắng thì không còn thấy ranh giới mạch trao đổi |
 | Hiện **mã nhân sự** cạnh tên, nhưng chỉ ở bình luận gốc | Tên tiếng Việt trùng nhau rất nhiều; đưa xuống cả nhánh phản hồi thì thừa và rối |
 | Thời gian **tương đối**, quá 60 ngày mới đổi sang ngày tháng | Trao đổi đang diễn ra thì "cách đây bao lâu" quan trọng hơn mốc giờ; nhưng "14 tháng trước" thì vô nghĩa, phải trả về ngày tra được |
 | Lệch tới 5 phút về tương lai vẫn coi là "Vừa xong" | Đồng hồ máy trạm lệch máy chủ vài phút là chuyện thường; lệch xa hẳn mới là dữ liệu có vấn đề, lúc đó hiện mốc giờ để truy |
@@ -313,3 +315,23 @@ CR-033 **không có migration** — dùng lại `tab_file` / `tab_file_link` đa
 | **Ghi luật ngay cạnh nút** thay vì để người dùng tự dò | Đọc "tối đa 5 tệp · 20MB" trước khi kéo thì không ai phải ăn báo lỗi mới biết |
 | Nút kẹp giấy **luôn hiện** ở ô trả lời, không đợi gõ chữ | Ô trả lời chỉ bung khi bấm "Phản hồi"; giấu thêm một tầng nữa thì không ai biết phản hồi cũng đính kèm được |
 | Chuông ghi thêm `[đính kèm N tệp]` | Bài chỉ có tệp thì chuông trống trơn, người nhận tưởng bình luận rỗng nên không mở |
+
+---
+
+## 7. Lần rà soát gần nhất
+
+**2026-08-11** — đối chiếu toàn bộ tài liệu với mã nguồn đang chạy. Kết quả: **khớp**, chỉ bổ sung phần giao diện thẻ ở mục 2 (thay đổi ngày 2026-08-07, không mang số CR vì là chỉnh giao diện thuần).
+
+Các con số trong tài liệu đã kiểm lại tận nơi, không chép theo trí nhớ:
+
+| Điều tài liệu ghi | Nơi kiểm | Kết quả |
+|---|---|---|
+| Tối đa 5.000 ký tự | `comment/service.py` `MAX_BODY` | đúng |
+| Mỗi lần tải 10 bình luận gốc | `PAGE_SIZE` | đúng |
+| Tối đa 20 người được nhắc | `MAX_MENTIONS` | đúng |
+| Tối đa 5 tệp một bình luận | `MAX_FILES` | đúng |
+| 7 endpoint dưới `/api/comments` | `comment/controller.py` | đúng, kể cả thứ tự `/mentionable` đứng trước `/{cid}/replies` |
+| 4 loại chứng từ mở bình luận | `core/comment_registry.py` | đúng (YCMH · YCBG · Phiếu khảo sát · ĐMH) |
+| 40 ca kiểm thử | `test/backend/test_comment.py` | đúng |
+
+Từ CR-033 tới nay **chỉ có duy nhất 1 commit** chạm vào phân hệ bình luận (`40b6033`, giao diện). Phần logic, dữ liệu, phân quyền, thông báo không đổi.

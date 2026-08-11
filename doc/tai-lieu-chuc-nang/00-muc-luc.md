@@ -70,6 +70,13 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 | # | Chức năng | Đường dẫn | Tài liệu chức năng |
 |---|-----------|-----------|-------------------|
 | 25 | Bình luận / Trao đổi trên chứng từ (2 cấp · @nhắc tên · lượt thích) | cuối trang chi tiết YCMH · YCBG · Phiếu khảo sát · ĐMH | [11-binh-luan-tren-chung-tu.md](11-binh-luan-tren-chung-tu.md) — đã có tài liệu |
+| 26 | Lịch sử mua hàng (từng lần mua của mã hàng · tham chiếu giá khi lập đơn) | tab ở chi tiết Sản phẩm · chi tiết NCC · popup trong ô Mã hàng của YCMH/ĐMH | [12-lich-su-mua-hang.md](12-lich-su-mua-hang.md) — đã có tài liệu |
+
+## Nhóm: Ứng dụng tách riêng (tên miền riêng)
+
+| # | Chức năng | Đường dẫn | Tài liệu chức năng |
+|---|-----------|-----------|-------------------|
+| 27 | Trung tâm Hướng dẫn sử dụng (bài viết · FAQ · khu quản trị) | tên miền riêng (`VITE_HELP_URL`) — vào từ nút `?` trên thanh trên cùng | [13-trung-tam-hdsd.md](13-trung-tam-hdsd.md) — đã có tài liệu |
 
 ---
 
@@ -78,5 +85,7 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 - "đã có tài liệu" — file `.md` tương ứng đã tồn tại trong thư mục `tai-lieu-chuc-nang/`.
 - "chưa có tài liệu" — chức năng đã hoạt động nhưng chưa viết tài liệu chi tiết.
 - Danh mục (mục 11–18) và một phần Hệ thống là màn hình CRUD chuẩn, render tự động qua `CrudList` / `CrudDetail` theo cấu hình trong `frontend/src/config/cruds.tsx`.
+- Mục 25–26 không có mục menu riêng: là khối dùng chung nhúng vào nhiều màn hình khác nhau.
+- Mục 27 là **ứng dụng web riêng** (`help-center/`), chạy trên tên miền riêng nhưng dùng chung backend và tài khoản.
 - Tài liệu phân quyền chi tiết xem tại `doc/phan-quyen/Thiet_Ke_Phan_Quyen.md`.
 - Nguồn danh sách: `frontend/src/layouts/AppLayout.tsx` — mảng `NAV_GROUPS`.
