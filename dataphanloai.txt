@@ -1,0 +1,105 @@
+PHÂN LOẠI VTBB	THỜI GIAN QUY ĐỊNH ( Ngày)	NSPT
+Nhãn	7	Mr Tiên
+Nhãn Metalize	12	Mr Tiên
+Nhãn Thùng	7	Mr Tiên
+Túi flexo	15	MS Dư
+Túi trục	21	MS Dư
+Hộp	15	Mr Tiên
+Can/Xô	5	MS Dư
+Can/Xô	7	MS Dư
+NL	10	Ms Quyên
+NL	14	Ms Quyên
+Thùng	18	Mr Tiên
+Chai Nhôm	8	MS Dư
+Chai Nhôm	33	MS Dư
+Chai khác	7	MS Dư
+Nắp	7	MS Dư
+Cốc đong	7	MS Dư
+Chai khác	15	MS Dư
+Nắp	15	MS Dư
+Cốc đong	15	MS Dư
+NL NK	59	Mr Tiên
+NL Icare	4	Ms Quyên
+Xốp ( bong bóng khí)	5	Ms Quyên
+Giấy nhiệt K100x150	5	Ms Quyên
+HDSD Antisol	10	Ms Quyên
+Tem phụ antisol	15	Ms Quyên
+Tem chống hàng giả 	10	Ms Quyên
+Chai Pet có vòi 	15	MS Dư
+Hộp trắng	10	Mr Tiên
+Màng co	20	Ms Quyên
+Túi in cuộn màng	14	MS Dư
+Vận chuyển		Ms Quyên
+Băng keo	5	Ms Quyên
+Cuộn PE	7	MS Dư
+Lon	7	MS Dư
+Lon	15	MS Dư
+VTBB SX	7	MS Dư
+VTBB SX	15	MS Dư
+Túi Zip	7	MS Dư
+Túi PA	7	MS Dư
+Tank	7	MS Dư
+Tank	15	MS Dư
+Chai Pet	7	MS Dư
+Chai Pet	15	MS Dư
+Chai Hdpe	7	MS Dư
+Chai Hdpe	15	MS Dư
+Chai Pape	7	MS Dư
+Chai Pape	15	MS Dư
+Chai Nhôm nhập khẩu	33	MS Dư
+Chai Pet giả nhôm	7	MS Dư
+Chai Pet giả nhôm	15	MS Dư
+Chai HD giả nhôm	7	MS Dư
+Chai HD giả nhôm	15	MS Dư
+Chai Pape giả nhôm	7	MS Dư
+Chai Pape giả nhôm	15	MS Dư
+Chai Pet có vòi	10	MS Dư
+Chai Pet có vòi	15	MS Dư
+Nắp Hdpe	7	MS Dư
+Nắp Hdpe	15	MS Dư
+Nắp Pet	7	MS Dư
+Nắp Pet	15	MS Dư
+Can HDPE	5	MS Dư
+Can HDPE	7	MS Dư
+Xô HDPE	5	MS Dư
+Xô HDPE	7	MS Dư
+Nhãn giấy	7	MS Dư
+Nhãn Decal	7	MS Dư
+Nhãn Phụ	7	MS Dư
+Nhãn dán thùng	7	MS Dư
+Túi rời	15	MS Dư
+Túi in cuộn (không trục)	14	MS Dư
+Túi PE (Túi nilong)	7	MS Dư
+Túi PE (Túi nilong)	14	MS Dư
+Túi Zip	14	MS Dư
+Túi PA 3 biên	7	MS Dư
+Túi PA 3 biên	14	MS Dư
+Hộp carton 3 lớp	15	Mr Tiên
+Hộp giấy D	15	Mr Tiên
+Hộp đóng gói nâu	15	Mr Tiên
+Hộp carton 3 lớp	10	Mr Tiên
+Hộp giấy D	10	Mr Tiên
+Hộp đóng gói nâu	10	Mr Tiên
+Hộp icare: giấy Ivory	10	Mr Tiên
+Thùng carton 5 lớp	18	Mr Tiên
+Thùng carton 3 lớp	18	Mr Tiên
+Lon HDPE	7	MS Dư
+Lon HDPE	15	MS Dư
+Bao PP	7	MS Dư
+Bao PP	15	MS Dư
+Bao PE	7	MS Dư
+Bao PE	15	MS Dư
+Phuy	15	MS Dư
+Màng co nhiệt	20	Ms Quyên
+Màng PE cuộn	21	Ms Quyên
+Băng keo trong	7	Ms Quyên
+Băng keo trong	15	Ms Quyên
+Băng keo in logo	7	Ms Quyên
+Băng keo in logo	15	Ms Quyên
+Keo sữa	7	MS Dư
+Keo sữa	15	MS Dư
+Tem Hologram bạc (tem chống hàng giả icare)	12	Ms Quyên
+Tem decal vỡ (tem Asahi)	12	Ms Quyên
+Tem decal giấy	12	Ms Quyên
+NL Nhập khẩu	59	Mr Tiên
+Tag treo	10	Mr Tiên
