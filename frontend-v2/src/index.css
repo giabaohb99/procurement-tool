@@ -1,0 +1,268 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/* DEGO ERP v2 — Tailwind v4 + shadcn/ui.
+   Token màu bám bộ nhận diện DEGO: sky blue #00aeef (primary), navy #1b2559 (chữ đậm). */
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.5rem;
+
+  --background: #ffffff;
+  --foreground: #1b2559;
+
+  --card: #ffffff;
+  --card-foreground: #1b2559;
+
+  --popover: #ffffff;
+  --popover-foreground: #1b2559;
+
+  --primary: #00aeef;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f6f8fb;
+  --secondary-foreground: #1b2559;
+
+  --muted: #f6f8fb;
+  --muted-foreground: #64748b;
+
+  --accent: #eef4fb;
+  --accent-foreground: #14507a;
+
+  --destructive: #b91c1c;
+  --destructive-foreground: #ffffff;
+
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #00aeef;
+
+  /* Màu ngữ nghĩa cho trạng thái chứng từ (chờ duyệt / đã duyệt / hủy). */
+  --success: #16a34a;
+  --warning: #d97706;
+  --info: #0284c7;
+
+  /* Màu phụ của bộ nhận diện. */
+  --navy: #1b2559;
+  --navy-deep: #14224f;
+  --teal-dark: #0096cc; /* điểm cuối gradient của nút chính */
+  --sky-soft: #5ed0ff; /* icon trên nền navy */
+  --brand-green: #92c83e;
+
+  /* ---- Màu biểu đồ ----------------------------------------------------
+     KHÔNG dùng --primary (#00aeef) làm màu cột: độ tương phản trên nền trắng
+     chỉ 1.9:1, cột mảnh sẽ chìm. Bốn slot dưới đây là bảng phân loại đã kiểm
+     (dải sáng, ngưỡng chroma, tách màu cho người mù màu protan/deutan
+     ΔE 9.1 ≥ 8, thị lực thường ΔE 22.9 ≥ 15). Gán theo THỨ TỰ CỐ ĐỊNH — lọc
+     bớt chuỗi dữ liệu không được đổi màu các chuỗi còn lại. */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  /* Xám trung tính cho nhóm "Khác" / phần bị làm mờ — không mang ý nghĩa. */
+  --chart-neutral: #cbd5e1;
+  /* Nền rãnh của thanh tỉ lệ — bậc nhạt cùng tông xanh của --chart-1. */
+  --chart-track: #cde2fb;
+  /* Lưới/trục: hairline lùi về sau, chỉ hơn nền một bậc. */
+  --chart-grid: #e8edf4;
+
+  /* Menu trái — bám bảng màu DEGO, không dùng xám mặc định của shadcn. */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1b2559;
+  --sidebar-accent: #eef4fb;
+  --sidebar-accent-foreground: #14507a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-primary: #00aeef;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-ring: #00aeef;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #e2e8f0;
+
+  --card: #1e293b;
+  --card-foreground: #e2e8f0;
+
+  --popover: #1e293b;
+  --popover-foreground: #e2e8f0;
+
+  --primary: #00aeef;
+  --primary-foreground: #06283d;
+
+  --secondary: #1e293b;
+  --secondary-foreground: #e2e8f0;
+
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+
+  --accent: #334155;
+  --accent-foreground: #e2e8f0;
+
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+
+  --border: #334155;
+  --input: #334155;
+  --ring: #00aeef;
+
+  /* Cùng 4 tông nhưng chỉnh bậc cho nền tối (không lật màu tự động) —
+     đã kiểm lại trên nền #1e293b: tương phản ≥ 3:1, CVD ΔE 8.4. */
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-neutral: #475569;
+  --chart-track: #1c3a5e;
+  --chart-grid: #2b3b52;
+
+  --sidebar: #1e293b;
+  --sidebar-foreground: #e2e8f0;
+  --sidebar-accent: #334155;
+  --sidebar-accent-foreground: #e2e8f0;
+  --sidebar-border: #334155;
+  --sidebar-primary: #00aeef;
+  --sidebar-primary-foreground: #06283d;
+  --sidebar-ring: #00aeef;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-neutral: var(--chart-neutral);
+  --color-chart-track: var(--chart-track);
+  --color-chart-grid: var(--chart-grid);
+
+  --color-navy: var(--navy);
+  --color-navy-deep: var(--navy-deep);
+  --color-teal-dark: var(--teal-dark);
+  --color-sky-soft: var(--sky-soft);
+  --color-brand-green: var(--brand-green);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-border: var(--sidebar-border);
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  /* Số tiền/số lượng đọc theo cột — chữ số phải cùng bề rộng mới thẳng hàng. */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ============ Màn hình xác thực (đăng nhập / quên mật khẩu) ============
+   Chỉ những hiệu ứng viết bằng class Tailwind sẽ không đọc nổi mới để ở đây;
+   phần còn lại của layout dùng utility trực tiếp trong component. */
+
+/* Nền bảng thương hiệu: 2 vầng sáng teal chồng lên nền navy chuyển sắc. */
+.auth-brand {
+  background:
+    radial-gradient(1100px 520px at 12% 8%, rgba(0, 174, 239, 0.28), transparent 60%),
+    radial-gradient(900px 600px at 100% 100%, rgba(0, 174, 239, 0.2), transparent 55%),
+    linear-gradient(155deg, var(--navy-deep) 0%, var(--navy) 42%, #0f2b52 100%);
+}
+
+/* Lưới chấm mờ phủ lên nền — thuần CSS, không tốn ảnh, GPU rẻ. */
+.auth-brand::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(160deg, #000 20%, transparent 78%);
+  pointer-events: none;
+}
+
+/* Form trôi lên nhẹ khi vào trang. */
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.auth-rise {
+  animation: auth-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Nút chính của màn xác thực — gradient dọc + bóng teal. */
+.auth-submit {
+  background-image: linear-gradient(180deg, var(--primary) 0%, var(--teal-dark) 100%);
+  box-shadow: 0 8px 20px rgba(0, 174, 239, 0.28);
+}
+
+.auth-submit:hover:not(:disabled) {
+  box-shadow: 0 12px 26px rgba(0, 174, 239, 0.34);
+  transform: translateY(-1px);
+}
+
+.auth-submit:disabled {
+  opacity: 0.7;
+  box-shadow: none;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-rise {
+    animation: none;
+  }
+
+  .auth-submit {
+    transition: none;
+  }
+}
+
+/* Trong lúc kéo giãn menu trái: tắt transition để mép menu bám sát con trỏ.
+   Không có nó thì bề rộng chạy trễ 200ms sau chuột, cảm giác như bị dính. */
+[data-sidebar-resizing='true'] [data-slot='sidebar-gap'],
+[data-sidebar-resizing='true'] [data-slot='sidebar-container'] {
+  transition: none !important;
+}

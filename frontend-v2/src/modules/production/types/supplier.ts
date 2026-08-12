@@ -1,0 +1,29 @@
+/** Nhà cung cấp — khớp `SupplierOut` của backend (`modules/supplier/schema.py`). */
+export interface Supplier {
+  id: number
+  /** Tên viết tắt, duy nhất toàn hệ. */
+  code: string
+  /** Tên pháp lý đầy đủ. */
+  name: string
+  legal_type: string
+  tax_code: string
+  address: string
+  /** `goods` = NCC bán hàng, `transport` = đơn vị vận chuyển. */
+  supplier_type: SupplierType
+  contact_person: string
+  phone: string
+  payment_terms: string
+  bank_account: string
+  bank_name: string
+  bank_account_name: string
+  /** Thuế suất VAT dạng thập phân: 0.08 = 8%. */
+  vat: number
+  is_active: boolean
+}
+
+export type SupplierType = 'goods' | 'transport'
+
+export const SUPPLIER_TYPE_LABELS: Record<SupplierType, string> = {
+  goods: 'Nhà cung cấp hàng hóa',
+  transport: 'Đơn vị vận chuyển',
+}
