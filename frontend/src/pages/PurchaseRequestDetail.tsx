@@ -296,14 +296,14 @@ export default function PurchaseRequestDetail() {
     if (newExp === orig) return                            // không đổi
     let reason = ''
     if (orig) {
-      const r = await askPrompt({ title: 'Đổi thời gian dự kiến có hàng', message: `Đổi từ ${orig} sang ${newExp || '(để trống)'} — nhập lý do (bắt buộc):`, confirmText: 'Lưu' })
+      const r = await askPrompt({ title: 'Đổi ngày dự kiến có hàng', message: `Đổi từ ${orig} sang ${newExp || '(để trống)'} — nhập lý do (bắt buộc):`, confirmText: 'Lưu' })
       if (r === null) { setItem(i, 'expected_date', orig); return }
       if (!r.trim()) { toast.error('Vui lòng nhập lý do thay đổi'); setItem(i, 'expected_date', orig); return }
       reason = r.trim()
     }
     try {
       await api.patch(`${API}/${id}/item-status`, { items: [{ id: it.id, line_status: it.line_status, progress_note: it.progress_note, note: it.note, expected_date: newExp, expected_date_reason: reason }] })
-      toast.success('Đã cập nhật thời gian dự kiến'); loadAll()
+      toast.success('Đã cập nhật ngày dự kiến'); loadAll()
     } catch { loadAll() }
   }
 
@@ -843,7 +843,7 @@ export default function PurchaseRequestDetail() {
                     <th style={{ width: 120, textAlign: 'right' }} title="Thành tiền gồm VAT">Thành tiền</th>
                     <th style={{ width: 150, textAlign: 'center' }}>Trạng thái</th>
                     <th style={{ width: 118, textAlign: 'center' }} title="Tiến độ: tổng SL đã nhận / tổng SL đã đặt (đồng bộ từ Đơn mua hàng)">Tiến độ<br /><span style={{ fontWeight: 400, fontSize: 10.5, color: 'var(--muted)' }}>nhận / đặt</span></th>
-                    <th style={{ width: 130, textAlign: 'center', whiteSpace: 'normal', lineHeight: 1.3 }} title="Thời gian dự kiến có hàng (sửa trực tiếp nếu có quyền, hoặc trong Chi tiết dòng)">TG dự kiến<br />có hàng</th>
+                    <th style={{ width: 130, textAlign: 'center', whiteSpace: 'normal', lineHeight: 1.3 }} title="Ngày dự kiến có hàng (sửa trực tiếp nếu có quyền, hoặc trong Chi tiết dòng)">Ngày dự kiến<br />có hàng</th>
                     {showAssigneeCol && <th style={{ width: 160, textAlign: 'left' }}>NSTM phụ trách</th>}
                     <th style={{ width: 96, textAlign: 'center' }}>Thao tác</th>
                   </tr>
@@ -1157,7 +1157,7 @@ export default function PurchaseRequestDetail() {
                   onChange={(v) => setItem(editIdx, 'required_date', v)} />
               </div>
               <div className="form-row">
-                <label title="NSTM phụ trách cập nhật — đổi giá trị đã có phải kèm lý do">Thời gian dự kiến có hàng</label>
+                <label title="NSTM phụ trách cập nhật — đổi giá trị đã có phải kèm lý do">Ngày dự kiến có hàng</label>
                 <DateInput value={edit.expected_date || ''} disabled={!canLineStatus(edit)} onChange={(v) => setItem(editIdx, 'expected_date', v)} />
               </div>
               {showAssigneeCol && (

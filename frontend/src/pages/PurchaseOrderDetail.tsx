@@ -902,7 +902,7 @@ export default function PurchaseOrderDetail() {
                     <div className="form-row"><label>Ngày yêu cầu có hàng</label><DateInput value={it.required_date || ''} disabled={de} onChange={(v) => setItem(ii, { required_date: v })} /></div>
                     {/* Dự kiến có hàng: để trống thì khi lưu backend tự chép từ dòng YCMH nguồn.
                         Sửa ở đây KHÔNG ghi đè ngày đang có trên YCMH — chỉ báo chuông cho NSTM phụ trách dòng. */}
-                    <div className="form-row"><label>Dự kiến có hàng</label><DateInput value={it.expected_date || ''} disabled={de} onChange={(v) => setItem(ii, { expected_date: v })} /></div>
+                    <div className="form-row"><label>Ngày dự kiến có hàng</label><DateInput value={it.expected_date || ''} disabled={de} onChange={(v) => setItem(ii, { expected_date: v })} /></div>
                     <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={!!it.supplier_ready} disabled={de} onChange={(e) => setItem(ii, { supplier_ready: e.target.checked })} style={{ width: 16, height: 16 }} /> NCC có sẵn hàng</label></div>
                     <div className="form-row"><label>ĐVT</label>
                       <SearchSelect value={it.unit ?? ''} options={units} disabled={de} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setItem(ii, { unit: v })} />
