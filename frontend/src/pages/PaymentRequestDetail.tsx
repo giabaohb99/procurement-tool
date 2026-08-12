@@ -161,17 +161,22 @@ function PaymentRequestCreate() {
         </button>
       </div>
 
-      <div className="card" style={{ padding: 14, marginBottom: 16, borderLeft: '4px solid var(--teal)' }}>
-        Soát lại số tiền đề nghị rồi bấm <b>Tạo phiếu</b>. Rời màn này mà chưa bấm thì <b>không phiếu nháp nào được sinh ra</b>.
-        {groups.length > 1 && <> Hệ thống sẽ tách thành <b>{groups.length} phiếu</b> (mỗi nhà cung cấp / loại công nợ 1 phiếu).</>}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', marginBottom: 14,
+        background: '#f8fafc', border: '1px solid var(--border)', borderRadius: 6,
+        fontSize: 12.5, color: '#475569', lineHeight: 1.4,
+      }}>
+        <i className="ti ti-info-circle" style={{ fontSize: 15, color: '#64748b', flexShrink: 0 }} />
+        <span>
+          Soát lại số tiền đề nghị rồi bấm <b>Tạo phiếu</b> (rời màn này sẽ không lưu nháp).
+          {groups.length > 1 && <> Tự động tách thành <b>{groups.length} phiếu</b> theo từng nhà cung cấp / loại nợ.</>}
+          {noInvoice.length > 0 && (
+            <span style={{ color: '#64748b', marginLeft: 6 }}>
+              · Dòng chưa có số HĐ có thể in nháp để ký tay (cần điền đủ khi gửi duyệt).
+            </span>
+          )}
+        </span>
       </div>
-
-      {noInvoice.length > 0 && (
-        <div className="card" style={{ padding: 14, marginBottom: 16, borderLeft: '4px solid var(--amber)' }}>
-          <b>{noInvoice.length} dòng chưa có Số hóa đơn</b> — vẫn tạo và in bản nháp để trình ký được (ô hóa đơn in trắng, điền tay),
-          nhưng <b>phải điền đủ và khớp khoản công nợ mới gửi duyệt được</b>.
-        </div>
-      )}
 
       <div className="card" style={{ padding: 18, marginBottom: 16 }}>
         <h3 className="sec-title">Thông tin phiếu</h3>
@@ -340,8 +345,13 @@ function PaymentRequestView() {
       </div>
 
       {req.status === 'cancelled' && req.reject_reason && (
-        <div className="card" style={{ padding: 14, marginBottom: 16, borderLeft: '4px solid var(--red)' }}>
-          <b style={{ color: 'var(--red)' }}>Lý do từ chối:</b> {req.reject_reason}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', marginBottom: 14,
+          background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6,
+          fontSize: 12.5, color: '#991b1b',
+        }}>
+          <i className="ti ti-alert-circle" style={{ fontSize: 16, color: '#dc2626', flexShrink: 0 }} />
+          <span><b>Lý do từ chối:</b> {req.reject_reason}</span>
         </div>
       )}
 
@@ -371,10 +381,15 @@ function PaymentRequestView() {
       <div className="card" style={{ padding: 18, marginBottom: 16 }}>
         <h3 className="sec-title">Các khoản công nợ thanh toán</h3>
         {editable && unmatched.length > 0 && (
-          <div style={{ padding: '10px 12px', marginBottom: 12, borderLeft: '4px solid var(--amber)', background: 'var(--bg-soft, #fff8e6)', fontSize: 13 }}>
-            <b>{unmatched.length} dòng chưa khớp khoản công nợ nào.</b> In bản nháp trình ký thì được (ô còn thiếu in trắng để điền tay),
-            nhưng <b>gửi duyệt</b> thì mỗi dòng phải có Số hóa đơn đúng với một khoản công nợ còn nợ — nếu không, lúc ghi nhận chi
-            tiền sẽ không trừ được vào đâu.
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', marginBottom: 12,
+            background: '#f8fafc', border: '1px solid var(--border)', borderRadius: 6,
+            fontSize: 12.5, color: '#475569',
+          }}>
+            <i className="ti ti-info-circle" style={{ fontSize: 15, color: '#64748b', flexShrink: 0 }} />
+            <span>
+              {unmatched.length} dòng chưa khớp khoản nợ: có thể in nháp để ký tay, cần điền đúng số HĐ trước khi gửi duyệt.
+            </span>
           </div>
         )}
         <div className="items-scroll">
