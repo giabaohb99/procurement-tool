@@ -20,6 +20,26 @@ import {
 } from '@/shared/utils/format-money'
 import type { PurchaseRequestItem } from '../types/purchase-request-detail'
 
+/**
+ * Bảng dòng hàng có nhiều cột nghiệp vụ nên ba cột nhận diện được ghim cứng
+ * bên trái và cột thao tác ghim bên phải. Đây là cấu hình cố định của màn này,
+ * không đưa vào menu Cột và không lưu localStorage như DataTable danh sách.
+ */
+const PINNED = {
+  noHead: 'sticky left-0 z-40 w-12 min-w-12 bg-inherit',
+  noCell: 'sticky left-0 z-20 w-12 min-w-12 bg-inherit',
+  codeHead: 'sticky left-12 z-40 w-44 min-w-44 bg-inherit',
+  codeCell: 'sticky left-12 z-20 w-44 min-w-44 bg-inherit',
+  nameHead:
+    'sticky left-56 z-40 w-80 min-w-80 bg-inherit shadow-[inset_-2px_0_0_0_var(--border)]',
+  nameCell:
+    'sticky left-56 z-20 w-80 min-w-80 bg-inherit shadow-[inset_-2px_0_0_0_var(--border)]',
+  actionHead:
+    'sticky right-0 z-40 w-20 min-w-20 bg-inherit shadow-[inset_2px_0_0_0_var(--border)]',
+  actionCell:
+    'sticky right-0 z-20 w-20 min-w-20 bg-inherit shadow-[inset_2px_0_0_0_var(--border)]',
+} as const
+
 interface ItemsTableProps {
   items: PurchaseRequestItem[]
   /** Bật chế độ sửa: hiện ô nhập + nút thêm/xóa dòng. */
@@ -79,13 +99,18 @@ export function PurchaseRequestItemsTable({
 
   return (
     <div className="space-y-3">
-      <div className="overflow-x-auto rounded-lg border">
-        <Table className="min-w-[1500px]">
+      <div className="isolate overflow-x-auto rounded-lg border">
+        <Table
+          className={cn(
+            'table-fixed',
+            showAssignee ? 'min-w-[2020px]' : 'min-w-[1860px]',
+          )}
+        >
           <TableHeader className="bg-muted">
-            <TableRow>
-              <TableHead className="w-10 text-center">No.</TableHead>
-              <TableHead className="w-44">Mã hàng *</TableHead>
-              <TableHead className="min-w-60">Tên sản phẩm *</TableHead>
+            <TableRow className="bg-muted">
+              <TableHead className={cn(PINNED.noHead, 'text-center')}>No.</TableHead>
+              <TableHead className={PINNED.codeHead}>Mã hàng *</TableHead>
+              <TableHead className={PINNED.nameHead}>Tên sản phẩm *</TableHead>
               <TableHead className="w-36">Kho nhận</TableHead>
               <TableHead className="w-36">Phân loại</TableHead>
               <TableHead className="w-20">ĐVT</TableHead>
@@ -114,7 +139,9 @@ export function PurchaseRequestItemsTable({
                 </span>
               </TableHead>
               {showAssignee && <TableHead className="w-40">NSTM phụ trách</TableHead>}
-              <TableHead className="w-20 text-center">Thao tác</TableHead>
+              <TableHead className={cn(PINNED.actionHead, 'text-center')}>
+                Thao tác
+              </TableHead>
             </TableRow>
           </TableHeader>
 
@@ -134,13 +161,16 @@ export function PurchaseRequestItemsTable({
               <TableRow
                 key={item.id ?? `new-${index}`}
                 // Dòng đã hủy vẫn phải thấy được nhưng không nên tranh sự chú ý.
-                className={cn(item.line_status === 'Hủy đơn' && 'opacity-60')}
+                className={cn(
+                  'bg-card hover:bg-muted',
+                  item.line_status === 'Hủy đơn' && 'opacity-60',
+                )}
               >
-                <TableCell className="text-center text-muted-foreground">
+                <TableCell className={cn(PINNED.noCell, 'text-center text-muted-foreground')}>
                   {index + 1}
                 </TableCell>
 
-                <TableCell>
+                <TableCell className={PINNED.codeCell}>
                   {editing ? (
                     <Input
                       value={item.product_code}
@@ -152,7 +182,7 @@ export function PurchaseRequestItemsTable({
                   )}
                 </TableCell>
 
-                <TableCell>
+                <TableCell className={PINNED.nameCell}>
                   {editing ? (
                     <Input
                       value={item.product_name}
@@ -164,7 +194,7 @@ export function PurchaseRequestItemsTable({
                   )}
                 </TableCell>
 
-                <TableCell>
+                <TableCell className={PINNED.actionCell}>
                   {editing ? (
                     <Input
                       value={item.warehouse}
