@@ -122,7 +122,8 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
             exp_from_pr = pr_expected.get((data.get("product_code") or "").strip(), "")
             if exp_from_pr:
                 data["expected_date"] = exp_from_pr
-            elif not data.get("id"):  # Dòng MỚI chưa có expected_date và không gắn YCMH -> tự tính theo ngày QĐ phân loại
+            elif not data.get("id") and not (po.pr_code or "").strip() and (data.get("item_group") or "").strip():
+                # Dòng MỚI trên ĐMH độc lập (không gắn YCMH) -> tự tính theo ngày QĐ phân loại
                 _base = (po.order_date or "").strip() or date.today().isoformat()
                 data["expected_date"] = lead_time.regulated_date(std_map, data.get("item_group") or "", _base)
         iid = data.pop("id", None)
