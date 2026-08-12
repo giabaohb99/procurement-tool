@@ -20,6 +20,7 @@ import AuditTimeline from '../components/AuditTimeline'
 import { fmtSize, fileIcon } from '../utils/file-type'
 import { newDupCodes } from '../utils/lines'
 import { regulatedDate, stdDaysMap, stdDaysOf } from '../utils/lead-time'
+import { fmtDateStr } from '../utils/datetime'
 
 const API = '/api/purchase-orders'
 // Ô/cột ĐƠN GIÁ cho lẻ tới 4 chữ số thập phân — giá quy đổi hay lẻ tới phần nghìn đồng
@@ -274,9 +275,18 @@ export default function PurchaseOrderDetail() {
   // Chọn SP → điền luôn các trường lấy từ danh mục, gồm "Xuất xứ / TSKT / chất liệu"
   // (spec) lấy từ Thông số kỹ thuật của sản phẩm; vẫn sửa tay lại được sau khi điền.
   const applyProduct = (i: number, p: any) => {
-    setItem(i, p
-      ? { product_code: p.code, product_name: p.name, invoice_name: p.invoice_name || '', unit: p.unit || '', item_group: p.item_group || '', spec: p.specs || '', fg_code: p.hh_code || '', fg_name: p.hh_name || '' }
-      : { product_code: '', product_name: '', invoice_name: '', item_group: '', spec: '', fg_code: '', fg_name: '' })
+    if (!p) {
+      setItem(i, { product_code: '', product_name: '', invoice_name: '', item_group: '', spec: '', fg_code: '', fg_name: '' })
+      return
+    }
+    const currentIt = items[i] || {}
+    const autoExp = !currentIt.expected_date ? regulatedDate(groupMap, p.item_group || '', po.order_date || '') : currentIt.expected_date
+    setItem(i, {
+      product_code: p.code, product_name: p.name, invoice_name: p.invoice_name || '',
+      unit: p.unit || '', item_group: p.item_group || '', spec: p.specs || '',
+      fg_code: p.hh_code || '', fg_name: p.hh_name || '',
+      ...(autoExp ? { expected_date: autoExp } : {}),
+    })
   }
   // Chọn 1 lần mua trước từ popup lịch sử → CHỈ điền vào state dòng hàng, KHÔNG tự lưu.
   // Không đụng NCC ở header: người dùng chủ động tham chiếu giá của bất kỳ NCC nào.
@@ -943,7 +953,7 @@ export default function PurchaseOrderDetail() {
                       <th style={{ width: 110 }}>Cam kết giao</th>
                       <th style={{ width: 110 }}>Ngày nhận</th>
                       <th style={{ width: 70 }}>Số ngày QĐ</th>
-                      <th style={{ width: 100 }}>Ngày QĐ</th>
+                      <th style={{ width: 105, whiteSpace: 'nowrap' }}>Ngày QĐ</th>
                       <th style={{ width: 70 }}>Trễ CK</th>
                       <th style={{ width: 70 }}>Trễ QĐ</th>
                       <th style={{ width: 80 }}>Trễ QĐ-KD</th>
@@ -993,7 +1003,7 @@ export default function PurchaseOrderDetail() {
                           <td><DateInput className="cell-input" style={{ width: 110 }} value={d.promised_date ?? ''} disabled={dis} onChange={(v) => setDelivery(ii, di, { promised_date: v })} /></td>
                           <td><DateInput className="cell-input" style={{ width: 110 }} value={d.received_date ?? ''} disabled={dis} onChange={(v) => setDelivery(ii, di, { received_date: v })} /></td>
                           <td><NumberInput className="cell-input" style={{ width: 60 }} value={d.std_days} disabled={dis} onChange={(v) => setDelivery(ii, di, { std_days: v })} /></td>
-                          <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{d.regulated_date || '—'}</td>
+                          <td style={{ textAlign: 'center', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{d.regulated_date ? fmtDateStr(d.regulated_date) : '—'}</td>
                           <td style={{ textAlign: 'center', color: (d.diff_promise < 0 ? 'var(--red)' : 'var(--muted)'), fontWeight: d.diff_promise < 0 ? 600 : 400 }}>{d.received_date ? (d.diff_promise ?? 0) : '—'}</td>
                           <td style={{ textAlign: 'center', color: (d.diff_regulated < 0 ? 'var(--red)' : 'var(--muted)'), fontWeight: d.diff_regulated < 0 ? 600 : 400 }}>{d.received_date ? (d.diff_regulated ?? 0) : '—'}</td>
                           <td style={{ textAlign: 'center', color: (d.diff_required < 0 ? 'var(--red)' : 'var(--muted)') }}>{items[ii].required_date ? (d.diff_required ?? 0) : '—'}</td>

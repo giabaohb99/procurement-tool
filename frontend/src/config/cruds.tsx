@@ -405,7 +405,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'created_at', label: 'Ngày tạo', render: (r) => fmtDateTime(r.created_at) || '—' },
       { key: 'requester', label: 'Người yêu cầu' },
       { key: 'department', label: 'Bộ phận' },
-      { key: 'need_date', label: 'Cần hàng', render: (r) => (r.need_date ? fmtDateStr(r.need_date) : '—') },
+      { key: 'need_date', label: 'Ngày cần hàng', render: (r) => (r.need_date ? fmtDateStr(r.need_date) : '—') },
       { key: 'total', label: 'Tổng tiền', render: (r) => (r.total ? fmtVND(r.total) + ' đ' : '0 đ') },
       { key: 'is_urgent', label: 'Gấp', render: (r) => (r.is_urgent ? <span className="badge warn">Gấp</span> : '—') },
       { key: 'status', label: 'Trạng thái', render: (r) => prBadge(r.status) },
