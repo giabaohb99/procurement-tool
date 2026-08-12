@@ -13,6 +13,11 @@ function viDate(d: string) {
   const [y, m, dd] = d.split('-')
   return `Cần Thơ, ngày ${dd} tháng ${m} năm ${y}`
 }
+function dmy(d: string) {
+  if (!d) return ''
+  const parts = d.split('-')
+  return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : d
+}
 
 export default function PrintPurchaseOrder() {
   const { id } = useParams()
@@ -103,7 +108,12 @@ export default function PrintPurchaseOrder() {
                   <td style={{ ...cell, textAlign: 'right' }}>{fmtVND(it.qty_order * priceVat)}</td>
                   <td style={cell}>{it.warehouse_code}</td>
                   <td style={cell}>{it.invoice_name}</td>
-                  <td style={cell}>{it.note}</td>
+                  <td style={cell}>
+                    {(it.required_date || it.expected_date) ? (
+                      <div style={{ fontWeight: 600 }}>Ngày cần: {dmy(it.required_date || it.expected_date)}</div>
+                    ) : null}
+                    {it.note ? <div>{it.note}</div> : null}
+                  </td>
                 </tr>
               )
             })}

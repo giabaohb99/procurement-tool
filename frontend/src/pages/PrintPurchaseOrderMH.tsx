@@ -136,7 +136,12 @@ export default function PrintPurchaseOrderMH() {
                 <td style={{ ...cell, textAlign: 'right' }}>{it.qty_received ? fmt(it.qty_received) : '-'}</td>
                 <td style={{ ...cell, textAlign: 'right' }}>{fmtPrice(it.price)}</td>
                 <td style={{ ...cell, textAlign: 'right' }}>{fmtVND(it.qty_order * it.price)}</td>
-                <td style={cell}>{it.note}</td>
+                <td style={cell}>
+                  {(it.required_date || it.expected_date) ? (
+                    <div style={{ fontWeight: 600 }}>Ngày cần: {dmy(it.required_date || it.expected_date)}</div>
+                  ) : null}
+                  {it.note ? <div>{it.note}</div> : null}
+                </td>
               </tr>
             ))}
             <tr>
