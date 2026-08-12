@@ -43,7 +43,8 @@ def _delivery(d, pay=None) -> dict:
             "remaining": float(pay.remaining or 0) if pay else 0.0}
 
 
-def _item(db, it, pay_by_del: dict, inv_by_code: dict | None = None) -> dict:
+def _item(db, it, pay_by_del: dict, inv_by_code: dict | None = None,
+          pr_expected: dict | None = None) -> dict:
     dels = service.deliveries_of(db, it.id)
     qty_order = float(it.qty_order or 0)
     del_out = [_delivery(d, pay_by_del.get(d.id)) for d in dels]
@@ -57,6 +58,10 @@ def _item(db, it, pay_by_del: dict, inv_by_code: dict | None = None) -> dict:
             "invoice_date": it.invoice_date or "",
             "document_delivery_date": it.document_delivery_date or "",
             "supplier_ready": bool(it.supplier_ready), "required_date": it.required_date,
+            "expected_date": it.expected_date or "",
+            # Ngày dự kiến ĐANG ghi trên dòng YCMH nguồn — CHỈ ĐỂ ĐỌC. FE so với ô bên trên để
+            # bật popup cảnh báo lệch ngày; hệ thống không tự ghi ngược lên YCMH (CR-062).
+            "pr_expected_date": (pr_expected or {}).get((it.product_code or "").strip(), ""),
             "unit": it.unit, "qty_request": float(it.qty_request or 0), "qty_order": qty_order,
             "price": float(it.price or 0), "vat": float(it.vat or 0), "amount": float(it.amount or 0),
             "qty_received": float(it.qty_received or 0), "qty_remaining": float(it.qty_remaining or 0),
@@ -85,7 +90,8 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
                   if not (it.invoice_name or "").strip() and (it.product_code or "").strip()}
     inv_by_code = {p.code: (p.invoice_name or "")
                    for p in db.query(Product).filter(Product.code.in_(need_codes)).all()} if need_codes else {}
-    items = [_item(db, it, pay_by_del, inv_by_code) for it in it_list]
+    pr_expected = service.pr_expected_map(db, po.pr_code)
+    items = [_item(db, it, pay_by_del, inv_by_code, pr_expected) for it in it_list]
     d["items"] = items
     # Tổng theo SL THỰC NHẬN (thành tiền đơn hàng = đã chốt)
     subtotal = round(sum(i["qty_received"] * i["price"] for i in items), 2)

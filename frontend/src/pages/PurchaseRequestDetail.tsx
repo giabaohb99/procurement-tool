@@ -517,6 +517,7 @@ export default function PurchaseRequestDetail() {
       product_code: it.product_code, product_name: it.product_name,
       item_group: it.item_group, unit: it.unit,
       required_date: it.required_date || '',   // Ngày cần hàng ở YCMH → Ngày yêu cầu có hàng ở ĐMH
+      expected_date: it.expected_date || '',   // Dự kiến có hàng: chép xuống ĐMH (backend cũng tự chép nếu để trống)
       qty_request: qty, qty_order: qty,
       price: Number(it.price) || 0, vat: Number(it.vat_pct) || 0,   // Task 4: VAT theo TỪNG DÒNG PYC
       warehouse_code: whCode(it.warehouse), note: it.note || '',
@@ -1135,7 +1136,13 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Ngày cần hàng <span className="req">*</span></label>
-                <DateInput value={edit.required_date || ''} disabled={!editable} onChange={(v) => setItem(editIdx, 'required_date', v)} />
+                {/* Dòng CHƯA lưu: điền luôn "Thời gian dự kiến có hàng" theo ngày này cho NSTM
+                    thấy trước (backend cũng tự điền khi tạo dòng). Dòng đã lưu thì không đụng —
+                    đổi ngày dự kiến ở đó phải qua luật nhập lý do. */}
+                <DateInput value={edit.required_date || ''} disabled={!editable} onChange={(v) => {
+                  setItem(editIdx, 'required_date', v)
+                  if (!edit.id && !(edit.expected_date || '').trim()) setItem(editIdx, 'expected_date', v)
+                }} />
               </div>
               <div className="form-row">
                 <label title="NSTM phụ trách cập nhật — đổi giá trị đã có phải kèm lý do">Thời gian dự kiến có hàng</label>

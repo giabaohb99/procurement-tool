@@ -329,6 +329,20 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 - Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
 - Logic đặc biệt: Dùng tính `diff_required` trong lần giao: `regulated_date − required_date`. Giá trị âm = ngày quy định trễ hơn KD yêu cầu.
 
+### 10a. Dự kiến có hàng (`expected_date`) — CR-062
+
+- Kiểu nhập: Chọn ngày (popup chi tiết dòng hàng, ngay dưới "Ngày yêu cầu có hàng")
+- Mặc định: trống → khi LƯU, backend tự chép từ dòng YCMH nguồn cùng mã hàng (nếu có)
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: Hai chiều với **"Thời gian dự kiến có hàng" của dòng YCMH** (`tab_pr_item.expected_date`) — nối theo `PurchaseOrder.pr_code` + `product_code` (không có khóa ngoại; mã hàng là duy nhất trên mỗi phiếu ở cả hai phía)
+- Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
+- Logic đặc biệt:
+  - **Chép xuống:** chỉ điền khi ô còn TRỐNG. Đã có giá trị (nhập tay hay chép từ lần lưu trước) thì giữ nguyên. Đặt ở backend `_save_items` nên nhập khẩu và dòng thêm sau cũng được điền, không chỉ nút "Tạo ĐMH".
+  - **Cuộn ngược:** giá trị MUỘN NHẤT trong các dòng ĐMH cùng `pr_code` + mã hàng được đẩy lên dòng YCMH nếu ô bên đó còn trống; nếu bên đó đã có và lệch thì **KHÔNG ghi đè** và hệ thống không tạo thông báo nào. Chi tiết ở [03 §12](./03-yeu-cau-mua-hang.md).
+  - **Popup cảnh báo lệch ngày:** khi bấm Lưu đơn, nếu có dòng mà ngày ở đây khác ngày đang ghi trên YCMH thì hiện hộp thoại "Lệch ngày dự kiến có hàng", liệt kê từng dòng (`YCMH dd/mm/yyyy → đơn này dd/mm/yyyy`) và nói rõ ngày trên YCMH sẽ KHÔNG tự đổi theo. Hai lựa chọn: **Vẫn lưu** / **Quay lại sửa**. Ngày YCMH để so sánh do API trả kèm trong trường chỉ-đọc `pr_expected_date` của mỗi dòng.
+  - Dòng ĐMH **không gắn YCMH** (`pr_code` trống — đơn tạo tay) hoặc mã hàng không có trên YCMH: nhập tay bình thường, không có gì để cuộn.
+  - Cột **"Dự kiến nhận"** ở màn Tiến độ mua hàng đọc từ đây. Trước CR-062 nó đọc `tab_po_delivery.expected_date` — cột đó không nơi nào ghi (chỉ có 10 dòng rác nạp tay), nay **đã bỏ dùng** và đã dọn về rỗng.
+
 ### 11. Đơn vị tính (`unit`)
 
 - Kiểu nhập: Chọn từ danh sách (select, tự điền khi chọn SP)
@@ -570,20 +584,22 @@ Mỗi lần lưu đơn khi đơn đang giao, hệ thống gọi `recompute_effec
 ### 8. Ngày NCC cam kết giao (`promised_date`)
 
 - Kiểu nhập: Chọn ngày
+- Mặc định: **lấy theo "Ngày yêu cầu có hàng" (`required_date`) của dòng hàng** (CR-063) — chỉ điền lúc TẠO lần giao, sau đó sửa lại theo cam kết thật của NCC được
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: `POItem.required_date` (chỉ ở thời điểm khởi tạo, không đồng bộ tiếp)
+- Người sửa: Người có quyền `purchase_order:write` khi đơn đang giao
+- Logic đặc biệt:
+  - Dùng tính `diff_promise = promised_date − received_date`. Giá trị âm = NCC giao trễ so với cam kết.
+  - Giá trị mặc định đặt ở CẢ hai nơi: nút "Thêm lần giao" trên giao diện (để NSTM thấy ngay) và `_save_deliveries` ở backend (để lần giao sinh từ nhập khẩu / copy đơn cũng có). Backend chỉ điền khi INSERT — lần giao đã tồn tại mà người dùng xóa trắng ô này thì giữ trắng, không tự điền lại.
+
+### 9. Ngày dự kiến nhận (`expected_date`) — ĐÃ BỎ DÙNG (CR-062)
+
+- Kiểu nhập: — (không có ô nhập nào trên giao diện, chưa từng có)
 - Mặc định: trống
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
-- Người sửa: Người có quyền `purchase_order:write` khi đơn đang giao
-- Logic đặc biệt: Dùng tính `diff_promise = promised_date − received_date`. Giá trị âm = NCC giao trễ so với cam kết.
-
-### 9. Ngày dự kiến nhận (`expected_date`)
-
-- Kiểu nhập: Chọn ngày
-- Mặc định: trống
-- Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: —
-- Người sửa: Người có quyền `purchase_order:write` khi đơn đang giao
-- Logic đặc biệt: Lưu trong DB và truyền trong payload; hiện tại không hiển thị thành cột riêng trong bảng giao hàng UI.
+- Người sửa: Không ai — **không nơi nào trong ứng dụng ghi cột này**
+- Logic đặc biệt: Cột sinh ra do một cột Excel bị ánh xạ hai lần trong tài liệu yêu cầu; bản được cài thật là `promised_date` ("Cam kết giao"). Cột này chỉ có dữ liệu ở 10 dòng nạp tay ngày 13/07/2026, tất cả cùng một giá trị. Từ CR-062: đã dọn về rỗng, các chỗ đọc (`alert`, `dashboard`, màn Tiến độ) đã chuyển sang `promised_date` hoặc `POItem.expected_date`. **Cột trong DB được GIỮ LẠI, không xóa** (luật "cơ sở dữ liệu cũ: chỉ thêm, không sửa"). Trường "Dự kiến có hàng" mới nằm ở dòng hàng — xem §10a.
 
 ### 10. Ngày nhận thực tế (`received_date`)
 
@@ -875,7 +891,7 @@ Sau khi cập nhật toàn bộ dòng, hệ thống gọi lại `recompute_statu
 
 ### H.5 Màn hình Tiến độ mua hàng (`/purchase-progress`)
 
-Màn hình riêng tại đường dẫn `/purchase-progress` (nhãn menu "Tiến độ mua hàng"), sử dụng endpoint `GET /api/purchase-progress`. Hiển thị dạng bảng phẳng, mỗi dòng = 1 dòng hàng (`po_item`) kèm thông tin lần giao tương ứng. Các cột chính: Mã ĐMH, Mã MISA, Mã PYC, Công ty, Bộ phận, NCC, NSPT, Ngày đặt, Mã SP, Tên SP, Tên hóa đơn, Nhóm hàng, Mã HH, Số HĐ, Ngày cần, ĐVT, SL đặt, Đơn giá, Thành tiền đặt, **Tiến độ** (`progress_status`), Lần giao, Kho, Ngày nhận, Ngày quy định, CL cam kết, CL quy định, CL vs YC, Hồ sơ CT (`document_status`). Hỗ trợ lọc theo công ty, bộ phận, tháng, trạng thái tiến độ, khoảng ngày đặt/nhận; sắp xếp theo cột; phân trang.
+Màn hình riêng tại đường dẫn `/purchase-progress` (nhãn menu "Tiến độ mua hàng"), sử dụng endpoint `GET /api/purchase-progress`. Hiển thị dạng bảng phẳng, mỗi dòng = 1 dòng hàng (`po_item`) kèm thông tin lần giao tương ứng. Các cột chính: Mã ĐMH, Mã MISA, Mã PYC, Công ty, Bộ phận, NCC, NSPT, Ngày đặt, Mã SP, Tên SP, Tên hóa đơn, Nhóm hàng, Mã HH, Số HĐ, Ngày cần, **Dự kiến nhận** (`po_item.expected_date` — xem §10a; trước CR-062 lấy nhầm từ `po_delivery.expected_date` nên hiện số rác), ĐVT, SL đặt, Đơn giá, Thành tiền đặt, **Tiến độ** (`progress_status`), Lần giao, Kho, Ngày nhận, Ngày quy định, CL cam kết, CL quy định, CL vs YC, Hồ sơ CT (`document_status`). Hỗ trợ lọc theo công ty, bộ phận, tháng, trạng thái tiến độ, khoảng ngày đặt/nhận; sắp xếp theo cột; phân trang.
 
 ---
 

@@ -36,7 +36,10 @@ def build(db: Session, user=None) -> dict:
         po_code = {p.id: p.code for p in db.query(PurchaseOrder).all()}
         item_name = {it.id: it.product_name for it in db.query(POItem).all()}
         for d in db.query(PODelivery).filter(PODelivery.received_qty <= 0).all():
-            due = d.expected_date or d.promised_date
+            # Hạn giao = NCC cam kết giao. Trước đây ưu tiên `expected_date` của lần giao,
+            # nhưng cột đó không nơi nào ghi (chỉ có 10 dòng rác nạp tay) nên nó thắng bằng
+            # dữ liệu sai — đã bỏ dùng, xem migration e2c5a81f7b60.
+            due = d.promised_date
             if not due:
                 continue
             link = f"/purchase-orders/{d.po_id}"

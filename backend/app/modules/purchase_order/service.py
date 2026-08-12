@@ -74,6 +74,24 @@ def _product_specs_map(db: Session, items) -> dict:
     return {c: (s or "") for c, s in rows if s}
 
 
+def pr_expected_map(db: Session, pr_code: str) -> dict[str, str]:
+    """{mã hàng -> thời gian dự kiến có hàng} của phiếu YCMH nguồn.
+
+    Không có khóa ngoại giữa dòng YCMH và dòng ĐMH: cầu nối duy nhất là
+    `PurchaseOrder.pr_code` + `product_code`. Mã hàng là DUY NHẤT trên mỗi phiếu ở cả hai
+    phía (xem app/core/utils.assert_unique_product_codes) nên cặp đó xác định đúng một dòng.
+    """
+    if not (pr_code or "").strip():
+        return {}
+    from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
+    pr = db.query(PurchaseRequest).filter(PurchaseRequest.code == pr_code).first()
+    if not pr:
+        return {}
+    rows = db.query(PurchaseRequestItem).filter(PurchaseRequestItem.pr_id == pr.id).all()
+    return {(r.product_code or "").strip(): (r.expected_date or "").strip()
+            for r in rows if (r.product_code or "").strip() and (r.expected_date or "").strip()}
+
+
 def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
     """Upsert dòng hàng + các lần giao theo id (giữ id ổn định để side-effect idempotent)."""
     if items is None:
@@ -84,6 +102,10 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
                                 [it.product_code for it in existing_items.values()])
     keep_item_ids = set()
     specs_by_code = _product_specs_map(db, items)
+    # Dự kiến có hàng: chép XUỐNG từ dòng YCMH nguồn, CHỈ khi ô trên ĐMH còn trống.
+    # Đặt ở backend (không chỉ ở nút "Tạo ĐMH" bên giao diện) để nhập khẩu và dòng thêm sau
+    # cũng được điền. Dòng không gắn YCMH, hoặc mã hàng không có trên YCMH: nhập tay bình thường.
+    pr_expected = pr_expected_map(db, po.pr_code)
     for raw in items:
         delivs = raw.deliveries or []
         data = raw.model_dump(exclude={"deliveries"})
@@ -95,6 +117,8 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
         # Chỉ điền lúc TẠO dòng: dòng đang sửa mà người dùng cố ý xóa trắng thì giữ trắng.
         if not (data.get("spec") or "").strip() and not data.get("id"):
             data["spec"] = specs_by_code.get((data.get("product_code") or "").strip(), "")
+        if not (data.get("expected_date") or "").strip():
+            data["expected_date"] = pr_expected.get((data.get("product_code") or "").strip(), "")
         iid = data.pop("id", None)
         if iid and iid in existing_items:
             it = existing_items[iid]
@@ -149,6 +173,11 @@ def _save_deliveries(db: Session, po: PurchaseOrder, item: POItem, delivs, user_
                 setattr(d, k, v)
             d.updated_by = user_id
         else:
+            # Cam kết giao mặc định = Ngày yêu cầu có hàng của dòng. CHỈ điền lúc TẠO lần giao
+            # (kể cả lần giao sinh từ nhập khẩu/copy đơn, không riêng nút "Thêm lần giao");
+            # lần giao đã có thì tôn trọng giá trị người dùng nhập, xóa trắng vẫn trắng.
+            if not (data.get("promised_date") or "").strip():
+                data["promised_date"] = (item.required_date or "").strip()
             d = PODelivery(po_id=po.id, po_item_id=item.id, created_by=user_id, updated_by=user_id, **data)
             db.add(d)
         db.flush()

@@ -278,6 +278,7 @@ Nguồn dữ liệu cho **option**. Cột chính:
 | qty, unit, price, amount | | SL/ĐVT/giá/thành tiền | |
 | warehouse | VARCHAR(100) | Kho nhận | → `tab_warehouse` |
 | required_date | VARCHAR(10) | Ngày cần (theo dòng) | |
+| expected_date | VARCHAR(10) | Thời gian dự kiến có hàng — mặc định = `required_date` lúc TẠO dòng (CR-064); đổi giá trị đã có phải kèm lý do | ↔ `tab_po_item.expected_date` |
 | assignee | VARCHAR(100) | Mã NSTM | → `tab_employee.code` |
 | line_status | VARCHAR(30) | "Chưa đặt hàng"… | |
 | progress_note | TEXT | | |
@@ -313,6 +314,7 @@ Nguồn dữ liệu cho **option**. Cột chính:
 | invoice_no | VARCHAR(50) | Số hóa đơn theo SP | |
 | supplier_ready | BOOLEAN | NCC có sẵn hàng | |
 | required_date | VARCHAR(10) | Ngày yêu cầu có hàng | |
+| **expected_date** | VARCHAR(10) | **Dự kiến có hàng** (CR-062) — chép xuống từ dòng YCMH khi trống; ngày MUỘN NHẤT của các dòng cùng `pr_code`+mã hàng cuộn ngược lên YCMH **chỉ khi ô bên đó trống**, lệch thì cảnh báo popup ở màn ĐMH | ↔ `tab_pr_item.expected_date` |
 | unit | VARCHAR(25) | | |
 | qty_request, qty_order | NUMERIC(18,3) | SL yêu cầu / đặt | |
 | price, vat, amount | NUMERIC | Giá / %VAT / thành tiền | |
@@ -330,7 +332,8 @@ Nguồn dữ liệu cho **option**. Cột chính:
 | carrier_code, carrier_name | | Đơn vị vận chuyển | → `tab_supplier.code` (type=transport) |
 | ship_qty, ship_unit | | SL giao | |
 | received_qty | NUMERIC(18,3) | SL thực nhận | |
-| promised_date, expected_date, received_date | VARCHAR(10) | Cam kết / dự kiến / **thực nhận** | |
+| promised_date, received_date | VARCHAR(10) | Cam kết giao / **thực nhận**. `promised_date` mặc định = `tab_po_item.required_date` lúc TẠO lần giao (CR-063), sau đó sửa tự do | |
+| ~~expected_date~~ | VARCHAR(10) | **BỎ DÙNG (CR-062)** — không nơi nào ghi, giữ cột theo luật "CSDL cũ: chỉ thêm, không sửa". "Dự kiến có hàng" nay ở `tab_po_item.expected_date` | |
 | std_days, regulated_date | | Số ngày & ngày quy định | |
 | diff_promise, diff_regulated, diff_required | BIGINT | Chênh lệch tiến độ (<0 = trễ) | |
 | shipping_unit_price, shipping_amount | NUMERIC | Phí vận chuyển | → sinh công nợ VC |

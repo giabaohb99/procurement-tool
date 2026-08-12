@@ -51,6 +51,7 @@ class POItem(Base, AuditMixin):
     document_delivery_date: Mapped[str] = mapped_column(String(10), default="")  # Ngày giao chứng từ cho KT (Task 8)
     supplier_ready: Mapped[bool] = mapped_column(Boolean, default=False)    # NCC có sẵn hàng (col17)
     required_date: Mapped[str] = mapped_column(String(10), default="")      # ngày yêu cầu có hàng (col3)
+    expected_date: Mapped[str] = mapped_column(String(10), default="")      # dự kiến có hàng — copy xuống từ dòng YCMH, sửa tay được
     unit: Mapped[str] = mapped_column(String(25), default="")
     qty_request: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
     qty_order: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
@@ -83,7 +84,7 @@ class PODelivery(Base, AuditMixin):
     ship_unit: Mapped[str] = mapped_column(String(25), default="")
     received_qty: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
     promised_date: Mapped[str] = mapped_column(String(10), default="")      # NCC cam kết giao
-    expected_date: Mapped[str] = mapped_column(String(10), default="")      # dự kiến nhận
+    expected_date: Mapped[str] = mapped_column(String(10), default="")      # BỎ DÙNG — không nơi nào ghi; "dự kiến có hàng" nay ở POItem.expected_date. Giữ cột theo luật "CSDL cũ: chỉ thêm, không sửa"
     received_date: Mapped[str] = mapped_column(String(10), default="", index=True)  # ngày nhận thực tế
     std_days: Mapped[int] = mapped_column(BigInteger, default=0)            # số ngày quy định (AH)
     regulated_date: Mapped[str] = mapped_column(String(10), default="")     # ngày quy định (AI)

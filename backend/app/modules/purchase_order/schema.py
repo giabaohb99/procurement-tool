@@ -37,6 +37,7 @@ class POItemIn(BaseModel):
     document_delivery_date: str = ""   # Ngày giao chứng từ cho KT (Task 8)
     supplier_ready: bool = False
     required_date: str = ""
+    expected_date: str = ""            # Dự kiến có hàng — rỗng thì backend copy từ dòng YCMH nguồn
     unit: str = ""
     qty_request: float = 0
     qty_order: float = 0

@@ -170,11 +170,18 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
     has_cancel: set[str] = set()          # sp có dòng Hủy đơn
     ordered_by_prod: dict[str, float] = {}   # sp -> tổng SL đã đặt
     received_by_prod: dict[str, float] = {}  # sp -> tổng SL đã nhận
+    expected_max: dict[str, str] = {}        # sp -> ngày dự kiến có hàng MUỘN NHẤT trong các dòng ĐMH
     for ln in lines:
         p = ln.product_code
         ps = ln.progress_status or "Chưa đặt hàng"
         if ps == "Hủy đơn":
             has_cancel.add(p); continue      # dòng hủy: không tính SL, không tính tiến độ
+        # Dự kiến có hàng: một dòng YCMH có thể trải ra NHIỀU ĐMH (nhiều NCC, nhiều đợt) nên
+        # lấy ngày MUỘN NHẤT — đó mới là lúc dòng được đáp ứng đủ. Ô trống không tính vào max.
+        # Ngày lưu dạng ISO 'YYYY-MM-DD' nên so sánh chuỗi là so sánh đúng thứ tự thời gian.
+        _ed = (ln.expected_date or "").strip()
+        if _ed and _ed > expected_max.get(p, ""):
+            expected_max[p] = _ed
         if ps == "Tạm ngưng":
             ps = ln.status_before_pause or "Đã đặt hàng"   # dùng mức trước khi tạm ngưng
         idx = _PROGRESS_ORDER.index(ps) if ps in _PROGRESS_ORDER else 0
@@ -200,6 +207,15 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
         old_st = prev_statuses.get(it.id, "")
         if (it.line_status or "") == "Hủy đơn":
             continue  # ngoại lệ đặt thủ công trên YCMH thì giữ nguyên
+        # Dự kiến có hàng cuộn NGƯỢC từ ĐMH lên:
+        #  - ô trên YCMH còn TRỐNG  -> ghi thẳng (đúng nhánh mà luật hiện hành cho sửa tự do)
+        #  - ô đã CÓ giá trị và LỆCH -> KHÔNG ghi đè, và KHÔNG báo gì ở đây. Người sửa ĐMH đã
+        #    được cảnh báo bằng popup ngay trên màn hình đơn mua hàng (CR-062); có sửa YCMH hay
+        #    không là quyền của NSTM, và khi họ sửa thật thì update_item_status mới báo cho
+        #    người yêu cầu. Ghi đè ở đây sẽ đi vòng qua luật "đổi ngày phải kèm lý do".
+        _emax = expected_max.get(p, "")
+        if _emax and not (it.expected_date or "").strip():
+            it.expected_date = _emax
         # Suy trạng thái theo SL/tiến độ THỰC (không bị dòng ĐMH chưa đặt làm sai):
         if p not in ordered_min:
             it.line_status = "Hủy đơn" if p in has_cancel else "Chưa đặt hàng"
@@ -224,6 +240,35 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
             creator_id=pr.created_by, background_tasks=None, link=f"/purchase-requests/{pr.id}",
             recipient_ids=[pr.created_by]
         )
+
+
+def _notify_expected_changed(db: Session, pr: PurchaseRequest, changes: list[str],
+                             actor_id: int) -> None:
+    """Báo cho NGƯỜI YÊU CẦU khi NSTM vừa đổi "thời gian dự kiến có hàng" trên YCMH.
+
+    Chỉ chạy khi ngày thực sự đổi trên YCMH (không phải khi ĐMH lệch) — sửa hay không là
+    quyền của NSTM, còn người yêu cầu thì cần biết hàng của mình lùi/sớm ngày.
+    Người nhận: tài khoản của nhân sự người yêu cầu (`requester_id`), không có thì người tạo
+    phiếu. Không tự báo cho chính người vừa thao tác.
+    """
+    from app.modules.user.model import User
+    from app.modules.notification.service import trigger_notification
+
+    uid = None
+    if pr.requester_id:
+        u = (db.query(User)
+             .filter(User.employee_id == pr.requester_id, User.is_active == True)
+             .first())
+        uid = u.id if u else None
+    uid = uid or pr.created_by
+    if not uid or uid == actor_id:
+        return
+
+    trigger_notification(
+        db=db, event="pr_expected_date_changed", doc_type="purchase_request", doc_code=pr.code,
+        creator_id=actor_id or pr.created_by, background_tasks=None,
+        reason="\n".join(f"- {c}" for c in changes),
+        link=f"/purchase-requests/{pr.id}", recipient_ids=[uid])
 
 
 def update_item_status(db: Session, pid: int, data: ItemStatusIn, user_id: int, emp_code: str, is_manager: bool) -> PurchaseRequest:
@@ -262,6 +307,8 @@ def update_item_status(db: Session, pid: int, data: ItemStatusIn, user_id: int, 
     record(db, user_id, ENTITY, pid, "line_status", "Cập nhật trạng thái dòng")
     for msg in _expected_changes:
         record(db, user_id, ENTITY, pid, "expected_date", msg)
+    if _expected_changes:
+        _notify_expected_changed(db, pr, _expected_changes, user_id)
     db.refresh(pr)
     return pr
 
@@ -395,6 +442,11 @@ def _save_items(db: Session, pr_id: int, items, user_id: int):
             row.updated_by = user_id
             keep.add(row.id)
         else:                                     # dòng mới
+            # Thời gian dự kiến có hàng mặc định = Ngày cần hàng của dòng. CHỈ điền lúc TẠO
+            # dòng: NSTM sửa lại sau (đổi giá trị đã có vẫn phải kèm lý do), và dòng đang sửa
+            # mà người dùng cố ý xóa trắng thì giữ trắng.
+            if not (data.get("expected_date") or "").strip():
+                data["expected_date"] = (data.get("required_date") or "").strip()
             db.add(PurchaseRequestItem(pr_id=pr_id, created_by=user_id, updated_by=user_id, **data))
     for rid, row in existing.items():             # dòng bị bỏ khỏi danh sách -> xóa
         if rid not in keep:
@@ -472,7 +524,10 @@ def copy_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
     for it in items_of(db, src.id):
         data = {k: getattr(it, k) for k in _COPY}
         db.add(PurchaseRequestItem(pr_id=pr.id, created_by=user_id, updated_by=user_id,
-                                   assignee="", line_status="Chưa đặt hàng", progress_note="", **data))
+                                   assignee="", line_status="Chưa đặt hàng", progress_note="",
+                                   # Ngày dự kiến của phiếu gốc là chuyện của phiếu gốc — dòng nhân
+                                   # bản khởi tạo lại theo Ngày cần hàng như dòng mới.
+                                   expected_date=(it.required_date or "").strip(), **data))
     db.commit()
     record(db, user_id, ENTITY, pr.id, "create", f"Nhân bản từ {src.code}")
     db.refresh(pr)

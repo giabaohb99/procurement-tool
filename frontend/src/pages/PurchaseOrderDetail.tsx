@@ -56,7 +56,7 @@ const DOC_STATUS_COLOR: Record<string, string> = {
 
 const emptyItem = {
   product_code: '', product_name: '', invoice_name: '', item_group: '', spec: '', fg_code: '', fg_name: '',
-  supplier_ready: true, required_date: '', unit: '', invoice_no: '', invoice_date: '', document_delivery_date: '',   // NCC có sẵn hàng — mặc định check cho dòng mới
+  supplier_ready: true, required_date: '', expected_date: '', unit: '', invoice_no: '', invoice_date: '', document_delivery_date: '',   // NCC có sẵn hàng — mặc định check cho dòng mới
   qty_request: 0, qty_order: 0, price: 0, vat: 8, warehouse_code: '', note: '', deliveries: [],
 }
 const emptyDelivery = {
@@ -258,7 +258,9 @@ export default function PurchaseOrderDetail() {
   const addDelivery = (ii: number) =>
     setPo((s: any) => ({
       ...s, items: s.items.map((it: any, idx: number) => idx !== ii ? it : {
-        ...it, deliveries: [...(it.deliveries || []), { ...emptyDelivery, delivery_no: (it.deliveries?.length || 0) + 1, warehouse_code: it.warehouse_code, ship_unit: it.unit }],
+        // Cam kết giao mặc định = Ngày yêu cầu có hàng của dòng; chỉ là GIÁ TRỊ KHỞI TẠO,
+        // NSTM sửa lại theo cam kết thật của NCC được (backend không ép đồng bộ lại).
+        ...it, deliveries: [...(it.deliveries || []), { ...emptyDelivery, delivery_no: (it.deliveries?.length || 0) + 1, warehouse_code: it.warehouse_code, ship_unit: it.unit, promised_date: it.required_date || '' }],
       }),
     }))
   const delDelivery = (ii: number, di: number) =>
@@ -354,6 +356,26 @@ export default function PurchaseOrderDetail() {
         }
       }
     }
+    // Dự kiến có hàng lệch với YCMH: hệ thống KHÔNG tự sửa ngược lên YCMH (đổi ngày ở đó là
+    // việc của NSTM và phải kèm lý do) — chỉ báo popup cho người đang sửa đơn biết mà đối chiếu.
+    const diffs = sentItems.filter((it: any) => {
+      const cur = (it.expected_date || '').trim()
+      const pr = (it.pr_expected_date || '').trim()
+      return cur && pr && cur !== pr
+    })
+    if (diffs.length) {
+      const dmy = (s: string) => { const [y, m, d] = s.split('-'); return `${d}/${m}/${y}` }
+      const ok = await askConfirm({
+        title: 'Lệch ngày dự kiến có hàng',
+        danger: false,
+        confirmText: 'Vẫn lưu',
+        cancelText: 'Quay lại sửa',
+        message: `Các dòng sau đang có ngày dự kiến khác với yêu cầu mua hàng ${po.pr_code}:\n`
+          + diffs.map((it: any) => `• ${it.product_name || it.product_code}: YCMH ${dmy(it.pr_expected_date)} → đơn này ${dmy(it.expected_date)}`).join('\n')
+          + '\n\nNgày trên YCMH sẽ KHÔNG tự đổi theo. Nếu cần đổi, vào phiếu YCMH sửa (phải kèm lý do).',
+      })
+      if (!ok) return
+    }
     const body: any = {
       misa_code: po.misa_code, pr_code: po.pr_code, survey_code: po.survey_code,
       company_id: Number(po.company_id) || 0, supplier_code: po.supplier_code, supplier_name: po.supplier_name,
@@ -364,7 +386,8 @@ export default function PurchaseOrderDetail() {
         item_group: it.item_group, spec: it.spec, fg_code: it.fg_code, fg_name: it.fg_name, invoice_no: it.invoice_no,
         invoice_date: it.invoice_date || '', document_delivery_date: it.document_delivery_date || '',
         supplier_ready: !!it.supplier_ready,
-        required_date: it.required_date, unit: it.unit, qty_request: Number(it.qty_request) || 0,
+        required_date: it.required_date, expected_date: it.expected_date || '',
+        unit: it.unit, qty_request: Number(it.qty_request) || 0,
         qty_order: Number(it.qty_order) || 0,
         price: Number(it.price) || 0, vat: Number(it.vat) || 0, warehouse_code: it.warehouse_code, note: it.note,
         deliveries: (it.deliveries || []).map((d: any) => ({
@@ -841,6 +864,9 @@ export default function PurchaseOrderDetail() {
                       </div>
                     </div>
                     <div className="form-row"><label>Ngày yêu cầu có hàng</label><DateInput value={it.required_date || ''} disabled={de} onChange={(v) => setItem(ii, { required_date: v })} /></div>
+                    {/* Dự kiến có hàng: để trống thì khi lưu backend tự chép từ dòng YCMH nguồn.
+                        Sửa ở đây KHÔNG ghi đè ngày đang có trên YCMH — chỉ báo chuông cho NSTM phụ trách dòng. */}
+                    <div className="form-row"><label>Dự kiến có hàng</label><DateInput value={it.expected_date || ''} disabled={de} onChange={(v) => setItem(ii, { expected_date: v })} /></div>
                     <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={!!it.supplier_ready} disabled={de} onChange={(e) => setItem(ii, { supplier_ready: e.target.checked })} style={{ width: 16, height: 16 }} /> NCC có sẵn hàng</label></div>
                     <div className="form-row"><label>ĐVT</label>
                       <SearchSelect value={it.unit ?? ''} options={units} disabled={de} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setItem(ii, { unit: v })} />

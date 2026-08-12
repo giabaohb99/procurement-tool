@@ -319,11 +319,17 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 ### 12. Thời gian dự kiến có hàng (`expected_date`)
 
 - Kiểu nhập: Chọn ngày (date input) — sửa trực tiếp trên bảng (nếu có quyền dòng) hoặc trong popup chi tiết dòng
-- Mặc định: trống
+- Mặc định: **lấy theo "Ngày cần hàng" (`required_date`) của chính dòng đó** (CR-064) — chỉ điền lúc TẠO dòng, sau đó sửa được. Dòng nhân bản từ phiếu khác cũng khởi tạo lại theo Ngày cần hàng chứ không bê ngày dự kiến của phiếu gốc. Đổi Ngày cần hàng về sau KHÔNG kéo ngày dự kiến chạy theo.
 - Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: —
+- Nguồn dữ liệu / liên kết: Hai chiều với **"Dự kiến có hàng" của dòng ĐMH** (`tab_po_item.expected_date`) — nối theo `pr_code` + `product_code` (CR-062)
 - Người sửa: NSTM được giao dòng hoặc người có `approve`/`cancel` (qua endpoint `PATCH /{pid}/item-status`, trường `expected_date`)
-- Logic đặc biệt: Khi đổi giá trị ĐÃ CÓ (tức `expected_date` trước đó không trống), BE yêu cầu kèm `expected_date_reason`; thiếu lý do sẽ trả về HTTP 400. Nếu giá trị cũ trống thì cập nhật tự do. Thay đổi được ghi vào audit log.
+- Logic đặc biệt: Khi đổi giá trị ĐÃ CÓ (tức `expected_date` trước đó không trống), BE yêu cầu kèm `expected_date_reason`; thiếu lý do sẽ trả về HTTP 400. Nếu giá trị cũ trống thì cập nhật tự do. Thay đổi được ghi vào audit log. Lưu lại phiếu (`PUT`/`POST` cả phiếu) KHÔNG đụng tới ô này — payload dòng không mang `expected_date`.
+- Báo cho người yêu cầu (CR-062): mỗi lần ngày này thực sự đổi trên YCMH, hệ thống gửi thông báo `pr_expected_date_changed` cho **người yêu cầu** (tài khoản của `requester_id`, không có thì người tạo phiếu) — nội dung liệt kê `tên hàng: ngày cũ → ngày mới · lý do`. Người vừa thao tác không tự nhận thông báo của chính mình.
+- Đồng bộ với ĐMH (CR-062) — một dòng YCMH có thể trải ra NHIỀU ĐMH:
+  - **Chép xuống:** khi lưu ĐMH, dòng ĐMH nào còn TRỐNG ô "Dự kiến có hàng" thì lấy giá trị của dòng YCMH cùng mã hàng. Ô đã có giá trị thì giữ nguyên.
+  - **Cuộn ngược:** `sync_from_purchase_orders` lấy ngày **MUỘN NHẤT** trong các dòng ĐMH liên kết (bỏ ô trống, bỏ dòng Hủy đơn) — đó là lúc dòng được đáp ứng đủ.
+    - Ô trên YCMH còn TRỐNG → ghi thẳng (đúng nhánh mà luật trên cho sửa tự do).
+    - Ô trên YCMH đã có và LỆCH → **KHÔNG ghi đè và KHÔNG báo gì ở phía YCMH**. Người đang sửa ĐMH đã thấy popup cảnh báo lệch ngày ngay trên màn hình đơn (xem 04 §10a); sửa hay không là quyền của NSTM, và khi họ sửa thật trên YCMH thì mới phát thông báo cho người yêu cầu như trên. Ghi đè ở đây sẽ đi vòng qua luật "đổi ngày phải kèm lý do".
 
 ### 13. SL đã đặt / SL đã nhận (`qty_ordered` / `qty_received`)
 
