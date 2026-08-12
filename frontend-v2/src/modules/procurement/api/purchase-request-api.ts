@@ -21,6 +21,8 @@ export interface PurchaseRequestPayload {
   vat_rate: number
   note: string
   show_code_on_print: boolean
+  quote_filename?: string
+  quote_file_url?: string
   supplier_req: { name: string; tax_code: string; contact: string }
   supplier_pur?: { name: string; tax_code: string; contact: string }
   items: Partial<PurchaseRequestItem>[]

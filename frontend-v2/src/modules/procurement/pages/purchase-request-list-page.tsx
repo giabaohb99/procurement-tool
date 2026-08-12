@@ -1,8 +1,9 @@
-import { Search } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { appConfig } from '@/core/config/app-config'
+import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appRoutes } from '@/shared/constants/app-routes'
 // Danh mục công ty do phân hệ Nhân sự quản lý nhưng dùng chung toàn hệ.
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
@@ -16,6 +17,7 @@ import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { Badge } from '@/shared/ui/badge'
+import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
@@ -154,6 +156,14 @@ function PurchaseRequestListContent() {
       <PageHeader
         title="Yêu cầu mua hàng"
         description="Phiếu yêu cầu mua hàng (PYC) của các bộ phận."
+        actions={
+          <PermissionGate entity="purchase_request" action="create">
+            <Button onClick={() => navigate(appRoutes.procurement.purchaseRequestNew)}>
+              <Plus />
+              Thêm mới
+            </Button>
+          </PermissionGate>
+        }
       />
 
       <Card className="flex min-h-0 flex-1 flex-col p-4">

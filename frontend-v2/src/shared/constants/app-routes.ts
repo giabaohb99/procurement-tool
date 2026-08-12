@@ -20,6 +20,7 @@ export const appRoutes = {
     surveyRequests: '/procurement/survey-requests',
     /** Yêu cầu mua hàng (PYC). */
     purchaseRequests: '/procurement/purchase-requests',
+    purchaseRequestNew: '/procurement/purchase-requests/new',
     purchaseRequestDetail: (id: number | string) =>
       `/procurement/purchase-requests/${id}`,
     /** Đơn mua hàng (ĐMH). */

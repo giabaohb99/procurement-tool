@@ -17,6 +17,8 @@ export const ACTIONS = [
   'cancel',
   'print',
   'export',
+  /** Cờ tổng hợp do backend thêm cho nhân sự thu mua, không phải ô trong ma trận vai trò. */
+  'process',
 ] as const
 
 export type PermissionAction = (typeof ACTIONS)[number]

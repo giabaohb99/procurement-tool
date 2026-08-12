@@ -104,6 +104,13 @@ export const procurementModule: ErpModule = {
       }),
     },
     {
+      path: appRoutes.procurement.purchaseRequestNew,
+      lazy: async () => ({
+        Component: (await import('./pages/purchase-request-detail-page'))
+          .PurchaseRequestDetailPage,
+      }),
+    },
+    {
       path: appRoutes.procurement.purchaseRequestDetail(':id'),
       lazy: async () => ({
         Component: (await import('./pages/purchase-request-detail-page'))

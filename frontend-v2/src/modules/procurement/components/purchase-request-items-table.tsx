@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -27,6 +27,9 @@ interface ItemsTableProps {
   onChange: (items: PurchaseRequestItem[]) => void
   /** SL đã đặt theo MÃ HÀNG, gộp mọi ĐMH sinh từ phiếu (chỉ đọc). */
   orderedByCode?: Record<string, number>
+  /** Người yêu cầu / trưởng bộ phận không cần thấy thông tin điều phối nội bộ. */
+  showAssignee?: boolean
+  onOpenDetail: (index: number) => void
 }
 
 /** Dòng trống khi bấm "Thêm dòng". */
@@ -64,6 +67,8 @@ export function PurchaseRequestItemsTable({
   editing,
   onChange,
   orderedByCode,
+  showAssignee = true,
+  onOpenDetail,
 }: ItemsTableProps) {
   function patch(index: number, changes: Partial<PurchaseRequestItem>) {
     onChange(items.map((item, i) => (i === index ? { ...item, ...changes } : item)))
@@ -108,15 +113,18 @@ export function PurchaseRequestItemsTable({
                   có hàng
                 </span>
               </TableHead>
-              <TableHead className="w-40">NSTM phụ trách</TableHead>
-              {editing && <TableHead className="w-12 text-center">Thao tác</TableHead>}
+              {showAssignee && <TableHead className="w-40">NSTM phụ trách</TableHead>}
+              <TableHead className="w-20 text-center">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
             {items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={15} className="py-10 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={showAssignee ? 15 : 14}
+                  className="py-10 text-center text-muted-foreground"
+                >
                   Phiếu chưa có dòng hàng nào.
                 </TableCell>
               </TableRow>
@@ -250,10 +258,19 @@ export function PurchaseRequestItemsTable({
                   {formatDate(item.expected_date) || '—'}
                 </TableCell>
 
-                <TableCell>{item.assignee || '—'}</TableCell>
+                {showAssignee && <TableCell>{item.assignee || '—'}</TableCell>}
 
-                {editing && (
-                  <TableCell>
+                <TableCell>
+                  <div className="flex items-center justify-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      title="Chi tiết dòng"
+                      onClick={() => onOpenDetail(index)}
+                    >
+                      <Pencil />
+                    </Button>
+                    {editing && (
                     <Button
                       variant="ghost"
                       size="icon-sm"
@@ -263,8 +280,9 @@ export function PurchaseRequestItemsTable({
                     >
                       <Trash2 />
                     </Button>
-                  </TableCell>
-                )}
+                    )}
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

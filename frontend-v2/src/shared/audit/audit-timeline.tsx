@@ -23,6 +23,8 @@ interface AuditTimelineProps {
    * phần diễn giải trong `message`.
    */
   showMessage?: boolean
+  /** Bố cục gọn dành cho trang chứng từ xếp các khối full-width. */
+  dense?: boolean
 }
 
 /**
@@ -37,6 +39,7 @@ export function AuditTimeline({
   entity,
   entityId,
   showMessage = false,
+  dense = false,
 }: AuditTimelineProps) {
   const [visible, setVisible] = useState(PAGE_STEP)
   const { data: logs, isLoading } = useAuditLogs(entity, entityId)
@@ -45,15 +48,15 @@ export function AuditTimeline({
   const remaining = total - visible
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className={cn(dense && 'gap-4 py-4')}>
+      <CardHeader className={cn(dense && 'border-b px-4 pb-3')}>
         <CardTitle className="flex items-center gap-2 text-base">
           <History className="size-4 text-muted-foreground" />
           Lịch sử thao tác
         </CardTitle>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className={cn(dense && 'px-4')}>
         {isLoading && <Skeleton className="h-24 w-full" />}
 
         {!isLoading && total === 0 && (
