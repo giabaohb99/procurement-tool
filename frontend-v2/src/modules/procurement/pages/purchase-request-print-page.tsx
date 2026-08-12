@@ -1,6 +1,6 @@
 import { ArrowLeft, Printer, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
@@ -64,11 +64,7 @@ export function PurchaseRequestPrintPage() {
   }
 
   function closePrintPage() {
-    if (window.opener) {
-      window.close()
-      return
-    }
-    navigate(appRoutes.procurement.purchaseRequestDetail(purchaseRequestId))
+    window.close()
   }
 
   const supplier = hasSupplierData(purchaseRequest.supplier_pur)
@@ -88,12 +84,6 @@ export function PurchaseRequestPrintPage() {
           <Button variant="outline" onClick={closePrintPage}>
             <X />
             Đóng
-          </Button>
-          <Button variant="ghost" asChild>
-            <Link to={appRoutes.procurement.purchaseRequestDetail(purchaseRequestId)}>
-              <ArrowLeft />
-              Về phiếu
-            </Link>
           </Button>
         </div>
 
