@@ -223,6 +223,7 @@ def list_pr(
     
     pr_ids = [p.id for p in items]
     subtotals = {}
+    need_dates = {}
     if pr_ids:
         subtotals = {
             pr_id: float(amount or 0) for pr_id, amount in db.query(
@@ -230,7 +231,17 @@ def list_pr(
                 func.sum(PurchaseRequestItem.amount)
             ).filter(PurchaseRequestItem.pr_id.in_(pr_ids)).group_by(PurchaseRequestItem.pr_id).all()
         }
-        
+        need_rows = db.query(
+            PurchaseRequestItem.pr_id,
+            func.min(PurchaseRequestItem.required_date)
+        ).filter(
+            PurchaseRequestItem.pr_id.in_(pr_ids),
+            PurchaseRequestItem.required_date != "",
+            PurchaseRequestItem.required_date.isnot(None),
+            PurchaseRequestItem.line_status != "Hủy đơn"
+        ).group_by(PurchaseRequestItem.pr_id).all()
+        need_dates = {r[0]: r[1] for r in need_rows if r[1]}
+
     cancelled_ids = set()
     if pr_ids:
         cancelled_ids = {r[0] for r in db.query(PurchaseRequestItem.pr_id).filter(
@@ -241,6 +252,7 @@ def list_pr(
     for p in items:
         d = {c: getattr(p, c) for c in HEADER_COLS}
         d["created_at"] = p.created_at   # thời điểm tạo (có giờ) — hiển thị giờ VN ở list
+        d["need_date"] = need_dates.get(p.id) or p.need_date or ""
         d["total"] = round(subtotals.get(p.id, 0.0), 2)   # gồm VAT (tính từ amount dòng)
         d["has_cancelled_line"] = p.id in cancelled_ids
         if not can_see_supplier:

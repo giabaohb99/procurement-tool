@@ -457,6 +457,12 @@ def _save_items(db: Session, pr_id: int, items, user_id: int):
     for rid, row in existing.items():             # dòng bị bỏ khỏi danh sách -> xóa
         if rid not in keep:
             db.delete(row)
+    db.flush()
+    # Đồng bộ ngày cần hàng sớm nhất lên header phiếu (để lọc khoảng ngày trên CSDL chuẩn xác)
+    all_req = [it.required_date for it in items_of(db, pr_id)
+               if (it.required_date or "").strip() and it.line_status != "Hủy đơn"]
+    if _pr:
+        _pr.need_date = min(all_req) if all_req else ""
     db.commit()
 
 

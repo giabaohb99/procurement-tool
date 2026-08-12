@@ -457,10 +457,14 @@ export default function PurchaseRequestDetail() {
     const v = validate(submitAfterSave)
     if (v) { toast.error(v); return false }
     const guiItems = items.filter((it: any) => it.product_name)
+    const validNeedDates = guiItems
+      .map((it: any) => it.required_date)
+      .filter((d: any) => typeof d === 'string' && d.trim() !== '')
+    const earliestNeedDate = validNeedDates.length > 0 ? [...validNeedDates].sort()[0] : ''
     const body = {
       company_id: Number(pr.company_id) || 0, requester: pr.requester, requester_id: Number(pr.requester_id) || 0, requester_position: pr.requester_position,
       department: pr.department, head_of_dept: pr.head_of_dept, purpose: pr.purpose,
-      request_date: pr.request_date, need_date: pr.need_date, is_urgent: pr.is_urgent, note: pr.note,
+      request_date: pr.request_date, need_date: earliestNeedDate || pr.need_date || '', is_urgent: pr.is_urgent, note: pr.note,
       show_code_on_print: pr.show_code_on_print,
       quote_filename: pr.quote_filename, quote_file_url: pr.quote_file_url,
       // Task 4: gửi 2 cụm NCC (BE tự chặn cụm 'pur' nếu không có quyền supplier.write)

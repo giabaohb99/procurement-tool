@@ -8,7 +8,7 @@ import EmployeeAccountCard from '../components/employee-account-card'
 import EmployeeAvatar from '../components/employee-avatar'
 import CompanyLogo from '../components/company-logo'
 import WarehousePurchaseLines from '../components/warehouse-purchase-lines'
-import { fmtDateTime } from '../utils/datetime'
+import { fmtDateStr, fmtDateTime } from '../utils/datetime'
 import { fmtVND } from '../utils/money'
 import { initialsOf } from '../utils/name'
 
@@ -405,7 +405,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'created_at', label: 'Ngày tạo', render: (r) => fmtDateTime(r.created_at) || '—' },
       { key: 'requester', label: 'Người yêu cầu' },
       { key: 'department', label: 'Bộ phận' },
-      { key: 'need_date', label: 'Cần hàng' },
+      { key: 'need_date', label: 'Cần hàng', render: (r) => (r.need_date ? fmtDateStr(r.need_date) : '—') },
       { key: 'total', label: 'Tổng tiền', render: (r) => (r.total ? fmtVND(r.total) + ' đ' : '0 đ') },
       { key: 'is_urgent', label: 'Gấp', render: (r) => (r.is_urgent ? <span className="badge warn">Gấp</span> : '—') },
       { key: 'status', label: 'Trạng thái', render: (r) => prBadge(r.status) },
