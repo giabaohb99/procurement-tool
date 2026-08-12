@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record
 from app.core.utils import assert_unique_product_codes
-from app.modules.catalog.model import ItemGroup
+from app.modules.catalog import lead_time
 from app.modules.goods_receipt import service as gr_service
 from app.modules.inventory import service as inv_service
 from app.modules.payable import service as pay_service
@@ -102,6 +102,7 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
                                 [it.product_code for it in existing_items.values()])
     keep_item_ids = set()
     specs_by_code = _product_specs_map(db, items)
+    std_map = lead_time.std_days_map(db)          # số ngày QĐ theo phân loại (mốc dài nhất)
     # Dự kiến có hàng: chép XUỐNG từ dòng YCMH nguồn, CHỈ khi ô trên ĐMH còn trống.
     # Đặt ở backend (không chỉ ở nút "Tạo ĐMH" bên giao diện) để nhập khẩu và dòng thêm sau
     # cũng được điền. Dòng không gắn YCMH, hoặc mã hàng không có trên YCMH: nhập tay bình thường.
@@ -147,7 +148,7 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
             db.add(it)
         db.flush()
         keep_item_ids.add(it.id)
-        _save_deliveries(db, po, it, delivs, user_id)
+        _save_deliveries(db, po, it, delivs, user_id, std_map)
 
     # Xóa dòng hàng (và lần giao + side-effect) không còn trong payload
     for old_id, it in existing_items.items():
@@ -159,8 +160,13 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
     db.flush()
 
 
-def _save_deliveries(db: Session, po: PurchaseOrder, item: POItem, delivs, user_id: int):
+def _save_deliveries(db: Session, po: PurchaseOrder, item: POItem, delivs, user_id: int,
+                     std_map: dict[str, int] | None = None):
     existing = {d.id: d for d in deliveries_of(db, item.id)}
+    if std_map is None:
+        std_map = lead_time.std_days_map(db)
+    # Ngày QĐ có hàng của dòng = Ngày đặt hàng + số ngày QĐ của phân loại
+    qd_date = lead_time.regulated_date(std_map, item.item_group, (po.order_date or "").strip())
     keep = set()
     for raw in delivs:
         data = raw.model_dump()
@@ -173,11 +179,11 @@ def _save_deliveries(db: Session, po: PurchaseOrder, item: POItem, delivs, user_
                 setattr(d, k, v)
             d.updated_by = user_id
         else:
-            # Cam kết giao mặc định = Ngày yêu cầu có hàng của dòng. CHỈ điền lúc TẠO lần giao
-            # (kể cả lần giao sinh từ nhập khẩu/copy đơn, không riêng nút "Thêm lần giao");
-            # lần giao đã có thì tôn trọng giá trị người dùng nhập, xóa trắng vẫn trắng.
+            # Cam kết giao mặc định = NGÀY QĐ CÓ HÀNG theo phân loại (Ngày đặt hàng + số ngày QĐ).
+            # CHỈ điền lúc TẠO lần giao (kể cả lần giao sinh từ nhập khẩu/copy đơn, không riêng nút
+            # "Thêm lần giao"); lần giao đã có thì tôn trọng giá trị người dùng nhập, xóa trắng vẫn trắng.
             if not (data.get("promised_date") or "").strip():
-                data["promised_date"] = (item.required_date or "").strip()
+                data["promised_date"] = qd_date
             d = PODelivery(po_id=po.id, po_item_id=item.id, created_by=user_id, updated_by=user_id, **data)
             db.add(d)
         db.flush()
@@ -203,11 +209,7 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
     goods_sup = suppliers.get(po.supplier_code)
     goods_days = pay_service.debt_days(po.payment_terms or (goods_sup.payment_terms if goods_sup else ""))
 
-    def _int(x):
-        return int("".join(ch for ch in str(x) if ch.isdigit()) or 0)
-    _groups = db.query(ItemGroup).all()
-    group_std = {g.name: _int(g.std_days) for g in _groups}                       # NCC có sẵn hàng
-    group_std_un = {g.name: _int(g.std_days_unavail) or _int(g.std_days) for g in _groups}  # không sẵn
+    std_map = lead_time.std_days_map(db)   # số ngày QĐ theo phân loại (mốc dài nhất, thiếu -> 15)
 
     total_order = total_received = 0.0
     for it in items_of(db, po.id):
@@ -257,9 +259,10 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
             else:
                 _cleanup_delivery(db, d.id)
 
-            # Tiến độ giao: số ngày QĐ (theo NCC có sẵn hàng hay không) → ngày QĐ → chênh lệch
-            base_std = group_std.get(it.item_group, 0) if it.supplier_ready else group_std_un.get(it.item_group, 0)
-            std = base_std or int(d.std_days or 0)   # ưu tiên quy định theo phân loại + có sẵn hàng
+            # Tiến độ giao: số ngày QĐ → ngày QĐ → chênh lệch.
+            # Số ngày QĐ ĐƯỢC SỬA TAY: đã có số trên dòng giao thì giữ nguyên, chỉ dòng còn trống
+            # mới lấy mặc định theo phân loại (mốc dài nhất — KHÔNG còn phụ thuộc "NCC có sẵn hàng").
+            std = int(d.std_days or 0) or lead_time.std_days_of(std_map, it.item_group)
             d.std_days = std
             od = _pdate(po.order_date)
             d.regulated_date = (od + timedelta(days=std)).strftime("%Y-%m-%d") if (od and std) else ""

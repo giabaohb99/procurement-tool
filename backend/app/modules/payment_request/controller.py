@@ -24,34 +24,27 @@ HEADER = ["id", "code", "supplier_code", "supplier_name", "company_id", "source_
 
 
 def _line(db, ln) -> dict:
-    p = db.get(Payable, ln.payable_id)
+    """Tổng nợ / Đã trả / Hạn trả luôn ĐỌC từ Công nợ (không lưu trên phiếu, tránh lệch số);
+    còn mã PO / số hóa đơn / ngày hóa đơn là dữ liệu nhập trên phiếu (CR-066).
+    Dòng chưa khớp khoản nợ nào (form trắng, hàng chưa về) thì các cột nợ trả về 0 / rỗng."""
     req = db.get(PaymentRequest, ln.request_id) if ln.request_id else None
-    if req and (ln.invoice_no or "").strip():
-        payables = db.query(Payable).filter(
-            Payable.supplier_code == req.supplier_code,
-            Payable.source_type == req.source_type,
-            Payable.po_code == ln.po_code,
-            Payable.invoice_no == ln.invoice_no
-        ).all()
-        if payables:
-            tot = sum(float(px.total or 0) for px in payables)
-            paid = sum(float(px.paid_amount or 0) for px in payables)
-            due_date = min((px.due_date for px in payables if px.due_date), default=(p.due_date if p else ""))
-            incur_date = min((px.incur_date for px in payables if px.incur_date), default=(p.incur_date if p else ""))
-            invoice_date = ln.created_at.date().isoformat() if getattr(ln, "created_at", None) else ""
-            return {"id": ln.id, "payable_id": ln.payable_id, "po_code": ln.po_code,
-                    "invoice_no": ln.invoice_no, "amount": float(ln.amount or 0),
-                    "invoice_date": invoice_date,
-                    "due_date": due_date, "incur_date": incur_date,
-                    "payable_total": tot, "payable_paid": paid}
+    payables = service.matching_payables(db, req.supplier_code, req.source_type,
+                                         ln.po_code, ln.invoice_no) if req else []
+    if not payables and ln.payable_id:
+        p = db.get(Payable, ln.payable_id)
+        payables = [p] if p else []
 
-    invoice_date = ln.created_at.date().isoformat() if getattr(ln, "created_at", None) else ""
+    tot = sum(float(px.total or 0) for px in payables)
+    paid = sum(float(px.paid_amount or 0) for px in payables)
+    due_date = min((px.due_date for px in payables if px.due_date), default="")
+    incur_date = min((px.incur_date for px in payables if px.incur_date), default="")
+    # Ngày hóa đơn: giá trị đã nhập trên phiếu > ngày hóa đơn của lần giao hàng
+    invoice_date = (ln.invoice_date or "").strip() or service.delivery_invoice_date(db, payables)
     return {"id": ln.id, "payable_id": ln.payable_id, "po_code": ln.po_code,
             "invoice_no": ln.invoice_no, "amount": float(ln.amount or 0),
-            "invoice_date": invoice_date,
-            "due_date": p.due_date if p else "", "incur_date": p.incur_date if p else "",
-            "payable_total": float(p.total or 0) if p else 0,
-            "payable_paid": float(p.paid_amount or 0) if p else 0}
+            "invoice_date": invoice_date, "due_date": due_date, "incur_date": incur_date,
+            "payable_total": tot, "payable_paid": paid,
+            "matched": bool(payables)}
 
 
 def _out(db: Session, req: PaymentRequest) -> dict:

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record
 from app.core.utils import assert_unique_product_codes
+from app.modules.catalog import lead_time
 
 from .model import PurchaseRequest, PurchaseRequestItem
 from .schema import AssignIn, ItemStatusIn, PRCreate, PRUpdate
@@ -428,6 +429,9 @@ def _save_items(db: Session, pr_id: int, items, user_id: int):
     # Mã hàng duy nhất trên phiếu — xem app/core/utils.assert_unique_product_codes
     assert_unique_product_codes([getattr(it, "product_code", "") for it in (items or [])],
                                 [r.product_code for r in existing.values()])
+    _pr = db.get(PurchaseRequest, pr_id)
+    _base = (getattr(_pr, "request_date", "") or "").strip()   # Ngày tiếp nhận = mốc tính ngày QĐ
+    _std = lead_time.std_days_map(db)
     keep: set[int] = set()
     for it in items or []:
         data = it.model_dump()
@@ -442,11 +446,13 @@ def _save_items(db: Session, pr_id: int, items, user_id: int):
             row.updated_by = user_id
             keep.add(row.id)
         else:                                     # dòng mới
-            # Thời gian dự kiến có hàng mặc định = Ngày cần hàng của dòng. CHỈ điền lúc TẠO
+            # Thời gian dự kiến có hàng mặc định = NGÀY QĐ CÓ HÀNG theo phân loại
+            # (Ngày tiếp nhận phiếu + số ngày QĐ; xem catalog/lead_time.py). CHỈ điền lúc TẠO
             # dòng: NSTM sửa lại sau (đổi giá trị đã có vẫn phải kèm lý do), và dòng đang sửa
             # mà người dùng cố ý xóa trắng thì giữ trắng.
             if not (data.get("expected_date") or "").strip():
-                data["expected_date"] = (data.get("required_date") or "").strip()
+                data["expected_date"] = lead_time.regulated_date(
+                    _std, data.get("item_group") or "", _base)
             db.add(PurchaseRequestItem(pr_id=pr_id, created_by=user_id, updated_by=user_id, **data))
     for rid, row in existing.items():             # dòng bị bỏ khỏi danh sách -> xóa
         if rid not in keep:
@@ -521,13 +527,16 @@ def copy_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
         db.commit()
     _COPY = ["product_code", "product_name", "item_group", "group_desc", "qty", "unit",
              "price", "vat_pct", "amount", "warehouse", "required_date", "note"]
+    _std = lead_time.std_days_map(db)
     for it in items_of(db, src.id):
         data = {k: getattr(it, k) for k in _COPY}
         db.add(PurchaseRequestItem(pr_id=pr.id, created_by=user_id, updated_by=user_id,
                                    assignee="", line_status="Chưa đặt hàng", progress_note="",
                                    # Ngày dự kiến của phiếu gốc là chuyện của phiếu gốc — dòng nhân
-                                   # bản khởi tạo lại theo Ngày cần hàng như dòng mới.
-                                   expected_date=(it.required_date or "").strip(), **data))
+                                   # bản khởi tạo lại theo ngày QĐ như dòng mới.
+                                   expected_date=lead_time.regulated_date(
+                                       _std, it.item_group, (pr.request_date or "").strip()),
+                                   **data))
     db.commit()
     record(db, user_id, ENTITY, pr.id, "create", f"Nhân bản từ {src.code}")
     db.refresh(pr)

@@ -172,6 +172,7 @@ Nút "Mở lại" (`reopen`) chuyển đơn từ `completed` về trạng thái 
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
 - Logic đặc biệt: Khi tích, thông báo gửi duyệt được đánh dấu `is_urgent=true`, kích hoạt kênh thông báo ưu tiên.
+- Tự tính trên form (FE): tự tích nếu có ít nhất 1 dòng mà **"Ngày yêu cầu có hàng" − "Ngày đặt hàng" < số ngày QĐ của phân loại**. Từ CR-065 số ngày QĐ ở đây dùng **mốc dài nhất** (không sẵn hàng, thiếu thì 15 ngày) và **không còn phụ thuộc checkbox "NCC có sẵn hàng"** — kết quả tính cờ gấp rộng hơn trước. Người dùng vẫn tích/bỏ tích tay được.
 
 ### 14. Ghi chú (`note`)
 
@@ -318,7 +319,7 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
-- Logic đặc biệt: Ảnh hưởng đến `std_days` tra bảng `ItemGroup`: nếu tích → tra `group.std_days` (NCC có sẵn); nếu không tích → tra `group.std_days_unavail` (không sẵn hàng).
+- Logic đặc biệt: **Từ CR-065 ô này KHÔNG còn ảnh hưởng tới `std_days` nữa** — số ngày QĐ luôn lấy mốc dài nhất của phân loại (xem §11 phần lần giao). Ô vẫn giữ để ghi nhận thông tin NCC và phục vụ báo cáo. (Trước CR-065: tích → tra `group.std_days`; không tích → tra `group.std_days_unavail`.)
 
 ### 10. Ngày yêu cầu có hàng (`required_date`)
 
@@ -584,9 +585,9 @@ Mỗi lần lưu đơn khi đơn đang giao, hệ thống gọi `recompute_effec
 ### 8. Ngày NCC cam kết giao (`promised_date`)
 
 - Kiểu nhập: Chọn ngày
-- Mặc định: **lấy theo "Ngày yêu cầu có hàng" (`required_date`) của dòng hàng** (CR-063) — chỉ điền lúc TẠO lần giao, sau đó sửa lại theo cam kết thật của NCC được
+- Mặc định: **lấy theo NGÀY QĐ CÓ HÀNG của Phân loại** (CR-065, thay cho CR-063) = `order_date` ("Ngày đặt hàng" của đơn) **+ số ngày QĐ của phân loại dòng hàng** — tức bằng `regulated_date` của lần giao (xem §12). Số ngày QĐ lấy **mốc DÀI NHẤT**: `item_group.std_days_unavail` → thiếu thì `std_days` → thiếu cả hai thì **15 ngày**. Đơn chưa có Ngày đặt hàng thì để trống. Chỉ điền lúc TẠO lần giao, sau đó sửa lại theo cam kết thật của NCC được.
 - Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: `POItem.required_date` (chỉ ở thời điểm khởi tạo, không đồng bộ tiếp)
+- Nguồn dữ liệu / liên kết: `PurchaseOrder.order_date` + `ItemGroup.std_days_unavail`/`std_days` (chỉ ở thời điểm khởi tạo, không đồng bộ tiếp)
 - Người sửa: Người có quyền `purchase_order:write` khi đơn đang giao
 - Logic đặc biệt:
   - Dùng tính `diff_promise = promised_date − received_date`. Giá trị âm = NCC giao trễ so với cam kết.
@@ -613,11 +614,13 @@ Mỗi lần lưu đơn khi đơn đang giao, hệ thống gọi `recompute_effec
 ### 11. Số ngày quy định (`std_days`)
 
 - Kiểu nhập: Nhập số (có thể ghi đè)
-- Mặc định: 0; tính lại tự động theo `ItemGroup.std_days` (hoặc `std_days_unavail`) và `supplier_ready`
+- Mặc định (CR-065): ô còn trống thì **tự điền theo Phân loại, lấy mốc DÀI NHẤT** — `ItemGroup.std_days_unavail` (không sẵn hàng) → thiếu thì `std_days` (có sẵn) → thiếu cả hai thì **15 ngày**
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Bảng `ItemGroup` (tra theo `item.item_group`)
-- Người sửa: Người có quyền `purchase_order:write`; hệ thống ghi đè tự động nếu `ItemGroup` có giá trị
-- Logic đặc biệt: Ưu tiên giá trị từ `ItemGroup`; nếu nhóm không có cấu hình thì giữ giá trị nhập thủ công. Công thức: nếu `supplier_ready=true` thì tra `group.std_days`; ngược lại tra `group.std_days_unavail` (hoặc `group.std_days` nếu `std_days_unavail` trống).
+- Người sửa: Người có quyền `purchase_order:write`
+- Logic đặc biệt (đổi ở CR-065):
+  - **Không còn phụ thuộc checkbox "NCC có sẵn hàng"** — luôn lấy mốc dài nhất, để ngày QĐ phản ánh cam kết an toàn nhất.
+  - **Ưu tiên số người dùng đã nhập:** dòng giao đã có `std_days > 0` thì `recompute_effects` GIỮ NGUYÊN, chỉ dòng còn trống/0 mới lấy mặc định theo phân loại. (Trước CR-065 thì ngược lại: giá trị `ItemGroup` ghi đè mỗi lần lưu.) Vì vậy các dòng giao cũ giữ nguyên số ngày đang có, chỉ dòng mới hưởng luật mới.
 
 ### 12. Ngày quy định (`regulated_date`)
 
@@ -626,7 +629,7 @@ Mỗi lần lưu đơn khi đơn đang giao, hệ thống gọi `recompute_effec
 - Bắt buộc: — (hệ thống tính)
 - Nguồn dữ liệu / liên kết: `order_date + std_days` (ngày đặt hàng cộng số ngày quy định)
 - Người sửa: Hệ thống (hiển thị chỉ đọc)
-- Logic đặc biệt: Nếu `order_date` hoặc `std_days` trống/0, hiển thị "—".
+- Logic đặc biệt: Nếu `order_date` hoặc `std_days` trống/0, hiển thị "—". Đây chính là **"ngày QĐ có hàng"** dùng làm giá trị mặc định cho "Cam kết giao" (§8) và cho "Thời gian dự kiến có hàng" bên YCMH (tài liệu 03 mục 12, nhưng bên đó mốc gốc là `request_date`).
 
 ### 13. Chênh lệch cam kết − ngày nhận (`diff_promise`)
 

@@ -132,6 +132,7 @@ Người dùng ở màn chi tiết thấy **dòng nhắc màu vàng** khi phiế
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Khi tích, hệ thống gắn cờ ưu tiên trong thông báo (`is_urgent=true` được truyền vào `trigger_notification`). Danh sách hiển thị badge "Gấp" màu cam.
+- Tự tính trên form (FE): phiếu MỚI tự tích cờ gấp nếu có ít nhất 1 dòng mà **"Ngày cần hàng" − "Ngày tiếp nhận" < số ngày QĐ của phân loại** (tức khách cần sớm hơn mốc quy định). Từ CR-065 số ngày QĐ ở đây dùng **mốc dài nhất** (không sẵn hàng, thiếu thì 15 ngày) — trước đó chỉ dùng mốc "có sẵn" và bỏ qua phân loại chưa khai báo số ngày, nên **kết quả tính cờ gấp rộng hơn trước**. Người dùng vẫn tích/bỏ tích tay được.
 
 ### 10. Mục đích mua hàng (`purpose`)
 
@@ -319,7 +320,10 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 ### 12. Thời gian dự kiến có hàng (`expected_date`)
 
 - Kiểu nhập: Chọn ngày (date input) — sửa trực tiếp trên bảng (nếu có quyền dòng) hoặc trong popup chi tiết dòng
-- Mặc định: **lấy theo "Ngày cần hàng" (`required_date`) của chính dòng đó** (CR-064) — chỉ điền lúc TẠO dòng, sau đó sửa được. Dòng nhân bản từ phiếu khác cũng khởi tạo lại theo Ngày cần hàng chứ không bê ngày dự kiến của phiếu gốc. Đổi Ngày cần hàng về sau KHÔNG kéo ngày dự kiến chạy theo.
+- Mặc định: **lấy theo NGÀY QĐ CÓ HÀNG của Phân loại** (CR-065, thay cho CR-064) = `request_date` ("Ngày tiếp nhận" của phiếu) **+ số ngày QĐ của phân loại dòng đó**. Số ngày QĐ lấy **mốc DÀI NHẤT**: `item_group.std_days_unavail` (không sẵn hàng) → thiếu thì `std_days` (có sẵn) → thiếu cả hai thì **15 ngày**. Phiếu chưa có Ngày tiếp nhận thì để trống.
+  - Chỉ điền lúc **TẠO dòng**, sau đó sửa được. Trên FE ngày được điền ngay khi chọn Phân loại (kể cả phân loại đến từ danh mục Sản phẩm), chỉ với dòng chưa lưu và ô còn trống; BE điền lại lúc lưu nếu ô vẫn trống.
+  - Dòng nhân bản từ phiếu khác cũng khởi tạo lại theo ngày QĐ của phiếu mới chứ không bê ngày dự kiến của phiếu gốc.
+  - Đổi "Ngày cần hàng" về sau KHÔNG kéo ngày dự kiến chạy theo (hai trường độc lập).
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Hai chiều với **"Dự kiến có hàng" của dòng ĐMH** (`tab_po_item.expected_date`) — nối theo `pr_code` + `product_code` (CR-062)
 - Người sửa: NSTM được giao dòng hoặc người có `approve`/`cancel` (qua endpoint `PATCH /{pid}/item-status`, trường `expected_date`)
@@ -383,7 +387,7 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 3. Mã phiếu tự sinh: định dạng `PYC{ddmmyy}{seq:02d}`, trong đó `ddmmyy` lấy từ `request_date` (không có thì lấy ngày hiện tại), `seq` là số thứ tự tăng dần trong ngày.
 4. Chọn Nhân sự YC: tự điền `requester_position` (chức vụ), `department` (phòng ban), `head_of_dept` (trưởng bộ phận theo `manager_id` của phòng ban), `company_id`. Trưởng bộ phận tra qua API `/api/purchase-requests/meta/dept-head` (với người không có quyền xem DS nhân sự).
 5. Chọn Mã hàng: tự điền `product_name`, `unit`, `item_group`, `group_desc`.
-6. Chọn Phân loại: tự điền `group_desc` với thời gian sản xuất tiêu chuẩn từ `item_group.std_days` và `item_group.std_days_unavail`.
+6. Chọn Phân loại: tự điền `group_desc` với thời gian sản xuất tiêu chuẩn từ `item_group.std_days` và `item_group.std_days_unavail`; đồng thời điền `expected_date` = ngày QĐ có hàng (xem mục 12) cho dòng chưa lưu còn trống ô đó.
 7. Thành tiền: `amount = qty × price × (1 + vat_pct / 100)` (gồm VAT theo dòng). Tổng kết phiếu gồm 3 dòng: Tiền hàng chưa VAT (`subtotal = sum(qty × price)`), Tiền VAT (`vat = total − subtotal`), Tổng cộng gồm VAT (`total = sum(amount)`).
 8. Phân quyền xem dòng: người tạo phiếu, người yêu cầu (khớp `requester_id`), và người có `approve` hoặc scope `dept`/`company`/`all` xem được mọi dòng; NSTM (scope nhỏ hơn) chỉ thấy dòng có `assignee` trùng với mã NV của mình.
 9. Tự phân công NSTM khi duyệt: hàm `auto_assign_by_category` gán NSTM cho từng dòng theo bảng phân công phụ trách (`category_assignee`).

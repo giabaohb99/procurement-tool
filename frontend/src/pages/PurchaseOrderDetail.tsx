@@ -19,6 +19,7 @@ import CommentThread from '../components/CommentThread'
 import AuditTimeline from '../components/AuditTimeline'
 import { fmtSize, fileIcon } from '../utils/file-type'
 import { newDupCodes } from '../utils/lines'
+import { regulatedDate, stdDaysMap, stdDaysOf } from '../utils/lead-time'
 
 const API = '/api/purchase-orders'
 // Ô/cột ĐƠN GIÁ cho lẻ tới 4 chữ số thập phân — giá quy đổi hay lẻ tới phần nghìn đồng
@@ -73,15 +74,13 @@ function daysBetween(a: string, b: string): number | null {
   return Math.round((da - db) / 86400000)
 }
 
-// Đơn gấp = có ≥1 dòng mà thời gian giao (ngày yêu cầu − ngày đặt) NHỎ HƠN số ngày quy định của phân loại VTBB/NL
-// (mốc 'sẵn hàng' std / 'không sẵn' stdUn — chọn theo checkbox NCC có sẵn hàng).
-function computeUrgent(items: any[], orderDate: string,
-  groupMap: Record<string, { std: number; stdUn: number }>): boolean {
+// Đơn gấp = có ≥1 dòng mà thời gian giao (ngày yêu cầu − ngày đặt) NHỎ HƠN số ngày QĐ của phân loại
+// VTBB/NL. Số ngày QĐ nay LUÔN lấy mốc dài nhất (không sẵn hàng), không còn theo checkbox "NCC có
+// sẵn hàng" — xem utils/lead-time.ts.
+function computeUrgent(items: any[], orderDate: string, stdMap: Record<string, number>): boolean {
   if (!orderDate) return false
   for (const it of items || []) {
-    const g = groupMap[it.item_group]
-    if (!g) continue
-    const std = it.supplier_ready ? g.std : g.stdUn
+    const std = stdDaysOf(stdMap, it.item_group)
     if (std <= 0) continue
     const lead = daysBetween(it.required_date, orderDate)
     if (lead === null) continue
@@ -201,13 +200,10 @@ export default function PurchaseOrderDetail() {
   const canPickNspt = can('purchase_order', 'approve')
   const employeeOptions = employees.map((e) => ({ value: e.full_name, label: e.full_name }))
 
-  // Map tra ngày QĐ theo tên phân loại (parse số từ chuỗi; 'không sẵn' rỗng thì fallback về 'sẵn hàng' — khớp backend)
-  const groupMap = useMemo(() => {
-    const toInt = (s: any) => parseInt(String(s ?? '').replace(/[^\d]/g, ''), 10) || 0
-    const m: Record<string, { std: number; stdUn: number }> = {}
-    for (const g of itemGroups) { const std = toInt(g.std_days); m[g.name] = { std, stdUn: toInt(g.std_days_unavail) || std } }
-    return m
-  }, [itemGroups])
+  // Số ngày QĐ theo tên phân loại (mốc dài nhất, thiếu thì 15 ngày — khớp backend)
+  const groupMap = useMemo(() => stdDaysMap(itemGroups), [itemGroups])
+  // Ngày QĐ có hàng của 1 dòng = Ngày đặt hàng + số ngày QĐ của phân loại
+  const qdDate = (it: any) => regulatedDate(groupMap, it?.item_group || '', po.order_date || '')
   // Tự tính lại cờ Đơn gấp khi dữ liệu nguồn (ngày đặt / dòng hàng) đổi. KHÔNG chạy lúc mở đơn (loadAll không qua đây) → giữ đè tay.
   const recalcUrgent = (next: any) => {
     if (Object.keys(groupMap).length === 0) return next   // chưa nạp danh mục → chưa tính
@@ -258,9 +254,14 @@ export default function PurchaseOrderDetail() {
   const addDelivery = (ii: number) =>
     setPo((s: any) => ({
       ...s, items: s.items.map((it: any, idx: number) => idx !== ii ? it : {
-        // Cam kết giao mặc định = Ngày yêu cầu có hàng của dòng; chỉ là GIÁ TRỊ KHỞI TẠO,
-        // NSTM sửa lại theo cam kết thật của NCC được (backend không ép đồng bộ lại).
-        ...it, deliveries: [...(it.deliveries || []), { ...emptyDelivery, delivery_no: (it.deliveries?.length || 0) + 1, warehouse_code: it.warehouse_code, ship_unit: it.unit, promised_date: it.required_date || '' }],
+        // Cam kết giao + Số ngày QĐ mặc định theo NGÀY QĐ CÓ HÀNG của phân loại; chỉ là GIÁ TRỊ
+        // KHỞI TẠO, NSTM sửa lại theo cam kết thật của NCC được (backend không ép đồng bộ lại).
+        ...it, deliveries: [...(it.deliveries || []), {
+          ...emptyDelivery, delivery_no: (it.deliveries?.length || 0) + 1,
+          warehouse_code: it.warehouse_code, ship_unit: it.unit,
+          promised_date: qdDate(it), std_days: stdDaysOf(groupMap, it.item_group),
+          regulated_date: qdDate(it),
+        }],
       }),
     }))
   const delDelivery = (ii: number, di: number) =>
@@ -422,6 +423,31 @@ export default function PurchaseOrderDetail() {
       // Lấy CẢ 2 luồng (hàng + vận chuyển), chỉ khoản chưa trả đủ
       const r = await api.get('/api/payables', { params: { po_code: po.code, year: 'all', page_size: 500 } })
       const list = (r.data.data.items || []).filter((p: any) => (Number(p.remaining) || 0) > 0.01)
+      if (list.length === 0) {
+        // Chưa có công nợ từ nhận hàng -> chuyển thẳng sang màn tạo YCTT với số tiền bằng tổng tiền PO
+        const orderAmount = Number(po.order_total || po.total) || 0
+        navigate('/payment-requests/new', {
+          state: {
+            supplier_code: po.supplier_code,
+            company_id: po.company_id,
+            source_type: 'goods',
+            rows: [{
+              id: 0,
+              supplier_code: po.supplier_code,
+              supplier_name: po.supplier_name,
+              source_type: 'goods',
+              po_code: po.code,
+              invoice_no: po.misa_code || '',
+              invoice_date: '',
+              total: orderAmount,
+              paid_amount: 0,
+              remaining: orderAmount,
+              amount: orderAmount,
+            }],
+          },
+        })
+        return
+      }
       setPayables(list)
       setPaySel(list.filter((p: any) => p.source_type === 'goods').map((p: any) => p.id))   // mặc định CHỈ tick NCC sản xuất; vận chuyển tự chọn thêm
       setPayTab((list.some((p: any) => p.source_type === 'goods')) ? 'goods' : 'shipping')
@@ -519,9 +545,9 @@ export default function PurchaseOrderDetail() {
         <h2 className="page-title" style={{ margin: 0 }}>{title}</h2>
         {!isNew && poBadge(po.status)}
         <span style={{ flex: 1 }} />
-        {/* Tạo yêu cầu thanh toán: khi đơn đã duyệt + còn công nợ hàng chưa trả đủ */}
+        {/* Tạo yêu cầu thanh toán: khi đơn đã duyệt */}
         {!isNew && ['approved', 'partial', 'received', 'completed'].includes(po.status) && can('payment_request', 'create')
-          && (Number(po.unpaid_total) || 0) > 0.01 && (
+          /* && (Number(po.unpaid_total) || 0) > 0.01 */ && (
           <button className="btn secondary" onClick={openPayModal}><i className="ti ti-receipt" />Tạo yêu cầu thanh toán</button>
         )}
         {/* ── Nhóm tiện ích + destructive (trái) ── */}

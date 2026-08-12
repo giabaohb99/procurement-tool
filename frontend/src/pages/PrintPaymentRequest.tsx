@@ -133,7 +133,8 @@ export default function PrintPaymentRequest() {
             {req.lines.map((l: any, i: number) => (
               <tr key={i}>
                 <td style={{ ...cell, textAlign: 'center', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{l.invoice_no}</td>
-                <td style={{ ...cell, textAlign: 'center' }}>{dmy(l.invoice_date || l.incur_date)}</td>
+                {/* CR-066: chưa có hóa đơn thì in TRẮNG để điền tay — không lấy ngày phát sinh thay thế */}
+                <td style={{ ...cell, textAlign: 'center' }}>{dmy(l.invoice_date)}</td>
                 {/* Diễn giải GỘP cho mọi dòng (rowSpan) — chỉ render ở dòng đầu */}
                 {i === 0 && (
                   <td style={{ ...cell, verticalAlign: 'middle' }} rowSpan={req.lines.length || 1}>{noiDung}</td>

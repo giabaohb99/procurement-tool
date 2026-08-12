@@ -213,9 +213,11 @@ Mỗi dòng tương ứng với một khoản công nợ (`Payable`) được đ
 
 ## C. Quy tắc nghiệp vụ
 
-1. Tạo phiếu từ màn Công nợ: người dùng vào `/payables`, chọn các dòng công nợ (có thể thuộc nhiều NCC), bấm "Tạo yêu cầu thanh toán". Lối vào thứ hai: nút "Tạo yêu cầu thanh toán" trong chi tiết Đơn mua hàng (chọn hóa đơn còn nợ của chính đơn đó).
+1. Tạo phiếu từ màn Công nợ: người dùng vào `/payables`, chọn các dòng công nợ (có thể thuộc nhiều NCC), bấm "Tạo yêu cầu thanh toán". Lối vào thứ hai: nút "Tạo yêu cầu thanh toán" trong chi tiết Đơn mua hàng (chọn hóa đơn còn nợ của chính đơn đó, hoặc tạo theo tổng tiền PO khi chưa nhận hàng — CR-067).
 
    **CR-025 — không sinh phiếu nháp:** hai lối vào trên **không gọi API ngay**. Các khoản đã tick được chuyển sang màn `/payment-requests/new` qua URL (`?payables=1,2,3`) kèm `location.state.rows`; màn này cho soát lại và **sửa số tiền đề nghị từng dòng**, **bỏ bớt khoản** (có nút khôi phục), nhập **Ngày lập** + **Hình thức thanh toán** (CR-035) + **Ghi chú**, hiển thị trước **số phiếu sẽ tách ra** và cảnh báo khoản **chưa có số hóa đơn**. Chỉ khi bấm **Tạo phiếu** mới `POST /api/payment-requests`; **thoát giữa chừng thì không bản ghi nào được tạo**. Mở lại link / F5 vẫn đúng danh sách nhờ `GET /api/payables?ids=…&year=all`.
+
+   **CR-067 — Tạo theo PO sớm:** Khi đơn PO chưa có đợt nhận hàng nào (chưa có dòng trong `tab_payable`), bấm nút "Tạo yêu cầu thanh toán" trên PO sẽ nạp sẵn dòng thanh toán với số tiền bằng đúng Tổng tiền đơn hàng PO để lập bản nháp và in phiếu trình ký sớm.
 
    Server nhận `PRequestCreate` với danh sách `lines` (mảng `{payable_id, amount}`), gom theo cặp `(supplier_code, source_type)`, tạo mỗi nhóm thành một `PaymentRequest` riêng.
 

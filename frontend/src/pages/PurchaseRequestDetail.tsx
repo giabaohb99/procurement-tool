@@ -23,6 +23,7 @@ import CompareLightbox from '../components/CompareLightbox'
 import CommentThread from '../components/CommentThread'
 import AuditTimeline from '../components/AuditTimeline'
 import { fmtSize, fileIcon } from '../utils/file-type'
+import { regulatedDate, stdDaysMap, stdDaysOf } from '../utils/lead-time'
 import { newDupCodes } from '../utils/lines'
 
 const API = '/api/purchase-requests'
@@ -60,13 +61,13 @@ function daysBetween(a: string, b: string): number | null {
   return Math.round((da - db) / 86400000)
 }
 
-// Đơn gấp = có ≥1 dòng mà thời gian chuẩn bị (ngày cần hàng − ngày tạo phiếu) NHỎ HƠN số ngày QĐ của phân loại VTBB/NL.
-// YCMH không có checkbox 'NCC có sẵn hàng' -> luôn dùng mốc 'có sẵn' (std_days).
+// Đơn gấp = có ≥1 dòng mà thời gian chuẩn bị (ngày cần hàng − ngày tiếp nhận phiếu) NHỎ HƠN số ngày
+// QĐ của phân loại VTBB/NL — mốc dài nhất (không sẵn hàng), xem utils/lead-time.ts.
 function computeUrgentPR(items: any[], baseDate: string, stdMap: Record<string, number>): boolean {
   if (!baseDate) return false
   for (const it of items || []) {
-    const std = stdMap[it.item_group]
-    if (!std || std <= 0) continue
+    const std = stdDaysOf(stdMap, it.item_group)
+    if (std <= 0) continue
     const lead = daysBetween(it.required_date, baseDate)
     if (lead === null) continue
     if (lead < std) return true
@@ -226,13 +227,10 @@ export default function PurchaseRequestDetail() {
   // Nhãn hiển thị "MÃ - Tên" cho kho đã lưu (giá trị lưu vẫn là name); fallback name nếu không tìm thấy
   const whLabel = (name: string) => { const w = warehouses.find(w => w.name === name); return w ? `${w.code} - ${w.name}` : name }
 
-  // Map tên phân loại -> số ngày QĐ khi NCC CÓ sẵn hàng (parse số từ chuỗi)
-  const stdMap = useMemo(() => {
-    const toInt = (s: any) => parseInt(String(s ?? '').replace(/[^\d]/g, ''), 10) || 0
-    const m: Record<string, number> = {}
-    for (const g of itemGroups) m[g.name] = toInt(g.std_days)
-    return m
-  }, [itemGroups])
+  // Số ngày QĐ theo tên phân loại (mốc dài nhất, thiếu thì 15 ngày — khớp backend)
+  const stdMap = useMemo(() => stdDaysMap(itemGroups), [itemGroups])
+  // Ngày QĐ có hàng của 1 dòng = Ngày tiếp nhận phiếu + số ngày QĐ của phân loại
+  const qdDate = (itemGroup: string) => regulatedDate(stdMap, itemGroup || '', pr.request_date || '')
   // Tự tính lại cờ Đơn gấp khi dữ liệu nguồn (ngày tạo / dòng hàng) đổi. KHÔNG chạy lúc mở phiếu (loadAll không qua đây) -> giữ đè tay.
   const recalcUrgent = (next: any) => {
     if (Object.keys(stdMap).length === 0) return next
@@ -254,6 +252,16 @@ export default function PurchaseRequestDetail() {
   const items = pr.items || []
   const setItem = (i: number, k: string, v: any) =>
     setPr((s: any) => recalcUrgent({ ...s, items: s.items.map((it: any, idx: number) => idx === i ? { ...it, [k]: v } : it) }))
+  /** Chọn Phân loại -> điền luôn "Thời gian dự kiến có hàng" = NGÀY QĐ CÓ HÀNG (Ngày tiếp nhận +
+   *  số ngày QĐ của phân loại). CHỈ với dòng CHƯA lưu và ô còn trống: dòng đã lưu mà đổi ngày dự
+   *  kiến thì phải qua luật nhập lý do, còn ô người dùng đã tự điền/cố ý xóa trắng thì tôn trọng. */
+  const setGroup = (i: number, v: string) =>
+    setPr((s: any) => recalcUrgent({
+      ...s, items: s.items.map((it: any, idx: number) => idx !== i ? it : {
+        ...it, item_group: v, group_desc: groupDesc(v),
+        ...(!it.id && !(it.expected_date || '').trim() ? { expected_date: qdDate(v) } : {}),
+      }),
+    }))
   const addItems = (n = 1) => setPr((s: any) => recalcUrgent({ ...s, items: [...(s.items || []), ...Array.from({ length: n }, () => ({ ...emptyItem }))] }))
   const delItem = (i: number) => setPr((s: any) => recalcUrgent({ ...s, items: s.items.filter((_: any, idx: number) => idx !== i) }))
   const copyItem = (i: number) => setPr((s: any) => {
@@ -370,11 +378,16 @@ export default function PurchaseRequestDetail() {
     if (!prod) { setItem(i, 'product_code', ''); return }
     setPr((s: any) => recalcUrgent({
       ...s,
-      items: s.items.map((it: any, idx: number) => idx === i ? {
-        ...it, product_code: prod.code, product_name: prod.name,
-        unit: prod.unit || it.unit, item_group: prod.item_group || it.item_group,
-        group_desc: groupDesc(prod.item_group || it.item_group),
-      } : it),
+      items: s.items.map((it: any, idx: number) => {
+        if (idx !== i) return it
+        const grp = prod.item_group || it.item_group
+        return {
+          ...it, product_code: prod.code, product_name: prod.name,
+          unit: prod.unit || it.unit, item_group: grp, group_desc: groupDesc(grp),
+          // Phân loại đến từ danh mục SP cũng điền ngày dự kiến như khi chọn tay (xem setGroup)
+          ...(!it.id && !(it.expected_date || '').trim() ? { expected_date: qdDate(grp) } : {}),
+        }
+      }),
     }))
   }
 
@@ -869,7 +882,7 @@ export default function PurchaseRequestDetail() {
                       </td>
                       <td>
                         {editable ? (
-                          <select className="cell-input" value={it.item_group || ''} onChange={(e) => { setItem(i, 'item_group', e.target.value); setItem(i, 'group_desc', groupDesc(e.target.value)) }} style={{ width: '100%' }}>
+                          <select className="cell-input" value={it.item_group || ''} onChange={(e) => setGroup(i, e.target.value)} style={{ width: '100%' }}>
                             <option value="">-- Phân loại --</option>
                             {groups.map((g) => <option key={g} value={g}>{g}</option>)}
                           </select>
@@ -1104,7 +1117,7 @@ export default function PurchaseRequestDetail() {
               <div className="form-row">
                 <label>Phân loại</label>
                 <SearchSelect value={edit.item_group || ''} options={groups} disabled={!editable} placeholder="Chọn/tìm phân loại…"
-                  onChange={(v) => { setItem(editIdx, 'item_group', v); setItem(editIdx, 'group_desc', groupDesc(v)) }} />
+                  onChange={(v) => setGroup(editIdx, v)} />
               </div>
               <div className="form-row">
                 <label>Mô tả phân loại</label>
@@ -1136,13 +1149,8 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Ngày cần hàng <span className="req">*</span></label>
-                {/* Dòng CHƯA lưu: điền luôn "Thời gian dự kiến có hàng" theo ngày này cho NSTM
-                    thấy trước (backend cũng tự điền khi tạo dòng). Dòng đã lưu thì không đụng —
-                    đổi ngày dự kiến ở đó phải qua luật nhập lý do. */}
-                <DateInput value={edit.required_date || ''} disabled={!editable} onChange={(v) => {
-                  setItem(editIdx, 'required_date', v)
-                  if (!edit.id && !(edit.expected_date || '').trim()) setItem(editIdx, 'expected_date', v)
-                }} />
+                <DateInput value={edit.required_date || ''} disabled={!editable}
+                  onChange={(v) => setItem(editIdx, 'required_date', v)} />
               </div>
               <div className="form-row">
                 <label title="NSTM phụ trách cập nhật — đổi giá trị đã có phải kèm lý do">Thời gian dự kiến có hàng</label>

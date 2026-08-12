@@ -278,7 +278,7 @@ Nguồn dữ liệu cho **option**. Cột chính:
 | qty, unit, price, amount | | SL/ĐVT/giá/thành tiền | |
 | warehouse | VARCHAR(100) | Kho nhận | → `tab_warehouse` |
 | required_date | VARCHAR(10) | Ngày cần (theo dòng) | |
-| expected_date | VARCHAR(10) | Thời gian dự kiến có hàng — mặc định = `required_date` lúc TẠO dòng (CR-064); đổi giá trị đã có phải kèm lý do | ↔ `tab_po_item.expected_date` |
+| expected_date | VARCHAR(10) | Thời gian dự kiến có hàng — mặc định = **ngày QĐ có hàng** = `tab_purchase_request.request_date` + số ngày QĐ của phân loại (CR-065, thay CR-064; xem `catalog/lead_time.py`), chỉ điền lúc TẠO dòng; đổi giá trị đã có phải kèm lý do | ↔ `tab_po_item.expected_date` |
 | assignee | VARCHAR(100) | Mã NSTM | → `tab_employee.code` |
 | line_status | VARCHAR(30) | "Chưa đặt hàng"… | |
 | progress_note | TEXT | | |
@@ -332,9 +332,9 @@ Nguồn dữ liệu cho **option**. Cột chính:
 | carrier_code, carrier_name | | Đơn vị vận chuyển | → `tab_supplier.code` (type=transport) |
 | ship_qty, ship_unit | | SL giao | |
 | received_qty | NUMERIC(18,3) | SL thực nhận | |
-| promised_date, received_date | VARCHAR(10) | Cam kết giao / **thực nhận**. `promised_date` mặc định = `tab_po_item.required_date` lúc TẠO lần giao (CR-063), sau đó sửa tự do | |
+| promised_date, received_date | VARCHAR(10) | Cam kết giao / **thực nhận**. `promised_date` mặc định = **ngày QĐ có hàng** = `tab_purchase_order.order_date` + số ngày QĐ của phân loại (CR-065, thay CR-063), chỉ điền lúc TẠO lần giao, sau đó sửa tự do | |
 | ~~expected_date~~ | VARCHAR(10) | **BỎ DÙNG (CR-062)** — không nơi nào ghi, giữ cột theo luật "CSDL cũ: chỉ thêm, không sửa". "Dự kiến có hàng" nay ở `tab_po_item.expected_date` | |
-| std_days, regulated_date | | Số ngày & ngày quy định | |
+| std_days, regulated_date | | Số ngày QĐ & ngày QĐ có hàng (`order_date + std_days`). CR-065: `std_days` mặc định lấy **mốc dài nhất** của phân loại (`std_days_unavail` → `std_days` → 15), **không** còn phụ thuộc `supplier_ready`; số đã nhập tay trên dòng giao thì GIỮ, chỉ dòng trống mới tính | → `tab_item_group` |
 | diff_promise, diff_regulated, diff_required | BIGINT | Chênh lệch tiến độ (<0 = trễ) | |
 | shipping_unit_price, shipping_amount | NUMERIC | Phí vận chuyển | → sinh công nợ VC |
 | invoice_no, qc_result, status | | Hóa đơn, QC, trạng thái | |

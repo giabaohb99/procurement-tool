@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext'
 import DateInput from '../components/DateInput'
 import NotFound from '../components/NotFound'
 import NumberInput from '../components/NumberInput'
+import SearchSelect from '../components/SearchSelect'
 import { toast } from '../components/toast'
 import { fmtDateTime } from '../utils/datetime'
 import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
@@ -33,61 +34,109 @@ export default function PaymentRequestDetail() {
   return id === 'new' ? <PaymentRequestCreate /> : <PaymentRequestView key={id} />
 }
 
-/** Màn TẠO phiếu: nhận danh sách khoản nợ đã tick qua URL (`?payables=1,2,3`), cho soát/sửa
- *  số tiền đề nghị + bỏ bớt khoản, rồi mới POST. Thoát giữa chừng = không sinh phiếu nháp nào. */
+/** Dòng trên màn TẠO. `payable_id = 0` là dòng gõ tay (form trắng) — chưa gắn khoản nợ nào. */
+type NewLine = {
+  key: number
+  payable_id: number
+  supplier_code: string
+  supplier_name: string
+  source_type: string
+  po_code: string
+  invoice_no: string
+  invoice_date: string
+  due_date: string
+  payable_total: number
+  payable_paid: number
+  amount: number
+}
+
+let seqKey = 0
+const blankLine = (): NewLine => ({
+  key: ++seqKey, payable_id: 0, supplier_code: '', supplier_name: '', source_type: '',
+  po_code: '', invoice_no: '', invoice_date: '', due_date: '', payable_total: 0, payable_paid: 0, amount: 0,
+})
+const fromPayable = (r: any): NewLine => ({
+  key: ++seqKey, payable_id: r.id, supplier_code: r.supplier_code || '', supplier_name: r.supplier_name || '',
+  source_type: r.source_type || 'goods', po_code: r.po_code || '', invoice_no: r.invoice_no || '',
+  invoice_date: r.invoice_date || '', due_date: r.due_date || '',
+  payable_total: Number(r.total) || 0, payable_paid: Number(r.paid_amount) || 0,
+  amount: Number(r.remaining) || 0,
+})
+
+/** Màn TẠO phiếu. Hai lối vào:
+ *  - từ màn Công nợ (`?payables=1,2,3`): nạp sẵn các khoản đã tick;
+ *  - FORM TRẮNG (CR-066): tự chọn NCC/công ty rồi gõ tay từng dòng.
+ *  Cả hai lối đều cho sửa Số hóa đơn · Ngày hóa đơn · Đề nghị trả; Tổng nợ / Đã trả / Hạn trả
+ *  là số ĐỌC TỪ CÔNG NỢ nên không sửa ở đây. Thoát giữa chừng = không sinh phiếu nháp nào. */
 function PaymentRequestCreate() {
   const navigate = useNavigate()
   const location = useLocation()
   const [sp] = useSearchParams()
   const idsParam = sp.get('payables') || ''
   const ids = useMemo(() => idsParam.split(',').map(Number).filter(Boolean), [idsParam])
+  const blankMode = !ids.length
 
-  const [rows, setRows] = useState<any[]>(() => (location.state as any)?.rows || [])
+  const [lines, setLines] = useState<NewLine[]>(
+    () => ((location.state as any)?.rows || []).map(fromPayable))
   const [loading, setLoading] = useState(false)
   const [requestDate, setRequestDate] = useState(new Date().toISOString().slice(0, 10))
   const [paymentMethod, setPaymentMethod] = useState('transfer')
   const [note, setNote] = useState('')
-  const [amounts, setAmounts] = useState<Record<number, number>>({})
-  const [dropped, setDropped] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
+  // Form trắng: phần đầu phiếu do người lập chọn (đi từ Công nợ/PO thì lấy theo state hoặc khoản nợ)
+  const locState = (location.state as any) || {}
+  const [supplierCode, setSupplierCode] = useState(() => locState.supplier_code || (locState.rows?.[0]?.supplier_code) || '')
+  const [companyId, setCompanyId] = useState(() => locState.company_id || 0)
+  const [sourceType, setSourceType] = useState(() => locState.source_type || 'goods')
+  const [suppliers, setSuppliers] = useState<any[]>([])
+  const [companies, setCompanies] = useState<any[]>([])
 
   // Mở lại bằng link/F5 (không còn state điều hướng) → nạp lại đúng các khoản đã tick
   useEffect(() => {
-    if (!ids.length || rows.length) return
+    if (!ids.length || lines.length) return
     setLoading(true)
     api.get('/api/payables', { params: { ids: ids.join(','), year: 'all', page_size: 500 } })
-      .then((r) => setRows(r.data.data.items || []))
+      .then((r) => setLines((r.data.data.items || []).map(fromPayable)))
       .finally(() => setLoading(false))
   }, [idsParam])
 
-  // Số tiền đề nghị mặc định = còn phải trả
   useEffect(() => {
-    setAmounts((prev) => {
-      const next = { ...prev }
-      rows.forEach((r) => { if (next[r.id] === undefined) next[r.id] = Number(r.remaining) || 0 })
-      return next
-    })
-  }, [rows])
+    if (!blankMode) return
+    api.get('/api/suppliers', { params: { page_size: 1000 } }).then((r) => setSuppliers(r.data.data.items))
+    api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items))
+    setLines((s) => (s.length ? s : [blankLine()]))
+  }, [blankMode])
 
-  const kept = rows.filter((r) => !dropped.includes(r.id))
+  const setLine = (key: number, patch: Partial<NewLine>) =>
+    setLines((s) => s.map((l) => (l.key === key ? { ...l, ...patch } : l)))
+
+  // Dòng gõ tay bám vào NCC nào: form trắng thì theo ô đã chọn, đi từ Công nợ thì theo khoản nợ đầu tiên
+  const headPayable = lines.find((l) => l.payable_id)
+  const headSupplier = blankMode ? supplierCode : (headPayable?.supplier_code || '')
+  const headSource = blankMode ? sourceType : (headPayable?.source_type || 'goods')
   // Server tách mỗi (NCC × loại công nợ) thành 1 phiếu — hiện trước để người dùng biết sẽ ra mấy phiếu
   const groups = useMemo(() => {
-    const m = new Map<string, any[]>()
-    kept.forEach((r) => {
-      const k = `${r.supplier_code}||${r.source_type}`
-      m.set(k, [...(m.get(k) || []), r])
-    })
-    return Array.from(m.values())
-  }, [kept, dropped])
-  const noInvoice = kept.filter((r) => !String(r.invoice_no || '').trim())
-  const total = kept.reduce((s, r) => s + (Number(amounts[r.id]) || 0), 0)
+    const m = new Set<string>()
+    lines.forEach((l) => m.add(l.payable_id ? `${l.supplier_code}||${l.source_type}` : `${headSupplier}||${headSource}`))
+    return Array.from(m)
+  }, [lines, headSupplier, headSource])
+  const noInvoice = lines.filter((l) => !l.invoice_no.trim())
+  const total = lines.reduce((s, l) => s + (Number(l.amount) || 0), 0)
 
   async function create() {
-    if (!kept.length) { toast.error('Chưa chọn khoản công nợ nào'); return }
+    if (!lines.length) { toast.error('Chưa có dòng nào'); return }
+    if (!headSupplier) { toast.error('Chưa chọn nhà cung cấp'); return }
     setSaving(true)
     try {
-      const lines = kept.map((r) => ({ payable_id: r.id, amount: Number(amounts[r.id]) || 0 }))
-      const r = await api.post(API, { request_date: requestDate, note, payment_method: paymentMethod, lines })
+      const payload: any = {
+        request_date: requestDate, note, payment_method: paymentMethod,
+        supplier_code: headSupplier, company_id: companyId, source_type: headSource,
+        lines: lines.map((l) => ({
+          payable_id: l.payable_id, po_code: l.po_code, invoice_no: l.invoice_no,
+          invoice_date: l.invoice_date, amount: Number(l.amount) || 0,
+        })),
+      }
+      const r = await api.post(API, payload)
       const created = r.data.data || []
       toast.success(created.length === 1 ? 'Đã tạo yêu cầu thanh toán'
         : `Đã tạo ${created.length} phiếu yêu cầu thanh toán (mỗi nhà cung cấp 1 phiếu).`)
@@ -97,16 +146,6 @@ function PaymentRequestCreate() {
     finally { setSaving(false) }
   }
 
-  if (!ids.length) return (
-    <div style={{ padding: 20 }}>
-      <h2 className="page-title">Tạo yêu cầu thanh toán</h2>
-      <div className="card" style={{ padding: 20 }}>
-        Phiếu yêu cầu thanh toán được tạo từ màn <b>Công nợ</b>: chọn các khoản nợ (cùng/khác NCC) rồi bấm
-        <i> "Tạo yêu cầu thanh toán"</i> — hệ thống tự tách mỗi nhà cung cấp 1 phiếu.
-        <div style={{ marginTop: 14 }}><button className="btn" onClick={() => navigate('/payables')}><i className="ti ti-cash" />Tới màn Công nợ</button></div>
-      </div>
-    </div>
-  )
   if (loading) return <div style={{ padding: 40 }}>Đang tải...</div>
 
   return (
@@ -116,7 +155,8 @@ function PaymentRequestCreate() {
         <h2 className="page-title" style={{ margin: 0 }}>Tạo yêu cầu thanh toán</h2>
         <span className="badge gray">Chưa lưu</span>
         <span style={{ flex: 1 }} />
-        <button className="btn" disabled={saving || !kept.length} onClick={create}>
+        {blankMode && <button className="btn ghost" onClick={() => navigate('/payables')}><i className="ti ti-cash" />Chọn từ Công nợ</button>}
+        <button className="btn" disabled={saving || !lines.length} onClick={create}>
           <i className="ti ti-check" />{saving ? 'Đang tạo…' : `Tạo ${groups.length > 1 ? `${groups.length} phiếu` : 'phiếu'}`}
         </button>
       </div>
@@ -127,15 +167,35 @@ function PaymentRequestCreate() {
       </div>
 
       {noInvoice.length > 0 && (
-        <div className="card" style={{ padding: 14, marginBottom: 16, borderLeft: '4px solid var(--red)' }}>
-          <b style={{ color: 'var(--red)' }}>{noInvoice.length} khoản chưa có Số hóa đơn</b> — bỏ các khoản này ra thì mới tạo được phiếu:
-          {' '}{noInvoice.map((r) => r.po_code || `#${r.id}`).join(', ')}
+        <div className="card" style={{ padding: 14, marginBottom: 16, borderLeft: '4px solid var(--amber)' }}>
+          <b>{noInvoice.length} dòng chưa có Số hóa đơn</b> — vẫn tạo và in bản nháp để trình ký được (ô hóa đơn in trắng, điền tay),
+          nhưng <b>phải điền đủ và khớp khoản công nợ mới gửi duyệt được</b>.
         </div>
       )}
 
       <div className="card" style={{ padding: 18, marginBottom: 16 }}>
         <h3 className="sec-title">Thông tin phiếu</h3>
         <div className="form-grid">
+          {blankMode && (
+            <>
+              <div className="form-row"><label>Nhà cung cấp <span style={{ color: 'var(--red)' }}>*</span></label>
+                <SearchSelect value={supplierCode} placeholder="Chọn/tìm NCC…"
+                  options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
+                  onChange={setSupplierCode} />
+              </div>
+              <div className="form-row"><label>Công ty</label>
+                <SearchSelect value={companyId ? String(companyId) : ''} placeholder="Chọn/tìm công ty…"
+                  options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
+                  onChange={(v) => setCompanyId(Number(v) || 0)} />
+              </div>
+              <div className="form-row"><label>Loại công nợ</label>
+                <select value={sourceType} onChange={(e) => setSourceType(e.target.value)}>
+                  <option value="goods">Hàng hóa</option>
+                  <option value="shipping">Vận chuyển</option>
+                </select>
+              </div>
+            </>
+          )}
           <div className="form-row"><label>Ngày lập</label><DateInput value={requestDate} onChange={setRequestDate} /></div>
           <div className="form-row">
             <label>Hình thức thanh toán</label>
@@ -151,31 +211,37 @@ function PaymentRequestCreate() {
       </div>
 
       <div className="card" style={{ padding: 18, marginBottom: 16 }}>
-        <h3 className="sec-title">Các khoản công nợ sẽ thanh toán ({kept.length})</h3>
+        <h3 className="sec-title">Các khoản công nợ thanh toán ({lines.length})</h3>
         <div className="items-scroll">
-          <table className="items-table" style={{ minWidth: 1000 }}>
-            <thead><tr><th style={{ width: 36 }}>#</th><th>Nhà cung cấp</th><th>Loại</th><th>PO</th><th>Số HĐ</th><th>Hạn trả</th>
+          <table className="items-table" style={{ minWidth: 1100 }}>
+            <thead><tr><th style={{ width: 36 }}>#</th><th>Nhà cung cấp</th><th>Loại</th><th>PO</th>
+              <th>Số hóa đơn</th><th>Ngày hóa đơn</th><th>Hạn trả</th>
               <th style={{ textAlign: 'right' }}>Tổng nợ</th><th style={{ textAlign: 'right' }}>Đã trả</th>
-              <th style={{ textAlign: 'right' }}>Còn lại</th><th style={{ textAlign: 'right' }}>Đề nghị trả</th>
+              <th style={{ textAlign: 'right' }}>Đề nghị trả</th>
               <th style={{ width: 50, textAlign: 'center' }}>Bỏ</th></tr></thead>
             <tbody>
-              {kept.map((r, i) => (
-                <tr key={r.id}>
+              {lines.map((l, i) => (
+                <tr key={l.key}>
                   <td>{i + 1}</td>
-                  <td>{r.supplier_name || r.supplier_code}</td>
-                  <td>{r.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa'}</td>
-                  <td>{r.po_code}</td>
-                  <td>{r.invoice_no || <span style={{ color: 'var(--red)', fontSize: 12 }}>chưa có HĐ</span>}</td>
-                  <td>{r.due_date}</td>
-                  <td style={{ textAlign: 'right' }}>{fmt(r.total)}</td>
-                  <td style={{ textAlign: 'right' }}>{fmt(r.paid_amount)}</td>
-                  <td style={{ textAlign: 'right' }}>{fmt(r.remaining)}</td>
+                  <td>{l.payable_id ? (l.supplier_name || l.supplier_code)
+                    : (suppliers.find((s) => s.code === headSupplier)?.name || headPayable?.supplier_name || headSupplier || '—')}</td>
+                  <td>{(l.payable_id ? l.source_type : headSource) === 'shipping' ? 'Vận chuyển' : 'Hàng hóa'}</td>
+                  <td>{l.payable_id ? l.po_code : (
+                    <input className="cell-input" style={{ width: 130 }} value={l.po_code}
+                      onChange={(e) => setLine(l.key, { po_code: e.target.value })} placeholder="Mã PO" />)}</td>
+                  <td><input className="cell-input" style={{ width: 130 }} value={l.invoice_no}
+                    onChange={(e) => setLine(l.key, { invoice_no: e.target.value })} placeholder="(để trống = in tay)" /></td>
+                  <td><DateInput value={l.invoice_date} onChange={(v) => setLine(l.key, { invoice_date: v })} /></td>
+                  <td>{l.due_date}</td>
+                  <td style={{ textAlign: 'right' }}>{fmt(l.payable_total)}</td>
+                  <td style={{ textAlign: 'right' }}>{fmt(l.payable_paid)}</td>
                   <td style={{ textAlign: 'right' }}>
                     <NumberInput className="cell-input" style={{ width: 140, textAlign: 'right' }}
-                      value={amounts[r.id] ?? 0} onChange={(v) => setAmounts((s) => ({ ...s, [r.id]: v }))} />
+                      value={l.amount} onChange={(v) => setLine(l.key, { amount: v })} />
                   </td>
                   <td style={{ textAlign: 'center' }}>
-                    <button className="icon-btn" title="Bỏ khoản này khỏi phiếu" onClick={() => setDropped((s) => [...s, r.id])}>
+                    <button className="icon-btn" title="Bỏ dòng này khỏi phiếu"
+                      onClick={() => setLines((s) => s.filter((x) => x.key !== l.key))}>
                       <i className="ti ti-x" style={{ fontSize: 16, color: 'var(--red)' }} />
                     </button>
                   </td>
@@ -184,12 +250,11 @@ function PaymentRequestCreate() {
             </tbody>
           </table>
         </div>
-        <div style={{ textAlign: 'right', fontSize: 16, color: 'var(--navy)', marginTop: 12 }}>Tổng đề nghị thanh toán: <b>{fmt(total)}</b></div>
-        {dropped.length > 0 && (
-          <div style={{ marginTop: 10 }}>
-            <button className="btn ghost" onClick={() => setDropped([])}><i className="ti ti-arrow-back-up" />Khôi phục {dropped.length} khoản đã bỏ</button>
-          </div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', marginTop: 12 }}>
+          <button className="btn ghost" onClick={() => setLines((s) => [...s, blankLine()])}><i className="ti ti-plus" />Thêm dòng</button>
+          <span style={{ flex: 1 }} />
+          <span style={{ fontSize: 16, color: 'var(--navy)' }}>Tổng đề nghị thanh toán: <b>{fmt(total)}</b></span>
+        </div>
       </div>
     </div>
   )
@@ -223,14 +288,22 @@ function PaymentRequestView() {
   if (notFound) return <NotFound backTo="/payment-requests" message="Không tìm thấy yêu cầu thanh toán này hoặc bạn không có quyền truy cập." />
   if (!req) return <div style={{ padding: 40 }}>Đang tải...</div>
 
+  // CR-066: chỉ bản NHÁP mới sửa được. Gửi duyệt / duyệt xong là khóa cứng (backend cũng chặn).
   const editable = req.status === 'draft' && can('payment_request', 'write')
   const companyName = companies.find((c) => c.id === req.company_id)?.name || '—'
-  const setLineAmount = (i: number, v: number) =>
-    setReq((s: any) => ({ ...s, lines: s.lines.map((l: any, idx: number) => idx === i ? { ...l, amount: v } : l) }))
+  const setLine = (i: number, patch: any) =>
+    setReq((s: any) => ({ ...s, lines: s.lines.map((l: any, idx: number) => idx === i ? { ...l, ...patch } : l) }))
+  const unmatched = (req.lines || []).filter((l: any) => !l.matched)
 
   async function save() {
     try {
-      await api.patch(`${API}/${id}`, { request_date: req.request_date, note: req.note, payment_method: req.payment_method || 'transfer', lines: req.lines.map((l: any) => ({ payable_id: l.payable_id, amount: Number(l.amount) || 0 })) })
+      await api.patch(`${API}/${id}`, {
+        request_date: req.request_date, note: req.note, payment_method: req.payment_method || 'transfer',
+        lines: req.lines.map((l: any) => ({
+          payable_id: l.payable_id, po_code: l.po_code || '', invoice_no: l.invoice_no || '',
+          invoice_date: l.invoice_date || '', amount: Number(l.amount) || 0,
+        })),
+      })
       toast.success('Đã lưu'); loadAll()
     } catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
   }
@@ -297,24 +370,57 @@ function PaymentRequestView() {
 
       <div className="card" style={{ padding: 18, marginBottom: 16 }}>
         <h3 className="sec-title">Các khoản công nợ thanh toán</h3>
+        {editable && unmatched.length > 0 && (
+          <div style={{ padding: '10px 12px', marginBottom: 12, borderLeft: '4px solid var(--amber)', background: 'var(--bg-soft, #fff8e6)', fontSize: 13 }}>
+            <b>{unmatched.length} dòng chưa khớp khoản công nợ nào.</b> In bản nháp trình ký thì được (ô còn thiếu in trắng để điền tay),
+            nhưng <b>gửi duyệt</b> thì mỗi dòng phải có Số hóa đơn đúng với một khoản công nợ còn nợ — nếu không, lúc ghi nhận chi
+            tiền sẽ không trừ được vào đâu.
+          </div>
+        )}
         <div className="items-scroll">
-          <table className="items-table" style={{ minWidth: 800 }}>
-            <thead><tr><th>#</th><th>PO</th><th>Số HĐ</th><th>Ngày PS</th><th>Hạn trả</th><th style={{ textAlign: 'right' }}>Tổng nợ</th><th style={{ textAlign: 'right' }}>Đã trả</th><th style={{ textAlign: 'right' }}>Đề nghị trả</th></tr></thead>
+          <table className="items-table" style={{ minWidth: 900 }}>
+            <thead><tr><th>#</th><th>PO</th><th>Số hóa đơn</th><th>Ngày hóa đơn</th><th>Hạn trả</th>
+              <th style={{ textAlign: 'right' }}>Tổng nợ</th><th style={{ textAlign: 'right' }}>Đã trả</th>
+              <th style={{ textAlign: 'right' }}>Đề nghị trả</th>
+              {editable && <th style={{ width: 50, textAlign: 'center' }}>Bỏ</th>}</tr></thead>
             <tbody>
               {req.lines.map((l: any, i: number) => (
                 <tr key={i}>
-                  <td>{i + 1}</td><td>{l.po_code}</td><td>{l.invoice_no}</td><td>{l.incur_date}</td><td>{l.due_date}</td>
+                  <td>{i + 1}</td>
+                  <td>{editable ? <input className="cell-input" style={{ width: 130 }} value={l.po_code || ''}
+                    onChange={(e) => setLine(i, { po_code: e.target.value })} placeholder="Mã PO" /> : l.po_code}</td>
+                  <td>{editable ? <input className="cell-input" style={{ width: 130 }} value={l.invoice_no || ''}
+                    onChange={(e) => setLine(i, { invoice_no: e.target.value })} placeholder="(để trống = in tay)" /> : l.invoice_no}</td>
+                  <td>{editable ? <DateInput value={l.invoice_date || ''} onChange={(v) => setLine(i, { invoice_date: v })} /> : l.invoice_date}</td>
+                  <td>{l.due_date}</td>
                   <td style={{ textAlign: 'right' }}>{fmt(l.payable_total)}</td>
                   <td style={{ textAlign: 'right' }}>{fmt(l.payable_paid)}</td>
                   <td style={{ textAlign: 'right' }}>
-                    {editable ? <NumberInput className="cell-input" style={{ width: 140, textAlign: 'right' }} value={l.amount} onChange={(v) => setLineAmount(i, v)} /> : fmt(l.amount)}
+                    {editable ? <NumberInput className="cell-input" style={{ width: 140, textAlign: 'right' }} value={l.amount} onChange={(v) => setLine(i, { amount: v })} /> : fmt(l.amount)}
                   </td>
+                  {editable && (
+                    <td style={{ textAlign: 'center' }}>
+                      <button className="icon-btn" title="Bỏ dòng này khỏi phiếu"
+                        onClick={() => setReq((s: any) => ({ ...s, lines: s.lines.filter((_: any, idx: number) => idx !== i) }))}>
+                        <i className="ti ti-x" style={{ fontSize: 16, color: 'var(--red)' }} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <div style={{ textAlign: 'right', fontSize: 16, color: 'var(--navy)', marginTop: 12 }}>Tổng đề nghị thanh toán: <b>{fmt(total)}</b></div>
+        <div style={{ display: 'flex', alignItems: 'center', marginTop: 12 }}>
+          {editable && (
+            <button className="btn ghost" onClick={() => setReq((s: any) => ({ ...s, lines: [...s.lines, { payable_id: 0, po_code: '', invoice_no: '', invoice_date: '', due_date: '', payable_total: 0, payable_paid: 0, amount: 0 }] }))}>
+              <i className="ti ti-plus" />Thêm dòng
+            </button>
+          )}
+          <span style={{ flex: 1 }} />
+          <span style={{ fontSize: 16, color: 'var(--navy)' }}>Tổng đề nghị thanh toán: <b>{fmt(total)}</b></span>
+        </div>
+        {editable && <div style={hintStyle}>Sửa xong nhớ bấm <b>Lưu</b>. Tổng nợ / Đã trả / Hạn trả đọc từ màn Công nợ, không sửa ở đây.</div>}
       </div>
 
       <DocumentAttachmentSection
