@@ -70,10 +70,21 @@ export interface UploadedFile {
   size: number
 }
 
+export interface WarehouseOption {
+  id: number
+  code: string
+  name: string
+}
+
 const ATTACHMENT_URL = '/api/attachments'
 const COMMENT_URL = '/api/comments'
 
 export const purchaseRequestSupportApi = {
+  listWarehouses: () =>
+    apiGet<PaginatedResult<WarehouseOption>>('/api/warehouses', {
+      params: { page: 1, page_size: 200 },
+    }),
+
   listAttachments: (entity: string, entityId: number) =>
     apiGet<AttachmentFile[]>(ATTACHMENT_URL, {
       params: { entity, entity_id: entityId },

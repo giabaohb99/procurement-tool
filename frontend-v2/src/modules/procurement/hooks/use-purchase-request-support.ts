@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { purchaseRequestSupportApi } from '../api/purchase-request-support-api'
 
 const supportKeys = {
+  warehouses: ['procurement', 'purchase-request-print', 'warehouses'] as const,
   attachments: (entity: string, entityId: number) =>
     ['procurement', 'attachments', entity, entityId] as const,
   documentTypes: ['procurement', 'attachments', 'document-types'] as const,
@@ -11,6 +12,14 @@ const supportKeys = {
     ['procurement', 'purchase-request-comments', purchaseRequestId] as const,
   relatedOrders: (code: string) =>
     ['procurement', 'purchase-request-related-orders', code] as const,
+}
+
+export function usePurchaseRequestPrintWarehouses() {
+  return useQuery({
+    queryKey: supportKeys.warehouses,
+    queryFn: purchaseRequestSupportApi.listWarehouses,
+    staleTime: 5 * 60 * 1000,
+  })
 }
 
 export function usePurchaseRequestAttachments(entity: string, entityId: number) {

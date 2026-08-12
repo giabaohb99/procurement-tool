@@ -355,9 +355,15 @@ export function PurchaseRequestDetailPage() {
               </>
             ) : (
               <>
-                <Button variant="outline" onClick={() => window.print()}>
-                  <Printer />
-                  In phiếu
+                <Button variant="outline" asChild>
+                  <Link
+                    to={appRoutes.procurement.purchaseRequestPrint(data.id)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Printer />
+                    In phiếu
+                  </Link>
                 </Button>
                 {!isNew && <RelatedPurchaseOrdersCard purchaseRequestCode={data.code} />}
                 {editable && (
