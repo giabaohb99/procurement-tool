@@ -110,7 +110,7 @@ export default function PrintPurchaseOrder() {
                   <td style={cell}>{it.invoice_name}</td>
                   <td style={cell}>
                     {(it.required_date || it.expected_date) ? (
-                      <div style={{ fontWeight: 600 }}>Ngày cần: {dmy(it.required_date || it.expected_date)}</div>
+                      <div style={{ fontWeight: 600 }}>Ngày cần hàng: {dmy(it.required_date || it.expected_date)}</div>
                     ) : null}
                     {it.note ? <div>{it.note}</div> : null}
                   </td>

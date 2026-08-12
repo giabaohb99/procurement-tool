@@ -138,7 +138,7 @@ export default function PrintPurchaseOrderMH() {
                 <td style={{ ...cell, textAlign: 'right' }}>{fmtVND(it.qty_order * it.price)}</td>
                 <td style={cell}>
                   {(it.required_date || it.expected_date) ? (
-                    <div style={{ fontWeight: 600 }}>Ngày cần: {dmy(it.required_date || it.expected_date)}</div>
+                    <div style={{ fontWeight: 600 }}>Ngày cần hàng: {dmy(it.required_date || it.expected_date)}</div>
                   ) : null}
                   {it.note ? <div>{it.note}</div> : null}
                 </td>
