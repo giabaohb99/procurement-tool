@@ -449,6 +449,7 @@ Trang danh sách `/purchase-requests` hỗ trợ các bộ lọc sau (khai báo 
 | Tham số | Nhãn trên UI | Kiểu | Ghi chú |
 |---------|-------------|------|---------|
 | `code` | Mã PYC | Văn bản (LIKE) | Tìm theo mã phiếu |
+| `product` | Mã / tên hàng | Văn bản (LIKE) | **CR-069** — lọc phiếu có ít nhất 1 dòng hàng mà **Mã hàng HOẶC Tên hàng** chứa chuỗi đã gõ. Khớp **một phần**: gõ `5155` ra cả `HOP5155` lẫn `NHG5155`. Không phân biệt hoa/thường và **không phân biệt dấu** (collation `utf8mb4_0900_ai_ci`: gõ `thung` vẫn ra `thùng`) |
 | `company_id` | Công ty | Chọn (exact) | Source: `/api/companies` |
 | `requester` | Người yêu cầu | Văn bản (LIKE) | Tìm theo tên nhân sự yêu cầu |
 | `department` | Bộ phận YC | Chọn (LIKE) | Source: `/api/departments` |
@@ -460,6 +461,8 @@ Trang danh sách `/purchase-requests` hỗ trợ các bộ lọc sau (khai báo 
 | `status` | Trạng thái | Chọn | `draft` (Nháp), `submitted` (Chờ duyệt), `approved` (Đã duyệt), `rejected` (Bị trả lại), `cancelled` (Đã từ chối), `processing` (Đang xử lý), `completed` (Hoàn thành) |
 
 Tất cả bộ lọc kết hợp với nhau theo AND và áp dụng thêm `apply_scope` theo phân quyền dữ liệu của người dùng.
+Bộ lọc đang đặt cũng là bộ lọc của **file xuất Excel** (chung hàm `_list_query`), nên lọc theo mã hàng
+rồi bấm "Xuất Excel" sẽ ra đúng bấy nhiêu phiếu.
 
 ---
 

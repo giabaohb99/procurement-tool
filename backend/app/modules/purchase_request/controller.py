@@ -214,6 +214,14 @@ def _list_query(request: Request, db: Session, user):
     if assignee:
         sub2 = select(PurchaseRequestItem.pr_id).where(PurchaseRequestItem.assignee == assignee)
         query = query.filter(PurchaseRequest.id.in_(sub2))
+    # CR-069 — tìm phiếu theo MÃ HÀNG / TÊN HÀNG ở dòng hàng (bảng con). Khớp MỘT PHẦN:
+    # gõ "5155" ra cả HOP5155 lẫn NHG5155. Cùng lối với ô tìm nhanh của màn Tiến độ mua hàng.
+    product = (request.query_params.get("product") or "").strip()
+    if product:
+        like = f"%{product}%"
+        sub3 = select(PurchaseRequestItem.pr_id).where(
+            (PurchaseRequestItem.product_code.like(like)) | (PurchaseRequestItem.product_name.like(like)))
+        query = query.filter(PurchaseRequest.id.in_(sub3))
     query = apply_scope(query, PurchaseRequest, "purchase_request", user, get_perm_profile(db, user))
     # Sort theo cột người dùng bấm (tiebreak id desc do service thêm); cột 'total' là tính toán -> bỏ qua
     return apply_sort_from_request(query, PurchaseRequest, request)

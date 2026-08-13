@@ -51,6 +51,7 @@ Màn danh sách `/survey-requests` hỗ trợ các bộ lọc:
 | Nhãn lọc | Param API | Loại | Ghi chú |
 |-----------|-----------|------|---------|
 | Mã phiếu | `code` | LIKE | |
+| Sản phẩm cần báo giá | `product` | LIKE | **CR-069** — dòng YCBG **không có ô mã/tên hàng**, nên ô này dò: `SurveyRequestLine.requirement_detail` (Thông số kỹ thuật) · `other_requirement` (Yêu cầu khác) · **và** mã/tên SP của **phương án ĐÃ CHỐT** (`SurveyRequestOption.system_product_code` / `snap_product_name`, chỉ `is_chosen = true`). Khớp một phần, không phân biệt hoa/thường và dấu. **KHÔNG dò** `snap_internal_code` và các cột `supplier_*` — nếu dò thì người không có `supplier.read` sẽ suy ra được NCC bằng cách gõ thử mã NCC |
 | Công ty | `company_id` | Bằng (ID) | |
 | Người yêu cầu | `requester` | LIKE | |
 | Bộ phận | `department` | LIKE | |
