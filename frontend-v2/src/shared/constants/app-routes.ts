@@ -47,6 +47,28 @@ export const appRoutes = {
   },
   document: {
     root: '/document',
+    /** Văn bản đến / đi / nội bộ. */
+    documents: '/document/documents',
+    documentNew: '/document/documents/new',
+    documentDetail: (id: number | string) => `/document/documents/${id}`,
+    /** Sổ văn bản đến / đi / nội bộ theo số vào sổ. */
+    books: '/document/books',
+    /** Danh mục loại văn bản (công văn, quyết định…). */
+    types: '/document/types',
+    typeNew: '/document/types/new',
+    typeDetail: (id: number | string) => `/document/types/${id}`,
+    /** Danh mục mức mật / khẩn. */
+    securityLevels: '/document/security-levels',
+    securityLevelNew: '/document/security-levels/new',
+    securityLevelDetail: (id: number | string) => `/document/security-levels/${id}`,
+    /** Danh mục đối tác văn bản. */
+    partners: '/document/partners',
+    partnerNew: '/document/partners/new',
+    partnerDetail: (id: number | string) => `/document/partners/${id}`,
+    /** Danh mục trường thông tin động. */
+    fields: '/document/fields',
+    fieldNew: '/document/fields/new',
+    fieldDetail: (id: number | string) => `/document/fields/${id}`,
   },
   report: {
     root: '/report',
