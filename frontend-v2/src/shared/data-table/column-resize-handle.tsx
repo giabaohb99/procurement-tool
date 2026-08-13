@@ -1,7 +1,11 @@
 import { useRef, type PointerEvent as ReactPointerEvent } from 'react'
 
+import { measureColumnContentWidth } from './measure-column-width'
+
 interface ColumnResizeHandleProps {
   minWidth: number
+  /** Chặn trên khi tự vừa nội dung; mặc định 640px cho khỏi có cột dài cả màn. */
+  maxWidth?: number
   onResize: (width: number) => void
   /**
    * Báo cho ô tiêu đề biết đang kéo giãn để nó TẮT `draggable` — ô tiêu đề vừa
@@ -21,15 +25,29 @@ interface ColumnResizeHandleProps {
  */
 export function ColumnResizeHandle({
   minWidth,
+  maxWidth,
   onResize,
   onResizingChange,
 }: ColumnResizeHandleProps) {
   const dragRef = useRef<{ startX: number; startWidth: number; width: number } | null>(null)
+  /** Mốc thời gian lần nhấn trước — dùng để tự bắt cú nháy đúp (xem dưới). */
+  const lastDownRef = useRef(0)
 
   function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
     // Ngăn click lan lên <th> (kẻo trang lại hiểu là bấm vào tiêu đề để sắp xếp).
     event.preventDefault()
     event.stopPropagation()
+
+    // `preventDefault` ở pointerdown làm trình duyệt NUỐT LUÔN sự kiện
+    // `dblclick`, nên phải tự đo khoảng cách giữa hai lần nhấn.
+    const now = event.timeStamp
+    const isDoubleClick = now - lastDownRef.current < 350
+    lastDownRef.current = now
+    if (isDoubleClick) {
+      lastDownRef.current = 0
+      autoFit(event.currentTarget)
+      return
+    }
 
     const handle = event.currentTarget
     // Đo độ rộng THẬT của ô lúc này thay vì tin vào prop: cột chưa khai `width`
@@ -63,11 +81,33 @@ export function ColumnResizeHandle({
     if (drag.width !== drag.startWidth) onResize(drag.width)
   }
 
+  /**
+   * Nháy đúp = tự co/giãn vừa nội dung (thói quen từ Excel). Đo xong đặt luôn
+   * vào DOM cho mượt rồi mới báo ra ngoài, giống lúc kéo tay.
+   */
+  function autoFit(handle: HTMLDivElement) {
+    const cell = handle.closest('th')
+    const table = cell?.closest('table')
+    if (!cell || !table) return
+
+    const columnIndex = Array.from(cell.parentElement?.children ?? []).indexOf(cell)
+    if (columnIndex < 0) return
+
+    const width = measureColumnContentWidth(table, columnIndex, {
+      min: minWidth,
+      max: maxWidth,
+    })
+    cell.style.width = `${width}px`
+    onResize(width)
+  }
+
   return (
     <div
       role="separator"
       aria-orientation="vertical"
-      aria-label="Kéo để đổi độ rộng cột"
+      aria-label="Kéo để đổi độ rộng cột, nháy đúp để vừa nội dung"
+      title="Kéo để đổi độ rộng · Nháy đúp để vừa nội dung"
+      onDoubleClick={(event) => autoFit(event.currentTarget)}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

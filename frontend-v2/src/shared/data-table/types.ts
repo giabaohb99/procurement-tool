@@ -54,6 +54,11 @@ export interface DataTableLayout {
    * biết đang xem đơn nào.
    */
   pinnedColumns: string[]
+  /**
+   * Màu người dùng tự đặt cho từng cột (mã màu gốc trong `COLUMN_COLORS`).
+   * Không có khóa = cột dùng nền mặc định.
+   */
+  columnColors: Record<string, string>
 }
 
 /** Thả cột vào TRƯỚC hay SAU cột đang trỏ tới. */

@@ -1,18 +1,22 @@
-import { Search } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { appConfig } from '@/core/config/app-config'
+import { PermissionGate } from '@/core/authorization/permission-gate'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import {
   ConditionalFilter,
   FilterProvider,
   useFilterQuery,
 } from '@/shared/conditional-filter'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { Badge } from '@/shared/ui/badge'
+import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
@@ -63,6 +67,7 @@ function PurchaseOrderListContent() {
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  const navigate = useNavigate()
 
   const { data: companies } = useCompanies({ page_size: 500, is_active: true })
   const { queryParams, queryKey } = useFilterQuery()
@@ -164,6 +169,14 @@ function PurchaseOrderListContent() {
       <PageHeader
         title="Đơn mua hàng"
         description="Đơn đặt hàng gửi nhà cung cấp và tình trạng hồ sơ chứng từ."
+        actions={
+          <PermissionGate entity="purchase_order" action="create">
+            <Button onClick={() => navigate(appRoutes.procurement.purchaseOrderNew)}>
+              <Plus />
+              Tạo đơn mua hàng
+            </Button>
+          </PermissionGate>
+        }
       />
 
       <Card className="flex min-h-0 flex-1 flex-col p-4">
@@ -172,6 +185,7 @@ function PurchaseOrderListContent() {
           columns={columns}
           rows={data?.items}
           getRowId={(po) => po.id}
+          onRowClick={(po) => navigate(appRoutes.procurement.purchaseOrderDetail(po.id))}
           isLoading={isLoading}
           isError={isError}
           emptyMessage="Không tìm thấy đơn mua hàng nào."

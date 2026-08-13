@@ -26,6 +26,9 @@ export const appRoutes = {
     purchaseRequestPrint: (id: number | string) => `/print/purchase-request/${id}`,
     /** Đơn mua hàng (ĐMH). */
     purchaseOrders: '/procurement/purchase-orders',
+    purchaseOrderNew: '/procurement/purchase-orders/new',
+    purchaseOrderDetail: (id: number | string) => `/procurement/purchase-orders/${id}`,
+    purchaseOrderPrint: (id: number | string) => `/print/purchase-order/${id}`,
     /** Báo cáo tiến độ theo từng lần giao hàng. */
     purchaseProgress: '/procurement/purchase-progress',
     /** Phiếu khảo sát NCC / sản phẩm. */
@@ -41,6 +44,9 @@ export const appRoutes = {
   },
   project: {
     root: '/project',
+  },
+  document: {
+    root: '/document',
   },
   report: {
     root: '/report',

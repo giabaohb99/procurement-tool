@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 export function usePinnedOffsets(pinnedKeys: string[]) {
   const headerRowRef = useRef<HTMLTableRowElement>(null)
   const [offsets, setOffsets] = useState<Record<string, number>>({})
+  const [scrolledX, setScrolledX] = useState(false)
 
   // Chuỗi khóa thay cho mảng: mảng đổi identity mỗi lần render sẽ chạy lại effect.
   const keySignature = pinnedKeys.join('|')
@@ -48,7 +49,24 @@ export function usePinnedOffsets(pinnedKeys: string[]) {
     return () => observer.disconnect()
   }, [measure])
 
-  return { headerRowRef, pinnedOffsets: offsets }
+  /**
+   * Bảng đã trượt ngang hay chưa. Mép cột ghim chỉ đổ bóng khi THẬT SỰ có nội
+   * dung chạy bên dưới — lúc chưa cuộn, cột ghim nằm đúng chỗ của nó nên vạch
+   * phải mảnh y hệt các cột khác, không thì trông như kẻ viền hai lần.
+   */
+  useEffect(() => {
+    const container = headerRowRef.current?.closest<HTMLElement>(
+      '[data-slot="table-container"]',
+    )
+    if (!container) return
+
+    const sync = () => setScrolledX(container.scrollLeft > 0)
+    sync()
+    container.addEventListener('scroll', sync, { passive: true })
+    return () => container.removeEventListener('scroll', sync)
+  }, [])
+
+  return { headerRowRef, pinnedOffsets: offsets, scrolledX }
 }
 
 function isSameOffsets(a: Record<string, number>, b: Record<string, number>): boolean {

@@ -49,7 +49,14 @@ export function AuditTimeline({
 
   return (
     <Card className={cn(dense && 'gap-4 py-4')}>
-      <CardHeader className={cn(dense && 'border-b px-4 pb-3')}>
+      {/*
+        `pb-3!`: `CardHeader` có luật `[.border-b]:pb-6` (selector kép, thắng
+        class thường) — không đánh important thì thẻ này cao hơn các thẻ khác
+        cùng trang dù khai cùng một mức đệm.
+      */}
+      <CardHeader
+        className={cn(dense && 'min-h-9 flex flex-row items-center gap-3 border-b px-4 pb-3!')}
+      >
         <CardTitle className="flex items-center gap-2 text-base">
           <History className="size-4 text-muted-foreground" />
           Lịch sử thao tác

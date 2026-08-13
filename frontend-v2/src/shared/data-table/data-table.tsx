@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react'
+import { useCallback, useMemo, useRef, type ReactNode } from 'react'
 
 import { Skeleton } from '@/shared/ui/skeleton'
 import {
@@ -9,9 +9,11 @@ import {
   TableRow,
 } from '@/shared/ui/table'
 import { cn } from '@/shared/utils/cn'
+import { columnColorStyle } from './column-color-palette'
 import { ColumnHeaderCell } from './column-header-cell'
 import { ColumnVisibilityMenu } from './column-visibility-menu'
 import { DataTablePagination } from './data-table-pagination'
+import { measureColumnContentWidth } from './measure-column-width'
 import type { DataTableColumn, DataTablePagination as PaginationConfig } from './types'
 import { useColumnDrag } from './use-column-drag'
 import { usePinnedOffsets } from './use-pinned-offsets'
@@ -99,12 +101,15 @@ export function DataTable<T>({
     visibleColumns,
     toggleColumn,
     setColumnWidth,
+    setColumnWidths,
+    setColumnColor,
     moveColumn,
     togglePin,
     resetLayout,
   } = useTableLayout(columns, storageKey)
 
   const { drag, startDrag } = useColumnDrag(moveColumn)
+  const tableRef = useRef<HTMLTableElement>(null)
 
   const columnCount = visibleColumns.length
   const widthOf = (column: DataTableColumn<T>) =>
@@ -123,8 +128,29 @@ export function DataTable<T>({
     return keys
   }, [visibleColumns, layout.pinnedColumns])
 
-  const { headerRowRef, pinnedOffsets } = usePinnedOffsets(pinnedKeys)
+  const { headerRowRef, pinnedOffsets, scrolledX } = usePinnedOffsets(pinnedKeys)
   const lastPinnedKey = pinnedKeys.at(-1)
+
+  /**
+   * Co MỌI cột đang hiện cho vừa nội dung — như nháy đúp vào từng vạch kéo giãn
+   * nhưng làm một lượt. Đo trên DOM thật nên số thứ tự cột lấy theo hàng đang
+   * hiện (khác thứ tự khai báo khi có cột ẩn / cột ghim).
+   *
+   * Ghi cả bảng bằng MỘT lần lưu: gọi `setColumnWidth` từng cột thì mỗi lần lại
+   * lưu đè lên `layout` cũ đọc được lúc dựng hàm, chỉ cột cuối sống sót.
+   */
+  const autoFitAll = useCallback(() => {
+    const table = tableRef.current
+    if (!table) return
+
+    const widths: Record<string, number> = {}
+    visibleColumns.forEach((column, index) => {
+      widths[column.key] = measureColumnContentWidth(table, index, {
+        min: column.minWidth ?? DEFAULT_MIN_WIDTH,
+      })
+    })
+    setColumnWidths(widths)
+  }, [visibleColumns, setColumnWidths])
 
   /**
    * Class của ô thuộc cột ghim. Nền `bg-inherit` để ăn theo nền của HÀNG (hàng
@@ -137,11 +163,13 @@ export function DataTable<T>({
       // MỌI ô ghim đều tắt `border-r` và tự vẽ vạch bằng `inset shadow`: ô dính
       // nằm đè lên ô kế bên, để cả hai cùng có đường kẻ thì thành vạch đôi.
       'sticky z-20 border-r-0 bg-inherit',
-      // Vạch mảnh giữa hai cột ghim, vạch đậm ở mép cột ghim cuối để thấy rõ
-      // ranh giới giữa phần đứng yên và phần đang trôi.
-      key === lastPinnedKey
-        ? 'shadow-[inset_-2px_0_0_0_var(--border)]'
-        : 'shadow-[inset_-1px_0_0_0_var(--border)]',
+      // Vạch luôn MẢNH 1px như mọi cột khác — vạch dày ở cột ghim cuối trông
+      // như bị kẻ viền chồng lên nhau. Ranh giới phần đứng yên / phần đang trôi
+      // báo bằng bóng đổ, và chỉ khi bảng đã cuộn ngang.
+      'shadow-[inset_-1px_0_0_0_var(--border)]',
+      key === lastPinnedKey &&
+        scrolledX &&
+        'shadow-[inset_-1px_0_0_0_var(--border),6px_0_8px_-6px_rgb(0_0_0/0.18)]',
     )
 
   /** `left` của ô dính; `undefined` nếu cột không ghim (hoặc chưa đo xong). */
@@ -159,8 +187,11 @@ export function DataTable<T>({
               columns={orderedColumns}
               hiddenColumns={layout.hiddenColumns}
               pinnedColumns={layout.pinnedColumns}
+              columnColors={layout.columnColors}
               onToggle={toggleColumn}
               onTogglePin={togglePin}
+              onAutoFitAll={autoFitAll}
+              onColorChange={setColumnColor}
               onReset={resetLayout}
             />
           </div>
@@ -186,6 +217,7 @@ export function DataTable<T>({
           trình duyệt lại tự tính lại và cột nhảy về chỗ cũ.
         */}
         <Table
+          ref={tableRef}
           className="table-fixed"
           containerClassName={cn(fillHeight && 'min-h-0 flex-1 overflow-auto')}
         >
@@ -195,13 +227,21 @@ export function DataTable<T>({
             của cột ghim `bg-inherit` che được phần bảng cuộn ngang phía sau.
           */}
           <TableHeader className={cn('bg-muted', fillHeight && 'sticky top-0 z-30')}>
-            <TableRow ref={headerRowRef} className="bg-muted">
+            {/*
+              `hover:bg-muted` KHÔNG thừa: `TableRow` của shadcn mặc định có
+              `hover:bg-muted/50` — nền CÓ ALPHA. Rê chuột lên hàng tiêu đề đang
+              dính đỉnh là nó trong suốt một nửa, các dòng trôi bên dưới hiện
+              xuyên qua (và ô cột ghim `bg-inherit` cũng lộ theo). Ghi đè bằng
+              đúng màu đục để hover không đổi gì cả.
+            */}
+            <TableRow ref={headerRowRef} className="bg-muted hover:bg-muted">
               {visibleColumns.map((column) => (
                 <ColumnHeaderCell
                   key={column.key}
                   column={column}
                   width={widthOf(column)}
                   className={cn(HEAD_CELL, alignClass(column.align), pinClass(column.key))}
+                  colorStyle={columnColorStyle(layout.columnColors[column.key], 'head')}
                   pinnedOffset={pinOffset(column.key)}
                   minWidth={column.minWidth ?? DEFAULT_MIN_WIDTH}
                   dragging={drag?.fromKey === column.key}
@@ -258,22 +298,39 @@ export function DataTable<T>({
                   className={cn(ROW_BG, onRowClick && 'cursor-pointer')}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
-                  {visibleColumns.map((column) => (
-                    <TableCell
-                      key={column.key}
-                      style={{
-                        width: widthOf(column),
-                        left: pinOffset(column.key),
-                      }}
-                      className={cn(
-                        BODY_CELL,
-                        alignClass(column.align),
-                        pinClass(column.key),
-                      )}
-                    >
-                      {column.cell(row)}
-                    </TableCell>
-                  ))}
+                  {visibleColumns.map((column) => {
+                    const content = column.cell(row)
+                    return (
+                      <TableCell
+                        key={column.key}
+                        style={{
+                          width: widthOf(column),
+                          left: pinOffset(column.key),
+                          // Màu cột đặt SAU nền của hàng: ô đã tô màu giữ nguyên
+                          // màu đó kể cả khi rê chuột, đúng ý "đánh dấu cột".
+                          ...columnColorStyle(layout.columnColors[column.key], 'cell'),
+                        }}
+                        className={cn(
+                          BODY_CELL,
+                          alignClass(column.align),
+                          pinClass(column.key),
+                        )}
+                      >
+                        {/*
+                          Bọc `truncate` giống ô tiêu đề: kéo cột hẹp lại thì chữ
+                          cắt bằng dấu "…" thay vì bị xén cụt giữa chừng. Đặt trên
+                          bọc chứ không trên `<td>` vì `text-overflow` chỉ ăn ở
+                          khối chứa trực tiếp dòng chữ.
+                        */}
+                        <div
+                          className="truncate"
+                          title={typeof content === 'string' ? content : undefined}
+                        >
+                          {content}
+                        </div>
+                      </TableCell>
+                    )
+                  })}
                 </TableRow>
               ))}
           </TableBody>

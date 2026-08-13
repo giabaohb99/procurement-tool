@@ -5,11 +5,16 @@ import { purchaseRequestSupportApi } from '../api/purchase-request-support-api'
 
 const supportKeys = {
   warehouses: ['procurement', 'purchase-request-print', 'warehouses'] as const,
+  units: ['procurement', 'purchase-request', 'units'] as const,
+  itemGroups: ['procurement', 'purchase-request', 'item-groups'] as const,
+  products: (search: string) => ['procurement', 'purchase-request', 'products', search] as const,
+  purchaseHistory: (productCode: string, page: number, search: string) =>
+    ['procurement', 'purchase-request', 'purchase-history', productCode, page, search] as const,
   attachments: (entity: string, entityId: number) =>
     ['procurement', 'attachments', entity, entityId] as const,
   documentTypes: ['procurement', 'attachments', 'document-types'] as const,
-  comments: (purchaseRequestId: number) =>
-    ['procurement', 'purchase-request-comments', purchaseRequestId] as const,
+  comments: (entity: string, entityId: number) =>
+    ['procurement', 'comments', entity, entityId] as const,
   relatedOrders: (code: string) =>
     ['procurement', 'purchase-request-related-orders', code] as const,
 }
@@ -19,6 +24,64 @@ export function usePurchaseRequestPrintWarehouses() {
     queryKey: supportKeys.warehouses,
     queryFn: purchaseRequestSupportApi.listWarehouses,
     staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function usePurchaseRequestWarehouses(enabled = true) {
+  return useQuery({
+    queryKey: supportKeys.warehouses,
+    queryFn: purchaseRequestSupportApi.listWarehouses,
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function usePurchaseRequestUnits(enabled = true) {
+  return useQuery({
+    queryKey: supportKeys.units,
+    queryFn: purchaseRequestSupportApi.listUnits,
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function usePurchaseRequestItemGroups(enabled = true) {
+  return useQuery({
+    queryKey: supportKeys.itemGroups,
+    queryFn: purchaseRequestSupportApi.listItemGroups,
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function usePurchaseRequestProducts(search: string, enabled = true) {
+  return useQuery({
+    queryKey: supportKeys.products(search),
+    queryFn: () => purchaseRequestSupportApi.listProducts(search),
+    enabled,
+    staleTime: 60 * 1000,
+  })
+}
+
+export function useProductPurchaseHistory(
+  productCode: string,
+  page: number,
+  pageSize: number,
+  search: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: supportKeys.purchaseHistory(productCode, page, search),
+    queryFn: () =>
+      purchaseRequestSupportApi.listProductPurchaseHistory(
+        productCode,
+        page,
+        pageSize,
+        search,
+      ),
+    enabled: enabled && !!productCode,
+    placeholderData: (previousData) => previousData,
+    staleTime: 60 * 1000,
   })
 }
 
@@ -38,11 +101,22 @@ export function useDocumentTypes() {
   })
 }
 
-export function useUploadPurchaseRequestAttachments(entity: string, entityId: number) {
+export function useUploadPurchaseRequestAttachments(
+  entity: string,
+  entityId: number,
+  /** Đơn mua hàng cha — bắt buộc khi đính kèm vào một LẦN GIAO. */
+  purchaseOrderId = 0,
+) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ files, docType }: { files: File[]; docType?: string }) =>
-      purchaseRequestSupportApi.uploadAttachments(entity, entityId, files, docType),
+      purchaseRequestSupportApi.uploadAttachments(
+        entity,
+        entityId,
+        files,
+        docType,
+        purchaseOrderId,
+      ),
     onSuccess: () => {
       toast.success('Đã tải lên tệp đính kèm')
       void queryClient.invalidateQueries({
@@ -65,15 +139,16 @@ export function useDeletePurchaseRequestAttachment(entity: string, entityId: num
   })
 }
 
-export function usePurchaseRequestComments(purchaseRequestId: number) {
+/** Bình luận của một chứng từ: `purchase_request` hoặc `purchase_order`. */
+export function useDocumentComments(entity: string, entityId: number) {
   return useQuery({
-    queryKey: supportKeys.comments(purchaseRequestId),
-    queryFn: () => purchaseRequestSupportApi.listComments(purchaseRequestId),
-    enabled: purchaseRequestId > 0,
+    queryKey: supportKeys.comments(entity, entityId),
+    queryFn: () => purchaseRequestSupportApi.listComments(entity, entityId),
+    enabled: entityId > 0,
   })
 }
 
-export function useCreatePurchaseRequestComment(purchaseRequestId: number) {
+export function useCreateDocumentComment(entity: string, entityId: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({
@@ -89,7 +164,8 @@ export function useCreatePurchaseRequestComment(purchaseRequestId: number) {
         ? await purchaseRequestSupportApi.uploadCommentFiles(files)
         : []
       return purchaseRequestSupportApi.createComment(
-        purchaseRequestId,
+        entity,
+        entityId,
         body,
         parentId,
         uploaded.map((file) => file.file_id),
@@ -97,15 +173,15 @@ export function useCreatePurchaseRequestComment(purchaseRequestId: number) {
     },
     onSuccess: () => {
       toast.success('Đã gửi bình luận')
-      void queryClient.invalidateQueries({ queryKey: supportKeys.comments(purchaseRequestId) })
+      void queryClient.invalidateQueries({ queryKey: supportKeys.comments(entity, entityId) })
     },
   })
 }
 
-export function usePurchaseRequestCommentActions(purchaseRequestId: number) {
+export function useDocumentCommentActions(entity: string, entityId: number) {
   const queryClient = useQueryClient()
   const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: supportKeys.comments(purchaseRequestId) })
+    queryClient.invalidateQueries({ queryKey: supportKeys.comments(entity, entityId) })
 
   const toggleLike = useMutation({
     mutationFn: purchaseRequestSupportApi.toggleLike,

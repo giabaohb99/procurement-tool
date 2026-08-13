@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
+import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -187,19 +188,17 @@ export function PurchaseRequestLineDetailDialog({
             />
           </LineField>
           <LineField label="Ngày cần hàng *">
-            <Input
-              type="date"
+            <DatePicker
               value={draft.required_date}
               disabled={!editing}
-              onChange={(event) => patch({ required_date: event.target.value })}
+              onChange={(value) => patch({ required_date: value })}
             />
           </LineField>
           <LineField label="Thời gian dự kiến có hàng">
-            <Input
-              type="date"
+            <DatePicker
               value={draft.expected_date}
               disabled={!canEditProgress}
-              onChange={(event) => patch({ expected_date: event.target.value })}
+              onChange={(value) => patch({ expected_date: value })}
             />
           </LineField>
           {showAssignee && (

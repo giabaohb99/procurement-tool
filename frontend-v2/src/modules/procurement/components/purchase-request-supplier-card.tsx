@@ -36,7 +36,8 @@ export function PurchaseRequestSupplierCard({
 
   return (
     <Card className="gap-4 py-4">
-      <CardHeader className="border-b px-4 pb-3">
+      {/* Xem ghi chú về `pb-3!` ở `purchase-request-attachments-card.tsx`. */}
+      <CardHeader className="min-h-9 flex flex-row items-center gap-3 border-b px-4 pb-3!">
         <CardTitle className="text-base text-navy dark:text-foreground">
           Nhà cung cấp
         </CardTitle>

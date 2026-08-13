@@ -7,9 +7,11 @@ import {
   CornerUpLeft,
   Loader2,
   Pencil,
+  Plus,
   Printer,
   Save,
   Send,
+  ShoppingCart,
   X,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -50,14 +52,18 @@ import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Textarea } from '@/shared/ui/textarea'
+import { formatDate } from '@/shared/utils/format-date'
 import { StatusBadge } from '../components/document-status-badge'
-import { PurchaseRequestAttachmentsCard } from '../components/purchase-request-attachments-card'
-import { PurchaseRequestComments } from '../components/purchase-request-comments'
+import { DocumentAttachmentsCard } from '../components/document-attachments-card'
+import { DocumentComments } from '../components/document-comments'
 import { PurchaseRequestInfoCard } from '../components/purchase-request-info-card'
-import { PurchaseRequestItemsTable } from '../components/purchase-request-items-table'
+import {
+  EMPTY_PURCHASE_REQUEST_ITEM,
+  PurchaseRequestItemsTable,
+} from '../components/purchase-request-items-table'
 import { PurchaseRequestLineDetailDialog } from '../components/purchase-request-line-detail-dialog'
 import { PurchaseRequestSupplierCard } from '../components/purchase-request-supplier-card'
-import { PurchaseRequestTotals } from '../components/purchase-request-totals'
+import { DocumentMoneyTotals } from '../components/document-money-totals'
 import { RelatedPurchaseOrdersCard } from '../components/related-purchase-orders-card'
 import {
   useAssignPurchaser,
@@ -71,6 +77,11 @@ import {
   type PurchaseRequestAction,
 } from '../hooks/use-purchase-request'
 import { PR_STATUS_LABELS } from '../types/purchase-document'
+import type { PurchaseOrderItem } from '../types/purchase-order-detail'
+import {
+  buildPurchaseOrderLines,
+  toDraftFromRequest,
+} from '../utils/purchase-order-draft'
 import { purchaseRequestApi } from '../api/purchase-request-api'
 import {
   isClosed,
@@ -111,7 +122,10 @@ const CONFIRM_ACTIONS: Record<ConfirmAction, { title: string; description: strin
 export function PurchaseRequestDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const isNew = id === 'new'
+  // Route tạo mới là route tĩnh `/new`, không khai `:id`, nên `useParams()`
+  // trả `undefined`. Vẫn chấp nhận giá trị `new` để component an toàn nếu sau
+  // này route được gộp lại với route chi tiết.
+  const isNew = !id || id === 'new'
   const purchaseRequestId = isNew ? 0 : Number(id)
   const { user } = useAuth()
   const { can } = usePermission()
@@ -135,6 +149,12 @@ export function PurchaseRequestDetailPage() {
   const [reason, setReason] = useState('')
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
   const [lineIndex, setLineIndex] = useState<number | null>(null)
+  /** Cảnh báo trước khi tạo ĐMH: có dòng đã đặt đủ/vượt so với số yêu cầu. */
+  const [orderedWarning, setOrderedWarning] = useState<{
+    message: string
+    remaining: PurchaseOrderItem[]
+    all: PurchaseOrderItem[]
+  } | null>(null)
 
   useEffect(() => {
     if (isNew) {
@@ -198,6 +218,25 @@ export function PurchaseRequestDetailPage() {
   const allItemsDone =
     data.items.length > 0 &&
     data.items.every((item) => ['Hoàn thành', 'Hủy đơn'].includes(item.line_status))
+  /**
+   * NSTM = nhân sự PHÒNG THU MUA; ô chọn hiện TÊN nhưng lưu MÃ nhân viên
+   * (backend nối dòng YCMH với người phụ trách bằng mã).
+   */
+  const purchasers = (employeesData?.items ?? [])
+    .filter((employee) => (employee.department_name || '').toLowerCase().includes('thu mua'))
+    .map((employee) => ({ code: employee.code, name: employee.full_name }))
+
+  /** Sửa tiến độ dòng: quản lý/người duyệt, hoặc chính NSTM phụ trách dòng đó. */
+  const canEditLine = (item: PurchaseRequestItem) =>
+    canAssign || canManage || (!!item.assignee && item.assignee === user?.emp_code)
+
+  /** Còn dòng chưa đặt đủ -> mới có việc cho nút "Tạo đơn mua hàng". */
+  const hasUnorderedItem = data.items.some(
+    (item) =>
+      item.product_name &&
+      item.line_status !== 'Hủy đơn' &&
+      (item.qty || 0) - (progress?.ordered?.[item.product_code] ?? 0) > 0,
+  )
   const canManageAttachments =
     editable && (can('purchase_request', 'write') || can('purchase_request', 'create'))
   const canManageLineAttachments =
@@ -276,6 +315,82 @@ export function PurchaseRequestDetailPage() {
     }
   }
 
+  /** Sang màn tạo ĐMH với dòng hàng điền sẵn — chưa ghi gì vào DB. */
+  function goToNewPurchaseOrder(items: PurchaseOrderItem[]) {
+    navigate(appRoutes.procurement.purchaseOrderNew, {
+      state: { fromPurchaseRequest: toDraftFromRequest(loadedData, items) },
+    })
+  }
+
+  function handleCreatePurchaseOrder() {
+    const { remaining, exceeded, exceededMessages } = buildPurchaseOrderLines(
+      loadedData.items,
+      progress?.ordered,
+    )
+    // Không có dòng nào đã đặt đủ/vượt thì đi thẳng, khỏi hỏi.
+    if (!exceeded.length) {
+      goToNewPurchaseOrder(remaining)
+      return
+    }
+    setOrderedWarning({
+      message: exceededMessages.join('; '),
+      remaining,
+      all: [...remaining, ...exceeded],
+    })
+  }
+
+  /**
+   * Đổi NSTM ngay trên bảng. Phiếu còn ở chế độ SỬA (nháp) thì chỉ đổi nháp và
+   * chờ nút Lưu; phiếu đã lưu thì ghi ngay để người phụ trách nhận việc liền.
+   */
+  function handleAssigneeChange(item: PurchaseRequestItem, assignee: string) {
+    if (editing || !item.id) return
+    void assignPurchaser.mutateAsync({ id: item.id, assignee })
+  }
+
+  /**
+   * Ghi "TG dự kiến có hàng" khi rời ô. ĐỔI giá trị ĐÃ CÓ thì bắt buộc nêu lý
+   * do (backend ghi vào nhật ký) — hủy nhập lý do sẽ trả ô về giá trị cũ.
+   */
+  function handleExpectedDateCommit(
+    item: PurchaseRequestItem,
+    expectedDate: string,
+    originalDate: string,
+  ) {
+    if (editing || !item.id || expectedDate === originalDate) return
+
+    const revert = () =>
+      patch({
+        items: loadedDraft.items.map((line) =>
+          line.id === item.id ? { ...line, expected_date: originalDate } : line,
+        ),
+      })
+
+    let reason = ''
+    if (originalDate) {
+      const answer = window.prompt(
+        `Đổi thời gian dự kiến có hàng từ ${formatDate(originalDate)} sang ${
+          formatDate(expectedDate) || '(để trống)'
+        } — nhập lý do:`,
+      )
+      reason = answer?.trim() ?? ''
+      if (!reason) {
+        toast.error('Cần nhập lý do thay đổi thời gian dự kiến')
+        revert()
+        return
+      }
+    }
+
+    void updateItemStatus.mutateAsync({
+      id: item.id,
+      line_status: item.line_status,
+      progress_note: item.progress_note,
+      note: item.note,
+      expected_date: expectedDate,
+      expected_date_reason: reason,
+    })
+  }
+
   async function handleOperationalLineSave(item: PurchaseRequestItem) {
     if (!item.id) return
     const original = loadedData.items.find((line) => line.id === item.id)
@@ -330,7 +445,11 @@ export function PurchaseRequestDetailPage() {
                 </Button>
                 {isNew && (
                   <Button
-                    variant="secondary"
+                    // KHÔNG dùng `secondary`: token `--secondary` gần như trắng
+                    // và biến thể đó không có viền, nên nút chìm hẳn vào nền
+                    // thanh công cụ. `outline` cho viền rõ mà vẫn nhường bậc
+                    // nhấn mạnh cho nút Lưu.
+                    variant="outline"
                     onClick={() => void handleSave(true)}
                     disabled={savePurchaseRequest.isPending}
                   >
@@ -407,12 +526,29 @@ export function PurchaseRequestDetailPage() {
                     Duyệt điều phối
                   </Button>
                 )}
+                {can('purchase_order', 'create') &&
+                  workableStatuses.includes(data.status) &&
+                  hasUnorderedItem && (
+                    <Button onClick={handleCreatePurchaseOrder} disabled={runAction.isPending}>
+                      <ShoppingCart />
+                      Tạo đơn mua hàng
+                    </Button>
+                  )}
                 {canManage && workableStatuses.includes(data.status) && (
                   <Button
                     variant="outline"
-                    disabled={!allItemsDone}
-                    title={allItemsDone ? undefined : 'Mọi dòng phải Hoàn thành hoặc Hủy đơn'}
-                    onClick={() => setConfirmAction('complete')}
+                    // KHÔNG disable: nút mờ chỉ nói "không bấm được" chứ không
+                    // nói vì sao. Cứ cho bấm rồi báo lý do bằng toast — giống v1.
+                    onClick={() => {
+                      if (!allItemsDone) {
+                        // Đỏ chứ không vàng: cam trên nền vàng nhạt đọc rất mệt.
+                        toast.error(
+                          'Chưa hoàn thành được phiếu: còn dòng hàng chưa ở trạng thái Hoàn thành hoặc Hủy đơn.',
+                        )
+                        return
+                      }
+                      setConfirmAction('complete')
+                    }}
                   >
                     <CheckCheck />
                     Hoàn thành
@@ -473,17 +609,34 @@ export function PurchaseRequestDetailPage() {
           />
 
           <Card className="gap-4 py-4">
-            <CardHeader className="flex flex-row items-center justify-between border-b px-4 pb-3">
+            <CardHeader className="min-h-9 flex flex-row items-center justify-between gap-3 border-b px-4 pb-3!">
               <CardTitle className="text-base text-navy dark:text-foreground">
                 Danh sách Sản phẩm Yêu cầu
               </CardTitle>
+              {editing ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    patch({
+                      items: [...draft.items, { ...EMPTY_PURCHASE_REQUEST_ITEM }],
+                    })
+                  }
+                >
+                  <Plus />
+                  Thêm SP
+                </Button>
+              ) : null}
+            </CardHeader>
+            <CardContent className="space-y-3 px-4">
+              {/* Câu hướng dẫn để trong thân thẻ, không nhét vào tiêu đề: hai
+                  dòng chữ ở tiêu đề làm thẻ này cao hơn hẳn các thẻ còn lại. */}
               {!editing && (
-                <p className="text-right text-xs text-muted-foreground">
-                  Trạng thái và tiến độ tự đồng bộ từ ĐMH. Mở Chi tiết để xem ngày cần hàng, ghi chú và ảnh đối chiếu.
+                <p className="text-xs text-muted-foreground">
+                  Trạng thái và tiến độ tự đồng bộ từ ĐMH. Mở Chi tiết để xem ngày cần hàng,
+                  ghi chú và ảnh đối chiếu.
                 </p>
               )}
-            </CardHeader>
-            <CardContent className="space-y-4 px-4">
               <PurchaseRequestItemsTable
                 items={draft.items}
                 editing={editing}
@@ -491,20 +644,27 @@ export function PurchaseRequestDetailPage() {
                 onChange={(items) => patch({ items })}
                 onOpenDetail={setLineIndex}
                 orderedByCode={progress?.ordered}
+                purchasers={purchasers}
+                canAssign={canAssign}
+                canEditLine={canEditLine}
+                onAssigneeChange={handleAssigneeChange}
+                onExpectedDateCommit={handleExpectedDateCommit}
               />
-              <PurchaseRequestTotals {...calculatedTotals} />
+              <DocumentMoneyTotals {...calculatedTotals} />
             </CardContent>
           </Card>
 
           <PurchaseRequestSupplierCard data={draft} editing={editing} onChange={patch} />
 
+          <DocumentAttachmentsCard
+            entity="purchase_request"
+            entityId={purchaseRequestId}
+            canManage={canManageAttachments}
+          />
+
           {!isNew && (
             <>
-              <PurchaseRequestAttachmentsCard
-                purchaseRequestId={purchaseRequestId}
-                canManage={canManageAttachments}
-              />
-              <PurchaseRequestComments purchaseRequestId={purchaseRequestId} />
+              <DocumentComments entity="purchase_request" entityId={purchaseRequestId} />
               <AuditTimeline
                 entity="purchase_request"
                 entityId={purchaseRequestId}
@@ -566,6 +726,48 @@ export function PurchaseRequestDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={orderedWarning !== null}
+        onOpenChange={(open) => !open && setOrderedWarning(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Có sản phẩm đã đặt đủ hoặc vượt số yêu cầu</AlertDialogTitle>
+            <AlertDialogDescription>
+              {orderedWarning?.message}. Chọn "Chỉ SP còn thiếu" để bỏ qua các dòng này, hoặc
+              "Mua thêm" nếu vẫn muốn đặt tiếp.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Đóng</AlertDialogCancel>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const picked = orderedWarning
+                setOrderedWarning(null)
+                if (!picked) return
+                if (!picked.remaining.length) {
+                  toast.info('Không còn sản phẩm nào cần đặt thêm')
+                  return
+                }
+                goToNewPurchaseOrder(picked.remaining)
+              }}
+            >
+              Chỉ SP còn thiếu
+            </Button>
+            <AlertDialogAction
+              onClick={() => {
+                const picked = orderedWarning
+                setOrderedWarning(null)
+                if (picked) goToNewPurchaseOrder(picked.all)
+              }}
+            >
+              Mua thêm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={confirmAction !== null} onOpenChange={(open) => !open && setConfirmAction(null)}>
         <AlertDialogContent>

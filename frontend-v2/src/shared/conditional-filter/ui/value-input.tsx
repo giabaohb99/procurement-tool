@@ -1,3 +1,4 @@
+import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import {
   Select,
@@ -21,9 +22,8 @@ interface ValueInputProps {
 /**
  * Ô nhập giá trị, hình dạng tùy theo (kiểu trường × operator).
  *
- * Khác FilterCN gốc: ngày dùng `<input type="date">` thay cho Calendar của
- * `react-day-picker` + `date-fns`. Backend lưu ngày dạng chuỗi `YYYY-MM-DD` —
- * đúng bằng giá trị mà input date trả ra, nên không cần tầng định dạng nào.
+ * Ngày dùng `DatePicker` chung của hệ. Backend lưu ngày dạng chuỗi `YYYY-MM-DD`
+ * — đúng bằng giá trị `DatePicker` nhận và trả — nên không cần tầng đổi dạng.
  */
 export function ValueInput({ rowId, field, operator, value }: ValueInputProps) {
   const { updateValue } = useFilterContext()
@@ -39,19 +39,35 @@ export function ValueInput({ rowId, field, operator, value }: ValueInputProps) {
     const [from = '', to = ''] = Array.isArray(value) ? value : []
     return (
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <Input
-          type={inputType}
-          placeholder={isDate ? 'Từ ngày' : 'Nhỏ nhất'}
-          value={String(from)}
-          onChange={(e) => change([e.target.value, String(to)])}
-        />
+        {isDate ? (
+          <DatePicker
+            placeholder="Từ ngày"
+            value={String(from)}
+            onChange={(next) => change([next, String(to)])}
+          />
+        ) : (
+          <Input
+            type={inputType}
+            placeholder="Nhỏ nhất"
+            value={String(from)}
+            onChange={(e) => change([e.target.value, String(to)])}
+          />
+        )}
         <span className="text-muted-foreground">–</span>
-        <Input
-          type={inputType}
-          placeholder={isDate ? 'Đến ngày' : 'Lớn nhất'}
-          value={String(to)}
-          onChange={(e) => change([String(from), e.target.value])}
-        />
+        {isDate ? (
+          <DatePicker
+            placeholder="Đến ngày"
+            value={String(to)}
+            onChange={(next) => change([String(from), next])}
+          />
+        ) : (
+          <Input
+            type={inputType}
+            placeholder="Lớn nhất"
+            value={String(to)}
+            onChange={(e) => change([String(from), e.target.value])}
+          />
+        )}
       </div>
     )
   }
@@ -102,6 +118,14 @@ export function ValueInput({ rowId, field, operator, value }: ValueInputProps) {
 
   if (field.type === 'combobox' && field.fetchOptions) {
     return <ComboboxValue field={field} value={String(value ?? '')} onChange={change} />
+  }
+
+  if (isDate) {
+    return (
+      <div className="min-w-32 flex-1">
+        <DatePicker value={String(value ?? '')} onChange={change} />
+      </div>
+    )
   }
 
   return (

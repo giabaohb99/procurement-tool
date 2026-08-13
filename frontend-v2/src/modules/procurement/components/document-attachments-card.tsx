@@ -20,25 +20,26 @@ import {
   useUploadPurchaseRequestAttachments,
 } from '../hooks/use-purchase-request-support'
 
-interface PurchaseRequestAttachmentsCardProps {
-  purchaseRequestId: number
+interface DocumentAttachmentsCardProps {
+  /** `purchase_request` hoặc `purchase_order` — quyết định chính sách file ở backend. */
+  entity: string
+  entityId: number
   canManage: boolean
 }
 
-/** Chứng từ của phiếu, dùng đúng loại tài liệu và chính sách file do backend cấp. */
-export function PurchaseRequestAttachmentsCard({
-  purchaseRequestId,
+/** Chứng từ của chứng từ mua hàng — dùng chung cho YCMH và ĐMH. */
+export function DocumentAttachmentsCard({
+  entity,
+  entityId,
   canManage,
-}: PurchaseRequestAttachmentsCardProps) {
+}: DocumentAttachmentsCardProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [docType, setDocType] = useState('other')
-  const { data: files, isLoading, isError } = usePurchaseRequestAttachments(
-    'purchase_request',
-    purchaseRequestId,
-  )
+  const { data: files, isLoading, isError } = usePurchaseRequestAttachments(entity, entityId)
   const { data: documentTypes } = useDocumentTypes()
-  const upload = useUploadPurchaseRequestAttachments('purchase_request', purchaseRequestId)
-  const remove = useDeletePurchaseRequestAttachment('purchase_request', purchaseRequestId)
+  const upload = useUploadPurchaseRequestAttachments(entity, entityId)
+  const remove = useDeletePurchaseRequestAttachment(entity, entityId)
+  const isNew = entityId <= 0
 
   const labels = Object.fromEntries(
     (documentTypes ?? []).map((option) => [option.value, option.label]),
@@ -53,18 +54,23 @@ export function PurchaseRequestAttachmentsCard({
 
   return (
     <Card className="gap-4 py-4">
-      <CardHeader className="gap-3 border-b px-4 pb-3 sm:flex-row sm:items-center sm:justify-between">
+      {/*
+        `pb-3!` chứ không phải `pb-3`: `CardHeader` của shadcn có luật
+        `[.border-b]:pb-6` — selector kép nên thắng class thường, không đánh dấu
+        important thì mọi thẻ có gạch chân đều bị đệm 24px, cao thấp lệch nhau.
+      */}
+      <CardHeader className="min-h-9 flex flex-row items-center justify-between gap-3 border-b px-4 pb-3!">
         <div className="flex items-center gap-2">
           <Paperclip className="size-4 text-primary" />
           <CardTitle className="text-base text-navy dark:text-foreground">
-            Chứng từ &amp; tài liệu đính kèm
+            Chứng từ &amp; Tài liệu đính kèm
           </CardTitle>
           <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
             {files?.length ?? 0} tệp
           </span>
         </div>
 
-        {canManage && (
+        {canManage && !isNew && (
           <div className="flex flex-wrap items-center gap-2">
             <Select value={docType} onValueChange={setDocType}>
               <SelectTrigger className="w-48">
@@ -102,33 +108,42 @@ export function PurchaseRequestAttachmentsCard({
       </CardHeader>
 
       <CardContent className="px-4">
-        <p className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Info className="size-3.5" />
-          Mỗi file tối đa 20 MB. Hỗ trợ PDF, ảnh, Word, Excel, XML, TXT, CSV, Email và CorelDRAW.
-        </p>
-        {isLoading && <Skeleton className="h-24 w-full" />}
-        {isError && (
-          <p className="text-sm text-destructive">Không tải được danh sách chứng từ.</p>
-        )}
-        {!isLoading && !isError && files?.length === 0 && (
-          <p className="rounded-lg border border-dashed bg-muted/20 py-5 text-center text-sm text-muted-foreground">
-            Chưa có tài liệu đính kèm.
+        {isNew ? (
+          <p className="flex items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/20 py-5 text-center text-sm text-muted-foreground">
+            <Info className="size-4" />
+            Vui lòng lưu chứng từ trước khi đính kèm tài liệu.
           </p>
-        )}
+        ) : (
+          <>
+            <p className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Info className="size-3.5" />
+              Mỗi file tối đa 20 MB. Hỗ trợ PDF, ảnh, Word, Excel, XML, TXT, CSV, Email và CorelDRAW.
+            </p>
+            {isLoading && <Skeleton className="h-24 w-full" />}
+            {isError && (
+              <p className="text-sm text-destructive">Không tải được danh sách chứng từ.</p>
+            )}
+            {!isLoading && !isError && files?.length === 0 && (
+              <p className="rounded-lg border border-dashed bg-muted/20 py-5 text-center text-sm text-muted-foreground">
+                Chưa có tài liệu đính kèm.
+              </p>
+            )}
 
-        {!!files?.length && (
-          <div className="divide-y rounded-lg border">
-            {files.map((file) => (
-              <AttachmentRow
-                key={file.id}
-                file={file}
-                typeLabel={labels[file.doc_type] || file.doc_type || 'Tài liệu khác'}
-                canDelete={canManage}
-                pending={remove.isPending}
-                onDelete={() => void remove.mutateAsync(file.id)}
-              />
-            ))}
-          </div>
+            {!!files?.length && (
+              <div className="divide-y rounded-lg border">
+                {files.map((file) => (
+                  <AttachmentRow
+                    key={file.id}
+                    file={file}
+                    typeLabel={labels[file.doc_type] || file.doc_type || 'Tài liệu khác'}
+                    canDelete={canManage}
+                    pending={remove.isPending}
+                    onDelete={() => void remove.mutateAsync(file.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
@@ -176,7 +191,7 @@ function AttachmentRow({
           icon={Trash2}
           title="Xóa tệp"
           confirmTitle={`Xóa "${file.filename}"?`}
-          confirmDescription="Tệp sẽ bị gỡ khỏi phiếu yêu cầu mua hàng."
+          confirmDescription="Tệp sẽ bị gỡ khỏi chứng từ này."
           confirmLabel="Xóa"
           destructive
           disabled={pending}

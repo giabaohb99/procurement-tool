@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
+import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import {
@@ -44,7 +45,9 @@ export function PurchaseRequestInfoCard({
 }: InfoCardProps) {
   return (
     <Card className="gap-4 py-4">
-      <CardHeader className="border-b px-4 pb-3">
+      {/* Cùng một khuôn với các thẻ khác trên trang — xem ghi chú `pb-3!` ở
+          `purchase-request-attachments-card.tsx`. */}
+      <CardHeader className="min-h-9 flex flex-row items-center gap-3 border-b px-4 pb-3!">
         <CardTitle className="text-base text-navy dark:text-foreground">
           Thông tin chung
         </CardTitle>
@@ -59,10 +62,9 @@ export function PurchaseRequestInfoCard({
             Ngày tiếp nhận <span className="text-destructive">*</span>
           </Label>
           {editing ? (
-            <Input
-              type="date"
+            <DatePicker
               value={data.request_date || ''}
-              onChange={(e) => onChange({ request_date: e.target.value })}
+              onChange={(value) => onChange({ request_date: value })}
             />
           ) : (
             <ReadOnlyValue>{formatDate(data.request_date) || '—'}</ReadOnlyValue>
@@ -158,7 +160,11 @@ export function PurchaseRequestInfoCard({
 
         <Field label="Trưởng bộ phận (TBP) / Người liên hệ">{data.head_of_dept}</Field>
 
-        <div className="space-y-1.5">
+        {/*
+          Ô "Đơn gấp" chiếm trọn một hàng để hai ô chữ dài bên dưới đứng CẠNH
+          NHAU: xếp một ô ngắn cạnh một textarea cao sẽ hở một mảng trống lớn.
+        */}
+        <div className="space-y-1.5 md:col-span-2">
           <Label>Tùy chọn phiếu</Label>
           <label className="flex cursor-pointer items-center gap-2 text-sm text-destructive">
             <Checkbox

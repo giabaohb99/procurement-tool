@@ -9,15 +9,19 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/core/auth/use-auth'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
+import {
+  MentionInput,
+  type MentionInputHandle,
+  type MentionPerson,
+} from '@/shared/ui/mention-input'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { Textarea } from '@/shared/ui/textarea'
 import { formatDateTime } from '@/shared/utils/format-date'
 import {
   purchaseRequestSupportApi,
@@ -25,17 +29,23 @@ import {
   type PurchaseRequestComment,
 } from '../api/purchase-request-support-api'
 import {
-  useCreatePurchaseRequestComment,
-  usePurchaseRequestCommentActions,
-  usePurchaseRequestComments,
+  useCreateDocumentComment,
+  useDocumentCommentActions,
+  useDocumentComments,
 } from '../hooks/use-purchase-request-support'
 
-export function PurchaseRequestComments({ purchaseRequestId }: { purchaseRequestId: number }) {
+interface DocumentCommentsProps {
+  /** `purchase_request` hoặc `purchase_order`. */
+  entity: string
+  entityId: number
+}
+
+/** Luồng trao đổi của một chứng từ — dùng chung cho YCMH và ĐMH. */
+export function DocumentComments({ entity, entityId }: DocumentCommentsProps) {
   const { user } = useAuth()
-  const { data, isLoading, isError } = usePurchaseRequestComments(purchaseRequestId)
-  const createComment = useCreatePurchaseRequestComment(purchaseRequestId)
-  const { toggleLike, remove } = usePurchaseRequestCommentActions(purchaseRequestId)
-  const [body, setBody] = useState('')
+  const { data, isLoading, isError } = useDocumentComments(entity, entityId)
+  const createComment = useCreateDocumentComment(entity, entityId)
+  const { toggleLike, remove } = useDocumentCommentActions(entity, entityId)
   const [files, setFiles] = useState<File[]>([])
   const [olderRoots, setOlderRoots] = useState<PurchaseRequestComment[]>([])
   const [olderCount, setOlderCount] = useState(0)
@@ -44,17 +54,21 @@ export function PurchaseRequestComments({ purchaseRequestId }: { purchaseRequest
     setOlderCount(data?.older_count ?? 0)
   }, [data?.older_count])
 
-  async function sendRoot() {
-    if (!body.trim() && !files.length) return
-    await createComment.mutateAsync({ body: body.trim(), files })
-    setBody('')
+  const searchMentionable = useCallback(
+    (query: string) => purchaseRequestSupportApi.listMentionable(entity, entityId, query),
+    [entity, entityId],
+  )
+
+  async function sendRoot(body: string) {
+    if (!body && !files.length) return
+    await createComment.mutateAsync({ body, files })
     setFiles([])
   }
 
   async function loadOlder() {
     const beforeId = olderRoots[0]?.id ?? data?.oldest_id ?? 0
     if (!beforeId) return
-    const page = await purchaseRequestSupportApi.listComments(purchaseRequestId, beforeId)
+    const page = await purchaseRequestSupportApi.listComments(entity, entityId, beforeId)
     setOlderRoots((current) => [...page.items, ...current])
     setOlderCount(page.older_count)
   }
@@ -63,7 +77,8 @@ export function PurchaseRequestComments({ purchaseRequestId }: { purchaseRequest
 
   return (
     <Card className="gap-4 py-4">
-      <CardHeader className="border-b px-4 pb-3">
+      {/* Xem ghi chú về `pb-3!` ở `purchase-request-attachments-card.tsx`. */}
+      <CardHeader className="min-h-9 flex flex-row items-center gap-3 border-b px-4 pb-3!">
         <CardTitle className="flex items-center gap-2 text-base text-navy dark:text-foreground">
           <MessageCircle className="size-4 text-primary" />
           Trao đổi
@@ -97,6 +112,7 @@ export function PurchaseRequestComments({ purchaseRequestId }: { purchaseRequest
                 key={comment.id}
                 comment={comment}
                 currentUserName={user?.full_name ?? ''}
+                searchMentionable={searchMentionable}
                 onLike={() => toggleLike.mutate(comment.id)}
                 onDelete={() => void remove.mutateAsync(comment.id)}
                 onReply={async (text, replyFiles) => {
@@ -112,13 +128,12 @@ export function PurchaseRequestComments({ purchaseRequestId }: { purchaseRequest
         )}
 
         <CommentComposer
-          body={body}
           files={files}
           pending={createComment.isPending}
-          placeholder="Viết bình luận..."
-          onBodyChange={setBody}
+          placeholder="Viết bình luận… gõ @ để nhắc tên"
+          searchMentionable={searchMentionable}
           onFilesChange={setFiles}
-          onSend={() => void sendRoot()}
+          onSend={(body) => void sendRoot(body)}
         />
       </CardContent>
     </Card>
@@ -128,12 +143,14 @@ export function PurchaseRequestComments({ purchaseRequestId }: { purchaseRequest
 function CommentThreadItem({
   comment,
   currentUserName,
+  searchMentionable,
   onLike,
   onDelete,
   onReply,
 }: {
   comment: PurchaseRequestComment
   currentUserName: string
+  searchMentionable: (query: string) => Promise<MentionPerson[]>
   onLike: () => void
   onDelete: () => void
   onReply: (body: string, files: File[]) => Promise<void>
@@ -142,7 +159,6 @@ function CommentThreadItem({
   const [replying, setReplying] = useState(false)
   const [replies, setReplies] = useState<PurchaseRequestComment[]>([])
   const [loadingReplies, setLoadingReplies] = useState(false)
-  const [replyBody, setReplyBody] = useState('')
   const [replyFiles, setReplyFiles] = useState<File[]>([])
 
   async function toggleReplies() {
@@ -161,11 +177,10 @@ function CommentThreadItem({
     setOpen(true)
   }
 
-  async function sendReply() {
-    if (!replyBody.trim() && !replyFiles.length) return
-    await onReply(replyBody.trim(), replyFiles)
+  async function sendReply(body: string) {
+    if (!body && !replyFiles.length) return
+    await onReply(body, replyFiles)
     setReplies(await purchaseRequestSupportApi.listReplies(comment.id))
-    setReplyBody('')
     setReplyFiles([])
     setReplying(false)
     setOpen(true)
@@ -218,14 +233,13 @@ function CommentThreadItem({
           ))}
           {replying && (
             <CommentComposer
-              body={replyBody}
               files={replyFiles}
               pending={false}
-              placeholder={`Phản hồi với tư cách ${currentUserName || 'người dùng'}...`}
+              placeholder={`Phản hồi với tư cách ${currentUserName || 'người dùng'}…`}
               compact
-              onBodyChange={setReplyBody}
+              searchMentionable={searchMentionable}
               onFilesChange={setReplyFiles}
-              onSend={() => void sendReply()}
+              onSend={(body) => void sendReply(body)}
               onCancel={() => setReplying(false)}
             />
           )}
@@ -299,41 +313,49 @@ function CommentRow({
 }
 
 function CommentComposer({
-  body,
   files,
   pending,
   placeholder,
   compact,
-  onBodyChange,
+  searchMentionable,
   onFilesChange,
   onSend,
   onCancel,
 }: {
-  body: string
   files: File[]
   pending: boolean
   placeholder: string
   compact?: boolean
-  onBodyChange: (body: string) => void
+  searchMentionable: (query: string) => Promise<MentionPerson[]>
   onFilesChange: (files: File[]) => void
-  onSend: () => void
+  /** Nội dung lấy từ ô soạn thảo, đã kèm thẻ `@[id]` của người được nhắc. */
+  onSend: (body: string) => void
   onCancel?: () => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const disabled = pending || (!body.trim() && !files.length)
+  const editorRef = useRef<MentionInputHandle>(null)
+  // Ô soạn thảo chạy uncontrolled (xem `MentionInput`), nên chỉ theo dõi RỖNG /
+  // KHÔNG RỖNG để bật tắt nút Gửi — không giữ cả nội dung trong state.
+  const [empty, setEmpty] = useState(true)
+  const disabled = pending || (empty && !files.length)
+
+  function send() {
+    const body = editorRef.current?.getValue() ?? ''
+    if (!body && !files.length) return
+    onSend(body)
+    editorRef.current?.clear()
+  }
+
   return (
     <div className="space-y-2 border-t pt-4">
-      <Textarea
-        rows={compact ? 2 : 3}
-        value={body}
+      <MentionInput
+        ref={editorRef}
         placeholder={placeholder}
-        onChange={(event) => onBodyChange(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-            event.preventDefault()
-            onSend()
-          }
-        }}
+        search={searchMentionable}
+        className={compact ? 'min-h-12' : undefined}
+        onEmptyChange={setEmpty}
+        onSubmit={send}
+        onCancel={onCancel}
       />
       {!!files.length && (
         <div className="flex flex-wrap gap-2">
@@ -375,7 +397,7 @@ function CommentComposer({
               Hủy
             </Button>
           )}
-          <Button size="sm" disabled={disabled} onClick={onSend}>
+          <Button size="sm" disabled={disabled} onClick={send}>
             <Send />
             {pending ? 'Đang gửi' : 'Gửi'}
           </Button>

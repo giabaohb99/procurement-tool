@@ -20,6 +20,7 @@ export function useTableLayout<T>(
       columnWidths: {},
       columnOrder: [],
       pinnedColumns: columns.filter((c) => c.defaultPinned).map((c) => c.key),
+      columnColors: {},
     }),
     [columns],
   )
@@ -70,6 +71,25 @@ export function useTableLayout<T>(
   const setColumnWidth = useCallback(
     (key: string, width: number) => {
       persist({ ...layout, columnWidths: { ...layout.columnWidths, [key]: width } })
+    },
+    [layout, persist],
+  )
+
+  /** Đặt độ rộng cho NHIỀU cột một lượt (nút "vừa nội dung tất cả cột"). */
+  const setColumnWidths = useCallback(
+    (widths: Record<string, number>) => {
+      persist({ ...layout, columnWidths: { ...layout.columnWidths, ...widths } })
+    },
+    [layout, persist],
+  )
+
+  /** Tô màu cột; `colorId` rỗng = bỏ màu, về nền mặc định. */
+  const setColumnColor = useCallback(
+    (key: string, colorId: string) => {
+      const columnColors = { ...layout.columnColors }
+      if (colorId) columnColors[key] = colorId
+      else delete columnColors[key]
+      persist({ ...layout, columnColors })
     },
     [layout, persist],
   )
@@ -136,6 +156,8 @@ export function useTableLayout<T>(
     visibleColumns,
     toggleColumn,
     setColumnWidth,
+    setColumnWidths,
+    setColumnColor,
     moveColumn,
     togglePin,
     resetLayout,
@@ -154,9 +176,13 @@ function readLayout(storageKey?: string): DataTableLayout | null {
         parsed.columnWidths && typeof parsed.columnWidths === 'object'
           ? parsed.columnWidths
           : {},
-      // Hai trường dưới thêm sau; bản lưu cũ không có -> coi như rỗng.
+      // Ba trường dưới thêm sau; bản lưu cũ không có -> coi như rỗng.
       columnOrder: Array.isArray(parsed.columnOrder) ? parsed.columnOrder : [],
       pinnedColumns: Array.isArray(parsed.pinnedColumns) ? parsed.pinnedColumns : [],
+      columnColors:
+        parsed.columnColors && typeof parsed.columnColors === 'object'
+          ? parsed.columnColors
+          : {},
     }
   } catch {
     // Dữ liệu cũ hỏng định dạng -> bỏ qua, dùng mặc định.

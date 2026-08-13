@@ -58,6 +58,14 @@ export const router = createBrowserRouter([
             errorElement: <RouteErrorPage />,
           },
           {
+            path: appRoutes.procurement.purchaseOrderPrint(':id'),
+            lazy: async () => ({
+              Component: (await import('@/modules/procurement/pages/purchase-order-print-page'))
+                .PurchaseOrderPrintPage,
+            }),
+            errorElement: <RouteErrorPage />,
+          },
+          {
             element: <LauncherLayout />,
             children: [
               {

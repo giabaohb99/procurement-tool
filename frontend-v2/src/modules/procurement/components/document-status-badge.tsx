@@ -21,15 +21,21 @@ const STATUS_TONE: Record<string, Tone> = {
   draft: 'neutral',
   submitted: 'pending',
   approved: 'progress',
-  dispatched: 'progress',
-  processing: 'progress',
+  // Điều phối là mốc "đã chốt xong khâu duyệt" — bản v1 tô XANH LÁ, giữ nguyên
+  // để người dùng cũ không phải học lại bảng màu.
+  dispatched: 'done',
+  // "Đang xử lý" là đang chờ người khác làm tiếp → cùng tông chờ với v1, không
+  // phải tông "đã xong một bước".
+  processing: 'pending',
   partial: 'progress',
   survey_done: 'progress',
   pr_created: 'progress',
   received: 'done',
   completed: 'done',
   done: 'done',
-  rejected: 'danger',
+  // `rejected` = TRẢ VỀ (sửa rồi gửi duyệt lại được) nên là cảnh báo, không phải
+  // lỗi; chỉ `cancelled` (từ chối, khóa phiếu) mới tô đỏ. Giống bảng màu v1.
+  rejected: 'pending',
   cancelled: 'danger',
 }
 
@@ -80,16 +86,24 @@ export function DocumentStatusBadge({ status }: { status: string }) {
   )
 }
 
-/** Tiến độ dòng đơn hàng ở màn "Tiến độ mua hàng". */
-const PROGRESS_TONE: Record<string, Tone> = {
-  'Chưa đặt hàng': 'neutral',
-  'Đã đặt hàng': 'progress',
-  'Đã nhận hàng': 'progress',
-  'Chưa gửi ĐMH cho KT': 'pending',
-  'Đã gửi ĐMH cho KT': 'progress',
-  'Hoàn thành': 'done',
-  'Tạm ngưng': 'pending',
-  'Hủy đơn': 'danger',
+/**
+ * Tiến độ dòng đơn hàng — chỗ DUY NHẤT không gom theo tông.
+ *
+ * Tám giá trị này là một dây chuyền tuần tự (chưa đặt → đặt → nhận → gửi KT →
+ * xong), người dùng quét bảng vài trăm dòng để tìm dòng kẹt ở khâu nào, nên mỗi
+ * khâu phải một màu riêng. Bảng màu bê nguyên từ v1 (`PG_COLOR`) để người dùng
+ * cũ không phải học lại. Bốn màu ngoài bộ token dùng thẳng bảng màu Tailwind vì
+ * chúng không mang nghĩa "thành công / cảnh báo / lỗi" nào cả.
+ */
+const PROGRESS_CLASS: Record<string, string> = {
+  'Chưa đặt hàng': TONE_CLASS.neutral,
+  'Đã đặt hàng': 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  'Đã nhận hàng': 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400',
+  'Chưa gửi ĐMH cho KT': 'bg-pink-500/10 text-pink-600 dark:text-pink-400',
+  'Đã gửi ĐMH cho KT': 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+  'Hoàn thành': TONE_CLASS.done,
+  'Tạm ngưng': TONE_CLASS.pending,
+  'Hủy đơn': TONE_CLASS.danger,
 }
 
 export function ProgressStatusBadge({ status }: { status: string }) {
@@ -98,7 +112,7 @@ export function ProgressStatusBadge({ status }: { status: string }) {
   return (
     <Badge
       variant="secondary"
-      className={cn('border-0', TONE_CLASS[PROGRESS_TONE[status] ?? 'neutral'])}
+      className={cn('border-0', PROGRESS_CLASS[status] ?? TONE_CLASS.neutral)}
     >
       {status}
     </Badge>

@@ -33,6 +33,16 @@ export interface CommentMention {
   name: string
 }
 
+/** Một người trong danh sách gợi ý khi gõ `@`. */
+export interface MentionablePerson {
+  user_id: number
+  name: string
+  code: string
+  avatar: string
+  /** Có liên quan sẵn tới phiếu (người tạo / đã bình luận) — xếp lên đầu. */
+  related: boolean
+}
+
 export interface PurchaseRequestComment {
   id: number
   entity: string
@@ -76,6 +86,61 @@ export interface WarehouseOption {
   name: string
 }
 
+export interface UnitOption {
+  id: number
+  code: string
+  name: string
+}
+
+export interface ItemGroupOption {
+  id: number
+  code: string
+  name: string
+  std_days: string
+  std_days_unavail: string
+}
+
+export interface ProductOption {
+  id: number
+  code: string
+  name: string
+  item_group: string
+  unit: string
+  thumbnail_url?: string
+}
+
+export interface PurchaseHistoryExtra {
+  item_group?: string
+  warehouse_code?: string
+  item_note?: string
+  invoice_name?: string
+  spec?: string
+  fg_code?: string
+  fg_name?: string
+  [key: string]: unknown
+}
+
+export interface PurchaseHistoryRow {
+  id: number
+  po_id: number
+  po_code: string
+  source: string
+  product_code: string
+  product_name: string
+  supplier_code: string
+  supplier_name: string
+  company_id: number
+  company_name: string
+  order_date: string
+  unit: string
+  qty_order: number
+  price: number
+  vat: number
+  amount: number
+  completed_at: string
+  extra: PurchaseHistoryExtra
+}
+
 const ATTACHMENT_URL = '/api/attachments'
 const COMMENT_URL = '/api/comments'
 
@@ -85,6 +150,32 @@ export const purchaseRequestSupportApi = {
       params: { page: 1, page_size: 200 },
     }),
 
+  listUnits: () =>
+    apiGet<PaginatedResult<UnitOption>>('/api/units', {
+      params: { page: 1, page_size: 200, is_active: true },
+    }),
+
+  listItemGroups: () =>
+    apiGet<PaginatedResult<ItemGroupOption>>('/api/item-groups', {
+      params: { page: 1, page_size: 500, is_active: true },
+    }),
+
+  listProducts: (search = '') =>
+    apiGet<PaginatedResult<ProductOption>>('/api/products', {
+      params: { page: 1, page_size: 30, search, is_active: true },
+    }),
+
+  listProductPurchaseHistory: (
+    productCode: string,
+    page: number,
+    pageSize: number,
+    search = '',
+  ) =>
+    apiGet<PaginatedResult<PurchaseHistoryRow>>(
+      `/api/products/${encodeURIComponent(productCode)}/purchase-history`,
+      { params: { page, page_size: pageSize, search } },
+    ),
+
   listAttachments: (entity: string, entityId: number) =>
     apiGet<AttachmentFile[]>(ATTACHMENT_URL, {
       params: { entity, entity_id: entityId },
@@ -92,11 +183,23 @@ export const purchaseRequestSupportApi = {
 
   listDocumentTypes: () => apiGet<DocumentTypeOption[]>(`${ATTACHMENT_URL}/doc-types`),
 
-  uploadAttachments: (entity: string, entityId: number, files: File[], docType = '') => {
+  /**
+   * `purchaseOrderId` chỉ dùng cho tệp gắn vào LẦN GIAO (`entity = 'delivery'`):
+   * backend cần biết đơn cha để kiểm tra phạm vi dữ liệu, dòng giao không tự
+   * suy ngược ra đơn được.
+   */
+  uploadAttachments: (
+    entity: string,
+    entityId: number,
+    files: File[],
+    docType = '',
+    purchaseOrderId = 0,
+  ) => {
     const body = new FormData()
     body.append('entity', entity)
     body.append('entity_id', String(entityId))
     body.append('doc_type', docType)
+    if (purchaseOrderId > 0) body.append('purchase_order_id', String(purchaseOrderId))
     files.forEach((file) => body.append('files', file))
     return apiPost<AttachmentFile[]>(ATTACHMENT_URL, body)
   },
@@ -110,28 +213,41 @@ export const purchaseRequestSupportApi = {
     return apiPost<UploadedFile[]>(`${ATTACHMENT_URL}/upload-file`, body)
   },
 
-  listComments: (purchaseRequestId: number, beforeId = 0) =>
+  /** `entity`: `purchase_request` | `purchase_order` — cùng một API bình luận. */
+  listComments: (entity: string, entityId: number, beforeId = 0) =>
     apiGet<CommentPage>(COMMENT_URL, {
       params: {
-        entity: 'purchase_request',
-        entity_id: purchaseRequestId,
+        entity,
+        entity_id: entityId,
         limit: 10,
         before_id: beforeId || undefined,
       },
+    }),
+
+  /**
+   * Gợi ý người để `@` khi đang gõ bình luận.
+   *
+   * Chưa gõ chữ nào (`q` rỗng) thì backend chỉ trả người ĐANG DÍNH TỚI PHIẾU
+   * (người tạo + người đã bình luận); gõ rồi thì tìm trong toàn bộ nhân sự.
+   */
+  listMentionable: (entity: string, entityId: number, q = '') =>
+    apiGet<MentionablePerson[]>(`${COMMENT_URL}/mentionable`, {
+      params: { entity, entity_id: entityId, q },
     }),
 
   listReplies: (commentId: number) =>
     apiGet<PurchaseRequestComment[]>(`${COMMENT_URL}/${commentId}/replies`),
 
   createComment: (
-    purchaseRequestId: number,
+    entity: string,
+    entityId: number,
     body: string,
     parentId = 0,
     fileIds: number[] = [],
   ) =>
     apiPost<PurchaseRequestComment>(COMMENT_URL, {
-      entity: 'purchase_request',
-      entity_id: purchaseRequestId,
+      entity,
+      entity_id: entityId,
       body,
       parent_id: parentId,
       file_ids: fileIds,
