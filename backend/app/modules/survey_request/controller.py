@@ -12,7 +12,7 @@ from app.core.response import success
 from app.core.scoping import apply_scope
 
 from . import service
-from .model import SurveyRequest, SurveyRequestLine
+from .model import SurveyRequest, SurveyRequestLine, SurveyRequestOption
 from .schema import LineStatusIn, RejectIn, SurveyRequestCreate, SurveyRequestUpdate
 
 router = APIRouter(prefix="/api/survey-requests", tags=["survey_request"])
@@ -171,6 +171,23 @@ def _list_query(request: Request, db: Session, user):
     if assignee:
         sub2 = select(SurveyRequestLine.survey_request_id).where(SurveyRequestLine.assignee == assignee)
         q = q.filter(SurveyRequest.id.in_(sub2))
+    # CR-069 — tìm phiếu theo SẢN PHẨM cần báo giá. Dòng YCBG chưa có mã hàng (lúc lập chỉ có mô
+    # tả), nên khớp một phần trên: "Thông số kỹ thuật" + "Yêu cầu khác" của dòng, và mã/tên SP của
+    # PHƯƠNG ÁN ĐÃ CHỐT (chốt xong mới có mã hệ thống). KHÔNG dò các cột lộ NCC
+    # (`snap_internal_code`, `supplier_*`) — người không có `supplier.read` sẽ suy ra được NCC
+    # bằng cách gõ thử mã của NCC vào ô tìm.
+    product = (request.query_params.get("product") or "").strip()
+    if product:
+        like = f"%{product}%"
+        chosen = select(SurveyRequestOption.survey_request_line_id).where(
+            SurveyRequestOption.is_chosen == True,
+            (SurveyRequestOption.system_product_code.like(like))
+            | (SurveyRequestOption.snap_product_name.like(like)))
+        sub3 = select(SurveyRequestLine.survey_request_id).where(
+            (SurveyRequestLine.requirement_detail.like(like))
+            | (SurveyRequestLine.other_requirement.like(like))
+            | (SurveyRequestLine.id.in_(chosen)))
+        q = q.filter(SurveyRequest.id.in_(sub3))
     return apply_scope(q, SurveyRequest, "survey_request", user, get_perm_profile(db, user))
 
 

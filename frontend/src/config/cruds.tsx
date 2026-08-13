@@ -419,8 +419,10 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     filters: [
       // Chỉ giữ ô tìm nhanh + các bộ lọc KHÔNG đưa xuống bộ lọc điều kiện được
-      // (company_id / assignee / item_group lọc qua bảng con, không nằm trong FILTERABLE).
+      // (company_id / assignee / item_group / product lọc qua bảng con, không nằm trong FILTERABLE).
       { key: 'code', label: 'Mã PYC' },
+      // CR-069: gõ một phần mã hoặc tên hàng đều ra (tìm trong các dòng hàng của phiếu)
+      { key: 'product', label: 'Mã / tên hàng' },
       { key: 'company_id', label: 'Công ty', source: { url: '/api/companies', value: 'id', label: 'name' } },
       { key: 'assignee', label: 'NSTM phụ trách', source: { url: '/api/employees', value: 'code', label: 'full_name' } },
       { key: 'item_group', label: 'Phân loại', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
@@ -458,8 +460,11 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'status', label: 'Trạng thái', render: (r) => srBadge(r.status) },
     ],
     filters: [
-      // company_id / assignee / item_group lọc qua bảng con → không đưa xuống bộ lọc điều kiện được
+      // company_id / assignee / item_group / product lọc qua bảng con → không đưa xuống bộ lọc điều kiện được
       { key: 'code', label: 'Mã phiếu' },
+      // CR-069: dòng YCBG chưa có mã hàng → tìm trong Thông số kỹ thuật / Yêu cầu khác
+      // và mã/tên SP của phương án ĐÃ CHỐT
+      { key: 'product', label: 'Sản phẩm cần báo giá' },
       { key: 'company_id', label: 'Công ty', source: { url: '/api/companies', value: 'id', label: 'name' } },
       { key: 'assignee', label: 'NSTM phụ trách', source: { url: '/api/employees', value: 'code', label: 'full_name' } },
       { key: 'item_group', label: 'Phân loại', source: { url: '/api/item-groups', value: 'name', label: 'name' } },
