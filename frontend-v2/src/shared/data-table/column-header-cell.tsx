@@ -1,7 +1,8 @@
-import { useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 
 import { TableHead } from '@/shared/ui/table'
 import { cn } from '@/shared/utils/cn'
+import { ColumnDropIndicator } from './column-drop-indicator'
 import { ColumnResizeHandle } from './column-resize-handle'
 import type { ColumnDropSide, DataTableColumn } from './types'
 
@@ -16,6 +17,8 @@ interface ColumnHeaderCellProps<T> {
   dropSide?: ColumnDropSide | null
   /** Cột đang ghim: khoảng cách dính tính từ mép trái bảng. */
   pinnedOffset?: number
+  /** Nền của cột do người dùng tự tô (xem `column-color-palette.ts`). */
+  colorStyle?: CSSProperties
   onResize: (width: number) => void
   onDragStart: (event: ReactPointerEvent<HTMLTableCellElement>) => void
 }
@@ -34,6 +37,7 @@ export function ColumnHeaderCell<T>({
   dragging,
   dropSide,
   pinnedOffset,
+  colorStyle,
   onResize,
   onDragStart,
 }: ColumnHeaderCellProps<T>) {
@@ -42,21 +46,18 @@ export function ColumnHeaderCell<T>({
   return (
     <TableHead
       data-column-key={column.key}
-      style={{ width, left: pinnedOffset }}
+      style={{ width, left: pinnedOffset, ...colorStyle }}
       className={cn(
         'select-none transition-[opacity,box-shadow] duration-150',
         resizing ? 'cursor-col-resize' : 'cursor-grab active:cursor-grabbing',
         dragging && 'opacity-40',
-        // Vạch báo chỗ sắp thả. Dùng `inset shadow` cho đồng bộ với viền ô tiêu
-        // đề (xem ghi chú về `border-collapse` trong `data-table.tsx`).
-        dropSide === 'before' && 'shadow-[inset_2px_0_0_0_var(--primary)]',
-        dropSide === 'after' && 'shadow-[inset_-2px_0_0_0_var(--primary)]',
         className,
       )}
       title={`${column.header} — kéo để đổi vị trí cột`}
       onPointerDown={onDragStart}
     >
       <span className="pointer-events-none block truncate">{column.header}</span>
+      {dropSide && <ColumnDropIndicator side={dropSide} />}
       <ColumnResizeHandle
         minWidth={minWidth}
         onResize={onResize}
