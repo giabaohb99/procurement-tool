@@ -266,3 +266,132 @@
 [data-sidebar-resizing='true'] [data-slot='sidebar-container'] {
   transition: none !important;
 }
+
+/* ── Trình soạn thảo văn bản (Tiptap) ─────────────────────────────────────────
+   Tiptap là trình soạn thảo "headless": nó chỉ sinh HTML thuần, mọi kiểu hiển
+   thị phải tự khai. Đặt ở đây chứ không dùng class Tailwind vì các thẻ (<h1>,
+   <table>, <li>…) do người dùng gõ ra lúc chạy, không có chỗ nào để gắn class.
+   Preflight của Tailwind đã gỡ sạch kiểu mặc định của trình duyệt nên không
+   khai thì tiêu đề với danh sách trông y hệt đoạn văn thường. */
+
+/* Tờ giấy A4: 210 × 297mm ở 96dpi ≈ 794 × 1123px, lề 20mm ≈ 76px.
+   ⚠️ KHÔNG khai `padding` / `min-height` ở đây: chiều cao trang, lề và khe
+   ngắt trang do `PaginationPlus` (xem `rich-text-editor.tsx`) tự vẽ theo đúng
+   bộ số đo trên — khai thêm ở CSS là cộng dồn hai lần lề. */
+.doc-page {
+  width: 794px;
+  max-width: 100%;
+  margin-inline: auto;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.12), 0 8px 24px rgb(15 23 42 / 0.08);
+  font-family: "Times New Roman", serif;
+  font-size: 14pt;
+  line-height: 1.5;
+  color: #111827;
+  outline: none;
+}
+
+.doc-page > * + * {
+  margin-top: 0.6em;
+}
+
+.doc-page h1 { font-size: 1.6em; font-weight: 700; }
+.doc-page h2 { font-size: 1.35em; font-weight: 700; }
+.doc-page h3 { font-size: 1.15em; font-weight: 700; }
+
+.doc-page ul,
+.doc-page ol {
+  padding-left: 1.6em;
+}
+
+.doc-page ul { list-style: disc; }
+.doc-page ol { list-style: decimal; }
+.doc-page li { margin-top: 0.2em; }
+.doc-page li > p { margin: 0; }
+
+/* Ảnh chèn vào không được vượt quá bề ngang trang giấy. */
+.doc-page img {
+  max-width: 100%;
+  height: auto;
+}
+
+.doc-page a {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.doc-page blockquote {
+  padding-left: 1em;
+  border-left: 3px solid var(--border);
+  color: #4b5563;
+}
+
+.doc-page hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin-block: 1.2em;
+}
+
+.doc-page code {
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  background: var(--muted);
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+}
+
+.doc-page pre {
+  padding: 0.8em 1em;
+  border-radius: 6px;
+  background: var(--muted);
+  overflow-x: auto;
+}
+
+.doc-page table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin-block: 0.8em;
+}
+
+.doc-page th,
+.doc-page td {
+  border: 1px solid #9ca3af;
+  padding: 6px 8px;
+  vertical-align: top;
+  /* Ô bảng phải "ôm" được cột kéo giãn, nếu không cột co lại theo chữ. */
+  position: relative;
+  min-width: 1em;
+}
+
+.doc-page th {
+  background: var(--muted);
+  font-weight: 700;
+  text-align: left;
+}
+
+/* Vùng chọn nhiều ô (kéo chuột qua bảng). */
+.doc-page .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgb(0 174 239 / 0.12);
+  pointer-events: none;
+}
+
+/* Tay nắm kéo giãn cột bảng. */
+.doc-page .column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  bottom: -2px;
+  width: 4px;
+  background: var(--primary);
+  pointer-events: none;
+}
+
+/* Tiptap bọc mỗi bảng trong `.tableWrapper`. Cho cuộn ngang ở đây thay vì để
+   bảng rộng hơn trang giấy đẩy vỡ cả bố cục. */
+.doc-page .tableWrapper {
+  overflow-x: auto;
+}
