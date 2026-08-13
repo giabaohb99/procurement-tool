@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.audit import record
 from app.modules.payable.model import Payable
 from app.modules.payable.service import recalc_status
+from app.modules.supplier.model import Supplier
 
 from .model import PaymentRequest, PaymentRequestLine
 from .schema import PRequestCreate, PRequestUpdate
@@ -33,99 +34,185 @@ def lines_of(db: Session, rid: int):
     return db.query(PaymentRequestLine).filter(PaymentRequestLine.request_id == rid).all()
 
 
+def matching_payables(db: Session, supplier_code: str, source_type: str,
+                      po_code: str, invoice_no: str) -> list[Payable]:
+    """Các khoản công nợ ứng với 1 dòng phiếu — khớp theo (NCC + loại + mã PO + số hóa đơn).
+
+    Một hóa đơn có thể ứng với NHIỀU khoản nợ (mỗi lần giao 1 khoản), nên trả về danh sách.
+    Chưa có số hóa đơn thì coi như chưa khớp được khoản nào."""
+    if not (invoice_no or "").strip() or not supplier_code:
+        return []
+    return db.query(Payable).filter(
+        Payable.supplier_code == supplier_code,
+        Payable.source_type == source_type,
+        Payable.po_code == (po_code or ""),
+        Payable.invoice_no == invoice_no).all()
+
+
+def delivery_invoice_date(db: Session, payables: list[Payable]) -> str:
+    """Ngày hóa đơn gốc = tab_po_delivery.invoice_date của lần giao sinh ra khoản nợ."""
+    from app.modules.purchase_order.model import PODelivery
+    for p in payables:
+        if p and p.ref_type == "delivery" and p.ref_id:
+            d = db.get(PODelivery, p.ref_id)
+            if d and (d.invoice_date or "").strip():
+                return d.invoice_date
+    return ""
+
+
+def _remaining(p: Payable) -> float:
+    return round(float(p.total or 0) - float(p.paid_amount or 0), 2)
+
+
+def _line_rows(db: Session, data_lines, supplier_code: str, fill_from_payable: bool) -> list[dict]:
+    """Chuẩn hóa dòng người dùng gửi lên thành các dòng sẽ ghi DB, đã gom nhóm.
+
+    - `fill_from_payable=True` (lúc TẠO): ô nào bỏ trống thì lấy theo khoản nợ.
+      Lúc SỬA thì KHÔNG lấy đè — người dùng có quyền xóa trắng số hóa đơn trên bản nháp.
+    - Gom các dòng cùng (mã PO + số hóa đơn) thành 1 dòng như trước; dòng CHƯA có số hóa đơn
+      thì để riêng, vì chưa biết chúng có thuộc cùng một hóa đơn hay không.
+    """
+    groups: dict[tuple, dict] = {}
+    for idx, ln in enumerate(data_lines):
+        p = db.get(Payable, ln.payable_id) if ln.payable_id else None
+        if p and supplier_code and p.supplier_code != supplier_code:
+            continue
+        po_code = ((ln.po_code or "") or (p.po_code if p and fill_from_payable else "")).strip()
+        invoice_no = ((ln.invoice_no or "") or (p.invoice_no if p and fill_from_payable else "")).strip()
+        invoice_date = (ln.invoice_date or "").strip()
+        if not invoice_date and p and fill_from_payable:
+            invoice_date = delivery_invoice_date(db, [p])
+        amt = float(ln.amount or 0)
+        if amt <= 0 and p:
+            amt = _remaining(p)
+
+        key = (po_code, invoice_no) if invoice_no else (po_code, "", idx)
+        row = groups.get(key)
+        if row:
+            row["amount"] = round(row["amount"] + amt, 2)
+            row["invoice_date"] = row["invoice_date"] or invoice_date
+        else:
+            groups[key] = {"payable_id": p.id if p else 0, "po_code": po_code,
+                           "invoice_no": invoice_no, "invoice_date": invoice_date,
+                           "amount": round(amt, 2)}
+    return list(groups.values())
+
+
 def create_requests(db: Session, data: PRequestCreate, user_id: int) -> list[PaymentRequest]:
     """Tạo phiếu; nếu các khoản nợ thuộc nhiều NCC -> tách mỗi NCC 1 phiếu;
-    Gom các khoản nợ cùng (mã PO + Số HĐ) thành 1 dòng duy nhất trên phiếu thanh toán."""
+    Gom các khoản nợ cùng (mã PO + Số HĐ) thành 1 dòng duy nhất trên phiếu thanh toán.
+
+    CR-066: KHÔNG còn chặn thiếu số hóa đơn ở đây — bản nháp được để trống để in trình ký,
+    điều kiện đủ chỉ bị bắt lúc GỬI DUYỆT (xem `check_submit`)."""
     if not data.lines:
-        raise HTTPException(400, "Chưa chọn khoản công nợ nào")
+        raise HTTPException(400, "Chưa có dòng đề nghị thanh toán nào")
 
-    # gom theo (supplier_code, source_type)
+    # gom theo (supplier_code, source_type); dòng gõ tay (không gắn khoản nợ) lấy theo phần đầu phiếu
     groups: dict[tuple, list] = {}
-    missing = []
+    heads: dict[tuple, tuple] = {}     # (supplier_code, source_type) -> (supplier_name, company_id)
+    manual: list = []
     for ln in data.lines:
-        p = db.get(Payable, ln.payable_id)
+        p = db.get(Payable, ln.payable_id) if ln.payable_id else None
         if not p:
+            manual.append(ln)
             continue
-        if not (p.invoice_no or "").strip():
-            missing.append(p.po_code or str(p.id))
-            continue
-        amt = ln.amount if ln.amount > 0 else round(float(p.total or 0) - float(p.paid_amount or 0), 2)
-        groups.setdefault((p.supplier_code, p.source_type), []).append((p, amt))
+        groups.setdefault((p.supplier_code, p.source_type), []).append(ln)
+        heads.setdefault((p.supplier_code, p.source_type), (p.supplier_name, p.company_id))
 
-    if missing:
-        raise HTTPException(400, f"Các khoản nợ chưa có Số hóa đơn, không thể tạo đề nghị thanh toán: {', '.join(missing)}")
-
-    if not groups:
-        raise HTTPException(400, "Khoản công nợ không hợp lệ")
+    if manual:
+        supplier_code = (data.supplier_code or "").strip()
+        if not supplier_code:
+            raise HTTPException(400, "Chưa chọn nhà cung cấp cho phiếu")
+        source_type = data.source_type if data.source_type in ("goods", "shipping") else "goods"
+        key = (supplier_code, source_type)
+        groups.setdefault(key, []).extend(manual)
+        if key not in heads:
+            sup = db.query(Supplier).filter(Supplier.code == supplier_code).first()
+            heads[key] = (sup.name if sup else supplier_code, data.company_id or 0)
 
     created = []
     for (supplier_code, source_type), items in groups.items():
-        first = items[0][0]
-        # Gom các item có cùng (po_code, invoice_no) thành 1 dòng
-        sub_groups: dict[tuple, list] = {}
-        for p, amt in items:
-            key = (p.po_code or "", (p.invoice_no or "").strip())
-            sub_groups.setdefault(key, []).append((p, amt))
-
+        rows = _line_rows(db, items, supplier_code, fill_from_payable=True)
+        if not rows:
+            continue
+        supplier_name, company_id = heads[(supplier_code, source_type)]
         req = PaymentRequest(
-            supplier_code=supplier_code, supplier_name=first.supplier_name,
-            company_id=first.company_id, source_type=source_type,
+            supplier_code=supplier_code, supplier_name=supplier_name,
+            company_id=company_id, source_type=source_type,
             request_date=data.request_date, note=data.note, status="draft",
             payment_method=norm_method(data.payment_method),
-            total=round(sum(a for _, a in items), 2), created_by=user_id, updated_by=user_id)
+            total=round(sum(r["amount"] for r in rows), 2), created_by=user_id, updated_by=user_id)
         db.add(req)
         db.flush()
         req.code = f"YCTT{req.id:05d}"
 
-        for (po_code, inv_no), sub_items in sub_groups.items():
-            lead_p = sub_items[0][0]
-            line_amt = round(sum(a for _, a in sub_items), 2)
-            db.add(PaymentRequestLine(request_id=req.id, payable_id=lead_p.id, po_code=po_code,
-                                      invoice_no=inv_no, amount=line_amt,
-                                      created_by=user_id, updated_by=user_id))
+        for r in rows:
+            db.add(PaymentRequestLine(request_id=req.id, payable_id=r["payable_id"], po_code=r["po_code"],
+                                      invoice_no=r["invoice_no"], invoice_date=r["invoice_date"],
+                                      amount=r["amount"], created_by=user_id, updated_by=user_id))
         db.flush()
         created.append(req)
+    if not created:
+        raise HTTPException(400, "Không có dòng hợp lệ để tạo phiếu")
     db.commit()
     for req in created:
         record(db, user_id, ENTITY, req.id, "create")
     return created
 
 
+# CR-066: duyệt xong là khóa số tiền / số hóa đơn — chặn ở BACKEND chứ không chỉ ẩn nút trên UI.
+EDIT_LOCK_MSG = {
+    "submitted": "Phiếu đang chờ duyệt, không sửa được — thu hồi (từ chối) rồi mới sửa",
+    "approved": "Phiếu đã duyệt, không sửa được số tiền và số hóa đơn nữa",
+    "paid": "Phiếu đã chi, không sửa được",
+    "cancelled": "Phiếu đã bị từ chối, không sửa được",
+}
+
+
 def update_request(db: Session, rid: int, data: PRequestUpdate, user_id: int) -> PaymentRequest:
     req = get_request(db, rid)
-    if req.status == "paid":
-        raise HTTPException(400, "Phiếu đã chi, không sửa được")
+    if req.status != "draft":
+        raise HTTPException(400, EDIT_LOCK_MSG.get(req.status, "Phiếu không còn ở trạng thái nháp, không sửa được"))
     for k, v in data.model_dump(exclude_unset=True, exclude={"lines"}).items():
         setattr(req, k, norm_method(v) if k == "payment_method" else v)
     if data.lines is not None:
         db.query(PaymentRequestLine).filter(PaymentRequestLine.request_id == rid).delete()
-        raw_items = []
-        for ln in data.lines:
-            p = db.get(Payable, ln.payable_id)
-            if not p or p.supplier_code != req.supplier_code:
-                continue
-            amt = ln.amount if ln.amount > 0 else round(float(p.total or 0) - float(p.paid_amount or 0), 2)
-            raw_items.append((p, amt))
-
-        sub_groups: dict[tuple, list] = {}
-        for p, amt in raw_items:
-            key = (p.po_code or "", (p.invoice_no or "").strip())
-            sub_groups.setdefault(key, []).append((p, amt))
-
-        total = 0.0
-        for (po_code, inv_no), sub_items in sub_groups.items():
-            lead_p = sub_items[0][0]
-            line_amt = round(sum(a for _, a in sub_items), 2)
-            total += line_amt
-            db.add(PaymentRequestLine(request_id=rid, payable_id=lead_p.id, po_code=po_code,
-                                      invoice_no=inv_no, amount=line_amt,
-                                      created_by=user_id, updated_by=user_id))
-        req.total = round(total, 2)
+        rows = _line_rows(db, data.lines, req.supplier_code, fill_from_payable=False)
+        for r in rows:
+            db.add(PaymentRequestLine(request_id=rid, payable_id=r["payable_id"], po_code=r["po_code"],
+                                      invoice_no=r["invoice_no"], invoice_date=r["invoice_date"],
+                                      amount=r["amount"], created_by=user_id, updated_by=user_id))
+        req.total = round(sum(r["amount"] for r in rows), 2)
     req.updated_by = user_id
     db.commit()
     record(db, user_id, ENTITY, rid, "update")
     db.refresh(req)
     return req
+
+
+def check_submit(db: Session, req: PaymentRequest) -> None:
+    """CR-066 — điều kiện GỬI DUYỆT: mỗi dòng phải khớp một khoản công nợ CÒN NỢ.
+
+    Bản nháp được để trống số hóa đơn (in ra trình ký, điền tay), nhưng đã trình duyệt chi thì
+    phải có hóa đơn và phải trỏ đúng vào khoản nợ — nếu không, lúc ghi nhận chi tiền sẽ không
+    trừ được vào đâu, công nợ treo và dòng ĐMH không bao giờ lên 'Hoàn thành'."""
+    lines = lines_of(db, req.id)
+    if not lines:
+        raise HTTPException(400, "Phiếu chưa có dòng đề nghị nào")
+    problems = []
+    for i, ln in enumerate(lines, start=1):
+        label = ln.po_code or f"dòng {i}"
+        if not (ln.invoice_no or "").strip():
+            problems.append(f"{label}: chưa có Số hóa đơn")
+            continue
+        pays = matching_payables(db, req.supplier_code, req.source_type, ln.po_code, ln.invoice_no)
+        if not pays:
+            problems.append(f"{label}: không có khoản công nợ nào khớp Số HĐ {ln.invoice_no} "
+                            f"(sai số hóa đơn / mã PO, hoặc hàng chưa được ghi nhận nhận)")
+        elif all(_remaining(p) <= 0.01 for p in pays):
+            problems.append(f"{label}: khoản công nợ theo Số HĐ {ln.invoice_no} đã tất toán")
+    if problems:
+        raise HTTPException(400, "Chưa gửi duyệt được: " + "; ".join(problems))
 
 
 def delete_request(db: Session, rid: int, user_id: int):
@@ -142,6 +229,8 @@ def delete_request(db: Session, rid: int, user_id: int):
 
 def set_status(db: Session, rid: int, status: str, user_id: int, reason: str = "") -> PaymentRequest:
     req = get_request(db, rid)
+    if status == "submitted":
+        check_submit(db, req)
     req.status = status
     req.updated_by = user_id
     if status == "cancelled":
@@ -153,12 +242,8 @@ def set_status(db: Session, rid: int, status: str, user_id: int, reason: str = "
             rem_to_pay = float(ln.amount or 0)
             if rem_to_pay <= 0:
                 continue
-            matched_payables = db.query(Payable).filter(
-                Payable.supplier_code == req.supplier_code,
-                Payable.source_type == req.source_type,
-                Payable.po_code == ln.po_code,
-                Payable.invoice_no == ln.invoice_no
-            ).all()
+            matched_payables = matching_payables(db, req.supplier_code, req.source_type,
+                                                 ln.po_code, ln.invoice_no)
             if not matched_payables and ln.payable_id:
                 p_single = db.get(Payable, ln.payable_id)
                 if p_single:

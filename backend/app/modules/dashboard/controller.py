@@ -164,10 +164,12 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
         delivs = db.query(PODelivery).filter(PODelivery.po_id.in_(po_ids), PODelivery.received_qty > 0).all() if po_ids else []
         kpi["po_ordered"] = sum(1 for p in pos.values() if p.status in ("approved", "partial", "received"))
         late_src = db.query(PODelivery).filter(PODelivery.po_id.in_(po_ids), PODelivery.received_qty <= 0).all() if po_ids else []
-        kpi["late_deliveries"] = sum(1 for d in late_src if (d.expected_date or d.promised_date) and (d.expected_date or d.promised_date) < tstr)
-        
+        # Hạn giao = NCC cam kết giao (`promised_date`). Cột `PODelivery.expected_date` đã bỏ
+        # dùng — không nơi nào ghi, xem migration e2c5a81f7b60.
+        kpi["late_deliveries"] = sum(1 for d in late_src if d.promised_date and d.promised_date < tstr)
+
         # Get detailed late deliveries list
-        late_delivs_sorted = sorted([d for d in late_src if (d.expected_date or d.promised_date) and (d.expected_date or d.promised_date) < tstr], key=lambda x: x.expected_date or x.promised_date)[:5]
+        late_delivs_sorted = sorted([d for d in late_src if d.promised_date and d.promised_date < tstr], key=lambda x: x.promised_date)[:5]
         for ld in late_delivs_sorted:
             po = pos.get(ld.po_id)
             it = items.get(ld.po_item_id)
@@ -176,7 +178,7 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
                 "po_id": ld.po_id,
                 "po_code": po.code if po else "",
                 "product_name": name,
-                "expected_date": ld.expected_date or ld.promised_date
+                "expected_date": ld.promised_date
             })
 
         cat, sup, dept, po_total = {}, {}, {}, {}
@@ -352,7 +354,7 @@ def my_tasks(request: Request, db: Session = Depends(get_db), user=Depends(get_c
         if po_ids:
             late = db.query(PODelivery).filter(PODelivery.po_id.in_(po_ids), PODelivery.received_qty <= 0).all()
             for d in late:
-                exp = d.expected_date or d.promised_date
+                exp = d.promised_date   # `expected_date` của lần giao đã bỏ dùng (e2c5a81f7b60)
                 if exp and exp < today:
                     po = pomap.get(d.po_id)
                     tasks.append({"type": "late", "label": "Giao hàng trễ", "code": po.code if po else "",

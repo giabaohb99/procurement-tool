@@ -102,11 +102,12 @@ Ba cái dễ sai, sai là mất buổi:
 
 - **KHÔNG `git pull`** trên VPS — có file sinh ra lúc chạy sẽ kẹt merge; luôn `fetch` + `reset --hard` về đúng nhánh.
 - **Prod bắt buộc `-f docker-compose.production.yml`.** Thiếu cờ này là compose lấy file mặc định (bản dev) → web chạy vite dev server, nginx trả **502**.
-- **Sao lưu DB trước khi có migration**: DB là MariaDB nên dùng `mariadb-dump`, không phải `mysqldump`:
+- **Sao lưu DB trước khi có migration** (từ 2026-08-11 CSDL là **MySQL 8.4**, container `procurement-mysql`, định nghĩa ở `~/procurement-db/` — **ngoài repo**, cố ý tách để deploy app không bao giờ đụng tới CSDL):
   ```bash
-  docker exec dego-erp-db-1 mariadb-dump -uroot -p"$DB_ROOT_PASSWORD" \
-      --single-transaction --routines procurement > ~/backups/prod_truoc_<mã CR>_$(date +%Y%m%d).sql
+  docker exec procurement-mysql mysqldump -uroot -p"$DB_ROOT_PASSWORD"       --single-transaction --routines procurement | gzip > ~/proc_backups/prod_truoc_<ma CR>_$(date +%Y%m%d).sql.gz
   ```
+  Mật khẩu ở `~/procurement-db/.env` (khoá `DB_ROOT_PASSWORD`) — **khác** mật khẩu MariaDB cũ. Vào Adminer: `ssh -p 51251 -L 18080:127.0.0.1:18080 degosysadmin@180.93.2.176` rồi mở `http://localhost:18080`, server = `procurement-mysql`.
+- **App nối CSDL bằng TÊN CONTAINER trên mạng `dego-db`**, không qua cổng máy chủ — nên chuyển CSDL chỉ là đổi `DB_HOST` trong `.env` rồi khởi động lại `api` + `celery`, quay lại cũng vậy. Đổi cổng không đổi được app nối vào đâu.
 - **Đổi gì thì build lại cái đó**: sửa FE → build lại `web`; sửa backend → `api`; sửa Trung tâm Hướng dẫn (`help-center/`) → `help`. Cả `web` và `help` đều build tĩnh nên **restart không ăn thua, phải `--build`**.
 
 Sau khi lên, ghi **1 dòng vào [Nhật ký deploy](../tai-lieu-ky-thuat/change-log.md#nhật-ký-deploy-môi-trường-thật)**: đẩy gì, migration tới head nào, file sao lưu tên gì, hành vi nào người dùng thấy đổi ngay.

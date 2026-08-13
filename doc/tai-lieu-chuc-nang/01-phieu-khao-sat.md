@@ -500,10 +500,11 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 
 ### 13. VAT % (`vat`)
 
-- Kiểu nhập: Chọn (danh sách cố định)
+- Kiểu nhập: Nhập số (%) — **0 ≤ VAT < 100**, tối đa 2 số thập phân
 - Mặc định: 0
 - Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: 0 / 2 / 4 / 6 / 8 / 10
+- Nguồn dữ liệu / liên kết: —
+- Logic đặc biệt: Trước CR-058 ô này là danh sách chọn cố định (0/2/4/6/8/10) nên thuế suất khác không nhập được. Nay nhập số tự do; ô nhập **kẹp về 99,99 ngay khi gõ** quá, và server chặn lại lần nữa (`ge=0, lt=100`) — gọi thẳng API cũng không lọt.
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 
 ### 14. SL YC theo dòng (`request_qty`)

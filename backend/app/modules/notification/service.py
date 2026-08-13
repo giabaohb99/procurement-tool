@@ -329,6 +329,13 @@ def trigger_notification(
     if event == "pr_assigned":
         subject = f"{doc_code} — Phân công phụ trách PYC"
         body = f"Bạn được phân công phụ trách yêu cầu mua hàng {doc_code}."
+    elif event == "pr_expected_date_changed":
+        # NSTM vừa đổi "thời gian dự kiến có hàng" trên YCMH -> báo cho NGƯỜI YÊU CẦU biết
+        # hàng của họ đổi ngày. `reason` mang chi tiết từng dòng (cũ → mới · lý do).
+        subject = f"{doc_code} — Điều chỉnh ngày dự kiến có hàng"
+        body = (f"Nhân sự thu mua vừa điều chỉnh thời gian dự kiến có hàng trên yêu cầu mua hàng {doc_code}:\n"
+                f"{reason}\n"
+                f"Mở phiếu để xem chi tiết.")
     elif event == "pr_submitted":
         subject = f"{doc_code} — Yêu cầu phê duyệt PYC"
         body = f"Có một yêu cầu mua hàng mới (Mã số: {doc_code}) cần bạn phê duyệt."

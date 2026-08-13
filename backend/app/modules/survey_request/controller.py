@@ -12,7 +12,7 @@ from app.core.response import success
 from app.core.scoping import apply_scope
 
 from . import service
-from .model import SurveyRequest, SurveyRequestLine
+from .model import SurveyRequest, SurveyRequestLine, SurveyRequestOption
 from .schema import LineStatusIn, RejectIn, SurveyRequestCreate, SurveyRequestUpdate
 
 router = APIRouter(prefix="/api/survey-requests", tags=["survey_request"])
@@ -158,9 +158,8 @@ def dept_head_(department: str = "", db: Session = Depends(get_db),
     return success({"head_of_dept": find_dept_head(db, department)})
 
 
-@router.get("")
-def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
-          user=Depends(require("survey_request", "read"))):
+def _list_query(request: Request, db: Session, user):
+    """Bộ lọc + phạm vi của màn danh sách — dùng chung cho danh sách và xuất Excel (CR-068)."""
     q = apply_filters(db.query(SurveyRequest), SurveyRequest, request, service.FILTERABLE)
     q = apply_range_filters(q, SurveyRequest, request, ["request_date"])
     q = apply_equals(q, SurveyRequest, request, ["company_id"])
@@ -172,11 +171,59 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
     if assignee:
         sub2 = select(SurveyRequestLine.survey_request_id).where(SurveyRequestLine.assignee == assignee)
         q = q.filter(SurveyRequest.id.in_(sub2))
-    q = apply_scope(q, SurveyRequest, "survey_request", user, get_perm_profile(db, user))
+    # CR-069 — tìm phiếu theo SẢN PHẨM cần báo giá. Dòng YCBG chưa có mã hàng (lúc lập chỉ có mô
+    # tả), nên khớp một phần trên: "Thông số kỹ thuật" + "Yêu cầu khác" của dòng, và mã/tên SP của
+    # PHƯƠNG ÁN ĐÃ CHỐT (chốt xong mới có mã hệ thống). KHÔNG dò các cột lộ NCC
+    # (`snap_internal_code`, `supplier_*`) — người không có `supplier.read` sẽ suy ra được NCC
+    # bằng cách gõ thử mã của NCC vào ô tìm.
+    product = (request.query_params.get("product") or "").strip()
+    if product:
+        like = f"%{product}%"
+        chosen = select(SurveyRequestOption.survey_request_line_id).where(
+            SurveyRequestOption.is_chosen == True,
+            (SurveyRequestOption.system_product_code.like(like))
+            | (SurveyRequestOption.snap_product_name.like(like)))
+        sub3 = select(SurveyRequestLine.survey_request_id).where(
+            (SurveyRequestLine.requirement_detail.like(like))
+            | (SurveyRequestLine.other_requirement.like(like))
+            | (SurveyRequestLine.id.in_(chosen)))
+        q = q.filter(SurveyRequest.id.in_(sub3))
+    return apply_scope(q, SurveyRequest, "survey_request", user, get_perm_profile(db, user))
+
+
+@router.get("")
+def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
+          user=Depends(require("survey_request", "read"))):
+    q = _list_query(request, db, user)
     total = q.count()
     q = apply_sort_from_request(q, SurveyRequest, request, default=SurveyRequest.id.desc())
     items = q.offset(pg["offset"]).limit(pg["limit"]).all()
     return success({"total": total, "items": [_dict(x) for x in items]})
+
+
+@router.get("/export/xlsx")
+def export_xlsx(request: Request, ids: str = "", cols: str = "",
+                db: Session = Depends(get_db), user=Depends(require("survey_request", "export"))):
+    """CR-068 — xuất Excel danh sách YCBG: mỗi dòng yêu cầu một hàng, kèm phương án đã chốt.
+
+    `ids` = phiếu người dùng tick chọn; rỗng thì theo bộ lọc đang đặt. `cols` = cột đang hiện.
+    Khai báo TRƯỚC route `/{sid}` kẻo 'export' bị hiểu thành id.
+    """
+    from app.core.export_xlsx import check_row_limit, parse_ids, pick_columns, xlsx_response
+    from . import export as ex
+
+    q = _list_query(request, db, user)
+    id_list = parse_ids(ids)
+    if id_list:
+        q = q.filter(SurveyRequest.id.in_(id_list))
+    srs = q.order_by(SurveyRequest.id.desc()).all()
+    check_row_limit(len(srs))
+    profile = get_perm_profile(db, user)
+    rows = ex.build_rows(db, srs, ex.line_visible_fn(db, user, profile))
+    check_row_limit(len(rows))
+    show_supplier = user_has_permission(db, user, "supplier", "read")
+    columns = pick_columns(ex.HEADER_COLS, cols) + ex.columns_for(show_supplier)
+    return xlsx_response(ex.FILE_NAME, columns, rows, ex.SHEET_TITLE)
 
 
 @router.get("/{sid}")

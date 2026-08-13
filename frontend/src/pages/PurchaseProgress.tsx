@@ -13,6 +13,7 @@ import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 import { useUrlFilters } from '../hooks/use-url-filters'
 import { fmtVND } from '../utils/money'
+import { toast } from '../components/toast'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 // ĐƠN GIÁ hiện đủ 4 số lẻ — mặc định toLocaleString chỉ cho 3, cắt mất chữ số cuối
@@ -92,6 +93,8 @@ const COLS: Col[] = [
   { key: 'fg_code', hide: true, label: 'Mã HH', w: 84, sort: 'fg_code', td: { ...NOWRAP, ...MUTED }, cell: (r) => r.fg_code },
   { key: 'invoice_no', hide: true, label: 'Số HĐ', w: 160, sort: 'invoice_no', td: NOWRAP, cell: (r) => r.invoice_no },
   { key: 'required_date', hide: true, label: 'Ngày cần', w: 88, sort: 'required_date', td: NOWRAP, cell: (r) => fmtDate(r.required_date) },
+  // Dự kiến nhận thuộc DÒNG HÀNG của ĐMH (trước đây đọc nhầm từ lần giao — cột đó không ai ghi)
+  { key: 'expected_date', hide: true, label: 'Dự kiến nhận', w: 100, sort: 'expected_date', td: NOWRAP, cell: (r) => fmtDate(r.expected_date) },
   { key: 'unit', label: 'ĐVT', w: 56, sort: 'unit', cell: (r) => r.unit },
   { key: 'qty_request', hide: true, label: 'SL YC', w: 76, sort: 'qty_request', td: R, cell: (r) => fmt(r.qty_request) },
   { key: 'qty_order', label: 'SL đặt', w: 76, sort: 'qty_order', td: R, cell: (r) => fmt(r.qty_order) },
@@ -106,7 +109,6 @@ const COLS: Col[] = [
   { key: 'ship_qty', hide: true, label: 'SL giao', w: 84, sort: 'ship_qty', td: R, cell: (r) => fmt(r.ship_qty) },
   { key: 'received_qty', label: 'SL nhận', w: 84, sort: 'received_qty', td: R, cell: (r) => fmt(r.received_qty) },
   { key: 'promised_date', hide: true, label: 'Cam kết giao', w: 100, sort: 'promised_date', td: NOWRAP, cell: (r) => fmtDate(r.promised_date) },
-  { key: 'expected_date', hide: true, label: 'Dự kiến nhận', w: 100, sort: 'expected_date', td: NOWRAP, cell: (r) => fmtDate(r.expected_date) },
   { key: 'received_date', label: 'Ngày nhận', w: 100, sort: 'received_date', td: NOWRAP, cell: (r) => fmtDate(r.received_date) },
   { key: 'std_days', hide: true, label: 'Ngày QĐ', w: 76, sort: 'std_days', td: R, cell: (r) => r.std_days || 0 },
   { key: 'regulated_date', hide: true, label: 'Ngày quy định', w: 108, sort: 'regulated_date', td: NOWRAP, cell: (r) => fmtDate(r.regulated_date) },
@@ -126,6 +128,8 @@ export default function PurchaseProgress() {
   const navigate = useNavigate()
   const { can } = useAuth()
   const canOpenPO = can('purchase_order', 'read')   // không có quyền xem ĐMH -> KHÔNG cho click (tránh ra trang trắng)
+  // Nút Xuất Excel: gate OR y như backend (export trên ĐMH HOẶC trên YCMH)
+  const canExport = can('purchase_order', 'export') || can('purchase_request', 'export')
   const [rows, setRows] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [showSupplier, setShowSupplier] = useState(true)
@@ -185,11 +189,49 @@ export default function PurchaseProgress() {
   const table = useTableColumns('purchase-progress', tableColumns)
   const minW = table.columns.reduce((s, c) => s + (typeof c.width === 'number' ? c.width : 100), 0)
 
+  /** CR-068 — xuất Excel đúng bộ lọc + đúng cột đang hiện. Bảng này không tick chọn từng dòng,
+   *  nên xuất theo kết quả lọc (backend chặn ở 5.000 dòng). */
+  async function exportXlsx() {
+    try {
+      const p: any = {}
+      Object.entries(f).forEach(([k, v]) => { const val = typeof v === 'string' ? v.trim() : v; if (val) p[k] = val })
+      if (sortBy) { p.sort_by = sortBy; p.sort_dir = sortDir }
+      p.cols = table.columns.map((c) => c.key).join(',')
+      const r = await api.get('/api/purchase-progress/export/xlsx', { params: p, responseType: 'blob' })
+      const cd = String(r.headers['content-disposition'] || '')
+      const name = /filename="?([^"]+)"?/.exec(cd)?.[1] || 'tien-do-mua-hang.xlsx'
+      const url = window.URL.createObjectURL(new Blob([r.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', name)
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode?.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (e: any) {
+      // Lỗi trả về cũng ở dạng blob (do responseType) -> đọc text rồi lấy message
+      let msg = 'Lỗi khi xuất file Excel'
+      try {
+        const body = e?.response?.data
+        const text = body instanceof Blob ? await body.text() : ''
+        msg = JSON.parse(text)?.error?.message || msg
+      } catch { /* giữ thông báo mặc định */ }
+      toast.error(msg)
+    }
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
         <h2 className="page-title" style={{ margin: 0 }}>Tiến độ mua hàng</h2>
-        <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Theo từng lần giao hàng · {fmt(total)} dòng</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Theo từng lần giao hàng · {fmt(total)} dòng</div>
+          {canExport && (
+            <button className="btn outline" onClick={exportXlsx} title="Xuất toàn bộ kết quả đang lọc ra Excel">
+              <i className="ti ti-file-spreadsheet" />Xuất Excel
+            </button>
+          )}
+        </div>
       </div>
 
       <FilterPanel onClear={() => setF({ ...EMPTY_FILTERS })} canClear={Object.values(f).some((v) => v)}>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import NotFound from '../components/NotFound'
+import { tenFileIn, usePrintTitle } from '../hooks/usePrintTitle'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 // ĐƠN GIÁ in đủ 4 số lẻ; TIỀN in làm tròn về đồng (kế toán chỉ ghi nhận tới đồng)
@@ -46,6 +47,8 @@ export default function PrintPurchaseOrderMH() {
       .then((r) => setPo(r.data.data))
       .catch(() => setNotFound(true))
   }, [id])
+  // Tên file gợi ý khi lưu PDF = Mã PO + ngày đơn (xem chú thích ở PrintPurchaseOrder).
+  usePrintTitle(po ? tenFileIn(po.code, po.order_date) : '')
   if (notFound) return (
     <NotFound backTo="/purchase-orders"
               message="Đơn mua hàng này không tồn tại, đã bị xóa hoặc bạn không có quyền in." />
@@ -133,7 +136,12 @@ export default function PrintPurchaseOrderMH() {
                 <td style={{ ...cell, textAlign: 'right' }}>{it.qty_received ? fmt(it.qty_received) : '-'}</td>
                 <td style={{ ...cell, textAlign: 'right' }}>{fmtPrice(it.price)}</td>
                 <td style={{ ...cell, textAlign: 'right' }}>{fmtVND(it.qty_order * it.price)}</td>
-                <td style={cell}>{it.note}</td>
+                <td style={cell}>
+                  {(it.required_date || it.expected_date) ? (
+                    <div style={{ fontWeight: 600 }}>Ngày cần hàng: {dmy(it.required_date || it.expected_date)}</div>
+                  ) : null}
+                  {it.note ? <div>{it.note}</div> : null}
+                </td>
               </tr>
             ))}
             <tr>

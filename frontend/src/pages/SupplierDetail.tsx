@@ -82,9 +82,11 @@ export default function SupplierDetail() {
       setErr('Tên pháp lý không được để trống')
       return
     }
+    // VAT phải DƯỚI 100% (CR-058) — 100% không phải thuế suất có thật, để lọt vào đây là
+    // mọi dòng ĐMH prefill từ NCC này đều nhân đôi tiền.
     const vatNum = Number(sup.vat)
-    if (isNaN(vatNum) || vatNum < 0 || vatNum > 100) {
-      setErr('VAT (%) phải là số từ 0 đến 100')
+    if (isNaN(vatNum) || vatNum < 0 || vatNum >= 100) {
+      setErr('VAT (%) phải là số từ 0 đến dưới 100')
       return
     }
 
@@ -187,7 +189,7 @@ export default function SupplierDetail() {
               <div className="form-row">
                 <label>VAT mặc định (%)</label>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <input type="number" style={{ width: '100%', paddingRight: 32 }} value={sup.vat ?? 8} min="0" max="100" disabled={!canEdit} onChange={(e) => setH('vat', e.target.value === '' ? '' : Number(e.target.value))} placeholder="Nhập từ 0 đến 100..." />
+                  <input type="number" style={{ width: '100%', paddingRight: 32 }} value={sup.vat ?? 8} min="0" max="99.99" disabled={!canEdit} onChange={(e) => setH('vat', e.target.value === '' ? '' : Number(e.target.value))} placeholder="Nhập từ 0 đến dưới 100..." />
                   <span style={{ position: 'absolute', right: 12, color: 'var(--muted)', fontWeight: 600 }}>%</span>
                 </div>
               </div>

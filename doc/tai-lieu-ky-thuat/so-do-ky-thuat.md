@@ -22,7 +22,7 @@ flowchart LR
     CF["☁️ Cloudflare Tunnel<br/>thumua.degoholding.vn"]
     WEB["🌐 Web / Nginx<br/>React (giao diện)"]
     API["⚙️ API — FastAPI<br/>(xử lý nghiệp vụ)"]
-    DB[("🗄️ MariaDB<br/>DB: procurement")]
+    DB[("🗄️ MySQL 8.4<br/>DB: procurement")]
     PUSH["📡 Push Service<br/>(VAPID / pywebpush)"]
 
     U -->|HTTPS| CF --> WEB

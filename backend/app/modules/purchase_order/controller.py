@@ -43,7 +43,8 @@ def _delivery(d, pay=None) -> dict:
             "remaining": float(pay.remaining or 0) if pay else 0.0}
 
 
-def _item(db, it, pay_by_del: dict, inv_by_code: dict | None = None) -> dict:
+def _item(db, it, pay_by_del: dict, inv_by_code: dict | None = None,
+          pr_expected: dict | None = None) -> dict:
     dels = service.deliveries_of(db, it.id)
     qty_order = float(it.qty_order or 0)
     del_out = [_delivery(d, pay_by_del.get(d.id)) for d in dels]
@@ -57,6 +58,10 @@ def _item(db, it, pay_by_del: dict, inv_by_code: dict | None = None) -> dict:
             "invoice_date": it.invoice_date or "",
             "document_delivery_date": it.document_delivery_date or "",
             "supplier_ready": bool(it.supplier_ready), "required_date": it.required_date,
+            "expected_date": it.expected_date or "",
+            # Ngày dự kiến ĐANG ghi trên dòng YCMH nguồn — CHỈ ĐỂ ĐỌC. FE so với ô bên trên để
+            # bật popup cảnh báo lệch ngày; hệ thống không tự ghi ngược lên YCMH (CR-062).
+            "pr_expected_date": (pr_expected or {}).get((it.product_code or "").strip(), ""),
             "unit": it.unit, "qty_request": float(it.qty_request or 0), "qty_order": qty_order,
             "price": float(it.price or 0), "vat": float(it.vat or 0), "amount": float(it.amount or 0),
             "qty_received": float(it.qty_received or 0), "qty_remaining": float(it.qty_remaining or 0),
@@ -85,7 +90,8 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
                   if not (it.invoice_name or "").strip() and (it.product_code or "").strip()}
     inv_by_code = {p.code: (p.invoice_name or "")
                    for p in db.query(Product).filter(Product.code.in_(need_codes)).all()} if need_codes else {}
-    items = [_item(db, it, pay_by_del, inv_by_code) for it in it_list]
+    pr_expected = service.pr_expected_map(db, po.pr_code)
+    items = [_item(db, it, pay_by_del, inv_by_code, pr_expected) for it in it_list]
     d["items"] = items
     # Tổng theo SL THỰC NHẬN (thành tiền đơn hàng = đã chốt)
     subtotal = round(sum(i["qty_received"] * i["price"] for i in items), 2)
@@ -105,9 +111,8 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
     return d
 
 
-@router.get("")
-def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
-            user=Depends(require("purchase_order", "read"))):
+def _list_query(request: Request, db: Session, user):
+    """Bộ lọc + phạm vi của màn danh sách — dùng chung cho danh sách và xuất Excel (CR-068)."""
     q = apply_filters(db.query(PurchaseOrder), PurchaseOrder, request, service.FILTERABLE)
     q = apply_range_filters(q, PurchaseOrder, request, ["order_date"])
     q = apply_equals(q, PurchaseOrder, request, ["company_id"])
@@ -121,7 +126,13 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
         sub2_deliv = select(PODelivery.po_id).where(PODelivery.invoice_no.like(f"%{invoice_no}%"))
         q = q.filter(or_(PurchaseOrder.id.in_(sub2_item), PurchaseOrder.id.in_(sub2_deliv)))
     q = apply_scope(q, PurchaseOrder, "purchase_order", user, get_perm_profile(db, user))
-    q = apply_sort_from_request(q, PurchaseOrder, request)   # sort theo cột; 'amount' tính toán -> bỏ qua
+    return apply_sort_from_request(q, PurchaseOrder, request)   # sort theo cột; 'amount' tính toán -> bỏ qua
+
+
+@router.get("")
+def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
+            user=Depends(require("purchase_order", "read"))):
+    q = _list_query(request, db, user)
     total, items = service.list_po(db, q, pg)
     out = []
     for p in items:
@@ -142,6 +153,32 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
         for r in out:
             r["pr_id"] = id_by_code.get(r.get("pr_code"))
     return success({"total": total, "items": out})
+
+
+@router.get("/export/xlsx")
+def export_xlsx(request: Request, ids: str = "", cols: str = "",
+                db: Session = Depends(get_db), user=Depends(require("purchase_order", "export"))):
+    """CR-068 — xuất Excel danh sách ĐMH, cột dòng hàng lấy đúng bộ cột màn Tiến độ mua hàng
+    (một hàng = một lần giao).
+
+    `ids` = đơn người dùng tick chọn; rỗng thì theo bộ lọc đang đặt. `cols` = cột đang hiện.
+    Cũng như `/lines`, phải khai báo TRƯỚC `/{pid}`.
+    """
+    from app.core.auth import user_has_permission
+    from app.core.export_xlsx import check_row_limit, parse_ids, pick_columns, xlsx_response
+    from . import export as ex
+
+    q = _list_query(request, db, user)
+    id_list = parse_ids(ids)
+    if id_list:
+        q = q.filter(PurchaseOrder.id.in_(id_list))
+    pos = q.order_by(PurchaseOrder.id.desc()).all()
+    check_row_limit(len(pos))
+    show_supplier = user_has_permission(db, user, "supplier", "read")
+    rows = ex.build_rows(db, pos, show_supplier)
+    check_row_limit(len(rows))
+    columns = pick_columns(ex.HEADER_COLS, cols) + ex.line_columns(show_supplier)
+    return xlsx_response(ex.FILE_NAME, columns, rows, ex.SHEET_TITLE)
 
 
 # PHẢI khai báo TRƯỚC `/{pid}`, nếu không "lines" sẽ rơi vào route đó và lỗi ép kiểu int.

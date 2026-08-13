@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../api/client";
+import { tenFileIn, usePrintTitle } from "../hooks/usePrintTitle";
 
 const fmt = (n: any) => Number(n || 0).toLocaleString("vi-VN");
 // ĐƠN GIÁ in đủ 4 số lẻ; TIỀN in làm tròn về đồng (kế toán chỉ ghi nhận tới đồng)
@@ -96,6 +97,8 @@ export default function PrintPurchaseRequest() {
       )
       .catch(() => {});
   }, [id]);
+  // Tên file gợi ý khi lưu PDF = Mã YCMH + ngày yêu cầu (xem chú thích ở usePrintTitle).
+  usePrintTitle(pr ? tenFileIn(pr.code, pr.request_date) : "");
 
   if (notFound)
     return (

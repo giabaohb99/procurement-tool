@@ -4,7 +4,7 @@
 
 Lập phiếu đề nghị thanh toán cho một nhà cung cấp, gom nhiều khoản công nợ (nhiều PO) vào một phiếu duy nhất. Phiếu hỗ trợ in theo mẫu biểu nội bộ (002/BM/PKT). Khi "Ghi nhận đã chi", hệ thống tự động cộng số tiền vào `paid_amount` của từng khoản công nợ tương ứng và tính lại trạng thái công nợ.
 
-Ràng buộc cốt lõi: mỗi phiếu chỉ thuộc về một NCC và một loại công nợ (`source_type`). Phiếu không tạo từ menu — người dùng chọn các khoản công nợ trên màn Công nợ (hoặc trong Đơn mua hàng) rồi bấm "Tạo yêu cầu thanh toán"; hệ thống mở màn nhập liệu để soát lại, và chỉ ghi phiếu khi bấm **Tạo phiếu** — tự tách mỗi NCC thành một phiếu riêng.
+Ràng buộc cốt lõi: mỗi phiếu chỉ thuộc về một NCC và một loại công nợ (`source_type`). Lối vào chính là chọn các khoản công nợ trên màn Công nợ (hoặc trong Đơn mua hàng) rồi bấm "Tạo yêu cầu thanh toán"; hệ thống mở màn nhập liệu để soát lại, và chỉ ghi phiếu khi bấm **Tạo phiếu** — tự tách mỗi NCC thành một phiếu riêng. Từ CR-066 còn lối vào **form trắng** (nút "Thêm" ở danh sách) cho trường hợp hàng chưa về nên chưa sinh công nợ: gõ tay từng dòng, in bản nháp trình ký, và chỉ bị chặn ở khâu **Gửi duyệt** khi dòng chưa khớp khoản nợ nào.
 
 Đường dẫn: `/payment-requests` (danh sách), `/payment-requests/:id` (chi tiết), `/print/payment-request/:id` (in phiếu).
 
@@ -135,43 +135,47 @@ Thông báo gửi qua chuông trong app (và Web Push nếu thiết bị đã đ
 
 ## B. Dòng công nợ thanh toán (PaymentRequestLine)
 
-Mỗi dòng tương ứng với một khoản công nợ (`Payable`) được đưa vào phiếu thanh toán. Các trường `po_code`, `invoice_no` được sao chép từ `Payable` khi tạo dòng; `due_date`, `incur_date`, `payable_total`, `payable_paid` được join trực tiếp từ `Payable` khi trả dữ liệu (không lưu riêng trong `tab_payment_request_line`).
+Mỗi dòng thường tương ứng với một khoản công nợ (`Payable`) được đưa vào phiếu thanh toán.
+
+**CR-066 — dòng nhập tay được:** `po_code`, `invoice_no`, `invoice_date`, `amount` là dữ liệu **lưu trên dòng phiếu** và **sửa được khi phiếu ở màn Tạo hoặc trạng thái Nháp**; lúc tạo từ màn Công nợ thì ô nào để trống mới lấy theo `Payable`. Ngược lại `due_date`, `payable_total`, `payable_paid` **luôn đọc lại từ Công nợ** mỗi lần trả dữ liệu (không lưu trên `tab_payment_request_line`) để không lệch số khi có phiếu khác chi cùng khoản nợ. Dòng chưa khớp khoản nợ nào (form trắng, hàng chưa về) trả về `matched = false`, các cột nợ bằng 0.
+
+Server tìm khoản nợ của một dòng bằng hàm `matching_payables(supplier_code, source_type, po_code, invoice_no)` — một số hóa đơn có thể ứng với nhiều `Payable`; nếu không khớp thì lùi về `payable_id` đã lưu.
 
 ### 1. Liên kết khoản công nợ (`payable_id`)
 
-- Kiểu nhập: Tự động (chọn từ màn Công nợ, không sửa được trong chi tiết phiếu)
-- Mặc định: ID của `Payable` được chọn
-- Bắt buộc: Bắt buộc (mỗi dòng phải liên kết với 1 `Payable` hợp lệ)
+- Kiểu nhập: Tự động (điền khi chọn khoản nợ từ màn Công nợ / Đơn mua hàng)
+- Mặc định: ID của `Payable` được chọn; **`0` với dòng gõ tay trên form trắng** (CR-066)
+- Bắt buộc: Không bắt buộc — dòng `payable_id = 0` vẫn lưu và in được; chỉ khi **Gửi duyệt** mới bắt buộc khớp một khoản nợ còn nợ (quy tắc C.2)
 - Nguồn dữ liệu / liên kết: Bảng `tab_payable`; khi cập nhật phiếu server bỏ qua `payable_id` thuộc NCC khác
-- Người sửa: Hệ thống (khóa sau khi tạo)
-- Logic đặc biệt: Khi `set_status` -> `paid`, server dùng `payable_id` để cộng `amount` vào `payable.paid_amount` và gọi `recalc_status`
+- Người sửa: Hệ thống (không hiển thị để sửa trên màn hình)
+- Logic đặc biệt: Khi `set_status` -> `paid`, server ưu tiên khớp khoản nợ theo `(supplier_code, source_type, po_code, invoice_no)`, chỉ lùi về `payable_id` khi không khớp được — nên dòng gõ tay vẫn trừ đúng công nợ
 
 ### 2. Mã PO (`po_code`)
 
-- Kiểu nhập: Tự động (sao chép từ `payable.po_code` khi tạo dòng)
-- Mặc định: Giá trị `po_code` của khoản nợ tương ứng
-- Bắt buộc: — (hệ thống điền)
-- Nguồn dữ liệu / liên kết: `payable.po_code` -> Đơn mua hàng (`purchase_order`)
-- Người sửa: Hệ thống (khóa hoàn toàn)
-- Logic đặc biệt: Hiển thị trong bảng dòng phiếu chi tiết (cột "PO")
+- Kiểu nhập: Nhập chữ (ô text) khi ở màn Tạo phiếu hoặc phiếu Nháp; chỉ đọc ở trạng thái khác
+- Mặc định: Lấy `payable.po_code` của khoản nợ tương ứng khi TẠO phiếu từ màn Công nợ; form trắng thì rỗng
+- Bắt buộc: — (để trống vẫn lưu được bản nháp)
+- Nguồn dữ liệu / liên kết: Lưu trên `tab_payment_request_line.po_code`; đối chiếu ngược với Đơn mua hàng (`purchase_order`) qua `payable.po_code`
+- Người sửa: Người tạo (quyền `payment_request:write`) khi phiếu Nháp
+- Logic đặc biệt: Hiển thị cột "PO" trong bảng dòng phiếu. Khi SỬA bản nháp, ô để trống **không** bị điền đè lại từ khoản nợ (người dùng có quyền xóa trắng); khi TẠO thì mới lấy theo khoản nợ
 
 ### 3. Số hóa đơn (`invoice_no`)
 
-- Kiểu nhập: Tự động (sao chép từ `payable.invoice_no` khi tạo dòng)
-- Mặc định: Giá trị `invoice_no` của khoản nợ tương ứng
-- Bắt buộc: Bắt buộc khi tạo — khoản nợ chưa có số hóa đơn bị từ chối, phiếu không được tạo
-- Nguồn dữ liệu / liên kết: `payable.invoice_no`
-- Người sửa: Hệ thống (khóa hoàn toàn)
-- Logic đặc biệt: Server kiểm tra `(p.invoice_no or "").strip()` trước khi thêm vào nhóm; khoản nợ thiếu số HĐ bị liệt kê trong thông báo lỗi 400 và không được đưa vào phiếu
+- Kiểu nhập: Nhập chữ (ô text) khi ở màn Tạo phiếu hoặc phiếu Nháp; chỉ đọc ở trạng thái khác
+- Mặc định: Lấy `payable.invoice_no` của khoản nợ tương ứng khi TẠO phiếu; form trắng thì rỗng
+- Bắt buộc: **Không bắt buộc khi tạo** (CR-066 — bỏ chặn cũ). **Bắt buộc khi Gửi duyệt**: thiếu số hóa đơn thì server chặn với thông báo "Chưa gửi duyệt được: … chưa có Số hóa đơn"
+- Nguồn dữ liệu / liên kết: Lưu trên `tab_payment_request_line.invoice_no`; là số hóa đơn của lần giao hàng trên dòng Đơn mua hàng (`tab_po_delivery.invoice_no` -> `payable.invoice_no`)
+- Người sửa: Người tạo (quyền `payment_request:write`) khi phiếu Nháp
+- Logic đặc biệt: Các dòng **cùng (mã PO + số hóa đơn)** được gộp thành một dòng khi tạo phiếu; dòng **chưa có số hóa đơn** thì để riêng (không gộp theo PO, vì chưa biết có cùng một hóa đơn hay không). Ô trống được **in trắng** trên phiếu để người dùng điền tay
 
-### 4. Ngày phát sinh (`incur_date`) — join từ Payable
+### 4. Ngày hóa đơn (`invoice_date`)
 
-- Kiểu nhập: Chỉ đọc (join từ `payable.incur_date` mỗi lần trả dữ liệu)
-- Mặc định: Ngày nhận hàng / ngày phát sinh công nợ (format `YYYY-MM-DD`)
-- Bắt buộc: —
-- Nguồn dữ liệu / liên kết: `payable.incur_date`
-- Người sửa: Hệ thống (không lưu trên `PaymentRequestLine`, đọc trực tiếp từ `Payable`)
-- Logic đặc biệt: Hiển thị cột "Ngày PS" trong bảng; trên phiếu in hiển thị dạng `dd/mm/yyyy`
+- Kiểu nhập: Chọn ngày (`DateInput`) khi ở màn Tạo phiếu hoặc phiếu Nháp; chỉ đọc ở trạng thái khác
+- Mặc định: Ngày hóa đơn của lần giao hàng sinh ra khoản nợ — `tab_po_delivery.invoice_date` (format `YYYY-MM-DD`)
+- Bắt buộc: — (để trống thì in trắng, điền tay trên bản in)
+- Nguồn dữ liệu / liên kết: Lưu trên `tab_payment_request_line.invoice_date` (thêm bởi migration `f4d1a6c92e08`); khi ô trống, lúc đọc server lùi về `tab_po_delivery.invoice_date` nên phiếu cũ không cần điền ngược dữ liệu
+- Người sửa: Người tạo (quyền `payment_request:write`) khi phiếu Nháp
+- Logic đặc biệt: Hiển thị cột "Ngày hóa đơn" trong bảng; trên phiếu in hiển thị `dd/mm/yyyy`, **trống thì in trắng** chứ không lấy ngày khác thay thế. Trước CR-066 cột này là "Ngày PS" và thực chất suy ra từ `created_at` của dòng (ngày tạo phiếu). Trường `incur_date` (ngày phát sinh công nợ) vẫn được trả về trong API để tham chiếu nhưng không còn hiển thị
 
 ### 5. Hạn trả (`due_date`) — join từ Payable
 
@@ -202,8 +206,8 @@ Mỗi dòng tương ứng với một khoản công nợ (`Payable`) được đ
 
 ### 8. Số tiền đề nghị trả (`amount`)
 
-- Kiểu nhập: Nhập số (VND) qua component `NumberInput` khi phiếu ở trạng thái Nháp; chỉ đọc ở trạng thái khác. Định dạng VN: dấu `.` ngăn nghìn, dấu `,` thập phân; chặn số âm.
-- Mặc định: `payable.total - payable.paid_amount` (phần còn lại chưa trả) — áp dụng nếu người dùng để 0 hoặc không nhập
+- Kiểu nhập: Nhập số (VND) qua component `NumberInput` ở màn Tạo phiếu và khi phiếu ở trạng thái Nháp; chỉ đọc ở trạng thái khác. Định dạng VN: dấu `.` ngăn nghìn, dấu `,` thập phân; chặn số âm.
+- Mặc định: `payable.total - payable.paid_amount` (phần còn lại chưa trả) — áp dụng nếu người dùng để 0 hoặc không nhập; dòng gõ tay chưa gắn khoản nợ thì mặc định 0, người lập tự nhập
 - Bắt buộc: Không bắt buộc (cho phép nhập 0 hoặc để trống; server tự tính từ phần còn lại)
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người tạo (quyền `payment_request:write`) khi phiếu Nháp
@@ -213,17 +217,27 @@ Mỗi dòng tương ứng với một khoản công nợ (`Payable`) được đ
 
 ## C. Quy tắc nghiệp vụ
 
-1. Tạo phiếu từ màn Công nợ: người dùng vào `/payables`, chọn các dòng công nợ (có thể thuộc nhiều NCC), bấm "Tạo yêu cầu thanh toán". Lối vào thứ hai: nút "Tạo yêu cầu thanh toán" trong chi tiết Đơn mua hàng (chọn hóa đơn còn nợ của chính đơn đó).
+1. Tạo phiếu từ màn Công nợ: người dùng vào `/payables`, chọn các dòng công nợ (có thể thuộc nhiều NCC), bấm "Tạo yêu cầu thanh toán". Lối vào thứ hai: nút "Tạo yêu cầu thanh toán" trong chi tiết Đơn mua hàng (chọn hóa đơn còn nợ của chính đơn đó, hoặc tạo theo tổng tiền PO khi chưa nhận hàng — CR-067).
 
    **CR-025 — không sinh phiếu nháp:** hai lối vào trên **không gọi API ngay**. Các khoản đã tick được chuyển sang màn `/payment-requests/new` qua URL (`?payables=1,2,3`) kèm `location.state.rows`; màn này cho soát lại và **sửa số tiền đề nghị từng dòng**, **bỏ bớt khoản** (có nút khôi phục), nhập **Ngày lập** + **Hình thức thanh toán** (CR-035) + **Ghi chú**, hiển thị trước **số phiếu sẽ tách ra** và cảnh báo khoản **chưa có số hóa đơn**. Chỉ khi bấm **Tạo phiếu** mới `POST /api/payment-requests`; **thoát giữa chừng thì không bản ghi nào được tạo**. Mở lại link / F5 vẫn đúng danh sách nhờ `GET /api/payables?ids=…&year=all`.
 
-   Server nhận `PRequestCreate` với danh sách `lines` (mảng `{payable_id, amount}`), gom theo cặp `(supplier_code, source_type)`, tạo mỗi nhóm thành một `PaymentRequest` riêng.
+   **CR-067 — Tạo theo PO sớm:** Khi đơn PO chưa có đợt nhận hàng nào (chưa có dòng trong `tab_payable`), bấm nút "Tạo yêu cầu thanh toán" trên PO sẽ nạp sẵn dòng thanh toán với số tiền bằng đúng Tổng tiền đơn hàng PO để lập bản nháp và in phiếu trình ký sớm.
 
-2. Điều kiện tiên quyết khi tạo: mỗi `Payable` trong danh sách gửi lên phải có `invoice_no` không rỗng. Các khoản nợ chưa có số hóa đơn bị liệt kê trong thông báo lỗi 400 và toàn bộ yêu cầu tạo bị từ chối.
+   **CR-066 — Tạo từ form trắng:** lối vào thứ ba là nút "Thêm" ở danh sách `/payment-requests`, mở thẳng `/payment-requests/new` **không kèm khoản nợ nào**. Ở chế độ này người lập tự chọn **Nhà cung cấp** + **Công ty** + **Loại công nợ** trên đầu phiếu, rồi gõ tay từng dòng (PO · Số hóa đơn · Ngày hóa đơn · Đề nghị trả) bằng nút "Thêm dòng"; vẫn có nút "Chọn từ Công nợ" để quay lại lối vào cũ. Dùng khi hàng chưa về nên chưa sinh công nợ mà vẫn cần in phiếu trình ký trước.
+
+   Server nhận `PRequestCreate` với danh sách `lines` (mảng `{payable_id, po_code, invoice_no, invoice_date, amount}`) kèm `supplier_code` / `company_id` / `source_type` của phiếu; gom theo cặp `(supplier_code, source_type)`, tạo mỗi nhóm thành một `PaymentRequest` riêng. Dòng không gắn khoản nợ (`payable_id = 0`) phải có `supplier_code` trên đầu phiếu, nếu không server báo "Chưa chọn nhà cung cấp cho phiếu".
+
+2. **Điều kiện GỬI DUYỆT (CR-066)** — thay cho điều kiện tiên quyết lúc tạo trước đây. Tạo phiếu và lưu nháp thì **không** đòi số hóa đơn (để in bản nháp trình ký sớm), nhưng khi bấm **Gửi duyệt** server chạy `check_submit`: **mỗi dòng phải khớp một khoản công nợ CÒN NỢ** theo `(NCC + loại công nợ + mã PO + số hóa đơn)`. Dòng vi phạm bị liệt kê trong lỗi 400 "Chưa gửi duyệt được: …" với 3 loại nguyên nhân:
+
+   - `… chưa có Số hóa đơn`
+   - `… không có khoản công nợ nào khớp Số HĐ X` (sai số hóa đơn / mã PO, hoặc hàng chưa được ghi nhận nhận)
+   - `… khoản công nợ theo Số HĐ X đã tất toán`
+
+   Lý do đặt cổng chặn ở đây: tiền chi phải trừ được vào một khoản nợ có thật, nếu không thì dòng Đơn mua hàng sẽ kẹt không lên "Hoàn thành". Trên màn hình, dòng chưa khớp được cảnh báo bằng thẻ vàng (`matched = false`) chứ không chặn thao tác lưu.
 
 3. Mã phiếu tự sinh: sau `db.flush()`, server gán `code = f"YCTT{req.id:05d}"` rồi `db.commit()`.
 
-4. Sửa phiếu (PATCH): chỉ cho phép khi `status != "paid"`. Khi cập nhật dòng, server xóa toàn bộ dòng cũ (`PaymentRequestLine`) và tạo lại từ danh sách mới; các khoản nợ có `supplier_code` khác với phiếu bị bỏ qua. `total` được tính lại.
+4. Sửa phiếu (PATCH): **chỉ cho phép khi `status = "draft"`** (CR-066 — khóa cứng ở backend, không chỉ ẩn nút trên giao diện). Trạng thái khác bị từ chối 400 với thông báo riêng: Chờ duyệt "…thu hồi (từ chối) rồi mới sửa", Đã duyệt "…không sửa được số tiền và số hóa đơn nữa", Đã chi / Từ chối "…không sửa được". Khi cập nhật dòng, server xóa toàn bộ dòng cũ (`PaymentRequestLine`) và tạo lại từ danh sách mới; các khoản nợ có `supplier_code` khác với phiếu bị bỏ qua; ô để trống **không** bị điền đè từ khoản nợ. `total` được tính lại.
 
 5. Xóa phiếu: chỉ cho phép khi `status != "paid"`. Khi xóa, server gọi `delete_attachments_for` để xóa file đính kèm, xóa toàn bộ dòng, rồi xóa phiếu.
 
@@ -245,6 +259,8 @@ Mỗi dòng tương ứng với một khoản công nợ (`Payable`) được đ
    - `cash` (Tiền mặt): tick ô "Tiền mặt"; cột phải **vẫn in đủ nhãn** (tiêu đề "Thông tin chuyển khoản:" và 4 dòng Tên TK / Số TK / Ngân hàng / Nội dung CK) nhưng **phần nội dung để trống thành dòng chấm** — giữ nguyên khung mẫu 002/BM/PKT và điền tay được khi cần. Server vẫn không gửi số TK / tên ngân hàng ra bản in (`bank_account = bank_name = ""`), nên dù có xem API cũng không lộ.
    - NCC chưa khai số TK thì chỗ đó vẫn in dấu chấm để điền tay như trước.
 
+   **CR-066 — in trắng ô còn thiếu:** cột "Số hóa đơn" và "Ngày" (ngày hóa đơn) của từng dòng **để trống khi chưa có dữ liệu**, không lấy ngày phát sinh công nợ in thay như trước. Nhờ vậy bản nháp in ra trình ký sớm được, người dùng điền tay hai ô đó rồi mới nhập lại vào phiếu để gửi duyệt.
+
 9. Đính kèm file: sử dụng module `attachment` với `entity = "payment_request"`, `entity_id = <id>`. Không giới hạn số file; file xóa kèm khi phiếu bị xóa.
 
 10. Tổng hiển thị cuối bảng dòng trên UI được tính phía client (`req.lines.reduce(sum, 0)`) và có thể khác `req.total` nếu người dùng đang chỉnh sửa chưa lưu. Sau khi lưu, `req.total` từ server là giá trị chính xác.
@@ -261,12 +277,18 @@ Entity: `payment_request`
 |---|---|---|
 | Xem danh sách | `payment_request:read` | mọi trạng thái (lọc theo data scope) |
 | Xem chi tiết | `payment_request:read` | mọi trạng thái (lọc theo data scope) |
-| Tạo phiếu (từ màn Công nợ) | `payment_request:create` | — |
-| Sửa nội dung phiếu và dòng | `payment_request:write` | `draft` |
-| Gửi duyệt | `payment_request:write` | `draft` |
+| Tạo phiếu (từ màn Công nợ, từ Đơn mua hàng, hoặc form trắng) | `payment_request:create` | — |
+| Sửa nội dung phiếu và dòng | `payment_request:write` | **chỉ `draft`** — chặn ở backend (CR-066) |
+| Gửi duyệt | `payment_request:write` | `draft` **và mọi dòng khớp một khoản công nợ còn nợ** (quy tắc C.2) |
 | Duyệt | `payment_request:approve` | `submitted` |
 | Ghi nhận đã chi | `payment_request:write` | `approved`; thực hiện bởi Quản lý thu mua / nhân viên được gán |
 | Xóa | `payment_request:delete` | không phải `paid` |
 | Xóa nhiều (bulk) | `payment_request:delete` | không phải `paid` |
 | In phiếu | `payment_request:print` | mọi trạng thái |
 | Đính kèm / xóa file | `payment_request:write` | không giới hạn trạng thái |
+
+---
+
+## E. Phiếu in (`/print/payment-request/:id`)
+
+**Tên file khi lưu PDF (CR-057).** Trang in đặt `document.title` = **`<Mã YCTT>-DDMMYYYY`** (ví dụ `YCTT00190-07082026`) qua hook `usePrintTitle` — trình duyệt và máy in ảo (Foxit, Microsoft Print to PDF) lấy đúng chuỗi đó làm tên file gợi ý, thay cho `Thu Mua Tool` mặc định. Ngày lấy `request_date` (ngày yêu cầu), **không** lấy ngày bấm in, nên in lại lúc nào cũng ra cùng một tên. Đây cũng chính là cột đang dùng để tính `period` in trên phiếu. Chi tiết cách làm: xem mục E của [04-don-mua-hang.md](04-don-mua-hang.md).

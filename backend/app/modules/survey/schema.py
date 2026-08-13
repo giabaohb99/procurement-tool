@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class SupplierLineIn(BaseModel):
@@ -44,7 +44,8 @@ class ProductLineIn(BaseModel):
     moq: float = 0
     price_by_volume: float = 0
     volume_range: str = ""
-    vat: float = 0
+    # % VAT theo phương án, nhập tay từ CR-058 → chặn 0 ≤ VAT < 100 (cột DB Numeric(5,2)).
+    vat: float = Field(0, ge=0, lt=100)
     request_qty: float = 0
     amount: float = 0
     internal_unit: str = ""

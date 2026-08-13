@@ -26,10 +26,16 @@ class PaymentRequest(Base, AuditMixin):
 
 
 class PaymentRequestLine(Base, AuditMixin):
+    """Dòng đề nghị chi. CR-066: mã PO / số hóa đơn / ngày hóa đơn là dữ liệu NHẬP TAY được
+    (bản nháp cho sửa), không còn bắt buộc phải soi ngược từ khoản công nợ. payable_id = 0
+    nghĩa là dòng gõ tay trên form trắng, chưa gắn khoản nợ nào."""
+
     __tablename__ = "tab_payment_request_line"
 
     request_id: Mapped[int] = mapped_column(BigInteger, index=True)
     payable_id: Mapped[int] = mapped_column(BigInteger, default=0)
     po_code: Mapped[str] = mapped_column(String(50), default="")
     invoice_no: Mapped[str] = mapped_column(String(50), default="")
+    # Ngày hóa đơn — mặc định lấy từ dòng giao hàng (tab_po_delivery.invoice_date), sửa tay được
+    invoice_date: Mapped[str] = mapped_column(String(10), default="")
     amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)

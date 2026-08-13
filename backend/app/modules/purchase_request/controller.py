@@ -200,11 +200,9 @@ def _out(db: Session, pr, user=None) -> dict:
     return d
 
 
-@router.get("")
-def list_pr(
-    request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
-    user=Depends(require("purchase_request", "read")),
-):
+def _list_query(request: Request, db: Session, user):
+    """Câu truy vấn danh sách (lọc + phạm vi + sắp xếp) — dùng chung cho màn danh sách và xuất Excel,
+    để file xuất luôn ra ĐÚNG những phiếu người dùng đang thấy."""
     query = apply_filters(db.query(PurchaseRequest).filter(PurchaseRequest.is_deleted == False), PurchaseRequest, request, service.FILTERABLE)
     query = apply_range_filters(query, PurchaseRequest, request, ["request_date", "need_date"])
     query = apply_equals(query, PurchaseRequest, request, ["company_id"])
@@ -216,13 +214,30 @@ def list_pr(
     if assignee:
         sub2 = select(PurchaseRequestItem.pr_id).where(PurchaseRequestItem.assignee == assignee)
         query = query.filter(PurchaseRequest.id.in_(sub2))
+    # CR-069 — tìm phiếu theo MÃ HÀNG / TÊN HÀNG ở dòng hàng (bảng con). Khớp MỘT PHẦN:
+    # gõ "5155" ra cả HOP5155 lẫn NHG5155. Cùng lối với ô tìm nhanh của màn Tiến độ mua hàng.
+    product = (request.query_params.get("product") or "").strip()
+    if product:
+        like = f"%{product}%"
+        sub3 = select(PurchaseRequestItem.pr_id).where(
+            (PurchaseRequestItem.product_code.like(like)) | (PurchaseRequestItem.product_name.like(like)))
+        query = query.filter(PurchaseRequest.id.in_(sub3))
     query = apply_scope(query, PurchaseRequest, "purchase_request", user, get_perm_profile(db, user))
     # Sort theo cột người dùng bấm (tiebreak id desc do service thêm); cột 'total' là tính toán -> bỏ qua
-    query = apply_sort_from_request(query, PurchaseRequest, request)
+    return apply_sort_from_request(query, PurchaseRequest, request)
+
+
+@router.get("")
+def list_pr(
+    request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
+    user=Depends(require("purchase_request", "read")),
+):
+    query = _list_query(request, db, user)
     total, items = service.list_pr(db, query, pg)
     
     pr_ids = [p.id for p in items]
     subtotals = {}
+    need_dates = {}
     if pr_ids:
         subtotals = {
             pr_id: float(amount or 0) for pr_id, amount in db.query(
@@ -230,7 +245,17 @@ def list_pr(
                 func.sum(PurchaseRequestItem.amount)
             ).filter(PurchaseRequestItem.pr_id.in_(pr_ids)).group_by(PurchaseRequestItem.pr_id).all()
         }
-        
+        need_rows = db.query(
+            PurchaseRequestItem.pr_id,
+            func.min(PurchaseRequestItem.required_date)
+        ).filter(
+            PurchaseRequestItem.pr_id.in_(pr_ids),
+            PurchaseRequestItem.required_date != "",
+            PurchaseRequestItem.required_date.isnot(None),
+            PurchaseRequestItem.line_status != "Hủy đơn"
+        ).group_by(PurchaseRequestItem.pr_id).all()
+        need_dates = {r[0]: r[1] for r in need_rows if r[1]}
+
     cancelled_ids = set()
     if pr_ids:
         cancelled_ids = {r[0] for r in db.query(PurchaseRequestItem.pr_id).filter(
@@ -241,6 +266,7 @@ def list_pr(
     for p in items:
         d = {c: getattr(p, c) for c in HEADER_COLS}
         d["created_at"] = p.created_at   # thời điểm tạo (có giờ) — hiển thị giờ VN ở list
+        d["need_date"] = need_dates.get(p.id) or p.need_date or ""
         d["total"] = round(subtotals.get(p.id, 0.0), 2)   # gồm VAT (tính từ amount dòng)
         d["has_cancelled_line"] = p.id in cancelled_ids
         if not can_see_supplier:
@@ -248,6 +274,32 @@ def list_pr(
         out_items.append(d)
 
     return success({"total": total, "items": out_items})
+
+
+@router.get("/export/xlsx")
+def export_xlsx(
+    request: Request, ids: str = "", cols: str = "",
+    db: Session = Depends(get_db), user=Depends(require("purchase_request", "export")),
+):
+    """CR-068 — xuất Excel danh sách YCMH, mỗi dòng hàng một hàng.
+
+    `ids` = các phiếu người dùng tự tick (ưu tiên); bỏ trống thì xuất theo đúng bộ lọc đang đặt.
+    `cols` = danh sách cột đang hiện trên bảng, để file khớp với những gì họ nhìn thấy.
+    Phải khai báo TRƯỚC route `/{pid}` kẻo 'export' bị nuốt thành id.
+    """
+    from app.core.export_xlsx import check_row_limit, parse_ids, pick_columns, xlsx_response
+    from . import export as ex
+
+    query = _list_query(request, db, user)
+    id_list = parse_ids(ids)
+    if id_list:
+        query = query.filter(PurchaseRequest.id.in_(id_list))
+    prs = query.order_by(PurchaseRequest.id.desc()).all()
+    check_row_limit(len(prs))
+    rows = ex.build_rows(db, prs)
+    check_row_limit(len(rows))
+    columns = pick_columns(ex.HEADER_COLS, cols) + list(ex.LINE_COLS)
+    return xlsx_response(ex.FILE_NAME, columns, rows, ex.SHEET_TITLE)
 
 
 def _see_all_items(profile: dict, pr, user) -> bool:

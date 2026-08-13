@@ -87,6 +87,16 @@ Quản lý danh sách nhân viên thuộc các công ty/phòng ban. Hồ sơ nh�
 - Người sửa: Người có quyền `employee:write`
 - Logic đặc biệt: Nhân sự không hoạt động không được chọn trong các trường liên kết (phân công, người đại diện pháp lý, NSTM...)
 
+### 10. Ảnh đại diện (`avatar`) — chỉ đọc trên hồ sơ nhân sự
+
+- Kiểu nhập: Tải ảnh lên (bấm vào ảnh tròn ở đầu trang chi tiết nhân sự)
+- Mặc định: rỗng — hiện chữ cái đầu của họ tên trên nền màu
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: **`tab_user.avatar` của tài khoản gắn với nhân sự đó** — bảng `tab_employee` KHÔNG có cột ảnh
+- Người sửa: `employee:write` (đổi hộ người khác) hoặc chính chủ tự đổi ở Trang cá nhân
+- Logic đặc biệt: Ảnh chỉ có **một chỗ lưu duy nhất**. Người dùng tự đổi ảnh ở Trang cá nhân thì danh sách nhân sự đổi theo và ngược lại — cố ý làm vậy để không có hai nguồn lệch nhau. Hệ quả: **nhân sự chưa được cấp tài khoản thì chưa đặt được ảnh**, hệ thống báo *"hãy tạo tài khoản trước khi đặt ảnh đại diện"*
+- Logic đặc biệt: API `POST /api/employees/{id}/avatar`; danh sách nhân sự nạp gộp ảnh qua `selectinload(user)` để không sinh mỗi dòng một câu truy vấn
+
 ### Xóa hồ sơ nhân sự (CR-023)
 
 Xóa hồ sơ nhân sự là **xóa cứng** bản ghi trong `tab_employee`. Từ CR-023, thao tác này **kéo theo tài khoản đăng nhập**:
@@ -169,6 +179,7 @@ Quản lý tài khoản đăng nhập và liên kết tài khoản với hồ s�
 - Nguồn dữ liệu / liên kết: Bảng Vai trò (`tab_role`)
 - Người sửa: Admin (`user:write`) tại trang `/users/:id`
 - Logic đặc biệt: Mỗi lần thay đổi vai trò sẽ gọi `perm_cache_clear()` để xóa cache phân quyền (cache sống 60 giây)
+- Logic đặc biệt (CR-037): tài khoản mới **không chọn vai trò** thì tự gán vai trò `employee` (**Nhân sự**) — áp cho cả 3 đường tạo: cấp tài khoản từ màn Nhân sự, gọi API tạo người dùng, và đăng nhập Google lần đầu. Vai trò cao hơn vẫn phải gán tay. Trước đó (CR-022) tài khoản mới không có quyền gì nên đăng nhập vào **thấy màn trắng**, không hiểu là lỗi hay chưa được cấp quyền
 
 ### 7. Phạm vi theo vai trò (`tab_user_scope`)
 
@@ -178,6 +189,45 @@ Quản lý tài khoản đăng nhập và liên kết tài khoản với hồ s�
 - Nguồn dữ liệu / liên kết: Công ty (`tab_company`), Phòng ban (`tab_department`), Nhân sự (`tab_employee`)
 - Người sửa: Admin (`user:write`)
 - Logic đặc biệt: Xem chi tiết ở mục Vai trò & Phân quyền bên dưới
+
+### Dọn tài khoản mồ côi (CR-037)
+
+CR-023 khóa và gỡ liên kết tài khoản khi xóa hồ sơ nhân sự, nhưng **không xóa** tài khoản. Hệ quả là danh sách người dùng
+dần tích lại những dòng đã khóa, không còn nhân sự, không ai dám đụng vì sợ mất dấu vết. CR-037 bổ sung công cụ để nhìn ra
+và dọn đúng nhóm đó.
+
+**Nhìn ra chúng — bộ lọc "Tình trạng"** (tab *Người dùng* của màn Phân quyền `/roles`), hai lựa chọn:
+
+| Lựa chọn | Nghĩa là gì |
+| --- | --- |
+| Chưa gán vai trò | Tài khoản đăng nhập được nhưng chưa có vai trò nào — vào hệ thống là màn trắng |
+| Mồ côi (không có hồ sơ nhân sự) | Tài khoản không còn gắn hồ sơ nhân sự nào (`employee_id = 0` hoặc trỏ vào nhân sự đã bị xóa) |
+
+Ngoài bộ lọc, mỗi dòng trong bảng tự đeo nhãn **"Mồ côi"** (đỏ) / **"Đã khóa"** (xám) để nhận ra ngay mà không cần lọc.
+
+**Xử lý chúng — hai nút biểu tượng ở cuối dòng:**
+
+- **Ổ khóa** — khóa / mở khóa (`is_active`), không mất gì. Đây là lựa chọn mặc định, nên dùng trước.
+- **Thùng rác** — xóa cứng bản ghi tài khoản. Nút này **chỉ hiện trên dòng có nhãn "Mồ côi"**.
+
+**Bốn chốt chặn khi xóa** (kiểm ở backend, không phải chỉ ẩn nút):
+
+1. Không xóa được **chính tài khoản đang đăng nhập**.
+2. Không xóa được tài khoản **còn gắn hồ sơ nhân sự** — kể cả khi nó đang bị khóa. Muốn xóa thì xử lý hồ sơ nhân sự trước.
+3. Không xóa được **tài khoản admin cuối cùng** — hệ thống phải luôn còn ít nhất một người mở được cửa.
+4. Không xóa được tài khoản **đã tạo chứng từ** — bất kỳ bảng nghiệp vụ nào còn `created_by` trỏ vào nó.
+
+Chốt 4 là lý do đa số tài khoản cũ **sẽ không xóa được**, và như vậy là đúng: xóa xong thì không còn trả lời được câu
+"phiếu này ai tạo". Chỉ những tài khoản chưa từng làm gì mới thực sự biến mất.
+
+**Xóa thì mất theo cái gì:** vai trò được gán, phạm vi dữ liệu, thông báo, và đăng ký nhận web-push của tài khoản đó.
+**Nhật ký thao tác được giữ nguyên** — các dòng cũ hiển thị "User #id" thay cho tên.
+
+**API liên quan:**
+
+- `GET /api/users` — thêm tham số `no_role`, `orphan`; mỗi dòng trả về thêm trường `is_orphan`
+- `PUT /api/users/{id}/active` — khóa / mở khóa (`user:write`)
+- `DELETE /api/users/{id}` — xóa cứng, yêu cầu quyền `user:delete`
 
 ---
 
@@ -579,6 +629,14 @@ Bốn thẻ đếm theo trạng thái duyệt dòng (`line_approve`), hiển th�
 
 Tất cả bộ lọc có debounce 300ms và tự động tải lại khi thay đổi.
 
+**Bộ lọc được lưu lên URL (CR-045).** Mọi ô lọc ở trên ghi thẳng vào query string, nên **F5 không mất điều kiện lọc** và **gửi link cho đồng nghiệp là họ mở ra thấy đúng cái mình đang xem**. Ba quy ước:
+
+- Ô **rỗng hoặc đúng bằng giá trị mặc định thì không ghi lên URL** — link ngắn gọn, và sau này đổi mặc định cũng không làm link cũ hiểu sai.
+- Ghi theo kiểu **`replace`**, nên bấm **Back** là quay về **trang trước**, không phải lùi từng lần gõ ô lọc.
+- Dùng hook chung `frontend/src/hooks/use-url-filters.ts` (`useUrlFilters`), cùng chỗ với **Bộ lọc điều kiện** (`<trường>__<phép so sánh>`); hai bên chỉ đụng đúng các key của mình nên không đè nhau.
+
+> Báo cáo mua hàng (`/reports`) **chưa áp** cơ chế này — bộ lọc Công ty / Năm ở đó vẫn mất khi F5.
+
 ### Cột bảng kết quả
 
 | Cột | Nội dung |
@@ -599,3 +657,20 @@ Mặc định sắp xếp theo `survey_id` giảm dần, sau đó theo `kind` (s
 ### Xuất CSV
 
 Nút "Xuất CSV" xuất toàn bộ trang hiện tại (theo bộ lọc đang áp) ra file `bao-cao-khao-sat-YYYY-MM-DD.csv`. Các cột: Mã phiếu, Loại, Nội dung, Phân loại, NSPT, Ngày, Trạng thái duyệt, Ghi chú duyệt. File UTF-8 có BOM để Excel đọc đúng tiếng Việt.
+
+---
+
+## Lần rà soát gần nhất
+
+Tài liệu này viết ngày 2026-08-05 và **để nguyên gần một tháng** trong khi phần Nhân sự / Người dùng có thay đổi. Lần rà soát 2026-08-11 đối chiếu lại với mã nguồn và bổ sung những phần đã thiếu:
+
+| Nội dung | Đối chiếu với | Kết quả |
+|---|---|---|
+| Vai trò mặc định của tài khoản mới (CR-037) | `backend/app/modules/user/service.py` — `DEFAULT_ROLE_CODE = "employee"` | Đã bổ sung vào trường 6 mục *Người dùng* |
+| Dọn tài khoản mồ côi (CR-037) | `service.py` — `orphan_user_ids`, `delete_user`, `user_data_refs`; `controller.py` — `no_role` / `orphan` / `is_orphan`, `PUT .../active`, `DELETE /api/users/{id}` | Đã bổ sung mục riêng; **4 chốt chặn khi xóa** kiểm lại đúng từng dòng mã |
+| Xóa kéo theo dữ liệu nào | `delete_user` — xóa `UserRole`, `UserScope`, `Notification`, `PushSubscription`; **giữ** `tab_audit_log` (`_SKIP_REF_TABLES`) | Khớp; đã ghi rõ trong tài liệu |
+| Ảnh đại diện nhân sự | `employee/model.py` (property `avatar` đọc từ `tab_user`), `employee/controller.py` — `POST /{eid}/avatar` | Trước đây tài liệu **không có** trường này; đã thêm thành trường 10 mục *Nhân sự* |
+| Bộ lọc lưu lên URL (CR-045) | `frontend/src/hooks/use-url-filters.ts`; `SurveyReport.tsx` có dùng, `Reports.tsx` và `RolePermissions.tsx` **không** | Đã ghi vào mục *Báo cáo khảo sát*, kèm ghi chú Báo cáo mua hàng chưa áp |
+| Các trường còn lại của Nhân sự / Người dùng / Vai trò / Cấu hình | Model + form tương ứng | Không đổi so với bản 2026-08-05 |
+
+Còn thiếu, sẽ bổ sung khi có dịp: **Bộ lọc điều kiện** (`frontend/src/config/conditional-filters.ts`) là cơ chế dùng chung cho 17 màn danh sách — nên viết thành một mục riêng ở tài liệu khối dùng chung thay vì nhắc rải rác từng file.

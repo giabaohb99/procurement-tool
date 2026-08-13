@@ -176,6 +176,7 @@ Hàm `trigger_notification` được các controller gọi sau mỗi thao tác t
 | `pr_rejected` | `[Từ chối] PYC {code}` | "Yêu cầu mua hàng {code} của bạn đã bị từ chối phê duyệt." |
 | `pr_returned` | `[Bị trả lại] PYC {code}` | "Yêu cầu mua hàng {code} của bạn bị trả lại — hãy chỉnh sửa và gửi duyệt lại." |
 | `pr_cancelled` | `[Đã hủy] PYC {code}` | "Yêu cầu mua hàng {code} của bạn đã bị hủy." |
+| `pr_expected_date_changed` (CR-062) | `{code} — Điều chỉnh ngày dự kiến có hàng` | "Nhân sự thu mua vừa điều chỉnh thời gian dự kiến có hàng trên yêu cầu mua hàng {code}:" + danh sách dòng (`- {tên hàng}: {ngày cũ} → {ngày mới} · lý do: {lý do}`) + "Mở phiếu để xem chi tiết." |
 | `sr_submitted` | `[Yêu cầu phê duyệt] YCBG {code}` | "Có một yêu cầu báo giá mới (Mã số: {code}) cần bạn phê duyệt." |
 | `sr_approved` | `[Đã duyệt] YCBG {code}` | "Yêu cầu báo giá {code} của bạn đã được phê duyệt." |
 | `sr_rejected` | `[Từ chối] YCBG {code}` | "Yêu cầu báo giá {code} của bạn đã bị từ chối phê duyệt." |
@@ -202,6 +203,7 @@ Nếu `is_urgent=True` → tiêu đề thêm tiền tố `[GẤP]`.
 | `sr_submitted` | **Người duyệt của phòng ban người yêu cầu — GỘP 2 nguồn** (`get_dept_approver_recipients`, giống `pr_submitted`): `Department.manager_id` + mọi user vai trò `dept_head` trong phòng, khử trùng theo `user.id`. |
 | `pay_submitted` | Người có quyền `approve` trên entity `payment_request` (Quản lý / Admin thu mua). |
 | `pr_approved` | Người tạo YCMH + tất cả người thuộc vai trò `pur_manager` và `pur_admin`. |
+| `pr_expected_date_changed` | **NGƯỜI YÊU CẦU** của phiếu — tài khoản của nhân sự `pr.requester_id` (`User.employee_id`, chỉ tài khoản đang hoạt động); không có thì người tạo phiếu (`created_by`). Chỉ phát khi ngày thực sự đổi qua `PATCH /{pid}/item-status`; **không tự gửi cho chính người vừa thao tác**. Ngày dự kiến bên ĐMH lệch với YCMH thì KHÔNG sinh thông báo — chỗ đó cảnh báo bằng popup trên màn hình đơn mua hàng. |
 | Các sự kiện còn lại | Người tạo chứng từ (`creator_id`). |
 
 Danh sách người nhận được khử trùng (mỗi `user_id` chỉ nhận 1 thông báo).
@@ -425,7 +427,7 @@ Danh sách đầy đủ (phân trang) tất cả công việc đang chờ ngư�
 | `pr` | YCMH chờ duyệt | `PurchaseRequest` | `status = "submitted"` |
 | `sr` | Khảo sát chờ duyệt | `SurveyRequest` | `status = "submitted"` |
 | `po` | ĐMH chờ duyệt | `PurchaseOrder` | `status = "submitted"` |
-| `late` | Giao hàng trễ | `PODelivery` | `received_qty <= 0` và `expected_date` (hoặc `promised_date`) < hôm nay |
+| `late` | Giao hàng trễ | `PODelivery` | `received_qty <= 0` và `promised_date` < hôm nay (CR-062: bỏ ưu tiên `expected_date` — cột đó không nơi nào ghi) |
 | `payable` | Công nợ quá hạn | `Payable` | `status != "Đã TT"`, `remaining > 0`, `due_date < hôm nay` |
 
 Mỗi loại chỉ được đưa vào danh sách nếu người dùng có quyền `read` trên entity tương ứng. Dữ liệu đã qua `apply_scope` (phạm vi của user).

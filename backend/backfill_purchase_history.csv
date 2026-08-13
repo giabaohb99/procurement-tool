@@ -1,0 +1,24 @@
+﻿po_code,product_code,product_name,supplier_code,qty_order,price,progress_status,completed_at,nguon_ngay,po_item_id,history_id
+PO00001,THC0003,Thùng DC Chai Pet Vuông 35 450ml-500ml - Trắng viền đen,XANH VIỆT VINA,1000.0,10000.0,Chưa gửi ĐMH cho KT,2026-06-12,nhận hàng,1,38649
+PO00002,NL0001,Nguyên liệu Vi lượng AV4,Nông Xanh,800.0,15000.0,Chưa gửi ĐMH cho KT,2026-07-14,YCTT,2,38650
+PO-DEMO-02,SP-THUNG-01,Thùng carton 5 lớp,Đông Tây,1200.0,8500.0,Chưa gửi ĐMH cho KT,2026-07-13,YCTT,23,38651
+PO-DEMO-04,SP-THUNG-02,Thùng carton in flexo,Cẩm Hùng,1600.0,8500.0,Chưa gửi ĐMH cho KT,2026-04-15,nhận hàng,25,38652
+PO-DEMO-05,SP-NHAN-02,Nhãn metalize,Đông Tây,8000.0,1150.0,Chưa gửi ĐMH cho KT,2026-05-16,nhận hàng,26,38653
+PO-DEMO-07,SP-THUNG-03,Thùng carton 3 lớp,Cẩm Hùng,2400.0,8500.0,Chưa gửi ĐMH cho KT,2026-06-26,nhận hàng,28,38654
+PO-DEMO-08,SP-NHAN-03,Nhãn giấy couche,Đông Tây,3000.0,1150.0,Chưa gửi ĐMH cho KT,2026-07-03,nhận hàng,29,38655
+PO00033,NAP0029,Nắp HD cổ 50 (10gr),Hồ Gia,2000.0,1000.0,Đã nhận hàng,2026-07-31,nhận hàng,34,38656
+PO00035,THI0002,Thùng IDA Chai Pet Vuông 35 450ml-500ml - 44x38.5x19 - Xanh lá,Cẩm Hùng,100.0,20000.0,Chưa đặt hàng,2026-07-13,nhận hàng,36,38657
+PO00035,THC0003,Thùng DC Chai Pet Vuông 35 450ml-500ml - (47x38.5x19cm) - Trắng viền đen,Cẩm Hùng,100.0,20000.0,Chưa đặt hàng,2026-07-13,nhận hàng,37,38658
+PO00036,THC0004,Thùng DC Chai Pet Tròn 43 450ml-500ml - 61.5x38.5x19 - Trắng,Cẩm Hùng,100.0,20000.0,Chưa đặt hàng,2026-07-13,nhận hàng,38,38659
+PO00036,THI0002,Thùng IDA Chai Pet Vuông 35 450ml-500ml - 44x38.5x19 - Xanh lá,Cẩm Hùng,100.0,20000.0,Chưa đặt hàng,2026-07-13,nhận hàng,39,38660
+PO00037,THI0002,Thùng IDA Chai Pet Vuông 35 450ml-500ml - 44x38.5x19 - Xanh lá,Cẩm Hùng,100.0,20000.0,Chưa gửi ĐMH cho KT,2026-07-13,nhận hàng,40,38661
+PO00338,VT00035,"Thùng carton nâu 5 lớp ,cán màng Icare (50.5x37.5x34cm) Phủ bì",Đông Tây,20.0,23500.0,Đã gửi ĐMH cho KT,2026-06-08,nhận hàng,380,38662
+PO00339,VT00035,"Thùng carton nâu 5 lớp ,cán màng Icare (50.5x37.5x34cm) Phủ bì",Đông Tây,80.0,23500.0,Đã gửi ĐMH cho KT,2026-06-08,nhận hàng,381,38663
+PO00340,THC0307,Thùng Japan chai HDPE 500ml x 30 chai (42x35x24.5cm) - Trắng viền xanh dương,Đông Tây,100.0,18300.0,Đã gửi ĐMH cho KT,2026-06-08,nhận hàng,382,38664
+PO00341,THC0004,Thùng DC Chai Pet Tròn 43 450ml-500ml - 61.5x38.5x19 - Trắng,Đông Tây,300.0,21700.0,Đã gửi ĐMH cho KT,2026-06-08,nhận hàng,383,38665
+PO00342,THC0162,Thùng Dùng Chung ABA 100g x100 gói (47.5x41.5x28cm) - Trắng,Đông Tây,200.0,23200.0,Đã gửi ĐMH cho KT,2026-06-13,nhận hàng,384,38666
+PO00343,THC0138,Thùng DC chai Pet tròn 60ml x 100 chai (48.5x25x17.5cm) - Trắng,Bao Bì Đông Bắc,100.0,13300.0,Đã gửi ĐMH cho KT,2026-06-12,nhận hàng,385,38667
+PO00344,THC0080,Thùng dùng chung ABA Chai 250ml x 40 chai (53.5x33.5x15.5cm) - Trắng,Bao Bì Đông Bắc,200.0,18300.0,Đã gửi ĐMH cho KT,2026-06-12,nhận hàng,386,38668
+PO00345,THC0309,Thùng chung chai PET 350ml x 40 chai (55.5x35x17.5cm) - Trắng viền đen,Đông Tây,150.0,19300.0,Đã gửi ĐMH cho KT,2026-06-15,nhận hàng,387,38669
+PO00347,THC0274,Thùng chung Chai HDPE 500ml x 40 chai  (64.5x40.5x19cm) - Nâu trơn,Đông Tây,300.0,22800.0,Đã gửi ĐMH cho KT,2026-06-15,nhận hàng,389,38670
+PO00350,THC0146,Thùng Chai HD 500ml x 40 chai (60x38x20cm) - Thùng Trắng viền đen,Đông Tây,300.0,22000.0,Đã gửi ĐMH cho KT,2026-07-31,nhận hàng,392,38671

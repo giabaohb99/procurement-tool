@@ -685,12 +685,18 @@ def create_prs(db: Session, sid: int, user_id: int):
         for ln, opt in items:
             qty = float(ln.request_qty or 0)
             price = float(opt.snap_price_by_volume or 0)
+            # VAT của phương án đã chọn phải theo sang YCMH (CR-058). Trước đây không gán
+            # `vat_pct` nên dòng nhận mặc định 0% — NCC báo giá 8% mà YCMH ghi 0%, người lập
+            # phải sửa tay từng dòng, quên thì ĐMH prefill sai và thiếu luôn tiền thuế.
+            vat = float(opt.snap_vat or 0)
             db.add(PurchaseRequestItem(
                 pr_id=pr.id,
                 product_code=(opt.system_product_code or "").strip(),   # mã SP hệ thống gắn ở option
                 product_name=opt.snap_product_name or ln.requirement_detail or "Sản phẩm",
                 item_group=ln.item_group or "", qty=qty, unit=opt.snap_quote_unit or ln.uom or "",
-                price=price, amount=qty * price, note="",
+                price=price, vat_pct=vat,
+                # Thành tiền GỒM VAT — cùng công thức với khi lưu YCMH (purchase_request/service.py)
+                amount=round(qty * price * (1 + vat / 100), 2), note="",
                 line_status="Chưa đặt hàng", created_by=user_id, updated_by=user_id,
             ))
             # Liên kết YCKS-dòng <-> YCMH (đếm được nhiều lần tạo) + tự BỎ CHỌN option

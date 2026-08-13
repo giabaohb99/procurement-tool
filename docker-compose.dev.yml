@@ -1,4 +1,5 @@
-# Dev-UAT — dùng CHUNG MariaDB dego-erp-db-1, database RIÊNG 'procurement_dev'.
+# Dev-UAT — CSDL là MySQL 8.4 chạy riêng ('procurement-mysql', net 'dego-db', xem ~/procurement-db/
+# trên VPS), database RIÊNG 'procurement_dev' — CÙNG máy chủ CSDL với prod, khác database.
 # Chạy: docker compose -p procurement-dev --env-file .env.dev -f docker-compose.dev.yml up -d --build
 #
 # ⚠ Trên VPS, ~/procurement-tool-dev và ~/procurement-tool là HAI WORKTREE của cùng 1 repo git,
@@ -17,7 +18,7 @@ services:
     restart: always
     command: ["sh", "start.prod.sh"]
     networks:
-      - dego-erp_default
+      - dego-db
       - procurement-internal
 
   web:
@@ -74,11 +75,11 @@ services:
       - redis
       - api
     networks:
-      - dego-erp_default
+      - dego-db
       - procurement-internal
 
 networks:
-  dego-erp_default:
+  dego-db:
     external: true
   proxy-tier:
     external: true

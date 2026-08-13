@@ -31,6 +31,4 @@ class CompanyUpdate(BaseModel):
 class CompanyOut(CompanyBase):
     id: int
     legal_rep_name: str | None = None
-    # Logo đặt qua endpoint upload riêng (POST /api/companies/{id}/logo), không nhập trong form
-    logo: str = ""
     model_config = {"from_attributes": True}

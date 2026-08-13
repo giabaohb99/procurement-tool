@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import NotFound from '../components/NotFound'
+import { tenFileIn, usePrintTitle } from '../hooks/usePrintTitle'
 
 const fmt = (n: any) => (Number(n) ? Number(n).toLocaleString('vi-VN') : '')
 // ĐƠN GIÁ in đủ 4 số lẻ; TIỀN in làm tròn về đồng (kế toán chỉ ghi nhận tới đồng)
@@ -11,6 +12,11 @@ function viDate(d: string) {
   if (!d) return ''
   const [y, m, dd] = d.split('-')
   return `Cần Thơ, ngày ${dd} tháng ${m} năm ${y}`
+}
+function dmy(d: string) {
+  if (!d) return ''
+  const parts = d.split('-')
+  return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : d
 }
 
 export default function PrintPurchaseOrder() {
@@ -26,6 +32,10 @@ export default function PrintPurchaseOrder() {
       .then((r) => setPo(r.data.data))
       .catch(() => setNotFound(true))
   }, [id])
+  // Tên file gợi ý khi lưu PDF = Mã PO + ngày đơn, thay cho "Thu Mua Tool" mặc định.
+  // Lấy `code` chứ không lấy `misa_code`: mã MISA là mã của hệ thống cũ, chỉ một phần đơn
+  // có, và trùng nhau giữa các đơn nhập lại — đặt tên file theo nó thì đè file của nhau.
+  usePrintTitle(po ? tenFileIn(po.code, po.order_date) : '')
 
   if (notFound) return (
     <NotFound backTo="/purchase-orders"
@@ -98,7 +108,12 @@ export default function PrintPurchaseOrder() {
                   <td style={{ ...cell, textAlign: 'right' }}>{fmtVND(it.qty_order * priceVat)}</td>
                   <td style={cell}>{it.warehouse_code}</td>
                   <td style={cell}>{it.invoice_name}</td>
-                  <td style={cell}>{it.note}</td>
+                  <td style={cell}>
+                    {(it.required_date || it.expected_date) ? (
+                      <div style={{ fontWeight: 600 }}>Ngày cần hàng: {dmy(it.required_date || it.expected_date)}</div>
+                    ) : null}
+                    {it.note ? <div>{it.note}</div> : null}
+                  </td>
                 </tr>
               )
             })}

@@ -172,6 +172,7 @@ Nút "Mở lại" (`reopen`) chuyển đơn từ `completed` về trạng thái 
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
 - Logic đặc biệt: Khi tích, thông báo gửi duyệt được đánh dấu `is_urgent=true`, kích hoạt kênh thông báo ưu tiên.
+- Tự tính trên form (FE): tự tích nếu có ít nhất 1 dòng mà **"Ngày yêu cầu có hàng" − "Ngày đặt hàng" < số ngày QĐ của phân loại**. Từ CR-065 số ngày QĐ ở đây dùng **mốc dài nhất** (không sẵn hàng, thiếu thì 15 ngày) và **không còn phụ thuộc checkbox "NCC có sẵn hàng"** — kết quả tính cờ gấp rộng hơn trước. Người dùng vẫn tích/bỏ tích tay được.
 
 ### 14. Ghi chú (`note`)
 
@@ -318,7 +319,7 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
-- Logic đặc biệt: Ảnh hưởng đến `std_days` tra bảng `ItemGroup`: nếu tích → tra `group.std_days` (NCC có sẵn); nếu không tích → tra `group.std_days_unavail` (không sẵn hàng).
+- Logic đặc biệt: **Từ CR-065 ô này KHÔNG còn ảnh hưởng tới `std_days` nữa** — số ngày QĐ luôn lấy mốc dài nhất của phân loại (xem §11 phần lần giao). Ô vẫn giữ để ghi nhận thông tin NCC và phục vụ báo cáo. (Trước CR-065: tích → tra `group.std_days`; không tích → tra `group.std_days_unavail`.)
 
 ### 10. Ngày yêu cầu có hàng (`required_date`)
 
@@ -328,6 +329,20 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
 - Logic đặc biệt: Dùng tính `diff_required` trong lần giao: `regulated_date − required_date`. Giá trị âm = ngày quy định trễ hơn KD yêu cầu.
+
+### 10a. Dự kiến có hàng (`expected_date`) — CR-062
+
+- Kiểu nhập: Chọn ngày (popup chi tiết dòng hàng, ngay dưới "Ngày yêu cầu có hàng")
+- Mặc định: trống → khi LƯU, backend tự chép từ dòng YCMH nguồn cùng mã hàng (nếu có)
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: Hai chiều với **"Thời gian dự kiến có hàng" của dòng YCMH** (`tab_pr_item.expected_date`) — nối theo `PurchaseOrder.pr_code` + `product_code` (không có khóa ngoại; mã hàng là duy nhất trên mỗi phiếu ở cả hai phía)
+- Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
+- Logic đặc biệt:
+  - **Chép xuống:** chỉ điền khi ô còn TRỐNG. Đã có giá trị (nhập tay hay chép từ lần lưu trước) thì giữ nguyên. Đặt ở backend `_save_items` nên nhập khẩu và dòng thêm sau cũng được điền, không chỉ nút "Tạo ĐMH".
+  - **Cuộn ngược:** giá trị MUỘN NHẤT trong các dòng ĐMH cùng `pr_code` + mã hàng được đẩy lên dòng YCMH nếu ô bên đó còn trống; nếu bên đó đã có và lệch thì **KHÔNG ghi đè** và hệ thống không tạo thông báo nào. Chi tiết ở [03 §12](./03-yeu-cau-mua-hang.md).
+  - **Popup cảnh báo lệch ngày:** khi bấm Lưu đơn, nếu có dòng mà ngày ở đây khác ngày đang ghi trên YCMH thì hiện hộp thoại "Lệch ngày dự kiến có hàng", liệt kê từng dòng (`YCMH dd/mm/yyyy → đơn này dd/mm/yyyy`) và nói rõ ngày trên YCMH sẽ KHÔNG tự đổi theo. Hai lựa chọn: **Vẫn lưu** / **Quay lại sửa**. Ngày YCMH để so sánh do API trả kèm trong trường chỉ-đọc `pr_expected_date` của mỗi dòng.
+  - Dòng ĐMH **không gắn YCMH** (`pr_code` trống — đơn tạo tay) hoặc mã hàng không có trên YCMH: nhập tay bình thường, không có gì để cuộn.
+  - Cột **"Dự kiến nhận"** ở màn Tiến độ mua hàng đọc từ đây. Trước CR-062 nó đọc `tab_po_delivery.expected_date` — cột đó không nơi nào ghi (chỉ có 10 dòng rác nạp tay), nay **đã bỏ dùng** và đã dọn về rỗng.
 
 ### 11. Đơn vị tính (`unit`)
 
@@ -368,7 +383,7 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 
 ### 15. VAT % của dòng (`vat`)
 
-- Kiểu nhập: Nhập số (%)
+- Kiểu nhập: Nhập số (%) — **0 ≤ VAT < 100** (CR-058), tối đa 2 số thập phân; ô nhập kẹp về 99,99 ngay khi gõ quá, server chặn lại (`ge=0, lt=100`)
 - Mặc định: 8 (khởi tạo từ frontend `emptyItem`)
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
@@ -570,20 +585,22 @@ Mỗi lần lưu đơn khi đơn đang giao, hệ thống gọi `recompute_effec
 ### 8. Ngày NCC cam kết giao (`promised_date`)
 
 - Kiểu nhập: Chọn ngày
+- Mặc định: **lấy theo NGÀY QĐ CÓ HÀNG của Phân loại** (CR-065, thay cho CR-063) = `order_date` ("Ngày đặt hàng" của đơn) **+ số ngày QĐ của phân loại dòng hàng** — tức bằng `regulated_date` của lần giao (xem §12). Số ngày QĐ lấy **mốc DÀI NHẤT**: `item_group.std_days_unavail` → thiếu thì `std_days` → thiếu cả hai thì **15 ngày**. Đơn chưa có Ngày đặt hàng thì để trống. Chỉ điền lúc TẠO lần giao, sau đó sửa lại theo cam kết thật của NCC được.
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: `PurchaseOrder.order_date` + `ItemGroup.std_days_unavail`/`std_days` (chỉ ở thời điểm khởi tạo, không đồng bộ tiếp)
+- Người sửa: Người có quyền `purchase_order:write` khi đơn đang giao
+- Logic đặc biệt:
+  - Dùng tính `diff_promise = promised_date − received_date`. Giá trị âm = NCC giao trễ so với cam kết.
+  - Giá trị mặc định đặt ở CẢ hai nơi: nút "Thêm lần giao" trên giao diện (để NSTM thấy ngay) và `_save_deliveries` ở backend (để lần giao sinh từ nhập khẩu / copy đơn cũng có). Backend chỉ điền khi INSERT — lần giao đã tồn tại mà người dùng xóa trắng ô này thì giữ trắng, không tự điền lại.
+
+### 9. Ngày dự kiến nhận (`expected_date`) — ĐÃ BỎ DÙNG (CR-062)
+
+- Kiểu nhập: — (không có ô nhập nào trên giao diện, chưa từng có)
 - Mặc định: trống
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
-- Người sửa: Người có quyền `purchase_order:write` khi đơn đang giao
-- Logic đặc biệt: Dùng tính `diff_promise = promised_date − received_date`. Giá trị âm = NCC giao trễ so với cam kết.
-
-### 9. Ngày dự kiến nhận (`expected_date`)
-
-- Kiểu nhập: Chọn ngày
-- Mặc định: trống
-- Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: —
-- Người sửa: Người có quyền `purchase_order:write` khi đơn đang giao
-- Logic đặc biệt: Lưu trong DB và truyền trong payload; hiện tại không hiển thị thành cột riêng trong bảng giao hàng UI.
+- Người sửa: Không ai — **không nơi nào trong ứng dụng ghi cột này**
+- Logic đặc biệt: Cột sinh ra do một cột Excel bị ánh xạ hai lần trong tài liệu yêu cầu; bản được cài thật là `promised_date` ("Cam kết giao"). Cột này chỉ có dữ liệu ở 10 dòng nạp tay ngày 13/07/2026, tất cả cùng một giá trị. Từ CR-062: đã dọn về rỗng, các chỗ đọc (`alert`, `dashboard`, màn Tiến độ) đã chuyển sang `promised_date` hoặc `POItem.expected_date`. **Cột trong DB được GIỮ LẠI, không xóa** (luật "cơ sở dữ liệu cũ: chỉ thêm, không sửa"). Trường "Dự kiến có hàng" mới nằm ở dòng hàng — xem §10a.
 
 ### 10. Ngày nhận thực tế (`received_date`)
 
@@ -597,11 +614,13 @@ Mỗi lần lưu đơn khi đơn đang giao, hệ thống gọi `recompute_effec
 ### 11. Số ngày quy định (`std_days`)
 
 - Kiểu nhập: Nhập số (có thể ghi đè)
-- Mặc định: 0; tính lại tự động theo `ItemGroup.std_days` (hoặc `std_days_unavail`) và `supplier_ready`
+- Mặc định (CR-065): ô còn trống thì **tự điền theo Phân loại, lấy mốc DÀI NHẤT** — `ItemGroup.std_days_unavail` (không sẵn hàng) → thiếu thì `std_days` (có sẵn) → thiếu cả hai thì **15 ngày**
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: Bảng `ItemGroup` (tra theo `item.item_group`)
-- Người sửa: Người có quyền `purchase_order:write`; hệ thống ghi đè tự động nếu `ItemGroup` có giá trị
-- Logic đặc biệt: Ưu tiên giá trị từ `ItemGroup`; nếu nhóm không có cấu hình thì giữ giá trị nhập thủ công. Công thức: nếu `supplier_ready=true` thì tra `group.std_days`; ngược lại tra `group.std_days_unavail` (hoặc `group.std_days` nếu `std_days_unavail` trống).
+- Người sửa: Người có quyền `purchase_order:write`
+- Logic đặc biệt (đổi ở CR-065):
+  - **Không còn phụ thuộc checkbox "NCC có sẵn hàng"** — luôn lấy mốc dài nhất, để ngày QĐ phản ánh cam kết an toàn nhất.
+  - **Ưu tiên số người dùng đã nhập:** dòng giao đã có `std_days > 0` thì `recompute_effects` GIỮ NGUYÊN, chỉ dòng còn trống/0 mới lấy mặc định theo phân loại. (Trước CR-065 thì ngược lại: giá trị `ItemGroup` ghi đè mỗi lần lưu.) Vì vậy các dòng giao cũ giữ nguyên số ngày đang có, chỉ dòng mới hưởng luật mới.
 
 ### 12. Ngày quy định (`regulated_date`)
 
@@ -610,7 +629,7 @@ Mỗi lần lưu đơn khi đơn đang giao, hệ thống gọi `recompute_effec
 - Bắt buộc: — (hệ thống tính)
 - Nguồn dữ liệu / liên kết: `order_date + std_days` (ngày đặt hàng cộng số ngày quy định)
 - Người sửa: Hệ thống (hiển thị chỉ đọc)
-- Logic đặc biệt: Nếu `order_date` hoặc `std_days` trống/0, hiển thị "—".
+- Logic đặc biệt: Nếu `order_date` hoặc `std_days` trống/0, hiển thị "—". Đây chính là **"ngày QĐ có hàng"** dùng làm giá trị mặc định cho "Cam kết giao" (§8) và cho "Thời gian dự kiến có hàng" bên YCMH (tài liệu 03 mục 12, nhưng bên đó mốc gốc là `request_date`).
 
 ### 13. Chênh lệch cam kết − ngày nhận (`diff_promise`)
 
@@ -722,6 +741,8 @@ Cả hai mẫu gọi cùng endpoint `GET /api/purchase-orders/{id}/print` (yêu 
 |-----|------|----------|----------------|-------------------|
 | Đơn đặt hàng (gửi NCC) | `PrintPurchaseOrder.tsx` | A4 ngang (landscape) | Bảng hàng theo SL đặt, đơn giá chưa/đã VAT, kho nhận, tên trên HĐ; điều khoản giao nhận + thông tin HĐ | `order_total` (theo SL đặt) |
 | Đơn mua hàng (nội bộ) | `PrintPurchaseOrderMH.tsx` | A4 dọc (portrait) | Bảng hàng theo SL yêu cầu + SL thực nhập, tiền thuế GTGT riêng; số tiền bằng chữ; điều khoản NCC | `order_total` (theo SL đặt) + `order_subtotal` tách thuế riêng |
+
+**Tên file khi lưu PDF (CR-057).** Hộp thoại "Save As" do hệ điều hành vẽ, trang web không can thiệp được; thứ duy nhất điều khiển được tên gợi ý là **`document.title`** — trình duyệt và máy in ảo (Foxit, Microsoft Print to PDF) lấy đúng chuỗi đó. Cả 2 mẫu dùng hook `usePrintTitle` (`frontend/src/hooks/usePrintTitle.ts`) đặt tiêu đề tab thành **`<Mã PO>-DDMMYYYY`** (ví dụ `PO00353-31072026`), trả lại tiêu đề cũ khi rời trang. Dùng `code` **chứ không phải `misa_code`** — mã MISA chỉ một phần đơn có và trùng nhau giữa các đơn nhập lại, đặt tên theo nó thì file đè lên nhau. Ngày lấy `order_date` (ngày đơn), **không** lấy ngày bấm in, để in lại lúc nào cũng ra cùng một tên. Tiêu đề tab không lọt lên giấy vì `@page { margin: 0 }` đã bỏ header/footer của trình duyệt. Quy ước này dùng chung cho **cả 4 phiếu in** của hệ thống — 2 mẫu ĐMH ở trên, [phiếu đề xuất YCMH](03-yeu-cau-mua-hang.md) và [phiếu YCTT](05-yeu-cau-thanh-toan.md) (hai phiếu kia lấy `request_date` thay cho `order_date`). Test: `test/e2e/test_print_filename.py`.
 
 Ngoài 2 mẫu trên, phiếu liên quan là **Phiếu đề xuất mua hàng hóa/dịch vụ** (Mẫu 003/BM/PKT, file `PrintPurchaseRequest.tsx`) — là bản in của phiếu YCMH nguồn, mở từ trang chi tiết YCMH (không phải từ trang PO). Bảng hàng hóa trên phiếu đề xuất đã có cột **Nơi giao** hiển thị mã kho nhận (`warehouse_code`) thay vì tên đầy đủ kho (dùng hàm `whCode` tra ngược từ danh mục kho).
 
@@ -873,7 +894,7 @@ Sau khi cập nhật toàn bộ dòng, hệ thống gọi lại `recompute_statu
 
 ### H.5 Màn hình Tiến độ mua hàng (`/purchase-progress`)
 
-Màn hình riêng tại đường dẫn `/purchase-progress` (nhãn menu "Tiến độ mua hàng"), sử dụng endpoint `GET /api/purchase-progress`. Hiển thị dạng bảng phẳng, mỗi dòng = 1 dòng hàng (`po_item`) kèm thông tin lần giao tương ứng. Các cột chính: Mã ĐMH, Mã MISA, Mã PYC, Công ty, Bộ phận, NCC, NSPT, Ngày đặt, Mã SP, Tên SP, Tên hóa đơn, Nhóm hàng, Mã HH, Số HĐ, Ngày cần, ĐVT, SL đặt, Đơn giá, Thành tiền đặt, **Tiến độ** (`progress_status`), Lần giao, Kho, Ngày nhận, Ngày quy định, CL cam kết, CL quy định, CL vs YC, Hồ sơ CT (`document_status`). Hỗ trợ lọc theo công ty, bộ phận, tháng, trạng thái tiến độ, khoảng ngày đặt/nhận; sắp xếp theo cột; phân trang.
+Màn hình riêng tại đường dẫn `/purchase-progress` (nhãn menu "Tiến độ mua hàng"), sử dụng endpoint `GET /api/purchase-progress`. Hiển thị dạng bảng phẳng, mỗi dòng = 1 dòng hàng (`po_item`) kèm thông tin lần giao tương ứng. Các cột chính: Mã ĐMH, Mã MISA, Mã PYC, Công ty, Bộ phận, NCC, NSPT, Ngày đặt, Mã SP, Tên SP, Tên hóa đơn, Nhóm hàng, Mã HH, Số HĐ, Ngày cần, **Dự kiến nhận** (`po_item.expected_date` — xem §10a; trước CR-062 lấy nhầm từ `po_delivery.expected_date` nên hiện số rác), ĐVT, SL đặt, Đơn giá, Thành tiền đặt, **Tiến độ** (`progress_status`), Lần giao, Kho, Ngày nhận, Ngày quy định, CL cam kết, CL quy định, CL vs YC, Hồ sơ CT (`document_status`). Hỗ trợ lọc theo công ty, bộ phận, tháng, trạng thái tiến độ, khoảng ngày đặt/nhận; sắp xếp theo cột; phân trang. Xuất Excel toàn bộ kết quả đang lọc: xem §J.2.
 
 ---
 
@@ -909,3 +930,65 @@ Lịch sử còn được nạp thêm từ file khảo sát cũ, đánh dấu **
 - Dữ liệu nguồn có lỗi đã được xử lý khi nạp: giá ghi bằng nghìn đồng, số lượng vô lý, ngày gõ sai/đảo ngày-tháng, NCC và mã hàng chưa có trong danh mục.
 
 **Quyền xem**: theo quyền đọc của danh mục tương ứng — `product.read` cho lịch sử theo sản phẩm, `supplier.read` cho lịch sử theo nhà cung cấp.
+
+---
+
+## J. Xuất Excel danh sách (CR-068)
+
+### J.1 Màn Đơn mua hàng
+
+Nút **"Xuất Excel"** trên thanh công cụ màn danh sách ĐMH, chỉ hiện với người có hành động
+**`export`** trên `purchase_order`. Endpoint: `GET /api/purchase-orders/export/xlsx`.
+
+- Đúng **bộ lọc + thứ tự sắp xếp** đang áp và đúng **các cột đầu đơn đang hiển thị**; không tick
+  dòng nào thì xuất **toàn bộ kết quả đang lọc**, tick thì chỉ xuất đơn đã tick.
+- **Khối cột dòng hàng dùng đúng bộ cột của màn Tiến độ mua hàng** (yêu cầu khách): mỗi hàng Excel là
+  **một lần giao** của một dòng hàng, có đủ khối kho/vận chuyển/ngày nhận/chênh lệch như §J.2.
+  Dòng hàng chưa có lần giao nào vẫn ra một hàng (phần giao để trống); đơn chưa có dòng hàng cũng vậy.
+- Cụm đầu đơn lặp lại ở mọi hàng nên **không cộng thẳng cột "Tiền hàng"** — lọc *STT dòng = 1* rồi mới
+  cộng. "STT dòng" đánh số **liên tục theo hàng trong đơn** (dòng hàng 2 lần giao chiếm STT 1 và 2).
+- Cột **"Nhà cung cấp"** (đầu đơn) lấy mã NCC, thiếu mã mới rơi về tên (giống cột trên bảng); cột
+  **"Tên NCC"** trong khối dòng là tên đầy đủ.
+- **Che dữ liệu**: người không có `supplier:read` thì file **bỏ hẳn** các cột Tên NCC · Mã ĐVVC ·
+  Đơn vị VC · Đơn giá VC · Tiền VC (cột "Nhà cung cấp" của đầu đơn vẫn giữ, vì nó là cột mặc định
+  của bảng ĐMH).
+
+**Ba cột tiền, đừng nhầm:**
+
+| Cột | Công thức | Dùng khi |
+|---|---|---|
+| **Tiền hàng** (đầu đơn) | tổng *Thành tiền ĐH* của các **dòng hàng**, tính một lần nên không nhân theo lần giao | Khớp cột trên bảng danh sách |
+| **Thành tiền ĐH** (dòng) | SL đặt × đơn giá × (1 + VAT%) | Giá trị đã đặt của dòng |
+| **Thành tiền nhận** (dòng) | SL **thực nhận của lần giao đó** × đơn giá × (1 + VAT%) | Con số ghi công nợ |
+
+Số liệu dòng do `purchase_progress.export.row_values` tính — **cùng một chỗ** với màn Tiến độ, nên hai
+file không bao giờ lệch nhau.
+
+Khối cột dòng: STT dòng · Công ty · Bộ phận · Tên NCC · NSPT · Ngày ĐH · Mã SP · Tên SP · Tên hóa đơn ·
+Nhóm hàng · Quy cách · Mã HH · Số HĐ · Ngày cần · Dự kiến nhận · ĐVT · SL YC · SL đặt · Đơn giá · VAT% ·
+Thành tiền ĐH · Tiến độ · Lần giao · Kho · Mã ĐVVC · Đơn vị VC · SL giao · SL nhận · Cam kết giao ·
+Ngày nhận · Ngày QĐ · Ngày quy định · CL cam kết · CL quy định · CL vs YC · Số HĐ (giao) · Đơn giá VC ·
+Tiền VC · QC · TT giao · Thành tiền nhận · SL còn lại · Trạng thái dòng · Ghi chú dòng.
+
+Tên file `don-mua-hang-DDMMYYYY.xlsx`. Quy ước định dạng và trần 5.000 dòng/lần xuất — xem
+[03-yeu-cau-mua-hang.md §G](03-yeu-cau-mua-hang.md).
+
+### J.2 Màn Tiến độ mua hàng
+
+Nút **"Xuất Excel"** đặt cạnh dòng đếm *"· N dòng"* ở đầu màn `/purchase-progress`.
+Endpoint: `GET /api/purchase-progress/export/xlsx`. Màn này vốn đã phẳng (một hàng = **một lần giao**
+của một dòng hàng) nên file ra **đúng bảng đang xem**: cùng bộ lọc, cùng thứ tự, **đúng các cột đang
+hiển thị và đúng thứ tự cột người dùng đang thấy**, kèm cột STT.
+
+- **Quyền**: cần hành động `export` của **Đơn mua hàng HOẶC Yêu cầu mua hàng** — vì màn này phục vụ
+  cả người theo dõi tiến độ phía yêu cầu.
+- **Che dữ liệu**: người không có `purchase_order:read` thì file **bỏ hẳn** các cột Mã NCC · Nhà cung cấp ·
+  Mã ĐVVC · Đơn vị VC · Đơn giá VC · Tiền VC — đúng như bảng đang che.
+
+Tên file `tien-do-mua-hang-DDMMYYYY.xlsx`.
+
+**Ai được xuất.** Vai trò chuẩn có sẵn ô "Xuất" của ĐMH: *Quản lý công ty · NV thu mua · Admin thu mua ·
+Quản lý thu mua · Quản trị hệ thống*. Màn Tiến độ nhận thêm cả người có "Xuất" của YCMH (Trưởng phòng…).
+Vai trò **"Nhân sự"** (người yêu cầu thường) **KHÔNG** được xuất ở bất kỳ màn nào — muốn cho ai đó xuất
+thì tạo một **vai trò riêng** chỉ tick ô "Xuất" của màn tương ứng rồi gán thêm cho người đó. Vai trò
+**tự tạo tay** cũng phải tick ô "Xuất" mới thấy nút.

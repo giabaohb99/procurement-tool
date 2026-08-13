@@ -154,6 +154,11 @@ def import_suppliers_csv(
             vat = float(vat_str) if vat_str else 0.08
         except ValueError:
             vat = 0.08
+        # Cột VAT trong file là TỈ LỆ (0.08 = 8%). Người dùng hay gõ nhầm theo % (8) — số đó
+        # nghĩa là 800%, lọt vào là mọi ĐMH prefill từ NCC này sai tiền. Import đi thẳng vào
+        # model nên không có schema chặn giúp (CR-058).
+        if vat < 0 or vat >= 1:
+            raise HTTPException(400, f"VAT của NCC phải là tỉ lệ từ 0 đến dưới 1 (0.08 = 8%), nhận được: {vat_str}")
 
         if existing:
             if action in ["xóa", "delete"]:

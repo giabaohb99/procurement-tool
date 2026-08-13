@@ -74,7 +74,7 @@ flowchart LR
     U["👤 Trình duyệt"] -->|HTTPS| CF["☁️ Cloudflare Tunnel"]
     CF --> WEB["🌐 Web/Nginx — React"]
     WEB -->|/api/...| API["⚙️ API — FastAPI"]
-    API -->|SQLAlchemy| DB[("🗄️ MariaDB: procurement")]
+    API -->|SQLAlchemy| DB[("🗄️ MySQL 8.4: procurement")]
 ```
 
 | Lớp | Công nghệ |
@@ -82,7 +82,7 @@ flowchart LR
 | Frontend | React 18 + Vite + TypeScript; danh sách/chi tiết cấu hình hóa (`cruds.tsx`); `AuthContext.can(entity, action)`; react-select (autocomplete) |
 | PWA / Push | `vite-plugin-pwa` (`registerType: prompt`, workbox precache + `importScripts: push-sw.js`); Service Worker chỉ bật bản build prod; Web Push qua VAPID (`pywebpush`); toggle banner cài ứng dụng: build arg `VITE_PWA_INSTALL_PROMPT=on` |
 | Backend | FastAPI + Uvicorn; SQLAlchemy 2.0 (`Mapped`/`mapped_column`); Pydantic v2; Alembic (migration) |
-| DB | MariaDB/MySQL (dùng chung với hệ ERP, DB riêng `procurement`) |
+| DB | MySQL 8.4 — container `procurement-mysql` chạy riêng ở `~/procurement-db/` (trước 2026-08-11 dùng chung MariaDB của hệ ERP, xem CR-059); prod = DB `procurement`, dev = DB `procurement_dev` trên cùng máy chủ |
 | Auth | JWT; khóa mã hóa Fernet (`JWT_SECRET`); đăng nhập bằng **Mã nhân viên** hoặc **Email**; **Đăng nhập Google OAuth** (build arg `VITE_GOOGLE_CLIENT_ID`, verify phía backend qua `settings.GOOGLE_CLIENT_ID`) |
 | Hạ tầng | Docker Compose (dev: mount code + hot reload; prod: image build sẵn); Cloudflare Tunnel; domain `thumua.degoholding.vn` |
 
@@ -179,7 +179,7 @@ flowchart TD
 ### Dọn vai trò legacy (`cleanup_legacy_staff_role`)
 
 Hàm `cleanup_legacy_staff_role(db)` (chạy cuối `run()`, sau `seed_demo_accounts()`):
-1. Tìm vai trò code `STAFF` (MariaDB không phân biệt hoa/thường → khớp cả `staff` demo).
+1. Tìm vai trò code `STAFF` (đối chiếu chuỗi mặc định của MySQL không phân biệt hoa/thường → khớp cả `staff` demo).
 2. Nhân sự có `role_name == STAFF.name` → đổi sang tên `Nhân sự (cơ bản)`.
 3. User gán `STAFF` → chuyển sang vai trò `employee`; nếu đã có `employee` thì chỉ bỏ gán `STAFF`.
 4. Xóa quyền/scope/gán còn sót → xóa vai trò `STAFF`.
@@ -225,7 +225,7 @@ Idempotent: bỏ qua nếu không còn vai trò `STAFF`.
 | Môi trường | Chi tiết |
 |---|---|
 | Dev (local) | Docker Compose, mount code + hot reload; DB `mysql:8` container; Service Worker tắt (`devOptions.enabled: false` trong `vite.config.ts`) |
-| Production (VPS) | `docker-compose.production.yml` (image build sẵn); MariaDB dùng chung; Cloudflare Tunnel; domain `thumua.degoholding.vn` |
+| Production (VPS) | `docker-compose.production.yml` (image build sẵn); MySQL 8.4 riêng, nối qua mạng `dego-db`; Cloudflare Tunnel; domain `thumua.degoholding.vn` |
 | Quy trình deploy | `git pull origin bao` → `docker compose -f docker-compose.production.yml up -d --build` → migration Alembic chạy khi khởi động |
 | Nhánh git | `flow-v2` (làm việc) → merge `bao` (deploy) → push origin |
 

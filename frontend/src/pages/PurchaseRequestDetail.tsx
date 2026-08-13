@@ -10,6 +10,7 @@ import ProductPicker from '../components/ProductPicker'
 import PurchaseHistoryPickerModal, { HistoryPick } from '../components/PurchaseHistoryPickerModal'
 import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
+import { VAT_MAX, VAT_DECIMALS } from '../utils/vat'
 import DateInput from '../components/DateInput'
 import TextAreaAuto from '../components/TextAreaAuto'
 import ConfirmModal from '../components/ConfirmModal'
@@ -22,6 +23,7 @@ import CompareLightbox from '../components/CompareLightbox'
 import CommentThread from '../components/CommentThread'
 import AuditTimeline from '../components/AuditTimeline'
 import { fmtSize, fileIcon } from '../utils/file-type'
+import { regulatedDate, stdDaysMap, stdDaysOf } from '../utils/lead-time'
 import { newDupCodes } from '../utils/lines'
 
 const API = '/api/purchase-requests'
@@ -44,8 +46,10 @@ const emptyItem = {
   price: 0, vat_pct: 8, warehouse: '', required_date: '', assignee: '', line_status: 'Chưa đặt hàng', progress_note: '', note: '',
   qty_ordered: 0, qty_received: 0,
 }
-// Các mức VAT chọn được (Task 4) — VN: 0/5/8/10%
-const VAT_OPTS = [0, 5, 8, 10]
+// Hằng số dùng chung cho dòng CHƯA có ảnh chờ: phải là CÙNG một mảng qua mọi lần render,
+// vì AttachmentGallery theo dõi `pendingFiles` theo tham chiếu — viết `|| []` tại chỗ sẽ
+// tạo mảng mới mỗi render và làm effect chạy lặp vô hạn.
+const KHONG_CO_FILE: File[] = []
 // Thành tiền dòng GỒM VAT (Task 4)
 const lineAmount = (it: any) => (Number(it.qty) || 0) * (Number(it.price) || 0) * (1 + (Number(it.vat_pct) || 0) / 100)
 
@@ -57,13 +61,13 @@ function daysBetween(a: string, b: string): number | null {
   return Math.round((da - db) / 86400000)
 }
 
-// Đơn gấp = có ≥1 dòng mà thời gian chuẩn bị (ngày cần hàng − ngày tạo phiếu) NHỎ HƠN số ngày QĐ của phân loại VTBB/NL.
-// YCMH không có checkbox 'NCC có sẵn hàng' -> luôn dùng mốc 'có sẵn' (std_days).
+// Đơn gấp = có ≥1 dòng mà thời gian chuẩn bị (ngày cần hàng − ngày tiếp nhận phiếu) NHỎ HƠN số ngày
+// QĐ của phân loại VTBB/NL — mốc dài nhất (không sẵn hàng), xem utils/lead-time.ts.
 function computeUrgentPR(items: any[], baseDate: string, stdMap: Record<string, number>): boolean {
   if (!baseDate) return false
   for (const it of items || []) {
-    const std = stdMap[it.item_group]
-    if (!std || std <= 0) continue
+    const std = stdDaysOf(stdMap, it.item_group)
+    if (std <= 0) continue
     const lead = daysBetween(it.required_date, baseDate)
     if (lead === null) continue
     if (lead < std) return true
@@ -223,13 +227,10 @@ export default function PurchaseRequestDetail() {
   // Nhãn hiển thị "MÃ - Tên" cho kho đã lưu (giá trị lưu vẫn là name); fallback name nếu không tìm thấy
   const whLabel = (name: string) => { const w = warehouses.find(w => w.name === name); return w ? `${w.code} - ${w.name}` : name }
 
-  // Map tên phân loại -> số ngày QĐ khi NCC CÓ sẵn hàng (parse số từ chuỗi)
-  const stdMap = useMemo(() => {
-    const toInt = (s: any) => parseInt(String(s ?? '').replace(/[^\d]/g, ''), 10) || 0
-    const m: Record<string, number> = {}
-    for (const g of itemGroups) m[g.name] = toInt(g.std_days)
-    return m
-  }, [itemGroups])
+  // Số ngày QĐ theo tên phân loại (mốc dài nhất, thiếu thì 15 ngày — khớp backend)
+  const stdMap = useMemo(() => stdDaysMap(itemGroups), [itemGroups])
+  // Ngày QĐ có hàng của 1 dòng = Ngày tiếp nhận phiếu + số ngày QĐ của phân loại
+  const qdDate = (itemGroup: string) => regulatedDate(stdMap, itemGroup || '', pr.request_date || '')
   // Tự tính lại cờ Đơn gấp khi dữ liệu nguồn (ngày tạo / dòng hàng) đổi. KHÔNG chạy lúc mở phiếu (loadAll không qua đây) -> giữ đè tay.
   const recalcUrgent = (next: any) => {
     if (Object.keys(stdMap).length === 0) return next
@@ -251,10 +252,22 @@ export default function PurchaseRequestDetail() {
   const items = pr.items || []
   const setItem = (i: number, k: string, v: any) =>
     setPr((s: any) => recalcUrgent({ ...s, items: s.items.map((it: any, idx: number) => idx === i ? { ...it, [k]: v } : it) }))
+  /** Chọn Phân loại -> điền luôn "Thời gian dự kiến có hàng" = NGÀY QĐ CÓ HÀNG (Ngày tiếp nhận +
+   *  số ngày QĐ của phân loại). CHỈ với dòng CHƯA lưu và ô còn trống: dòng đã lưu mà đổi ngày dự
+   *  kiến thì phải qua luật nhập lý do, còn ô người dùng đã tự điền/cố ý xóa trắng thì tôn trọng. */
+  const setGroup = (i: number, v: string) =>
+    setPr((s: any) => recalcUrgent({
+      ...s, items: s.items.map((it: any, idx: number) => idx !== i ? it : {
+        ...it, item_group: v, group_desc: groupDesc(v),
+        ...(!it.id && !(it.expected_date || '').trim() ? { expected_date: qdDate(v) } : {}),
+      }),
+    }))
   const addItems = (n = 1) => setPr((s: any) => recalcUrgent({ ...s, items: [...(s.items || []), ...Array.from({ length: n }, () => ({ ...emptyItem }))] }))
   const delItem = (i: number) => setPr((s: any) => recalcUrgent({ ...s, items: s.items.filter((_: any, idx: number) => idx !== i) }))
   const copyItem = (i: number) => setPr((s: any) => {
-    const src = { ...s.items[i] }; delete src.id
+    // Bỏ id VÀ ảnh chờ: dòng nhân bản là dòng khác, ảnh đối chiếu không đi theo (dòng đã lưu
+    // cũng không được copy đính kèm) — giữ lại thì cùng bộ ảnh bị tải lên cho 2 dòng.
+    const src = { ...s.items[i] }; delete src.id; delete src._pendingImgs
     const arr = [...s.items]; arr.splice(i + 1, 0, src); return recalcUrgent({ ...s, items: arr })
   })
 
@@ -283,14 +296,14 @@ export default function PurchaseRequestDetail() {
     if (newExp === orig) return                            // không đổi
     let reason = ''
     if (orig) {
-      const r = await askPrompt({ title: 'Đổi thời gian dự kiến có hàng', message: `Đổi từ ${orig} sang ${newExp || '(để trống)'} — nhập lý do (bắt buộc):`, confirmText: 'Lưu' })
+      const r = await askPrompt({ title: 'Đổi ngày dự kiến có hàng', message: `Đổi từ ${orig} sang ${newExp || '(để trống)'} — nhập lý do (bắt buộc):`, confirmText: 'Lưu' })
       if (r === null) { setItem(i, 'expected_date', orig); return }
       if (!r.trim()) { toast.error('Vui lòng nhập lý do thay đổi'); setItem(i, 'expected_date', orig); return }
       reason = r.trim()
     }
     try {
       await api.patch(`${API}/${id}/item-status`, { items: [{ id: it.id, line_status: it.line_status, progress_note: it.progress_note, note: it.note, expected_date: newExp, expected_date_reason: reason }] })
-      toast.success('Đã cập nhật thời gian dự kiến'); loadAll()
+      toast.success('Đã cập nhật ngày dự kiến'); loadAll()
     } catch { loadAll() }
   }
 
@@ -346,13 +359,16 @@ export default function PurchaseRequestDetail() {
 
   // Chọn SP từ ô tìm kiếm (nhận cả object) → tự điền tên/ĐVT/phân loại
   // Chọn 1 lần mua trước từ popup lịch sử → CHỈ điền vào state dòng, KHÔNG tự lưu.
-  // VAT là <select> giới hạn VAT_OPTS nên chỉ nhận giá trị hợp lệ, tránh select rơi vào rỗng.
+  // VAT giờ là ô nhập số nên nhận thẳng mọi thuế suất trong lịch sử (CR-058); trước đây phải
+  // lọc qua VAT_OPTS vì <select> không có option tương ứng thì rơi về rỗng. Chỉ chặn số rác
+  // (âm / ≥ 100 / không phải số) — dòng legacy nhập từ Excel có VAT bẩn thì giữ giá trị cũ.
   const applyHistory = (i: number, h: HistoryPick) => {
+    const vatHopLe = Number.isFinite(Number(h.vat)) && Number(h.vat) >= 0 && Number(h.vat) < 100
     setPr((s: any) => recalcUrgent({
       ...s,
       items: s.items.map((it: any, idx: number) => idx === i ? {
         ...it, unit: h.unit || it.unit, qty: h.qty_order, price: h.price,
-        vat_pct: VAT_OPTS.includes(h.vat) ? h.vat : it.vat_pct,
+        vat_pct: vatHopLe ? Number(h.vat) : it.vat_pct,
       } : it),
     }))
     toast.success('Đã điền giá từ lịch sử — bấm Lưu để ghi nhận')
@@ -362,11 +378,16 @@ export default function PurchaseRequestDetail() {
     if (!prod) { setItem(i, 'product_code', ''); return }
     setPr((s: any) => recalcUrgent({
       ...s,
-      items: s.items.map((it: any, idx: number) => idx === i ? {
-        ...it, product_code: prod.code, product_name: prod.name,
-        unit: prod.unit || it.unit, item_group: prod.item_group || it.item_group,
-        group_desc: groupDesc(prod.item_group || it.item_group),
-      } : it),
+      items: s.items.map((it: any, idx: number) => {
+        if (idx !== i) return it
+        const grp = prod.item_group || it.item_group
+        return {
+          ...it, product_code: prod.code, product_name: prod.name,
+          unit: prod.unit || it.unit, item_group: grp, group_desc: groupDesc(grp),
+          // Phân loại đến từ danh mục SP cũng điền ngày dự kiến như khi chọn tay (xem setGroup)
+          ...(!it.id && !(it.expected_date || '').trim() ? { expected_date: qdDate(grp) } : {}),
+        }
+      }),
     }))
   }
 
@@ -388,28 +409,81 @@ export default function PurchaseRequestDetail() {
     return ''
   }
 
+  /**
+   * Ghép dòng vừa GỬI với dòng SERVER TRẢ VỀ để biết id thật của dòng mới tạo.
+   * KHÔNG dựa vào thứ tự: server trả dòng cũ (giữ nguyên id) lẫn dòng mới (id vừa cấp)
+   * không theo thứ tự đã gửi. Ưu tiên khớp id, rồi MÃ HÀNG (backend chặn trùng mã trên
+   * cùng phiếu nên mã là khóa chắc chắn), cuối cùng mới tới tên — cho dòng chưa có mã.
+   */
+  function mapLineIds(sent: any[], returned: any[]): (number | null)[] {
+    const conLai = [...(returned || [])]
+    const ket: (number | null)[] = new Array(sent.length).fill(null)
+    const lay = (dk: (r: any) => boolean) => {
+      const i = conLai.findIndex(dk)
+      return i < 0 ? null : conLai.splice(i, 1)[0]
+    }
+    sent.forEach((it, i) => { if (it.id) { const r = lay((x) => x.id === it.id); if (r) ket[i] = r.id } })
+    sent.forEach((it, i) => {
+      if (ket[i] || !it.product_code) return
+      const r = lay((x) => (x.product_code || '') === it.product_code)
+      if (r) ket[i] = r.id
+    })
+    sent.forEach((it, i) => {
+      if (ket[i]) return
+      const r = lay((x) => (x.product_name || '') === (it.product_name || ''))
+      if (r) ket[i] = r.id
+    })
+    return ket
+  }
+
+  // Tải ảnh đối chiếu đang giữ ở client lên NGAY SAU khi dòng đã có id thật.
+  // Lỗi 1 dòng không được làm hỏng việc lưu phiếu — chỉ báo để người dùng đính kèm lại.
+  async function uploadPendingLineImgs(sent: any[], returned: any[]) {
+    if (!sent.some((it) => (it._pendingImgs || []).length)) return
+    const ids = mapLineIds(sent, returned)
+    for (let i = 0; i < sent.length; i++) {
+      const fs: File[] = sent[i]._pendingImgs || []
+      if (!fs.length || !ids[i]) continue
+      const fd = new FormData()
+      fd.append('entity', 'purchase_request_line_image')
+      fd.append('entity_id', String(ids[i]))
+      fs.forEach((f) => fd.append('files', f))
+      try { await api.post('/api/attachments', fd) }
+      catch { toast.error(`Chưa tải được ảnh đối chiếu của dòng "${sent[i].product_name || i + 1}" — vui lòng đính kèm lại`) }
+    }
+  }
+
   async function save(submitAfterSave = false): Promise<boolean> {
     const v = validate(submitAfterSave)
     if (v) { toast.error(v); return false }
+    const guiItems = items.filter((it: any) => it.product_name)
+    const validNeedDates = guiItems
+      .map((it: any) => it.required_date)
+      .filter((d: any) => typeof d === 'string' && d.trim() !== '')
+    const earliestNeedDate = validNeedDates.length > 0 ? [...validNeedDates].sort()[0] : ''
     const body = {
       company_id: Number(pr.company_id) || 0, requester: pr.requester, requester_id: Number(pr.requester_id) || 0, requester_position: pr.requester_position,
       department: pr.department, head_of_dept: pr.head_of_dept, purpose: pr.purpose,
-      request_date: pr.request_date, need_date: pr.need_date, is_urgent: pr.is_urgent, note: pr.note,
+      request_date: pr.request_date, need_date: earliestNeedDate || pr.need_date || '', is_urgent: pr.is_urgent, note: pr.note,
       show_code_on_print: pr.show_code_on_print,
       quote_filename: pr.quote_filename, quote_file_url: pr.quote_file_url,
       // Task 4: gửi 2 cụm NCC (BE tự chặn cụm 'pur' nếu không có quyền supplier.write)
       supplier_req: { name: pr.supplier_req?.name || '', tax_code: pr.supplier_req?.tax_code || '', contact: pr.supplier_req?.contact || '' },
       supplier_pur: { name: pr.supplier_pur?.name || '', tax_code: pr.supplier_pur?.tax_code || '', contact: pr.supplier_pur?.contact || '' },
-      items: items.filter((it: any) => it.product_name),
+      // `_pendingImgs` là File giữ ở client (ảnh đối chiếu của dòng chưa lưu) — không phải
+      // dữ liệu phiếu, phải bỏ khỏi body rồi upload riêng sau khi có id dòng.
+      items: guiItems.map((it: any) => { const { _pendingImgs, ...rest } = it; return rest }),
     }
     try {
       if (isNew) {
         const r = await api.post(API, body)
         const nid = r.data.data.id
+        await uploadPendingLineImgs(guiItems, r.data.data?.items || [])
         if (submitAfterSave) await api.post(`${API}/${nid}/submit`)
         navigate(`/purchase-requests/${nid}`)
       } else {
-        await api.patch(`${API}/${id}`, body)
+        const r = await api.patch(`${API}/${id}`, body)
+        await uploadPendingLineImgs(guiItems, r.data.data?.items || [])
         if (submitAfterSave) await api.post(`${API}/${id}/submit`)
         toast.success('Đã lưu'); loadAll()
       }
@@ -460,6 +534,7 @@ export default function PurchaseRequestDetail() {
       product_code: it.product_code, product_name: it.product_name,
       item_group: it.item_group, unit: it.unit,
       required_date: it.required_date || '',   // Ngày cần hàng ở YCMH → Ngày yêu cầu có hàng ở ĐMH
+      expected_date: it.expected_date || '',   // Dự kiến có hàng: chép xuống ĐMH (backend cũng tự chép nếu để trống)
       qty_request: qty, qty_order: qty,
       price: Number(it.price) || 0, vat: Number(it.vat_pct) || 0,   // Task 4: VAT theo TỪNG DÒNG PYC
       warehouse_code: whCode(it.warehouse), note: it.note || '',
@@ -768,7 +843,7 @@ export default function PurchaseRequestDetail() {
                     <th style={{ width: 120, textAlign: 'right' }} title="Thành tiền gồm VAT">Thành tiền</th>
                     <th style={{ width: 150, textAlign: 'center' }}>Trạng thái</th>
                     <th style={{ width: 118, textAlign: 'center' }} title="Tiến độ: tổng SL đã nhận / tổng SL đã đặt (đồng bộ từ Đơn mua hàng)">Tiến độ<br /><span style={{ fontWeight: 400, fontSize: 10.5, color: 'var(--muted)' }}>nhận / đặt</span></th>
-                    <th style={{ width: 130, textAlign: 'center', whiteSpace: 'normal', lineHeight: 1.3 }} title="Thời gian dự kiến có hàng (sửa trực tiếp nếu có quyền, hoặc trong Chi tiết dòng)">TG dự kiến<br />có hàng</th>
+                    <th style={{ width: 130, textAlign: 'center', whiteSpace: 'normal', lineHeight: 1.3 }} title="Ngày dự kiến có hàng (sửa trực tiếp nếu có quyền, hoặc trong Chi tiết dòng)">Ngày dự kiến<br />có hàng</th>
                     {showAssigneeCol && <th style={{ width: 160, textAlign: 'left' }}>NSTM phụ trách</th>}
                     <th style={{ width: 96, textAlign: 'center' }}>Thao tác</th>
                   </tr>
@@ -811,7 +886,7 @@ export default function PurchaseRequestDetail() {
                       </td>
                       <td>
                         {editable ? (
-                          <select className="cell-input" value={it.item_group || ''} onChange={(e) => { setItem(i, 'item_group', e.target.value); setItem(i, 'group_desc', groupDesc(e.target.value)) }} style={{ width: '100%' }}>
+                          <select className="cell-input" value={it.item_group || ''} onChange={(e) => setGroup(i, e.target.value)} style={{ width: '100%' }}>
                             <option value="">-- Phân loại --</option>
                             {groups.map((g) => <option key={g} value={g}>{g}</option>)}
                           </select>
@@ -837,9 +912,7 @@ export default function PurchaseRequestDetail() {
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         {editable ? (
-                          <select className="cell-input" value={it.vat_pct ?? 8} onChange={(e) => setItem(i, 'vat_pct', Number(e.target.value))} style={{ width: '100%' }}>
-                            {VAT_OPTS.map((v) => <option key={v} value={v}>{v}%</option>)}
-                          </select>
+                          <NumberInput value={it.vat_pct ?? 8} max={VAT_MAX} maxDecimals={VAT_DECIMALS} onChange={(v) => setItem(i, 'vat_pct', v)} className="cell-input" style={{ width: '100%', textAlign: 'right' }} placeholder="% VAT" />
                         ) : (it.vat_pct != null ? Number(it.vat_pct) + '%' : '')}
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 500 }} title="Thành tiền gồm VAT">{fmtVNDBlank(lineAmount(it))}</td>
@@ -1048,7 +1121,7 @@ export default function PurchaseRequestDetail() {
               <div className="form-row">
                 <label>Phân loại</label>
                 <SearchSelect value={edit.item_group || ''} options={groups} disabled={!editable} placeholder="Chọn/tìm phân loại…"
-                  onChange={(v) => { setItem(editIdx, 'item_group', v); setItem(editIdx, 'group_desc', groupDesc(v)) }} />
+                  onChange={(v) => setGroup(editIdx, v)} />
               </div>
               <div className="form-row">
                 <label>Mô tả phân loại</label>
@@ -1064,9 +1137,7 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label title="% VAT theo dòng">VAT (%)</label>
-                <select value={edit.vat_pct ?? 8} disabled={!editable} onChange={(e) => setItem(editIdx, 'vat_pct', Number(e.target.value))}>
-                  {VAT_OPTS.map((v) => <option key={v} value={v}>{v}%</option>)}
-                </select>
+                <NumberInput value={edit.vat_pct ?? 8} max={VAT_MAX} maxDecimals={VAT_DECIMALS} disabled={!editable} onChange={(v) => setItem(editIdx, 'vat_pct', v)} placeholder="Nhập % VAT (0 – 99,99)" />
               </div>
               <div className="form-row">
                 <label>ĐVT</label>
@@ -1082,10 +1153,11 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Ngày cần hàng <span className="req">*</span></label>
-                <DateInput value={edit.required_date || ''} disabled={!editable} onChange={(v) => setItem(editIdx, 'required_date', v)} />
+                <DateInput value={edit.required_date || ''} disabled={!editable}
+                  onChange={(v) => setItem(editIdx, 'required_date', v)} />
               </div>
               <div className="form-row">
-                <label title="NSTM phụ trách cập nhật — đổi giá trị đã có phải kèm lý do">Thời gian dự kiến có hàng</label>
+                <label title="NSTM phụ trách cập nhật — đổi giá trị đã có phải kèm lý do">Ngày dự kiến có hàng</label>
                 <DateInput value={edit.expected_date || ''} disabled={!canLineStatus(edit)} onChange={(v) => setItem(editIdx, 'expected_date', v)} />
               </div>
               {showAssigneeCol && (
@@ -1119,16 +1191,17 @@ export default function PurchaseRequestDetail() {
               </div>
             </div>
 
-            {/* Cụm ẢNH ĐỐI CHIẾU của dòng (upload/xóa/kéo-thả) — dưới form */}
-            {edit.id ? (
-              <div style={{ marginTop: 16 }}>
-                <AttachmentGallery entity="purchase_request_line_image" entityId={edit.id}
-                  permEntity="purchase_request" title="File đính kèm (đối chiếu)" onImages={setCompareImgs}
-                  maxHint="Ảnh chụp thực tế để so với ảnh gốc · tối đa 5MB/ảnh · có thể chọn nhiều" />
-              </div>
-            ) : (
-              <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 16 }}><i className="ti ti-info-circle" /> Lưu phiếu trước để đính kèm ảnh đối chiếu cho dòng.</div>
-            )}
+            {/* Cụm ẢNH ĐỐI CHIẾU của dòng (upload/xóa/kéo-thả) — dưới form.
+                Dòng CHƯA LƯU (phiếu mới hoặc dòng vừa thêm) vẫn chọn được ảnh: gallery giữ
+                File ở `_pendingImgs` của dòng, `save()` tải lên ngay sau khi dòng có id thật.
+                Trước đây chặn "Lưu phiếu trước để đính kèm" -> người dùng phải làm 2 lượt. */}
+            <div style={{ marginTop: 16 }}>
+              <AttachmentGallery entity="purchase_request_line_image" entityId={edit.id || 0}
+                permEntity="purchase_request" title="File đính kèm (đối chiếu)" onImages={setCompareImgs}
+                pendingFiles={edit._pendingImgs || KHONG_CO_FILE}
+                onPendingChange={(fs) => setItem(editIdx, '_pendingImgs', fs)}
+                maxHint="Ảnh chụp thực tế để so với ảnh gốc · tối đa 5MB/ảnh · có thể chọn nhiều" />
+            </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
               <button className="btn ghost" onClick={() => setEditIdx(null)}>{editable ? 'Đóng' : 'Hủy'}</button>

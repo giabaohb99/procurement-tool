@@ -1,0 +1,29 @@
+﻿sheet,dong_excel,o_goc,ngay_sau_sua,cach_suy,ma_hang
+Sheet1,2665,"datetime.datetime(2525, 9, 9, 0, 0)",2025-09-09,sửa năm theo vùng lân cận,NDT4051
+Sheet1,2680,'#VALUE!',2025-10-01,lấy ngày dòng 2679 (dòng gần nhất có ngày),NDT4166
+Sheet1,2950,'Dự trù 17/11',2025-11-17,đọc lại ô gõ sai,NDT4331
+Sheet1,2951,'Dự trù 17/11',2025-11-17,đọc lại ô gõ sai,NDT4335
+Sheet1,2977,'Dự trù 21/11',2025-11-21,đọc lại ô gõ sai,NDT4343
+Sheet1,2991,'Dự trù 22/11',2025-11-22,đọc lại ô gõ sai,NDT4366
+Sheet1,2992,'Dự trù 22/11',2025-11-22,đọc lại ô gõ sai,NDT4360
+Sheet1,2993,'Dự trù 22/11',2025-11-22,đọc lại ô gõ sai,NDT3891
+Sheet1,3252,"datetime.datetime(2015, 12, 10, 0, 0)",2025-12-10,sửa năm theo vùng lân cận,NHD4400
+Sheet1,3669,'#VALUE!',2026-01-21,lấy ngày dòng 3668 (dòng gần nhất có ngày),NHG4640
+Sheet1,3693,'21//01/2026',2026-01-21,đọc lại ô gõ sai,NHG4544
+Sheet1,3869,'28/012026',2026-01-28,đọc lại ô gõ sai,NHG4105
+Sheet1,4092,'2602/2026',2026-02-26,đọc lại ô gõ sai,COC0007
+Sheet1,4112,'#VALUE!',2026-02-27,lấy ngày dòng 4111 (dòng gần nhất có ngày),NAP0174
+Sheet1,5016,'08/07/0206',2026-07-08,đọc lại ô gõ sai,NTN5098
+Sheet2,118,'27/01/25024',2024-01-27,đọc lại ô gõ sai,NLT0060
+Sheet2,119,'27/01/25024',2024-01-27,đọc lại ô gõ sai,NLT0053
+Sheet2,120,'27/01/25024',2024-01-27,đọc lại ô gõ sai,NLT0073
+Sheet2,121,'27/01/25024',2024-01-27,đọc lại ô gõ sai,NLT0083
+Sheet2,122,'27/01/25024',2024-01-27,đọc lại ô gõ sai,NLT0090
+Sheet2,342,"datetime.datetime(2026, 3, 1, 0, 0)",2024-06-08,"lệch quá xa vùng, lấy ngày dòng 341",NLT0170
+Sheet2,687,'29/03/03/2025',2025-03-29,đọc lại ô gõ sai,NLT0022
+Sheet2,688,'29/03/03/2025',2025-03-29,đọc lại ô gõ sai,NLT0173
+Sheet2,709,'04/04/25025',2025-04-04,đọc lại ô gõ sai,NLT0152
+Sheet2,904,"datetime.datetime(2023, 4, 12, 0, 0)",2025-09-12,"lệch quá xa vùng, lấy ngày dòng 903",NLT0025
+Sheet2,1068,None,2025-12-23,lấy ngày dòng 1067 (dòng gần nhất có ngày),NLT0033
+Sheet2,1141,'30/03',2026-03-30,đọc lại ô gõ sai,NLT0274
+Sheet2,1214,None,2026-05-09,lấy ngày dòng 1213 (dòng gần nhất có ngày),NLT0318

@@ -20,11 +20,12 @@ from app.core.response import success
 from app.core.scoping import apply_scope
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 
+from . import export as ex
+
 router = APIRouter(prefix="/api/purchase-progress", tags=["purchase_progress"])
 
 # Cột nhạy cảm — ẩn với người chỉ có purchase_request.read (phòng yêu cầu)
-_SUPPLIER_HIDDEN = ("supplier_code", "supplier_name", "carrier_code", "carrier_name",
-                    "shipping_unit_price", "shipping_amount", "ship_unit")
+_SUPPLIER_HIDDEN = ex.SUPPLIER_HIDDEN_KEYS
 
 
 def _sort_map():
@@ -42,13 +43,15 @@ def _sort_map():
         "invoice_name": POItem.invoice_name, "item_group": POItem.item_group,
         "spec": POItem.spec, "fg_code": POItem.fg_code, "invoice_no": POItem.invoice_no,
         "required_date": POItem.required_date, "unit": POItem.unit,
+        # Dự kiến nhận nằm ở DÒNG HÀNG (không ở lần giao) — xem migration e2c5a81f7b60
+        "expected_date": POItem.expected_date,
         "qty_request": POItem.qty_request, "qty_order": POItem.qty_order,
         "price": POItem.price, "vat": POItem.vat, "progress_status": POItem.progress_status,
         # Lần giao
         "delivery_no": PODelivery.delivery_no, "warehouse_code": PODelivery.warehouse_code,
         "carrier_code": PODelivery.carrier_code, "carrier_name": PODelivery.carrier_name,
         "ship_qty": PODelivery.ship_qty, "received_qty": PODelivery.received_qty,
-        "promised_date": PODelivery.promised_date, "expected_date": PODelivery.expected_date,
+        "promised_date": PODelivery.promised_date,
         "received_date": PODelivery.received_date, "std_days": PODelivery.std_days,
         "regulated_date": PODelivery.regulated_date, "diff_promise": PODelivery.diff_promise,
         "diff_regulated": PODelivery.diff_regulated, "diff_required": PODelivery.diff_required,
@@ -67,70 +70,14 @@ def _require_progress(user=Depends(get_current_user), db: Session = Depends(get_
     raise HTTPException(403, "Không có quyền xem tiến độ mua hàng")
 
 
-def _row(po: PurchaseOrder, it: POItem, dl: PODelivery, show_supplier: bool) -> dict:
-    qty_recv = float(dl.received_qty or 0) if dl else 0.0
-    qty_order = float(it.qty_order or 0)
-    price = float(it.price or 0)
-    vat = float(it.vat or 0)
-    # Thành tiền ĐƠN HÀNG (col AB): SL đặt × đơn giá × (1+VAT%) — ổn định, không phụ thuộc đã nhận hay chưa
-    order_amount = round(qty_order * price * (1 + vat / 100), 2)
-    # Thành tiền theo SL thực NHẬN của lần giao (gồm VAT) — dùng đối chiếu công nợ đã chốt
-    amount = round(qty_recv * price * (1 + vat / 100), 2)
-    r = {
-        # ----- Đơn mua hàng -----
-        "po_id": po.id, "po_code": po.code, "misa_code": po.misa_code,
-        "pr_code": po.pr_code, "company_id": po.company_id, "department": po.department,
-        "supplier_code": po.supplier_code, "supplier_name": po.supplier_name,
-        "nspt": po.nspt, "order_date": po.order_date, "po_status": po.status,
-        "document_status": po.document_status, "payment_terms": po.payment_terms,
-        "is_urgent": bool(po.is_urgent),
-        # ----- Dòng hàng -----
-        "item_id": it.id, "product_code": it.product_code, "product_name": it.product_name,
-        "invoice_name": it.invoice_name, "item_group": it.item_group, "spec": it.spec,
-        "fg_code": it.fg_code, "fg_name": it.fg_name, "invoice_no": it.invoice_no,
-        "required_date": it.required_date, "supplier_ready": bool(it.supplier_ready),
-        "unit": it.unit, "qty_request": float(it.qty_request or 0),
-        "qty_order": qty_order, "price": price, "vat": vat, "order_amount": order_amount,
-        "line_status": it.line_status, "progress_status": it.progress_status or "Chưa đặt hàng",
-        "document_delivery_date": it.document_delivery_date or "",
-        # ----- Lần giao -----
-        "delivery_id": dl.id if dl else None,
-        "delivery_no": dl.delivery_no if dl else None,
-        "warehouse_code": dl.warehouse_code if dl else "",
-        "carrier_code": dl.carrier_code if dl else "",
-        "carrier_name": dl.carrier_name if dl else "",
-        "ship_qty": float(dl.ship_qty or 0) if dl else 0.0,
-        "ship_unit": dl.ship_unit if dl else "",
-        "received_qty": qty_recv,
-        "promised_date": dl.promised_date if dl else "",
-        "expected_date": dl.expected_date if dl else "",
-        "received_date": dl.received_date if dl else "",
-        "std_days": dl.std_days if dl else 0,
-        "regulated_date": dl.regulated_date if dl else "",
-        "diff_promise": dl.diff_promise if dl else 0,
-        "diff_regulated": dl.diff_regulated if dl else 0,
-        "diff_required": dl.diff_required if dl else 0,
-        "delivery_invoice_no": dl.invoice_no if dl else "",
-        "shipping_unit_price": float(dl.shipping_unit_price or 0) if dl else 0.0,
-        "shipping_amount": float(dl.shipping_amount or 0) if dl else 0.0,
-        "qc_result": dl.qc_result if dl else "",
-        "delivery_status": dl.status if dl else "",
-        "progress_note": dl.progress_note if dl else "",
-        "amount": amount,
-    }
-    if not show_supplier:
-        for k in _SUPPLIER_HIDDEN:
-            r.pop(k, None)
-    return r
+# Một hàng của bảng = đơn + dòng hàng + lần giao. Thân hàm nằm ở `export.row_values` vì file xuất
+# của màn Đơn mua hàng cũng dùng lại (CR-068) — giữ một chỗ tính tiền/chênh lệch cho cả ba nơi.
+_row = ex.row_values
 
 
-@router.get("")
-def list_progress(request: Request, pg: dict = Depends(pagination),
-                  db: Session = Depends(get_db), user=Depends(_require_progress)):
-    prof = get_perm_profile(db, user)
-    # Chỉ phòng thu mua (có purchase_order.read) mới thấy NCC + chi phí vận chuyển
-    show_supplier = user_has_permission(db, user, "purchase_order", "read")
-
+def _build_query(request: Request, db: Session, user, prof: dict, show_supplier: bool):
+    """Bộ lọc + phạm vi + sắp xếp của màn Tiến độ — dùng chung cho danh sách và xuất Excel (CR-068),
+    để file xuất luôn khớp đúng những gì đang bày trên bảng."""
     q = (db.query(PurchaseOrder, POItem, PODelivery)
          .join(POItem, POItem.po_id == PurchaseOrder.id)
          .outerjoin(PODelivery, PODelivery.po_item_id == POItem.id))
@@ -213,7 +160,16 @@ def list_progress(request: Request, pg: dict = Depends(pagination),
     col = _sort_map().get(sort_by)
     if col is not None:
         q = q.order_by(col.desc() if sort_dir == "desc" else col.asc())
-    q = q.order_by(PurchaseOrder.code, POItem.id, PODelivery.delivery_no)
+    return q.order_by(PurchaseOrder.code, POItem.id, PODelivery.delivery_no)
+
+
+@router.get("")
+def list_progress(request: Request, pg: dict = Depends(pagination),
+                  db: Session = Depends(get_db), user=Depends(_require_progress)):
+    prof = get_perm_profile(db, user)
+    # Chỉ phòng thu mua (có purchase_order.read) mới thấy NCC + chi phí vận chuyển
+    show_supplier = user_has_permission(db, user, "purchase_order", "read")
+    q = _build_query(request, db, user, prof, show_supplier)
     total = q.count()
     rows = q.offset(pg["offset"]).limit(pg["limit"]).all()
     # STT liên tục theo trang
@@ -221,3 +177,37 @@ def list_progress(request: Request, pg: dict = Depends(pagination),
     out = [{"stt": base + i + 1, **_row(po, it, dl, show_supplier)}
            for i, (po, it, dl) in enumerate(rows)]
     return success({"total": total, "items": out, "show_supplier": show_supplier})
+
+
+def _require_progress_export(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Gate OR cho việc XUẤT: `export` trên ĐMH HOẶC trên YCMH — cùng lối gộp quyền của trang."""
+    if (user_has_permission(db, user, "purchase_order", "export")
+            or user_has_permission(db, user, "purchase_request", "export")):
+        return user
+    raise HTTPException(403, "Không có quyền xuất dữ liệu tiến độ mua hàng")
+
+
+@router.get("/export/xlsx")
+def export_xlsx(request: Request, cols: str = "", db: Session = Depends(get_db),
+                user=Depends(_require_progress_export)):
+    """CR-068 — xuất Excel màn Tiến độ mua hàng theo đúng bộ lọc + cột đang hiện.
+
+    Không có tham số `ids`: bảng này không cho tick chọn từng dòng, người dùng lọc rồi xuất.
+    """
+    from app.core.export_xlsx import check_row_limit, pick_columns, xlsx_response
+    from app.modules.company.model import Company
+    from . import export as ex
+
+    prof = get_perm_profile(db, user)
+    show_supplier = user_has_permission(db, user, "purchase_order", "read")
+    q = _build_query(request, db, user, prof, show_supplier)
+    check_row_limit(q.count())
+    company_name = {c.id: c.name for c in db.query(Company).all()}
+    rows = []
+    for i, (po, it, dl) in enumerate(q.all(), start=1):
+        r = _row(po, it, dl, show_supplier)
+        r["stt"] = i
+        r["company"] = company_name.get(po.company_id, "")
+        rows.append(r)
+    columns = pick_columns(ex.columns_for(show_supplier), cols)
+    return xlsx_response(ex.FILE_NAME, columns, rows, ex.SHEET_TITLE)

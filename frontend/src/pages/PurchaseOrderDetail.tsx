@@ -8,6 +8,7 @@ import SearchSelect from '../components/SearchSelect'
 import ProductPicker from '../components/ProductPicker'
 import PurchaseHistoryPickerModal, { HistoryPick } from '../components/PurchaseHistoryPickerModal'
 import NumberInput from '../components/NumberInput'
+import { VAT_MAX, VAT_DECIMALS } from '../utils/vat'
 import DateInput from '../components/DateInput'
 import TextAreaAuto from '../components/TextAreaAuto'
 import NotFound from '../components/NotFound'
@@ -18,6 +19,8 @@ import CommentThread from '../components/CommentThread'
 import AuditTimeline from '../components/AuditTimeline'
 import { fmtSize, fileIcon } from '../utils/file-type'
 import { newDupCodes } from '../utils/lines'
+import { regulatedDate, stdDaysMap, stdDaysOf } from '../utils/lead-time'
+import { fmtDateStr } from '../utils/datetime'
 
 const API = '/api/purchase-orders'
 // Ô/cột ĐƠN GIÁ cho lẻ tới 4 chữ số thập phân — giá quy đổi hay lẻ tới phần nghìn đồng
@@ -55,7 +58,7 @@ const DOC_STATUS_COLOR: Record<string, string> = {
 
 const emptyItem = {
   product_code: '', product_name: '', invoice_name: '', item_group: '', spec: '', fg_code: '', fg_name: '',
-  supplier_ready: true, required_date: '', unit: '', invoice_no: '', invoice_date: '', document_delivery_date: '',   // NCC có sẵn hàng — mặc định check cho dòng mới
+  supplier_ready: true, required_date: '', expected_date: '', unit: '', invoice_no: '', invoice_date: '', document_delivery_date: '',   // NCC có sẵn hàng — mặc định check cho dòng mới
   qty_request: 0, qty_order: 0, price: 0, vat: 8, warehouse_code: '', note: '', deliveries: [],
 }
 const emptyDelivery = {
@@ -72,15 +75,13 @@ function daysBetween(a: string, b: string): number | null {
   return Math.round((da - db) / 86400000)
 }
 
-// Đơn gấp = có ≥1 dòng mà thời gian giao (ngày yêu cầu − ngày đặt) NHỎ HƠN số ngày quy định của phân loại VTBB/NL
-// (mốc 'sẵn hàng' std / 'không sẵn' stdUn — chọn theo checkbox NCC có sẵn hàng).
-function computeUrgent(items: any[], orderDate: string,
-  groupMap: Record<string, { std: number; stdUn: number }>): boolean {
+// Đơn gấp = có ≥1 dòng mà thời gian giao (ngày yêu cầu − ngày đặt) NHỎ HƠN số ngày QĐ của phân loại
+// VTBB/NL. Số ngày QĐ nay LUÔN lấy mốc dài nhất (không sẵn hàng), không còn theo checkbox "NCC có
+// sẵn hàng" — xem utils/lead-time.ts.
+function computeUrgent(items: any[], orderDate: string, stdMap: Record<string, number>): boolean {
   if (!orderDate) return false
   for (const it of items || []) {
-    const g = groupMap[it.item_group]
-    if (!g) continue
-    const std = it.supplier_ready ? g.std : g.stdUn
+    const std = stdDaysOf(stdMap, it.item_group)
     if (std <= 0) continue
     const lead = daysBetween(it.required_date, orderDate)
     if (lead === null) continue
@@ -200,13 +201,10 @@ export default function PurchaseOrderDetail() {
   const canPickNspt = can('purchase_order', 'approve')
   const employeeOptions = employees.map((e) => ({ value: e.full_name, label: e.full_name }))
 
-  // Map tra ngày QĐ theo tên phân loại (parse số từ chuỗi; 'không sẵn' rỗng thì fallback về 'sẵn hàng' — khớp backend)
-  const groupMap = useMemo(() => {
-    const toInt = (s: any) => parseInt(String(s ?? '').replace(/[^\d]/g, ''), 10) || 0
-    const m: Record<string, { std: number; stdUn: number }> = {}
-    for (const g of itemGroups) { const std = toInt(g.std_days); m[g.name] = { std, stdUn: toInt(g.std_days_unavail) || std } }
-    return m
-  }, [itemGroups])
+  // Số ngày QĐ theo tên phân loại (mốc dài nhất, thiếu thì 15 ngày — khớp backend)
+  const groupMap = useMemo(() => stdDaysMap(itemGroups), [itemGroups])
+  // Ngày QĐ có hàng của 1 dòng = Ngày đặt hàng + số ngày QĐ của phân loại
+  const qdDate = (it: any) => regulatedDate(groupMap, it?.item_group || '', po.order_date || '')
   // Tự tính lại cờ Đơn gấp khi dữ liệu nguồn (ngày đặt / dòng hàng) đổi. KHÔNG chạy lúc mở đơn (loadAll không qua đây) → giữ đè tay.
   const recalcUrgent = (next: any) => {
     if (Object.keys(groupMap).length === 0) return next   // chưa nạp danh mục → chưa tính
@@ -257,7 +255,14 @@ export default function PurchaseOrderDetail() {
   const addDelivery = (ii: number) =>
     setPo((s: any) => ({
       ...s, items: s.items.map((it: any, idx: number) => idx !== ii ? it : {
-        ...it, deliveries: [...(it.deliveries || []), { ...emptyDelivery, delivery_no: (it.deliveries?.length || 0) + 1, warehouse_code: it.warehouse_code, ship_unit: it.unit }],
+        // Cam kết giao + Số ngày QĐ mặc định theo NGÀY QĐ CÓ HÀNG của phân loại; chỉ là GIÁ TRỊ
+        // KHỞI TẠO, NSTM sửa lại theo cam kết thật của NCC được (backend không ép đồng bộ lại).
+        ...it, deliveries: [...(it.deliveries || []), {
+          ...emptyDelivery, delivery_no: (it.deliveries?.length || 0) + 1,
+          warehouse_code: it.warehouse_code, ship_unit: it.unit,
+          promised_date: qdDate(it), std_days: stdDaysOf(groupMap, it.item_group),
+          regulated_date: qdDate(it),
+        }],
       }),
     }))
   const delDelivery = (ii: number, di: number) =>
@@ -270,9 +275,18 @@ export default function PurchaseOrderDetail() {
   // Chọn SP → điền luôn các trường lấy từ danh mục, gồm "Xuất xứ / TSKT / chất liệu"
   // (spec) lấy từ Thông số kỹ thuật của sản phẩm; vẫn sửa tay lại được sau khi điền.
   const applyProduct = (i: number, p: any) => {
-    setItem(i, p
-      ? { product_code: p.code, product_name: p.name, invoice_name: p.invoice_name || '', unit: p.unit || '', item_group: p.item_group || '', spec: p.specs || '', fg_code: p.hh_code || '', fg_name: p.hh_name || '' }
-      : { product_code: '', product_name: '', invoice_name: '', item_group: '', spec: '', fg_code: '', fg_name: '' })
+    if (!p) {
+      setItem(i, { product_code: '', product_name: '', invoice_name: '', item_group: '', spec: '', fg_code: '', fg_name: '' })
+      return
+    }
+    const currentIt = items[i] || {}
+    const autoExp = !currentIt.expected_date ? regulatedDate(groupMap, p.item_group || '', po.order_date || '') : currentIt.expected_date
+    setItem(i, {
+      product_code: p.code, product_name: p.name, invoice_name: p.invoice_name || '',
+      unit: p.unit || '', item_group: p.item_group || '', spec: p.specs || '',
+      fg_code: p.hh_code || '', fg_name: p.hh_name || '',
+      ...(autoExp ? { expected_date: autoExp } : {}),
+    })
   }
   // Chọn 1 lần mua trước từ popup lịch sử → CHỈ điền vào state dòng hàng, KHÔNG tự lưu.
   // Không đụng NCC ở header: người dùng chủ động tham chiếu giá của bất kỳ NCC nào.
@@ -353,6 +367,26 @@ export default function PurchaseOrderDetail() {
         }
       }
     }
+    // Dự kiến có hàng lệch với YCMH: hệ thống KHÔNG tự sửa ngược lên YCMH (đổi ngày ở đó là
+    // việc của NSTM và phải kèm lý do) — chỉ báo popup cho người đang sửa đơn biết mà đối chiếu.
+    const diffs = sentItems.filter((it: any) => {
+      const cur = (it.expected_date || '').trim()
+      const pr = (it.pr_expected_date || '').trim()
+      return cur && pr && cur !== pr
+    })
+    if (diffs.length) {
+      const dmy = (s: string) => { const [y, m, d] = s.split('-'); return `${d}/${m}/${y}` }
+      const ok = await askConfirm({
+        title: 'Lệch ngày dự kiến có hàng',
+        danger: false,
+        confirmText: 'Vẫn lưu',
+        cancelText: 'Quay lại sửa',
+        message: `Các dòng sau đang có ngày dự kiến khác với yêu cầu mua hàng ${po.pr_code}:\n`
+          + diffs.map((it: any) => `• ${it.product_name || it.product_code}: YCMH ${dmy(it.pr_expected_date)} → đơn này ${dmy(it.expected_date)}`).join('\n')
+          + '\n\nNgày trên YCMH sẽ KHÔNG tự đổi theo. Nếu cần đổi, vào phiếu YCMH sửa (phải kèm lý do).',
+      })
+      if (!ok) return
+    }
     const body: any = {
       misa_code: po.misa_code, pr_code: po.pr_code, survey_code: po.survey_code,
       company_id: Number(po.company_id) || 0, supplier_code: po.supplier_code, supplier_name: po.supplier_name,
@@ -363,7 +397,8 @@ export default function PurchaseOrderDetail() {
         item_group: it.item_group, spec: it.spec, fg_code: it.fg_code, fg_name: it.fg_name, invoice_no: it.invoice_no,
         invoice_date: it.invoice_date || '', document_delivery_date: it.document_delivery_date || '',
         supplier_ready: !!it.supplier_ready,
-        required_date: it.required_date, unit: it.unit, qty_request: Number(it.qty_request) || 0,
+        required_date: it.required_date, expected_date: it.expected_date || '',
+        unit: it.unit, qty_request: Number(it.qty_request) || 0,
         qty_order: Number(it.qty_order) || 0,
         price: Number(it.price) || 0, vat: Number(it.vat) || 0, warehouse_code: it.warehouse_code, note: it.note,
         deliveries: (it.deliveries || []).map((d: any) => ({
@@ -398,6 +433,31 @@ export default function PurchaseOrderDetail() {
       // Lấy CẢ 2 luồng (hàng + vận chuyển), chỉ khoản chưa trả đủ
       const r = await api.get('/api/payables', { params: { po_code: po.code, year: 'all', page_size: 500 } })
       const list = (r.data.data.items || []).filter((p: any) => (Number(p.remaining) || 0) > 0.01)
+      if (list.length === 0) {
+        // Chưa có công nợ từ nhận hàng -> chuyển thẳng sang màn tạo YCTT với số tiền bằng tổng tiền PO
+        const orderAmount = Number(po.order_total || po.total) || 0
+        navigate('/payment-requests/new', {
+          state: {
+            supplier_code: po.supplier_code,
+            company_id: po.company_id,
+            source_type: 'goods',
+            rows: [{
+              id: 0,
+              supplier_code: po.supplier_code,
+              supplier_name: po.supplier_name,
+              source_type: 'goods',
+              po_code: po.code,
+              invoice_no: po.misa_code || '',
+              invoice_date: '',
+              total: orderAmount,
+              paid_amount: 0,
+              remaining: orderAmount,
+              amount: orderAmount,
+            }],
+          },
+        })
+        return
+      }
       setPayables(list)
       setPaySel(list.filter((p: any) => p.source_type === 'goods').map((p: any) => p.id))   // mặc định CHỈ tick NCC sản xuất; vận chuyển tự chọn thêm
       setPayTab((list.some((p: any) => p.source_type === 'goods')) ? 'goods' : 'shipping')
@@ -495,9 +555,9 @@ export default function PurchaseOrderDetail() {
         <h2 className="page-title" style={{ margin: 0 }}>{title}</h2>
         {!isNew && poBadge(po.status)}
         <span style={{ flex: 1 }} />
-        {/* Tạo yêu cầu thanh toán: khi đơn đã duyệt + còn công nợ hàng chưa trả đủ */}
+        {/* Tạo yêu cầu thanh toán: khi đơn đã duyệt */}
         {!isNew && ['approved', 'partial', 'received', 'completed'].includes(po.status) && can('payment_request', 'create')
-          && (Number(po.unpaid_total) || 0) > 0.01 && (
+          /* && (Number(po.unpaid_total) || 0) > 0.01 */ && (
           <button className="btn secondary" onClick={openPayModal}><i className="ti ti-receipt" />Tạo yêu cầu thanh toán</button>
         )}
         {/* ── Nhóm tiện ích + destructive (trái) ── */}
@@ -840,6 +900,9 @@ export default function PurchaseOrderDetail() {
                       </div>
                     </div>
                     <div className="form-row"><label>Ngày yêu cầu có hàng</label><DateInput value={it.required_date || ''} disabled={de} onChange={(v) => setItem(ii, { required_date: v })} /></div>
+                    {/* Dự kiến có hàng: để trống thì khi lưu backend tự chép từ dòng YCMH nguồn.
+                        Sửa ở đây KHÔNG ghi đè ngày đang có trên YCMH — chỉ báo chuông cho NSTM phụ trách dòng. */}
+                    <div className="form-row"><label>Ngày dự kiến có hàng</label><DateInput value={it.expected_date || ''} disabled={de} onChange={(v) => setItem(ii, { expected_date: v })} /></div>
                     <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={!!it.supplier_ready} disabled={de} onChange={(e) => setItem(ii, { supplier_ready: e.target.checked })} style={{ width: 16, height: 16 }} /> NCC có sẵn hàng</label></div>
                     <div className="form-row"><label>ĐVT</label>
                       <SearchSelect value={it.unit ?? ''} options={units} disabled={de} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setItem(ii, { unit: v })} />
@@ -852,7 +915,7 @@ export default function PurchaseOrderDetail() {
                     <div className="form-row"><label>SL yêu cầu</label><NumberInput decimals value={it.qty_request} disabled={de} onChange={(v) => setItem(ii, { qty_request: v })} /></div>
                     <div className="form-row"><label>SL đặt NCC</label><NumberInput decimals value={it.qty_order} disabled={de} onChange={(v) => setItem(ii, { qty_order: v })} /></div>
                     <div className="form-row"><label>Đơn giá</label><CurrencyInput className="" value={it.price ?? 0} disabled={de} onChange={(val: number) => setItem(ii, { price: val })} /></div>
-                    <div className="form-row"><label>VAT (%)</label><NumberInput value={it.vat} disabled={de} onChange={(v) => setItem(ii, { vat: v })} /></div>
+                    <div className="form-row"><label>VAT (%)</label><NumberInput value={it.vat} max={VAT_MAX} maxDecimals={VAT_DECIMALS} disabled={de} placeholder="Nhập % VAT (0 – 99,99)" onChange={(v) => setItem(ii, { vat: v })} /></div>
                     <div className="form-row"><label>Tổng tiền đặt hàng</label><input value={fmtVND(it.order_total ?? orderAmount(it))} disabled /></div>
                     <div className="form-row"><label>Tổng tiền hàng (đã nhận)</label><input value={fmtVND(it.goods_total || 0)} disabled /></div>
                     <div className="form-row"><label>Tổng đã trả</label><input value={fmtVND(it.paid_total || 0)} disabled style={{ color: 'var(--green)', fontWeight: 600 }} /></div>
@@ -890,7 +953,7 @@ export default function PurchaseOrderDetail() {
                       <th style={{ width: 110 }}>Cam kết giao</th>
                       <th style={{ width: 110 }}>Ngày nhận</th>
                       <th style={{ width: 70 }}>Số ngày QĐ</th>
-                      <th style={{ width: 100 }}>Ngày QĐ</th>
+                      <th style={{ width: 105, whiteSpace: 'nowrap' }}>Ngày QĐ</th>
                       <th style={{ width: 70 }}>Trễ CK</th>
                       <th style={{ width: 70 }}>Trễ QĐ</th>
                       <th style={{ width: 80 }}>Trễ QĐ-KD</th>
@@ -940,7 +1003,7 @@ export default function PurchaseOrderDetail() {
                           <td><DateInput className="cell-input" style={{ width: 110 }} value={d.promised_date ?? ''} disabled={dis} onChange={(v) => setDelivery(ii, di, { promised_date: v })} /></td>
                           <td><DateInput className="cell-input" style={{ width: 110 }} value={d.received_date ?? ''} disabled={dis} onChange={(v) => setDelivery(ii, di, { received_date: v })} /></td>
                           <td><NumberInput className="cell-input" style={{ width: 60 }} value={d.std_days} disabled={dis} onChange={(v) => setDelivery(ii, di, { std_days: v })} /></td>
-                          <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{d.regulated_date || '—'}</td>
+                          <td style={{ textAlign: 'center', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{d.regulated_date ? fmtDateStr(d.regulated_date) : '—'}</td>
                           <td style={{ textAlign: 'center', color: (d.diff_promise < 0 ? 'var(--red)' : 'var(--muted)'), fontWeight: d.diff_promise < 0 ? 600 : 400 }}>{d.received_date ? (d.diff_promise ?? 0) : '—'}</td>
                           <td style={{ textAlign: 'center', color: (d.diff_regulated < 0 ? 'var(--red)' : 'var(--muted)'), fontWeight: d.diff_regulated < 0 ? 600 : 400 }}>{d.received_date ? (d.diff_regulated ?? 0) : '—'}</td>
                           <td style={{ textAlign: 'center', color: (d.diff_required < 0 ? 'var(--red)' : 'var(--muted)') }}>{items[ii].required_date ? (d.diff_required ?? 0) : '—'}</td>

@@ -132,6 +132,7 @@ Người dùng ở màn chi tiết thấy **dòng nhắc màu vàng** khi phiế
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Khi tích, hệ thống gắn cờ ưu tiên trong thông báo (`is_urgent=true` được truyền vào `trigger_notification`). Danh sách hiển thị badge "Gấp" màu cam.
+- Tự tính trên form (FE): phiếu MỚI tự tích cờ gấp nếu có ít nhất 1 dòng mà **"Ngày cần hàng" − "Ngày tiếp nhận" < số ngày QĐ của phân loại** (tức khách cần sớm hơn mốc quy định). Từ CR-065 số ngày QĐ ở đây dùng **mốc dài nhất** (không sẵn hàng, thiếu thì 15 ngày) — trước đó chỉ dùng mốc "có sẵn" và bỏ qua phân loại chưa khai báo số ngày, nên **kết quả tính cờ gấp rộng hơn trước**. Người dùng vẫn tích/bỏ tích tay được.
 
 ### 10. Mục đích mua hàng (`purpose`)
 
@@ -209,7 +210,7 @@ Các cột `suggested_supplier`, `suggested_supplier_tax_code`, `suggested_suppl
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Qua API (không có ô nhập trực tiếp trên form)
-- Logic đặc biệt: Được dùng làm VAT mặc định khi prefill dòng ĐMH từ phiếu (trường `vat` trong ĐMH). VAT thực tế của từng dòng PYC được lưu theo trường `vat_pct` cấp dòng (chọn 0/5/8/10%). Giá trị `vat_rate` header vẫn được truyền sang ĐMH khi tạo từ phiếu.
+- Logic đặc biệt: Được dùng làm VAT mặc định khi prefill dòng ĐMH từ phiếu (trường `vat` trong ĐMH). VAT thực tế của từng dòng PYC được lưu theo trường `vat_pct` cấp dòng (nhập số, dưới 100% — xem mục 8 phần C). **Lưu ý đơn vị:** `vat_rate` header lưu dạng **tỉ lệ** (0.08), còn `vat_pct` cấp dòng lưu dạng **phần trăm** (8). Giá trị `vat_rate` header vẫn được truyền sang ĐMH khi tạo từ phiếu.
 
 ---
 
@@ -226,7 +227,8 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Chọn mã tự điền `product_name`, `unit`, `item_group`, `group_desc`. Nhập thủ công `product_name` mà không chọn mã sẽ bị chặn khi gửi duyệt.
 - **DUY NHẤT trên phiếu (CR-047)**: mỗi mã hàng chỉ được đứng ở **1 dòng**. Cần mua thêm cùng một mã thì **cộng số lượng vào một dòng**, đừng thêm dòng thứ hai. Ô mã trùng được tô đỏ ngay khi nhập; bấm Lưu sẽ báo `Mã hàng bị trùng: <mã>`. Xem quy tắc 22 mục C.
-- **Tham chiếu giá cũ**: sau khi chọn mã hàng, trong ô có nút mở **Lịch sử mua hàng** của mặt hàng đó (từng mua của NCC nào, giá bao nhiêu). Chọn 1 dòng lịch sử sẽ điền ĐVT / SL / đơn giá / VAT vào dòng, **không tự lưu**. Nút chỉ hiện khi dòng còn sửa được — xem `04-don-mua-hang.md` mục I.
+- **Tham chiếu giá cũ**: sau khi chọn mã hàng, trong ô có nút mở **Lịch sử mua hàng** của mặt hàng đó (từng mua của NCC nào, giá bao nhiêu). Chọn 1 dòng lịch sử sẽ điền ĐVT / SL / đơn giá / VAT vào dòng, **không tự lưu**. Nút chỉ hiện khi dòng còn sửa được — xem `04-don-mua-hang.md` mục I và tài liệu riêng `12-lich-su-mua-hang.md`. Từ CR-058, VAT của lần mua trước được điền **nguyên giá trị** (trước đây chỉ điền khi trùng một trong các mức 0/5/8/10, không trùng thì âm thầm bỏ qua); chỉ số rác (âm hoặc ≥ 100) mới bị bỏ để giữ VAT đang có của dòng.
+- **Người yêu cầu KHÔNG thấy Nhà cung cấp trong popup này (CR-060)**: popup mở được từ YCMH, mà route `/api/products/{code}/purchase-history` chỉ đòi `product.read` — nên trước đây người yêu cầu (không có `supplier.read`) vẫn đọc nguyên tên/mã NCC, trong khi mọi màn khác đã che theo quy tắc 2 cụm NCC ở mục A.14. Nay **backend** tự xóa `supplier_code`/`supplier_name` khỏi dữ liệu trả về, **và bỏ luôn tên NCC khỏi vế tìm kiếm** — chỉ che cột thôi thì gõ tên một NCC rồi xem có ra dòng nào là suy ngược ra được ai bán mã hàng đó. Giao diện ẩn hẳn cột cho gọn, nhưng đó chỉ là trang trí: chốt chặn nằm ở server.
 
 ### 2. Tên sản phẩm (`product_name`)
 
@@ -282,12 +284,12 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 
 ### 8. % VAT theo dòng (`vat_pct`)
 
-- Kiểu nhập: Chọn (select các mức 0 / 5 / 8 / 10%)
+- Kiểu nhập: Nhập số (%) — **0 ≤ VAT < 100**, tối đa 2 số thập phân (sửa được cả trong bảng dòng hàng lẫn popup chi tiết dòng)
 - Mặc định: 8 (tức 8%)
 - Bắt buộc: Không (có giá trị mặc định)
-- Nguồn dữ liệu / liên kết: —
+- Nguồn dữ liệu / liên kết: `tab_survey_request_option.snap_vat` khi phiếu sinh từ **Yêu cầu báo giá**
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
-- Logic đặc biệt: Được dùng để tính Thành tiền gồm VAT: `qty × price × (1 + vat_pct / 100)`.
+- Logic đặc biệt: Được dùng để tính Thành tiền gồm VAT: `qty × price × (1 + vat_pct / 100)`. Trước CR-058 ô này là select cố định 0/5/8/10% nên thuế suất khác (vd 3,5%) không nhập được; nay nhập số tự do, ô nhập **kẹp về 99,99 ngay khi gõ** quá và server chặn lại (`ge=0, lt=100`). Phiếu tạo từ **Yêu cầu báo giá** (`create_prs`) lấy VAT theo phương án đã chọn — **trước CR-058 bước này bị bỏ sót**, dòng nhận 0% và `amount` thiếu thuế; YCMH tạo theo lối cũ cần kiểm lại cột VAT trước khi tạo ĐMH.
 
 ### 9. Thành tiền (`amount`)
 
@@ -318,11 +320,20 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 ### 12. Thời gian dự kiến có hàng (`expected_date`)
 
 - Kiểu nhập: Chọn ngày (date input) — sửa trực tiếp trên bảng (nếu có quyền dòng) hoặc trong popup chi tiết dòng
-- Mặc định: trống
+- Mặc định: **lấy theo NGÀY QĐ CÓ HÀNG của Phân loại** (CR-065, thay cho CR-064) = `request_date` ("Ngày tiếp nhận" của phiếu) **+ số ngày QĐ của phân loại dòng đó**. Số ngày QĐ lấy **mốc DÀI NHẤT**: `item_group.std_days_unavail` (không sẵn hàng) → thiếu thì `std_days` (có sẵn) → thiếu cả hai thì **15 ngày**. Phiếu chưa có Ngày tiếp nhận thì để trống.
+  - Chỉ điền lúc **TẠO dòng**, sau đó sửa được. Trên FE ngày được điền ngay khi chọn Phân loại (kể cả phân loại đến từ danh mục Sản phẩm), chỉ với dòng chưa lưu và ô còn trống; BE điền lại lúc lưu nếu ô vẫn trống.
+  - Dòng nhân bản từ phiếu khác cũng khởi tạo lại theo ngày QĐ của phiếu mới chứ không bê ngày dự kiến của phiếu gốc.
+  - Đổi "Ngày cần hàng" về sau KHÔNG kéo ngày dự kiến chạy theo (hai trường độc lập).
 - Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: —
+- Nguồn dữ liệu / liên kết: Hai chiều với **"Dự kiến có hàng" của dòng ĐMH** (`tab_po_item.expected_date`) — nối theo `pr_code` + `product_code` (CR-062)
 - Người sửa: NSTM được giao dòng hoặc người có `approve`/`cancel` (qua endpoint `PATCH /{pid}/item-status`, trường `expected_date`)
-- Logic đặc biệt: Khi đổi giá trị ĐÃ CÓ (tức `expected_date` trước đó không trống), BE yêu cầu kèm `expected_date_reason`; thiếu lý do sẽ trả về HTTP 400. Nếu giá trị cũ trống thì cập nhật tự do. Thay đổi được ghi vào audit log.
+- Logic đặc biệt: Khi đổi giá trị ĐÃ CÓ (tức `expected_date` trước đó không trống), BE yêu cầu kèm `expected_date_reason`; thiếu lý do sẽ trả về HTTP 400. Nếu giá trị cũ trống thì cập nhật tự do. Thay đổi được ghi vào audit log. Lưu lại phiếu (`PUT`/`POST` cả phiếu) KHÔNG đụng tới ô này — payload dòng không mang `expected_date`.
+- Báo cho người yêu cầu (CR-062): mỗi lần ngày này thực sự đổi trên YCMH, hệ thống gửi thông báo `pr_expected_date_changed` cho **người yêu cầu** (tài khoản của `requester_id`, không có thì người tạo phiếu) — nội dung liệt kê `tên hàng: ngày cũ → ngày mới · lý do`. Người vừa thao tác không tự nhận thông báo của chính mình.
+- Đồng bộ với ĐMH (CR-062) — một dòng YCMH có thể trải ra NHIỀU ĐMH:
+  - **Chép xuống:** khi lưu ĐMH, dòng ĐMH nào còn TRỐNG ô "Dự kiến có hàng" thì lấy giá trị của dòng YCMH cùng mã hàng. Ô đã có giá trị thì giữ nguyên.
+  - **Cuộn ngược:** `sync_from_purchase_orders` lấy ngày **MUỘN NHẤT** trong các dòng ĐMH liên kết (bỏ ô trống, bỏ dòng Hủy đơn) — đó là lúc dòng được đáp ứng đủ.
+    - Ô trên YCMH còn TRỐNG → ghi thẳng (đúng nhánh mà luật trên cho sửa tự do).
+    - Ô trên YCMH đã có và LỆCH → **KHÔNG ghi đè và KHÔNG báo gì ở phía YCMH**. Người đang sửa ĐMH đã thấy popup cảnh báo lệch ngày ngay trên màn hình đơn (xem 04 §10a); sửa hay không là quyền của NSTM, và khi họ sửa thật trên YCMH thì mới phát thông báo cho người yêu cầu như trên. Ghi đè ở đây sẽ đi vòng qua luật "đổi ngày phải kèm lý do".
 
 ### 13. SL đã đặt / SL đã nhận (`qty_ordered` / `qty_received`)
 
@@ -376,7 +387,7 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 3. Mã phiếu tự sinh: định dạng `PYC{ddmmyy}{seq:02d}`, trong đó `ddmmyy` lấy từ `request_date` (không có thì lấy ngày hiện tại), `seq` là số thứ tự tăng dần trong ngày.
 4. Chọn Nhân sự YC: tự điền `requester_position` (chức vụ), `department` (phòng ban), `head_of_dept` (trưởng bộ phận theo `manager_id` của phòng ban), `company_id`. Trưởng bộ phận tra qua API `/api/purchase-requests/meta/dept-head` (với người không có quyền xem DS nhân sự).
 5. Chọn Mã hàng: tự điền `product_name`, `unit`, `item_group`, `group_desc`.
-6. Chọn Phân loại: tự điền `group_desc` với thời gian sản xuất tiêu chuẩn từ `item_group.std_days` và `item_group.std_days_unavail`.
+6. Chọn Phân loại: tự điền `group_desc` với thời gian sản xuất tiêu chuẩn từ `item_group.std_days` và `item_group.std_days_unavail`; đồng thời điền `expected_date` = ngày QĐ có hàng (xem mục 12) cho dòng chưa lưu còn trống ô đó.
 7. Thành tiền: `amount = qty × price × (1 + vat_pct / 100)` (gồm VAT theo dòng). Tổng kết phiếu gồm 3 dòng: Tiền hàng chưa VAT (`subtotal = sum(qty × price)`), Tiền VAT (`vat = total − subtotal`), Tổng cộng gồm VAT (`total = sum(amount)`).
 8. Phân quyền xem dòng: người tạo phiếu, người yêu cầu (khớp `requester_id`), và người có `approve` hoặc scope `dept`/`company`/`all` xem được mọi dòng; NSTM (scope nhỏ hơn) chỉ thấy dòng có `assignee` trùng với mã NV của mình.
 9. Tự phân công NSTM khi duyệt: hàm `auto_assign_by_category` gán NSTM cho từng dòng theo bảng phân công phụ trách (`category_assignee`).
@@ -388,6 +399,8 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 15. Tự hoàn thành Yêu cầu khảo sát liên quan: khi YCMH đạt trạng thái `completed`, hệ thống tự gọi `sr_service.auto_complete_from_pr` để tự động hoàn thành Yêu cầu khảo sát nếu mọi YCMH của nó đã xong.
 16. Thông báo và Web Push: mỗi sự kiện tạo chuông trong app và đẩy Web Push (best-effort) tới thiết bị đã đăng ký của người nhận. Người nhận: Gửi duyệt (`pr_submitted`) → Trưởng bộ phận của người YC (chỉ TBP — không fallback QL/Admin). Duyệt (`pr_approved`) → người tạo + Quản lý TM + Admin TM. Từ chối (`pr_rejected`), Trả về (`pr_returned`), Hủy (`pr_cancelled`) → người tạo. Phân bổ NSTM (`pr_assigned`) → NSTM được gán (không tự báo mình).
 17. Đính kèm tài liệu: mỗi phiếu có thể đính kèm nhiều file (entity `purchase_request`); riêng báo giá NCC đề xuất dùng entity riêng `purchase_request_quote` (chỉ 1 file). Cả hai lưu trên Cloudflare R2 qua API `/api/attachments`.
+    - **Ảnh đối chiếu của dòng đính kèm được ngay khi phiếu chưa lưu (CR-060)**: popup "Chi tiết dòng" trước đây hiện dòng chữ *"Lưu phiếu trước để đính kèm…"* vì liên kết file cần id dòng thật — người dùng phải làm hai lượt cho một việc. Nay ô đính kèm có **chế độ chờ lưu**: chưa có id thì file được giữ ở trình duyệt, vẫn xem trước / xóa / kéo-thả bình thường; bấm **Lưu** phiếu xong hệ thống mới tải file lên và gắn vào dòng vừa có id.
+    - Khớp dòng gửi đi với dòng server trả về **không theo thứ tự** (server không sắp xếp, dòng cũ giữ id cũ lẫn dòng mới vừa được cấp id): khớp lần lượt theo **id → mã hàng** (duy nhất trên phiếu, xem quy tắc 22) **→ tên hàng**. Ghép theo vị trí sẽ gắn ảnh nhầm dòng.
 18. Dòng "Hủy đơn": khi ít nhất 1 dòng có `line_status = "Hủy đơn"`, danh sách tô đỏ toàn bộ hàng đó (`rowStyle`, qua field `has_cancelled_line` trong response).
 19. Nút "Tạo đơn mua hàng": Hiển thị khi phiếu ở `approved` hoặc `processing`, người dùng có quyền `purchase_order:create` và thuộc phòng thu mua / có quyền `approve` / `cancel`, đồng thời còn ít nhất 1 dòng có `line_status = "Chưa đặt hàng"`. Khi bấm, tự điền header ĐMH từ phiếu (mã PYC nguồn, công ty, bộ phận...) và điền NSPT của ĐMH = tên đầy đủ (`full_name`) của người phụ trách dòng đầu tiên có `assignee` trong YCMH; nếu không có dòng nào có `assignee` thì để trống (ĐMH tự lấy người tạo làm NSPT). Số lượng từng dòng được prefill theo "còn thiếu" (yêu cầu − đã đặt trong các ĐMH cùng mã PYC); dòng đã đặt đủ/vượt hiện cảnh báo trước khi cho mua thêm.
 20. Điều hướng PYC ↔ ĐMH: Trên trang chi tiết YCMH, nút "ĐMH liên quan (N)" xuất hiện khi có ít nhất 1 đơn mua hàng cùng mã PYC; bấm mã ĐMH trong popup điều hướng sang trang chi tiết ĐMH tương ứng (`/purchase-orders/{id}`). Trên trang chi tiết ĐMH, trường "Mã PYC nguồn" có biểu tượng liên kết ngoài; bấm biểu tượng điều hướng ngược về trang YCMH tương ứng (`/purchase-requests/{id}`).
@@ -436,6 +449,7 @@ Trang danh sách `/purchase-requests` hỗ trợ các bộ lọc sau (khai báo 
 | Tham số | Nhãn trên UI | Kiểu | Ghi chú |
 |---------|-------------|------|---------|
 | `code` | Mã PYC | Văn bản (LIKE) | Tìm theo mã phiếu |
+| `product` | Mã / tên hàng | Văn bản (LIKE) | **CR-069** — lọc phiếu có ít nhất 1 dòng hàng mà **Mã hàng HOẶC Tên hàng** chứa chuỗi đã gõ. Khớp **một phần**: gõ `5155` ra cả `HOP5155` lẫn `NHG5155`. Không phân biệt hoa/thường và **không phân biệt dấu** (collation `utf8mb4_0900_ai_ci`: gõ `thung` vẫn ra `thùng`) |
 | `company_id` | Công ty | Chọn (exact) | Source: `/api/companies` |
 | `requester` | Người yêu cầu | Văn bản (LIKE) | Tìm theo tên nhân sự yêu cầu |
 | `department` | Bộ phận YC | Chọn (LIKE) | Source: `/api/departments` |
@@ -447,6 +461,8 @@ Trang danh sách `/purchase-requests` hỗ trợ các bộ lọc sau (khai báo 
 | `status` | Trạng thái | Chọn | `draft` (Nháp), `submitted` (Chờ duyệt), `approved` (Đã duyệt), `rejected` (Bị trả lại), `cancelled` (Đã từ chối), `processing` (Đang xử lý), `completed` (Hoàn thành) |
 
 Tất cả bộ lọc kết hợp với nhau theo AND và áp dụng thêm `apply_scope` theo phân quyền dữ liệu của người dùng.
+Bộ lọc đang đặt cũng là bộ lọc của **file xuất Excel** (chung hàm `_list_query`), nên lọc theo mã hàng
+rồi bấm "Xuất Excel" sẽ ra đúng bấy nhiêu phiếu.
 
 ---
 
@@ -460,6 +476,8 @@ Hai mẫu chọn bằng nút gạt ở đầu trang:
 Riêng **Mẫu thường** có thêm nút **Có chữ ký / Không chữ ký** (CR-036): "Không chữ ký" bỏ ảnh chữ ký số
 nhưng **vẫn in họ tên** dưới ô — dành cho bản đem đi ký tay, đúng nghĩa dòng *"(Ký, ghi rõ họ tên)"*.
 Mẫu thuế không có nút này vì vốn để trống toàn bộ.
+
+**Tên file khi lưu PDF (CR-057).** Trang in đặt `document.title` = **`<Mã PYC>-DDMMYYYY`** (ví dụ `PYC07082601-31072026`) qua hook `usePrintTitle` — trình duyệt và máy in ảo lấy đúng chuỗi đó làm tên file gợi ý, thay cho `Thu Mua Tool` mặc định. Ngày lấy `request_date` (ngày yêu cầu), không lấy ngày bấm in. Không phụ thuộc `show_code_on_print`: cờ đó chỉ chi phối việc **in mã lên giấy**, còn tên file thì luôn cần mã để phân biệt. Chi tiết cách làm: xem mục E của [04-don-mua-hang.md](04-don-mua-hang.md).
 
 ### Khối XÉT DUYỆT — tự điền chữ ký
 
@@ -513,3 +531,40 @@ Helper dùng chung: `resolve_signature_by_employee()`, `resolve_signature()`, `r
 Dòng ghi chú nhỏ *"Phiếu đề xuất này được in từ hệ thống thu mua"* in ở **góc phải dưới của mọi trang**
 (cả 2 mẫu). Khi in nó chuyển sang `position: fixed` nên trình duyệt lặp lại ở đúng góc từng tờ giấy;
 neo theo khối phiếu (`absolute`) thì phiếu dài 2 trang sẽ rơi xuống giữa trang cuối.
+
+---
+
+## G. Xuất Excel danh sách (CR-068)
+
+Nút **"Xuất Excel"** nằm trên thanh công cụ màn danh sách YCMH, chỉ hiện với người có hành động
+**`export`** trên `purchase_request`. Endpoint: `GET /api/purchase-requests/export/xlsx`.
+
+**Xuất cái gì**
+
+- Đúng **bộ lọc + thứ tự sắp xếp** đang áp trên bảng, và đúng **các cột đầu phiếu đang hiển thị**
+  (theo lựa chọn cột của từng người). Không tick dòng nào thì xuất **toàn bộ kết quả đang lọc**,
+  không phải chỉ trang hiện tại.
+- Bảng có **cột tick chọn** ở đầu (ô trên tiêu đề = chọn/bỏ chọn cả trang). Tick vài phiếu thì
+  chỉ xuất bấy nhiêu — nút hiện luôn số đã chọn: *"Xuất Excel (3)"*. Đổi trang / lọc lại thì bỏ tick.
+- Phạm vi dữ liệu vẫn do `apply_scope` quyết định: thấy được phiếu nào trên danh sách thì xuất
+  được đúng bấy nhiêu, xuất file không mở rộng quyền.
+
+**Mỗi dòng hàng là một dòng Excel.** Cụm đầu phiếu (mã, ngày tạo, người yêu cầu, bộ phận, ngày cần,
+tổng tiền, gấp, trạng thái) **lặp lại** ở mọi dòng của cùng một phiếu, nên **không cộng thẳng cột
+"Tổng tiền"** — lọc cột **"STT dòng" = 1** rồi mới cộng theo phiếu, hoặc cộng cột "Thành tiền" khi
+cần cộng theo sản phẩm. Phiếu chưa có dòng hàng vẫn ra một hàng (cụm dòng để trống).
+
+Khối cột dòng hàng **luôn có mặt** dù bảng đang ẩn: STT dòng · Mã SP · Tên SP · Phân loại · ĐVT ·
+Số lượng · Đơn giá · %VAT · Thành tiền · Kho nhận · Ngày cần hàng (dòng) · Dự kiến có hàng ·
+NSTM phụ trách · Trạng thái dòng · SL đã đặt · SL đã nhận · Ghi chú dòng.
+
+**Quy ước file** (chung cho cả 4 màn có nút này): ô tiền/số lượng giữ **kiểu số** (không kèm chữ "đ")
+để cộng · lọc · pivot ngay trong Excel; ô ngày là **kiểu ngày** thật; `Ngày tạo` quy về **giờ VN**;
+dòng tiêu đề đóng băng và bật auto-filter; tên file `yeu-cau-mua-hang-DDMMYYYY.xlsx`.
+Một lần xuất tối đa **5.000 dòng** — vượt thì hệ thống báo lỗi nhắc lọc bớt hoặc tự tick chọn phiếu.
+
+**Ai được xuất.** Vai trò chuẩn có sẵn ô "Xuất" của YCMH: *Trưởng phòng · Quản lý công ty ·
+NV thu mua · Admin thu mua · Quản lý thu mua · Quản trị hệ thống*. Vai trò **"Nhân sự"** (người
+yêu cầu thường) **KHÔNG** được xuất — muốn cho ai đó xuất thì tạo một **vai trò riêng** chỉ tick ô
+"Xuất" của màn tương ứng rồi gán thêm cho người đó (quyền là hợp của các vai trò được gán, nên
+không phải sửa vai trò "Nhân sự"). Vai trò **tự tạo tay** cũng phải tick ô "Xuất" mới thấy nút.

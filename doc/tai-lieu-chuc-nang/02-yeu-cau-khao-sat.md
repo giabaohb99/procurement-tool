@@ -51,6 +51,7 @@ Màn danh sách `/survey-requests` hỗ trợ các bộ lọc:
 | Nhãn lọc | Param API | Loại | Ghi chú |
 |-----------|-----------|------|---------|
 | Mã phiếu | `code` | LIKE | |
+| Sản phẩm cần báo giá | `product` | LIKE | **CR-069** — dòng YCBG **không có ô mã/tên hàng**, nên ô này dò: `SurveyRequestLine.requirement_detail` (Thông số kỹ thuật) · `other_requirement` (Yêu cầu khác) · **và** mã/tên SP của **phương án ĐÃ CHỐT** (`SurveyRequestOption.system_product_code` / `snap_product_name`, chỉ `is_chosen = true`). Khớp một phần, không phân biệt hoa/thường và dấu. **KHÔNG dò** `snap_internal_code` và các cột `supplier_*` — nếu dò thì người không có `supplier.read` sẽ suy ra được NCC bằng cách gõ thử mã NCC |
 | Công ty | `company_id` | Bằng (ID) | |
 | Người yêu cầu | `requester` | LIKE | |
 | Bộ phận | `department` | LIKE | |
@@ -463,7 +464,7 @@ Ghi chú: so với phiên bản cũ, hàm không còn kiểm tra `Survey.status 
 - Bắt buộc: —
 - Nguồn dữ liệu / liên kết: `tab_survey_product_line.vat`
 - Người sửa: Hệ thống
-- Logic đặc biệt: Nằm trong `_OPT_PUBLIC_FIELDS`.
+- Logic đặc biệt: Nằm trong `_OPT_PUBLIC_FIELDS`. Đơn vị là **phần trăm** (8 = 8%), khác `vat_rate` ở phần đầu chứng từ và `supplier.vat` — hai chỗ đó lưu tỉ lệ (0.08). Khi bấm **Tạo YCMH** (mục E.12), giá trị này được chép sang `vat_pct` của dòng YCMH và tính vào thành tiền. **Trước CR-058 bước chép này bị bỏ sót** — dòng YCMH nhận mặc định 0% dù phương án có thuế, và `amount` tính thiếu VAT; YCMH tạo trước CR-058 cần kiểm lại cột VAT bằng tay.
 
 ### 13. Thời gian giao hàng — snapshot (`snap_delivery_time`)
 
@@ -595,7 +596,7 @@ Dữ liệu trong bảng này được dùng để:
 
 11. Chốt hoàn thành khảo sát (`POST /{id}/complete`, chấp nhận `processing` hoặc `survey_done`): Backend validate rằng các dòng người gọi phụ trách (`my_lines`) đều có ít nhất 1 option HOẶC được "chốt rỗng" (`no_option = true`). Body tùy chọn: `{empty_line_ids: [...]}` — danh sách dòng chưa có option nhưng NSTM muốn chốt rỗng (không có NCC phù hợp). Phiếu chuyển `survey_done` chỉ khi TẤT CẢ dòng (mọi NSTM) đã có option hoặc được chốt rỗng; nếu còn dòng của NSTM khác chưa xong thì phiếu giữ nguyên `processing`. Quản lý/Admin TM (scope `all`) và người tạo phiếu validate toàn bộ dòng cùng lúc. Frontend kiểm tra thêm trước khi gọi API: mọi option hiển thị phải có `system_product_code`. Khi phiếu chuyển sang `survey_done`, gửi thông báo cho người YC (phân biệt 2 nội dung: "Khảo sát xong" vs "Đã khảo sát lại" nếu có dòng vừa khảo sát lại sau cờ `can_khao_sat_lai`).
 
-12. Tạo YCMH (`POST /{id}/create-prs`): Được phép gọi khi phiếu ở trạng thái `processing`, `survey_done`, `pr_created`, hoặc `done`. Gom option đang được chọn (`is_chosen = true`) theo `supplier_code` → mỗi NCC 1 PYC Nháp. Sau khi tạo: option tự bỏ chọn (`is_chosen = false`); dòng cập nhật `pr_id`/`pr_code` (YCMH gần nhất) và `is_completed = true` (cờ "đã từng tạo"); ghi bản ghi vào `tab_survey_request_pr`. Cờ `is_completed` KHÔNG ngăn tạo thêm YCMH lần sau — người YC chọn lại option và bấm "Tạo yêu cầu mua" lần nữa là được (tái sử dụng dòng, mua lại). Chỉ nâng status `survey_done → pr_created`; không thay đổi nếu phiếu đang `pr_created` / `done`. Ghi vào bảng `tab_survey_request_pr` để theo dõi toàn bộ lịch sử YCMH. Chỉ người YC (`created_by` hoặc `requester_id == user.employee_id`) hoặc Admin TM (quyền `delete`) được gọi.
+12. Tạo YCMH (`POST /{id}/create-prs`): Được phép gọi khi phiếu ở trạng thái `processing`, `survey_done`, `pr_created`, hoặc `done`. Gom option đang được chọn (`is_chosen = true`) theo `supplier_code` → mỗi NCC 1 PYC Nháp. Mỗi dòng YCMH lấy `qty` từ `request_qty` của dòng khảo sát, `price` từ `snap_price_by_volume`, **`vat_pct` từ `snap_vat`** và `amount = qty × price × (1 + vat_pct/100)` (gồm VAT — cùng công thức với khi lập YCMH bằng tay). Bước chép VAT được bổ sung ở **CR-058**; trước đó dòng nhận 0% và `amount` thiếu thuế. Sau khi tạo: option tự bỏ chọn (`is_chosen = false`); dòng cập nhật `pr_id`/`pr_code` (YCMH gần nhất) và `is_completed = true` (cờ "đã từng tạo"); ghi bản ghi vào `tab_survey_request_pr`. Cờ `is_completed` KHÔNG ngăn tạo thêm YCMH lần sau — người YC chọn lại option và bấm "Tạo yêu cầu mua" lần nữa là được (tái sử dụng dòng, mua lại). Chỉ nâng status `survey_done → pr_created`; không thay đổi nếu phiếu đang `pr_created` / `done`. Ghi vào bảng `tab_survey_request_pr` để theo dõi toàn bộ lịch sử YCMH. Chỉ người YC (`created_by` hoặc `requester_id == user.employee_id`) hoặc Admin TM (quyền `delete`) được gọi.
 
 13. Tự hoàn thành (`auto_complete_from_pr`): khi 1 PYC liên quan chuyển sang `completed`, hàm tra tất cả `pr_id` trong `tab_survey_request_pr` của YCBG đó. Nếu tất cả đều `completed` và YCBG đang `pr_created` → tự chuyển YCBG sang `done` và ghi audit log "Tự hoàn thành".
 
@@ -661,3 +662,41 @@ Entity: `survey_request`. Actions: `read`, `create`, `write`, `approve`, `cancel
 | Chuyển Hoàn thành (finalize) | (`survey_request:approve` + `is_purchaser`) HOẶC `_can_act_as_requester_side` (người YC, cùng phòng ban, Admin TM) | `survey_done`, `pr_created` | Admin/QL TM hoặc phía người yêu cầu |
 | Nhân bản phiếu | `survey_request:create` | mọi trạng thái | `POST /{id}/clone` |
 | Xóa phiếu | `survey_request:delete` | `draft`, `rejected`, `cancelled` | Xóa cascade dòng và option |
+
+---
+
+## G. Xuất Excel danh sách (CR-068)
+
+Nút **"Xuất Excel"** trên thanh công cụ màn danh sách YCBG, chỉ hiện với người có hành động
+**`export`** trên `survey_request`. Endpoint: `GET /api/survey-requests/export/xlsx`.
+
+**Xuất cái gì**
+
+- Đúng **bộ lọc + thứ tự sắp xếp** đang áp và đúng **các cột đầu phiếu đang hiển thị**; không tick
+  dòng nào thì xuất **toàn bộ kết quả đang lọc**, tick thì chỉ xuất phiếu đã tick.
+- **Mỗi DÒNG YÊU CẦU là một dòng Excel**, cụm đầu phiếu lặp lại; phiếu chưa có dòng vẫn ra một hàng.
+- **CHỈ xuất PHƯƠNG ÁN ĐÃ CHỐT** của từng dòng (quyết định của khách) — các option còn lại không ra
+  file. Dòng chưa chốt phương án thì cụm phương án để trống.
+
+**Bộ cột**: cụm dòng yêu cầu (STT dòng · Mã dòng nội bộ · Phân loại · Thông số kỹ thuật · Yêu cầu khác ·
+SL dự kiến · ĐVT · Giá đề xuất · Ngày tiếp nhận · Hạn trả kết quả · NSTM phụ trách · Trạng thái dòng ·
+Mã YCMH đã tạo) rồi tới cụm phương án chốt (Phương án chốt · Mã/Tên NCC · Mã SP theo NCC ·
+Mã SP hệ thống · Tên SP báo giá · Quy cách · Xuất xứ · ĐVT báo giá · SL tối thiểu · Đơn giá báo ·
+Khoảng SL áp giá · %VAT · Thời gian giao · Nơi giao · Phí vận chuyển · Có mẫu · Kết quả kiểm nghiệm ·
+Ghi chú NSTM).
+
+**ẨN NCC — file Excel không được thành đường rò.** Đúng luật của màn kết quả khảo sát:
+
+| Người xuất | File nhận được |
+|---|---|
+| Không có `supplier.read` (người yêu cầu, trưởng bộ phận…) | **Bỏ hẳn** các cột Mã NCC · Tên NCC · Mã SP theo NCC · Ghi chú NSTM · Mã dòng nội bộ |
+| NSTM (không có phạm vi `all`) | Chỉ xuất **dòng mình được giao hoặc thuộc phân loại mình phụ trách**; STT dòng đánh lại theo số dòng thấy được |
+| Người tạo · người yêu cầu · Quản lý/Admin TM | Thấy hết dòng của phiếu |
+
+Quy ước định dạng file, trần 5.000 dòng/lần xuất và tên file `yeu-cau-bao-gia-DDMMYYYY.xlsx` — xem
+[03-yeu-cau-mua-hang.md §G](03-yeu-cau-mua-hang.md).
+
+**Ai được xuất.** Vai trò chuẩn có sẵn ô "Xuất" của YCBG: *Trưởng phòng · NV thu mua · Admin thu mua ·
+Quản lý thu mua · Quản trị hệ thống*. Vai trò **"Nhân sự"** (người yêu cầu thường) **KHÔNG** được xuất —
+muốn cho ai đó xuất thì tạo một **vai trò riêng** chỉ tick ô "Xuất" của màn tương ứng rồi gán thêm cho
+người đó. Vai trò **tự tạo tay** cũng phải tick ô "Xuất" mới thấy nút.
