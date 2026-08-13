@@ -76,7 +76,7 @@ export function SecurityLevelDetailPage() {
       }
       formId={FORM_ID}
       isCreating={isCreating}
-      backTo={appRoutes.document.securityLevels}
+      backTo={appRoutes.document.settingsTab('security-levels')}
       isMissing={!isCreating && !record}
       missingTitle="Không tìm thấy mức mật / khẩn"
       history={history}
@@ -85,7 +85,7 @@ export function SecurityLevelDetailPage() {
           ? () => {
               remove(record.id)
               toast.success(`Đã xóa mức "${record.name}"`)
-              navigate(appRoutes.document.securityLevels)
+              navigate(appRoutes.document.settingsTab('security-levels'))
             }
           : undefined
       }

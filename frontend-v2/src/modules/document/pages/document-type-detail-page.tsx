@@ -41,7 +41,7 @@ export function DocumentTypeDetailPage() {
   const { save, remove, isCodeTaken } = useDocumentTypeActions()
 
   function backToList() {
-    navigate(appRoutes.document.types)
+    navigate(appRoutes.document.settingsTab('types'))
   }
 
   // Id có trong URL nhưng không có bản ghi: link cũ của bản ghi đã bị xóa.

@@ -49,6 +49,14 @@ export function toDateInputValue(value: string | Date | null | undefined): strin
 
 function toDate(value: string | Date | null | undefined): Date | null {
   if (!value) return null
-  const date = value instanceof Date ? value : new Date(value)
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value
+
+  // Backend lưu MỐC THỜI GIAN theo UTC nhưng trả chuỗi trần, không có `Z` hay
+  // `+07:00`. Không gắn `Z` vào thì trình duyệt hiểu là giờ máy và mọi mốc lệch
+  // đúng 7 tiếng (nhật ký thao tác, thông báo…). Chuỗi chỉ có NGÀY thì để yên:
+  // ngày trần không mang múi giờ, quy đổi là dễ lệch mất một ngày.
+  const hasTime = /\d{2}:\d{2}/.test(value)
+  const hasZone = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(value)
+  const date = new Date(hasTime && !hasZone ? `${value}Z` : value)
   return Number.isNaN(date.getTime()) ? null : date
 }

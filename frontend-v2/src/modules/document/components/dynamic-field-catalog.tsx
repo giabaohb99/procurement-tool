@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import { appRoutes } from '@/shared/constants/app-routes'
 import type { DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
-import { CatalogListPage } from '../components/catalog-list-page'
+import { CatalogTable } from './catalog-table'
 import { useDocumentTypes } from '../hooks/use-document-types'
 import { useDynamicFields } from '../hooks/use-document-catalogs'
 import {
@@ -15,7 +15,7 @@ import {
  * Danh mục TRƯỜNG THÔNG TIN ĐỘNG — ô nhập thêm cho văn bản, khai bằng cấu hình
  * chứ không phải sửa code.
  */
-export function DynamicFieldListPage() {
+export function DynamicFieldCatalog() {
   const items = useDynamicFields()
   const { items: documentTypes } = useDocumentTypes()
 
@@ -91,15 +91,12 @@ export function DynamicFieldListPage() {
   )
 
   return (
-    <CatalogListPage
-      title="Trường thông tin động"
-      description="Khai thêm ô nhập cho văn bản mà không phải sửa code — vd giá trị hợp đồng, phạm vi áp dụng."
+    <CatalogTable
       storageKey="document.dynamic-fields"
       items={items}
       columns={columns}
       searchFields={(row) => [row.code, row.label]}
       searchPlaceholder="Tìm theo khóa hoặc nhãn…"
-      newPath={appRoutes.document.fieldNew}
       detailPath={appRoutes.document.fieldDetail}
     />
   )

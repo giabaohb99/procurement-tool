@@ -9,6 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/shared/ui/breadcrumb'
+import { NotificationBell } from '@/shared/notifications/notification-bell'
 import { Separator } from '@/shared/ui/separator'
 import { SidebarTrigger } from '@/shared/ui/sidebar'
 import { UserMenu } from './user-menu'
@@ -61,6 +62,7 @@ export function ModuleTopbar({ module }: { module: ErpModule }) {
       </Breadcrumb>
 
       <div className="ml-auto flex items-center gap-1">
+        <NotificationBell />
         <UserMenu />
       </div>
     </header>

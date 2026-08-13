@@ -6,6 +6,7 @@ export function useAuth() {
   const isLoggingIn = useAuthStore((s) => s.isLoggingIn)
   const login = useAuthStore((s) => s.login)
   const logout = useAuthStore((s) => s.logout)
+  const setUser = useAuthStore((s) => s.setUser)
 
-  return { user, isAuthenticated: !!user, isLoggingIn, login, logout }
+  return { user, isAuthenticated: !!user, isLoggingIn, login, logout, setUser }
 }

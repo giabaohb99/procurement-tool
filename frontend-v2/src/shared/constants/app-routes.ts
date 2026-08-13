@@ -53,20 +53,23 @@ export const appRoutes = {
     documentDetail: (id: number | string) => `/document/documents/${id}`,
     /** Sổ văn bản đến / đi / nội bộ theo số vào sổ. */
     books: '/document/books',
-    /** Danh mục loại văn bản (công văn, quyết định…). */
-    types: '/document/types',
+    /**
+     * Thiết lập văn bản — bốn danh mục nền (loại, mức mật/khẩn, đối tác, trường
+     * thông tin) nằm chung một trang, phân biệt bằng `?tab=`.
+     */
+    settings: '/document/settings',
+    settingsTab: (tab: 'types' | 'security-levels' | 'partners' | 'fields') =>
+      `/document/settings?tab=${tab}`,
+    /** Loại văn bản (công văn, quyết định…). */
     typeNew: '/document/types/new',
     typeDetail: (id: number | string) => `/document/types/${id}`,
-    /** Danh mục mức mật / khẩn. */
-    securityLevels: '/document/security-levels',
+    /** Mức mật / khẩn. */
     securityLevelNew: '/document/security-levels/new',
     securityLevelDetail: (id: number | string) => `/document/security-levels/${id}`,
-    /** Danh mục đối tác văn bản. */
-    partners: '/document/partners',
+    /** Đối tác văn bản. */
     partnerNew: '/document/partners/new',
     partnerDetail: (id: number | string) => `/document/partners/${id}`,
-    /** Danh mục trường thông tin động. */
-    fields: '/document/fields',
+    /** Trường thông tin động. */
     fieldNew: '/document/fields/new',
     fieldDetail: (id: number | string) => `/document/fields/${id}`,
   },

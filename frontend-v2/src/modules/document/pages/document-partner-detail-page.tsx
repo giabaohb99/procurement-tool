@@ -74,7 +74,7 @@ export function DocumentPartnerDetailPage() {
       }
       formId={FORM_ID}
       isCreating={isCreating}
-      backTo={appRoutes.document.partners}
+      backTo={appRoutes.document.settingsTab('partners')}
       isMissing={!isCreating && !record}
       missingTitle="Không tìm thấy đối tác"
       history={history}
@@ -83,7 +83,7 @@ export function DocumentPartnerDetailPage() {
           ? () => {
               remove(record.id)
               toast.success(`Đã xóa đối tác "${record.name}"`)
-              navigate(appRoutes.document.partners)
+              navigate(appRoutes.document.settingsTab('partners'))
             }
           : undefined
       }

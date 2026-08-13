@@ -3,10 +3,7 @@ import {
   FileText,
   Files,
   LayoutDashboard,
-  ShieldAlert,
   SlidersHorizontal,
-  Tags,
-  Users,
 } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
@@ -38,17 +35,11 @@ export const documentModule: ErpModule = {
     },
     { label: 'Văn bản', path: appRoutes.document.documents, icon: Files, group: 'Nghiệp vụ' },
     { label: 'Sổ văn bản', path: appRoutes.document.books, icon: BookMarked, group: 'Nghiệp vụ' },
-    { label: 'Loại văn bản', path: appRoutes.document.types, icon: Tags, group: 'Danh mục' },
+    // Bốn danh mục nền gom vào MỘT mục menu: chúng chỉ được đụng tới lúc khai
+    // báo ban đầu, để bốn dòng riêng thì menu dài hơn cả phần việc hằng ngày.
     {
-      label: 'Mức mật / khẩn',
-      path: appRoutes.document.securityLevels,
-      icon: ShieldAlert,
-      group: 'Danh mục',
-    },
-    { label: 'Đối tác', path: appRoutes.document.partners, icon: Users, group: 'Danh mục' },
-    {
-      label: 'Trường thông tin',
-      path: appRoutes.document.fields,
+      label: 'Thiết lập văn bản',
+      path: appRoutes.document.settings,
       icon: SlidersHorizontal,
       group: 'Danh mục',
     },
@@ -88,9 +79,9 @@ export const documentModule: ErpModule = {
       }),
     },
     {
-      path: appRoutes.document.types,
+      path: appRoutes.document.settings,
       lazy: async () => ({
-        Component: (await import('./pages/document-type-list-page')).DocumentTypeListPage,
+        Component: (await import('./pages/document-settings-page')).DocumentSettingsPage,
       }),
     },
     {
@@ -108,12 +99,6 @@ export const documentModule: ErpModule = {
       }),
     },
     {
-      path: appRoutes.document.securityLevels,
-      lazy: async () => ({
-        Component: (await import('./pages/security-level-list-page')).SecurityLevelListPage,
-      }),
-    },
-    {
       path: appRoutes.document.securityLevelNew,
       lazy: async () => ({
         Component: (await import('./pages/security-level-detail-page'))
@@ -128,13 +113,6 @@ export const documentModule: ErpModule = {
       }),
     },
     {
-      path: appRoutes.document.partners,
-      lazy: async () => ({
-        Component: (await import('./pages/document-partner-list-page'))
-          .DocumentPartnerListPage,
-      }),
-    },
-    {
       path: appRoutes.document.partnerNew,
       lazy: async () => ({
         Component: (await import('./pages/document-partner-detail-page'))
@@ -146,12 +124,6 @@ export const documentModule: ErpModule = {
       lazy: async () => ({
         Component: (await import('./pages/document-partner-detail-page'))
           .DocumentPartnerDetailPage,
-      }),
-    },
-    {
-      path: appRoutes.document.fields,
-      lazy: async () => ({
-        Component: (await import('./pages/dynamic-field-list-page')).DynamicFieldListPage,
       }),
     },
     {

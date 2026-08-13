@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import { appRoutes } from '@/shared/constants/app-routes'
 import type { DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
-import { CatalogListPage } from '../components/catalog-list-page'
+import { CatalogTable } from './catalog-table'
 import { useSecurityLevels } from '../hooks/use-document-catalogs'
 import {
   SECURITY_LEVEL_KIND_LABELS,
@@ -11,7 +11,7 @@ import {
 } from '../types/security-level'
 
 /** Danh mục MỨC MẬT / KHẨN — hai thang đo nằm chung một bảng, phân biệt cột "Thang". */
-export function SecurityLevelListPage() {
+export function SecurityLevelCatalog() {
   const items = useSecurityLevels()
 
   const columns = useMemo<DataTableColumn<SecurityLevel>[]>(
@@ -58,15 +58,12 @@ export function SecurityLevelListPage() {
   )
 
   return (
-    <CatalogListPage
-      title="Mức mật / khẩn"
-      description="Độ mật quyết định ai được đọc, độ khẩn quyết định phải xử lý nhanh tới đâu."
+    <CatalogTable
       storageKey="document.security-levels"
       items={items}
       columns={columns}
       searchFields={(row) => [row.code, row.name]}
       searchPlaceholder="Tìm theo mã hoặc tên mức…"
-      newPath={appRoutes.document.securityLevelNew}
       detailPath={appRoutes.document.securityLevelDetail}
     />
   )

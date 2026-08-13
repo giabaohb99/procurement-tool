@@ -56,6 +56,13 @@ export const queryKeys = {
     userScope: (userId: number, roleId: number) =>
       ['hr', 'users', userId, 'scope', roleId] as const,
   },
+  /** Chuông thông báo trên thanh trên — dùng chung cho mọi phân hệ. */
+  notification: {
+    all: ['notification'] as const,
+    list: (params?: Record<string, unknown>) =>
+      ['notification', 'list', params ?? {}] as const,
+    alerts: () => ['notification', 'alerts'] as const,
+  },
   // Phân hệ đang tắt — giữ chỗ để bật lại không phải nghĩ lại quy ước key.
   sales: {
     all: ['sales'] as const,

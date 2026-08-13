@@ -3,12 +3,12 @@ import { useMemo } from 'react'
 import { appRoutes } from '@/shared/constants/app-routes'
 import type { DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
-import { CatalogListPage } from '../components/catalog-list-page'
+import { CatalogTable } from './catalog-table'
 import { useDocumentPartners } from '../hooks/use-document-catalogs'
 import { PARTNER_KIND_LABELS, type DocumentPartner } from '../types/document-partner'
 
 /** Danh mục ĐỐI TÁC — nơi gửi của văn bản đến, nơi nhận của văn bản đi. */
-export function DocumentPartnerListPage() {
+export function DocumentPartnerCatalog() {
   const items = useDocumentPartners()
 
   const columns = useMemo<DataTableColumn<DocumentPartner>[]>(
@@ -50,15 +50,12 @@ export function DocumentPartnerListPage() {
   )
 
   return (
-    <CatalogListPage
-      title="Đối tác"
-      description="Cơ quan, doanh nghiệp, cá nhân và đơn vị nội bộ trao đổi văn bản với công ty."
+    <CatalogTable
       storageKey="document.partners"
       items={items}
       columns={columns}
       searchFields={(row) => [row.code, row.name, row.contact_person, row.phone]}
       searchPlaceholder="Tìm theo mã, tên hoặc người liên hệ…"
-      newPath={appRoutes.document.partnerNew}
       detailPath={appRoutes.document.partnerDetail}
     />
   )

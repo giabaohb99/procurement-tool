@@ -88,7 +88,7 @@ export function DynamicFieldDetailPage() {
       }
       formId={FORM_ID}
       isCreating={isCreating}
-      backTo={appRoutes.document.fields}
+      backTo={appRoutes.document.settingsTab('fields')}
       isMissing={!isCreating && !record}
       missingTitle="Không tìm thấy trường thông tin"
       history={history}
@@ -97,7 +97,7 @@ export function DynamicFieldDetailPage() {
           ? () => {
               remove(record.id)
               toast.success(`Đã xóa trường "${record.label}"`)
-              navigate(appRoutes.document.fields)
+              navigate(appRoutes.document.settingsTab('fields'))
             }
           : undefined
       }
