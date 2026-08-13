@@ -894,7 +894,7 @@ Sau khi cập nhật toàn bộ dòng, hệ thống gọi lại `recompute_statu
 
 ### H.5 Màn hình Tiến độ mua hàng (`/purchase-progress`)
 
-Màn hình riêng tại đường dẫn `/purchase-progress` (nhãn menu "Tiến độ mua hàng"), sử dụng endpoint `GET /api/purchase-progress`. Hiển thị dạng bảng phẳng, mỗi dòng = 1 dòng hàng (`po_item`) kèm thông tin lần giao tương ứng. Các cột chính: Mã ĐMH, Mã MISA, Mã PYC, Công ty, Bộ phận, NCC, NSPT, Ngày đặt, Mã SP, Tên SP, Tên hóa đơn, Nhóm hàng, Mã HH, Số HĐ, Ngày cần, **Dự kiến nhận** (`po_item.expected_date` — xem §10a; trước CR-062 lấy nhầm từ `po_delivery.expected_date` nên hiện số rác), ĐVT, SL đặt, Đơn giá, Thành tiền đặt, **Tiến độ** (`progress_status`), Lần giao, Kho, Ngày nhận, Ngày quy định, CL cam kết, CL quy định, CL vs YC, Hồ sơ CT (`document_status`). Hỗ trợ lọc theo công ty, bộ phận, tháng, trạng thái tiến độ, khoảng ngày đặt/nhận; sắp xếp theo cột; phân trang.
+Màn hình riêng tại đường dẫn `/purchase-progress` (nhãn menu "Tiến độ mua hàng"), sử dụng endpoint `GET /api/purchase-progress`. Hiển thị dạng bảng phẳng, mỗi dòng = 1 dòng hàng (`po_item`) kèm thông tin lần giao tương ứng. Các cột chính: Mã ĐMH, Mã MISA, Mã PYC, Công ty, Bộ phận, NCC, NSPT, Ngày đặt, Mã SP, Tên SP, Tên hóa đơn, Nhóm hàng, Mã HH, Số HĐ, Ngày cần, **Dự kiến nhận** (`po_item.expected_date` — xem §10a; trước CR-062 lấy nhầm từ `po_delivery.expected_date` nên hiện số rác), ĐVT, SL đặt, Đơn giá, Thành tiền đặt, **Tiến độ** (`progress_status`), Lần giao, Kho, Ngày nhận, Ngày quy định, CL cam kết, CL quy định, CL vs YC, Hồ sơ CT (`document_status`). Hỗ trợ lọc theo công ty, bộ phận, tháng, trạng thái tiến độ, khoảng ngày đặt/nhận; sắp xếp theo cột; phân trang. Xuất Excel toàn bộ kết quả đang lọc: xem §J.2.
 
 ---
 
@@ -930,3 +930,65 @@ Lịch sử còn được nạp thêm từ file khảo sát cũ, đánh dấu **
 - Dữ liệu nguồn có lỗi đã được xử lý khi nạp: giá ghi bằng nghìn đồng, số lượng vô lý, ngày gõ sai/đảo ngày-tháng, NCC và mã hàng chưa có trong danh mục.
 
 **Quyền xem**: theo quyền đọc của danh mục tương ứng — `product.read` cho lịch sử theo sản phẩm, `supplier.read` cho lịch sử theo nhà cung cấp.
+
+---
+
+## J. Xuất Excel danh sách (CR-068)
+
+### J.1 Màn Đơn mua hàng
+
+Nút **"Xuất Excel"** trên thanh công cụ màn danh sách ĐMH, chỉ hiện với người có hành động
+**`export`** trên `purchase_order`. Endpoint: `GET /api/purchase-orders/export/xlsx`.
+
+- Đúng **bộ lọc + thứ tự sắp xếp** đang áp và đúng **các cột đầu đơn đang hiển thị**; không tick
+  dòng nào thì xuất **toàn bộ kết quả đang lọc**, tick thì chỉ xuất đơn đã tick.
+- **Khối cột dòng hàng dùng đúng bộ cột của màn Tiến độ mua hàng** (yêu cầu khách): mỗi hàng Excel là
+  **một lần giao** của một dòng hàng, có đủ khối kho/vận chuyển/ngày nhận/chênh lệch như §J.2.
+  Dòng hàng chưa có lần giao nào vẫn ra một hàng (phần giao để trống); đơn chưa có dòng hàng cũng vậy.
+- Cụm đầu đơn lặp lại ở mọi hàng nên **không cộng thẳng cột "Tiền hàng"** — lọc *STT dòng = 1* rồi mới
+  cộng. "STT dòng" đánh số **liên tục theo hàng trong đơn** (dòng hàng 2 lần giao chiếm STT 1 và 2).
+- Cột **"Nhà cung cấp"** (đầu đơn) lấy mã NCC, thiếu mã mới rơi về tên (giống cột trên bảng); cột
+  **"Tên NCC"** trong khối dòng là tên đầy đủ.
+- **Che dữ liệu**: người không có `supplier:read` thì file **bỏ hẳn** các cột Tên NCC · Mã ĐVVC ·
+  Đơn vị VC · Đơn giá VC · Tiền VC (cột "Nhà cung cấp" của đầu đơn vẫn giữ, vì nó là cột mặc định
+  của bảng ĐMH).
+
+**Ba cột tiền, đừng nhầm:**
+
+| Cột | Công thức | Dùng khi |
+|---|---|---|
+| **Tiền hàng** (đầu đơn) | tổng *Thành tiền ĐH* của các **dòng hàng**, tính một lần nên không nhân theo lần giao | Khớp cột trên bảng danh sách |
+| **Thành tiền ĐH** (dòng) | SL đặt × đơn giá × (1 + VAT%) | Giá trị đã đặt của dòng |
+| **Thành tiền nhận** (dòng) | SL **thực nhận của lần giao đó** × đơn giá × (1 + VAT%) | Con số ghi công nợ |
+
+Số liệu dòng do `purchase_progress.export.row_values` tính — **cùng một chỗ** với màn Tiến độ, nên hai
+file không bao giờ lệch nhau.
+
+Khối cột dòng: STT dòng · Công ty · Bộ phận · Tên NCC · NSPT · Ngày ĐH · Mã SP · Tên SP · Tên hóa đơn ·
+Nhóm hàng · Quy cách · Mã HH · Số HĐ · Ngày cần · Dự kiến nhận · ĐVT · SL YC · SL đặt · Đơn giá · VAT% ·
+Thành tiền ĐH · Tiến độ · Lần giao · Kho · Mã ĐVVC · Đơn vị VC · SL giao · SL nhận · Cam kết giao ·
+Ngày nhận · Ngày QĐ · Ngày quy định · CL cam kết · CL quy định · CL vs YC · Số HĐ (giao) · Đơn giá VC ·
+Tiền VC · QC · TT giao · Thành tiền nhận · SL còn lại · Trạng thái dòng · Ghi chú dòng.
+
+Tên file `don-mua-hang-DDMMYYYY.xlsx`. Quy ước định dạng và trần 5.000 dòng/lần xuất — xem
+[03-yeu-cau-mua-hang.md §G](03-yeu-cau-mua-hang.md).
+
+### J.2 Màn Tiến độ mua hàng
+
+Nút **"Xuất Excel"** đặt cạnh dòng đếm *"· N dòng"* ở đầu màn `/purchase-progress`.
+Endpoint: `GET /api/purchase-progress/export/xlsx`. Màn này vốn đã phẳng (một hàng = **một lần giao**
+của một dòng hàng) nên file ra **đúng bảng đang xem**: cùng bộ lọc, cùng thứ tự, **đúng các cột đang
+hiển thị và đúng thứ tự cột người dùng đang thấy**, kèm cột STT.
+
+- **Quyền**: cần hành động `export` của **Đơn mua hàng HOẶC Yêu cầu mua hàng** — vì màn này phục vụ
+  cả người theo dõi tiến độ phía yêu cầu.
+- **Che dữ liệu**: người không có `purchase_order:read` thì file **bỏ hẳn** các cột Mã NCC · Nhà cung cấp ·
+  Mã ĐVVC · Đơn vị VC · Đơn giá VC · Tiền VC — đúng như bảng đang che.
+
+Tên file `tien-do-mua-hang-DDMMYYYY.xlsx`.
+
+**Ai được xuất.** Vai trò chuẩn có sẵn ô "Xuất" của ĐMH: *Quản lý công ty · NV thu mua · Admin thu mua ·
+Quản lý thu mua · Quản trị hệ thống*. Màn Tiến độ nhận thêm cả người có "Xuất" của YCMH (Trưởng phòng…).
+Vai trò **"Nhân sự"** (người yêu cầu thường) **KHÔNG** được xuất ở bất kỳ màn nào — muốn cho ai đó xuất
+thì tạo một **vai trò riêng** chỉ tick ô "Xuất" của màn tương ứng rồi gán thêm cho người đó. Vai trò
+**tự tạo tay** cũng phải tick ô "Xuất" mới thấy nút.

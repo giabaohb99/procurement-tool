@@ -44,6 +44,13 @@ export type CrudConfig = {
    *  màn hình chỉ có thanh lọc cơ bản. `name` PHẢI nằm trong FILTERABLE của controller. */
   condFilters?: FilterFieldDefinition[]
   importExport?: boolean
+  /** CR-068 — hiện nút "Xuất Excel": gọi GET {apiPath}/export/xlsx với bộ lọc + dòng đã tick +
+   *  danh sách cột đang hiện. Backend phải có route đó và cấp hành động `export`.
+   *  Bật cờ này cũng bật luôn CỘT TICK CHỌN dòng trên bảng. */
+  exportXlsx?: boolean
+  /** Cho phép nút "Xóa đã chọn" (xóa hàng loạt qua `DELETE {apiPath}?ids=`). Mặc định TẮT:
+   *  cột tick chọn của CR-068 chỉ để chọn phiếu cần xuất, không mở thêm đường xóa dữ liệu. */
+  bulkDelete?: boolean
   rowStyle?: (row: any) => any   // tô màu dòng theo điều kiện (vd HĐ sắp hết hạn)
   txn?: boolean                  // chứng từ giao dịch (PYC/PO/khảo sát/YCTT): ai có 'read' là xem danh sách được
   cloneable?: boolean            // hiện nút "Nhân bản" mỗi dòng → POST {apiPath}/{id}/clone tạo phiếu nháp mới
@@ -398,7 +405,7 @@ export const cruds: Record<string, CrudConfig> = {
     ],
   },
   'purchase-requests': {
-    slug: 'purchase-requests', entity: 'purchase_request', title: 'Yêu cầu mua hàng (PYC)', apiPath: '/api/purchase-requests', txn: true, cloneable: true,
+    slug: 'purchase-requests', entity: 'purchase_request', title: 'Yêu cầu mua hàng (PYC)', apiPath: '/api/purchase-requests', txn: true, cloneable: true, exportXlsx: true,
     rowStyle: (r: any) => r.has_cancelled_line ? { background: '#fdecea' } : undefined,   // có dòng "Hủy đơn" → tô đỏ
     columns: [
       { key: 'code', label: 'Mã PYC' },
@@ -441,7 +448,7 @@ export const cruds: Record<string, CrudConfig> = {
     fields: [],  // chi tiết dùng trang riêng (PurchaseRequestDetail)
   },
   'survey-requests': {
-    slug: 'survey-requests', entity: 'survey_request', title: 'Yêu cầu báo giá', apiPath: '/api/survey-requests', txn: true, cloneable: true,
+    slug: 'survey-requests', entity: 'survey_request', title: 'Yêu cầu báo giá', apiPath: '/api/survey-requests', txn: true, cloneable: true, exportXlsx: true,
     columns: [
       { key: 'code', label: 'Mã phiếu' },
       { key: 'purpose', label: 'Mục đích' },
@@ -638,7 +645,7 @@ export const cruds: Record<string, CrudConfig> = {
     ],
   },
   'purchase-orders': {
-    slug: 'purchase-orders', entity: 'purchase_order', title: 'Đơn mua hàng (PO)', apiPath: '/api/purchase-orders', txn: true, cloneable: true,
+    slug: 'purchase-orders', entity: 'purchase_order', title: 'Đơn mua hàng (PO)', apiPath: '/api/purchase-orders', txn: true, cloneable: true, exportXlsx: true,
     columns: [
       { key: 'code', label: 'Mã PO' },
       { key: 'misa_code', label: 'Mã MISA', render: (r) => r.misa_code || '' },

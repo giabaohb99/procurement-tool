@@ -158,9 +158,8 @@ def dept_head_(department: str = "", db: Session = Depends(get_db),
     return success({"head_of_dept": find_dept_head(db, department)})
 
 
-@router.get("")
-def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
-          user=Depends(require("survey_request", "read"))):
+def _list_query(request: Request, db: Session, user):
+    """Bộ lọc + phạm vi của màn danh sách — dùng chung cho danh sách và xuất Excel (CR-068)."""
     q = apply_filters(db.query(SurveyRequest), SurveyRequest, request, service.FILTERABLE)
     q = apply_range_filters(q, SurveyRequest, request, ["request_date"])
     q = apply_equals(q, SurveyRequest, request, ["company_id"])
@@ -172,11 +171,42 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
     if assignee:
         sub2 = select(SurveyRequestLine.survey_request_id).where(SurveyRequestLine.assignee == assignee)
         q = q.filter(SurveyRequest.id.in_(sub2))
-    q = apply_scope(q, SurveyRequest, "survey_request", user, get_perm_profile(db, user))
+    return apply_scope(q, SurveyRequest, "survey_request", user, get_perm_profile(db, user))
+
+
+@router.get("")
+def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
+          user=Depends(require("survey_request", "read"))):
+    q = _list_query(request, db, user)
     total = q.count()
     q = apply_sort_from_request(q, SurveyRequest, request, default=SurveyRequest.id.desc())
     items = q.offset(pg["offset"]).limit(pg["limit"]).all()
     return success({"total": total, "items": [_dict(x) for x in items]})
+
+
+@router.get("/export/xlsx")
+def export_xlsx(request: Request, ids: str = "", cols: str = "",
+                db: Session = Depends(get_db), user=Depends(require("survey_request", "export"))):
+    """CR-068 — xuất Excel danh sách YCBG: mỗi dòng yêu cầu một hàng, kèm phương án đã chốt.
+
+    `ids` = phiếu người dùng tick chọn; rỗng thì theo bộ lọc đang đặt. `cols` = cột đang hiện.
+    Khai báo TRƯỚC route `/{sid}` kẻo 'export' bị hiểu thành id.
+    """
+    from app.core.export_xlsx import check_row_limit, parse_ids, pick_columns, xlsx_response
+    from . import export as ex
+
+    q = _list_query(request, db, user)
+    id_list = parse_ids(ids)
+    if id_list:
+        q = q.filter(SurveyRequest.id.in_(id_list))
+    srs = q.order_by(SurveyRequest.id.desc()).all()
+    check_row_limit(len(srs))
+    profile = get_perm_profile(db, user)
+    rows = ex.build_rows(db, srs, ex.line_visible_fn(db, user, profile))
+    check_row_limit(len(rows))
+    show_supplier = user_has_permission(db, user, "supplier", "read")
+    columns = pick_columns(ex.HEADER_COLS, cols) + ex.columns_for(show_supplier)
+    return xlsx_response(ex.FILE_NAME, columns, rows, ex.SHEET_TITLE)
 
 
 @router.get("/{sid}")

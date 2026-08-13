@@ -661,3 +661,41 @@ Entity: `survey_request`. Actions: `read`, `create`, `write`, `approve`, `cancel
 | Chuyển Hoàn thành (finalize) | (`survey_request:approve` + `is_purchaser`) HOẶC `_can_act_as_requester_side` (người YC, cùng phòng ban, Admin TM) | `survey_done`, `pr_created` | Admin/QL TM hoặc phía người yêu cầu |
 | Nhân bản phiếu | `survey_request:create` | mọi trạng thái | `POST /{id}/clone` |
 | Xóa phiếu | `survey_request:delete` | `draft`, `rejected`, `cancelled` | Xóa cascade dòng và option |
+
+---
+
+## G. Xuất Excel danh sách (CR-068)
+
+Nút **"Xuất Excel"** trên thanh công cụ màn danh sách YCBG, chỉ hiện với người có hành động
+**`export`** trên `survey_request`. Endpoint: `GET /api/survey-requests/export/xlsx`.
+
+**Xuất cái gì**
+
+- Đúng **bộ lọc + thứ tự sắp xếp** đang áp và đúng **các cột đầu phiếu đang hiển thị**; không tick
+  dòng nào thì xuất **toàn bộ kết quả đang lọc**, tick thì chỉ xuất phiếu đã tick.
+- **Mỗi DÒNG YÊU CẦU là một dòng Excel**, cụm đầu phiếu lặp lại; phiếu chưa có dòng vẫn ra một hàng.
+- **CHỈ xuất PHƯƠNG ÁN ĐÃ CHỐT** của từng dòng (quyết định của khách) — các option còn lại không ra
+  file. Dòng chưa chốt phương án thì cụm phương án để trống.
+
+**Bộ cột**: cụm dòng yêu cầu (STT dòng · Mã dòng nội bộ · Phân loại · Thông số kỹ thuật · Yêu cầu khác ·
+SL dự kiến · ĐVT · Giá đề xuất · Ngày tiếp nhận · Hạn trả kết quả · NSTM phụ trách · Trạng thái dòng ·
+Mã YCMH đã tạo) rồi tới cụm phương án chốt (Phương án chốt · Mã/Tên NCC · Mã SP theo NCC ·
+Mã SP hệ thống · Tên SP báo giá · Quy cách · Xuất xứ · ĐVT báo giá · SL tối thiểu · Đơn giá báo ·
+Khoảng SL áp giá · %VAT · Thời gian giao · Nơi giao · Phí vận chuyển · Có mẫu · Kết quả kiểm nghiệm ·
+Ghi chú NSTM).
+
+**ẨN NCC — file Excel không được thành đường rò.** Đúng luật của màn kết quả khảo sát:
+
+| Người xuất | File nhận được |
+|---|---|
+| Không có `supplier.read` (người yêu cầu, trưởng bộ phận…) | **Bỏ hẳn** các cột Mã NCC · Tên NCC · Mã SP theo NCC · Ghi chú NSTM · Mã dòng nội bộ |
+| NSTM (không có phạm vi `all`) | Chỉ xuất **dòng mình được giao hoặc thuộc phân loại mình phụ trách**; STT dòng đánh lại theo số dòng thấy được |
+| Người tạo · người yêu cầu · Quản lý/Admin TM | Thấy hết dòng của phiếu |
+
+Quy ước định dạng file, trần 5.000 dòng/lần xuất và tên file `yeu-cau-bao-gia-DDMMYYYY.xlsx` — xem
+[03-yeu-cau-mua-hang.md §G](03-yeu-cau-mua-hang.md).
+
+**Ai được xuất.** Vai trò chuẩn có sẵn ô "Xuất" của YCBG: *Trưởng phòng · NV thu mua · Admin thu mua ·
+Quản lý thu mua · Quản trị hệ thống*. Vai trò **"Nhân sự"** (người yêu cầu thường) **KHÔNG** được xuất —
+muốn cho ai đó xuất thì tạo một **vai trò riêng** chỉ tick ô "Xuất" của màn tương ứng rồi gán thêm cho
+người đó. Vai trò **tự tạo tay** cũng phải tick ô "Xuất" mới thấy nút.

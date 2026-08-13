@@ -200,11 +200,9 @@ def _out(db: Session, pr, user=None) -> dict:
     return d
 
 
-@router.get("")
-def list_pr(
-    request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
-    user=Depends(require("purchase_request", "read")),
-):
+def _list_query(request: Request, db: Session, user):
+    """Câu truy vấn danh sách (lọc + phạm vi + sắp xếp) — dùng chung cho màn danh sách và xuất Excel,
+    để file xuất luôn ra ĐÚNG những phiếu người dùng đang thấy."""
     query = apply_filters(db.query(PurchaseRequest).filter(PurchaseRequest.is_deleted == False), PurchaseRequest, request, service.FILTERABLE)
     query = apply_range_filters(query, PurchaseRequest, request, ["request_date", "need_date"])
     query = apply_equals(query, PurchaseRequest, request, ["company_id"])
@@ -218,7 +216,15 @@ def list_pr(
         query = query.filter(PurchaseRequest.id.in_(sub2))
     query = apply_scope(query, PurchaseRequest, "purchase_request", user, get_perm_profile(db, user))
     # Sort theo cột người dùng bấm (tiebreak id desc do service thêm); cột 'total' là tính toán -> bỏ qua
-    query = apply_sort_from_request(query, PurchaseRequest, request)
+    return apply_sort_from_request(query, PurchaseRequest, request)
+
+
+@router.get("")
+def list_pr(
+    request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
+    user=Depends(require("purchase_request", "read")),
+):
+    query = _list_query(request, db, user)
     total, items = service.list_pr(db, query, pg)
     
     pr_ids = [p.id for p in items]
@@ -260,6 +266,32 @@ def list_pr(
         out_items.append(d)
 
     return success({"total": total, "items": out_items})
+
+
+@router.get("/export/xlsx")
+def export_xlsx(
+    request: Request, ids: str = "", cols: str = "",
+    db: Session = Depends(get_db), user=Depends(require("purchase_request", "export")),
+):
+    """CR-068 — xuất Excel danh sách YCMH, mỗi dòng hàng một hàng.
+
+    `ids` = các phiếu người dùng tự tick (ưu tiên); bỏ trống thì xuất theo đúng bộ lọc đang đặt.
+    `cols` = danh sách cột đang hiện trên bảng, để file khớp với những gì họ nhìn thấy.
+    Phải khai báo TRƯỚC route `/{pid}` kẻo 'export' bị nuốt thành id.
+    """
+    from app.core.export_xlsx import check_row_limit, parse_ids, pick_columns, xlsx_response
+    from . import export as ex
+
+    query = _list_query(request, db, user)
+    id_list = parse_ids(ids)
+    if id_list:
+        query = query.filter(PurchaseRequest.id.in_(id_list))
+    prs = query.order_by(PurchaseRequest.id.desc()).all()
+    check_row_limit(len(prs))
+    rows = ex.build_rows(db, prs)
+    check_row_limit(len(rows))
+    columns = pick_columns(ex.HEADER_COLS, cols) + list(ex.LINE_COLS)
+    return xlsx_response(ex.FILE_NAME, columns, rows, ex.SHEET_TITLE)
 
 
 def _see_all_items(profile: dict, pr, user) -> bool:
