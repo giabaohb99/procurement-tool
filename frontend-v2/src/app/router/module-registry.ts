@@ -1,4 +1,5 @@
 import { customerModule } from '@/modules/customer/routes'
+import { documentModule } from '@/modules/document/routes'
 import { financeModule } from '@/modules/finance/routes'
 import { helpCenterModule } from '@/modules/help/routes'
 import { hrModule } from '@/modules/hr/routes'
@@ -28,6 +29,7 @@ export const allModules: ErpModule[] = [
   inventoryModule,
   financeModule,
   projectModule,
+  documentModule,
   reportModule,
   systemModule,
   // Đứng cuối: không phải phân hệ nghiệp vụ mà là link sang app Hướng dẫn sử dụng.
