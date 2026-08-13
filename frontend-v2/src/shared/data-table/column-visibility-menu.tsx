@@ -1,4 +1,14 @@
-import { Ban, Check, Columns3, Eye, EyeOff, Palette, Pin, PinOff, RotateCcw, Scaling } from 'lucide-react'
+import {
+  Columns3,
+  Eye,
+  EyeOff,
+  GripVertical,
+  Pin,
+  PinOff,
+  RotateCcw,
+  Scaling,
+} from 'lucide-react'
+import { createPortal } from 'react-dom'
 
 import { Button } from '@/shared/ui/button'
 import {
@@ -7,14 +17,12 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
 import { cn } from '@/shared/utils/cn'
-import { COLUMN_COLORS, findColumnColor, isCustomColor } from './column-color-palette'
-import type { DataTableColumn } from './types'
+import { ColumnColorMenu } from './column-color-menu'
+import type { ColumnDropSide, DataTableColumn } from './types'
+import { useColumnListDrag } from './use-column-list-drag'
 
 interface ColumnVisibilityMenuProps<T> {
   columns: DataTableColumn<T>[]
@@ -26,6 +34,8 @@ interface ColumnVisibilityMenuProps<T> {
   /** Co giãn MỌI cột đang hiện cho vừa nội dung. */
   onAutoFitAll: () => void
   onColorChange: (key: string, colorId: string) => void
+  /** Đổi thứ tự cột — kéo thả ngay trong danh sách này. */
+  onMove: (fromKey: string, toKey: string, side: ColumnDropSide) => void
   onReset: () => void
 }
 
@@ -33,8 +43,9 @@ const ICON_BUTTON =
   'grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-40'
 
 /**
- * Menu tùy biến cột: bật/tắt hiển thị, GHIM sang trái (dính khi cuộn ngang),
- * co giãn vừa nội dung và tô màu từng cột, kèm nút trả bảng về mặc định.
+ * Menu tùy biến cột: KÉO THẢ đổi thứ tự, bật/tắt hiển thị, GHIM sang trái (dính
+ * khi cuộn ngang), co giãn vừa nội dung và tô màu từng cột, kèm nút trả bảng về
+ * mặc định.
  *
  * Không dùng `DropdownMenuCheckboxItem`: mỗi dòng có nhiều nút bấm độc lập,
  * nhét vào một mục "chọn được" thì bấm chỗ nào cũng thành tick ẩn/hiện.
@@ -48,8 +59,11 @@ export function ColumnVisibilityMenu<T>({
   onTogglePin,
   onAutoFitAll,
   onColorChange,
+  onMove,
   onReset,
 }: ColumnVisibilityMenuProps<T>) {
+  const { drag, startDrag } = useColumnListDrag(onMove)
+
   if (columns.length === 0) return null
 
   return (
@@ -65,25 +79,53 @@ export function ColumnVisibilityMenu<T>({
 
       <DropdownMenuContent align="end" className="w-80">
         <DropdownMenuLabel className="flex items-center justify-between font-normal text-muted-foreground">
-          <span>Cột hiển thị</span>
+          <span>Kéo để đổi thứ tự</span>
           <span>Màu · Ghim</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        {/* Bảng nhiều cột (Tiến độ mua hàng ~24 cột) -> danh sách tự cuộn. */}
-        <div className="max-h-80 overflow-y-auto">
+        {/*
+          Bảng nhiều cột (Tiến độ mua hàng ~24 cột) -> danh sách tự cuộn.
+          `data-column-list` là mốc để `useColumnListDrag` dò dòng đang bị trỏ tới.
+        */}
+        <div data-column-list className="max-h-80 overflow-y-auto">
           {columns.map((column) => {
             const hidden = hiddenColumns.includes(column.key)
             const pinned = pinnedColumns.includes(column.key)
             // Cột `hideable: false` luôn phải hiện -> khóa nút ẩn, vẫn cho ghim.
             const canHide = column.hideable !== false
-            const color = findColumnColor(columnColors[column.key])
+            const dropSide = drag?.overKey === column.key ? drag.side : null
 
             return (
               <div
                 key={column.key}
-                className="flex items-center gap-0.5 rounded-sm px-2 py-1 hover:bg-accent"
+                data-column-key={column.key}
+                className={cn(
+                  'flex items-center gap-0.5 rounded-sm px-2 py-1 hover:bg-accent',
+                  drag?.fromKey === column.key && 'opacity-40',
+                  // Vạch báo chỗ sắp thả, vẽ bằng `inset shadow` để không đẩy
+                  // các dòng khác xê dịch trong lúc kéo.
+                  dropSide === 'before' && 'shadow-[inset_0_2px_0_0_var(--primary)]',
+                  dropSide === 'after' && 'shadow-[inset_0_-2px_0_0_var(--primary)]',
+                )}
               >
+                {/*
+                  Tay nắm riêng thay vì kéo cả dòng: cả dòng đều là nút bấm
+                  (ẩn/hiện, màu, ghim), cho kéo ở mọi chỗ thì mỗi cú bấm hụt vài
+                  pixel lại thành đổi thứ tự.
+                */}
+                <button
+                  type="button"
+                  title="Kéo để đổi thứ tự cột"
+                  onPointerDown={(event) => startDrag(event, column.key, column.header)}
+                  className={cn(
+                    ICON_BUTTON,
+                    'size-6 cursor-grab touch-none active:cursor-grabbing',
+                  )}
+                >
+                  <GripVertical className="size-4" />
+                </button>
+
                 <button
                   type="button"
                   disabled={!canHide}
@@ -103,71 +145,11 @@ export function ColumnVisibilityMenu<T>({
                   <span className="truncate">{column.header}</span>
                 </button>
 
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger
-                    title="Tô màu cột"
-                    // Bỏ hết dáng "mục menu" mặc định để nút này nhìn như hai
-                    // nút biểu tượng bên cạnh; mũi tên phụ của SubTrigger ẩn đi.
-                    className={cn(ICON_BUTTON, 'px-0 py-0 [&>svg:last-child]:hidden')}
-                  >
-                    {color ? (
-                      <span
-                        className="size-4 rounded-full border"
-                        style={{ backgroundColor: color.value }}
-                      />
-                    ) : (
-                      <Palette className="size-4" />
-                    )}
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-44">
-                    <DropdownMenuItem onSelect={() => onColorChange(column.key, '')}>
-                      <Ban className="text-muted-foreground" />
-                      Không màu
-                      {!color && <Check className="ml-auto size-4" />}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    {COLUMN_COLORS.map((option) => (
-                      <DropdownMenuItem
-                        key={option.id}
-                        onSelect={() => onColorChange(column.key, option.id)}
-                      >
-                        <span
-                          className="size-4 rounded-full border"
-                          style={{ backgroundColor: option.value }}
-                        />
-                        {option.label}
-                        {color?.id === option.id && <Check className="ml-auto size-4" />}
-                      </DropdownMenuItem>
-                    ))}
-                    <DropdownMenuSeparator />
-                    {/* `preventDefault`: chọn màu xong menu phải Ở LẠI, đóng cái
-                        là bảng chọn màu của hệ điều hành cũng tắt theo. */}
-                    <DropdownMenuItem
-                      onSelect={(event) => event.preventDefault()}
-                      className="cursor-pointer"
-                      asChild
-                    >
-                      <label>
-                        <span
-                          className="size-4 rounded-full border"
-                          style={{
-                            background: isCustomColor(color?.id)
-                              ? color?.value
-                              : 'conic-gradient(#dc2626,#d97706,#16a34a,#0891b2,#2563eb,#7c3aed,#db2777,#dc2626)',
-                          }}
-                        />
-                        Màu tùy chỉnh…
-                        {isCustomColor(color?.id) && <Check className="ml-auto size-4" />}
-                        <input
-                          type="color"
-                          className="sr-only"
-                          value={isCustomColor(color?.id) ? color!.value : '#2563eb'}
-                          onChange={(event) => onColorChange(column.key, event.target.value)}
-                        />
-                      </label>
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
+                <ColumnColorMenu
+                  colorId={columnColors[column.key]}
+                  triggerClassName={ICON_BUTTON}
+                  onChange={(colorId) => onColorChange(column.key, colorId)}
+                />
 
                 <button
                   type="button"
@@ -195,6 +177,23 @@ export function ColumnVisibilityMenu<T>({
           Khôi phục mặc định
         </DropdownMenuItem>
       </DropdownMenuContent>
+
+      {/*
+        "Viên" bám theo con trỏ trong lúc kéo. Đưa thẳng ra `body` bằng portal:
+        để bên trong menu thì nó bị khung menu cắt mất khi kéo ra ngoài, và
+        `overflow-y-auto` của danh sách cũng xén nốt.
+      */}
+      {drag &&
+        createPortal(
+          <div
+            className="pointer-events-none fixed z-100 flex -translate-y-1/2 translate-x-3 items-center gap-1.5 rounded-md border bg-popover px-2 py-1 text-xs font-medium text-popover-foreground shadow-md"
+            style={{ left: drag.x, top: drag.y }}
+          >
+            <GripVertical className="size-3.5 text-muted-foreground" />
+            {drag.label}
+          </div>,
+          document.body,
+        )}
     </DropdownMenu>
   )
 }

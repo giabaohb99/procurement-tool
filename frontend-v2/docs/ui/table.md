@@ -4,8 +4,9 @@ Mọi màn danh sách dùng **`DataTable`** (`@/shared/data-table`). Không tự
 `<Table>`/`<TableRow>` của `shared/ui/table.tsx` ở tầng trang — những primitive
 đó chỉ là vật liệu cho `DataTable`.
 
-`DataTable` lo: ẩn/hiện cột, kéo giãn cột, nhớ bố cục, phân trang, trạng thái
-đang tải / lỗi / rỗng. Trang gọi nó lo: gọi API, giữ state trang và bộ lọc.
+`DataTable` lo: ẩn/hiện cột, kéo giãn cột, **kéo thả đổi thứ tự cột**, **ghim
+cột**, tô màu cột, **nút tải lại**, nhớ bố cục, phân trang, trạng thái đang tải /
+lỗi / rỗng. Trang gọi nó lo: gọi API, giữ state trang và bộ lọc.
 
 ---
 
@@ -41,7 +42,7 @@ const columns = useMemo<DataTableColumn<Employee>[]>(() => [
 
 | Field | Bắt buộc | Ghi chú |
 | --- | --- | --- |
-| `key` | ✓ | Duy nhất trong bảng; là id khi ẩn cột và nhớ độ rộng |
+| `key` | ✓ | Duy nhất trong bảng; là id khi ẩn cột, nhớ độ rộng, thứ tự, màu |
 | `header` | ✓ | **Luôn có chữ**, kể cả cột ảnh/hành động — mục không tên trong menu "Cột" là một dòng trống |
 | `cell` | ✓ | `(row) => ReactNode` |
 | `width` | | px, độ rộng ban đầu |
@@ -49,20 +50,34 @@ const columns = useMemo<DataTableColumn<Employee>[]>(() => [
 | `align` | | `left` (mặc định) / `center` / `right` |
 | `hideable` | | `false` = luôn hiện. Đặt cho cột định danh (tên/mã) và cột hành động |
 | `defaultHidden` | | Ẩn sẵn lần đầu, người dùng bật lại được |
+| `defaultPinned` | | Ghim trái sẵn. Chỉ đặt cho cột định danh của bảng **nhiều cột** |
+
+### Prop của `DataTable`
+
+| Prop | Ghi chú |
+| --- | --- |
+| `rows` | `undefined` = chưa có dữ liệu; `[]` = rỗng → hiện `emptyMessage` |
+| `getRowId` | Bắt buộc, dùng làm `key` của dòng |
+| `isLoading` / `isError` | Hiện khung xương / dòng báo lỗi (`errorMessage`) |
+| `onRowClick` | Bấm dòng; ô hành động phải `stopPropagation` |
+| `onRefresh` | Việc chạy khi bấm **Tải lại**. Bỏ trống = tự `invalidateQueries({ type: 'active' })` |
+| `toolbar` | Nội dung chèn bên TRÁI cụm nút phải (xem mục 3) |
+| `storageKey` | Có thì nhớ bố cục vào localStorage |
+| `pagination` | Phân trang server-side |
+| `fillHeight` | Bảng cao bằng khung chứa, chỉ vùng dòng cuộn |
 
 ### Quy ước khác
 
 - `columns` **phải** bọc `useMemo` — mảng dựng lại mỗi render sẽ làm bảng tính lại bố cục liên tục.
-- `storageKey` theo dạng `<module>.<entity>` (`hr.employees`, `hr.companies`). Có nó thì cột ẩn + độ rộng được nhớ vào localStorage.
+- `storageKey` theo dạng `<module>.<entity>` (`hr.employees`, `document.records`).
 - Ô hành động: bọc `onClick={(e) => e.stopPropagation()}`, nếu không mỗi lần bấm nút sẽ mở luôn trang chi tiết vì `onRowClick` bắt được.
 - Nội dung dài: thêm `truncate` trong `cell`. Bảng chạy `table-fixed` nên ô không tự nong ra.
 
 ---
 
-## 2. Chiều cao & phân trang
+## 2. Bọc `Card` — BẮT BUỘC
 
-Màn danh sách luôn **fit chiều cao**: bảng cao bằng khung, chỉ vùng dòng cuộn,
-thanh phân trang dính đáy. Cần đủ **cả ba** mắt xích, thiếu một là hỏng:
+Bảng luôn nằm trong `Card`, không đặt trần lên nền trang:
 
 ```tsx
 <PageContainer fill>                        {/* h-full + flex-col */}
@@ -72,6 +87,14 @@ thanh phân trang dính đáy. Cần đủ **cả ba** mắt xích, thiếu mộ
   </Card>
 </PageContainer>
 ```
+
+Không phải chuyện thẩm mỹ: nền của `Card` là `bg-card` (trắng đục) — cùng màu với
+hàng dữ liệu, còn hàng tiêu đề `bg-muted` xám hơn một bậc. Bỏ `Card` thì bảng
+ngồi trên nền trang `bg-secondary`, tương phản tiêu đề / thân bảng đổi hẳn và màn
+đó **nhìn lệch tông so với mọi phân hệ khác**.
+
+Ba mắt xích của chế độ fit chiều cao (`PageContainer fill` → `Card flex min-h-0
+flex-1 flex-col` → `DataTable fillHeight`) phải đủ cả ba, thiếu một là hỏng.
 
 Trang **chi tiết** thì KHÔNG dùng `fill` — để nội dung dài ra và cuộn cả trang.
 
@@ -88,13 +111,57 @@ useEffect(() => setPage(1), [queryKey, debouncedValue, departmentId, status])
 
 ---
 
-## 3. Bộ lọc
+## 3. Thanh công cụ: tìm kiếm → select chính → Bộ lọc
 
-Chia hai tầng — đừng nhồi hết vào thanh công cụ:
+Một hàng duy nhất, thứ tự cố định để mọi màn nhìn như một:
 
-- **Thanh công cụ**: ô tìm kiếm + 1–3 select dùng hằng ngày.
-- **"Bộ lọc" nâng cao** (`ConditionalFilter`): các trường còn lại, có đủ phép so
-  sánh. Khai trong `modules/<m>/config/*-filter-fields.ts`.
+```
+[ 🔍 ô tìm kiếm ] [ select chính 1 ] [ select chính 2 ] [ Bộ lọc ]  ……  [ ⟳ ] [ Cột ]
+└──────────────────── prop `toolbar` ────────────────────┘        └ DataTable tự vẽ ┘
+```
+
+- **Ô tìm kiếm** — `w-full max-w-xs`, icon `Search` đặt tuyệt đối bên trái, input `pl-9`.
+- **Select chính** — 1–3 ô CHỌN dùng hằng ngày (pháp nhân, trạng thái, loại…), `w-44` (rộng hơn thì `w-48`). Mỗi ô luôn có mục "Tất cả …" làm mặc định.
+- **`<ConditionalFilter />`** — bộ lọc nâng cao, đứng cuối cụm trái.
+- **Tải lại + Cột** — `DataTable` tự render, dính mép phải (`ml-auto`). Trang không phải khai gì.
+
+```tsx
+toolbar={
+  <>
+    <div className="relative w-full max-w-xs">
+      <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+      <Input className="pl-9" placeholder="Tìm theo mã…" value={keyword}
+             onChange={(e) => setKeyword(e.target.value)} />
+    </div>
+
+    <Select value={status} onValueChange={setStatus}>
+      <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">Tất cả trạng thái</SelectItem>
+        …
+      </SelectContent>
+    </Select>
+
+    <ConditionalFilter />
+  </>
+}
+```
+
+Tab (vd luồng văn bản đến / đi / nội bộ) thì đặt **ngoài** `DataTable`, giữa
+`PageHeader` và `Card` — nó chia tập dữ liệu chứ không phải một ô lọc.
+
+### Nút Tải lại
+
+Mặc định làm mới MỌI query đang hoạt động của trang
+(`invalidateQueries({ type: 'active' })`) chứ không chỉ query của bảng: màn danh
+sách nào cũng kèm query phụ (danh mục công ty, trạng thái…), làm mới cả cụm mới
+ra số khớp nhau. Cần việc khác thì truyền `onRefresh` (nhận cả hàm async) — bảng
+chờ promise xong mới tắt vòng xoay. Cờ quay do chính nút giữ, không đọc
+`isFetching`: dữ liệu về tức thì vẫn phải thấy một nhịp phản hồi.
+
+### Bộ lọc nâng cao
+
+Khai trường trong `modules/<m>/config/*-filter-fields.ts`, bọc trang bằng provider:
 
 ```tsx
 const FILTER_CONFIG = {                        // hằng số tầng module, KHÔNG inline
@@ -112,7 +179,7 @@ export function EmployeeListPage() {
 }
 ```
 
-### Ba cái bẫy
+#### Ba cái bẫy
 
 1. **`preserveParams` phải liệt kê đủ tên param của các select trên thanh công cụ.**
    `applyChanges` dựng lại query string từ đầu và chỉ giữ `searchParamName` +
@@ -122,7 +189,7 @@ export function EmployeeListPage() {
 3. **`name` của field phải nằm trong whitelist `FILTERABLE` của controller.**
    Sai tên thì backend im lặng bỏ qua, giao diện trông như bộ lọc hỏng.
 
-### State bộ lọc nằm trên URL
+#### State bộ lọc nằm trên URL
 
 | Loại | Hook | Ghi chú |
 | --- | --- | --- |
@@ -132,7 +199,7 @@ export function EmployeeListPage() {
 
 `page` / `pageSize` KHÔNG lên URL.
 
-### Cú pháp operator gửi backend
+#### Cú pháp operator gửi backend
 
 Hậu tố của dự án **khác** FilterCN gốc — bảng ánh xạ nằm ở
 `shared/conditional-filter/helpers/operators.ts`, phải khớp `OPERATORS` trong
@@ -148,22 +215,53 @@ Endpoint không chạy qua `apply_filters` (vd `/api/users`) thì **không** g�
 
 ---
 
-## 4. Trình bày — và vì sao lại thế
+## 4. Tùy biến cột (menu "Cột")
+
+Người dùng tự chỉnh, bảng nhớ vào localStorage theo `storageKey`:
+
+| Việc | Cách làm | Ghi ở |
+| --- | --- | --- |
+| Ẩn / hiện | Bấm tên cột trong menu | `hiddenColumns` |
+| Đổi độ rộng | Kéo vạch mép phải ô tiêu đề; **nháy đúp** = vừa nội dung | `columnWidths` |
+| Đổi thứ tự | Kéo ô tiêu đề, **hoặc** kéo tay nắm ⠿ trong menu | `columnOrder` |
+| Ghim trái | Icon ghim trong menu | `pinnedColumns` |
+| Tô màu cột | Bảng màu trong menu | `columnColors` |
+| Vừa nội dung tất cả | Mục cuối menu | `columnWidths` |
+
+Hai chỉ báo khi kéo thả, cùng một ngôn ngữ hình ảnh:
+- Kéo trên hàng tiêu đề → vạch dọc có chóp mũi tên ngay khe sẽ chèn
+  (`column-drop-indicator.tsx`).
+- Kéo trong menu → vạch ngang + "viên" nhãn bám con trỏ (portal ra `body`, vì
+  khung menu và `overflow-y-auto` của danh sách sẽ xén mất).
+
+Thứ tự luôn tính trên danh sách ĐẦY ĐỦ (kể cả cột đang ẩn) — sắp lại chỉ trên cột
+đang hiện thì cột ẩn bị dồn xuống cuối lúc bật lại.
+
+---
+
+## 5. Màu sắc & kích thước — và vì sao lại thế
 
 Kẻ ô đầy đủ, mọi dòng cùng chiều cao. Các con số nằm trong `data-table.tsx`:
 
-| | Giá trị |
-| --- | --- |
-| Ô tiêu đề | `h-9`, `px-3`, `text-xs`, nền `bg-muted` |
-| Ô dữ liệu | `h-10`, `px-3`, `py-0` |
-| Ô báo trạng thái | `h-20`, căn giữa |
-| Ảnh/avatar trong ô | `size-7` |
+| | Class | Màu thực tế (light) |
+| --- | --- | --- |
+| Khung ngoài | `Card` `p-4` | `bg-card` → `#fff` |
+| Hàng tiêu đề | `h-9 px-3 text-xs`, `bg-muted` | `rgb(246,248,251)` |
+| Hàng dữ liệu | `h-10 px-3 py-0`, `bg-card` | `#fff`, hover `bg-muted` |
+| Dòng đang chọn | `data-[state=selected]:bg-muted` | như hover |
+| Ô báo trạng thái | `h-20`, căn giữa | — |
+| Ảnh/avatar trong ô | `size-7` | — |
+
+**Nền hàng phải ĐỤC, cấm biến thể alpha** (`bg-muted/50`, `bg-card/60`…): ô của
+cột ghim lấy `bg-inherit` từ hàng để che phần bảng đang cuộn ngang phía dưới; nền
+trong suốt là nội dung lộ xuyên qua cột dính. Cũng vì vậy `TableRow` mặc định của
+shadcn (`hover:bg-muted/50`) bị ghi đè ở hàng tiêu đề.
 
 **Chiều cao đặt cứng kèm `py-0`, không dùng padding dọc.** Mỗi cột một loại nội
 dung (chữ, huy hiệu, ảnh); để padding tự tính thì dòng có huy hiệu cao hơn hẳn
 dòng chỉ có chữ.
 
-### Bốn cái bẫy CSS đã vấp — đừng vấp lại
+### Năm cái bẫy CSS đã vấp — đừng vấp lại
 
 1. **`sticky` thead làm mất viền.** Tailwind preflight đặt
    `border-collapse: collapse`; ở chế độ đó viền thuộc về *bảng* chứ không thuộc
@@ -179,10 +277,12 @@ dòng chỉ có chữ.
    co dưới min-content. Bảng rộng sẽ đẩy cả trang trôi ngang thay vì tự cuộn.
    Đã xử ở `module-layout.tsx` (`SidebarInset`, `main`); ô grid nào chứa bảng
    cũng phải tự thêm.
+5. **`line-clamp` bị `block` ghi đè.** `line-clamp-2` cần `display: -webkit-box`;
+   viết kèm `block` trong cùng `cn(...)` là mất tác dụng, chữ tràn 3–4 dòng.
 
 ---
 
-## 5. Sửa primitive dùng chung
+## 6. Sửa primitive dùng chung
 
 `shared/ui/table.tsx` là component generated — mặc định **không sửa**. Cần đổi
 diện mạo thì viết class ở `data-table.tsx` (lớp sơn đè), giống cách

@@ -1,5 +1,8 @@
-import { useCallback, useMemo, useRef, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { RotateCw } from 'lucide-react'
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 
+import { Button } from '@/shared/ui/button'
 import { Skeleton } from '@/shared/ui/skeleton'
 import {
   Table,
@@ -60,6 +63,12 @@ export interface DataTableProps<T> {
   errorMessage?: string
 
   onRowClick?: (row: T) => void
+  /**
+   * Việc chạy khi bấm nút Tải lại. Bỏ trống thì bảng tự làm mới MỌI query đang
+   * hoạt động của trang — đúng ý "xem số mới nhất" ở gần hết màn danh sách, nên
+   * không bắt từng trang phải khai lại.
+   */
+  onRefresh?: () => void | Promise<unknown>
   /** Nội dung chèn bên TRÁI menu "Cột" (ô tìm kiếm, select, nút Bộ lọc…). */
   toolbar?: ReactNode
   /** Có thì bảng nhớ cột ẩn + độ rộng + thứ tự cột vào localStorage theo khóa này. */
@@ -90,11 +99,28 @@ export function DataTable<T>({
   emptyMessage = 'Không có dữ liệu.',
   errorMessage = 'Không tải được danh sách. Kiểm tra kết nối hoặc quyền truy cập.',
   onRowClick,
+  onRefresh,
   toolbar,
   storageKey,
   pagination,
   fillHeight = false,
 }: DataTableProps<T>) {
+  const queryClient = useQueryClient()
+  const [refreshing, setRefreshing] = useState(false)
+
+  /**
+   * Tải lại dữ liệu. Cờ `refreshing` do CHÍNH nút giữ (không dùng `isFetching`
+   * của trang): vòng xoay phải chạy đủ trọn một nhịp bấm kể cả khi dữ liệu về
+   * gần như tức thì, nếu không thì bấm xong chẳng thấy gì phản hồi.
+   */
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true)
+    try {
+      await (onRefresh ? onRefresh() : queryClient.invalidateQueries({ type: 'active' }))
+    } finally {
+      setRefreshing(false)
+    }
+  }, [onRefresh, queryClient])
   const {
     layout,
     orderedColumns,
@@ -180,7 +206,18 @@ export function DataTable<T>({
       {(toolbar || columns.some((c) => c.hideable !== false)) && (
         <div className="mb-4 flex shrink-0 flex-wrap items-center gap-3">
           {toolbar}
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              title="Tải lại dữ liệu"
+              aria-label="Tải lại dữ liệu"
+              disabled={refreshing}
+              onClick={handleRefresh}
+            >
+              <RotateCw className={cn('size-4', refreshing && 'animate-spin')} />
+            </Button>
+
             <ColumnVisibilityMenu
               // Menu liệt kê theo thứ tự đang xem, không theo thứ tự khai báo —
               // kéo cột xong mà menu vẫn xếp kiểu cũ thì rất khó dò.
@@ -192,6 +229,7 @@ export function DataTable<T>({
               onTogglePin={togglePin}
               onAutoFitAll={autoFitAll}
               onColorChange={setColumnColor}
+              onMove={moveColumn}
               onReset={resetLayout}
             />
           </div>

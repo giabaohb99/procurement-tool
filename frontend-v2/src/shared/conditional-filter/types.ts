@@ -6,8 +6,8 @@
  *     react-router (`hooks/use-filter-url-sync.ts`).
  *  2. Hậu tố operator đổi cho khớp backend FastAPI của dự án — xem
  *     `helpers/operators.ts` và `backend/app/core/filter_operators.py`.
- *  3. Bỏ phụ thuộc `date-fns`, `cmdk`, `react-day-picker`: dùng `<input type="date">`
- *     và danh sách tự cuộn thay cho Calendar/Command.
+ *  3. Bỏ phụ thuộc `cmdk`: dùng danh sách tự cuộn thay cho Command. Ô ngày thì
+ *     vẫn là `DatePicker` chung của hệ (react-day-picker) — xem `docs/ui/date.md`.
  */
 
 // ===== ĐỊNH NGHĨA TRƯỜNG =====
