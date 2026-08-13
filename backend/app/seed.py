@@ -244,10 +244,10 @@ STD_ROLES = {
         "product": (["read"], "all"), "unit": (["read"], "all"),
         "item_group": (["read"], "all"), "warehouse": (["read"], "all"),
         "department": (["read"], "all"), "company": (["read"], "all"),
-        # CR-068: 'export' = xuất Excel danh sách — chỉ ra được đúng phần dữ liệu trong phạm vi
-        # ('own' → phiếu của chính mình), nên cấp thẳng cho người yêu cầu.
-        "purchase_request": (["read", "create", "export"], "own"),
-        "survey_request": (["read", "create", "write", "export"], "own"),
+        # CR-068: KHÔNG cấp 'export' (xuất Excel) cho nhân sự yêu cầu thường — khách chốt: ai được
+        # xuất báo cáo thì gán thêm một vai trò riêng tự tạo, tick ô "Xuất" ở màn Phân quyền.
+        "purchase_request": (["read", "create"], "own"),
+        "survey_request": (["read", "create", "write"], "own"),
         "ticket": (["read", "create", "write"], "own"),
     }},
     "dept_head": {"name": "Trưởng phòng (duyệt PYC)", "perms": {

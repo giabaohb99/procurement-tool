@@ -24,8 +24,10 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 # (ma vai tro, entity) — khop voi STD_ROLES trong app/seed.py
+# KHONG co vai tro `employee` (Nhan su): khach chot nhan su yeu cau thuong khong duoc xuat Excel,
+# ai duoc xuat thi gan them mot vai tro rieng tu tao. Ban dau co, da go bang migration b5c2f8a41d97
+# cho moi truong da chay ban cu.
 _GRANTS = [
-    ("employee", "purchase_request"), ("employee", "survey_request"),
     ("dept_head", "purchase_request"), ("dept_head", "survey_request"),
     ("company_head", "purchase_request"), ("company_head", "purchase_order"),
     ("pur_staff", "purchase_request"), ("pur_staff", "survey_request"),

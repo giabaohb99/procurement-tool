@@ -695,4 +695,7 @@ Ghi chú NSTM).
 Quy ước định dạng file, trần 5.000 dòng/lần xuất và tên file `yeu-cau-bao-gia-DDMMYYYY.xlsx` — xem
 [03-yeu-cau-mua-hang.md §G](03-yeu-cau-mua-hang.md).
 
-> Vai trò **tự tạo tay** phải tick ô **"Xuất"** của Yêu cầu báo giá trong màn *Phân quyền* mới thấy nút.
+**Ai được xuất.** Vai trò chuẩn có sẵn ô "Xuất" của YCBG: *Trưởng phòng · NV thu mua · Admin thu mua ·
+Quản lý thu mua · Quản trị hệ thống*. Vai trò **"Nhân sự"** (người yêu cầu thường) **KHÔNG** được xuất —
+muốn cho ai đó xuất thì tạo một **vai trò riêng** chỉ tick ô "Xuất" của màn tương ứng rồi gán thêm cho
+người đó. Vai trò **tự tạo tay** cũng phải tick ô "Xuất" mới thấy nút.

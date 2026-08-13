@@ -987,4 +987,8 @@ hiển thị và đúng thứ tự cột người dùng đang thấy**, kèm c�
 
 Tên file `tien-do-mua-hang-DDMMYYYY.xlsx`.
 
-> Vai trò **tự tạo tay** phải tick ô **"Xuất"** trong màn *Phân quyền* mới thấy nút.
+**Ai được xuất.** Vai trò chuẩn có sẵn ô "Xuất" của ĐMH: *Quản lý công ty · NV thu mua · Admin thu mua ·
+Quản lý thu mua · Quản trị hệ thống*. Màn Tiến độ nhận thêm cả người có "Xuất" của YCMH (Trưởng phòng…).
+Vai trò **"Nhân sự"** (người yêu cầu thường) **KHÔNG** được xuất ở bất kỳ màn nào — muốn cho ai đó xuất
+thì tạo một **vai trò riêng** chỉ tick ô "Xuất" của màn tương ứng rồi gán thêm cho người đó. Vai trò
+**tự tạo tay** cũng phải tick ô "Xuất" mới thấy nút.
