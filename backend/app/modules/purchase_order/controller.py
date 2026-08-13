@@ -111,9 +111,8 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
     return d
 
 
-@router.get("")
-def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
-            user=Depends(require("purchase_order", "read"))):
+def _list_query(request: Request, db: Session, user):
+    """Bộ lọc + phạm vi của màn danh sách — dùng chung cho danh sách và xuất Excel (CR-068)."""
     q = apply_filters(db.query(PurchaseOrder), PurchaseOrder, request, service.FILTERABLE)
     q = apply_range_filters(q, PurchaseOrder, request, ["order_date"])
     q = apply_equals(q, PurchaseOrder, request, ["company_id"])
@@ -127,7 +126,13 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
         sub2_deliv = select(PODelivery.po_id).where(PODelivery.invoice_no.like(f"%{invoice_no}%"))
         q = q.filter(or_(PurchaseOrder.id.in_(sub2_item), PurchaseOrder.id.in_(sub2_deliv)))
     q = apply_scope(q, PurchaseOrder, "purchase_order", user, get_perm_profile(db, user))
-    q = apply_sort_from_request(q, PurchaseOrder, request)   # sort theo cột; 'amount' tính toán -> bỏ qua
+    return apply_sort_from_request(q, PurchaseOrder, request)   # sort theo cột; 'amount' tính toán -> bỏ qua
+
+
+@router.get("")
+def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
+            user=Depends(require("purchase_order", "read"))):
+    q = _list_query(request, db, user)
     total, items = service.list_po(db, q, pg)
     out = []
     for p in items:
@@ -148,6 +153,32 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
         for r in out:
             r["pr_id"] = id_by_code.get(r.get("pr_code"))
     return success({"total": total, "items": out})
+
+
+@router.get("/export/xlsx")
+def export_xlsx(request: Request, ids: str = "", cols: str = "",
+                db: Session = Depends(get_db), user=Depends(require("purchase_order", "export"))):
+    """CR-068 — xuất Excel danh sách ĐMH, cột dòng hàng lấy đúng bộ cột màn Tiến độ mua hàng
+    (một hàng = một lần giao).
+
+    `ids` = đơn người dùng tick chọn; rỗng thì theo bộ lọc đang đặt. `cols` = cột đang hiện.
+    Cũng như `/lines`, phải khai báo TRƯỚC `/{pid}`.
+    """
+    from app.core.auth import user_has_permission
+    from app.core.export_xlsx import check_row_limit, parse_ids, pick_columns, xlsx_response
+    from . import export as ex
+
+    q = _list_query(request, db, user)
+    id_list = parse_ids(ids)
+    if id_list:
+        q = q.filter(PurchaseOrder.id.in_(id_list))
+    pos = q.order_by(PurchaseOrder.id.desc()).all()
+    check_row_limit(len(pos))
+    show_supplier = user_has_permission(db, user, "supplier", "read")
+    rows = ex.build_rows(db, pos, show_supplier)
+    check_row_limit(len(rows))
+    columns = pick_columns(ex.HEADER_COLS, cols) + ex.line_columns(show_supplier)
+    return xlsx_response(ex.FILE_NAME, columns, rows, ex.SHEET_TITLE)
 
 
 # PHẢI khai báo TRƯỚC `/{pid}`, nếu không "lines" sẽ rơi vào route đó và lỗi ép kiểu int.

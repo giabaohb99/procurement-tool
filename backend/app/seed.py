@@ -244,34 +244,36 @@ STD_ROLES = {
         "product": (["read"], "all"), "unit": (["read"], "all"),
         "item_group": (["read"], "all"), "warehouse": (["read"], "all"),
         "department": (["read"], "all"), "company": (["read"], "all"),
-        "purchase_request": (["read", "create"], "own"),
-        "survey_request": (["read", "create", "write"], "own"),
+        # CR-068: 'export' = xuất Excel danh sách — chỉ ra được đúng phần dữ liệu trong phạm vi
+        # ('own' → phiếu của chính mình), nên cấp thẳng cho người yêu cầu.
+        "purchase_request": (["read", "create", "export"], "own"),
+        "survey_request": (["read", "create", "write", "export"], "own"),
         "ticket": (["read", "create", "write"], "own"),
     }},
     "dept_head": {"name": "Trưởng phòng (duyệt PYC)", "perms": {
         **_CATALOG_READ,
         "employee": (["read"], "dept"),
-        "purchase_request": (["read", "approve"], "dept"),
-        "survey_request": (["read", "approve"], "dept"),
+        "purchase_request": (["read", "approve", "export"], "dept"),
+        "survey_request": (["read", "approve", "export"], "dept"),
         "ticket": (["read", "create", "write"], "own"),
         "report": (["read"], "dept"),
     }},
     "company_head": {"name": "Quản lý công ty", "perms": {
         **_CATALOG_READ,
         "employee": (["read"], "company"),
-        "purchase_request": (["read"], "company"),
-        "purchase_order": (["read"], "company"),
+        "purchase_request": (["read", "export"], "company"),
+        "purchase_order": (["read", "export"], "company"),
         "ticket": (["read", "create", "write"], "own"),
         "report": (["read"], "company"),
     }},
     "pur_staff": {"name": "Nhân viên thu mua", "perms": {
         **_CATALOG_READ,
         "employee": (["read"], "dept"),
-        "purchase_request": (["read", "create", "write"], "assigned"),
-        "survey_request": (["read", "write"], "proc"),
+        "purchase_request": (["read", "create", "write", "export"], "assigned"),
+        "survey_request": (["read", "write", "export"], "proc"),
         "ticket": (["read", "create", "write"], "own"),
         "survey": (["read", "create", "write"], "all"),
-        "purchase_order": (["read", "create", "write", "delete", "print"], "assigned"),   # chỉ đơn mình tạo/NSPT là mình; xóa được đơn NHÁP của mình
+        "purchase_order": (["read", "create", "write", "delete", "print", "export"], "assigned"),   # chỉ đơn mình tạo/NSPT là mình; xóa được đơn NHÁP của mình
         "inventory": (["read"], "company"),
         "payable": (["read"], "company"),
         "payment_request": (["read", "create", "write", "print"], "company"),
@@ -290,10 +292,10 @@ STD_ROLES = {
         # phiếu Chờ duyệt) — nó mở nút DUYỆT ĐIỀU PHỐI + phân bổ NSTM cho Admin thu mua.
         # Dòng này chỉ áp cho cài mới; môi trường đang chạy được vá bằng migration d2e6f4b81a37
         # (D-018: seed không ghi đè phân quyền trên DB thật).
-        "purchase_request": (["read", "approve"], "proc"),
-        "survey_request": (["read"], "proc"),
+        "purchase_request": (["read", "approve", "export"], "proc"),
+        "survey_request": (["read", "export"], "proc"),
         "ticket": (["read", "create", "write"], "own"),
-        "purchase_order": (["read", "print"], "all"),
+        "purchase_order": (["read", "print", "export"], "all"),
         "survey": (["read", "create", "write", "delete", "approve"], "all"),   # Admin TM thao tác được phiếu khảo sát
         "import": (["read", "create", "delete"], "all"),   # nạp data cũ + hoàn tác
         "goods_receipt": (["read"], "all"),

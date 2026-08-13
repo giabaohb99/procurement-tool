@@ -528,3 +528,36 @@ Helper dùng chung: `resolve_signature_by_employee()`, `resolve_signature()`, `r
 Dòng ghi chú nhỏ *"Phiếu đề xuất này được in từ hệ thống thu mua"* in ở **góc phải dưới của mọi trang**
 (cả 2 mẫu). Khi in nó chuyển sang `position: fixed` nên trình duyệt lặp lại ở đúng góc từng tờ giấy;
 neo theo khối phiếu (`absolute`) thì phiếu dài 2 trang sẽ rơi xuống giữa trang cuối.
+
+---
+
+## G. Xuất Excel danh sách (CR-068)
+
+Nút **"Xuất Excel"** nằm trên thanh công cụ màn danh sách YCMH, chỉ hiện với người có hành động
+**`export`** trên `purchase_request`. Endpoint: `GET /api/purchase-requests/export/xlsx`.
+
+**Xuất cái gì**
+
+- Đúng **bộ lọc + thứ tự sắp xếp** đang áp trên bảng, và đúng **các cột đầu phiếu đang hiển thị**
+  (theo lựa chọn cột của từng người). Không tick dòng nào thì xuất **toàn bộ kết quả đang lọc**,
+  không phải chỉ trang hiện tại.
+- Bảng có **cột tick chọn** ở đầu (ô trên tiêu đề = chọn/bỏ chọn cả trang). Tick vài phiếu thì
+  chỉ xuất bấy nhiêu — nút hiện luôn số đã chọn: *"Xuất Excel (3)"*. Đổi trang / lọc lại thì bỏ tick.
+- Phạm vi dữ liệu vẫn do `apply_scope` quyết định: thấy được phiếu nào trên danh sách thì xuất
+  được đúng bấy nhiêu, xuất file không mở rộng quyền.
+
+**Mỗi dòng hàng là một dòng Excel.** Cụm đầu phiếu (mã, ngày tạo, người yêu cầu, bộ phận, ngày cần,
+tổng tiền, gấp, trạng thái) **lặp lại** ở mọi dòng của cùng một phiếu, nên **không cộng thẳng cột
+"Tổng tiền"** — lọc cột **"STT dòng" = 1** rồi mới cộng theo phiếu, hoặc cộng cột "Thành tiền" khi
+cần cộng theo sản phẩm. Phiếu chưa có dòng hàng vẫn ra một hàng (cụm dòng để trống).
+
+Khối cột dòng hàng **luôn có mặt** dù bảng đang ẩn: STT dòng · Mã SP · Tên SP · Phân loại · ĐVT ·
+Số lượng · Đơn giá · %VAT · Thành tiền · Kho nhận · Ngày cần hàng (dòng) · Dự kiến có hàng ·
+NSTM phụ trách · Trạng thái dòng · SL đã đặt · SL đã nhận · Ghi chú dòng.
+
+**Quy ước file** (chung cho cả 4 màn có nút này): ô tiền/số lượng giữ **kiểu số** (không kèm chữ "đ")
+để cộng · lọc · pivot ngay trong Excel; ô ngày là **kiểu ngày** thật; `Ngày tạo` quy về **giờ VN**;
+dòng tiêu đề đóng băng và bật auto-filter; tên file `yeu-cau-mua-hang-DDMMYYYY.xlsx`.
+Một lần xuất tối đa **5.000 dòng** — vượt thì hệ thống báo lỗi nhắc lọc bớt hoặc tự tick chọn phiếu.
+
+> Vai trò **tự tạo tay** phải tick ô **"Xuất"** của Yêu cầu mua hàng trong màn *Phân quyền* mới thấy nút.

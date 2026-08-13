@@ -13,6 +13,7 @@ import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 import { useUrlFilters } from '../hooks/use-url-filters'
 import { fmtVND } from '../utils/money'
+import { toast } from '../components/toast'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 // ĐƠN GIÁ hiện đủ 4 số lẻ — mặc định toLocaleString chỉ cho 3, cắt mất chữ số cuối
@@ -127,6 +128,8 @@ export default function PurchaseProgress() {
   const navigate = useNavigate()
   const { can } = useAuth()
   const canOpenPO = can('purchase_order', 'read')   // không có quyền xem ĐMH -> KHÔNG cho click (tránh ra trang trắng)
+  // Nút Xuất Excel: gate OR y như backend (export trên ĐMH HOẶC trên YCMH)
+  const canExport = can('purchase_order', 'export') || can('purchase_request', 'export')
   const [rows, setRows] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [showSupplier, setShowSupplier] = useState(true)
@@ -186,11 +189,49 @@ export default function PurchaseProgress() {
   const table = useTableColumns('purchase-progress', tableColumns)
   const minW = table.columns.reduce((s, c) => s + (typeof c.width === 'number' ? c.width : 100), 0)
 
+  /** CR-068 — xuất Excel đúng bộ lọc + đúng cột đang hiện. Bảng này không tick chọn từng dòng,
+   *  nên xuất theo kết quả lọc (backend chặn ở 5.000 dòng). */
+  async function exportXlsx() {
+    try {
+      const p: any = {}
+      Object.entries(f).forEach(([k, v]) => { const val = typeof v === 'string' ? v.trim() : v; if (val) p[k] = val })
+      if (sortBy) { p.sort_by = sortBy; p.sort_dir = sortDir }
+      p.cols = table.columns.map((c) => c.key).join(',')
+      const r = await api.get('/api/purchase-progress/export/xlsx', { params: p, responseType: 'blob' })
+      const cd = String(r.headers['content-disposition'] || '')
+      const name = /filename="?([^"]+)"?/.exec(cd)?.[1] || 'tien-do-mua-hang.xlsx'
+      const url = window.URL.createObjectURL(new Blob([r.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', name)
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode?.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (e: any) {
+      // Lỗi trả về cũng ở dạng blob (do responseType) -> đọc text rồi lấy message
+      let msg = 'Lỗi khi xuất file Excel'
+      try {
+        const body = e?.response?.data
+        const text = body instanceof Blob ? await body.text() : ''
+        msg = JSON.parse(text)?.error?.message || msg
+      } catch { /* giữ thông báo mặc định */ }
+      toast.error(msg)
+    }
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
         <h2 className="page-title" style={{ margin: 0 }}>Tiến độ mua hàng</h2>
-        <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Theo từng lần giao hàng · {fmt(total)} dòng</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Theo từng lần giao hàng · {fmt(total)} dòng</div>
+          {canExport && (
+            <button className="btn outline" onClick={exportXlsx} title="Xuất toàn bộ kết quả đang lọc ra Excel">
+              <i className="ti ti-file-spreadsheet" />Xuất Excel
+            </button>
+          )}
+        </div>
       </div>
 
       <FilterPanel onClear={() => setF({ ...EMPTY_FILTERS })} canClear={Object.values(f).some((v) => v)}>

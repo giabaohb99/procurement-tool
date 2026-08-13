@@ -66,6 +66,22 @@ export default function CrudList() {
   const cloneEnabled = !!cfg?.cloneable && can(cfg.entity, 'create')
   const showClone = cloneEnabled && cloneMode   // cột "Thao tác" chỉ hiện khi bật chế độ nhân bản
 
+  // CR-068 — cột tick chọn dòng: bật ở các màn có Xuất Excel, để chọn đúng phiếu cần xuất.
+  // Nút "Xóa đã chọn" (có sẵn từ trước nhưng chưa từng dùng được vì thiếu chỗ tick) vẫn TẮT,
+  // phải bật riêng bằng cờ `bulkDelete` — thêm cột tick không đồng nghĩa mở đường xóa hàng loạt.
+  const selectable = !!cfg?.exportXlsx
+  const pageIds = useMemo(() => items.map((r) => r.id), [items])
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id))
+
+  function toggleRow(id: number) {
+    setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])
+  }
+  function toggleAllOnPage() {
+    setSelectedIds((prev) => allPageSelected
+      ? prev.filter((id) => !pageIds.includes(id))
+      : [...prev, ...pageIds.filter((id) => !prev.includes(id))])
+  }
+
   // Khai báo cột 1 lần: dùng chung cho header (sort + kéo giãn) và các ô dữ liệu
   const tableColumns = useMemo<TableColumn<any>[]>(() => {
     if (!cfg) return []
@@ -85,6 +101,20 @@ export default function CrudList() {
         },
       })),
     ]
+    if (selectable) {
+      list.unshift({
+        key: '__select', label: (
+          <input type="checkbox" checked={allPageSelected} onChange={toggleAllOnPage}
+            title="Chọn/bỏ chọn toàn bộ dòng trên trang này" />
+        ), width: 44, align: 'center', fixed: true,
+        cell: (row) => (
+          <span onClick={(e) => e.stopPropagation()}>
+            <input type="checkbox" checked={selectedIds.includes(row.id)}
+              onChange={() => toggleRow(row.id)} title="Chọn phiếu này để xuất Excel" />
+          </span>
+        ),
+      })
+    }
     if (showClone) {
       list.push({
         key: '__clone', label: 'Thao tác', width: 110, align: 'center', fixed: true,
@@ -99,7 +129,7 @@ export default function CrudList() {
       })
     }
     return list
-  }, [cfg?.slug, showClone])
+  }, [cfg?.slug, showClone, selectable, selectedIds, pageIds, allPageSelected])
 
   const table = useTableColumns(`crud:${entity || ''}`, tableColumns)
 
@@ -126,6 +156,40 @@ export default function CrudList() {
       link.parentNode?.removeChild(link);
     } catch (e) {
       toast.error('Lỗi khi xuất file');
+    }
+  }
+
+  /** CR-068 — Xuất Excel: đúng bộ lọc đang đặt (hoặc đúng các dòng đã tick), đúng cột đang hiện.
+   *  Mỗi dòng hàng của phiếu là một hàng trong file, cụm đầu phiếu lặp lại. */
+  async function handleExportXlsx() {
+    try {
+      const params: any = { ...filters, ...condParams }
+      if (sortField) { params.sort_by = sortField; params.sort_dir = sortDir }
+      if (selectedIds.length > 0) params.ids = selectedIds.join(',')
+      // Bỏ cột kỹ thuật (ID, cột Thao tác) — file xuất theo cột nghiệp vụ người dùng đang thấy
+      params.cols = table.columns.map((c) => c.key)
+        .filter((k) => k !== 'id' && !k.startsWith('__')).join(',')
+      const r = await api.get(`${cfg.apiPath}/export/xlsx`, { params, responseType: 'blob' })
+      // Tên file do backend đặt (kèm ngày xuất) — nằm ở Content-Disposition
+      const cd = String(r.headers['content-disposition'] || '')
+      const name = /filename="?([^"]+)"?/.exec(cd)?.[1] || `${cfg.slug}.xlsx`
+      const url = window.URL.createObjectURL(new Blob([r.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', name)
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode?.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (e: any) {
+      // responseType blob nên thông báo lỗi của backend cũng về dạng blob -> phải đọc ra text
+      let msg = 'Lỗi khi xuất file Excel'
+      try {
+        const body = e?.response?.data
+        const text = body instanceof Blob ? await body.text() : ''
+        msg = JSON.parse(text)?.error?.message || msg
+      } catch { /* giữ thông báo mặc định */ }
+      toast.error(msg)
     }
   }
 
@@ -298,9 +362,18 @@ export default function CrudList() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2 className="page-title" style={{ margin: 0 }}>{cfg.title}</h2>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {selectedIds.length > 0 && can(cfg.entity, 'delete') && (
+          {selectedIds.length > 0 && cfg.bulkDelete && can(cfg.entity, 'delete') && (
             <button className="btn err" onClick={handleDeleteSelected}>
               <i className="ti ti-trash" />Xóa đã chọn ({selectedIds.length})
+            </button>
+          )}
+          {cfg.exportXlsx && can(cfg.entity, 'export') && (
+            <button className="btn outline" onClick={handleExportXlsx}
+              title={selectedIds.length > 0
+                ? `Xuất ${selectedIds.length} phiếu đã chọn ra Excel`
+                : 'Xuất toàn bộ kết quả đang lọc ra Excel'}>
+              <i className="ti ti-file-spreadsheet" />
+              Xuất Excel{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}
             </button>
           )}
           {cfg.importExport && can(cfg.entity, 'write') && (
