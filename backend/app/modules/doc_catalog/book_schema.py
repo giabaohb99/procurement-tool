@@ -9,14 +9,15 @@ class DocumentBookBase(BaseModel):
     kind: int = 1
     description: str = ""
     company_id: int
-    department_id: int = 0
     number_prefix: str = ""
     reset_yearly: bool = True
     start_no: int = Field(default=1, ge=1)
     is_active: bool = True
 
-    #  Danh sách NHÂN SỰ, không phải tài khoản. Gửi cả hai mảng mỗi lần lưu:
-    #  bỏ trống nghĩa là sổ không còn ai quản lý / không ai xem riêng.
+    #  Danh sách NHÂN SỰ đích danh, không phải tài khoản và không phải phòng ban.
+    #  Gửi cả hai mảng mỗi lần lưu: bỏ trống nghĩa là xóa hết khỏi vai đó.
+    #  `manager_ids` phải có ít nhất một người — sổ không ai quản lý là sổ không
+    #  ai chịu trách nhiệm; kiểm ở `book_service.create_book` / `update_book`.
     manager_ids: list[int] = []
     viewer_ids: list[int] = []
 
@@ -38,7 +39,6 @@ class DocumentBookUpdate(BaseModel):
     kind: int | None = None
     description: str | None = None
     company_id: int | None = None
-    department_id: int | None = None
     number_prefix: str | None = None
     reset_yearly: bool | None = None
     start_no: int | None = Field(default=None, ge=1)
@@ -56,7 +56,7 @@ class DocumentBookOut(DocumentBookBase):
     #  Đã cấp bao nhiêu số trong năm nay.
     issued_count: int = 0
     company_name: str = ""
-    department_name: str = ""
     manager_names: list[str] = []
+    viewer_names: list[str] = []
 
     model_config = {"from_attributes": True}

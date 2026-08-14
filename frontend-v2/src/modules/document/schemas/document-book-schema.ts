@@ -24,7 +24,6 @@ export const documentBookSchema = z.object({
   description: z.string().trim().max(1000, 'Mô tả tối đa 1000 ký tự'),
 
   company_id: z.coerce.number().int().min(1, 'Chọn pháp nhân sở hữu sổ'),
-  department_id: z.coerce.number().int().min(0),
 
   number_prefix: z.string().trim().max(20, 'Tiền tố tối đa 20 ký tự'),
   reset_yearly: z.boolean(),
@@ -34,7 +33,9 @@ export const documentBookSchema = z.object({
     .min(1, 'Số bắt đầu từ 1 trở lên')
     .max(999999, 'Số quá lớn'),
 
-  manager_ids: z.array(z.number()),
+  // Người quản lý là người duy nhất sửa và xóa được sổ — không cử ai thì lúc
+  // cần đóng sổ hay sửa tiền tố không ai có thẩm quyền làm.
+  manager_ids: z.array(z.number()).min(1, 'Chọn ít nhất một người quản lý'),
   viewer_ids: z.array(z.number()),
   is_active: z.boolean(),
 })

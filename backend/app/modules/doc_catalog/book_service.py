@@ -10,7 +10,6 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.modules.company.model import Company
-from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 
 from .book_model import DocumentBook, DocumentBookMember, NumberSequence
@@ -59,7 +58,19 @@ def members_of(db: Session, book_id: int, role: int) -> list[int]:
     return [r[0] for r in rows]
 
 
+def _require_manager(manager_ids: list[int] | None):
+    """Sổ phải có ít nhất một người quản lý.
+
+    Không phải ràng buộc hình thức: người quản lý là người duy nhất sửa và xóa
+    được sổ. Sổ không cử ai thì lúc cần đóng sổ hay sửa tiền tố, không ai có
+    thẩm quyền làm ngoài quản trị hệ thống.
+    """
+    if manager_ids is not None and not manager_ids:
+        raise HTTPException(400, "Sổ phải có ít nhất một người quản lý")
+
+
 def create_book(db: Session, data: DocumentBookCreate, actor: int) -> DocumentBook:
+    _require_manager(data.manager_ids)
     code = data.code or _generate_code(db, data.kind)
     if db.query(DocumentBook).filter(DocumentBook.code == code).first():
         raise HTTPException(400, "Mã sổ đã tồn tại")
@@ -81,6 +92,7 @@ def update_book(db: Session, book_id: int, data: DocumentBookUpdate, actor: int)
     if not book:
         raise HTTPException(404, "Không tìm thấy sổ")
 
+    _require_manager(data.manager_ids)
     values = data.model_dump(exclude_unset=True, exclude={"manager_ids", "viewer_ids"})
 
     #  Đổi `start_no` sau khi sổ đã cấp số là làm lệch cả sổ: số đã phát ra ngoài
@@ -140,11 +152,14 @@ def serialize(db: Session, book: DocumentBook, year: int | None = None) -> dict:
     next_no = peek_book_number(db, book, year)
 
     company = db.get(Company, book.company_id) if book.company_id else None
-    department = db.get(Department, book.department_id) if book.department_id else None
-    managers = (
-        db.query(Employee.full_name).filter(Employee.id.in_(manager_ids)).all()
-        if manager_ids else []
-    )
+
+    def names(ids: list[int]) -> list[str]:
+        if not ids:
+            return []
+        rows = db.query(Employee.id, Employee.full_name).filter(Employee.id.in_(ids)).all()
+        by_id = {r[0]: r[1] for r in rows}
+        # Giữ đúng thứ tự người dùng đã chọn, bỏ id trỏ tới nhân sự đã xóa.
+        return [by_id[i] for i in ids if i in by_id]
 
     return {
         "id": book.id,
@@ -153,7 +168,6 @@ def serialize(db: Session, book: DocumentBook, year: int | None = None) -> dict:
         "kind": book.kind,
         "description": book.description,
         "company_id": book.company_id,
-        "department_id": book.department_id,
         "number_prefix": book.number_prefix,
         "reset_yearly": book.reset_yearly,
         "start_no": book.start_no,
@@ -164,6 +178,6 @@ def serialize(db: Session, book: DocumentBook, year: int | None = None) -> dict:
         "next_number_display": format_book_number(book, next_no, year),
         "issued_count": issued_count(db, book, year),
         "company_name": company.name if company else "",
-        "department_name": department.name if department else "",
-        "manager_names": [m[0] for m in managers],
+        "manager_names": names(manager_ids),
+        "viewer_names": names(viewer_ids),
     }

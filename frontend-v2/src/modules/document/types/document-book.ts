@@ -37,8 +37,6 @@ export interface DocumentBook {
 
   /** Pháp nhân sở hữu sổ. */
   company_id: number
-  /** Đơn vị được xem sổ; 0 = cả pháp nhân xem được. */
-  department_id: number
 
   /** Tiền tố in trước số thứ tự: `VBĐ` → `VBĐ 08/2026`. */
   number_prefix: string
@@ -47,7 +45,11 @@ export interface DocumentBook {
   start_no: number
   is_active: boolean
 
-  /** ID **nhân sự**, không phải id tài khoản. */
+  /**
+   * ID **nhân sự** đích danh — không phải id tài khoản, và **không có chiều
+   * phòng ban**: cấp quyền xem theo phòng ban thì người mới vào phòng tự thấy
+   * sổ, người chuyển đi tự mất, mà người mở sổ không hề chọn hai hành vi đó.
+   */
   manager_ids: number[]
   viewer_ids: number[]
 
@@ -58,8 +60,8 @@ export interface DocumentBook {
   /** Đã cấp bao nhiêu số trong năm. */
   issued_count: number
   company_name: string
-  department_name: string
   manager_names: string[]
+  viewer_names: string[]
 }
 
 /** Phần gửi lên khi tạo / sửa — bỏ hết trường backend tự tính. */
@@ -70,8 +72,8 @@ export type DocumentBookInput = Omit<
   | 'next_number_display'
   | 'issued_count'
   | 'company_name'
-  | 'department_name'
   | 'manager_names'
+  | 'viewer_names'
 >
 
 export interface BookCounter {

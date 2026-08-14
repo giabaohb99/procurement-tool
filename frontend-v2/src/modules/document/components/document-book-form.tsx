@@ -2,7 +2,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
-import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { Card, CardContent } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
@@ -43,7 +42,6 @@ const EMPTY_FORM: DocumentBookFormValues = {
   kind: 1,
   description: '',
   company_id: 0,
-  department_id: 0,
   number_prefix: '',
   reset_yearly: true,
   start_no: 1,
@@ -52,9 +50,17 @@ const EMPTY_FORM: DocumentBookFormValues = {
   is_active: true,
 }
 
-/** Danh mục nạp một lần: pháp nhân và phòng ban chỉ vài chục dòng. */
+/** Danh mục nạp một lần: pháp nhân chỉ vài chục dòng. */
 const LOOKUP_PAGE_SIZE = 200
 
+/**
+ * Khai báo một quyển sổ — **một card duy nhất**, đọc từ trên xuống là hết:
+ * sổ là gì → của ai → đánh số ra sao.
+ *
+ * Người quản lý và người xem để ngay trong card này chứ không tách xuống dưới:
+ * hai thứ đó là một phần của việc "mở sổ", tách ra thì người khai lướt qua và
+ * để trống, mà sổ không có người quản lý là sổ không ai sửa hay đóng được.
+ */
 export function DocumentBookForm({ formId, book, onSubmit }: DocumentBookFormProps) {
   const form = useForm<DocumentBookFormValues>({
     resolver: zodResolver(documentBookSchema),
@@ -64,12 +70,12 @@ export function DocumentBookForm({ formId, book, onSubmit }: DocumentBookFormPro
   })
 
   const { data: companies } = useCompanies({ page_size: LOOKUP_PAGE_SIZE })
-  const { data: departments } = useDepartments({ page_size: LOOKUP_PAGE_SIZE })
   const { data: employees } = useEmployees({ page_size: 1000, is_active: true })
 
   const isEditing = Boolean(book)
   //  Sổ đã cấp số thì khóa số bắt đầu — kéo về là lệch cả sổ đã phát ra ngoài.
   const hasIssued = (book?.issued_count ?? 0) > 0
+  const employeeList = employees?.items ?? []
 
   return (
     <Form {...form}>
@@ -118,7 +124,7 @@ export function DocumentBookForm({ formId, book, onSubmit }: DocumentBookFormPro
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="kind"
@@ -131,7 +137,7 @@ export function DocumentBookForm({ formId, book, onSubmit }: DocumentBookFormPro
                       disabled={isEditing && hasIssued}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
@@ -159,7 +165,7 @@ export function DocumentBookForm({ formId, book, onSubmit }: DocumentBookFormPro
                       onValueChange={(value) => field.onChange(Number(value))}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Chọn pháp nhân" />
                         </SelectTrigger>
                       </FormControl>
@@ -167,35 +173,6 @@ export function DocumentBookForm({ formId, book, onSubmit }: DocumentBookFormPro
                         {(companies?.items ?? []).map((company) => (
                           <SelectItem key={company.id} value={String(company.id)}>
                             {company.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="department_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Đơn vị được xem</FormLabel>
-                    <Select
-                      value={String(field.value || 0)}
-                      onValueChange={(value) => field.onChange(Number(value))}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="0">Cả pháp nhân</SelectItem>
-                        {(departments?.items ?? []).map((department) => (
-                          <SelectItem key={department.id} value={String(department.id)}>
-                            {department.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -219,6 +196,53 @@ export function DocumentBookForm({ formId, book, onSubmit }: DocumentBookFormPro
                 </FormItem>
               )}
             />
+
+            {/* ===== Người dùng sổ — chỉ định đích danh, không theo phòng ban ===== */}
+            <div className="grid gap-4 border-t pt-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="manager_ids"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Người quản lý <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <EmployeeMultiSelect
+                        value={field.value}
+                        onChange={field.onChange}
+                        employees={employeeList}
+                        placeholder="Chọn người quản lý…"
+                      />
+                    </FormControl>
+                    <FormDescription>Sửa, đóng và xóa được sổ.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="viewer_ids"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Người xem sổ</FormLabel>
+                    <FormControl>
+                      <EmployeeMultiSelect
+                        value={field.value}
+                        onChange={field.onChange}
+                        employees={employeeList}
+                        placeholder="Chọn người được xem…"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Chỉ đọc. Chọn từng người, không cấp theo phòng ban.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -291,56 +315,6 @@ export function DocumentBookForm({ formId, book, onSubmit }: DocumentBookFormPro
                 )}
               />
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm font-medium">Người dùng sổ</p>
-              <p className="text-sm text-muted-foreground">
-                Người quản lý sửa và xóa được sổ; người xem chỉ đọc. Sổ không cử ai quản lý
-                là sổ không ai chịu trách nhiệm.
-              </p>
-            </div>
-
-            <FormField
-              control={form.control}
-              name="manager_ids"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Người quản lý</FormLabel>
-                  <FormControl>
-                    <EmployeeMultiSelect
-                      value={field.value}
-                      onChange={field.onChange}
-                      employees={employees?.items ?? []}
-                      placeholder="Chọn người quản lý sổ…"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="viewer_ids"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Người xem sổ</FormLabel>
-                  <FormControl>
-                    <EmployeeMultiSelect
-                      value={field.value}
-                      onChange={field.onChange}
-                      employees={employees?.items ?? []}
-                      placeholder="Chọn người được xem sổ…"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <FormField
               control={form.control}

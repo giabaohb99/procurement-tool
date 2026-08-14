@@ -1,8 +1,8 @@
 """SỔ VĂN BẢN và BỘ ĐẾM CẤP SỐ.
 
 Mô hình theo lối AMIS Văn thư: **sổ là một bản ghi riêng** chứ không phải một
-giá trị enum trên văn bản. Mỗi sổ có người quản lý, đơn vị được xem, và **bộ đếm
-số của riêng nó** — sổ Công văn đến 2026 đếm 1, 2, 3… độc lập với sổ Quyết định
+giá trị enum trên văn bản. Mỗi sổ có người quản lý, người xem đích danh, và **bộ
+đếm số của riêng nó** — sổ Công văn đến 2026 đếm 1, 2, 3… độc lập với sổ Quyết định
 đi 2026.
 
 Vì sao tách bảng thành viên (`tab_document_book_member`) thay vì nhét mảng id vào
@@ -30,9 +30,12 @@ class DocumentBook(Base, AuditMixin):
 
     #  Pháp nhân sở hữu sổ. 13 pháp nhân, mỗi nơi mở sổ riêng — đây cũng là
     #  chiều lọc phạm vi dữ liệu (`SCOPE_FIELDS`).
+    #
+    #  KHÔNG có `department_id`: quyền xem sổ cấp cho **người đích danh**
+    #  (`tab_document_book_member`), không cấp theo phòng ban. Cấp theo phòng ban
+    #  thì người mới vào phòng tự thấy sổ, người chuyển đi tự mất — hai hành vi
+    #  ngược nhau mà người mở sổ không hề chọn.
     company_id: Mapped[int] = mapped_column(BigInteger)
-    #  Đơn vị / phòng ban được xem sổ. Rỗng = cả pháp nhân xem được.
-    department_id: Mapped[int] = mapped_column(BigInteger, default=0)
 
     #  Tiền tố in trước số thứ tự khi hiển thị: `CVĐ` → `CVĐ 08/2026`.
     number_prefix: Mapped[str] = mapped_column(String(20), default="")

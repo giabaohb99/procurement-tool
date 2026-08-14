@@ -23,7 +23,7 @@ from .book_schema import DocumentBookCreate, DocumentBookUpdate
 
 router = APIRouter(prefix="/api/document-books", tags=["document_book"])
 
-FILTERABLE = ["code", "name", "kind", "company_id", "department_id", "is_active"]
+FILTERABLE = ["code", "name", "kind", "company_id", "is_active"]
 
 
 @router.get("")
