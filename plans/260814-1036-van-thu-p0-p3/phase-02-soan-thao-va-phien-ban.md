@@ -1,7 +1,9 @@
-# PHASE 2 · YÊU CẦU, SOẠN THẢO, PHIÊN BẢN
+# PHASE 2 · SOẠN THẢO VÀ PHIÊN BẢN
 
-> [← plan.md](./plan.md) · Nguồn: `01` nhóm B + C + E + L, `02` mục 6, `04` mục 5, **`05` toàn bộ**
+> [← plan.md](./plan.md) · Nguồn: `01` nhóm C + E + L, `02` mục 6, `04` mục 5, **`05` toàn bộ**
 > Ra được: một người soạn được văn bản từ đầu tới cuối, lên được phiên bản 2 mà bản 1 vẫn còn nguyên.
+
+⚠️ **Không có bước xin phép.** Chốt 14/08/2026: bỏ hẳn nhóm B *Yêu cầu văn bản* khỏi bản 1 — ai có quyền `document.create` thì **tạo văn bản trực tiếp**. Xem quyết định 7 ở [`plan.md`](./plan.md) để biết cái gì mất đi và cái gì giữ lại để sau thêm được.
 
 ## Tổng quan
 
@@ -9,10 +11,10 @@
 |---|---|
 | Ưu tiên | Cao — chặn P3, P4, P5 |
 | Trạng thái | ☐ Chưa bắt đầu |
-| Mã `01` | B01–B07, C01, C03–C07, C12–C19, D06, E01–E06, E11, L01, L02, L07 (**C02 tệp mẫu đã bỏ** — quyết định 6 ở `plan.md`) |
+| Mã `01` | C01, C03–C07, C12–C19, D06, E01–E06, E11, L01, L02, L07 (**bỏ: B01–B07 yêu cầu văn bản · C02 tệp mẫu** — quyết định 6 và 7 ở `plan.md`) |
 | Migration | M6, M7 |
 
-Bước duyệt ở phase này dùng **luồng một bước viết tay tạm thời** — đúng kiểu 5 luồng Thu mua đang có. P3-T17 sẽ thay bằng bộ máy chung. Làm vậy để phase 2 cho người thật bấm thử được ngay.
+Duyệt **nội dung văn bản** ở phase này dùng **luồng một bước viết tay tạm thời** — đúng kiểu 5 luồng Thu mua đang có. P3-T17 sẽ thay bằng bộ máy chung. Làm vậy để phase 2 cho người thật bấm thử được ngay.
 
 ## Điểm cần biết trước — 7 cái bẫy
 
@@ -31,20 +33,18 @@ Bước duyệt ở phase này dùng **luồng một bước viết tay tạm th
 
 | Mã | L | Việc | Chi tiết |
 |---|---|---|---|
-| **P2-T01** | DB | **Migration M6** | `tab_document_request` (14 cột) · `tab_document` (**~45 cột**, gồm 7 cột clone + 2 cột `origin=2` + 3 cột sổ đi) · `tab_document_version` (18 cột). Kèm đủ: `CHECK (origin<>1 OR ...)`, `UNIQUE(doc_code)`, `UNIQUE(company_id, issue_year, doc_type_id, seq_no)`, `UNIQUE(source_document_id, company_id)`, cột sinh `open_slot` + `uq_one_open_version`. **Không tách M6 làm hai** — các cột gom phải có ngay từ lúc tạo bảng |
+| **P2-T01** | DB | **Migration M6** | `tab_document_request` (14 cột — **tạo rỗng, không có màn hình**, xem P2-T05) · `tab_document` (**~45 cột**, gồm 7 cột clone + 2 cột `origin=2` + 3 cột sổ đi) · `tab_document_version` (18 cột). Kèm đủ: `CHECK (origin<>1 OR ...)`, `UNIQUE(doc_code)`, `UNIQUE(company_id, issue_year, doc_type_id, seq_no)`, `UNIQUE(source_document_id, company_id)`, cột sinh `open_slot` + `uq_one_open_version`. **Không tách M6 làm hai** — các cột gom phải có ngay từ lúc tạo bảng |
 | **P2-T02** | DB | **Migration M7** | `tab_document_link` + `UNIQUE(source_document_id, target_document_id, relation)` + `CHECK (source_document_id <> target_document_id)` + index cả hai chiều |
 | **P2-T03** | BE | **Chỉ mục** | `(origin, company_id, doc_type_id, status)` · `(origin, status, effective_date)` · `(doc_code)` unique, `(issue_number)`, `(legacy_code)` · `(company_id, issue_year, doc_type_id, seq_no)` · `(source_document_id, clone_status)` · `tab_document_version(document_id, version_no)` |
 | **P2-T04** | BE | **Hàm dựng truy vấn dùng chung + bài kiểm `origin`** | `modules/document/query.py::documents_query(db, origin=1)` — mọi controller đi qua đây. Test tự động: tạo bản ghi `origin = 2`, gọi **hết** các endpoint danh sách/tìm kiếm/thống kê, **không endpoint nào được trả về nó** |
 
-### Yêu cầu văn bản (nhóm B)
+### ~~Yêu cầu văn bản (nhóm B)~~ — đã cắt khỏi bản 1
+
+5 task cũ (P2-T05 … P2-T09) **bỏ hết**. Thay bằng đúng một việc, gộp vào P2-T10:
 
 | Mã | L | Việc | Chi tiết |
 |---|---|---|---|
-| **P2-T05** | BE | **Service yêu cầu văn bản** | 3 loại `kind` (1 soạn mới · 2 sửa · 3 bãi bỏ), `reason` bắt buộc, `status` 1–5. Loại 2/3 bắt buộc `target_document_id`. **Không có cột `created_document_id`** — truy ngược từ `tab_document.document_request_id` |
-| **P2-T06** | BE | **Chặn soạn khi chưa có yêu cầu được duyệt** | Ở tầng dịch vụ: `doc_type.needs_request = true` → không tạo `tab_document` nếu thiếu `document_request_id` có `status = 3`. Loại có `needs_request = false` (biên bản, đơn cá nhân) thì bỏ qua |
-| **P2-T07** | BE | **Sinh bản nháp từ yêu cầu** | Yêu cầu được duyệt → tạo `tab_document` + `tab_document_version` 1.0 điền sẵn loại, phòng ban, người phụ trách, giữ `document_request_id`. Nếu `kind = 2` thì mở phiên bản mới trên `target_document_id` thay vì tạo văn bản mới |
-| **P2-T08** | FE | **Form + danh sách yêu cầu** | `pages/document-request-{list,detail,create}-page.tsx`. Form: 3 loại, lý do bắt buộc, ngày mong muốn. Danh sách "yêu cầu của tôi" — đang chờ ai, bao lâu rồi. Dùng `data-table` + `conditional-filter` |
-| **P2-T09** | ∞ | **Gợi ý văn bản đã có** | Khi chọn loại + phòng ban trong form yêu cầu, gọi `GET /api/documents?doc_type_id&department_id&status=4` hiện danh sách đang hiệu lực để người xin tự thấy đã có hay chưa (B05) |
+| **P2-T05** | ∞ | **Tạo văn bản trực tiếp** | Nút "Tạo văn bản" trên danh sách → thẳng vào form soạn, chỉ gác bằng `require("document", "create")` + `apply_scope`. **Giữ lại hai thứ để sau thêm bước xin phép mà không phải `ALTER` bảng nóng:** bảng `tab_document_request` vẫn tạo ở M6 (rỗng, không màn hình, không router) · hai cột `tab_document.document_request_id` và `tab_document_version.created_from_request_id` vẫn khai, luôn `NULL`. Cột `doc_type.needs_request` giữ trong DB, mặc định `FALSE`, **ẩn khỏi form loại văn bản** (sửa P1-T10). **Vẫn giữ B05**: lúc chọn loại + phòng ban, form hiện danh sách văn bản cùng loại cùng phòng đang hiệu lực để người soạn tự thấy đã có hay chưa — đây là thứ rẻ nhất còn lại chống việc đẻ trùng quy trình |
 
 ### Soạn thảo và phiên bản (nhóm C)
 
@@ -76,8 +76,8 @@ Bước duyệt ở phase này dùng **luồng một bước viết tay tạm th
 
 ## Tệp đụng tới
 
-**Tạo BE:** `modules/document_request/{model,schema,service,controller}.py` · `modules/document/{model,version_model,link_model,schema,service,version_service,link_service,extract_service,query,controller}.py` · `migrations/versions/<M6,M7>.py` · `test/backend/test_document_origin_filter.py` · `test_document_version.py` · `test_document_link_cycle.py` · `test_document_extract.py`
-**Tạo FE:** `pages/document-request-{list,create,detail}-page.tsx` · `pages/document-extract-page.tsx` · `components/document-version-tab.tsx` · `document-version-dialog.tsx` · `document-link-fields.tsx` · `document-tree.tsx` · `document-ocr-panel.tsx` · `hooks/use-document-versions.ts` · `use-document-links.ts` · `api/document-api.ts`
+**Tạo BE:** `modules/document/{model,request_model,version_model,link_model,schema,service,version_service,link_service,extract_service,query,controller}.py` (`request_model.py` chỉ khai bảng rỗng, **không có service/controller**) · `migrations/versions/<M6,M7>.py` · `test/backend/test_document_origin_filter.py` · `test_document_version.py` · `test_document_link_cycle.py` · `test_document_extract.py`
+**Tạo FE:** `pages/document-extract-page.tsx` · `components/document-version-tab.tsx` · `document-version-dialog.tsx` · `document-link-fields.tsx` · `document-tree.tsx` · `document-ocr-panel.tsx` · `hooks/use-document-versions.ts` · `use-document-links.ts` · `api/document-api.ts`
 **Sửa FE:** `components/document-record-form.tsx` · `types/document-record.ts` · `pages/document-{list,detail,create,settings}-page.tsx` · `routes.tsx` · `app-routes.ts`
 **Xóa FE:** `store/document-record-store.ts` (sau khi nối API) · `components/dynamic-field-catalog.tsx` · `components/document-dynamic-fields.tsx` · `pages/dynamic-field-detail-page.tsx` · `types/dynamic-field.ts` (P2-T14b)
 
@@ -87,11 +87,7 @@ Bước duyệt ở phase này dùng **luồng một bước viết tay tạm th
 - [ ] P2-T02 · M7: `tab_document_link`
 - [ ] P2-T03 · Chỉ mục theo `04` mục 10
 - [ ] P2-T04 · Hàm truy vấn dùng chung + **bài kiểm `origin`**
-- [ ] P2-T05 · Service yêu cầu văn bản
-- [ ] P2-T06 · Chặn soạn khi chưa có yêu cầu duyệt
-- [ ] P2-T07 · Sinh bản nháp từ yêu cầu
-- [ ] P2-T08 · FE form + danh sách yêu cầu
-- [ ] P2-T09 · Gợi ý văn bản đã có
+- [ ] P2-T05 · Tạo văn bản trực tiếp + gợi ý văn bản đã có (B05)
 - [ ] P2-T10 · Service văn bản + cấp số theo `number_when`
 - [ ] P2-T11 · Bất biến hóa phiên bản, `is_locked` một chiều
 - [ ] P2-T12 · Mở phiên bản mới, bắt `open_slot`
@@ -108,7 +104,7 @@ Bước duyệt ở phase này dùng **luồng một bước viết tay tạm th
 
 ## Nghiệm thu
 
-Đi hết một đường: xin phép soạn → được duyệt → soạn → chụp ảnh văn bản giấy cho AI đọc → sửa lại → đính kèm tệp → khai văn bản cha → tạo phiên bản 2 với lý do sửa. **Phiên bản 1 vẫn còn nguyên, không bị đè.**
+Đi hết một đường: bấm tạo văn bản → chọn loại → gõ nội dung trên web (hoặc chụp ảnh văn bản giấy cho AI đọc rồi sửa lại) → đính kèm tệp → khai văn bản cha → gửi duyệt → tạo phiên bản 2 với lý do sửa. **Phiên bản 1 vẫn còn nguyên, không bị đè.**
 
 | Bài kiểm | Kết quả phải là |
 |---|---|

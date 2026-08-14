@@ -34,7 +34,7 @@
 | **P1-T07** | BE | **CRUD loại văn bản** | `modules/doc_catalog/{model,schema,service,controller}.py`. Loại văn bản dùng `make_crud_router` được, nhưng thêm kiểm: đổi `id_scheme` khi đã có văn bản thuộc loại → chặn. Entity `doc_type`, seed quyền cho vai trò `van_thu_admin` |
 | **P1-T08** | BE | **CRUD quy tắc cha–con** | `tab_doc_type_link_rule`. **Quan hệ 10 *trích từ* khóa cứng ở tầng dịch vụ:** `on_parent_new_version = 2`, `on_parent_obsolete = 3`, `inherit_secrecy = TRUE` — API từ chối mọi giá trị khác, giao diện không cho sửa. Chặn tạo dòng trùng `(source_type_id, relation, target_type_id)` |
 | **P1-T09** | BE | **CRUD đơn vị gửi nhận + phòng ban×pháp nhân** | 2 router theo `make_crud_router`. (Tệp mẫu đã bỏ khỏi bản 1 — quyết định 6) |
-| **P1-T10** | FE | **Form loại văn bản mở rộng** | `modules/document/components/document-type-form.tsx` + `types/document-type.ts`: thay 6 cờ hiện tại bằng bộ trường thật của `tab_doc_type` — `group_code` (A–F), `id_scheme`, `needs_decision`, `default_secrecy`, `is_confidential_type`, `needs_request`, `number_when`, `review_cycle_months`, `retention_months`, `default_flow_id`. **Bỏ hẳn cờ `has_template`** (không còn tệp mẫu); `has_version` suy từ `id_scheme` |
+| **P1-T10** | FE | **Form loại văn bản mở rộng** | `modules/document/components/document-type-form.tsx` + `types/document-type.ts`: thay 6 cờ hiện tại bằng bộ trường thật của `tab_doc_type` — `group_code` (A–F), `id_scheme`, `needs_decision`, `default_secrecy`, `is_confidential_type`, `number_when`, `review_cycle_months`, `retention_months`, `default_flow_id`. **Bỏ hẳn cờ `has_template`** (không còn tệp mẫu) và **ẩn `needs_request`** (không còn bước xin phép — quyết định 7); `has_version` suy từ `id_scheme` |
 | **P1-T11** | FE | **Danh mục 32 loại theo 6 nhóm** | `document-type-catalog.tsx`: gom theo `group_code`, thêm tìm kiếm. Nối react-query, **bỏ** `store/document-type-store.ts` |
 | **P1-T12** | FE | **Màn quy tắc cha–con** | Màn mới `pages/link-rule-page.tsx` + `components/link-rule-table.tsx`. Mỗi dòng đọc thành một câu tiếng Việt: *"Hướng dẫn công việc — hướng dẫn — Quy trình — bắt buộc — đúng 1"*. Dòng *trích từ* hiện 3 cột khóa ở dạng chỉ đọc kèm giải thích vì sao |
 | **P1-T13** | FE | **Nắn thang mức mật** | `types/security-level.ts`: thang `confidential` về đúng 4 mức `1 Công khai · 2 Nội bộ · 3 Mật · 4 Tuyệt mật`; thang `urgent` về 3 mức `1 thường · 2 khẩn · 3 hỏa tốc` theo `tab_document.urgency`. **Hai thang độc lập**, không gộp |
@@ -51,7 +51,7 @@
 ## Todo
 
 - [ ] P1-T01 · M2: `issue_code` cho pháp nhân/phòng ban + `tab_department_company`
-- [ ] P1-T02 · M3: 4 bảng danh mục
+- [ ] P1-T02 · M3: 3 bảng danh mục
 - [ ] P1-T03 · M4 + M5: bộ đếm + sổ đến (tạo sớm)
 - [ ] P1-T04 · `next_number()` khóa dòng, cùng transaction
 - [ ] P1-T05 · Khóa mã sau khi đã cấp số
@@ -92,4 +92,4 @@
 
 ## Tiếp theo
 
-[Phase 2 · Yêu cầu, soạn thảo, phiên bản](./phase-02-yeu-cau-soan-thao-phien-ban.md) — chỉ bắt đầu khi bài kiểm 100 kết nối đạt.
+[Phase 2 · Soạn thảo và phiên bản](./phase-02-soan-thao-va-phien-ban.md) — chỉ bắt đầu khi bài kiểm 100 kết nối đạt.
