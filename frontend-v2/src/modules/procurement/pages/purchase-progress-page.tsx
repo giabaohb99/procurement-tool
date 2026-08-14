@@ -1,10 +1,11 @@
 import { Search } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { appConfig } from '@/core/config/app-config'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
@@ -44,13 +45,12 @@ export function PurchaseProgressPage() {
   const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
   const [department, setDepartment] = useUrlParamState('department', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
-  const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
   const { data: companies } = useCompanies({ page_size: 500, is_active: true })
   const { data: departments } = useDepartments({ page_size: 500, is_active: true })
 
-  useEffect(() => setPage(1), [debouncedValue, companyId, department, status])
+  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, companyId, department, status])
 
   const params: ListParams = { page, page_size: pageSize }
   if (debouncedValue) params.q = debouncedValue
@@ -63,8 +63,12 @@ export function PurchaseProgressPage() {
   // Không có quyền `supplier.read` thì backend xóa trắng cột NCC / vận chuyển —
   // ẩn luôn cho khỏi bày ra một loạt ô rỗng.
   const showSupplier = data?.show_supplier ?? true
-  const companyName = (id: number) =>
-    (companies?.items ?? []).find((company) => company.id === id)?.name ?? '—'
+  // useCallback để đưa được vào deps của `columns` mà không phá memo:
+  // hàm khai báo thẳng trong thân component sẽ đổi danh tính mỗi lần render.
+  const companyName = useCallback(
+    (id: number) => (companies?.items ?? []).find((company) => company.id === id)?.name ?? '—',
+    [companies],
+  )
 
   const columns = useMemo<DataTableColumn<PurchaseProgressRow>[]>(() => {
     const all: (DataTableColumn<PurchaseProgressRow> & { supplierOnly?: boolean })[] = [
@@ -182,7 +186,7 @@ export function PurchaseProgressPage() {
     ]
 
     return all.filter((column) => !column.supplierOnly || showSupplier)
-  }, [showSupplier, companies])
+  }, [showSupplier, companyName])
 
   return (
     <PageContainer fill>

@@ -1,6 +1,7 @@
 import { Loader2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
+import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -39,9 +40,7 @@ export function PurchaseOrderReasonDialog({
   const [reason, setReason] = useState('')
 
   // Mở lại hộp thoại cho thao tác khác thì phải sạch ô, không mang lý do cũ theo.
-  useEffect(() => {
-    if (open) setReason('')
-  }, [open])
+  if (useHasChanged(open)) setReason('')
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>

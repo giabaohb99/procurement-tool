@@ -1,6 +1,7 @@
 import { Image, Loader2, Save, Trash2, Upload } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 
+import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
@@ -59,9 +60,11 @@ export function PurchaseRequestLineDetailDialog({
   const [draft, setDraft] = useState<PurchaseRequestItem | null>(item)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    if (open) setDraft(item)
-  }, [item, open])
+  // Mở dòng khác (hoặc dữ liệu dòng đổi) -> nạp lại bản nháp đang sửa.
+  // Gọi hook ra biến riêng: `||` sẽ short-circuit, làm hook thứ hai không chạy.
+  const itemChanged = useHasChanged(item)
+  const openChanged = useHasChanged(open)
+  if ((itemChanged || openChanged) && open) setDraft(item)
 
   if (!draft) return null
 

@@ -57,17 +57,34 @@ export default tseslint.config(
       'no-console': ['warn', { allow: ['warn', 'error'] }],
 
       // --- react-hooks v7 (rule kiểu React Compiler) ---
-      // Nhóm rule dưới đây mặc định là 'error' và hiện bắt ~28 chỗ CÓ SẴN trong code
-      // (phổ biến nhất: `useEffect(() => setPage(1), [filters])` và reset field khi mở
-      // dialog). Đây là code smell thật theo hướng dẫn mới của React, nhưng không phải
-      // bug đang gây lỗi — hạ xuống 'warn' để `npm run lint` dùng được làm cổng CI,
-      // vẫn nhìn thấy để sửa dần. `rules-of-hooks` giữ nguyên 'error'.
+      // Giữ 'warn' thay vì 'error': đây là gợi ý theo hướng dẫn mới của React, vi phạm
+      // còn lại đều đã rà tay và là cố ý (xem eslint-disable kèm lý do tại chỗ).
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/purity': 'warn',
       'react-hooks/refs': 'warn',
       'react-hooks/static-components': 'warn',
-      'react-hooks/incompatible-library': 'warn',
+
+      // Dự án KHÔNG bật React Compiler (vite chỉ dùng @vitejs/plugin-react, không có
+      // babel-plugin-react-compiler). Rule này chỉ cảnh báo compiler sẽ bỏ qua việc
+      // memo hóa component dùng `form.watch()` của react-hook-form — vô nghĩa khi
+      // chưa có compiler. Bật lại nếu sau này dùng React Compiler.
+      'react-hooks/incompatible-library': 'off',
     },
+  },
+
+  // ---- File shadcn/ui sinh ra sẵn ----
+  // Theo .claude/rules/components.md: coi như file generated, không sửa tay. Chúng
+  // luôn export thêm hằng/biến thể cạnh component nên luôn vướng rule HMR này.
+  {
+    files: ['src/shared/ui/*.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
+
+  // ---- Logger ----
+  // Chỗ DUY NHẤT được phép gọi console: đây chính là lớp bọc log của dự án.
+  {
+    files: ['src/core/telemetry/logger.ts'],
+    rules: { 'no-console': 'off' },
   },
 
   // ---- File cấu hình chạy trên Node ----

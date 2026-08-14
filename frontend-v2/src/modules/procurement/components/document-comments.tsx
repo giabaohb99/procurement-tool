@@ -9,9 +9,10 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 import { useAuth } from '@/core/auth/use-auth'
+import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -50,9 +51,7 @@ export function DocumentComments({ entity, entityId }: DocumentCommentsProps) {
   const [olderRoots, setOlderRoots] = useState<PurchaseRequestComment[]>([])
   const [olderCount, setOlderCount] = useState(0)
 
-  useEffect(() => {
-    setOlderCount(data?.older_count ?? 0)
-  }, [data?.older_count])
+  if (useHasChanged(data?.older_count)) setOlderCount(data?.older_count ?? 0)
 
   const searchMentionable = useCallback(
     (query: string) => purchaseRequestSupportApi.listMentionable(entity, entityId, query),

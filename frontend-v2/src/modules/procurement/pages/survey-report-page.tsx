@@ -1,8 +1,9 @@
 import { Search } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { appConfig } from '@/core/config/app-config'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
@@ -43,10 +44,9 @@ export function SurveyReportPage() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [kind, setKind] = useUrlParamState('kind', ALL)
   const [lineApprove, setLineApprove] = useUrlParamState('line_approve', ALL)
-  const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
-  useEffect(() => setPage(1), [debouncedValue, kind, lineApprove])
+  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, kind, lineApprove])
 
   const params: ListParams = { page, page_size: pageSize }
   if (debouncedValue) params.code = debouncedValue

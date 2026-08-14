@@ -22,7 +22,9 @@ export function useFilterUrlSync(config: FilterConfig) {
   const initialState = useMemo(
     () =>
       enabled
-        ? deserializeUrlToFilters(initialParams.current, config)
+        ? // Đọc ref lúc render là CỐ Ý: chỉ lấy URL của lần khởi tạo (xem chú thích trên).
+          // eslint-disable-next-line react-hooks/refs
+          deserializeUrlToFilters(initialParams.current, config)
         : { rows: [], conjunction: 'and' as const },
     // Cố ý chỉ chạy một lần: `config` là object dựng lại mỗi lần render.
     // eslint-disable-next-line react-hooks/exhaustive-deps

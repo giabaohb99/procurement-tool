@@ -1,9 +1,10 @@
 import { ArrowLeft, Filter, Loader2, Save } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
@@ -35,9 +36,8 @@ export function UserPermissionDetailPage() {
   const { data: roles } = useRoles()
   const assignRoles = useAssignRoles(userId)
 
-  useEffect(() => {
-    setSelectedRoleIds(account?.role_ids ?? [])
-  }, [account])
+  // Tài khoản vừa tải về / vừa lưu xong -> đồng bộ lại các vai trò đang tick.
+  if (useHasChanged(account)) setSelectedRoleIds(account?.role_ids ?? [])
 
   if (isLoading) {
     return (

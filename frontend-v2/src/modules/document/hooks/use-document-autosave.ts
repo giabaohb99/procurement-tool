@@ -36,6 +36,9 @@ export function useDocumentAutosave({ onSave }: UseDocumentAutosaveOptions) {
   // lưu xong lại hẹn tiếp một lần nữa — thành vòng lặp tự lưu mỗi 1,5 giây dù
   // người dùng không gõ gì.
   const saveRef = useRef(onSave)
+  // Ghi ref lúc render là CỐ Ý (mẫu "latest ref"): mục đích chính là để `onSave`
+  // mới nhất luôn sẵn sàng mà không đưa nó vào deps của hẹn giờ bên dưới.
+  // eslint-disable-next-line react-hooks/refs
   saveRef.current = onSave
   // Đếm số lần gõ: chỉ dựa vào cờ "đang bẩn" thì effect không chạy lại giữa hai
   // lần gõ liên tiếp, hẹn giờ sẽ không được đặt lại.

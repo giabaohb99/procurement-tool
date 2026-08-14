@@ -1,5 +1,5 @@
 import { Plus, Search } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
@@ -11,6 +11,7 @@ import {
 } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
@@ -60,13 +61,12 @@ function DepartmentListContent() {
 
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [active, setActive] = useUrlParamState('is_active', ALL)
-  const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const [isFormOpen, setFormOpen] = useState(false)
 
   const { queryParams, queryKey } = useFilterQuery()
 
-  useEffect(() => setPage(1), [queryKey, debouncedValue, active])
+  const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, active])
 
   const params: ListParams = { page, page_size: pageSize, ...queryParams }
   // `q` là tham số RIÊNG của endpoint này: khớp tên phòng ban HOẶC tên trưởng

@@ -1,7 +1,8 @@
 import { Loader2, Receipt } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
 import {
@@ -81,14 +82,17 @@ export function PurchaseOrderPaymentDialog({
     [data?.items],
   )
 
-  useEffect(() => {
-    if (!open) return
+  // Mở hộp thoại (hoặc danh sách công nợ đổi) -> dựng lại lựa chọn mặc định.
+  // Gọi hook ra biến riêng: `||` sẽ short-circuit, làm hook thứ hai không chạy.
+  const openChanged = useHasChanged(open)
+  const payablesChanged = useHasChanged(payables)
+  if (openChanged || payablesChanged) {
     const goods = payables.filter((payable) => payable.source_type === 'goods')
     setSelected(goods.map((payable) => payable.id))
     setTab(goods.length ? 'goods' : 'shipping')
     setNote('')
     setMethod('transfer')
-  }, [open, payables])
+  }
 
   const rows = payables.filter((payable) => payable.source_type === tab)
   const allChecked = rows.length > 0 && rows.every((row) => selected.includes(row.id))

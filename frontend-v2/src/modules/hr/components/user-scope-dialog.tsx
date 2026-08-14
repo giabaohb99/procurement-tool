@@ -1,6 +1,7 @@
 import { Loader2 } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 
+import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -51,9 +52,7 @@ export function UserScopeDialog({
   const { data: employees } = useEmployees({ page_size: 2000 })
 
   // Nạp phạm vi đã lưu vào state cục bộ mỗi lần mở một vai trò khác.
-  useEffect(() => {
-    setScope(saved ?? EMPTY_USER_SCOPE)
-  }, [saved])
+  if (useHasChanged(saved)) setScope(saved ?? EMPTY_USER_SCOPE)
 
   /** Bật/tắt một id trong chiều dùng ID (công ty, nhân sự). */
   function toggleId(key: 'companies' | 'employees' | 'exclude_employees', id: number) {

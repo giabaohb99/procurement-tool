@@ -1,10 +1,11 @@
 import { Lock, LockOpen, Pencil, Search, Trash2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { appConfig } from '@/core/config/app-config'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
@@ -53,7 +54,6 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
   const [department, setDepartment] = useUrlParamState('department', ALL)
   const [roleId, setRoleId] = useUrlParamState('role_id', ALL)
   const [flag, setFlag] = useUrlParamState('flag', ALL)
-  const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
   const { data: departments } = useDepartments({ page_size: 500 })
@@ -61,7 +61,7 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
   const deleteAccount = useDeleteUserAccount()
 
   // Đổi bất kỳ bộ lọc nào cũng về trang 1, tránh đứng ở trang trống.
-  useEffect(() => setPage(1), [debouncedKeyword, department, roleId, flag])
+  const [page, setPage] = usePageResetOnFilterChange([debouncedKeyword, department, roleId, flag])
 
   const params: ListParams = { page, page_size: pageSize }
   if (debouncedKeyword) params.search = debouncedKeyword
@@ -72,7 +72,12 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
 
   const { data, isLoading, isError } = useUserAccounts(params)
 
-  const roleName = (id: number) => roles.find((role) => role.id === id)?.name ?? String(id)
+  // useCallback để đưa được vào deps của `columns` mà không phá memo:
+  // hàm khai báo thẳng trong thân component sẽ đổi danh tính mỗi lần render.
+  const roleName = useCallback(
+    (id: number) => roles.find((role) => role.id === id)?.name ?? String(id),
+    [roles],
+  )
 
   const columns = useMemo<DataTableColumn<UserAccount>[]>(
     () => [
@@ -191,7 +196,7 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
         ),
       },
     ],
-    [roles, navigate, setActive, deleteAccount],
+    [roleName, navigate, setActive, deleteAccount],
   )
 
   return (

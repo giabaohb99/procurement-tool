@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { appConfig } from '@/core/config/app-config'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
@@ -9,6 +9,7 @@ import {
   useFilterQuery,
 } from '@/shared/conditional-filter'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
@@ -57,13 +58,12 @@ function SurveyRequestListContent() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
-  const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
   const { data: companies } = useCompanies({ page_size: 500, is_active: true })
   const { queryParams, queryKey } = useFilterQuery()
 
-  useEffect(() => setPage(1), [queryKey, debouncedValue, companyId, status])
+  const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, companyId, status])
 
   const params: ListParams = { page, page_size: pageSize, ...queryParams }
   if (debouncedValue) params.code = debouncedValue

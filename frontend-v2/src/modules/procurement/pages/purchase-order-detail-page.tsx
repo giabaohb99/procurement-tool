@@ -13,7 +13,7 @@ import {
   Save,
   Send,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -23,6 +23,7 @@ import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -133,10 +134,11 @@ export function PurchaseOrderDetailPage() {
   const [lineIndex, setLineIndex] = useState<number | null>(null)
   const [paymentOpen, setPaymentOpen] = useState(false)
 
-  useEffect(() => {
-    if (isNew) return
-    setDraft(serverData ?? null)
-  }, [isNew, serverData])
+  // Dữ liệu server về (hoặc đổi đơn) -> nạp lại bản nháp đang xem.
+  // Gọi hook ra biến riêng: `||` sẽ short-circuit, làm hook thứ hai không chạy.
+  const serverDataChanged = useHasChanged(serverData)
+  const isNewChanged = useHasChanged(isNew)
+  if ((serverDataChanged || isNewChanged) && !isNew) setDraft(serverData ?? null)
 
   /** Tiền theo SL ĐẶT — tính tại chỗ để người dùng thấy ngay khi gõ. */
   const orderTotals = useMemo(() => {

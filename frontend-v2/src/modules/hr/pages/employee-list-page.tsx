@@ -1,5 +1,5 @@
 import { Plus, Search } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
@@ -11,6 +11,7 @@ import {
 } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
@@ -75,7 +76,6 @@ function EmployeeListContent() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [departmentId, setDepartmentId] = useUrlParamState('department_id', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
-  const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const [isFormOpen, setFormOpen] = useState(false)
 
@@ -84,7 +84,7 @@ function EmployeeListContent() {
 
   // Đổi BẤT KỲ điều kiện lọc nào cũng phải về trang 1, nếu không sẽ rơi vào
   // trang trống khi kết quả mới ít hơn trang đang đứng.
-  useEffect(() => setPage(1), [queryKey, debouncedValue, departmentId, status])
+  const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, departmentId, status])
 
   // Chỉ gửi key nằm trong whitelist FILTERABLE của backend.
   const params: ListParams = { page, page_size: pageSize, ...queryParams }

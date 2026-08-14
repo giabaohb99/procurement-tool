@@ -14,7 +14,7 @@ import {
   ShoppingCart,
   X,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -36,6 +36,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
+import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -156,15 +157,21 @@ export function PurchaseRequestDetailPage() {
     all: PurchaseOrderItem[]
   } | null>(null)
 
-  useEffect(() => {
+  // Tạo mới -> dựng phiếu rỗng và vào thẳng chế độ sửa.
+  // Xem phiếu có sẵn -> nạp dữ liệu server, về chế độ chỉ đọc.
+  // Gọi hook ra biến riêng: `||` sẽ short-circuit, làm hook sau không chạy.
+  const isNewChanged = useHasChanged(isNew)
+  const serverDataChanged = useHasChanged(serverData)
+  const userChanged = useHasChanged(user)
+  if (isNewChanged || serverDataChanged || userChanged) {
     if (isNew) {
       setDraft((current) => current ?? createEmptyPurchaseRequest(user))
       setEditing(true)
-      return
+    } else {
+      setDraft(serverData ?? null)
+      setEditing(false)
     }
-    setDraft(serverData ?? null)
-    setEditing(false)
-  }, [isNew, serverData, user])
+  }
 
   const calculatedTotals = useMemo(() => {
     const items = draft?.items ?? []
