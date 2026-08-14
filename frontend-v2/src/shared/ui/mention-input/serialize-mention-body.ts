@@ -52,7 +52,7 @@ export function serializeMentionBody(root: HTMLElement): string {
 
   walk(root)
   // Khoảng trắng cứng (U+00A0) do contenteditable tự chèn → về khoảng trắng thường.
-  return out.replace(/ /g, ' ').trim()
+  return out.replace(/\u00A0/g, ' ').trim()
 }
 
 /** Chữ viết tắt cho avatar: tên người Việt lấy chữ cái của TÊN (từ cuối). */
