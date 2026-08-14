@@ -654,6 +654,110 @@ def seed_doc_catalog(db, company_id=0):
             db.add(ExternalParty(code=code, name=name, kind=kind, is_active=True))
             n += 1
 
+    # Mã đi vào số hiệu văn bản: điền cho pháp nhân đang BỎ TRỐNG, lấy từ `code`
+    # nếu mã đó vốn đã chỉ có chữ và số ("DEGO", "IDA"). Mã có dấu hoặc khoảng
+    # trắng thì để trống — Hành chính khai tay, chứ tự bịa ra một mã rồi cấp số
+    # theo nó là không rút lại được (P1-T05 khóa mã sau khi đã cấp số).
+    for company in db.query(Company).filter(
+            (Company.issue_code == "") | (Company.issue_code.is_(None))).all():
+        candidate = (company.code or "").strip().upper()
+        if candidate.isalnum() and len(candidate) <= 20:
+            company.issue_code = candidate
+            n += 1
+
+    db.commit()
+    return n
+
+
+def seed_sample_documents(db, company_id=0):
+    """Vài văn bản mẫu — **CHỈ dùng cho máy local**, `seed_prod.py` không gọi hàm này.
+
+    Có mẫu để mở màn hình lên là thấy ngay bảng danh sách, trang chi tiết và tab
+    phiên bản trông ra sao, chứ không phải một bảng trắng. Chỉ nạp khi bảng còn
+    rỗng — nạp đè sẽ dựng lại đúng những bản ghi vừa bị xóa lúc thử nghiệm.
+    """
+    from datetime import date
+
+    from app.modules.document.model import (STATUS_DRAFT, STATUS_EFFECTIVE,
+                                            Document)
+    from app.modules.document.version_model import (CHANGE_MAJOR, VERSION_APPROVED,
+                                                    VERSION_DRAFT, VERSION_SUPERSEDED,
+                                                    DocumentVersion)
+
+    if db.query(Document).count() or not company_id:
+        return 0
+
+    doc_types = {t.code: t for t in db.query(DocType).all()}
+    employee = db.query(Employee).first()
+    department = db.query(Department).first()
+    if not doc_types or not employee:
+        return 0
+
+    owner_id = employee.id
+    dept_id = department.id if department else None
+
+    def add_document(type_code, title, summary, status, versions):
+        from app.modules.document import numbering
+
+        doc_type = doc_types.get(type_code)
+        if not doc_type:
+            return 0
+        doc = Document(
+            doc_type_id=doc_type.id, company_id=company_id, department_id=dept_id,
+            owner_employee_id=owner_id, drafter_employee_id=owner_id,
+            title=title, summary=summary, keywords="mẫu, thử nghiệm",
+            secrecy_level=doc_type.default_secrecy, urgency=1, status=status,
+            effective_date=date.today() if status == STATUS_EFFECTIVE else None,
+        )
+        db.add(doc)
+        db.flush()
+
+        #  Văn bản mẫu đang có hiệu lực thì phải có số hiệu thật — một văn bản
+        #  "có hiệu lực" mà bỏ trống ô số hiệu là hình ảnh sai ngay từ dữ liệu
+        #  mẫu. Đi qua đúng bộ cấp số chứ không gán chuỗi tay.
+        if status == STATUS_EFFECTIVE:
+            numbering.assign(db, doc, doc_type, date.today().year)
+
+        last = None
+        for major, minor, ver_status, html, change in versions:
+            version = DocumentVersion(
+                document_id=doc.id, major=major, minor=minor, status=ver_status,
+                is_locked=ver_status == VERSION_APPROVED,
+                content_html=html, change_summary=change,
+                change_kind=CHANGE_MAJOR if change else 0,
+                effective_from=date.today() if ver_status != VERSION_DRAFT else None,
+                prev_version_id=last.id if last else None,
+            )
+            db.add(version)
+            db.flush()
+            last = version
+            if ver_status == VERSION_APPROVED:
+                doc.current_version_id = version.id
+        if doc.current_version_id is None and last is not None:
+            doc.current_version_id = last.id
+        return 1
+
+    n = add_document(
+        "QC", "Quy chế quản lý văn bản nội bộ",
+        "Quy định cách lập, duyệt, ban hành và lưu trữ văn bản trong tập đoàn.",
+        STATUS_EFFECTIVE,
+        [
+            #  Bản 1.0 đã bị 2.0 thay thế — để trang chi tiết có sẵn một băng
+            #  cảnh báo "đã bị thay thế" mà xem.
+            (1, 0, VERSION_SUPERSEDED,
+             "<p>Bản đầu tiên của quy chế quản lý văn bản.</p>", ""),
+            (2, 0, VERSION_APPROVED,
+             "<p><strong>QUY CHẾ QUẢN LÝ VĂN BẢN NỘI BỘ</strong></p>"
+             "<p>Điều 1. Phạm vi áp dụng: toàn bộ pháp nhân thuộc tập đoàn.</p>"
+             "<p>Điều 2. Văn bản chỉ có hiệu lực sau khi được duyệt và cấp số.</p>",
+             "Bổ sung Điều 2 về hiệu lực và cấp số"),
+        ])
+    n += add_document(
+        "CV", "Công văn trao đổi lịch làm việc quý III",
+        "Đề nghị các đơn vị gửi lịch làm việc quý III trước ngày 25 hằng tháng.",
+        STATUS_DRAFT,
+        [(1, 0, VERSION_DRAFT, "<p>Kính gửi: Các đơn vị trực thuộc.</p>", "")])
+
     db.commit()
     return n
 
@@ -812,6 +916,11 @@ def run():
         n_doc = seed_doc_catalog(db, company.id if company else 0)
         if n_doc:
             print(f"Nạp {n_doc} dòng danh mục Văn thư.")
+
+        # Văn bản mẫu — CHỈ local (`seed_prod.py` không gọi hàm này).
+        n_sample = seed_sample_documents(db, company.id if company else 0)
+        if n_sample:
+            print(f"Nạp {n_sample} văn bản mẫu.")
 
         # Gán vai trò mặc định "Nhân sự" cho tài khoản chưa có vai trò
         n_default = assign_default_roles(db)

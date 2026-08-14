@@ -68,6 +68,24 @@ export const queryKeys = {
     /** Bộ đếm tách riêng theo năm: đổi năm là đọc lại, không đụng bản ghi sổ. */
     bookCounter: (id: number, year: number) =>
       ['document', 'books', id, 'counter', year] as const,
+
+    records: (params?: Record<string, unknown>) =>
+      ['document', 'records', params ?? {}] as const,
+    record: (id: number) => ['document', 'records', id] as const,
+    /** Danh sách phiên bản — KHÔNG kèm nội dung, nhẹ. */
+    versions: (documentId: number) =>
+      ['document', 'records', documentId, 'versions'] as const,
+    /** Một phiên bản KÈM nội dung — tách key để mở bản khác không nạp lại cả danh sách. */
+    version: (documentId: number, versionId: number) =>
+      ['document', 'records', documentId, 'versions', versionId] as const,
+    access: (documentId: number) =>
+      ['document', 'records', documentId, 'access'] as const,
+    permissions: (documentId: number) =>
+      ['document', 'records', documentId, 'permissions'] as const,
+    suggestions: (params: Record<string, unknown>) =>
+      ['document', 'suggestions', params] as const,
+    numberPreview: (params: Record<string, unknown>) =>
+      ['document', 'number-preview', params] as const,
   },
   /** Chuông thông báo trên thanh trên — dùng chung cho mọi phân hệ. */
   notification: {

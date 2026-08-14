@@ -7,7 +7,8 @@ pháp nhân thì 13 nơi khai 13 lần rồi lệch nhau.
 Thiết kế cột theo `van-thu/04` mục 4.1 và 4.5, với ba chỗ lệch cố ý — ghi rõ tại
 chỗ để lần sau đọc không tưởng là làm sai tài liệu.
 """
-from sqlalchemy import Boolean, BigInteger, Integer, SmallInteger, String, Text
+from sqlalchemy import (Boolean, BigInteger, Index, Integer, SmallInteger, String,
+                        Text)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import AuditMixin, Base
@@ -30,6 +31,8 @@ class DocType(Base, AuditMixin):
     """
 
     __tablename__ = "tab_doc_type"
+    #  Màn danh mục luôn mở theo nhóm A–F và chỉ hiện loại đang dùng.
+    __table_args__ = (Index("ix_doc_type_group", "group_code", "is_active"),)
 
     code: Mapped[str] = mapped_column(String(10), unique=True)
     name: Mapped[str] = mapped_column(String(200))
@@ -76,6 +79,7 @@ class ExternalParty(Base, AuditMixin):
     """
 
     __tablename__ = "tab_external_party"
+    __table_args__ = (Index("ix_external_party_kind", "kind", "is_active"),)
 
     code: Mapped[str] = mapped_column(String(30), unique=True)
     name: Mapped[str] = mapped_column(String(300))

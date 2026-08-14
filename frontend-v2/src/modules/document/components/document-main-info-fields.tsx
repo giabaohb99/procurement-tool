@@ -1,6 +1,8 @@
 import type { UseFormReturn } from 'react-hook-form'
 
-import { DatePicker } from '@/shared/ui/date-picker'
+import { useCompanies } from '@/modules/hr/hooks/use-companies'
+import { useDepartments } from '@/modules/hr/hooks/use-departments'
+import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import {
   FormControl,
   FormDescription,
@@ -17,105 +19,85 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { useDepartmentNames, useEmployeeNames } from '../hooks/use-document-people'
+import { useDocumentBooks } from '../hooks/use-document-books'
 import { useActiveDocumentTypes } from '../hooks/use-document-types'
-import { useNextDocumentCode } from '../hooks/use-documents'
+import { useNumberPreview } from '../hooks/use-documents'
 import type { DocumentRecordFormValues } from '../schemas/document-record-schema'
-import { BOOK_LABELS } from '../types/document-record'
-import { DocumentPartnerFields } from './document-partner-fields'
-import { DocumentPriorityToggle } from './document-priority-toggle'
-import { DocumentRecipientPicker } from './document-recipient-picker'
-import { NameSelect } from './name-select'
+import { DocumentNumberPreview } from './document-number-preview'
+import { DocumentSuggestionList } from './document-suggestion-list'
 
-/** Các trường thuộc bước "Thông tin chính" — kiểm khi bấm "Tiếp tục". */
+/** Trường của bước "Thông tin chính" — kiểm khi bấm "Tiếp tục" ở trang tạo mới. */
 export const MAIN_INFO_FIELDS = [
-  'direction',
-  'document_type_id',
+  'doc_type_id',
+  'company_id',
+  'department_id',
   'title',
-  'code',
-  'issued_date',
-  'approver',
-  'required_due_date',
-  'drafting_department',
+  'owner_employee_id',
 ] as const
+
+/** Giá trị của ô select khi người dùng chọn "không chọn gì". */
+const NONE = 'none'
 
 interface DocumentMainInfoFieldsProps {
   form: UseFormReturn<DocumentRecordFormValues>
-  /**
-   * Đang sửa văn bản đã vào sổ: khóa ô số văn bản và mở thêm những ô chỉ dùng
-   * lúc rà soát lại (nơi gửi theo danh mục, ngày đến).
-   */
-  isEditing: boolean
+  /** Văn bản đã có số hiệu: khóa ô loại và pháp nhân — đổi là hỏng số đã ban hành. */
+  isNumbered: boolean
+  /** Bỏ chính văn bản đang sửa ra khỏi khối gợi ý "đã có văn bản cùng loại". */
+  excludeId?: number
 }
 
-/** Dấu * đỏ sau nhãn của ô bắt buộc. */
 function Required() {
   return <span className="text-destructive"> *</span>
 }
 
 /**
- * THÔNG TIN CHÍNH của văn bản: tên, số, ngày ban hành, ai duyệt, gửi cho ai.
+ * THÔNG TIN CHÍNH — bộ trường chung C01.
  *
- * Dùng chung cho bước 1 của trang tạo mới và tab "Thông tin" của trang chi tiết
- * — hai chỗ đó phải hỏi y hệt nhau, tách ra là sớm muộn cũng lệch.
+ * Thứ tự hỏi bám theo cái quyết định cái kia: **loại văn bản** và **pháp nhân
+ * ban hành** đứng trước vì hai ô đó quyết định số hiệu (hiện ngay ở dòng xem
+ * trước bên dưới) và mức mật mặc định; **phòng chủ trì** đứng thứ ba vì nó vào
+ * giữa chuỗi số hiệu và là chiều lọc của khối gợi ý văn bản trùng.
+ *
+ * Dùng chung cho trang tạo mới và tab "Thông tin" của trang chi tiết — hai chỗ
+ * đó phải hỏi y hệt nhau, tách ra là sớm muộn cũng lệch.
  */
-export function DocumentMainInfoFields({ form, isEditing }: DocumentMainInfoFieldsProps) {
-  const direction = form.watch('direction')
+export function DocumentMainInfoFields({
+  form,
+  isNumbered,
+  excludeId,
+}: DocumentMainInfoFieldsProps) {
   const documentTypes = useActiveDocumentTypes()
-  const employeeNames = useEmployeeNames()
-  const departmentNames = useDepartmentNames()
+  const { data: companies } = useCompanies({ page_size: 200, is_active: true })
+  const { data: departments } = useDepartments({ page_size: 500 })
+  const { data: employees } = useEmployees({ page_size: 1000, is_active: true })
+  const { items: books } = useDocumentBooks()
 
-  const suggestedCode = useNextDocumentCode(
-    direction,
-    form.watch('issued_date'),
-    form.watch('document_type_id'),
-  )
+  const docTypeId = form.watch('doc_type_id')
+  const companyId = form.watch('company_id')
+  const departmentId = form.watch('department_id')
+
+  const { data: preview } = useNumberPreview({
+    doc_type_id: docTypeId,
+    company_id: companyId,
+    department_id: departmentId,
+  })
+
+  const employeeOptions = employees?.items ?? []
+  const departmentOptions = (departments?.items ?? []).filter((item) => item.is_active)
+
+  /** Chọn loại xong thì kéo theo mức mật mặc định của loại đó. */
+  function handleTypeChange(value: string) {
+    const id = Number(value)
+    form.setValue('doc_type_id', id, { shouldValidate: true })
+    const picked = documentTypes.find((item) => item.id === id)
+    if (picked) form.setValue('secrecy_level', picked.default_secrecy)
+  }
 
   return (
-    // Lưới 2 cột, nhãn nằm trên ô nhập. Ô nào dài (tên văn bản, nơi nhận) thì
-    // cho ăn hết bề ngang bằng `sm:col-span-2`.
     <div className="grid items-start gap-x-5 gap-y-3 sm:grid-cols-2">
-      {/* Hỏi SỔ và LOẠI trước tên: hai ô này quyết định số hiệu gợi ý ở ô ngay
-          dưới và bộ trường động ở bước 3 — chọn sau thì mấy ô kia đổi dưới tay
-          người đang nhập. */}
       <FormField
         control={form.control}
-        name="direction"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>
-              Vào sổ
-              <Required />
-            </FormLabel>
-            {/* Sổ nào thì cấp số theo sổ đó — đổi sổ sau khi đã vào sổ là mọi
-                giấy tờ đã phát hành thành sai, nên lúc sửa thì khóa. */}
-            <Select value={field.value} onValueChange={field.onChange} disabled={isEditing}>
-              <FormControl>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Chọn sổ văn bản" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {Object.entries(BOOK_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormDescription>
-              {isEditing
-                ? 'Không đổi được: văn bản đã vào sổ này.'
-                : 'Văn bản đến / đi / nội bộ — mỗi sổ đánh số riêng theo năm.'}
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="document_type_id"
+        name="doc_type_id"
         render={({ field }) => (
           <FormItem>
             <FormLabel>
@@ -124,7 +106,8 @@ export function DocumentMainInfoFields({ form, isEditing }: DocumentMainInfoFiel
             </FormLabel>
             <Select
               value={field.value ? String(field.value) : ''}
-              onValueChange={(value) => field.onChange(Number(value))}
+              onValueChange={handleTypeChange}
+              disabled={isNumbered}
             >
               <FormControl>
                 <SelectTrigger className="w-full">
@@ -134,7 +117,80 @@ export function DocumentMainInfoFields({ form, isEditing }: DocumentMainInfoFiel
               <SelectContent>
                 {documentTypes.map((type) => (
                   <SelectItem key={type.id} value={String(type.id)}>
-                    {type.name}
+                    {type.code} · {type.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormDescription>
+              {isNumbered
+                ? 'Không đổi được: văn bản đã cấp số theo loại này.'
+                : 'Loại quyết định kiểu số hiệu và mức mật mặc định.'}
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="company_id"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>
+              Pháp nhân ban hành
+              <Required />
+            </FormLabel>
+            <Select
+              value={field.value ? String(field.value) : ''}
+              onValueChange={(value) => field.onChange(Number(value))}
+              disabled={isNumbered}
+            >
+              <FormControl>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Chọn pháp nhân" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {(companies?.items ?? []).map((company) => (
+                  <SelectItem key={company.id} value={String(company.id)}>
+                    {company.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormDescription>
+              {isNumbered
+                ? 'Không đổi được: văn bản đã cấp số theo pháp nhân này.'
+                : 'Nơi ĐỨNG TÊN ban hành, không phải nơi của người đang nhập.'}
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="department_id"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Phòng chủ trì</FormLabel>
+            <Select
+              value={field.value ? String(field.value) : NONE}
+              onValueChange={(value) =>
+                field.onChange(value === NONE ? null : Number(value))
+              }
+            >
+              <FormControl>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Chọn phòng chủ trì" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value={NONE}>-- Chưa chọn --</SelectItem>
+                {departmentOptions.map((department) => (
+                  <SelectItem key={department.id} value={String(department.id)}>
+                    {department.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -143,6 +199,48 @@ export function DocumentMainInfoFields({ form, isEditing }: DocumentMainInfoFiel
           </FormItem>
         )}
       />
+
+      <FormField
+        control={form.control}
+        name="book_id"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Vào sổ</FormLabel>
+            <Select
+              value={field.value ? String(field.value) : NONE}
+              onValueChange={(value) =>
+                field.onChange(value === NONE ? null : Number(value))
+              }
+            >
+              <FormControl>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Không vào sổ" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value={NONE}>-- Không vào sổ --</SelectItem>
+                {books
+                  .filter((book) => book.is_active)
+                  .map((book) => (
+                    <SelectItem key={book.id} value={String(book.id)}>
+                      {book.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            {/* Nói rõ vào sổ được thêm cái gì — không thì người dùng bỏ trống cho
+                nhanh rồi sau đó thắc mắc vì sao đồng nghiệp không xem được. */}
+            <FormDescription>
+              Vào sổ thì văn bản được cấp thêm một số thứ tự trong sổ, và{' '}
+              <strong>mọi thành viên của sổ đọc được</strong> (người quản lý sổ sửa được).
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* Dòng xem trước số hiệu đứng ngay dưới các ô quyết định ra nó. */}
+      <DocumentNumberPreview preview={preview} />
 
       <FormField
         control={form.control}
@@ -161,124 +259,79 @@ export function DocumentMainInfoFields({ form, isEditing }: DocumentMainInfoFiel
         )}
       />
 
+      {/* B05 — hiện luôn văn bản cùng loại cùng phòng đang hiệu lực. Đây là thứ
+          còn lại chống đẻ trùng quy trình sau khi bước xin phép bị cắt. */}
+      <DocumentSuggestionList
+        docTypeId={docTypeId}
+        departmentId={departmentId}
+        companyId={companyId}
+        excludeId={excludeId}
+      />
+
       <FormField
         control={form.control}
-        name="code"
+        name="owner_employee_id"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Số văn bản</FormLabel>
-            <FormControl>
-              <Input placeholder={suggestedCode} disabled={isEditing} {...field} />
-            </FormControl>
+            <FormLabel>
+              Người chịu trách nhiệm nội dung
+              <Required />
+            </FormLabel>
+            <Select
+              value={field.value ? String(field.value) : ''}
+              onValueChange={(value) => field.onChange(Number(value))}
+            >
+              <FormControl>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Chọn người chịu trách nhiệm" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {employeeOptions.map((employee) => (
+                  <SelectItem key={employee.id} value={String(employee.id)}>
+                    {employee.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <FormDescription>
-              {isEditing
-                ? 'Không đổi được: văn bản đã vào sổ với số này.'
-                : `Để trống thì hệ cấp số ${suggestedCode}.`}
+              Người trả lời khi có ai hỏi về văn bản này — khác người ngồi gõ.
             </FormDescription>
             <FormMessage />
           </FormItem>
         )}
       />
 
-      <FormItem>
-        <FormLabel>Mức độ quan trọng, khẩn cấp</FormLabel>
-        <DocumentPriorityToggle
-          isImportant={form.watch('is_important')}
-          isUrgent={form.watch('is_urgent')}
-          onChange={(next) => {
-            form.setValue('is_important', next.is_important)
-            form.setValue('is_urgent', next.is_urgent)
-          }}
-        />
-      </FormItem>
-
       <FormField
         control={form.control}
-        name="issued_date"
+        name="drafter_employee_id"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>
-              Ngày ban hành
-              <Required />
-            </FormLabel>
-            <FormControl>
-              {/* Bắt buộc nên không cho xóa — xem `docs/ui/date.md`. */}
-              <DatePicker value={field.value} onChange={field.onChange} clearable={false} />
-            </FormControl>
+            <FormLabel>Người soạn</FormLabel>
+            <Select
+              value={field.value ? String(field.value) : NONE}
+              onValueChange={(value) =>
+                field.onChange(value === NONE ? null : Number(value))
+              }
+            >
+              <FormControl>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Chọn người soạn" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value={NONE}>-- Chưa chọn --</SelectItem>
+                {employeeOptions.map((employee) => (
+                  <SelectItem key={employee.id} value={String(employee.id)}>
+                    {employee.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <FormMessage />
           </FormItem>
         )}
       />
-
-      <FormField
-        control={form.control}
-        name="approver"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Người phê duyệt (Trưởng phòng)</FormLabel>
-            <FormControl>
-              <NameSelect
-                value={field.value}
-                onChange={field.onChange}
-                options={employeeNames}
-                placeholder="-- Mặc định --"
-                emptyLabel="-- Mặc định --"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="required_due_date"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Thời hạn văn bản yêu cầu</FormLabel>
-            <FormControl>
-              <DatePicker value={field.value} onChange={field.onChange} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="drafting_department"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Đơn vị soạn thảo</FormLabel>
-            <FormControl>
-              <NameSelect
-                value={field.value}
-                onChange={field.onChange}
-                options={departmentNames}
-                placeholder="Chọn đơn vị soạn thảo"
-                emptyLabel="-- Chưa chọn --"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="recipients"
-        render={({ field }) => (
-          <FormItem className="sm:col-span-2">
-            <FormLabel>Nơi nhận</FormLabel>
-            <FormControl>
-              <DocumentRecipientPicker value={field.value} onChange={field.onChange} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {isEditing && <DocumentPartnerFields form={form} direction={direction} />}
     </div>
   )
 }

@@ -10,12 +10,16 @@ import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
 
 /**
- * Phân hệ VĂN BẢN — quản lý văn bản đến / đi / nội bộ và các danh mục nền.
+ * Phân hệ VĂN THƯ — soạn thảo, duyệt, ban hành và tra cứu văn bản.
  *
- * ⚠️ Backend mới có phần DANH MỤC (`/api/doc-types`, `/api/external-parties`,
- * entity `doc_type` và `external_party`). Bảng văn bản và sổ văn bản vẫn chạy
- * trên kho tạm phía trình duyệt (`store/local-collection.ts`) — xem lộ trình ở
- * `plans/260814-1036-van-thu-p0-p3/thu-tu-thuc-hien.md`.
+ * Trục của văn bản là **loại × pháp nhân ban hành × phiên bản**. Toàn bộ phân
+ * hệ đã chạy trên backend thật (`/api/documents`, `/api/doc-types`,
+ * `/api/external-parties`, `/api/document-books`).
+ *
+ * **Sổ văn bản là một phần của đường làm việc chính**, không phải màn phụ: văn
+ * bản vào sổ thì được cấp thêm một số thứ tự trong sổ, và **thành viên của sổ
+ * đọc được mọi văn bản trong sổ đó** (người quản lý sổ sửa được) — cách cấp
+ * quyền theo quyển thay vì chia tay từng văn bản.
  */
 export const documentModule: ErpModule = {
   id: 'document',
@@ -25,6 +29,8 @@ export const documentModule: ErpModule = {
   path: appRoutes.document.root,
   accent: 'bg-indigo-50 text-indigo-600',
   enabled: true,
+  //  Không có quyền nào trên văn bản thì không thấy cả phân hệ.
+  entity: 'document',
 
   nav: [
     {
@@ -33,14 +39,27 @@ export const documentModule: ErpModule = {
       icon: LayoutDashboard,
       end: true,
     },
-    { label: 'Văn bản', path: appRoutes.document.documents, icon: Files, group: 'Nghiệp vụ' },
-    { label: 'Sổ văn bản', path: appRoutes.document.books, icon: BookMarked, group: 'Nghiệp vụ' },
+    {
+      label: 'Văn bản',
+      path: appRoutes.document.documents,
+      icon: Files,
+      entity: 'document',
+      group: 'Nghiệp vụ',
+    },
+    {
+      label: 'Sổ văn bản',
+      path: appRoutes.document.books,
+      icon: BookMarked,
+      entity: 'document_book',
+      group: 'Nghiệp vụ',
+    },
     // Ba danh mục nền gom vào MỘT mục menu: chúng chỉ được đụng tới lúc khai
     // báo ban đầu, để mỗi cái một dòng thì menu dài hơn cả phần việc hằng ngày.
     {
       label: 'Thiết lập văn bản',
       path: appRoutes.document.settings,
       icon: SlidersHorizontal,
+      entity: 'doc_type',
       group: 'Danh mục',
     },
   ],

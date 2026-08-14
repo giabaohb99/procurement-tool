@@ -76,7 +76,7 @@ export function DocumentBookDetailPage() {
       {!isCreating && book && (
         <>
           <BookCounterCard bookId={book.id} year={year} onYearChange={setYear} />
-          <BookEntriesCard kind={book.kind} year={year} />
+          <BookEntriesCard bookId={book.id} year={year} />
         </>
       )}
     </DetailPageShell>

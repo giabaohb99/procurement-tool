@@ -39,7 +39,13 @@ def create_company(db: Session, data: CompanyCreate, user_id: int) -> Company:
 
 def update_company(db: Session, cid: int, data: CompanyUpdate, user_id: int) -> Company:
     obj = get_company(db, cid)
-    for key, value in data.model_dump(exclude_unset=True).items():
+    values = data.model_dump(exclude_unset=True)
+
+    if "issue_code" in values:
+        from app.modules.doc_catalog.issue_code_guard import ensure_company_issue_code_free
+        ensure_company_issue_code_free(db, obj.issue_code, values["issue_code"])
+
+    for key, value in values.items():
         setattr(obj, key, value)
     obj.updated_by = user_id
     db.commit()

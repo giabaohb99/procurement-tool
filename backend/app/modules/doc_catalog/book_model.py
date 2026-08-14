@@ -9,7 +9,8 @@ Vì sao tách bảng thành viên (`tab_document_book_member`) thay vì nhét m�
 một cột JSON: cần trả lời được câu ngược lại — *"người này đang quản lý / xem
 được những sổ nào"* — mà cột JSON thì không index được, phải quét cả bảng.
 """
-from sqlalchemy import BigInteger, Boolean, Integer, SmallInteger, String, Text, UniqueConstraint
+from sqlalchemy import (BigInteger, Boolean, Index, Integer, SmallInteger, String, Text,
+                        UniqueConstraint)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import AuditMixin, Base
@@ -19,6 +20,8 @@ class DocumentBook(Base, AuditMixin):
     """Một quyển sổ: sổ văn bản đến, sổ văn bản đi hoặc sổ văn bản nội bộ."""
 
     __tablename__ = "tab_document_book"
+    #  Danh sách sổ luôn lọc theo pháp nhân + loại sổ + còn dùng.
+    __table_args__ = (Index("ix_doc_book_company", "company_id", "kind", "is_active"),)
 
     #  Mã sổ đi vào khóa bộ đếm (`book:{code}:{năm}`) nên phải duy nhất và
     #  KHÔNG đổi sau khi đã cấp số — đổi là mất dấu toàn bộ số đã cấp.
@@ -56,6 +59,8 @@ class DocumentBookMember(Base, AuditMixin):
     __tablename__ = "tab_document_book_member"
     __table_args__ = (
         UniqueConstraint("book_id", "employee_id", "role", name="uq_book_member"),
+        #  Trả lời câu ngược: "người này quản lý / xem được những sổ nào".
+        Index("ix_doc_book_member_emp", "employee_id", "role"),
     )
 
     book_id: Mapped[int] = mapped_column(BigInteger)

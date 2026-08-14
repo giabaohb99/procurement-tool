@@ -1,0 +1,153 @@
+import { useState } from 'react'
+
+import { Button } from '@/shared/ui/button'
+import { DatePicker } from '@/shared/ui/date-picker'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui/dialog'
+import { Label } from '@/shared/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group'
+import { Textarea } from '@/shared/ui/textarea'
+import { useOpenVersion } from '../hooks/use-document-versions'
+import { CHANGE_KIND } from '../types/document-record'
+
+interface DocumentVersionDialogProps {
+  documentId: number
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+/**
+ * MỞ PHIÊN BẢN MỚI — bắt khai lý do và phân loại mức sửa (C05, C13, C15).
+ *
+ * Hai ô này không phải thủ tục:
+ *  - **lý do** là thứ duy nhất trả lời được câu "ba tháng trước vì sao có bản
+ *    2.0" — không bắt khai thì không ai tự viết;
+ *  - **mức sửa** quyết định số bản (2.0 hay 1.1) và quyết định người đã đọc bản
+ *    cũ có phải xác nhận đã đọc lại hay không.
+ *
+ * Bản cũ **không bị đè**: mở bản mới là thêm một dòng, bản cũ ở lại nguyên vẹn.
+ */
+export function DocumentVersionDialog({
+  documentId,
+  open,
+  onOpenChange,
+}: DocumentVersionDialogProps) {
+  const [changeKind, setChangeKind] = useState(String(CHANGE_KIND.major))
+  const [summary, setSummary] = useState('')
+  const [reason, setReason] = useState('')
+  const [effectiveFrom, setEffectiveFrom] = useState('')
+
+  const openVersion = useOpenVersion(documentId)
+
+  function handleSubmit() {
+    openVersion.mutate(
+      {
+        change_kind: Number(changeKind),
+        change_summary: summary.trim(),
+        change_reason: reason.trim(),
+        effective_from: effectiveFrom || null,
+      },
+      {
+        onSuccess: () => {
+          onOpenChange(false)
+          setSummary('')
+          setReason('')
+          setEffectiveFrom('')
+        },
+      },
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Mở phiên bản mới</DialogTitle>
+          <DialogDescription>
+            Bản đang dùng vẫn giữ nguyên và vẫn có hiệu lực cho tới khi bản mới
+            được duyệt.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Mức sửa</Label>
+            <RadioGroup value={changeKind} onValueChange={setChangeKind}>
+              <label className="flex items-start gap-3 rounded-md border p-3 text-sm">
+                <RadioGroupItem value={String(CHANGE_KIND.major)} className="mt-0.5" />
+                <span>
+                  <span className="font-medium">Sửa lớn</span> — lên bản 2.0.
+                  <span className="block text-muted-foreground">
+                    Đổi nội dung có ảnh hưởng tới người thực hiện; người đã đọc
+                    bản cũ phải xác nhận đã đọc lại.
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-3 rounded-md border p-3 text-sm">
+                <RadioGroupItem value={String(CHANGE_KIND.minor)} className="mt-0.5" />
+                <span>
+                  <span className="font-medium">Sửa nhỏ</span> — lên bản 1.1.
+                  <span className="block text-muted-foreground">
+                    Sửa lỗi chính tả, đổi số điện thoại — không đổi cách làm việc.
+                  </span>
+                </span>
+              </label>
+            </RadioGroup>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="change-summary">
+              Sửa gì<span className="text-destructive"> *</span>
+            </Label>
+            <Textarea
+              id="change-summary"
+              rows={2}
+              placeholder="VD: Bổ sung Điều 5 về mức phụ cấp ca đêm"
+              value={summary}
+              onChange={(event) => setSummary(event.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="change-reason">Vì sao sửa</Label>
+            <Textarea
+              id="change-reason"
+              rows={2}
+              placeholder="VD: Theo kết luận họp Ban điều hành ngày 10/8/2026"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Ngày hiệu lực của bản mới</Label>
+            <DatePicker value={effectiveFrom} onChange={setEffectiveFrom} />
+            <p className="text-xs text-muted-foreground">
+              Để trống = áp dụng ngay khi được duyệt. Đặt ngày trong tương lai
+              thì bản cũ vẫn chạy cho tới ngày đó.
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Hủy
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!summary.trim() || openVersion.isPending}
+          >
+            Mở phiên bản
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

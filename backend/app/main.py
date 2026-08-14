@@ -15,6 +15,7 @@ from app.modules.auth.controller import router as auth_router
 from app.modules.doc_catalog.book_controller import router as document_book_router
 from app.modules.doc_catalog.controller import (doc_type_router,
                                                external_party_router)
+from app.modules.document.controller import router as document_router
 from app.modules.catalog.controller import (brand_router, item_group_router,
                                             unit_router, warehouse_router)
 from app.modules.dashboard.controller import router as dashboard_router
@@ -101,6 +102,7 @@ app.include_router(brand_router)
 app.include_router(doc_type_router)
 app.include_router(external_party_router)
 app.include_router(document_book_router)
+app.include_router(document_router)
 app.include_router(survey_router)
 app.include_router(survey_report_router)
 app.include_router(po_router)
