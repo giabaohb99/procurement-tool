@@ -131,39 +131,3 @@ export function ToolbarMenu({ icon: Icon, label, children }: ToolbarMenuProps) {
   )
 }
 
-interface ColorSwatchesProps {
-  colors: string[]
-  onPick: (color: string) => void
-  onClear: () => void
-  clearLabel: string
-}
-
-/** Lưới ô màu + một dòng "bỏ màu". */
-export function ColorSwatches({ colors, onPick, onClear, clearLabel }: ColorSwatchesProps) {
-  return (
-    <div className="p-1">
-      <div className="grid grid-cols-5 gap-1">
-        {colors.map((color) => (
-          <button
-            key={color}
-            type="button"
-            title={color}
-            aria-label={color}
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => onPick(color)}
-            className="size-6 rounded border border-border/60 transition-transform hover:scale-110"
-            style={{ backgroundColor: color }}
-          />
-        ))}
-      </div>
-      <button
-        type="button"
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={onClear}
-        className="mt-1 w-full rounded px-2 py-1 text-left text-xs text-muted-foreground hover:bg-accent"
-      >
-        {clearLabel}
-      </button>
-    </div>
-  )
-}

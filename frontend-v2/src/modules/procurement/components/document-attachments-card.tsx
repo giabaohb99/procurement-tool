@@ -163,9 +163,12 @@ function AttachmentRow({
   pending: boolean
   onDelete: () => void
 }) {
+  // `attachmentIcon` chỉ TRA CỨU và trả về một trong các icon lucide khai báo sẵn ở
+  // cấp module, không tạo component mới mỗi lần render -> không có chuyện remount.
   const Icon = attachmentIcon(file)
   return (
     <div className="flex min-h-12 items-center gap-3 px-3 py-2">
+      {/* eslint-disable-next-line react-hooks/static-components */}
       <Icon className="size-5 shrink-0 text-primary" />
       <div className="min-w-0 flex-1">
         <a

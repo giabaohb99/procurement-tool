@@ -1,7 +1,9 @@
 import type { Editor } from '@tiptap/react'
 import { Table as TableIcon } from 'lucide-react'
+import { Fragment } from 'react'
 
 import { DropdownMenuItem, DropdownMenuSeparator } from '@/shared/ui/dropdown-menu'
+import { tableCommands } from './table-commands'
 import { ToolbarMenu } from './toolbar-primitives'
 
 interface TableMenuProps {
@@ -10,45 +12,23 @@ interface TableMenuProps {
   inTable: boolean
 }
 
-/** Nhóm lệnh về BẢNG: chèn mới, thêm/xóa hàng cột, gộp tách ô. */
+/** Nhóm lệnh về BẢNG: chèn mới, thêm/xóa hàng cột, gộp tách ô, đổ màu ô. */
 export function TableMenu({ editor, inTable }: TableMenuProps) {
-  const run = () => editor.chain().focus()
-
   return (
     <ToolbarMenu icon={TableIcon} label="Bảng">
-      <DropdownMenuItem
-        onSelect={() => run().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-      >
-        Chèn bảng 3×3
-      </DropdownMenuItem>
+      {tableCommands(editor).map((command) => (
+        <Fragment key={command.label}>
+          {command.separatorBefore && <DropdownMenuSeparator />}
+          <DropdownMenuItem
+            variant={command.destructive ? 'destructive' : 'default'}
+            disabled={command.needsTable && !inTable}
+            onSelect={command.run}
+          >
+            {command.label}
+          </DropdownMenuItem>
+        </Fragment>
+      ))}
 
-      <DropdownMenuSeparator />
-
-      <DropdownMenuItem disabled={!inTable} onSelect={() => run().addRowAfter().run()}>
-        Thêm hàng bên dưới
-      </DropdownMenuItem>
-      <DropdownMenuItem disabled={!inTable} onSelect={() => run().addColumnAfter().run()}>
-        Thêm cột bên phải
-      </DropdownMenuItem>
-      <DropdownMenuItem disabled={!inTable} onSelect={() => run().deleteRow().run()}>
-        Xóa hàng
-      </DropdownMenuItem>
-      <DropdownMenuItem disabled={!inTable} onSelect={() => run().deleteColumn().run()}>
-        Xóa cột
-      </DropdownMenuItem>
-      <DropdownMenuItem disabled={!inTable} onSelect={() => run().mergeOrSplit().run()}>
-        Gộp / tách ô
-      </DropdownMenuItem>
-
-      <DropdownMenuSeparator />
-
-      <DropdownMenuItem
-        variant="destructive"
-        disabled={!inTable}
-        onSelect={() => run().deleteTable().run()}
-      >
-        Xóa bảng
-      </DropdownMenuItem>
     </ToolbarMenu>
   )
 }

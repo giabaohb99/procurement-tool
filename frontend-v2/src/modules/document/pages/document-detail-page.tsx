@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { FileText, Info, Save } from 'lucide-react'
+import { FileText, Info, Loader2, Save } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -113,7 +113,11 @@ export function DocumentDetailPage() {
               {tab === 'compose' && (
                 <>
                   <span aria-hidden>·</span>
-                  <DocumentAutosaveStatus dirty={autosave.dirty} savedAt={autosave.savedAt} />
+                  <DocumentAutosaveStatus
+                    dirty={autosave.dirty}
+                    saving={autosave.saving}
+                    savedAt={autosave.savedAt}
+                  />
                 </>
               )}
             </>
@@ -142,8 +146,14 @@ export function DocumentDetailPage() {
             </TabsList>
 
             {tab === 'compose' && (
-              <Button type="button" onClick={autosave.saveNow}>
-                <Save className="size-4" />
+              // Khóa nút trong lúc lưu để không dồn hai lượt ghi chồng nhau;
+              // chữ giữ nguyên để bề ngang nút không nhảy.
+              <Button type="button" onClick={autosave.saveNow} disabled={autosave.saving}>
+                {autosave.saving ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Save className="size-4" />
+                )}
                 Lưu nội dung
               </Button>
             )}

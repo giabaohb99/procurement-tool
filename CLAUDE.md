@@ -55,8 +55,10 @@ docker compose up --build api                                             # back
 # Cổng kiểm tra frontend-v2 — chạy hết trước khi báo xong việc (typecheck + lint + test)
 docker compose exec erp npm run check
 docker compose exec erp npm run test          # vitest run
-docker compose exec erp npm run lint          # oxlint (chỉ đỏ khi có LỖI)
+docker compose exec erp npm run lint          # eslint . — phải 0 lỗi
 docker compose exec erp npm run typecheck     # tsc --noEmit — phải 0 lỗi
+# Prettier có sẵn nhưng CHƯA nằm trong cổng: `format:check` đang đỏ ~381 tệp vì chưa
+# ai chạy `format --write` lần nào. Muốn dọn thì chạy riêng thành một commit độc lập.
 ```
 
 ⚠️ **Never run `ALTER TABLE` / `INSERT` with Vietnamese text directly via `docker compose exec db mysql -e "..."`** — causes double-encoding mojibake. Always go through an Alembic migration or a Python/SQLAlchemy script.
@@ -112,9 +114,9 @@ Docker; code bind-mount nên HMR chạy. Gọi API bằng đường **tương đ
   Đây là bản mô phỏng giao diện; kiểu dữ liệu của nó **chưa khớp** thiết kế ở `ke-hoach/erp/van-thu/04-bang-du-lieu.md`.
 - **Kiểm tra trước khi giao: `docker compose exec erp npm run check`** — gộp ba cổng:
   - `typecheck` (`tsc --noEmit`) phải **0 lỗi** (khác `frontend/`, bên đó baseline là đúng 4 lỗi cũ);
-  - `lint` (**oxlint**, cấu hình `.oxlintrc.json`) phải **0 lỗi**. Cảnh báo hiện còn **27**, xem bằng
-    `npm run lint:strict` — đừng thêm mới. Dùng oxlint chứ không phải ESLint vì typescript-eslint
-    chưa chạy được trên TypeScript 7;
+  - `lint` (**ESLint 10** flat config, `eslint.config.js`) phải **0 lỗi**. Cảnh báo hiện còn **6**
+    (`react-refresh/only-export-components`) — đừng thêm mới. `typescript` ghim ở **5.9.3**,
+    KHÔNG nâng lên 7 vì `typescript-eslint@8` chưa chạy được trên TS 7 (xem D-027);
   - `test` (**Vitest 4** + jsdom + Testing Library, cấu hình `vitest.config.ts`) phải xanh hết.
 - **Test đặt cạnh tệp nó kiểm** (`format-money.ts` → `format-money.test.ts`); luật đầy đủ ở
   `frontend-v2/.claude/rules/testing.md`. Múi giờ khi chạy test cố định `Asia/Ho_Chi_Minh`.

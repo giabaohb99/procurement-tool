@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
+import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -60,16 +61,19 @@ export function PurchaseRequestHistoryDialog({
     open,
   )
 
-  useEffect(() => {
-    setPage(1)
-  }, [debouncedSearch, productCode])
+  // Gọi hook ra biến riêng: `||` sẽ short-circuit, làm hook thứ hai không chạy.
+  const searchChanged = useHasChanged(debouncedSearch)
+  const productChanged = useHasChanged(productCode)
+  const openChanged = useHasChanged(open)
 
-  useEffect(() => {
-    if (!open) {
-      setPage(1)
-      setSearch('')
-    }
-  }, [open])
+  // Đổi từ khóa / đổi sản phẩm -> xem lại từ trang đầu.
+  if (searchChanged || productChanged) setPage(1)
+
+  // Đóng hộp thoại -> trả về trạng thái ban đầu cho lần mở sau.
+  if (openChanged && !open) {
+    setPage(1)
+    setSearch('')
+  }
 
   const rows = history.data?.items ?? []
   const total = history.data?.total ?? 0

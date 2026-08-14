@@ -28,7 +28,12 @@ export function useFilterOptions(fetchFn?: (search: string) => Promise<SelectOpt
     [fetchFn],
   )
 
+  // Nạp options lần đầu. Đây là effect THẬT (gọi API ra ngoài React), không
+  // phải đồng bộ state theo prop — `search()` chỉ set `loading` rồi fetch trong
+  // setTimeout. Tắt rule tại chỗ vì chuyển sang gán lúc render sẽ fetch ngay
+  // trong thân render, đúng thứ mà rule này muốn ngăn.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (fetchFn) search('')
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)

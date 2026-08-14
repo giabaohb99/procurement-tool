@@ -20,6 +20,11 @@ export function useToolbarState(editor: Editor) {
       subscript: instance.isActive('subscript'),
       superscript: instance.isActive('superscript'),
       link: instance.isActive('link'),
+      // Địa chỉ của liên kết đang đứng — menu chuột phải cần để mở ra tab mới.
+      linkHref: (instance.getAttributes('link').href as string | undefined) ?? '',
+      // Có đang bôi đen chữ nào không: cắt / sao chép mà không chọn gì thì vô
+      // nghĩa, phải làm mờ dòng lệnh đi.
+      hasSelection: !instance.state.selection.empty,
       bulletList: instance.isActive('bulletList'),
       orderedList: instance.isActive('orderedList'),
       blockquote: instance.isActive('blockquote'),

@@ -1,8 +1,9 @@
 import { Loader2, Save, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
+import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -45,9 +46,9 @@ export function RolePermissionPage() {
   const deleteRole = useDeleteRole()
 
   // Đổi vai trò -> nạp lại ma trận. Khóa theo `entity` để tra nhanh khi tick ô.
-  useEffect(() => {
+  if (useHasChanged(savedRows)) {
     setMatrix(Object.fromEntries((savedRows ?? []).map((row) => [row.entity, row])))
-  }, [savedRows])
+  }
 
   const selectedRole = roles?.find((role) => role.id === selectedRoleId) ?? null
   const canWriteRole = can('role', 'write')

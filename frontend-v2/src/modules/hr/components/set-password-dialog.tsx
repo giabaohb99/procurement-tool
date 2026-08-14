@@ -1,7 +1,8 @@
 import { Loader2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 
+import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -39,12 +40,10 @@ export function SetPasswordDialog({
   const [saving, setSaving] = useState(false)
 
   // Dialog không unmount giữa các lần mở — xóa mật khẩu cũ khỏi ô nhập.
-  useEffect(() => {
-    if (open) {
-      setPassword('')
-      setConfirmation('')
-    }
-  }, [open])
+  if (useHasChanged(open)) {
+    setPassword('')
+    setConfirmation('')
+  }
 
   async function handleSubmit() {
     if (password.length < 4) {

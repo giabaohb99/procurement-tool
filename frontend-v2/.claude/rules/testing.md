@@ -8,26 +8,39 @@ metadata:
 # Testing
 
 Runner: **Vitest 4** (`vitest.config.ts`), DOM: **jsdom**, component queries:
-**@testing-library/react**. Linter: **oxlint** (`.oxlintrc.json`) — not ESLint,
-because typescript-eslint does not support TypeScript 7.
+**@testing-library/react**. Linter: **ESLint 10** flat config (`eslint.config.js`) —
+`@eslint/js` + `typescript-eslint` + `react-hooks` v7 + `react-refresh`, với
+`eslint-config-prettier` đặt cuối. Định dạng: **Prettier** (`.prettierrc.json`,
+kèm `prettier-plugin-tailwindcss` tự sắp xếp class Tailwind).
 
-Everything runs inside the Docker service `erp`:
+`typescript` đang ghim ở **5.9.3** (không phải 7.x) vì `typescript-eslint@8` chưa
+chạy được trên TS 7. Đừng nâng lên 7 nếu chưa kiểm tra ESLint còn dựng được.
+
+Mọi thứ chạy trong Docker service `erp`:
 
 ```bash
 docker compose exec erp npm run check        # typecheck + lint + test (chạy hết trước khi báo xong việc)
 docker compose exec erp npm run test         # vitest run
 docker compose exec erp npm run test:watch   # vitest ở chế độ theo dõi
-docker compose exec erp npm run lint         # oxlint — chỉ đỏ khi có LỖI
+docker compose exec erp npm run lint         # eslint .
+docker compose exec erp npm run lint:fix     # eslint . --fix
 docker compose exec erp npm run typecheck    # tsc --noEmit
+docker compose exec erp npm run format       # prettier --write . (đọc ghi chú bên dưới)
 ```
 
-Three gates, and all three must stay green:
+Ba cổng, cả ba phải xanh:
 
-| Gate        | Ngưỡng                                                              |
-| ----------- | ------------------------------------------------------------------- |
-| `typecheck` | **0 lỗi**                                                            |
-| `lint`      | **0 lỗi**. Cảnh báo thì có (xem `npm run lint:strict`) — đừng thêm mới |
-| `test`      | **toàn bộ xanh**                                                     |
+| Cổng        | Ngưỡng                                                 |
+| ----------- | ------------------------------------------------------ |
+| `typecheck` | **0 lỗi**                                              |
+| `lint`      | **0 lỗi**. Cảnh báo còn vài chỗ cũ — đừng thêm mới      |
+| `test`      | **toàn bộ xanh**                                       |
+
+**`format:check` CHƯA nằm trong `check`** và hiện đỏ ở ~381 tệp: Prettier mới được
+thêm vào, chưa ai chạy `format --write` cho toàn bộ mã. Đừng tự ý chạy
+`npm run format` trên cả cây trong lúc đang làm việc khác — nó đẻ ra một diff khổng
+lồ đè lên việc đang làm dở của người khác. Chạy riêng, thành một commit độc lập,
+lúc không ai sửa dở.
 
 ## Where tests go
 
