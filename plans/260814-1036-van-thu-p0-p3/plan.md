@@ -4,14 +4,18 @@
 > Phạm vi: **P0 vá nền · P1 danh mục+số hiệu · P2 soạn thảo+phiên bản · P3 bộ máy phê duyệt**
 > Ngoài phạm vi: P4 ban hành/clone, P5 quyền+tra cứu (chờ câu B3/B5/B6) — sẽ lên plan riêng.
 
+## 👉 Bắt đầu từ đâu
+
+**[`thu-tu-thuc-hien.md`](./thu-tu-thuc-hien.md) — đọc tệp này trước khi làm.** Bốn tệp phase bên dưới nói *cái gì phải làm*; tệp thứ tự nói *làm theo thứ tự nào*, bám đúng mục "Thứ tự làm phía FE" của [báo cáo 260814-1027](../reports/planner-260814-1027-van-thu-fe-giai-doan-dau.md): **bước 1** nắn lại nền module đang có → **2** danh mục → **3** soạn thảo và phiên bản → **4** phê duyệt (**hoãn**) → **5** ban hành/clone (ngoài phạm vi).
+
 ## Tiến độ
 
 | Phase | Tệp | Task | Trạng thái |
 |---|---|---|---|
-| 0 · Vá nền | [phase-00-va-nen.md](./phase-00-va-nen.md) | 13 | ☐ Chưa bắt đầu |
-| 1 · Danh mục và số hiệu | [phase-01-danh-muc-va-so-hieu.md](./phase-01-danh-muc-va-so-hieu.md) | 14 | ☐ Chưa bắt đầu |
-| 2 · Soạn thảo và phiên bản | [phase-02-soan-thao-va-phien-ban.md](./phase-02-soan-thao-va-phien-ban.md) | 18 | ☐ Chưa bắt đầu |
-| 3 · Bộ máy phê duyệt dùng chung | [phase-03-bo-may-phe-duyet.md](./phase-03-bo-may-phe-duyet.md) | 18 | ☐ Chưa bắt đầu |
+| 0 · Vá nền | [phase-00-va-nen.md](./phase-00-va-nen.md) | 13 | ☐ 6 task rải vào bước 1 và 3 · 7 task còn lại chạy song song, **chặn việc lên prod** |
+| 1 · Danh mục và số hiệu | [phase-01-danh-muc-va-so-hieu.md](./phase-01-danh-muc-va-so-hieu.md) | 14 | ☐ bước 1, 2, 3a, 3d |
+| 2 · Soạn thảo và phiên bản | [phase-02-soan-thao-va-phien-ban.md](./phase-02-soan-thao-va-phien-ban.md) | 18 | ☐ bước 1, 3b–3e |
+| 3 · Bộ máy phê duyệt dùng chung | [phase-03-bo-may-phe-duyet.md](./phase-03-bo-may-phe-duyet.md) | 18 | ⏸ **Hoãn** — làm xong phần văn bản mới quay lại |
 
 **63 task.** Mã task: `P{phase}-T{nn}`. Cột **L** trong từng phase: `BE` backend · `FE` frontend-v2 · `DB` migration · `∞` cả hai.
 
@@ -22,8 +26,9 @@ P0 ──▶ P1 ──▶ P2 ──▶ P3 ──▶ (P4)
                 └────────────▶ (P5, song song được với P3)
 ```
 
-- **P0 không làm song song với phase nào khác** — đụng vào nền của hệ đang chạy thật (`02` mục 15).
-- P0-T01 (kiểm thử 5 luồng duyệt Thu mua) **làm đầu tiên**, không chờ trả lời câu hỏi nào.
+- Sơ đồ trên là **phụ thuộc kỹ thuật**, không phải thứ tự chạy. Thứ tự chạy ở [`thu-tu-thuc-hien.md`](./thu-tu-thuc-hien.md).
+- P0 **tách làm ba**: entity+chuông vào bước 1 · kho tệp riêng tư vào bước 3b (văn bản cần đính tệp) · 7 task còn lại chạy song song và **chặn cứng việc lên prod**.
+- P0-T01 (kiểm thử 5 luồng duyệt Thu mua) **làm sớm nhất có thể**, không chờ trả lời câu hỏi nào.
 - P2 duyệt **nội dung văn bản** bằng luồng một bước viết tay tạm thời; P3-T17 mới chuyển sang bộ máy chung.
 - P1–P3 **không bị chặn** bởi 17 câu hỏi ở `00` mục 8 (chỉ chặn P4 trở đi).
 
