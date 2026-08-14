@@ -291,6 +291,19 @@
   outline: none;
 }
 
+/*
+ * Lề trái/phải của trang giấy do THƯỚC KẺ chỉnh (`editor-ruler.tsx`).
+ *
+ * Phải để `!important`: `tiptap-pagination-plus` ghi thẳng
+ * `padding-left: var(--rm-margin-left)` vào thuộc tính `style` của chính thẻ
+ * này mỗi lần nó tính lại trang, mà style nội tuyến thì luật thường không đè
+ * lại được. Chỉ đụng lề NGANG — lề trên/dưới là số liệu chia trang của nó.
+ */
+.doc-page.rm-with-pagination {
+  padding-left: var(--doc-margin-left, 76px) !important;
+  padding-right: var(--doc-margin-right, 76px) !important;
+}
+
 .doc-page > * + * {
   margin-top: 0.6em;
 }
@@ -390,8 +403,64 @@
   pointer-events: none;
 }
 
-/* Tiptap bọc mỗi bảng trong `.tableWrapper`. Cho cuộn ngang ở đây thay vì để
-   bảng rộng hơn trang giấy đẩy vỡ cả bố cục. */
+/* Tiptap bọc mỗi bảng trong `.tableWrapper`. Bảng đã bị ghim đúng bề ngang khổ
+   giấy (xem quy tắc bên dưới) nên không cần chỗ cuộn — để `auto` thì chỉ cần
+   lệch nửa px là hiện một thanh cuộn ngang vô duyên giữa trang văn bản. */
 .doc-page .tableWrapper {
-  overflow-x: auto;
+  overflow-x: visible;
+}
+
+/* Con trỏ đổi thành mũi tên hai chiều khi rê vào mép cột / mép hàng. */
+.doc-page.resize-cursor {
+  cursor: col-resize;
+}
+
+.doc-page.row-resize-cursor {
+  cursor: row-resize;
+}
+
+/*
+ * TRẢ BẢNG VỀ ĐÚNG MỘT THẺ <table>.
+ *
+ * `tiptap-pagination-plus` đặt `display: contents` cho <table> rồi biến <tbody>
+ * thành hộp bảng (kèm `max-height: 300px` cuộn dọc) để bảng dài tự cắt. Hệ quả
+ * là <table> KHÔNG CÒN HỘP, nên:
+ *  - `width: 100%` và `table-layout: fixed` khai ở trên mất tác dụng → bảng co
+ *    lại bằng bề ngang chữ thay vì bằng khổ giấy;
+ *  - <colgroup> — chỗ trình soạn thảo ghi bề rộng từng cột mỗi lần kéo — cũng
+ *    không được đọc nữa → KÉO CỘT bấm được mà không thấy gì thay đổi.
+ *
+ * Đổi lại: bảng dài quá một trang sẽ không tự cắt sang trang sau. Với công văn
+ * thì bảng đúng khổ và kéo cột được quan trọng hơn — bảng dài thì tự tách làm
+ * hai bảng, còn bảng cuộn trong khung 300px thì in ra là mất nội dung.
+ */
+.doc-page.rm-with-pagination table {
+  display: table !important;
+  width: 100% !important;
+  table-layout: fixed !important;
+  /*
+   * BẢNG LUÔN ĐÚNG BỀ NGANG KHỔ GIẤY.
+   *
+   * Kéo giãn cột, ProseMirror ghi bề rộng từng cột rồi đặt `min-width` bằng
+   * tổng chỗ ấy vào `style` của bảng — kéo rộng quá là bảng phình ra khỏi trang
+   * và sinh thanh cuộn ngang. Văn bản in ra giấy thì không có chỗ nào để cuộn:
+   * chặn `min-width` lại, cột nào kéo rộng ra thì các cột còn lại tự co.
+   */
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.doc-page.rm-with-pagination table tbody {
+  display: table-row-group !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.doc-page.rm-with-pagination table td,
+.doc-page.rm-with-pagination table th {
+  max-height: none !important;
+  overflow: visible !important;
+  /* `break-all` của thư viện cắt từ tiếng Việt ngay giữa chừng ("phòn|g ban"). */
+  word-break: normal !important;
+  overflow-wrap: break-word;
 }

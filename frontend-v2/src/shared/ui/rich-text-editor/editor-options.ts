@@ -29,18 +29,87 @@ export const BLOCK_STYLES = [
   { label: 'Tiêu đề 3', value: '3' },
 ]
 
-/** Bảng màu chữ / màu nền — đủ dùng cho văn bản, không cần bảng đầy đủ. */
-export const TEXT_COLORS = [
-  '#111827',
-  '#dc2626',
-  '#ea580c',
-  '#ca8a04',
-  '#16a34a',
-  '#0891b2',
-  '#2563eb',
-  '#7c3aed',
-  '#be185d',
-  '#6b7280',
+/**
+ * BẢNG MÀU dùng chung cho màu chữ, tô nền chữ và nền ô bảng.
+ *
+ * Xếp như Word: hàng đầu là dải xám từ trắng tới đen, mười hàng dưới là mười
+ * sắc màu đi từ nhạt tới đậm — cùng một cột là cùng một màu, càng xuống càng
+ * đậm, nên mắt dò theo cột chứ không phải quét cả bảng. Ai cần đúng màu nhận
+ * diện của đơn vị thì bấm "Màu khác" chọn tay.
+ */
+export const COLOR_PALETTE_ROWS = [
+  [
+    '#ffffff',
+    '#f1f5f9',
+    '#e2e8f0',
+    '#cbd5e1',
+    '#94a3b8',
+    '#64748b',
+    '#475569',
+    '#334155',
+    '#1e293b',
+    '#000000',
+  ],
+  [
+    '#fee2e2',
+    '#ffedd5',
+    '#fef3c7',
+    '#dcfce7',
+    '#ccfbf1',
+    '#cffafe',
+    '#dbeafe',
+    '#e0e7ff',
+    '#ede9fe',
+    '#fce7f3',
+  ],
+  [
+    '#fca5a5',
+    '#fdba74',
+    '#fcd34d',
+    '#86efac',
+    '#5eead4',
+    '#67e8f9',
+    '#93c5fd',
+    '#a5b4fc',
+    '#c4b5fd',
+    '#f9a8d4',
+  ],
+  [
+    '#ef4444',
+    '#f97316',
+    '#eab308',
+    '#22c55e',
+    '#14b8a6',
+    '#06b6d4',
+    '#3b82f6',
+    '#6366f1',
+    '#8b5cf6',
+    '#ec4899',
+  ],
+  [
+    '#b91c1c',
+    '#c2410c',
+    '#a16207',
+    '#15803d',
+    '#0f766e',
+    '#0e7490',
+    '#1d4ed8',
+    '#4338ca',
+    '#6d28d9',
+    '#be185d',
+  ],
+  [
+    '#7f1d1d',
+    '#7c2d12',
+    '#713f12',
+    '#14532d',
+    '#134e4a',
+    '#164e63',
+    '#1e3a8a',
+    '#312e81',
+    '#4c1d95',
+    '#831843',
+  ],
 ]
 
 /**
@@ -58,11 +127,3 @@ export const LINE_HEIGHTS = [
   { label: 'Đôi (2,0)', value: '2' },
 ] as const
 
-export const HIGHLIGHT_COLORS = [
-  '#fef08a',
-  '#bbf7d0',
-  '#bfdbfe',
-  '#fbcfe8',
-  '#e9d5ff',
-  '#fed7aa',
-]

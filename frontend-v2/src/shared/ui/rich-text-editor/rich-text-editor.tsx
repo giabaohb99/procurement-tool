@@ -6,13 +6,22 @@ import { TextAlign } from '@tiptap/extension-text-align'
 import { TextStyleKit } from '@tiptap/extension-text-style'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { PaginationPlus } from 'tiptap-pagination-plus'
 
 import { cn } from '@/shared/utils/cn'
-import { EditorOutline } from './editor-outline'
+import { EditorContextMenu } from './editor-context-menu'
+import { EditorOutlinePanel } from './editor-outline-panel'
+import { EditorRuler, type PageMargins } from './editor-ruler'
 import { EditorToolbar } from './editor-toolbar'
+import { EditorVerticalRuler } from './editor-vertical-ruler'
 import { ParagraphFormat } from './paragraph-format-extension'
+import {
+  TableCellWithBackground,
+  TableHeaderWithBackground,
+} from './table-cell-background-extension'
+import { TableWithColumnResizing } from './table-column-resizing-extension'
+import { TableRowWithHeight } from './table-row-resizing-extension'
 
 /** Khổ A4 ở 96dpi: 210 × 297mm ≈ 794 × 1123px, lề 20mm ≈ 76px. */
 const A4_WIDTH = 794
@@ -54,6 +63,15 @@ export function RichTextEditor({
   className,
 }: RichTextEditorProps) {
   const [zoom, setZoom] = useState(1)
+  // Lề ngang do thước kẻ chỉnh. Giữ ở đây (chưa lưu xuống bản ghi): đổi lề là
+  // việc căn chỉnh lúc soạn, mở lại văn bản thì về đúng lề quy định.
+  const [margins, setMargins] = useState<PageMargins>({
+    left: PAGE_MARGIN,
+    right: PAGE_MARGIN,
+  })
+  // Cột mục lục: đóng/mở và bề ngang do người dùng chỉnh, giữ trong phiên soạn.
+  const [outlineOpen, setOutlineOpen] = useState(true)
+  const [outlineWidth, setOutlineWidth] = useState(224)
 
   const editor = useEditor({
     extensions: [
@@ -69,7 +87,24 @@ export function RichTextEditor({
       // Giãn dòng + thụt lề đầu dòng, xem `paragraph-format-extension.ts`.
       ParagraphFormat,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
-      TableKit.configure({ table: { resizable: true } }),
+      // Tắt ô / ô tiêu đề / hàng mặc định để thay bằng bản có thêm MÀU NỀN
+      // (`table-cell-background-extension.ts`) và KÉO CAO HÀNG
+      // (`table-row-resizing-extension.ts`).
+      // Tắt luôn cả bảng mặc định: phần kéo cột dựng sẵn làm bảng phình quá
+      // khổ giấy, thay bằng bản kéo cột kiểu Word ở
+      // `table-column-resizing-extension.ts`.
+      TableKit.configure({
+        table: false,
+        tableCell: false,
+        tableHeader: false,
+        tableRow: false,
+      }),
+      // `resizable: false` để tắt phần kéo cột dựng sẵn, nhưng vẫn giữ nguyên
+      // phần còn lại của bảng (vùng chọn ô, `<colgroup>` giữ bề rộng cột).
+      TableWithColumnResizing.configure({ resizable: false }),
+      TableCellWithBackground,
+      TableHeaderWithBackground,
+      TableRowWithHeight,
       // Gõ quá một trang thì tự sang TRANG MỚI như Google Docs, thay vì kéo
       // dài mãi một tờ giấy — soạn công văn phải biết nội dung tràn sang trang
       // thứ mấy. Số đo lấy theo A4 ở 96dpi, khớp `.doc-page` trong `index.css`.
@@ -108,27 +143,86 @@ export function RichTextEditor({
 
   return (
     <div className={cn('overflow-hidden rounded-lg border bg-card', className)}>
-      {editable && <EditorToolbar editor={editor} zoom={zoom} onZoomChange={setZoom} />}
+      {editable && (
+        <EditorToolbar
+          editor={editor}
+          zoom={zoom}
+          onZoomChange={setZoom}
+          outlineOpen={showOutline ? outlineOpen : undefined}
+          onToggleOutline={() => setOutlineOpen((open) => !open)}
+        />
+      )}
+
+      {/* Thước ngang nằm ngoài vùng cuộn và kéo hết bề ngang — kể cả qua cột
+          mục lục — nên nó dính liền dưới thanh công cụ thành một khối lệnh. */}
+      {editable && (
+        <EditorRuler
+          pageWidth={A4_WIDTH}
+          defaultMargin={PAGE_MARGIN}
+          margins={margins}
+          onChange={setMargins}
+          zoom={zoom}
+          page={editor.view.dom}
+        />
+      )}
 
       {/* Mục lục và trang giấy cuộn RIÊNG nhau: cuộn xuống cuối bài mà mục lục
           cũng trôi theo thì mất luôn chỗ để nhảy ngược lên. */}
       <div className="flex">
-        {showOutline && (
-          <EditorOutline
+        {/* Thước dọc nằm ở MÉP TRÁI khung soạn thảo, ngoài cả cột mục lục —
+            giống Google Docs: hai cây thước gặp nhau ở góc trên bên trái nên
+            đọc ra ngay đây là gốc tọa độ của tờ giấy. */}
+        {editable && (
+          <EditorVerticalRuler
+            pageHeight={A4_HEIGHT}
+            pageGap={PAGE_GAP}
+            margin={PAGE_MARGIN}
+            zoom={zoom}
+            page={editor.view.dom}
+          />
+        )}
+
+        {showOutline && outlineOpen && (
+          <EditorOutlinePanel
             editor={editor}
-            className="hidden max-h-[calc(100vh-16rem)] w-56 shrink-0 overflow-y-auto border-r lg:block"
+            width={outlineWidth}
+            onWidthChange={setOutlineWidth}
           />
         )}
 
         {/* Nền xám để tờ giấy trắng nổi lên — nhìn ra ngay đâu là mép trang.
             Cao theo màn hình chứ không cố định: màn 13" thì vẫn thấy được cả
-            thanh công cụ lẫn cuối trang, màn lớn thì soạn được nhiều dòng hơn. */}
-        <div className="max-h-[calc(100vh-16rem)] min-h-100 flex-1 overflow-x-auto overflow-y-auto bg-muted px-6 py-5">
-          {/* Phóng bằng `zoom` chứ không phải `transform: scale`: `zoom` co giãn
-              luôn cả hộp bố cục nên thanh cuộn vẫn đúng tầm và con trỏ chuột
-              vẫn trỏ trúng chữ, còn `scale` thì phải tự bù chiều cao. */}
-          <div style={{ zoom }}>
-            <EditorContent editor={editor} />
+            thanh công cụ lẫn cuối trang, màn lớn thì soạn được nhiều dòng. */}
+        <div
+          className="max-h-[calc(100vh-16rem)] min-h-100 min-w-0 flex-1 overflow-x-auto overflow-y-auto bg-muted px-6 py-5"
+        >
+          {/* Phóng bằng `zoom` chứ không phải `transform: scale`: `zoom` co
+              giãn luôn cả hộp bố cục nên thanh cuộn vẫn đúng tầm và con trỏ
+              chuột vẫn trỏ trúng chữ, còn `scale` thì phải tự bù chiều cao.
+
+              Hai biến lề đặt ở đây để thước kẻ và trang giấy cùng đọc một số —
+              trang giấy nhận qua `.doc-page` trong `index.css`. */}
+          <div
+            style={
+              {
+                zoom,
+                '--doc-margin-left': `${margins.left}px`,
+                '--doc-margin-right': `${margins.right}px`,
+              } as CSSProperties
+            }
+          >
+            {/* Chỉ bọc menu chuột phải khi CÒN SỬA ĐƯỢC: trang chỉ để xem thì
+                menu toàn lệnh sửa là bày ra cho có, mà lại chặn mất menu gốc
+                của trình duyệt (dịch, tìm kiếm chữ đang chọn…). */}
+            {editable ? (
+              <EditorContextMenu editor={editor}>
+                <div>
+                  <EditorContent editor={editor} />
+                </div>
+              </EditorContextMenu>
+            ) : (
+              <EditorContent editor={editor} />
+            )}
           </div>
         </div>
       </div>

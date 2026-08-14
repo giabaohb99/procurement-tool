@@ -1,10 +1,12 @@
-import { Check, PencilLine } from 'lucide-react'
+import { Check, Loader2, PencilLine } from 'lucide-react'
 
 import { formatDateTime } from '@/shared/utils/format-date'
 
 interface DocumentAutosaveStatusProps {
   /** Còn nội dung chưa kịp lưu. */
   dirty: boolean
+  /** Đang ghi xuống kho — chỉ đúng lúc này mới được hiện vòng xoay. */
+  saving: boolean
   /** ISO string của lần lưu gần nhất; `null` = chưa lưu lần nào trong phiên. */
   savedAt: string | null
 }
@@ -19,9 +21,24 @@ interface DocumentAutosaveStatusProps {
  * ⚠️ Lúc đang gõ KHÔNG dùng biểu tượng xoay: vòng xoay đọc ra là "đang gửi đi",
  * làm người dùng tưởng cứ mỗi phím gõ là một lần lưu. Thực tế lúc này chưa lưu
  * gì cả — chỉ ghi nhận là có thay đổi, việc lưu đợi ngừng gõ 1,5 giây mới chạy
- * (xem `use-document-autosave.ts`).
+ * (xem `use-document-autosave.ts`). Vòng xoay để dành cho đúng lúc ghi thật,
+ * nhờ vậy nó giữ nghĩa "hệ đang làm việc với dữ liệu của bạn".
  */
-export function DocumentAutosaveStatus({ dirty, savedAt }: DocumentAutosaveStatusProps) {
+export function DocumentAutosaveStatus({
+  dirty,
+  saving,
+  savedAt,
+}: DocumentAutosaveStatusProps) {
+  // "Đang lưu" đè lên "chưa lưu": lượt ghi đã chạy rồi thì báo chưa lưu là sai.
+  if (saving) {
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <Loader2 className="size-3.5 animate-spin" />
+        Đang lưu…
+      </span>
+    )
+  }
+
   if (dirty) {
     return (
       <span className="inline-flex items-center gap-1.5">
