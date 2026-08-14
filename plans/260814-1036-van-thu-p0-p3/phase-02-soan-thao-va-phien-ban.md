@@ -10,7 +10,7 @@
 | | |
 |---|---|
 | Ưu tiên | Cao — chặn P3, P4, P5 |
-| Trạng thái | ☐ Chưa bắt đầu |
+| Trạng thái | ◪ 12/18 xong — còn T02, T17–T21 (quan hệ cha–con, bản trích, OCR) |
 | Mã `01` | C01, C03–C07, C12–C19, D06, E01–E06, E11, L01, L02, L07 (**bỏ: B01–B07 yêu cầu văn bản · C02 tệp mẫu** — quyết định 6 và 7 ở `plan.md`) |
 | Migration | M6, M7 |
 
@@ -83,24 +83,25 @@ Duyệt **nội dung văn bản** ở phase này dùng **luồng một bước v
 
 ## Todo
 
-- [ ] P2-T01 · M6: 3 bảng chính + đủ CHECK/UNIQUE + `open_slot`
+- [x] P2-T01 · M6: 3 bảng chính + đủ CHECK/UNIQUE + `open_slot`
 - [ ] P2-T02 · M7: `tab_document_link`
-- [ ] P2-T03 · Chỉ mục theo `04` mục 10
-- [ ] P2-T04 · Hàm truy vấn dùng chung + **bài kiểm `origin`**
-- [ ] P2-T05 · Tạo văn bản trực tiếp + gợi ý văn bản đã có (B05)
-- [ ] P2-T10 · Service văn bản + cấp số theo `number_when`
-- [ ] P2-T11 · Bất biến hóa phiên bản, `is_locked` một chiều
-- [ ] P2-T12 · Mở phiên bản mới, bắt `open_slot`
-- [ ] P2-T13 · Ngày hiệu lực riêng của phiên bản
-- [ ] P2-T14 · FE form văn bản theo C01
-- [ ] P2-T14b · Gỡ bộ trường nhập động khỏi module văn bản
-- [ ] P2-T15 · FE tab phiên bản + băng cảnh báo
-- [ ] P2-T16 · FE trình soạn nội dung, đính kèm, số hiệu cũ
+- [x] P2-T03 · Chỉ mục theo `04` mục 10
+- [x] P2-T04 · Hàm truy vấn dùng chung + **bài kiểm `origin`**
+- [x] P2-T05 · Tạo văn bản trực tiếp + gợi ý văn bản đã có (B05)
+- [x] P2-T10 · Service văn bản + cấp số theo `number_when`
+- [x] P2-T11 · Bất biến hóa phiên bản, `is_locked` một chiều
+- [x] P2-T12 · Mở phiên bản mới, bắt `open_slot`
+- [x] P2-T13 · Ngày hiệu lực riêng của phiên bản
+- [x] P2-T14 · FE form văn bản theo C01
+- [x] P2-T14b · Gỡ bộ trường nhập động khỏi module văn bản
+- [x] P2-T15 · FE tab phiên bản + băng cảnh báo
+- [x] P2-T16 · FE trình soạn nội dung, đính kèm, số hiệu cũ — **đính kèm đang đi đường `/api/attachments` chung**, kho tệp riêng tư là P0-T02…T04
 - [ ] P2-T17 · Quan hệ + cấm vòng lặp + chặn thiếu quan hệ bắt buộc
 - [ ] P2-T18 · Bản trích + quan hệ *trích từ* + 3 ràng buộc
 - [ ] P2-T19 · FE khối quan hệ + cây tài liệu
 - [ ] P2-T20 · FE màn soạn bản trích
 - [ ] P2-T21 · OCR ảnh → nháp, cờ tắt AI
+- [x] **Thêm ngoài phase** · Quyền trên TỪNG văn bản (chia sẻ / cấm đích danh, có hạn, thu hồi là đánh dấu) — vốn là F-52 · F-57 của P5, làm sớm theo yêu cầu 14/08/2026
 
 ## Nghiệm thu
 

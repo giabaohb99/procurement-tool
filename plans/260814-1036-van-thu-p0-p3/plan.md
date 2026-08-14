@@ -12,12 +12,28 @@
 
 | Phase | Tệp | Task | Trạng thái |
 |---|---|---|---|
-| 0 · Vá nền | [phase-00-va-nen.md](./phase-00-va-nen.md) | 13 | ☐ 6 task rải vào bước 1 và 3 · 7 task còn lại chạy song song, **chặn việc lên prod** |
-| 1 · Danh mục và số hiệu | [phase-01-danh-muc-va-so-hieu.md](./phase-01-danh-muc-va-so-hieu.md) | 14 | ☐ bước 1, 2, 3a, 3d |
-| 2 · Soạn thảo và phiên bản | [phase-02-soan-thao-va-phien-ban.md](./phase-02-soan-thao-va-phien-ban.md) | 18 | ☐ bước 1, 3b–3e |
+| 0 · Vá nền | [phase-00-va-nen.md](./phase-00-va-nen.md) | 13 | ◪ entity `document` + ẩn menu theo quyền đã xong · **7 task chặn prod vẫn còn nguyên** |
+| 1 · Danh mục và số hiệu | [phase-01-danh-muc-va-so-hieu.md](./phase-01-danh-muc-va-so-hieu.md) | 14 | ◪ 10/14 — còn quy tắc cha–con (T08, T12) và phòng ban×pháp nhân |
+| 2 · Soạn thảo và phiên bản | [phase-02-soan-thao-va-phien-ban.md](./phase-02-soan-thao-va-phien-ban.md) | 18 | ◪ 12/18 — còn quan hệ cha–con, bản trích, OCR (T02, T17–T21) |
 | 3 · Bộ máy phê duyệt dùng chung | [phase-03-bo-may-phe-duyet.md](./phase-03-bo-may-phe-duyet.md) | 18 | ⏸ **Hoãn** — làm xong phần văn bản mới quay lại |
 
 **63 task.** Mã task: `P{phase}-T{nn}`. Cột **L** trong từng phase: `BE` backend · `FE` frontend-v2 · `DB` migration · `∞` cả hai.
+
+### Quyết định bổ sung 14/08/2026
+
+| # | Quyết định | Vì sao |
+|---|---|---|
+| 8 | **Quyền trên TỪNG văn bản** (`tab_document_access`) làm sớm, không đợi P5 | Phạm vi vai trò chỉ cắt theo pháp nhân / phòng / người tạo; "gửi bản quy chế cho một người ở phòng khác đọc" và "phòng nhân sự thấy hết trừ đúng một văn bản" đều không diễn đạt được bằng phạm vi. Cấm thắng cho phép; thu hồi là đánh dấu, không xóa dòng |
+| 9 | **Sổ văn bản giữ nguyên trong menu** và trở thành nguồn quyền thứ ba | Sổ là cách văn thư phân việc (sổ Quyết định do Hành chính giữ, sổ Nhân sự do phòng Nhân sự giữ). Cấp quyền theo quyển thì khai một lần, người vào sau tự có — thay vì chia tay từng văn bản |
+
+### Đã chạy được trên dev (14/08/2026)
+
+Tạo văn bản → chọn loại → gõ nội dung trên web → đính tệp → gửi duyệt → duyệt
+(cấp số `01/2026/TB-DEGO`) → mở phiên bản 2.0 → bản 1.0 khóa vĩnh viễn, văn bản
+**vẫn có hiệu lực** trong lúc bản 2.0 còn nháp. Kèm **quyền trên từng văn bản**
+(chia sẻ / cấm đích danh cho người · phòng · pháp nhân · vai trò, có hạn, thu hồi
+là đánh dấu) và **quyền theo sổ** (thành viên sổ đọc được mọi văn bản trong sổ).
+Hai phần này vốn thuộc P5, làm sớm theo yêu cầu.
 
 ## Phụ thuộc
 
@@ -83,5 +99,5 @@ Module này dựng theo **trục sổ đến/đi** (`direction` · `book_no` · 
 | Hạ tầng dùng chung: `data-table`, `conditional-filter`, `rich-text-editor`, `use-document-autosave`, `audit-timeline`, `notification-bell` | **Giữ nguyên**, không đụng |
 | Bộ trường trên form văn bản (`DocumentRecord` ~40 trường) | **Đổi trục** (P2-T14) — phần viết lại thật sự nằm ở đây |
 | Trường nhập động | **Xóa** (P2-T14b) |
-| Sổ văn bản đến/đi + `direction`/`book_no`/`partner_id`/`processing_*` | **Tạm ẩn khỏi menu**, giữ mã, chờ câu A1 |
+| Sổ văn bản đến/đi | **Giữ và dùng tiếp** (chốt 14/08/2026). Sổ không chỉ để đánh số: `tab_document.book_id` cho văn bản vào sổ, được cấp thêm số thứ tự trong sổ, và **thành viên sổ là một nguồn quyền** trên văn bản (quản lý sổ: xem + sửa · người xem sổ: xem). `direction`/`partner_id`/`processing_*` thì bỏ khỏi văn bản — đó mới là phần chờ câu A1 |
 | `store/local-collection.ts` + 3 store | **Xóa dần** khi từng màn nối API |

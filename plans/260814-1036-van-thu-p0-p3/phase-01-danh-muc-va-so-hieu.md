@@ -8,7 +8,7 @@
 | | |
 |---|---|
 | Ưu tiên | Cao — chặn P2 |
-| Trạng thái | ☐ Chưa bắt đầu |
+| Trạng thái | ◪ 10/14 xong — còn T08, T12 (quy tắc cha–con) và phần phòng ban×pháp nhân |
 | Mã `01` | A01–A07, D01–D08, C20 (chờ B12) |
 | Migration | M2, M3, M4, M5 |
 
@@ -50,20 +50,20 @@
 
 ## Todo
 
-- [ ] P1-T01 · M2: `issue_code` cho pháp nhân/phòng ban + `tab_department_company`
-- [ ] P1-T02 · M3: 3 bảng danh mục
-- [ ] P1-T03 · M4 + M5: bộ đếm + sổ đến (tạo sớm)
-- [ ] P1-T04 · `next_number()` khóa dòng, cùng transaction
-- [ ] P1-T05 · Khóa mã sau khi đã cấp số
-- [ ] P1-T06 · **Bài kiểm 100 kết nối — điều kiện chuyển phase**
-- [ ] P1-T07 · CRUD loại văn bản
+- [x] P1-T01 · M2: `issue_code` cho pháp nhân/phòng ban — **`tab_department_company` chưa làm** (F-09)
+- [x] P1-T02 · M3: 3 bảng danh mục
+- [x] P1-T03 · M4 bộ đếm — **M5 `tab_incoming_register` chưa tạo** (chờ câu A1)
+- [x] P1-T04 · `next_number()` khóa dòng, cùng transaction
+- [x] P1-T05 · Khóa mã sau khi đã cấp số
+- [x] P1-T06 · **Bài kiểm 100 kết nối — điều kiện chuyển phase**
+- [x] P1-T07 · CRUD loại văn bản
 - [ ] P1-T08 · CRUD quy tắc cha–con, khóa cứng *trích từ*
-- [ ] P1-T09 · CRUD đơn vị gửi nhận, phòng ban×pháp nhân
-- [ ] P1-T10 · Form loại văn bản mở rộng
-- [ ] P1-T11 · Danh mục 32 loại theo nhóm, nối API
+- [x] P1-T09 · CRUD đơn vị gửi nhận — **phòng ban×pháp nhân chưa làm** (F-09)
+- [x] P1-T10 · Form loại văn bản mở rộng
+- [x] P1-T11 · Danh mục 32 loại theo nhóm, nối API
 - [ ] P1-T12 · Màn quy tắc cha–con
-- [ ] P1-T13 · Nắn thang mức mật về 4 mức
-- [ ] P1-T14 · Bỏ tự sinh số client, thêm ô `issue_code`
+- [x] P1-T13 · Nắn thang mức mật về 4 mức
+- [x] P1-T14 · Bỏ tự sinh số client, thêm ô `issue_code`
 - [ ] Nhập 32 loại + 13 mã pháp nhân + mã phòng ban (**việc của người, làm song song được**)
 
 ## Nghiệm thu

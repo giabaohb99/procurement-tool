@@ -8,9 +8,9 @@
 
 | Bước | Report | Trong plan này | Trạng thái |
 |---|---|---|---|
-| **1** | F-05, F-11, F-12 + mục 4.1–4.4 · *nắn lại nền module đang có* | 5 task + 2 việc không mã | ☐ |
-| **2** | F-06 → F-10 · *danh mục* | 6 task | ☐ |
-| **3** | F-13 → F-30 · *soạn thảo và phiên bản* | 27 task + 2 việc không mã | ☐ |
+| **1** | F-05, F-11, F-12 + mục 4.1–4.4 · *nắn lại nền module đang có* | 5 task + 2 việc không mã | ☑ xong (trừ F-02 gom nhóm màn phân quyền) |
+| **2** | F-06 → F-10 · *danh mục* | 6 task | ☑ xong (trừ F-09 phòng ban×pháp nhân) |
+| **3** | F-13 → F-30 · *soạn thảo và phiên bản* | 27 task + 2 việc không mã | ◪ 3a, 3b, 3c xong · 3d (quan hệ cha–con, bản trích) và 3e (OCR) còn nguyên |
 | **4** | F-31 → F-40 · *bộ máy phê duyệt* ‖ F-51 → F-64 · *quyền và tra cứu* | 18 task (P3) | ⏸ **Hoãn** — làm văn bản xong mới quay lại |
 | **5** | F-41 → F-50 · *ban hành, phạm vi, clone* | — | Ngoài phạm vi plan này (P4) |
 
