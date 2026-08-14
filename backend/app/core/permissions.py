@@ -11,6 +11,8 @@ ENTITIES = [
     "inventory", "payable", "payment", "payment_request",
     "report", "setting", "category_assignee", "survey_request", "import", "backup",
     "help_article", "ticket",
+    # Phân hệ Văn thư
+    "doc_type", "external_party",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -45,6 +47,8 @@ ENTITY_LABELS = {
     "backup": "Sao lưu CSDL",
     "help_article": "Hướng dẫn sử dụng (Help Center)",
     "ticket": "Phiếu hỗ trợ",
+    "doc_type": "Loại văn bản (Văn thư)",
+    "external_party": "Đơn vị gửi nhận (Văn thư)",
 }
 
 ACTION_LABELS = {

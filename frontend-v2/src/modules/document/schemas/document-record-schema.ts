@@ -42,8 +42,6 @@ export const documentRecordSchema = z
     result: z.string().trim().max(500, 'Tối đa 500 ký tự'),
     processing_note: z.string().trim().max(1000, 'Tối đa 1000 ký tự'),
     storage_location: z.string().trim().max(120, 'Tối đa 120 ký tự'),
-
-    field_values: z.record(z.string(), z.string()),
   })
   // Nơi gửi / nơi nhận (`partner_id`) và ngày đến KHÔNG còn bắt buộc: form tạo
   // mới hỏi nơi nhận bằng danh sách tên (`recipients`), còn hai ô kia chỉ hiện

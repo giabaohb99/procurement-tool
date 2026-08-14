@@ -53,8 +53,8 @@ export function useDocumentActions() {
 
       const year = bookYearOf(values.issued_date)
       const bookNo = nextBookNo(records, values.direction, year)
-      const prefix =
-        documentTypes.find((type) => type.id === values.document_type_id)?.prefix ?? ''
+      const typeCode =
+        documentTypes.find((type) => type.id === values.document_type_id)?.code ?? ''
 
       return persist({
         ...values,
@@ -62,7 +62,7 @@ export function useDocumentActions() {
         book_year: year,
         // Người dùng gõ số riêng thì tôn trọng — nhiều đơn vị đã có cách đánh
         // số của họ; bỏ trống mới ghép số theo tiền tố loại văn bản.
-        code: values.code.trim() || buildDocumentCode(prefix, year, bookNo),
+        code: values.code.trim() || buildDocumentCode(typeCode, year, bookNo),
       })
     },
     [persist, records, documentTypes],
@@ -86,6 +86,6 @@ export function useNextDocumentCode(
   const { items: documentTypes } = useDocumentTypes()
 
   const year = bookYearOf(issuedDate)
-  const prefix = documentTypes.find((type) => type.id === documentTypeId)?.prefix ?? ''
-  return buildDocumentCode(prefix, year, nextBookNo(records, direction, year))
+  const typeCode = documentTypes.find((type) => type.id === documentTypeId)?.code ?? ''
+  return buildDocumentCode(typeCode, year, nextBookNo(records, direction, year))
 }

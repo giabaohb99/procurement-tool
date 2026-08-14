@@ -13,11 +13,9 @@ import { RichTextEditor } from '@/shared/ui/rich-text-editor'
 import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentAttachmentList } from '../components/document-attachment-list'
 import { DocumentAutosaveStatus } from '../components/document-autosave-status'
-import { DocumentDynamicFields } from '../components/document-dynamic-fields'
 import { DocumentRecordForm } from '../components/document-record-form'
 import { emptyDocumentForm } from '../helpers/document-form-defaults'
 import { useDocumentAutosave } from '../hooks/use-document-autosave'
-import { useDynamicFieldsFor } from '../hooks/use-document-catalogs'
 import { useDocument, useDocumentActions, useDocumentHistory } from '../hooks/use-documents'
 import {
   documentRecordSchema,
@@ -56,7 +54,6 @@ export function DocumentDetailPage() {
     record?.attachments ?? [],
   )
 
-  const dynamicFields = useDynamicFieldsFor(form.watch('document_type_id'))
 
   const handleSaveContent = useCallback(
     (content: string, options: { silent: boolean }) => {
@@ -69,16 +66,6 @@ export function DocumentDetailPage() {
   const autosave = useDocumentAutosave({ onSave: handleSaveContent })
 
   function handleSubmit(values: DocumentRecordFormValues) {
-    // Trường động bắt buộc không kiểm được bằng zod (danh sách trường đổi theo
-    // loại văn bản), nên chặn ở đây.
-    const missing = dynamicFields.find(
-      (field) => field.is_required && !values.field_values?.[field.code],
-    )
-    if (missing) {
-      toast.error(`Chưa nhập "${missing.label}"`)
-      return
-    }
-
     save(
       {
         ...values,
@@ -197,7 +184,6 @@ export function DocumentDetailPage() {
 
         <TabsContent value="info" className="mt-0">
           <DocumentRecordForm formId={FORM_ID} form={form} isEditing onSubmit={handleSubmit}>
-            <DocumentDynamicFields fields={dynamicFields} form={form} />
             <DocumentAttachmentList attachments={attachments} onChange={setAttachments} />
           </DocumentRecordForm>
         </TabsContent>

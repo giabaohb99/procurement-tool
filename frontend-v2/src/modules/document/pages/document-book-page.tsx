@@ -36,7 +36,7 @@ export function DocumentBookPage() {
   const navigate = useNavigate()
   const [direction, setDirection] = useUrlParamState('direction', 'incoming')
   const records = useDocuments()
-  const partners = useDocumentPartners()
+  const { items: partners } = useDocumentPartners()
 
   /** Các năm đang có văn bản, mới nhất trước. */
   const years = useMemo(() => {

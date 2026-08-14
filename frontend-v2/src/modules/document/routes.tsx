@@ -12,10 +12,10 @@ import { appRoutes } from '@/shared/constants/app-routes'
 /**
  * Phân hệ VĂN BẢN — quản lý văn bản đến / đi / nội bộ và các danh mục nền.
  *
- * ⚠️ Backend CHƯA có gì cho phân hệ này: dữ liệu đang nằm ở kho tạm phía trình
- * duyệt (`store/local-collection.ts`) và `ENTITIES` trong `core/permissions.py`
- * chưa có `document`. Vì vậy chưa gắn được `entity` để lọc quyền — hiện ai đăng
- * nhập cũng thấy phân hệ này.
+ * ⚠️ Backend mới có phần DANH MỤC (`/api/doc-types`, `/api/external-parties`,
+ * entity `doc_type` và `external_party`). Bảng văn bản và sổ văn bản vẫn chạy
+ * trên kho tạm phía trình duyệt (`store/local-collection.ts`) — xem lộ trình ở
+ * `plans/260814-1036-van-thu-p0-p3/thu-tu-thuc-hien.md`.
  */
 export const documentModule: ErpModule = {
   id: 'document',
@@ -35,8 +35,8 @@ export const documentModule: ErpModule = {
     },
     { label: 'Văn bản', path: appRoutes.document.documents, icon: Files, group: 'Nghiệp vụ' },
     { label: 'Sổ văn bản', path: appRoutes.document.books, icon: BookMarked, group: 'Nghiệp vụ' },
-    // Bốn danh mục nền gom vào MỘT mục menu: chúng chỉ được đụng tới lúc khai
-    // báo ban đầu, để bốn dòng riêng thì menu dài hơn cả phần việc hằng ngày.
+    // Ba danh mục nền gom vào MỘT mục menu: chúng chỉ được đụng tới lúc khai
+    // báo ban đầu, để mỗi cái một dòng thì menu dài hơn cả phần việc hằng ngày.
     {
       label: 'Thiết lập văn bản',
       path: appRoutes.document.settings,
@@ -99,20 +99,6 @@ export const documentModule: ErpModule = {
       }),
     },
     {
-      path: appRoutes.document.securityLevelNew,
-      lazy: async () => ({
-        Component: (await import('./pages/security-level-detail-page'))
-          .SecurityLevelDetailPage,
-      }),
-    },
-    {
-      path: appRoutes.document.securityLevelDetail(':id'),
-      lazy: async () => ({
-        Component: (await import('./pages/security-level-detail-page'))
-          .SecurityLevelDetailPage,
-      }),
-    },
-    {
       path: appRoutes.document.partnerNew,
       lazy: async () => ({
         Component: (await import('./pages/document-partner-detail-page'))
@@ -124,20 +110,6 @@ export const documentModule: ErpModule = {
       lazy: async () => ({
         Component: (await import('./pages/document-partner-detail-page'))
           .DocumentPartnerDetailPage,
-      }),
-    },
-    {
-      path: appRoutes.document.fieldNew,
-      lazy: async () => ({
-        Component: (await import('./pages/dynamic-field-detail-page'))
-          .DynamicFieldDetailPage,
-      }),
-    },
-    {
-      path: appRoutes.document.fieldDetail(':id'),
-      lazy: async () => ({
-        Component: (await import('./pages/dynamic-field-detail-page'))
-          .DynamicFieldDetailPage,
       }),
     },
   ],

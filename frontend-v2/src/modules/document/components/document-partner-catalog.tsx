@@ -7,9 +7,9 @@ import { CatalogTable } from './catalog-table'
 import { useDocumentPartners } from '../hooks/use-document-catalogs'
 import { PARTNER_KIND_LABELS, type DocumentPartner } from '../types/document-partner'
 
-/** Danh mục ĐỐI TÁC — nơi gửi của văn bản đến, nơi nhận của văn bản đi. */
+/** Danh mục ĐƠN VỊ GỬI NHẬN — nơi gửi của văn bản đến, nơi nhận của văn bản đi. */
 export function DocumentPartnerCatalog() {
-  const items = useDocumentPartners()
+  const { items, isLoading } = useDocumentPartners()
 
   const columns = useMemo<DataTableColumn<DocumentPartner>[]>(
     () => [
@@ -20,7 +20,7 @@ export function DocumentPartnerCatalog() {
         hideable: false,
         cell: (row) => <span className="font-medium text-navy">{row.code}</span>,
       },
-      { key: 'name', header: 'Tên đối tác', width: 280, cell: (row) => row.name },
+      { key: 'name', header: 'Tên đơn vị', width: 280, cell: (row) => row.name },
       {
         key: 'kind',
         header: 'Nhóm',
@@ -57,6 +57,9 @@ export function DocumentPartnerCatalog() {
       searchFields={(row) => [row.code, row.name, row.contact_person, row.phone]}
       searchPlaceholder="Tìm theo mã, tên hoặc người liên hệ…"
       detailPath={appRoutes.document.partnerDetail}
+      emptyMessage={
+        isLoading ? 'Đang tải danh mục…' : 'Chưa có đơn vị nào khớp điều kiện đang lọc.'
+      }
     />
   )
 }

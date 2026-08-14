@@ -61,7 +61,6 @@ const SAMPLE_DOCUMENTS: DocumentRecord[] = [
     ].join(''),
 
     attachments: [],
-    field_values: {},
   },
 ]
 
@@ -109,6 +108,5 @@ export const documentRecordCollection = createLocalCollection<DocumentRecord>({
     storage_location: 'vị trí lưu trữ',
     content: 'nội dung soạn thảo',
     attachments: 'tệp đính kèm',
-    field_values: 'thông tin bổ sung',
   },
 })

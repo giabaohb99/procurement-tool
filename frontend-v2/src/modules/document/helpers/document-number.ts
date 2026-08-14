@@ -23,9 +23,16 @@ export function nextBookNo(
   return used.reduce((max, record) => Math.max(max, record.book_no), 0) + 1
 }
 
-/** `CV` + 2026 + 1 → `CV-2026-001`. */
-export function buildDocumentCode(prefix: string, year: number, bookNo: number): string {
-  return `${prefix || 'VB'}-${year}-${String(bookNo).padStart(3, '0')}`
+/**
+ * `CV` + 2026 + 1 → `CV-2026-001`.
+ *
+ * ⚠️ Chỉ dùng cho màn SỔ VĂN BẢN đang chạy trên kho tạm. Số hiệu thật của văn
+ * bản do backend cấp trong cùng giao dịch với việc ghi bản ghi (khóa dòng bộ
+ * đếm) — xem `van-thu/04` mục 4.4. Tuyệt đối không dựng số ở client rồi ghi
+ * xuống: hai người bấm cùng lúc là ra hai văn bản trùng số.
+ */
+export function buildDocumentCode(typeCode: string, year: number, bookNo: number): string {
+  return `${typeCode || 'VB'}-${year}-${String(bookNo).padStart(3, '0')}`
 }
 
 /** Năm dùng để vào sổ: theo NGÀY BAN HÀNH, không phải ngày ngồi nhập. */

@@ -12,6 +12,8 @@ from app.core.response import error
 from app.modules.attachment.controller import router as attachment_router
 from app.modules.audit.controller import router as audit_router
 from app.modules.auth.controller import router as auth_router
+from app.modules.doc_catalog.controller import (doc_type_router,
+                                               external_party_router)
 from app.modules.catalog.controller import (brand_router, item_group_router,
                                             unit_router, warehouse_router)
 from app.modules.dashboard.controller import router as dashboard_router
@@ -95,6 +97,8 @@ app.include_router(warehouse_router)
 app.include_router(unit_router)
 app.include_router(item_group_router)
 app.include_router(brand_router)
+app.include_router(doc_type_router)
+app.include_router(external_party_router)
 app.include_router(survey_router)
 app.include_router(survey_report_router)
 app.include_router(po_router)

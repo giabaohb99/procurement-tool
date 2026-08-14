@@ -20,6 +20,7 @@ from app.modules.catalog.model import (Brand, ItemGroup,  # noqa: F401
                                        Unit, Warehouse)
 from app.modules.company.model import Company
 from app.modules.department.model import Department
+from app.modules.doc_catalog.model import DocType, ExternalParty
 from app.modules.employee.model import Employee
 from app.modules.product.model import Product
 from app.modules.purchase_request.model import (PurchaseRequest,  # noqa: F401
@@ -587,6 +588,59 @@ def force_resync_roles(db):
     print("SEED_FORCE_SYNC=true: đã ghi đè ma trận quyền các vai trò chuẩn theo app/seed.py.")
 
 
+# ---- Phân hệ VĂN THƯ · danh mục nền ----
+# Sáu loại hành chính phổ biến, đủ để bấm thử màn "Thiết lập văn bản".
+# Danh mục 32 loại chính thức do Pháp chế chốt rồi nhập trên giao diện (câu B6).
+SAMPLE_DOC_TYPES = [
+    # code, tên, nhóm, id_scheme, mật mặc định, duyệt, ký số, kèm QĐ, mô tả
+    ("CV", "Công văn", "D", 2, 2, True, False, False,
+     "Công văn trao đổi, đề nghị giữa các đơn vị."),
+    ("QD", "Quyết định", "B", 2, 2, True, True, False,
+     "Quyết định bổ nhiệm, điều động, khen thưởng, kỷ luật."),
+    ("TB", "Thông báo", "D", 2, 1, False, False, False,
+     "Thông báo nội bộ gửi toàn công ty hoặc từng bộ phận."),
+    ("QC", "Quy chế / Quy trình", "A", 1, 2, True, False, True,
+     "Quy chế, quy trình nội bộ ban hành kèm quyết định."),
+    ("HD", "Hợp đồng", "C", 2, 3, True, True, False,
+     "Hợp đồng kinh tế, hợp đồng nguyên tắc với đối tác."),
+    ("BM", "Biểu mẫu", "A", 1, 2, False, False, False,
+     "Biểu mẫu, phiếu in dùng chung trong nội bộ."),
+]
+
+SAMPLE_EXTERNAL_PARTIES = [
+    ("SKHDT", "Sở Kế hoạch và Đầu tư", 1),
+    ("CUCTHUE", "Cục Thuế TP.HCM", 1),
+    ("VCB", "Ngân hàng Vietcombank — CN Tân Bình", 2),
+]
+
+
+def seed_doc_catalog(db):
+    """Danh mục nền phân hệ Văn thư — CHỈ nạp khi bảng còn rỗng.
+
+    Bảng có dữ liệu rồi thì bỏ qua hoàn toàn: seed chạy lại mỗi lần deploy, nạp
+    đè sẽ dựng lại đúng những loại mà Hành chính vừa xóa trên giao diện.
+    """
+    n = 0
+    if db.query(DocType).count() == 0:
+        for i, (code, name, group, scheme, secrecy, appr, sign, decision, desc) in enumerate(
+                SAMPLE_DOC_TYPES):
+            db.add(DocType(
+                code=code, name=name, group_code=group, description=desc,
+                id_scheme=scheme, number_when=2, default_secrecy=secrecy,
+                needs_approval=appr, needs_signature=sign, needs_decision=decision,
+                sort_order=i + 1, is_active=True,
+            ))
+            n += 1
+
+    if db.query(ExternalParty).count() == 0:
+        for code, name, kind in SAMPLE_EXTERNAL_PARTIES:
+            db.add(ExternalParty(code=code, name=name, kind=kind, is_active=True))
+            n += 1
+
+    db.commit()
+    return n
+
+
 def run():
     # Schema do Alembic quản lý (start.sh chạy `alembic upgrade head` trước). Seed chỉ nạp DATA.
     db = SessionLocal()
@@ -736,6 +790,11 @@ def run():
 
         # 4 khung cấu hình trang chủ Help Center (Bắt đầu ngay/Phân hệ/Câu hỏi/Mẹo)
         seed_help_home_sections(db)
+
+        # Danh mục nền phân hệ Văn thư (loại văn bản, đơn vị gửi nhận)
+        n_doc = seed_doc_catalog(db)
+        if n_doc:
+            print(f"Nạp {n_doc} dòng danh mục Văn thư.")
 
         # Gán vai trò mặc định "Nhân sự" cho tài khoản chưa có vai trò
         n_default = assign_default_roles(db)

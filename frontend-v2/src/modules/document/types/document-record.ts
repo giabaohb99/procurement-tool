@@ -181,8 +181,6 @@ export interface DocumentRecord {
   content: string
 
   attachments: DocumentAttachment[]
-  /** Giá trị của trường thông tin động, tra theo `DynamicField.code`. */
-  field_values: Record<string, string>
 }
 
 export type DocumentRecordInput = Omit<DocumentRecord, 'id'>

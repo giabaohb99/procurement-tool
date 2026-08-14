@@ -54,7 +54,7 @@ export function DocumentListPage() {
 
   const records = useDocuments()
   const { items: documentTypes } = useDocumentTypes()
-  const partners = useDocumentPartners()
+  const { items: partners } = useDocumentPartners()
   const securityLevels = useSecurityLevels()
 
   const rows = useMemo(() => {

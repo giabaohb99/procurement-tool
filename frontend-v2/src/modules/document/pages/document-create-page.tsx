@@ -13,7 +13,6 @@ import { FormStepper } from '@/shared/ui/form-stepper'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { DocumentAttachmentList } from '../components/document-attachment-list'
-import { DocumentDynamicFields } from '../components/document-dynamic-fields'
 import { DocumentExtraInfoFields } from '../components/document-extra-info-fields'
 import {
   DocumentMainInfoFields,
@@ -24,7 +23,6 @@ import {
   PROCESSING_FIELDS,
 } from '../components/document-processing-fields'
 import { emptyDocumentForm } from '../helpers/document-form-defaults'
-import { useDynamicFieldsFor } from '../hooks/use-document-catalogs'
 import { useDocumentActions } from '../hooks/use-documents'
 import {
   documentRecordSchema,
@@ -83,7 +81,6 @@ export function DocumentCreatePage() {
   })
 
   const [attachments, setAttachments] = useState<DocumentAttachment[]>([])
-  const dynamicFields = useDynamicFieldsFor(form.watch('document_type_id'))
 
   async function goNext() {
     const valid = await form.trigger([...STEPS[step].fields])
@@ -95,16 +92,6 @@ export function DocumentCreatePage() {
   }
 
   function handleSubmit(values: DocumentRecordFormValues) {
-    // Trường động bắt buộc không kiểm được bằng zod (danh sách trường đổi theo
-    // loại văn bản), nên chặn ở đây.
-    const missing = dynamicFields.find(
-      (field) => field.is_required && !values.field_values?.[field.code],
-    )
-    if (missing) {
-      toast.error(`Chưa nhập "${missing.label}"`)
-      return
-    }
-
     const savedId = save({
       ...values,
       attachments,
@@ -166,8 +153,6 @@ export function DocumentCreatePage() {
             >
               <DocumentExtraInfoFields form={form} isEditing={false} />
             </FormCard>
-
-            <DocumentDynamicFields fields={dynamicFields} form={form} />
             <DocumentAttachmentList attachments={attachments} onChange={setAttachments} />
           </div>
 

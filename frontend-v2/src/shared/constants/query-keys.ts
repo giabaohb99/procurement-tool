@@ -56,6 +56,14 @@ export const queryKeys = {
     userScope: (userId: number, roleId: number) =>
       ['hr', 'users', userId, 'scope', roleId] as const,
   },
+  /** Phân hệ Văn thư. Danh mục nền nạp cả danh sách nên key không mang tham số lọc. */
+  document: {
+    all: ['document'] as const,
+    docTypes: () => ['document', 'doc-types'] as const,
+    docType: (id: number) => ['document', 'doc-types', id] as const,
+    externalParties: () => ['document', 'external-parties'] as const,
+    externalParty: (id: number) => ['document', 'external-parties', id] as const,
+  },
   /** Chuông thông báo trên thanh trên — dùng chung cho mọi phân hệ. */
   notification: {
     all: ['notification'] as const,

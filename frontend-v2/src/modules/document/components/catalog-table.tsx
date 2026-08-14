@@ -25,7 +25,8 @@ interface CatalogTableProps<T extends { id: number; is_active: boolean }> {
   /** Các trường được ô tìm kiếm quét qua. */
   searchFields: (row: T) => string[]
   searchPlaceholder: string
-  detailPath: (id: number) => string
+  /** Bỏ trống = danh mục chỉ đọc, bấm dòng không đi đâu cả. */
+  detailPath?: (id: number) => string
   emptyMessage?: string
   /** Lọc thêm sau ô tìm kiếm và select trạng thái (vd bộ lọc nâng cao). */
   filterRows?: (rows: T[]) => T[]
@@ -78,7 +79,7 @@ export function CatalogTable<T extends { id: number; is_active: boolean }>({
         getRowId={(row) => row.id}
         storageKey={storageKey}
         fillHeight
-        onRowClick={(row) => navigate(detailPath(row.id))}
+        onRowClick={detailPath ? (row) => navigate(detailPath(row.id)) : undefined}
         emptyMessage={emptyMessage}
         toolbar={
           <>

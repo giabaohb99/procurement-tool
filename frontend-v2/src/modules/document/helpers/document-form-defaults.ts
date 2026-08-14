@@ -43,6 +43,5 @@ export function emptyDocumentForm(): DocumentRecordFormValues {
     result: '',
     processing_note: '',
     storage_location: '',
-    field_values: {},
   }
 }

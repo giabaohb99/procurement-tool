@@ -1,37 +1,114 @@
 /**
- * MỨC MẬT / KHẨN — hai thang đo song song, cùng một danh mục:
- *  - `confidential` (độ mật): ai được đọc.
- *  - `urgent` (độ khẩn): phải xử lý nhanh tới đâu.
+ * MỨC MẬT và ĐỘ KHẨN — hai thang **cố định, khai trong mã**, không phải danh mục
+ * sửa được trên giao diện.
  *
- * Một văn bản chọn tối đa một mức ở mỗi thang, nên `kind` phải có để lọc đúng
- * nhóm khi chọn.
+ * Vì sao không cho sửa: mức mật là số nguyên lưu thẳng trên `tab_document`
+ * (`secrecy_level` 1–4, `urgency` 1–3) và mọi lớp kiểm quyền so sánh bằng con số
+ * đó. Cho người dùng thêm "mức 5" hay đổi thứ bậc thì phần kiểm quyền hiểu một
+ * đằng, danh mục nói một nẻo — mà sai ở đây nghĩa là lộ văn bản mật.
+ *
+ * Thang lấy theo `van-thu/04` mục 5.2. Tên hiển thị đang chờ chốt câu **B3**;
+ * đổi tên thì sửa đúng bảng dưới đây, KHÔNG đổi số.
  */
+
 export type SecurityLevelKind = 'confidential' | 'urgent'
 
 export const SECURITY_LEVEL_KIND_LABELS: Record<SecurityLevelKind, string> = {
-  confidential: 'Độ mật',
+  confidential: 'Mức mật',
   urgent: 'Độ khẩn',
 }
 
 export interface SecurityLevel {
+  /** Chính là giá trị lưu xuống DB (1–4 với mật, 1–3 với khẩn). */
   id: number
   code: string
   name: string
   kind: SecurityLevelKind
-  /** Càng lớn càng nghiêm/gấp — dùng để xếp thứ tự và tô đậm nhạt. */
+  /** Càng lớn càng nghiêm / càng gấp. Trùng `id` trong cùng một thang. */
   rank: number
   description: string
+  /** Luôn `true` — giữ trường cho bảng dùng chung `CatalogTable` khỏi phải rẽ nhánh. */
   is_active: boolean
 }
 
-/** Thang mật / khẩn theo lối hành chính Việt Nam. */
-export const DEFAULT_SECURITY_LEVELS: SecurityLevel[] = [
-  { id: 1, code: 'THUONG', name: 'Thường', kind: 'confidential', rank: 0, description: 'Không hạn chế người đọc.', is_active: true },
-  { id: 2, code: 'MAT', name: 'Mật', kind: 'confidential', rank: 1, description: 'Chỉ người được phân quyền mới xem.', is_active: true },
-  { id: 3, code: 'TOIMAT', name: 'Tối mật', kind: 'confidential', rank: 2, description: 'Hạn chế nghiêm ngặt, có sổ theo dõi người đọc.', is_active: true },
-  { id: 4, code: 'TUYETMAT', name: 'Tuyệt mật', kind: 'confidential', rank: 3, description: 'Mức cao nhất, do lãnh đạo chỉ định người đọc.', is_active: true },
-  { id: 5, code: 'BINHTHUONG', name: 'Bình thường', kind: 'urgent', rank: 0, description: 'Xử lý theo thứ tự thông thường.', is_active: true },
-  { id: 6, code: 'KHAN', name: 'Khẩn', kind: 'urgent', rank: 1, description: 'Xử lý trong ngày.', is_active: true },
-  { id: 7, code: 'THUONGKHAN', name: 'Thượng khẩn', kind: 'urgent', rank: 2, description: 'Xử lý ngay khi nhận.', is_active: true },
-  { id: 8, code: 'HOATOC', name: 'Hỏa tốc', kind: 'urgent', rank: 3, description: 'Chuyển và xử lý tức thì.', is_active: true },
+/** Bốn mức mật. Chưa cấp gì cho một người thì người đó ở mức 2 Nội bộ. */
+export const CONFIDENTIAL_LEVELS: SecurityLevel[] = [
+  {
+    id: 1,
+    code: 'CONGKHAI',
+    name: 'Công khai',
+    kind: 'confidential',
+    rank: 1,
+    description: 'Ai trong tập đoàn cũng đọc được, gửi ra ngoài cũng không sao.',
+    is_active: true,
+  },
+  {
+    id: 2,
+    code: 'NOIBO',
+    name: 'Nội bộ',
+    kind: 'confidential',
+    rank: 2,
+    description: 'Mức mặc định của mọi người khi chưa được cấp mức nào khác.',
+    is_active: true,
+  },
+  {
+    id: 3,
+    code: 'MAT',
+    name: 'Mật',
+    kind: 'confidential',
+    rank: 3,
+    description: 'Phải được cấp mức mật tường minh, có thời hạn.',
+    is_active: true,
+  },
+  {
+    id: 4,
+    code: 'TUYETMAT',
+    name: 'Tuyệt mật',
+    kind: 'confidential',
+    rank: 4,
+    description: 'Chỉ xem trên web, không cho tải tệp, có dấu chìm mang tên người xem.',
+    is_active: true,
+  },
 ]
+
+/** Ba độ khẩn. **Độc lập hoàn toàn với mức mật** — thông báo hỏa tốc vẫn có thể công khai. */
+export const URGENCY_LEVELS: SecurityLevel[] = [
+  {
+    id: 1,
+    code: 'THUONG',
+    name: 'Thường',
+    kind: 'urgent',
+    rank: 1,
+    description: 'Xử lý theo thứ tự thông thường.',
+    is_active: true,
+  },
+  {
+    id: 2,
+    code: 'KHAN',
+    name: 'Khẩn',
+    kind: 'urgent',
+    rank: 2,
+    description: 'Xử lý trong ngày.',
+    is_active: true,
+  },
+  {
+    id: 3,
+    code: 'HOATOC',
+    name: 'Hỏa tốc',
+    kind: 'urgent',
+    rank: 3,
+    description: 'Chuyển và xử lý tức thì.',
+    is_active: true,
+  },
+]
+
+export const SECURITY_LEVELS: SecurityLevel[] = [...CONFIDENTIAL_LEVELS, ...URGENCY_LEVELS]
+
+/** Tên mức mật theo số lưu trong DB; số lạ thì trả về chính con số đó. */
+export function secrecyLabel(level: number): string {
+  return CONFIDENTIAL_LEVELS.find((item) => item.id === level)?.name ?? String(level)
+}
+
+export function urgencyLabel(level: number): string {
+  return URGENCY_LEVELS.find((item) => item.id === level)?.name ?? String(level)
+}
