@@ -63,6 +63,11 @@ export const queryKeys = {
     docType: (id: number) => ['document', 'doc-types', id] as const,
     externalParties: () => ['document', 'external-parties'] as const,
     externalParty: (id: number) => ['document', 'external-parties', id] as const,
+    books: (year?: number) => ['document', 'books', year ?? 0] as const,
+    book: (id: number) => ['document', 'books', id] as const,
+    /** Bộ đếm tách riêng theo năm: đổi năm là đọc lại, không đụng bản ghi sổ. */
+    bookCounter: (id: number, year: number) =>
+      ['document', 'books', id, 'counter', year] as const,
   },
   /** Chuông thông báo trên thanh trên — dùng chung cho mọi phân hệ. */
   notification: {

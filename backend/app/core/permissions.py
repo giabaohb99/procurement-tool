@@ -12,7 +12,7 @@ ENTITIES = [
     "report", "setting", "category_assignee", "survey_request", "import", "backup",
     "help_article", "ticket",
     # Phân hệ Văn thư
-    "doc_type", "external_party",
+    "doc_type", "external_party", "document_book",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -49,6 +49,7 @@ ENTITY_LABELS = {
     "ticket": "Phiếu hỗ trợ",
     "doc_type": "Loại văn bản (Văn thư)",
     "external_party": "Đơn vị gửi nhận (Văn thư)",
+    "document_book": "Sổ văn bản (Văn thư)",
 }
 
 ACTION_LABELS = {

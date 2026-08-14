@@ -79,6 +79,20 @@ export const documentModule: ErpModule = {
       }),
     },
     {
+      path: appRoutes.document.bookNew,
+      lazy: async () => ({
+        Component: (await import('./pages/document-book-detail-page'))
+          .DocumentBookDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.document.bookDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/document-book-detail-page'))
+          .DocumentBookDetailPage,
+      }),
+    },
+    {
       path: appRoutes.document.settings,
       lazy: async () => ({
         Component: (await import('./pages/document-settings-page')).DocumentSettingsPage,

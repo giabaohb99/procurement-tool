@@ -19,6 +19,8 @@ SCOPE_FIELDS = {
     "survey":           {"owner": "created_by"},
     "employee":         {"company": "company_id", "dept_id": "department_id", "self": "id"},
     "ticket":           {"company": "company_id", "owner": "created_by"},
+    # Sổ văn bản: lọc theo pháp nhân sở hữu sổ và đơn vị được xem sổ.
+    "document_book":    {"company": "company_id", "dept_id": "department_id", "owner": "created_by"},
 }
 
 

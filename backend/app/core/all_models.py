@@ -33,3 +33,4 @@ from app.modules.faq import model as _faq  # noqa: F401
 from app.modules.ticket import model as _ticket  # noqa: F401
 from app.modules.comment import model as _comment  # noqa: F401
 from app.modules.doc_catalog import model as _doc_catalog  # noqa: F401
+from app.modules.doc_catalog import book_model as _doc_book  # noqa: F401

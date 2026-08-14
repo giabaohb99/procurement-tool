@@ -20,6 +20,7 @@ from app.modules.catalog.model import (Brand, ItemGroup,  # noqa: F401
                                        Unit, Warehouse)
 from app.modules.company.model import Company
 from app.modules.department.model import Department
+from app.modules.doc_catalog.book_model import DocumentBook
 from app.modules.doc_catalog.model import DocType, ExternalParty
 from app.modules.employee.model import Employee
 from app.modules.product.model import Product
@@ -607,6 +608,15 @@ SAMPLE_DOC_TYPES = [
      "Biểu mẫu, phiếu in dùng chung trong nội bộ."),
 ]
 
+# Ba sổ mở sẵn cho pháp nhân đầu tiên: đến / đi / nội bộ.
+# Mỗi sổ một bộ đếm riêng, đếm lại từ 1 mỗi năm — đúng lệ hành chính.
+SAMPLE_DOCUMENT_BOOKS = [
+    # mã, tên sổ, loại (1 đến · 2 đi · 3 nội bộ), tiền tố số
+    ("SD001", "Sổ văn bản đến", 1, "VBĐ"),
+    ("SDI001", "Sổ văn bản đi", 2, "VBĐI"),
+    ("SNB001", "Sổ văn bản nội bộ", 3, "NB"),
+]
+
 SAMPLE_EXTERNAL_PARTIES = [
     ("SKHDT", "Sở Kế hoạch và Đầu tư", 1),
     ("CUCTHUE", "Cục Thuế TP.HCM", 1),
@@ -614,7 +624,7 @@ SAMPLE_EXTERNAL_PARTIES = [
 ]
 
 
-def seed_doc_catalog(db):
+def seed_doc_catalog(db, company_id=0):
     """Danh mục nền phân hệ Văn thư — CHỈ nạp khi bảng còn rỗng.
 
     Bảng có dữ liệu rồi thì bỏ qua hoàn toàn: seed chạy lại mỗi lần deploy, nạp
@@ -630,6 +640,13 @@ def seed_doc_catalog(db):
                 needs_approval=appr, needs_signature=sign, needs_decision=decision,
                 sort_order=i + 1, is_active=True,
             ))
+            n += 1
+
+    if db.query(DocumentBook).count() == 0 and company_id:
+        for code, name, kind, prefix in SAMPLE_DOCUMENT_BOOKS:
+            db.add(DocumentBook(code=code, name=name, kind=kind, number_prefix=prefix,
+                                company_id=company_id, reset_yearly=True, start_no=1,
+                                is_active=True))
             n += 1
 
     if db.query(ExternalParty).count() == 0:
@@ -792,7 +809,7 @@ def run():
         seed_help_home_sections(db)
 
         # Danh mục nền phân hệ Văn thư (loại văn bản, đơn vị gửi nhận)
-        n_doc = seed_doc_catalog(db)
+        n_doc = seed_doc_catalog(db, company.id if company else 0)
         if n_doc:
             print(f"Nạp {n_doc} dòng danh mục Văn thư.")
 

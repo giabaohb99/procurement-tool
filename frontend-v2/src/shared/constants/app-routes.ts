@@ -51,8 +51,10 @@ export const appRoutes = {
     documents: '/document/documents',
     documentNew: '/document/documents/new',
     documentDetail: (id: number | string) => `/document/documents/${id}`,
-    /** Sổ văn bản đến / đi / nội bộ theo số vào sổ. */
+    /** Danh sách SỔ (mỗi sổ một bộ đếm riêng), không phải danh sách văn bản. */
     books: '/document/books',
+    bookNew: '/document/books/new',
+    bookDetail: (id: number | string) => `/document/books/${id}`,
     /**
      * Thiết lập văn bản — ba danh mục nền (loại văn bản, mức mật/khẩn, đơn vị
      * gửi nhận) nằm chung một trang, phân biệt bằng `?tab=`.
