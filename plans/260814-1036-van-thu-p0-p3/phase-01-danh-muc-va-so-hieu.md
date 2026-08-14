@@ -26,15 +26,15 @@
 | Mã | L | Việc | Chi tiết |
 |---|---|---|---|
 | **P1-T01** | DB | **Migration M2** | `tab_company` + `issue_code VARCHAR(20) UNIQUE` (chỉ chữ và số), `short_name VARCHAR(100)`, `level TINYINT` (1 Tập đoàn · 2 công ty thành viên · 3 đơn vị trực thuộc). `tab_department` + `issue_code VARCHAR(20)`, `kind TINYINT` (1 phòng chức năng · 2 đơn vị kinh doanh · 3 ban dự án). Tạo `tab_department_company` (`department_id, company_id, manager_employee_id, issue_code_override, is_active`) + `UNIQUE(department_id, company_id)` |
-| **P1-T02** | DB | **Migration M3** | `tab_doc_type` (17 cột, xem `04` 4.1) · `tab_doc_type_link_rule` (11 cột + `UNIQUE(source_type_id, relation, target_type_id)`) · `tab_doc_template` · `tab_external_party`. Tất cả có `company_id` (trừ `doc_type` dùng chung) + 4 cột audit + khai vào `all_models.py` + khai `SCOPE_FIELDS` |
+| **P1-T02** | DB | **Migration M3** | `tab_doc_type` (**16 cột** — bỏ `template_id`, xem `04` 4.1) · `tab_doc_type_link_rule` (11 cột + `UNIQUE(source_type_id, relation, target_type_id)`) · `tab_external_party`. **Không tạo `tab_doc_template`** (quyết định 6 ở `plan.md` — soạn thảo gõ tay, không có tệp mẫu). Tất cả có `company_id` (trừ `doc_type` dùng chung) + 4 cột audit + khai vào `all_models.py` + khai `SCOPE_FIELDS` |
 | **P1-T03** | DB | **Migration M4 + M5** | `tab_number_sequence` (`scope_key VARCHAR(150) UNIQUE, year SMALLINT, current_no INT`). `tab_incoming_register` — **tạo sớm, chưa có màn hình** |
 | **P1-T04** | BE | **Bộ cấp số** | `modules/doc_catalog/number_service.py`: `next_number(db, scope_key, year)` dùng `with_for_update()`, tự tạo dòng khi chưa có, reset khi `row.year != year`. **Bắt buộc gọi trong cùng transaction với việc ghi bản ghi.** 3 dạng `scope_key`: `doc:{issue_code}:{mã loại}` · `out:{issue_code}:{năm}:{mã loại}` · `in:{issue_code}:{năm}` |
 | **P1-T05** | BE | **Khóa mã sau khi đã cấp số** | Không cho sửa `company.issue_code` / `department.issue_code` / `doc_type.code` khi đã tồn tại `tab_number_sequence` mang mã đó. Chặn ở tầng dịch vụ + báo lỗi rõ ràng (D07) |
 | **P1-T06** | BE | **Kiểm thử 100 kết nối cấp số** | `test/backend/test_number_sequence.py`: 100 luồng cùng xin cấp số cho **cùng một sổ** → đúng 100 số liên tiếp, không trùng, không nhảy cóc. **Điều kiện chuyển phase, không được bỏ qua vì "chắc là ổn"** |
 | **P1-T07** | BE | **CRUD loại văn bản** | `modules/doc_catalog/{model,schema,service,controller}.py`. Loại văn bản dùng `make_crud_router` được, nhưng thêm kiểm: đổi `id_scheme` khi đã có văn bản thuộc loại → chặn. Entity `doc_type`, seed quyền cho vai trò `van_thu_admin` |
 | **P1-T08** | BE | **CRUD quy tắc cha–con** | `tab_doc_type_link_rule`. **Quan hệ 10 *trích từ* khóa cứng ở tầng dịch vụ:** `on_parent_new_version = 2`, `on_parent_obsolete = 3`, `inherit_secrecy = TRUE` — API từ chối mọi giá trị khác, giao diện không cho sửa. Chặn tạo dòng trùng `(source_type_id, relation, target_type_id)` |
-| **P1-T09** | BE | **CRUD tệp mẫu + đơn vị gửi nhận + phòng ban×pháp nhân** | 3 router theo `make_crud_router`. `tab_doc_template.file_id` trỏ `tab_file`, tải lên qua đường riêng tư của P0-T04 |
-| **P1-T10** | FE | **Form loại văn bản mở rộng** | `modules/document/components/document-type-form.tsx` + `types/document-type.ts`: thay 6 cờ hiện tại bằng bộ trường thật của `tab_doc_type` — `group_code` (A–F), `id_scheme`, `needs_decision`, `default_secrecy`, `is_confidential_type`, `needs_request`, `number_when`, `review_cycle_months`, `retention_months`, `default_flow_id`, `template_id`. Giữ `has_template`→`template_id`, `has_version`→suy từ `id_scheme` |
+| **P1-T09** | BE | **CRUD đơn vị gửi nhận + phòng ban×pháp nhân** | 2 router theo `make_crud_router`. (Tệp mẫu đã bỏ khỏi bản 1 — quyết định 6) |
+| **P1-T10** | FE | **Form loại văn bản mở rộng** | `modules/document/components/document-type-form.tsx` + `types/document-type.ts`: thay 6 cờ hiện tại bằng bộ trường thật của `tab_doc_type` — `group_code` (A–F), `id_scheme`, `needs_decision`, `default_secrecy`, `is_confidential_type`, `needs_request`, `number_when`, `review_cycle_months`, `retention_months`, `default_flow_id`. **Bỏ hẳn cờ `has_template`** (không còn tệp mẫu); `has_version` suy từ `id_scheme` |
 | **P1-T11** | FE | **Danh mục 32 loại theo 6 nhóm** | `document-type-catalog.tsx`: gom theo `group_code`, thêm tìm kiếm. Nối react-query, **bỏ** `store/document-type-store.ts` |
 | **P1-T12** | FE | **Màn quy tắc cha–con** | Màn mới `pages/link-rule-page.tsx` + `components/link-rule-table.tsx`. Mỗi dòng đọc thành một câu tiếng Việt: *"Hướng dẫn công việc — hướng dẫn — Quy trình — bắt buộc — đúng 1"*. Dòng *trích từ* hiện 3 cột khóa ở dạng chỉ đọc kèm giải thích vì sao |
 | **P1-T13** | FE | **Nắn thang mức mật** | `types/security-level.ts`: thang `confidential` về đúng 4 mức `1 Công khai · 2 Nội bộ · 3 Mật · 4 Tuyệt mật`; thang `urgent` về 3 mức `1 thường · 2 khẩn · 3 hỏa tốc` theo `tab_document.urgency`. **Hai thang độc lập**, không gộp |
@@ -58,7 +58,7 @@
 - [ ] P1-T06 · **Bài kiểm 100 kết nối — điều kiện chuyển phase**
 - [ ] P1-T07 · CRUD loại văn bản
 - [ ] P1-T08 · CRUD quy tắc cha–con, khóa cứng *trích từ*
-- [ ] P1-T09 · CRUD tệp mẫu, đơn vị gửi nhận, phòng ban×pháp nhân
+- [ ] P1-T09 · CRUD đơn vị gửi nhận, phòng ban×pháp nhân
 - [ ] P1-T10 · Form loại văn bản mở rộng
 - [ ] P1-T11 · Danh mục 32 loại theo nhóm, nối API
 - [ ] P1-T12 · Màn quy tắc cha–con
@@ -89,7 +89,6 @@
 ## Bảo mật
 
 - Bảng danh mục mới đều phải khai trong `SCOPE_FIELDS`, kể cả khi phạm vi là "mọi người đọc được" — khai tường minh chứ không để trống (chỗ dễ sai số 6).
-- `tab_doc_template.file_id` đi qua đường riêng tư của P0-T04; tệp mẫu không phải bí mật nhưng để chung một đường thì bớt một nhánh mã.
 
 ## Tiếp theo
 

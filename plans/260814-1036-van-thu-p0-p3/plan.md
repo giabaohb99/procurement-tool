@@ -10,10 +10,10 @@
 |---|---|---|---|
 | 0 · Vá nền | [phase-00-va-nen.md](./phase-00-va-nen.md) | 13 | ☐ Chưa bắt đầu |
 | 1 · Danh mục và số hiệu | [phase-01-danh-muc-va-so-hieu.md](./phase-01-danh-muc-va-so-hieu.md) | 14 | ☐ Chưa bắt đầu |
-| 2 · Yêu cầu, soạn thảo, phiên bản | [phase-02-yeu-cau-soan-thao-phien-ban.md](./phase-02-yeu-cau-soan-thao-phien-ban.md) | 21 | ☐ Chưa bắt đầu |
+| 2 · Yêu cầu, soạn thảo, phiên bản | [phase-02-yeu-cau-soan-thao-phien-ban.md](./phase-02-yeu-cau-soan-thao-phien-ban.md) | 22 | ☐ Chưa bắt đầu |
 | 3 · Bộ máy phê duyệt dùng chung | [phase-03-bo-may-phe-duyet.md](./phase-03-bo-may-phe-duyet.md) | 18 | ☐ Chưa bắt đầu |
 
-**66 task.** Mã task: `P{phase}-T{nn}`. Cột **L** trong từng phase: `BE` backend · `FE` frontend-v2 · `DB` migration · `∞` cả hai.
+**67 task.** Mã task: `P{phase}-T{nn}`. Cột **L** trong từng phase: `BE` backend · `FE` frontend-v2 · `DB` migration · `∞` cả hai.
 
 ## Phụ thuộc
 
@@ -42,9 +42,10 @@ P0 ──▶ P1 ──▶ P2 ──▶ P3 ──▶ (P4)
 |---|---|---|
 | 1 | `tab_file_access_log` tạo **sớm ở M1 (phase 0)** thay vì M10 | H03 "ghi nhật ký mọi lượt xem/tải" thuộc phase 0; không có bảng thì không ghi được |
 | 2 | Backend đặt ở **3 module mới**: `doc_catalog`, `document`, `approval` | Theo `module pattern` của `CLAUDE.md`; không nhét vào module có sẵn |
-| 3 | FE dựng trong `frontend-v2/src/modules/document` (đã có) + module mới `approval` | Tái dùng 4 danh mục + data-table + conditional-filter đã có |
+| 3 | FE dựng trong `frontend-v2/src/modules/document` (đã có) + module mới `approval` | Tái dùng 3 danh mục (loại · mức mật/khẩn · đối tác) + data-table + conditional-filter + rich-text-editor đã có |
 | 4 | `store/local-collection.ts` **gỡ dần theo từng task**, không gỡ một lần | Mỗi màn nối API xong thì bỏ collection tương ứng; tránh một PR khổng lồ |
 | 5 | Bộ máy duyệt **đứng cạnh** 5 luồng viết tay của Thu mua, bật bằng cờ `I26` | `00` mục 4.7 — đường lui trong một lần bấm |
+| 6 | **Soạn thảo = gõ thẳng trên web.** Bỏ cả `C02` tệp mẫu Word lẫn bộ trường nhập động | Chốt 14/08/2026: việc cơ bản nhất là người dùng **nhập văn bản bằng tay**. Không làm bảng `tab_doc_template`, không có cột `template_id`; gỡ danh mục "Trường thông tin động" đang có trong `frontend-v2`. Nội dung nằm ở `tab_document_version.content_html`, soạn bằng `rich-text-editor` (tiptap) đã có. Vẫn **giữ đính kèm tệp** — chỉ bỏ phần khai form |
 
 ## Rủi ro chặn cả plan
 
@@ -58,7 +59,7 @@ P0 ──▶ P1 ──▶ P2 ──▶ P3 ──▶ (P4)
 
 ## Câu hỏi chưa trả lời (không chặn P0–P3)
 
-1. **B1** — form chuẩn là mẫu Word (C02) hay form web (C09)? Plan này đi theo mẫu Word; form web để P9.
+1. ~~**B1** — form chuẩn là mẫu Word hay form web?~~ **Đã chốt 14/08/2026: không cả hai.** Người soạn gõ thẳng nội dung trên web bằng trình soạn thảo + bộ trường chung cố định `C01`. `C02` tệp mẫu Word và `C09` form web sinh thể thức đều **bỏ khỏi bản 1** — muốn làm thì đưa vào P9.
 2. **B3** — 4 mức mật chốt tên gì? Plan dùng `1 Công khai · 2 Nội bộ · 3 Mật · 4 Tuyệt mật` theo `04` mục 5.2. FE hiện đang là Thường/Mật/Tối mật/Tuyệt mật → P1-T13 nắn lại.
 3. **B12** — có làm loại thứ 33 *Trích lục* (C20) không? Plan chỉ làm bản trích nội bộ C19.
 4. **B6** — 32 mã loại + 13 mã pháp nhân đã ai duyệt chưa? Cấp số rồi thì **không đổi mã được** (P1-T05 khóa cột).

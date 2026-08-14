@@ -9,7 +9,7 @@
 |---|---|
 | Ưu tiên | Cao — chặn P3, P4, P5 |
 | Trạng thái | ☐ Chưa bắt đầu |
-| Mã `01` | B01–B07, C01–C07, C12–C19, D06, E01–E06, E11, L01, L02, L07 |
+| Mã `01` | B01–B07, C01, C03–C07, C12–C19, D06, E01–E06, E11, L01, L02, L07 (**C02 tệp mẫu đã bỏ** — quyết định 6 ở `plan.md`) |
 | Migration | M6, M7 |
 
 Bước duyệt ở phase này dùng **luồng một bước viết tay tạm thời** — đúng kiểu 5 luồng Thu mua đang có. P3-T17 sẽ thay bằng bộ máy chung. Làm vậy để phase 2 cho người thật bấm thử được ngay.
@@ -23,6 +23,7 @@ Bước duyệt ở phase này dùng **luồng một bước viết tay tạm th
 5. **Quan hệ *trích từ* (10) khác *thuộc về* (6).** Dùng nhầm là mất cả ba ràng buộc: gốc lên bản mới mà bản trích không bị đánh dấu · gốc bãi bỏ mà bản trích còn sống · mức mật bản trích vượt gốc (chỗ dễ sai số 11). *Trích từ* **bắt buộc có `source_version_id`**.
 6. `tab_document.doc_type_id`, `company_id`, `owner_employee_id`, `drafter_employee_id` **cho phép rỗng** (vì `origin = 2`), nhưng có `CHECK (origin <> 1 OR ...)` ép lại.
 7. Tệp đính kèm **dùng lại `tab_file_link`** với `entity = 'document_version'`, không tạo bảng nối riêng.
+8. **Soạn thảo là gõ tay trên web.** Nội dung nằm ở `tab_document_version.content_html`, soạn bằng `shared/ui/rich-text-editor` (tiptap, đã có sẵn phân trang + bảng + thước). **Không có tệp mẫu Word, không có trường nhập động** — bộ trường của văn bản là bộ chung cố định `C01`, khai trong mã. `version.file_id` / `pdf_file_id` vẫn giữ: đó là **đính kèm**, không phải mẫu.
 
 ## Danh sách task
 
@@ -53,9 +54,10 @@ Bước duyệt ở phase này dùng **luồng một bước viết tay tạm th
 | **P2-T11** | BE | **Bất biến hóa phiên bản** | `is_locked = true` khi duyệt, **không có API nào tắt**. Mọi `PUT` lên version đã khóa → 409. `change_summary` + `change_reason` **bắt buộc từ phiên bản thứ hai**. `sha256` nội dung tính lúc khóa |
 | **P2-T12** | BE | **Mở phiên bản mới** | `POST /documents/{id}/versions` → kiểm `open_slot` (bắt `IntegrityError` trả câu "bản nháp 2.0 đang do ông X giữ"), chép nội dung bản hiện tại, bắt `change_kind` (1 sửa lớn · 2 sửa nhỏ), set `prev_version_id`, `requires_reconfirm` mặc định theo `change_kind`. **Không đụng `tab_document.status`** |
 | **P2-T13** | BE | **Ngày hiệu lực của phiên bản** | `effective_from` riêng từng phiên bản, khác ngày được duyệt. Tác vụ định kỳ chuyển `current_version_id` đúng ngày; **đổi trong một giao dịch**, không có khoảng trống (C16, C17) |
-| **P2-T14** | FE | **Form văn bản dựng lại theo C01** | `components/document-record-form.tsx` + `types/document-record.ts`: đổi trục sang `doc_type_id` + `company_id` (pháp nhân **ban hành**) + `owner_employee_id` / `drafter_employee_id` / `signer_employee_id`, `secrecy_level`, `urgency`, `keywords`, `effective_date`, `legacy_code`. `direction`/`book_no`/`partner_id`/`processing_*` **gỡ khỏi form chính** (thuộc sổ đến, phase 9) |
+| **P2-T14** | FE | **Form văn bản dựng lại theo C01** | `components/document-record-form.tsx` + `types/document-record.ts`: đổi trục sang `doc_type_id` + `company_id` (pháp nhân **ban hành**) + `owner_employee_id` / `drafter_employee_id` / `signer_employee_id`, `secrecy_level`, `urgency`, `keywords`, `effective_date`, `legacy_code`. **Bộ trường cố định, khai trong mã.** `direction`/`book_no`/`partner_id`/`processing_*` **gỡ khỏi form chính** (thuộc sổ đến, phase 9) |
+| **P2-T14b** | FE | **Gỡ bộ trường nhập động khỏi module văn bản** | Xóa `components/dynamic-field-catalog.tsx`, `components/document-dynamic-fields.tsx`, `pages/dynamic-field-detail-page.tsx`, `types/dynamic-field.ts`, tab `fields` trong `document-settings-page.tsx`, 2 route `fieldNew`/`fieldDetail` và `field_values` trên `DocumentRecord`. Danh mục "Thiết lập văn bản" còn 3 tab: loại văn bản · mức mật/khẩn · đối tác. **Lý do ghi vào commit** để sau này ai muốn khôi phục thì biết vì sao bỏ |
 | **P2-T15** | FE | **Tab phiên bản trên trang chi tiết** | Danh sách phiên bản + trạng thái + `change_kind`; bản đã duyệt mở ra **chỉ đọc**; nút "mở phiên bản mới" (dialog bắt lý do + phân loại sửa); băng cảnh báo trên bản cũ *"Đã bị thay thế bởi bản 2.0 ngày …"* kèm nút sang bản mới — **bản cũ không xóa, không ẩn** (C18) |
-| **P2-T16** | FE | **Tệp mẫu + đính kèm + số hiệu cũ** | Nút tải tệp mẫu theo loại (C02); tải bản đã điền lên qua đường riêng tư P0-T04, hiện `sha256` (C06); ô `legacy_code` và tìm kiếm chấp nhận số cũ (C12) |
+| **P2-T16** | FE | **Trình soạn nội dung + đính kèm + số hiệu cũ** | Gắn `rich-text-editor` vào form văn bản, lưu vào `content_html`, tự động lưu bản nháp (tái dùng `use-document-autosave.ts`); phiên bản đã khóa thì editor ở chế độ **chỉ đọc**. Đính kèm tệp qua đường riêng tư P0-T04, hiện `sha256` (C06). Ô `legacy_code` + tìm kiếm chấp nhận số cũ (C12) |
 
 ### Quan hệ cha–con và bản trích (nhóm E)
 
@@ -76,8 +78,8 @@ Bước duyệt ở phase này dùng **luồng một bước viết tay tạm th
 
 **Tạo BE:** `modules/document_request/{model,schema,service,controller}.py` · `modules/document/{model,version_model,link_model,schema,service,version_service,link_service,extract_service,query,controller}.py` · `migrations/versions/<M6,M7>.py` · `test/backend/test_document_origin_filter.py` · `test_document_version.py` · `test_document_link_cycle.py` · `test_document_extract.py`
 **Tạo FE:** `pages/document-request-{list,create,detail}-page.tsx` · `pages/document-extract-page.tsx` · `components/document-version-tab.tsx` · `document-version-dialog.tsx` · `document-link-fields.tsx` · `document-tree.tsx` · `document-ocr-panel.tsx` · `hooks/use-document-versions.ts` · `use-document-links.ts` · `api/document-api.ts`
-**Sửa FE:** `components/document-record-form.tsx` · `types/document-record.ts` · `pages/document-{list,detail,create}-page.tsx` · `routes.tsx` · `app-routes.ts`
-**Xóa FE:** `store/document-record-store.ts` (sau khi nối API)
+**Sửa FE:** `components/document-record-form.tsx` · `types/document-record.ts` · `pages/document-{list,detail,create,settings}-page.tsx` · `routes.tsx` · `app-routes.ts`
+**Xóa FE:** `store/document-record-store.ts` (sau khi nối API) · `components/dynamic-field-catalog.tsx` · `components/document-dynamic-fields.tsx` · `pages/dynamic-field-detail-page.tsx` · `types/dynamic-field.ts` (P2-T14b)
 
 ## Todo
 
@@ -95,8 +97,9 @@ Bước duyệt ở phase này dùng **luồng một bước viết tay tạm th
 - [ ] P2-T12 · Mở phiên bản mới, bắt `open_slot`
 - [ ] P2-T13 · Ngày hiệu lực riêng của phiên bản
 - [ ] P2-T14 · FE form văn bản theo C01
+- [ ] P2-T14b · Gỡ bộ trường nhập động khỏi module văn bản
 - [ ] P2-T15 · FE tab phiên bản + băng cảnh báo
-- [ ] P2-T16 · FE tệp mẫu, đính kèm, số hiệu cũ
+- [ ] P2-T16 · FE trình soạn nội dung, đính kèm, số hiệu cũ
 - [ ] P2-T17 · Quan hệ + cấm vòng lặp + chặn thiếu quan hệ bắt buộc
 - [ ] P2-T18 · Bản trích + quan hệ *trích từ* + 3 ràng buộc
 - [ ] P2-T19 · FE khối quan hệ + cây tài liệu
