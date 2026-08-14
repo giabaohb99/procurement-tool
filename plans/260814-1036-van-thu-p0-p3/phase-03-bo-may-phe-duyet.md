@@ -32,7 +32,7 @@ Phase **nặng nhất và rủi ro nhất**: đây là chỗ dễ làm hỏng Th
 
 | Mã | L | Việc | Chi tiết |
 |---|---|---|---|
-| **P3-T01** | — | **Khai thử 8 luồng ra giấy** | **Làm trước khi viết dòng mã đầu tiên.** 5 luồng thật của Thu mua (PYC, khảo sát, yêu cầu khảo sát, ĐMH, yêu cầu thanh toán) + 3 luồng văn thư (duyệt yêu cầu văn bản, duyệt nội dung, duyệt bản clone) — khai bằng đúng mô hình `tab_approval_flow` + `tab_approval_node`. **Chỗ nào khai không nổi thì mô hình còn thiếu.** Ra một tệp `plans/.../8-luong-thu-nghiem.md` |
+| **P3-T01** | — | **Khai thử 7 luồng ra giấy** | **Làm trước khi viết dòng mã đầu tiên.** 5 luồng thật của Thu mua (PYC, khảo sát, yêu cầu khảo sát, ĐMH, yêu cầu thanh toán) + 2 luồng văn thư (duyệt nội dung văn bản, duyệt bản clone ở pháp nhân con) — khai bằng đúng mô hình `tab_approval_flow` + `tab_approval_node`. **Chỗ nào khai không nổi thì mô hình còn thiếu.** Ra một tệp `plans/.../7-luong-thu-nghiem.md` |
 | **P3-T02** | DB | **Migration M8** | 6 bảng: `tab_approval_flow` (13 cột) · `tab_approval_node` (17 cột) · `tab_approval_instance` (11 cột, có `flow_snapshot JSON`) · `tab_approval_task` (10 cột) · `tab_approval_action` (13 cột) · `tab_delegation` (10 cột). Index: **`tab_approval_task(assignee_employee_id, status)`**, `(instance_id, node_id)`, `tab_approval_instance(entity, entity_id)` + `(status, company_id)`, `tab_approval_action(instance_id, created_at)`. Grant MySQL append-only cho `tab_approval_action` |
 
 ### Bộ máy chạy phiên (backend)
@@ -51,14 +51,14 @@ Phase **nặng nhất và rủi ro nhất**: đây là chỗ dễ làm hỏng Th
 | **P3-T12** | BE | **Ủy quyền có thời hạn** | `tab_delegation`: bắt buộc `from_date`/`to_date`, quản trị đặt hộ được (`created_by_admin`). **Cấm ủy quyền dây chuyền** — A ủy cho B thì B không ủy tiếp phần việc nhận từ A, kiểm lúc lưu, báo lỗi rõ. Ghi cả hai danh tính: `actor_employee_id` + `on_behalf_of_id` + `delegation_id` |
 | **P3-T13** | BE | **Hạn và nhắc** | `sla_hours` mỗi node → `task.due_at`. Job định kỳ: sắp quá hạn nhắc, quá hạn nhắc tiếp, tăng `reminded_count`, ghi `action = 11`. Thông báo qua chuông (`app = 'vanthu'`) + thư. Leo cấp trên để bản sau (I6) |
 | **P3-T14** | BE | **Bàn giao hàng loạt + cảnh báo trước khi tắt tài khoản** | Chọn nhiều task của người nghỉ → chuyển sang người khác trong một lần (I23/F5). Khi HR bấm tắt nhân sự: **cảnh báo "người này đang giữ 12 phiếu"** trước khi cho tắt (F6) |
-| **P3-T15** | BE | **Cờ bật tắt theo loại chứng từ** | `setting` key `approval_engine.{entity}` mặc định `false`. Bật cho `document_request` và `document` trước; 5 luồng Thu mua **giữ nguyên mã cũ**, tắt cờ là quay về đường cũ ngay, không deploy (I26) |
+| **P3-T15** | BE | **Cờ bật tắt theo loại chứng từ** | `setting` key `approval_engine.{entity}` mặc định `false`. Bật cho `document` trước; 5 luồng Thu mua **giữ nguyên mã cũ**, tắt cờ là quay về đường cũ ngay, không deploy (I26) |
 
 ### Giao diện (frontend-v2 — module `approval` mới)
 
 | Mã | L | Việc | Chi tiết |
 |---|---|---|---|
 | **P3-T16** | FE | **Trình khai luồng duyệt** | Màn nặng nhất. Danh sách luồng + trình soạn: danh sách bước dọc (kéo đổi thứ tự), mỗi bước một panel cấu hình (`node_kind`, `flow_role`, `approver_kind` + `approver_ref`, `multi_mode`, `fallback_employee_id`, `sla_hours`, `min_secrecy_required`), khối điều kiện rẽ nhánh, **ép khai nhánh mặc định**. Ô `on_no_approver` **không có lựa chọn tự duyệt qua**. Nút "xem trước đường đi" (B8). Không dùng thư viện flow-chart — danh sách dọc đủ và rẻ hơn nhiều |
-| **P3-T17** | FE | **Panel duyệt trên phiếu + chuyển luồng yêu cầu văn bản** | Component dùng chung `<ApprovalPanel entity entityId />`: các nút duyệt/từ chối/trả lại/rút, ô ý kiến + đính kèm (tái dùng `procurement/document-comments` + `mention-input`), dòng thời gian dấu vết, hiện phiên bản luồng đang chạy. Gắn vào trang chi tiết yêu cầu văn bản (thay luồng một bước tạm của P2) và trang chi tiết văn bản |
+| **P3-T17** | FE | **Panel duyệt trên phiếu + chuyển luồng duyệt nội dung văn bản** | Component dùng chung `<ApprovalPanel entity entityId />`: các nút duyệt/từ chối/trả lại/rút, ô ý kiến + đính kèm (tái dùng `procurement/document-comments` + `mention-input`), dòng thời gian dấu vết, hiện phiên bản luồng đang chạy. Gắn vào trang chi tiết văn bản, **thay luồng một bước viết tay tạm thời của P2** |
 | **P3-T18** | FE | **Việc của tôi + phiếu kẹt + in dấu vết + ủy quyền** | `pages/my-tasks-page.tsx` gom việc chờ của **cả văn thư và thu mua** (I17), 3 tab: chờ tôi · tôi đã nộp · tôi đã duyệt. `pages/stuck-instances-page.tsx` liệt kê phiếu không ai xử lý (F7). `pages/approval-trace-print-page.tsx` — bản in dấu vết, ghi rõ "B duyệt thay A theo ủy quyền số 12" và "bước 3 tự qua vì …" (I20/H4/E). `pages/delegation-page.tsx` khai ủy quyền |
 
 ## Tệp đụng tới
@@ -69,7 +69,7 @@ Phase **nặng nhất và rủi ro nhất**: đây là chỗ dễ làm hỏng Th
 
 ## Todo
 
-- [ ] P3-T01 · **Khai thử 8 luồng ra giấy** (trước khi viết mã)
+- [ ] P3-T01 · **Khai thử 7 luồng ra giấy** (trước khi viết mã)
 - [ ] P3-T02 · M8: 6 bảng + index + grant append-only
 - [ ] P3-T03 · Chọn luồng theo điều kiện + `priority`
 - [ ] P3-T04 · Khởi tạo phiên + `flow_snapshot`
@@ -85,7 +85,7 @@ Phase **nặng nhất và rủi ro nhất**: đây là chỗ dễ làm hỏng Th
 - [ ] P3-T14 · Bàn giao hàng loạt + cảnh báo trước khi tắt tài khoản
 - [ ] P3-T15 · Cờ bật tắt theo loại chứng từ
 - [ ] P3-T16 · FE trình khai luồng duyệt
-- [ ] P3-T17 · FE panel duyệt + chuyển luồng yêu cầu văn bản sang bộ máy mới
+- [ ] P3-T17 · FE panel duyệt + chuyển luồng duyệt nội dung văn bản sang bộ máy mới
 - [ ] P3-T18 · FE việc của tôi, phiếu kẹt, in dấu vết, ủy quyền
 - [ ] **Chạy lại 5 kiểm thử Thu mua ở P0-T01 → vẫn xanh**
 
@@ -101,7 +101,7 @@ Phase **nặng nhất và rủi ro nhất**: đây là chỗ dễ làm hỏng Th
 | **Chạy lại 5 kiểm thử Thu mua (P0-T01)** | **Vẫn xanh** — bộ máy mới chưa bật cho Thu mua nên không được ảnh hưởng gì |
 | A ủy quyền cho B, B thử ủy tiếp cho C | Bị chặn, báo lỗi rõ |
 | In dấu vết một phiếu có bước tự qua và bước duyệt thay | Tờ in ghi đúng cả hai: "tự qua vì …" và "B duyệt thay A theo ủy quyền số 12" |
-| Tắt cờ `approval_engine.document_request` | Quay về đường duyệt cũ ngay, không cần deploy |
+| Tắt cờ `approval_engine.document` | Quay về đường duyệt cũ ngay, không cần deploy |
 
 ## Rủi ro
 
