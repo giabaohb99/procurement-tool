@@ -63,4 +63,19 @@ P0 ──▶ P1 ──▶ P2 ──▶ P3 ──▶ (P4)
 2. **B3** — 4 mức mật chốt tên gì? Plan dùng `1 Công khai · 2 Nội bộ · 3 Mật · 4 Tuyệt mật` theo `04` mục 5.2. FE hiện đang là Thường/Mật/Tối mật/Tuyệt mật → P1-T13 nắn lại.
 3. **B12** — có làm loại thứ 33 *Trích lục* (C20) không? Plan chỉ làm bản trích nội bộ C19.
 4. **B6** — 32 mã loại + 13 mã pháp nhân đã ai duyệt chưa? Cấp số rồi thì **không đổi mã được** (P1-T05 khóa cột).
-5. `frontend-v2` đã chốt thay `frontend/` chưa? Cả bộ van-thu không nhắc tới nó — plan này giả định **có**.
+5. ~~`frontend-v2` đã chốt thay `frontend/` chưa?~~ **Đã chốt: `frontend-v2` là FE chính thức, `frontend/` đóng băng chỉ sửa lỗi.** Cả bộ `van-thu` viết trước quyết định này nên không nhắc tới `frontend-v2` chỗ nào — đọc `01` thấy nói "màn hình của Thu mua" thì hiểu là `frontend-v2`.
+   ⚠️ **Quyết định này chưa được ghi vào `doc/tai-lieu-ky-thuat/change-log.md`** — bảng quyết định hiện dừng ở **D-025**, không có D-026, và không tệp nào trong `doc/` nhắc tới `frontend-v2`. Cần ghi một dòng D-026 để lần sau không ai phải hỏi lại.
+
+## Mức tái dùng của module `document` đang có trong `frontend-v2`
+
+Module này dựng theo **trục sổ đến/đi** (`direction` · `book_no` · `partner_id` · `processing_status`) — thuộc nhóm S, van-thu xếp **phase 9**. Nói "đập đi làm lại" thì quá, nói "dùng lại được nhiều" cũng sai. Phân ra cho rõ:
+
+| Phần | Số phận |
+|---|---|
+| 3 danh mục: loại văn bản · mức mật/khẩn · đối tác | **Giữ**, sửa trường (P1-T10, T11, T13) |
+| Vỏ trang: list · detail · create · settings, breadcrumb, layout | **Giữ**, thay nội dung |
+| Hạ tầng dùng chung: `data-table`, `conditional-filter`, `rich-text-editor`, `use-document-autosave`, `audit-timeline`, `notification-bell` | **Giữ nguyên**, không đụng |
+| Bộ trường trên form văn bản (`DocumentRecord` ~40 trường) | **Đổi trục** (P2-T14) — phần viết lại thật sự nằm ở đây |
+| Trường nhập động | **Xóa** (P2-T14b) |
+| Sổ văn bản đến/đi + `direction`/`book_no`/`partner_id`/`processing_*` | **Tạm ẩn khỏi menu**, giữ mã, chờ câu A1 |
+| `store/local-collection.ts` + 3 store | **Xóa dần** khi từng màn nối API |

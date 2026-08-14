@@ -1,7 +1,9 @@
 # PHASE 0 · VÁ NỀN
 
 > [← plan.md](./plan.md) · Nguồn: `van-thu/00` mục 3, `01` nhóm N, `02` mục 4, `04` mục 3
-> **Phase duy nhất chạm vào hệ Thu mua đang chạy thật (~300 tài khoản). Không sinh ra tính năng nào người dùng thấy.**
+> **Phase duy nhất chạm vào hệ Thu mua đang chạy thật. Không sinh ra tính năng nào người dùng thấy.**
+
+⚠️ **Số tài khoản prod chưa chốt.** `van-thu/00` mục 2.1 ghi "gần 300 tài khoản", `CLAUDE.md` ghi "~20–100 users", DB local chỉ có 7 (dữ liệu seed). Con số **không đổi thiết kế nào** ở phase này — lý do chuyển cache quyền sang Redis (P0-T05) là **tính đúng đắn giữa nhiều tiến trình** (thu hồi quyền phải có hiệu lực ngay và đều trên mọi worker), không phải chịu tải. Nhưng vẫn phải chốt để ước lượng đúng mức rủi ro khi deploy: đếm `tab_user WHERE is_active = 1` trên prod trước khi bắt đầu.
 
 ## Tổng quan
 
@@ -38,7 +40,7 @@
 | **P0-T10** | ∞ | **Gom nhóm đối tượng phân quyền theo phân hệ** | `core/permissions.py`: thêm `ENTITY_GROUPS = {"thumua": [...], "vanthu": [...], "nen": [...]}` + entity mới `document`, `document_request`, `doc_type`, `approval_flow`, `document_acl`. FE `hr/components/role-permission-matrix.tsx` render theo nhóm có thể thu gọn. 28 → ~40 đối tượng mà không rối |
 | **P0-T11** | ∞ | **Thông báo tách theo app** | BE: `modules/notification` nhận + lọc `app`; mọi chỗ `create_notification` truyền `app`. FE: `shared/notifications/use-notifications.ts` gửi `app` theo module đang mở; chuông chỉ đếm chưa đọc của app đó. **Không tạo bảng thông báo thứ hai** |
 | **P0-T12** | FE | **Tệp đính kèm đi qua link tạm** | `modules/document/components/document-attachment-list.tsx` và `procurement/components/document-attachments-card.tsx`: bỏ dùng `file.url`, gọi `/api/attachments/{id}/link` ngay lúc bấm, không prefetch (link chỉ sống 60–120s). Nút tải ẩn khi API trả `can_download = false` |
-| **P0-T13** | BE | **Guard `SCOPE_FIELDS` lúc khởi động** | Quét model đã khai trong `all_models.py`: bảng nào có cột `company_id` mà entity tương ứng chưa có mặt trong `SCOPE_FIELDS` → **raise lúc startup**, không chạy im lặng. Chống chỗ dễ sai số 6 của `04` mục 13 |
+| **P0-T13** | BE | **Guard `SCOPE_FIELDS` lúc khởi động — có danh sách miễn trừ** | Quét model trong `all_models.py`: bảng có `company_id` mà entity chưa khai `SCOPE_FIELDS` thì báo. ⚠️ **Không được raise thẳng**: đối chiếu ngày 14/08/2026 có **14 model mang `company_id`** mà `SCOPE_FIELDS` chỉ khai **9** — thiếu `contract`, `department`, `goods_receipt`, `purchase_history`, `report`, `user`. Bật guard kiểu "thiếu là raise" thì **prod chết ngay lần deploy đầu**. Cách làm: hằng số `SCOPE_EXEMPT = {...}` liệt kê đúng 6 entity cũ kèm ghi chú vì sao · entity **nào không nằm trong danh sách đó mà thiếu khai thì raise** · entity cũ chỉ log cảnh báo lúc startup. Mọi entity văn thư mới **cấm** cho vào `SCOPE_EXEMPT`. Rút dần danh sách miễn trừ ở các phase sau, mỗi lần rút một entity kèm test |
 
 ## Tệp đụng tới
 
@@ -74,7 +76,8 @@
 | Gọi API nhật ký không truyền `entity_id` | Bị từ chối (hoặc chỉ trả về trong phạm vi) |
 | Thu hồi một vai trò | Mất quyền **trong vài giây**, không chờ 60s, đều trên mọi worker |
 | Tải tệp qua endpoint mới | Có dòng trong `tab_file_access_log` |
-| Khởi động app với một model có `company_id` chưa khai `SCOPE_FIELDS` | App **không khởi động được** |
+| Khởi động app với một entity **mới** có `company_id` chưa khai `SCOPE_FIELDS` | App **không khởi động được** |
+| Khởi động app với 6 entity cũ đang thiếu khai (`contract`, `department`, `goods_receipt`, `purchase_history`, `report`, `user`) | App **vẫn khởi động**, log 6 dòng cảnh báo |
 
 ## Rủi ro
 
