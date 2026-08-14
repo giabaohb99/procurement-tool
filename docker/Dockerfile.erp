@@ -1,0 +1,14 @@
+# ERP v2 — bản giao diện dựng lại (React 19 + Vite 8 + Tailwind 4), dev server + HMR.
+# Node 22 chứ không phải 20 như hai app kia: Vite 8 và TypeScript 7 đòi Node >= 20.19,
+# và @types/node ở đây là bản 26.
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY frontend-v2/package.json /app/package.json
+RUN npm install
+
+COPY frontend-v2/ /app/
+
+EXPOSE 5174
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

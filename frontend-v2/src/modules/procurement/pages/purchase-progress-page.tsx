@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { appConfig } from '@/core/config/app-config'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
@@ -63,8 +63,14 @@ export function PurchaseProgressPage() {
   // Không có quyền `supplier.read` thì backend xóa trắng cột NCC / vận chuyển —
   // ẩn luôn cho khỏi bày ra một loạt ô rỗng.
   const showSupplier = data?.show_supplier ?? true
-  const companyName = (id: number) =>
-    (companies?.items ?? []).find((company) => company.id === id)?.name ?? '—'
+  // useCallback để `columns` bên dưới phụ thuộc thẳng vào hàm này thay vì phụ
+  // thuộc gián tiếp qua `companies` — cách gián tiếp đúng nhưng dễ vỡ: sửa thân
+  // hàm mà quên sửa mảng phụ thuộc là bảng hiện dữ liệu cũ.
+  const companyName = useCallback(
+    (id: number) =>
+      (companies?.items ?? []).find((company) => company.id === id)?.name ?? '—',
+    [companies],
+  )
 
   const columns = useMemo<DataTableColumn<PurchaseProgressRow>[]>(() => {
     const all: (DataTableColumn<PurchaseProgressRow> & { supplierOnly?: boolean })[] = [
@@ -182,7 +188,7 @@ export function PurchaseProgressPage() {
     ]
 
     return all.filter((column) => !column.supplierOnly || showSupplier)
-  }, [showSupplier, companies])
+  }, [showSupplier, companyName])
 
   return (
     <PageContainer fill>

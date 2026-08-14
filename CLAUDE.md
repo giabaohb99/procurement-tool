@@ -16,8 +16,10 @@ Stack: FastAPI 0.115 · SQLAlchemy 2.0 · Pydantic v2 · MySQL 8 · Alembic · R
 Everything runs in Docker; there is no local venv/npm workflow.
 
 ```bash
-docker compose up --build           # start db + api + web + help + adminer
-# Web http://localhost:8080 · Help Center http://localhost:8082
+docker compose up --build           # start db + api + web + erp + help + adminer
+# Web (frontend/, đóng băng) http://localhost:8080
+# ERP v2 (frontend-v2/, đang phát triển) http://localhost:8083
+# Help Center http://localhost:8082
 # API http://localhost:8000/docs · Adminer http://localhost:8081
 ```
 
@@ -47,7 +49,14 @@ pytest test/e2e --headed -v
 
 # Adding dependencies
 docker compose exec web npm install <pkg> && docker compose restart web   # frontend (edit package.json)
+docker compose exec erp npm install <pkg> && docker compose restart erp   # frontend-v2
 docker compose up --build api                                             # backend (edit requirements.txt)
+
+# Cổng kiểm tra frontend-v2 — chạy hết trước khi báo xong việc (typecheck + lint + test)
+docker compose exec erp npm run check
+docker compose exec erp npm run test          # vitest run
+docker compose exec erp npm run lint          # oxlint (chỉ đỏ khi có LỖI)
+docker compose exec erp npm run typecheck     # tsc --noEmit — phải 0 lỗi
 ```
 
 ⚠️ **Never run `ALTER TABLE` / `INSERT` with Vietnamese text directly via `docker compose exec db mysql -e "..."`** — causes double-encoding mojibake. Always go through an Alembic migration or a Python/SQLAlchemy script.
@@ -74,6 +83,43 @@ A typical list endpoint composes both: `require(...)` as the route dependency, t
 **Filtering & pagination.** `apply_filters` (whitelist-based LIKE / IN filters from query params) and `pagination` live in `core/base_controller.py`. Mutations are audited via `core/audit.py record(...)`.
 
 ## Frontend architecture
+
+⚠️ **`frontend/` ĐÃ ĐÓNG BĂNG (D-026, 13/08/2026) — chỉ sửa lỗi, KHÔNG nhận tính năng mới.**
+Mọi phát triển giao diện từ nay làm ở **`frontend-v2/`** (React 19 + Vite 8 + Tailwind 4 +
+shadcn/Radix + TanStack Query + zustand). Backend không đổi: v2 gọi đúng `/api/...` cũ và
+đúng phong bì `{success, message, data}` cũ.
+
+Phân xử khi có yêu cầu mới: **sửa lỗi** màn đang chạy thật → `frontend/`; **tính năng mới**
+→ `frontend-v2/`, màn đó chưa có ở v2 thì dựng màn đó trước. `frontend/` chưa được tắt vì v2
+còn thiếu 6 màn: Yêu cầu báo giá, Công nợ, Yêu cầu thanh toán, Tiến độ mua hàng, Báo cáo,
+Phân quyền.
+
+### `frontend-v2/` — giao diện ERP (đang phát triển)
+
+Chạy bằng `docker compose up -d erp` → **http://localhost:8083**. Không có npm workflow ngoài
+Docker; code bind-mount nên HMR chạy. Gọi API bằng đường **tương đối** rồi qua proxy Vite
+(`VITE_API_PROXY_TARGET`, trong Docker là `http://api:8000`) nên không dính CORS.
+
+- **Phân hệ.** `src/modules/<tên>/` mỗi phân hệ một thư mục, khai báo ở `src/app/router/module-registry.ts`.
+  Thêm phân hệ = thêm một dòng. Phân hệ chưa làm để `enabled: false` — hiện "Sắp có" nhưng không đăng ký route.
+- **Tầng dùng chung.** `src/core/` (api, auth, authorization, i18n) · `src/shared/` (ui, data-table,
+  conditional-filter, utils). Component riêng của phân hệ **không** để ở `shared/`.
+- **Gọi API.** Dùng `apiGet<T>/apiPost<T>/apiPatch<T>/apiDelete<T>` (`@/core/api`) — đã bóc sẵn
+  lớp phong bì, trả thẳng `data`. Cần cả `message` thì dùng `httpClient`.
+- **Bảng danh sách.** Luôn dùng `DataTable` (`@/shared/data-table`), đọc `docs/ui/table.md` trước.
+  Không tự ghép `<Table>` ở tầng trang.
+- **Phân hệ Văn bản chưa có backend** — đang chạy trên localStorage (`modules/document/store/local-collection.ts`).
+  Đây là bản mô phỏng giao diện; kiểu dữ liệu của nó **chưa khớp** thiết kế ở `ke-hoach/erp/van-thu/04-bang-du-lieu.md`.
+- **Kiểm tra trước khi giao: `docker compose exec erp npm run check`** — gộp ba cổng:
+  - `typecheck` (`tsc --noEmit`) phải **0 lỗi** (khác `frontend/`, bên đó baseline là đúng 4 lỗi cũ);
+  - `lint` (**oxlint**, cấu hình `.oxlintrc.json`) phải **0 lỗi**. Cảnh báo hiện còn **27**, xem bằng
+    `npm run lint:strict` — đừng thêm mới. Dùng oxlint chứ không phải ESLint vì typescript-eslint
+    chưa chạy được trên TypeScript 7;
+  - `test` (**Vitest 4** + jsdom + Testing Library, cấu hình `vitest.config.ts`) phải xanh hết.
+- **Test đặt cạnh tệp nó kiểm** (`format-money.ts` → `format-money.test.ts`); luật đầy đủ ở
+  `frontend-v2/.claude/rules/testing.md`. Múi giờ khi chạy test cố định `Asia/Ho_Chi_Minh`.
+
+### `frontend/` — bản đang chạy thật (đóng băng)
 
 **Config-driven CRUD.** Most list/detail screens are declared as data in `src/config/cruds.tsx` (`CrudConfig`: columns, fields, filters, entity, apiPath) and rendered generically by `components/CrudList.tsx` + `components/CrudDetail.tsx`. Routing in `App.tsx`: the catch-all `:entity` / `:entity/:id` routes drive these; anything needing bespoke logic (PurchaseRequestDetail, SurveyDetail, PurchaseOrderDetail, Reports, RolePermissions, print pages, …) gets an explicit route + a page in `src/pages/`. **To add a simple screen, add a config entry; only write a page when behavior is genuinely custom.**
 

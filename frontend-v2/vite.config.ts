@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url'
+
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
@@ -13,7 +15,11 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
-      alias: { '@': new URL('./src', import.meta.url).pathname },
+      // fileURLToPath chứ KHÔNG phải .pathname: trên Windows .pathname trả về
+      // '/D:/New%20folder/...' — có gạch chéo thừa ở đầu và dấu cách bị mã hóa.
+      // Dev server bỏ qua được, nhưng `vite build` (rolldown) đọc thẳng đường dẫn
+      // đó và chết ngay ở import đầu tiên (os error 123).
+      alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
     },
     server: {
       host: true,

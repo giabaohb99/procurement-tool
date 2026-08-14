@@ -13,25 +13,48 @@ Goal: a name should tell you what's inside before you open the file. Long-but-de
 
 Every `.ts` / `.tsx` file is kebab-case, named after its main export's role:
 
-| File                    | Contains                    |
-| ----------------------- | --------------------------- |
-| `todo-list.tsx`         | `TodoList` component        |
-| `use-todos.ts`          | `useTodos` hook             |
-| `query-client.ts`       | the query client            |
-| `user-profile-form.tsx` | `UserProfileForm` component |
+| File                     | Contains                     |
+| ------------------------ | ---------------------------- |
+| `employee-list-page.tsx` | `EmployeeListPage` component |
+| `use-employees.ts`       | `useEmployees` hook          |
+| `employee-api.ts`        | the employee API functions   |
+| `query-client.ts`        | the query client             |
 
 - One primary export per file; name the file after it.
-- Hooks files start with `use-` (`use-auth.ts`). Component files are the kebab-case of the component name.
-- Feature folders: `src/features/<feature>/` with `api/`, `components/`, `hooks/`, `types.ts`, `index.ts`.
-- Tests sit next to the file they cover: `utils.ts` → `utils.test.ts`.
+- Hooks files start with `use-` (`use-permission.ts`). Component files are the
+  kebab-case of the component name. API files end with `-api.ts`. Page components
+  end with `-page.tsx` and live in `pages/`.
+- Module folders: `src/modules/<module>/` with `api/`, `components/`, `config/`,
+  `hooks/`, `pages/`, `types/`, `utils/`, `routes.tsx`. Not every module needs every
+  folder — create one when there is something to put in it.
+- Tests sit next to the file they cover: `format-money.ts` → `format-money.test.ts`.
 
 ## Symbols
 
-- Components & types/interfaces → `PascalCase` (`TodoList`, `interface Todo`).
-- Hooks, functions, variables → `camelCase` (`useTodos`, `fetchTodos`).
+- Components & types/interfaces → `PascalCase` (`EmployeeListPage`, `interface Employee`).
+- Hooks, functions, variables → `camelCase` (`useEmployees`, `fetchEmployees`).
 - Constants that are true constants → `SCREAMING_SNAKE_CASE` only when global/config; otherwise `camelCase`.
-- Query-key factories → `<feature>Keys` (e.g. `exampleKeys`), colocated with the feature's API.
+- A module's route definition is exported as `<module>Module` from
+  `modules/<module>/routes.tsx` and registered in `src/app/router/module-registry.ts`.
+
+## Query keys
+
+There are **no per-feature `<feature>Keys` factories**. All query keys live in one
+place: `src/shared/constants/query-keys.ts`, shaped `[<module>, <entity>, <params>]`
+so invalidation can work by level. Add new keys there; never inline a raw key string.
+The one deliberate exception is a key used by exactly one hook and never invalidated
+from outside it — keep it as a local `const …Keys` at the top of that hook file and
+say why in a comment.
 
 ## Barrels
 
-- Each feature exposes a public API via `index.ts`. Export the component, hooks, and types other code is allowed to use — nothing else.
+**Modules do NOT have barrels.** Import the exact file
+(`@/modules/hr/components/employee-form-dialog`). Only self-contained shared kits
+expose an `index.ts` (`@/shared/conditional-filter`, `@/core/api`); don't add more.
+
+## Language
+
+Code identifiers are English. **User-facing text, comments and documentation are
+Vietnamese** — this is an internal tool for a Vietnamese company and the domain
+vocabulary (YCMH, YCBG, ĐMH, NCC, YCTT…) is part of the spec. Do not "translate"
+existing Vietnamese strings or comments to English.

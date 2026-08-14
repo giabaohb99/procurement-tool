@@ -77,6 +77,24 @@ services:
     depends_on:
       - api
 
+  # Giao diện ERP v2 (thư mục frontend-v2/) — dùng chung backend api, chạy song song
+  # với `web` để so sánh. Gọi API bằng đường tương đối rồi qua proxy của Vite, nên
+  # VITE_API_PROXY_TARGET phải trỏ sang tên service `api` chứ không phải localhost.
+  erp:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.erp
+    environment:
+      VITE_API_PROXY_TARGET: http://api:8000
+      VITE_HELP_URL: ${VITE_HELP_URL:-http://localhost:8082}
+    volumes:
+      - ./frontend-v2:/app # mount code -> HMR
+      - /app/node_modules # giữ node_modules trong container
+    ports:
+      - "8083:5174"
+    depends_on:
+      - api
+
   # --- Celery / Redis (chạy tác vụ ngầm + theo lịch) ---
   redis:
     image: redis:7.2-alpine

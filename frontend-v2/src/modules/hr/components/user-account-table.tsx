@@ -1,5 +1,5 @@
 import { Lock, LockOpen, Pencil, Search, Trash2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { appConfig } from '@/core/config/app-config'
@@ -72,7 +72,12 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
 
   const { data, isLoading, isError } = useUserAccounts(params)
 
-  const roleName = (id: number) => roles.find((role) => role.id === id)?.name ?? String(id)
+  // useCallback để `columns` phụ thuộc thẳng vào hàm này thay vì phụ thuộc gián
+  // tiếp qua `roles` — cách gián tiếp đúng nhưng dễ vỡ khi sửa thân hàm.
+  const roleName = useCallback(
+    (id: number) => roles.find((role) => role.id === id)?.name ?? String(id),
+    [roles],
+  )
 
   const columns = useMemo<DataTableColumn<UserAccount>[]>(
     () => [
@@ -191,7 +196,7 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
         ),
       },
     ],
-    [roles, navigate, setActive, deleteAccount],
+    [roleName, navigate, setActive, deleteAccount],
   )
 
   return (
