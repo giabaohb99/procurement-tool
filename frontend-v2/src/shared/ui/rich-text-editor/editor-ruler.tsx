@@ -50,7 +50,10 @@ export function EditorRuler({
   // Giữ mốc lúc bắt đầu kéo trong ref: đọc `margins` trong hàm nghe chuột sẽ
   // dính giá trị cũ của lần render đã đóng băng.
   const dragRef = useRef<{ side: keyof PageMargins; startX: number; startValue: number }>(null)
-  const offset = usePageOffset(page, containerRef, zoom)
+  // Chỉ theo trục NGANG: thước này chỉ cần biết mép trái tờ giấy nằm ở đâu,
+  // báo cả vị trí dọc thì cuộn xuống là nó vẽ lại theo từng khung hình cho
+  // không.
+  const offset = usePageOffset(page, containerRef, zoom, 'x')
 
   function clamp(side: keyof PageMargins, value: number) {
     const other = side === 'left' ? margins.right : margins.left

@@ -1,4 +1,4 @@
-import { Plus, ShieldAlert, SlidersHorizontal, Tags, Users } from 'lucide-react'
+import { LibraryBig, Plus, ShieldAlert, Tags, Users } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -9,8 +9,8 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { DocumentPartnerCatalog } from '../components/document-partner-catalog'
+import { DocumentTemplateCatalog } from '../components/document-template-catalog'
 import { DocumentTypeCatalog } from '../components/document-type-catalog'
-import { DynamicFieldCatalog } from '../components/dynamic-field-catalog'
 import { SecurityLevelCatalog } from '../components/security-level-catalog'
 
 interface CatalogTab {
@@ -20,8 +20,8 @@ interface CatalogTab {
   icon: ComponentType<{ className?: string }>
   /** Chú thích dưới tiêu đề trang, đổi theo tab đang mở. */
   description: string
-  /** Trang thêm mới của danh mục này. */
-  newPath: string
+  /** Trang thêm mới của danh mục này. Bỏ trống = danh mục chỉ đọc. */
+  newPath?: string
   Catalog: ComponentType
 }
 
@@ -30,44 +30,47 @@ const TABS: CatalogTab[] = [
     value: 'types',
     label: 'Loại văn bản',
     icon: Tags,
-    description: 'Các loại văn bản dùng trong hệ thống và tiền tố số hiệu tương ứng.',
+    description:
+      'Loại văn bản quyết định số hiệu, mức mật mặc định và các bước bắt buộc của văn bản thuộc loại đó.',
     newPath: appRoutes.document.typeNew,
     Catalog: DocumentTypeCatalog,
+  },
+  {
+    value: 'templates',
+    label: 'Thư viện văn bản mẫu',
+    icon: LibraryBig,
+    description: 'Quản lý nội dung mẫu theo từng loại văn bản để người soạn dùng làm điểm bắt đầu.',
+    newPath: appRoutes.document.templateNew,
+    Catalog: DocumentTemplateCatalog,
   },
   {
     value: 'security-levels',
     label: 'Mức mật / khẩn',
     icon: ShieldAlert,
-    description: 'Độ mật quyết định ai được đọc, độ khẩn quyết định phải xử lý nhanh tới đâu.',
-    newPath: appRoutes.document.securityLevelNew,
+    description:
+      'Thang cố định, chỉ để tra cứu — mức mật quyết định ai được đọc, độ khẩn quyết định phải xử lý nhanh tới đâu.',
+    // Không có `newPath`: đây là thang khai trong mã, không thêm sửa được.
     Catalog: SecurityLevelCatalog,
   },
   {
     value: 'partners',
-    label: 'Đối tác',
+    label: 'Đơn vị gửi nhận',
     icon: Users,
-    description:
-      'Cơ quan, doanh nghiệp, cá nhân và đơn vị nội bộ trao đổi văn bản với công ty.',
+    description: 'Cơ quan, doanh nghiệp, cá nhân và đơn vị nội bộ trao đổi văn bản với công ty.',
     newPath: appRoutes.document.partnerNew,
     Catalog: DocumentPartnerCatalog,
-  },
-  {
-    value: 'fields',
-    label: 'Trường thông tin',
-    icon: SlidersHorizontal,
-    description:
-      'Khai thêm ô nhập cho văn bản mà không phải sửa code — vd giá trị hợp đồng, phạm vi áp dụng.',
-    newPath: appRoutes.document.fieldNew,
-    Catalog: DynamicFieldCatalog,
   },
 ]
 
 /**
- * THIẾT LẬP VĂN BẢN — bốn danh mục nền của phân hệ gom vào một trang nhiều tab.
+ * THIẾT LẬP VĂN BẢN — các danh mục nền và thư viện mẫu gom vào một trang nhiều tab.
  *
- * Trước đây mỗi danh mục một mục menu riêng: bốn dòng cho những thứ mà cả năm
- * người dùng động tới một lần lúc khai báo ban đầu, trong khi công việc hằng
+ * Trước đây mỗi danh mục một mục menu riêng: mấy dòng menu cho những thứ mà cả
+ * năm người dùng động tới một lần lúc khai báo ban đầu, trong khi công việc hằng
  * ngày (văn bản, sổ văn bản) chỉ có hai dòng. Gom lại còn một mục "Thiết lập".
+ *
+ * Tab "Mức mật / khẩn" **chỉ đọc**: đó là thang cố định khai trong mã, không
+ * phải danh mục (lý do ở `types/security-level.ts`).
  *
  * Tab đang xem ghi lên URL (`?tab=`) nên gửi link cho người khác vẫn ra đúng
  * danh mục, và nút "Về danh sách" ở các trang chi tiết quay lại đúng chỗ.
@@ -84,10 +87,14 @@ export function DocumentSettingsPage() {
         title="Thiết lập văn bản"
         description={current.description}
         actions={
-          <Button onClick={() => navigate(current.newPath)}>
-            <Plus className="size-4" />
-            Thêm mới
-          </Button>
+          // Tab chỉ đọc (mức mật / khẩn) không có gì để thêm — hiện nút rồi bấm
+          // vào không đi đâu thì tệ hơn là không có nút.
+          current.newPath ? (
+            <Button onClick={() => navigate(current.newPath as string)}>
+              <Plus className="size-4" />
+              Thêm mới
+            </Button>
+          ) : null
         }
       />
 

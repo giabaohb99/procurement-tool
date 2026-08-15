@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Boolean, String, Text
+from sqlalchemy import BigInteger, Boolean, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base_model import Base, AuditMixin
@@ -11,6 +11,15 @@ class Company(Base, AuditMixin):
 
     code: Mapped[str] = mapped_column(String(25), unique=True)
     name: Mapped[str] = mapped_column(String(255))
+    #  MÃ ĐI VÀO SỐ HIỆU VĂN BẢN (`DEGO` trong `DEGO-QC-012`) — chỉ chữ và số.
+    #  Cố ý KHÔNG dùng `code`: `code` là mã hiển thị, chứa được dấu tiếng Việt và
+    #  khoảng trắng, ghép vào số hiệu thì ra `Cty Dego-QC-012` (`van-thu` chỗ dễ
+    #  sai số 1). Đã cấp số rồi thì không đổi được nữa.
+    issue_code: Mapped[str] = mapped_column(String(20), default="", index=True)
+    #  Tên gọi tắt dùng trên thể thức văn bản, vd "DEGO Holding".
+    short_name: Mapped[str] = mapped_column(String(100), default="")
+    #  1 Tập đoàn · 2 công ty thành viên · 3 đơn vị trực thuộc.
+    level: Mapped[int] = mapped_column(SmallInteger, default=2)
     tax_code: Mapped[str] = mapped_column(String(25), default="")
     address: Mapped[str] = mapped_column(Text, default="")
     invoice_email: Mapped[str] = mapped_column(String(255), default="")

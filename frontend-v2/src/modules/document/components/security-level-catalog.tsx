@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 
-import { appRoutes } from '@/shared/constants/app-routes'
 import type { DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
 import { CatalogTable } from './catalog-table'
@@ -10,7 +9,14 @@ import {
   type SecurityLevel,
 } from '../types/security-level'
 
-/** Danh mục MỨC MẬT / KHẨN — hai thang đo nằm chung một bảng, phân biệt cột "Thang". */
+/**
+ * MỨC MẬT / ĐỘ KHẨN — bảng **chỉ đọc**, không thêm sửa xóa được.
+ *
+ * Đây là thang cố định khai trong mã, không phải danh mục: mức mật lưu xuống DB
+ * bằng số và mọi lớp kiểm quyền so sánh bằng chính con số đó. Cho sửa ở đây thì
+ * phần kiểm quyền hiểu một đằng, danh mục nói một nẻo — mà sai chỗ này nghĩa là
+ * lộ văn bản mật. Chi tiết ở `types/security-level.ts`.
+ */
 export function SecurityLevelCatalog() {
   const items = useSecurityLevels()
 
@@ -36,23 +42,13 @@ export function SecurityLevelCatalog() {
       },
       {
         key: 'rank',
-        header: 'Thứ bậc',
+        header: 'Bậc',
         width: 100,
         align: 'right',
         // Số càng lớn càng nghiêm/gấp — hiện thẳng con số để so sánh nhanh.
         cell: (row) => <span className="tabular-nums">{row.rank}</span>,
       },
       { key: 'description', header: 'Mô tả', cell: (row) => row.description },
-      {
-        key: 'is_active',
-        header: 'Trạng thái',
-        width: 120,
-        cell: (row) => (
-          <Badge variant={row.is_active ? 'default' : 'secondary'}>
-            {row.is_active ? 'Đang dùng' : 'Ngừng'}
-          </Badge>
-        ),
-      },
     ],
     [],
   )
@@ -64,7 +60,6 @@ export function SecurityLevelCatalog() {
       columns={columns}
       searchFields={(row) => [row.code, row.name]}
       searchPlaceholder="Tìm theo mã hoặc tên mức…"
-      detailPath={appRoutes.document.securityLevelDetail}
     />
   )
 }

@@ -1,10 +1,13 @@
-import { useMemo } from 'react'
+import { Plus } from 'lucide-react'
+import { useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { appRoutes } from '@/shared/constants/app-routes'
-import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import type { DataTableColumn } from '@/shared/data-table'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
-import { Card } from '@/shared/ui/card'
+import { Badge } from '@/shared/ui/badge'
+import { Button } from '@/shared/ui/button'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import {
@@ -15,130 +18,177 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import { formatDate } from '@/shared/utils/format-date'
-import { useDocumentPartners } from '../hooks/use-document-catalogs'
-import { useDocuments } from '../hooks/use-documents'
-import {
-  BOOK_LABELS,
-  DIRECTION_LABELS,
-  type DocumentDirection,
-  type DocumentRecord,
-} from '../types/document-record'
+import { CatalogTable } from '../components/catalog-table'
+import { useDocumentBooks } from '../hooks/use-document-books'
+import { BOOK_KIND_LABELS, BOOK_KIND_OPTIONS, type DocumentBook } from '../types/document-book'
+
+const ALL_COMPANIES = 'all'
+/** Bốn năm gần nhất — đủ để tra sổ cũ mà không phải gõ tay. */
+const YEARS = Array.from({ length: 4 }, (_, i) => new Date().getFullYear() - i)
 
 /**
- * SỔ VĂN BẢN ĐẾN / ĐI / NỘI BỘ.
+ * DANH SÁCH SỔ VĂN BẢN — ba tab theo loại sổ: đến · đi · nội bộ.
  *
- * Không phải bảng thứ hai: sổ chính là các văn bản đã lưu, xếp theo SỐ VÀO SỔ
- * tăng dần của từng (luồng × năm) — mở ra là đọc y như quyển sổ giấy. Số do hệ
- * cấp lúc tạo văn bản nên không có thao tác "vào sổ" thủ công nào.
+ * Sổ là bản ghi riêng chứ không phải một bộ lọc trên bảng văn bản: mỗi sổ có
+ * người quản lý, người xem đích danh và **bộ đếm số của riêng nó**. Mở một sổ ra
+ * mới thấy văn bản bên trong.
+ *
+ * Tab, pháp nhân và năm đều ghi lên URL nên gửi link cho nhau vẫn ra đúng màn
+ * đang xem. Riêng NĂM phải gửi lên backend chứ không lọc ở client: "số kế tiếp"
+ * và "đã cấp trong năm" là do bộ đếm của năm đó quyết định.
  */
 export function DocumentBookPage() {
   const navigate = useNavigate()
-  const [direction, setDirection] = useUrlParamState('direction', 'incoming')
-  const records = useDocuments()
-  const partners = useDocumentPartners()
+  const [kind, setKind] = useUrlParamState('kind', '1')
+  const [companyId, setCompanyId] = useUrlParamState('company', ALL_COMPANIES)
+  const [year, setYear] = useUrlParamState('year', String(YEARS[0]))
 
-  /** Các năm đang có văn bản, mới nhất trước. */
-  const years = useMemo(() => {
-    const set = new Set(records.map((record) => record.book_year))
-    if (set.size === 0) set.add(new Date().getFullYear())
-    return [...set].sort((a, b) => b - a)
-  }, [records])
+  const { items, isLoading } = useDocumentBooks(Number(year))
+  const { data: companies } = useCompanies({ page_size: 200 })
 
-  const [year, setYear] = useUrlParamState('year', String(years[0]))
-
-  const rows = useMemo(
-    () =>
-      records
-        .filter(
-          (record) => record.direction === direction && record.book_year === Number(year),
-        )
-        .sort((a, b) => a.book_no - b.book_no),
-    [records, direction, year],
+  const filterRows = useCallback(
+    (rows: DocumentBook[]) =>
+      rows.filter((row) => {
+        if (row.kind !== Number(kind)) return false
+        if (companyId === ALL_COMPANIES) return true
+        return row.company_id === Number(companyId)
+      }),
+    [kind, companyId],
   )
 
-  const columns = useMemo<DataTableColumn<DocumentRecord>[]>(
+  const columns = useMemo<DataTableColumn<DocumentBook>[]>(
     () => [
       {
-        key: 'book_no',
-        header: 'Số vào sổ',
+        key: 'code',
+        header: 'Mã sổ',
         width: 110,
-        align: 'right',
         hideable: false,
-        cell: (row) => <span className="font-medium tabular-nums">{row.book_no}</span>,
+        cell: (row) => <span className="font-medium text-navy">{row.code}</span>,
       },
-      { key: 'code', header: 'Số hiệu', width: 150, cell: (row) => row.code },
+      { key: 'name', header: 'Tên sổ', width: 240, cell: (row) => row.name },
+      { key: 'company_name', header: 'Pháp nhân', width: 240, cell: (row) => row.company_name },
       {
-        key: 'issued_date',
-        header: 'Ngày ban hành',
-        width: 140,
-        cell: (row) => formatDate(row.issued_date),
+        key: 'next_number_display',
+        header: 'Số kế tiếp',
+        width: 150,
+        // Con số cần nhất khi mở màn này: sổ đang tới đâu rồi.
+        cell: (row) => <span className="font-mono text-xs">{row.next_number_display}</span>,
       },
       {
-        key: 'received_date',
-        header: 'Ngày đến',
-        width: 130,
-        // Chỉ sổ văn bản đến mới có cột này.
-        defaultHidden: direction !== 'incoming',
-        cell: (row) => formatDate(row.received_date),
+        key: 'issued_count',
+        header: `Đã cấp ${year}`,
+        width: 120,
+        align: 'right',
+        cell: (row) => <span className="tabular-nums">{row.issued_count}</span>,
       },
-      { key: 'title', header: 'Trích yếu', cell: (row) => row.title },
       {
-        key: 'partner_id',
-        header: 'Nơi gửi / nhận',
-        width: 220,
-        cell: (row) => partners.find((partner) => partner.id === row.partner_id)?.name ?? '',
+        key: 'manager_names',
+        header: 'Người quản lý',
+        width: 200,
+        cell: (row) =>
+          row.manager_names.length ? (
+            row.manager_names.join(', ')
+          ) : (
+            // Sổ mở từ trước lúc bắt buộc cử người quản lý — nói thẳng thay vì
+            // để ô trống nhìn như dữ liệu chưa tải xong.
+            <span className="text-muted-foreground">Chưa cử ai</span>
+          ),
       },
-      { key: 'signer', header: 'Người ký', width: 160, cell: (row) => row.signer },
+      {
+        key: 'viewer_names',
+        header: 'Người xem sổ',
+        width: 200,
+        defaultHidden: true,
+        cell: (row) =>
+          row.viewer_names.length ? (
+            row.viewer_names.join(', ')
+          ) : (
+            <span className="text-muted-foreground">Chỉ người quản lý</span>
+          ),
+      },
+      {
+        key: 'is_active',
+        header: 'Trạng thái',
+        width: 120,
+        cell: (row) => (
+          <Badge variant={row.is_active ? 'default' : 'secondary'}>
+            {row.is_active ? 'Đang dùng' : 'Ngừng'}
+          </Badge>
+        ),
+      },
     ],
-    [partners, direction],
+    [year],
   )
 
   return (
     <PageContainer fill>
       <PageHeader
-        title={BOOK_LABELS[direction as DocumentDirection]}
-        description="Danh sách theo số vào sổ — số do hệ cấp tự động khi tạo văn bản."
+        title="Sổ văn bản"
+        description="Mỗi sổ có bộ đếm số riêng, đếm lại từ 1 mỗi năm."
+        actions={
+          <Button onClick={() => navigate(appRoutes.document.bookNew)}>
+            <Plus className="size-4" />
+            Thêm mới
+          </Button>
+        }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Tabs value={direction} onValueChange={setDirection}>
-          <TabsList>
-            {Object.entries(DIRECTION_LABELS).map(([value, label]) => (
-              <TabsTrigger key={value} value={value}>
-                {label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+      <Tabs value={kind} onValueChange={setKind} className="mb-4">
+        <TabsList>
+          {BOOK_KIND_OPTIONS.map((option) => (
+            <TabsTrigger key={option.value} value={String(option.value)}>
+              {BOOK_KIND_LABELS[option.value]}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
-        <Select value={year} onValueChange={setYear}>
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {years.map((option) => (
-              <SelectItem key={option} value={String(option)}>
-                Năm {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <CatalogTable
+        // Khóa nhớ layout tách theo tab: ba loại sổ có nhu cầu ẩn/hiện cột khác
+        // nhau, dùng chung một khóa thì đổi cột ở tab này lại đổi luôn tab kia.
+        storageKey={`document.books.${kind}`}
+        items={items}
+        columns={columns}
+        searchFields={(row) => [row.code, row.name, row.company_name]}
+        searchPlaceholder="Tìm theo mã sổ, tên sổ hoặc pháp nhân…"
+        detailPath={appRoutes.document.bookDetail}
+        filterRows={filterRows}
+        emptyMessage={
+          isLoading
+            ? 'Đang tải danh sách sổ…'
+            : `Chưa có ${BOOK_KIND_LABELS[Number(kind) as 1 | 2 | 3].toLowerCase()} nào khớp điều kiện đang lọc.`
+        }
+        extraToolbar={
+          <>
+            <Select value={companyId} onValueChange={setCompanyId}>
+              <SelectTrigger className="w-56">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_COMPANIES}>Tất cả pháp nhân</SelectItem>
+                {(companies?.items ?? []).map((company) => (
+                  <SelectItem key={company.id} value={String(company.id)}>
+                    {company.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-      {/* Bọc `Card` như mọi màn danh sách khác — bảng đặt trần lên nền trang
-          thì màu hàng tiêu đề và thân bảng lệch so với các phân hệ kia. */}
-      <Card className="flex min-h-0 flex-1 flex-col p-4">
-        <DataTable
-          columns={columns}
-          rows={rows}
-          getRowId={(row) => row.id}
-          storageKey="document.books"
-          fillHeight
-          onRowClick={(row) => navigate(appRoutes.document.documentDetail(row.id))}
-          emptyMessage="Sổ năm này chưa có văn bản nào."
-        />
-      </Card>
+            <Select value={year} onValueChange={setYear}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {YEARS.map((option) => (
+                  <SelectItem key={option} value={String(option)}>
+                    Năm {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
+        }
+      />
     </PageContainer>
   )
 }

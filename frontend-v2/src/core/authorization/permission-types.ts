@@ -53,6 +53,11 @@ export const ENTITIES = [
   'backup',
   'help_article',
   'ticket',
+  // Phân hệ Văn thư — phải khớp `ENTITIES` trong backend `core/permissions.py`.
+  'doc_type',
+  'external_party',
+  'document_book',
+  'document',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

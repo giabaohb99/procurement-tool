@@ -1,156 +1,141 @@
 /**
- * Loại văn bản — danh mục nền của phân hệ Văn bản: mỗi văn bản khi tạo sẽ chọn
- * một loại, và số hiệu văn bản sinh theo `prefix` của loại đó.
+ * LOẠI VĂN BẢN — danh mục gốc của phân hệ Văn thư (`tab_doc_type`).
  *
- * ⚠️ TẠM THỜI CHƯA CÓ BACKEND. Dữ liệu sống trong kho tạm phía trình duyệt (xem
- * `store/document-type-store.ts`). Kiểu dữ liệu dưới đây giữ tên trường theo lối
- * đặt của backend (`snake_case`, `is_*`, `has_*`) để lúc nối API không phải sửa
- * bảng và form.
+ * Mỗi văn bản khi tạo chọn một loại ở đây. Loại quyết định: kiểu định danh, mức
+ * mật mặc định, cấp số lúc nào, có phải duyệt / ký / kèm Quyết định ban hành
+ * không, chu kỳ rà soát và thời hạn lưu trữ.
+ *
+ * ⚠️ **Không có trường `prefix`.** Tiền tố số hiệu chính là `code` — hai trường
+ * luôn phải bằng nhau thì sớm muộn cũng lệch. Muốn hiện mẫu số hiệu thì gọi
+ * `documentCodeSample()` bên dưới.
  */
-export interface DocumentType {
-  id: number
-  /** Mã loại, viết HOA không dấu — vd `CV`, `QD`. */
-  code: string
-  name: string
-  /** Tiền tố số hiệu văn bản — vd `CV` → `CV-2026-001`. */
-  prefix: string
-  description: string
-  is_active: boolean
 
-  // ===== Tùy chọn khác — quyết định luồng làm việc của văn bản thuộc loại này =====
-  /** Loại này soạn theo BIỂU MẪU dựng sẵn, không gõ tự do. */
-  has_template: boolean
-  /** Quản lý phiên bản: sửa nội dung thì ra bản mới, bản cũ vẫn tra lại được. */
-  has_version: boolean
-  /** Phải qua duyệt trước khi có hiệu lực. */
-  needs_approval: boolean
-  /** Phải kèm quyết định ban hành (thường đi với quy trình / quy chế). */
-  needs_issue_decision: boolean
-  /** Phải ký số trước khi phát hành. */
-  needs_signature: boolean
-  /** Chỉ người được cấp quyền mới xem được nội dung. */
-  is_confidential: boolean
+/** 1 = mã tài liệu bất biến · 2 = số hiệu theo sổ. Khai theo từng loại. */
+export type IdScheme = 1 | 2
+
+export const ID_SCHEME_LABELS: Record<IdScheme, string> = {
+  1: 'Mã tài liệu bất biến',
+  2: 'Số hiệu theo sổ',
 }
 
-/** Các trường bật/tắt gom vào khối "Tùy chọn khác" của form. */
-export type DocumentTypeOptionKey =
-  | 'has_template'
-  | 'has_version'
-  | 'needs_approval'
-  | 'needs_issue_decision'
-  | 'needs_signature'
-  | 'is_confidential'
+export const ID_SCHEME_HINTS: Record<IdScheme, string> = {
+  1: 'Mã không đổi kể cả khi lên phiên bản 5. Dùng cho quy chế, quy trình, biểu mẫu — thứ sống lâu.',
+  2: 'Đếm lại từ 1 mỗi năm, mỗi pháp nhân một sổ. Dùng cho công văn, thông báo, quyết định — việc sự vụ.',
+}
+
+/** Lúc nào thì chiếm số: 1 = ngay khi tạo nháp · 2 = khi được duyệt. */
+export type NumberWhen = 1 | 2
+
+export const NUMBER_WHEN_LABELS: Record<NumberWhen, string> = {
+  1: 'Khi tạo bản nháp',
+  2: 'Khi được duyệt',
+}
+
+/** Mức mật — thang cố định, khai trong mã chứ không phải danh mục sửa được. */
+export type SecrecyLevel = 1 | 2 | 3 | 4
+
+/** Nhóm A–F của danh mục 32 loại. Rỗng = chưa xếp nhóm. */
+export const DOC_GROUP_LABELS: Record<string, string> = {
+  A: 'A · Tài liệu hệ thống',
+  B: 'B · Văn bản quản lý',
+  C: 'C · Hợp đồng, cam kết',
+  D: 'D · Văn bản sự vụ',
+  E: 'E · Hồ sơ, biên bản',
+  F: 'F · Khác',
+}
+
+export interface DocumentType {
+  id: number
+  /** Mã loại, chữ HOA không dấu — **đi thẳng vào số hiệu văn bản**. */
+  code: string
+  name: string
+  group_code: string
+  description: string
+
+  id_scheme: IdScheme
+  number_when: NumberWhen
+  default_secrecy: SecrecyLevel
+  is_confidential_type: boolean
+
+  needs_approval: boolean
+  needs_signature: boolean
+  needs_decision: boolean
+  /**
+   * Phải có yêu cầu được duyệt mới soạn được.
+   *
+   * Bản 1 **luôn `false`** và không hiện trên form: đã bỏ bước xin phép, ai có
+   * quyền tạo thì soạn thẳng. Giữ trường để bật lại sau không phải sửa bảng.
+   */
+  needs_request: boolean
+
+  /** 0 = không rà định kỳ. */
+  review_cycle_months: number
+  retention_months: number
+  /** Luồng duyệt mặc định — bộ máy duyệt chưa làm, luôn là 0. */
+  default_flow_id: number
+
+  sort_order: number
+  is_active: boolean
+}
 
 /**
- * Khai báo MỘT CHỖ cho cả form, bảng và bộ lọc — thêm tùy chọn mới chỉ cần nối
- * một dòng vào đây (và một trường vào `DocumentType`).
+ * Các cờ bật/tắt hiện thành hàng chip trên bảng và trên form.
+ *
+ * Khai MỘT CHỖ cho cả bảng, form và bộ lọc — thêm cờ mới chỉ cần nối một dòng
+ * vào đây và một trường vào `DocumentType`.
  */
-export const DOCUMENT_TYPE_OPTIONS: {
-  key: DocumentTypeOptionKey
+export type DocumentTypeFlagKey =
+  | 'needs_approval'
+  | 'needs_signature'
+  | 'needs_decision'
+  | 'is_confidential_type'
+
+export const DOCUMENT_TYPE_FLAGS: {
+  key: DocumentTypeFlagKey
   label: string
   hint: string
 }[] = [
-  { key: 'has_template', label: 'Có mẫu', hint: 'Soạn theo biểu mẫu dựng sẵn.' },
   {
-    key: 'has_version',
-    label: 'Có phiên bản',
-    hint: 'Sửa nội dung sẽ tạo bản mới, bản cũ vẫn tra lại được.',
+    key: 'needs_approval',
+    label: 'Cần duyệt',
+    hint: 'Phải qua duyệt trước khi có hiệu lực.',
   },
-  { key: 'needs_approval', label: 'Cần duyệt', hint: 'Phải duyệt trước khi có hiệu lực.' },
   {
-    key: 'needs_issue_decision',
+    key: 'needs_signature',
+    label: 'Cần ký số',
+    hint: 'Phải ký trước khi phát hành.',
+  },
+  {
+    key: 'needs_decision',
     label: 'Cần QĐ ban hành',
-    hint: 'Phải kèm quyết định ban hành.',
+    hint: 'Ban hành phải kèm một Quyết định. Mỗi lần sửa lớn cần một Quyết định mới.',
   },
-  { key: 'needs_signature', label: 'Cần ký số', hint: 'Phải ký số trước khi phát hành.' },
   {
-    key: 'is_confidential',
+    key: 'is_confidential_type',
     label: 'Bảo mật',
-    hint: 'Chỉ người được cấp quyền mới xem được nội dung.',
+    hint: 'Cả loại là loại bảo mật — chỉ người đủ mức mật mới xem được.',
   },
 ]
 
-/** Mọi tùy chọn đều TẮT — dùng cho form thêm mới. */
-export const EMPTY_DOCUMENT_TYPE_OPTIONS = {
-  has_template: false,
-  has_version: false,
+/** Mọi cờ đều TẮT — dùng cho form thêm mới. */
+export const EMPTY_DOCUMENT_TYPE_FLAGS = {
   needs_approval: false,
-  needs_issue_decision: false,
   needs_signature: false,
-  is_confidential: false,
+  needs_decision: false,
+  is_confidential_type: false,
 }
 
-/** Vài loại văn bản hành chính phổ biến, dùng làm dữ liệu khởi tạo của trang. */
-export const DEFAULT_DOCUMENT_TYPES: DocumentType[] = [
-  {
-    id: 1,
-    code: 'CV',
-    name: 'Công văn',
-    prefix: 'CV',
-    description: 'Công văn trao đổi, đề nghị giữa các đơn vị.',
-    is_active: true,
-    ...EMPTY_DOCUMENT_TYPE_OPTIONS,
-    has_template: true,
-    needs_approval: true,
-  },
-  {
-    id: 2,
-    code: 'QD',
-    name: 'Quyết định',
-    prefix: 'QD',
-    description: 'Quyết định bổ nhiệm, điều động, khen thưởng, kỷ luật.',
-    is_active: true,
-    ...EMPTY_DOCUMENT_TYPE_OPTIONS,
-    has_template: true,
-    needs_approval: true,
-    needs_signature: true,
-  },
-  {
-    id: 3,
-    code: 'TB',
-    name: 'Thông báo',
-    prefix: 'TB',
-    description: 'Thông báo nội bộ gửi toàn công ty hoặc từng bộ phận.',
-    is_active: true,
-    ...EMPTY_DOCUMENT_TYPE_OPTIONS,
-    has_template: true,
-  },
-  {
-    id: 4,
-    code: 'QC',
-    name: 'Quy chế / Quy trình',
-    prefix: 'QC',
-    description: 'Quy chế, quy trình nội bộ ban hành kèm quyết định.',
-    is_active: true,
-    ...EMPTY_DOCUMENT_TYPE_OPTIONS,
-    has_template: true,
-    has_version: true,
-    needs_approval: true,
-    needs_issue_decision: true,
-  },
-  {
-    id: 5,
-    code: 'HD',
-    name: 'Hợp đồng',
-    prefix: 'HD',
-    description: 'Hợp đồng kinh tế, hợp đồng nguyên tắc với đối tác.',
-    is_active: true,
-    ...EMPTY_DOCUMENT_TYPE_OPTIONS,
-    has_template: true,
-    has_version: true,
-    needs_approval: true,
-    needs_signature: true,
-    is_confidential: true,
-  },
-  {
-    id: 6,
-    code: 'BM',
-    name: 'Biểu mẫu',
-    prefix: 'BM',
-    description: 'Biểu mẫu, phiếu in dùng chung trong nội bộ.',
-    is_active: false,
-    ...EMPTY_DOCUMENT_TYPE_OPTIONS,
-    has_template: true,
-    has_version: true,
-  },
-]
+/**
+ * Mẫu số hiệu để người khai hình dung, KHÔNG phải số thật.
+ *
+ * Số thật do backend cấp trong cùng giao dịch với việc ghi bản ghi (khóa dòng bộ
+ * đếm) — xem `van-thu/04` mục 4.4. Ở đây chỉ dựng chuỗi minh họa.
+ */
+export function documentCodeSample(
+  code: string,
+  idScheme: IdScheme,
+  year = new Date().getFullYear(),
+): string {
+  const safe = code || 'XX'
+  return idScheme === 1 ? `DEGO-${safe}-012` : `08/${year}/${safe}-NS-DEGO`
+}

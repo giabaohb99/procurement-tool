@@ -21,8 +21,7 @@ export const appRoutes = {
     /** Yêu cầu mua hàng (PYC). */
     purchaseRequests: '/procurement/purchase-requests',
     purchaseRequestNew: '/procurement/purchase-requests/new',
-    purchaseRequestDetail: (id: number | string) =>
-      `/procurement/purchase-requests/${id}`,
+    purchaseRequestDetail: (id: number | string) => `/procurement/purchase-requests/${id}`,
     purchaseRequestPrint: (id: number | string) => `/print/purchase-request/${id}`,
     /** Đơn mua hàng (ĐMH). */
     purchaseOrders: '/procurement/purchase-orders',
@@ -51,27 +50,26 @@ export const appRoutes = {
     documents: '/document/documents',
     documentNew: '/document/documents/new',
     documentDetail: (id: number | string) => `/document/documents/${id}`,
-    /** Sổ văn bản đến / đi / nội bộ theo số vào sổ. */
+    /** Danh sách SỔ (mỗi sổ một bộ đếm riêng), không phải danh sách văn bản. */
     books: '/document/books',
+    bookNew: '/document/books/new',
+    bookDetail: (id: number | string) => `/document/books/${id}`,
     /**
-     * Thiết lập văn bản — bốn danh mục nền (loại, mức mật/khẩn, đối tác, trường
-     * thông tin) nằm chung một trang, phân biệt bằng `?tab=`.
+     * Thiết lập văn bản - các danh mục nền và thư viện mẫu nằm chung một trang,
+     * phân biệt bằng `?tab=`.
      */
     settings: '/document/settings',
-    settingsTab: (tab: 'types' | 'security-levels' | 'partners' | 'fields') =>
+    settingsTab: (tab: 'types' | 'templates' | 'security-levels' | 'partners') =>
       `/document/settings?tab=${tab}`,
     /** Loại văn bản (công văn, quyết định…). */
     typeNew: '/document/types/new',
     typeDetail: (id: number | string) => `/document/types/${id}`,
-    /** Mức mật / khẩn. */
-    securityLevelNew: '/document/security-levels/new',
-    securityLevelDetail: (id: number | string) => `/document/security-levels/${id}`,
-    /** Đối tác văn bản. */
+    /** Thư viện nội dung mẫu dùng khi tạo văn bản. */
+    templateNew: '/document/templates/new',
+    templateDetail: (id: number | string) => `/document/templates/${id}`,
+    /** Đơn vị gửi nhận bên ngoài. */
     partnerNew: '/document/partners/new',
     partnerDetail: (id: number | string) => `/document/partners/${id}`,
-    /** Trường thông tin động. */
-    fieldNew: '/document/fields/new',
-    fieldDetail: (id: number | string) => `/document/fields/${id}`,
   },
   report: {
     root: '/report',

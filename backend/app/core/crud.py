@@ -10,7 +10,14 @@ from app.core.response import success
 
 
 def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchema,
-                     filterable, unique_field="code", code_prefix=None, csv_headers=None):
+                     filterable, unique_field="code", code_prefix=None, csv_headers=None,
+                     before_update=None):
+    """`before_update(db, obj, values)` — chốt chặn riêng của từng danh mục.
+
+    Gọi TRƯỚC khi gán giá trị, nên `obj` còn mang dữ liệu cũ để so sánh (vd "mã
+    này đã cấp số chưa"). Danh mục nào không cần thì bỏ trống — đừng vì một chốt
+    chặn mà viết tay lại cả bộ CRUD.
+    """
     router = APIRouter(prefix=prefix, tags=[entity])
 
     def out(o):
@@ -57,7 +64,10 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         o = db.get(Model, oid)
         if not o:
             raise HTTPException(404, "Không tìm thấy")
-        for k, v in data.model_dump(exclude_unset=True).items():
+        values = data.model_dump(exclude_unset=True)
+        if before_update:
+            before_update(db, o, values)
+        for k, v in values.items():
             setattr(o, k, v)
         o.updated_by = user.id
         db.commit()

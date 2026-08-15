@@ -4,7 +4,7 @@ Mỗi vai trò của user là 1 grant: có quyền hành động + phạm vi ri�
 (cấp bậc own/dept/company/all theo vai trò + chọn cụ thể công ty/phòng ban/nhân sự + loại trừ).
 `apply_scope` = HỢP (OR) điều kiện của mọi grant có quyền `action` trên entity.
 """
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, false, or_, select
 
 from app.core.auth import get_perm_profile  # noqa: F401  (re-export tiện dùng)
 
@@ -19,6 +19,14 @@ SCOPE_FIELDS = {
     "survey":           {"owner": "created_by"},
     "employee":         {"company": "company_id", "dept_id": "department_id", "self": "id"},
     "ticket":           {"company": "company_id", "owner": "created_by"},
+    # Sổ văn bản: chỉ lọc theo pháp nhân sở hữu sổ. KHÔNG có chiều phòng ban —
+    # quyền xem sổ cấp cho người đích danh qua tab_document_book_member.
+    "document_book":    {"company": "company_id", "owner": "created_by"},
+    # Văn bản: lọc theo pháp nhân BAN HÀNH + phòng chủ trì. `owner` là tài khoản
+    # người tạo, không phải `owner_employee_id` (người chịu trách nhiệm nội dung)
+    # — hai thứ khác nhau, người tạo hộ vẫn phải thấy phiếu mình vừa nhập.
+    "document":         {"company": "company_id", "dept_id": "department_id",
+                         "owner": "created_by"},
 }
 
 
@@ -137,8 +145,19 @@ def _dept_include_cond(model, entity, scopeconf):
     return getattr(model, col).in_(list(inc))
 
 
-def apply_scope(query, model, entity: str, user, profile: dict, action: str = "read"):
-    """Lọc query theo HỢP các grant có quyền `action` trên entity."""
+def scope_condition(model, entity: str, user, profile: dict, action: str = "read"):
+    """ĐIỀU KIỆN phạm vi (chưa gắn vào query nào) = HỢP các grant có `action`.
+
+    Ba giá trị trả về, phân biệt rõ:
+      * `None` — thấy TẤT CẢ, không lọc gì;
+      * `false()` — không grant nào cấp quyền này, không thấy gì;
+      * điều kiện — phạm vi thật.
+
+    Tách khỏi `apply_scope` để chỗ nào cần **OR thêm** một nguồn quyền khác còn
+    ghép được. Chỗ đang cần: văn bản được chia sẻ đích danh cho một người — văn
+    bản đó nằm NGOÀI phạm vi vai trò của họ, mà `apply_scope` thì chỉ biết thu
+    hẹp, không biết mở thêm.
+    """
     conds = []
     for g in profile.get("grants", []):
         p = g["perms"].get(entity)
@@ -153,8 +172,14 @@ def apply_scope(query, model, entity: str, user, profile: dict, action: str = "r
         ec = _explicit_cond(model, entity, scopeconf)   # thu hẹp: company include + mọi loại trừ
         parts = [c for c in (base, ec) if c is not None]
         if not parts:
-            return query          # grant này thấy tất cả → không lọc
+            return None           # grant này thấy tất cả → không lọc
         conds.append(and_(*parts))
     if not conds:
-        return query.filter(model.id == -1)   # không grant nào cấp quyền này → không thấy gì
-    return query.filter(or_(*conds))
+        return false()            # không grant nào cấp quyền này → không thấy gì
+    return or_(*conds)
+
+
+def apply_scope(query, model, entity: str, user, profile: dict, action: str = "read"):
+    """Lọc query theo HỢP các grant có quyền `action` trên entity."""
+    cond = scope_condition(model, entity, user, profile, action)
+    return query if cond is None else query.filter(cond)

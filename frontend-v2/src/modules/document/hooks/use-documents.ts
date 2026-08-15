@@ -1,91 +1,156 @@
-import { useCallback } from 'react'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
-import { documentRecordCollection } from '../store/document-record-store'
-import { bookYearOf, buildDocumentCode, nextBookNo } from '../helpers/document-number'
-import type { DocumentDirection, DocumentRecordInput } from '../types/document-record'
+import { queryKeys } from '@/shared/constants/query-keys'
 import {
-  useCollectionActions,
-  useCollectionHistory,
-  useCollectionItem,
-  useCollectionItems,
-} from './use-collection'
-import { useDocumentTypes } from './use-document-types'
-
-export function useDocuments() {
-  return useCollectionItems(documentRecordCollection)
-}
-
-export const useDocument = (id?: number) => useCollectionItem(documentRecordCollection, id)
-export const useDocumentHistory = (id?: number) =>
-  useCollectionHistory(documentRecordCollection, id)
+  documentApi,
+  type DocumentInput,
+  type DocumentListParams,
+} from '../api/document-api'
 
 /**
- * Lưu / xóa văn bản.
+ * VĂN BẢN — đọc/ghi qua API thật.
  *
- * Lúc TẠO MỚI, hàm `save` tự vào sổ: cấp số thứ tự theo (luồng × năm ban hành)
- * rồi ghép số hiệu theo tiền tố của loại văn bản. Sửa thì GIỮ NGUYÊN số cũ —
- * số đã vào sổ mà đổi thì mọi giấy tờ đã phát hành thành sai.
+ * Danh sách **phân trang và tìm kiếm ở backend**, không nạp hết về rồi lọc tại
+ * trình duyệt như ba danh mục nền: bảng này sẽ lên vài chục nghìn dòng, mà quan
+ * trọng hơn là lọc ở client thì máy người dùng phải nhận về cả những văn bản họ
+ * không được xem.
  */
-export function useDocumentActions() {
-  const records = useDocuments()
-  const { items: documentTypes } = useDocumentTypes()
-  const { save: persist, remove } = useCollectionActions(documentRecordCollection)
 
-  /**
-   * Ghi riêng phần NỘI DUNG SOẠN THẢO.
-   *
-   * Tách khỏi `save` vì trình soạn thảo gọi liên tục theo nhịp tự động lưu: chỉ
-   * đụng đúng trường `content`, và không ghi lịch sử (`silent`) để sổ nhật ký
-   * không ngập những dòng "Cập nhật" cách nhau vài giây.
-   */
-  const saveContent = useCallback(
-    (id: number, content: string, options?: { silent?: boolean }) => {
-      const current = records.find((record) => record.id === id)
-      if (!current) return
-      persist({ ...current, content }, id, { silent: options?.silent ?? true })
-    },
-    [persist, records],
-  )
+export function useDocuments(params: DocumentListParams = {}) {
+  return useQuery({
+    queryKey: queryKeys.document.records(params),
+    queryFn: () => documentApi.list(params),
+    //  Giữ trang cũ trong lúc nạp trang mới: bảng không nháy trắng mỗi lần đổi
+    //  bộ lọc hay sang trang.
+    placeholderData: keepPreviousData,
+  })
+}
 
-  const save = useCallback(
-    (values: DocumentRecordInput, id?: number) => {
-      if (id) return persist(values, id)
-
-      const year = bookYearOf(values.issued_date)
-      const bookNo = nextBookNo(records, values.direction, year)
-      const prefix =
-        documentTypes.find((type) => type.id === values.document_type_id)?.prefix ?? ''
-
-      return persist({
-        ...values,
-        book_no: bookNo,
-        book_year: year,
-        // Người dùng gõ số riêng thì tôn trọng — nhiều đơn vị đã có cách đánh
-        // số của họ; bỏ trống mới ghép số theo tiền tố loại văn bản.
-        code: values.code.trim() || buildDocumentCode(prefix, year, bookNo),
-      })
-    },
-    [persist, records, documentTypes],
-  )
-
-  return { save, saveContent, remove }
+export function useDocument(id?: number) {
+  return useQuery({
+    queryKey: queryKeys.document.record(id ?? 0),
+    queryFn: () => documentApi.getById(id as number),
+    enabled: typeof id === 'number' && id > 0,
+  })
 }
 
 /**
- * Số hiệu mà hệ SẼ cấp nếu người dùng để trống ô "Số văn bản".
+ * Văn bản CÙNG LOẠI CÙNG PHÒNG đang còn hiệu lực (B05).
  *
- * Chỉ để làm placeholder gợi ý, không ghi vào form: tính lại theo (sổ × năm)
- * đang chọn nên đổi sổ hay đổi ngày ban hành là số gợi ý đổi theo.
+ * Hiện ngay trong form soạn để người dùng thấy "đã có rồi" trước khi ngồi gõ
+ * bản thứ hai cho cùng một việc — đây là thứ còn lại chống đẻ trùng quy trình
+ * sau khi bước xin phép bị cắt khỏi bản 1.
  */
-export function useNextDocumentCode(
-  direction: DocumentDirection,
-  issuedDate: string,
-  documentTypeId: number,
-): string {
-  const records = useDocuments()
-  const { items: documentTypes } = useDocumentTypes()
+export function useDocumentSuggestions(params: {
+  doc_type_id: number
+  department_id?: number | null
+  company_id?: number | null
+  exclude_id?: number
+}) {
+  return useQuery({
+    queryKey: queryKeys.document.suggestions(params),
+    queryFn: () => documentApi.suggestions(params),
+    enabled: params.doc_type_id > 0,
+  })
+}
 
-  const year = bookYearOf(issuedDate)
-  const prefix = documentTypes.find((type) => type.id === documentTypeId)?.prefix ?? ''
-  return buildDocumentCode(prefix, year, nextBookNo(records, direction, year))
+/**
+ * Số hiệu SẼ cấp — chỉ để xem trước.
+ *
+ * ⚠️ Không chiếm số và có thể lệch nếu có người được cấp số ngay sau đó. Số
+ * thật do backend cấp trong cùng giao dịch ghi bản ghi.
+ */
+export function useNumberPreview(params: {
+  doc_type_id: number
+  company_id: number
+  department_id?: number | null
+}) {
+  return useQuery({
+    queryKey: queryKeys.document.numberPreview(params),
+    queryFn: () => documentApi.numberPreview(params),
+    enabled: params.doc_type_id > 0 && params.company_id > 0,
+  })
+}
+
+export function useSaveDocument() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      values,
+    }: {
+      id?: number
+      values: DocumentInput & { content_html?: string }
+    }) => (id ? documentApi.update(id, values) : documentApi.create(values)),
+
+    onSuccess: (_data, variables) => {
+      toast.success(variables.id ? 'Đã cập nhật văn bản' : 'Đã tạo văn bản')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
+    },
+  })
+}
+
+export function useDeleteDocument() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: number) => documentApi.remove(id),
+    onSuccess: () => {
+      toast.success('Đã xóa văn bản')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
+    },
+  })
+}
+
+/**
+ * Ba nút của luồng duyệt MỘT BƯỚC tạm thời.
+ *
+ * P3 sẽ thay bằng bộ máy duyệt dùng chung (nhiều bước, rẽ nhánh, người thay
+ * thế). Gói gọn trong một hook để lúc thay chỉ phải sửa một chỗ.
+ */
+export function useDocumentWorkflow(documentId: number) {
+  const queryClient = useQueryClient()
+
+  const refresh = () =>
+    void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
+
+  const submit = useMutation({
+    mutationFn: () => documentApi.submit(documentId),
+    onSuccess: () => {
+      toast.success('Đã gửi duyệt')
+      refresh()
+    },
+  })
+
+  const approve = useMutation({
+    mutationFn: () => documentApi.approve(documentId),
+    onSuccess: (doc) => {
+      //  Số hiệu thường được cấp đúng lúc này (`number_when = 2`) — nói ra luôn
+      //  để người duyệt biết văn bản vừa mang số gì.
+      toast.success(
+        doc.display_code ? `Đã ban hành ${doc.display_code}` : 'Đã duyệt và ban hành',
+      )
+      refresh()
+    },
+  })
+
+  const reject = useMutation({
+    mutationFn: (reason: string) => documentApi.reject(documentId, reason),
+    onSuccess: () => {
+      toast.success('Đã trả lại bản nháp')
+      refresh()
+    },
+  })
+
+  const revoke = useMutation({
+    mutationFn: (reason: string) => documentApi.revoke(documentId, reason),
+    onSuccess: () => {
+      toast.success('Đã bãi bỏ văn bản')
+      refresh()
+    },
+  })
+
+  return { submit, approve, reject, revoke }
 }
