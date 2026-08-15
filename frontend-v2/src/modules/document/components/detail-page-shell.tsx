@@ -47,6 +47,14 @@ interface DetailPageShellProps {
    * thảo): ở đó khối lịch sử chỉ đẩy trang giấy lên và cắt mất chỗ gõ.
    */
   showHistory?: boolean
+  /**
+   * Dính dải tiêu đề lên đầu khung khi cuộn.
+   *
+   * Chỉ bật cho màn có form DÀI mà nút bấm nằm trên đầu (tab Thông tin). Màn
+   * làm việc toàn màn hình như soạn thảo thì không: ở đó phần cuộn nằm bên
+   * trong trang giấy, dải dính chỉ ăn mất chiều cao.
+   */
+  stickyHeader?: boolean
   children: ReactNode
 }
 
@@ -72,6 +80,7 @@ export function DetailPageShell({
   history,
   audit,
   showHistory = true,
+  stickyHeader = false,
   children,
 }: DetailPageShellProps) {
   const navigate = useNavigate()
@@ -95,6 +104,7 @@ export function DetailPageShell({
   return (
     <PageContainer className="space-y-5">
       <PageHeader
+        sticky={stickyHeader}
         title={title}
         description={description}
         leading={
@@ -118,9 +128,7 @@ export function DetailPageShell({
                 title="Xóa"
                 destructive
                 confirmTitle={deleteConfirmTitle ?? `Xóa "${title}"?`}
-                confirmDescription={
-                  deleteConfirmDescription ?? 'Thao tác này không hoàn tác được.'
-                }
+                confirmDescription={deleteConfirmDescription ?? 'Thao tác này không hoàn tác được.'}
                 confirmLabel="Xóa"
                 onConfirm={onDelete}
               />
@@ -152,9 +160,7 @@ export function DetailPageShell({
       {!isCreating && showHistory && audit && (
         <AuditTimeline entity={audit.entity} entityId={audit.id} />
       )}
-      {!isCreating && showHistory && !audit && history && (
-        <RecordHistoryCard entries={history} />
-      )}
+      {!isCreating && showHistory && !audit && history && <RecordHistoryCard entries={history} />}
     </PageContainer>
   )
 }

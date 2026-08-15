@@ -187,6 +187,22 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       ],
       content: defaultContent,
       editable,
+      onCreate: ({ editor: instance }) => {
+        // PaginationPlus chia trang bằng cách ĐO CHIỀU CAO DOM thật. Lúc editor
+        // vừa dựng xong, phông của trang giấy ("Times New Roman" 14pt, khai ở
+        // `index.css`) thường chưa tải xong nên nó đo trên phông dự phòng: chữ
+        // thấp hơn thực tế, cả bài lọt vào MỘT trang. Sau đó không gì bắt nó đo
+        // lại, nên trang chỉ "vỡ" ra đúng số tờ khi người dùng bấm chuột hay gõ
+        // phím đầu tiên — nhìn như trang tự hỏng dưới tay.
+        //
+        // Chờ phông sẵn sàng rồi phát một transaction RỖNG: không đổi nội dung,
+        // không vào lịch sử hoàn tác, không kích `onUpdate` (Tiptap chỉ gọi khi
+        // `docChanged`), nhưng đủ để plugin đo lại trên phông thật.
+        void document.fonts.ready.then(() => {
+          if (instance.isDestroyed) return
+          instance.view.dispatch(instance.state.tr.setMeta('addToHistory', false))
+        })
+      },
       onUpdate: ({ editor: instance }) => {
         if (!importingRef.current) scheduleChange(instance)
       },

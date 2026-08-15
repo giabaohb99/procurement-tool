@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { cn } from '@/shared/utils/cn'
 import { formatDate, formatDateTime } from '@/shared/utils/format-date'
-import { useDocumentAccess, useRevokeAccess } from '../hooks/use-document-access'
+import { useDocumentAccess, useGrantAccess, useRevokeAccess } from '../hooks/use-document-access'
 import { EFFECT } from '../types/document-access'
 import { DocumentAccessDialog } from './document-access-dialog'
 
@@ -29,6 +29,7 @@ interface DocumentAccessCardProps {
  */
 export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardProps) {
   const { data: rows = [] } = useDocumentAccess(documentId)
+  const grant = useGrantAccess(documentId)
   const revoke = useRevokeAccess(documentId)
   const [dialogOpen, setDialogOpen] = useState(false)
 
@@ -81,20 +82,14 @@ export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardP
                       {row.effect_label}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
-                      {[
-                        row.can_read && 'xem',
-                        row.can_write && 'sửa',
-                        row.can_delete && 'xóa',
-                      ]
+                      {[row.can_read && 'xem', row.can_write && 'sửa', row.can_delete && 'xóa']
                         .filter(Boolean)
                         .join(' · ')}
                     </span>
                   </p>
 
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {row.valid_to
-                      ? `Hết hạn ${formatDate(row.valid_to)}`
-                      : 'Không đặt hạn'}
+                    {row.valid_to ? `Hết hạn ${formatDate(row.valid_to)}` : 'Không đặt hạn'}
                     {row.granted_by_name && ` · ${row.granted_by_name} cấp`}
                     {row.reason && ` · ${row.reason}`}
                   </p>
@@ -128,9 +123,12 @@ export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardP
       </CardContent>
 
       <DocumentAccessDialog
-        documentId={documentId}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        pending={grant.isPending}
+        //  Văn bản đã có id nên gửi thẳng lên máy chủ. Trang TẠO văn bản dùng
+        //  cùng hộp này nhưng xếp hàng chờ tới lúc tạo xong.
+        onSubmit={(values) => grant.mutate(values, { onSuccess: () => setDialogOpen(false) })}
       />
     </Card>
   )

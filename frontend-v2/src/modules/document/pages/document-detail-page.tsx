@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Check, FileText, GitBranch, Info, Loader2, Save, Send, Undo2 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Ban, Check, FileText, GitBranch, Info, Loader2, Save, Send, Undo2 } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -10,13 +10,13 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { RichTextEditor, type RichTextEditorHandle } from '@/shared/ui/rich-text-editor'
+import { ReasonConfirmDialog } from '@/shared/ui/reason-confirm-dialog'
+import { RichTextEditor } from '@/shared/ui/rich-text-editor'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentAccessCard } from '../components/document-access-card'
 import { DocumentAttachmentList } from '../components/document-attachment-list'
 import { DocumentAutosaveStatus } from '../components/document-autosave-status'
-import { DocumentImportButton } from '../components/document-import-button'
 import { DocumentRecordForm } from '../components/document-record-form'
 import { DocumentVersionBanner } from '../components/document-version-banner'
 import { DocumentVersionTab } from '../components/document-version-tab'
@@ -56,7 +56,6 @@ export function DocumentDetailPage() {
   const navigate = useNavigate()
   const { id } = useParams()
   const [tab, setTab] = useUrlParamState('tab', 'compose')
-  const editorRef = useRef<RichTextEditorHandle>(null)
 
   const documentId = Number(id)
   const { data: record, isLoading } = useDocument(documentId)
@@ -67,6 +66,9 @@ export function DocumentDetailPage() {
   // đồng bộ bằng effect: mở bản mới xong danh sách đổi, effect sẽ chạy lại và
   // kéo màn hình về bản khác ngay dưới tay người đang xem.
   const [pickedVersionId, setPickedVersionId] = useState<number | null>(null)
+  //  Hộp hỏi lý do đang mở cho việc gì (`null` = đang đóng). Hai việc dùng
+  //  chung một hộp vì chỉ khác chữ.
+  const [reasonFor, setReasonFor] = useState<'revoke' | 'reject' | null>(null)
   const autoVersion =
     versions.find((item) => !item.is_locked) ??
     versions.find((item) => item.is_current) ??
@@ -112,6 +114,13 @@ export function DocumentDetailPage() {
   }
 
   const isNumbered = Boolean(record?.doc_code || record?.issue_number)
+  //  Backend chỉ cho xóa văn bản CÒN LÀ NHÁP và CHƯA cấp số (`service.py`
+  //  `delete_document`). Nút xóa phải bám đúng hai điều kiện đó, không thì
+  //  người có quyền vẫn thấy nút rồi bấm vào chỉ nhận lỗi 400.
+  const isRemovable = record?.status === DOCUMENT_STATUS.draft && !isNumbered
+  //  Đã ban hành: đã duyệt (chờ tới ngày) hoặc đang có hiệu lực.
+  const isIssued =
+    record?.status === DOCUMENT_STATUS.approved || record?.status === DOCUMENT_STATUS.effective
   const isLocked = version?.is_locked ?? true
   const label = record ? effectiveLabel(record) : null
 
@@ -158,6 +167,9 @@ export function DocumentDetailPage() {
         // Tab soạn thảo là màn làm việc toàn màn hình — sổ nhật ký để ở tab
         // Thông tin, chỗ người dùng đang rà soát bản ghi.
         showHistory={tab === 'info'}
+        //  Chỉ tab Thông tin mới dính tiêu đề: form dài, nút Lưu ở trên đầu.
+        //  Tab Soạn thảo cuộn bên trong trang giấy, tab Phiên bản thì ngắn.
+        stickyHeader={tab === 'info'}
         actions={
           <>
             <TabsList>
@@ -175,13 +187,11 @@ export function DocumentDetailPage() {
               </TabsTrigger>
             </TabsList>
 
+            {/* KHÔNG có nút nhập tệp ở đây: nhập từ Word/Markdown chỉ dùng lúc
+                dựng MẪU (`document-template-detail-page.tsx`). Văn bản thật soạn
+                từ mẫu hoặc gõ thẳng, không đổ nguyên một tệp ngoài vào. */}
             {tab === 'compose' && canWrite && !isLocked && (
               <>
-                <DocumentImportButton
-                  onInsert={(html) =>
-                    editorRef.current?.insertContent(html) ?? Promise.resolve(false)
-                  }
-                />
                 <Button type="button" onClick={autosave.saveNow} disabled={autosave.saving}>
                   {autosave.saving ? (
                     <Loader2 className="size-4 animate-spin" />
@@ -213,15 +223,29 @@ export function DocumentDetailPage() {
               </Button>
             )}
 
+            {/* Văn bản ĐÃ ban hành không xóa được (số đã vào sổ) — lối gỡ bỏ
+                duy nhất là bãi bỏ, giữ nguyên dòng và số. */}
+            {isIssued && (
+              <PermissionGate entity="document" action="cancel">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setReasonFor('revoke')}
+                  disabled={workflow.revoke.isPending}
+                >
+                  <Ban className="size-4" />
+                  Bãi bỏ
+                </Button>
+              </PermissionGate>
+            )}
+
             {record?.status === DOCUMENT_STATUS.submitted && (
               <PermissionGate entity="document" action="approve">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    const reason = window.prompt('Lý do trả lại bản nháp?')
-                    if (reason?.trim()) workflow.reject.mutate(reason.trim())
-                  }}
+                  onClick={() => setReasonFor('reject')}
+                  disabled={workflow.reject.isPending}
                 >
                   <Undo2 className="size-4" />
                   Trả lại
@@ -239,7 +263,7 @@ export function DocumentDetailPage() {
           </>
         }
         onDelete={
-          record && canDelete
+          record && canDelete && isRemovable
             ? () =>
                 remove.mutate(record.id, {
                   onSuccess: () => navigate(appRoutes.document.documents),
@@ -261,7 +285,6 @@ export function DocumentDetailPage() {
               thảo để nó nạp đúng nội dung mới. */}
           {version && (
             <RichTextEditor
-              ref={editorRef}
               key={version.id}
               showOutline
               editable={canWrite && !isLocked}
@@ -297,6 +320,31 @@ export function DocumentDetailPage() {
             />
           )}
         </TabsContent>
+
+        {/* Lý do đi vào nhật ký thao tác và người khác sẽ đọc lại, nên hỏi bằng
+            hộp thoại của hệ thống — bắt buộc điền, gõ được nhiều dòng. */}
+        <ReasonConfirmDialog
+          open={reasonFor !== null}
+          onOpenChange={(open) => !open && setReasonFor(null)}
+          title={reasonFor === 'revoke' ? 'Bãi bỏ văn bản?' : 'Trả lại bản nháp?'}
+          description={
+            reasonFor === 'revoke'
+              ? `${record?.display_code || 'Văn bản'} chuyển sang trạng thái "Bãi bỏ" và hết hiệu lực kể từ hôm nay. Số hiệu vẫn giữ nguyên trong sổ, không xóa được.`
+              : 'Người soạn nhận lại bản nháp kèm lý do bên dưới để sửa tiếp.'
+          }
+          placeholder={
+            reasonFor === 'revoke'
+              ? 'Ví dụ: đã thay bằng công văn 05/2026/CV-DEGO'
+              : 'Ví dụ: thiếu căn cứ ở mục 2'
+          }
+          confirmText={reasonFor === 'revoke' ? 'Bãi bỏ' : 'Trả lại'}
+          destructive={reasonFor === 'revoke'}
+          pending={reasonFor === 'revoke' ? workflow.revoke.isPending : workflow.reject.isPending}
+          onConfirm={(reason) => {
+            const action = reasonFor === 'revoke' ? workflow.revoke : workflow.reject
+            action.mutate(reason, { onSuccess: () => setReasonFor(null) })
+          }}
+        />
       </DetailPageShell>
     </Tabs>
   )

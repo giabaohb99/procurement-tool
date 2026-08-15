@@ -85,6 +85,10 @@ export const documentApi = {
   approve: (id: number) => apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/approve`, {}),
   reject: (id: number, reason: string) =>
     apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/reject`, { reason }),
+  //  Bãi bỏ = lối gỡ bỏ của văn bản ĐÃ cấp số; xóa hẳn thì backend từ chối vì
+  //  số đã nằm trong sổ.
+  revoke: (id: number, reason: string) =>
+    apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/revoke`, { reason }),
 
   /** Văn bản cùng loại cùng phòng đang hiệu lực — hiện ngay trong form soạn (B05). */
   suggestions: (params: {
