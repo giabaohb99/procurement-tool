@@ -25,6 +25,21 @@ export function useOrderProgress(id: number) {
   })
 }
 
+/**
+ * CR-071 — ứng viên đứng tên TBP trên phiếu, đổ vào ô "Trưởng bộ phận".
+ * Phiếu chưa lưu (`id <= 0`) chưa có gì để soi phạm vi nên không gọi; lúc đó
+ * backend tự điền TBP theo phòng ban, lưu xong mới đổi người được.
+ * (Giao diện cũ dùng bản tra theo TÊN PHÒNG — `/meta/dept-head-candidates` — nên
+ * màn tạo mới bên đó chọn được ngay; v2 sẽ chuyển sang dùng chung sau.)
+ */
+export function useDeptHeadCandidates(id: number, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.procurement.purchaseRequestDeptHeads(id),
+    queryFn: () => purchaseRequestApi.getDeptHeadCandidates(id),
+    enabled: id > 0 && enabled,
+  })
+}
+
 /** Tạo mới HOẶC cập nhật — hai màn dùng chung một form nên gộp một hook. */
 export function useSavePurchaseRequest() {
   const queryClient = useQueryClient()

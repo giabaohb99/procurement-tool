@@ -14,7 +14,10 @@ import { Textarea } from '@/shared/ui/textarea'
 import { formatDate, formatDateTime } from '@/shared/utils/format-date'
 import type { Company } from '@/modules/hr/types/company'
 import type { Employee } from '@/modules/hr/types/employee'
-import type { PurchaseRequestDetail } from '../types/purchase-request-detail'
+import type {
+  DeptHeadCandidate,
+  PurchaseRequestDetail,
+} from '../types/purchase-request-detail'
 
 interface InfoCardProps {
   data: PurchaseRequestDetail
@@ -24,6 +27,8 @@ interface InfoCardProps {
   onUrgentChange?: (checked: boolean) => void
   companies?: Company[]
   employees?: Employee[]
+  /** CR-071 — ứng viên đứng tên TBP trên phiếu; rỗng thì ô về dạng chữ như cũ. */
+  deptHeadCandidates?: DeptHeadCandidate[]
   onChange: (changes: Partial<PurchaseRequestDetail>) => void
 }
 
@@ -31,8 +36,11 @@ interface InfoCardProps {
  * Thẻ "Thông tin chung" — GIỮ NGUYÊN thứ tự và tên nhãn của bản `frontend` cũ
  * (`PurchaseRequestDetail.tsx`) để người dùng không phải học lại màn hình.
  *
- * Bộ phận YC và Trưởng bộ phận luôn khóa: backend tự điền theo hồ sơ nhân sự
- * của người yêu cầu / theo phòng ban, sửa tay ở đây là sai nguồn dữ liệu.
+ * Bộ phận YC luôn khóa: backend tự điền theo hồ sơ nhân sự của người yêu cầu,
+ * sửa tay ở đây là sai nguồn dữ liệu.
+ *
+ * Trưởng bộ phận thì KHÁC (CR-071): chọn được trong số những người duyệt được
+ * phiếu này — nhưng CHỈ để lưu + in, không khóa quyền duyệt của ai.
  */
 export function PurchaseRequestInfoCard({
   data,
@@ -41,6 +49,7 @@ export function PurchaseRequestInfoCard({
   onUrgentChange,
   companies = [],
   employees = [],
+  deptHeadCandidates = [],
   onChange,
 }: InfoCardProps) {
   return (
@@ -109,12 +118,16 @@ export function PurchaseRequestInfoCard({
               onValueChange={(value) => {
                 const employee = employees.find((option) => option.id === Number(value))
                 if (!employee) return
+                const nextDepartment = employee.department_name || ''
                 onChange({
                   requester_id: employee.id,
                   requester: employee.full_name,
                   requester_position: employee.position || '',
-                  department: employee.department_name || '',
+                  department: nextDepartment,
                   head_of_dept: employee.manager_name || '',
+                  // Đổi sang phòng khác thì TBP đã chọn không còn đúng phòng nữa
+                  // -> bỏ đi, người lập chọn lại (CR-071).
+                  ...(nextDepartment !== data.department ? { head_of_dept_id: 0 } : {}),
                   company_id: employee.company_id || data.company_id,
                   company_name:
                     companies.find((company) => company.id === employee.company_id)?.name ||
@@ -158,7 +171,44 @@ export function PurchaseRequestInfoCard({
           )}
         </div>
 
-        <Field label="Trưởng bộ phận (TBP) / Người liên hệ">{data.head_of_dept}</Field>
+        {/*
+          CR-071 — phòng có nhiều người ký được (phó phòng, quyền trưởng phòng),
+          trước đây ô này khóa cứng theo `Department.manager_id` nên in ra sai tên.
+          Người được chọn CHỈ để lưu + in — luật duyệt giữ nguyên, ai có quyền trên
+          phiếu vẫn bấm Duyệt được. Danh sách do backend lọc theo đúng luật phạm vi,
+          rỗng thì để dạng chữ như cũ.
+        */}
+        <div className="space-y-1.5">
+          <Label className={editing && deptHeadCandidates.length ? '' : 'text-muted-foreground'}>
+            Trưởng bộ phận (TBP) / Người liên hệ
+          </Label>
+          {editing && deptHeadCandidates.length ? (
+            <Select
+              value={data.head_of_dept_id ? String(data.head_of_dept_id) : undefined}
+              onValueChange={(value) => {
+                const candidate = deptHeadCandidates.find(
+                  (option) => option.employee_id === Number(value),
+                )
+                if (!candidate) return
+                onChange({ head_of_dept_id: candidate.employee_id, head_of_dept: candidate.name })
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={data.head_of_dept || 'Chọn Trưởng bộ phận'} />
+              </SelectTrigger>
+              <SelectContent>
+                {deptHeadCandidates.map((candidate) => (
+                  <SelectItem key={candidate.employee_id} value={String(candidate.employee_id)}>
+                    {candidate.name}
+                    {candidate.position ? ` - ${candidate.position}` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <ReadOnlyValue>{data.head_of_dept || '—'}</ReadOnlyValue>
+          )}
+        </div>
 
         {/*
           Ô "Đơn gấp" chiếm trọn một hàng để hai ô chữ dài bên dưới đứng CẠNH

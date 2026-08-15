@@ -69,6 +69,7 @@ import { RelatedPurchaseOrdersCard } from '../components/related-purchase-orders
 import {
   useAssignPurchaser,
   useDeletePurchaseRequest,
+  useDeptHeadCandidates,
   useOrderProgress,
   usePurchaseRequest,
   usePurchaseRequestAction,
@@ -146,6 +147,8 @@ export function PurchaseRequestDetailPage() {
   const [draft, setDraft] = useState<PurchaseRequestDetail | null>(() =>
     isNew ? createEmptyPurchaseRequest(user) : null,
   )
+  // CR-071 — chỉ hỏi backend khi đang SỬA: ô TBP lúc chỉ đọc là chữ, không cần danh sách.
+  const { data: deptHeadData } = useDeptHeadCandidates(purchaseRequestId, editing)
   const [reasonFor, setReasonFor] = useState<ReasonAction | null>(null)
   const [reason, setReason] = useState('')
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
@@ -280,6 +283,7 @@ export function PurchaseRequestDetailPage() {
         requester_position: loadedDraft.requester_position,
         department: loadedDraft.department,
         head_of_dept: loadedDraft.head_of_dept,
+        head_of_dept_id: loadedDraft.head_of_dept_id,
         purpose: loadedDraft.purpose,
         request_date: loadedDraft.request_date,
         need_date: loadedDraft.need_date,
@@ -610,6 +614,7 @@ export function PurchaseRequestDetailPage() {
             editing={editing}
             companies={companiesData?.items}
             employees={employeesData?.items}
+            deptHeadCandidates={deptHeadData?.items}
             urgentEditable={!closed && !editing && can('purchase_request', 'write')}
             onUrgentChange={(value) => void setUrgent.mutateAsync(value)}
             onChange={patch}
@@ -822,6 +827,9 @@ function createEmptyPurchaseRequest(user?: AuthUser | null): PurchaseRequestDeta
     requester_position: user?.position ?? '',
     department: user?.department_name ?? '',
     head_of_dept: '',
+    // Phiếu mới chưa chỉ định ai — backend tự điền theo Trưởng phòng của bộ phận
+    // lúc tạo, lưu xong mới đổi người duyệt được (CR-071).
+    head_of_dept_id: 0,
     purpose: '',
     request_date: new Date().toISOString().slice(0, 10),
     need_date: '',

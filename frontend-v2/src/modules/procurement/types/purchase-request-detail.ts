@@ -48,6 +48,12 @@ export interface PurchaseRequestDetail {
   requester_position: string
   department: string
   head_of_dept: string
+  /**
+   * CR-071: id NHÂN SỰ của người đứng tên Trưởng bộ phận trên phiếu.
+   * `0` = lấy mặc định theo phòng ban. Ô này CHỈ để lưu + in, KHÔNG khóa quyền duyệt.
+   * `head_of_dept` ở trên chỉ là bản chụp TÊN để in, backend đồng bộ theo id này.
+   */
+  head_of_dept_id: number
   purpose: string
   request_date: string
   need_date: string
@@ -96,6 +102,18 @@ export interface PurchaseRequestDetail {
   subtotal: number
   vat: number
   total: number
+}
+
+/**
+ * Một người ĐƯỢC PHÉP duyệt bước 1 của phiếu — nguồn của ô "Trưởng bộ phận"
+ * (`GET /api/purchase-requests/{id}/dept-head-candidates`, CR-071).
+ * Danh sách rỗng = chưa ai đủ điều kiện, ô để dạng chữ như cũ.
+ */
+export interface DeptHeadCandidate {
+  employee_id: number
+  name: string
+  code: string
+  position: string
 }
 
 /** Trạng thái của một DÒNG hàng (khác trạng thái phiếu). */

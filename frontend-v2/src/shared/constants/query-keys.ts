@@ -14,6 +14,9 @@ export const queryKeys = {
     /** Số đã đặt theo mã hàng của một phiếu YCMH. */
     purchaseRequestProgress: (id: number) =>
       ['procurement', 'purchase-requests', id, 'order-progress'] as const,
+    /** Những người được phép duyệt bước 1 của một phiếu YCMH (CR-071). */
+    purchaseRequestDeptHeads: (id: number) =>
+      ['procurement', 'purchase-requests', id, 'dept-head-candidates'] as const,
     surveyRequests: (params?: Record<string, unknown>) =>
       ['procurement', 'survey-requests', params ?? {}] as const,
     purchaseOrders: (params?: Record<string, unknown>) =>

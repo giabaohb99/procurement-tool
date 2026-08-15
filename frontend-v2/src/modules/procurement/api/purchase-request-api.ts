@@ -1,5 +1,6 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
 import type {
+  DeptHeadCandidate,
   PurchaseRequestDetail,
   PurchaseRequestItem,
 } from '../types/purchase-request-detail'
@@ -14,6 +15,8 @@ export interface PurchaseRequestPayload {
   requester_position: string
   department: string
   head_of_dept: string
+  /** CR-071 — id nhân sự TBP đứng tên trên phiếu (0 = theo mặc định phòng). */
+  head_of_dept_id: number
   purpose: string
   request_date: string
   need_date: string
@@ -91,6 +94,13 @@ export const purchaseRequestApi = {
     apiGet<{ head_of_dept: string }>(`${BASE_URL}/meta/dept-head`, {
       params: { department },
     }),
+
+  /**
+   * CR-071 — những người duyệt được phiếu này, để ô "Trưởng bộ phận" cho chọn.
+   * Backend lọc bằng chính luật phạm vi nên danh sách có thể rỗng.
+   */
+  getDeptHeadCandidates: (id: number) =>
+    apiGet<{ items: DeptHeadCandidate[] }>(`${BASE_URL}/${id}/dept-head-candidates`),
 
   /** Số lượng ĐÃ ĐẶT theo mã hàng, gộp mọi ĐMH sinh từ phiếu này. */
   getOrderProgress: (id: number) =>
