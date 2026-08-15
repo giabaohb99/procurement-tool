@@ -1,103 +1,124 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { FileText, Info, Loader2, Save } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { Check, FileText, GitBranch, Info, Loader2, Save, Send, Undo2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
+import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
+import { RichTextEditor, type RichTextEditorHandle } from '@/shared/ui/rich-text-editor'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import { RichTextEditor } from '@/shared/ui/rich-text-editor'
 import { DetailPageShell } from '../components/detail-page-shell'
+import { DocumentAccessCard } from '../components/document-access-card'
 import { DocumentAttachmentList } from '../components/document-attachment-list'
 import { DocumentAutosaveStatus } from '../components/document-autosave-status'
-import { DocumentDynamicFields } from '../components/document-dynamic-fields'
+import { DocumentImportButton } from '../components/document-import-button'
 import { DocumentRecordForm } from '../components/document-record-form'
-import { emptyDocumentForm } from '../helpers/document-form-defaults'
+import { DocumentVersionBanner } from '../components/document-version-banner'
+import { DocumentVersionTab } from '../components/document-version-tab'
+import { documentToForm, emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
+import { effectiveLabel } from '../helpers/document-status'
+import { useDocumentPermissions } from '../hooks/use-document-access'
 import { useDocumentAutosave } from '../hooks/use-document-autosave'
-import { useDynamicFieldsFor } from '../hooks/use-document-catalogs'
-import { useDocument, useDocumentActions, useDocumentHistory } from '../hooks/use-documents'
+import {
+  useDocumentVersion,
+  useDocumentVersions,
+  useSaveVersionContent,
+} from '../hooks/use-document-versions'
+import {
+  useDeleteDocument,
+  useDocument,
+  useDocumentWorkflow,
+  useSaveDocument,
+} from '../hooks/use-documents'
 import {
   documentRecordSchema,
   type DocumentRecordFormValues,
 } from '../schemas/document-record-schema'
-import { DIRECTION_LABELS, type DocumentAttachment } from '../types/document-record'
+import { DOCUMENT_STATUS } from '../types/document-record'
 
 const FORM_ID = 'document-record-form'
 
 /**
- * Trang CHI TIẾT một văn bản, chia hai tab:
- *  - "Soạn thảo": trang giấy trắng kiểu Word, tự động lưu trong lúc gõ.
- *  - "Thông tin": xem lại và sửa những gì đã khai lúc tạo.
+ * Trang CHI TIẾT một văn bản, ba tab:
+ *  - **Soạn thảo** — trang giấy trắng kiểu Word, tự động lưu trong lúc gõ;
+ *  - **Thông tin** — bộ trường chung C01, tệp đính kèm, bảng quyền truy cập;
+ *  - **Phiên bản** — danh sách các bản, mở bản mới, xem lại bản cũ.
  *
- * Mở lên vào thẳng tab soạn thảo vì tạo xong thì việc kế tiếp luôn là gõ nội
- * dung; tab đang xem ghi lên URL để gửi link cho người khác vẫn ra đúng chỗ.
+ * Mặc định mở bản ĐANG SỬA ĐƯỢC nếu có (bản nháp), không thì bản đang dùng —
+ * người vào trang gần như luôn muốn một trong hai.
  */
 export function DocumentDetailPage() {
   const navigate = useNavigate()
   const { id } = useParams()
   const [tab, setTab] = useUrlParamState('tab', 'compose')
+  const editorRef = useRef<RichTextEditorHandle>(null)
 
-  const recordId = Number(id)
-  const record = useDocument(recordId)
-  const history = useDocumentHistory(recordId)
-  const { save, saveContent, remove } = useDocumentActions()
+  const documentId = Number(id)
+  const { data: record, isLoading } = useDocument(documentId)
+  const { data: versions = [] } = useDocumentVersions(documentId)
+  const { data: permissions } = useDocumentPermissions(documentId)
+
+  // Bản người dùng tự chọn; `null` = để hệ chọn. TÍNH RA `versionId` chứ không
+  // đồng bộ bằng effect: mở bản mới xong danh sách đổi, effect sẽ chạy lại và
+  // kéo màn hình về bản khác ngay dưới tay người đang xem.
+  const [pickedVersionId, setPickedVersionId] = useState<number | null>(null)
+  const autoVersion =
+    versions.find((item) => !item.is_locked) ??
+    versions.find((item) => item.is_current) ??
+    versions[0]
+  const versionId =
+    pickedVersionId && versions.some((item) => item.id === pickedVersionId)
+      ? pickedVersionId
+      : (autoVersion?.id ?? null)
+
+  const { data: version } = useDocumentVersion(documentId, versionId)
+
+  const save = useSaveDocument()
+  const remove = useDeleteDocument()
+  const workflow = useDocumentWorkflow(documentId)
+  const saveContent = useSaveVersionContent(documentId, versionId)
+
+  const canWrite = permissions?.write ?? false
+  const canDelete = permissions?.delete ?? false
 
   const form = useForm<DocumentRecordFormValues>({
     resolver: zodResolver(documentRecordSchema),
-    defaultValues: { ...emptyDocumentForm(), ...record },
+    defaultValues: emptyDocumentForm(),
   })
 
-  // Tệp đính kèm giữ ngoài react-hook-form: chúng không có ràng buộc nào để
-  // kiểm, mà cho vào form thì mỗi lần thêm file lại chạy toàn bộ validate.
-  const [attachments, setAttachments] = useState<DocumentAttachment[]>(
-    record?.attachments ?? [],
-  )
-
-  const dynamicFields = useDynamicFieldsFor(form.watch('document_type_id'))
+  // Nạp bản ghi vào form một lần khi có dữ liệu. `reset` chứ không phải
+  // `defaultValues`: query trả về sau lần render đầu.
+  useEffect(() => {
+    if (record) form.reset(documentToForm(record))
+  }, [record, form])
 
   const handleSaveContent = useCallback(
-    (content: string, options: { silent: boolean }) => {
-      saveContent(recordId, content, options)
+    async (content: string, options: { silent: boolean }) => {
+      await saveContent.mutateAsync({ content_html: content })
       if (!options.silent) toast.success('Đã lưu nội dung văn bản')
     },
-    [saveContent, recordId],
+    [saveContent],
   )
 
   const autosave = useDocumentAutosave({ onSave: handleSaveContent })
 
-  function handleSubmit(values: DocumentRecordFormValues) {
-    // Trường động bắt buộc không kiểm được bằng zod (danh sách trường đổi theo
-    // loại văn bản), nên chặn ở đây.
-    const missing = dynamicFields.find(
-      (field) => field.is_required && !values.field_values?.[field.code],
-    )
-    if (missing) {
-      toast.error(`Chưa nhập "${missing.label}"`)
-      return
-    }
-
-    save(
-      {
-        ...values,
-        attachments,
-        // Ba trường này do hệ cấp lúc tạo, sửa thì giữ nguyên.
-        content: record?.content ?? '',
-        code: record?.code ?? '',
-        book_no: record?.book_no ?? 0,
-        book_year: record?.book_year ?? 0,
-      },
-      recordId,
-    )
-    toast.success('Đã cập nhật văn bản')
+  function handleSubmitForm(values: DocumentRecordFormValues) {
+    save.mutate({ id: documentId, values: formToPayload(values) })
   }
 
+  const isNumbered = Boolean(record?.doc_code || record?.issue_number)
+  const isLocked = version?.is_locked ?? true
+  const label = record ? effectiveLabel(record) : null
+
   return (
-    // `Tabs` bọc CẢ khung trang để hàng tab nằm được trên đầu trang, cạnh tiêu
-    // đề — trang soạn thảo cần từng dòng chiều cao, để tab thành một hàng riêng
-    // là đẩy tờ giấy xuống thêm một nấc nữa.
+    // `Tabs` bọc CẢ khung trang để hàng tab nằm cạnh tiêu đề — trang soạn thảo
+    // cần từng dòng chiều cao, để tab thành một hàng riêng là đẩy tờ giấy xuống
+    // thêm một nấc nữa.
     <Tabs value={tab} onValueChange={setTab}>
       <DetailPageShell
         title={record?.title ?? ''}
@@ -105,12 +126,17 @@ export function DocumentDetailPage() {
           record && (
             <>
               <span>
-                {record.code} · {DIRECTION_LABELS[record.direction]} · số {record.book_no}/
-                {record.book_year}
+                {record.display_code || 'Chưa cấp số'} · {record.doc_type_name}
+                {record.book_number_display && ` · sổ ${record.book_number_display}`}
+                {version && ` · bản ${version.version_no}`}
               </span>
-              {/* Trạng thái tự lưu đứng ngay cạnh phụ đề, cùng chỗ mắt nhìn khi
-                  ngước lên tìm nút Lưu. */}
-              {tab === 'compose' && (
+              {label && (
+                <>
+                  <span aria-hidden>·</span>
+                  <Badge variant={label.variant}>{label.text}</Badge>
+                </>
+              )}
+              {tab === 'compose' && !isLocked && (
                 <>
                   <span aria-hidden>·</span>
                   <DocumentAutosaveStatus
@@ -126,10 +152,10 @@ export function DocumentDetailPage() {
         formId={FORM_ID}
         isCreating={false}
         backTo={appRoutes.document.documents}
-        isMissing={!record}
+        isMissing={!isLoading && !record}
         missingTitle="Không tìm thấy văn bản"
-        history={history}
-        // Tab soạn thảo là màn làm việc toàn màn hình — sổ lịch sử để ở tab
+        audit={{ entity: 'document', id: documentId }}
+        // Tab soạn thảo là màn làm việc toàn màn hình — sổ nhật ký để ở tab
         // Thông tin, chỗ người dùng đang rà soát bản ghi.
         showHistory={tab === 'info'}
         actions={
@@ -143,63 +169,133 @@ export function DocumentDetailPage() {
                 <Info className="size-4" />
                 Thông tin
               </TabsTrigger>
+              <TabsTrigger value="versions">
+                <GitBranch className="size-4" />
+                Phiên bản
+              </TabsTrigger>
             </TabsList>
 
-            {tab === 'compose' && (
-              // Khóa nút trong lúc lưu để không dồn hai lượt ghi chồng nhau;
-              // chữ giữ nguyên để bề ngang nút không nhảy.
-              <Button type="button" onClick={autosave.saveNow} disabled={autosave.saving}>
-                {autosave.saving ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Save className="size-4" />
-                )}
-                Lưu nội dung
+            {tab === 'compose' && canWrite && !isLocked && (
+              <>
+                <DocumentImportButton
+                  onInsert={(html) =>
+                    editorRef.current?.insertContent(html) ?? Promise.resolve(false)
+                  }
+                />
+                <Button type="button" onClick={autosave.saveNow} disabled={autosave.saving}>
+                  {autosave.saving ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Save className="size-4" />
+                  )}
+                  Lưu nội dung
+                </Button>
+              </>
+            )}
+
+            {tab === 'info' && canWrite && (
+              <Button type="submit" form={FORM_ID} disabled={save.isPending}>
+                <Save className="size-4" />
+                Lưu thông tin
               </Button>
             )}
 
-            {tab === 'info' && (
-              <>
+            {/* Luồng duyệt MỘT BƯỚC tạm thời — P3 thay bằng bộ máy chung. */}
+            {record?.status === DOCUMENT_STATUS.draft && canWrite && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => workflow.submit.mutate()}
+                disabled={workflow.submit.isPending}
+              >
+                <Send className="size-4" />
+                Gửi duyệt
+              </Button>
+            )}
+
+            {record?.status === DOCUMENT_STATUS.submitted && (
+              <PermissionGate entity="document" action="approve">
                 <Button
+                  type="button"
                   variant="outline"
-                  onClick={() => navigate(appRoutes.document.documents)}
+                  onClick={() => {
+                    const reason = window.prompt('Lý do trả lại bản nháp?')
+                    if (reason?.trim()) workflow.reject.mutate(reason.trim())
+                  }}
                 >
-                  Hủy
+                  <Undo2 className="size-4" />
+                  Trả lại
                 </Button>
-                <Button type="submit" form={FORM_ID}>
-                  <Save className="size-4" />
-                  Lưu thông tin
+                <Button
+                  type="button"
+                  onClick={() => workflow.approve.mutate()}
+                  disabled={workflow.approve.isPending}
+                >
+                  <Check className="size-4" />
+                  Duyệt và ban hành
                 </Button>
-              </>
+              </PermissionGate>
             )}
           </>
         }
         onDelete={
-          record
-            ? () => {
-                remove(record.id)
-                toast.success(`Đã xóa văn bản ${record.code}`)
-                navigate(appRoutes.document.documents)
-              }
+          record && canDelete
+            ? () =>
+                remove.mutate(record.id, {
+                  onSuccess: () => navigate(appRoutes.document.documents),
+                })
             : undefined
         }
+        deleteConfirmDescription="Chỉ xóa được văn bản còn là nháp và chưa cấp số. Văn bản đã ban hành thì bãi bỏ, không xóa."
       >
         <TabsContent value="compose" className="mt-0">
-          {/* `key` theo id: đổi sang văn bản khác thì dựng lại trình soạn thảo
-              để nó nạp đúng nội dung mới. */}
-          <RichTextEditor
-            key={recordId}
-            showOutline
-            defaultContent={record?.content ?? ''}
-            onChange={autosave.handleChange}
-          />
+          {record && version && (
+            <DocumentVersionBanner
+              document={record}
+              version={version}
+              onGoToCurrent={() => setPickedVersionId(record.current_version_id)}
+            />
+          )}
+
+          {/* `key` theo phiên bản: đổi sang bản khác thì dựng lại trình soạn
+              thảo để nó nạp đúng nội dung mới. */}
+          {version && (
+            <RichTextEditor
+              ref={editorRef}
+              key={version.id}
+              showOutline
+              editable={canWrite && !isLocked}
+              defaultContent={version.content_html ?? ''}
+              onChange={autosave.handleChange}
+            />
+          )}
         </TabsContent>
 
-        <TabsContent value="info" className="mt-0">
-          <DocumentRecordForm formId={FORM_ID} form={form} isEditing onSubmit={handleSubmit}>
-            <DocumentDynamicFields fields={dynamicFields} form={form} />
-            <DocumentAttachmentList attachments={attachments} onChange={setAttachments} />
+        <TabsContent value="info" className="mt-0 space-y-4">
+          <DocumentRecordForm
+            formId={FORM_ID}
+            form={form}
+            isNumbered={isNumbered}
+            documentId={documentId}
+            onSubmit={handleSubmitForm}
+          >
+            <DocumentAttachmentList versionId={versionId} readOnly={!canWrite || isLocked} />
+            <DocumentAccessCard documentId={documentId} canWrite={canWrite} />
           </DocumentRecordForm>
+        </TabsContent>
+
+        <TabsContent value="versions" className="mt-0">
+          {record && (
+            <DocumentVersionTab
+              document={record}
+              activeVersionId={versionId}
+              canWrite={canWrite}
+              onSelect={(picked) => {
+                setPickedVersionId(picked.id)
+                setTab('compose')
+              }}
+            />
+          )}
         </TabsContent>
       </DetailPageShell>
     </Tabs>

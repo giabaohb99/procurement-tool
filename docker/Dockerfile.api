@@ -3,9 +3,9 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Client MySQL/MariaDB (mysqldump) — dùng cho task sao lưu CSDL
+# Client MySQL/MariaDB (mysqldump) và bộ đọc Word .doc đời cũ.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends default-mysql-client \
+    && apt-get install -y --no-install-recommends default-mysql-client antiword \
     && rm -rf /var/lib/apt/lists/*
 
 # Cài dependency trước -> tận dụng cache, chỉ build lại khi requirements đổi

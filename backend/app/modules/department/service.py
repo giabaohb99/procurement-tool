@@ -54,7 +54,13 @@ def create_department(db: Session, data: DepartmentCreate, user_id: int) -> Depa
 
 def update_department(db: Session, did: int, data: DepartmentUpdate, user_id: int) -> Department:
     obj = get_department(db, did)
-    for key, value in data.model_dump(exclude_unset=True).items():
+    values = data.model_dump(exclude_unset=True)
+
+    if "issue_code" in values:
+        from app.modules.doc_catalog.issue_code_guard import ensure_department_issue_code_free
+        ensure_department_issue_code_free(db, obj.id, obj.issue_code, values["issue_code"])
+
+    for key, value in values.items():
         setattr(obj, key, value)
     obj.updated_by = user_id
     db.commit()

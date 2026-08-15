@@ -30,6 +30,10 @@ FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
     # `__self__` ở đây chỉ mở bước TẢI FILE TẠM (chưa gắn vào đâu), giống ảnh đại diện;
     # còn gắn/đọc/xóa link đều đi qua nhánh riêng trong `attachment/controller.py`.
     "comment":                ("__self__", _DOC, 20),
+    # Đính kèm của văn bản treo vào PHIÊN BẢN (`entity_id` = id phiên bản), không
+    # vào văn bản: bản đã duyệt phải tra ra đúng bộ tệp lúc duyệt, kể cả sau khi
+    # bản mới đã gỡ bớt. Quyền kiểm trên entity cha `document`.
+    "document_version":       ("document", _DOC, 30),
 }
 
 

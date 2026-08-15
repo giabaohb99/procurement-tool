@@ -11,7 +11,14 @@ import { Badge } from '@/shared/ui/badge'
 import { DOCUMENT_TYPE_FILTER_FIELDS } from '../config/document-filter-fields'
 import { filterDocumentTypes } from '../helpers/filter-document-types'
 import { useDocumentTypes } from '../hooks/use-document-types'
-import { DOCUMENT_TYPE_OPTIONS, type DocumentType } from '../types/document-type'
+import {
+  DOCUMENT_TYPE_FLAGS,
+  DOC_GROUP_LABELS,
+  ID_SCHEME_LABELS,
+  documentCodeSample,
+  type DocumentType,
+} from '../types/document-type'
+import { secrecyLabel } from '../types/security-level'
 import { CatalogTable } from './catalog-table'
 
 const FILTER_CONFIG = {
@@ -24,10 +31,7 @@ const FILTER_CONFIG = {
 
 /**
  * Danh mục LOẠI VĂN BẢN — mỗi văn bản khi tạo chọn một loại ở đây, số hiệu sinh
- * theo tiền tố của loại đó.
- *
- * ⚠️ Dữ liệu còn nằm ở kho tạm phía trình duyệt (`store/document-type-store.ts`),
- * chờ backend có `/api/document-types`.
+ * theo mã của loại đó.
  */
 export function DocumentTypeCatalog() {
   return (
@@ -38,9 +42,10 @@ export function DocumentTypeCatalog() {
 }
 
 function DocumentTypeCatalogContent() {
-  const { items } = useDocumentTypes()
+  const { items, isLoading } = useDocumentTypes()
 
-  // Lọc tại chỗ chứ không gửi query param: chưa có backend để lọc hộ.
+  // Lọc tại chỗ chứ không gửi query param: danh mục dưới 100 dòng, đã nạp cả
+  // danh sách rồi thì lọc ở client nhanh hơn và đỡ một vòng gọi mỗi lần gõ.
   const { appliedState } = useFilterContext()
   const filterRows = useCallback(
     (rows: DocumentType[]) => filterDocumentTypes(rows, appliedState),
@@ -52,42 +57,67 @@ function DocumentTypeCatalogContent() {
       {
         key: 'code',
         header: 'Mã loại',
-        width: 110,
+        width: 100,
         hideable: false,
         cell: (row) => <span className="font-medium text-navy">{row.code}</span>,
       },
       { key: 'name', header: 'Tên loại văn bản', width: 220, cell: (row) => row.name },
       {
-        key: 'prefix',
-        header: 'Tiền tố số hiệu',
-        width: 160,
-        // Mẫu số hiệu thật dễ hiểu hơn mỗi chuỗi tiền tố trơ trọi.
+        key: 'id_scheme',
+        header: 'Số hiệu',
+        width: 210,
+        // Mẫu số hiệu thật dễ hiểu hơn chữ "mã bất biến / theo sổ" trơ trọi.
         cell: (row) => (
-          <span className="font-mono text-xs text-muted-foreground">
-            {row.prefix}-2026-001
+          <span className="flex flex-col">
+            <span className="font-mono text-xs text-muted-foreground">
+              {documentCodeSample(row.code, row.id_scheme)}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {ID_SCHEME_LABELS[row.id_scheme]}
+            </span>
           </span>
         ),
       },
       {
-        key: 'options',
-        header: 'Tùy chọn',
-        width: 260,
+        key: 'flags',
+        header: 'Quy tắc',
+        width: 240,
         // Chỉ liệt kê cái ĐANG BẬT: kê cả cái tắt thì cột nào cũng như cột nào,
         // nhìn không ra loại nào khác loại nào.
         cell: (row) => (
           <span className="flex flex-wrap gap-1">
-            {DOCUMENT_TYPE_OPTIONS.filter((option) => row[option.key]).map((option) => (
-              <Badge key={option.key} variant="outline" className="font-normal">
-                {option.label}
+            {DOCUMENT_TYPE_FLAGS.filter((flag) => row[flag.key]).map((flag) => (
+              <Badge key={flag.key} variant="outline" className="font-normal">
+                {flag.label}
               </Badge>
             ))}
           </span>
         ),
       },
       {
+        key: 'default_secrecy',
+        header: 'Mức mật mặc định',
+        width: 150,
+        defaultHidden: true,
+        cell: (row) => secrecyLabel(row.default_secrecy),
+      },
+      {
+        key: 'group_code',
+        header: 'Nhóm',
+        width: 180,
+        defaultHidden: true,
+        cell: (row) => DOC_GROUP_LABELS[row.group_code] ?? '—',
+      },
+      {
+        key: 'review_cycle_months',
+        header: 'Chu kỳ rà soát',
+        width: 130,
+        defaultHidden: true,
+        cell: (row) => (row.review_cycle_months ? `${row.review_cycle_months} tháng` : '—'),
+      },
+      {
         key: 'description',
         header: 'Mô tả',
-        defaultHidden: true,
         cell: (row) => row.description,
       },
       {
@@ -109,10 +139,14 @@ function DocumentTypeCatalogContent() {
       storageKey="document.types"
       items={items}
       columns={columns}
-      searchFields={(row) => [row.code, row.name, row.prefix]}
-      searchPlaceholder="Tìm theo mã, tên hoặc tiền tố…"
+      searchFields={(row) => [row.code, row.name]}
+      searchPlaceholder="Tìm theo mã hoặc tên loại…"
       detailPath={appRoutes.document.typeDetail}
-      emptyMessage="Không có loại văn bản nào khớp điều kiện đang lọc."
+      emptyMessage={
+        isLoading
+          ? 'Đang tải danh mục…'
+          : 'Không có loại văn bản nào khớp điều kiện đang lọc.'
+      }
       filterRows={filterRows}
       extraToolbar={<ConditionalFilter />}
     />

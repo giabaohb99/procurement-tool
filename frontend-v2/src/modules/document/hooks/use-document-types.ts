@@ -1,60 +1,67 @@
-import { useCallback, useMemo } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMemo } from 'react'
+import { toast } from 'sonner'
 
-import { documentTypeCollection } from '../store/document-type-store'
+import { queryKeys } from '@/shared/constants/query-keys'
+import { docTypeApi, type DocumentTypeInput } from '../api/doc-catalog-api'
 import type { DocumentType } from '../types/document-type'
-import {
-  useCollectionActions,
-  useCollectionHistory,
-  useCollectionItem,
-  useCollectionItems,
-} from './use-collection'
 
-/** Danh sách loại văn bản, lọc theo mã / tên / tiền tố. */
-export function useDocumentTypes(keyword = '') {
-  const items = useCollectionItems(documentTypeCollection)
+/**
+ * Danh mục LOẠI VĂN BẢN — nạp cả danh sách một lần (dưới 100 dòng), tìm và lọc
+ * ngay tại trình duyệt. Xem ghi chú trong `api/doc-catalog-api.ts`.
+ */
+export function useDocumentTypes() {
+  const query = useQuery({
+    queryKey: queryKeys.document.docTypes(),
+    queryFn: () => docTypeApi.list(),
+  })
 
-  const filtered = useMemo(() => {
-    const needle = keyword.trim().toLowerCase()
-    if (!needle) return items
-    return items.filter((item) =>
-      [item.code, item.name, item.prefix].some((field) =>
-        field.toLowerCase().includes(needle),
-      ),
-    )
-  }, [items, keyword])
+  const items = useMemo(() => {
+    const rows = query.data?.items ?? []
+    // Sắp ở client: `sort_order` là thứ tự Hành chính muốn thấy, backend trả
+    // theo id giảm dần nên loại thêm sau lại nhảy lên đầu bảng.
+    return [...rows].sort((a, b) => a.sort_order - b.sort_order || a.id - b.id)
+  }, [query.data])
 
-  return { items: filtered, total: items.length }
+  return { ...query, items }
 }
 
-/** Loại văn bản đang bật — dùng cho ô chọn loại khi tạo văn bản. */
+/** Loại đang bật — dùng cho ô chọn loại khi tạo văn bản. */
 export function useActiveDocumentTypes(): DocumentType[] {
-  const items = useCollectionItems(documentTypeCollection)
+  const { items } = useDocumentTypes()
   return useMemo(() => items.filter((item) => item.is_active), [items])
 }
 
 export function useDocumentType(id?: number) {
-  return useCollectionItem(documentTypeCollection, id)
+  return useQuery({
+    queryKey: queryKeys.document.docType(id ?? 0),
+    queryFn: () => docTypeApi.getById(id as number),
+    enabled: typeof id === 'number' && id > 0,
+  })
 }
 
-export function useDocumentTypeHistory(id?: number) {
-  return useCollectionHistory(documentTypeCollection, id)
+export function useSaveDocumentType() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, values }: { id?: number; values: DocumentTypeInput }) =>
+      id ? docTypeApi.update(id, values) : docTypeApi.create(values),
+
+    onSuccess: (_data, variables) => {
+      toast.success(variables.id ? 'Đã cập nhật loại văn bản' : 'Đã thêm loại văn bản')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
+    },
+  })
 }
 
-/**
- * Lưu / xóa loại văn bản, kèm `isCodeTaken` để form chặn trùng mã ngay trên ô
- * nhập — mã đi vào số hiệu văn bản nên bắt buộc duy nhất.
- */
-export function useDocumentTypeActions() {
-  const items = useCollectionItems(documentTypeCollection)
-  const { save, remove } = useCollectionActions(documentTypeCollection)
+export function useDeleteDocumentType() {
+  const queryClient = useQueryClient()
 
-  const isCodeTaken = useCallback(
-    (code: string, id?: number) =>
-      items.some(
-        (item) => item.id !== id && item.code.toLowerCase() === code.trim().toLowerCase(),
-      ),
-    [items],
-  )
-
-  return { save, remove, isCodeTaken }
+  return useMutation({
+    mutationFn: (id: number) => docTypeApi.remove(id),
+    onSuccess: () => {
+      toast.success('Đã xóa loại văn bản')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
+    },
+  })
 }

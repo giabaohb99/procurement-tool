@@ -7,6 +7,7 @@ import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { AuditTimeline } from '@/shared/audit'
 import type { HistoryEntry } from '../store/local-collection'
 import { RecordHistoryCard } from './record-history-card'
 
@@ -32,7 +33,13 @@ interface DetailPageShellProps {
    * "Lưu" chung trên đầu trang không còn rõ là đang lưu cái gì.
    */
   actions?: ReactNode
-  history: HistoryEntry[]
+  /**
+   * Nhật ký của kho tạm phía trình duyệt. Chỉ còn các màn CHƯA nối API dùng —
+   * màn đã có backend thì truyền `audit` để đọc `tab_audit_log` thật.
+   */
+  history?: HistoryEntry[]
+  /** Bản ghi đã có backend: đọc nhật ký thật theo `(entity, id)`. */
+  audit?: { entity: string; id: number }
   /**
    * Ẩn hẳn khối "Lịch sử thao tác".
    *
@@ -63,6 +70,7 @@ export function DetailPageShell({
   deleteConfirmDescription,
   actions,
   history,
+  audit,
   showHistory = true,
   children,
 }: DetailPageShellProps) {
@@ -141,7 +149,12 @@ export function DetailPageShell({
       {children}
 
       {/* Chỉ bản ghi đã tồn tại mới có lịch sử để xem. */}
-      {!isCreating && showHistory && <RecordHistoryCard entries={history} />}
+      {!isCreating && showHistory && audit && (
+        <AuditTimeline entity={audit.entity} entityId={audit.id} />
+      )}
+      {!isCreating && showHistory && !audit && history && (
+        <RecordHistoryCard entries={history} />
+      )}
     </PageContainer>
   )
 }

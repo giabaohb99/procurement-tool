@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, ArrowRight, Activity, Info, Layers, PenLine } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Info, Layers, PenLine } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -12,47 +12,31 @@ import { FormCard } from '@/shared/ui/form-card'
 import { FormStepper } from '@/shared/ui/form-stepper'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
-import { DocumentAttachmentList } from '../components/document-attachment-list'
-import { DocumentDynamicFields } from '../components/document-dynamic-fields'
 import { DocumentExtraInfoFields } from '../components/document-extra-info-fields'
-import {
-  DocumentMainInfoFields,
-  MAIN_INFO_FIELDS,
-} from '../components/document-main-info-fields'
-import {
-  DocumentProcessingFields,
-  PROCESSING_FIELDS,
-} from '../components/document-processing-fields'
-import { emptyDocumentForm } from '../helpers/document-form-defaults'
-import { useDynamicFieldsFor } from '../hooks/use-document-catalogs'
-import { useDocumentActions } from '../hooks/use-documents'
+import { DocumentMainInfoFields, MAIN_INFO_FIELDS } from '../components/document-main-info-fields'
+import { emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
+import { useSaveDocument } from '../hooks/use-documents'
+import { useDocumentTemplate } from '../hooks/use-document-templates'
 import {
   documentRecordSchema,
   type DocumentRecordFormValues,
 } from '../schemas/document-record-schema'
-import type { DocumentAttachment, DocumentDirection } from '../types/document-record'
 
 /**
- * Ba bước của form tạo văn bản.
+ * Hai bước của form tạo văn bản.
  *
  * `fields` là các ô được kiểm khi bấm "Tiếp tục" — chỉ kiểm bước đang đứng, vì
- * các bước sau còn chưa mở ra để nhập. Bước cuối không cần khai: bấm "Tạo" là
- * zod kiểm toàn bộ.
+ * bước sau còn chưa mở ra để nhập.
  */
 const STEPS = [
   {
     title: 'Thông tin chính',
-    description: 'Tên, số, loại, nơi nhận',
+    description: 'Loại, pháp nhân, phòng, tên văn bản',
     fields: MAIN_INFO_FIELDS,
   },
   {
-    title: 'Tình trạng xử lý',
-    description: 'Khâu xử lý, người nhận, hạn',
-    fields: PROCESSING_FIELDS,
-  },
-  {
     title: 'Thông tin bổ sung',
-    description: 'Hình thức, vào sổ, mức mật, tệp đính kèm',
+    description: 'Mức mật, hiệu lực, từ khóa',
     fields: [],
   },
 ] as const
@@ -60,30 +44,27 @@ const STEPS = [
 const LAST_STEP = STEPS.length - 1
 
 /**
- * Trang TẠO VĂN BẢN, chia ba bước.
+ * Trang TẠO VĂN BẢN.
  *
- * Tách theo việc chứ không theo số lượng ô: bước 1 là những thứ bắt buộc để cấp
- * số và vào sổ, bước 2 là giao việc cho ai, bước 3 gom phần có thể bổ sung sau.
- * Tạo xong nhảy thẳng sang tab "Soạn thảo" của văn bản vừa lập — lập xong cái
- * vỏ thì việc kế tiếp luôn là gõ nội dung.
+ * **Không có bước xin phép** — ai có quyền `document.create` thì tạo thẳng
+ * (chốt 14/08/2026, quyết định 7 của plan). Bù lại, khối gợi ý ngay dưới ô tên
+ * hiện luôn văn bản cùng loại cùng phòng đang hiệu lực để người soạn thấy trước
+ * khi ngồi gõ bản thứ hai cho cùng một việc.
+ *
+ * Tạo xong nhảy thẳng sang tab "Soạn thảo": lập xong cái vỏ thì việc kế tiếp
+ * luôn là gõ nội dung.
  */
 export function DocumentCreatePage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
   const [step, setStep] = useState(0)
-
-  const { save } = useDocumentActions()
-
-  // Tạo mới từ tab đang xem: `?direction=outgoing` để khỏi phải chọn lại.
-  const initialDirection = (searchParams.get('direction') ?? 'incoming') as DocumentDirection
+  const [templateId, setTemplateId] = useState<number | null>(null)
+  const save = useSaveDocument()
+  const selectedTemplate = useDocumentTemplate(templateId)
 
   const form = useForm<DocumentRecordFormValues>({
     resolver: zodResolver(documentRecordSchema),
-    defaultValues: { ...emptyDocumentForm(), direction: initialDirection },
+    defaultValues: emptyDocumentForm(),
   })
-
-  const [attachments, setAttachments] = useState<DocumentAttachment[]>([])
-  const dynamicFields = useDynamicFieldsFor(form.watch('document_type_id'))
 
   async function goNext() {
     const valid = await form.trigger([...STEPS[step].fields])
@@ -95,34 +76,40 @@ export function DocumentCreatePage() {
   }
 
   function handleSubmit(values: DocumentRecordFormValues) {
-    // Trường động bắt buộc không kiểm được bằng zod (danh sách trường đổi theo
-    // loại văn bản), nên chặn ở đây.
-    const missing = dynamicFields.find(
-      (field) => field.is_required && !values.field_values?.[field.code],
-    )
-    if (missing) {
-      toast.error(`Chưa nhập "${missing.label}"`)
+    //  Gõ Enter trong một ô nhập cũng gửi form (implicit submission của trình
+    //  duyệt). Ở bước chưa cuối, ý người dùng là "sang bước tiếp" chứ không
+    //  phải "tạo văn bản" — nếu không chặn thì gõ xong tên văn bản, bấm Enter
+    //  là văn bản ra đời với bộ trường bổ sung còn trống trơn.
+    if (step < LAST_STEP) {
+      setStep(step + 1)
       return
     }
 
-    const savedId = save({
-      ...values,
-      attachments,
-      content: '',
-      // Số vào sổ do hệ cấp lúc lưu; số văn bản (`code`) lấy theo ô người dùng
-      // gõ, bỏ trống thì cũng do hệ ghép — xem `use-documents.ts`.
-      book_no: 0,
-      book_year: 0,
-    })
-    toast.success('Đã tạo và vào sổ văn bản')
-    navigate(appRoutes.document.documentDetail(savedId), { replace: true })
+    if (templateId && !selectedTemplate.data) {
+      toast.error('Văn bản mẫu chưa tải xong. Vui lòng thử lại.')
+      return
+    }
+
+    save.mutate(
+      {
+        values: {
+          ...formToPayload(values),
+          content_html: selectedTemplate.data?.content_html ?? '',
+        },
+      },
+      {
+        onSuccess: (record) => {
+          navigate(appRoutes.document.documentDetail(record.id), { replace: true })
+        },
+      },
+    )
   }
 
   return (
     <PageContainer className="space-y-5">
       <PageHeader
-        title="Thêm văn bản"
-        description="Số hiệu và số vào sổ sẽ được cấp tự động khi lưu."
+        title="Tạo văn bản"
+        description="Số hiệu do hệ cấp — khi lưu bản nháp hoặc khi được duyệt, tùy loại văn bản."
         leading={
           <Button
             variant="outline"
@@ -136,39 +123,27 @@ export function DocumentCreatePage() {
         }
       />
 
-      <FormStepper steps={STEPS} current={step} onGoTo={setStep} className="max-w-5xl" />
+      <FormStepper steps={STEPS} current={step} onGoTo={setStep} className="max-w-3xl" />
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          {/* Giữ CẢ BA bước trong DOM, chỉ ẩn bước không xem: gỡ hẳn thì các ô
+          {/* Giữ CẢ HAI bước trong DOM, chỉ ẩn bước không xem: gỡ hẳn thì các ô
               của bước kia bị hủy đăng ký khỏi form và mất dữ liệu vừa nhập. */}
           <div className={step === 0 ? undefined : 'hidden'}>
             <FormCard title="Thông tin chính" icon={Info} iconClassName="text-primary">
-              <DocumentMainInfoFields form={form} isEditing={false} />
+              <DocumentMainInfoFields
+                form={form}
+                isNumbered={false}
+                templateId={templateId}
+                onTemplateChange={setTemplateId}
+              />
             </FormCard>
           </div>
 
           <div className={step === 1 ? undefined : 'hidden'}>
-            <FormCard
-              title="Tình trạng xử lý"
-              icon={Activity}
-              iconClassName="text-violet-500"
-            >
-              <DocumentProcessingFields form={form} isEditing={false} />
+            <FormCard title="Thông tin bổ sung" icon={Layers} iconClassName="text-emerald-600">
+              <DocumentExtraInfoFields form={form} />
             </FormCard>
-          </div>
-
-          <div className={step === 2 ? 'space-y-4' : 'hidden'}>
-            <FormCard
-              title="Thông tin bổ sung"
-              icon={Layers}
-              iconClassName="text-emerald-600"
-            >
-              <DocumentExtraInfoFields form={form} isEditing={false} />
-            </FormCard>
-
-            <DocumentDynamicFields fields={dynamicFields} form={form} />
-            <DocumentAttachmentList attachments={attachments} onChange={setAttachments} />
           </div>
 
           <div className="flex items-center justify-between gap-3">
@@ -191,13 +166,26 @@ export function DocumentCreatePage() {
                 Hủy
               </Button>
 
+              {/* ⚠️ `key` KHÁC NHAU là bắt buộc, không phải cho đẹp.
+                  Cùng key thì React giữ NGUYÊN nút DOM cũ và chỉ đổi thuộc tính
+                  `type`. Bấm chuột thật: click bắn ra → `goNext` chạy → await
+                  xong trong microtask → React render lại ngay trong nhịp đó →
+                  nút đang bấm biến thành `type="submit"` → trình duyệt mới xử
+                  lý hành vi kích hoạt, đọc `type` MỚI và gửi form luôn. Kết quả
+                  là bấm "Tiếp tục" ở bước 1 tạo thẳng văn bản, bỏ qua bước 2.
+                  Key khác nhau → React thay hẳn nút, nút cũ rời khỏi DOM trước
+                  khi tới bước kích hoạt nên không gửi form được. */}
               {step < LAST_STEP ? (
-                <Button type="button" onClick={goNext}>
+                <Button key="next" type="button" onClick={goNext}>
                   Tiếp tục
                   <ArrowRight className="size-4" />
                 </Button>
               ) : (
-                <Button type="submit">
+                <Button
+                  key="submit"
+                  type="submit"
+                  disabled={save.isPending || selectedTemplate.isFetching}
+                >
                   <PenLine className="size-4" />
                   Tạo và soạn thảo
                 </Button>

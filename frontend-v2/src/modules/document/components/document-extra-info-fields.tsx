@@ -1,8 +1,10 @@
 import type { UseFormReturn } from 'react-hook-form'
 
+import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { DatePicker } from '@/shared/ui/date-picker'
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -19,49 +21,58 @@ import {
 import { Textarea } from '@/shared/ui/textarea'
 import { useSecurityLevelOptions } from '../hooks/use-document-catalogs'
 import type { DocumentRecordFormValues } from '../schemas/document-record-schema'
-import { DOCUMENT_FORMAT_LABELS } from '../types/document-record'
-import { DocumentValidityFields } from './document-validity-fields'
 
-/** Giá trị của ô select khi người dùng chọn "không chọn gì". */
 const NONE = 'none'
 
 interface DocumentExtraInfoFieldsProps {
   form: UseFormReturn<DocumentRecordFormValues>
-  /** Đang sửa: mở thêm khối hiệu lực (xem `DocumentValidityFields`). */
-  isEditing: boolean
 }
 
 /**
- * THÔNG TIN BỔ SUNG: hình thức bản lưu, mức mật, người ký, ngày đi, chỗ cất.
+ * THÔNG TIN BỔ SUNG: mức mật, độ khẩn, người ký, hiệu lực, số hiệu cũ, từ khóa.
  *
- * Đều là thứ có thể bỏ trống lúc tạo rồi bổ sung sau, nên xếp sau cùng để người
- * nhập vào sổ được văn bản chỉ với vài ô bắt buộc ở bước đầu.
+ * Đều là thứ bổ sung được sau nên xếp ở bước cuối — người soạn tạo được cái vỏ
+ * văn bản rồi vào gõ nội dung ngay, không phải khai đủ hai mươi ô mới lưu được.
+ *
+ * **Mức mật và độ khẩn là hai thang ĐỘC LẬP**: một thông báo hỏa tốc vẫn có thể
+ * công khai. Đặt cạnh nhau nhưng không bao giờ gộp.
  */
-export function DocumentExtraInfoFields({ form, isEditing }: DocumentExtraInfoFieldsProps) {
+export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) {
   const confidentialLevels = useSecurityLevelOptions('confidential')
+  const urgencyLevels = useSecurityLevelOptions('urgent')
+  const { data: employees } = useEmployees({ page_size: 1000, is_active: true })
 
   return (
     <div className="grid items-start gap-x-5 gap-y-3 sm:grid-cols-2">
       <FormField
         control={form.control}
-        name="doc_format"
+        name="secrecy_level"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Hình thức văn bản</FormLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
+            <FormLabel>Mức mật</FormLabel>
+            <Select
+              value={String(field.value)}
+              onValueChange={(value) => field.onChange(Number(value))}
+            >
               <FormControl>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Chọn hình thức" />
+                  <SelectValue />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {Object.entries(DOCUMENT_FORMAT_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
+                {confidentialLevels.map((level) => (
+                  <SelectItem key={level.id} value={String(level.id)}>
+                    {level.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {/* Nói thẳng giới hạn hiện tại: cột đã ghi xuống nhưng lớp kiểm mức
+                mật là việc của P5, chưa có. */}
+            <FormDescription>
+              Mặc định theo loại văn bản. Lớp kiểm mức mật chưa bật — chưa đưa
+              văn bản mật thật vào hệ thống.
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -69,22 +80,21 @@ export function DocumentExtraInfoFields({ form, isEditing }: DocumentExtraInfoFi
 
       <FormField
         control={form.control}
-        name="confidential_level_id"
+        name="urgency"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Mức độ mật</FormLabel>
+            <FormLabel>Độ khẩn</FormLabel>
             <Select
-              value={field.value ? String(field.value) : NONE}
-              onValueChange={(value) => field.onChange(value === NONE ? null : Number(value))}
+              value={String(field.value)}
+              onValueChange={(value) => field.onChange(Number(value))}
             >
               <FormControl>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Chọn mức độ mật" />
+                  <SelectValue />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem value={NONE}>Không đặt</SelectItem>
-                {confidentialLevels.map((level) => (
+                {urgencyLevels.map((level) => (
                   <SelectItem key={level.id} value={String(level.id)}>
                     {level.name}
                   </SelectItem>
@@ -98,13 +108,30 @@ export function DocumentExtraInfoFields({ form, isEditing }: DocumentExtraInfoFi
 
       <FormField
         control={form.control}
-        name="signer"
+        name="signer_employee_id"
         render={({ field }) => (
           <FormItem>
             <FormLabel>Người ký</FormLabel>
-            <FormControl>
-              <Input placeholder="Nhập người ký" {...field} />
-            </FormControl>
+            <Select
+              value={field.value ? String(field.value) : NONE}
+              onValueChange={(value) =>
+                field.onChange(value === NONE ? null : Number(value))
+              }
+            >
+              <FormControl>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Chọn người ký" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value={NONE}>-- Chưa chọn --</SelectItem>
+                {(employees?.items ?? []).map((employee) => (
+                  <SelectItem key={employee.id} value={String(employee.id)}>
+                    {employee.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <FormMessage />
           </FormItem>
         )}
@@ -112,13 +139,32 @@ export function DocumentExtraInfoFields({ form, isEditing }: DocumentExtraInfoFi
 
       <FormField
         control={form.control}
-        name="sent_date"
+        name="legacy_code"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Ngày đi</FormLabel>
+            <FormLabel>Số hiệu cũ (bản giấy)</FormLabel>
+            <FormControl>
+              <Input placeholder="VD: 145/QĐ-DEGO" {...field} />
+            </FormControl>
+            {/* C12 — người dùng lâu năm vẫn tra theo số họ đã thuộc. */}
+            <FormDescription>Tìm kiếm chấp nhận cả số này.</FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="effective_date"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Ngày hiệu lực</FormLabel>
             <FormControl>
               <DatePicker value={field.value} onChange={field.onChange} />
             </FormControl>
+            <FormDescription>
+              Để trống = có hiệu lực ngay khi được duyệt.
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -126,19 +172,35 @@ export function DocumentExtraInfoFields({ form, isEditing }: DocumentExtraInfoFi
 
       <FormField
         control={form.control}
-        name="storage_location"
+        name="expire_date"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Vị trí lưu trữ</FormLabel>
+            <FormLabel>Hết hiệu lực</FormLabel>
             <FormControl>
-              <Input placeholder="Nhập vị trí lưu trữ" {...field} />
+              <DatePicker value={field.value} onChange={field.onChange} />
             </FormControl>
+            <FormDescription>Trống = không đặt hạn.</FormDescription>
             <FormMessage />
           </FormItem>
         )}
       />
 
-      {isEditing && <DocumentValidityFields form={form} />}
+      <FormField
+        control={form.control}
+        name="keywords"
+        render={({ field }) => (
+          <FormItem className="sm:col-span-2">
+            <FormLabel>Từ khóa</FormLabel>
+            <FormControl>
+              <Input placeholder="Ngăn cách bằng dấu phẩy" {...field} />
+            </FormControl>
+            <FormDescription>
+              Từ người khác sẽ gõ khi đi tìm văn bản này, không phải từ trong tiêu đề.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       <FormField
         control={form.control}
@@ -147,7 +209,7 @@ export function DocumentExtraInfoFields({ form, isEditing }: DocumentExtraInfoFi
           <FormItem className="sm:col-span-2">
             <FormLabel>Trích yếu nội dung</FormLabel>
             <FormControl>
-              <Textarea rows={6} placeholder="Tóm tắt nội dung văn bản…" {...field} />
+              <Textarea rows={5} placeholder="Tóm tắt nội dung văn bản…" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
