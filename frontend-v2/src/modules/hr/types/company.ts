@@ -4,6 +4,11 @@ export interface Company {
   code: string
   /** Tên pháp nhân đầy đủ. */
   name: string
+  /** Mã chữ HOA/số đi vào số hiệu văn bản, khác mã hiển thị `code`. */
+  issue_code: string
+  short_name: string
+  /** 1 Tập đoàn · 2 công ty thành viên · 3 đơn vị trực thuộc. */
+  level: 1 | 2 | 3
   tax_code: string
   address: string
   /** Nơi nhận hóa đơn điện tử của pháp nhân này. */
@@ -17,6 +22,12 @@ export interface Company {
   legal_rep_name?: string | null
   /** Đặt qua endpoint upload riêng, KHÔNG nhập trong form. */
   logo: string
+}
+
+export const COMPANY_LEVEL_LABELS: Record<Company['level'], string> = {
+  1: 'Tập đoàn',
+  2: 'Công ty thành viên',
+  3: 'Đơn vị trực thuộc',
 }
 
 /**

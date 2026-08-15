@@ -5,7 +5,7 @@ import type { CompanyFormValues } from '../schemas/company-schema'
 
 const BASE_URL = '/api/companies'
 
-/** Danh mục Công ty (pháp nhân). Lọc được: `code`, `name`, `tax_code`, `is_active`. */
+/** Danh mục pháp nhân. Lọc được cả mã số hiệu và cấp pháp nhân. */
 export const companyApi = {
   list: (params: ListParams) => apiGet<PaginatedResult<Company>>(BASE_URL, { params }),
 

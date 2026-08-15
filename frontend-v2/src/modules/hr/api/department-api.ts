@@ -1,6 +1,6 @@
-import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '@/core/api'
 import type { ListParams, PaginatedResult } from '@/shared/types/api'
-import type { Department } from '../types/department'
+import type { Department, DepartmentCompany, DepartmentCompanyInput } from '../types/department'
 import type { DepartmentFormValues } from '../schemas/department-schema'
 
 const BASE_URL = '/api/departments'
@@ -23,4 +23,9 @@ export const departmentApi = {
     apiPatch<Department>(`${BASE_URL}/${id}`, payload),
 
   remove: (id: number) => apiDelete<null>(`${BASE_URL}/${id}`),
+
+  listCompanies: (id: number) => apiGet<DepartmentCompany[]>(`${BASE_URL}/${id}/companies`),
+
+  replaceCompanies: (id: number, items: DepartmentCompanyInput[]) =>
+    apiPut<DepartmentCompany[]>(`${BASE_URL}/${id}/companies`, { items }),
 }

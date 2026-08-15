@@ -24,17 +24,17 @@ import {
 import { FormSection } from '@/shared/ui/form-section'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
-import {
-  RecordIdentityCard,
-  type IdentityChip,
-} from '@/shared/ui/record-identity-card'
+import { RecordIdentityCard, type IdentityChip } from '@/shared/ui/record-identity-card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ActiveStatusSelect } from '../components/active-status-select'
+import { DepartmentCompanyCard } from '../components/department-company-card'
 import { DepartmentMembersTable } from '../components/department-members-table'
 import { LookupSelect } from '../components/lookup-select'
+import { useCompanies } from '../hooks/use-companies'
 import {
   useDeleteDepartment,
   useDepartment,
+  useDepartments,
   useSaveDepartment,
 } from '../hooks/use-departments'
 import { useEmployees } from '../hooks/use-employees'
@@ -44,6 +44,7 @@ import {
   type DepartmentFormValues,
 } from '../schemas/department-schema'
 import type { Department } from '../types/department'
+import { DEPARTMENT_KIND_LABELS } from '../types/department'
 
 /**
  * Chi tiết phòng ban — form sửa trực tiếp, bên dưới là bảng nhân sự thuộc phòng
@@ -61,6 +62,8 @@ export function DepartmentDetailPage() {
   const saveDepartment = useSaveDepartment()
   const deleteDepartment = useDeleteDepartment()
   const { data: employees } = useEmployees({ page_size: 1000, is_active: true })
+  const { data: companies } = useCompanies({ page_size: 1000, is_active: true })
+  const { data: departments } = useDepartments({ page_size: 1000, is_active: true })
 
   const form = useForm<DepartmentFormValues>({
     resolver: zodResolver(departmentSchema),
@@ -103,6 +106,14 @@ export function DepartmentDetailPage() {
     navigate(appRoutes.hr.departments)
   }
 
+  const selectedCompanyId = form.watch('company_id')
+  const managerOptions = (employees?.items ?? [])
+    .filter((employee) => !selectedCompanyId || employee.company_id === selectedCompanyId)
+    .map((employee) => ({
+      id: employee.id,
+      label: `${employee.code} — ${employee.full_name}`,
+    }))
+
   return (
     <PageContainer>
       <Form {...form}>
@@ -118,11 +129,7 @@ export function DepartmentDetailPage() {
             <div className="flex items-center gap-2">
               <PermissionGate entity="department" action="write">
                 <Button type="submit" disabled={saveDepartment.isPending}>
-                  {saveDepartment.isPending ? (
-                    <Loader2 className="animate-spin" />
-                  ) : (
-                    <Save />
-                  )}
+                  {saveDepartment.isPending ? <Loader2 className="animate-spin" /> : <Save />}
                   Lưu
                 </Button>
               </PermissionGate>
@@ -138,10 +145,7 @@ export function DepartmentDetailPage() {
             </div>
           </div>
 
-          <RecordIdentityCard
-            title={department.name}
-            chips={identityChips(department)}
-          />
+          <RecordIdentityCard title={department.name} chips={identityChips(department)} />
 
           <Card className="gap-4 p-5">
             <FormSection title="Định danh">
@@ -173,9 +177,106 @@ export function DepartmentDetailPage() {
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="issue_code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mã trên số hiệu văn bản</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="VD: HCNS"
+                        maxLength={20}
+                        disabled={!canWrite}
+                        {...field}
+                        onChange={(event) =>
+                          field.onChange(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))
+                        }
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Chỉ dùng chữ hoa và số; được ghép vào số hiệu của phòng chức năng.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="kind"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Loại đơn vị</FormLabel>
+                    <LookupSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      items={Object.entries(DEPARTMENT_KIND_LABELS).map(([id, label]) => ({
+                        id: Number(id),
+                        label,
+                      }))}
+                      placeholder="Chọn loại đơn vị"
+                      disabled={!canWrite}
+                    />
+                    <FormDescription>
+                      Chỉ “Phòng chức năng” xuất hiện trong số hiệu văn bản.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </FormSection>
 
-            <FormSection title="Phụ trách">
+            <FormSection title="Cơ cấu tổ chức">
+              <FormField
+                control={form.control}
+                name="company_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pháp nhân gốc</FormLabel>
+                    <LookupSelect
+                      value={field.value}
+                      onChange={(companyId) => {
+                        field.onChange(companyId)
+                        form.setValue('manager_id', 0)
+                      }}
+                      items={(companies?.items ?? []).map((company) => ({
+                        id: company.id,
+                        label: `${company.issue_code || company.code} — ${company.name}`,
+                      }))}
+                      placeholder="Chọn pháp nhân gốc"
+                      disabled={!canWrite}
+                    />
+                    <FormDescription>
+                      Dòng pháp nhân gốc luôn được giữ trong cấu hình áp dụng bên dưới.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="parent"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phòng ban cấp trên</FormLabel>
+                    <LookupSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      items={(departments?.items ?? [])
+                        .filter((item) => item.id !== departmentId)
+                        .map((item) => ({ id: item.id, label: `${item.code} — ${item.name}` }))}
+                      placeholder="Chọn phòng ban cấp trên"
+                      emptyLabel="— Phòng ban gốc —"
+                      disabled={!canWrite}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="manager_id"
@@ -188,10 +289,7 @@ export function DepartmentDetailPage() {
                       disabled={!canWrite}
                       placeholder="Chọn nhân sự"
                       emptyLabel="— Chưa chỉ định —"
-                      items={(employees?.items ?? []).map((e) => ({
-                        id: e.id,
-                        label: `${e.code} — ${e.full_name}`,
-                      }))}
+                      items={managerOptions}
                     />
                     <FormDescription>
                       Người duyệt/ký thay mặt phòng ban trong luồng mua hàng.
@@ -227,10 +325,12 @@ export function DepartmentDetailPage() {
       </Form>
 
       <div className="mt-5 space-y-5">
-        <DepartmentMembersTable
+        <DepartmentCompanyCard
           departmentId={department.id}
-          managerId={department.manager_id}
+          primaryCompanyId={department.company_id}
+          canWrite={canWrite}
         />
+        <DepartmentMembersTable departmentId={department.id} managerId={department.manager_id} />
         <AuditTimeline entity="department" entityId={departmentId} />
       </div>
     </PageContainer>
@@ -240,6 +340,9 @@ export function DepartmentDetailPage() {
 function identityChips(department: Department): IdentityChip[] {
   const chips: IdentityChip[] = []
   if (department.code) chips.push({ icon: Hash, text: department.code, tone: 'code' })
+  if (department.issue_code) {
+    chips.push({ icon: Hash, text: `Số hiệu: ${department.issue_code}`, tone: 'code' })
+  }
   if (department.manager_name) {
     chips.push({ icon: UserStar, text: `Trưởng BP: ${department.manager_name}` })
   }

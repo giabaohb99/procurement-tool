@@ -15,6 +15,7 @@ from app.modules.company.model import Company
 from app.modules.department.model import Department
 from app.modules.doc_catalog.book_model import DocumentBook
 from app.modules.doc_catalog.model import DocType
+from app.modules.doc_catalog.numbering_rule_model import DocumentNumberingRule
 from app.modules.employee.model import Employee
 
 from .model import STATUS_LABELS, Document
@@ -45,6 +46,12 @@ def serialize_many(db: Session, docs: list[Document]) -> list[dict]:
         *(d.drafter_employee_id for d in docs),
         *(d.signer_employee_id for d in docs),
     }, "full_name")
+    numbering_rules = _lookup(
+        db,
+        DocumentNumberingRule,
+        {d.numbering_rule_id for d in docs},
+        "allow_manual",
+    )
 
     version_ids = [d.current_version_id for d in docs if d.current_version_id]
     versions = {
@@ -85,6 +92,10 @@ def serialize_many(db: Session, docs: list[Document]) -> list[dict]:
             "version_no": version.version_no if version else "",
             "version_count": version_counts.get(doc.id, 0),
             "attachment_count": attach_counts.get(doc.current_version_id, 0),
+            "allow_manual_number": bool(
+                numbering_rules.get(doc.numbering_rule_id, (False,))[0]
+                and doc.issue_number
+            ),
         })
     return out
 

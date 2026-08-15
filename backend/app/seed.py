@@ -19,7 +19,7 @@ from app.modules.audit.model import AuditLog  # noqa: F401
 from app.modules.catalog.model import (Brand, ItemGroup,  # noqa: F401
                                        Unit, Warehouse)
 from app.modules.company.model import Company
-from app.modules.department.model import Department
+from app.modules.department.model import Department, DepartmentCompany
 from app.modules.doc_catalog.book_model import DocumentBook
 from app.modules.doc_catalog.model import DocType, ExternalParty
 from app.modules.employee.model import Employee
@@ -38,6 +38,9 @@ from app.modules.supplier.model import Supplier
 from app.modules.survey.model import (Survey, SurveyProductLine,  # noqa: F401
                                       SurveySupplierLine)
 from app.modules.user.model import User, UserRole
+from app.seed_data.document_phase1 import (ALL_DOC_TYPES,
+                                           DEPARTMENT_DOCUMENT_CONFIG,
+                                           DOCUMENT_COMPANIES)
 from app.modules.notification.model import Notification, EmailLog  # noqa: F401
 
 
@@ -590,24 +593,6 @@ def force_resync_roles(db):
 
 
 # ---- Phân hệ VĂN THƯ · danh mục nền ----
-# Sáu loại hành chính phổ biến, đủ để bấm thử màn "Thiết lập văn bản".
-# Danh mục 32 loại chính thức do Pháp chế chốt rồi nhập trên giao diện (câu B6).
-SAMPLE_DOC_TYPES = [
-    # code, tên, nhóm, id_scheme, mật mặc định, duyệt, ký số, kèm QĐ, mô tả
-    ("CV", "Công văn", "D", 2, 2, True, False, False,
-     "Công văn trao đổi, đề nghị giữa các đơn vị."),
-    ("QD", "Quyết định", "B", 2, 2, True, True, False,
-     "Quyết định bổ nhiệm, điều động, khen thưởng, kỷ luật."),
-    ("TB", "Thông báo", "D", 2, 1, False, False, False,
-     "Thông báo nội bộ gửi toàn công ty hoặc từng bộ phận."),
-    ("QC", "Quy chế / Quy trình", "A", 1, 2, True, False, True,
-     "Quy chế, quy trình nội bộ ban hành kèm quyết định."),
-    ("HD", "Hợp đồng", "C", 2, 3, True, True, False,
-     "Hợp đồng kinh tế, hợp đồng nguyên tắc với đối tác."),
-    ("BM", "Biểu mẫu", "A", 1, 2, False, False, False,
-     "Biểu mẫu, phiếu in dùng chung trong nội bộ."),
-]
-
 # Ba sổ mở sẵn cho pháp nhân đầu tiên: đến / đi / nội bộ.
 # Mỗi sổ một bộ đếm riêng, đếm lại từ 1 mỗi năm — đúng lệ hành chính.
 SAMPLE_DOCUMENT_BOOKS = [
@@ -624,24 +609,91 @@ SAMPLE_EXTERNAL_PARTIES = [
 ]
 
 
+def seed_document_phase1(db):
+    """Nạp insert-only dữ liệu A01, C20, A04, A05 và dòng A06 pháp nhân gốc.
+
+    Chỉ thêm bản ghi còn thiếu và điền ô đang rỗng. Không ghi đè mã người dùng
+    đã sửa, vì các mã này có thể đã xuất hiện trên văn bản ban hành.
+    """
+    changed = 0
+
+    existing_types = {row.code.upper(): row for row in db.query(DocType).all()}
+    for values in ALL_DOC_TYPES:
+        if values["code"].upper() in existing_types:
+            continue
+        row = DocType(**values)
+        db.add(row)
+        existing_types[values["code"].upper()] = row
+        changed += 1
+
+    existing_companies = {row.code.upper(): row for row in db.query(Company).all()}
+    for values in DOCUMENT_COMPANIES:
+        row = existing_companies.get(values["code"].upper())
+        if row is None:
+            row = Company(**values, is_active=True)
+            db.add(row)
+            existing_companies[values["code"].upper()] = row
+            changed += 1
+            continue
+        first_document_backfill = not (row.short_name or "").strip()
+        for field in ("issue_code", "short_name"):
+            if not (getattr(row, field, "") or "").strip() and values.get(field):
+                setattr(row, field, values[field])
+                changed += 1
+        # Chỉ điền level cùng lần backfill dữ liệu Văn thư đầu tiên. Những lần
+        # startup sau không ghi đè cấp pháp nhân mà người dùng đã chỉnh trên UI.
+        if first_document_backfill and row.level != values["level"]:
+            row.level = values["level"]
+            changed += 1
+
+    db.flush()
+
+    employee_by_code = {row.code.upper(): row for row in db.query(Employee).all()}
+    for department in db.query(Department).all():
+        config = DEPARTMENT_DOCUMENT_CONFIG.get((department.code or "").upper())
+        if config and not (department.issue_code or "").strip():
+            department.issue_code = config["issue_code"]
+            department.kind = config["kind"]
+            changed += 1
+
+        manager_code = (config or {}).get("manager_employee_code", "").upper()
+        manager = employee_by_code.get(manager_code) if manager_code else None
+        if manager and not department.manager_id:
+            department.manager_id = manager.id
+            changed += 1
+
+        if not department.company_id:
+            continue
+        link = (
+            db.query(DepartmentCompany)
+            .filter(DepartmentCompany.department_id == department.id,
+                    DepartmentCompany.company_id == department.company_id)
+            .one_or_none()
+        )
+        if link is None:
+            db.add(DepartmentCompany(
+                department_id=department.id,
+                company_id=department.company_id,
+                manager_employee_id=department.manager_id or None,
+                issue_code_override="",
+                is_active=department.is_active,
+            ))
+            changed += 1
+        elif not link.manager_employee_id and department.manager_id:
+            link.manager_employee_id = department.manager_id
+            changed += 1
+
+    db.commit()
+    return changed
+
+
 def seed_doc_catalog(db, company_id=0):
-    """Danh mục nền phân hệ Văn thư — CHỈ nạp khi bảng còn rỗng.
+    """Danh mục phụ phân hệ Văn thư — CHỈ nạp khi bảng còn rỗng.
 
     Bảng có dữ liệu rồi thì bỏ qua hoàn toàn: seed chạy lại mỗi lần deploy, nạp
     đè sẽ dựng lại đúng những loại mà Hành chính vừa xóa trên giao diện.
     """
     n = 0
-    if db.query(DocType).count() == 0:
-        for i, (code, name, group, scheme, secrecy, appr, sign, decision, desc) in enumerate(
-                SAMPLE_DOC_TYPES):
-            db.add(DocType(
-                code=code, name=name, group_code=group, description=desc,
-                id_scheme=scheme, number_when=2, default_secrecy=secrecy,
-                needs_approval=appr, needs_signature=sign, needs_decision=decision,
-                sort_order=i + 1, is_active=True,
-            ))
-            n += 1
-
     if db.query(DocumentBook).count() == 0 and company_id:
         for code, name, kind, prefix in SAMPLE_DOCUMENT_BOOKS:
             db.add(DocumentBook(code=code, name=name, kind=kind, number_prefix=prefix,
@@ -918,7 +970,13 @@ def run():
         # 4 khung cấu hình trang chủ Help Center (Bắt đầu ngay/Phân hệ/Câu hỏi/Mẹo)
         seed_help_home_sections(db)
 
-        # Danh mục nền phân hệ Văn thư (loại văn bản, đơn vị gửi nhận)
+        # Phase 1 Văn thư: 32 loại + Trích lục, 13 mã pháp nhân, mã phòng ban và
+        # dòng A06 cho pháp nhân gốc. Chỉ thêm/điền ô trống, không ghi đè.
+        n_phase1 = seed_document_phase1(db)
+        if n_phase1:
+            print(f"Nạp/cập nhật {n_phase1} dòng dữ liệu Phase 1 Văn thư.")
+
+        # Danh mục phụ phân hệ Văn thư (đơn vị gửi nhận, sổ mẫu)
         n_doc = seed_doc_catalog(db, company.id if company else 0)
         if n_doc:
             print(f"Nạp {n_doc} dòng danh mục Văn thư.")

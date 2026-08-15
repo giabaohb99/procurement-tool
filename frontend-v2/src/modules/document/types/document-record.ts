@@ -37,19 +37,17 @@ export const STATUS_LABELS: Record<number, string> = {
   8: 'Lưu trữ',
 }
 
-export const STATUS_VARIANTS: Record<
-  number,
-  'default' | 'secondary' | 'outline' | 'destructive'
-> = {
-  1: 'outline',
-  2: 'secondary',
-  3: 'secondary',
-  4: 'default',
-  5: 'secondary',
-  6: 'secondary',
-  7: 'destructive',
-  8: 'outline',
-}
+export const STATUS_VARIANTS: Record<number, 'default' | 'secondary' | 'outline' | 'destructive'> =
+  {
+    1: 'outline',
+    2: 'secondary',
+    3: 'secondary',
+    4: 'default',
+    5: 'secondary',
+    6: 'secondary',
+    7: 'destructive',
+    8: 'outline',
+  }
 
 /** Trạng thái của PHIÊN BẢN — thang riêng, xem chú thích đầu tệp. */
 export const VERSION_STATUS_LABELS: Record<number, string> = {
@@ -79,6 +77,8 @@ export interface DocumentRecord {
   display_code: string
   seq_no: number | null
   issue_year: number | null
+  /** Quy tắc đã cấp số có cho phép văn thư chỉnh số và ghi lý do hay không. */
+  allow_manual_number: boolean
   /** Số hiệu của bản GIẤY trước khi lên hệ thống; tìm kiếm chấp nhận số này. */
   legacy_code: string
 

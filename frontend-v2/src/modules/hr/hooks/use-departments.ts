@@ -6,6 +6,7 @@ import { queryKeys } from '@/shared/constants/query-keys'
 import type { ListParams } from '@/shared/types/api'
 import { departmentApi } from '../api/department-api'
 import type { DepartmentFormValues } from '../schemas/department-schema'
+import type { DepartmentCompanyInput } from '../types/department'
 
 /**
  * Danh sách phòng ban. Tham số tìm kiếm là `q` (tên phòng ban HOẶC tên trưởng
@@ -55,6 +56,28 @@ export function useDeleteDepartment() {
     onSuccess: () => {
       toast.success('Đã xóa phòng ban')
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.all })
+    },
+  })
+}
+
+export function useDepartmentCompanies(id: number) {
+  return useQuery({
+    queryKey: queryKeys.hr.departmentCompanies(id),
+    queryFn: () => departmentApi.listCompanies(id),
+    enabled: id > 0,
+  })
+}
+
+export function useSaveDepartmentCompanies(id: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (items: DepartmentCompanyInput[]) => departmentApi.replaceCompanies(id, items),
+    onSuccess: () => {
+      toast.success('Đã cập nhật pháp nhân áp dụng')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.departmentCompanies(id) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.department(id) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.departments() })
     },
   })
 }

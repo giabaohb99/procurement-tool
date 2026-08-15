@@ -44,6 +44,7 @@ export const queryKeys = {
     employee: (id: number) => ['hr', 'employees', id] as const,
     departments: (params?: Record<string, unknown>) => ['hr', 'departments', params ?? {}] as const,
     department: (id: number) => ['hr', 'departments', id] as const,
+    departmentCompanies: (id: number) => ['hr', 'departments', id, 'companies'] as const,
     companies: (params?: Record<string, unknown>) => ['hr', 'companies', params ?? {}] as const,
     company: (id: number) => ['hr', 'companies', id] as const,
     roles: (params?: Record<string, unknown>) => ['hr', 'roles', params ?? {}] as const,
@@ -58,6 +59,9 @@ export const queryKeys = {
   /** Phân hệ Văn thư. Danh mục nền nạp cả danh sách nên key không mang tham số lọc. */
   document: {
     all: ['document'] as const,
+    numberingRuleAll: ['document', 'numbering-rules'] as const,
+    numberPreviewAll: ['document', 'number-preview'] as const,
+    numberingRules: (direction: number) => ['document', 'numbering-rules', direction] as const,
     docTypes: () => ['document', 'doc-types'] as const,
     docType: (id: number) => ['document', 'doc-types', id] as const,
     templates: (params?: Record<string, unknown>) =>

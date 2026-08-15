@@ -4,13 +4,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 
 import { Button } from '@/shared/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import {
   Form,
   FormControl,
@@ -29,7 +23,7 @@ import {
   companySchema,
   type CompanyFormValues,
 } from '../schemas/company-schema'
-import type { Company } from '../types/company'
+import { COMPANY_LEVEL_LABELS, type Company } from '../types/company'
 import { ActiveStatusSelect } from './active-status-select'
 import { LookupSelect } from './lookup-select'
 
@@ -40,11 +34,7 @@ interface CompanyFormDialogProps {
 }
 
 /** Form thêm/sửa pháp nhân. Logo KHÔNG ở đây — đổi trực tiếp ở trang chi tiết. */
-export function CompanyFormDialog({
-  open,
-  onOpenChange,
-  company,
-}: CompanyFormDialogProps) {
+export function CompanyFormDialog({ open, onOpenChange, company }: CompanyFormDialogProps) {
   const saveCompany = useSaveCompany()
   const { data: employees } = useEmployees({ page_size: 1000, is_active: true })
 
@@ -93,6 +83,27 @@ export function CompanyFormDialog({
 
               <FormField
                 control={form.control}
+                name="issue_code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mã trên số hiệu</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="VD: DEGO"
+                        maxLength={20}
+                        {...field}
+                        onChange={(event) =>
+                          field.onChange(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="tax_code"
                 render={({ field }) => (
                   <FormItem>
@@ -120,6 +131,42 @@ export function CompanyFormDialog({
               )}
             />
 
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="short_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tên viết tắt</FormLabel>
+                    <FormControl>
+                      <Input placeholder="VD: DEGO Holding" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="level"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cấp pháp nhân</FormLabel>
+                    <LookupSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      items={Object.entries(COMPANY_LEVEL_LABELS).map(([id, label]) => ({
+                        id: Number(id),
+                        label,
+                      }))}
+                      placeholder="Chọn cấp pháp nhân"
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
               name="invoice_email"
@@ -129,9 +176,7 @@ export function CompanyFormDialog({
                   <FormControl>
                     <Input type="email" {...field} />
                   </FormControl>
-                  <FormDescription>
-                    Nơi nhận hóa đơn điện tử của pháp nhân này.
-                  </FormDescription>
+                  <FormDescription>Nơi nhận hóa đơn điện tử của pháp nhân này.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

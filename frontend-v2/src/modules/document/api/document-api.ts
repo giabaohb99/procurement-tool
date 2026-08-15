@@ -2,10 +2,7 @@ import type { AxiosRequestConfig } from 'axios'
 
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
 import type { ListParams, PaginatedResult } from '@/shared/types/api'
-import type {
-  DocumentAccess,
-  DocumentAccessInput,
-} from '../types/document-access'
+import type { DocumentAccess, DocumentAccessInput } from '../types/document-access'
 import type {
   DocumentPermissions,
   DocumentRecord,
@@ -79,6 +76,9 @@ export const documentApi = {
   update: (id: number, payload: Partial<DocumentInput>) =>
     apiPatch<DocumentRecord>(`${DOCUMENT_URL}/${id}`, payload),
 
+  updateIssueNumber: (id: number, payload: { issue_number: string; reason: string }) =>
+    apiPatch<DocumentRecord>(`${DOCUMENT_URL}/${id}/issue-number`, payload),
+
   remove: (id: number) => apiDelete<null>(`${DOCUMENT_URL}/${id}`),
 
   submit: (id: number) => apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/submit`, {}),
@@ -106,12 +106,12 @@ export const documentApi = {
     doc_type_id: number
     company_id: number
     department_id?: number | null
+    book_id?: number | null
   }) => apiGet<NumberPreview>(`${DOCUMENT_URL}/number-preview`, { params }),
 }
 
 export const documentVersionApi = {
-  list: (documentId: number) =>
-    apiGet<DocumentVersion[]>(`${DOCUMENT_URL}/${documentId}/versions`),
+  list: (documentId: number) => apiGet<DocumentVersion[]>(`${DOCUMENT_URL}/${documentId}/versions`),
 
   /** Kèm `content_html` — chỉ trang soạn thảo gọi, danh sách phiên bản thì không. */
   getById: (documentId: number, versionId: number) =>
@@ -136,18 +136,14 @@ export const documentVersionApi = {
 }
 
 export const documentAccessApi = {
-  list: (documentId: number) =>
-    apiGet<DocumentAccess[]>(`${DOCUMENT_URL}/${documentId}/access`),
+  list: (documentId: number) => apiGet<DocumentAccess[]>(`${DOCUMENT_URL}/${documentId}/access`),
 
   grant: (documentId: number, payload: DocumentAccessInput) =>
     apiPost<DocumentAccess>(`${DOCUMENT_URL}/${documentId}/access`, payload),
 
   /** Thu hồi = đánh dấu; dòng vẫn ở lại bảng kèm mốc và lý do. */
   revoke: (documentId: number, accessId: number, reason: string) =>
-    apiPost<DocumentAccess>(
-      `${DOCUMENT_URL}/${documentId}/access/${accessId}/revoke`,
-      { reason },
-    ),
+    apiPost<DocumentAccess>(`${DOCUMENT_URL}/${documentId}/access/${accessId}/revoke`, { reason }),
 
   /** Tôi được làm gì trên văn bản này — chỉ để ẩn nút, không phải bảo mật. */
   permissions: (documentId: number) =>

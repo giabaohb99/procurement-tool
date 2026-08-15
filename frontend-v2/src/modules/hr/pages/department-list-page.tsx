@@ -4,11 +4,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
-import {
-  ConditionalFilter,
-  FilterProvider,
-  useFilterQuery,
-} from '@/shared/conditional-filter'
+import { ConditionalFilter, FilterProvider, useFilterQuery } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
@@ -21,17 +17,11 @@ import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { DepartmentFormDialog } from '../components/department-form-dialog'
 import { DEPARTMENT_FILTER_FIELDS } from '../config/hr-filter-fields'
 import { useDepartments } from '../hooks/use-departments'
-import type { Department } from '../types/department'
+import { DEPARTMENT_KIND_LABELS, type Department } from '../types/department'
 
 const ALL = 'all'
 
@@ -80,11 +70,23 @@ function DepartmentListContent() {
     () => [
       { key: 'code', header: 'Mã', width: 150, cell: (d) => d.code },
       {
+        key: 'issue_code',
+        header: 'Mã số hiệu',
+        width: 140,
+        cell: (d) => d.issue_code || '—',
+      },
+      {
         key: 'name',
         header: 'Phòng ban',
         width: 300,
         hideable: false,
         cell: (d) => <span className="truncate">{d.name}</span>,
+      },
+      {
+        key: 'kind',
+        header: 'Loại đơn vị',
+        width: 230,
+        cell: (d) => DEPARTMENT_KIND_LABELS[d.kind],
       },
       {
         key: 'manager_name',
@@ -143,7 +145,7 @@ function DepartmentListContent() {
           toolbar={
             <>
               <div className="relative min-w-56 flex-1 md:max-w-sm">
-                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   className="pl-9"
                   placeholder="Tìm theo tên phòng ban hoặc trưởng bộ phận…"

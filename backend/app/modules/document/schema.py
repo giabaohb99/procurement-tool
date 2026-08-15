@@ -75,6 +75,13 @@ class DocumentUpdate(BaseModel):
     legacy_code: str | None = Field(default=None, max_length=100)
 
 
+class ManualIssueNumberUpdate(BaseModel):
+    """Sửa chuỗi số hiệu đã cấp, chỉ khi quy tắc đã bật quyền cho văn thư."""
+
+    issue_number: str = Field(min_length=1, max_length=100)
+    reason: str = Field(min_length=1, max_length=1000)
+
+
 class DocumentOut(DocumentBase):
     id: int
     origin: int
@@ -82,6 +89,7 @@ class DocumentOut(DocumentBase):
     issue_number: str = ""
     seq_no: int | None = None
     issue_year: int | None = None
+    allow_manual_number: bool = False
     status: int = STATUS_DRAFT
     status_label: str = ""
     current_version_id: int | None = None

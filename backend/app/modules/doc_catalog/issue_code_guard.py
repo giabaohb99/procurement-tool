@@ -47,14 +47,48 @@ def ensure_department_issue_code_free(db: Session, department_id: int,
     """
     if not old_code or old_code == new_code:
         return
-    from app.modules.document.model import Document
-
-    issued = (
-        db.query(Document.id)
-        .filter(Document.department_id == department_id,
-                (Document.issue_number != "") | (Document.doc_code.isnot(None)))
-        .first()
-    )
-    if issued:
+    if _department_has_issued_document(db, department_id):
         raise HTTPException(
             400, f"Phòng ban đã có văn bản cấp số với mã {old_code}, không đổi được mã số hiệu.")
+
+
+def ensure_department_kind_free(db: Session, department_id: int, old_kind: int, new_kind: int):
+    """Đổi loại phòng có thể làm mã phòng xuất hiện/biến mất khỏi số hiệu."""
+    if old_kind == new_kind:
+        return
+    if _department_has_issued_document(db, department_id):
+        raise HTTPException(
+            400, "Phòng ban đã có văn bản cấp số, không đổi được loại đơn vị.")
+
+
+def ensure_department_company_issue_code_free(
+    db: Session,
+    department_id: int,
+    company_id: int,
+    old_code: str,
+    new_code: str,
+):
+    """Khóa mã ghi đè A06 sau khi cặp phòng ban/pháp nhân đã phát hành văn bản."""
+    if old_code == new_code:
+        return
+    if _department_has_issued_document(db, department_id, company_id):
+        raise HTTPException(
+            400,
+            "Phòng ban đã cấp số văn bản tại pháp nhân này, không đổi được mã số hiệu riêng.",
+        )
+
+
+def _department_has_issued_document(
+    db: Session,
+    department_id: int,
+    company_id: int | None = None,
+) -> bool:
+    from app.modules.document.model import Document
+
+    query = db.query(Document.id).filter(
+        Document.department_id == department_id,
+        (Document.issue_number != "") | (Document.doc_code.isnot(None)),
+    )
+    if company_id is not None:
+        query = query.filter(Document.company_id == company_id)
+    return query.first() is not None

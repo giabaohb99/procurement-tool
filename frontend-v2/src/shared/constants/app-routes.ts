@@ -59,6 +59,7 @@ export const appRoutes = {
      * phân biệt bằng `?tab=`.
      */
     settings: '/document/settings',
+    numberingRules: '/document/numbering-rules',
     settingsTab: (tab: 'types' | 'templates' | 'security-levels' | 'partners') =>
       `/document/settings?tab=${tab}`,
     /** Loại văn bản (công văn, quyết định…). */

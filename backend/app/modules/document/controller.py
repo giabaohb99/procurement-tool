@@ -33,7 +33,8 @@ from . import access_service, import_service, numbering, serializer, service, ve
 from .model import Document
 from .query import documents_query
 from .schema import (AccessGrant, AccessRevokeIn, DocumentCreate, DocumentUpdate,
-                     RejectIn, VersionContentUpdate, VersionCreate)
+                     ManualIssueNumberUpdate, RejectIn, VersionContentUpdate,
+                     VersionCreate)
 from .service import doc_type_or_400
 
 router = APIRouter(prefix="/api/documents", tags=["document"])
@@ -114,6 +115,7 @@ def preview_number(
     doc_type_id: int,
     company_id: int,
     department_id: int | None = None,
+    book_id: int | None = None,
     year: int | None = None,
     db: Session = Depends(get_db),
     user=Depends(require("document", "read")),
@@ -124,9 +126,10 @@ def preview_number(
     transaction với việc ghi bản ghi mang số đó.
     """
     doc_type = doc_type_or_400(db, doc_type_id)
-    year = year or date.today().year
+    today = date.today()
+    when = date(year, 1, 1) if year and year != today.year else today
     return success({
-        "preview": numbering.peek(db, doc_type, company_id, department_id, year),
+        "preview": numbering.peek(db, doc_type, company_id, department_id, when, book_id),
         "number_when": doc_type.number_when,
         "id_scheme": doc_type.id_scheme,
     })
@@ -187,6 +190,27 @@ def update_document(
     doc = service.update_document(db, doc, data, user.id)
     record(db, user.id, "document", doc.id, "update")
     return success(serializer.serialize(db, doc), "Đã cập nhật")
+
+
+@router.patch("/{document_id}/issue-number")
+def update_issue_number(
+    document_id: int,
+    data: ManualIssueNumberUpdate,
+    db: Session = Depends(get_db),
+    user=Depends(require("document", "write")),
+):
+    """Văn thư sửa số khi chính quy tắc đã bật quyền, luôn ghi lý do vào nhật ký."""
+    doc = _load(db, document_id, user, "write")
+    doc, previous = service.update_issue_number(db, doc, data.issue_number, user.id)
+    record(
+        db,
+        user.id,
+        "document",
+        doc.id,
+        "update",
+        f"Sửa số hiệu từ {previous} thành {doc.issue_number}. Lý do: {data.reason}",
+    )
+    return success(serializer.serialize(db, doc), "Đã cập nhật số hiệu")
 
 
 @router.delete("/{document_id}")

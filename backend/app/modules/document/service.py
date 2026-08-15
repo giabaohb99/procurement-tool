@@ -154,6 +154,43 @@ def update_document(db: Session, doc: Document, data: DocumentUpdate, actor: int
     return doc
 
 
+def update_issue_number(
+    db: Session,
+    doc: Document,
+    issue_number: str,
+    actor: int,
+) -> tuple[Document, str]:
+    """Sửa số hiệu thủ công nhưng không quay lui bộ đếm đã cấp."""
+    from app.modules.doc_catalog.numbering_rule_model import DocumentNumberingRule
+
+    if not doc.issue_number:
+        raise HTTPException(400, "Văn bản chưa có số hiệu để chỉnh sửa")
+    rule = db.get(DocumentNumberingRule, doc.numbering_rule_id) if doc.numbering_rule_id else None
+    if not rule or not rule.allow_manual:
+        raise HTTPException(400, "Quy tắc đánh số không cho phép sửa số thủ công")
+
+    value = issue_number.strip()
+    duplicate = (
+        db.query(Document.id)
+        .filter(
+            Document.id != doc.id,
+            Document.company_id == doc.company_id,
+            Document.issue_year == doc.issue_year,
+            Document.issue_number == value,
+        )
+        .first()
+    )
+    if duplicate:
+        raise HTTPException(400, "Số hiệu này đã được dùng cho văn bản khác")
+
+    previous = doc.issue_number
+    doc.issue_number = value
+    doc.updated_by = actor
+    db.commit()
+    db.refresh(doc)
+    return doc, previous
+
+
 def delete_document(db: Session, doc: Document):
     """Xóa — CHỈ khi còn là nháp chưa cấp số.
 

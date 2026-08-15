@@ -7,7 +7,7 @@ from app.core.utils import generate_code
 from .model import Company
 from .schema import CompanyCreate, CompanyUpdate
 
-FILTERABLE = ["code", "name", "tax_code", "is_active"]
+FILTERABLE = ["code", "name", "issue_code", "tax_code", "level", "is_active"]
 ENTITY = "company"
 
 
@@ -29,6 +29,8 @@ def create_company(db: Session, data: CompanyCreate, user_id: int) -> Company:
         data.code = generate_code(db, Company, "CTY")
     elif db.query(Company).filter(Company.code == data.code).first():
         raise HTTPException(400, "Mã công ty đã tồn tại")
+    if data.issue_code and db.query(Company).filter(Company.issue_code == data.issue_code).first():
+        raise HTTPException(400, "Mã số hiệu pháp nhân đã tồn tại")
     obj = Company(**data.model_dump(), created_by=user_id, updated_by=user_id)
     db.add(obj)
     db.commit()
@@ -44,6 +46,13 @@ def update_company(db: Session, cid: int, data: CompanyUpdate, user_id: int) -> 
     if "issue_code" in values:
         from app.modules.doc_catalog.issue_code_guard import ensure_company_issue_code_free
         ensure_company_issue_code_free(db, obj.issue_code, values["issue_code"])
+        duplicate = (
+            db.query(Company.id)
+            .filter(Company.issue_code == values["issue_code"], Company.id != obj.id)
+            .first()
+        ) if values["issue_code"] else None
+        if duplicate:
+            raise HTTPException(400, "Mã số hiệu pháp nhân đã tồn tại")
 
     for key, value in values.items():
         setattr(obj, key, value)

@@ -4,13 +4,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 
 import { Button } from '@/shared/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import {
   Form,
   FormControl,
@@ -21,14 +15,15 @@ import {
   FormMessage,
 } from '@/shared/ui/form'
 import { Input } from '@/shared/ui/input'
-import { useSaveDepartment } from '../hooks/use-departments'
+import { useCompanies } from '../hooks/use-companies'
+import { useDepartments, useSaveDepartment } from '../hooks/use-departments'
 import { useEmployees } from '../hooks/use-employees'
 import {
   EMPTY_DEPARTMENT_FORM,
   departmentSchema,
   type DepartmentFormValues,
 } from '../schemas/department-schema'
-import type { Department } from '../types/department'
+import { DEPARTMENT_KIND_LABELS, type Department } from '../types/department'
 import { ActiveStatusSelect } from './active-status-select'
 import { LookupSelect } from './lookup-select'
 
@@ -46,6 +41,8 @@ export function DepartmentFormDialog({
 }: DepartmentFormDialogProps) {
   const saveDepartment = useSaveDepartment()
   const { data: employees } = useEmployees({ page_size: 1000, is_active: true })
+  const { data: companies } = useCompanies({ page_size: 1000, is_active: true })
+  const { data: departments } = useDepartments({ page_size: 1000, is_active: true })
 
   const form = useForm<DepartmentFormValues>({
     resolver: zodResolver(departmentSchema),
@@ -54,9 +51,7 @@ export function DepartmentFormDialog({
 
   useEffect(() => {
     if (!open) return
-    form.reset(
-      department ? { ...EMPTY_DEPARTMENT_FORM, ...department } : EMPTY_DEPARTMENT_FORM,
-    )
+    form.reset(department ? { ...EMPTY_DEPARTMENT_FORM, ...department } : EMPTY_DEPARTMENT_FORM)
   }, [open, department, form])
 
   async function onSubmit(values: DepartmentFormValues) {
@@ -64,9 +59,17 @@ export function DepartmentFormDialog({
     onOpenChange(false)
   }
 
+  const selectedCompanyId = form.watch('company_id')
+  const managerOptions = (employees?.items ?? [])
+    .filter((employee) => !selectedCompanyId || employee.company_id === selectedCompanyId)
+    .map((employee) => ({
+      id: employee.id,
+      label: `${employee.code} — ${employee.full_name}`,
+    }))
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{department ? 'Sửa phòng ban' : 'Thêm phòng ban'}</DialogTitle>
         </DialogHeader>
@@ -127,6 +130,97 @@ export function DepartmentFormDialog({
               )}
             />
 
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="issue_code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mã trên số hiệu văn bản</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="VD: HCNS"
+                        maxLength={20}
+                        {...field}
+                        onChange={(event) =>
+                          field.onChange(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="kind"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Loại đơn vị</FormLabel>
+                    <LookupSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      items={Object.entries(DEPARTMENT_KIND_LABELS).map(([id, label]) => ({
+                        id: Number(id),
+                        label,
+                      }))}
+                      placeholder="Chọn loại đơn vị"
+                    />
+                    <FormDescription>
+                      Chỉ phòng chức năng được ghép mã vào số hiệu văn bản.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="company_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pháp nhân gốc</FormLabel>
+                    <LookupSelect
+                      value={field.value}
+                      onChange={(companyId) => {
+                        field.onChange(companyId)
+                        form.setValue('manager_id', 0)
+                      }}
+                      items={(companies?.items ?? []).map((company) => ({
+                        id: company.id,
+                        label: `${company.issue_code || company.code} — ${company.name}`,
+                      }))}
+                      placeholder="Chọn pháp nhân gốc"
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="parent"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phòng ban cấp trên</FormLabel>
+                    <LookupSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      items={(departments?.items ?? [])
+                        .filter((item) => item.id !== department?.id)
+                        .map((item) => ({ id: item.id, label: `${item.code} — ${item.name}` }))}
+                      placeholder="Chọn phòng ban cấp trên"
+                      emptyLabel="— Phòng ban gốc —"
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
               name="manager_id"
@@ -138,10 +232,7 @@ export function DepartmentFormDialog({
                     onChange={field.onChange}
                     placeholder="Chọn nhân sự"
                     emptyLabel="— Chưa chỉ định —"
-                    items={(employees?.items ?? []).map((e) => ({
-                      id: e.id,
-                      label: `${e.code} — ${e.full_name}`,
-                    }))}
+                    items={managerOptions}
                   />
                   <FormDescription>
                     Người duyệt/ký thay mặt phòng ban trong luồng mua hàng.

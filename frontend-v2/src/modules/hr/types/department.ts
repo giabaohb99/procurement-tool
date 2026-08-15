@@ -3,6 +3,10 @@ export interface Department {
   id: number
   code: string
   name: string
+  /** Mã mặc định đi vào số hiệu; có thể bị ghi đè theo từng pháp nhân. */
+  issue_code: string
+  /** 1 phòng chức năng · 2 đơn vị kinh doanh · 3 ban dự án. */
+  kind: 1 | 2 | 3
   company_id: number
   /** ID phòng ban cha; 0 = phòng ban gốc. */
   parent: number
@@ -12,3 +16,25 @@ export interface Department {
   /** Cột join từ hồ sơ nhân sự của `manager_id`. */
   manager_name?: string | null
 }
+
+export const DEPARTMENT_KIND_LABELS: Record<Department['kind'], string> = {
+  1: 'Phòng chức năng',
+  2: 'Đơn vị kinh doanh / sản xuất',
+  3: 'Ban dự án',
+}
+
+export interface DepartmentCompany {
+  id: number
+  department_id: number
+  company_id: number
+  company_name: string
+  manager_employee_id: number | null
+  manager_name: string
+  issue_code_override: string
+  is_active: boolean
+}
+
+export type DepartmentCompanyInput = Pick<
+  DepartmentCompany,
+  'company_id' | 'manager_employee_id' | 'issue_code_override' | 'is_active'
+>

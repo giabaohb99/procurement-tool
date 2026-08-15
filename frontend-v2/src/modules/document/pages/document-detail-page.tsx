@@ -1,5 +1,16 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Ban, Check, FileText, GitBranch, Info, Loader2, Save, Send, Undo2 } from 'lucide-react'
+import {
+  Ban,
+  Check,
+  FileText,
+  GitBranch,
+  Info,
+  Loader2,
+  Pencil,
+  Save,
+  Send,
+  Undo2,
+} from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -20,6 +31,7 @@ import { DocumentAutosaveStatus } from '../components/document-autosave-status'
 import { DocumentRecordForm } from '../components/document-record-form'
 import { DocumentVersionBanner } from '../components/document-version-banner'
 import { DocumentVersionTab } from '../components/document-version-tab'
+import { ManualIssueNumberDialog } from '../components/manual-issue-number-dialog'
 import { documentToForm, emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
 import { effectiveLabel } from '../helpers/document-status'
 import { useDocumentPermissions } from '../hooks/use-document-access'
@@ -34,6 +46,7 @@ import {
   useDocument,
   useDocumentWorkflow,
   useSaveDocument,
+  useUpdateDocumentIssueNumber,
 } from '../hooks/use-documents'
 import {
   documentRecordSchema,
@@ -69,6 +82,7 @@ export function DocumentDetailPage() {
   //  Hộp hỏi lý do đang mở cho việc gì (`null` = đang đóng). Hai việc dùng
   //  chung một hộp vì chỉ khác chữ.
   const [reasonFor, setReasonFor] = useState<'revoke' | 'reject' | null>(null)
+  const [numberDialogOpen, setNumberDialogOpen] = useState(false)
   const autoVersion =
     versions.find((item) => !item.is_locked) ??
     versions.find((item) => item.is_current) ??
@@ -83,6 +97,7 @@ export function DocumentDetailPage() {
   const save = useSaveDocument()
   const remove = useDeleteDocument()
   const workflow = useDocumentWorkflow(documentId)
+  const updateIssueNumber = useUpdateDocumentIssueNumber(documentId)
   const saveContent = useSaveVersionContent(documentId, versionId)
 
   const canWrite = permissions?.write ?? false
@@ -207,6 +222,13 @@ export function DocumentDetailPage() {
               <Button type="submit" form={FORM_ID} disabled={save.isPending}>
                 <Save className="size-4" />
                 Lưu thông tin
+              </Button>
+            )}
+
+            {record?.allow_manual_number && canWrite && (
+              <Button type="button" variant="outline" onClick={() => setNumberDialogOpen(true)}>
+                <Pencil className="size-4" />
+                Sửa số hiệu
               </Button>
             )}
 
@@ -345,6 +367,19 @@ export function DocumentDetailPage() {
             action.mutate(reason, { onSuccess: () => setReasonFor(null) })
           }}
         />
+        {record && (
+          <ManualIssueNumberDialog
+            open={numberDialogOpen}
+            currentNumber={record.issue_number}
+            pending={updateIssueNumber.isPending}
+            onOpenChange={setNumberDialogOpen}
+            onConfirm={(values) =>
+              updateIssueNumber.mutate(values, {
+                onSuccess: () => setNumberDialogOpen(false),
+              })
+            }
+          />
+        )}
       </DetailPageShell>
     </Tabs>
   )

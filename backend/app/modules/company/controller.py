@@ -92,6 +92,8 @@ def export_companies_csv(
     headers_map = {
         "id": "ID",
         "code": "Mã",
+        "issue_code": "Mã số hiệu",
+        "short_name": "Tên viết tắt",
         "name": "Tên pháp nhân",
         "export_tax_code": "MST",
         "address": "Địa chỉ",

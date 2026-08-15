@@ -25,6 +25,15 @@ export async function apiPost<T>(
   return res.data.data
 }
 
+export async function apiPut<T>(
+  url: string,
+  body?: unknown,
+  config?: AxiosRequestConfig,
+): Promise<T> {
+  const res = await httpClient.put<SuccessEnvelope<T>>(url, body, config)
+  return res.data.data
+}
+
 export async function apiPatch<T>(
   url: string,
   body?: unknown,

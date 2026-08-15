@@ -1,4 +1,4 @@
-import { BookMarked, FileText, Files, LayoutDashboard, SlidersHorizontal } from 'lucide-react'
+import { BookMarked, FileText, Files, Hash, LayoutDashboard, SlidersHorizontal } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -56,6 +56,13 @@ export const documentModule: ErpModule = {
       entity: 'doc_type',
       group: 'Danh mục',
     },
+    {
+      label: 'Quy tắc đánh số',
+      path: appRoutes.document.numberingRules,
+      icon: Hash,
+      entity: 'doc_type',
+      group: 'Danh mục',
+    },
   ],
 
   // `/new` khai trước `/:id` cho dễ đọc; react-router vẫn tự ưu tiên route tĩnh
@@ -107,6 +114,13 @@ export const documentModule: ErpModule = {
       path: appRoutes.document.settings,
       lazy: async () => ({
         Component: (await import('./pages/document-settings-page')).DocumentSettingsPage,
+      }),
+    },
+    {
+      path: appRoutes.document.numberingRules,
+      lazy: async () => ({
+        Component: (await import('./pages/document-numbering-rules-page'))
+          .DocumentNumberingRulesPage,
       }),
     },
     {

@@ -2,11 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { toast } from 'sonner'
 
 import { queryKeys } from '@/shared/constants/query-keys'
-import {
-  documentApi,
-  type DocumentInput,
-  type DocumentListParams,
-} from '../api/document-api'
+import { documentApi, type DocumentInput, type DocumentListParams } from '../api/document-api'
 
 /**
  * VĂN BẢN — đọc/ghi qua API thật.
@@ -65,6 +61,7 @@ export function useNumberPreview(params: {
   doc_type_id: number
   company_id: number
   department_id?: number | null
+  book_id?: number | null
 }) {
   return useQuery({
     queryKey: queryKeys.document.numberPreview(params),
@@ -104,6 +101,18 @@ export function useDeleteDocument() {
   })
 }
 
+export function useUpdateDocumentIssueNumber(documentId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (values: { issue_number: string; reason: string }) =>
+      documentApi.updateIssueNumber(documentId, values),
+    onSuccess: () => {
+      toast.success('Đã cập nhật số hiệu')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
+    },
+  })
+}
+
 /**
  * Ba nút của luồng duyệt MỘT BƯỚC tạm thời.
  *
@@ -113,8 +122,7 @@ export function useDeleteDocument() {
 export function useDocumentWorkflow(documentId: number) {
   const queryClient = useQueryClient()
 
-  const refresh = () =>
-    void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
+  const refresh = () => void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
 
   const submit = useMutation({
     mutationFn: () => documentApi.submit(documentId),
@@ -129,9 +137,7 @@ export function useDocumentWorkflow(documentId: number) {
     onSuccess: (doc) => {
       //  Số hiệu thường được cấp đúng lúc này (`number_when = 2`) — nói ra luôn
       //  để người duyệt biết văn bản vừa mang số gì.
-      toast.success(
-        doc.display_code ? `Đã ban hành ${doc.display_code}` : 'Đã duyệt và ban hành',
-      )
+      toast.success(doc.display_code ? `Đã ban hành ${doc.display_code}` : 'Đã duyệt và ban hành')
       refresh()
     },
   })

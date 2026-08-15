@@ -12,7 +12,7 @@ class CompanyBase(BaseModel):
     #  Xem `Company.issue_code` — khác `code`, và khóa lại sau khi đã cấp số.
     issue_code: str = Field(default="", max_length=20, pattern=ISSUE_CODE_PATTERN)
     short_name: str = ""
-    level: int = 2
+    level: int = Field(default=2, ge=1, le=3)
     tax_code: str = ""
     address: str = ""
     invoice_email: str = ""
@@ -30,7 +30,7 @@ class CompanyUpdate(BaseModel):
     name: str | None = None
     issue_code: str | None = Field(default=None, max_length=20, pattern=ISSUE_CODE_PATTERN)
     short_name: str | None = None
-    level: int | None = None
+    level: int | None = Field(default=None, ge=1, le=3)
     tax_code: str | None = None
     address: str | None = None
     invoice_email: str | None = None

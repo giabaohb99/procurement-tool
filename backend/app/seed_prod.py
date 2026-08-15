@@ -31,7 +31,8 @@ from app.modules.role.model import Role, Permission  # noqa: F401
 from app.modules.user.model import User, UserRole
 
 from app.seed import (ensure_admin_role, force_resync_roles,
-                      seed_help_admin, seed_help_home_sections, seed_standard_roles)
+                      seed_document_phase1, seed_help_admin,
+                      seed_help_home_sections, seed_standard_roles)
 
 
 def bootstrap_admin_account(db):
@@ -83,6 +84,10 @@ def run():
         _company = db.query(Company).order_by(Company.id).first()   # 4
         seed_help_admin(db, _company.id if _company else None)
         seed_help_home_sections(db)
+
+        n_phase1 = seed_document_phase1(db)
+        if n_phase1:
+            print(f"Nạp/cập nhật {n_phase1} dòng dữ liệu Phase 1 Văn thư.")
 
         print("Seed prod done (không nạp dữ liệu mẫu, không ghi đè dữ liệu đã có).")
     finally:

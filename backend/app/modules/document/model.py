@@ -75,7 +75,7 @@ class Document(Base, AuditMixin):
         #  Số hiệu theo sổ: (pháp nhân × năm × loại × số thứ tự) chỉ có một.
         #  Đây là lớp chặn trùng số THỨ HAI, sau khóa dòng ở `next_number()`.
         UniqueConstraint(
-            "company_id", "issue_year", "doc_type_id", "seq_no",
+            "company_id", "issue_year", "doc_type_id", "numbering_rule_id", "seq_no",
             name="uq_document_issue_seq",
         ),
         #  Một pháp nhân con chỉ nhận MỘT bản clone từ cùng một văn bản gốc.
@@ -97,6 +97,9 @@ class Document(Base, AuditMixin):
     #  UNIQUE — tách chuỗi ra mà lọc thì không dùng được chỉ mục nào.
     seq_no: Mapped[int | None] = mapped_column(Integer, nullable=True)
     issue_year: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    #  0 là cách cấp số mặc định cũ; số dương là quy tắc đã áp dụng. Cột này
+    #  nằm trong khóa duy nhất để hai quy tắc có bộ đếm độc lập không va nhau.
+    numbering_rule_id: Mapped[int] = mapped_column(BigInteger, default=0)
     #  Số hiệu của bản GIẤY trước khi lên hệ thống (C12). Tìm kiếm chấp nhận số
     #  này: người cũ vẫn tra theo số họ đã quen.
     legacy_code: Mapped[str] = mapped_column(String(100), default="")

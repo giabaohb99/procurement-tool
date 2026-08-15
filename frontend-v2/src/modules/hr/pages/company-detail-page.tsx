@@ -1,5 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, CircleCheck, CircleX, Hash, Loader2, ReceiptText, Save, UserRoundCog } from 'lucide-react'
+import {
+  ArrowLeft,
+  CircleCheck,
+  CircleX,
+  Hash,
+  Loader2,
+  ReceiptText,
+  Save,
+  UserRoundCog,
+} from 'lucide-react'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -13,7 +22,15 @@ import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
 import { ErrorState } from '@/shared/ui/error-state'
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/shared/ui/form'
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/shared/ui/form'
 import { FormSection } from '@/shared/ui/form-section'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
@@ -30,8 +47,12 @@ import {
   useUploadCompanyLogo,
 } from '../hooks/use-companies'
 import { useEmployees } from '../hooks/use-employees'
-import { EMPTY_COMPANY_FORM, companySchema, type CompanyFormValues } from '../schemas/company-schema'
-import { companyInitial, type Company } from '../types/company'
+import {
+  EMPTY_COMPANY_FORM,
+  companySchema,
+  type CompanyFormValues,
+} from '../schemas/company-schema'
+import { COMPANY_LEVEL_LABELS, companyInitial, type Company } from '../types/company'
 
 /**
  * Chi tiết pháp nhân — form SỬA TRỰC TIẾP, không phải thẻ chỉ-đọc.
@@ -168,6 +189,31 @@ export function CompanyDetailPage() {
 
               <FormField
                 control={form.control}
+                name="issue_code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mã trên số hiệu văn bản</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="VD: DEGO"
+                        maxLength={20}
+                        disabled={!canWrite}
+                        {...field}
+                        onChange={(event) =>
+                          field.onChange(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))
+                        }
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Chỉ dùng chữ hoa và số; mã này được ghép vào số hiệu văn bản.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
@@ -175,6 +221,21 @@ export function CompanyDetailPage() {
                     <FormControl>
                       <Input disabled={!canWrite} {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="short_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tên viết tắt</FormLabel>
+                    <FormControl>
+                      <Input placeholder="VD: DEGO Holding" disabled={!canWrite} {...field} />
+                    </FormControl>
+                    <FormDescription>Dùng trên thể thức và tiêu đề văn bản.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -205,9 +266,7 @@ export function CompanyDetailPage() {
                     <FormControl>
                       <Input type="email" disabled={!canWrite} {...field} />
                     </FormControl>
-                    <FormDescription>
-                      Nơi nhận hóa đơn điện tử của pháp nhân này.
-                    </FormDescription>
+                    <FormDescription>Nơi nhận hóa đơn điện tử của pháp nhân này.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -271,6 +330,27 @@ export function CompanyDetailPage() {
             <FormSection title="Tổ chức">
               <FormField
                 control={form.control}
+                name="level"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cấp pháp nhân</FormLabel>
+                    <LookupSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={!canWrite}
+                      placeholder="Chọn cấp pháp nhân"
+                      items={Object.entries(COMPANY_LEVEL_LABELS).map(([id, label]) => ({
+                        id: Number(id),
+                        label,
+                      }))}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="parent"
                 render={({ field }) => (
                   <FormItem>
@@ -319,6 +399,9 @@ export function CompanyDetailPage() {
 function identityChips(company: Company): IdentityChip[] {
   const chips: IdentityChip[] = []
   if (company.code) chips.push({ icon: Hash, text: company.code, tone: 'code' })
+  if (company.issue_code) {
+    chips.push({ icon: Hash, text: `Số hiệu: ${company.issue_code}`, tone: 'code' })
+  }
   if (company.tax_code) {
     chips.push({ icon: ReceiptText, text: `MST ${company.tax_code}` })
   }

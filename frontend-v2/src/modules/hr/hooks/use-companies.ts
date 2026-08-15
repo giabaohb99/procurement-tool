@@ -7,7 +7,7 @@ import type { ListParams } from '@/shared/types/api'
 import { companyApi } from '../api/company-api'
 import type { CompanyFormValues } from '../schemas/company-schema'
 
-/** Danh sách công ty. Lọc được: `code`, `name`, `tax_code`, `is_active`. */
+/** Danh sách công ty. Lọc được cả mã số hiệu và cấp pháp nhân. */
 export function useCompanies(params: ListParams = {}) {
   const query: ListParams = {
     page: 1,

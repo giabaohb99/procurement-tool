@@ -4,11 +4,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
-import {
-  ConditionalFilter,
-  FilterProvider,
-  useFilterQuery,
-} from '@/shared/conditional-filter'
+import { ConditionalFilter, FilterProvider, useFilterQuery } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
@@ -21,13 +17,7 @@ import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { CompanyFormDialog } from '../components/company-form-dialog'
 import { COMPANY_FILTER_FIELDS } from '../config/hr-filter-fields'
 import { useCompanies } from '../hooks/use-companies'
@@ -96,6 +86,19 @@ function CompanyListContent() {
         ),
       },
       { key: 'code', header: 'Mã', width: 140, cell: (c) => c.code },
+      {
+        key: 'issue_code',
+        header: 'Mã số hiệu',
+        width: 140,
+        cell: (c) => c.issue_code || '—',
+      },
+      {
+        key: 'short_name',
+        header: 'Tên viết tắt',
+        width: 180,
+        defaultHidden: true,
+        cell: (c) => c.short_name || '—',
+      },
       { key: 'tax_code', header: 'Mã số thuế', width: 170, cell: (c) => c.tax_code || '—' },
       {
         key: 'legal_rep_name',
@@ -162,7 +165,7 @@ function CompanyListContent() {
           toolbar={
             <>
               <div className="relative min-w-56 flex-1 md:max-w-sm">
-                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   className="pl-9"
                   placeholder="Tìm theo tên pháp nhân…"

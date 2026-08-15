@@ -8,8 +8,8 @@ import { EMPLOYEE_STATUSES } from '../types/employee'
  * nếu không backend im lặng bỏ qua điều kiện và người dùng tưởng bộ lọc hỏng:
  *
  *   employee   -> code, full_name, email, position, status, department_id, is_active, role_names
- *   department -> code, name, is_active
- *   company    -> code, name, tax_code, is_active
+ *   department -> code, name, issue_code, kind, company_id, is_active
+ *   company    -> code, name, issue_code, tax_code, level, is_active
  *
  * Các select QUAN TRỌNG (phòng ban, tình trạng, trạng thái) vẫn nằm ngoài thanh
  * công cụ cho thao tác hằng ngày; những trường còn lại gom hết vào đây.
@@ -45,6 +45,17 @@ export const EMPLOYEE_FILTER_FIELDS: FilterFieldDefinition[] = [
 export const DEPARTMENT_FILTER_FIELDS: FilterFieldDefinition[] = [
   { name: 'code', label: 'Mã phòng ban', type: 'text' },
   { name: 'name', label: 'Tên phòng ban', type: 'text' },
+  { name: 'issue_code', label: 'Mã số hiệu', type: 'text' },
+  {
+    name: 'kind',
+    label: 'Loại đơn vị',
+    type: 'select',
+    options: [
+      { label: 'Phòng chức năng', value: '1' },
+      { label: 'Đơn vị kinh doanh / sản xuất', value: '2' },
+      { label: 'Ban dự án', value: '3' },
+    ],
+  },
   {
     name: 'is_active',
     label: 'Đang hoạt động',
@@ -56,7 +67,18 @@ export const DEPARTMENT_FILTER_FIELDS: FilterFieldDefinition[] = [
 export const COMPANY_FILTER_FIELDS: FilterFieldDefinition[] = [
   { name: 'code', label: 'Mã công ty', type: 'text' },
   { name: 'name', label: 'Tên pháp nhân', type: 'text' },
+  { name: 'issue_code', label: 'Mã số hiệu', type: 'text' },
   { name: 'tax_code', label: 'Mã số thuế', type: 'text' },
+  {
+    name: 'level',
+    label: 'Cấp pháp nhân',
+    type: 'select',
+    options: [
+      { label: 'Tập đoàn', value: '1' },
+      { label: 'Công ty thành viên', value: '2' },
+      { label: 'Đơn vị trực thuộc', value: '3' },
+    ],
+  },
   {
     name: 'is_active',
     label: 'Đang dùng',

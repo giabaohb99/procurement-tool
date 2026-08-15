@@ -7,7 +7,8 @@ from app.core.database import get_db
 from app.core.response import success
 
 from . import service
-from .schema import DepartmentCreate, DepartmentOut, DepartmentUpdate
+from .schema import (DepartmentCompanyOut, DepartmentCompanyReplace,
+                     DepartmentCreate, DepartmentOut, DepartmentUpdate)
 
 router = APIRouter(prefix="/api/departments", tags=["department"])
 
@@ -63,6 +64,30 @@ def delete_department(
 ):
     service.delete_department(db, did, user.id)
     return success(None, "Đã xóa")
+
+
+@router.get("/{did}/companies")
+def list_department_companies(
+    did: int,
+    db: Session = Depends(get_db),
+    user=Depends(require("department", "read")),
+):
+    rows = service.list_department_companies(db, did)
+    return success([DepartmentCompanyOut.model_validate(row).model_dump() for row in rows])
+
+
+@router.put("/{did}/companies")
+def replace_department_companies(
+    did: int,
+    data: DepartmentCompanyReplace,
+    db: Session = Depends(get_db),
+    user=Depends(require("department", "write")),
+):
+    rows = service.replace_department_companies(db, did, data.items, user.id)
+    return success(
+        [DepartmentCompanyOut.model_validate(row).model_dump() for row in rows],
+        "Đã cập nhật pháp nhân áp dụng",
+    )
 
 @router.get("/export/csv")
 def export_departments_csv(

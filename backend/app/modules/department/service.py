@@ -2,11 +2,12 @@ from fastapi import HTTPException
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from .model import Department
-from .schema import DepartmentCreate, DepartmentUpdate
+from .model import Department, DepartmentCompany
+from .schema import (DepartmentCompanyInput, DepartmentCreate,
+                     DepartmentUpdate)
 
 
-FILTERABLE = ["code", "name", "is_active"]
+FILTERABLE = ["code", "name", "issue_code", "kind", "company_id", "is_active"]
 
 
 def list_departments(db: Session, q: str | None, pg: dict, is_active: bool | None = None,
@@ -45,8 +46,12 @@ def create_department(db: Session, data: DepartmentCreate, user_id: int) -> Depa
     elif db.query(Department).filter(Department.code == data.code).first():
         raise HTTPException(400, "Mã phòng ban đã tồn tại")
 
+    _validate_primary_assignment(db, data.company_id, data.manager_id)
+
     obj = Department(**data.model_dump(), created_by=user_id, updated_by=user_id)
     db.add(obj)
+    db.flush()
+    _sync_primary_company_link(db, obj, user_id)
     db.commit()
     db.refresh(obj)
     return obj
@@ -59,10 +64,22 @@ def update_department(db: Session, did: int, data: DepartmentUpdate, user_id: in
     if "issue_code" in values:
         from app.modules.doc_catalog.issue_code_guard import ensure_department_issue_code_free
         ensure_department_issue_code_free(db, obj.id, obj.issue_code, values["issue_code"])
+    if "kind" in values:
+        from app.modules.doc_catalog.issue_code_guard import ensure_department_kind_free
+        ensure_department_kind_free(db, obj.id, obj.kind, values["kind"])
+
+    if {"company_id", "manager_id"} & values.keys():
+        _validate_primary_assignment(
+            db,
+            values.get("company_id", obj.company_id),
+            values.get("manager_id", obj.manager_id),
+        )
 
     for key, value in values.items():
         setattr(obj, key, value)
     obj.updated_by = user_id
+    if {"company_id", "manager_id"} & values.keys():
+        _sync_primary_company_link(db, obj, user_id)
     db.commit()
     db.refresh(obj)
     return obj
@@ -72,3 +89,144 @@ def delete_department(db: Session, did: int, user_id: int) -> None:
     obj = get_department(db, did)
     db.delete(obj)
     db.commit()
+
+
+def _sync_primary_company_link(db: Session, department: Department, user_id: int) -> None:
+    """Giữ dòng pháp nhân gốc trong A06 khớp hai cột legacy của phòng ban."""
+    if not department.company_id:
+        return
+    link = (
+        db.query(DepartmentCompany)
+        .filter(DepartmentCompany.department_id == department.id,
+                DepartmentCompany.company_id == department.company_id)
+        .one_or_none()
+    )
+    manager_id = department.manager_id or None
+    if link is None:
+        db.add(DepartmentCompany(
+            department_id=department.id,
+            company_id=department.company_id,
+            manager_employee_id=manager_id,
+            issue_code_override="",
+            is_active=True,
+            created_by=user_id,
+            updated_by=user_id,
+        ))
+        return
+    link.manager_employee_id = manager_id
+    link.is_active = True
+    link.updated_by = user_id
+
+
+def _validate_primary_assignment(db: Session, company_id: int, manager_id: int) -> None:
+    """Chặn pháp nhân ảo và trưởng phòng thuộc nhầm pháp nhân ở hai cột legacy."""
+    from app.modules.company.model import Company
+    from app.modules.employee.model import Employee
+
+    if company_id and db.get(Company, company_id) is None:
+        raise HTTPException(400, "Pháp nhân gốc không tồn tại")
+    if not manager_id:
+        return
+    manager = db.get(Employee, manager_id)
+    if manager is None:
+        raise HTTPException(400, "Nhân sự trưởng bộ phận không tồn tại")
+    if company_id and manager.company_id not in (0, company_id):
+        raise HTTPException(400, "Trưởng bộ phận không thuộc pháp nhân gốc")
+
+
+def list_department_companies(db: Session, did: int) -> list[DepartmentCompany]:
+    get_department(db, did)
+    return (
+        db.query(DepartmentCompany)
+        .filter(DepartmentCompany.department_id == did)
+        .order_by(DepartmentCompany.is_active.desc(), DepartmentCompany.company_id.asc())
+        .all()
+    )
+
+
+def replace_department_companies(
+    db: Session,
+    did: int,
+    items: list[DepartmentCompanyInput],
+    user_id: int,
+) -> list[DepartmentCompany]:
+    """Thay danh sách pháp nhân của phòng trong một transaction.
+
+    Không xóa vật lý dòng bị bỏ khỏi payload: chuyển `is_active=False` để lịch sử
+    tổ chức và các luồng duyệt cũ vẫn giải thích được.
+    """
+    from app.modules.company.model import Company
+    from app.modules.doc_catalog.issue_code_guard import (
+        ensure_department_company_issue_code_free,
+    )
+    from app.modules.employee.model import Employee
+
+    department = get_department(db, did)
+    company_ids = [item.company_id for item in items]
+    if len(company_ids) != len(set(company_ids)):
+        raise HTTPException(400, "Một pháp nhân chỉ được khai một lần cho mỗi phòng ban")
+    if department.company_id and department.company_id not in company_ids:
+        raise HTTPException(400, "Danh sách phải chứa pháp nhân gốc của phòng ban")
+
+    companies = {
+        row.id: row for row in db.query(Company).filter(Company.id.in_(company_ids)).all()
+    } if company_ids else {}
+    missing = sorted(set(company_ids) - set(companies))
+    if missing:
+        raise HTTPException(400, f"Pháp nhân không tồn tại: {', '.join(map(str, missing))}")
+
+    manager_ids = {item.manager_employee_id for item in items if item.manager_employee_id}
+    managers = {
+        row.id: row for row in db.query(Employee).filter(Employee.id.in_(manager_ids)).all()
+    } if manager_ids else {}
+    missing_managers = sorted(manager_ids - set(managers))
+    if missing_managers:
+        raise HTTPException(400, f"Nhân sự không tồn tại: {', '.join(map(str, missing_managers))}")
+
+    existing = {
+        row.company_id: row for row in
+        db.query(DepartmentCompany).filter(DepartmentCompany.department_id == did).all()
+    }
+    submitted = set(company_ids)
+    for company_id, row in existing.items():
+        if company_id not in submitted:
+            row.is_active = False
+            row.updated_by = user_id
+
+    for item in items:
+        manager = managers.get(item.manager_employee_id) if item.manager_employee_id else None
+        if manager and manager.company_id not in (0, item.company_id):
+            raise HTTPException(
+                400,
+                f"{manager.full_name} không thuộc pháp nhân {companies[item.company_id].name}",
+            )
+        row = existing.get(item.company_id)
+        values = item.model_dump()
+        ensure_department_company_issue_code_free(
+            db,
+            did,
+            item.company_id,
+            row.issue_code_override if row else "",
+            item.issue_code_override,
+        )
+        if row is None:
+            row = DepartmentCompany(
+                department_id=did,
+                **values,
+                created_by=user_id,
+                updated_by=user_id,
+            )
+            db.add(row)
+            existing[item.company_id] = row
+        else:
+            for key, value in values.items():
+                setattr(row, key, value)
+            row.updated_by = user_id
+
+        # Hai cột cũ tiếp tục phản ánh đúng trưởng phòng tại pháp nhân gốc.
+        if item.company_id == department.company_id:
+            department.manager_id = item.manager_employee_id or 0
+            department.updated_by = user_id
+
+    db.commit()
+    return list_department_companies(db, did)

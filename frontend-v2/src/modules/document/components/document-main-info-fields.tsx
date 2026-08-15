@@ -78,12 +78,14 @@ export function DocumentMainInfoFields({
   const docTypeId = form.watch('doc_type_id')
   const companyId = form.watch('company_id')
   const departmentId = form.watch('department_id')
+  const bookId = form.watch('book_id')
   const templates = useActiveDocumentTemplates(docTypeId, Boolean(onTemplateChange))
 
   const { data: preview } = useNumberPreview({
     doc_type_id: docTypeId,
     company_id: companyId,
     department_id: departmentId,
+    book_id: bookId,
   })
 
   const employeeOptions = employees?.items ?? []
