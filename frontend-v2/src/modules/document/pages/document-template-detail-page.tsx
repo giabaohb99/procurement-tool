@@ -100,6 +100,9 @@ export function DocumentTemplateDetailPage() {
                 onInsert={(html) =>
                   editorRef.current?.insertContent(html) ?? Promise.resolve(false)
                 }
+                onNavigateToTrace={(importId, page) =>
+                  editorRef.current?.focusImportedPage(importId, page) ?? false
+                }
               />
             )}
 

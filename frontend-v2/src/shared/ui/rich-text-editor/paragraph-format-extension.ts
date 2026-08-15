@@ -49,11 +49,43 @@ export const ParagraphFormat = Extension.create({
             renderHTML: (attributes) =>
               attributes.lineHeight ? { style: `line-height: ${attributes.lineHeight}` } : {},
           },
+          spaceBefore: {
+            default: null,
+            parseHTML: (element) => element.style.marginTop || null,
+            renderHTML: (attributes) =>
+              attributes.spaceBefore ? { style: `margin-top: ${attributes.spaceBefore}` } : {},
+          },
+          rightIndent: {
+            default: 0,
+            parseHTML: (element) => Number.parseInt(element.style.marginRight, 10) || 0,
+            renderHTML: (attributes) =>
+              attributes.rightIndent ? { style: `margin-right: ${attributes.rightIndent}px` } : {},
+          },
+          spaceAfter: {
+            default: null,
+            parseHTML: (element) => element.style.marginBottom || null,
+            renderHTML: (attributes) =>
+              attributes.spaceAfter ? { style: `margin-bottom: ${attributes.spaceAfter}` } : {},
+          },
           indent: {
             default: 0,
             parseHTML: (element) => Number.parseInt(element.style.marginLeft, 10) || 0,
             renderHTML: (attributes) =>
               attributes.indent ? { style: `margin-left: ${attributes.indent}px` } : {},
+          },
+          textIndent: {
+            default: 0,
+            parseHTML: (element) => Number.parseInt(element.style.textIndent, 10) || 0,
+            renderHTML: (attributes) =>
+              attributes.textIndent ? { style: `text-indent: ${attributes.textIndent}px` } : {},
+          },
+          backgroundColor: {
+            default: null,
+            parseHTML: (element) => element.style.backgroundColor || null,
+            renderHTML: (attributes) =>
+              attributes.backgroundColor
+                ? { style: `background-color: ${attributes.backgroundColor}` }
+                : {},
           },
         },
       },

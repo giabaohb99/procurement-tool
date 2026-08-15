@@ -1,4 +1,3 @@
-import { Image } from '@tiptap/extension-image'
 import { Subscript } from '@tiptap/extension-subscript'
 import { Superscript } from '@tiptap/extension-superscript'
 import { TableKit } from '@tiptap/extension-table'
@@ -22,6 +21,8 @@ import { EditorOutlinePanel } from './editor-outline-panel'
 import { EditorRuler, type PageMargins } from './editor-ruler'
 import { EditorToolbar } from './editor-toolbar'
 import { EditorVerticalRuler } from './editor-vertical-ruler'
+import { ImageWithSize } from './image-size-extension'
+import { ImportTrace } from './import-trace-extension'
 import { ParagraphFormat } from './paragraph-format-extension'
 import {
   TableCellWithBackground,
@@ -57,6 +58,8 @@ interface RichTextEditorProps {
 export interface RichTextEditorHandle {
   /** Chèn HTML tại con trỏ theo chế độ tối ưu cho tài liệu lớn. */
   insertContent: (html: string) => Promise<boolean>
+  /** Nhảy tới node đầu tiên được dựng từ một trang PDF trong báo cáo import. */
+  focusImportedPage: (importId: string, page: number) => boolean
 }
 
 /** Chờ trình duyệt vẽ xong ít nhất một khung hình trước khi làm việc nặng. */
@@ -140,7 +143,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         // Chỉ số trên / dưới — cần cho ký hiệu m², số mũ trong phụ lục.
         Subscript,
         Superscript,
-        Image.configure({ inline: false, allowBase64: true }),
+        ImageWithSize.configure({ inline: false, allowBase64: true }),
+        ImportTrace,
         // Giãn dòng + thụt lề đầu dòng, xem `paragraph-format-extension.ts`.
         ParagraphFormat,
         TextAlign.configure({ types: ['heading', 'paragraph'] }),
@@ -269,6 +273,23 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
               editor.commands.enablePagination()
             }
           }
+        },
+        focusImportedPage: (importId, page) => {
+          if (!editor || editor.isDestroyed) return false
+          const matches: { pos: number; isTextblock: boolean }[] = []
+          editor.state.doc.descendants((node, pos) => {
+            if (node.attrs.importId === importId && Number(node.attrs.sourcePage) === page) {
+              matches.push({ pos, isTextblock: node.isTextblock })
+              return false
+            }
+            return true
+          })
+          const match = matches[0]
+          if (!match) return false
+          const chain = editor.chain().focus()
+          if (match.isTextblock) chain.setTextSelection(match.pos + 1)
+          else chain.setNodeSelection(match.pos)
+          return chain.scrollIntoView().run()
         },
       }),
       [editor],

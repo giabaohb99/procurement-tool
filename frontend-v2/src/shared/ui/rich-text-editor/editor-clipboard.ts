@@ -1,6 +1,7 @@
 import { DOMSerializer } from '@tiptap/pm/model'
 import type { Editor } from '@tiptap/react'
 import { toast } from 'sonner'
+import { insertImageBlobs } from './image-size-extension'
 
 /**
  * Cắt / sao chép / dán cho MENU CHUỘT PHẢI.
@@ -64,10 +65,20 @@ export async function cutSelection(editor: Editor) {
 export async function pasteFromClipboard(editor: Editor, { plain = false } = {}) {
   try {
     if (!plain && navigator.clipboard.read) {
-      for (const item of await navigator.clipboard.read()) {
+      const items = await navigator.clipboard.read()
+      for (const item of items) {
         if (!item.types.includes('text/html')) continue
         const html = await (await item.getType('text/html')).text()
         editor.chain().focus().insertContent(html).run()
+        return
+      }
+      const images: Blob[] = []
+      for (const item of items) {
+        const imageType = item.types.find((type) => type.startsWith('image/'))
+        if (imageType) images.push(await item.getType(imageType))
+      }
+      if (images.length) {
+        await insertImageBlobs(editor, images)
         return
       }
     }

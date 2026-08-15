@@ -27,6 +27,14 @@ function withBackgroundColor<T extends typeof TableCell | typeof TableHeader>(ce
         borderRight: cellBorderAttribute('border-right'),
         borderBottom: cellBorderAttribute('border-bottom'),
         borderLeft: cellBorderAttribute('border-left'),
+        verticalAlignment: {
+          default: null,
+          parseHTML: (element) => element.style.verticalAlign || null,
+          renderHTML: (attributes) =>
+            attributes.verticalAlignment
+              ? { style: `vertical-align: ${attributes.verticalAlignment}` }
+              : {},
+        },
       }
     },
   })

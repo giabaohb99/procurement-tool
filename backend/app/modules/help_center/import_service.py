@@ -34,7 +34,8 @@ VOID_TAGS = {"br", "hr", "img", "col"}
 ALLOWED_ATTRS = {
     "href", "src", "alt", "title", "class", "style", "width", "height",
     "colspan", "rowspan", "span", "target", "rel", "start", "type",
-    "allow", "allowfullscreen", "frameborder", "loading", "data-lang",
+    "allow", "allowfullscreen", "frameborder", "loading", "data-lang", "data-colwidth",
+    "data-import-id", "data-source-page",
 }
 URL_ATTRS = {"href", "src"}
 

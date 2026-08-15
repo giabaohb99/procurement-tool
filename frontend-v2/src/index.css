@@ -283,8 +283,10 @@
   max-width: 100%;
   margin-inline: auto;
   background: #fff;
-  box-shadow: 0 1px 3px rgb(15 23 42 / 0.12), 0 8px 24px rgb(15 23 42 / 0.08);
-  font-family: "Times New Roman", serif;
+  box-shadow:
+    0 1px 3px rgb(15 23 42 / 0.12),
+    0 8px 24px rgb(15 23 42 / 0.08);
+  font-family: 'Times New Roman', serif;
   font-size: 14pt;
   line-height: 1.5;
   color: #111827;
@@ -308,24 +310,139 @@
   margin-top: 0.6em;
 }
 
-.doc-page h1 { font-size: 1.6em; font-weight: 700; }
-.doc-page h2 { font-size: 1.35em; font-weight: 700; }
-.doc-page h3 { font-size: 1.15em; font-weight: 700; }
+.doc-page h1 {
+  font-size: 1.6em;
+  font-weight: 700;
+}
+.doc-page h2 {
+  font-size: 1.35em;
+  font-weight: 700;
+}
+.doc-page h3 {
+  font-size: 1.15em;
+  font-weight: 700;
+}
 
 .doc-page ul,
 .doc-page ol {
   padding-left: 1.6em;
 }
 
-.doc-page ul { list-style: disc; }
-.doc-page ol { list-style: decimal; }
-.doc-page li { margin-top: 0.2em; }
-.doc-page li > p { margin: 0; }
+.doc-page ul {
+  list-style: disc;
+}
+.doc-page ol {
+  list-style: decimal;
+}
+.doc-page li {
+  margin-top: 0.2em;
+}
+.doc-page li > p {
+  margin: 0;
+}
 
 /* Ảnh chèn vào không được vượt quá bề ngang trang giấy. */
 .doc-page img {
   max-width: 100%;
   height: auto;
+}
+
+/* Ảnh là một node độc lập: bấm chọn mới hiện bốn tay nắm, caption nằm cùng
+   node nên kéo ảnh / hoàn tác / sao chép không làm rơi chú thích. */
+.doc-page .editor-image-node {
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.doc-page .editor-image-resize-wrapper {
+  max-width: 100%;
+  line-height: 0;
+}
+
+.doc-page .editor-image-resize-wrapper img {
+  display: block;
+}
+
+.doc-page .editor-image-resize-handle {
+  z-index: 2;
+  width: 11px;
+  height: 11px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #2563eb;
+  box-shadow: 0 0 0 1px rgb(37 99 235 / 0.7);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.doc-page .editor-image-resize-handle[data-resize-handle$='right'] {
+  transform: translate(50%, -50%);
+}
+
+.doc-page .editor-image-resize-handle[data-resize-handle^='bottom'] {
+  transform: translate(-50%, 50%);
+}
+
+.doc-page .editor-image-resize-handle[data-resize-handle^='bottom'][data-resize-handle$='right'] {
+  transform: translate(50%, 50%);
+}
+
+.doc-page .editor-image-node.is-selected .editor-image-resize-wrapper {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.doc-page .editor-image-node.is-selected .editor-image-resize-handle,
+.doc-page .editor-image-node.is-resizing .editor-image-resize-handle {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.doc-page .editor-image-caption {
+  width: 100%;
+  min-width: 12rem;
+  margin-top: 0.45rem;
+  resize: none;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0.25rem;
+  background: transparent;
+  padding: 0.2rem 0.35rem;
+  color: #4b5563;
+  font-family: 'Times New Roman', serif;
+  font-size: 11pt;
+  font-style: italic;
+  line-height: 1.3;
+  text-align: center;
+  outline: none;
+}
+
+.doc-page .editor-image-caption::placeholder {
+  color: #9ca3af;
+}
+
+.doc-page .editor-image-caption:focus {
+  box-shadow: 0 0 0 2px rgb(37 99 235 / 0.25);
+}
+
+/* HTML đã serialize vẫn có hình thức đúng ở nơi render không dựng NodeView. */
+.doc-page figure[data-editor-image] {
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.doc-page figure[data-editor-image] figcaption {
+  margin-top: 0.45rem;
+  color: #4b5563;
+  font-size: 11pt;
+  font-style: italic;
+  line-height: 1.3;
 }
 
 .doc-page a {
@@ -385,7 +502,7 @@
 
 /* Vùng chọn nhiều ô (kéo chuột qua bảng). */
 .doc-page .selectedCell::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   background: rgb(0 174 239 / 0.12);
