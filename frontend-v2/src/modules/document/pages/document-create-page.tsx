@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, ArrowRight, Info, Layers, PenLine, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Info, Layers, PenLine } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
@@ -13,7 +13,7 @@ import { FormStepper } from '@/shared/ui/form-stepper'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { documentAccessApi } from '../api/document-api'
-import { DocumentAccessStep, type PendingAccess } from '../components/document-access-step'
+import { DocumentAccessFields, type PendingAccess } from '../components/document-access-fields'
 import { DocumentExtraInfoFields } from '../components/document-extra-info-fields'
 import { DocumentMainInfoFields, MAIN_INFO_FIELDS } from '../components/document-main-info-fields'
 import { emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
@@ -61,7 +61,8 @@ export function DocumentCreatePage() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [templateId, setTemplateId] = useState<number | null>(null)
-  //  Quyền khai ở bước 3 phải chờ có id văn bản mới gửi được, nên giữ tạm ở đây.
+  //  Quyền khai ở khối cuối thẻ thông tin chính phải chờ có id văn bản mới gửi
+  //  được, nên giữ tạm ở đây.
   const [pendingAccess, setPendingAccess] = useState<PendingAccess[]>([])
   const save = useSaveDocument()
   const selectedTemplate = useDocumentTemplate(templateId)
@@ -160,18 +161,12 @@ export function DocumentCreatePage() {
                 templateId={templateId}
                 onTemplateChange={setTemplateId}
               />
-            </FormCard>
 
-            {/* Quyền truy cập nằm CÙNG bước với thông tin chính, không tách
-                thành một bước riêng: khai xong ai được xem ngay lúc lập văn bản
-                thì không còn khoảng hở "đã tạo nhưng chưa chặn ai". */}
-            <FormCard
-              title="Quyền truy cập"
-              icon={ShieldCheck}
-              iconClassName="text-amber-600"
-              className="mt-4"
-            >
-              <DocumentAccessStep
+              {/* Quyền truy cập nằm CUỐI chính thẻ này, không tách thẻ riêng và
+                  càng không tách bước riêng: khai xong ai được xem ngay lúc lập
+                  văn bản thì không còn khoảng hở "đã tạo nhưng chưa chặn ai",
+                  mà form cũng không dài thêm vì mặc định nó chỉ là một dòng. */}
+              <DocumentAccessFields
                 rows={pendingAccess}
                 onChange={setPendingAccess}
                 bookName={books.find((book) => book.id === Number(form.watch('book_id')))?.name}
