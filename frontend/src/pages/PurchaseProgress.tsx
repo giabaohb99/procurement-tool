@@ -91,7 +91,6 @@ const COLS: Col[] = [
   { key: 'item_group', hide: true, label: 'Nhóm hàng', w: 120, sort: 'item_group', cell: (r) => r.item_group },
   { key: 'spec', hide: true, label: 'Quy cách', w: 190, sort: 'spec', cell: (r) => r.spec },
   { key: 'fg_code', hide: true, label: 'Mã HH', w: 84, sort: 'fg_code', td: { ...NOWRAP, ...MUTED }, cell: (r) => r.fg_code },
-  { key: 'invoice_no', hide: true, label: 'Số HĐ', w: 160, sort: 'invoice_no', td: NOWRAP, cell: (r) => r.invoice_no },
   { key: 'required_date', hide: true, label: 'Ngày cần', w: 88, sort: 'required_date', td: NOWRAP, cell: (r) => fmtDate(r.required_date) },
   // Dự kiến nhận thuộc DÒNG HÀNG của ĐMH (trước đây đọc nhầm từ lần giao — cột đó không ai ghi)
   { key: 'expected_date', hide: true, label: 'Dự kiến nhận', w: 100, sort: 'expected_date', td: NOWRAP, cell: (r) => fmtDate(r.expected_date) },
@@ -115,7 +114,9 @@ const COLS: Col[] = [
   { key: 'diff_promise', hide: true, label: 'CL cam kết', w: 84, sort: 'diff_promise', td: R, cell: (r) => diffCell(r.diff_promise) },
   { key: 'diff_regulated', hide: true, label: 'CL quy định', w: 84, sort: 'diff_regulated', td: R, cell: (r) => diffCell(r.diff_regulated) },
   { key: 'diff_required', hide: true, label: 'CL vs YC', w: 76, sort: 'diff_required', td: R, cell: (r) => diffCell(r.diff_required) },
-  { key: 'delivery_invoice_no', hide: true, label: 'Số HĐ (giao)', w: 160, sort: 'delivery_invoice_no', td: NOWRAP, cell: (r) => r.delivery_invoice_no },
+  // Chỉ còn MỘT cột "Số HĐ" — lấy số ghi ở LẦN GIAO, vì cột số HĐ của dòng ĐMH (`invoice_no`)
+  // không ai nhập nên luôn trống. Đừng thêm lại cột kia mà không hỏi phòng thu mua.
+  { key: 'delivery_invoice_no', hide: true, label: 'Số HĐ', w: 160, sort: 'delivery_invoice_no', td: NOWRAP, cell: (r) => r.delivery_invoice_no },
   { key: 'shipping_unit_price', hide: true, label: 'Đơn giá VC', w: 96, sort: 'shipping_unit_price', sup: true, td: R, cell: (r) => fmtPrice(r.shipping_unit_price) },
   { key: 'shipping_amount', hide: true, label: 'Tiền VC', w: 108, sort: 'shipping_amount', sup: true, td: R, cell: (r) => fmtVND(r.shipping_amount) },
   { key: 'qc_result', hide: true, label: 'QC', w: 64, sort: 'qc_result', cell: (r) => r.qc_result },
