@@ -23,59 +23,87 @@ interface FormStepperProps {
 }
 
 /**
- * Dải bước của form nhiều bước: số thứ tự, tên bước, vạch nối.
+ * Dải bước của form nhiều bước.
  *
- * Bước đã qua hiện dấu tích và bấm được để quay lại — người dùng luôn nhìn ra
- * mình đang ở đâu và còn mấy bước nữa.
+ * Mỗi bước là một CHẤM TRÒN kèm nhãn, nối nhau bằng một đường liền chạy suốt
+ * dải và **tô dần theo tiến độ** — nhìn một cái ra ngay đang ở đâu, còn mấy
+ * bước. Cố ý bỏ khung hộp quanh từng bước: đóng khung làm dải này nặng ngang
+ * các thẻ nội dung bên dưới, trong khi nó chỉ là thanh chỉ đường.
+ *
+ * Bước đã qua hiện dấu tích và bấm được để quay lại.
  */
 export function FormStepper({ steps, current, onGoTo, className }: FormStepperProps) {
+  const last = steps.length - 1
+
   return (
-    <ol className={cn('flex items-center gap-2', className)}>
+    <ol className={cn('flex items-start', className)}>
       {steps.map((step, index) => {
         const done = index < current
         const active = index === current
         const clickable = done && Boolean(onGoTo)
 
         return (
-          <li key={step.title} className="flex flex-1 items-center gap-2">
+          <li
+            key={step.title}
+            // Bước cuối KHÔNG chiếm phần dư: cho nó co lại thì nhãn không bị
+            // kéo giãn ra tận mép phải, dải bước gọn về bên trái như thanh
+            // chỉ đường thật.
+            className={cn('flex min-w-0 items-start', index < last && 'flex-1')}
+          >
             <button
               type="button"
               disabled={!clickable}
               onClick={() => onGoTo?.(index)}
+              aria-current={active ? 'step' : undefined}
               className={cn(
-                'flex min-w-0 flex-1 items-center gap-3 rounded-lg border p-3 text-left transition-colors',
-                active && 'border-primary bg-primary/5',
-                done && 'border-primary/40',
-                !active && !done && 'border-dashed text-muted-foreground',
-                clickable && 'hover:bg-accent',
-                !clickable && 'cursor-default',
+                'group flex min-w-0 items-center gap-3 rounded-lg text-left transition-opacity',
+                'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none',
+                clickable ? 'hover:opacity-70' : 'cursor-default',
               )}
             >
               <span
                 className={cn(
-                  'flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-semibold',
+                  'flex size-9 shrink-0 items-center justify-center rounded-full border text-sm font-semibold tabular-nums transition-colors',
                   (active || done) && 'border-primary bg-primary text-primary-foreground',
+                  // Quầng sáng quanh bước ĐANG đứng — thứ duy nhất tách nó khỏi
+                  // bước đã xong, vì cả hai cùng tô màu chính.
+                  active && 'ring-4 ring-primary/15',
+                  !active && !done && 'bg-background text-muted-foreground',
                 )}
               >
                 {done ? <Check className="size-4" /> : index + 1}
               </span>
 
               <span className="min-w-0">
-                <span className="block truncate text-sm font-medium">{step.title}</span>
+                <span
+                  className={cn(
+                    'block truncate text-sm font-medium transition-colors',
+                    active || done ? 'text-foreground' : 'text-muted-foreground',
+                  )}
+                >
+                  {step.title}
+                </span>
                 {step.description && (
-                  <span className="block truncate text-xs text-muted-foreground">
+                  <span className="hidden truncate text-xs text-muted-foreground sm:block">
                     {step.description}
                   </span>
                 )}
               </span>
             </button>
 
-            {/* Vạch nối — bước cuối không có gì để nối tới. */}
-            {index < steps.length - 1 && (
+            {/* Đường nối — bước cuối không có gì để nối tới.
+                `mt-[17px]` = nửa chấm tròn (36px) trừ nửa bề dày đường (2px):
+                đường cắt đúng tâm chấm chứ không lệch lên xuống. */}
+            {index < last && (
               <span
                 aria-hidden
-                className={cn('h-px w-6 shrink-0 bg-border', done && 'bg-primary')}
-              />
+                className="mx-3 mt-[17px] h-0.5 min-w-6 flex-1 overflow-hidden rounded-full bg-border"
+              >
+                <span
+                  className="block h-full rounded-full bg-primary transition-[width] duration-300 ease-out"
+                  style={{ width: done ? '100%' : '0%' }}
+                />
+              </span>
             )}
           </li>
         )

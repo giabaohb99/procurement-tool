@@ -126,9 +126,12 @@ export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardP
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         pending={grant.isPending}
-        //  Văn bản đã có id nên gửi thẳng lên máy chủ. Trang TẠO văn bản dùng
-        //  cùng hộp này nhưng xếp hàng chờ tới lúc tạo xong.
-        onSubmit={(values) => grant.mutate(values, { onSuccess: () => setDialogOpen(false) })}
+        //  Văn bản đã có id nên gửi thẳng lên máy chủ, tuần tự từng dòng. Trang
+        //  TẠO văn bản dùng cùng hộp này nhưng xếp hàng chờ tới lúc tạo xong.
+        onSubmit={async (rows) => {
+          for (const row of rows) await grant.mutateAsync(row.values)
+          setDialogOpen(false)
+        }}
       />
     </Card>
   )

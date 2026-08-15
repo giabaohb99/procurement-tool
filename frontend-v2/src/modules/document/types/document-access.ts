@@ -74,3 +74,14 @@ export interface DocumentAccessInput {
   valid_to: string | null
   reason: string
 }
+
+/**
+ * Một dòng quyền vừa khai trong hộp chia quyền, CHƯA gửi lên máy chủ.
+ *
+ * `subjectLabel` đi kèm để nơi nhận hiện tên đối tượng mà không phải tra lại
+ * danh mục — trang tạo văn bản xếp hàng chờ tới lúc có id văn bản mới gửi.
+ */
+export interface DocumentAccessDraft {
+  values: DocumentAccessInput
+  subjectLabel: string
+}
