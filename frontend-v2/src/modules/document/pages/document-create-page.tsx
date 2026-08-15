@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, ArrowRight, Info, Layers, PenLine } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Info, Layers, PenLine, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
@@ -12,9 +12,12 @@ import { FormCard } from '@/shared/ui/form-card'
 import { FormStepper } from '@/shared/ui/form-stepper'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { documentAccessApi } from '../api/document-api'
+import { DocumentAccessStep, type PendingAccess } from '../components/document-access-step'
 import { DocumentExtraInfoFields } from '../components/document-extra-info-fields'
 import { DocumentMainInfoFields, MAIN_INFO_FIELDS } from '../components/document-main-info-fields'
 import { emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
+import { useDocumentBooks } from '../hooks/use-document-books'
 import { useSaveDocument } from '../hooks/use-documents'
 import { useDocumentTemplate } from '../hooks/use-document-templates'
 import {
@@ -31,7 +34,7 @@ import {
 const STEPS = [
   {
     title: 'Thông tin chính',
-    description: 'Loại, pháp nhân, phòng, tên văn bản',
+    description: 'Tên, loại, pháp nhân, quyền truy cập',
     fields: MAIN_INFO_FIELDS,
   },
   {
@@ -58,8 +61,11 @@ export function DocumentCreatePage() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [templateId, setTemplateId] = useState<number | null>(null)
+  //  Quyền khai ở bước 3 phải chờ có id văn bản mới gửi được, nên giữ tạm ở đây.
+  const [pendingAccess, setPendingAccess] = useState<PendingAccess[]>([])
   const save = useSaveDocument()
   const selectedTemplate = useDocumentTemplate(templateId)
+  const { items: books } = useDocumentBooks()
 
   const form = useForm<DocumentRecordFormValues>({
     resolver: zodResolver(documentRecordSchema),
@@ -98,7 +104,24 @@ export function DocumentCreatePage() {
         },
       },
       {
-        onSuccess: (record) => {
+        onSuccess: async (record) => {
+          //  Gửi quyền NGAY SAU KHI tạo, tuần tự để dòng nào hỏng thì biết đúng
+          //  dòng đó. Hỏng cũng vẫn vào trang soạn thảo: văn bản đã tồn tại rồi,
+          //  giữ người dùng ở lại form trắng tay còn tệ hơn — bảng quyền ở tab
+          //  Thông tin là chỗ khai lại.
+          const failed: string[] = []
+          for (const row of pendingAccess) {
+            try {
+              await documentAccessApi.grant(record.id, row.values)
+            } catch {
+              failed.push(row.subjectLabel || 'một đối tượng')
+            }
+          }
+          if (failed.length > 0) {
+            toast.error(
+              `Chưa chia được quyền cho ${failed.join(', ')} — mở tab Thông tin để khai lại.`,
+            )
+          }
           navigate(appRoutes.document.documentDetail(record.id), { replace: true })
         },
       },
@@ -136,6 +159,22 @@ export function DocumentCreatePage() {
                 isNumbered={false}
                 templateId={templateId}
                 onTemplateChange={setTemplateId}
+              />
+            </FormCard>
+
+            {/* Quyền truy cập nằm CÙNG bước với thông tin chính, không tách
+                thành một bước riêng: khai xong ai được xem ngay lúc lập văn bản
+                thì không còn khoảng hở "đã tạo nhưng chưa chặn ai". */}
+            <FormCard
+              title="Quyền truy cập"
+              icon={ShieldCheck}
+              iconClassName="text-amber-600"
+              className="mt-4"
+            >
+              <DocumentAccessStep
+                rows={pendingAccess}
+                onChange={setPendingAccess}
+                bookName={books.find((book) => book.id === Number(form.watch('book_id')))?.name}
               />
             </FormCard>
           </div>

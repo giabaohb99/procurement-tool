@@ -722,7 +722,13 @@ def seed_sample_documents(db, company_id=0):
         for major, minor, ver_status, html, change in versions:
             version = DocumentVersion(
                 document_id=doc.id, major=major, minor=minor, status=ver_status,
-                is_locked=ver_status == VERSION_APPROVED,
+                #  Bản ĐÃ THAY THẾ cũng là bản đã từng được duyệt, nên phải khóa
+                #  y như bản đang dùng. Chỉ khóa mỗi bản `APPROVED` là để lại một
+                #  bản cũ còn "mở": trang chi tiết ưu tiên mở bản chưa khóa nên
+                #  sẽ mở nhầm bản 1.0, băng cảnh báo đọc ra "chưa có hiệu lực"
+                #  thay vì "đã bị thay thế", và nút Mở phiên bản mới biến mất vì
+                #  hệ tưởng còn một bản nháp đang dở.
+                is_locked=ver_status in (VERSION_APPROVED, VERSION_SUPERSEDED),
                 content_html=html, change_summary=change,
                 change_kind=CHANGE_MAJOR if change else 0,
                 effective_from=date.today() if ver_status != VERSION_DRAFT else None,

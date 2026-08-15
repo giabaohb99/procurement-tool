@@ -24,7 +24,17 @@ export function ModuleLayout() {
     // SidebarProvider lo trạng thái thu/mở, ngăn kéo mobile, phím tắt ⌘B và ghi
     // nhớ trạng thái vào cookie — không cần tự quản lý state.
     // `--sidebar-width` ghi đè mặc định 16rem bằng bề rộng người dùng đã kéo.
-    <SidebarProvider style={{ '--sidebar-width': `${width}px` } as CSSProperties}>
+    <SidebarProvider
+      // `h-svh` + `overflow-hidden`: khóa cả khung đúng một màn hình để phần
+      // cuộn nằm TRONG `<main>` bên dưới. Thiếu nó thì khung của shadcn chỉ có
+      // `min-h-svh` — trang dài làm khung dài theo, `overflow-auto` của `main`
+      // không bao giờ kích hoạt và **cửa sổ** mới là chỗ cuộn. Hệ quả: mọi
+      // `sticky top-0` bên trong `main` chết lặng (trình duyệt neo chúng vào
+      // `main`, mà `main` thì không cuộn) — đó là lý do dải tiêu đề trang chi
+      // tiết vẫn trôi lên mất.
+      className="h-svh overflow-hidden"
+      style={{ '--sidebar-width': `${width}px` } as CSSProperties}
+    >
       <ModuleSidebar module={activeModule} onResizeWidth={setWidth} />
       {/*
         `min-w-0`: SidebarInset là item flex, mà item flex mặc định không co

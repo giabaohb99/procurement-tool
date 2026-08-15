@@ -240,6 +240,21 @@ def reject_document(
     return success(serializer.serialize(db, doc), "Đã trả lại bản nháp")
 
 
+@router.post("/{document_id}/revoke")
+def revoke_document(
+    document_id: int,
+    data: RejectIn,
+    db: Session = Depends(get_db),
+    user=Depends(require("document", "cancel")),
+):
+    """Bãi bỏ văn bản ĐÃ ban hành. Đây là lối thoát duy nhất cho văn bản đã cấp
+    số — `DELETE` từ chối những văn bản đó để không thủng sổ."""
+    doc = _load(db, document_id, user, "write")
+    doc = service.revoke(db, doc, data.reason, user.id)
+    record(db, user.id, "document", doc.id, "cancel", f"Bãi bỏ: {data.reason}")
+    return success(serializer.serialize(db, doc), "Đã bãi bỏ văn bản")
+
+
 # ── Phiên bản ────────────────────────────────────────────────────────────────
 @router.get("/{document_id}/versions")
 def list_versions(

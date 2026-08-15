@@ -51,10 +51,13 @@ function Required() {
 /**
  * THÔNG TIN CHÍNH — bộ trường chung C01.
  *
- * Thứ tự hỏi bám theo cái quyết định cái kia: **loại văn bản** và **pháp nhân
- * ban hành** đứng trước vì hai ô đó quyết định số hiệu (hiện ngay ở dòng xem
- * trước bên dưới) và mức mật mặc định; **phòng chủ trì** đứng thứ ba vì nó vào
- * giữa chuỗi số hiệu và là chiều lọc của khối gợi ý văn bản trùng.
+ * **Tên văn bản đứng đầu** — đó là thứ người soạn đã có sẵn trong đầu khi mở
+ * form ra; bắt khai loại và pháp nhân trước là chặn họ ngay ở ô đầu tiên.
+ *
+ * Sau tên, thứ tự bám theo cái quyết định cái kia: **loại văn bản** và **pháp
+ * nhân ban hành** vì hai ô đó quyết định số hiệu (hiện ngay ở dòng xem trước
+ * bên dưới) và mức mật mặc định; **phòng chủ trì** kế đó vì nó vào giữa chuỗi
+ * số hiệu và là chiều lọc của khối gợi ý văn bản trùng.
  *
  * Dùng chung cho trang tạo mới và tab "Thông tin" của trang chi tiết — hai chỗ
  * đó phải hỏi y hệt nhau, tách ra là sớm muộn cũng lệch.
@@ -98,6 +101,23 @@ export function DocumentMainInfoFields({
 
   return (
     <div className="grid items-start gap-x-5 gap-y-3 sm:grid-cols-2">
+      <FormField
+        control={form.control}
+        name="title"
+        render={({ field }) => (
+          <FormItem className="sm:col-span-2">
+            <FormLabel>
+              Tên văn bản
+              <Required />
+            </FormLabel>
+            <FormControl>
+              <Input placeholder="Nhập tên văn bản" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       <FormField
         control={form.control}
         name="doc_type_id"
@@ -274,23 +294,6 @@ export function DocumentMainInfoFields({
 
       {/* Dòng xem trước số hiệu đứng ngay dưới các ô quyết định ra nó. */}
       <DocumentNumberPreview preview={preview} />
-
-      <FormField
-        control={form.control}
-        name="title"
-        render={({ field }) => (
-          <FormItem className="sm:col-span-2">
-            <FormLabel>
-              Tên văn bản
-              <Required />
-            </FormLabel>
-            <FormControl>
-              <Input placeholder="Nhập tên văn bản" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
 
       {/* B05 — hiện luôn văn bản cùng loại cùng phòng đang hiệu lực. Đây là thứ
           còn lại chống đẻ trùng quy trình sau khi bước xin phép bị cắt. */}

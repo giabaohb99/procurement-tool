@@ -144,5 +144,13 @@ export function useDocumentWorkflow(documentId: number) {
     },
   })
 
-  return { submit, approve, reject }
+  const revoke = useMutation({
+    mutationFn: (reason: string) => documentApi.revoke(documentId, reason),
+    onSuccess: () => {
+      toast.success('Đã bãi bỏ văn bản')
+      refresh()
+    },
+  })
+
+  return { submit, approve, reject, revoke }
 }

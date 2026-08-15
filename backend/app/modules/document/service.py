@@ -18,7 +18,8 @@ from app.modules.doc_catalog.model import DocType
 
 from . import numbering
 from .model import (ALIVE_STATUSES, STATUS_APPROVED, STATUS_DRAFT,
-                    STATUS_EFFECTIVE, STATUS_SUBMITTED, Document)
+                    STATUS_EFFECTIVE, STATUS_REVOKED, STATUS_SUBMITTED,
+                    Document)
 from .query import documents_query
 from .schema import DocumentCreate, DocumentUpdate
 from .version_model import (VERSION_APPROVED, VERSION_DRAFT, VERSION_SUBMITTED,
@@ -255,6 +256,35 @@ def reject(db: Session, doc: Document, reason: str, actor: int) -> Document:
     #  trạng thái vì bản trước đó vẫn đang có hiệu lực.
     if version.prev_version_id is None:
         doc.status = STATUS_DRAFT
+    doc.updated_by = actor
+    db.commit()
+    db.refresh(doc)
+    return doc
+
+
+def revoke(db: Session, doc: Document, reason: str, actor: int) -> Document:
+    """BÃI BỎ văn bản đã ban hành — cách đúng để gỡ bỏ thay cho xóa.
+
+    Số hiệu đã cấp thì đã nằm trong sổ, xóa bản ghi đi là sổ thủng một lỗ không
+    giải thích được (xem `delete_document`). Bãi bỏ giữ nguyên dòng và số, chỉ
+    đổi trạng thái + đóng ngày hết hiệu lực, nên tra sổ vẫn ra "số này từng cấp
+    cho văn bản gì, bỏ ngày nào".
+
+    LÝ DO ghi vào nhật ký thao tác (`audit`) ở tầng controller, không thêm cột
+    riêng: sổ nhật ký đã hiện ngay trên trang chi tiết, mà thêm cột là phải
+    ALTER một bảng đang chạy.
+    """
+    if doc.status == STATUS_REVOKED:
+        raise HTTPException(400, "Văn bản đã bãi bỏ rồi")
+    #  Chưa ban hành thì không có gì để bãi bỏ: nháp thì xóa, đang duyệt thì
+    #  trả lại bản nháp.
+    if doc.status not in ALIVE_STATUSES:
+        raise HTTPException(400, "Chỉ bãi bỏ được văn bản đã ban hành")
+
+    doc.status = STATUS_REVOKED
+    #  Ngày bãi bỏ chính là ngày hết hiệu lực — để bộ lọc "còn hiệu lực đến
+    #  ngày…" khỏi phải biết thêm một cột nữa.
+    doc.expire_date = date.today()
     doc.updated_by = actor
     db.commit()
     db.refresh(doc)
