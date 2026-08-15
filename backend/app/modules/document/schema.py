@@ -1,9 +1,10 @@
 """Schema VĂN BẢN và PHIÊN BẢN.
 
-Bộ trường của văn bản là **bộ chung cố định `C01`, khai trong mã** — bản 1 không
-có trường nhập động và không có tệp mẫu Word (quyết định 6 của plan). Muốn thêm
-ô thì sửa ở đây, sửa model, sửa form; đổi lấy sự đơn giản là mọi văn bản đều
-cùng một hình dạng, tra cứu và báo cáo được.
+Bộ trường của văn bản là **bộ chung cố định `C01`, khai trong mã**. Bản 1 không
+có trường nhập động và không nhập tệp mẫu Word; thư viện mẫu trên web chỉ chép
+`content_html` vào phiên bản đầu tiên. Muốn thêm ô thì sửa ở đây, sửa model, sửa
+form; đổi lấy sự đơn giản là mọi văn bản đều cùng một hình dạng, tra cứu và báo
+cáo được.
 """
 from datetime import date
 

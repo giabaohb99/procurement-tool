@@ -1,4 +1,4 @@
-import { Plus, ShieldAlert, Tags, Users } from 'lucide-react'
+import { LibraryBig, Plus, ShieldAlert, Tags, Users } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -9,6 +9,7 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { DocumentPartnerCatalog } from '../components/document-partner-catalog'
+import { DocumentTemplateCatalog } from '../components/document-template-catalog'
 import { DocumentTypeCatalog } from '../components/document-type-catalog'
 import { SecurityLevelCatalog } from '../components/security-level-catalog'
 
@@ -35,6 +36,14 @@ const TABS: CatalogTab[] = [
     Catalog: DocumentTypeCatalog,
   },
   {
+    value: 'templates',
+    label: 'Thư viện văn bản mẫu',
+    icon: LibraryBig,
+    description: 'Quản lý nội dung mẫu theo từng loại văn bản để người soạn dùng làm điểm bắt đầu.',
+    newPath: appRoutes.document.templateNew,
+    Catalog: DocumentTemplateCatalog,
+  },
+  {
     value: 'security-levels',
     label: 'Mức mật / khẩn',
     icon: ShieldAlert,
@@ -47,15 +56,14 @@ const TABS: CatalogTab[] = [
     value: 'partners',
     label: 'Đơn vị gửi nhận',
     icon: Users,
-    description:
-      'Cơ quan, doanh nghiệp, cá nhân và đơn vị nội bộ trao đổi văn bản với công ty.',
+    description: 'Cơ quan, doanh nghiệp, cá nhân và đơn vị nội bộ trao đổi văn bản với công ty.',
     newPath: appRoutes.document.partnerNew,
     Catalog: DocumentPartnerCatalog,
   },
 ]
 
 /**
- * THIẾT LẬP VĂN BẢN — ba danh mục nền của phân hệ gom vào một trang nhiều tab.
+ * THIẾT LẬP VĂN BẢN — các danh mục nền và thư viện mẫu gom vào một trang nhiều tab.
  *
  * Trước đây mỗi danh mục một mục menu riêng: mấy dòng menu cho những thứ mà cả
  * năm người dùng động tới một lần lúc khai báo ban đầu, trong khi công việc hằng

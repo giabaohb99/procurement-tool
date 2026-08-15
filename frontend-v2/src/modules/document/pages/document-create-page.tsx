@@ -13,12 +13,10 @@ import { FormStepper } from '@/shared/ui/form-stepper'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { DocumentExtraInfoFields } from '../components/document-extra-info-fields'
-import {
-  DocumentMainInfoFields,
-  MAIN_INFO_FIELDS,
-} from '../components/document-main-info-fields'
+import { DocumentMainInfoFields, MAIN_INFO_FIELDS } from '../components/document-main-info-fields'
 import { emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
 import { useSaveDocument } from '../hooks/use-documents'
+import { useDocumentTemplate } from '../hooks/use-document-templates'
 import {
   documentRecordSchema,
   type DocumentRecordFormValues,
@@ -59,7 +57,9 @@ const LAST_STEP = STEPS.length - 1
 export function DocumentCreatePage() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
+  const [templateId, setTemplateId] = useState<number | null>(null)
   const save = useSaveDocument()
+  const selectedTemplate = useDocumentTemplate(templateId)
 
   const form = useForm<DocumentRecordFormValues>({
     resolver: zodResolver(documentRecordSchema),
@@ -85,8 +85,18 @@ export function DocumentCreatePage() {
       return
     }
 
+    if (templateId && !selectedTemplate.data) {
+      toast.error('Văn bản mẫu chưa tải xong. Vui lòng thử lại.')
+      return
+    }
+
     save.mutate(
-      { values: { ...formToPayload(values), content_html: '' } },
+      {
+        values: {
+          ...formToPayload(values),
+          content_html: selectedTemplate.data?.content_html ?? '',
+        },
+      },
       {
         onSuccess: (record) => {
           navigate(appRoutes.document.documentDetail(record.id), { replace: true })
@@ -121,16 +131,17 @@ export function DocumentCreatePage() {
               của bước kia bị hủy đăng ký khỏi form và mất dữ liệu vừa nhập. */}
           <div className={step === 0 ? undefined : 'hidden'}>
             <FormCard title="Thông tin chính" icon={Info} iconClassName="text-primary">
-              <DocumentMainInfoFields form={form} isNumbered={false} />
+              <DocumentMainInfoFields
+                form={form}
+                isNumbered={false}
+                templateId={templateId}
+                onTemplateChange={setTemplateId}
+              />
             </FormCard>
           </div>
 
           <div className={step === 1 ? undefined : 'hidden'}>
-            <FormCard
-              title="Thông tin bổ sung"
-              icon={Layers}
-              iconClassName="text-emerald-600"
-            >
+            <FormCard title="Thông tin bổ sung" icon={Layers} iconClassName="text-emerald-600">
               <DocumentExtraInfoFields form={form} />
             </FormCard>
           </div>
@@ -170,7 +181,11 @@ export function DocumentCreatePage() {
                   <ArrowRight className="size-4" />
                 </Button>
               ) : (
-                <Button key="submit" type="submit" disabled={save.isPending}>
+                <Button
+                  key="submit"
+                  type="submit"
+                  disabled={save.isPending || selectedTemplate.isFetching}
+                >
                   <PenLine className="size-4" />
                   Tạo và soạn thảo
                 </Button>

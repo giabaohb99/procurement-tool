@@ -1,15 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import {
-  Check,
-  FileText,
-  GitBranch,
-  Info,
-  Loader2,
-  Save,
-  Send,
-  Undo2,
-} from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { Check, FileText, GitBranch, Info, Loader2, Save, Send, Undo2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -19,12 +10,13 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { RichTextEditor } from '@/shared/ui/rich-text-editor'
+import { RichTextEditor, type RichTextEditorHandle } from '@/shared/ui/rich-text-editor'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentAccessCard } from '../components/document-access-card'
 import { DocumentAttachmentList } from '../components/document-attachment-list'
 import { DocumentAutosaveStatus } from '../components/document-autosave-status'
+import { DocumentImportButton } from '../components/document-import-button'
 import { DocumentRecordForm } from '../components/document-record-form'
 import { DocumentVersionBanner } from '../components/document-version-banner'
 import { DocumentVersionTab } from '../components/document-version-tab'
@@ -64,6 +56,7 @@ export function DocumentDetailPage() {
   const navigate = useNavigate()
   const { id } = useParams()
   const [tab, setTab] = useUrlParamState('tab', 'compose')
+  const editorRef = useRef<RichTextEditorHandle>(null)
 
   const documentId = Number(id)
   const { data: record, isLoading } = useDocument(documentId)
@@ -183,14 +176,19 @@ export function DocumentDetailPage() {
             </TabsList>
 
             {tab === 'compose' && canWrite && !isLocked && (
-              <Button type="button" onClick={autosave.saveNow} disabled={autosave.saving}>
-                {autosave.saving ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Save className="size-4" />
-                )}
-                Lưu nội dung
-              </Button>
+              <>
+                <DocumentImportButton
+                  onInsert={(html) => editorRef.current?.insertContent(html) ?? false}
+                />
+                <Button type="button" onClick={autosave.saveNow} disabled={autosave.saving}>
+                  {autosave.saving ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Save className="size-4" />
+                  )}
+                  Lưu nội dung
+                </Button>
+              </>
             )}
 
             {tab === 'info' && canWrite && (
@@ -261,6 +259,7 @@ export function DocumentDetailPage() {
               thảo để nó nạp đúng nội dung mới. */}
           {version && (
             <RichTextEditor
+              ref={editorRef}
               key={version.id}
               showOutline
               editable={canWrite && !isLocked}

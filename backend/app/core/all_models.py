@@ -38,3 +38,4 @@ from app.modules.document import model as _document  # noqa: F401
 from app.modules.document import version_model as _document_version  # noqa: F401
 from app.modules.document import request_model as _document_request  # noqa: F401
 from app.modules.document import access_model as _document_access  # noqa: F401
+from app.modules.document import template_model as _document_template  # noqa: F401

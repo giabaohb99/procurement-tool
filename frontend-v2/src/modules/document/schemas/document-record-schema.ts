@@ -3,8 +3,9 @@ import { z } from 'zod'
 /**
  * Ràng buộc form VĂN BẢN — **bộ trường chung C01, cố định, khai trong mã**.
  *
- * Bản 1 không có trường nhập động và không có tệp mẫu Word (quyết định 6 của
- * plan): mọi văn bản cùng một hình dạng thì mới tra cứu và báo cáo được.
+ * Bản 1 không có trường nhập động và không nhập tệp mẫu Word. Văn bản mẫu trên
+ * web chỉ cung cấp `content_html`; bộ trường chung vẫn cố định để tra cứu và
+ * báo cáo được.
  *
  * KHÔNG có ô số hiệu — số do backend cấp trong cùng giao dịch ghi bản ghi, form
  * chỉ hiện dòng xem trước (D08). Ô `legacy_code` là chuyện khác: đó là số của
@@ -21,10 +22,7 @@ export const documentRecordSchema = z
     //  Người chịu trách nhiệm NỘI DUNG — người trả lời khi có ai hỏi về văn bản
     //  này. Bắt buộc: văn bản không có ai chịu trách nhiệm thì ba tháng sau
     //  không biết hỏi ai.
-    owner_employee_id: z.coerce
-      .number()
-      .int()
-      .positive('Chọn người chịu trách nhiệm nội dung'),
+    owner_employee_id: z.coerce.number().int().positive('Chọn người chịu trách nhiệm nội dung'),
     drafter_employee_id: z.coerce.number().int().nullable(),
     signer_employee_id: z.coerce.number().int().nullable(),
 
@@ -42,9 +40,7 @@ export const documentRecordSchema = z
   // Khoảng hiệu lực ngược đầu là lỗi nhập liệu, không phải trường hợp hợp lệ.
   .refine(
     (values) =>
-      !values.effective_date ||
-      !values.expire_date ||
-      values.effective_date <= values.expire_date,
+      !values.effective_date || !values.expire_date || values.effective_date <= values.expire_date,
     { path: ['expire_date'], message: 'Ngày hết hiệu lực phải sau ngày bắt đầu' },
   )
 

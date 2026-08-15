@@ -23,6 +23,7 @@ import {
 } from './collapsible-toolbar-commands'
 import { ImageMenu } from './image-menu'
 import { LinkMenu } from './link-menu'
+import { TableBorderMenu } from './table-border-menu'
 import { TableMenu } from './table-menu'
 import { setCellBackground } from './table-commands'
 import { ColorPalette } from './color-palette'
@@ -84,10 +85,7 @@ export function EditorToolbar({
   )
 
   return (
-    <div
-      ref={ref}
-      className="flex flex-wrap items-center gap-0.5 border-b bg-muted/40 px-2 py-1.5"
-    >
+    <div ref={ref} className="flex flex-wrap items-center gap-0.5 border-b bg-muted/40 px-2 py-1.5">
       {/* Nút mục lục đứng đầu thanh, tách hẳn khỏi nhóm lệnh soạn thảo: nó đổi
           cách BÀY MÀN HÌNH chứ không đụng gì tới nội dung văn bản. */}
       {outlineOpen !== undefined && onToggleOutline && (
@@ -116,12 +114,7 @@ export function EditorToolbar({
       />
       <ToolbarDivider />
 
-      <ToolbarStyleSelects
-        editor={editor}
-        state={state}
-        zoom={zoom}
-        onZoomChange={onZoomChange}
-      />
+      <ToolbarStyleSelects editor={editor} state={state} zoom={zoom} onZoomChange={onZoomChange} />
       <ToolbarDivider />
 
       <ToolbarButton
@@ -207,18 +200,20 @@ export function EditorToolbar({
 
       <LinkMenu editor={editor} active={state.link} />
       <ImageMenu editor={editor} />
-      <TableMenu editor={editor} inTable={state.inTable} />
-      {/* Đổ màu ô là nút RIÊNG cạnh nút Bảng, không nằm trong menu Bảng: kẻ
-          xong bảng thì tô màu là việc bấm liên tục, mỗi lần phải mở menu rồi dò
-          xuống cuối là mất thêm hai nhịp. Chỉ hiện khi con trỏ ở trong bảng. */}
+      <TableMenu editor={editor} />
+      {/* Công cụ viền và màu nền chỉ có nghĩa khi con trỏ đang trong bảng. Các
+          lệnh thay đổi cấu trúc bảng nằm ở menu chuột phải ngay tại ô. */}
       {state.inTable && (
-        <ToolbarMenu icon={PaintBucket} label="Màu nền ô">
-          <ColorPalette
-            clearLabel="Bỏ màu nền"
-            onPick={(color) => setCellBackground(editor, color)}
-            onClear={() => setCellBackground(editor, null)}
-          />
-        </ToolbarMenu>
+        <>
+          <TableBorderMenu editor={editor} />
+          <ToolbarMenu icon={PaintBucket} label="Màu nền ô">
+            <ColorPalette
+              clearLabel="Bỏ màu nền"
+              onPick={(color) => setCellBackground(editor, color)}
+              onClear={() => setCellBackground(editor, null)}
+            />
+          </ToolbarMenu>
+        </>
       )}
       {inline('horizontalRule')}
 

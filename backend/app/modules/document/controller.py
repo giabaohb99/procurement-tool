@@ -19,17 +19,17 @@ vào hệ thống.
 """
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
-from app.core.auth import get_perm_profile, require
+from app.core.auth import get_current_user, get_perm_profile, require
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
 
-from . import access_service, numbering, serializer, service, version_service
+from . import access_service, import_service, numbering, serializer, service, version_service
 from .model import Document
 from .query import documents_query
 from .schema import (AccessGrant, AccessRevokeIn, DocumentCreate, DocumentUpdate,
@@ -130,6 +130,26 @@ def preview_number(
         "number_when": doc_type.number_when,
         "id_scheme": doc_type.id_scheme,
     })
+
+
+@router.post("/import/parse")
+def parse_import_file(
+    file: UploadFile = File(...),
+    user=Depends(get_current_user),
+):
+    """Đọc tệp trên máy người dùng, trả HTML để chèn tại con trỏ.
+
+    Đây là thao tác chuyển đổi không ghi dữ liệu, nhưng vẫn yêu cầu đăng nhập để
+    tránh biến API thành dịch vụ xử lý tệp công cộng.
+    """
+    del user
+    filename = (file.filename or "tai-lieu").rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
+    raw = file.file.read(import_service.MAX_FILE_SIZE + 1)
+    try:
+        parsed = import_service.parse_document_file(filename, raw)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return success(parsed, "Đã đọc tệp")
 
 
 @router.get("/{document_id}")

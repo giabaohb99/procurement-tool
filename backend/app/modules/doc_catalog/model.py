@@ -21,8 +21,9 @@ class DocType(Base, AuditMixin):
     mật mặc định, lúc nào cấp số, có phải kèm Quyết định ban hành không.
 
     Lệch so với `van-thu/04` mục 4.1:
-      - **Bỏ `template_id`** — bản 1 soạn thảo gõ thẳng trên web, không có tệp
-        mẫu Word (quyết định 6 của plan).
+      - **Không đặt một `template_id` duy nhất trên loại** — mỗi loại có thể có
+        nhiều mẫu soạn thẳng trên web ở `tab_document_template`, không dùng tệp
+        mẫu Word.
       - **Thêm `needs_approval` và `needs_signature`** — hai cờ này tài liệu để
         ngầm trong `default_flow_id` và bảng `tab_signature`, nhưng bộ máy duyệt
         chưa làm, mà màn hình đang cần khai "loại này có phải duyệt / ký không".

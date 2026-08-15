@@ -1,10 +1,4 @@
-import {
-  BookMarked,
-  FileText,
-  Files,
-  LayoutDashboard,
-  SlidersHorizontal,
-} from 'lucide-react'
+import { BookMarked, FileText, Files, LayoutDashboard, SlidersHorizontal } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -53,7 +47,7 @@ export const documentModule: ErpModule = {
       entity: 'document_book',
       group: 'Nghiệp vụ',
     },
-    // Ba danh mục nền gom vào MỘT mục menu: chúng chỉ được đụng tới lúc khai
+    // Các danh mục nền gom vào MỘT mục menu: chúng chỉ được đụng tới lúc khai
     // báo ban đầu, để mỗi cái một dòng thì menu dài hơn cả phần việc hằng ngày.
     {
       label: 'Thiết lập văn bản',
@@ -100,15 +94,13 @@ export const documentModule: ErpModule = {
     {
       path: appRoutes.document.bookNew,
       lazy: async () => ({
-        Component: (await import('./pages/document-book-detail-page'))
-          .DocumentBookDetailPage,
+        Component: (await import('./pages/document-book-detail-page')).DocumentBookDetailPage,
       }),
     },
     {
       path: appRoutes.document.bookDetail(':id'),
       lazy: async () => ({
-        Component: (await import('./pages/document-book-detail-page'))
-          .DocumentBookDetailPage,
+        Component: (await import('./pages/document-book-detail-page')).DocumentBookDetailPage,
       }),
     },
     {
@@ -120,29 +112,39 @@ export const documentModule: ErpModule = {
     {
       path: appRoutes.document.typeNew,
       lazy: async () => ({
-        Component: (await import('./pages/document-type-detail-page'))
-          .DocumentTypeDetailPage,
+        Component: (await import('./pages/document-type-detail-page')).DocumentTypeDetailPage,
       }),
     },
     {
       path: appRoutes.document.typeDetail(':id'),
       lazy: async () => ({
-        Component: (await import('./pages/document-type-detail-page'))
-          .DocumentTypeDetailPage,
+        Component: (await import('./pages/document-type-detail-page')).DocumentTypeDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.document.templateNew,
+      lazy: async () => ({
+        Component: (await import('./pages/document-template-detail-page'))
+          .DocumentTemplateDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.document.templateDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/document-template-detail-page'))
+          .DocumentTemplateDetailPage,
       }),
     },
     {
       path: appRoutes.document.partnerNew,
       lazy: async () => ({
-        Component: (await import('./pages/document-partner-detail-page'))
-          .DocumentPartnerDetailPage,
+        Component: (await import('./pages/document-partner-detail-page')).DocumentPartnerDetailPage,
       }),
     },
     {
       path: appRoutes.document.partnerDetail(':id'),
       lazy: async () => ({
-        Component: (await import('./pages/document-partner-detail-page'))
-          .DocumentPartnerDetailPage,
+        Component: (await import('./pages/document-partner-detail-page')).DocumentPartnerDetailPage,
       }),
     },
   ],

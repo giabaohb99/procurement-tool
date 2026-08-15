@@ -12,14 +12,9 @@ import {
   FormMessage,
 } from '@/shared/ui/form'
 import { Input } from '@/shared/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { useDocumentBooks } from '../hooks/use-document-books'
+import { useActiveDocumentTemplates } from '../hooks/use-document-templates'
 import { useActiveDocumentTypes } from '../hooks/use-document-types'
 import { useNumberPreview } from '../hooks/use-documents'
 import type { DocumentRecordFormValues } from '../schemas/document-record-schema'
@@ -44,6 +39,9 @@ interface DocumentMainInfoFieldsProps {
   isNumbered: boolean
   /** Bỏ chính văn bản đang sửa ra khỏi khối gợi ý "đã có văn bản cùng loại". */
   excludeId?: number
+  /** Chỉ trang tạo mới truyền hai props này để hiện ô chọn nội dung mẫu. */
+  templateId?: number | null
+  onTemplateChange?: (templateId: number | null) => void
 }
 
 function Required() {
@@ -65,6 +63,8 @@ export function DocumentMainInfoFields({
   form,
   isNumbered,
   excludeId,
+  templateId,
+  onTemplateChange,
 }: DocumentMainInfoFieldsProps) {
   const documentTypes = useActiveDocumentTypes()
   const { data: companies } = useCompanies({ page_size: 200, is_active: true })
@@ -75,6 +75,7 @@ export function DocumentMainInfoFields({
   const docTypeId = form.watch('doc_type_id')
   const companyId = form.watch('company_id')
   const departmentId = form.watch('department_id')
+  const templates = useActiveDocumentTemplates(docTypeId, Boolean(onTemplateChange))
 
   const { data: preview } = useNumberPreview({
     doc_type_id: docTypeId,
@@ -91,6 +92,8 @@ export function DocumentMainInfoFields({
     form.setValue('doc_type_id', id, { shouldValidate: true })
     const picked = documentTypes.find((item) => item.id === id)
     if (picked) form.setValue('secrecy_level', picked.default_secrecy)
+    // Mẫu luôn thuộc một loại cụ thể. Đổi loại thì lựa chọn cũ không còn hợp lệ.
+    onTemplateChange?.(null)
   }
 
   return (
@@ -131,6 +134,40 @@ export function DocumentMainInfoFields({
           </FormItem>
         )}
       />
+
+      {onTemplateChange && (
+        <FormItem>
+          <FormLabel>Văn bản mẫu</FormLabel>
+          <Select
+            value={templateId ? String(templateId) : NONE}
+            onValueChange={(value) => onTemplateChange(value === NONE ? null : Number(value))}
+            disabled={!docTypeId || templates.isLoading}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue
+                placeholder={docTypeId ? 'Chọn văn bản mẫu' : 'Chọn loại văn bản trước'}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NONE}>-- Không dùng văn bản mẫu --</SelectItem>
+              {templates.items.map((template) => (
+                <SelectItem key={template.id} value={String(template.id)}>
+                  {template.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormDescription>
+            {!docTypeId
+              ? 'Danh sách mẫu được lọc theo loại văn bản.'
+              : templates.isError
+                ? 'Không tải được danh sách văn bản mẫu.'
+                : templates.items.length === 0 && !templates.isLoading
+                  ? 'Loại văn bản này chưa có mẫu đang sử dụng.'
+                  : 'Nội dung mẫu sẽ được chép vào trang soạn thảo sau khi tạo.'}
+          </FormDescription>
+        </FormItem>
+      )}
 
       <FormField
         control={form.control}
@@ -177,9 +214,7 @@ export function DocumentMainInfoFields({
             <FormLabel>Phòng chủ trì</FormLabel>
             <Select
               value={field.value ? String(field.value) : NONE}
-              onValueChange={(value) =>
-                field.onChange(value === NONE ? null : Number(value))
-              }
+              onValueChange={(value) => field.onChange(value === NONE ? null : Number(value))}
             >
               <FormControl>
                 <SelectTrigger className="w-full">
@@ -208,9 +243,7 @@ export function DocumentMainInfoFields({
             <FormLabel>Vào sổ</FormLabel>
             <Select
               value={field.value ? String(field.value) : NONE}
-              onValueChange={(value) =>
-                field.onChange(value === NONE ? null : Number(value))
-              }
+              onValueChange={(value) => field.onChange(value === NONE ? null : Number(value))}
             >
               <FormControl>
                 <SelectTrigger className="w-full">
@@ -310,9 +343,7 @@ export function DocumentMainInfoFields({
             <FormLabel>Người soạn</FormLabel>
             <Select
               value={field.value ? String(field.value) : NONE}
-              onValueChange={(value) =>
-                field.onChange(value === NONE ? null : Number(value))
-              }
+              onValueChange={(value) => field.onChange(value === NONE ? null : Number(value))}
             >
               <FormControl>
                 <SelectTrigger className="w-full">

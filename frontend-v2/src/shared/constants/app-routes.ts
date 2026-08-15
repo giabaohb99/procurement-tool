@@ -21,8 +21,7 @@ export const appRoutes = {
     /** Yêu cầu mua hàng (PYC). */
     purchaseRequests: '/procurement/purchase-requests',
     purchaseRequestNew: '/procurement/purchase-requests/new',
-    purchaseRequestDetail: (id: number | string) =>
-      `/procurement/purchase-requests/${id}`,
+    purchaseRequestDetail: (id: number | string) => `/procurement/purchase-requests/${id}`,
     purchaseRequestPrint: (id: number | string) => `/print/purchase-request/${id}`,
     /** Đơn mua hàng (ĐMH). */
     purchaseOrders: '/procurement/purchase-orders',
@@ -56,15 +55,18 @@ export const appRoutes = {
     bookNew: '/document/books/new',
     bookDetail: (id: number | string) => `/document/books/${id}`,
     /**
-     * Thiết lập văn bản — ba danh mục nền (loại văn bản, mức mật/khẩn, đơn vị
-     * gửi nhận) nằm chung một trang, phân biệt bằng `?tab=`.
+     * Thiết lập văn bản - các danh mục nền và thư viện mẫu nằm chung một trang,
+     * phân biệt bằng `?tab=`.
      */
     settings: '/document/settings',
-    settingsTab: (tab: 'types' | 'security-levels' | 'partners') =>
+    settingsTab: (tab: 'types' | 'templates' | 'security-levels' | 'partners') =>
       `/document/settings?tab=${tab}`,
     /** Loại văn bản (công văn, quyết định…). */
     typeNew: '/document/types/new',
     typeDetail: (id: number | string) => `/document/types/${id}`,
+    /** Thư viện nội dung mẫu dùng khi tạo văn bản. */
+    templateNew: '/document/templates/new',
+    templateDetail: (id: number | string) => `/document/templates/${id}`,
     /** Đơn vị gửi nhận bên ngoài. */
     partnerNew: '/document/partners/new',
     partnerDetail: (id: number | string) => `/document/partners/${id}`,
