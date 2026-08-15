@@ -23,17 +23,28 @@ const ACCEPT = [
 interface ImportedDocument {
   filename: string
   content_html: string
+  structural_nodes: number
 }
 
 interface DocumentImportButtonProps {
   /** Trả false nếu editor chưa sẵn sàng để nhận nội dung. */
-  onInsert: (html: string) => boolean
+  onInsert: (html: string) => Promise<boolean>
+}
+
+type ImportPhase = 'idle' | 'uploading' | 'inserting'
+
+/** Đợi React commit nhãn tiến trình và trình duyệt vẽ nó lên màn hình. */
+function afterPaint() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+  })
 }
 
 /** Hành động đầu trang: tải tài liệu, chuyển đổi rồi chèn tại vị trí con trỏ. */
 export function DocumentImportButton({ onInsert }: DocumentImportButtonProps) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const [loading, setLoading] = useState(false)
+  const [phase, setPhase] = useState<ImportPhase>('idle')
+  const loading = phase !== 'idle'
 
   async function importFile(file: File) {
     const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
@@ -48,22 +59,28 @@ export function DocumentImportButton({ onInsert }: DocumentImportButtonProps) {
 
     const form = new FormData()
     form.append('file', file)
-    setLoading(true)
+    let converted = false
+    setPhase('uploading')
     try {
       const imported = await apiPost<ImportedDocument>('/api/documents/import/parse', form)
+      converted = true
       if (!imported.content_html.trim()) {
         toast.error('Không tìm thấy nội dung có thể chèn trong tệp')
         return
       }
-      if (!onInsert(imported.content_html)) {
+      setPhase('inserting')
+      await afterPaint()
+      if (!(await onInsert(imported.content_html))) {
         toast.error('Trình soạn thảo chưa sẵn sàng, vui lòng thử lại')
         return
       }
       toast.success(`Đã chèn nội dung từ ${imported.filename}`)
     } catch {
-      // Interceptor API đã hiển thị đúng thông báo lỗi từ backend.
+      // Lỗi API đã được interceptor hiển thị. Lỗi sau khi API chuyển đổi xong
+      // là lỗi phía editor, cần báo riêng thay vì nuốt im lặng.
+      if (converted) toast.error('Không thể chèn nội dung vào trình soạn thảo')
     } finally {
-      setLoading(false)
+      setPhase('idle')
     }
   }
 
@@ -73,17 +90,19 @@ export function DocumentImportButton({ onInsert }: DocumentImportButtonProps) {
         type="button"
         variant="outline"
         title="Nhận Word (.doc, .docx), Markdown và HTML"
+        aria-busy={loading}
         disabled={loading}
         onClick={() => inputRef.current?.click()}
       >
         {loading ? <Loader2 className="size-4 animate-spin" /> : <FileUp className="size-4" />}
-        {loading ? 'Đang nhập…' : 'Nhập tệp'}
+        {phase === 'uploading' ? 'Đang tải…' : phase === 'inserting' ? 'Đang chèn…' : 'Nhập tệp'}
       </Button>
       <input
         ref={inputRef}
         hidden
         type="file"
         accept={ACCEPT}
+        disabled={loading}
         onChange={(event) => {
           const file = event.target.files?.[0]
           if (file) void importFile(file)

@@ -178,7 +178,9 @@ export function DocumentDetailPage() {
             {tab === 'compose' && canWrite && !isLocked && (
               <>
                 <DocumentImportButton
-                  onInsert={(html) => editorRef.current?.insertContent(html) ?? false}
+                  onInsert={(html) =>
+                    editorRef.current?.insertContent(html) ?? Promise.resolve(false)
+                  }
                 />
                 <Button type="button" onClick={autosave.saveNow} disabled={autosave.saving}>
                   {autosave.saving ? (

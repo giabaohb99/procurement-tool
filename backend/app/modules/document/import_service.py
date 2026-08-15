@@ -21,6 +21,12 @@ import markdown
 from app.modules.help_center.import_service import sanitize_html
 
 MAX_FILE_SIZE = 10 * 1024 * 1024
+# Trình soạn thảo có phân trang theo kích thước DOM thật. Cho một tài liệu vô
+# hạn node đi qua thì trình duyệt phải đo hàng trăm trang trong một lượt và có
+# thể khóa tab. Giới hạn theo NỘI DUNG SAU CHUYỂN ĐỔI (không chỉ dung lượng file,
+# vì DOCX nén rất nhỏ nhưng bung ra có thể cực lớn).
+MAX_CONTENT_SIZE = 2 * 1024 * 1024
+MAX_STRUCTURAL_NODES = 12_000
 TEXT_EXTS = {"html", "htm", "md", "markdown"}
 WORD_EXTS = {"doc", "docx"}
 ALLOWED_EXTS = TEXT_EXTS | WORD_EXTS
@@ -187,4 +193,26 @@ def parse_document_file(filename: str, raw: bytes) -> dict:
 
     if not re.sub(r"<[^>]+>", "", content).strip() and "<table" not in content:
         raise ValueError("Không tìm thấy nội dung có thể chèn trong tệp")
-    return {"filename": filename, "content_html": content}
+
+    # Đếm những node tác động trực tiếp tới bố cục/pagination. Đây là ngưỡng
+    # bảo vệ UX, không phải giới hạn nghiệp vụ; ảnh base64 làm HTML dài nhưng
+    # chỉ là một node nên cần kiểm tra riêng cả kích thước lẫn số node.
+    structural_nodes = len(re.findall(
+        r"<(?:p|h[1-6]|li|tr|br|img|blockquote|pre)\b",
+        content,
+        re.I,
+    ))
+    if (
+        len(content.encode("utf-8")) > MAX_CONTENT_SIZE
+        or structural_nodes > MAX_STRUCTURAL_NODES
+    ):
+        raise ValueError(
+            "Tài liệu quá lớn để soạn trực tuyến. Vui lòng chia thành tệp nhỏ hơn "
+            "(tối đa khoảng 12.000 dòng/khối nội dung)."
+        )
+
+    return {
+        "filename": filename,
+        "content_html": content,
+        "structural_nodes": structural_nodes,
+    }

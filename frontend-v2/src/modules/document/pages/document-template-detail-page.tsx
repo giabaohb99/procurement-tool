@@ -97,7 +97,9 @@ export function DocumentTemplateDetailPage() {
 
             {tab === 'compose' && (
               <DocumentImportButton
-                onInsert={(html) => editorRef.current?.insertContent(html) ?? false}
+                onInsert={(html) =>
+                  editorRef.current?.insertContent(html) ?? Promise.resolve(false)
+                }
               />
             )}
 

@@ -4,9 +4,16 @@ import { Superscript } from '@tiptap/extension-superscript'
 import { TableKit } from '@tiptap/extension-table'
 import { TextAlign } from '@tiptap/extension-text-align'
 import { TextStyleKit } from '@tiptap/extension-text-style'
-import { EditorContent, useEditor } from '@tiptap/react'
+import { EditorContent, useEditor, type Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import { forwardRef, useImperativeHandle, useState, type CSSProperties } from 'react'
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react'
 import { PaginationPlus } from 'tiptap-pagination-plus'
 
 import { cn } from '@/shared/utils/cn'
@@ -48,9 +55,25 @@ interface RichTextEditorProps {
 }
 
 export interface RichTextEditorHandle {
-  /** Chèn HTML tại vị trí con trỏ hiện tại; trả false khi editor chưa sẵn sàng. */
-  insertContent: (html: string) => boolean
+  /** Chèn HTML tại con trỏ theo chế độ tối ưu cho tài liệu lớn. */
+  insertContent: (html: string) => Promise<boolean>
 }
+
+/** Chờ trình duyệt vẽ xong ít nhất một khung hình trước khi làm việc nặng. */
+function afterPaint() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+  })
+}
+
+/**
+ * Gõ ngừng bao lâu (ms) thì mới chốt nội dung ra HTML.
+ *
+ * `getHTML()` duyệt lại TOÀN BỘ cây tài liệu; với văn bản nhập từ tệp Word dài,
+ * làm việc đó ở mỗi phím gõ là đủ để chữ hiện ra chậm hơn tay. Mốc này ngắn hơn
+ * nhiều so với nhịp tự động lưu (1,5 giây) nên không làm chậm việc lưu.
+ */
+const SERIALIZE_DELAY = 250
 
 /**
  * Trình soạn thảo văn bản kiểu Word: thanh công cụ trên, TRANG GIẤY TRẮNG ở
@@ -75,6 +98,37 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
     // Cột mục lục: đóng/mở và bề ngang do người dùng chỉnh, giữ trong phiên soạn.
     const [outlineOpen, setOutlineOpen] = useState(true)
     const [outlineWidth, setOutlineWidth] = useState(224)
+    // Khi nhập file lớn, transaction chèn sẽ phát `onUpdate`. Không serialize
+    // ở đó vì phía dưới còn bật lại pagination; chốt HTML đúng một lần sau khi
+    // chèn xong để tránh duyệt cả cây tài liệu hai lần liên tiếp.
+    const importingRef = useRef(false)
+
+    // Giữ hàm báo thay đổi trong ref: `onUpdate` của Tiptap đóng băng closure
+    // từ lần dựng đầu, còn hàm này thì trang cha có thể dựng lại.
+    const changeRef = useRef(onChange)
+    changeRef.current = onChange
+    const serializeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    function cancelSerialize() {
+      if (serializeTimer.current === null) return false
+      clearTimeout(serializeTimer.current)
+      serializeTimer.current = null
+      return true
+    }
+
+    /** Hẹn chốt HTML sau khi người dùng ngừng gõ — xem `SERIALIZE_DELAY`. */
+    function scheduleChange(instance: Editor) {
+      cancelSerialize()
+      serializeTimer.current = setTimeout(() => {
+        serializeTimer.current = null
+        if (!instance.isDestroyed) changeRef.current(instance.getHTML())
+      }, SERIALIZE_DELAY)
+    }
+
+    /** Chốt ngay lượt đang chờ: bấm ra ngoài (kể cả bấm nút Lưu) hoặc rời trang. */
+    function flushChange(instance: Editor) {
+      if (cancelSerialize() && !instance.isDestroyed) changeRef.current(instance.getHTML())
+    }
 
     const editor = useEditor({
       extensions: [
@@ -133,7 +187,13 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       ],
       content: defaultContent,
       editable,
-      onUpdate: ({ editor: instance }) => onChange(instance.getHTML()),
+      onUpdate: ({ editor: instance }) => {
+        if (!importingRef.current) scheduleChange(instance)
+      },
+      // Bấm ra khỏi trang giấy (nút Lưu, một tab khác, ô nhập khác) là chốt
+      // ngay: `blur` bắn trước `click`, nên nút Lưu luôn nhận đúng nội dung vừa
+      // gõ dù lượt hẹn ở trên chưa tới hạn.
+      onBlur: ({ editor: instance }) => flushChange(instance),
       editorProps: {
         attributes: {
           // `doc-page` = khổ A4 và kiểu chữ của thân văn bản, khai ở `index.css`.
@@ -145,11 +205,70 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
     useImperativeHandle(
       ref,
       () => ({
-        insertContent: (html) =>
-          editor ? editor.chain().focus().insertContent(html).scrollIntoView().run() : false,
+        insertContent: async (html) => {
+          if (!editor || editor.isDestroyed) return false
+
+          const paginationEnabled = editor.storage.PaginationPlus.enabled
+          importingRef.current = true
+          try {
+            // PaginationPlus đo DOM và dựng page-break ngay trong mỗi
+            // transaction. Tắt nó trước khi chèn để phần parse + insert chỉ là
+            // MỘT transaction nhẹ, sau đó mới đo trang một lần trên tài liệu đã
+            // ổn định. Hai lần `afterPaint` giữ spinner/UI thật sự chuyển động.
+            if (paginationEnabled) {
+              editor.commands.disablePagination()
+              await afterPaint()
+            }
+
+            // Người dùng có thể bấm Quay lại trong lúc file đang được API xử
+            // lý; editor đã hủy thì dừng êm thay vì gọi command vào view cũ.
+            if (editor.isDestroyed) return false
+
+            const inserted = editor.chain().focus().insertContent(html).run()
+            if (!inserted) return false
+
+            await afterPaint()
+            if (editor.isDestroyed) return false
+            // Lượt hẹn của phím gõ trước đó (nếu có) coi như xong: nội dung
+            // dưới đây đã bao gồm cả phần vừa chèn.
+            cancelSerialize()
+            changeRef.current(editor.getHTML())
+
+            if (paginationEnabled) {
+              await afterPaint()
+              editor.commands.enablePagination()
+              await afterPaint()
+            }
+            editor.view.focus()
+            return true
+          } finally {
+            importingRef.current = false
+            // Kể cả parser/transaction lỗi cũng không để editor mắc kẹt ở chế
+            // độ không phân trang.
+            if (
+              paginationEnabled &&
+              !editor.isDestroyed &&
+              !editor.storage.PaginationPlus.enabled
+            ) {
+              editor.commands.enablePagination()
+            }
+          }
+        },
       }),
       [editor],
     )
+
+    // Rời trang bằng bàn phím hay điều hướng trong mã thì không có `blur` —
+    // chốt nốt lượt đang chờ trước khi trình soạn thảo bị gỡ.
+    useEffect(() => {
+      if (!editor) return
+      return () => {
+        if (serializeTimer.current === null) return
+        clearTimeout(serializeTimer.current)
+        serializeTimer.current = null
+        if (!editor.isDestroyed) changeRef.current(editor.getHTML())
+      }
+    }, [editor])
 
     if (!editor) return null
 
