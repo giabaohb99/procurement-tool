@@ -35,29 +35,6 @@ def get_company(cid: int, db: Session = Depends(get_db), user=Depends(require("c
     return success(CompanyOut.model_validate(service.get_company(db, cid)).model_dump())
 
 
-@router.post("/{cid}/logo")
-def update_company_logo(cid: int, file: UploadFile = File(...), db: Session = Depends(get_db),
-                        user=Depends(require("company", "write"))):
-    """Đổi logo / ảnh đại diện của pháp nhân. Lưu URL vào tab_company.logo."""
-    import uuid
-
-    from fastapi import HTTPException
-
-    from app.core.audit import record as audit_record
-    from app.core.storage import env_prefix, safe_name, upload_fileobj
-
-    obj = service.get_company(db, cid)
-    try:
-        key = f"{env_prefix()}/company-logo/{cid}/{uuid.uuid4().hex[:12]}-{safe_name(file.filename or 'logo')}"
-        url = upload_fileobj(file.file, key, file.content_type or "")
-    except Exception as e:
-        raise HTTPException(400, f"Lỗi tải ảnh: {str(e)}")
-    obj.logo = url
-    db.commit()
-    audit_record(db, user.id, "company", cid, "update", f"Đổi logo công ty {obj.code}")
-    return success({"logo": url}, "Đã cập nhật logo")
-
-
 @router.post("")
 def create_company(
     data: CompanyCreate, db: Session = Depends(get_db), user=Depends(require("company", "create"))

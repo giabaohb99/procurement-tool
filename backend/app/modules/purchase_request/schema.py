@@ -36,6 +36,7 @@ class PRCreate(BaseModel):
     requester_position: str = ""
     department: str = ""
     head_of_dept: str = ""
+    head_of_dept_id: int = 0      # CR-071: id nhân sự TBP đứng tên trên phiếu (0 = theo mặc định phòng)
     purpose: str = ""
     request_date: str = ""
     need_date: str = ""
@@ -60,6 +61,7 @@ class PRUpdate(BaseModel):
     requester_position: str | None = None
     department: str | None = None
     head_of_dept: str | None = None
+    head_of_dept_id: int | None = None    # CR-071
     purpose: str | None = None
     request_date: str | None = None
     need_date: str | None = None

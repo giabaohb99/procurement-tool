@@ -17,7 +17,12 @@ class PurchaseRequest(Base, AuditMixin):
     requester_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)   # id nhân sự người yêu cầu (để so scope)
     requester_position: Mapped[str] = mapped_column(String(100), default="")  # chức vụ
     department: Mapped[str] = mapped_column(String(255), default="")       # phòng ban/thương hiệu
-    head_of_dept: Mapped[str] = mapped_column(String(255), default="")     # trưởng bộ phận
+    head_of_dept: Mapped[str] = mapped_column(String(255), default="")     # trưởng bộ phận (TÊN — dùng để in)
+    # CR-071: TBP trên phiếu CHỌN được (phòng có phó phòng / quyền trưởng phòng cùng ký), neo
+    # bằng id nhân sự chứ không bằng tên. Ô này CHỈ để lưu + in, KHÔNG khóa quyền duyệt của ai.
+    # Cột `head_of_dept` ở trên GIỮ LẠI làm bản chụp tên lúc lập phiếu (phiếu cũ không có id).
+    # NỢ KỸ THUẬT: `department` cũng đang là chuỗi tên — xem doc/tai-lieu-ky-thuat/change-log.md (N-006).
+    head_of_dept_id: Mapped[int] = mapped_column(BigInteger, default=0)    # id NHÂN SỰ (tab_employee)
     purpose: Mapped[str] = mapped_column(String(255), default="")          # mục đích mua hàng
     request_date: Mapped[str] = mapped_column(String(10), default="")      # ngày tạo (YYYY-MM-DD)
     need_date: Mapped[str] = mapped_column(String(10), default="")         # ngày cần hàng

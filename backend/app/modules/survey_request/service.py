@@ -627,7 +627,8 @@ def create_prs(db: Session, sid: int, user_id: int):
     from app.modules.purchase_request.model import (PurchaseRequest,
                                                     PurchaseRequestItem)
     from app.modules.purchase_request.service import (apply_supplier_info,
-                                                     find_dept_head)
+                                                     find_dept_head,
+                                                     find_dept_head_id)
     from app.modules.supplier.model import Supplier
     s = get_sr(db, sid)
     # Cho tạo YCMH khi: Đang xử lý (mua trước dòng đã khảo sát xong), Đã khảo sát, Đã tạo YCMH, Hoàn thành.
@@ -664,6 +665,9 @@ def create_prs(db: Session, sid: int, user_id: int):
             requester_id=s.requester_id,
             requester_position=s.requester_position, department=s.department,
             head_of_dept=s.head_of_dept or find_dept_head(db, s.department or ""),
+            # CR-071: YCBG chưa lưu id TBP (vẫn là chuỗi) nên suy lại từ phòng ban —
+            # 0 = không chỉ định ai, phiếu chạy theo luật duyệt cũ.
+            head_of_dept_id=find_dept_head_id(db, s.department or ""),
             purpose=s.purpose, request_date=today, status="draft",
             note=f"Sinh tự động từ Yêu cầu báo giá {s.code}",
             suggested_supplier=first_opt.supplier_name or "",

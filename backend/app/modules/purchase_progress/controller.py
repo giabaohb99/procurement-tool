@@ -2,8 +2,16 @@
 
 Nguồn: join tab_purchase_order -> tab_po_item -> tab_po_delivery, hiển thị theo LẦN GIAO.
 Quyền: cho phép nếu có `purchase_order.read` HOẶC `purchase_request.read`
-(phòng yêu cầu thường chỉ có cái sau). Che cột NCC + khối vận chuyển với người
-không có `purchase_order.read`.
+(phòng yêu cầu thường chỉ có cái sau).
+
+**Hai quyền RỜI nhau, đừng gộp lại** (bản vá CR-071):
+- `purchase_order.read` quyết định PHẠM VI dữ liệu — thấy mọi ĐMH theo scope của mình,
+  hay chỉ những ĐMH sinh từ YCMH của phòng mình;
+- `supplier.read` quyết định CỘT NCC + khối vận chuyển hiện hay bị che.
+
+Trước đây cả hai cùng đọc `purchase_order.read`, nên vai trò Trưởng phòng (được cấp
+`supplier.read` phạm vi "Tất cả" nhưng không có quyền nào trên ĐMH) vẫn bị xóa trắng cột
+Nhà cung cấp cả trên bảng lẫn file Excel.
 
 Bản 1: CHỈ dùng cột đã có trong DB. Các cột theo Mapping còn thiếu master
 (product.legal_name...) để bản 2 bổ sung migration — xem
@@ -24,7 +32,7 @@ from . import export as ex
 
 router = APIRouter(prefix="/api/purchase-progress", tags=["purchase_progress"])
 
-# Cột nhạy cảm — ẩn với người chỉ có purchase_request.read (phòng yêu cầu)
+# Cột nhạy cảm — ẩn với người không có `supplier.read`
 _SUPPLIER_HIDDEN = ex.SUPPLIER_HIDDEN_KEYS
 
 
@@ -75,7 +83,17 @@ def _require_progress(user=Depends(get_current_user), db: Session = Depends(get_
 _row = ex.row_values
 
 
-def _build_query(request: Request, db: Session, user, prof: dict, show_supplier: bool):
+def _po_scope(db: Session, user) -> bool:
+    """Có `purchase_order.read` = đi theo phạm vi ĐMH của mình; không có = chỉ ĐMH sinh từ YCMH."""
+    return user_has_permission(db, user, "purchase_order", "read")
+
+
+def _show_supplier(db: Session, user) -> bool:
+    """Cột NCC + khối vận chuyển đi theo quyền `supplier.read`, KHÔNG theo quyền ĐMH."""
+    return user_has_permission(db, user, "supplier", "read")
+
+
+def _build_query(request: Request, db: Session, user, prof: dict, po_scope: bool):
     """Bộ lọc + phạm vi + sắp xếp của màn Tiến độ — dùng chung cho danh sách và xuất Excel (CR-068),
     để file xuất luôn khớp đúng những gì đang bày trên bảng."""
     q = (db.query(PurchaseOrder, POItem, PODelivery)
@@ -142,7 +160,7 @@ def _build_query(request: Request, db: Session, user, prof: dict, show_supplier:
         q = q.filter(recv_sum <= rmax)
 
     # ----- Phạm vi dữ liệu -----
-    if show_supplier:
+    if po_scope:
         q = apply_scope(q, PurchaseOrder, "purchase_order", user, prof)
     else:
         # Phòng yêu cầu (chỉ purchase_request.read) → chỉ thấy ĐMH LIÊN KẾT với PYC
@@ -167,9 +185,8 @@ def _build_query(request: Request, db: Session, user, prof: dict, show_supplier:
 def list_progress(request: Request, pg: dict = Depends(pagination),
                   db: Session = Depends(get_db), user=Depends(_require_progress)):
     prof = get_perm_profile(db, user)
-    # Chỉ phòng thu mua (có purchase_order.read) mới thấy NCC + chi phí vận chuyển
-    show_supplier = user_has_permission(db, user, "purchase_order", "read")
-    q = _build_query(request, db, user, prof, show_supplier)
+    show_supplier = _show_supplier(db, user)
+    q = _build_query(request, db, user, prof, _po_scope(db, user))
     total = q.count()
     rows = q.offset(pg["offset"]).limit(pg["limit"]).all()
     # STT liên tục theo trang
@@ -199,8 +216,8 @@ def export_xlsx(request: Request, cols: str = "", db: Session = Depends(get_db),
     from . import export as ex
 
     prof = get_perm_profile(db, user)
-    show_supplier = user_has_permission(db, user, "purchase_order", "read")
-    q = _build_query(request, db, user, prof, show_supplier)
+    show_supplier = _show_supplier(db, user)
+    q = _build_query(request, db, user, prof, _po_scope(db, user))
     check_row_limit(q.count())
     company_name = {c.id: c.name for c in db.query(Company).all()}
     rows = []

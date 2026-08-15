@@ -1,0 +1,56 @@
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+
+import { ChartTooltipContent, type ChartDatum } from './chart'
+
+interface ColumnChartProps {
+  data: ChartDatum[]
+  height?: number
+  /** Đơn vị trong tooltip, vd "đ". */
+  unit?: string
+  /** Rút gọn số trên trục Y và trong tooltip (vd 286.000.000 -> "286 tr"). */
+  formatValue?: (value: number) => string
+  color?: string
+}
+
+/**
+ * Biểu đồ CỘT DỌC theo thời gian (12 tháng, 4 quý…). Trục X là mốc thời gian
+ * nên phải giữ đủ mọi mốc kể cả tháng chưa phát sinh — cột 0 cũng là thông tin.
+ *
+ * Khác `HorizontalBarChart` (so sánh giữa các hạng mục, nhãn dài, sắp theo độ
+ * lớn): ở đây thứ tự cột là thứ tự thời gian, không được sắp lại.
+ */
+export function ColumnChart({
+  data,
+  height = 280,
+  unit,
+  formatValue,
+  color = 'var(--chart-1)',
+}: ColumnChartProps) {
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+        {/* Chỉ kẻ ngang: vạch dọc giữa các tháng không giúp đọc giá trị. */}
+        <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
+        <XAxis
+          dataKey="label"
+          tickLine={false}
+          axisLine={false}
+          tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+        />
+        <YAxis
+          width="auto"
+          tickLine={false}
+          axisLine={false}
+          tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+          tickFormatter={(value: number) => formatValue?.(value) ?? String(value)}
+        />
+        <Tooltip
+          cursor={{ fill: 'var(--accent)' }}
+          wrapperStyle={{ outline: 'none' }}
+          content={<ChartTooltipContent unit={unit} formatValue={formatValue} />}
+        />
+        <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]} maxBarSize={36} />
+      </BarChart>
+    </ResponsiveContainer>
+  )
+}

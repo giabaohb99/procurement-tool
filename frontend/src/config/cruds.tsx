@@ -6,7 +6,6 @@ import ProductImages from '../components/ProductImages'
 import PurchaseHistoryTable from '../components/PurchaseHistoryTable'
 import EmployeeAccountCard from '../components/employee-account-card'
 import EmployeeAvatar from '../components/employee-avatar'
-import CompanyLogo from '../components/company-logo'
 import WarehousePurchaseLines from '../components/warehouse-purchase-lines'
 import { fmtDateStr, fmtDateTime } from '../utils/datetime'
 import { fmtVND } from '../utils/money'
@@ -178,9 +177,7 @@ export const docStatusBadge = (st: string) => {
 export const cruds: Record<string, CrudConfig> = {
   companies: {
     slug: 'companies', entity: 'company', title: 'Công ty', apiPath: '/api/companies', importExport: true,
-    detailHeader: (row) => (
-      <CompanyLogo companyId={row.id} code={row.code} name={row.name} logo={row.logo} />
-    ),
+    // KHÔNG khai báo detailHeader: đã bỏ logo pháp nhân, thẻ danh tính chỉ còn tên + chip.
     // KHÔNG bật detailTwoCols: công ty không có thẻ phụ nào bên phải, để 2 cột sẽ
     // bóp hẹp form và chừa một khoảng trống lớn. Form full chiều ngang, lịch sử xuống dưới.
     detailChips: (row) => [
@@ -190,12 +187,10 @@ export const cruds: Record<string, CrudConfig> = {
       { icon: row.is_active ? 'ti-circle-check' : 'ti-circle-x', text: row.is_active ? 'Đang dùng' : 'Ngừng' },
     ],
     columns: [
-      // Logo đi kèm luôn trong ô Tên (không tách cột riêng)
+      // Ô Tên có chữ cái đầu của MÃ công ty làm ảnh đại diện (không còn logo tải lên)
       { key: 'name', label: 'Tên', render: (r) => (
         <span style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          {r.logo
-            ? <img src={r.logo} alt="" className="avatar" style={{ objectFit: 'contain', background: '#fff', flex: 'none' }} />
-            : <span className="avatar" style={{ flex: 'none' }}>{((r.code || r.name || '?')[0] || '?').toUpperCase()}</span>}
+          <span className="avatar" style={{ flex: 'none' }}>{((r.code || r.name || '?')[0] || '?').toUpperCase()}</span>
           <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</span>
         </span>
       ) },

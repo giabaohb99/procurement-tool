@@ -3,13 +3,13 @@
 Màn này vốn đã phẳng (một hàng = một LẦN GIAO của một dòng hàng) nên không phải bung thêm:
 lấy đúng dòng của bảng, đúng bộ lọc, đúng thứ tự cột đang hiện.
 
-Cột NCC + khối vận chuyển bị bỏ khỏi file với người không có `purchase_order.read` — cùng luật
+Cột NCC + khối vận chuyển bị bỏ khỏi file với người không có `supplier.read` — cùng luật
 `_SUPPLIER_HIDDEN` của API danh sách (dữ liệu cũng đã bị gỡ khỏi row trước khi tới đây).
 """
 from app.core.export_xlsx import Col
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 
-# Key bị GỠ KHỎI DỮ LIỆU với người không có `purchase_order.read` (rộng hơn `SUPPLIER_ONLY`
+# Key bị GỠ KHỎI DỮ LIỆU với người không có `supplier.read` (rộng hơn `SUPPLIER_ONLY`
 # bên dưới vì có cả key không lên bảng, vd `ship_unit`).
 SUPPLIER_HIDDEN_KEYS = ("supplier_code", "supplier_name", "carrier_code", "carrier_name",
                         "shipping_unit_price", "shipping_amount", "ship_unit")
@@ -64,16 +64,24 @@ COLS = [
     Col("document_status", "Hồ sơ CT", width=18),
 ]
 
-# Cột chỉ dành cho người có purchase_order.read (trùng _SUPPLIER_HIDDEN của controller)
+# Cột chỉ dành cho người có `supplier.read` (trùng _SUPPLIER_HIDDEN của controller)
 SUPPLIER_ONLY = {"supplier_code", "supplier_name", "carrier_code", "carrier_name",
                  "shipping_unit_price", "shipping_amount"}
+
+# ----- Riêng của màn Tiến độ (KHÔNG đụng `COLS`, vì file xuất màn ĐMH bê nguyên bộ đó) -----
+# Số HĐ có hai chỗ: `invoice_no` ghi ở DÒNG ĐMH và `delivery_invoice_no` ghi ở LẦN GIAO.
+# Thực tế người dùng chỉ nhập ở lần giao, cột kia luôn trống mà vẫn chiếm chỗ, nên bảng Tiến độ
+# bỏ hẳn cột dòng và để cột lần giao mang đúng nhãn "Số HĐ".
+PROGRESS_SKIP = {"invoice_no"}
+PROGRESS_RENAME = {"delivery_invoice_no": Col("delivery_invoice_no", "Số HĐ", width=16)}
 
 SHEET_TITLE = "Tien do mua hang"
 FILE_NAME = "tien-do-mua-hang"
 
 
 def columns_for(show_supplier: bool) -> list[Col]:
-    return list(COLS) if show_supplier else [c for c in COLS if c.key not in SUPPLIER_ONLY]
+    cols = [PROGRESS_RENAME.get(c.key, c) for c in COLS if c.key not in PROGRESS_SKIP]
+    return cols if show_supplier else [c for c in cols if c.key not in SUPPLIER_ONLY]
 
 
 def row_values(po: PurchaseOrder, it: POItem, dl: PODelivery | None, show_supplier: bool) -> dict:

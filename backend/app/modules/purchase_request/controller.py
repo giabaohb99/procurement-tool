@@ -16,7 +16,7 @@ from .schema import ApproveIn, AssignIn, ItemStatusIn, PRCreate, PRUpdate, Reaso
 router = APIRouter(prefix="/api/purchase-requests", tags=["purchase_request"])
 
 HEADER_COLS = ["id", "code", "company_id", "requester", "requester_id", "requester_position",
-               "department", "head_of_dept", "purpose", "request_date", "need_date",
+               "department", "head_of_dept", "head_of_dept_id", "purpose", "request_date", "need_date",
                "status", "is_urgent", "vat_rate", "assignee_id", "note",
                "show_code_on_print", "suggested_supplier", "suggested_supplier_tax_code",
                "suggested_supplier_contact", "quote_filename", "quote_file_url"]
@@ -133,6 +133,8 @@ def _out(db: Session, pr, user=None) -> dict:
                              and _can_dispatch(get_perm_profile(db, user)))
     # Duyệt bước 1: cũng phải tính ở server vì có quyền `approve` chưa chắc đúng PHẠM VI —
     # Admin thu mua (phạm vi 'proc') có approve để duyệt điều phối nhưng không duyệt bước 1.
+    # CR-071: ô TBP (`head_of_dept_id`) CHỈ để lưu + in, KHÔNG khóa quyền duyệt — chọn ai
+    # thì ai có quyền trong phạm vi vẫn duyệt được như trước.
     d["can_approve"] = bool(user is not None and pr.status == "submitted"
                             and user_has_permission(db, user, "purchase_request", "approve")
                             and _in_approve_scope(db, user, pr.id))
@@ -328,6 +330,32 @@ def dept_head(department: str = "", db: Session = Depends(get_db), user=Depends(
     return success({"head_of_dept": service.find_dept_head(db, department)})
 
 
+@router.get("/meta/dept-head-candidates")
+def dept_head_candidates_meta(department: str = "", company_id: int = 0, db: Session = Depends(get_db),
+                              user=Depends(require("purchase_request", "read"))):
+    """CR-071 — cùng danh sách nhưng tra theo PHÒNG BAN, cho màn TẠO MỚI (chưa có id phiếu).
+
+    Phải khai TRƯỚC `/{pid}` nếu không FastAPI nuốt "meta" thành pid.
+    """
+    return success({"items": service.dept_head_candidates_by_department(db, department, company_id)})
+
+
+@router.get("/{pid}/dept-head-candidates")
+def dept_head_candidates(pid: int, db: Session = Depends(get_db),
+                         user=Depends(require("purchase_request", "read"))):
+    """CR-071 — những người duyệt được bước 1 phiếu này, để ô "Trưởng bộ phận" cho chọn.
+
+    Ô này CHỈ để lưu + in (xem ghi chú ở `service.py`), không khóa quyền duyệt của ai.
+    Danh sách rỗng = chưa ai đủ điều kiện; lúc đó FE để ô ở dạng chữ như cũ.
+    """
+    profile = get_perm_profile(db, user)
+    pr = apply_scope(db.query(PurchaseRequest).filter(PurchaseRequest.id == pid),
+                     PurchaseRequest, "purchase_request", user, profile).first()
+    if not pr:
+        raise HTTPException(403, "Ngoài phạm vi được phép xem")
+    return success({"items": service.dept_head_candidates(db, pr)})
+
+
 @router.get("/{pid}")
 def get_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
     profile = get_perm_profile(db, user)
@@ -518,6 +546,7 @@ def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db:
     # không thấy phiếu 'submitted' nên tự động bị loại: họ chỉ điều phối, không duyệt thay trưởng phòng.
     if not _in_approve_scope(db, user, pid):
         raise HTTPException(403, "Ngoài phạm vi được phép duyệt")
+    # CR-071 — KHÔNG chặn theo `head_of_dept_id`: ô TBP chỉ để lưu + in, luật duyệt giữ như cũ.
     pr = service.set_status(db, pid, "approved", user.id)
     if data.assignee_id:
         pr.assignee_id = data.assignee_id
