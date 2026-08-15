@@ -14,7 +14,9 @@
 | Mã `01` | C01, C03–C07, C12–C19, D06, E01–E06, E11, L01, L02, L07 (**bỏ: B01–B07 yêu cầu văn bản · C02 tệp mẫu** — quyết định 6 và 7 ở `plan.md`) |
 | Migration | M6, M7 |
 
-Duyệt **nội dung văn bản** ở phase này dùng **luồng một bước viết tay tạm thời** — đúng kiểu 5 luồng Thu mua đang có. P3-T17 sẽ thay bằng bộ máy chung. Làm vậy để phase 2 cho người thật bấm thử được ngay.
+Duyệt **nội dung văn bản** ở phase này dùng **luồng một bước viết tay tạm thời** — đúng kiểu 5 luồng Thu mua đang có. Làm vậy để phase 2 cho người thật bấm thử được ngay.
+
+> **Sửa 14/08/2026:** nhánh A viết lại đã **bỏ văn thư khỏi phạm vi phase 3** — người dùng đầu tiên của bộ máy phê duyệt là **Thu mua**. Trong 36 task của phase 3 **không còn task nào thay luồng tạm này**. Nghĩa là luồng tạm sống lâu hơn dự tính: dựng cho tử tế, đừng dựng tạm bợ. Đấu văn thư vào bộ máy là **task chưa ai viết**, làm sau khi P3-T31 chạy ổn ở prod.
 
 ## Điểm cần biết trước — 7 cái bẫy
 
@@ -138,4 +140,6 @@ Duyệt **nội dung văn bản** ở phase này dùng **luồng một bước v
 
 ## Tiếp theo
 
-[Phase 3 · Bộ máy phê duyệt dùng chung](./phase-03-bo-may-phe-duyet.md).
+[Phase 3 · Bộ máy phê duyệt dùng chung](./phase-03-bo-may-phe-duyet.md) — **không còn xếp sau phase này.** Từ 14/08/2026 phase 3 là **nhánh A chạy song song** ngay từ đầu; 16/18 task của nó không cần văn bản có thật.
+
+Điều phase này **không còn nợ** nhánh A: sau khi viết lại 14/08/2026, nhánh A không có task nào chờ văn thư và cũng không có task nào thay luồng duyệt tạm của văn thư. Hai nhánh chạy độc lập. Việc đấu văn thư vào bộ máy phê duyệt chung phải **mở task mới** — làm theo đúng thủ tục của P3-T31 (khai luồng → kiểm thử hai chế độ cờ → bật dev → bật prod). Xem [`thu-tu-thuc-hien.md`](./thu-tu-thuc-hien.md).

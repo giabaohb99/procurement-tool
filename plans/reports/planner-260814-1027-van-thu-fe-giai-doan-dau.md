@@ -3,6 +3,11 @@
 > Nguồn: `van-thu/00`–`05` (bản đề xuất 13/08/2026, chưa duyệt) · hiện trạng `frontend-v2/src/modules/document`
 > Phạm vi tệp này: **phần việc phía frontend-v2** cho bản 1 (132/174 tính năng của `01`).
 
+> ⚠️ **Tệp này là báo cáo khảo sát ngày 14/08/2026 lúc 10:27, giữ nguyên làm gốc đối chiếu — ba chỗ đã bị quyết định sau đó thay đổi.** Khi làm thì theo [`thu-tu-thuc-hien.md`](../260814-1036-van-thu-p0-p3/thu-tu-thuc-hien.md), không theo tệp này:
+> 1. **Bỏ hẳn bước "yêu cầu văn bản"** (quyết định 7 ở `plan.md`) → **F-13, F-15, F-16 bị cắt**; F-14 chuyển thành gợi ý trên form soạn.
+> 2. **Bỏ tệp mẫu Word và trường nhập động** (quyết định 6) → **F-18 cắt phần tệp mẫu**, thay bằng trình soạn tiptap.
+> 3. **Bộ máy phê duyệt không xếp sau nữa** — mục "Thứ tự làm phía FE" bên dưới đặt nó ở bước 4; nay nó là **nhánh A chạy song song** ngay từ đầu với hai người.
+
 ---
 
 ## 1. Bộ van-thu nói gì — tóm 10 dòng

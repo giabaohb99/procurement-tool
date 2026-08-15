@@ -28,7 +28,7 @@
 
 | Mã | L | Việc | Chi tiết |
 |---|---|---|---|
-| **P0-T01** | BE | **Kiểm thử 5 luồng duyệt hiện tại** | Bắt buộc làm **đầu tiên**, không chờ ai. `test/backend/test_approval_purchase_request.py`, `..._survey.py`, `..._survey_request.py`, `..._purchase_order.py`, `..._payment_request.py`. Mỗi tệp phủ: nộp → duyệt → từ chối → hủy → kiểm quyền `require()` → kiểm `apply_scope`. Đây là **lưới an toàn duy nhất** cho mọi phase sau |
+| ~~**P0-T01**~~ | BE | ~~**Kiểm thử 5 luồng duyệt hiện tại**~~ → **chuyển thành [`P3-T11`](./phase-03-bo-may-phe-duyet.md)** (14/08/2026). Không còn là nền chung: chỉ nhánh A cần lưới này, và cần **ngay đầu** nhánh A. Nội dung giữ nguyên | Bắt buộc làm **đầu tiên**, không chờ ai. `test/backend/test_approval_purchase_request.py`, `..._survey.py`, `..._survey_request.py`, `..._purchase_order.py`, `..._payment_request.py`. Mỗi tệp phủ: nộp → duyệt → từ chối → hủy → kiểm quyền `require()` → kiểm `apply_scope`. Đây là **lưới an toàn duy nhất** cho mọi phase sau |
 | **P0-T02** | DB | **Migration M1** | `tab_file` thêm `sha256 CHAR(64)`, `is_private BOOLEAN DEFAULT TRUE`, `scan_status TINYINT DEFAULT 0`. `tab_notification` thêm `app VARCHAR(30) DEFAULT 'thumua'`. Tạo `tab_file_access_log` (`file_id, document_id NULL, user_id, action TINYINT, ip, user_agent, created_at`) + index `(file_id, created_at)`, `(user_id, created_at)`. **Kéo sớm từ M10** vì H03 thuộc phase này. Khai model vào `app/core/all_models.py` |
 | **P0-T03** | BE | **Kho R2 riêng tư hoàn toàn** | Tắt public access trên bucket. `modules/attachment/service.py`: ngừng ghi `url`, đặt `is_private = True` cho mọi tệp mới, tính `sha256` lúc upload. Script chuyển tệp cũ (Python/SQLAlchemy, **không chạy SQL tiếng Việt qua dòng lệnh mysql**) |
 | **P0-T04** | BE | **Link tạm có kiểm quyền** | `GET /api/attachments/{id}/link` → `require(entity, "read")` + `apply_scope` trên bản ghi chủ → sinh presigned URL **sống 60–120s** → ghi `tab_file_access_log` (action 4). `GET .../view` và `.../download` ghi action 1 và 2. Trả lỗi 403 chứ không 404 khi đủ quyền đọc nhưng cấm tải |
@@ -49,7 +49,7 @@
 
 ## Todo
 
-- [ ] P0-T01 · 5 tệp kiểm thử luồng duyệt, tất cả xanh
+- [ ] ~~P0-T01~~ → làm ở **P3-T11** · 5 tệp kiểm thử luồng duyệt, tất cả xanh
 - [ ] P0-T02 · Migration M1 + khai model vào `all_models.py`
 - [ ] P0-T03 · Bucket R2 riêng tư, ngừng ghi `url`, tính `sha256`
 - [ ] P0-T04 · Endpoint link tạm + ghi `tab_file_access_log`
@@ -96,4 +96,10 @@
 
 ## Tiếp theo
 
-[Phase 1 · Danh mục và số hiệu](./phase-01-danh-muc-va-so-hieu.md) — chỉ bắt đầu khi 9 bài kiểm ở trên đạt và bản vá đã chạy prod ổn định.
+[Phase 1 · Danh mục và số hiệu](./phase-01-danh-muc-va-so-hieu.md).
+
+⚠️ **13 task của phase này không còn chạy thành một khối.** Từ 14/08/2026 chúng bị chia theo hai nhánh song song — xem [`thu-tu-thuc-hien.md`](./thu-tu-thuc-hien.md):
+
+- **T01, T10, T11** → nền chung, làm **trước khi tách nhánh**;
+- **T02, T03, T04, T12** (kho tệp riêng tư) → nhánh B, làm ở bước 3b khi văn bản cần đính tệp;
+- **T05–T09, T13** → chạy bất kỳ lúc nào, nhưng **9 bài kiểm ở trên phải đạt và bản vá phải chạy prod ổn định trước khi mở prod cho văn thư**. Trên dev thì hai nhánh chạy trước được.

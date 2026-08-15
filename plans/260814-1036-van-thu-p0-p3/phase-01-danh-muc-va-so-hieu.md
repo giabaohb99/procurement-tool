@@ -8,9 +8,13 @@
 | | |
 |---|---|
 | Ưu tiên | Cao — chặn P2 |
-| Trạng thái | ☐ Chưa bắt đầu |
+| Trạng thái | ☐ Chưa bắt đầu — **toàn bộ thuộc nhánh B** (P1-T01 không còn là nền chung, xem ghi chú dưới) |
 | Mã `01` | A01–A07, D01–D08, C20 (chờ B12) |
-| Migration | M2, M3, M4, M5 |
+| Migration | M2, M3, M4, M5 · **nhánh B giữ chuỗi Alembic**, nhánh A muốn sinh M8 phải báo trước |
+
+> **P1-T01 không còn là nền chung (sửa 14/08/2026).** Nhánh A viết lại đã đưa việc gắn phòng ban vào pháp nhân thành **[`P3-T04`](./phase-03-bo-may-phe-duyet.md)** và làm ngay đầu nhánh A — vì rà DB thấy **18/18 phòng ban đang `company_id = 0`**, không có dữ liệu này thì 5 trong 7 cách chọn người duyệt không chạy được. Hình dạng bảng (một cột `company_id` hay bảng nối `tab_department_company`) do **quyết định (a) của P3-T01** chốt, nhánh B **làm theo**, không tự quyết.
+>
+> Phần còn lại của P1-T01 — `issue_code` cho pháp nhân/phòng ban, `short_name`, `level`, `kind` — **vẫn là việc của nhánh B**, phục vụ cấp số văn bản.
 
 ## Điểm cần biết trước
 
@@ -50,7 +54,7 @@
 
 ## Todo
 
-- [ ] P1-T01 · M2: `issue_code` cho pháp nhân/phòng ban + `tab_department_company`
+- [ ] P1-T01 · M2: `issue_code` cho pháp nhân/phòng ban (~~`tab_department_company`~~ → làm ở **P3-T04**)
 - [ ] P1-T02 · M3: 3 bảng danh mục
 - [ ] P1-T03 · M4 + M5: bộ đếm + sổ đến (tạo sớm)
 - [ ] P1-T04 · `next_number()` khóa dòng, cùng transaction
