@@ -116,13 +116,15 @@ Người dùng ở màn chi tiết thấy **dòng nhắc màu vàng** khi phiế
 - Nguồn dữ liệu / liên kết: Lấy tên phòng ban từ `employee.department_id` → `department.name`
 - Người sửa: Hệ thống (thay đổi khi đổi Nhân sự YC)
 
-### 8. Trưởng bộ phận (`head_of_dept`)
+### 8. Trưởng bộ phận (`head_of_dept` + `head_of_dept_id`)
 
-- Kiểu nhập: Tự động (trường bị khóa `disabled`)
-- Mặc định: trống; tự điền từ trưởng phòng của bộ phận
+- Kiểu nhập: **Ô chọn** (CR-071). Trước đây là trường khóa `disabled`; đổi vì phòng có phó phòng / quyền trưởng phòng cùng ký được, khóa cứng theo `manager_id` thì **in ra sai tên**.
+- Mặc định: trưởng phòng của bộ phận (`Department.manager_id`). Bỏ chọn → quay về mặc định này.
 - Bắt buộc: Có (đánh dấu `*` trên UI); điền tự động nên ít khi trống nếu phòng ban đã có trưởng
-- Nguồn dữ liệu / liên kết: Tra qua `Department.manager_id` → `Employee.full_name`; hoặc qua API `/api/purchase-requests/meta/dept-head` (người không có quyền xem DS nhân sự cũng tra được)
-- Người sửa: Hệ thống (cập nhật khi đổi Nhân sự YC; BE cũng tự điền khi tạo qua `find_dept_head`)
+- Nguồn danh sách chọn: những người **thật sự duyệt được phiếu đó** — `GET /api/purchase-requests/meta/dept-head-candidates?department=&company_id=` (màn tạo mới) và `GET /api/purchase-requests/{pid}/dept-head-candidates` (màn sửa). Backend lọc bằng chính `apply_scope`. Danh sách rỗng → ô về dạng chữ khóa như cũ.
+- Nguồn mặc định: `Department.manager_id` → `Employee.full_name`, hoặc API `/api/purchase-requests/meta/dept-head` (người không có quyền xem DS nhân sự cũng tra được)
+- Người sửa: Người lập phiếu, khi phiếu còn sửa được (`draft` / `rejected`). Đổi Nhân sự YC sang phòng khác thì bỏ người đã chọn tay và lấy lại mặc định của phòng mới.
+- **Ý nghĩa: LƯU TRỮ + IN, không phải phân quyền.** Chọn ai **không** khóa quyền duyệt của bất kỳ ai — ai có `purchase_request:approve` và phiếu nằm trong phạm vi của họ thì vẫn bấm Duyệt được y như trước. Lưu bằng **id nhân sự** (`head_of_dept_id`, `0` = theo mặc định phòng); cột `head_of_dept` là **bản chụp TÊN để in**, backend đồng bộ theo id mỗi lần tạo/sửa.
 
 ### 9. Đơn gấp (`is_urgent`)
 
@@ -385,7 +387,7 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 1. Lưu (Nháp): lọc bỏ dòng không có `product_name`; dòng còn lại được lưu theo cơ chế upsert — dòng có `id` thì cập nhật tại chỗ (giữ nguyên `id`), dòng không có `id` thêm mới, dòng cũ không còn trong danh sách thì xóa (`_save_items`). Cơ chế upsert thay cho DELETE+INSERT cũ, giữ nguyên `id` để ảnh đính kèm theo dòng (`purchase_request_line_image`) không bị mồ côi.
 2. Gửi duyệt: kiểm tra `validate()` — phải có `company_id`, `requester`, ít nhất 1 dòng có `product_name`; mỗi dòng đó phải có `product_code` (chọn từ danh mục), `qty > 0`, `warehouse` và `required_date`. Nếu không pass, thông báo lỗi cụ thể từng trường.
 3. Mã phiếu tự sinh: định dạng `PYC{ddmmyy}{seq:02d}`, trong đó `ddmmyy` lấy từ `request_date` (không có thì lấy ngày hiện tại), `seq` là số thứ tự tăng dần trong ngày.
-4. Chọn Nhân sự YC: tự điền `requester_position` (chức vụ), `department` (phòng ban), `head_of_dept` (trưởng bộ phận theo `manager_id` của phòng ban), `company_id`. Trưởng bộ phận tra qua API `/api/purchase-requests/meta/dept-head` (với người không có quyền xem DS nhân sự).
+4. Chọn Nhân sự YC: tự điền `requester_position` (chức vụ), `department` (phòng ban), `head_of_dept` (trưởng bộ phận theo `manager_id` của phòng ban), `company_id`. Trưởng bộ phận tra qua API `/api/purchase-requests/meta/dept-head` (với người không có quyền xem DS nhân sự). Sau đó **đổi được** sang người khác trong danh sách người duyệt được phiếu — chỉ đổi tên in, không đổi quyền duyệt (CR-071, xem §8).
 5. Chọn Mã hàng: tự điền `product_name`, `unit`, `item_group`, `group_desc`.
 6. Chọn Phân loại: tự điền `group_desc` với thời gian sản xuất tiêu chuẩn từ `item_group.std_days` và `item_group.std_days_unavail`; đồng thời điền `expected_date` = ngày QĐ có hàng (xem mục 12) cho dòng chưa lưu còn trống ô đó.
 7. Thành tiền: `amount = qty × price × (1 + vat_pct / 100)` (gồm VAT theo dòng). Tổng kết phiếu gồm 3 dòng: Tiền hàng chưa VAT (`subtotal = sum(qty × price)`), Tiền VAT (`vat = total − subtotal`), Tổng cộng gồm VAT (`total = sum(amount)`).

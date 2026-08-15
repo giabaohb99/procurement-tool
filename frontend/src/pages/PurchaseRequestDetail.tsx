@@ -82,7 +82,7 @@ export default function PurchaseRequestDetail() {
   const navigate = useNavigate()
 
   const [pr, setPr] = useState<any>({
-    code: '', requester: '', requester_position: '', department: '', head_of_dept: '',
+    code: '', requester: '', requester_position: '', department: '', head_of_dept: '', head_of_dept_id: 0,
     purpose: '', company_id: 0, request_date: new Date().toISOString().slice(0, 10),
     need_date: '', is_urgent: false, note: '', status: 'draft', items: [],
     show_code_on_print: true, suggested_supplier: '', suggested_supplier_tax_code: '', suggested_supplier_contact: '',
@@ -92,6 +92,8 @@ export default function PurchaseRequestDetail() {
     supplier_pur: { name: '', tax_code: '', contact: '' },
     supplier_from_survey: false, can_edit_supplier_pur: false,
   })
+  /** CR-071 — ứng viên đứng tên TBP trên phiếu (rỗng → ô về dạng chữ khóa như cũ). */
+  const [deptHeads, setDeptHeads] = useState<any[]>([])
   const [companies, setCompanies] = useState<any[]>([])
   const [itemGroups, setItemGroups] = useState<any[]>([])
   const [groups, setGroups] = useState<string[]>([])
@@ -189,6 +191,19 @@ export default function PurchaseRequestDetail() {
       .then((r) => { const h = r.data.data.head_of_dept; if (h) setH('head_of_dept', h) })
       .catch(() => {})
   }, [isNew, pr.department])
+
+  // CR-071 — DS người có thể đứng tên TBP trên phiếu. Phòng nào cũng có thể có phó phòng /
+  // quyền trưởng phòng cùng ký, mà ô này trước đây khóa cứng theo `Department.manager_id` nên
+  // in ra sai tên. Ô CHỈ để lưu + in: chọn ai KHÔNG đổi quyền duyệt của bất kỳ ai.
+  // Tra theo TÊN PHÒNG chứ không theo id phiếu, để màn tạo mới (chưa có id) cũng chọn được.
+  useEffect(() => {
+    if (!pr.department) { setDeptHeads([]); return }
+    api.get(`${API}/meta/dept-head-candidates`, {
+      params: { department: pr.department, company_id: Number(pr.company_id) || 0 },
+    })
+      .then((r) => setDeptHeads(r.data.data.items || []))
+      .catch(() => setDeptHeads([]))
+  }, [pr.department, pr.company_id])
 
   const editable = isNew || pr.status === 'draft' || pr.status === 'rejected'
   const isStaff = !can('purchase_request', 'approve') && !can('purchase_request', 'delete')
@@ -329,12 +344,15 @@ export default function PurchaseRequestDetail() {
     return p.join(' · ')
   }
 
-  /** Trưởng bộ phận LẤY THEO `Department.manager_id` (nguồn duy nhất) — hỏi server, không đoán
-   *  theo chức danh nhân sự cùng phòng. Phòng chưa gán trưởng → để trống. */
+  /** Trưởng bộ phận MẶC ĐỊNH lấy theo `Department.manager_id` (nguồn duy nhất) — hỏi server,
+   *  không đoán theo chức danh nhân sự cùng phòng. Phòng chưa gán trưởng → để trống.
+   *  Đổi phòng thì bỏ luôn người đã chọn tay, không thì phiếu in tên trưởng phòng cũ. */
   const fetchDeptHead = (deptName: string) => {
-    if (!deptName) { setH('head_of_dept', ''); return }
+    if (!deptName) { setPr((s: any) => ({ ...s, head_of_dept: '', head_of_dept_id: 0 })); return }
     api.get(`${API}/meta/dept-head`, { params: { department: deptName } })
-      .then((r) => setH('head_of_dept', r.data.data.head_of_dept || ''))
+      .then((r) => setPr((s: any) => ({
+        ...s, head_of_dept: r.data.data.head_of_dept || '', head_of_dept_id: 0,
+      })))
       .catch(() => {})
   }
 
@@ -463,7 +481,8 @@ export default function PurchaseRequestDetail() {
     const earliestNeedDate = validNeedDates.length > 0 ? [...validNeedDates].sort()[0] : ''
     const body = {
       company_id: Number(pr.company_id) || 0, requester: pr.requester, requester_id: Number(pr.requester_id) || 0, requester_position: pr.requester_position,
-      department: pr.department, head_of_dept: pr.head_of_dept, purpose: pr.purpose,
+      department: pr.department, head_of_dept: pr.head_of_dept,
+      head_of_dept_id: Number(pr.head_of_dept_id) || 0, purpose: pr.purpose,
       request_date: pr.request_date, need_date: earliestNeedDate || pr.need_date || '', is_urgent: pr.is_urgent, note: pr.note,
       show_code_on_print: pr.show_code_on_print,
       quote_filename: pr.quote_filename, quote_file_url: pr.quote_file_url,
@@ -797,8 +816,36 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Trưởng bộ phận (TBP) / Người liên hệ</label>
-                <input value={pr.head_of_dept || ''} placeholder="Tự động theo phòng ban của người yêu cầu" disabled
-                  title="Lấy theo Trưởng bộ phận đã gán ở màn hình Phòng ban" />
+                {/* CR-071: phòng có nhiều người ký được (phó phòng, quyền trưởng phòng) thì chọn
+                    đúng người để IN. Không đổi quyền duyệt — ai có quyền vẫn duyệt như cũ.
+                    Chưa nạp được DS (hoặc phiếu đã khóa) thì giữ nguyên ô chữ cũ. */}
+                {editable && deptHeads.length > 0 ? (
+                  <select
+                    value={pr.head_of_dept_id ? String(pr.head_of_dept_id) : ''}
+                    title="Chọn người đứng tên Trưởng bộ phận trên phiếu in"
+                    onChange={(e) => {
+                      const v = Number(e.target.value) || 0
+                      const c = deptHeads.find((x: any) => x.employee_id === v)
+                      setPr((s: any) => ({
+                        ...s,
+                        head_of_dept_id: v,
+                        // Bỏ chọn → trả tên về mặc định của phòng, đừng để trống ô in.
+                        head_of_dept: c ? c.name : s.head_of_dept,
+                      }))
+                      if (!v) fetchDeptHead(pr.department)
+                    }}
+                  >
+                    <option value="">{pr.head_of_dept ? `${pr.head_of_dept} (mặc định của phòng)` : '— Chọn —'}</option>
+                    {deptHeads.map((c: any) => (
+                      <option key={c.employee_id} value={c.employee_id}>
+                        {c.name}{c.position ? ` - ${c.position}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input value={pr.head_of_dept || ''} placeholder="Tự động theo phòng ban của người yêu cầu" disabled
+                    title="Lấy theo Trưởng bộ phận đã gán ở màn hình Phòng ban" />
+                )}
               </div>
               <div className="form-row">
                 <label>Tùy chọn phiếu</label>

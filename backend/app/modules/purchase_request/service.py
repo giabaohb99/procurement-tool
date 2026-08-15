@@ -94,6 +94,152 @@ def find_dept_head(db: Session, department_name: str) -> str:
     return head.full_name if head else ""
 
 
+def find_dept_head_id(db: Session, department_name: str) -> int:
+    """Id NHÂN SỰ của Trưởng bộ phận theo `Department.manager_id`. 0 = chưa gán."""
+    if not department_name:
+        return 0
+    from app.modules.department.model import Department
+    dep = db.query(Department).filter(Department.name == department_name).first()
+    return int(dep.manager_id or 0) if dep else 0
+
+
+# ---------------------------------------------------------------------------
+# CR-071 — Trưởng bộ phận trên phiếu: CHỌN ĐƯỢC, nhưng CHỈ ĐỂ LƯU + IN
+# ---------------------------------------------------------------------------
+# Trước đây ô "Trưởng bộ phận" tự điền theo `Department.manager_id` và không sửa được, nên
+# phòng có nhiều người ký (phó phòng, quyền trưởng phòng) thì in ra sai tên. Nay người lập
+# CHỌN được một người trong số những người thật sự duyệt được phiếu này.
+#
+# QUAN TRỌNG — chọn ai KHÔNG khóa quyền duyệt: luật duyệt giữ nguyên như cũ, ai có quyền
+# `approve` và phiếu nằm trong phạm vi của họ thì vẫn bấm Duyệt được. Ô này chỉ mang ý nghĩa
+# lưu trữ + in phiếu. Đừng thêm điều kiện chặn duyệt theo `head_of_dept_id` ở đây.
+
+def _approver_users(db: Session):
+    """Ứng viên: tài khoản đang hoạt động, có nhân sự, giữ vai trò `approve` YCMH phạm vi 'dept'.
+
+    Phạm vi 'proc'/'all' (thu mua điều phối / admin) không phải "trưởng phòng" nên không vào
+    danh sách chọn — nhưng quyền duyệt của họ không đổi.
+    """
+    from app.modules.role.model import Permission
+    from app.modules.user.model import User, UserRole
+    role_ids = [p.role_id for p in db.query(Permission).filter(
+        Permission.entity == "purchase_request", Permission.can_approve == True,   # noqa: E712
+        Permission.scope == "dept").all()]
+    if not role_ids:
+        return []
+    uids = {ur.user_id for ur in db.query(UserRole).filter(UserRole.role_id.in_(role_ids)).all()}
+    if not uids:
+        return []
+    return (db.query(User).filter(User.id.in_(uids), User.is_active == True,      # noqa: E712
+                                  User.employee_id > 0).all())
+
+
+def _can_user_approve_row(db: Session, u, pr_id: int) -> bool:
+    """Người `u` có thấy phiếu này trong phạm vi duyệt của họ không.
+
+    Chạy ĐÚNG `apply_scope` chứ không chép lại luật phạm vi — nếu tự viết lại điều kiện
+    theo tên phòng thì danh sách chọn và nút Duyệt sẽ lệch nhau, mà lệch ở đây nghĩa là
+    chọn được một người không bấm duyệt nổi.
+    """
+    from app.core.auth import get_perm_profile
+    from app.core.scoping import apply_scope
+    q = db.query(PurchaseRequest.id).filter(PurchaseRequest.id == pr_id)
+    return apply_scope(q, PurchaseRequest, "purchase_request", u,
+                       get_perm_profile(db, u)).first() is not None
+
+
+def dept_head_candidates(db: Session, pr: PurchaseRequest) -> list[dict]:
+    """Những người duyệt được bước 1 CỦA ĐÚNG PHIẾU NÀY — nguồn cho ô chọn TBP.
+
+    Tính ngược `apply_scope`: thay vì hỏi "phiếu nào người này thấy" thì hỏi "ai thấy
+    phiếu này". Tốn một hồ sơ quyền cho mỗi ứng viên, nhưng số người có quyền duyệt YCMH
+    phạm vi phòng chỉ vài chục, và endpoint này chỉ gọi khi người dùng mở ô chọn.
+    """
+    from app.modules.employee.model import Employee
+    users = [u for u in _approver_users(db) if _can_user_approve_row(db, u, pr.id)]
+    if not users:
+        return []
+    emps = {e.id: e for e in db.query(Employee).filter(
+        Employee.id.in_([u.employee_id for u in users])).all()}
+    out = []
+    for u in users:
+        e = emps.get(u.employee_id)
+        if not e:
+            continue
+        out.append({"employee_id": e.id, "name": e.full_name or "", "code": e.code or "",
+                    "position": e.position or ""})
+    out.sort(key=lambda r: r["name"])
+    return out
+
+
+def dept_head_candidates_by_department(db: Session, department: str, company_id: int = 0) -> list[dict]:
+    """Cùng danh sách như trên nhưng cho màn TẠO MỚI — lúc đó chưa có phiếu để soi phạm vi.
+
+    Dựng một phiếu TẠM trong bộ nhớ (không `add` vào session) rồi vẫn hỏi `apply_scope` bằng
+    một truy vấn giả theo cột phòng ban/pháp nhân, để danh sách khi tạo và khi sửa ra như nhau.
+    """
+    from app.core.auth import get_perm_profile
+    from app.core.scoping import apply_scope
+    from app.modules.employee.model import Employee
+    if not department:
+        return []
+    users = []
+    for u in _approver_users(db):
+        q = db.query(PurchaseRequest.id).filter(PurchaseRequest.department == department)
+        if company_id:
+            q = q.filter(PurchaseRequest.company_id == company_id)
+        # Không có phiếu thật để thử, nên hỏi ngược: điều kiện phạm vi của người này có
+        # cho phép phòng/pháp nhân NÀY không. Dùng chính `apply_scope` để không chép lại luật.
+        sub = apply_scope(q, PurchaseRequest, "purchase_request", u, get_perm_profile(db, u))
+        if _scope_allows_department(db, u, department, company_id, sub, q):
+            users.append(u)
+    if not users:
+        return []
+    emps = {e.id: e for e in db.query(Employee).filter(
+        Employee.id.in_([u.employee_id for u in users])).all()}
+    out = []
+    for u in users:
+        e = emps.get(u.employee_id)
+        if not e:
+            continue
+        out.append({"employee_id": e.id, "name": e.full_name or "", "code": e.code or "",
+                    "position": e.position or ""})
+    out.sort(key=lambda r: r["name"])
+    return out
+
+
+def _scope_allows_department(db: Session, u, department: str, company_id: int, scoped_q, plain_q) -> bool:
+    """Phạm vi của `u` có phủ phòng/pháp nhân này không.
+
+    Phòng có sẵn phiếu thì so hai truy vấn là biết ngay. Phòng CHƯA có phiếu nào (phiếu đầu
+    tiên) thì cả hai đều rỗng, không kết luận được — lúc đó dựa vào chính hồ sơ quyền: người
+    có grant `approve` phạm vi 'dept' mà phòng của họ trùng thì cho vào.
+    """
+    from app.core.auth import get_perm_profile
+    if plain_q.first() is not None:
+        return scoped_q.first() is not None
+    prof = get_perm_profile(db, u)
+    for g in prof.get("grants", []):
+        p = g["perms"].get("purchase_request")
+        if not (p and p.get("approve")):
+            continue
+        if p.get("scope") in ("company", "all"):
+            return True
+        if p.get("scope") == "dept" and (prof.get("dept_name") or "") == department:
+            return True
+    return False
+
+
+def sync_head_of_dept_name(db: Session, pr: PurchaseRequest) -> None:
+    """Lưu bằng id thì ô TÊN (dùng để in) phải chạy theo, khỏi in một đằng lưu một nẻo."""
+    if not getattr(pr, "head_of_dept_id", 0):
+        return
+    from app.modules.employee.model import Employee
+    emp = db.get(Employee, pr.head_of_dept_id)
+    if emp and emp.full_name:
+        pr.head_of_dept = emp.full_name
+
+
 def has_cancelled_line(db: Session, pr_id: int) -> bool:
     return db.query(PurchaseRequestItem).filter(
         PurchaseRequestItem.pr_id == pr_id, PurchaseRequestItem.line_status == "Hủy đơn").first() is not None
@@ -499,14 +645,19 @@ def copy_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
         _requester, _requester_id = (_emp.full_name or ""), _emp.id
         _requester_position, _department = (_emp.position or ""), (_emp.department_name or "")
         _head_of_dept = _emp.manager_name or ""
+        # CR-071: bản sao đổi phòng theo người bấm nhân bản → chỉ định TBP phải tính lại
+        # theo phòng MỚI, không bê id của phiếu gốc sang.
+        _head_of_dept_id = find_dept_head_id(db, _department)
     else:
         _requester, _requester_id = "", 0
         _requester_position, _department, _head_of_dept = "", src.department, src.head_of_dept
+        _head_of_dept_id = src.head_of_dept_id
     pr = PurchaseRequest(
         code="", company_id=src.company_id, requester=_requester,
         requester_id=_requester_id,
         requester_position=_requester_position, department=_department,
-        head_of_dept=_head_of_dept, purpose=src.purpose, request_date=src.request_date,
+        head_of_dept=_head_of_dept, head_of_dept_id=_head_of_dept_id,
+        purpose=src.purpose, request_date=src.request_date,
         need_date=src.need_date, is_urgent=src.is_urgent, note=src.note,
         status="draft", assignee_id=0, created_by=user_id, updated_by=user_id,
         show_code_on_print=src.show_code_on_print, suggested_supplier=src.suggested_supplier,
@@ -554,7 +705,8 @@ def create_pr(db: Session, data: PRCreate, user_id: int, can_write_pur: bool = F
         code=data.code or "", company_id=data.company_id, requester=data.requester,
         requester_id=data.requester_id,
         requester_position=data.requester_position, department=data.department,
-        head_of_dept=data.head_of_dept, purpose=data.purpose, request_date=data.request_date,
+        head_of_dept=data.head_of_dept, head_of_dept_id=data.head_of_dept_id,
+        purpose=data.purpose, request_date=data.request_date,
         need_date=data.need_date, is_urgent=data.is_urgent, vat_rate=data.vat_rate,
         note=data.note, status="draft", created_by=user_id, updated_by=user_id,
         show_code_on_print=data.show_code_on_print,
@@ -567,6 +719,9 @@ def create_pr(db: Session, data: PRCreate, user_id: int, can_write_pur: bool = F
             "pur": _empty_cluster(), "from_survey": False}
     apply_supplier_info(pr, build_clusters(prev, data, can_write_pur, from_survey=False))
     # Tự điền Trưởng bộ phận theo phòng ban của người yêu cầu (nếu phòng có trưởng)
+    if not pr.head_of_dept_id and pr.department:
+        pr.head_of_dept_id = find_dept_head_id(db, pr.department)
+    sync_head_of_dept_name(db, pr)
     if not pr.head_of_dept and pr.department:
         pr.head_of_dept = find_dept_head(db, pr.department)
     db.add(pr)
@@ -612,6 +767,9 @@ def update_pr(db: Session, pid: int, data: PRUpdate, user_id: int, can_write_pur
     # Task 4: cập nhật cụm NCC (req do người yêu cầu · pur cần quyền supplier.write)
     if data.supplier_req is not None or data.supplier_pur is not None:
         apply_supplier_info(pr, build_clusters(clusters_of(pr), data, can_write_pur))
+    # CR-071: đổi người duyệt chỉ định thì tên in trên phiếu phải chạy theo
+    if data.head_of_dept_id is not None:
+        sync_head_of_dept_name(db, pr)
     pr.updated_by = user_id
     db.commit()
     if data.items is not None:
