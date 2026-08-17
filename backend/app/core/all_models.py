@@ -47,3 +47,6 @@ from app.modules.document import link_model as _document_link  # noqa: F401
 from app.modules.document import scope_model as _document_scope  # noqa: F401
 from app.modules.document import signature_model as _document_signature  # noqa: F401
 from app.modules.document import clone_plan_model as _document_clone_plan  # noqa: F401
+from app.modules.approval import flow_model as _approval_flow  # noqa: F401
+from app.modules.approval import instance_model as _approval_instance  # noqa: F401
+from app.modules.approval import delegation_model as _approval_delegation  # noqa: F401
