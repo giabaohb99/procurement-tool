@@ -26,6 +26,7 @@ from app.modules.payable.controller import router as payable_router
 from app.modules.payment_request.controller import router as payment_request_router
 from app.modules.purchase_order.controller import router as po_router
 from app.modules.purchase_progress.controller import router as purchase_progress_router
+from app.modules.survey_progress.controller import router as survey_progress_router
 from app.modules.report.controller import router as report_router
 from app.modules.contract.controller import router as contract_router
 from app.modules.alert.controller import router as alert_router
@@ -111,6 +112,7 @@ app.include_router(survey_router)
 app.include_router(survey_report_router)
 app.include_router(po_router)
 app.include_router(purchase_progress_router)
+app.include_router(survey_progress_router)
 app.include_router(purchase_history_router)
 app.include_router(inventory_router)
 app.include_router(payable_router)

@@ -83,6 +83,13 @@ const NAV_GROUPS: NavGroup[] = [
         entity: "survey_request",
       },
       {
+        // CR-075 — song sinh của "Tiến độ mua hàng" nhưng đọc chuỗi yêu cầu báo giá
+        to: "/survey-progress",
+        label: "Tiến độ báo giá",
+        icon: "ti-progress-check",
+        entity: "survey_request",
+      },
+      {
         to: "/purchase-requests",
         label: "Yêu cầu mua hàng",
         icon: "ti-file-text",

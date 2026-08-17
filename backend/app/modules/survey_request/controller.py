@@ -12,7 +12,9 @@ from app.core.response import success
 from app.core.scoping import apply_scope
 
 from . import service
-from .model import SurveyRequest, SurveyRequestLine, SurveyRequestOption
+from . import line_state
+from .model import (LS_RESURVEY, SurveyRequest, SurveyRequestLine,
+                    SurveyRequestOption)
 from .schema import LineStatusIn, RejectIn, SurveyRequestCreate, SurveyRequestUpdate
 
 router = APIRouter(prefix="/api/survey-requests", tags=["survey_request"])
@@ -52,6 +54,10 @@ def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
         opts = service.valid_options_of(db, x.id)
         d["option_count"] = len(opts)
         d["has_chosen"] = any(o.is_chosen for o in opts)
+        # CR-077: nhãn tiến độ dòng do BACKEND suy, dùng chung với màn Tiến độ báo giá.
+        # FE không tự tính lại — trước đây nó tự tính nên hai màn hiện hai chữ khác nhau.
+        d["progress_state"] = line_state.progress_state(x, d["has_chosen"], d["option_count"])
+        d["progress_tone"] = line_state.STATE_TONE.get(d["progress_state"], "gray")
         out_lines.append(d)
     base["lines"] = out_lines
     return base
@@ -648,6 +654,10 @@ def _out_result(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
             od["ycmh_count"] = len(od["ycmh_list"])
             opts.append(od)
         d["options"] = opts
+        d["option_count"] = len(opts)
+        d["has_chosen"] = any(o.get("is_chosen") for o in opts)
+        d["progress_state"] = line_state.progress_state(ln, d["has_chosen"], d["option_count"])
+        d["progress_tone"] = line_state.STATE_TONE.get(d["progress_state"], "gray")
         out_lines.append(d)
     base["lines"] = out_lines
     return base
@@ -710,7 +720,9 @@ def set_line_status_(sid: int, line_id: int, body: LineStatusIn,
     if not _can_act_as_requester_side(db, s, user):
         raise HTTPException(403, "Chỉ người yêu cầu hoặc cùng phòng ban được đổi trạng thái dòng")
     service.set_line_status(db, sid, line_id, body.line_status, user.id)
-    if (body.line_status or "").strip().lower() == "cần khảo sát lại":
+    # LỖI CŨ: chỗ này so với chuỗi tiếng Việt CÓ DẤU "cần khảo sát lại", trong khi giá trị hợp lệ
+    # chỉ là slug -> nhánh không bao giờ chạy, NSTM/pur_admin chưa từng nhận chuông khi bị trả về.
+    if (body.line_status or "").strip() == LS_RESURVEY:
         ln = service.get_line(db, sid, line_id)
         recips = []
         if ln and ln.assignee:

@@ -358,11 +358,25 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 ### 15. Trạng thái xử lý dòng (`line_status`)
 
 - Kiểu nhập: Chỉ đọc trên bảng (tự đồng bộ từ ĐMH); hoặc chọn trong popup chi tiết khi chưa có ĐMH
-- Mặc định: `Chưa đặt hàng`
+- Mặc định: `Chưa tạo đơn mua hàng` (CR-074 — trước đây là `Chưa đặt hàng`)
 - Bắt buộc: Không (có giá trị mặc định)
-- Nguồn dữ liệu / liên kết: Danh sách 5 mức cố định: `Chưa đặt hàng / Đã đặt hàng / Đã nhận hàng / Hoàn thành / Hủy đơn`
+- Nguồn dữ liệu / liên kết: Danh sách 6 mức cố định: `Chưa tạo đơn mua hàng / Chưa đặt hàng / Đã đặt hàng / Đã nhận hàng / Hoàn thành / Hủy đơn`
 - Người sửa: NSTM được giao dòng, hoặc người có `approve`/`cancel`; cập nhật qua popup (endpoint `PATCH /{pid}/item-status`). Sau khi phiếu có ĐMH liên kết, trạng thái tự đồng bộ theo tiến độ ĐMH.
-- Logic đặc biệt: Thay đổi trạng thái dòng kích hoạt `recompute_status` tự điều chỉnh trạng thái phiếu. Dòng "Hủy đơn" tô đỏ toàn bộ hàng trong danh sách phiếu (`has_cancelled_line`). Khi trả phiếu về ("Bị trả lại"), tất cả dòng reset về "Chưa đặt hàng". Dòng YCMH thủ công đặt "Hủy đơn" sẽ được giữ nguyên khi đồng bộ từ ĐMH.
+- Logic đặc biệt: Thay đổi trạng thái dòng kích hoạt `recompute_status` tự điều chỉnh trạng thái phiếu. Dòng "Hủy đơn" tô đỏ toàn bộ hàng trong danh sách phiếu (`has_cancelled_line`). Khi trả phiếu về ("Bị trả lại"), tất cả dòng reset về "Chưa tạo đơn mua hàng". Dòng YCMH thủ công đặt "Hủy đơn" sẽ được giữ nguyên khi đồng bộ từ ĐMH.
+
+**Ranh giới hai nhãn đầu (CR-074).** Trước đây ba tình huống khác hẳn nhau cùng đeo một nhãn
+"Chưa đặt hàng", người yêu cầu nhìn vào không biết NSTM đã bắt tay làm chưa. Nay tách:
+
+| Nhãn | Nghĩa |
+|---|---|
+| **Chưa tạo đơn mua hàng** | Chưa ĐMH nào có dòng cho sản phẩm này (hoặc mọi ĐMH chứa nó đã bị hủy) |
+| **Chưa đặt hàng** | ĐÃ có dòng ĐMH — **kể cả đơn còn Nháp / Chờ duyệt** — nhưng chưa bấm đặt hàng |
+
+Nhãn đổi **ngay lúc lập đơn**, không đợi duyệt; **xóa đơn Nháp thì dòng quay lại "Chưa tạo đơn
+mua hàng"** (`create_po`/`delete_po` đều gọi `_sync_pr`). Đơn `cancelled` không được tính là đã lập.
+Từ "Đã đặt hàng" trở đi giữ nguyên luật cũ. Hai nhãn này đều được coi là "chưa động tới" khi suy
+trạng thái phiếu (`LINE_STATUS_IDLE`) nên phiếu vừa điều phối xong **không** tự nhảy "Đang xử lý",
+và nút "Tạo ĐMH" vẫn hiện khi dòng mới có đơn Nháp (dòng đó còn có thể cần thêm đơn cho NCC khác).
 
 ### 16. Chi tiết tiến độ (`progress_note`)
 

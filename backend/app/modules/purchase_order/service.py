@@ -414,6 +414,8 @@ def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
     recompute_effects(db, po, user_id)
     db.commit()
     db.refresh(po)
+    # CR-074: dòng YCMH phải đổi sang "Chưa đặt hàng" NGAY khi đơn vừa được lập, kể cả đơn Nháp.
+    _sync_pr(db, po.pr_code)
     record(db, user_id, ENTITY, po.id, "create")
     return po
 
@@ -480,8 +482,12 @@ def delete_po(db: Session, pid: int, user_id: int):
             db.delete(d)
         db.delete(it)
     delete_attachments_for(db, pairs)
+    _pr_code = po.pr_code
     db.delete(po)
     db.commit()
+    # CR-074: xóa đơn xong thì dòng YCMH phải quay lại "Chưa tạo đơn mua hàng" nếu không còn
+    # đơn nào khác — nên phải đồng bộ lại, lấy mã YCMH trước khi xóa.
+    _sync_pr(db, _pr_code)
     record(db, user_id, ENTITY, pid, "delete")
 
 

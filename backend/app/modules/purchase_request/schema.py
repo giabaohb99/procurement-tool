@@ -23,7 +23,7 @@ class PRItemIn(BaseModel):
     warehouse: str = ""
     required_date: str = ""
     assignee: str = ""
-    line_status: str = "Chưa đặt hàng"
+    line_status: str = "Chưa tạo đơn mua hàng"   # CR-074
     progress_note: str = ""
     note: str = ""
 

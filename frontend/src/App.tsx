@@ -38,6 +38,7 @@ import SurveyRequestDetail from './pages/SurveyRequestDetail'
 import SurveyRequestProcess from './pages/SurveyRequestProcess'
 import Documents from './pages/Documents'
 import PurchaseProgress from './pages/PurchaseProgress'
+import SurveyProgress from './pages/SurveyProgress'
 import TicketList from './pages/TicketList'
 import TicketDetail from './pages/TicketDetail'
 import { TICKET_ENABLED } from './config/features'
@@ -70,6 +71,7 @@ export default function App() {
             <Route path="surveys-product/:id" element={<SurveyDetail />} />
             <Route path="purchase-orders/:id" element={<PurchaseOrderDetail />} />
             <Route path="purchase-progress" element={<PurchaseProgress />} />
+            <Route path="survey-progress" element={<SurveyProgress />} />
             <Route path="payment-requests/:id" element={<PaymentRequestDetail />} />
             <Route path="documents" element={<Documents />} />
             <Route path="inventory" element={<Inventory />} />
