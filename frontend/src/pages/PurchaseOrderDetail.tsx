@@ -180,8 +180,10 @@ export default function PurchaseOrderDetail() {
   const goodsSuppliers = suppliers.filter((s) => s.supplier_type !== 'transport')
   const carriers = suppliers.filter((s) => s.supplier_type === 'transport')
 
-  // Đơn CHƯA hoàn thành (và chưa hủy) thì vẫn cho sửa sản phẩm/thông tin bên trong
-  const locked = ['completed', 'cancelled'].includes(po.status)
+  // Đơn CHƯA hoàn thành (và chưa hủy) thì vẫn cho sửa sản phẩm/thông tin bên trong.
+  // CR-073: đơn đang CHỜ DUYỆT cũng khóa — sửa lúc này là người duyệt bấm duyệt cho một
+  // nội dung khác với nội dung đã trình. Muốn sửa thì người duyệt trả đơn về (Bị trả lại).
+  const locked = ['submitted', 'completed', 'cancelled'].includes(po.status)
   const canWrite = can('purchase_order', isNew ? 'create' : 'write')
   const headerEditable = (isNew || !locked) && canWrite
   const deliveryEditable = !isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'write')
@@ -221,6 +223,12 @@ export default function PurchaseOrderDetail() {
   const setH = (k: string, v: any) =>
     setPo((s: any) => (k === 'order_date' ? recalcUrgent({ ...s, order_date: v }) : { ...s, [k]: v }))
   const items = po.items || []
+  // CR-073: thiếu thông tin bắt buộc thì chặn ngay tại nút Gửi duyệt (backend chặn lần nữa)
+  const submitBlockReason = !(po.supplier_code || '').trim()
+    ? 'Chưa chọn nhà cung cấp — không gửi duyệt được'
+    : items.length === 0
+      ? 'Đơn chưa có dòng hàng — không gửi duyệt được'
+      : ''
   // Mã hàng đang lưu trên server — mốc để chỉ chặn TRÙNG MỚI (xem utils/lines.newDupCodes)
   const savedCodes = useRef<string[]>([])
   const dupCodes = useMemo(() => newDupCodes(items.map((it: any) => it.product_code || ''), savedCodes.current), [items])
@@ -584,7 +592,7 @@ export default function PurchaseOrderDetail() {
         {!isNew && <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--border)', margin: '2px 4px' }} />}
         {/* ── Nhóm workflow + Lưu (phải) ── */}
         {!isNew && ['draft', 'rejected'].includes(po.status) && can('purchase_order', 'write') && (
-          <button className="btn secondary" onClick={() => action('submit')}><i className="ti ti-send" />Gửi duyệt</button>
+          <button className="btn secondary" disabled={!!submitBlockReason} title={submitBlockReason || undefined} onClick={() => action('submit')}><i className="ti ti-send" />Gửi duyệt</button>
         )}
         {!isNew && po.status === 'submitted' && can('purchase_order', 'approve') && (
           <>

@@ -25,6 +25,18 @@ HEADER = ["id", "code", "misa_code", "pr_code", "survey_code", "company_id", "su
           "is_urgent", "status", "document_status", "note", "approve_note"]
 
 
+def _require_awaiting_approval(db: Session, pid: int, action_label: str) -> None:
+    """CR-073: duyệt / từ chối / trả về chỉ hợp lệ khi đơn đang CHỜ DUYỆT.
+
+    Trước đây các endpoint này gọi thẳng `service.set_status`, mà hàm đó chỉ GÁN trạng thái
+    chứ không kiểm gì — nên gọi API trực tiếp là chuyển đơn sang trạng thái bất kỳ, kể cả
+    ngược chiều (đơn đã Hoàn thành vẫn "duyệt" lại được). Giao diện có ẩn nút, nhưng ẩn nút
+    không phải là chốt chặn.
+    """
+    if service.get_po(db, pid).status != "submitted":
+        raise HTTPException(400, f"Chỉ {action_label} được đơn đang ở trạng thái Chờ duyệt")
+
+
 def _delivery(d, pay=None) -> dict:
     return {"id": d.id, "delivery_no": d.delivery_no, "warehouse_code": d.warehouse_code,
             "carrier_code": d.carrier_code, "carrier_name": d.carrier_name,
@@ -331,6 +343,19 @@ def bulk_delete_pos(ids: str, db: Session = Depends(get_db), user=Depends(requir
 @router.post("/{pid}/submit")
 def submit_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
               user=Depends(require("purchase_order", "write"))):
+    # CR-073: trước đây gọi thẳng set_status nên gửi duyệt được đơn thiếu NCC, thiếu dòng
+    # hàng, hoặc đơn đang ở trạng thái bất kỳ. set_status chỉ GÁN trạng thái, không kiểm gì —
+    # chốt phải đặt ở đây (đồng bộ cách làm của submit_pr).
+    po = service.get_po(db, pid)
+    if po.status not in ("draft", "rejected"):
+        raise HTTPException(400, "Chỉ gửi duyệt được đơn ở trạng thái Nháp hoặc Bị trả lại")
+    missing = []
+    if not (po.supplier_code or "").strip():
+        missing.append("nhà cung cấp")
+    if not db.query(POItem).filter(POItem.po_id == pid).first():
+        missing.append("ít nhất một dòng hàng")
+    if missing:
+        raise HTTPException(400, f"Chưa gửi duyệt được — đơn còn thiếu {' và '.join(missing)}.")
     po = service.set_status(db, pid, "submitted", user.id)
     trigger_notification(db=db, event="po_submitted", doc_type="purchase_order", doc_code=po.code,
                          creator_id=po.created_by or user.id, background_tasks=background_tasks,
@@ -341,6 +366,7 @@ def submit_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
 @router.post("/{pid}/approve")
 def approve_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
                user=Depends(require("purchase_order", "approve"))):
+    _require_awaiting_approval(db, pid, "duyệt")
     po = service.set_status(db, pid, "approved", user.id)
     trigger_notification(db=db, event="po_approved", doc_type="purchase_order", doc_code=po.code,
                          creator_id=po.created_by or user.id, background_tasks=background_tasks,
@@ -352,6 +378,7 @@ def approve_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depend
 def reject_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
               user=Depends(require("purchase_order", "approve"))):
     # Từ chối = KHÓA đơn (Đã từ chối) — không sửa/gửi lại được, phải Nhân bản thành đơn mới.
+    _require_awaiting_approval(db, pid, "từ chối")
     po = service.set_status(db, pid, "cancelled", user.id, data.reason)
     trigger_notification(db=db, event="po_rejected", doc_type="purchase_order", doc_code=po.code,
                          creator_id=po.created_by or user.id, background_tasks=background_tasks,
@@ -363,6 +390,7 @@ def reject_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: S
 def return_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
               user=Depends(require("purchase_order", "approve"))):
     # Trả về = Bị trả lại — người tạo SỬA & GỬI DUYỆT LẠI được (đồng bộ YCMH).
+    _require_awaiting_approval(db, pid, "trả về")
     po = service.set_status(db, pid, "rejected", user.id, data.reason)
     trigger_notification(db=db, event="po_returned", doc_type="purchase_order", doc_code=po.code,
                          creator_id=po.created_by or user.id, background_tasks=background_tasks,
@@ -376,6 +404,9 @@ def cancel_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
     # Hủy phải có lý do
     if not (data.reason or "").strip():
         raise HTTPException(400, "Vui lòng nhập lý do hủy đơn")
+    # CR-073: đơn đã ở điểm cuối thì không hủy lại được nữa
+    if service.get_po(db, pid).status in ("cancelled", "completed"):
+        raise HTTPException(400, "Đơn đã Hủy/Hoàn thành — không hủy lại được")
     # Có sản phẩm nào đã Hoàn thành → KHÔNG cho hủy
     if db.query(POItem).filter(POItem.po_id == pid, POItem.progress_status == "Hoàn thành").first():
         raise HTTPException(400, "Đơn có sản phẩm đã Hoàn thành — không thể hủy")
