@@ -176,3 +176,59 @@ def test_nhan_gom_nhieu_van_ban_cung_dung_vao_mot_van_ban(db, bo_quyet_dinh):
         service.approve(db, moi, ACTOR)
 
     assert len(supersede_service.amended_by(db, cu.id)) == 2
+
+
+# ── Văn bản hẹn hiệu lực TƯƠNG LAI ──────────────────────────────────────────
+#
+# Ban hành hôm nay mà áp dụng từ tháng sau thì văn bản cũ phải còn hiệu lực
+# nguyên tháng đó — nên `approve()` cố ý KHÔNG chạy tác động thay thế. Nhưng nếu
+# không có gì chạy vào đúng ngày hiệu lực thì Quyết định 15 nằm im mãi ở trạng
+# thái "có hiệu lực", và nhãn cảnh báo là thứ duy nhất còn đúng.
+def test_hen_hieu_luc_tuong_lai_thi_chua_thay_the_ngay(db, bo_quyet_dinh):
+    from datetime import date, timedelta
+
+    cu = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
+    moi = service.create_document(db, DocumentCreate(
+        doc_type_id=bo_quyet_dinh["QD"].id, company_id=bo_quyet_dinh["seed"].company_id,
+        department_id=bo_quyet_dinh["seed"].dept_id,
+        owner_employee_id=bo_quyet_dinh["seed"].emp_req_id,
+        title="Quyết định 47", content_html="<p>Thay thế QĐ 15 từ tháng sau.</p>",
+        effective_date=date.today() + timedelta(days=30),
+    ), ACTOR)
+    _noi(db, moi, cu, RELATION_REPLACE)
+    service.submit(db, moi, ACTOR)
+    service.approve(db, moi, ACTOR)
+
+    db.refresh(cu)
+    #  Văn bản cũ CÒN hiệu lực cho tới ngày bản mới áp dụng.
+    assert cu.status == STATUS_EFFECTIVE
+    #  Nhưng người đọc đã được cảnh báo ngay từ bây giờ.
+    assert len(supersede_service.amended_by(db, cu.id)) == 1
+
+
+def test_toi_ngay_hieu_luc_thi_moi_thay_the(db, bo_quyet_dinh):
+    """Lỗ đã vá 17/08: trước đây không có gì chạy vào ngày hiệu lực."""
+    from datetime import date, timedelta
+
+    from app.modules.document.version_model import DocumentVersion
+
+    cu = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
+    moi = service.create_document(db, DocumentCreate(
+        doc_type_id=bo_quyet_dinh["QD"].id, company_id=bo_quyet_dinh["seed"].company_id,
+        department_id=bo_quyet_dinh["seed"].dept_id,
+        owner_employee_id=bo_quyet_dinh["seed"].emp_req_id,
+        title="Quyết định 47", content_html="<p>Thay thế QĐ 15.</p>",
+        effective_date=date.today() + timedelta(days=30),
+    ), ACTOR)
+    _noi(db, moi, cu, RELATION_REPLACE)
+    service.submit(db, moi, ACTOR)
+    service.approve(db, moi, ACTOR)
+
+    #  Tua tới ngày hiệu lực rồi chạy việc bảo trì.
+    version = db.get(DocumentVersion, moi.current_version_id)
+    version.effective_from = date.today()
+    db.commit()
+    service.activate_due_versions(db)
+
+    db.refresh(cu)
+    assert cu.status == STATUS_REPLACED

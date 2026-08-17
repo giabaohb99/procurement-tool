@@ -497,11 +497,11 @@ loại chứng từ bằng cờ, không thay chỗ.
 6. **Nghiệp vụ có phân biệt "hủy" với "bãi bỏ" không?** Tài liệu liệt kê 9 trạng thái, mã đang có 8 —
    thiếu `status = 9 đã hủy`, khác `7 bãi bỏ`. Chưa thêm vì hằng số không có nút bấm thì tạo ra trạng
    thái nửa vời. Chốt xong thì làm trọn cả luồng.
-7. **Văn bản hiệu lực trong TƯƠNG LAI thì tác động thay thế bị treo.** Ba tác động tự động của J10 chỉ
-   chạy khi văn bản mới thật sự có hiệu lực — ban hành hôm nay mà áp dụng từ tháng sau thì văn bản cũ
-   phải còn hiệu lực nguyên tháng đó. Nhưng hiện **không có gì chạy vào ngày hiệu lực** để đổi trạng
-   thái, nên nó sẽ không bao giờ chuyển. Cần một việc chạy theo lịch (mỗi ngày quét văn bản tới ngày
-   hiệu lực). Băng cảnh báo trên văn bản cũ thì đã hiện đúng ngay từ lúc ban hành nên chưa gây hại.
+7. ~~Văn bản hiệu lực tương lai thì tác động thay thế bị treo.~~ **ĐÃ VÁ 17/08** — hóa ra
+   `activate_due_versions()` đã tồn tại sẵn để chuyển văn bản hẹn ngày sang hiệu lực, chỉ là nó không
+   gọi bước thay thế. Nay gom thành `_apply_effective_side_effects()` chạy ở cả hai đường (ban hành
+   ngay và tới ngày). Vẫn cần gắn cron gọi `POST /api/documents/maintenance/activate-due` mỗi ngày —
+   không gắn thì hệ vẫn đúng, chỉ chậm một nhịp cho tới khi có người mở văn bản ra xem.
 8. **J11 mới làm được nửa.** Đã chặn: loại khai `needs_decision` mà không có quan hệ «Kèm theo» thì không
    ban hành được. Chưa làm: *"mỗi lần sửa lớn phải kèm một Quyết định MỚI, không dùng lại Quyết định ban
    hành lần đầu"* — `tab_document_link` không có chiều phiên bản nên hiện không biết Quyết định nào đã

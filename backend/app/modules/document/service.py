@@ -443,6 +443,7 @@ def activate_due_versions(db: Session, document_id: int | None = None) -> int:
         if doc.current_version_id == version.id:
             if doc.status == STATUS_APPROVED:
                 switch_current(db, doc, version, None)
+                _apply_effective_side_effects(db, doc)
                 changed += 1
             continue
         current = db.get(DocumentVersion, doc.current_version_id) if doc.current_version_id else None
@@ -451,11 +452,38 @@ def activate_due_versions(db: Session, document_id: int | None = None) -> int:
         if current and (current.major, current.minor) > (version.major, version.minor):
             continue
         switch_current(db, doc, version, current)
+        _apply_effective_side_effects(db, doc)
         changed += 1
 
     if changed:
         db.commit()
     return changed
+
+
+def _apply_effective_side_effects(db: Session, doc: Document):
+    """Việc phải làm khi một văn bản THẬT SỰ có hiệu lực, dù tới đường nào.
+
+    `approve()` chạy phần này khi ban hành mà hiệu lực ngay. Văn bản hẹn hiệu lực
+    tháng sau thì lúc ban hành CHƯA được chạy — văn bản cũ còn hiệu lực nguyên
+    tháng đó. Tới ngày, `activate_due_versions()` mới gọi vào đây.
+
+    Không có hàm này thì «Quyết định 47 hiệu lực từ 01/09» sẽ không bao giờ đẩy
+    «Quyết định 15» sang *bị thay thế* — nó nằm im mãi ở trạng thái có hiệu lực.
+    """
+    from .clone_notification import notify_clones_stale
+    from .clone_service import clones_of, mark_clones_for_review
+    from .parent_change_service import apply_new_version
+    from .supersede_service import apply_supersede
+
+    #  Actor 0 = hệ thống. Đây đúng là hệ thống làm, không phải người nào bấm.
+    apply_supersede(db, doc, 0)
+    apply_new_version(
+        db, doc,
+        f"Văn bản cha đã có hiệu lực từ {date.today():%d/%m/%Y}. "
+        "Rà lại xem còn đúng không.",
+    )
+    if mark_clones_for_review(db, doc):
+        notify_clones_stale(db, doc, clones_of(db, doc.id))
 
 
 # ── Gợi ý văn bản đã có (B05) ────────────────────────────────────────────────

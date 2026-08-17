@@ -113,11 +113,19 @@ app.include_router(document_book_router)
 app.include_router(numbering_rule_router)
 app.include_router(link_rule_router)
 app.include_router(document_template_router)
-app.include_router(document_router)
+#  ⚠️ THỨ TỰ QUAN TRỌNG. Bốn router dưới đây dùng CHUNG prefix `/api/documents`
+#  với `document_router`, mà `document_router` có route động `/{document_id}`.
+#  FastAPI khớp theo THỨ TỰ ĐĂNG KÝ, nên nếu `document_router` đứng trước thì
+#  `/api/documents/applies-to-me` bị khớp vào `/{document_id}` và chết ở bước
+#  ép kiểu số nguyên — 422, không phải 404, nên nhìn log cũng không ra ngay.
+#
+#  Quy tắc: router nào có đường dẫn TĨNH dưới `/api/documents/...` thì phải
+#  đăng ký TRƯỚC `document_router`. Xem `test_thu_tu_route_van_ban.py`.
 app.include_router(document_link_router)
 app.include_router(document_scope_router)
 app.include_router(document_signature_router)
 app.include_router(document_clone_router)
+app.include_router(document_router)
 app.include_router(survey_router)
 app.include_router(survey_report_router)
 app.include_router(po_router)
