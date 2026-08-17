@@ -92,6 +92,18 @@ export function useSaveApprovalNode(flowId: number) {
   })
 }
 
+export function useReorderApprovalNodes(flowId: number) {
+  const invalidate = useInvalidateApproval()
+
+  return useMutation({
+    mutationFn: (stages: number[][]) => approvalFlowApi.reorderNodes(flowId, stages),
+    onSuccess: invalidate,
+    //  Không toast khi thành công: kéo thả đã tự nói ra kết quả trên màn hình,
+    //  thêm một dòng thông báo mỗi lần kéo chỉ tổ che mất sơ đồ.
+    onError: (error) => toast.error(extractErrorMessage(error)),
+  })
+}
+
 export function useDeleteApprovalNode(flowId: number) {
   const invalidate = useInvalidateApproval()
 

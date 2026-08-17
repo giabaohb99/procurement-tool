@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
-import { ApprovalFlowDetailPage } from './pages/approval-flow-detail-page'
+import { ApprovalFlowDesignerPage } from './pages/approval-flow-designer-page'
 import { ApprovalFlowListPage } from './pages/approval-flow-list-page'
 import { MyTasksPage } from './pages/my-tasks-page'
 
@@ -47,7 +47,7 @@ export const approvalModule: ErpModule = {
     { path: appRoutes.approval.root, element: <Navigate to={appRoutes.approval.myTasks} replace /> },
     { path: appRoutes.approval.myTasks, element: <MyTasksPage /> },
     { path: appRoutes.approval.flows, element: <ApprovalFlowListPage /> },
-    { path: appRoutes.approval.flowNew, element: <ApprovalFlowDetailPage /> },
-    { path: '/approval/flows/:id', element: <ApprovalFlowDetailPage /> },
+    { path: appRoutes.approval.flowNew, element: <ApprovalFlowDesignerPage /> },
+    { path: '/approval/flows/:id', element: <ApprovalFlowDesignerPage /> },
   ],
 }

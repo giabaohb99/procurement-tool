@@ -14,6 +14,7 @@ Bài 6 không viết lại ở đây: nó chính là hai tệp kia, và điều 
 vẫn xanh sau khi thêm bộ máy này.
 """
 import json
+from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
@@ -358,3 +359,61 @@ def test_cau_truy_van_viec_cua_toi_khong_dung_NULLS_LAST(db, seed):
         .statement.compile(dialect=mysql.dialect())
     ).upper()
     assert "NULLS LAST" not in cau
+
+
+# ── Kéo thả đổi thứ tự các bước ─────────────────────────────────────────────
+
+def test_doi_thu_tu_buoc_khong_dam_vao_rang_buoc_duy_nhat(db, seed, nguoi):
+    """Hoán vị hai chặng phải đi HAI LƯỢT.
+
+    `UNIQUE(flow_id, seq, branch_key)` nổ ngay giữa chừng nếu gán thẳng: có một
+    khoảnh khắc hai bước cùng mang `seq = 1`. Bài này canh đúng chỗ đó.
+    """
+    from app.modules.approval.flow_controller import ReorderIn, reorder_nodes
+
+    flow = _luong(db, code="LUONG-DND")
+    a = _buoc(db, flow, 1, nguoi["a"])
+    b = _buoc(db, flow, 2, nguoi["b"])
+
+    reorder_nodes(flow.id, ReorderIn(stages=[[b.id], [a.id]]), db=db,
+                  user=SimpleNamespace(id=ACTOR))
+
+    db.refresh(a)
+    db.refresh(b)
+    assert (b.seq, a.seq) == (1, 2)
+
+
+def test_gop_hai_buoc_vao_cung_mot_chang_thi_tach_nhanh_khac_nhau(db, seed, nguoi):
+    """Hai nhánh song song phải khác `branch_key`, nếu không cũng đâm ràng buộc.
+
+    Đánh lại theo vị trí thay vì tin giá trị cũ — kéo một bước từ chặng khác
+    sang là trùng ngay.
+    """
+    from app.modules.approval.flow_controller import ReorderIn, reorder_nodes
+
+    flow = _luong(db, code="LUONG-NHANH")
+    a = _buoc(db, flow, 1, nguoi["a"])
+    b = _buoc(db, flow, 2, nguoi["b"])
+
+    reorder_nodes(flow.id, ReorderIn(stages=[[a.id, b.id]]), db=db,
+                  user=SimpleNamespace(id=ACTOR))
+
+    db.refresh(a)
+    db.refresh(b)
+    assert a.seq == b.seq == 1
+    assert a.branch_key != b.branch_key
+
+
+def test_doi_thu_tu_thi_luong_len_ban_moi(db, seed, nguoi):
+    """Phiếu ĐANG chạy giữ bản chụp riêng nên không bị ảnh hưởng — nhưng số bản
+    vẫn phải tăng, không thì hai luồng khác hẳn nhau cùng mang một số."""
+    from app.modules.approval.flow_controller import ReorderIn, reorder_nodes
+
+    flow = _luong(db, code="LUONG-BAN")
+    a = _buoc(db, flow, 1, nguoi["a"])
+    ban_cu = flow.version_no
+
+    reorder_nodes(flow.id, ReorderIn(stages=[[a.id]]), db=db, user=SimpleNamespace(id=ACTOR))
+
+    db.refresh(flow)
+    assert flow.version_no > ban_cu

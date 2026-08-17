@@ -175,6 +175,49 @@ def update_node(flow_id: int, node_id: int, data: NodeIn, db: Session = Depends(
     return success(serializer.node_out(db, node), "Đã lưu bước")
 
 
+class ReorderIn(BaseModel):
+    """Thứ tự chặng sau khi kéo thả: mỗi phần tử là một CHẶNG, chứa id các bước
+    của chặng đó (nhiều id = các nhánh song song cùng chặng)."""
+    stages: list[list[int]]
+
+
+@router.put("/{flow_id}/nodes/reorder")
+def reorder_nodes(flow_id: int, data: ReorderIn, db: Session = Depends(get_db),
+                  user=Depends(require("approval_flow", "write"))):
+    """Ghi lại thứ tự sau khi kéo thả trên màn khai luồng.
+
+    Gán lại `seq` theo vị trí trong mảng thay vì để giao diện tự tính số: giao
+    diện tính thì hai người kéo cùng lúc sẽ ra hai bộ số khác nhau, và bộ nào ghi
+    sau thắng mà không ai biết.
+    """
+    flow = _load(db, flow_id)
+    theo_id = {node.id: node for node in flow_service.nodes_of(db, flow.id)}
+
+    #  ⚠️ HAI LƯỢT, không phải một. `UNIQUE(flow_id, seq, branch_key)` nổ ngay
+    #  giữa chừng nếu gán thẳng: hoán vị chặng 1 với chặng 2 thì có một khoảnh
+    #  khắc hai bước cùng mang seq = 1. Đẩy hết sang số ÂM trước rồi mới gán số
+    #  thật — số âm không bao giờ trùng số thật.
+    for thu_tu, node in enumerate(theo_id.values(), start=1):
+        node.seq = -thu_tu
+    db.flush()
+
+    for vi_tri, ids_cua_chang in enumerate(data.stages, start=1):
+        for nhanh, node_id in enumerate(ids_cua_chang):
+            node = theo_id.get(node_id)
+            if node is None:
+                raise HTTPException(400, f"Bước {node_id} không thuộc luồng này")
+            node.seq = vi_tri
+            #  Các nhánh song song phải khác `branch_key` nhau, nếu không cũng
+            #  đâm vào chính ràng buộc trên. Đánh lại theo vị trí thay vì tin
+            #  vào giá trị cũ — kéo một bước từ chặng khác sang là trùng ngay.
+            node.branch_key = "" if len(ids_cua_chang) == 1 else f"n{nhanh + 1}"
+            node.updated_by = user.id
+    db.flush()
+
+    _len_ban_moi(db, flow, user.id)
+    return success(serializer.flow_out(db, flow, kem_buoc=True), "Đã lưu thứ tự các bước")
+
+
 @router.delete("/{flow_id}/nodes/{node_id}")
 def delete_node(flow_id: int, node_id: int, db: Session = Depends(get_db),
                 user=Depends(require("approval_flow", "write"))):

@@ -36,6 +36,9 @@ export const approvalFlowApi = {
     apiPatch<ApprovalNode>(`${FLOW_URL}/${flowId}/nodes/${nodeId}`, values),
   removeNode: (flowId: number, nodeId: number) =>
     apiDelete<null>(`${FLOW_URL}/${flowId}/nodes/${nodeId}`),
+  /** Thứ tự sau khi kéo thả. Mỗi phần tử là một CHẶNG, chứa id các nhánh của nó. */
+  reorderNodes: (flowId: number, stages: number[][]) =>
+    apiPut<ApprovalFlow>(`${FLOW_URL}/${flowId}/nodes/reorder`, { stages }),
 
   switches: () => apiGet<ApprovalSwitch[]>(`${FLOW_URL}/switches`),
   /** I26 — đường lui của cả phase: tắt là quay về đường duyệt cũ ngay. */
