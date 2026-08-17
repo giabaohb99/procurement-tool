@@ -5,9 +5,11 @@ import {
   FileText,
   GitBranch,
   Info,
+  Link2,
   Loader2,
   Pencil,
   Save,
+  Scissors,
   Send,
   Undo2,
 } from 'lucide-react'
@@ -31,6 +33,10 @@ import { DocumentAutosaveStatus } from '../components/document-autosave-status'
 import { DocumentRecordForm } from '../components/document-record-form'
 import { DocumentVersionBanner } from '../components/document-version-banner'
 import { DocumentVersionTab } from '../components/document-version-tab'
+import { DocumentLinkTab } from '../components/document-link-tab'
+import { DocumentExcerptDialog } from '../components/document-excerpt-dialog'
+import { DocumentNeedsReviewBanner } from '../components/document-needs-review-banner'
+import { useCreateExcerpt } from '../hooks/use-document-links'
 import { ManualIssueNumberDialog } from '../components/manual-issue-number-dialog'
 import { documentToForm, emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
 import { effectiveLabel } from '../helpers/document-status'
@@ -99,6 +105,8 @@ export function DocumentDetailPage() {
   const workflow = useDocumentWorkflow(documentId)
   const updateIssueNumber = useUpdateDocumentIssueNumber(documentId)
   const saveContent = useSaveVersionContent(documentId, versionId)
+  const createExcerpt = useCreateExcerpt(documentId)
+  const [excerptOpen, setExcerptOpen] = useState(false)
 
   const canWrite = permissions?.write ?? false
   const canDelete = permissions?.delete ?? false
@@ -200,7 +208,20 @@ export function DocumentDetailPage() {
                 <GitBranch className="size-4" />
                 Phiên bản
               </TabsTrigger>
+              <TabsTrigger value="links">
+                <Link2 className="size-4" />
+                Quan hệ
+              </TabsTrigger>
             </TabsList>
+
+            {/*  C19 — chỉ trích được từ văn bản ĐÃ BAN HÀNH: trích từ một bản
+                 nháp là chia ra ngoài thứ chưa ai duyệt. */}
+            {isIssued && (
+              <Button type="button" variant="outline" onClick={() => setExcerptOpen(true)}>
+                <Scissors className="size-4" />
+                Tạo bản trích
+              </Button>
+            )}
 
             {/* KHÔNG có nút nhập tệp ở đây: nhập từ Word/Markdown chỉ dùng lúc
                 dựng MẪU (`document-template-detail-page.tsx`). Văn bản thật soạn
@@ -295,6 +316,13 @@ export function DocumentDetailPage() {
         deleteConfirmDescription="Chỉ xóa được văn bản còn là nháp và chưa cấp số. Văn bản đã ban hành thì bãi bỏ, không xóa."
       >
         <TabsContent value="compose" className="mt-0">
+          {record && (
+            <DocumentNeedsReviewBanner
+              needsReview={record.needs_review}
+              note={record.needs_review_note}
+            />
+          )}
+
           {record && version && (
             <DocumentVersionBanner
               document={record}
@@ -342,6 +370,24 @@ export function DocumentDetailPage() {
             />
           )}
         </TabsContent>
+
+        <TabsContent value="links" className="mt-0">
+          <DocumentLinkTab documentId={documentId} canWrite={canWrite} />
+        </TabsContent>
+
+        {/* C19 — tách một phần nội dung bản gốc thành văn bản riêng mức mật thấp hơn. */}
+        {record && (
+          <DocumentExcerptDialog
+            open={excerptOpen}
+            onOpenChange={setExcerptOpen}
+            sourceSecrecy={record.secrecy_level}
+            sourceTitle={record.title}
+            isPending={createExcerpt.isPending}
+            onSubmit={(values) =>
+              createExcerpt.mutate(values, { onSuccess: () => setExcerptOpen(false) })
+            }
+          />
+        )}
 
         {/* Lý do đi vào nhật ký thao tác và người khác sẽ đọc lại, nên hỏi bằng
             hộp thoại của hệ thống — bắt buộc điền, gõ được nhiều dòng. */}

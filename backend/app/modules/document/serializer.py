@@ -131,6 +131,9 @@ def base_fields(doc: Document) -> dict:
         "effective_date": doc.effective_date,
         "expire_date": doc.expire_date,
         "current_version_id": doc.current_version_id,
+        #  Băng "cần rà lại" trên trang chi tiết đọc thẳng hai cột này (E11 a/b).
+        "needs_review": doc.needs_review,
+        "needs_review_note": doc.needs_review_note,
         #  Số VÀO SỔ — khác `issue_number` (số đi ra ngoài). Xem
         #  `service.assign_book_number`.
         "book_id": doc.book_id,

@@ -89,6 +89,15 @@ export const queryKeys = {
     version: (documentId: number, versionId: number) =>
       ['document', 'records', documentId, 'versions', versionId] as const,
     access: (documentId: number) => ['document', 'records', documentId, 'access'] as const,
+    /** Quan hệ cha–con hai chiều + phần khai còn thiếu để gửi duyệt (nhóm E). */
+    links: (documentId: number) => ['document', 'records', documentId, 'links'] as const,
+    /** Các ô quan hệ form phải tự hiện theo loại, kèm danh sách chọn được (E03). */
+    linkSlots: (documentId: number) => ['document', 'records', documentId, 'link-slots'] as const,
+    tree: (documentId: number) => ['document', 'records', documentId, 'tree'] as const,
+    /** Quy tắc quan hệ theo LOẠI văn bản — danh mục nền, không theo văn bản nào. */
+    linkRules: () => ['document', 'link-rules'] as const,
+    linkRule: (id: number) => ['document', 'link-rules', 'detail', id] as const,
+    linkRuleOptions: () => ['document', 'link-rules', 'options'] as const,
     permissions: (documentId: number) =>
       ['document', 'records', documentId, 'permissions'] as const,
     suggestions: (params: Record<string, unknown>) => ['document', 'suggestions', params] as const,

@@ -63,6 +63,10 @@ export const appRoutes = {
     numberingRules: '/document/numbering-rules',
     numberingRuleNew: '/document/numbering-rules/new',
     numberingRuleDetail: (id: number | string) => `/document/numbering-rules/${id}`,
+    /** Quy tắc quan hệ cha–con giữa các LOẠI văn bản (E01). */
+    linkRules: '/document/link-rules',
+    linkRuleNew: '/document/link-rules/new',
+    linkRuleDetail: (id: number | string) => `/document/link-rules/${id}`,
     settingsTab: (tab: 'types' | 'templates' | 'security-levels' | 'partners') =>
       `/document/settings?tab=${tab}`,
     /** Loại văn bản (công văn, quyết định…). */

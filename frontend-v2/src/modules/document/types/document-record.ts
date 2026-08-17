@@ -135,6 +135,12 @@ export interface DocumentRecord {
   version_no: string
   version_count: number
   attachment_count: number
+  /**
+   * CẦN RÀ LẠI — bật khi văn bản CHA đổi: lên phiên bản mới hoặc bị bãi bỏ (E11).
+   * Hệ thống chỉ đánh dấu, không tự sửa nội dung con.
+   */
+  needs_review: boolean
+  needs_review_note: string
   created_at: string
 }
 

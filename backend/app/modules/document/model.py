@@ -140,6 +140,13 @@ class Document(Base, AuditMixin):
     issued_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     #  Hạn rà soát định kỳ. Chưa có màn nhắc — thuộc phase sau.
     next_review_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    #  CẦN RÀ LẠI — bật khi văn bản CHA đổi (lên phiên bản mới hoặc bị bãi bỏ) và
+    #  quy tắc quan hệ khai `on_parent_* = 2`. Hệ thống chỉ ĐÁNH DẤU, tuyệt đối
+    #  không tự sửa nội dung con: người sửa quyết định, quyết định đó vào nhật ký.
+    needs_review: Mapped[bool] = mapped_column(Boolean, default=False)
+    #  Vì sao cần rà lại — câu này hiện thẳng trên băng cảnh báo nên phải đọc
+    #  được một mình, không cần tra thêm bảng nào.
+    needs_review_note: Mapped[str] = mapped_column(String(300), default="")
     current_version_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
     # ── Bước xin phép (đã cắt khỏi bản 1 — quyết định 7) ─────────────────────

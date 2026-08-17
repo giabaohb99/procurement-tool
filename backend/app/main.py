@@ -14,9 +14,11 @@ from app.modules.audit.controller import router as audit_router
 from app.modules.auth.controller import router as auth_router
 from app.modules.doc_catalog.book_controller import router as document_book_router
 from app.modules.doc_catalog.numbering_rule_controller import router as numbering_rule_router
+from app.modules.doc_catalog.link_rule_controller import router as link_rule_router
 from app.modules.doc_catalog.controller import (doc_type_router,
                                                external_party_router)
 from app.modules.document.controller import router as document_router
+from app.modules.document.link_controller import router as document_link_router
 from app.modules.document.template_controller import router as document_template_router
 from app.modules.catalog.controller import (brand_router, item_group_router,
                                             unit_router, warehouse_router)
@@ -105,8 +107,10 @@ app.include_router(doc_type_router)
 app.include_router(external_party_router)
 app.include_router(document_book_router)
 app.include_router(numbering_rule_router)
+app.include_router(link_rule_router)
 app.include_router(document_template_router)
 app.include_router(document_router)
+app.include_router(document_link_router)
 app.include_router(survey_router)
 app.include_router(survey_report_router)
 app.include_router(po_router)

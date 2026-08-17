@@ -38,7 +38,7 @@ from app.modules.supplier.model import Supplier
 from app.modules.survey.model import (Survey, SurveyProductLine,  # noqa: F401
                                       SurveySupplierLine)
 from app.modules.user.model import User, UserRole
-from app.seed_data.document_phase1 import (ALL_DOC_TYPES,
+from app.seed_data.document_phase1 import (ALL_DOC_TYPES, DOC_TYPE_LINK_RULES,
                                            DEPARTMENT_DOCUMENT_CONFIG,
                                            DOCUMENT_COMPANIES)
 from app.modules.notification.model import Notification, EmailLog  # noqa: F401
@@ -683,8 +683,42 @@ def seed_document_phase1(db):
             link.manager_employee_id = department.manager_id
             changed += 1
 
+    db.flush()
+    changed += _seed_doc_type_link_rules(db, existing_types)
+
     db.commit()
     return changed
+
+
+def _seed_doc_type_link_rules(db, types_by_code: dict) -> int:
+    """E01 — bảy dòng quy tắc quan hệ mẫu. INSERT-ONLY.
+
+    Không ghi đè dòng đã có: Hành chính chỉnh "bắt buộc hay không" trên giao diện
+    rồi mà seed đè lại thì mỗi lần deploy là một lần chặn nhầm người gửi duyệt.
+    """
+    from app.modules.doc_catalog.link_rule_model import DocTypeLinkRule
+
+    added = 0
+    for source_code, relation, target_code, required, min_count, max_count in DOC_TYPE_LINK_RULES:
+        source = types_by_code.get(source_code.upper())
+        target = types_by_code.get(target_code.upper())
+        if source is None or target is None:
+            continue
+        exists = (
+            db.query(DocTypeLinkRule.id)
+            .filter(DocTypeLinkRule.source_type_id == source.id,
+                    DocTypeLinkRule.relation == relation,
+                    DocTypeLinkRule.target_type_id == target.id)
+            .first()
+        )
+        if exists:
+            continue
+        db.add(DocTypeLinkRule(
+            source_type_id=source.id, relation=relation, target_type_id=target.id,
+            is_required=required, min_count=min_count, max_count=max_count,
+        ))
+        added += 1
+    return added
 
 
 def seed_doc_catalog(db, company_id=0):

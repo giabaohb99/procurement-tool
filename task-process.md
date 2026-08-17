@@ -11,13 +11,13 @@
 | Phase | Nội dung | % làm được | Đủ điều kiện chuyển phase? |
 |---|---|---|---|
 | 1 | Danh mục và số hiệu | **100%** | **ĐẠT** — cả 3 bài nghiệm thu xanh |
-| 2 | Yêu cầu, soạn thảo, phiên bản | **~52%** | chưa |
+| 2 | Yêu cầu, soạn thảo, phiên bản | **~75%** | chưa |
 | 3 | Bộ máy phê duyệt dùng chung | **~5%** | chưa |
 | 4 | Ban hành, phạm vi, clone | **~6%** | chưa |
-| **Tổng 4 phase** | trọng số theo khối lượng (15/30/35/20) | **≈ 33%** | |
+| **Tổng 4 phase** | trọng số theo khối lượng (15/30/35/20) | **≈ 40%** | |
 
 Đọc nhanh: **Phase 1 ĐÓNG, Phase 2 xong đúng phần lõi (soạn thảo + phiên bản), Phase 3 và 4 chưa bắt đầu.**
-Con số 33% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính năng) và hoàn toàn chưa động tới.
+Con số 40% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính năng) và hoàn toàn chưa động tới.
 
 > **Đổi gì so với lần chấm 15/08 — ba đợt:**
 >
@@ -30,6 +30,9 @@ Con số 33% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính n�
 >
 > *Đợt 3 (Phase 2 · C14 và C03/C06).* Màn báo ai đang giữ bản nháp; đính kèm văn bản thôi phát link
 > công khai và có mã băm toàn vẹn. Phase 2 từ ~45% lên **~52%**, tổng lên **~33%**.
+>
+> *Đợt 4 (Phase 2 · nhóm E + C19).* Quan hệ cha–con trọn bộ E01–E06, bản trích nội bộ C19 và quan hệ
+> «trích từ» E11 với ba ràng buộc khóa cứng. Phase 2 từ ~52% lên **~75%**, tổng lên **~40%**.
 
 ---
 
@@ -120,7 +123,7 @@ Muốn "100%" mang nghĩa **đã kiểm**, còn thiếu 4 nhóm test (chưa làm
 
 ---
 
-## 2. Phase 2 · Yêu cầu, soạn thảo, phiên bản — ~52%
+## 2. Phase 2 · Yêu cầu, soạn thảo, phiên bản — ~75%
 
 | Việc | Mã | FE v2 | Ghi chú |
 |---|---|---|---|
@@ -133,9 +136,9 @@ Muốn "100%" mang nghĩa **đã kiểm**, còn thiếu 4 nhóm test (chưa làm
 | Sửa văn bản đã ban hành | C13–C18 | ✅ | `document-version-dialog.tsx`, `document-version-banner.tsx`; **C14 xong 17/08**: `document-draft-holder-notice.tsx` nêu tên người giữ + nút sang bản nháp, và lỗi 409 lúc thua đường đua ở lại trong hộp thoại thay vì bay theo toast |
 | Tệp đính kèm đường riêng tư, mã băm | C03, C06 | 🟡 ~80% | **Nâng 17/08.** Ứng dụng không còn phát link công khai cho đính kèm văn bản (`PRIVATE_ENTITIES`), tải qua `GET /attachments/{id}/download` có kiểm quyền bằng `downloadFile`; mã băm SHA-256 tính lúc tải lên và hiện trên danh sách. **Còn lại là việc hạ tầng** — xem ghi chú dưới |
 | Ghi số hiệu cũ của văn bản giấy | C12 | ✅ | `legacy_code` |
-| Quan hệ cha con | E01–E06 | ❌ | Không có bảng, không có màn |
-| Bản trích nội bộ | C19 | ❌ | — |
-| Quan hệ "trích từ" | E11 | ❌ | — |
+| Quan hệ cha con | E01–E06 | ✅ | `tab_doc_type_link_rule` + `tab_document_link`; màn Quy tắc quan hệ, tab Quan hệ trên trang văn bản, cây tài liệu |
+| Bản trích nội bộ | C19 | ✅ | `excerpt_service.py`, `document-excerpt-dialog.tsx`; mang đúng loại của gốc, **không cấp số riêng** |
+| Quan hệ "trích từ" | E11 | ✅ | `is_system` + `source_version_id` bắt buộc; ba ràng buộc khóa cứng ở tầng dịch vụ |
 | Ảnh → văn bản, ảnh gốc cạnh nháp, cờ tắt AI | L01, L02, L07 | 🟡 ~25% | Có nhập .doc/.docx/.pdf/.md/.html + truy vết chuyển đổi — **không phải ảnh/OCR** |
 | Luồng duyệt yêu cầu tạm một bước | — | 🟡 50% | `submit/approve/reject` đặt trên văn bản, không phải trên yêu cầu |
 
@@ -267,6 +270,8 @@ docker compose exec -T api alembic check   # còn báo drift tab_comment_*/tab_t
 | `doc_catalog/numbering_rule_*.py` | `test_document_numbering_rule.py` |
 | `document/service.py` (bãi bỏ, đổi trạng thái) | `test_document_revoke_keeps_number.py` |
 | `attachment/controller.py`, `core/file_registry.py` | `test_dinh_kem_van_ban_rieng_tu.py` |
+| `document/link_service.py`, `link_serializer.py`, `doc_catalog/link_rule_*.py` | `test_document_quan_he_cha_con.py` |
+| `document/excerpt_service.py`, `service.revoke/approve` | `test_ban_trich_noi_bo.py` |
 | `document-draft-holder-notice.tsx`, `document-version-*.tsx` | `document-draft-holder-notice.test.tsx` + kịch bản bấm tay 6.5 |
 | `document/access_service.py`, quyền theo sổ | `test_document_access.py` (22 test) |
 | `seed_data/document_phase1.py` | `test_document_phase1_seed.py` |
@@ -338,13 +343,13 @@ Mỗi dòng là một task độc lập, đã kèm mã tính năng để tra ng�
 - [x] [P1][D01] Vá lỗi bộ đếm tự đếm lại đầu năm với mã tài liệu bất biến — **S**
 - [x] [P1][TEST] 8 test cho 2 bài nghiệm thu chưa từng được kiểm — **S**
 
-## Phase 2 · Yêu cầu, soạn thảo, phiên bản (còn 7 việc)
+## Phase 2 · Yêu cầu, soạn thảo, phiên bản (còn 2 việc)
 
-- [ ] [P2][E01/E02] Bảng quy tắc quan hệ cha–con + 10 loại quan hệ — **M**
-- [ ] [P2][E03/E04] Form tự hiện ô quan hệ theo loại + chặn gửi duyệt khi thiếu quan hệ bắt buộc — **M**
-- [ ] [P2][E05/E06] Cấm vòng lặp quan hệ + màn cây tài liệu — **M**
-- [ ] [P2][C19] Soạn bản trích nội bộ — tách một phần nội dung bản gốc thành văn bản riêng mức mật thấp hơn — **M**
-- [ ] [P2][E11] Quan hệ "trích từ" + 3 ràng buộc khóa cứng + cột ghi trích từ phiên bản nào của gốc — **M**
+- [x] [P2][E01/E02] Bảng quy tắc quan hệ cha–con + 10 loại quan hệ — **M** — xong 17/08
+- [x] [P2][E03/E04] Form tự hiện ô quan hệ theo loại + chặn gửi duyệt khi thiếu quan hệ bắt buộc — **M** — xong 17/08
+- [x] [P2][E05/E06] Cấm vòng lặp quan hệ + màn cây tài liệu — **M** — xong 17/08
+- [x] [P2][C19] Soạn bản trích nội bộ — tách một phần nội dung bản gốc thành văn bản riêng mức mật thấp hơn — **M** — xong 17/08
+- [x] [P2][E11] Quan hệ "trích từ" + 3 ràng buộc khóa cứng + cột ghi trích từ phiên bản nào của gốc — **M** — xong 17/08
 - [x] [P2][C14] Màn báo "ai đang giữ bản nháp" khi người thứ hai bấm mở phiên bản mới — **S** — xong 17/08
 - [ ] [P2][L01/L02] Chuyển ảnh thành văn bản (OCR) + đặt ảnh gốc cạnh bản nháp để đối chiếu — **L** — CẦN chốt câu hỏi 2 bên dưới
 - [ ] [P2][L07] Cờ tắt AI — tắt là hệ thống chạy bình thường không có phần AI — **S**
