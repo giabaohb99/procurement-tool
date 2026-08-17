@@ -129,8 +129,32 @@ Cùng họ với nó: `core/scoping.py:84` so `model.nspt == profile["emp_name"]
 
 ---
 
+## N-08 · CR-074 / CR-075 làm ở `frontend/`, nợ lại bản `frontend-v2`
+
+**Nợ cái gì.** Hai việc khách yêu cầu ngày 17/08 được dựng giao diện ở `frontend/` — bản đang
+chạy thật — chứ không phải `frontend-v2`:
+
+- **CR-074** trạng thái dòng YCMH "Chưa tạo đơn mua hàng" (`frontend/src/pages/PurchaseRequestDetail.tsx`);
+- **CR-075** màn "Tiến độ báo giá" (màn MỚI hoàn toàn).
+
+CR-074 là sửa lỗi nhãn trên màn đang chạy nên vẫn nằm trong luật D-026. CR-075 thì **là tính
+năng mới, đúng luật phải làm ở `frontend-v2`** — đây là ngoại lệ có ý thức, khách chốt.
+
+**Vì sao chấp nhận nợ.** `frontend-v2` chưa có màn Yêu cầu báo giá lẫn màn Tiến độ mua hàng để
+lấy làm khuôn; dựng ở đó trước nghĩa là khách phải chờ thêm hai màn nữa mới dùng được. Backend
+thì dùng chung — `survey_progress/` gọi được từ cả hai giao diện, nên phần nợ chỉ là lớp màn hình.
+
+**Điều kiện xóa.** Khi `frontend-v2` làm tới phân hệ thu mua (đang thiếu 6 màn: Yêu cầu báo giá,
+Công nợ, Yêu cầu thanh toán, Tiến độ mua hàng, Báo cáo, Phân quyền).
+
+**Xóa bằng cách nào.** Dựng lại hai màn trên `frontend-v2` bằng `DataTable` + `conditional-filter`
+dùng chung, gọi thẳng API cũ; xong thì tắt màn tương ứng ở `frontend/`.
+
+---
+
 ## Nhật ký sổ
 
 | Ngày | Ai | Việc |
 |---|---|---|
 | 17/08/2026 | — | Mở sổ. Ghi N-01…N-06 (nợ có sẵn). N-07 ghi trước ở dạng dự kiến |
+| 17/08/2026 | — | Ghi N-08: giao diện CR-074/CR-075 làm ở `frontend/`, nợ lại bản `frontend-v2` |
