@@ -1,9 +1,11 @@
 # PHASE 3 · BỘ MÁY PHÊ DUYỆT DÙNG CHUNG
 
 > [← plan.md](./plan.md) · Nguồn: `03-lark-approver.md` (phần đường đi của phiếu), `01` nhóm I
-> Ra được: khai luồng duyệt **bằng giao diện, không sửa mã, không deploy lại** — cho **Thu mua trước**, văn thư dùng ké sau.
+> Ra được: khai luồng duyệt **bằng giao diện, không sửa mã, không deploy lại** — cho **văn thư trước**, Thu mua chuyển sau.
 
-**Viết lại toàn bộ ngày 14/08/2026.** Bản cũ (18 task) bị hủy vì hai lý do: (1) nó coi bộ máy là thứ *đứng cạnh* Thu mua, nay chốt là **gom hẳn về một luồng**; (2) nó giả định dữ liệu tổ chức đã đủ để làm điều kiện duyệt — **rà DB thì không đủ, thiếu rất nặng**. Phần văn thư tách khỏi phase này, không nhắc tới nữa.
+**Viết lại toàn bộ ngày 14/08/2026.** Bản cũ (18 task) bị hủy vì hai lý do: (1) nó coi bộ máy là thứ *đứng cạnh* Thu mua, nay chốt là **gom hẳn về một luồng**; (2) nó giả định dữ liệu tổ chức đã đủ để làm điều kiện duyệt — **rà DB thì không đủ, thiếu rất nặng**.
+
+**Đảo người dùng đầu tiên ngày 17/08/2026 (quyết định 10).** Khách chốt: **Thu mua giữ nguyên, không đụng trong phase này**, ghi sổ nợ để chuyển sau. Người dùng đầu tiên thành **văn thư** — chỗ cắm đã sẵn (`tab_doc_type.needs_approval` + `default_flow_id`), bước duyệt hiện chỉ là **một bước cứng**, và chưa có người dùng thật trên prod nên sai thì sửa được. Kéo theo: **nhóm D tách ra làm sau** (trừ T30 ở lại), thêm **T37** đấu nối văn thư, **T35 mở sổ nợ ngay từ đầu phase**. Nhóm A, B, C, E **không đổi một chữ** — bộ máy phải khai được cả hai bên, không phải chỉ văn thư.
 
 ## Tổng quan
 
@@ -11,10 +13,11 @@
 |---|---|
 | Ưu tiên | Cao |
 | Trạng thái | ☐ Chưa bắt đầu |
-| Task | **36** — nhóm A (11) nền tổ chức · B (2) mô hình · C (14) bộ máy · D (4) gom cổng · E (3) giao diện · F (2) sổ nợ |
+| Task | **37** — trong phase **33**: nhóm A (11) nền tổ chức · B (2) mô hình · C (14) bộ máy · E (4) giao diện, gồm cả T30 chuyển từ D sang · F (1) sổ nợ · **G (1) đấu nối văn thư**. **Tách ra làm sau 4 task:** T28 gate · T29 cờ đổi đường · T31 chuyển 5 luồng Thu mua · T36 dọn dẹp |
 | Migration | M-A (nền tổ chức, nhóm A) · M-B (6 bảng phê duyệt, T13) |
-| Phụ thuộc | **Nhóm A chặn tất cả.** Không có chức vụ và pháp nhân thì không có điều kiện duyệt để mà khai |
-| Người dùng đầu tiên | **Thu mua** — 5 luồng đang chạy thật, không phải văn bản |
+| Phụ thuộc | **Nhóm A chặn tất cả.** Không có chức vụ và pháp nhân thì không có điều kiện duyệt để mà khai. T37 chờ thêm **P2** (nhánh B) |
+| Người dùng đầu tiên | **Văn thư** — quyết định 10 (17/08/2026). Thu mua giữ nguyên, vào sổ nợ |
+| Nhiều pháp nhân | Theo quyết định 11: `approval_flow.company_id` + **thừa kế leo cây `company.parent`** · điều kiện lưu bằng **ID**, cấm chuỗi tên · **không** thêm `tenant_id`. Chốt **trước** khi gõ M-B ở T13 |
 
 ---
 
@@ -57,9 +60,9 @@ Cột **L**: `BE` backend · `FE` frontend-v2 · `DB` migration · `DATA` nạp/
 | **P3-T06** | ∞·DATA | **Khai trưởng phòng** | **16/18 phòng đang `manager_id = 0`.** Không khai thì cách chọn "trưởng phòng của người nộp" rơi thẳng vào đường dự phòng ngay ngày đầu, và người dùng sẽ kết luận là bộ máy hỏng |
 | **P3-T07** | ∞·DATA | **Cây tổ chức + cấp trên trực tiếp** | `tab_department.parent` (18/18 đang 0) · `tab_company.parent` (15/15 đang 0) · thêm **`tab_employee.manager_id`** cho cấp trên trực tiếp — hiện **không có cột này**, cấp trên chỉ suy gián tiếp qua trưởng phòng. Hình dạng theo quyết định (c) của T01. **Nếu chốt là leo theo cấp bậc chức vụ thì T07 rút xuống chỉ còn `company.parent`** |
 | **P3-T08** | DATA | **Người đại diện pháp nhân** | Điền `legal_representative_id` cho **3 công ty đang NULL**, `legal_rep_title` cho **14 công ty đang rỗng**. Rẻ, làm một buổi, mở khóa được một cách chọn người duyệt |
-| **P3-T09** | ∞·DATA | **Khóa hóa phòng ban trên chứng từ** | YCMH · ĐMH · Yêu cầu khảo sát đang nối phòng ban bằng **chuỗi tên** (`department varchar(255)`). Thêm `department_id` **song song**, backfill bằng khớp tên, **giữ cột chữ** để không vỡ màn hình cũ. Chốt cách xử lý `'Phòng Marketing'` theo quyết định (d). Ghi vào sổ nợ F: `tab_user_scope` với `dim='department'` cũng đang lưu **tên phòng** làm giá trị — cùng một món nợ, dọn cùng lúc |
-| **P3-T10** | BE | **Hàm lấy giá trị phiếu** | `doc_amount(db, entity, entity_id) -> Decimal` — chuẩn hóa "số tiền của phiếu" cho cả 5 loại. YCMH và ĐMH **không có cột tổng ở header**, phải cộng từ dòng; YCTT có `total` sẵn. Không có hàm này thì mỗi chỗ rẽ nhánh theo tiền tự cộng một kiểu, và số trên phiếu sẽ khác số bộ máy dùng để quyết định |
-| **P3-T11** | BE | **Lưới an toàn: kiểm thử 5 luồng duyệt Thu mua hiện tại** | YCMH · khảo sát · yêu cầu khảo sát · ĐMH · yêu cầu thanh toán. **Viết trước khi đụng vào bất cứ thứ gì**, vì phase này sẽ sửa vào chúng thật. Đây là điều kiện nghiệm thu của cả phase, chạy lại ở mọi cổng |
+| **P3-T09** | ∞·DATA | **Khóa hóa phòng ban trên chứng từ** | YCMH · ĐMH · Yêu cầu khảo sát đang nối phòng ban bằng **chuỗi tên** (`department varchar(255)`). Thêm `department_id` **song song**, backfill bằng khớp tên, **giữ cột chữ** để không vỡ màn hình cũ. Chốt cách xử lý `'Phòng Marketing'` theo quyết định (d). Ghi vào sổ nợ F: `tab_user_scope` với `dim='department'` cũng đang lưu **tên phòng** làm giá trị — cùng một món nợ, dọn cùng lúc. **Cập nhật 17/08/2026:** Thu mua chưa chuyển nên task này **hạ ưu tiên trong nhóm A**, nhưng **không bỏ và không hoãn vô hạn** — nó không chỉ là dọn dẹp mà là **lỗ lộ dữ liệu xuyên pháp nhân**: hai pháp nhân cùng có "Phòng Hành chính" thì phạm vi phòng ban khớp bằng tên sẽ cho người ở pháp nhân A thấy phiếu của pháp nhân B. Cùng loại lỗi ở `core/scoping.py` chỗ ĐMH khớp người phụ trách bằng **tên** (`model.nspt == profile["emp_name"]`). Nền chung của việc này là **P0-T06 + P0-T07**, làm ở phase 0 |
+| **P3-T10** | BE | **Hàm lấy giá trị phiếu** | `doc_amount(db, entity, entity_id) -> Decimal` — chuẩn hóa "số tiền của phiếu" cho cả 5 loại. YCMH và ĐMH **không có cột tổng ở header**, phải cộng từ dòng; YCTT có `total` sẵn. Không có hàm này thì mỗi chỗ rẽ nhánh theo tiền tự cộng một kiểu, và số trên phiếu sẽ khác số bộ máy dùng để quyết định. **Cập nhật 17/08/2026:** văn bản **không có tiền** nên T10 không chặn người dùng đầu tiên — nhưng **vẫn phải xong trước T12**, vì T12 khai thử 5 luồng Thu mua ra giấy mà điều kiện hay dùng nhất chính là số tiền |
+| **P3-T11** | BE | **Lưới an toàn: kiểm thử 5 luồng duyệt Thu mua hiện tại** | YCMH · khảo sát · yêu cầu khảo sát · ĐMH · yêu cầu thanh toán. **Viết trước khi đụng vào bất cứ thứ gì.** **Đổi vai từ 17/08/2026:** trước đây là lưới an toàn để *chuyển* Thu mua; nay Thu mua **không chuyển**, nên nó là **bằng chứng rằng phase này không đụng vào Thu mua**. Vẫn làm sớm nhất, vẫn là điều kiện nghiệm thu chạy lại ở mọi cổng — nhóm A có sửa `core/scoping.py`, `modules/{company,department,employee}` và thêm `department_id` vào 3 bảng chứng từ, đều là chỗ Thu mua đứng lên trên |
 
 **Cổng nhóm A:** 4 quyết định đã chốt · 244 nhân sự có chức vụ và pháp nhân · 18 phòng ban có pháp nhân và trưởng phòng · 5 kiểm thử Thu mua xanh. Chưa đạt thì **không sang nhóm B** — làm bộ máy trên nền dữ liệu rỗng là làm xong không chạy được.
 
@@ -67,14 +70,14 @@ Cột **L**: `BE` backend · `FE` frontend-v2 · `DB` migration · `DATA` nạp/
 
 | Mã | L | Việc | Chi tiết |
 |---|---|---|---|
-| **P3-T12** | — | **Khai thử 5 luồng thật ra giấy** | Đúng 5 luồng Thu mua đang chạy, khai bằng mô hình `tab_approval_flow` + `tab_approval_node` **có dùng chức vụ và cấp bậc của nhóm A**. **Chỗ nào khai không nổi là mô hình còn thiếu** — sửa trên giấy rẻ hơn sửa khi đã có 200 phiếu chạy. Chú ý luồng YCMH: nó có **hai lần duyệt** (trưởng phòng duyệt, rồi thu mua điều phối), khai không ra hai bước là mô hình sai |
-| **P3-T13** | DB | **Migration M-B: 6 bảng phê duyệt** | `tab_approval_flow` · `tab_approval_node` · `tab_approval_instance` (có `flow_snapshot JSON`) · `tab_approval_task` · `tab_approval_action` · `tab_delegation`. Điều kiện trong `condition_json` phải khai được: **số tiền · pháp nhân · phòng ban · chức vụ · cấp bậc chức vụ · loại phiếu · gấp/không gấp**. Chỉ mục bắt buộc có ngay: **`tab_approval_task(assignee_employee_id, status)`** — truy vấn "việc của tôi" chạy mỗi lần ai mở trang chủ. `tab_approval_action` chỉ ghi thêm, grant MySQL không cấp `UPDATE`/`DELETE` |
+| **P3-T12** | — | **Khai thử 6 luồng thật ra giấy** | **5 luồng Thu mua đang chạy + 1 luồng duyệt văn bản**, khai bằng mô hình `tab_approval_flow` + `tab_approval_node` **có dùng chức vụ và cấp bậc của nhóm A**. **Chỗ nào khai không nổi là mô hình còn thiếu** — sửa trên giấy rẻ hơn sửa khi đã có 200 phiếu chạy. Chú ý luồng YCMH: nó có **hai lần duyệt** (trưởng phòng duyệt, rồi thu mua điều phối), khai không ra hai bước là mô hình sai. **Vẫn phải khai đủ 5 luồng Thu mua dù chưa chuyển** (quyết định 10) — thiết kế mô hình chỉ vừa văn thư thì lúc mở nhóm D, Thu mua vào không lọt và phải sửa lại bảng khi đã có phiếu chạy. Thêm một bài khai thử của riêng nhiều pháp nhân: *"một luồng khai ở Tập đoàn, 12 pháp nhân con dùng chung, riêng một pháp nhân khai đè"* — khai không nổi là thiếu phần thừa kế ở T13/T14 |
+| **P3-T13** | DB | **Migration M-B: 6 bảng phê duyệt** | `tab_approval_flow` · `tab_approval_node` · `tab_approval_instance` (có `flow_snapshot JSON`) · `tab_approval_task` · `tab_approval_action` · `tab_delegation`. Điều kiện trong `condition_json` phải khai được: **số tiền · pháp nhân · phòng ban · chức vụ · cấp bậc chức vụ · loại phiếu · gấp/không gấp**. Chỉ mục bắt buộc có ngay: **`tab_approval_task(assignee_employee_id, status)`** — truy vấn "việc của tôi" chạy mỗi lần ai mở trang chủ. `tab_approval_action` chỉ ghi thêm, grant MySQL không cấp `UPDATE`/`DELETE`.<br>**Ba điều bắt buộc theo quyết định 11 — chốt TRƯỚC khi gõ migration, không sửa được sau khi `flow_snapshot` đã có phiếu chạy:** **(a)** `tab_approval_flow.company_id`, `0` = **dùng chung cả tập đoàn**, kèm cờ `applies_to_children` cho luồng khai ở một pháp nhân mẹ; **(b)** mọi khóa tổ chức trong `condition_json` lưu bằng **ID** (`company_id`, `department_id`, `position_id`, `employee_id`), **cấm lưu chuỗi tên** — đây đúng là món nợ đang phải trả ở P0-T06/T07 và T09; **(c)** **không** thêm cột `tenant_id`: gốc cây pháp nhân (`level = 1`, `parent = 0`) đã đóng vai đó, muốn sang kiểu nhiều khách hàng thì chặn ở `core/scoping.py` chứ không phải thêm cột |
 
 ### Nhóm C · Bộ máy chạy phiên (backend, tự kiểm bằng pytest)
 
 | Mã | L | Việc | Chi tiết |
 |---|---|---|---|
-| **P3-T14** | BE | **Chọn luồng** | Khớp theo `entity` + `company_id` + `department_id` + `condition_json`, nhiều luồng khớp thì `priority` nhỏ hơn thắng. Không luồng nào khớp → **lỗi rõ ràng, không tự duyệt qua** |
+| **P3-T14** | BE | **Chọn luồng — có thừa kế theo cây pháp nhân** | Khớp theo `entity` + `company_id` + `department_id` + `condition_json`, nhiều luồng khớp thì `priority` nhỏ hơn thắng. Không luồng nào khớp → **lỗi rõ ràng, không tự duyệt qua**. **Thừa kế (quyết định 11a):** không có luồng khai đích danh cho pháp nhân của phiếu thì **leo lên `tab_company.parent`** cho tới gốc, lấy luồng gần nhất có `applies_to_children`; cuối cùng mới tới luồng `company_id = 0` dùng chung. **Luôn ưu tiên luồng khai gần nhất** — con khai đè thì mẹ không áp xuống. Không có thừa kế thì 13 pháp nhân × 5 loại phiếu = **65 luồng khai tay**, sửa một quy định phải sửa 13 chỗ. Đây cũng chính là phần "clone xuống pháp nhân con" của P4 văn thư — làm một lần dùng cả hai. Kiểm thử bắt buộc: luồng khai ở Tập đoàn áp đúng cho 12 con, con thứ 13 khai đè thì chỉ nó đổi |
 | **P3-T15** | BE | **Khởi tạo phiên + bản chụp luồng** | Chép **toàn bộ** định nghĩa luồng + node vào `flow_snapshot`, ghi `flow_version_no`. Từ đó engine **chỉ đọc bản chụp**. Đây là cột giải bài toán sửa luồng khi đang có phiếu chạy |
 | **P3-T16** | BE | **Bảy cách chọn người duyệt** | 1 đích danh · 2 **theo vai trò** · 3 **theo chức vụ** (dùng `tab_position` của T02) · 4 **trưởng phòng của người nộp tại pháp nhân của phiếu** · 5 **lên n cấp** (theo quyết định (c): cây phòng ban hoặc `position.level`) · 6 người đại diện pháp nhân · 7 lấy từ một ô trên phiếu (phải kiểm người được chọn nằm trong danh sách cho phép). Cách 2·3·4·5·6 **chỉ chạy được sau nhóm A** |
 | **P3-T17** | BE | **Nhiều người trong một bước** | Một người đủ · tất cả phải duyệt · lần lượt theo `seq` · đủ tỷ lệ (để bản sau). **Mặc định: một người từ chối là hỏng cả bước** |
@@ -89,31 +92,41 @@ Cột **L**: `BE` backend · `FE` frontend-v2 · `DB` migration · `DATA` nạp/
 | **P3-T26** | BE | **Sổ đăng ký việc chạy kèm, cùng transaction** | `on_approved / on_rejected / on_returned(db, entity, entity_id, instance)`. Duyệt YCMH hiện kéo theo đổi trạng thái, điều phối, chuông, thư — **không có chỗ cắm này thì chuyển sang bộ máy là mất sạch tác dụng phụ**. Việc chạy kèm ném lỗi → **rollback cả hành động duyệt**, không để phiếu "đã duyệt nhưng chưa làm gì" |
 | **P3-T27** | BE | **Quyền đọc phiếu cho người được giao duyệt** | `approval_task` là entity mới, mà phạm vi `assigned` đang **viết tay cho từng entity** ở `core/scoping.py:37–66` nên **không được lọc tự động**. Nặng hơn: người được giao duyệt một phiếu **ngoài phạm vi dữ liệu thường ngày của họ** sẽ không mở nổi phiếu mình phải duyệt. Luật: **được giao duyệt phiếu nào thì đọc được đúng phiếu đó**, hết phiên là hết, **không nới phạm vi chung**. Kiểm thử: người pháp nhân B duyệt phiếu pháp nhân A → mở được đúng phiếu đó, **không** thấy thêm phiếu nào khác của A |
 
-### Nhóm D · Gom về một cổng và chuyển Thu mua sang
+### Nhóm D · Gom về một cổng và chuyển Thu mua sang — **TÁCH RA, LÀM SAU**
 
-> Cách làm đã chốt: **thay đúng đoạn kiểm tra phân quyền**, hoặc **thêm một nhánh `if` ngay trong hàm đó** để đổi đường. Không viết lại nghiệp vụ. Mỗi chỗ chèn **phải vào sổ nợ ở nhóm F ngay lúc chèn**.
-
-| Mã | L | Việc | Chi tiết |
-|---|---|---|---|
-| **P3-T28** | BE | **Một cổng duy nhất — bê nguyên xi, chưa đổi hành vi** | `modules/approval/gate.py`, đúng một hàm `approval_state(db, user, entity, entity_id)` trả về `{instance_id, status, step, waiting_on[], can_approve, can_reject, can_return, can_withdraw, block_reason}`. **Bê nguyên logic duyệt của 5 module Thu mua vào, không sửa một dòng nghiệp vụ** — kể cả `_in_approve_scope` ở `purchase_request/controller.py:45`, kể cả chỗ trông có vẻ sai. Controller bỏ tính tay, gọi cổng. Giao diện **không sửa**. Không đụng DB. **Chống chỉ định: nhân tiện sửa luôn cái thấy sai.** Nghiệm thu: 5 kiểm thử T11 xanh y nguyên, `git diff` chỉ có mã bị **dời chỗ** |
-| **P3-T29** | BE | **Nhánh `if` đổi đường + cờ theo từng loại phiếu** | `setting` key `approval_engine.{entity}` mặc định `false`. Nhánh `if` nằm **bên trong cổng**, đúng một chỗ: bật → trả lời bằng `tab_approval_task`, tắt → trả lời bằng đoạn mã cũ đã dời vào. Tắt cờ là về đường cũ **ngay, không deploy**. Vào sổ nợ F |
-| **P3-T30** | BE·FE | **Hợp đồng dữ liệu cho giao diện** | Mọi phiếu duyệt được trả về **cùng một khối `approval`** như trên. Hiện backend phát ra **12 tên cờ rời rạc** (`can_approve`, `can_dispatch`, `can_process`, `can_khao_sat_lai`…) — **giữ song song** tới khi dọn ở T36, đừng xóa ngay kẻo vỡ `frontend/` đang chạy thật. Thêm `?waiting_for_me=1` trên endpoint danh sách và `GET /approvals/my-tasks`, chạy trên chỉ mục của T13. **Giao diện tuyệt đối không tự suy luận quyền duyệt** |
-| **P3-T31** | BE·DATA | **Chuyển 5 luồng Thu mua, mỗi luồng một lần** | Thứ tự: **yêu cầu thanh toán** (đơn giản nhất) → khảo sát → yêu cầu khảo sát → **YCMH** (khó nhất: hai lần duyệt + `_in_approve_scope` + điều phối) → **ĐMH**. Mỗi luồng đi đúng bốn nhịp: khai luồng bằng giao diện T32 → chạy kiểm thử của luồng đó **ở cả hai chế độ cờ, phải ra cùng kết quả** → bật ở dev, theo dõi → mới sang luồng kế. **Không bật hai luồng cùng lúc** |
-
-### Nhóm E · Giao diện
+> **Hoãn ngày 17/08/2026 theo quyết định 10.** Khách chốt Thu mua **giữ nguyên**, không đụng trong phase này. Ba task T28 · T29 · T31 và task dọn dẹp T36 **ra khỏi phạm vi phase**, giữ nguyên nội dung ở đây để lúc mở lại không phải viết lại. **T30 ở lại phase** (chuyển sang nhóm E) vì văn thư cần đúng hợp đồng dữ liệu đó.
+>
+> **Điều kiện mở lại nhóm D:** bộ máy đã chạy thật ổn định với văn thư **ở prod**. Trước lúc đó, mọi món nợ liên quan nằm ở [`no-can-don.md`](./no-can-don.md) — sổ nợ mở **ngay từ đầu phase** (T35), không chờ T28 như bản cũ.
+>
+> Cách làm khi mở lại (giữ nguyên): **thay đúng đoạn kiểm tra phân quyền**, hoặc **thêm một nhánh `if` ngay trong hàm đó** để đổi đường. Không viết lại nghiệp vụ. Mỗi chỗ chèn **phải vào sổ nợ ngay lúc chèn**.
 
 | Mã | L | Việc | Chi tiết |
 |---|---|---|---|
+| **P3-T28** | ⏸ BE | **[HOÃN] Một cổng duy nhất — bê nguyên xi, chưa đổi hành vi** | `modules/approval/gate.py`, đúng một hàm `approval_state(db, user, entity, entity_id)` trả về `{instance_id, status, step, waiting_on[], can_approve, can_reject, can_return, can_withdraw, block_reason}`. **Bê nguyên logic duyệt của 5 module Thu mua vào, không sửa một dòng nghiệp vụ** — kể cả `_in_approve_scope` ở `purchase_request/controller.py:45`, kể cả chỗ trông có vẻ sai. Controller bỏ tính tay, gọi cổng. Giao diện **không sửa**. Không đụng DB. **Chống chỉ định: nhân tiện sửa luôn cái thấy sai.** Nghiệm thu: 5 kiểm thử T11 xanh y nguyên, `git diff` chỉ có mã bị **dời chỗ** |
+| **P3-T29** | ⏸ BE | **[HOÃN] Nhánh `if` đổi đường + cờ theo từng loại phiếu** | `setting` key `approval_engine.{entity}` mặc định `false`. Nhánh `if` nằm **bên trong cổng**, đúng một chỗ: bật → trả lời bằng `tab_approval_task`, tắt → trả lời bằng đoạn mã cũ đã dời vào. Tắt cờ là về đường cũ **ngay, không deploy**. Vào sổ nợ F |
+| **P3-T31** | ⏸ BE·DATA | **[HOÃN] Chuyển 5 luồng Thu mua, mỗi luồng một lần** | Thứ tự: **yêu cầu thanh toán** (đơn giản nhất) → khảo sát → yêu cầu khảo sát → **YCMH** (khó nhất: hai lần duyệt + `_in_approve_scope` + điều phối) → **ĐMH**. Mỗi luồng đi đúng bốn nhịp: khai luồng bằng giao diện T32 → chạy kiểm thử của luồng đó **ở cả hai chế độ cờ, phải ra cùng kết quả** → bật ở dev, theo dõi → mới sang luồng kế. **Không bật hai luồng cùng lúc** |
+
+### Nhóm E · Hợp đồng dữ liệu và giao diện
+
+| Mã | L | Việc | Chi tiết |
+|---|---|---|---|
+| **P3-T30** | BE·FE | **Hợp đồng dữ liệu cho giao diện** *(chuyển từ nhóm D sang, 17/08/2026)* | Mọi phiếu duyệt được trả về **cùng một khối `approval`**: `{instance_id, status, step, waiting_on[], can_approve, can_reject, can_return, can_withdraw, block_reason}`. **Ở lại phase** dù nhóm D hoãn, vì **văn thư cần đúng hợp đồng này** — `<ApprovalPanel>` của T33 đọc nó, và T37 phải phát ra nó cho `document`. Bên Thu mua backend hiện phát ra **12 tên cờ rời rạc** (`can_approve`, `can_dispatch`, `can_process`, `can_khao_sat_lai`…) — **không đụng tới, giữ nguyên**; chỉ dọn khi mở lại nhóm D (T36). Thêm `?waiting_for_me=1` trên endpoint danh sách và `GET /approvals/my-tasks`, chạy trên chỉ mục của T13. **Giao diện tuyệt đối không tự suy luận quyền duyệt** |
 | **P3-T32** | FE | **Trình khai luồng duyệt** | Màn nặng nhất. Danh sách luồng + trình soạn: danh sách bước dọc kéo đổi thứ tự, mỗi bước một panel (cách chọn người duyệt, nhiều người, người thay thế, hạn), khối điều kiện rẽ nhánh **có đủ: số tiền · pháp nhân · phòng ban · chức vụ · cấp bậc · loại phiếu · gấp**, **ép khai nhánh mặc định**. Ô "không tìm ra người duyệt" **không có lựa chọn tự duyệt qua**. Nút xem trước đường đi. **Không dùng thư viện flow-chart** — danh sách dọc đủ và rẻ hơn nhiều |
-| **P3-T33** | FE | **Panel duyệt dùng chung** | `<ApprovalPanel entity entityId />` đọc **đúng khối `approval` của T30**, không tự suy luận: nút duyệt/từ chối/trả lại/rút, ô ý kiến + đính kèm (tái dùng `procurement/document-comments` + `mention-input`), dòng thời gian dấu vết, hiện phiên bản luồng đang chạy, hiện lý do khi không được duyệt. **Dựng và nghiệm thu trên trang chi tiết YCMH** (`purchase-request-detail-page.tsx`). Gỡ luôn chỗ rò `(data.can_approve \|\| canManage)` ở dòng **513** và **520** — `canManage = can('purchase_request','cancel')`, tức giao diện đang **tự đoán** "có quyền hủy nghĩa là quản lý nên chắc được trả về", suy đoán này không tồn tại ở backend |
+| **P3-T33** | FE | **Panel duyệt dùng chung** | `<ApprovalPanel entity entityId />` đọc **đúng khối `approval` của T30**, không tự suy luận: nút duyệt/từ chối/trả lại/rút, ô ý kiến + đính kèm (tái dùng `procurement/document-comments` + `mention-input`), dòng thời gian dấu vết, hiện phiên bản luồng đang chạy, hiện lý do khi không được duyệt. **Dựng và nghiệm thu trên trang chi tiết VĂN BẢN** (đổi 17/08/2026 — trước đây là YCMH; nay YCMH không đụng tới nữa, xem T37). Panel phải **không biết** nó đang đứng trên phiếu loại gì: chỉ nhận `entity` + `entityId`, mọi thứ khác đọc từ khối `approval`. **Ghi lại vào sổ nợ:** chỗ rò `(data.can_approve \|\| canManage)` ở `purchase-request-detail-page.tsx` dòng **513** và **520** — `canManage = can('purchase_request','cancel')`, tức giao diện đang **tự đoán** "có quyền hủy nghĩa là quản lý nên chắc được trả về", suy đoán này không tồn tại ở backend. **Chưa gỡ ở phase này** vì gỡ là đụng vào Thu mua; ghi vào [`no-can-don.md`](./no-can-don.md), gỡ cùng nhóm D |
 | **P3-T34** | FE | **Việc của tôi · phiếu kẹt · in dấu vết · ủy quyền** | `my-tasks-page.tsx` 3 tab: chờ tôi · tôi đã nộp · tôi đã duyệt — lấy từ `GET /approvals/my-tasks`, **không gọi cổng cho từng dòng** (N+1 sẽ giết trang chủ). `stuck-instances-page.tsx` liệt kê phiếu không ai xử lý. `approval-trace-print-page.tsx` bản in dấu vết, ghi rõ "B duyệt thay A theo ủy quyền số 12" và "bước 3 tự qua vì …". `delegation-page.tsx` khai ủy quyền |
+
+### Nhóm G · Đấu nối VĂN THƯ — người dùng đầu tiên
+
+| Mã | L | Việc | Chi tiết |
+|---|---|---|---|
+| **P3-T37** | BE·FE | **Cho văn bản chạy qua bộ máy duyệt** | Hôm nay duyệt văn bản là **một bước cứng**: `POST /api/documents/{id}/approve` → `Depends(require("document","approve"))` → `service.approve()` (cấp số + đổi trạng thái phiên bản). Đổi thành: **`doc_type.needs_approval = true`** → `submit` khởi tạo phiên duyệt (T15), `approve`/`reject` đi qua `tab_approval_task`; **`false`** → giữ nguyên đường một bước cũ. Đúng **một cái `if`, một cái cờ** — cùng khuôn với nhánh `if` của T29 nhưng ở chỗ rẻ hơn nhiều vì văn thư chưa có người dùng thật. Luồng dùng lấy từ **`doc_type.default_flow_id`** — cột đã khai sẵn từ đầu, không phải `ALTER`. Ba chỗ phải cẩn thận: **(1)** cấp số phải nằm **trong cùng transaction** với hành động duyệt — dùng chỗ cắm việc chạy kèm của **T26**, không gọi rời; **(2)** `number_when = 2` nghĩa là cấp số **lúc được duyệt**, nên chỗ gọi `next_number` là **bước cuối** của luồng, không phải bước đầu; **(3)** người được giao duyệt một văn bản **ngoài phạm vi thường ngày** phải mở được đúng văn bản đó — `access_service.visible_condition()` đã có sẵn chỗ OR thêm nguồn quyền, ghép `tab_approval_task` vào đó chứ đừng nới phạm vi vai trò (xem T27). Giao diện: gắn `<ApprovalPanel entity="document" />` của T33 vào trang chi tiết văn bản, gỡ nút duyệt một bước. **Chờ P2 xong** (nhánh B) — đây là chỗ duy nhất trong cả phase phụ thuộc P2 |
 
 ### Nhóm F · Sổ nợ và dọn dẹp
 
 | Mã | L | Việc | Chi tiết |
 |---|---|---|---|
-| **P3-T35** | — | **Mở sổ nợ, ghi ngay lúc chèn** | Tệp `plans/260814-1036-van-thu-p0-p3/no-can-don.md`, mở **cùng lúc với T28**, ghi **ngay khi chèn chứ không ghi sau**. Mỗi dòng: tệp · dòng · chèn cái gì · điều kiện xóa được. Bốn nhóm nợ đã biết trước: **(1)** mọi nhánh `if` đổi đường ở T29 · **(2)** đoạn mã duyệt cũ bê nguyên vào cổng ở T28, gồm `_in_approve_scope` · **(3)** 12 tên cờ `can_*` giữ song song ở T30 · **(4)** **phân quyền vai trò thành thừa** — `MANAGER` (id 2) và `dept_head` (id 11) và `manager_purchase` (id 8, demo) và `pur_manager` (id 14) cùng nghĩa "quản lý"; khi bước duyệt chuyển sang khai bằng luồng thì một số quyền `approve` không còn dùng, cộng `tab_user_scope` với `dim='department'` đang lưu **tên phòng** làm giá trị |
-| **P3-T36** | ∞ | **Dọn** | Chỉ làm khi luồng đó đã chạy thật ổn **ở prod**. Xóa nhánh `if`, xóa mã cũ trong cổng, xóa `_in_approve_scope`, xóa cờ `can_*` hết người dùng, dọn vai trò/quyền thành thừa. **Task cuối cùng, không gộp vào T31.** Không làm là còn ba cơ chế cùng trả lời một câu hỏi — đúng cái mà việc gom này sinh ra để dẹp |
+| **P3-T35** | — | **Mở sổ nợ, ghi ngay lúc chèn** | Tệp [`no-can-don.md`](./no-can-don.md), mở **ngay từ đầu phase** (đổi 17/08/2026 — bản cũ ghi "cùng lúc với T28", mà T28 đã hoãn, chờ nó là chờ vô hạn). Ghi **ngay khi chèn chứ không ghi sau**. Mỗi dòng: tệp · dòng · chèn cái gì · điều kiện xóa được. Nợ **to nhất, ghi dòng đầu tiên:** *5 luồng duyệt Thu mua chưa chuyển sang bộ máy mới, mã cũ giữ nguyên xi* — kèm điều kiện xóa. Bốn nhóm nợ đã biết trước: **(1)** nhánh `if` đổi đường — hôm nay chỉ có một chỗ, ở T37 · **(2)** mã duyệt cũ của Thu mua **vẫn nằm nguyên tại chỗ**, gồm `_in_approve_scope` ở `purchase_request/controller.py:45` · **(3)** 12 tên cờ `can_*` của Thu mua giữ nguyên, cộng chỗ rò `canManage` ở `purchase-request-detail-page.tsx:513,520` · **(4)** **phân quyền vai trò thành thừa** — `MANAGER` (id 2) và `dept_head` (id 11) và `manager_purchase` (id 8, demo) và `pur_manager` (id 14) cùng nghĩa "quản lý"; cộng `tab_user_scope` với `dim='department'` đang lưu **tên phòng** làm giá trị |
+| **P3-T36** | ⏸ ∞ | **[HOÃN] Dọn** | **Đi theo nhóm D**, không dọn được khi mã cũ còn đang chạy thật. Chỉ làm khi luồng đó đã chạy thật ổn **ở prod**. Xóa nhánh `if`, xóa mã cũ trong cổng, xóa `_in_approve_scope`, xóa cờ `can_*` hết người dùng, dọn vai trò/quyền thành thừa. **Task cuối cùng, không gộp vào T31.** Không làm là còn ba cơ chế cùng trả lời một câu hỏi — đúng cái mà việc gom này sinh ra để dẹp |
 
 ---
 
@@ -132,11 +145,14 @@ Cột **L**: `BE` backend · `FE` frontend-v2 · `DB` migration · `DATA` nạp/
 ## Phần 4 · Tệp đụng tới
 
 **Tạo BE:** `modules/position/{model,schema,service,controller}.py` (T02) · `modules/approval/{__init__,model,schema,controller}.py` · `modules/approval/{gate,hooks,flow_resolver,engine,assignee_resolver,duplicate_rule,delegation_service,reminder_job,doc_amount}.py` · `migrations/versions/<M-A>.py` · `<M-B>.py`
-**Tạo test:** `test_approval_gate.py` · `test_approval_engine.py` · `test_approval_snapshot.py` · `test_approval_assignee_by_position.py` · `test_approval_duplicate_skip.py` · `test_approval_no_approver.py` · `test_approval_hooks_transaction.py` · `test_approval_reader_scope.py` · `test_delegation_chain.py` · 5 tệp kiểm thử luồng Thu mua (T11)
+**Tạo test:** `test_approval_gate.py` · `test_approval_engine.py` · `test_approval_snapshot.py` · `test_approval_assignee_by_position.py` · `test_approval_duplicate_skip.py` · `test_approval_no_approver.py` · `test_approval_hooks_transaction.py` · `test_approval_reader_scope.py` · `test_delegation_chain.py` · `test_approval_flow_inherit_company.py` (T14) · `test_document_approval_flow.py` (T37) · 5 tệp kiểm thử luồng Thu mua (T11 — **chỉ viết để làm chứng, không sửa mã Thu mua**)
 **Tạo FE:** `modules/approval/routes.tsx` · `pages/flow-{list,detail}-page.tsx` · `my-tasks-page.tsx` · `stuck-instances-page.tsx` · `delegation-page.tsx` · `approval-trace-print-page.tsx` · `components/{flow-node-editor,approver-picker,branch-condition-editor,approval-panel,approval-trace-timeline}.tsx` · `api/approval-api.ts` · `hooks/use-approval-{flows,tasks,instance}.ts` · `types/approval.ts` · màn danh mục chức vụ trong `modules/hr`
 **Sửa nền tổ chức (nhóm A):** `modules/company/model.py` · `modules/department/model.py` · `modules/employee/{model,schema,service}.py` · `modules/purchase_request/model.py` · `modules/purchase_order/model.py` · `modules/survey_request/model.py` (thêm `department_id`) · `frontend-v2/src/modules/hr/**`
-**Sửa để gom cổng (nhóm D — chỉ đoạn kiểm tra phân quyền):** `modules/purchase_request/controller.py` · `modules/purchase_order/controller.py` · `modules/payment_request/controller.py` · `modules/survey/controller.py` · `modules/survey_request/controller.py`
-**Sửa chung:** `app/main.py` · `core/permissions.py` (entity `approval_flow`, `approval_task`, `position`) · `core/all_models.py` · `core/scoping.py` (T27) · `frontend-v2/src/app/router/module-registry.ts` · `frontend-v2/src/modules/procurement/pages/purchase-request-detail-page.tsx`
+**Sửa để đấu nối văn thư (nhóm G):** `modules/document/controller.py` (submit/approve/reject) · `modules/document/service.py` · `modules/doc_catalog/model.py` (dùng `default_flow_id` đã khai sẵn — **không `ALTER`**) · trang chi tiết văn bản ở FE
+**KHÔNG đụng tới trong phase này** *(hoãn theo quyết định 10 — 5 tệp dưới đây chỉ được **đọc**, mọi thay đổi đẩy sang nhóm D)*: `modules/purchase_request/controller.py` · `modules/purchase_order/controller.py` · `modules/payment_request/controller.py` · `modules/survey/controller.py` · `modules/survey_request/controller.py`
+**Sửa chung:** `app/main.py` · `core/permissions.py` (entity `approval_flow`, `approval_task`, `position`) · `core/all_models.py` · `core/scoping.py` (T27) · `frontend-v2/src/app/router/module-registry.ts`
+
+> **Cảnh báo va chạm:** `modules/document/{controller,service}.py` là **tệp đồng nghiệp đang làm P2**. Nhóm G phải đợi P2 xong rồi mới đụng vào, hoặc thống nhất trước ai sửa hàm nào.
 
 ## Phần 5 · Todo
 
@@ -152,16 +168,16 @@ Nhóm A — nền tổ chức (chặn mọi thứ):
 - [ ] P3-T08 · Người đại diện pháp nhân (3 NULL, 14 rỗng chức danh)
 - [ ] P3-T09 · Khóa hóa phòng ban trên chứng từ
 - [ ] P3-T10 · Hàm lấy giá trị phiếu
-- [ ] P3-T11 · **Kiểm thử 5 luồng duyệt Thu mua hiện tại** (lưới an toàn)
+- [ ] P3-T11 · **Kiểm thử 5 luồng duyệt Thu mua hiện tại** (bằng chứng phase này KHÔNG đụng Thu mua)
 
 Nhóm B — mô hình:
 
-- [ ] P3-T12 · Khai thử 5 luồng thật ra giấy
-- [ ] P3-T13 · M-B: 6 bảng + chỉ mục + grant append-only
+- [ ] P3-T12 · Khai thử **6** luồng thật ra giấy (5 Thu mua + 1 văn thư) + phép thử nhiều pháp nhân
+- [ ] P3-T13 · M-B: 6 bảng + chỉ mục + grant append-only (**có `company_id` + `applies_to_children`, KHÔNG có `tenant_id`**)
 
 Nhóm C — bộ máy:
 
-- [ ] P3-T14 · Chọn luồng
+- [ ] P3-T14 · Chọn luồng — **có thừa kế theo cây pháp nhân**
 - [ ] P3-T15 · Khởi tạo phiên + bản chụp
 - [ ] P3-T16 · Bảy cách chọn người duyệt (có chức vụ, có cấp bậc)
 - [ ] P3-T17 · Nhiều người trong một bước
@@ -176,23 +192,27 @@ Nhóm C — bộ máy:
 - [ ] P3-T26 · Việc chạy kèm cùng transaction
 - [ ] P3-T27 · Quyền đọc phiếu cho người được giao duyệt
 
-Nhóm D — gom cổng:
+Nhóm E — hợp đồng dữ liệu và giao diện:
 
-- [ ] P3-T28 · `gate.py` — một hàm, bê nguyên xi
-- [ ] P3-T29 · Nhánh `if` đổi đường + cờ theo loại phiếu
 - [ ] P3-T30 · Hợp đồng dữ liệu `approval` cho giao diện
-- [ ] P3-T31 · Chuyển 5 luồng Thu mua, mỗi luồng một lần
-
-Nhóm E — giao diện:
-
 - [ ] P3-T32 · Trình khai luồng duyệt
-- [ ] P3-T33 · `<ApprovalPanel>` trên YCMH + gỡ rò `canManage`
+- [ ] P3-T33 · `<ApprovalPanel>` — dựng và nghiệm thu trên **trang văn bản**
 - [ ] P3-T34 · Việc của tôi · phiếu kẹt · in dấu vết · ủy quyền
+
+Nhóm G — đấu nối văn thư (**người dùng đầu tiên**):
+
+- [ ] P3-T37 · `doc_type.needs_approval` → chạy `default_flow_id`, cấp số ở bước cuối
 
 Nhóm F — sổ nợ:
 
-- [ ] P3-T35 · Mở `no-can-don.md` **cùng lúc với T28**
-- [ ] P3-T36 · Dọn sau khi prod chạy ổn
+- [ ] P3-T35 · Mở `no-can-don.md` **ngay từ đầu phase**, dòng đầu là 5 luồng Thu mua chưa chuyển
+
+**Tách ra làm sau — không tính vào phase này** (quyết định 10, mở lại khi văn thư đã chạy ổn ở prod):
+
+- [ ] ⏸ P3-T28 · `gate.py` — một hàm, bê nguyên xi
+- [ ] ⏸ P3-T29 · Nhánh `if` đổi đường + cờ theo loại phiếu
+- [ ] ⏸ P3-T31 · Chuyển 5 luồng Thu mua, mỗi luồng một lần
+- [ ] ⏸ P3-T36 · Dọn sau khi prod chạy ổn
 
 ## Phần 6 · Nghiệm thu
 
@@ -201,9 +221,14 @@ Nhóm F — sổ nợ:
 | Mở màn Nhân sự, chọn chức vụ | Là **danh mục có cấp bậc**, không phải ô gõ tay. 244 người đều có chức vụ và pháp nhân |
 | Khai một luồng "từ cấp trưởng phòng trở lên duyệt" | Chạy đúng — nghĩa là dữ liệu chức vụ và cấp bậc đã đủ |
 | Khai một luồng 4 bước bằng giao diện | Phiếu chạy đúng qua 4 người, **không sửa dòng mã nào, không deploy lại** |
-| Sau T28: chạy lại 5 kiểm thử Thu mua | **Vẫn xanh**, `git diff` chỉ có mã **dời chỗ**, không có thay đổi nghiệp vụ |
-| Sau mỗi luồng ở T31: chạy kiểm thử ở **cả hai chế độ cờ** | Cờ tắt và cờ bật cho **cùng một kết quả** |
-| Tắt cờ `approval_engine.purchase_request` | Quay về đường duyệt cũ **ngay, không cần deploy** |
+| **Văn thư chạy hết một vòng thật** | Loại văn bản bật `needs_approval` → soạn → gửi duyệt → qua đủ các bước của `default_flow_id` → **bước cuối duyệt xong mới cấp số**, số đúng sổ đúng năm, trạng thái phiên bản đúng |
+| **Tắt `needs_approval` của loại văn bản đó** | Quay về đường duyệt một bước cũ **ngay, không cần deploy** |
+| **Việc chạy kèm cấp số ném lỗi ở bước cuối** | Rollback cả hành động duyệt — **không có văn bản nào đã duyệt mà chưa có số**, cũng không có số bị đốt |
+| **Khai một luồng ở Tập đoàn, 12 pháp nhân con không khai gì** | Cả 12 pháp nhân **dùng chung luồng đó**, không phải khai tay 12 lần |
+| **Một pháp nhân con khai đè luồng của riêng nó** | Pháp nhân đó chạy luồng riêng, **11 pháp nhân còn lại không đổi gì** |
+| **Sau cả phase: chạy lại 5 kiểm thử Thu mua của T11** | **Vẫn xanh**, và `git diff` của 5 controller Thu mua **rỗng hoàn toàn** — đây là bằng chứng nghiệm thu chính của quyết định "giữ nguyên Thu mua" |
+| *(khi mở lại nhóm D)* Sau T28: chạy lại 5 kiểm thử Thu mua | **Vẫn xanh**, `git diff` chỉ có mã **dời chỗ**, không có thay đổi nghiệp vụ |
+| *(khi mở lại nhóm D)* Sau mỗi luồng ở T31: chạy kiểm thử ở **cả hai chế độ cờ** | Cờ tắt và cờ bật cho **cùng một kết quả** |
 | Người bước 1 cũng là người bước 3 | Bước 3 tự bỏ qua, nhật ký ghi rõ lý do, **không ghi thành "đã duyệt"** |
 | Sửa luồng khi có 5 phiếu đang chạy | 5 phiếu vẫn đi theo luồng cũ tới khi kết thúc |
 | Tạo phiếu không khớp điều kiện nhánh nào | Rơi vào nhánh mặc định, **không biến mất khỏi mọi danh sách** |
@@ -211,8 +236,8 @@ Nhóm F — sổ nợ:
 | A ủy quyền cho B, B thử ủy tiếp cho C | Bị chặn, báo lỗi rõ |
 | Người pháp nhân B được giao duyệt một phiếu của pháp nhân A | Mở được **đúng phiếu đó**, **không** thấy thêm phiếu nào khác của A |
 | Việc chạy kèm (cấp số / điều phối) ném lỗi giữa chừng | **Rollback cả hành động duyệt** |
-| Grep `frontend-v2` tìm chỗ tự suy luận quyền duyệt | **Không còn** `can_approve \|\| canManage` hay tương tự |
-| Mở `no-can-don.md` | Có **đủ** mọi chỗ đã chèn `if`, mọi hàm đã thay, mọi vai trò/quyền thành thừa |
+| Grep `frontend-v2` tìm chỗ tự suy luận quyền duyệt | Chỗ mới **không có**; chỗ cũ ở YCMH còn nguyên nhưng **đã nằm trong sổ nợ** |
+| Mở `no-can-don.md` | Dòng đầu là **5 luồng Thu mua chưa chuyển**, có điều kiện xóa rõ ràng. Có **đủ** mọi chỗ đã chèn `if`, mọi hàm đã thay, mọi vai trò/quyền thành thừa |
 
 ## Phần 7 · Rủi ro
 
@@ -220,13 +245,16 @@ Nhóm F — sổ nợ:
 |---|---|---|
 | **Làm bộ máy trước, phát hiện dữ liệu tổ chức rỗng sau** | **Cao** | Nhóm A đứng trước và **chặn cứng**. Phần 1 đã đo sẵn con số để không ai nghĩ "chắc dữ liệu ổn" |
 | Nạp lại chức vụ cho 244 người bị làm ẩu | Cao | 216 người đang ghi `"Nhân sự"` — đó là tên **phòng ban**, không phải chức vụ. Phải rà thật, không map máy móc |
-| Sửa vào 5 luồng Thu mua đang chạy thật | **Cao** | T11 viết **trước** · T28 chỉ dời mã, kiểm thử làm chứng · T31 chuyển **từng luồng một**, mỗi luồng xanh ở cả hai chế độ mới sang luồng kế · cờ tắt là về đường cũ không cần deploy |
-| Chèn `if` khắp nơi rồi quên, thành mã hai đường vĩnh viễn | **Cao** | T35 mở sổ nợ **cùng lúc với T28**, ghi ngay lúc chèn. T36 là task bắt buộc, không bỏ |
-| Mô hình luồng không đủ mềm, vẫn phải sửa mã cho từng loại | Trung bình | T12 khai thử 5 luồng ra giấy. Sửa trên giấy rẻ hơn sửa khi đã có 200 phiếu chạy |
+| Sửa vào 5 luồng Thu mua đang chạy thật | ~~Cao~~ **Đã gỡ** | **Quyết định 10 (17/08/2026): phase này không đụng Thu mua.** Nghiệm thu bằng `git diff` rỗng trên 5 controller. Rủi ro chuyển sang nhóm D lúc mở lại — lúc đó vẫn giữ nguyên cách giảm cũ: T11 làm lưới, T28 chỉ dời mã, T31 chuyển từng luồng một, cờ tắt là về đường cũ |
+| **Hoãn Thu mua rồi quên luôn — bộ máy chỉ vừa văn thư** | **Cao** | T12 bắt buộc khai **cả 5 luồng Thu mua ra giấy** dù chưa chuyển, và T13 phải đủ chỗ chứa chúng. Nợ ghi dòng đầu [`no-can-don.md`](./no-can-don.md) kèm điều kiện xóa. Nếu 5 luồng Thu mua không khai nổi trên mô hình thì **quay lại T13**, không đi tiếp |
+| **Lộ dữ liệu xuyên pháp nhân** | **Cao** | Hôm nay có 3 chỗ rò thật: phòng ban so bằng **tên**, `purchase_order.nspt` so bằng **tên nhân sự**, loại trừ phòng ban chết với entity khóa theo `dept_id`. Vá bằng P0-T06 + P0-T07 + P3-T09, **trước** khi bộ máy giao việc xuyên pháp nhân. Mọi khóa tổ chức trong `condition_json` lưu **ID**, cấm lưu chuỗi tên (quyết định 11) |
+| Chèn `if` khắp nơi rồi quên, thành mã hai đường vĩnh viễn | Trung bình | Phase này chỉ còn **một** nhánh `if` (T37, ở văn thư). T35 mở sổ nợ **ngay từ đầu phase**, ghi ngay lúc chèn. T36 là task bắt buộc, không bỏ |
+| Mô hình luồng không đủ mềm, vẫn phải sửa mã cho từng loại | Trung bình | T12 khai thử **6** luồng ra giấy. Sửa trên giấy rẻ hơn sửa khi đã có 200 phiếu chạy |
 | Phiếu kẹt không ai biết | Trung bình | Ép nhánh mặc định (T18) + màn phiếu kẹt (T34) + cảnh báo đỏ khi rơi về quản trị |
 | Trình khai luồng phình thành công cụ vạn năng | Cao | Chỉ làm phần bản 1: không kéo thả biểu mẫu, không luồng con, không chuyển tiếp/thêm người duyệt giữa chừng, không mô phỏng |
 | "Việc của tôi" chậm khi nhiều phiếu | Trung bình | Chỉ mục `(assignee_employee_id, status)` có ngay từ T13, không thêm sau |
-| Xóa cờ `can_*` cũ làm vỡ `frontend/` đang chạy thật | Trung bình | T30 **giữ song song**; chỉ xóa ở T36 |
+| Xóa cờ `can_*` cũ làm vỡ `frontend/` đang chạy thật | Thấp | Phase này **không đụng** cờ cũ; T30 chỉ thêm khối `approval` cho `document`. Chỉ xóa ở T36 |
+| **Đụng tệp `modules/document/` cùng lúc với đồng nghiệp làm P2** | Trung bình | Nhóm G là task **cuối cùng** của phase và **chờ P2 xong**. Trước lúc đó chỉ đọc, không sửa. Thống nhất trước ai sửa hàm nào |
 
 ## Phần 8 · Bốn quyết định đang chặn (T01)
 

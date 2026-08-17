@@ -1,7 +1,8 @@
 # THỨ TỰ THỰC HIỆN
 
 > [← plan.md](./plan.md) · Chốt 14/08/2026, sửa lại cùng ngày khi chốt làm **hai nhánh song song**
-> **Nhánh A viết lại toàn bộ 14/08/2026** — `phase-03` từ 18 task thành **36**, thêm nhóm nền tổ chức chặn đầu, bỏ văn thư khỏi phạm vi. Phần nhánh B bên dưới giữ nguyên.
+> **Nhánh A viết lại toàn bộ 14/08/2026** — `phase-03` từ 18 task thành 36, thêm nhóm nền tổ chức chặn đầu, bỏ văn thư khỏi phạm vi. Phần nhánh B bên dưới giữ nguyên.
+> **Sửa 17/08/2026 (quyết định 10) — đảo người dùng đầu tiên:** bộ máy chạy vòng đầu với **văn thư**, **Thu mua giữ nguyên không đụng**. Nhịp A5 (gom cổng, chuyển 5 luồng Thu mua) **tách ra làm sau**, thay bằng nhịp **A5' đấu nối văn thư**. `phase-03` thành **37 task**, trong đó 33 nằm trong phase và 4 tách ra. Món nợ để lại ghi ở [`no-can-don.md`](./no-can-don.md).
 > Thứ tự phía văn thư lấy theo mục **"Thứ tự làm phía FE"** của [`plans/reports/planner-260814-1027-van-thu-fe-giai-doan-dau.md`](../reports/planner-260814-1027-van-thu-fe-giai-doan-dau.md).
 > Report đó là **FE-only** (64 mã `F-`); tệp này ghép mỗi mã `F-` với task backend tương ứng trong 4 tệp phase.
 
@@ -11,14 +12,21 @@ Trước đây tệp này xếp bộ máy phê duyệt vào bước 4 và ghi **
 
 | | Nhánh | Người | Task | Nội dung |
 |---|---|---|---|---|
-| **A** | Nền tổ chức + bộ máy phê duyệt | chủ dự án | 36 | Toàn bộ [`phase-03`](./phase-03-bo-may-phe-duyet.md). **Không có task nào chờ nhánh B.** Nhưng **11 task nhóm A (nền tổ chức) chặn cứng 25 task còn lại**, và **4 quyết định của P3-T01 chặn nhóm A** — hỏi ngay hôm nay |
+| **A** | Nền tổ chức + bộ máy phê duyệt | chủ dự án | 33 *(+4 tách ra)* | Toàn bộ [`phase-03`](./phase-03-bo-may-phe-duyet.md) **trừ nhóm D và T36**. **11 task nhóm A (nền tổ chức) chặn cứng phần còn lại**, và **4 quyết định của P3-T01 chặn nhóm A** — hỏi ngay hôm nay |
 | **B** | Văn thư | người thứ hai | 35 | Bước 1 → 2 → 3 bên dưới: nắn nền module đang có → danh mục → soạn thảo và phiên bản |
 
-Cộng **2 task nền chung** làm trước khi tách nhánh và **6 task P0 còn lại** chặn việc lên prod → **79 task**.
+Cộng **2 task nền chung** làm trước khi tách nhánh và **6 task P0 còn lại** chặn việc lên prod → **80 việc thật** (đã trừ 2 task trùng).
 
-**Quan hệ hai nhánh đã đổi.** Trước đây nhánh A làm bộ máy *cho văn thư dùng*. Giờ (quyết định 8) bộ máy gom luôn phần duyệt viết tay của **Thu mua**, và **Thu mua là người dùng đầu tiên** — văn thư ra khỏi phạm vi phase 3. Hai nhánh vì thế **gần như không còn dính nhau**: nhánh B tự dựng luồng duyệt tạm của mình, đấu vào bộ máy sau, bằng một task chưa ai viết.
+**Quan hệ hai nhánh đảo lại lần nữa (17/08/2026, quyết định 10).** Ngày 14/08 nhánh A nhận **Thu mua** làm người dùng đầu tiên và đẩy văn thư ra khỏi phạm vi phase 3. Ngày 17/08 khách chốt **Thu mua giữ nguyên**, nên **văn thư quay lại làm người dùng đầu tiên** — bằng đúng **một task**, `P3-T37`.
 
-**Vì sao tách được:** bộ máy chạy phiên — chọn luồng, snapshot, chọn người duyệt, rẽ nhánh, ủy quyền — tự kiểm hoàn toàn bằng pytest. Còn hai màn hình trước đây tưởng phải chờ văn bản có thật thì **không phải chờ**: `<ApprovalPanel>` dựng và nghiệm thu trên **YCMH** (`frontend-v2/src/modules/procurement/pages/purchase-request-detail-page.tsx` đã có sẵn), màn "việc của tôi" chạy được ngay khi Thu mua lên bộ máy. Sơ đồ `P2 ──▶ P3` trong `plan.md` là phụ thuộc *của tính năng người dùng thấy*, không phải của mã.
+Hệ quả cho hai nhánh:
+
+- **Hai nhánh dính nhau lại ở đúng một điểm:** `P3-T37` **chờ P2 xong**. Ngoài điểm đó ra, 32 task còn lại của nhánh A vẫn không chờ gì bên B.
+- **Nhánh B không cần dựng luồng duyệt tạm cho tử tế nữa** — luồng tạm chỉ sống tới lúc T37 chạy. Dựng đủ dùng để test là được, đừng đầu tư.
+- **Nhánh A không đụng một dòng nào trong 5 controller Thu mua.** Nghiệm thu bằng `git diff` rỗng trên 5 tệp đó.
+- **Va chạm mới:** `modules/document/{controller,service}.py` là tệp của nhánh B. Nhánh A chỉ đụng vào ở T37, tức là task cuối cùng, sau khi P2 xong.
+
+**Vì sao vẫn tách song song được:** bộ máy chạy phiên — chọn luồng, snapshot, chọn người duyệt, rẽ nhánh, ủy quyền — tự kiểm hoàn toàn bằng pytest, không cần văn bản thật. `<ApprovalPanel>` nay dựng và nghiệm thu trên **trang chi tiết văn bản** (đổi từ YCMH), nên nó là phần cuối cùng của nhánh A chứ không phải phần đầu.
 
 Luật chống giẫm chân nhau (Alembic, `core/permissions.py`, …) nằm ở mục **"Luật khi hai người chạy song song"** trong [`plan.md`](./plan.md). Đọc trước khi gõ dòng đầu tiên.
 
@@ -39,16 +47,18 @@ Hai task này cả hai nhánh đều cần. Làm một lần, một người là
 
 # NHÁNH A · NỀN TỔ CHỨC + BỘ MÁY PHÊ DUYỆT
 
-Chi tiết đầy đủ ở [`phase-03-bo-may-phe-duyet.md`](./phase-03-bo-may-phe-duyet.md) — **36 task, viết lại toàn bộ ngày 14/08/2026**. Người dùng đầu tiên của bộ máy là **Thu mua**, không phải văn thư. Sáu nhịp:
+Chi tiết đầy đủ ở [`phase-03-bo-may-phe-duyet.md`](./phase-03-bo-may-phe-duyet.md) — **37 task, viết lại 14/08/2026, đảo người dùng đầu tiên 17/08/2026**. Người dùng đầu tiên của bộ máy là **văn thư**; **Thu mua giữ nguyên, không đụng**. Sáu nhịp:
 
 | Nhịp | Nhóm | Task | Ra được gì |
 |---|---|---|---|
-| **A1** | A · nền tổ chức | T01 → T11 | Chức vụ thành danh mục có cấp bậc · 244 nhân sự và 18 phòng ban gắn pháp nhân · trưởng phòng đã khai · cây tổ chức · **5 kiểm thử Thu mua xanh**. **Chặn cứng mọi nhịp sau** |
-| **A2** | B · mô hình | T12 → T13 | 5 luồng thật khai được ra giấy · 6 bảng phê duyệt + chỉ mục |
+| **A0** | F · sổ nợ | T35 | **Mở [`no-can-don.md`](./no-can-don.md) ngay, trước dòng mã đầu tiên.** Dòng đầu: 5 luồng Thu mua chưa chuyển |
+| **A1** | A · nền tổ chức | T01 → T11 | Chức vụ thành danh mục có cấp bậc · 244 nhân sự và 18 phòng ban gắn pháp nhân · trưởng phòng đã khai · cây tổ chức · **5 kiểm thử Thu mua xanh** (làm bằng chứng, không để sửa). **Chặn cứng mọi nhịp sau** |
+| **A2** | B · mô hình | T12 → T13 | **6** luồng thật khai được ra giấy (5 Thu mua + 1 văn thư) · 6 bảng phê duyệt + chỉ mục · có `company_id`, không có `tenant_id` |
 | **A3** | C · bộ máy | T14 → T27 | Chạy phiên duyệt đầy đủ, tự kiểm bằng pytest. Người dùng đầu tiên là **bộ test** |
-| **A4** | E · giao diện khai luồng | T32 | Khai luồng bằng giao diện, không sửa mã |
-| **A5** | D + E · gom cổng | T28 → T31, T33, T34 | Một hàm trả lời "có quyền duyệt không" · chuyển **từng luồng Thu mua một** |
-| **A6** | F · dọn | T35 → T36 | Sổ nợ ghi từ đầu, dọn sau khi prod chạy ổn |
+| **A4** | E · giao diện | T30, T32, T33, T34 | Hợp đồng dữ liệu `approval` · khai luồng bằng giao diện, không sửa mã · panel duyệt dùng chung · việc của tôi |
+| **A5'** | G · đấu nối văn thư | T37 | **Văn bản chạy thật qua bộ máy.** Chờ P2 xong |
+| ~~A5~~ | ~~D · gom cổng Thu mua~~ | ~~T28 → T31~~ | **Tách ra làm sau** — xem N-01 trong sổ nợ |
+| ~~A6~~ | ~~F · dọn~~ | ~~T36~~ | **Đi theo nhóm D** |
 
 ### A1 · Nền tổ chức — làm trước, không được bỏ qua
 
@@ -64,13 +74,16 @@ Hệ quả: trong 7 cách chọn người duyệt, hôm nay chỉ **2 cách ch�
 
 **Bốn quyết định phải chốt trước (P3-T01):** một phòng ban thuộc một hay nhiều pháp nhân · danh mục chức vụ gồm gì và mấy cấp · "lên n cấp" leo theo cây phòng ban hay cấp bậc chức vụ · `'Phòng Marketing'` là phòng thật hay gõ nhầm.
 
-**P3-T11 làm sớm nhất có thể** — phase này sẽ sửa thật vào 5 luồng duyệt của Thu mua, không có lưới thì không biết mình làm gãy cái gì.
+**P3-T11 làm sớm nhất có thể** — vai trò của nó **đổi ngày 17/08/2026**: trước đây là lưới an toàn cho việc sửa vào Thu mua, **nay là bằng chứng phase này KHÔNG đụng Thu mua**. Vẫn viết, vẫn là cổng nghiệm thu: cuối phase chạy lại phải xanh và `git diff` của 5 controller Thu mua phải rỗng.
 
 ### A2 · Mô hình luồng
 
-**P3-T12 khai thử 5 luồng thật ra giấy** trước dòng mã đầu tiên, **có dùng chức vụ và cấp bậc** của A1. Chỗ nào khai không nổi là mô hình còn thiếu. Chú ý YCMH có **hai lần duyệt** (trưởng phòng, rồi thu mua điều phối) — khai không ra hai bước là mô hình sai.
+**P3-T12 khai thử 6 luồng thật ra giấy** trước dòng mã đầu tiên (5 Thu mua + 1 văn thư), **có dùng chức vụ và cấp bậc** của A1. Chỗ nào khai không nổi là mô hình còn thiếu.
 
-**P3-T13** dựng 6 bảng. Chỉ mục `tab_approval_task(assignee_employee_id, status)` phải có **ngay từ migration**, không thêm sau.
+- **5 luồng Thu mua vẫn phải khai đủ dù chưa chuyển.** Đây là chốt chống rủi ro "hoãn Thu mua rồi thiết kế chỉ vừa văn thư". Chú ý YCMH có **hai lần duyệt** (trưởng phòng, rồi thu mua điều phối) — khai không ra hai bước là mô hình sai.
+- **Thêm phép thử nhiều pháp nhân:** một luồng khai ở Tập đoàn, 12 pháp nhân con dùng chung, riêng một pháp nhân khai đè. Khai không ra là thiếu `company_id` + thừa kế.
+
+**P3-T13** dựng 6 bảng. Ba điều bắt buộc chốt trước khi viết migration (quyết định 11): **(a)** `tab_approval_flow` có `company_id` (0 = dùng chung) + `applies_to_children` · **(b)** mọi khóa tổ chức trong `condition_json` lưu **ID**, cấm chuỗi tên · **(c)** **không** thêm cột `tenant_id`. Chỉ mục `tab_approval_task(assignee_employee_id, status)` phải có **ngay từ migration**, không thêm sau.
 
 ### A3 · Bộ máy chạy phiên — T14 → T27
 
@@ -79,29 +92,35 @@ Hệ quả: trong 7 cách chọn người duyệt, hôm nay chỉ **2 cách ch�
 - **T26 · việc chạy kèm cùng transaction.** Duyệt YCMH hiện kéo theo đổi trạng thái, điều phối, chuông, thư. Không có chỗ cắm này thì chuyển sang bộ máy là mất sạch tác dụng phụ.
 - **T27 · quyền đọc phiếu cho người được giao duyệt.** `apply_scope` sẽ giấu việc của chính người phải duyệt, vì phạm vi `assigned` viết tay từng entity.
 
-Trong A3 người dùng đầu tiên là **bộ test**. Đừng bật cờ cho luồng Thu mua nào chỉ để "thấy nó chạy" — bật là việc có thủ tục riêng ở A5.
+Trong A3 người dùng đầu tiên là **bộ test**. Đừng bật bộ máy cho luồng nào chỉ để "thấy nó chạy" — bật thật là việc có thủ tục riêng ở A5'.
 
-### A4 · Trình khai luồng — T32
+**T14 nhớ phần thừa kế:** không tìm thấy luồng khai riêng cho pháp nhân của phiếu thì **leo lên `tab_company.parent`**, gặp khai gần nhất thì dùng, hết cây thì dùng `company_id = 0`. Không có nó là 13 pháp nhân × 5 loại phiếu = **65 luồng khai tay**.
 
-Màn nặng nhất. Khối điều kiện rẽ nhánh phải khai được đủ: **số tiền · pháp nhân · phòng ban · chức vụ · cấp bậc chức vụ · loại phiếu · gấp**. Ép khai nhánh mặc định. Ô "không tìm ra người duyệt" **không có lựa chọn tự duyệt qua**. Không dùng thư viện flow-chart.
+### A4 · Hợp đồng dữ liệu và giao diện — T30, T32, T33, T34
 
-### A5 · Gom về một cổng và chuyển Thu mua — T28 → T31, T33, T34
+**T30** phát ra khối `approval` chuẩn. Bên Thu mua **không đụng** — 12 cờ `can_*` cũ giữ nguyên tại chỗ, ghi vào sổ nợ (N-03).
 
-Cách làm đã chốt (quyết định 8): **thay đúng đoạn kiểm tra phân quyền**, hoặc **thêm một nhánh `if` ngay trong hàm đó** để đổi đường. Không viết lại nghiệp vụ.
+**T32** là màn nặng nhất. Khối điều kiện rẽ nhánh phải khai được đủ: **số tiền · pháp nhân · phòng ban · chức vụ · cấp bậc chức vụ · loại phiếu · gấp**. Ép khai nhánh mặc định. Ô "không tìm ra người duyệt" **không có lựa chọn tự duyệt qua**. Không dùng thư viện flow-chart.
 
-1. **T28** — dựng `gate.py`, **bê nguyên xi** mã duyệt của 5 module Thu mua vào, kể cả chỗ trông có vẻ sai. Giao diện không sửa. Nghiệm thu: 5 kiểm thử xanh y nguyên, `git diff` chỉ có mã **dời chỗ**. **Chống chỉ định: nhân tiện sửa luôn cái thấy sai** — để dành T31, lúc đó có kiểm thử hai chế độ làm chứng.
-2. **T29** — nhánh `if` + cờ `approval_engine.{entity}`, nằm **đúng một chỗ** bên trong cổng.
-3. **T30** — hợp đồng dữ liệu `approval` cho giao diện. Giữ song song 12 cờ `can_*` cũ, đừng xóa ngay kẻo vỡ `frontend/` đang chạy thật.
-4. **T33/T34** — `<ApprovalPanel>` dựng trên trang YCMH; màn việc của tôi lấy từ `/approvals/my-tasks`, **không gọi cổng cho từng dòng**.
-5. **T31** — chuyển từng luồng: yêu cầu thanh toán → khảo sát → yêu cầu khảo sát → **YCMH** → ĐMH. Mỗi luồng bốn nhịp: khai luồng → kiểm thử xanh ở **cả hai chế độ cờ** → bật ở dev, theo dõi → sang luồng kế. **Không bật hai luồng cùng lúc.**
+**T33** — `<ApprovalPanel>` dựng và nghiệm thu trên **trang chi tiết văn bản** (đổi từ YCMH ngày 17/08/2026). Panel phải **không biết** nó đứng trên phiếu loại gì. Chỗ rò `canManage` ở trang YCMH **chưa gỡ**, ghi sổ nợ (N-04).
 
-### A6 · Sổ nợ và dọn — T35, T36
+**T34** — màn việc của tôi lấy từ `/approvals/my-tasks`, **không gọi cổng cho từng dòng**.
 
-**T35 mở `no-can-don.md` cùng lúc với T28**, ghi **ngay lúc chèn** chứ không ghi sau. Bốn nhóm nợ đã biết trước: nhánh `if` đổi đường · mã duyệt cũ bê vào cổng (gồm `_in_approve_scope`) · 12 cờ `can_*` giữ song song · **vai trò và quyền thành thừa** (`MANAGER` id 2, `dept_head` id 11, `manager_purchase` id 8 demo, `pur_manager` id 14 cùng nghĩa "quản lý"; cộng `tab_user_scope` với `dim='department'` đang lưu tên phòng làm giá trị).
+### A5' · Đấu nối văn thư — T37 *(chờ P2 xong)*
 
-**T36 là task cuối, không được bỏ.** Không dọn là còn ba cơ chế cùng trả lời một câu hỏi — đúng cái mà việc gom này sinh ra để dẹp.
+Đúng **một cái `if`, một cái cờ**: `doc_type.needs_approval = true` → chạy bộ máy theo `doc_type.default_flow_id`; `false` → giữ đường duyệt một bước cũ. Cả hai cột **đã khai sẵn** trong `tab_doc_type`, không phải `ALTER`.
 
-**Cổng nhánh A:** 5 luồng Thu mua chạy trên bộ máy ở prod ổn định · **5 kiểm thử vẫn xanh** · sổ nợ đã dọn hoặc mỗi dòng còn lại có lý do rõ.
+Ba chỗ dễ sai:
+
+1. **Cấp số phải nằm trong cùng transaction với hành động duyệt** — dùng chỗ cắm việc chạy kèm của T26, đừng gọi rời. Sai chỗ này là có văn bản đã duyệt mà không có số, hoặc số bị đốt.
+2. **`number_when = 2` nghĩa là cấp số lúc được duyệt** → chỗ gọi `next_number` là **bước cuối** của luồng, không phải bước đầu.
+3. **Người được giao duyệt văn bản ngoài phạm vi thường ngày phải mở được đúng văn bản đó.** `access_service.visible_condition()` đã có sẵn chỗ OR thêm nguồn quyền — ghép `tab_approval_task` vào đó, **đừng nới phạm vi vai trò**.
+
+**Cổng nhánh A (đổi 17/08/2026):** văn bản chạy hết một vòng thật trên bộ máy ở dev, cấp số đúng, không phiếu kẹt · **5 kiểm thử Thu mua vẫn xanh và `git diff` 5 controller rỗng** · phép thử thừa kế nhiều pháp nhân đạt · sổ nợ có đủ N-01…N-07 với điều kiện trả rõ ràng.
+
+### ~~A5 · Gom cổng Thu mua~~ · ~~A6 · Dọn~~ — **tách ra làm sau**
+
+Nội dung giữ nguyên trong `phase-03` (T28 · T29 · T31 · T36), điều kiện mở lại và cách làm ghi ở **N-01** trong [`no-can-don.md`](./no-can-don.md). Tóm tắt điều kiện: bộ máy chạy thật ổn với văn thư **ở prod** · người nghiệp vụ tự khai được luồng không cần lập trình viên · 5 luồng Thu mua khai được hết trên mô hình mà không phải `ALTER`.
 
 ---
 
@@ -180,9 +199,13 @@ Report là FE-only nên không liệt kê phần này, nhưng nó **chặn 3b**:
 
 > ⚠️ **Vẫn phải dựng luồng tạm đó, đừng chờ nhánh A.** Quyết định 7 đã bỏ bước xin phép, nên nếu văn bản tạo xong là hiệu lực ngay thì không còn chốt chặn nào — đúng cái `00` mục 4.1 lo nhất.
 >
-> **Nhánh A viết lại ngày 14/08/2026 đã bỏ văn thư khỏi phạm vi.** Bộ máy phê duyệt giờ nhận **Thu mua** làm người dùng đầu tiên; trong 36 task của phase 3 **không còn task nào dành riêng cho văn thư**. Nghĩa là luồng tạm này sống lâu hơn dự tính ban đầu — cứ dựng cho tử tế, đừng dựng kiểu tạm bợ.
+> ~~**Nhánh A viết lại ngày 14/08/2026 đã bỏ văn thư khỏi phạm vi.** Luồng tạm này sống lâu hơn dự tính ban đầu — cứ dựng cho tử tế.~~
 >
-> Khi nào đấu văn thư vào bộ máy: **sau khi nhóm D (P3-T28 → P3-T31) chạy xong và bộ máy đã ổn ở prod với Thu mua.** Lúc đó văn thư đấu vào **theo đúng cách của P3-T31** (khai luồng → kiểm thử hai chế độ cờ → bật ở dev → bật prod). Đó là **task của nhánh B, chưa ai viết** — phải thêm vào phase 2 hoặc mở phase riêng, không mặc định có sẵn.
+> **ĐẢO LẠI 17/08/2026 (quyết định 10).** Văn thư **là người dùng đầu tiên** của bộ máy, và việc đấu nối **đã có task**: **`P3-T37`** trong nhánh A — không còn là "task chưa ai viết" của nhánh B nữa.
+>
+> Hệ quả cho nhánh B: **luồng tạm chỉ sống tới lúc T37 chạy.** Dựng đủ để test được là đủ, đừng đầu tư vào nó. Vẫn phải có (xem cảnh báo ngay trên), nhưng không cần chắc như một luồng chạy thật lâu dài.
+>
+> **Khi nào đấu: ngay sau khi P2 xong**, không phải chờ Thu mua gì cả. Cách đấu: bật `doc_type.needs_approval` + trỏ `doc_type.default_flow_id`; tắt cờ là về đường một bước cũ, không cần deploy. Chi tiết ở [`phase-03`](./phase-03-bo-may-phe-duyet.md) nhóm G.
 
 **Xong là:** tạo → chọn loại → gõ nội dung → đính tệp → lưu → tìm lại được. **Cho 3 người ngoài đội bấm thử ở đây**, đừng đợi hết bước 3.
 
@@ -243,7 +266,7 @@ Sáu task này **đụng thẳng vào lõi của hệ đang chạy**, không đ�
 
 > ⚠️ **Ràng buộc không thương lượng:** cho tới khi sáu task này xong và đã chạy prod ổn định — **không mở tài khoản văn thư trên prod, không đưa văn bản thật (nhất là văn bản mật) vào hệ thống.** Cả hai nhánh chỉ chạy trên dev với dữ liệu giả. Lý do đầy đủ ở `van-thu/00` mục 3.
 >
-> Ràng buộc thứ hai: **không mở prod khi luồng duyệt văn bản vẫn là luồng tạm một bước cấu hình cứng.** Nhánh A không còn nhận việc này (xem cảnh báo ở 3b), nên hoặc nhánh B tự làm luồng tạm đủ chắc để chạy thật, hoặc chờ đấu vào bộ máy sau P3-T31. Chọn đường nào cũng phải chốt trước khi bàn mở prod.
+> Ràng buộc thứ hai: **không mở prod khi luồng duyệt văn bản vẫn là luồng tạm một bước cấu hình cứng.** ~~Nhánh A không còn nhận việc này.~~ **Sửa 17/08/2026:** nhánh A **có nhận** — `P3-T37`. Nên đường đi đã rõ: **P2 xong → T37 → mới bàn mở prod.** Không còn phải chọn giữa hai đường như bản cũ.
 
 ## Làm song song được
 

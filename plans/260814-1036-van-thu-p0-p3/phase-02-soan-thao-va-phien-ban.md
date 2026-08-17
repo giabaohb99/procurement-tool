@@ -16,7 +16,9 @@
 
 Duyệt **nội dung văn bản** ở phase này dùng **luồng một bước viết tay tạm thời** — đúng kiểu 5 luồng Thu mua đang có. Làm vậy để phase 2 cho người thật bấm thử được ngay.
 
-> **Sửa 14/08/2026:** nhánh A viết lại đã **bỏ văn thư khỏi phạm vi phase 3** — người dùng đầu tiên của bộ máy phê duyệt là **Thu mua**. Trong 36 task của phase 3 **không còn task nào thay luồng tạm này**. Nghĩa là luồng tạm sống lâu hơn dự tính: dựng cho tử tế, đừng dựng tạm bợ. Đấu văn thư vào bộ máy là **task chưa ai viết**, làm sau khi P3-T31 chạy ổn ở prod.
+> ~~**Sửa 14/08/2026:** nhánh A đã bỏ văn thư khỏi phạm vi phase 3; luồng tạm sống lâu hơn dự tính, dựng cho tử tế. Đấu văn thư vào bộ máy là task chưa ai viết.~~
+>
+> **ĐẢO LẠI 17/08/2026 (D-028).** Văn thư **là người dùng đầu tiên** của bộ máy phê duyệt; Thu mua giữ nguyên, không đụng. Việc đấu nối **đã có task**: **`P3-T37`** trong nhánh A, chạy **ngay sau khi P2 xong**. Nghĩa là **luồng tạm chỉ sống tới lúc T37 chạy** — dựng đủ để test được là đủ, đừng đầu tư vào nó. Cách đấu: bật `doc_type.needs_approval` + trỏ `doc_type.default_flow_id`; tắt cờ là về đường một bước cũ, không cần deploy.
 
 ## Điểm cần biết trước — 7 cái bẫy
 
