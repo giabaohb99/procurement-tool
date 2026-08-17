@@ -1,10 +1,19 @@
-import { AlertTriangle, Inbox, UserCheck } from 'lucide-react'
+import { AlertTriangle, Inbox, Search, UserCheck } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import {
+  applyClientFilter,
+  ConditionalFilter,
+  FilterProvider,
+  useFilterContext,
+} from '@/shared/conditional-filter'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { Badge } from '@/shared/ui/badge'
 import { Card } from '@/shared/ui/card'
+import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import {
@@ -16,11 +25,30 @@ import {
 } from '@/shared/ui/select'
 import { formatDate } from '@/shared/utils/format-date'
 import { ApprovalActionDialog } from '../components/approval-action-dialog'
+import { MY_TASK_FILTER_FIELDS } from '../config/my-task-filter-fields'
 import { ENTITY_LABELS, entityLink } from '../helpers/entity-link'
 import { useMyTasks } from '../hooks/use-approvals'
 import type { MyTask } from '../types/approval'
 
 const ALL = 'all'
+
+/**
+ * `preserveParams`: thiếu tên nào ở đây thì bấm "Áp dụng" bộ lọc nâng cao sẽ xóa
+ * mất tham số đó khỏi URL. Không cần kể `q` — `searchParamName` giữ sẵn.
+ */
+const FILTER_CONFIG = {
+  fields: MY_TASK_FILTER_FIELDS,
+  allowConjunctionToggle: true,
+  preserveParams: ['loai', 'han'],
+}
+
+export function MyTasksPage() {
+  return (
+    <FilterProvider config={FILTER_CONFIG}>
+      <MyTasksContent />
+    </FilterProvider>
+  )
+}
 
 /**
  * VIỆC CỦA TÔI (I17) — một chỗ gom mọi thứ đang chờ tôi.
@@ -32,16 +60,29 @@ const ALL = 'all'
  * Hai thứ phải thấy được ngay mà không cần bấm vào: việc nào **quá hạn**, và
  * việc nào mình đang làm **thay người khác** theo ủy quyền — biết sau khi bấm
  * thì đã ký mất rồi.
+ *
+ * ⚠️ Tìm và lọc chạy NGAY TẠI TRÌNH DUYỆT, khác các màn danh sách gọi API phân
+ * trang. Lý do ở `config/my-task-filter-fields.ts`.
  */
-export function MyTasksPage() {
+function MyTasksContent() {
   const { data, isLoading, isError } = useMyTasks()
-  const [entity, setEntity] = useState(ALL)
+  const { appliedState } = useFilterContext()
+  const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
+  const [entity, setEntity] = useUrlParamState('loai', ALL)
+  const [han, setHan] = useUrlParamState('han', ALL)
   const [dangXuLy, setDangXuLy] = useState<MyTask | null>(null)
 
   const items = useMemo(() => {
-    const rows = data?.items ?? []
-    return entity === ALL ? rows : rows.filter((row) => row.entity === entity)
-  }, [data?.items, entity])
+    const needle = debouncedValue.trim().toLowerCase()
+    const found = (data?.items ?? []).filter((row) => {
+      if (entity !== ALL && row.entity !== entity) return false
+      if (han !== ALL && row.is_overdue !== (han === 'overdue')) return false
+      if (!needle) return true
+      return [row.entity_code, row.entity_title, row.node_name, row.started_by_name]
+        .some((field) => (field ?? '').toLowerCase().includes(needle))
+    })
+    return applyClientFilter(found, appliedState)
+  }, [data?.items, debouncedValue, entity, han, appliedState])
 
   const cacLoai = useMemo(
     () => [...new Set((data?.items ?? []).map((row) => row.entity))],
@@ -151,14 +192,26 @@ export function MyTasksPage() {
           isError={isError}
           onRowClick={(row) => setDangXuLy(row)}
           emptyMessage={
+            //  Phân biệt "hộp việc rỗng" với "lọc không ra gì": một bên là tin
+            //  mừng, một bên là phải xóa bớt điều kiện.
             (data?.items?.length ?? 0) > 0
-              ? 'Không có việc nào thuộc loại chứng từ đang lọc.'
+              ? 'Không có việc nào khớp điều kiện đang lọc.'
               : 'Không có việc nào đang chờ bạn.'
           }
           toolbar={
             <>
+              <div className="relative w-full max-w-xs">
+                <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder="Tìm theo số hiệu, nội dung, bước, người trình…"
+                  value={keyword}
+                  onChange={(event) => setKeyword(event.target.value)}
+                />
+              </div>
+
               <Select value={entity} onValueChange={setEntity}>
-                <SelectTrigger className="w-56">
+                <SelectTrigger className="w-52">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -171,9 +224,24 @@ export function MyTasksPage() {
                 </SelectContent>
               </Select>
 
+              {/*  Lọc nhanh "quá hạn" để ngoài thanh công cụ chứ không giấu
+                   trong bộ lọc nâng cao: đó là câu người ta hỏi mỗi sáng. */}
+              <Select value={han} onValueChange={setHan}>
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>Mọi hạn duyệt</SelectItem>
+                  <SelectItem value="overdue">Đã quá hạn</SelectItem>
+                  <SelectItem value="ontime">Còn hạn</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <ConditionalFilter />
+
               <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Inbox className="size-4" />
-                {items.length} việc đang chờ
+                {items.length} việc
               </span>
             </>
           }

@@ -1,15 +1,32 @@
-import { Plus, Power } from 'lucide-react'
+import { Plus, Power, Search } from 'lucide-react'
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import {
+  applyClientFilter,
+  ConditionalFilter,
+  FilterProvider,
+  useFilterContext,
+} from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
 import { Switch } from '@/shared/ui/switch'
+import { APPROVAL_FLOW_FILTER_FIELDS } from '../config/approval-flow-filter-fields'
 import { ENTITY_LABELS } from '../helpers/entity-link'
 import {
   useApprovalFlows,
@@ -21,6 +38,22 @@ import type { ApprovalFlow } from '../types/approval'
 /** Các loại chứng từ có thể chạy qua bộ máy duyệt — cùng danh sách với backend. */
 const CAC_LOAI = Object.keys(ENTITY_LABELS)
 
+const ALL = 'all'
+
+const FILTER_CONFIG = {
+  fields: APPROVAL_FLOW_FILTER_FIELDS,
+  allowConjunctionToggle: true,
+  preserveParams: ['loai', 'dung'],
+}
+
+export function ApprovalFlowListPage() {
+  return (
+    <FilterProvider config={FILTER_CONFIG}>
+      <ApprovalFlowListContent />
+    </FilterProvider>
+  )
+}
+
 /**
  * Danh sách LUỒNG DUYỆT + công tắc bật/tắt theo từng loại chứng từ.
  *
@@ -28,9 +61,26 @@ const CAC_LOAI = Object.keys(ENTITY_LABELS)
  * chứng từ này đang duyệt theo đường nào"*. Khai luồng mà quên bật công tắc thì
  * luồng nằm im, và người khai không hiểu vì sao phiếu vẫn đi đường cũ.
  */
-export function ApprovalFlowListPage() {
+function ApprovalFlowListContent() {
   const navigate = useNavigate()
   const { data, isLoading, isError } = useApprovalFlows()
+  const { appliedState } = useFilterContext()
+  const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
+  const [entity, setEntity] = useUrlParamState('loai', ALL)
+  const [dung, setDung] = useUrlParamState('dung', ALL)
+
+  const rows = useMemo(() => {
+    const needle = debouncedValue.trim().toLowerCase()
+    const found = (data?.items ?? []).filter((row) => {
+      if (entity !== ALL && row.entity !== entity) return false
+      if (dung !== ALL && row.is_active !== (dung === 'active')) return false
+      if (!needle) return true
+      return [row.name, row.code, row.description].some((field) =>
+        (field ?? '').toLowerCase().includes(needle),
+      )
+    })
+    return applyClientFilter(found, appliedState)
+  }, [data?.items, debouncedValue, entity, dung, appliedState])
 
   const columns = useMemo<DataTableColumn<ApprovalFlow>[]>(
     () => [
@@ -106,13 +156,57 @@ export function ApprovalFlowListPage() {
       <Card className="p-4">
         <DataTable
           columns={columns}
-          rows={data?.items}
+          rows={rows}
           getRowId={(row) => row.id}
           storageKey="approval.flows"
           isLoading={isLoading}
           isError={isError}
           onRowClick={(row) => navigate(appRoutes.approval.flowDetail(row.id))}
-          emptyMessage="Chưa khai luồng nào. Chưa có luồng thì chứng từ vẫn đi theo đường duyệt cũ."
+          emptyMessage={
+            (data?.items?.length ?? 0) > 0
+              ? 'Không có luồng nào khớp điều kiện đang lọc.'
+              : 'Chưa khai luồng nào. Chưa có luồng thì chứng từ vẫn đi theo đường duyệt cũ.'
+          }
+          toolbar={
+            <>
+              <div className="relative w-full max-w-xs">
+                <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder="Tìm theo tên, mã, mô tả…"
+                  value={keyword}
+                  onChange={(event) => setKeyword(event.target.value)}
+                />
+              </div>
+
+              <Select value={entity} onValueChange={setEntity}>
+                <SelectTrigger className="w-52">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>Tất cả loại chứng từ</SelectItem>
+                  {CAC_LOAI.map((ma) => (
+                    <SelectItem key={ma} value={ma}>
+                      {ENTITY_LABELS[ma]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={dung} onValueChange={setDung}>
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
+                  <SelectItem value="active">Đang dùng</SelectItem>
+                  <SelectItem value="inactive">Ngừng</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <ConditionalFilter />
+            </>
+          }
         />
       </Card>
     </PageContainer>
