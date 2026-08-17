@@ -66,16 +66,22 @@ function daysBetween(a: string, b: string): number | null {
 
 // Đơn gấp = có ≥1 dòng mà thời gian chuẩn bị (ngày cần hàng − ngày tiếp nhận phiếu) NHỎ HƠN số ngày
 // QĐ của phân loại VTBB/NL — mốc dài nhất (không sẵn hàng), xem utils/lead-time.ts.
-function computeUrgentPR(items: any[], baseDate: string, stdMap: Record<string, number>): boolean {
-  if (!baseDate) return false
+// CR-082: thiếu ĐÚNG MỘT ngày cũng là gấp (không có dung sai); dòng Hủy đơn hoặc chưa nhập ngày
+// cần hàng thì bỏ qua. Khớp urgent_reasons() bên backend — backend mới là nơi chốt cờ lúc lưu.
+// Trả về danh sách dòng vi phạm để nói rõ cho người dùng vì sao phiếu bị đánh dấu gấp.
+function urgentLinesPR(items: any[], baseDate: string, stdMap: Record<string, number>): string[] {
+  if (!baseDate) return []
+  const out: string[] = []
   for (const it of items || []) {
+    if (it.line_status === 'Hủy đơn') continue
     const std = stdDaysOf(stdMap, it.item_group)
     if (std <= 0) continue
     const lead = daysBetween(it.required_date, baseDate)
-    if (lead === null) continue
-    if (lead < std) return true
+    if (lead === null || lead >= std) continue
+    out.push(`${it.product_name || it.product_code || 'Dòng hàng'}: cần sau ${lead} ngày, `
+      + `phân loại "${it.item_group || 'chưa chọn'}" quy định ${std} ngày`)
   }
-  return false
+  return out
 }
 
 export default function PurchaseRequestDetail() {
@@ -251,18 +257,24 @@ export default function PurchaseRequestDetail() {
   const stdMap = useMemo(() => stdDaysMap(itemGroups), [itemGroups])
   // Ngày QĐ có hàng của 1 dòng = Ngày tiếp nhận phiếu + số ngày QĐ của phân loại
   const qdDate = (itemGroup: string) => regulatedDate(stdMap, itemGroup || '', pr.request_date || '')
-  // Tự tính lại cờ Đơn gấp khi dữ liệu nguồn (ngày tạo / dòng hàng) đổi. KHÔNG chạy lúc mở phiếu (loadAll không qua đây) -> giữ đè tay.
+  // CR-082 — các dòng khiến phiếu thành Đơn gấp (rỗng = không dòng nào vi phạm).
+  const urgentLines = useMemo(() => urgentLinesPR(pr.items || [], pr.request_date || '', stdMap),
+    [pr.items, pr.request_date, stdMap])
+  // Tự tính lại cờ Đơn gấp khi dữ liệu nguồn (ngày tiếp nhận / dòng hàng) đổi. CR-082: chỉ BẬT,
+  // KHÔNG bao giờ tự tắt — bỏ gấp là quyết định của người dùng (backend cũng xử đúng như vậy).
   const recalcUrgent = (next: any) => {
-    if (Object.keys(stdMap).length === 0) return next
-    const u = computeUrgentPR(next.items || [], next.request_date, stdMap)
-    return u === !!next.is_urgent ? next : { ...next, is_urgent: u }
+    if (Object.keys(stdMap).length === 0 || next.is_urgent) return next
+    return urgentLinesPR(next.items || [], next.request_date, stdMap).length
+      ? { ...next, is_urgent: true } : next
   }
-  // Phiếu MỚI: tự tính cờ gấp khi có đủ dữ liệu (kể cả tạo từ khảo sát), sau khi danh mục QĐ nạp xong.
+  // Phiếu còn sửa được (mới / nháp / bị trả lại): có dòng vi phạm thì bật cờ ngay khi mở phiếu và
+  // sau khi danh mục QĐ nạp xong — để ô tick khớp với những gì backend sẽ ghi lúc Lưu. Phiếu đã
+  // duyệt thì giữ nguyên hiển thị, vì ô tick ở đó lưu thẳng qua API.
   useEffect(() => {
-    if (!isNew || Object.keys(stdMap).length === 0) return
-    setPr((s: any) => { const u = computeUrgentPR(s.items || [], s.request_date, stdMap); return s.is_urgent === u ? s : { ...s, is_urgent: u } })
+    if (!editable || urgentLines.length === 0) return
+    setPr((s: any) => (s.is_urgent ? s : { ...s, is_urgent: true }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isNew, stdMap, pr.request_date, pr.items])
+  }, [editable, urgentLines.length])
 
   const setH = (k: string, v: any) =>
     setPr((s: any) => (k === 'request_date' ? recalcUrgent({ ...s, request_date: v }) : { ...s, [k]: v }))
@@ -854,11 +866,18 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Tùy chọn phiếu</label>
-                <div style={{ display: 'flex', gap: 20, alignItems: 'center', height: 40 }}>
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center', minHeight: 40, flexWrap: 'wrap' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', margin: 0, color: 'var(--red)' }}>
                     <input type="checkbox" checked={!!pr.is_urgent} disabled={prLocked} onChange={(e) => toggleUrgent(e.target.checked)} style={{ width: 18, height: 18 }} />
                     Đơn gấp
                   </label>
+                  {/* CR-082 — nói rõ vì sao phiếu bị đánh dấu gấp (danh sách dòng vi phạm ở tooltip) */}
+                  {urgentLines.length > 0 && (
+                    <span style={{ fontSize: 12, color: 'var(--red)' }} title={urgentLines.join('\n')}>
+                      Tự động: {urgentLines.length} dòng có ngày cần hàng sớm hơn thời gian quy định của phân loại
+                      {editable ? ' — hệ thống đánh dấu Đơn gấp khi lưu' : ''}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="form-row">
