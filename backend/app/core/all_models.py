@@ -44,3 +44,4 @@ from app.modules.document import template_model as _document_template  # noqa: F
 from app.modules.document import recipient_model as _document_recipient  # noqa: F401
 from app.modules.document import incoming_register_model as _incoming_register  # noqa: F401
 from app.modules.document import link_model as _document_link  # noqa: F401
+from app.modules.document import scope_model as _document_scope  # noqa: F401

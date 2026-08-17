@@ -1,0 +1,109 @@
+"""Tính AI THUỘC PHẠM VI áp dụng của văn bản (F01–F05).
+
+Ba quy tắc, thứ tự quan trọng:
+
+1. Các dòng **bao gồm** cộng dồn.
+2. **Loại trừ luôn thắng** — dù trùng chiều nào.
+3. **Không có dòng nào = không ai thuộc phạm vi.**
+
+⚠️ **`include_children` đang là phép xấp xỉ.** `tab_company` chỉ có cột `level`
+(1 Tập đoàn · 2 công ty con · 3 …), KHÔNG có cột cha, nên "gồm đơn vị con" hiện
+được hiểu là *mọi pháp nhân có `level` lớn hơn*. Đúng với cây một tầng đang có,
+sai ngay khi xuất hiện tầng thứ ba thuộc hai nhánh khác nhau. Muốn đúng hẳn thì
+phải thêm `parent_id` vào `tab_company` — xem câu hỏi cuối `task-process.md`.
+"""
+from sqlalchemy.orm import Session
+
+from app.modules.company.model import Company
+from app.modules.employee.model import Employee
+
+from .scope_model import (DIM_COMPANY, DIM_DEPARTMENT, DIM_EMPLOYEE,
+                          MODE_EXCLUDE, MODE_INCLUDE, DocumentScope)
+
+
+def scopes_of(db: Session, document_id: int) -> list[DocumentScope]:
+    return (
+        db.query(DocumentScope)
+        .filter(DocumentScope.document_id == document_id)
+        #  Loại trừ hiện SAU bao gồm trên màn hình — đọc theo thứ tự đó là hiểu
+        #  ngay "áp cho ai, trừ ai".
+        .order_by(DocumentScope.mode.asc(), DocumentScope.dim.asc(),
+                  DocumentScope.id.asc())
+        .all()
+    )
+
+
+def _child_company_ids(db: Session, company: Company | None) -> set[int]:
+    """Pháp nhân "con" của một pháp nhân. Xem cảnh báo ở đầu tệp."""
+    if company is None:
+        return set()
+    rows = db.query(Company.id).filter(Company.level > company.level).all()
+    return {row[0] for row in rows}
+
+
+def _match(db: Session, row: DocumentScope, employee: Employee) -> bool:
+    """Một dòng phạm vi có trúng nhân sự này không."""
+    if row.dim == DIM_EMPLOYEE:
+        return row.employee_id == employee.id
+
+    if row.dim == DIM_DEPARTMENT:
+        #  Ràng buộc dữ liệu đã ép `company_id` khác rỗng ở chiều này, nên so cả
+        #  hai là đúng ý người khai: "phòng Kế toán CỦA pháp nhân này".
+        return (row.department_id == employee.department_id
+                and row.company_id == employee.company_id)
+
+    if row.company_id == employee.company_id:
+        return True
+    if row.include_children:
+        return employee.company_id in _child_company_ids(db, db.get(Company, row.company_id))
+    return False
+
+
+def applies_to(db: Session, document_id: int, employee: Employee) -> bool:
+    """Nhân sự này có thuộc phạm vi áp dụng của văn bản không."""
+    rows = scopes_of(db, document_id)
+    if not rows:
+        #  Quy tắc 3 — không khai gì thì KHÔNG AI thuộc phạm vi. Ngược trực giác
+        #  nhưng an toàn: quên khai thì văn bản không tới ai và người ta sẽ hỏi;
+        #  mặc định "mọi người" thì quên khai là gửi văn bản mật cho cả tập đoàn.
+        return False
+
+    #  Quy tắc 2 — loại trừ thắng, nên xét trước và thoát ngay.
+    for row in rows:
+        if row.mode == MODE_EXCLUDE and _match(db, row, employee):
+            return False
+
+    return any(row.mode == MODE_INCLUDE and _match(db, row, employee) for row in rows)
+
+
+def document_ids_for(db: Session, employee: Employee) -> list[int]:
+    """F05 — mọi văn bản đang áp dụng cho một người.
+
+    Lọc thô ở tầng truy vấn rồi lọc tinh bằng `applies_to`: phần "gồm đơn vị con"
+    và luật loại-trừ-thắng không viết gọn thành một câu SQL được, mà số văn bản
+    có khai phạm vi thì nhỏ hơn hẳn tổng số văn bản.
+    """
+    ung_vien = {row[0] for row in db.query(DocumentScope.document_id).distinct().all()}
+    return sorted(doc_id for doc_id in ung_vien if applies_to(db, doc_id, employee))
+
+
+def serialize(db: Session, row: DocumentScope) -> dict:
+    from app.modules.department.model import Department
+
+    company = db.get(Company, row.company_id) if row.company_id else None
+    department = db.get(Department, row.department_id) if row.department_id else None
+    employee = db.get(Employee, row.employee_id) if row.employee_id else None
+
+    return {
+        "id": row.id,
+        "document_id": row.document_id,
+        "dim": row.dim,
+        "mode": row.mode,
+        "company_id": row.company_id,
+        "company_name": company.name if company else "",
+        "department_id": row.department_id,
+        "department_name": department.name if department else "",
+        "employee_id": row.employee_id,
+        "employee_name": employee.full_name if employee else "",
+        "include_children": row.include_children,
+    }

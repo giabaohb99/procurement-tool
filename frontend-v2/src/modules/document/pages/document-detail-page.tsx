@@ -28,6 +28,7 @@ import { RichTextEditor } from '@/shared/ui/rich-text-editor'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentAccessCard } from '../components/document-access-card'
+import { DocumentScopeCard } from '../components/document-scope-card'
 import { DocumentAttachmentList } from '../components/document-attachment-list'
 import { DocumentAutosaveStatus } from '../components/document-autosave-status'
 import { DocumentRecordForm } from '../components/document-record-form'
@@ -353,6 +354,10 @@ export function DocumentDetailPage() {
             onSubmit={handleSubmitForm}
           >
             <DocumentAttachmentList versionId={versionId} readOnly={!canWrite || isLocked} />
+            {/*  Phạm vi áp dụng (F01–F04) khác QUYỀN TRUY CẬP: phạm vi trả lời
+                 "văn bản này áp cho ai phải làm theo", quyền trả lời "ai được
+                 mở ra đọc". Hai câu hỏi khác nhau, để cạnh nhau cho dễ đối chiếu. */}
+            <DocumentScopeCard documentId={documentId} canWrite={canWrite} />
             <DocumentAccessCard documentId={documentId} canWrite={canWrite} />
           </DocumentRecordForm>
         </TabsContent>

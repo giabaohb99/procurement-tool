@@ -94,6 +94,11 @@ export const queryKeys = {
     /** Các ô quan hệ form phải tự hiện theo loại, kèm danh sách chọn được (E03). */
     linkSlots: (documentId: number) => ['document', 'records', documentId, 'link-slots'] as const,
     tree: (documentId: number) => ['document', 'records', documentId, 'tree'] as const,
+    /** Phạm vi áp dụng của một văn bản (F01–F04). */
+    scopes: (documentId: number) => ['document', 'records', documentId, 'scopes'] as const,
+    scopeOptions: () => ['document', 'scope-options'] as const,
+    /** F05 — văn bản đang áp dụng cho chính tôi. Không theo văn bản nào. */
+    appliesToMe: () => ['document', 'applies-to-me'] as const,
     /** Quy tắc quan hệ theo LOẠI văn bản — danh mục nền, không theo văn bản nào. */
     linkRules: () => ['document', 'link-rules'] as const,
     linkRule: (id: number) => ['document', 'link-rules', 'detail', id] as const,

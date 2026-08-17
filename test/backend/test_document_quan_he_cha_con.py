@@ -292,3 +292,122 @@ def test_so_luong_toi_da_dem_rieng_tung_dong_quy_tac(db, hai_dong_thuoc_ve):
     with pytest.raises(HTTPException) as loi:
         link_service.add_link(db, bieu_mau, RELATION_BELONGS, quy_trinh_2.id, "", ACTOR)
     assert "tối đa" in loi.value.detail
+
+
+# ── E07 / E08 · tác động khi văn bản CHA thay đổi ────────────────────────────
+#
+# Hai cột `on_parent_new_version` và `on_parent_obsolete` của bảng quy tắc trước
+# đây là CỘT CHẾT: chỉ quan hệ "trích từ" đọc tới, và đọc bằng giá trị khóa cứng
+# chứ không qua bảng quy tắc. Nhóm bài kiểm này canh việc chúng thật sự điều
+# khiển hành vi.
+from app.modules.doc_catalog.link_rule_model import (NEW_VERSION_NOTHING,  # noqa: E402
+                                                     OBSOLETE_EXPIRE,
+                                                     OBSOLETE_NOTHING)
+from app.modules.document import parent_change_service  # noqa: E402
+from app.modules.document.model import STATUS_EXPIRED  # noqa: E402
+from app.modules.document.schema import VersionCreate  # noqa: E402
+from app.modules.document.version_model import CHANGE_MAJOR  # noqa: E402
+from app.modules.document.version_service import open_new_version  # noqa: E402
+
+
+def _ban_hanh(db, doc):
+    service.submit(db, doc, ACTOR)
+    service.approve(db, doc, ACTOR)
+    return doc
+
+
+def _len_ban_moi(db, doc):
+    open_new_version(db, doc, VersionCreate(
+        change_kind=CHANGE_MAJOR, change_summary="Sửa điều 5",
+    ), ACTOR)
+    service.submit(db, doc, ACTOR)
+    service.approve(db, doc, ACTOR)
+
+
+def test_liet_ke_tac_dong_truoc_khi_bam_va_khong_doi_gi(db, catalog):
+    """E07 — bảng tác động chỉ ĐỌC. Gọi xong dữ liệu phải y nguyên."""
+    quy_trinh = _ban_hanh(db, _tao(db, catalog, "QT", "Quy trình mua hàng"))
+    huong_dan = _tao(db, catalog, "HDCV", "Hướng dẫn tạo phiếu")
+    link_service.add_link(db, huong_dan, RELATION_GUIDE, quy_trinh.id, "", ACTOR)
+
+    tac_dong = parent_change_service.impact_of(db, quy_trinh, obsolete=False)
+
+    assert [m["title"] for m in tac_dong] == ["Hướng dẫn tạo phiếu"]
+    assert tac_dong[0]["action_label"]
+    db.refresh(huong_dan)
+    assert huong_dan.needs_review is False
+
+
+def test_cha_len_phien_ban_moi_thi_con_bi_danh_dau(db, catalog):
+    quy_trinh = _ban_hanh(db, _tao(db, catalog, "QT", "Quy trình mua hàng"))
+    huong_dan = _tao(db, catalog, "HDCV", "Hướng dẫn tạo phiếu")
+    link_service.add_link(db, huong_dan, RELATION_GUIDE, quy_trinh.id, "", ACTOR)
+
+    _len_ban_moi(db, quy_trinh)
+
+    db.refresh(huong_dan)
+    assert huong_dan.needs_review is True
+    assert "phiên bản 2.0" in huong_dan.needs_review_note
+
+
+def test_quy_tac_khai_khong_lam_gi_thi_con_khong_bi_danh_dau(db, catalog):
+    """Cột cấu hình phải thật sự điều khiển — không phải lúc nào cũng đánh dấu."""
+    for rule in link_service.rules_for_type(db, catalog["HDCV"].id):
+        rule.on_parent_new_version = NEW_VERSION_NOTHING
+    db.commit()
+
+    quy_trinh = _ban_hanh(db, _tao(db, catalog, "QT", "Quy trình mua hàng"))
+    huong_dan = _tao(db, catalog, "HDCV", "Hướng dẫn tạo phiếu")
+    link_service.add_link(db, huong_dan, RELATION_GUIDE, quy_trinh.id, "", ACTOR)
+
+    _len_ban_moi(db, quy_trinh)
+
+    db.refresh(huong_dan)
+    assert huong_dan.needs_review is False
+
+
+def test_bai_bo_cha_theo_cau_hinh_het_hieu_luc(db, catalog):
+    for rule in link_service.rules_for_type(db, catalog["HDCV"].id):
+        rule.on_parent_obsolete = OBSOLETE_EXPIRE
+    db.commit()
+
+    quy_trinh = _ban_hanh(db, _tao(db, catalog, "QT", "Quy trình mua hàng"))
+    huong_dan = _tao(db, catalog, "HDCV", "Hướng dẫn tạo phiếu")
+    link_service.add_link(db, huong_dan, RELATION_GUIDE, quy_trinh.id, "", ACTOR)
+    _ban_hanh(db, huong_dan)
+
+    service.revoke(db, quy_trinh, "Thay bằng quy trình mới", ACTOR)
+
+    db.refresh(huong_dan)
+    assert huong_dan.status == STATUS_EXPIRED
+
+
+def test_bai_bo_cha_muc_danh_dau_thi_con_van_con_hieu_luc(db, catalog):
+    """Mức 2 chỉ đánh dấu: Biểu mẫu vẫn dùng được dù Quy trình cha đã bỏ."""
+    quy_trinh = _ban_hanh(db, _tao(db, catalog, "QT", "Quy trình mua hàng"))
+    bieu_mau = _tao(db, catalog, "BM", "Biểu mẫu đề nghị")
+    link_service.add_link(db, bieu_mau, RELATION_BELONGS, quy_trinh.id, "", ACTOR)
+    _ban_hanh(db, bieu_mau)
+
+    service.revoke(db, quy_trinh, "Thay bằng quy trình mới", ACTOR)
+
+    db.refresh(bieu_mau)
+    assert bieu_mau.needs_review is True
+    assert bieu_mau.status != STATUS_EXPIRED
+
+
+def test_bai_bo_cha_muc_khong_lam_gi_thi_con_khong_bi_dung(db, catalog):
+    for rule in link_service.rules_for_type(db, catalog["BM"].id):
+        rule.on_parent_obsolete = OBSOLETE_NOTHING
+    db.commit()
+
+    quy_trinh = _ban_hanh(db, _tao(db, catalog, "QT", "Quy trình mua hàng"))
+    bieu_mau = _tao(db, catalog, "BM", "Biểu mẫu đề nghị")
+    link_service.add_link(db, bieu_mau, RELATION_BELONGS, quy_trinh.id, "", ACTOR)
+    _ban_hanh(db, bieu_mau)
+
+    service.revoke(db, quy_trinh, "Thay bằng quy trình mới", ACTOR)
+
+    db.refresh(bieu_mau)
+    assert bieu_mau.needs_review is False
+    assert bieu_mau.status != STATUS_EXPIRED

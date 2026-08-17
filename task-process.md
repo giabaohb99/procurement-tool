@@ -13,11 +13,11 @@
 | 1 | Danh mục và số hiệu | **100%** | **ĐẠT** — cả 3 bài nghiệm thu xanh |
 | 2 | Yêu cầu, soạn thảo, phiên bản | **~75%** | chưa |
 | 3 | Bộ máy phê duyệt dùng chung | **~5%** | chưa |
-| 4 | Ban hành, phạm vi, clone | **~6%** | chưa |
-| **Tổng 4 phase** | trọng số theo khối lượng (15/30/35/20) | **≈ 40%** | |
+| 4 | Ban hành, phạm vi, clone | **~35%** | chưa |
+| **Tổng 4 phase** | trọng số theo khối lượng (15/30/35/20) | **≈ 46%** | |
 
 Đọc nhanh: **Phase 1 ĐÓNG, Phase 2 xong đúng phần lõi (soạn thảo + phiên bản), Phase 3 và 4 chưa bắt đầu.**
-Con số 40% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính năng) và hoàn toàn chưa động tới.
+Con số 46% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính năng) và hoàn toàn chưa động tới.
 
 > **Đổi gì so với lần chấm 15/08 — ba đợt:**
 >
@@ -33,6 +33,9 @@ Con số 40% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính n�
 >
 > *Đợt 4 (Phase 2 · nhóm E + C19).* Quan hệ cha–con trọn bộ E01–E06, bản trích nội bộ C19 và quan hệ
 > «trích từ» E11 với ba ràng buộc khóa cứng. Phase 2 từ ~52% lên **~75%**, tổng lên **~40%**.
+>
+> *Đợt 5 (Phase 4 · phạm vi + tác động cha).* Phạm vi áp dụng F01–F05 và tác động khi văn bản cha đổi
+> E07/E08. **Bỏ qua phần phụ thuộc Phase 3** theo yêu cầu. Phase 4 từ ~6% lên **~35%**, tổng lên **~46%**.
 
 ---
 
@@ -198,20 +201,20 @@ của Thu mua.
 
 ---
 
-## 4. Phase 4 · Ban hành, phạm vi, clone — ~6%
+## 4. Phase 4 · Ban hành, phạm vi, clone — ~35%
 
 | Việc | Mã | FE v2 |
 |---|---|---|
 | Vòng đời văn bản 8 trạng thái | J01 | ✅ |
 | Ban hành (cấp số, đóng phiên bản) | J04 | 🟡 có `approve → effective`, chưa có màn ban hành riêng |
 | Ký điện tử nội bộ, ghi rõ loại chữ ký | J02, J03 | ❌ |
-| Phạm vi ba kiểu, bao gồm/loại trừ, áp cho đơn vị con | F01–F04 | ❌ |
-| Màn "văn bản áp dụng cho tôi", thông báo theo phạm vi | F05, J05 | ❌ |
+| Phạm vi ba kiểu, bao gồm/loại trừ, áp cho đơn vị con | F01–F04 | ✅ | `tab_document_scope` + CHECK ép phòng ban phải kèm pháp nhân; `document-scope-card.tsx` |
+| Màn "văn bản áp dụng cho tôi" | F05 | ✅ | `documents-applied-to-me-page.tsx`. Thông báo theo phạm vi (J05) chưa — cần bộ thông báo |
 | Clone xuống pháp nhân con | F06–F08 | ❌ |
 | Gửi thư kèm nháp, bảng theo dõi clone | F09, F10 | ❌ |
 | Bản gốc lên phiên bản → con cần rà lại | F11 | 🟡 có cờ `requires_reconfirm`, chưa có clone để áp |
 | Màn chọn cơ chế lúc ban hành | F13 | ❌ |
-| Cảnh báo tác động sửa cha, xử lý bãi bỏ cha | E07, E08 | ❌ |
+| Cảnh báo tác động sửa cha, xử lý bãi bỏ cha | E07, E08 | ✅ | `parent_change_service.py`; hai cột `on_parent_*` giờ mới thật sự điều khiển hành vi |
 | Nhãn "đã bị sửa đổi" | J10 | ❌ |
 | Quyết định ban hành kiểm ở mức phiên bản | J11 | 🟡 chỉ có cờ `needs_decision` |
 
@@ -281,6 +284,8 @@ docker compose exec -T api alembic check   # còn báo drift tab_comment_*/tab_t
 | `attachment/controller.py`, `core/file_registry.py` | `test_dinh_kem_van_ban_rieng_tu.py` |
 | `document/link_service.py`, `link_serializer.py`, `doc_catalog/link_rule_*.py` | `test_document_quan_he_cha_con.py` |
 | `document/excerpt_service.py`, `service.revoke/approve` | `test_ban_trich_noi_bo.py` |
+| `document/scope_service.py`, `scope_controller.py` | `test_pham_vi_ap_dung.py` |
+| `document/parent_change_service.py` | `test_document_quan_he_cha_con.py` |
 | `document-draft-holder-notice.tsx`, `document-version-*.tsx` | `document-draft-holder-notice.test.tsx` + kịch bản bấm tay 6.5 |
 | `document/access_service.py`, quyền theo sổ | `test_document_access.py` (22 test) |
 | `seed_data/document_phase1.py` | `test_document_phase1_seed.py` |
@@ -451,18 +456,19 @@ loại chứng từ bằng cờ, không thay chỗ.
 2. `multi_mode = 4` (đủ tỷ lệ `quorum`) có thật sự cần bản 1 không, hay ba chế độ đầu là đủ? I05 chỉ nói "ba chế độ".
 3. Chuyển 5 luồng Thu mua sang bộ máy mới (I25) là bản 2 — vậy bản 1 bộ máy chỉ chạy cho văn thư. Có đúng ý không, hay muốn chuyển sớm một luồng Thu mua để thử thật?
 
-## Phase 4 · Ban hành, phạm vi, clone (12 việc)
+## Phase 4 · Ban hành, phạm vi, clone (còn 8 việc)
 
-- [ ] [P4][F01/F02] Phạm vi áp dụng ba kiểu + bao gồm và loại trừ — **L**
-- [ ] [P4][F03/F04] Bắt buộc kèm pháp nhân khi chọn phòng ban + áp cho cả đơn vị con — **M**
-- [ ] [P4][F05/J05] Màn "văn bản áp dụng cho tôi" + thông báo theo phạm vi — **M**
+- [x] [P4][F01/F02] Phạm vi áp dụng ba kiểu + bao gồm và loại trừ — **L** — xong 17/08
+- [x] [P4][F03/F04] Bắt buộc kèm pháp nhân khi chọn phòng ban + áp cho cả đơn vị con — **M** — xong 17/08
+- [x] [P4][F05] Màn "văn bản áp dụng cho tôi" — **S** — xong 17/08
+- [ ] [P4][J05] Thông báo theo phạm vi — **S** — cần bộ thông báo, chưa làm
 - [ ] [P4][J02/J03] Ký điện tử nội bộ, bản ghi ký, mã băm, ghi rõ loại chữ ký — **L**
 - [ ] [P4][J04] Màn ban hành: cấp số, đóng phiên bản — **M**
 - [ ] [P4][F06/F07/F08] Clone xuống pháp nhân con: tạo nháp, giữ liên kết ngược, số hiệu riêng — **L** — CHỜ chốt câu hỏi 4
 - [ ] [P4][F09/F10] Gửi thư kèm bản nháp + bảng theo dõi các bản clone — **M**
 - [ ] [P4][F11/F12] Bản gốc lên phiên bản thì đánh dấu con cần rà lại + nhắc hạn — **M**
 - [ ] [P4][F13] Màn chọn cơ chế lúc ban hành: gắn phạm vi hay clone — **S**
-- [ ] [P4][E07/E08] Cảnh báo tác động khi sửa cha + xử lý khi bãi bỏ cha — **M**
+- [x] [P4][E07/E08] Cảnh báo tác động khi sửa cha + xử lý khi bãi bỏ cha — **M** — xong 17/08
 - [ ] [P4][J10] Nhãn "đã bị sửa đổi" trên bản cũ + tác động tự động của quan hệ thay thế/bãi bỏ — **M**
 - [ ] [P4][J11] Quyết định ban hành kiểm ở mức phiên bản — **S**
 
@@ -486,5 +492,9 @@ loại chứng từ bằng cờ, không thay chỗ.
 6. **Nghiệp vụ có phân biệt "hủy" với "bãi bỏ" không?** Tài liệu liệt kê 9 trạng thái, mã đang có 8 —
    thiếu `status = 9 đã hủy`, khác `7 bãi bỏ`. Chưa thêm vì hằng số không có nút bấm thì tạo ra trạng
    thái nửa vời. Chốt xong thì làm trọn cả luồng.
-7. **Có đổi tên `legal_issuer`/`legal_url` thành `issuer`/`external_url` như tài liệu ghi không?**
+7. **`tab_company` chưa có cột cha.** Cờ "gồm đơn vị con" (F04) hiện hiểu là *mọi pháp nhân có `level`
+   lớn hơn* — đúng với cây một tầng đang có, sai ngay khi xuất hiện tầng ba thuộc hai nhánh khác nhau.
+   Muốn đúng hẳn phải thêm `parent_id` vào `tab_company`. Có 13 pháp nhân thì cây có bao giờ sâu quá
+   hai tầng không?
+8. **Có đổi tên `legal_issuer`/`legal_url` thành `issuer`/`external_url` như tài liệu ghi không?**
    Đang giữ tên cũ: rõ nghĩa hơn, đổi thì phải sửa cả FE mà không được thêm gì.

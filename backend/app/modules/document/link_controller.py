@@ -16,7 +16,7 @@ from app.core.database import get_db
 from app.core.response import success
 from app.modules.doc_catalog.link_rule_model import RELATION_LABELS
 
-from . import excerpt_service, link_serializer, link_service
+from . import excerpt_service, link_serializer, link_service, parent_change_service
 from .controller import _load
 from .link_serializer import summary_of
 
@@ -108,6 +108,25 @@ def document_tree(
     """E06 — mở một Quy trình thấy ngay Hướng dẫn công việc và Biểu mẫu thuộc nó."""
     doc = _load(db, document_id, user)
     return success(link_serializer.build_tree(db, doc))
+
+
+@router.get("/{document_id}/impact")
+def parent_change_impact(
+    document_id: int,
+    obsolete: bool = False,
+    db: Session = Depends(get_db),
+    user=Depends(require("document", "read")),
+):
+    """E07 — LIỆT KÊ trước khi bấm: sửa/bãi bỏ văn bản này thì con nào bị gì.
+
+    `obsolete=false` hỏi cho việc lên phiên bản mới, `true` hỏi cho việc bãi bỏ.
+    Hai việc khác nhau, hai cột cấu hình riêng — hỏi chung một câu là trả lời sai
+    một trong hai.
+
+    Chỉ ĐỌC. Hệ thống liệt kê để người ban hành quyết, không tự sửa gì.
+    """
+    doc = _load(db, document_id, user)
+    return success(parent_change_service.impact_of(db, doc, obsolete=obsolete))
 
 
 @router.post("/{document_id}/links")

@@ -5,6 +5,7 @@ import {
   Hash,
   LayoutDashboard,
   Link2,
+  Target,
   SlidersHorizontal,
 } from 'lucide-react'
 
@@ -70,6 +71,12 @@ export const documentModule: ErpModule = {
       icon: Hash,
       entity: 'doc_type',
       group: 'Danh mục',
+    },
+    {
+      label: 'Áp dụng cho tôi',
+      path: appRoutes.document.appliedToMe,
+      icon: Target,
+      entity: 'document',
     },
     {
       label: 'Quy tắc quan hệ',
@@ -150,6 +157,13 @@ export const documentModule: ErpModule = {
       lazy: async () => ({
         Component: (await import('./pages/document-numbering-rule-detail-page'))
           .DocumentNumberingRuleDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.document.appliedToMe,
+      lazy: async () => ({
+        Component: (await import('./pages/documents-applied-to-me-page'))
+          .DocumentsAppliedToMePage,
       }),
     },
     {

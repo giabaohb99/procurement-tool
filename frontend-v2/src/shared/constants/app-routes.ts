@@ -50,6 +50,8 @@ export const appRoutes = {
     documents: '/document/documents',
     documentNew: '/document/documents/new',
     documentDetail: (id: number | string) => `/document/documents/${id}`,
+    /** F05 — văn bản mà chính tôi nằm trong phạm vi áp dụng. */
+    appliedToMe: '/document/applied-to-me',
     /** Danh sách SỔ (mỗi sổ một bộ đếm riêng), không phải danh sách văn bản. */
     books: '/document/books',
     bookNew: '/document/books/new',

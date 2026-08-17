@@ -271,7 +271,8 @@ def approve(db: Session, doc: Document, actor: int) -> Document:
     if not version or version.status != VERSION_SUBMITTED:
         raise HTTPException(400, "Không có bản nào đang chờ duyệt")
 
-    from .excerpt_service import is_excerpt, mark_excerpts_for_review
+    from .excerpt_service import is_excerpt
+    from .parent_change_service import apply_new_version
 
     doc_type = doc_type_or_400(db, doc.doc_type_id)
     #  Bản trích KHÔNG cấp số hiệu riêng — nó gọi theo số của bản gốc (C19).
@@ -287,14 +288,14 @@ def approve(db: Session, doc: Document, actor: int) -> Document:
 
     if effective <= date.today():
         switch_current(db, doc, version, previous)
-        #  E11 (a) — gốc lên phiên bản mới thì MỌI bản trích của nó bị đánh dấu
-        #  cần rà lại. Quy tắc không tắt được điều này: bản trích là cùng nội
-        #  dung, gốc đổi là bản trích có thể đang nói sai.
+        #  E07 — cha lên phiên bản mới thì MỌI văn bản con bị xử lý theo cột
+        #  `on_parent_new_version` của quy tắc quan hệ. Bản trích là trường hợp
+        #  đặc biệt: cột đó bị khóa cứng ở mức "đánh dấu cần rà lại" (E11 a).
         if previous is not None:
-            mark_excerpts_for_review(
+            apply_new_version(
                 db, doc,
-                f"Bản gốc đã lên phiên bản {version.version_no} ngày "
-                f"{date.today():%d/%m/%Y}. Rà lại xem phần trích còn đúng không.",
+                f"Văn bản cha đã lên phiên bản {version.version_no} ngày "
+                f"{date.today():%d/%m/%Y}. Rà lại xem còn đúng không.",
             )
     elif previous is None:
         #  Bản đầu tiên duyệt trước ngày hiệu lực: đã duyệt nhưng chưa áp dụng.
@@ -348,15 +349,17 @@ def revoke(db: Session, doc: Document, reason: str, actor: int) -> Document:
     if doc.status not in ALIVE_STATUSES:
         raise HTTPException(400, "Chỉ bãi bỏ được văn bản đã ban hành")
 
-    from .excerpt_service import expire_excerpts
+    from .parent_change_service import apply_obsolete
 
     doc.status = STATUS_REVOKED
     #  Ngày bãi bỏ chính là ngày hết hiệu lực — để bộ lọc "còn hiệu lực đến
     #  ngày…" khỏi phải biết thêm một cột nữa.
     doc.expire_date = date.today()
-    #  E11 (b) — bản trích hết hiệu lực THEO gốc. Không có lựa chọn "không làm
-    #  gì": gốc bị bãi bỏ mà bản trích còn sống là phát tán nội dung đã bỏ.
-    expire_excerpts(db, doc)
+    #  E08 — văn bản con xử lý theo cột `on_parent_obsolete` của quy tắc: không
+    #  làm gì · đánh dấu cần rà lại · hết hiệu lực theo cha. Bản trích bị khóa ở
+    #  mức thứ ba (E11 b) — gốc bãi bỏ mà bản trích còn sống là phát tán nội
+    #  dung đã bỏ.
+    apply_obsolete(db, doc)
     doc.updated_by = actor
     db.commit()
     db.refresh(doc)
