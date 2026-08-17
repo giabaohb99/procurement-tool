@@ -49,11 +49,10 @@ def test_so_khong_reset_thi_dem_tiep_qua_nam(db):
     """Sổ tắt `reset_yearly` dùng chung một dòng cho mọi năm."""
     key = book_scope_key("SD002", 2026, reset_yearly=False)
     assert key == "book:SD002"
-    assert next_number(db, key, 2026) == 1
-    # Cùng khóa, năm sau: `next_number` thấy `row.year` lệch nên reset — đó là lý
-    # do khóa của sổ không reset PHẢI bỏ năm ra khỏi chuỗi, và cũng phải truyền
-    # đúng năm của dòng vào để không tự đá nhau.
-    assert next_number(db, key, 2026) == 2
+    assert next_number(db, key, 2026, reset_yearly=False) == 1
+    #  Khóa đã bỏ năm ra, nhưng chừng đó chưa đủ: phải nói thẳng cho bộ đếm biết
+    #  là không đếm lại, nếu không nó thấy `row.year` lệch và tự đặt về đầu.
+    assert next_number(db, key, 2027, reset_yearly=False) == 2
 
 
 def test_start_no_ap_dung_khi_chuyen_tu_so_giay(db):

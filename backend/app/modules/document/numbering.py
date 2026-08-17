@@ -92,9 +92,8 @@ def _rule_scope_key(rule: DocumentNumberingRule, company_code: str, year: int) -
     return f"rule:{rule.id}:{company_code}:{period}"
 
 
-def _rule_counter_year(rule: DocumentNumberingRule, year: int) -> int:
-    """Bộ đếm liên tục dùng năm 0 để `next_number` không tự đặt lại."""
-    return year if rule.reset_yearly else 0
+#  Bộ đếm liên tục KHÔNG đếm lại theo năm — báo cho `next_number` bằng cờ
+#  `reset_yearly` chứ không bằng cách truyền một năm giả.
 
 
 def _render_rule(
@@ -159,12 +158,15 @@ def peek(db: Session, doc_type: DocType, company_id: int | None,
         else yearly_scope_key(company_code, year, type_code)
     )
     row = db.query(NumberSequence).filter(NumberSequence.scope_key == key).one_or_none()
-    counter_year = _rule_counter_year(rule, year) if rule else year
+    #  Mã tài liệu bất biến không đếm lại theo năm; quy tắc thì tùy khai báo.
+    reset_yearly = False if permanent else (rule.reset_yearly if rule else True)
     start_no = rule.start_no if rule else 1
-    if permanent:
-        seq = 1 if row is None else row.current_no + 1
+    if row is None:
+        seq = 1 if permanent else start_no
+    elif reset_yearly and row.year != year:
+        seq = start_no
     else:
-        seq = start_no if row is None or row.year != counter_year else row.current_no + 1
+        seq = row.current_no + 1
 
     if permanent:
         return format_permanent(company_code, type_code, seq)
@@ -193,7 +195,9 @@ def assign(db: Session, doc, doc_type: DocType, year: int) -> None:
 
     if doc_type.id_scheme == ID_SCHEME_PERMANENT:
         key = permanent_scope_key(company_code, type_code)
-        seq = next_number(db, key, year)
+        #  Mã theo văn bản suốt đời — bộ đếm không có năm trong khóa nên tuyệt
+        #  đối không được đếm lại, nếu không 1/1 hàng năm là đụng số cũ.
+        seq = next_number(db, key, year, reset_yearly=False)
         doc.seq_no, doc.issue_year = seq, year
         doc.doc_code = format_permanent(company_code, type_code, seq)
         return
@@ -201,9 +205,7 @@ def assign(db: Session, doc, doc_type: DocType, year: int) -> None:
     rule, book = _matching_rule(db, doc_type, doc.book_id)
     if rule:
         key = _rule_scope_key(rule, company_code, year)
-        seq = next_number(
-            db, key, _rule_counter_year(rule, year), rule.start_no,
-        )
+        seq = next_number(db, key, year, rule.start_no, rule.reset_yearly)
         when = doc.effective_date or date.today()
         doc.seq_no, doc.issue_year = seq, year
         doc.numbering_rule_id = rule.id

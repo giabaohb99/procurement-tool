@@ -40,3 +40,5 @@ from app.modules.document import version_model as _document_version  # noqa: F40
 from app.modules.document import request_model as _document_request  # noqa: F401
 from app.modules.document import access_model as _document_access  # noqa: F401
 from app.modules.document import template_model as _document_template  # noqa: F401
+from app.modules.document import recipient_model as _document_recipient  # noqa: F401
+from app.modules.document import incoming_register_model as _incoming_register  # noqa: F401

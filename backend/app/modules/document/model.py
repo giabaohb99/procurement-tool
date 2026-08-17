@@ -16,10 +16,11 @@ Ba cái bẫy, đọc trước khi sửa (`van-thu/05`, `02` mục 6):
 3. **Số hiệu cấp một lần, không cấp lại.** Hủy văn bản thì số của nó nằm lại
    trong sổ, không trả về cho văn bản sau (`van-thu` D05).
 """
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import (BigInteger, Boolean, CheckConstraint, Date, Index,
-                        Integer, SmallInteger, String, Text, UniqueConstraint)
+from sqlalchemy import (BigInteger, Boolean, CheckConstraint, Date, DateTime,
+                        Index, Integer, SmallInteger, String, Text,
+                        UniqueConstraint)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import AuditMixin, Base
@@ -134,6 +135,11 @@ class Document(Base, AuditMixin):
     #  sách lọc được mà không phải nối bảng phiên bản.
     effective_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     expire_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    #  Thời điểm KÝ BAN HÀNH, khác `effective_date`: ký hôm nay, áp dụng từ đầu
+    #  tháng sau là chuyện thường. Sổ văn bản đi sắp theo cột này.
+    issued_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    #  Hạn rà soát định kỳ. Chưa có màn nhắc — thuộc phase sau.
+    next_review_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     current_version_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
     # ── Bước xin phép (đã cắt khỏi bản 1 — quyết định 7) ─────────────────────
@@ -156,10 +162,26 @@ class Document(Base, AuditMixin):
     cloned_at: Mapped[date | None] = mapped_column(Date, nullable=True)
     cloned_by: Mapped[int] = mapped_column(BigInteger, default=0)
     clone_note: Mapped[str] = mapped_column(String(500), default="")
+    #  Ba cột giao việc cho pháp nhân nhận (`04` mục 5.2): ai chịu trách nhiệm
+    #  bản clone, hạn xử lý, lúc xử lý xong.
+    clone_assignee_employee_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    clone_due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    clone_handled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # ── Văn bản pháp luật ngoài (`origin = 2`) ───────────────────────────────
+    #  Nghị định / thông tư gom vào chính bảng này thay vì `tab_legal_reference`
+    #  riêng (`04` mục 9.3): quan hệ "căn cứ theo" trỏ khóa ngoại vào
+    #  `tab_document`, nên một dòng ở bảng riêng không bao giờ làm đích được.
     legal_issuer: Mapped[str] = mapped_column(String(300), default="")
     legal_url: Mapped[str] = mapped_column(String(1000), default="")
+
+    # ── Báo cáo sổ văn bản đi (`04` mục 9.1 — báo cáo, không phải bảng) ──────
+    #  Sổ đi là một truy vấn trên chính bảng này: lọc `origin = 1`, đã ban hành,
+    #  theo pháp nhân và năm, sắp theo `seq_no`. Ba cột dưới là phần sổ giấy có
+    #  mà bảng chưa có.
+    recipient_summary: Mapped[str] = mapped_column(String(500), default="")
+    copies: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    register_note: Mapped[str] = mapped_column(String(500), default="")
 
     # ── Sổ đến / đi (nhóm S — chờ câu A1, bản 1 không ghi) ───────────────────
     #  Sổ văn bản đã dựng xong ở `doc_catalog/book_model.py` nhưng việc gắn văn

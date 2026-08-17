@@ -29,11 +29,21 @@ def book_scope_key(book_code: str, year: int, reset_yearly: bool = True) -> str:
     return f"book:{book_code}:{year}" if reset_yearly else f"book:{book_code}"
 
 
-def next_number(db: Session, scope_key: str, year: int, start_no: int = 1) -> int:
+def next_number(db: Session, scope_key: str, year: int, start_no: int = 1,
+                reset_yearly: bool = True) -> int:
     """Cấp số kế tiếp của một bộ đếm. PHẢI gọi trong transaction đang ghi bản ghi.
 
     `start_no` chỉ dùng lúc bộ đếm chưa tồn tại — dành cho trường hợp chuyển từ
     sổ giấy đang dở sang (sổ giấy đã tới số 47 thì sổ điện tử bắt đầu từ 48).
+
+    `reset_yearly=False` cho các bộ đếm **không có năm trong khóa**: mã tài liệu
+    bất biến (`doc:DEGO:QC`), sổ tắt đếm lại, quy tắc đánh số tắt đếm lại. Với
+    chúng, một dòng dùng cho mọi năm nên so `row.year` là sai — sang 1/1 là bộ
+    đếm về 0 và số đầu năm đụng số đã cấp năm trước.
+
+    Cờ này nằm ở đây chứ không để nơi gọi "nhớ truyền năm của dòng vào": cách đó
+    là hợp đồng ngầm, mà cả `next_book_number` lẫn `numbering.assign` đều đã lỡ
+    phá nó một lần rồi.
     """
     row = (
         db.query(NumberSequence)
@@ -48,7 +58,7 @@ def next_number(db: Session, scope_key: str, year: int, start_no: int = 1) -> in
         db.add(row)
         db.flush()
 
-    if row.year != year:  # sang năm mới thì đếm lại từ đầu
+    if reset_yearly and row.year != year:  # sang năm mới thì đếm lại từ đầu
         row.year, row.current_no = year, start_no - 1
 
     row.current_no += 1
@@ -58,7 +68,7 @@ def next_number(db: Session, scope_key: str, year: int, start_no: int = 1) -> in
 def next_book_number(db: Session, book: DocumentBook, year: int) -> int:
     """Cấp số kế tiếp cho một quyển sổ. Xem cảnh báo ở đầu tệp."""
     key = book_scope_key(book.code, year, book.reset_yearly)
-    return next_number(db, key, year, book.start_no)
+    return next_number(db, key, year, book.start_no, book.reset_yearly)
 
 
 def peek_book_number(db: Session, book: DocumentBook, year: int) -> int:
@@ -70,7 +80,7 @@ def peek_book_number(db: Session, book: DocumentBook, year: int) -> int:
     """
     key = book_scope_key(book.code, year, book.reset_yearly)
     row = db.query(NumberSequence).filter(NumberSequence.scope_key == key).one_or_none()
-    if row is None or row.year != year:
+    if row is None or (book.reset_yearly and row.year != year):
         return book.start_no
     return row.current_no + 1
 
