@@ -312,3 +312,49 @@ def test_bat_co_thi_bo_may_moi_vao_cuoc(db, seed):
     db.commit()
     assert flow_service.is_enabled(db, ENTITY) is True
     assert flow_service.is_enabled(db, "purchase_request") is False
+
+
+# ── Thứ tự đăng ký route ────────────────────────────────────────────────────
+
+def test_duong_dan_tinh_dang_ky_truoc_route_dong():
+    """Cùng cái bẫy đã giết ba endpoint văn bản ngày 17/08.
+
+    `/api/approvals/my-tasks` và `/api/approvals/handover` là đường TĨNH; đăng ký
+    sau `/{instance_id}` thì bị nuốt và chết ở bước ép kiểu số nguyên — trả
+    **422 chứ không phải 404**, nên nhìn log cũng không nghĩ ngay tới định tuyến.
+    """
+    from app.main import app
+
+    PREFIX = "/api/approvals"
+    vi_tri_dong = next(
+        (i for i, route in enumerate(app.routes)
+         if getattr(route, "path", "") == PREFIX + "/{instance_id}"), None)
+    assert vi_tri_dong is not None
+
+    muon = [
+        route.path for i, route in enumerate(app.routes)
+        if i > vi_tri_dong and getattr(route, "path", "").startswith(PREFIX + "/")
+        and len(route.path[len(PREFIX) + 1:].split("/")) == 1
+        and "{" not in route.path[len(PREFIX) + 1:]
+    ]
+    assert muon == [], f"Các đường dẫn tĩnh này bị /{{instance_id}} nuốt: {muon}"
+
+
+def test_cau_truy_van_viec_cua_toi_khong_dung_NULLS_LAST(db, seed):
+    """Lỗi 17/08: `.nulls_last()` chạy ngon trên SQLite nhưng MySQL 8 KHÔNG hiểu.
+
+    Cả bộ kiểm này chạy SQLite nên không có bài nào bắt được — màn «Việc của
+    tôi» trả 500 ngay lần gọi thật đầu tiên. Nên canh bằng cách soi thẳng câu
+    SQL sinh ra, thứ duy nhất kiểm được mà không cần MySQL.
+    """
+    from sqlalchemy.dialects import mysql
+
+    from app.modules.approval.instance_model import ApprovalTask
+
+    cau = str(
+        db.query(ApprovalTask)
+        .order_by(ApprovalTask.due_at.is_(None), ApprovalTask.due_at.asc(),
+                  ApprovalTask.id.asc())
+        .statement.compile(dialect=mysql.dialect())
+    ).upper()
+    assert "NULLS LAST" not in cau

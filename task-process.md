@@ -16,8 +16,8 @@
 | 4 | Ban hành, phạm vi, clone | **~90%** | chưa |
 | **Tổng 4 phase** | trọng số theo khối lượng (15/30/35/20) | **≈ 58%** | |
 
-Đọc nhanh: **Phase 1 ĐÓNG, Phase 2 xong đúng phần lõi (soạn thảo + phiên bản), Phase 3 và 4 chưa bắt đầu.**
-Con số 58% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính năng) và hoàn toàn chưa động tới.
+Đọc nhanh: **Phase 1 ĐÓNG · Phase 2 xong phần lõi · Phase 3 ~85% (17/08) · Phase 4 ~90%.**
+Phase 3 (phase nặng nhất, 20 tính năng bản 1) đã có nền, máy chạy, API và hai màn hình; còn I18 tác vụ nền và việc chuyển YCBG.
 
 > **Đổi gì so với lần chấm 15/08 — ba đợt:**
 >
@@ -182,22 +182,49 @@ nào bật lên**.
 
 ---
 
-## 3. Phase 3 · Bộ máy phê duyệt dùng chung — ~5%
+## 3. Phase 3 · Bộ máy phê duyệt dùng chung — ~85% (17/08)
 
-Chưa bắt đầu. Không có bảng luồng/bước/phiên chạy/việc/hành động, không màn khai luồng, không "Việc của tôi".
-Thứ duy nhất có là 3 nút cứng `submit → approve/reject` trên trang chi tiết — đúng bằng "luồng một bước
-viết tay tạm thời" mà tài liệu xếp vào phase 2.
+**N01 xong trước tiên** (điều kiện chặn cứng): 30 bài cho các luồng duyệt Thu mua đang chạy thật —
+`test_luong_duyet_thu_mua.py`; ĐMH đã có sẵn `test_po_submit_guard.py` (11 bài). Bộ này ghi lại
+HÀNH VI ĐANG CÓ, kể cả **ba lỗ hổng đã biết**: Khảo sát, YCBG và YCTT không chặn trạng thái ở bước
+duyệt/ghi chi, gọi thẳng API là duyệt được phiếu còn nháp (YCTT còn ghi nhận chi được phiếu chưa duyệt).
 
-Chưa có: **I01–I26**. Bản 1 gồm 20 tính năng (I01–I12, I15–I18, I20, I21, I23, I26); sáu cái còn lại
-(I13, I14, I19, I22, I24, I25) tài liệu xếp bản 2.
+**Bảy bảng** đã dựng (`092b4e436d25`), chỉ thêm — không đổi, không xóa cột nào đang có:
+`tab_approval_flow` · `_node` · `_instance` · `_task` · `_action` · `tab_approval_switch` · `tab_delegation`.
+`tab_approval_switch` mặc định **TẮT** nên chạy migration không đổi hành vi của bất kỳ luồng nào.
 
-Sáu bảng phải dựng: `tab_approval_flow` · `_node` · `_instance` · `_task` · `_action` · `tab_delegation`.
-Chúng **không dành riêng cho văn bản** — nhận mọi loại chứng từ, và sau này thay 5 luồng duyệt viết tay
-của Thu mua.
+| Việc | Mã | Tình trạng |
+|---|---|---|
+| Mô hình dữ liệu 7 bảng | I01/I02/I12/I17/I20/I21 | ✅ |
+| Khai luồng bằng giao diện | I01 | ✅ `approval-flow-detail-page.tsx` |
+| Sáu cách chọn người duyệt | I03 | ✅ `approver_resolver.py` |
+| Rẽ nhánh + nhánh mặc định | I04 | ✅ cảnh báo tại chỗ khi thiếu nhánh mặc định |
+| Bốn chế độ nhiều người | I05 | ✅ |
+| Bỏ qua khi trùng người | I06 | ✅ trạng thái RIÊNG, không ghi thành "đã duyệt" |
+| Người vắng / nghỉ việc | I07 | ✅ `on_no_approver` **cố ý không có** "tự động duyệt qua" |
+| Chặn tự duyệt | I08 | ✅ |
+| Trả lại · từ chối · rút lại | I09–I11 | ✅ cả ba bắt buộc nêu lý do |
+| Ủy quyền có thời hạn | I12 | ✅ ghi cả hai danh tính, cấm dây chuyền |
+| Người nhận bản sao | I15 | ✅ |
+| Ý kiến trên phiếu | I16 | ✅ |
+| **Việc của tôi** | I17 | ✅ `my-tasks-page.tsx` — gom cả văn thư lẫn thu mua |
+| Bản in dấu vết duyệt | I20 | ✅ `approval-trail-card.tsx`, câu chữ dựng ở backend |
+| Phiên bản luồng · bản chụp | I21 | ✅ `flow_snapshot` |
+| Bàn giao hàng loạt | I23 | ✅ |
+| Cờ bật/tắt theo loại chứng từ | I26 | ✅ đường lui, mặc định TẮT |
+| Chuyển luồng duyệt VĂN BẢN sang bộ máy mới | CHUYỂN | ✅ `approval_bridge.py`, sau cờ |
+| Hạn duyệt + nhắc + leo cấp | I18 | 🟡 dữ liệu và hàm có (`task_service`), **chưa gắn tác vụ nền** |
+| Chuyển luồng duyệt YCBG | CHUYỂN | ❌ chờ chốt câu hỏi 1 (B01–B07) |
 
-⚠️ **Chưa được bắt đầu.** Ràng buộc số 4 của cam kết "không ảnh hưởng Thu mua" là phải có kiểm thử tự
-động cho 5 luồng duyệt hiện tại TRƯỚC — đó là lưới an toàn duy nhất, và nó đang thiếu. Danh sách task
-đầy đủ ở phần cuối tài liệu này.
+**Sáu bài nghiệm thu chuyển phase**: 5 bài viết được ở tầng dịch vụ đều XANH
+(`test_bo_may_phe_duyet.py`, 16 bài); bài thứ 6 là chạy lại toàn bộ — **790 test xanh**.
+
+Ba lỗi thật bắt được trong lúc làm:
+1. phiên làm việc chạy `autoflush=False` nên bước lẽ ra tự qua vì trùng người lại hỏi ký lần nữa;
+2. `document/service.py::reject()` tham chiếu `apply_mode` không tồn tại → **từ chối văn bản nổ
+   `NameError`** từ lúc làm F13, im lặng vì chưa bài kiểm nào gọi `reject()`;
+3. `.nulls_last()` chạy ngon trên SQLite nhưng MySQL 8 không hiểu → màn "Việc của tôi" trả 500 ngay
+   lần gọi thật đầu tiên. Đã thêm bài kiểm soi câu SQL sinh ra vì bộ kiểm chạy SQLite không bắt được.
 
 ---
 
@@ -383,49 +410,49 @@ loại chứng từ bằng cờ, không thay chỗ.
 
 ### 3.0 · Trước khi viết dòng mã đầu tiên (2 việc — chặn tất cả)
 
-- [ ] [P3][N01] Viết kiểm thử tự động cho **5 luồng duyệt hiện tại của Thu mua** — **M** — CHẶN CỨNG. Tài liệu nói thẳng: đây là lưới an toàn duy nhất, *"không có nó thì mọi cam kết còn lại chỉ là lời hứa"*. Không có bộ này thì không được đụng dòng mã nào của phase 3
+- [x] [P3][N01] Viết kiểm thử tự động cho **5 luồng duyệt hiện tại của Thu mua** — **M** — CHẶN CỨNG. Tài liệu nói thẳng: đây là lưới an toàn duy nhất, *"không có nó thì mọi cam kết còn lại chỉ là lời hứa"*. Không có bộ này thì không được đụng dòng mã nào của phase 3
 - [ ] [P3][GIẤY] Khai thử **8 luồng thật ra giấy** bằng đúng mô hình định làm: 5 luồng Thu mua + 3 luồng văn thư (duyệt yêu cầu · duyệt nội dung · duyệt bản clone) — **S** — chỗ nào khai không nổi là mô hình còn thiếu. Sửa trên giấy rẻ hơn nhiều so với sửa khi đã có phiếu chạy trong đó
 
 ### 3.1 · Mô hình dữ liệu — 6 bảng (nền của mọi việc còn lại)
 
-- [ ] [P3][I01/I02] `tab_approval_flow` + `tab_approval_node` — luồng và các bước — **L** — `flow.entity` nhận MỌI loại chứng từ, không riêng văn bản. `node.flow_role`: đề xuất · thực hiện · kiểm tra · phê duyệt
-- [ ] [P3][I21] `tab_approval_instance` với cột **`flow_snapshot` JSON** — **M** — phiếu chạy theo BẢN CHỤP của chính nó, không tham chiếu tới bản luồng đang sống. Đây là cách duy nhất để "sửa luồng khi có 5 phiếu đang chạy" không làm hỏng 5 phiếu đó
-- [ ] [P3][I17] `tab_approval_task` + **`INDEX(assignee_employee_id, status)`** — **M** — chỉ mục quan trọng nhất của cả hệ thống: đó là truy vấn màn "Việc của tôi", chạy mỗi lần có người mở trang chủ
-- [ ] [P3][I20] `tab_approval_action` — **chỉ ghi thêm, không sửa, không xóa** — **M** — ba cột `actor_employee_id` / `on_behalf_of_id` / `delegation_id` để bản in ghi đúng câu *"ông B duyệt thay ông A theo ủy quyền số 12"*. Ghi một người là sau này không phân biệt được ai chịu trách nhiệm
-- [ ] [P3][I12] `tab_delegation` — ủy quyền có thời hạn — **S** — `from_date`/`to_date` BẮT BUỘC. Cấm ủy quyền dây chuyền ở tầng dịch vụ: A ủy cho B thì B không ủy tiếp cho C phần việc nhận từ A
+- [x] [P3][I01/I02] `tab_approval_flow` + `tab_approval_node` — luồng và các bước — **L** — `flow.entity` nhận MỌI loại chứng từ, không riêng văn bản. `node.flow_role`: đề xuất · thực hiện · kiểm tra · phê duyệt
+- [x] [P3][I21] `tab_approval_instance` với cột **`flow_snapshot` JSON** — **M** — phiếu chạy theo BẢN CHỤP của chính nó, không tham chiếu tới bản luồng đang sống. Đây là cách duy nhất để "sửa luồng khi có 5 phiếu đang chạy" không làm hỏng 5 phiếu đó
+- [x] [P3][I17] `tab_approval_task` + **`INDEX(assignee_employee_id, status)`** — **M** — chỉ mục quan trọng nhất của cả hệ thống: đó là truy vấn màn "Việc của tôi", chạy mỗi lần có người mở trang chủ
+- [x] [P3][I20] `tab_approval_action` — **chỉ ghi thêm, không sửa, không xóa** — **M** — ba cột `actor_employee_id` / `on_behalf_of_id` / `delegation_id` để bản in ghi đúng câu *"ông B duyệt thay ông A theo ủy quyền số 12"*. Ghi một người là sau này không phân biệt được ai chịu trách nhiệm
+- [x] [P3][I12] `tab_delegation` — ủy quyền có thời hạn — **S** — `from_date`/`to_date` BẮT BUỘC. Cấm ủy quyền dây chuyền ở tầng dịch vụ: A ủy cho B thì B không ủy tiếp cho C phần việc nhận từ A
 
 ### 3.2 · Khai luồng bằng giao diện (6 việc)
 
-- [ ] [P3][I01] Màn khai luồng: bước, thứ tự, tên bước — **không sửa mã, không deploy lại** — **L**
-- [ ] [P3][I03] Sáu cách chọn người duyệt: người cụ thể · vai trò · trưởng phòng người nộp · lên N cấp · người đại diện pháp nhân · lấy từ một ô trên phiếu — **L** — tài liệu còn cách thứ 7 (cả phòng ban) trong `approver_kind`, cần chốt có làm bản 1 không
-- [ ] [P3][I04] Rẽ nhánh theo điều kiện (số tiền · loại VB · phòng ban · pháp nhân · mức mật) + **`is_default_branch`** — **M** — cột chống mất phiếu. Không có nó thì phiếu rơi vào trạng thái không nhánh nào nhận, biến mất khỏi mọi danh sách, tới lúc có người đi hỏi mới phát hiện
-- [ ] [P3][I05] Nhiều người trong một bước — 4 chế độ: một người là đủ · tất cả phải duyệt · lần lượt · đủ tỷ lệ (`quorum`) — **M**
-- [ ] [P3][I21] Phiên bản của luồng: `version_no` tăng mỗi lần sửa, phiếu đang chạy giữ nguyên bản cũ tới khi kết thúc — **M**
-- [ ] [P3][I26] Cờ bật/tắt theo từng loại chứng từ — **tắt là quay về đường duyệt cũ ngay, không cần deploy** — **S** — đây là đường lui của cả phase
+- [x] [P3][I01] Màn khai luồng: bước, thứ tự, tên bước — **không sửa mã, không deploy lại** — **L**
+- [x] [P3][I03] Sáu cách chọn người duyệt: người cụ thể · vai trò · trưởng phòng người nộp · lên N cấp · người đại diện pháp nhân · lấy từ một ô trên phiếu — **L** — tài liệu còn cách thứ 7 (cả phòng ban) trong `approver_kind`, cần chốt có làm bản 1 không
+- [x] [P3][I04] Rẽ nhánh theo điều kiện (số tiền · loại VB · phòng ban · pháp nhân · mức mật) + **`is_default_branch`** — **M** — cột chống mất phiếu. Không có nó thì phiếu rơi vào trạng thái không nhánh nào nhận, biến mất khỏi mọi danh sách, tới lúc có người đi hỏi mới phát hiện
+- [x] [P3][I05] Nhiều người trong một bước — 4 chế độ: một người là đủ · tất cả phải duyệt · lần lượt · đủ tỷ lệ (`quorum`) — **M**
+- [x] [P3][I21] Phiên bản của luồng: `version_no` tăng mỗi lần sửa, phiếu đang chạy giữ nguyên bản cũ tới khi kết thúc — **M**
+- [x] [P3][I26] Cờ bật/tắt theo từng loại chứng từ — **tắt là quay về đường duyệt cũ ngay, không cần deploy** — **S** — đây là đường lui của cả phase
 
 ### 3.3 · Chạy phiên duyệt (5 việc)
 
-- [ ] [P3][I09/I10/I11] Trả lại (về người nộp hoặc về một bước cụ thể) · Từ chối · Rút lại — **L** — cả ba **bắt buộc nhập lý do**; rút lại chỉ khi chưa ai duyệt
-- [ ] [P3][I06] Trùng thao tác thì bỏ qua — 3 mức: trùng liền kề · trùng bất kỳ chỗ nào phía trước · không bỏ qua — **M** — task phải mang **trạng thái 5 riêng** ("tự động qua vì trùng người"), KHÔNG được ghi thành "đã duyệt": bản in dấu vết cần phân biệt người này ký với bước này tự qua
-- [ ] [P3][I08] Chặn tự duyệt — **M** — người nộp không duyệt phiếu của chính mình; luồng bắt buộc trùng thì chuyển lên cấp trên
+- [x] [P3][I09/I10/I11] Trả lại (về người nộp hoặc về một bước cụ thể) · Từ chối · Rút lại — **L** — cả ba **bắt buộc nhập lý do**; rút lại chỉ khi chưa ai duyệt
+- [x] [P3][I06] Trùng thao tác thì bỏ qua — 3 mức: trùng liền kề · trùng bất kỳ chỗ nào phía trước · không bỏ qua — **M** — task phải mang **trạng thái 5 riêng** ("tự động qua vì trùng người"), KHÔNG được ghi thành "đã duyệt": bản in dấu vết cần phân biệt người này ký với bước này tự qua
+- [x] [P3][I08] Chặn tự duyệt — **M** — người nộp không duyệt phiếu của chính mình; luồng bắt buộc trùng thì chuyển lên cấp trên
 - [ ] [P3][I18] Hạn duyệt (`sla_hours`) + nhắc + quá lâu thì leo lên cấp trên — **M**
-- [ ] [P3][I16] Ý kiến và tệp đính kèm khi duyệt — trao đổi ngay trên phiếu, không qua chat riêng — **M**
+- [x] [P3][I16] Ý kiến và tệp đính kèm khi duyệt — trao đổi ngay trên phiếu, không qua chat riêng — **M**
 
 ### 3.4 · Người vắng mặt / nghỉ việc (3 việc)
 
-- [ ] [P3][I07] Người duyệt nghỉ việc thì chỉ định người khác (`fallback_employee_id` theo bước) — **M** — ⚠️ `on_no_approver` **cố ý không có giá trị "tự động duyệt qua"**. Lark có tùy chọn đó; với văn bản nó tạo ra văn bản có hiệu lực mà không ai chịu trách nhiệm. Không khai giá trị thì sau này không ai bật nhầm được
-- [ ] [P3][I12] Ủy quyền có thời hạn — nhật ký ghi CẢ HAI danh tính — **M**
-- [ ] [P3][I23] Bàn giao hàng loạt khi nghỉ việc: 30 phiếu đang chờ chuyển hết sang người khác trong một lần — **M**
+- [x] [P3][I07] Người duyệt nghỉ việc thì chỉ định người khác (`fallback_employee_id` theo bước) — **M** — ⚠️ `on_no_approver` **cố ý không có giá trị "tự động duyệt qua"**. Lark có tùy chọn đó; với văn bản nó tạo ra văn bản có hiệu lực mà không ai chịu trách nhiệm. Không khai giá trị thì sau này không ai bật nhầm được
+- [x] [P3][I12] Ủy quyền có thời hạn — nhật ký ghi CẢ HAI danh tính — **M**
+- [x] [P3][I23] Bàn giao hàng loạt khi nghỉ việc: 30 phiếu đang chờ chuyển hết sang người khác trong một lần — **M**
 
 ### 3.5 · Màn hình người dùng (3 việc)
 
-- [ ] [P3][I17] **Việc của tôi** — một chỗ gom mọi thứ đang chờ tôi, của cả văn thư lẫn thu mua — **L** — màn được mở nhiều nhất của cả hệ
-- [ ] [P3][I15] Người nhận bản sao — chỉ nhận thông báo, không duyệt (`node_kind = 2`) — **S**
-- [ ] [P3][I20] Bản in dấu vết duyệt: ai duyệt lúc nào, ý kiến gì — **M** — *"khi kiểm toán hoặc thanh tra hỏi «ai duyệt cái này», câu trả lời phải là một tờ giấy in ra được, không phải một ảnh chụp màn hình"*
+- [x] [P3][I17] **Việc của tôi** — một chỗ gom mọi thứ đang chờ tôi, của cả văn thư lẫn thu mua — **L** — màn được mở nhiều nhất của cả hệ
+- [x] [P3][I15] Người nhận bản sao — chỉ nhận thông báo, không duyệt (`node_kind = 2`) — **S**
+- [x] [P3][I20] Bản in dấu vết duyệt: ai duyệt lúc nào, ý kiến gì — **M** — *"khi kiểm toán hoặc thanh tra hỏi «ai duyệt cái này», câu trả lời phải là một tờ giấy in ra được, không phải một ảnh chụp màn hình"*
 
 ### 3.6 · Chuyển đổi (2 việc, làm cuối)
 
-- [ ] [P3][CHUYỂN] Chuyển luồng duyệt văn bản của phase 2 sang bộ máy mới — **M** — hiện là 3 nút cứng `submit → approve/reject` trên trang chi tiết. Bật bằng cờ I26, giữ đường lui
+- [x] [P3][CHUYỂN] Chuyển luồng duyệt văn bản của phase 2 sang bộ máy mới — **M** — hiện là 3 nút cứng `submit → approve/reject` trên trang chi tiết. Bật bằng cờ I26, giữ đường lui
 - [ ] [P3][CHUYỂN] Chuyển luồng duyệt **yêu cầu văn bản** sang bộ máy mới — **S** — ⚠️ phụ thuộc câu hỏi 1: B01–B07 bỏ hẳn hay hoãn. Bỏ hẳn thì task này biến mất
 
 ### Sáu bài nghiệm thu — điều kiện chuyển phase

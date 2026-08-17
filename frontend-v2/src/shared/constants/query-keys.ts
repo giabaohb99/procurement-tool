@@ -123,6 +123,20 @@ export const queryKeys = {
     numberPreview: (params: Record<string, unknown>) =>
       ['document', 'number-preview', params] as const,
   },
+  /**
+   * Bộ máy phê duyệt dùng chung — KHÔNG thuộc phân hệ nào. Cùng bộ khóa này
+   * phục vụ văn bản, YCMH, ĐMH, khảo sát, YCBG, YCTT.
+   */
+  approval: {
+    all: ['approval'] as const,
+    myTasks: (entity: string) => ['approval', 'my-tasks', entity] as const,
+    options: () => ['approval', 'options'] as const,
+    flows: (entity: string) => ['approval', 'flows', entity] as const,
+    flow: (id: number) => ['approval', 'flows', 'detail', id] as const,
+    trail: (instanceId: number) => ['approval', 'trail', instanceId] as const,
+    switches: () => ['approval', 'switches'] as const,
+    delegations: (employeeId: number) => ['approval', 'delegations', employeeId] as const,
+  },
   /** Chuông thông báo trên thanh trên — dùng chung cho mọi phân hệ. */
   notification: {
     all: ['notification'] as const,

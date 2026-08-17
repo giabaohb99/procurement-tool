@@ -254,6 +254,16 @@ def submit(db: Session, doc: Document, actor: int) -> Document:
         doc.status = STATUS_SUBMITTED
     doc.updated_by = actor
     db.commit()
+
+    #  Phase 3 — nếu bộ máy duyệt dùng chung đang BẬT cho văn bản thì mở luôn
+    #  một phiên nhiều bước. Cờ tắt, hoặc bật mà chưa khai luồng nào, thì
+    #  `trinh_duyet` trả `None` và mọi thứ chạy y như trước: ba nút cứng
+    #  submit → approve/reject trên trang chi tiết.
+    from .approval_bridge import dang_bat, trinh_duyet
+
+    if dang_bat(db):
+        trinh_duyet(db, doc, actor)
+
     db.refresh(doc)
     return doc
 
@@ -346,14 +356,11 @@ def reject(db: Session, doc: Document, reason: str, actor: int) -> Document:
     if not version or version.status != VERSION_SUBMITTED:
         raise HTTPException(400, "Không có bản nào đang chờ duyệt")
 
-    #  F13 — cơ chế áp dụng chốt LÚC BAN HÀNH, không phải lúc soạn: tới lúc này
-    #  người ban hành mới biết nội dung cuối cùng có dùng chung được cho mọi
-    #  pháp nhân hay không.
-    if apply_mode is not None:
-        if apply_mode not in APPLY_MODE_LABELS:
-            raise HTTPException(400, "Cơ chế áp dụng không hợp lệ")
-        doc.apply_mode = apply_mode
-
+    #  ⚠️ Ở đây từng có một khối F13 (chốt cơ chế áp dụng) bị chép nhầm từ
+    #  `approve()` sang. Hàm này không có tham số `apply_mode` nên MỌI lần trả
+    #  lại văn bản đều nổ `NameError` — im lặng cho tới 17/08 vì chưa bài kiểm
+    #  nào gọi `reject()`. Đã bỏ: chốt cơ chế áp dụng là việc của lúc BAN HÀNH,
+    #  trả lại thì chưa ban hành gì cả.
     version.status, version.updated_by = VERSION_DRAFT, actor
     version.change_reason = (
         f"{version.change_reason}\n[Trả lại] {reason}".strip()

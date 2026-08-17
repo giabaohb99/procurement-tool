@@ -9,7 +9,7 @@ from datetime import datetime
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from . import delegation_service, flow_service, instance_service
+from . import delegation_service, entity_hooks, flow_service, instance_service
 from .instance_model import (ACTION_APPROVE, ACTION_COMMENT, ACTION_REASSIGN,
                              ACTION_REJECT, ACTION_RETURN, ACTION_WITHDRAW,
                              INSTANCE_OPEN_STATUSES, INSTANCE_REJECTED,
@@ -118,6 +118,8 @@ def tu_choi(db: Session, instance: ApprovalInstance, actor_employee_id: int,
     instance.finished_at = datetime.now()
     instance.finish_reason = ly_do
     instance.updated_by = actor
+    db.flush()
+    entity_hooks.fire(db, instance, "rejected")
     db.commit()
     db.refresh(instance)
     return instance
@@ -154,6 +156,8 @@ def tra_lai(db: Session, instance: ApprovalInstance, actor_employee_id: int,
         instance.status = INSTANCE_RETURNED
         instance.finished_at = datetime.now()
         instance.finish_reason = ly_do
+        db.flush()
+        entity_hooks.fire(db, instance, "returned")
     else:
         chang = flow_service.cac_chang(instance.flow_snapshot)
         if ve_buoc not in chang or ve_buoc >= task.node_seq:

@@ -35,6 +35,19 @@ export const appRoutes = {
     /** Báo cáo khảo sát, cắt theo dòng khảo sát. */
     surveyReport: '/procurement/survey-report',
   },
+  /**
+   * Bộ máy phê duyệt dùng chung — không nằm trong phân hệ nào vì «Việc của tôi»
+   * gom việc của CẢ văn thư lẫn thu mua.
+   */
+  approval: {
+    root: '/approval',
+    /** I17 — màn được mở nhiều nhất của cả hệ. */
+    myTasks: '/approval/my-tasks',
+    flows: '/approval/flows',
+    flowNew: '/approval/flows/new',
+    flowDetail: (id: number | string) => `/approval/flows/${id}`,
+    delegations: '/approval/delegations',
+  },
   finance: {
     root: '/finance',
   },

@@ -13,6 +13,9 @@ ENTITIES = [
     "help_article", "ticket",
     # Phân hệ Văn thư
     "doc_type", "external_party", "document_book", "document",
+    # Bộ máy phê duyệt dùng chung — KHÔNG thuộc phân hệ nào, mọi loại chứng từ
+    # đều chạy qua nó.
+    "approval_flow",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -51,6 +54,7 @@ ENTITY_LABELS = {
     "external_party": "Đơn vị gửi nhận (Văn thư)",
     "document_book": "Sổ văn bản (Văn thư)",
     "document": "Văn bản (Văn thư)",
+    "approval_flow": "Luồng phê duyệt (dùng chung)",
 }
 
 ACTION_LABELS = {

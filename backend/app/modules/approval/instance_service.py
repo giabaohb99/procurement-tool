@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from . import approver_resolver, flow_service
+from . import approver_resolver, entity_hooks, flow_service
 from .flow_model import (MULTI_ALL, MULTI_ANY, MULTI_QUORUM, MULTI_SEQUENTIAL,
                          NO_APPROVER_ESCALATE, NO_APPROVER_FALLBACK,
                          NODE_CC, SKIP_ADJACENT, SKIP_ANY_BEFORE, SKIP_NONE)
@@ -304,6 +304,8 @@ def di_tiep(db: Session, instance: ApprovalInstance, subject: dict) -> None:
         ghi_dau_vet(db, instance, ACTION_FINISH, instance.updated_by or 0,
                     node_seq=instance.current_seq, comment="Đã duyệt hết các bước")
         db.flush()
+        #  Báo cho module chứng từ để nó tự đổi trạng thái theo luật của mình.
+        entity_hooks.fire(db, instance, "approved")
         return
 
     mo_chang(db, instance, subject, ke_tiep)

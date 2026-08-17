@@ -58,6 +58,13 @@ from app.modules.help_center.controller import router as help_center_router
 from app.modules.faq.controller import router as faq_router
 from app.modules.ticket.controller import router as ticket_router
 from app.modules.comment.controller import router as comment_router
+from app.modules.approval.flow_controller import router as approval_flow_router
+from app.modules.approval.instance_controller import router as approval_router
+from app.modules.approval.delegation_controller import router as delegation_router
+#  Nạp để module VĂN BẢN kịp đăng ký hàm chạy khi phiên duyệt kết thúc.
+#  Nạp lười (chỉ khi có người bấm gửi duyệt) thì phiên duyệt đầu tiên chạy
+#  xong mà văn bản không đổi trạng thái, vì lúc đó chưa ai khai hàm.
+from app.modules.document import approval_bridge  # noqa: F401
 
 app = FastAPI(title="Procurement Tool API", version="0.1.0")
 
@@ -151,3 +158,8 @@ app.include_router(help_center_router)
 app.include_router(faq_router)
 app.include_router(ticket_router)
 app.include_router(comment_router)
+#  Bộ máy phê duyệt dùng chung — không thuộc phân hệ nào, mọi loại chứng từ
+#  đều chạy qua nó.
+app.include_router(approval_flow_router)
+app.include_router(approval_router)
+app.include_router(delegation_router)
