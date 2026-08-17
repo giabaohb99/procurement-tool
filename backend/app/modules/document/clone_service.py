@@ -26,6 +26,7 @@ from app.modules.company.model import Company
 from app.modules.doc_catalog.link_rule_model import RELATION_BASED_ON
 from app.modules.employee.model import Employee
 
+from .clone_plan_model import DocumentClonePlan
 from .link_model import DocumentLink
 from .model import (ALIVE_STATUSES, APPLY_MODE_CLONE, STATUS_DRAFT,
                     STATUS_LABELS, Document)
@@ -65,6 +66,10 @@ def create_clones(db: Session, source: Document, company_ids: list[int],
         raise HTTPException(400, "Bản gốc chưa có phiên bản nào đang dùng")
     if not company_ids:
         raise HTTPException(400, "Chưa chọn pháp nhân nào để clone")
+
+    #  Hạn và ghi chú khai sẵn từ lúc tạo văn bản (xem `clone_plan_model`) là
+    #  giá trị mặc định cho pháp nhân đó, nếu lần bấm này không khai đè.
+    ke_hoach = {row.company_id: row for row in plan_for(db, source.id)}
 
     ket_qua: list[Document] = []
     for company_id in dict.fromkeys(company_ids):
@@ -113,8 +118,10 @@ def create_clones(db: Session, source: Document, company_ids: list[int],
             #  bản clone đã lạc hậu chưa.
             clone_source_version_id=goc_version.id,
             clone_status=CLONE_SENT,
-            clone_due_date=due_date,
-            clone_note=note,
+            clone_due_date=due_date or (ke_hoach[company_id].due_date
+                                        if company_id in ke_hoach else None),
+            clone_note=note or (ke_hoach[company_id].note
+                                if company_id in ke_hoach else ""),
             cloned_at=date.today(),
             cloned_by=actor,
             created_by=actor, updated_by=actor,
@@ -146,10 +153,89 @@ def create_clones(db: Session, source: Document, company_ids: list[int],
         ))
         ket_qua.append(clone)
 
+    #  Dòng kế hoạch đã thành bản clone thật thì gỡ khỏi kế hoạch: để nguyên là
+    #  pháp nhân đó nằm cả ở "dự kiến" lẫn "đã có", và bảng theo dõi đếm hai lần.
+    consume_plan(db, source.id, [clone.company_id for clone in ket_qua])
+
     db.commit()
     for clone in ket_qua:
         db.refresh(clone)
     return ket_qua
+
+
+# ── Kế hoạch clone: khai lúc tạo, chạy lúc ban hành ──────────────────────────
+
+def plan_for(db: Session, document_id: int) -> list[DocumentClonePlan]:
+    return (
+        db.query(DocumentClonePlan)
+        .filter(DocumentClonePlan.document_id == document_id)
+        .order_by(DocumentClonePlan.company_id.asc())
+        .all()
+    )
+
+
+def set_plan(db: Session, doc: Document, company_ids: list[int],
+             due_date: date | None, note: str, actor: int) -> list[DocumentClonePlan]:
+    """Ghi đè toàn bộ kế hoạch clone của một văn bản.
+
+    Ghi đè chứ không cộng dồn: màn hình gửi lên danh sách pháp nhân **cuối cùng**
+    người dùng đang tick, nên bỏ tick một nơi phải là gỡ nơi đó khỏi kế hoạch.
+    Cộng dồn thì không có cách nào bỏ bớt.
+    """
+    da_clone = {clone.company_id for clone in clones_of(db, doc.id)}
+
+    muon: list[int] = []
+    for company_id in dict.fromkeys(company_ids):
+        if company_id == doc.company_id:
+            raise HTTPException(
+                400, "Không clone văn bản về chính pháp nhân đã ban hành nó"
+            )
+        if company_id in da_clone:
+            #  Đã có bản clone thật rồi thì không xếp lại vào kế hoạch — nếu
+            #  không, bấm clone lần nữa sẽ đâm vào UNIQUE(source, company).
+            continue
+        if db.get(Company, company_id) is None:
+            raise HTTPException(400, f"Pháp nhân {company_id} không tồn tại")
+        muon.append(company_id)
+
+    for row in plan_for(db, doc.id):
+        db.delete(row)
+    db.flush()
+
+    for company_id in muon:
+        db.add(DocumentClonePlan(
+            document_id=doc.id, company_id=company_id,
+            due_date=due_date, note=note,
+            created_by=actor, updated_by=actor,
+        ))
+    db.commit()
+    return plan_for(db, doc.id)
+
+
+def consume_plan(db: Session, document_id: int, company_ids: list[int]) -> int:
+    """Gỡ khỏi kế hoạch những pháp nhân vừa có bản clone thật."""
+    if not company_ids:
+        return 0
+    rows = (
+        db.query(DocumentClonePlan)
+        .filter(DocumentClonePlan.document_id == document_id,
+                DocumentClonePlan.company_id.in_(company_ids))
+        .all()
+    )
+    for row in rows:
+        db.delete(row)
+    db.flush()
+    return len(rows)
+
+
+def serialize_plan(db: Session, row: DocumentClonePlan) -> dict:
+    company = db.get(Company, row.company_id)
+    return {
+        "company_id": row.company_id,
+        "company_name": company.name if company else "",
+        "due_date": row.due_date,
+        "note": row.note,
+    }
 
 
 def _copy_attachments(db: Session, from_version_id: int, to_version_id: int, actor: int):
@@ -237,6 +323,9 @@ def pending_companies(db: Session, source: Document) -> list[dict]:
     """Pháp nhân CHƯA nhận bản clone nào — phần "ai chưa đụng tới" của F10."""
     da_clone = {clone.company_id for clone in clones_of(db, source.id)}
     da_clone.add(source.company_id)
+    #  Đã khai từ lúc tạo văn bản thì hộp thoại tick sẵn — việc còn lại đúng một
+    #  nút bấm, không phải chọn lại từ đầu danh sách mười ba pháp nhân.
+    da_khai = {row.company_id for row in plan_for(db, source.id)}
 
     rows = (
         db.query(Company)
@@ -244,7 +333,11 @@ def pending_companies(db: Session, source: Document) -> list[dict]:
         .order_by(Company.name.asc())
         .all()
     )
-    return [{"company_id": row.id, "company_name": row.name} for row in rows]
+    return [
+        {"company_id": row.id, "company_name": row.name,
+         "planned": row.id in da_khai}
+        for row in rows
+    ]
 
 
 def mark_handled(db: Session, clone: Document, clone_status: int, actor: int) -> Document:

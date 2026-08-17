@@ -12,6 +12,7 @@ import {
 } from '@/shared/ui/dialog'
 import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group'
 import { cn } from '@/shared/utils/cn'
+import { useDocumentClones } from '../hooks/use-document-clones'
 import { useIssuePreview } from '../hooks/use-document-links'
 import { APPLY_MODE } from '../types/document-record'
 import { IssuePreflightSummary } from './issue-preflight-summary'
@@ -47,6 +48,9 @@ export function DocumentIssueDialog({
   const [mode, setMode] = useState(String(currentMode || APPLY_MODE.scope))
   //  Chỉ hỏi khi hộp thoại thật sự mở — đây là truy vấn nặng nhất của trang.
   const { data: preview } = useIssuePreview(documentId, open)
+  const { data: clones } = useDocumentClones(open ? documentId : undefined)
+
+  const soPhapNhanDaKhai = clones?.plan.length ?? 0
 
   const chonPhamVi = Number(mode) === APPLY_MODE.scope
   //  Backend sẽ từ chối những thứ này — không bày ra nút bấm sẽ hỏng.
@@ -91,10 +95,17 @@ export function DocumentIssueDialog({
           <p className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
             <Building2 className="mt-0.5 size-4 shrink-0 text-amber-700" />
             <span>
-              Lựa chọn được <b>ghi lại</b> và vào nhật ký, nhưng bản nháp cho pháp
-              nhân con <b>chưa được sinh tự động</b> — phần clone (F06–F12) chưa mở,
-              đang chờ chốt hai câu hỏi nghiệp vụ. Tạm thời phải tạo tay ở từng
-              pháp nhân.
+              Bản nháp cho pháp nhân con <b>không sinh tự động</b> khi bấm Ban hành —
+              mỗi bản là một văn bản thật mang số hiệu vĩnh viễn, nên đó phải là một
+              lần bấm có chủ ý. Ban hành xong, mở thẻ «Bản clone ở pháp nhân con» ở
+              tab Quan hệ.
+              {soPhapNhanDaKhai > 0 && (
+                <>
+                  {' '}
+                  Kế hoạch khai lúc tạo văn bản đã có <b>{soPhapNhanDaKhai}</b> pháp
+                  nhân, sẽ được tick sẵn.
+                </>
+              )}
             </span>
           </p>
         )}

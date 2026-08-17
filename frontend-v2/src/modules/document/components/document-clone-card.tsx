@@ -1,4 +1,4 @@
-import { AlertTriangle, Building2, Copy } from 'lucide-react'
+import { AlertTriangle, Building2, ClipboardList, Copy } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -36,6 +36,7 @@ export function DocumentCloneCard({
 
   const items = data?.items ?? []
   const pending = data?.pending_companies ?? []
+  const plan = data?.plan ?? []
   const lechBan = items.filter((row) => row.is_outdated).length
 
   return (
@@ -66,6 +67,27 @@ export function DocumentCloneCard({
           </p>
         )}
 
+        {/*  Kế hoạch khai từ lúc tạo văn bản. Hiện cả khi còn nháp — đó chính là
+             lúc nó có ích nhất: người soạn thấy dự định của mình còn nguyên,
+             không phải nhớ suông cho tới ngày ban hành. */}
+        {plan.length > 0 && (
+          <div className="rounded-md border border-dashed px-3 py-2 text-sm">
+            <p className="flex items-center gap-2 font-medium">
+              <ClipboardList className="size-4 text-muted-foreground" />
+              Dự kiến clone tới {plan.length} pháp nhân
+            </p>
+            <p className="mt-0.5 text-muted-foreground">
+              {plan.map((row) => row.company_name).join(', ')}
+              {plan[0]?.due_date && ` · hạn ${formatDate(plan[0].due_date)}`}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {isIssued
+                ? 'Bấm «Clone xuống pháp nhân» — danh sách đã tick sẵn.'
+                : 'Chưa sinh bản nháp nào. Chạy được sau khi văn bản đã ban hành.'}
+            </p>
+          </div>
+        )}
+
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             {isIssued
@@ -88,12 +110,16 @@ export function DocumentCloneCard({
         )}
       </CardContent>
 
-      <DocumentCloneDialog
-        documentId={documentId}
-        open={cloneOpen}
-        onOpenChange={setCloneOpen}
-        companies={pending}
-      />
+      {/*  Dựng lại hộp mỗi lần mở: nó tick sẵn theo kế hoạch ngay lúc khởi tạo
+           state, nên phải khởi tạo lại khi kế hoạch đã đổi. */}
+      {cloneOpen && (
+        <DocumentCloneDialog
+          documentId={documentId}
+          open
+          onOpenChange={setCloneOpen}
+          companies={pending}
+        />
+      )}
     </Card>
   )
 }

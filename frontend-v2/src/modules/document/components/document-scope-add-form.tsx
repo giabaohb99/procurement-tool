@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { scopeLabel } from '../helpers/scope-label'
 import { useScopeOptions } from '../hooks/use-document-scopes'
 import {
   SCOPE_DIM,
@@ -23,7 +24,14 @@ import {
 
 interface DocumentScopeAddFormProps {
   disabled?: boolean
-  onAdd: (values: DocumentScopeInput) => void
+  /**
+   * `label` là tên đọc được của đối tượng vừa chọn ("Phòng Kế toán — Công ty A").
+   *
+   * Có nó thì form TẠO văn bản bày được dòng vừa khai ra ngay, dù dòng đó chưa
+   * gửi lên máy chủ nên chưa có tên do backend trả về. Màn sửa bỏ qua tham số
+   * này vì đọc tên từ dữ liệu đã lưu.
+   */
+  onAdd: (values: DocumentScopeInput, label: string) => void
 }
 
 /**
@@ -54,14 +62,25 @@ export function DocumentScopeAddForm({ disabled = false, onAdd }: DocumentScopeA
     (dimValue === SCOPE_DIM.employee && employeeId)
 
   function handleAdd() {
-    onAdd({
-      dim: dimValue,
-      mode: Number(mode),
-      company_id: dimValue === SCOPE_DIM.employee ? null : Number(companyId) || null,
-      department_id: dimValue === SCOPE_DIM.department ? Number(departmentId) : null,
-      employee_id: dimValue === SCOPE_DIM.employee ? Number(employeeId) : null,
-      include_children: dimValue === SCOPE_DIM.company && includeChildren,
+    const label = scopeLabel(dimValue, {
+      company: (companyPage?.items ?? []).find((row) => String(row.id) === companyId)?.name,
+      department: (departmentPage?.items ?? []).find((row) => String(row.id) === departmentId)
+        ?.name,
+      employee: (employeePage?.items ?? []).find((row) => String(row.id) === employeeId)
+        ?.full_name,
     })
+
+    onAdd(
+      {
+        dim: dimValue,
+        mode: Number(mode),
+        company_id: dimValue === SCOPE_DIM.employee ? null : Number(companyId) || null,
+        department_id: dimValue === SCOPE_DIM.department ? Number(departmentId) : null,
+        employee_id: dimValue === SCOPE_DIM.employee ? Number(employeeId) : null,
+        include_children: dimValue === SCOPE_DIM.company && includeChildren,
+      },
+      label,
+    )
     setCompanyId('')
     setDepartmentId('')
     setEmployeeId('')

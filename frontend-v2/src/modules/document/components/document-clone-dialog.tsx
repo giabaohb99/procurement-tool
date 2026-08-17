@@ -42,7 +42,13 @@ export function DocumentCloneDialog({
   companies,
 }: DocumentCloneDialogProps) {
   const createClones = useCreateClones(documentId)
-  const [picked, setPicked] = useState<number[]>([])
+  //  Tick sẵn đúng những pháp nhân đã khai trong kế hoạch từ lúc tạo văn bản.
+  //  Thẻ cha dựng lại hộp này mỗi lần mở nên khởi tạo một lần là đủ — không cần
+  //  `useEffect` đồng bộ lại, và cũng không được dùng: người dùng bỏ tick xong
+  //  mà danh sách tải lại là tick tự mọc lại.
+  const [picked, setPicked] = useState<number[]>(() =>
+    companies.filter((company) => company.planned).map((company) => company.company_id),
+  )
   const [dueDate, setDueDate] = useState('')
   const [note, setNote] = useState('')
 
@@ -102,6 +108,11 @@ export function DocumentCloneDialog({
                       className="font-normal"
                     >
                       {company.company_name}
+                      {company.planned && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          đã khai lúc tạo văn bản
+                        </span>
+                      )}
                     </Label>
                   </li>
                 ))}

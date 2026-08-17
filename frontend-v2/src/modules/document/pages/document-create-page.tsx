@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, ArrowRight, Info, Layers, PenLine } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Copy, Info, Layers, PenLine, Target } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
@@ -12,10 +12,14 @@ import { FormCard } from '@/shared/ui/form-card'
 import { FormStepper } from '@/shared/ui/form-stepper'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { documentCloneApi } from '../api/document-clone-api'
+import { documentScopeApi } from '../api/document-scope-api'
 import { documentAccessApi } from '../api/document-api'
 import { DocumentAccessFields, type PendingAccess } from '../components/document-access-fields'
+import { DocumentClonePlanFields } from '../components/document-clone-plan-fields'
 import { DocumentExtraInfoFields } from '../components/document-extra-info-fields'
 import { DocumentMainInfoFields, MAIN_INFO_FIELDS } from '../components/document-main-info-fields'
+import { DocumentScopeFields, type PendingScope } from '../components/document-scope-fields'
 import { emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
 import { useDocumentBooks } from '../hooks/use-document-books'
 import { useSaveDocument } from '../hooks/use-documents'
@@ -24,6 +28,7 @@ import {
   documentRecordSchema,
   type DocumentRecordFormValues,
 } from '../schemas/document-record-schema'
+import type { DocumentClonePlanInput } from '../types/document-clone'
 
 /**
  * Hai bước của form tạo văn bản.
@@ -36,6 +41,11 @@ const STEPS = [
     title: 'Thông tin chính',
     description: 'Tên, loại, pháp nhân, quyền truy cập',
     fields: MAIN_INFO_FIELDS,
+  },
+  {
+    title: 'Phạm vi áp dụng',
+    description: 'Áp cho ai, có tách bản riêng không',
+    fields: [],
   },
   {
     title: 'Thông tin bổ sung',
@@ -64,6 +74,13 @@ export function DocumentCreatePage() {
   //  Quyền khai ở khối cuối thẻ thông tin chính phải chờ có id văn bản mới gửi
   //  được, nên giữ tạm ở đây.
   const [pendingAccess, setPendingAccess] = useState<PendingAccess[]>([])
+  //  Phạm vi và kế hoạch clone cũng phải chờ có id văn bản, nên xếp hàng y hệt.
+  const [pendingScopes, setPendingScopes] = useState<PendingScope[]>([])
+  const [clonePlan, setClonePlan] = useState<DocumentClonePlanInput>({
+    company_ids: [],
+    due_date: '',
+    note: '',
+  })
   const save = useSaveDocument()
   const selectedTemplate = useDocumentTemplate(templateId)
   const { items: books } = useDocumentBooks()
@@ -80,6 +97,53 @@ export function DocumentCreatePage() {
       return
     }
     setStep(step + 1)
+  }
+
+  /**
+   * Gửi ba thứ xếp hàng chờ — quyền, phạm vi, kế hoạch clone — ngay sau khi văn
+   * bản có id.
+   *
+   * Tuần tự để dòng nào hỏng thì báo đúng dòng đó. Hỏng cũng **vẫn vào trang
+   * soạn thảo**: văn bản đã tồn tại rồi, giữ người dùng ở lại form trắng tay
+   * còn tệ hơn — mỗi phần đều có chỗ khai lại ở trang chi tiết, và câu báo lỗi
+   * nói rõ phải mở tab nào.
+   */
+  async function guiPhanXepHang(documentId: number) {
+    const hongQuyen: string[] = []
+    for (const row of pendingAccess) {
+      try {
+        await documentAccessApi.grant(documentId, row.values)
+      } catch {
+        hongQuyen.push(row.subjectLabel || 'một đối tượng')
+      }
+    }
+    if (hongQuyen.length > 0) {
+      toast.error(
+        `Chưa chia được quyền cho ${hongQuyen.join(', ')} — mở tab Thông tin để khai lại.`,
+      )
+    }
+
+    const hongPhamVi: string[] = []
+    for (const row of pendingScopes) {
+      try {
+        await documentScopeApi.create(documentId, row.values)
+      } catch {
+        hongPhamVi.push(row.label || 'một dòng')
+      }
+    }
+    if (hongPhamVi.length > 0) {
+      toast.error(
+        `Chưa lưu được phạm vi cho ${hongPhamVi.join(', ')} — mở tab Phạm vi để khai lại.`,
+      )
+    }
+
+    if (clonePlan.company_ids.length > 0) {
+      try {
+        await documentCloneApi.savePlan(documentId, clonePlan)
+      } catch {
+        toast.error('Chưa ghi được kế hoạch clone — khai lại ở thẻ «Bản clone ở pháp nhân con».')
+      }
+    }
   }
 
   function handleSubmit(values: DocumentRecordFormValues) {
@@ -106,23 +170,7 @@ export function DocumentCreatePage() {
       },
       {
         onSuccess: async (record) => {
-          //  Gửi quyền NGAY SAU KHI tạo, tuần tự để dòng nào hỏng thì biết đúng
-          //  dòng đó. Hỏng cũng vẫn vào trang soạn thảo: văn bản đã tồn tại rồi,
-          //  giữ người dùng ở lại form trắng tay còn tệ hơn — bảng quyền ở tab
-          //  Thông tin là chỗ khai lại.
-          const failed: string[] = []
-          for (const row of pendingAccess) {
-            try {
-              await documentAccessApi.grant(record.id, row.values)
-            } catch {
-              failed.push(row.subjectLabel || 'một đối tượng')
-            }
-          }
-          if (failed.length > 0) {
-            toast.error(
-              `Chưa chia được quyền cho ${failed.join(', ')} — mở tab Thông tin để khai lại.`,
-            )
-          }
+          await guiPhanXepHang(record.id)
           navigate(appRoutes.document.documentDetail(record.id), { replace: true })
         },
       },
@@ -151,7 +199,7 @@ export function DocumentCreatePage() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          {/* Giữ CẢ HAI bước trong DOM, chỉ ẩn bước không xem: gỡ hẳn thì các ô
+          {/* Giữ CẢ BA bước trong DOM, chỉ ẩn bước không xem: gỡ hẳn thì các ô
               của bước kia bị hủy đăng ký khỏi form và mất dữ liệu vừa nhập. */}
           <div className={step === 0 ? undefined : 'hidden'}>
             <FormCard title="Thông tin chính" icon={Info} iconClassName="text-primary">
@@ -175,6 +223,30 @@ export function DocumentCreatePage() {
           </div>
 
           <div className={step === 1 ? undefined : 'hidden'}>
+            <div className="space-y-4">
+              <FormCard title="Phạm vi áp dụng" icon={Target} iconClassName="text-sky-600">
+                <DocumentScopeFields rows={pendingScopes} onChange={setPendingScopes} />
+              </FormCard>
+
+              {/*  Kế hoạch clone đứng SAU phạm vi, không phải song song: hai
+                   khối trả lời hai câu nối tiếp nhau — "áp cho ai" rồi mới tới
+                   "mỗi nơi dùng chung một bản hay tách bản riêng". Đảo lại thì
+                   câu thứ hai hỏi trước khi người ta biết mình đang nói về ai. */}
+              <FormCard
+                title="Bản clone ở pháp nhân con"
+                icon={Copy}
+                iconClassName="text-violet-600"
+              >
+                <DocumentClonePlanFields
+                  value={clonePlan}
+                  onChange={setClonePlan}
+                  issuerCompanyId={Number(form.watch('company_id')) || 0}
+                />
+              </FormCard>
+            </div>
+          </div>
+
+          <div className={step === 2 ? undefined : 'hidden'}>
             <FormCard title="Thông tin bổ sung" icon={Layers} iconClassName="text-emerald-600">
               <DocumentExtraInfoFields form={form} />
             </FormCard>

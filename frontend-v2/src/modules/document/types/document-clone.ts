@@ -37,16 +37,39 @@ export interface DocumentCloneRow {
 export interface PendingCompany {
   company_id: number
   company_name: string
+  /** Đã khai trong kế hoạch từ lúc tạo văn bản — hộp thoại tick sẵn. */
+  planned: boolean
+}
+
+/** Một dòng KẾ HOẠCH clone: đã khai, chưa sinh bản nháp. */
+export interface DocumentClonePlanRow {
+  company_id: number
+  company_name: string
+  due_date: string | null
+  note: string
 }
 
 export interface DocumentCloneList {
   items: DocumentCloneRow[]
   /** Pháp nhân chưa nhận bản clone nào — phần "ai chưa đụng tới". */
   pending_companies: PendingCompany[]
+  /** Dự định khai từ lúc tạo, chạy được sau khi ban hành. */
+  plan: DocumentClonePlanRow[]
 }
 
 export interface DocumentCloneInput {
   company_ids: number[]
   due_date?: string | null
   note?: string
+}
+
+/**
+ * Kế hoạch clone gửi lên: danh sách pháp nhân **cuối cùng** đang tick.
+ *
+ * Ghi đè chứ không cộng dồn — bỏ tick một nơi phải là gỡ nơi đó khỏi kế hoạch.
+ */
+export interface DocumentClonePlanInput {
+  company_ids: number[]
+  due_date: string
+  note: string
 }

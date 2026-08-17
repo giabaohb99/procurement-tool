@@ -26,6 +26,16 @@ class CloneCreate(BaseModel):
     note: str = ""
 
 
+class ClonePlanSave(BaseModel):
+    """Danh sách pháp nhân CUỐI CÙNG đang được tick — ghi đè, không cộng dồn.
+
+    Cho phép rỗng: bỏ tick hết nghĩa là hủy kế hoạch clone.
+    """
+    company_ids: list[int] = []
+    due_date: date | None = None
+    note: str = ""
+
+
 class CloneStatusUpdate(BaseModel):
     clone_status: int = Field(ge=1, le=6)
 
@@ -45,7 +55,35 @@ def list_clones(
     return success({
         "items": clone_service.tracking(db, doc),
         "pending_companies": clone_service.pending_companies(db, doc),
+        #  Kế hoạch khai từ lúc tạo văn bản — hiện ngay cả khi văn bản còn nháp,
+        #  lúc đó `items` chắc chắn rỗng vì chưa clone được.
+        "plan": [clone_service.serialize_plan(db, row)
+                 for row in clone_service.plan_for(db, doc.id)],
     })
+
+
+@router.put("/{document_id}/clone-plan")
+def save_clone_plan(
+    document_id: int,
+    data: ClonePlanSave,
+    db: Session = Depends(get_db),
+    user=Depends(require("document", "write")),
+):
+    """Khai TRƯỚC những pháp nhân sẽ nhận bản riêng, ngay từ lúc lập văn bản.
+
+    Không sinh bản nháp nào ở đây — văn bản còn chưa ban hành thì chưa có phiên
+    bản nào để chép. Xem `clone_plan_model` về lý do tách làm hai nhịp.
+    """
+    doc = _load(db, document_id, user, "write")
+    rows = clone_service.set_plan(
+        db, doc, data.company_ids, data.due_date, data.note, user.id,
+    )
+    record(db, user.id, "document", doc.id, "update",
+           f"Kế hoạch clone: {len(rows)} pháp nhân")
+    return success(
+        [clone_service.serialize_plan(db, row) for row in rows],
+        f"Đã ghi kế hoạch clone cho {len(rows)} pháp nhân",
+    )
 
 
 @router.post("/{document_id}/clones")

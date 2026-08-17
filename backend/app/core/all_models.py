@@ -46,3 +46,4 @@ from app.modules.document import incoming_register_model as _incoming_register  
 from app.modules.document import link_model as _document_link  # noqa: F401
 from app.modules.document import scope_model as _document_scope  # noqa: F401
 from app.modules.document import signature_model as _document_signature  # noqa: F401
+from app.modules.document import clone_plan_model as _document_clone_plan  # noqa: F401
