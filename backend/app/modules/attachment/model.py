@@ -15,6 +15,13 @@ class StoredFile(Base, AuditMixin):
     url: Mapped[str] = mapped_column(String(1000), default="")
     content_type: Mapped[str] = mapped_column(String(100), default="")
     size: Mapped[int] = mapped_column(BigInteger, default=0)
+    #  Mã băm toàn vẹn, tính lúc tải lên (`van-thu` C06). Để người cầm một tệp
+    #  ngoài hệ thống đối chiếu được nó có đúng tệp đã đính kèm hay không —
+    #  cùng dung lượng cùng tên file vẫn có thể là hai nội dung khác nhau.
+    #
+    #  Tệp tải lên TRƯỚC khi có cột này để rỗng: tính lại phải tải toàn bộ
+    #  object từ storage về, tốn kém mà không ai đang cần đối chiếu tệp cũ.
+    sha256: Mapped[str] = mapped_column(String(64), default="")
 
 
 class FileLink(Base, AuditMixin):

@@ -6,9 +6,18 @@ export interface AttachmentFile {
   id: number
   file_id: number
   filename: string
+  /**
+   * Đường đọc thẳng kho lưu trữ, KHÔNG qua kiểm quyền.
+   *
+   * Backend để rỗng với entity riêng tư (`document_version`) — chỗ nào nhận
+   * chuỗi rỗng thì phải tải qua `GET /api/attachments/{id}/download` bằng
+   * `downloadFile` của `@/core/api`.
+   */
   url: string
   content_type: string
   size: number
+  /** Mã băm SHA-256 nội dung, tính lúc tải lên. Tệp tải lên trước 17/08/2026 để rỗng. */
+  sha256: string
   doc_type: string
   entity: string
   entity_id: number

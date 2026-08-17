@@ -1,3 +1,4 @@
+import hashlib
 import io
 import zipfile
 from urllib.parse import quote
@@ -12,7 +13,7 @@ from app.core.auth import (get_current_user, get_perm_profile,
 from app.core.database import get_db
 from app.core.document_types import (DOC_TYPE_LABEL, DOC_TYPE_VALUES,
                                       DOCUMENT_TYPES)
-from app.core.file_registry import ext_of, policy
+from app.core.file_registry import ext_of, is_private, policy
 from app.core.response import success
 from app.core.scoping import apply_scope
 from app.core.storage import (dated_key, delete_key, download_bytes,
@@ -26,15 +27,21 @@ router = APIRouter(prefix="/api/attachments", tags=["attachment"])
 
 def _link_out(link: FileLink, f: StoredFile) -> dict:
     # id = LINK id (để DELETE tương thích FE cũ); kèm file_id + thông tin file
-    return {"id": link.id, "file_id": f.id, "filename": f.filename, "url": f.url,
-            "content_type": f.content_type, "size": f.size,
+    #
+    #  `url` để RỖNG với entity riêng tư — đó là link đọc thẳng bucket, không qua
+    #  kiểm quyền. Bên gọi phải dùng `GET /api/attachments/{id}/download`.
+    #  Không xóa hẳn khóa `url` khỏi phong bì vì `frontend/` đang đóng băng đọc
+    #  nó cho mọi entity khác; đổi kiểu trả về là làm vỡ màn đang chạy thật.
+    return {"id": link.id, "file_id": f.id, "filename": f.filename,
+            "url": "" if is_private(link.entity) else f.url,
+            "content_type": f.content_type, "size": f.size, "sha256": f.sha256,
             "entity": link.entity, "entity_id": link.entity_id,
             "doc_type": link.doc_type, "sort_order": link.sort_order}
 
 
 def _file_out(f: StoredFile) -> dict:
     return {"file_id": f.id, "filename": f.filename, "url": f.url,
-            "content_type": f.content_type, "size": f.size}
+            "content_type": f.content_type, "size": f.size, "sha256": f.sha256}
 
 
 def _valid_doc_type(doc_type: str) -> str:
@@ -95,6 +102,20 @@ def _deny_comment(entity: str):
         raise HTTPException(400, "Đính kèm bình luận phải gửi kèm khi tạo bình luận")
 
 
+def _sha256_of(fileobj) -> str:
+    """Mã băm nội dung tệp (C06). Đọc theo khối để tệp 30MB không nằm hết trong RAM.
+
+    Trả con trỏ về đầu khi xong — ngay sau đây `upload_fileobj` đọc lại chính
+    luồng này; quên `seek(0)` là đẩy lên storage một tệp rỗng.
+    """
+    h = hashlib.sha256()
+    fileobj.seek(0)
+    while chunk := fileobj.read(1024 * 1024):
+        h.update(chunk)
+    fileobj.seek(0)
+    return h.hexdigest()
+
+
 def _store_one(db: Session, f: UploadFile, exts: set, max_mb: int, user_id: int) -> StoredFile:
     """Upload 1 file lên storage + tạo dòng tab_file. Chưa gắn link."""
     ext = ext_of(f.filename or "")
@@ -103,9 +124,10 @@ def _store_one(db: Session, f: UploadFile, exts: set, max_mb: int, user_id: int)
     f.file.seek(0, 2); size = f.file.tell(); f.file.seek(0)
     if size > max_mb * 1024 * 1024:
         raise HTTPException(400, f"File '{f.filename}' vượt {max_mb}MB")
+    digest = _sha256_of(f.file)
     # Tạo bản ghi trước (flush lấy id) để đặt key theo cấu trúc {env}/attachment/{năm}/{tháng}/{id}-tên.
     sf = StoredFile(filename=f.filename, file_key="", url="",
-                    content_type=f.content_type or "", size=size,
+                    content_type=f.content_type or "", size=size, sha256=digest,
                     created_by=user_id, updated_by=user_id)
     db.add(sf); db.flush()
     key = dated_key("attachment", f.filename or "file", sf.id)
@@ -315,8 +337,12 @@ def chain(entity: str = Query(...), entity_id: int = Query(...),
     out = [{"link_id": lk.id, "source": src, "source_code": scode,
             "entity": lk.entity, "entity_id": lk.entity_id, "doc_type": lk.doc_type,
             "doc_type_label": DOC_TYPE_LABEL.get(lk.doc_type, lk.doc_type or "—"),
-            "filename": f.filename, "url": f.url,
-            "content_type": f.content_type, "size": f.size}
+            "filename": f.filename,
+            #  Chuỗi chứng từ hiện chỉ gom entity của Thu mua (không có entity
+            #  riêng tư nào), nhưng vẫn chặn ở đây để sau này thêm loại mới vào
+            #  chuỗi không lặng lẽ phát ra link công khai.
+            "url": "" if is_private(lk.entity) else f.url,
+            "content_type": f.content_type, "size": f.size, "sha256": f.sha256}
            for lk, f, src, scode in _chain_rows(db, groups)]
     return success(out)
 

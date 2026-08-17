@@ -11,15 +11,15 @@
 | Phase | Nội dung | % làm được | Đủ điều kiện chuyển phase? |
 |---|---|---|---|
 | 1 | Danh mục và số hiệu | **100%** | **ĐẠT** — cả 3 bài nghiệm thu xanh |
-| 2 | Yêu cầu, soạn thảo, phiên bản | **~45%** | chưa |
+| 2 | Yêu cầu, soạn thảo, phiên bản | **~52%** | chưa |
 | 3 | Bộ máy phê duyệt dùng chung | **~5%** | chưa |
 | 4 | Ban hành, phạm vi, clone | **~6%** | chưa |
-| **Tổng 4 phase** | trọng số theo khối lượng (15/30/35/20) | **≈ 31%** | |
+| **Tổng 4 phase** | trọng số theo khối lượng (15/30/35/20) | **≈ 33%** | |
 
 Đọc nhanh: **Phase 1 ĐÓNG, Phase 2 xong đúng phần lõi (soạn thảo + phiên bản), Phase 3 và 4 chưa bắt đầu.**
-Con số 31% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính năng) và hoàn toàn chưa động tới.
+Con số 33% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính năng) và hoàn toàn chưa động tới.
 
-> **Đổi gì so với lần chấm 15/08 — hai đợt:**
+> **Đổi gì so với lần chấm 15/08 — ba đợt:**
 >
 > *Đợt 1 (giao diện).* Màn Quy tắc đánh số dựng lại cho khớp khuôn Sổ văn bản (tab ra ngoài card,
 > dùng `CatalogTable`, thêm/sửa sang trang riêng thay vì hộp thoại) + 6 test đầu tiên của phân hệ.
@@ -27,6 +27,9 @@ Con số 31% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính n�
 >
 > *Đợt 2 (đóng Phase 1).* Dựng nốt hai bảng còn thiếu, vá một lỗi chặn phase, viết 8 test cho ba bài
 > nghiệm thu. Phase 1 đi từ ~90% lên **100%**, tổng từ 30% lên 31%.
+>
+> *Đợt 3 (Phase 2 · C14 và C03/C06).* Màn báo ai đang giữ bản nháp; đính kèm văn bản thôi phát link
+> công khai và có mã băm toàn vẹn. Phase 2 từ ~45% lên **~52%**, tổng lên **~33%**.
 
 ---
 
@@ -117,7 +120,7 @@ Muốn "100%" mang nghĩa **đã kiểm**, còn thiếu 4 nhóm test (chưa làm
 
 ---
 
-## 2. Phase 2 · Yêu cầu, soạn thảo, phiên bản — ~45%
+## 2. Phase 2 · Yêu cầu, soạn thảo, phiên bản — ~52%
 
 | Việc | Mã | FE v2 | Ghi chú |
 |---|---|---|---|
@@ -127,14 +130,49 @@ Muốn "100%" mang nghĩa **đã kiểm**, còn thiếu 4 nhóm test (chưa làm
 | Sinh bản nháp từ yêu cầu, theo dõi yêu cầu | B04, B07 | ❌ | `tab_document_request` có bảng, FE không có màn |
 | Bản ghi văn bản, bộ trường chung, tệp mẫu theo loại | C01, C02 | ✅ | `document-record-form.tsx`, `document-template-catalog.tsx` |
 | Phiên bản bất biến, lý do sửa, khóa sửa sau duyệt | C04, C05, C07 | ✅ | `document-version-tab.tsx`, `content_sha256` |
-| Sửa văn bản đã ban hành | C13–C18 | 🟡 ~90% | `document-version-dialog.tsx`, `document-version-banner.tsx`; **C14 thiếu màn báo "ai đang giữ bản nháp"** |
-| Tệp đính kèm đường riêng tư, mã băm | C03, C06 | 🟡 ~50% | Gắn theo phiên bản ✅, nhưng **vẫn dùng link công khai** `/api/attachments` |
+| Sửa văn bản đã ban hành | C13–C18 | ✅ | `document-version-dialog.tsx`, `document-version-banner.tsx`; **C14 xong 17/08**: `document-draft-holder-notice.tsx` nêu tên người giữ + nút sang bản nháp, và lỗi 409 lúc thua đường đua ở lại trong hộp thoại thay vì bay theo toast |
+| Tệp đính kèm đường riêng tư, mã băm | C03, C06 | 🟡 ~80% | **Nâng 17/08.** Ứng dụng không còn phát link công khai cho đính kèm văn bản (`PRIVATE_ENTITIES`), tải qua `GET /attachments/{id}/download` có kiểm quyền bằng `downloadFile`; mã băm SHA-256 tính lúc tải lên và hiện trên danh sách. **Còn lại là việc hạ tầng** — xem ghi chú dưới |
 | Ghi số hiệu cũ của văn bản giấy | C12 | ✅ | `legacy_code` |
 | Quan hệ cha con | E01–E06 | ❌ | Không có bảng, không có màn |
 | Bản trích nội bộ | C19 | ❌ | — |
 | Quan hệ "trích từ" | E11 | ❌ | — |
 | Ảnh → văn bản, ảnh gốc cạnh nháp, cờ tắt AI | L01, L02, L07 | 🟡 ~25% | Có nhập .doc/.docx/.pdf/.md/.html + truy vết chuyển đổi — **không phải ảnh/OCR** |
 | Luồng duyệt yêu cầu tạm một bước | — | 🟡 50% | `submit/approve/reject` đặt trên văn bản, không phải trên yêu cầu |
+
+### Làm ngày 17/08 — C14 và C03/C06
+
+**C14 · ai đang giữ bản nháp.** Ràng buộc "một văn bản một bản nháp" đã ép ở tầng dữ liệu từ trước
+(cột sinh `open_slot` + `UNIQUE`), backend cũng đã trả 409 kèm TÊN người giữ. Thủng nằm hết ở giao diện,
+hai chỗ:
+
+1. Đường thường — tab phiên bản chỉ ghi *"đang có bản nháp mở"*, không nói ai, không có lối sang xem.
+   Nay là `document-draft-holder-notice.tsx`: bản số mấy, ai giữ, mở từ lúc nào, kèm nút **Xem bản nháp**.
+2. Đường đua — hai người cùng bấm, người thua nhận 409 dưới dạng **toast bay mất sau vài giây**, trong
+   khi đó chính là câu chứa tên người cần hỏi. Nay câu đó ở lại ngay trong hộp thoại; và danh sách
+   phiên bản được nạp lại **cả khi lỗi** (`onSettled`), nếu không màn hình vẫn hiện nút "Mở phiên bản
+   mới" và bấm bao nhiêu lần cũng hỏng.
+
+Test: `document-draft-holder-notice.test.tsx` — 6 test, **component test đầu tiên của phân hệ**.
+
+**C03/C06 · đính kèm riêng tư + mã băm.** Đã có sẵn `GET /api/attachments/{link_id}/download` kiểm quyền
+đàng hoàng, nhưng giao diện lại dùng `file.url` — đường đọc thẳng kho lưu trữ. Chạy local đường đó là
+`StaticFiles`, **không hỏi đăng nhập**; chạy thật là URL công khai của bucket. Sửa ba lớp:
+
+- `PRIVATE_ENTITIES` trong `core/file_registry.py` — API trả `url` RỖNG cho `document_version`.
+  Giữ nguyên `url` cho mọi entity Thu mua vì `frontend/` đóng băng đang đọc nó.
+- `downloadFile` (`@/core/api`) tải bằng `httpClient` rồi dựng liên kết tạm — `<a href>` không gắn được
+  token Bearer nên đi thẳng vào 401.
+- `tab_file.sha256` tính lúc tải lên, hiện 12 ký tự đầu trên danh sách, rê chuột ra chuỗi đầy đủ.
+
+Test: `test_dinh_kem_van_ban_rieng_tu.py` — 6 test, trong đó một test canh riêng bẫy `seek(0)`: quên trả
+con trỏ về đầu sau khi băm thì `upload_fileobj` đọc được 0 byte và **đẩy lên kho một tệp rỗng, không lỗi
+nào bật lên**.
+
+> ⚠️ **Vì sao C03 là ~80% chứ không phải xong.** Ứng dụng thôi phát link công khai, nhưng object trên kho
+> lưu trữ **vẫn đọc được** nếu ai đó đã có URL từ trước (mọi tệp tải lên trước 17/08/2026) hoặc đoán đúng
+> key. Bịt hẳn = chuyển bucket sang riêng tư + đổi TOÀN BỘ phân hệ sang link tạm, tức là P0-N02/N03,
+> đụng cả `frontend/` đang đóng băng — không nằm trong phạm vi task này. **Tới lúc đó vẫn chưa được đưa
+> văn bản Tuyệt mật thật vào hệ thống.**
 
 ---
 
@@ -171,7 +209,9 @@ Sáu bài kiểm chuyển phase 4: **0/6**.
 
 ## 5. Rủi ro
 
-1. **Đính kèm vẫn đi link công khai** (`document-attachment-list.tsx` tự ghi chú), trong khi form đã cho chọn mức "Tuyệt mật". Phase 0 (N02/N03/H01) chưa xong.
+1. **Object trên kho lưu trữ vẫn đọc được bằng URL.** Ứng dụng đã thôi phát link công khai cho đính kèm
+   văn bản (17/08), nhưng bucket còn để công khai nên URL cũ vẫn mở được, và tệp tải lên trước 17/08 thì
+   URL đó đã phát ra rồi. Phase 0 (N02/N03/H01) chưa xong → chưa đưa văn bản Tuyệt mật thật vào hệ thống.
 2. **Test phía giao diện gần như trắng.** Cả phân hệ FE ~9.900 dòng, mới có 1 tệp test (6 test).
    Backend khá hơn: 500 test xanh, trong đó 8 test cấp số viết ngày 17/08 — nhưng phần **màn hình**
    (form văn bản, phiên bản, quyền theo văn bản) vẫn chưa có lưới an toàn nào.
@@ -226,6 +266,8 @@ docker compose exec -T api alembic check   # còn báo drift tab_comment_*/tab_t
 | `document/numbering.py` | 2 tệp trên + `test_document_numbering_rule.py` + `test_document_revoke_keeps_number.py` |
 | `doc_catalog/numbering_rule_*.py` | `test_document_numbering_rule.py` |
 | `document/service.py` (bãi bỏ, đổi trạng thái) | `test_document_revoke_keeps_number.py` |
+| `attachment/controller.py`, `core/file_registry.py` | `test_dinh_kem_van_ban_rieng_tu.py` |
+| `document-draft-holder-notice.tsx`, `document-version-*.tsx` | `document-draft-holder-notice.test.tsx` + kịch bản bấm tay 6.5 |
 | `document/access_service.py`, quyền theo sổ | `test_document_access.py` (22 test) |
 | `seed_data/document_phase1.py` | `test_document_phase1_seed.py` |
 | bất kỳ `model.py` nào | `alembic check` + cả bộ `pytest` |
@@ -262,6 +304,19 @@ những màn dưới đây **phải bấm tay** sau mỗi lần sửa. Đăng nh
 
 **Cấp số thật** — tạo một văn bản loại `id_scheme = 2`, xem trước số hiệu trên form, lưu, rồi đối chiếu: **số hiển thị lúc xem trước phải trùng số được cấp**. Bãi bỏ nó rồi tạo văn bản kế tiếp → số phải đi tiếp, không nhặt lại số vừa bãi bỏ.
 
+**Bản nháp một người giữ (C14)** — cần HAI trình duyệt, hai tài khoản khác nhau, cùng mở một văn bản đã duyệt.
+
+1. Người A bấm *Mở phiên bản mới*, khai lý do, lưu.
+2. Người B tải lại trang → tab phiên bản phải hiện băng vàng ghi **đúng tên người A** và bản số mấy; nút *Mở phiên bản mới* biến mất; bấm *Xem bản nháp* thì nhảy sang đúng bản đó.
+3. Đường đua: cả hai cùng mở sẵn hộp thoại *trước khi* A lưu, rồi A lưu xong B mới bấm → B phải thấy câu **"Bản nháp 2.0 đang do A giữ"** nằm lại NGAY TRONG hộp thoại (không phải toast bay mất), và sau khi đóng hộp thoại thì tab phiên bản đã tự cập nhật.
+
+**Đính kèm riêng tư (C03/C06)** — mở tab Mạng của trình duyệt ở trang chi tiết văn bản.
+
+1. Gọi `GET /api/attachments?entity=document_version&...` → mọi phần tử phải có **`url` rỗng**. Còn thấy chuỗi `http...` là hồi quy.
+2. Bấm tải một tệp → phải thấy request `GET /api/attachments/{id}/download` có header `Authorization`, không phải điều hướng ra kho lưu trữ.
+3. Chép URL request đó, dán sang cửa sổ ẩn danh → phải bị **401**, không tải được.
+4. Tệp mới tải lên phải hiện 12 ký tự mã băm cạnh dung lượng; rê chuột ra chuỗi đầy đủ. Tải tệp về rồi chạy `shasum -a 256 <tệp>` → phải trùng.
+
 ---
 
 # DANH SÁCH TASK — copy thẳng lên Lark
@@ -272,7 +327,7 @@ Mỗi dòng là một task độc lập, đã kèm mã tính năng để tra ng�
 ## Nhóm 0 · Việc nền, làm trước hoặc song song
 
 - [ ] [P0][N02/N03/H01] Kho tệp riêng tư + link tạm có kiểm quyền, ngừng ghi link công khai — **L** — CHẶN việc đưa văn bản mật thật vào hệ thống
-- [ ] [P0][C03/C06] Chuyển đính kèm văn bản sang đường tải riêng tư, hiện mã băm toàn vẹn — **M** — phụ thuộc task trên
+- [x] [P0][C03/C06] Chuyển đính kèm văn bản sang đường tải riêng tư, hiện mã băm toàn vẹn — **M** — xong 17/08 phần ứng dụng; phần kho lưu trữ nằm ở task trên
 - [ ] [P0][TEST] Viết test cho phần đã có: form văn bản, phiên bản, quyền theo văn bản — **M** — làm trước khi code thêm
 
 ## Phase 1 · Danh mục và số hiệu — XONG 17/08/2026
@@ -283,14 +338,14 @@ Mỗi dòng là một task độc lập, đã kèm mã tính năng để tra ng�
 - [x] [P1][D01] Vá lỗi bộ đếm tự đếm lại đầu năm với mã tài liệu bất biến — **S**
 - [x] [P1][TEST] 8 test cho 2 bài nghiệm thu chưa từng được kiểm — **S**
 
-## Phase 2 · Yêu cầu, soạn thảo, phiên bản (còn 9 việc)
+## Phase 2 · Yêu cầu, soạn thảo, phiên bản (còn 7 việc)
 
 - [ ] [P2][E01/E02] Bảng quy tắc quan hệ cha–con + 10 loại quan hệ — **M**
 - [ ] [P2][E03/E04] Form tự hiện ô quan hệ theo loại + chặn gửi duyệt khi thiếu quan hệ bắt buộc — **M**
 - [ ] [P2][E05/E06] Cấm vòng lặp quan hệ + màn cây tài liệu — **M**
 - [ ] [P2][C19] Soạn bản trích nội bộ — tách một phần nội dung bản gốc thành văn bản riêng mức mật thấp hơn — **M**
 - [ ] [P2][E11] Quan hệ "trích từ" + 3 ràng buộc khóa cứng + cột ghi trích từ phiên bản nào của gốc — **M**
-- [ ] [P2][C14] Màn báo "ai đang giữ bản nháp" khi người thứ hai bấm mở phiên bản mới — **S**
+- [x] [P2][C14] Màn báo "ai đang giữ bản nháp" khi người thứ hai bấm mở phiên bản mới — **S** — xong 17/08
 - [ ] [P2][L01/L02] Chuyển ảnh thành văn bản (OCR) + đặt ảnh gốc cạnh bản nháp để đối chiếu — **L** — CẦN chốt câu hỏi 2 bên dưới
 - [ ] [P2][L07] Cờ tắt AI — tắt là hệ thống chạy bình thường không có phần AI — **S**
 - [ ] [P2][B01/B03/B04/B06/B07] Yêu cầu văn bản: 3 loại, lý do bắt buộc, chặn soạn khi chưa duyệt, sinh nháp từ yêu cầu, màn theo dõi — **L** — CHỜ chốt câu hỏi 1 bên dưới

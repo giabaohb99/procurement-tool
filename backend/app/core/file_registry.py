@@ -36,6 +36,25 @@ FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
     "document_version":       ("document", _DOC, 30),
 }
 
+#  ENTITY RIÊNG TƯ — API **không trả `url` công khai** cho những entity này, chỉ
+#  trả đường tải có kiểm quyền `GET /api/attachments/{link_id}/download`.
+#
+#  Vì sao cần: `upload_fileobj()` sinh URL đọc thẳng từ bucket (hoặc
+#  `/api/uploads/...` khi chạy local — mà chỗ đó là `StaticFiles`, KHÔNG kiểm
+#  đăng nhập). Đưa URL đó ra ngoài nghĩa là ai cầm được chuỗi đó đều mở được tệp,
+#  kể cả người đã bị thu hồi quyền, kể cả người chưa đăng nhập.
+#
+#  ⚠️ Đây mới là **nửa việc**. Bản thân object trên storage vẫn đọc được nếu ai
+#  đó đã có URL từ trước hoặc đoán đúng key — bịt hẳn thì phải chuyển bucket sang
+#  private + đổi mọi phân hệ sang link tạm (P0-N02/N03), là việc hạ tầng đụng cả
+#  `frontend/` đang đóng băng. Cho tới lúc đó: **không đưa văn bản Tuyệt mật thật
+#  vào hệ thống**.
+PRIVATE_ENTITIES: set[str] = {"document_version"}
+
+
+def is_private(entity: str) -> bool:
+    return entity in PRIVATE_ENTITIES
+
 
 def is_image(filename: str, content_type: str = "") -> bool:
     """Ảnh thì hiện luôn ra, file khác chỉ hiện tên — dùng cho đính kèm bình luận."""

@@ -3,7 +3,11 @@ import { Download, FileText, Loader2, Paperclip, X } from 'lucide-react'
 import { useRef } from 'react'
 import { toast } from 'sonner'
 
-import { purchaseRequestSupportApi } from '@/modules/procurement/api/purchase-request-support-api'
+import { downloadFile, extractErrorMessage } from '@/core/api'
+import {
+  purchaseRequestSupportApi,
+  type AttachmentFile,
+} from '@/modules/procurement/api/purchase-request-support-api'
 import { Button } from '@/shared/ui/button'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { FormCard } from '@/shared/ui/form-card'
@@ -16,9 +20,15 @@ import { FormCard } from '@/shared/ui/form-card'
  * dùng không thấy khác biệt gì — chỉ khi lật lại bản cũ mới thấy nó giữ nguyên
  * bộ tệp của nó.
  *
- * ⚠️ Đang đi đường tải tệp CHUNG (`/api/attachments`), link công khai theo
- * `file.url`. Kho tệp riêng tư + link tạm 60–120 giây là P0-T02…T04, chưa làm —
- * cho tới khi xong thì **không đưa văn bản mật thật vào hệ thống**.
+ * **Tải tệp đi đường riêng tư (C03).** `document_version` nằm trong
+ * `PRIVATE_ENTITIES` nên backend trả `url` rỗng; tải bằng `downloadFile` qua
+ * `GET /api/attachments/{id}/download` — đường đó kiểm quyền đọc văn bản trước
+ * khi trả byte nào.
+ *
+ * ⚠️ **Vẫn chưa kín hoàn toàn.** Object trên kho lưu trữ còn đọc được nếu ai đó
+ * đã có URL từ trước (tệp tải lên trước 17/08/2026) hoặc đoán đúng key — bịt hẳn
+ * phải chuyển kho sang riêng tư, là việc hạ tầng P0-N02/N03 đụng cả `frontend/`
+ * đang đóng băng. Tới lúc đó thì **chưa đưa văn bản Tuyệt mật thật vào hệ thống**.
  */
 const ENTITY = 'document_version'
 
@@ -59,6 +69,14 @@ export function DocumentAttachmentList({
       toast.success('Đã gỡ tệp')
       void queryClient.invalidateQueries({ queryKey })
     },
+  })
+
+  //  Tải qua đường có kiểm quyền. Giữ id đang tải để hiện vòng xoay đúng dòng —
+  //  tệp 30MB mà nút không đổi gì thì người dùng bấm lại mấy lần.
+  const download = useMutation({
+    mutationFn: (file: AttachmentFile) =>
+      downloadFile(`/api/attachments/${file.id}/download`, file.filename),
+    onError: (error) => toast.error(extractErrorMessage(error)),
   })
 
   function handleFiles(list: FileList | null) {
@@ -112,13 +130,35 @@ export function DocumentAttachmentList({
               <FileText className="size-4 shrink-0 text-muted-foreground" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm">{file.filename}</p>
-                <p className="text-xs text-muted-foreground">{formatSize(file.size)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {formatSize(file.size)}
+                  {/*  Mã băm để người cầm tệp ngoài hệ thống đối chiếu được nó
+                       có đúng tệp đã đính kèm không (C06). Hiện 12 ký tự đầu cho
+                       vừa dòng; rê chuột ra chuỗi đầy đủ để so từng ký tự. */}
+                  {file.sha256 && (
+                    <>
+                      {' · '}
+                      <span className="font-mono" title={`SHA-256: ${file.sha256}`}>
+                        {file.sha256.slice(0, 12)}
+                      </span>
+                    </>
+                  )}
+                </p>
               </div>
 
-              <Button asChild variant="ghost" size="icon-sm" title="Tải về">
-                <a href={file.url} target="_blank" rel="noreferrer">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                title="Tải về"
+                disabled={download.isPending}
+                onClick={() => download.mutate(file)}
+              >
+                {download.isPending && download.variables?.id === file.id ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
                   <Download className="size-4" />
-                </a>
+                )}
               </Button>
 
               {!readOnly && (
