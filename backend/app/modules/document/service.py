@@ -280,6 +280,8 @@ def approve(db: Session, doc: Document, actor: int,
             raise HTTPException(400, "Cơ chế áp dụng không hợp lệ")
         doc.apply_mode = apply_mode
 
+    from .clone_notification import notify_clones_stale
+    from .clone_service import clones_of, mark_clones_for_review
     from .excerpt_service import is_excerpt
     from .issue_service import ensure_can_issue
     from .parent_change_service import apply_new_version
@@ -321,6 +323,11 @@ def approve(db: Session, doc: Document, actor: int,
                 f"Văn bản cha đã lên phiên bản {version.version_no} ngày "
                 f"{date.today():%d/%m/%Y}. Rà lại xem còn đúng không.",
             )
+            #  Điều kiện 3 của clone (F11): mọi bản clone bị đánh dấu cần rà lại
+            #  VÀ người phụ trách phải được báo. Đánh dấu mà không báo thì cái
+            #  dấu nằm im tới lúc có người tình cờ mở văn bản ra xem.
+            if mark_clones_for_review(db, doc):
+                notify_clones_stale(db, doc, clones_of(db, doc.id))
     elif previous is None:
         #  Bản đầu tiên duyệt trước ngày hiệu lực: đã duyệt nhưng chưa áp dụng.
         #  Bản thứ hai trở đi thì KHÔNG đụng gì — bản cũ còn đang chạy.

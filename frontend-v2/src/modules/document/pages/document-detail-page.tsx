@@ -31,6 +31,7 @@ import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentAmendedBanner } from '../components/document-amended-banner'
 import { DocumentAccessCard } from '../components/document-access-card'
 import { DocumentScopeCard } from '../components/document-scope-card'
+import { DocumentCloneCard } from '../components/document-clone-card'
 import { DocumentSignatureCard } from '../components/document-signature-card'
 import { DocumentAttachmentList } from '../components/document-attachment-list'
 import { DocumentAutosaveStatus } from '../components/document-autosave-status'
@@ -378,7 +379,14 @@ export function DocumentDetailPage() {
               isLocked={isLocked}
               canApprove={canApprove}
             />
+            {/*  Clone và phạm vi là HAI cơ chế thay nhau, không dùng cùng lúc —
+                 để cạnh nhau cho người ban hành thấy mình đang đi đường nào. */}
             <DocumentScopeCard documentId={documentId} canWrite={canWrite} />
+            <DocumentCloneCard
+              documentId={documentId}
+              isIssued={isIssued}
+              canCreate={canWrite}
+            />
             <DocumentAccessCard documentId={documentId} canWrite={canWrite} />
           </DocumentRecordForm>
         </TabsContent>
