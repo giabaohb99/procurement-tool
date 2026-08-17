@@ -48,7 +48,9 @@ LINE_COLS = [
     Col("result_due_date", "Hạn trả kết quả", "date", 14),
     Col("assignee_name", "NSTM phụ trách", width=22),
     Col("line_status", "Trạng thái dòng", width=16),
-    Col("pr_code", "Mã YCMH đã tạo", width=18),
+    # CR-079: bỏ cột "Mã YCMH đã tạo" — cùng lý do với màn Tiến độ báo giá: `pr_code` trên dòng
+    # chỉ giữ mã MỚI NHẤT, dòng tạo YCMH nhiều lần (mua lại) thì các mã trước biến mất. Danh
+    # sách đủ nằm ở `tab_survey_request_pr`, xem qua popup phương án trong chi tiết YCBG.
 ]
 
 # Cụm PHƯƠNG ÁN CHỐT
