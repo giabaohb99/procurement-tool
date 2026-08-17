@@ -68,7 +68,8 @@ class PurchaseRequestItem(Base, AuditMixin):
     required_date: Mapped[str] = mapped_column(String(10), default="")     # ngày cần hàng (theo dòng)
     expected_date: Mapped[str] = mapped_column(String(10), default="")     # thời gian dự kiến có hàng (NSTM cập nhật; đổi giá trị đã có phải kèm lý do)
     assignee: Mapped[str] = mapped_column(String(100), default="", index=True)  # NSTM phụ trách (mã NV) — scope "được giao" lọc theo cột này
-    line_status: Mapped[str] = mapped_column(String(30), default="Chưa đặt hàng")  # trạng thái xử lý dòng
+    # CR-074: dòng mới chưa có ĐMH nào -> "Chưa tạo đơn mua hàng" (xem service.LINE_STATUS_NO_PO)
+    line_status: Mapped[str] = mapped_column(String(30), default="Chưa tạo đơn mua hàng")  # trạng thái xử lý dòng
     qty_ordered: Mapped[float] = mapped_column(Numeric(18, 3), default=0)   # tổng SL đã đặt (đồng bộ từ ĐMH liên kết)
     qty_received: Mapped[float] = mapped_column(Numeric(18, 3), default=0)  # tổng SL đã nhận (đồng bộ từ ĐMH liên kết)
     progress_note: Mapped[str] = mapped_column(Text, default="")           # chi tiết tiến độ

@@ -51,5 +51,5 @@ class RejectIn(BaseModel):
 
 
 class LineStatusIn(BaseModel):
-    # "" chưa xác định · "can_khao_sat_lai" cần khảo sát lại · "hoan_thanh" hoàn thành
+    # "" chưa xác định · "resurvey" cần khảo sát lại · "completed" hoàn thành
     line_status: str = ""

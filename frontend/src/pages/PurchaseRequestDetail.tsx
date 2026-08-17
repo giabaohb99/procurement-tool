@@ -36,14 +36,17 @@ const PRICE_DECIMALS = 4
 const fmtPriceBlank = (n: any) => { const v = Number(n || 0); return v ? v.toLocaleString('vi-VN', { maximumFractionDigits: PRICE_DECIMALS }) : '' }
 const fmtVND = (n: any) => Math.round(Number(n) || 0).toLocaleString('vi-VN')
 const fmtVNDBlank = (n: any) => { const v = Math.round(Number(n) || 0); return v ? v.toLocaleString('vi-VN') : '' }
-const LINE_STATUS = ['Chưa đặt hàng', 'Đã đặt hàng', 'Đã nhận hàng', 'Hoàn thành', 'Hủy đơn']
+// CR-074: "Chưa tạo đơn mua hàng" = chưa ai lập ĐMH cho dòng này;
+// "Chưa đặt hàng" = đã có ĐMH (kể cả đơn còn Nháp) nhưng chưa bấm đặt hàng.
+const LS_NO_PO = 'Chưa tạo đơn mua hàng'
+const LINE_STATUS = [LS_NO_PO, 'Chưa đặt hàng', 'Đã đặt hàng', 'Đã nhận hàng', 'Hoàn thành', 'Hủy đơn']
 const LS_COLOR: Record<string, string> = {
-  'Chưa đặt hàng': '#94a3b8', 'Đã đặt hàng': '#00AEEF',
+  [LS_NO_PO]: '#94a3b8', 'Chưa đặt hàng': '#d97706', 'Đã đặt hàng': '#00AEEF',
   'Đã nhận hàng': '#0d9488', 'Hoàn thành': '#16a34a', 'Hủy đơn': '#b91c1c',
 }
 const emptyItem = {
   product_code: '', product_name: '', item_group: '', group_desc: '', qty: 0, unit: '',
-  price: 0, vat_pct: 8, warehouse: '', required_date: '', assignee: '', line_status: 'Chưa đặt hàng', progress_note: '', note: '',
+  price: 0, vat_pct: 8, warehouse: '', required_date: '', assignee: '', line_status: LS_NO_PO, progress_note: '', note: '',
   qty_ordered: 0, qty_received: 0,
 }
 // Hằng số dùng chung cho dòng CHƯA có ảnh chờ: phải là CÙNG một mảng qua mọi lần render,
@@ -218,10 +221,12 @@ export default function PurchaseRequestDetail() {
   // (phiếu cũ còn kẹt ở đó từ lúc công tắc còn bật).
   const workableStatuses = pr.dispatch_enabled === false
     ? ['approved', 'dispatched', 'processing'] : ['dispatched', 'processing']
-  // Còn dòng nào chưa đặt hàng → vẫn cho tạo ĐMH (không ẩn khi mới hoàn thành 1 dòng)
-  const hasUnorderedItem = (pr.items || []).some((it: any) => (it.line_status || 'Chưa đặt hàng') === 'Chưa đặt hàng')
+  // Còn dòng nào chưa đặt hàng → vẫn cho tạo ĐMH (không ẩn khi mới hoàn thành 1 dòng).
+  // CR-074: phải tính CẢ hai nhãn "chưa động tới", nếu không thì vừa lập đơn Nháp là nút
+  // "Tạo ĐMH" biến mất, trong khi dòng đó vẫn có thể cần thêm đơn cho NCC khác.
+  const hasUnorderedItem = (pr.items || []).some((it: any) => [LS_NO_PO, 'Chưa đặt hàng'].includes(it.line_status || LS_NO_PO))
   // Chỉ cho Hoàn thành phiếu khi MỌI dòng đã ở điểm cuối (Hoàn thành/Hủy đơn)
-  const allItemsDone = (pr.items || []).length > 0 && (pr.items || []).every((it: any) => ['Hoàn thành', 'Hủy đơn'].includes(it.line_status || 'Chưa đặt hàng'))
+  const allItemsDone = (pr.items || []).length > 0 && (pr.items || []).every((it: any) => ['Hoàn thành', 'Hủy đơn'].includes(it.line_status || LS_NO_PO))
   // Cột/trường "NSTM phụ trách" chỉ cho phía thu mua (is_purchaser = có quyền xử lý khảo sát).
   // Ẩn hoàn toàn với người yêu cầu (NSYC/employee) & trưởng bộ phận của họ (dept_head).
   const showAssigneeCol = can('survey_request', 'process')
@@ -964,7 +969,7 @@ export default function PurchaseRequestDetail() {
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 500 }} title="Thành tiền gồm VAT">{fmtVNDBlank(lineAmount(it))}</td>
                       <td title="Trạng thái tự đồng bộ từ Đơn mua hàng — không sửa tay">
-                        <span className="badge" style={{ background: (LS_COLOR[it.line_status] || '#94a3b8') + '22', color: LS_COLOR[it.line_status] || '#64748b' }}>{it.line_status || 'Chưa đặt hàng'}</span>
+                        <span className="badge" style={{ background: (LS_COLOR[it.line_status] || '#94a3b8') + '22', color: LS_COLOR[it.line_status] || '#64748b' }}>{it.line_status || LS_NO_PO}</span>
                       </td>
                       <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }} title="SL đã nhận / SL đã đặt (đồng bộ từ Đơn mua hàng)">
                         {(Number(it.qty_ordered) || Number(it.qty_received)) ? (
@@ -1217,7 +1222,7 @@ export default function PurchaseRequestDetail() {
               )}
               <div className="form-row">
                 <label title="Tự đồng bộ từ Đơn mua hàng — không sửa tay">Trạng thái xử lý</label>
-                <div><span className="badge" style={{ background: (LS_COLOR[edit.line_status] || '#94a3b8') + '22', color: LS_COLOR[edit.line_status] || '#64748b' }}>{edit.line_status || 'Chưa đặt hàng'}</span>
+                <div><span className="badge" style={{ background: (LS_COLOR[edit.line_status] || '#94a3b8') + '22', color: LS_COLOR[edit.line_status] || '#64748b' }}>{edit.line_status || LS_NO_PO}</span>
                   <span style={{ fontSize: 11.5, color: 'var(--muted)', marginLeft: 8 }}>tự đồng bộ từ Đơn mua hàng</span></div>
               </div>
               <div className="form-row">

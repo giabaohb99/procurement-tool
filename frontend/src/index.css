@@ -1570,6 +1570,12 @@ thead th {
   color: #5b6770;
 }
 
+/* CR-077: tông xanh dương cho mốc "đang chờ bên kia xử lý" (Đã trả kết quả / Đã tạo YCMH) */
+.badge.info {
+  background: #e6f6fd;
+  color: #0b7fac;
+}
+
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

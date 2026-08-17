@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 from app.core.audit import record
 from app.core.utils import assert_unique_product_codes
 
-from .model import (SurveyRequest, SurveyRequestLine, SurveyRequestOption,
-                    SurveyRequestPr)
+from .model import (LINE_STATUSES, LS_COMPLETED, LS_RESURVEY, SurveyRequest,
+                    SurveyRequestLine, SurveyRequestOption, SurveyRequestPr)
 
 ENTITY = "survey_request"
 # request_date: cho bộ lọc điều kiện lọc theo ngày (apply_range_filters vẫn lo _from/_to)
@@ -15,6 +15,18 @@ FILTERABLE = ["code", "status", "requester", "department", "request_date"]
 MAX_OPTIONS_PER_LINE = 5   # mỗi sản phẩm (dòng YCKS) tối đa 5 phương án khảo sát
 HEADER_FIELDS = ["company_id", "requester", "requester_id", "requester_position", "department",
                  "head_of_dept", "purpose", "request_date", "note"]
+
+
+VN_OFFSET = timedelta(hours=7)   # container chạy giờ UTC — ngày phải quy về giờ Việt Nam
+
+
+def _stamp_result_date(ln: SurveyRequestLine) -> None:
+    """CR-075: ghi "ngày trả kết quả thực tế" cho dòng khảo sát, MỘT LẦN duy nhất.
+
+    Đã có mốc rồi thì giữ nguyên — dòng bị trả về "cần khảo sát lại" rồi chốt lần hai không
+    được phép xóa dấu trễ của lần đầu."""
+    if not (ln.result_date or "").strip():
+        ln.result_date = (datetime.utcnow() + VN_OFFSET).strftime("%Y-%m-%d")
 
 
 def get_sr(db: Session, sid: int) -> SurveyRequest:
@@ -270,7 +282,7 @@ def get_line(db: Session, sid: int, line_id: int) -> SurveyRequestLine:
     return ln
 
 
-LINE_STATUSES = ("", "can_khao_sat_lai", "hoan_thanh")   # Task 2: trạng thái dòng do người YC/phòng ban cập nhật
+# Task 2: trạng thái dòng do người YC/phòng ban cập nhật — hằng số gốc nằm ở model.py
 
 
 def set_line_status(db: Session, sid: int, line_id: int, new_status: str, user_id: int) -> SurveyRequestLine:
@@ -282,14 +294,14 @@ def set_line_status(db: Session, sid: int, line_id: int, new_status: str, user_i
     # Chỉ được chốt HOÀN THÀNH sau khi dòng đã chọn 1 phương án (Đã chọn PA).
     # "Cần khảo sát lại" thì KHÔNG cần chọn phương án — đây là lúc kết quả khảo sát
     # chưa đạt, người YC muốn yêu cầu khảo sát lại mà không phải chọn phương án nào.
-    if new_status == "hoan_thanh":
+    if new_status == LS_COMPLETED:
         if not any(o.is_chosen for o in options_of(db, line_id)):
             raise HTTPException(400, "Cần chọn 1 phương án (Đã chọn PA) trước khi chốt Hoàn thành")
     ln.line_status = new_status
-    ln.is_completed = (new_status == "hoan_thanh")
+    ln.is_completed = (new_status == LS_COMPLETED)
     # Hướng B: gắn cờ "Cần khảo sát lại" thì TỰ BỎ CHỌN mọi phương án — cờ khảo sát lại
     # và "đã chọn PA" là hai trạng thái loại trừ nhau (không cho vừa chê vừa tạo YCMH).
-    if new_status == "can_khao_sat_lai":
+    if new_status == LS_RESURVEY:
         for o in options_of(db, line_id):
             if o.is_chosen:
                 o.is_chosen = False
@@ -590,7 +602,7 @@ def choose_option(db: Session, line_id: int, oid: int, user_id: int) -> SurveyRe
     # coi như người YC đã đồng ý phương án, không còn yêu cầu khảo sát lại.
     if not already:
         ln = db.query(SurveyRequestLine).filter(SurveyRequestLine.id == line_id).first()
-        if ln and ln.line_status == "can_khao_sat_lai":
+        if ln and ln.line_status == LS_RESURVEY:
             ln.line_status = ""
             ln.updated_by = user_id
     db.commit()
@@ -701,7 +713,7 @@ def create_prs(db: Session, sid: int, user_id: int):
                 price=price, vat_pct=vat,
                 # Thành tiền GỒM VAT — cùng công thức với khi lưu YCMH (purchase_request/service.py)
                 amount=round(qty * price * (1 + vat / 100), 2), note="",
-                line_status="Chưa đặt hàng", created_by=user_id, updated_by=user_id,
+                line_status="Chưa tạo đơn mua hàng", created_by=user_id, updated_by=user_id,   # CR-074
             ))
             # Liên kết YCKS-dòng <-> YCMH (đếm được nhiều lần tạo) + tự BỎ CHỌN option
             db.add(SurveyRequestPr(
@@ -774,13 +786,15 @@ def complete_sr(db: Session, sid: int, user, profile: dict = None, empty_line_id
     for ln in my_lines:
         if options_of(db, ln.id):
             ln.no_option = False
-            if ln.line_status == "can_khao_sat_lai":
+            if ln.line_status == LS_RESURVEY:
                 ln.line_status = ""
                 ln.updated_by = getattr(user, "id", 0)
                 resurveyed += 1
+            _stamp_result_date(ln)
         elif ln.id in empty_ids:
             ln.no_option = True
             ln.updated_by = getattr(user, "id", 0)
+            _stamp_result_date(ln)   # chốt rỗng cũng là trả kết quả — "khảo sát rồi, không có NCC phù hợp"
     db.flush()
     missing_mine = [ln.internal_line_code or str(ln.id) for ln in my_lines
                     if not options_of(db, ln.id) and not ln.no_option]

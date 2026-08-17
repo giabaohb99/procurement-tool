@@ -43,24 +43,54 @@ File: `backend/app/modules/survey_request/model.py`, `service.py`.
 Đây là trạng thái do **người yêu cầu / phòng ban yêu cầu** cập nhật sau khi xem kết quả khảo sát.
 Mục đích: xác nhận chấp thuận kết quả hay yêu cầu làm lại — KHÔNG phản ánh tiến độ đặt hàng.
 
-Hằng số trong code: `LINE_STATUSES = ("", "can_khao_sat_lai", "hoan_thanh")` (service.py).
+Hằng số trong code: `LINE_STATUSES = ("", LS_RESURVEY, LS_COMPLETED)` (`survey_request/model.py`).
+Lưu bằng **slug tiếng Anh** cho khớp cột `status` của cùng bảng — CR-076 đổi từ tiếng Việt
+không dấu (`can_khao_sat_lai` / `hoan_thanh`), migration dữ liệu `4b6d2f0a97c5`.
 
 | Giá trị (DB) | Nhãn hiển thị | Mô tả |
 |---|---|---|
 | `""` | Chưa xác định | Giá trị mặc định — chưa có ý kiến của người yêu cầu |
-| `"can_khao_sat_lai"` | Cần khảo sát lại | Kết quả chưa phù hợp, yêu cầu NSTM khảo sát lại |
-| `"hoan_thanh"` | Hoàn thành | Đã chọn phương án, người yêu cầu chốt dòng xong |
+| `"resurvey"` | Cần khảo sát lại | Kết quả chưa phù hợp, yêu cầu NSTM khảo sát lại |
+| `"completed"` | Hoàn thành | Đã chọn phương án, người yêu cầu chốt dòng xong |
 
 **Quy tắc chuyển trạng thái (hàm `set_line_status`):**
-- Chuyển sang `"hoan_thanh"`: bắt buộc dòng phải có ít nhất 1 option với `is_chosen = True`.
-- Chuyển sang `"can_khao_sat_lai"`: tự động bỏ chọn (`is_chosen = False`) mọi option của dòng;
+- Chuyển sang `"completed"`: bắt buộc dòng phải có ít nhất 1 option với `is_chosen = True`.
+- Chuyển sang `"resurvey"`: tự động bỏ chọn (`is_chosen = False`) mọi option của dòng;
   nếu phiếu YCKS đang ở `"survey_done"` thì hạ về `"processing"`.
-- Khi người YC bấm chọn 1 option (choose_option): nếu dòng đang ở `"can_khao_sat_lai"` thì tự gỡ về `""`.
-- Khi NSTM chốt hoàn thành khảo sát (complete_sr) với dòng có option mới: nếu dòng đang ở `"can_khao_sat_lai"` thì tự gỡ về `""`.
+- Khi người YC bấm chọn 1 option (choose_option): nếu dòng đang ở `"resurvey"` thì tự gỡ về `""`.
+- Khi NSTM chốt hoàn thành khảo sát (complete_sr) với dòng có option mới: nếu dòng đang ở `"resurvey"` thì tự gỡ về `""`.
 
-**Đồng bộ cờ `is_completed`:** `is_completed = (line_status == "hoan_thanh")` — ghi luôn khi `set_line_status`.
+**Đồng bộ cờ `is_completed`:** `is_completed = (line_status == "completed")` — ghi luôn khi `set_line_status`.
 
 **Ai cập nhật:** người yêu cầu / phòng ban yêu cầu qua endpoint `PATCH /{sid}/lines/{line_id}/line-status`.
+
+### 4b. Nhãn TIẾN ĐỘ của dòng khảo sát (`progress_state` — CR-077)
+
+`line_status` ở trên chỉ là **ý kiến của người yêu cầu**, không đủ để mô tả dòng đang ở đâu.
+Nhãn người dùng nhìn thấy là `progress_state` — **suy ra, không lưu cột**, nguồn duy nhất
+`survey_request/line_state.py`. Cả màn chi tiết Yêu cầu báo giá lẫn màn Tiến độ báo giá đều
+đọc chung hàm này; backend nhét sẵn `progress_state` + `progress_tone` vào payload để FE
+không tự tính lại (trước CR-077 mỗi bên tính một kiểu, cùng một dòng hiện hai chữ khác nhau).
+
+Thứ tự xét — từ mốc XA nhất về gần, khớp cái nào trả cái đó:
+
+| # | Nhãn | Điều kiện |
+|---|---|---|
+| 1 | Hoàn thành | `line_status == LS_COMPLETED` |
+| 2 | Đã tạo YCMH | `pr_code` khác rỗng |
+| 3 | Cần khảo sát lại | `line_status == LS_RESURVEY` |
+| 4 | Đã chọn phương án | có option `is_chosen` |
+| 5 | Chốt rỗng | `no_option = true` |
+| 6 | Đã trả kết quả | `result_date` khác rỗng |
+| 7 | Đang khảo sát | có ít nhất 1 option |
+| 8 | Đã tiếp nhận | có `assignee` |
+| 9 | Chưa tiếp nhận | còn lại |
+
+**Hoàn thành là điểm cuối**, đứng trên "Đã tạo YCMH": một dòng có thể tạo YCMH nhiều lần
+(mua lại) nên `pr_code` không khép dòng lại.
+
+**Đừng dùng `is_completed` để suy nhãn** — cờ đó bị `create_prs` bật lên với nghĩa "đã TỪNG
+tạo YCMH", không phải "đã chốt xong". FE cũ dùng nhầm nên gắn nhãn Hoàn thành sai hàng loạt.
 
 ## 5. Máy trạng thái tiến độ dòng ĐMH (`POItem.progress_status`)
 
