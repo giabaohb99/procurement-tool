@@ -54,7 +54,8 @@ COLS = [
     Col("progress_state", "Tiến độ dòng", width=18),
     Col("line_status", "Trạng thái dòng", width=16),
     Col("option_count", "Số phương án", "int", 12),
-    Col("pr_code", "Mã YCMH đã tạo", width=18),
+    # CR-079: bỏ cột "Mã YCMH đã tạo" — `pr_code` trên dòng chỉ giữ mã MỚI NHẤT, dòng tạo YCMH
+    # nhiều lần (mua lại) thì các mã trước biến mất. Xuất ra Excel dễ bị đọc nhầm là đủ.
     # ----- Phương án đã chốt -----
     Col("opt_label", "Phương án chốt", width=16),
     Col("opt_supplier_code", "Mã NCC", width=14),          # chỉ khi có supplier.read

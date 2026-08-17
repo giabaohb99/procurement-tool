@@ -730,6 +730,8 @@ vẫn là một hàng, vì thứ cần theo dõi là "dòng này khảo sát t�
 | **Số ngày xử lý** | `result_date − received_date`; thiếu một trong hai mốc → để trống |
 | **Tiến độ dòng** | Suy từ dữ liệu đang có, **không lưu cột riêng**. Nguồn duy nhất: `survey_request/line_state.py` — **cả màn chi tiết YCBG cũng dùng chung** (CR-077). Xếp từ mốc xa nhất về gần: **Hoàn thành** › Đã tạo YCMH › Cần khảo sát lại › Đã chọn phương án › Chốt rỗng › Đã trả kết quả › Đang khảo sát › Đã tiếp nhận › Chưa tiếp nhận. **Hoàn thành là điểm cuối** (CR-077, trước đó thua "Đã tạo YCMH"): một dòng tạo được YCMH nhiều lần khi mua lại, nên `pr_code` không khép dòng; chỉ khi người YC chốt hoàn thành thì dòng mới thật sự xong |
 
+**KHÔNG có cột "Mã YCMH" (CR-079).** Một dòng khảo sát tạo được **nhiều** YCMH (mua lại) — hệ thống lưu đủ ở `tab_survey_request_pr`, nhưng ô `pr_code` trên dòng bị ghi đè mỗi lần tạo nên chỉ còn mã **mới nhất**. Hiện một mã mà người đọc tưởng là đủ thì nguy hơn không hiện, nên cột này đã bỏ khỏi cả bảng lẫn file Excel. Muốn xem đủ: mở chi tiết YCBG, bấm vào phương án → popup liệt kê hết YCMH đã tạo. Ô tìm kiếm vẫn khớp mã YCMH nên gõ mã vẫn tra ra dòng.
+
 **Bộ lọc**: Công ty · Bộ phận · Phân loại · NSTM phụ trách · **Tiến độ dòng** · Trạng thái phiếu ·
 Trạng thái dòng · Đã/chưa trả kết quả · **Chỉ dòng trễ hạn** · Tháng tiếp nhận · ba khoảng ngày
 (tiếp nhận, hạn trả kết quả, ngày trả kết quả) · từ khóa (mã YCBG · mục đích · phân loại · thông số ·
