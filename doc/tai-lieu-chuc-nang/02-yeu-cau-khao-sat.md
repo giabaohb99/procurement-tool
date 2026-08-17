@@ -311,7 +311,7 @@ Mỗi dòng = một sản phẩm / nhóm hàng cần khảo sát. Bảng tóm t�
 - Bắt buộc: —
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Hệ thống tự đặt `true` khi tạo PYC lần đầu; NSTM/QL có thể đổi thủ công qua `PATCH /{id}/lines/{line_id}/status` (quyền `write`)
-- Logic đặc biệt: Khi `true`: hiển thị badge "Hoàn thành" (xanh lá); không thêm/xóa option được (`add_option_` kiểm tra và trả HTTP 400). Lưu ý: cờ `is_completed = True` chỉ đánh dấu "đã từng tạo YCMH" — KHÔNG còn ngăn tạo thêm YCMH lần sau (tái sử dụng dòng). Đồng bộ với `line_status`: `line_status = "hoan_thanh"` kéo `is_completed = true` và ngược lại.
+- Logic đặc biệt: Khi `true`: hiển thị badge "Hoàn thành" (xanh lá); không thêm/xóa option được (`add_option_` kiểm tra và trả HTTP 400). Lưu ý: cờ `is_completed = True` chỉ đánh dấu "đã từng tạo YCMH" — KHÔNG còn ngăn tạo thêm YCMH lần sau (tái sử dụng dòng). Đồng bộ với `line_status`: `line_status = "completed"` kéo `is_completed = true` và ngược lại.
 
 ### 15. Mã yêu cầu dòng (`internal_line_code`)
 
@@ -326,11 +326,11 @@ Mỗi dòng = một sản phẩm / nhóm hàng cần khảo sát. Bảng tóm t�
 
 - Kiểu nhập: Hệ thống — thay đổi qua endpoint `PATCH /{id}/lines/{line_id}/line-status`
 - Mặc định: `""` (chưa xác định)
-- Giá trị cho phép: `""` / `"can_khao_sat_lai"` / `"hoan_thanh"`
+- Giá trị cho phép: `""` / `"resurvey"` / `"completed"`
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người YC hoặc cùng phòng ban người YC (`_can_act_as_requester_side`) hoặc Admin TM (quyền `delete`). Chặn khi phiếu ở trạng thái `cancelled` / `done`.
-- Logic đặc biệt: Nằm trong `_LINE_PUBLIC_FIELDS` — người YC được xem. Đồng bộ hai chiều với `is_completed`: `"hoan_thanh"` đặt `is_completed = true`; `""` / `"can_khao_sat_lai"` đặt `is_completed = false`. Khi đặt `"can_khao_sat_lai"`: tự hủy chọn (`is_chosen = false`) mọi option của dòng; nếu phiếu đang `survey_done` thì hạ về `processing`. Khi chọn một phương án (PA): tự gỡ cờ `can_khao_sat_lai` về `""`. Chốt `"hoan_thanh"` yêu cầu dòng phải có option đang được chọn (`is_chosen = true`). Badge trên FE tính theo ưu tiên: `line_status == "hoan_thanh"` hoặc `is_completed` → "Hoàn thành"; `line_status == "can_khao_sat_lai"` → "Cần khảo sát lại"; `has_chosen` → "Đã chọn PA"; `option_count > 0` → "Đã khảo sát"; còn lại → "Chưa xong".
+- Logic đặc biệt: Nằm trong `_LINE_PUBLIC_FIELDS` — người YC được xem. Đồng bộ hai chiều với `is_completed`: `"completed"` đặt `is_completed = true`; `""` / `"resurvey"` đặt `is_completed = false`. Khi đặt `"resurvey"`: tự hủy chọn (`is_chosen = false`) mọi option của dòng; nếu phiếu đang `survey_done` thì hạ về `processing`. Khi chọn một phương án (PA): tự gỡ cờ `resurvey` về `""`. Chốt `"completed"` yêu cầu dòng phải có option đang được chọn (`is_chosen = true`). **CR-077:** badge trên màn chi tiết KHÔNG còn do FE tự tính — backend nhét sẵn `progress_state` + `progress_tone` vào payload (`_out` và `/result`), dùng chung đúng bộ 9 nhãn của màn Tiến độ báo giá (xem §H và `survey_request/line_state.py`). Trước CR-077 FE tự suy 5 nhãn riêng, lại coi `is_completed` là "Hoàn thành" trong khi cờ đó chỉ nghĩa "đã TỪNG tạo YCMH" — nên dòng vừa tạo YCMH bị gắn nhãn Hoàn thành sai.
 
 ### 17. Không có phương án phù hợp (`no_option`)
 
@@ -340,6 +340,15 @@ Mỗi dòng = một sản phẩm / nhóm hàng cần khảo sát. Bảng tóm t�
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Hệ thống — đặt `true` khi NSTM gửi `empty_line_ids` chứa `line_id` này; đặt về `false` khi sau đó có option được gắn vào dòng
 - Logic đặc biệt: Nằm trong `_LINE_PUBLIC_FIELDS` — người YC được xem. FE hiển thị banner "Không có phương án phù hợp (đã chốt rỗng) — sản phẩm này không mua được từ phiếu khảo sát" thay cho danh sách option. Dòng được chốt rỗng được tính là "xong" trong `complete_sr` — phiếu vẫn chuyển `survey_done` khi mọi dòng hoặc có option hoặc `no_option = true`.
+
+### 18. Ngày trả kết quả thực tế (`result_date`) — CR-075
+
+- Kiểu nhập: Hệ thống — không có ô nhập, không sửa tay được
+- Mặc định: trống
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: đi cặp với `result_due_date` (mục 2) để đo trễ hạn
+- Người sửa: Hệ thống — đóng mốc trong `complete_sr` (`_stamp_result_date`) khi NSTM bấm **"Chốt khảo sát"**, cho cả hai nhánh: dòng có phương án và dòng **chốt rỗng** (chốt rỗng cũng là đã trả kết quả — "khảo sát rồi, không có NCC phù hợp")
+- Logic đặc biệt: **Ghi MỘT LẦN duy nhất.** Dòng bị trả về `resurvey` rồi chốt lần hai **không** ghi đè mốc cũ — nếu ghi đè thì mọi dấu trễ hạn của lần đầu bị xóa sạch chỉ bằng một lần khảo sát lại. Ngày lấy theo **giờ Việt Nam** (`VN_OFFSET`) vì container chạy UTC. Dữ liệu cũ đã backfill bằng `backend/scripts/backfill_result_date_cr075.py` (dòng có phương án → ngày tạo phương án sớm nhất; dòng chốt rỗng → `updated_at`; còn lại để trống) — đây là mốc **suy đoán**, phiếu nhập từ Excel lịch sử mang ngày nhập liệu.
 
 ---
 
@@ -594,7 +603,7 @@ Dữ liệu trong bảng này được dùng để:
 
 10. Nút "Lấy từ khảo sát" (`POST /{id}/sync-options`): hàm `sync_options_from_surveys` tìm mọi Phiếu khảo sát (`status` bất kỳ trừ `cancelled`) đã liên kết YCBG qua `survey.survey_request_id = sid`, lấy dòng SP `line_approve = "Đã duyệt"`, khớp `item_group` với dòng YCBG để gắn option. Nếu YCBG chỉ có 1 dòng nhưng phân loại không khớp thì cũng tự gắn vào dòng đó. Bỏ qua dòng đã có option nguồn đó. Trả về số option mới thêm. Chỉ hoạt động khi `status = processing` hoặc `survey_done`. (Lưu ý: frontend chỉ hiện nút "Lấy từ khảo sát" khi `processing`, nhưng backend cho phép cả `survey_done`.)
 
-11. Chốt hoàn thành khảo sát (`POST /{id}/complete`, chấp nhận `processing` hoặc `survey_done`): Backend validate rằng các dòng người gọi phụ trách (`my_lines`) đều có ít nhất 1 option HOẶC được "chốt rỗng" (`no_option = true`). Body tùy chọn: `{empty_line_ids: [...]}` — danh sách dòng chưa có option nhưng NSTM muốn chốt rỗng (không có NCC phù hợp). Phiếu chuyển `survey_done` chỉ khi TẤT CẢ dòng (mọi NSTM) đã có option hoặc được chốt rỗng; nếu còn dòng của NSTM khác chưa xong thì phiếu giữ nguyên `processing`. Quản lý/Admin TM (scope `all`) và người tạo phiếu validate toàn bộ dòng cùng lúc. Frontend kiểm tra thêm trước khi gọi API: mọi option hiển thị phải có `system_product_code`. Khi phiếu chuyển sang `survey_done`, gửi thông báo cho người YC (phân biệt 2 nội dung: "Khảo sát xong" vs "Đã khảo sát lại" nếu có dòng vừa khảo sát lại sau cờ `can_khao_sat_lai`).
+11. Chốt hoàn thành khảo sát (`POST /{id}/complete`, chấp nhận `processing` hoặc `survey_done`): Backend validate rằng các dòng người gọi phụ trách (`my_lines`) đều có ít nhất 1 option HOẶC được "chốt rỗng" (`no_option = true`). Body tùy chọn: `{empty_line_ids: [...]}` — danh sách dòng chưa có option nhưng NSTM muốn chốt rỗng (không có NCC phù hợp). Phiếu chuyển `survey_done` chỉ khi TẤT CẢ dòng (mọi NSTM) đã có option hoặc được chốt rỗng; nếu còn dòng của NSTM khác chưa xong thì phiếu giữ nguyên `processing`. Quản lý/Admin TM (scope `all`) và người tạo phiếu validate toàn bộ dòng cùng lúc. Frontend kiểm tra thêm trước khi gọi API: mọi option hiển thị phải có `system_product_code`. Khi phiếu chuyển sang `survey_done`, gửi thông báo cho người YC (phân biệt 2 nội dung: "Khảo sát xong" vs "Đã khảo sát lại" nếu có dòng vừa khảo sát lại sau cờ `resurvey`).
 
 12. Tạo YCMH (`POST /{id}/create-prs`): Được phép gọi khi phiếu ở trạng thái `processing`, `survey_done`, `pr_created`, hoặc `done`. Gom option đang được chọn (`is_chosen = true`) theo `supplier_code` → mỗi NCC 1 PYC Nháp. Mỗi dòng YCMH lấy `qty` từ `request_qty` của dòng khảo sát, `price` từ `snap_price_by_volume`, **`vat_pct` từ `snap_vat`** và `amount = qty × price × (1 + vat_pct/100)` (gồm VAT — cùng công thức với khi lập YCMH bằng tay). Bước chép VAT được bổ sung ở **CR-058**; trước đó dòng nhận 0% và `amount` thiếu thuế. Sau khi tạo: option tự bỏ chọn (`is_chosen = false`); dòng cập nhật `pr_id`/`pr_code` (YCMH gần nhất) và `is_completed = true` (cờ "đã từng tạo"); ghi bản ghi vào `tab_survey_request_pr`. Cờ `is_completed` KHÔNG ngăn tạo thêm YCMH lần sau — người YC chọn lại option và bấm "Tạo yêu cầu mua" lần nữa là được (tái sử dụng dòng, mua lại). Chỉ nâng status `survey_done → pr_created`; không thay đổi nếu phiếu đang `pr_created` / `done`. Ghi vào bảng `tab_survey_request_pr` để theo dõi toàn bộ lịch sử YCMH. Chỉ người YC (`created_by` hoặc `requester_id == user.employee_id`) hoặc Admin TM (quyền `delete`) được gọi.
 
@@ -619,7 +628,7 @@ Dữ liệu trong bảng này được dùng để:
 | Trả đơn (`reject` → `rejected`) | Người tạo |
 | Từ chối (`cancel` → `cancelled`) | Người tạo |
 | Chốt hoàn thành khảo sát lần đầu (`complete` → `survey_done`) | Người tạo (nội dung: "Kết quả khảo sát đã sẵn sàng — vào chọn phương án") |
-| Chốt khảo sát lại (`complete` sau `can_khao_sat_lai`) | Người tạo (nội dung: "NSTM đã khảo sát lại N dòng — vào chọn lại phương án") |
+| Chốt khảo sát lại (`complete` sau `resurvey`) | Người tạo (nội dung: "NSTM đã khảo sát lại N dòng — vào chọn lại phương án") |
 | Tạo YCMH từ phương án (`create-prs`) | Quản lý TM + Admin TM |
 | Chuyển Hoàn thành (`finalize`) | Người tạo |
 
@@ -679,11 +688,15 @@ Nút **"Xuất Excel"** trên thanh công cụ màn danh sách YCBG, chỉ hiệ
   file. Dòng chưa chốt phương án thì cụm phương án để trống.
 
 **Bộ cột**: cụm dòng yêu cầu (STT dòng · Mã dòng nội bộ · Phân loại · Thông số kỹ thuật · Yêu cầu khác ·
-SL dự kiến · ĐVT · Giá đề xuất · Ngày tiếp nhận · Hạn trả kết quả · NSTM phụ trách · Trạng thái dòng ·
-Mã YCMH đã tạo) rồi tới cụm phương án chốt (Phương án chốt · Mã/Tên NCC · Mã SP theo NCC ·
+SL dự kiến · ĐVT · Giá đề xuất · Ngày tiếp nhận · Hạn trả kết quả · NSTM phụ trách ·
+Trạng thái dòng) rồi tới cụm phương án chốt (Phương án chốt · Mã/Tên NCC · Mã SP theo NCC ·
 Mã SP hệ thống · Tên SP báo giá · Quy cách · Xuất xứ · ĐVT báo giá · SL tối thiểu · Đơn giá báo ·
 Khoảng SL áp giá · %VAT · Thời gian giao · Nơi giao · Phí vận chuyển · Có mẫu · Kết quả kiểm nghiệm ·
 Ghi chú NSTM).
+
+**KHÔNG có cột "Mã YCMH đã tạo" (CR-079).** Một dòng khảo sát tạo được nhiều YCMH (mua lại) nhưng ô
+`pr_code` trên dòng bị ghi đè nên chỉ còn mã mới nhất — xuất ra file dễ bị đọc nhầm là đủ. Danh sách
+đủ xem trong chi tiết YCBG: bấm vào phương án → popup liệt kê hết YCMH đã tạo.
 
 **ẨN NCC — file Excel không được thành đường rò.** Đúng luật của màn kết quả khảo sát:
 
@@ -700,3 +713,50 @@ Quy ước định dạng file, trần 5.000 dòng/lần xuất và tên file `y
 Quản lý thu mua · Quản trị hệ thống*. Vai trò **"Nhân sự"** (người yêu cầu thường) **KHÔNG** được xuất —
 muốn cho ai đó xuất thì tạo một **vai trò riêng** chỉ tick ô "Xuất" của màn tương ứng rồi gán thêm cho
 người đó. Vai trò **tự tạo tay** cũng phải tick ô "Xuất" mới thấy nút.
+
+---
+
+## H. Màn "Tiến độ báo giá" (CR-075)
+
+Đường dẫn `/survey-progress`, menu **Mua hàng → Tiến độ báo giá**. Là màn song sinh của
+**Tiến độ mua hàng** nhưng đọc chuỗi Yêu cầu báo giá. Endpoint `GET /api/survey-progress`
+(module `app/modules/survey_progress/` — **không** dùng chung code với `purchase_progress/`).
+
+**Đơn vị một hàng = MỘT DÒNG yêu cầu**, kèm phương án đã chốt của dòng đó. Khác Tiến độ mua hàng
+ở chỗ này: bên kia nở theo LẦN GIAO, bên này **không** nở theo phương án — dòng có 5 phương án
+vẫn là một hàng, vì thứ cần theo dõi là "dòng này khảo sát tới đâu rồi", không phải "có mấy báo giá".
+
+**Ba cột tính** — phần giá trị riêng của màn này, không có trong màn danh sách YCBG:
+
+| Cột | Cách tính |
+|---|---|
+| **Trễ (ngày)** | Đã trả kết quả: `result_date − result_due_date`. **Chưa trả mà đã quá hạn: `hôm nay − result_due_date`** (đang trễ, số còn tăng). Trả sớm/đúng hạn/không có hạn → để trống; **không hiện số âm** vì cột này để soi việc trễ |
+| **Số ngày xử lý** | `result_date − received_date`; thiếu một trong hai mốc → để trống |
+| **Tiến độ dòng** | Suy từ dữ liệu đang có, **không lưu cột riêng**. Nguồn duy nhất: `survey_request/line_state.py` — **cả màn chi tiết YCBG cũng dùng chung** (CR-077). Xếp từ mốc xa nhất về gần: **Hoàn thành** › Đã tạo YCMH › Cần khảo sát lại › Đã chọn phương án › Chốt rỗng › Đã trả kết quả › Đang khảo sát › Đã tiếp nhận › Chưa tiếp nhận. **Hoàn thành là điểm cuối** (CR-077, trước đó thua "Đã tạo YCMH"): một dòng tạo được YCMH nhiều lần khi mua lại, nên `pr_code` không khép dòng; chỉ khi người YC chốt hoàn thành thì dòng mới thật sự xong |
+
+**KHÔNG có cột "Mã YCMH" (CR-079).** Một dòng khảo sát tạo được **nhiều** YCMH (mua lại) — hệ thống lưu đủ ở `tab_survey_request_pr`, nhưng ô `pr_code` trên dòng bị ghi đè mỗi lần tạo nên chỉ còn mã **mới nhất**. Hiện một mã mà người đọc tưởng là đủ thì nguy hơn không hiện, nên cột này đã bỏ khỏi cả bảng lẫn file Excel. Muốn xem đủ: mở chi tiết YCBG, bấm vào phương án → popup liệt kê hết YCMH đã tạo. Ô tìm kiếm vẫn khớp mã YCMH nên gõ mã vẫn tra ra dòng.
+
+**Bộ lọc (CR-080, CR-081)**: thanh lọc cố định còn 6 ô cơ bản — **Công ty · Bộ phận · Tiến độ dòng ·
+Trễ hạn · Ngày tiếp nhận (khoảng) · Tìm kiếm** (từ khóa khớp mã YCBG · mục đích · phân loại ·
+thông số · mã YCMH). "Tiến độ dòng" và "Trễ hạn" bắt buộc ở lại vì là cột TÍNH, không có cột DB
+tương ứng nên bộ lọc điều kiện không làm được; Bộ phận và khoảng Ngày tiếp nhận ở lại cho song
+song với màn Tiến độ mua hàng (CR-081). Mọi cột còn lại (phân loại, NSTM, trạng thái phiếu, trạng
+thái dòng, hạn/ngày trả kết quả, số lượng, giá đề xuất…) lọc bằng **Bộ lọc điều kiện** — nút ở cuối thanh lọc, chọn trường + phép so
+sánh (chứa, bằng, khác, lớn/nhỏ hơn, trong khoảng, đang trống…), nhiều điều kiện nối VÀ / HOẶC.
+Thay cho ô "chưa trả kết quả" cũ: chọn trường **Ngày trả kết quả** + phép **đang trống**. Người
+không có `supplier.read` thì cụm NCC không xuất hiện trong danh sách trường, đúng như cột bị ẩn.
+Lọc theo **Tiến độ dòng** được dịch sang SQL bám đúng thứ tự ưu tiên ở trên — mỗi nhãn là
+"khớp mốc của mình VÀ không khớp mốc nào xa hơn", nên chín nhãn chia trọn số dòng, không trùng không
+sót. Sắp xếp tại server theo cột thật; ba cột tính ở trên **không sort được** vì giá trị không nằm
+trong DB (sort trên trang đang xem thì làm ở trình duyệt).
+
+**Xuất Excel**: `GET /api/survey-progress/export/xlsx`, gate ở hành động **`export`** trên
+`survey_request`, xuất đúng bộ lọc + đúng cột đang hiện, trần 5.000 dòng, tên file
+`tien-do-bao-gia-DDMMYYYY.xlsx`.
+
+**Phân quyền — hai cờ RỜI, đừng gộp** (bài học CR-071):
+
+| Cờ | Quyết định |
+|---|---|
+| `survey_request.read` | Vào được màn hay không, và **phạm vi dữ liệu** (qua `apply_scope`). NSTM chỉ thấy dòng mình phụ trách — điều kiện dòng dịch nguyên từ `_see_all_lines` / `can_process_line` sang SQL |
+| `supplier.read` | Cụm cột NCC (Mã/Tên NCC · Mã SP theo NCC · Ghi chú NSTM · Mã dòng nội bộ) hiện hay **bị gỡ khỏi dữ liệu** — gỡ ở API chứ không chỉ ẩn cột, để màn tiến độ không thành đường rò danh tính nhà cung cấp |

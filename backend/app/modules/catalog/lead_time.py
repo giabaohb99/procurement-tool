@@ -5,6 +5,7 @@ Luật chốt với khách (CR-065): mặc định LUÔN lấy mốc DÀI NHẤT
 lúc tạo phiếu/đơn chưa ai chắc NCC còn hàng; thiếu mốc đó thì lùi về mốc "có sẵn", thiếu cả hai
 thì 15 ngày. Đây chỉ là GIÁ TRỊ KHỞI TẠO: người dùng sửa lại được và hệ thống không ép đồng bộ.
 """
+import unicodedata
 from datetime import date, timedelta
 
 from sqlalchemy.orm import Session
@@ -19,16 +20,30 @@ def _int(x) -> int:
     return int("".join(ch for ch in str(x or "") if ch.isdigit()) or 0)
 
 
+def norm_group(name: str) -> str:
+    """Khóa tra cứu phân loại: bỏ dấu cách thừa, KHÔNG phân biệt chữ hoa/thường (CR-083).
+
+    Phân loại trên sản phẩm là chuỗi tự do do nhiều đợt nhập liệu để lại, nên viết lệch hoa/thường
+    so với danh mục là chuyện thường ("Nhãn thùng" vs "Nhãn Thùng" — 1125 sản phẩm trên prod).
+    Trước đây tra khớp tuyệt đối nên các dòng đó âm thầm rơi về 15 ngày, sai ngày QĐ và sai cờ
+    Đơn gấp. Chuẩn hóa Unicode về NFC để "ã" tổ hợp và "ã" dựng sẵn cùng ra một khóa.
+    """
+    return " ".join(unicodedata.normalize("NFC", str(name or "")).lower().split())
+
+
 def std_days_map(db: Session) -> dict[str, int]:
-    """{tên phân loại: số ngày QĐ} — đã áp luật "lấy mốc dài nhất, thiếu thì 15 ngày"."""
-    return {(g.name or "").strip():
+    """{tên phân loại đã chuẩn hóa: số ngày QĐ} — luật "lấy mốc dài nhất, thiếu thì 15 ngày".
+
+    Khóa đã qua `norm_group` nên chỉ được tra bằng `std_days_of`, đừng tra thẳng bằng tên gốc.
+    """
+    return {norm_group(g.name):
             (_int(g.std_days_unavail) or _int(g.std_days) or DEFAULT_STD_DAYS)
             for g in db.query(ItemGroup).all()}
 
 
 def std_days_of(m: dict[str, int], item_group: str) -> int:
     """Số ngày QĐ của 1 phân loại; phân loại lạ/để trống cũng ra mốc mặc định."""
-    return m.get((item_group or "").strip(), DEFAULT_STD_DAYS) or DEFAULT_STD_DAYS
+    return m.get(norm_group(item_group), DEFAULT_STD_DAYS) or DEFAULT_STD_DAYS
 
 
 def add_days(base: str, days: int) -> str:

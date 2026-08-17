@@ -3,6 +3,12 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
 
+# Trạng thái DÒNG khảo sát — lưu bằng slug tiếng Anh cho khớp cột `status` của cùng bảng
+# (draft/submitted/approved/...). Nhãn tiếng Việt để ở tầng hiển thị, xem LINE_STATUS_LABEL.
+LS_RESURVEY = "resurvey"      # cần khảo sát lại
+LS_COMPLETED = "completed"    # hoàn thành
+LINE_STATUSES = ("", LS_RESURVEY, LS_COMPLETED)
+
 
 class SurveyRequest(Base, AuditMixin):
     """Phiếu YÊU CẦU KHẢO SÁT (Task 5). Người YC lập để nhờ thu mua khảo sát sản phẩm/NCC,
@@ -37,6 +43,10 @@ class SurveyRequestLine(Base, AuditMixin):
     internal_line_code: Mapped[str] = mapped_column(String(50), default="")  # mã yêu cầu dòng (auto, KHÔNG hiện với người YC)
     received_date: Mapped[str] = mapped_column(String(10), default="")
     result_due_date: Mapped[str] = mapped_column(String(10), default="")
+    # CR-075: ngày NSTM TRẢ kết quả khảo sát cho dòng này (lúc bấm "Chốt khảo sát" — có phương án
+    # hoặc chốt rỗng). Đi cặp với `result_due_date` để đo trễ hạn ở màn Tiến độ báo giá.
+    # Ghi MỘT LẦN, lần chốt đầu tiên; khảo sát lại KHÔNG ghi đè (giữ mốc gốc để không xóa dấu trễ).
+    result_date: Mapped[str] = mapped_column(String(10), default="")
     department_requester: Mapped[str] = mapped_column(String(255), default="")  # BP/Người YC
     item_group: Mapped[str] = mapped_column(String(100), default="", index=True)  # phân loại
     requirement_detail: Mapped[str] = mapped_column(Text, default="")        # thông số kỹ thuật & chất lượng
@@ -50,8 +60,8 @@ class SurveyRequestLine(Base, AuditMixin):
     pr_code: Mapped[str] = mapped_column(String(50), default="")
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
     # Trạng thái dòng do người YC / phòng ban YC cập nhật (Task 2):
-    #   "" chưa xác định · "can_khao_sat_lai" cần khảo sát lại · "hoan_thanh" hoàn thành
-    # Đồng bộ: is_completed = (line_status == "hoan_thanh").
+    #   "" chưa xác định · LS_RESURVEY cần khảo sát lại · LS_COMPLETED hoàn thành
+    # Đồng bộ: is_completed = (line_status == LS_COMPLETED).
     line_status: Mapped[str] = mapped_column(String(30), default="", index=True)
     no_option: Mapped[bool] = mapped_column(Boolean, default=False)           # chốt rỗng: khảo sát nhưng không có phương án phù hợp
 

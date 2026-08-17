@@ -6,6 +6,10 @@ import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
 import DateRangePicker from '../components/DateRangePicker'
 import FilterPanel, { FilterItem } from '../components/FilterPanel'
+import {
+  ConditionalFilter, ConditionalFilterButton, RestQueryParams,
+} from '../components/conditional-filter'
+import { purchaseProgressCondFilters } from '../config/conditional-filters'
 import Pagination from '../components/Pagination'
 import { fmtDate } from '../utils/datetime'
 import TableHead, { TableCells, TableColGroup } from '../components/TableHead'
@@ -30,11 +34,20 @@ const PG_COLOR: Record<string, string> = {
 }
 const PG_OPTS = Object.keys(PG_COLOR)
 
-/** Bộ lọc rỗng — dùng cho khởi tạo và nút "Xóa lọc" */
+/** Bộ lọc rỗng — dùng cho khởi tạo và nút "Xóa lọc".
+ *
+ *  CR-080: thanh lọc rút về mấy ô CƠ BẢN, phần còn lại (tháng, khoảng ngày nhận, NSPT, NCC,
+ *  số lượng, tiền…) chuyển sang BỘ LỌC ĐIỀU KIỆN vì ở đó lọc được cả "trước ngày", "trong
+ *  khoảng", "đang trống"… Backend VẪN đọc các param cũ (`month`, `received_date_from`…) cho ai
+ *  gọi API trực tiếp, chỉ là màn hình không còn ô nhập cho chúng.
+ *
+ *  Giữ lại `status` (tiến độ dòng) và `recv_state` vì đó là hai câu hỏi người dùng vào màn này
+ *  để trả lời; riêng `recv_state` là cột TÍNH (tổng SL nhận của mọi lần giao) nên bộ lọc điều
+ *  kiện không làm được. `department` + khoảng `order_date` giữ ở ngoài (CR-081) vì đây là hai
+ *  lát cắt dùng gần như mọi lần mở màn — bắt người dùng dựng điều kiện cho chúng là phiền. */
 const EMPTY_FILTERS = {
-  company_id: '', department: '', month: '', status: '', q: '',
-  order_date_from: '', order_date_to: '', received_date_from: '', received_date_to: '',
-  recv_state: '',
+  company_id: '', department: '', status: '', q: '', recv_state: '',
+  order_date_from: '', order_date_to: '',
 }
 const pgBadge = (s: string) =>
   <span className="badge" style={{ background: (PG_COLOR[s] || '#94a3b8') + '22', color: PG_COLOR[s] || '#64748b', whiteSpace: 'nowrap' }}>{s || '—'}</span>
@@ -141,6 +154,11 @@ export default function PurchaseProgress() {
   const [sortBy, setSortBy] = useState('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [f, setF] = useUrlFilters<any>({ ...EMPTY_FILTERS })
+  // Điều kiện từ BỘ LỌC ĐIỀU KIỆN — thêm ref để load()/exportXlsx đọc được giá trị mới nhất
+  const [condParams, setCondParams] = useState<RestQueryParams>({})
+  const condRef = useRef<RestQueryParams>({})
+  condRef.current = condParams
+  const condFields = useMemo(() => purchaseProgressCondFilters(showSupplier), [showSupplier])
   const setFilter = (k: string, v: any) => { setF((s: any) => ({ ...s, [k]: v })); setPage(1) }
 
   function handleSort(key: string) {
@@ -148,17 +166,23 @@ export default function PurchaseProgress() {
     setSortBy(key); setSortDir(nextDir); setPage(1)
   }
 
-  async function load() {
-    const p: any = { page, page_size: pageSize }
+  /** Tham số gửi lên backend — dùng chung cho danh sách và xuất Excel để hai bên luôn khớp */
+  function queryParams() {
+    const p: any = { ...condRef.current }
     Object.entries(f).forEach(([k, v]) => { const val = typeof v === 'string' ? v.trim() : v; if (val) p[k] = val })
     if (sortBy) { p.sort_by = sortBy; p.sort_dir = sortDir }
-    const r = await api.get('/api/purchase-progress', { params: p })
+    return p
+  }
+
+  async function load() {
+    const r = await api.get('/api/purchase-progress', { params: { ...queryParams(), page, page_size: pageSize } })
     const d = r.data.data
     setRows(d.items); setTotal(d.total); setShowSupplier(d.show_supplier)
   }
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items))
-    api.get('/api/departments', { params: { page_size: 500 } }).then((r) => setDepartments(r.data.data.items)).catch(() => {})
+    api.get('/api/departments', { params: { page_size: 500 } })
+      .then((r) => setDepartments(r.data.data.items)).catch(() => {})
   }, [])
 
   // Tự tìm khi đổi filter (debounce) / đổi trang / đổi sort
@@ -168,7 +192,10 @@ export default function PurchaseProgress() {
     timer.current = setTimeout(load, 300)
     return () => clearTimeout(timer.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f, page, pageSize, sortBy, sortDir])
+  }, [f, condParams, page, pageSize, sortBy, sortDir])
+
+  // Đổi điều kiện lọc thì về trang 1, kẻo đang ở trang 5 mà kết quả mới chỉ có 2 trang -> bảng rỗng
+  useEffect(() => { setPage(1) }, [condParams])
 
   const companyName = (cid: number) => companies.find((c) => c.id === cid)?.name || '—'
 
@@ -194,9 +221,7 @@ export default function PurchaseProgress() {
    *  nên xuất theo kết quả lọc (backend chặn ở 5.000 dòng). */
   async function exportXlsx() {
     try {
-      const p: any = {}
-      Object.entries(f).forEach(([k, v]) => { const val = typeof v === 'string' ? v.trim() : v; if (val) p[k] = val })
-      if (sortBy) { p.sort_by = sortBy; p.sort_dir = sortDir }
+      const p = queryParams()
       p.cols = table.columns.map((c) => c.key).join(',')
       const r = await api.get('/api/purchase-progress/export/xlsx', { params: p, responseType: 'blob' })
       const cd = String(r.headers['content-disposition'] || '')
@@ -235,7 +260,9 @@ export default function PurchaseProgress() {
         </div>
       </div>
 
-      <FilterPanel onClear={() => setF({ ...EMPTY_FILTERS })} canClear={Object.values(f).some((v) => v)}>
+      <ConditionalFilter fields={condFields} onChange={setCondParams}>
+      <FilterPanel onClear={() => setF({ ...EMPTY_FILTERS })} canClear={Object.values(f).some((v) => v)}
+                   extra={<ConditionalFilterButton />}>
         <FilterItem label="Công ty">
           <SearchSelect value={f.company_id} placeholder="Tất cả"
             options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
@@ -246,35 +273,28 @@ export default function PurchaseProgress() {
             options={departments.map((d) => ({ value: d.name, label: d.name }))}
             onChange={(v) => setFilter('department', v)} />
         </FilterItem>
-        <FilterItem label="Tìm kiếm" grow>
-          <input value={f.q} placeholder="Mã ĐMH / PYC / mã, tên SP…" onChange={(e) => setFilter('q', e.target.value)} />
-        </FilterItem>
-
-        <FilterItem label="Tháng (đặt hàng)" width={150} secondary active={!!f.month}>
-          <input type="month" value={f.month} onChange={(e) => setFilter('month', e.target.value)} />
-        </FilterItem>
-        <FilterItem label="Trạng thái tiến độ" secondary active={!!f.status}>
+        <FilterItem label="Trạng thái tiến độ">
           <SearchSelect value={f.status} placeholder="Tất cả"
             options={PG_OPTS.map((s) => ({ value: s, label: s }))}
             onChange={(v) => setFilter('status', v)} />
         </FilterItem>
-        <FilterItem label="Tình trạng nhận" width={200} secondary active={!!f.recv_state}>
+        <FilterItem label="Tình trạng nhận" width={200}>
           <select value={f.recv_state} onChange={(e) => setFilter('recv_state', e.target.value)}>
             <option value="">Tất cả</option>
             <option value="unreceived">Chưa giao (SL nhận = 0)</option>
             <option value="under">Chưa đủ (nhận &lt; đặt)</option>
-            <option value="full">Đã đủ (nhận ≥ đặt)</option>
+            <option value="full">Đã đủ (nhận &ge; đặt)</option>
           </select>
         </FilterItem>
-        <FilterItem label="Ngày đặt hàng" width={260} secondary active={!!(f.order_date_from || f.order_date_to)}>
+        <FilterItem label="Ngày đặt hàng" width={260} active={!!(f.order_date_from || f.order_date_to)}>
           <DateRangePicker block value={{ from: f.order_date_from, to: f.order_date_to }}
             onChange={(v) => { setF((s: any) => ({ ...s, order_date_from: v.from, order_date_to: v.to })); setPage(1) }} />
         </FilterItem>
-        <FilterItem label="Ngày nhận" width={260} secondary active={!!(f.received_date_from || f.received_date_to)}>
-          <DateRangePicker block value={{ from: f.received_date_from, to: f.received_date_to }}
-            onChange={(v) => { setF((s: any) => ({ ...s, received_date_from: v.from, received_date_to: v.to })); setPage(1) }} />
+        <FilterItem label="Tìm kiếm" grow>
+          <input value={f.q} placeholder="Mã ĐMH / PYC / mã, tên SP…" onChange={(e) => setFilter('q', e.target.value)} />
         </FilterItem>
       </FilterPanel>
+      </ConditionalFilter>
 
       <div className="card table-card">
         <TableToolbar {...table} onRefresh={load} />

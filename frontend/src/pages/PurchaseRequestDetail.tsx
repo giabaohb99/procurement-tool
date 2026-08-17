@@ -36,14 +36,17 @@ const PRICE_DECIMALS = 4
 const fmtPriceBlank = (n: any) => { const v = Number(n || 0); return v ? v.toLocaleString('vi-VN', { maximumFractionDigits: PRICE_DECIMALS }) : '' }
 const fmtVND = (n: any) => Math.round(Number(n) || 0).toLocaleString('vi-VN')
 const fmtVNDBlank = (n: any) => { const v = Math.round(Number(n) || 0); return v ? v.toLocaleString('vi-VN') : '' }
-const LINE_STATUS = ['Chưa đặt hàng', 'Đã đặt hàng', 'Đã nhận hàng', 'Hoàn thành', 'Hủy đơn']
+// CR-074: "Chưa tạo đơn mua hàng" = chưa ai lập ĐMH cho dòng này;
+// "Chưa đặt hàng" = đã có ĐMH (kể cả đơn còn Nháp) nhưng chưa bấm đặt hàng.
+const LS_NO_PO = 'Chưa tạo đơn mua hàng'
+const LINE_STATUS = [LS_NO_PO, 'Chưa đặt hàng', 'Đã đặt hàng', 'Đã nhận hàng', 'Hoàn thành', 'Hủy đơn']
 const LS_COLOR: Record<string, string> = {
-  'Chưa đặt hàng': '#94a3b8', 'Đã đặt hàng': '#00AEEF',
+  [LS_NO_PO]: '#94a3b8', 'Chưa đặt hàng': '#d97706', 'Đã đặt hàng': '#00AEEF',
   'Đã nhận hàng': '#0d9488', 'Hoàn thành': '#16a34a', 'Hủy đơn': '#b91c1c',
 }
 const emptyItem = {
   product_code: '', product_name: '', item_group: '', group_desc: '', qty: 0, unit: '',
-  price: 0, vat_pct: 8, warehouse: '', required_date: '', assignee: '', line_status: 'Chưa đặt hàng', progress_note: '', note: '',
+  price: 0, vat_pct: 8, warehouse: '', required_date: '', assignee: '', line_status: LS_NO_PO, progress_note: '', note: '',
   qty_ordered: 0, qty_received: 0,
 }
 // Hằng số dùng chung cho dòng CHƯA có ảnh chờ: phải là CÙNG một mảng qua mọi lần render,
@@ -63,16 +66,22 @@ function daysBetween(a: string, b: string): number | null {
 
 // Đơn gấp = có ≥1 dòng mà thời gian chuẩn bị (ngày cần hàng − ngày tiếp nhận phiếu) NHỎ HƠN số ngày
 // QĐ của phân loại VTBB/NL — mốc dài nhất (không sẵn hàng), xem utils/lead-time.ts.
-function computeUrgentPR(items: any[], baseDate: string, stdMap: Record<string, number>): boolean {
-  if (!baseDate) return false
+// CR-082: thiếu ĐÚNG MỘT ngày cũng là gấp (không có dung sai); dòng Hủy đơn hoặc chưa nhập ngày
+// cần hàng thì bỏ qua. Khớp urgent_reasons() bên backend — backend mới là nơi chốt cờ lúc lưu.
+// Trả về danh sách dòng vi phạm để nói rõ cho người dùng vì sao phiếu bị đánh dấu gấp.
+function urgentLinesPR(items: any[], baseDate: string, stdMap: Record<string, number>): string[] {
+  if (!baseDate) return []
+  const out: string[] = []
   for (const it of items || []) {
+    if (it.line_status === 'Hủy đơn') continue
     const std = stdDaysOf(stdMap, it.item_group)
     if (std <= 0) continue
     const lead = daysBetween(it.required_date, baseDate)
-    if (lead === null) continue
-    if (lead < std) return true
+    if (lead === null || lead >= std) continue
+    out.push(`${it.product_name || it.product_code || 'Dòng hàng'}: cần sau ${lead} ngày, `
+      + `phân loại "${it.item_group || 'chưa chọn'}" quy định ${std} ngày`)
   }
-  return false
+  return out
 }
 
 export default function PurchaseRequestDetail() {
@@ -218,10 +227,12 @@ export default function PurchaseRequestDetail() {
   // (phiếu cũ còn kẹt ở đó từ lúc công tắc còn bật).
   const workableStatuses = pr.dispatch_enabled === false
     ? ['approved', 'dispatched', 'processing'] : ['dispatched', 'processing']
-  // Còn dòng nào chưa đặt hàng → vẫn cho tạo ĐMH (không ẩn khi mới hoàn thành 1 dòng)
-  const hasUnorderedItem = (pr.items || []).some((it: any) => (it.line_status || 'Chưa đặt hàng') === 'Chưa đặt hàng')
+  // Còn dòng nào chưa đặt hàng → vẫn cho tạo ĐMH (không ẩn khi mới hoàn thành 1 dòng).
+  // CR-074: phải tính CẢ hai nhãn "chưa động tới", nếu không thì vừa lập đơn Nháp là nút
+  // "Tạo ĐMH" biến mất, trong khi dòng đó vẫn có thể cần thêm đơn cho NCC khác.
+  const hasUnorderedItem = (pr.items || []).some((it: any) => [LS_NO_PO, 'Chưa đặt hàng'].includes(it.line_status || LS_NO_PO))
   // Chỉ cho Hoàn thành phiếu khi MỌI dòng đã ở điểm cuối (Hoàn thành/Hủy đơn)
-  const allItemsDone = (pr.items || []).length > 0 && (pr.items || []).every((it: any) => ['Hoàn thành', 'Hủy đơn'].includes(it.line_status || 'Chưa đặt hàng'))
+  const allItemsDone = (pr.items || []).length > 0 && (pr.items || []).every((it: any) => ['Hoàn thành', 'Hủy đơn'].includes(it.line_status || LS_NO_PO))
   // Cột/trường "NSTM phụ trách" chỉ cho phía thu mua (is_purchaser = có quyền xử lý khảo sát).
   // Ẩn hoàn toàn với người yêu cầu (NSYC/employee) & trưởng bộ phận của họ (dept_head).
   const showAssigneeCol = can('survey_request', 'process')
@@ -246,18 +257,24 @@ export default function PurchaseRequestDetail() {
   const stdMap = useMemo(() => stdDaysMap(itemGroups), [itemGroups])
   // Ngày QĐ có hàng của 1 dòng = Ngày tiếp nhận phiếu + số ngày QĐ của phân loại
   const qdDate = (itemGroup: string) => regulatedDate(stdMap, itemGroup || '', pr.request_date || '')
-  // Tự tính lại cờ Đơn gấp khi dữ liệu nguồn (ngày tạo / dòng hàng) đổi. KHÔNG chạy lúc mở phiếu (loadAll không qua đây) -> giữ đè tay.
+  // CR-082 — các dòng khiến phiếu thành Đơn gấp (rỗng = không dòng nào vi phạm).
+  const urgentLines = useMemo(() => urgentLinesPR(pr.items || [], pr.request_date || '', stdMap),
+    [pr.items, pr.request_date, stdMap])
+  // Tự tính lại cờ Đơn gấp khi dữ liệu nguồn (ngày tiếp nhận / dòng hàng) đổi. CR-082: chỉ BẬT,
+  // KHÔNG bao giờ tự tắt — bỏ gấp là quyết định của người dùng (backend cũng xử đúng như vậy).
   const recalcUrgent = (next: any) => {
-    if (Object.keys(stdMap).length === 0) return next
-    const u = computeUrgentPR(next.items || [], next.request_date, stdMap)
-    return u === !!next.is_urgent ? next : { ...next, is_urgent: u }
+    if (Object.keys(stdMap).length === 0 || next.is_urgent) return next
+    return urgentLinesPR(next.items || [], next.request_date, stdMap).length
+      ? { ...next, is_urgent: true } : next
   }
-  // Phiếu MỚI: tự tính cờ gấp khi có đủ dữ liệu (kể cả tạo từ khảo sát), sau khi danh mục QĐ nạp xong.
+  // Phiếu còn sửa được (mới / nháp / bị trả lại): có dòng vi phạm thì bật cờ ngay khi mở phiếu và
+  // sau khi danh mục QĐ nạp xong — để ô tick khớp với những gì backend sẽ ghi lúc Lưu. Phiếu đã
+  // duyệt thì giữ nguyên hiển thị, vì ô tick ở đó lưu thẳng qua API.
   useEffect(() => {
-    if (!isNew || Object.keys(stdMap).length === 0) return
-    setPr((s: any) => { const u = computeUrgentPR(s.items || [], s.request_date, stdMap); return s.is_urgent === u ? s : { ...s, is_urgent: u } })
+    if (!editable || urgentLines.length === 0) return
+    setPr((s: any) => (s.is_urgent ? s : { ...s, is_urgent: true }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isNew, stdMap, pr.request_date, pr.items])
+  }, [editable, urgentLines.length])
 
   const setH = (k: string, v: any) =>
     setPr((s: any) => (k === 'request_date' ? recalcUrgent({ ...s, request_date: v }) : { ...s, [k]: v }))
@@ -849,11 +866,18 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Tùy chọn phiếu</label>
-                <div style={{ display: 'flex', gap: 20, alignItems: 'center', height: 40 }}>
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center', minHeight: 40, flexWrap: 'wrap' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', margin: 0, color: 'var(--red)' }}>
                     <input type="checkbox" checked={!!pr.is_urgent} disabled={prLocked} onChange={(e) => toggleUrgent(e.target.checked)} style={{ width: 18, height: 18 }} />
                     Đơn gấp
                   </label>
+                  {/* CR-082 — nói rõ vì sao phiếu bị đánh dấu gấp (danh sách dòng vi phạm ở tooltip) */}
+                  {urgentLines.length > 0 && (
+                    <span style={{ fontSize: 12, color: 'var(--red)' }} title={urgentLines.join('\n')}>
+                      Tự động: {urgentLines.length} dòng có ngày cần hàng sớm hơn thời gian quy định của phân loại
+                      {editable ? ' — hệ thống đánh dấu Đơn gấp khi lưu' : ''}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="form-row">
@@ -875,7 +899,7 @@ export default function PurchaseRequestDetail() {
               {!editable && !isNew && <span style={{ fontSize: 12, color: 'var(--muted)' }}><i className="ti ti-device-floppy" /> Trạng thái tự đồng bộ từ ĐMH · thay đổi phụ trách được lưu tự động</span>}
             </div>
             <div className="items-scroll">
-              <table className="items-table" style={{ minWidth: showAssigneeCol ? 1652 : 1492, tableLayout: 'fixed' }}>
+              <table className="items-table" style={{ minWidth: showAssigneeCol ? 1697 : 1537, tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
                     <th style={{ width: 34, textAlign: 'center' }}>No.</th>
@@ -888,7 +912,8 @@ export default function PurchaseRequestDetail() {
                     <th style={{ width: 100, textAlign: 'right' }}>Đơn giá</th>
                     <th style={{ width: 64, textAlign: 'right' }} title="% VAT theo dòng">VAT%</th>
                     <th style={{ width: 120, textAlign: 'right' }} title="Thành tiền gồm VAT">Thành tiền</th>
-                    <th style={{ width: 150, textAlign: 'center' }}>Trạng thái</th>
+                    {/* CR-078: cột đủ chỗ cho nhãn dài nhất "Chưa tạo đơn mua hàng" (CR-074) — hẹp hơn thì pill tràn đè cột Tiến độ */}
+                    <th style={{ width: 195, textAlign: 'center' }}>Trạng thái</th>
                     <th style={{ width: 118, textAlign: 'center' }} title="Tiến độ: tổng SL đã nhận / tổng SL đã đặt (đồng bộ từ Đơn mua hàng)">Tiến độ<br /><span style={{ fontWeight: 400, fontSize: 10.5, color: 'var(--muted)' }}>nhận / đặt</span></th>
                     <th style={{ width: 130, textAlign: 'center', whiteSpace: 'normal', lineHeight: 1.3 }} title="Ngày dự kiến có hàng (sửa trực tiếp nếu có quyền, hoặc trong Chi tiết dòng)">Ngày dự kiến<br />có hàng</th>
                     {showAssigneeCol && <th style={{ width: 160, textAlign: 'left' }}>NSTM phụ trách</th>}
@@ -963,8 +988,9 @@ export default function PurchaseRequestDetail() {
                         ) : (it.vat_pct != null ? Number(it.vat_pct) + '%' : '')}
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 500 }} title="Thành tiền gồm VAT">{fmtVNDBlank(lineAmount(it))}</td>
-                      <td title="Trạng thái tự đồng bộ từ Đơn mua hàng — không sửa tay">
-                        <span className="badge" style={{ background: (LS_COLOR[it.line_status] || '#94a3b8') + '22', color: LS_COLOR[it.line_status] || '#64748b' }}>{it.line_status || 'Chưa đặt hàng'}</span>
+                      <td style={{ textAlign: 'center' }} title="Trạng thái tự đồng bộ từ Đơn mua hàng — không sửa tay">
+                        {/* badge wrap: nhãn nào dài quá ô thì XUỐNG DÒNG, không tràn sang cột bên cạnh */}
+                        <span className="badge wrap" style={{ background: (LS_COLOR[it.line_status] || '#94a3b8') + '22', color: LS_COLOR[it.line_status] || '#64748b' }}>{it.line_status || LS_NO_PO}</span>
                       </td>
                       <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }} title="SL đã nhận / SL đã đặt (đồng bộ từ Đơn mua hàng)">
                         {(Number(it.qty_ordered) || Number(it.qty_received)) ? (
@@ -1217,7 +1243,7 @@ export default function PurchaseRequestDetail() {
               )}
               <div className="form-row">
                 <label title="Tự đồng bộ từ Đơn mua hàng — không sửa tay">Trạng thái xử lý</label>
-                <div><span className="badge" style={{ background: (LS_COLOR[edit.line_status] || '#94a3b8') + '22', color: LS_COLOR[edit.line_status] || '#64748b' }}>{edit.line_status || 'Chưa đặt hàng'}</span>
+                <div><span className="badge" style={{ background: (LS_COLOR[edit.line_status] || '#94a3b8') + '22', color: LS_COLOR[edit.line_status] || '#64748b' }}>{edit.line_status || LS_NO_PO}</span>
                   <span style={{ fontSize: 11.5, color: 'var(--muted)', marginLeft: 8 }}>tự đồng bộ từ Đơn mua hàng</span></div>
               </div>
               <div className="form-row">

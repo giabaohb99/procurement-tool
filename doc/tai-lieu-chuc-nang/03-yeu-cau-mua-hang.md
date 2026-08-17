@@ -134,7 +134,11 @@ Người dùng ở màn chi tiết thấy **dòng nhắc màu vàng** khi phiế
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
 - Logic đặc biệt: Khi tích, hệ thống gắn cờ ưu tiên trong thông báo (`is_urgent=true` được truyền vào `trigger_notification`). Danh sách hiển thị badge "Gấp" màu cam.
-- Tự tính trên form (FE): phiếu MỚI tự tích cờ gấp nếu có ít nhất 1 dòng mà **"Ngày cần hàng" − "Ngày tiếp nhận" < số ngày QĐ của phân loại** (tức khách cần sớm hơn mốc quy định). Từ CR-065 số ngày QĐ ở đây dùng **mốc dài nhất** (không sẵn hàng, thiếu thì 15 ngày) — trước đó chỉ dùng mốc "có sẵn" và bỏ qua phân loại chưa khai báo số ngày, nên **kết quả tính cờ gấp rộng hơn trước**. Người dùng vẫn tích/bỏ tích tay được.
+- **Tự bật Đơn gấp (CR-082).** Chỉ cần **1 dòng** có **"Ngày cần hàng" < "Ngày tiếp nhận" + số ngày QĐ của phân loại** là hệ thống tự tích cờ gấp cho cả phiếu. Thiếu **đúng một ngày** cũng tính là gấp — không có ngưỡng dung sai (cần trong 14 ngày mà phân loại quy định 15 ngày thì vẫn là gấp). Số ngày QĐ lấy **mốc dài nhất** (không sẵn hàng, thiếu thì mốc có sẵn, thiếu cả hai thì 15 ngày — xem CR-065), nên phân loại chưa khai báo số ngày vẫn được xét.
+  - Bỏ qua: dòng **chưa nhập Ngày cần hàng**, dòng **Hủy đơn**, và phiếu **chưa có Ngày tiếp nhận** (không có mốc gốc thì không suy ra được ngày QĐ).
+  - **Chỉ BẬT, không bao giờ tự tắt.** Sửa ngày cho đúng hạn thì cờ vẫn còn — bỏ gấp là việc của người dùng (ô tích / nút Đơn gấp). Nếu chính lần Lưu đó là hành động tắt cờ thì hệ thống tôn trọng, không bật lại ngay; nhưng lần Lưu sau, nếu ngày cần hàng vẫn sớm hơn quy định thì cờ được bật lại.
+  - Chạy ở **backend** (nguồn sự thật) tại: tạo phiếu, lưu dòng hàng, **nhân bản phiếu**, và **gửi duyệt** — nên phiếu cũ tạo trước luật này cũng được đánh dấu đúng khi gửi duyệt, và thông báo duyệt đi kèm mức ưu tiên thật. Khi bật, cờ **đồng bộ xuống mọi ĐMH cùng `pr_code`** và ghi lý do vào nhật ký thao tác (tên hàng · ngày cần · ngày QĐ · số ngày của phân loại).
+  - Trên form (FE): ô tích tự bật sẵn khi phiếu còn sửa được, kèm dòng chữ đỏ *"Tự động: N dòng có ngày cần hàng sớm hơn thời gian quy định của phân loại"* (đưa chuột vào xem danh sách dòng vi phạm).
 
 ### 10. Mục đích mua hàng (`purpose`)
 
@@ -358,11 +362,25 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 ### 15. Trạng thái xử lý dòng (`line_status`)
 
 - Kiểu nhập: Chỉ đọc trên bảng (tự đồng bộ từ ĐMH); hoặc chọn trong popup chi tiết khi chưa có ĐMH
-- Mặc định: `Chưa đặt hàng`
+- Mặc định: `Chưa tạo đơn mua hàng` (CR-074 — trước đây là `Chưa đặt hàng`)
 - Bắt buộc: Không (có giá trị mặc định)
-- Nguồn dữ liệu / liên kết: Danh sách 5 mức cố định: `Chưa đặt hàng / Đã đặt hàng / Đã nhận hàng / Hoàn thành / Hủy đơn`
+- Nguồn dữ liệu / liên kết: Danh sách 6 mức cố định: `Chưa tạo đơn mua hàng / Chưa đặt hàng / Đã đặt hàng / Đã nhận hàng / Hoàn thành / Hủy đơn`
 - Người sửa: NSTM được giao dòng, hoặc người có `approve`/`cancel`; cập nhật qua popup (endpoint `PATCH /{pid}/item-status`). Sau khi phiếu có ĐMH liên kết, trạng thái tự đồng bộ theo tiến độ ĐMH.
-- Logic đặc biệt: Thay đổi trạng thái dòng kích hoạt `recompute_status` tự điều chỉnh trạng thái phiếu. Dòng "Hủy đơn" tô đỏ toàn bộ hàng trong danh sách phiếu (`has_cancelled_line`). Khi trả phiếu về ("Bị trả lại"), tất cả dòng reset về "Chưa đặt hàng". Dòng YCMH thủ công đặt "Hủy đơn" sẽ được giữ nguyên khi đồng bộ từ ĐMH.
+- Logic đặc biệt: Thay đổi trạng thái dòng kích hoạt `recompute_status` tự điều chỉnh trạng thái phiếu. Dòng "Hủy đơn" tô đỏ toàn bộ hàng trong danh sách phiếu (`has_cancelled_line`). Khi trả phiếu về ("Bị trả lại"), tất cả dòng reset về "Chưa tạo đơn mua hàng". Dòng YCMH thủ công đặt "Hủy đơn" sẽ được giữ nguyên khi đồng bộ từ ĐMH.
+
+**Ranh giới hai nhãn đầu (CR-074).** Trước đây ba tình huống khác hẳn nhau cùng đeo một nhãn
+"Chưa đặt hàng", người yêu cầu nhìn vào không biết NSTM đã bắt tay làm chưa. Nay tách:
+
+| Nhãn | Nghĩa |
+|---|---|
+| **Chưa tạo đơn mua hàng** | Chưa ĐMH nào có dòng cho sản phẩm này (hoặc mọi ĐMH chứa nó đã bị hủy) |
+| **Chưa đặt hàng** | ĐÃ có dòng ĐMH — **kể cả đơn còn Nháp / Chờ duyệt** — nhưng chưa bấm đặt hàng |
+
+Nhãn đổi **ngay lúc lập đơn**, không đợi duyệt; **xóa đơn Nháp thì dòng quay lại "Chưa tạo đơn
+mua hàng"** (`create_po`/`delete_po` đều gọi `_sync_pr`). Đơn `cancelled` không được tính là đã lập.
+Từ "Đã đặt hàng" trở đi giữ nguyên luật cũ. Hai nhãn này đều được coi là "chưa động tới" khi suy
+trạng thái phiếu (`LINE_STATUS_IDLE`) nên phiếu vừa điều phối xong **không** tự nhảy "Đang xử lý",
+và nút "Tạo ĐMH" vẫn hiện khi dòng mới có đơn Nháp (dòng đó còn có thể cần thêm đơn cho NCC khác).
 
 ### 16. Chi tiết tiến độ (`progress_note`)
 

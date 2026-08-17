@@ -12,7 +12,7 @@
   z-index: 2000;
   top: calc(100% + 8px);
   right: 0;
-  width: min(720px, calc(100vw - 48px));
+  width: min(880px, calc(100vw - 48px));
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--hz-radius);
@@ -96,12 +96,24 @@
 }
 
 .cf-field {
-  flex: 0 0 160px;
+  flex: 0 0 220px;
 }
 
 /* đủ rộng cho nhãn dài nhất ("lớn hơn hoặc bằng", "không thuộc") khỏi bị cắt */
 .cf-operator {
   flex: 0 0 172px;
+}
+
+/* Ô select mặc định của app dành 16px padding mỗi bên + 8px cho nút X + 8px cho mũi tên, tức là
+   mất ~85px chrome; ô chọn trường vì thế chỉ còn ~60px chữ, nhãn "Ngày nhận" bị cắt thành
+   "Ngày n…". Trong bảng điều kiện thu gọn chrome lại để đọc được đủ tên trường (CR-080). */
+.cf-row .rs__value-container {
+  padding: 0 8px;
+}
+
+.cf-row .rs__clear-indicator,
+.cf-row .rs__dropdown-indicator {
+  padding: 0 3px;
 }
 
 .cf-value {

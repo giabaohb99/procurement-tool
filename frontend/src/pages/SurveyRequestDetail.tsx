@@ -73,15 +73,13 @@ const srBadge = (st: string) => {
   return <span className={'badge ' + s.cls}>{s.label}</span>
 }
 
-// Tình trạng DÒNG — ưu tiên trạng thái do người YC/phòng ban chốt (Task 2),
-// còn lại tự suy theo tiến trình khảo sát.
-const srLineStatus = (l: any): { label: string; cls: string } => {
-  if (l.line_status === 'hoan_thanh' || l.is_completed) return { label: 'Hoàn thành', cls: 'ok' }
-  if (l.line_status === 'can_khao_sat_lai') return { label: 'Cần khảo sát lại', cls: 'err' }
-  if (l.has_chosen)   return { label: 'Đã chọn PA', cls: 'ok' }
-  if ((l.option_count || 0) > 0) return { label: 'Đã khảo sát', cls: 'warn' }
-  return { label: 'Chưa xong', cls: 'gray' }
-}
+// Tình trạng DÒNG — CR-077: BACKEND suy (`progress_state`/`progress_tone`, 9 mốc), FE chỉ hiển thị.
+// Trước đây FE tự tính 5 mốc riêng nên cùng một dòng mà màn này và "Tiến độ báo giá" hiện hai chữ
+// khác nhau; tệ hơn là nó coi `is_completed` = Hoàn thành, trong khi cờ đó chỉ nghĩa "đã từng tạo
+// YCMH" nên mọi dòng đã tạo YCMH đều bị gắn nhãn Hoàn thành sai.
+// Dòng mới chưa lưu thì chưa có nhãn -> trả rỗng, nơi gọi tự bỏ qua.
+const srLineStatus = (l: any): { label: string; cls: string } =>
+  ({ label: l?.progress_state || '', cls: l?.progress_tone || 'gray' })
 
 const emptyLine = {
   received_date: '',
@@ -302,7 +300,7 @@ export default function SurveyRequestDetail() {
         ? 'Dòng này đang chọn 1 phương án. Đánh dấu "Cần khảo sát lại" sẽ BỎ CHỌN phương án đó và chờ NSTM khảo sát lại. Tiếp tục?'
         : 'Đánh dấu dòng này "Cần khảo sát lại"? NSTM sẽ khảo sát lại phương án cho sản phẩm này.'
       if (!(await askConfirm({ title: 'Cần khảo sát lại', message: msg, confirmText: 'Cần khảo sát lại', danger: true }))) return
-      await setLineStatus(ln.id, 'can_khao_sat_lai')
+      await setLineStatus(ln.id, 'resurvey')
     } else {
       await setLineStatus(ln.id, '')
     }
@@ -860,7 +858,7 @@ export default function SurveyRequestDetail() {
                       {/* Trạng thái — ẩn khi tạo mới */}
                       {showStatus && (
                         <td style={{ textAlign: 'center' }}>
-                          {(() => { const s = srLineStatus(l); return <span className={'badge ' + s.cls}>{s.label}</span> })()}
+                          {(() => { const s = srLineStatus(l); return s.label ? <span className={'badge ' + s.cls}>{s.label}</span> : null })()}
                         </td>
                       )}
 
@@ -918,13 +916,12 @@ export default function SurveyRequestDetail() {
                       Đang gắn cờ thì hiện nút "Bỏ khảo sát lại" để gỡ. Chọn lại 1 PA cũng tự gỡ cờ. */}
                   {(() => {
                     const optCount = (ln.options || []).length
-                    const lineHasChosen = (ln.options || []).some((o: any) => o.is_chosen)
-                    const s = srLineStatus({ ...ln, has_chosen: lineHasChosen, option_count: optCount })
-                    const flagged = ln.line_status === 'can_khao_sat_lai'
+                    const s = srLineStatus(ln)   // CR-077: /result đã trả sẵn progress_state
+                    const flagged = ln.line_status === 'resurvey'
                     return (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
                         <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>Trạng thái dòng:</span>
-                        <span className={'badge ' + s.cls}>{s.label}</span>
+                        {s.label && <span className={'badge ' + s.cls}>{s.label}</span>}
                         {canSetLineStatus && optCount > 0 && (
                           flagged ? (
                             // Đang cần khảo sát lại → KHÓA nút (không cho bấm lại). Cờ tự gỡ khi
@@ -946,7 +943,7 @@ export default function SurveyRequestDetail() {
                       </div>
                     )
                   })()}
-                  {ln.line_status === 'can_khao_sat_lai' && (
+                  {ln.line_status === 'resurvey' && (
                     <div style={{ color: '#b91c1c', fontSize: 12.5, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', marginBottom: 10 }}>
                       <i className="ti ti-alert-triangle" style={{ marginRight: 6 }} />
                       Dòng này đang yêu cầu <b>khảo sát lại</b> — chờ NSTM cập nhật phương án. Chọn 1 phương án bên dưới sẽ tự gỡ cờ.
@@ -1157,7 +1154,7 @@ export default function SurveyRequestDetail() {
                 <div className="form-row">
                   <label>Trạng thái</label>
                   <div style={{ paddingTop: 4 }}>
-                    {(() => { const s = srLineStatus(edit); return <span className={'badge ' + s.cls}>{s.label}</span> })()}
+                    {(() => { const s = srLineStatus(edit); return s.label ? <span className={'badge ' + s.cls}>{s.label}</span> : null })()}
                     {edit.id && (
                       <span style={{ color: 'var(--muted)', fontSize: 12, marginLeft: 8 }}>
                         ({edit.option_count || 0} phương án{edit.has_chosen ? ', đã chọn' : ''})

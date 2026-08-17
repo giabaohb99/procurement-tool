@@ -116,22 +116,45 @@ def build_condition(col, op: str, raw: str) -> ColumnElement | None:
     return None
 
 
-def collect_conditions(model, request, filterable: list[str]) -> list[ColumnElement]:
-    """Quét query params, trả về danh sách điều kiện từ các param dạng `<field>__<op>`."""
+def collect_conditions_map(colmap: dict, request) -> list[ColumnElement]:
+    """Quét query params, trả về điều kiện từ các param dạng `<field>__<op>`.
+
+    `colmap` là whitelist dạng {tên field trên URL: CỘT SQLAlchemy}. Dạng map (thay vì
+    model + danh sách tên) là để dùng được cho màn JOIN NHIỀU BẢNG: ở "Tiến độ mua hàng" một
+    hàng gồm đơn + dòng hàng + lần giao, tên field trên URL không nằm hết trên một model, lại có
+    cột phải đổi tên cho khỏi trùng (`delivery_invoice_no` -> `PODelivery.invoice_no`).
+
+    Field ngoài map -> BỎ QUA (không raise): đây cũng là chỗ chặn lọc bừa cột nhạy cảm, ví dụ
+    người không có `supplier.read` thì map không chứa cột NCC nên không thể mò tên NCC bằng cách
+    lọc rồi xem còn mấy dòng.
+    """
     conditions: list[ColumnElement] = []
     for key, raw in request.query_params.multi_items():
         if "__" not in key:
             continue
         field, _, op = key.rpartition("__")
-        if op not in OPERATORS or field not in filterable:
+        if op not in OPERATORS:
             continue
-        col = getattr(model, field, None)
+        col = colmap.get(field)
         if col is None:
             continue
         cond = build_condition(col, op, raw)
         if cond is not None:
             conditions.append(cond)
     return conditions
+
+
+def collect_conditions(model, request, filterable: list[str]) -> list[ColumnElement]:
+    """Bản cho MỘT model: whitelist là danh sách tên cột trên model đó."""
+    colmap = {f: getattr(model, f) for f in filterable if getattr(model, f, None) is not None}
+    return collect_conditions_map(colmap, request)
+
+
+def _apply(query, conditions: list[ColumnElement], request):
+    if not conditions:
+        return query
+    use_or = (request.query_params.get(CONJUNCTION_PARAM) or "").strip().lower() == "or"
+    return query.filter(or_(*conditions) if use_or and len(conditions) > 1 else and_(*conditions))
 
 
 def apply_operator_filters(query, model, request, filterable: list[str]):
@@ -141,8 +164,9 @@ def apply_operator_filters(query, model, request, filterable: list[str]):
     Cả cụm đó luôn AND với các filter param trần do `apply_filters` xử lý — filter trần thường
     đến từ URL điều hướng (vd /purchase-orders?pr_code=PYC-001) nên không được nới lỏng thành OR.
     """
-    conditions = collect_conditions(model, request, filterable)
-    if not conditions:
-        return query
-    use_or = (request.query_params.get(CONJUNCTION_PARAM) or "").strip().lower() == "or"
-    return query.filter(or_(*conditions) if use_or and len(conditions) > 1 else and_(*conditions))
+    return _apply(query, collect_conditions(model, request, filterable), request)
+
+
+def apply_operator_filters_map(query, colmap: dict, request):
+    """Như `apply_operator_filters` nhưng whitelist là map {field: cột} — cho màn JOIN nhiều bảng."""
+    return _apply(query, collect_conditions_map(colmap, request), request)

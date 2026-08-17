@@ -1570,6 +1570,22 @@ thead th {
   color: #5b6770;
 }
 
+/* CR-077: tông xanh dương cho mốc "đang chờ bên kia xử lý" (Đã trả kết quả / Đã tạo YCMH) */
+.badge.info {
+  background: #e6f6fd;
+  color: #0b7fac;
+}
+
+/* CR-078: pill mặc định là white-space:nowrap, nằm trong bảng tableLayout:fixed thì nhãn dài
+   (vd "Chưa tạo đơn mua hàng") tràn ra ngoài ô, đè lên cột bên cạnh. Dùng thêm class `wrap`
+   cho pill nằm trong ô bảng: hết chỗ thì xuống dòng, không bao giờ tràn. */
+.badge.wrap {
+  white-space: normal;
+  text-align: center;
+  line-height: 1.3;
+  max-width: 100%;
+}
+
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

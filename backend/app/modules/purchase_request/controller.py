@@ -525,6 +525,9 @@ def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
         raise HTTPException(403, "Không có quyền gửi duyệt phiếu này")
     if pr.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ gửi duyệt được phiếu ở trạng thái Nháp hoặc Bị trả lại")
+    # CR-082: chốt cờ Đơn gấp trước khi gửi duyệt — phiếu cũ (tạo trước luật này) hoặc phiếu
+    # sửa dòng bằng đường khác vẫn được đánh dấu đúng, và thông báo duyệt đi kèm mức ưu tiên thật.
+    service.apply_auto_urgent(db, pr, user.id)
     pr = service.set_status(db, pid, "submitted", user.id)
     trigger_notification(
         db=db,

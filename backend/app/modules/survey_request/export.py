@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 
 from app.core.export_xlsx import Col
 from . import service
-from .model import SurveyRequest, SurveyRequestLine, SurveyRequestOption
+from .model import (LS_COMPLETED, LS_RESURVEY, SurveyRequest, SurveyRequestLine,
+                    SurveyRequestOption)
 
 STATUS_LABEL = {
     "draft": "Nháp", "submitted": "Chờ duyệt", "approved": "Đã duyệt",
@@ -20,7 +21,7 @@ STATUS_LABEL = {
 }
 
 LINE_STATUS_LABEL = {
-    "": "", "can_khao_sat_lai": "Cần khảo sát lại", "hoan_thanh": "Hoàn thành",
+    "": "", LS_RESURVEY: "Cần khảo sát lại", LS_COMPLETED: "Hoàn thành",
 }
 
 # Cụm đầu phiếu — key trùng cột trên bảng danh sách
@@ -47,7 +48,9 @@ LINE_COLS = [
     Col("result_due_date", "Hạn trả kết quả", "date", 14),
     Col("assignee_name", "NSTM phụ trách", width=22),
     Col("line_status", "Trạng thái dòng", width=16),
-    Col("pr_code", "Mã YCMH đã tạo", width=18),
+    # CR-079: bỏ cột "Mã YCMH đã tạo" — cùng lý do với màn Tiến độ báo giá: `pr_code` trên dòng
+    # chỉ giữ mã MỚI NHẤT, dòng tạo YCMH nhiều lần (mua lại) thì các mã trước biến mất. Danh
+    # sách đủ nằm ở `tab_survey_request_pr`, xem qua popup phương án trong chi tiết YCBG.
 ]
 
 # Cụm PHƯƠNG ÁN CHỐT
@@ -131,7 +134,7 @@ def _employee_names(db: Session, codes: set[str]) -> dict[str, str]:
     return {c: (f"{c} — {n}" if n else c) for c, n in rows}
 
 
-def _opt_cells(o: SurveyRequestOption | None) -> dict:
+def opt_cells(o: SurveyRequestOption | None) -> dict:
     if o is None:
         return {}
     return {
@@ -212,5 +215,5 @@ def build_rows(db: Session, srs: list[SurveyRequest], visible=None) -> list[dict
                 "assignee_name": names.get(ln.assignee, ln.assignee or ""),
                 "line_status": LINE_STATUS_LABEL.get(ln.line_status, ln.line_status or ""),
                 "pr_code": ln.pr_code,
-            } | _opt_cells(chosen.get(ln.id)))
+            } | opt_cells(chosen.get(ln.id)))
     return rows
