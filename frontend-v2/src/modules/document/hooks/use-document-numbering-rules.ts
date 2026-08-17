@@ -16,6 +16,15 @@ export function useDocumentNumberingRules(direction: NumberingDirection) {
   })
 }
 
+/** Một quy tắc theo id — trang khai báo đọc thẳng, không lần trong danh sách. */
+export function useDocumentNumberingRule(id?: number) {
+  return useQuery({
+    queryKey: queryKeys.document.numberingRule(id ?? 0),
+    queryFn: () => documentNumberingRuleApi.getById(id as number),
+    enabled: typeof id === 'number' && id > 0,
+  })
+}
+
 export function useSaveDocumentNumberingRule() {
   const queryClient = useQueryClient()
   return useMutation({

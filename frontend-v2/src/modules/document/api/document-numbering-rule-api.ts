@@ -13,6 +13,7 @@ export const documentNumberingRuleApi = {
     apiGet<PaginatedResult<DocumentNumberingRule>>(BASE_URL, {
       params: direction ? { direction } : {},
     }),
+  getById: (id: number) => apiGet<DocumentNumberingRule>(`${BASE_URL}/${id}`),
   create: (payload: DocumentNumberingRuleInput) =>
     apiPost<DocumentNumberingRule>(BASE_URL, payload),
   update: (id: number, payload: Partial<DocumentNumberingRuleInput>) =>

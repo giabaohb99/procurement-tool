@@ -59,7 +59,10 @@ export const appRoutes = {
      * phân biệt bằng `?tab=`.
      */
     settings: '/document/settings',
+    /** Quy tắc đánh số — danh sách và trang khai báo, KHÔNG dùng hộp thoại. */
     numberingRules: '/document/numbering-rules',
+    numberingRuleNew: '/document/numbering-rules/new',
+    numberingRuleDetail: (id: number | string) => `/document/numbering-rules/${id}`,
     settingsTab: (tab: 'types' | 'templates' | 'security-levels' | 'partners') =>
       `/document/settings?tab=${tab}`,
     /** Loại văn bản (công văn, quyết định…). */

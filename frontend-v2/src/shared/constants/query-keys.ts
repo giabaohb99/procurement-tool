@@ -62,6 +62,13 @@ export const queryKeys = {
     numberingRuleAll: ['document', 'numbering-rules'] as const,
     numberPreviewAll: ['document', 'number-preview'] as const,
     numberingRules: (direction: number) => ['document', 'numbering-rules', direction] as const,
+    /**
+     * Một quy tắc theo id. Chèn `'detail'` vào giữa là BẮT BUỘC: không có nó thì
+     * key trùng hệt `numberingRules(direction)` — quy tắc id 1 và chiều "văn bản
+     * đến" (direction 1) dùng chung một ô nhớ, đọc chi tiết xong là danh sách
+     * hiện một bản ghi lẻ.
+     */
+    numberingRule: (id: number) => ['document', 'numbering-rules', 'detail', id] as const,
     docTypes: () => ['document', 'doc-types'] as const,
     docType: (id: number) => ['document', 'doc-types', id] as const,
     templates: (params?: Record<string, unknown>) =>

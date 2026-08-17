@@ -124,6 +124,20 @@ export const documentModule: ErpModule = {
       }),
     },
     {
+      path: appRoutes.document.numberingRuleNew,
+      lazy: async () => ({
+        Component: (await import('./pages/document-numbering-rule-detail-page'))
+          .DocumentNumberingRuleDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.document.numberingRuleDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/document-numbering-rule-detail-page'))
+          .DocumentNumberingRuleDetailPage,
+      }),
+    },
+    {
       path: appRoutes.document.typeNew,
       lazy: async () => ({
         Component: (await import('./pages/document-type-detail-page')).DocumentTypeDetailPage,
