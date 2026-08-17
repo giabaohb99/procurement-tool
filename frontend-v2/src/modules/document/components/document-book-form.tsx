@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { Card, CardContent } from '@/shared/ui/card'
+import { EmployeeMultiSelect } from '@/shared/ui/employee-multi-select'
 import { Checkbox } from '@/shared/ui/checkbox'
 import {
   Form,
@@ -28,7 +29,6 @@ import {
   type DocumentBookFormValues,
 } from '../schemas/document-book-schema'
 import { BOOK_KIND_OPTIONS, type BookKind, type DocumentBook } from '../types/document-book'
-import { EmployeeMultiSelect } from './employee-multi-select'
 
 interface DocumentBookFormProps {
   formId: string

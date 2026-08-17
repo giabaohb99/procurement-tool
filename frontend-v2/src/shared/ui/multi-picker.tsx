@@ -1,23 +1,26 @@
 import { Check, Search, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
-import type { Employee } from '@/modules/hr/types/employee'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/shared/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { cn } from '@/shared/utils/cn'
 
-interface EmployeeMultiSelectProps {
-  /** ID nhân sự đang chọn. */
+export interface MultiPickerOption {
+  id: number
+  label: string
+  /** Chữ mờ bên phải: mã, số hiệu, chức danh… — thứ để phân biệt hai dòng trùng tên. */
+  hint?: string
+}
+
+interface MultiPickerProps {
   value: number[]
   onChange: (ids: number[]) => void
-  employees: Employee[]
+  options: MultiPickerOption[]
   placeholder: string
+  searchPlaceholder?: string
+  emptyMessage?: string
   disabled?: boolean
 }
 
@@ -25,38 +28,39 @@ interface EmployeeMultiSelectProps {
 const MAX_VISIBLE = 50
 
 /**
- * Chọn NHIỀU nhân sự — dùng cho người quản lý sổ và người xem sổ.
+ * Chọn NHIỀU mục từ một danh sách có sẵn: nút mở, ô tìm, danh sách tick, và dải
+ * chip của những mục đã chọn.
  *
- * Không dùng `ScopeEmployeePicker` của phân hệ Nhân sự: component đó mang thêm
- * ngữ nghĩa "không giới hạn / tùy chỉnh" của phạm vi dữ liệu, ở đây danh sách
- * rỗng chỉ đơn giản là chưa cử ai chứ không có nghĩa "mọi người".
+ * Dùng cho nhân sự, loại văn bản, văn bản… — bất cứ thứ gì rút gọn được về
+ * `{id, label, hint}`. Trước đây chỉ có bản riêng cho nhân sự, và mỗi lần cần
+ * chọn nhiều thứ khác lại chép ra một bản gần giống.
  */
-export function EmployeeMultiSelect({
+export function MultiPicker({
   value,
   onChange,
-  employees,
+  options,
   placeholder,
+  searchPlaceholder = 'Tìm…',
+  emptyMessage = 'Không tìm thấy mục nào.',
   disabled,
-}: EmployeeMultiSelectProps) {
+}: MultiPickerProps) {
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
 
   const selected = useMemo(
-    () => value.map((id) => employees.find((e) => e.id === id)).filter(Boolean) as Employee[],
-    [value, employees],
+    () => value.map((id) => options.find((item) => item.id === id)).filter(Boolean) as MultiPickerOption[],
+    [value, options],
   )
 
   const matches = useMemo(() => {
     const needle = keyword.trim().toLowerCase()
     const rows = needle
-      ? employees.filter((e) =>
-          [e.full_name, e.code, e.position].some((field) =>
-            (field ?? '').toLowerCase().includes(needle),
-          ),
+      ? options.filter((item) =>
+          [item.label, item.hint].some((field) => (field ?? '').toLowerCase().includes(needle)),
         )
-      : employees
+      : options
     return rows.slice(0, MAX_VISIBLE)
-  }, [employees, keyword])
+  }, [options, keyword])
 
   function toggle(id: number) {
     onChange(value.includes(id) ? value.filter((item) => item !== id) : [...value, id])
@@ -80,7 +84,7 @@ export function EmployeeMultiSelect({
           <div className="border-b p-2">
             <Input
               autoFocus
-              placeholder="Tìm theo tên, mã hoặc chức danh…"
+              placeholder={searchPlaceholder}
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
             />
@@ -88,28 +92,26 @@ export function EmployeeMultiSelect({
           <div className="max-h-72 overflow-y-auto p-1">
             {matches.length === 0 && (
               <p className="px-2 py-4 text-center text-sm text-muted-foreground">
-                Không tìm thấy nhân sự nào.
+                {emptyMessage}
               </p>
             )}
-            {matches.map((employee) => {
-              const checked = value.includes(employee.id)
+            {matches.map((item) => {
+              const checked = value.includes(item.id)
               return (
                 <button
-                  key={employee.id}
+                  key={item.id}
                   type="button"
-                  onClick={() => toggle(employee.id)}
+                  onClick={() => toggle(item.id)}
                   className={cn(
                     'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent',
                     checked && 'bg-accent/50',
                   )}
                 >
-                  <Check
-                    className={cn('size-4 shrink-0', !checked && 'invisible')}
-                  />
-                  <span className="flex-1 truncate">{employee.full_name}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {employee.code}
-                  </span>
+                  <Check className={cn('size-4 shrink-0', !checked && 'invisible')} />
+                  <span className="flex-1 truncate">{item.label}</span>
+                  {item.hint && (
+                    <span className="shrink-0 text-xs text-muted-foreground">{item.hint}</span>
+                  )}
                 </button>
               )
             })}
@@ -119,13 +121,13 @@ export function EmployeeMultiSelect({
 
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          {selected.map((employee) => (
-            <Badge key={employee.id} variant="secondary" className="gap-1 font-normal">
-              {employee.full_name}
+          {selected.map((item) => (
+            <Badge key={item.id} variant="secondary" className="gap-1 font-normal">
+              {item.label}
               <button
                 type="button"
-                aria-label={`Bỏ ${employee.full_name}`}
-                onClick={() => toggle(employee.id)}
+                aria-label={`Bỏ ${item.label}`}
+                onClick={() => toggle(item.id)}
                 className="text-muted-foreground hover:text-foreground"
               >
                 <X className="size-3" />

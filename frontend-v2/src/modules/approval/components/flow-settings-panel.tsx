@@ -12,8 +12,8 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { Switch } from '@/shared/ui/switch'
-import { Textarea } from '@/shared/ui/textarea'
 import { ENTITY_LABELS } from '../helpers/entity-link'
+import { FlowScopePicker } from './flow-scope-picker'
 import { useSaveApprovalFlow } from '../hooks/use-approvals'
 import type { ApprovalFlow } from '../types/approval'
 
@@ -115,20 +115,11 @@ export function FlowSettingsPanel({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label>Áp cho phiếu nào</Label>
-        <Textarea
-          rows={2}
-          className="font-mono text-xs"
-          placeholder='[{"field": "doc_type_id", "op": "eq", "value": 3}]'
-          value={form.condition ?? ''}
-          onChange={(event) => dat('condition', event.target.value)}
-        />
-        <p className="text-xs text-muted-foreground">
-          Để trống = luồng MẶC ĐỊNH của loại chứng từ này. Nhiều luồng cùng loại thì
-          xét theo độ ưu tiên giảm dần, luồng mặc định đứng cuối hàng.
-        </p>
-      </div>
+      <FlowScopePicker
+        entity={form.entity ?? 'document'}
+        condition={form.condition ?? ''}
+        onChange={(condition) => dat('condition', condition)}
+      />
 
       <div className="flex items-center gap-3">
         <Switch

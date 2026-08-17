@@ -28,6 +28,10 @@ def boi_canh(doc: Document) -> dict:
     người khai luồng thấy sáu chục tên cột và không biết chọn cái nào.
     """
     return {
+        #  `id` để khai được luồng riêng cho MỘT văn bản cụ thể — bộ chọn "Áp
+        #  dụng cho" ở giao diện sinh điều kiện `id in [...]`. Thiếu ô này thì
+        #  lựa chọn đó không bao giờ khớp và luồng lặng lẽ không chạy.
+        "id": doc.id,
         "doc_type_id": doc.doc_type_id,
         "company_id": doc.company_id,
         "department_id": doc.department_id,
