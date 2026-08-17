@@ -70,7 +70,6 @@ const numCell = (n: number | null) => (n === null || n === undefined ? <span sty
 
 type Ctx = {
   canOpenSR: boolean
-  canOpenPR: boolean
   navigate: (p: string) => void
   page: number
   pageSize: number
@@ -124,15 +123,11 @@ const COLS: Col[] = [
   { key: 'progress_state', label: 'Tiến độ dòng', w: 150, cell: (r) => pgBadge(r.progress_state) },
   { key: 'line_status', hide: true, label: 'TT dòng', w: 130, sort: 'line_status', cell: (r) => r.line_status || '—' },
   { key: 'option_count', label: 'Số PA', w: 66, td: R, cell: (r) => fmt(r.option_count) },
-  {
-    key: 'pr_code', label: 'Mã YCMH', w: 120, sort: 'pr_code', td: NOWRAP,
-    cell: (r, c) => (r.pr_code && c.canOpenPR) ? (
-      <a href={`/purchase-requests/${r.pr_id}`}
-        onClick={(e) => { e.preventDefault(); c.navigate(`/purchase-requests/${r.pr_id}`) }}
-        style={{ cursor: 'pointer', color: 'var(--navy)', fontWeight: 600, textDecoration: 'underline' }}
-        title="Mở yêu cầu mua hàng">{r.pr_code}</a>
-    ) : <span style={MUTED}>{r.pr_code || '—'}</span>,
-  },
+  // CR-079: BỎ cột "Mã YCMH". Một dòng khảo sát tạo được NHIỀU YCMH (mua lại) và lưu đủ ở
+  // tab_survey_request_pr, nhưng cột này đọc `pr_code` trên dòng — ô đó bị ghi đè mỗi lần tạo
+  // nên chỉ hiện mã MỚI NHẤT, mã cũ mất hút. Thà không có còn hơn hiện thiếu mà tưởng là đủ.
+  // Muốn xem đủ thì mở chi tiết Yêu cầu báo giá, bấm vào phương án -> popup liệt kê hết YCMH.
+  // (Ô tìm kiếm vẫn khớp mã YCMH nên gõ mã vẫn tra ra dòng.)
   // ----- Phương án đã chốt -----
   { key: 'opt_label', hide: true, label: 'Phương án chốt', w: 130, cell: (r) => r.opt_label || '—' },
   { key: 'opt_supplier_code', hide: true, label: 'Mã NCC', w: 120, sup: true, td: { ...NOWRAP, ...MUTED }, cell: (r) => r.opt_supplier_code },
@@ -159,7 +154,6 @@ export default function SurveyProgress() {
   const navigate = useNavigate()
   const { can } = useAuth()
   const canOpenSR = can('survey_request', 'read')
-  const canOpenPR = can('purchase_request', 'read')
   const canExport = can('survey_request', 'export')
   const [rows, setRows] = useState<any[]>([])
   const [total, setTotal] = useState(0)
@@ -213,7 +207,7 @@ export default function SurveyProgress() {
   }, [f, page, pageSize, sortBy, sortDir])
 
   const tableColumns = useMemo<TableColumn<any>[]>(() => {
-    const ctx: Ctx = { canOpenSR, canOpenPR, navigate, page, pageSize }
+    const ctx: Ctx = { canOpenSR, navigate, page, pageSize }
     return COLS.filter((c) => !c.sup || showSupplier).map((c) => ({
       key: c.key,
       label: c.label,
@@ -224,7 +218,7 @@ export default function SurveyProgress() {
       td: c.td,
       cell: (r: any, i: number) => c.cell(r, ctx, i),
     }))
-  }, [showSupplier, canOpenSR, canOpenPR, page, pageSize])
+  }, [showSupplier, canOpenSR, page, pageSize])
 
   const table = useTableColumns('survey-progress', tableColumns)
   const minW = table.columns.reduce((s, c) => s + (typeof c.width === 'number' ? c.width : 100), 0)
