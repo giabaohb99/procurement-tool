@@ -736,11 +736,12 @@ vẫn là một hàng, vì thứ cần theo dõi là "dòng này khảo sát t�
 
 **KHÔNG có cột "Mã YCMH" (CR-079).** Một dòng khảo sát tạo được **nhiều** YCMH (mua lại) — hệ thống lưu đủ ở `tab_survey_request_pr`, nhưng ô `pr_code` trên dòng bị ghi đè mỗi lần tạo nên chỉ còn mã **mới nhất**. Hiện một mã mà người đọc tưởng là đủ thì nguy hơn không hiện, nên cột này đã bỏ khỏi cả bảng lẫn file Excel. Muốn xem đủ: mở chi tiết YCBG, bấm vào phương án → popup liệt kê hết YCMH đã tạo. Ô tìm kiếm vẫn khớp mã YCMH nên gõ mã vẫn tra ra dòng.
 
-**Bộ lọc (CR-080)**: thanh lọc cố định chỉ còn 4 ô cơ bản — **Công ty · Tiến độ dòng · Trễ hạn ·
-Tìm kiếm** (từ khóa khớp mã YCBG · mục đích · phân loại · thông số · mã YCMH). "Tiến độ dòng" và
-"Trễ hạn" ở lại vì là cột TÍNH, không có cột DB tương ứng nên bộ lọc điều kiện không làm được.
-Mọi cột còn lại (bộ phận, phân loại, NSTM, trạng thái phiếu, trạng thái dòng, các mốc ngày, số
-lượng, giá đề xuất…) lọc bằng **Bộ lọc điều kiện** — nút ở cuối thanh lọc, chọn trường + phép so
+**Bộ lọc (CR-080, CR-081)**: thanh lọc cố định còn 6 ô cơ bản — **Công ty · Bộ phận · Tiến độ dòng ·
+Trễ hạn · Ngày tiếp nhận (khoảng) · Tìm kiếm** (từ khóa khớp mã YCBG · mục đích · phân loại ·
+thông số · mã YCMH). "Tiến độ dòng" và "Trễ hạn" bắt buộc ở lại vì là cột TÍNH, không có cột DB
+tương ứng nên bộ lọc điều kiện không làm được; Bộ phận và khoảng Ngày tiếp nhận ở lại cho song
+song với màn Tiến độ mua hàng (CR-081). Mọi cột còn lại (phân loại, NSTM, trạng thái phiếu, trạng
+thái dòng, hạn/ngày trả kết quả, số lượng, giá đề xuất…) lọc bằng **Bộ lọc điều kiện** — nút ở cuối thanh lọc, chọn trường + phép so
 sánh (chứa, bằng, khác, lớn/nhỏ hơn, trong khoảng, đang trống…), nhiều điều kiện nối VÀ / HOẶC.
 Thay cho ô "chưa trả kết quả" cũ: chọn trường **Ngày trả kết quả** + phép **đang trống**. Người
 không có `supplier.read` thì cụm NCC không xuất hiện trong danh sách trường, đúng như cột bị ẩn.

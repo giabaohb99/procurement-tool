@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
+import DateRangePicker from '../components/DateRangePicker'
 import FilterPanel, { FilterItem } from '../components/FilterPanel'
 import {
   ConditionalFilter, ConditionalFilterButton, RestQueryParams,
@@ -43,15 +44,18 @@ const PG_COLOR: Record<string, string> = {
 
 /** Bộ lọc rỗng — dùng cho khởi tạo và nút "Xóa lọc".
  *
- *  CR-080: thanh lọc chỉ còn 4 ô CƠ BẢN. Phân loại / bộ phận / NSTM / trạng thái phiếu / trạng
- *  thái dòng / tháng / ba khoảng ngày / "đã trả kết quả" đều chuyển sang BỘ LỌC ĐIỀU KIỆN — ở đó
+ *  CR-080: thanh lọc rút về mấy ô CƠ BẢN. Phân loại / NSTM / trạng thái phiếu / trạng thái dòng /
+ *  tháng / hạn trả KQ / ngày trả KQ / "đã trả kết quả" đều chuyển sang BỘ LỌC ĐIỀU KIỆN — ở đó
  *  còn lọc được "trước ngày", "trong khoảng", "đang trống" (chưa trả kết quả = Ngày trả KQ đang
  *  trống). Backend VẪN đọc các param cũ cho ai gọi API trực tiếp, chỉ là FE không còn ô nhập.
  *
  *  Giữ `state` (Tiến độ dòng) và `late` (Trễ hạn) vì cả hai là cột TÍNH — bộ lọc điều kiện chỉ
- *  chạy trên cột thật trong DB nên không làm được. */
+ *  chạy trên cột thật trong DB nên không làm được. `department` + khoảng `received_date` giữ ở
+ *  ngoài (CR-081), song song với màn Tiến độ mua hàng: hai lát cắt "phòng nào" và "trong quãng
+ *  thời gian nào" dùng gần như mọi lần mở màn. */
 const EMPTY_FILTERS = {
-  company_id: '', q: '', state: '', late: '',
+  company_id: '', department: '', q: '', state: '', late: '',
+  received_date_from: '', received_date_to: '',
 }
 
 const pgBadge = (s: string) =>
@@ -155,6 +159,7 @@ export default function SurveyProgress() {
   const [showSupplier, setShowSupplier] = useState(true)
   const [states, setStates] = useState<string[]>(Object.keys(PG_COLOR))   // backend là nguồn thật
   const [companies, setCompanies] = useState<any[]>([])
+  const [departments, setDepartments] = useState<any[]>([])
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [sortBy, setSortBy] = useState('')
@@ -189,6 +194,8 @@ export default function SurveyProgress() {
 
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items)).catch(() => {})
+    api.get('/api/departments', { params: { page_size: 500 } })
+      .then((r) => setDepartments(r.data.data.items)).catch(() => {})
   }, [])
 
   // Tự tìm khi đổi filter (debounce) / đổi trang / đổi sort
@@ -270,6 +277,11 @@ export default function SurveyProgress() {
             options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
             onChange={(v) => setFilter('company_id', v)} />
         </FilterItem>
+        <FilterItem label="Bộ phận">
+          <SearchSelect value={f.department} placeholder="Tất cả"
+            options={departments.map((d) => ({ value: d.name, label: d.name }))}
+            onChange={(v) => setFilter('department', v)} />
+        </FilterItem>
         <FilterItem label="Tiến độ dòng">
           <SearchSelect value={f.state} placeholder="Tất cả"
             options={states.map((s) => ({ value: s, label: s }))}
@@ -280,6 +292,10 @@ export default function SurveyProgress() {
             <option value="">Không lọc</option>
             <option value="1">Chỉ dòng trễ hạn</option>
           </select>
+        </FilterItem>
+        <FilterItem label="Ngày tiếp nhận" width={260} active={!!(f.received_date_from || f.received_date_to)}>
+          <DateRangePicker block value={{ from: f.received_date_from, to: f.received_date_to }}
+            onChange={(v) => { setF((s: any) => ({ ...s, received_date_from: v.from, received_date_to: v.to })); setPage(1) }} />
         </FilterItem>
         <FilterItem label="Tìm kiếm" grow>
           <input value={f.q} placeholder="Mã YCBG / mục đích / phân loại / thông số…"
