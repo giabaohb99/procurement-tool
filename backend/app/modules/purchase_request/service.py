@@ -589,7 +589,57 @@ def assign(db: Session, pid: int, data: AssignIn, user_id: int) -> PurchaseReque
     return pr
 
 
-def _save_items(db: Session, pr_id: int, items, user_id: int):
+def urgent_reasons(std: dict, base: str, lines) -> list[str]:
+    """CR-082 — các dòng có NGÀY CẦN HÀNG sớm hơn NGÀY QUY ĐỊNH của phân loại.
+
+    Luật chốt với khách: thiếu ĐÚNG MỘT ngày cũng là gấp (cần trong 14 ngày mà phân loại quy
+    định 15 ngày -> gấp), nên phép so là `<` chứ không có ngưỡng dung sai. Ngày lưu dạng
+    'YYYY-MM-DD' nên so chuỗi là so đúng thứ tự thời gian.
+
+    Bỏ qua: dòng chưa nhập ngày cần hàng, dòng đã Hủy đơn, và cả phiếu chưa có Ngày tiếp nhận
+    (không có mốc gốc thì không suy ra được ngày QĐ).
+    """
+    if not (base or "").strip():
+        return []
+    out: list[str] = []
+    for it in lines or []:
+        want = (getattr(it, "required_date", "") or "").strip()
+        if not want or (getattr(it, "line_status", "") or "") == "Hủy đơn":
+            continue
+        group = getattr(it, "item_group", "") or ""
+        due = lead_time.regulated_date(std, group, base)
+        if due and want < due:
+            out.append(f'"{getattr(it, "product_name", "") or getattr(it, "product_code", "")}" '
+                       f'cần {want} < ngày QĐ {due} '
+                       f'(phân loại "{group or "chưa chọn"}": {lead_time.std_days_of(std, group)} ngày)')
+    return out
+
+
+def apply_auto_urgent(db: Session, pr: PurchaseRequest, user_id: int, std: dict | None = None) -> bool:
+    """Tự BẬT cờ Đơn gấp khi có ≥1 dòng cần hàng sớm hơn thời gian quy định của phân loại.
+
+    Chỉ bật, KHÔNG bao giờ tự tắt: cờ do người dùng bật tay (hoặc bật ở phiếu cũ) phải giữ
+    nguyên, còn muốn bỏ gấp thì sửa ngày cần hàng rồi tắt tay bằng nút Đơn gấp.
+    Phiếu đã hủy thì không đụng tới. Trả về True nếu vừa bật.
+    """
+    if pr is None or pr.is_urgent or pr.status == "cancelled":
+        return False
+    reasons = urgent_reasons(std if std is not None else lead_time.std_days_map(db),
+                             (pr.request_date or "").strip(), items_of(db, pr.id))
+    if not reasons:
+        return False
+    pr.is_urgent = True
+    pr.updated_by = user_id
+    db.commit()
+    if pr.code:   # cờ gấp của YCMH đè xuống mọi ĐMH cùng pr_code (như khi bật tay)
+        from app.modules.purchase_order.service import sync_urgent_group
+        sync_urgent_group(db, pr.code, True)
+    record(db, user_id, ENTITY, pr.id, "update",
+           "Tự bật Đơn gấp — " + "; ".join(reasons[:5]))
+    return True
+
+
+def _save_items(db: Session, pr_id: int, items, user_id: int, auto_urgent: bool = True):
     """Upsert dòng THEO id — dòng có id thì cập nhật TẠI CHỖ (giữ nguyên id), dòng không id
     thêm mới, dòng cũ không còn trong danh sách thì xóa. GIỮ id để ảnh đối chiếu
     (đính kèm entity 'purchase_request_line_image' theo id dòng) không bị mồ côi khi lưu lại phiếu."""
@@ -633,6 +683,8 @@ def _save_items(db: Session, pr_id: int, items, user_id: int):
     if _pr:
         _pr.need_date = min(all_req) if all_req else ""
     db.commit()
+    if auto_urgent:
+        apply_auto_urgent(db, _pr, user_id, _std)   # CR-082 — dòng cần sớm hơn ngày QĐ -> Đơn gấp
 
 
 def items_of(db: Session, pr_id: int):
@@ -719,6 +771,7 @@ def copy_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
                                    **data))
     db.commit()
     record(db, user_id, ENTITY, pr.id, "create", f"Nhân bản từ {src.code}")
+    apply_auto_urgent(db, pr, user_id, _std)   # CR-082 — dòng nhân bản vẫn giữ ngày cần hàng cũ
     db.refresh(pr)
     return pr
 
@@ -796,7 +849,10 @@ def update_pr(db: Session, pid: int, data: PRUpdate, user_id: int, can_write_pur
     pr.updated_by = user_id
     db.commit()
     if data.items is not None:
-        _save_items(db, pid, data.items, user_id)
+        # CR-082: nếu chính lần lưu này là hành động TẮT cờ gấp thì đừng tự bật lại ngay —
+        # người dùng vừa quyết định, hệ thống không cãi. Lần lưu sau mới xét lại.
+        _save_items(db, pid, data.items, user_id,
+                    auto_urgent=not (old_urgent and not bool(pr.is_urgent)))
     # Cờ Đơn gấp đổi → YCMH đè lên tất cả ĐMH cùng pr_code (đồng bộ nhóm)
     if bool(pr.is_urgent) != old_urgent and pr.code:
         from app.modules.purchase_order.service import sync_urgent_group
