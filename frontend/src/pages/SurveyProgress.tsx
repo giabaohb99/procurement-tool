@@ -4,8 +4,11 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
-import DateRangePicker from '../components/DateRangePicker'
 import FilterPanel, { FilterItem } from '../components/FilterPanel'
+import {
+  ConditionalFilter, ConditionalFilterButton, RestQueryParams,
+} from '../components/conditional-filter'
+import { surveyProgressCondFilters } from '../config/conditional-filters'
 import Pagination from '../components/Pagination'
 import { fmtDate } from '../utils/datetime'
 import TableHead, { TableCells, TableColGroup } from '../components/TableHead'
@@ -38,25 +41,17 @@ const PG_COLOR: Record<string, string> = {
   'Cần khảo sát lại': '#dc2626', 'Đã tạo YCMH': '#7c3aed', 'Hoàn thành': '#16a34a',
 }
 
-// Trạng thái dòng do người YC đặt (cột `line_status` trong DB) — nhãn theo survey_request/export.py
-const LINE_STATUS_OPTS = [
-  { value: 'resurvey', label: 'Cần khảo sát lại' },
-  { value: 'completed', label: 'Hoàn thành' },
-]
-
-const SR_STATUS_OPTS = [
-  { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
-  { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Từ chối' },
-  { value: 'processing', label: 'Đang xử lý' }, { value: 'survey_done', label: 'Đã khảo sát' },
-]
-
-/** Bộ lọc rỗng — dùng cho khởi tạo và nút "Xóa lọc" */
+/** Bộ lọc rỗng — dùng cho khởi tạo và nút "Xóa lọc".
+ *
+ *  CR-080: thanh lọc chỉ còn 4 ô CƠ BẢN. Phân loại / bộ phận / NSTM / trạng thái phiếu / trạng
+ *  thái dòng / tháng / ba khoảng ngày / "đã trả kết quả" đều chuyển sang BỘ LỌC ĐIỀU KIỆN — ở đó
+ *  còn lọc được "trước ngày", "trong khoảng", "đang trống" (chưa trả kết quả = Ngày trả KQ đang
+ *  trống). Backend VẪN đọc các param cũ cho ai gọi API trực tiếp, chỉ là FE không còn ô nhập.
+ *
+ *  Giữ `state` (Tiến độ dòng) và `late` (Trễ hạn) vì cả hai là cột TÍNH — bộ lọc điều kiện chỉ
+ *  chạy trên cột thật trong DB nên không làm được. */
 const EMPTY_FILTERS = {
-  company_id: '', department: '', item_group: '', assignee: '', q: '',
-  sr_status: '', line_status: '', state: '', answered: '', late: '', month: '',
-  received_date_from: '', received_date_to: '',
-  result_due_date_from: '', result_due_date_to: '',
-  result_date_from: '', result_date_to: '',
+  company_id: '', q: '', state: '', late: '',
 }
 
 const pgBadge = (s: string) =>
@@ -160,14 +155,16 @@ export default function SurveyProgress() {
   const [showSupplier, setShowSupplier] = useState(true)
   const [states, setStates] = useState<string[]>(Object.keys(PG_COLOR))   // backend là nguồn thật
   const [companies, setCompanies] = useState<any[]>([])
-  const [departments, setDepartments] = useState<any[]>([])
-  const [itemGroups, setItemGroups] = useState<string[]>([])
-  const [employees, setEmployees] = useState<any[]>([])
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [sortBy, setSortBy] = useState('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [f, setF] = useUrlFilters<any>({ ...EMPTY_FILTERS })
+  // Điều kiện từ BỘ LỌC ĐIỀU KIỆN — thêm ref để queryParams() đọc được giá trị mới nhất
+  const [condParams, setCondParams] = useState<RestQueryParams>({})
+  const condRef = useRef<RestQueryParams>({})
+  condRef.current = condParams
+  const condFields = useMemo(() => surveyProgressCondFilters(showSupplier), [showSupplier])
   const setFilter = (k: string, v: any) => { setF((s: any) => ({ ...s, [k]: v })); setPage(1) }
 
   function handleSort(key: string) {
@@ -177,7 +174,7 @@ export default function SurveyProgress() {
 
   /** Tham số gửi lên backend — dùng chung cho danh sách và xuất Excel để hai bên luôn khớp. */
   function queryParams() {
-    const p: any = {}
+    const p: any = { ...condRef.current }
     Object.entries(f).forEach(([k, v]) => { const val = typeof v === 'string' ? v.trim() : v; if (val) p[k] = val })
     if (sortBy) { p.sort_by = sortBy; p.sort_dir = sortDir }
     return p
@@ -192,9 +189,6 @@ export default function SurveyProgress() {
 
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items)).catch(() => {})
-    api.get('/api/departments', { params: { page_size: 500 } }).then((r) => setDepartments(r.data.data.items)).catch(() => {})
-    api.get('/api/item-groups', { params: { page_size: 500 } }).then((r) => setItemGroups(r.data.data.items.map((x: any) => x.name))).catch(() => {})
-    api.get('/api/employees', { params: { page_size: 1000 } }).then((r) => setEmployees(r.data.data.items)).catch(() => {})
   }, [])
 
   // Tự tìm khi đổi filter (debounce) / đổi trang / đổi sort
@@ -204,7 +198,10 @@ export default function SurveyProgress() {
     timer.current = setTimeout(load, 300)
     return () => clearTimeout(timer.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f, page, pageSize, sortBy, sortDir])
+  }, [f, condParams, page, pageSize, sortBy, sortDir])
+
+  // Đổi điều kiện lọc thì về trang 1, kẻo đang ở trang 5 mà kết quả mới chỉ có 2 trang -> bảng rỗng
+  useEffect(() => { setPage(1) }, [condParams])
 
   const tableColumns = useMemo<TableColumn<any>[]>(() => {
     const ctx: Ctx = { canOpenSR, navigate, page, pageSize }
@@ -265,74 +262,31 @@ export default function SurveyProgress() {
         </div>
       </div>
 
-      <FilterPanel onClear={() => setF({ ...EMPTY_FILTERS })} canClear={Object.values(f).some((v) => v)}>
+      <ConditionalFilter fields={condFields} onChange={setCondParams}>
+      <FilterPanel onClear={() => setF({ ...EMPTY_FILTERS })} canClear={Object.values(f).some((v) => v)}
+                   extra={<ConditionalFilterButton />}>
         <FilterItem label="Công ty">
           <SearchSelect value={f.company_id} placeholder="Tất cả"
             options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
             onChange={(v) => setFilter('company_id', v)} />
-        </FilterItem>
-        <FilterItem label="Phân loại">
-          <SearchSelect value={f.item_group} placeholder="Tất cả"
-            options={itemGroups.map((g) => ({ value: g, label: g }))}
-            onChange={(v) => setFilter('item_group', v)} />
         </FilterItem>
         <FilterItem label="Tiến độ dòng">
           <SearchSelect value={f.state} placeholder="Tất cả"
             options={states.map((s) => ({ value: s, label: s }))}
             onChange={(v) => setFilter('state', v)} />
         </FilterItem>
-        <FilterItem label="Tìm kiếm" grow>
-          <input value={f.q} placeholder="Mã YCBG / mục đích / phân loại / thông số / mã YCMH…"
-            onChange={(e) => setFilter('q', e.target.value)} />
-        </FilterItem>
-
-        <FilterItem label="Bộ phận" secondary active={!!f.department}>
-          <SearchSelect value={f.department} placeholder="Tất cả"
-            options={departments.map((d) => ({ value: d.name, label: d.name }))}
-            onChange={(v) => setFilter('department', v)} />
-        </FilterItem>
-        <FilterItem label="NSTM phụ trách" secondary active={!!f.assignee}>
-          <SearchSelect value={f.assignee} placeholder="Tất cả"
-            options={employees.filter((e) => e.code).map((e) => ({ value: e.code, label: `${e.code} — ${e.full_name}` }))}
-            onChange={(v) => setFilter('assignee', v)} />
-        </FilterItem>
-        <FilterItem label="Trạng thái phiếu" secondary active={!!f.sr_status}>
-          <SearchSelect value={f.sr_status} placeholder="Tất cả" options={SR_STATUS_OPTS}
-            onChange={(v) => setFilter('sr_status', v)} />
-        </FilterItem>
-        <FilterItem label="Trạng thái dòng" secondary active={!!f.line_status}>
-          <SearchSelect value={f.line_status} placeholder="Tất cả" options={LINE_STATUS_OPTS}
-            onChange={(v) => setFilter('line_status', v)} />
-        </FilterItem>
-        <FilterItem label="Trả kết quả" width={180} secondary active={!!f.answered}>
-          <select value={f.answered} onChange={(e) => setFilter('answered', e.target.value)}>
-            <option value="">Tất cả</option>
-            <option value="no">Chưa trả kết quả</option>
-            <option value="yes">Đã trả kết quả</option>
-          </select>
-        </FilterItem>
-        <FilterItem label="Trễ hạn" width={170} secondary active={!!f.late}>
+        <FilterItem label="Trễ hạn" width={170}>
           <select value={f.late} onChange={(e) => setFilter('late', e.target.value)}>
             <option value="">Không lọc</option>
             <option value="1">Chỉ dòng trễ hạn</option>
           </select>
         </FilterItem>
-        <FilterItem label="Tháng (tiếp nhận)" width={150} secondary active={!!f.month}>
-          <input type="month" value={f.month} onChange={(e) => setFilter('month', e.target.value)} />
-        </FilterItem>
-        <FilterItem label="Ngày tiếp nhận" width={260} secondary active={!!(f.received_date_from || f.received_date_to)}>
-          <DateRangePicker block value={{ from: f.received_date_from, to: f.received_date_to }}
-            onChange={(v) => { setF((s: any) => ({ ...s, received_date_from: v.from, received_date_to: v.to })); setPage(1) }} />
-        </FilterItem>
-        <FilterItem label="Hạn trả kết quả" width={260} secondary active={!!(f.result_due_date_from || f.result_due_date_to)}>
-          <DateRangePicker block value={{ from: f.result_due_date_from, to: f.result_due_date_to }}
-            onChange={(v) => { setF((s: any) => ({ ...s, result_due_date_from: v.from, result_due_date_to: v.to })); setPage(1) }} />
-        </FilterItem>
-        <FilterItem label="Ngày trả kết quả" width={260} secondary active={!!(f.result_date_from || f.result_date_to)}>
-          <DateRangePicker block value={{ from: f.result_date_from, to: f.result_date_to }}
-            onChange={(v) => { setF((s: any) => ({ ...s, result_date_from: v.from, result_date_to: v.to })); setPage(1) }} />
+        <FilterItem label="Tìm kiếm" grow>
+          <input value={f.q} placeholder="Mã YCBG / mục đích / phân loại / thông số…"
+            onChange={(e) => setFilter('q', e.target.value)} />
         </FilterItem>
       </FilterPanel>
+      </ConditionalFilter>
 
       <div className="card table-card">
         <TableToolbar {...table} onRefresh={load} />
