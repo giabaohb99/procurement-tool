@@ -94,6 +94,9 @@ export const queryKeys = {
     /** Các ô quan hệ form phải tự hiện theo loại, kèm danh sách chọn được (E03). */
     linkSlots: (documentId: number) => ['document', 'records', documentId, 'link-slots'] as const,
     tree: (documentId: number) => ['document', 'records', documentId, 'tree'] as const,
+    /** J10 — văn bản này bị văn bản nào sửa đổi / thay thế / bãi bỏ. */
+    amendedBy: (documentId: number) =>
+      ['document', 'records', documentId, 'amended-by'] as const,
     /** Phạm vi áp dụng của một văn bản (F01–F04). */
     scopes: (documentId: number) => ['document', 'records', documentId, 'scopes'] as const,
     scopeOptions: () => ['document', 'scope-options'] as const,

@@ -1,5 +1,6 @@
 import { apiDelete, apiGet, apiPost } from '@/core/api'
 import type {
+  DocumentAmendment,
   DocumentExcerptInput,
   DocumentLink,
   DocumentLinkInput,
@@ -18,6 +19,10 @@ export const documentLinkApi = {
   /** E03 — các ô quan hệ theo loại, kèm sẵn danh sách văn bản chọn được. */
   slots: (documentId: number) =>
     apiGet<DocumentLinkSlot[]>(`${BASE_URL}/${documentId}/link-slots`),
+
+  /** J10 — văn bản này đã bị sửa đổi / thay thế / bãi bỏ bởi những văn bản nào. */
+  amendedBy: (documentId: number) =>
+    apiGet<DocumentAmendment[]>(`${BASE_URL}/${documentId}/amended-by`),
 
   tree: (documentId: number) =>
     apiGet<DocumentTreeNode>(`${BASE_URL}/${documentId}/tree`),

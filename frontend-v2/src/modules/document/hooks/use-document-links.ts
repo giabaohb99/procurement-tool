@@ -30,6 +30,20 @@ export function useDocumentLinkSlots(documentId?: number) {
   })
 }
 
+/**
+ * J10 — nhãn "đã bị sửa đổi".
+ *
+ * Nạp cho MỌI văn bản, không chờ người dùng mở tab nào: đây là cảnh báo bắt
+ * buộc, giấu sau một cú bấm thì cũng như không có.
+ */
+export function useDocumentAmendedBy(documentId?: number) {
+  return useQuery({
+    queryKey: queryKeys.document.amendedBy(documentId ?? 0),
+    queryFn: () => documentLinkApi.amendedBy(documentId as number),
+    enabled: typeof documentId === 'number' && documentId > 0,
+  })
+}
+
 export function useDocumentTree(documentId?: number, enabled = true) {
   return useQuery({
     queryKey: queryKeys.document.tree(documentId ?? 0),
@@ -44,6 +58,7 @@ function useInvalidateLinks(documentId: number) {
     void queryClient.invalidateQueries({ queryKey: queryKeys.document.links(documentId) })
     void queryClient.invalidateQueries({ queryKey: queryKeys.document.linkSlots(documentId) })
     void queryClient.invalidateQueries({ queryKey: queryKeys.document.tree(documentId) })
+    void queryClient.invalidateQueries({ queryKey: queryKeys.document.amendedBy(documentId) })
   }
 }
 

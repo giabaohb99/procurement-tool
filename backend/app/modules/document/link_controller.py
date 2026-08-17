@@ -16,7 +16,8 @@ from app.core.database import get_db
 from app.core.response import success
 from app.modules.doc_catalog.link_rule_model import RELATION_LABELS
 
-from . import excerpt_service, link_serializer, link_service, parent_change_service
+from . import (excerpt_service, link_serializer, link_service,
+               parent_change_service, supersede_service)
 from .controller import _load
 from .link_serializer import summary_of
 
@@ -97,6 +98,23 @@ def list_link_slots(
             "options": [summary_of(db, target) for target in targets],
         })
     return success(slots)
+
+
+@router.get("/{document_id}/amended-by")
+def amended_by(
+    document_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(require("document", "read")),
+):
+    """J10 — văn bản này đã bị sửa đổi / thay thế / bãi bỏ bởi những văn bản nào.
+
+    **Bắt buộc hiện trên màn hình, không phải tùy chọn.** Quan hệ *sửa đổi* không
+    đổi trạng thái, nên Quyết định 15 bị sửa Điều 5 vẫn hiện "Có hiệu lực" — người
+    mở nó đọc Điều 5 cũ rồi làm sai, và không ai phát hiện ra vì mọi thứ trông
+    vẫn đúng.
+    """
+    doc = _load(db, document_id, user)
+    return success(supersede_service.amended_by(db, doc.id))
 
 
 @router.get("/{document_id}/tree")

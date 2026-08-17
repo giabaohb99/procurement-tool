@@ -84,6 +84,22 @@ export interface DocumentTreeNode extends LinkedDocument {
   children: DocumentTreeNode[]
 }
 
+/**
+ * J10 — một văn bản đang sửa đổi / thay thế / bãi bỏ văn bản đang mở.
+ *
+ * Chỉ gồm văn bản ĐÃ BAN HÀNH: dự thảo sửa đổi còn trong ngăn kéo thì chưa đổi
+ * gì cả, gắn nhãn sớm là dọa người đọc bằng một thứ chưa có hiệu lực.
+ */
+export interface DocumentAmendment {
+  document_id: number
+  title: string
+  display_code: string
+  relation: number
+  relation_label: string
+  effective_date: string | null
+  status_label: string
+}
+
 export interface DocumentLinkInput {
   relation: number
   target_document_id: number

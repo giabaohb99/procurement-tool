@@ -28,6 +28,7 @@ import { ReasonConfirmDialog } from '@/shared/ui/reason-confirm-dialog'
 import { RichTextEditor } from '@/shared/ui/rich-text-editor'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { DetailPageShell } from '../components/detail-page-shell'
+import { DocumentAmendedBanner } from '../components/document-amended-banner'
 import { DocumentAccessCard } from '../components/document-access-card'
 import { DocumentScopeCard } from '../components/document-scope-card'
 import { DocumentSignatureCard } from '../components/document-signature-card'
@@ -324,6 +325,10 @@ export function DocumentDetailPage() {
         }
         deleteConfirmDescription="Chỉ xóa được văn bản còn là nháp và chưa cấp số. Văn bản đã ban hành thì bãi bỏ, không xóa."
       >
+        {/*  J10 — đặt NGOÀI mọi `TabsContent` để hiện ở mọi tab. Cảnh báo bắt
+             buộc mà giấu sau một cú bấm thì cũng như không có. */}
+        <DocumentAmendedBanner documentId={documentId} />
+
         <TabsContent value="compose" className="mt-0">
           {record && (
             <DocumentNeedsReviewBanner

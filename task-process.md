@@ -13,11 +13,11 @@
 | 1 | Danh mục và số hiệu | **100%** | **ĐẠT** — cả 3 bài nghiệm thu xanh |
 | 2 | Yêu cầu, soạn thảo, phiên bản | **~75%** | chưa |
 | 3 | Bộ máy phê duyệt dùng chung | **~5%** | chưa |
-| 4 | Ban hành, phạm vi, clone | **~50%** | chưa |
-| **Tổng 4 phase** | trọng số theo khối lượng (15/30/35/20) | **≈ 49%** | |
+| 4 | Ban hành, phạm vi, clone | **~57%** | chưa |
+| **Tổng 4 phase** | trọng số theo khối lượng (15/30/35/20) | **≈ 51%** | |
 
 Đọc nhanh: **Phase 1 ĐÓNG, Phase 2 xong đúng phần lõi (soạn thảo + phiên bản), Phase 3 và 4 chưa bắt đầu.**
-Con số 49% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính năng) và hoàn toàn chưa động tới.
+Con số 51% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính năng) và hoàn toàn chưa động tới.
 
 > **Đổi gì so với lần chấm 15/08 — ba đợt:**
 >
@@ -201,7 +201,7 @@ của Thu mua.
 
 ---
 
-## 4. Phase 4 · Ban hành, phạm vi, clone — ~50%
+## 4. Phase 4 · Ban hành, phạm vi, clone — ~57%
 
 | Việc | Mã | FE v2 |
 |---|---|---|
@@ -215,7 +215,7 @@ của Thu mua.
 | Bản gốc lên phiên bản → con cần rà lại | F11 | 🟡 có cờ `requires_reconfirm`, chưa có clone để áp |
 | Màn chọn cơ chế lúc ban hành | F13 | ✅ | `document-issue-dialog.tsx` — bảng so sánh hai cơ chế lấy thẳng từ `00` mục 2.2; cảnh báo khi gắn phạm vi mà chưa khai dòng nào |
 | Cảnh báo tác động sửa cha, xử lý bãi bỏ cha | E07, E08 | ✅ | `parent_change_service.py`; hai cột `on_parent_*` giờ mới thật sự điều khiển hành vi |
-| Nhãn "đã bị sửa đổi" | J10 | ❌ |
+| Nhãn "đã bị sửa đổi" | J10 | ✅ | `supersede_service.py` + `document-amended-banner.tsx`; ba tác động tự động của quan hệ thay thế/sửa đổi/bãi bỏ |
 | Quyết định ban hành kiểm ở mức phiên bản | J11 | 🟡 chỉ có cờ `needs_decision` |
 
 Sáu bài kiểm chuyển phase 4: **0/6**.
@@ -287,6 +287,7 @@ docker compose exec -T api alembic check   # còn báo drift tab_comment_*/tab_t
 | `document/scope_service.py`, `scope_controller.py` | `test_pham_vi_ap_dung.py` |
 | `document/parent_change_service.py` | `test_document_quan_he_cha_con.py` |
 | `document/signature_service.py` | `test_chu_ky_van_ban.py` |
+| `document/supersede_service.py`, `service.approve` | `test_nhan_da_bi_sua_doi.py` |
 | `document-draft-holder-notice.tsx`, `document-version-*.tsx` | `document-draft-holder-notice.test.tsx` + kịch bản bấm tay 6.5 |
 | `document/access_service.py`, quyền theo sổ | `test_document_access.py` (22 test) |
 | `seed_data/document_phase1.py` | `test_document_phase1_seed.py` |
@@ -457,7 +458,7 @@ loại chứng từ bằng cờ, không thay chỗ.
 2. `multi_mode = 4` (đủ tỷ lệ `quorum`) có thật sự cần bản 1 không, hay ba chế độ đầu là đủ? I05 chỉ nói "ba chế độ".
 3. Chuyển 5 luồng Thu mua sang bộ máy mới (I25) là bản 2 — vậy bản 1 bộ máy chỉ chạy cho văn thư. Có đúng ý không, hay muốn chuyển sớm một luồng Thu mua để thử thật?
 
-## Phase 4 · Ban hành, phạm vi, clone (còn 6 việc)
+## Phase 4 · Ban hành, phạm vi, clone (còn 5 việc)
 
 - [x] [P4][F01/F02] Phạm vi áp dụng ba kiểu + bao gồm và loại trừ — **L** — xong 17/08
 - [x] [P4][F03/F04] Bắt buộc kèm pháp nhân khi chọn phòng ban + áp cho cả đơn vị con — **M** — xong 17/08
@@ -470,7 +471,7 @@ loại chứng từ bằng cờ, không thay chỗ.
 - [ ] [P4][F11/F12] Bản gốc lên phiên bản thì đánh dấu con cần rà lại + nhắc hạn — **M**
 - [x] [P4][F13] Màn chọn cơ chế lúc ban hành: gắn phạm vi hay clone — **S** — xong 17/08
 - [x] [P4][E07/E08] Cảnh báo tác động khi sửa cha + xử lý khi bãi bỏ cha — **M** — xong 17/08
-- [ ] [P4][J10] Nhãn "đã bị sửa đổi" trên bản cũ + tác động tự động của quan hệ thay thế/bãi bỏ — **M**
+- [x] [P4][J10] Nhãn "đã bị sửa đổi" trên bản cũ + tác động tự động của quan hệ thay thế/bãi bỏ — **M** — xong 17/08
 - [ ] [P4][J11] Quyết định ban hành kiểm ở mức phiên bản — **S**
 
 ## Thứ tự đề nghị
@@ -493,9 +494,14 @@ loại chứng từ bằng cờ, không thay chỗ.
 6. **Nghiệp vụ có phân biệt "hủy" với "bãi bỏ" không?** Tài liệu liệt kê 9 trạng thái, mã đang có 8 —
    thiếu `status = 9 đã hủy`, khác `7 bãi bỏ`. Chưa thêm vì hằng số không có nút bấm thì tạo ra trạng
    thái nửa vời. Chốt xong thì làm trọn cả luồng.
-7. **`tab_company` chưa có cột cha.** Cờ "gồm đơn vị con" (F04) hiện hiểu là *mọi pháp nhân có `level`
+7. **Văn bản hiệu lực trong TƯƠNG LAI thì tác động thay thế bị treo.** Ba tác động tự động của J10 chỉ
+   chạy khi văn bản mới thật sự có hiệu lực — ban hành hôm nay mà áp dụng từ tháng sau thì văn bản cũ
+   phải còn hiệu lực nguyên tháng đó. Nhưng hiện **không có gì chạy vào ngày hiệu lực** để đổi trạng
+   thái, nên nó sẽ không bao giờ chuyển. Cần một việc chạy theo lịch (mỗi ngày quét văn bản tới ngày
+   hiệu lực). Băng cảnh báo trên văn bản cũ thì đã hiện đúng ngay từ lúc ban hành nên chưa gây hại.
+8. **`tab_company` chưa có cột cha.** Cờ "gồm đơn vị con" (F04) hiện hiểu là *mọi pháp nhân có `level`
    lớn hơn* — đúng với cây một tầng đang có, sai ngay khi xuất hiện tầng ba thuộc hai nhánh khác nhau.
    Muốn đúng hẳn phải thêm `parent_id` vào `tab_company`. Có 13 pháp nhân thì cây có bao giờ sâu quá
    hai tầng không?
-8. **Có đổi tên `legal_issuer`/`legal_url` thành `issuer`/`external_url` như tài liệu ghi không?**
+9. **Có đổi tên `legal_issuer`/`legal_url` thành `issuer`/`external_url` như tài liệu ghi không?**
    Đang giữ tên cũ: rõ nghĩa hơn, đổi thì phải sửa cả FE mà không được thêm gì.

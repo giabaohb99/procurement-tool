@@ -282,6 +282,7 @@ def approve(db: Session, doc: Document, actor: int,
 
     from .excerpt_service import is_excerpt
     from .parent_change_service import apply_new_version
+    from .supersede_service import apply_supersede
 
     doc_type = doc_type_or_400(db, doc.doc_type_id)
     #  Bản trích KHÔNG cấp số hiệu riêng — nó gọi theo số của bản gốc (C19).
@@ -297,6 +298,15 @@ def approve(db: Session, doc: Document, actor: int,
 
     if effective <= date.today():
         switch_current(db, doc, version, previous)
+        #  J10 — ba tác động tự động: văn bản này *thay thế* cái nào thì cái đó
+        #  chuyển sang "bị thay thế", *bãi bỏ* cái nào thì cái đó sang "bãi bỏ".
+        #  Quan hệ *sửa đổi* KHÔNG đụng trạng thái — phần không bị sửa vẫn có
+        #  hiệu lực, và chính vì thế mà cái nhãn cảnh báo là bắt buộc.
+        #
+        #  ⚠️ Chỉ chạy khi văn bản mới THẬT SỰ có hiệu lực. Ban hành hôm nay mà
+        #  áp dụng từ tháng sau thì văn bản cũ còn hiệu lực nguyên tháng đó —
+        #  đổi trạng thái sớm là khai tử một văn bản đang còn giá trị.
+        apply_supersede(db, doc, actor)
         #  E07 — cha lên phiên bản mới thì MỌI văn bản con bị xử lý theo cột
         #  `on_parent_new_version` của quy tắc quan hệ. Bản trích là trường hợp
         #  đặc biệt: cột đó bị khóa cứng ở mức "đánh dấu cần rà lại" (E11 a).
