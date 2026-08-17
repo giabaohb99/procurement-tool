@@ -688,11 +688,15 @@ Nút **"Xuất Excel"** trên thanh công cụ màn danh sách YCBG, chỉ hiệ
   file. Dòng chưa chốt phương án thì cụm phương án để trống.
 
 **Bộ cột**: cụm dòng yêu cầu (STT dòng · Mã dòng nội bộ · Phân loại · Thông số kỹ thuật · Yêu cầu khác ·
-SL dự kiến · ĐVT · Giá đề xuất · Ngày tiếp nhận · Hạn trả kết quả · NSTM phụ trách · Trạng thái dòng ·
-Mã YCMH đã tạo) rồi tới cụm phương án chốt (Phương án chốt · Mã/Tên NCC · Mã SP theo NCC ·
+SL dự kiến · ĐVT · Giá đề xuất · Ngày tiếp nhận · Hạn trả kết quả · NSTM phụ trách ·
+Trạng thái dòng) rồi tới cụm phương án chốt (Phương án chốt · Mã/Tên NCC · Mã SP theo NCC ·
 Mã SP hệ thống · Tên SP báo giá · Quy cách · Xuất xứ · ĐVT báo giá · SL tối thiểu · Đơn giá báo ·
 Khoảng SL áp giá · %VAT · Thời gian giao · Nơi giao · Phí vận chuyển · Có mẫu · Kết quả kiểm nghiệm ·
 Ghi chú NSTM).
+
+**KHÔNG có cột "Mã YCMH đã tạo" (CR-079).** Một dòng khảo sát tạo được nhiều YCMH (mua lại) nhưng ô
+`pr_code` trên dòng bị ghi đè nên chỉ còn mã mới nhất — xuất ra file dễ bị đọc nhầm là đủ. Danh sách
+đủ xem trong chi tiết YCBG: bấm vào phương án → popup liệt kê hết YCMH đã tạo.
 
 **ẨN NCC — file Excel không được thành đường rò.** Đúng luật của màn kết quả khảo sát:
 
