@@ -245,12 +245,15 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 
 ### 4. Phân loại (`item_group`)
 
-- Kiểu nhập: Nhập tay (tự điền khi chọn SP)
+- Kiểu nhập: **Chọn/tìm trong Danh mục Phân loại** (CR-083, trước đó là ô nhập tay); tự điền khi chọn SP. Ô nằm trong popup chi tiết dòng hàng, bảng ngoài không còn cột này (từ 30/06).
 - Mặc định: trống
 - Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: Tự điền từ `product.item_group`; liên kết bảng `ItemGroup`
+- Nguồn dữ liệu / liên kết: Tự điền từ `product.item_group`; danh sách chọn lấy từ bảng `ItemGroup` (Danh mục > Phân loại VTBB/NL)
 - Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
-- Logic đặc biệt: Hệ thống dùng `item_group` để tra `std_days` (số ngày quy định giao hàng) từ bảng `ItemGroup` khi tính lại lần giao.
+- Logic đặc biệt:
+  - Hệ thống dùng `item_group` để tra `std_days` (số ngày quy định giao hàng) từ bảng `ItemGroup` khi tính lại lần giao.
+  - **Tra KHÔNG phân biệt hoa/thường và bỏ dấu cách thừa (CR-083).** Dữ liệu sản phẩm còn nhiều tên viết lệch danh mục ("Nhãn thùng" vs "Nhãn Thùng"); trước CR-083 các dòng đó rơi về mặc định 15 ngày nên sai Ngày QĐ và sai cờ Đơn gấp.
+  - Dòng cũ ghi lệch hoa/thường thì ô hiển thị theo cách viết của danh mục; phân loại đã bị xóa khỏi danh mục vẫn hiện, kèm chú thích "(ngoài danh mục)".
 
 ### 5. Xuất xứ / TSKT / chất liệu (`spec`)
 

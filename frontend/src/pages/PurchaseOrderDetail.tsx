@@ -19,7 +19,7 @@ import CommentThread from '../components/CommentThread'
 import AuditTimeline from '../components/AuditTimeline'
 import { fmtSize, fileIcon } from '../utils/file-type'
 import { newDupCodes } from '../utils/lines'
-import { regulatedDate, stdDaysMap, stdDaysOf } from '../utils/lead-time'
+import { normGroup, regulatedDate, stdDaysMap, stdDaysOf } from '../utils/lead-time'
 import { fmtDateStr } from '../utils/datetime'
 
 const API = '/api/purchase-orders'
@@ -207,6 +207,15 @@ export default function PurchaseOrderDetail() {
   const groupMap = useMemo(() => stdDaysMap(itemGroups), [itemGroups])
   // Ngày QĐ có hàng của 1 dòng = Ngày đặt hàng + số ngày QĐ của phân loại
   const qdDate = (it: any) => regulatedDate(groupMap, it?.item_group || '', po.order_date || '')
+  // CR-083: Phân loại chọn từ Danh mục Phân loại (trước đây gõ tay nên sai chính tả -> sai ngày QĐ).
+  const groupNames = useMemo(() => itemGroups.map((g) => String(g.name || '')).filter(Boolean), [itemGroups])
+  // Dòng cũ có thể ghi lệch hoa/thường so với danh mục -> hiện đúng cách viết của danh mục.
+  const canonGroup = (v: any) => groupNames.find((n) => normGroup(n) === normGroup(v)) || String(v || '').trim()
+  // Phân loại đã bị bỏ khỏi danh mục vẫn phải thấy được, không thì mở dòng cũ là mất chữ.
+  const groupOptions = (v: any) => {
+    const cur = canonGroup(v)
+    return !cur || groupNames.includes(cur) ? groupNames : [{ value: cur, label: `${cur} (ngoài danh mục)` }, ...groupNames]
+  }
   // Tự tính lại cờ Đơn gấp khi dữ liệu nguồn (ngày đặt / dòng hàng) đổi. KHÔNG chạy lúc mở đơn (loadAll không qua đây) → giữ đè tay.
   const recalcUrgent = (next: any) => {
     if (Object.keys(groupMap).length === 0) return next   // chưa nạp danh mục → chưa tính
@@ -874,7 +883,11 @@ export default function PurchaseOrderDetail() {
                       <ProductPicker code={it.product_code} name={it.product_name} disabled={de || lineReceived(it)} onPick={(prod) => applyProduct(ii, prod)} />
                       {lineReceived(it) && <span style={{ fontSize: 12, color: 'var(--muted)' }}><i className="ti ti-lock" /> Đã nhận hàng — khóa mã hàng / tên hàng / ĐVT</span>}
                     </div>
-                    <div className="form-row"><label>Phân loại</label><input value={it.item_group || ''} disabled={de} onChange={(e) => setItem(ii, { item_group: e.target.value })} /></div>
+                    <div className="form-row">
+                      <label>Phân loại</label>
+                      <SearchSelect value={canonGroup(it.item_group)} options={groupOptions(it.item_group)} disabled={de}
+                        placeholder="Chọn/tìm phân loại…" onChange={(v) => setItem(ii, { item_group: v })} />
+                    </div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }} title={lineReceived(it) ? PRODUCT_LOCK_HINT : undefined}><label>Tên hàng</label><TextAreaAuto style={POPUP_TEXT} value={it.product_name || ''} disabled={de || lineReceived(it)} onChange={(v) => setItem(ii, { product_name: v })} /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên trên hóa đơn</label><TextAreaAuto style={POPUP_TEXT} value={it.invoice_name || ''} disabled={de} onChange={(v) => setItem(ii, { invoice_name: v })} /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Xuất xứ / TSKT / chất liệu</label><TextAreaAuto style={POPUP_TEXT} value={it.spec || ''} disabled={de} onChange={(v) => setItem(ii, { spec: v })} /></div>
