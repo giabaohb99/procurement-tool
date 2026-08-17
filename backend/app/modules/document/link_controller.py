@@ -16,7 +16,7 @@ from app.core.database import get_db
 from app.core.response import success
 from app.modules.doc_catalog.link_rule_model import RELATION_LABELS
 
-from . import (excerpt_service, link_serializer, link_service,
+from . import (excerpt_service, issue_service, link_serializer, link_service,
                parent_change_service, supersede_service)
 from .controller import _load
 from .link_serializer import summary_of
@@ -98,6 +98,21 @@ def list_link_slots(
             "options": [summary_of(db, target) for target in targets],
         })
     return success(slots)
+
+
+@router.get("/{document_id}/issue-preview")
+def issue_preview(
+    document_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(require("document", "read")),
+):
+    """J04 — mọi thứ sắp xảy ra khi bấm Ban hành. Chỉ đọc, không đụng gì.
+
+    Ban hành không lùi được: số cấp ra là cấp vĩnh viễn, phiên bản khóa là khóa
+    một chiều, văn bản cũ bị thay thế thì đổi trạng thái ngay.
+    """
+    doc = _load(db, document_id, user)
+    return success(issue_service.preview(db, doc))
 
 
 @router.get("/{document_id}/amended-by")

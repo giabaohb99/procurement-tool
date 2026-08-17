@@ -94,6 +94,9 @@ export const queryKeys = {
     /** Các ô quan hệ form phải tự hiện theo loại, kèm danh sách chọn được (E03). */
     linkSlots: (documentId: number) => ['document', 'records', documentId, 'link-slots'] as const,
     tree: (documentId: number) => ['document', 'records', documentId, 'tree'] as const,
+    /** J04 — bản xem trước lúc ban hành. */
+    issuePreview: (documentId: number) =>
+      ['document', 'records', documentId, 'issue-preview'] as const,
     /** J10 — văn bản này bị văn bản nào sửa đổi / thay thế / bãi bỏ. */
     amendedBy: (documentId: number) =>
       ['document', 'records', documentId, 'amended-by'] as const,

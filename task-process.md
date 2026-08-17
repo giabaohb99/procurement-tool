@@ -13,11 +13,11 @@
 | 1 | Danh mục và số hiệu | **100%** | **ĐẠT** — cả 3 bài nghiệm thu xanh |
 | 2 | Yêu cầu, soạn thảo, phiên bản | **~75%** | chưa |
 | 3 | Bộ máy phê duyệt dùng chung | **~5%** | chưa |
-| 4 | Ban hành, phạm vi, clone | **~57%** | chưa |
-| **Tổng 4 phase** | trọng số theo khối lượng (15/30/35/20) | **≈ 51%** | |
+| 4 | Ban hành, phạm vi, clone | **~65%** | chưa |
+| **Tổng 4 phase** | trọng số theo khối lượng (15/30/35/20) | **≈ 53%** | |
 
 Đọc nhanh: **Phase 1 ĐÓNG, Phase 2 xong đúng phần lõi (soạn thảo + phiên bản), Phase 3 và 4 chưa bắt đầu.**
-Con số 51% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính năng) và hoàn toàn chưa động tới.
+Con số 53% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính năng) và hoàn toàn chưa động tới.
 
 > **Đổi gì so với lần chấm 15/08 — ba đợt:**
 >
@@ -201,12 +201,12 @@ của Thu mua.
 
 ---
 
-## 4. Phase 4 · Ban hành, phạm vi, clone — ~57%
+## 4. Phase 4 · Ban hành, phạm vi, clone — ~65%
 
 | Việc | Mã | FE v2 |
 |---|---|---|
 | Vòng đời văn bản 8 trạng thái | J01 | ✅ |
-| Ban hành (cấp số, đóng phiên bản) | J04 | 🟡 có `approve → effective`, chưa có màn ban hành riêng |
+| Ban hành (cấp số, đóng phiên bản) | J04 | ✅ | Màn ban hành có bản xem trước: số sắp cấp, bản sắp khóa, ngày hiệu lực, văn bản sắp bị thay thế. Tách **chặn** khỏi **cảnh báo**. Còn thiếu J05 gửi thông báo |
 | Ký điện tử nội bộ, ghi rõ loại chữ ký | J02, J03 | ✅ | `tab_signature` chỉ ghi thêm; câu giá trị pháp lý do backend cấp, hiện ngay cạnh chữ ký |
 | Phạm vi ba kiểu, bao gồm/loại trừ, áp cho đơn vị con | F01–F04 | ✅ | `tab_document_scope` + CHECK ép phòng ban phải kèm pháp nhân; `document-scope-card.tsx` |
 | Màn "văn bản áp dụng cho tôi" | F05 | ✅ | `documents-applied-to-me-page.tsx`. Thông báo theo phạm vi (J05) chưa — cần bộ thông báo |
@@ -216,7 +216,7 @@ của Thu mua.
 | Màn chọn cơ chế lúc ban hành | F13 | ✅ | `document-issue-dialog.tsx` — bảng so sánh hai cơ chế lấy thẳng từ `00` mục 2.2; cảnh báo khi gắn phạm vi mà chưa khai dòng nào |
 | Cảnh báo tác động sửa cha, xử lý bãi bỏ cha | E07, E08 | ✅ | `parent_change_service.py`; hai cột `on_parent_*` giờ mới thật sự điều khiển hành vi |
 | Nhãn "đã bị sửa đổi" | J10 | ✅ | `supersede_service.py` + `document-amended-banner.tsx`; ba tác động tự động của quan hệ thay thế/sửa đổi/bãi bỏ |
-| Quyết định ban hành kiểm ở mức phiên bản | J11 | 🟡 chỉ có cờ `needs_decision` |
+| Quyết định ban hành kiểm ở mức phiên bản | J11 | 🟡 ~60% | Loại khai `needs_decision` mà thiếu quan hệ «Kèm theo» → **chặn ban hành**. Phần *mỗi lần sửa lớn phải kèm Quyết định MỚI* chưa làm — xem câu hỏi 8 |
 
 Sáu bài kiểm chuyển phase 4: **0/6**.
 
@@ -288,6 +288,7 @@ docker compose exec -T api alembic check   # còn báo drift tab_comment_*/tab_t
 | `document/parent_change_service.py` | `test_document_quan_he_cha_con.py` |
 | `document/signature_service.py` | `test_chu_ky_van_ban.py` |
 | `document/supersede_service.py`, `service.approve` | `test_nhan_da_bi_sua_doi.py` |
+| `document/issue_service.py` | `test_ban_hanh_van_ban.py` |
 | `document-draft-holder-notice.tsx`, `document-version-*.tsx` | `document-draft-holder-notice.test.tsx` + kịch bản bấm tay 6.5 |
 | `document/access_service.py`, quyền theo sổ | `test_document_access.py` (22 test) |
 | `seed_data/document_phase1.py` | `test_document_phase1_seed.py` |
@@ -458,21 +459,21 @@ loại chứng từ bằng cờ, không thay chỗ.
 2. `multi_mode = 4` (đủ tỷ lệ `quorum`) có thật sự cần bản 1 không, hay ba chế độ đầu là đủ? I05 chỉ nói "ba chế độ".
 3. Chuyển 5 luồng Thu mua sang bộ máy mới (I25) là bản 2 — vậy bản 1 bộ máy chỉ chạy cho văn thư. Có đúng ý không, hay muốn chuyển sớm một luồng Thu mua để thử thật?
 
-## Phase 4 · Ban hành, phạm vi, clone (còn 5 việc)
+## Phase 4 · Ban hành, phạm vi, clone (còn 4 việc)
 
 - [x] [P4][F01/F02] Phạm vi áp dụng ba kiểu + bao gồm và loại trừ — **L** — xong 17/08
 - [x] [P4][F03/F04] Bắt buộc kèm pháp nhân khi chọn phòng ban + áp cho cả đơn vị con — **M** — xong 17/08
 - [x] [P4][F05] Màn "văn bản áp dụng cho tôi" — **S** — xong 17/08
 - [ ] [P4][J05] Thông báo theo phạm vi — **S** — cần bộ thông báo, chưa làm
 - [x] [P4][J02/J03] Ký điện tử nội bộ, bản ghi ký, mã băm, ghi rõ loại chữ ký — **L** — xong 17/08. J08 (ký số thật, cần USB) vẫn là dịch vụ riêng chưa làm
-- [ ] [P4][J04] Màn ban hành: cấp số, đóng phiên bản — **M**
+- [x] [P4][J04] Màn ban hành: cấp số, đóng phiên bản — **M** — xong 17/08
 - [ ] [P4][F06/F07/F08] Clone xuống pháp nhân con: tạo nháp, giữ liên kết ngược, số hiệu riêng — **L** — CHỜ chốt câu hỏi 4
 - [ ] [P4][F09/F10] Gửi thư kèm bản nháp + bảng theo dõi các bản clone — **M**
 - [ ] [P4][F11/F12] Bản gốc lên phiên bản thì đánh dấu con cần rà lại + nhắc hạn — **M**
 - [x] [P4][F13] Màn chọn cơ chế lúc ban hành: gắn phạm vi hay clone — **S** — xong 17/08
 - [x] [P4][E07/E08] Cảnh báo tác động khi sửa cha + xử lý khi bãi bỏ cha — **M** — xong 17/08
 - [x] [P4][J10] Nhãn "đã bị sửa đổi" trên bản cũ + tác động tự động của quan hệ thay thế/bãi bỏ — **M** — xong 17/08
-- [ ] [P4][J11] Quyết định ban hành kiểm ở mức phiên bản — **S**
+- [ ] [P4][J11] Quyết định ban hành kiểm ở mức PHIÊN BẢN — **S** — phần chặn khi thiếu Quyết định đã xong 17/08; còn phần ràng buộc "sửa lớn phải kèm Quyết định mới"
 
 ## Thứ tự đề nghị
 
@@ -499,9 +500,14 @@ loại chứng từ bằng cờ, không thay chỗ.
    phải còn hiệu lực nguyên tháng đó. Nhưng hiện **không có gì chạy vào ngày hiệu lực** để đổi trạng
    thái, nên nó sẽ không bao giờ chuyển. Cần một việc chạy theo lịch (mỗi ngày quét văn bản tới ngày
    hiệu lực). Băng cảnh báo trên văn bản cũ thì đã hiện đúng ngay từ lúc ban hành nên chưa gây hại.
-8. **`tab_company` chưa có cột cha.** Cờ "gồm đơn vị con" (F04) hiện hiểu là *mọi pháp nhân có `level`
+8. **J11 mới làm được nửa.** Đã chặn: loại khai `needs_decision` mà không có quan hệ «Kèm theo» thì không
+   ban hành được. Chưa làm: *"mỗi lần sửa lớn phải kèm một Quyết định MỚI, không dùng lại Quyết định ban
+   hành lần đầu"* — `tab_document_link` không có chiều phiên bản nên hiện không biết Quyết định nào đã
+   dùng cho bản nào. Cần chốt cách buộc: thêm `version_id` vào dòng quan hệ «Kèm theo», hay so ngày ban
+   hành của Quyết định với ngày duyệt bản trước?
+9. **`tab_company` chưa có cột cha.** Cờ "gồm đơn vị con" (F04) hiện hiểu là *mọi pháp nhân có `level`
    lớn hơn* — đúng với cây một tầng đang có, sai ngay khi xuất hiện tầng ba thuộc hai nhánh khác nhau.
    Muốn đúng hẳn phải thêm `parent_id` vào `tab_company`. Có 13 pháp nhân thì cây có bao giờ sâu quá
    hai tầng không?
-9. **Có đổi tên `legal_issuer`/`legal_url` thành `issuer`/`external_url` như tài liệu ghi không?**
+10. **Có đổi tên `legal_issuer`/`legal_url` thành `issuer`/`external_url` như tài liệu ghi không?**
    Đang giữ tên cũ: rõ nghĩa hơn, đổi thì phải sửa cả FE mà không được thêm gì.

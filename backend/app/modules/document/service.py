@@ -281,8 +281,13 @@ def approve(db: Session, doc: Document, actor: int,
         doc.apply_mode = apply_mode
 
     from .excerpt_service import is_excerpt
+    from .issue_service import ensure_can_issue
     from .parent_change_service import apply_new_version
     from .supersede_service import apply_supersede
+
+    #  J11 — loại khai "ban hành phải kèm Quyết định" thì thiếu là không cho ban
+    #  hành. Chặn ở đây chứ không chỉ trên màn xem trước: màn đó là tiện ích.
+    ensure_can_issue(db, doc)
 
     doc_type = doc_type_or_400(db, doc.doc_type_id)
     #  Bản trích KHÔNG cấp số hiệu riêng — nó gọi theo số của bản gốc (C19).

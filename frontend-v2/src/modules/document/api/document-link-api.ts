@@ -1,6 +1,7 @@
 import { apiDelete, apiGet, apiPost } from '@/core/api'
 import type {
   DocumentAmendment,
+  DocumentIssuePreview,
   DocumentExcerptInput,
   DocumentLink,
   DocumentLinkInput,
@@ -19,6 +20,10 @@ export const documentLinkApi = {
   /** E03 — các ô quan hệ theo loại, kèm sẵn danh sách văn bản chọn được. */
   slots: (documentId: number) =>
     apiGet<DocumentLinkSlot[]>(`${BASE_URL}/${documentId}/link-slots`),
+
+  /** J04 — bản xem trước lúc ban hành. Chỉ đọc, không chiếm số. */
+  issuePreview: (documentId: number) =>
+    apiGet<DocumentIssuePreview>(`${BASE_URL}/${documentId}/issue-preview`),
 
   /** J10 — văn bản này đã bị sửa đổi / thay thế / bãi bỏ bởi những văn bản nào. */
   amendedBy: (documentId: number) =>

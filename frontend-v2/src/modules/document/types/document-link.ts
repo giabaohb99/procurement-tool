@@ -100,6 +100,39 @@ export interface DocumentAmendment {
   status_label: string
 }
 
+/** Một văn bản sẽ đổi trạng thái khi văn bản đang mở được ban hành (J10). */
+export interface SupersedeTarget {
+  document_id: number
+  title: string
+  display_code: string
+  relation_label: string
+  current_status_label: string
+  next_status_label: string
+}
+
+/**
+ * J04 — mọi thứ sắp xảy ra khi bấm Ban hành.
+ *
+ * `blockers` là thứ backend SẼ TỪ CHỐI; `warnings` là thứ vẫn ban hành được
+ * nhưng gần như chắc chắn là quên. Gộp chung hai loại thì người dùng học được
+ * thói quen bỏ qua tất.
+ */
+export interface DocumentIssuePreview {
+  version_id: number | null
+  version_no: string
+  effective_date: string | null
+  /** Có hiệu lực ngay hay còn chờ tới ngày — quyết định văn bản cũ chết ngay hay chưa. */
+  effective_now: boolean
+  issue_number_preview: string
+  number_on_approve: boolean
+  needs_decision: boolean
+  has_decision: boolean
+  scope_count: number
+  will_supersede: SupersedeTarget[]
+  blockers: string[]
+  warnings: string[]
+}
+
 export interface DocumentLinkInput {
   relation: number
   target_document_id: number

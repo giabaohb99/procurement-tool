@@ -31,6 +31,21 @@ export function useDocumentLinkSlots(documentId?: number) {
 }
 
 /**
+ * J04 — bản xem trước lúc ban hành.
+ *
+ * `enabled` để hộp thoại chỉ hỏi khi thật sự mở: đây là truy vấn nặng nhất của
+ * trang (đọc quan hệ, phạm vi, xem trước số hiệu) mà 99% lượt mở văn bản không
+ * cần tới nó.
+ */
+export function useIssuePreview(documentId?: number, enabled = false) {
+  return useQuery({
+    queryKey: queryKeys.document.issuePreview(documentId ?? 0),
+    queryFn: () => documentLinkApi.issuePreview(documentId as number),
+    enabled: enabled && typeof documentId === 'number' && documentId > 0,
+  })
+}
+
+/**
  * J10 — nhãn "đã bị sửa đổi".
  *
  * Nạp cho MỌI văn bản, không chờ người dùng mở tab nào: đây là cảnh báo bắt

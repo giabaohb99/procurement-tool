@@ -1,4 +1,4 @@
-import { AlertTriangle, Building2, Copy, Target } from 'lucide-react'
+import { Building2, Copy, Target } from 'lucide-react'
 import { useState } from 'react'
 
 import { Button } from '@/shared/ui/button'
@@ -12,8 +12,9 @@ import {
 } from '@/shared/ui/dialog'
 import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group'
 import { cn } from '@/shared/utils/cn'
-import { useDocumentScopes } from '../hooks/use-document-scopes'
+import { useIssuePreview } from '../hooks/use-document-links'
 import { APPLY_MODE } from '../types/document-record'
+import { IssuePreflightSummary } from './issue-preflight-summary'
 
 interface DocumentIssueDialogProps {
   documentId: number
@@ -44,12 +45,12 @@ export function DocumentIssueDialog({
   onConfirm,
 }: DocumentIssueDialogProps) {
   const [mode, setMode] = useState(String(currentMode || APPLY_MODE.scope))
-  const { data: scopes } = useDocumentScopes(documentId)
+  //  Chỉ hỏi khi hộp thoại thật sự mở — đây là truy vấn nặng nhất của trang.
+  const { data: preview } = useIssuePreview(documentId, open)
 
   const chonPhamVi = Number(mode) === APPLY_MODE.scope
-  //  Cảnh báo đúng lúc đáng cảnh báo nhất: sắp ban hành một văn bản gắn phạm vi
-  //  mà chưa khai dòng phạm vi nào — theo quy tắc của hệ thì nó không tới ai.
-  const khongToiAi = chonPhamVi && scopes?.applies_to_nobody
+  //  Backend sẽ từ chối những thứ này — không bày ra nút bấm sẽ hỏng.
+  const biChan = (preview?.blockers.length ?? 0) > 0
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -57,10 +58,14 @@ export function DocumentIssueDialog({
         <DialogHeader>
           <DialogTitle>Ban hành văn bản</DialogTitle>
           <DialogDescription>
-            Văn bản sẽ được cấp số và phiên bản hiện tại bị khóa lại. Chọn cách áp
-            dụng cho các pháp nhân con.
+            Ban hành không lùi lại được: số hiệu cấp ra là cấp vĩnh viễn, phiên bản
+            bị khóa một chiều. Xem kỹ phần dưới trước khi bấm.
           </DialogDescription>
         </DialogHeader>
+
+        {/*  J04 — bốn thứ sắp xảy ra, đặt TRƯỚC phần chọn cơ chế: người ban hành
+             cần biết mình đang ban hành cái gì trước khi chọn áp dụng ra sao. */}
+        {preview && <IssuePreflightSummary preview={preview} />}
 
         <RadioGroup value={mode} onValueChange={setMode} className="gap-3">
           <ModeOption
@@ -82,18 +87,6 @@ export function DocumentIssueDialog({
           />
         </RadioGroup>
 
-        {khongToiAi && (
-          <p className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700" />
-            <span>
-              Văn bản này <b>chưa khai phạm vi áp dụng nào</b> nên sẽ không hiện
-              trong mục «Văn bản áp dụng cho tôi» của bất kỳ ai. Để trống không có
-              nghĩa là áp cho mọi người. Vẫn ban hành được — nhưng nên khai phạm vi
-              ở tab Thông tin trước.
-            </span>
-          </p>
-        )}
-
         {!chonPhamVi && (
           <p className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
             <Building2 className="mt-0.5 size-4 shrink-0 text-amber-700" />
@@ -110,7 +103,11 @@ export function DocumentIssueDialog({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Hủy
           </Button>
-          <Button type="button" disabled={isPending} onClick={() => onConfirm(Number(mode))}>
+          <Button
+            type="button"
+            disabled={isPending || biChan}
+            onClick={() => onConfirm(Number(mode))}
+          >
             Ban hành
           </Button>
         </DialogFooter>
