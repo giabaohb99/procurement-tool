@@ -66,6 +66,8 @@ export interface DocumentLinkSlot {
   relation: number
   relation_label: string
   target_type_id: number | null
+  /** Tên loại đích, hoặc "Loại bất kỳ". Hai ô cùng quan hệ phân biệt nhau bằng đây. */
+  target_type_name: string
   is_required: boolean
   min_count: number
   /** 0 = không giới hạn. */

@@ -36,12 +36,21 @@ export function DocumentLinkTab({ documentId, canWrite }: DocumentLinkTabProps) 
   const incoming = data?.incoming ?? []
   const missing = data?.missing_required ?? []
 
-  //  Đếm theo loại quan hệ để form biết ô nào đã đủ số lượng tối đa.
-  const countByRelation = useMemo(() => {
+  //  Đếm theo TỪNG DÒNG QUY TẮC, không theo loại quan hệ: một loại văn bản có
+  //  thể có hai dòng cùng quan hệ khác loại đích (Biểu mẫu *thuộc về* Quy trình
+  //  và *thuộc về* Quy chế). Đếm gộp thì khai một cái là ô kia cũng tự khóa.
+  const countByRule = useMemo(() => {
     const dem: Record<number, number> = {}
-    for (const link of outgoing) dem[link.relation] = (dem[link.relation] ?? 0) + 1
+    for (const slot of slots) {
+      dem[slot.rule_id] = outgoing.filter(
+        (link) =>
+          link.relation === slot.relation &&
+          //  Quy tắc để trống loại đích thì mọi văn bản đều tính.
+          (!slot.target_type_id || link.document?.doc_type_id === slot.target_type_id),
+      ).length
+    }
     return dem
-  }, [outgoing])
+  }, [outgoing, slots])
 
   return (
     <div className="space-y-4">
@@ -69,7 +78,7 @@ export function DocumentLinkTab({ documentId, canWrite }: DocumentLinkTabProps) 
           <CardContent>
             <DocumentLinkAddForm
               slots={slots}
-              countByRelation={countByRelation}
+              countByRule={countByRule}
               disabled={addLink.isPending}
               onAdd={(relation, targetDocumentId) =>
                 addLink.mutate({ relation, target_document_id: targetDocumentId })

@@ -162,7 +162,10 @@ def add_link(db: Session, source: Document, relation: int, target_document_id: i
     if existing:
         raise HTTPException(400, "Quan hệ này đã khai rồi")
 
-    if rule and rule.max_count and _count_relation(db, source.id, relation) >= rule.max_count:
+    da_khai = (
+        _count_relation(db, source.id, relation, rule.target_type_id) if rule else 0
+    )
+    if rule and rule.max_count and da_khai >= rule.max_count:
         raise HTTPException(
             400,
             f"Quan hệ «{RELATION_LABELS[relation]}» chỉ được khai tối đa "
@@ -208,7 +211,7 @@ def missing_required(db: Session, doc: Document) -> list[str]:
         if not rule.is_required:
             continue
         can = max(rule.min_count, 1)
-        dang_co = _count_relation(db, doc.id, rule.relation)
+        dang_co = _count_relation(db, doc.id, rule.relation, rule.target_type_id)
         if dang_co < can:
             ten_dich = _type_name(db, rule.target_type_id) if rule.target_type_id else "văn bản"
             thieu.append(
@@ -227,13 +230,27 @@ def ensure_required_links(db: Session, doc: Document):
         )
 
 
-def _count_relation(db: Session, source_id: int, relation: int) -> int:
-    return (
-        db.query(DocumentLink.id)
-        .filter(DocumentLink.source_document_id == source_id,
-                DocumentLink.relation == relation)
-        .count()
+def _count_relation(db: Session, source_id: int, relation: int,
+                    target_type_id: int | None = None) -> int:
+    """Đếm quan hệ đã khai, ĐÚNG THEO một dòng quy tắc.
+
+    Phải lọc cả LOẠI ĐÍCH chứ không chỉ loại quan hệ: một loại nguồn có thể có
+    nhiều dòng cùng quan hệ, khác đích — Biểu mẫu *thuộc về* Quy trình (bắt buộc)
+    và Biểu mẫu *thuộc về* Quy chế (tùy chọn).
+
+    Đếm gộp theo quan hệ thì khai một Quy chế là thỏa mãn luôn dòng đòi Quy
+    trình, tức cổng "chặn gửi duyệt khi thiếu quan hệ bắt buộc" bị đi vòng bằng
+    cách khai sai loại đích.
+    """
+    query = db.query(DocumentLink.id).filter(
+        DocumentLink.source_document_id == source_id,
+        DocumentLink.relation == relation,
     )
+    if target_type_id:
+        query = query.join(
+            Document, Document.id == DocumentLink.target_document_id
+        ).filter(Document.doc_type_id == target_type_id)
+    return query.count()
 
 
 def _type_name(db: Session, doc_type_id: int | None) -> str:

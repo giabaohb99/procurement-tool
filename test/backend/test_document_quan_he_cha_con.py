@@ -228,3 +228,67 @@ def test_doc_nguoc_quan_he_theo_phia_dang_xem(db, catalog):
     assert tu_con["direction"] == "outgoing"
     assert tu_cha["relation_label"] == "Được hướng dẫn bởi"
     assert tu_cha["direction"] == "incoming"
+
+
+# ── Hai dòng quy tắc CÙNG quan hệ, KHÁC loại đích ────────────────────────────
+#
+# Biểu mẫu *thuộc về* Quy trình (bắt buộc) và Biểu mẫu *thuộc về* Quy chế (tùy
+# chọn) là hai dòng khác nhau. Đếm gộp theo loại quan hệ thì khai một Quy chế
+# làm thỏa mãn luôn dòng đòi Quy trình — cổng E04 bị đi vòng bằng cách khai sai
+# loại đích. Lỗi này lọt qua toàn bộ bài kiểm ở trên vì chúng chỉ dựng MỘT dòng
+# quy tắc cho mỗi quan hệ.
+@pytest.fixture()
+def hai_dong_thuoc_ve(db, catalog):
+    quy_che = DocType(code="QC", name="Quy chế", id_scheme=1, number_when=2)
+    db.add(quy_che)
+    db.commit()
+    db.add(DocTypeLinkRule(source_type_id=catalog["BM"].id, relation=RELATION_BELONGS,
+                           target_type_id=quy_che.id, is_required=False))
+    db.commit()
+    catalog["QC"] = quy_che
+    return catalog
+
+
+def test_khai_sai_loai_dich_khong_qua_duoc_cong_bat_buoc(db, hai_dong_thuoc_ve):
+    bieu_mau = _tao(db, hai_dong_thuoc_ve, "BM", "Biểu mẫu đề nghị")
+    quy_che = _tao(db, hai_dong_thuoc_ve, "QC", "Quy chế lương")
+
+    link_service.add_link(db, bieu_mau, RELATION_BELONGS, quy_che.id, "", ACTOR)
+
+    #  Dòng bắt buộc đòi QUY TRÌNH — khai Quy chế không thay thế được.
+    thieu = link_service.missing_required(db, bieu_mau)
+    assert len(thieu) == 1 and "Quy trình" in thieu[0]
+
+    with pytest.raises(HTTPException):
+        service.submit(db, bieu_mau, ACTOR)
+
+
+def test_khai_dung_loai_dich_thi_qua_cong(db, hai_dong_thuoc_ve):
+    bieu_mau = _tao(db, hai_dong_thuoc_ve, "BM", "Biểu mẫu đề nghị")
+    quy_trinh = _tao(db, hai_dong_thuoc_ve, "QT", "Quy trình mua hàng")
+
+    link_service.add_link(db, bieu_mau, RELATION_BELONGS, quy_trinh.id, "", ACTOR)
+
+    assert link_service.missing_required(db, bieu_mau) == []
+    service.submit(db, bieu_mau, ACTOR)
+
+
+def test_so_luong_toi_da_dem_rieng_tung_dong_quy_tac(db, hai_dong_thuoc_ve):
+    """Dòng QT tối đa 1 không được chặn dòng QC — hai bộ đếm độc lập."""
+    for rule in link_service.rules_for_type(db, hai_dong_thuoc_ve["BM"].id):
+        rule.max_count = 1
+    db.commit()
+
+    bieu_mau = _tao(db, hai_dong_thuoc_ve, "BM", "Biểu mẫu đề nghị")
+    quy_trinh = _tao(db, hai_dong_thuoc_ve, "QT", "Quy trình mua hàng")
+    quy_che = _tao(db, hai_dong_thuoc_ve, "QC", "Quy chế lương")
+
+    link_service.add_link(db, bieu_mau, RELATION_BELONGS, quy_trinh.id, "", ACTOR)
+    #  Khai tiếp sang loại đích KHÁC phải được — trước đây bị chặn vì đếm gộp.
+    link_service.add_link(db, bieu_mau, RELATION_BELONGS, quy_che.id, "", ACTOR)
+
+    #  Nhưng thêm cái thứ hai CÙNG loại đích thì đúng là phải chặn.
+    quy_trinh_2 = _tao(db, hai_dong_thuoc_ve, "QT", "Quy trình bán hàng")
+    with pytest.raises(HTTPException) as loi:
+        link_service.add_link(db, bieu_mau, RELATION_BELONGS, quy_trinh_2.id, "", ACTOR)
+    assert "tối đa" in loi.value.detail

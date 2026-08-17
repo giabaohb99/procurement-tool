@@ -23,6 +23,14 @@ from .link_serializer import summary_of
 router = APIRouter(prefix="/api/documents", tags=["document-link"])
 
 
+def _ten_loai(db: Session, doc_type_id: int | None) -> str:
+    """Rỗng = loại nào cũng được — nói thẳng ra thay vì để trống."""
+    from app.modules.doc_catalog.model import DocType
+
+    doc_type = db.get(DocType, doc_type_id) if doc_type_id else None
+    return doc_type.name if doc_type else "Loại bất kỳ"
+
+
 class LinkCreate(BaseModel):
     relation: int = Field(ge=1, le=10)
     target_document_id: int
@@ -80,6 +88,9 @@ def list_link_slots(
             "relation": rule.relation,
             "relation_label": RELATION_LABELS.get(rule.relation, str(rule.relation)),
             "target_type_id": rule.target_type_id,
+            #  Hai dòng cùng quan hệ khác đích thì nhãn phải nói ra đích, nếu
+            #  không màn hình hiện hai ô "Thuộc về" y hệt nhau.
+            "target_type_name": _ten_loai(db, rule.target_type_id),
             "is_required": rule.is_required,
             "min_count": rule.min_count,
             "max_count": rule.max_count,

@@ -14,8 +14,15 @@ import type { DocumentLinkSlot } from '../types/document-link'
 
 interface DocumentLinkAddFormProps {
   slots: DocumentLinkSlot[]
-  /** Số quan hệ đã khai theo từng loại — để tắt ô đã đủ số lượng tối đa. */
-  countByRelation: Record<number, number>
+  /**
+   * Số quan hệ đã khai cho TỪNG Ô, khóa theo `rule_id`.
+   *
+   * Không khóa theo `relation`: một loại văn bản có thể có hai dòng quy tắc cùng
+   * quan hệ khác loại đích — Biểu mẫu *thuộc về* Quy trình (bắt buộc) và Biểu
+   * mẫu *thuộc về* Quy chế (tùy chọn). Đếm gộp thì khai một cái là ô kia cũng
+   * hiện "đã khai 1" rồi tự khóa.
+   */
+  countByRule: Record<number, number>
   disabled?: boolean
   onAdd: (relation: number, targetDocumentId: number) => void
 }
@@ -30,12 +37,12 @@ interface DocumentLinkAddFormProps {
  */
 export function DocumentLinkAddForm({
   slots,
-  countByRelation,
+  countByRule,
   disabled = false,
   onAdd,
 }: DocumentLinkAddFormProps) {
-  //  Giá trị đang chọn của TỪNG ô, khóa theo `relation`: hai ô cùng mở một lúc
-  //  mà dùng chung một state thì chọn ô này làm nhảy ô kia.
+  //  Giá trị đang chọn của TỪNG ô, khóa theo `rule_id` — khóa theo `relation`
+  //  thì hai ô "Thuộc về" dùng chung một ô nhớ, chọn ô này nhảy luôn ô kia.
   const [picked, setPicked] = useState<Record<number, string>>({})
 
   if (slots.length === 0) {
@@ -49,14 +56,17 @@ export function DocumentLinkAddForm({
   return (
     <div className="space-y-4">
       {slots.map((slot) => {
-        const daCo = countByRelation[slot.relation] ?? 0
+        const daCo = countByRule[slot.rule_id] ?? 0
         const daDu = slot.max_count > 0 && daCo >= slot.max_count
-        const value = picked[slot.relation] ?? ''
+        const value = picked[slot.rule_id] ?? ''
 
         return (
-          <div key={`${slot.relation}-${slot.rule_id}`} className="space-y-2">
+          <div key={slot.rule_id} className="space-y-2">
             <Label>
-              {slot.relation_label}
+              {/*  Kèm loại đích: hai dòng quy tắc cùng quan hệ mà chỉ ghi "Thuộc
+                   về" thì trên màn hình ra hai ô y hệt nhau, không biết ô nào
+                   đang bắt buộc. */}
+              {slot.relation_label} → {slot.target_type_name}
               {slot.is_required && <span className="text-destructive"> *</span>}
               <span className="ml-2 font-normal text-muted-foreground">
                 {slot.max_count > 0
@@ -70,7 +80,7 @@ export function DocumentLinkAddForm({
                 value={value}
                 disabled={disabled || daDu || slot.options.length === 0}
                 onValueChange={(next) =>
-                  setPicked((truoc) => ({ ...truoc, [slot.relation]: next }))
+                  setPicked((truoc) => ({ ...truoc, [slot.rule_id]: next }))
                 }
               >
                 <SelectTrigger className="flex-1">
@@ -98,7 +108,7 @@ export function DocumentLinkAddForm({
                 disabled={disabled || daDu || !value}
                 onClick={() => {
                   onAdd(slot.relation, Number(value))
-                  setPicked((truoc) => ({ ...truoc, [slot.relation]: '' }))
+                  setPicked((truoc) => ({ ...truoc, [slot.rule_id]: '' }))
                 }}
               >
                 <Plus className="size-4" />
