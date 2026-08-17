@@ -19,6 +19,7 @@
  *   }
  */
 export { DEFAULT_OPERATORS, OPERATOR_LABELS } from './constants'
+export { applyClientFilter } from './helpers/apply-client-filter'
 export { buildRestQuery } from './helpers/query-builder'
 export { getValidFilterRows, isValidFilterRow } from './helpers/validators'
 export { useFilterQuery } from './hooks/use-filter-query'

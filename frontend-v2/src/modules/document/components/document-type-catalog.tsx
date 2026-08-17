@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react'
 
 import {
+  applyClientFilter,
   ConditionalFilter,
   FilterProvider,
   useFilterContext,
@@ -9,7 +10,6 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import type { DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
 import { DOCUMENT_TYPE_FILTER_FIELDS } from '../config/document-filter-fields'
-import { filterDocumentTypes } from '../helpers/filter-document-types'
 import { useDocumentTypes } from '../hooks/use-document-types'
 import {
   DOCUMENT_TYPE_FLAGS,
@@ -48,7 +48,7 @@ function DocumentTypeCatalogContent() {
   // danh sách rồi thì lọc ở client nhanh hơn và đỡ một vòng gọi mỗi lần gõ.
   const { appliedState } = useFilterContext()
   const filterRows = useCallback(
-    (rows: DocumentType[]) => filterDocumentTypes(rows, appliedState),
+    (rows: DocumentType[]) => applyClientFilter(rows, appliedState),
     [appliedState],
   )
 

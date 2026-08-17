@@ -5,8 +5,8 @@ import { DOCUMENT_TYPE_FLAGS, DOC_GROUP_LABELS } from '../types/document-type'
  * Trường của BỘ LỌC NÂNG CAO trên danh sách Loại văn bản.
  *
  * Danh mục này nạp cả danh sách một lần rồi lọc NGAY TẠI TRÌNH DUYỆT
- * (`helpers/filter-document-types.ts`) — dưới 100 dòng thì lọc ở client nhanh
- * hơn gọi lại API. `name` vì thế chỉ cần trùng tên trường của `DocumentType`.
+ * (`applyClientFilter`) — dưới 100 dòng thì lọc ở client nhanh hơn gọi lại API.
+ * `name` vì thế chỉ cần trùng tên trường của `DocumentType`.
  *
  * Nếu sau này danh mục phình lên và phải lọc phía server, `name` phải nằm trong
  * whitelist `filterable` của `doc_type_router`.
