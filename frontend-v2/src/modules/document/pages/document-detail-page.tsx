@@ -5,9 +5,11 @@ import {
   FileText,
   GitBranch,
   Info,
+  Link2,
   Loader2,
   Pencil,
   Save,
+  Scissors,
   Send,
   Undo2,
 } from 'lucide-react'
@@ -17,6 +19,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
+import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { Badge } from '@/shared/ui/badge'
@@ -25,12 +28,21 @@ import { ReasonConfirmDialog } from '@/shared/ui/reason-confirm-dialog'
 import { RichTextEditor } from '@/shared/ui/rich-text-editor'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { DetailPageShell } from '../components/detail-page-shell'
+import { DocumentAmendedBanner } from '../components/document-amended-banner'
 import { DocumentAccessCard } from '../components/document-access-card'
+import { DocumentScopeCard } from '../components/document-scope-card'
+import { DocumentCloneCard } from '../components/document-clone-card'
+import { DocumentSignatureCard } from '../components/document-signature-card'
 import { DocumentAttachmentList } from '../components/document-attachment-list'
 import { DocumentAutosaveStatus } from '../components/document-autosave-status'
 import { DocumentRecordForm } from '../components/document-record-form'
 import { DocumentVersionBanner } from '../components/document-version-banner'
 import { DocumentVersionTab } from '../components/document-version-tab'
+import { DocumentLinkTab } from '../components/document-link-tab'
+import { DocumentExcerptDialog } from '../components/document-excerpt-dialog'
+import { DocumentIssueDialog } from '../components/document-issue-dialog'
+import { DocumentNeedsReviewBanner } from '../components/document-needs-review-banner'
+import { useCreateExcerpt } from '../hooks/use-document-links'
 import { ManualIssueNumberDialog } from '../components/manual-issue-number-dialog'
 import { documentToForm, emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
 import { effectiveLabel } from '../helpers/document-status'
@@ -99,7 +111,14 @@ export function DocumentDetailPage() {
   const workflow = useDocumentWorkflow(documentId)
   const updateIssueNumber = useUpdateDocumentIssueNumber(documentId)
   const saveContent = useSaveVersionContent(documentId, versionId)
+  const createExcerpt = useCreateExcerpt(documentId)
+  const [excerptOpen, setExcerptOpen] = useState(false)
+  const [issueOpen, setIssueOpen] = useState(false)
 
+  const { can } = usePermission()
+  //  Ký là hành vi PHÊ DUYỆT, không phải sửa nội dung — gác bằng `approve` đúng
+  //  như backend làm.
+  const canApprove = can('document', 'approve')
   const canWrite = permissions?.write ?? false
   const canDelete = permissions?.delete ?? false
 
@@ -200,7 +219,20 @@ export function DocumentDetailPage() {
                 <GitBranch className="size-4" />
                 Phiên bản
               </TabsTrigger>
+              <TabsTrigger value="links">
+                <Link2 className="size-4" />
+                Quan hệ
+              </TabsTrigger>
             </TabsList>
+
+            {/*  C19 — chỉ trích được từ văn bản ĐÃ BAN HÀNH: trích từ một bản
+                 nháp là chia ra ngoài thứ chưa ai duyệt. */}
+            {isIssued && (
+              <Button type="button" variant="outline" onClick={() => setExcerptOpen(true)}>
+                <Scissors className="size-4" />
+                Tạo bản trích
+              </Button>
+            )}
 
             {/* KHÔNG có nút nhập tệp ở đây: nhập từ Word/Markdown chỉ dùng lúc
                 dựng MẪU (`document-template-detail-page.tsx`). Văn bản thật soạn
@@ -274,7 +306,7 @@ export function DocumentDetailPage() {
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => workflow.approve.mutate()}
+                  onClick={() => setIssueOpen(true)}
                   disabled={workflow.approve.isPending}
                 >
                   <Check className="size-4" />
@@ -294,7 +326,18 @@ export function DocumentDetailPage() {
         }
         deleteConfirmDescription="Chỉ xóa được văn bản còn là nháp và chưa cấp số. Văn bản đã ban hành thì bãi bỏ, không xóa."
       >
+        {/*  J10 — đặt NGOÀI mọi `TabsContent` để hiện ở mọi tab. Cảnh báo bắt
+             buộc mà giấu sau một cú bấm thì cũng như không có. */}
+        <DocumentAmendedBanner documentId={documentId} />
+
         <TabsContent value="compose" className="mt-0">
+          {record && (
+            <DocumentNeedsReviewBanner
+              needsReview={record.needs_review}
+              note={record.needs_review_note}
+            />
+          )}
+
           {record && version && (
             <DocumentVersionBanner
               document={record}
@@ -325,6 +368,25 @@ export function DocumentDetailPage() {
             onSubmit={handleSubmitForm}
           >
             <DocumentAttachmentList versionId={versionId} readOnly={!canWrite || isLocked} />
+            {/*  Phạm vi áp dụng (F01–F04) khác QUYỀN TRUY CẬP: phạm vi trả lời
+                 "văn bản này áp cho ai phải làm theo", quyền trả lời "ai được
+                 mở ra đọc". Hai câu hỏi khác nhau, để cạnh nhau cho dễ đối chiếu. */}
+            {/*  Chữ ký gắn với PHIÊN BẢN đang mở — ký được sau khi bản đó đã
+                 duyệt và khóa lại. */}
+            <DocumentSignatureCard
+              documentId={documentId}
+              versionId={versionId}
+              isLocked={isLocked}
+              canApprove={canApprove}
+            />
+            {/*  Clone và phạm vi là HAI cơ chế thay nhau, không dùng cùng lúc —
+                 để cạnh nhau cho người ban hành thấy mình đang đi đường nào. */}
+            <DocumentScopeCard documentId={documentId} canWrite={canWrite} />
+            <DocumentCloneCard
+              documentId={documentId}
+              isIssued={isIssued}
+              canCreate={canWrite}
+            />
             <DocumentAccessCard documentId={documentId} canWrite={canWrite} />
           </DocumentRecordForm>
         </TabsContent>
@@ -342,6 +404,40 @@ export function DocumentDetailPage() {
             />
           )}
         </TabsContent>
+
+        <TabsContent value="links" className="mt-0">
+          <DocumentLinkTab documentId={documentId} canWrite={canWrite} />
+        </TabsContent>
+
+        {/*  F13 — hỏi cơ chế áp dụng TRƯỚC khi ban hành. Không hỏi thì mọi văn
+             bản đi theo mặc định "gắn phạm vi", và người ban hành không bao giờ
+             biết là có lựa chọn thứ hai. */}
+        {record && (
+          <DocumentIssueDialog
+            documentId={documentId}
+            open={issueOpen}
+            onOpenChange={setIssueOpen}
+            currentMode={record.apply_mode}
+            isPending={workflow.approve.isPending}
+            onConfirm={(applyMode) =>
+              workflow.approve.mutate(applyMode, { onSuccess: () => setIssueOpen(false) })
+            }
+          />
+        )}
+
+        {/* C19 — tách một phần nội dung bản gốc thành văn bản riêng mức mật thấp hơn. */}
+        {record && (
+          <DocumentExcerptDialog
+            open={excerptOpen}
+            onOpenChange={setExcerptOpen}
+            sourceSecrecy={record.secrecy_level}
+            sourceTitle={record.title}
+            isPending={createExcerpt.isPending}
+            onSubmit={(values) =>
+              createExcerpt.mutate(values, { onSuccess: () => setExcerptOpen(false) })
+            }
+          />
+        )}
 
         {/* Lý do đi vào nhật ký thao tác và người khác sẽ đọc lại, nên hỏi bằng
             hộp thoại của hệ thống — bắt buộc điền, gõ được nhiều dòng. */}

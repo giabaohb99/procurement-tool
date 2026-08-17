@@ -1,5 +1,7 @@
+import { AlertTriangle } from 'lucide-react'
 import { useState } from 'react'
 
+import { extractErrorMessage } from '@/core/api'
 import { Button } from '@/shared/ui/button'
 import { DatePicker } from '@/shared/ui/date-picker'
 import {
@@ -55,7 +57,7 @@ export function DocumentVersionDialog({
       },
       {
         onSuccess: () => {
-          onOpenChange(false)
+          handleOpenChange(false)
           setSummary('')
           setReason('')
           setEffectiveFrom('')
@@ -64,8 +66,15 @@ export function DocumentVersionDialog({
     )
   }
 
+  //  Đóng hộp thoại thì xóa luôn câu báo lỗi cũ — mở lại mà vẫn thấy "người
+  //  khác đang giữ" trong khi bản nháp đó đã chốt xong là báo sai.
+  function handleOpenChange(next: boolean) {
+    if (!next) openVersion.reset()
+    onOpenChange(next)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Mở phiên bản mới</DialogTitle>
@@ -74,6 +83,19 @@ export function DocumentVersionDialog({
             được duyệt.
           </DialogDescription>
         </DialogHeader>
+
+        {/*  Thua đường đua thì backend trả 409 kèm TÊN người đang giữ bản nháp.
+             Đặt câu đó ở lại ngay trong hộp thoại, chỗ người dùng vừa bấm —
+             toast bay mất trước khi đọc xong tên (C14). */}
+        {openVersion.isError && (
+          <p
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+          >
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700" />
+            {extractErrorMessage(openVersion.error)}
+          </p>
+        )}
 
         <div className="space-y-4">
           <div className="space-y-2">
@@ -136,7 +158,7 @@ export function DocumentVersionDialog({
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
             Hủy
           </Button>
           <Button

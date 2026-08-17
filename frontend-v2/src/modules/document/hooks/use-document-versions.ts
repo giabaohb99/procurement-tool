@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { extractErrorMessage } from '@/core/api'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { documentVersionApi, type VersionInput } from '../api/document-api'
 
@@ -36,6 +35,14 @@ export function useDocumentVersion(documentId?: number, versionId?: number | nul
  * Lỗi 409 ở đây là chuyện thường chứ không phải sự cố: người khác vừa mở bản
  * nháp trước mình. Backend trả kèm tên người đang giữ, nên hiện nguyên câu của
  * nó thay vì một câu chung chung.
+ *
+ * **Không bật toast khi lỗi.** Câu báo phải ở lại trên màn hình để người dùng
+ * đọc kịp tên người đang giữ rồi còn đi hỏi — toast bay mất sau vài giây. Nơi
+ * gọi hiển thị `mutation.error` ngay trong hộp thoại (C14).
+ *
+ * Nạp lại danh sách phiên bản CẢ KHI LỖI: thua đường đua nghĩa là dữ liệu trên
+ * màn hình đã cũ — bản nháp của người thắng chưa có trong danh sách, nên tab
+ * phiên bản vẫn hiện nút "Mở phiên bản mới" và bấm bao nhiêu lần cũng hỏng.
  */
 export function useOpenVersion(documentId: number) {
   const queryClient = useQueryClient()
@@ -44,10 +51,9 @@ export function useOpenVersion(documentId: number) {
     mutationFn: (values: VersionInput) => documentVersionApi.create(documentId, values),
     onSuccess: (version) => {
       toast.success(`Đã mở phiên bản ${version.version_no}`)
-      void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
     },
-    onError: (error) => {
-      toast.error(extractErrorMessage(error))
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
     },
   })
 }

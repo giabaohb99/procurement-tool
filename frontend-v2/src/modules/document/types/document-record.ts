@@ -64,6 +64,18 @@ export const CHANGE_KIND_LABELS: Record<number, string> = {
   2: 'Sửa nhỏ',
 }
 
+/**
+ * Cơ chế áp dụng cho pháp nhân con, chốt LÚC BAN HÀNH (F13).
+ *
+ * Hai cách không mâu thuẫn nhau — nội dung giống hệt mọi công ty con thì gắn
+ * phạm vi (một số hiệu, một nơi sửa); pháp nhân con phải tự đứng tên thì clone
+ * thành bản nháp riêng (mỗi nơi một số hiệu, người ký, hiệu lực riêng).
+ */
+export const APPLY_MODE = {
+  scope: 1,
+  clone: 2,
+} as const
+
 export interface DocumentRecord {
   id: number
   /** 1 nội bộ · 2 văn bản pháp luật ngoài · 3 văn bản đến. Màn hình chỉ thấy 1. */
@@ -135,6 +147,14 @@ export interface DocumentRecord {
   version_no: string
   version_count: number
   attachment_count: number
+  /**
+   * CẦN RÀ LẠI — bật khi văn bản CHA đổi: lên phiên bản mới hoặc bị bãi bỏ (E11).
+   * Hệ thống chỉ đánh dấu, không tự sửa nội dung con.
+   */
+  needs_review: boolean
+  needs_review_note: string
+  /** Cơ chế áp dụng — xem `APPLY_MODE`. */
+  apply_mode: number
   created_at: string
 }
 

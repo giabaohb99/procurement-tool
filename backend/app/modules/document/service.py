@@ -17,7 +17,7 @@ from app.modules.attachment.model import FileLink
 from app.modules.doc_catalog.model import DocType
 
 from . import numbering
-from .model import (ALIVE_STATUSES, STATUS_APPROVED, STATUS_DRAFT,
+from .model import (ALIVE_STATUSES, APPLY_MODE_LABELS, STATUS_APPROVED, STATUS_DRAFT,
                     STATUS_EFFECTIVE, STATUS_REVOKED, STATUS_SUBMITTED,
                     Document)
 from .query import documents_query
@@ -146,6 +146,18 @@ def update_document(db: Session, doc: Document, data: DocumentUpdate, actor: int
     if "doc_type_id" in values and values["doc_type_id"] != doc.doc_type_id:
         doc_type_or_400(db, values["doc_type_id"])
 
+    #  E11 (c) — kiểm LẠI ở đây chứ không chỉ lúc tạo bản trích: người dùng nâng
+    #  mức mật sau đó thì bản trích thành ra mật hơn cả bản gốc, tức là phần nội
+    #  dung ít hơn lại được canh chặt hơn phần đầy đủ.
+    if "secrecy_level" in values:
+        from .excerpt_service import ensure_secrecy_within_source, source_link_of
+
+        link = source_link_of(db, doc.id)
+        if link:
+            source = db.get(Document, link.target_document_id)
+            if source:
+                ensure_secrecy_within_source(values["secrecy_level"], source.secrecy_level)
+
     for key, value in values.items():
         setattr(doc, key, value)
     doc.updated_by = actor
@@ -228,6 +240,11 @@ def submit(db: Session, doc: Document, actor: int) -> Document:
     #  Từ phiên bản thứ hai trở đi phải nói rõ sửa gì (C05, C13).
     if (version.major, version.minor) != (1, 0) and not version.change_summary.strip():
         raise HTTPException(400, "Phiên bản từ bản thứ hai phải khai tóm tắt nội dung sửa")
+    #  E04 — thiếu quan hệ bắt buộc thì không cho gửi. Chặn ở ĐÂY chứ không phải
+    #  ẩn nút trên giao diện: Hướng dẫn công việc không trỏ vào Quy trình nào thì
+    #  ban hành ra cũng không ai biết nó hướng dẫn cho cái gì.
+    from .link_service import ensure_required_links
+    ensure_required_links(db, doc)
 
     version.status, version.updated_by = VERSION_SUBMITTED, actor
     #  CHỈ bản đầu tiên mới kéo cả văn bản sang "đang duyệt". Từ bản thứ hai trở
@@ -241,7 +258,8 @@ def submit(db: Session, doc: Document, actor: int) -> Document:
     return doc
 
 
-def approve(db: Session, doc: Document, actor: int) -> Document:
+def approve(db: Session, doc: Document, actor: int,
+            apply_mode: int | None = None) -> Document:
     """Duyệt bản đang chờ: khóa phiên bản, cấp số nếu tới lượt, chuyển hiệu lực.
 
     ⚠️ **Không kéo `tab_document.status` về nháp.** Quy chế lên bản 2.0 thì văn
@@ -254,8 +272,29 @@ def approve(db: Session, doc: Document, actor: int) -> Document:
     if not version or version.status != VERSION_SUBMITTED:
         raise HTTPException(400, "Không có bản nào đang chờ duyệt")
 
+    #  F13 — cơ chế áp dụng chốt LÚC BAN HÀNH, không phải lúc soạn: tới lúc này
+    #  người ban hành mới biết nội dung cuối cùng có dùng chung được cho mọi
+    #  pháp nhân hay không.
+    if apply_mode is not None:
+        if apply_mode not in APPLY_MODE_LABELS:
+            raise HTTPException(400, "Cơ chế áp dụng không hợp lệ")
+        doc.apply_mode = apply_mode
+
+    from .clone_notification import notify_clones_stale
+    from .clone_service import clones_of, mark_clones_for_review
+    from .excerpt_service import is_excerpt
+    from .issue_service import ensure_can_issue
+    from .parent_change_service import apply_new_version
+    from .supersede_service import apply_supersede
+
+    #  J11 — loại khai "ban hành phải kèm Quyết định" thì thiếu là không cho ban
+    #  hành. Chặn ở đây chứ không chỉ trên màn xem trước: màn đó là tiện ích.
+    ensure_can_issue(db, doc)
+
     doc_type = doc_type_or_400(db, doc.doc_type_id)
-    if doc_type.number_when == NUMBER_ON_APPROVE:
+    #  Bản trích KHÔNG cấp số hiệu riêng — nó gọi theo số của bản gốc (C19).
+    #  Cấp số cho nó là đẻ ra một số hiệu thứ hai cho cùng một nội dung.
+    if doc_type.number_when == NUMBER_ON_APPROVE and not is_excerpt(db, doc.id):
         numbering.assign(db, doc, doc_type, issue_year(doc))
     assign_book_number(db, doc)
 
@@ -266,6 +305,29 @@ def approve(db: Session, doc: Document, actor: int) -> Document:
 
     if effective <= date.today():
         switch_current(db, doc, version, previous)
+        #  J10 — ba tác động tự động: văn bản này *thay thế* cái nào thì cái đó
+        #  chuyển sang "bị thay thế", *bãi bỏ* cái nào thì cái đó sang "bãi bỏ".
+        #  Quan hệ *sửa đổi* KHÔNG đụng trạng thái — phần không bị sửa vẫn có
+        #  hiệu lực, và chính vì thế mà cái nhãn cảnh báo là bắt buộc.
+        #
+        #  ⚠️ Chỉ chạy khi văn bản mới THẬT SỰ có hiệu lực. Ban hành hôm nay mà
+        #  áp dụng từ tháng sau thì văn bản cũ còn hiệu lực nguyên tháng đó —
+        #  đổi trạng thái sớm là khai tử một văn bản đang còn giá trị.
+        apply_supersede(db, doc, actor)
+        #  E07 — cha lên phiên bản mới thì MỌI văn bản con bị xử lý theo cột
+        #  `on_parent_new_version` của quy tắc quan hệ. Bản trích là trường hợp
+        #  đặc biệt: cột đó bị khóa cứng ở mức "đánh dấu cần rà lại" (E11 a).
+        if previous is not None:
+            apply_new_version(
+                db, doc,
+                f"Văn bản cha đã lên phiên bản {version.version_no} ngày "
+                f"{date.today():%d/%m/%Y}. Rà lại xem còn đúng không.",
+            )
+            #  Điều kiện 3 của clone (F11): mọi bản clone bị đánh dấu cần rà lại
+            #  VÀ người phụ trách phải được báo. Đánh dấu mà không báo thì cái
+            #  dấu nằm im tới lúc có người tình cờ mở văn bản ra xem.
+            if mark_clones_for_review(db, doc):
+                notify_clones_stale(db, doc, clones_of(db, doc.id))
     elif previous is None:
         #  Bản đầu tiên duyệt trước ngày hiệu lực: đã duyệt nhưng chưa áp dụng.
         #  Bản thứ hai trở đi thì KHÔNG đụng gì — bản cũ còn đang chạy.
@@ -283,6 +345,14 @@ def reject(db: Session, doc: Document, reason: str, actor: int) -> Document:
     version = open_version(db, doc)
     if not version or version.status != VERSION_SUBMITTED:
         raise HTTPException(400, "Không có bản nào đang chờ duyệt")
+
+    #  F13 — cơ chế áp dụng chốt LÚC BAN HÀNH, không phải lúc soạn: tới lúc này
+    #  người ban hành mới biết nội dung cuối cùng có dùng chung được cho mọi
+    #  pháp nhân hay không.
+    if apply_mode is not None:
+        if apply_mode not in APPLY_MODE_LABELS:
+            raise HTTPException(400, "Cơ chế áp dụng không hợp lệ")
+        doc.apply_mode = apply_mode
 
     version.status, version.updated_by = VERSION_DRAFT, actor
     version.change_reason = (
@@ -318,10 +388,17 @@ def revoke(db: Session, doc: Document, reason: str, actor: int) -> Document:
     if doc.status not in ALIVE_STATUSES:
         raise HTTPException(400, "Chỉ bãi bỏ được văn bản đã ban hành")
 
+    from .parent_change_service import apply_obsolete
+
     doc.status = STATUS_REVOKED
     #  Ngày bãi bỏ chính là ngày hết hiệu lực — để bộ lọc "còn hiệu lực đến
     #  ngày…" khỏi phải biết thêm một cột nữa.
     doc.expire_date = date.today()
+    #  E08 — văn bản con xử lý theo cột `on_parent_obsolete` của quy tắc: không
+    #  làm gì · đánh dấu cần rà lại · hết hiệu lực theo cha. Bản trích bị khóa ở
+    #  mức thứ ba (E11 b) — gốc bãi bỏ mà bản trích còn sống là phát tán nội
+    #  dung đã bỏ.
+    apply_obsolete(db, doc)
     doc.updated_by = actor
     db.commit()
     db.refresh(doc)

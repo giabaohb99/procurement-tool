@@ -12,6 +12,7 @@ import {
   type DocumentRecord,
   type DocumentVersion,
 } from '../types/document-record'
+import { DocumentDraftHolderNotice } from './document-draft-holder-notice'
 import { DocumentVersionDialog } from './document-version-dialog'
 
 interface DocumentVersionTabProps {
@@ -44,8 +45,8 @@ export function DocumentVersionTab({
   //  Chỉ mở được bản mới khi bản đang dùng đã được duyệt và không còn bản nháp
   //  nào đang mở — cùng điều kiện backend kiểm, nói trước cho đỡ bấm vào rồi
   //  nhận lỗi.
-  const hasOpenDraft = versions.some((version) => !version.is_locked)
-  const canOpenNew = canWrite && !hasOpenDraft && versions.some((v) => v.is_current && v.is_locked)
+  const openDraft = versions.find((version) => !version.is_locked)
+  const canOpenNew = canWrite && !openDraft && versions.some((v) => v.is_current && v.is_locked)
 
   return (
     <Card>
@@ -63,10 +64,12 @@ export function DocumentVersionTab({
       </CardHeader>
 
       <CardContent>
-        {hasOpenDraft && (
-          <p className="mb-3 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
-            Đang có bản nháp mở — chốt xong bản đó rồi mới mở được phiên bản tiếp theo.
-          </p>
+        {openDraft && (
+          <DocumentDraftHolderNotice
+            draft={openDraft}
+            onOpenDraft={() => onSelect(openDraft)}
+            className="mb-3"
+          />
         )}
 
         <ul className="divide-y">

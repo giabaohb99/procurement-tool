@@ -178,6 +178,16 @@ class VersionDetailOut(VersionOut):
     content_html: str = ""
 
 
+class ApproveIn(BaseModel):
+    """F13 — cơ chế áp dụng, chốt lúc ban hành.
+
+    Bỏ trống thì giữ nguyên giá trị đang có trên bản ghi (mặc định là *gắn phạm
+    vi*). Không bắt buộc để đường gọi cũ và bài kiểm cũ không phải sửa.
+    """
+
+    apply_mode: int | None = Field(default=None, ge=1, le=2)
+
+
 class RejectIn(BaseModel):
     """Trả lại bản nháp. Lý do BẮT BUỘC — `van-thu` I09."""
 

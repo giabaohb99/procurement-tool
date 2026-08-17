@@ -131,6 +131,11 @@ def base_fields(doc: Document) -> dict:
         "effective_date": doc.effective_date,
         "expire_date": doc.expire_date,
         "current_version_id": doc.current_version_id,
+        #  F13 — cơ chế áp dụng, hộp thoại ban hành chọn sẵn theo giá trị này.
+        "apply_mode": doc.apply_mode,
+        #  Băng "cần rà lại" trên trang chi tiết đọc thẳng hai cột này (E11 a/b).
+        "needs_review": doc.needs_review,
+        "needs_review_note": doc.needs_review_note,
         #  Số VÀO SỔ — khác `issue_number` (số đi ra ngoài). Xem
         #  `service.assign_book_number`.
         "book_id": doc.book_id,

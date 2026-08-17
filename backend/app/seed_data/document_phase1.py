@@ -164,3 +164,30 @@ DEPARTMENT_DOCUMENT_CONFIG = {
     "PBA008": {"issue_code": "CNTT", "kind": 1},
     "PBA009": {"issue_code": "BGD", "kind": 1},
 }
+
+
+# ── E01 · Quy tắc quan hệ cha–con, bảy dòng mẫu theo `van-thu/04` mục 4.2 ─────
+#
+# Khai bằng MÃ LOẠI chứ không phải id: id sinh ra lúc seed chạy, mà seed chạy
+# lại mỗi lần deploy nên không ghim được số nào.
+#
+# Hai chỗ lệch tài liệu, cố ý, ghi rõ ở đây để lần sau đọc không tưởng là sai:
+#
+#   1. Dòng "bất kỳ tham chiếu bất kỳ" KHÔNG seed. `source_type_id` là cột bắt
+#      buộc nên khai cho đủ 33 loại sẽ làm bảng 15–25 dòng phình gấp đôi mà
+#      không thêm nghĩa. Thay vào đó `link_service` cho quan hệ «tham chiếu» đi
+#      qua thẳng không cần quy tắc — nó vốn là liên kết mềm.
+#   2. Tài liệu ghi "BM thuộc về QT, QC — bắt buộc, từ 1", nghĩa là bắt buộc ÍT
+#      NHẤT MỘT TRONG HAI loại đích. Bảng quy tắc khóa theo từng cặp nên hai
+#      dòng bắt buộc sẽ đòi CẢ HAI. Tạm để BM→QT bắt buộc, BM→QC cho phép —
+#      cần Hành chính chốt lại.
+DOC_TYPE_LINK_RULES = [
+    # (mã nguồn, quan hệ, mã đích, bắt buộc, min, max)
+    ("HDCV", 4, "QT", True, 1, 1),    # Hướng dẫn công việc hướng dẫn đúng 1 Quy trình
+    ("BM", 6, "QT", True, 1, 0),      # Biểu mẫu không đứng một mình
+    ("BM", 6, "QC", False, 0, 0),
+    ("QC", 5, "QD", True, 1, 1),      # Quy chế ban hành kèm 1 Quyết định
+    ("QDI", 7, "CS", False, 0, 0),    # Quy định căn cứ theo Chính sách — có thì tốt
+    ("QD", 1, "QD", False, 0, 0),     # Quyết định mới thay quyết định cũ
+    ("QT", 7, "CS", False, 0, 0),     # Quy trình căn cứ theo Chính sách
+]

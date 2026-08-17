@@ -1,4 +1,13 @@
-import { BookMarked, FileText, Files, Hash, LayoutDashboard, SlidersHorizontal } from 'lucide-react'
+import {
+  BookMarked,
+  FileText,
+  Files,
+  Hash,
+  LayoutDashboard,
+  Link2,
+  Target,
+  SlidersHorizontal,
+} from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -60,6 +69,19 @@ export const documentModule: ErpModule = {
       label: 'Quy tắc đánh số',
       path: appRoutes.document.numberingRules,
       icon: Hash,
+      entity: 'doc_type',
+      group: 'Danh mục',
+    },
+    {
+      label: 'Áp dụng cho tôi',
+      path: appRoutes.document.appliedToMe,
+      icon: Target,
+      entity: 'document',
+    },
+    {
+      label: 'Quy tắc quan hệ',
+      path: appRoutes.document.linkRules,
+      icon: Link2,
       entity: 'doc_type',
       group: 'Danh mục',
     },
@@ -135,6 +157,33 @@ export const documentModule: ErpModule = {
       lazy: async () => ({
         Component: (await import('./pages/document-numbering-rule-detail-page'))
           .DocumentNumberingRuleDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.document.appliedToMe,
+      lazy: async () => ({
+        Component: (await import('./pages/documents-applied-to-me-page'))
+          .DocumentsAppliedToMePage,
+      }),
+    },
+    {
+      path: appRoutes.document.linkRules,
+      lazy: async () => ({
+        Component: (await import('./pages/document-link-rules-page')).DocumentLinkRulesPage,
+      }),
+    },
+    {
+      path: appRoutes.document.linkRuleNew,
+      lazy: async () => ({
+        Component: (await import('./pages/document-link-rule-detail-page'))
+          .DocumentLinkRuleDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.document.linkRuleDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/document-link-rule-detail-page'))
+          .DocumentLinkRuleDetailPage,
       }),
     },
     {

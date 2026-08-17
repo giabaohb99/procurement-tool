@@ -35,6 +35,7 @@ from app.modules.comment import model as _comment  # noqa: F401
 from app.modules.doc_catalog import model as _doc_catalog  # noqa: F401
 from app.modules.doc_catalog import book_model as _doc_book  # noqa: F401
 from app.modules.doc_catalog import numbering_rule_model as _numbering_rule  # noqa: F401
+from app.modules.doc_catalog import link_rule_model as _doc_type_link_rule  # noqa: F401
 from app.modules.document import model as _document  # noqa: F401
 from app.modules.document import version_model as _document_version  # noqa: F401
 from app.modules.document import request_model as _document_request  # noqa: F401
@@ -42,3 +43,6 @@ from app.modules.document import access_model as _document_access  # noqa: F401
 from app.modules.document import template_model as _document_template  # noqa: F401
 from app.modules.document import recipient_model as _document_recipient  # noqa: F401
 from app.modules.document import incoming_register_model as _incoming_register  # noqa: F401
+from app.modules.document import link_model as _document_link  # noqa: F401
+from app.modules.document import scope_model as _document_scope  # noqa: F401
+from app.modules.document import signature_model as _document_signature  # noqa: F401
