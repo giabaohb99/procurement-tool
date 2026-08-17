@@ -1,14 +1,11 @@
 import { ClipboardList, FileText, ShoppingCart, TruckIcon, Wallet } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { ChartCard, CHART_COLORS, CHART_NEUTRAL } from '@/shared/ui/chart'
 import { ColumnChart } from '@/shared/ui/column-chart'
 import { DonutChart } from '@/shared/ui/donut-chart'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
-import { Skeleton } from '@/shared/ui/skeleton'
-import { cn } from '@/shared/utils/cn'
+import { StatCard } from '@/shared/ui/stat-card'
 import { formatMoney } from '@/shared/utils/format-money'
 import { ProcurementAlertList } from '../components/procurement-alert-list'
 import { RecentPurchaseRequests } from '../components/recent-purchase-requests'
@@ -147,52 +144,4 @@ function compactMoney(value: number): string {
     return `${Math.round(value / 1_000_000).toLocaleString('vi-VN')} tr`
   }
   return formatMoney(value)
-}
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  hint,
-  tone,
-  loading,
-}: {
-  icon: LucideIcon
-  label: string
-  value: number | string
-  hint?: string
-  /** Tô màu dòng chú thích khi có việc cần làm. */
-  tone?: 'warning' | 'danger'
-  loading: boolean
-}) {
-  return (
-    <Card className="gap-2">
-      <CardHeader className="flex-row items-center gap-2 pb-0">
-        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
-          <Icon className="size-4" />
-        </span>
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {label}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <Skeleton className="h-7 w-24" />
-        ) : (
-          <p className="text-xl font-semibold text-navy dark:text-foreground">{value}</p>
-        )}
-        {hint && (
-          <p
-            className={cn(
-              'mt-0.5 text-xs text-muted-foreground',
-              tone === 'warning' && 'text-warning',
-              tone === 'danger' && 'text-destructive',
-            )}
-          >
-            {hint}
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  )
 }

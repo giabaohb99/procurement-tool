@@ -81,6 +81,8 @@ export const queryKeys = {
     /** Bộ đếm tách riêng theo năm: đổi năm là đọc lại, không đụng bản ghi sổ. */
     bookCounter: (id: number, year: number) => ['document', 'books', id, 'counter', year] as const,
 
+    /** Số liệu trang tổng quan Văn thư. */
+    dashboard: () => ['document', 'dashboard'] as const,
     records: (params?: Record<string, unknown>) => ['document', 'records', params ?? {}] as const,
     record: (id: number) => ['document', 'records', id] as const,
     /** Danh sách phiên bản — KHÔNG kèm nội dung, nhẹ. */
