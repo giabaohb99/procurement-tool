@@ -13,11 +13,11 @@
 | 1 | Danh mục và số hiệu | **100%** | **ĐẠT** — cả 3 bài nghiệm thu xanh |
 | 2 | Yêu cầu, soạn thảo, phiên bản | **~75%** | chưa |
 | 3 | Bộ máy phê duyệt dùng chung | **~5%** | chưa |
-| 4 | Ban hành, phạm vi, clone | **~35%** | chưa |
-| **Tổng 4 phase** | trọng số theo khối lượng (15/30/35/20) | **≈ 46%** | |
+| 4 | Ban hành, phạm vi, clone | **~40%** | chưa |
+| **Tổng 4 phase** | trọng số theo khối lượng (15/30/35/20) | **≈ 47%** | |
 
 Đọc nhanh: **Phase 1 ĐÓNG, Phase 2 xong đúng phần lõi (soạn thảo + phiên bản), Phase 3 và 4 chưa bắt đầu.**
-Con số 46% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính năng) và hoàn toàn chưa động tới.
+Con số 47% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính năng) và hoàn toàn chưa động tới.
 
 > **Đổi gì so với lần chấm 15/08 — ba đợt:**
 >
@@ -201,7 +201,7 @@ của Thu mua.
 
 ---
 
-## 4. Phase 4 · Ban hành, phạm vi, clone — ~35%
+## 4. Phase 4 · Ban hành, phạm vi, clone — ~40%
 
 | Việc | Mã | FE v2 |
 |---|---|---|
@@ -213,7 +213,7 @@ của Thu mua.
 | Clone xuống pháp nhân con | F06–F08 | ❌ |
 | Gửi thư kèm nháp, bảng theo dõi clone | F09, F10 | ❌ |
 | Bản gốc lên phiên bản → con cần rà lại | F11 | 🟡 có cờ `requires_reconfirm`, chưa có clone để áp |
-| Màn chọn cơ chế lúc ban hành | F13 | ❌ |
+| Màn chọn cơ chế lúc ban hành | F13 | ✅ | `document-issue-dialog.tsx` — bảng so sánh hai cơ chế lấy thẳng từ `00` mục 2.2; cảnh báo khi gắn phạm vi mà chưa khai dòng nào |
 | Cảnh báo tác động sửa cha, xử lý bãi bỏ cha | E07, E08 | ✅ | `parent_change_service.py`; hai cột `on_parent_*` giờ mới thật sự điều khiển hành vi |
 | Nhãn "đã bị sửa đổi" | J10 | ❌ |
 | Quyết định ban hành kiểm ở mức phiên bản | J11 | 🟡 chỉ có cờ `needs_decision` |
@@ -456,7 +456,7 @@ loại chứng từ bằng cờ, không thay chỗ.
 2. `multi_mode = 4` (đủ tỷ lệ `quorum`) có thật sự cần bản 1 không, hay ba chế độ đầu là đủ? I05 chỉ nói "ba chế độ".
 3. Chuyển 5 luồng Thu mua sang bộ máy mới (I25) là bản 2 — vậy bản 1 bộ máy chỉ chạy cho văn thư. Có đúng ý không, hay muốn chuyển sớm một luồng Thu mua để thử thật?
 
-## Phase 4 · Ban hành, phạm vi, clone (còn 8 việc)
+## Phase 4 · Ban hành, phạm vi, clone (còn 7 việc)
 
 - [x] [P4][F01/F02] Phạm vi áp dụng ba kiểu + bao gồm và loại trừ — **L** — xong 17/08
 - [x] [P4][F03/F04] Bắt buộc kèm pháp nhân khi chọn phòng ban + áp cho cả đơn vị con — **M** — xong 17/08
@@ -467,7 +467,7 @@ loại chứng từ bằng cờ, không thay chỗ.
 - [ ] [P4][F06/F07/F08] Clone xuống pháp nhân con: tạo nháp, giữ liên kết ngược, số hiệu riêng — **L** — CHỜ chốt câu hỏi 4
 - [ ] [P4][F09/F10] Gửi thư kèm bản nháp + bảng theo dõi các bản clone — **M**
 - [ ] [P4][F11/F12] Bản gốc lên phiên bản thì đánh dấu con cần rà lại + nhắc hạn — **M**
-- [ ] [P4][F13] Màn chọn cơ chế lúc ban hành: gắn phạm vi hay clone — **S**
+- [x] [P4][F13] Màn chọn cơ chế lúc ban hành: gắn phạm vi hay clone — **S** — xong 17/08
 - [x] [P4][E07/E08] Cảnh báo tác động khi sửa cha + xử lý khi bãi bỏ cha — **M** — xong 17/08
 - [ ] [P4][J10] Nhãn "đã bị sửa đổi" trên bản cũ + tác động tự động của quan hệ thay thế/bãi bỏ — **M**
 - [ ] [P4][J11] Quyết định ban hành kiểm ở mức phiên bản — **S**

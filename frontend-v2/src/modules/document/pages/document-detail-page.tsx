@@ -36,6 +36,7 @@ import { DocumentVersionBanner } from '../components/document-version-banner'
 import { DocumentVersionTab } from '../components/document-version-tab'
 import { DocumentLinkTab } from '../components/document-link-tab'
 import { DocumentExcerptDialog } from '../components/document-excerpt-dialog'
+import { DocumentIssueDialog } from '../components/document-issue-dialog'
 import { DocumentNeedsReviewBanner } from '../components/document-needs-review-banner'
 import { useCreateExcerpt } from '../hooks/use-document-links'
 import { ManualIssueNumberDialog } from '../components/manual-issue-number-dialog'
@@ -108,6 +109,7 @@ export function DocumentDetailPage() {
   const saveContent = useSaveVersionContent(documentId, versionId)
   const createExcerpt = useCreateExcerpt(documentId)
   const [excerptOpen, setExcerptOpen] = useState(false)
+  const [issueOpen, setIssueOpen] = useState(false)
 
   const canWrite = permissions?.write ?? false
   const canDelete = permissions?.delete ?? false
@@ -296,7 +298,7 @@ export function DocumentDetailPage() {
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => workflow.approve.mutate()}
+                  onClick={() => setIssueOpen(true)}
                   disabled={workflow.approve.isPending}
                 >
                   <Check className="size-4" />
@@ -379,6 +381,22 @@ export function DocumentDetailPage() {
         <TabsContent value="links" className="mt-0">
           <DocumentLinkTab documentId={documentId} canWrite={canWrite} />
         </TabsContent>
+
+        {/*  F13 — hỏi cơ chế áp dụng TRƯỚC khi ban hành. Không hỏi thì mọi văn
+             bản đi theo mặc định "gắn phạm vi", và người ban hành không bao giờ
+             biết là có lựa chọn thứ hai. */}
+        {record && (
+          <DocumentIssueDialog
+            documentId={documentId}
+            open={issueOpen}
+            onOpenChange={setIssueOpen}
+            currentMode={record.apply_mode}
+            isPending={workflow.approve.isPending}
+            onConfirm={(applyMode) =>
+              workflow.approve.mutate(applyMode, { onSuccess: () => setIssueOpen(false) })
+            }
+          />
+        )}
 
         {/* C19 — tách một phần nội dung bản gốc thành văn bản riêng mức mật thấp hơn. */}
         {record && (

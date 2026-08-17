@@ -17,7 +17,7 @@ from app.modules.attachment.model import FileLink
 from app.modules.doc_catalog.model import DocType
 
 from . import numbering
-from .model import (ALIVE_STATUSES, STATUS_APPROVED, STATUS_DRAFT,
+from .model import (ALIVE_STATUSES, APPLY_MODE_LABELS, STATUS_APPROVED, STATUS_DRAFT,
                     STATUS_EFFECTIVE, STATUS_REVOKED, STATUS_SUBMITTED,
                     Document)
 from .query import documents_query
@@ -258,7 +258,8 @@ def submit(db: Session, doc: Document, actor: int) -> Document:
     return doc
 
 
-def approve(db: Session, doc: Document, actor: int) -> Document:
+def approve(db: Session, doc: Document, actor: int,
+            apply_mode: int | None = None) -> Document:
     """Duyệt bản đang chờ: khóa phiên bản, cấp số nếu tới lượt, chuyển hiệu lực.
 
     ⚠️ **Không kéo `tab_document.status` về nháp.** Quy chế lên bản 2.0 thì văn
@@ -270,6 +271,14 @@ def approve(db: Session, doc: Document, actor: int) -> Document:
     version = open_version(db, doc)
     if not version or version.status != VERSION_SUBMITTED:
         raise HTTPException(400, "Không có bản nào đang chờ duyệt")
+
+    #  F13 — cơ chế áp dụng chốt LÚC BAN HÀNH, không phải lúc soạn: tới lúc này
+    #  người ban hành mới biết nội dung cuối cùng có dùng chung được cho mọi
+    #  pháp nhân hay không.
+    if apply_mode is not None:
+        if apply_mode not in APPLY_MODE_LABELS:
+            raise HTTPException(400, "Cơ chế áp dụng không hợp lệ")
+        doc.apply_mode = apply_mode
 
     from .excerpt_service import is_excerpt
     from .parent_change_service import apply_new_version
@@ -314,6 +323,14 @@ def reject(db: Session, doc: Document, reason: str, actor: int) -> Document:
     version = open_version(db, doc)
     if not version or version.status != VERSION_SUBMITTED:
         raise HTTPException(400, "Không có bản nào đang chờ duyệt")
+
+    #  F13 — cơ chế áp dụng chốt LÚC BAN HÀNH, không phải lúc soạn: tới lúc này
+    #  người ban hành mới biết nội dung cuối cùng có dùng chung được cho mọi
+    #  pháp nhân hay không.
+    if apply_mode is not None:
+        if apply_mode not in APPLY_MODE_LABELS:
+            raise HTTPException(400, "Cơ chế áp dụng không hợp lệ")
+        doc.apply_mode = apply_mode
 
     version.status, version.updated_by = VERSION_DRAFT, actor
     version.change_reason = (

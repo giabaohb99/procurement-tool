@@ -32,7 +32,8 @@ from app.core.response import success
 from . import access_service, import_service, numbering, serializer, service, version_service
 from .model import Document
 from .query import documents_query
-from .schema import (AccessGrant, AccessRevokeIn, DocumentCreate, DocumentUpdate,
+from .model import APPLY_MODE_LABELS
+from .schema import (AccessGrant, AccessRevokeIn, ApproveIn, DocumentCreate, DocumentUpdate,
                      ManualIssueNumberUpdate, RejectIn, VersionContentUpdate,
                      VersionCreate)
 from .service import doc_type_or_400
@@ -241,13 +242,17 @@ def submit_document(
 @router.post("/{document_id}/approve")
 def approve_document(
     document_id: int,
+    data: ApproveIn | None = None,
     db: Session = Depends(get_db),
     user=Depends(require("document", "approve")),
 ):
     doc = _load(db, document_id, user)
-    doc = service.approve(db, doc, user.id)
+    doc = service.approve(db, doc, user.id, data.apply_mode if data else None)
+    #  Ghi luôn cơ chế áp dụng vào nhật ký: sáu tháng sau ai hỏi "vì sao văn bản
+    #  này không clone xuống công ty con" thì có câu trả lời tại chỗ.
     record(db, user.id, "document", doc.id, "approve",
-           f"Ban hành {doc.doc_code or doc.issue_number}")
+           f"Ban hành {doc.doc_code or doc.issue_number}"
+           f" · {APPLY_MODE_LABELS.get(doc.apply_mode, '')}")
     return success(serializer.serialize(db, doc), "Đã duyệt và ban hành")
 
 

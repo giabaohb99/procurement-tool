@@ -166,3 +166,71 @@ def test_liet_ke_van_ban_ap_dung_cho_mot_nguoi(db, to_chuc):
 
     assert scope_service.document_ids_for(db, to_chuc["a"]) == [DOC_ID]
     assert scope_service.document_ids_for(db, to_chuc["b"]) == [2]
+
+
+# ── F13 · chọn cơ chế lúc ban hành ──────────────────────────────────────────
+#
+# Hai cơ chế KHÔNG mâu thuẫn nhau, dùng cho hai tình huống khác nhau:
+#   * nội dung giống hệt mọi công ty con  → một văn bản gắn phạm vi;
+#   * pháp nhân con phải tự đứng tên       → clone thành bản nháp riêng.
+# Chốt LÚC BAN HÀNH chứ không phải lúc soạn: tới lúc đó người ban hành mới biết
+# nội dung cuối cùng có dùng chung được không.
+from app.modules.company.model import Company as _Company  # noqa: E402
+from app.modules.doc_catalog.model import DocType  # noqa: E402
+from app.modules.document import service  # noqa: E402
+from app.modules.document.model import (APPLY_MODE_CLONE,  # noqa: E402
+                                        APPLY_MODE_SCOPE)
+from app.modules.document.schema import ApproveIn, DocumentCreate  # noqa: E402
+
+ACTOR = 1
+
+
+@pytest.fixture()
+def van_ban(db, seed):
+    company = db.get(_Company, seed.company_id)
+    company.issue_code = "DEGO"
+    doc_type = DocType(code="QC", name="Quy chế", id_scheme=1, number_when=2)
+    db.add(doc_type)
+    db.commit()
+
+    doc = service.create_document(db, DocumentCreate(
+        doc_type_id=doc_type.id, company_id=seed.company_id, department_id=seed.dept_id,
+        owner_employee_id=seed.emp_req_id, title="Quy chế bảo mật",
+        content_html="<p>Nội dung</p>",
+    ), ACTOR)
+    service.submit(db, doc, ACTOR)
+    return doc
+
+
+def test_mac_dinh_la_gan_pham_vi(db, van_ban):
+    """Phạm vi là mặc định; clone là nút bấm có điều kiện."""
+    service.approve(db, van_ban, ACTOR)
+    assert van_ban.apply_mode == APPLY_MODE_SCOPE
+
+
+def test_chon_clone_luc_ban_hanh_thi_ghi_lai(db, van_ban):
+    service.approve(db, van_ban, ACTOR, apply_mode=APPLY_MODE_CLONE)
+    assert van_ban.apply_mode == APPLY_MODE_CLONE
+
+
+def test_khong_truyen_thi_giu_nguyen_gia_tri_dang_co(db, van_ban):
+    """Đường gọi cũ không truyền gì — không được lặng lẽ đặt lại về mặc định."""
+    van_ban.apply_mode = APPLY_MODE_CLONE
+    db.commit()
+
+    service.approve(db, van_ban, ACTOR)
+    assert van_ban.apply_mode == APPLY_MODE_CLONE
+
+
+def test_co_che_la_bi_tu_choi(db, van_ban):
+    from fastapi import HTTPException
+
+    with pytest.raises(HTTPException):
+        service.approve(db, van_ban, ACTOR, apply_mode=9)
+
+
+def test_schema_chan_gia_tri_ngoai_hai_co_che(db):
+    with pytest.raises(ValidationError):
+        ApproveIn(apply_mode=3)
+    #  Bỏ trống là hợp lệ — nghĩa là "giữ nguyên".
+    assert ApproveIn().apply_mode is None

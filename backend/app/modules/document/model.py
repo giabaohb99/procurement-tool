@@ -53,6 +53,27 @@ STATUS_LABELS = {
     STATUS_ARCHIVED: "Lưu trữ",
 }
 
+#  ── Cơ chế áp dụng cho pháp nhân con (F13) ──────────────────────────────────
+#
+#  Hai cách KHÔNG mâu thuẫn nhau — chúng dùng cho hai tình huống khác nhau
+#  (`van-thu/00` mục 2.2):
+#
+#    * nội dung giống hệt cho mọi công ty con (thông báo nghỉ Tết, quy chế bảo
+#      mật) → MỘT văn bản gắn phạm vi: một số hiệu, một nơi sửa, sửa một lần là
+#      13 công ty thấy bản mới ngay;
+#    * pháp luật buộc pháp nhân con tự đứng tên, hoặc nội dung phải khác (hạn
+#      mức khác, ngành nghề khác) → CLONE thành bản nháp riêng: mỗi công ty một
+#      số hiệu, người ký, hiệu lực riêng.
+#
+#  Phạm vi là MẶC ĐỊNH; clone là nút bấm có điều kiện.
+APPLY_MODE_SCOPE = 1
+APPLY_MODE_CLONE = 2
+
+APPLY_MODE_LABELS = {
+    APPLY_MODE_SCOPE: "Một văn bản, gắn phạm vi áp dụng",
+    APPLY_MODE_CLONE: "Clone thành bản nháp riêng cho từng pháp nhân con",
+}
+
 #  Trạng thái coi là "còn sống" — dùng cho gợi ý văn bản trùng (B05) và cho
 #  danh sách chọn văn bản cha ở P2-T19.
 ALIVE_STATUSES = (STATUS_APPROVED, STATUS_EFFECTIVE)
@@ -164,7 +185,7 @@ class Document(Base, AuditMixin):
     #  Bản clone đang bám theo phiên bản nào của gốc — để bảng theo dõi F-46
     #  chỉ ra được nơi nào còn dùng bản cũ.
     clone_source_version_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    #  1 một văn bản gắn phạm vi (mặc định) · 2 clone xuống từng pháp nhân.
+    #  Cơ chế áp dụng, chọn LÚC BAN HÀNH (F13). Xem `APPLY_MODE_LABELS`.
     apply_mode: Mapped[int] = mapped_column(SmallInteger, default=1)
     cloned_at: Mapped[date | None] = mapped_column(Date, nullable=True)
     cloned_by: Mapped[int] = mapped_column(BigInteger, default=0)
