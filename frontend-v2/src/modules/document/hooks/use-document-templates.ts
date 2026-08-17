@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { toast } from 'sonner'
 
@@ -12,6 +12,10 @@ export function useDocumentTemplates(params: ListParams = {}, enabled = true) {
     queryKey: queryKeys.document.templates(params),
     queryFn: () => documentTemplateApi.list(params),
     enabled,
+    //  Ô "Văn bản mẫu" lọc theo loại văn bản, nên đổi loại là đổi khóa truy
+    //  vấn. Không giữ danh sách cũ thì ô này rỗng đi một nhịp và câu chú thích
+    //  dưới nó nhảy qua nhánh "chưa có mẫu" rồi quay lại.
+    placeholderData: keepPreviousData,
   })
 
   const items = useMemo(() => query.data?.items ?? [], [query.data])

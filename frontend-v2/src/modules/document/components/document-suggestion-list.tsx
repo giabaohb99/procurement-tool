@@ -2,6 +2,7 @@ import { Info } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { appRoutes } from '@/shared/constants/app-routes'
+import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import { useDocumentSuggestions } from '../hooks/use-documents'
 
@@ -24,6 +25,12 @@ interface DocumentSuggestionListProps {
  *
  * Không có gì trùng thì **không hiện gì** — một khối rỗng nằm giữa form chỉ tổ
  * làm người dùng phải đọc lướt qua nó mỗi lần.
+ *
+ * Nhưng "không hiện gì" chỉ đúng khi đã biết là không có gì. Trong lúc đang hỏi
+ * lại (đổi loại, đổi phòng), khối vẫn **giữ nguyên kết quả cũ và làm mờ** thay
+ * vì biến mất: nó chiếm cả hai cột giữa lưới, mất đi một nhịp là hai ô nhập bên
+ * dưới nhảy lên rồi tụt xuống. Làm mờ vì nội dung đang là của lựa chọn trước —
+ * bày y như thật thì người ta đọc phải con số sai.
  */
 export function DocumentSuggestionList({
   docTypeId,
@@ -31,7 +38,7 @@ export function DocumentSuggestionList({
   companyId,
   excludeId,
 }: DocumentSuggestionListProps) {
-  const { data } = useDocumentSuggestions({
+  const { data, isFetching } = useDocumentSuggestions({
     doc_type_id: docTypeId,
     department_id: departmentId,
     company_id: companyId,
@@ -41,7 +48,13 @@ export function DocumentSuggestionList({
   if (!data?.length) return null
 
   return (
-    <div className="rounded-md border border-amber-200 bg-amber-50 p-3 sm:col-span-2">
+    <div
+      aria-busy={isFetching}
+      className={cn(
+        'rounded-md border border-amber-200 bg-amber-50 p-3 transition-opacity sm:col-span-2',
+        isFetching && 'opacity-50',
+      )}
+    >
       <p className="flex items-center gap-2 text-sm font-medium text-amber-900">
         <Info className="size-4 shrink-0" />
         Đã có {data.length} văn bản cùng loại ở phòng này đang còn hiệu lực

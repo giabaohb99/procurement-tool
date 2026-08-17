@@ -34,7 +34,9 @@ export function DocumentClonePlanFields({
   onChange,
   issuerCompanyId,
 }: DocumentClonePlanFieldsProps) {
-  const { data: companyPage } = useCompanies({ page_size: 200 })
+  //  Cùng bộ tham số với ô "Pháp nhân ban hành" ở bước 1 nên dùng chung một
+  //  lượt gọi trong bộ nhớ đệm — lệch tham số là gọi lại y hệt lần thứ hai.
+  const { data: companyPage } = useCompanies({ page_size: 200, is_active: true })
 
   const companies = (companyPage?.items ?? []).filter((row) => row.id !== issuerCompanyId)
   const picked = value.company_ids

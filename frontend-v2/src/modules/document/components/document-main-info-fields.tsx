@@ -81,7 +81,7 @@ export function DocumentMainInfoFields({
   const bookId = form.watch('book_id')
   const templates = useActiveDocumentTemplates(docTypeId, Boolean(onTemplateChange))
 
-  const { data: preview } = useNumberPreview({
+  const { data: preview, isFetching: dangNapSoHieu } = useNumberPreview({
     doc_type_id: docTypeId,
     company_id: companyId,
     department_id: departmentId,
@@ -160,10 +160,13 @@ export function DocumentMainInfoFields({
       {onTemplateChange && (
         <FormItem>
           <FormLabel>Văn bản mẫu</FormLabel>
+          {/*  KHÔNG khóa ô khi đang nạp — chỉ khóa khi chưa chọn loại. Khóa rồi
+               mở lại sau vài trăm mili giây làm ô nhấp nháy xám, và ai vừa bấm
+               vào đúng nhịp đó thì bấm hụt. */}
           <Select
             value={templateId ? String(templateId) : NONE}
             onValueChange={(value) => onTemplateChange(value === NONE ? null : Number(value))}
-            disabled={!docTypeId || templates.isLoading}
+            disabled={!docTypeId}
           >
             <SelectTrigger className="w-full">
               <SelectValue
@@ -179,12 +182,14 @@ export function DocumentMainInfoFields({
               ))}
             </SelectContent>
           </Select>
-          <FormDescription>
+          {/*  `min-h-10` giữ chỗ sẵn hai dòng: bốn câu dưới đây dài ngắn khác
+               nhau, đổi câu mà không giữ chỗ thì cả hàng lưới xô lên xuống. */}
+          <FormDescription className="min-h-10">
             {!docTypeId
               ? 'Danh sách mẫu được lọc theo loại văn bản.'
               : templates.isError
                 ? 'Không tải được danh sách văn bản mẫu.'
-                : templates.items.length === 0 && !templates.isLoading
+                : templates.items.length === 0 && !templates.isFetching
                   ? 'Loại văn bản này chưa có mẫu đang sử dụng.'
                   : 'Nội dung mẫu sẽ được chép vào trang soạn thảo sau khi tạo.'}
           </FormDescription>
@@ -295,7 +300,7 @@ export function DocumentMainInfoFields({
       />
 
       {/* Dòng xem trước số hiệu đứng ngay dưới các ô quyết định ra nó. */}
-      <DocumentNumberPreview preview={preview} />
+      <DocumentNumberPreview preview={preview} isFetching={dangNapSoHieu} />
 
       {/* B05 — hiện luôn văn bản cùng loại cùng phòng đang hiệu lực. Đây là thứ
           còn lại chống đẻ trùng quy trình sau khi bước xin phép bị cắt. */}

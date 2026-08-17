@@ -195,7 +195,10 @@ export function DocumentCreatePage() {
         }
       />
 
-      <FormStepper steps={STEPS} current={step} onGoTo={setStep} className="max-w-3xl" />
+      {/*  `max-w-5xl` chứ không phải `3xl`: bề rộng cũ đặt từ hồi form còn hai
+           bước. Thêm bước thứ ba là mỗi bước mất một phần ba chỗ, và dòng mô tả
+           bị cắt cụt ("Áp cho ai, có tách bản riêng kh…"). */}
+      <FormStepper steps={STEPS} current={step} onGoTo={setStep} className="max-w-5xl" />
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">

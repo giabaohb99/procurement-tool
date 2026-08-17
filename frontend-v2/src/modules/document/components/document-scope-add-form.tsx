@@ -44,7 +44,9 @@ interface DocumentScopeAddFormProps {
  */
 export function DocumentScopeAddForm({ disabled = false, onAdd }: DocumentScopeAddFormProps) {
   const { data: options } = useScopeOptions()
-  const { data: companyPage } = useCompanies({ page_size: 200 })
+  //  Cùng tham số với ô "Pháp nhân ban hành" nên dùng chung một lượt gọi trong
+  //  bộ nhớ đệm — lệch tham số là gọi lại y hệt lần thứ hai.
+  const { data: companyPage } = useCompanies({ page_size: 200, is_active: true })
   const { data: departmentPage } = useDepartments({ page_size: 500 })
   const { data: employeePage } = useEmployees({ page_size: 1000, is_active: true })
 

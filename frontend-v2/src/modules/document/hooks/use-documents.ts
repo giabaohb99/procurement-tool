@@ -48,6 +48,11 @@ export function useDocumentSuggestions(params: {
     queryKey: queryKeys.document.suggestions(params),
     queryFn: () => documentApi.suggestions(params),
     enabled: params.doc_type_id > 0,
+    //  Đổi loại/phòng/pháp nhân là đổi khóa truy vấn. Không giữ kết quả cũ thì
+    //  `data` về `undefined`, cả khối cảnh báo biến mất rồi hiện lại — mà nó
+    //  nằm giữa lưới ô nhập nên hai ô bên dưới nhảy lên rồi tụt xuống. Giữ lại
+    //  và làm mờ trong lúc nạp (xem `DocumentSuggestionList`) thì đứng yên.
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -67,6 +72,11 @@ export function useNumberPreview(params: {
     queryKey: queryKeys.document.numberPreview(params),
     queryFn: () => documentApi.numberPreview(params),
     enabled: params.doc_type_id > 0 && params.company_id > 0,
+    //  Bốn ô nhập đều đổi khóa truy vấn này. Không giữ kết quả cũ thì mỗi lần
+    //  chọn, dòng số hiệu nháy về câu "Chọn loại và pháp nhân để xem số" rồi
+    //  mới có số — và câu chú thích bên dưới đổi độ dài theo, kéo cả lưới xô
+    //  một nhịp.
+    placeholderData: keepPreviousData,
   })
 }
 
