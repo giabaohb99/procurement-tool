@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user, get_perm_profile, user_has_permission
 from app.core.base_controller import pagination
 from app.core.database import get_db
+from app.core.filter_operators import apply_operator_filters_map
 from app.core.response import success
 from app.core.scoping import apply_scope
 from app.modules.survey_request.model import (LS_COMPLETED, LS_RESURVEY, SurveyRequest,
@@ -56,6 +57,26 @@ def _sort_map():
         "line_status": SurveyRequestLine.line_status,
         "pr_code": SurveyRequestLine.pr_code,
     }
+
+
+def _cond_map(show_supplier: bool) -> dict:
+    """CR-080 — whitelist cho BỘ LỌC ĐIỀU KIỆN (`<field>__<op>`).
+
+    Lấy thẳng `_sort_map()` (cột nào sort được tại server thì lọc được) và bỏ `company_id` — ô
+    Công ty đã nằm ở thanh lọc cơ bản, chọn theo tên chứ không gõ id. Thêm bí danh `assignee`
+    trỏ cùng cột với `assignee_name` để tên field trên URL đọc ra nghĩa (giá trị là MÃ nhân sự).
+
+    Cột thuộc cụm NCC bị gỡ khỏi map với người không có `supplier.read` — cột đã che trên bảng thì
+    cũng không cho lọc, kẻo lọc rồi đếm dòng còn lại là mò ra được nhà cung cấp. Cột TÍNH (trễ
+    hạn, số ngày xử lý, tiến độ dòng, số phương án) không có ở đây vì không nằm trong DB: tiến độ
+    dòng vẫn lọc bằng ô `state` sẵn có, hai cột ngày thì lọc qua các mốc ngày thật.
+    """
+    m = {k: v for k, v in _sort_map().items() if k != "company_id"}
+    m["assignee"] = SurveyRequestLine.assignee
+    if not show_supplier:
+        for k in ex.SUPPLIER_HIDDEN_KEYS:
+            m.pop(k, None)
+    return m
 
 
 def _state_cond(state: str):
@@ -168,7 +189,8 @@ def _line_visible_cond(db: Session, user, profile: dict):
     return or_(*conds)
 
 
-def _build_query(request: Request, db: Session, user, prof: dict):
+def _build_query(request: Request, db: Session, user, prof: dict,
+                 show_supplier: bool = False):
     """Bộ lọc + phạm vi + sắp xếp — dùng chung cho danh sách và xuất Excel, để file xuất luôn
     khớp đúng những gì đang bày trên bảng."""
     q = (db.query(SurveyRequest, SurveyRequestLine)
@@ -232,6 +254,13 @@ def _build_query(request: Request, db: Session, user, prof: dict):
                      | (SurveyRequestLine.requirement_detail.like(like))
                      | (SurveyRequestLine.pr_code.like(like)))
 
+    # ----- Bộ lọc điều kiện (CR-080) -----
+    # Thanh lọc cố định phía trên chỉ còn Công ty / Tiến độ dòng / Tìm kiếm / Trễ hạn; các cột
+    # còn lại (bộ phận, phân loại, NSTM, trạng thái phiếu, trạng thái dòng, các mốc ngày…) lọc
+    # qua đây với đủ phép so sánh. Param cũ (month, *_from/_to, answered…) vẫn đọc ở trên để
+    # link cũ không chết, chỉ là FE không còn ô nhập cho chúng.
+    q = apply_operator_filters_map(q, _cond_map(show_supplier), request)
+
     # ----- Phạm vi dữ liệu: phiếu theo scope, rồi dòng theo phần việc -----
     q = apply_scope(q, SurveyRequest, "survey_request", user, prof)
     cond = _line_visible_cond(db, user, prof)
@@ -287,7 +316,7 @@ def list_progress(request: Request, pg: dict = Depends(pagination),
                   db: Session = Depends(get_db), user=Depends(_require_progress)):
     prof = get_perm_profile(db, user)
     show_supplier = _show_supplier(db, user)
-    q = _build_query(request, db, user, prof)
+    q = _build_query(request, db, user, prof, show_supplier)
     total = q.count()
     rows = q.offset(pg["offset"]).limit(pg["limit"]).all()
     return success({"total": total, "items": _decorate(db, rows, show_supplier, pg["offset"]),
@@ -302,7 +331,7 @@ def export_xlsx(request: Request, cols: str = "", db: Session = Depends(get_db),
 
     prof = get_perm_profile(db, user)
     show_supplier = _show_supplier(db, user)
-    q = _build_query(request, db, user, prof)
+    q = _build_query(request, db, user, prof, show_supplier)
     check_row_limit(q.count())
     rows = _decorate(db, q.all(), show_supplier, 0)
     columns = pick_columns(ex.columns_for(show_supplier), cols)

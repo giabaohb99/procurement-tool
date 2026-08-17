@@ -21,6 +21,9 @@ export const condSelect = (name: string, label: string, options: Opt[],
                            operators: OperatorType[] = ['eq', 'ne', 'in', 'not_in']): FilterFieldDefinition =>
   ({ name, label, type: 'select', options, operators })
 
+export const condNumber = (name: string, label: string): FilterFieldDefinition =>
+  ({ name, label, type: 'number' })
+
 /** Như condSelect nhưng options nạp động từ API (NCC, phòng ban, phân loại…) */
 export const condSource = (name: string, label: string,
                            source: { url: string; value?: string; label?: string },
@@ -53,6 +56,88 @@ export const INVENTORY_COND_FILTERS: FilterFieldDefinition[] = [
   condSource('warehouse_code', 'Kho', { url: '/api/warehouses', value: 'code', label: 'name' }),
   condText('product_code', 'Mã sản phẩm'),
   condText('product_name', 'Tên sản phẩm'),
+]
+
+// ── Hai màn TIẾN ĐỘ (CR-080) ──────────────────────────────────────────────────
+//
+// Hai bảng này rộng 40+ cột nên thanh lọc cố định chỉ giữ mấy ô cơ bản (Công ty · Tìm kiếm ·
+// tiến độ · trạng thái nhận/trễ hạn); mọi cột còn lại lọc ở đây, có đủ phép so sánh.
+//
+// Là HÀM chứ không phải hằng số vì cụm NCC/vận chuyển chỉ được lọc khi người dùng có
+// `supplier.read` — backend cũng gỡ cột đó khỏi whitelist (xem `_cond_map` của hai controller),
+// nên khai báo thêm cũng vô ích mà còn khiến người dùng tưởng lọc được.
+
+const DEPT_SRC = { url: '/api/departments', value: 'name', label: 'name' }
+const GROUP_SRC = { url: '/api/item-groups', value: 'name', label: 'name' }
+
+/** Tiến độ mua hàng (/api/purchase-progress) — theo `purchase_progress/controller._cond_map` */
+export const purchaseProgressCondFilters = (showSupplier: boolean): FilterFieldDefinition[] => [
+  // Đơn mua hàng
+  condText('po_code', 'Mã ĐMH'), condText('misa_code', 'Mã MISA'), condText('pr_code', 'Mã PYC'),
+  condSource('department', 'Bộ phận', DEPT_SRC),
+  condSource('nspt', 'NSPT phụ trách', { url: '/api/employees', value: 'full_name', label: 'full_name' }),
+  condDate('order_date', 'Ngày đặt hàng'),
+  condSelect('document_status', 'Hồ sơ chứng từ', [
+    { value: 'chưa có chứng từ', label: 'Chưa có chứng từ' },
+    { value: 'đã có thông tin chứng từ', label: 'Đã có chứng từ' },
+    { value: 'đã đủ chứng từ', label: 'Đã đủ chứng từ' }]),
+  ...(showSupplier ? [
+    condSource('supplier_code', 'Mã NCC', { url: '/api/suppliers', value: 'code', label: 'name' }),
+    condText('supplier_name', 'Tên nhà cung cấp'),
+  ] : []),
+  // Dòng hàng
+  condText('product_code', 'Mã SP'), condText('product_name', 'Tên SP'),
+  condText('invoice_name', 'Tên hóa đơn'), condSource('item_group', 'Nhóm hàng', GROUP_SRC),
+  condText('spec', 'Quy cách'), condText('fg_code', 'Mã HH'), condText('unit', 'ĐVT'),
+  condDate('required_date', 'Ngày cần'), condDate('expected_date', 'Dự kiến nhận'),
+  condNumber('qty_request', 'SL yêu cầu'), condNumber('qty_order', 'SL đặt'),
+  condNumber('price', 'Đơn giá'), condNumber('vat', 'VAT %'),
+  condSelect('progress_status', 'Tiến độ dòng', [
+    'Chưa đặt hàng', 'Đã đặt hàng', 'Đã nhận hàng', 'Chưa gửi ĐMH cho KT',
+    'Đã gửi ĐMH cho KT', 'Hoàn thành', 'Tạm ngưng', 'Hủy đơn',
+  ].map((s) => ({ value: s, label: s }))),
+  // Lần giao
+  condNumber('delivery_no', 'Lần giao'),
+  condSource('warehouse_code', 'Kho', { url: '/api/warehouses', value: 'code', label: 'name' }),
+  condNumber('ship_qty', 'SL giao'), condNumber('received_qty', 'SL nhận'),
+  condDate('promised_date', 'Cam kết giao'), condDate('received_date', 'Ngày nhận'),
+  condDate('regulated_date', 'Ngày quy định'), condNumber('std_days', 'Ngày QĐ (số ngày)'),
+  condNumber('diff_promise', 'CL cam kết'), condNumber('diff_regulated', 'CL quy định'),
+  condNumber('diff_required', 'CL vs yêu cầu'),
+  condText('delivery_invoice_no', 'Số hóa đơn'), condText('qc_result', 'Kết quả QC'),
+  condText('delivery_status', 'Trạng thái giao'),
+  ...(showSupplier ? [
+    condSource('carrier_code', 'Mã ĐVVC', { url: '/api/suppliers', value: 'code', label: 'name' }),
+    condText('carrier_name', 'Đơn vị vận chuyển'),
+    condNumber('shipping_unit_price', 'Đơn giá VC'), condNumber('shipping_amount', 'Tiền VC'),
+  ] : []),
+]
+
+/** Tiến độ báo giá (/api/survey-progress) — theo `survey_progress/controller._cond_map`.
+ *  Cột TÍNH (trễ hạn, số ngày xử lý, tiến độ dòng) không lọc được ở đây vì không nằm trong DB:
+ *  tiến độ dòng có ô riêng trên thanh lọc, "chưa trả kết quả" thì dùng `Ngày trả KQ` + đang trống. */
+export const surveyProgressCondFilters = (showSupplier: boolean): FilterFieldDefinition[] => [
+  // Đầu phiếu
+  condText('code', 'Mã YCBG'), condText('purpose', 'Mục đích'),
+  condText('requester', 'Người yêu cầu'), condSource('department', 'Bộ phận', DEPT_SRC),
+  condDate('request_date', 'Ngày yêu cầu'),
+  condSelect('status', 'Trạng thái phiếu', [
+    { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
+    { value: 'approved', label: 'Đã duyệt' }, { value: 'rejected', label: 'Từ chối' },
+    { value: 'processing', label: 'Đang xử lý' }, { value: 'survey_done', label: 'Đã khảo sát' },
+    { value: 'pr_created', label: 'Đã tạo YCMH' }, { value: 'done', label: 'Hoàn thành' }]),
+  // Dòng yêu cầu
+  condSource('item_group', 'Phân loại', GROUP_SRC),
+  condSource('assignee', 'NSTM phụ trách', { url: '/api/employees', value: 'code', label: 'full_name' }),
+  condNumber('request_qty', 'SL dự kiến'), condText('uom', 'ĐVT'),
+  condNumber('proposed_price', 'Giá đề xuất'),
+  // Mốc tiến độ
+  condDate('received_date', 'Ngày tiếp nhận'), condDate('result_due_date', 'Hạn trả kết quả'),
+  condDate('result_date', 'Ngày trả kết quả'),
+  condSelect('line_status', 'Trạng thái dòng', [
+    { value: 'resurvey', label: 'Cần khảo sát lại' },
+    { value: 'completed', label: 'Hoàn thành' }]),
+  ...(showSupplier ? [condText('internal_line_code', 'Mã dòng nội bộ')] : []),
 ]
 
 /** Phân công phụ trách (/api/category-assignees) — lọc theo KHÓA vì tên phân loại / tên NSTM

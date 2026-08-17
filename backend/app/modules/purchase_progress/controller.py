@@ -24,6 +24,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user, get_perm_profile, user_has_permission
 from app.core.base_controller import pagination
 from app.core.database import get_db
+from app.core.filter_operators import apply_operator_filters_map
 from app.core.response import success
 from app.core.scoping import apply_scope
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
@@ -70,6 +71,23 @@ def _sort_map():
     }
 
 
+def _cond_map(show_supplier: bool) -> dict:
+    """CR-080 — whitelist cho BỘ LỌC ĐIỀU KIỆN (`<field>__<op>`).
+
+    Lấy thẳng `_sort_map()`: cột nào sort được tại server thì lọc được, khỏi phải giữ hai danh
+    sách lệch nhau. Bỏ `company_id` vì thanh lọc cơ bản đã có ô Công ty (chọn theo tên), gõ số id
+    trong bộ lọc điều kiện chẳng ai dùng.
+
+    Người KHÔNG có `supplier.read` thì cột NCC/vận chuyển bị gỡ khỏi map — cột đã bị che trên
+    bảng thì cũng không được lọc theo, kẻo lọc rồi đếm số dòng còn lại là mò ra được tên NCC.
+    """
+    m = {k: v for k, v in _sort_map().items() if k != "company_id"}
+    if not show_supplier:
+        for k in _SUPPLIER_HIDDEN:
+            m.pop(k, None)
+    return m
+
+
 def _require_progress(user=Depends(get_current_user), db: Session = Depends(get_db)):
     """Gate OR: purchase_order.read HOẶC purchase_request.read."""
     if (user_has_permission(db, user, "purchase_order", "read")
@@ -93,7 +111,8 @@ def _show_supplier(db: Session, user) -> bool:
     return user_has_permission(db, user, "supplier", "read")
 
 
-def _build_query(request: Request, db: Session, user, prof: dict, po_scope: bool):
+def _build_query(request: Request, db: Session, user, prof: dict, po_scope: bool,
+                 show_supplier: bool = False):
     """Bộ lọc + phạm vi + sắp xếp của màn Tiến độ — dùng chung cho danh sách và xuất Excel (CR-068),
     để file xuất luôn khớp đúng những gì đang bày trên bảng."""
     q = (db.query(PurchaseOrder, POItem, PODelivery)
@@ -132,6 +151,13 @@ def _build_query(request: Request, db: Session, user, prof: dict, po_scope: bool
         like = f"%{kw}%"
         q = q.filter((PurchaseOrder.code.like(like)) | (PurchaseOrder.pr_code.like(like))
                      | (POItem.product_code.like(like)) | (POItem.product_name.like(like)))
+
+    # ----- Bộ lọc điều kiện (CR-080) -----
+    # Các ô lọc cố định phía trên chỉ còn Công ty / Tìm kiếm / Trạng thái tiến độ / Tình trạng
+    # nhận; mọi cột còn lại (bộ phận, NSPT, ngày đặt, ngày nhận, số lượng, tiền…) lọc qua đây với
+    # đủ phép so sánh. Param cũ của thanh lọc (month, order_date_from/_to…) vẫn được đọc ở trên
+    # để link cũ không chết, chỉ là FE không còn ô nhập cho chúng.
+    q = apply_operator_filters_map(q, _cond_map(show_supplier), request)
 
     # ----- Lọc theo SỐ LƯỢNG NHẬN (tổng đã nhận trên MỌI lần giao của dòng hàng) -----
     # Mục đích: sáng lọc nhanh đơn "chưa giao" / "giao thiếu" để hối thúc NCC.
@@ -186,7 +212,7 @@ def list_progress(request: Request, pg: dict = Depends(pagination),
                   db: Session = Depends(get_db), user=Depends(_require_progress)):
     prof = get_perm_profile(db, user)
     show_supplier = _show_supplier(db, user)
-    q = _build_query(request, db, user, prof, _po_scope(db, user))
+    q = _build_query(request, db, user, prof, _po_scope(db, user), show_supplier)
     total = q.count()
     rows = q.offset(pg["offset"]).limit(pg["limit"]).all()
     # STT liên tục theo trang
@@ -217,7 +243,7 @@ def export_xlsx(request: Request, cols: str = "", db: Session = Depends(get_db),
 
     prof = get_perm_profile(db, user)
     show_supplier = _show_supplier(db, user)
-    q = _build_query(request, db, user, prof, _po_scope(db, user))
+    q = _build_query(request, db, user, prof, _po_scope(db, user), show_supplier)
     check_row_limit(q.count())
     company_name = {c.id: c.name for c in db.query(Company).all()}
     rows = []
