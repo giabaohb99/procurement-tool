@@ -19,6 +19,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
+import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { Badge } from '@/shared/ui/badge'
@@ -29,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentAccessCard } from '../components/document-access-card'
 import { DocumentScopeCard } from '../components/document-scope-card'
+import { DocumentSignatureCard } from '../components/document-signature-card'
 import { DocumentAttachmentList } from '../components/document-attachment-list'
 import { DocumentAutosaveStatus } from '../components/document-autosave-status'
 import { DocumentRecordForm } from '../components/document-record-form'
@@ -111,6 +113,10 @@ export function DocumentDetailPage() {
   const [excerptOpen, setExcerptOpen] = useState(false)
   const [issueOpen, setIssueOpen] = useState(false)
 
+  const { can } = usePermission()
+  //  Ký là hành vi PHÊ DUYỆT, không phải sửa nội dung — gác bằng `approve` đúng
+  //  như backend làm.
+  const canApprove = can('document', 'approve')
   const canWrite = permissions?.write ?? false
   const canDelete = permissions?.delete ?? false
 
@@ -359,6 +365,14 @@ export function DocumentDetailPage() {
             {/*  Phạm vi áp dụng (F01–F04) khác QUYỀN TRUY CẬP: phạm vi trả lời
                  "văn bản này áp cho ai phải làm theo", quyền trả lời "ai được
                  mở ra đọc". Hai câu hỏi khác nhau, để cạnh nhau cho dễ đối chiếu. */}
+            {/*  Chữ ký gắn với PHIÊN BẢN đang mở — ký được sau khi bản đó đã
+                 duyệt và khóa lại. */}
+            <DocumentSignatureCard
+              documentId={documentId}
+              versionId={versionId}
+              isLocked={isLocked}
+              canApprove={canApprove}
+            />
             <DocumentScopeCard documentId={documentId} canWrite={canWrite} />
             <DocumentAccessCard documentId={documentId} canWrite={canWrite} />
           </DocumentRecordForm>

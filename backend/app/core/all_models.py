@@ -45,3 +45,4 @@ from app.modules.document import recipient_model as _document_recipient  # noqa:
 from app.modules.document import incoming_register_model as _incoming_register  # noqa: F401
 from app.modules.document import link_model as _document_link  # noqa: F401
 from app.modules.document import scope_model as _document_scope  # noqa: F401
+from app.modules.document import signature_model as _document_signature  # noqa: F401

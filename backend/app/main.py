@@ -20,6 +20,7 @@ from app.modules.doc_catalog.controller import (doc_type_router,
 from app.modules.document.controller import router as document_router
 from app.modules.document.link_controller import router as document_link_router
 from app.modules.document.scope_controller import router as document_scope_router
+from app.modules.document.signature_controller import router as document_signature_router
 from app.modules.document.template_controller import router as document_template_router
 from app.modules.catalog.controller import (brand_router, item_group_router,
                                             unit_router, warehouse_router)
@@ -113,6 +114,7 @@ app.include_router(document_template_router)
 app.include_router(document_router)
 app.include_router(document_link_router)
 app.include_router(document_scope_router)
+app.include_router(document_signature_router)
 app.include_router(survey_router)
 app.include_router(survey_report_router)
 app.include_router(po_router)

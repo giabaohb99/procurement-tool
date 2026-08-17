@@ -97,6 +97,10 @@ export const queryKeys = {
     /** Phạm vi áp dụng của một văn bản (F01–F04). */
     scopes: (documentId: number) => ['document', 'records', documentId, 'scopes'] as const,
     scopeOptions: () => ['document', 'scope-options'] as const,
+    /** Chữ ký của một văn bản (J02, J03). */
+    signatures: (documentId: number) =>
+      ['document', 'records', documentId, 'signatures'] as const,
+    signKinds: () => ['document', 'sign-kinds'] as const,
     /** F05 — văn bản đang áp dụng cho chính tôi. Không theo văn bản nào. */
     appliesToMe: () => ['document', 'applies-to-me'] as const,
     /** Quy tắc quan hệ theo LOẠI văn bản — danh mục nền, không theo văn bản nào. */

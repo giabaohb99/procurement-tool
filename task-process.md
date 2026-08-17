@@ -13,11 +13,11 @@
 | 1 | Danh mục và số hiệu | **100%** | **ĐẠT** — cả 3 bài nghiệm thu xanh |
 | 2 | Yêu cầu, soạn thảo, phiên bản | **~75%** | chưa |
 | 3 | Bộ máy phê duyệt dùng chung | **~5%** | chưa |
-| 4 | Ban hành, phạm vi, clone | **~40%** | chưa |
-| **Tổng 4 phase** | trọng số theo khối lượng (15/30/35/20) | **≈ 47%** | |
+| 4 | Ban hành, phạm vi, clone | **~50%** | chưa |
+| **Tổng 4 phase** | trọng số theo khối lượng (15/30/35/20) | **≈ 49%** | |
 
 Đọc nhanh: **Phase 1 ĐÓNG, Phase 2 xong đúng phần lõi (soạn thảo + phiên bản), Phase 3 và 4 chưa bắt đầu.**
-Con số 47% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính năng) và hoàn toàn chưa động tới.
+Con số 49% thấp chủ yếu vì Phase 3 là phase nặng nhất (20 tính năng) và hoàn toàn chưa động tới.
 
 > **Đổi gì so với lần chấm 15/08 — ba đợt:**
 >
@@ -201,13 +201,13 @@ của Thu mua.
 
 ---
 
-## 4. Phase 4 · Ban hành, phạm vi, clone — ~40%
+## 4. Phase 4 · Ban hành, phạm vi, clone — ~50%
 
 | Việc | Mã | FE v2 |
 |---|---|---|
 | Vòng đời văn bản 8 trạng thái | J01 | ✅ |
 | Ban hành (cấp số, đóng phiên bản) | J04 | 🟡 có `approve → effective`, chưa có màn ban hành riêng |
-| Ký điện tử nội bộ, ghi rõ loại chữ ký | J02, J03 | ❌ |
+| Ký điện tử nội bộ, ghi rõ loại chữ ký | J02, J03 | ✅ | `tab_signature` chỉ ghi thêm; câu giá trị pháp lý do backend cấp, hiện ngay cạnh chữ ký |
 | Phạm vi ba kiểu, bao gồm/loại trừ, áp cho đơn vị con | F01–F04 | ✅ | `tab_document_scope` + CHECK ép phòng ban phải kèm pháp nhân; `document-scope-card.tsx` |
 | Màn "văn bản áp dụng cho tôi" | F05 | ✅ | `documents-applied-to-me-page.tsx`. Thông báo theo phạm vi (J05) chưa — cần bộ thông báo |
 | Clone xuống pháp nhân con | F06–F08 | ❌ |
@@ -286,6 +286,7 @@ docker compose exec -T api alembic check   # còn báo drift tab_comment_*/tab_t
 | `document/excerpt_service.py`, `service.revoke/approve` | `test_ban_trich_noi_bo.py` |
 | `document/scope_service.py`, `scope_controller.py` | `test_pham_vi_ap_dung.py` |
 | `document/parent_change_service.py` | `test_document_quan_he_cha_con.py` |
+| `document/signature_service.py` | `test_chu_ky_van_ban.py` |
 | `document-draft-holder-notice.tsx`, `document-version-*.tsx` | `document-draft-holder-notice.test.tsx` + kịch bản bấm tay 6.5 |
 | `document/access_service.py`, quyền theo sổ | `test_document_access.py` (22 test) |
 | `seed_data/document_phase1.py` | `test_document_phase1_seed.py` |
@@ -456,13 +457,13 @@ loại chứng từ bằng cờ, không thay chỗ.
 2. `multi_mode = 4` (đủ tỷ lệ `quorum`) có thật sự cần bản 1 không, hay ba chế độ đầu là đủ? I05 chỉ nói "ba chế độ".
 3. Chuyển 5 luồng Thu mua sang bộ máy mới (I25) là bản 2 — vậy bản 1 bộ máy chỉ chạy cho văn thư. Có đúng ý không, hay muốn chuyển sớm một luồng Thu mua để thử thật?
 
-## Phase 4 · Ban hành, phạm vi, clone (còn 7 việc)
+## Phase 4 · Ban hành, phạm vi, clone (còn 6 việc)
 
 - [x] [P4][F01/F02] Phạm vi áp dụng ba kiểu + bao gồm và loại trừ — **L** — xong 17/08
 - [x] [P4][F03/F04] Bắt buộc kèm pháp nhân khi chọn phòng ban + áp cho cả đơn vị con — **M** — xong 17/08
 - [x] [P4][F05] Màn "văn bản áp dụng cho tôi" — **S** — xong 17/08
 - [ ] [P4][J05] Thông báo theo phạm vi — **S** — cần bộ thông báo, chưa làm
-- [ ] [P4][J02/J03] Ký điện tử nội bộ, bản ghi ký, mã băm, ghi rõ loại chữ ký — **L**
+- [x] [P4][J02/J03] Ký điện tử nội bộ, bản ghi ký, mã băm, ghi rõ loại chữ ký — **L** — xong 17/08. J08 (ký số thật, cần USB) vẫn là dịch vụ riêng chưa làm
 - [ ] [P4][J04] Màn ban hành: cấp số, đóng phiên bản — **M**
 - [ ] [P4][F06/F07/F08] Clone xuống pháp nhân con: tạo nháp, giữ liên kết ngược, số hiệu riêng — **L** — CHỜ chốt câu hỏi 4
 - [ ] [P4][F09/F10] Gửi thư kèm bản nháp + bảng theo dõi các bản clone — **M**
