@@ -880,7 +880,7 @@ export default function PurchaseRequestDetail() {
               {!editable && !isNew && <span style={{ fontSize: 12, color: 'var(--muted)' }}><i className="ti ti-device-floppy" /> Trạng thái tự đồng bộ từ ĐMH · thay đổi phụ trách được lưu tự động</span>}
             </div>
             <div className="items-scroll">
-              <table className="items-table" style={{ minWidth: showAssigneeCol ? 1652 : 1492, tableLayout: 'fixed' }}>
+              <table className="items-table" style={{ minWidth: showAssigneeCol ? 1697 : 1537, tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
                     <th style={{ width: 34, textAlign: 'center' }}>No.</th>
@@ -893,7 +893,8 @@ export default function PurchaseRequestDetail() {
                     <th style={{ width: 100, textAlign: 'right' }}>Đơn giá</th>
                     <th style={{ width: 64, textAlign: 'right' }} title="% VAT theo dòng">VAT%</th>
                     <th style={{ width: 120, textAlign: 'right' }} title="Thành tiền gồm VAT">Thành tiền</th>
-                    <th style={{ width: 150, textAlign: 'center' }}>Trạng thái</th>
+                    {/* CR-078: cột đủ chỗ cho nhãn dài nhất "Chưa tạo đơn mua hàng" (CR-074) — hẹp hơn thì pill tràn đè cột Tiến độ */}
+                    <th style={{ width: 195, textAlign: 'center' }}>Trạng thái</th>
                     <th style={{ width: 118, textAlign: 'center' }} title="Tiến độ: tổng SL đã nhận / tổng SL đã đặt (đồng bộ từ Đơn mua hàng)">Tiến độ<br /><span style={{ fontWeight: 400, fontSize: 10.5, color: 'var(--muted)' }}>nhận / đặt</span></th>
                     <th style={{ width: 130, textAlign: 'center', whiteSpace: 'normal', lineHeight: 1.3 }} title="Ngày dự kiến có hàng (sửa trực tiếp nếu có quyền, hoặc trong Chi tiết dòng)">Ngày dự kiến<br />có hàng</th>
                     {showAssigneeCol && <th style={{ width: 160, textAlign: 'left' }}>NSTM phụ trách</th>}
@@ -968,8 +969,9 @@ export default function PurchaseRequestDetail() {
                         ) : (it.vat_pct != null ? Number(it.vat_pct) + '%' : '')}
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 500 }} title="Thành tiền gồm VAT">{fmtVNDBlank(lineAmount(it))}</td>
-                      <td title="Trạng thái tự đồng bộ từ Đơn mua hàng — không sửa tay">
-                        <span className="badge" style={{ background: (LS_COLOR[it.line_status] || '#94a3b8') + '22', color: LS_COLOR[it.line_status] || '#64748b' }}>{it.line_status || LS_NO_PO}</span>
+                      <td style={{ textAlign: 'center' }} title="Trạng thái tự đồng bộ từ Đơn mua hàng — không sửa tay">
+                        {/* badge wrap: nhãn nào dài quá ô thì XUỐNG DÒNG, không tràn sang cột bên cạnh */}
+                        <span className="badge wrap" style={{ background: (LS_COLOR[it.line_status] || '#94a3b8') + '22', color: LS_COLOR[it.line_status] || '#64748b' }}>{it.line_status || LS_NO_PO}</span>
                       </td>
                       <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }} title="SL đã nhận / SL đã đặt (đồng bộ từ Đơn mua hàng)">
                         {(Number(it.qty_ordered) || Number(it.qty_received)) ? (
