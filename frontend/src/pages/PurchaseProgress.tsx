@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
+import DateRangePicker from '../components/DateRangePicker'
 import FilterPanel, { FilterItem } from '../components/FilterPanel'
 import {
   ConditionalFilter, ConditionalFilterButton, RestQueryParams,
@@ -35,16 +36,18 @@ const PG_OPTS = Object.keys(PG_COLOR)
 
 /** Bộ lọc rỗng — dùng cho khởi tạo và nút "Xóa lọc".
  *
- *  CR-080: thanh lọc chỉ còn 4 ô CƠ BẢN. Bộ phận / tháng / khoảng ngày đặt / khoảng ngày nhận
- *  đã chuyển sang BỘ LỌC ĐIỀU KIỆN (lọc được cả "trước ngày", "trong khoảng", "đang trống"…)
- *  nên bỏ khỏi đây. Backend VẪN đọc các param cũ (`month`, `order_date_from`…) cho ai gọi API
- *  trực tiếp, chỉ là màn hình không còn ô nhập cho chúng.
+ *  CR-080: thanh lọc rút về mấy ô CƠ BẢN, phần còn lại (tháng, khoảng ngày nhận, NSPT, NCC,
+ *  số lượng, tiền…) chuyển sang BỘ LỌC ĐIỀU KIỆN vì ở đó lọc được cả "trước ngày", "trong
+ *  khoảng", "đang trống"… Backend VẪN đọc các param cũ (`month`, `received_date_from`…) cho ai
+ *  gọi API trực tiếp, chỉ là màn hình không còn ô nhập cho chúng.
  *
  *  Giữ lại `status` (tiến độ dòng) và `recv_state` vì đó là hai câu hỏi người dùng vào màn này
  *  để trả lời; riêng `recv_state` là cột TÍNH (tổng SL nhận của mọi lần giao) nên bộ lọc điều
- *  kiện không làm được. */
+ *  kiện không làm được. `department` + khoảng `order_date` giữ ở ngoài (CR-081) vì đây là hai
+ *  lát cắt dùng gần như mọi lần mở màn — bắt người dùng dựng điều kiện cho chúng là phiền. */
 const EMPTY_FILTERS = {
-  company_id: '', status: '', q: '', recv_state: '',
+  company_id: '', department: '', status: '', q: '', recv_state: '',
+  order_date_from: '', order_date_to: '',
 }
 const pgBadge = (s: string) =>
   <span className="badge" style={{ background: (PG_COLOR[s] || '#94a3b8') + '22', color: PG_COLOR[s] || '#64748b', whiteSpace: 'nowrap' }}>{s || '—'}</span>
@@ -145,6 +148,7 @@ export default function PurchaseProgress() {
   const [total, setTotal] = useState(0)
   const [showSupplier, setShowSupplier] = useState(true)
   const [companies, setCompanies] = useState<any[]>([])
+  const [departments, setDepartments] = useState<any[]>([])
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [sortBy, setSortBy] = useState('')
@@ -177,6 +181,8 @@ export default function PurchaseProgress() {
   }
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items))
+    api.get('/api/departments', { params: { page_size: 500 } })
+      .then((r) => setDepartments(r.data.data.items)).catch(() => {})
   }, [])
 
   // Tự tìm khi đổi filter (debounce) / đổi trang / đổi sort
@@ -262,6 +268,11 @@ export default function PurchaseProgress() {
             options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
             onChange={(v) => setFilter('company_id', v)} />
         </FilterItem>
+        <FilterItem label="Bộ phận">
+          <SearchSelect value={f.department} placeholder="Tất cả"
+            options={departments.map((d) => ({ value: d.name, label: d.name }))}
+            onChange={(v) => setFilter('department', v)} />
+        </FilterItem>
         <FilterItem label="Trạng thái tiến độ">
           <SearchSelect value={f.status} placeholder="Tất cả"
             options={PG_OPTS.map((s) => ({ value: s, label: s }))}
@@ -274,6 +285,10 @@ export default function PurchaseProgress() {
             <option value="under">Chưa đủ (nhận &lt; đặt)</option>
             <option value="full">Đã đủ (nhận &ge; đặt)</option>
           </select>
+        </FilterItem>
+        <FilterItem label="Ngày đặt hàng" width={260} active={!!(f.order_date_from || f.order_date_to)}>
+          <DateRangePicker block value={{ from: f.order_date_from, to: f.order_date_to }}
+            onChange={(v) => { setF((s: any) => ({ ...s, order_date_from: v.from, order_date_to: v.to })); setPage(1) }} />
         </FilterItem>
         <FilterItem label="Tìm kiếm" grow>
           <input value={f.q} placeholder="Mã ĐMH / PYC / mã, tên SP…" onChange={(e) => setFilter('q', e.target.value)} />
