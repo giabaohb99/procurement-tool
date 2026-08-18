@@ -60,6 +60,22 @@ def xoa(db) -> dict[str, int]:
     return dem
 
 
+def _gan_truong_phong(db, nguoi) -> None:
+    """Khai TRƯỞNG PHÒNG cho các phòng chưa có.
+
+    Bước đầu của mọi luồng mẫu chọn người duyệt kiểu «trưởng bộ phận người nộp»
+    (`_truong_bo_phan` đọc `Department.manager_id`). Phòng bỏ trống cột đó thì
+    bước 1 không tìm ra ai, phiên duyệt rơi thẳng vào trạng thái **KẸT** và
+    không sinh việc nào — màn «Việc của tôi» trống trơn dù luồng khai đúng.
+    """
+    from app.modules.department.model import Department
+
+    for phong in db.query(Department).filter(
+            (Department.manager_id.is_(None)) | (Department.manager_id == 0)).all():
+        phong.manager_id = nguoi["chanh_vp"].id
+    db.commit()
+
+
 def _nguoi(db) -> dict[str, Employee]:
     """Ba vai người duyệt. Ít nhân sự thì dùng lại người đầu — dữ liệu mẫu
     không được nổ chỉ vì máy local mới seed có hai nhân viên."""
@@ -183,6 +199,7 @@ def run() -> None:
             print(f"  - {ten}: {so}")
 
         nguoi = _nguoi(db)
+        _gan_truong_phong(db, nguoi)
         xuong = _Xuong(db)
 
         from app.seed_data.approval_demo_corpus import dung_luong
