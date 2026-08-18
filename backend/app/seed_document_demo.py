@@ -37,6 +37,7 @@ from app.modules.document.link_model import DocumentLink
 from app.modules.document.model import (STATUS_DRAFT, STATUS_EFFECTIVE,
                                         STATUS_REPLACED, STATUS_SUBMITTED,
                                         Document)
+from app.modules.document.template_model import DocumentTemplate
 from app.modules.document.scope_model import (DIM_COMPANY, DIM_DEPARTMENT,
                                               MODE_INCLUDE, DocumentScope)
 from app.modules.document.version_model import (CHANGE_MAJOR, VERSION_APPROVED,
@@ -64,6 +65,7 @@ def xoa_du_lieu_van_ban(db: Session) -> dict[str, int]:
         ("phạm vi", DocumentScope),
         ("quyền", DocumentAccess),
         ("kế hoạch clone", DocumentClonePlan),
+        ("văn bản mẫu", DocumentTemplate),
         ("phiên bản", DocumentVersion),
         ("văn bản", Document),
     ]:
@@ -235,6 +237,29 @@ class _Xuong:
         return clone
 
 
+def nap_van_ban_mau(db: Session, company_name: str) -> int:
+    """THƯ VIỆN VĂN BẢN MẪU — khung trắng cho người soạn bắt đầu.
+
+    Khác bộ văn bản thật ở chỗ mọi ô phải điền đều để dấu chấm lửng: gán sẵn
+    tên người hay số hiệu thì người soạn quên xóa, và văn bản ra đời mang tên
+    một người không liên quan.
+    """
+    from app.seed_data.document_demo_templates import VAN_BAN_MAU
+
+    loai = {t.code: t for t in db.query(DocType).all()}
+    dem = 0
+    for ma, ten, mo_ta, than in VAN_BAN_MAU:
+        if ma not in loai:
+            continue
+        db.add(DocumentTemplate(
+            doc_type_id=loai[ma].id, name=ten, description=mo_ta,
+            content_html=than.replace("{{PHAP_NHAN}}", company_name.upper()),
+            is_active=True, created_by=ACTOR, updated_by=ACTOR))
+        dem += 1
+    db.commit()
+    return dem
+
+
 def nap_du_lieu_mau(db: Session) -> dict:
     """Nạp bộ văn bản mẫu. Trả về số bản ghi từng loại để in ra màn hình."""
     from app.seed_data.document_demo_corpus import dung
@@ -253,7 +278,10 @@ def nap_du_lieu_mau(db: Session) -> dict:
     ket_qua = dung(xuong, HOM_NAY, cac_con)
     db.commit()
 
+    so_mau = nap_van_ban_mau(db, company.name or "")
+
     return {
+        "văn bản mẫu": so_mau,
         "văn bản": db.query(Document).count(),
         "phiên bản": db.query(DocumentVersion).count(),
         "quan hệ": db.query(DocumentLink).count(),
