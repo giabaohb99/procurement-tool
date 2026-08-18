@@ -581,6 +581,40 @@ tbody tr:hover {
   overflow-x: auto;
 }
 
+/* Thanh cuộn ngang PHỤ neo đáy màn hình (components/TableScroll.tsx).
+   Chỉ hiện khi bảng rộng hơn khung VÀ thanh cuộn thật đang khuất dưới tầm nhìn,
+   để khỏi phải cuộn dọc hết trang mới kéo ngang được. Vị trí ngang (left/width)
+   do JS đặt inline cho khớp đúng khối bảng. */
+.table-scroll-proxy {
+  position: fixed;
+  bottom: 0;
+  z-index: 30;
+  height: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border-top: 1px solid #e9edf7;
+  box-shadow: 0 -2px 6px rgba(15, 39, 84, 0.06);
+}
+
+/* Trên máy Mac thanh cuộn tự ẩn; ép hiện để người dùng thấy có chỗ kéo. */
+.table-scroll-proxy::-webkit-scrollbar {
+  height: 13px;
+}
+
+.table-scroll-proxy::-webkit-scrollbar-thumb {
+  background: #b9c4da;
+  border: 3px solid transparent;
+  border-radius: 8px;
+  background-clip: content-box;
+}
+
+.table-scroll-proxy::-webkit-scrollbar-thumb:hover {
+  background: #93a3c0;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
 /* Bo nhẹ 2 góc trên của dải tiêu đề cho khớp với lề mới */
 .table-card thead tr :first-child {
   border-top-left-radius: 8px;
@@ -1690,6 +1724,11 @@ thead th {
   }
 
   .no-print {
+    display: none !important;
+  }
+
+  /* Thanh cuộn ngang phụ chỉ có nghĩa trên màn hình */
+  .table-scroll-proxy {
     display: none !important;
   }
 

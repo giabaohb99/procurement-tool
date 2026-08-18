@@ -13,6 +13,7 @@ import TableHead, { TableCells, TableColGroup } from '../components/TableHead'
 import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 import { useUrlFilters } from '../hooks/use-url-filters'
+import TableScroll from '../components/TableScroll'
 
 type Row = {
   id: number; item_group_id: number; item_group_name: string
@@ -143,7 +144,7 @@ export default function CategoryAssignees() {
 
       <div className="card table-card">
         <TableToolbar {...table} onRefresh={load} />
-        <div className="table-scroll">
+        <TableScroll>
           {/* table-layout fixed + colgroup: khóa bề rộng cột để sort/đổi trang không làm bảng giật */}
           <table style={{ tableLayout: 'fixed' }}>
             <TableColGroup columns={table.columns} colW={table.colW} />
@@ -158,7 +159,7 @@ export default function CategoryAssignees() {
               {sorted.length === 0 && <tr><td colSpan={table.columns.length} className="table-empty">Không có phân công nào khớp bộ lọc</td></tr>}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
         <div className="table-foot">
           <Pagination page={page} pageSize={pageSize} total={sorted.length}
             onChange={(p, s) => { setPage(p); setPageSize(s) }} />

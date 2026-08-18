@@ -9,6 +9,7 @@ import TableHead, { TableCells } from '../components/TableHead'
 import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 import { useUrlFilters } from '../hooks/use-url-filters'
+import TableScroll from '../components/TableScroll'
 
 const LINE_APPROVE_COLOR: Record<string, string> = {
   'Chờ duyệt': '#d97706',
@@ -324,7 +325,7 @@ export default function SurveyReport() {
       {/* Table */}
       <div className="card table-card">
         <TableToolbar {...table} onRefresh={() => load(debouncedFilters, page)} />
-        <div className="table-scroll">
+        <TableScroll>
           <table style={{ minWidth: 900 }}>
             <TableHead {...table} sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
             <tbody>
@@ -342,7 +343,7 @@ export default function SurveyReport() {
               )}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
 
         {total > 0 && (
           <div className="table-foot">

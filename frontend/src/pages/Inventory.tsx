@@ -16,6 +16,7 @@ import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 import { useUrlFilters } from '../hooks/use-url-filters'
 import { fmtVND } from '../utils/money'
+import TableScroll from '../components/TableScroll'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 // ĐƠN GIÁ hiện đủ 4 số lẻ — mặc định toLocaleString chỉ cho 3, cắt mất chữ số cuối
@@ -215,7 +216,7 @@ export default function Inventory() {
         return (
           <div className="card table-card">
             <TableToolbar {...table} onRefresh={load} />
-            <div className="table-scroll">
+            <TableScroll>
               <table>
                 <TableHead {...table} sortBy={sortField} sortDir={sortAsc ? 'asc' : 'desc'} onSort={handleSort} />
                 <tbody>
@@ -227,7 +228,7 @@ export default function Inventory() {
                   {totalRows === 0 && <tr><td colSpan={table.columns.length} className="table-empty">Chưa có tồn kho</td></tr>}
                 </tbody>
               </table>
-            </div>
+            </TableScroll>
             <div className="table-foot">
               <Pagination page={page} pageSize={pageSize} total={totalRows}
                 onChange={(p, s) => { setPage(p); setPageSize(s) }} />

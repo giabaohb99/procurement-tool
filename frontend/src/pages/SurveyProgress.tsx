@@ -18,6 +18,7 @@ import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 import { useUrlFilters } from '../hooks/use-url-filters'
 import { fmtVND } from '../utils/money'
 import { toast } from '../components/toast'
+import TableScroll from '../components/TableScroll'
 
 /**
  * CR-075 — Tiến độ báo giá.
@@ -306,7 +307,7 @@ export default function SurveyProgress() {
 
       <div className="card table-card">
         <TableToolbar {...table} onRefresh={load} />
-        <div className="table-scroll">
+        <TableScroll>
           <table className="dense" style={{ minWidth: minW, tableLayout: 'fixed' }}>
             <TableColGroup columns={table.columns} colW={table.colW} />
             <TableHead columns={table.columns} startResize={table.startResize}
@@ -320,7 +321,7 @@ export default function SurveyProgress() {
               {rows.length === 0 && <tr><td colSpan={table.columns.length} className="table-empty">Chưa có dữ liệu tiến độ</td></tr>}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
         <div className="table-foot">
           <Pagination page={page} pageSize={pageSize} total={total}
             onChange={(p, s) => { setPage(p); setPageSize(s) }} />
