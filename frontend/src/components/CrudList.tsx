@@ -14,6 +14,7 @@ import TableHead, { TableCells } from './TableHead'
 import TableToolbar from './TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 import { useFilterUrlWriter } from '../hooks/use-url-filters'
+import TableScroll from './TableScroll'
 
 export default function CrudList() {
   const { entity } = useParams()
@@ -411,7 +412,7 @@ export default function CrudList() {
 
       <div className="card table-card">
         <TableToolbar {...table} onRefresh={() => load(page, pageSize, filters)} />
-        <div className="table-scroll">
+        <TableScroll>
           <table>
             <TableHead {...table} sortBy={sortField} sortDir={sortDir} onSort={handleSort} />
             <tbody>
@@ -426,7 +427,7 @@ export default function CrudList() {
               )}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
         <div className="table-foot">
           <Pagination page={page} pageSize={pageSize} total={total} onChange={changePage} />
         </div>
