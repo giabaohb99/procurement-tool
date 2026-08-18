@@ -17,6 +17,7 @@ import TableHead, { TableCells } from '../components/TableHead'
 import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 import { useUrlFilters } from '../hooks/use-url-filters'
+import TableScroll from '../components/TableScroll'
 
 // Công nợ toàn là TIỀN -> làm tròn về đồng, không để lòi ra số lẻ của đơn giá 4 chữ số
 const fmt = fmtVND
@@ -246,7 +247,7 @@ export default function Payables() {
       {err && <div className="err" style={{ marginBottom: 8 }}>{err}</div>}
       <div className="card table-card">
         <TableToolbar {...table} onRefresh={load} />
-        <div className="table-scroll">
+        <TableScroll>
           <table className="dense" style={{ minWidth: 1220 }}>
             <TableHead {...table} sortBy={sortField} sortDir={sortDir} onSort={handleSort} />
             <tbody>
@@ -258,7 +259,7 @@ export default function Payables() {
               {rows.length === 0 && <tr><td colSpan={table.columns.length} className="table-empty">Chưa có công nợ</td></tr>}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
         <div className="table-foot">
           <Pagination page={page} pageSize={pageSize} total={rows.length}
             onChange={(p, s) => { setPage(p); setPageSize(s) }} />
