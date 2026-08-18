@@ -44,7 +44,9 @@ services:
       - proxy-tier
 
   # ERP v2 (frontend-v2/) — giao diện mới, chạy SONG SONG với `web` chứ không thay thế.
-  # Tunnel trỏ deverp.degoholding.vn -> http://procurement-erp-dev:80 (chờ khai trên Cloudflare).
+  # Tunnel trỏ deverp.degoholding.vn -> http://erp-dev:80 (khai tay trên Cloudflare Zero Trust).
+  # Tên container KHÔNG mang tiền tố `procurement-` như `web`/`help`: hai cái kia là app Thu mua,
+  # còn đây là ERP — cùng repo nhưng khác sản phẩm, để tên cũ là đọc nhầm.
   # Không mở cổng ra host: vào bằng domain qua tunnel, giống `web` và `help`.
   erp:
     build:
@@ -54,7 +56,7 @@ services:
         VITE_API_URL: ""                                # rỗng = gọi cùng origin, nginx proxy /api -> api:8000
         VITE_APP_NAME: "DEGO ERP (dev)"
         VITE_HELP_URL: "https://devhelp.degoholding.vn"
-    container_name: procurement-erp-dev
+    container_name: erp-dev
     restart: always
     depends_on:
       - api
