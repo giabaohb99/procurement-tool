@@ -10,6 +10,7 @@ import {
   Pencil,
   Save,
   Scissors,
+  ShieldCheck,
   Send,
   Undo2,
 } from 'lucide-react'
@@ -18,6 +19,8 @@ import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
+import { useEntityApproval } from '@/modules/approval/hooks/use-approvals'
+import { INSTANCE_STATUS } from '@/modules/approval/types/approval'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -29,6 +32,8 @@ import { RichTextEditor } from '@/shared/ui/rich-text-editor'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentAmendedBanner } from '../components/document-amended-banner'
+import { DocumentApprovalBanner } from '../components/document-approval-banner'
+import { DocumentApprovalTab } from '../components/document-approval-tab'
 import { DocumentAccessCard } from '../components/document-access-card'
 import { DocumentScopeCard } from '../components/document-scope-card'
 import { DocumentSignatureCard } from '../components/document-signature-card'
@@ -114,6 +119,18 @@ export function DocumentDetailPage() {
   const [excerptOpen, setExcerptOpen] = useState(false)
   const [issueOpen, setIssueOpen] = useState(false)
 
+  //  Phiếu này có đang chạy trong bộ máy duyệt NHIỀU BƯỚC không.
+  const { data: approvalData } = useEntityApproval('document', documentId)
+  const approval = approvalData ?? null
+  //  ⚠️ Đang chạy nhiều bước thì hai nút của luồng MỘT BƯỚC cũ phải biến mất.
+  //  Lỗi đã xảy ra: văn bản nằm ở chặng 1 chờ trưởng bộ phận, người có quyền
+  //  `document.approve` bấm «Duyệt và ban hành» là văn bản được cấp số và
+  //  chuyển hiệu lực ngay, còn phiên duyệt vẫn chạy tiếp trên một văn bản đã
+  //  ban hành. Backend nay cũng chặn (`approval_bridge.chan_duong_cu`) — ẩn nút
+  //  ở đây là để người dùng không thấy một cái nút chỉ để nhận lỗi.
+  const dangDuyetNhieuBuoc =
+    approval?.status === INSTANCE_STATUS.running || approval?.status === INSTANCE_STATUS.blocked
+
   const { can } = usePermission()
   //  Ký là hành vi PHÊ DUYỆT, không phải sửa nội dung — gác bằng `approve` đúng
   //  như backend làm.
@@ -187,7 +204,10 @@ export function DocumentDetailPage() {
                   <Badge variant={label.variant}>{label.text}</Badge>
                 </>
               )}
-              {tab === 'compose' && !isLocked && (
+              {/*  Chỉ nói "tự lưu" với người THẬT SỰ sửa được. Người duyệt nay
+                   mở được văn bản để đọc — nói với họ là trang đang tự lưu thì
+                   họ tưởng mình vừa động vào bài của người khác. */}
+              {tab === 'compose' && !isLocked && canWrite && (
                 <>
                   <span aria-hidden>·</span>
                   <DocumentAutosaveStatus
@@ -230,6 +250,10 @@ export function DocumentDetailPage() {
               <TabsTrigger value="links">
                 <Link2 className="size-4" />
                 Quan hệ
+              </TabsTrigger>
+              <TabsTrigger value="approval">
+                <ShieldCheck className="size-4" />
+                Phê duyệt
               </TabsTrigger>
             </TabsList>
 
@@ -301,7 +325,7 @@ export function DocumentDetailPage() {
               </PermissionGate>
             )}
 
-            {isSubmitted && (
+            {isSubmitted && !dangDuyetNhieuBuoc && (
               <PermissionGate entity="document" action="approve">
                 <Button
                   type="button"
@@ -337,6 +361,9 @@ export function DocumentDetailPage() {
         {/*  J10 — đặt NGOÀI mọi `TabsContent` để hiện ở mọi tab. Cảnh báo bắt
              buộc mà giấu sau một cú bấm thì cũng như không có. */}
         <DocumentAmendedBanner documentId={documentId} />
+        {/*  Cũng đặt NGOÀI mọi tab: người soạn cần biết phiếu đang chờ ai, và
+             nhất là biết khi nó kẹt — dù họ đang đứng ở tab nào. */}
+        <DocumentApprovalBanner instance={approval} />
 
         <TabsContent value="compose" className="mt-0">
           {record && (
@@ -409,6 +436,10 @@ export function DocumentDetailPage() {
               }}
             />
           )}
+        </TabsContent>
+
+        <TabsContent value="approval" className="mt-0">
+          <DocumentApprovalTab instance={approval} />
         </TabsContent>
 
         <TabsContent value="links" className="mt-0">

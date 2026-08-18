@@ -186,7 +186,15 @@ DOC_TYPE_LINK_RULES = [
     ("HDCV", 4, "QT", True, 1, 1),    # Hướng dẫn công việc hướng dẫn đúng 1 Quy trình
     ("BM", 6, "QT", True, 1, 0),      # Biểu mẫu không đứng một mình
     ("BM", 6, "QC", False, 0, 0),
+    #  Bốn loại dưới đây đều khai `needs_decision` ở `ALL_DOC_TYPES`, nghĩa là
+    #  không có Quyết định kèm theo thì `ensure_can_issue` từ chối ban hành.
+    #  Thiếu dòng quy tắc tương ứng ở đây là khóa chết: người soạn muốn khai
+    #  quan hệ «Kèm theo» tới Quyết định cũng bị bảng quy tắc chặn, nên văn bản
+    #  không còn đường nào ra. Đã từng thiếu ba dòng CS · QDI · QT.
     ("QC", 5, "QD", True, 1, 1),      # Quy chế ban hành kèm 1 Quyết định
+    ("CS", 5, "QD", True, 1, 1),      # Chính sách — như trên
+    ("QDI", 5, "QD", True, 1, 1),     # Quy định — như trên
+    ("QT", 5, "QD", True, 1, 1),      # Quy trình — như trên
     ("QDI", 7, "CS", False, 0, 0),    # Quy định căn cứ theo Chính sách — có thì tốt
     ("QD", 1, "QD", False, 0, 0),     # Quyết định mới thay quyết định cũ
     ("QT", 7, "CS", False, 0, 0),     # Quy trình căn cứ theo Chính sách

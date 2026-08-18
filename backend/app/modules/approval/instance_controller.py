@@ -67,6 +67,34 @@ def my_tasks(entity: str = "", db: Session = Depends(get_db),
     return success({"total": len(items), "items": items})
 
 
+@router.get("/of/{entity}/{entity_id}")
+def phien_cua_chung_tu(entity: str, entity_id: int, db: Session = Depends(get_db),
+                       user=Depends(get_current_user)):
+    """Phiên duyệt MỚI NHẤT của một chứng từ — `null` nếu nó chưa vào bộ máy.
+
+    Trang chi tiết chứng từ cần câu trả lời này để biết phiếu đang nằm ở bước
+    nào và ai đang giữ. Thiếu nó thì màn văn bản chỉ hiện được chữ «Đang duyệt»
+    trơ trọi, còn hai nút ban hành một bước thì vẫn bày ra như chưa hề có luồng.
+
+    Trả cả phiên ĐÃ kết thúc, vì `finish_reason` là chỗ duy nhất nói được câu
+    "đã duyệt hết các bước nhưng chưa ban hành được vì …".
+
+    Ai đăng nhập cũng gọi được: quyền đọc chính chứng từ đó do module của nó
+    gác, ở đây chỉ có tiến trình duyệt.
+    """
+    del user
+    instance = (
+        db.query(ApprovalInstance)
+        .filter(ApprovalInstance.entity == entity,
+                ApprovalInstance.entity_id == entity_id)
+        .order_by(ApprovalInstance.id.desc())
+        .first()
+    )
+    if instance is None:
+        return success(None)
+    return success(serializer.instance_out(db, instance, kem_chi_tiet=True))
+
+
 @router.post("/handover")
 def handover(data: HandoverIn, db: Session = Depends(get_db),
              user=Depends(require("approval_flow", "write"))):

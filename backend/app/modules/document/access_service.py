@@ -149,8 +149,42 @@ def visible_condition(user, profile: dict, action: str = "read"):
     return not_denied if base is None else and_(base, not_denied)
 
 
+def dang_duyet_van_ban_nay(db: Session, document_id: int, employee_id: int | None) -> bool:
+    """Người này có chân trong một phiên duyệt của văn bản này không.
+
+    Tính cả việc ĐÃ xử lý xong: người vừa ký phải mở lại được thứ mình đã ký,
+    nếu không thì chữ ký của họ là chữ ký vào một tờ giấy họ không còn xem được.
+    """
+    if not employee_id:
+        return False
+
+    from app.modules.approval.instance_model import ApprovalInstance, ApprovalTask
+
+    return (
+        db.query(ApprovalTask.id)
+        .join(ApprovalInstance, ApprovalInstance.id == ApprovalTask.instance_id)
+        .filter(ApprovalInstance.entity == "document",
+                ApprovalInstance.entity_id == document_id,
+                ApprovalTask.assignee_employee_id == employee_id)
+        .first()
+        is not None
+    )
+
+
 def can(db: Session, doc: Document, user, profile: dict, action: str = "read") -> bool:
     """Người này có được `action` trên ĐÚNG văn bản này không."""
+    #  ĐỌC ĐƯỢC THỨ MÌNH PHẢI KÝ. Người duyệt trong luồng thường không có vai
+    #  trò nào trên phân hệ Văn bản — bộ máy duyệt chỉ hỏi "anh có việc ở phiếu
+    #  này không", không hỏi phân quyền. Thiếu ngoại lệ này thì họ bấm từ «Việc
+    #  của tôi» sang văn bản là gặp 404 và phải ký mù, chỉ nhìn được mỗi cái
+    #  tiêu đề trên dòng việc.
+    #
+    #  CHỈ mở quyền ĐỌC. Sửa, xóa, ban hành vẫn đi theo phân quyền như cũ — việc
+    #  của người duyệt là xem xét rồi ký, không phải sửa bài người khác.
+    if action == "read" and dang_duyet_van_ban_nay(
+            db, doc.id, getattr(user, "employee_id", None)):
+        return True
+
     match = _subject_match(profile)
     if match is not None:
         column = ACTION_COLUMN[action]

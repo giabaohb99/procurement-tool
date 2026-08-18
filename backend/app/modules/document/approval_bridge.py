@@ -12,6 +12,7 @@ Ba điều giữ nguyên khi cờ TẮT hoặc chưa khai luồng nào:
 Cờ bật mà chưa khai luồng cho `document` thì `bat_dau()` trả `None` và đường cũ
 vẫn chạy — không có khe nào để văn bản rơi vào khoảng không.
 """
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.modules.approval import entity_hooks, flow_service, instance_service
@@ -45,6 +46,32 @@ def boi_canh(doc: Document) -> dict:
 
 def dang_bat(db: Session) -> bool:
     return flow_service.is_enabled(db, ENTITY)
+
+
+def phien_dang_chay(db: Session, document_id: int):
+    """Phiên duyệt nhiều bước còn mở của văn bản này, `None` nếu không có."""
+    return instance_service.phien_dang_chay(db, ENTITY, document_id)
+
+
+def chan_duong_cu(db: Session, doc: Document) -> None:
+    """Khóa hai nút duyệt MỘT BƯỚC khi phiếu đang chạy trong bộ máy nhiều bước.
+
+    Không có chốt này thì bất kỳ ai có quyền `document.approve` cũng ban hành
+    được một văn bản đang nằm ở chặng 1 — đã bắt được đúng ca đó: văn bản được
+    cấp số và chuyển hiệu lực trong khi phiên duyệt vẫn chờ trưởng bộ phận ký,
+    còn phiên thì tiếp tục chạy trên một văn bản đã ban hành.
+
+    Chốt đặt ở controller chứ không ở `service.approve()`: chính bộ máy nhiều
+    bước gọi `service.approve()` khi duyệt xong, đặt ở đó là nó tự chặn mình.
+    """
+    phien = phien_dang_chay(db, doc.id)
+    if phien is None:
+        return
+    raise HTTPException(
+        400,
+        "Văn bản này đang chạy trong luồng duyệt nhiều bước — xử lý ở màn "
+        "«Việc của tôi» chứ không ban hành thẳng ở đây.",
+    )
 
 
 def trinh_duyet(db: Session, doc: Document, actor: int):

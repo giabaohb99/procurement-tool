@@ -12,6 +12,9 @@ Lớp 3 phải áp ở **cả hai chỗ**: `visible_condition()` cho danh sách 
 `ensure_can()` cho từng bản ghi. Lọc danh sách mà quên kiểm chi tiết thì gõ
 thẳng id lên URL là mở được.
 
+Ngoại lệ duy nhất của lớp 1: bốn endpoint ĐỌC MỘT văn bản dùng `doc_reader` —
+xem ghi chú tại chỗ.
+
 ⚠️ Lớp kiểm **mức mật** (`secrecy_level`) vẫn CHƯA có — nó là P5 (cấp mức mật cho
 người, chia đặc cách, trình xem Tuyệt mật). Cột đã ghi xuống từ phase này nhưng
 chưa ai chặn theo nó, nên chừng nào P5 chưa xong thì không đưa văn bản mật thật
@@ -29,7 +32,8 @@ from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
 
-from . import access_service, import_service, numbering, serializer, service, version_service
+from . import (access_service, approval_bridge, import_service, numbering,
+               serializer, service, version_service)
 from .model import Document
 from .query import (an_ban_rieng_co_goc_xem_duoc, dem_ban_rieng,
                     documents_query)
@@ -46,6 +50,25 @@ FILTERABLE = ["doc_type_id", "company_id", "department_id", "book_id", "status",
               #  Hỏi thẳng các BẢN RIÊNG của một bản gốc — đường mà bảng danh
               #  sách dùng khi người dùng bung một dòng ra.
               "source_document_id"]
+
+
+def doc_reader(user=Depends(get_current_user)):
+    """Cổng vào của bốn endpoint ĐỌC MỘT văn bản — chỉ cần đăng nhập.
+
+    Ở đây cố ý BỎ lớp 1 (`require("document", "read")`) và giao toàn bộ việc
+    gác cho lớp 3 (`_load` → `ensure_can`), vì lớp 1 hỏi sai câu: nó hỏi "vai
+    trò của anh có được đụng vào phân hệ Văn bản không", trong khi người duyệt
+    trong luồng thường **không có vai trò nào** ở phân hệ này — bộ máy duyệt
+    chỉ hỏi "anh có việc ở phiếu này không".
+
+    Hệ quả của việc hỏi sai câu, đã bắt được thật: người duyệt bấm từ «Việc của
+    tôi» sang văn bản thì nhận 404, đành ký mù theo mỗi cái tiêu đề trên dòng
+    việc. `access_service.can()` nay mở đúng khe đó và CHỈ mở quyền đọc.
+
+    Không nới thêm endpoint nào khác: danh sách, tìm kiếm, sửa, xóa, ban hành
+    vẫn giữ nguyên lớp 1.
+    """
+    return user
 
 
 def _load(db: Session, document_id: int, user, action: str = "read") -> Document:
@@ -187,7 +210,7 @@ def parse_import_file(
 def get_document(
     document_id: int,
     db: Session = Depends(get_db),
-    user=Depends(require("document", "read")),
+    user=Depends(doc_reader),
 ):
     #  Tới ngày hiệu lực thì đổi bản đang dùng ngay tại đây — hệ chưa có bộ chạy
     #  định kỳ, xem `service.activate_due_versions`.
@@ -274,6 +297,7 @@ def approve_document(
     user=Depends(require("document", "approve")),
 ):
     doc = _load(db, document_id, user)
+    approval_bridge.chan_duong_cu(db, doc)
     doc = service.approve(db, doc, user.id, data.apply_mode if data else None)
     #  Ghi luôn cơ chế áp dụng vào nhật ký: sáu tháng sau ai hỏi "vì sao văn bản
     #  này không clone xuống công ty con" thì có câu trả lời tại chỗ.
@@ -291,6 +315,7 @@ def reject_document(
     user=Depends(require("document", "approve")),
 ):
     doc = _load(db, document_id, user)
+    approval_bridge.chan_duong_cu(db, doc)
     doc = service.reject(db, doc, data.reason, user.id)
     record(db, user.id, "document", doc.id, "update", f"Trả lại: {data.reason}")
     return success(serializer.serialize(db, doc), "Đã trả lại bản nháp")
@@ -316,7 +341,7 @@ def revoke_document(
 def list_versions(
     document_id: int,
     db: Session = Depends(get_db),
-    user=Depends(require("document", "read")),
+    user=Depends(doc_reader),
 ):
     doc = _load(db, document_id, user)
     versions = version_service.list_versions(db, doc)
@@ -328,7 +353,7 @@ def get_version(
     document_id: int,
     version_id: int,
     db: Session = Depends(get_db),
-    user=Depends(require("document", "read")),
+    user=Depends(doc_reader),
 ):
     """Kèm nội dung — chỉ trang soạn thảo gọi, danh sách phiên bản thì không."""
     doc = _load(db, document_id, user)
@@ -420,7 +445,7 @@ def revoke_access(
 def my_permissions(
     document_id: int,
     db: Session = Depends(get_db),
-    user=Depends(require("document", "read")),
+    user=Depends(doc_reader),
 ):
     """Tôi được làm gì trên ĐÚNG văn bản này — để giao diện ẩn nút cho đỡ vướng.
 
