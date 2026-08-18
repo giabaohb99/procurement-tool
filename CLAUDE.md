@@ -93,8 +93,11 @@ shadcn/Radix + TanStack Query + zustand). Backend không đổi: v2 gọi đúng
 
 Phân xử khi có yêu cầu mới: **sửa lỗi** màn đang chạy thật → `frontend/`; **tính năng mới**
 → `frontend-v2/`, màn đó chưa có ở v2 thì dựng màn đó trước. `frontend/` chưa được tắt vì v2
-còn thiếu 6 màn: Yêu cầu báo giá, Công nợ, Yêu cầu thanh toán, Tiến độ mua hàng, Báo cáo,
-Phân quyền.
+còn thiếu 6 màn nghiệp vụ — **đo lại 18/08/2026**: **chi tiết Yêu cầu báo giá**, **chi tiết
+Phiếu khảo sát**, Công nợ, Yêu cầu thanh toán (kèm phiếu in), Tồn kho, Báo cáo mua hàng.
+*Tiến độ mua hàng* và *Phân quyền* thì **đã có ở v2** rồi
+(`procurement/pages/purchase-progress-page.tsx`, `hr/pages/role-permission-page.tsx` +
+`user-permission-detail-page.tsx`) — danh sách cũ ghi sai.
 
 ### `frontend-v2/` — giao diện ERP (đang phát triển)
 

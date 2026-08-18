@@ -1,0 +1,21 @@
+# Những thứ KHÔNG được đưa vào build context.
+#
+# Quan trọng nhất là `node_modules`: các Dockerfile đều `npm install` trong ảnh rồi mới
+# `COPY <app>/ /app/`, nên nếu máy build có sẵn node_modules thì bước COPY sẽ ĐÈ LÊN bản
+# vừa cài. Gói biên dịch theo nền tảng (esbuild/rolldown/typescript) khi đó là bản Windows,
+# vào ảnh Linux là hỏng — `vite build` chết với "Unable to resolve @typescript/typescript-linux-x64".
+**/node_modules
+**/dist
+**/.vite
+
+# Python
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.venv
+
+# Git và báo cáo test
+.git
+.gitignore
+**/playwright-report
+**/test-results

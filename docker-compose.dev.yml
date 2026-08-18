@@ -3,12 +3,15 @@
 # Chạy: docker compose -p procurement-dev --env-file .env.dev -f docker-compose.dev.yml up -d --build
 #
 # ⚠ Trên VPS, ~/procurement-tool-dev và ~/procurement-tool là HAI WORKTREE của cùng 1 repo git,
-#   nên phải giữ KHÁC NHÁNH: dev = `bao`, prod = `main`. Nếu để chung nhánh thì lần deploy sau
+#   nên phải giữ KHÁC NHÁNH: dev = `erp-v2`, prod = `main`. Nếu để chung nhánh thì lần deploy sau
 #   `git pull` ở worktree này sẽ dời ref chung, worktree kia báo "Already up to date" và im lặng
 #   build lại code CŨ. Cập nhật code luôn bằng:
-#       cd ~/procurement-tool-dev && git fetch origin && git reset --hard origin/bao
+#       cd ~/procurement-tool-dev && git fetch origin && git reset --hard origin/erp-v2
 #   rồi kiểm `git status --short` phải RỖNG trước khi build.
+#   (Từ 18/08/2026 dev đổi từ `bao` sang `erp-v2` để chạy song song hai giao diện; `bao` được
+#   merge vào `erp-v2` chứ không bỏ — nhánh tính năng nào cũng phải về `erp-v2` mới lên dev.)
 # Khác prod: KHÔNG celery-beat, KHÔNG db-forward; web build cho domain devthumua.
+# Có thêm `erp` (frontend-v2) mà prod chưa có — giao diện mới chạy song song bản cũ để đối chiếu.
 services:
   api:
     build:
@@ -33,6 +36,25 @@ services:
         VITE_FEATURE_TICKET: "${VITE_FEATURE_TICKET:-on}"   # Phiếu hỗ trợ (ticket): dev mặc định BẬT
         VITE_HELP_URL: "https://devhelp.degoholding.vn"      # Trung tâm HDSD là app riêng (subdomain riêng)
     container_name: procurement-web-dev
+    restart: always
+    depends_on:
+      - api
+    networks:
+      - procurement-internal
+      - proxy-tier
+
+  # ERP v2 (frontend-v2/) — giao diện mới, chạy SONG SONG với `web` chứ không thay thế.
+  # Tunnel trỏ deverp.degoholding.vn -> http://procurement-erp-dev:80 (chờ khai trên Cloudflare).
+  # Không mở cổng ra host: vào bằng domain qua tunnel, giống `web` và `help`.
+  erp:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.erp.prod
+      args:
+        VITE_API_URL: ""                                # rỗng = gọi cùng origin, nginx proxy /api -> api:8000
+        VITE_APP_NAME: "DEGO ERP (dev)"
+        VITE_HELP_URL: "https://devhelp.degoholding.vn"
+    container_name: procurement-erp-dev
     restart: always
     depends_on:
       - api
