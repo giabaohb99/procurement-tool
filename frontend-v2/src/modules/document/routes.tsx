@@ -5,8 +5,8 @@ import {
   Hash,
   LayoutDashboard,
   Link2,
-  Target,
   SlidersHorizontal,
+  UserCheck,
 } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
@@ -75,7 +75,10 @@ export const documentModule: ErpModule = {
     {
       label: 'Áp dụng cho tôi',
       path: appRoutes.document.appliedToMe,
-      icon: Target,
+      //  Người + dấu tích: màn này liệt kê văn bản mà TÔI nằm trong phạm vi áp
+      //  dụng. `Target` (vòng tròn đồng tâm) đọc ra "mục tiêu", không dính gì
+      //  tới việc ai phải tuân theo văn bản nào.
+      icon: UserCheck,
       entity: 'document',
     },
     {

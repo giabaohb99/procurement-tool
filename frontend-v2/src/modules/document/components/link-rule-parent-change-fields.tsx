@@ -24,10 +24,16 @@ interface LinkRuleParentChangeFieldsProps {
 }
 
 /**
- * Khối "khi văn bản cha thay đổi" của form quy tắc quan hệ.
+ * Khối THIẾT LẬP NÂNG CAO của form quy tắc quan hệ.
  *
  * Tách khỏi `document-link-rule-form.tsx` vì đó là một câu hỏi nghiệp vụ riêng —
- * *cha đổi thì con ra sao* — và nó chiếm quá nửa chiều dài form.
+ * *văn bản được trỏ tới thay đổi thì bên này ra sao* — và nó chiếm quá nửa chiều
+ * dài form. Form gập khối này lại mặc định: có sẵn mặc định an toàn, hầu như
+ * không ai sửa.
+ *
+ * Nhãn cố tình tránh chữ "cha / con": trong bảng dữ liệu thì đúng là quan hệ
+ * cha–con, nhưng người khai chỉ nhìn thấy hai loại văn bản và không có gì trên
+ * màn hình nói cho họ biết bên nào là "cha".
  */
 export function LinkRuleParentChangeFields({
   values,
@@ -39,15 +45,16 @@ export function LinkRuleParentChangeFields({
     <Card>
       <CardContent className="space-y-5">
         <div>
-          <p className="text-sm font-medium">Khi văn bản cha thay đổi</p>
+          <p className="text-sm font-medium">Khi văn bản được trỏ tới thay đổi</p>
           <p className="text-sm text-muted-foreground">
-            Hệ thống chỉ đánh dấu và liệt kê, không tự sửa nội dung văn bản con.
+            Hệ thống chỉ đánh dấu và liệt kê để người ban hành quyết, không tự sửa nội dung văn
+            bản nào.
           </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>Cha lên phiên bản mới</Label>
+            <Label>Khi văn bản đó lên phiên bản mới</Label>
             <Select
               value={String(values.on_parent_new_version)}
               disabled={isExcerpt}
@@ -67,7 +74,7 @@ export function LinkRuleParentChangeFields({
           </div>
 
           <div className="space-y-2">
-            <Label>Cha bị bãi bỏ</Label>
+            <Label>Khi văn bản đó bị bãi bỏ</Label>
             <Select
               value={String(values.on_parent_obsolete)}
               disabled={isExcerpt}
@@ -87,7 +94,8 @@ export function LinkRuleParentChangeFields({
           </div>
         </div>
 
-        {/*  Cặp "thừa kế" đi với nhau — cùng trả lời "con lấy gì theo cha". */}
+        {/*  Cặp "thừa kế" đi với nhau — cùng trả lời "văn bản này lấy gì theo
+             văn bản nó trỏ tới". */}
         <div className="grid gap-4 border-t pt-4 sm:grid-cols-2">
           <div className="flex items-start gap-3">
             <Checkbox
@@ -97,9 +105,9 @@ export function LinkRuleParentChangeFields({
               onCheckedChange={(checked) => onChange('inherit_code', checked === true)}
             />
             <div className="space-y-1">
-              <Label htmlFor="rule-inherit-code">Thừa kế số hiệu</Label>
+              <Label htmlFor="rule-inherit-code">Đánh số nối theo văn bản đó</Label>
               <p className="text-sm text-muted-foreground">
-                Con lấy mã theo cha: <span className="font-mono">DEGO-QC-012-HD01</span>.
+                Số hiệu nối thêm phần đuôi: <span className="font-mono">DEGO-QC-012-HD01</span>.
               </p>
             </div>
           </div>
@@ -113,9 +121,9 @@ export function LinkRuleParentChangeFields({
               onCheckedChange={(checked) => onChange('inherit_secrecy', checked === true)}
             />
             <div className="space-y-1">
-              <Label htmlFor="rule-inherit-secrecy">Thừa kế mức mật</Label>
+              <Label htmlFor="rule-inherit-secrecy">Không được hạ mức mật</Label>
               <p className="text-sm text-muted-foreground">
-                Con không được đặt mức mật thấp hơn cha.
+                Mức mật luôn phải bằng hoặc cao hơn văn bản được trỏ tới.
               </p>
             </div>
           </div>
@@ -131,9 +139,10 @@ export function LinkRuleParentChangeFields({
             onCheckedChange={(checked) => onChange('is_active', checked === true)}
           />
           <div className="space-y-1">
-            <Label htmlFor="rule-active">Đang dùng</Label>
+            <Label htmlFor="rule-active">Quy tắc đang áp dụng</Label>
             <p className="text-sm text-muted-foreground">
-              Tắt thì không khai thêm và không chặn gửi duyệt; quan hệ đã khai vẫn còn.
+              Tắt thì từ nay không khai thêm và không chặn gửi duyệt nữa; các quan hệ đã khai
+              trên văn bản cũ vẫn giữ nguyên.
             </p>
           </div>
         </div>
@@ -142,10 +151,10 @@ export function LinkRuleParentChangeFields({
           <p className="flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
             <Lock className="mt-0.5 size-4 shrink-0 text-amber-700" />
             <span>
-              Quan hệ «Trích từ» khóa ba ô trên. Bản trích là <b>cùng nội dung</b> với
-              gốc, chỉ ít hơn — cho phép đặt "không làm gì" nghĩa là cho phép một bản
-              trích nói sai tồn tại hợp lệ, và bỏ thừa kế mức mật nghĩa là phần nội dung
-              ít hơn lại lỏng hơn phần đầy đủ.
+              Quan hệ «Trích từ» khóa ba ô trên, khai gì hệ thống cũng đặt lại. Bản trích
+              là <b>cùng nội dung</b> với bản gốc, chỉ ít hơn — cho phép đặt "không làm gì"
+              nghĩa là chấp nhận một bản trích nói sai vẫn tồn tại hợp lệ, còn bỏ ràng buộc
+              mức mật nghĩa là phần nội dung ít hơn lại được bảo vệ lỏng hơn phần đầy đủ.
             </span>
           </p>
         )}

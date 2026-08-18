@@ -1,4 +1,5 @@
 import { AlertTriangle, CalendarClock, CheckCircle2, FileText, PenLine } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -10,6 +11,9 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { StatCard } from '@/shared/ui/stat-card'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
+import { DocumentDashboardFilters } from '../components/document-dashboard-filters'
+import { DocumentPriorityMatrix } from '../components/document-priority-matrix'
+import { toDashboardParams, type DateRangeKey } from '../helpers/dashboard-date-range'
 import { useDocumentDashboard } from '../hooks/use-document-dashboard'
 import type { DocumentRecord } from '../types/document-record'
 import type { DocumentTodo } from '../types/document-dashboard'
@@ -26,10 +30,20 @@ import type { DocumentTodo } from '../types/document-dashboard'
  * đúng phạm vi dữ liệu như danh sách văn bản.
  */
 export function DocumentDashboardPage() {
-  const { data, isLoading } = useDocumentDashboard()
+  //  Mặc định «Tất cả»: mở trang lên là thấy toàn cảnh. Mặc định "Hôm nay" thì
+  //  gần như lúc nào cũng là một trang trắng toàn số 0, và người dùng kết luận
+  //  hệ thống hỏng chứ không nghĩ tới bộ lọc.
+  const [companyId, setCompanyId] = useState<number | undefined>()
+  const [departmentId, setDepartmentId] = useState<number | undefined>()
+  const [rangeKey, setRangeKey] = useState<DateRangeKey>('all')
+
+  const { data, isLoading } = useDocumentDashboard(
+    toDashboardParams(companyId, departmentId, rangeKey),
+  )
 
   const kpi = data?.kpi
   const banHanhNam = (data?.issued_12m ?? []).reduce((sum, item) => sum + item.value, 0)
+  const tongMaTran = Object.values(data?.priority_matrix ?? {}).reduce((sum, so) => sum + so, 0)
 
   return (
     <PageContainer>
@@ -38,7 +52,21 @@ export function DocumentDashboardPage() {
         description="Công văn, quyết định, quy chế và biểu mẫu nội bộ."
       />
 
-      <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <DocumentDashboardFilters
+        companyId={companyId}
+        departmentId={departmentId}
+        rangeKey={rangeKey}
+        onChange={(next) => {
+          setCompanyId(next.companyId)
+          setDepartmentId(next.departmentId)
+          setRangeKey(next.rangeKey)
+        }}
+      />
+
+      {/*  Năm thẻ KPI: 2 → 3 → 5 cột. Thiếu mốc `lg` ở giữa thì khoảng
+           1024–1279px (cửa sổ chia đôi màn 13") tụt thẳng về 2 cột, tức ba hàng
+           thẻ chiếm gần nửa màn hình trước khi thấy được biểu đồ nào. */}
+      <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard
           icon={CheckCircle2}
           label="Đang có hiệu lực"
@@ -79,7 +107,27 @@ export function DocumentDashboardPage() {
         />
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-3">
+      {/*
+        HAI BỐ CỤC, một cây DOM.
+
+        - **13 inch** (`lg`, khoảng 1280–1470px ngang) → **3 cột**:
+              [ ban hành theo tháng  ×2 ][ việc cần xử lý ]
+              [ cơ cấu theo loại ][ ma trận ưu tiên   ×2 ]
+              [ văn bản gần đây                       ×3 ]
+        - **15 inch trở lên** (`2xl`, từ 1536px — MacBook 15/16" mặc định là
+          1680/1728) → **4 cột**, cả trang gọn trong HAI hàng:
+              [ ban hành theo tháng ×2 ][ việc cần xử lý ][ cơ cấu theo loại ]
+              [ ma trận ưu tiên     ×2 ][ văn bản gần đây               ×2  ]
+
+        Thứ tự thẻ trong DOM cố định (tháng · việc · cơ cấu · ma trận · gần đây)
+        và được chọn để **cả hai mốc đều lấp kín lưới**. Đảo thứ tự cho đẹp ở một
+        mốc thì mốc kia thừa ra một ô trống — đúng lỗi bố cục cũ, nơi thẻ ma trận
+        chiếm 2 cột và bỏ hở cột thứ ba.
+
+        Không dùng `grid-flow-dense`: nó lấp lỗ bằng cách kéo thẻ phía sau lên
+        trước, nên thứ tự đọc trên màn hình khác thứ tự bàn phím đi qua.
+      */}
+      <div className="grid items-start gap-4 lg:grid-cols-3 2xl:grid-cols-4">
         <ChartCard
           className="lg:col-span-2"
           title="Văn bản ban hành theo tháng"
@@ -106,21 +154,6 @@ export function DocumentDashboardPage() {
         </ChartCard>
 
         <ChartCard
-          className="lg:col-span-2"
-          title="Văn bản gần đây"
-          description="8 văn bản mới nhất trong phạm vi bạn xem được."
-          loading={isLoading}
-          isEmpty={(data?.recent ?? []).length === 0}
-          emptyLabel="Chưa có văn bản nào."
-        >
-          <ul className="divide-y">
-            {(data?.recent ?? []).map((row) => (
-              <RecentRow key={row.id} row={row} />
-            ))}
-          </ul>
-        </ChartCard>
-
-        <ChartCard
           title="Cơ cấu theo loại"
           description="Văn bản đang có hiệu lực."
           loading={isLoading}
@@ -137,6 +170,35 @@ export function DocumentDashboardPage() {
               color: CHART_COLORS[index] ?? CHART_NEUTRAL,
             }))}
           />
+        </ChartCard>
+
+        <ChartCard
+          className="lg:col-span-2"
+          title="Thống kê văn bản theo mức độ quan trọng, khẩn cấp"
+          description="Văn bản đang có hiệu lực, chia theo hai trục ưu tiên."
+          loading={isLoading}
+          isEmpty={tongMaTran === 0}
+          emptyLabel="Chưa có văn bản nào đang có hiệu lực."
+        >
+          <DocumentPriorityMatrix data={data?.priority_matrix} />
+        </ChartCard>
+
+        <ChartCard
+          //  Trải hết hàng ở 13" (3 cột) và nằm cạnh ma trận ở màn rộng (2/4).
+          //  Danh sách 8 dòng, mỗi dòng bốn phần — hẹp hơn nữa là số hiệu và
+          //  ngày rơi xuống dòng thứ hai.
+          className="lg:col-span-3 2xl:col-span-2"
+          title="Văn bản gần đây"
+          description="8 văn bản mới nhất trong phạm vi bạn xem được."
+          loading={isLoading}
+          isEmpty={(data?.recent ?? []).length === 0}
+          emptyLabel="Chưa có văn bản nào."
+        >
+          <ul className="divide-y">
+            {(data?.recent ?? []).map((row) => (
+              <RecentRow key={row.id} row={row} />
+            ))}
+          </ul>
         </ChartCard>
       </div>
     </PageContainer>

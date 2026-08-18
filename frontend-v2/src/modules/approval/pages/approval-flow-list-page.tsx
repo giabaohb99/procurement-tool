@@ -1,7 +1,8 @@
-import { Plus, Power, Search } from 'lucide-react'
+import { Plus, Power, Search, Trash2 } from 'lucide-react'
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { usePermission } from '@/core/authorization/use-permission'
 import {
   applyClientFilter,
   ConditionalFilter,
@@ -14,7 +15,8 @@ import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Card } from '@/shared/ui/card'
+import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -25,25 +27,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { Switch } from '@/shared/ui/switch'
 import { APPROVAL_FLOW_FILTER_FIELDS } from '../config/approval-flow-filter-fields'
-import { ENTITY_LABELS } from '../helpers/entity-link'
+import { conditionFieldsOf } from '../config/condition-fields'
+import { cauDieuKien } from '../helpers/condition-sentence'
+import { parseCondition } from '../helpers/node-condition'
+import { useConditionChoices } from '../hooks/use-condition-choices'
+import { CAC_LOAI, ENTITY_LABELS } from '../helpers/entity-link'
+import { ALL, filterApprovalFlows } from '../helpers/filter-approval-flows'
+import { flowStatus, type FlowStatusTone } from '../helpers/flow-status'
 import {
   useApprovalFlows,
   useApprovalSwitches,
-  useSetApprovalSwitch,
+  useDeleteApprovalFlow,
 } from '../hooks/use-approvals'
 import type { ApprovalFlow } from '../types/approval'
-
-/** Các loại chứng từ có thể chạy qua bộ máy duyệt — cùng danh sách với backend. */
-const CAC_LOAI = Object.keys(ENTITY_LABELS)
-
-const ALL = 'all'
 
 const FILTER_CONFIG = {
   fields: APPROVAL_FLOW_FILTER_FIELDS,
   allowConjunctionToggle: true,
   preserveParams: ['loai', 'dung'],
+}
+
+/** Huy hiệu trạng thái: chỉ "Đang chạy" mới tô đậm, phần còn lại là viền. */
+const BADGE_VARIANT: Record<FlowStatusTone, 'default' | 'outline'> = {
+  running: 'default',
+  waiting: 'outline',
+  off: 'outline',
 }
 
 export function ApprovalFlowListPage() {
@@ -63,24 +72,35 @@ export function ApprovalFlowListPage() {
  */
 function ApprovalFlowListContent() {
   const navigate = useNavigate()
+  const { can } = usePermission()
   const { data, isLoading, isError } = useApprovalFlows()
+  const { data: switches } = useApprovalSwitches()
   const { appliedState } = useFilterContext()
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [entity, setEntity] = useUrlParamState('loai', ALL)
   const [dung, setDung] = useUrlParamState('dung', ALL)
+  const deleteFlow = useDeleteApprovalFlow()
 
   const rows = useMemo(() => {
-    const needle = debouncedValue.trim().toLowerCase()
-    const found = (data?.items ?? []).filter((row) => {
-      if (entity !== ALL && row.entity !== entity) return false
-      if (dung !== ALL && row.is_active !== (dung === 'active')) return false
-      if (!needle) return true
-      return [row.name, row.code, row.description].some((field) =>
-        (field ?? '').toLowerCase().includes(needle),
-      )
+    //  Hai tầng lọc nối nhau: thanh công cụ (tìm + hai select) rồi mới tới bộ
+    //  lọc nâng cao. Tầng đầu tách ra hàm thuần để kiểm được bằng test.
+    const found = filterApprovalFlows(data?.items ?? [], {
+      entity,
+      dung,
+      keyword: debouncedValue,
     })
     return applyClientFilter(found, appliedState)
   }, [data?.items, debouncedValue, entity, dung, appliedState])
+
+  //  Danh mục để dịch id trong điều kiện thành TÊN. Không truyền nhân sự: điều
+  //  kiện ở tầng luồng chỉ lọc theo loại/pháp nhân/phòng, và nạp cả nghìn nhân
+  //  sự chỉ để dựng một dòng chữ là quá đắt cho màn danh sách.
+  const layLuaChon = useConditionChoices([])
+
+  const engineOn = useMemo(
+    () => new Map((switches ?? []).map((row) => [row.entity, row.is_enabled])),
+    [switches],
+  )
 
   const columns = useMemo<DataTableColumn<ApprovalFlow>[]>(
     () => [
@@ -90,9 +110,11 @@ function ApprovalFlowListContent() {
         width: 300,
         hideable: false,
         cell: (row) => (
-          <div>
-            <div className="font-medium">{row.name}</div>
-            {row.code && <div className="font-mono text-xs text-muted-foreground">{row.code}</div>}
+          <div className="min-w-0">
+            <div className="truncate font-medium">{row.name}</div>
+            {row.code && (
+              <div className="truncate font-mono text-xs text-muted-foreground">{row.code}</div>
+            )}
           </div>
         ),
       },
@@ -101,6 +123,25 @@ function ApprovalFlowListContent() {
         header: 'Loại chứng từ',
         width: 180,
         cell: (row) => ENTITY_LABELS[row.entity] ?? row.entity,
+      },
+      {
+        key: 'condition',
+        header: 'Áp khi',
+        width: 300,
+        cell: (row) => {
+          if (!row.condition) return <span className="text-muted-foreground">Mọi phiếu</span>
+
+          //  Dịch điều kiện thành câu tiếng Việt — cột này để ĐỌC LƯỚT, phơi
+          //  JSON thô ra bảng thì người khai luồng phải tự giải mã từng dòng.
+          const fields = conditionFieldsOf(row.entity)
+          const { rows: dieuKien, advanced } = parseCondition(row.condition, (name) =>
+            fields.some((field) => field.name === name),
+          )
+          if (advanced || dieuKien.length === 0) {
+            return <span className="truncate font-mono text-xs">{row.condition}</span>
+          }
+          return <span className="truncate">{cauDieuKien(dieuKien, fields, layLuaChon)}</span>
+        },
       },
       {
         key: 'node_count',
@@ -114,51 +155,90 @@ function ApprovalFlowListContent() {
         header: 'Bản',
         width: 90,
         align: 'right',
-        //  Phiếu đang chạy giữ bản chụp riêng nên số này không ảnh hưởng chúng —
-        //  nó chỉ để tra lịch sử và để bản in nói đúng phiếu chạy theo bản nào.
+        //  Ẩn sẵn: phiếu đang chạy giữ bản chụp riêng nên số này không ảnh
+        //  hưởng chúng — nó chỉ để tra lịch sử, không phải thứ đọc hằng ngày.
+        //  Cần thì bật lại trong menu "Cột".
+        defaultHidden: true,
         cell: (row) => <span className="tabular-nums">{row.version_no}</span>,
-      },
-      {
-        key: 'condition',
-        header: 'Áp khi',
-        width: 260,
-        cell: (row) => row.condition || <span className="text-muted-foreground">Mọi phiếu</span>,
       },
       {
         key: 'is_active',
         header: 'Trạng thái',
-        width: 130,
-        cell: (row) => (
-          <Badge variant={row.is_active ? 'default' : 'outline'}>
-            {row.is_active ? 'Đang dùng' : 'Ngừng'}
-          </Badge>
-        ),
+        width: 160,
+        cell: (row) => {
+          const trangThai = flowStatus(row, engineOn.get(row.entity) ?? false)
+          return (
+            <Badge variant={BADGE_VARIANT[trangThai.tone]} title={trangThai.hint}>
+              {trangThai.label}
+            </Badge>
+          )
+        },
+      },
+      {
+        key: 'actions',
+        header: '',
+        width: 70,
+        align: 'right',
+        hideable: false,
+        cell: (row) =>
+          //  Không có quyền xóa thì bỏ hẳn nút, không hiện nút mờ: người dùng
+          //  không đoán được vì sao nút mờ, còn hàng rào thật vẫn ở backend.
+          can('approval_flow', 'delete') ? (
+            //  Chặn click lan lên dòng, nếu không mỗi lần bấm Xóa lại mở luôn
+            //  màn khai luồng phía sau hộp xác nhận.
+            <div className="flex justify-end" onClick={(event) => event.stopPropagation()}>
+              <ConfirmIconButton
+                icon={Trash2}
+                title="Xóa luồng"
+                confirmTitle={`Xóa luồng "${row.name}"?`}
+                confirmDescription={
+                  'Xóa cả các bước đã khai trong luồng và không khôi phục được. ' +
+                  'Nếu còn phiếu đang chạy theo luồng này, hệ thống sẽ chặn — khi đó ' +
+                  'hãy tắt luồng trong màn khai luồng thay vì xóa.'
+                }
+                confirmLabel="Xóa"
+                destructive
+                disabled={deleteFlow.isPending}
+                onConfirm={() => deleteFlow.mutate(row.id)}
+              />
+            </div>
+          ) : null,
       },
     ],
-    [],
+    [can, deleteFlow, engineOn, layLuaChon],
   )
 
   return (
-    <PageContainer className="space-y-4">
+    //  `fill` + `Card flex min-h-0 flex-1 flex-col` + `DataTable fillHeight` là
+    //  BA MẮT XÍCH của chế độ fit chiều cao (`docs/ui/table.md` mục 2), thiếu một
+    //  là hỏng cả ba.
+    <PageContainer fill>
       <PageHeader
         title="Luồng phê duyệt"
         description="Khai bằng giao diện — thêm bước, đổi người duyệt, rẽ nhánh mà không phải sửa mã."
         actions={
-          <Button onClick={() => navigate(appRoutes.approval.flowNew)}>
-            <Plus className="size-4" />
-            Tạo luồng
-          </Button>
+          <>
+            {/*  Lối sang công tắc bật bộ máy: cột Trạng thái bên dưới có nhắc
+                 tới nó ("Chờ bật bộ máy") nên phải với tới được từ đây. */}
+            <Button variant="outline" onClick={() => navigate(appRoutes.approval.engine)}>
+              <Power className="size-4" />
+              Bật bộ máy
+            </Button>
+            <Button onClick={() => navigate(appRoutes.approval.flowNew)}>
+              <Plus className="size-4" />
+              Tạo luồng
+            </Button>
+          </>
         }
       />
 
-      <CongTacTheoLoai />
-
-      <Card className="p-4">
+      <Card className="flex min-h-0 flex-1 flex-col p-4">
         <DataTable
           columns={columns}
           rows={rows}
           getRowId={(row) => row.id}
           storageKey="approval.flows"
+          fillHeight
           isLoading={isLoading}
           isError={isError}
           onRowClick={(row) => navigate(appRoutes.approval.flowDetail(row.id))}
@@ -198,9 +278,12 @@ function ApprovalFlowListContent() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  {/*  Lọc theo cờ `is_active` của LUỒNG, không phải theo công
+                       tắc bộ máy của loại — nói "Đang bật / Đã tắt" cho khớp
+                       cái nó thực sự lọc, tránh lẫn với cột Trạng thái. */}
                   <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-                  <SelectItem value="active">Đang dùng</SelectItem>
-                  <SelectItem value="inactive">Ngừng</SelectItem>
+                  <SelectItem value="active">Luồng đang bật</SelectItem>
+                  <SelectItem value="inactive">Luồng đã tắt</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -210,53 +293,5 @@ function ApprovalFlowListContent() {
         />
       </Card>
     </PageContainer>
-  )
-}
-
-/**
- * I26 — công tắc theo từng loại chứng từ, **đường lui của cả bộ máy**.
- *
- * Tắt là loại chứng từ đó quay về đường duyệt cũ ngay, không cần deploy lại.
- * Phiếu đã bắt đầu chạy bằng bộ máy mới thì vẫn chạy tiếp cho hết — cắt ngang
- * giữa chừng là bỏ rơi phiếu ở trạng thái không màn hình nào nhặt lên.
- */
-function CongTacTheoLoai() {
-  const { data } = useApprovalSwitches()
-  const setSwitch = useSetApprovalSwitch()
-
-  const dangBat = new Map((data ?? []).map((row) => [row.entity, row.is_enabled]))
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Power className="size-4 text-muted-foreground" />
-          Bật bộ máy duyệt mới theo loại chứng từ
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <p className="text-sm text-muted-foreground">
-          Mặc định <b>TẮT</b> cho mọi loại. Tắt thì chứng từ đi theo đường duyệt cũ đang
-          chạy — đây là đường lui, giữ nguyên để còn quay về được khi có sự cố.
-        </p>
-        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {CAC_LOAI.map((ma) => (
-            <li
-              key={ma}
-              className="flex items-center justify-between gap-3 rounded-md border px-3 py-2"
-            >
-              <span className="text-sm">{ENTITY_LABELS[ma]}</span>
-              <Switch
-                checked={dangBat.get(ma) ?? false}
-                disabled={setSwitch.isPending}
-                onCheckedChange={(bat) =>
-                  setSwitch.mutate({ entity: ma, is_enabled: bat, note: '' })
-                }
-              />
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
   )
 }

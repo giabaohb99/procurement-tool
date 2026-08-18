@@ -45,6 +45,24 @@ class ExcerptCreate(BaseModel):
     note: str = ""
 
 
+@router.get("/prerequisite-check")
+def prerequisite_check(
+    doc_type_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(require("document", "read")),
+):
+    """E04b — loại này bắt buộc trỏ tới loại nào mà kho chưa có văn bản nào?
+
+    Màn TẠO VĂN BẢN hỏi câu này lúc bấm Tạo. Rỗng = tạo thẳng; có dòng nào thì
+    giao diện hỏi lại một nhịp rồi **vẫn cho tạo** nếu người dùng chọn tiếp tục.
+
+    ⚠️ Đường dẫn TĨNH một đoạn dưới `/api/documents` — chỉ chạy được vì router
+    này đăng ký TRƯỚC `document_router` (route động `/{document_id}`). Xem
+    `test_thu_tu_route_van_ban.py`.
+    """
+    return success(link_service.missing_prerequisites(db, doc_type_id))
+
+
 @router.get("/{document_id}/links")
 def list_links(
     document_id: int,

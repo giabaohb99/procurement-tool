@@ -10,13 +10,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { Textarea } from '@/shared/ui/textarea'
 import { NODE_KIND, ON_NO_APPROVER, type ApprovalNode, type ApprovalOptions } from '../types/approval'
+import { NodeConditionBuilder } from './node-condition-builder'
 
 interface ApprovalNodeAdvancedProps {
   form: Partial<ApprovalNode>
   options?: ApprovalOptions
   employees: Employee[]
+  /** Loại chứng từ của luồng — bộ dựng điều kiện cần để biết phiếu có ô nào. */
+  entity: string
   onChange: <K extends keyof ApprovalNode>(khoa: K, gia_tri: ApprovalNode[K]) => void
 }
 
@@ -32,6 +34,7 @@ export function ApprovalNodeAdvanced({
   form,
   options,
   employees,
+  entity,
   onChange,
 }: ApprovalNodeAdvancedProps) {
   function chonSo(khoa: keyof ApprovalNode) {
@@ -141,19 +144,12 @@ export function ApprovalNodeAdvanced({
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label>Bước này chỉ chạy khi</Label>
-        <Textarea
-          rows={2}
-          className="font-mono text-xs"
-          placeholder='Để trống = luôn chạy. VD: [{"field": "secrecy_level", "op": "gte", "value": 3}]'
-          value={form.condition ?? ''}
-          onChange={(event) => onChange('condition', event.target.value)}
-        />
-        <p className="text-xs text-muted-foreground">
-          Dùng khi một chặng có nhiều nhánh và mỗi nhánh dành cho một loại phiếu khác nhau.
-        </p>
-      </div>
+      <NodeConditionBuilder
+        value={form.condition ?? ''}
+        onChange={(condition) => onChange('condition', condition)}
+        entity={entity}
+        employees={employees}
+      />
 
       <div className="flex items-start gap-3">
         <Checkbox

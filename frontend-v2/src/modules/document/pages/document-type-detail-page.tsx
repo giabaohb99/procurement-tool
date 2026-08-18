@@ -1,4 +1,5 @@
 import { ArrowLeft, Save, Trash2 } from 'lucide-react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { AuditTimeline } from '@/shared/audit'
@@ -10,12 +11,15 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { DocumentTypeForm } from '../components/document-type-form'
+import { DocumentTypeLinkRulesCard } from '../components/document-type-link-rules-card'
+import { useSaveDocumentLinkRules } from '../hooks/use-document-link-rules'
 import {
   useDeleteDocumentType,
   useDocumentType,
   useSaveDocumentType,
 } from '../hooks/use-document-types'
 import { documentCodeSample } from '../types/document-type'
+import type { DocTypeLinkRuleInput } from '../types/document-link-rule'
 
 /**
  * Trang THÊM MỚI / SỬA một loại văn bản.
@@ -37,10 +41,16 @@ export function DocumentTypeDetailPage() {
   const documentTypeId = Number(id)
   const isCreating = !Number.isFinite(documentTypeId)
 
+  //  Quan hệ khai lúc TẠO MỚI: dòng quy tắc cần một `source_type_id` có thật,
+  //  mà loại thì chưa ra đời. Giữ tạm ở đây rồi gửi ngay sau khi lưu loại —
+  //  đúng lối quyền / phạm vi đang dùng ở trang tạo văn bản.
+  const [pendingRules, setPendingRules] = useState<DocTypeLinkRuleInput[]>([])
+
   const { data: documentType, isLoading } = useDocumentType(
     isCreating ? undefined : documentTypeId,
   )
   const save = useSaveDocumentType()
+  const saveRules = useSaveDocumentLinkRules()
   const remove = useDeleteDocumentType()
 
   function backToList() {
@@ -141,17 +151,40 @@ export function DocumentTypeDetailPage() {
               },
             },
             {
-              onSuccess: (saved) => {
+              onSuccess: async (saved) => {
+                if (!isCreating) return
+
+                // Quan hệ khai lúc chưa có id: giờ mới ghi được, và phải ghi
+                // XONG rồi mới đổi URL — đổi trước thì trang dựng lại theo id
+                // mới, component này rời DOM và mẻ ghi đứt giữa chừng.
+                if (pendingRules.length > 0) {
+                  await saveRules.mutateAsync({
+                    rows: pendingRules.map((row) => ({ ...row, source_type_id: saved.id })),
+                  })
+                }
+
                 // Thêm mới xong ở lại chính bản ghi vừa tạo (đổi URL sang id
                 // thật): người dùng thường sửa tiếp hoặc xem nhật ký ngay.
-                if (isCreating) {
-                  navigate(appRoutes.document.typeDetail(saved.id), { replace: true })
-                }
+                navigate(appRoutes.document.typeDetail(saved.id), { replace: true })
               },
             },
           )
         }
       />
+
+      {/* Đứng NGOÀI thẻ `<form>` của form loại: form lồng form là mã HTML sai,
+          và bấm Lưu ở hộp thoại quan hệ sẽ gửi luôn cả form loại.
+
+          Lúc TẠO MỚI chưa có id để dòng quy tắc trỏ vào, nên thẻ chạy trên state
+          tạm ở đây rồi ghi ngay sau khi loại được lưu — cùng lối với quyền và
+          phạm vi ở trang tạo văn bản. */}
+      {isCreating ? (
+        <DocumentTypeLinkRulesCard pending={pendingRules} onPendingChange={setPendingRules} />
+      ) : (
+        documentType && (
+          <DocumentTypeLinkRulesCard docTypeId={documentType.id} docTypeName={documentType.name} />
+        )
+      )}
 
       {/* Chỉ bản ghi đã tồn tại mới có nhật ký để xem. */}
       {!isCreating && documentType && (

@@ -50,6 +50,13 @@ export const STATUS_VARIANTS: Record<number, 'default' | 'secondary' | 'outline'
   }
 
 /** Trạng thái của PHIÊN BẢN — thang riêng, xem chú thích đầu tệp. */
+export const VERSION_STATUS = {
+  draft: 1,
+  submitted: 2,
+  approved: 3,
+  superseded: 4,
+} as const
+
 export const VERSION_STATUS_LABELS: Record<number, string> = {
   1: 'Nháp',
   2: 'Đang duyệt',
@@ -156,6 +163,13 @@ export interface DocumentRecord {
   /** Cơ chế áp dụng — xem `APPLY_MODE`. */
   apply_mode: number
   created_at: string
+  /** Bản gốc mà dòng này là BẢN RIÊNG của nó; rỗng = văn bản đứng một mình. */
+  source_document_id?: number | null
+  /**
+   * Số bản riêng đã tách cho pháp nhân con. Chỉ có ở endpoint DANH SÁCH —
+   * bảng dựa vào nó để quyết định có bày mũi tên bung hay không.
+   */
+  clone_count?: number
 }
 
 export interface DocumentVersion {

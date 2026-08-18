@@ -91,6 +91,13 @@ class DocTypeLinkRule(Base, AuditMixin):
     #  0 = không giới hạn.
     max_count: Mapped[int] = mapped_column(SmallInteger, default=0)
 
+    #  THỨ TỰ tiên quyết trong cùng một loại nguồn: *"trước C phải có A rồi B"*.
+    #  Người khai kéo thứ tự trên giao diện, hệ thống chỉ HIỆN theo thứ tự đó —
+    #  không ép phải ban hành A xong mới được soạn B. Ép thì đúng một lần trong
+    #  mười lần, chín lần còn lại là chặn người đang làm đúng: hai văn bản
+    #  thường được soạn song song rồi mới ban hành lần lượt.
+    sort_order: Mapped[int] = mapped_column(SmallInteger, default=0)
+
     on_parent_obsolete: Mapped[int] = mapped_column(SmallInteger, default=OBSOLETE_REVIEW)
     on_parent_new_version: Mapped[int] = mapped_column(SmallInteger, default=NEW_VERSION_ASK)
 

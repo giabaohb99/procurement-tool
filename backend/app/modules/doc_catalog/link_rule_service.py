@@ -15,9 +15,15 @@ from .model import DocType
 
 
 def list_rules(db: Session) -> list[DocTypeLinkRule]:
+    #  `sort_order` đứng ngay sau loại nguồn: trong một loại, thứ tự người khai
+    #  xếp là thứ tự phải đọc ("trước C là A rồi B"). Dòng chưa xếp (0) lên
+    #  trước theo `relation` như cũ — bảng cũ không có cột này nên tất cả là 0.
     return (
         db.query(DocTypeLinkRule)
-        .order_by(DocTypeLinkRule.source_type_id.asc(), DocTypeLinkRule.relation.asc())
+        .order_by(DocTypeLinkRule.source_type_id.asc(),
+                  DocTypeLinkRule.sort_order.asc(),
+                  DocTypeLinkRule.relation.asc(),
+                  DocTypeLinkRule.id.asc())
         .all()
     )
 
@@ -109,6 +115,7 @@ def serialize(db: Session, rule: DocTypeLinkRule) -> dict:
         "is_required": rule.is_required,
         "min_count": rule.min_count,
         "max_count": rule.max_count,
+        "sort_order": rule.sort_order,
         "on_parent_obsolete": rule.on_parent_obsolete,
         "on_parent_new_version": rule.on_parent_new_version,
         "inherit_code": rule.inherit_code,

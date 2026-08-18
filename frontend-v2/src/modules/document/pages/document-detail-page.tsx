@@ -31,7 +31,6 @@ import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentAmendedBanner } from '../components/document-amended-banner'
 import { DocumentAccessCard } from '../components/document-access-card'
 import { DocumentScopeCard } from '../components/document-scope-card'
-import { DocumentCloneCard } from '../components/document-clone-card'
 import { DocumentSignatureCard } from '../components/document-signature-card'
 import { DocumentAttachmentList } from '../components/document-attachment-list'
 import { DocumentAutosaveStatus } from '../components/document-autosave-status'
@@ -64,7 +63,7 @@ import {
   documentRecordSchema,
   type DocumentRecordFormValues,
 } from '../schemas/document-record-schema'
-import { DOCUMENT_STATUS } from '../types/document-record'
+import { DOCUMENT_STATUS, VERSION_STATUS } from '../types/document-record'
 
 const FORM_ID = 'document-record-form'
 
@@ -157,6 +156,15 @@ export function DocumentDetailPage() {
     record?.status === DOCUMENT_STATUS.approved || record?.status === DOCUMENT_STATUS.effective
   const isLocked = version?.is_locked ?? true
   const label = record ? effectiveLabel(record) : null
+
+  // Bản đang mở (nháp hoặc đang duyệt)
+  const openVersion = versions.find((item) => !item.is_locked)
+  const isDraft = openVersion
+    ? openVersion.status === VERSION_STATUS.draft
+    : record?.status === DOCUMENT_STATUS.draft
+  const isSubmitted = openVersion
+    ? openVersion.status === VERSION_STATUS.submitted
+    : record?.status === DOCUMENT_STATUS.submitted
 
   return (
     // `Tabs` bọc CẢ khung trang để hàng tab nằm cạnh tiêu đề — trang soạn thảo
@@ -265,7 +273,7 @@ export function DocumentDetailPage() {
             )}
 
             {/* Luồng duyệt MỘT BƯỚC tạm thời — P3 thay bằng bộ máy chung. */}
-            {record?.status === DOCUMENT_STATUS.draft && canWrite && (
+            {isDraft && canWrite && (
               <Button
                 type="button"
                 variant="outline"
@@ -293,7 +301,7 @@ export function DocumentDetailPage() {
               </PermissionGate>
             )}
 
-            {record?.status === DOCUMENT_STATUS.submitted && (
+            {isSubmitted && (
               <PermissionGate entity="document" action="approve">
                 <Button
                   type="button"
@@ -379,14 +387,12 @@ export function DocumentDetailPage() {
               isLocked={isLocked}
               canApprove={canApprove}
             />
-            {/*  Clone và phạm vi là HAI cơ chế thay nhau, không dùng cùng lúc —
-                 để cạnh nhau cho người ban hành thấy mình đang đi đường nào. */}
+            {/*  Chỉ còn PHẠM VI ở đây. Thẻ «Bản clone ở pháp nhân con» đã bỏ:
+                 nơi nhận bản riêng nay SUY từ chính khối phạm vi này, nên nó
+                 chỉ lặp lại cùng một danh sách bằng một cách nói khác. Muốn
+                 xem bản riêng đã sinh ra chưa, ai đang lệch bản — mở tab
+                 «Quan hệ», thẻ Cây tài liệu liệt kê đủ kèm tên pháp nhân. */}
             <DocumentScopeCard documentId={documentId} canWrite={canWrite} />
-            <DocumentCloneCard
-              documentId={documentId}
-              isIssued={isIssued}
-              canCreate={canWrite}
-            />
             <DocumentAccessCard documentId={documentId} canWrite={canWrite} />
           </DocumentRecordForm>
         </TabsContent>

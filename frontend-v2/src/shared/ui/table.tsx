@@ -67,7 +67,12 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
+        //  ⚠️ `has-aria-expanded` để nền ĐỤC (`bg-muted`), không phải
+        //  `bg-muted/50` như bản shadcn gốc. Hàng có nút bung (`aria-expanded`)
+        //  sẽ dính nền alpha, mà ô của CỘT GHIM lấy `bg-inherit` từ hàng —
+        //  nền trong suốt là phần bảng đang cuộn ngang lộ xuyên qua cột dính.
+        //  Xem `docs/ui/table.md` mục 5, bẫy số 6.
+        "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted data-[state=selected]:bg-muted",
         className
       )}
       {...props}

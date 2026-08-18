@@ -131,6 +131,9 @@ def base_fields(doc: Document) -> dict:
         "effective_date": doc.effective_date,
         "expire_date": doc.expire_date,
         "current_version_id": doc.current_version_id,
+        #  Bản gốc của BẢN RIÊNG. Danh sách dựa vào cột này để thụt lề dòng con
+        #  và để biết dòng nào là bản riêng của dòng nào.
+        "source_document_id": doc.source_document_id,
         #  F13 — cơ chế áp dụng, hộp thoại ban hành chọn sẵn theo giá trị này.
         "apply_mode": doc.apply_mode,
         #  Băng "cần rà lại" trên trang chi tiết đọc thẳng hai cột này (E11 a/b).

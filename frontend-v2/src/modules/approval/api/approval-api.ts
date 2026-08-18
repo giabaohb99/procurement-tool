@@ -30,8 +30,14 @@ export const approvalFlowApi = {
     apiPatch<ApprovalFlow>(`${FLOW_URL}/${id}`, values),
   remove: (id: number) => apiDelete<null>(`${FLOW_URL}/${id}`),
 
-  addNode: (flowId: number, values: Partial<ApprovalNode>) =>
-    apiPost<ApprovalNode>(`${FLOW_URL}/${flowId}/nodes`, values),
+  /**
+   * Thêm một bước. `asBranch` = nhánh song song của chặng đó; mặc định là chèn
+   * hẳn một CHẶNG MỚI tại `seq` và backend tự đẩy các chặng sau xuống.
+   */
+  addNode: (flowId: number, values: Partial<ApprovalNode>, asBranch = false) =>
+    apiPost<ApprovalNode>(`${FLOW_URL}/${flowId}/nodes`, values, {
+      params: { as_branch: asBranch },
+    }),
   updateNode: (flowId: number, nodeId: number, values: Partial<ApprovalNode>) =>
     apiPatch<ApprovalNode>(`${FLOW_URL}/${flowId}/nodes/${nodeId}`, values),
   removeNode: (flowId: number, nodeId: number) =>

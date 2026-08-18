@@ -37,6 +37,69 @@ def nodes_of(db: Session, flow_id: int) -> list[ApprovalNode]:
     )
 
 
+def them_buoc(db: Session, flow_id: int, values: dict, actor: int,
+              *, la_nhanh: bool = False) -> ApprovalNode:
+    """Chèn một BƯỚC vào luồng, tự dọn chỗ cho nó.
+
+    `UNIQUE(flow_id, seq, branch_key)` nên không thể cứ thế `INSERT` số chặng
+    người dùng chọn: chèn vào giữa là đâm thẳng vào bước đang đứng ở đó và cả
+    request nổ 500. Chỗ này tự dọn theo đúng ý người dùng vừa bấm:
+
+    * `la_nhanh=False` — **chèn một chặng mới**: đẩy mọi bước từ chặng đó trở đi
+      xuống một bậc rồi mới chèn.
+    * `la_nhanh=True` — **thêm nhánh song song** vào chặng đang có: đánh lại
+      `branch_key` của cả chặng thành `n1..nk` (chặng một nhánh mang khóa rỗng,
+      từ hai nhánh trở lên phải có khóa khác nhau — cùng quy ước với `reorder`).
+
+    Dồn số qua **hai lượt**, số âm trước rồi mới số thật, vì nếu gán thẳng thì
+    có một khoảnh khắc hai bước cùng mang một `seq` và ràng buộc nổ giữa chừng.
+    """
+    seq = max(int(values.get("seq") or 1), 1)
+    dang_co = nodes_of(db, flow_id)
+
+    if la_nhanh:
+        cung_chang = [node for node in dang_co if node.seq == seq]
+        branch_key = _danh_lai_nhanh(db, cung_chang, actor)
+    else:
+        _day_xuong_mot_bac(db, [node for node in dang_co if node.seq >= seq], actor)
+        branch_key = ""
+
+    node = ApprovalNode(**{**values, "flow_id": flow_id, "seq": seq,
+                           "branch_key": branch_key},
+                        created_by=actor, updated_by=actor)
+    db.add(node)
+    db.flush()
+    return node
+
+
+def _day_xuong_mot_bac(db: Session, cac_buoc_sau: list[ApprovalNode], actor: int) -> None:
+    if not cac_buoc_sau:
+        return
+    for node in cac_buoc_sau:
+        node.seq = -node.seq
+    db.flush()
+    for node in cac_buoc_sau:
+        node.seq = -node.seq + 1
+        node.updated_by = actor
+    db.flush()
+
+
+def _danh_lai_nhanh(db: Session, cung_chang: list[ApprovalNode], actor: int) -> str:
+    """Trả về `branch_key` cho nhánh sắp thêm, sau khi đánh lại cả chặng."""
+    if not cung_chang:
+        #  Chặng chưa có bước nào: nhánh đầu tiên mang khóa rỗng như bước thường.
+        return ""
+
+    for thu_tu, node in enumerate(cung_chang, start=1):
+        node.branch_key = f"x{thu_tu}"
+    db.flush()
+    for thu_tu, node in enumerate(cung_chang, start=1):
+        node.branch_key = f"n{thu_tu}"
+        node.updated_by = actor
+    db.flush()
+    return f"n{len(cung_chang) + 1}"
+
+
 def chon_luong(db: Session, entity: str, subject: dict) -> ApprovalFlow | None:
     """Luồng nào áp cho phiếu này.
 

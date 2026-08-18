@@ -21,17 +21,24 @@ from app.modules.doc_catalog.model import DocType
 
 from .link_model import DocumentLink
 from .model import ALIVE_STATUSES, Document
+from .query import documents_query
 
 
 def rules_for_type(db: Session, source_type_id: int | None) -> list[DocTypeLinkRule]:
     """Các ô quan hệ mà form phải tự hiện khi chọn loại này (E03)."""
     if not source_type_id:
         return []
+    #  `sort_order` trước hết: người khai xếp "trước C phải có A rồi B" thì màn
+    #  hình phải đọc đúng thứ tự đó.
+    #  Trong cùng một bậc thứ tự (kể cả bảng cũ, mọi dòng đều 0) thì dòng BẮT
+    #  BUỘC lên đầu — người soạn nhìn thấy thứ chặn mình trước.
     return (
         db.query(DocTypeLinkRule)
         .filter(DocTypeLinkRule.source_type_id == source_type_id,
                 DocTypeLinkRule.is_active.is_(True))
-        .order_by(DocTypeLinkRule.is_required.desc(), DocTypeLinkRule.relation.asc())
+        .order_by(DocTypeLinkRule.sort_order.asc(),
+                  DocTypeLinkRule.is_required.desc(),
+                  DocTypeLinkRule.relation.asc())
         .all()
     )
 
@@ -219,6 +226,58 @@ def missing_required(db: Session, doc: Document) -> list[str]:
                 f"(cần {can}, đang có {dang_co})"
             )
     return thieu
+
+
+def missing_prerequisites(db: Session, doc_type_id: int) -> list[dict]:
+    """Quan hệ bắt buộc của một LOẠI mà trong kho chưa có văn bản nào để trỏ tới.
+
+    Hỏi TRƯỚC khi tạo văn bản, nên câu hỏi khác hẳn `missing_required`: lúc này
+    bản ghi chưa tồn tại, không có quan hệ nào để đếm. Cái đếm được là **kho văn
+    bản**: loại Hướng dẫn công việc bắt buộc phải hướng dẫn một Quy trình — trong
+    hệ đã có Quy trình nào còn hiệu lực chưa? Chưa có nghĩa là người soạn tạo
+    xong sẽ mắc kẹt: không khai được quan hệ bắt buộc thì không gửi duyệt được.
+
+    **Chỉ để cảnh báo, KHÔNG chặn** (chốt 18/08/2026). Soạn con trước rồi ban
+    hành cha sau là việc có thật — chặn cứng ở đây là chặn nhầm. Cổng thật vẫn
+    nằm ở `ensure_required_links` lúc gửi duyệt.
+    """
+    thieu: list[dict] = []
+    for rule in rules_for_type(db, doc_type_id):
+        if not rule.is_required:
+            continue
+        can = max(rule.min_count, 1)
+        dang_co = _count_alive_of_type(db, rule.target_type_id)
+        if dang_co >= can:
+            continue
+        thieu.append({
+            #  Giữ nguyên thứ tự của `rules_for_type` — màn tạo đánh số 1, 2, 3
+            #  theo đúng thứ tự người khai đã xếp.
+            "sort_order": rule.sort_order,
+            "relation": rule.relation,
+            "relation_label": RELATION_LABELS.get(rule.relation, str(rule.relation)),
+            "target_type_id": rule.target_type_id,
+            "target_type_name": (
+                _type_name(db, rule.target_type_id) if rule.target_type_id else "Loại bất kỳ"
+            ),
+            "need": can,
+            "available": dang_co,
+        })
+    return thieu
+
+
+def _count_alive_of_type(db: Session, target_type_id: int | None) -> int:
+    """Đếm văn bản CÒN HIỆU LỰC của một loại — ứng viên cho một ô quan hệ.
+
+    Đếm y hệt bộ lọc của `allowed_targets`: chỉ những văn bản mà lát nữa người
+    soạn thật sự chọn được. Đếm cả bản nháp thì cảnh báo im lặng trong đúng
+    trường hợp cần nói — cha còn nằm trong ngăn kéo ai đó.
+    """
+    query = documents_query(db).filter(Document.status.in_(ALIVE_STATUSES))
+    #  `target_type_id` rỗng = loại nào cũng được, khi đó chỉ cần trong kho có
+    #  bất kỳ văn bản nào còn hiệu lực.
+    if target_type_id:
+        query = query.filter(Document.doc_type_id == target_type_id)
+    return query.count()
 
 
 def ensure_required_links(db: Session, doc: Document):

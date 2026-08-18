@@ -3,6 +3,7 @@ import type { AxiosRequestConfig } from 'axios'
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
 import type { ListParams, PaginatedResult } from '@/shared/types/api'
 import type { DocumentAccess, DocumentAccessInput } from '../types/document-access'
+import type { DocPrerequisite } from '../types/document-link-rule'
 import type {
   DocumentPermissions,
   DocumentRecord,
@@ -22,6 +23,8 @@ import type {
 const DOCUMENT_URL = '/api/documents'
 
 export interface DocumentListParams extends ListParams {
+  /** Hỏi đích danh các BẢN RIÊNG của một bản gốc (dùng khi bung dòng). */
+  source_document_id?: number
   /** Tìm theo tiêu đề, số hiệu, số hiệu CŨ, từ khóa. */
   q?: string
   doc_type_id?: number
@@ -99,6 +102,17 @@ export const documentApi = {
     company_id?: number | null
     exclude_id?: number
   }) => apiGet<DocumentSuggestion[]>(`${DOCUMENT_URL}/suggestions`, { params }),
+
+  /**
+   * Quan hệ tiên quyết còn thiếu của một LOẠI — hỏi trước khi tạo (E04b).
+   *
+   * Rỗng nghĩa là tạo thẳng. Có dòng nào thì màn tạo hỏi lại một nhịp, người
+   * dùng chọn tiếp tục thì văn bản vẫn được tạo.
+   */
+  prerequisites: (docTypeId: number) =>
+    apiGet<DocPrerequisite[]>(`${DOCUMENT_URL}/prerequisite-check`, {
+      params: { doc_type_id: docTypeId },
+    }),
 
   /**
    * Số hiệu SẼ cấp. Chỉ để xem trước — **không chiếm số**, và có thể lệch nếu

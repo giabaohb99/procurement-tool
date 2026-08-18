@@ -1,4 +1,5 @@
 import { AlertTriangle } from 'lucide-react'
+import { useState } from 'react'
 
 import { useActiveDocumentTypes } from '@/modules/document/hooks/use-document-types'
 import { useDocuments } from '@/modules/document/hooks/use-documents'
@@ -38,20 +39,28 @@ interface FlowScopePickerProps {
  * khai ở phần **rẽ nhánh của từng bước** — chỗ đó mới thật sự cần.
  */
 export function FlowScopePicker({ condition, onChange, entity }: FlowScopePickerProps) {
-  const scope = parseScope(condition)
+  const daLuu = parseScope(condition)
   const nangCao = laDieuKienNangCao(condition)
+
+  //  Kiểu đang chọn giữ ở state RIÊNG, không suy thẳng từ chuỗi điều kiện.
+  //  Chuỗi chỉ mang được lựa chọn ĐÃ ĐỦ: chọn «một số loại văn bản» mà chưa tick
+  //  loại nào thì `buildScopeCondition` trả chuỗi rỗng, đọc ngược lại ra «tất
+  //  cả» — nên bộ chọn bật lại về dòng đầu và ô tick không bao giờ hiện ra.
+  const [kind, setKind] = useState<FlowScopeKind>(daLuu.kind)
+  const ids = daLuu.kind === kind ? daLuu.ids : []
 
   const docTypes = useActiveDocumentTypes()
   //  Chỉ nạp danh sách văn bản khi người dùng thật sự chọn tới lựa chọn đó —
   //  đây là bảng lớn nhất của phân hệ.
   const { data: documents } = useDocuments(
-    scope.kind === 'document' ? { page_size: 200 } : { page_size: 1 },
+    kind === 'document' ? { page_size: 200 } : { page_size: 1 },
   )
 
   const laVanBan = entity === 'document'
 
-  function doiKieu(kind: FlowScopeKind) {
-    onChange(buildScopeCondition({ kind, ids: kind === scope.kind ? scope.ids : [] }))
+  function doiKieu(kindMoi: FlowScopeKind) {
+    setKind(kindMoi)
+    onChange(buildScopeCondition({ kind: kindMoi, ids: kindMoi === kind ? ids : [] }))
   }
 
   if (!laVanBan) {
@@ -94,7 +103,7 @@ export function FlowScopePicker({ condition, onChange, entity }: FlowScopePicker
         </div>
       ) : (
         <>
-          <Select value={scope.kind} onValueChange={(value) => doiKieu(value as FlowScopeKind)}>
+          <Select value={kind} onValueChange={(value) => doiKieu(value as FlowScopeKind)}>
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
@@ -107,9 +116,9 @@ export function FlowScopePicker({ condition, onChange, entity }: FlowScopePicker
             </SelectContent>
           </Select>
 
-          {scope.kind === 'doc_type' && (
+          {kind === 'doc_type' && (
             <MultiPicker
-              value={scope.ids}
+              value={ids}
               onChange={(ids) => onChange(buildScopeCondition({ kind: 'doc_type', ids }))}
               options={docTypes.map((type) => ({
                 id: type.id,
@@ -120,9 +129,9 @@ export function FlowScopePicker({ condition, onChange, entity }: FlowScopePicker
             />
           )}
 
-          {scope.kind === 'document' && (
+          {kind === 'document' && (
             <MultiPicker
-              value={scope.ids}
+              value={ids}
               onChange={(ids) => onChange(buildScopeCondition({ kind: 'document', ids }))}
               options={(documents?.items ?? []).map((row) => ({
                 id: row.id,
@@ -133,11 +142,19 @@ export function FlowScopePicker({ condition, onChange, entity }: FlowScopePicker
             />
           )}
 
-          <p className="text-xs text-muted-foreground">
-            {scope.kind === 'all'
-              ? 'Đây là luồng MẶC ĐỊNH của văn bản. Nhiều luồng cùng loại thì luồng có điều kiện được xét trước.'
-              : 'Phiếu không khớp sẽ dùng luồng mặc định, hoặc đi đường duyệt cũ nếu chưa có luồng mặc định.'}
-          </p>
+          {/*  Chọn kiểu hẹp mà chưa tick gì thì luồng vẫn đang áp cho TẤT CẢ —
+               nói ra, đừng để người khai tưởng mình đã giới hạn được. */}
+          {kind !== 'all' && ids.length === 0 ? (
+            <p className="text-xs text-amber-700">
+              Chưa chọn mục nào nên luồng vẫn áp cho <b>mọi văn bản</b>.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              {kind === 'all'
+                ? 'Đây là luồng MẶC ĐỊNH của văn bản. Nhiều luồng cùng loại thì luồng có điều kiện được xét trước.'
+                : 'Phiếu không khớp sẽ dùng luồng mặc định, hoặc đi đường duyệt cũ nếu chưa có luồng mặc định.'}
+            </p>
+          )}
         </>
       )}
     </div>

@@ -10,6 +10,9 @@ from app.modules.doc_catalog.link_rule_model import (RELATION_EXCERPT,
                                                      RELATION_LABELS,
                                                      RELATION_REVERSE_LABELS)
 
+from app.modules.company.model import Company
+
+from .clone_service import CLONE_STATUS_LABELS
 from .link_model import DocumentLink
 from .model import STATUS_LABELS, Document
 from .version_model import DocumentVersion
@@ -26,6 +29,7 @@ def summary_of(db: Session, doc: Document | None) -> dict | None:
     version = (
         db.get(DocumentVersion, doc.current_version_id) if doc.current_version_id else None
     )
+    company = db.get(Company, doc.company_id) if doc.company_id else None
     return {
         "id": doc.id,
         "title": doc.title,
@@ -36,6 +40,11 @@ def summary_of(db: Session, doc: Document | None) -> dict | None:
         "secrecy_level": doc.secrecy_level,
         "version_no": version.version_no if version else "",
         "needs_review": doc.needs_review,
+        #  Tên pháp nhân đi kèm mọi dòng tóm tắt: cây tài liệu có cả bản riêng
+        #  của các pháp nhân con, mà chúng thường TRÙNG TÊN với bản gốc — không
+        #  có cột này thì cây hiện năm dòng y hệt nhau.
+        "company_id": doc.company_id,
+        "company_name": company.name if company else "",
     }
 
 
@@ -104,18 +113,60 @@ def _children(db: Session, document_id: int, depth: int, seen: set[int]) -> list
         .all()
     )
 
+    #  Bản riêng của pháp nhân con CŨNG tự ghi một quan hệ "căn cứ theo" trỏ về
+    #  bản gốc (`clone_service.create_clones`). Không gạt chúng ra khỏi vòng dưới
+    #  thì nhánh quan hệ nhặt trước, và bản riêng hiện thành một dòng quan hệ
+    #  thường: mất nhãn «Bản riêng», mất tên pháp nhân, mất trạng thái xử lý.
+    ids_ban_rieng = {row[0] for row in db.query(Document.id)
+                     .filter(Document.source_document_id == document_id).all()}
+
     nodes: list[dict] = []
     for link in links:
-        if link.source_document_id in seen:
+        if link.source_document_id in seen or link.source_document_id in ids_ban_rieng:
             continue
         child = db.get(Document, link.source_document_id)
         if child is None:
             continue
         seen.add(child.id)
         node = summary_of(db, child) or {}
+        node["kind"] = "link"
         node["relation"] = link.relation
         node["relation_label"] = RELATION_LABELS.get(link.relation, str(link.relation))
         node["is_outdated"] = _is_outdated(db, link)
         node["children"] = _children(db, child.id, depth - 1, seen)
+        nodes.append(node)
+
+    nodes.extend(_clone_children(db, document_id, depth, seen))
+    return nodes
+
+
+def _clone_children(db: Session, document_id: int, depth: int, seen: set[int]) -> list[dict]:
+    """BẢN RIÊNG của các pháp nhân con (F06) — nhánh thứ hai của cây.
+
+    Clone KHÔNG đi qua `tab_document_link`: nó nối bằng cột
+    `Document.source_document_id`. Vì vậy cây cũ — chỉ duyệt quan hệ — không hề
+    thấy chúng, và người mở bản gốc không có cách nào biết văn bản của mình đã
+    tách thành mười hai bản ở mười hai pháp nhân.
+    """
+    clones = (
+        db.query(Document)
+        .filter(Document.source_document_id == document_id)
+        .order_by(Document.company_id.asc(), Document.id.asc())
+        .all()
+    )
+
+    nodes: list[dict] = []
+    for clone in clones:
+        if clone.id in seen:
+            continue
+        seen.add(clone.id)
+        node = summary_of(db, clone) or {}
+        node["kind"] = "clone"
+        node["clone_status"] = clone.clone_status
+        node["clone_status_label"] = CLONE_STATUS_LABELS.get(clone.clone_status, "")
+        #  Bản riêng lệch phiên bản với gốc là thứ phải thấy NGAY trên cây —
+        #  đó chính là câu hỏi "pháp nhân nào chưa cập nhật theo bản mới".
+        node["is_outdated"] = bool(clone.needs_review)
+        node["children"] = _children(db, clone.id, depth - 1, seen)
         nodes.append(node)
     return nodes

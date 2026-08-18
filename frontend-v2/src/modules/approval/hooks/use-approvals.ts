@@ -76,14 +76,39 @@ export function useSaveApprovalFlow() {
   })
 }
 
+export function useDeleteApprovalFlow() {
+  const invalidate = useInvalidateApproval()
+
+  return useMutation({
+    mutationFn: (id: number) => approvalFlowApi.remove(id),
+    onSuccess: () => {
+      toast.success('Đã xóa luồng duyệt')
+      invalidate()
+    },
+    //  Backend CHẶN xóa khi còn phiếu đang chạy theo luồng
+    //  (`_chan_khi_dang_chay`) và câu chặn đó đã nói rõ nên làm gì thay thế —
+    //  hiện nguyên văn, đừng thay bằng câu chung chung "Xóa thất bại".
+    onError: (error) => toast.error(extractErrorMessage(error)),
+  })
+}
+
 export function useSaveApprovalNode(flowId: number) {
   const invalidate = useInvalidateApproval()
 
   return useMutation({
-    mutationFn: ({ id, values }: { id?: number; values: Partial<ApprovalNode> }) =>
+    mutationFn: ({
+      id,
+      values,
+      asBranch,
+    }: {
+      id?: number
+      values: Partial<ApprovalNode>
+      /** Chỉ dùng khi THÊM: bước mới là nhánh song song của chặng đó. */
+      asBranch?: boolean
+    }) =>
       id
         ? approvalFlowApi.updateNode(flowId, id, values)
-        : approvalFlowApi.addNode(flowId, values),
+        : approvalFlowApi.addNode(flowId, values, asBranch),
     onSuccess: (_data, variables) => {
       toast.success(variables.id ? 'Đã lưu bước' : 'Đã thêm bước')
       invalidate()

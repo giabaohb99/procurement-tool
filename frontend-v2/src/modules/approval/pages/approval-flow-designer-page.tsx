@@ -1,4 +1,10 @@
-import { ArrowLeft, Settings2, SlidersHorizontal } from 'lucide-react'
+import {
+  ArrowLeft,
+  Layers,
+  Settings2,
+  SlidersHorizontal,
+  X,
+} from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -7,103 +13,93 @@ import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { PageContainer } from '@/shared/ui/page-container'
-import { PageHeader } from '@/shared/ui/page-header'
 import { ApprovalNodeForm } from '../components/approval-node-form'
-import { FlowCanvas } from '../components/flow-canvas'
-import { FlowEntitySidebar } from '../components/flow-entity-sidebar'
+import { FlowCanvasXY } from '../components/flow-canvas-xy'
 import { FlowSettingsPanel } from '../components/flow-settings-panel'
 import { ENTITY_LABELS } from '../helpers/entity-link'
 import {
   useApprovalFlow,
   useDeleteApprovalNode,
-  useReorderApprovalNodes,
   useSaveApprovalNode,
 } from '../hooks/use-approvals'
 import type { ApprovalNode } from '../types/approval'
 
-/** Bảng bên phải đang bày gì. */
+/** Bảng bên phải đang bày gì (`null` = đóng panel). */
 type BangPhai =
+  | null
   | { loai: 'cai-dat' }
   | { loai: 'sua-buoc'; nodeId: number }
   | { loai: 'them-buoc'; sauChang: number; vaoChang?: number }
 
 /**
- * MÀN KHAI LUỒNG DUYỆT — ba cột, dựng theo lối Lark Approval.
- *
- * Trái: loại chứng từ → các luồng của loại đó. Giữa: **sơ đồ luồng**, kéo thả
- * đổi thứ tự, dấu + giữa hai chặng để chèn bước. Phải: thuộc tính của bước đang
- * chọn, hoặc cài đặt chung của luồng khi chưa chọn bước nào.
- *
- * Bố cục này thay cho bản danh sách form trước đó, vì hai thứ một danh sách
- * không nói ra được: **phiếu đi theo chiều nào**, và **chặng nào rẽ nhánh**.
- * Người khai luồng phải thấy hình dạng của luồng chứ không phải đọc một bảng rồi
- * tự vẽ trong đầu.
+ * MÀN KHAI LUỒNG DUYỆT — Canvas kéo thả React Flow toàn màn hình.
  */
 export function ApprovalFlowDesignerPage() {
   const params = useParams()
   const navigate = useNavigate()
-  const laTaoMoi = params.id === 'new'
+  const laTaoMoi = !params.id || params.id === 'new'
   const flowId = laTaoMoi ? 0 : Number(params.id)
 
   const { data: flow, isLoading } = useApprovalFlow(laTaoMoi ? undefined : flowId)
   const saveNode = useSaveApprovalNode(flowId)
   const deleteNode = useDeleteApprovalNode(flowId)
-  const reorder = useReorderApprovalNodes(flowId)
 
-  const [bangPhai, setBangPhai] = useState<BangPhai>({ loai: 'cai-dat' })
+  const [bangPhai, setBangPhai] = useState<BangPhai>(null)
   const [entityMoi, setEntityMoi] = useState('document')
 
   const nodes = flow?.nodes ?? []
   const cacChang = [...new Set(nodes.map((node) => node.seq))].sort((a, b) => a - b)
   const nodeDangSua =
-    bangPhai.loai === 'sua-buoc'
+    bangPhai?.loai === 'sua-buoc'
       ? (nodes.find((node) => node.id === bangPhai.nodeId) ?? null)
       : null
 
   /** Chèn vào sau chặng thứ `sauChang` → bước mới mang số chặng đó + 1. */
   function seqGoiY(): number {
-    if (bangPhai.loai !== 'them-buoc') return cacChang.length + 1
+    if (!bangPhai || bangPhai.loai !== 'them-buoc') return cacChang.length + 1
     if (bangPhai.vaoChang) return bangPhai.vaoChang
     return Math.min(bangPhai.sauChang + 1, cacChang.length + 1)
   }
 
   function themBuoc(values: Partial<ApprovalNode>) {
+    //  Chỗ đặt bước do BACKEND lo (`flow_service.them_buoc`): chèn giữa thì nó
+    //  tự đẩy các chặng sau xuống, thêm nhánh thì tự đánh lại `branch_key`.
+    //  Trước đây màn này chèn thẳng rồi mới gọi sắp lại thứ tự — mà chính lượt
+    //  chèn đó đâm vào `UNIQUE(flow_id, seq, branch_key)` và trả 500, bước mới
+    //  mất luôn.
+    const laNhanh = bangPhai?.loai === 'them-buoc' && !!bangPhai.vaoChang
+
     saveNode.mutate(
-      { values },
-      {
-        onSuccess: (moi) => {
-          //  Chèn vào GIỮA luồng thì các chặng phía sau phải lùi xuống một bậc.
-          //  Không đẩy thì bước mới nằm chung chặng với bước đang có và biến
-          //  thành một nhánh song song — khác hẳn ý người dùng vừa bấm.
-          if (bangPhai.loai === 'them-buoc' && !bangPhai.vaoChang) {
-            const truoc = cacChang.slice(0, bangPhai.sauChang)
-            const sau = cacChang.slice(bangPhai.sauChang)
-            const thuTu = [
-              ...truoc.map((seq) => nodes.filter((n) => n.seq === seq).map((n) => n.id)),
-              [moi.id],
-              ...sau.map((seq) => nodes.filter((n) => n.seq === seq).map((n) => n.id)),
-            ]
-            reorder.mutate(thuTu)
-          }
-          setBangPhai({ loai: 'sua-buoc', nodeId: moi.id })
-        },
-      },
+      { values, asBranch: laNhanh },
+      { onSuccess: (moi) => setBangPhai({ loai: 'sua-buoc', nodeId: moi.id }) },
     )
   }
 
+  // Màn hình tạo mới luồng
   if (laTaoMoi) {
     return (
-      <PageContainer className="space-y-4">
-        <PageHeader
-          title="Tạo luồng duyệt"
-          description="Khai phần chung trước; vẽ các bước ngay sau khi lưu."
-          leading={<NutQuayLai onClick={() => navigate(appRoutes.approval.flows)} />}
-        />
-        <div className="max-w-2xl">
+      <PageContainer className="py-8">
+        <div className="mx-auto max-w-xl space-y-4">
+          <div className="flex items-center gap-3 pb-2">
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-9 rounded-xl shadow-2xs"
+              onClick={() => navigate(appRoutes.approval.flows)}
+            >
+              <ArrowLeft className="size-4" />
+            </Button>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-foreground">Tạo luồng duyệt mới</h1>
+              <p className="text-xs text-muted-foreground">Khai báo thông tin chung trước; vẽ các bước ngay sau khi lưu.</p>
+            </div>
+          </div>
+
           <FlowSettingsPanel
             entityMacDinh={entityMoi}
             onDoiEntity={setEntityMoi}
             onSaved={(moi) => navigate(appRoutes.approval.flowDetail(moi.id), { replace: true })}
+            onCancel={() => navigate(appRoutes.approval.flows)}
           />
         </div>
       </PageContainer>
@@ -112,114 +108,157 @@ export function ApprovalFlowDesignerPage() {
 
   if (isLoading || !flow) {
     return (
-      <PageContainer>
-        <p className="text-sm text-muted-foreground">Đang tải…</p>
+      <PageContainer fill className="flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-8 animate-spin rounded-full border-3 border-primary border-t-transparent" />
+          <p className="text-sm font-medium text-muted-foreground">Đang tải sơ đồ luồng duyệt…</p>
+        </div>
       </PageContainer>
     )
   }
 
   return (
-    <PageContainer fill className="flex flex-col">
-      <PageHeader
-        title={flow.name || 'Luồng duyệt'}
-        description={`${ENTITY_LABELS[flow.entity] ?? flow.entity} · bản ${flow.version_no} · ${nodes.length} bước`}
-        leading={<NutQuayLai onClick={() => navigate(appRoutes.approval.flows)} />}
-        actions={
-          <>
-            {!flow.is_active && <Badge variant="outline">Ngừng dùng</Badge>}
-            <Button
-              variant="outline"
-              onClick={() => setBangPhai({ loai: 'cai-dat' })}
-            >
-              <Settings2 className="size-4" />
-              Cài đặt luồng
-            </Button>
-          </>
-        }
-      />
+    <div className="relative flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden bg-background">
+      {/* Top Navigation Bar */}
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-border/80 bg-card/95 px-4 backdrop-blur-md z-10">
+        <div className="flex items-center gap-3 min-w-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
+            onClick={() => navigate(appRoutes.approval.flows)}
+            title="Về danh sách luồng"
+          >
+            <ArrowLeft className="size-4" />
+          </Button>
 
-      <div className="flex min-h-0 flex-1 gap-4">
-        <FlowEntitySidebar
-          flowId={flow.id}
-          onTaoLuong={(entity) => {
-            setEntityMoi(entity)
-            navigate(appRoutes.approval.flowNew)
+          <div className="h-4 w-px bg-border/80" />
+
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="truncate text-sm font-bold text-foreground">
+              {flow.name || 'Luồng duyệt'}
+            </h2>
+            <Badge variant="secondary" className="gap-1 rounded-md px-2 py-0.5 text-xs font-semibold">
+              <Layers className="size-3 text-primary" />
+              {ENTITY_LABELS[flow.entity] ?? flow.entity}
+            </Badge>
+            <Badge variant="outline" className="rounded-md px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+              v{flow.version_no}
+            </Badge>
+            <span className="text-xs text-muted-foreground hidden sm:inline">
+              · {nodes.length} bước duyệt
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {!flow.is_active && (
+            <Badge variant="destructive" className="rounded-md text-xs">
+              Ngừng dùng
+            </Badge>
+          )}
+
+          <Button
+            variant={bangPhai?.loai === 'cai-dat' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() =>
+              setBangPhai((prev) => (prev?.loai === 'cai-dat' ? null : { loai: 'cai-dat' }))
+            }
+            className="h-8.5 gap-1.5 rounded-xl font-medium shadow-2xs"
+          >
+            <Settings2 className="size-3.5" />
+            Cài đặt luồng
+          </Button>
+        </div>
+      </header>
+
+      {/* Main Canvas Area */}
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+        <FlowCanvasXY
+          nodes={nodes}
+          nodeDangChon={nodeDangSua?.id ?? null}
+          onChon={(nodeId) => setBangPhai({ loai: 'sua-buoc', nodeId })}
+          onBoChon={() => {
+            if (bangPhai?.loai === 'sua-buoc') setBangPhai(null)
           }}
+          onXoa={(nodeId) => {
+            deleteNode.mutate(nodeId)
+            if (bangPhai?.loai === 'sua-buoc' && bangPhai.nodeId === nodeId) {
+              setBangPhai(null)
+            }
+          }}
+          onNhanBan={(node) => {
+            const { id: _bo, flow_id: _bo2, ...phanConLai } = node
+            //  Bản sao nằm NGAY SAU bản gốc: gửi lại đúng `seq` cũ thì backend
+            //  hiểu là chèn chặng mới tại đó và đẩy bản gốc xuống dưới bản sao.
+            saveNode.mutate({
+              values: { ...phanConLai, seq: node.seq + 1, name: `${node.name} (bản sao)` },
+            })
+          }}
+          onThem={(sauChang, vaoChang) =>
+            setBangPhai({ loai: 'them-buoc', sauChang, vaoChang })
+          }
         />
 
-        {/*  Sơ đồ nằm giữa và CUỘN RIÊNG: luồng mười bước dài hơn màn hình, mà
-             bảng thuộc tính bên phải phải luôn nhìn thấy được trong lúc sửa. */}
-        <Card className="min-w-0 flex-1 overflow-y-auto p-4">
-          {nodes.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-              <p className="text-sm text-muted-foreground">
-                Luồng chưa có bước nào. Luồng rỗng thì trình duyệt sẽ báo lỗi.
-              </p>
-              <Button onClick={() => setBangPhai({ loai: 'them-buoc', sauChang: 0 })}>
-                Thêm bước đầu tiên
-              </Button>
-            </div>
-          ) : (
-            <FlowCanvas
-              nodes={nodes}
-              nodeDangChon={nodeDangSua?.id ?? null}
-              onChon={(nodeId) => setBangPhai({ loai: 'sua-buoc', nodeId })}
-              onXoa={(nodeId) => {
-                deleteNode.mutate(nodeId)
-                setBangPhai({ loai: 'cai-dat' })
-              }}
-              onNhanBan={(node) => {
-                const { id: _bo, flow_id: _bo2, ...phanConLai } = node
-                saveNode.mutate({ values: { ...phanConLai, name: `${node.name} (bản sao)` } })
-              }}
-              onThem={(sauChang) => setBangPhai({ loai: 'them-buoc', sauChang })}
-              onThemNhanh={(chang) =>
-                setBangPhai({ loai: 'them-buoc', sauChang: chang - 1, vaoChang: chang })
-              }
-              onDoiThuTu={(stages) => reorder.mutate(stages)}
-            />
-          )}
-        </Card>
-
-        <aside className="w-96 shrink-0 overflow-y-auto">
-          {bangPhai.loai === 'cai-dat' ? (
-            <FlowSettingsPanel flow={flow} />
-          ) : (
-            <Card className="p-4">
-              <p className="mb-3 flex items-center gap-2 text-sm font-medium">
-                <SlidersHorizontal className="size-4 text-muted-foreground" />
-                {nodeDangSua ? 'Thuộc tính bước' : 'Bước mới'}
-              </p>
-              <ApprovalNodeForm
-                key={nodeDangSua?.id ?? `moi-${seqGoiY()}`}
-                node={nodeDangSua ?? undefined}
-                seqGoiY={seqGoiY()}
-                isPending={saveNode.isPending}
-                onCancel={() => setBangPhai({ loai: 'cai-dat' })}
-                onSubmit={(values) =>
-                  nodeDangSua
-                    ? saveNode.mutate({ id: nodeDangSua.id, values })
-                    : themBuoc(values)
-                }
+        {/* Slide-over Right Inspector Panel */}
+        {bangPhai !== null && (
+          <aside className="absolute right-4 top-4 bottom-4 z-20 w-[420px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-2xl backdrop-blur-xl transition-all duration-300 animate-in fade-in slide-in-from-right-4">
+            {bangPhai.loai === 'cai-dat' ? (
+              <FlowSettingsPanel
+                flow={flow}
+                onSaved={() => setBangPhai(null)}
+                onCancel={() => setBangPhai(null)}
               />
-            </Card>
-          )}
-        </aside>
-      </div>
-    </PageContainer>
-  )
-}
+            ) : (
+              <Card className="flex h-full flex-col overflow-hidden rounded-2xl border-none shadow-none bg-transparent">
+                <div className="flex items-center justify-between border-b border-border/60 bg-muted/30 px-5 py-4">
+                  <div className="flex items-center gap-2">
+                    <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <SlidersHorizontal className="size-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground">
+                        {nodeDangSua ? `Thuộc tính: ${nodeDangSua.name || `Bước #${nodeDangSua.seq}`}` : 'Thêm bước duyệt mới'}
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        {nodeDangSua ? 'Cấu hình người duyệt & chế độ phê duyệt' : `Chèn bước vào chặng #${seqGoiY()}`}
+                      </p>
+                    </div>
+                  </div>
 
-function NutQuayLai({ onClick }: { onClick: () => void }) {
-  return (
-    <Button
-      variant="outline"
-      size="icon"
-      title="Về danh sách luồng"
-      aria-label="Về danh sách luồng"
-      onClick={onClick}
-    >
-      <ArrowLeft className="size-4" />
-    </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setBangPhai(null)}
+                    className="size-7 rounded-lg text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-5">
+                  <ApprovalNodeForm
+                    key={nodeDangSua?.id ?? `moi-${seqGoiY()}`}
+                    node={nodeDangSua ?? undefined}
+                    entity={flow.entity}
+                    seqGoiY={seqGoiY()}
+                    isPending={saveNode.isPending}
+                    onCancel={() => setBangPhai(null)}
+                    onSubmit={(values) => {
+                      if (nodeDangSua) {
+                        saveNode.mutate({ id: nodeDangSua.id, values }, { onSuccess: () => setBangPhai(null) })
+                      } else {
+                        themBuoc(values)
+                      }
+                    }}
+                  />
+                </div>
+              </Card>
+            )}
+          </aside>
+        )}
+      </div>
+    </div>
   )
 }

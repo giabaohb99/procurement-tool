@@ -16,6 +16,9 @@ export const ENTITY_LABELS: Record<string, string> = {
   payment_request: 'Yêu cầu thanh toán',
 }
 
+/** Danh sách mã loại chứng từ, dùng cho ô lọc và cụm công tắc bộ máy. */
+export const CAC_LOAI = Object.keys(ENTITY_LABELS)
+
 const ENTITY_ROUTES: Record<string, (id: number) => string> = {
   document: appRoutes.document.documentDetail,
   purchase_request: appRoutes.procurement.purchaseRequestDetail,

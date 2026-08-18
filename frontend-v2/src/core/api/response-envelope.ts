@@ -18,17 +18,42 @@ export interface ErrorEnvelope {
 
 export type ApiEnvelope<T> = SuccessEnvelope<T> | ErrorEnvelope
 
-/** Thông điệp lỗi ưu tiên: error.message > message > message của axios > câu mặc định. */
+/** Thông điệp lỗi ưu tiên: error.message (+ details nếu có) > message > message của axios > câu mặc định. */
 export function extractErrorMessage(error: unknown): string {
   const fallback = 'Có lỗi xảy ra, vui lòng thử lại'
   if (!error || typeof error !== 'object') return fallback
 
   const err = error as {
-    response?: { data?: Partial<ErrorEnvelope> & { message?: string } }
+    response?: {
+      data?: Partial<ErrorEnvelope> & {
+        message?: string
+        error?: {
+          code?: string
+          message?: string
+          details?: unknown
+        }
+      }
+    }
     message?: string
   }
+
+  const errObj = err.response?.data?.error
+  if (errObj?.details && Array.isArray(errObj.details) && errObj.details.length > 0) {
+    const detailMsgs = errObj.details
+      .map((d: { loc?: unknown[]; msg?: string }) => {
+        const field = Array.isArray(d.loc)
+          ? d.loc.filter((x) => x !== 'body').join('.')
+          : ''
+        return field ? `${field}: ${d.msg}` : d.msg || ''
+      })
+      .filter(Boolean)
+    if (detailMsgs.length > 0) {
+      return `${errObj.message || 'Dữ liệu không hợp lệ'} (${detailMsgs.join('; ')})`
+    }
+  }
+
   return (
-    err.response?.data?.error?.message ||
+    errObj?.message ||
     err.response?.data?.message ||
     err.message ||
     fallback

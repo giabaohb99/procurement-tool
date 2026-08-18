@@ -19,10 +19,13 @@ import { DocumentAccessFields, type PendingAccess } from '../components/document
 import { DocumentClonePlanFields } from '../components/document-clone-plan-fields'
 import { DocumentExtraInfoFields } from '../components/document-extra-info-fields'
 import { DocumentMainInfoFields, MAIN_INFO_FIELDS } from '../components/document-main-info-fields'
+import { DocumentPrerequisiteDialog } from '../components/document-prerequisite-dialog'
 import { DocumentScopeFields, type PendingScope } from '../components/document-scope-fields'
+import { cloneTargetsFromScopes } from '../helpers/clone-targets-from-scopes'
 import { emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
 import { useDocumentBooks } from '../hooks/use-document-books'
-import { useSaveDocument } from '../hooks/use-documents'
+import { useActiveDocumentTypes } from '../hooks/use-document-types'
+import { useDocumentPrerequisites, useSaveDocument } from '../hooks/use-documents'
 import { useDocumentTemplate } from '../hooks/use-document-templates'
 import {
   documentRecordSchema,
@@ -76,19 +79,40 @@ export function DocumentCreatePage() {
   const [pendingAccess, setPendingAccess] = useState<PendingAccess[]>([])
   //  Phạm vi và kế hoạch clone cũng phải chờ có id văn bản, nên xếp hàng y hệt.
   const [pendingScopes, setPendingScopes] = useState<PendingScope[]>([])
-  const [clonePlan, setClonePlan] = useState<DocumentClonePlanInput>({
-    company_ids: [],
+  //  `company_ids` KHÔNG giữ ở đây: nơi nhận bản riêng suy thẳng từ các dòng
+  //  phạm vi (xem `cloneTargetsFromScopes`). Giữ thêm một bản thứ hai là lại có
+  //  hai danh sách lệch nhau — đúng thứ vừa bỏ đi.
+  const [clonePlan, setClonePlan] = useState<Omit<DocumentClonePlanInput, 'company_ids'>>({
     due_date: '',
     note: '',
   })
+  //  Bộ giá trị đang chờ người dùng trả lời hộp cảnh báo thiếu văn bản tiên
+  //  quyết. Khác `null` = hộp đang mở. Giữ luôn cả `values` để lúc bấm "Vẫn
+  //  tạo" không phải đọc lại form (người dùng không sửa được gì khi hộp đang mở,
+  //  nhưng đọc lại là thêm một đường dữ liệu thứ hai cho cùng một việc).
+  const [choXacNhan, setChoXacNhan] = useState<DocumentRecordFormValues | null>(null)
   const save = useSaveDocument()
   const selectedTemplate = useDocumentTemplate(templateId)
   const { items: books } = useDocumentBooks()
+  const documentTypes = useActiveDocumentTypes()
 
   const form = useForm<DocumentRecordFormValues>({
     resolver: zodResolver(documentRecordSchema),
     defaultValues: emptyDocumentForm(),
   })
+
+  //  Pháp nhân nhận bản riêng = các pháp nhân khai ở khối phạm vi, trừ nơi ban
+  //  hành. Suy tại chỗ chứ không giữ state riêng: sửa một dòng phạm vi là danh
+  //  sách clone đổi theo ngay, không có nhịp nào hai bên nói khác nhau.
+  const cloneCompanyIds = cloneTargetsFromScopes(
+    pendingScopes.map((row) => row.values),
+    Number(form.watch('company_id')) || 0,
+  )
+
+  const docTypeId = Number(form.watch('doc_type_id')) || 0
+  //  Hỏi ngay khi chọn loại dù hộp cảnh báo chỉ hiện lúc bấm Tạo — hỏi đúng
+  //  nhịp bấm thì người dùng phải chờ một vòng mạng ở đúng nhịp sốt ruột nhất.
+  const { data: thieuTienQuyet } = useDocumentPrerequisites(docTypeId)
 
   async function goNext() {
     const valid = await form.trigger([...STEPS[step].fields])
@@ -137,9 +161,12 @@ export function DocumentCreatePage() {
       )
     }
 
-    if (clonePlan.company_ids.length > 0) {
+    if (cloneCompanyIds.length > 0) {
       try {
-        await documentCloneApi.savePlan(documentId, clonePlan)
+        await documentCloneApi.savePlan(documentId, {
+          ...clonePlan,
+          company_ids: cloneCompanyIds,
+        })
       } catch {
         toast.error('Chưa ghi được kế hoạch clone — khai lại ở thẻ «Bản clone ở pháp nhân con».')
       }
@@ -161,6 +188,17 @@ export function DocumentCreatePage() {
       return
     }
 
+    //  E04b — loại này bắt buộc trỏ tới loại khác mà kho chưa có cái nào để
+    //  trỏ vào: hỏi lại một nhịp rồi vẫn cho tạo nếu họ chọn tiếp tục.
+    if (thieuTienQuyet?.length) {
+      setChoXacNhan(values)
+      return
+    }
+
+    taoVanBan(values)
+  }
+
+  function taoVanBan(values: DocumentRecordFormValues) {
     save.mutate(
       {
         values: {
@@ -231,21 +269,27 @@ export function DocumentCreatePage() {
                 <DocumentScopeFields rows={pendingScopes} onChange={setPendingScopes} />
               </FormCard>
 
-              {/*  Kế hoạch clone đứng SAU phạm vi, không phải song song: hai
-                   khối trả lời hai câu nối tiếp nhau — "áp cho ai" rồi mới tới
-                   "mỗi nơi dùng chung một bản hay tách bản riêng". Đảo lại thì
-                   câu thứ hai hỏi trước khi người ta biết mình đang nói về ai. */}
+              {/*  Thẻ này chỉ hiện khi phạm vi đã có pháp nhân ngoài nơi ban
+                   hành. Nơi nhận bản riêng nay SUY từ phạm vi, nên lúc chưa
+                   khai gì nó chẳng hỏi được câu nào — bày ra một thẻ chỉ để nói
+                   "chưa có gì" là bắt người dùng đọc rồi bỏ qua.
+
+                   Đứng SAU phạm vi, không song song: hai khối trả lời hai câu
+                   nối tiếp nhau — "áp cho ai" rồi mới tới "mỗi nơi dùng chung
+                   một bản hay tách bản riêng". */}
+              {cloneCompanyIds.length > 0 && (
               <FormCard
                 title="Bản clone ở pháp nhân con"
                 icon={Copy}
                 iconClassName="text-violet-600"
               >
                 <DocumentClonePlanFields
-                  value={clonePlan}
-                  onChange={setClonePlan}
-                  issuerCompanyId={Number(form.watch('company_id')) || 0}
+                  value={{ ...clonePlan, company_ids: cloneCompanyIds }}
+                  onChange={({ due_date, note }) => setClonePlan({ due_date, note })}
+                  companyIds={cloneCompanyIds}
                 />
               </FormCard>
+              )}
             </div>
           </div>
 
@@ -303,6 +347,20 @@ export function DocumentCreatePage() {
           </div>
         </form>
       </Form>
+
+      <DocumentPrerequisiteDialog
+        open={choXacNhan !== null}
+        onOpenChange={(open) => {
+          if (!open) setChoXacNhan(null)
+        }}
+        docTypeName={documentTypes.find((type) => type.id === docTypeId)?.name ?? 'này'}
+        items={thieuTienQuyet ?? []}
+        onConfirm={() => {
+          const values = choXacNhan
+          setChoXacNhan(null)
+          if (values) taoVanBan(values)
+        }}
+      />
     </PageContainer>
   )
 }

@@ -31,7 +31,8 @@ from app.core.response import success
 
 from . import access_service, import_service, numbering, serializer, service, version_service
 from .model import Document
-from .query import documents_query
+from .query import (an_ban_rieng_co_goc_xem_duoc, dem_ban_rieng,
+                    documents_query)
 from .model import APPLY_MODE_LABELS
 from .schema import (AccessGrant, AccessRevokeIn, ApproveIn, DocumentCreate, DocumentUpdate,
                      ManualIssueNumberUpdate, RejectIn, VersionContentUpdate,
@@ -41,7 +42,10 @@ from .service import doc_type_or_400
 router = APIRouter(prefix="/api/documents", tags=["document"])
 
 FILTERABLE = ["doc_type_id", "company_id", "department_id", "book_id", "status",
-              "secrecy_level", "urgency", "owner_employee_id"]
+              "secrecy_level", "urgency", "owner_employee_id",
+              #  Hỏi thẳng các BẢN RIÊNG của một bản gốc — đường mà bảng danh
+              #  sách dùng khi người dùng bung một dòng ra.
+              "source_document_id"]
 
 
 def _load(db: Session, document_id: int, user, action: str = "read") -> Document:
@@ -89,13 +93,36 @@ def list_documents(
     if effective_to:
         query = query.filter(Document.effective_date <= effective_to)
 
+    #  BẢN RIÊNG nằm DƯỚI bản gốc, không đứng ngang hàng: một văn bản clone cho
+    #  mười hai pháp nhân sẽ thành mười ba dòng gần như giống hệt nhau, đọc
+    #  danh sách không ra nổi có bao nhiêu văn bản thật.
+    #
+    #  Chỉ giấu khi người đang xem THẤY ĐƯỢC bản gốc. Người ở pháp nhân con
+    #  không xem được bản gốc thì bản riêng của họ chính là văn bản của họ —
+    #  giấu đi là danh sách của họ trống trơn.
+    #  Hỏi đích danh bản riêng của một bản gốc thì KHÔNG gom nữa — người dùng
+    #  vừa bung đúng dòng đó ra, gom lại là trả về rỗng.
+    if not request.query_params.get("source_document_id"):
+        query = an_ban_rieng_co_goc_xem_duoc(query)
+
     total = query.count()
     #  Lọc `?book_id=` là đường mà màn SỔ VĂN BẢN dùng để liệt kê văn bản trong
     #  một quyển; sổ đọc theo số vào sổ tăng dần, khác danh sách chung (mới nhất
     #  trước) nên để màn đó tự sắp lại nếu cần.
     items = (query.order_by(Document.id.desc())
              .offset(pg["offset"]).limit(pg["limit"]).all())
-    return success({"total": total, "items": serializer.serialize_many(db, items)})
+    rows = serializer.serialize_many(db, items)
+
+    #  Đếm trên một truy vấn CHỈ lọc quyền — không kèm bộ lọc/tìm kiếm của
+    #  danh sách, nếu không lọc theo trạng thái là số bản riêng tụt theo.
+    dem_query = documents_query(db)
+    if visible is not None:
+        dem_query = dem_query.filter(visible)
+    dem = dem_ban_rieng(dem_query, [doc.id for doc in items])
+    for row in rows:
+        row["clone_count"] = dem.get(row["id"], 0)
+
+    return success({"total": total, "items": rows})
 
 
 @router.get("/suggestions")

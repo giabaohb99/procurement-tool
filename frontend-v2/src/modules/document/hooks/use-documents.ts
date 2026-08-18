@@ -57,6 +57,24 @@ export function useDocumentSuggestions(params: {
 }
 
 /**
+ * Quan hệ TIÊN QUYẾT còn thiếu của loại đang chọn (E04b).
+ *
+ * Nạp sẵn ngay khi người dùng chọn loại — dù cảnh báo chỉ hiện lúc bấm Tạo:
+ * hỏi tại đúng nhịp bấm thì người dùng phải chờ một vòng mạng giữa cái bấm và
+ * cái hộp thoại, mà đó là nhịp họ đang sốt ruột nhất.
+ *
+ * Rỗng = không cảnh báo gì. Hỏng mạng cũng coi như rỗng: đây là lời nhắc, không
+ * phải cổng chặn — chặn người dùng lại vì một truy vấn phụ hỏng là sai.
+ */
+export function useDocumentPrerequisites(docTypeId: number) {
+  return useQuery({
+    queryKey: queryKeys.document.prerequisites(docTypeId),
+    queryFn: () => documentApi.prerequisites(docTypeId),
+    enabled: docTypeId > 0,
+  })
+}
+
+/**
  * Số hiệu SẼ cấp — chỉ để xem trước.
  *
  * ⚠️ Không chiếm số và có thể lệch nếu có người được cấp số ngay sau đó. Số

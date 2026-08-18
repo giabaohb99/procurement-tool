@@ -10,6 +10,8 @@ class DocTypeLinkRuleBase(BaseModel):
     is_required: bool = False
     min_count: int = Field(default=0, ge=0, le=99)
     max_count: int = Field(default=0, ge=0, le=99)
+    #  Thứ tự tiên quyết trong cùng loại nguồn. 0 = chưa xếp, xuống cuối.
+    sort_order: int = Field(default=0, ge=0, le=999)
     on_parent_obsolete: int = Field(default=2, ge=1, le=3)
     on_parent_new_version: int = Field(default=3, ge=1, le=3)
     inherit_code: bool = False

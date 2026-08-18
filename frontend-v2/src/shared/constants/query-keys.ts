@@ -81,8 +81,9 @@ export const queryKeys = {
     /** Bộ đếm tách riêng theo năm: đổi năm là đọc lại, không đụng bản ghi sổ. */
     bookCounter: (id: number, year: number) => ['document', 'books', id, 'counter', year] as const,
 
-    /** Số liệu trang tổng quan Văn thư. */
-    dashboard: () => ['document', 'dashboard'] as const,
+    /** Số liệu trang tổng quan Văn thư, theo bộ lọc của thanh trên cùng trang. */
+    dashboard: (params?: Record<string, unknown>) =>
+      ['document', 'dashboard', params ?? {}] as const,
     records: (params?: Record<string, unknown>) => ['document', 'records', params ?? {}] as const,
     record: (id: number) => ['document', 'records', id] as const,
     /** Danh sách phiên bản — KHÔNG kèm nội dung, nhẹ. */
@@ -114,12 +115,21 @@ export const queryKeys = {
     /** F05 — văn bản đang áp dụng cho chính tôi. Không theo văn bản nào. */
     appliesToMe: () => ['document', 'applies-to-me'] as const,
     /** Quy tắc quan hệ theo LOẠI văn bản — danh mục nền, không theo văn bản nào. */
-    linkRules: () => ['document', 'link-rules'] as const,
+    linkRulesAll: ['document', 'link-rules'] as const,
+    /**
+     * Bảng quy tắc, lọc theo loại nguồn. `0` = cả bảng (trang danh mục), id =
+     * chỉ quy tắc của một loại (thẻ quan hệ trên trang loại văn bản). Hai chỗ
+     * đọc hai danh sách khác nhau nên khóa phải khác nhau; muốn dọn cả hai thì
+     * vô hiệu theo `linkRulesAll`.
+     */
+    linkRules: (sourceTypeId = 0) => ['document', 'link-rules', sourceTypeId] as const,
     linkRule: (id: number) => ['document', 'link-rules', 'detail', id] as const,
     linkRuleOptions: () => ['document', 'link-rules', 'options'] as const,
     permissions: (documentId: number) =>
       ['document', 'records', documentId, 'permissions'] as const,
     suggestions: (params: Record<string, unknown>) => ['document', 'suggestions', params] as const,
+    /** Quan hệ tiên quyết còn thiếu của một loại — hỏi trước khi tạo văn bản (E04b). */
+    prerequisites: (docTypeId: number) => ['document', 'prerequisites', docTypeId] as const,
     numberPreview: (params: Record<string, unknown>) =>
       ['document', 'number-preview', params] as const,
   },

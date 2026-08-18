@@ -8,25 +8,10 @@ import { countText } from './link-rule-count-text'
  * lời: "đúng 1", "từ 1", "0 trở lên". Dịch sai chỗ này thì người khai quy tắc
  * tưởng mình đặt một đằng, hệ thống chặn một nẻo.
  */
-function rule(min: number, max: number): DocTypeLinkRule {
-  return {
-    id: 1,
-    source_type_id: 1,
-    source_type_name: 'Hướng dẫn công việc',
-    relation: 4,
-    relation_label: 'Hướng dẫn',
-    target_type_id: 2,
-    target_type_name: 'Quy trình',
-    is_required: true,
-    min_count: min,
-    max_count: max,
-    on_parent_obsolete: 2,
-    on_parent_new_version: 3,
-    inherit_code: false,
-    inherit_secrecy: false,
-    is_locked: false,
-    is_active: true,
-  }
+//  Chỉ dựng ĐÚNG hai cột hàm này đọc — dựng cả bản ghi thì mỗi lần thêm cột vào
+//  bảng quy tắc là bài kiểm đỏ, dù chẳng liên quan gì tới việc nó đang kiểm.
+function rule(min: number, max: number): Pick<DocTypeLinkRule, 'min_count' | 'max_count'> {
+  return { min_count: min, max_count: max }
 }
 
 describe('countText', () => {

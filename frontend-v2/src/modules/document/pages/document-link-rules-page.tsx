@@ -29,14 +29,14 @@ export function DocumentLinkRulesPage() {
     () => [
       {
         key: 'source_type_name',
-        header: 'Loại văn bản',
+        header: 'Loại văn bản áp dụng',
         width: 220,
         hideable: false,
         cell: (row) => <span className="font-medium text-navy">{row.source_type_name}</span>,
       },
       {
         key: 'relation_label',
-        header: 'Quan hệ',
+        header: 'Loại quan hệ',
         width: 150,
         cell: (row) => (
           <div className="flex items-center gap-2">
@@ -49,37 +49,37 @@ export function DocumentLinkRulesPage() {
       },
       {
         key: 'target_type_name',
-        header: 'Tới loại',
+        header: 'Trỏ tới loại',
         width: 220,
         cell: (row) => row.target_type_name,
       },
       {
         key: 'is_required',
-        header: 'Bắt buộc',
+        header: 'Ràng buộc',
         width: 130,
         cell: (row) =>
           row.is_required ? (
             <Badge>Bắt buộc</Badge>
           ) : (
-            <span className="text-muted-foreground">Không</span>
+            <span className="text-muted-foreground">Tùy chọn</span>
           ),
       },
       {
         key: 'count',
-        header: 'Số lượng',
+        header: 'Số văn bản',
         width: 140,
         cell: (row) => countText(row),
       },
       {
         key: 'inherit_code',
-        header: 'Thừa kế mã',
+        header: 'Đánh số nối theo',
         width: 130,
         defaultHidden: true,
         cell: (row) => (row.inherit_code ? 'Có' : 'Không'),
       },
       {
         key: 'inherit_secrecy',
-        header: 'Thừa kế mức mật',
+        header: 'Không hạ mức mật',
         width: 150,
         defaultHidden: true,
         cell: (row) => (row.inherit_secrecy ? 'Có' : 'Không'),
@@ -92,7 +92,7 @@ export function DocumentLinkRulesPage() {
     <PageContainer fill>
       <PageHeader
         title="Quy tắc quan hệ"
-        description="Loại văn bản nào phải trỏ tới loại nào, bắt buộc hay không, được mấy cái."
+        description="Toàn cảnh quy tắc quan hệ của cả hệ thống. Khai theo từng loại thì mở trang loại văn bản tương ứng."
         actions={
           <Button onClick={() => navigate(appRoutes.document.linkRuleNew)}>
             <Plus className="size-4" />
@@ -112,7 +112,7 @@ export function DocumentLinkRulesPage() {
         ]}
         searchPlaceholder="Tìm theo loại văn bản hoặc quan hệ…"
         detailPath={appRoutes.document.linkRuleDetail}
-        emptyMessage="Chưa khai quy tắc quan hệ nào."
+        emptyMessage="Chưa có quy tắc quan hệ nào."
       />
     </PageContainer>
   )

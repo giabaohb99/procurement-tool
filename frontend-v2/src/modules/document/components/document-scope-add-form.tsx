@@ -7,6 +7,7 @@ import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Label } from '@/shared/ui/label'
+import { MultiPicker } from '@/shared/ui/multi-picker'
 import {
   Select,
   SelectContent,
@@ -30,6 +31,9 @@ interface DocumentScopeAddFormProps {
    * Có nó thì form TẠO văn bản bày được dòng vừa khai ra ngay, dù dòng đó chưa
    * gửi lên máy chủ nên chưa có tên do backend trả về. Màn sửa bỏ qua tham số
    * này vì đọc tên từ dữ liệu đã lưu.
+   *
+   * Chọn nhiều pháp nhân một lượt thì hàm này được gọi **nhiều lần**, mỗi pháp
+   * nhân một dòng — tầng dữ liệu lưu mỗi dòng đúng một đối tượng.
    */
   onAdd: (values: DocumentScopeInput, label: string) => void
 }
@@ -52,20 +56,47 @@ export function DocumentScopeAddForm({ disabled = false, onAdd }: DocumentScopeA
 
   const [dim, setDim] = useState(String(SCOPE_DIM.company))
   const [mode, setMode] = useState(String(SCOPE_MODE.include))
+  //  Áp theo PHÁP NHÂN thì chọn nhiều một lượt: một quy chế thường ban hành cho
+  //  cả chục pháp nhân, khai từng dòng một là mười lượt bấm y hệt nhau.
+  const [companyIds, setCompanyIds] = useState<number[]>([])
+  //  Áp theo PHÒNG BAN thì vẫn đúng MỘT pháp nhân — nó là ô định danh phòng ban
+  //  ("phòng Kế toán của công ty nào"), không phải danh sách nơi áp dụng.
   const [companyId, setCompanyId] = useState('')
   const [departmentId, setDepartmentId] = useState('')
   const [employeeId, setEmployeeId] = useState('')
   const [includeChildren, setIncludeChildren] = useState(false)
 
   const dimValue = Number(dim)
+  const companies = companyPage?.items ?? []
   const canAdd =
-    (dimValue === SCOPE_DIM.company && companyId) ||
+    (dimValue === SCOPE_DIM.company && companyIds.length > 0) ||
     (dimValue === SCOPE_DIM.department && departmentId && companyId) ||
     (dimValue === SCOPE_DIM.employee && employeeId)
 
   function handleAdd() {
+    if (dimValue === SCOPE_DIM.company) {
+      //  Mỗi pháp nhân một dòng: tầng dữ liệu lưu `company_id` đơn, và có vậy
+      //  mới bỏ riêng được một nơi sau này mà không phải khai lại cả cụm.
+      for (const id of companyIds) {
+        onAdd(
+          {
+            dim: dimValue,
+            mode: Number(mode),
+            company_id: id,
+            department_id: null,
+            employee_id: null,
+            include_children: includeChildren,
+          },
+          scopeLabel(dimValue, { company: companies.find((row) => row.id === id)?.name }),
+        )
+      }
+      setCompanyIds([])
+      setIncludeChildren(false)
+      return
+    }
+
     const label = scopeLabel(dimValue, {
-      company: (companyPage?.items ?? []).find((row) => String(row.id) === companyId)?.name,
+      company: companies.find((row) => String(row.id) === companyId)?.name,
       department: (departmentPage?.items ?? []).find((row) => String(row.id) === departmentId)
         ?.name,
       employee: (employeePage?.items ?? []).find((row) => String(row.id) === employeeId)
@@ -79,14 +110,13 @@ export function DocumentScopeAddForm({ disabled = false, onAdd }: DocumentScopeA
         company_id: dimValue === SCOPE_DIM.employee ? null : Number(companyId) || null,
         department_id: dimValue === SCOPE_DIM.department ? Number(departmentId) : null,
         employee_id: dimValue === SCOPE_DIM.employee ? Number(employeeId) : null,
-        include_children: dimValue === SCOPE_DIM.company && includeChildren,
+        include_children: false,
       },
       label,
     )
     setCompanyId('')
     setDepartmentId('')
     setEmployeeId('')
-    setIncludeChildren(false)
   }
 
   return (
@@ -116,6 +146,7 @@ export function DocumentScopeAddForm({ disabled = false, onAdd }: DocumentScopeA
               setDim(next)
               //  Đổi chiều là đổi cả bộ ô bên dưới — giữ lại giá trị cũ thì gửi
               //  đi một dòng nửa nọ nửa kia.
+              setCompanyIds([])
               setCompanyId('')
               setDepartmentId('')
               setEmployeeId('')
@@ -136,7 +167,28 @@ export function DocumentScopeAddForm({ disabled = false, onAdd }: DocumentScopeA
         </div>
       </div>
 
-      {dimValue !== SCOPE_DIM.employee && (
+      {dimValue === SCOPE_DIM.company && (
+        <div className="space-y-2">
+          <Label>
+            Pháp nhân<span className="text-destructive"> *</span>
+          </Label>
+          <MultiPicker
+            value={companyIds}
+            onChange={setCompanyIds}
+            options={companies.map((company) => ({
+              id: company.id,
+              label: company.name,
+              hint: company.code,
+            }))}
+            placeholder="Chọn pháp nhân…"
+          />
+          <p className="text-xs text-muted-foreground">
+            Chọn được nhiều nơi một lượt — mỗi nơi thành một dòng phạm vi riêng.
+          </p>
+        </div>
+      )}
+
+      {dimValue === SCOPE_DIM.department && (
         <div className="space-y-2">
           <Label>
             Pháp nhân<span className="text-destructive"> *</span>
@@ -146,19 +198,17 @@ export function DocumentScopeAddForm({ disabled = false, onAdd }: DocumentScopeA
               <SelectValue placeholder="Chọn pháp nhân…" />
             </SelectTrigger>
             <SelectContent>
-              {(companyPage?.items ?? []).map((company) => (
+              {companies.map((company) => (
                 <SelectItem key={company.id} value={String(company.id)}>
                   {company.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          {dimValue === SCOPE_DIM.department && (
-            <p className="text-xs text-muted-foreground">
-              Bắt buộc: một phòng ban có mặt ở nhiều pháp nhân, thiếu ô này là văn
-              bản lan sang tất cả.
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground">
+            Bắt buộc: một phòng ban có mặt ở nhiều pháp nhân, thiếu ô này là văn
+            bản lan sang tất cả.
+          </p>
         </div>
       )}
 

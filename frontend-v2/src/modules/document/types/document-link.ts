@@ -24,6 +24,28 @@ export const RELATION = {
   excerpt: 10,
 } as const
 
+/**
+ * Một câu giải thích cho từng loại quan hệ, hiện dưới ô chọn trong form khai
+ * quy tắc.
+ *
+ * ⚠️ Đây là CHÚ THÍCH, không phải nhãn — nhãn vẫn lấy từ `relation_label` của
+ * backend. Mười cái tên ("Thuộc về", "Kèm theo", "Bổ sung"…) nghe gần giống
+ * nhau, mà chọn sai thì lát nữa văn bản bị chặn gửi duyệt vì một quan hệ người
+ * khai còn không định đặt ra.
+ */
+export const RELATION_HINTS: Record<number, string> = {
+  [1]: 'Văn bản mới ban hành làm văn bản cũ hết hiệu lực hoàn toàn.',
+  [2]: 'Sửa một phần văn bản cũ; phần còn lại vẫn giữ nguyên hiệu lực.',
+  [3]: 'Thêm nội dung cho văn bản cũ, không thay thế phần nào.',
+  [4]: 'Hướng dẫn cách thực hiện một văn bản khác.',
+  [5]: 'Đi kèm văn bản khác như phụ lục, không đứng một mình.',
+  [6]: 'Là một bộ phận của văn bản khác — biểu mẫu thuộc về quy trình.',
+  [7]: 'Lấy văn bản khác làm căn cứ pháp lý để ban hành.',
+  [8]: 'Chỉ dẫn chiếu để tra cứu, không ràng buộc hiệu lực.',
+  [9]: 'Làm cho văn bản khác hết hiệu lực mà không thay thế bằng nội dung mới.',
+  [10]: 'Bản trích từ văn bản gốc — hệ thống tự tạo, không khai tay được.',
+}
+
 /** Tóm tắt một dòng của văn bản đầu kia — vừa đủ nhìn ra là văn bản gì. */
 export interface LinkedDocument {
   id: number
@@ -35,6 +57,9 @@ export interface LinkedDocument {
   secrecy_level: number
   version_no: string
   needs_review: boolean
+  company_id: number | null
+  /** Bản riêng của pháp nhân con trùng tiêu đề với bản gốc — tên này để phân biệt. */
+  company_name: string
 }
 
 export interface DocumentLink {
@@ -78,9 +103,13 @@ export interface DocumentLinkSlot {
 
 /** Một nút trên cây tài liệu (E06). */
 export interface DocumentTreeNode extends LinkedDocument {
+  /** `link` = nối bằng quan hệ; `clone` = bản riêng của một pháp nhân con. */
+  kind?: 'link' | 'clone'
   relation?: number
   relation_label?: string
   is_outdated?: boolean
+  clone_status?: number
+  clone_status_label?: string
   children: DocumentTreeNode[]
 }
 

@@ -4,7 +4,9 @@ import { Link } from 'react-router-dom'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
+import { shouldWarnDuplicate } from '../helpers/should-warn-duplicate'
 import { useDocumentSuggestions } from '../hooks/use-documents'
+import { useActiveDocumentTypes } from '../hooks/use-document-types'
 
 interface DocumentSuggestionListProps {
   docTypeId: number
@@ -23,6 +25,11 @@ interface DocumentSuggestionListProps {
  * ô tên văn bản, người soạn nhìn thấy trước khi ngồi gõ chứ không phải sau khi
  * đã gõ xong.
  *
+ * Chỉ nhắc ở **văn bản quản trị** (quy chế, quy định, quy trình…). Một phòng ra
+ * hàng chục công văn, thông báo, biên bản mỗi tháng — nhắc ở đó thì lần tạo nào
+ * cũng thấy băng vàng và người dùng học được đúng một điều: bỏ qua nó. Luật
+ * nhận diện nằm ở `shouldWarnDuplicate`.
+ *
  * Không có gì trùng thì **không hiện gì** — một khối rỗng nằm giữa form chỉ tổ
  * làm người dùng phải đọc lướt qua nó mỗi lần.
  *
@@ -38,14 +45,17 @@ export function DocumentSuggestionList({
   companyId,
   excludeId,
 }: DocumentSuggestionListProps) {
+  const docTypes = useActiveDocumentTypes()
+  const canNhac = shouldWarnDuplicate(docTypes.find((type) => type.id === docTypeId))
+
   const { data, isFetching } = useDocumentSuggestions({
-    doc_type_id: docTypeId,
+    doc_type_id: canNhac ? docTypeId : 0,
     department_id: departmentId,
     company_id: companyId,
     exclude_id: excludeId,
   })
 
-  if (!data?.length) return null
+  if (!canNhac || !data?.length) return null
 
   return (
     <div
@@ -57,7 +67,8 @@ export function DocumentSuggestionList({
     >
       <p className="flex items-center gap-2 text-sm font-medium text-amber-900">
         <Info className="size-4 shrink-0" />
-        Đã có {data.length} văn bản cùng loại ở phòng này đang còn hiệu lực
+        Đã có {data.length} văn bản cùng loại ở phòng này đang còn hiệu lực — bản mới
+        có thay thế bản dưới đây không?
       </p>
       <ul className="mt-2 space-y-1">
         {data.map((item) => (

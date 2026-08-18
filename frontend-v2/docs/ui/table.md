@@ -261,7 +261,7 @@ shadcn (`hover:bg-muted/50`) bị ghi đè ở hàng tiêu đề.
 dung (chữ, huy hiệu, ảnh); để padding tự tính thì dòng có huy hiệu cao hơn hẳn
 dòng chỉ có chữ.
 
-### Năm cái bẫy CSS đã vấp — đừng vấp lại
+### Sáu cái bẫy CSS đã vấp — đừng vấp lại
 
 1. **`sticky` thead làm mất viền.** Tailwind preflight đặt
    `border-collapse: collapse`; ở chế độ đó viền thuộc về *bảng* chứ không thuộc
@@ -279,6 +279,13 @@ dòng chỉ có chữ.
    cũng phải tự thêm.
 5. **`line-clamp` bị `block` ghi đè.** `line-clamp-2` cần `display: -webkit-box`;
    viết kèm `block` trong cùng `cn(...)` là mất tác dụng, chữ tràn 3–4 dòng.
+6. **Hàng có nút bung dính nền ALPHA.** `TableRow` của shadcn có sẵn
+   `has-aria-expanded:bg-muted/50` — đặt `aria-expanded` lên một nút trong hàng
+   (nút bung nhánh con) là cả hàng nhận nền nửa trong suốt, và ô cột ghim
+   `bg-inherit` lộ nguyên phần bảng đang cuộn ngang phía sau. → Đã sửa thành
+   `has-aria-expanded:bg-muted` (đục) trong `shared/ui/table.tsx`.
+   **Cùng một luật với bẫy nền alpha ở trên** — chỗ này chỉ là một cửa nữa dẫn
+   tới nó, mở ra bằng thuộc tính a11y chứ không phải bằng class.
 
 ---
 
@@ -288,8 +295,15 @@ dòng chỉ có chữ.
 diện mạo thì viết class ở `data-table.tsx` (lớp sơn đè), giống cách
 `module-sidebar.tsx` làm với `sidebar.tsx`.
 
-Ngoại lệ duy nhất tới giờ: thêm prop `containerClassName` cho `Table`. Khung
+Hai ngoại lệ tới giờ:
+
+**(1)** thêm prop `containerClassName` cho `Table`. Khung
 cuộn nằm bên trong `Table` và không có đường nào với tới, mà đó đúng là chỗ cần
 `flex-1 overflow-auto` cho chế độ fit chiều cao. Thay đổi thuần cộng thêm, mặc
-định không đổi. Nếu buộc phải sửa primitive lần nữa: chỉ cộng thêm, không đổi
+định không đổi.
+
+**(2)** đổi `has-aria-expanded:bg-muted/50` thành `has-aria-expanded:bg-muted`
+(bẫy số 6). Đây là sửa một mặc định của shadcn chứ không phải cộng thêm, nên ghi
+rõ lý do: nền hàng có alpha làm hỏng cột ghim, mà luật này bật lên bởi một
+thuộc tính a11y (`aria-expanded`) nên không lường trước được từ tầng gọi. Nếu buộc phải sửa primitive lần nữa: chỉ cộng thêm, không đổi
 hành vi mặc định, và ghi lý do vào đây.

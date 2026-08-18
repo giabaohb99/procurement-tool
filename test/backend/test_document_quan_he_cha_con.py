@@ -188,6 +188,49 @@ def test_loai_khong_co_quy_tac_bat_buoc_thi_gui_thoai_mai(db, catalog):
     service.submit(db, quy_trinh, ACTOR)
 
 
+# ── E04b · cảnh báo TRƯỚC khi tạo: kho chưa có văn bản cha ───────────────────
+def test_chua_co_van_ban_cha_thi_bao_thieu_tien_quyet(db, catalog):
+    """Kho trống trơn: chọn loại HDCV là biết trước sẽ mắc kẹt lúc gửi duyệt."""
+    thieu = link_service.missing_prerequisites(db, catalog["HDCV"].id)
+
+    assert len(thieu) == 1
+    assert thieu[0]["target_type_name"] == "Quy trình"
+    assert thieu[0]["need"] == 1 and thieu[0]["available"] == 0
+
+
+def test_van_ban_cha_con_nham_thi_van_bao_thieu(db, catalog):
+    """Bản nháp KHÔNG tính: lát nữa ô chọn quan hệ cũng không hiện nó ra.
+
+    Đếm cả nháp thì cảnh báo im lặng đúng lúc cần nói — cha còn nằm trong ngăn
+    kéo của ai đó, người soạn con vẫn không trỏ vào được.
+    """
+    _tao(db, catalog, "QT", "Quy trình còn nháp")
+
+    thieu = link_service.missing_prerequisites(db, catalog["HDCV"].id)
+    assert len(thieu) == 1 and thieu[0]["available"] == 0
+
+
+def test_co_van_ban_cha_con_hieu_luc_thi_khong_canh_bao(db, catalog):
+    quy_trinh = _tao(db, catalog, "QT", "Quy trình đã ban hành")
+    service.submit(db, quy_trinh, ACTOR)
+    service.approve(db, quy_trinh, ACTOR)
+
+    assert link_service.missing_prerequisites(db, catalog["HDCV"].id) == []
+
+
+def test_loai_khong_co_quy_tac_bat_buoc_thi_khong_canh_bao_gi(db, catalog):
+    assert link_service.missing_prerequisites(db, catalog["QT"].id) == []
+
+
+def test_quy_tac_tat_thi_khong_con_canh_bao(db, catalog):
+    """Tắt quy tắc = từ nay không chặn gửi duyệt nữa, nên cũng thôi cảnh báo."""
+    for rule in link_service.rules_for_type(db, catalog["BM"].id):
+        rule.is_active = False
+    db.commit()
+
+    assert link_service.missing_prerequisites(db, catalog["BM"].id) == []
+
+
 # ── E06 · cây tài liệu ───────────────────────────────────────────────────────
 def test_cay_tai_lieu_hien_con_tro_vao_minh(db, catalog):
     """Mở một Quy trình thấy ngay Hướng dẫn và Biểu mẫu thuộc nó."""

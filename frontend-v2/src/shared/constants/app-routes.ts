@@ -46,6 +46,8 @@ export const appRoutes = {
     flows: '/approval/flows',
     flowNew: '/approval/flows/new',
     flowDetail: (id: number | string) => `/approval/flows/${id}`,
+    /** I26 — công tắc bật bộ máy duyệt mới theo từng loại chứng từ. */
+    engine: '/approval/engine',
     delegations: '/approval/delegations',
   },
   finance: {

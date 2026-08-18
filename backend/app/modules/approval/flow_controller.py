@@ -150,12 +150,14 @@ def delete_flow(flow_id: int, db: Session = Depends(get_db),
 
 
 @router.post("/{flow_id}/nodes")
-def add_node(flow_id: int, data: NodeIn, db: Session = Depends(get_db),
+def add_node(flow_id: int, data: NodeIn, as_branch: bool = False,
+             db: Session = Depends(get_db),
              user=Depends(require("approval_flow", "write"))):
+    """Thêm một bước. `as_branch=true` = nhánh song song của chặng đó, mặc định
+    là chèn hẳn một chặng mới tại vị trí `seq`."""
     flow = _load(db, flow_id)
-    node = ApprovalNode(flow_id=flow.id, **data.model_dump(),
-                        created_by=user.id, updated_by=user.id)
-    db.add(node)
+    node = flow_service.them_buoc(db, flow.id, data.model_dump(), user.id,
+                                  la_nhanh=as_branch)
     _len_ban_moi(db, flow, user.id)
     db.refresh(node)
     return success(serializer.node_out(db, node), "Đã thêm bước", 201)

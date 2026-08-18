@@ -3,10 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentLinkRuleForm } from '../components/document-link-rule-form'
+import { linkRuleToInput } from '../helpers/link-rule-input'
 import {
   useDeleteDocumentLinkRule,
   useDocumentLinkRule,
-  useSaveDocumentLinkRule,
+  useSaveDocumentLinkRules,
 } from '../hooks/use-document-link-rules'
 
 const FORM_ID = 'document-link-rule-form'
@@ -20,7 +21,7 @@ export function DocumentLinkRuleDetailPage() {
   const isCreating = !Number.isFinite(ruleId)
 
   const { data: rule, isLoading } = useDocumentLinkRule(isCreating ? undefined : ruleId)
-  const save = useSaveDocumentLinkRule()
+  const save = useSaveDocumentLinkRules()
   const remove = useDeleteDocumentLinkRule()
 
   const backTo = appRoutes.document.linkRules
@@ -58,15 +59,24 @@ export function DocumentLinkRuleDetailPage() {
         //  thật thay vì phải đồng bộ state bằng effect.
         key={rule?.id ?? 'new'}
         formId={FORM_ID}
-        rule={rule}
-        onSubmit={(values) =>
+        initial={rule && linkRuleToInput(rule)}
+        sourceTypeName={rule?.source_type_name}
+        //  Thêm mới cho chọn nhiều loại đích một lần; sửa thì đúng một dòng.
+        allowMultipleTargets={isCreating}
+        onSubmit={(rows) =>
           save.mutate(
-            { id: rule?.id, values },
+            { id: rule?.id, rows },
             {
-              onSuccess: (saved) => {
-                if (isCreating) {
-                  navigate(appRoutes.document.linkRuleDetail(saved.id), { replace: true })
-                }
+              onSuccess: ({ saved }) => {
+                if (!isCreating || saved.length === 0) return
+                //  Khai một dòng thì ở lại chính nó để sửa tiếp; khai nhiều thì
+                //  về danh sách — không có "dòng vừa tạo" nào để đứng lại.
+                navigate(
+                  saved.length === 1
+                    ? appRoutes.document.linkRuleDetail(saved[0].id)
+                    : appRoutes.document.linkRules,
+                  { replace: true },
+                )
               },
             },
           )

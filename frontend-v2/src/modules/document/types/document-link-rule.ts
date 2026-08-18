@@ -18,6 +18,14 @@ export interface DocTypeLinkRule {
   min_count: number
   /** 0 = không giới hạn. */
   max_count: number
+  /**
+   * THỨ TỰ tiên quyết trong cùng một loại nguồn: *"trước C phải có A rồi B"*.
+   *
+   * Chỉ quyết định thứ tự HIỆN ra (bảng quy tắc, ô quan hệ trong form soạn, danh
+   * sách cảnh báo lúc tạo) — không ép phải ban hành A xong mới soạn được B.
+   * 0 = chưa xếp.
+   */
+  sort_order: number
   /** 1 không làm gì · 2 đánh dấu con cần rà lại · 3 con hết hiệu lực theo cha. */
   on_parent_obsolete: number
   /** 1 không làm gì · 2 đánh dấu con cần rà lại · 3 hỏi người ban hành rồi ghi nhật ký. */
@@ -40,11 +48,33 @@ export interface DocTypeLinkRuleInput {
   is_required: boolean
   min_count: number
   max_count: number
+  sort_order: number
   on_parent_obsolete: number
   on_parent_new_version: number
   inherit_code: boolean
   inherit_secrecy: boolean
   is_active: boolean
+}
+
+/**
+ * Một quan hệ TIÊN QUYẾT còn thiếu, hỏi trước khi tạo văn bản (E04b).
+ *
+ * Khác `missing_required` (tính trên một văn bản ĐÃ có, đếm quan hệ đã khai):
+ * ở đây văn bản chưa ra đời, thứ đếm được là **kho văn bản** — loại bắt buộc
+ * trỏ tới có ứng viên nào còn hiệu lực để trỏ vào chưa.
+ */
+export interface DocPrerequisite {
+  /** Thứ tự người khai đã xếp — backend trả về đã sắp sẵn theo cột này. */
+  sort_order: number
+  relation: number
+  relation_label: string
+  target_type_id: number | null
+  /** Rỗng ở backend thành "Loại bất kỳ". */
+  target_type_name: string
+  /** Cần bao nhiêu văn bản đích (tối thiểu 1). */
+  need: number
+  /** Đang có bao nhiêu văn bản đích còn hiệu lực. */
+  available: number
 }
 
 export interface LinkRuleOption {

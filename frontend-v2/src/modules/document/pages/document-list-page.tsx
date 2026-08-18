@@ -1,5 +1,5 @@
-import { Plus, Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { ChevronRight, CornerDownRight, Plus, Search } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import { effectiveLabel } from '../helpers/document-status'
 import { useActiveDocumentTypes } from '../hooks/use-document-types'
@@ -43,6 +44,10 @@ export function DocumentListPage() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [typeId, setTypeId] = useUrlParamState('type', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
+  //  Bung MỘT dòng tại một thời điểm: các bản riêng phải hỏi máy chủ, mà hook
+  //  không gọi được trong vòng lặp. Mở dòng khác thì dòng đang mở tự đóng —
+  //  cũng đúng thói quen dùng: người ta soi từng bản gốc một.
+  const [dongDangBung, setDongDangBung] = useState<number | null>(null)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
@@ -56,20 +61,96 @@ export function DocumentListPage() {
     status: status === ALL ? undefined : Number(status),
   })
 
+  //  Các BẢN RIÊNG của dòng đang bung. Backend giấu chúng khỏi danh sách chung
+  //  (xem `an_ban_rieng_co_goc_xem_duoc`) nên phải hỏi đích danh theo bản gốc.
+  const { data: banRieng } = useDocuments({
+    source_document_id: dongDangBung ?? undefined,
+    page_size: 100,
+  })
+
+  //  ⚠️ Phải chặn `dongDangBung === null`: `source_document_id` của văn bản
+  //  thường cũng là `null`, mà `null === null` là TRUE — so thẳng thì lúc chưa
+  //  bung dòng nào, CẢ BẢNG bị đánh dấu là bản riêng.
+  const laConDangBung = useCallback(
+    (row: DocumentRecord) =>
+      dongDangBung !== null && row.source_document_id === dongDangBung,
+    [dongDangBung],
+  )
+
+  const rows = useMemo(() => {
+    const items = data?.items ?? []
+    if (!dongDangBung) return items
+    const con = (banRieng?.items ?? []).filter(
+      (row) => row.source_document_id === dongDangBung,
+    )
+
+    return items.flatMap((row) => (row.id === dongDangBung ? [row, ...con] : [row]))
+  }, [data?.items, banRieng?.items, dongDangBung])
+
   const columns = useMemo<DataTableColumn<DocumentRecord>[]>(
     () => [
       {
         key: 'display_code',
         header: 'Số hiệu',
-        width: 170,
+        width: 210,
         hideable: false,
         defaultPinned: true,
-        cell: (row) => (
-          <span className="font-medium text-navy">
-            {/* Chưa duyệt thì chưa có số — nói rõ chứ đừng để ô trống. */}
-            {row.display_code || <span className="text-muted-foreground">Chưa cấp số</span>}
-          </span>
-        ),
+        cell: (row) => {
+          //  Chỉ thụt lề khi dòng CHA đang nằm ngay trên nó. Người ở pháp nhân
+          //  con xem được bản riêng nhưng KHÔNG xem được bản gốc — với họ đây
+          //  là văn bản đứng một mình, kẻ mũi tên rẽ nhánh là trỏ vào một dòng
+          //  cha không tồn tại trên màn hình.
+          const laBanRieng = laConDangBung(row)
+          const soBanRieng = row.clone_count ?? 0
+
+          return (
+            <div className="flex items-center gap-1">
+              {soBanRieng > 0 ? (
+                //  Nút bung phải chặn click lan lên dòng, nếu không mỗi lần mở
+                //  nhánh là mở luôn trang chi tiết của bản gốc.
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="-ml-1 shrink-0"
+                  title={`${soBanRieng} bản riêng ở pháp nhân con`}
+                  aria-label={`Xem ${soBanRieng} bản riêng`}
+                  aria-expanded={dongDangBung === row.id}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setDongDangBung(dongDangBung === row.id ? null : row.id)
+                  }}
+                >
+                  <ChevronRight
+                    className={cn(
+                      'transition-transform',
+                      dongDangBung === row.id && 'rotate-90',
+                    )}
+                  />
+                </Button>
+              ) : (
+                //  Chừa đúng chỗ của nút để cột số hiệu của mọi dòng thẳng hàng.
+                <span className={cn('shrink-0', laBanRieng ? 'w-5' : 'w-7')} />
+              )}
+
+              {laBanRieng && (
+                <CornerDownRight className="size-3.5 shrink-0 text-muted-foreground" />
+              )}
+
+              <span
+                className={cn(
+                  'truncate',
+                  laBanRieng ? 'text-muted-foreground' : 'font-medium text-navy',
+                )}
+              >
+                {/* Chưa duyệt thì chưa có số — nói rõ chứ đừng để ô trống. */}
+                {row.display_code || (
+                  <span className="text-muted-foreground">Chưa cấp số</span>
+                )}
+              </span>
+            </div>
+          )
+        },
       },
       {
         key: 'book_number_display',
@@ -90,7 +171,13 @@ export function DocumentListPage() {
         key: 'company_name',
         header: 'Pháp nhân ban hành',
         width: 220,
-        cell: (row) => row.company_name,
+        cell: (row) => (
+          //  Với BẢN RIÊNG đang bung, pháp nhân là thứ duy nhất phân biệt nó
+          //  với bản gốc (tiêu đề chép nguyên) — tô đậm để mắt bám vào cột đó.
+          <span className={cn('truncate', laConDangBung(row) && 'font-medium')}>
+            {row.company_name}
+          </span>
+        ),
       },
       {
         key: 'department_name',
@@ -174,7 +261,7 @@ export function DocumentListPage() {
         cell: (row) => (row.attachment_count ? String(row.attachment_count) : ''),
       },
     ],
-    [],
+    [dongDangBung, laConDangBung],
   )
 
   return (
@@ -195,7 +282,7 @@ export function DocumentListPage() {
       <Card className="flex min-h-0 flex-1 flex-col p-4">
         <DataTable
           columns={columns}
-          rows={data?.items}
+          rows={rows}
           getRowId={(row) => row.id}
           storageKey="document.records"
           fillHeight

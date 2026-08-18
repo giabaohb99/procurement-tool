@@ -22,6 +22,8 @@ import { ApprovalNodeAdvanced } from './approval-node-advanced'
 interface ApprovalNodeFormProps {
   /** Bỏ trống = thêm bước mới. */
   node?: ApprovalNode
+  /** Loại chứng từ của luồng — quyết định ô nào đem ra rẽ nhánh được. */
+  entity: string
   seqGoiY: number
   isPending?: boolean
   onSubmit: (values: Partial<ApprovalNode>) => void
@@ -48,6 +50,7 @@ const GOI_Y_REF: Record<number, string> = {
  */
 export function ApprovalNodeForm({
   node,
+  entity,
   seqGoiY,
   isPending,
   onSubmit,
@@ -192,6 +195,7 @@ export function ApprovalNodeForm({
           form={form}
           options={options}
           employees={employeePage?.items ?? []}
+          entity={entity}
           onChange={dat}
         />
       )}
