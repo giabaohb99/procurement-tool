@@ -37,6 +37,9 @@ def flow_out(db: Session, flow: ApprovalFlow, kem_buoc: bool = False) -> dict:
         "priority": flow.priority,
         "condition": flow.condition,
         "node_count": len(flow_service.nodes_of(db, flow.id)),
+        #  Hai luồng mặc định cùng bật thì chỉ một cái chạy — nói ra ngay trên
+        #  dòng danh sách, xem `flow_service.canh_bao_trung_mac_dinh`.
+        "duplicate_default_warning": flow_service.canh_bao_trung_mac_dinh(db, flow),
     }
     if kem_buoc:
         data["nodes"] = [node_out(db, node) for node in flow_service.nodes_of(db, flow.id)]

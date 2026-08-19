@@ -13,21 +13,30 @@ from typing import Callable
 
 from sqlalchemy.orm import Session
 
-#  entity → {"approved": fn, "rejected": fn, "returned": fn}
+#  entity → {"approved": fn, "rejected": fn, "returned": fn, "withdrawn": fn}
 _HOOKS: dict[str, dict[str, Callable]] = {}
 
 
 def register(entity: str, *, on_approved: Callable | None = None,
              on_rejected: Callable | None = None,
-             on_returned: Callable | None = None) -> None:
+             on_returned: Callable | None = None,
+             on_withdrawn: Callable | None = None) -> None:
     """Khai hàm chạy khi phiên duyệt của loại chứng từ này kết thúc.
 
     Mỗi hàm nhận `(db, entity_id, instance)`.
+
+    ⚠️ `on_withdrawn` bổ sung 19/08/2026 và là **bốn kết cục, không phải ba**.
+    Thiếu nó thì người nộp rút phiếu xong chứng từ vẫn nằm ở *đang duyệt*:
+    không gửi duyệt lại được (đường gửi chỉ nhận bản nháp) mà nút duyệt MỘT
+    BƯỚC thì mở lại — vì chốt chặn chỉ khóa khi phiên còn ĐANG CHẠY. Đã dựng
+    được ca thật: văn bản lên có hiệu lực, cấp số, trong khi phiên duyệt ghi
+    «Đã rút» và không ai ký bước nào.
     """
     _HOOKS[entity] = {
         "approved": on_approved,
         "rejected": on_rejected,
         "returned": on_returned,
+        "withdrawn": on_withdrawn,
     }
 
 

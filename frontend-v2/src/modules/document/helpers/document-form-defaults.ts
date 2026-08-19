@@ -20,7 +20,10 @@ export function emptyDocumentForm(): DocumentRecordFormValues {
   return {
     doc_type_id: 0,
     company_id: 0,
-    department_id: null,
+    //  0 = chưa chọn. Phòng chủ trì BẮT BUỘC (bước đầu luồng duyệt hỏi trưởng
+    //  bộ phận của phòng này) nên nó đi cùng kiểu với các ô bắt buộc khác, chứ
+    //  không còn `null` như ô tùy chọn.
+    department_id: 0,
     book_id: null,
     owner_employee_id: 0,
     drafter_employee_id: null,
@@ -43,7 +46,9 @@ export function documentToForm(record: DocumentRecord): DocumentRecordFormValues
   return {
     doc_type_id: record.doc_type_id,
     company_id: record.company_id,
-    department_id: record.department_id,
+    //  Văn bản cũ lập trước ngày phòng chủ trì thành bắt buộc có thể còn rỗng —
+    //  đưa về 0 để ô select hiện "chưa chọn" và bắt người sửa chọn một phòng.
+    department_id: record.department_id ?? 0,
     book_id: record.book_id,
     owner_employee_id: record.owner_employee_id,
     drafter_employee_id: record.drafter_employee_id,

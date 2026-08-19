@@ -115,9 +115,28 @@ def _khi_tra_lai(db: Session, document_id: int, instance) -> None:
     _khi_tu_choi(db, document_id, instance)
 
 
+def _khi_rut_lai(db: Session, document_id: int, instance) -> None:
+    """Người nộp tự rút phiếu → văn bản VỀ NHÁP, sửa rồi gửi duyệt lại từ đầu.
+
+    Phải có nhịp này, không thì rút xong văn bản kẹt ở *đang duyệt*: gửi duyệt
+    lại không được (đường gửi chỉ nhận bản nháp), mà nút ban hành MỘT BƯỚC lại
+    mở ra vì `chan_duong_cu` chỉ khóa khi phiên còn đang chạy — thành đường tắt
+    ban hành không ai ký. Dùng lại `service.reject()` chứ không tự đặt trạng
+    thái: luật "bản đầu về nháp, bản thứ hai giữ nguyên vì bản trước còn hiệu
+    lực" nằm ở đó, chép ra đây là sớm muộn hai bên lệch nhau.
+    """
+    from . import service
+
+    doc = db.get(Document, document_id)
+    if doc is not None:
+        service.reject(db, doc, f"[Rút phiếu] {instance.finish_reason or ''}".strip(),
+                       instance.updated_by or 0)
+
+
 entity_hooks.register(
     ENTITY,
     on_approved=_khi_duyet_xong,
     on_rejected=_khi_tu_choi,
     on_returned=_khi_tra_lai,
+    on_withdrawn=_khi_rut_lai,
 )

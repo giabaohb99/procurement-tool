@@ -1,4 +1,4 @@
-import { Plus, Power, Search, Trash2 } from 'lucide-react'
+import { Plus, Power, Search, Trash2, TriangleAlert } from 'lucide-react'
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -111,9 +111,26 @@ function ApprovalFlowListContent() {
         hideable: false,
         cell: (row) => (
           <div className="min-w-0">
-            <div className="truncate font-medium">{row.name}</div>
+            <div className="flex items-center gap-1.5">
+              <span className="truncate font-medium">{row.name}</span>
+              {/*  Hai luồng mặc định cùng bật thì chỉ một cái chạy — dấu hiệu
+                  phải nằm ngay cạnh TÊN, chỗ mắt dừng lại đầu tiên. */}
+              {row.duplicate_default_warning && (
+                <TriangleAlert
+                  className="size-4 shrink-0 text-amber-600"
+                  aria-label={row.duplicate_default_warning}
+                >
+                  <title>{row.duplicate_default_warning}</title>
+                </TriangleAlert>
+              )}
+            </div>
             {row.code && (
               <div className="truncate font-mono text-xs text-muted-foreground">{row.code}</div>
+            )}
+            {row.duplicate_default_warning && (
+              <div className="mt-0.5 text-xs text-amber-700 dark:text-amber-500">
+                {row.duplicate_default_warning}
+              </div>
             )}
           </div>
         ),

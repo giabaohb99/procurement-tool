@@ -104,12 +104,52 @@ def test_chua_vao_bo_may_thi_khong_chan_gi(db, seed):
     db.add(doc_type)
     db.flush()
     doc = service.create_document(db, DocumentCreate(
-        doc_type_id=doc_type.id, company_id=seed.company_id,
+        doc_type_id=doc_type.id, company_id=seed.company_id, department_id=seed.dept_id,
         owner_employee_id=seed.emp_req_id, title="Thông báo nghỉ lễ",
         content_html="<p>Nội dung.</p>",
     ), ACTOR)
 
     approval_bridge.chan_duong_cu(db, doc)   # không được ném lỗi
+
+
+def test_thieu_phong_chu_tri_thi_chan_ngay_luc_tao(db, seed):
+    """Bước đầu luồng hỏi trưởng bộ phận CỦA PHÒNG CHỦ TRÌ.
+
+    Không có phòng thì phiên duyệt chốt ở trạng thái KẸT ngay khi vừa gửi, và
+    văn bản không đi tiếp được bằng đường nào — chặn từ lúc tạo rẻ hơn nhiều.
+    """
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        DocumentCreate(doc_type_id=1, company_id=seed.company_id,
+                       owner_employee_id=seed.emp_req_id, title="Thiếu phòng")
+
+
+# ── 1b · rút phiếu thì văn bản phải VỀ NHÁP ─────────────────────────────────
+
+def test_rut_phieu_thi_van_ban_ve_nhap_va_khong_con_duong_tat(db, canh):
+    """Ca thật bắt được 19/08/2026.
+
+    Trước đây rút phiếu chỉ đóng phiên duyệt, văn bản nằm lại ở *đang duyệt*:
+    gửi duyệt lại không được (đường gửi chỉ nhận bản nháp), mà chốt chặn thì mở
+    ra vì phiên hết chạy — thành ra ban hành thẳng được một văn bản không ai ký.
+    """
+    from app.modules.document.model import STATUS_DRAFT
+
+    action_service.rut_lai(db, canh["phien"], canh["doc"].owner_employee_id,
+                           ACTOR, "gửi nhầm bản")
+
+    db.refresh(canh["doc"])
+    assert canh["doc"].status == STATUS_DRAFT
+    assert not canh["doc"].doc_code
+
+    #  Về nháp thì không còn bản nào "đang chờ duyệt" để mà ban hành thẳng.
+    with pytest.raises(HTTPException):
+        service.approve(db, canh["doc"], ACTOR)
+
+    #  Và gửi duyệt lại được — đây là đường đi tiếp đúng.
+    service.submit(db, canh["doc"], ACTOR)
+    assert canh["doc"].status == STATUS_SUBMITTED
 
 
 # ── 2 · hỏng thì phải nói ra ────────────────────────────────────────────────

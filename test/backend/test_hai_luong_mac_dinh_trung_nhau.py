@@ -1,0 +1,85 @@
+"""CẢNH BÁO KHI HAI LUỒNG MẶC ĐỊNH CÙNG BẬT (19/08/2026).
+
+Ca thật bắt được lúc chạy thử luồng văn thư: hai luồng `document` cùng đang bật
+và cùng KHÔNG khai điều kiện — «Ban hành văn bản hành chính» (bước 1 có người dự
+phòng) và «Ban hành văn bản (mặc định)» (bước 1 chặn cứng). `chon_luong` lấy
+đúng một cái, cái còn lại nằm im vĩnh viễn mà không có gì báo. Hệ quả: văn bản
+thiếu người duyệt thì phiếu KẸT, trong khi người khai đinh ninh nó rơi về người
+dự phòng như luồng kia khai.
+
+Hệ không cấm khai hai luồng mặc định — có lúc người ta đang dựng dần luồng mới.
+Nhưng phải NÓI RA, ngay trên dòng danh sách và ngay lúc bấm lưu.
+"""
+from app.modules.approval import flow_service
+from app.modules.approval.flow_model import ApprovalFlow
+
+ACTOR = 1
+
+
+def _luong(db, name: str, *, condition: str = "", is_active: bool = True,
+           priority: int = 0, company_id=None, entity: str = "document") -> ApprovalFlow:
+    flow = ApprovalFlow(entity=entity, code=name[:20], name=name, condition=condition,
+                        is_active=is_active, priority=priority, company_id=company_id,
+                        created_by=ACTOR, updated_by=ACTOR)
+    db.add(flow)
+    db.commit()
+    db.refresh(flow)
+    return flow
+
+
+def test_mot_luong_mac_dinh_thi_khong_canh_bao_gi(db):
+    flow = _luong(db, "Ban hành văn bản")
+
+    assert flow_service.canh_bao_trung_mac_dinh(db, flow) == ""
+
+
+def test_hai_luong_mac_dinh_cung_bat_thi_goi_ten_ca_hai(db):
+    thang = _luong(db, "Ban hành văn bản (mặc định)", priority=5)
+    bi_che = _luong(db, "Ban hành văn bản hành chính", priority=1)
+
+    canh_bao = flow_service.canh_bao_trung_mac_dinh(db, bi_che)
+
+    assert "Ban hành văn bản (mặc định)" in canh_bao
+    assert "Ban hành văn bản hành chính" in canh_bao
+    #  Phải nói rõ CÁI NÀO chạy, không chỉ "có trùng".
+    assert f"chỉ «{thang.name}» chạy" in canh_bao
+    #  Cái đang thắng cũng thấy cảnh báo — người mở luồng nào cũng phải biết.
+    assert flow_service.canh_bao_trung_mac_dinh(db, thang) != ""
+
+
+def test_luong_co_dieu_kien_khong_tinh_la_trung(db):
+    _luong(db, "Ban hành văn bản (mặc định)")
+    co_dieu_kien = _luong(db, "Văn bản mật", condition='{"secrecy_level": 3}')
+
+    assert flow_service.canh_bao_trung_mac_dinh(db, co_dieu_kien) == ""
+
+
+def test_luong_da_tat_khong_tinh_la_trung(db):
+    _luong(db, "Ban hành văn bản (mặc định)", is_active=False)
+    dang_bat = _luong(db, "Ban hành văn bản hành chính")
+
+    assert flow_service.canh_bao_trung_mac_dinh(db, dang_bat) == ""
+
+
+def test_khac_loai_chung_tu_thi_khong_dinh_gi_den_nhau(db):
+    _luong(db, "Duyệt YCMH", entity="purchase_request")
+    van_ban = _luong(db, "Ban hành văn bản")
+
+    assert flow_service.canh_bao_trung_mac_dinh(db, van_ban) == ""
+
+
+def test_hai_luong_khai_cho_hai_phap_nhan_khac_nhau_thi_khong_trung(db):
+    """Luồng khai riêng cho một pháp nhân chỉ va nhau khi CÙNG pháp nhân."""
+    _luong(db, "Ban hành — Công ty A", company_id=1)
+    cong_ty_b = _luong(db, "Ban hành — Công ty B", company_id=2)
+
+    assert flow_service.canh_bao_trung_mac_dinh(db, cong_ty_b) == ""
+
+
+def test_luong_toan_he_va_luong_theo_phap_nhan_thi_van_che_nhau(db):
+    """Luồng để trống pháp nhân áp cho MỌI pháp nhân, nên nó và luồng của một
+    pháp nhân cụ thể vẫn tranh nhau ở đúng pháp nhân đó."""
+    _luong(db, "Ban hành toàn hệ")
+    rieng = _luong(db, "Ban hành — Công ty A", company_id=1)
+
+    assert flow_service.canh_bao_trung_mac_dinh(db, rieng) != ""

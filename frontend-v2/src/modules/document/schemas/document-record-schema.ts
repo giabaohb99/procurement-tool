@@ -15,7 +15,10 @@ export const documentRecordSchema = z
   .object({
     doc_type_id: z.coerce.number().int().positive('Chọn loại văn bản'),
     company_id: z.coerce.number().int().positive('Chọn pháp nhân ban hành'),
-    department_id: z.coerce.number().int().nullable(),
+    //  Bắt buộc: bước đầu luồng duyệt là «trưởng bộ phận của phòng chủ trì»,
+    //  bỏ trống thì gửi duyệt xong phiên chốt ở trạng thái KẸT và văn bản không
+    //  đi tiếp được bằng đường nào.
+    department_id: z.coerce.number().int().positive('Chọn phòng chủ trì'),
     //  Sổ văn bản: không bắt buộc. Vào sổ thì được cấp thêm số thứ tự trong sổ,
     //  và mọi thành viên của sổ đọc được văn bản này.
     book_id: z.coerce.number().int().nullable(),

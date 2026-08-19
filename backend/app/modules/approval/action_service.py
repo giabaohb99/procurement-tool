@@ -199,6 +199,10 @@ def rut_lai(db: Session, instance: ApprovalInstance, actor_employee_id: int,
     instance.finished_at = datetime.now()
     instance.finish_reason = ly_do
     instance.updated_by = actor
+    #  Trả chứng từ về chỗ SỬA ĐƯỢC. Không có nhịp này thì phiếu rút xong nằm
+    #  lại ở *đang duyệt*: gửi duyệt lại không được, mà nút duyệt một bước lại
+    #  mở ra — thành đường tắt đi vòng qua cả luồng. Xem `entity_hooks.register`.
+    entity_hooks.fire(db, instance, "withdrawn")
     db.commit()
     db.refresh(instance)
     return instance

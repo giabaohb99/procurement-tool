@@ -130,6 +130,56 @@ def chon_luong(db: Session, entity: str, subject: dict) -> ApprovalFlow | None:
     return mac_dinh
 
 
+def luong_mac_dinh_bi_che(db: Session, flow: ApprovalFlow) -> list[ApprovalFlow]:
+    """Những luồng MẶC ĐỊNH khác cùng phạm vi — chỉ một cái trong số đó chạy.
+
+    "Mặc định" = đang bật và KHÔNG khai điều kiện. `chon_luong` lấy đúng cái đầu
+    tiên theo `priority` giảm dần rồi `id` tăng dần, nên khai cái thứ hai là nó
+    nằm im vĩnh viễn mà không có gì báo — đã gặp thật ở dữ liệu chạy thử ngày
+    19/08/2026: luồng có người dự phòng bị một luồng chặn-cứng che mất, phiếu
+    thiếu người duyệt là kẹt luôn thay vì rơi về người dự phòng.
+
+    Trả về danh sách BỊ CHE nếu `flow` là cái thắng, hoặc chính cái thắng nếu
+    `flow` là cái bị che — người khai cần biết tên cụ thể, không phải một câu
+    chung chung "có trùng".
+    """
+    if not flow.is_active or (flow.condition or "").strip():
+        return []
+
+    cung_pham_vi = (
+        db.query(ApprovalFlow)
+        .filter(ApprovalFlow.entity == flow.entity,
+                ApprovalFlow.is_active.is_(True),
+                ApprovalFlow.id != flow.id)
+        .order_by(ApprovalFlow.priority.desc(), ApprovalFlow.id.asc())
+        .all()
+    )
+    return [
+        khac for khac in cung_pham_vi
+        if not (khac.condition or "").strip()
+        #  Luồng khai riêng cho một pháp nhân chỉ đụng nhau khi CÙNG pháp nhân
+        #  (hoặc cả hai đều để trống = áp cho mọi pháp nhân).
+        and (not flow.company_id or not khac.company_id
+             or str(flow.company_id) == str(khac.company_id))
+    ]
+
+
+def canh_bao_trung_mac_dinh(db: Session, flow: ApprovalFlow) -> str:
+    """Câu cảnh báo cho giao diện, rỗng nếu không trùng ai."""
+    trung = luong_mac_dinh_bi_che(db, flow)
+    if not trung:
+        return ""
+
+    xep = sorted([flow, *trung], key=lambda row: (-row.priority, row.id))
+    thang = xep[0]
+    ten_con_lai = ", ".join(f"«{row.name}»" for row in xep[1:])
+    return (
+        f"Đang có {len(xep)} luồng mặc định (không khai điều kiện) cùng bật cho "
+        f"«{flow.entity}»: chỉ «{thang.name}» chạy, {ten_con_lai} sẽ không bao giờ "
+        "được chọn. Khai điều kiện hoặc tắt bớt để khỏi tưởng nhầm là đang chạy."
+    )
+
+
 def snapshot(db: Session, flow: ApprovalFlow) -> str:
     """Chụp lại luồng lúc phiếu bắt đầu chạy (I21).
 

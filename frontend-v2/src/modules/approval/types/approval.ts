@@ -97,6 +97,11 @@ export interface ApprovalFlow {
   priority: number
   condition: string
   node_count: number
+  /**
+   * Câu cảnh báo khi có luồng MẶC ĐỊNH khác cùng bật cho loại chứng từ này —
+   * chỉ một trong số đó được chọn, các luồng còn lại nằm im. Rỗng = không trùng.
+   */
+  duplicate_default_warning: string
   nodes?: ApprovalNode[]
 }
 

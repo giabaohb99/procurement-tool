@@ -50,6 +50,16 @@ class DocumentCreate(DocumentBase):
     mở đường cho hai người cùng gửi một số.
     """
 
+    #  PHÒNG CHỦ TRÌ bắt buộc khi TẠO (19/08/2026), dù bộ trường chung vẫn cho
+    #  rỗng vì văn bản cũ và văn bản pháp luật ngoài không có phòng nào.
+    #
+    #  Lý do: bước đầu của luồng duyệt là «trưởng bộ phận của phòng chủ trì».
+    #  Không có phòng thì không tìm ra người duyệt, phiên duyệt chốt ở trạng thái
+    #  KẸT ngay khi vừa gửi, và văn bản không đi tiếp được bằng đường nào —
+    #  đã dựng lại được đúng ca đó ngày 19/08. Chặn ở lúc tạo rẻ hơn nhiều so với
+    #  gỡ một phiếu đã kẹt.
+    department_id: int
+
     #  Nội dung của phiên bản 1.0. Để trống rồi gõ sau ở màn soạn thảo cũng được.
     content_html: str = ""
 

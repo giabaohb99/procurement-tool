@@ -238,10 +238,14 @@ export function DocumentMainInfoFields({
         name="department_id"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Phòng chủ trì</FormLabel>
+            <FormLabel>
+              Phòng chủ trì<span className="text-destructive"> *</span>
+            </FormLabel>
+            {/*  Không còn mục "-- Chưa chọn --": bước đầu luồng duyệt hỏi trưởng
+                bộ phận CỦA PHÒNG NÀY, để trống là phiếu duyệt kẹt ngay khi gửi. */}
             <Select
-              value={field.value ? String(field.value) : NONE}
-              onValueChange={(value) => field.onChange(value === NONE ? null : Number(value))}
+              value={field.value ? String(field.value) : undefined}
+              onValueChange={(value) => field.onChange(Number(value))}
             >
               <FormControl>
                 <SelectTrigger className="w-full">
@@ -249,7 +253,6 @@ export function DocumentMainInfoFields({
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem value={NONE}>-- Chưa chọn --</SelectItem>
                 {departmentOptions.map((department) => (
                   <SelectItem key={department.id} value={String(department.id)}>
                     {department.name}

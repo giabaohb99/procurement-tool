@@ -118,7 +118,11 @@ def create_flow(data: FlowIn, db: Session = Depends(get_db),
     db.commit()
     db.refresh(flow)
     record(db, user.id, "approval_flow", flow.id, "create", flow.name)
-    return success(serializer.flow_out(db, flow), "Đã tạo luồng duyệt", 201)
+    #  Trùng luồng mặc định thì báo NGAY lúc lưu, không đợi người khai tự phát
+    #  hiện phiếu đang chạy theo một luồng khác cái họ vừa sửa.
+    canh_bao = flow_service.canh_bao_trung_mac_dinh(db, flow)
+    return success(serializer.flow_out(db, flow),
+                   f"Đã tạo luồng duyệt. ⚠ {canh_bao}" if canh_bao else "Đã tạo luồng duyệt", 201)
 
 
 @router.get("/{flow_id}")
@@ -134,7 +138,9 @@ def update_flow(flow_id: int, data: FlowIn, db: Session = Depends(get_db),
     for ten, gia_tri in data.model_dump().items():
         setattr(flow, ten, gia_tri)
     _len_ban_moi(db, flow, user.id)
-    return success(serializer.flow_out(db, flow, kem_buoc=True), "Đã lưu luồng duyệt")
+    canh_bao = flow_service.canh_bao_trung_mac_dinh(db, flow)
+    return success(serializer.flow_out(db, flow, kem_buoc=True),
+                   f"Đã lưu luồng duyệt. ⚠ {canh_bao}" if canh_bao else "Đã lưu luồng duyệt")
 
 
 @router.delete("/{flow_id}")

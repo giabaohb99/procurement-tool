@@ -16,6 +16,7 @@ function luong(overrides: Partial<ApprovalFlow> = {}): ApprovalFlow {
     priority: 0,
     condition: '',
     node_count: 2,
+    duplicate_default_warning: '',
     ...overrides,
   }
 }
