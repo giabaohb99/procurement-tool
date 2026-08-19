@@ -132,8 +132,25 @@ def create_document(db: Session, data: DocumentCreate, actor: int) -> Document:
     return doc
 
 
+def chan_sua_khi_dang_duyet(doc: Document) -> None:
+    """Văn bản ĐANG TRÌNH DUYỆT thì đóng băng cả bộ trường chung (19/08/2026).
+
+    Không chỉ thân văn bản: đổi **mức mật** hay **tiêu đề** dưới tay người duyệt
+    cũng là đưa họ ký một thứ khác với thứ họ đọc. Đã dựng lại được — gửi duyệt
+    xong `PATCH /documents/{id}` vẫn trả 200 và nâng được mức mật lên "Mật".
+
+    Cùng luật với nội dung, xem `version_service.chan_khi_dang_duyet`: muốn sửa
+    thì rút phiếu → văn bản về Nháp.
+    """
+    if doc.status == STATUS_SUBMITTED:
+        raise HTTPException(409, "Văn bản đang trình duyệt nên khóa thông tin. "
+                                 "Muốn sửa thì rút phiếu duyệt (hoặc chờ người duyệt trả lại).")
+
+
 def update_document(db: Session, doc: Document, data: DocumentUpdate, actor: int) -> Document:
     """Sửa bộ trường chung. Không đụng nội dung (ở phiên bản) và không đụng số hiệu."""
+    chan_sua_khi_dang_duyet(doc)
+
     values = data.model_dump(exclude_unset=True)
     numbered = bool(doc.doc_code or doc.issue_number)
 

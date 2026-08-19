@@ -22,7 +22,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.base_model import AuditMixin, Base
 
 VERSION_DRAFT = 1       # nháp — đang gõ, sửa được
-VERSION_SUBMITTED = 2   # đang duyệt — vẫn sửa được (trả lại thì gõ tiếp)
+VERSION_SUBMITTED = 2   # đang duyệt — ĐÓNG BĂNG (rút phiếu / bị trả lại thì về nháp)
 VERSION_APPROVED = 3    # đã duyệt — KHÓA, bất biến
 VERSION_SUPERSEDED = 4  # đã bị phiên bản sau thay thế
 
@@ -33,8 +33,13 @@ VERSION_STATUS_LABELS = {
     VERSION_SUPERSEDED: "Đã thay thế",
 }
 
-#  Phiên bản còn "đang mở" = còn sửa được. Đúng hai trạng thái này, và đây cũng
-#  là điều kiện của cột sinh `open_slot` bên dưới — sửa một chỗ phải sửa cả hai.
+#  Phiên bản còn "đang mở" = CHƯA CHỐT, tức là còn đường quay lại sửa. Đúng hai
+#  trạng thái này, và đây cũng là điều kiện của cột sinh `open_slot` bên dưới —
+#  sửa một chỗ phải sửa cả hai.
+#
+#  ⚠️ "Đang mở" KHÁC "đang ghi được": bản ở trạng thái đang duyệt vẫn giữ chỗ
+#  `open_slot` (chưa mở được bản nháp thứ hai) nhưng KHÔNG ghi nội dung được
+#  nữa — xem `version_service.chan_khi_dang_duyet`.
 OPEN_STATUSES = (VERSION_DRAFT, VERSION_SUBMITTED)
 
 CHANGE_MAJOR = 1  # sửa lớn → lên 2.0, mặc định bắt xác nhận lại

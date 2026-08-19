@@ -22,7 +22,7 @@ from .schema import VersionContentUpdate, VersionCreate
 from .serializer import holder_name
 from .service import ATTACH_ENTITY, open_version
 from .version_model import (CHANGE_MAJOR, VERSION_APPROVED, VERSION_DRAFT,
-                            DocumentVersion)
+                            VERSION_SUBMITTED, DocumentVersion)
 
 
 def list_versions(db: Session, doc: Document) -> list[DocumentVersion]:
@@ -150,6 +150,30 @@ def _require_open(db: Session, version: DocumentVersion):
     if version.is_locked or version.status == VERSION_APPROVED:
         raise HTTPException(409, f"Phiên bản {version.version_no} đã duyệt, không sửa được. "
                                  "Muốn sửa thì mở phiên bản mới.")
+    chan_khi_dang_duyet(version)
+
+
+def chan_khi_dang_duyet(version: DocumentVersion) -> None:
+    """ĐANG TRÌNH DUYỆT thì đóng băng — 409 (19/08/2026).
+
+    Trước đây bản «đang duyệt» vẫn ghi được, với lý do "trả lại thì gõ tiếp".
+    Lý do đó chết từ D-029: bị trả lại hay rút phiếu là văn bản **về Nháp** rồi
+    mới gõ tiếp, nên không cần mở cửa trong lúc đang duyệt nữa.
+
+    Mở cửa lúc đó là một lỗ hổng thật, đã dựng lại được: người duyệt đọc bản A,
+    người soạn sửa thành bản B, người duyệt bấm Duyệt → **ban hành bản B mà
+    không ai đọc**. Luồng nhiều bước còn tệ hơn — bước 1 ký trên bản A, bước 2
+    ký trên bản B, dấu vết ghi "đã duyệt" cho cả hai. `content_sha256` chỉ tính
+    lúc khóa nên sau đó không còn gì để đối chiếu ngược.
+
+    Đường ra cho người soạn: **Rút phiếu** (hoặc người duyệt trả lại) → văn bản
+    về Nháp → sửa tiếp. Không ai bị kẹt.
+    """
+    if version.status == VERSION_SUBMITTED:
+        raise HTTPException(409,
+                            f"Phiên bản {version.version_no} đang trình duyệt nên khóa nội dung. "
+                            "Muốn sửa thì rút phiếu duyệt (hoặc chờ người duyệt trả lại) — "
+                            "văn bản về Nháp rồi sửa tiếp.")
 
 
 def _copy_attachments(db: Session, from_version_id: int, to_version_id: int, actor: int):

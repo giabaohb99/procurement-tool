@@ -15,6 +15,12 @@ interface DocumentRecordFormProps {
   isNumbered: boolean
   /** Văn bản đang sửa — bỏ chính nó ra khỏi khối gợi ý văn bản trùng. */
   documentId?: number
+  /**
+   * Khóa BỘ TRƯỜNG CHUNG (đang trình duyệt). Chỉ khóa hai thẻ trường ở trên —
+   * phạm vi áp dụng và chia quyền đọc nằm trong `children` và vẫn sửa được:
+   * chúng không phải nội dung mà người duyệt đang đọc.
+   */
+  readOnly?: boolean
   onSubmit: (values: DocumentRecordFormValues) => void
   children?: ReactNode
 }
@@ -32,25 +38,30 @@ export function DocumentRecordForm({
   form,
   isNumbered,
   documentId,
+  readOnly = false,
   onSubmit,
   children,
 }: DocumentRecordFormProps) {
   return (
     <Form {...form}>
       <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormCard title="Thông tin chính" icon={Info} iconClassName="text-primary">
-          <DocumentMainInfoFields
-            form={form}
-            isNumbered={isNumbered}
-            excludeId={documentId}
-          />
-        </FormCard>
+        {/* `fieldset disabled` khóa MỌI ô bên trong bằng đúng cơ chế của trình
+            duyệt — chắc hơn là đi truyền `disabled` xuống từng ô rồi quên một ô. */}
+        <fieldset disabled={readOnly} className="space-y-4">
+          <FormCard title="Thông tin chính" icon={Info} iconClassName="text-primary">
+            <DocumentMainInfoFields
+              form={form}
+              isNumbered={isNumbered}
+              excludeId={documentId}
+            />
+          </FormCard>
 
-        {/* Cùng thứ tự và cùng biểu tượng với hai bước của trang tạo mới — đảo
-            đi thì người dùng phải dò lại xem ô mình vừa khai nằm ở đâu. */}
-        <FormCard title="Thông tin bổ sung" icon={Layers} iconClassName="text-emerald-600">
-          <DocumentExtraInfoFields form={form} />
-        </FormCard>
+          {/* Cùng thứ tự và cùng biểu tượng với hai bước của trang tạo mới — đảo
+              đi thì người dùng phải dò lại xem ô mình vừa khai nằm ở đâu. */}
+          <FormCard title="Thông tin bổ sung" icon={Layers} iconClassName="text-emerald-600">
+            <DocumentExtraInfoFields form={form} />
+          </FormCard>
+        </fieldset>
 
         {/* Tệp đính kèm và bảng chia sẻ nằm trong cùng thẻ `<form>` để nút Lưu
             trên header gom được tất cả. */}

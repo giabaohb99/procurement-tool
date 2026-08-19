@@ -72,6 +72,28 @@ def _check(db: Session, user, entity: str, mode: str):
     return exts, max_mb
 
 
+def _chan_ban_dang_duyet(db: Session, entity: str, entity_id: int):
+    """Đính kèm của VĂN BẢN đang trình duyệt thì khóa (19/08/2026).
+
+    Bộ đính kèm là một phần hồ sơ trình duyệt: thêm hay gỡ một tệp trong lúc
+    người duyệt đang đọc cũng là đổi thứ họ sắp ký, y như sửa thân văn bản
+    (xem `document/version_service.chan_khi_dang_duyet`).
+
+    Kiểm ở đây chứ không ở tầng `_check` chung: `FILE_POLICY` chỉ biết entity
+    cha là `document` nên nó kiểm được QUYỀN, không biết TRẠNG THÁI của đúng
+    phiên bản đang bị gắn tệp. Import cục bộ để không tạo vòng import — cùng
+    cách `_check_comment` làm với phân hệ bình luận.
+    """
+    if entity != "document_version":
+        return
+    from app.modules.document.version_model import DocumentVersion
+    from app.modules.document.version_service import chan_khi_dang_duyet
+
+    version = db.get(DocumentVersion, entity_id)
+    if version:
+        chan_khi_dang_duyet(version)
+
+
 def _check_comment(db: Session, user, comment_id: int, mode: str):
     """Quyền với đính kèm của MỘT bình luận (CR-033).
 
@@ -187,6 +209,7 @@ def upload(
     """Upload + gắn luôn (record đã có id) — tương thích FE cũ."""
     _deny_comment(entity)
     exts, max_mb = _check(db, user, entity, "manage")
+    _chan_ban_dang_duyet(db, entity, entity_id)
     _valid_doc_type(doc_type)
     out = []
     for f in files:
@@ -224,6 +247,7 @@ def register_files(data: RegisterIn, db: Session = Depends(get_db), user=Depends
     """Gắn các file ĐÃ upload (theo file_id) vào 1 record — khi record vừa có id."""
     _deny_comment(data.entity)
     _check(db, user, data.entity, "manage")
+    _chan_ban_dang_duyet(db, data.entity, data.entity_id)
     _valid_doc_type(data.doc_type)
     out = []
     for fid in data.file_ids:
@@ -409,6 +433,7 @@ def remove(link_id: int, db: Session = Depends(get_db), user=Depends(get_current
         _check_comment(db, user, lk.entity_id, "manage")
     else:
         _check(db, user, lk.entity, "manage")
+        _chan_ban_dang_duyet(db, lk.entity, lk.entity_id)
     fid = lk.file_id
     db.delete(lk); db.flush()
     _delete_file_if_orphan(db, fid)      # còn dùng chỗ khác thì giữ file

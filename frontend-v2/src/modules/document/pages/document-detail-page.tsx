@@ -48,6 +48,7 @@ import { DocumentExcerptDialog } from '../components/document-excerpt-dialog'
 import { DocumentImportButton } from '../components/document-import-button'
 import { DocumentIssueDialog } from '../components/document-issue-dialog'
 import { DocumentNeedsReviewBanner } from '../components/document-needs-review-banner'
+import { DocumentSubmittedLockNotice } from '../components/document-submitted-lock-notice'
 import { useCreateExcerpt } from '../hooks/use-document-links'
 import { ManualIssueNumberDialog } from '../components/manual-issue-number-dialog'
 import { documentToForm, emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
@@ -189,6 +190,12 @@ export function DocumentDetailPage() {
     ? openVersion.status === VERSION_STATUS.submitted
     : record?.status === DOCUMENT_STATUS.submitted
 
+  //  ĐANG TRÌNH DUYỆT thì đóng băng nội dung VÀ bộ trường chung (19/08/2026).
+  //  Backend đã chặn (`version_service.chan_khi_dang_duyet`,
+  //  `service.chan_sua_khi_dang_duyet`) — khóa ở đây để người dùng không gõ cả
+  //  đoạn rồi mới nhận 409, và để tự động lưu không bắn lỗi theo từng nhịp gõ.
+  const khoaVietVi = isSubmitted
+
   return (
     // `Tabs` bọc CẢ khung trang để hàng tab nằm cạnh tiêu đề — trang soạn thảo
     // cần từng dòng chiều cao, để tab thành một hàng riêng là đẩy tờ giấy xuống
@@ -213,7 +220,7 @@ export function DocumentDetailPage() {
               {/*  Chỉ nói "tự lưu" với người THẬT SỰ sửa được. Người duyệt nay
                    mở được văn bản để đọc — nói với họ là trang đang tự lưu thì
                    họ tưởng mình vừa động vào bài của người khác. */}
-              {tab === 'compose' && !isLocked && canWrite && (
+              {tab === 'compose' && !isLocked && canWrite && !khoaVietVi && (
                 <>
                   <span aria-hidden>·</span>
                   <DocumentAutosaveStatus
@@ -295,7 +302,7 @@ export function DocumentDetailPage() {
                  vào hệ. Chèn tại con trỏ nên vẫn ghép được vào bản đang gõ dở.
                  Điều kiện hiện nút bám đúng điều kiện SỬA ĐƯỢC (bản chưa khóa +
                  có quyền ghi) — như nút Lưu nội dung bên cạnh. */}
-            {tab === 'compose' && canWrite && !isLocked && (
+            {tab === 'compose' && canWrite && !isLocked && !khoaVietVi && (
               <>
                 <DocumentImportButton
                   onInsert={(html) =>
@@ -316,7 +323,7 @@ export function DocumentDetailPage() {
               </>
             )}
 
-            {tab === 'info' && canWrite && (
+            {tab === 'info' && canWrite && !khoaVietVi && (
               <Button type="submit" form={FORM_ID} disabled={save.isPending}>
                 <Save className="size-4" />
                 Lưu thông tin
@@ -400,6 +407,8 @@ export function DocumentDetailPage() {
         <DocumentApprovalBanner instance={approval} />
 
         <TabsContent value="compose" className="mt-0">
+          <DocumentSubmittedLockNotice submitted={khoaVietVi} />
+
           {record && (
             <DocumentNeedsReviewBanner
               needsReview={record.needs_review}
@@ -422,7 +431,7 @@ export function DocumentDetailPage() {
               key={version.id}
               ref={editorRef}
               showOutline
-              editable={canWrite && !isLocked}
+              editable={canWrite && !isLocked && !khoaVietVi}
               defaultContent={version.content_html ?? ''}
               onChange={autosave.handleChange}
               //  Lề đi theo PHIÊN BẢN: kéo thước xong là ghi xuống bản ghi, mở
@@ -437,14 +446,20 @@ export function DocumentDetailPage() {
         </TabsContent>
 
         <TabsContent value="info" className="mt-0 space-y-4">
+          <DocumentSubmittedLockNotice submitted={khoaVietVi} />
+
           <DocumentRecordForm
             formId={FORM_ID}
             form={form}
             isNumbered={isNumbered}
             documentId={documentId}
+            readOnly={khoaVietVi}
             onSubmit={handleSubmitForm}
           >
-            <DocumentAttachmentList versionId={versionId} readOnly={!canWrite || isLocked} />
+            <DocumentAttachmentList
+              versionId={versionId}
+              readOnly={!canWrite || isLocked || khoaVietVi}
+            />
             {/*  Phạm vi áp dụng (F01–F04) khác QUYỀN TRUY CẬP: phạm vi trả lời
                  "văn bản này áp cho ai phải làm theo", quyền trả lời "ai được
                  mở ra đọc". Hai câu hỏi khác nhau, để cạnh nhau cho dễ đối chiếu. */}
