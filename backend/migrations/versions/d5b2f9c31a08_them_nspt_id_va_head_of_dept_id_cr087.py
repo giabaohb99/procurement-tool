@@ -49,11 +49,14 @@ def _backfill_nspt_qua_ycmh(bind) -> None:
           JOIN (SELECT pr.code pcode, TRIM(e.full_name) nm, MIN(e.id) eid
                   FROM tab_purchase_request pr
                   JOIN tab_purchase_request_item pri ON pri.pr_id = pr.id
-                  JOIN tab_employee e ON e.code = TRIM(pri.assignee)
+                  JOIN tab_employee e
+                    ON e.code COLLATE utf8mb4_unicode_ci
+                     = TRIM(pri.assignee) COLLATE utf8mb4_unicode_ci
                  WHERE TRIM(pri.assignee) <> ''
                  GROUP BY pr.code, TRIM(e.full_name)
                 HAVING COUNT(DISTINCT e.id) = 1) u
-            ON u.pcode = po.pr_code AND u.nm = TRIM(po.nspt)
+            ON u.pcode COLLATE utf8mb4_unicode_ci = po.pr_code COLLATE utf8mb4_unicode_ci
+           AND u.nm COLLATE utf8mb4_unicode_ci = TRIM(po.nspt) COLLATE utf8mb4_unicode_ci
            SET po.nspt_id = u.eid
          WHERE po.nspt_id = 0 AND TRIM(po.nspt) <> ''
     """))
@@ -66,7 +69,9 @@ def _backfill(bind, table: str, col_id: str, col_name: str) -> None:
           JOIN (SELECT TRIM(e.full_name) nm, e.company_id cid, MIN(e.id) eid
                   FROM tab_employee e
                  GROUP BY TRIM(e.full_name), e.company_id HAVING COUNT(*) = 1) u
-            ON u.nm = TRIM(t.{col_name}) AND u.cid = t.company_id
+            ON u.nm COLLATE utf8mb4_unicode_ci
+             = TRIM(t.{col_name}) COLLATE utf8mb4_unicode_ci
+           AND u.cid = t.company_id
            SET t.{col_id} = u.eid
          WHERE t.{col_id} = 0 AND TRIM(t.{col_name}) <> ''
     """))
@@ -76,7 +81,8 @@ def _backfill(bind, table: str, col_id: str, col_name: str) -> None:
           JOIN (SELECT TRIM(e.full_name) nm, MIN(e.id) eid
                   FROM tab_employee e
                  GROUP BY TRIM(e.full_name) HAVING COUNT(*) = 1) u
-            ON u.nm = TRIM(t.{col_name})
+            ON u.nm COLLATE utf8mb4_unicode_ci
+             = TRIM(t.{col_name}) COLLATE utf8mb4_unicode_ci
            SET t.{col_id} = u.eid
          WHERE t.{col_id} = 0 AND TRIM(t.{col_name}) <> ''
     """))
@@ -112,7 +118,19 @@ def upgrade() -> None:
           + (f"({', '.join(f'{r[0]} x{r[1]}' for r in dup)})" if dup else ""))
 
     for table, col_id, col_name, _ in _REFS:
-        _backfill(bind, table, col_id, col_name)
+        #  Đầu tệp đã ghi rõ: migration chết là `start.prod.sh` không dựng nổi
+        #  api → prod 502. Phần THÊM CỘT ở trên là bắt buộc phải xong; phần điền
+        #  lùi thì hỏng cũng chỉ nghĩa là id để 0 và mã chạy nhánh lùi theo tên
+        #  (`scoping._emp_match`), nên nuốt lỗi ở đây là đúng chỗ.
+        #
+        #  Đã gặp thật ngày 19/08/2026: hai bảng lệch collation
+        #  (utf8mb4_0900_ai_ci vs utf8mb4_unicode_ci) làm MySQL từ chối phép so
+        #  tên, cả migration nổ giữa chừng và CSDL kẹt ở nửa chừng.
+        try:
+            _backfill(bind, table, col_id, col_name)
+        except Exception as loi:      # noqa: BLE001 — cố ý nuốt, xem chú thích
+            print(f"[CR-087] {table}.{col_name}: KHONG dien lui duoc ({loi}); "
+                  f"giu nguyen ten, {col_id} = 0")
 
 
 def downgrade() -> None:

@@ -4,8 +4,10 @@ import { useNavigate } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
+import { ConditionalFilter, FilterProvider, useFilterQuery } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { Badge } from '@/shared/ui/badge'
@@ -23,6 +25,7 @@ import {
 } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
+import { DOCUMENT_LIST_FILTER_FIELDS } from '../config/document-list-filter-fields'
 import { effectiveLabel } from '../helpers/document-status'
 import { useActiveDocumentTypes } from '../hooks/use-document-types'
 import { useDocuments } from '../hooks/use-documents'
@@ -30,6 +33,22 @@ import { secrecyLabel, urgencyLabel } from '../types/security-level'
 import { STATUS_LABELS, type DocumentRecord } from '../types/document-record'
 
 const ALL = 'all'
+
+const FILTER_CONFIG = {
+  fields: DOCUMENT_LIST_FILTER_FIELDS,
+  allowConjunctionToggle: true,
+  //  Ba ô trên thanh công cụ. Thiếu tên nào ở đây là bấm "Áp dụng" ở bộ lọc
+  //  nâng cao xong mất luôn ô đó.
+  preserveParams: ['q', 'type', 'status'],
+}
+
+export function DocumentListPage() {
+  return (
+    <FilterProvider config={FILTER_CONFIG}>
+      <DocumentListContent />
+    </FilterProvider>
+  )
+}
 
 /**
  * Danh sách VĂN BẢN.
@@ -39,7 +58,7 @@ const ALL = 'all'
  * máy người dùng phải nhận về cả những văn bản họ không được xem. Ô tìm chấp
  * nhận cả **số hiệu cũ của bản giấy** (C12).
  */
-export function DocumentListPage() {
+function DocumentListContent() {
   const navigate = useNavigate()
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [typeId, setTypeId] = useUrlParamState('type', ALL)
@@ -48,12 +67,17 @@ export function DocumentListPage() {
   //  không gọi được trong vòng lặp. Mở dòng khác thì dòng đang mở tự đóng —
   //  cũng đúng thói quen dùng: người ta soi từng bản gốc một.
   const [dongDangBung, setDongDangBung] = useState<number | null>(null)
-  const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
   const documentTypes = useActiveDocumentTypes()
+  //  Điều kiện của bộ lọc nâng cao, đã dịch sang query param cho backend.
+  const { queryParams, queryKey } = useFilterQuery()
+  //  Đổi bất kỳ điều kiện nào cũng phải về trang 1 — đang ở trang 5 mà lọc còn
+  //  ba dòng thì màn hình trống trơn, người dùng tưởng không có kết quả.
+  const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, typeId, status])
 
   const { data, isLoading, isError } = useDocuments({
+    ...queryParams,
     page,
     page_size: pageSize,
     q: debouncedValue.trim() || undefined,
@@ -352,6 +376,8 @@ export function DocumentListPage() {
                   ))}
                 </SelectContent>
               </Select>
+
+              <ConditionalFilter />
             </>
           }
         />

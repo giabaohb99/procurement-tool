@@ -45,8 +45,22 @@ from .service import doc_type_or_400
 
 router = APIRouter(prefix="/api/documents", tags=["document"])
 
+#  Trường mà BỘ LỌC NÂNG CAO của danh sách được phép hỏi. Tên nào không có ở
+#  đây thì backend **lặng lẽ bỏ qua** điều kiện đó — nên thêm ô lọc ở giao diện
+#  mà quên chỗ này là bộ lọc chạy nhưng không lọc gì.
+#
+#  Mở rộng ngày 19/08/2026: trước chỉ có mấy khóa tham chiếu, nên màn danh sách
+#  chỉ lọc được theo loại và trạng thái. Bộ này thêm đúng những trường người
+#  dùng tra thật: trích yếu, các kiểu số hiệu, từ khóa, ngày hiệu lực, năm ban
+#  hành và cờ "cần rà soát".
+#
+#  ⚠️ Whitelist này KHÔNG phải hàng rào quyền: lọc xong vẫn đi qua
+#  `access_service.visible_condition`, nên thêm trường vào đây không làm lộ
+#  thêm dòng nào.
 FILTERABLE = ["doc_type_id", "company_id", "department_id", "book_id", "status",
               "secrecy_level", "urgency", "owner_employee_id",
+              "title", "doc_code", "issue_number", "legacy_code", "keywords",
+              "effective_date", "expire_date", "issue_year", "needs_review",
               #  Hỏi thẳng các BẢN RIÊNG của một bản gốc — đường mà bảng danh
               #  sách dùng khi người dùng bung một dòng ra.
               "source_document_id"]

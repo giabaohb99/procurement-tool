@@ -8,8 +8,14 @@ thức hành chính; ai muốn khác thì kéo lại thước trên trình soạ
 bình luận / ticket — đó là lệch có sẵn giữa model và DB, KHÔNG thuộc việc này
 nên đã bỏ khỏi bản vá để không đụng bảng của phân hệ khác.
 
+⚠️ `Revises` trỏ vào `d5b2f9c31a08` (CR-087) chứ không phải `225c3966c99c` như lúc
+mới sinh ra: bản vá này làm song song với nhánh CR-086/087, rebase xong thì hai
+nhánh cùng treo vào một điểm và Alembic có HAI head. `alembic upgrade head` gặp
+hai head là báo lỗi và dừng — mà `start.sh` chạy đúng lệnh đó lúc khởi động, nên
+API sẽ không lên nổi. Nối thẳng vào cuối nhánh kia là hết chẻ.
+
 Revision ID: 9fd918454b1e
-Revises: 225c3966c99c
+Revises: d5b2f9c31a08
 Create Date: 2026-08-19 03:43:48.925469
 """
 from typing import Sequence, Union
@@ -19,7 +25,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '9fd918454b1e'
-down_revision: Union[str, None] = '225c3966c99c'
+down_revision: Union[str, None] = 'd5b2f9c31a08'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
