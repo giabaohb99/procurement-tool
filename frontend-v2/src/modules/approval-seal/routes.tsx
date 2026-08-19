@@ -12,7 +12,7 @@ const CustomStampIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const approvalSealModule: ErpModule = {
   id: 'approval-seal',
   title: 'Duyệt dấu',
-  description: 'Duyệt yêu cầu đóng dấu đỏ lên chứng từ, hợp đồng, văn bản hành chính.',
+  description: '(hay còn gọi là ứng dụng quản lý con dấu điện tử, ký số và phê duyệt tài liệu) là giải pháp số hóa quy trình trình ký, duyệt và đóng dấu đỏ (hoặc dấu chức danh/dấu phòng ban) lên các chứng từ kế toán, hợp đồng, và văn bản hành chính một cách tự động.',
   icon: CustomStampIcon,
   path: appRoutes.approvalSeal.root,
   accent: 'bg-red-50 text-red-600',
