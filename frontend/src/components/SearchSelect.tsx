@@ -14,10 +14,11 @@ const rsComponents = (table: boolean) =>
  *  - Trống → để rỗng (không hiện "—").
  *  - variant="table": gọn cho ô trong bảng (không nút X, viền trong suốt khi rảnh, gõ là sổ).
  *  - colorMap: {giá trị → mã màu} → hiển thị như badge có màu (dùng cho cột trạng thái).
+ *  - wrap: cho nhãn đã chọn XUỐNG DÒNG, ô cao theo nội dung (mặc định cắt cụt bằng "…").
  *  options nhận string[] hoặc {value,label}[].
  */
 export default function SearchSelect({
-  value, options, onChange, disabled, placeholder = '', width, variant = 'form', colorMap,
+  value, options, onChange, disabled, placeholder = '', width, variant = 'form', colorMap, wrap,
 }: {
   value?: string | number
   options: (string | Opt)[]
@@ -27,6 +28,8 @@ export default function SearchSelect({
   width?: number | string
   variant?: 'form' | 'table'
   colorMap?: Record<string, string>
+  /** Nhãn dài (tên NCC…) hiện đủ chữ thay vì bị cắt. Mặc định tắt để không đổi các ô cũ. */
+  wrap?: boolean
 }) {
   const opts: Opt[] = options.map((o) => (typeof o === 'string' ? { value: o, label: o } : o))
   const table = variant === 'table'
@@ -74,7 +77,9 @@ export default function SearchSelect({
             borderColor: state.isFocused ? 'var(--teal)' : (color ? color : '#cbd5e1')
           }
         }),
-        valueContainer: (b) => table ? ({ ...b, padding: '0 6px' }) : ({
+        // Khi cho xuống dòng phải mở `overflow` ở ĐÂY nữa: react-select cắt chữ ở
+        // cả hai lớp (khung chứa + nhãn), sửa mỗi nhãn thì vẫn bị cắt.
+        valueContainer: (b) => table ? ({ ...b, padding: wrap ? '3px 6px' : '0 6px', ...(wrap && { overflow: 'visible' }) }) : ({
           ...b,
           padding: '0 16px',
         }),
@@ -82,7 +87,13 @@ export default function SearchSelect({
           ...b,
           margin: 0,
         }),
-        singleValue: (b) => table ? (color ? ({ ...b, color, fontWeight: 600 }) : b) : ({
+        singleValue: (b) => table ? ({
+          ...b,
+          ...(color && { color, fontWeight: 600 }),
+          // Mặc định của react-select là nowrap + ellipsis — bỏ cả ba thuộc tính
+          // mới thấy đủ chữ. `anywhere` để mã dài không có dấu cách cũng ngắt được.
+          ...(wrap && { whiteSpace: 'normal', overflow: 'visible', textOverflow: 'clip', overflowWrap: 'anywhere', lineHeight: 1.35 }),
+        }) : ({
           ...b,
           margin: 0,
           color: color ? color : undefined,
