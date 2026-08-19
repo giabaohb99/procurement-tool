@@ -59,6 +59,13 @@ export const approvalApi = {
   getById: (id: number) => apiGet<ApprovalInstance>(`${INSTANCE_URL}/${id}`),
   trail: (id: number) => apiGet<ApprovalTrail>(`${INSTANCE_URL}/${id}/trail`),
 
+  /**
+   * Phiên duyệt mới nhất của một chứng từ — `null` nếu nó chưa vào bộ máy.
+   * Trang chi tiết chứng từ hỏi câu này để biết phiếu đang ở bước nào.
+   */
+  ofEntity: (entity: string, entityId: number) =>
+    apiGet<ApprovalInstance | null>(`${INSTANCE_URL}/of/${entity}/${entityId}`),
+
   approve: (id: number, comment: string, subject: Record<string, unknown> = {}) =>
     apiPost<ApprovalInstance>(`${INSTANCE_URL}/${id}/approve`, { comment, subject }),
   reject: (id: number, reason: string) =>

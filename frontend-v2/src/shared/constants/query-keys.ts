@@ -170,6 +170,9 @@ export const queryKeys = {
     flows: (entity: string) => ['approval', 'flows', entity] as const,
     flow: (id: number) => ['approval', 'flows', 'detail', id] as const,
     trail: (instanceId: number) => ['approval', 'trail', instanceId] as const,
+    /** Phiên duyệt của MỘT chứng từ — trang chi tiết chứng từ hỏi bằng key này. */
+    ofEntity: (entity: string, entityId: number) =>
+      ['approval', 'of-entity', entity, entityId] as const,
     switches: () => ['approval', 'switches'] as const,
     delegations: (employeeId: number) => ['approval', 'delegations', employeeId] as const,
   },

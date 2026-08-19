@@ -50,6 +50,20 @@ export function useApprovalTrail(instanceId?: number) {
   })
 }
 
+/**
+ * Phiên duyệt của MỘT chứng từ, cho trang chi tiết của chứng từ đó.
+ *
+ * Trả `null` khi chứng từ chưa từng vào bộ máy — đó là câu trả lời hợp lệ, không
+ * phải lỗi, và là cách trang chi tiết biết mình còn đang chạy luồng một bước cũ.
+ */
+export function useEntityApproval(entity: string, entityId?: number) {
+  return useQuery({
+    queryKey: queryKeys.approval.ofEntity(entity, entityId ?? 0),
+    queryFn: () => approvalApi.ofEntity(entity, entityId as number),
+    enabled: typeof entityId === 'number' && entityId > 0,
+  })
+}
+
 export function useApprovalSwitches() {
   return useQuery({
     queryKey: queryKeys.approval.switches(),

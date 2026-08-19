@@ -60,6 +60,48 @@ def xoa(db) -> dict[str, int]:
     return dem
 
 
+def _gan_truong_phong(db, nguoi) -> None:
+    """Khai TRƯỞNG PHÒNG cho các phòng chưa có.
+
+    Bước đầu của mọi luồng mẫu chọn người duyệt kiểu «trưởng bộ phận người nộp»
+    (`_truong_bo_phan` đọc `Department.manager_id`). Phòng bỏ trống cột đó thì
+    bước 1 không tìm ra ai, phiên duyệt rơi thẳng vào trạng thái **KẸT** và
+    không sinh việc nào — màn «Việc của tôi» trống trơn dù luồng khai đúng.
+    """
+    from app.modules.department.model import Department
+
+    for phong in db.query(Department).filter(
+            (Department.manager_id.is_(None)) | (Department.manager_id == 0)).all():
+        phong.manager_id = nguoi["chanh_vp"].id
+    db.commit()
+
+
+def bat_cong_tac(db) -> str:
+    """BẬT bộ máy duyệt nhiều bước cho văn bản (I26).
+
+    `xoa()` cố ý không đụng tới công tắc, nhưng nạp luồng mà để công tắc TẮT thì
+    cả bộ dữ liệu mẫu này là đồ trang trí: `service.submit()` đi thẳng đường một
+    bước cũ, không phiên nào được mở, và người xem tưởng luồng đang chạy vì
+    trong bảng vẫn có sẵn hai phiên do chính seed này gọi tay vào engine.
+
+    Chỉ áp cho `document` — các loại chứng từ khác vẫn giữ nguyên trạng thái của
+    chúng, và tắt lại lúc nào cũng được ở màn «Bộ máy duyệt».
+    """
+    from app.modules.approval.flow_model import ApprovalSwitch
+
+    row = db.query(ApprovalSwitch).filter(ApprovalSwitch.entity == "document").first()
+    if row is None:
+        db.add(ApprovalSwitch(entity="document", is_enabled=True, note="",
+                              created_by=ACTOR, updated_by=ACTOR))
+        db.commit()
+        return "bật"
+    if not row.is_enabled:
+        row.is_enabled, row.updated_by = True, ACTOR
+        db.commit()
+        return "bật"
+    return "giữ nguyên (đang bật)"
+
+
 def _nguoi(db) -> dict[str, Employee]:
     """Ba vai người duyệt. Ít nhân sự thì dùng lại người đầu — dữ liệu mẫu
     không được nổ chỉ vì máy local mới seed có hai nhân viên."""
@@ -153,23 +195,28 @@ def nap_uy_quyen(db, nguoi) -> int:
 def trinh_vai_van_ban(db) -> int:
     """Trình hai văn bản đang chờ duyệt vào bộ máy, để «Việc của tôi» có dữ liệu.
 
-    Đi qua đúng `instance_service.bat_dau` chứ không dựng tay bảng phiên duyệt:
-    dựng tay thì bản chụp luồng, danh sách việc và dấu vết duyệt có thể lệch
-    nhau, và màn hình đọc ra ba câu chuyện khác nhau về cùng một phiếu.
+    Đi qua đúng `service.submit` — cùng một cửa mà người dùng bấm «Gửi duyệt» —
+    chứ không gọi thẳng `instance_service.bat_dau`.
+
+    Gọi thẳng vào engine thì mở được phiên duyệt nhưng **bỏ quên phiên bản**: nó
+    vẫn nằm ở trạng thái nháp. Hậu quả thấy ngay trên màn hình: văn bản ghi
+    «Đang duyệt» mà nút «Gửi duyệt» vẫn bày ra, và tới lúc duyệt xong hết bước
+    thì `service.approve` báo "Không có bản nào đang chờ duyệt" — phiếu ghi đã
+    duyệt còn văn bản thì không ban hành được. Dữ liệu mẫu phải đi đúng đường
+    của người dùng, nếu không nó dựng ra một trạng thái không ai tạo nổi bằng
+    tay và ta ngồi sửa những lỗi chỉ tồn tại trong seed.
+
+    Công tắc phải BẬT trước khi gọi hàm này (xem `bat_cong_tac`), nếu không
+    `service.submit` đi đường một bước cũ và không phiên nào được mở.
     """
-    from app.modules.document.approval_bridge import boi_canh
-    from app.modules.document.model import STATUS_SUBMITTED, Document
     from app.modules.approval import instance_service
+    from app.modules.document import service
+    from app.modules.document.model import STATUS_SUBMITTED, Document
 
     dem = 0
     for doc in db.query(Document).filter(Document.status == STATUS_SUBMITTED).all():
-        phien = instance_service.bat_dau(
-            db, "document", doc.id, boi_canh(doc),
-            submitter_employee_id=doc.drafter_employee_id or doc.owner_employee_id,
-            actor=ACTOR, entity_code=doc.doc_code or doc.issue_number or "",
-            entity_title=doc.title or "",
-        )
-        if phien is not None:
+        service.submit(db, doc, ACTOR)
+        if instance_service.phien_dang_chay(db, "document", doc.id) is not None:
             dem += 1
     db.commit()
     return dem
@@ -183,6 +230,7 @@ def run() -> None:
             print(f"  - {ten}: {so}")
 
         nguoi = _nguoi(db)
+        _gan_truong_phong(db, nguoi)
         xuong = _Xuong(db)
 
         from app.seed_data.approval_demo_corpus import dung_luong
@@ -191,6 +239,7 @@ def run() -> None:
         db.commit()
         print(f"Đã nạp {len(luong)} luồng duyệt, "
               f"{db.query(ApprovalNode).count()} bước.")
+        print(f"Đã {bat_cong_tac(db)} bộ máy duyệt cho văn bản.")
         print(f"Đã nạp {nap_quy_tac_so(db)} quy tắc đánh số.")
         print(f"Đã nạp {nap_uy_quyen(db, nguoi)} dòng ủy quyền.")
         print(f"Đã trình {trinh_vai_van_ban(db)} văn bản vào bộ máy duyệt.")

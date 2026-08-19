@@ -26,3 +26,8 @@ doc/tai-lieu-ky-thuat/export/*.html
 # Celery beat schedule (dev)
 backend/celerybeat-schedule*
 celerybeat-schedule*
+
+# Bản xuất dữ liệu để đồng bộ môi trường — sinh bằng
+# `scripts/export-van-thu-phe-duyet.sh`. KHÔNG đẩy lên git: tệp chứa dữ liệu
+# thật của một môi trường cụ thể, và nó cũ đi ngay khi ai đó sửa dữ liệu.
+db-export/
