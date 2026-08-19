@@ -3,6 +3,12 @@ import { LayoutDashboard, Stamp } from 'lucide-react'
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
 
+/**
+ * Phân hệ DUYỆT DẤU — chưa làm xong, hiện ở dạng "Sắp có".
+ *
+ * Backend mới có `model.py` + `schema.py`, chưa có endpoint; trang dưới đây mới
+ * là chỗ để tên. Bật lên khi có màn thật, không thì người dùng bấm vào ô rỗng.
+ */
 export const approvalSealModule: ErpModule = {
   id: 'approval-seal',
   title: 'Duyệt dấu',
@@ -10,7 +16,7 @@ export const approvalSealModule: ErpModule = {
   icon: Stamp,
   path: appRoutes.approvalSeal.root,
   accent: 'bg-red-50 text-red-600',
-  enabled: true,
+  enabled: false,
 
   nav: [
     { label: 'Tổng quan', path: appRoutes.approvalSeal.root, icon: LayoutDashboard, end: true },
