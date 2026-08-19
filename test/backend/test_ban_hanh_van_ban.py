@@ -117,15 +117,19 @@ def test_thieu_quyet_dinh_hien_o_muc_CHAN_chu_khong_phai_canh_bao(db, ctx):
     assert not any("Quyết định" in item for item in data["warnings"])
 
 
-def test_chua_khai_pham_vi_la_CANH_BAO_chu_khong_chan(db, ctx):
-    """Vẫn ban hành được — có văn bản cố ý không gắn phạm vi."""
+def test_chua_khai_pham_vi_khong_chan_ma_cung_khong_canh_bao(db, ctx):
+    """Từ 19/08/2026: không khai dòng nào = áp cho đúng pháp nhân ban hành.
+
+    Nên đây không còn là thiếu sót để dọa người ban hành — dọa mỗi lần thì họ
+    học cách bỏ qua mọi cảnh báo, kể cả cái thật.
+    """
     quyet_dinh = _tao(db, ctx, "QD", "Quyết định 15")
     service.submit(db, quyet_dinh, ACTOR)
 
     data = issue_service.preview(db, quyet_dinh)
 
     assert data["scope_count"] == 0
-    assert any("phạm vi" in item for item in data["warnings"])
+    assert not any("phạm vi" in item for item in data["warnings"])
     assert data["blockers"] == []
 
 

@@ -42,9 +42,11 @@ export function IssuePreflightSummary({ preview }: IssuePreflightSummaryProps) {
         </Row>
 
         <Row icon={ArrowRight} label="Phạm vi áp dụng">
+          {/*  Không khai dòng nào KHÔNG còn là lỗi: văn bản áp trong đúng pháp
+               nhân ban hành (quy tắc 3, `scope_service.py`). */}
           {preview.scope_count > 0
             ? `${preview.scope_count} dòng`
-            : 'Chưa khai — không tới ai'}
+            : 'Mặc định — toàn bộ pháp nhân ban hành'}
         </Row>
       </dl>
 

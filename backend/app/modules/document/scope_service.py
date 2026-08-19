@@ -4,7 +4,18 @@ Ba quy tắc, thứ tự quan trọng:
 
 1. Các dòng **bao gồm** cộng dồn.
 2. **Loại trừ luôn thắng** — dù trùng chiều nào.
-3. **Không có dòng nào = không ai thuộc phạm vi.**
+3. **Không có dòng nào = áp cho TOÀN BỘ PHÁP NHÂN BAN HÀNH** — mọi phòng ban,
+   mọi nhân sự của chính công ty đứng tên văn bản, và chỉ công ty đó.
+
+Quy tắc 3 đổi ngày 19/08/2026. Trước đó "không khai gì = không ai thuộc phạm
+vi": an toàn về lý thuyết nhưng sai với việc thật — phần lớn văn bản chỉ lưu
+hành trong đúng công ty làm ra nó, mà vẫn bắt người soạn khai tay một dòng
+"pháp nhân = công ty mình" thì ai cũng quên, và văn bản ban hành xong không tới
+ai. Mặc định mới không làm rò văn bản sang công ty khác: nó dừng đúng ở pháp
+nhân ban hành, muốn đi xa hơn vẫn phải khai tay.
+
+Mặc định này chỉ tính cho văn bản **còn sống** (đã duyệt / có hiệu lực) — bản
+nháp trong công ty không phải thứ nằm trong mục "Văn bản áp dụng cho tôi".
 
 ⚠️ **`include_children` đang là phép xấp xỉ.** `tab_company` chỉ có cột `level`
 (1 Tập đoàn · 2 công ty con · 3 …), KHÔNG có cột cha, nên "gồm đơn vị con" hiện
@@ -17,6 +28,7 @@ from sqlalchemy.orm import Session
 from app.modules.company.model import Company
 from app.modules.employee.model import Employee
 
+from .model import ALIVE_STATUSES, Document
 from .scope_model import (DIM_COMPANY, DIM_DEPARTMENT, DIM_EMPLOYEE,
                           MODE_EXCLUDE, MODE_INCLUDE, DocumentScope)
 
@@ -59,14 +71,20 @@ def _match(db: Session, row: DocumentScope, employee: Employee) -> bool:
     return False
 
 
+def mac_dinh_theo_phap_nhan(doc: Document | None, employee: Employee) -> bool:
+    """Quy tắc 3 — văn bản không khai dòng nào thì áp trong đúng pháp nhân của nó."""
+    if doc is None:
+        return False
+    if doc.status not in ALIVE_STATUSES:
+        return False
+    return doc.company_id == employee.company_id
+
+
 def applies_to(db: Session, document_id: int, employee: Employee) -> bool:
     """Nhân sự này có thuộc phạm vi áp dụng của văn bản không."""
     rows = scopes_of(db, document_id)
     if not rows:
-        #  Quy tắc 3 — không khai gì thì KHÔNG AI thuộc phạm vi. Ngược trực giác
-        #  nhưng an toàn: quên khai thì văn bản không tới ai và người ta sẽ hỏi;
-        #  mặc định "mọi người" thì quên khai là gửi văn bản mật cho cả tập đoàn.
-        return False
+        return mac_dinh_theo_phap_nhan(db.get(Document, document_id), employee)
 
     #  Quy tắc 2 — loại trừ thắng, nên xét trước và thoát ngay.
     for row in rows:
@@ -83,7 +101,20 @@ def document_ids_for(db: Session, employee: Employee) -> list[int]:
     và luật loại-trừ-thắng không viết gọn thành một câu SQL được, mà số văn bản
     có khai phạm vi thì nhỏ hơn hẳn tổng số văn bản.
     """
-    ung_vien = {row[0] for row in db.query(DocumentScope.document_id).distinct().all()}
+    co_khai = {row[0] for row in db.query(DocumentScope.document_id).distinct().all()}
+    #  Quy tắc 3 — văn bản còn sống của chính công ty người này, không khai dòng
+    #  phạm vi nào, thì mặc định áp cho họ. Lọc luôn ở SQL cho khỏi kéo cả bảng.
+    ngam_dinh = {
+        row[0]
+        for row in db.query(Document.id)
+        .filter(
+            Document.company_id == employee.company_id,
+            Document.status.in_(ALIVE_STATUSES),
+            Document.id.notin_(co_khai or {0}),
+        )
+        .all()
+    }
+    ung_vien = co_khai | ngam_dinh
     return sorted(doc_id for doc_id in ung_vien if applies_to(db, doc_id, employee))
 
 

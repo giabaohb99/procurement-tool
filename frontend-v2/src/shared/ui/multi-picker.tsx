@@ -52,18 +52,35 @@ export function MultiPicker({
     [value, options],
   )
 
-  const matches = useMemo(() => {
+  // Giữ CẢ danh sách lọc được, không chỉ phần bày ra: nút "Chọn tất cả" phải áp
+  // cho mọi mục khớp từ khóa, kể cả những mục bị `MAX_VISIBLE` cắt bớt — người
+  // dùng gõ tìm rồi bấm chọn tất cả là muốn hết chỗ đó, không phải 50 dòng đầu.
+  const filtered = useMemo(() => {
     const needle = keyword.trim().toLowerCase()
-    const rows = needle
-      ? options.filter((item) =>
-          [item.label, item.hint].some((field) => (field ?? '').toLowerCase().includes(needle)),
-        )
-      : options
-    return rows.slice(0, MAX_VISIBLE)
+    if (!needle) return options
+    return options.filter((item) =>
+      [item.label, item.hint].some((field) => (field ?? '').toLowerCase().includes(needle)),
+    )
   }, [options, keyword])
+
+  const matches = useMemo(() => filtered.slice(0, MAX_VISIBLE), [filtered])
+
+  /** Đã tick hết phần đang lọc chưa — quyết định nút là "Chọn" hay "Bỏ chọn". */
+  const allPicked = filtered.length > 0 && filtered.every((item) => value.includes(item.id))
 
   function toggle(id: number) {
     onChange(value.includes(id) ? value.filter((item) => item !== id) : [...value, id])
+  }
+
+  /** Tick / bỏ tick TOÀN BỘ phần đang lọc, giữ nguyên các mục đã chọn ngoài đó. */
+  function toggleAll() {
+    const ids = filtered.map((item) => item.id)
+    if (allPicked) {
+      const dropped = new Set(ids)
+      onChange(value.filter((id) => !dropped.has(id)))
+      return
+    }
+    onChange([...value, ...ids.filter((id) => !value.includes(id))])
   }
 
   return (
@@ -89,6 +106,25 @@ export function MultiPicker({
               onChange={(event) => setKeyword(event.target.value)}
             />
           </div>
+          {filtered.length > 0 && (
+            <div className="flex items-center justify-between gap-2 border-b px-2 py-1.5">
+              <button
+                type="button"
+                onClick={toggleAll}
+                className="rounded-sm px-1 py-0.5 text-sm font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              >
+                {allPicked ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                <span className="ml-1 font-normal text-muted-foreground tabular-nums">
+                  ({filtered.length})
+                </span>
+              </button>
+              {/* Nhắc rõ nút đang áp cho phần lọc được, không phải cả danh sách. */}
+              {keyword.trim() && (
+                <span className="text-xs text-muted-foreground">theo từ khóa đang tìm</span>
+              )}
+            </div>
+          )}
+
           <div className="max-h-72 overflow-y-auto p-1">
             {matches.length === 0 && (
               <p className="px-2 py-4 text-center text-sm text-muted-foreground">
@@ -115,6 +151,14 @@ export function MultiPicker({
                 </button>
               )
             })}
+
+            {/* Danh sách bị cắt bớt thì phải nói ra, không thì nhìn như đã hết
+                mục — trong khi "Chọn tất cả" vẫn tính cả phần chưa bày. */}
+            {filtered.length > matches.length && (
+              <p className="px-2 py-2 text-center text-xs text-muted-foreground">
+                Còn {filtered.length - matches.length} mục nữa — gõ để thu hẹp danh sách.
+              </p>
+            )}
           </div>
         </PopoverContent>
       </Popover>

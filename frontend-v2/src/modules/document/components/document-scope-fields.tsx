@@ -1,4 +1,4 @@
-import { AlertTriangle, Building2, MinusCircle, PlusCircle, User, Users, X } from 'lucide-react'
+import { Building2, MinusCircle, PlusCircle, User, Users, X } from 'lucide-react'
 
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -20,11 +20,10 @@ interface DocumentScopeFieldsProps {
 /**
  * PHẠM VI ÁP DỤNG khai ngay ở form TẠO văn bản (F01–F04).
  *
- * Khai ở đây thay vì đợi tạo xong rồi vào tab riêng, vì quy tắc của hệ là
- * *không khai gì = không ai thuộc phạm vi* — ngược hẳn trực giác. Ai chưa biết
- * luật đó sẽ tạo xong rồi đi làm việc khác, và văn bản ban hành ra không tới ai
- * mà không có gì báo. Hỏi ngay lúc lập là lúc duy nhất chắc chắn người ta còn
- * đang nghĩ về văn bản này.
+ * **Bỏ trống là xong việc** với phần lớn văn bản: không khai dòng nào thì văn
+ * bản áp cho toàn bộ pháp nhân ban hành — mọi phòng ban, mọi nhân sự ở đó. Khối
+ * này chỉ cần đụng tới khi muốn đi XA HƠN (pháp nhân khác) hoặc HẸP LẠI (một
+ * phòng ban, một người, hoặc trừ ai đó ra).
  *
  * Các dòng khai ở đây **xếp hàng chờ** trong bộ nhớ, gửi lên máy chủ ngay sau
  * khi văn bản được tạo — giống hệt cách khối quyền truy cập làm.
@@ -32,17 +31,19 @@ interface DocumentScopeFieldsProps {
 export function DocumentScopeFields({ rows, onChange }: DocumentScopeFieldsProps) {
   return (
     <div className="space-y-4">
-      {/*  Băng cảnh báo là phần quan trọng nhất của khối này, và nó phải hiện
-           NGAY khi chưa khai dòng nào chứ không đợi bấm gửi. */}
+      {/*  Nói rõ cái sẽ xảy ra khi bỏ trống — người dùng bước qua bước này nhiều
+           hơn hẳn số lần dừng lại khai, nên câu này phải đọc là yên tâm đi tiếp. */}
       {rows.length === 0 && (
-        <div className="flex gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700" />
-          <div className="text-sm text-amber-900">
-            <p className="font-medium">Chưa khai dòng nào — văn bản này sẽ không tới ai.</p>
-            <p className="text-amber-800">
-              Để trống KHÔNG có nghĩa là áp cho mọi người. Khai ít nhất một dòng bao
-              gồm thì văn bản mới hiện trong mục «Văn bản áp dụng cho tôi» của người
-              thuộc phạm vi. Bỏ qua bước này cũng được — khai lại sau ở tab Phạm vi.
+        <div className="flex gap-3 rounded-md border bg-muted/40 px-4 py-3">
+          <Building2 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <div className="text-sm">
+            <p className="font-medium">
+              Bỏ trống được — mặc định áp cho toàn bộ pháp nhân ban hành.
+            </p>
+            <p className="text-muted-foreground">
+              Mọi phòng ban, mọi nhân sự của pháp nhân đứng tên văn bản đều thấy nó
+              trong mục «Văn bản áp dụng cho tôi». Chỉ khai thêm dòng khi cần đi xa
+              hơn (pháp nhân khác) hoặc hẹp lại (một phòng ban, một người).
             </p>
           </div>
         </div>

@@ -1,10 +1,11 @@
 /**
  * PHẠM VI ÁP DỤNG của văn bản (F01–F05).
  *
- * Ba quy tắc, quy tắc thứ ba ngược trực giác nên giao diện phải nói ra:
+ * Ba quy tắc, giao diện phải nói ra quy tắc thứ ba:
  *  1. các dòng bao gồm cộng dồn;
  *  2. loại trừ luôn thắng;
- *  3. **không có dòng nào = không ai thuộc phạm vi**, không phải "mọi người".
+ *  3. **không có dòng nào = áp cho toàn bộ pháp nhân ban hành** — mọi phòng ban,
+ *     mọi nhân sự của chính công ty đứng tên, và chỉ công ty đó.
  */
 
 export const SCOPE_DIM = {
@@ -35,8 +36,10 @@ export interface DocumentScope {
 
 export interface DocumentScopeList {
   items: DocumentScope[]
-  /** Chưa khai dòng nào — văn bản KHÔNG tới ai. Backend nói ra để giao diện khỏi đoán. */
-  applies_to_nobody: boolean
+  /** Chưa khai dòng nào — văn bản áp trong đúng pháp nhân ban hành (quy tắc 3). */
+  default_to_issuer: boolean
+  /** Tên pháp nhân ban hành, để nói thẳng "toàn bộ CÔNG TY A" thay vì nói chung chung. */
+  issuer_company_name: string
 }
 
 export interface DocumentScopeInput {

@@ -103,11 +103,9 @@ def preview(db: Session, doc: Document) -> dict:
 
     #  CẢNH BÁO — vẫn ban hành được, nhưng gần như chắc chắn là quên.
     canh_bao: list[str] = []
-    if so_dong_pham_vi == 0:
-        canh_bao.append(
-            "Chưa khai phạm vi áp dụng — văn bản sẽ không hiện trong mục "
-            "«Văn bản áp dụng cho tôi» của bất kỳ ai."
-        )
+    #  Không khai phạm vi KHÔNG còn là thiếu sót: văn bản mặc định áp trong đúng
+    #  pháp nhân ban hành (quy tắc 3, xem `scope_service`). Màn xem trước nói ra
+    #  chuyện đó ở dòng "Phạm vi áp dụng" chứ không dọa nữa.
     if not doc.signer_employee_id:
         canh_bao.append("Chưa chọn người ký ban hành.")
 

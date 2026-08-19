@@ -1,4 +1,4 @@
-import { AlertTriangle, Target } from 'lucide-react'
+import { Building2, Target } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import {
@@ -17,10 +17,9 @@ interface DocumentScopeCardProps {
 /**
  * PHẠM VI ÁP DỤNG (F01–F04) — văn bản này áp cho ai.
  *
- * Băng cảnh báo khi chưa khai dòng nào là phần **quan trọng nhất** của thẻ này.
- * Quy tắc của hệ là *không khai gì = không ai thuộc phạm vi*, ngược hẳn trực
- * giác — người dùng mặc định tưởng "chưa giới hạn nghĩa là mọi người". Không nói
- * ra thì họ ban hành một văn bản không tới ai và không hiểu vì sao im lặng.
+ * Chưa khai dòng nào là chuyện BÌNH THƯỜNG: văn bản áp cho toàn bộ pháp nhân ban
+ * hành. Băng ở đầu thẻ nói ra điều đó kèm TÊN pháp nhân — không thì người dùng
+ * lại đoán, mà hai hướng đoán ("không tới ai" / "cả tập đoàn") đều sai.
  */
 export function DocumentScopeCard({ documentId, canWrite }: DocumentScopeCardProps) {
   const { data } = useDocumentScopes(documentId)
@@ -39,15 +38,18 @@ export function DocumentScopeCard({ documentId, canWrite }: DocumentScopeCardPro
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {data?.applies_to_nobody && (
-          <div className="flex gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
-            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700" />
-            <div className="text-sm text-amber-900">
-              <p className="font-medium">Chưa khai phạm vi — văn bản này không tới ai.</p>
-              <p className="text-amber-800">
-                Để trống KHÔNG có nghĩa là áp cho mọi người. Khai ít nhất một dòng
-                bao gồm thì văn bản mới hiện trong mục «Văn bản áp dụng cho tôi»
-                của người thuộc phạm vi.
+        {data?.default_to_issuer && (
+          <div className="flex gap-3 rounded-md border bg-muted/40 px-4 py-3">
+            <Building2 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            <div className="text-sm">
+              <p className="font-medium">
+                Chưa khai dòng nào — mặc định áp cho toàn bộ{' '}
+                {data.issuer_company_name || 'pháp nhân ban hành'}.
+              </p>
+              <p className="text-muted-foreground">
+                Mọi phòng ban, mọi nhân sự của chính pháp nhân này đều thấy văn bản
+                trong mục «Văn bản áp dụng cho tôi». Chỉ khai thêm dòng khi muốn đi
+                XA HƠN (pháp nhân khác) hoặc HẸP LẠI (một phòng ban, một người).
               </p>
             </div>
           </div>

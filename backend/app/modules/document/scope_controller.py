@@ -11,6 +11,7 @@ from app.core.audit import record
 from app.core.auth import get_current_user, require
 from app.core.database import get_db
 from app.core.response import success
+from app.modules.company.model import Company
 from app.modules.employee.model import Employee
 
 from . import scope_service, serializer
@@ -86,11 +87,14 @@ def list_scopes(
 ):
     doc = _load(db, document_id, user)
     rows = scope_service.scopes_of(db, doc.id)
+    company = db.get(Company, doc.company_id) if doc.company_id else None
     return success({
         "items": [scope_service.serialize(db, row) for row in rows],
         #  Nói thẳng quy tắc 3 ra cho giao diện khỏi tự đoán: chưa khai dòng nào
-        #  thì văn bản KHÔNG tới ai, không phải "tới mọi người".
-        "applies_to_nobody": len(rows) == 0,
+        #  thì văn bản áp trong ĐÚNG pháp nhân ban hành, không phải "không tới
+        #  ai" (luật cũ) mà cũng không phải "cả tập đoàn".
+        "default_to_issuer": len(rows) == 0,
+        "issuer_company_name": company.name if company else "",
     })
 
 

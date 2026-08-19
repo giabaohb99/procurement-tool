@@ -1,14 +1,18 @@
 """PHẠM VI ÁP DỤNG của văn bản (F01–F05).
 
-Ba quy tắc, và quy tắc thứ ba là thứ dễ làm sai nhất vì nó **ngược trực giác**:
+Ba quy tắc, và quy tắc thứ ba là thứ dễ làm sai nhất:
 
 1. Các dòng bao gồm cộng dồn.
 2. Loại trừ luôn thắng bao gồm.
-3. Không có dòng nào = KHÔNG AI thuộc phạm vi.
+3. Không có dòng nào = áp cho TOÀN BỘ PHÁP NHÂN BAN HÀNH, và chỉ pháp nhân đó.
 
-Quy tắc 3 an toàn hơn: quên khai thì văn bản không tới ai và người ta sẽ hỏi.
-Mặc định "mọi người" thì quên khai nghĩa là gửi văn bản mật cho cả tập đoàn —
-và không ai phát hiện ra, vì mọi người đều đọc được nên không ai đi hỏi.
+Quy tắc 3 đổi ngày 19/08/2026 (trước đó là "không ai thuộc phạm vi"). Bắt khai
+tay một dòng "pháp nhân = công ty mình" cho gần như mọi văn bản thì ai cũng
+quên, và văn bản ban hành xong nằm im không tới ai. Mặc định mới vẫn không làm
+rò sang công ty khác — nó dừng đúng ở pháp nhân đứng tên văn bản.
+
+Khai bất kỳ dòng nào là mặc định TẮT: lúc đó người soạn đã nói rõ ý mình, hệ
+thống không được tự cộng thêm gì vào.
 """
 import pytest
 from pydantic import ValidationError
@@ -17,6 +21,8 @@ from app.modules.company.model import Company
 from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 from app.modules.document import scope_service
+from app.modules.document.model import (STATUS_DRAFT, STATUS_EFFECTIVE,
+                                        Document)
 from app.modules.document.scope_controller import ScopeCreate
 from app.modules.document.scope_model import (DIM_COMPANY, DIM_DEPARTMENT,
                                               DIM_EMPLOYEE, MODE_EXCLUDE,
@@ -57,10 +63,47 @@ def _khai(db, **kwargs):
     return row
 
 
-# ── Quy tắc 3 · chưa khai gì thì không ai thuộc phạm vi ─────────────────────
-def test_chua_khai_dong_nao_thi_khong_ai_thuoc_pham_vi(db, to_chuc):
-    assert scope_service.applies_to(db, DOC_ID, to_chuc["a"]) is False
+def _van_ban(db, company_id: int, status: int = STATUS_EFFECTIVE, doc_id: int = DOC_ID):
+    """Một văn bản trần của pháp nhân nào đó — chỉ đủ cột để tính phạm vi.
+
+    `doc_type_id` / `owner_employee_id` đặt bừa một số: ràng buộc
+    `ck_document_internal_required` chỉ đòi chúng khác rỗng, mà phần tính phạm vi
+    thì không đọc tới hai cột này.
+    """
+    doc = Document(id=doc_id, company_id=company_id, title="Văn bản", status=status,
+                   doc_type_id=1, owner_employee_id=1)
+    db.add(doc)
+    db.commit()
+    return doc
+
+
+# ── Quy tắc 3 · chưa khai gì thì áp cho đúng pháp nhân ban hành ─────────────
+def test_chua_khai_dong_nao_thi_ap_cho_ca_phap_nhan_ban_hanh(db, to_chuc):
+    """Người của công ty A thấy văn bản của công ty A, người công ty B thì không."""
+    _van_ban(db, to_chuc["con_a"].id)
+
+    assert scope_service.applies_to(db, DOC_ID, to_chuc["a"]) is True
     assert scope_service.applies_to(db, DOC_ID, to_chuc["b"]) is False
+
+
+def test_ban_nhap_chua_khai_gi_thi_chua_ap_cho_ai(db, to_chuc):
+    """Mặc định chỉ chạy với văn bản còn sống — nháp không phải thứ để mọi người đọc."""
+    _van_ban(db, to_chuc["con_a"].id, status=STATUS_DRAFT)
+
+    assert scope_service.applies_to(db, DOC_ID, to_chuc["a"]) is False
+
+
+def test_khai_mot_dong_la_tat_mac_dinh_theo_phap_nhan(db, to_chuc):
+    """Văn bản công ty A khai áp cho công ty B thì người công ty A KHÔNG còn trong phạm vi.
+
+    Khai rồi mà hệ thống vẫn cộng thêm pháp nhân ban hành thì không có cách nào
+    ra văn bản "công ty A ban hành, chỉ công ty B đọc".
+    """
+    _van_ban(db, to_chuc["con_a"].id)
+    _khai(db, dim=DIM_COMPANY, company_id=to_chuc["con_b"].id, mode=MODE_INCLUDE)
+
+    assert scope_service.applies_to(db, DOC_ID, to_chuc["a"]) is False
+    assert scope_service.applies_to(db, DOC_ID, to_chuc["b"]) is True
 
 
 # ── Quy tắc 1 · bao gồm cộng dồn ────────────────────────────────────────────
@@ -166,6 +209,15 @@ def test_liet_ke_van_ban_ap_dung_cho_mot_nguoi(db, to_chuc):
 
     assert scope_service.document_ids_for(db, to_chuc["a"]) == [DOC_ID]
     assert scope_service.document_ids_for(db, to_chuc["b"]) == [2]
+
+
+def test_van_ban_khong_khai_gi_van_vao_danh_sach_cua_nguoi_cung_phap_nhan(db, to_chuc):
+    """Đây là đường đi của phần lớn văn bản — không khai dòng nào, chỉ lưu hành nội bộ."""
+    _van_ban(db, to_chuc["con_a"].id, doc_id=7)
+    _van_ban(db, to_chuc["con_b"].id, doc_id=8)
+
+    assert scope_service.document_ids_for(db, to_chuc["a"]) == [7]
+    assert scope_service.document_ids_for(db, to_chuc["b"]) == [8]
 
 
 # ── F13 · chọn cơ chế lúc ban hành ──────────────────────────────────────────

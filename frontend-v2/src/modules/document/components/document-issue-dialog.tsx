@@ -1,5 +1,4 @@
-import { Building2, Copy, Target } from 'lucide-react'
-import { useState } from 'react'
+import { Building2, Target } from 'lucide-react'
 
 import { Button } from '@/shared/ui/button'
 import {
@@ -10,10 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
-import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group'
-import { cn } from '@/shared/utils/cn'
-import { useDocumentClones } from '../hooks/use-document-clones'
+import { cloneTargetsFromScopes } from '../helpers/clone-targets-from-scopes'
 import { useIssuePreview } from '../hooks/use-document-links'
+import { useDocumentScopes } from '../hooks/use-document-scopes'
 import { APPLY_MODE } from '../types/document-record'
 import { IssuePreflightSummary } from './issue-preflight-summary'
 
@@ -21,38 +19,50 @@ interface DocumentIssueDialogProps {
   documentId: number
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Cơ chế đang ghi trên bản ghi — mở hộp thoại là chọn sẵn cái đó. */
-  currentMode: number
+  /** Pháp nhân ban hành — nơi bản gốc nằm, không tự clone về chính nó. */
+  issuerCompanyId: number
   isPending?: boolean
   onConfirm: (applyMode: number) => void
 }
 
 /**
- * MÀN CHỌN CƠ CHẾ LÚC BAN HÀNH (F13).
+ * MÀN XÁC NHẬN BAN HÀNH (F13).
  *
- * Hai cơ chế **không mâu thuẫn nhau** — chúng dùng cho hai tình huống khác nhau,
- * và tài liệu yêu cầu nói rõ khác nhau ở chỗ nào ngay trên màn hình, không bắt
- * người ban hành đi tra tài liệu.
+ * **Không hỏi cơ chế áp dụng nữa** — nó suy từ phạm vi khai ở bước 2 lúc tạo văn
+ * bản: có khai pháp nhân nào ngoài nơi ban hành thì pháp nhân đó nhận bản riêng,
+ * không khai thì văn bản chỉ áp trong pháp nhân gốc. Hỏi lại ở đây là hỏi lần
+ * thứ hai cùng một câu, mà câu trả lời sau lại đè lên phần đã khai — hai chỗ nói
+ * khác nhau về cùng một văn bản (chốt 19/08/2026).
  *
- * Chốt LÚC BAN HÀNH chứ không phải lúc soạn: tới đây người ban hành mới biết nội
- * dung cuối cùng có dùng chung được cho mọi pháp nhân hay không.
+ * Việc còn lại của hộp thoại này là **nói rõ cái sắp xảy ra** rồi mới cho bấm:
+ * số hiệu cấp ra là vĩnh viễn, phiên bản khóa một chiều.
  */
 export function DocumentIssueDialog({
   documentId,
   open,
   onOpenChange,
-  currentMode,
+  issuerCompanyId,
   isPending = false,
   onConfirm,
 }: DocumentIssueDialogProps) {
-  const [mode, setMode] = useState(String(currentMode || APPLY_MODE.scope))
   //  Chỉ hỏi khi hộp thoại thật sự mở — đây là truy vấn nặng nhất của trang.
   const { data: preview } = useIssuePreview(documentId, open)
-  const { data: clones } = useDocumentClones(open ? documentId : undefined)
+  const { data: scopes } = useDocumentScopes(open ? documentId : undefined)
 
-  const soPhapNhanDaKhai = clones?.plan.length ?? 0
+  //  Đọc thẳng PHẠM VI đang lưu chứ không đọc kế hoạch clone khai lúc tạo: phạm
+  //  vi còn sửa được ở tab Phạm vi sau khi tạo, lấy bản khai cũ thì hộp thoại
+  //  nói một đằng mà văn bản áp một nẻo. Cùng một luật với màn tạo văn bản.
+  const phapNhanNhanBanRieng = cloneTargetsFromScopes(scopes?.items ?? [], issuerCompanyId)
+  const tachBanRieng = phapNhanNhanBanRieng.length > 0
+  const applyMode = tachBanRieng ? APPLY_MODE.clone : APPLY_MODE.scope
 
-  const chonPhamVi = Number(mode) === APPLY_MODE.scope
+  //  Gọi tên từng nơi thay vì chỉ đếm số: người ban hành phải nhận ra ngay có
+  //  nơi nào lọt vào danh sách mà lẽ ra không nên có.
+  const tenPhapNhan = phapNhanNhanBanRieng
+    .map((id) => scopes?.items.find((row) => row.company_id === id)?.company_name)
+    .filter(Boolean)
+    .join(', ')
+
   //  Backend sẽ từ chối những thứ này — không bày ra nút bấm sẽ hỏng.
   const biChan = (preview?.blockers.length ?? 0) > 0
 
@@ -67,45 +77,33 @@ export function DocumentIssueDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/*  J04 — bốn thứ sắp xảy ra, đặt TRƯỚC phần chọn cơ chế: người ban hành
-             cần biết mình đang ban hành cái gì trước khi chọn áp dụng ra sao. */}
+        {/*  J04 — bốn thứ sắp xảy ra. */}
         {preview && <IssuePreflightSummary preview={preview} />}
 
-        <RadioGroup value={mode} onValueChange={setMode} className="gap-3">
-          <ModeOption
-            value={String(APPLY_MODE.scope)}
-            picked={chonPhamVi}
-            icon={Target}
-            title="Một văn bản, gắn phạm vi áp dụng"
-            recommended
-            when="Nội dung giống hệt cho mọi công ty con — thông báo nghỉ Tết, quy chế bảo mật thông tin."
-            result="Một số hiệu, một nơi sửa. Sửa một lần là 13 công ty thấy bản mới ngay."
-          />
-          <ModeOption
-            value={String(APPLY_MODE.clone)}
-            picked={!chonPhamVi}
-            icon={Copy}
-            title="Clone thành bản nháp riêng cho từng pháp nhân"
-            when="Pháp luật buộc pháp nhân con tự đứng tên, hoặc nội dung phải khác — hạn mức khác, ngành nghề khác."
-            result="Mỗi công ty một số hiệu riêng, người ký riêng, hiệu lực riêng."
-          />
-        </RadioGroup>
-
-        {!chonPhamVi && (
-          <p className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            <Building2 className="mt-0.5 size-4 shrink-0 text-amber-700" />
+        {tachBanRieng ? (
+          <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <p className="flex items-start gap-2">
+              <Building2 className="mt-0.5 size-4 shrink-0 text-amber-700" />
+              <span>
+                Phạm vi đang khai <b>{phapNhanNhanBanRieng.length}</b> pháp nhân ngoài
+                nơi ban hành{tenPhapNhan && <> — {tenPhapNhan}</>}, nên mỗi nơi sẽ có{' '}
+                <b>bản riêng</b>: số hiệu riêng, người ký riêng, hiệu lực riêng.
+              </span>
+            </p>
+            <p className="pl-6">
+              Bản nháp <b>không sinh tự động</b> khi bấm Ban hành — mỗi bản là một văn
+              bản thật mang số hiệu vĩnh viễn, nên đó phải là một lần bấm có chủ ý. Ban
+              hành xong, mở thẻ «Bản clone ở pháp nhân con» ở tab Quan hệ; các pháp nhân
+              đã khai được tick sẵn.
+            </p>
+          </div>
+        ) : (
+          <p className="flex items-start gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+            <Target className="mt-0.5 size-4 shrink-0" />
             <span>
-              Bản nháp cho pháp nhân con <b>không sinh tự động</b> khi bấm Ban hành —
-              mỗi bản là một văn bản thật mang số hiệu vĩnh viễn, nên đó phải là một
-              lần bấm có chủ ý. Ban hành xong, mở thẻ «Bản clone ở pháp nhân con» ở
-              tab Quan hệ.
-              {soPhapNhanDaKhai > 0 && (
-                <>
-                  {' '}
-                  Kế hoạch khai lúc tạo văn bản đã có <b>{soPhapNhanDaKhai}</b> pháp
-                  nhân, sẽ được tick sẵn.
-                </>
-              )}
+              Phạm vi không khai pháp nhân nào khác, nên văn bản áp dụng cho{' '}
+              <b>toàn bộ pháp nhân ban hành</b> — mọi phòng ban, mọi nhân sự ở đó. Muốn
+              nơi khác có bản riêng thì khai thêm pháp nhân ở tab Phạm vi rồi ban hành.
             </span>
           </p>
         )}
@@ -114,62 +112,11 @@ export function DocumentIssueDialog({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Hủy
           </Button>
-          <Button
-            type="button"
-            disabled={isPending || biChan}
-            onClick={() => onConfirm(Number(mode))}
-          >
+          <Button type="button" disabled={isPending || biChan} onClick={() => onConfirm(applyMode)}>
             Ban hành
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
-}
-
-interface ModeOptionProps {
-  value: string
-  picked: boolean
-  icon: React.ComponentType<{ className?: string }>
-  title: string
-  when: string
-  result: string
-  recommended?: boolean
-}
-
-/** Một lựa chọn cơ chế — nói rõ *dùng khi nào* và *kết quả ra sao*. */
-function ModeOption({
-  value,
-  picked,
-  icon: Icon,
-  title,
-  when,
-  result,
-  recommended = false,
-}: ModeOptionProps) {
-  return (
-    <label
-      className={cn(
-        'flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors',
-        picked ? 'border-primary bg-accent/40' : 'hover:bg-muted/50',
-      )}
-    >
-      <RadioGroupItem value={value} className="mt-0.5" />
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-2 font-medium">
-          <Icon className="size-4 text-muted-foreground" />
-          {title}
-          {recommended && (
-            <span className="font-normal text-muted-foreground">— mặc định</span>
-          )}
-        </span>
-        <span className="mt-1 block text-muted-foreground">
-          <b>Dùng khi:</b> {when}
-        </span>
-        <span className="block text-muted-foreground">
-          <b>Kết quả:</b> {result}
-        </span>
-      </span>
-    </label>
   )
 }
