@@ -121,4 +121,13 @@ export const appRoutes = {
     /** Gán vai trò và phạm vi dữ liệu cho MỘT tài khoản. */
     userPermissionDetail: (userId: number | string) => `/hr/permissions/users/${userId}`,
   },
+  approvalSeal: {
+    root: '/approval-seal',
+  },
+  vehicleBooking: {
+    root: '/vehicle-booking',
+  },
+  degoCoffee: {
+    root: '/dego-coffee',
+  },
 } as const
