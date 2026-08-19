@@ -1,9 +1,7 @@
-import { FileText, Paperclip, Trash2, Upload, X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useState } from 'react'
 
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
-import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { DatePicker } from '@/shared/ui/date-picker'
 import {
   Dialog,
@@ -22,18 +20,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { Skeleton } from '@/shared/ui/skeleton'
 import { Textarea } from '@/shared/ui/textarea'
 import { formatDate } from '@/shared/utils/format-date'
 import {
-  useDeletePurchaseRequestAttachment,
-  usePurchaseRequestAttachments,
   usePurchaseRequestItemGroups,
   usePurchaseRequestUnits,
-  useUploadPurchaseRequestAttachments,
 } from '../hooks/use-purchase-request-support'
 import type { SurveyRequestLine } from '../types/survey-request-detail'
 import { SurveyLineStateBadge } from './document-status-badge'
+import { LineAttachments } from './line-attachments'
 
 /** Đính kèm của dòng khảo sát nằm dưới entity riêng, không chung với đầu phiếu. */
 const LINE_ATTACHMENT_ENTITY = 'survey_request_line'
@@ -222,6 +217,7 @@ export function SurveyRequestLineDialog({
 
           <div className="sm:col-span-2">
             <LineAttachments
+              entity={LINE_ATTACHMENT_ENTITY}
               lineId={draft.id ?? 0}
               canManage={editing}
               pendingFiles={pendingFiles}
@@ -330,178 +326,5 @@ function CatalogSelect({
         ))}
       </SelectContent>
     </Select>
-  )
-}
-
-const IMAGE_PATTERN = /\.(jpe?g|png|webp|gif)$/i
-
-/**
- * Đính kèm của một dòng.
- *
- * Dòng CHƯA lưu thì chưa có id để gắn tệp vào, nên ảnh được giữ tạm trong bộ nhớ
- * và chỉ tải lên sau khi bấm Lưu phiếu (trang lo việc đó). Không làm vậy thì
- * người lập phải lưu phiếu trước rồi mới quay lại đính ảnh từng dòng.
- */
-function LineAttachments({
-  lineId,
-  canManage,
-  pendingFiles,
-  onPendingFilesChange,
-}: {
-  lineId: number
-  canManage: boolean
-  pendingFiles: File[]
-  onPendingFilesChange: (files: File[]) => void
-}) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const { data, isLoading } = usePurchaseRequestAttachments(LINE_ATTACHMENT_ENTITY, lineId)
-  const upload = useUploadPurchaseRequestAttachments(LINE_ATTACHMENT_ENTITY, lineId)
-  const remove = useDeletePurchaseRequestAttachment(LINE_ATTACHMENT_ENTITY, lineId)
-
-  // Ảnh tạm phải có URL để xem trước; tạo xong nhớ thu hồi, không thì mỗi lần
-  // mở popup lại giữ thêm một bản blob trong bộ nhớ trình duyệt.
-  const previews = useMemo(
-    () => pendingFiles.map((file) => ({ file, url: URL.createObjectURL(file) })),
-    [pendingFiles],
-  )
-  useEffect(
-    () => () => previews.forEach((preview) => URL.revokeObjectURL(preview.url)),
-    [previews],
-  )
-
-  const files = data ?? []
-
-  return (
-    <section className="rounded-lg border p-3">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h4 className="flex items-center gap-2 text-sm font-semibold text-navy dark:text-foreground">
-          <Paperclip className="size-4 text-primary" />
-          Hình ảnh / tài liệu đính kèm
-        </h4>
-        {canManage && (
-          <>
-            <input
-              ref={inputRef}
-              className="hidden"
-              type="file"
-              multiple
-              onChange={(event) => {
-                const picked = Array.from(event.target.files ?? [])
-                if (picked.length) {
-                  if (lineId > 0) void upload.mutateAsync({ files: picked })
-                  else onPendingFilesChange([...pendingFiles, ...picked])
-                }
-                event.target.value = ''
-              }}
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={upload.isPending}
-              onClick={() => inputRef.current?.click()}
-            >
-              <Upload />
-              Thêm tệp
-            </Button>
-          </>
-        )}
-      </div>
-
-      {lineId > 0 && isLoading && <Skeleton className="h-20 w-full" />}
-
-      {lineId <= 0 && (
-        <p className="mb-2 text-xs text-muted-foreground">
-          Chọn hình bây giờ — sẽ được lưu cùng khi bạn bấm Lưu.
-        </p>
-      )}
-
-      {lineId > 0 && !isLoading && !files.length && (
-        <p className="text-xs text-muted-foreground">Chưa có tệp nào.</p>
-      )}
-
-      <div className="flex flex-wrap gap-2">
-        {files.map((file) =>
-          file.content_type.startsWith('image/') || IMAGE_PATTERN.test(file.filename) ? (
-            <div key={file.id} className="group relative">
-              <a href={file.url} target="_blank" rel="noreferrer">
-                <img
-                  className="size-20 rounded-md border object-cover"
-                  src={file.url}
-                  alt={file.filename}
-                />
-              </a>
-              {canManage && (
-                <div className="absolute right-1 top-1 rounded-md bg-background/90 opacity-0 shadow-sm transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-                  <ConfirmIconButton
-                    icon={Trash2}
-                    title="Xóa tệp"
-                    confirmTitle={`Xóa tệp ${file.filename}?`}
-                    confirmDescription="Tệp sẽ bị gỡ khỏi dòng khảo sát này."
-                    confirmLabel="Xóa"
-                    destructive
-                    disabled={remove.isPending}
-                    onConfirm={() => void remove.mutateAsync(file.id)}
-                  />
-                </div>
-              )}
-            </div>
-          ) : (
-            <div key={file.id} className="flex items-center gap-1 rounded-md border px-2 py-1">
-              <a
-                className="flex items-center gap-1.5 text-sm hover:underline"
-                href={file.url}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <FileText className="size-4 text-muted-foreground" />
-                {file.filename}
-              </a>
-              {canManage && (
-                <ConfirmIconButton
-                  icon={Trash2}
-                  title="Xóa tệp"
-                  confirmTitle={`Xóa tệp ${file.filename}?`}
-                  confirmDescription="Tệp sẽ bị gỡ khỏi dòng khảo sát này."
-                  confirmLabel="Xóa"
-                  destructive
-                  disabled={remove.isPending}
-                  onConfirm={() => void remove.mutateAsync(file.id)}
-                />
-              )}
-            </div>
-          ),
-        )}
-
-        {previews.map((preview, index) => (
-          <div key={`${preview.file.name}-${index}`} className="group relative">
-            {preview.file.type.startsWith('image/') ? (
-              <img
-                className="size-20 rounded-md border object-cover"
-                src={preview.url}
-                alt={preview.file.name}
-              />
-            ) : (
-              <div className="flex size-20 flex-col items-center justify-center gap-1 rounded-md border p-1 text-center">
-                <FileText className="size-5 text-muted-foreground" />
-                <span className="line-clamp-2 text-[10.5px] text-muted-foreground">
-                  {preview.file.name}
-                </span>
-              </div>
-            )}
-            {canManage && (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="absolute right-0.5 top-0.5 bg-background/90 text-destructive hover:text-destructive"
-                title="Bỏ tệp này"
-                onClick={() => onPendingFilesChange(pendingFiles.filter((_, i) => i !== index))}
-              >
-                <X />
-              </Button>
-            )}
-          </div>
-        ))}
-      </div>
-    </section>
   )
 }

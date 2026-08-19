@@ -31,6 +31,7 @@ export const queryKeys = {
     purchaseOrder: (id: number) => ['procurement', 'purchase-orders', id] as const,
     surveys: (params?: Record<string, unknown>) =>
       ['procurement', 'surveys', params ?? {}] as const,
+    survey: (id: number) => ['procurement', 'surveys', id] as const,
     purchaseProgress: (params?: Record<string, unknown>) =>
       ['procurement', 'purchase-progress', params ?? {}] as const,
     surveyReport: (params?: Record<string, unknown>) =>

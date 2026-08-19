@@ -170,6 +170,18 @@ export const procurementModule: ErpModule = {
       }),
     },
     {
+      path: appRoutes.procurement.surveyNew,
+      lazy: async () => ({
+        Component: (await import('./pages/survey-detail-page')).SurveyDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.surveyDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/survey-detail-page')).SurveyDetailPage,
+      }),
+    },
+    {
       path: appRoutes.procurement.surveyReport,
       lazy: async () => ({
         Component: (await import('./pages/survey-report-page')).SurveyReportPage,

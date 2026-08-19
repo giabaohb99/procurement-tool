@@ -93,13 +93,17 @@ shadcn/Radix + TanStack Query + zustand). Backend không đổi: v2 gọi đúng
 
 Phân xử khi có yêu cầu mới: **sửa lỗi** màn đang chạy thật → `frontend/`; **tính năng mới**
 → `frontend-v2/`, màn đó chưa có ở v2 thì dựng màn đó trước. `frontend/` chưa được tắt vì v2
-còn thiếu màn nghiệp vụ — **đo lại 19/08/2026, còn 3**: **chi tiết Phiếu khảo sát**, **Xử lý
-khảo sát**, Yêu cầu thanh toán (kèm phiếu in).
+còn thiếu màn nghiệp vụ — **đo lại 19/08/2026, còn 2**: **Xử lý khảo sát**
+(`SurveyRequestProcess.tsx`) và Yêu cầu thanh toán (kèm phiếu in).
+Đụng vào **bảng dòng của phiếu khảo sát** (cả hai bản) thì đọc **hợp đồng hiển thị** ở dòng
+**CR-090** trong `doc/tai-lieu-ky-thuat/change-log.md` trước — 5 điều kiện về xuống dòng /
+ô chỉ xem / ô chọn NCC / phím Enter / bề rộng cột, làm hụt là lủng đúng chỗ vừa sửa lỗi.
 *Tiến độ mua hàng* và *Phân quyền* thì **đã có ở v2** rồi
 (`procurement/pages/purchase-progress-page.tsx`, `hr/pages/role-permission-page.tsx` +
 `user-permission-detail-page.tsx`) — danh sách cũ ghi sai.
-Vừa dời xong: **chi tiết Yêu cầu báo giá** (`procurement/pages/survey-request-detail-page.tsx` —
-hai nút ở đầu phiếu tạm khuyết, chờ hai màn khảo sát nói trên), **Công nợ**
+Vừa dời xong: **chi tiết Phiếu khảo sát** (`procurement/pages/survey-detail-page.tsx`, xem
+CR-091), **chi tiết Yêu cầu báo giá** (`procurement/pages/survey-request-detail-page.tsx` —
+còn khuyết nút *Xử lý khảo sát*, chờ màn đó), **Công nợ**
 (`finance/pages/payable-list-page.tsx` — cột tick chọn tạm khuyết, chờ màn Yêu cầu thanh toán),
 **Tồn kho** (`inventory/pages/inventory-list-page.tsx`) và **Báo cáo mua hàng**
 (`procurement/pages/purchase-report-page.tsx` — tám tab, dữ liệu vẫn gom theo TÊN phòng

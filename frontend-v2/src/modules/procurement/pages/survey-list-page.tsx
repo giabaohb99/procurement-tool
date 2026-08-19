@@ -1,18 +1,22 @@
-import { Search } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
+import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
 import {
   ConditionalFilter,
   FilterProvider,
   useFilterQuery,
 } from '@/shared/conditional-filter'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { Badge } from '@/shared/ui/badge'
+import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
@@ -58,6 +62,7 @@ export function SurveyListPage() {
  * lọc bằng subquery nên không dùng được trong bộ lọc nâng cao.
  */
 function SurveyListContent() {
+  const navigate = useNavigate()
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
@@ -133,6 +138,14 @@ function SurveyListContent() {
       <PageHeader
         title="Phiếu khảo sát"
         description="Khảo sát nhà cung cấp và sản phẩm phục vụ so sánh giá."
+        actions={
+          <PermissionGate entity="survey" action="create">
+            <Button onClick={() => navigate(appRoutes.procurement.surveyNew)}>
+              <Plus />
+              Thêm mới
+            </Button>
+          </PermissionGate>
+        }
       />
 
       <Card className="flex min-h-0 flex-1 flex-col p-4">
@@ -141,6 +154,7 @@ function SurveyListContent() {
           columns={columns}
           rows={data?.items}
           getRowId={(survey) => survey.id}
+          onRowClick={(survey) => navigate(appRoutes.procurement.surveyDetail(survey.id))}
           isLoading={isLoading}
           isError={isError}
           emptyMessage="Không tìm thấy phiếu khảo sát nào."

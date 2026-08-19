@@ -3,6 +3,7 @@ import {
   Ban,
   Check,
   CheckCheck,
+  ClipboardCheck,
   CornerUpLeft,
   FileCheck,
   FilePlus,
@@ -424,10 +425,28 @@ export function SurveyRequestDetailPage() {
           )}
 
           {/*
-            Còn thiếu so với bản cũ: "Xử lý khảo sát" và "Tạo phiếu khảo sát" —
-            hai màn đó chưa được dựng ở v2 nên nút sẽ dẫn vào trang trống. Gắn lại
-            ngay khi `survey-request-process-page` và `survey-detail-page` lên.
+            Còn thiếu so với bản cũ: "Xử lý khảo sát" — màn đó chưa dựng ở v2 nên
+            nút sẽ dẫn vào trang trống. Gắn lại ngay khi `survey-request-process-page` lên.
           */}
+
+          {/* Chỉ nhân sự thu mua, và chỉ khi phiếu ĐANG XỬ LÝ — đúng lúc đó mới
+              biết cần khảo sát cái gì. Mã YCBG đưa sang theo URL để phiếu khảo sát
+              mới neo sẵn về phiếu nguồn. */}
+          {!isNew && status === 'processing' && can('survey_request', 'process') && (
+            <PermissionGate entity="survey" action="create">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  navigate(
+                    `${appRoutes.procurement.surveyNew}?sr=${data.id}&sr_code=${encodeURIComponent(data.code)}`,
+                  )
+                }
+              >
+                <ClipboardCheck />
+                Tạo phiếu khảo sát
+              </Button>
+            </PermissionGate>
+          )}
 
           {!isNew && CREATE_PR_STATUSES.includes(status) && canCreatePr && (
             <Button

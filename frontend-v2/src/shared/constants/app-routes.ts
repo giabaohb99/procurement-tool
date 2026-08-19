@@ -36,6 +36,8 @@ export const appRoutes = {
     purchaseProgress: '/procurement/purchase-progress',
     /** Phiếu khảo sát NCC / sản phẩm. */
     surveys: '/procurement/surveys',
+    surveyNew: '/procurement/surveys/new',
+    surveyDetail: (id: number | string) => `/procurement/surveys/${id}`,
     /** Báo cáo khảo sát, cắt theo dòng khảo sát. */
     surveyReport: '/procurement/survey-report',
     /** Báo cáo mua hàng — tám tab trên cùng một bộ lọc công ty / năm. */
