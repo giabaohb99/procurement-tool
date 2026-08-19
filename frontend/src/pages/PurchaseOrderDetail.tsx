@@ -67,6 +67,40 @@ const emptyDelivery = {
   shipping_unit_price: 0, shipping_amount: 0, qc_result: '', progress_note: '',
 }
 
+// CR-095 (phiếu hỗ trợ TK19082601) — bộ trường BẮT BUỘC của một dòng hàng trước khi
+// gửi duyệt. PHẢI khớp `TRUONG_BAT_BUOC_DONG` ở backend
+// (app/modules/purchase_order/service.py): lệch một ô là nút Gửi duyệt mở ra nhưng API
+// trả 400, hoặc ngược lại — nút khóa mà không ai biết vì sao.
+//
+// Không có VAT: 0 vừa là "chưa nhập" vừa là "hàng không chịu thuế", chặn thì khóa luôn
+// mặt hàng 0% hợp lệ. Xem chú thích dài ở backend.
+const REQUIRED_LINE_FIELDS: [string, string][] = [
+  ['product_code', 'Mã hàng'],
+  ['item_group', 'Phân loại'],
+  ['product_name', 'Tên hàng'],
+  ['invoice_name', 'Tên trên hóa đơn'],
+  ['required_date', 'Ngày yêu cầu có hàng'],
+  ['expected_date', 'Ngày dự kiến có hàng'],
+  ['unit', 'ĐVT'],
+  ['warehouse_code', 'Kho nhận mặc định'],
+  ['qty_request', 'SL yêu cầu'],
+  ['qty_order', 'SL đặt NCC'],
+  ['price', 'Đơn giá'],
+]
+const NUMERIC_LINE_FIELDS = ['qty_request', 'qty_order', 'price']
+
+// Dấu * đỏ sau nhãn ô bắt buộc — theo lệ đang dùng ở cột "Tên hàng *" của bảng dòng hàng
+const Req = () => <span style={{ color: 'var(--red)' }} title="Bắt buộc trước khi gửi duyệt"> *</span>
+
+// Nhãn các ô còn trống của 1 dòng hàng (rỗng ⇒ chưa gửi duyệt được)
+function missingLineFields(it: any): string[] {
+  return REQUIRED_LINE_FIELDS
+    .filter(([k]) => NUMERIC_LINE_FIELDS.includes(k)
+      ? !(Number(it?.[k]) > 0)
+      : !String(it?.[k] ?? '').trim())
+    .map(([, label]) => label)
+}
+
 // Số ngày giữa 2 mốc "YYYY-MM-DD" (a − b); null nếu thiếu/không hợp lệ
 function daysBetween(a: string, b: string): number | null {
   if (!a || !b) return null
@@ -198,6 +232,9 @@ export default function PurchaseOrderDetail() {
   // Dòng ĐÃ NHẬN HÀNG → khóa nhận diện sản phẩm (Mã hàng, ĐVT). Đổi lúc này sẽ dời
   // phiếu nhập kho + tồn kho đã ghi theo mã cũ sang mã khác. Backend cũng chặn.
   const lineReceived = (it: any) => Number(it?.qty_received || 0) > 0
+  // CR-096: popup lịch sử mua hàng mở được ở MỌI trạng thái đơn (nó chỉ đọc), nhưng chỉ cho
+  // "Dùng giá này" khi dòng thật sự còn sửa được — nếu không, lượt lưu sẽ bị backend chặn.
+  const historyReadOnly = (it: any) => !headerEditable || lineLocked(it)
   const PRODUCT_LOCK_HINT = 'Dòng đã nhận hàng — không đổi được Mã hàng / Tên hàng / ĐVT (đã ghi nhận nhập kho theo hàng này). Hủy dòng rồi thêm dòng mới nếu cần.'
   // NSPT phụ trách CHỈ admin/người có quyền duyệt được giao (không auto-gán, không tự điền)
   const canPickNspt = can('purchase_order', 'approve')
@@ -233,11 +270,17 @@ export default function PurchaseOrderDetail() {
     setPo((s: any) => (k === 'order_date' ? recalcUrgent({ ...s, order_date: v }) : { ...s, [k]: v }))
   const items = po.items || []
   // CR-073: thiếu thông tin bắt buộc thì chặn ngay tại nút Gửi duyệt (backend chặn lần nữa)
+  // CR-095: kiểm thêm bộ trường bắt buộc của TỪNG dòng hàng, và nói rõ dòng nào thiếu ô nào.
+  const lineIssues = items
+    .map((it: any, i: number) => ({ i: i + 1, code: it.product_code || 'chưa có mã hàng', missing: missingLineFields(it) }))
+    .filter((x: any) => x.missing.length > 0)
   const submitBlockReason = !(po.supplier_code || '').trim()
     ? 'Chưa chọn nhà cung cấp — không gửi duyệt được'
     : items.length === 0
       ? 'Đơn chưa có dòng hàng — không gửi duyệt được'
-      : ''
+      : lineIssues.length > 0
+        ? 'Chưa gửi duyệt được — còn thiếu ' + lineIssues.map((x: any) => `dòng ${x.i} (${x.code}): ${x.missing.join(', ')}`).join('; ')
+        : ''
   // Mã hàng đang lưu trên server — mốc để chỉ chặn TRÙNG MỚI (xem utils/lines.newDupCodes)
   const savedCodes = useRef<string[]>([])
   const dupCodes = useMemo(() => newDupCodes(items.map((it: any) => it.product_code || ''), savedCodes.current), [items])
@@ -677,6 +720,21 @@ export default function PurchaseOrderDetail() {
                 </div>
               )}
             </div>
+            {/* CR-095: nêu trước dòng nào còn thiếu ô nào, thay vì để người lập bấm Gửi
+                duyệt rồi mới nhận lỗi. Chỉ hiện lúc còn sửa được — đơn đã trình/đã duyệt
+                mà kêu thiếu thì không có đường sửa, chỉ làm rối. */}
+            {headerEditable && lineIssues.length > 0 && (
+              <div style={{ marginBottom: 12, padding: '8px 12px', borderRadius: 8, background: '#fffbeb',
+                border: '1px solid #fcd34d', color: '#92400e', fontSize: 12.5 }}>
+                <div style={{ fontWeight: 600, marginBottom: 2 }}>
+                  <i className="ti ti-alert-triangle" /> Còn thiếu thông tin bắt buộc — chưa gửi duyệt được
+                </div>
+                {lineIssues.map((x: any) => (
+                  <div key={x.i}>Dòng {x.i} ({x.code}): {x.missing.join(', ')}</div>
+                ))}
+                <div style={{ marginTop: 2, opacity: .85 }}>Bấm <i className="ti ti-pencil" /> ở cột Hành động để mở Chi tiết dòng và điền.</div>
+              </div>
+            )}
             <div className="items-scroll">
               <table className="items-table" style={{ minWidth: 1220 }}>
                 <thead>
@@ -709,9 +767,16 @@ export default function PurchaseOrderDetail() {
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <ProductPicker compact code={it.product_code} name={it.product_name} disabled={!headerEditable || lineLocked(it) || lineReceived(it)} onPick={(prod) => applyProduct(i, prod)} />
                           </div>
-                          {/* Tham chiếu giá đã mua trước đó — chỉ hiện khi đã chọn mã hàng và dòng còn sửa được */}
-                          {headerEditable && !lineLocked(it) && it.product_code && (
-                            <button className="icon-btn" style={{ flexShrink: 0 }} title="Lịch sử mua hàng gần nhất của mã hàng này" onClick={() => setHistoryIdx(i)}>
+                          {/* Tham chiếu giá đã mua trước đó — hiện ngay khi đã chọn mã hàng.
+                              KHÔNG khóa theo quyền sửa: đơn đang chờ duyệt (CR-073 khóa sửa)
+                              chính là lúc người duyệt cần đối chiếu giá cũ nhất. Dòng không
+                              sửa được thì popup mở ở chế độ chỉ xem, không điền giá. */}
+                          {it.product_code && (
+                            <button className="icon-btn" style={{ flexShrink: 0 }}
+                              title={historyReadOnly(it)
+                                ? 'Lịch sử mua hàng gần nhất của mã hàng này (chỉ xem)'
+                                : 'Lịch sử mua hàng gần nhất của mã hàng này'}
+                              onClick={() => setHistoryIdx(i)}>
                               <i className="ti ti-history" style={{ fontSize: 16, color: 'var(--muted)' }} />
                             </button>
                           )}
@@ -848,6 +913,7 @@ export default function PurchaseOrderDetail() {
           productCode={items[historyIdx].product_code}
           productName={items[historyIdx].product_name}
           onPick={(h) => applyHistory(historyIdx, h)}
+          readOnly={historyReadOnly(items[historyIdx])}
           onClose={() => setHistoryIdx(null)}
         />
       )}
@@ -879,17 +945,17 @@ export default function PurchaseOrderDetail() {
                 return (
                   <div className="form-grid" style={{ marginBottom: 18 }}>
                     <div className="form-row" title={lineReceived(it) ? PRODUCT_LOCK_HINT : undefined}>
-                      <label>Mã hàng (VTBB/NL)</label>
+                      <label>Mã hàng (VTBB/NL)<Req /></label>
                       <ProductPicker code={it.product_code} name={it.product_name} disabled={de || lineReceived(it)} onPick={(prod) => applyProduct(ii, prod)} />
                       {lineReceived(it) && <span style={{ fontSize: 12, color: 'var(--muted)' }}><i className="ti ti-lock" /> Đã nhận hàng — khóa mã hàng / tên hàng / ĐVT</span>}
                     </div>
                     <div className="form-row">
-                      <label>Phân loại</label>
+                      <label>Phân loại<Req /></label>
                       <SearchSelect value={canonGroup(it.item_group)} options={groupOptions(it.item_group)} disabled={de}
                         placeholder="Chọn/tìm phân loại…" onChange={(v) => setItem(ii, { item_group: v })} />
                     </div>
-                    <div className="form-row" style={{ gridColumn: '1 / -1' }} title={lineReceived(it) ? PRODUCT_LOCK_HINT : undefined}><label>Tên hàng</label><TextAreaAuto style={POPUP_TEXT} value={it.product_name || ''} disabled={de || lineReceived(it)} onChange={(v) => setItem(ii, { product_name: v })} /></div>
-                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên trên hóa đơn</label><TextAreaAuto style={POPUP_TEXT} value={it.invoice_name || ''} disabled={de} onChange={(v) => setItem(ii, { invoice_name: v })} /></div>
+                    <div className="form-row" style={{ gridColumn: '1 / -1' }} title={lineReceived(it) ? PRODUCT_LOCK_HINT : undefined}><label>Tên hàng<Req /></label><TextAreaAuto style={POPUP_TEXT} value={it.product_name || ''} disabled={de || lineReceived(it)} onChange={(v) => setItem(ii, { product_name: v })} /></div>
+                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên trên hóa đơn<Req /></label><TextAreaAuto style={POPUP_TEXT} value={it.invoice_name || ''} disabled={de} onChange={(v) => setItem(ii, { invoice_name: v })} /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Xuất xứ / TSKT / chất liệu</label><TextAreaAuto style={POPUP_TEXT} value={it.spec || ''} disabled={de} onChange={(v) => setItem(ii, { spec: v })} /></div>
                     <div className="form-row"><label>Mã HH (thành phẩm)</label><input value={it.fg_code || ''} placeholder="Tự gắn khi chọn SP" disabled={de} onChange={(e) => setItem(ii, { fg_code: e.target.value })} /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên HH (thành phẩm)</label><TextAreaAuto style={POPUP_TEXT} value={it.fg_name || ''} placeholder="Tự gắn khi chọn SP" disabled={de} onChange={(v) => setItem(ii, { fg_name: v })} /></div>
@@ -920,22 +986,22 @@ export default function PurchaseOrderDetail() {
                         )}
                       </div>
                     </div>
-                    <div className="form-row"><label>Ngày yêu cầu có hàng</label><DateInput value={it.required_date || ''} disabled={de} onChange={(v) => setItem(ii, { required_date: v })} /></div>
+                    <div className="form-row"><label>Ngày yêu cầu có hàng<Req /></label><DateInput value={it.required_date || ''} disabled={de} onChange={(v) => setItem(ii, { required_date: v })} /></div>
                     {/* Dự kiến có hàng: để trống thì khi lưu backend tự chép từ dòng YCMH nguồn.
                         Sửa ở đây KHÔNG ghi đè ngày đang có trên YCMH — chỉ báo chuông cho NSTM phụ trách dòng. */}
-                    <div className="form-row"><label>Ngày dự kiến có hàng</label><DateInput value={it.expected_date || ''} disabled={de} onChange={(v) => setItem(ii, { expected_date: v })} /></div>
+                    <div className="form-row"><label>Ngày dự kiến có hàng<Req /></label><DateInput value={it.expected_date || ''} disabled={de} onChange={(v) => setItem(ii, { expected_date: v })} /></div>
                     <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={!!it.supplier_ready} disabled={de} onChange={(e) => setItem(ii, { supplier_ready: e.target.checked })} style={{ width: 16, height: 16 }} /> NCC có sẵn hàng</label></div>
-                    <div className="form-row"><label>ĐVT</label>
+                    <div className="form-row"><label>ĐVT<Req /></label>
                       <SearchSelect value={it.unit ?? ''} options={units} disabled={de} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setItem(ii, { unit: v })} />
                     </div>
-                    <div className="form-row"><label>Kho nhận mặc định</label>
+                    <div className="form-row"><label>Kho nhận mặc định<Req /></label>
                       <SearchSelect value={it.warehouse_code ?? ''} disabled={de} placeholder="Chọn/tìm kho…"
                         options={warehouses.map((w) => ({ value: w.code, label: `${w.code} — ${w.name}` }))}
                         onChange={(v) => setItem(ii, { warehouse_code: v })} />
                     </div>
-                    <div className="form-row"><label>SL yêu cầu</label><NumberInput decimals value={it.qty_request} disabled={de} onChange={(v) => setItem(ii, { qty_request: v })} /></div>
-                    <div className="form-row"><label>SL đặt NCC</label><NumberInput decimals value={it.qty_order} disabled={de} onChange={(v) => setItem(ii, { qty_order: v })} /></div>
-                    <div className="form-row"><label>Đơn giá</label><CurrencyInput className="" value={it.price ?? 0} disabled={de} onChange={(val: number) => setItem(ii, { price: val })} /></div>
+                    <div className="form-row"><label>SL yêu cầu<Req /></label><NumberInput decimals value={it.qty_request} disabled={de} onChange={(v) => setItem(ii, { qty_request: v })} /></div>
+                    <div className="form-row"><label>SL đặt NCC<Req /></label><NumberInput decimals value={it.qty_order} disabled={de} onChange={(v) => setItem(ii, { qty_order: v })} /></div>
+                    <div className="form-row"><label>Đơn giá<Req /></label><CurrencyInput className="" value={it.price ?? 0} disabled={de} onChange={(val: number) => setItem(ii, { price: val })} /></div>
                     <div className="form-row"><label>VAT (%)</label><NumberInput value={it.vat} max={VAT_MAX} maxDecimals={VAT_DECIMALS} disabled={de} placeholder="Nhập % VAT (0 – 99,99)" onChange={(v) => setItem(ii, { vat: v })} /></div>
                     <div className="form-row"><label>Tổng tiền đặt hàng</label><input value={fmtVND(it.order_total ?? orderAmount(it))} disabled /></div>
                     <div className="form-row"><label>Tổng tiền hàng (đã nhận)</label><input value={fmtVND(it.goods_total || 0)} disabled /></div>
