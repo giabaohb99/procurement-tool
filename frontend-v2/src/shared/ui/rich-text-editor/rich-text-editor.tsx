@@ -23,6 +23,14 @@ import { EditorToolbar } from './editor-toolbar'
 import { EditorVerticalRuler } from './editor-vertical-ruler'
 import { ImageWithSize } from './image-size-extension'
 import { ImportTrace } from './import-trace-extension'
+import {
+  A4_HEIGHT_PX,
+  A4_WIDTH_PX,
+  MARGIN_LEFT_MM,
+  MARGIN_RIGHT_MM,
+  MARGIN_TOP_MM,
+  mmToPx,
+} from './page-format'
 import { ParagraphFormat } from './paragraph-format-extension'
 import {
   TableCellWithBackground,
@@ -31,10 +39,16 @@ import {
 import { TableWithColumnResizing } from './table-column-resizing-extension'
 import { TableRowWithHeight } from './table-row-resizing-extension'
 
-/** Khổ A4 ở 96dpi: 210 × 297mm ≈ 794 × 1123px, lề 20mm ≈ 76px. */
-const A4_WIDTH = 794
-const A4_HEIGHT = 1123
-const PAGE_MARGIN = 76
+/** Khổ giấy và lề — số gốc ở `page-format.ts`, dùng chung với bản in. */
+const A4_WIDTH = A4_WIDTH_PX
+const A4_HEIGHT = A4_HEIGHT_PX
+const PAGE_MARGIN = mmToPx(MARGIN_TOP_MM)
+
+/** Lề ngang mặc định (px) khi trang cha không truyền lề của bản ghi xuống. */
+const DEFAULT_MARGINS: PageMargins = {
+  left: mmToPx(MARGIN_LEFT_MM),
+  right: mmToPx(MARGIN_RIGHT_MM),
+}
 
 /** Khe giữa hai trang — chỉ là chỗ trống nhìn thấy nền xám, không thuộc trang. */
 const PAGE_GAP = 28
@@ -52,6 +66,13 @@ interface RichTextEditorProps {
   editable?: boolean
   /** Hiện khung mục lục bên trái — xem `EditorOutline`. */
   showOutline?: boolean
+  /**
+   * Lề ngang (px) của bản ghi. Bỏ trống thì dùng lề Nghị định 30 và giữ trong
+   * phiên soạn; truyền vào thì trang cha là nơi lưu, xem `onMarginsChange`.
+   */
+  defaultMargins?: PageMargins
+  /** Người dùng kéo thước xong — trang cha ghi xuống bản ghi. */
+  onMarginsChange?: (margins: PageMargins) => void
   className?: string
 }
 
@@ -88,16 +109,27 @@ const SERIALIZE_DELAY = 250
  */
 export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
   function RichTextEditor(
-    { defaultContent, onChange, editable = true, showOutline = false, className },
+    {
+      defaultContent,
+      onChange,
+      editable = true,
+      showOutline = false,
+      defaultMargins,
+      onMarginsChange,
+      className,
+    },
     ref,
   ) {
     const [zoom, setZoom] = useState(1)
-    // Lề ngang do thước kẻ chỉnh. Giữ ở đây (chưa lưu xuống bản ghi): đổi lề là
-    // việc căn chỉnh lúc soạn, mở lại văn bản thì về đúng lề quy định.
-    const [margins, setMargins] = useState<PageMargins>({
-      left: PAGE_MARGIN,
-      right: PAGE_MARGIN,
-    })
+    //  Lề ngang do thước kẻ chỉnh. Giữ ở đây và BÁO RA cho trang cha ghi xuống
+    //  bản ghi — như `defaultContent`, chỉ nhận giá trị ban đầu một lần: bám
+    //  theo prop thì mỗi lần lưu xong lề lại đổ ngược vào giữa lúc đang kéo.
+    const [margins, setMargins] = useState<PageMargins>(defaultMargins ?? DEFAULT_MARGINS)
+
+    function changeMargins(next: PageMargins) {
+      setMargins(next)
+      onMarginsChange?.(next)
+    }
     // Cột mục lục: đóng/mở và bề ngang do người dùng chỉnh, giữ trong phiên soạn.
     const [outlineOpen, setOutlineOpen] = useState(true)
     const [outlineWidth, setOutlineWidth] = useState(224)
@@ -176,8 +208,11 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
           pageHeight: A4_HEIGHT,
           marginTop: PAGE_MARGIN,
           marginBottom: PAGE_MARGIN,
-          marginLeft: PAGE_MARGIN,
-          marginRight: PAGE_MARGIN,
+          //  Lề ngang chỉ khai lúc dựng: sau đó thước kẻ đổi lề bằng biến CSS
+          //  (`--doc-margin-left/right`), plugin đo chiều cao trên DOM thật nên
+          //  vẫn chia trang đúng.
+          marginLeft: (defaultMargins ?? DEFAULT_MARGINS).left,
+          marginRight: (defaultMargins ?? DEFAULT_MARGINS).right,
           // Lề trên/dưới đã khai ở `marginTop/Bottom`; để thêm ở đây là cộng dồn
           // thành lề dày hơn quy định.
           contentMarginTop: 0,
@@ -326,9 +361,9 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         {editable && (
           <EditorRuler
             pageWidth={A4_WIDTH}
-            defaultMargin={PAGE_MARGIN}
+            defaultMargins={DEFAULT_MARGINS}
             margins={margins}
-            onChange={setMargins}
+            onChange={changeMargins}
             zoom={zoom}
             page={editor.view.dom}
           />

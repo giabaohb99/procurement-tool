@@ -8,31 +8,62 @@ Gán sẵn thì người soạn quên xóa và văn bản ra đời mang tên m�
 quan — lỗi này ngoài đời hay xảy ra và rất khó nhận ra khi đọc lướt.
 
 Mỗi mẫu gắn với MỘT loại văn bản: form tạo văn bản lọc mẫu theo loại đang chọn.
-"""
 
-_DAU_MAU = (
-    '<p style="text-align:center"><strong>{{PHAP_NHAN}}</strong></p>'
-    '<p style="text-align:center"><strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong></p>'
-    '<p style="text-align:center"><strong>Độc lập - Tự do - Hạnh phúc</strong></p>'
-    '<p style="text-align:center">———————</p>'
-    '<p style="text-align:center">Số: ……/……/…… </p>'
-    '<p style="text-align:right"><em>…………, ngày …… tháng …… năm 20……</em></p>'
-)
+Thể thức (khối đầu hai cột, khối ký) lấy từ `document_the_thuc.py` — sửa thể
+thức một chỗ là cả bộ mẫu lẫn bộ văn bản demo cùng đổi theo.
+"""
+from . import document_the_thuc as the_thuc
+
+#  Khối đầu HAI CỘT đúng Nghị định 30 — dựng ở `document_the_thuc.py`, dùng
+#  chung với bộ văn bản demo để hai nơi không lệch thể thức.
+_DAU_MAU = the_thuc.khoi_dau("{{PHAP_NHAN}}", "……/……/……",
+                             "…………, ngày …… tháng …… năm 20……")
 
 
 def _mau(ten_loai: str, trich_yeu_goi_y: str, than: str, ky: str) -> str:
     return (
         _DAU_MAU
-        + f'<p style="text-align:center"><strong>{ten_loai}</strong></p>'
-        + f'<p style="text-align:center"><em>{trich_yeu_goi_y}</em></p>'
+        + the_thuc.khoi_ten_loai(ten_loai, trich_yeu_goi_y)
         + than
-        + '<p><strong>Nơi nhận:</strong></p><ul>'
-          '<li>Như trên;</li><li>………………;</li>'
-          '<li>Lưu: VT, ………</li></ul>'
-        + f'<p style="text-align:right"><strong>{ky}</strong></p>'
-          '<p style="text-align:right"><em>(Ký, ghi rõ họ tên, đóng dấu)</em></p>'
-          '<p style="text-align:right">&nbsp;</p>'
-          '<p style="text-align:right">……………………………</p>'
+        + the_thuc.khoi_noi_nhan("Như trên", "………………")
+        + the_thuc.khoi_ky_mot_ben(ky)
+    )
+
+
+def _bien_ban_hop() -> str:
+    """BIÊN BẢN HỌP — dựng riêng, không dùng `_mau`.
+
+    Khác mọi mẫu khác ở hai chỗ và cả hai đều đúng với biên bản ngoài đời:
+    **không có khối «Nơi nhận»** (biên bản không gửi đi đâu, nó là bản ghi của
+    cuộc họp), và **ký hai bên** — thư ký ghi, chủ trì xác nhận. Một chữ ký thì
+    biên bản không có giá trị đối chiếu.
+    """
+    return (
+        _DAU_MAU
+        + the_thuc.khoi_ten_loai("BIÊN BẢN HỌP", "Về việc ……………………………………")
+        + "<p>Hôm nay, vào lúc ……… giờ ……… ngày …… tháng …… năm ………</p>"
+          "<p>Tại ………………………………………………………………………</p>"
+          "<p>Diễn ra cuộc họp với nội dung ………………………………………</p>"
+          "<p><strong>I. Thành phần tham dự:</strong></p>"
+          "<p>1. Chủ trì: Ông/Bà ……………………………… Chức vụ: ………………</p>"
+          "<p>2. Thư ký: Ông/Bà ……………………………… Chức vụ: ………………</p>"
+          "<p>3. Thành phần khác:</p>"
+          "<p>………………………………………………………………………………</p>"
+          "<p>………………………………………………………………………………</p>"
+          "<p><strong>II. Nội dung cuộc họp:</strong></p>"
+          "<p>………………………………………………………………………………</p>"
+          "<p>………………………………………………………………………………</p>"
+          "<p><strong>III. Biểu quyết (nếu có):</strong></p>"
+          "<p>- Tổng số phiếu: ………………… phiếu</p>"
+          "<p>- Số phiếu tán thành: ………… phiếu, chiếm …… %</p>"
+          "<p>- Số phiếu không tán thành: ………… phiếu, chiếm …… %</p>"
+          "<p><strong>IV. Kết luận cuộc họp:</strong></p>"
+          "<p>………………………………………………………………………………</p>"
+          "<p>………………………………………………………………………………</p>"
+          "<p>Cuộc họp kết thúc vào lúc …… giờ …… ngày …… tháng …… năm ………, "
+          "nội dung cuộc họp đã được các thành viên dự họp thông qua và cùng ký "
+          "vào biên bản./.</p>"
+        + the_thuc.khoi_ky_hai_ben("THƯ KÝ", "CHỦ TRÌ CUỘC HỌP")
     )
 
 
@@ -93,20 +124,9 @@ VAN_BAN_MAU = [
           "TRƯỞNG ĐƠN VỊ TRÌNH")),
 
     ("BB", "Biên bản họp",
-     "Khung biên bản: thời gian, thành phần, nội dung thảo luận và kết luận.",
-     _mau("BIÊN BẢN", "Họp về việc ……………………………………",
-          "<p><strong>Thời gian:</strong> ……… giờ ………, ngày ……/……/………</p>"
-          "<p><strong>Địa điểm:</strong> ………………………………………</p>"
-          "<p><strong>Thành phần tham dự:</strong></p>"
-          "<ul><li>Chủ trì: ………………………;</li>"
-          "<li>Thành viên: ………………………;</li>"
-          "<li>Thư ký: ………………………</li></ul>"
-          "<p><strong>Nội dung:</strong> ………………………………………</p>"
-          "<p><strong>Ý kiến thảo luận:</strong> ………………………………</p>"
-          "<p><strong>Kết luận:</strong> ………………………………………</p>"
-          "<p>Biên bản được đọc lại trước cuộc họp và nhất trí thông qua./.</p>"
-          "<p><strong>THƯ KÝ</strong> — ………………………</p>",
-          "CHỦ TRÌ CUỘC HỌP")),
+     "Khung biên bản họp thông dụng: thời gian địa điểm, thành phần tham dự, "
+     "nội dung, biểu quyết và kết luận; ký hai bên thư ký — chủ trì.",
+     _bien_ban_hop()),
 
     ("KH", "Kế hoạch triển khai",
      "Khung kế hoạch bốn phần: mục đích yêu cầu, nội dung và tiến độ, kinh phí, "

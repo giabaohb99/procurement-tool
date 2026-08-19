@@ -8,13 +8,14 @@ import {
   Link2,
   Loader2,
   Pencil,
+  Printer,
   Save,
   Scissors,
   ShieldCheck,
   Send,
   Undo2,
 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -28,7 +29,7 @@ import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { ReasonConfirmDialog } from '@/shared/ui/reason-confirm-dialog'
-import { RichTextEditor } from '@/shared/ui/rich-text-editor'
+import { mmToPx, RichTextEditor, type RichTextEditorHandle } from '@/shared/ui/rich-text-editor'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentAmendedBanner } from '../components/document-amended-banner'
@@ -44,6 +45,7 @@ import { DocumentVersionBanner } from '../components/document-version-banner'
 import { DocumentVersionTab } from '../components/document-version-tab'
 import { DocumentLinkTab } from '../components/document-link-tab'
 import { DocumentExcerptDialog } from '../components/document-excerpt-dialog'
+import { DocumentImportButton } from '../components/document-import-button'
 import { DocumentIssueDialog } from '../components/document-issue-dialog'
 import { DocumentNeedsReviewBanner } from '../components/document-needs-review-banner'
 import { useCreateExcerpt } from '../hooks/use-document-links'
@@ -52,6 +54,7 @@ import { documentToForm, emptyDocumentForm, formToPayload } from '../helpers/doc
 import { effectiveLabel } from '../helpers/document-status'
 import { useDocumentPermissions } from '../hooks/use-document-access'
 import { useDocumentAutosave } from '../hooks/use-document-autosave'
+import { useDocumentPageMargins } from '../hooks/use-document-page-margins'
 import {
   useDocumentVersion,
   useDocumentVersions,
@@ -85,6 +88,7 @@ export function DocumentDetailPage() {
   const navigate = useNavigate()
   const { id } = useParams()
   const [tab, setTab] = useUrlParamState('tab', 'compose')
+  const editorRef = useRef<RichTextEditorHandle>(null)
 
   const documentId = Number(id)
   const { data: record, isLoading } = useDocument(documentId)
@@ -158,6 +162,8 @@ export function DocumentDetailPage() {
   )
 
   const autosave = useDocumentAutosave({ onSave: handleSaveContent })
+  //  Kéo thước lề → ghi xuống phiên bản, gộp nhịp (xem hook).
+  const saveMargins = useDocumentPageMargins(documentId, versionId)
 
   function handleSubmitForm(values: DocumentRecordFormValues) {
     save.mutate({ id: documentId, values: formToPayload(values) })
@@ -257,6 +263,24 @@ export function DocumentDetailPage() {
               </TabsTrigger>
             </TabsList>
 
+            {/*  Bản in mở TAB MỚI: trang in không có menu, mở đè lên trang
+                 đang soạn là người dùng mất chỗ đứng. Bản nháp cũng in được
+                 (soát bản thảo trên giấy) nhưng đóng chữ chìm "BẢN NHÁP". */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                window.open(
+                  `${appRoutes.document.documentPrint(documentId)}${versionId ? `?version=${versionId}` : ''}`,
+                  '_blank',
+                  'noopener',
+                )
+              }
+            >
+              <Printer className="size-4" />
+              In / Xuất PDF
+            </Button>
+
             {/*  C19 — chỉ trích được từ văn bản ĐÃ BAN HÀNH: trích từ một bản
                  nháp là chia ra ngoài thứ chưa ai duyệt. */}
             {isIssued && (
@@ -266,11 +290,21 @@ export function DocumentDetailPage() {
               </Button>
             )}
 
-            {/* KHÔNG có nút nhập tệp ở đây: nhập từ Word/Markdown chỉ dùng lúc
-                dựng MẪU (`document-template-detail-page.tsx`). Văn bản thật soạn
-                từ mẫu hoặc gõ thẳng, không đổ nguyên một tệp ngoài vào. */}
+            {/*  Nhập tệp (Word/PDF/Markdown/HTML) CÓ ở đây, không chỉ ở màn dựng
+                 mẫu: phần lớn văn bản đã được soạn sẵn ngoài Word rồi mới đưa
+                 vào hệ. Chèn tại con trỏ nên vẫn ghép được vào bản đang gõ dở.
+                 Điều kiện hiện nút bám đúng điều kiện SỬA ĐƯỢC (bản chưa khóa +
+                 có quyền ghi) — như nút Lưu nội dung bên cạnh. */}
             {tab === 'compose' && canWrite && !isLocked && (
               <>
+                <DocumentImportButton
+                  onInsert={(html) =>
+                    editorRef.current?.insertContent(html) ?? Promise.resolve(false)
+                  }
+                  onNavigateToTrace={(importId, page) =>
+                    editorRef.current?.focusImportedPage(importId, page) ?? false
+                  }
+                />
                 <Button type="button" onClick={autosave.saveNow} disabled={autosave.saving}>
                   {autosave.saving ? (
                     <Loader2 className="size-4 animate-spin" />
@@ -386,10 +420,18 @@ export function DocumentDetailPage() {
           {version && (
             <RichTextEditor
               key={version.id}
+              ref={editorRef}
               showOutline
               editable={canWrite && !isLocked}
               defaultContent={version.content_html ?? ''}
               onChange={autosave.handleChange}
+              //  Lề đi theo PHIÊN BẢN: kéo thước xong là ghi xuống bản ghi, mở
+              //  lại đúng như lúc đóng — và bản in dùng lại đúng bộ số này.
+              defaultMargins={{
+                left: mmToPx(version.margin_left_mm),
+                right: mmToPx(version.margin_right_mm),
+              }}
+              onMarginsChange={saveMargins}
             />
           )}
         </TabsContent>
@@ -446,15 +488,14 @@ export function DocumentDetailPage() {
           <DocumentLinkTab documentId={documentId} canWrite={canWrite} />
         </TabsContent>
 
-        {/*  F13 — hỏi cơ chế áp dụng TRƯỚC khi ban hành. Không hỏi thì mọi văn
-             bản đi theo mặc định "gắn phạm vi", và người ban hành không bao giờ
-             biết là có lựa chọn thứ hai. */}
+        {/*  F13 — chốt lần cuối trước khi ban hành. Cơ chế áp dụng KHÔNG hỏi ở
+             đây nữa mà suy từ phạm vi đã khai; hộp thoại chỉ nói rõ điều đó. */}
         {record && (
           <DocumentIssueDialog
             documentId={documentId}
             open={issueOpen}
             onOpenChange={setIssueOpen}
-            currentMode={record.apply_mode}
+            issuerCompanyId={record.company_id}
             isPending={workflow.approve.isPending}
             onConfirm={(applyMode) =>
               workflow.approve.mutate(applyMode, { onSuccess: () => setIssueOpen(false) })

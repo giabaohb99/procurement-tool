@@ -288,7 +288,13 @@
     0 8px 24px rgb(15 23 42 / 0.08);
   font-family: 'Times New Roman', serif;
   font-size: 14pt;
-  line-height: 1.5;
+  /* GIÃN DÒNG ĐƠN đúng như Word: Word đo một dòng theo số đo của bộ phông
+     (Times New Roman = 1,15 lần cỡ chữ), CSS thì đo theo cỡ chữ — nên "dòng
+     đơn" của Word ra `line-height: 1.15`, không phải 1. Trước đây để 1.5, đặt
+     cạnh bản Word thì dòng thưa hơn hẳn.
+     Ai cần thưa hơn thì chọn nấc 1,5 ở thanh công cụ; các nấc đó cũng đã quy
+     đổi qua `rich-text-editor/word-line-spacing.ts`. */
+  line-height: 1.15;
   color: #111827;
   outline: none;
 }
@@ -306,8 +312,23 @@
   padding-right: var(--doc-margin-right, 76px) !important;
 }
 
+/* Khối này cách khối kia 6pt — trước tiêu đề, danh sách, bảng… */
 .doc-page > * + * {
-  margin-top: 0.6em;
+  margin-top: 6pt;
+}
+
+/*
+ * HAI ĐOẠN VĂN LIỀN NHAU thì KHÔNG chèn khe.
+ *
+ * Word để "Spacing After: 0" cho đoạn thường, và quan trọng hơn: trình duyệt chỉ
+ * tô nền vùng chọn trên các DÒNG CHỮ, phần margin giữa hai đoạn thì để trắng.
+ * Có khe là bôi đen mấy dòng liền nhau lại thấy vệt trắng cắt ngang, trong khi
+ * bên Word vệt chọn liền một mạch. Đoạn nào cần cách xa thì đặt riêng khoảng
+ * cách cho đoạn đó (thuộc tính `spaceBefore` / `spaceAfter`, tệp Word nhập vào
+ * cũng mang theo số của chính nó) — hơn là ép cả trang.
+ */
+.doc-page > p + p {
+  margin-top: 0;
 }
 
 .doc-page h1 {
@@ -334,8 +355,10 @@
 .doc-page ol {
   list-style: decimal;
 }
+/* Các mục trong cùng danh sách cũng nối liền, cùng lý do với hai đoạn văn ở
+   trên: có khe thì vệt bôi đen bị cắt khúc, Word thì liền một mạch. */
 .doc-page li {
-  margin-top: 0.2em;
+  margin-top: 0;
 }
 .doc-page li > p {
   margin: 0;

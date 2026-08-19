@@ -40,6 +40,13 @@ OPEN_STATUSES = (VERSION_DRAFT, VERSION_SUBMITTED)
 CHANGE_MAJOR = 1  # sửa lớn → lên 2.0, mặc định bắt xác nhận lại
 CHANGE_MINOR = 2  # sửa nhỏ → lên 1.1 (sửa lỗi chính tả, đổi số điện thoại…)
 
+#  THỂ THỨC TRANG — Nghị định 30/2020 điều 8 khoản 3: khổ A4, lề trên 20–25mm,
+#  lề dưới 20–25mm, lề trái 30–35mm, lề phải 15–20mm.
+MARGIN_TOP_MM = 20
+MARGIN_BOTTOM_MM = 20
+MARGIN_LEFT_MIN_MM, MARGIN_LEFT_MAX_MM = 15, 60
+MARGIN_RIGHT_MIN_MM, MARGIN_RIGHT_MAX_MM = 10, 60
+
 
 class DocumentVersion(Base, AuditMixin):
     __tablename__ = "tab_document_version"
@@ -79,6 +86,14 @@ class DocumentVersion(Base, AuditMixin):
     #  Dấu vân tay nội dung, tính LÚC KHÓA. Để sau này ai hỏi "bản in tôi cầm có
     #  đúng bản đã duyệt không" thì còn cái mà đối chiếu.
     content_sha256: Mapped[str] = mapped_column(String(64), default="")
+
+    #  LỀ TRANG (mm) theo Nghị định 30 điều 8: trái 30–35, phải 15–20. Lưu theo
+    #  PHIÊN BẢN chứ không theo văn bản: lề là một phần thể thức của chính bản
+    #  đó, sửa lề ở bản 2.0 không được đổi hình dạng bản 1.0 đã ký.
+    #  Chỉ có lề ngang — lề trên/dưới là số liệu chia trang, cố định 20mm ở cả
+    #  trình soạn thảo lẫn bản in (xem `MARGIN_TOP_MM`).
+    margin_left_mm: Mapped[int] = mapped_column(SmallInteger, default=30)
+    margin_right_mm: Mapped[int] = mapped_column(SmallInteger, default=20)
 
     #  1 sửa lớn · 2 sửa nhỏ. Phiên bản đầu tiên để 0 — nó không sửa gì cả.
     change_kind: Mapped[int] = mapped_column(SmallInteger, default=0)

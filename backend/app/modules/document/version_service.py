@@ -47,7 +47,14 @@ def save_content(db: Session, version: DocumentVersion, data: VersionContentUpda
     """Ghi nội dung bản nháp. Đường mà tự động lưu gọi liên tục theo nhịp gõ."""
     _require_open(db, version)
 
-    version.content_html = data.content_html
+    #  Kéo thước lề chỉ gửi hai số lề, không gửi thân văn bản — đừng xóa trắng
+    #  nội dung chỉ vì trường vắng mặt.
+    if data.content_html is not None:
+        version.content_html = data.content_html
+    if data.margin_left_mm is not None:
+        version.margin_left_mm = data.margin_left_mm
+    if data.margin_right_mm is not None:
+        version.margin_right_mm = data.margin_right_mm
     if data.change_summary is not None:
         version.change_summary = data.change_summary
     if data.change_reason is not None:
@@ -91,6 +98,10 @@ def open_new_version(db: Session, doc: Document, data: VersionCreate,
     version = DocumentVersion(
         document_id=doc.id, major=major, minor=minor, status=VERSION_DRAFT,
         content_html=base.content_html,
+        #  Bản mới thừa hưởng THỂ THỨC của bản nó sinh ra từ đó: mở bản 2.0 mà
+        #  lề nhảy về mặc định thì cả văn bản lệch so với bản đã ký.
+        margin_left_mm=base.margin_left_mm,
+        margin_right_mm=base.margin_right_mm,
         change_kind=data.change_kind,
         change_summary=data.change_summary,
         change_reason=data.change_reason,

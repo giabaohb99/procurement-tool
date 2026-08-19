@@ -139,7 +139,14 @@ export const documentVersionApi = {
   saveContent: (
     documentId: number,
     versionId: number,
-    payload: { content_html: string; change_summary?: string; effective_from?: string | null },
+    payload: {
+      content_html?: string
+      change_summary?: string
+      effective_from?: string | null
+      //  Lề trang (mm) — kéo thước thì chỉ gửi hai số này, không gửi thân bài.
+      margin_left_mm?: number
+      margin_right_mm?: number
+    },
   ) =>
     apiPatch<DocumentVersion>(
       `${DOCUMENT_URL}/${documentId}/versions/${versionId}`,

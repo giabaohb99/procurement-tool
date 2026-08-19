@@ -5,6 +5,8 @@
  * chung một bảng, không chép lại.
  */
 
+import { wordLineSpacingToCss } from './word-line-spacing'
+
 /** Giá trị của ô select khi đoạn đang chọn không có định dạng nào. */
 export const INHERIT = 'inherit'
 
@@ -119,11 +121,16 @@ export const COLOR_PALETTE_ROWS = [
  */
 export const ZOOM_LEVELS = ['0.5', '0.75', '0.9', '1', '1.25', '1.5', '2'] as const
 
-/** Giãn dòng theo nấc quen thuộc của Word — công văn thường quy định 1,5. */
-export const LINE_HEIGHTS = [
-  { label: 'Đơn (1,0)', value: '1' },
-  { label: '1,15', value: '1.15' },
-  { label: '1,5', value: '1.5' },
-  { label: 'Đôi (2,0)', value: '2' },
-] as const
+/**
+ * Các nấc giãn dòng bày sẵn — đúng bộ nấc trong menu giãn dòng của Word.
+ *
+ * `lines` là con số người dùng thấy (và quen gõ trong Word), `value` là
+ * `line-height` CSS đã quy đổi để dòng chữ giãn ĐÚNG BẰNG Word; muốn số khác
+ * thì có mục "Tùy chỉnh" — xem `line-spacing-menu.tsx` và `word-line-spacing.ts`.
+ */
+export const LINE_HEIGHTS = [1, 1.15, 1.5, 2, 2.5, 3].map((lines) => ({
+  lines,
+  label: lines.toFixed(lines === 1.15 ? 2 : 1).replace('.', ','),
+  value: wordLineSpacingToCss(lines),
+}))
 

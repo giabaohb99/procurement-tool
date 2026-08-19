@@ -118,7 +118,10 @@ def test_docx_giu_style_danh_sach_va_lien_ket():
     )["content_html"]
 
     assert "text-align: center" in result
-    assert "line-height: 1.5" in result
+    # w:line="360" w:lineRule="auto" = 1,5 DÒNG kiểu Word, không phải 1,5 lần cỡ
+    # chữ như CSS hiểu — quy đổi qua chiều cao dòng đơn (1,15) mới ra 1.725, nếu
+    # không thì văn bản nhập vào hiện chật hơn bản Word gốc 15%.
+    assert "line-height: 1.725" in result
     assert "font-family: &quot;Calibri&quot;" in result
     assert "font-size: 20pt" in result
     assert "color: #00b0f0" in result

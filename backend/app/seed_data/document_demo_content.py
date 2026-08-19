@@ -17,37 +17,23 @@ Trình soạn thảo (tiptap) nhận `h2/h3/p/ul/ol/table/strong/em` và
 `style="text-align:…"`; không dùng thẻ ngoài danh sách đó vì sẽ bị lọc khi lưu.
 """
 
-_GACH = "<p style=\"text-align:center\">———————</p>"
+from . import document_the_thuc as the_thuc
 
 
 def _dau(ten_loai: str, trich_yeu: str = "") -> str:
-    """Khối đầu văn bản: tên cơ quan · quốc hiệu · số ký hiệu · ngày · tên loại."""
-    ten = f'<p style="text-align:center"><strong>{ten_loai}</strong></p>'
-    tr_y = (f'<p style="text-align:center"><em>{trich_yeu}</em></p>' if trich_yeu else "")
-    return (
-        '<p style="text-align:center"><strong>{{PHAP_NHAN}}</strong></p>'
-        '<p style="text-align:center"><strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong></p>'
-        '<p style="text-align:center"><strong>Độc lập - Tự do - Hạnh phúc</strong></p>'
-        + _GACH
-        + '<p style="text-align:center">Số: {{SO_HIEU}}</p>'
-        + '<p style="text-align:right"><em>Hà Nội, {{NGAY}}</em></p>'
-        + ten + tr_y
-    )
+    """Khối đầu văn bản HAI CỘT + tên loại — thể thức chung ở `document_the_thuc`."""
+    return (the_thuc.khoi_dau("{{PHAP_NHAN}}", "{{SO_HIEU}}", "Hà Nội, {{NGAY}}")
+            + the_thuc.khoi_ten_loai(ten_loai, trich_yeu))
 
 
 def _noi_nhan(*noi: str) -> str:
     """Khối «Nơi nhận» — phần không ai được quên ở văn bản gửi ra ngoài."""
-    return ("<p><strong>Nơi nhận:</strong></p><ul>"
-            + "".join(f"<li>{n};</li>" for n in noi)
-            + "<li>Lưu: VT, Ban Hành chính.</li></ul>")
+    return the_thuc.khoi_noi_nhan(*noi, luu="Lưu: VT, Ban Hành chính.")
 
 
 def _ky(chuc_vu: str, ho_ten: str = "Nguyễn Văn A") -> str:
     """Khối chữ ký: chức vụ, khoảng trống ký tay, họ tên."""
-    return (f'<p style="text-align:right"><strong>{chuc_vu}</strong></p>'
-            '<p style="text-align:right"><em>(Ký, ghi rõ họ tên, đóng dấu)</em></p>'
-            '<p style="text-align:right">&nbsp;</p>'
-            f'<p style="text-align:right"><strong>{ho_ten}</strong></p>')
+    return the_thuc.khoi_ky_mot_ben(chuc_vu, ho_ten)
 
 
 def _bang(tieu_de: list[str], *hang: list[str]) -> str:

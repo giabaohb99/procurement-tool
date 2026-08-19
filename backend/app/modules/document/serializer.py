@@ -174,6 +174,10 @@ def serialize_version(db: Session, version: DocumentVersion, doc: Document,
         "requires_reconfirm": version.requires_reconfirm,
         "effective_from": version.effective_from,
         "content_sha256": version.content_sha256,
+        #  Thể thức trang (Nghị định 30 điều 8) — trình soạn thảo và bản in đều
+        #  đọc đúng bộ số này, không bên nào tự đặt lề riêng.
+        "margin_left_mm": version.margin_left_mm,
+        "margin_right_mm": version.margin_right_mm,
         "prev_version_id": version.prev_version_id,
         "approved_at": version.approved_at.isoformat() if version.approved_at else "",
         "approved_by_name": approvers.get(version.approved_by, ("",))[0],

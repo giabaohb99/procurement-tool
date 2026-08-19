@@ -25,6 +25,8 @@ function draft(overrides: Partial<DocumentVersion> = {}): DocumentVersion {
     requires_reconfirm: true,
     effective_from: null,
     content_sha256: '',
+    margin_left_mm: 30,
+    margin_right_mm: 20,
     prev_version_id: 8,
     approved_at: '',
     approved_by_name: '',

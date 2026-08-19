@@ -251,10 +251,25 @@ def nap_van_ban_mau(db: Session, company_name: str) -> int:
     for ma, ten, mo_ta, than in VAN_BAN_MAU:
         if ma not in loai:
             continue
-        db.add(DocumentTemplate(
-            doc_type_id=loai[ma].id, name=ten, description=mo_ta,
-            content_html=than.replace("{{PHAP_NHAN}}", company_name.upper()),
-            is_active=True, created_by=ACTOR, updated_by=ACTOR))
+        noi_dung = than.replace("{{PHAP_NHAN}}", company_name.upper())
+        #  GHI ĐÈ theo (loại × tên) thay vì chỉ thêm mới: hàm này còn được gọi
+        #  riêng để làm mới thư viện mẫu khi thể thức đổi, mà chạy trên cơ sở dữ
+        #  liệu đang dùng thật thì không được đẻ ra bản thứ hai cùng tên. Mẫu do
+        #  người dùng tự đặt tên khác vẫn nằm nguyên.
+        dang_co = (db.query(DocumentTemplate)
+                   .filter(DocumentTemplate.doc_type_id == loai[ma].id,
+                           DocumentTemplate.name == ten)
+                   .first())
+        if dang_co:
+            dang_co.description = mo_ta
+            dang_co.content_html = noi_dung
+            dang_co.is_active = True
+            dang_co.updated_by = ACTOR
+        else:
+            db.add(DocumentTemplate(
+                doc_type_id=loai[ma].id, name=ten, description=mo_ta,
+                content_html=noi_dung,
+                is_active=True, created_by=ACTOR, updated_by=ACTOR))
         dem += 1
     db.commit()
     return dem

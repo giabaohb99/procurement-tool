@@ -14,8 +14,8 @@ export interface PageMargins {
 
 interface EditorRulerProps {
   pageWidth: number
-  /** Lề mặc định (px) — bấm đúp vào con trượt là về lại mốc này. */
-  defaultMargin: number
+  /** Lề mặc định (px) hai bên — bấm đúp vào con trượt là về lại mốc này. */
+  defaultMargins: PageMargins
   margins: PageMargins
   onChange: (margins: PageMargins) => void
   /** Mức phóng của trang, để quy khoảng chuột kéo về px thật của trang giấy. */
@@ -40,7 +40,7 @@ interface EditorRulerProps {
  */
 export function EditorRuler({
   pageWidth,
-  defaultMargin,
+  defaultMargins,
   margins,
   onChange,
   zoom,
@@ -148,7 +148,7 @@ export function EditorRuler({
           offset={at(margins.left)}
           valueCm={margins.left / PX_PER_CM}
           onPointerDown={(event) => startDrag('left', event)}
-          onReset={() => onChange({ ...margins, left: defaultMargin })}
+          onReset={() => onChange({ ...margins, left: defaultMargins.left })}
           onNudge={(steps) => nudge('left', steps)}
         />
         <MarginHandle
@@ -156,7 +156,7 @@ export function EditorRuler({
           offset={at(margins.right)}
           valueCm={margins.right / PX_PER_CM}
           onPointerDown={(event) => startDrag('right', event)}
-          onReset={() => onChange({ ...margins, right: defaultMargin })}
+          onReset={() => onChange({ ...margins, right: defaultMargins.right })}
           onNudge={(steps) => nudge('right', steps)}
         />
       </div>

@@ -31,3 +31,8 @@ celerybeat-schedule*
 # `scripts/export-van-thu-phe-duyet.sh`. KHÔNG đẩy lên git: tệp chứa dữ liệu
 # thật của một môi trường cụ thể, và nó cũ đi ngay khi ai đó sửa dữ liệu.
 db-export/
+
+# Ảnh chụp màn hình + kịch bản chạy tay của skill chrome-devtools. Rác của một
+# máy cụ thể: sinh ra lúc kiểm bằng trình duyệt thật rồi bỏ. Kịch bản nào đáng
+# giữ lâu dài thì chuyển vào `test/e2e/` chứ không để ở đây.
+.claude/chrome-devtools/

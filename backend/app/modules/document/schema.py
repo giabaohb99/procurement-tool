@@ -11,7 +11,9 @@ from datetime import date
 from pydantic import BaseModel, Field
 
 from .model import STATUS_DRAFT
-from .version_model import CHANGE_MAJOR
+from .version_model import (CHANGE_MAJOR, MARGIN_LEFT_MAX_MM,
+                            MARGIN_LEFT_MIN_MM, MARGIN_RIGHT_MAX_MM,
+                            MARGIN_RIGHT_MIN_MM)
 
 
 class DocumentBase(BaseModel):
@@ -144,12 +146,22 @@ class VersionCreate(BaseModel):
 
 
 class VersionContentUpdate(BaseModel):
-    """Ghi nội dung bản nháp — đường mà tự động lưu gọi liên tục theo nhịp gõ."""
+    """Ghi nội dung bản nháp — đường mà tự động lưu gọi liên tục theo nhịp gõ.
 
-    content_html: str
+    `content_html` để trống được: kéo thước lề cũng gọi vào đây, và lúc đó chỉ
+    có hai số lề đi kèm. Bắt gửi kèm cả thân văn bản chỉ để đổi 5mm lề là bắt
+    đẩy lên vài trăm KB cho mỗi nhịp kéo chuột.
+    """
+
+    content_html: str | None = None
     change_summary: str | None = Field(default=None, max_length=500)
     change_reason: str | None = None
     effective_from: date | None = None
+    #  Lề ngang (mm) — xem `version_model.MARGIN_LEFT_MIN_MM`.
+    margin_left_mm: int | None = Field(default=None, ge=MARGIN_LEFT_MIN_MM,
+                                       le=MARGIN_LEFT_MAX_MM)
+    margin_right_mm: int | None = Field(default=None, ge=MARGIN_RIGHT_MIN_MM,
+                                        le=MARGIN_RIGHT_MAX_MM)
 
 
 class VersionOut(BaseModel):
@@ -167,6 +179,9 @@ class VersionOut(BaseModel):
     requires_reconfirm: bool = False
     effective_from: date | None = None
     content_sha256: str = ""
+    #  Thể thức trang của chính bản này (mm) — bản in dùng đúng bộ số này.
+    margin_left_mm: int = 30
+    margin_right_mm: int = 20
     prev_version_id: int | None = None
     approved_at: str = ""
     approved_by_name: str = ""

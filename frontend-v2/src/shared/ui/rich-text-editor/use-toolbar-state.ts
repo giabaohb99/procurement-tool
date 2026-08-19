@@ -1,6 +1,7 @@
 import { useEditorState, type Editor } from '@tiptap/react'
 
 import { INHERIT } from './editor-options'
+import { cssToWordLineSpacing } from './word-line-spacing'
 
 /**
  * Trạng thái các nút trên thanh công cụ (đang đậm? canh giữa? phông gì?).
@@ -47,6 +48,14 @@ export function useToolbarState(editor: Editor) {
 
       fontFamily: instance.getAttributes('textStyle').fontFamily ?? INHERIT,
       fontSize: instance.getAttributes('textStyle').fontSize ?? INHERIT,
+
+      // Giãn dòng tính bằng SỐ DÒNG kiểu Word để menu tick đúng nấc. Đọc cả hai
+      // loại khối vì con trỏ có thể đang đứng trong tiêu đề chứ không phải đoạn
+      // văn; `null` = đoạn không đặt riêng, ăn theo giãn dòng của trang.
+      lineSpacing: cssToWordLineSpacing(
+        (instance.getAttributes('paragraph').lineHeight as string | undefined) ??
+          (instance.getAttributes('heading').lineHeight as string | undefined),
+      ),
 
       canUndo: instance.can().undo(),
       canRedo: instance.can().redo(),

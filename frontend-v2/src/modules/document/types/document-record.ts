@@ -190,6 +190,9 @@ export interface DocumentVersion {
   /** Ngày hiệu lực RIÊNG của phiên bản, khác ngày được duyệt. */
   effective_from: string | null
   content_sha256: string
+  /** Lề trang (mm) của chính bản này — Nghị định 30: trái 30–35, phải 15–20. */
+  margin_left_mm: number
+  margin_right_mm: number
   prev_version_id: number | null
   approved_at: string
   approved_by_name: string

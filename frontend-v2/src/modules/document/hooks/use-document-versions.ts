@@ -73,3 +73,21 @@ export function useSaveVersionContent(documentId: number, versionId?: number | n
     }) => documentVersionApi.saveContent(documentId, versionId as number, payload),
   })
 }
+
+/**
+ * Ghi LỀ TRANG của bản nháp (Nghị định 30 điều 8).
+ *
+ * Tách khỏi `useSaveVersionContent` vì hai việc khác nhịp: nội dung gửi theo
+ * nhịp gõ và luôn kèm cả thân bài, còn lề chỉ là hai con số và chỉ gửi khi
+ * người dùng buông chuột. Gộp làm một là mỗi lần nhích thước 1mm lại đẩy lên
+ * vài trăm KB HTML.
+ *
+ * Cũng KHÔNG `invalidateQueries`: nạp lại phiên bản là đổ nội dung cũ đè lên
+ * những chữ đang gõ dở.
+ */
+export function useSaveVersionMargins(documentId: number, versionId?: number | null) {
+  return useMutation({
+    mutationFn: (payload: { margin_left_mm: number; margin_right_mm: number }) =>
+      documentVersionApi.saveContent(documentId, versionId as number, payload),
+  })
+}

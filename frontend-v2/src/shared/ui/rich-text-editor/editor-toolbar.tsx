@@ -2,7 +2,6 @@ import type { Editor } from '@tiptap/react'
 import {
   Baseline,
   Bold,
-  ChevronsUpDown,
   Highlighter,
   Italic,
   List,
@@ -15,7 +14,6 @@ import {
   Undo2,
 } from 'lucide-react'
 
-import { DropdownMenuItem } from '@/shared/ui/dropdown-menu'
 import {
   collapsibleCommands,
   COLLAPSIBLE_KEYS,
@@ -27,7 +25,7 @@ import { TableBorderMenu } from './table-border-menu'
 import { TableMenu } from './table-menu'
 import { setCellBackground } from './table-commands'
 import { ColorPalette } from './color-palette'
-import { LINE_HEIGHTS } from './editor-options'
+import { LineSpacingMenu } from './line-spacing-menu'
 import { ToolbarStyleSelects } from './toolbar-style-selects'
 import { ToolbarOverflowMenu } from './toolbar-overflow-menu'
 import { ToolbarButton, ToolbarDivider, ToolbarMenu } from './toolbar-primitives'
@@ -166,19 +164,7 @@ export function EditorToolbar({
       {inline('alignRight')}
       {inline('alignJustify')}
 
-      <ToolbarMenu icon={ChevronsUpDown} label="Giãn dòng">
-        {LINE_HEIGHTS.map((option) => (
-          <DropdownMenuItem
-            key={option.value}
-            onSelect={() => run().setLineHeight(option.value).run()}
-          >
-            {option.label}
-          </DropdownMenuItem>
-        ))}
-        <DropdownMenuItem onSelect={() => run().setLineHeight(null).run()}>
-          Giãn dòng mặc định
-        </DropdownMenuItem>
-      </ToolbarMenu>
+      <LineSpacingMenu editor={editor} current={state.lineSpacing} />
       {inline('outdent')}
       {inline('indent')}
       <ToolbarDivider />

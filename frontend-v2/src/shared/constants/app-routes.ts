@@ -73,6 +73,9 @@ export const appRoutes = {
     documents: '/document/documents',
     documentNew: '/document/documents/new',
     documentDetail: (id: number | string) => `/document/documents/${id}`,
+    //  Bản in nằm NGOÀI khung phân hệ (không menu, không thanh tiêu đề) — cùng
+    //  chỗ với bản in của Mua hàng.
+    documentPrint: (id: number | string) => `/print/document/${id}`,
     /** F05 — văn bản mà chính tôi nằm trong phạm vi áp dụng. */
     appliedToMe: '/document/applied-to-me',
     /** Danh sách SỔ (mỗi sổ một bộ đếm riêng), không phải danh sách văn bản. */

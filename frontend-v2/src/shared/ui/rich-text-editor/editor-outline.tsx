@@ -69,15 +69,38 @@ export function EditorOutline({ editor, className }: EditorOutlineProps) {
     return found
   }, [items, cursor])
 
-  /** `pos + 1` = vào bên TRONG tiêu đề, đặt đúng vào node thì con trỏ nằm ngoài. */
+  /**
+   * Nhảy tới tiêu đề: đặt con trỏ vào đó rồi CUỘN TRANG GIẤY tới nơi.
+   *
+   * `pos + 1` = vào bên TRONG tiêu đề, đặt đúng vào node thì con trỏ nằm ngoài.
+   *
+   * Phải tự cuộn bằng DOM thay vì dùng `.scrollIntoView()` của ProseMirror: lệnh
+   * đó cuộn theo con trỏ, mà văn bản đã ban hành thì mở ở chế độ CHỈ ĐỌC —
+   * `contenteditable="false"` nên trình duyệt không đặt được con trỏ, lệnh thành
+   * ra không làm gì và bấm mục lục chỉ thấy dòng sáng lên chứ trang không nhúc
+   * nhích. `Element.scrollIntoView` thì không phụ thuộc con trỏ, lại tự đi qua
+   * mọi lớp cuộn lồng nhau và hiểu đúng khung đang phóng to (`zoom`).
+   */
   const goTo = useCallback(
     (pos: number) => {
       editor
         .chain()
         .focus()
         .setTextSelection(pos + 1)
-        .scrollIntoView()
         .run()
+
+      const node = editor.view.nodeDOM(pos)
+      if (!(node instanceof HTMLElement)) {
+        // Không lấy được thẻ (tiêu đề chưa dựng xong DOM) thì thử cách của
+        // ProseMirror — có còn hơn không.
+        editor.commands.scrollIntoView()
+        return
+      }
+      // Chờ hết khung hình hiện tại: `focus()` ở trên có thể khiến trình duyệt
+      // tự cuộn về vùng soạn thảo, cuộn của mình phải chạy sau để không bị đè.
+      requestAnimationFrame(() => {
+        node.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
     },
     [editor],
   )
