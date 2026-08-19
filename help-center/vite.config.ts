@@ -16,7 +16,15 @@ export default defineConfig({
     host: true,
     port: 5173,
     allowedHosts: true,             // cho phép host từ Cloudflare/ngrok
-    watch: { usePolling: true },    // HMR nhận thay đổi qua volume trên Docker/Windows
+    // HMR nhận thay đổi qua volume trên Docker/Windows. Giãn nhịp hỏi vòng để
+    // proxy `/api` không bị vòng quét tệp chiếm vòng lặp sự kiện — lý do đầy đủ
+    // + số đo ở `frontend-v2/vite.config.ts`.
+    watch: {
+      usePolling: true,
+      interval: 1000,
+      binaryInterval: 2000,
+      ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**'],
+    },
     proxy: {
       '/api': {
         target: 'http://api:8000',

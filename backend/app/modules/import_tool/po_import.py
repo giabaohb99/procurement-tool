@@ -14,6 +14,8 @@ from sqlalchemy import inspect as sa_inspect
 
 from app.modules.catalog.model import ItemGroup, Unit, Warehouse
 from app.modules.company.model import Company
+from app.modules.department.service import sync_department_ref
+from app.modules.employee.service import sync_employee_ref
 from app.modules.payable.model import Payable
 from app.modules.payment_request import service as pr_service
 from app.modules.payment_request.schema import LineIn, PRequestCreate
@@ -207,11 +209,17 @@ def run(db, batch: ImportBatch, wb, apply: bool, default_nspt: str = "") -> None
                       payment_terms=d["payment_terms"])
         if po is None:
             po = PurchaseOrder(status="approved", created_by=uid, updated_by=uid, **fields)
+            sync_department_ref(db, po)   # CR-086: nạp từ Misa chỉ có TÊN phòng → suy ra id
+            sync_employee_ref(db, po, "nspt_id", "nspt")   # CR-087: NSPT cũng chỉ có tên
             db.add(po); db.flush(); po.code = f"PO{po.id:05d}"
             log(0, LogLevel.INFO, "po_new", f"Tạo đơn mới {po.code} (Misa {misa})", ref_key=misa, target_code=po.code)
         else:
             for k, v in fields.items():
                 setattr(po, k, v)
+            po.department_id = 0
+            sync_department_ref(db, po)   # CR-086
+            po.nspt_id = 0
+            sync_employee_ref(db, po, "nspt_id", "nspt")   # CR-087
             po.updated_by = uid
             log(0, LogLevel.INFO, "po_update", f"Cập nhật đơn {po.code} (Misa {misa})", ref_key=misa, target_code=po.code)
         return po, was_new

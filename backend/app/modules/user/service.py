@@ -55,9 +55,10 @@ def list_users(db: Session, pg: dict, search: str = "", department: str = "", ro
             cond = cond | User.employee_id.in_(emp_ids)
         query = query.filter(cond)
     if department:
-        from app.modules.department.model import Department
-        dep = db.query(Department).filter(Department.name == department).first()
-        emp_ids = [e.id for e in db.query(Employee).filter(Employee.department_id == (dep.id if dep else -1)).all()]
+        # CR-086: nhận cả id lẫn tên phòng ban (giao diện cũ còn lọc bằng tên)
+        from app.modules.department.service import dept_id_by_name
+        dep_id = int(department) if str(department).isdigit() else dept_id_by_name(db, department)
+        emp_ids = [e.id for e in db.query(Employee).filter(Employee.department_id == (dep_id or -1)).all()]
         query = query.filter(User.employee_id.in_(emp_ids or [-1]))
     if role_id:
         uids = [ur.user_id for ur in db.query(UserRole).filter(UserRole.role_id == role_id).all()]
@@ -181,9 +182,15 @@ def assign_roles(db: Session, user_id: int, data: RoleAssign, actor_id: int) -> 
 
 
 def get_user_scope(db: Session, user_id: int, role_id: int) -> dict:
+    """CR-086: phòng ban LƯU bằng id nhưng API vẫn trả TÊN — giao diện phân quyền (cả bản cũ lẫn
+    v2) chọn phòng theo tên. Đổi tên phòng thì id đứng yên, tên trả ra tự chạy theo."""
     out = {"companies": [], "departments": [], "employees": [],
            "exclude_companies": [], "exclude_departments": [], "exclude_employees": []}
     rows = db.query(UserScope).filter(UserScope.user_id == user_id, UserScope.role_id == role_id).all()
+    from app.modules.department.model import Department
+    ids = [int(r.value) for r in rows if r.dim == "department" and (r.value or "").isdigit()]
+    dep_by_id = dict(db.query(Department.id, Department.name).filter(
+        Department.id.in_(ids)).all()) if ids else {}
     for r in rows:
         v = int(r.value) if (r.value or "").isdigit() else r.value
         if r.dim == "company":
@@ -191,7 +198,9 @@ def get_user_scope(db: Session, user_id: int, role_id: int) -> dict:
         elif r.dim == "employee":
             out["exclude_employees" if r.is_exclude else "employees"].append(v)
         else:
-            out["exclude_departments" if r.is_exclude else "departments"].append(r.value)
+            # id → tên hiện hành; dòng chưa đổi được (tên không suy ra id) thì giữ nguyên tên
+            name = dep_by_id.get(v, r.value) if isinstance(v, int) else r.value
+            out["exclude_departments" if r.is_exclude else "departments"].append(name)
     return out
 
 
@@ -201,14 +210,20 @@ def set_user_scope(db: Session, user_id: int, role_id: int, data: ScopeUpdate, a
     def add(dim, value, exc):
         db.add(UserScope(user_id=user_id, role_id=role_id, entity="", dim=dim, value=str(value),
                          is_exclude=exc, created_by=actor_id, updated_by=actor_id))
+
+    def add_dept(name, exc):
+        """CR-086: giao diện gửi TÊN phòng → quy về id trước khi lưu. Tên không suy ra được id
+        (trùng tên / phòng đã xóa) thì giữ nguyên tên: `core/auth.py` đọc được cả hai kiểu."""
+        from app.modules.department.service import dept_id_by_name
+        add("department", dept_id_by_name(db, str(name)) or name, exc)
     for c in data.companies:
         add("company", c, False)
     for c in data.exclude_companies:
         add("company", c, True)
     for d in data.departments:
-        add("department", d, False)
+        add_dept(d, False)
     for d in data.exclude_departments:
-        add("department", d, True)
+        add_dept(d, True)
     for e in data.employees:
         add("employee", e, False)
     for e in data.exclude_employees:

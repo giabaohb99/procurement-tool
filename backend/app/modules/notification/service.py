@@ -145,36 +145,53 @@ def get_approvers_for_entity(db: Session, entity: str) -> list[User]:
     return users
 
 
-def get_department_head_users(db: Session, department_name: str) -> list[User]:
-    """Tài khoản của Trưởng bộ phận phòng ban (theo Department.manager_id chọn cứng). [] nếu chưa gán."""
-    if not department_name:
-        return []
+def _resolve_dept(db: Session, department_id: int = 0, department_name: str = ""):
+    """Phòng ban của phiếu — CR-086: ưu tiên ID; phiếu cũ chưa có id mới dò theo TÊN.
+
+    Dò theo tên là chỗ hỏng âm thầm cũ: đổi tên phòng một cái là thông báo "cần duyệt" gửi
+    cho KHÔNG AI mà không có lỗi nào. Giờ vẫn trả None được, nhưng có ghi log để còn lần ra.
+    """
+    import logging
+
     from app.modules.department.model import Department
-    dep = db.query(Department).filter(Department.name == department_name).first()
+    if department_id:
+        dep = db.get(Department, department_id)
+        if dep:
+            return dep
+    name = (department_name or "").strip()
+    if not name:
+        return None
+    dep = db.query(Department).filter(Department.name == name).first()
+    if not dep:
+        logging.getLogger(__name__).warning(
+            "Khong tim ra phong ban de gui thong bao duyet: id=%s ten=%r", department_id, name)
+    return dep
+
+
+def get_department_head_users(db: Session, department_name: str = "", department_id: int = 0) -> list[User]:
+    """Tài khoản của Trưởng bộ phận phòng ban (theo Department.manager_id chọn cứng). [] nếu chưa gán."""
+    dep = _resolve_dept(db, department_id, department_name)
     if not dep or not dep.manager_id:
         return []
     # manager_id = employee id → tìm tài khoản user gắn nhân sự đó
     return db.query(User).filter(User.employee_id == dep.manager_id, User.is_active == True).all()
 
 
-def get_dept_approver_recipients(db: Session, department_name: str) -> list[User]:
+def get_dept_approver_recipients(db: Session, department_name: str = "", department_id: int = 0) -> list[User]:
     """Người nhận thông báo "cần duyệt" của 1 phòng ban — GỘP 2 nguồn:
       (1) Trưởng bộ phận đặt cứng ở ô Department.manager_id (1 người);
       (2) MỌI tài khoản có vai trò dept_head thuộc chính phòng đó (theo Employee.department_id).
     Union + khử trùng lặp. Dùng cho pr_submitted/sr_submitted để cả trưởng phòng chính lẫn
     người được tạm quyền trưởng phòng (gán vai trò dept_head + cùng phòng) đều nhận báo."""
-    if not department_name:
-        return []
-    from app.modules.department.model import Department
     from app.modules.employee.model import Employee
 
-    dep = db.query(Department).filter(Department.name == department_name).first()
+    dep = _resolve_dept(db, department_id, department_name)
     if not dep:
         return []
 
     out: dict[int, User] = {}
     # (1) Trưởng bộ phận chỉ định (manager_id)
-    for u in get_department_head_users(db, department_name):
+    for u in get_department_head_users(db, department_id=dep.id):
         out[u.id] = u
 
     # (2) Tài khoản có vai trò dept_head và nhân sự thuộc phòng này
@@ -307,6 +324,7 @@ def trigger_notification(
     is_urgent: bool = False,
     link: str = "",
     department: str = "",
+    department_id: int = 0,              # CR-086: phòng ban của phiếu, neo bằng id
     recipient_ids: list | None = None,   # chỉ định thẳng người nhận (vd phân bổ NSTM)
 ):
     """
@@ -406,7 +424,7 @@ def trigger_notification(
     elif event in ("pr_submitted", "sr_submitted"):
         # Trưởng bộ phận của phòng YC + mọi tk có vai trò dept_head thuộc phòng đó
         # (để người tạm quyền trưởng phòng cũng nhận báo duyệt)
-        recipients = get_dept_approver_recipients(db, department)
+        recipients = get_dept_approver_recipients(db, department, department_id)
     elif event == "pay_submitted":
         # Yêu cầu thanh toán do người có quyền duyệt payment_request duyệt (QL/Admin TM)
         recipients = get_approvers_for_entity(db, "payment_request")

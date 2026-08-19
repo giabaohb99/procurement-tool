@@ -78,6 +78,29 @@ def perm_cache_clear(user_id: int | None = None):
         _PERM_CACHE.pop(user_id, None)
 
 
+def _dept_ref_map(db: Session, values) -> tuple[dict, dict]:
+    """Tra một lượt các phòng ban được nhắc trong `tab_user_scope` → (id→tên, tên→id).
+
+    Giá trị lưu có thể là ID (CR-086) hoặc TÊN (dòng cũ / FE cũ), nên tra cả hai chiều trong
+    MỘT câu truy vấn. Trả về map rỗng nếu không có dòng phòng ban nào.
+    """
+    from sqlalchemy import or_
+
+    from app.modules.department.model import Department
+    vals = [(v or "").strip() for v in values]
+    ids = {int(v) for v in vals if v.isdigit()}
+    names = {v for v in vals if v and not v.isdigit()}
+    if not ids and not names:
+        return {}, {}
+    conds = []
+    if ids:
+        conds.append(Department.id.in_(ids))
+    if names:
+        conds.append(Department.name.in_(names))
+    rows = db.query(Department.id, Department.name).filter(or_(*conds)).all()
+    return {r[0]: r[1] for r in rows}, {r[1]: r[0] for r in rows}
+
+
 def get_perm_profile(db: Session, user) -> dict:
     """Hồ sơ quyền (cache in-process) theo mô hình GRANT — mỗi vai trò của user là 1 grant
     (quyền hành động + phạm vi RIÊNG). Trả:
@@ -112,6 +135,10 @@ def get_perm_profile(db: Session, user) -> dict:
     emp_to_user = {}
     if emp_ids:
         emp_to_user = {u.employee_id: u.id for u in db.query(User).filter(User.employee_id.in_(emp_ids)).all()}
+    # CR-086: chiều phòng ban lưu ID. Dòng cũ (và FE cũ) còn ghi TÊN → đọc được cả hai và dựng
+    # song song 2 khóa: `department` = id (để khớp `department_id` trên phiếu) và
+    # `department_name` = tên (chỉ để lùi cho phiếu chưa điền lùi được id — xem scoping._dept_match).
+    dep_by_id, dep_by_name = _dept_ref_map(db, [s.value for s in scope_rows if s.dim == "department"])
     scope_by_role: dict = {}
     for s in scope_rows:
         b = scope_by_role.setdefault(s.role_id, {"inc": {}, "exc": {}})
@@ -123,7 +150,13 @@ def get_perm_profile(db: Session, user) -> dict:
         elif s.dim == "company":
             b[kind].setdefault("company", []).append(int(s.value) if (s.value or "").isdigit() else s.value)
         else:
-            b[kind].setdefault("department", []).append(s.value)
+            v = (s.value or "").strip()
+            did = int(v) if v.isdigit() else dep_by_name.get(v, 0)
+            name = dep_by_id.get(did, "") if v.isdigit() else v
+            if did:
+                b[kind].setdefault("department", []).append(did)
+            if name:
+                b[kind].setdefault("department_name", []).append(name)
 
     grants = [{"role_id": rid, "perms": role_perms.get(rid, {}),
                "scope": scope_by_role.get(rid, {"inc": {}, "exc": {}})} for rid in role_ids]

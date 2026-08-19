@@ -238,8 +238,9 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
             <SelectContent>
               <SelectItem value={ALL}>Tất cả phòng ban</SelectItem>
               {(departments?.items ?? []).map((item) => (
-                // Backend lọc tài khoản theo TÊN phòng ban, không phải id.
-                <SelectItem key={item.id} value={item.name}>
+                // CR-088: gửi ID. Tham số vẫn tên là `department` vì backend nhận cả hai
+                // (CR-086), nhưng gửi TÊN thì hai phòng trùng tên là tra ra 0 -> danh sách rỗng.
+                <SelectItem key={item.id} value={String(item.id)}>
                   {item.name}
                 </SelectItem>
               ))}

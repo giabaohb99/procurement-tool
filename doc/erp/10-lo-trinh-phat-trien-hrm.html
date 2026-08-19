@@ -1,0 +1,2373 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>BÁO CÁO KẾ HOẠCH TRIỂN KHAI — DEGO WORKHUB</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  @page {
+    size: A4;
+    margin: 22mm 22mm 20mm 22mm;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 9.6pt;
+    line-height: 1.55;
+    color: #222222;
+    background: #ffffff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .page-break {
+    page-break-after: always;
+    break-after: page;
+    height: 0;
+  }
+
+  /* Cover Page */
+  .cover-page {
+    height: 235mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    page-break-after: always;
+    break-after: page;
+    padding-top: 8mm;
+  }
+
+  .cover-header-group {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .cover-main-title {
+    font-size: 21pt;
+    font-weight: 800;
+    color: #0E7DA8;
+    letter-spacing: -0.3px;
+    line-height: 1.25;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .cover-sub-title {
+    font-size: 17pt;
+    font-weight: 800;
+    color: #0E7DA8;
+    line-height: 1.3;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .cover-tagline {
+    font-size: 10.5pt;
+    color: #4B5563;
+    font-weight: 500;
+    margin-bottom: 25px;
+  }
+
+  .cover-meta-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 25px;
+    font-size: 9.25pt;
+  }
+
+  .cover-meta-table td {
+    border: 1px solid #CCCCCC;
+    padding: 7px 12px;
+    vertical-align: middle;
+  }
+
+  .cover-meta-table tr td:first-child {
+    width: 28%;
+    background-color: #F2F2F2;
+    font-weight: 700;
+    color: #000000;
+  }
+
+  .cover-meta-table tr td:last-child {
+    background-color: #FFFFFF;
+    color: #222222;
+  }
+
+  .cover-footer-note {
+    text-align: center;
+    font-size: 8.75pt;
+    color: #4B5563;
+    line-height: 1.6;
+    padding: 0 10mm;
+    margin-top: auto;
+    margin-bottom: 5mm;
+  }
+
+  /* Page 2: Approval Page */
+  .approval-page {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  /* Page 3: TOC Page */
+  .toc-page {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .toc-row {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 10px;
+    font-size: 9.5pt;
+    color: #0E7DA8;
+  }
+
+  .toc-title-text {
+    white-space: nowrap;
+    color: #0E7DA8;
+  }
+
+  .toc-dots {
+    flex-grow: 1;
+    border-bottom: 1.5px dotted #0E7DA8;
+    margin: 0 8px;
+    height: 1px;
+    opacity: 0.65;
+  }
+
+  .toc-page-num {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    color: #0E7DA8;
+    font-size: 9.5pt;
+    min-width: 16px;
+    text-align: right;
+  }
+
+  .toc-appendix {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid #E5E7EB;
+  }
+
+  /* Headings */
+  h1, h2, h3, h4 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: #0E7DA8;
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  h2 {
+    font-size: 13.5pt;
+    font-weight: 800;
+    color: #0E7DA8;
+    text-transform: uppercase;
+    margin-top: 22px;
+    margin-bottom: 10px;
+    line-height: 1.3;
+  }
+
+  h3 {
+    font-size: 10.75pt;
+    font-weight: 700;
+    color: #0E7DA8;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    line-height: 1.35;
+  }
+
+  h4 {
+    font-size: 9.75pt;
+    font-weight: 700;
+    color: #0E7DA8;
+    margin-top: 12px;
+    margin-bottom: 6px;
+  }
+
+  p {
+    margin-bottom: 8.5px;
+    text-align: justify;
+    color: #222222;
+  }
+
+  strong {
+    font-weight: 700;
+    color: #000000;
+  }
+
+  em {
+    font-style: italic;
+    color: #4B5563;
+  }
+
+  /* Lists */
+  ul, ol {
+    margin-top: 4px;
+    margin-bottom: 10px;
+    padding-left: 20px;
+  }
+
+  li {
+    margin-bottom: 3.5px;
+    line-height: 1.5;
+  }
+
+  /* Tables — Exact DEGO WorkHub SRS Styling */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    margin-bottom: 14px;
+    font-size: 8.9pt;
+    page-break-inside: auto;
+    break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  th {
+    background-color: #0E7DA8;
+    color: #FFFFFF;
+    font-weight: 700;
+    text-align: left;
+    padding: 6.5px 9px;
+    border: 1px solid #0E7DA8;
+    font-size: 8.65pt;
+    letter-spacing: 0.15px;
+  }
+
+  td {
+    padding: 5.5px 9px;
+    border: 1px solid #CCCCCC;
+    vertical-align: top;
+    line-height: 1.45;
+    background-color: #FFFFFF;
+  }
+
+  tbody tr:nth-child(even) td {
+    background-color: #F8FAFC;
+  }
+
+  .col-center {
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .col-num {
+    width: 30px;
+    font-weight: 600;
+    color: #4B5563;
+  }
+
+  /* Callout / Note Box */
+  .brand-note-box {
+    background-color: #F2F2F2;
+    border: 1px solid #E0E0E0;
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 8.75pt;
+    color: #333333;
+    line-height: 1.5;
+    margin-top: 16px;
+    margin-bottom: 16px;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Code & Monospace */
+  code {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 8pt;
+    background-color: #F0F4F8;
+    color: #0E7DA8;
+    padding: 1px 4px;
+    border-radius: 3px;
+    border: 1px solid #D1D5DB;
+    white-space: nowrap;
+  }
+
+  pre {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 7.8pt;
+    line-height: 1.45;
+    background-color: #F8FAFC;
+    color: #1E293B;
+    border: 1px solid #CCCCCC;
+    padding: 10px 14px;
+    border-radius: 4px;
+    margin-top: 8px;
+    margin-bottom: 12px;
+    overflow-x: auto;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    border: none;
+    font-size: inherit;
+    white-space: pre;
+  }
+
+  .section-divider {
+    height: 1px;
+    background-color: #E5E7EB;
+    margin: 18px 0 14px 0;
+    page-break-after: avoid;
+  }
+
+  .doc-end-marker {
+    text-align: center;
+    font-size: 8.75pt;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #0E7DA8;
+    margin-top: 24px;
+    padding-top: 12px;
+    border-top: 1px solid #E5E7EB;
+    page-break-inside: avoid;
+  }
+
+  table td:first-child:has(> code) {
+    width: 110px;
+    white-space: nowrap;
+  }
+
+</style>
+</head>
+<body>
+
+<!-- PAGE 1: COVER PAGE -->
+<div class="cover-page">
+  <div class="cover-header-group">
+    <div class="cover-main-title">BÁO CÁO KẾ HOẠCH TRIỂN KHAI</div>
+    <div class="cover-sub-title">HỆ THỐNG QUẢN TRỊ NỘI BỘ<br>DEGO WORKHUB</div>
+    <div class="cover-tagline">Quản trị Tổ chức — Văn bản tài liệu — Nhân sự — Đào tạo — Công việc</div>
+  </div>
+
+  <table class="cover-meta-table">
+    <tr>
+      <td>Mã tài liệu</td>
+      <td><strong>BC-DEGO-IT-001-2026</strong></td>
+    </tr>
+    <tr>
+      <td>Phiên bản</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <td>Ngày ban hành</td>
+      <td>12/08/2026</td>
+    </tr>
+    <tr>
+      <td>Đơn vị soạn thảo</td>
+      <td>Đội Công nghệ thông tin DEGO Holding</td>
+    </tr>
+    <tr>
+      <td>Loại tài liệu</td>
+      <td>Báo cáo kế hoạch triển khai</td>
+    </tr>
+    <tr>
+      <td>Trả lời cho</td>
+      <td><code>SRS-HOLDING-IT-001-2026</code> — Tài liệu yêu cầu phần mềm DEGO WorkHub, bản 1.1, ngày 11/08/2026</td>
+    </tr>
+    <tr>
+      <td>Trạng thái</td>
+      <td>Trình duyệt</td>
+    </tr>
+    <tr>
+      <td>Phạm vi áp dụng</td>
+      <td>Toàn tập đoàn DEGO Holding</td>
+    </tr>
+  </table>
+
+  <div class="cover-footer-note">
+    Tài liệu này xác lập lộ trình triển khai chi tiết cho hệ thống DEGO WorkHub theo SRS-HOLDING-IT-001-2026, dựa trên hiện trạng nền tảng công nghệ sẵn có của Tập đoàn DEGO Holding.
+  </div>
+</div>
+
+<!-- PAGE 2: APPROVAL & BRAND NOTES -->
+<div class="approval-page">
+  <h2>LỊCH SỬ SOẠN THẢO VÀ PHÊ DUYỆT</h2>
+  
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 15%;">Phiên bản</th>
+        <th style="width: 18%;">Ngày</th>
+        <th style="width: 42%;">Nội dung thay đổi</th>
+        <th style="width: 25%;">Người thực hiện</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="col-center"><strong>1.0</strong></td>
+        <td>11/08/2026</td>
+        <td>Dự thảo kế hoạch triển khai sơ bộ</td>
+        <td>Đội Công nghệ thông tin</td>
+      </tr>
+      <tr>
+        <td class="col-center"><strong>2.0</strong></td>
+        <td>12/08/2026</td>
+        <td>Hoàn thiện báo cáo kế hoạch chi tiết: vá nền, phỏng vấn chốt ưu tiên, lộ trình 6 giai đoạn và định biên nhân lực</td>
+        <td>Đội Công nghệ thông tin</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top: 20px;">Bảng phê duyệt</h3>
+  
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 18%;">Vai trò</th>
+        <th style="width: 25%;">Họ tên / Đơn vị</th>
+        <th style="width: 37%;">Nội dung xác nhận</th>
+        <th style="width: 10%;">Ngày</th>
+        <th style="width: 10%;">Chữ ký</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Người lập</strong></td>
+        <td>Đội Công nghệ thông tin</td>
+        <td>Số liệu hiện trạng là số đếm được trên mã nguồn, không phải ước lượng</td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><strong>Người rà soát</strong></td>
+        <td>Văn phòng Điều hành</td>
+        <td>Thứ tự triển khai và phạm vi từng giai đoạn đúng nhu cầu quản trị</td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><strong>Người phê duyệt</strong></td>
+        <td>Tổng Giám đốc</td>
+        <td>Chốt lộ trình, chốt nhân lực, chốt các nội dung tại mục 11</td>
+        <td></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="brand-note-box">
+    <strong>Ghi chú về nhận diện thương hiệu:</strong> tài liệu dùng hai màu nhận diện của DEGO Holding là xanh lơ (màu chủ đạo <code>#0E7DA8</code>) và xanh lá (màu nhấn <code>#3A9E4E</code>) theo xác nhận của Ban lãnh đạo. Mã màu chính xác theo tệp logo gốc sẽ do phòng Marketing cung cấp để tinh chỉnh đồng loạt khi áp dụng cho giao diện phần mềm.
+  </div>
+</div>
+
+<!-- PAGE 3: TABLE OF CONTENTS -->
+<div class="toc-page">
+  <h2>MỤC LỤC</h2>
+  <div style="margin-top: 18px;">
+    
+        <div class="toc-row">
+            <span class="toc-title-text"><strong>1. MỤC ĐÍCH CỦA BÁO CÁO</strong></span>
+            <span class="toc-dots"></span>
+            <span class="toc-page-num">4</span>
+        </div>
+        
+        <div class="toc-row">
+            <span class="toc-title-text"><strong>2. KẾT LUẬN VÀ KHUYẾN NGHỊ</strong></span>
+            <span class="toc-dots"></span>
+            <span class="toc-page-num">4</span>
+        </div>
+        
+        <div class="toc-row">
+            <span class="toc-title-text"><strong>3. ĐIỂM XUẤT PHÁT — HỆ THỐNG HIỆN CÓ LÀM NỀN CHO WORKHUB</strong></span>
+            <span class="toc-dots"></span>
+            <span class="toc-page-num">5</span>
+        </div>
+        
+        <div class="toc-row">
+            <span class="toc-title-text"><strong>4. CÁCH LÀM: SỬA NỀN, PHỎNG VẤN CHỐT ƯU TIÊN, RỒI XÂY TỪNG PHÂN HỆ</strong></span>
+            <span class="toc-dots"></span>
+            <span class="toc-page-num">7</span>
+        </div>
+        
+        <div class="toc-row">
+            <span class="toc-title-text"><strong>5. VIỆC PHẢI LÀM TRÊN NỀN TRƯỚC KHI LẮP WORKHUB</strong></span>
+            <span class="toc-dots"></span>
+            <span class="toc-page-num">10</span>
+        </div>
+        
+        <div class="toc-row">
+            <span class="toc-title-text"><strong>6. KẾ HOẠCH CHO TỪNG PHÂN HỆ CỦA WORKHUB</strong></span>
+            <span class="toc-dots"></span>
+            <span class="toc-page-num">12</span>
+        </div>
+        
+        <div class="toc-row">
+            <span class="toc-title-text"><strong>7. LỘ TRÌNH VÀ MỐC THỜI GIAN</strong></span>
+            <span class="toc-dots"></span>
+            <span class="toc-page-num">16</span>
+        </div>
+        
+        <div class="toc-row">
+            <span class="toc-title-text"><strong>8. NHÂN LỰC</strong></span>
+            <span class="toc-dots"></span>
+            <span class="toc-page-num">19</span>
+        </div>
+        
+        <div class="toc-row">
+            <span class="toc-title-text"><strong>9. DANH MỤC MỞ RỘNG NGOÀI PHẠM VI BẢN 1</strong></span>
+            <span class="toc-dots"></span>
+            <span class="toc-page-num">21</span>
+        </div>
+        
+        <div class="toc-row">
+            <span class="toc-title-text"><strong>10. NGHIỆM THU VÀ ĐIỀU KIỆN THÀNH CÔNG NGOÀI PHẦN MỀM</strong></span>
+            <span class="toc-dots"></span>
+            <span class="toc-page-num">22</span>
+        </div>
+        
+        <div class="toc-row">
+            <span class="toc-title-text"><strong>11. NỘI DUNG CẦN BAN LÃNH ĐẠO QUYẾT ĐỊNH</strong></span>
+            <span class="toc-dots"></span>
+            <span class="toc-page-num">23</span>
+        </div>
+        
+        <div class="toc-row">
+            <span class="toc-title-text"><strong>12. RỦI RO</strong></span>
+            <span class="toc-dots"></span>
+            <span class="toc-page-num">25</span>
+        </div>
+        
+        <div class="toc-row toc-appendix">
+            <span class="toc-title-text"><strong>PHỤ LỤC A — BẢNG THUẬT NGỮ</strong></span>
+            <span class="toc-dots"></span>
+            <span class="toc-page-num">26</span>
+        </div>
+        
+  </div>
+</div>
+
+<!-- BODY PAGES (SECTIONS 1 TO 12 + APPENDIX) -->
+<div class="body-content">
+  <h2 id="sec-1">1. MỤC ĐÍCH CỦA BÁO CÁO</h2>
+<p><code>SRS-HOLDING-IT-001-2026</code> mô tả <strong>DEGO WorkHub phải làm được những gì</strong> — 12 phân hệ, khoảng 300 tài khoản, trên 10 công ty thành viên. Báo cáo này trả lời phần còn lại: <strong>làm thế nào để có nó, theo thứ tự nào, mất bao lâu, cần bao nhiêu người.</strong></p>
+<p>Bốn câu hỏi cụ thể mà báo cáo này trả lời:</p>
+<table>
+<thead>
+<tr>
+<th>Câu hỏi</th>
+<th>Trả lời ở mục</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bắt đầu từ đâu — xây mới hay dùng lại phần mềm đang chạy</td>
+<td>Mục 3</td>
+</tr>
+<tr>
+<td>Cách quyết định làm chức năng nào trước</td>
+<td>Mục 4</td>
+</tr>
+<tr>
+<td>Bao giờ có từng phân hệ</td>
+<td>Mục 7</td>
+</tr>
+<tr>
+<td>Cần bao nhiêu người, có phải tuyển thêm không</td>
+<td>Mục 8</td>
+</tr>
+</tbody>
+</table>
+<p>Báo cáo này <strong>không thay thế</strong> tài liệu yêu cầu phần mềm. Mọi mô tả chức năng vẫn lấy theo tài liệu đó. Chỗ nào báo cáo này đề nghị khác đi so với lộ trình gợi ý trong tài liệu yêu cầu, đều được nêu rõ kèm lý do và đưa thành một nội dung cần quyết định tại mục 11.</p>
+<p><strong>Quy ước giữ nguyên theo tài liệu yêu cầu:</strong> mã chức năng dạng <code>FR-[PHÂN HỆ]-[NN]</code>, mã yêu cầu phi chức năng dạng <code>NFR-[NN]</code>, mỗi yêu cầu viết bắt đầu bằng "Hệ thống phải...", mức ưu tiên <strong>B — Bắt buộc · N — Nên có · T — Tương lai</strong>.</p>
+<div class="section-divider"></div>
+<h2 id="sec-2">2. KẾT LUẬN VÀ KHUYẾN NGHỊ</h2>
+<h3>2.1. Bốn kết luận</h3>
+<p><strong>Một — Không xây WorkHub từ đầu. Xây trên nền đang chạy.</strong><br />
+Tập đoàn đã có một phần mềm nội bộ vận hành thật: <strong>20.674 dòng mã, 36 phân hệ nghiệp vụ nhỏ, 265 điểm giao tiếp, 57 bảng dữ liệu</strong>, người dùng thật sử dụng hằng ngày cho công tác thu mua. Phần mềm này đã sẵn có bốn thứ mà WorkHub cần và mất nhiều thời gian nhất để xây lại: cơ chế đăng nhập, cơ chế phân quyền theo vai trò, cơ chế giới hạn phạm vi dữ liệu, và hệ thống thông báo ba kênh. Bỏ đi để xây mới là bỏ khoảng một năm công đã trả.</p>
+<p><strong>Hai — Nhưng nền đó chưa đủ chắc để gánh dữ liệu nhân sự, và phải sửa trước.</strong><br />
+Rà soát ngày 12/08/2026 phát hiện <strong>bốn lỗ hổng đang có hiệu lực trên hệ thống chạy thật</strong>, trong đó ba lỗ hổng sẽ đi thẳng vào dữ liệu lương, hợp đồng lao động và giấy tờ tùy thân ngay khi phân hệ Nhân sự có dữ liệu. Chi tiết tại mục 3.3. Đây là lý do giai đoạn đầu tiên của lộ trình là <strong>sửa nền</strong>, không phải xây phân hệ mới.</p>
+<p><strong>Ba — Không quyết chức năng nào làm trước bằng cách ngồi bàn. Quyết bằng phỏng vấn.</strong><br />
+Cách làm đề xuất: lấy danh mục chức năng chuẩn từ các nền tảng lớn, mang đi phỏng vấn từng phòng ban, chấm mức ưu tiên dựa trên câu trả lời có ghi biên bản, sửa lại cho vừa thực tế, dựng bản chạy được cho người dùng thật bấm, rồi mới chốt. Quy trình sáu bước tại mục 4.</p>
+<p><strong>Bốn — Nửa năm là đạt được, nhưng chỉ đến hết phần nền và phần con người.</strong><br />
+Mốc <strong>15/02/2027</strong>: nền đã sửa xong, phân hệ Tổ chức và phân hệ Nhân sự chạy thật, khoảng 300 hồ sơ nhân sự số hóa và đối chiếu khớp. Các phân hệ còn lại của WorkHub — Văn bản, Công việc, Đào tạo, Góp ý, Báo cáo — kéo dài đến hết 2027 và sang 2028. Đây là chương trình nhiều năm, không phải một dự án nửa năm.</p>
+<h3>2.2. Ba khuyến nghị cần quyết ngay</h3>
+<table>
+<thead>
+<tr>
+<th class="col-center col-num">#</th>
+<th>Khuyến nghị</th>
+<th>Vì sao gấp</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="col-center col-num">1</td>
+<td><strong>Cho phép bắt đầu ngay phần vá bốn lỗ hổng</strong>, không chờ phê duyệt toàn bộ lộ trình. Khối lượng vài ngày công</td>
+<td>Bốn lỗ hổng đang hở <strong>ngay lúc này</strong>. Chờ phê duyệt thêm một tháng là hở thêm một tháng, mà việc vá không phụ thuộc vào việc lộ trình có được duyệt hay không</td>
+</tr>
+<tr>
+<td class="col-center col-num">2</td>
+<td><strong>Tách một người ra khỏi hàng chờ yêu cầu thay đổi của phần mềm Thu mua</strong></td>
+<td>Đo được: phần mềm đang chạy phát sinh <strong>xấp xỉ một yêu cầu thay đổi mỗi ngày làm việc</strong>. Không tách người thì mốc 15/02/2027 trượt sang tháng 4–5/2027. Phép tính tại mục 8.2</td>
+</tr>
+<tr>
+<td class="col-center col-num">3</td>
+<td><strong>Tuyển thêm một người từ tháng 9/2026</strong></td>
+<td>Không phải để rút ngắn nửa năm này — người mới cần hai đến ba tháng đào tạo nên đóng góp trong nửa năm đầu là nhỏ. Tuyển vì phần việc <strong>sau</strong> phân hệ Nhân sự dài gấp nhiều lần phần trước, và vì hiện đang có công cụ vận hành chỉ một người biết dùng</td>
+</tr>
+</tbody>
+</table>
+<div class="section-divider"></div>
+<h2 id="sec-3">3. ĐIỂM XUẤT PHÁT — HỆ THỐNG HIỆN CÓ LÀM NỀN CHO WORKHUB</h2>
+<h3>3.1. Tập đoàn đang có gì</h3>
+<p>Phần mềm quản lý Thu mua, xây trong nội bộ, đang vận hành trên hai môi trường tách biệt (môi trường chạy thật và môi trường thử nghiệm), có sao lưu tự động hai lần mỗi ngày.</p>
+<table>
+<thead>
+<tr>
+<th>Hạng mục</th>
+<th>Số đo ngày 12/08/2026</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Quy mô mã nguồn phía máy chủ</td>
+<td>20.674 dòng</td>
+</tr>
+<tr>
+<td>Số phân hệ nghiệp vụ nhỏ</td>
+<td class="col-center col-num">36</td>
+</tr>
+<tr>
+<td>Số điểm giao tiếp (chức năng gọi được)</td>
+<td class="col-center col-num">265</td>
+</tr>
+<tr>
+<td>Số bảng dữ liệu</td>
+<td class="col-center col-num">57</td>
+</tr>
+<tr>
+<td>Số bước thay đổi cấu trúc dữ liệu đã chạy</td>
+<td class="col-center col-num">75</td>
+</tr>
+<tr>
+<td>Số bộ kiểm thử tự động</td>
+<td class="col-center col-num">27</td>
+</tr>
+<tr>
+<td>Công nghệ</td>
+<td>Python FastAPI · MySQL 8.4 · React · Docker</td>
+</tr>
+</tbody>
+</table>
+<h3>3.2. Cái gì dùng lại được cho WorkHub</h3>
+<p>Đây là phần trả lời câu "vì sao không xây mới". Bốn hạng mục dưới đây là phần tốn thời gian nhất của bất kỳ hệ thống quản trị nội bộ nào, và tập đoàn <strong>đã có, đã chạy thật, đã qua kiểm chứng bằng người dùng</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Hạng mục WorkHub cần</th>
+<th>Hiện trạng</th>
+<th>Đỡ được bao nhiêu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Đăng nhập và quản lý tài khoản</strong></td>
+<td>Đã có, đã nối tài khoản đăng nhập với hồ sơ nhân sự</td>
+<td>Gần như đủ. Còn thiếu xác thực hai lớp</td>
+</tr>
+<tr>
+<td><strong>Phân quyền theo vai trò</strong></td>
+<td>Đã có ma trận quyền: mỗi vai trò được làm gì trên loại dữ liệu nào</td>
+<td>Đủ về cơ chế. Cần rà lại danh sách vai trò theo góc nhìn tập đoàn</td>
+</tr>
+<tr>
+<td><strong>Giới hạn phạm vi dữ liệu</strong></td>
+<td>Đã có, và <strong>mềm hơn mặt bằng phần mềm thương mại</strong>: cấp theo từng lượt gán vai trò, có bao gồm và loại trừ theo pháp nhân, phòng ban, từng nhân sự</td>
+<td>Cơ chế đủ mạnh. Nhưng đang bị bỏ sót ở nhiều chỗ — xem mục 3.3</td>
+</tr>
+<tr>
+<td><strong>Thông báo ba kênh</strong></td>
+<td>Đã chạy thật: thông báo trong ứng dụng, thư điện tử, thông báo đẩy trên trình duyệt</td>
+<td>Đủ cho phân hệ Thông báo của WorkHub, trừ kênh Zalo</td>
+</tr>
+<tr>
+<td><strong>Nhật ký thao tác</strong></td>
+<td>Đã có, ghi giá trị trước và sau mỗi lần sửa, có gom theo tháng</td>
+<td>Đủ về cơ chế ghi. Thiếu phần kiểm quyền khi đọc, và thiếu chính sách lưu trữ dài hạn</td>
+</tr>
+<tr>
+<td><strong>Sao lưu tự động</strong></td>
+<td>Chạy hai lần mỗi ngày lên lưu trữ đám mây</td>
+<td>Tốt hơn mức tài liệu yêu cầu đặt ra. Nhưng <strong>chưa từng thử phục hồi</strong></td>
+</tr>
+<tr>
+<td><strong>Hạ tầng vận hành</strong></td>
+<td>Đóng gói bằng Docker, có tên miền riêng, có chứng chỉ bảo mật, có tiến trình chạy nền theo lịch</td>
+<td>Đủ để mở rộng, không phải dựng lại</td>
+</tr>
+</tbody>
+</table>
+<p>Ngoài ra, tập đoàn đã có ba ứng dụng nội bộ khác đang chạy, <strong>dùng chung máy chủ và chung tài khoản đăng nhập</strong> với phần mềm Thu mua: Trung tâm Hướng dẫn sử dụng, công cụ Quản lý Dự án cho Ban điều hành, và Phiếu hỗ trợ. Ba ứng dụng này phủ được một phần của ba phân hệ WorkHub — chi tiết tại mục 6.</p>
+<h3>3.3. Cái gì phải sửa — bốn lỗ hổng đang hở</h3>
+<p>Không phải rủi ro tương lai. Rà soát ngày 12/08/2026, cả bốn đang có hiệu lực trên hệ thống chạy thật:</p>
+<table>
+<thead>
+<tr>
+<th class="col-center col-num">#</th>
+<th>Lỗ hổng</th>
+<th>Hậu quả cụ thể nếu WorkHub lắp lên nền này</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="col-center col-num">1</td>
+<td>Chức năng <strong>xem hồ sơ nhân sự theo mã</strong> và <strong>11 chức năng xuất tệp</strong> không kiểm tra phạm vi dữ liệu</td>
+<td>Người có quyền đọc nhân sự xem được hồ sơ bất kỳ bằng cách đoán số thứ tự; và tải về toàn bộ danh sách nhân sự của mọi công ty thành viên bằng một lần bấm. Trong 11 chức năng xuất tệp, <strong>chỉ 1 chức năng kiểm tra quyền xuất</strong></td>
+</tr>
+<tr>
+<td class="col-center col-num">2</td>
+<td>Cấu hình <strong>loại trừ phòng ban</strong> trên dữ liệu nhân sự lưu được nhưng <strong>không có tác dụng</strong></td>
+<td>Người quản trị chọn "trừ phòng Nhân sự", hệ thống báo lưu thành công, và người ta tin là đã cấm. Đây là loại lỗi nguy hiểm nhất vì nó tạo cảm giác an toàn giả</td>
+</tr>
+<tr>
+<td class="col-center col-num">3</td>
+<td>Tệp đính kèm trả về <strong>đường dẫn công khai vĩnh viễn</strong>, thư mục tệp không kiểm tra đăng nhập, tên tệp đoán được theo quy luật</td>
+<td>Hợp đồng, hóa đơn, giấy tờ tùy thân: ai có đường dẫn là tải được, không cần đăng nhập, kể cả người đã nghỉ việc còn giữ đường dẫn cũ. <strong>Phân hệ Nhân sự và phân hệ Văn bản đều lưu tài liệu bằng cơ chế này</strong></td>
+</tr>
+<tr>
+<td class="col-center col-num">4</td>
+<td>Nhật ký thao tác <strong>đọc tự do</strong>; bỏ trống mã bản ghi thì trả về nhật ký của mọi bản ghi</td>
+<td>Nhật ký chứa giá trị trước và sau của mọi lần sửa. Đây là đường vòng đọc được đúng phần dữ liệu mà cơ chế phạm vi đang che</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ba trong bốn lỗ hổng này đi thẳng vào phạm vi của phân hệ Nhân sự.</strong> Riêng lỗ hổng số 3 không thể vá bằng cách chỉnh phạm vi dữ liệu, vì hợp đồng lao động và giấy tờ tùy thân là <strong>tệp</strong>, không phải dòng trong bảng.</p>
+<p>Khối lượng vá: <strong>vài ngày công</strong>. Đây là căn cứ của khuyến nghị số 1 tại mục 2.2.</p>
+<h3>3.4. Ba khoảng cách kỹ thuật khác, lớn hơn nhưng không gấp</h3>
+<table>
+<thead>
+<tr>
+<th class="col-center col-num">#</th>
+<th>Khoảng cách</th>
+<th>Đo được</th>
+<th>Vì sao WorkHub cần</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="col-center col-num">1</td>
+<td><strong>Phạm vi dữ liệu đang phải khai bằng tay ở từng chỗ</strong></td>
+<td>97 chức năng đọc dữ liệu, nhưng chỉ <strong>38 chỗ</strong> có gọi hàm áp phạm vi. <strong>9 trên 28</strong> loại dữ liệu được khai phạm vi; 19 loại còn lại không lọc theo chiều nào</td>
+<td>WorkHub có 12 phân hệ và khoảng 300 người dùng ở trên 10 pháp nhân. Cơ chế "nhớ thì gọi, quên thì hở" không chịu được quy mô đó. Phải đổi thành: <strong>quên khai là hệ thống báo lỗi, không phải trả hết</strong></td>
+</tr>
+<tr>
+<td class="col-center col-num">2</td>
+<td><strong>Chưa sẵn sàng cho nhiều pháp nhân</strong></td>
+<td><strong>15 trên 57 bảng</strong> có cột đánh dấu công ty thành viên. Thiếu 42 bảng</td>
+<td>Tài liệu yêu cầu nêu rõ tập đoàn có trên 10 công ty thành viên và có vai trò "Nhân sự công ty" tách khỏi "Nhân sự tập đoàn". Thêm cột phân định pháp nhân <strong>sau khi đã có dữ liệu</strong> là việc rất khó sửa lại</td>
+</tr>
+<tr>
+<td class="col-center col-num">3</td>
+<td><strong>Không có bộ máy phê duyệt dùng chung</strong></td>
+<td>Hiện có 5 luồng phê duyệt, mỗi luồng viết riêng trong từng phân hệ nghiệp vụ</td>
+<td>Tài liệu yêu cầu xếp phân hệ Luồng phê duyệt vào <strong>tầng nền tảng</strong>, và gần như mọi phân hệ nghiệp vụ đều cần nó: ban hành văn bản, quyết định nhân sự, duyệt kết quả công việc, duyệt cấp phúc lợi. Viết luồng thứ sáu, thứ bảy theo cách cũ là nhân bản một vấn đề</td>
+</tr>
+</tbody>
+</table>
+<p>Ngoài ra: hệ thống hiện có <strong>1 lớp xử lý trung gian duy nhất</strong>, chưa có mã định danh cho từng lượt gọi, chưa có nhật ký truy cập, và chưa có bộ xử lý lỗi chung — nên khi có sự cố thì không truy được ai đã làm gì. Với phần mềm một phân hệ thì chấp nhận được; với hệ thống lưu dữ liệu nhân sự của 300 người thì không.</p>
+<div class="section-divider"></div>
+<h2 id="sec-4">4. CÁCH LÀM: SỬA NỀN, PHỎNG VẤN CHỐT ƯU TIÊN, RỒI XÂY TỪNG PHÂN HỆ</h2>
+<h3>4.1. Ba bước lớn</h3>
+<div class="codehilite"><pre><span></span><code>Bước 1 — SỬA NỀN            Bước 2 — PHỎNG VẤN CHỐT ƯU TIÊN     Bước 3 — XÂY TỪNG PHÂN HỆ
+Vá lỗ hổng đang hở          Lấy danh mục chức năng chuẩn        Theo thứ tự đã chốt
+Làm phần dùng chung         Mang đi hỏi từng phòng ban          Mỗi phân hệ một vòng khảo sát
+Chuẩn hóa dữ liệu           Chấm mức ưu tiên B / N / T          Demo hai tuần một lần
+Bộ máy phê duyệt chung      Sửa lại cho vừa thực tế             Nghiệm thu bằng người dùng thật
+Khung nhiều phân hệ         Demo, lấy ý kiến, rồi chốt
+</code></pre></div>
+
+<p>Bước 1 và bước 2 <strong>chạy song song</strong>, không xếp hàng. Đội phần mềm sửa nền trong khi Văn phòng Điều hành đi phỏng vấn. Đây là chỗ tiết kiệm được nhiều thời gian nhất của cả lộ trình: phần sửa nền không cần chờ kết quả phỏng vấn, và phần phỏng vấn không cần chờ mã nguồn.</p>
+<h3>4.2. Bước 2 chi tiết — quy trình khảo sát sáu bước</h3>
+<p>Vì sao không hỏi thẳng "các anh chị cần chức năng gì":</p>
+<table>
+<thead>
+<tr>
+<th>Cách làm</th>
+<th>Hỏng ở đâu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chỉ hỏi người dùng muốn gì</td>
+<td>Người dùng mô tả cái họ đang làm bằng Excel, không mô tả cái họ chưa biết là có. Kết quả là tin học hóa một quy trình thủ công và giữ nguyên mọi chỗ dở của nó</td>
+</tr>
+<tr>
+<td>Chỉ chép hệ thống nước ngoài</td>
+<td>Ra một phần mềm đủ tính năng mà không ai dùng, vì nó giả định một cách vận hành khác</td>
+</tr>
+</tbody>
+</table>
+<p>Quy trình đề xuất đi từ chuẩn quốc tế <strong>xuống</strong> thực tế, sáu bước:</p>
+<table>
+<thead>
+<tr>
+<th>Bước</th>
+<th>Làm gì</th>
+<th>Đầu ra kiểm chứng được</th>
+<th>Ai chủ trì</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>KS1 — Lấy danh mục chuẩn</strong></td>
+<td>Trích danh sách chức năng từ các nền tảng quản trị nhân sự và quản trị doanh nghiệp lớn, gộp với danh sách chức năng trong tài liệu yêu cầu WorkHub, thành <strong>một bảng đối chiếu</strong>, mỗi dòng một chức năng</td>
+<td>Bảng có cột: tên chức năng · nguồn · mô tả một câu · dữ liệu nó cần</td>
+<td>Đội Công nghệ thông tin</td>
+</tr>
+<tr>
+<td><strong>KS2 — Mang đi hỏi</strong></td>
+<td>Cầm bảng đi phỏng vấn từng phòng. Với mỗi dòng hỏi đúng ba câu: <strong>hiện đang làm bằng gì · một tháng phát sinh bao nhiêu lần · nếu không có thì hỏng chuyện gì</strong></td>
+<td>Biên bản phỏng vấn có chữ ký người được phỏng vấn. Bảng điền xong ba cột trả lời</td>
+<td>Văn phòng Điều hành chủ trì, Công nghệ thông tin ghi</td>
+</tr>
+<tr>
+<td><strong>KS3 — Chấm ưu tiên</strong></td>
+<td>Mỗi dòng nhận một mức <strong>B / N / T</strong>. Quy tắc chấm: mức <strong>B</strong> chỉ dành cho chức năng mà <strong>không có thì một quy trình có thật bị đứt</strong> — không dành cho chức năng "nên có cho đủ bộ"</td>
+<td>Bảng có cột mức, và <strong>số dòng mức B không vượt quá 40% tổng số dòng</strong>. Vượt là chấm chưa nghiêm</td>
+<td>Ban điều hành duyệt</td>
+</tr>
+<tr>
+<td><strong>KS4 — Sửa cho vừa</strong></td>
+<td>Mỗi dòng mức B viết lại thành yêu cầu "Hệ thống phải..." theo thực tế DEGO, không giữ nguyên cách nói của phần mềm nguồn. Chỗ nào phần mềm ngoài làm phức tạp hơn nhu cầu thì <strong>ghi rõ phần cắt bỏ và lý do</strong></td>
+<td>Danh sách yêu cầu có mã, có mức, có ghi chú "cắt gì so với bản gốc"</td>
+<td>Đội Công nghệ thông tin</td>
+</tr>
+<tr>
+<td><strong>KS5 — Demo và lấy ý kiến</strong></td>
+<td>Dựng bản chạy được cho người dùng thật bấm trên môi trường thử nghiệm. <strong>Không trình bày bằng ảnh chụp màn hình hay bản vẽ</strong></td>
+<td>Biên bản demo: ai bấm, chỗ nào vướng, sửa gì</td>
+<td>Công nghệ thông tin trình, phòng nghiệp vụ bấm</td>
+</tr>
+<tr>
+<td><strong>KS6 — Chốt hoặc quay lại KS4</strong></td>
+<td>Đạt thì chuyển sang xây bản chính thức. Không đạt thì ghi lý do và quay lại KS4. <strong>Quá hai vòng chưa đạt thì đưa lên Ban điều hành</strong>, không lặp vòng ba</td>
+<td>Yêu cầu được đánh dấu đã chốt và khóa lại</td>
+<td>Người chủ trì</td>
+</tr>
+</tbody>
+</table>
+<h3>4.3. Nguồn của danh mục chức năng ở bước KS1</h3>
+<table>
+<thead>
+<tr>
+<th>Nguồn</th>
+<th>Loại</th>
+<th>Dùng cho phần nào</th>
+<th>Mức tin cậy hiện tại</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Tài liệu yêu cầu WorkHub</strong></td>
+<td>Nội bộ, bản 1.1 đã ban hành</td>
+<td><strong>Nguồn chính</strong> — toàn bộ 12 phân hệ</td>
+<td>Cao</td>
+</tr>
+<tr>
+<td><strong>HrOnline</strong></td>
+<td>Phần mềm nhân sự thương mại Việt Nam</td>
+<td>Nhân sự: hồ sơ, hợp đồng, nghỉ phép, tiền lương</td>
+<td>Cao — đã khảo sát trực tiếp <strong>59 chức năng</strong>, có đường dẫn và danh sách trường</td>
+</tr>
+<tr>
+<td><strong>Odoo Community</strong></td>
+<td>Bộ phần mềm quản trị doanh nghiệp mã nguồn mở</td>
+<td>Cách chia phân hệ nhân sự: hồ sơ, tuyển dụng, nghỉ phép, chấm công, đánh giá</td>
+<td>Trung bình — mới ở mức nắm cách chia phân hệ, <strong>phải khảo sát lại ở bước KS1</strong></td>
+</tr>
+<tr>
+<td><strong>ERPNext</strong></td>
+<td>Hệ thống quản trị nguồn lực mã nguồn mở</td>
+<td>Cách nối phân hệ nhân sự với các phân hệ khác</td>
+<td>Trung bình — <strong>phải khảo sát lại ở bước KS1</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>4.4. Bốn quy tắc bắt buộc của cách làm này</h3>
+<table>
+<thead>
+<tr>
+<th class="col-center col-num">#</th>
+<th>Quy tắc</th>
+<th>Vì sao</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="col-center col-num">1</td>
+<td><strong>Bảng đối chiếu không bao giờ trở thành bản đặc tả.</strong> Nó là danh mục để hỏi, không phải danh mục để làm</td>
+<td>Chép cấu trúc dữ liệu của phần mềm ngoài là kế thừa luôn cả giả định vận hành của họ. Đây là quyết định đã chốt trong nội bộ đội phần mềm</td>
+</tr>
+<tr>
+<td class="col-center col-num">2</td>
+<td><strong>Mỗi nửa tháng kết thúc bằng một buổi trình diễn cho Ban lãnh đạo</strong>, kể cả khi phần việc trong kỳ là phần nền không nhìn thấy được — khi đó trình diễn bằng bộ kiểm thử tự động chạy trước mặt người xem</td>
+<td>Nguyên tắc quản trị này lấy đúng theo tài liệu yêu cầu WorkHub. Nó là cách rẻ nhất để phát hiện đi sai hướng</td>
+</tr>
+<tr>
+<td class="col-center col-num">3</td>
+<td><strong>Người dùng thật phải chạm vào trước khi chốt.</strong> Không nhận "đã lập trình xong" làm bằng chứng nghiệm thu</td>
+<td>Một chức năng chạy đúng kỹ thuật vẫn có thể sai nghiệp vụ, và chỉ người làm nghiệp vụ phát hiện ra</td>
+</tr>
+<tr>
+<td class="col-center col-num">4</td>
+<td><strong>Yêu cầu đã chốt thì khóa.</strong> Thay đổi sau đó phải ghi thành văn bản và thành phiên bản mới của tài liệu</td>
+<td>Không có quy tắc này thì phạm vi trôi liên tục và không mốc nào giữ được</td>
+</tr>
+</tbody>
+</table>
+<h3>4.5. Vai trò của trí tuệ nhân tạo trong lộ trình</h3>
+<p>Đội phần mềm sử dụng công cụ trí tuệ nhân tạo hỗ trợ lập trình. Cần nói rõ nó giúp chỗ nào để con số ở mục 8 được hiểu đúng:</p>
+<table>
+<thead>
+<tr>
+<th>Loại việc</th>
+<th>Mức hỗ trợ</th>
+<th>Rút ngắn ước tính</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chuyển 36 phân hệ nghiệp vụ sang phần dùng chung</td>
+<td>Nhiều — việc lặp, có khuôn mẫu rõ, kiểm chứng được bằng bộ kiểm cũ</td>
+<td>30 – 40%</td>
+</tr>
+<tr>
+<td>Chuẩn hóa 11 cột dữ liệu đang lưu tiếng Việt</td>
+<td>Nhiều — cùng một khuôn lặp 11 lần</td>
+<td>30 – 40%</td>
+</tr>
+<tr>
+<td>Dựng phân hệ danh mục mới</td>
+<td>Nhiều</td>
+<td>30%</td>
+</tr>
+<tr>
+<td>Viết bộ kiểm thử</td>
+<td>Trung bình — sinh khung nhanh, nhưng vẫn phải tự chứng minh bộ kiểm bắt được vi phạm thật</td>
+<td>20%</td>
+</tr>
+<tr>
+<td><strong>Phỏng vấn nghiệp vụ, chốt phạm vi</strong></td>
+<td><strong>Gần như không</strong> — việc của con người ngồi với con người</td>
+<td>0%</td>
+</tr>
+<tr>
+<td><strong>Đối chiếu dữ liệu thật khi chuyển đổi</strong></td>
+<td><strong>Gần như không, và không được để làm thay</strong> — sai ở đây là hỏng dữ liệu đang chạy</td>
+<td>0%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Kết luận dùng cho phép tính ở mục 8: rút ngắn khoảng 15% tổng khối lượng</strong>, không phải 40%. Lý do: phần việc nó giúp nhiều nhất chỉ chiếm khoảng một phần ba lộ trình, và ba thứ chặn tiến độ nặng nhất — phỏng vấn, chốt phạm vi, đối chiếu dữ liệu thật — nằm đúng ở chỗ nó không giúp được.</p>
+<div class="section-divider"></div>
+<h2 id="sec-5">5. VIỆC PHẢI LÀM TRÊN NỀN TRƯỚC KHI LẮP WORKHUB</h2>
+<p>Đây là bước 1 tại mục 4.1. Các yêu cầu dưới đây <strong>không có trong tài liệu yêu cầu WorkHub</strong>, vì tài liệu đó viết theo giả định xây mới. Chúng là điều kiện để nền hiện có gánh được 12 phân hệ.</p>
+<h3>5.1. Nhóm vá gấp</h3>
+<table>
+<thead>
+<tr>
+<th>Mã</th>
+<th>Yêu cầu</th>
+<th>Mức</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-NEN-01</td>
+<td>Hệ thống phải áp giới hạn phạm vi dữ liệu cho <strong>mọi</strong> đường đọc, gồm cả xem chi tiết theo mã và xuất tệp, không chỉ đường xem danh sách</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-02</td>
+<td>Hệ thống phải làm cho cấu hình bao gồm và loại trừ theo phòng ban, theo nhân sự <strong>có hiệu lực thật</strong> trên mọi loại dữ liệu đã khai báo</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-03</td>
+<td>Hệ thống phải buộc mọi lượt tải tệp đính kèm đi qua kiểm tra đăng nhập, kiểm tra quyền và phạm vi <strong>của chứng từ chủ quản</strong>, và cấp đường dẫn có hạn giờ thay vì đường dẫn công khai vĩnh viễn</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-04</td>
+<td>Hệ thống phải kiểm tra quyền và áp phạm vi khi đọc nhật ký thao tác, và che các trường nhạy cảm trong nội dung trước và sau khi sửa</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-05</td>
+<td>Hệ thống phải kiểm tra quyền xuất tệp riêng biệt với quyền xem, và ghi nhật ký mỗi lượt xuất kèm bộ lọc đã dùng</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>5.2. Nhóm phần dùng chung</h3>
+<table>
+<thead>
+<tr>
+<th>Mã</th>
+<th>Yêu cầu</th>
+<th>Mức</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-NEN-06</td>
+<td>Hệ thống phải <strong>báo lỗi khi gặp loại dữ liệu chưa khai báo phạm vi</strong>, thay vì lặng lẽ trả về toàn bộ</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-07</td>
+<td>Hệ thống phải có phần dùng chung sao cho xây một phân hệ danh mục mới <strong>dưới 50 dòng mã</strong> mà vẫn tự động có đầy đủ phân quyền, phạm vi, nhật ký, phân trang, tìm kiếm và xuất tệp</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-08</td>
+<td>Hệ thống phải sinh <strong>mã định danh cho mỗi lượt gọi</strong>, trả về trong phản hồi lỗi và ghi vào mọi dòng nhật ký của lượt đó</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-09</td>
+<td>Hệ thống phải ghi <strong>nhật ký truy cập</strong>: ai gọi chức năng nào, lúc nào, trả về bao nhiêu dòng</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-10</td>
+<td>Hệ thống phải trả về <strong>đúng một khuôn phản hồi</strong> cho mọi loại lỗi, kể cả lỗi chưa lường trước, và không để lộ thông tin kỹ thuật nội bộ ra ngoài</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-11</td>
+<td>Hệ thống phải cho phép <strong>thu hồi phiên đăng nhập ngay lập tức</strong>: khóa một tài khoản là tài khoản đó mất quyền trong vài giây</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-12</td>
+<td>Hệ thống phải có <strong>bộ kiểm thử tự động</strong> chặn việc đưa lên bản chạy thật khi vi phạm các quy ước nền</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-13</td>
+<td>Hệ thống phải có <strong>giới hạn tần suất gọi</strong> có hiệu lực trên toàn bộ chức năng, không chỉ trên chức năng đăng nhập</td>
+<td class="col-center"><strong>N</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>5.3. Nhóm chuẩn hóa dữ liệu</h3>
+<table>
+<thead>
+<tr>
+<th>Mã</th>
+<th>Yêu cầu</th>
+<th>Mức</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-NEN-14</td>
+<td>Hệ thống phải lưu các giá trị trạng thái, loại, mức bằng <strong>mã quy ước cố định</strong>, không lưu chuỗi tiếng Việt — hiện có <strong>11 cột</strong> đang lưu tiếng Việt</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-15</td>
+<td>Hệ thống phải có <strong>cột phân định công ty thành viên trên mọi bảng nghiệp vụ</strong> — hiện thiếu <strong>42 trên 57 bảng</strong></td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-16</td>
+<td>Hệ thống phải lọc phạm vi phòng ban <strong>theo mã phòng ban</strong>, không so sánh bằng tên phòng ban</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-17</td>
+<td>Hệ thống phải dựng lại được từ cơ sở dữ liệu trống bằng cách chạy đủ chuỗi bước thay đổi cấu trúc từ đầu</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>5.4. Nhóm nền cho phân hệ</h3>
+<table>
+<thead>
+<tr>
+<th>Mã</th>
+<th>Yêu cầu</th>
+<th>Mức</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-NEN-18</td>
+<td>Hệ thống phải có <strong>phân quyền tới mức từng trường dữ liệu</strong>: trường bị che thì không xuất hiện trong dữ liệu trả về, áp dụng cho cả đường xuất tệp và đường tích hợp</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-19</td>
+<td>Hệ thống phải có <strong>bộ máy phê duyệt dùng chung</strong>: thêm loại chứng từ cần duyệt chỉ bằng khai báo cấu hình; người duyệt khai theo vai trò tương đối chứ không theo tên người; có nhiều bậc; có ủy quyền khi vắng; và <strong>giữ nguyên phiên bản luồng cho hồ sơ đang trình dở</strong></td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-20</td>
+<td>Hệ thống phải khai báo danh sách phân hệ tại <strong>đúng một nơi</strong>, và kiểm tra lúc khởi động rằng mọi loại dữ liệu thuộc đúng một phân hệ</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-21</td>
+<td>Hệ thống phải hiển thị <strong>lưới biểu tượng phân hệ</strong> sau khi đăng nhập, chỉ hiện phân hệ mà người dùng có quyền</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-22</td>
+<td>Hệ thống phải <strong>giữ nguyên toàn bộ đường dẫn hiện có của phần mềm Thu mua</strong> khi chuyển sang khung nhiều phân hệ</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+<tr>
+<td>FR-NEN-23</td>
+<td>Hệ thống phải cho phép bật tắt khung nhiều phân hệ bằng công tắc cấu hình, để có đường lui</td>
+<td class="col-center"><strong>B</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>5.5. Yêu cầu phi chức năng — điều chỉnh so với tài liệu yêu cầu</h3>
+<p>Giữ nguyên phần lớn chương 5 của tài liệu yêu cầu. Bốn điều chỉnh, đều có căn cứ từ hạ tầng thật:</p>
+<table>
+<thead>
+<tr>
+<th>Mã</th>
+<th>Yêu cầu</th>
+<th>Điều chỉnh so với tài liệu yêu cầu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NFR-01</td>
+<td>Hệ thống phải phục vụ khoảng 300 tài khoản, 100 người dùng đồng thời, phản hồi màn hình thông thường dưới 3 giây</td>
+<td>Giữ nguyên</td>
+</tr>
+<tr>
+<td>NFR-02</td>
+<td>Hệ thống phải chạy trên giao thức bảo mật và <strong>bắt buộc xác thực hai lớp cho vai trò nhân sự và quản trị hệ thống</strong></td>
+<td>Giữ nguyên. <strong>Hiện chưa có</strong> — phải bổ sung trước khi phân hệ Nhân sự có dữ liệu thật</td>
+</tr>
+<tr>
+<td>NFR-03</td>
+<td>Hệ thống phải sao lưu tự động và có <strong>đợt thử phục hồi định kỳ hằng quý</strong></td>
+<td>Sao lưu đang chạy <strong>hai lần mỗi ngày</strong>, tốt hơn mức yêu cầu. Nhưng <strong>chưa từng thử phục hồi</strong> — đây là việc một ngày công, đề nghị làm ngay</td>
+</tr>
+<tr>
+<td>NFR-04</td>
+<td>Hệ thống phải đạt điểm phục hồi trong vòng <strong>12 giờ</strong> và thời gian phục hồi trong vòng <strong>8 giờ làm việc</strong></td>
+<td><strong>Chặt hơn</strong> mức 24 giờ trong tài liệu yêu cầu, vì sao lưu đã chạy hai lần mỗi ngày</td>
+</tr>
+<tr>
+<td>NFR-05</td>
+<td>Hệ thống phải ghi nhật ký thao tác bất biến, giữ <strong>tối thiểu 5 năm</strong>, ghi cả hành vi <strong>xem và tải</strong>, tra được theo người, theo đối tượng, theo khoảng thời gian</td>
+<td>Giữ nguyên. Hiện đã ghi hành vi sửa, <strong>chưa ghi hành vi xem và tải</strong>, và chưa có chính sách lưu 5 năm</td>
+</tr>
+<tr>
+<td>NFR-06</td>
+<td>Hệ thống phải mã hóa tệp lưu trữ</td>
+<td>Giữ nguyên, nhưng <strong>phải làm sau FR-NEN-03</strong> — mã hóa một đường đi còn đang hở là vô nghĩa</td>
+</tr>
+<tr>
+<td>NFR-07</td>
+<td>Hệ thống phải chạy trên <strong>MySQL 8.4</strong></td>
+<td><strong>Khác tài liệu yêu cầu</strong>, vốn gợi ý PostgreSQL. Đề nghị giữ MySQL 8.4: hệ thống đang chạy thật trên nền này với 57 bảng và 75 bước thay đổi cấu trúc; đổi hệ quản trị cơ sở dữ liệu không mang lại giá trị nghiệp vụ nào mà chỉ thêm rủi ro</td>
+</tr>
+<tr>
+<td>NFR-08</td>
+<td>Hệ thống phải hiển thị và xử lý đúng tiếng Việt ở mọi tầng, gồm cả tệp xuất ra</td>
+<td>Giữ nguyên</td>
+</tr>
+<tr>
+<td>NFR-09</td>
+<td>Hệ thống phải chạy tốt trên trình duyệt phổ biến bản mới, trên máy tính và điện thoại</td>
+<td>Giữ nguyên. Giao diện hiện đã đáp ứng phần lớn</td>
+</tr>
+<tr>
+<td>NFR-10</td>
+<td>Hệ thống phải tuân thủ Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân, và nguyên tắc kiểm soát tài liệu tại điều 7.5 của ISO 9001:2015</td>
+<td>Giữ nguyên</td>
+</tr>
+</tbody>
+</table>
+<div class="section-divider"></div>
+<h2 id="sec-6">6. KẾ HOẠCH CHO TỪNG PHÂN HỆ CỦA WORKHUB</h2>
+<p>Mười hai phân hệ theo tài liệu yêu cầu, cộng một phân hệ đề nghị bổ sung. Mỗi phân hệ ghi rõ: nền hiện có đỡ được bao nhiêu, phải xây thêm gì, phụ thuộc vào đâu.</p>
+<h3>6.1. Tầng nền tảng</h3>
+<p><strong>ORG — Tổ chức và phân quyền</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nền hiện có đỡ được</td>
+<td><strong>Khoảng 60%.</strong> Đã có ma trận quyền theo vai trò, cơ chế phạm vi dữ liệu theo từng lượt gán vai trò, bảng phòng ban và bảng công ty</td>
+</tr>
+<tr>
+<td>Phải xây thêm</td>
+<td>Rà lại danh sách vai trò theo bảy vai trò ở góc nhìn tập đoàn; quản lý danh mục chức danh chuẩn toàn tập đoàn; phân quyền tới mức từng trường; và toàn bộ nhóm vá tại mục 5.1</td>
+</tr>
+<tr>
+<td>Phụ thuộc</td>
+<td>Không phụ thuộc phân hệ nào. <strong>Mọi phân hệ khác phụ thuộc vào nó</strong></td>
+</tr>
+<tr>
+<td>Điểm cần Ban lãnh đạo quyết</td>
+<td>Tài liệu yêu cầu đặt <strong>vị trí công việc làm thực thể trung tâm</strong>, có "bộ yêu cầu vị trí" và suy quyền từ vị trí. Nền hiện tại coi chức danh là một danh mục và cấp quyền theo vai trò. Đây là khác biệt kiến trúc thật, phải quyết <strong>trước khi tạo bảng</strong> — mục 11</td>
+</tr>
+</tbody>
+</table>
+<p><strong>WF — Luồng phê duyệt</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nền hiện có đỡ được</td>
+<td><strong>Khoảng 20%.</strong> Có 5 luồng phê duyệt đang chạy thật, nhưng mỗi luồng viết riêng, không dùng lại được</td>
+</tr>
+<tr>
+<td>Phải xây thêm</td>
+<td>Toàn bộ bộ máy dùng chung: khai báo cấu hình để thêm loại chứng từ, người duyệt theo vai trò tương đối, nhiều bậc, ủy quyền khi vắng, giữ phiên bản luồng cho hồ sơ đang trình dở, nhắc quá hạn</td>
+</tr>
+<tr>
+<td>Phụ thuộc</td>
+<td>Cần chuẩn hóa phòng ban theo mã và cột công ty thành viên xong trước</td>
+</tr>
+<tr>
+<td>Ghi chú</td>
+<td>Đây là <strong>hạng mục lớn nhất của bước sửa nền</strong>, và cũng là hạng mục đáng giá nhất: ban hành văn bản, quyết định nhân sự, duyệt kết quả công việc, duyệt cấp phúc lợi đều dùng chung nó</td>
+</tr>
+</tbody>
+</table>
+<p><strong>AUD — Nhật ký hệ thống</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nền hiện có đỡ được</td>
+<td><strong>Khoảng 70%.</strong> Đã ghi giá trị trước và sau mỗi lần sửa, có gom theo tháng</td>
+</tr>
+<tr>
+<td>Phải xây thêm</td>
+<td>Kiểm tra quyền khi đọc nhật ký; ghi thêm hành vi xem và tải; chính sách lưu tối thiểu 5 năm; màn hình tra cứu theo người, theo đối tượng, theo khoảng thời gian</td>
+</tr>
+<tr>
+<td>Phụ thuộc</td>
+<td>Không</td>
+</tr>
+</tbody>
+</table>
+<h3>6.2. Tầng nghiệp vụ</h3>
+<p><strong>HRM — Quản lý nhân sự</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nền hiện có đỡ được</td>
+<td><strong>Khoảng 30%.</strong> Đã có bảng nhân sự và đã nối với tài khoản đăng nhập</td>
+</tr>
+<tr>
+<td>Phải xây thêm, chia ba bậc</td>
+<td><strong>Bậc 1</strong> — danh mục cơ cấu tổ chức, hồ sơ nhân viên, phân quyền xem hồ sơ, dòng thời gian công tác, nhập dữ liệu nhân sự hiện có và đối chiếu. <strong>Bậc 2</strong> — hợp đồng lao động và cảnh báo hết hạn, giấy tờ và bằng cấp, quyết định nhân sự đi qua phê duyệt. <strong>Bậc 3</strong> — nghỉ phép tự nộp và duyệt trên web, nhân viên tự xem và đề nghị sửa hồ sơ, báo cáo nhân sự</td>
+</tr>
+<tr>
+<td>Phụ thuộc</td>
+<td><strong>Bắt buộc phải có phân quyền tới mức từng trường trước khi tạo bảng hợp đồng lao động.</strong> Bậc 2 và bậc 3 cần bộ máy phê duyệt dùng chung</td>
+</tr>
+<tr>
+<td>Hai bài học từ khảo sát phần mềm thương mại</td>
+<td>(1) Hồ sơ nhân viên có khoảng 90 trường nhưng lúc tạo chỉ hỏi <strong>12 trường</strong> — bắt điền đủ ngay thì không ai nhập và dữ liệu thành rác. (2) Quy tắc nghỉ phép là <strong>dữ liệu cấu hình, không phải mã nguồn</strong> — họ khai 15 loại nghỉ trong một bảng cấu hình khoảng 50 cột</td>
+</tr>
+<tr>
+<td>Điểm cần Ban lãnh đạo quyết</td>
+<td>Tài liệu yêu cầu xếp <strong>nghỉ phép và chấm công ra ngoài phạm vi</strong>. Báo cáo này đề nghị <strong>đưa nghỉ phép vào</strong>: hồ sơ và hợp đồng là thứ một phòng dùng, nghỉ phép là thứ 300 người dùng — mục 11</td>
+</tr>
+</tbody>
+</table>
+<p><strong>DOC — Quản lý văn bản</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nền hiện có đỡ được</td>
+<td><strong>Khoảng 25%.</strong> Trung tâm Hướng dẫn sử dụng đã chạy thật, chung tài khoản đăng nhập, đã có phần soạn nội dung và phân quyền xem, và đã xử lý làm sạch nội dung đưa từ ngoài vào</td>
+</tr>
+<tr>
+<td>Phải xây thêm</td>
+<td>Danh mục loại văn bản và sinh mã tự động; vòng đời soạn thảo đến lưu trữ; quản lý phiên bản có đánh dấu bản hết hiệu lực; xác nhận đã đọc và hiểu có theo dõi; tìm kiếm toàn văn trong tệp đính kèm</td>
+</tr>
+<tr>
+<td>Phụ thuộc</td>
+<td><strong>Bắt buộc phải vá lỗ hổng tệp đính kèm trước.</strong> Cần bộ máy phê duyệt cho quy trình ban hành</td>
+</tr>
+<tr>
+<td>Điểm cần Ban lãnh đạo quyết</td>
+<td>Mở rộng Trung tâm Hướng dẫn sử dụng hay xây phân hệ mới — mục 11</td>
+</tr>
+</tbody>
+</table>
+<p><strong>PAY — Phiếu lương điện tử</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nền hiện có đỡ được</td>
+<td><strong>0%</strong></td>
+</tr>
+<tr>
+<td>Phải xây thêm</td>
+<td>Nhập bảng lương từ tệp Excel, đối chiếu theo mã nhân viên, phát phiếu, mỗi người chỉ xem phiếu của mình, ghi nhật ký từng lượt xem</td>
+</tr>
+<tr>
+<td>Phụ thuộc</td>
+<td>Phân hệ Nhân sự bậc 1. <strong>Bắt buộc phải có phân quyền tới mức từng trường</strong></td>
+</tr>
+<tr>
+<td>Ghi chú quan trọng</td>
+<td>Tài liệu yêu cầu <strong>không tính lương</strong>, chỉ nhập và phát phiếu. Khảo sát phần mềm thương mại độc lập đi tới cùng kết luận: không đơn vị nào viết cứng công thức lương, họ làm cả một bộ máy công thức có hàm điều kiện và hàm làm tròn để khách tự khai. Làm tính lương không phải làm một màn hình mà là làm một ngôn ngữ kịch bản thu nhỏ. <strong>Đề nghị giữ nguyên phạm vi: không tính lương</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>LMS — Đào tạo nội bộ</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nền hiện có đỡ được</td>
+<td><strong>0%</strong></td>
+</tr>
+<tr>
+<td>Phải xây thêm</td>
+<td>Toàn bộ: khóa học sinh từ tài liệu, giao khóa học theo vị trí, ngân hàng câu hỏi, chấm tự động, chứng chỉ có hạn và nhắc đào tạo lại</td>
+</tr>
+<tr>
+<td>Phụ thuộc</td>
+<td>Phân hệ Văn bản (nguồn tài liệu học) và phân hệ Tổ chức (bộ yêu cầu vị trí)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>TASK — Quản lý công việc</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nền hiện có đỡ được</td>
+<td><strong>Khoảng 30%.</strong> Công cụ Quản lý Dự án cho Ban điều hành đã chạy thật, chung máy chủ và chung tài khoản</td>
+</tr>
+<tr>
+<td>Phải xây thêm</td>
+<td>Bảng công việc dạng thẻ, việc con, giao việc định kỳ, duyệt kết quả đạt hoặc chưa đạt, báo cáo công việc theo kỳ</td>
+</tr>
+<tr>
+<td>Phụ thuộc</td>
+<td>Bộ máy phê duyệt dùng chung; phân hệ Nhân sự để biết ai thuộc phòng nào</td>
+</tr>
+<tr>
+<td>Điểm cần Ban lãnh đạo quyết</td>
+<td>Mở rộng công cụ Quản lý Dự án hiện có hay xây phân hệ mới cho toàn tập đoàn — hai nhóm người dùng khác nhau, mục 11</td>
+</tr>
+</tbody>
+</table>
+<p><strong>FDB — Góp ý và phản hồi</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nền hiện có đỡ được</td>
+<td><strong>Khoảng 40%.</strong> Phiếu hỗ trợ đã chạy trên cả hai môi trường, có phân công người phụ trách và có luồng xử lý</td>
+</tr>
+<tr>
+<td>Phải xây thêm</td>
+<td>Kênh góp ý <strong>ẩn danh</strong> — và đây là phần khó nhất, vì phải không lưu bất cứ thứ gì truy ngược được danh tính, <strong>kể cả trong nhật ký thao tác</strong>, đồng thời vẫn cấp được mã tra cứu cho người gửi</td>
+</tr>
+<tr>
+<td>Phụ thuộc</td>
+<td>Mâu thuẫn kỹ thuật trực tiếp với yêu cầu ghi nhật ký đầy đủ. <strong>Phải thiết kế đường ghi riêng, không dùng chung</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>6.3. Tầng giao tiếp</h3>
+<p><strong>POR — Trang cá nhân</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nền hiện có đỡ được</td>
+<td><strong>Khoảng 20%.</strong> Có màn hình thông báo cá nhân, chưa có trang gộp</td>
+</tr>
+<tr>
+<td>Phải xây thêm</td>
+<td>Trang "Việc của tôi" gộp mọi thứ đang chờ người dùng xử lý, bất kể sinh ra từ phân hệ nào</td>
+</tr>
+<tr>
+<td>Phụ thuộc</td>
+<td>Có bao nhiêu phân hệ thì trang này mới có bấy nhiêu nội dung. Làm phần khung sớm, bổ sung nguồn dần</td>
+</tr>
+</tbody>
+</table>
+<p><strong>NTF — Thông báo và nhắc việc</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nền hiện có đỡ được</td>
+<td><strong>Khoảng 70%.</strong> Thông báo trong ứng dụng, thư điện tử và thông báo đẩy trên trình duyệt đều đã chạy thật</td>
+</tr>
+<tr>
+<td>Phải xây thêm</td>
+<td>Bộ quy tắc cảnh báo cấu hình được (nhắc trước bao nhiêu ngày, nhắc ai); kênh Zalo</td>
+</tr>
+<tr>
+<td>Phụ thuộc</td>
+<td>Không</td>
+</tr>
+</tbody>
+</table>
+<p><strong>RPT — Báo cáo và bảng điều khiển</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nền hiện có đỡ được</td>
+<td><strong>Khoảng 25%.</strong> Đã có báo cáo cho nghiệp vụ thu mua</td>
+</tr>
+<tr>
+<td>Phải xây thêm</td>
+<td>Bảng điều khiển theo vai trò cho Ban lãnh đạo, trưởng bộ phận, nhân sự, người quản trị tài liệu</td>
+</tr>
+<tr>
+<td>Phụ thuộc</td>
+<td><strong>Bắt buộc phải chuẩn hóa dữ liệu trạng thái trước.</strong> Còn 11 cột lưu tiếng Việt thì không gộp số liệu xuyên phân hệ được</td>
+</tr>
+</tbody>
+</table>
+<h3>6.4. Phân hệ đề nghị bổ sung — Phúc lợi và Bán lẻ</h3>
+<p>Không có trong tài liệu yêu cầu WorkHub. Đề nghị bổ sung vì là nhu cầu có thật và đã được nêu: tập đoàn có một quán cà phê, mỗi nhân sự tùy chức vụ được cấp một số điểm mỗi tháng để tiêu tại quầy, quán đang chạy trên phần mềm bán hàng POS365.</p>
+<p>Phân hệ này tách làm <strong>hai phần độc lập</strong>, vì một phần tự chủ hoàn toàn còn một phần phụ thuộc năng lực kỹ thuật của bên thứ ba:</p>
+<table>
+<thead>
+<tr>
+<th>Phần</th>
+<th>Nội dung</th>
+<th>Phụ thuộc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A — Chính sách điểm</strong></td>
+<td>Danh mục định mức điểm theo chức danh; sổ cái ghi mọi biến động điểm; cấp điểm theo kỳ có bước xem trước và có phê duyệt; xử lý người vào và người nghỉ trong kỳ; nhân viên tự xem số dư</td>
+<td><strong>Tự chủ hoàn toàn.</strong> Chỉ cần phân hệ Nhân sự bậc 1 (để có chức danh) và bộ máy phê duyệt</td>
+</tr>
+<tr>
+<td><strong>B — Đầu nối phần mềm bán hàng</strong></td>
+<td>Ghép nhân sự với khách hàng bên phần mềm bán hàng; đẩy điểm sang quầy; kéo về dữ liệu tiêu điểm; đối chiếu chênh lệch hằng ngày</td>
+<td><strong>Phụ thuộc bên thứ ba.</strong> Chưa xác định được phần mềm bán hàng có cho ghi dữ liệu bằng khóa máy hay không</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Việc đầu tiên của phần B không phải viết mã, mà là hai ngày công gọi thử giao diện kỹ thuật của phần mềm bán hàng</strong> để trả lời chín câu, trong đó ba câu quyết định: có cấp được khóa truy cập cho máy không (hay chỉ đăng nhập bằng người), có ghi được điểm vào không (hay chỉ đọc được), và trường nào mới là số dư mà quầy trừ khi bán hàng. <strong>Nếu câu trả lời là không ghi được, phần B không tồn tại</strong> và thay bằng một màn hình tra cứu số dư cho thu ngân.</p>
+<p><strong>Đề nghị chạy tay tháng đầu tiên.</strong> Vài chục người thì cấp điểm bằng bảng tính mất khoảng nửa giờ mỗi tháng, trong khi phần mềm hóa mất vài tuần công. Tháng chạy tay là cách rẻ nhất để phát hiện các quy tắc nghiệp vụ chưa được trả lời — trong đó có một câu mà đội phần mềm <strong>không tự trả lời được</strong>: phúc lợi này có tính thuế thu nhập cá nhân không. Câu đó phải hỏi kế toán trước khi bàn giao số liệu.</p>
+<p><strong>Đề nghị không tự viết phần mềm bán hàng tại quầy trong năm 2026.</strong> Màn hình bán hàng là phần dễ nhất. Phần đắt là chạy khi mất mạng, phần cứng đầu đọc và máy in, hóa đơn điện tử theo quy định nhà nước, ca kíp kiểm quỹ, và trừ kho theo định lượng. Phần mềm hiện tại đang chạy được, nên viết lại để <strong>bằng</strong> cái đang có là bỏ vài tháng công đổi lấy con số không.</p>
+<div class="section-divider"></div>
+<h2 id="sec-7">7. LỘ TRÌNH VÀ MỐC THỜI GIAN</h2>
+<h3>7.1. Cách đọc phần này</h3>
+<p>Ba điều phải nói trước:</p>
+<ol>
+<li>Ngày ở đây là <strong>ngày dự kiến có điều kiện</strong>, không phải ngày cam kết giao hàng.</li>
+<li><strong>Toàn bộ mốc phụ thuộc vào việc có tách được một người ra khỏi hàng chờ yêu cầu thay đổi của phần mềm Thu mua hay không.</strong> Chưa có quyết định đó thì bảng dưới là <strong>thứ tự</strong>, không phải <strong>ngày</strong>.</li>
+<li>Bảng dưới tính theo kịch bản: hai người hiện có, một người được tách khoảng 70% thời gian, có công cụ trí tuệ nhân tạo hỗ trợ.</li>
+</ol>
+<h3>7.2. Sáu giai đoạn</h3>
+<table>
+<thead>
+<tr>
+<th>Giai đoạn</th>
+<th>Nội dung</th>
+<th>Thời lượng</th>
+<th>Kết quả dùng được khi kết thúc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>GĐ 0 — Sửa nền</strong></td>
+<td>Toàn bộ mục 5</td>
+<td><strong>3,5 tháng</strong></td>
+<td>Nền chịu được dữ liệu nhân sự. Xây một phân hệ danh mục mới dưới 50 dòng mã. Thêm loại chứng từ cần duyệt chỉ bằng khai báo cấu hình. Người dùng thấy lưới biểu tượng phân hệ</td>
+</tr>
+<tr>
+<td><strong>GĐ 1 — Tổ chức và Con người</strong></td>
+<td>ORG đầy đủ · HRM ba bậc · POR mức tối thiểu · NTF bộ quy tắc cảnh báo · AUD hoàn thiện</td>
+<td><strong>2,5 tháng</strong></td>
+<td><strong>Khoảng 300 hồ sơ nhân sự số hóa và đối chiếu khớp.</strong> Nhân viên tự nộp đơn nghỉ phép, trưởng phòng duyệt trên web. Hợp đồng sắp hết hạn có cảnh báo tự động</td>
+</tr>
+<tr>
+<td><strong>GĐ 2 — Văn bản</strong></td>
+<td>DOC đầy đủ · WF cho quy trình ban hành · tìm kiếm toàn văn</td>
+<td><strong>2 – 2,5 tháng</strong></td>
+<td>Văn bản có mã tự động, có phiên bản, có xác nhận đã đọc. Đủ điều kiện cho ISO 9001 điều 7.5</td>
+</tr>
+<tr>
+<td><strong>GĐ 3 — Phúc lợi và Bán lẻ</strong></td>
+<td>Phần A chính sách điểm · phần B đầu nối nếu khả thi</td>
+<td><strong>1,5 – 2 tháng</strong></td>
+<td>Cấp điểm theo chức danh chạy tự động, có duyệt, có sổ cái, có đối chiếu</td>
+</tr>
+<tr>
+<td><strong>GĐ 4 — Công việc và Học tập</strong></td>
+<td>TASK · LMS · FDB · RPT · PAY</td>
+<td><strong>3 – 4 tháng</strong></td>
+<td>Giao việc và theo dõi trên hệ thống. Đào tạo nội bộ có chứng chỉ. Bảng điều khiển cho Ban lãnh đạo</td>
+</tr>
+<tr>
+<td><strong>GĐ 5 — Hiệu quả và Năng lực</strong></td>
+<td>Quản lý mục tiêu · đánh giá theo kỳ · khung năng lực · kế hoạch phát triển cá nhân</td>
+<td>Theo nhu cầu</td>
+<td>Chỉ bắt đầu sau khi GĐ 4 chạy ổn định tối thiểu 3 tháng</td>
+</tr>
+</tbody>
+</table>
+<p>Sau GĐ 5 là nhóm mở rộng của tài liệu yêu cầu: quản lý dự án đầy đủ, trao đổi nội bộ, trợ lý tri thức, phân tích bằng trí tuệ nhân tạo, tích hợp kế toán và chấm công.</p>
+<h3>7.3. Một đề nghị khác so với lộ trình gợi ý trong tài liệu yêu cầu</h3>
+<p>Tài liệu yêu cầu gợi ý giai đoạn 1A gồm <strong>Tổ chức và Văn bản</strong> đi cùng nhau, rồi giai đoạn 1B mới đến <strong>Con người</strong>. Báo cáo này đề nghị <strong>tách Văn bản ra sau Con người</strong>, tức thứ tự thành: Tổ chức → Con người → Văn bản.</p>
+<p>Ba lý do:</p>
+<table>
+<thead>
+<tr>
+<th class="col-center col-num">#</th>
+<th>Lý do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="col-center col-num">1</td>
+<td><strong>Hồ sơ nhân sự là dữ liệu gốc mà mọi phân hệ sau đều đọc.</strong> Văn bản cần biết ai ký, Đào tạo cần biết ai học, Công việc cần biết ai thuộc phòng nào, Phúc lợi cần biết ai giữ chức danh gì. Có hồ sơ trước thì các phân hệ sau đều rẻ hơn</td>
+</tr>
+<tr>
+<td class="col-center col-num">2</td>
+<td><strong>Phân hệ Nhân sự rẻ hơn phân hệ Văn bản trên nền hiện có</strong>, vì đã sẵn bảng nhân sự và đã nối với tài khoản đăng nhập; trong khi phân hệ Văn bản gần như phải xây mới phần vòng đời và phần phiên bản</td>
+</tr>
+<tr>
+<td class="col-center col-num">3</td>
+<td><strong>Trung tâm Hướng dẫn sử dụng đang gánh tạm</strong> nhu cầu tra cứu tài liệu nội bộ, nên hoãn phân hệ Văn bản không để lại khoảng trống ngay lập tức. Trong khi hồ sơ nhân sự hiện vẫn nằm trên tệp rời</td>
+</tr>
+</tbody>
+</table>
+<p>Đây là đề nghị, không phải quyết định của đội phần mềm. Đưa vào mục 11 để Ban lãnh đạo chốt.</p>
+<h3>7.4. Lịch theo nửa tháng đến mốc nửa năm</h3>
+<table>
+<thead>
+<tr>
+<th>Kỳ</th>
+<th>Nội dung</th>
+<th>Trình diễn cuối kỳ cho Ban lãnh đạo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Nửa sau T8/2026</strong></td>
+<td>Vá bốn lỗ hổng. Bắt đầu ghi nhật ký truy cập. <strong>Song song: bắt đầu phỏng vấn — bước KS1 và KS2</strong></td>
+<td>Dán đường dẫn tệp hợp đồng vào cửa sổ trình duyệt ẩn danh: bị chặn. Mở hồ sơ nhân sự phòng khác bằng mã trực tiếp: bị từ chối</td>
+</tr>
+<tr>
+<td><strong>Nửa đầu T9/2026</strong></td>
+<td>Phần dùng chung: khuôn mã lỗi, khuôn ngữ cảnh gọi. <strong>Phỏng vấn kết thúc, chấm ưu tiên, ký bảng chốt phạm vi phân hệ Nhân sự</strong></td>
+<td><strong>Bảng chốt phạm vi phân hệ Nhân sự có chữ ký.</strong> Đây là mốc chặn lớn nhất của cả lộ trình</td>
+</tr>
+<tr>
+<td><strong>Nửa sau T9/2026</strong></td>
+<td>Phần dùng chung: tầng truy vấn và tầng nghiệp vụ nền</td>
+<td>Xây một phân hệ danh mục mới từ đầu, trước mặt người xem, dưới 50 dòng mã, và nó tự có đầy đủ phân quyền</td>
+</tr>
+<tr>
+<td><strong>Nửa đầu T10/2026</strong></td>
+<td>Bộ kiểm thử quy ước nền. Bật kiểm tra quyền xuất tệp <strong>sau khi đã đọc hai tuần nhật ký để biết ai đang thực sự xuất</strong></td>
+<td>Cố tình vi phạm một quy ước trong nhánh nháp: bộ kiểm báo đỏ đúng quy ước đó</td>
+</tr>
+<tr>
+<td><strong>Nửa sau T10/2026</strong></td>
+<td>Chuẩn hóa phòng ban theo mã. Cột công ty thành viên cho nhóm bảng nhân sự. Phân quyền tới mức từng trường. <strong>Song song: hai ngày gọi thử phần mềm bán hàng</strong></td>
+<td>Đổi tên một phòng ban trên môi trường thử: chứng từ cũ vẫn nằm đúng phạm vi. Và: biết được phần B của phân hệ quán cà phê có làm được hay không</td>
+</tr>
+<tr>
+<td><strong>Nửa đầu T11/2026</strong></td>
+<td>Khung nhiều phân hệ và lưới biểu tượng</td>
+<td><strong>Lưới biểu tượng phân hệ chạy thật.</strong> Mở 20 đường dẫn cũ lấy ngẫu nhiên từ dữ liệu thông báo đã gửi: vẫn vào đúng chỗ</td>
+</tr>
+<tr>
+<td><strong>Nửa sau T11/2026</strong></td>
+<td>Bộ máy phê duyệt dùng chung, kèm phép thử chuyển một loại chứng từ Thu mua sang</td>
+<td>Người dùng Thu mua <strong>không nhận ra gì thay đổi</strong>. Đó chính là tiêu chí đạt</td>
+</tr>
+<tr>
+<td><strong>Nửa đầu T12/2026</strong></td>
+<td>Phân hệ Nhân sự bậc 1: danh mục cơ cấu, hồ sơ nhân viên, phân quyền xem</td>
+<td>Chứng minh phân quyền bằng bộ kiểm tự động, gồm cả trường hợp mở bằng mã trực tiếp và trường hợp xuất tệp</td>
+</tr>
+<tr>
+<td><strong>Nửa sau T12/2026</strong></td>
+<td>Nhập dữ liệu nhân sự hiện có và đối chiếu</td>
+<td><strong>Số trên hệ thống khớp số phòng Nhân sự đang giữ, từng người một.</strong> Không khớp thì không qua kỳ này</td>
+</tr>
+<tr>
+<td><strong>Nửa đầu T1/2027</strong></td>
+<td>Phân hệ Nhân sự bậc 2: hợp đồng lao động, giấy tờ, quyết định nhân sự</td>
+<td>Danh sách hợp đồng sắp hết hạn chạy thật. Mức lương chỉ hiện với người được cấp quyền trên trường đó</td>
+</tr>
+<tr>
+<td><strong>Nửa sau T1/2027</strong></td>
+<td>Phân hệ Nhân sự bậc 3: nghỉ phép, tự phục vụ</td>
+<td>Một nhân viên thật nộp đơn nghỉ phép, một trưởng phòng thật duyệt trên web, số ngày phép còn lại giảm đúng</td>
+</tr>
+<tr>
+<td><strong>Nửa đầu T2/2027</strong></td>
+<td>Báo cáo nhân sự, trang cá nhân mức tối thiểu, một vòng quay lại sửa nền</td>
+<td><strong>Phân hệ Tổ chức và phân hệ Nhân sự vận hành chính thức</strong></td>
+</tr>
+<tr>
+<td><strong>MỐC 15/02/2027</strong></td>
+<td></td>
+<td><strong>Nền đã sửa xong. Hai phân hệ WorkHub chạy thật. Thu mua trở thành một phân hệ, không gián đoạn ngày nào</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Sau mốc này: phân hệ Văn bản tháng 2–4/2027; phân hệ Phúc lợi và Bán lẻ tháng 4–5/2027; nhóm Công việc, Đào tạo, Góp ý, Báo cáo, Phiếu lương từ quý 3/2027 sang 2028.</p>
+<h3>7.5. Thứ tự cắt khi trượt lịch</h3>
+<p>Quyết trước để lúc trượt không phải tranh luận:</p>
+<table>
+<thead>
+<tr>
+<th>Thứ tự</th>
+<th>Cắt cái gì</th>
+<th>Vì sao cắt được</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cắt đầu tiên</td>
+<td>Báo cáo nhân sự; trang cá nhân gộp</td>
+<td>Chạy tạm bằng chức năng xuất tệp</td>
+</tr>
+<tr>
+<td>Cắt thứ hai</td>
+<td>Đưa Trung tâm Hướng dẫn sử dụng và công cụ Quản lý Dự án vào lưới biểu tượng</td>
+<td>Hai ứng dụng đó đang chạy riêng và người dùng đã quen</td>
+</tr>
+<tr>
+<td>Cắt thứ ba</td>
+<td>Phân hệ Phúc lợi và Bán lẻ đẩy lùi</td>
+<td>Có phương án chạy tay bằng bảng tính</td>
+</tr>
+<tr>
+<td>Cắt thứ tư</td>
+<td>Nghỉ phép và tự phục vụ đẩy sang bản 2</td>
+<td>Đau, vì đây là phần 300 người cảm nhận được giá trị. Nhưng hồ sơ và hợp đồng vẫn dùng được nếu thiếu phần này</td>
+</tr>
+<tr>
+<td><strong>Không cắt</strong></td>
+<td><strong>Toàn bộ nhóm vá gấp · phần dùng chung · bộ kiểm thử quy ước nền · phân quyền tới mức từng trường · bộ máy phê duyệt</strong></td>
+<td>Cắt nhóm vá là để lỗ hổng hở khi hệ thống đã có dữ liệu lương và giấy tờ tùy thân. Cắt phần dùng chung là hơn mười phân hệ xây ra rồi phải dọn lại. Cắt bộ máy phê duyệt là sinh ra luồng duyệt viết tay thứ sáu, thứ bảy</td>
+</tr>
+</tbody>
+</table>
+<div class="section-divider"></div>
+<h2 id="sec-8">8. NHÂN LỰC</h2>
+<h3>8.1. Cách tính</h3>
+<p>Đơn vị: <strong>tuần-người thuần</strong> — một tuần làm việc của một người, đã trừ họp, nghỉ và thời gian bảo trì phần mềm đang chạy.</p>
+<table>
+<thead>
+<tr>
+<th>Giai đoạn</th>
+<th>Tuần-người thuần</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GĐ 0 — Sửa nền</td>
+<td>31 – 43</td>
+</tr>
+<tr>
+<td>GĐ 1 — Tổ chức và Con người</td>
+<td>11 – 17</td>
+</tr>
+<tr>
+<td><strong>Cộng đến mốc 15/02/2027</strong></td>
+<td><strong>42 – 60</strong></td>
+</tr>
+<tr>
+<td>Trừ khoảng 15% nhờ trí tuệ nhân tạo</td>
+<td><strong>36 – 51</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Nửa năm từ 15/08/2026 đến 15/02/2027 là <strong>26 tuần lịch</strong>.</p>
+<h3>8.2. Ba kịch bản</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Kịch bản A</strong> — hai người hiện có, một người được tách 70% khỏi hàng chờ yêu cầu thay đổi</th>
+<th><strong>Kịch bản B</strong> — hai người hiện có, không ai được tách</th>
+<th><strong>Kịch bản C</strong> — kịch bản A cộng một người mới từ tháng 9</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Năng lực trong 26 tuần</td>
+<td>~<strong>30 tuần-người</strong></td>
+<td>~<strong>23 tuần-người</strong></td>
+<td>~<strong>38 tuần-người</strong></td>
+</tr>
+<tr>
+<td>Người mới đóng góp</td>
+<td>—</td>
+<td>—</td>
+<td>Tháng 1–2: <strong>âm 3</strong> (chi phí kèm cặp). Tháng 3–4: +4. Tháng 5–6: +7. <strong>Cộng khoảng +8</strong></td>
+</tr>
+<tr>
+<td>Cần</td>
+<td>36 – 51</td>
+<td>36 – 51</td>
+<td>36 – 51</td>
+</tr>
+<tr>
+<td><strong>Kết quả</strong></td>
+<td><strong>Thiếu 6 – 21.</strong> Đạt mốc 15/02/2027 <strong>nếu cắt theo đúng thứ tự tại mục 7.5</strong></td>
+<td><strong>Thiếu 13 – 28. Không đạt</strong>, trượt sang khoảng <strong>tháng 4 – 5/2027</strong></td>
+<td><strong>Thiếu 0 – 13.</strong> Đạt, và <strong>dư năng lực từ tháng thứ bảy trở đi</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Cơ sở của phép trừ bảo trì: phần mềm Thu mua đang chạy thật phát sinh <strong>xấp xỉ một yêu cầu thay đổi mỗi ngày làm việc</strong>. Đây là con số cần được xác nhận lại, nhưng dù sai lệch theo hướng nào thì khoảng cách giữa ba kịch bản vẫn lớn hơn sai số của nó.</p>
+<h3>8.3. Về việc tuyển thêm người</h3>
+<p>Người mới đóng góp khoảng <strong>+8 tuần-người trong nửa năm đầu</strong> — đủ để kéo kịch bản A từ "phải cắt phạm vi" thành "không phải cắt", <strong>không đủ để rút ngắn mốc</strong>, vì hai đến ba tháng đầu là đào tạo.</p>
+<p><strong>Khuyến nghị vẫn là tuyển từ tháng 9/2026</strong>, với ba căn cứ khác:</p>
+<table>
+<thead>
+<tr>
+<th class="col-center col-num">#</th>
+<th>Căn cứ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="col-center col-num">1</td>
+<td><strong>Phần việc sau phân hệ Nhân sự dài gấp nhiều lần phần trước.</strong> Các phân hệ còn lại của WorkHub là chương trình hai đến ba năm. Nửa năm này chỉ là đoạn đầu</td>
+</tr>
+<tr>
+<td class="col-center col-num">2</td>
+<td><strong>Đang có phụ thuộc vào một người.</strong> Công cụ đồng bộ dữ liệu giữa các môi trường hiện là kịch bản chạy tay nằm trên máy một người, chưa đưa vào kho mã chung. Đây là rủi ro vận hành, không phải rủi ro tiến độ</td>
+</tr>
+<tr>
+<td class="col-center col-num">3</td>
+<td><strong>Chi phí kèm cặp trả một lần, năng lực giữ lại nhiều năm.</strong> Trả hai đến ba tháng bây giờ rẻ hơn trả đúng khoản đó vào lúc đang chạy nước rút của một phân hệ khác. Tuyển muộn hơn 15/09/2026 thì phần đóng góp trong nửa năm này gần bằng không</td>
+</tr>
+</tbody>
+</table>
+<h3>8.4. Người mới làm gì trong hai đến ba tháng đầu</h3>
+<p>Nguyên tắc phân việc: <strong>việc lặp và kiểm chứng được thì giao; việc quyết định và việc động vào dữ liệu thật thì không.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Giao được ngay</th>
+<th>Không giao trong ba tháng đầu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chuyển các phân hệ nghiệp vụ sang phần dùng chung — có khuôn mẫu, có bộ kiểm cũ xác nhận</td>
+<td>Vá lỗ hổng phạm vi và phân quyền — sai một chỗ là hở dữ liệu</td>
+</tr>
+<tr>
+<td>Chuẩn hóa các cột trạng thái ở nhóm bảng ít liên đới</td>
+<td>Thêm cột công ty thành viên trên dữ liệu thật — sai là hỏng dữ liệu không lui được</td>
+</tr>
+<tr>
+<td>Viết bộ kiểm thử quy ước nền</td>
+<td>Đầu nối phần mềm bán hàng — dính tiền và dính hệ thống bên ngoài</td>
+</tr>
+<tr>
+<td>Phần giao diện: lưới biểu tượng, điều hướng</td>
+<td>Chủ trì phỏng vấn, chốt phạm vi nghiệp vụ</td>
+</tr>
+<tr>
+<td>Xây phân hệ danh mục mới sau khi đã có phần dùng chung</td>
+<td>Thao tác trực tiếp trên hệ thống chạy thật</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ràng buộc bắt buộc:</strong> người mới làm việc trên môi trường thử nghiệm, không truy cập hệ thống chạy thật, không có công cụ truy vấn cơ sở dữ liệu trực tiếp, và ký cam kết bảo mật trước khi được cấp tài khoản.</p>
+<div class="section-divider"></div>
+<h2 id="sec-9">9. DANH MỤC MỞ RỘNG NGOÀI PHẠM VI BẢN 1</h2>
+<p>Những việc đã nhận diện nhưng chưa có chỗ trong lịch đến 15/02/2027. Ghi ra để không phải phát hiện lại, và để khi có chỗ trống thì biết lấy gì lấp vào.</p>
+<p><strong>Quy tắc:</strong> một mục chỉ rời khỏi danh mục này khi có đủ ba thứ — mã yêu cầu, mức ưu tiên đã được duyệt, và một giai đoạn cụ thể.</p>
+<table>
+<thead>
+<tr>
+<th class="col-center col-num">#</th>
+<th>Nội dung</th>
+<th>Mức</th>
+<th>Vòng dự kiến</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="col-center col-num">1</td>
+<td><strong>Xác thực hai lớp bắt buộc cho vai trò nhân sự và quản trị</strong></td>
+<td class="col-center"><strong>B</strong></td>
+<td>Nên chen vào GĐ 1, <strong>trước khi phân hệ Nhân sự có dữ liệu thật</strong></td>
+<td>Bật muộn thì vướng thói quen người dùng đã hình thành</td>
+</tr>
+<tr>
+<td class="col-center col-num">2</td>
+<td><strong>Đợt thử phục hồi sao lưu định kỳ hằng quý</strong></td>
+<td class="col-center"><strong>B</strong></td>
+<td>Chen vào bất kỳ lúc nào — <strong>việc một ngày công</strong></td>
+<td>Sao lưu chạy hai lần mỗi ngày nhưng <strong>chưa từng phục hồi thử</strong>. Bản sao lưu chưa phục hồi thử là bản sao lưu chưa tồn tại</td>
+</tr>
+<tr>
+<td class="col-center col-num">3</td>
+<td><strong>Đưa công cụ đồng bộ dữ liệu giữa môi trường vào kho mã chung</strong></td>
+<td class="col-center"><strong>B</strong></td>
+<td>Chen vào GĐ 0</td>
+<td>Gỡ phụ thuộc vào một người</td>
+</tr>
+<tr>
+<td class="col-center col-num">4</td>
+<td><strong>Chính sách lưu nhật ký tối thiểu 5 năm và màn hình tra cứu</strong></td>
+<td class="col-center"><strong>B</strong></td>
+<td>GĐ 0 phần chính sách, GĐ 2 phần công cụ</td>
+<td></td>
+</tr>
+<tr>
+<td class="col-center col-num">5</td>
+<td><strong>Mô hình lấy vị trí công việc làm trung tâm</strong> — bộ yêu cầu vị trí, tự sinh việc khi gán vị trí</td>
+<td class="col-center"><strong>N</strong></td>
+<td>Phải quyết <strong>trước</strong> GĐ 1</td>
+<td>Quyết sau khi đã tạo bảng nhân sự là phải làm lại</td>
+</tr>
+<tr>
+<td class="col-center col-num">6</td>
+<td><strong>Mã hóa tệp lưu trữ</strong></td>
+<td class="col-center"><strong>N</strong></td>
+<td>Sau khi vá xong đường tải tệp</td>
+<td></td>
+</tr>
+<tr>
+<td class="col-center col-num">7</td>
+<td><strong>Kênh Zalo cho thông báo</strong></td>
+<td class="col-center"><strong>T</strong></td>
+<td>Sau GĐ 2</td>
+<td>Cần chốt dùng tài khoản Zalo chính thức hay kênh tự vận hành</td>
+</tr>
+<tr>
+<td class="col-center col-num">8</td>
+<td><strong>Phiếu lương điện tử</strong></td>
+<td class="col-center"><strong>N</strong></td>
+<td>GĐ 4</td>
+<td>Cần phân quyền tới mức từng trường</td>
+</tr>
+<tr>
+<td class="col-center col-num">9</td>
+<td><strong>Góp ý ẩn danh</strong></td>
+<td class="col-center"><strong>N</strong></td>
+<td>GĐ 4</td>
+<td>Mâu thuẫn kỹ thuật với yêu cầu ghi nhật ký đầy đủ, phải thiết kế đường ghi riêng</td>
+</tr>
+<tr>
+<td class="col-center col-num">10</td>
+<td><strong>Chấm công</strong></td>
+<td class="col-center"><strong>T</strong></td>
+<td>Chưa xếp</td>
+<td>Tài liệu yêu cầu xếp ngoài phạm vi. Nếu làm thì đây là trường hợp tích hợp đi vào đầu tiên</td>
+</tr>
+<tr>
+<td class="col-center col-num">11</td>
+<td><strong>Quản lý mục tiêu, đánh giá theo kỳ, khung năng lực</strong></td>
+<td class="col-center"><strong>T</strong></td>
+<td>GĐ 5</td>
+<td>Chỉ sau khi GĐ 4 chạy ổn định 3 tháng</td>
+</tr>
+<tr>
+<td class="col-center col-num">12</td>
+<td><strong>Trợ lý tri thức hỏi đáp quy trình, có dẫn nguồn</strong></td>
+<td class="col-center"><strong>T</strong></td>
+<td>Sau phân hệ Văn bản</td>
+<td>Không có phân hệ Văn bản thì không có nguồn để dẫn</td>
+</tr>
+<tr>
+<td class="col-center col-num">13</td>
+<td><strong>Trao đổi nội bộ trong hệ thống</strong></td>
+<td class="col-center"><strong>T</strong></td>
+<td>Chưa xếp</td>
+<td></td>
+</tr>
+<tr>
+<td class="col-center col-num">14</td>
+<td><strong>Quản lý dự án đầy đủ có biểu đồ tiến độ</strong></td>
+<td class="col-center"><strong>T</strong></td>
+<td>Chưa xếp</td>
+<td></td>
+</tr>
+<tr>
+<td class="col-center col-num">15</td>
+<td><strong>Tích hợp với phần mềm kế toán</strong></td>
+<td class="col-center"><strong>T</strong></td>
+<td>Chưa xếp</td>
+<td></td>
+</tr>
+<tr>
+<td class="col-center col-num">16</td>
+<td><strong>Cơ chế phát sự kiện cho hệ thống bên ngoài</strong></td>
+<td class="col-center"><strong>N</strong></td>
+<td>Chạy song song được từ sau GĐ 0</td>
+<td>Chưa có trường hợp sử dụng chốt</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ba mục đáng chen vào sớm nhất dù đang ở danh mục này:</strong> số 2 (thử phục hồi sao lưu), số 3 (gỡ phụ thuộc một người), số 5 (quyết mô hình vị trí công việc trước khi tạo bảng).</p>
+<div class="section-divider"></div>
+<h2 id="sec-10">10. NGHIỆM THU VÀ ĐIỀU KIỆN THÀNH CÔNG NGOÀI PHẦN MỀM</h2>
+<h3>10.1. Nguyên tắc nghiệm thu</h3>
+<p>Bốn nguyên tắc đầu lấy theo tài liệu yêu cầu, hai nguyên tắc sau bổ sung từ thực tế rà soát:</p>
+<table>
+<thead>
+<tr>
+<th class="col-center col-num">#</th>
+<th>Nguyên tắc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="col-center col-num">1</td>
+<td>Mỗi yêu cầu mức <strong>B</strong> phải có ít nhất một kịch bản kiểm thử. Giai đoạn chỉ được nghiệm thu khi <strong>toàn bộ</strong> yêu cầu mức B của giai đoạn đó đạt</td>
+</tr>
+<tr>
+<td class="col-center col-num">2</td>
+<td>Đội phần mềm lập và cập nhật <strong>ma trận truy vết</strong> — bảng đối chiếu từng yêu cầu với chức năng đã xây và kịch bản kiểm thử</td>
+</tr>
+<tr>
+<td class="col-center col-num">3</td>
+<td>Trước khi dùng chính thức, mỗi giai đoạn có đợt chạy thử với người dùng thật <strong>tối thiểu hai tuần</strong> tại một đơn vị làm điểm, rồi mới nhân rộng</td>
+</tr>
+<tr>
+<td class="col-center col-num">4</td>
+<td>Mọi thay đổi phạm vi phải ghi bằng văn bản và thành phiên bản mới của tài liệu</td>
+</tr>
+<tr>
+<td class="col-center col-num">5</td>
+<td><strong>Bổ sung:</strong> không nhận "đã lập trình xong" làm bằng chứng. Điều kiện nghiệm thu phải là thứ <strong>kiểm chứng lại được</strong> bởi người khác</td>
+</tr>
+<tr>
+<td class="col-center col-num">6</td>
+<td><strong>Bổ sung:</strong> với mỗi cấu hình bảo mật, bộ kiểm phải chứng minh <strong>nó có tác dụng</strong>, không phải chứng minh nó lưu được. Rà soát đã phát hiện <strong>hai trường hợp</strong> cấu hình có màn hình đầy đủ nhưng không có hiệu lực</td>
+</tr>
+</tbody>
+</table>
+<h3>10.2. Bảy tiêu chí nghiệm thu mốc 15/02/2027</h3>
+<p>Mốc coi là đạt khi cả bảy điều dưới đây làm được trước mặt người kiểm:</p>
+<table>
+<thead>
+<tr>
+<th class="col-center col-num">#</th>
+<th>Tiêu chí</th>
+<th>Cách kiểm</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="col-center col-num">1</td>
+<td>Không còn lỗ hổng nào trong bốn lỗ hổng tại mục 3.3</td>
+<td>Dán đường dẫn tệp hợp đồng vào cửa sổ ẩn danh: bị chặn. Mở hồ sơ nhân sự ngoài phạm vi bằng mã trực tiếp: bị từ chối. Đọc nhật ký của chứng từ ngoài phạm vi: không ra dòng nào. Đặt loại trừ một phòng ban rồi đếm lại: số dòng giảm đúng</td>
+</tr>
+<tr>
+<td class="col-center col-num">2</td>
+<td>Thêm loại dữ liệu mới mà quên khai phạm vi thì <strong>hệ thống báo lỗi ngay</strong></td>
+<td>Tạo một loại dữ liệu nháp, chạy thử</td>
+</tr>
+<tr>
+<td class="col-center col-num">3</td>
+<td>Xây một phân hệ danh mục mới <strong>dưới 50 dòng mã</strong> mà vẫn đủ quyền, phạm vi, nhật ký, phân trang, xuất tệp</td>
+<td>Xây trực tiếp trước mặt người kiểm</td>
+</tr>
+<tr>
+<td class="col-center col-num">4</td>
+<td>Người dùng Thu mua đăng nhập vẫn vào thẳng công việc cũ; <strong>20 đường dẫn cũ lấy ngẫu nhiên</strong> từ dữ liệu thông báo đã gửi vẫn vào đúng chỗ</td>
+<td>Thử toàn bộ 20 đường dẫn</td>
+</tr>
+<tr>
+<td class="col-center col-num">5</td>
+<td>Thêm một loại chứng từ cần duyệt <strong>chỉ bằng khai báo cấu hình</strong>, không viết dòng mã nào</td>
+<td>Thêm một loại nháp trước mặt người kiểm</td>
+</tr>
+<tr>
+<td class="col-center col-num">6</td>
+<td><strong>Số nhân sự trên hệ thống khớp số phòng Nhân sự đang giữ, từng người một</strong></td>
+<td>Đối chiếu toàn bộ, không lấy mẫu</td>
+</tr>
+<tr>
+<td class="col-center col-num">7</td>
+<td>Một nhân viên thật nộp đơn nghỉ phép, một trưởng phòng thật duyệt trên web, số ngày phép còn lại giảm đúng</td>
+<td>Chạy với người thật, không dùng tài khoản kiểm thử</td>
+</tr>
+</tbody>
+</table>
+<h3>10.3. Điều kiện thành công ngoài phần mềm</h3>
+<p>Không phần mềm nào thay được sáu điều dưới đây:</p>
+<table>
+<thead>
+<tr>
+<th class="col-center col-num">#</th>
+<th>Điều kiện</th>
+<th>Ai chịu trách nhiệm</th>
+<th>Hạn</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="col-center col-num">1</td>
+<td><strong>Quyết định về nhân lực</strong>: ai làm chương trình này, và người đó có được tách khỏi hàng chờ yêu cầu thay đổi của Thu mua không</td>
+<td>Ban lãnh đạo</td>
+<td><strong>Trước khi bắt đầu phần dùng chung.</strong> Đây là điều kiện chặn nặng nhất</td>
+</tr>
+<tr>
+<td class="col-center col-num">2</td>
+<td><strong>Chốt danh sách chức danh chuẩn toàn tập đoàn</strong> — dữ liệu gốc quan trọng nhất của phân hệ Nhân sự</td>
+<td>Văn phòng Điều hành chủ trì cùng các trưởng bộ phận</td>
+<td>Trước GĐ 1</td>
+</tr>
+<tr>
+<td class="col-center col-num">3</td>
+<td><strong>Mỗi công ty thành viên cử một đầu mối</strong> chịu trách nhiệm nhập và xác nhận hồ sơ nhân sự</td>
+<td>Giám đốc từng công ty thành viên</td>
+<td>Trong GĐ 1</td>
+</tr>
+<tr>
+<td class="col-center col-num">4</td>
+<td><strong>Chỉ định người quản trị tài liệu cấp tập đoàn</strong> trước khi phân hệ Văn bản chạy thật</td>
+<td>Tổng Giám đốc</td>
+<td>Trước GĐ 2</td>
+</tr>
+<tr>
+<td class="col-center col-num">5</td>
+<td><strong>Ban lãnh đạo giữ lịch xem trình diễn hai tuần một lần</strong> suốt các giai đoạn phát triển</td>
+<td>Ban lãnh đạo</td>
+<td>Xuyên suốt</td>
+</tr>
+<tr>
+<td class="col-center col-num">6</td>
+<td><strong>Ban hành quy định hiệu lực</strong>: kể từ ngày ấn định, việc hoặc văn bản không có trên hệ thống là chưa được ghi nhận</td>
+<td>Tổng Giám đốc</td>
+<td>Khi từng phân hệ chạy thật</td>
+</tr>
+</tbody>
+</table>
+<div class="section-divider"></div>
+<h2 id="sec-11">11. NỘI DUNG CẦN BAN LÃNH ĐẠO QUYẾT ĐỊNH</h2>
+<p>Bảy nội dung. Mỗi nội dung có giá trị mặc định nếu quá hạn chưa có quyết định, trừ nội dung số 1.</p>
+<table>
+<thead>
+<tr>
+<th class="col-center col-num">#</th>
+<th>Nội dung</th>
+<th>Người quyết</th>
+<th>Hạn</th>
+<th>Chặn gì</th>
+<th>Mặc định nếu quá hạn</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="col-center col-num">1</td>
+<td><strong>Nhân lực</strong>: ai làm chương trình này, có tách người khỏi hàng chờ yêu cầu thay đổi của Thu mua không, có tuyển thêm từ tháng 9 không</td>
+<td>Ban lãnh đạo</td>
+<td><strong>Trước 15/09/2026</strong></td>
+<td>Toàn bộ mốc tại mục 7</td>
+<td><strong>Không có mặc định.</strong> Chưa quyết thì mục 7 là thứ tự, không phải ngày</td>
+</tr>
+<tr>
+<td class="col-center col-num">2</td>
+<td><strong>Thứ tự: Văn bản trước hay Con người trước</strong> — tài liệu yêu cầu gợi ý Văn bản đi cùng Tổ chức ở giai đoạn đầu; báo cáo này đề nghị đưa Con người lên trước, lý do tại mục 7.3</td>
+<td>Tổng Giám đốc</td>
+<td>Trước GĐ 1</td>
+<td>Toàn bộ mục 7</td>
+<td>Theo đề nghị của báo cáo: Tổ chức → Con người → Văn bản</td>
+</tr>
+<tr>
+<td class="col-center col-num">3</td>
+<td><strong>Có áp mô hình lấy vị trí công việc làm trung tâm không</strong> — tài liệu yêu cầu đặt vị trí làm thực thể trung tâm và suy quyền từ vị trí; nền hiện tại coi chức danh là danh mục và cấp quyền theo vai trò</td>
+<td>Ban điều hành, theo đề xuất của Công nghệ thông tin và Nhân sự</td>
+<td><strong>Trước GĐ 1</strong></td>
+<td>Thiết kế bảng của phân hệ Nhân sự. <strong>Quyết sau khi đã tạo bảng là phải làm lại</strong></td>
+<td>Chưa áp trong bản 1, chức danh giữ dạng danh mục, nhưng <strong>thiết kế bảng phải chừa chỗ</strong> để lắp vào sau mà không phải chuyển dữ liệu</td>
+</tr>
+<tr>
+<td class="col-center col-num">4</td>
+<td><strong>Nghỉ phép có nằm trong phạm vi không</strong> — tài liệu yêu cầu xếp ra ngoài; báo cáo này đề nghị đưa vào</td>
+<td>Ban điều hành cùng phòng Nhân sự</td>
+<td>Trước GĐ 1</td>
+<td>Phạm vi phân hệ Nhân sự bậc 3</td>
+<td><strong>Làm.</strong> Hồ sơ và hợp đồng là thứ một phòng dùng; nghỉ phép là thứ 300 người dùng</td>
+</tr>
+<tr>
+<td class="col-center col-num">5</td>
+<td><strong>Phân hệ Văn bản: mở rộng Trung tâm Hướng dẫn sử dụng hay xây mới</strong></td>
+<td>Ban điều hành</td>
+<td>Trước GĐ 2</td>
+<td>Kế hoạch GĐ 2</td>
+<td>Mở rộng cái đang chạy, vì nội dung và người dùng đã ở đó</td>
+</tr>
+<tr>
+<td class="col-center col-num">6</td>
+<td><strong>Phân hệ Công việc: mở rộng công cụ Quản lý Dự án hay xây mới</strong></td>
+<td>Ban điều hành</td>
+<td>Trước GĐ 4</td>
+<td>Kế hoạch GĐ 4</td>
+<td>Giữ công cụ hiện có cho Ban điều hành, xây phân hệ Công việc toàn tập đoàn riêng — hai nhóm người dùng khác nhau</td>
+</tr>
+<tr>
+<td class="col-center col-num">7</td>
+<td><strong>Bật xác thực hai lớp cho vai trò nhân sự và quản trị từ khi nào</strong></td>
+<td>Tổng Giám đốc, theo đề xuất Công nghệ thông tin</td>
+<td>Trước khi phân hệ Nhân sự có dữ liệu thật</td>
+<td>Không chặn kỹ thuật, nhưng bật muộn thì vướng thói quen người dùng</td>
+<td>Bật cùng lúc với GĐ 1</td>
+</tr>
+</tbody>
+</table>
+<p>Ngoài bảy nội dung trên, phân hệ Phúc lợi và Bán lẻ cần thêm <strong>mười câu hỏi nghiệp vụ</strong> được trả lời trước khi lập trình — trong đó có câu phúc lợi này có tính thuế thu nhập cá nhân không, là câu đội phần mềm không tự trả lời được.</p>
+<div class="section-divider"></div>
+<h2 id="sec-12">12. RỦI RO</h2>
+<table>
+<thead>
+<tr>
+<th class="col-center col-num">#</th>
+<th>Rủi ro</th>
+<th>Dấu hiệu sớm</th>
+<th>Chặn bằng gì</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="col-center col-num">1</td>
+<td><strong>Lịch trượt vì đội vẫn gánh phần mềm đang chạy</strong></td>
+<td>Yêu cầu thay đổi của Thu mua vẫn vào đều mà không ai được rút khỏi lộ trình</td>
+<td>Nội dung số 1 tại mục 11. Kịch bản B tại mục 8.2 cho thấy hậu quả: trượt hai đến ba tháng</td>
+</tr>
+<tr>
+<td class="col-center col-num">2</td>
+<td><strong>Lộ dữ liệu lương và giấy tờ tùy thân</strong></td>
+<td><strong>Không có dấu hiệu sớm</strong> — loại rủi ro chỉ biết khi đã xảy ra. Và kiểu bỏ sót gây ra nó <strong>đã xảy ra bốn lần</strong></td>
+<td>Nhóm vá gấp làm trước tất cả. Phân quyền tới mức từng trường xong trước khi thiết kế bảng hợp đồng lao động. Không ngoại lệ</td>
+</tr>
+<tr>
+<td class="col-center col-num">3</td>
+<td><strong>Cấu hình bảo mật có màn hình nhưng không có tác dụng</strong></td>
+<td>Không có dấu hiệu nào — đó chính là điểm nguy. Đã có <strong>hai trường hợp thật</strong></td>
+<td>Nguyên tắc nghiệm thu số 6 tại mục 10.1</td>
+</tr>
+<tr>
+<td class="col-center col-num">4</td>
+<td><strong>Phạm vi phình ra khi phỏng vấn</strong></td>
+<td>Xuất hiện yêu cầu "tiện thể làm luôn" trong biên bản phỏng vấn</td>
+<td>Quy tắc cứng ở bước KS3: <strong>số dòng mức B không quá 40%</strong>. Yêu cầu mới vào danh mục chờ, không chen ngang</td>
+</tr>
+<tr>
+<td class="col-center col-num">5</td>
+<td><strong>Phần dùng chung bị hoãn tới sau phân hệ Nhân sự</strong></td>
+<td>Phân hệ Nhân sự đầu tiên xây xong mà chưa có phần dùng chung</td>
+<td>Phần dùng chung nằm trong danh sách <strong>không cắt</strong> tại mục 7.5</td>
+</tr>
+<tr>
+<td class="col-center col-num">6</td>
+<td><strong>Bộ máy phê duyệt bị coi là việc kỹ thuật để sau</strong></td>
+<td>Có đề nghị "làm Nhân sự trước, duyệt tính sau"</td>
+<td>Tài liệu yêu cầu xếp Luồng phê duyệt vào <strong>tầng nền tảng</strong>, không phải tầng nghiệp vụ. Đây là nền dùng chung, không phải việc riêng của phân hệ Nhân sự</td>
+</tr>
+<tr>
+<td class="col-center col-num">7</td>
+<td><strong>Người mới không lên được trong ba tháng</strong></td>
+<td>Hết tháng thứ ba vẫn cần rà từng dòng mã người đó viết</td>
+<td>Phân việc theo mục 8.4. Nếu tháng thứ ba chưa đạt thì <strong>hạ kỳ vọng xuống kịch bản A</strong>, không kéo dài kèm cặp vô hạn</td>
+</tr>
+<tr>
+<td class="col-center col-num">8</td>
+<td><strong>Đầu nối phần mềm bán hàng không khả thi nhưng đã hứa với quán</strong></td>
+<td>Có lịch hẹn triển khai trước khi có kết quả gọi thử</td>
+<td>Phần B của phân hệ Phúc lợi có điều kiện vào ghi rõ. Và có phương án chạy tay viết sẵn để không phải hứa</td>
+</tr>
+<tr>
+<td class="col-center col-num">9</td>
+<td><strong>Chuẩn hóa dữ liệu làm vỡ hệ thống đang chạy</strong></td>
+<td>Người dùng báo chứng từ mất trạng thái</td>
+<td>Hai cột chạy song song, không xóa cột cũ trước một tháng. Có đường lui ở mọi bước trừ bước cuối</td>
+</tr>
+<tr>
+<td class="col-center col-num">10</td>
+<td><strong>Nhiều pháp nhân bị bỏ tới lúc cần mới làm</strong></td>
+<td>Có yêu cầu tách báo cáo theo công ty con</td>
+<td>Cột công ty thành viên nằm ở GĐ 0. <strong>Thêm cột phân định pháp nhân sau khi đã có dữ liệu là việc rất khó sửa lại.</strong> Tập đoàn có trên 10 công ty thành viên nên nhu cầu này chắc chắn đến</td>
+</tr>
+<tr>
+<td class="col-center col-num">11</td>
+<td><strong>Nhiệt tình lúc đầu, không ai duy trì dữ liệu</strong></td>
+<td>Sau ba tháng, hồ sơ nhân sự không còn ai cập nhật</td>
+<td>Điều kiện số 3 và số 6 tại mục 10.3. Đây là rủi ro của tổ chức, phần mềm không chặn được</td>
+</tr>
+</tbody>
+</table>
+<div class="section-divider"></div>
+<div class="page-break"></div><h2 id="sec-app">PHỤ LỤC A — BẢNG THUẬT NGỮ</h2>
+<table>
+<thead>
+<tr>
+<th>Thuật ngữ</th>
+<th>Giải thích</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Phân hệ</strong></td>
+<td>Một mảng nghiệp vụ có thể bật tắt độc lập trong cùng một hệ thống: Tổ chức, Nhân sự, Văn bản, Thu mua</td>
+</tr>
+<tr>
+<td><strong>Phạm vi dữ liệu</strong></td>
+<td>Giới hạn xem được: cùng một quyền đọc, nhưng người này thấy dữ liệu phòng mình, người kia thấy toàn công ty. Khác với <strong>quyền hành động</strong> là được làm gì</td>
+</tr>
+<tr>
+<td><strong>Phân quyền tới mức từng trường</strong></td>
+<td>Che từng ô dữ liệu chứ không chỉ từng bản ghi: trưởng phòng xem được hồ sơ nhân viên nhưng không xem được cột mức lương</td>
+</tr>
+<tr>
+<td><strong>Phần dùng chung</strong></td>
+<td>Phần mã nguồn viết một lần cho mọi phân hệ dùng lại: kiểm quyền, áp phạm vi, ghi nhật ký, phân trang, xuất tệp</td>
+</tr>
+<tr>
+<td><strong>Bộ máy phê duyệt dùng chung</strong></td>
+<td>Cơ chế duyệt khai báo bằng cấu hình, dùng chung cho mọi loại chứng từ, thay vì mỗi phân hệ tự viết luồng riêng</td>
+</tr>
+<tr>
+<td><strong>Nguyên tắc chặn khi chưa khai báo</strong></td>
+<td>Gặp tình huống chưa khai báo thì <strong>từ chối</strong>, không phải cho qua. Ngược lại là cho qua khi chưa khai báo — chính là lỗ hổng đang có</td>
+</tr>
+<tr>
+<td><strong>Bước thay đổi cấu trúc dữ liệu</strong></td>
+<td>Một thao tác sửa cấu trúc cơ sở dữ liệu, có thứ tự, chạy lại được từ đầu, có đường lui</td>
+</tr>
+<tr>
+<td><strong>Điểm phục hồi</strong></td>
+<td>Khoảng dữ liệu tối đa có thể mất khi xảy ra sự cố. Sao lưu hai lần mỗi ngày tương ứng điểm phục hồi 12 giờ</td>
+</tr>
+<tr>
+<td><strong>Thời gian phục hồi</strong></td>
+<td>Thời gian tối đa để đưa hệ thống chạy lại sau sự cố</td>
+</tr>
+<tr>
+<td><strong>Tuần-người thuần</strong></td>
+<td>Một tuần làm việc của một người sau khi đã trừ họp, nghỉ và bảo trì. Đơn vị dùng tại mục 8</td>
+</tr>
+<tr>
+<td><strong>Yêu cầu thay đổi</strong></td>
+<td>Một đề nghị sửa đổi từ người dùng của hệ thống đang chạy. Đo được: xấp xỉ một yêu cầu mỗi ngày làm việc</td>
+</tr>
+<tr>
+<td><strong>Công tắc cấu hình</strong></td>
+<td>Cách bật tắt một chức năng mà không phải triển khai lại phần mềm. Dùng để có đường lui</td>
+</tr>
+<tr>
+<td><strong>Sổ cái chỉ ghi thêm</strong></td>
+<td>Bảng chỉ thêm dòng, không sửa và không xóa dòng cũ; sửa sai bằng bút toán đảo. Cách lưu bắt buộc với thứ mang giá trị như tiền hoặc điểm</td>
+</tr>
+<tr>
+<td><strong>Phần mềm bán hàng tại quầy</strong></td>
+<td>Phần mềm thu ngân của quán cà phê. Hiện đang dùng POS365</td>
+</tr>
+</tbody>
+</table>
+<div class="section-divider"></div>
+<div class="doc-end-marker">— HẾT BÁO CÁO —</div>
+</div>
+
+</body>
+</html>

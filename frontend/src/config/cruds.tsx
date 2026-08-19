@@ -1,6 +1,6 @@
 import { FilterField } from '../components/FilterBar'
 import type { FilterFieldDefinition } from '../components/conditional-filter'
-import { condDate, condSelect, condSource, condText } from './conditional-filters'
+import { condDate, condSelect, condSource, condText, DEPT_SRC, EMP_SRC } from './conditional-filters'
 import DepartmentMembers from '../components/DepartmentMembers'
 import ProductImages from '../components/ProductImages'
 import PurchaseHistoryTable from '../components/PurchaseHistoryTable'
@@ -431,8 +431,10 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     // company_id / assignee / item_group lọc qua bảng con hoặc scope -> không có trong FILTERABLE
     condFilters: [
-      condText('code', 'Mã PYC'), condText('requester', 'Người yêu cầu'),
-      condSource('department', 'Bộ phận YC', { url: '/api/departments', value: 'name', label: 'name' }),
+      condText('code', 'Mã PYC'),
+      // CR-088: hai ô này lọc theo ID (xem `conditional-filters.ts`).
+      condSource('requester_id', 'Người yêu cầu', EMP_SRC),
+      condSource('department_id', 'Bộ phận YC', DEPT_SRC),
       condDate('request_date', 'Ngày tạo'), condDate('need_date', 'Ngày cần hàng'),
       { name: 'is_urgent', label: 'Đơn gấp', type: 'boolean' },
       condSelect('status', 'Trạng thái', [
@@ -471,8 +473,9 @@ export const cruds: Record<string, CrudConfig> = {
         { value: 'cancelled', label: 'Đã từ chối' }] },
     ],
     condFilters: [
-      condText('code', 'Mã phiếu'), condText('requester', 'Người yêu cầu'),
-      condSource('department', 'Bộ phận', { url: '/api/departments', value: 'name', label: 'name' }),
+      condText('code', 'Mã phiếu'),
+      condSource('requester_id', 'Người yêu cầu', EMP_SRC),      // CR-088: lọc theo ID
+      condSource('department_id', 'Bộ phận', DEPT_SRC),
       condDate('request_date', 'Ngày tạo'),
       condSelect('status', 'Trạng thái', [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
@@ -682,8 +685,8 @@ export const cruds: Record<string, CrudConfig> = {
     condFilters: [
       condText('code', 'Mã PO'), condText('misa_code', 'Mã MISA'), condText('pr_code', 'Mã PYC'),
       condSource('supplier_code', 'Nhà cung cấp', { url: '/api/suppliers', value: 'code', label: 'name' }),
-      condSource('nspt', 'NSPT phụ trách', { url: '/api/employees', value: 'full_name', label: 'full_name' }),
-      condText('department', 'Bộ phận'),
+      condSource('nspt_id', 'NSPT phụ trách', EMP_SRC),      // CR-088: lọc theo ID
+      condSource('department_id', 'Bộ phận', DEPT_SRC),
       condDate('order_date', 'Ngày đặt'),
       { name: 'is_urgent', label: 'Đơn gấp', type: 'boolean' },
       condSelect('document_status', 'Hồ sơ chứng từ', [
@@ -761,6 +764,8 @@ export const cruds: Record<string, CrudConfig> = {
       condText('code', 'Mã phiếu'), condText('sr_code', 'Mã YCBG'), condText('pr_code', 'Mã PYC'),
       condText('main_content', 'Nội dung chính'), condText('item_code', 'Mã hàng'),
       condSource('item_group', 'Nhóm hàng', { url: '/api/item-groups', value: 'name', label: 'name' }),
+      // Phiếu khảo sát CHƯA có cột `nspt_id` (CR-087 mới neo YCMH/YCBG/ĐMH) nên ô này vẫn
+      // lọc theo TÊN. Đổi sang id ở đây là backend lặng lẽ bỏ qua điều kiện.
       condText('nspt', 'NSPT'),
       condSelect('status', 'Trạng thái', [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },

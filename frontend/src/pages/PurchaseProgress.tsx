@@ -46,8 +46,10 @@ const PG_OPTS = Object.keys(PG_COLOR)
  *  để trả lời; riêng `recv_state` là cột TÍNH (tổng SL nhận của mọi lần giao) nên bộ lọc điều
  *  kiện không làm được. `department` + khoảng `order_date` giữ ở ngoài (CR-081) vì đây là hai
  *  lát cắt dùng gần như mọi lần mở màn — bắt người dùng dựng điều kiện cho chúng là phiền. */
+// CR-088: ô Bộ phận gửi ID chứ không gửi tên nữa — phòng đổi tên là bộ lọc theo tên trượt
+// sạch, bảng rỗng mà không báo gì. Backend vẫn nhận `department=<tên>` cho ai gọi API thẳng.
 const EMPTY_FILTERS = {
-  company_id: '', department: '', status: '', q: '', recv_state: '',
+  company_id: '', department_id: '', status: '', q: '', recv_state: '',
   order_date_from: '', order_date_to: '',
 }
 const pgBadge = (s: string) =>
@@ -270,9 +272,9 @@ export default function PurchaseProgress() {
             onChange={(v) => setFilter('company_id', v)} />
         </FilterItem>
         <FilterItem label="Bộ phận">
-          <SearchSelect value={f.department} placeholder="Tất cả"
-            options={departments.map((d) => ({ value: d.name, label: d.name }))}
-            onChange={(v) => setFilter('department', v)} />
+          <SearchSelect value={f.department_id} placeholder="Tất cả"
+            options={departments.map((d) => ({ value: String(d.id), label: d.name }))}
+            onChange={(v) => setFilter('department_id', v)} />
         </FilterItem>
         <FilterItem label="Trạng thái tiến độ">
           <SearchSelect value={f.status} placeholder="Tất cả"

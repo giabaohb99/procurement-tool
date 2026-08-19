@@ -34,6 +34,7 @@ class PRCreate(BaseModel):
     requester: str = ""
     requester_id: int = 0
     requester_position: str = ""
+    department_id: int = 0        # CR-086: phòng ban neo bằng id; bỏ trống thì tra từ `department`
     department: str = ""
     head_of_dept: str = ""
     head_of_dept_id: int = 0      # CR-071: id nhân sự TBP đứng tên trên phiếu (0 = theo mặc định phòng)
@@ -59,6 +60,7 @@ class PRUpdate(BaseModel):
     requester: str | None = None
     requester_id: int | None = None
     requester_position: str | None = None
+    department_id: int | None = None      # CR-086
     department: str | None = None
     head_of_dept: str | None = None
     head_of_dept_id: int | None = None    # CR-071

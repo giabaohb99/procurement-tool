@@ -18,7 +18,14 @@ class PurchaseOrder(Base, AuditMixin):
     company_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True) # pháp nhân nhận HĐ — apply_scope lọc theo cột này
     supplier_code: Mapped[str] = mapped_column(String(50), default="")         # NCC bán hàng
     supplier_name: Mapped[str] = mapped_column(String(255), default="")
-    department: Mapped[str] = mapped_column(String(255), default="", index=True)
+    # CR-086: phòng ban neo bằng ID (xem PurchaseRequest.department_id). Cột `department` bên dưới
+    # hạ xuống làm BẢN CHỤP TÊN — chỉ để in/đối chiếu, không khớp nghiệp vụ bằng nó nữa.
+    department_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    department: Mapped[str] = mapped_column(String(255), default="", index=True)  # BẢN CHỤP tên (sẽ xóa — N-008)
+    # CR-087: NSPT phụ trách neo bằng ID nhân sự. `full_name` KHÔNG duy nhất — khớp bằng tên
+    # là cho người trùng tên thấy đơn của nhau (prod đang có 1 cặp). Cột `nspt` hạ xuống làm
+    # BẢN CHỤP TÊN để in/xuất Excel (sẽ xóa — N-008).
+    nspt_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     nspt: Mapped[str] = mapped_column(String(100), default="")
     order_date: Mapped[str] = mapped_column(String(10), default="", index=True)
     vat_rate: Mapped[float] = mapped_column(Numeric(5, 4), default=0.08)

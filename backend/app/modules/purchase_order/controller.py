@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_perm_profile, require
 from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, apply_sort_from_request, pagination
+from app.core.ref_filter import apply_ref_filters
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope
@@ -21,7 +22,7 @@ from .schema import POCreate, POUpdate, RejectIn, ItemProgressIn, DocumentStatus
 router = APIRouter(prefix="/api/purchase-orders", tags=["purchase_order"])
 
 HEADER = ["id", "code", "misa_code", "pr_code", "survey_code", "company_id", "supplier_code",
-          "supplier_name", "department", "nspt", "order_date", "vat_rate", "payment_terms",
+          "supplier_name", "department_id", "department", "nspt_id", "nspt", "order_date", "vat_rate", "payment_terms",
           "is_urgent", "status", "document_status", "note", "approve_note"]
 
 
@@ -126,6 +127,7 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
 def _list_query(request: Request, db: Session, user):
     """Bộ lọc + phạm vi của màn danh sách — dùng chung cho danh sách và xuất Excel (CR-068)."""
     q = apply_filters(db.query(PurchaseOrder), PurchaseOrder, request, service.FILTERABLE)
+    q = apply_ref_filters(q, PurchaseOrder, request, db)      # CR-088: `nspt_id` / `department_id`
     q = apply_range_filters(q, PurchaseOrder, request, ["order_date"])
     q = apply_equals(q, PurchaseOrder, request, ["company_id"])
     item_group = (request.query_params.get("item_group") or "").strip()

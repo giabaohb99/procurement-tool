@@ -10,6 +10,11 @@ interface ColumnChartProps {
   /** Rút gọn số trên trục Y và trong tooltip (vd 286.000.000 -> "286 tr"). */
   formatValue?: (value: number) => string
   color?: string
+  /**
+   * Bấm vào một cột — nhận CHỈ SỐ của cột trong `data` (chỗ gọi tự tra lại mốc
+   * thời gian tương ứng). Bỏ trống = biểu đồ chỉ để xem, con trỏ giữ nguyên.
+   */
+  onBarClick?: (index: number) => void
 }
 
 /**
@@ -25,6 +30,7 @@ export function ColumnChart({
   unit,
   formatValue,
   color = 'var(--chart-1)',
+  onBarClick,
 }: ColumnChartProps) {
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -49,7 +55,16 @@ export function ColumnChart({
           wrapperStyle={{ outline: 'none' }}
           content={<ChartTooltipContent unit={unit} formatValue={formatValue} />}
         />
-        <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]} maxBarSize={36} />
+        <Bar
+          dataKey="value"
+          fill={color}
+          radius={[4, 4, 0, 0]}
+          maxBarSize={36}
+          // Đối số đầu là hình chữ nhật recharts vẽ ra, không phải mục dữ liệu
+          // gốc — nên trả CHỈ SỐ về cho chỗ gọi tự tra trong `data`.
+          onClick={onBarClick ? (_bar, index) => onBarClick(index) : undefined}
+          className={onBarClick ? 'cursor-pointer' : undefined}
+        />
       </BarChart>
     </ResponsiveContainer>
   )

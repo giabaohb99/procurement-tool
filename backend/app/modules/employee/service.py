@@ -14,6 +14,49 @@ FILTERABLE = ["code", "full_name", "email", "is_active", "position", "role_names
 ENTITY = "employee"
 
 
+# ── CR-087: neo nhân sự trên chứng từ bằng ID ────────────────────────────────────
+def emp_id_by_name(db: Session, name: str, company_id: int = 0) -> int:
+    """Tra id nhân sự từ TÊN. Không suy ra chắc chắn được thì trả 0 — KHÔNG đoán bừa.
+
+    `full_name` KHÔNG duy nhất (prod đang có cặp trùng tên, dev 4 cặp) nên trùng tên thì
+    thử phân giải bằng pháp nhân; vẫn còn nhiều hơn một thì chịu, để 0 và giữ chuỗi tên.
+    """
+    name = (name or "").strip()
+    if not name:
+        return 0
+    rows = db.query(Employee.id, Employee.company_id).filter(Employee.full_name == name).all()
+    if len(rows) == 1:
+        return int(rows[0][0])
+    same = [int(r[0]) for r in rows if company_id and r[1] == company_id]
+    return same[0] if len(same) == 1 else 0
+
+
+def emp_id_by_code(db: Session, code: str) -> int:
+    """Tra id từ MÃ nhân sự. `code` là UNIQUE nên không có chuyện nhập nhằng."""
+    code = (code or "").strip()
+    if not code:
+        return 0
+    row = db.query(Employee.id).filter(Employee.code == code).first()
+    return int(row[0]) if row else 0
+
+
+def sync_employee_ref(db: Session, obj, id_field: str, name_field: str) -> None:
+    """Ghi kép id ↔ tên cho MỘT ô nhân sự trên chứng từ (vd. `nspt_id`/`nspt`).
+
+    Có id thì TÊN chạy theo id (đổi tên nhân sự là phiếu in ra tên mới). Chỉ có tên thì suy
+    ngược ra id. Không suy ra được thì giữ tên, `id = 0` — phần lùi nằm ở `scoping._emp_match`.
+    """
+    eid = int(getattr(obj, id_field, 0) or 0)
+    if eid:
+        emp = db.get(Employee, eid)
+        if emp:
+            setattr(obj, name_field, emp.full_name or "")
+            return
+        setattr(obj, id_field, 0)
+    setattr(obj, id_field, emp_id_by_name(db, getattr(obj, name_field, "") or "",
+                                          int(getattr(obj, "company_id", 0) or 0)))
+
+
 def list_employees(db: Session, base_query, pg: dict):
     total = base_query.count()
     # selectinload(user): danh sách có cột ảnh đại diện (lưu ở tab_user.avatar) — nạp gộp

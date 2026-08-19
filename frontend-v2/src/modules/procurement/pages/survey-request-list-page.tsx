@@ -1,6 +1,8 @@
-import { Search } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
+import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import {
@@ -8,11 +10,13 @@ import {
   FilterProvider,
   useFilterQuery,
 } from '@/shared/conditional-filter'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
+import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
@@ -55,6 +59,7 @@ export function SurveyRequestListPage() {
  * thu mua đi khảo sát giá rồi mới lên yêu cầu mua hàng.
  */
 function SurveyRequestListContent() {
+  const navigate = useNavigate()
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
@@ -105,6 +110,14 @@ function SurveyRequestListContent() {
       <PageHeader
         title="Yêu cầu báo giá"
         description="Phiếu yêu cầu khảo sát giá (YCBG) trước khi lên yêu cầu mua hàng."
+        actions={
+          <PermissionGate entity="survey_request" action="create">
+            <Button onClick={() => navigate(appRoutes.procurement.surveyRequestNew)}>
+              <Plus />
+              Thêm mới
+            </Button>
+          </PermissionGate>
+        }
       />
 
       <Card className="flex min-h-0 flex-1 flex-col p-4">
@@ -113,6 +126,7 @@ function SurveyRequestListContent() {
           columns={columns}
           rows={data?.items}
           getRowId={(sr) => sr.id}
+          onRowClick={(sr) => navigate(appRoutes.procurement.surveyRequestDetail(sr.id))}
           isLoading={isLoading}
           isError={isError}
           emptyMessage="Không tìm thấy yêu cầu báo giá nào."

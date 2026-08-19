@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import (get_current_user, get_perm_profile, require,
                            user_has_permission)
 from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, apply_sort_from_request, pagination
+from app.core.ref_filter import apply_ref_filters
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope
@@ -33,9 +34,10 @@ def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
     base = _dict(s)
     # Trưởng bộ phận: phiếu lập lúc phòng chưa gán trưởng sẽ lưu rỗng và ở rỗng vĩnh viễn.
     # Rỗng thì lấy theo Department.manager_id hiện tại để HIỂN THỊ (không ghi đè dữ liệu đã lưu).
-    if not base.get("head_of_dept") and s.department:
-        from app.modules.purchase_request.service import find_dept_head
-        base["head_of_dept"] = find_dept_head(db, s.department)
+    if not base.get("head_of_dept") and (s.department_id or s.department):
+        from app.modules.purchase_request.service import find_dept_head, find_dept_head_id
+        base["head_of_dept"] = find_dept_head(db, s.department, s.department_id)
+        base["head_of_dept_id"] = find_dept_head_id(db, s.department, s.department_id)   # CR-087
     lines = service.lines_of(db, s.id)
     order = getattr(s, "_ordered_line_ids", None)   # sau create/update: giữ đúng thứ tự dòng đã gửi
     if order:
@@ -93,6 +95,10 @@ def _same_dept_as_requester(db, s, user) -> bool:
             req_dept_id = re.department_id or 0
     if req_dept_id and ue.department_id:
         return ue.department_id == req_dept_id
+    # CR-086: chưa suy ra được phòng của người yêu cầu thì lấy phòng ghi trên phiếu — ưu tiên id,
+    # tên chỉ dùng cho phiếu cũ chưa điền lùi được id (bỏ nhánh tên ở N-008).
+    if s.department_id and ue.department_id:
+        return ue.department_id == s.department_id
     return bool(s.department) and (ue.department_name or "") == s.department
 
 
@@ -158,15 +164,24 @@ def _users_of_codes(db, codes):
 
 
 @router.get("/meta/dept-head")
-def dept_head_(department: str = "", db: Session = Depends(get_db),
+def dept_head_(department: str = "", department_id: int = 0, db: Session = Depends(get_db),
                user=Depends(require("survey_request", "read"))):
-    from app.modules.purchase_request.service import find_dept_head
-    return success({"head_of_dept": find_dept_head(db, department)})
+    """Trưởng bộ phận của 1 phòng ban — cho người yêu cầu (không xem được DS nhân sự) tự điền TBP.
+
+    CR-089: nhận `department_id` và trả kèm `head_of_dept_id`. Tra theo TÊN là đường lùi cho
+    màn cũ, vì hai phòng trùng tên ở hai pháp nhân sẽ ra nhầm trưởng — id thì không nhầm được.
+    """
+    from app.modules.purchase_request.service import find_dept_head, find_dept_head_id
+    return success({
+        "head_of_dept": find_dept_head(db, department, department_id),
+        "head_of_dept_id": find_dept_head_id(db, department, department_id),
+    })
 
 
 def _list_query(request: Request, db: Session, user):
     """Bộ lọc + phạm vi của màn danh sách — dùng chung cho danh sách và xuất Excel (CR-068)."""
     q = apply_filters(db.query(SurveyRequest), SurveyRequest, request, service.FILTERABLE)
+    q = apply_ref_filters(q, SurveyRequest, request, db)      # CR-088
     q = apply_range_filters(q, SurveyRequest, request, ["request_date"])
     q = apply_equals(q, SurveyRequest, request, ["company_id"])
     item_group = (request.query_params.get("item_group") or "").strip()
@@ -299,7 +314,7 @@ def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(g
     s = service.set_status(db, sid, "submitted", user.id)
     # CHỈ Trưởng bộ phận của phòng YC (1 người duyệt)
     from app.modules.notification.service import get_department_head_users
-    recips = get_department_head_users(db, s.department or "")
+    recips = get_department_head_users(db, s.department or "", s.department_id or 0)
     _notify(db, recips,
             f"{s.code} — Yêu cầu phê duyệt YCBG",
             f"Có yêu cầu báo giá mới ({s.code}) cần bạn duyệt.",

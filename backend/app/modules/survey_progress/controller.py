@@ -21,6 +21,7 @@ from app.core.auth import get_current_user, get_perm_profile, user_has_permissio
 from app.core.base_controller import pagination
 from app.core.database import get_db
 from app.core.filter_operators import apply_operator_filters_map
+from app.core.ref_filter import apply_ref_filters
 from app.core.response import success
 from app.core.scoping import apply_scope
 from app.modules.survey_request.model import (LS_COMPLETED, LS_RESURVEY, SurveyRequest,
@@ -73,6 +74,10 @@ def _cond_map(show_supplier: bool) -> dict:
     """
     m = {k: v for k, v in _sort_map().items() if k != "company_id"}
     m["assignee"] = SurveyRequestLine.assignee
+    # CR-088: lọc ô tham chiếu theo ID. Không nhét vào `_sort_map()` — sắp xếp theo id ra thứ tự
+    # số, chẳng ai đọc được. Lối này khớp id THẲNG, nhánh lùi nằm ở `apply_ref_filters`.
+    m["department_id"] = SurveyRequest.department_id
+    m["requester_id"] = SurveyRequest.requester_id
     if not show_supplier:
         for k in ex.SUPPLIER_HIDDEN_KEYS:
             m.pop(k, None)
@@ -200,6 +205,8 @@ def _build_query(request: Request, db: Session, user, prof: dict,
     company_id = (request.query_params.get("company_id") or "").strip()
     if company_id.isdigit():
         q = q.filter(SurveyRequest.company_id == int(company_id))
+    # CR-088: màn hình đã đổi sang `department_id=` (xử lý ở `apply_ref_filters` bên dưới);
+    # nhánh theo TÊN này giữ cho các đường dẫn đã lưu sẵn và ai gọi API thẳng.
     department = (request.query_params.get("department") or "").strip()
     if department:
         q = q.filter(SurveyRequest.department == department)
@@ -260,6 +267,8 @@ def _build_query(request: Request, db: Session, user, prof: dict,
     # qua đây với đủ phép so sánh. Param cũ (month, *_from/_to, answered…) vẫn đọc ở trên để
     # link cũ không chết, chỉ là FE không còn ô nhập cho chúng.
     q = apply_operator_filters_map(q, _cond_map(show_supplier), request)
+    # CR-088: param trần `department_id=` / `requester_id=`, có nhánh lùi cho phiếu chưa có id.
+    q = apply_ref_filters(q, SurveyRequest, request, db)
 
     # ----- Phạm vi dữ liệu: phiếu theo scope, rồi dòng theo phần việc -----
     q = apply_scope(q, SurveyRequest, "survey_request", user, prof)

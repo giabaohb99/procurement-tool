@@ -54,8 +54,10 @@ const PG_COLOR: Record<string, string> = {
  *  chạy trên cột thật trong DB nên không làm được. `department` + khoảng `received_date` giữ ở
  *  ngoài (CR-081), song song với màn Tiến độ mua hàng: hai lát cắt "phòng nào" và "trong quãng
  *  thời gian nào" dùng gần như mọi lần mở màn. */
+// CR-088: ô Bộ phận gửi ID chứ không gửi tên nữa — phòng đổi tên là bộ lọc theo tên trượt
+// sạch, bảng rỗng mà không báo gì. Backend vẫn nhận `department=<tên>` cho ai gọi API thẳng.
 const EMPTY_FILTERS = {
-  company_id: '', department: '', q: '', state: '', late: '',
+  company_id: '', department_id: '', q: '', state: '', late: '',
   received_date_from: '', received_date_to: '',
 }
 
@@ -279,9 +281,9 @@ export default function SurveyProgress() {
             onChange={(v) => setFilter('company_id', v)} />
         </FilterItem>
         <FilterItem label="Bộ phận">
-          <SearchSelect value={f.department} placeholder="Tất cả"
-            options={departments.map((d) => ({ value: d.name, label: d.name }))}
-            onChange={(v) => setFilter('department', v)} />
+          <SearchSelect value={f.department_id} placeholder="Tất cả"
+            options={departments.map((d) => ({ value: String(d.id), label: d.name }))}
+            onChange={(v) => setFilter('department_id', v)} />
         </FilterItem>
         <FilterItem label="Tiến độ dòng">
           <SearchSelect value={f.state} placeholder="Tất cả"

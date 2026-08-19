@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_perm_profile, require, user_has_permission
 from app.core.scoping import apply_scope
 from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, apply_sort_from_request, pagination
+from app.core.ref_filter import apply_ref_filters
 from app.core.database import get_db
 from app.core.response import success
 from app.modules.notification.service import trigger_notification
@@ -16,7 +17,8 @@ from .schema import ApproveIn, AssignIn, ItemStatusIn, PRCreate, PRUpdate, Reaso
 router = APIRouter(prefix="/api/purchase-requests", tags=["purchase_request"])
 
 HEADER_COLS = ["id", "code", "company_id", "requester", "requester_id", "requester_position",
-               "department", "head_of_dept", "head_of_dept_id", "purpose", "request_date", "need_date",
+               "department_id", "department", "head_of_dept", "head_of_dept_id",
+               "purpose", "request_date", "need_date",
                "status", "is_urgent", "vat_rate", "assignee_id", "note",
                "show_code_on_print", "suggested_supplier", "suggested_supplier_tax_code",
                "suggested_supplier_contact", "quote_filename", "quote_file_url"]
@@ -115,8 +117,8 @@ def _out(db: Session, pr, user=None) -> dict:
     d["vat_rate"] = float(pr.vat_rate or 0)
     # Trưởng bộ phận: phiếu lập lúc phòng chưa gán trưởng sẽ lưu rỗng và ở rỗng vĩnh viễn.
     # Rỗng thì lấy theo Department.manager_id hiện tại để HIỂN THỊ (không ghi đè dữ liệu đã lưu).
-    if not d.get("head_of_dept") and pr.department:
-        d["head_of_dept"] = service.find_dept_head(db, pr.department)
+    if not d.get("head_of_dept") and (pr.department_id or pr.department):
+        d["head_of_dept"] = service.find_dept_head(db, pr.department, pr.department_id)
     # Task 4: NCC 2 cụm. Cụm 'req' (bộ phận đề xuất) MỌI người xem/sửa được — sửa bug người
     # yêu cầu không nhập nổi NCC của chính mình. Cụm 'pur' (khảo sát/thu mua) cần supplier.read
     # để xem, supplier.write để sửa.
@@ -206,6 +208,7 @@ def _list_query(request: Request, db: Session, user):
     """Câu truy vấn danh sách (lọc + phạm vi + sắp xếp) — dùng chung cho màn danh sách và xuất Excel,
     để file xuất luôn ra ĐÚNG những phiếu người dùng đang thấy."""
     query = apply_filters(db.query(PurchaseRequest).filter(PurchaseRequest.is_deleted == False), PurchaseRequest, request, service.FILTERABLE)
+    query = apply_ref_filters(query, PurchaseRequest, request, db)   # CR-088
     query = apply_range_filters(query, PurchaseRequest, request, ["request_date", "need_date"])
     query = apply_equals(query, PurchaseRequest, request, ["company_id"])
     item_group = (request.query_params.get("item_group") or "").strip()
@@ -539,6 +542,7 @@ def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
         is_urgent=bool(pr.is_urgent),
         link=f"/purchase-requests/{pr.id}",
         department=pr.department or "",
+        department_id=pr.department_id or 0,
     )
     return success(_out(db, pr, user), "Đã gửi duyệt")
 
