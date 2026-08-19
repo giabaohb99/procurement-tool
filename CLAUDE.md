@@ -93,8 +93,13 @@ shadcn/Radix + TanStack Query + zustand). Backend không đổi: v2 gọi đúng
 
 Phân xử khi có yêu cầu mới: **sửa lỗi** màn đang chạy thật → `frontend/`; **tính năng mới**
 → `frontend-v2/`, màn đó chưa có ở v2 thì dựng màn đó trước. `frontend/` chưa được tắt vì v2
-còn thiếu màn nghiệp vụ — **đo lại 19/08/2026, còn 2**: **Xử lý khảo sát**
-(`SurveyRequestProcess.tsx`) và Yêu cầu thanh toán (kèm phiếu in).
+còn thiếu màn — đếm 19/08/2026 là 17 màn, **làm xong 4 nên còn 13**, xem **CR-093**, **CR-094** và
+`doc/erp/13-ke-hoach-man-con-lai-v2.md`. Trong đó **chặn nghiệp vụ chỉ còn 1**: Yêu cầu thanh toán
+(kèm phiếu in). *Xử lý khảo sát* (`SurveyRequestProcess.tsx`) **đã quyết BỎ**, không port — xem
+`doc/erp/12-...` mục 2.7. Mười hai màn kia là danh mục + hệ thống + cá nhân, đã có lịch: **MC-5,
+MC-6, MC-7** ở `13` (khách cho **hoãn**), sáu danh mục và chi tiết NCC ở P4, Phân công phụ trách
+ở P7. **Đã xong MC-1…MC-4** (CR-094): Đặt lại mật khẩu · Thông báo (`/notifications`) · Trang cá
+nhân (`/me`) · Cấu hình hệ thống (`/system/settings`, phân hệ Quản trị nay **bật**).
 Đụng vào **bảng dòng của phiếu khảo sát** (cả hai bản) thì đọc **hợp đồng hiển thị** ở dòng
 **CR-090** trong `doc/tai-lieu-ky-thuat/change-log.md` trước — 5 điều kiện về xuống dòng /
 ô chỉ xem / ô chọn NCC / phím Enter / bề rộng cột, làm hụt là lủng đúng chỗ vừa sửa lỗi.

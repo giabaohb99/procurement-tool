@@ -13,6 +13,9 @@ export const notificationApi = {
 
   readAll: () => apiPost<null>('/api/notifications/read-all'),
 
+  /** Xóa MỘT thông báo, đã đọc hay chưa cũng xóa. Chỉ trang danh sách dùng tới. */
+  remove: (id: number) => apiDelete<null>(`/api/notifications/${id}`),
+
   /** Dọn những cái ĐÃ ĐỌC; cái chưa đọc giữ nguyên. */
   clearRead: () => apiDelete<{ deleted: number }>('/api/notifications/read'),
 }

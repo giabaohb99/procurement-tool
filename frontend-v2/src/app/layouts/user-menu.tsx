@@ -9,12 +9,14 @@ import {
   User,
 } from 'lucide-react'
 import { useRef, useState, type ChangeEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { apiPost } from '@/core/api'
 import { useAuth } from '@/core/auth/use-auth'
 import { appConfig } from '@/core/config/app-config'
 import { useTranslation } from '@/core/i18n/use-translation'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
 import {
@@ -30,6 +32,7 @@ import {
 export function UserMenu() {
   const { user, logout, setUser } = useAuth()
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
@@ -153,7 +156,10 @@ export function UserMenu() {
               <Headphones className="size-4.5 text-navy dark:text-foreground" />
               Gửi yêu cầu hỗ trợ
             </DropdownMenuItem>
-            <DropdownMenuItem className="min-h-10 gap-3 px-2.5 font-medium text-navy dark:text-foreground">
+            <DropdownMenuItem
+              className="min-h-10 gap-3 px-2.5 font-medium text-navy dark:text-foreground"
+              onSelect={() => navigate(appRoutes.me)}
+            >
               <User className="size-4.5 text-navy dark:text-foreground" />
               Trang cá nhân
             </DropdownMenuItem>

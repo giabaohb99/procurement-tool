@@ -6,6 +6,11 @@
  * (`queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })`).
  */
 export const queryKeys = {
+  /** Hồ sơ của chính người đang đăng nhập — Trang cá nhân đọc bằng khóa này. */
+  auth: {
+    all: ['auth'] as const,
+    me: () => ['auth', 'me'] as const,
+  },
   procurement: {
     all: ['procurement'] as const,
     purchaseRequests: (params?: Record<string, unknown>) =>
@@ -209,5 +214,10 @@ export const queryKeys = {
      */
     payableSummary: (params?: Record<string, unknown>) =>
       ['finance', 'payables', 'summary', params ?? {}] as const,
+  },
+  system: {
+    all: ['system'] as const,
+    /** Cấu hình chạy nóng (email, lưu trữ, công tắc quy trình) — một khóa duy nhất. */
+    settings: () => ['system', 'settings'] as const,
   },
 } as const

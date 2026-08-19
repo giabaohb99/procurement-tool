@@ -6,6 +6,7 @@ import { ModuleLayout } from '@/app/layouts/module-layout'
 import { ModuleLauncherPage } from '@/app/pages/module-launcher-page'
 import { ForgotPasswordPage } from '@/core/auth/pages/forgot-password-page'
 import { LoginPage } from '@/core/auth/pages/login-page'
+import { ResetPasswordPage } from '@/core/auth/pages/reset-password-page'
 import { NotFoundPage } from '@/shared/ui/not-found-page'
 import { RouteErrorPage } from '@/shared/ui/route-error-page'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
             children: [
               { path: appRoutes.login, element: <LoginPage /> },
               { path: appRoutes.forgotPassword, element: <ForgotPasswordPage /> },
+              { path: appRoutes.resetPassword, element: <ResetPasswordPage /> },
             ],
           },
         ],
@@ -80,6 +82,22 @@ export const router = createBrowserRouter([
                 errorElement: <RouteErrorPage />,
                 children: [
                   { index: true, element: <ModuleLauncherPage /> },
+                  // Hai màn DÙNG CHUNG cho mọi phân hệ, nên đặt ở khung launcher
+                  // chứ không nhét vào một phân hệ nào: thông báo của cả hệ gom
+                  // về một chỗ, còn trang cá nhân là của tài khoản.
+                  {
+                    path: appRoutes.notifications,
+                    lazy: async () => ({
+                      Component: (await import('@/app/pages/notification-page'))
+                        .NotificationPage,
+                    }),
+                  },
+                  {
+                    path: appRoutes.me,
+                    lazy: async () => ({
+                      Component: (await import('@/app/pages/profile-page')).ProfilePage,
+                    }),
+                  },
                   // Bắt mọi URL không khớp phân hệ nào — kể cả phân hệ đang tắt.
                   { path: '*', element: <NotFoundPage /> },
                 ],

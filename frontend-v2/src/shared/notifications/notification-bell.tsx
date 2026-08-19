@@ -1,7 +1,8 @@
 import { AlertTriangle, Bell } from 'lucide-react'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
+import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
@@ -161,6 +162,16 @@ export function NotificationBell() {
             Xóa đã đọc
           </Button>
         </div>
+
+        {/* Chuông chỉ giữ 20 cái mới nhất — lối ra trang đầy đủ (tìm kiếm, phân
+            trang, xóa từng cái) phải nằm ngay đây, không bắt người dùng tự mò URL. */}
+        <Link
+          to={appRoutes.notifications}
+          onClick={() => setOpen(false)}
+          className="block border-t px-3 py-2 text-center text-[13px] font-medium text-primary hover:bg-accent"
+        >
+          Xem tất cả thông báo
+        </Link>
       </PopoverContent>
     </Popover>
   )

@@ -5,8 +5,16 @@
 export const appRoutes = {
   login: '/login',
   forgotPassword: '/forgot-password',
+  /** Mở từ đường dẫn trong email khôi phục, kèm `?token=`. Màn CÔNG KHAI. */
+  resetPassword: '/reset-password',
   /** Màn chọn phân hệ — trang chủ sau khi đăng nhập. */
   launcher: '/',
+  /**
+   * Hai màn dùng chung cho MỌI phân hệ nên đứng ở gốc, không nằm trong phân hệ
+   * nào: thông báo gom cả hệ về một chỗ, còn trang cá nhân là của tài khoản.
+   */
+  notifications: '/notifications',
+  me: '/me',
 
   sales: {
     root: '/sales',
@@ -114,6 +122,8 @@ export const appRoutes = {
   },
   system: {
     root: '/system',
+    /** Cấu hình chạy nóng (email, lưu trữ, công tắc quy trình) — lưu ở DB, không phải `.env`. */
+    settings: '/system/settings',
   },
   production: {
     root: '/production',

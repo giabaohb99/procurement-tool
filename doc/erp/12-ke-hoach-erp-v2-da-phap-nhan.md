@@ -116,10 +116,13 @@ nhưng phải sửa cho đa pháp nhân · **Gộp** = nhập vào màn khác ·
 | Màn phân quyền hiểu bậc mới + cấp theo cây công ty | Nâng cấp | P9 |
 | Báo cáo tổng hợp nhiều pháp nhân | Mới | P9 |
 
-### 2.6 Chưa xếp lịch
+### 2.6 Chưa xếp lịch → **đã xếp lịch ngày 19/08/2026**
 
 Cấu hình hệ thống · Quản lý Import · Sao lưu CSDL · Phiếu hỗ trợ · Thông báo · Trang cá nhân —
-**giữ ở bản cũ** cho tới khi có quyết định tắt `frontend/`. Xem mục 6.
+nay có kế hoạch riêng ở [`13`](./13-ke-hoach-man-con-lai-v2.md), mã **MC-1 … MC-7**, 13,5–18,5 ngày
+công, **không phải viết backend**. Tệp `13` bổ sung một màn mục này bỏ sót: **Đặt lại mật khẩu** —
+v2 có màn *Quên mật khẩu* nhưng đường dẫn trong thư rơi vào trang 404, tức luồng đang gãy chứ không
+chỉ là thiếu màn.
 
 ### 2.7 Hai màn bị bỏ, và vì sao
 
