@@ -21,8 +21,14 @@ class SurveyRequest(Base, AuditMixin):
     requester: Mapped[str] = mapped_column(String(255), default="")
     requester_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)   # id nhân sự người yêu cầu (để so scope)
     requester_position: Mapped[str] = mapped_column(String(100), default="")
-    department: Mapped[str] = mapped_column(String(255), default="", index=True)
-    head_of_dept: Mapped[str] = mapped_column(String(255), default="")       # trưởng bộ phận
+    # CR-086: phòng ban neo bằng ID (xem PurchaseRequest.department_id). Cột `department` bên dưới
+    # hạ xuống làm BẢN CHỤP TÊN — chỉ để in/đối chiếu, không khớp nghiệp vụ bằng nó nữa.
+    department_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    department: Mapped[str] = mapped_column(String(255), default="", index=True)  # BẢN CHỤP tên (sẽ xóa — N-008)
+    # CR-087: trưởng bộ phận neo bằng id nhân sự, đối xứng YCMH (`PurchaseRequest.head_of_dept_id`
+    # có từ CR-071). Ô TÊN bên dưới là BẢN CHỤP để in (sẽ xóa — N-008).
+    head_of_dept_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    head_of_dept: Mapped[str] = mapped_column(String(255), default="")       # BẢN CHỤP tên
     purpose: Mapped[str] = mapped_column(String(255), default="")
     request_date: Mapped[str] = mapped_column(String(10), default="")
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)  # draft|submitted|approved|rejected|processing|survey_done

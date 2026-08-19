@@ -19,6 +19,13 @@ export const queryKeys = {
       ['procurement', 'purchase-requests', id, 'dept-head-candidates'] as const,
     surveyRequests: (params?: Record<string, unknown>) =>
       ['procurement', 'survey-requests', params ?? {}] as const,
+    surveyRequest: (id: number) => ['procurement', 'survey-requests', id] as const,
+    /**
+     * Khung KẾT QUẢ của YCBG (`/{id}/result`) — phải tách khóa khỏi khung đầu phiếu
+     * ở trên, vì backend trả hai hình dạng khác nhau cho cùng một phiếu.
+     */
+    surveyRequestResult: (id: number) =>
+      ['procurement', 'survey-requests', id, 'result'] as const,
     purchaseOrders: (params?: Record<string, unknown>) =>
       ['procurement', 'purchase-orders', params ?? {}] as const,
     purchaseOrder: (id: number) => ['procurement', 'purchase-orders', id] as const,
@@ -28,6 +35,25 @@ export const queryKeys = {
       ['procurement', 'purchase-progress', params ?? {}] as const,
     surveyReport: (params?: Record<string, unknown>) =>
       ['procurement', 'survey-report', params ?? {}] as const,
+
+    /**
+     * Báo cáo mua hàng. Sáu đường API khác nhau nên sáu khóa riêng — chung một
+     * khóa thì đổi tab là ghi đè cache của tab trước, quay lại phải tải lại.
+     */
+    reportProcurement: (params?: Record<string, unknown>) =>
+      ['procurement', 'purchase-report', 'procurement', params ?? {}] as const,
+    reportMatrix: (params?: Record<string, unknown>) =>
+      ['procurement', 'purchase-report', 'matrix', params ?? {}] as const,
+    reportRequestMatrix: (params?: Record<string, unknown>) =>
+      ['procurement', 'purchase-report', 'request-matrix', params ?? {}] as const,
+    /** Bảng phẳng theo khoảng ngày — khóa mang cả đường API vì mỗi tab một đường. */
+    reportRange: (endpoint: string, params?: Record<string, unknown>) =>
+      ['procurement', 'purchase-report', 'range', endpoint, params ?? {}] as const,
+    reportShippingDetail: (params?: Record<string, unknown>) =>
+      ['procurement', 'purchase-report', 'shipping-detail', params ?? {}] as const,
+    reportDaily: (params?: Record<string, unknown>) =>
+      ['procurement', 'purchase-report', 'daily', params ?? {}] as const,
+
     /** Số liệu trang Tổng quan Thu mua (`/api/dashboard/overview`). */
     dashboard: () => ['procurement', 'dashboard'] as const,
   },
@@ -159,8 +185,25 @@ export const queryKeys = {
   },
   inventory: {
     all: ['inventory'] as const,
+    /** Tồn hiện tại theo bộ ba công ty · kho · mã SP. */
+    stock: (params?: Record<string, unknown>) => ['inventory', 'stock', params ?? {}] as const,
+    /** Sổ phát sinh nhập/xuất — tách khóa khỏi `stock` vì là API khác. */
+    moves: (params?: Record<string, unknown>) => ['inventory', 'moves', params ?? {}] as const,
+    // Ba danh mục nền dưới đây không mang tham số lọc: nạp trọn danh sách một
+    // lần rồi lọc tại chỗ, trừ ô tìm sản phẩm (danh mục hàng nghìn mã).
+    warehouses: () => ['inventory', 'warehouses'] as const,
+    itemGroups: () => ['inventory', 'item-groups'] as const,
+    products: (search: string) => ['inventory', 'products', search] as const,
   },
   finance: {
     all: ['finance'] as const,
+    payables: (params?: Record<string, unknown>) => ['finance', 'payables', params ?? {}] as const,
+    /**
+     * Bốn số tổng của màn Công nợ. Tách khóa khỏi danh sách ở trên vì hai lời
+     * gọi ăn chung bộ lọc nhưng KHÁC tham số phân trang — dùng chung khóa thì
+     * đổi trang cũng nạp lại tổng, mà tổng thì không đổi theo trang.
+     */
+    payableSummary: (params?: Record<string, unknown>) =>
+      ['finance', 'payables', 'summary', params ?? {}] as const,
   },
 } as const

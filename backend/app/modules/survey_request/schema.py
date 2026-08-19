@@ -21,7 +21,9 @@ class _Header(BaseModel):
     requester: str = ""
     requester_id: int = 0
     requester_position: str = ""
+    department_id: int = 0        # CR-086: phòng ban neo bằng id; bỏ trống thì tra từ `department`
     department: str = ""
+    head_of_dept_id: int = 0      # CR-087: TBP neo bằng id nhân sự; bỏ trống thì lấy theo phòng
     head_of_dept: str = ""
     purpose: str = ""
     request_date: str = ""
@@ -38,7 +40,9 @@ class SurveyRequestUpdate(BaseModel):
     requester: str | None = None
     requester_id: int | None = None
     requester_position: str | None = None
+    department_id: int | None = None      # CR-086
     department: str | None = None
+    head_of_dept_id: int | None = None    # CR-087
     head_of_dept: str | None = None
     purpose: str | None = None
     request_date: str | None = None

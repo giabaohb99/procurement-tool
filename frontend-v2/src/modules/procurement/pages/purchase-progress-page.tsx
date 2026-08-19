@@ -37,25 +37,33 @@ const ALL = 'all'
  * không phải danh sách chứng từ.
  *
  * Endpoint `/api/purchase-progress` KHÔNG chạy qua `apply_filters` mà tự đọc bộ
- * tham số riêng (`company_id`, `department`, `status`, `q`, các cặp ngày…) nên
+ * tham số riêng (`company_id`, `department_id`, `status`, `q`, các cặp ngày…) nên
  * màn này không dùng "Bộ lọc điều kiện" như các danh sách khác.
  */
 export function PurchaseProgressPage() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
-  const [department, setDepartment] = useUrlParamState('department', ALL)
+  // CR-088: lọc theo ID phòng ban. Gửi TÊN thì phòng đổi tên là bộ lọc trượt sạch,
+  // danh sách rỗng mà không báo gì. Backend vẫn nhận `department=<tên>` cho các
+  // đường dẫn cũ đã lưu, chỉ có màn này thôi không gửi nữa.
+  const [departmentId, setDepartmentId] = useUrlParamState('department_id', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
   const { data: companies } = useCompanies({ page_size: 500, is_active: true })
   const { data: departments } = useDepartments({ page_size: 500, is_active: true })
 
-  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, companyId, department, status])
+  const [page, setPage] = usePageResetOnFilterChange([
+    debouncedValue,
+    companyId,
+    departmentId,
+    status,
+  ])
 
   const params: ListParams = { page, page_size: pageSize }
   if (debouncedValue) params.q = debouncedValue
   if (companyId !== ALL) params.company_id = Number(companyId)
-  if (department !== ALL) params.department = department
+  if (departmentId !== ALL) params.department_id = Number(departmentId)
   if (status !== ALL) params.status = status
 
   const { data, isLoading, isError } = usePurchaseProgress(params)
@@ -239,15 +247,14 @@ export function PurchaseProgressPage() {
                 </SelectContent>
               </Select>
 
-              <Select value={department} onValueChange={setDepartment}>
+              <Select value={departmentId} onValueChange={setDepartmentId}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Bộ phận" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ALL}>Tất cả bộ phận</SelectItem>
                   {(departments?.items ?? []).map((item) => (
-                    // Backend lọc theo TÊN bộ phận, không phải id.
-                    <SelectItem key={item.id} value={item.name}>
+                    <SelectItem key={item.id} value={String(item.id)}>
                       {item.name}
                     </SelectItem>
                   ))}

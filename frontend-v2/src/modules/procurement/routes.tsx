@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  ChartColumnBig,
   ClipboardCheck,
   ClipboardList,
   FileText,
@@ -67,6 +68,13 @@ export const procurementModule: ErpModule = {
       group: 'Mua hàng',
     },
     {
+      label: 'Báo cáo mua hàng',
+      path: appRoutes.procurement.purchaseReport,
+      icon: ChartColumnBig,
+      entity: 'report',
+      group: 'Mua hàng',
+    },
+    {
       label: 'Phiếu khảo sát',
       path: appRoutes.procurement.surveys,
       icon: ClipboardCheck,
@@ -94,6 +102,18 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.surveyRequests,
       lazy: async () => ({
         Component: (await import('./pages/survey-request-list-page')).SurveyRequestListPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.surveyRequestNew,
+      lazy: async () => ({
+        Component: (await import('./pages/survey-request-detail-page')).SurveyRequestDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.surveyRequestDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/survey-request-detail-page')).SurveyRequestDetailPage,
       }),
     },
     {
@@ -153,6 +173,12 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.surveyReport,
       lazy: async () => ({
         Component: (await import('./pages/survey-report-page')).SurveyReportPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.purchaseReport,
+      lazy: async () => ({
+        Component: (await import('./pages/purchase-report-page')).PurchaseReportPage,
       }),
     },
   ],

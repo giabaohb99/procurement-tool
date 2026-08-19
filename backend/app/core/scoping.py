@@ -9,10 +9,17 @@ from sqlalchemy import and_, false, or_, select
 from app.core.auth import get_perm_profile  # noqa: F401  (re-export tiện dùng)
 
 # Entity → tên cột theo từng chiều. Thiếu chiều nào = không lọc theo chiều đó.
+#
+# CR-086 — chiều phòng ban: `dept_id` là NGUỒN SỰ THẬT. `dept_name` chỉ còn là ĐƯỜNG LÙI cho
+# phiếu cũ chưa điền lùi được id (`department_id = 0`), xem `_dept_match`. Entity nào khai cả
+# hai thì bỏ `dept_name` đi là xong phần lùi — làm cùng lúc với việc xóa cột text (N-008).
 SCOPE_FIELDS = {
-    "purchase_request": {"company": "company_id", "dept_name": "department", "owner": "created_by"},
-    "survey_request":   {"company": "company_id", "dept_name": "department", "owner": "created_by"},
-    "purchase_order":   {"company": "company_id", "dept_name": "department", "owner": "created_by"},
+    "purchase_request": {"company": "company_id", "dept_id": "department_id",
+                         "dept_name": "department", "owner": "created_by"},
+    "survey_request":   {"company": "company_id", "dept_id": "department_id",
+                         "dept_name": "department", "owner": "created_by"},
+    "purchase_order":   {"company": "company_id", "dept_id": "department_id",
+                         "dept_name": "department", "owner": "created_by"},
     "payable":          {"company": "company_id", "owner": "created_by"},
     "payment_request":  {"company": "company_id", "owner": "created_by"},
     "inventory":        {"company": "company_id"},
@@ -28,6 +35,42 @@ SCOPE_FIELDS = {
     "document":         {"company": "company_id", "dept_id": "department_id",
                          "owner": "created_by"},
 }
+
+
+def _dept_match(model, f, dept_ids, dept_names):
+    """Điều kiện "phiếu thuộc một trong các phòng này" — CR-086.
+
+    Khớp bằng ID. Chỉ những phiếu KHÔNG điền lùi được id (`department_id = 0`, phòng đã đổi
+    tên hoặc dữ liệu nhập tay) mới rơi về so tên, nên tên không bao giờ đè lên id. Xóa nhánh
+    tên khi bỏ cột text (N-008). None = không có gì để so.
+    """
+    col_id, col_name = f.get("dept_id"), f.get("dept_name")
+    cs = []
+    if col_id and dept_ids:
+        cs.append(getattr(model, col_id).in_(list(dept_ids)))
+    if col_name and dept_names:
+        legacy = getattr(model, col_name).in_(list(dept_names))
+        cs.append(and_(getattr(model, col_id) == 0, legacy) if col_id else legacy)
+    if not cs:
+        return None
+    return or_(*cs) if len(cs) > 1 else cs[0]
+
+
+def _emp_match(model, col_id: str, col_name: str, emp_id: int, emp_name: str):
+    """Điều kiện "ô nhân sự này là mình" — CR-087, cùng khuôn với `_dept_match`.
+
+    `tab_employee.full_name` KHÔNG duy nhất nên khớp bằng tên là cho người trùng tên thấy
+    việc của nhau. Khớp bằng id; chỉ dòng chưa điền lùi được (`<col_id> = 0`) mới rơi về so
+    tên. Xóa nhánh tên khi bỏ cột chuỗi (N-008). None = không có gì để so.
+    """
+    cs = []
+    if emp_id:
+        cs.append(getattr(model, col_id) == emp_id)
+    if emp_name:
+        cs.append(and_(getattr(model, col_id) == 0, getattr(model, col_name) == emp_name))
+    if not cs:
+        return None
+    return or_(*cs) if len(cs) > 1 else cs[0]
 
 
 def _role_scope_cond(model, entity, scope, user, profile):
@@ -76,12 +119,15 @@ def _role_scope_cond(model, entity, scope, user, profile):
                                   model.id.in_(code_sub)))
             return or_(*conds)
         if entity == "purchase_order":
-            # ĐMH: thấy đơn MÌNH tạo HOẶC đơn có NSPT phụ trách = mình (nspt lưu theo TÊN)
+            # ĐMH: thấy đơn MÌNH tạo HOẶC đơn có NSPT phụ trách = mình.
+            # CR-087: khớp bằng `nspt_id`; tên chỉ còn là đường lùi cho đơn cũ (`nspt_id = 0`).
             conds = [model.created_by == user.id]
             if scope == "proc":
                 conds.append(model.status == "approved")
-            if profile.get("emp_name"):
-                conds.append(model.nspt == profile["emp_name"])
+            ec = _emp_match(model, "nspt_id", "nspt",
+                            profile.get("employee_id") or 0, profile.get("emp_name") or "")
+            if ec is not None:
+                conds.append(ec)
             return or_(*conds)
         scope = "own"   # entity khác chưa có phân bổ → coi như của mình
 
@@ -101,10 +147,12 @@ def _role_scope_cond(model, entity, scope, user, profile):
         cs = []
         if f.get("company") and company_id:
             cs.append(getattr(model, f["company"]) == company_id)
-        if f.get("dept_name"):
-            cs.append(getattr(model, f["dept_name"]) == dept_name)
-        elif f.get("dept_id"):
-            cs.append(getattr(model, f["dept_id"]) == dept_id)
+        if f.get("dept_id") or f.get("dept_name"):
+            dc = _dept_match(model, f, [dept_id] if dept_id else [],
+                             [dept_name] if dept_name else [])
+            # Người dùng chưa gắn phòng nào → không có gì để so → không thấy gì. (Luật cũ so
+            # `department == ""` nên cũng gần như không ra phiếu nào; ở đây nói thẳng ra.)
+            cs.append(dc if dc is not None else false())
         elif f.get("owner"):
             cs.append(getattr(model, f["owner"]) == user.id)
         return and_(*cs) if cs else None
@@ -119,30 +167,34 @@ def _explicit_cond(model, entity, scopeconf):
     """Điều kiện THU HẸP: include công ty/nhân sự + MỌI loại trừ (AND).
     Riêng 'Phòng ban được xem' (department include) = CỘNG THÊM → xử lý ở apply_scope."""
     f = SCOPE_FIELDS.get(entity) or {}
-    dim_col = {"company": f.get("company"), "department": f.get("dept_name"), "employee": f.get("owner")}
     cs = []
-    for dim, col in dim_col.items():
+    for dim, col in (("company", f.get("company")), ("employee", f.get("owner"))):
         if not col:
             continue
         column = getattr(model, col)
         inc = (scopeconf.get("inc") or {}).get(dim) or []
         exc = (scopeconf.get("exc") or {}).get(dim) or []
-        cast = (lambda v: int(v)) if dim in ("company", "employee") else (lambda v: v)
-        if inc and dim != "department":       # department include = additive (không thu hẹp)
-            cs.append(column.in_([cast(v) for v in inc]))
+        if inc:
+            cs.append(column.in_([int(v) for v in inc]))
         if exc:
-            cs.append(~column.in_([cast(v) for v in exc]))
+            cs.append(~column.in_([int(v) for v in exc]))
+    # Phòng ban: include là CỘNG THÊM (xem `_dept_include_cond`), ở đây chỉ còn loại trừ.
+    dc = _dept_match(model, f, (scopeconf.get("exc") or {}).get("department") or [],
+                     (scopeconf.get("exc") or {}).get("department_name") or [])
+    if dc is not None:
+        cs.append(~dc)
     return and_(*cs) if cs else None
 
 
 def _dept_include_cond(model, entity, scopeconf):
-    """'Phòng ban được xem' → điều kiện CỘNG THÊM (OR với phạm vi vai trò). None = không chọn phòng nào."""
-    f = SCOPE_FIELDS.get(entity) or {}
-    col = f.get("dept_name")
-    inc = (scopeconf.get("inc") or {}).get("department") or []
-    if not col or not inc:
-        return None
-    return getattr(model, col).in_(list(inc))
+    """'Phòng ban được xem' → điều kiện CỘNG THÊM (OR với phạm vi vai trò). None = không chọn phòng nào.
+
+    `department` = danh sách ID, `department_name` = tên tương ứng (chỉ để lùi cho phiếu cũ).
+    Hai khóa này do `core/auth.py` dựng sẵn khi đọc `tab_user_scope`.
+    """
+    inc = (scopeconf.get("inc") or {})
+    return _dept_match(model, SCOPE_FIELDS.get(entity) or {},
+                       inc.get("department") or [], inc.get("department_name") or [])
 
 
 def scope_condition(model, entity: str, user, profile: dict, action: str = "read"):

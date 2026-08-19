@@ -6,13 +6,15 @@ from sqlalchemy.orm import Session
 from app.core.audit import record
 from app.core.utils import assert_unique_product_codes
 from app.modules.catalog import lead_time
+from app.modules.department.service import sync_department_ref
 
 from .model import PurchaseRequest, PurchaseRequestItem
 from .schema import AssignIn, ItemStatusIn, PRCreate, PRUpdate
 
 # request_date/need_date nằm trong whitelist để bộ lọc điều kiện lọc theo ngày; lọc khoảng kiểu cũ
 # (<field>_from/_to) vẫn do apply_range_filters lo.
-FILTERABLE = ["code", "status", "requester", "department", "is_urgent", "request_date", "need_date"]
+FILTERABLE = ["code", "status", "requester", "department", "is_urgent", "request_date", "need_date",
+              "department_id", "head_of_dept_id", "requester_id"]   # CR-088 — xem `core/ref_filter.py`
 ENTITY = "purchase_request"
 
 # CR-074: tách bạch "chưa ai lập ĐMH" với "đã có ĐMH nhưng chưa bấm đặt hàng". Trước đây hai
@@ -89,26 +91,35 @@ LINE_STATUS = [LINE_STATUS_NO_PO, LINE_STATUS_NOT_ORDERED, "Đã đặt hàng", 
                "Hoàn thành", "Hủy đơn"]
 
 
-def find_dept_head(db: Session, department_name: str) -> str:
-    """Tên Trưởng bộ phận của 1 phòng ban (theo field manager_id chọn cứng). '' nếu chưa gán."""
-    if not department_name:
-        return ""
-    from app.modules.department.model import Department
+def find_dept_head(db: Session, department_name: str = "", department_id: int = 0) -> str:
+    """Tên Trưởng bộ phận của 1 phòng ban (theo field manager_id chọn cứng). '' nếu chưa gán.
+
+    CR-086: truyền được `department_id` thì dùng id; chỉ phiếu cũ chưa có id mới dò theo tên."""
     from app.modules.employee.model import Employee
-    dep = db.query(Department).filter(Department.name == department_name).first()
+    dep = _find_dept(db, department_name, department_id)
     if not dep or not dep.manager_id:
         return ""
     head = db.get(Employee, dep.manager_id)
     return head.full_name if head else ""
 
 
-def find_dept_head_id(db: Session, department_name: str) -> int:
+def find_dept_head_id(db: Session, department_name: str = "", department_id: int = 0) -> int:
     """Id NHÂN SỰ của Trưởng bộ phận theo `Department.manager_id`. 0 = chưa gán."""
-    if not department_name:
-        return 0
-    from app.modules.department.model import Department
-    dep = db.query(Department).filter(Department.name == department_name).first()
+    dep = _find_dept(db, department_name, department_id)
     return int(dep.manager_id or 0) if dep else 0
+
+
+def _find_dept(db: Session, department_name: str = "", department_id: int = 0):
+    """Phòng ban theo id (ưu tiên) hoặc theo tên (đường lùi cho phiếu chưa điền lùi được id)."""
+    from app.modules.department.model import Department
+    if department_id:
+        dep = db.get(Department, department_id)
+        if dep:
+            return dep
+    name = (department_name or "").strip()
+    if not name:
+        return None
+    return db.query(Department).filter(Department.name == name).first()
 
 
 # ---------------------------------------------------------------------------
@@ -239,13 +250,15 @@ def _scope_allows_department(db: Session, u, department: str, company_id: int, s
 
 
 def sync_head_of_dept_name(db: Session, pr: PurchaseRequest) -> None:
-    """Lưu bằng id thì ô TÊN (dùng để in) phải chạy theo, khỏi in một đằng lưu một nẻo."""
-    if not getattr(pr, "head_of_dept_id", 0):
-        return
-    from app.modules.employee.model import Employee
-    emp = db.get(Employee, pr.head_of_dept_id)
-    if emp and emp.full_name:
-        pr.head_of_dept = emp.full_name
+    """Ghi kép ô Trưởng bộ phận: có id thì tên chạy theo id, chỉ có tên thì tra ngược ra id.
+
+    CR-087 gom về `employee.service.sync_employee_ref` — YCMH / YCBG / ĐMH dùng chung một
+    đường, khỏi mỗi nơi một kiểu. Trước đây hàm này chỉ chạy chiều id → tên, nên phiếu gửi
+    lên chỉ có tên mà phòng chưa có trưởng thì `head_of_dept_id` nằm 0 vĩnh viễn — đúng món
+    nợ mà migration `d5b2f9c31a08` vừa điền lùi xong.
+    """
+    from app.modules.employee.service import sync_employee_ref
+    sync_employee_ref(db, pr, "head_of_dept_id", "head_of_dept")
 
 
 def has_cancelled_line(db: Session, pr_id: int) -> bool:
@@ -719,18 +732,21 @@ def copy_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
     if _emp:
         _requester, _requester_id = (_emp.full_name or ""), _emp.id
         _requester_position, _department = (_emp.position or ""), (_emp.department_name or "")
+        _department_id = _emp.department_id or 0     # CR-086: lấy thẳng id phòng của nhân sự
         _head_of_dept = _emp.manager_name or ""
         # CR-071: bản sao đổi phòng theo người bấm nhân bản → chỉ định TBP phải tính lại
         # theo phòng MỚI, không bê id của phiếu gốc sang.
-        _head_of_dept_id = find_dept_head_id(db, _department)
+        _head_of_dept_id = find_dept_head_id(db, _department, _department_id)
     else:
         _requester, _requester_id = "", 0
         _requester_position, _department, _head_of_dept = "", src.department, src.head_of_dept
+        _department_id = src.department_id
         _head_of_dept_id = src.head_of_dept_id
     pr = PurchaseRequest(
         code="", company_id=src.company_id, requester=_requester,
         requester_id=_requester_id,
         requester_position=_requester_position, department=_department,
+        department_id=_department_id,
         head_of_dept=_head_of_dept, head_of_dept_id=_head_of_dept_id,
         purpose=src.purpose, request_date=src.request_date,
         need_date=src.need_date, is_urgent=src.is_urgent, note=src.note,
@@ -741,6 +757,10 @@ def copy_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
         quote_filename=src.quote_filename, quote_file_url=src.quote_file_url,
         supplier_info=src.supplier_info or "",   # Task 4: giữ 2 cụm NCC khi nhân bản
     )
+    sync_department_ref(db, pr)      # CR-086
+    # CR-087: tên lấy từ `manager_name` của nhân sự, id lấy từ trưởng phòng — hai nguồn có thể
+    # lệch nhau. Cho id nói tiếng nói cuối cùng rồi kéo tên theo.
+    sync_head_of_dept_name(db, pr)
     db.add(pr)
     db.commit()
     db.refresh(pr)
@@ -781,6 +801,7 @@ def create_pr(db: Session, data: PRCreate, user_id: int, can_write_pur: bool = F
         code=data.code or "", company_id=data.company_id, requester=data.requester,
         requester_id=data.requester_id,
         requester_position=data.requester_position, department=data.department,
+        department_id=data.department_id,
         head_of_dept=data.head_of_dept, head_of_dept_id=data.head_of_dept_id,
         purpose=data.purpose, request_date=data.request_date,
         need_date=data.need_date, is_urgent=data.is_urgent, vat_rate=data.vat_rate,
@@ -794,12 +815,13 @@ def create_pr(db: Session, data: PRCreate, user_id: int, can_write_pur: bool = F
                     "contact": data.suggested_supplier_contact},
             "pur": _empty_cluster(), "from_survey": False}
     apply_supplier_info(pr, build_clusters(prev, data, can_write_pur, from_survey=False))
+    # CR-086: neo phòng ban bằng id ngay từ lúc lập phiếu (FE cũ chỉ gửi tên → tra ra id).
+    sync_department_ref(db, pr)
     # Tự điền Trưởng bộ phận theo phòng ban của người yêu cầu (nếu phòng có trưởng)
-    if not pr.head_of_dept_id and pr.department:
-        pr.head_of_dept_id = find_dept_head_id(db, pr.department)
+    if not pr.head_of_dept_id and (pr.department_id or pr.department):
+        pr.head_of_dept_id = find_dept_head_id(db, pr.department, pr.department_id)
+    # CR-087: ghi kép hai chiều — id có thì tên chạy theo, phiếu chỉ gửi tên thì tra ra id.
     sync_head_of_dept_name(db, pr)
-    if not pr.head_of_dept and pr.department:
-        pr.head_of_dept = find_dept_head(db, pr.department)
     db.add(pr)
     db.commit()
     db.refresh(pr)
@@ -840,11 +862,21 @@ def update_pr(db: Session, pid: int, data: PRUpdate, user_id: int, can_write_pur
     for key, value in data.model_dump(exclude_unset=True,
                                       exclude={"items", "supplier_req", "supplier_pur"}).items():
         setattr(pr, key, value)
+    # CR-086: FE cũ chỉ gửi TÊN phòng → bỏ id cũ đi rồi tra lại từ tên, kẻo đổi phòng mà id
+    # vẫn nằm ở phòng trước đó. Gửi kèm id thì id nói tiếng nói cuối cùng.
+    if data.department is not None or data.department_id is not None:
+        if data.department_id is None:
+            pr.department_id = 0
+        sync_department_ref(db, pr)
     # Task 4: cập nhật cụm NCC (req do người yêu cầu · pur cần quyền supplier.write)
     if data.supplier_req is not None or data.supplier_pur is not None:
         apply_supplier_info(pr, build_clusters(clusters_of(pr), data, can_write_pur))
     # CR-071: đổi người duyệt chỉ định thì tên in trên phiếu phải chạy theo
-    if data.head_of_dept_id is not None:
+    # CR-087: gửi mỗi TÊN (giao diện cũ) cũng phải tra lại id — bỏ id cũ trước, kẻo đổi người
+    # mà id vẫn nằm ở người trước đó.
+    if data.head_of_dept is not None or data.head_of_dept_id is not None:
+        if data.head_of_dept_id is None:
+            pr.head_of_dept_id = 0
         sync_head_of_dept_name(db, pr)
     pr.updated_by = user_id
     db.commit()

@@ -10,6 +10,40 @@ from .schema import (DepartmentCompanyInput, DepartmentCreate,
 FILTERABLE = ["code", "name", "issue_code", "kind", "company_id", "is_active"]
 
 
+def dept_id_by_name(db: Session, name: str, company_id: int = 0) -> int:
+    """Id phòng ban theo TÊN — CR-086. Chỉ dùng cho đường vào cũ (FE chỉ gửi tên) và điền lùi.
+
+    Tên trùng ở nhiều phòng thì ưu tiên phòng cùng pháp nhân; vẫn nhập nhằng thì trả 0. Đoán
+    bừa một cái là sai âm thầm, mà cái sai đó nằm ở phân quyền — thà để 0 rồi rơi về so tên.
+    """
+    name = (name or "").strip()
+    if not name:
+        return 0
+    rows = db.query(Department.id, Department.company_id).filter(Department.name == name).all()
+    if len(rows) == 1:
+        return int(rows[0][0])
+    same = [int(r[0]) for r in rows if company_id and r[1] == company_id]
+    return same[0] if len(same) == 1 else 0
+
+
+def sync_department_ref(db: Session, obj) -> None:
+    """Đồng bộ cặp (`department_id`, `department`) trên một phiếu — CR-086.
+
+    `department_id` là nguồn sự thật: có id thì chép lại tên hiện hành làm BẢN CHỤP. Chỉ có
+    tên (FE cũ gửi lên) thì tra ngược ra id; tra không ra thì để 0 và GIỮ nguyên tên đã nhập
+    — phiếu đó vẫn khớp phạm vi theo đường lùi trong `core/scoping.py`.
+    """
+    did = int(getattr(obj, "department_id", 0) or 0)
+    if did:
+        dep = db.get(Department, did)
+        if dep:
+            obj.department = dep.name
+            return
+        obj.department_id = 0    # id trỏ vào phòng đã xóa → coi như chưa neo
+    obj.department_id = dept_id_by_name(db, getattr(obj, "department", "") or "",
+                                        int(getattr(obj, "company_id", 0) or 0))
+
+
 def list_departments(db: Session, q: str | None, pg: dict, is_active: bool | None = None,
                      sort_by: str = "", sort_dir: str = "asc", request=None):
     from app.core.base_controller import apply_sort

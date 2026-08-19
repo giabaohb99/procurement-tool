@@ -8,6 +8,8 @@ from sqlalchemy.orm import Session
 from app.core.audit import record
 from app.core.utils import assert_unique_product_codes
 from app.modules.catalog import lead_time
+from app.modules.department.service import sync_department_ref
+from app.modules.employee.service import sync_employee_ref
 from app.modules.goods_receipt import service as gr_service
 from app.modules.inventory import service as inv_service
 from app.modules.payable import service as pay_service
@@ -32,7 +34,11 @@ def _days(a: str, b: str) -> int:
 # order_date nằm trong whitelist để BỘ LỌC ĐIỀU KIỆN lọc theo ngày (order_date__between/gte…).
 # Lọc khoảng kiểu cũ (order_date_from/_to của thanh lọc cơ bản) vẫn do apply_range_filters lo.
 FILTERABLE = ["code", "status", "supplier_code", "pr_code", "misa_code", "nspt", "is_urgent",
-              "department", "document_status", "order_date"]
+              "department", "document_status", "order_date",
+              # CR-088: lọc theo ID. Param trần `nspt_id=` / `department_id=` đi qua
+              # `apply_ref_filters` (có nhánh lùi cho dòng id = 0); khai ở đây là để BỘ LỌC
+              # ĐIỀU KIỆN (`nspt_id__eq=`) dùng được — bên đó khớp id thẳng, không nhánh lùi.
+              "nspt_id", "department_id"]
 ENTITY = "purchase_order"
 
 
@@ -322,10 +328,13 @@ def copy_po(db: Session, pid: int, user_id: int) -> PurchaseOrder:
     po = PurchaseOrder(
         code="", misa_code="", pr_code=src.pr_code, survey_code=src.survey_code,
         company_id=src.company_id, supplier_code=src.supplier_code, supplier_name=src.supplier_name,
-        department=src.department, nspt=src.nspt, order_date=src.order_date, vat_rate=src.vat_rate,
+        department=src.department, department_id=src.department_id,
+        nspt=src.nspt, nspt_id=src.nspt_id, order_date=src.order_date, vat_rate=src.vat_rate,
         payment_terms=src.payment_terms, is_urgent=src.is_urgent, note=src.note,
         status="draft", created_by=user_id, updated_by=user_id,
     )
+    sync_department_ref(db, po)     # CR-086
+    sync_employee_ref(db, po, "nspt_id", "nspt")    # CR-087
     db.add(po)
     db.flush()
     po.code = f"PO{po.id:05d}"
@@ -339,10 +348,13 @@ def copy_po(db: Session, pid: int, user_id: int) -> PurchaseOrder:
     return po
 
 
-def _default_nspt(db: Session, data: POCreate, user_id: int) -> str:
-    """NSPT mặc định khi tạo ĐMH:
+def _default_nspt(db: Session, data: POCreate, user_id: int) -> tuple[str, int]:
+    """NSPT mặc định khi tạo ĐMH — trả về `(tên, id nhân sự)`:
     - Tạo TỪ YCMH (pr_code): lấy người phụ trách (assignee) của dòng trong đơn.
     - Không qua YCMH: người tạo đơn.
+
+    CR-087: ở đây đã cầm sẵn bản ghi nhân sự nên trả luôn id, khỏi tra ngược lại theo tên
+    (tra theo tên là chỗ trùng tên gây sai).
     """
     from app.modules.employee.model import Employee
     from app.modules.user.model import User
@@ -363,13 +375,13 @@ def _default_nspt(db: Session, data: POCreate, user_id: int) -> str:
             if emp_code:
                 emp = db.query(Employee).filter(Employee.code == emp_code).first()
                 if emp:
-                    return emp.full_name
+                    return emp.full_name, emp.id
     u = db.query(User).filter(User.id == user_id).first()   # người tạo
     if u and u.employee_id:
         emp = db.query(Employee).filter(Employee.id == u.employee_id).first()
         if emp:
-            return emp.full_name
-    return ""
+            return emp.full_name, emp.id
+    return "", 0
 
 
 def _ensure_pr_dispatched(db: Session, pr_code: str) -> None:
@@ -398,14 +410,19 @@ def _ensure_pr_dispatched(db: Session, pr_code: str) -> None:
 
 def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
     _ensure_pr_dispatched(db, (data.pr_code or "").strip())
-    nspt = (data.nspt or "").strip() or _default_nspt(db, data, user_id)
+    nspt, nspt_id = (data.nspt or "").strip(), data.nspt_id
+    if not nspt and not nspt_id:
+        nspt, nspt_id = _default_nspt(db, data, user_id)
     po = PurchaseOrder(
         code=data.code or "", misa_code=data.misa_code, pr_code=data.pr_code,
         survey_code=data.survey_code, company_id=data.company_id, supplier_code=data.supplier_code,
-        supplier_name=data.supplier_name, department=data.department, nspt=nspt,
+        supplier_name=data.supplier_name, department=data.department,
+        department_id=data.department_id, nspt=nspt, nspt_id=nspt_id,
         order_date=data.order_date, vat_rate=data.vat_rate, payment_terms=data.payment_terms,
         is_urgent=data.is_urgent, note=data.note, status="draft", created_by=user_id, updated_by=user_id,
     )
+    sync_department_ref(db, po)     # CR-086: neo phòng ban bằng id ngay từ lúc lập đơn
+    sync_employee_ref(db, po, "nspt_id", "nspt")    # CR-087: NSPT cũng neo bằng id
     db.add(po)
     db.flush()
     if not po.code:
@@ -430,6 +447,16 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
     old_urgent = bool(po.is_urgent)
     for k, v in data.model_dump(exclude_unset=True, exclude={"items"}).items():
         setattr(po, k, v)
+    # CR-086: FE cũ chỉ gửi TÊN phòng → bỏ id cũ rồi tra lại từ tên; gửi kèm id thì id thắng.
+    if data.department is not None or data.department_id is not None:
+        if data.department_id is None:
+            po.department_id = 0
+        sync_department_ref(db, po)
+    # CR-087: y hệt vậy cho ô NSPT.
+    if data.nspt is not None or data.nspt_id is not None:
+        if data.nspt_id is None:
+            po.nspt_id = 0
+        sync_employee_ref(db, po, "nspt_id", "nspt")
     po.updated_by = user_id
     _save_items(db, po, data.items, user_id)
     recompute_effects(db, po, user_id)

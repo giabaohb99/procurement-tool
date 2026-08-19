@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatMoney, formatQuantity, formatUnitPrice } from './format-money'
+import { formatMoney, formatPercent, formatQuantity, formatUnitPrice } from './format-money'
 
 describe('formatMoney', () => {
   it('làm tròn tới đồng, không để lẻ rò ra cột danh sách', () => {
@@ -53,5 +53,22 @@ describe('formatQuantity', () => {
   it('giữ tối đa 3 số thập phân', () => {
     expect(formatQuantity(10.12345)).toBe('10,123')
     expect(formatQuantity(10)).toBe('10')
+  })
+})
+
+describe('formatPercent', () => {
+  it('nhận số phần trăm sẵn, không nhân thêm 100', () => {
+    expect(formatPercent(41.67)).toBe('41,67%')
+    expect(formatPercent(0.5)).toBe('0,5%')
+  })
+
+  it('không ép đủ 2 số thập phân khi tỷ lệ tròn', () => {
+    expect(formatPercent(30)).toBe('30%')
+    expect(formatPercent(0)).toBe('0%')
+  })
+
+  it('trả chuỗi rỗng khi không có số để hiện', () => {
+    expect(formatPercent(null)).toBe('')
+    expect(formatPercent(undefined)).toBe('')
   })
 })

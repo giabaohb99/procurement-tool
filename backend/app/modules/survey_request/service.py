@@ -11,10 +11,12 @@ from .model import (LINE_STATUSES, LS_COMPLETED, LS_RESURVEY, SurveyRequest,
 
 ENTITY = "survey_request"
 # request_date: cho bộ lọc điều kiện lọc theo ngày (apply_range_filters vẫn lo _from/_to)
-FILTERABLE = ["code", "status", "requester", "department", "request_date"]
+FILTERABLE = ["code", "status", "requester", "department", "request_date",
+              "department_id", "head_of_dept_id", "requester_id"]   # CR-088 — xem `core/ref_filter.py`
 MAX_OPTIONS_PER_LINE = 5   # mỗi sản phẩm (dòng YCKS) tối đa 5 phương án khảo sát
-HEADER_FIELDS = ["company_id", "requester", "requester_id", "requester_position", "department",
-                 "head_of_dept", "purpose", "request_date", "note"]
+HEADER_FIELDS = ["company_id", "requester", "requester_id", "requester_position",
+                 "department_id", "department",
+                 "head_of_dept_id", "head_of_dept", "purpose", "request_date", "note"]
 
 
 VN_OFFSET = timedelta(hours=7)   # container chạy giờ UTC — ngày phải quy về giờ Việt Nam
@@ -158,14 +160,18 @@ def _save_lines(db: Session, sid: int, lines, user_id: int, user=None, profile=N
 
 
 def create_sr(db: Session, data, user_id: int, user=None, profile=None) -> SurveyRequest:
-    from app.modules.purchase_request.service import find_dept_head
+    from app.modules.department.service import sync_department_ref
+    from app.modules.employee.service import sync_employee_ref
+    from app.modules.purchase_request.service import find_dept_head_id
     header = {f: getattr(data, f) for f in HEADER_FIELDS}
-    # Tự điền Trưởng bộ phận theo Department.manager_id (parity với PYC).
-    # Phòng chưa gán trưởng thì để rỗng — lúc đọc sẽ tự lấy lại (xem `_out` ở controller).
-    if not header.get("head_of_dept") and header.get("department"):
-        header["head_of_dept"] = find_dept_head(db, header["department"])
     s = SurveyRequest(code=(data.code or _gen_code(db)), status="draft", created_by=user_id, updated_by=user_id,
                       **header)
+    sync_department_ref(db, s)   # CR-086: neo phòng ban bằng id ngay từ lúc lập phiếu
+    # Tự điền Trưởng bộ phận theo Department.manager_id (parity với PYC).
+    # Phòng chưa gán trưởng thì để rỗng — lúc đọc sẽ tự lấy lại (xem `_out` ở controller).
+    if not s.head_of_dept_id and not s.head_of_dept and (s.department_id or s.department):
+        s.head_of_dept_id = find_dept_head_id(db, s.department, s.department_id)
+    sync_employee_ref(db, s, "head_of_dept_id", "head_of_dept")   # CR-087
     db.add(s)
     db.commit()
     db.refresh(s)
@@ -176,16 +182,24 @@ def create_sr(db: Session, data, user_id: int, user=None, profile=None) -> Surve
 
 
 def update_sr(db: Session, sid: int, data, user_id: int, user=None, profile=None) -> SurveyRequest:
-    from app.modules.purchase_request.service import find_dept_head
+    from app.modules.department.service import sync_department_ref
+    from app.modules.employee.service import sync_employee_ref
+    from app.modules.purchase_request.service import find_dept_head_id
     s = get_sr(db, sid)
     if s.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ sửa được khi phiếu ở trạng thái Nháp hoặc Bị trả lại "
                                  "(phiếu Đã từ chối đã khóa — hãy Nhân bản thành phiếu mới).")
     for k, v in data.model_dump(exclude_unset=True, exclude={"lines"}).items():
         setattr(s, k, v)
+    # CR-086: FE cũ chỉ gửi TÊN phòng → bỏ id cũ rồi tra lại từ tên; gửi kèm id thì id thắng.
+    if data.department is not None or data.department_id is not None:
+        if data.department_id is None:
+            s.department_id = 0
+        sync_department_ref(db, s)
     # Đổi Bộ phận YC ở bản nháp → cập nhật lại Trưởng bộ phận (ô này người dùng không tự nhập).
-    if s.department:
-        s.head_of_dept = find_dept_head(db, s.department) or s.head_of_dept
+    if s.department_id or s.department:
+        s.head_of_dept_id = find_dept_head_id(db, s.department, s.department_id) or s.head_of_dept_id
+    sync_employee_ref(db, s, "head_of_dept_id", "head_of_dept")   # CR-087
     s.updated_by = user_id
     db.commit()
     ordered = None
@@ -203,6 +217,7 @@ def clone_sr(db: Session, sid: int, user, profile: dict) -> SurveyRequest:
     dùng chung file). CHỈ copy dòng NGƯỜI DÙNG ĐƯỢC XEM (tránh lộ dòng của NSTM khác).
     KHÔNG sao chép NSTM/option/PYC/tình trạng (làm mới hoàn toàn)."""
     from app.modules.attachment.model import FileLink
+    from app.modules.department.service import sync_department_ref
     from app.modules.employee.model import Employee
     user_id = getattr(user, "id", 0)
     src = get_sr(db, sid)
@@ -215,13 +230,21 @@ def clone_sr(db: Session, sid: int, user, profile: dict) -> SurveyRequest:
         header["requester"] = emp.full_name or ""
         header["requester_id"] = emp.id
         header["requester_position"] = emp.position or ""
+        header["department_id"] = emp.department_id or 0    # CR-086
         header["department"] = emp.department_name or ""
+        header["head_of_dept_id"] = 0                       # CR-087: lấy lại theo phòng bên dưới
         header["head_of_dept"] = emp.manager_name or ""
     else:
         header["requester"] = getattr(user, "full_name", "") or ""
         header["requester_id"] = 0
     s = SurveyRequest(code=_gen_code(db), status="draft", created_by=user_id, updated_by=user_id,
                       **header)
+    sync_department_ref(db, s)      # CR-086
+    if not s.head_of_dept_id and (s.department_id or s.department):
+        from app.modules.purchase_request.service import find_dept_head_id
+        s.head_of_dept_id = find_dept_head_id(db, s.department, s.department_id)
+    from app.modules.employee.service import sync_employee_ref
+    sync_employee_ref(db, s, "head_of_dept_id", "head_of_dept")   # CR-087
     db.add(s)
     db.commit()
     db.refresh(s)
@@ -676,10 +699,12 @@ def create_prs(db: Session, sid: int, user_id: int):
             code=_gen_pr_code(db, today), company_id=s.company_id, requester=s.requester,
             requester_id=s.requester_id,
             requester_position=s.requester_position, department=s.department,
-            head_of_dept=s.head_of_dept or find_dept_head(db, s.department or ""),
-            # CR-071: YCBG chưa lưu id TBP (vẫn là chuỗi) nên suy lại từ phòng ban —
-            # 0 = không chỉ định ai, phiếu chạy theo luật duyệt cũ.
-            head_of_dept_id=find_dept_head_id(db, s.department or ""),
+            department_id=s.department_id,      # CR-086: PYC sinh ra thừa kế id phòng của YCBG
+            head_of_dept=s.head_of_dept or find_dept_head(db, s.department or "", s.department_id),
+            # CR-087: YCBG nay đã có id TBP → thừa kế thẳng, chỉ suy lại từ phòng khi phiếu
+            # nguồn chưa có (phiếu cũ). 0 = không chỉ định ai, chạy theo luật duyệt cũ.
+            head_of_dept_id=(s.head_of_dept_id
+                             or find_dept_head_id(db, s.department or "", s.department_id)),
             purpose=s.purpose, request_date=today, status="draft",
             note=f"Sinh tự động từ Yêu cầu báo giá {s.code}",
             suggested_supplier=first_opt.supplier_name or "",

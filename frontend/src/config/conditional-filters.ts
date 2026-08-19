@@ -67,15 +67,19 @@ export const INVENTORY_COND_FILTERS: FilterFieldDefinition[] = [
 // `supplier.read` — backend cũng gỡ cột đó khỏi whitelist (xem `_cond_map` của hai controller),
 // nên khai báo thêm cũng vô ích mà còn khiến người dùng tưởng lọc được.
 
-const DEPT_SRC = { url: '/api/departments', value: 'name', label: 'name' }
+// CR-088: ô tham chiếu (phòng ban / nhân sự) lọc theo ID, không lọc theo tên nữa. Lọc theo tên
+// vỡ ở ba chỗ, cả ba đều gặp thật: phòng đổi tên -> bộ lọc trượt sạch; hai người trùng tên ->
+// lọc một người ra đơn của cả hai; `contains` khớp chuỗi con -> lọc "Hân" ra "Ngọc Hân".
+export const DEPT_SRC = { url: '/api/departments', value: 'id', label: 'name' }
+export const EMP_SRC = { url: '/api/employees', value: 'id', label: 'full_name' }
 const GROUP_SRC = { url: '/api/item-groups', value: 'name', label: 'name' }
 
 /** Tiến độ mua hàng (/api/purchase-progress) — theo `purchase_progress/controller._cond_map` */
 export const purchaseProgressCondFilters = (showSupplier: boolean): FilterFieldDefinition[] => [
   // Đơn mua hàng
   condText('po_code', 'Mã ĐMH'), condText('misa_code', 'Mã MISA'), condText('pr_code', 'Mã PYC'),
-  condSource('department', 'Bộ phận', DEPT_SRC),
-  condSource('nspt', 'NSPT phụ trách', { url: '/api/employees', value: 'full_name', label: 'full_name' }),
+  condSource('department_id', 'Bộ phận', DEPT_SRC),
+  condSource('nspt_id', 'NSPT phụ trách', EMP_SRC),
   condDate('order_date', 'Ngày đặt hàng'),
   condSelect('document_status', 'Hồ sơ chứng từ', [
     { value: 'chưa có chứng từ', label: 'Chưa có chứng từ' },
@@ -119,7 +123,8 @@ export const purchaseProgressCondFilters = (showSupplier: boolean): FilterFieldD
 export const surveyProgressCondFilters = (showSupplier: boolean): FilterFieldDefinition[] => [
   // Đầu phiếu
   condText('code', 'Mã YCBG'), condText('purpose', 'Mục đích'),
-  condText('requester', 'Người yêu cầu'), condSource('department', 'Bộ phận', DEPT_SRC),
+  condSource('requester_id', 'Người yêu cầu', EMP_SRC),
+  condSource('department_id', 'Bộ phận', DEPT_SRC),
   condDate('request_date', 'Ngày yêu cầu'),
   condSelect('status', 'Trạng thái phiếu', [
     { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },

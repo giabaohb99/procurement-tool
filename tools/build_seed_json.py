@@ -130,20 +130,11 @@ for i, r in enumerate(rows("thuonghieu.txt")):
     seen_brand.add(code.upper())
     brands.append({"code": code, "department": clean(r[1]) if len(r) > 1 else ""})
 
-# Dropdown khác (datangoai): 4 cột song song
-vc_units, nspt, vat_opts, payment_terms = [], [], [], []
-for i, r in enumerate(rows("datangoai.txt")):
-    if i == 0:
-        continue
-    toks = [clean(x) for x in r if clean(x)]
-    if len(toks) >= 1 and toks[0]:
-        vc_units.append(toks[0])
-    if len(toks) >= 2:
-        nspt.append(toks[1])
-    if len(toks) >= 3:
-        vat_opts.append(toks[2])
-    if len(toks) >= 4:
-        payment_terms.append(toks[3])
+# CR-088: BỎ `options.json` (dropdown ĐVT vận chuyển / NSPT / VAT / điều khoản TT sinh từ
+# `datangoai.txt`). Không nơi nào ĐỌC tệp đó — `seed.py` chỉ nạp 6 tệp danh mục bên dưới — nên
+# nó chỉ là dữ liệu chết. Riêng danh sách `nspt` còn là dữ liệu chết ĐỘC HẠI: bốn biệt danh
+# ("Ms Quyên", "Mr Tiên"…) không có trong `tab_employee`, và chính mấy cái tên kiểu này làm
+# ĐMH nhập từ Excel không điền lùi được `nspt_id` ở CR-087. NSPT nay chọn từ danh mục Nhân sự.
 
 data = {
     "companies": companies,
@@ -152,7 +143,6 @@ data = {
     "units": units,
     "item_groups": item_groups,
     "brands": brands,
-    "options": {"shipping_units": vc_units, "nspt": nspt, "vat": vat_opts, "payment_terms": payment_terms},
 }
 
 for k, v in data.items():

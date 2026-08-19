@@ -1,20 +1,6 @@
 import { Badge } from '@/shared/ui/badge'
+import { TONE_CLASS, type StatusTone as Tone } from '@/shared/ui/status-tone'
 import { cn } from '@/shared/utils/cn'
-
-/**
- * Nhóm màu theo Ý NGHĨA của trạng thái, không theo từng mã: mỗi loại chứng từ
- * có một bộ mã riêng nhưng chỉ có bốn tình huống người đọc cần phân biệt —
- * đang nháp, đang chờ, đã xong, bị chặn.
- */
-const TONE_CLASS = {
-  neutral: 'bg-muted text-muted-foreground',
-  pending: 'bg-warning/10 text-warning',
-  progress: 'bg-info/10 text-info',
-  done: 'bg-success/10 text-success',
-  danger: 'bg-destructive/10 text-destructive',
-} as const
-
-type Tone = keyof typeof TONE_CLASS
 
 /** Mã trạng thái -> tông màu. Mã của cả 4 loại chứng từ gom chung được vì không đụng nhau. */
 const STATUS_TONE: Record<string, Tone> = {
@@ -115,6 +101,43 @@ export function ProgressStatusBadge({ status }: { status: string }) {
       className={cn('border-0', PROGRESS_CLASS[status] ?? TONE_CLASS.neutral)}
     >
       {status}
+    </Badge>
+  )
+}
+
+/**
+ * Tiến độ MỘT DÒNG của phiếu Yêu cầu báo giá (CR-077).
+ *
+ * Nhãn lẫn màu đều do backend quyết (`progress_state` / `progress_tone` trong
+ * `survey_request/line_state.py`) — FE chỉ dịch mã tông sang lớp CSS. Đừng tự
+ * suy nhãn ở đây: trước CR-077 mỗi màn suy một kiểu nên cùng một dòng lại hiện
+ * hai chữ khác nhau ở màn chi tiết và màn Tiến độ báo giá.
+ */
+const LINE_TONE_CLASS: Record<string, string> = {
+  gray: TONE_CLASS.neutral,
+  warn: TONE_CLASS.pending,
+  info: TONE_CLASS.progress,
+  ok: TONE_CLASS.done,
+  err: TONE_CLASS.danger,
+}
+
+export function SurveyLineStateBadge({
+  state,
+  tone,
+  className,
+}: {
+  state: string
+  tone: string
+  className?: string
+}) {
+  if (!state) return <span className="text-muted-foreground">—</span>
+
+  return (
+    <Badge
+      variant="secondary"
+      className={cn('border-0', LINE_TONE_CLASS[tone] ?? TONE_CLASS.neutral, className)}
+    >
+      {state}
     </Badge>
   )
 }

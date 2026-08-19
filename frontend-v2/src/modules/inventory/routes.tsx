@@ -1,9 +1,13 @@
-import { Boxes, LayoutDashboard } from 'lucide-react'
+import { Boxes, LayoutDashboard, Warehouse } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
 
-/** Phân hệ KHO — mới đăng ký chỗ, chưa có chức năng. */
+/**
+ * Phân hệ KHO.
+ *
+ * Mới có Tồn kho. Nhập xuất và luân chuyển kho vẫn nằm ở bản `frontend` cũ.
+ */
 export const inventoryModule: ErpModule = {
   id: 'inventory',
   title: 'Kho',
@@ -11,7 +15,7 @@ export const inventoryModule: ErpModule = {
   icon: Boxes,
   path: appRoutes.inventory.root,
   accent: 'bg-amber-50 text-amber-600',
-  enabled: false,
+  enabled: true,
   entity: 'inventory',
 
   nav: [
@@ -21,6 +25,12 @@ export const inventoryModule: ErpModule = {
       icon: LayoutDashboard,
       end: true,
     },
+    {
+      label: 'Tồn kho',
+      path: appRoutes.inventory.stock,
+      icon: Warehouse,
+      entity: 'inventory',
+    },
   ],
 
   routes: [
@@ -29,6 +39,12 @@ export const inventoryModule: ErpModule = {
       lazy: async () => ({
         Component: (await import('./pages/inventory-dashboard-page'))
           .InventoryDashboardPage,
+      }),
+    },
+    {
+      path: appRoutes.inventory.stock,
+      lazy: async () => ({
+        Component: (await import('./pages/inventory-list-page')).InventoryListPage,
       }),
     },
   ],

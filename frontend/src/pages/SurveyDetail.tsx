@@ -6,6 +6,7 @@ import { srBadge } from '../config/cruds'
 import ProductPicker from '../components/ProductPicker'
 import SearchSelect from '../components/SearchSelect'
 import NumberInput from '../components/NumberInput'
+import TextAreaAuto from '../components/TextAreaAuto'
 import { VAT_MAX, VAT_DECIMALS } from '../utils/vat'
 import DateInput from '../components/DateInput'
 import { toast } from '../components/toast'
@@ -676,9 +677,11 @@ export default function SurveyDetail() {
   function cell(col: Col, tbl: 'supplier' | 'product', i: number) {
     const lines = getLines(tbl)
     const it = lines[i]
-    // Ô CHỈ XEM: chặn text dài tràn sang cột bên (ellipsis) + tooltip xem đầy đủ.
+    // Ô CHỈ XEM: cho xuống dòng, ô cao theo nội dung. Bảng đã `table-layout: fixed`
+    // nên chữ dài không tràn sang cột bên — trước đây cắt bằng "…" khiến tên pháp
+    // lý / nhận xét dài phải rê chuột mới đọc được.
     const ro = (v: any) => <div title={typeof v === 'string' && v ? v : undefined}
-      style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v}</div>
+      style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', lineHeight: 1.35 }}>{v}</div>
     if (col.key === 'line_approve') {
       if (canEditApprove)
         return <div style={{ width: '100%' }}><SearchSelect variant="table" colorMap={APPROVE_COLOR} value={it[col.key] || 'Chờ duyệt'} options={APPROVE_OPTS} placeholder="Duyệt…" onChange={(v) => changeLineApprove(tbl, i, v)} /></div>
@@ -689,8 +692,8 @@ export default function SurveyDetail() {
     if (col.type === 'legal') {
       const nm = it.supplier_name ?? (suppliers.find((s) => s.code === it.supplier_code)?.name || '')
       return editable
-        ? <input className="cell-input" style={{ width: '100%' }} value={nm} placeholder="Nhập tên pháp lý NCC…"
-            onChange={(e) => setLine(tbl, i, { supplier_name: e.target.value })} />
+        ? <TextAreaAuto className="cell-input cell-textarea" style={{ width: '100%' }} value={nm} placeholder="Nhập tên pháp lý NCC…"
+            onChange={(v) => setLine(tbl, i, { supplier_name: v })} />
         : ro(nm)
     }
     // NCC sẵn có: mặc định TRUE (chưa set = có sẵn) → không lưu DB, chỉ đổi kiểu ô NCC
@@ -720,14 +723,16 @@ export default function SurveyDetail() {
     if (col.type === 'supplier') {
       // Bỏ check "NCC sẵn có" → ô NCC thành text tự do (NCC chưa có trong danh mục)
       if (!supplierAvail)
-        return <input className="cell-input" style={{ width: '100%' }} value={it[col.key] ?? ''} placeholder="Nhập NCC…" onChange={(e) => setLine(tbl, i, { [col.key]: e.target.value })} />
+        return <TextAreaAuto className="cell-input cell-textarea" style={{ width: '100%' }} value={it[col.key] ?? ''} placeholder="Nhập NCC…" onChange={(v) => setLine(tbl, i, { [col.key]: v })} />
       return (
-        <div style={{ width: '100%' }}><SearchSelect variant="table" value={it[col.key] ?? ''} placeholder="Chọn/tìm NCC…"
+        <div style={{ width: '100%' }}><SearchSelect variant="table" wrap value={it[col.key] ?? ''} placeholder="Chọn/tìm NCC…"
           options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
           onChange={(v) => { const sup = suppliers.find((s) => s.code === v); setLine(tbl, i, sup ? { supplier_code: sup.code, supplier_name: sup.name, tax_code: sup.tax_code, reg_address: sup.address } : { supplier_code: v }) }} /></div>
       )
     }
-    return <input className="cell-input" style={{ width: '100%' }} value={it[col.key] ?? ''} onChange={(e) => setLine(tbl, i, { [col.key]: e.target.value })} />
+    // Cột chữ tự do (tên pháp lý, mã/tên SP theo NCC, nhận xét NSPT, ghi chú…):
+    // dùng ô tự xuống dòng thay cho <input> một dòng, nếu không chữ dài bị cắt cụt.
+    return <TextAreaAuto className="cell-input cell-textarea" style={{ width: '100%' }} value={it[col.key] ?? ''} onChange={(v) => setLine(tbl, i, { [col.key]: v })} />
   }
 
   // ---- Render one survey table section (NCC or Product) ----

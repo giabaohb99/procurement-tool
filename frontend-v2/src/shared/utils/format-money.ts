@@ -22,6 +22,18 @@ export function formatUnitPrice(value: number | string | null | undefined): stri
   return num.toLocaleString(locale, { maximumFractionDigits: 4 })
 }
 
+/**
+ * TỶ LỆ phần trăm — giữ tối đa 2 chữ số thập phân và tự gắn dấu `%`.
+ *
+ * Giá trị vào là SỐ PHẦN TRĂM (41.67 -> "41,67%"), không phải tỷ số 0–1: các
+ * đường báo cáo đều đã nhân 100 và làm tròn 2 chữ số ở backend.
+ */
+export function formatPercent(value: number | string | null | undefined): string {
+  const num = toNumber(value)
+  if (num === null) return ''
+  return `${num.toLocaleString(locale, { maximumFractionDigits: 2 })}%`
+}
+
 /** Số lượng — tối đa 3 chữ số thập phân. */
 export function formatQuantity(value: number | string | null | undefined): string {
   const num = toNumber(value)

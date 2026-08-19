@@ -57,7 +57,9 @@ class POCreate(BaseModel):
     company_id: int = 0
     supplier_code: str = ""
     supplier_name: str = ""
+    department_id: int = 0        # CR-086: phòng ban neo bằng id; bỏ trống thì tra từ `department`
     department: str = ""
+    nspt_id: int = 0              # CR-087: NSPT neo bằng id; bỏ trống thì tra từ `nspt`
     nspt: str = ""
     order_date: str = ""
     vat_rate: float = 0.08
@@ -74,7 +76,9 @@ class POUpdate(BaseModel):
     company_id: int | None = None
     supplier_code: str | None = None
     supplier_name: str | None = None
+    department_id: int | None = None      # CR-086
     department: str | None = None
+    nspt_id: int | None = None            # CR-087
     nspt: str | None = None
     order_date: str | None = None
     vat_rate: float | None = None

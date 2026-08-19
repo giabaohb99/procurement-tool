@@ -25,6 +25,7 @@ from app.core.auth import get_current_user, get_perm_profile, user_has_permissio
 from app.core.base_controller import pagination
 from app.core.database import get_db
 from app.core.filter_operators import apply_operator_filters_map
+from app.core.ref_filter import apply_ref_filters
 from app.core.response import success
 from app.core.scoping import apply_scope
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
@@ -82,6 +83,11 @@ def _cond_map(show_supplier: bool) -> dict:
     bảng thì cũng không được lọc theo, kẻo lọc rồi đếm số dòng còn lại là mò ra được tên NCC.
     """
     m = {k: v for k, v in _sort_map().items() if k != "company_id"}
+    # CR-088: cho lọc theo ID ô tham chiếu. Không nhét vào `_sort_map()` vì sắp xếp theo id là ra
+    # thứ tự số, chẳng ai đọc được; đây chỉ mở đường cho `department_id__eq=` / `nspt_id__eq=`.
+    # Lối này khớp id THẲNG, không có nhánh lùi — nhánh lùi nằm ở `apply_ref_filters` bên dưới.
+    m["department_id"] = PurchaseOrder.department_id
+    m["nspt_id"] = PurchaseOrder.nspt_id
     if not show_supplier:
         for k in _SUPPLIER_HIDDEN:
             m.pop(k, None)
@@ -123,6 +129,9 @@ def _build_query(request: Request, db: Session, user, prof: dict, po_scope: bool
     company_id = (request.query_params.get("company_id") or "").strip()
     if company_id.isdigit():
         q = q.filter(PurchaseOrder.company_id == int(company_id))
+    # CR-088: ô Bộ phận lọc theo ID (`department_id=`), kèm nhánh lùi cho ĐMH chưa điền lùi được id.
+    # Vẫn nhận `department=<tên>` cho giao diện cũ và các đường dẫn đã lưu sẵn.
+    q = apply_ref_filters(q, PurchaseOrder, request, db)
     department = (request.query_params.get("department") or "").strip()
     if department:
         q = q.filter(PurchaseOrder.department == department)

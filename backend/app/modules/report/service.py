@@ -354,7 +354,10 @@ def report_dept_scope(db, user):
             return None   # thấy hết
         if prof.get("dept_name"):
             allow.add(prof["dept_name"])
-        for d in ((g.get("scope") or {}).get("inc") or {}).get("department", []) or []:
+        # CR-086: báo cáo gom dòng theo TÊN phòng (khóa `key` cũng là tên) nên phạm vi ở đây
+        # vẫn là tập TÊN — lấy `department_name` chứ không lấy `department` (nay là id).
+        # Gom theo id là việc của lần dựng lại màn Báo cáo ở frontend-v2 (N-008).
+        for d in ((g.get("scope") or {}).get("inc") or {}).get("department_name", []) or []:
             allow.add(d)
     return allow
 

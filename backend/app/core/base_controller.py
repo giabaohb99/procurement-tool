@@ -1,6 +1,7 @@
 from fastapi import Query, Request
 
 from app.core.filter_operators import apply_operator_filters
+from app.core.ref_filter import owns as _ref_owns
 
 
 def pagination(
@@ -28,6 +29,11 @@ def apply_filters(query, model, request: Request, filterable: list[str]):
     """
     for key, raw in request.query_params.items():
         val = raw.strip() if isinstance(raw, str) else raw   # cắt space thừa để LIKE khớp
+        if _ref_owns(model, key):
+            # CR-088: ô THAM CHIẾU (có đủ cặp id + tên) do `apply_ref_filters` lo, vì nó còn
+            # phải kèm nhánh lùi cho dòng chưa điền lùi được id. So khớp chính xác ở đây nữa
+            # là AND chồng lên, nhánh lùi coi như không tồn tại.
+            continue
         if key in filterable and val not in (None, ""):
             col = getattr(model, key, None)
             if col is not None:

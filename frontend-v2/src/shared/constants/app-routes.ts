@@ -13,11 +13,15 @@ export const appRoutes = {
   },
   inventory: {
     root: '/inventory',
+    /** Tồn hiện tại theo kho — số dư do hệ thống tính, chỉ sửa qua điều chỉnh tay. */
+    stock: '/inventory/stock',
   },
   procurement: {
     root: '/procurement',
     /** Yêu cầu báo giá (YCBG) — bước đầu của luồng mua hàng. */
     surveyRequests: '/procurement/survey-requests',
+    surveyRequestNew: '/procurement/survey-requests/new',
+    surveyRequestDetail: (id: number | string) => `/procurement/survey-requests/${id}`,
     /** Yêu cầu mua hàng (PYC). */
     purchaseRequests: '/procurement/purchase-requests',
     purchaseRequestNew: '/procurement/purchase-requests/new',
@@ -34,6 +38,8 @@ export const appRoutes = {
     surveys: '/procurement/surveys',
     /** Báo cáo khảo sát, cắt theo dòng khảo sát. */
     surveyReport: '/procurement/survey-report',
+    /** Báo cáo mua hàng — tám tab trên cùng một bộ lọc công ty / năm. */
+    purchaseReport: '/procurement/purchase-report',
   },
   /**
    * Bộ máy phê duyệt dùng chung — không nằm trong phân hệ nào vì «Việc của tôi»
@@ -52,6 +58,8 @@ export const appRoutes = {
   },
   finance: {
     root: '/finance',
+    /** Công nợ phải trả — bảng chỉ đọc, sinh tự động khi nhận hàng. */
+    payables: '/finance/payables',
   },
   customer: {
     root: '/customer',
