@@ -163,8 +163,8 @@ export function DocumentDetailPage() {
   )
 
   const autosave = useDocumentAutosave({ onSave: handleSaveContent })
-  //  Kéo thước lề → ghi xuống phiên bản, gộp nhịp (xem hook).
-  const saveMargins = useDocumentPageMargins(documentId, versionId)
+  //  Buông tay khỏi thước lề → ghi ngay xuống phiên bản (xem hook).
+  const pageMargins = useDocumentPageMargins(documentId, versionId)
 
   function handleSubmitForm(values: DocumentRecordFormValues) {
     save.mutate({ id: documentId, values: formToPayload(values) })
@@ -276,6 +276,9 @@ export function DocumentDetailPage() {
             <Button
               type="button"
               variant="outline"
+              //  Lề vừa kéo còn đang ghi thì chưa mở bản in: tab in đọc thẳng
+              //  bản ghi, mở sớm là in ra lề cũ.
+              disabled={pageMargins.dangLuu}
               onClick={() =>
                 window.open(
                   `${appRoutes.document.documentPrint(documentId)}${versionId ? `?version=${versionId}` : ''}`,
@@ -440,7 +443,7 @@ export function DocumentDetailPage() {
                 left: mmToPx(version.margin_left_mm),
                 right: mmToPx(version.margin_right_mm),
               }}
-              onMarginsChange={saveMargins}
+              onMarginsChange={pageMargins.luu}
             />
           )}
         </TabsContent>

@@ -17,7 +17,17 @@ interface EditorRulerProps {
   /** Lề mặc định (px) hai bên — bấm đúp vào con trượt là về lại mốc này. */
   defaultMargins: PageMargins
   margins: PageMargins
+  /** Gọi liên tục trong lúc kéo — chỉ để VẼ lại trang giấy theo tay. */
   onChange: (margins: PageMargins) => void
+  /**
+   * Gọi MỘT LẦN khi người dùng buông tay (thả chuột, nhấn phím, bấm đúp về
+   * mặc định) — đây mới là lúc trang cha ghi xuống bản ghi.
+   *
+   * Tách khỏi `onChange` vì trước đây trang cha phải tự hẹn giờ 600ms để gom
+   * nhịp kéo, mà hẹn giờ thì sinh ra khe hở: kéo xong bấm ngay «In / Xuất PDF»
+   * là bản in đọc lề CŨ, còn chuyển tab trong khoảng đó là mất luôn thay đổi.
+   */
+  onCommit?: (margins: PageMargins) => void
   /** Mức phóng của trang, để quy khoảng chuột kéo về px thật của trang giấy. */
   zoom: number
   /** Thẻ trang giấy — thước bám theo đúng vị trí của nó. */
@@ -43,6 +53,7 @@ export function EditorRuler({
   defaultMargins,
   margins,
   onChange,
+  onCommit,
   zoom,
   page,
 }: EditorRulerProps) {
@@ -50,6 +61,9 @@ export function EditorRuler({
   // Giữ mốc lúc bắt đầu kéo trong ref: đọc `margins` trong hàm nghe chuột sẽ
   // dính giá trị cũ của lần render đã đóng băng.
   const dragRef = useRef<{ side: keyof PageMargins; startX: number; startValue: number }>(null)
+  //  Giá trị mới nhất trong lúc kéo — lúc thả tay, `margins` trong closure vẫn
+  //  là giá trị của lần render bắt đầu kéo, ghi theo nó là ghi hụt cả cú kéo.
+  const moiNhatRef = useRef<PageMargins>(margins)
   // Chỉ theo trục NGANG: thước này chỉ cần biết mép trái tờ giấy nằm ở đâu,
   // báo cả vị trí dọc thì cuộn xuống là nó vẽ lại theo từng khung hình cho
   // không.
@@ -72,10 +86,13 @@ export function EditorRuler({
       const direction = drag.side === 'left' ? 1 : -1
       const delta = ((moveEvent.clientX - drag.startX) / zoom) * direction
       const next = Math.round((drag.startValue + delta) / RULER_SNAP_PX) * RULER_SNAP_PX
-      onChange({ ...margins, [drag.side]: clamp(drag.side, next) })
+      const ke = { ...margins, [drag.side]: clamp(drag.side, next) }
+      moiNhatRef.current = ke
+      onChange(ke)
     }
 
     const stop = () => {
+      if (dragRef.current) onCommit?.(moiNhatRef.current)
       dragRef.current = null
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', stop)
@@ -86,7 +103,16 @@ export function EditorRuler({
   }
 
   function nudge(side: keyof PageMargins, steps: number) {
-    onChange({ ...margins, [side]: clamp(side, margins[side] + steps * RULER_SNAP_PX) })
+    const ke = { ...margins, [side]: clamp(side, margins[side] + steps * RULER_SNAP_PX) }
+    onChange(ke)
+    onCommit?.(ke)
+  }
+
+  /** Bấm đúp con trượt: về lề mặc định — cũng là một lần buông tay. */
+  function datLai(side: keyof PageMargins, giaTri: number) {
+    const ke = { ...margins, [side]: giaTri }
+    onChange(ke)
+    onCommit?.(ke)
   }
 
   const leftCm = margins.left / PX_PER_CM
@@ -148,7 +174,7 @@ export function EditorRuler({
           offset={at(margins.left)}
           valueCm={margins.left / PX_PER_CM}
           onPointerDown={(event) => startDrag('left', event)}
-          onReset={() => onChange({ ...margins, left: defaultMargins.left })}
+          onReset={() => datLai('left', defaultMargins.left)}
           onNudge={(steps) => nudge('left', steps)}
         />
         <MarginHandle
@@ -156,7 +182,7 @@ export function EditorRuler({
           offset={at(margins.right)}
           valueCm={margins.right / PX_PER_CM}
           onPointerDown={(event) => startDrag('right', event)}
-          onReset={() => onChange({ ...margins, right: defaultMargins.right })}
+          onReset={() => datLai('right', defaultMargins.right)}
           onNudge={(steps) => nudge('right', steps)}
         />
       </div>

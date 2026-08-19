@@ -71,7 +71,12 @@ interface RichTextEditorProps {
    * phiên soạn; truyền vào thì trang cha là nơi lưu, xem `onMarginsChange`.
    */
   defaultMargins?: PageMargins
-  /** Người dùng kéo thước xong — trang cha ghi xuống bản ghi. */
+  /**
+   * Người dùng BUÔNG TAY khỏi thước — trang cha ghi xuống bản ghi.
+   *
+   * Chỉ bắn một lần cho mỗi cú chỉnh, không bắn theo từng khung hình lúc rê
+   * chuột, nên trang cha ghi thẳng chứ không phải hẹn giờ gom nhịp.
+   */
   onMarginsChange?: (margins: PageMargins) => void
   className?: string
 }
@@ -126,7 +131,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
     //  theo prop thì mỗi lần lưu xong lề lại đổ ngược vào giữa lúc đang kéo.
     const [margins, setMargins] = useState<PageMargins>(defaultMargins ?? DEFAULT_MARGINS)
 
-    function changeMargins(next: PageMargins) {
+    //  Rê chuột: chỉ vẽ lại trang giấy. Buông tay: mới ghi xuống bản ghi.
+    function commitMargins(next: PageMargins) {
       setMargins(next)
       onMarginsChange?.(next)
     }
@@ -363,7 +369,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
             pageWidth={A4_WIDTH}
             defaultMargins={DEFAULT_MARGINS}
             margins={margins}
-            onChange={changeMargins}
+            onChange={setMargins}
+            onCommit={commitMargins}
             zoom={zoom}
             page={editor.view.dom}
           />
