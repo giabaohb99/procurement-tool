@@ -50,3 +50,5 @@ from app.modules.document import clone_plan_model as _document_clone_plan  # noq
 from app.modules.approval import flow_model as _approval_flow  # noqa: F401
 from app.modules.approval import instance_model as _approval_instance  # noqa: F401
 from app.modules.approval import delegation_model as _approval_delegation  # noqa: F401
+from app.modules.seal_request import model as _seal_request  # noqa: F401
+from app.modules.vehicle_booking import model as _vehicle_booking  # noqa: F401

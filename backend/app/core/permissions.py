@@ -13,6 +13,10 @@ ENTITIES = [
     "help_article", "ticket",
     # Phân hệ Văn thư
     "doc_type", "external_party", "document_book", "document",
+    # Phân hệ Duyệt dấu
+    "seal_request", "seal_type",
+    # Phân hệ Đặt xe
+    "vehicle_booking", "vehicle", "driver",
     # Bộ máy phê duyệt dùng chung — KHÔNG thuộc phân hệ nào, mọi loại chứng từ
     # đều chạy qua nó.
     "approval_flow",
@@ -54,6 +58,11 @@ ENTITY_LABELS = {
     "external_party": "Đơn vị gửi nhận (Văn thư)",
     "document_book": "Sổ văn bản (Văn thư)",
     "document": "Văn bản (Văn thư)",
+    "seal_request": "Yêu cầu duyệt dấu",
+    "seal_type": "Loại con dấu",
+    "vehicle_booking": "Yêu cầu đặt xe",
+    "vehicle": "Phương tiện (Xe)",
+    "driver": "Tài xế",
     "approval_flow": "Luồng phê duyệt (dùng chung)",
 }
 
