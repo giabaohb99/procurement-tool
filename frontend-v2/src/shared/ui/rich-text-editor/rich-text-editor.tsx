@@ -72,6 +72,23 @@ interface RichTextEditorProps {
    */
   defaultMargins?: PageMargins
   /**
+   * Đánh số mục tự động cho tiêu đề (I · 1 · a). Bỏ trống `onAutoNumberChange`
+   * thì thanh công cụ không hiện nút bật/tắt — dùng cho chỗ không có nơi lưu cờ.
+   */
+  autoNumber?: boolean
+  onAutoNumberChange?: (bat: boolean) => void
+  /**
+   * Đầu trang / chân trang vẽ trên MỌI tờ giấy. Trang cha đã thay sẵn các thẻ
+   * mà nó biết (số hiệu, tên, ngày); thẻ số trang thì trang cha để lại nhãn
+   * ngắn vì lúc soạn chưa biết tờ nào là tờ thứ mấy của bản in.
+   */
+  pageFrame?: {
+    headerLeft: string
+    headerRight: string
+    footerLeft: string
+    footerRight: string
+  }
+  /**
    * Người dùng BUÔNG TAY khỏi thước — trang cha ghi xuống bản ghi.
    *
    * Chỉ bắn một lần cho mỗi cú chỉnh, không bắn theo từng khung hình lúc rê
@@ -121,6 +138,9 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       showOutline = false,
       defaultMargins,
       onMarginsChange,
+      autoNumber,
+      onAutoNumberChange,
+      pageFrame,
       className,
     },
     ref,
@@ -228,6 +248,12 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
           // Đúng màu nền xám của vùng đặt giấy (`--muted`), để khe giữa hai
           // trang nhìn xuyên xuống nền chứ không thành một vạch trắng.
           pageBreakBackground: '#f6f8fb',
+          //  Đầu/chân trang: thư viện tự vẽ trên mọi tờ. Khai lúc dựng rồi cập
+          //  nhật bằng lệnh khi trang cha đổi (xem effect bên dưới).
+          headerLeft: pageFrame?.headerLeft ?? '',
+          headerRight: pageFrame?.headerRight ?? '',
+          footerLeft: pageFrame?.footerLeft ?? '',
+          footerRight: pageFrame?.footerRight ?? '',
         }),
       ],
       content: defaultContent,
@@ -336,6 +362,21 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       [editor],
     )
 
+    //  Trang cha lưu xong đầu/chân trang thì vẽ lại ngay, không phải dựng lại
+    //  cả trình soạn thảo (dựng lại là mất lịch sử hoàn tác của người đang gõ).
+    useEffect(() => {
+      if (!editor || editor.isDestroyed || !pageFrame) return
+      editor.commands.updateHeaderContent(pageFrame.headerLeft, pageFrame.headerRight)
+      editor.commands.updateFooterContent(pageFrame.footerLeft, pageFrame.footerRight)
+    }, [
+      editor,
+      pageFrame?.headerLeft,
+      pageFrame?.headerRight,
+      pageFrame?.footerLeft,
+      pageFrame?.footerRight,
+      pageFrame,
+    ])
+
     // Rời trang bằng bàn phím hay điều hướng trong mã thì không có `blur` —
     // chốt nốt lượt đang chờ trước khi trình soạn thảo bị gỡ.
     useEffect(() => {
@@ -359,6 +400,10 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
             onZoomChange={setZoom}
             outlineOpen={showOutline ? outlineOpen : undefined}
             onToggleOutline={() => setOutlineOpen((open) => !open)}
+            autoNumber={onAutoNumberChange ? Boolean(autoNumber) : undefined}
+            onToggleAutoNumber={
+              onAutoNumberChange ? () => onAutoNumberChange(!autoNumber) : undefined
+            }
           />
         )}
 
@@ -411,6 +456,10 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
               Hai biến lề đặt ở đây để thước kẻ và trang giấy cùng đọc một số —
               trang giấy nhận qua `.doc-page` trong `index.css`. */}
             <div
+              //  Class bật đánh số mục nằm ở thẻ BỌC NGOÀI trang giấy, không
+              //  phải trên chính `.doc-page`: đổi class của trang giấy phải đi
+              //  qua `editorProps` và dựng lại trình soạn thảo.
+              className={cn(autoNumber && 'doc-auto-number')}
               style={
                 {
                   zoom,

@@ -79,6 +79,10 @@ export const documentApi = {
   update: (id: number, payload: Partial<DocumentInput>) =>
     apiPatch<DocumentRecord>(`${DOCUMENT_URL}/${id}`, payload),
 
+  /** Xác nhận đã rà soát xong — tắt cờ «cần rà lại», kết luận vào nhật ký. */
+  confirmReviewed: (id: number, ket_luan: string) =>
+    apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/reviewed`, { ket_luan }),
+
   updateIssueNumber: (id: number, payload: { issue_number: string; reason: string }) =>
     apiPatch<DocumentRecord>(`${DOCUMENT_URL}/${id}/issue-number`, payload),
 
@@ -146,6 +150,11 @@ export const documentVersionApi = {
       //  Lề trang (mm) — kéo thước thì chỉ gửi hai số này, không gửi thân bài.
       margin_left_mm?: number
       margin_right_mm?: number
+      auto_heading_number?: boolean
+      header_left?: string
+      header_right?: string
+      footer_left?: string
+      footer_right?: string
     },
   ) =>
     apiPatch<DocumentVersion>(

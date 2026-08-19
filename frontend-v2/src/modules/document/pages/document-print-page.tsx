@@ -121,6 +121,18 @@ export function DocumentPrintPage() {
           marginLeftMm={version.margin_left_mm}
           marginRightMm={version.margin_right_mm}
           watermark={daBanHanh ? undefined : 'BẢN NHÁP'}
+          autoNumber={version.auto_heading_number}
+          pageFrame={{
+            header_left: version.header_left,
+            header_right: version.header_right,
+            footer_left: version.footer_left,
+            footer_right: version.footer_right,
+          }}
+          markers={{
+            soHieu: record.display_code || '',
+            tenVanBan: record.title,
+            ngay: new Date().toLocaleDateString('vi-VN'),
+          }}
           onLayout={setLayout}
         />
       )}
@@ -165,6 +177,24 @@ const PRINT_STYLES = `
     background: transparent !important;
     box-shadow: none !important;
   }
+
+  /* Dải đầu/chân trang nằm TRONG phần lề (20mm), không lấn vào vùng chữ —
+     nếu lấn thì phần chia trang đã đo theo vùng chữ sẽ sai. */
+  .doc-print-frame {
+    position: absolute;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 8mm;
+    padding-left: var(--doc-print-pad-left, 20mm);
+    padding-right: var(--doc-print-pad-right, 20mm);
+    font-family: 'Times New Roman', serif;
+    font-size: 11pt;
+    color: #374151;
+  }
+  .doc-print-frame--top { top: 8mm; }
+  .doc-print-frame--bottom { bottom: 8mm; }
 
   .doc-print-page-number {
     position: absolute;

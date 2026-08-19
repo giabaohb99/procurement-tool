@@ -55,6 +55,11 @@ def save_content(db: Session, version: DocumentVersion, data: VersionContentUpda
         version.margin_left_mm = data.margin_left_mm
     if data.margin_right_mm is not None:
         version.margin_right_mm = data.margin_right_mm
+    if data.auto_heading_number is not None:
+        version.auto_heading_number = data.auto_heading_number
+    for o in ("header_left", "header_right", "footer_left", "footer_right"):
+        if getattr(data, o) is not None:
+            setattr(version, o, getattr(data, o))
     if data.change_summary is not None:
         version.change_summary = data.change_summary
     if data.change_reason is not None:
@@ -102,6 +107,9 @@ def open_new_version(db: Session, doc: Document, data: VersionCreate,
         #  lề nhảy về mặc định thì cả văn bản lệch so với bản đã ký.
         margin_left_mm=base.margin_left_mm,
         margin_right_mm=base.margin_right_mm,
+        auto_heading_number=base.auto_heading_number,
+        header_left=base.header_left, header_right=base.header_right,
+        footer_left=base.footer_left, footer_right=base.footer_right,
         change_kind=data.change_kind,
         change_summary=data.change_summary,
         change_reason=data.change_reason,

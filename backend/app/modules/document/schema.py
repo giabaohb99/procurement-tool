@@ -130,6 +130,12 @@ class DocumentOut(DocumentBase):
 
 
 # ── Phiên bản ────────────────────────────────────────────────────────────────
+class ReviewedIn(BaseModel):
+    """Kết luận sau khi rà soát — bắt buộc, xem `service.xac_nhan_da_ra_soat`."""
+
+    ket_luan: str = Field(min_length=3, max_length=300)
+
+
 class VersionCreate(BaseModel):
     """Mở phiên bản MỚI trên một văn bản đã có bản được duyệt.
 
@@ -162,6 +168,13 @@ class VersionContentUpdate(BaseModel):
                                        le=MARGIN_LEFT_MAX_MM)
     margin_right_mm: int | None = Field(default=None, ge=MARGIN_RIGHT_MIN_MM,
                                         le=MARGIN_RIGHT_MAX_MM)
+    #  Bật/tắt đánh số mục tự động cho tiêu đề.
+    auto_heading_number: bool | None = None
+    #  Đầu trang / chân trang — chuỗi ngắn, có thể chứa thẻ `{{trang}}`…
+    header_left: str | None = Field(default=None, max_length=200)
+    header_right: str | None = Field(default=None, max_length=200)
+    footer_left: str | None = Field(default=None, max_length=200)
+    footer_right: str | None = Field(default=None, max_length=200)
 
 
 class VersionOut(BaseModel):
@@ -182,6 +195,11 @@ class VersionOut(BaseModel):
     #  Thể thức trang của chính bản này (mm) — bản in dùng đúng bộ số này.
     margin_left_mm: int = 30
     margin_right_mm: int = 20
+    auto_heading_number: bool = False
+    header_left: str = ""
+    header_right: str = ""
+    footer_left: str = ""
+    footer_right: str = ""
     prev_version_id: int | None = None
     approved_at: str = ""
     approved_by_name: str = ""

@@ -49,6 +49,12 @@ interface EditorToolbarProps {
   /** Cột mục lục đang mở hay không; `undefined` = trang này không có mục lục. */
   outlineOpen?: boolean
   onToggleOutline?: () => void
+  /**
+   * Đánh số mục tự động cho tiêu đề (I · 1 · a).
+   * `undefined` = trang này không cho bật/tắt (vd trang dựng mẫu).
+   */
+  autoNumber?: boolean
+  onToggleAutoNumber?: () => void
 }
 
 export function EditorToolbar({
@@ -57,6 +63,8 @@ export function EditorToolbar({
   onZoomChange,
   outlineOpen,
   onToggleOutline,
+  autoNumber,
+  onToggleAutoNumber,
 }: EditorToolbarProps) {
   const state = useToolbarState(editor)
   const { ref, fits } = useToolbarDensity()
@@ -181,6 +189,20 @@ export function EditorToolbar({
         active={state.orderedList}
         onClick={() => run().toggleOrderedList().run()}
       />
+      {/* Đứng cạnh hai nút danh sách vì cùng họ "đánh số cho nội dung" —
+          khác ở chỗ nó đánh cho TIÊU ĐỀ và áp cho cả bài. */}
+      {autoNumber !== undefined && onToggleAutoNumber && (
+        <ToolbarButton
+          icon={ListTree}
+          label={
+            autoNumber
+              ? 'Tắt đánh số mục tự động'
+              : 'Đánh số mục tự động cho tiêu đề (I · 1 · a)'
+          }
+          active={autoNumber}
+          onClick={onToggleAutoNumber}
+        />
+      )}
       {inline('blockquote')}
       <ToolbarDivider />
 

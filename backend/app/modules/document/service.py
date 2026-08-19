@@ -393,6 +393,34 @@ def reject(db: Session, doc: Document, reason: str, actor: int) -> Document:
     return doc
 
 
+def xac_nhan_da_ra_soat(db: Session, doc: Document, ket_luan: str, actor: int) -> Document:
+    """TẮT cờ «cần rà lại» sau khi người phụ trách đã đối chiếu xong.
+
+    Cờ này có **năm chỗ bật** (bản gốc lên bản mới, cha bị bãi bỏ, cha lên bản
+    mới, hai luật của bản trích) mà trước đây **không có chỗ nào tắt** — rà xong,
+    sửa xong, ban hành xong thì băng cảnh báo vẫn treo vĩnh viễn. Vài tháng là
+    văn bản nào cũng đeo băng vàng, và đúng lúc cảnh báo cần được chú ý thì
+    không ai còn nhìn nữa.
+
+    Bắt ghi KẾT LUẬN chứ không cho bấm một cái cho xong: người sau mở nhật ký ra
+    phải đọc được «đã đối chiếu, vẫn đúng, không phải sửa» hay «đã sửa theo
+    Chương II» — hai câu đó dẫn tới hai hành động khác hẳn nhau nếu về sau có
+    tranh chấp. Kết luận đi vào `audit` ở tầng controller, không thêm cột.
+
+    Không kiểm trạng thái văn bản: rà soát là việc đọc, làm được ở mọi trạng
+    thái. Quyền thì gác bằng `write` như mọi thao tác sửa khác.
+    """
+    if not doc.needs_review:
+        raise HTTPException(400, "Văn bản này không có dấu cần rà lại")
+
+    doc.needs_review = False
+    doc.needs_review_note = ""
+    doc.updated_by = actor
+    db.commit()
+    db.refresh(doc)
+    return doc
+
+
 def revoke(db: Session, doc: Document, reason: str, actor: int) -> Document:
     """BÃI BỎ văn bản đã ban hành — cách đúng để gỡ bỏ thay cho xóa.
 

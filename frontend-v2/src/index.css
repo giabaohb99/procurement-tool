@@ -344,6 +344,90 @@
   font-weight: 700;
 }
 
+/*
+ * ĐÁNH SỐ MỤC TỰ ĐỘNG cho tiêu đề.
+ *
+ * Hai lối gắn class, dùng chung một bộ luật đếm:
+ *   `.doc-auto-number`      — thẻ BỌC NGOÀI trang giấy (trình soạn thảo), nên
+ *                             bật/tắt không phải dựng lại trình soạn thảo;
+ *   `.doc-auto-number-body` — gắn thẳng lên thân bài (bản in), nơi không có
+ *                             thẻ bọc nào.
+ *
+ * Ba cấp theo lối văn bản hành chính Việt Nam: I · 1 · a.
+ *
+ * Dùng bộ đếm CSS chứ không chèn số vào nội dung: chèn vào nội dung thì thêm
+ * một mục ở giữa là phải sửa tay toàn bộ số phía sau, mà đó đúng là việc người
+ * ta muốn máy làm hộ.
+ *
+ * ⚠️ Đánh đổi đã biết: số do `::before` vẽ ra nên KHÔNG đi theo khi sao chép
+ * sang nơi khác. Bản in đọc cùng bộ luật này (`document-print-page.tsx`), còn
+ * bản xuất ra tệp Word thì backend tự đánh số lúc chuyển đổi.
+ */
+.doc-auto-number .doc-page,
+.doc-auto-number-body {
+  counter-reset: doc-muc1;
+}
+.doc-auto-number .doc-page h1,
+.doc-auto-number-body h1 {
+  counter-reset: doc-muc2;
+  counter-increment: doc-muc1;
+}
+.doc-auto-number .doc-page h1::before,
+.doc-auto-number-body h1::before {
+  content: counter(doc-muc1, upper-roman) '. ';
+}
+.doc-auto-number .doc-page h2,
+.doc-auto-number-body h2 {
+  counter-reset: doc-muc3;
+  counter-increment: doc-muc2;
+}
+.doc-auto-number .doc-page h2::before,
+.doc-auto-number-body h2::before {
+  content: counter(doc-muc2) '. ';
+}
+.doc-auto-number .doc-page h3,
+.doc-auto-number-body h3 {
+  counter-increment: doc-muc3;
+}
+.doc-auto-number .doc-page h3::before,
+.doc-auto-number-body h3::before {
+  content: counter(doc-muc3, lower-alpha) ') ';
+}
+
+/* Khối XEM TRƯỚC phần nội dung sắp trích (hộp thoại Tạo bản trích). Chỉ cần
+   đọc được ra hình văn bản, không cần đúng khổ giấy — nên khai riêng vài luật
+   thay vì mượn `.doc-page` (thứ kéo theo cả bề ngang 794px và bóng đổ). */
+.doc-excerpt-preview h1,
+.doc-excerpt-preview h2,
+.doc-excerpt-preview h3 {
+  margin-bottom: 0.25rem;
+  font-weight: 700;
+}
+.doc-excerpt-preview h1 { font-size: 1.15em; }
+.doc-excerpt-preview h2 { font-size: 1.08em; }
+.doc-excerpt-preview p + p,
+.doc-excerpt-preview * + h1,
+.doc-excerpt-preview * + h2,
+.doc-excerpt-preview * + h3 {
+  margin-top: 0.5rem;
+}
+.doc-excerpt-preview ul,
+.doc-excerpt-preview ol {
+  margin-top: 0.35rem;
+  padding-left: 1.4em;
+  list-style: revert;
+}
+.doc-excerpt-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-block: 0.5rem;
+}
+.doc-excerpt-preview th,
+.doc-excerpt-preview td {
+  border: 1px solid var(--border);
+  padding: 4px 6px;
+}
+
 .doc-page ul,
 .doc-page ol {
   padding-left: 1.6em;
