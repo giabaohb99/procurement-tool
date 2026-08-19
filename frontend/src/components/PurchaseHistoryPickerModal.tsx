@@ -38,14 +38,20 @@ export type HistoryPick = {
  * MUA HÀNG (người yêu cầu chỉ cần `product.read`), mà NCC là thông tin riêng của khối
  * thu mua. Backend cũng đã xóa tên/mã NCC khỏi payload cho người không có quyền — ẩn cột
  * ở đây chỉ để bảng khỏi thừa một cột rỗng.
+ *
+ * `readOnly` — mở để THAM KHẢO trên chứng từ đang khóa sửa (đơn chờ duyệt, dòng đã
+ * Hoàn thành/Hủy, người chỉ có quyền đọc). Vẫn xem được giá cũ, nhưng bỏ hẳn đường
+ * "Dùng giá này": điền vào một đơn đang trình duyệt là đổi nội dung dưới tay người
+ * duyệt, mà backend cũng sẽ chặn lượt lưu đó.
  */
 export default function PurchaseHistoryPickerModal({
-  productCode, productName, onPick, onClose,
+  productCode, productName, onPick, onClose, readOnly = false,
 }: {
   productCode: string
   productName?: string
   onPick: (v: HistoryPick) => void
   onClose: () => void
+  readOnly?: boolean
 }) {
   const { can } = useAuth()
   const xemNcc = can('supplier', 'read')
@@ -80,6 +86,7 @@ export default function PurchaseHistoryPickerModal({
   }, [productCode, page, kw])
 
   const chon = (h: any) => {
+    if (readOnly) return
     const ex = h.extra || {}      // dòng dữ liệu cũ (legacy) không có extra → chỉ điền giá
     onPick({
       unit: h.unit || '',
@@ -139,12 +146,12 @@ export default function PurchaseHistoryPickerModal({
                 <th style={{ textAlign: 'right' }}>VAT%</th>
                 <th style={{ textAlign: 'right' }}>Thành tiền</th>
                 <th>Công ty</th>
-                <th style={{ width: 92, textAlign: 'center' }}>Chọn</th>
+                {!readOnly && <th style={{ width: 92, textAlign: 'center' }}>Chọn</th>}
               </tr>
             </thead>
             <tbody>
               {rows.map((h) => (
-                <tr key={h.id} className="clickable" onClick={() => chon(h)}>
+                <tr key={h.id} className={readOnly ? undefined : 'clickable'} onClick={() => chon(h)}>
                   <td>{fmtDateStr(h.order_date)}</td>
                   {/* Dòng dữ liệu cũ không có ĐMH — ghi rõ như bảng lịch sử, đừng để ô trống */}
                   <td>{h.po_code || <span style={{ color: '#999', fontSize: 12 }}>Dữ liệu cũ</span>}</td>
@@ -155,17 +162,19 @@ export default function PurchaseHistoryPickerModal({
                   <td style={{ textAlign: 'right' }}>{fmt(h.vat)}</td>
                   <td style={{ textAlign: 'right' }}>{fmtVND(h.amount)}</td>
                   <td>{h.company_name}</td>
-                  <td style={{ textAlign: 'center' }}>
-                    <button className="btn ghost" style={{ height: 26, fontSize: 11, padding: '0 8px' }}
-                      onClick={(e) => { e.stopPropagation(); chon(h) }}>
-                      Dùng giá này
-                    </button>
-                  </td>
+                  {!readOnly && (
+                    <td style={{ textAlign: 'center' }}>
+                      <button className="btn ghost" style={{ height: 26, fontSize: 11, padding: '0 8px' }}
+                        onClick={(e) => { e.stopPropagation(); chon(h) }}>
+                        Dùng giá này
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={xemNcc ? 10 : 9} style={{ textAlign: 'center', color: '#999', padding: 18 }}>
+                  <td colSpan={(xemNcc ? 9 : 8) + (readOnly ? 0 : 1)} style={{ textAlign: 'center', color: '#999', padding: 18 }}>
                     {loading ? 'Đang tải…' : kw ? 'Không có kết quả khớp từ khóa' : 'Mã hàng này chưa có lịch sử mua hàng'}
                   </td>
                 </tr>
@@ -178,8 +187,9 @@ export default function PurchaseHistoryPickerModal({
           <Pagination page={page} pageSize={PAGE_SIZE} total={total} hideSize
             onChange={(p) => setPage(p)} />
           <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
-            Chọn 1 dòng để điền ĐVT · SL đặt · Đơn giá · VAT% và thông tin Chi tiết dòng (tên trên hóa đơn,
-            xuất xứ/TSKT, mã & tên HH, phân loại, kho nhận, ghi chú). Đơn chưa được lưu — bấm Lưu để ghi nhận.
+            {readOnly
+              ? 'Chỉ xem để tham khảo — chứng từ đang khóa sửa nên không điền giá từ đây được.'
+              : 'Chọn 1 dòng để điền ĐVT · SL đặt · Đơn giá · VAT% và thông tin Chi tiết dòng (tên trên hóa đơn, xuất xứ/TSKT, mã & tên HH, phân loại, kho nhận, ghi chú). Đơn chưa được lưu — bấm Lưu để ghi nhận.'}
           </div>
         </div>
       </div>

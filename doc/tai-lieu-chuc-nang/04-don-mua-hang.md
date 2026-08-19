@@ -754,7 +754,7 @@ Ngoài 2 mẫu trên, phiếu liên quan là **Phiếu đề xuất mua hàng h�
 ## F. Quy tắc nghiệp vụ
 
 1. Lưu đơn: dòng hàng không có `product_name` và `product_code` bị loại bỏ trước khi gửi lên BE. Mỗi lần lưu gọi `recompute_effects` để tính lại toàn bộ số liệu và side-effect.
-2. Gửi duyệt: bắt buộc điền `misa_code` (kiểm tra ở cả FE và BE); không kiểm tra trường dòng hàng.
+2. Gửi duyệt: bắt buộc điền `misa_code` (kiểm tra ở cả FE và BE). **Từ CR-095 mỗi dòng hàng phải điền đủ 11 ô bắt buộc**: Mã hàng, Phân loại, Tên hàng, Tên trên hóa đơn, Ngày yêu cầu có hàng, Ngày dự kiến có hàng, ĐVT, Kho nhận mặc định, SL yêu cầu, SL đặt NCC, Đơn giá — thiếu ô nào thì BE trả 400 kèm tên dòng và tên ô, FE khóa sẵn nút Gửi duyệt và hiện khối cảnh báo liệt kê. Danh sách nằm ở `TRUONG_BAT_BUOC_DONG` (`purchase_order/service.py`), FE mirror ở `REQUIRED_LINE_FIELDS`. **VAT KHÔNG bắt buộc** (0 vừa là "chưa nhập" vừa là "không chịu thuế"), các ô còn lại (xuất xứ/TSKT, mã & tên HH thành phẩm, ngày giao chứng từ cho KT, ghi chú) cũng không bắt buộc. Chỉ chặn lúc **Gửi duyệt**, Lưu nháp vẫn lưu được đơn còn thiếu.
 3. Duyệt đơn: bắt buộc `misa_code` không trống (kiểm tra ở BE).
 4. Từ chối / Hủy: yêu cầu nhập lý do (`reason`); lý do lưu vào `approve_note`.
 5. Khóa sửa: đơn `completed` hoặc `cancelled` trả lỗi 400 khi `PATCH`; chỉ cho phép Nhân bản.
@@ -924,7 +924,7 @@ Vì sao chụp lại thay vì đọc thẳng đơn cũ: đơn hàng còn sửa �
 | Chi tiết **Nhà cung cấp** → tab *Lịch sử mua hàng* | NCC này từng bán những gì, giá bao nhiêu |
 | **Ô Mã hàng** trên dòng ĐMH và dòng YCMH | Nút mở popup lịch sử để **tham chiếu giá lúc lập đơn** |
 
-Popup tham chiếu giá: 20 dòng/trang, có tìm kiếm + phân trang; chọn 1 dòng thì **điền ĐVT / SL / đơn giá / VAT vào dòng hàng nhưng KHÔNG tự lưu** — người lập đơn còn soát lại rồi mới Lưu. Nút chỉ hiện khi dòng **đã chọn mã hàng** và **còn sửa được**.
+Popup tham chiếu giá: 20 dòng/trang, có tìm kiếm + phân trang; chọn 1 dòng thì **điền ĐVT / SL / đơn giá / VAT vào dòng hàng nhưng KHÔNG tự lưu** — người lập đơn còn soát lại rồi mới Lưu. Nút hiện khi dòng **đã chọn mã hàng**, ở **mọi trạng thái đơn** (CR-096) — đơn đang Chờ duyệt chính là lúc người duyệt cần đối chiếu giá cũ nhất. Dòng không còn sửa được thì popup mở ở **chế độ chỉ xem**: vẫn thấy đủ giá cũ nhưng không có đường "Dùng giá này".
 
 **Dữ liệu cũ (trước khi có hệ thống)**
 

@@ -524,6 +524,47 @@ def set_status(db: Session, pid: int, status: str, user_id: int, message: str = 
     return po
 
 
+# ───────────────────────── Trường BẮT BUỘC trước khi GỬI DUYỆT ─────────────────────────
+# CR-095 (phiếu hỗ trợ TK19082601): khách chốt danh sách ô phải điền xong mới được
+# trình đơn. Trước đây chỉ chặn thiếu NCC và thiếu dòng hàng (CR-073), nên đơn gửi lên
+# vẫn có thể trống ĐVT, kho nhận, đơn giá — người duyệt không có gì để duyệt.
+#
+# Chặn ở lúc GỬI DUYỆT chứ không chặn lúc LƯU: người lập thường lưu nháp nhiều lần rồi
+# mới điền đủ (chờ NCC báo giá, chờ kho xác nhận). Chặn lúc lưu là ép nhập một lượt.
+#
+# KHÔNG có VAT trong danh sách dù khách liệt kê: cột lưu số, giá trị 0 vừa nghĩa là
+# "chưa nhập" vừa nghĩa là "hàng không chịu thuế / thuế suất 0%" — hai thứ đó không phân
+# biệt được, chặn thì khóa luôn mặt hàng 0% hợp lệ. Ô nào để trống KHÔNG bắt buộc thì
+# giữ nguyên: xuất xứ/TSKT, mã & tên HH thành phẩm, ngày giao chứng từ cho KT, ghi chú.
+TRUONG_BAT_BUOC_DONG: list[tuple[str, str]] = [
+    ("product_code", "Mã hàng"),
+    ("item_group", "Phân loại"),
+    ("product_name", "Tên hàng"),
+    ("invoice_name", "Tên trên hóa đơn"),
+    ("required_date", "Ngày yêu cầu có hàng"),
+    ("expected_date", "Ngày dự kiến có hàng"),
+    ("unit", "ĐVT"),
+    ("warehouse_code", "Kho nhận mặc định"),
+    ("qty_request", "SL yêu cầu"),
+    ("qty_order", "SL đặt NCC"),
+    ("price", "Đơn giá"),
+]
+# Ô số: 0 ở đây là "chưa nhập" thật — dòng hàng không có số lượng hoặc không có giá thì
+# không phải là dòng để đặt mua.
+_TRUONG_SO = {"qty_request", "qty_order", "price"}
+
+
+def thieu_truong_dong(item: POItem) -> list[str]:
+    """Nhãn các ô còn trống của MỘT dòng hàng, theo thứ tự hiện trên màn Chi tiết dòng."""
+    thieu = []
+    for ten, nhan in TRUONG_BAT_BUOC_DONG:
+        gia_tri = getattr(item, ten, None)
+        rong = float(gia_tri or 0) <= 0 if ten in _TRUONG_SO else not str(gia_tri or "").strip()
+        if rong:
+            thieu.append(nhan)
+    return thieu
+
+
 # ───────────────────────── Máy trạng thái TIẾN ĐỘ của DÒNG ĐMH (progress_status) ─────────────────────────
 # Luồng chính tuần tự; Tạm ngưng/Hủy là ngoại lệ bấm nút, cần lý do.
 # Task 8: tách "Chưa gửi ĐMH cho KT" (có số hóa đơn) → "Đã gửi ĐMH cho KT" (có ngày giao chứng từ).
