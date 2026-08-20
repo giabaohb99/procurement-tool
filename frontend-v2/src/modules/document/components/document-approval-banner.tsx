@@ -1,6 +1,7 @@
 import { AlertTriangle, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import { useAuth } from '@/core/auth/use-auth'
 import { INSTANCE_STATUS, TASK_STATUS } from '@/modules/approval/types/approval'
 import type { ApprovalInstance } from '@/modules/approval/types/approval'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -25,9 +26,17 @@ interface DocumentApprovalBannerProps {
  *   duyệt* và chưa có số; lý do nằm ở `finish_reason`.
  */
 export function DocumentApprovalBanner({ instance }: DocumentApprovalBannerProps) {
+  const { user } = useAuth()
+
   if (!instance) return null
 
   const dangCho = (instance.tasks ?? []).filter((row) => row.status === TASK_STATUS.pending)
+  //  Việc này có phải của CHÍNH người đang đọc không. Quan trọng: «Việc của tôi»
+  //  chỉ liệt kê việc của người đăng nhập, nên dẫn người ngoài cuộc sang đó là
+  //  quăng họ vào một danh sách rỗng — họ tưởng hệ thống hỏng.
+  const toiPhaiXuLy =
+    Boolean(user?.employee_id) &&
+    dangCho.some((row) => row.assignee_employee_id === user?.employee_id)
   const dangChay = instance.status === INSTANCE_STATUS.running
   const ket = instance.status === INSTANCE_STATUS.blocked
   //  Đã duyệt xong mà vẫn còn lý do ghi lại = có gì đó chưa hoàn tất được.
@@ -59,18 +68,26 @@ export function DocumentApprovalBanner({ instance }: DocumentApprovalBannerProps
           Đang chạy luồng «{instance.flow_name}» — bước {instance.current_seq}
           {dangCho.length > 0 && ` · ${dangCho[0].node_name}`}
         </p>
-        {/*  Gọi tên một màn hình mà không mở được nó tới là bắt người đọc tự đi
-             tìm trong menu. Băng này hiện đúng lúc người ta đang muốn sang đó,
-             nên chữ «Việc của tôi» phải bấm được. */}
-        {dangCho.length > 0 && (
-          <p className="text-muted-foreground">
-            Chờ {dangCho.map((row) => row.assignee_name).join(', ')} xử lý ở màn{' '}
-            <Link to={appRoutes.approval.myTasks} className="font-medium underline">
-              Việc của tôi
-            </Link>
-            .
-          </p>
-        )}
+        {/*  Hai câu khác hẳn nhau tùy người đọc là ai.
+
+             Bản cũ nói với tất cả mọi người là "xử lý ở màn «Việc của tôi»" —
+             sai với 9/10 người mở trang này, vì màn đó chỉ có việc của CHÍNH
+             họ. Người soạn bấm sang chỉ thấy danh sách rỗng. */}
+        {dangCho.length > 0 &&
+          (toiPhaiXuLy ? (
+            <p className="text-muted-foreground">
+              <b className="text-foreground">Đang chờ bạn duyệt.</b>{' '}
+              <Link to={appRoutes.approval.myTasks} className="font-medium underline">
+                Mở «Việc của tôi» để xử lý
+              </Link>
+              .
+            </p>
+          ) : (
+            <p className="text-muted-foreground">
+              Chờ {dangCho.map((row) => row.assignee_name).join(', ')} duyệt. Bạn không phải
+              làm gì — xem dấu vết ở tab <b>Phê duyệt</b>.
+            </p>
+          ))}
       </div>
     </div>
   )

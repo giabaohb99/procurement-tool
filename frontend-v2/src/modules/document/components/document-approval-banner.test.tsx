@@ -1,10 +1,21 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { INSTANCE_STATUS, TASK_STATUS } from '@/modules/approval/types/approval'
 import type { ApprovalInstance } from '@/modules/approval/types/approval'
 import { DocumentApprovalBanner } from './document-approval-banner'
+
+//  Ai đang đọc băng — quyết định băng nói câu nào. Mặc định là người NGOÀI cuộc
+//  (nhân sự 99), vì đó là 9/10 lượt mở trang này.
+const dangDangNhap = { employee_id: 99 }
+vi.mock('@/core/auth/use-auth', () => ({
+  useAuth: () => ({ user: dangDangNhap }),
+}))
+
+beforeEach(() => {
+  dangDangNhap.employee_id = 99
+})
 
 //  Băng có một <Link> sang «Việc của tôi», nên phải có Router context.
 function ve(instance: ApprovalInstance | null) {
@@ -64,10 +75,23 @@ describe('DocumentApprovalBanner', () => {
     expect(screen.getByText(/Dego Admin/)).toBeInTheDocument()
   })
 
-  it('mở thẳng được màn «Việc của tôi» chứ không bắt tự đi tìm trong menu', () => {
+  it('người NGOÀI cuộc không bị đẩy sang một danh sách rỗng', () => {
+    //  LỖI ĐÃ XẢY RA: băng nói với tất cả mọi người là "xử lý ở màn «Việc của
+    //  tôi»". Màn đó chỉ liệt kê việc của CHÍNH người đăng nhập, nên người soạn
+    //  bấm sang chỉ thấy trống trơn và tưởng hệ thống hỏng.
     ve(phien())
 
-    expect(screen.getByRole('link', { name: 'Việc của tôi' })).toHaveAttribute(
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+    expect(screen.getByText(/Bạn không phải làm gì/)).toBeInTheDocument()
+  })
+
+  it('đúng người đang giữ việc thì mở thẳng được «Việc của tôi»', () => {
+    dangDangNhap.employee_id = 2 // = assignee_employee_id của task đang chờ
+
+    ve(phien())
+
+    expect(screen.getByText(/Đang chờ bạn duyệt/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Việc của tôi/ })).toHaveAttribute(
       'href',
       '/approval/my-tasks',
     )
