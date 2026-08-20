@@ -69,6 +69,17 @@ export const queryKeys = {
     suppliers: (params?: Record<string, unknown>) =>
       ['production', 'suppliers', params ?? {}] as const,
     supplier: (id: number) => ['production', 'suppliers', id] as const,
+    /** Hợp đồng — danh mục dùng chung, đặt ở Sản xuất cùng chỗ với NCC. */
+    contracts: (params?: Record<string, unknown>) =>
+      ['production', 'contracts', params ?? {}] as const,
+    /** Dòng khảo sát của một NCC (`/api/survey-report/by-supplier`). */
+    supplierSurveys: (params?: Record<string, unknown>) =>
+      ['production', 'suppliers', 'surveys', params ?? {}] as const,
+    /**
+     * KPI giao hàng của NCC, lấy từ báo cáo ma trận. Khóa mang cả năm vì backend
+     * mặc định NĂM HIỆN TẠI khi không gửi tham số.
+     */
+    supplierKpi: (year: string) => ['production', 'suppliers', 'kpi', year] as const,
   },
   hr: {
     all: ['hr'] as const,

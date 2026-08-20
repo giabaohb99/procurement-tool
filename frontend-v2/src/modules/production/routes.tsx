@@ -70,6 +70,12 @@ export const productionModule: ErpModule = {
       }),
     },
     {
+      path: `${appRoutes.production.suppliers}/:id`,
+      lazy: async () => ({
+        Component: (await import('./pages/supplier-detail-page')).SupplierDetailPage,
+      }),
+    },
+    {
       path: appRoutes.production.products,
       lazy: async () => ({
         Component: (await import('./pages/product-list-page')).ProductListPage,

@@ -1,7 +1,14 @@
 import { z } from 'zod'
 
 /**
- * Nguồn sự thật DUY NHẤT cho form nhà cung cấp: vừa validate, vừa sinh kiểu TS.
+ * Kiểu dữ liệu ghi của nhà cung cấp, dùng cho `supplier-api.ts`.
+ *
+ * ⚠️ Màn Nhà cung cấp KHÔNG còn chạy qua schema này: từ khi dời sang khung
+ * Generic CRUD (`config/supplier-crud.tsx`), form do `CrudFormDialog` dựng và
+ * ràng buộc khai ngay trong `formFields`. Sửa luật nhập liệu ở đây KHÔNG đổi gì
+ * trên màn — sửa trong config. Giữ file lại vì tầng API vẫn lấy kiểu từ đây, và
+ * vì đây là mẫu quy ước schema form được các phân hệ khác dẫn chiếu.
+ *
  * Ràng buộc phải bám sát backend (`SupplierCreate`) để không bị 422 sau khi submit.
  *
  * ⚠️ QUY ƯỚC CHO MỌI SCHEMA FORM: KHÔNG dùng `.default()` và `.coerce`.
@@ -21,8 +28,8 @@ export const supplierSchema = z.object({
   phone: z.string().trim().max(30, 'Số điện thoại tối đa 30 ký tự'),
   contact_person: z.string().trim().max(100, 'Người liên hệ tối đa 100 ký tự'),
   address: z.string().trim(),
-  // Lưu dạng thập phân (0.08 = 8%). Người dùng nhập theo phần trăm, quy đổi ở form —
-  // xem `supplier-form-dialog.tsx`.
+  // Lưu dạng thập phân (0.08 = 8%). Người dùng nhập theo phần trăm, quy đổi ở
+  // `shared/crud/field-values.ts` (trường khai `type: 'percent'`).
   vat: z.number().min(0, 'VAT không âm').max(1, 'VAT tối đa 100%'),
   is_active: z.boolean(),
 })

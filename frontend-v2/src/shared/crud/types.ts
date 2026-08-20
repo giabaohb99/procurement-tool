@@ -14,8 +14,13 @@ export interface CrudFormField {
   name: string
   /** Nhãn tiếng Việt hiển thị trên form. */
   label: string
-  /** Loại trường form. */
-  type?: 'text' | 'number' | 'textarea' | 'select' | 'switch' | 'date'
+  /**
+   * Loại trường form.
+   *
+   * `percent`: người dùng nhập PHẦN TRĂM (8) còn backend lưu TỈ LỆ (0.08) —
+   * quy đổi do `field-values.ts` lo, config chỉ khai kiểu.
+   */
+  type?: 'text' | 'number' | 'textarea' | 'select' | 'switch' | 'date' | 'percent'
   /** Bắt buộc nhập. */
   required?: boolean
   /** Chỉ đọc khi sửa (vd `code` không cho đổi sau khi tạo). */
@@ -33,7 +38,10 @@ export interface CrudFormField {
     valueKey?: string
     labelKey?: string
   }
-  /** Giá trị mặc định khi tạo mới. */
+  /**
+   * Giá trị mặc định khi tạo mới, khai theo DẠNG LƯU của backend (vd VAT 8% thì
+   * khai `0.08`, không khai `8`).
+   */
   defaultValue?: unknown
 }
 

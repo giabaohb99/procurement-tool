@@ -1,6 +1,6 @@
 import { ArrowLeft, CircleCheck, CircleX, Hash, Loader2, Save } from 'lucide-react'
 import { useEffect } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
@@ -8,26 +8,16 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { AuditTimeline } from '@/shared/audit'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
-import { DatePicker } from '@/shared/ui/date-picker'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
 import { ErrorState } from '@/shared/ui/error-state'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
 import { PageContainer } from '@/shared/ui/page-container'
 import { RecordIdentityCard, type IdentityChip } from '@/shared/ui/record-identity-card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { Switch } from '@/shared/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import { Textarea } from '@/shared/ui/textarea'
-import type { CrudConfig, CrudFormField } from './types'
-import { useCrudDelete, useCrudDetail, useCrudSave, useCrudSourceOptions } from './use-crud'
+import { CrudField } from './crud-field'
+import { buildFormDefaults, toApiPayload } from './field-values'
+import type { CrudConfig } from './types'
+import { useCrudDelete, useCrudDetail, useCrudSave } from './use-crud'
 
 interface CrudDetailPageProps<T> {
   config: CrudConfig<T>
@@ -48,39 +38,22 @@ export function CrudDetailPage<T extends Record<string, any>>({
 
   const listUrl = config.listRoute || '/'
 
-  const buildDefaultValues = (sourceItem?: T | null) => {
-    const values: Record<string, any> = {}
-    for (const field of config.formFields) {
-      if (sourceItem && sourceItem[field.name] !== undefined) {
-        values[field.name] = sourceItem[field.name]
-      } else if (field.defaultValue !== undefined) {
-        values[field.name] = field.defaultValue
-      } else if (field.type === 'switch') {
-        values[field.name] = true
-      } else if (field.type === 'number') {
-        values[field.name] = 0
-      } else {
-        values[field.name] = ''
-      }
-    }
-    return values
-  }
-
   const {
     register,
     handleSubmit,
     control,
     reset,
     formState: { errors },
-  } = useForm<Record<string, any>>({
-    defaultValues: buildDefaultValues(item),
+  } = useForm<Record<string, unknown>>({
+    defaultValues: buildFormDefaults(config.formFields, item),
   })
 
+  // Bản ghi về sau khi gọi API (hoặc sau khi lưu) thì nạp lại vào form.
   useEffect(() => {
     if (item) {
-      reset(buildDefaultValues(item))
+      reset(buildFormDefaults(config.formFields, item))
     }
-  }, [item])
+  }, [item, config.formFields, reset])
 
   if (isLoading) {
     return (
@@ -109,21 +82,15 @@ export function CrudDetailPage<T extends Record<string, any>>({
     ? config.getItemName(item)
     : String(item.name || item.code || item[idKey] || config.title)
 
-  const onSubmit = async (values: Record<string, any>) => {
-    const payload: Record<string, any> = { ...values }
-    for (const field of config.formFields) {
-      if (field.type === 'number' && payload[field.name] !== undefined && payload[field.name] !== '') {
-        payload[field.name] = Number(payload[field.name])
-      }
-    }
-
-    const itemId = item[idKey]
-    await saveMutation.mutateAsync({ id: itemId, values: payload })
+  const onSubmit = async (values: Record<string, unknown>) => {
+    await saveMutation.mutateAsync({
+      id: item[idKey],
+      values: toApiPayload(config.formFields, values),
+    })
   }
 
   const handleDelete = async () => {
-    const itemId = item[idKey]
-    await deleteMutation.mutateAsync(itemId)
+    await deleteMutation.mutateAsync(item[idKey])
     navigate(listUrl)
   }
 
@@ -144,6 +111,43 @@ export function CrudDetailPage<T extends Record<string, any>>({
             ]
           : []),
       ]
+
+  const infoPanel = (
+    <>
+      <form
+        id="crud-detail-form"
+        onSubmit={handleSubmit(onSubmit)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+            e.preventDefault()
+          }
+        }}
+      >
+        <Card className="gap-4 p-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {config.formFields.map((field) => (
+              <CrudField
+                key={field.name}
+                field={field}
+                register={register}
+                control={control}
+                errors={errors}
+                isReadonly={!canWrite || field.readonlyOnEdit}
+              />
+            ))}
+          </div>
+        </Card>
+      </form>
+
+      {config.renderExtra && <div>{config.renderExtra(item)}</div>}
+
+      {item[idKey] && (
+        <div>
+          <AuditTimeline entity={config.entity} entityId={Number(item[idKey])} />
+        </div>
+      )}
+    </>
+  )
 
   return (
     <PageContainer>
@@ -193,40 +197,7 @@ export function CrudDetailPage<T extends Record<string, any>>({
             </TabsList>
 
             <TabsContent value="info" className="space-y-6">
-              <form
-                id="crud-detail-form"
-                onSubmit={handleSubmit(onSubmit)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-                    e.preventDefault()
-                  }
-                }}
-              >
-                <Card className="gap-4 p-5">
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {config.formFields.map((field) => (
-                      <DetailFormFieldItem
-                        key={field.name}
-                        field={field}
-                        register={register}
-                        control={control}
-                        errors={errors}
-                        canWrite={canWrite}
-                      />
-                    ))}
-                  </div>
-                </Card>
-              </form>
-
-              {config.renderExtra && (
-                <div>{config.renderExtra(item)}</div>
-              )}
-
-              {item[idKey] && (
-                <div>
-                  <AuditTimeline entity={config.entity} entityId={Number(item[idKey])} />
-                </div>
-              )}
+              {infoPanel}
             </TabsContent>
 
             {config.tabs.map((tab) => (
@@ -236,172 +207,9 @@ export function CrudDetailPage<T extends Record<string, any>>({
             ))}
           </Tabs>
         ) : (
-          <div className="space-y-6">
-            <form
-              id="crud-detail-form"
-              onSubmit={handleSubmit(onSubmit)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-                  e.preventDefault()
-                }
-              }}
-            >
-              <Card className="gap-4 p-5">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  {config.formFields.map((field) => (
-                    <DetailFormFieldItem
-                      key={field.name}
-                      field={field}
-                      register={register}
-                      control={control}
-                      errors={errors}
-                      canWrite={canWrite}
-                    />
-                  ))}
-                </div>
-              </Card>
-            </form>
-
-            {config.renderExtra && (
-              <div>{config.renderExtra(item)}</div>
-            )}
-
-            {item[idKey] && (
-              <div>
-                <AuditTimeline entity={config.entity} entityId={Number(item[idKey])} />
-              </div>
-            )}
-          </div>
+          <div className="space-y-6">{infoPanel}</div>
         )}
       </div>
     </PageContainer>
-  )
-}
-
-function DetailFormFieldItem({
-  field,
-  register,
-  control,
-  errors,
-  canWrite,
-}: {
-  field: CrudFormField
-  register: any
-  control: any
-  errors: any
-  canWrite: boolean
-}) {
-  const isFullWidth = field.fullWidth || field.type === 'textarea'
-  const isReadonly = !canWrite || field.readonlyOnEdit
-  const errorMessage = errors[field.name]?.message as string | undefined
-
-  return (
-    <div className={`space-y-1.5 ${isFullWidth ? 'sm:col-span-2' : ''}`}>
-      <Label htmlFor={field.name} className="flex items-center gap-1">
-        {field.label}
-        {field.required && <span className="text-destructive">*</span>}
-      </Label>
-
-      {field.type === 'textarea' ? (
-        <Textarea
-          id={field.name}
-          placeholder={field.placeholder}
-          disabled={isReadonly}
-          rows={3}
-          {...register(field.name, {
-            required: field.required ? `${field.label} là bắt buộc` : false,
-          })}
-        />
-      ) : field.type === 'switch' ? (
-        <Controller
-          control={control}
-          name={field.name}
-          render={({ field: controllerField }) => (
-            <div className="flex items-center gap-3 pt-1">
-              <Switch
-                id={field.name}
-                checked={Boolean(controllerField.value)}
-                onCheckedChange={controllerField.onChange}
-                disabled={isReadonly}
-              />
-              <span className="text-sm font-normal text-muted-foreground">
-                {controllerField.value ? 'Đang dùng / Hoạt động' : 'Ngừng / Ẩn'}
-              </span>
-            </div>
-          )}
-        />
-      ) : field.type === 'select' ? (
-        <DetailSelectField field={field} control={control} isReadonly={isReadonly} />
-      ) : field.type === 'date' ? (
-        <Controller
-          control={control}
-          name={field.name}
-          rules={{ required: field.required ? `${field.label} là bắt buộc` : false }}
-          render={({ field: controllerField }) => (
-            <DatePicker
-              value={controllerField.value || ''}
-              onChange={controllerField.onChange}
-              disabled={isReadonly}
-            />
-          )}
-        />
-      ) : (
-        <Input
-          id={field.name}
-          type={field.type === 'number' ? 'number' : 'text'}
-          placeholder={field.placeholder}
-          disabled={isReadonly}
-          {...register(field.name, {
-            required: field.required ? `${field.label} là bắt buộc` : false,
-          })}
-        />
-      )}
-
-      {field.hint && <p className="text-xs text-muted-foreground">{field.hint}</p>}
-      {errorMessage && <p className="text-xs text-destructive">{errorMessage}</p>}
-    </div>
-  )
-}
-
-function DetailSelectField({
-  field,
-  control,
-  isReadonly,
-}: {
-  field: CrudFormField
-  control: any
-  isReadonly?: boolean
-}) {
-  const { data: remoteOptions, isLoading } = useCrudSourceOptions(field.source)
-  const options = field.options ?? remoteOptions ?? []
-
-  return (
-    <Controller
-      control={control}
-      name={field.name}
-      rules={{ required: field.required ? `${field.label} là bắt buộc` : false }}
-      render={({ field: controllerField }) => (
-        <Select
-          value={String(controllerField.value ?? '')}
-          onValueChange={(val) => {
-            if (val === 'true') controllerField.onChange(true)
-            else if (val === 'false') controllerField.onChange(false)
-            else controllerField.onChange(val)
-          }}
-          disabled={isReadonly || isLoading}
-        >
-          <SelectTrigger id={field.name}>
-            <SelectValue placeholder={field.placeholder || `Chọn ${field.label.toLowerCase()}`} />
-          </SelectTrigger>
-          <SelectContent>
-            {options.map((opt) => (
-              <SelectItem key={String(opt.value)} value={String(opt.value)}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
-    />
   )
 }

@@ -7,8 +7,14 @@ import type { ListParams } from '@/shared/types/api'
 import { companyApi } from '../api/company-api'
 import type { CompanyFormValues } from '../schemas/company-schema'
 
-/** Danh sách công ty. Lọc được cả mã số hiệu và cấp pháp nhân. */
-export function useCompanies(params: ListParams = {}) {
+/**
+ * Danh sách công ty. Lọc được cả mã số hiệu và cấp pháp nhân.
+ *
+ * `enabled`: backend chặn `company.read`. Màn nào chỉ mượn danh sách này để đổi
+ * `company_id` thành tên (vd tab Hợp đồng của NCC) thì phải tự tắt khi thiếu
+ * quyền, kẻo người dùng ăn một toast 403 chẳng liên quan gì tới việc đang làm.
+ */
+export function useCompanies(params: ListParams = {}, options: { enabled?: boolean } = {}) {
   const query: ListParams = {
     page: 1,
     page_size: appConfig.defaultPageSize,
@@ -19,6 +25,7 @@ export function useCompanies(params: ListParams = {}) {
     queryKey: queryKeys.hr.companies(query),
     queryFn: () => companyApi.list(query),
     placeholderData: keepPreviousData,
+    enabled: options.enabled ?? true,
   })
 }
 

@@ -109,6 +109,15 @@ nhân (`/me`) · Cấu hình hệ thống (`/system/settings`, phân hệ Quản
 kế thừa 3 cấp độ (CrudListPage + CrudDetailPage có RecordIdentityCard + AuditTimeline + hỗ trợ tabs/bảng con DataTable + CrudFormDialog) và dời Danh mục Kho (`/inventory/warehouses` và `/inventory/warehouses/:id`).
 **Đã xong Đ-02** (CR-099): Dời Đơn vị tính (`/production/units` + `/production/units/:id`) và Phân loại VTBB/NL (`/production/item-groups` + `/production/item-groups/:id`) sang `frontend-v2` kế thừa 100% tầng generic CRUD, gắn vào phân hệ Sản xuất.
 **Đã xong Đ-03** (CR-100): Dời Sản phẩm & Vật tư (`/production/products` + `/production/products/:id`) sang `frontend-v2` có tab *Lịch sử mua hàng* (`PurchaseHistoryTable` với `DataTable` riêng, ẩn/hiện cột NCC theo quyền `supplier.read`, link sang ĐMH và gắn `AuditTimeline`).
+**Đã xong Đ-05** (CR-106): **Nhà cung cấp** — danh sách `/production/suppliers` dời sang khung CRUD
+khai báo (`production/config/supplier-crud.tsx`) và dựng `/production/suppliers/:id` **5 tab** đúng
+bản cũ: *Thông tin* · *Hợp đồng* · *Công nợ & Đánh giá* · *Lịch sử mua hàng* · *Khảo sát của NCC*
+(kế hoạch `erp/13` ghi "3 tab" là đếm sai, đã đính chính). Đây là màn danh sách **cuối cùng** còn tự
+ghép `<Table>`. Khung CRUD nay có kiểu trường **`percent`** (`shared/crud/field-values.ts`) — dùng nó
+cho VAT, đừng tự nhân chia 100 ở tầng màn: `Supplier.vat` lưu **tỷ lệ** `0.08` chứ không lưu `8`
+(CR-058). ⚠️ **Tab mượn dữ liệu của phân hệ khác thì phải tự tắt khi thiếu quyền** — `usePayables`,
+`usePayableSummary`, `useCompanies` không có nhánh tắt, cứ mount là gọi và người dùng ăn toast 403
+ngay lúc mở tab; truyền `enabled` hoặc bọc bằng `can(...)` trước khi dựng component con.
 **Bảng DÒNG CHỨNG TỪ dùng chung `LinesTable`** (`shared/data-table/lines-table.tsx`, CR-101 + CR-102):
 bốn bảng dòng (YCMH · YCBG · ĐMH · Giao hàng nhiều lần trong popup chi tiết dòng ĐMH) đều chạy trên
 nó — ghim cột, kéo thả đổi thứ tự, co giãn + auto-fit, tô màu, nhớ `localStorage`, nút *Bảng rút gọn
@@ -153,8 +162,9 @@ Docker; code bind-mount nên HMR chạy. Gọi API bằng đường **tương đ
   Đây là bản mô phỏng giao diện; kiểu dữ liệu của nó **chưa khớp** thiết kế ở `ke-hoach/erp/van-thu/04-bang-du-lieu.md`.
 - **Kiểm tra trước khi giao: `docker compose exec erp npm run check`** — gộp ba cổng:
   - `typecheck` (`tsc --noEmit`) phải **0 lỗi** (khác `frontend/`, bên đó baseline là đúng 4 lỗi cũ);
-  - `lint` (**ESLint 10** flat config, `eslint.config.js`) phải **0 lỗi**. Cảnh báo hiện còn **6**
-    (`react-refresh/only-export-components`) — đừng thêm mới. `typescript` ghim ở **5.9.3**,
+  - `lint` (**ESLint 10** flat config, `eslint.config.js`) phải **0 lỗi**. Cảnh báo hiện còn **13**
+    (6 `react-refresh/only-export-components` + 7 `no-explicit-any` của lớp CRUD, xem
+    `doc/erp/13-...md` §6.5) — đừng thêm mới. `typescript` ghim ở **5.9.3**,
     KHÔNG nâng lên 7 vì `typescript-eslint@8` chưa chạy được trên TS 7 (xem D-027);
   - `test` (**Vitest 4** + jsdom + Testing Library, cấu hình `vitest.config.ts`) phải xanh hết.
 - **Test đặt cạnh tệp nó kiểm** (`format-money.ts` → `format-money.test.ts`); luật đầy đủ ở

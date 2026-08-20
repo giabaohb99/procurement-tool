@@ -15,6 +15,8 @@ toàn bộ màn hình** của bản cũ, và chia phần còn lại thành **15 
 1. **Bản cũ có 48 màn.** Đếm ngày 19/08/2026: **26 xong** · **3 có nhưng khuyết** · **16 chưa có** ·
    **2 đã quyết bỏ** · **1 chờ quyết**. Trong 16 màn chưa có thì **5 màn thuộc ba thứ khách cho
    hoãn** *(Sao lưu CSDL, Quản lý Import, Phiếu hỗ trợ)*, còn lại **11 màn là việc trước mắt**.
+   *Cập nhật 20/08/2026 (CR-106):* xong thêm **chi tiết Nhà cung cấp** ⇒ **27 xong** · **15 chưa
+   có**, việc trước mắt còn **10 màn**. Số ngày công ở mục 3 chưa trừ đợt này.
 2. **Không phải viết backend dòng nào** cho 16 màn còn thiếu. Toàn bộ endpoint đã chạy thật ở bản
    cũ — đây thuần là dựng lại giao diện. (Việc backend của ERP v2 nằm ở `12`, giai đoạn P1/P2/P5…,
    không dính tới tệp này.)
@@ -86,7 +88,7 @@ tiết, chỉ khác nhãn. v2 gộp làm một, không phải màn thiếu.*
 | # | Màn bản cũ | Đường dẫn v2 | Tình trạng |
 |---|---|---|---|
 | 25 | Nhà cung cấp — danh sách | `/production/suppliers` | Xong |
-| 26 | Nhà cung cấp — **chi tiết** *(309 dòng, 3 tab)* | `appRoutes.production.supplierDetail` **đã khai, chưa route nào dùng** | **Thiếu** |
+| 26 | Nhà cung cấp — **chi tiết** *(309 dòng, 5 tab)* | `/production/suppliers/:id` | Xong *(CR-106)* |
 | 27 | Sản phẩm | `/production/products` *(+ chi tiết)* | Xong *(Đ-03, CR-100)* |
 | 28 | Hợp đồng — danh sách | *(chưa có)* → `/production/contracts` | **Thiếu** *(Đ-04)* |
 | 29 | Hợp đồng — chi tiết *(128 dòng)* | *(chưa có)* → `/production/contracts/:id` | **Thiếu** *(Đ-04)* |
@@ -96,9 +98,9 @@ tiết, chỉ khác nhãn. v2 gộp làm một, không phải màn thiếu.*
 | 33 | Phòng ban | `/hr/departments` *(+ chi tiết)* | Xong |
 | 34 | Phân công phụ trách *(170 + 187 dòng)* | *(chưa có)* | **Thiếu** |
 
-Chỗ dễ đếm nhầm: **chi tiết Nhà cung cấp mới có một nửa**. v2 có danh sách + hộp thoại sửa
-(`modules/production/pages/supplier-list-page.tsx`); bản cũ là **trang riêng** có tab *Hợp đồng*,
-*Lịch sử mua hàng*, *KPI giao hàng*. Hằng số đường dẫn đã khai sẵn nên nhìn qua tưởng xong.
+~~Chỗ dễ đếm nhầm: **chi tiết Nhà cung cấp mới có một nửa**.~~ **Đã làm xong ở CR-106** — xem §Đ-05.
+Ghi lại chỗ từng đếm nhầm để người sau khỏi lặp: hằng số `appRoutes.production.supplierDetail` khai
+sẵn từ lâu mà **không route nào dùng**, nhìn qua tưởng xong; và bản cũ có **5** tab chứ không phải 3.
 
 ### 1.6 Hệ thống
 
@@ -197,7 +199,7 @@ công, và đợt sau không chặn việc dùng thử đợt trước. Ai làm 
 | **Đ-02** | **Đơn vị tính** + **Phân loại** *(chỉ khai báo, không viết trang)* | 0,5 – 1 | Có | **Xong** |
 | **Đ-03** | **Sản phẩm** — danh sách + chi tiết *(có tab Lịch sử mua hàng)* | 2 – 3 | Có | **Xong** |
 | **Đ-04** | **Hợp đồng** — danh sách + chi tiết + tệp đính kèm | 1,5 – 2 | Có | Chưa làm |
-| **Đ-05** | **Chi tiết Nhà cung cấp** — 3 tab | 1,5 – 2 | Có | Chưa làm |
+| **Đ-05** | **Nhà cung cấp** — danh sách dời sang CRUD + chi tiết 5 tab | 1,5 – 2 | Có | **Xong** |
 | **Đ-06** | **Yêu cầu thanh toán — danh sách** ở `/finance/payment-requests` | 1 – 1,5 | Có | Chưa làm |
 | **Đ-07** | **Yêu cầu thanh toán — chi tiết** *(gồm cả màn tạo mới từ công nợ)* | 2 – 3 | Có | Chưa làm |
 | **Đ-08** | **Phiếu in Yêu cầu thanh toán** | 0,5 – 1 | Có | Chưa làm |
@@ -218,6 +220,10 @@ nhìn thấy mỗi sáng, nên đừng để nó nghèo hơn bản cũ vào đú
 
 **Đã xong trước bản này:** MC-1 … MC-4 *(CR-094)* — Đặt lại mật khẩu · Thông báo · Trang cá nhân ·
 Cấu hình hệ thống; **Đ-01** *(CR-098)* Kho · **Đ-02** *(CR-099)* ĐVT & Phân loại · **Đ-03** *(CR-100)* Sản phẩm & tab Lịch sử mua hàng · **CR-101** Hợp nhất bảng dòng hàng (YCMH, YCBG, ĐMH).
+
+**Xong sau bản này:** **Đ-05** *(CR-106)* Nhà cung cấp — danh sách dời sang khung CRUD khai báo và
+dựng trang chi tiết 5 tab. Làm **trước Đ-04** *(Hợp đồng)* nên tab *Hợp đồng* của NCC hiện là bảng
+chỉ đọc, chưa bấm sang được trang chi tiết hợp đồng; nối nốt khi Đ-04 xong.
 
 ### Đ-01 — Lớp CRUD khai báo + danh mục Kho · 2–3 ngày
 
@@ -274,14 +280,57 @@ biên bản nghiệm thu** để khỏi tưởng màn mới làm lộ dữ liệ
 **Điều kiện đủ.** Tải lên và tải về tệp đính kèm chạy · hạn hợp đồng sắp hết hiện cảnh báo như bản
 cũ · lọc theo nhà cung cấp ra đúng.
 
-### Đ-05 — Chi tiết Nhà cung cấp · 1,5–2 ngày
+### Đ-05 — Nhà cung cấp · 1,5–2 ngày · **ĐÃ XONG (CR-106)**
 
-**Làm gì.** Trang `/production/suppliers/:id` với ba tab: *Hợp đồng*, *Lịch sử mua hàng*, *KPI giao
-hàng* — đúng ba tab bản cũ *(309 dòng)*. Nối `appRoutes.production.supplierDetail` **đã khai sẵn
-nhưng chưa route nào dùng** vào router, và cho dòng trong danh sách bấm được sang đây.
+> **Đính chính bản kế hoạch.** Dòng cũ ghi *"ba tab — đúng ba tab bản cũ"* là **đếm sai**. Bản cũ
+> `frontend/src/pages/SupplierDetail.tsx` có **năm** tab: *Thông tin* · *Hợp đồng* · *Công nợ &
+> Đánh giá* · *Lịch sử mua hàng* · *Khảo sát của NCC*. Bản v2 làm đủ năm. Ai đọc kế hoạch để
+> nghiệm thu thì lấy đoạn dưới đây, đừng lấy dòng cũ.
 
-**Điều kiện đủ.** Ba tab ra số khớp bản cũ trên cùng nhà cung cấp · từ tab hợp đồng bấm sang chi
-tiết hợp đồng của Đ-04 · hộp thoại sửa nhanh ở danh sách vẫn chạy, không bị trang mới nuốt mất.
+**Đã làm gì.**
+
+1. **Danh sách** `/production/suppliers` dời sang khung CRUD khai báo — trang cũ 154 dòng tự ghép
+   giờ còn 6 dòng, mọi thứ khai trong `production/config/supplier-crud.tsx`. Đây là màn danh sách
+   **cuối cùng** còn tự dựng `<Table>` ở tay.
+2. **Chi tiết** `/production/suppliers/:id` — `appRoutes.production.supplierDetail` trước đây khai
+   sẵn mà **không route nào dùng**, nay đã nối. Tab *Thông tin* + `AuditTimeline` do
+   `CrudDetailPage` tự dựng; bốn tab còn lại khai trong `tabs` của config.
+3. **Kiểu trường `percent`** thêm vào khung CRUD chung để đóng cái bẫy CR-058: `Supplier.vat` lưu
+   **tỷ lệ** (`0.08`) chứ không lưu phần trăm, người nhập thì gõ `8`. Trước đây mỗi màn tự nhân chia
+   lấy; nay quy về `shared/crud/field-values.ts`.
+
+**Bốn tab phụ và nguồn số.**
+
+| Tab | Nguồn | Quyền cần |
+|---|---|---|
+| Hợp đồng | `/api/contracts?party_code=` | `contract.read` *(+ `company.read` cho cột **Công ty ký**)* |
+| Công nợ & Đánh giá | `/api/reports/matrix?year=all` **và** `/api/payables` | `report.read` · `payable.read` |
+| Lịch sử mua hàng | `/api/suppliers/{code}/purchase-history` — dùng lại `PurchaseHistoryTable` của Đ-03 | `supplier.read` *(đã có sẵn vì mới vào được trang)* |
+| Khảo sát của NCC | `/api/survey-report/by-supplier` | `survey.read` |
+
+**Bẫy đã vấp và cách đã xử.**
+
+- **Thiếu quyền là ăn toast 403 ngay lúc mở tab.** `usePayables` / `usePayableSummary` /
+  `useCompanies` không có nhánh tắt, cứ mount là gọi. Đã tách khối công nợ thành component con chỉ
+  dựng khi `can('payable','read')`, và thêm tùy chọn `enabled` cho `useCompanies`. Tab nào mượn dữ
+  liệu của phân hệ khác thì **phải tự tắt**, đừng trông vào hook.
+- **Đánh giá và Công nợ không được ăn chung bộ lọc.** KPI giao hàng tính trên *toàn bộ* lịch sử
+  giao hàng, còn bảng công nợ là *sổ nợ còn treo*. Cho chung một bộ lọc thì lọc "nợ quá hạn" xong
+  nhìn sang tỷ lệ trễ sẽ tưởng đó là tỷ lệ của riêng mấy đơn quá hạn. Hai khối, hai nguồn, có ghi
+  chú ngay trên màn.
+- **`/api/survey-report/by-supplier` không phân trang, không nhận tham số lọc** — trả một cục
+  `{supplier_lines, product_lines}`. Nên lọc và phân trang ở phía giao diện; luật lọc bóc ra hàm
+  thuần `utils/supplier-survey-filter.ts` có test riêng, vì dò từng ô chứ **không** nối các ô lại
+  thành một chuỗi *(nối thì "An" ở cột tên khớp luôn với "An" trong số điện thoại)*.
+- **Backend chỉ nhận đúng 5 tham số lọc** `code · name · tax_code · supplier_type · is_active`, và
+  **không có tham số `search`** — tham số ngoài danh sách bị **bỏ qua im lặng**, người dùng tưởng
+  đã lọc. Ô tìm nhanh vì thế ánh xạ vào `name`.
+
+**Còn nợ.** Tab *Hợp đồng* chưa bấm sang chi tiết hợp đồng được vì Đ-04 chưa làm.
+
+**Điều kiện đủ.** *(đã nghiệm thu bằng cổng `npm run check`: 0 lỗi typecheck · 0 lỗi lint · 376
+test xanh)* Năm tab ra số khớp bản cũ trên cùng nhà cung cấp · hộp thoại thêm/sửa nhanh ở danh sách
+vẫn chạy, không bị trang mới nuốt mất · tài khoản thiếu quyền thấy dòng giải thích thay vì toast lỗi.
 
 ### Đ-06 — Yêu cầu thanh toán, danh sách · 1–1,5 ngày
 
@@ -518,18 +567,19 @@ treo lại rồi tải nhầm sang lượt lưu sau.
 ### 6.5 Nợ kỹ thuật của lớp CRUD — trả trước khi mở rộng thêm
 
 Rà lại `shared/crud/` (dựng ở CR-098) thấy các chỗ sau; chưa cái nào chặn chạy, nhưng **đợt Đ-04 và
-Đ-05 sẽ nhân bản chúng lên gấp đôi** nên trả sớm rẻ hơn:
+Đ-05 sẽ nhân bản chúng lên gấp đôi** nên trả sớm rẻ hơn. **Cột *Tình trạng* rà lại 20/08/2026 sau
+CR-106** — bốn dòng đã trả, bốn dòng còn nợ:
 
-| Chỗ | Vấn đề | Vì sao phải sửa |
-|---|---|---|
-| `crud-detail-page.tsx`, `crud-form-dialog.tsx`, `crud-list-page.tsx`, `use-crud.ts` | **25 cảnh báo `no-explicit-any` mới** *(lint từ 6 lên 31 cảnh báo)*, trong đó `any` lọt vào chữ ký export `CrudListPage<T extends Record<string, any>>` | `typescript.md`: *"Never let `any` leak into a public/exported signature"*. Dùng `unknown` + thu hẹp, hoặc ràng generic vào kiểu bản ghi thật |
-| `crud-form-dialog.tsx` | Ghép class bằng **template string** | `styling.md` **CẤM** — bỏ qua `tailwind-merge` nên class đè nhau im lặng. Đổi sang `cn()` |
-| `use-crud.ts` | Khóa query viết thẳng tại chỗ `['crud', apiPath, …]` | `naming.md`: khóa phải khai ở `shared/constants/query-keys.ts`, không thì `invalidate` trượt âm thầm |
-| `shared/crud/types.ts` | Một câu `import` nằm **giữa tệp** (dòng 40) | Khó thấy phụ thuộc, và là chỗ dễ đẻ vòng lặp import |
-| `crud-detail-page.tsx` | Khối form + `renderExtra` + `AuditTimeline` bị **chép nguyên hai lần** cho nhánh có tab và nhánh không tab | Sửa một chỗ quên chỗ kia là hai màn lệch nhau |
-| `crud-detail-page.tsx` vs `crud-form-dialog.tsx` | `FormFieldItem`/`SelectField` và `DetailFormFieldItem`/`DetailSelectField` **trùng nhau ~85 dòng** | Cùng một ô nhập mà hai bản, sửa quy tắc hiển thị phải nhớ cả hai |
-| `CrudConfig` | `config.exportXlsx` khai ra nhưng **không chỗ nào dùng** | Đọc khai báo tưởng có xuất Excel, thật ra không |
-| `crud-detail-page.tsx:83`, `crud-form-dialog.tsx:77` | `useEffect` thiếu phụ thuộc `buildDefaultValues`, `reset` | Mở lại form với bản ghi khác có thể còn giữ giá trị cũ |
+| Chỗ | Vấn đề | Vì sao phải sửa | Tình trạng |
+|---|---|---|---|
+| `crud-detail-page.tsx`, `crud-form-dialog.tsx`, `crud-list-page.tsx`, `use-crud.ts` | `no-explicit-any` — `any` lọt vào chữ ký export `CrudListPage<T extends Record<string, any>>` | `typescript.md`: *"Never let `any` leak into a public/exported signature"*. Dùng `unknown` + thu hẹp, hoặc ràng generic vào kiểu bản ghi thật | **Còn nợ** — nay còn **6 cảnh báo** *(cộng 1 ở `purchase-history-table.tsx`)*, không còn 25 |
+| `use-crud.ts` | Khóa query viết thẳng tại chỗ `['crud', apiPath, …]` | `naming.md`: khóa phải khai ở `shared/constants/query-keys.ts`, không thì `invalidate` trượt âm thầm | **Còn nợ** — danh sách đã có `getCrudQueryKey`, nhưng khóa *chi tiết* và hai chỗ `invalidateQueries` vẫn viết tay |
+| `shared/crud/types.ts` | Một câu `import` nằm **giữa tệp** *(nay ở dòng 48)* | Khó thấy phụ thuộc, và là chỗ dễ đẻ vòng lặp import | **Còn nợ** |
+| `CrudConfig` | `config.exportXlsx` khai ra nhưng **không chỗ nào dùng** | Đọc khai báo tưởng có xuất Excel, thật ra không | **Còn nợ** — riêng NCC thì backend cũng chỉ có `/export/csv`, không có xlsx |
+| `crud-form-dialog.tsx` | Ghép class bằng **template string** | `styling.md` **CẤM** — bỏ qua `tailwind-merge` nên class đè nhau im lặng. Đổi sang `cn()` | ~~Còn nợ~~ **Đã trả** |
+| `crud-detail-page.tsx` | Khối form + `renderExtra` + `AuditTimeline` bị **chép nguyên hai lần** cho nhánh có tab và nhánh không tab | Sửa một chỗ quên chỗ kia là hai màn lệch nhau | ~~Còn nợ~~ **Đã trả** — gom thành `infoPanel` dựng một lần |
+| `crud-detail-page.tsx` vs `crud-form-dialog.tsx` | `FormFieldItem`/`SelectField` và `DetailFormFieldItem`/`DetailSelectField` **trùng nhau ~85 dòng** | Cùng một ô nhập mà hai bản, sửa quy tắc hiển thị phải nhớ cả hai | ~~Còn nợ~~ **Đã trả** — gộp về `crud-field.tsx` |
+| `crud-detail-page.tsx:83`, `crud-form-dialog.tsx:77` | `useEffect` thiếu phụ thuộc `buildDefaultValues`, `reset` | Mở lại form với bản ghi khác có thể còn giữ giá trị cũ | ~~Còn nợ~~ **Đã trả** *(CR-106)* |
 
 ---
 
@@ -538,8 +588,8 @@ Rà lại `shared/crud/` (dựng ở CR-098) thấy các chỗ sau; chưa cái n
 Áp cho **mọi** đợt, không có ngoại lệ:
 
 - `docker compose exec erp npm run check` xanh cả ba cổng — typecheck **0 lỗi**, lint **0 lỗi**,
-  test xanh hết. Cảnh báo lint: mốc cũ là **6**, hiện **31** vì lớp CRUD *(xem §6.5)* — **đừng thêm
-  mới**, và trả về 6 khi dọn xong §6.5.
+  test xanh hết. Cảnh báo lint: mốc cũ là **6**, hiện **13** *(6 `react-refresh` cũ + 7
+  `no-explicit-any` của lớp CRUD, xem §6.5)* — **đừng thêm mới**, và trả về 6 khi dọn xong §6.5.
 - Mỗi đợt có **ít nhất một tệp test đặt cạnh tệp nó kiểm**, tên `it(...)` bằng tiếng Việt, mô tả
   hành vi. Ưu tiên phần dễ sai âm thầm: kiểm tra dữ liệu nhập, dịch bộ lọc, tính tiền.
 - Màn nào có phân quyền thì phải có bài kiểm **thiếu quyền không thấy mục menu** — ẩn nút ở giao
