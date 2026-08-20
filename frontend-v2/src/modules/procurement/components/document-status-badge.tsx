@@ -165,3 +165,25 @@ export function LineApproveBadge({ status }: { status: string }) {
     </Badge>
   )
 }
+
+/** Kết luận LAB của một dòng khảo sát sản phẩm (CR-109). */
+const LAB_RESULT_TONE: Record<string, Tone> = {
+  'Mẫu đạt': 'done',
+  'Mẫu không đạt': 'danger',
+}
+
+export function LabResultBadge({ result }: { result: string }) {
+  if (!result) return <span className="text-muted-foreground">—</span>
+
+  return (
+    <Badge
+      variant="secondary"
+      className={cn(
+        'border-0 whitespace-normal break-words text-center leading-tight',
+        TONE_CLASS[LAB_RESULT_TONE[result] ?? 'neutral'],
+      )}
+    >
+      {result}
+    </Badge>
+  )
+}

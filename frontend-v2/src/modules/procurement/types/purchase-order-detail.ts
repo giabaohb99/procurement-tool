@@ -160,6 +160,22 @@ export function isPurchaseOrderLocked(status: string): boolean {
   return ['completed', 'cancelled'].includes(status)
 }
 
+/**
+ * Đơn đã được duyệt (CR-108, phiếu hỗ trợ TK19082604).
+ *
+ * Từ mốc này nội dung đơn là thứ trưởng phòng đã ký, không sửa được nữa — chỉ còn
+ * mở vài ô PHÁT SINH SAU KHI DUYỆT (xem `PO_FIELDS_EDITABLE_AFTER_APPROVE`). Muốn
+ * đổi phần đã duyệt thì bấm "Hủy duyệt" để đơn về Nháp rồi gửi duyệt lại. Backend
+ * chặn y hệt (`chan_sua_don_da_duyet`), đây chỉ là lớp khóa cho êm tay.
+ */
+export function isPurchaseOrderApproved(status: string): boolean {
+  return ['approved', 'partial', 'received'].includes(status)
+}
+
+/** Nhãn các ô còn sửa được sau khi duyệt — dùng cho câu nhắc trên màn. */
+export const PO_FIELDS_EDITABLE_AFTER_APPROVE =
+  'Tên trên hóa đơn · Ngày dự kiến có hàng · Kho nhận mặc định · Ghi chú · Ngày giao chứng từ cho KT · Giao hàng nhiều lần'
+
 /** Đơn đã duyệt trở đi mới nhập được tiến độ giao hàng. */
 export function isDeliveryStage(status: string): boolean {
   return ['approved', 'partial', 'received'].includes(status)

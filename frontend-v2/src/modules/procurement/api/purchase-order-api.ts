@@ -105,9 +105,12 @@ export const purchaseOrderApi = {
   /** Mở lại đơn đã hoàn thành để xử lý tiếp (nhập số HĐ, tạo YCTT…). */
   reopen: (id: number) => apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/reopen`, {}),
 
-  /** Ba thao tác dưới đều cần lý do — lý do vào nhật ký thao tác. */
+  /** Bốn thao tác dưới đều cần lý do — lý do vào nhật ký thao tác. */
   reject: (id: number, reason: string) =>
     apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/reject`, { reason }),
+  /** Hủy duyệt: đưa đơn ĐÃ DUYỆT về Nháp để sửa rồi gửi duyệt lại (CR-108). */
+  unapprove: (id: number, reason: string) =>
+    apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/unapprove`, { reason }),
   returnToCreator: (id: number, reason: string) =>
     apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/return`, { reason }),
   cancel: (id: number, reason: string) =>

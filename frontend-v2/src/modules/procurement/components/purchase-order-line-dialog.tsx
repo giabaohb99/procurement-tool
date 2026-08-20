@@ -1,6 +1,7 @@
 import type { Supplier } from '@/modules/production/types/supplier'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
+import { CopyButton } from '@/shared/ui/copy-button'
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,7 @@ import { PurchaseOrderDeliveriesTable } from './purchase-order-deliveries-table'
 import {
   isLineLocked,
   isLineReceived,
+  PO_FIELDS_EDITABLE_AFTER_APPROVE,
   PRODUCT_LOCK_HINT,
   type PurchaseOrderItem,
 } from '../types/purchase-order-detail'
@@ -43,6 +45,11 @@ interface PurchaseOrderLineDialogProps {
   open: boolean
   /** Sửa được nội dung dòng (đơn chưa chốt + có quyền ghi). */
   editable: boolean
+  /**
+   * Đơn ĐÃ DUYỆT + có quyền ghi (CR-108). Chỉ mở đúng các ô phát sinh sau khi
+   * duyệt; phần nội dung đã được ký thì vẫn khóa.
+   */
+  afterApproveEditable: boolean
   /** Nhập được tiến độ giao (đơn đã duyệt trở đi). */
   deliveryEditable: boolean
   /** Gắn tệp cho lần giao — mở cả khi đơn đã hoàn thành. */
@@ -71,6 +78,7 @@ export function PurchaseOrderLineDialog({
   lineNumber,
   open,
   editable,
+  afterApproveEditable,
   deliveryEditable,
   attachEditable,
   purchaseOrderId,
@@ -91,6 +99,11 @@ export function PurchaseOrderLineDialog({
   const received = isLineReceived(item)
   const fieldEditable = editable && !locked
   const canEditDeliveries = deliveryEditable && !locked
+  /**
+   * Ô còn mở khi đơn ĐÃ DUYỆT (CR-108). Gộp với `fieldEditable` chứ không thay thế:
+   * lúc đơn còn Nháp thì mấy ô này vẫn sửa như cũ.
+   */
+  const lateEditable = fieldEditable || (afterApproveEditable && !locked)
   const remaining = (item.qty_order || 0) - (item.qty_received || 0)
 
   const patch = (changes: Partial<PurchaseOrderItem>) => onChange({ ...item, ...changes })
@@ -121,10 +134,25 @@ export function PurchaseOrderLineDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {afterApproveEditable && !locked && (
+          <p className="rounded-md border border-info/30 bg-info/8 px-3 py-2 text-sm text-muted-foreground">
+            Đơn đã duyệt — chỉ còn sửa được: {PO_FIELDS_EDITABLE_AFTER_APPROVE}. Muốn đổi phần
+            khác thì bấm <b>Hủy duyệt</b> ở đầu trang để đơn về Nháp, sửa xong gửi duyệt lại.
+          </p>
+        )}
+
         <section className="grid min-w-0 gap-x-4 gap-y-3 md:grid-cols-2">
-          <Field label="Mã hàng" required>
-            {item.product_code || '—'}
-          </Field>
+          <div className="space-y-1.5">
+            <Label className="text-muted-foreground">
+              Mã hàng
+              <RequiredMark />
+            </Label>
+            {/* Chỉ xem nhưng phải lấy ra được để tra cứu — chép bằng nút cho chắc. */}
+            <div className="flex min-w-0 items-center gap-1">
+              <ReadOnlyValue className="min-w-0 flex-1">{item.product_code}</ReadOnlyValue>
+              <CopyButton value={item.product_code} label="mã hàng" className="size-8" />
+            </div>
+          </div>
 
           <div className="space-y-1.5">
             <Label>
@@ -164,7 +192,7 @@ export function PurchaseOrderLineDialog({
                   liệu về — nói rõ để người lập không tưởng phải gõ tay mọi dòng. */}
               <RequiredMark hint="Bắt buộc trước khi gửi duyệt — bỏ trống thì lấy theo danh mục sản phẩm; sản phẩm chưa khai thì phải gõ tay" />
             </Label>
-            {fieldEditable ? (
+            {lateEditable ? (
               <Textarea
                 rows={2}
                 value={item.invoice_name || ''}
@@ -219,7 +247,7 @@ export function PurchaseOrderLineDialog({
             <Label title="Có ngày này thì dòng chuyển sang 'Đã gửi ĐMH cho KT'">
               Ngày giao chứng từ cho KT
             </Label>
-            {fieldEditable ? (
+            {lateEditable ? (
               <DatePicker
                 value={item.document_delivery_date || ''}
                 onChange={(value) => patch({ document_delivery_date: value })}
@@ -256,7 +284,7 @@ export function PurchaseOrderLineDialog({
                   loại chưa khai thời gian chuẩn thì ô ở lại rỗng, phải gõ tay. */}
               <RequiredMark hint="Bắt buộc trước khi gửi duyệt — bỏ trống thì hệ thống tự tính theo phân loại; không tính được thì phải chọn tay" />
             </Label>
-            {fieldEditable ? (
+            {lateEditable ? (
               <DatePicker
                 value={item.expected_date || ''}
                 onChange={(value) => patch({ expected_date: value })}
@@ -318,7 +346,7 @@ export function PurchaseOrderLineDialog({
               Kho nhận mặc định
               <RequiredMark />
             </Label>
-            {fieldEditable ? (
+            {lateEditable ? (
               <Select
                 value={item.warehouse_code || undefined}
                 onValueChange={(value) => patch({ warehouse_code: value })}
@@ -374,7 +402,7 @@ export function PurchaseOrderLineDialog({
 
           <div className="space-y-1.5 md:col-span-2">
             <Label>Ghi chú</Label>
-            {fieldEditable ? (
+            {lateEditable ? (
               <Input
                 value={item.note || ''}
                 onChange={(event) => patch({ note: event.target.value })}
@@ -431,7 +459,7 @@ export function PurchaseOrderLineDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Đóng
           </Button>
-          {(editable || canEditDeliveries) && (
+          {(editable || canEditDeliveries || lateEditable) && (
             <Button
               onClick={() => {
                 onOpenChange(false)

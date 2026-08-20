@@ -43,6 +43,7 @@ const ACTION_LABELS = {
   reopen: 'Đã mở lại đơn',
   reject: 'Đã từ chối đơn',
   return: 'Đã trả đơn về cho người tạo',
+  unapprove: 'Đã hủy duyệt — đơn về Nháp',
   cancel: 'Đã hủy đơn',
   copy: 'Đã nhân bản thành đơn nháp mới',
 } as const
@@ -51,7 +52,7 @@ export type PurchaseOrderAction = keyof typeof ACTION_LABELS
 
 /**
  * Mọi thao tác chuyển trạng thái gom vào MỘT mutation — chúng chỉ khác đường
- * dẫn và câu thông báo. `reason` bắt buộc với reject / return / cancel.
+ * dẫn và câu thông báo. `reason` bắt buộc với reject / return / unapprove / cancel.
  */
 export function usePurchaseOrderAction(id: number) {
   const queryClient = useQueryClient()
@@ -71,6 +72,8 @@ export function usePurchaseOrderAction(id: number) {
           return purchaseOrderApi.reject(id, reason ?? '')
         case 'return':
           return purchaseOrderApi.returnToCreator(id, reason ?? '')
+        case 'unapprove':
+          return purchaseOrderApi.unapprove(id, reason ?? '')
         case 'cancel':
           return purchaseOrderApi.cancel(id, reason ?? '')
         case 'copy':

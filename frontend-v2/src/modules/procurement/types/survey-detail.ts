@@ -104,6 +104,7 @@ export type SurveyFieldType =
   | 'legal'
   | 'unit'
   | 'approve'
+  | 'lab'
 
 /** Một cột của bảng dòng. `width` tính bằng px, bảng chạy `table-fixed`. */
 export interface SurveyColumn {
@@ -136,6 +137,15 @@ export const SURVEY_APPROVE_OPTIONS = [
   'Không duyệt',
   'Thiếu thông tin',
 ] as const
+
+/**
+ * Kết luận của LAB về mẫu hàng (CR-109, phiếu hỗ trợ TK20082601).
+ *
+ * Trước đây `lab_result` là ô chữ tự do nên mỗi người gõ một kiểu, không lọc và
+ * không tô màu được. Nay nó là hai lựa chọn, phần nhận xét dài chuyển sang
+ * `lab_note` ("Chi tiết đánh giá từ LAB"). Để trống = chưa có kết quả.
+ */
+export const SURVEY_LAB_OPTIONS = ['Mẫu đạt', 'Mẫu không đạt'] as const
 
 /** Dòng mới luôn bắt đầu ở "Chờ duyệt" — để trống thì bảng duyệt lọc không thấy. */
 export const LINE_APPROVE_DEFAULT = 'Chờ duyệt'
@@ -354,8 +364,8 @@ export const PRODUCT_SECTIONS: SurveySection[] = [
       { key: 'sample_ready', label: 'Mẫu sẵn', type: 'check' },
       { key: 'sample_date', label: 'Ngày lấy mẫu', type: 'date' },
       { key: 'sample_qty', label: 'Số lượng mẫu nhận', type: 'num' },
-      { key: 'lab_result', label: 'Đánh giá chất lượng từ LAB', type: 'textarea', full: true },
-      { key: 'lab_note', label: 'Ghi chú LAB', type: 'textarea', full: true },
+      { key: 'lab_result', label: 'Đánh giá của LAB', type: 'lab' },
+      { key: 'lab_note', label: 'Chi tiết đánh giá từ LAB', type: 'textarea', full: true },
     ],
   },
   {
@@ -397,11 +407,20 @@ export const PRODUCT_COLUMNS: SurveyColumn[] = [
   { key: 'sample_ready', label: 'Mẫu sẵn', width: 80, type: 'check' },
   { key: 'sample_date', label: 'Ngày mẫu', width: 120, type: 'date' },
   { key: 'sample_qty', label: 'SL mẫu', width: 90, type: 'num' },
-  { key: 'lab_result', label: 'KQ LAB', width: 150 },
-  { key: 'lab_note', label: 'Ghi chú LAB', width: 150 },
+  { key: 'lab_note', label: 'Chi tiết ĐG LAB', width: 180 },
   { key: 'nspt_note', label: 'Nhận xét NSPT', width: 160 },
   { key: 'nspt_reason', label: 'Lý do NSPT', width: 160 },
   { key: 'note', label: 'Ghi chú', width: 160 },
+  // CR-109: kết luận LAB đứng ngay TRƯỚC cột Duyệt — người duyệt quét bảng là
+  // thấy mẫu đạt hay không, khỏi mở từng dòng ra xem (đúng chỗ khách khoanh trong
+  // phiếu hỗ trợ TK20082601).
+  {
+    key: 'lab_result',
+    label: 'Mẫu đạt/không đạt',
+    width: 150,
+    type: 'lab',
+    options: SURVEY_LAB_OPTIONS,
+  },
   {
     key: 'line_approve',
     label: 'Duyệt (TP/QL)',
@@ -412,7 +431,7 @@ export const PRODUCT_COLUMNS: SurveyColumn[] = [
   { key: 'line_approve_note', label: 'Ghi chú duyệt', width: 180 },
 ]
 
-/** Cột hiện ở chế độ RÚT GỌN — 10 trong 30 cột. */
+/** Cột hiện ở chế độ RÚT GỌN — 11 trong 30 cột. */
 export const PRODUCT_CORE_KEYS = [
   'supplier_available',
   'supplier_code',
@@ -423,6 +442,8 @@ export const PRODUCT_CORE_KEYS = [
   'moq',
   'price_by_volume',
   'note',
+  // CR-109: kết luận LAB phải thấy được cả ở bảng rút gọn — đây là căn cứ duyệt.
+  'lab_result',
   'line_approve',
 ] as const
 

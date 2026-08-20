@@ -1,5 +1,7 @@
+import { Circle, CircleCheck } from 'lucide-react'
 import { useMemo } from 'react'
 
+import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
@@ -18,13 +20,20 @@ import type { SurveyCatalog } from '../helpers/survey-catalog'
 import { isSupplierFromCatalog, rowAmount, toNumber } from '../helpers/survey-line'
 import {
   SURVEY_APPROVE_OPTIONS,
+  SURVEY_LAB_OPTIONS,
   type SurveyField,
   type SurveyLine,
 } from '../types/survey-detail'
-import { LineApproveBadge } from './document-status-badge'
+import { LabResultBadge, LineApproveBadge } from './document-status-badge'
 
 /** Radix Select cấm value rỗng — dùng mã canh này cho lựa chọn "để trống". */
 const EMPTY_CATALOG_VALUE = '__empty__'
+
+/** Màu chữ của ô chọn kết luận LAB — xanh = đạt, đỏ = không đạt (CR-109). */
+const LAB_TEXT_CLASS: Record<string, string> = {
+  'Mẫu đạt': 'text-success',
+  'Mẫu không đạt': 'text-destructive',
+}
 
 /**
  * Ô chữ CHỈ ĐỌC.
@@ -186,6 +195,67 @@ export function SurveyLineField({
           </SelectContent>
         </Select>
       )
+
+    /* ---- Kết luận LAB: hai lựa chọn, để trống = chưa có kết quả (CR-109) ---- */
+    case 'lab': {
+      if (!editable) return <LabResultBadge result={text} />
+      // Trong BẢNG thì dùng ô chọn: cột rộng 150px, hai cái nút không nằm vừa.
+      if (isCell)
+        return (
+          <Select
+            value={text || EMPTY_CATALOG_VALUE}
+            onValueChange={(next) =>
+              onChange({ [field.key]: next === EMPTY_CATALOG_VALUE ? '' : next })
+            }
+          >
+            <SelectTrigger
+              className={cn('h-8 w-full text-sm font-medium', LAB_TEXT_CLASS[text], invalidClass)}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent position="popper" align="start">
+              <SelectItem value={EMPTY_CATALOG_VALUE}>-- Chưa có KQ --</SelectItem>
+              {SURVEY_LAB_OPTIONS.map((option) => (
+                <SelectItem key={option} value={option} className={LAB_TEXT_CLASS[option]}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )
+      // Trong POPUP thì hai nút bấm cho nhanh tay — bấm lại nút đang chọn để bỏ chọn.
+      return (
+        <div
+          className={cn(
+            'flex flex-wrap items-center gap-2',
+            invalid && 'rounded-md p-1 ring-2 ring-destructive/20',
+          )}
+        >
+          {SURVEY_LAB_OPTIONS.map((option) => {
+            const on = text === option
+            const pass = option === 'Mẫu đạt'
+            return (
+              <Button
+                key={option}
+                type="button"
+                variant="outline"
+                onClick={() => onChange({ [field.key]: on ? '' : option })}
+                className={cn(
+                  'font-semibold',
+                  pass
+                    ? 'border-success/50 text-success hover:text-success'
+                    : 'border-destructive/50 text-destructive hover:text-destructive',
+                  on && (pass ? 'bg-success/15 hover:bg-success/20' : 'bg-destructive/15 hover:bg-destructive/20'),
+                )}
+              >
+                {on ? <CircleCheck className="size-4" /> : <Circle className="size-4" />}
+                {option}
+              </Button>
+            )
+          })}
+        </div>
+      )
+    }
 
     case 'select': {
       if (!editable) return <ReadOnlyText value={text} />

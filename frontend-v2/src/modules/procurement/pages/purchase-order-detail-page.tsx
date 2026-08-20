@@ -11,6 +11,7 @@ import {
   Plus,
   Printer,
   Receipt,
+  RotateCcw,
   Save,
   Send,
 } from 'lucide-react'
@@ -74,18 +75,25 @@ import { validatePurchaseOrder } from '../utils/required-fields'
 import { summarizeShipping } from '../utils/purchase-order-shipping'
 import {
   isDeliveryStage,
+  isPurchaseOrderApproved,
   isPurchaseOrderLocked,
+  PO_FIELDS_EDITABLE_AFTER_APPROVE,
   type PurchaseOrderDetail,
   type PurchaseOrderItem,
 } from '../types/purchase-order-detail'
 
 /** Thao tác cần lý do — mở hộp nhập trước khi gọi API. */
-type ReasonAction = Extract<PurchaseOrderAction, 'return' | 'reject' | 'cancel'>
+type ReasonAction = Extract<PurchaseOrderAction, 'return' | 'reject' | 'unapprove' | 'cancel'>
 
 const REASON_ACTIONS: Record<ReasonAction, { title: string; description: string }> = {
   return: {
     title: 'Trả đơn về cho người tạo',
     description: 'Đơn chuyển sang Bị trả lại để người tạo sửa và gửi duyệt lại.',
+  },
+  unapprove: {
+    title: 'Hủy duyệt đơn',
+    description:
+      'Đơn về Nháp để sửa lại nội dung, sửa xong phải Gửi duyệt và Duyệt lại. Đơn đã nhận hàng hoặc đã có yêu cầu thanh toán thì không hủy duyệt được.',
   },
   reject: {
     title: 'Từ chối đơn',
@@ -199,10 +207,25 @@ export function PurchaseOrderDetailPage() {
   }
 
   const data = draft
+  /** Đơn đã chốt/hủy — khóa cứng, kể cả hồ sơ chứng từ cũng theo mốc này. */
   const locked = isPurchaseOrderLocked(data.status)
+  const approved = isPurchaseOrderApproved(data.status)
   const canWrite = can('purchase_order', isNew ? 'create' : 'write')
-  const headerEditable = (isNew || !locked) && canWrite
+  /**
+   * Sửa được nội dung đơn: chỉ khi đơn còn Nháp / Bị trả lại (CR-108). Gửi duyệt
+   * xong là chốt nội dung — đang chờ duyệt mà vẫn sửa được thì người duyệt đọc
+   * một đằng, ký một nẻo; duyệt rồi lại càng không.
+   */
+  const headerEditable = (isNew || ['draft', 'rejected'].includes(data.status)) && canWrite
+  /** Đơn đã duyệt: chỉ mở các ô phát sinh sau khi duyệt, nằm trong popup chi tiết dòng. */
+  const afterApproveEditable = !isNew && approved && canWrite
   const progressEditable = !isNew && isDeliveryStage(data.status) && can('purchase_order', 'write')
+  /** Chưa nhận hàng thì mới hủy duyệt được — khớp điều kiện backend chặn. */
+  const canUnapprove =
+    !isNew &&
+    approved &&
+    can('purchase_order', 'approve') &&
+    !data.items.some((item) => (item.qty_received ?? 0) > 0)
   const canDelete = !isNew && ['draft', 'rejected'].includes(data.status)
   const purchaseRequestId = purchaseRequestsData?.items.find(
     (request) => request.code === data.pr_code,
@@ -246,7 +269,12 @@ export function PurchaseOrderDetailPage() {
   }
 
   async function handleAction(action: PurchaseOrderAction) {
-    if (action === 'return' || action === 'reject' || action === 'cancel') {
+    if (
+      action === 'return' ||
+      action === 'reject' ||
+      action === 'unapprove' ||
+      action === 'cancel'
+    ) {
       setReasonFor(action)
       return
     }
@@ -337,6 +365,13 @@ export function PurchaseOrderDetailPage() {
             </>
           )}
 
+          {canUnapprove && (
+            <Button variant="outline" onClick={() => void handleAction('unapprove')}>
+              <RotateCcw />
+              Hủy duyệt
+            </Button>
+          )}
+
           {!isNew && ['partial', 'received', 'approved'].includes(data.status) && canWrite && (
             <Button variant="outline" onClick={() => void handleAction('complete')}>
               <CircleCheck />
@@ -381,7 +416,9 @@ export function PurchaseOrderDetailPage() {
             />
           )}
 
-          {headerEditable && (
+          {/* Đơn đã duyệt vẫn cần nút Lưu: mấy ô mở sau khi duyệt nằm trong popup
+              chi tiết dòng, sửa xong phải ghi xuống được. */}
+          {(headerEditable || afterApproveEditable) && (
             <Button onClick={() => void handleSave()} disabled={savePurchaseOrder.isPending}>
               {savePurchaseOrder.isPending ? <Loader2 className="animate-spin" /> : <Save />}
               {isNew ? 'Tạo đơn' : 'Lưu'}
@@ -425,6 +462,13 @@ export function PurchaseOrderDetailPage() {
             )}
           </CardHeader>
           <CardContent className="space-y-4 px-4">
+            {afterApproveEditable && (
+              <p className="rounded-md border border-info/30 bg-info/8 px-3 py-2 text-sm text-muted-foreground">
+                Đơn đã duyệt — nội dung đã ký khóa lại. Mở nút bút chì ở cột Hành động để sửa:{' '}
+                {PO_FIELDS_EDITABLE_AFTER_APPROVE}.
+                {canUnapprove && ' Muốn đổi phần khác thì bấm Hủy duyệt để đưa đơn về Nháp.'}
+              </p>
+            )}
             <PurchaseOrderItemsTable
               items={data.items}
               editable={headerEditable}
@@ -507,6 +551,7 @@ export function PurchaseOrderDetailPage() {
         lineNumber={(lineIndex ?? 0) + 1}
         open={lineIndex !== null}
         editable={headerEditable}
+        afterApproveEditable={afterApproveEditable}
         deliveryEditable={progressEditable}
         // Đính kèm phiếu giao mở cả khi đơn đã hoàn thành (chỉ chặn khi hủy):
         // chứng từ thường về sau ngày chốt đơn.
@@ -547,7 +592,7 @@ export function PurchaseOrderDetailPage() {
         title={reasonFor ? REASON_ACTIONS[reasonFor].title : ''}
         description={reasonFor ? REASON_ACTIONS[reasonFor].description : ''}
         pending={runAction.isPending}
-        destructive={reasonFor !== 'return'}
+        destructive={reasonFor === 'reject' || reasonFor === 'cancel'}
         onClose={() => setReasonFor(null)}
         onConfirm={async (reason) => {
           if (!reasonFor) return
