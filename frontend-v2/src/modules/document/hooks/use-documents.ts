@@ -150,7 +150,25 @@ export function useUpdateDocumentIssueNumber(documentId: number) {
 export function useDocumentWorkflow(documentId: number) {
   const queryClient = useQueryClient()
 
-  const refresh = () => void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
+  /**
+   * Nạp lại CẢ HAI họ dữ liệu: bản ghi văn bản **và** phiên duyệt của nó.
+   *
+   * ⚠️ Trước 20/08/2026 hàm này chỉ nạp lại `document.all`, và đó là một lỗ
+   * thật. Bấm «Gửi duyệt» xong: văn bản nạp lại nên sang «Đang duyệt», nhưng
+   * phiên duyệt vẫn là kết quả cũ (`null`, hỏi từ lúc còn Nháp). Trang chi tiết
+   * ẩn hai nút của luồng MỘT BƯỚC bằng điều kiện «có phiên đang chạy không» —
+   * đọc phải dữ liệu cũ nên nó kết luận là không, và **«Trả lại» + «Duyệt và ban
+   * hành» vẫn hiện** dù phiếu đã vào bộ máy nhiều bước.
+   *
+   * Bấm vào chỉ nhận lỗi 409 từ `approval_bridge.chan_duong_cu`. Băng tiến
+   * trình duyệt cũng không hiện cho tới khi người dùng tự F5.
+   */
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
+    //  Cả cụm `approval`: phiên của chứng từ này đổi, mà hộp «Việc của tôi» của
+    //  người duyệt cũng vừa có thêm/bớt một việc.
+    void queryClient.invalidateQueries({ queryKey: queryKeys.approval.all })
+  }
 
   const submit = useMutation({
     mutationFn: () => documentApi.submit(documentId),
