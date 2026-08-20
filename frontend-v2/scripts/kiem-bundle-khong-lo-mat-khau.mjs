@@ -27,6 +27,21 @@ const CAM = [
   'DEMO_PURCHASER',
   'DEMO_ACCOUNTS',
   'Đổi tài khoản nhanh',
+  //  12 văn thư pháp nhân con — mật khẩu CHÍNH LÀ mã này, nên liệt kê đủ cả 12
+  //  chứ không lấy mẫu vài cái. Đã có lần rút gọn danh sách bằng `.map()` trong
+  //  `demo-accounts.ts` và cả 12 lọt vào bản build; chỉ có đếm đủ mới bắt được.
+  'VTAGRIPLANT',
+  'VTSAM',
+  'VTICARE',
+  'VTIDA',
+  'VTABA',
+  'VTNNABA',
+  'VTNNDEGO',
+  'VTN2SBIO',
+  'VTBAMBOO',
+  'VTDRXANH',
+  'VTHKDDRXANH',
+  'VTDEGOHOLDING',
 ]
 
 let js

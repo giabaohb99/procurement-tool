@@ -74,7 +74,13 @@ export function DemoAccountSwitcher() {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" sideOffset={8} className="w-72">
+      {/*  Cao tối đa 70% màn hình rồi cuộn: danh sách có 22 tài khoản (12 pháp
+           nhân con), để tự do thì menu dài quá màn và mất mấy dòng cuối. */}
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        className="max-h-[70vh] w-72 overflow-y-auto"
+      >
         <DropdownMenuLabel className="flex items-center justify-between gap-2 font-normal">
           <span className="font-semibold">Đổi tài khoản nhanh</span>
           <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
