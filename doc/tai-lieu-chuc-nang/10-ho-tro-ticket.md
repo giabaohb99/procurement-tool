@@ -78,7 +78,7 @@ Mở từ **icon tai nghe** ở menu avatar (mọi trang) hoặc nút trong tab 
 
 **Đính kèm ngay lúc tạo:** file được upload **ngay khi chọn** qua `POST /api/attachments/upload-file` (entity `ticket`) → trả `file_id`, chưa gắn vào phiếu. Danh sách tệp hiện bên dưới, gỡ được bằng nút X. Lúc bấm Gửi, các `file_ids` đi kèm request tạo phiếu và `service.create_ticket` gắn chúng vào phiếu (`_register_files`). Nút Gửi khóa trong lúc đang upload. Vẫn đính kèm thêm được ở màn chi tiết sau đó.
 
-Đóng popup bằng nút X, nút Hủy, phím **Esc** hoặc bấm ra nền. Mỗi lần mở là form trắng. Gửi thành công → điều hướng thẳng vào chi tiết phiếu.
+Đóng popup **chỉ bằng nút X hoặc nút Hủy** (**CR-110**, phiếu hỗ trợ TK20082602). Bấm ra nền và phím **Esc** đã bị bỏ: người dùng gõ xong cả yêu cầu rồi lỡ tay bấm ra ngoài là mất trắng, phải nhập lại từ đầu — mà popup này không lưu nháp. Mỗi lần mở là form trắng. Gửi thành công → điều hướng thẳng vào chi tiết phiếu.
 
 **Trang lúc tạo (`origin_url`) — hỗ trợ debug.** Lúc bấm icon tai nghe, `AppLayout` lấy **đường dẫn trang đang đứng** và truyền vào popup qua prop `originUrl`; popup gửi kèm khi tạo phiếu và **hiển thị nhắc trong form** ("Đính kèm trang bạn đang xem: …"). Ở màn chi tiết, nhóm Hỗ trợ thấy dòng **"Trang lúc tạo"** là **link bấm được** để nhảy thẳng tới đúng màn hình người dùng gặp lỗi.
 

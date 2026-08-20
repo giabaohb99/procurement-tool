@@ -23,9 +23,9 @@ Bảng DB: `tab_purchase_order` (header), `tab_po_item` (dòng hàng), `tab_po_d
 |------------|---------------|---------|----------------------|
 | `draft` | Nháp | Đang soạn hoặc vừa mở lại | Lưu, Gửi duyệt, Xóa, Nhân bản |
 | `submitted` | Chờ duyệt | Đã gửi, đợi TP/QL duyệt | Duyệt, Trả về, Từ chối (TP/QL), Nhân bản |
-| `approved` | Đã duyệt | TP/QL đã duyệt, cho phép nhập giao hàng | Thêm lần giao, Hủy đơn, Nhân bản |
-| `partial` | Đã nhận một phần | Đã nhận một phần (tự động khi SL nhận > 0 và < SL đặt) | Hoàn thành, Hủy đơn, Nhân bản |
-| `received` | Đã nhận đủ | Toàn bộ SL đã nhận | Hoàn thành, Hủy đơn, Nhân bản |
+| `approved` | Đã duyệt | TP/QL đã duyệt, cho phép nhập giao hàng; **nội dung đơn khóa lại** (xem mục "Khóa sửa sau khi duyệt") | Thêm lần giao, Hủy duyệt, Hủy đơn, Nhân bản |
+| `partial` | Đã nhận một phần | Đã nhận một phần (tự động khi SL nhận > 0 và < SL đặt) | Hoàn thành, Hủy duyệt, Hủy đơn, Nhân bản |
+| `received` | Đã nhận đủ | Toàn bộ SL đã nhận | Hoàn thành, Hủy duyệt, Hủy đơn, Nhân bản |
 | `completed` | Hoàn thành | Đã đóng đơn (khóa sửa hoàn toàn) | Nhân bản |
 | `rejected` | Bị trả lại | TP/QL trả về để người tạo sửa và gửi duyệt lại (không khóa sửa) | Lưu, Gửi duyệt, Xóa, Nhân bản |
 | `cancelled` | Đã từ chối / Đã hủy | Bị từ chối hẳn (từ `submitted` qua nút Từ chối) hoặc bị hủy thủ công (từ `approved`/`partial`/`received` qua nút Hủy) — khóa sửa; badge hiển thị "Đã từ chối" | Nhân bản |
@@ -35,6 +35,30 @@ Luồng trạng thái chính: `draft` → `submitted` → `approved` → `partia
 Trạng thái `partial` và `received` được cập nhật tự động sau mỗi lần lưu khi đơn đang ở `approved/partial/received`. Đơn ở `completed` hoặc `cancelled` không cho phép sửa; dùng "Nhân bản" để tạo đơn Nháp mới.
 
 Nút "Mở lại" (`reopen`) chuyển đơn từ `completed` về trạng thái theo tiến độ nhận thực tế: `received` (đã nhận đủ), `partial` (đã nhận một phần), hoặc `approved` (chưa nhận gì) — không hạ về `draft`. Endpoint: `POST /{id}/reopen`; chỉ áp dụng cho đơn `completed`, hiển thị nút trên trang chi tiết.
+
+### Khóa sửa sau khi duyệt (CR-108)
+
+Từ lúc đơn sang `approved` (và giữ nguyên ở `partial` / `received`), nội dung đơn là thứ TP/QL đã ký — **không sửa được nữa**. Chỉ còn **5 ô phát sinh sau khi duyệt** mở cho người phụ trách:
+
+| Ô còn sửa được | Vì sao mở |
+|---|---|
+| Tên trên hóa đơn (`invoice_name`) | NCC xuất hóa đơn tên khác tên hàng, chốt được sau khi có hóa đơn |
+| Ngày dự kiến có hàng (`expected_date`) | NCC dời lịch giao sau khi đã nhận đơn |
+| Kho nhận mặc định (`warehouse_code`) | Điều phối kho đổi theo thực tế nhận hàng |
+| Ghi chú (`note`) | Ghi việc phát sinh trong quá trình giao |
+| Giao hàng (nhiều lần) | Cả khối lần giao — đây chính là việc sau khi duyệt |
+
+Ngoài ra ô **Ngày giao chứng từ cho KT** (`document_delivery_date`) cũng để mở, dù phiếu hỗ trợ không liệt kê: bước tiến độ "Đã gửi ĐMH cho KT" lấy đúng ô này làm mốc (`_step_ok` trong `purchase_order/service.py`), khóa lại thì dòng hàng không bao giờ đi hết tiến độ được.
+
+Mọi ô còn lại đều khóa: **Mã hàng cho copy nhưng không cho sửa**; ĐVT, SL đặt NCC, Đơn giá, VAT% chỉ đọc. Cũng **không thêm dòng, không xóa dòng**.
+
+Muốn đổi phần đã duyệt thì bấm **"Hủy duyệt"** (`POST /{id}/unapprove`, quyền `purchase_order:approve`, bắt buộc nhập lý do): đơn về **`draft`**, sửa xong phải **Gửi duyệt** rồi **Duyệt** lại — nên đơn nào cũng đi qua đủ cổng kiểm CR-095 một lần nữa. Hủy duyệt bị **chặn** khi:
+
+- có dòng đã nhận hàng (`qty_received > 0`),
+- có dòng ở tiến độ "Hoàn thành",
+- hoặc đơn đã có yêu cầu thanh toán chưa hủy.
+
+Backend chặn ở `chan_sua_don_da_duyet()` (`purchase_order/service.py`) — gửi thẳng PATCH cũng không lách được; giao diện chỉ khóa cho êm tay. Test: `test/backend/test_po_lock_after_approve_cr108.py`.
 
 ### Trạng thái dòng hàng (`line_status` — tự động)
 
@@ -794,7 +818,7 @@ Entity: `purchase_order`.
 |----------|---------------|----------------------|
 | Xem danh sách / chi tiết | `purchase_order:read` | Mọi trạng thái (theo phạm vi dữ liệu scope — xem quy tắc 13) |
 | Tạo mới / Nhân bản | `purchase_order:create` | — |
-| Sửa header, dòng hàng | `purchase_order:write` | Đơn chưa `completed` / `cancelled`; dòng có `progress_status = 'Hoàn thành'/'Hủy đơn'` bị khóa riêng |
+| Sửa header, dòng hàng | `purchase_order:write` | Đơn `draft` / `rejected`; dòng có `progress_status = 'Hoàn thành'/'Hủy đơn'` bị khóa riêng. Đơn `approved`/`partial`/`received` chỉ còn 5 ô + khối giao hàng (CR-108) |
 | Thêm / sửa lần giao | `purchase_order:write` | Đơn ở `approved` / `partial` / `received`; lần giao thuộc dòng đã khóa không sửa được |
 | Gửi duyệt | `purchase_order:write` | Đơn `draft` hoặc `rejected` (Bị trả lại) |
 | Mở lại (về nháp) | `purchase_order:write` | Mọi trạng thái (qua `/reopen`) |
@@ -802,6 +826,7 @@ Entity: `purchase_order`.
 | Duyệt | `purchase_order:approve` | Đơn `submitted` |
 | Trả về (Bị trả lại) | `purchase_order:approve` | Đơn `submitted`; cần nhập lý do |
 | Từ chối (khóa hẳn) | `purchase_order:approve` | Đơn `submitted`; cần nhập lý do; status → `cancelled` |
+| Hủy duyệt (về Nháp) | `purchase_order:approve` | Đơn `approved` / `partial` / `received`; cần nhập lý do; status → `draft`; chặn nếu đã nhận hàng / có dòng "Hoàn thành" / có YCTT chưa hủy (CR-108) |
 | Hủy đơn | `purchase_order:cancel` | Đơn `approved` / `partial` / `received`; bắt buộc nhập lý do; bị chặn nếu có dòng đã "Hoàn thành" |
 | Xóa | `purchase_order:delete` | Đơn `draft` / `rejected` (kiểm tra ở FE) |
 | In (cả 2 mẫu) | `purchase_order:print` | Mọi trạng thái |

@@ -1,6 +1,7 @@
 """Đơn mua hàng: lưu header + dòng hàng + các lần giao; mỗi lần lưu reconcile side-effect
 (phiếu nhập kho ngầm, tồn kho, công nợ 2 luồng). Idempotent theo id của dòng giao."""
 from datetime import date, datetime, timedelta
+from decimal import Decimal
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -13,6 +14,7 @@ from app.modules.employee.service import sync_employee_ref
 from app.modules.goods_receipt import service as gr_service
 from app.modules.inventory import service as inv_service
 from app.modules.payable import service as pay_service
+from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
 from app.modules.supplier.model import Supplier
 
 from .model import PODelivery, POItem, PurchaseOrder
@@ -437,10 +439,132 @@ def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
     return po
 
 
+# ───────────────────── Đơn ĐÃ DUYỆT: khóa phần đã được duyệt ─────────────────────
+# CR-108 (phiếu hỗ trợ TK19082604): 'approved' không nằm trong danh sách khóa nên duyệt
+# xong vẫn đổi được mã hàng, số lượng, đơn giá — trưởng phòng ký một đằng, đơn gửi nhà
+# cung cấp một nẻo mà không để lại dấu vết nào. Từ nay đơn đã duyệt chỉ còn sửa được các
+# ô PHÁT SINH SAU KHI DUYỆT; muốn đổi phần đã duyệt thì bấm "Hủy duyệt" (đơn về Nháp)
+# rồi gửi duyệt lại — đi qua đúng cổng kiểm tra CR-095 một lần nữa.
+TRANG_THAI_DA_DUYET = ("approved", "partial", "received")
+
+# Ô của DÒNG HÀNG còn sửa được sau khi duyệt (đúng các ô khoanh đỏ trong phiếu hỗ trợ).
+TRUONG_DONG_SUA_SAU_DUYET = {
+    "invoice_name",            # Tên trên hóa đơn — kế toán chốt sau khi có hóa đơn thật
+    "expected_date",           # Ngày dự kiến có hàng — NCC hẹn lại liên tục
+    "warehouse_code",          # Kho nhận mặc định
+    "note",                    # Ghi chú
+    # Ngày giao chứng từ cho KT: KHÔNG có trong phiếu hỗ trợ nhưng bắt buộc phải để mở.
+    # Nó là điều kiện của bước tiến độ "Đã gửi ĐMH cho KT" (xem _step_ok) mà bước đó chỉ
+    # xảy ra SAU khi duyệt — khóa lại thì mọi dòng đều kẹt tiến độ, không đơn nào xong.
+    "document_delivery_date",
+}
+
+# Nhãn tiếng Việt để câu báo lỗi gọi đúng tên ô người dùng nhìn thấy trên màn hình.
+NHAN_TRUONG_DONG = {
+    "product_code": "Mã hàng", "product_name": "Tên hàng", "item_group": "Phân loại",
+    "spec": "Xuất xứ / TSKT / chất liệu", "fg_code": "Mã HH (thành phẩm)",
+    "fg_name": "Tên HH (thành phẩm)", "invoice_no": "Số hóa đơn", "invoice_date": "Ngày hóa đơn",
+    "supplier_ready": "NCC có sẵn hàng", "required_date": "Ngày yêu cầu có hàng",
+    "unit": "ĐVT", "qty_request": "SL yêu cầu", "qty_order": "SL đặt NCC",
+    "price": "Đơn giá", "vat": "VAT (%)",
+}
+NHAN_TRUONG_DON = {
+    "misa_code": "Số hóa đơn (MISA)", "pr_code": "Mã YCMH nguồn", "survey_code": "Mã YCBG nguồn",
+    "company_id": "Pháp nhân", "supplier_code": "Nhà cung cấp", "supplier_name": "Tên NCC",
+    "department": "Bộ phận", "nspt": "NSPT phụ trách", "order_date": "Ngày đặt hàng",
+    "vat_rate": "VAT chung", "payment_terms": "Điều khoản thanh toán", "is_urgent": "Đơn gấp",
+    "note": "Ghi chú đơn",
+}
+# Ô của ĐƠN còn sửa được sau khi duyệt: chỉ hồ sơ chứng từ (đã có endpoint riêng, cập nhật
+# được cả khi đơn Hoàn thành) — mọi ô còn lại là nội dung đã được duyệt.
+TRUONG_DON_SUA_SAU_DUYET = {"document_status"}
+
+_HUONG_DAN = "Bấm 'Hủy duyệt' để đưa đơn về Nháp, chỉnh rồi gửi duyệt lại."
+
+
+def _khac_nhau(cu, moi) -> bool:
+    """So sánh giá trị cũ (DB) với giá trị gửi lên, bỏ qua khác biệt kiểu Decimal/float
+    và None/chuỗi rỗng — nếu không thì lần lưu nào cũng báo 'đã sửa' dù không ai chạm vào."""
+    if isinstance(cu, bool) or isinstance(moi, bool):
+        return bool(cu) != bool(moi)
+    if isinstance(cu, (int, float, Decimal)) or isinstance(moi, (int, float, Decimal)):
+        try:
+            return abs(float(cu or 0) - float(moi or 0)) > 1e-6
+        except (TypeError, ValueError):
+            pass
+    return (str(cu or "").strip()) != (str(moi or "").strip())
+
+
+def chan_sua_don_da_duyet(db: Session, po: PurchaseOrder, data: POUpdate) -> None:
+    """Chặn mọi thay đổi ngoài danh sách cho phép khi đơn đã duyệt. So theo GIÁ TRỊ chứ
+    không theo 'có gửi lên hay không': màn hình luôn gửi nguyên cả đơn mỗi lần Lưu."""
+    if po.status not in TRANG_THAI_DA_DUYET:
+        return
+    payload = data.model_dump(exclude_unset=True)
+    for k, v in payload.items():
+        if k == "items" or k in TRUONG_DON_SUA_SAU_DUYET:
+            continue
+        if _khac_nhau(getattr(po, k, None), v):
+            raise HTTPException(400, f"Đơn đã duyệt — không sửa được '{NHAN_TRUONG_DON.get(k, k)}'. {_HUONG_DAN}")
+
+    rows = payload.get("items")
+    if rows is None:
+        return
+    dang_co = {it.id: it for it in items_of(db, po.id)}
+    if any(not r.get("id") for r in rows):
+        raise HTTPException(400, f"Đơn đã duyệt — không thêm dòng hàng mới. {_HUONG_DAN}")
+    gui_len = {r.get("id") for r in rows}
+    if set(dang_co) - gui_len:
+        raise HTTPException(400, f"Đơn đã duyệt — không xóa dòng hàng. {_HUONG_DAN}")
+    for r in rows:
+        it = dang_co.get(r.get("id"))
+        if it is None:
+            raise HTTPException(400, "Dòng hàng không thuộc đơn này.")
+        # Dòng Hoàn thành / Hủy đơn: _save_items đã bỏ qua nguyên dòng, không cần chặn thêm.
+        if (it.progress_status or "") in ("Hoàn thành", "Hủy đơn"):
+            continue
+        ten_dong = (it.product_name or "").strip() or (it.product_code or "").strip() or f"#{it.id}"
+        for k, v in r.items():
+            if k in ("id", "deliveries") or k in TRUONG_DONG_SUA_SAU_DUYET:
+                continue
+            if _khac_nhau(getattr(it, k, None), v):
+                nhan = NHAN_TRUONG_DONG.get(k, k)
+                raise HTTPException(400, f"Đơn đã duyệt — dòng '{ten_dong}' không sửa được '{nhan}'. {_HUONG_DAN}")
+
+
+def unapprove_po(db: Session, pid: int, user_id: int, reason: str = "") -> PurchaseOrder:
+    """Hủy duyệt: đưa đơn ĐÃ DUYỆT về Nháp để sửa rồi gửi duyệt lại (CR-108).
+
+    Về Nháp chứ không về Chờ duyệt: ở Nháp màn hình mở khóa sẵn theo luồng đang có, và
+    lần Gửi duyệt sau sẽ chạy lại cổng kiểm tra đủ trường (CR-095) — sửa xong mà thiếu ô
+    thì không lọt lên người duyệt được.
+    """
+    po = get_po(db, pid)
+    if po.status not in TRANG_THAI_DA_DUYET:
+        raise HTTPException(400, "Chỉ hủy duyệt được đơn đang ở trạng thái Đã duyệt / Nhận một phần / Đã nhận.")
+    items = items_of(db, pid)
+    if any(float(i.qty_received or 0) > 0 for i in items):
+        raise HTTPException(400, "Đơn đã nhận hàng — không hủy duyệt được. Hàng đã vào kho và đã sinh công nợ; "
+                                 "muốn dừng thì hủy từng dòng ở cột Trạng thái.")
+    if any((i.progress_status or "") == "Hoàn thành" for i in items):
+        raise HTTPException(400, "Đơn có dòng đã Hoàn thành — không hủy duyệt được.")
+    dinh_yctt = db.query(PaymentRequestLine.id).join(
+        PaymentRequest, PaymentRequest.id == PaymentRequestLine.request_id
+    ).filter(
+        PaymentRequestLine.po_code == (po.code or ""),
+        PaymentRequest.status != "cancelled",
+    ).first()
+    if dinh_yctt:
+        raise HTTPException(400, "Đơn đã có yêu cầu thanh toán — không hủy duyệt được. "
+                                 "Hủy phiếu thanh toán liên quan trước.")
+    return set_status(db, pid, "draft", user_id, reason)
+
+
 def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOrder:
     po = get_po(db, pid)
     if po.status in ("completed", "cancelled"):
         raise HTTPException(400, "Đơn đã hoàn thành/đã hủy — không sửa được. Dùng 'Nhân bản' để tạo đơn mới.")
+    chan_sua_don_da_duyet(db, po, data)
     _new_pr_code = (data.model_dump(exclude_unset=True).get("pr_code") or "").strip()
     if _new_pr_code and _new_pr_code != (po.pr_code or ""):
         _ensure_pr_dispatched(db, _new_pr_code)   # CR-034: đổi sang YCMH khác cũng phải đã điều phối

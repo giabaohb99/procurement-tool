@@ -42,10 +42,11 @@ export default function TicketCreateModal({ open, onClose, originUrl = '' }: Pro
     setSubject(''); setDepartment(TICKET_DEPARTMENTS[0]); setPriority('normal'); setBody('')
     setFiles([]); setUploading(false)
     document.body.style.overflow = 'hidden'
-    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onEsc)
-    return () => { document.body.style.overflow = ''; window.removeEventListener('keydown', onEsc) }
-  }, [open, onClose])
+    // CR-110 (phiếu hỗ trợ TK20082602): KHÔNG đóng bằng phím Esc và KHÔNG đóng khi bấm ra
+    // nền. Người dùng gõ xong cả yêu cầu rồi lỡ tay bấm ra ngoài là mất trắng, phải nhập
+    // lại từ đầu. Chỉ đóng bằng nút X hoặc nút Hủy — hai thao tác có chủ ý.
+    return () => { document.body.style.overflow = '' }
+  }, [open])
 
   if (!open) return null
 
@@ -94,10 +95,10 @@ export default function TicketCreateModal({ open, onClose, originUrl = '' }: Pro
   }
 
   return (
-    <div onClick={onClose}
+    <div
       style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 140,
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}
+      <div className="modal-card"
         style={{ width: 620, maxWidth: '96vw', maxHeight: '92vh', background: '#fff', borderRadius: 14,
           boxShadow: '0 24px 40px -12px rgba(15,23,42,.28)', display: 'flex', flexDirection: 'column',
           overflow: 'hidden', fontFamily: 'inherit' }}>
