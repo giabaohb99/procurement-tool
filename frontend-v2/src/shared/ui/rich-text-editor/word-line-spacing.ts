@@ -1,32 +1,34 @@
 /**
- * Quy đổi GIÃN DÒNG kiểu Word sang `line-height` của CSS.
+ * GIÃN DÒNG: số trên thanh công cụ CHÍNH LÀ `line-height` của CSS.
  *
- * Hai bên đếm khác nhau, đây là chỗ nhiều người tưởng nhầm:
+ * ⚠️ Trước 20/08/2026 chỗ này nhân thêm 1,15 để "nhìn giống Word": Word đo một
+ * dòng đơn theo số đo của bộ phông (Times New Roman = 1,15 × cỡ chữ), còn CSS đo
+ * theo cỡ chữ, nên "1,5 dòng" của Word tương đương `line-height: 1.725`.
  *
- * - CSS `line-height: 1.5` = 1,5 × CỠ CHỮ.
- * - Word "1.5 lines" = 1,5 × CHIỀU CAO MỘT DÒNG ĐƠN, mà dòng đơn lấy theo số đo
- *   của chính bộ phông (ascent + descent + lineGap), luôn CAO HƠN cỡ chữ.
+ * Về lý thuyết thì đúng, nhưng dùng thì hỏng, và người dùng bắt được:
  *
- * Times New Roman: (1825 + 443 + 87) / 2048 = 1,15 lần cỡ chữ. Nên cùng ghi
- * "giãn dòng 1,5" mà trang web lại chật hơn Word đúng 15% — nhìn ra ngay khi
- * đặt hai bản cạnh nhau, và đó là lý do có tệp này.
+ * - Trang giấy (`.doc-page`) để sẵn `line-height: 1.15`. Đoạn chưa đặt gì thì ăn
+ *   theo số đó. Bấm nấc **1,0** ghi ra đúng `1.15` — **không đổi một pixel nào**,
+ *   nhìn như tính năng chết. Trên văn bản 217 có 136 đoạn thì 110 đoạn rơi vào
+ *   đúng ca này.
+ * - Số ghi xuống dữ liệu thành số lẻ vô nghĩa (`1.3225`, `1.725`), ai mở HTML ra
+ *   xem cũng tưởng hỏng.
  *
- * Con số 1,15 gắn với Times New Roman — phông quy định của văn bản hành chính
- * (Nghị định 30/2020) và cũng là phông mặc định của `.doc-page`. Đoạn nào người
- * dùng đổi sang phông khác thì tỷ lệ thật hơi lệch (Calibri ~1,22), chấp nhận
- * xấp xỉ chứ không đo phông theo từng đoạn.
+ * Chốt với người dùng 20/08/2026: **giãn dòng 1 là 1**. Đổi lại thì bản nhập từ
+ * Word hiển thị chật hơn bản gốc chừng 15% — chấp nhận, vì đoán ý người bấm
+ * quan trọng hơn khớp từng pixel với Word.
+ *
+ * Bỏ ở đây thì phải bỏ **cả hai đầu** cho khớp: `docx_html.py` (nhập) và
+ * `html_docx.py` (xuất) bên backend cũng đã gỡ hệ số này.
  */
 
-/** Chiều cao một dòng đơn của Times New Roman, tính theo cỡ chữ. */
-export const SINGLE_LINE_RATIO = 1.15
+/** Giãn dòng của trang giấy khi đoạn không đặt riêng — khai ở `.doc-page`. */
+export const DEFAULT_LINE_SPACING = 1.15
 
-/** Giãn dòng mặc định của trang giấy — 1 dòng, khai ở `.doc-page` trong `index.css`. */
-export const DEFAULT_LINE_SPACING = 1
-
-/** Đổi số giãn dòng ghi trong Word (1 · 1,15 · 1,5 · 2) thành `line-height` CSS. */
+/** Số trên thanh công cụ = `line-height` CSS, không quy đổi. */
 export function wordLineSpacingToCss(lines: number): string {
-  // Làm tròn 4 chữ số cho hết đuôi 1.7249999999999999 của số thực dấu phẩy động.
-  return String(Number((lines * SINGLE_LINE_RATIO).toFixed(4)))
+  //  Vẫn làm tròn: ô "Tùy chỉnh" nhận số thực nên vẫn có đuôi dấu phẩy động.
+  return String(Number(lines.toFixed(4)))
 }
 
 /**
@@ -40,7 +42,7 @@ export function cssToWordLineSpacing(value: string | null | undefined): number |
   if (!value) return null
   const parsed = Number(value)
   if (!Number.isFinite(parsed) || parsed <= 0) return null
-  return Number((parsed / SINGLE_LINE_RATIO).toFixed(2))
+  return Number(parsed.toFixed(2))
 }
 
 /**

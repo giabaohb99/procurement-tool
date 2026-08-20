@@ -23,6 +23,7 @@ import { EditorToolbar } from './editor-toolbar'
 import { EditorVerticalRuler } from './editor-vertical-ruler'
 import { ImageWithSize } from './image-size-extension'
 import { ImportTrace } from './import-trace-extension'
+import { KeepSelectionVisible } from './keep-selection-visible-extension'
 import {
   A4_HEIGHT_PX,
   A4_WIDTH_PX,
@@ -208,6 +209,9 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         Superscript,
         ImageWithSize.configure({ inline: false, allowBase64: true }),
         ImportTrace,
+        // Giữ vệt bôi đen khi bấm sang thanh công cụ — nếu không, mở một ô chọn
+        // là vùng đã bôi biến mất trước mắt và người dùng tưởng bị mất chọn.
+        KeepSelectionVisible,
         // Giãn dòng + thụt lề đầu dòng, xem `paragraph-format-extension.ts`.
         ParagraphFormat,
         TextAlign.configure({ types: ['heading', 'paragraph'] }),

@@ -118,10 +118,15 @@ def test_docx_giu_style_danh_sach_va_lien_ket():
     )["content_html"]
 
     assert "text-align: center" in result
-    # w:line="360" w:lineRule="auto" = 1,5 DÒNG kiểu Word, không phải 1,5 lần cỡ
-    # chữ như CSS hiểu — quy đổi qua chiều cao dòng đơn (1,15) mới ra 1.725, nếu
-    # không thì văn bản nhập vào hiện chật hơn bản Word gốc 15%.
-    assert "line-height: 1.725" in result
+    # w:line="360" w:lineRule="auto" = 1,5 dòng → `line-height: 1.5`, KHÔNG nhân
+    # thêm hệ số nào.
+    #
+    # ⚠️ Trước 20/08/2026 chỗ này ra 1.725: nhân thêm 1,15 (chiều cao dòng đơn
+    # của Times New Roman) để bản nhập nhìn giống hệt Word. Đúng lý thuyết nhưng
+    # hỏng khi dùng — trang giấy để sẵn `line-height: 1.15` nên bấm nấc «1,0»
+    # trên thanh công cụ ghi ra đúng 1.15, không đổi một pixel nào, người dùng
+    # tưởng tính năng chết. Chốt: giãn dòng 1 là 1. Xem `word-line-spacing.ts`.
+    assert "line-height: 1.5" in result
     assert "font-family: &quot;Calibri&quot;" in result
     assert "font-size: 20pt" in result
     assert "color: #00b0f0" in result

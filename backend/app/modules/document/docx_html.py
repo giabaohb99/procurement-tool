@@ -33,12 +33,6 @@ _PR = f"{{{_PR_NS}}}"
 _EMU_PER_PX = 9_525
 _TWIPS_PER_PX = 15
 
-# Word đo giãn dòng theo CHIỀU CAO MỘT DÒNG ĐƠN của bộ phông, CSS đo theo CỠ CHỮ.
-# Times New Roman — phông quy định của văn bản hành chính — có dòng đơn cao 1,15
-# lần cỡ chữ, nên "1.5 lines" trong Word phải ra `line-height: 1.725` thì trang
-# web mới giãn đúng bằng bản gốc. Xem thêm
-# `frontend-v2/src/shared/ui/rich-text-editor/word-line-spacing.ts`.
-_SINGLE_LINE_RATIO = 1.15
 
 _HIGHLIGHT_COLORS = {
     "black": "#000000",
@@ -429,12 +423,13 @@ class DocxHtmlConverter:
             line = _number(spacing.get(f"{_W}line"))
             rule = spacing.get(f"{_W}lineRule", "auto")
             if line is not None:
-                # `auto` = bội số dòng (w:line 360 = 1,5 dòng) — phải nhân thêm
-                # `_SINGLE_LINE_RATIO` mới ra đúng con số của CSS. Hai kiểu còn
-                # lại (`exact` / `atLeast`) đã là chiều cao tuyệt đối tính bằng
-                # twip nên đổi thẳng sang px.
+                # `auto` = bội số dòng (w:line 360 = 1,5 dòng) → CSS 1.5, KHÔNG
+                # nhân thêm hệ số nào. Xem `word-line-spacing.ts`: chốt 20/08/2026
+                # là "giãn dòng 1 là 1", bỏ phép ×1,15 từng dùng để khớp Word.
+                # Hai kiểu còn lại (`exact` / `atLeast`) là chiều cao tuyệt đối
+                # tính bằng twip nên đổi thẳng sang px.
                 result["line_height"] = (
-                    _css_number(line / 240 * _SINGLE_LINE_RATIO)
+                    _css_number(line / 240)
                     if rule == "auto"
                     else f"{_css_number(line / _TWIPS_PER_PX)}px"
                 )
