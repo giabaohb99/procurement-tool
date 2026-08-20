@@ -96,6 +96,10 @@ Phân xử khi có yêu cầu mới: **sửa lỗi** màn đang chạy thật �
 còn thiếu màn. **Số đo đầy đủ và kế hoạch dời nằm ở `doc/erp/13-ke-hoach-man-con-lai-v2.md`**
 (bản 2.0, xem **CR-097**): bản cũ có **48 màn** — 26 xong · **3 có nhưng KHUYẾT** · 16 chưa có ·
 2 đã bỏ · 1 chờ quyết. Phần còn lại chia **15 đợt Đ-01 … Đ-15**, 22–32 ngày công.
+⚠️ **NHẬN ĐỢT TRƯỚC KHI LÀM.** Nhiều người cùng đẩy lên `erp-v2`, nên cột ***Ai làm*** trong bảng
+§3 của `13-...md` là **chỗ ghi phân công duy nhất** — luật bốn dòng ở §3.1: ghi tên + đổi
+*Đang làm* rồi **push riêng dòng đó ngay** trước khi gõ mã, xong thì đổi *Xong (CR-xxx)*, bỏ
+giữa chừng thì trả về *(chưa nhận)*. `git fetch` trước mỗi lần bắt đầu và trước mỗi lần push.
 Trong 16 màn thiếu, **chặn nghiệp vụ chỉ còn Yêu cầu thanh toán** (danh sách + chi tiết + phiếu
 in, đặt ở `/finance/payment-requests` theo QĐ-5); 5 màn thuộc ba thứ khách cho **hoãn** (MC-5 Sao
 lưu CSDL, MC-6 Quản lý Import, MC-7 Phiếu hỗ trợ); còn lại là danh mục (Sản phẩm, Hợp đồng ×2,

@@ -193,24 +193,24 @@ không thấy mục tắt — giống hệt mục gốc.
 Nguyên tắc chia: **mỗi đợt là một thứ bấm được và nghiệm thu được riêng**, không đợt nào quá 4 ngày
 công, và đợt sau không chặn việc dùng thử đợt trước. Ai làm một mình thì chạy từ trên xuống.
 
-| Đợt | Việc | Ngày công | Chặn tắt bản cũ? | Tình trạng |
-|---|---|---|---|---|
-| **Đ-01** | Lớp CRUD khai báo + danh mục **Kho** làm màn chứng minh | 2 – 3 | Có | **Xong** |
-| **Đ-02** | **Đơn vị tính** + **Phân loại** *(chỉ khai báo, không viết trang)* | 0,5 – 1 | Có | **Xong** |
-| **Đ-03** | **Sản phẩm** — danh sách + chi tiết *(có tab Lịch sử mua hàng)* | 2 – 3 | Có | **Xong** |
-| **Đ-04** | **Hợp đồng** — danh sách + chi tiết + tệp đính kèm | 1,5 – 2 | Có | Chưa làm |
-| **Đ-05** | **Nhà cung cấp** — danh sách dời sang CRUD + chi tiết 5 tab | 1,5 – 2 | Có | **Xong** |
-| **Đ-06** | **Yêu cầu thanh toán — danh sách** ở `/finance/payment-requests` | 1 – 1,5 | Có | Chưa làm |
-| **Đ-07** | **Yêu cầu thanh toán — chi tiết** *(gồm cả màn tạo mới từ công nợ)* | 2 – 3 | Có | Chưa làm |
-| **Đ-08** | **Phiếu in Yêu cầu thanh toán** | 0,5 – 1 | Có | Chưa làm |
-| **Đ-09** | Trả lại **cột tick chọn + nút lên phiếu** ở màn Công nợ | 0,5 – 1 | Có | Chưa làm |
-| **Đ-10** | **Phân công phụ trách** — port nguyên trạng *(QĐ-6)* | 1 – 1,5 | Có | Chưa làm |
-| **Đ-11** | Vá **4 khối thiếu** ở Trang chủ + dựng Tổng quan Tài chính / Kho | 1,5 – 2 | Không* | Chưa làm |
-| **Đ-12** | **Sao lưu CSDL** *(MC-5)* | 1,5 – 2 | Có | **Hoãn** |
-| **Đ-13** | **Quản lý Import** *(MC-6)* | 3 – 4 | Có | **Hoãn** |
-| **Đ-14** | **Phiếu hỗ trợ** *(MC-7)* | 3 – 4 | Có | **Hoãn** |
-| **Đ-15** | Đổi `FRONTEND_URL`, chuyển hướng bản cũ, tắt `frontend/` | 0,5 – 1 | — | Chưa làm |
-| | **Cộng** | **22 – 32** | | |
+| Đợt | Việc | Ngày công | Chặn tắt bản cũ? | Độ khó | Ai làm | Tình trạng |
+|---|---|---|---|---|---|---|
+| **Đ-01** | Lớp CRUD khai báo + danh mục **Kho** làm màn chứng minh | 2 – 3 | Có | — | AI | **Xong** |
+| **Đ-02** | **Đơn vị tính** + **Phân loại** *(chỉ khai báo, không viết trang)* | 0,5 – 1 | Có | — | AI | **Xong** |
+| **Đ-03** | **Sản phẩm** — danh sách + chi tiết *(có tab Lịch sử mua hàng)* | 2 – 3 | Có | — | AI | **Xong** |
+| **Đ-04** | **Hợp đồng** — danh sách + chi tiết + tệp đính kèm | 1,5 – 2 | Có | **Dễ** | *(chưa nhận)* | Chưa làm |
+| **Đ-05** | **Nhà cung cấp** — danh sách dời sang CRUD + chi tiết 5 tab | 1,5 – 2 | Có | — | AI | **Xong** |
+| **Đ-06** | **Yêu cầu thanh toán — danh sách** ở `/finance/payment-requests` | 1 – 1,5 | Có | **Dễ** | AI | Chưa làm |
+| **Đ-07** | **Yêu cầu thanh toán — chi tiết** *(gồm cả màn tạo mới từ công nợ)* | 2 – 3 | Có | **Khó** | AI | Chưa làm |
+| **Đ-08** | **Phiếu in Yêu cầu thanh toán** | 0,5 – 1 | Có | Vừa | AI | Chưa làm |
+| **Đ-09** | Trả lại **cột tick chọn + nút lên phiếu** ở màn Công nợ | 0,5 – 1 | Có | Dễ *(chờ Đ-07)* | AI | Chưa làm |
+| **Đ-10** | **Phân công phụ trách** — port nguyên trạng *(QĐ-6)* | 1 – 1,5 | Có | **Dễ** | *(chưa nhận)* | Chưa làm |
+| **Đ-11** | Vá **4 khối thiếu** ở Trang chủ + dựng Tổng quan Tài chính / Kho | 1,5 – 2 | Không* | Vừa | *(chưa nhận)* | Chưa làm |
+| **Đ-12** | **Sao lưu CSDL** *(MC-5)* | 1,5 – 2 | Có | Vừa | *(chưa nhận)* | **Hoãn** |
+| **Đ-13** | **Quản lý Import** *(MC-6)* | 3 – 4 | Có | **Khó** | *(chưa nhận)* | **Hoãn** |
+| **Đ-14** | **Phiếu hỗ trợ** *(MC-7)* | 3 – 4 | Có | Vừa | *(chưa nhận)* | **Hoãn** |
+| **Đ-15** | Đổi `FRONTEND_URL`, chuyển hướng bản cũ, tắt `frontend/` | 0,5 – 1 | — | Vừa | *(chưa nhận)* | Chưa làm |
+| | **Cộng** | **22 – 32** | | | | |
 
 Tách theo nhóm cho dễ hẹn: **Đ-01…Đ-05 danh mục 7,5–11** · **Đ-06…Đ-09 thanh toán 4–6,5** ·
 **Đ-10…Đ-11 phần lẻ 2,5–3,5** · **Đ-12…Đ-14 ba màn hoãn 7,5–10** · **Đ-15 tắt bản cũ 0,5–1**.
@@ -218,12 +218,55 @@ Tách theo nhóm cho dễ hẹn: **Đ-01…Đ-05 danh mục 7,5–11** · **Đ-0
 *\* Đ-11 không chặn về mặt chức năng — người dùng vẫn làm được việc — nhưng đây là màn đầu tiên họ
 nhìn thấy mỗi sáng, nên đừng để nó nghèo hơn bản cũ vào đúng ngày chuyển sang v2.*
 
+### 3.1 Nhận việc — hai người làm song song *(chốt 20/08/2026)*
+
+Từ đây **nhiều người cùng làm** trên nhánh `erp-v2`, nên **cột *Ai làm* của bảng trên là chỗ ghi
+duy nhất**. Không có bảng phân công thứ hai, không nhắn miệng.
+
+**Luật nhận việc — bốn dòng:**
+
+1. **Trước khi gõ dòng mã đầu tiên**: sửa cột *Ai làm* của đợt đó thành tên mình, đổi *Tình trạng*
+   thành **Đang làm**, rồi **commit + push riêng dòng sửa này ngay** *(một commit chỉ đụng tệp
+   `13-...md`)*. Đẩy trễ là hai người cùng dựng một màn.
+2. **Xong đợt**: đổi *Tình trạng* thành **Xong** kèm số CR *(ví dụ `**Xong** (CR-111)`)*, và ghi
+   phần "đã làm gì / bẫy đã vấp" vào đúng mục `### Đ-xx` bên dưới — mục Đ-05 là mẫu.
+3. **Bỏ giữa chừng**: trả cột *Ai làm* về `*(chưa nhận)*` và ghi một dòng lý do. Để tên treo ở đó
+   là đợt đóng băng, không ai dám đụng.
+4. **Nhánh `erp-v2` có ba người cùng đẩy** *(kể cả phân hệ Văn thư)* — **`git fetch` trước mỗi
+   lần bắt đầu và trước mỗi lần push**. Trùng head migration đã làm api dev chết một lần chiều
+   20/08 *(xem `c66984bcd932`)*; cách chữa là merge migration, không phải sửa `down_revision` của
+   tệp người khác.
+
+**Chọn đợt nào cho khỏi giẫm chân.** Hai đợt chạm cùng một tệp dùng chung thì sẽ đụng nhau ở
+`app-routes.ts`, `module-registry.ts` và `nav` trong `modules/<phân hệ>/routes.tsx`. Ba đợt **độc
+lập hoàn toàn**, ba phân hệ khác nhau, làm song song được ngay:
+
+| Đợt | Phân hệ | Vì sao dễ |
+|---|---|---|
+| **Đ-04** Hợp đồng | Sản xuất | Khai CRUD như Đ-02/Đ-03, có sẵn khuôn `supplier-crud.tsx` để chép; phần khó nhất là khối tệp đính kèm, mà `DocumentAttachmentSection` đã có |
+| **Đ-10** Phân công phụ trách | Thu mua | Port **nguyên trạng**, không thiết kế lại, hai màn cộng lại 357 dòng bản cũ |
+| **Đ-11** Trang chủ + 2 tổng quan | Thu mua / Tài chính / Kho | Không dựng màn mới, chỉ thêm khối vào màn đã có; đọc endpoint có sẵn |
+
+**Cụm thanh toán Đ-06 … Đ-09 nhận nguyên cụm cho một người** *(đang là AI)*, không xé lẻ. Hai lý
+do: bốn đợt cùng đụng `finance/routes.tsx` và `app-routes.ts` nên xé ra là đụng nhau mỗi lần push;
+và ba trong bốn đợt sai là **ra số tiền sai** chứ không phải lệch giao diện — **Đ-07** phân bổ tiền
+*(đã từng đẻ công nợ âm, xem bẫy ở mục Đ-07)*, **Đ-08** đọc số thành chữ *(chép nguyên hàm
+`docTien`, viết lại là hai phiếu in đọc khác nhau)*, **Đ-09** đẩy dòng nợ sang màn tạo phiếu
+*(phải có Đ-07 trước)*.
+
 **Đã xong trước bản này:** MC-1 … MC-4 *(CR-094)* — Đặt lại mật khẩu · Thông báo · Trang cá nhân ·
 Cấu hình hệ thống; **Đ-01** *(CR-098)* Kho · **Đ-02** *(CR-099)* ĐVT & Phân loại · **Đ-03** *(CR-100)* Sản phẩm & tab Lịch sử mua hàng · **CR-101** Hợp nhất bảng dòng hàng (YCMH, YCBG, ĐMH).
 
 **Xong sau bản này:** **Đ-05** *(CR-106)* Nhà cung cấp — danh sách dời sang khung CRUD khai báo và
 dựng trang chi tiết 5 tab. Làm **trước Đ-04** *(Hợp đồng)* nên tab *Hợp đồng* của NCC hiện là bảng
 chỉ đọc, chưa bấm sang được trang chi tiết hợp đồng; nối nốt khi Đ-04 xong.
+
+**Không tính vào đợt nào — CR-107 … CR-110** *(20/08/2026)*: bốn thứ này **sửa màn đã có**, không
+dời thêm màn nào nên **số màn không đổi**. CR-107 dấu sao đỏ + cổng gửi duyệt *(§6.6)*; CR-108 khóa
+sửa Đơn mua hàng sau khi duyệt + nút *Hủy duyệt*; CR-109 kết luận LAB thành *Mẫu đạt / Mẫu không
+đạt*; CR-110 popup phiếu hỗ trợ **chỉ có ở `frontend/`**, v2 không có popup này. CR-108 và CR-109
+làm ở **cả hai bản** — ai port màn Phiếu khảo sát hoặc Đơn mua hàng sau này thì lấy bản v2 làm
+chuẩn, đừng chép lại từ `frontend/`.
 
 ### Đ-01 — Lớp CRUD khai báo + danh mục Kho · 2–3 ngày
 
