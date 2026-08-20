@@ -2,14 +2,20 @@ import { Building2, MinusCircle, PlusCircle, User, Users, X } from 'lucide-react
 
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { SCOPE_DIM, SCOPE_MODE, type DocumentScopeInput } from '../types/document-scope'
+import { SCOPE_DIM, SCOPE_MODE, type PendingScope } from '../types/document-scope'
 import { DocumentScopeAddForm } from './document-scope-add-form'
 
-/** Một dòng phạm vi đang xếp hàng chờ — gửi lên ngay sau khi văn bản được tạo. */
-export interface PendingScope {
-  values: DocumentScopeInput
-  /** Tên đọc được, do form thêm dòng dựng sẵn — xem `scopeLabel`. */
-  label: string
+export type { PendingScope }
+
+/** Khóa nhận diện một dòng phạm vi — hai dòng cùng khóa là khai trùng. */
+function khoaTrung({ values }: PendingScope): string {
+  return [
+    values.dim,
+    values.mode,
+    values.company_id ?? '',
+    values.department_id ?? '',
+    values.employee_id ?? '',
+  ].join('|')
 }
 
 interface DocumentScopeFieldsProps {
@@ -62,19 +68,27 @@ export function DocumentScopeFields({ rows, onChange }: DocumentScopeFieldsProps
       )}
 
       <DocumentScopeAddForm
-        onAdd={(values, label) => {
+        onAdd={(them) => {
           //  Khai trùng y hệt một dòng đã có thì bỏ qua: backend trả lỗi "Dòng
           //  phạm vi này đã khai rồi", mà lỗi đó chỉ nổ ra sau khi văn bản đã
           //  được tạo — lúc người dùng không còn ở đây để sửa.
-          const trung = rows.some(
-            (item) =>
-              item.values.dim === values.dim &&
-              item.values.mode === values.mode &&
-              item.values.company_id === values.company_id &&
-              item.values.department_id === values.department_id &&
-              item.values.employee_id === values.employee_id,
-          )
-          if (!trung) onChange([...rows, { values, label }])
+          //
+          //  Lọc trùng bằng `Set` khóa chuỗi, và cho khóa của các dòng MỚI vào
+          //  luôn: một mẻ có thể chứa hai dòng y hệt nhau, so với `rows` không
+          //  thôi thì cả hai cùng lọt.
+          const daCo = new Set(rows.map((item) => khoaTrung(item)))
+          const themDuoc: PendingScope[] = []
+          for (const item of them) {
+            const khoa = khoaTrung(item)
+            if (daCo.has(khoa)) continue
+            daCo.add(khoa)
+            themDuoc.push(item)
+          }
+
+          //  Ghi state ĐÚNG MỘT LẦN cho cả mẻ. Gọi `onChange` trong vòng lặp là
+          //  lỗi cũ: `rows` đọc qua closure không đổi giữa các lượt nên lượt
+          //  cuối ghi đè hết — chọn 13 pháp nhân chỉ còn 1 dòng.
+          if (themDuoc.length > 0) onChange([...rows, ...themDuoc])
         }}
       />
     </div>

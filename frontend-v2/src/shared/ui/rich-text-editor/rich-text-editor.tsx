@@ -38,6 +38,7 @@ import {
 } from './table-cell-background-extension'
 import { TableWithColumnResizing } from './table-column-resizing-extension'
 import { TableRowWithHeight } from './table-row-resizing-extension'
+import { useFillViewportHeight } from './use-fill-viewport-height'
 
 /** Khổ giấy và lề — số gốc ở `page-format.ts`, dùng chung với bản in. */
 const A4_WIDTH = A4_WIDTH_PX
@@ -71,6 +72,23 @@ interface RichTextEditorProps {
    * phiên soạn; truyền vào thì trang cha là nơi lưu, xem `onMarginsChange`.
    */
   defaultMargins?: PageMargins
+  /**
+   * Đánh số mục tự động cho tiêu đề (I · 1 · a). Bỏ trống `onAutoNumberChange`
+   * thì thanh công cụ không hiện nút bật/tắt — dùng cho chỗ không có nơi lưu cờ.
+   */
+  autoNumber?: boolean
+  onAutoNumberChange?: (bat: boolean) => void
+  /**
+   * Đầu trang / chân trang vẽ trên MỌI tờ giấy. Trang cha đã thay sẵn các thẻ
+   * mà nó biết (số hiệu, tên, ngày); thẻ số trang thì trang cha để lại nhãn
+   * ngắn vì lúc soạn chưa biết tờ nào là tờ thứ mấy của bản in.
+   */
+  pageFrame?: {
+    headerLeft: string
+    headerRight: string
+    footerLeft: string
+    footerRight: string
+  }
   /**
    * Người dùng BUÔNG TAY khỏi thước — trang cha ghi xuống bản ghi.
    *
@@ -121,6 +139,9 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       showOutline = false,
       defaultMargins,
       onMarginsChange,
+      autoNumber,
+      onAutoNumberChange,
+      pageFrame,
       className,
     },
     ref,
@@ -139,6 +160,10 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
     // Cột mục lục: đóng/mở và bề ngang do người dùng chỉnh, giữ trong phiên soạn.
     const [outlineOpen, setOutlineOpen] = useState(true)
     const [outlineWidth, setOutlineWidth] = useState(224)
+
+    //  Khung giấy cao hết phần màn hình còn lại — đo thật, xem hook.
+    const khungGiay = useRef<HTMLDivElement>(null)
+    const chieuCaoGiay = useFillViewportHeight(khungGiay)
     // Khi nhập file lớn, transaction chèn sẽ phát `onUpdate`. Không serialize
     // ở đó vì phía dưới còn bật lại pagination; chốt HTML đúng một lần sau khi
     // chèn xong để tránh duyệt cả cây tài liệu hai lần liên tiếp.
@@ -228,6 +253,12 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
           // Đúng màu nền xám của vùng đặt giấy (`--muted`), để khe giữa hai
           // trang nhìn xuyên xuống nền chứ không thành một vạch trắng.
           pageBreakBackground: '#f6f8fb',
+          //  Đầu/chân trang: thư viện tự vẽ trên mọi tờ. Khai lúc dựng rồi cập
+          //  nhật bằng lệnh khi trang cha đổi (xem effect bên dưới).
+          headerLeft: pageFrame?.headerLeft ?? '',
+          headerRight: pageFrame?.headerRight ?? '',
+          footerLeft: pageFrame?.footerLeft ?? '',
+          footerRight: pageFrame?.footerRight ?? '',
         }),
       ],
       content: defaultContent,
@@ -336,6 +367,21 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       [editor],
     )
 
+    //  Trang cha lưu xong đầu/chân trang thì vẽ lại ngay, không phải dựng lại
+    //  cả trình soạn thảo (dựng lại là mất lịch sử hoàn tác của người đang gõ).
+    useEffect(() => {
+      if (!editor || editor.isDestroyed || !pageFrame) return
+      editor.commands.updateHeaderContent(pageFrame.headerLeft, pageFrame.headerRight)
+      editor.commands.updateFooterContent(pageFrame.footerLeft, pageFrame.footerRight)
+    }, [
+      editor,
+      pageFrame?.headerLeft,
+      pageFrame?.headerRight,
+      pageFrame?.footerLeft,
+      pageFrame?.footerRight,
+      pageFrame,
+    ])
+
     // Rời trang bằng bàn phím hay điều hướng trong mã thì không có `blur` —
     // chốt nốt lượt đang chờ trước khi trình soạn thảo bị gỡ.
     useEffect(() => {
@@ -359,6 +405,10 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
             onZoomChange={setZoom}
             outlineOpen={showOutline ? outlineOpen : undefined}
             onToggleOutline={() => setOutlineOpen((open) => !open)}
+            autoNumber={onAutoNumberChange ? Boolean(autoNumber) : undefined}
+            onToggleAutoNumber={
+              onAutoNumberChange ? () => onAutoNumberChange(!autoNumber) : undefined
+            }
           />
         )}
 
@@ -401,9 +451,16 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
           )}
 
           {/* Nền xám để tờ giấy trắng nổi lên — nhìn ra ngay đâu là mép trang.
-            Cao theo màn hình chứ không cố định: màn 13" thì vẫn thấy được cả
-            thanh công cụ lẫn cuối trang, màn lớn thì soạn được nhiều dòng. */}
-          <div className="max-h-[calc(100vh-16rem)] min-h-100 min-w-0 flex-1 overflow-x-auto overflow-y-auto bg-muted px-6 py-5">
+
+            Chiều cao ĐO THẬT từ vị trí của chính khối này tới đáy cửa sổ (xem
+            `useFillViewportHeight`), không trừ một hằng số. Trang chi tiết có
+            tới bốn dải cảnh báo hiện/ẩn tùy lúc, và bản chỉ đọc thì không có
+            thanh công cụ — mọi hằng số đều sai ở đa số trường hợp. */}
+          <div
+            ref={khungGiay}
+            style={{ height: chieuCaoGiay }}
+            className="min-h-80 min-w-0 flex-1 overflow-x-auto overflow-y-auto bg-muted px-6 py-5"
+          >
             {/* Phóng bằng `zoom` chứ không phải `transform: scale`: `zoom` co
               giãn luôn cả hộp bố cục nên thanh cuộn vẫn đúng tầm và con trỏ
               chuột vẫn trỏ trúng chữ, còn `scale` thì phải tự bù chiều cao.
@@ -411,6 +468,10 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
               Hai biến lề đặt ở đây để thước kẻ và trang giấy cùng đọc một số —
               trang giấy nhận qua `.doc-page` trong `index.css`. */}
             <div
+              //  Class bật đánh số mục nằm ở thẻ BỌC NGOÀI trang giấy, không
+              //  phải trên chính `.doc-page`: đổi class của trang giấy phải đi
+              //  qua `editorProps` và dựng lại trình soạn thảo.
+              className={cn(autoNumber && 'doc-auto-number')}
               style={
                 {
                   zoom,

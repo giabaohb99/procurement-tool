@@ -54,7 +54,13 @@ export function PageHeader({
           )}
         </div>
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {/* `flex-wrap` bắt buộc: trang chi tiết có màn tới 8 nút, không cho xuống
+          dòng thì cụm nút đẩy rộng cả trang và sinh THANH CUỘN NGANG cho toàn
+          trang — đã gặp ở màn chi tiết văn bản. `justify-end` để khi xuống dòng
+          các nút vẫn bám mép phải, không trôi vào giữa. */}
+      {actions && (
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">{actions}</div>
+      )}
     </div>
   )
 }

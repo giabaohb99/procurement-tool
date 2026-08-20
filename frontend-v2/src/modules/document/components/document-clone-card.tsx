@@ -83,7 +83,7 @@ export function DocumentCloneCard({
             <p className="mt-1 text-xs text-muted-foreground">
               {isIssued
                 ? 'Bấm «Clone xuống pháp nhân» — danh sách đã tick sẵn.'
-                : 'Chưa sinh bản nháp nào. Chạy được sau khi văn bản đã ban hành.'}
+                : 'Bản nháp sinh tự động ngay khi ban hành văn bản này.'}
             </p>
           </div>
         )}
@@ -91,8 +91,8 @@ export function DocumentCloneCard({
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             {isIssued
-              ? 'Chưa clone xuống pháp nhân nào.'
-              : 'Clone được sau khi văn bản đã ban hành.'}
+              ? 'Chưa clone xuống pháp nhân nào. Tab Phạm vi không khai pháp nhân nào ngoài nơi ban hành.'
+              : 'Ban hành xong, mỗi pháp nhân khai ở tab Phạm vi sẽ tự có một bản nháp ở đây.'}
           </p>
         ) : (
           <ul className="divide-y">

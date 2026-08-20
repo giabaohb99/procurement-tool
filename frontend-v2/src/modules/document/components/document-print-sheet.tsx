@@ -1,6 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 
 import { A4_HEIGHT_PX, A4_WIDTH_PX, MARGIN_TOP_MM, mmToPx } from '@/shared/ui/rich-text-editor'
+import { cn } from '@/shared/utils/cn'
+import {
+  fillPageMarkers,
+  hasPageMarkerContent,
+  type PageMarkerValues,
+} from '../helpers/page-marker'
 import {
   oversizedCount,
   splitBlocksIntoPages,
@@ -14,6 +20,21 @@ interface DocumentPrintSheetProps {
   marginRightMm: number
   /** Chữ chìm cảnh báo, vd "BẢN NHÁP" — bỏ trống thì không vẽ. */
   watermark?: string
+  /** Đánh số mục tự động cho tiêu đề — bản in phải giống hệt màn soạn thảo. */
+  autoNumber?: boolean
+  /**
+   * Đầu trang / chân trang, còn nguyên thẻ. Bản in là nơi DUY NHẤT thay được
+   * `{{trang}}` và `{{tong_trang}}` bằng số thật, vì chỉ ở đây mới biết bài
+   * chia ra mấy tờ.
+   */
+  pageFrame?: {
+    header_left: string
+    header_right: string
+    footer_left: string
+    footer_right: string
+  }
+  /** Giá trị cho các thẻ còn lại (số hiệu, tên văn bản, ngày in). */
+  markers?: PageMarkerValues
   /** Báo ra số tờ và số khối sẽ tràn, để trang cha nói với người dùng. */
   onLayout?: (info: { pages: number; oversized: number }) => void
 }
@@ -31,6 +52,9 @@ export function DocumentPrintSheet({
   marginLeftMm,
   marginRightMm,
   watermark,
+  autoNumber = false,
+  pageFrame,
+  markers,
   onLayout,
 }: DocumentPrintSheetProps) {
   const measureRef = useRef<HTMLDivElement>(null)
@@ -85,6 +109,20 @@ export function DocumentPrintSheet({
     }
   }, [html, contentHeight, contentWidth])
 
+  const soTo = pages?.length ?? 0
+
+  /** Nội dung đầu/chân trang của tờ thứ `index` (0-based), đã thay hết thẻ. */
+  function khungTrang(index: number) {
+    if (!pageFrame) return null
+    const giaTri: PageMarkerValues = { ...markers, trang: index + 1, tongTrang: soTo }
+    return {
+      headerLeft: fillPageMarkers(pageFrame.header_left, giaTri),
+      headerRight: fillPageMarkers(pageFrame.header_right, giaTri),
+      footerLeft: fillPageMarkers(pageFrame.footer_left, giaTri),
+      footerRight: fillPageMarkers(pageFrame.footer_right, giaTri),
+    }
+  }
+
   return (
     <>
       {/* Bản đo: cùng bề ngang, cùng kiểu chữ với tờ thật, nhưng nằm ngoài tầm
@@ -93,7 +131,9 @@ export function DocumentPrintSheet({
       <div
         aria-hidden
         ref={measureRef}
-        className="doc-page doc-print-body"
+        //  Bản đo phải mang CÙNG class với tờ thật: thiếu `doc-auto-number` thì
+        //  đo hụt phần số mục và chia trang lệch.
+        className={cn('doc-page doc-print-body', autoNumber && 'doc-auto-number-body')}
         style={{
           position: 'absolute',
           top: 0,
@@ -109,19 +149,45 @@ export function DocumentPrintSheet({
         <section
           key={index}
           className="doc-print-sheet"
-          style={{
-            paddingLeft: `${marginLeftMm}mm`,
-            paddingRight: `${marginRightMm}mm`,
-          }}
+          style={
+            {
+              paddingLeft: `${marginLeftMm}mm`,
+              paddingRight: `${marginRightMm}mm`,
+              //  Dải đầu/chân trang canh theo đúng lề của trang, không phải lề
+              //  cố định — lề trái 30mm mà dải bắt đầu ở 20mm thì lệch thấy rõ.
+              '--doc-print-pad-left': `${marginLeftMm}mm`,
+              '--doc-print-pad-right': `${marginRightMm}mm`,
+            } as CSSProperties
+          }
         >
           {watermark && <span className="doc-print-watermark">{watermark}</span>}
+
+          {/* Đầu trang / chân trang lặp trên MỌI tờ, số trang thay bằng số thật
+              của chính tờ này. Ô rỗng thì không vẽ dải nào cả — tờ giấy trống
+              trên đầu vẫn hơn một dải kẻ trống trơn. */}
+          {khungTrang(index) && (
+            <>
+              {hasPageMarkerContent(pageFrame?.header_left, pageFrame?.header_right) && (
+                <div className="doc-print-frame doc-print-frame--top">
+                  <span>{khungTrang(index)?.headerLeft}</span>
+                  <span>{khungTrang(index)?.headerRight}</span>
+                </div>
+              )}
+              {hasPageMarkerContent(pageFrame?.footer_left, pageFrame?.footer_right) && (
+                <div className="doc-print-frame doc-print-frame--bottom">
+                  <span>{khungTrang(index)?.footerLeft}</span>
+                  <span>{khungTrang(index)?.footerRight}</span>
+                </div>
+              )}
+            </>
+          )}
 
           {/* Nghị định 30 điều 8: số trang đặt canh giữa ở LỀ TRÊN, KHÔNG hiện
               ở trang đầu. */}
           {index > 0 && <span className="doc-print-page-number">{index + 1}</span>}
 
           <div
-            className="doc-page doc-print-body"
+            className={cn('doc-page doc-print-body', autoNumber && 'doc-auto-number-body')}
             dangerouslySetInnerHTML={{ __html: blocks.map((block) => block.html).join('') }}
           />
         </section>

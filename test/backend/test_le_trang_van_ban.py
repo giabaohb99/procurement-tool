@@ -85,6 +85,35 @@ def test_ban_moi_thua_huong_le_cua_ban_goc(db, doc):
     assert ban_moi.margin_right_mm == 18
 
 
+def test_danh_so_muc_mac_dinh_tat(db, doc):
+    """Bật sẵn thì văn bản cũ mở lên tự nhiên mọc số trước mọi tiêu đề."""
+    assert _ban_dang_mo(db, doc).auto_heading_number is False
+
+
+def test_bat_danh_so_muc_khong_dung_toi_noi_dung(db, doc):
+    version = _ban_dang_mo(db, doc)
+
+    version_service.save_content(
+        db, version, VersionContentUpdate(auto_heading_number=True), ACTOR)
+
+    assert version.auto_heading_number is True
+    assert version.content_html == "<p>Điều 1.</p>"
+
+
+def test_ban_moi_thua_huong_cach_danh_so_cua_ban_goc(db, doc):
+    version = _ban_dang_mo(db, doc)
+    version_service.save_content(
+        db, version, VersionContentUpdate(auto_heading_number=True), ACTOR)
+    service.submit(db, doc, ACTOR)
+    service.approve(db, doc, ACTOR)
+
+    ban_moi = version_service.open_new_version(db, doc, VersionCreate(
+        change_kind=CHANGE_MINOR, change_summary="Sửa lỗi chính tả",
+        change_reason="Đọc soát lại"), ACTOR)
+
+    assert ban_moi.auto_heading_number is True
+
+
 def test_le_vo_ly_bi_chan_ngay_o_schema(db):
     """Lề 5mm hay 200mm là gõ nhầm, không phải nhu cầu — chặn trước khi ghi."""
     with pytest.raises(ValueError):

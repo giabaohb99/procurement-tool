@@ -14,7 +14,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run typecheck && npm run lint && npm run test"
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "kiem:bundle": "node scripts/kiem-bundle-khong-lo-mat-khau.mjs"
   },
   "dependencies": {
     "@dagrejs/dagre": "^3.1.1",

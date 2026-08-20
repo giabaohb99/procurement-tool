@@ -1020,6 +1020,15 @@ def run():
         if n_sample:
             print(f"Nạp {n_sample} văn bản mẫu.")
 
+        # Văn thư ở TỪNG pháp nhân con — CHỈ local. Không có mấy tài khoản này thì
+        # bản clone sinh ra ở 12 công ty con không ai mở được, tức là nửa sau của
+        # luồng "ban hành xuống pháp nhân con" không diễn được.
+        from app.seed_van_thu_phap_nhan_con import seed_van_thu_phap_nhan_con
+
+        n_vt = seed_van_thu_phap_nhan_con(db)
+        if n_vt:
+            print(f"Tạo {n_vt} văn thư ở pháp nhân con.")
+
         # Gán vai trò mặc định "Nhân sự" cho tài khoản chưa có vai trò
         n_default = assign_default_roles(db)
         if n_default:

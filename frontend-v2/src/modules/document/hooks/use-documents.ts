@@ -186,5 +186,19 @@ export function useDocumentWorkflow(documentId: number) {
     },
   })
 
-  return { submit, approve, reject, revoke }
+  /**
+   * Xác nhận ĐÃ RÀ SOÁT xong — tắt cờ «cần rà lại».
+   *
+   * Nằm chung `useDocumentWorkflow` vì cùng họ: đều đổi trạng thái bản ghi và
+   * đều phải nạp lại cả cụm dữ liệu văn bản sau khi chạy.
+   */
+  const confirmReviewed = useMutation({
+    mutationFn: (ketLuan: string) => documentApi.confirmReviewed(documentId, ketLuan),
+    onSuccess: () => {
+      toast.success('Đã ghi nhận rà soát xong')
+      refresh()
+    },
+  })
+
+  return { submit, approve, reject, revoke, confirmReviewed }
 }

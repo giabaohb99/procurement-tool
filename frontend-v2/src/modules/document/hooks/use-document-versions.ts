@@ -91,3 +91,49 @@ export function useSaveVersionMargins(documentId: number, versionId?: number | n
       documentVersionApi.saveContent(documentId, versionId as number, payload),
   })
 }
+
+/**
+ * Ghi ĐẦU TRANG / CHÂN TRANG của bản đang mở.
+ *
+ * Nạp lại phiên bản sau khi ghi: bốn dòng này vẽ ngay lên trang giấy nên phải
+ * thấy kết quả liền, khác nhịp gõ chữ (chỗ đó nạp lại là mất chữ đang gõ).
+ */
+export function useSaveVersionPageFrame(documentId: number, versionId?: number | null) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: {
+      header_left: string
+      header_right: string
+      footer_left: string
+      footer_right: string
+    }) => documentVersionApi.saveContent(documentId, versionId as number, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.document.version(documentId, versionId ?? 0),
+      })
+    },
+  })
+}
+
+/**
+ * Bật/tắt ĐÁNH SỐ MỤC TỰ ĐỘNG của bản đang mở.
+ *
+ * Tách riêng khỏi đường ghi nội dung vì đây là một cú bấm nút, phải ghi ngay và
+ * phải nạp lại phiên bản để cờ mới về đúng — khác nhịp gõ chữ.
+ */
+export function useSaveVersionAutoNumber(documentId: number, versionId?: number | null) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (bat: boolean) =>
+      documentVersionApi.saveContent(documentId, versionId as number, {
+        auto_heading_number: bat,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.document.version(documentId, versionId ?? 0),
+      })
+    },
+  })
+}

@@ -69,9 +69,11 @@ export function DocumentScopeCard({ documentId, canWrite }: DocumentScopeCardPro
 
         {canWrite && (
           <div className="border-t pt-4">
+            {/*  Ở đây mỗi dòng là một lệnh gửi lên máy chủ độc lập, nên lặp qua
+                 mẻ là đúng — không có state cục bộ nào để ghi đè nhau. */}
             <DocumentScopeAddForm
               disabled={addScope.isPending}
-              onAdd={(values) => addScope.mutate(values)}
+              onAdd={(rows) => rows.forEach((row) => addScope.mutate(row.values))}
             />
           </div>
         )}

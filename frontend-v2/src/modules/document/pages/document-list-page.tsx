@@ -1,7 +1,8 @@
-import { ChevronRight, CornerDownRight, Plus, Search } from 'lucide-react'
+import { ChevronRight, CornerDownRight, Loader2, Plus, Search, Sheet } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { downloadFile } from '@/core/api'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
 import { ConditionalFilter, FilterProvider, useFilterQuery } from '@/shared/conditional-filter'
@@ -23,6 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { toast } from 'sonner'
+
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import { DOCUMENT_LIST_FILTER_FIELDS } from '../config/document-list-filter-fields'
@@ -76,14 +79,45 @@ function DocumentListContent() {
   //  ba dòng thì màn hình trống trơn, người dùng tưởng không có kết quả.
   const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, typeId, status])
 
-  const { data, isLoading, isError } = useDocuments({
+  //  Điều kiện lọc gom một chỗ: bảng và nút Xuất Excel phải nhìn cùng một bộ,
+  //  nếu không thì file tải về khác hẳn thứ đang hiện trên màn hình.
+  const dieuKienLoc = {
     ...queryParams,
-    page,
-    page_size: pageSize,
     q: debouncedValue.trim() || undefined,
     doc_type_id: typeId === ALL ? undefined : Number(typeId),
     status: status === ALL ? undefined : Number(status),
+  }
+
+  const { data, isLoading, isError } = useDocuments({
+    ...dieuKienLoc,
+    page,
+    page_size: pageSize,
   })
+
+  const [dangXuat, setDangXuat] = useState(false)
+
+  async function xuatExcel() {
+    setDangXuat(true)
+    try {
+      //  KHÔNG gửi `cols`: người dùng ẩn cột trên màn hình để nhìn cho gọn,
+      //  còn file Excel thì gần như luôn muốn đủ cột để lọc lại trong Excel.
+      const query = new URLSearchParams()
+      for (const [khoa, giaTri] of Object.entries(dieuKienLoc)) {
+        if (giaTri !== undefined && giaTri !== null && giaTri !== '') {
+          query.set(khoa, String(giaTri))
+        }
+      }
+      const homNay = new Date().toISOString().slice(0, 10)
+      await downloadFile(
+        `/api/documents/export/xlsx?${query.toString()}`,
+        `danh-sach-van-ban-${homNay}.xlsx`,
+      )
+    } catch {
+      toast.error('Không xuất được danh sách. Thử lọc bớt rồi xuất lại.')
+    } finally {
+      setDangXuat(false)
+    }
+  }
 
   //  Các BẢN RIÊNG của dòng đang bung. Backend giấu chúng khỏi danh sách chung
   //  (xem `an_ban_rieng_co_goc_xem_duoc`) nên phải hỏi đích danh theo bản gốc.
@@ -294,12 +328,25 @@ function DocumentListContent() {
         title="Văn bản"
         description="Số hiệu do hệ cấp khi văn bản được duyệt — không ai gõ tay."
         actions={
-          <PermissionGate entity="document" action="create">
-            <Button onClick={() => navigate(appRoutes.document.documentNew)}>
-              <Plus className="size-4" />
-              Tạo văn bản
-            </Button>
-          </PermissionGate>
+          <>
+            <PermissionGate entity="document" action="export">
+              <Button variant="outline" onClick={() => void xuatExcel()} disabled={dangXuat}>
+                {dangXuat ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Sheet className="size-4" />
+                )}
+                Xuất Excel
+              </Button>
+            </PermissionGate>
+
+            <PermissionGate entity="document" action="create">
+              <Button onClick={() => navigate(appRoutes.document.documentNew)}>
+                <Plus className="size-4" />
+                Tạo văn bản
+              </Button>
+            </PermissionGate>
+          </>
         }
       />
 

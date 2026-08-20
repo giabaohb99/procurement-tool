@@ -52,6 +52,18 @@ MARGIN_BOTTOM_MM = 20
 MARGIN_LEFT_MIN_MM, MARGIN_LEFT_MAX_MM = 15, 60
 MARGIN_RIGHT_MIN_MM, MARGIN_RIGHT_MAX_MM = 10, 60
 
+#  Thẻ được thay khi vẽ đầu trang / chân trang. Khai ở tầng model để backend
+#  (bản xuất Word) và giao diện (bản in, trình soạn thảo) dùng chung một danh
+#  sách — thêm thẻ ở một nơi mà quên nơi kia thì người dùng gõ thẻ đúng nhưng
+#  chỗ này ra chữ, chỗ kia ra thẻ thô.
+THE_DAU_CHAN_TRANG = {
+    "{{trang}}": "số trang hiện tại",
+    "{{tong_trang}}": "tổng số trang",
+    "{{so_hieu}}": "số hiệu văn bản",
+    "{{ten_van_ban}}": "trích yếu",
+    "{{ngay}}": "ngày in",
+}
+
 
 class DocumentVersion(Base, AuditMixin):
     __tablename__ = "tab_document_version"
@@ -99,6 +111,20 @@ class DocumentVersion(Base, AuditMixin):
     #  trình soạn thảo lẫn bản in (xem `MARGIN_TOP_MM`).
     margin_left_mm: Mapped[int] = mapped_column(SmallInteger, default=30)
     margin_right_mm: Mapped[int] = mapped_column(SmallInteger, default=20)
+
+    #  ĐẦU TRANG / CHÂN TRANG — mỗi bên hai ô (trái · phải), lặp lại ở MỌI tờ.
+    #  Chuỗi ngắn chứ không phải HTML: đây là dòng chạy trên mọi trang, cho phép
+    #  định dạng tự do thì mỗi trang một kiểu và bản in vỡ bố cục.
+    #  Nhận mấy thẻ thay lúc in — xem `THE_DAU_CHAN_TRANG`.
+    header_left: Mapped[str] = mapped_column(String(200), default="")
+    header_right: Mapped[str] = mapped_column(String(200), default="")
+    footer_left: Mapped[str] = mapped_column(String(200), default="")
+    footer_right: Mapped[str] = mapped_column(String(200), default="")
+
+    #  ĐÁNH SỐ MỤC TỰ ĐỘNG cho tiêu đề (I · 1 · a). Cờ của TỪNG BẢN, không phải
+    #  của cả văn bản: bản 2.0 đổi cách trình bày không được kéo bản 1.0 đã ký
+    #  đổi theo.
+    auto_heading_number: Mapped[bool] = mapped_column(Boolean, default=False)
 
     #  1 sửa lớn · 2 sửa nhỏ. Phiên bản đầu tiên để 0 — nó không sửa gì cả.
     change_kind: Mapped[int] = mapped_column(SmallInteger, default=0)

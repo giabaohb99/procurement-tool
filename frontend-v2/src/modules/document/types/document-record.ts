@@ -193,6 +193,13 @@ export interface DocumentVersion {
   /** Lề trang (mm) của chính bản này — Nghị định 30: trái 30–35, phải 15–20. */
   margin_left_mm: number
   margin_right_mm: number
+  /** Bật đánh số mục tự động cho tiêu đề (I · 1 · a). */
+  auto_heading_number: boolean
+  /** Đầu trang / chân trang — lặp ở mọi tờ giấy, có thể chứa thẻ `{{trang}}`… */
+  header_left: string
+  header_right: string
+  footer_left: string
+  footer_right: string
   prev_version_id: number | null
   approved_at: string
   approved_by_name: string

@@ -35,10 +35,12 @@ from app.core.response import success
 from . import (access_service, approval_bridge, import_service, numbering,
                serializer, service, version_service)
 from .model import Document
+from .version_model import DocumentVersion
 from .query import (an_ban_rieng_co_goc_xem_duoc, dem_ban_rieng,
                     documents_query)
 from .model import APPLY_MODE_LABELS
 from .schema import (AccessGrant, AccessRevokeIn, ApproveIn, DocumentCreate, DocumentUpdate,
+                     ReviewedIn,
                      ManualIssueNumberUpdate, RejectIn, VersionContentUpdate,
                      VersionCreate)
 from .service import doc_type_or_400
@@ -97,17 +99,15 @@ def _load(db: Session, document_id: int, user, action: str = "read") -> Document
     return doc
 
 
-@router.get("")
-def list_documents(
-    request: Request,
-    q: str = Query("", description="Tìm theo tiêu đề, số hiệu, SỐ HIỆU CŨ, từ khóa"),
-    effective_from: date | None = Query(None, description="Hiệu lực từ ngày"),
-    effective_to: date | None = Query(None, description="Hiệu lực đến ngày"),
-    pg: dict = Depends(pagination),
-    db: Session = Depends(get_db),
-    user=Depends(require("document", "read")),
-):
-    profile = get_perm_profile(db, user)
+def _danh_sach_query(request: Request, db: Session, user, profile: dict,
+                     q: str = "", effective_from: date | None = None,
+                     effective_to: date | None = None):
+    """Truy vấn danh sách văn bản — **một luật lọc duy nhất** cho cả màn danh
+    sách lẫn bản xuất Excel.
+
+    Tách ra vì hai đường mà chép luật hai lần thì sớm muộn cũng lệch nhau, và
+    lệch ở đây nghĩa là file Excel chứa văn bản người xuất không được phép xem.
+    """
     query = apply_filters(documents_query(db), Document, request, FILTERABLE)
     #  Phạm vi vai trò + văn bản được chia đích danh − văn bản bị cấm đích danh.
     visible = access_service.visible_condition(user, profile)
@@ -141,6 +141,23 @@ def list_documents(
     #  vừa bung đúng dòng đó ra, gom lại là trả về rỗng.
     if not request.query_params.get("source_document_id"):
         query = an_ban_rieng_co_goc_xem_duoc(query)
+
+    return query, visible
+
+
+@router.get("")
+def list_documents(
+    request: Request,
+    q: str = Query("", description="Tìm theo tiêu đề, số hiệu, SỐ HIỆU CŨ, từ khóa"),
+    effective_from: date | None = Query(None, description="Hiệu lực từ ngày"),
+    effective_to: date | None = Query(None, description="Hiệu lực đến ngày"),
+    pg: dict = Depends(pagination),
+    db: Session = Depends(get_db),
+    user=Depends(require("document", "read")),
+):
+    profile = get_perm_profile(db, user)
+    query, visible = _danh_sach_query(request, db, user, profile, q,
+                                      effective_from, effective_to)
 
     total = query.count()
     #  Lọc `?book_id=` là đường mà màn SỔ VĂN BẢN dùng để liệt kê văn bản trong
@@ -198,6 +215,45 @@ def preview_number(
         "number_when": doc_type.number_when,
         "id_scheme": doc_type.id_scheme,
     })
+
+
+@router.get("/export/xlsx")
+def export_xlsx(
+    request: Request,
+    ids: str = "",
+    cols: str = "",
+    q: str = Query(""),
+    effective_from: date | None = Query(None),
+    effective_to: date | None = Query(None),
+    db: Session = Depends(get_db),
+    user=Depends(require("document", "export")),
+):
+    """Xuất danh sách văn bản ra Excel.
+
+    `ids` = các văn bản người dùng tự tick; bỏ trống thì xuất theo **đúng bộ lọc
+    đang đặt trên màn hình**. `cols` = các cột đang hiện, để file ra giống hệt
+    cái người dùng đang nhìn.
+
+    ⚠️ Khai TRƯỚC route `/{document_id}` kẻo "export" bị đọc thành id văn bản.
+    Lọc quyền dùng chung `_danh_sach_query` với màn danh sách — không viết lại.
+    """
+    from app.core.export_xlsx import (check_row_limit, parse_ids, pick_columns,
+                                      xlsx_response)
+
+    from . import export as ex
+
+    profile = get_perm_profile(db, user)
+    query, _ = _danh_sach_query(request, db, user, profile, q,
+                                effective_from, effective_to)
+    id_list = parse_ids(ids)
+    if id_list:
+        query = query.filter(Document.id.in_(id_list))
+
+    docs = query.order_by(Document.id.desc()).all()
+    check_row_limit(len(docs))
+    rows = ex.build_rows(serializer.serialize_many(db, docs))
+    return xlsx_response(ex.FILE_NAME, pick_columns(ex.COLUMNS, cols), rows,
+                         ex.SHEET_TITLE)
 
 
 @router.post("/import/parse")
@@ -335,6 +391,28 @@ def reject_document(
     return success(serializer.serialize(db, doc), "Đã trả lại bản nháp")
 
 
+@router.post("/{document_id}/reviewed")
+def confirm_reviewed(
+    document_id: int,
+    data: ReviewedIn,
+    db: Session = Depends(get_db),
+    user=Depends(require("document", "write")),
+):
+    """Xác nhận ĐÃ RÀ SOÁT xong — tắt cờ «cần rà lại».
+
+    Kết luận vào NHẬT KÝ THAO TÁC, không thêm cột: người sau mở nhật ký phải đọc
+    được «đã đối chiếu, vẫn đúng» hay «đã sửa theo Chương II» — hai câu đó dẫn
+    tới hai hành động khác hẳn nhau nếu về sau có tranh chấp.
+    """
+    doc = _load(db, document_id, user, "write")
+    ghi_chu_cu = doc.needs_review_note
+    doc = service.xac_nhan_da_ra_soat(db, doc, data.ket_luan, user.id)
+    record(db, user.id, "document", doc.id, "update",
+           f"Xác nhận đã rà soát: {data.ket_luan}"
+           + (f" (dấu cũ: {ghi_chu_cu})" if ghi_chu_cu else ""))
+    return success(serializer.serialize(db, doc), "Đã ghi nhận rà soát xong")
+
+
 @router.post("/{document_id}/revoke")
 def revoke_document(
     document_id: int,
@@ -351,6 +429,55 @@ def revoke_document(
 
 
 # ── Phiên bản ────────────────────────────────────────────────────────────────
+@router.get("/{document_id}/export/docx")
+def export_docx(
+    document_id: int,
+    version_id: int | None = Query(None, description="Bản cần xuất; bỏ trống = bản đang dùng"),
+    db: Session = Depends(get_db),
+    user=Depends(doc_reader),
+):
+    """Xuất một phiên bản văn bản ra tệp Word (.docx).
+
+    Gác bằng `doc_reader` + `_load(..., "read")` như mọi đường ĐỌC nội dung: ai
+    mở được văn bản trên màn hình thì tải được đúng thứ đó về máy. Không đòi
+    thêm quyền `export` — quyền đó dành cho việc kéo cả DANH SÁCH ra ngoài.
+    """
+    from fastapi.responses import Response
+    from urllib.parse import quote
+
+    from .html_docx import html_to_docx
+
+    doc = _load(db, document_id, user, "read")
+    version = (version_service.get_or_404(db, doc, version_id) if version_id
+               else db.get(DocumentVersion, doc.current_version_id))
+    if version is None:
+        raise HTTPException(404, "Văn bản chưa có phiên bản nào để xuất")
+
+    du_lieu = html_to_docx(
+        version.content_html or "",
+        le_trai_mm=version.margin_left_mm,
+        le_phai_mm=version.margin_right_mm,
+        danh_so_muc=version.auto_heading_number,
+        dau_trang=(version.header_left, version.header_right),
+        chan_trang=(version.footer_left, version.footer_right),
+        the_thay={
+            "{{so_hieu}}": doc.doc_code or doc.issue_number or "",
+            "{{ten_van_ban}}": doc.title or "",
+            "{{ngay}}": date.today().strftime("%d/%m/%Y"),
+        },
+    )
+
+    #  Tên tệp lấy theo SỐ HIỆU nếu đã có — người nhận lưu về máy còn tra được.
+    ten = (doc.doc_code or doc.issue_number or doc.title or "van-ban")
+    ten = f"{ten.replace('/', '-')} - ban {version.version_no}.docx"
+    return Response(
+        content=du_lieu,
+        media_type=("application/vnd.openxmlformats-officedocument."
+                    "wordprocessingml.document"),
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(ten)}"},
+    )
+
+
 @router.get("/{document_id}/versions")
 def list_versions(
     document_id: int,

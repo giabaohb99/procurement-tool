@@ -91,17 +91,15 @@ function MyTasksContent() {
   const soQuaHan = (data?.items ?? []).filter((row) => row.is_overdue).length
 
   const columns = useMemo<DataTableColumn<MyTask>[]>(
+    //  Thứ tự cột đọc theo NHỊP RA QUYẾT ĐỊNH của người duyệt: phiếu nào
+    //  (số hiệu) → về việc gì (nội dung) → gấp tới đâu (hạn duyệt). Ba cột
+    //  đó xong là bấm được.
+    //
+    //  «Hạn duyệt» từng nằm CUỐI, sau một cột «Bấm thay» rộng 170px mà gần
+    //  như luôn rỗng (ủy quyền là chuyện hiếm) — mắt phải nhảy qua một dải
+    //  «—» mới tới thứ quyết định làm cái nào trước. «Loại» thì cùng một giá
+    //  trị ở hầu hết dòng nên không dẫn dắt được gì, lùi ra sau.
     () => [
-      {
-        key: 'entity',
-        header: 'Loại',
-        width: 150,
-        cell: (row) => (
-          <Badge variant="outline" className="font-normal">
-            {ENTITY_LABELS[row.entity] ?? row.entity}
-          </Badge>
-        ),
-      },
       {
         key: 'entity_code',
         header: 'Số hiệu',
@@ -131,6 +129,30 @@ function MyTasksContent() {
         ),
       },
       {
+        key: 'due_at',
+        header: 'Hạn duyệt',
+        width: 150,
+        cell: (row) =>
+          row.due_at ? (
+            <span className={row.is_overdue ? 'font-medium text-destructive' : undefined}>
+              {formatDate(row.due_at)}
+              {row.is_overdue && ' · quá hạn'}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+      {
+        key: 'entity',
+        header: 'Loại',
+        width: 150,
+        cell: (row) => (
+          <Badge variant="outline" className="font-normal">
+            {ENTITY_LABELS[row.entity] ?? row.entity}
+          </Badge>
+        ),
+      },
+      {
         key: 'on_behalf_of_name',
         header: 'Bấm thay',
         width: 170,
@@ -141,20 +163,6 @@ function MyTasksContent() {
             <span className="flex items-center gap-1.5 text-sm text-amber-800">
               <UserCheck className="size-3.5 shrink-0" />
               {row.on_behalf_of_name}
-            </span>
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          ),
-      },
-      {
-        key: 'due_at',
-        header: 'Hạn duyệt',
-        width: 150,
-        cell: (row) =>
-          row.due_at ? (
-            <span className={row.is_overdue ? 'font-medium text-destructive' : undefined}>
-              {formatDate(row.due_at)}
-              {row.is_overdue && ' · quá hạn'}
             </span>
           ) : (
             <span className="text-muted-foreground">—</span>

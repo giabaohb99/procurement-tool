@@ -2,11 +2,14 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Ban,
   Check,
+  ChevronDown,
+  FileDown,
   FileText,
   GitBranch,
   Info,
   Link2,
   Loader2,
+  PanelTop,
   Pencil,
   Printer,
   Save,
@@ -22,12 +25,20 @@ import { toast } from 'sonner'
 
 import { useEntityApproval } from '@/modules/approval/hooks/use-approvals'
 import { INSTANCE_STATUS } from '@/modules/approval/types/approval'
+import { downloadFile } from '@/core/api'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
 import { ReasonConfirmDialog } from '@/shared/ui/reason-confirm-dialog'
 import { mmToPx, RichTextEditor, type RichTextEditorHandle } from '@/shared/ui/rich-text-editor'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
@@ -48,18 +59,22 @@ import { DocumentExcerptDialog } from '../components/document-excerpt-dialog'
 import { DocumentImportButton } from '../components/document-import-button'
 import { DocumentIssueDialog } from '../components/document-issue-dialog'
 import { DocumentNeedsReviewBanner } from '../components/document-needs-review-banner'
+import { DocumentPageFrameDialog } from '../components/document-page-frame-dialog'
 import { DocumentSubmittedLockNotice } from '../components/document-submitted-lock-notice'
 import { useCreateExcerpt } from '../hooks/use-document-links'
 import { ManualIssueNumberDialog } from '../components/manual-issue-number-dialog'
 import { documentToForm, emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
 import { effectiveLabel } from '../helpers/document-status'
+import { fillPageMarkers } from '../helpers/page-marker'
 import { useDocumentPermissions } from '../hooks/use-document-access'
 import { useDocumentAutosave } from '../hooks/use-document-autosave'
 import { useDocumentPageMargins } from '../hooks/use-document-page-margins'
 import {
   useDocumentVersion,
   useDocumentVersions,
+  useSaveVersionAutoNumber,
   useSaveVersionContent,
+  useSaveVersionPageFrame,
 } from '../hooks/use-document-versions'
 import {
   useDeleteDocument,
@@ -102,7 +117,7 @@ export function DocumentDetailPage() {
   const [pickedVersionId, setPickedVersionId] = useState<number | null>(null)
   //  Hộp hỏi lý do đang mở cho việc gì (`null` = đang đóng). Hai việc dùng
   //  chung một hộp vì chỉ khác chữ.
-  const [reasonFor, setReasonFor] = useState<'revoke' | 'reject' | null>(null)
+  const [reasonFor, setReasonFor] = useState<'revoke' | 'reject' | 'reviewed' | null>(null)
   const [numberDialogOpen, setNumberDialogOpen] = useState(false)
   const autoVersion =
     versions.find((item) => !item.is_locked) ??
@@ -165,6 +180,20 @@ export function DocumentDetailPage() {
   const autosave = useDocumentAutosave({ onSave: handleSaveContent })
   //  Buông tay khỏi thước lề → ghi ngay xuống phiên bản (xem hook).
   const pageMargins = useDocumentPageMargins(documentId, versionId)
+  const saveAutoNumber = useSaveVersionAutoNumber(documentId, versionId)
+  const savePageFrame = useSaveVersionPageFrame(documentId, versionId)
+  const [pageFrameOpen, setPageFrameOpen] = useState(false)
+
+  //  Thay sẵn những thẻ mà lúc soạn đã biết. Số trang thì để nhãn ngắn: trang
+  //  giấy trong trình soạn thảo chưa biết mình là tờ thứ mấy của bản in.
+  const veKhungTrang = (mau: string) =>
+    fillPageMarkers(mau, {
+      trang: '#',
+      tongTrang: 'N',
+      soHieu: record?.display_code || '',
+      tenVanBan: record?.title || '',
+      ngay: new Date().toLocaleDateString('vi-VN'),
+    })
 
   function handleSubmitForm(values: DocumentRecordFormValues) {
     save.mutate({ id: documentId, values: formToPayload(values) })
@@ -270,35 +299,69 @@ export function DocumentDetailPage() {
               </TabsTrigger>
             </TabsList>
 
-            {/*  Bản in mở TAB MỚI: trang in không có menu, mở đè lên trang
-                 đang soạn là người dùng mất chỗ đứng. Bản nháp cũng in được
-                 (soát bản thảo trên giấy) nhưng đóng chữ chìm "BẢN NHÁP". */}
-            <Button
-              type="button"
-              variant="outline"
-              //  Lề vừa kéo còn đang ghi thì chưa mở bản in: tab in đọc thẳng
-              //  bản ghi, mở sớm là in ra lề cũ.
-              disabled={pageMargins.dangLuu}
-              onClick={() =>
-                window.open(
-                  `${appRoutes.document.documentPrint(documentId)}${versionId ? `?version=${versionId}` : ''}`,
-                  '_blank',
-                  'noopener',
-                )
-              }
-            >
-              <Printer className="size-4" />
-              In / Xuất PDF
-            </Button>
+            {/*  MỘT MENU cho cả nhóm lệnh tệp thay vì bốn nút rời.
+                 Trang này có tới tám lệnh; xếp hết ra ngoài thì cụm nút đẩy
+                 rộng cả trang và sinh thanh cuộn ngang — đã gặp thật. Ở ngoài
+                 chỉ giữ lệnh dùng theo nhịp soạn (Nhập tệp, Lưu, Gửi duyệt). */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="outline">
+                  <FileText className="size-4" />
+                  Tệp
+                  <ChevronDown className="size-4 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem
+                  //  Lề vừa kéo còn đang ghi thì chưa mở bản in: tab in đọc
+                  //  thẳng bản ghi, mở sớm là in ra lề cũ.
+                  disabled={pageMargins.dangLuu}
+                  onSelect={() =>
+                    window.open(
+                      `${appRoutes.document.documentPrint(documentId)}${versionId ? `?version=${versionId}` : ''}`,
+                      '_blank',
+                      'noopener',
+                    )
+                  }
+                >
+                  <Printer className="size-4" />
+                  In / Xuất PDF
+                </DropdownMenuItem>
 
-            {/*  C19 — chỉ trích được từ văn bản ĐÃ BAN HÀNH: trích từ một bản
-                 nháp là chia ra ngoài thứ chưa ai duyệt. */}
-            {isIssued && (
-              <Button type="button" variant="outline" onClick={() => setExcerptOpen(true)}>
-                <Scissors className="size-4" />
-                Tạo bản trích
-              </Button>
-            )}
+                {/* Xuất .docx để người nhận sửa tiếp bằng Word — khác bản in PDF
+                    là bản chốt để ký. Tải qua `downloadFile` vì cần token. */}
+                <DropdownMenuItem
+                  onSelect={() =>
+                    void downloadFile(
+                      `/api/documents/${documentId}/export/docx${versionId ? `?version_id=${versionId}` : ''}`,
+                      `${record?.display_code || 'van-ban'}.docx`,
+                    ).catch(() => toast.error('Không xuất được tệp Word'))
+                  }
+                >
+                  <FileDown className="size-4" />
+                  Xuất Word
+                </DropdownMenuItem>
+
+                {tab === 'compose' && canWrite && !isLocked && !khoaVietVi && (
+                  <DropdownMenuItem onSelect={() => setPageFrameOpen(true)}>
+                    <PanelTop className="size-4" />
+                    Đầu/chân trang
+                  </DropdownMenuItem>
+                )}
+
+                {/*  C19 — chỉ trích được từ văn bản ĐÃ BAN HÀNH: trích từ một
+                     bản nháp là chia ra ngoài thứ chưa ai duyệt. */}
+                {isIssued && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => setExcerptOpen(true)}>
+                      <Scissors className="size-4" />
+                      Tạo bản trích
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/*  Nhập tệp (Word/PDF/Markdown/HTML) CÓ ở đây, không chỉ ở màn dựng
                  mẫu: phần lớn văn bản đã được soạn sẵn ngoài Word rồi mới đưa
@@ -416,6 +479,12 @@ export function DocumentDetailPage() {
             <DocumentNeedsReviewBanner
               needsReview={record.needs_review}
               note={record.needs_review_note}
+              //  Bản riêng của pháp nhân con thì biết ngay bản gốc là ai; ca
+              //  khác (văn bản con theo quan hệ) phải tự tìm ở tab Quan hệ.
+              sourceDocumentId={record.source_document_id}
+              canWrite={canWrite}
+              pending={workflow.confirmReviewed.isPending}
+              onConfirm={() => setReasonFor('reviewed')}
             />
           )}
 
@@ -444,6 +513,15 @@ export function DocumentDetailPage() {
                 right: mmToPx(version.margin_right_mm),
               }}
               onMarginsChange={pageMargins.luu}
+              //  Đánh số mục tự động: cờ của chính phiên bản này, bấm là ghi ngay.
+              autoNumber={version.auto_heading_number}
+              onAutoNumberChange={(bat) => saveAutoNumber.mutate(bat)}
+              pageFrame={{
+                headerLeft: veKhungTrang(version.header_left),
+                headerRight: veKhungTrang(version.header_right),
+                footerLeft: veKhungTrang(version.footer_left),
+                footerRight: veKhungTrang(version.footer_right),
+              }}
             />
           )}
         </TabsContent>
@@ -521,6 +599,23 @@ export function DocumentDetailPage() {
           />
         )}
 
+        {version && (
+          <DocumentPageFrameDialog
+            open={pageFrameOpen}
+            onOpenChange={setPageFrameOpen}
+            pending={savePageFrame.isPending}
+            value={{
+              header_left: version.header_left,
+              header_right: version.header_right,
+              footer_left: version.footer_left,
+              footer_right: version.footer_right,
+            }}
+            onSubmit={(giaTri) =>
+              savePageFrame.mutate(giaTri, { onSuccess: () => setPageFrameOpen(false) })
+            }
+          />
+        )}
+
         {/* C19 — tách một phần nội dung bản gốc thành văn bản riêng mức mật thấp hơn. */}
         {record && (
           <DocumentExcerptDialog
@@ -528,6 +623,8 @@ export function DocumentDetailPage() {
             onOpenChange={setExcerptOpen}
             sourceSecrecy={record.secrecy_level}
             sourceTitle={record.title}
+            //  Thân bản ĐANG XEM: hộp thoại cắt ra mục lục để tick, khỏi bôi đen dán tay.
+            sourceHtml={version?.content_html ?? ''}
             isPending={createExcerpt.isPending}
             onSubmit={(values) =>
               createExcerpt.mutate(values, { onSuccess: () => setExcerptOpen(false) })
@@ -540,22 +637,49 @@ export function DocumentDetailPage() {
         <ReasonConfirmDialog
           open={reasonFor !== null}
           onOpenChange={(open) => !open && setReasonFor(null)}
-          title={reasonFor === 'revoke' ? 'Bãi bỏ văn bản?' : 'Trả lại bản nháp?'}
+          title={
+            reasonFor === 'revoke'
+              ? 'Bãi bỏ văn bản?'
+              : reasonFor === 'reviewed'
+                ? 'Xác nhận đã rà soát xong?'
+                : 'Trả lại bản nháp?'
+          }
           description={
             reasonFor === 'revoke'
               ? `${record?.display_code || 'Văn bản'} chuyển sang trạng thái "Bãi bỏ" và hết hiệu lực kể từ hôm nay. Số hiệu vẫn giữ nguyên trong sổ, không xóa được.`
-              : 'Người soạn nhận lại bản nháp kèm lý do bên dưới để sửa tiếp.'
+              : reasonFor === 'reviewed'
+                ? 'Gỡ dấu "cần rà lại" khỏi văn bản. Kết luận bên dưới vào nhật ký thao tác — người sau đọc lại phải biết bạn đã đối chiếu ra điều gì.'
+                : 'Người soạn nhận lại bản nháp kèm lý do bên dưới để sửa tiếp.'
           }
           placeholder={
             reasonFor === 'revoke'
               ? 'Ví dụ: đã thay bằng công văn 05/2026/CV-DEGO'
-              : 'Ví dụ: thiếu căn cứ ở mục 2'
+              : reasonFor === 'reviewed'
+                ? 'Ví dụ: đã đối chiếu bản 2.0, phần của pháp nhân mình vẫn đúng, không phải sửa'
+                : 'Ví dụ: thiếu căn cứ ở mục 2'
           }
-          confirmText={reasonFor === 'revoke' ? 'Bãi bỏ' : 'Trả lại'}
+          confirmText={
+            reasonFor === 'revoke'
+              ? 'Bãi bỏ'
+              : reasonFor === 'reviewed'
+                ? 'Xác nhận đã rà xong'
+                : 'Trả lại'
+          }
           destructive={reasonFor === 'revoke'}
-          pending={reasonFor === 'revoke' ? workflow.revoke.isPending : workflow.reject.isPending}
+          pending={
+            reasonFor === 'revoke'
+              ? workflow.revoke.isPending
+              : reasonFor === 'reviewed'
+                ? workflow.confirmReviewed.isPending
+                : workflow.reject.isPending
+          }
           onConfirm={(reason) => {
-            const action = reasonFor === 'revoke' ? workflow.revoke : workflow.reject
+            const action =
+              reasonFor === 'revoke'
+                ? workflow.revoke
+                : reasonFor === 'reviewed'
+                  ? workflow.confirmReviewed
+                  : workflow.reject
             action.mutate(reason, { onSuccess: () => setReasonFor(null) })
           }}
         />
