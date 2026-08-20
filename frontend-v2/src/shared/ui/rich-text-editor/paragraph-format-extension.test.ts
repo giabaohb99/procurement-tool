@@ -6,6 +6,7 @@ import StarterKit from '@tiptap/starter-kit'
 import { describe, expect, it } from 'vitest'
 
 import { ParagraphFormat } from './paragraph-format-extension'
+import { cssToWordLineSpacing } from './word-line-spacing'
 
 function dungEditor(content: string) {
   return new Editor({
@@ -144,5 +145,30 @@ describe('setLineHeight với bảng — mẫu hành chính nào cũng có bản
     editor.commands.setLineHeight('2')
 
     expect(gianDong(editor)).toEqual(['2', '2'])
+  })
+})
+
+// ── Giãn dòng TUYỆT ĐỐI (Word "Exactly" / "At least") ───────────────────────
+//  `docx_html.py` ghi hai kiểu này ra px chứ không ra bội số:
+//  `line_height = f"{line / 15}px"`. Tệp người dùng nhập lên hôm 20/08 rơi vào
+//  đúng nhóm này — dòng thưa hẳn ra so với bản gốc.
+describe('setLineHeight khi tệp Word dùng giãn dòng tuyệt đối (px)', () => {
+  it('đè được giá trị px bằng bội số dòng', () => {
+    const editor = dungEditor(
+      '<p style="line-height: 42.5px">Đoạn giãn dòng kiểu Exactly.</p>' +
+        '<p style="line-height: 42.5px">Đoạn nữa.</p>',
+    )
+
+    editor.commands.selectAll()
+    editor.commands.setLineHeight('1.15')
+
+    expect(gianDong(editor)).toEqual(['1.15', '1.15'])
+  })
+
+  it('đọc ra "mấy dòng" thì chịu — px không quy đổi được, thanh công cụ không tick nấc nào', () => {
+    //  Đây là hành vi CỐ Ý (xem `cssToWordLineSpacing`), không phải lỗi. Ghi lại
+    //  để người sau đừng "sửa" thành 0 hay 1 rồi tick nhầm nấc.
+    expect(cssToWordLineSpacing('42.5px')).toBeNull()
+    expect(cssToWordLineSpacing('1.725')).toBe(1.5)
   })
 })
