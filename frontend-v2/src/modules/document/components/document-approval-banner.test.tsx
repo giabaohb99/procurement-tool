@@ -1,9 +1,19 @@
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 
 import { INSTANCE_STATUS, TASK_STATUS } from '@/modules/approval/types/approval'
 import type { ApprovalInstance } from '@/modules/approval/types/approval'
 import { DocumentApprovalBanner } from './document-approval-banner'
+
+//  Băng có một <Link> sang «Việc của tôi», nên phải có Router context.
+function ve(instance: ApprovalInstance | null) {
+  return render(
+    <MemoryRouter>
+      <DocumentApprovalBanner instance={instance} />
+    </MemoryRouter>,
+  )
+}
 
 function phien(doi: Partial<ApprovalInstance> = {}): ApprovalInstance {
   return {
@@ -43,22 +53,29 @@ function phien(doi: Partial<ApprovalInstance> = {}): ApprovalInstance {
 
 describe('DocumentApprovalBanner', () => {
   it('chưa vào bộ máy duyệt thì không chen thêm băng nào', () => {
-    const { container } = render(<DocumentApprovalBanner instance={null} />)
+    const { container } = ve(null)
     expect(container).toBeEmptyDOMElement()
   })
 
   it('đang chạy thì nói rõ đang ở bước nào và chờ ai', () => {
-    render(<DocumentApprovalBanner instance={phien()} />)
+    ve(phien())
 
     expect(screen.getByText(/bước 2/)).toBeInTheDocument()
     expect(screen.getByText(/Dego Admin/)).toBeInTheDocument()
   })
 
+  it('mở thẳng được màn «Việc của tôi» chứ không bắt tự đi tìm trong menu', () => {
+    ve(phien())
+
+    expect(screen.getByRole('link', { name: 'Việc của tôi' })).toHaveAttribute(
+      'href',
+      '/approval/my-tasks',
+    )
+  })
+
   it('duyệt xong TRỌN VẸN thì im lặng — không có gì để báo', () => {
-    const { container } = render(
-      <DocumentApprovalBanner
-        instance={phien({ status: INSTANCE_STATUS.approved, status_label: 'Đã duyệt', tasks: [] })}
-      />,
+    const { container } = ve(
+      phien({ status: INSTANCE_STATUS.approved, status_label: 'Đã duyệt', tasks: [] }),
     )
     expect(container).toBeEmptyDOMElement()
   })
@@ -68,16 +85,14 @@ describe('DocumentApprovalBanner', () => {
     //  ban hành ném lỗi, `entity_hooks.fire` nuốt lỗi để giữ chữ ký. Kết quả là
     //  phiên ghi «Đã duyệt», văn bản nằm lại ở *chờ duyệt* không số, và lý do
     //  chỉ nằm trong log container — không ai biết có chuyện.
-    render(
-      <DocumentApprovalBanner
-        instance={phien({
-          status: INSTANCE_STATUS.approved,
-          status_label: 'Đã duyệt',
-          tasks: [],
-          finish_reason:
-            'Đã duyệt hết các bước nhưng CHƯA hoàn tất được: Loại «Quy trình» phải ban hành kèm một Quyết định.',
-        })}
-      />,
+    ve(
+      phien({
+        status: INSTANCE_STATUS.approved,
+        status_label: 'Đã duyệt',
+        tasks: [],
+        finish_reason:
+          'Đã duyệt hết các bước nhưng CHƯA hoàn tất được: Loại «Quy trình» phải ban hành kèm một Quyết định.',
+      }),
     )
 
     expect(screen.getByText(/CHƯA ban hành/)).toBeInTheDocument()
@@ -85,15 +100,13 @@ describe('DocumentApprovalBanner', () => {
   })
 
   it('phiếu kẹt vì không có người duyệt cũng phải kêu lên', () => {
-    render(
-      <DocumentApprovalBanner
-        instance={phien({
-          status: INSTANCE_STATUS.blocked,
-          status_label: 'Kẹt — không có người duyệt',
-          tasks: [],
-          finish_reason: 'Chặng 1: không tìm được người duyệt nào',
-        })}
-      />,
+    ve(
+      phien({
+        status: INSTANCE_STATUS.blocked,
+        status_label: 'Kẹt — không có người duyệt',
+        tasks: [],
+        finish_reason: 'Chặng 1: không tìm được người duyệt nào',
+      }),
     )
 
     expect(screen.getByText(/đang kẹt/)).toBeInTheDocument()

@@ -90,11 +90,15 @@ export function DocumentIssueDialog({
                 <b>bản riêng</b>: số hiệu riêng, người ký riêng, hiệu lực riêng.
               </span>
             </p>
+            {/*  Chốt 20/08/2026: clone SINH TỰ ĐỘNG lúc ban hành. Trước đó phải
+                 vào thẻ Quan hệ bấm tay. Vì mỗi bản là một văn bản thật mang số
+                 hiệu vĩnh viễn, chỗ chặn nhầm lẫn dời về đây — gọi tên từng pháp
+                 nhân ở trên trước khi cho bấm. */}
             <p className="pl-6">
-              Bản nháp <b>không sinh tự động</b> khi bấm Ban hành — mỗi bản là một văn
-              bản thật mang số hiệu vĩnh viễn, nên đó phải là một lần bấm có chủ ý. Ban
-              hành xong, mở thẻ «Bản clone ở pháp nhân con» ở tab Quan hệ; các pháp nhân
-              đã khai được tick sẵn.
+              Bấm Ban hành là <b>{phapNhanNhanBanRieng.length} bản nháp sinh ra ngay</b> ở
+              các pháp nhân trên, mỗi nơi một bản để họ sửa cho đúng công ty mình rồi tự
+              ban hành. Danh sách này lấy từ tab <b>Phạm vi</b> — sai chỗ nào thì thoát ra
+              sửa ở đó trước, vì số hiệu cấp ra là cấp vĩnh viễn.
             </p>
           </div>
         ) : (

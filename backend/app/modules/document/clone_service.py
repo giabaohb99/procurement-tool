@@ -30,7 +30,9 @@ from .clone_plan_model import DocumentClonePlan
 from .link_model import DocumentLink
 from .model import (ALIVE_STATUSES, APPLY_MODE_CLONE, STATUS_DRAFT,
                     STATUS_LABELS, Document)
-from .service import ATTACH_ENTITY
+from . import numbering
+from .service import (ATTACH_ENTITY, NUMBER_ON_DRAFT, doc_type_or_400,
+                      issue_year)
 from .version_model import VERSION_DRAFT, DocumentVersion
 
 # Vòng đời của một bản clone (`04` mục 5.2).
@@ -70,6 +72,7 @@ def create_clones(db: Session, source: Document, company_ids: list[int],
     #  Hạn và ghi chú khai sẵn từ lúc tạo văn bản (xem `clone_plan_model`) là
     #  giá trị mặc định cho pháp nhân đó, nếu lần bấm này không khai đè.
     ke_hoach = {row.company_id: row for row in plan_for(db, source.id)}
+    doc_type = doc_type_or_400(db, source.doc_type_id)
 
     ket_qua: list[Document] = []
     for company_id in dict.fromkeys(company_ids):
@@ -128,6 +131,13 @@ def create_clones(db: Session, source: Document, company_ids: list[int],
         )
         db.add(clone)
         db.flush()
+
+        #  Loại khai "cấp số ngay lúc nháp" thì bản clone cũng phải có số ngay.
+        #  Thiếu nhánh này thì `approve()` — chỉ cấp cho loại "cấp số lúc duyệt" —
+        #  bỏ qua nó luôn, và bản clone ban hành xong vẫn không có số hiệu nào
+        #  (bắt được 20/08/2026: gốc ra `01/2026/TB-DEGO`, clone ra chuỗi rỗng).
+        if doc_type.number_when == NUMBER_ON_DRAFT:
+            numbering.assign(db, clone, doc_type, issue_year(clone))
 
         version = DocumentVersion(
             document_id=clone.id, major=1, minor=0, status=VERSION_DRAFT,

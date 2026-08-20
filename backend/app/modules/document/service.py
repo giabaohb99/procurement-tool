@@ -270,6 +270,12 @@ def submit(db: Session, doc: Document, actor: int) -> Document:
     if version.prev_version_id is None:
         doc.status = STATUS_SUBMITTED
     doc.updated_by = actor
+
+    #  Văn bản này là bản clone thì bảng theo dõi ở bản gốc phải thấy ngay —
+    #  không thì pháp nhân mẹ tưởng nơi đó còn chưa đụng tới.
+    from .clone_lifecycle_service import dong_bo_trang_thai
+    dong_bo_trang_thai(doc, actor)
+
     db.commit()
 
     #  Phase 3 — nếu bộ máy duyệt dùng chung đang BẬT cho văn bản thì mở luôn
@@ -361,9 +367,28 @@ def approve(db: Session, doc: Document, actor: int,
         doc.status = STATUS_APPROVED
         doc.effective_date = effective
 
+    #  Bản clone vừa được pháp nhân con ban hành → cột theo dõi ở bản gốc sang
+    #  "Đã ban hành". Đặt TRƯỚC commit để đi chung một transaction với việc cấp
+    #  số: có số hiệu mà bảng vẫn ghi "Đã gửi" là hai nguồn nói khác nhau.
+    from .clone_lifecycle_service import dong_bo_trang_thai
+    dong_bo_trang_thai(doc, actor)
+
     doc.updated_by = actor
     db.commit()
     db.refresh(doc)
+
+    #  Ban hành xuống thì mỗi pháp nhân trong phạm vi có ngay một bản nháp
+    #  (20/08/2026). Chạy SAU commit và tự nuốt lỗi — bản gốc đã ban hành xong
+    #  và đúng, không được để việc clone kéo đổ nó.
+    from .clone_lifecycle_service import auto_clone_after_issue
+    from .clone_notification import notify_clone_created
+
+    clones = auto_clone_after_issue(db, doc, actor)
+    if clones:
+        for clone in clones:
+            notify_clone_created(db, doc, clone)
+        db.commit()
+
     return doc
 
 
@@ -388,6 +413,12 @@ def reject(db: Session, doc: Document, reason: str, actor: int) -> Document:
     if version.prev_version_id is None:
         doc.status = STATUS_DRAFT
     doc.updated_by = actor
+
+    #  Bản clone bị trả lại thì quay về "Đang soạn" ở bảng theo dõi — để nguyên
+    #  "Đang duyệt" là pháp nhân mẹ chờ một cái duyệt không bao giờ tới.
+    from .clone_lifecycle_service import dong_bo_trang_thai
+    dong_bo_trang_thai(doc, actor)
+
     db.commit()
     db.refresh(doc)
     return doc
@@ -415,6 +446,22 @@ def xac_nhan_da_ra_soat(db: Session, doc: Document, ket_luan: str, actor: int) -
 
     doc.needs_review = False
     doc.needs_review_note = ""
+
+    #  Bản clone: dời con trỏ phiên bản lên bản hiện hành của gốc, nếu không thì
+    #  bảng theo dõi vẫn kêu "lệch bản" vĩnh viễn dù đã rà xong. Tắt băng vàng mà
+    #  quên chỗ này là chữa đúng một nửa — người rà thấy sạch, người ở tập đoàn
+    #  mở bảng theo dõi vẫn thấy đỏ (bắt được 20/08/2026).
+    if doc.source_document_id:
+        from .clone_lifecycle_service import dong_bo_trang_thai
+
+        goc = db.get(Document, doc.source_document_id)
+        if goc and goc.current_version_id:
+            doc.clone_source_version_id = goc.current_version_id
+        #  Gỡ luôn nhãn "Cần rà lại" khỏi cột theo dõi, trả về đúng chỗ bản clone
+        #  đang đứng — đã ban hành thì là "Đã ban hành", còn nháp thì "Đang soạn".
+        doc.clone_status = 0
+        dong_bo_trang_thai(doc, actor)
+
     doc.updated_by = actor
     db.commit()
     db.refresh(doc)

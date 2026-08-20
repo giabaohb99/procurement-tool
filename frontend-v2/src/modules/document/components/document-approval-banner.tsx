@@ -1,7 +1,9 @@
 import { AlertTriangle, Clock } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 import { INSTANCE_STATUS, TASK_STATUS } from '@/modules/approval/types/approval'
 import type { ApprovalInstance } from '@/modules/approval/types/approval'
+import { appRoutes } from '@/shared/constants/app-routes'
 
 interface DocumentApprovalBannerProps {
   instance: ApprovalInstance | null | undefined
@@ -57,9 +59,16 @@ export function DocumentApprovalBanner({ instance }: DocumentApprovalBannerProps
           Đang chạy luồng «{instance.flow_name}» — bước {instance.current_seq}
           {dangCho.length > 0 && ` · ${dangCho[0].node_name}`}
         </p>
+        {/*  Gọi tên một màn hình mà không mở được nó tới là bắt người đọc tự đi
+             tìm trong menu. Băng này hiện đúng lúc người ta đang muốn sang đó,
+             nên chữ «Việc của tôi» phải bấm được. */}
         {dangCho.length > 0 && (
           <p className="text-muted-foreground">
-            Chờ {dangCho.map((row) => row.assignee_name).join(', ')} xử lý ở màn «Việc của tôi».
+            Chờ {dangCho.map((row) => row.assignee_name).join(', ')} xử lý ở màn{' '}
+            <Link to={appRoutes.approval.myTasks} className="font-medium underline">
+              Việc của tôi
+            </Link>
+            .
           </p>
         )}
       </div>
