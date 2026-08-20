@@ -3,24 +3,31 @@ import { describe, expect, it } from 'vitest'
 import { LINE_HEIGHTS } from './editor-options'
 import {
   cssToWordLineSpacing,
+  DEFAULT_LINE_SPACING,
   parseLineSpacingInput,
   wordLineSpacingToCss,
 } from './word-line-spacing'
 
 describe('wordLineSpacingToCss', () => {
-  // Lỗi từng gặp: trang giấy để `line-height: 1.5` y như số ghi trong Word, đặt
-  // cạnh bản Word thì dòng chật hơn 15% vì Word nhân theo chiều cao dòng đơn.
-  it('đổi 1,5 dòng của Word thành 1.725 chứ không giữ nguyên 1.5', () => {
-    expect(wordLineSpacingToCss(1.5)).toBe('1.725')
+  //  ⚠️ Chỗ này TỪNG nhân thêm 1,15 để bản nhập nhìn giống Word, và người dùng
+  //  bắt được là hỏng: trang giấy để sẵn `line-height: 1.15`, nên bấm nấc «1,0»
+  //  ghi ra đúng 1.15 — không đổi một pixel nào, nhìn như tính năng chết. Chốt
+  //  20/08/2026: giãn dòng 1 là 1.
+  it('số trên thanh công cụ CHÍNH LÀ line-height, không quy đổi', () => {
+    expect(wordLineSpacingToCss(1)).toBe('1')
+    expect(wordLineSpacingToCss(1.5)).toBe('1.5')
+    expect(wordLineSpacingToCss(2)).toBe('2')
   })
 
-  it('giãn dòng đơn vẫn cao hơn cỡ chữ — bằng đúng dòng đơn của Times New Roman', () => {
-    expect(wordLineSpacingToCss(1)).toBe('1.15')
+  it('bấm nấc 1,0 phải KHÁC mặc định của trang, không thì bấm như không bấm', () => {
+    //  `.doc-page` để `line-height: 1.15`. Nấc nhỏ nhất mà trùng luôn số đó thì
+    //  người dùng bấm mãi không thấy gì đổi — đúng lỗi đã báo trên văn bản 217.
+    expect(wordLineSpacingToCss(1)).not.toBe(String(DEFAULT_LINE_SPACING))
   })
 
   it('không để đuôi số thực dấu phẩy động lọt vào style', () => {
-    expect(wordLineSpacingToCss(1.15)).toBe('1.3225')
-    expect(wordLineSpacingToCss(2)).toBe('2.3')
+    expect(wordLineSpacingToCss(1.15)).toBe('1.15')
+    expect(wordLineSpacingToCss(0.1 + 0.2)).toBe('0.3')
   })
 
   it('mọi nấc trong thanh công cụ đều là số CSS hợp lệ', () => {

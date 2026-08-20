@@ -36,10 +36,6 @@ _CANH_LE = {"left": "left", "center": "center", "right": "right", "justify": "bo
 
 _EMU_PER_PX = 9525
 _TWIPS_PER_PX = 15
-#  Word đo giãn dòng theo 1/240 dòng đơn; CSS `line-height` là bội của cỡ chữ,
-#  còn "dòng đơn" của Word = 1,15 lần cỡ chữ (xem `docx_html._SINGLE_LINE_RATIO`).
-_SINGLE_LINE_RATIO = 1.15
-
 _SO_LA_MA = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X",
              "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX"]
 
@@ -175,8 +171,9 @@ class _BoChuyen(HTMLParser):
         spacing = ""
         if gian:
             try:
-                #  CSS 1.725 = 1,5 dòng Word → 1.5 * 240 = 360.
-                dong = float(gian) / _SINGLE_LINE_RATIO
+                #  CSS 1.5 = 1,5 dòng Word → 1.5 * 240 = 360. Không quy đổi hệ
+                #  số: xem `word-line-spacing.ts`, chốt "giãn dòng 1 là 1".
+                dong = float(gian)
                 spacing += f' w:line="{int(round(dong * 240))}" w:lineRule="auto"'
             except ValueError:
                 pass

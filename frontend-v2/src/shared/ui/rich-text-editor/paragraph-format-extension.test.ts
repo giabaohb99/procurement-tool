@@ -169,6 +169,12 @@ describe('setLineHeight khi tệp Word dùng giãn dòng tuyệt đối (px)', (
     //  Đây là hành vi CỐ Ý (xem `cssToWordLineSpacing`), không phải lỗi. Ghi lại
     //  để người sau đừng "sửa" thành 0 hay 1 rồi tick nhầm nấc.
     expect(cssToWordLineSpacing('42.5px')).toBeNull()
-    expect(cssToWordLineSpacing('1.725')).toBe(1.5)
+  })
+
+  it('số bội thì đọc ngược ra ĐÚNG chính nó — 1 là 1', () => {
+    //  Từ 20/08/2026 không còn chia cho 1,15 nữa. Bài kiểm này canh việc ai đó
+    //  lắp lại hệ số: lắp vào thì 1.5 đọc ra 1.3, menu tick nhầm nấc.
+    expect(cssToWordLineSpacing('1.5')).toBe(1.5)
+    expect(cssToWordLineSpacing('1')).toBe(1)
   })
 })

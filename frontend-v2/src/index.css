@@ -552,6 +552,20 @@
   line-height: 1.3;
 }
 
+/* Vệt bôi đen vẫn còn khi con trỏ nhảy sang thanh công cụ.
+
+   Trình duyệt thôi tô vùng chọn ngay khi phần tử mất con trỏ, nên bấm vào một ô
+   chọn là vùng đã bôi biến mất trước mắt — người dùng tưởng mất chọn nên không
+   dám bấm tiếp (báo 20/08/2026). Lớp này do
+   `rich-text-editor/keep-selection-visible-extension.ts` gắn vào.
+
+   Dùng ĐÚNG màu chọn mặc định của trình duyệt để không ai nhận ra là hai lớp
+   khác nhau; nhạt hơn một chút cho thấy vùng soạn thảo đang không giữ con trỏ. */
+.doc-page .doc-selection-giu {
+  border-radius: 1px;
+  background: rgb(59 130 246 / 0.22);
+}
+
 .doc-page a {
   color: #1d4ed8;
   text-decoration: underline;
