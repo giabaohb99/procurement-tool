@@ -428,8 +428,13 @@ class DocxHtmlConverter:
                 # là "giãn dòng 1 là 1", bỏ phép ×1,15 từng dùng để khớp Word.
                 # Hai kiểu còn lại (`exact` / `atLeast`) là chiều cao tuyệt đối
                 # tính bằng twip nên đổi thẳng sang px.
+                #  Ghi kèm `em`: `line-height` không đơn vị kế thừa xuống các
+                #  `<span style="font-size: …">` dưới dạng CON SỐ, mỗi span lại
+                #  nhân với cỡ chữ của chính nó nên đoạn có chữ to vẫn thưa hơn
+                #  hẳn. `em` quy ra px ngay tại `<p>` rồi mới kế thừa.
+                #  Xem `word-line-spacing.ts`.
                 result["line_height"] = (
-                    _css_number(line / 240)
+                    f"{_css_number(line / 240)}em"
                     if rule == "auto"
                     else f"{_css_number(line / _TWIPS_PER_PX)}px"
                 )

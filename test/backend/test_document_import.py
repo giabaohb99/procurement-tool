@@ -126,7 +126,10 @@ def test_docx_giu_style_danh_sach_va_lien_ket():
     # hỏng khi dùng — trang giấy để sẵn `line-height: 1.15` nên bấm nấc «1,0»
     # trên thanh công cụ ghi ra đúng 1.15, không đổi một pixel nào, người dùng
     # tưởng tính năng chết. Chốt: giãn dòng 1 là 1. Xem `word-line-spacing.ts`.
-    assert "line-height: 1.5" in result
+    #  Kèm `em`: không đơn vị thì trị số kế thừa xuống từng `<span style="font-size">`
+    #  và mỗi span nhân lại với cỡ chữ của nó, nên đoạn có chữ to vẫn thưa hơn hẳn
+    #  dù đã đặt giãn dòng (lỗi người dùng bắt được 20/08/2026).
+    assert "line-height: 1.5em" in result
     assert "font-family: &quot;Calibri&quot;" in result
     assert "font-size: 20pt" in result
     assert "color: #00b0f0" in result
@@ -221,3 +224,36 @@ def test_pdf_scan_duoc_giu_nguyen_duoi_dang_anh_trang():
     assert trace["editable_page_count"] == 0
     assert trace["image_page_count"] == 1
     assert trace["issues"][0]["code"] == "image_only_page"
+
+
+def _xml_cua_docx(goi: bytes) -> str:
+    """Bóc `word/document.xml` ra khỏi gói .docx (là một tệp ZIP)."""
+    import io
+    import zipfile
+
+    with zipfile.ZipFile(io.BytesIO(goi)) as z:
+        return z.read("word/document.xml").decode("utf-8")
+
+
+def test_xuat_word_boc_duoc_duoi_em_cua_gian_dong():
+    """Giao diện ghi `1.5em`; bộ xuất phải bóc đuôi trước khi đổi sang twip.
+
+    Quên bóc thì `float("1.5em")` ném ValueError, khối `except` nuốt mất và tệp
+    Word xuất ra KHÔNG còn giãn dòng — hỏng im lặng, không ai thấy cho tới lúc
+    mở tệp lên đọc.
+    """
+    from app.modules.document.html_docx import html_to_docx
+
+    xml = _xml_cua_docx(html_to_docx('<p style="line-height: 1.5em">Một đoạn.</p>'))
+
+    #  1,5 dòng × 240 = 360.
+    assert 'w:line="360"' in xml
+
+
+def test_xuat_word_van_doc_duoc_gian_dong_khong_don_vi():
+    """Văn bản lưu TRƯỚC 20/08/2026 ghi số trần — không được bỏ rơi."""
+    from app.modules.document.html_docx import html_to_docx
+
+    xml = _xml_cua_docx(html_to_docx('<p style="line-height: 1.5">Một đoạn.</p>'))
+
+    assert 'w:line="360"' in xml

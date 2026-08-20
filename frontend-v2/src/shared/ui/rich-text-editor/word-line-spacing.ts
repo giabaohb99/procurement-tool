@@ -25,10 +25,31 @@
 /** Giãn dòng của trang giấy khi đoạn không đặt riêng — khai ở `.doc-page`. */
 export const DEFAULT_LINE_SPACING = 1.15
 
-/** Số trên thanh công cụ = `line-height` CSS, không quy đổi. */
+/**
+ * Số trên thanh công cụ → `line-height` CSS. Ghi kèm **đơn vị `em`**.
+ *
+ * ⚠️ Đây là chỗ tinh vi nhất của cả tệp, và là lỗi người dùng bắt được chiều
+ * 20/08/2026: đặt giãn dòng 1 cho một đoạn mà nó **vẫn thưa hơn đoạn dưới**.
+ *
+ * `line-height` viết KHÔNG ĐƠN VỊ thì kế thừa xuống con dưới dạng **con số**,
+ * và mỗi con lại nhân số đó với cỡ chữ của CHÍNH NÓ. Văn bản nhập từ Word thì
+ * mỗi đoạn chữ nằm trong một `<span style="font-size: …">` riêng, nên:
+ *
+ *     <p style="line-height: 1">            → dòng cao 1 × 14pt = 18,7px
+ *     <p style="line-height: 1">            → nhưng span bên trong 20pt
+ *       <span style="font-size: 20pt">…     → dòng cao 1 × 20pt = 26,7px
+ *
+ * Đo thật trên Chrome: cùng đặt `line-height: 1`, đoạn không có span cao 18,7px
+ * mỗi dòng, đoạn có span 20pt cao 26,7px. Đặt giãn dòng lên `<p>` **không khống
+ * chế được** chữ to bên trong — người dùng bấm xong thấy y như chưa bấm.
+ *
+ * `em` chữa đúng chỗ đó: nó quy ra px **ngay tại `<p>`** rồi mới kế thừa, nên
+ * con nhận một giá trị tuyệt đối và không nhân lại lần nữa. Đây cũng đúng cách
+ * Word hiểu giãn dòng: thuộc tính của ĐOẠN, không phải của từng cụm chữ.
+ */
 export function wordLineSpacingToCss(lines: number): string {
   //  Vẫn làm tròn: ô "Tùy chỉnh" nhận số thực nên vẫn có đuôi dấu phẩy động.
-  return String(Number(lines.toFixed(4)))
+  return `${Number(lines.toFixed(4))}em`
 }
 
 /**
@@ -40,7 +61,10 @@ export function wordLineSpacingToCss(lines: number): string {
  */
 export function cssToWordLineSpacing(value: string | null | undefined): number | null {
   if (!value) return null
-  const parsed = Number(value)
+  //  Nhận CẢ HAI cách viết: `1.5em` (bản mới) và `1.5` trần (văn bản cũ, và
+  //  bản nhập từ Word trước khi đổi). Bỏ nhánh số trần là mọi văn bản đã lưu
+  //  thôi tick nấc nào cả.
+  const parsed = Number(value.trim().replace(/em$/i, ''))
   if (!Number.isFinite(parsed) || parsed <= 0) return null
   return Number(parsed.toFixed(2))
 }

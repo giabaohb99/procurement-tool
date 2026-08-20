@@ -173,7 +173,10 @@ class _BoChuyen(HTMLParser):
             try:
                 #  CSS 1.5 = 1,5 dòng Word → 1.5 * 240 = 360. Không quy đổi hệ
                 #  số: xem `word-line-spacing.ts`, chốt "giãn dòng 1 là 1".
-                dong = float(gian)
+                #  Bóc đuôi `em` — giao diện ghi `1.5em` để khống chế được cả
+                #  chữ to trong `<span>`; quên bóc thì `float()` nổ, khối `except`
+                #  nuốt mất và văn bản xuất ra không còn giãn dòng.
+                dong = float(str(gian).strip().removesuffix("em"))
                 spacing += f' w:line="{int(round(dong * 240))}" w:lineRule="auto"'
             except ValueError:
                 pass
