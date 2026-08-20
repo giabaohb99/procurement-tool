@@ -13,6 +13,7 @@ import {
 } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import {
   Select,
   SelectContent,
@@ -22,6 +23,7 @@ import {
 } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
 import { formatDate } from '@/shared/utils/format-date'
+import { formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import {
   usePurchaseRequestItemGroups,
   usePurchaseRequestUnits,
@@ -123,52 +125,68 @@ export function SurveyRequestLineDialog({
                 onChange={(value) => patch({ item_group: value })}
               />
             ) : (
-              <Input value={draft.item_group} disabled />
+              <ReadOnlyValue>{draft.item_group}</ReadOnlyValue>
             )}
             {!!groupHint && <p className="text-xs text-muted-foreground">{groupHint}</p>}
           </LineField>
 
           <LineField label="Ngày yêu cầu trả kết quả">
-            <DatePicker
-              value={draft.result_due_date || ''}
-              disabled={!editing}
-              onChange={(value) => patch({ result_due_date: value })}
-            />
+            {editing ? (
+              <DatePicker
+                value={draft.result_due_date || ''}
+                onChange={(value) => patch({ result_due_date: value })}
+              />
+            ) : (
+              <ReadOnlyValue className="tabular-nums">
+                {formatDate(draft.result_due_date)}
+              </ReadOnlyValue>
+            )}
           </LineField>
 
           <div className="sm:col-span-2">
             <LineField label="Chi tiết thông số kỹ thuật & chất lượng">
-              <Textarea
-                rows={3}
-                value={draft.requirement_detail}
-                disabled={!editing}
-                placeholder="Kích thước, chất liệu, tiêu chuẩn, mẫu tham khảo..."
-                onChange={(event) => patch({ requirement_detail: event.target.value })}
-              />
+              {editing ? (
+                <Textarea
+                  rows={3}
+                  value={draft.requirement_detail}
+                  placeholder="Kích thước, chất liệu, tiêu chuẩn, mẫu tham khảo..."
+                  onChange={(event) => patch({ requirement_detail: event.target.value })}
+                />
+              ) : (
+                <ReadOnlyValue multiline>{draft.requirement_detail}</ReadOnlyValue>
+              )}
             </LineField>
           </div>
 
           <div className="sm:col-span-2">
             <LineField label="Yêu cầu khác">
-              <Textarea
-                rows={3}
-                value={draft.other_requirement}
-                disabled={!editing}
-                placeholder="Thời gian giao, đóng gói, chứng từ kèm theo..."
-                onChange={(event) => patch({ other_requirement: event.target.value })}
-              />
+              {editing ? (
+                <Textarea
+                  rows={3}
+                  value={draft.other_requirement}
+                  placeholder="Thời gian giao, đóng gói, chứng từ kèm theo..."
+                  onChange={(event) => patch({ other_requirement: event.target.value })}
+                />
+              ) : (
+                <ReadOnlyValue multiline>{draft.other_requirement}</ReadOnlyValue>
+              )}
             </LineField>
           </div>
 
           <LineField label="Số lượng dự kiến mua">
-            <Input
-              type="number"
-              min={0}
-              step="0.001"
-              value={draft.request_qty || ''}
-              disabled={!editing}
-              onChange={(event) => patch({ request_qty: Number(event.target.value) })}
-            />
+            {editing ? (
+              <Input
+                type="number"
+                min={0}
+                step="0.001"
+                value={draft.request_qty || ''}
+                onChange={(event) => patch({ request_qty: Number(event.target.value) })}
+              />
+            ) : (
+              <ReadOnlyValue className="tabular-nums">
+                {formatQuantity(draft.request_qty)}
+              </ReadOnlyValue>
+            )}
           </LineField>
 
           <LineField label="ĐVT">
@@ -183,19 +201,24 @@ export function SurveyRequestLineDialog({
                 onChange={(value) => patch({ uom: value })}
               />
             ) : (
-              <Input value={draft.uom} disabled />
+              <ReadOnlyValue>{draft.uom}</ReadOnlyValue>
             )}
           </LineField>
 
           <LineField label="Giá đề xuất (VNĐ)">
-            <Input
-              type="number"
-              min={0}
-              step="0.0001"
-              value={draft.proposed_price || ''}
-              disabled={!editing}
-              onChange={(event) => patch({ proposed_price: Number(event.target.value) })}
-            />
+            {editing ? (
+              <Input
+                type="number"
+                min={0}
+                step="0.0001"
+                value={draft.proposed_price || ''}
+                onChange={(event) => patch({ proposed_price: Number(event.target.value) })}
+              />
+            ) : (
+              <ReadOnlyValue className="tabular-nums">
+                {formatUnitPrice(draft.proposed_price)}
+              </ReadOnlyValue>
+            )}
           </LineField>
 
           {showStatus && (
@@ -211,7 +234,7 @@ export function SurveyRequestLineDialog({
 
           {!!draft.pr_code && (
             <LineField label="Mã YCMH liên kết">
-              <Input value={draft.pr_code} disabled />
+              <ReadOnlyValue>{draft.pr_code}</ReadOnlyValue>
             </LineField>
           )}
 
@@ -254,16 +277,18 @@ export function SurveyRequestLineDialog({
                     </SelectContent>
                   </Select>
                 ) : (
-                  <Input value={draft.assignee_name || draft.assignee} disabled />
+                  <ReadOnlyValue>{draft.assignee_name || draft.assignee}</ReadOnlyValue>
                 )}
               </LineField>
 
               <LineField label="Ngày tiếp nhận">
-                <Input
-                  value={formatDate(draft.received_date)}
-                  placeholder="Tự tính khi gán NSTM"
-                  disabled
-                />
+                <ReadOnlyValue className="tabular-nums">
+                  {formatDate(draft.received_date) || (
+                    <span className="font-normal text-muted-foreground">
+                      Tự tính khi gán NSTM
+                    </span>
+                  )}
+                </ReadOnlyValue>
               </LineField>
             </>
           )}

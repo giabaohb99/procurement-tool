@@ -31,6 +31,12 @@ export const inventoryModule: ErpModule = {
       icon: Warehouse,
       entity: 'inventory',
     },
+    {
+      label: 'Danh mục Kho',
+      path: appRoutes.inventory.warehouses,
+      icon: Warehouse,
+      entity: 'warehouse',
+    },
   ],
 
   routes: [
@@ -45,6 +51,18 @@ export const inventoryModule: ErpModule = {
       path: appRoutes.inventory.stock,
       lazy: async () => ({
         Component: (await import('./pages/inventory-list-page')).InventoryListPage,
+      }),
+    },
+    {
+      path: appRoutes.inventory.warehouses,
+      lazy: async () => ({
+        Component: (await import('./pages/warehouse-list-page')).WarehouseListPage,
+      }),
+    },
+    {
+      path: `${appRoutes.inventory.warehouses}/:id`,
+      lazy: async () => ({
+        Component: (await import('./pages/warehouse-detail-page')).WarehouseDetailPage,
       }),
     },
   ],

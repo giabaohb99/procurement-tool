@@ -98,7 +98,10 @@ export function ProgressStatusBadge({ status }: { status: string }) {
   return (
     <Badge
       variant="secondary"
-      className={cn('border-0', PROGRESS_CLASS[status] ?? TONE_CLASS.neutral)}
+      className={cn(
+        'border-0 whitespace-normal break-words text-center leading-tight py-1 px-2',
+        PROGRESS_CLASS[status] ?? TONE_CLASS.neutral,
+      )}
     >
       {status}
     </Badge>

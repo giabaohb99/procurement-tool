@@ -1,5 +1,3 @@
-import { Plus } from 'lucide-react'
-
 import type { Supplier } from '@/modules/production/types/supplier'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
@@ -14,6 +12,7 @@ import {
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import {
   Select,
   SelectContent,
@@ -22,6 +21,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
+import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney, formatQuantity } from '@/shared/utils/format-money'
 import {
   usePurchaseRequestUnits,
@@ -48,7 +48,11 @@ interface PurchaseOrderLineDialogProps {
   attachEditable: boolean
   purchaseOrderId: number
   carriers: Supplier[]
+  /** Phiếu giao chọn trước khi lưu, khóa theo chỉ số lần giao của dòng này. */
+  pendingFiles: Record<number, File[]>
   onChange: (item: PurchaseOrderItem) => void
+  onPendingFilesChange: (deliveryIndex: number, files: File[]) => void
+  onDeliveryRemoved: (deliveryIndex: number) => void
   onOpenChange: (open: boolean) => void
   /** Lưu cả đơn — lần giao chỉ được ghi nhận khi lưu đơn (giống v1). */
   onSave: () => void
@@ -70,7 +74,10 @@ export function PurchaseOrderLineDialog({
   attachEditable,
   purchaseOrderId,
   carriers,
+  pendingFiles,
   onChange,
+  onPendingFilesChange,
+  onDeliveryRemoved,
   onOpenChange,
   onSave,
 }: PurchaseOrderLineDialogProps) {
@@ -86,6 +93,16 @@ export function PurchaseOrderLineDialog({
   const remaining = (item.qty_order || 0) - (item.qty_received || 0)
 
   const patch = (changes: Partial<PurchaseOrderItem>) => onChange({ ...item, ...changes })
+
+  /**
+   * Chỉ xem thì hiện "MÃ — Tên kho" cho đúng thứ đang thấy lúc mở ô chọn. Kho cũ
+   * bị gỡ khỏi danh mục thì vẫn hiện mã trần, đừng nuốt mất dữ liệu của đơn cũ.
+   */
+  function warehouseLabel(code?: string) {
+    if (!code) return ''
+    const warehouse = (warehouses?.items ?? []).find((option) => option.code === code)
+    return warehouse ? `${warehouse.code} — ${warehouse.name}` : code
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -108,122 +125,153 @@ export function PurchaseOrderLineDialog({
 
           <div className="space-y-1.5">
             <Label>Phân loại</Label>
-            <Input
-              value={item.item_group || ''}
-              disabled={!fieldEditable}
-              onChange={(event) => patch({ item_group: event.target.value })}
-            />
+            {fieldEditable ? (
+              <Input
+                value={item.item_group || ''}
+                onChange={(event) => patch({ item_group: event.target.value })}
+              />
+            ) : (
+              <ReadOnlyValue>{item.item_group}</ReadOnlyValue>
+            )}
           </div>
 
           <div className="space-y-1.5 md:col-span-2">
             <Label title={received ? PRODUCT_LOCK_HINT : undefined}>Tên hàng</Label>
-            <Textarea
-              rows={2}
-              value={item.product_name || ''}
-              disabled={!fieldEditable || received}
-              onChange={(event) => patch({ product_name: event.target.value })}
-            />
+            {fieldEditable && !received ? (
+              <Textarea
+                rows={2}
+                value={item.product_name || ''}
+                onChange={(event) => patch({ product_name: event.target.value })}
+              />
+            ) : (
+              <ReadOnlyValue multiline>{item.product_name}</ReadOnlyValue>
+            )}
           </div>
 
           <div className="space-y-1.5 md:col-span-2">
             <Label>Tên trên hóa đơn</Label>
-            <Textarea
-              rows={2}
-              value={item.invoice_name || ''}
-              placeholder="Bỏ trống thì hệ thống lấy theo danh mục sản phẩm"
-              disabled={!fieldEditable}
-              onChange={(event) => patch({ invoice_name: event.target.value })}
-            />
+            {fieldEditable ? (
+              <Textarea
+                rows={2}
+                value={item.invoice_name || ''}
+                placeholder="Bỏ trống thì hệ thống lấy theo danh mục sản phẩm"
+                onChange={(event) => patch({ invoice_name: event.target.value })}
+              />
+            ) : (
+              <ReadOnlyValue multiline>{item.invoice_name}</ReadOnlyValue>
+            )}
           </div>
 
           <div className="space-y-1.5 md:col-span-2">
             <Label>Xuất xứ / TSKT / chất liệu</Label>
-            <Textarea
-              rows={2}
-              value={item.spec || ''}
-              disabled={!fieldEditable}
-              onChange={(event) => patch({ spec: event.target.value })}
-            />
+            {fieldEditable ? (
+              <Textarea
+                rows={2}
+                value={item.spec || ''}
+                onChange={(event) => patch({ spec: event.target.value })}
+              />
+            ) : (
+              <ReadOnlyValue multiline>{item.spec}</ReadOnlyValue>
+            )}
           </div>
 
           <div className="space-y-1.5">
             <Label>Mã HH (thành phẩm)</Label>
-            <Input
-              value={item.fg_code || ''}
-              placeholder="Tự gắn khi chọn sản phẩm"
-              disabled={!fieldEditable}
-              onChange={(event) => patch({ fg_code: event.target.value })}
-            />
+            {fieldEditable ? (
+              <Input
+                value={item.fg_code || ''}
+                placeholder="Tự gắn khi chọn sản phẩm"
+                onChange={(event) => patch({ fg_code: event.target.value })}
+              />
+            ) : (
+              <ReadOnlyValue>{item.fg_code}</ReadOnlyValue>
+            )}
           </div>
 
           <div className="space-y-1.5">
             <Label>Tên HH (thành phẩm)</Label>
-            <Input
-              value={item.fg_name || ''}
-              placeholder="Tự gắn khi chọn sản phẩm"
-              disabled={!fieldEditable}
-              onChange={(event) => patch({ fg_name: event.target.value })}
-            />
+            {fieldEditable ? (
+              <Input
+                value={item.fg_name || ''}
+                placeholder="Tự gắn khi chọn sản phẩm"
+                onChange={(event) => patch({ fg_name: event.target.value })}
+              />
+            ) : (
+              <ReadOnlyValue>{item.fg_name}</ReadOnlyValue>
+            )}
           </div>
 
           <div className="space-y-1.5">
             <Label title="Có ngày này thì dòng chuyển sang 'Đã gửi ĐMH cho KT'">
               Ngày giao chứng từ cho KT
             </Label>
-            <DatePicker
-              value={item.document_delivery_date || ''}
-              disabled={!fieldEditable}
-              onChange={(value) => patch({ document_delivery_date: value })}
-            />
+            {fieldEditable ? (
+              <DatePicker
+                value={item.document_delivery_date || ''}
+                onChange={(value) => patch({ document_delivery_date: value })}
+              />
+            ) : (
+              <ReadOnlyValue className="tabular-nums">
+                {formatDate(item.document_delivery_date)}
+              </ReadOnlyValue>
+            )}
           </div>
 
           <div className="space-y-1.5">
             <Label>Ngày yêu cầu có hàng</Label>
-            <DatePicker
-              value={item.required_date || ''}
-              disabled={!fieldEditable}
-              onChange={(value) => patch({ required_date: value })}
-            />
+            {fieldEditable ? (
+              <DatePicker
+                value={item.required_date || ''}
+                onChange={(value) => patch({ required_date: value })}
+              />
+            ) : (
+              <ReadOnlyValue className="tabular-nums">
+                {formatDate(item.required_date)}
+              </ReadOnlyValue>
+            )}
           </div>
 
           <div className="space-y-1.5">
             <Label>ĐVT</Label>
-            <Select
-              value={item.unit || undefined}
-              disabled={!fieldEditable || received}
-              onValueChange={(value) => patch({ unit: value })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Chọn ĐVT" />
-              </SelectTrigger>
-              <SelectContent>
-                {(units?.items ?? []).map((unit) => (
-                  <SelectItem key={unit.id} value={unit.name}>
-                    {unit.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {fieldEditable && !received ? (
+              <Select value={item.unit || undefined} onValueChange={(value) => patch({ unit: value })}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Chọn ĐVT" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(units?.items ?? []).map((unit) => (
+                    <SelectItem key={unit.id} value={unit.name}>
+                      {unit.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <ReadOnlyValue>{item.unit}</ReadOnlyValue>
+            )}
           </div>
 
           <div className="space-y-1.5">
             <Label>Kho nhận mặc định</Label>
-            <Select
-              value={item.warehouse_code || undefined}
-              disabled={!fieldEditable}
-              onValueChange={(value) => patch({ warehouse_code: value })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Chọn kho" />
-              </SelectTrigger>
-              <SelectContent>
-                {(warehouses?.items ?? []).map((warehouse) => (
-                  <SelectItem key={warehouse.id} value={warehouse.code}>
-                    {warehouse.code} — {warehouse.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {fieldEditable ? (
+              <Select
+                value={item.warehouse_code || undefined}
+                onValueChange={(value) => patch({ warehouse_code: value })}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Chọn kho" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(warehouses?.items ?? []).map((warehouse) => (
+                    <SelectItem key={warehouse.id} value={warehouse.code}>
+                      {warehouse.code} — {warehouse.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <ReadOnlyValue>{warehouseLabel(item.warehouse_code)}</ReadOnlyValue>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -261,38 +309,18 @@ export function PurchaseOrderLineDialog({
 
           <div className="space-y-1.5 md:col-span-2">
             <Label>Ghi chú</Label>
-            <Input
-              value={item.note || ''}
-              disabled={!fieldEditable}
-              onChange={(event) => patch({ note: event.target.value })}
-            />
+            {fieldEditable ? (
+              <Input
+                value={item.note || ''}
+                onChange={(event) => patch({ note: event.target.value })}
+              />
+            ) : (
+              <ReadOnlyValue multiline>{item.note}</ReadOnlyValue>
+            )}
           </div>
         </section>
 
         <section className="min-w-0 space-y-3 border-t pt-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-navy dark:text-foreground">
-              Giao hàng (nhiều lần)
-            </h3>
-            {canEditDeliveries && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  patch({
-                    deliveries: [
-                      ...(item.deliveries ?? []),
-                      createEmptyDelivery(item, (item.deliveries?.length ?? 0) + 1),
-                    ],
-                  })
-                }
-              >
-                <Plus />
-                Thêm lần giao
-              </Button>
-            )}
-          </div>
-
           {purchaseOrderId <= 0 && (
             <p className="text-sm text-muted-foreground">
               Lưu đơn (Tạo) trước rồi mới thêm được lần giao.
@@ -316,7 +344,21 @@ export function PurchaseOrderLineDialog({
             carriers={carriers}
             attachEditable={attachEditable && !locked}
             purchaseOrderId={purchaseOrderId}
+            pendingFiles={pendingFiles}
             onChange={(deliveries) => patch({ deliveries })}
+            onPendingFilesChange={onPendingFilesChange}
+            onDeliveryRemoved={onDeliveryRemoved}
+            onAdd={
+              canEditDeliveries && purchaseOrderId > 0
+                ? () =>
+                    patch({
+                      deliveries: [
+                        ...(item.deliveries ?? []),
+                        createEmptyDelivery(item, (item.deliveries?.length ?? 0) + 1),
+                      ],
+                    })
+                : undefined
+            }
           />
         </section>
 
@@ -368,9 +410,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return (
     <div className="space-y-1.5">
       <Label className="text-muted-foreground">{label}</Label>
-      <div className="flex min-h-9 items-center rounded-lg border bg-muted/35 px-3 py-2 text-sm font-medium tabular-nums">
-        {children}
-      </div>
+      <ReadOnlyValue className="tabular-nums">{children}</ReadOnlyValue>
     </div>
   )
 }

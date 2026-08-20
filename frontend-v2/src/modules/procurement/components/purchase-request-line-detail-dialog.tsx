@@ -1,4 +1,4 @@
-import { Image, Loader2, Save, Trash2, Upload } from 'lucide-react'
+import { Image, Loader2, Pencil, Save, Trash2, Upload } from 'lucide-react'
 import { useRef, useState } from 'react'
 
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
@@ -16,9 +16,11 @@ import {
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Textarea } from '@/shared/ui/textarea'
-import { formatMoney, formatQuantity } from '@/shared/utils/format-money'
+import { formatDate } from '@/shared/utils/format-date'
+import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import {
   useDeletePurchaseRequestAttachment,
   usePurchaseRequestAttachments,
@@ -35,6 +37,10 @@ interface PurchaseRequestLineDetailDialogProps {
   canEditProgress: boolean
   canAssign: boolean
   canManageAttachments: boolean
+  /** Phiếu còn sửa nội dung được (nháp / bị trả lại) nhưng trang đang ở chế độ xem. */
+  documentEditable?: boolean
+  /** Bật chế độ sửa của cả phiếu; hộp thoại đang mở sẽ hóa ô nhập ngay tại chỗ. */
+  onStartEditing?: () => void
   onOpenChange: (open: boolean) => void
   onChange: (item: PurchaseRequestItem) => void
   onSaveOperational: (item: PurchaseRequestItem) => Promise<void>
@@ -53,6 +59,8 @@ export function PurchaseRequestLineDetailDialog({
   canEditProgress,
   canAssign,
   canManageAttachments,
+  documentEditable = false,
+  onStartEditing,
   onOpenChange,
   onChange,
   onSaveOperational,
@@ -120,98 +128,139 @@ export function PurchaseRequestLineDetailDialog({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <LineField label="Mã vật tư *">
-            <Input
-              value={draft.product_code}
-              disabled={!editing}
-              onChange={(event) => patch({ product_code: event.target.value })}
-            />
+            {editing ? (
+              <Input
+                value={draft.product_code}
+                onChange={(event) => patch({ product_code: event.target.value })}
+              />
+            ) : (
+              <ReadOnlyValue>{draft.product_code}</ReadOnlyValue>
+            )}
           </LineField>
           <LineField label="Tên vật tư *">
-            <Textarea
-              rows={2}
-              value={draft.product_name}
-              disabled={!editing}
-              onChange={(event) => patch({ product_name: event.target.value })}
-            />
+            {editing ? (
+              <Textarea
+                rows={2}
+                value={draft.product_name}
+                onChange={(event) => patch({ product_name: event.target.value })}
+              />
+            ) : (
+              <ReadOnlyValue multiline>{draft.product_name}</ReadOnlyValue>
+            )}
           </LineField>
           <LineField label="Phân loại">
-            <Input
-              value={draft.item_group}
-              disabled={!editing}
-              onChange={(event) => patch({ item_group: event.target.value })}
-            />
+            {editing ? (
+              <Input
+                value={draft.item_group}
+                onChange={(event) => patch({ item_group: event.target.value })}
+              />
+            ) : (
+              <ReadOnlyValue>{draft.item_group}</ReadOnlyValue>
+            )}
           </LineField>
           <LineField label="Mô tả phân loại">
-            <Input value={draft.group_desc} disabled />
+            <ReadOnlyValue>{draft.group_desc}</ReadOnlyValue>
           </LineField>
           <LineField label="Số lượng mua *">
-            <Input
-              type="number"
-              min={0}
-              step="0.001"
-              value={draft.qty || ''}
-              disabled={!editing}
-              onChange={(event) => patch({ qty: Number(event.target.value) })}
-            />
+            {editing ? (
+              <Input
+                type="number"
+                min={0}
+                step="0.001"
+                value={draft.qty || ''}
+                onChange={(event) => patch({ qty: Number(event.target.value) })}
+              />
+            ) : (
+              // Chỉ xem thì hiện số đã ngăn cách hàng nghìn — ô nhập bắt buộc để
+              // số trần (2000), đọc lướt qua rất dễ nhầm bậc.
+              <ReadOnlyValue className="tabular-nums">{formatQuantity(draft.qty)}</ReadOnlyValue>
+            )}
           </LineField>
           <LineField label="Giá đề xuất (chưa VAT)">
-            <Input
-              type="number"
-              min={0}
-              step="0.0001"
-              value={draft.price || ''}
-              disabled={!editing}
-              onChange={(event) => patch({ price: Number(event.target.value) })}
-            />
+            {editing ? (
+              <Input
+                type="number"
+                min={0}
+                step="0.0001"
+                value={draft.price || ''}
+                onChange={(event) => patch({ price: Number(event.target.value) })}
+              />
+            ) : (
+              <ReadOnlyValue className="tabular-nums">{formatUnitPrice(draft.price)}</ReadOnlyValue>
+            )}
           </LineField>
           <LineField label="VAT (%)">
-            <Input
-              type="number"
-              min={0}
-              value={draft.vat_pct || 0}
-              disabled={!editing}
-              onChange={(event) => patch({ vat_pct: Number(event.target.value) })}
-            />
+            {editing ? (
+              <Input
+                type="number"
+                min={0}
+                value={draft.vat_pct || 0}
+                onChange={(event) => patch({ vat_pct: Number(event.target.value) })}
+              />
+            ) : (
+              <ReadOnlyValue className="tabular-nums">{`${draft.vat_pct || 0}%`}</ReadOnlyValue>
+            )}
           </LineField>
           <LineField label="ĐVT">
-            <Input
-              value={draft.unit}
-              disabled={!editing}
-              onChange={(event) => patch({ unit: event.target.value })}
-            />
+            {editing ? (
+              <Input
+                value={draft.unit}
+                onChange={(event) => patch({ unit: event.target.value })}
+              />
+            ) : (
+              <ReadOnlyValue>{draft.unit}</ReadOnlyValue>
+            )}
           </LineField>
           <LineField label="Thành tiền (gồm VAT)">
-            <Input value={lineTotal ? `${formatMoney(lineTotal)} đ` : ''} disabled />
+            <ReadOnlyValue className="tabular-nums">
+              {lineTotal ? `${formatMoney(lineTotal)} đ` : ''}
+            </ReadOnlyValue>
           </LineField>
           <LineField label="Kho nhận *">
-            <Input
-              value={draft.warehouse}
-              disabled={!editing}
-              onChange={(event) => patch({ warehouse: event.target.value })}
-            />
+            {editing ? (
+              <Input
+                value={draft.warehouse}
+                onChange={(event) => patch({ warehouse: event.target.value })}
+              />
+            ) : (
+              <ReadOnlyValue>{draft.warehouse}</ReadOnlyValue>
+            )}
           </LineField>
           <LineField label="Ngày cần hàng *">
-            <DatePicker
-              value={draft.required_date}
-              disabled={!editing}
-              onChange={(value) => patch({ required_date: value })}
-            />
+            {editing ? (
+              <DatePicker
+                value={draft.required_date}
+                onChange={(value) => patch({ required_date: value })}
+              />
+            ) : (
+              <ReadOnlyValue className="tabular-nums">
+                {formatDate(draft.required_date)}
+              </ReadOnlyValue>
+            )}
           </LineField>
           <LineField label="Thời gian dự kiến có hàng">
-            <DatePicker
-              value={draft.expected_date}
-              disabled={!canEditProgress}
-              onChange={(value) => patch({ expected_date: value })}
-            />
+            {canEditProgress ? (
+              <DatePicker
+                value={draft.expected_date}
+                onChange={(value) => patch({ expected_date: value })}
+              />
+            ) : (
+              <ReadOnlyValue className="tabular-nums">
+                {formatDate(draft.expected_date)}
+              </ReadOnlyValue>
+            )}
           </LineField>
           {showAssignee && (
             <LineField label="Nhân sự phụ trách">
-              <Input
-                value={draft.assignee}
-                disabled={!canAssign}
-                placeholder="Mã nhân sự thu mua"
-                onChange={(event) => patch({ assignee: event.target.value })}
-              />
+              {canAssign ? (
+                <Input
+                  value={draft.assignee}
+                  placeholder="Mã nhân sự thu mua"
+                  onChange={(event) => patch({ assignee: event.target.value })}
+                />
+              ) : (
+                <ReadOnlyValue>{draft.assignee}</ReadOnlyValue>
+              )}
             </LineField>
           )}
           <LineField label="Trạng thái xử lý">
@@ -230,22 +279,28 @@ export function PurchaseRequestLineDetailDialog({
           </LineField>
           <div className="sm:col-span-2">
             <LineField label="Chi tiết tiến độ">
-              <Textarea
-                rows={3}
-                value={draft.progress_note}
-                disabled={!editing && !canEditProgress}
-                onChange={(event) => patch({ progress_note: event.target.value })}
-              />
+              {editing || canEditProgress ? (
+                <Textarea
+                  rows={3}
+                  value={draft.progress_note}
+                  onChange={(event) => patch({ progress_note: event.target.value })}
+                />
+              ) : (
+                <ReadOnlyValue multiline>{draft.progress_note}</ReadOnlyValue>
+              )}
             </LineField>
           </div>
           <div className="sm:col-span-2">
             <LineField label="Ghi chú khác">
-              <Textarea
-                rows={3}
-                value={draft.note}
-                disabled={!editing && !canEditProgress}
-                onChange={(event) => patch({ note: event.target.value })}
-              />
+              {editing || canEditProgress ? (
+                <Textarea
+                  rows={3}
+                  value={draft.note}
+                  onChange={(event) => patch({ note: event.target.value })}
+                />
+              ) : (
+                <ReadOnlyValue multiline>{draft.note}</ReadOnlyValue>
+              )}
             </LineField>
           </div>
         </div>
@@ -254,6 +309,17 @@ export function PurchaseRequestLineDetailDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Đóng
           </Button>
+          {/*
+            Phiếu nháp mở hộp thoại ra là chữ chết hết — người dùng đọc thành
+            "hết quyền sửa". Cho bật chế độ sửa ngay tại đây: hộp thoại không
+            đóng, các ô hóa ô nhập tại chỗ.
+          */}
+          {!editing && documentEditable && onStartEditing && (
+            <Button variant="outline" onClick={onStartEditing}>
+              <Pencil />
+              Sửa dòng này
+            </Button>
+          )}
           {canSave && (
             <Button onClick={() => void save()} disabled={saving}>
               {saving ? <Loader2 className="animate-spin" /> : <Save />}

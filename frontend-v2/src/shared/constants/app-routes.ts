@@ -23,6 +23,9 @@ export const appRoutes = {
     root: '/inventory',
     /** Tồn hiện tại theo kho — số dư do hệ thống tính, chỉ sửa qua điều chỉnh tay. */
     stock: '/inventory/stock',
+    /** Danh mục Kho. */
+    warehouses: '/inventory/warehouses',
+    warehouseDetail: (id: number | string) => `/inventory/warehouses/${id}`,
   },
   procurement: {
     root: '/procurement',
@@ -130,6 +133,15 @@ export const appRoutes = {
     /** Danh mục nhà cung cấp / đơn vị vận chuyển — thuộc phân hệ Sản xuất. */
     suppliers: '/production/suppliers',
     supplierDetail: (id: number | string) => `/production/suppliers/${id}`,
+    /** Danh mục Sản phẩm & Vật tư bao bì. */
+    products: '/production/products',
+    productDetail: (id: number | string) => `/production/products/${id}`,
+    /** Danh mục Đơn vị tính (ĐVT). */
+    units: '/production/units',
+    unitDetail: (id: number | string) => `/production/units/${id}`,
+    /** Phân loại vật tư / bao bì / nguyên liệu. */
+    itemGroups: '/production/item-groups',
+    itemGroupDetail: (id: number | string) => `/production/item-groups/${id}`,
   },
   hr: {
     root: '/hr',

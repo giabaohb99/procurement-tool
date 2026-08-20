@@ -68,6 +68,15 @@ export function useTableLayout<T>(
     [layout, persist],
   )
 
+  const setHiddenColumns = useCallback(
+    (hiddenOrFn: string[] | ((prev: string[]) => string[])) => {
+      const next =
+        typeof hiddenOrFn === 'function' ? hiddenOrFn(layout.hiddenColumns) : hiddenOrFn
+      persist({ ...layout, hiddenColumns: next })
+    },
+    [layout, persist],
+  )
+
   const setColumnWidth = useCallback(
     (key: string, width: number) => {
       persist({ ...layout, columnWidths: { ...layout.columnWidths, [key]: width } })
@@ -155,6 +164,7 @@ export function useTableLayout<T>(
     orderedColumns,
     visibleColumns,
     toggleColumn,
+    setHiddenColumns,
     setColumnWidth,
     setColumnWidths,
     setColumnColor,

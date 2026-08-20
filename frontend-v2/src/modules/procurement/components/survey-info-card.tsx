@@ -6,10 +6,12 @@ import { Checkbox } from '@/shared/ui/checkbox'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { ReadOnlyValue as ReadOnlyBox } from '@/shared/ui/read-only-value'
 import { SearchSelect } from '@/shared/ui/search-select'
 import { Textarea } from '@/shared/ui/textarea'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
+import { formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import type { SurveyRequest } from '../types/purchase-document'
 import type { SurveyDetail } from '../types/survey-detail'
 import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
@@ -40,12 +42,9 @@ function InfoField({
   )
 }
 
-function ReadOnlyValue({ value }: { value: string }) {
-  return (
-    <p className="min-h-9 whitespace-pre-wrap break-words rounded-md border border-transparent bg-muted/40 px-3 py-2 text-sm">
-      {value || <span className="text-muted-foreground">—</span>}
-    </p>
-  )
+/** Giữ chữ ký `value=` sẵn có của thẻ này; hộp hiển thị dùng chung ở `shared/ui`. */
+function ReadOnlyValue({ value, multiline }: { value: string; multiline?: boolean }) {
+  return <ReadOnlyBox multiline={multiline}>{value}</ReadOnlyBox>
 }
 
 /**
@@ -123,7 +122,7 @@ export function SurveyInfoCard({
               onChange={(event) => onChange({ main_content: event.target.value })}
             />
           ) : (
-            <ReadOnlyValue value={data.main_content} />
+            <ReadOnlyValue value={data.main_content} multiline />
           )}
         </InfoField>
 
@@ -179,7 +178,7 @@ export function SurveyInfoCard({
               onChange={(event) => onChange({ requirement_detail: event.target.value })}
             />
           ) : (
-            <ReadOnlyValue value={data.requirement_detail} />
+            <ReadOnlyValue value={data.requirement_detail} multiline />
           )}
         </InfoField>
 
@@ -230,7 +229,7 @@ export function SurveyInfoCard({
                   onChange={(event) => onChange({ request_qty: Number(event.target.value) || 0 })}
                 />
               ) : (
-                <ReadOnlyValue value={String(data.request_qty ?? 0)} />
+                <ReadOnlyValue value={formatQuantity(data.request_qty ?? 0)} />
               )}
             </InfoField>
 
@@ -262,7 +261,7 @@ export function SurveyInfoCard({
                   }
                 />
               ) : (
-                <ReadOnlyValue value={String(data.proposed_rate ?? 0)} />
+                <ReadOnlyValue value={formatUnitPrice(data.proposed_rate ?? 0)} />
               )}
             </InfoField>
           </>

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import {
   Select,
   SelectContent,
@@ -252,27 +253,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return (
     <div className="space-y-1.5">
       <Label className="text-muted-foreground">{label}</Label>
-      <ReadOnlyValue>{children || '—'}</ReadOnlyValue>
-    </div>
-  )
-}
-
-function ReadOnlyValue({
-  children,
-  multiline = false,
-}: {
-  children: React.ReactNode
-  multiline?: boolean
-}) {
-  return (
-    <div
-      className={
-        multiline
-          ? 'min-h-20 whitespace-pre-wrap rounded-lg border bg-muted/35 px-3 py-2.5 text-sm font-medium'
-          : 'flex min-h-9 items-center rounded-lg border bg-muted/35 px-3 py-2 text-sm font-medium'
-      }
-    >
-      {children}
+      <ReadOnlyValue>{children}</ReadOnlyValue>
     </div>
   )
 }

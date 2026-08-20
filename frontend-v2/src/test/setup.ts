@@ -21,3 +21,14 @@ if (!Element.prototype.hasPointerCapture) {
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = vi.fn()
 }
+
+// jsdom cũng không có `ResizeObserver`. Bảng dòng dùng nó để đo bề ngang các cột
+// ghim; không có bản giả thì mọi test render bảng chết ngay ở lúc gắn effect.
+// Bản giả này không đo gì cả — jsdom vốn không dựng bố cục, mọi kích thước là 0.
+if (!globalThis.ResizeObserver) {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+}

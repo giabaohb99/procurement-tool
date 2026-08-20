@@ -1,5 +1,8 @@
+import { useMemo } from 'react'
 import { Copy, Pencil, Trash2 } from 'lucide-react'
 
+import { LinesTable } from '@/shared/data-table/lines-table'
+import type { LinesTableColumn } from '@/shared/data-table/types'
 import { Button } from '@/shared/ui/button'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
@@ -10,14 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/shared/ui/table'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import {
@@ -55,6 +50,8 @@ export const EMPTY_SURVEY_REQUEST_LINE: SurveyRequestLine = {
 const UNASSIGNED = '__unassigned__'
 const EMPTY_CATALOG_VALUE = '__empty__'
 
+const TABLE_STORAGE_KEY = 'survey-request-lines'
+
 interface SurveyRequestLinesTableProps {
   lines: SurveyRequestLine[]
   editing: boolean
@@ -78,10 +75,11 @@ interface SurveyRequestLinesTableProps {
 }
 
 /**
- * Bảng "Danh sách sản phẩm cần khảo sát".
- *
- * Cột trạng thái đọc thẳng `progress_state` / `progress_tone` của backend
- * (CR-077) — đừng suy lại từ `option_count` hay `line_status` ở đây.
+ * Bảng "Danh sách sản phẩm cần khảo sát" hỗ trợ:
+ * - Ghim cột cố định (default: No, Phân loại, Chi tiết thông số).
+ * - Kéo thả trực tiếp tiêu đề cột trên bảng để đổi thứ tự.
+ * - Chế độ Bảng rút gọn vs Bảng đầy đủ.
+ * - Kéo giãn / co nhỏ độ rộng cột & nhớ tự động vào localStorage.
  */
 export function SurveyRequestLinesTable({
   lines,
@@ -99,11 +97,94 @@ export function SurveyRequestLinesTable({
   const units = usePurchaseRequestUnits(editing)
   const itemGroups = usePurchaseRequestItemGroups(editing)
 
+  const columns = useMemo<LinesTableColumn[]>(() => [
+    {
+      key: 'no',
+      header: 'No.',
+      width: 48,
+      minWidth: 40,
+      hideable: false,
+      defaultPinned: true,
+      align: 'center',
+    },
+    {
+      key: 'item_group',
+      header: 'Phân loại',
+      width: 180,
+      minWidth: 100,
+      defaultPinned: true,
+    },
+    {
+      key: 'requirement_detail',
+      header: 'Chi tiết thông số',
+      width: 320,
+      minWidth: 140,
+      defaultPinned: true,
+    },
+    ...(showNstmColumns
+      ? [
+          {
+            key: 'received_date',
+            header: 'Ngày tiếp nhận',
+            width: 130,
+            minWidth: 90,
+            compactHidden: true,
+          },
+        ]
+      : []),
+    {
+      key: 'result_due_date',
+      header: 'Ngày YC trả KQ',
+      width: 140,
+      minWidth: 100,
+      compactHidden: true,
+    },
+    { key: 'request_qty', header: 'SL dự kiến', width: 100, minWidth: 50, align: 'right' },
+    { key: 'uom', header: 'ĐVT', width: 90, minWidth: 50 },
+    {
+      key: 'proposed_price',
+      header: 'Giá đề xuất',
+      width: 130,
+      minWidth: 70,
+      align: 'right',
+      compactHidden: true,
+    },
+    ...(showNstmColumns
+      ? [
+          {
+            key: 'assignee',
+            header: 'Nhân sự phụ trách',
+            width: 210,
+            minWidth: 140,
+            compactHidden: true,
+          },
+        ]
+      : []),
+    ...(showStatus
+      ? [
+          {
+            key: 'status',
+            header: 'Trạng thái',
+            width: 180,
+            minWidth: 120,
+            align: 'center' as const,
+          },
+        ]
+      : []),
+    {
+      key: 'action',
+      header: 'Thao tác',
+      width: 92,
+      minWidth: 60,
+      hideable: false,
+      align: 'center',
+    },
+  ], [showNstmColumns, showStatus])
+
   function patch(index: number, changes: Partial<SurveyRequestLine>) {
     onChange(lines.map((line, i) => (i === index ? { ...line, ...changes } : line)))
   }
 
-  /** Nhân bản dòng: bỏ mọi dấu vết của bản gốc để backend hiểu là dòng mới. */
   function duplicate(index: number) {
     const source = lines[index]
     if (!source) return
@@ -133,224 +214,192 @@ export function SurveyRequestLinesTable({
     onLineRemoved?.(index)
   }
 
-  const columnCount = 8 + (showNstmColumns ? 2 : 0) + (showStatus ? 1 : 0)
+  function renderCell(key: string, line: SurveyRequestLine, index: number) {
+    switch (key) {
+      case 'no':
+        return <span className="text-muted-foreground">{index + 1}</span>
+
+      case 'item_group':
+        return editing ? (
+          <CatalogSelect
+            value={line.item_group}
+            placeholder="-- Phân loại --"
+            options={(itemGroups.data?.items ?? []).map((group) => ({
+              value: group.name,
+              label: group.name,
+            }))}
+            onChange={(value) => patch(index, { item_group: value })}
+          />
+        ) : (
+          <span className="block break-words whitespace-normal leading-snug" title={line.item_group}>
+            {line.item_group || '—'}
+          </span>
+        )
+
+      case 'requirement_detail':
+        return editing ? (
+          <Input
+            value={line.requirement_detail}
+            placeholder="Thông số / chất lượng cần khảo sát"
+            onChange={(event) => patch(index, { requirement_detail: event.target.value })}
+          />
+        ) : (
+          <span className="block break-words whitespace-normal font-medium leading-snug" title={line.requirement_detail}>
+            {line.requirement_detail || '—'}
+          </span>
+        )
+
+      case 'received_date':
+        return (
+          <span className="text-muted-foreground">
+            {formatDate(line.received_date) || '—'}
+          </span>
+        )
+
+      case 'result_due_date':
+        return editing ? (
+          <DatePicker
+            size="sm"
+            value={line.result_due_date || ''}
+            onChange={(value) => patch(index, { result_due_date: value })}
+          />
+        ) : (
+          formatDate(line.result_due_date) || '—'
+        )
+
+      case 'request_qty':
+        return editing ? (
+          <Input
+            className="text-right"
+            type="number"
+            min={0}
+            step="0.001"
+            value={line.request_qty || ''}
+            onChange={(event) => patch(index, { request_qty: Number(event.target.value) })}
+          />
+        ) : (
+          <span className="tabular-nums">{formatQuantity(line.request_qty) || '—'}</span>
+        )
+
+      case 'uom':
+        return editing ? (
+          <CatalogSelect
+            value={line.uom}
+            placeholder="-- ĐVT --"
+            options={(units.data?.items ?? []).map((unit) => ({
+              value: unit.name,
+              label: unit.name,
+            }))}
+            onChange={(value) => patch(index, { uom: value })}
+          />
+        ) : (
+          line.uom || '—'
+        )
+
+      case 'proposed_price':
+        return editing ? (
+          <Input
+            className="text-right"
+            type="number"
+            min={0}
+            step="0.0001"
+            value={line.proposed_price || ''}
+            onChange={(event) =>
+              patch(index, { proposed_price: Number(event.target.value) })
+            }
+          />
+        ) : (
+          <span className="tabular-nums">{formatUnitPrice(line.proposed_price) || '—'}</span>
+        )
+
+      case 'assignee':
+        return canAssignNstm && line.id ? (
+          <Select
+            value={line.assignee || undefined}
+            onValueChange={(value) => {
+              const assignee = value === UNASSIGNED ? '' : value
+              patch(index, { assignee })
+              onAssigneeChange(line, assignee)
+            }}
+          >
+            <SelectTrigger size="sm" className="w-full">
+              <SelectValue placeholder="Chọn NSTM" />
+            </SelectTrigger>
+            <SelectContent>
+              {line.assignee && (
+                <SelectItem value={UNASSIGNED} className="text-muted-foreground">
+                  — Bỏ chọn —
+                </SelectItem>
+              )}
+              {purchasers.map((purchaser) => (
+                <SelectItem key={purchaser.code} value={purchaser.code}>
+                  {purchaser.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <span className="block break-words whitespace-normal leading-snug">
+            {line.assignee_name ||
+              purchasers.find((purchaser) => purchaser.code === line.assignee)?.name ||
+              line.assignee ||
+              '—'}
+          </span>
+        )
+
+      case 'status':
+        return <SurveyLineStateBadge state={line.progress_state} tone={line.progress_tone} />
+
+      case 'action':
+        return (
+          <div className="flex items-center justify-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title="Chi tiết dòng"
+              onClick={() => onOpenDetail(index)}
+            >
+              <Pencil />
+            </Button>
+            {editing && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  title="Nhân bản dòng"
+                  onClick={() => duplicate(index)}
+                >
+                  <Copy />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-destructive hover:text-destructive"
+                  title="Xóa dòng"
+                  onClick={() => remove(index)}
+                >
+                  <Trash2 />
+                </Button>
+              </>
+            )}
+          </div>
+        )
+
+      default:
+        return null
+    }
+  }
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
-      <Table className="[&_td]:border-r [&_td:last-child]:border-r-0 [&_th]:border-r [&_th:last-child]:border-r-0">
-        <TableHeader className="bg-muted">
-          <TableRow className="bg-muted">
-            <TableHead className="w-[42px] text-center">No.</TableHead>
-            {showNstmColumns && (
-              <TableHead className="w-[110px]" title="Thời điểm NSTM nhận dòng này">
-                Ngày tiếp nhận
-              </TableHead>
-            )}
-            <TableHead className="w-[130px]">Ngày YC trả KQ</TableHead>
-            <TableHead className="w-[160px]">Phân loại</TableHead>
-            <TableHead className="min-w-56">Chi tiết thông số</TableHead>
-            <TableHead className="w-[90px] text-right">SL dự kiến</TableHead>
-            <TableHead className="w-[100px]">ĐVT</TableHead>
-            <TableHead className="w-[120px] text-right">Giá đề xuất</TableHead>
-            {showNstmColumns && <TableHead className="w-[170px]">Nhân sự phụ trách</TableHead>}
-            {showStatus && <TableHead className="w-[130px] text-center">Trạng thái</TableHead>}
-            <TableHead className="w-[92px] text-center">Thao tác</TableHead>
-          </TableRow>
-        </TableHeader>
-
-        <TableBody>
-          {lines.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={columnCount} className="py-10 text-center text-muted-foreground">
-                Chưa có dòng nào — nhấn "Thêm dòng" để bắt đầu
-              </TableCell>
-            </TableRow>
-          )}
-
-          {lines.map((line, index) => (
-            <TableRow key={line.id || `new-${index}`} className="bg-card hover:bg-muted">
-              <TableCell className="text-center text-muted-foreground">{index + 1}</TableCell>
-
-              {showNstmColumns && (
-                <TableCell className="text-muted-foreground">
-                  {formatDate(line.received_date) || '—'}
-                </TableCell>
-              )}
-
-              <TableCell>
-                {editing ? (
-                  <DatePicker
-                    size="sm"
-                    value={line.result_due_date || ''}
-                    onChange={(value) => patch(index, { result_due_date: value })}
-                  />
-                ) : (
-                  formatDate(line.result_due_date) || '—'
-                )}
-              </TableCell>
-
-              <TableCell>
-                {editing ? (
-                  <CatalogSelect
-                    value={line.item_group}
-                    placeholder="-- Phân loại --"
-                    options={(itemGroups.data?.items ?? []).map((group) => ({
-                      value: group.name,
-                      label: group.name,
-                    }))}
-                    onChange={(value) => patch(index, { item_group: value })}
-                  />
-                ) : (
-                  <span className="block truncate" title={line.item_group}>
-                    {line.item_group || '—'}
-                  </span>
-                )}
-              </TableCell>
-
-              <TableCell>
-                {editing ? (
-                  <Input
-                    value={line.requirement_detail}
-                    placeholder="Thông số / chất lượng cần khảo sát"
-                    onChange={(event) => patch(index, { requirement_detail: event.target.value })}
-                  />
-                ) : (
-                  <span className="block truncate" title={line.requirement_detail}>
-                    {line.requirement_detail || '—'}
-                  </span>
-                )}
-              </TableCell>
-
-              <TableCell className="text-right">
-                {editing ? (
-                  <Input
-                    className="text-right"
-                    type="number"
-                    min={0}
-                    step="0.001"
-                    value={line.request_qty || ''}
-                    onChange={(event) => patch(index, { request_qty: Number(event.target.value) })}
-                  />
-                ) : (
-                  <span className="tabular-nums">{formatQuantity(line.request_qty) || '—'}</span>
-                )}
-              </TableCell>
-
-              <TableCell>
-                {editing ? (
-                  <CatalogSelect
-                    value={line.uom}
-                    placeholder="-- ĐVT --"
-                    options={(units.data?.items ?? []).map((unit) => ({
-                      value: unit.name,
-                      label: unit.name,
-                    }))}
-                    onChange={(value) => patch(index, { uom: value })}
-                  />
-                ) : (
-                  line.uom || '—'
-                )}
-              </TableCell>
-
-              <TableCell className="text-right">
-                {editing ? (
-                  <Input
-                    className="text-right"
-                    type="number"
-                    min={0}
-                    // Đơn giá giữ tới 4 số lẻ như mọi đơn giá trong hệ.
-                    step="0.0001"
-                    value={line.proposed_price || ''}
-                    onChange={(event) =>
-                      patch(index, { proposed_price: Number(event.target.value) })
-                    }
-                  />
-                ) : (
-                  <span className="tabular-nums">{formatUnitPrice(line.proposed_price) || '—'}</span>
-                )}
-              </TableCell>
-
-              {showNstmColumns && (
-                <TableCell>
-                  {/* Dòng chưa lưu thì chưa có id để gán — chờ bấm Lưu đã. */}
-                  {canAssignNstm && line.id ? (
-                    <Select
-                      value={line.assignee || undefined}
-                      onValueChange={(value) => {
-                        const assignee = value === UNASSIGNED ? '' : value
-                        patch(index, { assignee })
-                        onAssigneeChange(line, assignee)
-                      }}
-                    >
-                      <SelectTrigger size="sm" className="w-full">
-                        <SelectValue placeholder="Chọn NSTM" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {line.assignee && (
-                          <SelectItem value={UNASSIGNED} className="text-muted-foreground">
-                            — Bỏ chọn —
-                          </SelectItem>
-                        )}
-                        {purchasers.map((purchaser) => (
-                          <SelectItem key={purchaser.code} value={purchaser.code}>
-                            {purchaser.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    line.assignee_name ||
-                    purchasers.find((purchaser) => purchaser.code === line.assignee)?.name ||
-                    line.assignee ||
-                    '—'
-                  )}
-                </TableCell>
-              )}
-
-              {showStatus && (
-                <TableCell className="text-center">
-                  <SurveyLineStateBadge state={line.progress_state} tone={line.progress_tone} />
-                </TableCell>
-              )}
-
-              <TableCell>
-                <div className="flex items-center justify-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    title="Chi tiết dòng"
-                    onClick={() => onOpenDetail(index)}
-                  >
-                    <Pencil />
-                  </Button>
-                  {editing && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        title="Nhân bản dòng"
-                        onClick={() => duplicate(index)}
-                      >
-                        <Copy />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="text-destructive hover:text-destructive"
-                        title="Xóa dòng"
-                        onClick={() => remove(index)}
-                      >
-                        <Trash2 />
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <LinesTable
+      columns={columns}
+      rows={lines}
+      storageKey={TABLE_STORAGE_KEY}
+      rowKey={(line, index) => line.id || `new-${index}`}
+      renderCell={renderCell}
+      title={`Danh sách sản phẩm cần khảo sát (${lines.length} dòng)`}
+      emptyMessage='Chưa có dòng nào — nhấn "Thêm dòng" để bắt đầu'
+    />
   )
 }
 

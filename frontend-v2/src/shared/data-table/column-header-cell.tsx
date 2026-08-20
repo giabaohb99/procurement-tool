@@ -53,7 +53,6 @@ export function ColumnHeaderCell<T>({
         dragging && 'opacity-40',
         className,
       )}
-      title={`${column.header} — kéo để đổi vị trí cột`}
       onPointerDown={onDragStart}
     >
       <span className="pointer-events-none block truncate">{column.header}</span>

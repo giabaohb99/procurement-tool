@@ -652,6 +652,8 @@ export function PurchaseRequestDetailPage() {
               <PurchaseRequestItemsTable
                 items={draft.items}
                 editing={editing}
+                documentEditable={editable}
+                onStartEditing={() => setEditing(true)}
                 showAssignee={showAssignee}
                 onChange={(items) => patch({ items })}
                 onOpenDetail={setLineIndex}
@@ -692,6 +694,8 @@ export function PurchaseRequestDetailPage() {
         lineNumber={(lineIndex ?? 0) + 1}
         open={lineIndex !== null}
         editing={editing}
+        documentEditable={editable}
+        onStartEditing={() => setEditing(true)}
         showAssignee={showAssignee}
         canEditProgress={canEditSelectedLine}
         canAssign={canAssign}

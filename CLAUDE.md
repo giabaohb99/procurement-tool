@@ -93,13 +93,34 @@ shadcn/Radix + TanStack Query + zustand). Backend không đổi: v2 gọi đúng
 
 Phân xử khi có yêu cầu mới: **sửa lỗi** màn đang chạy thật → `frontend/`; **tính năng mới**
 → `frontend-v2/`, màn đó chưa có ở v2 thì dựng màn đó trước. `frontend/` chưa được tắt vì v2
-còn thiếu màn — đếm 19/08/2026 là 17 màn, **làm xong 4 nên còn 13**, xem **CR-093**, **CR-094** và
-`doc/erp/13-ke-hoach-man-con-lai-v2.md`. Trong đó **chặn nghiệp vụ chỉ còn 1**: Yêu cầu thanh toán
-(kèm phiếu in). *Xử lý khảo sát* (`SurveyRequestProcess.tsx`) **đã quyết BỎ**, không port — xem
-`doc/erp/12-...` mục 2.7. Mười hai màn kia là danh mục + hệ thống + cá nhân, đã có lịch: **MC-5,
-MC-6, MC-7** ở `13` (khách cho **hoãn**), sáu danh mục và chi tiết NCC ở P4, Phân công phụ trách
-ở P7. **Đã xong MC-1…MC-4** (CR-094): Đặt lại mật khẩu · Thông báo (`/notifications`) · Trang cá
+còn thiếu màn. **Số đo đầy đủ và kế hoạch dời nằm ở `doc/erp/13-ke-hoach-man-con-lai-v2.md`**
+(bản 2.0, xem **CR-097**): bản cũ có **48 màn** — 26 xong · **3 có nhưng KHUYẾT** · 16 chưa có ·
+2 đã bỏ · 1 chờ quyết. Phần còn lại chia **15 đợt Đ-01 … Đ-15**, 22–32 ngày công.
+Trong 16 màn thiếu, **chặn nghiệp vụ chỉ còn Yêu cầu thanh toán** (danh sách + chi tiết + phiếu
+in, đặt ở `/finance/payment-requests` theo QĐ-5); 5 màn thuộc ba thứ khách cho **hoãn** (MC-5 Sao
+lưu CSDL, MC-6 Quản lý Import, MC-7 Phiếu hỗ trợ); còn lại là danh mục (Sản phẩm, Hợp đồng ×2,
+Kho, ĐVT, Phân loại, chi tiết NCC) và Phân công phụ trách. *Tiến độ báo giá* và *Xử lý khảo sát*
+(`SurveyRequestProcess.tsx`) **đã quyết BỎ** — xem `doc/erp/12-...` mục 2.7.
+**Đừng tin cột "xong" mà bỏ qua §1.8 của `13`:** Trang chủ v2 thiếu 4 khối, Tổng quan Tài chính và
+Tổng quan Kho vẫn là trang rỗng, màn Công nợ thiếu cột tick chọn để lên phiếu thanh toán.
+**Đã xong MC-1…MC-4** (CR-094): Đặt lại mật khẩu · Thông báo (`/notifications`) · Trang cá
 nhân (`/me`) · Cấu hình hệ thống (`/system/settings`, phân hệ Quản trị nay **bật**).
+**Đã xong Đ-01** (CR-098): Dựng khung Generic Declarative CRUD (`frontend-v2/src/shared/crud/`)
+kế thừa 3 cấp độ (CrudListPage + CrudDetailPage có RecordIdentityCard + AuditTimeline + hỗ trợ tabs/bảng con DataTable + CrudFormDialog) và dời Danh mục Kho (`/inventory/warehouses` và `/inventory/warehouses/:id`).
+**Đã xong Đ-02** (CR-099): Dời Đơn vị tính (`/production/units` + `/production/units/:id`) và Phân loại VTBB/NL (`/production/item-groups` + `/production/item-groups/:id`) sang `frontend-v2` kế thừa 100% tầng generic CRUD, gắn vào phân hệ Sản xuất.
+**Đã xong Đ-03** (CR-100): Dời Sản phẩm & Vật tư (`/production/products` + `/production/products/:id`) sang `frontend-v2` có tab *Lịch sử mua hàng* (`PurchaseHistoryTable` với `DataTable` riêng, ẩn/hiện cột NCC theo quyền `supplier.read`, link sang ĐMH và gắn `AuditTimeline`).
+**Bảng DÒNG CHỨNG TỪ dùng chung `LinesTable`** (`shared/data-table/lines-table.tsx`, CR-101 + CR-102):
+bốn bảng dòng (YCMH · YCBG · ĐMH · Giao hàng nhiều lần trong popup chi tiết dòng ĐMH) đều chạy trên
+nó — ghim cột, kéo thả đổi thứ tự, co giãn + auto-fit, tô màu, nhớ `localStorage`, nút *Bảng rút gọn
+/ Bảng đầy đủ* (cột phụ khai `compactHidden`, bảng nhiều cột bật `defaultCompact`). Bảng dòng mới
+**phải dùng `LinesTable`**, đừng chép khung. ⚠️ **Không đặt bề rộng cứng cho `<table>`** —
+`table-fixed` + `w-full` là đủ; gắn `style={{ width: totalWidth }}` thì ẩn cột xong bảng co lại,
+chừa một lỗ trắng bên phải trong khung viền (đúng lỗi CR-102 phải vá). Xem `doc/erp/13-...md` §6.
+⚠️ **Ô CHỈ XEM: cấm `<Input disabled>` / `<Textarea disabled>`** — `disabled` gỡ luôn khả năng
+nhận con trỏ nên người dùng KHÔNG bôi đen, KHÔNG copy được giá trị, lại còn bị làm mờ 50% nhìn
+như chữ gợi ý. Dùng `shared/ui/read-only-value.tsx` (chữ trong thẻ thường, khung viền nền mờ).
+Giá trị nằm trong **ô CHỌN** thì bản chất là một `<button>` — bôi đen không được bằng cách nào cả,
+phải gắn `shared/ui/copy-button.tsx` bên cạnh (xem CR-105).
 Đụng vào **bảng dòng của phiếu khảo sát** (cả hai bản) thì đọc **hợp đồng hiển thị** ở dòng
 **CR-090** trong `doc/tai-lieu-ky-thuat/change-log.md` trước — 5 điều kiện về xuống dòng /
 ô chỉ xem / ô chọn NCC / phím Enter / bề rộng cột, làm hụt là lủng đúng chỗ vừa sửa lỗi.

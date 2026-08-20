@@ -9,7 +9,6 @@ import {
   Rows3,
   Save,
   Send,
-  Table2,
   Trash2,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -165,8 +164,6 @@ export function SurveyDetailPage() {
     supplier: new Set(),
     product: new Set(),
   })
-  /** Bảng mặc định RÚT GỌN như bản cũ; bật đầy đủ khi cần soi hết vài chục cột. */
-  const [fullColumns, setFullColumns] = useState(false)
   const [invalid, setInvalid] = useState<Set<string>>(new Set())
   const [reasonFor, setReasonFor] = useState<ReasonAction | null>(null)
   const [reason, setReason] = useState('')
@@ -567,67 +564,50 @@ export function SurveyDetailPage() {
             <CardHeader className="flex min-h-9 flex-row flex-wrap items-center justify-between gap-3 border-b px-4 pb-3!">
               <CardTitle className="text-base text-navy dark:text-foreground">
                 {SURVEY_TABLE_LABELS[table]}
-                <span className="ml-2 text-xs font-normal text-muted-foreground">
-                  {linesOf(table).length} dòng
-                </span>
               </CardTitle>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  title={
-                    fullColumns
-                      ? 'Về bảng rút gọn, xem đủ ô ở popup chi tiết dòng'
-                      : 'Hiện toàn bộ cột — bảng sẽ cuộn ngang'
-                  }
-                  onClick={() => setFullColumns((current) => !current)}
-                >
-                  <Table2 />
-                  {fullColumns ? 'Bảng rút gọn' : 'Bảng đầy đủ'}
-                </Button>
-                {editable && (
-                  <>
-                    {selected[table].size > 0 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => removeSelected(table)}
-                      >
-                        <Trash2 />
-                        Xóa dòng đã chọn ({selected[table].size})
-                      </Button>
-                    )}
-                    <Button variant="outline" size="sm" onClick={() => addLines(table, 1)}>
-                      <Plus />
-                      Thêm dòng
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setBulkCount('3')
-                        setBulkFor(table)
-                      }}
-                    >
-                      <Rows3 />
-                      Thêm nhiều
-                    </Button>
-                  </>
-                )}
-              </div>
             </CardHeader>
             <CardContent className="min-w-0 px-4">
               <SurveyLinesTable
                 table={table}
                 lines={linesOf(table)}
-                compact={!fullColumns}
                 editable={editable}
                 approveEditable={canEditApprove}
                 invalid={invalid}
                 catalog={catalog}
                 selected={selected[table]}
                 canFill={canFill}
+                actions={
+                  editable && (
+                    <>
+                      {selected[table].size > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => removeSelected(table)}
+                        >
+                          <Trash2 />
+                          Xóa dòng đã chọn ({selected[table].size})
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" onClick={() => addLines(table, 1)}>
+                        <Plus />
+                        Thêm dòng
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setBulkCount('3')
+                          setBulkFor(table)
+                        }}
+                      >
+                        <Rows3 />
+                        Thêm nhiều
+                      </Button>
+                    </>
+                  )
+                }
                 onSelectedChange={(next) => setSelectedOf(table, next)}
                 onChangeLine={(index, changes) => changeLine(table, index, changes)}
                 onOpenLine={(index, mode) => setOpenLine({ table, index, mode })}

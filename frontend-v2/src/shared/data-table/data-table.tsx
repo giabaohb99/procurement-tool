@@ -43,7 +43,7 @@ const DEFAULT_MIN_WIDTH = 64
  */
 const HEAD_CELL =
   'relative h-9 px-3 text-xs shadow-[inset_-1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border)] last:shadow-[inset_0_-1px_0_0_var(--border)]'
-const BODY_CELL = 'h-10 overflow-hidden border-r px-3 py-0 last:border-r-0'
+const BODY_CELL = 'min-h-10 border-r px-3 py-1.5 last:border-r-0 align-middle'
 /**
  * Nền hàng phải là màu ĐỤC (không dùng biến thể alpha kiểu `bg-muted/50`): ô của
  * cột ghim lấy `bg-inherit` từ hàng để che phần bảng đang cuộn ngang phía dưới.
@@ -361,7 +361,11 @@ export function DataTable<T>({
                           khối chứa trực tiếp dòng chữ.
                         */}
                         <div
-                          className="truncate"
+                          className={cn(
+                            column.wrap
+                              ? 'break-words whitespace-normal leading-snug'
+                              : 'truncate',
+                          )}
                           title={typeof content === 'string' ? content : undefined}
                         >
                           {content}

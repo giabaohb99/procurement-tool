@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   ArrowLeft,
   Ban,
   Check,
@@ -43,7 +44,17 @@ import {
 import { PurchaseOrderLineDialog } from '../components/purchase-order-line-dialog'
 import { PurchaseOrderPaymentDialog } from '../components/purchase-order-payment-dialog'
 import { PurchaseOrderReasonDialog } from '../components/purchase-order-reason-dialog'
+import {
+  parseDeliveryFileKey,
+  pendingFilesOfLine,
+  setPendingDeliveryFiles,
+  shiftPendingAfterDeliveryRemove,
+  shiftPendingAfterLineInsert,
+  shiftPendingAfterLineRemove,
+  type PendingDeliveryFiles,
+} from '../helpers/pending-delivery-files'
 import { usePurchaseRequests } from '../hooks/use-purchase-documents'
+import { useUploadDeliveryFiles } from '../hooks/use-purchase-request-support'
 import {
   useDeletePurchaseOrder,
   usePurchaseOrder,
@@ -60,6 +71,7 @@ import {
   validatePurchaseOrder,
   type PurchaseOrderDraftFromRequest,
 } from '../utils/purchase-order-draft'
+import { summarizeShipping } from '../utils/purchase-order-shipping'
 import {
   isDeliveryStage,
   isPurchaseOrderLocked,
@@ -115,6 +127,7 @@ export function PurchaseOrderDetailPage() {
   const deletePurchaseOrder = useDeletePurchaseOrder()
   const setDocumentStatus = useSetDocumentStatus(purchaseOrderId)
   const setItemProgress = useSetItemProgress(purchaseOrderId)
+  const uploadDeliveryFiles = useUploadDeliveryFiles()
 
   /** Nháp đang sửa. Đơn mới có thể được điền sẵn từ YCMH (`state.fromPurchaseRequest`). */
   const [draft, setDraft] = useState<PurchaseOrderDetail | null>(() =>
@@ -133,6 +146,11 @@ export function PurchaseOrderDetailPage() {
   /** Dòng đang mở hộp chi tiết (thông tin đầy đủ + các lần giao). */
   const [lineIndex, setLineIndex] = useState<number | null>(null)
   const [paymentOpen, setPaymentOpen] = useState(false)
+  /**
+   * Phiếu giao chọn cho lần giao CHƯA LƯU — giữ hộ tới khi bấm Lưu đơn. Không có
+   * nó thì người nhập phải lưu đơn trước rồi mới quay lại đính từng phiếu.
+   */
+  const [pendingFiles, setPendingFiles] = useState<PendingDeliveryFiles>({})
 
   // Dữ liệu server về (hoặc đổi đơn) -> nạp lại bản nháp đang xem.
   // Gọi hook ra biến riêng: `||` sẽ short-circuit, làm hook thứ hai không chạy.
@@ -147,6 +165,15 @@ export function PurchaseOrderDetailPage() {
     const total = items.reduce((sum, item) => sum + orderLineAmount(item), 0)
     return { subtotal, vat: total - subtotal, total }
   }, [draft?.items])
+
+  /** Cước vận chuyển gom từ các lần giao — để giải thích con số ở dưới bảng. */
+  const shipping = useMemo(() => summarizeShipping(draft?.items ?? []), [draft?.items])
+
+  /** Giỏ phiếu giao của riêng dòng đang mở, đổi về khóa theo chỉ số lần giao. */
+  const linePendingFiles = useMemo(
+    () => (lineIndex === null ? {} : pendingFilesOfLine(pendingFiles, lineIndex)),
+    [pendingFiles, lineIndex],
+  )
 
   if (!isNew && isLoading) {
     return (
@@ -195,7 +222,27 @@ export function PurchaseOrderDetailPage() {
       id: isNew ? undefined : purchaseOrderId,
       payload: toPurchaseOrderPayload(data),
     })
+    await flushPendingDeliveryFiles(saved)
     if (isNew) navigate(appRoutes.procurement.purchaseOrderDetail(saved.id), { replace: true })
+  }
+
+  /** Đẩy phiếu giao đang chờ lên đúng lần giao vừa được server trả về. */
+  async function flushPendingDeliveryFiles(saved: PurchaseOrderDetail) {
+    const buckets = Object.entries(pendingFiles)
+    if (!buckets.length) return
+
+    const batches = buckets
+      .map(([key, files]) => {
+        const { lineIndex: line, deliveryIndex } = parseDeliveryFileKey(key)
+        return { deliveryId: findSavedDeliveryId(data, saved, line, deliveryIndex), files }
+      })
+      .filter((batch) => batch.deliveryId > 0 && batch.files.length > 0)
+
+    // Dọn giỏ trước: dù có lần giao nào không dò ra id thì cũng đừng để tệp cũ
+    // treo lại rồi tải nhầm sang lần lưu sau.
+    setPendingFiles({})
+    if (!batches.length) return
+    await uploadDeliveryFiles.mutateAsync({ purchaseOrderId: saved.id, batches })
   }
 
   async function handleAction(action: PurchaseOrderAction) {
@@ -374,6 +421,12 @@ export function PurchaseOrderDetailPage() {
               progressEditable={progressEditable}
               onChange={(items) => patch({ items })}
               onOpenDetail={setLineIndex}
+              onLineRemoved={(index) =>
+                setPendingFiles((current) => shiftPendingAfterLineRemove(current, index))
+              }
+              onLineDuplicated={(index) =>
+                setPendingFiles((current) => shiftPendingAfterLineInsert(current, index))
+              }
               onProgressChange={(item, status) => {
                 // Tạm ngưng / Hủy đơn bắt buộc nêu lý do; tiếp tục thì gọi thẳng.
                 if (status === '__resume__') {
@@ -389,11 +442,26 @@ export function PurchaseOrderDetailPage() {
               totalLabel="Tổng đơn đặt (gồm VAT)"
             />
             {!isNew && (
-              <p className="text-right text-xs text-muted-foreground">
-                Đã nhận: {data.total.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} đ ·
-                Cước vận chuyển:{' '}
-                {data.shipping_total.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} đ
-              </p>
+              <div className="space-y-1 text-right text-xs text-muted-foreground">
+                <p>
+                  <span title="Tiền hàng tính theo SỐ LƯỢNG THỰC NHẬN (gồm VAT) — khác tổng đơn đặt ở trên khi chưa nhận đủ.">
+                    Đã nhận: {data.total.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} đ
+                  </span>{' '}
+                  ·{' '}
+                  <span title="Cộng cước ghi ở TỪNG LẦN GIAO của các dòng hàng. Đây là khoản trả cho nhà xe, không nằm trong tổng tiền đơn hàng.">
+                    Cước vận chuyển:{' '}
+                    {data.shipping_total.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} đ
+                    {shipping.chargedCount > 0 && ` (${shipping.chargedCount} lần giao)`}
+                  </span>
+                </p>
+                {shipping.missingCarrierCount > 0 && (
+                  <p className="flex items-center justify-end gap-1.5 text-amber-600 dark:text-amber-500">
+                    <AlertTriangle className="size-3.5" />
+                    {shipping.missingCarrierCount} lần giao có cước nhưng chưa chọn Đơn vị vận
+                    chuyển — cước đó chưa vào công nợ.
+                  </p>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -402,6 +470,7 @@ export function PurchaseOrderDetailPage() {
           entity="purchase_order"
           entityId={purchaseOrderId}
           canManage={!locked && can('purchase_order', 'write')}
+          documentStatus={data.document_status}
         />
 
         {!isNew && (
@@ -438,11 +507,24 @@ export function PurchaseOrderDetailPage() {
         carriers={(suppliersData?.items ?? []).filter(
           (supplier) => supplier.supplier_type === 'transport',
         )}
+        pendingFiles={linePendingFiles}
         onChange={(item) => {
           if (lineIndex === null) return
           patch({
             items: data.items.map((current, index) => (index === lineIndex ? item : current)),
           })
+        }}
+        onPendingFilesChange={(deliveryIndex, files) => {
+          if (lineIndex === null) return
+          setPendingFiles((current) =>
+            setPendingDeliveryFiles(current, lineIndex, deliveryIndex, files),
+          )
+        }}
+        onDeliveryRemoved={(deliveryIndex) => {
+          if (lineIndex === null) return
+          setPendingFiles((current) =>
+            shiftPendingAfterDeliveryRemove(current, lineIndex, deliveryIndex),
+          )
         }}
         onOpenChange={(open) => {
           if (!open) setLineIndex(null)
@@ -483,6 +565,47 @@ export function PurchaseOrderDetailPage() {
       />
     </PageContainer>
   )
+}
+
+/**
+ * Dò id của LẦN GIAO vừa lưu, ứng với lần giao thứ `deliveryIndex` của dòng thứ
+ * `lineIndex` trên bản nháp.
+ *
+ * Không khớp theo chỉ số mảng: backend trả dòng và lần giao theo id tăng dần,
+ * nên dòng mới chèn giữa bản nháp sẽ rơi xuống cuối danh sách trả về. Khớp theo
+ * id (dòng đã lưu) rồi tới mã hàng, và chỉ xét những lần giao MỚI xuất hiện —
+ * các lần giao cũ đã có id trên bản nháp thì không phải đích của tệp đang chờ.
+ */
+function findSavedDeliveryId(
+  draft: PurchaseOrderDetail,
+  saved: PurchaseOrderDetail,
+  lineIndex: number,
+  deliveryIndex: number,
+): number {
+  const draftItem = draft.items[lineIndex]
+  const draftDelivery = draftItem?.deliveries?.[deliveryIndex]
+  if (!draftItem || !draftDelivery) return 0
+
+  const savedItem =
+    (draftItem.id ? saved.items.find((item) => item.id === draftItem.id) : undefined) ??
+    (draftItem.product_code
+      ? saved.items.find((item) => item.product_code === draftItem.product_code)
+      : undefined) ??
+    saved.items[lineIndex]
+  if (!savedItem) return 0
+
+  const knownIds = new Set(
+    draftItem.deliveries.map((delivery) => delivery.id).filter((id): id is number => !!id),
+  )
+  const fresh = savedItem.deliveries.filter((delivery) => !knownIds.has(delivery.id ?? 0))
+  const rank = draftItem.deliveries
+    .filter((delivery) => !delivery.id)
+    .indexOf(draftDelivery)
+
+  const match =
+    fresh.find((delivery) => delivery.delivery_no === draftDelivery.delivery_no) ??
+    (rank >= 0 ? fresh[rank] : undefined)
+  return match?.id ?? 0
 }
 
 /** Dòng trống — VAT lấy theo mức mặc định của đơn (`vat_rate` là thập phân). */

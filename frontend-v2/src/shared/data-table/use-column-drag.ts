@@ -1,4 +1,10 @@
-import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
 
 import type { ColumnDropSide } from './types'
 
@@ -83,6 +89,14 @@ export function useColumnDrag(
       window.addEventListener('pointercancel', handleUp)
     },
     [onReorder],
+  )
+
+  // Bảng biến mất giữa lúc đang kéo (chuyển trang, mở hộp thoại) thì `pointerup`
+  // có thể không bao giờ tới, `select-none` kẹt lại trên <body> và CẢ TRANG hết
+  // bôi đen được — kể cả chữ trong popup. Gỡ chốt lúc tháo component.
+  useEffect(
+    () => () => document.body.classList.remove('select-none', 'cursor-grabbing'),
+    [],
   )
 
   return { drag, startDrag }

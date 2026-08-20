@@ -126,6 +126,81 @@ export function useUploadPurchaseRequestAttachments(
   })
 }
 
+/**
+ * Tải NHIỀU MỤC chứng từ trong một lượt — mỗi mục là một loại kèm một xấp tệp.
+ *
+ * Không gọi `useUploadPurchaseRequestAttachments` lặp lại vì hook đó bật toast
+ * cho từng lượt: chọn ba loại chứng từ là ba thông báo chồng lên nhau, mà người
+ * dùng chỉ bấm "Lưu chứng từ" một lần nên chỉ chờ một câu trả lời.
+ */
+export function useUploadDocumentBatches(entity: string, entityId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (batches: { docType: string; files: File[] }[]) => {
+      // Tuần tự: mỗi mục là một yêu cầu ghi vào cùng một chứng từ, bắn song song
+      // chỉ tổ bắt server khóa đi khóa lại một bản ghi.
+      let uploaded = 0
+      for (const batch of batches) {
+        await purchaseRequestSupportApi.uploadAttachments(
+          entity,
+          entityId,
+          batch.files,
+          batch.docType,
+        )
+        uploaded += batch.files.length
+      }
+      return uploaded
+    },
+    onSuccess: (uploaded) => {
+      toast.success(`Đã tải lên ${uploaded} tệp`)
+      void queryClient.invalidateQueries({
+        queryKey: supportKeys.attachments(entity, entityId),
+      })
+    },
+  })
+}
+
+/**
+ * Tải phiếu giao cho NHIỀU lần giao một lượt, dùng ngay sau khi lưu Đơn mua hàng.
+ *
+ * Khác `useUploadPurchaseRequestAttachments` ở chỗ đích đến chỉ biết lúc GỌI:
+ * lần giao vừa thêm chưa có id, phải lưu đơn xong mới dò ra id để gắn tệp.
+ */
+export function useUploadDeliveryFiles() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      purchaseOrderId,
+      batches,
+    }: {
+      purchaseOrderId: number
+      batches: { deliveryId: number; files: File[] }[]
+    }) => {
+      // Tải tuần tự: mỗi lần giao là một yêu cầu riêng, bắn song song chỉ tổ
+      // làm server phải khóa cùng một đơn nhiều lần.
+      for (const batch of batches) {
+        await purchaseRequestSupportApi.uploadAttachments(
+          'delivery',
+          batch.deliveryId,
+          batch.files,
+          '',
+          purchaseOrderId,
+        )
+      }
+      return batches
+    },
+    onSuccess: (batches) => {
+      if (!batches.length) return
+      toast.success(`Đã tải phiếu giao cho ${batches.length} lần giao`)
+      batches.forEach((batch) => {
+        void queryClient.invalidateQueries({
+          queryKey: supportKeys.attachments('delivery', batch.deliveryId),
+        })
+      })
+    },
+  })
+}
+
 export function useDeletePurchaseRequestAttachment(entity: string, entityId: number) {
   const queryClient = useQueryClient()
   return useMutation({

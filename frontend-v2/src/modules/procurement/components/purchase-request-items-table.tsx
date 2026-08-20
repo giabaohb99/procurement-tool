@@ -1,9 +1,11 @@
-import { useState, type CSSProperties, type ReactNode } from 'react'
-import { History, Pencil, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { History, Pencil, Plus, PlusCircle, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { ColumnResizeHandle } from '@/shared/data-table/column-resize-handle'
+import { LinesTable } from '@/shared/data-table/lines-table'
+import type { LinesTableColumn } from '@/shared/data-table/types'
 import { Button } from '@/shared/ui/button'
+import { CopyButton } from '@/shared/ui/copy-button'
 import { DatePicker } from '@/shared/ui/date-picker'
 import {
   Dialog,
@@ -21,15 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/shared/ui/table'
-import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import {
   formatMoney,
@@ -50,113 +43,13 @@ import {
   type PurchaseRequestItem,
 } from '../types/purchase-request-detail'
 import { ProgressStatusBadge } from './document-status-badge'
-import { PurchaseRequestHistoryDialog } from './purchase-request-history-dialog'
+import { PurchaseHistoryDialog } from './purchase-history-dialog'
 import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
-
-/**
- * Bảng dòng hàng có nhiều cột nghiệp vụ nên ba cột nhận diện được ghim cứng
- * bên trái. Người dùng kéo mép tiêu đề để đổi độ rộng; cấu hình được nhớ riêng
- * cho màn YCMH nhưng không đưa vào menu Cột.
- */
-const PINNED = {
-  noHead: 'sticky z-40 bg-muted',
-  noCell: 'sticky z-20 bg-card group-hover:bg-muted',
-  codeHead: 'sticky z-40 bg-muted',
-  codeCell: 'sticky z-20 bg-card group-hover:bg-muted',
-  nameHead:
-    'sticky z-40 bg-muted shadow-[inset_-2px_0_0_0_var(--border)]',
-  nameCell:
-    'sticky z-20 bg-card group-hover:bg-muted shadow-[inset_-2px_0_0_0_var(--border)]',
-  actionHead:
-    'sticky right-0 z-40 border-l bg-muted [background-clip:padding-box]',
-  actionCell:
-    'sticky right-0 z-20 border-l bg-card [background-clip:padding-box] group-hover:bg-muted',
-} as const
-
-const COLUMN_WIDTH_STORAGE_KEY = 'erp.purchase-request.items.column-widths'
 
 /** Mã giả cho mục "bỏ chọn NSTM" — xem chú thích ở ô chọn NSTM. */
 const UNASSIGNED = '__unassigned__'
 
-const COLUMN_SIZES = {
-  no: { width: 48, min: 48 },
-  code: { width: 150, min: 120 },
-  name: { width: 360, min: 220 },
-  warehouse: { width: 240, min: 140 },
-  group: { width: 160, min: 120 },
-  unit: { width: 80, min: 64 },
-  qty: { width: 80, min: 64 },
-  price: { width: 112, min: 88 },
-  vat: { width: 64, min: 56 },
-  amount: { width: 128, min: 104 },
-  status: { width: 144, min: 112 },
-  progress: { width: 112, min: 88 },
-  expected: { width: 128, min: 104 },
-  assignee: { width: 160, min: 120 },
-  action: { width: 80, min: 72 },
-} as const
-
-type ColumnKey = keyof typeof COLUMN_SIZES
-type ColumnWidths = Record<ColumnKey, number>
-
-const DEFAULT_COLUMN_WIDTHS = Object.fromEntries(
-  Object.entries(COLUMN_SIZES).map(([key, value]) => [key, value.width]),
-) as ColumnWidths
-
-function readColumnWidths(): ColumnWidths {
-  try {
-    const saved = JSON.parse(localStorage.getItem(COLUMN_WIDTH_STORAGE_KEY) || '{}') as Record<
-      string,
-      unknown
-    >
-    return Object.fromEntries(
-      Object.entries(COLUMN_SIZES).map(([key, size]) => {
-        const value = saved[key]
-        return [
-          key,
-          typeof value === 'number' && Number.isFinite(value)
-            ? Math.max(size.min, value)
-            : size.width,
-        ]
-      }),
-    ) as ColumnWidths
-  } catch {
-    return { ...DEFAULT_COLUMN_WIDTHS }
-  }
-}
-
-function ResizableTableHead({
-  columnKey,
-  width,
-  className,
-  style,
-  title,
-  children,
-  onResize,
-}: {
-  columnKey: ColumnKey
-  width: number
-  className?: string
-  style?: CSSProperties
-  title?: string
-  children: ReactNode
-  onResize: (key: ColumnKey, width: number) => void
-}) {
-  return (
-    <TableHead
-      data-column-key={columnKey}
-      className={cn('relative select-none', className)}
-      style={{ ...style, width }}
-      title={title}
-    >
-      {children}
-      <ColumnResizeHandle
-        minWidth={COLUMN_SIZES[columnKey].min}
-        onResize={(nextWidth) => onResize(columnKey, nextWidth)}
-      />
-    </TableHead>
-  )
-}
+const TABLE_STORAGE_KEY = 'purchase-request-items'
 
 interface ItemsTableProps {
   items: PurchaseRequestItem[]
@@ -168,6 +61,10 @@ interface ItemsTableProps {
   /** Người yêu cầu / trưởng bộ phận không cần thấy thông tin điều phối nội bộ. */
   showAssignee?: boolean
   onOpenDetail: (index: number) => void
+  /** Phiếu đang ở trạng thái còn sửa nội dung được (nháp / bị trả lại). */
+  documentEditable?: boolean
+  /** Bật chế độ sửa của cả phiếu ngay từ bảng, khỏi đi tìm nút Sửa trên đầu trang. */
+  onStartEditing?: () => void
 
   /** Nhân sự thu mua để chọn NSTM phụ trách — hiện TÊN nhưng lưu MÃ nhân viên. */
   purchasers?: { code: string; name: string }[]
@@ -210,10 +107,11 @@ export const EMPTY_PURCHASE_REQUEST_ITEM: PurchaseRequestItem = {
 }
 
 /**
- * Bảng dòng hàng của phiếu YCMH.
- *
- * Thành tiền do BACKEND tính (`amount`), ở đây chỉ tính tạm để người nhập thấy
- * ngay trong lúc gõ — lưu xong sẽ lấy lại số của server.
+ * Bảng dòng hàng của phiếu YCMH với hỗ trợ:
+ * - Ghim cột cố định (default: No, Code, Name).
+ * - Kéo thả trực tiếp tiêu đề cột trên bảng để đổi thứ tự.
+ * - Chế độ Bảng rút gọn vs Bảng đầy đủ.
+ * - Kéo giãn / co nhỏ độ rộng cột & nhớ tự động vào localStorage.
  */
 export function PurchaseRequestItemsTable({
   items,
@@ -222,13 +120,14 @@ export function PurchaseRequestItemsTable({
   orderedByCode,
   showAssignee = true,
   onOpenDetail,
+  documentEditable = false,
+  onStartEditing,
   purchasers = [],
   canAssign = false,
   canEditLine,
   onAssigneeChange,
   onExpectedDateCommit,
 }: ItemsTableProps) {
-  const [columnWidths, setColumnWidths] = useState<ColumnWidths>(readColumnWidths)
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
   const [bulkCount, setBulkCount] = useState(5)
   const [historyIndex, setHistoryIndex] = useState<number | null>(null)
@@ -236,17 +135,96 @@ export function PurchaseRequestItemsTable({
   const units = usePurchaseRequestUnits(editing)
   const itemGroups = usePurchaseRequestItemGroups(editing)
 
-  function resizeColumn(key: ColumnKey, width: number) {
-    setColumnWidths((current) => {
-      const next = { ...current, [key]: Math.round(width) }
-      try {
-        localStorage.setItem(COLUMN_WIDTH_STORAGE_KEY, JSON.stringify(next))
-      } catch {
-        // Trình duyệt chặn storage thì bảng vẫn đổi cỡ trong phiên hiện tại.
-      }
-      return next
-    })
-  }
+  const columns = useMemo<LinesTableColumn[]>(() => [
+    {
+      key: 'no',
+      header: 'No.',
+      width: 48,
+      minWidth: 40,
+      hideable: false,
+      defaultPinned: true,
+      align: 'center',
+    },
+    {
+      key: 'code',
+      header: 'Mã hàng *',
+      // Rộng hơn bề ngang của mã: ô còn chứa nút chép mã và nút lịch sử mua hàng.
+      width: 196,
+      minWidth: 90,
+      hideable: false,
+      defaultPinned: true,
+    },
+    {
+      key: 'name',
+      header: 'Tên sản phẩm *',
+      width: 300,
+      minWidth: 140,
+      hideable: false,
+      defaultPinned: true,
+    },
+    {
+      key: 'warehouse',
+      header: 'Kho nhận',
+      width: 220,
+      minWidth: 100,
+      compactHidden: true,
+    },
+    {
+      key: 'group',
+      header: 'Phân loại',
+      width: 180,
+      minWidth: 100,
+      compactHidden: true,
+    },
+    { key: 'unit', header: 'ĐVT', width: 80, minWidth: 50 },
+    { key: 'qty', header: 'SL', width: 80, minWidth: 50, align: 'right' },
+    { key: 'price', header: 'Đơn giá', width: 112, minWidth: 70, align: 'right' },
+    {
+      key: 'vat',
+      header: 'VAT %',
+      width: 72,
+      minWidth: 50,
+      align: 'right',
+      compactHidden: true,
+    },
+    { key: 'amount', header: 'Thành tiền', width: 130, minWidth: 80, align: 'right' },
+    { key: 'status', header: 'Trạng thái', width: 190, minWidth: 120, align: 'center' },
+    {
+      key: 'progress',
+      header: 'Tiến độ',
+      width: 112,
+      minWidth: 70,
+      align: 'center',
+      compactHidden: true,
+    },
+    {
+      key: 'expected',
+      header: 'TG dự kiến',
+      width: 170,
+      minWidth: 130,
+      align: 'center',
+      compactHidden: true,
+    },
+    ...(showAssignee
+      ? [
+          {
+            key: 'assignee',
+            header: 'NSTM phụ trách',
+            width: 210,
+            minWidth: 140,
+            compactHidden: true,
+          },
+        ]
+      : []),
+    {
+      key: 'action',
+      header: 'Thao tác',
+      width: 88,
+      minWidth: 60,
+      hideable: false,
+      align: 'center',
+    },
+  ], [showAssignee])
 
   function patch(index: number, changes: Partial<PurchaseRequestItem>) {
     onChange(items.map((item, i) => (i === index ? { ...item, ...changes } : item)))
@@ -319,377 +297,315 @@ export function PurchaseRequestItemsTable({
   const lineTotal = (item: PurchaseRequestItem) =>
     editing ? item.qty * item.price * (1 + (item.vat_pct || 0) / 100) : item.amount
 
-  const pinnedLeft = {
-    no: 0,
-    code: columnWidths.no,
-    name: columnWidths.no + columnWidths.code,
+  function renderCell(key: string, item: PurchaseRequestItem, index: number) {
+    switch (key) {
+      case 'no':
+        return <span className="text-muted-foreground">{index + 1}</span>
+
+      case 'code':
+        return (
+          <div className="flex min-w-0 items-center gap-0.5">
+            <div className="min-w-0 flex-1">
+              {editing ? (
+                <PurchaseRequestProductPicker
+                  code={item.product_code}
+                  name={item.product_name}
+                  onPick={(product) => applyProduct(index, product)}
+                />
+              ) : (
+                <span
+                  className="block break-words whitespace-normal leading-snug font-medium"
+                  title={item.product_code}
+                >
+                  {item.product_code || '—'}
+                </span>
+              )}
+            </div>
+            {/* Đang sửa thì mã nằm trong ô chọn (một <button>) nên bôi đen không
+                được — nút chép là đường duy nhất lấy được mã ra ngoài. */}
+            <CopyButton value={item.product_code} label="mã hàng" className="size-7" />
+            {editing && !!item.product_code && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="size-7 shrink-0 text-muted-foreground"
+                title="Xem lịch sử mua hàng gần nhất"
+                aria-label={`Xem lịch sử mua hàng của ${item.product_code}`}
+                onClick={() => setHistoryIndex(index)}
+              >
+                <History />
+              </Button>
+            )}
+          </div>
+        )
+
+      case 'name':
+        return editing ? (
+          <Input
+            value={item.product_name}
+            onChange={(e) => patch(index, { product_name: e.target.value })}
+            placeholder="Tên hàng"
+          />
+        ) : (
+          <span className="block break-words whitespace-normal font-medium leading-snug" title={item.product_name}>
+            {item.product_name}
+          </span>
+        )
+
+      case 'warehouse':
+        return editing ? (
+          <CatalogSelect
+            value={item.warehouse}
+            placeholder="-- Kho --"
+            options={(warehouses.data?.items ?? []).map((warehouse) => ({
+              value: warehouse.name,
+              label: warehouse.code
+                ? `${warehouse.code} - ${warehouse.name}`
+                : warehouse.name,
+            }))}
+            onChange={(value) => patch(index, { warehouse: value })}
+          />
+        ) : (
+          <span className="block break-words whitespace-normal leading-snug" title={item.warehouse}>
+            {item.warehouse || '—'}
+          </span>
+        )
+
+      case 'group':
+        return editing ? (
+          <CatalogSelect
+            value={item.item_group}
+            placeholder="-- Phân loại --"
+            options={(itemGroups.data?.items ?? []).map((group) => ({
+              value: group.name,
+              label: group.name,
+            }))}
+            onChange={(value) =>
+              patch(index, {
+                item_group: value,
+                group_desc: groupDescription(value),
+              })
+            }
+          />
+        ) : (
+          <span className="block break-words whitespace-normal leading-snug" title={item.item_group}>
+            {item.item_group || '—'}
+          </span>
+        )
+
+      case 'unit':
+        return editing ? (
+          <CatalogSelect
+            value={item.unit}
+            placeholder="-- ĐVT --"
+            options={(units.data?.items ?? []).map((unit) => ({
+              value: unit.name,
+              label: unit.name,
+            }))}
+            onChange={(value) => patch(index, { unit: value })}
+          />
+        ) : (
+          item.unit || '—'
+        )
+
+      case 'qty':
+        return editing ? (
+          <Input
+            className="text-right"
+            type="number"
+            min={0}
+            value={item.qty || ''}
+            onChange={(e) => patch(index, { qty: Number(e.target.value) })}
+          />
+        ) : (
+          <span className="tabular-nums">{formatQuantity(item.qty)}</span>
+        )
+
+      case 'price':
+        return editing ? (
+          <Input
+            className="text-right"
+            type="number"
+            min={0}
+            step="0.0001"
+            value={item.price || ''}
+            onChange={(e) => patch(index, { price: Number(e.target.value) })}
+          />
+        ) : (
+          <span className="tabular-nums">{formatUnitPrice(item.price)}</span>
+        )
+
+      case 'vat':
+        return editing ? (
+          <Select
+            value={String(item.vat_pct ?? 8)}
+            onValueChange={(value) => patch(index, { vat_pct: Number(value) })}
+          >
+            <SelectTrigger size="sm" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent position="popper" align="end">
+              {VAT_OPTIONS.map((vat) => (
+                <SelectItem key={vat} value={String(vat)}>
+                  {vat}%
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <span className="tabular-nums">{item.vat_pct || 0}%</span>
+        )
+
+      case 'amount':
+        return (
+          <span className="tabular-nums font-semibold text-navy">
+            {formatMoney(lineTotal(item))}
+          </span>
+        )
+
+      case 'status':
+        return (
+          <div className="flex items-center justify-center">
+            <ProgressStatusBadge status={item.line_status} />
+          </div>
+        )
+
+      case 'progress':
+        return (
+          <span className="tabular-nums">
+            {formatQuantity(item.qty_received)} /{' '}
+            {formatQuantity(orderedByCode?.[item.product_code] ?? item.qty_ordered)}
+          </span>
+        )
+
+      case 'expected':
+        return canEditLine?.(item) ? (
+          <DatePicker
+            size="sm"
+            value={item.expected_date || ''}
+            placeholder="Chọn ngày"
+            onChange={(next) => {
+              const original = item.expected_date || ''
+              patch(index, { expected_date: next })
+              onExpectedDateCommit?.(item, next, original)
+            }}
+          />
+        ) : (
+          <span className="tabular-nums">{formatDate(item.expected_date) || '—'}</span>
+        )
+
+      case 'assignee':
+        return canAssign ? (
+          <Select
+            value={item.assignee || undefined}
+            onValueChange={(value) => {
+              const assignee = value === UNASSIGNED ? '' : value
+              patch(index, { assignee })
+              onAssigneeChange?.(item, assignee)
+            }}
+          >
+            <SelectTrigger className="h-8 w-full">
+              <SelectValue placeholder="Chọn NSTM" />
+            </SelectTrigger>
+            <SelectContent>
+              {item.assignee && (
+                <SelectItem value={UNASSIGNED} className="text-muted-foreground">
+                  — Bỏ chọn —
+                </SelectItem>
+              )}
+              {purchasers.map((purchaser) => (
+                <SelectItem key={purchaser.code} value={purchaser.code}>
+                  {purchaser.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <span className="block break-words whitespace-normal leading-snug">
+            {purchasers.find((purchaser) => purchaser.code === item.assignee)?.name ||
+              item.assignee ||
+              '—'}
+          </span>
+        )
+
+      case 'action':
+        return (
+          <div className="flex items-center justify-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title="Chi tiết dòng"
+              onClick={() => onOpenDetail(index)}
+            >
+              <Pencil />
+            </Button>
+            {editing && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="text-destructive hover:text-destructive"
+                title="Xóa dòng"
+                onClick={() => onChange(items.filter((_, i) => i !== index))}
+              >
+                <Trash2 />
+              </Button>
+            )}
+          </div>
+        )
+
+      default:
+        return null
+    }
   }
-  const visibleColumnKeys: ColumnKey[] = [
-    'no',
-    'code',
-    'name',
-    'warehouse',
-    'group',
-    'unit',
-    'qty',
-    'price',
-    'vat',
-    'amount',
-    'status',
-    'progress',
-    'expected',
-    ...(showAssignee ? (['assignee'] as const) : []),
-    'action',
-  ]
-  const tableWidth = visibleColumnKeys.reduce((total, key) => total + columnWidths[key], 0)
 
   return (
-    <div className="space-y-3">
-      <div className="isolate overflow-hidden rounded-lg border">
-        <Table
-          className="table-fixed [&_td]:overflow-hidden [&_td]:border-r [&_td]:text-ellipsis [&_td:last-child]:border-r-0 [&_th]:border-r [&_th:last-child]:border-r-0"
-          style={{ width: tableWidth, minWidth: tableWidth }}
-        >
-          <TableHeader className="bg-muted">
-            <TableRow className="bg-muted">
-              <ResizableTableHead columnKey="no" width={columnWidths.no} className={cn(PINNED.noHead, 'text-center')} style={{ left: pinnedLeft.no }} onResize={resizeColumn}>No.</ResizableTableHead>
-              <ResizableTableHead columnKey="code" width={columnWidths.code} className={PINNED.codeHead} style={{ left: pinnedLeft.code }} onResize={resizeColumn}>Mã hàng *</ResizableTableHead>
-              <ResizableTableHead columnKey="name" width={columnWidths.name} className={PINNED.nameHead} style={{ left: pinnedLeft.name }} onResize={resizeColumn}>Tên sản phẩm *</ResizableTableHead>
-              <ResizableTableHead columnKey="warehouse" width={columnWidths.warehouse} onResize={resizeColumn}>Kho nhận</ResizableTableHead>
-              <ResizableTableHead columnKey="group" width={columnWidths.group} onResize={resizeColumn}>Phân loại</ResizableTableHead>
-              <ResizableTableHead columnKey="unit" width={columnWidths.unit} onResize={resizeColumn}>ĐVT</ResizableTableHead>
-              <ResizableTableHead columnKey="qty" width={columnWidths.qty} className="text-right" onResize={resizeColumn}>SL</ResizableTableHead>
-              <ResizableTableHead columnKey="price" width={columnWidths.price} className="text-right" onResize={resizeColumn}>Đơn giá</ResizableTableHead>
-              <ResizableTableHead columnKey="vat" width={columnWidths.vat} className="text-right" title="% VAT theo dòng" onResize={resizeColumn}>
-                VAT%
-              </ResizableTableHead>
-              <ResizableTableHead columnKey="amount" width={columnWidths.amount} className="text-right" title="Thành tiền gồm VAT" onResize={resizeColumn}>
-                Thành tiền
-              </ResizableTableHead>
-              <ResizableTableHead columnKey="status" width={columnWidths.status} className="text-center" onResize={resizeColumn}>Trạng thái</ResizableTableHead>
-              <ResizableTableHead
-                columnKey="progress"
-                width={columnWidths.progress}
-                className="text-center"
-                title="Tổng SL đã nhận / đã đặt, đồng bộ từ Đơn mua hàng"
-                onResize={resizeColumn}
+    <>
+      <LinesTable
+        columns={columns}
+        rows={items}
+        storageKey={TABLE_STORAGE_KEY}
+        rowKey={(item, index) => item.id ?? `new-${index}`}
+        renderCell={renderCell}
+        title={`Danh sách sản phẩm (${items.length} dòng)`}
+        emptyMessage="Chưa có sản phẩm nào."
+        rowClassName={(item) =>
+          item.line_status === 'Hủy đơn' ? 'opacity-60' : undefined
+        }
+        actions={
+          editing ? (
+            <>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => onChange([...items, { ...EMPTY_PURCHASE_REQUEST_ITEM }])}
               >
-                Tiến độ
-                <span className="block text-[10.5px] font-normal text-muted-foreground">
-                  nhận / đặt
-                </span>
-              </ResizableTableHead>
-              <ResizableTableHead columnKey="expected" width={columnWidths.expected} className="text-center" onResize={resizeColumn}>
-                TG dự kiến
-                <span className="block text-[10.5px] font-normal text-muted-foreground">
-                  có hàng
-                </span>
-              </ResizableTableHead>
-              {showAssignee && <ResizableTableHead columnKey="assignee" width={columnWidths.assignee} onResize={resizeColumn}>NSTM phụ trách</ResizableTableHead>}
-              <ResizableTableHead columnKey="action" width={columnWidths.action} className={cn(PINNED.actionHead, 'text-center')} onResize={resizeColumn}>
-                Thao tác
-              </ResizableTableHead>
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {items.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={showAssignee ? 15 : 14}
-                  className="py-10 text-center text-muted-foreground"
-                >
-                  Chưa có sản phẩm nào.
-                </TableCell>
-              </TableRow>
-            )}
-
-            {items.map((item, index) => (
-              <TableRow
-                key={item.id ?? `new-${index}`}
-                // Dòng đã hủy vẫn phải thấy được nhưng không nên tranh sự chú ý.
-                className={cn(
-                  'group bg-card hover:bg-muted',
-                  item.line_status === 'Hủy đơn' && 'opacity-60',
-                )}
+                <Plus /> Thêm dòng
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setBulkDialogOpen(true)}
               >
-                <TableCell
-                  className={cn(PINNED.noCell, 'text-center text-muted-foreground')}
-                  style={{ left: pinnedLeft.no }}
-                >
-                  {index + 1}
-                </TableCell>
-
-                <TableCell className={PINNED.codeCell} style={{ left: pinnedLeft.code }}>
-                  {editing ? (
-                    <div className="flex min-w-0 items-center gap-1">
-                      <div className="min-w-0 flex-1">
-                        <PurchaseRequestProductPicker
-                          code={item.product_code}
-                          name={item.product_name}
-                          onPick={(product) => applyProduct(index, product)}
-                        />
-                      </div>
-                      {!!item.product_code && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          className="shrink-0 text-muted-foreground"
-                          title="Xem lịch sử mua hàng gần nhất"
-                          aria-label={`Xem lịch sử mua hàng của ${item.product_code}`}
-                          onClick={() => setHistoryIndex(index)}
-                        >
-                          <History />
-                        </Button>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="block truncate" title={item.product_code}>
-                      {item.product_code || '—'}
-                    </span>
-                  )}
-                </TableCell>
-
-                <TableCell className={PINNED.nameCell} style={{ left: pinnedLeft.name }}>
-                  {editing ? (
-                    <Input
-                      value={item.product_name}
-                      onChange={(e) => patch(index, { product_name: e.target.value })}
-                      placeholder="Tên hàng"
-                    />
-                  ) : (
-                    <span className="block truncate font-medium" title={item.product_name}>
-                      {item.product_name}
-                    </span>
-                  )}
-                </TableCell>
-
-                <TableCell>
-                  {editing ? (
-                    <CatalogSelect
-                      value={item.warehouse}
-                      placeholder="-- Kho --"
-                      options={(warehouses.data?.items ?? []).map((warehouse) => ({
-                        value: warehouse.name,
-                        label: warehouse.code
-                          ? `${warehouse.code} - ${warehouse.name}`
-                          : warehouse.name,
-                      }))}
-                      onChange={(value) => patch(index, { warehouse: value })}
-                    />
-                  ) : (
-                    <span className="block truncate" title={item.warehouse}>
-                      {item.warehouse || '—'}
-                    </span>
-                  )}
-                </TableCell>
-
-                <TableCell>
-                  {editing ? (
-                    <CatalogSelect
-                      value={item.item_group}
-                      placeholder="-- Phân loại --"
-                      options={(itemGroups.data?.items ?? []).map((group) => ({
-                        value: group.name,
-                        label: group.name,
-                      }))}
-                      onChange={(value) =>
-                        patch(index, {
-                          item_group: value,
-                          group_desc: groupDescription(value),
-                        })
-                      }
-                    />
-                  ) : (
-                    <span className="block truncate" title={item.item_group}>
-                      {item.item_group || '—'}
-                    </span>
-                  )}
-                </TableCell>
-
-                <TableCell>
-                  {editing ? (
-                    <CatalogSelect
-                      value={item.unit}
-                      placeholder="-- ĐVT --"
-                      options={(units.data?.items ?? []).map((unit) => ({
-                        value: unit.name,
-                        label: unit.name,
-                      }))}
-                      onChange={(value) => patch(index, { unit: value })}
-                    />
-                  ) : (
-                    item.unit || '—'
-                  )}
-                </TableCell>
-
-                <TableCell className="text-right">
-                  {editing ? (
-                    <Input
-                      className="text-right"
-                      type="number"
-                      min={0}
-                      value={item.qty || ''}
-                      onChange={(e) => patch(index, { qty: Number(e.target.value) })}
-                    />
-                  ) : (
-                    <span className="tabular-nums">{formatQuantity(item.qty)}</span>
-                  )}
-                </TableCell>
-
-                <TableCell className="text-right">
-                  {editing ? (
-                    <Input
-                      className="text-right"
-                      type="number"
-                      min={0}
-                      // Đơn giá cho tới 4 số lẻ (migration d4b9e7c1a305).
-                      step="0.0001"
-                      value={item.price || ''}
-                      onChange={(e) => patch(index, { price: Number(e.target.value) })}
-                    />
-                  ) : (
-                    <span className="tabular-nums">{formatUnitPrice(item.price)}</span>
-                  )}
-                </TableCell>
-
-                <TableCell className="text-right">
-                  {editing ? (
-                    <Select
-                      value={String(item.vat_pct ?? 8)}
-                      onValueChange={(value) => patch(index, { vat_pct: Number(value) })}
-                    >
-                      <SelectTrigger size="sm" className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent position="popper" align="end">
-                        {VAT_OPTIONS.map((vat) => (
-                          <SelectItem key={vat} value={String(vat)}>
-                            {vat}%
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <span className="tabular-nums">{item.vat_pct || 0}%</span>
-                  )}
-                </TableCell>
-
-                <TableCell className="text-right font-medium tabular-nums">
-                  {formatMoney(lineTotal(item))}
-                </TableCell>
-
-                <TableCell className="text-center">
-                  {/* Dùng chung bảng màu với tiến độ dòng ĐMH: huy hiệu viền
-                      trơn khiến "Hủy đơn" và "Hoàn thành" trông y hệt nhau. */}
-                  <ProgressStatusBadge status={item.line_status} />
-                </TableCell>
-
-                <TableCell className="text-center tabular-nums">
-                  {formatQuantity(item.qty_received)} /{' '}
-                  {formatQuantity(orderedByCode?.[item.product_code] ?? item.qty_ordered)}
-                </TableCell>
-
-                <TableCell className="text-center">
-                  {/* Sửa thẳng trên bảng (giống v1): người phụ trách cập nhật
-                      tiến độ liên tục, bắt mở hộp chi tiết từng dòng rất mất công. */}
-                  {canEditLine?.(item) ? (
-                    <DatePicker
-                      size="sm"
-                      value={item.expected_date || ''}
-                      placeholder="Chọn ngày"
-                      onChange={(next) => {
-                        // Lịch chỉ đổi giá trị khi người dùng thật sự chọn/xóa
-                        // ngày, nên gửi đi luôn — không phải chờ rời ô như ô
-                        // nhập tay (gõ dở dang thì chưa được gửi).
-                        const original = item.expected_date || ''
-                        patch(index, { expected_date: next })
-                        onExpectedDateCommit?.(item, next, original)
-                      }}
-                    />
-                  ) : (
-                    formatDate(item.expected_date) || '—'
-                  )}
-                </TableCell>
-
-                {showAssignee && (
-                  <TableCell>
-                    {canAssign ? (
-                      <Select
-                        value={item.assignee || undefined}
-                        onValueChange={(value) => {
-                          // Radix Select cấm dùng chuỗi rỗng làm value (rỗng =
-                          // "chưa chọn"), nên mục bỏ chọn phải mượn một mã giả
-                          // rồi đổi ngược về rỗng ở đây.
-                          const assignee = value === UNASSIGNED ? '' : value
-                          patch(index, { assignee })
-                          onAssigneeChange?.(item, assignee)
-                        }}
-                      >
-                        <SelectTrigger className="h-8 w-full">
-                          <SelectValue placeholder="Chọn NSTM" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {item.assignee && (
-                            <SelectItem value={UNASSIGNED} className="text-muted-foreground">
-                              — Bỏ chọn —
-                            </SelectItem>
-                          )}
-                          {purchasers.map((purchaser) => (
-                            <SelectItem key={purchaser.code} value={purchaser.code}>
-                              {purchaser.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      purchasers.find((purchaser) => purchaser.code === item.assignee)?.name ||
-                      item.assignee ||
-                      '—'
-                    )}
-                  </TableCell>
-                )}
-
-                <TableCell className={PINNED.actionCell}>
-                  <div className="flex items-center justify-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      title="Chi tiết dòng"
-                      onClick={() => onOpenDetail(index)}
-                    >
-                      <Pencil />
-                    </Button>
-                    {editing && (
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="text-destructive hover:text-destructive"
-                      title="Xóa dòng"
-                      onClick={() => onChange(items.filter((_, i) => i !== index))}
-                    >
-                      <Trash2 />
-                    </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {editing && items.length > 0 && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setBulkDialogOpen(true)}
-        >
-          Thêm nhiều dòng
-        </Button>
-      )}
+                <PlusCircle /> Thêm nhiều
+              </Button>
+            </>
+          ) : (
+            /*
+              Phiếu nháp mà bảng vẫn là chữ chết thì người dùng tưởng mình hết
+              quyền — nút Sửa duy nhất lại nằm tít trên đầu trang, lẫn giữa gần
+              chục nút khác. Đặt lối vào ngay cạnh bảng, đúng chỗ đang nhìn.
+            */
+            documentEditable &&
+            onStartEditing && (
+              <Button type="button" size="sm" variant="outline" onClick={onStartEditing}>
+                <Pencil /> Sửa dòng hàng
+              </Button>
+            )
+          )
+        }
+      />
 
       <Dialog open={bulkDialogOpen} onOpenChange={setBulkDialogOpen}>
         <DialogContent className="sm:max-w-sm">
@@ -726,7 +642,7 @@ export function PurchaseRequestItemsTable({
         </DialogContent>
       </Dialog>
 
-      <PurchaseRequestHistoryDialog
+      <PurchaseHistoryDialog
         open={historyIndex !== null}
         productCode={historyIndex === null ? '' : items[historyIndex]?.product_code || ''}
         productName={historyIndex === null ? '' : items[historyIndex]?.product_name || ''}
@@ -737,7 +653,7 @@ export function PurchaseRequestItemsTable({
           if (historyIndex !== null) applyPurchaseHistory(historyIndex, history)
         }}
       />
-    </div>
+    </>
   )
 }
 

@@ -23,6 +23,37 @@ export interface DataTableColumn<T> {
    * của bảng nhiều cột — ghim nhiều quá thì không còn chỗ cho dữ liệu.
    */
   defaultPinned?: boolean
+  /**
+   * `true` = cho phép chữ dài tự xuống dòng thay vì cắt bằng dấu ba chấm "…".
+   * Thích hợp cho cột Tên, Nhà cung cấp, Địa chỉ, Ghi chú.
+   */
+  wrap?: boolean
+}
+
+/**
+ * Cột của `LinesTable` — bảng DÒNG CHỨNG TỪ (dòng hàng YCMH/ĐMH, dòng khảo sát,
+ * các lần giao). Khác `DataTableColumn` ở chỗ KHÔNG khai `cell`: ô của bảng dòng
+ * cần cả chỉ số dòng để sửa đúng phần tử, nên nội dung do một hàm `renderCell`
+ * duy nhất vẽ theo `key`.
+ */
+export interface LinesTableColumn {
+  /** Khóa cột — vừa là id nhớ bố cục, vừa là nhánh `switch` trong `renderCell`. */
+  key: string
+  header: string
+  /** Độ rộng ban đầu (px). */
+  width?: number
+  /** Chặn dưới khi kéo giãn. Mặc định 64px. */
+  minWidth?: number
+  align?: 'left' | 'center' | 'right'
+  /** `false` = cột luôn hiện, không cho tắt trong menu "Cột". */
+  hideable?: boolean
+  /** Mặc định GHIM sang trái (dính khi cuộn ngang). */
+  defaultPinned?: boolean
+  /**
+   * Cột chỉ hiện ở chế độ "Bảng đầy đủ"; nút chuyển chế độ bật/tắt đúng nhóm này.
+   * Vẫn bật/tắt lẻ được trong menu "Cột" như mọi cột khác.
+   */
+  compactHidden?: boolean
 }
 
 export interface DataTablePagination {

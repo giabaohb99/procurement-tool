@@ -426,17 +426,6 @@ export const PRODUCT_CORE_KEYS = [
   'line_approve',
 ] as const
 
-/**
- * Bề ngang tối thiểu của bảng ở chế độ ĐẦY ĐỦ.
- *
- * CR-090: KHÔNG nới hai số này để né lỗi tràn chữ. Lỗi tràn phải sửa bằng cách
- * cho ô xuống dòng; nới bảng chỉ đẩy thanh cuộn ngang dài thêm.
- */
-export const SURVEY_TABLE_MIN_WIDTH: Record<SurveyTable, number> = {
-  supplier: 1350,
-  product: 1400,
-}
-
 export const SURVEY_TABLE_LABELS: Record<SurveyTable, string> = {
   supplier: 'Khảo sát nhà cung cấp',
   product: 'Khảo sát sản phẩm',

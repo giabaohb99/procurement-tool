@@ -31,25 +31,38 @@ import { useProductPurchaseHistory } from '../hooks/use-purchase-request-support
 
 const PAGE_SIZE = 20
 
-interface PurchaseRequestHistoryDialogProps {
+interface PurchaseHistoryDialogProps {
   open: boolean
   productCode: string
   productName: string
+  /**
+   * Chỉ xem, không điền được giá.
+   *
+   * Dùng cho chứng từ đang khóa sửa — mà đơn CHỜ DUYỆT lại đúng là lúc người
+   * duyệt cần đối chiếu giá cũ nhất, nên vẫn phải mở được. Chỉ bỏ đường "Dùng
+   * giá này": điền vào đơn đang trình duyệt là đổi nội dung ngay dưới tay người
+   * duyệt, mà backend cũng sẽ chặn lượt lưu đó.
+   */
+  readOnly?: boolean
   onOpenChange: (open: boolean) => void
   onPick: (row: PurchaseHistoryRow) => void
 }
 
 /**
- * Các lần mua đã hoàn thành của đúng mã hàng. Chọn một dòng chỉ cập nhật bản nháp
- * hiện tại; người dùng vẫn phải bấm Lưu phiếu để ghi nhận.
+ * Các lần mua đã hoàn thành của đúng mã hàng — dùng chung cho YCMH và ĐMH.
+ *
+ * Chọn một dòng chỉ cập nhật bản nháp hiện tại; người dùng vẫn phải bấm Lưu
+ * phiếu để ghi nhận. KHÔNG lọc theo NCC của chứng từ đang lập: mục đích chính
+ * của màn này là so giá giữa các NCC.
  */
-export function PurchaseRequestHistoryDialog({
+export function PurchaseHistoryDialog({
   open,
   productCode,
   productName,
+  readOnly = false,
   onOpenChange,
   onPick,
-}: PurchaseRequestHistoryDialogProps) {
+}: PurchaseHistoryDialogProps) {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebouncedValue(search, 300)
@@ -80,8 +93,10 @@ export function PurchaseRequestHistoryDialog({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const start = total ? (page - 1) * PAGE_SIZE + 1 : 0
   const end = Math.min(page * PAGE_SIZE, total)
+  const columnCount = readOnly ? 9 : 10
 
   function pick(row: PurchaseHistoryRow) {
+    if (readOnly) return
     onPick(row)
     onOpenChange(false)
   }
@@ -120,14 +135,14 @@ export function PurchaseRequestHistoryDialog({
                   <TableHead className="text-right">VAT%</TableHead>
                   <TableHead className="text-right">Thành tiền</TableHead>
                   <TableHead>Công ty</TableHead>
-                  <TableHead className="w-28 text-center">Chọn</TableHead>
+                  {!readOnly && <TableHead className="w-28 text-center">Chọn</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    className="cursor-pointer"
+                    className={readOnly ? undefined : 'cursor-pointer'}
                     onClick={() => pick(row)}
                   >
                     <TableCell className="whitespace-nowrap">
@@ -153,25 +168,30 @@ export function PurchaseRequestHistoryDialog({
                       {formatMoney(row.amount)}
                     </TableCell>
                     <TableCell>{row.company_name || '—'}</TableCell>
-                    <TableCell className="text-center">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="xs"
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          pick(row)
-                        }}
-                      >
-                        Dùng giá này
-                      </Button>
-                    </TableCell>
+                    {!readOnly && (
+                      <TableCell className="text-center">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="xs"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            pick(row)
+                          }}
+                        >
+                          Dùng giá này
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
 
                 {!rows.length && (
                   <TableRow>
-                    <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
+                    <TableCell
+                      colSpan={columnCount}
+                      className="h-24 text-center text-muted-foreground"
+                    >
                       {history.isLoading ? (
                         <span className="inline-flex items-center gap-2">
                           <Loader2 className="size-4 animate-spin" /> Đang tải...
@@ -223,8 +243,9 @@ export function PurchaseRequestHistoryDialog({
             </div>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Chọn một dòng để điền ĐVT, SL, đơn giá, VAT, phân loại, kho nhận và ghi chú
-            tương thích. Phiếu chưa được lưu — bấm Lưu để ghi nhận.
+            {readOnly
+              ? 'Chỉ xem để tham khảo — chứng từ đang khóa sửa nên không điền giá từ đây được.'
+              : 'Chọn một dòng để điền ĐVT, SL, đơn giá, VAT, phân loại, kho nhận và ghi chú tương thích. Phiếu chưa được lưu — bấm Lưu để ghi nhận.'}
           </p>
         </div>
       </DialogContent>
