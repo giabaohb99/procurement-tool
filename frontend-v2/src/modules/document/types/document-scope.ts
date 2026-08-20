@@ -51,6 +51,18 @@ export interface DocumentScopeInput {
   include_children?: boolean
 }
 
+/**
+ * Một dòng phạm vi ĐANG XẾP HÀNG CHỜ ở form tạo văn bản — gửi lên ngay sau khi
+ * văn bản được tạo.
+ *
+ * `label` là tên đọc được dựng sẵn ở giao diện ("Phòng Kế toán — Công ty A"),
+ * vì dòng chưa lên máy chủ nên chưa có tên do backend trả về.
+ */
+export interface PendingScope {
+  values: DocumentScopeInput
+  label: string
+}
+
 export interface ScopeOption {
   value: number
   label: string

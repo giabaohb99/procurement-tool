@@ -17,25 +17,25 @@ import {
 } from '@/shared/ui/select'
 import { scopeLabel } from '../helpers/scope-label'
 import { useScopeOptions } from '../hooks/use-document-scopes'
-import {
-  SCOPE_DIM,
-  SCOPE_MODE,
-  type DocumentScopeInput,
-} from '../types/document-scope'
+import { SCOPE_DIM, SCOPE_MODE, type PendingScope } from '../types/document-scope'
 
 interface DocumentScopeAddFormProps {
   disabled?: boolean
   /**
-   * `label` là tên đọc được của đối tượng vừa chọn ("Phòng Kế toán — Công ty A").
+   * Nhận **cả mẻ một lần**, kể cả khi chỉ có một dòng.
    *
-   * Có nó thì form TẠO văn bản bày được dòng vừa khai ra ngay, dù dòng đó chưa
-   * gửi lên máy chủ nên chưa có tên do backend trả về. Màn sửa bỏ qua tham số
-   * này vì đọc tên từ dữ liệu đã lưu.
+   * ⚠️ Trước 20/08/2026 hàm này được gọi một lần cho MỖI pháp nhân, trong một
+   * vòng lặp đồng bộ — và đó là lỗi. Nơi nhận dựng mảng mới từ `rows` đọc qua
+   * closure; React chưa kịp dựng lại giữa các lượt gọi nên cả 13 lượt đều thấy
+   * mảng cũ, lượt cuối ghi đè 12 lượt trước. Chọn 13 pháp nhân chỉ còn 1 dòng.
    *
-   * Chọn nhiều pháp nhân một lượt thì hàm này được gọi **nhiều lần**, mỗi pháp
-   * nhân một dòng — tầng dữ liệu lưu mỗi dòng đúng một đối tượng.
+   * Trả cả mẻ thì nơi nhận chỉ ghi state ĐÚNG MỘT LẦN, không còn chỗ cho lỗi đó.
+   *
+   * `label` là tên đọc được dựng sẵn ("Phòng Kế toán — Công ty A") để form TẠO
+   * văn bản bày dòng ra ngay khi nó chưa lên máy chủ; màn sửa bỏ qua vì đọc tên
+   * từ dữ liệu đã lưu.
    */
-  onAdd: (values: DocumentScopeInput, label: string) => void
+  onAdd: (rows: PendingScope[]) => void
 }
 
 /**
@@ -77,9 +77,10 @@ export function DocumentScopeAddForm({ disabled = false, onAdd }: DocumentScopeA
     if (dimValue === SCOPE_DIM.company) {
       //  Mỗi pháp nhân một dòng: tầng dữ liệu lưu `company_id` đơn, và có vậy
       //  mới bỏ riêng được một nơi sau này mà không phải khai lại cả cụm.
-      for (const id of companyIds) {
-        onAdd(
-          {
+      //  Dựng đủ mảng rồi mới gọi MỘT lần — xem cảnh báo ở `onAdd`.
+      onAdd(
+        companyIds.map((id) => ({
+          values: {
             dim: dimValue,
             mode: Number(mode),
             company_id: id,
@@ -87,9 +88,11 @@ export function DocumentScopeAddForm({ disabled = false, onAdd }: DocumentScopeA
             employee_id: null,
             include_children: includeChildren,
           },
-          scopeLabel(dimValue, { company: companies.find((row) => row.id === id)?.name }),
-        )
-      }
+          label: scopeLabel(dimValue, {
+            company: companies.find((row) => row.id === id)?.name,
+          }),
+        })),
+      )
       setCompanyIds([])
       setIncludeChildren(false)
       return
@@ -103,17 +106,19 @@ export function DocumentScopeAddForm({ disabled = false, onAdd }: DocumentScopeA
         ?.full_name,
     })
 
-    onAdd(
+    onAdd([
       {
-        dim: dimValue,
-        mode: Number(mode),
-        company_id: dimValue === SCOPE_DIM.employee ? null : Number(companyId) || null,
-        department_id: dimValue === SCOPE_DIM.department ? Number(departmentId) : null,
-        employee_id: dimValue === SCOPE_DIM.employee ? Number(employeeId) : null,
-        include_children: false,
+        values: {
+          dim: dimValue,
+          mode: Number(mode),
+          company_id: dimValue === SCOPE_DIM.employee ? null : Number(companyId) || null,
+          department_id: dimValue === SCOPE_DIM.department ? Number(departmentId) : null,
+          employee_id: dimValue === SCOPE_DIM.employee ? Number(employeeId) : null,
+          include_children: false,
+        },
+        label,
       },
-      label,
-    )
+    ])
     setCompanyId('')
     setDepartmentId('')
     setEmployeeId('')
