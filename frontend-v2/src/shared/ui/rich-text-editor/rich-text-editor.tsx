@@ -38,6 +38,7 @@ import {
 } from './table-cell-background-extension'
 import { TableWithColumnResizing } from './table-column-resizing-extension'
 import { TableRowWithHeight } from './table-row-resizing-extension'
+import { useFillViewportHeight } from './use-fill-viewport-height'
 
 /** Khổ giấy và lề — số gốc ở `page-format.ts`, dùng chung với bản in. */
 const A4_WIDTH = A4_WIDTH_PX
@@ -159,6 +160,10 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
     // Cột mục lục: đóng/mở và bề ngang do người dùng chỉnh, giữ trong phiên soạn.
     const [outlineOpen, setOutlineOpen] = useState(true)
     const [outlineWidth, setOutlineWidth] = useState(224)
+
+    //  Khung giấy cao hết phần màn hình còn lại — đo thật, xem hook.
+    const khungGiay = useRef<HTMLDivElement>(null)
+    const chieuCaoGiay = useFillViewportHeight(khungGiay)
     // Khi nhập file lớn, transaction chèn sẽ phát `onUpdate`. Không serialize
     // ở đó vì phía dưới còn bật lại pagination; chốt HTML đúng một lần sau khi
     // chèn xong để tránh duyệt cả cây tài liệu hai lần liên tiếp.
@@ -446,9 +451,16 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
           )}
 
           {/* Nền xám để tờ giấy trắng nổi lên — nhìn ra ngay đâu là mép trang.
-            Cao theo màn hình chứ không cố định: màn 13" thì vẫn thấy được cả
-            thanh công cụ lẫn cuối trang, màn lớn thì soạn được nhiều dòng. */}
-          <div className="max-h-[calc(100vh-16rem)] min-h-100 min-w-0 flex-1 overflow-x-auto overflow-y-auto bg-muted px-6 py-5">
+
+            Chiều cao ĐO THẬT từ vị trí của chính khối này tới đáy cửa sổ (xem
+            `useFillViewportHeight`), không trừ một hằng số. Trang chi tiết có
+            tới bốn dải cảnh báo hiện/ẩn tùy lúc, và bản chỉ đọc thì không có
+            thanh công cụ — mọi hằng số đều sai ở đa số trường hợp. */}
+          <div
+            ref={khungGiay}
+            style={{ height: chieuCaoGiay }}
+            className="min-h-80 min-w-0 flex-1 overflow-x-auto overflow-y-auto bg-muted px-6 py-5"
+          >
             {/* Phóng bằng `zoom` chứ không phải `transform: scale`: `zoom` co
               giãn luôn cả hộp bố cục nên thanh cuộn vẫn đúng tầm và con trỏ
               chuột vẫn trỏ trúng chữ, còn `scale` thì phải tự bù chiều cao.
