@@ -2737,3 +2737,29 @@ input,
 .drp-summary { font-size: 13px; color: var(--navy); }
 .drp-summary b { color: var(--teal-dark); }
 .drp-footer .btn { height: 34px; padding: 0 14px; font-size: 13px; }
+
+/* ── Ô chỉ đọc nhưng cho copy (CR-108) ─────────────────────────────────────────
+   Dùng thay cho input/react-select bị disabled ở các ô KHÔNG cho sửa nhưng người
+   dùng vẫn cần lấy giá trị ra (mã hàng trên Đơn mua hàng đã duyệt). */
+.copy-text {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 5px 8px;
+  border: 1px solid #E9EDF7;
+  border-radius: 10px;
+  background: #f6f8fa;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.copy-text-value {
+  flex: 1;
+  min-width: 0;
+  user-select: text;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+.copy-text-btn { flex-shrink: 0; color: var(--muted); }
+.copy-text-btn:hover { color: var(--teal); }

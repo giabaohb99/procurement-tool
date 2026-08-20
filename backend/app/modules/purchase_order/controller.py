@@ -381,6 +381,20 @@ def approve_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depend
     return success(_out(db, po), "Đã duyệt")
 
 
+@router.post("/{pid}/unapprove")
+def unapprove_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
+                 user=Depends(require("purchase_order", "approve"))):
+    """Hủy duyệt — đơn về Nháp để sửa rồi gửi duyệt lại (CR-108, phiếu hỗ trợ TK19082604).
+
+    Chỉ người có quyền DUYỆT được bấm: sau khi duyệt, đơn là cam kết đã ký với NCC, mở
+    lại để sửa là quyết định của trưởng phòng chứ không phải của người lập đơn.
+    """
+    if not (data.reason or "").strip():
+        raise HTTPException(400, "Vui lòng nhập lý do hủy duyệt")
+    po = service.unapprove_po(db, pid, user.id, data.reason.strip())
+    return success(_out(db, po), "Đã hủy duyệt — đơn về Nháp")
+
+
 @router.post("/{pid}/reject")
 def reject_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
               user=Depends(require("purchase_order", "approve"))):

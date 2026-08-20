@@ -599,22 +599,23 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 
-### 25. Đánh giá chất lượng từ LAB (`lab_result`)
+### 25. Đánh giá của LAB (`lab_result`) — CR-109
 
-- Kiểu nhập: Nhập nhiều dòng
+- Kiểu nhập: **Bấm chọn 1 trong 2** — "Mẫu đạt" / "Mẫu không đạt". Bấm lại nút đang chọn thì bỏ chọn (về trống = chưa có kết quả). Trong bảng tóm tắt là ô chọn; xem-only thì hiện nhãn màu (xanh = đạt, đỏ = không đạt)
 - Mặc định: trống
 - Bắt buộc: Không bắt buộc khi Nháp, bắt buộc khi Gửi duyệt (chỉ khi đã tick "Mẫu sẵn")
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
+- Logic đặc biệt: Cột **"Mẫu đạt/không đạt"** đứng ngay **trước cột Duyệt (TP/QL)** trong bảng Khảo sát Sản phẩm và nằm trong bộ cột **Bảng rút gọn** — người duyệt quét bảng là thấy kết luận LAB, không phải mở từng dòng. Trước CR-109 đây là ô chữ tự do; dữ liệu cũ đã được migration `c9e4b1a7d260` đẩy sang `lab_note`
 
-### 26. Ghi chú LAB (`lab_note`)
+### 26. Chi tiết đánh giá từ LAB (`lab_note`) — CR-109
 
 - Kiểu nhập: Nhập nhiều dòng
 - Mặc định: trống
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
-- Logic đặc biệt: Trường hiển thị trong bảng tóm tắt (`PRODUCT_COLS`) nhưng không có trong form popup chi tiết dòng (`PRODUCT_SECTIONS`)
+- Logic đặc biệt: Từ CR-109 ô này **có mặt cả trong popup chi tiết dòng** (trước đây chỉ có ở bảng tóm tắt) — đây là chỗ ghi nhận xét dài của LAB sau khi `lab_result` rút về hai lựa chọn
 
 **Nhóm: Ghi chú**
 

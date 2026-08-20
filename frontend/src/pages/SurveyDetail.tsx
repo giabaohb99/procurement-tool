@@ -23,7 +23,14 @@ const PRICE_KEYS = ['price_by_volume', 'proposed_rate']
 const APPROVE_OPTS = ['Chờ duyệt', 'Đã duyệt', 'Không duyệt', 'Thiếu thông tin']
 const APPROVE_COLOR: Record<string, string> = { 'Chờ duyệt': '#d97706', 'Đã duyệt': '#16a34a', 'Không duyệt': '#b91c1c', 'Thiếu thông tin': '#ea580c' }
 
-// Kiểu trường: date | text | textarea | num | check | computed | unit(chọn) | vat(nhập %) | approve(chọn)
+// CR-109 (phiếu hỗ trợ TK20082601): kết quả LAB trước đây là ô chữ tự do nên mỗi người ghi
+// một kiểu ("COA ok", "test mẫu trước khi mua"…) — nhìn bảng không biết mẫu có đạt hay
+// không. Nay tách làm hai: KẾT LUẬN chọn 1 trong 2 (hiện luôn ra bảng ngoài) và CHI TIẾT
+// đánh giá ghi tự do ở `lab_note`.
+const LAB_OPTS = ['Mẫu đạt', 'Mẫu không đạt']
+const LAB_COLOR: Record<string, string> = { 'Mẫu đạt': '#16a34a', 'Mẫu không đạt': '#b91c1c' }
+
+// Kiểu trường: date | text | textarea | num | check | computed | unit(chọn) | vat(nhập %) | approve(chọn) | lab(chọn đạt/không đạt)
 type SecField = { k: string; label: string; type?: string; full?: boolean }
 type Section = { title: string; fields: SecField[] }
 
@@ -100,7 +107,8 @@ const PRODUCT_SECTIONS: Section[] = [
     { k: 'sample_ready', label: 'Mẫu sẵn', type: 'check' },
     { k: 'sample_date', label: 'Ngày lấy mẫu', type: 'date' },
     { k: 'sample_qty', label: 'Số lượng mẫu nhận', type: 'num' },
-    { k: 'lab_result', label: 'Đánh giá chất lượng từ LAB', type: 'textarea', full: true },
+    { k: 'lab_result', label: 'Đánh giá của LAB', type: 'lab' },
+    { k: 'lab_note', label: 'Chi tiết đánh giá từ LAB', type: 'textarea', full: true },
   ] },
   { title: 'Ghi chú', fields: [
     { k: 'note', label: 'Ghi chú', type: 'textarea', full: true },
@@ -146,7 +154,7 @@ const SUPPLIER_COLS: Col[] = [
   { key: 'line_approve_note', label: 'Ghi chú duyệt', w: 180 },
 ]
 
-const PRODUCT_CORE_KEYS = ['supplier_available', 'supplier_code', 'supplier_name', 'internal_code', 'product_name', 'quote_unit', 'moq', 'price_by_volume', 'note', 'line_approve']
+const PRODUCT_CORE_KEYS = ['supplier_available', 'supplier_code', 'supplier_name', 'internal_code', 'product_name', 'quote_unit', 'moq', 'price_by_volume', 'note', 'lab_result', 'line_approve']
 
 const PRODUCT_COLS: Col[] = [
   { key: 'supplier_available', label: 'NCC sẵn có', w: 90, type: 'check' },
@@ -172,11 +180,13 @@ const PRODUCT_COLS: Col[] = [
   { key: 'sample_ready', label: 'Mẫu sẵn', w: 80, type: 'check' },
   { key: 'sample_date', label: 'Ngày mẫu', w: 120, type: 'date' },
   { key: 'sample_qty', label: 'SL mẫu', w: 90, type: 'num' },
-  { key: 'lab_result', label: 'KQ LAB', w: 150 },
-  { key: 'lab_note', label: 'Ghi chú LAB', w: 150 },
+  { key: 'lab_note', label: 'Chi tiết ĐG LAB', w: 180 },
   { key: 'nspt_note', label: 'Nhận xét NSPT', w: 160 },
   { key: 'nspt_reason', label: 'Lý do NSPT', w: 160 },
   { key: 'note', label: 'Ghi chú', w: 160 },
+  // CR-109: kết luận LAB đứng ngay trước cột Duyệt — người duyệt nhìn thấy mẫu đạt hay
+  // không ngay tại chỗ bấm duyệt, không phải mở từng dòng.
+  { key: 'lab_result', label: 'Mẫu đạt/không đạt', w: 150, type: 'lab' },
   { key: 'line_approve', label: 'Duyệt (TP/QL)', w: 140, type: 'select', options: ['', 'Chờ duyệt', 'Đã duyệt', 'Không duyệt', 'Thiếu thông tin'] },
   { key: 'line_approve_note', label: 'Ghi chú duyệt', w: 180 },
 ]
@@ -669,6 +679,22 @@ export default function SurveyDetail() {
     if (t === 'unit') return <SearchSelect value={it[k] ?? ''} options={units} disabled={!ce} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setLine(tbl, i, { [k]: v })} />
     // VAT: nhập tay theo % (0 ≤ VAT < 100), không còn khoá vào danh sách mức cố định
     if (t === 'vat') return <NumberInput value={it[k]} disabled={!ce} max={VAT_MAX} maxDecimals={VAT_DECIMALS} placeholder="Nhập % VAT…" onChange={(v: number) => setLine(tbl, i, { [k]: v })} />
+    // CR-109: hai nút bấm thay vì ô chữ — bấm lại nút đang chọn thì bỏ chọn (chưa có KQ).
+    if (t === 'lab') return (
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', minHeight: 40 }}>
+        {LAB_OPTS.map((o) => {
+          const on = it[k] === o
+          return (
+            <button key={o} type="button" className="btn ghost" disabled={!ce}
+              onClick={() => setLine(tbl, i, { [k]: on ? '' : o })}
+              style={{ height: 34, fontSize: 13, borderColor: on ? LAB_COLOR[o] : 'var(--border)',
+                color: on ? '#fff' : LAB_COLOR[o], background: on ? LAB_COLOR[o] : '#fff', fontWeight: 600 }}>
+              <i className={on ? 'ti ti-circle-check-filled' : 'ti ti-circle'} style={{ fontSize: 16 }} />{o}
+            </button>
+          )
+        })}
+      </div>
+    )
     if (t === 'approve') return <SearchSelect value={it[k] || 'Chờ duyệt'} options={APPROVE_OPTS} colorMap={APPROVE_COLOR} disabled={!canEditApprove} placeholder="Chọn…" onChange={(v) => setLine(tbl, i, { [k]: v })} />
     return <input value={it[k] ?? ''} disabled={!ce} onChange={(e) => setLine(tbl, i, { [k]: e.target.value })} />
   }
@@ -687,6 +713,16 @@ export default function SurveyDetail() {
         return <div style={{ width: '100%' }}><SearchSelect variant="table" colorMap={APPROVE_COLOR} value={it[col.key] || 'Chờ duyệt'} options={APPROVE_OPTS} placeholder="Duyệt…" onChange={(v) => changeLineApprove(tbl, i, v)} /></div>
       const st = it.line_approve || 'Chờ duyệt'; const c = APPROVE_COLOR[st] || '#64748b'
       return <span className="badge" style={{ background: `${c}1a`, color: c, border: `1px solid ${c}55` }}>{st}</span>
+    }
+    // CR-109: kết luận LAB hiện thành nhãn màu ngay trên bảng ngoài (xanh = đạt, đỏ = không
+    // đạt) — người duyệt thấy ngay cạnh cột Duyệt, không phải mở từng dòng ra xem.
+    if (col.type === 'lab') {
+      const v = String(it[col.key] || '')
+      if (editable)
+        return <div style={{ width: '100%' }}><SearchSelect variant="table" colorMap={LAB_COLOR} value={v} options={LAB_OPTS} placeholder="Chọn…" onChange={(nv) => setLine(tbl, i, { [col.key]: nv })} /></div>
+      if (!v) return ro('')
+      const c = LAB_COLOR[v] || '#64748b'
+      return <span className="badge" style={{ background: `${c}1a`, color: c, border: `1px solid ${c}55` }}>{v}</span>
     }
     // Tên pháp lý NCC: tự tra làm mặc định, cho nhập/ghi đè tay khi đang sửa
     if (col.type === 'legal') {

@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext'
 import { poBadge, PAYMENT_TERMS_OPTIONS } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
 import ProductPicker from '../components/ProductPicker'
+import CopyText from '../components/CopyText'
 import PurchaseHistoryPickerModal, { HistoryPick } from '../components/PurchaseHistoryPickerModal'
 import NumberInput from '../components/NumberInput'
 import { VAT_MAX, VAT_DECIMALS } from '../utils/vat'
@@ -217,9 +218,17 @@ export default function PurchaseOrderDetail() {
   // Đơn CHƯA hoàn thành (và chưa hủy) thì vẫn cho sửa sản phẩm/thông tin bên trong.
   // CR-073: đơn đang CHỜ DUYỆT cũng khóa — sửa lúc này là người duyệt bấm duyệt cho một
   // nội dung khác với nội dung đã trình. Muốn sửa thì người duyệt trả đơn về (Bị trả lại).
-  const locked = ['submitted', 'completed', 'cancelled'].includes(po.status)
+  // CR-108 (phiếu hỗ trợ TK19082604): đơn ĐÃ DUYỆT cũng khóa. Trước đây 'approved' không
+  // nằm trong danh sách này nên duyệt xong vẫn đổi được mã hàng, số lượng, đơn giá — nội
+  // dung trưởng phòng đã ký không còn khớp đơn gửi NCC. Muốn đổi thì bấm "Hủy duyệt".
+  const approved = ['approved', 'partial', 'received'].includes(po.status)
+  const locked = ['submitted', 'completed', 'cancelled'].includes(po.status) || approved
   const canWrite = can('purchase_order', isNew ? 'create' : 'write')
   const headerEditable = (isNew || !locked) && canWrite
+  // Vài ô CHỈ có thông tin sau khi duyệt (tên trên hóa đơn, ngày dự kiến có hàng, kho nhận,
+  // ghi chú, ngày giao chứng từ cho KT) — khóa luôn thì không ai nhập được. Backend mở đúng
+  // bấy nhiêu ô, xem TRUONG_DONG_SUA_SAU_DUYET ở purchase_order/service.py.
+  const afterApproveEditable = !isNew && approved && canWrite
   const deliveryEditable = !isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'write')
   // Đính kèm chứng từ vào lần giao: cho phép CẢ khi đơn đã 'Hoàn thành' (chỉ chặn khi Hủy / chưa lưu).
   // Chỉ mở nút gắn/xóa file — KHÔNG mở các field khác (SL nhận, ngày nhận...). Task 10a.
@@ -653,6 +662,18 @@ export default function PurchaseOrderDetail() {
             <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { const r = await askPrompt({ title: 'Từ chối đơn', message: 'Lý do từ chối (khóa đơn, không sửa lại được):', confirmText: 'Từ chối' }); if (r !== null) action('reject', { reason: r }) }}><i className="ti ti-ban" />Từ chối</button>
           </>
         )}
+        {/* CR-108: đơn đã duyệt bị khóa nội dung — muốn sửa thì người DUYỆT hạ đơn về Nháp,
+            sửa rồi gửi duyệt lại. Ẩn khi đã nhận hàng (backend cũng chặn): hàng đã vào kho
+            và đã sinh công nợ thì không hạ đơn xuống được nữa. */}
+        {!isNew && approved && can('purchase_order', 'approve') && !items.some((it: any) => Number(it.qty_received || 0) > 0) && (
+          <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }}
+            onClick={async () => {
+              const r = await askPrompt({ title: 'Hủy duyệt', message: 'Lý do hủy duyệt (đơn về Nháp để sửa, sau đó phải gửi duyệt lại):', confirmText: 'Hủy duyệt' })
+              if (r === null) return
+              if (!r.trim()) { toast.error('Vui lòng nhập lý do hủy duyệt'); return }
+              action('unapprove', { reason: r.trim() })
+            }}><i className="ti ti-lock-open" />Hủy duyệt</button>
+        )}
         {!isNew && ['received', 'partial'].includes(po.status) && can('purchase_order', 'write') && (
           <button className="btn" onClick={async () => { if (await askConfirm({ message: po.status === 'partial' ? 'Đơn mới nhận MỘT PHẦN. Xác nhận HOÀN THÀNH (chốt đơn dù còn thiếu)? Sau khi hoàn thành sẽ khóa, không chỉnh sửa được nữa.' : 'Xác nhận HOÀN THÀNH đơn mua hàng này? Sau khi hoàn thành sẽ khóa, không chỉnh sửa được nữa.', confirmText: 'Hoàn thành', danger: false })) action('complete') }}><i className="ti ti-circle-check" />Hoàn thành</button>
         )}
@@ -735,6 +756,16 @@ export default function PurchaseOrderDetail() {
                 <div style={{ marginTop: 2, opacity: .85 }}>Bấm <i className="ti ti-pencil" /> ở cột Hành động để mở Chi tiết dòng và điền.</div>
               </div>
             )}
+            {/* CR-108: nói rõ vì sao bảng bị khóa và mở lại bằng cách nào — nếu không,
+                người dùng tưởng hỏng màn hình rồi gọi hỗ trợ. */}
+            {afterApproveEditable && (
+              <div style={{ marginBottom: 12, padding: '8px 12px', borderRadius: 8, background: '#eff6ff',
+                border: '1px solid #bfdbfe', color: '#1e40af', fontSize: 12.5 }}>
+                <i className="ti ti-lock" /> Đơn đã duyệt — nội dung đã duyệt bị khóa. Mở <i className="ti ti-pencil" /> Chi tiết dòng
+                để sửa Tên trên hóa đơn, Ngày dự kiến có hàng, Kho nhận, Ghi chú, Ngày giao chứng từ cho KT và các lần giao hàng.
+                {can('purchase_order', 'approve') && ' Cần đổi mã hàng / số lượng / đơn giá thì bấm "Hủy duyệt" rồi gửi duyệt lại.'}
+              </div>
+            )}
             <div className="items-scroll">
               <table className="items-table" style={{ minWidth: 1220 }}>
                 <thead>
@@ -765,7 +796,11 @@ export default function PurchaseOrderDetail() {
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <ProductPicker compact code={it.product_code} name={it.product_name} disabled={!headerEditable || lineLocked(it) || lineReceived(it)} onPick={(prod) => applyProduct(i, prod)} />
+                            {/* CR-108: không cho chỉnh thì hiện chữ + nút copy — ô react-select
+                                bị disabled không bôi đen được, người dùng không lấy mã ra tra cứu được. */}
+                            {(!headerEditable || lineLocked(it) || lineReceived(it))
+                              ? <CopyText value={it.product_code} title={it.product_name || undefined} />
+                              : <ProductPicker compact code={it.product_code} name={it.product_name} onPick={(prod) => applyProduct(i, prod)} />}
                           </div>
                           {/* Tham chiếu giá đã mua trước đó — hiện ngay khi đã chọn mã hàng.
                               KHÔNG khóa theo quyền sửa: đơn đang chờ duyệt (CR-073 khóa sửa)
@@ -869,13 +904,15 @@ export default function PurchaseOrderDetail() {
             </div>
           </div>
 
-          {/* Chứng từ chung */}
+          {/* Chứng từ chung — CR-108 khóa NỘI DUNG đơn đã duyệt, nhưng chứng từ vẫn phải gắn
+              được SAU khi duyệt (đó mới là lúc có hóa đơn/biên bản), nên `editable` ở đây giữ
+              nguyên phạm vi cũ chứ không đi theo headerEditable. */}
           {!isNew && (
             <DocumentAttachmentSection
               entity="purchase_order"
               entityId={Number(id)}
               files={files}
-              editable={headerEditable}
+              editable={headerEditable || afterApproveEditable}
               isNew={isNew}
               showDocumentStatus={true}
               documentStatus={po.document_status || 'chưa có chứng từ'}
@@ -942,11 +979,15 @@ export default function PurchaseOrderDetail() {
                 const ii = editingItemIdx
                 const it = items[ii]
                 const de = !headerEditable || lineLocked(it)
+                // Ô còn sửa được sau khi duyệt (CR-108) — khóa theo `deSau` chứ không theo `de`.
+                const deSau = de && !(afterApproveEditable && !lineLocked(it))
                 return (
                   <div className="form-grid" style={{ marginBottom: 18 }}>
                     <div className="form-row" title={lineReceived(it) ? PRODUCT_LOCK_HINT : undefined}>
                       <label>Mã hàng (VTBB/NL)<Req /></label>
-                      <ProductPicker code={it.product_code} name={it.product_name} disabled={de || lineReceived(it)} onPick={(prod) => applyProduct(ii, prod)} />
+                      {(de || lineReceived(it))
+                        ? <CopyText value={it.product_code} title={it.product_name || undefined} />
+                        : <ProductPicker code={it.product_code} name={it.product_name} onPick={(prod) => applyProduct(ii, prod)} />}
                       {lineReceived(it) && <span style={{ fontSize: 12, color: 'var(--muted)' }}><i className="ti ti-lock" /> Đã nhận hàng — khóa mã hàng / tên hàng / ĐVT</span>}
                     </div>
                     <div className="form-row">
@@ -955,11 +996,11 @@ export default function PurchaseOrderDetail() {
                         placeholder="Chọn/tìm phân loại…" onChange={(v) => setItem(ii, { item_group: v })} />
                     </div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }} title={lineReceived(it) ? PRODUCT_LOCK_HINT : undefined}><label>Tên hàng<Req /></label><TextAreaAuto style={POPUP_TEXT} value={it.product_name || ''} disabled={de || lineReceived(it)} onChange={(v) => setItem(ii, { product_name: v })} /></div>
-                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên trên hóa đơn<Req /></label><TextAreaAuto style={POPUP_TEXT} value={it.invoice_name || ''} disabled={de} onChange={(v) => setItem(ii, { invoice_name: v })} /></div>
+                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên trên hóa đơn<Req /></label><TextAreaAuto style={POPUP_TEXT} value={it.invoice_name || ''} disabled={deSau} onChange={(v) => setItem(ii, { invoice_name: v })} /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Xuất xứ / TSKT / chất liệu</label><TextAreaAuto style={POPUP_TEXT} value={it.spec || ''} disabled={de} onChange={(v) => setItem(ii, { spec: v })} /></div>
                     <div className="form-row"><label>Mã HH (thành phẩm)</label><input value={it.fg_code || ''} placeholder="Tự gắn khi chọn SP" disabled={de} onChange={(e) => setItem(ii, { fg_code: e.target.value })} /></div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Tên HH (thành phẩm)</label><TextAreaAuto style={POPUP_TEXT} value={it.fg_name || ''} placeholder="Tự gắn khi chọn SP" disabled={de} onChange={(v) => setItem(ii, { fg_name: v })} /></div>
-                    <div className="form-row"><label title="Có ngày này → dòng chuyển 'Đã gửi ĐMH cho KT'">Ngày giao chứng từ cho KT</label><DateInput value={it.document_delivery_date || ''} disabled={de} onChange={(v) => setItem(ii, { document_delivery_date: v })} /></div>
+                    <div className="form-row"><label title="Có ngày này → dòng chuyển 'Đã gửi ĐMH cho KT'">Ngày giao chứng từ cho KT</label><DateInput value={it.document_delivery_date || ''} disabled={deSau} onChange={(v) => setItem(ii, { document_delivery_date: v })} /></div>
                     <div className="form-row">
                       <label>Trạng thái tiến độ</label>
                       <div>
@@ -989,13 +1030,13 @@ export default function PurchaseOrderDetail() {
                     <div className="form-row"><label>Ngày yêu cầu có hàng<Req /></label><DateInput value={it.required_date || ''} disabled={de} onChange={(v) => setItem(ii, { required_date: v })} /></div>
                     {/* Dự kiến có hàng: để trống thì khi lưu backend tự chép từ dòng YCMH nguồn.
                         Sửa ở đây KHÔNG ghi đè ngày đang có trên YCMH — chỉ báo chuông cho NSTM phụ trách dòng. */}
-                    <div className="form-row"><label>Ngày dự kiến có hàng<Req /></label><DateInput value={it.expected_date || ''} disabled={de} onChange={(v) => setItem(ii, { expected_date: v })} /></div>
+                    <div className="form-row"><label>Ngày dự kiến có hàng<Req /></label><DateInput value={it.expected_date || ''} disabled={deSau} onChange={(v) => setItem(ii, { expected_date: v })} /></div>
                     <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={!!it.supplier_ready} disabled={de} onChange={(e) => setItem(ii, { supplier_ready: e.target.checked })} style={{ width: 16, height: 16 }} /> NCC có sẵn hàng</label></div>
                     <div className="form-row"><label>ĐVT<Req /></label>
                       <SearchSelect value={it.unit ?? ''} options={units} disabled={de} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setItem(ii, { unit: v })} />
                     </div>
                     <div className="form-row"><label>Kho nhận mặc định<Req /></label>
-                      <SearchSelect value={it.warehouse_code ?? ''} disabled={de} placeholder="Chọn/tìm kho…"
+                      <SearchSelect value={it.warehouse_code ?? ''} disabled={deSau} placeholder="Chọn/tìm kho…"
                         options={warehouses.map((w) => ({ value: w.code, label: `${w.code} — ${w.name}` }))}
                         onChange={(v) => setItem(ii, { warehouse_code: v })} />
                     </div>
@@ -1007,7 +1048,7 @@ export default function PurchaseOrderDetail() {
                     <div className="form-row"><label>Tổng tiền hàng (đã nhận)</label><input value={fmtVND(it.goods_total || 0)} disabled /></div>
                     <div className="form-row"><label>Tổng đã trả</label><input value={fmtVND(it.paid_total || 0)} disabled style={{ color: 'var(--green)', fontWeight: 600 }} /></div>
                     <div className="form-row"><label>Còn lại</label><input value={fmtVND(it.remaining_total || 0)} disabled style={{ color: (it.remaining_total || 0) > 0 ? 'var(--red)' : 'var(--muted)', fontWeight: 600 }} /></div>
-                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><input value={it.note || ''} disabled={de} onChange={(e) => setItem(ii, { note: e.target.value })} /></div>
+                    <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><input value={it.note || ''} disabled={deSau} onChange={(e) => setItem(ii, { note: e.target.value })} /></div>
                   </div>
                 )
               })()}
