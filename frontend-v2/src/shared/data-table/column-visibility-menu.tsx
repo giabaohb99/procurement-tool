@@ -21,6 +21,7 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { cn } from '@/shared/utils/cn'
 import { ColumnColorMenu } from './column-color-menu'
+import { columnLabel } from './required-header'
 import type { ColumnDropSide, DataTableColumn } from './types'
 import { useColumnListDrag } from './use-column-list-drag'
 
@@ -117,7 +118,7 @@ export function ColumnVisibilityMenu<T>({
                 <button
                   type="button"
                   title="Kéo để đổi thứ tự cột"
-                  onPointerDown={(event) => startDrag(event, column.key, column.header)}
+                  onPointerDown={(event) => startDrag(event, column.key, columnLabel(column.header))}
                   className={cn(
                     ICON_BUTTON,
                     'size-6 cursor-grab touch-none active:cursor-grabbing',
@@ -142,7 +143,9 @@ export function ColumnVisibilityMenu<T>({
                   ) : (
                     <Eye className="size-4 shrink-0 text-muted-foreground" />
                   )}
-                  <span className="truncate">{column.header}</span>
+                  {/* Menu này là danh sách TÊN cột — dấu sao bắt buộc chỉ có
+                      nghĩa ở tiêu đề bảng, đưa vào đây chỉ làm rối. */}
+                  <span className="truncate">{columnLabel(column.header)}</span>
                 </button>
 
                 <ColumnColorMenu

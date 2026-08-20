@@ -109,7 +109,7 @@ export function SurveyRequestLinesTable({
     },
     {
       key: 'item_group',
-      header: 'Phân loại',
+      header: 'Phân loại *',
       width: 180,
       minWidth: 100,
       defaultPinned: true,

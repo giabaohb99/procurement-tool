@@ -6,6 +6,7 @@ import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
+import { RequiredMark } from '@/shared/ui/required-mark'
 import {
   Select,
   SelectContent,
@@ -114,7 +115,8 @@ export function SurveyRequestInfoCard({
 
         <div className="space-y-1.5">
           <Label>
-            Công ty nhận hóa đơn <span className="text-destructive">*</span>
+            Công ty nhận hóa đơn
+            <RequiredMark />
           </Label>
           {editing && companies.length ? (
             <Select
@@ -142,7 +144,8 @@ export function SurveyRequestInfoCard({
 
         <div className="space-y-1.5">
           <Label>
-            Người yêu cầu <span className="text-destructive">*</span>
+            Người yêu cầu
+            <RequiredMark />
           </Label>
           {editing && !lockRequester && employees.length ? (
             <Select
@@ -180,7 +183,8 @@ export function SurveyRequestInfoCard({
 
         <div className="space-y-1.5">
           <Label>
-            Bộ phận YC <span className="text-destructive">*</span>
+            Bộ phận YC
+            <RequiredMark />
           </Label>
           {editing && departments.length ? (
             <Select
@@ -216,7 +220,8 @@ export function SurveyRequestInfoCard({
 
         <div className="space-y-1.5 md:col-span-2">
           <Label>
-            Mục đích khảo sát <span className="text-destructive">*</span>
+            Mục đích khảo sát
+            <RequiredMark />
           </Label>
           {editing ? (
             <Textarea

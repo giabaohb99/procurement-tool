@@ -59,6 +59,13 @@ export interface PurchaseOrderItem {
   /** NCC có sẵn hàng — quyết định lấy mốc ngày quy định nào khi tính Đơn gấp. */
   supplier_ready: boolean
   required_date: string
+  /**
+   * Ngày dự kiến có hàng. Bỏ trống thì backend tự điền: lấy theo dòng YCMH
+   * nguồn, không có thì tính từ thời gian chuẩn của phân loại. Tự điền HỤT
+   * (dòng thêm tay, phân loại chưa khai thời gian chuẩn) thì ô ở lại rỗng và
+   * cổng CR-095 chặn gửi duyệt — nên màn phải có ô để sửa tay.
+   */
+  expected_date: string
   unit: string
   qty_request: number
   qty_order: number

@@ -17,6 +17,7 @@ import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
+import { RequiredMark } from '@/shared/ui/required-mark'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Textarea } from '@/shared/ui/textarea'
 import { formatDate } from '@/shared/utils/format-date'
@@ -127,7 +128,7 @@ export function PurchaseRequestLineDetailDialog({
         )}
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <LineField label="Mã vật tư *">
+          <LineField label="Mã vật tư" required>
             {editing ? (
               <Input
                 value={draft.product_code}
@@ -137,7 +138,7 @@ export function PurchaseRequestLineDetailDialog({
               <ReadOnlyValue>{draft.product_code}</ReadOnlyValue>
             )}
           </LineField>
-          <LineField label="Tên vật tư *">
+          <LineField label="Tên vật tư" required>
             {editing ? (
               <Textarea
                 rows={2}
@@ -161,7 +162,7 @@ export function PurchaseRequestLineDetailDialog({
           <LineField label="Mô tả phân loại">
             <ReadOnlyValue>{draft.group_desc}</ReadOnlyValue>
           </LineField>
-          <LineField label="Số lượng mua *">
+          <LineField label="Số lượng mua" required>
             {editing ? (
               <Input
                 type="number"
@@ -216,7 +217,7 @@ export function PurchaseRequestLineDetailDialog({
               {lineTotal ? `${formatMoney(lineTotal)} đ` : ''}
             </ReadOnlyValue>
           </LineField>
-          <LineField label="Kho nhận *">
+          <LineField label="Kho nhận" required>
             {editing ? (
               <Input
                 value={draft.warehouse}
@@ -226,7 +227,7 @@ export function PurchaseRequestLineDetailDialog({
               <ReadOnlyValue>{draft.warehouse}</ReadOnlyValue>
             )}
           </LineField>
-          <LineField label="Ngày cần hàng *">
+          <LineField label="Ngày cần hàng" required>
             {editing ? (
               <DatePicker
                 value={draft.required_date}
@@ -332,10 +333,22 @@ export function PurchaseRequestLineDetailDialog({
   )
 }
 
-function LineField({ label, children }: { label: string; children: React.ReactNode }) {
+function LineField({
+  label,
+  required,
+  children,
+}: {
+  label: string
+  /** Ô bắt buộc — vẽ dấu sao đỏ. Bộ trường lấy từ `utils/required-fields.ts`. */
+  required?: boolean
+  children: React.ReactNode
+}) {
   return (
     <div className="space-y-1.5">
-      <Label>{label}</Label>
+      <Label>
+        {label}
+        {required && <RequiredMark />}
+      </Label>
       {children}
     </div>
   )

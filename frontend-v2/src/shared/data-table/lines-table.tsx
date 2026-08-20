@@ -15,6 +15,7 @@ import { columnColorStyle } from './column-color-palette'
 import { ColumnHeaderCell } from './column-header-cell'
 import { ColumnVisibilityMenu } from './column-visibility-menu'
 import { measureColumnContentWidth } from './measure-column-width'
+import { columnLabel } from './required-header'
 import type { DataTableColumn, LinesTableColumn } from './types'
 import { useColumnDrag } from './use-column-drag'
 import { usePinnedOffsets } from './use-pinned-offsets'
@@ -240,7 +241,7 @@ export function LinesTable<T>({
                   dragging={drag?.fromKey === column.key}
                   dropSide={drag?.overKey === column.key ? drag.side : null}
                   onResize={(next) => setColumnWidth(column.key, next)}
-                  onDragStart={(event) => startDrag(event, column.key, column.header)}
+                  onDragStart={(event) => startDrag(event, column.key, columnLabel(column.header))}
                 />
               ))}
             </TableRow>

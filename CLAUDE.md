@@ -130,6 +130,14 @@ nhận con trỏ nên người dùng KHÔNG bôi đen, KHÔNG copy được giá
 như chữ gợi ý. Dùng `shared/ui/read-only-value.tsx` (chữ trong thẻ thường, khung viền nền mờ).
 Giá trị nằm trong **ô CHỌN** thì bản chất là một `<button>` — bôi đen không được bằng cách nào cả,
 phải gắn `shared/ui/copy-button.tsx` bên cạnh (xem CR-105).
+⚠️ **TRƯỜNG BẮT BUỘC của YCMH · YCBG · ĐMH khai MỘT CHỖ:**
+`modules/procurement/utils/required-fields.ts` (CR-107) — vừa là nguồn vẽ dấu sao đỏ, vừa là
+nguồn câu chặn lúc **gửi duyệt** (không chặn lúc lưu nháp). Bộ trường của ĐMH phải khớp
+`TRUONG_BAT_BUOC_DONG` ở `backend/app/modules/purchase_order/service.py` (cổng CR-095); YCMH và
+YCBG thì backend **không kiểm**, luật chỉ nằm ở giao diện. Đừng gõ `*` thẳng vào chuỗi nhãn —
+ô nhập dùng `shared/ui/required-mark.tsx`, tiêu đề cột dùng đuôi `" *"`
+(`shared/data-table/required-header.ts`, xem `docs/ui/table.md` §1). **VAT cố ý KHÔNG bắt buộc**:
+`0` vừa nghĩa "chưa nhập" vừa nghĩa "hàng không chịu thuế".
 Đụng vào **bảng dòng của phiếu khảo sát** (cả hai bản) thì đọc **hợp đồng hiển thị** ở dòng
 **CR-090** trong `doc/tai-lieu-ky-thuat/change-log.md` trước — 5 điều kiện về xuống dòng /
 ô chỉ xem / ô chọn NCC / phím Enter / bề rộng cột, làm hụt là lủng đúng chỗ vừa sửa lỗi.

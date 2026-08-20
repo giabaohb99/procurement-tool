@@ -96,7 +96,7 @@ export function PurchaseOrderItemsTable({
     },
     {
       key: 'code',
-      header: 'Mã hàng',
+      header: 'Mã hàng *',
       // Rộng hơn bề ngang của mã: ô còn chứa nút chép mã và nút lịch sử mua hàng.
       width: 212,
       minWidth: 100,
@@ -111,9 +111,9 @@ export function PurchaseOrderItemsTable({
       hideable: false,
       defaultPinned: true,
     },
-    { key: 'unit', header: 'ĐVT', width: 90, minWidth: 50 },
-    { key: 'qty', header: 'SL đặt', width: 100, minWidth: 60, align: 'right' },
-    { key: 'price', header: 'Đơn giá', width: 130, minWidth: 70, align: 'right' },
+    { key: 'unit', header: 'ĐVT *', width: 90, minWidth: 50 },
+    { key: 'qty', header: 'SL đặt *', width: 108, minWidth: 60, align: 'right' },
+    { key: 'price', header: 'Đơn giá *', width: 130, minWidth: 70, align: 'right' },
     {
       key: 'vat',
       header: 'VAT%',

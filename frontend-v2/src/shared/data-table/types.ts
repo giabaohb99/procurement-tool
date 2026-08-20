@@ -3,6 +3,11 @@ import type { ReactNode } from 'react'
 export interface DataTableColumn<T> {
   /** Khóa cột — dùng làm id khi ẩn/hiện và khi nhớ độ rộng. Phải duy nhất trong bảng. */
   key: string
+  /**
+   * Tiêu đề cột. Kết thúc bằng `" *"` = cột BẮT BUỘC nhập: bảng tự tách phần đó
+   * ra và vẽ dấu sao màu đỏ (`required-header.ts`). Đừng tự chèn thẻ vào đây —
+   * chuỗi này còn dùng làm nhãn kéo thả và tên cột trong menu ẩn/hiện.
+   */
   header: string
   /** Nội dung ô. Trả `null`/chuỗi rỗng thì bảng tự hiện dấu gạch ngang. */
   cell: (row: T) => ReactNode
@@ -39,6 +44,7 @@ export interface DataTableColumn<T> {
 export interface LinesTableColumn {
   /** Khóa cột — vừa là id nhớ bố cục, vừa là nhánh `switch` trong `renderCell`. */
   key: string
+  /** Kết thúc bằng `" *"` = cột bắt buộc nhập — xem `DataTableColumn.header`. */
   header: string
   /** Độ rộng ban đầu (px). */
   width?: number

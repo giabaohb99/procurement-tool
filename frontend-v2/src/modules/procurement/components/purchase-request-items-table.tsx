@@ -164,7 +164,7 @@ export function PurchaseRequestItemsTable({
     },
     {
       key: 'warehouse',
-      header: 'Kho nhận',
+      header: 'Kho nhận *',
       width: 220,
       minWidth: 100,
       compactHidden: true,
@@ -177,7 +177,7 @@ export function PurchaseRequestItemsTable({
       compactHidden: true,
     },
     { key: 'unit', header: 'ĐVT', width: 80, minWidth: 50 },
-    { key: 'qty', header: 'SL', width: 80, minWidth: 50, align: 'right' },
+    { key: 'qty', header: 'SL *', width: 88, minWidth: 50, align: 'right' },
     { key: 'price', header: 'Đơn giá', width: 112, minWidth: 70, align: 'right' },
     {
       key: 'vat',

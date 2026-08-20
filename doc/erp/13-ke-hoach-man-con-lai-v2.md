@@ -505,7 +505,7 @@ Google có dạng bốn cụm cách nhau.
 
 ---
 
-## 6. Hợp nhất Logic Bảng dòng hàng & Quy chuẩn UX chung *(CR-101, CR-102)*
+## 6. Hợp nhất Logic Bảng dòng hàng & Quy chuẩn UX chung *(CR-101, CR-102, CR-107)*
 
 Khách yêu cầu: *"trên yêu cầu mua hàng, yêu cầu báo giá, đơn mua hàng thì cái bảng cũng có dạng cột cố định, đổi vị trí, rút gọn/đầy đủ như phần sản phẩm... gom chung 1 logic hết"*. 
 
@@ -580,6 +580,51 @@ CR-106** — bốn dòng đã trả, bốn dòng còn nợ:
 | `crud-detail-page.tsx` | Khối form + `renderExtra` + `AuditTimeline` bị **chép nguyên hai lần** cho nhánh có tab và nhánh không tab | Sửa một chỗ quên chỗ kia là hai màn lệch nhau | ~~Còn nợ~~ **Đã trả** — gom thành `infoPanel` dựng một lần |
 | `crud-detail-page.tsx` vs `crud-form-dialog.tsx` | `FormFieldItem`/`SelectField` và `DetailFormFieldItem`/`DetailSelectField` **trùng nhau ~85 dòng** | Cùng một ô nhập mà hai bản, sửa quy tắc hiển thị phải nhớ cả hai | ~~Còn nợ~~ **Đã trả** — gộp về `crud-field.tsx` |
 | `crud-detail-page.tsx:83`, `crud-form-dialog.tsx:77` | `useEffect` thiếu phụ thuộc `buildDefaultValues`, `reset` | Mở lại form với bản ghi khác có thể còn giữ giá trị cũ | ~~Còn nợ~~ **Đã trả** *(CR-106)* |
+
+### 6.6 Trường bắt buộc của ba chứng từ — dấu sao đỏ và cổng gửi duyệt *(CR-107)*
+
+Khách yêu cầu: *"ở đơn mua hàng, yêu cầu mua hàng + yêu cầu báo giá... chổ đó đánh dấu \* đỏ lên
+buộc phải nhập đó"*.
+
+**Bộ trường lấy từ nguồn, không lấy theo trí nhớ:**
+
+| Chứng từ | Bắt buộc trên từng dòng | Nguồn của luật |
+|---|---|---|
+| **ĐMH** | Mã hàng · Phân loại · Tên hàng · Tên trên hóa đơn · ĐVT · Kho nhận mặc định · SL yêu cầu · SL đặt · Đơn giá · Ngày yêu cầu có hàng · Ngày dự kiến có hàng *(11 ô)* | `TRUONG_BAT_BUOC_DONG` ở `backend/app/modules/purchase_order/service.py` — cổng **CR-095**, backend chặn thật |
+| **YCMH** | Mã hàng · Số lượng mua · Kho nhận · Ngày cần hàng | Bản `frontend` đang chạy thật. Backend **không kiểm** nội dung ở `submit_pr` |
+| **YCBG** | Phân loại | Như trên; khách chốt **bắt buộc cứng**, bỏ luật "Phân loại HOẶC Chi tiết thông số" của bản v2 |
+
+**Cách làm:**
+
+1. **Một nguồn duy nhất** — `modules/procurement/utils/required-fields.ts` vừa là nguồn vẽ dấu sao,
+   vừa là nguồn câu chặn. Trước đây dấu sao là chữ `*` gõ thẳng vào chuỗi nhãn còn hàm `validate`
+   nằm rải ba trang; hai thứ trôi khỏi nhau lúc nào không ai biết.
+2. **Chặn ở GỬI DUYỆT, không chặn ở LƯU** — phiếu nháp vẫn cất dở được. Chỉ vài ô đầu phiếu (công
+   ty, người yêu cầu, mục đích) mới chặn ngay từ nút *Lưu* vì thiếu chúng backend không dựng nổi
+   bản ghi. Nối vào **cả hai** lối gửi duyệt: `handleSave(true)` *(phiếu chưa lưu)* và
+   `handleAction('submit')` *(phiếu đã lưu)* — trước đây chỉ lối thứ nhất được kiểm.
+3. **Tiêu đề cột khai bằng đuôi `" *"`** — `shared/data-table/required-header.ts` tách ra, ô tiêu đề
+   vẽ dấu sao `text-destructive`. Cố ý **không** nới `header` thành `ReactNode`: chuỗi đó còn làm
+   nhãn khối kéo thả (`startDrag`), tên cột trong menu *Cột* và số đo bề rộng tự động — cho JSX vào
+   là gãy cả ba chỗ. Ba nơi hiển thị tên cột nay gọi `columnLabel()`. Ô nhập trong biểu mẫu / popup
+   thì dùng `shared/ui/required-mark.tsx`.
+4. **ĐMH thiếu hẳn hai ô bắt buộc** — popup chi tiết dòng không có ô cho `qty_request` lẫn
+   `expected_date`; riêng `expected_date` còn **thiếu trong kiểu `PurchaseOrderItem`** và không nằm
+   trong `toPurchaseOrderPayload`, nên có thêm ô thì giá trị cũng bị nuốt. Đã vá đủ tầng. Backend tự
+   điền `expected_date` khi để trống *(theo dòng YCMH nguồn, không có thì theo thời gian chuẩn của
+   phân loại)* nhưng tự điền **hụt** với dòng thêm tay hoặc phân loại chưa khai thời gian chuẩn —
+   đúng lúc đó cổng CR-095 chặn.
+
+**Ba chỗ người sau dễ vấp:**
+
+* **VAT cố ý KHÔNG bắt buộc** ở cả ba chứng từ — `0` vừa nghĩa "chưa nhập" vừa nghĩa "hàng không
+  chịu thuế"; bắt buộc là chặn oan hàng 0%.
+* **"Ngày cần hàng" của YCMH không có cột trên bảng**, chỉ nhập trong popup chi tiết dòng — giống
+  hệt bản `frontend` đang chạy, không phải sót.
+* **"Tên trên hóa đơn" của ĐMH** được backend suy từ danh mục sản phẩm lúc **trả** dữ liệu
+  (`purchase_order/controller.py` `_item()`) chứ không suy lúc **ghi**, nên cột trong DB có thể vẫn
+  rỗng trong khi màn hình đã thấy chữ. Giao diện lọt mà cổng CR-095 chặn là do chỗ này. **Việc
+  backend, chưa làm** — muốn dứt điểm thì cho `service.py` ghi luôn giá trị đã suy lúc lưu.
 
 ---
 

@@ -43,7 +43,7 @@ const columns = useMemo<DataTableColumn<Employee>[]>(() => [
 | Field | Bắt buộc | Ghi chú |
 | --- | --- | --- |
 | `key` | ✓ | Duy nhất trong bảng; là id khi ẩn cột, nhớ độ rộng, thứ tự, màu |
-| `header` | ✓ | **Luôn có chữ**, kể cả cột ảnh/hành động — mục không tên trong menu "Cột" là một dòng trống |
+| `header` | ✓ | **Luôn có chữ**, kể cả cột ảnh/hành động — mục không tên trong menu "Cột" là một dòng trống. Cột bắt buộc nhập thì thêm đuôi `" *"` (xem *Cột bắt buộc* bên dưới) |
 | `cell` | ✓ | `(row) => ReactNode` |
 | `width` | | px, độ rộng ban đầu |
 | `minWidth` | | Chặn dưới khi kéo, mặc định 64 |
@@ -72,6 +72,30 @@ const columns = useMemo<DataTableColumn<Employee>[]>(() => [
 - `storageKey` theo dạng `<module>.<entity>` (`hr.employees`, `document.records`).
 - Ô hành động: bọc `onClick={(e) => e.stopPropagation()}`, nếu không mỗi lần bấm nút sẽ mở luôn trang chi tiết vì `onRowClick` bắt được.
 - Nội dung dài: thêm `truncate` trong `cell`. Bảng chạy `table-fixed` nên ô không tự nong ra.
+
+### Cột bắt buộc — khai bằng đuôi `" *"`
+
+Cột nào **bắt buộc nhập** thì viết tiêu đề kết thúc bằng dấu cách rồi dấu sao:
+
+```ts
+{ key: 'warehouse_code', header: 'Kho nhận *', width: 120 }
+```
+
+`shared/data-table/required-header.ts` tách đuôi đó ra, ô tiêu đề vẽ chữ bình thường
+cộng một dấu sao `text-destructive` kèm lời nhắc *"Bắt buộc trước khi gửi duyệt"*.
+
+- **Đừng đổi `header` thành `ReactNode` để nhét JSX vào.** Chuỗi tiêu đề còn được
+  dùng làm nhãn khối kéo thả (`startDrag`), tên cột trong menu **Cột** và số đo bề
+  rộng tự động — cho JSX vào là gãy cả ba chỗ. Ba nơi đó gọi `columnLabel(header)`
+  nên tên cột hiện ra không dính dấu sao.
+- Quy ước là **dấu cách rồi mới tới sao**. `'SL*'` viết liền bị coi là tiêu đề thường,
+  cố ý vậy để tiêu đề có `*` sẵn (ví dụ `'VAT%*'` gõ thiếu dấu cách) không bị cắt cụt.
+- Dấu sao chỉ để **báo**; phần **chặn** nằm ở validator của phân hệ. Với ba chứng từ
+  mua hàng, bộ trường bắt buộc khai một chỗ duy nhất tại
+  `modules/procurement/utils/required-fields.ts` (xem **CR-107**) — sửa dấu sao mà
+  quên sửa validator là hai thứ trôi khỏi nhau.
+- Ô nhập trong biểu mẫu / popup thì dùng `shared/ui/required-mark.tsx`
+  (`<RequiredMark />`, đổi lời nhắc bằng prop `hint`), đừng gõ `*` thẳng vào chuỗi nhãn.
 
 ---
 

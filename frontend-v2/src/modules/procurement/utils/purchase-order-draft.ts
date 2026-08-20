@@ -87,6 +87,7 @@ export function toPurchaseOrderPayload(data: PurchaseOrderDetail): PurchaseOrder
         document_delivery_date: item.document_delivery_date,
         supplier_ready: !!item.supplier_ready,
         required_date: item.required_date,
+        expected_date: item.expected_date,
         unit: item.unit,
         qty_request: Number(item.qty_request) || 0,
         qty_order: Number(item.qty_order) || 0,
@@ -97,26 +98,6 @@ export function toPurchaseOrderPayload(data: PurchaseOrderDetail): PurchaseOrder
         deliveries: item.deliveries ?? [],
       })),
   }
-}
-
-/** Trả về câu báo lỗi đầu tiên, chuỗi rỗng nếu hợp lệ. */
-export function validatePurchaseOrder(data: PurchaseOrderDetail): string {
-  if (!data.company_id) return 'Vui lòng chọn Công ty nhận hóa đơn'
-  if (!data.supplier_code) return 'Vui lòng chọn Nhà cung cấp bán hàng'
-
-  const lines = data.items.filter((item) => item.product_name.trim() || item.product_code.trim())
-  if (!lines.length) return 'Cần ít nhất một dòng hàng'
-
-  // Mỗi mã hàng CHỈ một dòng: dòng ĐMH nối về dòng YCMH bằng mã, trùng mã là
-  // tiến độ số lượng của cả hai phiếu sai.
-  const seen = new Set<string>()
-  for (const line of lines) {
-    const code = line.product_code.trim()
-    if (!code) continue
-    if (seen.has(code)) return `Mã hàng bị trùng: ${code}. Mỗi mã chỉ được một dòng.`
-    seen.add(code)
-  }
-  return ''
 }
 
 /** Kết quả dựng dòng ĐMH từ phiếu YCMH. */
@@ -177,6 +158,9 @@ function toOrderLine(item: PurchaseRequestItem, qty: number): PurchaseOrderItem 
     supplier_ready: true,
     // Ngày cần hàng ở YCMH → Ngày yêu cầu có hàng ở ĐMH.
     required_date: item.required_date || '',
+    // TG dự kiến có hàng ở YCMH → Ngày dự kiến có hàng ở ĐMH. Rỗng thì backend
+    // tự tính theo thời gian chuẩn của phân loại.
+    expected_date: item.expected_date || '',
     unit: item.unit,
     qty_request: qty,
     qty_order: qty,

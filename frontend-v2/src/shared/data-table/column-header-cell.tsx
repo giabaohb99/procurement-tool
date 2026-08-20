@@ -1,9 +1,11 @@
 import { useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 
+import { RequiredMark } from '@/shared/ui/required-mark'
 import { TableHead } from '@/shared/ui/table'
 import { cn } from '@/shared/utils/cn'
 import { ColumnDropIndicator } from './column-drop-indicator'
 import { ColumnResizeHandle } from './column-resize-handle'
+import { splitRequiredHeader } from './required-header'
 import type { ColumnDropSide, DataTableColumn } from './types'
 
 interface ColumnHeaderCellProps<T> {
@@ -42,6 +44,7 @@ export function ColumnHeaderCell<T>({
   onDragStart,
 }: ColumnHeaderCellProps<T>) {
   const [resizing, setResizing] = useState(false)
+  const { label, required } = splitRequiredHeader(column.header)
 
   return (
     <TableHead
@@ -55,7 +58,10 @@ export function ColumnHeaderCell<T>({
       )}
       onPointerDown={onDragStart}
     >
-      <span className="pointer-events-none block truncate">{column.header}</span>
+      <span className="pointer-events-none block truncate">
+        {label}
+        {required && <RequiredMark />}
+      </span>
       {dropSide && <ColumnDropIndicator side={dropSide} />}
       <ColumnResizeHandle
         minWidth={minWidth}

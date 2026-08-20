@@ -4,6 +4,7 @@ import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
+import { RequiredMark } from '@/shared/ui/required-mark'
 import {
   Select,
   SelectContent,
@@ -69,7 +70,8 @@ export function PurchaseRequestInfoCard({
 
         <div className="space-y-1.5">
           <Label>
-            Ngày tiếp nhận <span className="text-destructive">*</span>
+            Ngày tiếp nhận
+            <RequiredMark />
           </Label>
           {editing ? (
             <DatePicker
@@ -83,7 +85,8 @@ export function PurchaseRequestInfoCard({
 
         <div className="space-y-1.5">
           <Label>
-            Công ty nhận hóa đơn <span className="text-destructive">*</span>
+            Công ty nhận hóa đơn
+            <RequiredMark />
           </Label>
           {editing && companies.length ? (
             <Select
@@ -111,7 +114,8 @@ export function PurchaseRequestInfoCard({
 
         <div className="space-y-1.5">
           <Label>
-            Nhân sự YC <span className="text-destructive">*</span>
+            Nhân sự YC
+            <RequiredMark />
           </Label>
           {editing && employees.length ? (
             <Select
@@ -157,7 +161,9 @@ export function PurchaseRequestInfoCard({
             <ReadOnlyValue>{data.requester || 'Chưa chọn nhân sự'}</ReadOnlyValue>
           )}
         </div>
-        <Field label="Bộ phận YC *">{data.department}</Field>
+        <Field label="Bộ phận YC" required>
+          {data.department}
+        </Field>
 
         <div className="space-y-1.5">
           <Label>Chức vụ (Nếu có)</Label>
@@ -233,7 +239,8 @@ export function PurchaseRequestInfoCard({
 
         <div className="space-y-1.5">
           <Label>
-            Mục đích mua hàng <span className="text-destructive">*</span>
+            Mục đích mua hàng
+            <RequiredMark />
           </Label>
           {editing ? (
             <Textarea
@@ -266,10 +273,25 @@ export function PurchaseRequestInfoCard({
 }
 
 /** Ô chỉ đọc: dữ liệu do backend gán, màn này không cho sửa. */
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  required,
+  children,
+}: {
+  label: string
+  /**
+   * Ô bắt buộc. Nhãn ở đây là chữ mờ nhưng dấu sao vẫn đỏ — `RequiredMark` mang
+   * màu riêng nên không bị `text-muted-foreground` nuốt thành xám.
+   */
+  required?: boolean
+  children: React.ReactNode
+}) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-muted-foreground">{label}</Label>
+      <Label className="text-muted-foreground">
+        {label}
+        {required && <RequiredMark />}
+      </Label>
       <ReadOnlyValue>{children}</ReadOnlyValue>
     </div>
   )

@@ -68,9 +68,9 @@ import { PO_STATUS_LABELS } from '../types/purchase-document'
 import {
   createEmptyPurchaseOrder,
   toPurchaseOrderPayload,
-  validatePurchaseOrder,
   type PurchaseOrderDraftFromRequest,
 } from '../utils/purchase-order-draft'
+import { validatePurchaseOrder } from '../utils/required-fields'
 import { summarizeShipping } from '../utils/purchase-order-shipping'
 import {
   isDeliveryStage,
@@ -249,6 +249,16 @@ export function PurchaseOrderDetailPage() {
     if (action === 'return' || action === 'reject' || action === 'cancel') {
       setReasonFor(action)
       return
+    }
+    // Chặn trước ở màn thay vì để API trả 400: câu của backend gộp hết dòng
+    // thiếu vào một dòng chữ dài, đọc trong hộp thoại lỗi rất khó dò. Đây chỉ là
+    // bản sao cho êm — backend vẫn kiểm lại (CR-095).
+    if (action === 'submit') {
+      const message = validatePurchaseOrder(data, true)
+      if (message) {
+        toast.error(message)
+        return
+      }
     }
     const result = await runAction.mutateAsync({ action })
     if (action === 'copy' && result?.id) {
@@ -623,6 +633,9 @@ function createEmptyPurchaseOrderItem(vatRate: number): PurchaseOrderItem {
     document_delivery_date: '',
     supplier_ready: true,
     required_date: '',
+    // Để rỗng có chủ đích: backend tự điền theo YCMH nguồn / thời gian chuẩn của
+    // phân loại. Tự điền hụt thì người lập sửa tay trong popup chi tiết dòng.
+    expected_date: '',
     unit: '',
     qty_request: 0,
     qty_order: 0,

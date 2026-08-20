@@ -84,6 +84,7 @@ import {
   buildPurchaseOrderLines,
   toDraftFromRequest,
 } from '../utils/purchase-order-draft'
+import { validatePurchaseRequest } from '../utils/required-fields'
 import { purchaseRequestApi } from '../api/purchase-request-api'
 import {
   isClosed,
@@ -269,7 +270,7 @@ export function PurchaseRequestDetailPage() {
   }
 
   async function handleSave(submitAfterSave = false) {
-    const validationMessage = validatePurchaseRequest(loadedDraft)
+    const validationMessage = validatePurchaseRequest(loadedDraft, submitAfterSave)
     if (validationMessage) {
       toast.error(validationMessage)
       return
@@ -319,6 +320,16 @@ export function PurchaseRequestDetailPage() {
       setReasonFor(action)
       setReason('')
       return
+    }
+    // Backend KHÔNG kiểm nội dung phiếu ở `submit_pr` — bộ trường bắt buộc của
+    // dòng (mã hàng / SL / kho / ngày cần hàng) chỉ có màn này giữ, đúng như bản
+    // `frontend` đang chạy. Bỏ nhánh này là phiếu rỗng ruột vẫn lên duyệt được.
+    if (action === 'submit') {
+      const message = validatePurchaseRequest(loadedData, true)
+      if (message) {
+        toast.error(message)
+        return
+      }
     }
     const result = await runAction.mutateAsync({ action })
     if (action === 'copy' && result?.id) {
@@ -810,14 +821,6 @@ export function PurchaseRequestDetailPage() {
       </AlertDialog>
     </PageContainer>
   )
-}
-
-function validatePurchaseRequest(data: PurchaseRequestDetail): string {
-  if (!data.company_id) return 'Vui lòng chọn Công ty'
-  if (!data.requester) return 'Vui lòng chọn Nhân sự yêu cầu'
-  const validItems = data.items.filter((item) => item.product_name.trim())
-  if (!validItems.length) return 'Cần ít nhất một sản phẩm'
-  return ''
 }
 
 function createEmptyPurchaseRequest(user?: AuthUser | null): PurchaseRequestDetail {

@@ -13,6 +13,7 @@ import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
+import { RequiredMark } from '@/shared/ui/required-mark'
 import {
   Select,
   SelectContent,
@@ -121,10 +122,15 @@ export function PurchaseOrderLineDialog({
         </DialogHeader>
 
         <section className="grid min-w-0 gap-x-4 gap-y-3 md:grid-cols-2">
-          <Field label="Mã hàng">{item.product_code || '—'}</Field>
+          <Field label="Mã hàng" required>
+            {item.product_code || '—'}
+          </Field>
 
           <div className="space-y-1.5">
-            <Label>Phân loại</Label>
+            <Label>
+              Phân loại
+              <RequiredMark />
+            </Label>
             {fieldEditable ? (
               <Input
                 value={item.item_group || ''}
@@ -136,7 +142,10 @@ export function PurchaseOrderLineDialog({
           </div>
 
           <div className="space-y-1.5 md:col-span-2">
-            <Label title={received ? PRODUCT_LOCK_HINT : undefined}>Tên hàng</Label>
+            <Label title={received ? PRODUCT_LOCK_HINT : undefined}>
+              Tên hàng
+              <RequiredMark />
+            </Label>
             {fieldEditable && !received ? (
               <Textarea
                 rows={2}
@@ -149,7 +158,12 @@ export function PurchaseOrderLineDialog({
           </div>
 
           <div className="space-y-1.5 md:col-span-2">
-            <Label>Tên trên hóa đơn</Label>
+            <Label>
+              Tên trên hóa đơn
+              {/* Bắt buộc, nhưng backend suy sẵn từ danh mục sản phẩm khi trả dữ
+                  liệu về — nói rõ để người lập không tưởng phải gõ tay mọi dòng. */}
+              <RequiredMark hint="Bắt buộc trước khi gửi duyệt — bỏ trống thì lấy theo danh mục sản phẩm; sản phẩm chưa khai thì phải gõ tay" />
+            </Label>
             {fieldEditable ? (
               <Textarea
                 rows={2}
@@ -218,7 +232,10 @@ export function PurchaseOrderLineDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Ngày yêu cầu có hàng</Label>
+            <Label>
+              Ngày yêu cầu có hàng
+              <RequiredMark />
+            </Label>
             {fieldEditable ? (
               <DatePicker
                 value={item.required_date || ''}
@@ -232,7 +249,52 @@ export function PurchaseOrderLineDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label>ĐVT</Label>
+            <Label>
+              Ngày dự kiến có hàng
+              {/* Hệ thống tự tính khi lưu (theo dòng YCMH nguồn, không có thì
+                  theo thời gian chuẩn của phân loại). Dòng thêm tay hoặc phân
+                  loại chưa khai thời gian chuẩn thì ô ở lại rỗng, phải gõ tay. */}
+              <RequiredMark hint="Bắt buộc trước khi gửi duyệt — bỏ trống thì hệ thống tự tính theo phân loại; không tính được thì phải chọn tay" />
+            </Label>
+            {fieldEditable ? (
+              <DatePicker
+                value={item.expected_date || ''}
+                onChange={(value) => patch({ expected_date: value })}
+              />
+            ) : (
+              <ReadOnlyValue className="tabular-nums">
+                {formatDate(item.expected_date)}
+              </ReadOnlyValue>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>
+              SL yêu cầu
+              <RequiredMark />
+            </Label>
+            {fieldEditable ? (
+              <Input
+                type="number"
+                min={0}
+                step="0.001"
+                value={item.qty_request || ''}
+                onChange={(event) => patch({ qty_request: Number(event.target.value) })}
+              />
+            ) : (
+              // Chỉ xem thì hiện số đã ngăn cách hàng nghìn — ô nhập bắt buộc để
+              // số trần (2000), đọc lướt qua rất dễ nhầm bậc.
+              <ReadOnlyValue className="tabular-nums">
+                {formatQuantity(item.qty_request)}
+              </ReadOnlyValue>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>
+              ĐVT
+              <RequiredMark />
+            </Label>
             {fieldEditable && !received ? (
               <Select value={item.unit || undefined} onValueChange={(value) => patch({ unit: value })}>
                 <SelectTrigger className="w-full">
@@ -252,7 +314,10 @@ export function PurchaseOrderLineDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Kho nhận mặc định</Label>
+            <Label>
+              Kho nhận mặc định
+              <RequiredMark />
+            </Label>
             {fieldEditable ? (
               <Select
                 value={item.warehouse_code || undefined}
@@ -406,10 +471,25 @@ function createEmptyDelivery(item: PurchaseOrderItem, deliveryNo: number) {
   }
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  required,
+  children,
+}: {
+  label: string
+  /**
+   * Ô bắt buộc theo cổng CR-095. Nhãn ở đây là chữ mờ nhưng dấu sao vẫn đỏ —
+   * `RequiredMark` tự mang màu riêng nên không bị `text-muted-foreground` nuốt.
+   */
+  required?: boolean
+  children: React.ReactNode
+}) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-muted-foreground">{label}</Label>
+      <Label className="text-muted-foreground">
+        {label}
+        {required && <RequiredMark />}
+      </Label>
       <ReadOnlyValue className="tabular-nums">{children}</ReadOnlyValue>
     </div>
   )

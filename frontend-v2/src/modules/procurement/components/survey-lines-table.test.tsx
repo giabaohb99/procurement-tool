@@ -48,7 +48,10 @@ describe('SurveyLinesTable', () => {
     renderTable()
     const headers = headerNames()
 
-    expect(headers).toContain('NCC (viết tắt) *')
+    // Tiêu đề khai là 'NCC (viết tắt) *' nhưng bảng tách đuôi " *" ra thành dấu
+    // sao đỏ (`shared/data-table/required-header.ts`), nên chữ đọc được không
+    // còn dấu cách trước dấu sao.
+    expect(headers).toContain('NCC (viết tắt)*')
     expect(headers).not.toContain('Chính sách công nợ')
   })
 

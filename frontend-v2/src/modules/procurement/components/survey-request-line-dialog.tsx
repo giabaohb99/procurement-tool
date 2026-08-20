@@ -14,6 +14,7 @@ import {
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
+import { RequiredMark } from '@/shared/ui/required-mark'
 import {
   Select,
   SelectContent,
@@ -113,7 +114,7 @@ export function SurveyRequestLineDialog({
         </DialogHeader>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <LineField label="Phân loại *">
+          <LineField label="Phân loại" required>
             {editing ? (
               <CatalogSelect
                 value={draft.item_group}
@@ -314,10 +315,22 @@ export function SurveyRequestLineDialog({
   )
 }
 
-function LineField({ label, children }: { label: string; children: React.ReactNode }) {
+function LineField({
+  label,
+  required,
+  children,
+}: {
+  label: string
+  /** Ô bắt buộc — vẽ dấu sao đỏ. Bộ trường lấy từ `utils/required-fields.ts`. */
+  required?: boolean
+  children: React.ReactNode
+}) {
   return (
     <div className="space-y-1.5">
-      <Label>{label}</Label>
+      <Label>
+        {label}
+        {required && <RequiredMark />}
+      </Label>
       {children}
     </div>
   )

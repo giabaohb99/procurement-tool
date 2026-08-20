@@ -88,6 +88,7 @@ import {
   type SurveyRequestDetail,
   type SurveyRequestLine,
 } from '../types/survey-request-detail'
+import { validateSurveyRequest } from '../utils/required-fields'
 
 /** Tệp đính kèm của DÒNG khảo sát — đầu phiếu YCBG không có khu đính kèm riêng. */
 const LINE_ATTACHMENT_ENTITY = 'survey_request_line'
@@ -313,7 +314,7 @@ export function SurveyRequestDetailPage() {
   }
 
   async function handleSave(submitAfterSave = false) {
-    const message = validateSurveyRequest(loadedDraft)
+    const message = validateSurveyRequest(loadedDraft, submitAfterSave)
     if (message) {
       toast.error(message)
       return
@@ -730,19 +731,6 @@ export function SurveyRequestDetailPage() {
 }
 
 /** Trả về chuỗi lỗi đầu tiên gặp phải, rỗng nghĩa là hợp lệ. */
-function validateSurveyRequest(data: SurveyRequestDetail): string {
-  if (!data.company_id) return 'Vui lòng chọn Công ty'
-  if (!data.requester) return 'Vui lòng nhập Người yêu cầu'
-  if (!data.purpose) return 'Vui lòng nhập Mục đích khảo sát'
-  if (!data.lines.length) return 'Cần ít nhất 1 dòng sản phẩm cần khảo sát'
-  for (const line of data.lines) {
-    if (!line.item_group && !line.requirement_detail) {
-      return 'Mỗi dòng cần có Phân loại hoặc Chi tiết thông số'
-    }
-  }
-  return ''
-}
-
 function createEmptySurveyRequest(user?: AuthUser | null): SurveyRequestDetail {
   return {
     id: 0,

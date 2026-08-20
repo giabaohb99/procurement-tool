@@ -11,6 +11,7 @@ import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
+import { RequiredMark } from '@/shared/ui/required-mark'
 import {
   Select,
   SelectContent,
@@ -126,7 +127,8 @@ export function PurchaseOrderInfoCard({
 
         <div className="space-y-1.5">
           <Label>
-            Công ty nhận hóa đơn <span className="text-destructive">*</span>
+            Công ty nhận hóa đơn
+            <RequiredMark />
           </Label>
           {editable && companies.length ? (
             <Select
@@ -165,7 +167,8 @@ export function PurchaseOrderInfoCard({
 
         <div className="space-y-1.5">
           <Label>
-            Nhà cung cấp bán hàng <span className="text-destructive">*</span>
+            Nhà cung cấp bán hàng
+            <RequiredMark />
           </Label>
           {editable && suppliers.length ? (
             <Select

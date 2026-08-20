@@ -23,6 +23,7 @@ export interface PurchaseOrderItemPayload
     | 'document_delivery_date'
     | 'supplier_ready'
     | 'required_date'
+    | 'expected_date'
     | 'unit'
     | 'qty_request'
     | 'qty_order'

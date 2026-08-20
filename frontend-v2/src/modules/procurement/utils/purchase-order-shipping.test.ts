@@ -41,6 +41,7 @@ function item(deliveries: PurchaseOrderDelivery[]): PurchaseOrderItem {
     document_delivery_date: '',
     supplier_ready: false,
     required_date: '',
+    expected_date: '',
     unit: 'Cái',
     qty_request: 0,
     qty_order: 0,
