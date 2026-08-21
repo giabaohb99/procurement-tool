@@ -17,6 +17,7 @@ import { PaginationPlus } from 'tiptap-pagination-plus'
 
 import { cn } from '@/shared/utils/cn'
 import { EditorContextMenu } from './editor-context-menu'
+import { applyImportedContent, hasEditorContent, type DocumentImportMode } from './editor-import'
 import { EditorOutlinePanel } from './editor-outline-panel'
 import { EditorRuler, type PageMargins } from './editor-ruler'
 import { EditorToolbar } from './editor-toolbar'
@@ -39,6 +40,7 @@ import {
 } from './table-cell-background-extension'
 import { TableWithColumnResizing } from './table-column-resizing-extension'
 import { TableRowWithHeight } from './table-row-resizing-extension'
+import { SpreadsheetPaste } from './spreadsheet-paste-extension'
 import { useFillViewportHeight } from './use-fill-viewport-height'
 
 /** Khổ giấy và lề — số gốc ở `page-format.ts`, dùng chung với bản in. */
@@ -101,8 +103,10 @@ interface RichTextEditorProps {
 }
 
 export interface RichTextEditorHandle {
-  /** Chèn HTML tại con trỏ theo chế độ tối ưu cho tài liệu lớn. */
-  insertContent: (html: string) => Promise<boolean>
+  /** Trình soạn thảo đang có nội dung thật, không tính đoạn rỗng mặc định. */
+  hasContent: () => boolean
+  /** Chèn tại con trỏ hoặc ghi đè toàn bộ theo chế độ nhập đã chọn. */
+  insertContent: (html: string, mode?: DocumentImportMode) => Promise<boolean>
   /** Nhảy tới node đầu tiên được dựng từ một trang PDF trong báo cáo import. */
   focusImportedPage: (importId: string, page: number) => boolean
 }
@@ -207,6 +211,9 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         // Chỉ số trên / dưới — cần cho ký hiệu m², số mũ trong phụ lục.
         Subscript,
         Superscript,
+        // Excel đính kèm cả bảng lẫn ảnh xem trước; ưu tiên bảng để dán vào các
+        // ô đang bôi đen thay vì biến vùng Excel thành một tấm hình.
+        SpreadsheetPaste,
         ImageWithSize.configure({ inline: false, allowBase64: true }),
         ImportTrace,
         // Giữ vệt bôi đen khi bấm sang thanh công cụ — nếu không, mở một ô chọn
@@ -301,7 +308,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
     useImperativeHandle(
       ref,
       () => ({
-        insertContent: async (html) => {
+        hasContent: () => Boolean(editor && !editor.isDestroyed && hasEditorContent(editor)),
+        insertContent: async (html, mode = 'insert') => {
           if (!editor || editor.isDestroyed) return false
 
           const paginationEnabled = editor.storage.PaginationPlus.enabled
@@ -320,7 +328,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
             // lý; editor đã hủy thì dừng êm thay vì gọi command vào view cũ.
             if (editor.isDestroyed) return false
 
-            const inserted = editor.chain().focus().insertContent(html).run()
+            const inserted = applyImportedContent(editor, html, mode)
             if (!inserted) return false
 
             await afterPaint()

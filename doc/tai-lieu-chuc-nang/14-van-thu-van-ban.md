@@ -122,6 +122,8 @@ Thanh công cụ **tự co theo bề ngang màn hình**: hụt chỗ thì các l
 
 **Menu chuột phải**: Cắt/Sao chép/Dán/Dán chữ thuần · Đậm/Nghiêng/Gạch chân/Xóa định dạng · Mở & gỡ liên kết · submenu **Bảng** đầy đủ (thêm/xóa hàng cột, gộp ô, tách ô, hàng tiêu đề, cột tiêu đề, chia đều bề ngang, xóa bảng) · bảng màu nền ô.
 
+**Dán từ Excel / Google Sheets**: copy một vùng ô, bôi chọn vùng ô tương ứng trong bảng của trình soạn rồi nhấn Ctrl/Cmd+V — dữ liệu được rải theo đúng hàng/cột và vẫn sửa được, **không dán thành ảnh**. Nếu không đứng trong bảng, vùng Excel được chèn thành một bảng mới. Menu chuột phải **Dán** dùng cùng quy tắc này; ảnh copy thông thường vẫn dán thành ảnh.
+
 ### 4.3 Mục lục và thước
 
 - **Mục lục** đọc thẳng các tiêu đề trong bài, thụt theo cấp, tô sáng mục đang đứng, bấm là cuộn tới. Cột kéo giãn được (160–420px).
@@ -130,7 +132,10 @@ Thanh công cụ **tự co theo bề ngang màn hình**: hụt chỗ thì các l
 
 ### 4.4 Nhập tệp
 
-Nút **Nhập tệp** có ở cả trang soạn văn bản thật lẫn trang dựng mẫu. Nhận **.doc · .docx · .pdf · .md · .html**, tối đa **10MB**, chèn **tại vị trí con trỏ** nên ghép được vào bản đang gõ dở.
+Nút **Nhập tệp** có ở cả trang soạn văn bản thật lẫn trang dựng mẫu. Nhận **.doc · .docx · .pdf · .md · .html**, tối đa **10MB**. Nếu trình soạn thảo đã có nội dung, hệ thống hỏi một trong hai cách:
+
+- **Chèn tại vị trí con trỏ** (mặc định an toàn): giữ nguyên phần đã soạn và gắn nội dung tệp vào đúng chỗ con trỏ.
+- **Ghi đè toàn bộ**: xóa nội dung đang có rồi thay bằng toàn bộ nội dung tệp; lựa chọn mang màu cảnh báo. Editor đang rỗng thì nhập thẳng, không hiện hộp hỏi.
 
 - **DOCX** đọc thẳng OpenXML, giữ định dạng đoạn/chữ/danh sách/bảng/ảnh.
 - **PDF có lớp chữ** dựng lại được thành văn bản sửa được; PDF scan giữ nguyên dạng ảnh trang.

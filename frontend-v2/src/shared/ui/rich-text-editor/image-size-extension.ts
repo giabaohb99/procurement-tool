@@ -4,6 +4,8 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { Plugin } from '@tiptap/pm/state'
 import { toast } from 'sonner'
 
+import { clipboardHasSpreadsheetTable } from './spreadsheet-clipboard'
+
 const MAX_PASTED_IMAGE_SIZE = 1024 * 1024
 const MAX_EDITOR_IMAGE_WIDTH = 642
 
@@ -225,6 +227,11 @@ export const ImageWithSize = Image.extend({
       new Plugin({
         props: {
           handlePaste: (_view, event) => {
+            // Excel chép một vùng ô thường đính kèm cả ẢNH XEM TRƯỚC. Bảng HTML
+            // hoặc TSV phải thắng file ảnh, nếu không vùng Excel bị dán thành
+            // hình và không còn sửa từng ô được.
+            if (clipboardHasSpreadsheetTable(event.clipboardData)) return false
+
             const images = Array.from(event.clipboardData?.files ?? []).filter((file) =>
               file.type.startsWith('image/'),
             )
