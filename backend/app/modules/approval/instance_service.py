@@ -8,10 +8,10 @@ from datetime import datetime, timedelta
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from . import approver_resolver, entity_hooks, flow_service
+from . import approver_resolver, entity_hooks, flow_service, task_notification
 from .flow_model import (MULTI_ALL, MULTI_ANY, MULTI_QUORUM, MULTI_SEQUENTIAL,
-                         NO_APPROVER_ESCALATE, NO_APPROVER_FALLBACK,
-                         NODE_CC, SKIP_ADJACENT, SKIP_ANY_BEFORE, SKIP_NONE)
+                         NO_APPROVER_FALLBACK, NODE_CC, SKIP_ADJACENT,
+                         SKIP_ANY_BEFORE, SKIP_NONE)
 from .instance_model import (ACTION_APPROVE, ACTION_FINISH,
                              ACTION_SKIP_DUPLICATE, ACTION_START,
                              INSTANCE_APPROVED, INSTANCE_BLOCKED,
@@ -135,8 +135,9 @@ def mo_chang(db: Session, instance: ApprovalInstance, subject: dict, seq: int) -
     han = datetime.now() + timedelta(hours=node.sla_hours) if node.sla_hours else None
     lan_luot = node.multi_mode == MULTI_SEQUENTIAL
 
+    viec_moi = []
     for thu_tu, employee_id in enumerate(nguoi_duyet, start=1):
-        db.add(ApprovalTask(
+        task = ApprovalTask(
             instance_id=instance.id, node_seq=seq, node_name=node.name or "",
             order_no=thu_tu, assignee_employee_id=employee_id,
             #  Bước "lần lượt" chỉ mở việc cho người đầu; những người sau còn
@@ -144,8 +145,13 @@ def mo_chang(db: Session, instance: ApprovalInstance, subject: dict, seq: int) -
             status=TASK_WAITING if (lan_luot and thu_tu > 1) else TASK_PENDING,
             due_at=han, created_by=instance.updated_by or 0,
             updated_by=instance.updated_by or 0,
-        ))
+        )
+        db.add(task)
+        viec_moi.append(task)
     db.flush()
+    #  Báo NGAY khi việc mở ra. Không báo thì việc nằm im trong hộp «Việc của
+    #  tôi» tới lúc người duyệt tự nhớ ra mà mở hộp — phiếu chết giữa luồng.
+    task_notification.bao_viec_moi(db, instance, viec_moi)
 
 
 def _bo_nguoi_nop(instance: ApprovalInstance, node, ids: list[int]) -> list[int]:
@@ -217,46 +223,31 @@ def _khong_co_nguoi_duyet(db: Session, instance: ApprovalInstance, node, subject
 
     ⚠️ **Không có nhánh "tự động duyệt qua"**, và đó là chủ ý. Lark có tùy chọn
     đó; với văn bản nó tạo ra văn bản CÓ HIỆU LỰC mà không ai chịu trách nhiệm.
-    Ba lối còn lại đều để lại một người cụ thể phải bấm.
+    Hai lối còn lại đều để lại một người cụ thể phải bấm.
+
+    ⚠️ **Nhánh "đẩy lên cấp trên" ĐÃ BỎ** (21/08/2026, CR-114). Nó là chỗ duy
+    nhất bộ máy TỰ CHỌN một người không có tên trong luồng — chủ đầu tư chốt
+    phiếu phải đi đúng luồng đã khai, không ai thay ai. Luồng cũ còn khai giá
+    trị đó thì nay rơi thẳng xuống *dừng phiếu*: hiện ra để người ta sửa luồng,
+    chứ không lặng lẽ giao cho một người lạ.
     """
     if node.on_no_approver == NO_APPROVER_FALLBACK and node.fallback_employee_id:
-        db.add(ApprovalTask(
+        task = ApprovalTask(
             instance_id=instance.id, node_seq=node.seq, node_name=node.name or "",
             order_no=1, assignee_employee_id=node.fallback_employee_id,
             status=TASK_PENDING, created_by=instance.updated_by or 0,
             updated_by=instance.updated_by or 0,
-        ))
+        )
+        db.add(task)
         ghi_dau_vet(db, instance, ACTION_APPROVE, instance.updated_by or 0,
                     node_seq=node.seq, node_name=node.name or "",
                     comment="Không tìm được người duyệt — chuyển cho người dự phòng")
         db.flush()
+        #  Người dự phòng lại càng phải được báo: họ không hề chờ phiếu này.
+        task_notification.bao_viec_moi(db, instance, [task])
         return
 
-    if node.on_no_approver == NO_APPROVER_ESCALATE:
-        cap_tren = approver_resolver.resolve(
-            db, _buoc_gia_len_cap_tren(node), subject, instance.started_by_employee_id)
-        if cap_tren:
-            for thu_tu, employee_id in enumerate(cap_tren, start=1):
-                db.add(ApprovalTask(
-                    instance_id=instance.id, node_seq=node.seq, node_name=node.name or "",
-                    order_no=thu_tu, assignee_employee_id=employee_id, status=TASK_PENDING,
-                    created_by=instance.updated_by or 0, updated_by=instance.updated_by or 0,
-                ))
-            ghi_dau_vet(db, instance, ACTION_APPROVE, instance.updated_by or 0,
-                        node_seq=node.seq, node_name=node.name or "",
-                        comment="Không tìm được người duyệt — đẩy lên cấp trên")
-            db.flush()
-            return
-
     _ket(db, instance, f"Bước «{node.name or node.seq}» không tìm được người duyệt")
-
-
-def _buoc_gia_len_cap_tren(node):
-    """Bước tạm để hỏi lại người duyệt theo lối "lên 1 cấp"."""
-    from types import SimpleNamespace
-    from .flow_model import APPROVER_LEVEL_UP
-
-    return SimpleNamespace(approver_kind=APPROVER_LEVEL_UP, approver_ref="1")
 
 
 def _ket(db: Session, instance: ApprovalInstance, ly_do: str) -> None:
@@ -320,3 +311,5 @@ def mo_viec_ke_tiep_trong_buoc(db: Session, instance: ApprovalInstance, node) ->
     if cho:
         cho[0].status = TASK_PENDING
         db.flush()
+        #  Tới lượt ai thì báo người đó — việc của họ vừa từ "chờ" sang "phải làm".
+        task_notification.bao_viec_moi(db, instance, [cho[0]])

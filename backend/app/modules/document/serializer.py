@@ -115,6 +115,7 @@ def base_fields(doc: Document) -> dict:
         "seq_no": doc.seq_no,
         "issue_year": doc.issue_year,
         "legacy_code": doc.legacy_code,
+        "storage_location": doc.storage_location,
         "doc_type_id": doc.doc_type_id,
         "company_id": doc.company_id,
         "department_id": doc.department_id,

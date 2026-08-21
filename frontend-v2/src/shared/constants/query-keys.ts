@@ -88,6 +88,9 @@ export const queryKeys = {
     departments: (params?: Record<string, unknown>) => ['hr', 'departments', params ?? {}] as const,
     department: (id: number) => ['hr', 'departments', id] as const,
     departmentCompanies: (id: number) => ['hr', 'departments', id, 'companies'] as const,
+    /** Cặp (phòng ban × pháp nhân) của một nhóm pháp nhân — khóa theo danh sách id. */
+    departmentsByCompanies: (companyIds: number[]) =>
+      ['hr', 'departments', 'by-companies', [...companyIds].sort((a, b) => a - b)] as const,
     companies: (params?: Record<string, unknown>) => ['hr', 'companies', params ?? {}] as const,
     company: (id: number) => ['hr', 'companies', id] as const,
     roles: (params?: Record<string, unknown>) => ['hr', 'roles', params ?? {}] as const,
@@ -112,6 +115,8 @@ export const queryKeys = {
      * hiện một bản ghi lẻ.
      */
     numberingRule: (id: number) => ['document', 'numbering-rules', 'detail', id] as const,
+    /** Mã đưa vào số hiệu, gom từ năm bảng — chỉ nạp khi mở hộp thoại sửa mã. */
+    issueCodes: () => ['document', 'issue-codes'] as const,
     docTypes: () => ['document', 'doc-types'] as const,
     docType: (id: number) => ['document', 'doc-types', id] as const,
     templates: (params?: Record<string, unknown>) =>
@@ -127,6 +132,8 @@ export const queryKeys = {
     /** Số liệu trang tổng quan Văn thư, theo bộ lọc của thanh trên cùng trang. */
     dashboard: (params?: Record<string, unknown>) =>
       ['document', 'dashboard', params ?? {}] as const,
+    /** Gợi ý cho ô «Nơi lưu trữ cứng» — các giá trị đã từng nhập. */
+    storageLocations: () => ['document', 'storage-locations'] as const,
     records: (params?: Record<string, unknown>) => ['document', 'records', params ?? {}] as const,
     record: (id: number) => ['document', 'records', id] as const,
     /** Danh sách phiên bản — KHÔNG kèm nội dung, nhẹ. */
@@ -183,6 +190,9 @@ export const queryKeys = {
   approval: {
     all: ['approval'] as const,
     myTasks: (entity: string) => ['approval', 'my-tasks', entity] as const,
+    /** «Đã duyệt gần đây» — phiếu chính tôi vừa quyết định, theo số ngày nhìn lại. */
+    myHistory: (entity: string, days: number) =>
+      ['approval', 'my-history', entity, days] as const,
     options: () => ['approval', 'options'] as const,
     flows: (entity: string) => ['approval', 'flows', entity] as const,
     flow: (id: number) => ['approval', 'flows', 'detail', id] as const,

@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
+import type { ComponentType } from 'react'
 import type { RouteObject } from 'react-router-dom'
 
 import type { PermissionEntity } from '@/core/authorization/permission-types'
@@ -18,6 +19,16 @@ export interface ModuleNavItem {
    * này gom lại dưới một tiêu đề. Bỏ trống = đứng riêng ở đầu menu, không tiêu đề.
    */
   group?: string
+  /**
+   * Huy hiệu nhỏ ở cuối dòng menu — dùng cho những mục có **số việc đang chờ**
+   * (vd "Chờ tôi duyệt"). Là một COMPONENT chứ không phải con số, vì con số phải
+   * hỏi máy chủ mà `routes.tsx` chỉ là bảng khai báo tĩnh: component tự gọi hook
+   * của phân hệ mình và tự ẩn khi không có việc nào.
+   *
+   * Đừng dùng nó cho nhãn tĩnh kiểu "Mới" — menu đầy huy hiệu thì cái nào cũng
+   * hết nổi bật, mà mục đích của nó đúng là để nổi bật.
+   */
+  badge?: ComponentType
 }
 
 /**

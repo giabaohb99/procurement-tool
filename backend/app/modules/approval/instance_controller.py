@@ -67,6 +67,26 @@ def my_tasks(entity: str = "", db: Session = Depends(get_db),
     return success({"total": len(items), "items": items})
 
 
+@router.get("/my-history")
+def my_history(entity: str = "", days: int = 30, limit: int = 50,
+               db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """ĐÃ DUYỆT GẦN ĐÂY — nhìn lại những phiếu chính tôi vừa quyết định.
+
+    Cùng lý do mở cửa như `/my-tasks`: đây là việc của chính người đăng nhập,
+    không phải dữ liệu của người khác.
+
+    ⚠️ Đây là màn "nhớ lại xem hôm qua mình ký cái gì", **không phải sổ tra
+    cứu** — nên chặn `days` và `limit` ở mức vừa phải. Muốn tra đủ lịch sử thì
+    mở dấu vết của chính văn bản, nơi có cả những người khác đã làm gì.
+    """
+    if not getattr(user, "employee_id", None):
+        return success({"total": 0, "items": []})
+    items = task_service.viec_da_xu_ly(
+        db, user.employee_id, entity,
+        ngay=max(1, min(days, 365)), gioi_han=max(1, min(limit, 200)))
+    return success({"total": len(items), "items": items})
+
+
 @router.get("/of/{entity}/{entity_id}")
 def phien_cua_chung_tu(entity: str, entity_id: int, db: Session = Depends(get_db),
                        user=Depends(get_current_user)):

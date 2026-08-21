@@ -1,5 +1,5 @@
-import { Plus } from 'lucide-react'
-import { useMemo } from 'react'
+import { Plus, Tags } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -11,6 +11,7 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { CatalogTable } from '../components/catalog-table'
+import { IssueCodeDialog } from '../components/issue-code-dialog'
 import { useDocumentNumberingRules } from '../hooks/use-document-numbering-rules'
 import {
   NUMBERING_DIRECTIONS,
@@ -44,6 +45,7 @@ function scopeText(rule: DocumentNumberingRule) {
 export function DocumentNumberingRulesPage() {
   const navigate = useNavigate()
   const [direction, setDirection] = useUrlParamState('direction', '1')
+  const [maDialogOpen, setMaDialogOpen] = useState(false)
 
   const { data, isLoading } = useDocumentNumberingRules(Number(direction) as NumberingDirection)
   const items = useMemo(() => data?.items ?? [], [data?.items])
@@ -119,16 +121,29 @@ export function DocumentNumberingRulesPage() {
         title="Quy tắc đánh số"
         description="Thiết lập mẫu số hiệu và bộ đếm tự động cho từng chiều văn bản."
         actions={
-          <Button
-            onClick={() =>
-              navigate(`${appRoutes.document.numberingRuleNew}?direction=${direction}`)
-            }
-          >
-            <Plus className="size-4" />
-            Thêm mới
-          </Button>
+          <>
+            {/*  Sửa mã ngay tại đây (CR-118): mẫu số hiệu ghép từ mã của pháp
+                 nhân · phòng ban · loại văn bản · sổ, mà bốn thứ đó vốn nằm ở
+                 bốn màn thuộc ba phân hệ — và ba trong bốn màn người khai quy
+                 tắc có thể không có quyền vào. */}
+            <Button variant="outline" onClick={() => setMaDialogOpen(true)}>
+              <Tags className="size-4" />
+              Mã đưa vào số hiệu
+            </Button>
+
+            <Button
+              onClick={() =>
+                navigate(`${appRoutes.document.numberingRuleNew}?direction=${direction}`)
+              }
+            >
+              <Plus className="size-4" />
+              Thêm mới
+            </Button>
+          </>
         }
       />
+
+      <IssueCodeDialog open={maDialogOpen} onOpenChange={setMaDialogOpen} />
 
       <Tabs value={direction} onValueChange={setDirection} className="mb-4">
         <TabsList>

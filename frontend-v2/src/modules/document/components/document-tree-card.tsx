@@ -77,7 +77,25 @@ export function DocumentTreeCard({ documentId }: DocumentTreeCardProps) {
 function CloneNode({ node }: { node: DocumentTreeNode }) {
   return (
     <li>
-      <Link
+      <CloneLink node={node} />
+    </li>
+  )
+}
+
+/**
+ * Dòng BẢN RIÊNG — dùng ở CẢ hai chỗ: nhóm "Bản riêng" ở cấp một, và lẫn trong
+ * cây ở cấp sâu.
+ *
+ * ⚠️ Trước 20/08/2026 chỉ cấp MỘT mới tách được bản riêng ra (`children.filter`
+ * chạy đúng một lần ở gốc), còn `TreeNode` đệ quy thì không hề xét `kind`. Bản
+ * clone nằm sâu vì thế bị vẽ như một quan hệ thường: lấy `title` — mà tiêu đề
+ * chép nguyên của gốc nên trùng hệt — rồi `relation_label` và `display_code`
+ * đều rỗng. Kết quả là mấy dòng **giống hệt nhau, không tên pháp nhân, không số
+ * hiệu**, không ai đoán được là gì (người dùng bắt được trên cây của văn bản 204).
+ */
+function CloneLink({ node }: { node: DocumentTreeNode }) {
+  return (
+    <Link
         to={appRoutes.document.documentDetail(node.id)}
         className="flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted"
       >
@@ -107,11 +125,10 @@ function CloneNode({ node }: { node: DocumentTreeNode }) {
           </span>
         )}
 
-        <Badge variant="outline" className="shrink-0">
-          {node.status_label}
-        </Badge>
-      </Link>
-    </li>
+      <Badge variant="outline" className="shrink-0">
+        {node.status_label}
+      </Badge>
+    </Link>
   )
 }
 
@@ -122,6 +139,10 @@ function TreeNode({ node, level }: { node: DocumentTreeNode; level: number }) {
       {/*  Thụt lề bằng padding theo cấp, không lồng `<ul>` nhiều tầng: lồng sâu
            thì trên màn hẹp cây bị đẩy tràn ra ngoài khung. */}
       <div style={{ paddingLeft: `${level * 20}px` }}>
+        {/*  Bản riêng ở CẤP SÂU vẫn phải đọc ra là bản riêng — xem `CloneLink`. */}
+        {node.kind === 'clone' ? (
+          <CloneLink node={node} />
+        ) : (
         <Link
           to={appRoutes.document.documentDetail(node.id)}
           className="flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted"
@@ -152,6 +173,7 @@ function TreeNode({ node, level }: { node: DocumentTreeNode; level: number }) {
             {node.status_label}
           </Badge>
         </Link>
+        )}
       </div>
 
       {node.children.length > 0 && (

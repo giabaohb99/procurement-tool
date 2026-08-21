@@ -1,6 +1,11 @@
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '@/core/api'
 import type { ListParams, PaginatedResult } from '@/shared/types/api'
-import type { Department, DepartmentCompany, DepartmentCompanyInput } from '../types/department'
+import type {
+  Department,
+  DepartmentCompany,
+  DepartmentCompanyInput,
+  DepartmentOfCompany,
+} from '../types/department'
 import type { DepartmentFormValues } from '../schemas/department-schema'
 
 const BASE_URL = '/api/departments'
@@ -25,6 +30,18 @@ export const departmentApi = {
   remove: (id: number) => apiDelete<null>(`${BASE_URL}/${id}`),
 
   listCompanies: (id: number) => apiGet<DepartmentCompany[]>(`${BASE_URL}/${id}/companies`),
+
+  /**
+   * Các CẶP (phòng ban × pháp nhân) của những pháp nhân được hỏi.
+   *
+   * Trả cặp chứ không phải danh sách phòng ban: một phòng có mặt ở nhiều pháp
+   * nhân, mà nơi gọi (ô chọn phạm vi áp dụng của văn bản) cần đúng cặp — khai
+   * trơ trọi "phòng Kế toán" là văn bản lan sang cả 13 công ty.
+   */
+  byCompanies: (companyIds: number[]) =>
+    apiGet<DepartmentOfCompany[]>(`${BASE_URL}/by-companies`, {
+      params: { company_ids: companyIds.join(',') },
+    }),
 
   replaceCompanies: (id: number, items: DepartmentCompanyInput[]) =>
     apiPut<DepartmentCompany[]>(`${BASE_URL}/${id}/companies`, { items }),

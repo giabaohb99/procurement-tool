@@ -34,7 +34,7 @@ from app.core.response import success
 
 from . import (access_service, approval_bridge, import_service, numbering,
                serializer, service, version_service)
-from .model import Document
+from .model import ORIGIN_INTERNAL, Document
 from .version_model import DocumentVersion
 from .query import (an_ban_rieng_co_goc_xem_duoc, dem_ban_rieng,
                     documents_query)
@@ -62,6 +62,7 @@ router = APIRouter(prefix="/api/documents", tags=["document"])
 FILTERABLE = ["doc_type_id", "company_id", "department_id", "book_id", "status",
               "secrecy_level", "urgency", "owner_employee_id",
               "title", "doc_code", "issue_number", "legacy_code", "keywords",
+              "storage_location",
               "effective_date", "expire_date", "issue_year", "needs_review",
               #  Hỏi thẳng các BẢN RIÊNG của một bản gốc — đường mà bảng danh
               #  sách dùng khi người dùng bung một dòng ra.
@@ -124,6 +125,9 @@ def _danh_sach_query(request: Request, db: Session, user, profile: dict,
             Document.issue_number.like(needle),
             Document.legacy_code.like(needle),
             Document.keywords.like(needle),
+            #  NƠI LƯU TRỮ CỨNG: gõ "Tủ A2" phải ra mọi văn bản đang nằm trong
+            #  tủ đó — đúng lý do cột này tồn tại (đi tìm lại bản giấy).
+            Document.storage_location.like(needle),
         ))
     if effective_from:
         query = query.filter(Document.effective_date >= effective_from)
@@ -190,6 +194,38 @@ def list_suggestions(
 ):
     """Văn bản cùng loại cùng phòng đang hiệu lực — hiện ngay trong form soạn (B05)."""
     return success(service.suggestions(db, doc_type_id, department_id, company_id, exclude_id))
+
+
+@router.get("/storage-locations")
+def list_storage_locations(
+    q: str = Query("", description="Lọc gợi ý theo chuỗi đang gõ"),
+    db: Session = Depends(get_db),
+    user=Depends(require("document", "read")),
+):
+    """Các NƠI LƯU TRỮ CỨNG đã từng nhập — gợi ý cho ô nhập ở form văn bản.
+
+    Ô lưu trữ cứng là chữ tự do (mỗi pháp nhân sắp kho một kiểu), nên thứ giữ
+    cho dữ liệu đỡ mỗi người một kiểu chính là danh sách này: gõ "Tủ" là thấy
+    ngay "Tủ A2 · Kệ 3" người khác đã dùng, thay vì tự đặt "tu a2" viết thường.
+
+    Chỉ đọc trên những văn bản người này XEM ĐƯỢC: tên ngăn tủ của phòng nhân
+    sự cũng là một mẩu thông tin, không phát cho cả công ty.
+    """
+    query = (
+        db.query(Document.storage_location)
+        .filter(Document.origin == ORIGIN_INTERNAL, Document.storage_location != "")
+    )
+    visible = access_service.visible_condition(user, get_perm_profile(db, user))
+    if visible is not None:
+        query = query.filter(visible)
+    if q.strip():
+        query = query.filter(Document.storage_location.like(f"%{q.strip()}%"))
+
+    #  `distinct()` ở tầng SQL rồi vẫn gom lại bằng `dict.fromkeys`: MySQL so
+    #  chuỗi không phân biệt hoa thường nên hai cách gõ khác nhau vẫn ra hai
+    #  dòng, mà gợi ý thì chỉ cần mỗi chỗ một dòng.
+    rows = [row[0] for row in query.distinct().limit(200).all()]
+    return success(sorted(dict.fromkeys(rows))[:50])
 
 
 @router.get("/number-preview")

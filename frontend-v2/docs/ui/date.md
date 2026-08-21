@@ -26,16 +26,16 @@ Chưa chọn = chuỗi rỗng `''` (không phải `null`, không phải `undefin
 
 ### Props
 
-| Prop | Mặc định | Ý nghĩa |
-|---|---|---|
-| `value` | — | Chuỗi `yyyy-mm-dd`; `''` = chưa chọn |
-| `onChange` | — | `(value: string) => void`; xóa ngày trả `''` |
-| `onClose` | — | Gọi khi popover ĐÓNG — chỗ móc "lưu khi rời ô" cho bảng nhập liệu |
-| `disabled` | `false` | Khóa ô |
-| `size` | `'default'` | `'sm'` = cao 32px, vừa ô trong bảng |
-| `placeholder` | `'Chọn ngày'` | Chữ mờ khi chưa chọn |
-| `clearable` | `true` | Hiện nút ✕ xóa ngày đã chọn |
-| `className` | — | Gộp vào nút bấm (merge cuối qua `cn`) |
+| Prop          | Mặc định      | Ý nghĩa                                                           |
+| ------------- | ------------- | ----------------------------------------------------------------- |
+| `value`       | —             | Chuỗi `yyyy-mm-dd`; `''` = chưa chọn                              |
+| `onChange`    | —             | `(value: string) => void`; xóa ngày trả `''`                      |
+| `onClose`     | —             | Gọi khi popover ĐÓNG — chỗ móc "lưu khi rời ô" cho bảng nhập liệu |
+| `disabled`    | `false`       | Khóa ô                                                            |
+| `size`        | `'default'`   | `'sm'` = cao 32px, vừa ô trong bảng                               |
+| `placeholder` | `'Chọn ngày'` | Chữ mờ khi chưa chọn                                              |
+| `clearable`   | `true`        | Hiện nút ✕ xóa ngày đã chọn                                       |
+| `className`   | —             | Gộp vào nút bấm (merge cuối qua `cn`)                             |
 
 **`clearable={false}` cho ô BẮT BUỘC.** Trường có `min(1)` trong zod mà vẫn cho
 bấm ✕ thì người dùng tự tay tạo ra lỗi validate — che nút đi rẻ hơn là báo lỗi.
@@ -107,12 +107,12 @@ mất lần sửa cuối.
 Mọi hàm ở `@/shared/utils/format-date`. **Không gọi `toLocaleDateString` trực
 tiếp** ở component — mỗi chỗ tự đặt option một kiểu là định dạng lệch nhau.
 
-| Hàm | Vào | Ra |
-|---|---|---|
-| `formatDate` | `'2026-08-11'` \| `Date` | `11/08/2026` |
-| `formatDateTime` | ISO có giờ | `11/08/2026 09:30` |
-| `formatWeekdayDate` | ISO | `Thứ Tư, 12.08.2026` |
-| `toDateInputValue` | `Date` | `2026-08-11` |
+| Hàm                 | Vào                      | Ra                   |
+| ------------------- | ------------------------ | -------------------- |
+| `formatDate`        | `'2026-08-11'` \| `Date` | `11/08/2026`         |
+| `formatDateTime`    | ISO có giờ               | `11/08/2026 09:30`   |
+| `formatWeekdayDate` | ISO                      | `Thứ Tư, 12.08.2026` |
+| `toDateInputValue`  | `Date`                   | `2026-08-11`         |
 
 Giá trị rỗng / sai định dạng đều trả `''` — cứ gọi thẳng, không cần kiểm trước.
 
@@ -129,7 +129,7 @@ Giá trị rỗng / sai định dạng đều trả `''` — cứ gọi thẳng,
 3. **Nút ✕ chặn ở `onPointerDown`, không phải `onClick`** — trigger của popover
    mở lịch ngay từ `pointerdown`, tới `click` thì lịch đã bung ra rồi.
 4. **Nút ✕ là `<span role="button">`, không phải `<button>`** — `PopoverTrigger
-   asChild` đã biến ô ngày thành một `<button>`, nút lồng trong nút là HTML sai.
+asChild` đã biến ô ngày thành một `<button>`, nút lồng trong nút là HTML sai.
 5. **Đừng spread `{...field}` của RHF** vào `DatePicker` (xem mục 2).
 
 ---

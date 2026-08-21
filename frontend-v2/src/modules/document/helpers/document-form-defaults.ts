@@ -38,6 +38,7 @@ export function emptyDocumentForm(): DocumentRecordFormValues {
     effective_date: '',
     expire_date: '',
     legacy_code: '',
+    storage_location: '',
   }
 }
 
@@ -61,6 +62,7 @@ export function documentToForm(record: DocumentRecord): DocumentRecordFormValues
     effective_date: record.effective_date ?? '',
     expire_date: record.expire_date ?? '',
     legacy_code: record.legacy_code ?? '',
+    storage_location: record.storage_location ?? '',
   }
 }
 

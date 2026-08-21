@@ -20,9 +20,13 @@ import {
 } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
 import { useSecurityLevelOptions } from '../hooks/use-document-catalogs'
+import { useStorageLocations } from '../hooks/use-documents'
 import type { DocumentRecordFormValues } from '../schemas/document-record-schema'
 
 const NONE = 'none'
+
+/** Id của `<datalist>` gợi ý ngăn tủ — ô nhập trỏ vào bằng thuộc tính `list`. */
+const STORAGE_LOCATION_LIST_ID = 'document-storage-locations'
 
 interface DocumentExtraInfoFieldsProps {
   form: UseFormReturn<DocumentRecordFormValues>
@@ -41,6 +45,7 @@ export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) 
   const confidentialLevels = useSecurityLevelOptions('confidential')
   const urgencyLevels = useSecurityLevelOptions('urgent')
   const { data: employees } = useEmployees({ page_size: 1000, is_active: true })
+  const { data: storageLocations = [] } = useStorageLocations()
 
   return (
     <div className="grid items-start gap-x-5 gap-y-3 sm:grid-cols-2">
@@ -148,6 +153,39 @@ export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) 
             </FormControl>
             {/* C12 — người dùng lâu năm vẫn tra theo số họ đã thuộc. */}
             <FormDescription>Tìm kiếm chấp nhận cả số này.</FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="storage_location"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Nơi lưu trữ cứng</FormLabel>
+            <FormControl>
+              {/*  Ô CHỮ TỰ DO có gợi ý, không phải ô chọn: mỗi pháp nhân sắp kho
+                   một kiểu, ép vào danh mục là đẻ thêm một màn khai báo mà
+                   không ai duy trì. `<datalist>` cho gõ gì cũng được nhưng vẫn
+                   bày ra chỗ người khác đã dùng — đủ để không có "Tủ A2" và
+                   "tu a2" nằm cạnh nhau trong cùng một kho. */}
+              <Input
+                list={STORAGE_LOCATION_LIST_ID}
+                placeholder="VD: Tủ A2 · Kệ 3 · Bìa 12"
+                {...field}
+              />
+            </FormControl>
+            <datalist id={STORAGE_LOCATION_LIST_ID}>
+              {storageLocations.map((noi) => (
+                <option key={noi} value={noi} />
+              ))}
+            </datalist>
+            {/* Nói rõ ô này để làm gì, không thì người nhập bỏ trống cho nhanh. */}
+            <FormDescription>
+              Bản giấy có chữ ký tươi đang cất ở đâu — để sau này còn tìm lại.
+              Tìm kiếm chấp nhận cả ô này.
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}

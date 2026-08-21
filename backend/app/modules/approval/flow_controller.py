@@ -12,9 +12,10 @@ from app.core.auth import require
 from app.core.database import get_db
 from app.core.response import success
 
-from . import flow_service, serializer
+from . import entity_hooks, flow_service, flow_sync_service, serializer
 from .flow_model import (APPROVER_KIND_LABELS, MULTI_MODE_LABELS,
-                         NODE_KIND_LABELS, NO_APPROVER_LABELS, ROLE_LABELS,
+                         NODE_KIND_LABELS, NO_APPROVER_CHOICES,
+                         NO_APPROVER_LABELS, ROLE_LABELS,
                          SKIP_MODE_LABELS, ApprovalFlow, ApprovalNode,
                          ApprovalSwitch)
 from .instance_model import INSTANCE_OPEN_STATUSES, ApprovalInstance
@@ -69,7 +70,10 @@ def options(user=Depends(require("approval_flow", "read"))):
         "approver_kinds": bang(APPROVER_KIND_LABELS),
         "multi_modes": bang(MULTI_MODE_LABELS),
         "skip_modes": bang(SKIP_MODE_LABELS),
-        "on_no_approver": bang(NO_APPROVER_LABELS),
+        #  CHỈ những lựa chọn còn khai được — «Đẩy lên cấp trên» đã bỏ (CR-114)
+        #  nên không bày ra ô chọn nữa, dù nhãn của nó vẫn còn để đọc dữ liệu cũ.
+        "on_no_approver": [{"value": ma, "label": NO_APPROVER_LABELS[ma]}
+                           for ma in NO_APPROVER_CHOICES],
     })
 
 
@@ -178,9 +182,23 @@ def update_node(flow_id: int, node_id: int, data: NodeIn, db: Session = Depends(
         raise HTTPException(404, "Không tìm thấy bước này")
     for ten, gia_tri in data.model_dump().items():
         setattr(node, ten, gia_tri)
+    db.flush()
+
+    #  CR-114 — phiếu ĐANG CHẠY bám theo người duyệt vừa sửa. Trước đây chúng
+    #  giữ nguyên bản chụp cũ, nên đổi người duyệt xong mở phiếu ra vẫn thấy tên
+    #  người cũ và không có đường nào sửa — người dùng đọc ra là "sửa không ăn".
+    #  Chỉ người duyệt mới bám theo; cấu trúc bước vẫn đóng băng theo bản chụp.
+    so_phieu = flow_sync_service.dong_bo_sau_khi_sua_buoc(
+        db, node, user.id,
+        lambda entity, entity_id: entity_hooks.boi_canh(db, entity, entity_id))
+
     _len_ban_moi(db, flow, user.id)
     db.refresh(node)
-    return success(serializer.node_out(db, node), "Đã lưu bước")
+    return success(
+        serializer.node_out(db, node),
+        f"Đã lưu bước và cập nhật {so_phieu} phiếu đang chạy" if so_phieu
+        else "Đã lưu bước",
+    )
 
 
 class ReorderIn(BaseModel):

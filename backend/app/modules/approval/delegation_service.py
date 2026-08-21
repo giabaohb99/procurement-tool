@@ -33,6 +33,20 @@ def nguoi_uy_quyen_cho(db: Session, to_employee_id: int, entity: str,
     ).all()
 
 
+def nguoi_duoc_uy_quyen_boi(db: Session, from_employee_id: int, entity: str,
+                            hom_nay: date | None = None) -> list[Delegation]:
+    """Chiều NGƯỢC của hàm trên — ai đang được người này ủy quyền bấm thay.
+
+    Dùng lúc BÁO việc: người đi vắng mới là người mang tên trên việc, nên báo
+    mỗi họ thì thư rơi vào hộp thư không ai đọc trong đúng khoảng thời gian ủy
+    quyền sinh ra để chống lại.
+    """
+    return _dang_hieu_luc(
+        db.query(Delegation).filter(Delegation.from_employee_id == from_employee_id),
+        entity, hom_nay or date.today(),
+    ).all()
+
+
 def tim_uy_quyen(db: Session, actor_employee_id: int, owner_employee_id: int,
                  entity: str, hom_nay: date | None = None) -> Delegation | None:
     """`actor` có được bấm thay `owner` không. `None` = không được."""

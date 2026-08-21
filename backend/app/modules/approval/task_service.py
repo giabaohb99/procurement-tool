@@ -1,16 +1,22 @@
-"""VIỆC CỦA TÔI (I17) và nhắc hạn (I18).
+"""HỘP VIỆC CỦA MỘT NGƯỜI (I17) và nhắc hạn (I18).
 
-Màn "Việc của tôi" là màn được mở nhiều nhất của cả hệ — mỗi lần có người mở
-trang chủ. Truy vấn ở đây phải bám đúng chỉ mục
-`INDEX(assignee_employee_id, status)` của `tab_approval_task`.
+Hai câu hỏi, hai hàm:
+
+* `viec_cua_toi` — **đang chờ tôi** (màn «Chờ tôi duyệt»). Được mở nhiều nhất
+  của cả hệ, nên truy vấn phải bám đúng chỉ mục
+  `INDEX(assignee_employee_id, status)` của `tab_approval_task`.
+* `viec_da_xu_ly` — **tôi đã quyết định gần đây**, đọc từ dấu vết.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
 from . import delegation_service, serializer
-from .instance_model import (ACTION_ESCALATE, INSTANCE_OPEN_STATUSES,
-                             TASK_PENDING, ApprovalInstance, ApprovalTask)
+from .instance_model import (ACTION_APPROVE, ACTION_ESCALATE, ACTION_LABELS,
+                             ACTION_REJECT, ACTION_RETURN,
+                             INSTANCE_OPEN_STATUSES, INSTANCE_STATUS_LABELS,
+                             TASK_PENDING, ApprovalAction, ApprovalInstance,
+                             ApprovalTask)
 
 
 def viec_cua_toi(db: Session, employee_id: int, entity: str = "") -> list[dict]:
@@ -79,6 +85,79 @@ def viec_cua_toi(db: Session, employee_id: int, entity: str = "") -> list[dict]:
             "is_overdue": bool(task.due_at and task.due_at < bay_gio),
         })
         ket_qua.append(dong)
+    return ket_qua
+
+
+#  Những việc coi là ĐÃ XỬ LÝ khi nhìn lại. Cố ý KHÔNG gồm «Ý kiến» (ghi ý kiến
+#  không đổi trạng thái phiếu) và «Chuyển người xử lý» (đó là việc của quản trị,
+#  không phải một quyết định trên phiếu).
+HANH_DONG_DA_XU_LY = (ACTION_APPROVE, ACTION_REJECT, ACTION_RETURN)
+
+
+def viec_da_xu_ly(db: Session, employee_id: int, entity: str = "",
+                  ngay: int = 30, gioi_han: int = 50) -> list[dict]:
+    """ĐÃ DUYỆT GẦN ĐÂY — nhìn lại những phiếu chính tôi vừa quyết định.
+
+    Đọc từ **dấu vết** (`tab_approval_action`) chứ không từ bảng việc, vì hai lý
+    do: dấu vết ghi rõ *đã làm gì* (duyệt / trả lại / từ chối) kèm ý kiến, còn
+    bảng việc chỉ có trạng thái cuối; và người **bấm thay** theo ủy quyền phải
+    thấy phiếu mình đã ký — dấu vết ghi đúng tên người bấm, bảng việc thì vẫn
+    mang tên người được ủy quyền.
+
+    Mặc định 30 ngày gần nhất: đây là màn "nhớ lại xem hôm qua mình ký cái gì",
+    không phải sổ tra cứu — muốn tra đủ thì mở dấu vết của chính văn bản.
+    """
+    if not employee_id:
+        return []
+
+    tu_ngay = datetime.now() - timedelta(days=max(1, ngay))
+    rows = (
+        db.query(ApprovalAction)
+        .filter(ApprovalAction.actor_employee_id == employee_id,
+                ApprovalAction.action.in_(HANH_DONG_DA_XU_LY),
+                ApprovalAction.created_at >= tu_ngay)
+        .order_by(ApprovalAction.created_at.desc(), ApprovalAction.id.desc())
+        .limit(gioi_han * 3)   # dư ra để còn lọc theo `entity` bên dưới
+        .all()
+    )
+    if not rows:
+        return []
+
+    phien = {
+        row.id: row for row in
+        db.query(ApprovalInstance)
+        .filter(ApprovalInstance.id.in_({r.instance_id for r in rows})).all()
+    }
+
+    ket_qua = []
+    for row in rows:
+        instance = phien.get(row.instance_id)
+        if instance is None:
+            continue
+        if entity and instance.entity != entity:
+            continue
+        ket_qua.append({
+            "id": row.id,
+            "instance_id": instance.id,
+            "entity": instance.entity,
+            "entity_id": instance.entity_id,
+            "entity_code": instance.entity_code,
+            "entity_title": instance.entity_title,
+            "node_seq": row.node_seq,
+            "node_name": row.node_name,
+            "action": row.action,
+            "action_label": ACTION_LABELS.get(row.action, str(row.action)),
+            "comment": row.comment or "",
+            "decided_at": row.created_at,
+            #  Trạng thái CUỐI của phiếu — "tôi đã duyệt" khác "phiếu đã xong":
+            #  ký xong bước của mình mà phiếu vẫn còn ba bước nữa là chuyện thường.
+            "instance_status": instance.status,
+            "instance_status_label": INSTANCE_STATUS_LABELS.get(instance.status, ""),
+            #  Bấm THAY ai theo ủy quyền — nhật ký ghi cả hai tên, chỗ này cũng vậy.
+            "on_behalf_of_name": serializer._ten(db, row.on_behalf_of_id),
+        })
+        if len(ket_qua) >= gioi_han:
+            break
     return ket_qua
 
 

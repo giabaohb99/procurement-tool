@@ -11,7 +11,7 @@ describe('toAppPath', () => {
     //  đâu cả. Cả HAI thư của luồng clone đều dính, tức là đường báo việc cho
     //  pháp nhân con gãy ở bước cuối.
     expect(toAppPath('/document/documents/273')).toBe('/document/documents/273')
-    expect(toAppPath('/approval/my-tasks')).toBe('/approval/my-tasks')
+    expect(toAppPath('/approval/flows')).toBe('/approval/flows')
   })
 
   it('dịch link kiểu app cũ sang đường dẫn phân hệ', () => {

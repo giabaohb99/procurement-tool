@@ -34,6 +34,24 @@ def list_departments(
     })
 
 
+@router.get("/by-companies")
+def list_by_companies(
+    company_ids: str = Query("", description="Danh sách id pháp nhân, ngăn bằng dấu phẩy"),
+    db: Session = Depends(get_db),
+    user=Depends(require("department", "read")),
+):
+    """Các CẶP (phòng ban × pháp nhân) của những pháp nhân được hỏi.
+
+    ⚠️ Phải khai TRƯỚC `/{did}`, không thì FastAPI khớp `by-companies` vào tham
+    số `did` và trả 422.
+
+    Trả về cặp chứ không phải danh sách phòng ban: một phòng có mặt ở nhiều pháp
+    nhân, mà ô chọn phạm vi áp dụng cần đúng cặp (phòng nào ở công ty nào).
+    """
+    ids = [int(row) for row in company_ids.split(",") if row.strip().isdigit()]
+    return success(service.phong_ban_cua_cac_phap_nhan(db, ids))
+
+
 @router.get("/{did}")
 def get_department(did: int, db: Session = Depends(get_db), user=Depends(require("department", "read"))):
     obj = service.get_department(db, did)

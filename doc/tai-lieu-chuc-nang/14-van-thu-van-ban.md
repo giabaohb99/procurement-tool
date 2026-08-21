@@ -17,6 +17,7 @@ Khác mọi phân hệ còn lại trong tài liệu này ở một điểm: **ph
 | `/document/documents/new` | Tạo văn bản | Form 3 bước |
 | `/document/documents/:id` | Chi tiết văn bản | 5 tab: Soạn thảo · Thông tin · Phiên bản · Quan hệ · Phê duyệt |
 | `/print/document/:id` | Bản in / Xuất PDF | Ngoài khung phân hệ, không menu |
+| `/document/pending-approval` | Chờ tôi duyệt | Văn bản đang chờ **chính tôi** ký (có tìm + lọc) và khối **Đã duyệt gần đây**; bấm dòng là mở văn bản ra duyệt tại đó |
 | `/document/applied-to-me` | Văn bản áp dụng cho tôi | Văn bản mà **chính tôi** phải làm theo |
 | `/document/books` · `/books/:id` | Sổ văn bản | 3 tab theo chiều (đến · đi · nội bộ), bộ đếm theo năm |
 | `/document/numbering-rules` · `/:id` | Quy tắc đánh số | 3 tab theo chiều |
@@ -81,7 +82,9 @@ Ba bước, dữ liệu cả ba bước giữ nguyên khi chuyển qua lại.
 
 **Bước 2 — Phạm vi áp dụng.** Khai ai phải làm theo (xem mục 7). Nếu phạm vi có pháp nhân khác nơi ban hành, thẻ **"Bản clone ở pháp nhân con"** tự hiện.
 
-**Bước 3 — Thông tin bổ sung.** Mức mật, độ khẩn, người ký, số hiệu cũ của bản giấy, ngày hiệu lực / hết hiệu lực, từ khóa, trích yếu.
+**Bước 3 — Thông tin bổ sung.** Mức mật, độ khẩn, người ký, số hiệu cũ của bản giấy, **nơi lưu trữ cứng**, ngày hiệu lực / hết hiệu lực, từ khóa, trích yếu.
+
+**Nơi lưu trữ cứng** (CR-112) trả lời câu "bản giấy có chữ ký tươi đang nằm ở đâu" — ví dụ `Tủ A2 · Kệ 3 · Bìa 12`. Là **ô chữ tự do có gợi ý**, không phải danh mục: mỗi pháp nhân sắp kho một kiểu, ép vào một bảng danh mục là đẻ thêm màn khai báo không ai duy trì. Gõ vài chữ là hiện các chỗ người khác đã dùng, nhờ đó không có "Tủ A2" và "tu a2" nằm cạnh nhau. Ô tìm nhanh, bộ lọc nâng cao và bản xuất Excel đều có cột này — đó chính là lý do nó tồn tại (đi tìm lại hồ sơ giấy).
 
 **Kiểm tra tiên quyết.** Loại nào khai "phải có văn bản cha" mà trong kho chưa có cái nào thì lúc bấm Tạo sẽ hiện hộp liệt kê thứ còn thiếu — **chỉ cảnh báo, không chặn** (chọn "Vẫn tạo văn bản" là đi tiếp). Cổng chặn thật nằm ở bước **gửi duyệt**.
 
@@ -209,6 +212,12 @@ Luật 3 là mặc định thực dụng: gần như mọi văn bản chỉ lưu
 
 Chọn chiều **phòng ban bắt buộc kèm pháp nhân** — "Phòng Kế toán" ở tập đoàn 13 công ty là câu hỏi thiếu vế.
 
+**Chọn nhiều một lượt** (CR-117). Cả ba chiều đều khai được cả mẻ:
+
+- *Pháp nhân* — tick nhiều nơi, mỗi nơi thành một dòng riêng (bỏ riêng một nơi về sau không phải khai lại cả cụm).
+- *Phòng ban* — tick nhiều **pháp nhân** trước, ô phòng ban bên dưới gom phòng ban của **đúng những nơi đó**; tick nhiều phòng thì mỗi **cặp (phòng ban × pháp nhân)** thành một dòng. Bỏ tick một pháp nhân thì các cặp thuộc nơi đó tự rơi khỏi ô chọn. Cùng một tên phòng ở hai công ty là **hai dòng khác nhau** — ô chọn hiện tên pháp nhân bên phải để phân biệt.
+- *Cá nhân* — vẫn từng người một.
+
 Màn **Văn bản áp dụng cho tôi** (`/document/applied-to-me`) là mặt kia của cùng dữ liệu: mở ra thấy đúng những văn bản mình phải theo, lọc nhanh được nhóm "cần rà lại".
 
 ---
@@ -314,10 +323,35 @@ Hai đường tồn tại song song, chọn bằng công tắc của bộ máy d
 **Luồng một bước (mặc định).** Người có quyền `document.approve` bấm **Duyệt và ban hành** hoặc **Trả lại** ngay trên trang văn bản.
 
 **Luồng nhiều bước.** Khi đã khai luồng duyệt cho `document`: gửi duyệt sinh một phiếu chạy qua từng chặng (trưởng bộ phận → ban chuyên môn → lãnh đạo…). Lúc này:
-- Hai nút của luồng một bước **biến mất** — duyệt làm ở màn **"Việc của tôi"**.
+- Hai nút của luồng một bước **biến mất**.
+- **Duyệt ngay trong văn bản** (CR-111): băng ở đầu trang chi tiết đổi màu và mọc nút **Duyệt / Trả lại** khi đang tới lượt người đang đọc; tab **Phê duyệt** cũng có nút đó. Cả hai mở đúng hộp thoại chung của bộ máy duyệt (Duyệt · Trả lại · Từ chối · Ghi ý kiến), nên dấu vết và luật bắt buộc nêu lý do không đổi. Nút **chỉ hiện với đúng người đang cầm việc**.
 - Tab **Phê duyệt** hiển thị từng chặng: đã duyệt · đang chờ · từ chối · tự qua vì trùng người · chưa tới lượt · không chạy, kèm dấu vết ai làm gì lúc nào (in ra được).
 - Băng ở đầu trang cho biết đang chờ ai, và **chuyển đỏ khi phiếu kẹt** (không tìm ra người duyệt) hoặc khi duyệt hết bước mà chưa ban hành.
 - **Rút phiếu** đưa văn bản **về Nháp** để sửa tiếp.
+
+**Đổi người duyệt giữa chừng** (CR-114). Sửa ô *ai duyệt bước này* trong màn **Luồng duyệt** thì mọi phiếu **đang chạy** theo luồng đó bám theo ngay:
+
+- bước **đang chờ** → việc chuyển sang người mới, người cũ mất việc và **không ký được nữa**; người mới nhận thư báo;
+- bước **chưa tới** → tới lượt thì tính theo người mới;
+- bước **đã ký** → không đụng tới, chữ ký là chuyện đã rồi;
+- phiếu đang **kẹt** ở bước đó → **hồi sinh** nếu nay tìm được người duyệt (đây là đường gỡ kẹt bằng cấu hình);
+- sửa xong mà **không còn ai** duyệt được → phiếu KẸT, tuyệt đối không tự đi tiếp.
+
+Người cũ đang mở trang chi tiết văn bản đó sẽ bị **báo lỗi và đá về danh sách** trong vòng 20 giây — khe đọc của họ vốn mở ra chính vì việc duyệt đó. Người còn quyền xem vì lý do khác (người soạn, được chia quyền, vai trò đủ rộng) thì vẫn ở lại, chỉ mất nút Duyệt.
+
+⚠️ **Cấu trúc bước thì KHÔNG bám theo** — thêm/xóa/đổi thứ tự bước vẫn đóng băng theo bản chụp lúc phiếu bắt đầu, và đó là chủ ý: phiếu đang đứng ở một bước vừa bị xóa thì mất đích tới.
+
+⚠️ **Không có ai thay ai.** Nhánh «Đẩy lên cấp trên» đã bỏ (CR-114) — đó là chỗ duy nhất bộ máy tự chọn một người không có tên trong luồng. Bước hụt người thì chỉ còn hai lối: *chuyển cho người dự phòng* (phải khai đích danh) hoặc *dừng phiếu và báo quản trị*.
+
+**Ba đường tìm ra việc của mình** — cố ý nhiều đường, vì im lặng ở đây nghĩa là văn bản nằm chết giữa luồng:
+
+1. **Thư báo** vào chuông thông báo và trang `/notifications` **ngay khi** việc chuyển sang chờ mình, kèm đường dẫn thẳng tới văn bản. Người được **ủy quyền bấm thay** cũng nhận thư, và thư nói rõ đang bấm thay ai. Dùng chung hệ thông báo sẵn có, không có hộp thư thứ hai.
+2. **Menu «Chờ tôi duyệt»** trong chính phân hệ Văn bản, mang huy hiệu đếm việc (đỏ nếu có việc quá hạn). Mục này **không gác quyền** — người duyệt trong luồng thường không có vai trò nào ở phân hệ Văn bản. Màn này có ô tìm (số hiệu · tên · bước · người trình) và hai ô lọc (*Hạn duyệt*, *Người trình*), chạy ngay tại trình duyệt vì hộp việc của một người vốn ngắn.
+3. **Nhãn *Chờ bạn duyệt*** trên đúng dòng của bảng danh sách văn bản.
+
+**Nhìn lại việc mình đã ký.** Ngay dưới hộp việc là khối **«Đã duyệt gần đây»** — chọn 7 / 30 / 90 ngày, có ô tìm riêng, bấm dòng mở thẳng văn bản. Nó đọc từ **dấu vết** nên ghi rõ *tôi đã làm gì* (duyệt · trả lại · từ chối) kèm ý kiến, và người **bấm thay** theo ủy quyền vẫn thấy phiếu mình đã ký. Hai cột tách hẳn: *Tôi đã* và *Phiếu bây giờ* — ký xong bước của mình mà phiếu còn ba bước nữa là chuyện thường. Ghi ý kiến **không** tính là một quyết định nên không vào danh sách này. Muốn tra đủ lịch sử thì mở dấu vết của chính văn bản (tab *Phê duyệt*), nơi có cả những người khác đã làm gì.
+
+Màn **«Việc của tôi»** ở phân hệ Phê duyệt **đã xóa** (21/08/2026). Phân hệ đó nay chỉ còn phần cấu hình (Luồng duyệt · Bật bộ máy duyệt). Nút hộp việc trên thanh trên và nút *Việc cần làm* ở Trang cá nhân đều dẫn về **«Chờ tôi duyệt»**. Hiện chỉ Văn bản chạy bộ máy duyệt; ngày bật cho Thu mua thì dựng hộp việc trong chính phân hệ đó — **không** dựng lại một danh sách gom chung có nút duyệt trên từng dòng.
 
 ---
 
@@ -338,9 +372,9 @@ Ban hành xong: cấp số → khóa phiên bản (tính SHA-256) → vào sổ 
 
 **Danh sách văn bản** lọc và phân trang **ở máy chủ** — bảng sẽ lên hàng chục nghìn dòng, và nạp hết về máy người dùng còn nghĩa là gửi cho họ cả văn bản họ không được xem.
 
-- Ô tìm nhanh chấp nhận **tên, số hiệu, số hiệu cũ của bản giấy, từ khóa**.
+- Ô tìm nhanh chấp nhận **tên, số hiệu, số hiệu cũ của bản giấy, từ khóa, nơi lưu trữ cứng**.
 - Hai ô chọn nhanh: loại văn bản, trạng thái.
-- **Bộ lọc nâng cao** (nhiều điều kiện, nối AND/OR): trích yếu · mã tài liệu · số hiệu theo sổ · số hiệu cũ · từ khóa · loại · pháp nhân · phòng chủ trì · người chịu trách nhiệm · sổ · trạng thái · mức mật · độ khẩn · ngày hiệu lực · ngày hết hiệu lực · năm ban hành · cờ cần rà soát. Ô tham chiếu tra theo **ID** chứ không theo tên — đổi tên phòng thì bộ lọc cũ không trượt.
+- **Bộ lọc nâng cao** (nhiều điều kiện, nối AND/OR): trích yếu · mã tài liệu · số hiệu theo sổ · số hiệu cũ · nơi lưu trữ cứng · từ khóa · loại · pháp nhân · phòng chủ trì · người chịu trách nhiệm · sổ · trạng thái · mức mật · độ khẩn · ngày hiệu lực · ngày hết hiệu lực · năm ban hành · cờ cần rà soát. Ô tham chiếu tra theo **ID** chứ không theo tên — đổi tên phòng thì bộ lọc cũ không trượt.
 - **Bản riêng nằm dưới bản gốc**, không đứng ngang hàng: một văn bản clone cho 12 pháp nhân sẽ thành 13 dòng gần như giống hệt nhau. Bung dòng gốc ra mới thấy các bản riêng.
 
 **Tổng quan** (`/document`): 5 thẻ KPI (đang hiệu lực · chờ duyệt · cần rà lại · sắp hết hiệu lực trong 30 ngày · bản nháp), biểu đồ ban hành 12 tháng, cơ cấu theo loại, **ma trận ưu tiên** (quan trọng × khẩn), việc cần xử lý (cần rà lại · chờ duyệt · nháp treo quá 30 ngày), 8 văn bản gần đây. Mọi con số đều đã lọc theo đúng quyền của người đang xem.

@@ -55,6 +55,7 @@ export interface DocumentInput {
   effective_date: string | null
   expire_date: string | null
   legacy_code: string
+  storage_location: string
 }
 
 export interface VersionInput {
@@ -106,6 +107,14 @@ export const documentApi = {
     company_id?: number | null
     exclude_id?: number
   }) => apiGet<DocumentSuggestion[]>(`${DOCUMENT_URL}/suggestions`, { params }),
+
+  /**
+   * Các NƠI LƯU TRỮ CỨNG đã từng nhập — gợi ý cho ô nhập chỗ cất bản giấy.
+   *
+   * Ô đó là chữ tự do (mỗi pháp nhân sắp kho một kiểu), nên thứ giữ cho dữ liệu
+   * đỡ mỗi người một kiểu chính là danh sách này.
+   */
+  storageLocations: () => apiGet<string[]>(`${DOCUMENT_URL}/storage-locations`),
 
   /**
    * Quan hệ tiên quyết còn thiếu của một LOẠI — hỏi trước khi tạo (E04b).

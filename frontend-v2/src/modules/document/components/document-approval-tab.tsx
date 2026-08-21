@@ -1,14 +1,20 @@
-import { Check, CircleDashed, CircleDot, MinusCircle, X } from 'lucide-react'
+import { Check, CircleDashed, CircleDot, MinusCircle, ShieldCheck, X } from 'lucide-react'
+import { useState } from 'react'
 
+import { ApprovalActionDialog } from '@/modules/approval/components/approval-action-dialog'
 import { ApprovalTrailCard } from '@/modules/approval/components/approval-trail-card'
 import { INSTANCE_STATUS, TASK_STATUS } from '@/modules/approval/types/approval'
 import type { ApprovalInstance, ApprovalTask } from '@/modules/approval/types/approval'
 import { Badge } from '@/shared/ui/badge'
+import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { cn } from '@/shared/utils/cn'
+import { useMyDocumentTask } from '../hooks/use-my-document-approvals'
 
 interface DocumentApprovalTabProps {
   instance: ApprovalInstance | null | undefined
+  /** Văn bản đang mở — để tìm việc duyệt của chính người đọc. */
+  documentId: number
 }
 
 /** Bộ mặt của một chặng, gộp từ trạng thái các việc thuộc chặng đó. */
@@ -47,10 +53,16 @@ const HINH = {
  * - **tự qua vì trùng người duyệt** — KHÁC "đã duyệt", vẽ mờ và nói rõ, vì gộp
  *   làm một là bản in nói dối rằng có thêm một người đã xem xét.
  *
- * Không có nút bấm nào ở đây: duyệt là việc làm ở «Việc của tôi», nơi bộ máy
- * biết ai đang cầm việc. Bày nút ở đây lại đẻ ra đúng cái đường tắt vừa bịt.
+ * **Nút duyệt CÓ ở đây (21/08/2026)** — nhưng chỉ hiện với đúng người đang cầm
+ * việc, và vẫn là hộp thoại chung của bộ máy duyệt chứ không phải một đường
+ * riêng của phân hệ Văn bản. Bản trước cố ý không có nút và bắt sang «Việc của
+ * tôi»: người duyệt phải rời văn bản đang đọc để đi bấm ở một danh sách, hoặc
+ * ký mà chưa mở văn bản ra.
  */
-export function DocumentApprovalTab({ instance }: DocumentApprovalTabProps) {
+export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTabProps) {
+  const viecCuaToi = useMyDocumentTask(documentId)
+  const [dangXuLy, setDangXuLy] = useState(false)
+
   if (!instance) {
     return (
       <Card>
@@ -73,18 +85,28 @@ export function DocumentApprovalTab({ instance }: DocumentApprovalTabProps) {
           <CardTitle className="text-base">
             Luồng «{instance.flow_name}» bản {instance.flow_version}
           </CardTitle>
-          <Badge
-            variant={
-              instance.status === INSTANCE_STATUS.approved
-                ? 'default'
-                : instance.status === INSTANCE_STATUS.blocked ||
-                    instance.status === INSTANCE_STATUS.rejected
-                  ? 'destructive'
-                  : 'outline'
-            }
-          >
-            {instance.status_label}
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Badge
+              variant={
+                instance.status === INSTANCE_STATUS.approved
+                  ? 'default'
+                  : instance.status === INSTANCE_STATUS.blocked ||
+                      instance.status === INSTANCE_STATUS.rejected
+                    ? 'destructive'
+                    : 'outline'
+              }
+            >
+              {instance.status_label}
+            </Badge>
+            {/*  Chỉ đúng người đang cầm việc mới thấy nút. Bày cho mọi người là
+                 đẻ lại đúng cái đường tắt mà bộ máy duyệt vừa bịt. */}
+            {viecCuaToi && (
+              <Button type="button" size="sm" onClick={() => setDangXuLy(true)}>
+                <ShieldCheck className="size-4" />
+                Duyệt / Trả lại
+              </Button>
+            )}
+          </div>
         </CardHeader>
 
         <CardContent>
@@ -122,6 +144,10 @@ export function DocumentApprovalTab({ instance }: DocumentApprovalTabProps) {
       </Card>
 
       <ApprovalTrailCard instanceId={instance.id} />
+
+      {dangXuLy && viecCuaToi && (
+        <ApprovalActionDialog task={viecCuaToi} open onOpenChange={setDangXuLy} />
+      )}
     </div>
   )
 }

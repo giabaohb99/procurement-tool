@@ -23,11 +23,28 @@ export function useDocuments(params: DocumentListParams = {}) {
   })
 }
 
-export function useDocument(id?: number) {
+/**
+ * Nhịp hỏi lại khi văn bản ĐANG CHẠY trong bộ máy duyệt.
+ *
+ * Người duyệt có thể bị đổi bất cứ lúc nào ở màn Luồng duyệt (CR-114). Không
+ * hỏi lại thì người vừa mất việc vẫn ngồi trong trang chi tiết với nút *Duyệt*
+ * sáng trưng cho tới khi họ tự tải lại trang — bấm vào chỉ nhận lỗi.
+ *
+ * 20 giây, cùng nhịp với chuông thông báo.
+ */
+const NHIP_DANG_DUYET_MS = 20_000
+
+export function useDocument(id?: number, options: { dangDuyet?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.document.record(id ?? 0),
     queryFn: () => documentApi.getById(id as number),
     enabled: typeof id === 'number' && id > 0,
+    //  Chỉ poll lúc phiếu đang chạy. Văn bản đã ban hành thì không ai đổi người
+    //  duyệt được nữa, hỏi lại đều đặn chỉ tốn đường truyền.
+    refetchInterval: options.dangDuyet ? NHIP_DANG_DUYET_MS : false,
+    //  Quay lại tab là hỏi ngay, không đợi hết nhịp: người dùng chuyển sang màn
+    //  khác rồi quay về là lúc hay gặp nhất.
+    refetchOnWindowFocus: options.dangDuyet,
   })
 }
 
@@ -53,6 +70,22 @@ export function useDocumentSuggestions(params: {
     //  nằm giữa lưới ô nhập nên hai ô bên dưới nhảy lên rồi tụt xuống. Giữ lại
     //  và làm mờ trong lúc nạp (xem `DocumentSuggestionList`) thì đứng yên.
     placeholderData: keepPreviousData,
+  })
+}
+
+/**
+ * Gợi ý cho ô «Nơi lưu trữ cứng» — các ngăn tủ đã từng được gõ.
+ *
+ * Danh sách này là thứ duy nhất giữ cho một ô chữ tự do khỏi thành mỗi người
+ * một kiểu ("Tủ A2" / "tu a2" / "TỦ A2"), nên nó phải hiện ngay lúc gõ chứ
+ * không phải một màn danh mục ai đó nhớ ra thì vào sửa.
+ */
+export function useStorageLocations() {
+  return useQuery({
+    queryKey: queryKeys.document.storageLocations(),
+    queryFn: () => documentApi.storageLocations(),
+    //  Danh sách ngăn tủ gần như đứng yên trong một phiên làm việc.
+    staleTime: 5 * 60_000,
   })
 }
 
@@ -165,8 +198,8 @@ export function useDocumentWorkflow(documentId: number) {
    */
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
-    //  Cả cụm `approval`: phiên của chứng từ này đổi, mà hộp «Việc của tôi» của
-    //  người duyệt cũng vừa có thêm/bớt một việc.
+    //  Cả cụm `approval`: phiên của chứng từ này đổi, mà hộp «Chờ tôi duyệt»
+    //  của người duyệt cũng vừa có thêm/bớt một việc.
     void queryClient.invalidateQueries({ queryKey: queryKeys.approval.all })
   }
 

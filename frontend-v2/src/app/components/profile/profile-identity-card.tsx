@@ -90,12 +90,12 @@ export function ProfileIdentityCard({ profile }: { profile: AuthUser | null }) {
 
       {/*
         Bản cũ có tab "Việc cần làm" ngay trong trang này. v2 đã có màn riêng
-        (`/approval/my-tasks`) gom việc của cả văn thư lẫn thu mua, nên ở đây
-        chỉ để lối đi sang, không dựng lại bảng thứ hai.
+        («Chờ tôi duyệt» của phân hệ Văn bản) nên ở đây chỉ để lối đi sang,
+        không dựng lại bảng thứ hai.
       */}
       <div className="flex shrink-0 flex-wrap gap-2">
         <Button variant="outline" size="sm" asChild>
-          <Link to={appRoutes.approval.myTasks}>
+          <Link to={appRoutes.document.pendingApproval}>
             <ListChecks className="size-4" />
             Việc cần làm
           </Link>

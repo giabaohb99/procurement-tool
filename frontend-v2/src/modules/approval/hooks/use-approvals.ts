@@ -18,6 +18,19 @@ export function useMyTasks(entity?: string) {
   })
 }
 
+/**
+ * «Đã duyệt gần đây» — nhìn lại phiếu chính mình vừa quyết định.
+ *
+ * Không tự hỏi lại theo nhịp: danh sách này chỉ dài thêm khi CHÍNH người dùng
+ * bấm duyệt, mà lúc đó `useInvalidateApproval` đã nạp lại cả cụm rồi.
+ */
+export function useMyDecisions(entity?: string, days = 30) {
+  return useQuery({
+    queryKey: queryKeys.approval.myHistory(entity ?? '', days),
+    queryFn: () => approvalApi.myHistory(entity, days),
+  })
+}
+
 export function useApprovalOptions() {
   return useQuery({
     queryKey: queryKeys.approval.options(),

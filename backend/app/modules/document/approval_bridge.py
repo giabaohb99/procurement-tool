@@ -172,3 +172,16 @@ entity_hooks.register(
     on_returned=_khi_tra_lai,
     on_withdrawn=_khi_rut_lai,
 )
+
+
+def _boi_canh_theo_id(db: Session, document_id: int) -> dict:
+    """Dựng lại bối cảnh từ id — cho lúc SỬA LUỒNG phải tính lại người duyệt.
+
+    Khác `boi_canh(doc)` ở trên đúng một chỗ: ở đây bộ máy chỉ cầm cái id, vì
+    người quản trị đang đứng ở màn Luồng duyệt chứ không mở văn bản nào.
+    """
+    doc = db.get(Document, document_id)
+    return boi_canh(doc) if doc else {}
+
+
+entity_hooks.register_subject(ENTITY, _boi_canh_theo_id)
