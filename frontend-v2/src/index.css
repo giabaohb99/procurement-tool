@@ -194,6 +194,37 @@
   }
 }
 
+@layer components {
+  /* Trục timeline phải có kích thước thật, không phụ thuộc utility được sinh lại bởi Vite HMR. */
+  .approval-timeline-rail {
+    position: absolute;
+    top: 1rem;
+    bottom: -1rem;
+    left: 15px;
+    width: 2px;
+    background: var(--primary);
+    pointer-events: none;
+  }
+
+  .approval-timeline-system-node {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 9999px;
+    background: var(--primary);
+  }
+
+  /* Trục các chặng dùng màu trung tính vì nó biểu diễn thứ tự, không phải đã hoàn tất. */
+  .approval-flow-step-rail {
+    position: absolute;
+    top: 1rem;
+    bottom: -1rem;
+    left: 15px;
+    width: 2px;
+    background: var(--chart-neutral);
+    pointer-events: none;
+  }
+}
+
 /* ============ Màn hình xác thực (đăng nhập / quên mật khẩu) ============
    Chỉ những hiệu ứng viết bằng class Tailwind sẽ không đọc nổi mới để ở đây;
    phần còn lại của layout dùng utility trực tiếp trong component. */

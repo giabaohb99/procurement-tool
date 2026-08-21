@@ -10,10 +10,7 @@ const STORAGE_PREFIX = 'erp.table.'
  * Có `storageKey` thì ghi vào localStorage — người dùng chỉnh bảng một lần,
  * lần sau mở lại vẫn thế. Không có thì trạng thái chỉ sống trong phiên.
  */
-export function useTableLayout<T>(
-  columns: DataTableColumn<T>[],
-  storageKey?: string,
-) {
+export function useTableLayout<T>(columns: DataTableColumn<T>[], storageKey?: string) {
   const defaultLayout = useMemo<DataTableLayout>(
     () => ({
       hiddenColumns: columns.filter((c) => c.defaultHidden).map((c) => c.key),
@@ -70,8 +67,7 @@ export function useTableLayout<T>(
 
   const setHiddenColumns = useCallback(
     (hiddenOrFn: string[] | ((prev: string[]) => string[])) => {
-      const next =
-        typeof hiddenOrFn === 'function' ? hiddenOrFn(layout.hiddenColumns) : hiddenOrFn
+      const next = typeof hiddenOrFn === 'function' ? hiddenOrFn(layout.hiddenColumns) : hiddenOrFn
       persist({ ...layout, hiddenColumns: next })
     },
     [layout, persist],
@@ -127,6 +123,9 @@ export function useTableLayout<T>(
   /** Ghim / bỏ ghim một cột sang trái. Ghim cột đang ẩn thì hiện nó lại luôn. */
   const togglePin = useCallback(
     (key: string) => {
+      // Cột thao tác cố định bên phải là một phần của bố cục màn hình, không
+      // cho layout cũ hoặc thao tác trong menu chuyển nó sang mép trái.
+      if (columns.some((column) => column.key === key && column.stickyRight)) return
       const pinned = layout.pinnedColumns.includes(key)
       persist({
         ...layout,
@@ -138,24 +137,23 @@ export function useTableLayout<T>(
           : layout.hiddenColumns.filter((item) => item !== key),
       })
     },
-    [layout, persist],
+    [columns, layout, persist],
   )
 
   const resetLayout = useCallback(() => persist(defaultLayout), [defaultLayout, persist])
 
   /**
-   * Cột đang hiện, CỘT GHIM XẾP TRƯỚC. Phải sắp lại thật (không chỉ tô CSS) vì
-   * cột dính bên trái mà lại nằm giữa bảng thì khi cuộn nó sẽ chồng lên hàng xóm.
-   * Trong mỗi nhóm vẫn giữ thứ tự người dùng đã kéo thả.
+   * Cột đang hiện: ghim trái xếp đầu, cột thường ở giữa, cột cố định phải xếp
+   * cuối. Phải sắp lại thật (không chỉ tô CSS) vì cột sticky nằm giữa bảng sẽ
+   * chồng lên hàng xóm khi cuộn ngang. Trong mỗi nhóm vẫn giữ thứ tự người dùng.
    */
   const visibleColumns = useMemo(() => {
-    const shown = orderedColumns.filter(
-      (column) => !layout.hiddenColumns.includes(column.key),
-    )
+    const shown = orderedColumns.filter((column) => !layout.hiddenColumns.includes(column.key))
     const isPinned = (key: string) => layout.pinnedColumns.includes(key)
     return [
-      ...shown.filter((column) => isPinned(column.key)),
-      ...shown.filter((column) => !isPinned(column.key)),
+      ...shown.filter((column) => isPinned(column.key) && !column.stickyRight),
+      ...shown.filter((column) => !isPinned(column.key) && !column.stickyRight),
+      ...shown.filter((column) => column.stickyRight),
     ]
   }, [orderedColumns, layout.hiddenColumns, layout.pinnedColumns])
 
@@ -183,16 +181,12 @@ function readLayout(storageKey?: string): DataTableLayout | null {
     return {
       hiddenColumns: Array.isArray(parsed.hiddenColumns) ? parsed.hiddenColumns : [],
       columnWidths:
-        parsed.columnWidths && typeof parsed.columnWidths === 'object'
-          ? parsed.columnWidths
-          : {},
+        parsed.columnWidths && typeof parsed.columnWidths === 'object' ? parsed.columnWidths : {},
       // Ba trường dưới thêm sau; bản lưu cũ không có -> coi như rỗng.
       columnOrder: Array.isArray(parsed.columnOrder) ? parsed.columnOrder : [],
       pinnedColumns: Array.isArray(parsed.pinnedColumns) ? parsed.pinnedColumns : [],
       columnColors:
-        parsed.columnColors && typeof parsed.columnColors === 'object'
-          ? parsed.columnColors
-          : {},
+        parsed.columnColors && typeof parsed.columnColors === 'object' ? parsed.columnColors : {},
     }
   } catch {
     // Dữ liệu cũ hỏng định dạng -> bỏ qua, dùng mặc định.

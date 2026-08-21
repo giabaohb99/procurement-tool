@@ -263,6 +263,15 @@ def submit(db: Session, doc: Document, actor: int) -> Document:
     from .link_service import ensure_required_links
     ensure_required_links(db, doc)
 
+    #  Kiểm TRA LUỒNG trước khi chuyển bản nháp sang «Đang duyệt». Bản clone
+    #  bắt buộc có luồng riêng của pháp nhân nhận; chặn sau `db.commit()` sẽ để
+    #  lại một văn bản đang duyệt nhưng không có phiên duyệt nào nhặt nó lên.
+    from .approval_bridge import (dam_bao_co_luong_rieng, dang_bat,
+                                  trinh_duyet)
+    bo_may_duyet_bat = dang_bat(db)
+    if bo_may_duyet_bat:
+        dam_bao_co_luong_rieng(db, doc)
+
     version.status, version.updated_by = VERSION_SUBMITTED, actor
     #  CHỈ bản đầu tiên mới kéo cả văn bản sang "đang duyệt". Từ bản thứ hai trở
     #  đi, văn bản vẫn đang có hiệu lực bằng bản cũ trong suốt lúc bản mới chờ
@@ -282,9 +291,7 @@ def submit(db: Session, doc: Document, actor: int) -> Document:
     #  một phiên nhiều bước. Cờ tắt, hoặc bật mà chưa khai luồng nào, thì
     #  `trinh_duyet` trả `None` và mọi thứ chạy y như trước: ba nút cứng
     #  submit → approve/reject trên trang chi tiết.
-    from .approval_bridge import dang_bat, trinh_duyet
-
-    if dang_bat(db):
+    if bo_may_duyet_bat:
         trinh_duyet(db, doc, actor)
 
     db.refresh(doc)

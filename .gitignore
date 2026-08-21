@@ -30,7 +30,10 @@ celerybeat-schedule*
 # Bản xuất dữ liệu để đồng bộ môi trường — sinh bằng
 # `scripts/export-van-thu-phe-duyet.sh`. KHÔNG đẩy lên git: tệp chứa dữ liệu
 # thật của một môi trường cụ thể, và nó cũ đi ngay khi ai đó sửa dữ liệu.
-db-export/
+# Bản dump dữ liệu thật vẫn bỏ qua; riêng gói tài khoản test idempotent cần đưa
+# theo source để có thể nạp đồng nhất lên môi trường DEV/UAT.
+db-export/*
+!db-export/test-accounts-van-thu-phap-nhan-20260821.sql
 
 # Ảnh chụp màn hình + kịch bản chạy tay của skill chrome-devtools. Rác của một
 # máy cụ thể: sinh ra lúc kiểm bằng trình duyệt thật rồi bỏ. Kịch bản nào đáng

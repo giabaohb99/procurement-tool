@@ -3,15 +3,15 @@
 Ba kiểu: pháp nhân · phòng ban · cá nhân. **Không có kiểu chức danh** — điều kiện
 dạng "trưởng phòng trở lên" viết trong nội dung văn bản, không khai thành dữ liệu.
 
-Ba quy tắc tính "ai thuộc phạm vi", đọc kỹ trước khi sửa (`04` mục 5.4):
+Bốn quy tắc tính "ai thuộc phạm vi", đọc kỹ trước khi sửa:
 
 1. Các dòng **bao gồm** cộng dồn với nhau.
-2. **Loại trừ luôn thắng** bao gồm.
-3. **Không có dòng nào thì KHÔNG AI thuộc phạm vi** — không phải "mọi người".
+2. Chiều cụ thể hơn thắng: **cá nhân > phòng ban > pháp nhân**.
+3. Cùng một chiều thì **loại trừ thắng** bao gồm.
+4. **Không có dòng nào = toàn bộ pháp nhân ban hành** — và chỉ pháp nhân đó.
 
-Quy tắc 3 ngược với trực giác nhưng an toàn hơn: quên khai phạm vi thì văn bản
-không tới ai, người ta sẽ hỏi. Còn nếu mặc định là mọi người thì quên khai nghĩa
-là văn bản mật gửi cho cả tập đoàn.
+Ví dụ: bao gồm Công ty A, loại trừ phòng Kế toán, rồi bao gồm đích danh chị B
+trong phòng đó → chị B thấy, những thành viên Kế toán còn lại không thấy.
 """
 from sqlalchemy import (BigInteger, Boolean, CheckConstraint, Index,
                         SmallInteger, UniqueConstraint)

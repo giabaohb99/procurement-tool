@@ -114,6 +114,34 @@ def trinh_duyet(db: Session, doc: Document, actor: int):
         actor=actor,
         entity_code=doc.doc_code or doc.issue_number or "",
         entity_title=doc.title or "",
+        #  Bản clone là văn bản pháp lý riêng của nơi nhận. Không có luồng riêng
+        #  thì phải chặn từ trước bằng `dam_bao_co_luong_rieng()`, tuyệt đối
+        #  không rơi về luồng dùng chung của bản gốc.
+        chi_luong_phap_nhan=bool(doc.source_document_id),
+    )
+
+
+def dam_bao_co_luong_rieng(db: Session, doc: Document) -> None:
+    """Bản clone phải có luồng khớp ĐÚNG pháp nhân trước khi đổi trạng thái.
+
+    Gọi trước `service.submit()` commit. Chặn sau commit thì API báo lỗi nhưng
+    văn bản đã thành «Đang duyệt» mà không có phiên nào — tình trạng không màn
+    hình nào sửa được.
+    """
+    if not doc.source_document_id:
+        return
+    if flow_service.chon_luong(
+            db, ENTITY, boi_canh(doc), chi_phap_nhan=True) is not None:
+        return
+
+    from app.modules.company.model import Company
+
+    company = db.get(Company, doc.company_id) if doc.company_id else None
+    ten = company.name if company else f"#{doc.company_id}"
+    raise HTTPException(
+        400,
+        f"Pháp nhân «{ten}» chưa có luồng duyệt Văn bản riêng. "
+        "Hãy tạo luồng và chọn đúng «Pháp nhân áp dụng» trước khi gửi duyệt.",
     )
 
 

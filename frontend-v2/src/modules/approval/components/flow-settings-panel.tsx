@@ -2,22 +2,19 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { SlidersHorizontal, X } from 'lucide-react'
 
+import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Switch } from '@/shared/ui/switch'
 import { ENTITY_LABELS } from '../helpers/entity-link'
 import { FlowScopePicker } from './flow-scope-picker'
 import { useSaveApprovalFlow } from '../hooks/use-approvals'
 import type { ApprovalFlow } from '../types/approval'
+
+const ALL_COMPANIES = 'all'
 
 interface FlowSettingsPanelProps {
   /** Bỏ trống = đang TẠO luồng mới. */
@@ -39,6 +36,7 @@ export function FlowSettingsPanel({
   onCancel,
 }: FlowSettingsPanelProps) {
   const save = useSaveApprovalFlow()
+  const { data: companies } = useCompanies({ page_size: 200, is_active: true })
   const [form, setForm] = useState<Partial<ApprovalFlow>>(() => ({
     entity: flow?.entity ?? entityMacDinh ?? 'document',
     code: flow?.code ?? '',
@@ -79,7 +77,9 @@ export function FlowSettingsPanel({
               {isCreate ? 'Thông tin luồng duyệt' : 'Cài đặt luồng duyệt'}
             </h3>
             <p className="text-xs text-muted-foreground">
-              {isCreate ? 'Thiết lập đối tượng & điều kiện áp dụng' : 'Cập nhật phạm vi & điều kiện luồng'}
+              {isCreate
+                ? 'Thiết lập đối tượng & điều kiện áp dụng'
+                : 'Cập nhật phạm vi & điều kiện luồng'}
             </p>
           </div>
         </div>
@@ -138,6 +138,34 @@ export function FlowSettingsPanel({
           />
         </div>
 
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold">Pháp nhân áp dụng</Label>
+          <Select
+            value={form.company_id ? String(form.company_id) : ALL_COMPANIES}
+            onValueChange={(value) =>
+              dat('company_id', value === ALL_COMPANIES ? null : Number(value))
+            }
+          >
+            <SelectTrigger className="h-10 w-full rounded-xl">
+              <SelectValue placeholder="Chọn pháp nhân" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value={ALL_COMPANIES}>
+                Tất cả pháp nhân — không dùng cho bản clone
+              </SelectItem>
+              {(companies?.items ?? []).map((company) => (
+                <SelectItem key={company.id} value={String(company.id)}>
+                  {company.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">
+            Bản clone bắt buộc dùng luồng riêng của pháp nhân nhận. Luồng “Tất cả pháp nhân” chỉ là
+            đường dùng chung cho các chứng từ không phải bản clone.
+          </p>
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
             <Label className="text-xs font-semibold">Mã luồng</Label>
@@ -179,11 +207,13 @@ export function FlowSettingsPanel({
 
         <div className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/20 p-3">
           <div className="space-y-0.5">
-            <Label htmlFor="flow-active" className="text-xs font-semibold cursor-pointer">
+            <Label htmlFor="flow-active" className="cursor-pointer text-xs font-semibold">
               Trạng thái hoạt động
             </Label>
             <p className="text-[11px] text-muted-foreground">
-              {form.is_active ? 'Đang kích hoạt áp dụng cho chứng từ mới' : 'Tạm dừng áp dụng luồng này'}
+              {form.is_active
+                ? 'Đang kích hoạt áp dụng cho chứng từ mới'
+                : 'Tạm dừng áp dụng luồng này'}
             </p>
           </div>
           <Switch

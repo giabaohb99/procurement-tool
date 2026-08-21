@@ -44,3 +44,12 @@ export const NUMBERING_TOKENS = [
   { token: '{PhapNhan}', label: 'Mã pháp nhân' },
   { token: '{SoVB}', label: 'Mã sổ văn bản' },
 ] as const
+
+/** Các dấu thường dùng để ghép những phần của số hiệu. */
+export const NUMBERING_SEPARATORS = [
+  { token: '/', label: '/' },
+  { token: '-', label: '-' },
+  { token: '.', label: '.' },
+  { token: '(', label: '(' },
+  { token: ')', label: ')' },
+] as const

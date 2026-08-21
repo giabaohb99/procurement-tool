@@ -13,6 +13,7 @@ function luong(overrides: Partial<ApprovalFlow> = {}): ApprovalFlow {
     version_no: 1,
     is_active: true,
     company_id: null,
+    company_name: '',
     priority: 0,
     condition: '',
     node_count: 2,
@@ -44,13 +45,17 @@ describe('filterApprovalFlows', () => {
     expect(filterApprovalFlows(rows, { ...KHONG_LOC, dung: 'inactive' }).map((r) => r.id)).toEqual([
       2,
     ])
-    expect(filterApprovalFlows(rows, { ...KHONG_LOC, dung: 'active' }).map((r) => r.id)).toEqual([1])
+    expect(filterApprovalFlows(rows, { ...KHONG_LOC, dung: 'active' }).map((r) => r.id)).toEqual([
+      1,
+    ])
   })
 
   it('tìm được theo MÃ luồng, không chỉ theo tên', () => {
     const rows = [luong({ id: 1, code: 'PO-STD' }), luong({ id: 2, code: 'PO-GAP' })]
 
-    expect(filterApprovalFlows(rows, { ...KHONG_LOC, keyword: 'gap' }).map((r) => r.id)).toEqual([2])
+    expect(filterApprovalFlows(rows, { ...KHONG_LOC, keyword: 'gap' }).map((r) => r.id)).toEqual([
+      2,
+    ])
   })
 
   it('tìm được theo mô tả', () => {
@@ -59,9 +64,15 @@ describe('filterApprovalFlows', () => {
       luong({ id: 2, description: 'Đơn nhỏ' }),
     ]
 
-    expect(filterApprovalFlows(rows, { ...KHONG_LOC, keyword: '100 triệu' }).map((r) => r.id)).toEqual(
-      [1],
-    )
+    expect(
+      filterApprovalFlows(rows, { ...KHONG_LOC, keyword: '100 triệu' }).map((r) => r.id),
+    ).toEqual([1])
+  })
+
+  it('tìm được theo tên pháp nhân của luồng riêng', () => {
+    const sam = luong({ id: 4, name: 'Ban hành văn bản', company_name: 'SAM' })
+
+    expect(filterApprovalFlows([sam], { ...KHONG_LOC, keyword: 'sam' })).toEqual([sam])
   })
 
   it('bỏ qua hoa thường và khoảng trắng thừa hai đầu', () => {

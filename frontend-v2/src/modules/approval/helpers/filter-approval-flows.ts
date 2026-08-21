@@ -35,7 +35,7 @@ export function filterApprovalFlows(
 
     //  Tìm cả trong MÃ và MÔ TẢ, không chỉ tên: người khai luồng nhớ mã
     //  ("PO-STD") thường xuyên hơn nhớ tên đầy đủ.
-    return [row.name, row.code, row.description].some((field) =>
+    return [row.name, row.code, row.description, row.company_name].some((field) =>
       (field ?? '').toLowerCase().includes(needle),
     )
   })

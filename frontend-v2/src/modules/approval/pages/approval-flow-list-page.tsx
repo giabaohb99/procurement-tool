@@ -20,13 +20,7 @@ import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { APPROVAL_FLOW_FILTER_FIELDS } from '../config/approval-flow-filter-fields'
 import { conditionFieldsOf } from '../config/condition-fields'
 import { cauDieuKien } from '../helpers/condition-sentence'
@@ -140,6 +134,13 @@ function ApprovalFlowListContent() {
         header: 'Loại chứng từ',
         width: 180,
         cell: (row) => ENTITY_LABELS[row.entity] ?? row.entity,
+      },
+      {
+        key: 'company_name',
+        header: 'Pháp nhân',
+        width: 220,
+        cell: (row) =>
+          row.company_name || <span className="text-muted-foreground">Tất cả pháp nhân</span>,
       },
       {
         key: 'condition',

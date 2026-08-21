@@ -150,6 +150,19 @@ export function useSaveDocument() {
   })
 }
 
+/** Sao chép một văn bản thành bản nháp độc lập; không phải clone xuống pháp nhân con. */
+export function useCopyDocument() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (documentId: number) => documentApi.copy(documentId),
+    onSuccess: () => {
+      toast.success('Đã tạo bản sao ở trạng thái nháp')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
+    },
+  })
+}
+
 export function useDeleteDocument() {
   const queryClient = useQueryClient()
 

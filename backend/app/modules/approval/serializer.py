@@ -5,6 +5,7 @@ trong hai chỗ thì màn hình hiện số thô, và người dùng đọc "3" 
 """
 from sqlalchemy.orm import Session
 
+from app.modules.company.model import Company
 from app.modules.employee.model import Employee
 
 from . import flow_service
@@ -25,6 +26,7 @@ def _ten(db: Session, employee_id: int | None) -> str:
 
 
 def flow_out(db: Session, flow: ApprovalFlow, kem_buoc: bool = False) -> dict:
+    company = db.get(Company, flow.company_id) if flow.company_id else None
     data = {
         "id": flow.id,
         "entity": flow.entity,
@@ -34,6 +36,7 @@ def flow_out(db: Session, flow: ApprovalFlow, kem_buoc: bool = False) -> dict:
         "version_no": flow.version_no,
         "is_active": flow.is_active,
         "company_id": flow.company_id,
+        "company_name": company.name if company else "",
         "priority": flow.priority,
         "condition": flow.condition,
         "node_count": len(flow_service.nodes_of(db, flow.id)),

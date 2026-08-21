@@ -11,13 +11,15 @@ import { useCallback, useEffect, useRef, useState } from 'react'
  * Đo lại khi: đổi danh sách cột ghim, người dùng kéo giãn cột, hoặc khung bảng
  * đổi bề rộng (thu/mở menu trái, đổi cỡ cửa sổ).
  */
-export function usePinnedOffsets(pinnedKeys: string[]) {
+export function usePinnedOffsets(pinnedKeys: string[], pinnedRightKeys: string[] = []) {
   const headerRowRef = useRef<HTMLTableRowElement>(null)
   const [offsets, setOffsets] = useState<Record<string, number>>({})
+  const [rightOffsets, setRightOffsets] = useState<Record<string, number>>({})
   const [scrolledX, setScrolledX] = useState(false)
 
   // Chuỗi khóa thay cho mảng: mảng đổi identity mỗi lần render sẽ chạy lại effect.
   const keySignature = pinnedKeys.join('|')
+  const rightKeySignature = pinnedRightKeys.join('|')
 
   const measure = useCallback(() => {
     const row = headerRowRef.current
@@ -35,7 +37,18 @@ export function usePinnedOffsets(pinnedKeys: string[]) {
     // So sánh trước khi set: ResizeObserver bắn liên tục, set state y hệt sẽ
     // tạo vòng lặp render vô ích (và Chrome cảnh báo "ResizeObserver loop").
     setOffsets((current) => (isSameOffsets(current, next) ? current : next))
-  }, [keySignature])
+
+    const nextRight: Record<string, number> = {}
+    let right = 0
+    const rightKeys = rightKeySignature ? rightKeySignature.split('|') : []
+    for (const key of rightKeys.reverse()) {
+      const cell = row.querySelector<HTMLElement>(`th[data-column-key="${CSS.escape(key)}"]`)
+      if (!cell) continue
+      nextRight[key] = right
+      right += cell.offsetWidth
+    }
+    setRightOffsets((current) => (isSameOffsets(current, nextRight) ? current : nextRight))
+  }, [keySignature, rightKeySignature])
 
   useEffect(() => {
     const row = headerRowRef.current
@@ -55,18 +68,21 @@ export function usePinnedOffsets(pinnedKeys: string[]) {
    * phải mảnh y hệt các cột khác, không thì trông như kẻ viền hai lần.
    */
   useEffect(() => {
-    const container = headerRowRef.current?.closest<HTMLElement>(
-      '[data-slot="table-container"]',
-    )
+    const container = headerRowRef.current?.closest<HTMLElement>('[data-slot="table-container"]')
     if (!container) return
 
     const sync = () => setScrolledX(container.scrollLeft > 0)
     sync()
     container.addEventListener('scroll', sync, { passive: true })
     return () => container.removeEventListener('scroll', sync)
-  }, [])
+  }, [keySignature, rightKeySignature])
 
-  return { headerRowRef, pinnedOffsets: offsets, scrolledX }
+  return {
+    headerRowRef,
+    pinnedOffsets: offsets,
+    pinnedRightOffsets: rightOffsets,
+    scrolledX,
+  }
 }
 
 function isSameOffsets(a: Record<string, number>, b: Record<string, number>): boolean {

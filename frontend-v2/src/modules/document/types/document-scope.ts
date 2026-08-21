@@ -1,10 +1,11 @@
 /**
  * PHẠM VI ÁP DỤNG của văn bản (F01–F05).
  *
- * Ba quy tắc, giao diện phải nói ra quy tắc thứ ba:
+ * Bốn quy tắc, giao diện phải nói ra quy tắc mặc định:
  *  1. các dòng bao gồm cộng dồn;
- *  2. loại trừ luôn thắng;
- *  3. **không có dòng nào = áp cho toàn bộ pháp nhân ban hành** — mọi phòng ban,
+ *  2. chiều cụ thể hơn thắng: cá nhân > phòng ban > pháp nhân;
+ *  3. cùng một chiều thì loại trừ thắng;
+ *  4. **không có dòng nào = áp cho toàn bộ pháp nhân ban hành** — mọi phòng ban,
  *     mọi nhân sự của chính công ty đứng tên, và chỉ công ty đó.
  */
 

@@ -1,13 +1,14 @@
 """Tính AI THUỘC PHẠM VI áp dụng của văn bản (F01–F05).
 
-Ba quy tắc, thứ tự quan trọng:
+Bốn quy tắc, thứ tự quan trọng:
 
 1. Các dòng **bao gồm** cộng dồn.
-2. **Loại trừ luôn thắng** — dù trùng chiều nào.
-3. **Không có dòng nào = áp cho TOÀN BỘ PHÁP NHÂN BAN HÀNH** — mọi phòng ban,
+2. Chiều cụ thể hơn thắng: **cá nhân > phòng ban > pháp nhân**.
+3. Nếu cùng mức cụ thể thì **loại trừ thắng**.
+4. **Không có dòng nào = áp cho TOÀN BỘ PHÁP NHÂN BAN HÀNH** — mọi phòng ban,
    mọi nhân sự của chính công ty đứng tên văn bản, và chỉ công ty đó.
 
-Quy tắc 3 đổi ngày 19/08/2026. Trước đó "không khai gì = không ai thuộc phạm
+Quy tắc 4 đổi ngày 19/08/2026. Trước đó "không khai gì = không ai thuộc phạm
 vi": an toàn về lý thuyết nhưng sai với việc thật — phần lớn văn bản chỉ lưu
 hành trong đúng công ty làm ra nó, mà vẫn bắt người soạn khai tay một dòng
 "pháp nhân = công ty mình" thì ai cũng quên, và văn bản ban hành xong không tới
@@ -86,19 +87,27 @@ def applies_to(db: Session, document_id: int, employee: Employee) -> bool:
     if not rows:
         return mac_dinh_theo_phap_nhan(db.get(Document, document_id), employee)
 
-    #  Quy tắc 2 — loại trừ thắng, nên xét trước và thoát ngay.
-    for row in rows:
-        if row.mode == MODE_EXCLUDE and _match(db, row, employee):
-            return False
+    trung = [row for row in rows if _match(db, row, employee)]
+    if not trung:
+        return False
 
-    return any(row.mode == MODE_INCLUDE and _match(db, row, employee) for row in rows)
+    bao_gom = [row.dim for row in trung if row.mode == MODE_INCLUDE]
+    if not bao_gom:
+        return False
+
+    loai_tru = [row.dim for row in trung if row.mode == MODE_EXCLUDE]
+    #  Hằng chiều cố ý xếp theo độ cụ thể: pháp nhân (1) < phòng ban (2) < cá
+    #  nhân (3). Vì vậy một cá nhân được cho phép đích danh vẫn thuộc phạm vi
+    #  khi phòng của họ bị loại. Cùng một cấp thì loại trừ thắng (`>=`), nên
+    #  dòng cấm đích danh chính cá nhân vẫn được giữ nguyên.
+    return max(bao_gom) > max(loai_tru, default=0)
 
 
 def document_ids_for(db: Session, employee: Employee) -> list[int]:
     """F05 — mọi văn bản đang áp dụng cho một người.
 
     Lọc thô ở tầng truy vấn rồi lọc tinh bằng `applies_to`: phần "gồm đơn vị con"
-    và luật loại-trừ-thắng không viết gọn thành một câu SQL được, mà số văn bản
+    và luật ưu tiên theo độ cụ thể không viết gọn thành một câu SQL được, mà số văn bản
     có khai phạm vi thì nhỏ hơn hẳn tổng số văn bản.
     """
     co_khai = {row[0] for row in db.query(DocumentScope.document_id).distinct().all()}

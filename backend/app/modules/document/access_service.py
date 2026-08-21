@@ -124,6 +124,11 @@ def visible_condition(user, profile: dict, action: str = "read"):
 
     Trả `None` nghĩa là **không lọc gì** — chỉ xảy ra khi vai trò cho thấy tất cả
     và không có dòng cấm nào áp lên người này.
+
+    Riêng quyền ĐỌC: nếu người dùng thấy một bản clone thì danh sách phải hiện
+    thêm bản gốc của nó. Giao diện cần dòng gốc để gom bản clone vào nhánh bung;
+    chỉ mở được gốc bằng URL mà không có nó trong danh sách sẽ làm bản clone
+    đứng thành một dòng cấp cao, trông như một văn bản hoàn toàn mới.
     """
     scope = scope_condition(Document, "document", user, profile, action)
     allow = _document_ids(profile, action, EFFECT_ALLOW)
@@ -144,9 +149,30 @@ def visible_condition(user, profile: dict, action: str = "read"):
         base = scope
 
     if deny is None:
-        return base
-    not_denied = ~Document.id.in_(deny)
-    return not_denied if base is None else and_(base, not_denied)
+        direct = base
+        not_denied = None
+    else:
+        not_denied = ~Document.id.in_(deny)
+        direct = not_denied if base is None else and_(base, not_denied)
+
+    #  `None` = đã thấy tất cả, không cần cộng nguồn quyền nào. Các hành động
+    #  sửa / xóa tuyệt đối không được kéo theo từ bản clone sang bản gốc.
+    if action != "read" or direct is None:
+        return direct
+
+    #  Chỉ lấy MỘT tầng gốc của những clone đọc được bằng quyền trực tiếp. Không
+    #  dùng lại `visible_condition()` trong truy vấn con vì sẽ tự đệ quy vô hạn.
+    #  Cùng một bảng ở hai scope SQL khác nhau nên truy vấn con vẫn độc lập với
+    #  dòng `Document` bên ngoài.
+    source_ids = (
+        select(Document.source_document_id)
+        .where(Document.source_document_id.isnot(None), direct)
+    )
+    source_visible = Document.id.in_(source_ids)
+    #  Dòng CẤM đích danh trên BẢN GỐC vẫn thắng quyền đọc kéo theo từ clone.
+    if not_denied is not None:
+        source_visible = and_(source_visible, not_denied)
+    return or_(direct, source_visible)
 
 
 def dang_duyet_van_ban_nay(db: Session, document_id: int, employee_id: int | None) -> bool:
@@ -176,8 +202,9 @@ def co_ban_clone_xem_duoc(db: Session, source_document_id: int, user,
     """Người dùng có đọc được ít nhất một bản clone của văn bản gốc hay không.
 
     Pháp nhân nhận phải mở lại được bản gốc để đặt hai bản cạnh nhau, chỉnh bản
-    của mình rồi mới ban hành. Quyền này chỉ mở theo liên kết clone đã tồn tại,
-    không cộng bản gốc vào danh sách chung của pháp nhân nhận.
+    của mình rồi mới ban hành. Quyền này chỉ mở theo liên kết clone đã tồn tại;
+    `visible_condition()` cũng đưa gốc vào danh sách để giao diện gom clone vào
+    đúng nhánh cha–con.
 
     Dùng chính ``visible_condition`` của bản clone để giữ nguyên mọi luật phạm
     vi, chia sẻ, quyền theo sổ và dòng cấm. Không suy rộng thành "cùng pháp nhân

@@ -28,7 +28,8 @@ from app.modules.document.access_model import (EFFECT_ALLOW, EFFECT_DENY,
                                                SUBJECT_EMPLOYEE, SUBJECT_ROLE,
                                                DocumentAccess)
 from app.modules.document.model import Document
-from app.modules.document.query import documents_query
+from app.modules.document.query import (an_ban_rieng_co_goc_xem_duoc,
+                                        dem_ban_rieng, documents_query)
 from app.modules.document.schema import AccessGrant, DocumentCreate
 
 OWNER_USER_ID = 10
@@ -309,9 +310,15 @@ def test_doc_duoc_ban_clone_thi_xem_lai_duoc_ban_goc(db, doc, seed):
     #  Mở thêm đúng quyền ĐỌC bản gốc để đối chiếu, không cho sửa bản của mẹ.
     assert access_service.can(db, doc, user, profile, "read") is True
     assert access_service.can(db, doc, user, profile, "write") is False
-    #  Bản gốc không trộn vào danh sách chung của pháp nhân con; họ đi tới nó
-    #  bằng nút «Xem bản gốc» trên chính bản clone.
-    assert [row.id for row in _visible(db, user, profile)] == [clone.id]
+    #  Danh sách cần cả gốc lẫn clone trước khi gom; thiếu gốc thì giao diện
+    #  buộc phải bày clone thành một dòng cấp cao như văn bản mới.
+    visible = _visible(db, user, profile)
+    assert {row.id for row in visible} == {doc.id, clone.id}
+
+    cond = access_service.visible_condition(user, profile, "read")
+    query = documents_query(db).filter(cond)
+    assert [row.id for row in an_ban_rieng_co_goc_xem_duoc(query).all()] == [doc.id]
+    assert dem_ban_rieng(query, [doc.id]) == {doc.id: 1}
 
 
 def test_cam_dich_danh_ban_goc_van_thang_quyen_doc_qua_clone(db, doc, seed):
@@ -334,6 +341,9 @@ def test_cam_dich_danh_ban_goc_van_thang_quyen_doc_qua_clone(db, doc, seed):
     ), OWNER_USER_ID)
 
     assert access_service.can(db, doc, user, profile, "read") is False
+    visible_ids = {row.id for row in _visible(db, user, profile)}
+    assert clone.id in visible_ids
+    assert doc.id not in visible_ids
 
 
 def test_van_ban_ngoai_khong_lot_qua_lop_chia_se(db, doc, seed):
