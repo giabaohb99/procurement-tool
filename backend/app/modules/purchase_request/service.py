@@ -324,7 +324,8 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
     created_prods = {r[0] for r in
                      db.query(POItem.product_code).join(PurchaseOrder, PurchaseOrder.id == POItem.po_id)
                      .filter(PurchaseOrder.pr_code == pr_code,
-                             PurchaseOrder.status != "cancelled").distinct().all()}
+                             PurchaseOrder.status != "cancelled",
+                             POItem.progress_status != "Hủy đơn").distinct().all()}
     # Tổng SL đã nhận theo từng dòng ĐMH (gom các lần giao).
     recv_by_item: dict[int, float] = {}
     item_ids = [ln.id for ln in lines]
@@ -371,8 +372,10 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
         it.qty_ordered = round(ordered, 3)
         it.qty_received = round(received, 3)
         old_st = prev_statuses.get(it.id, "")
-        if (it.line_status or "") == "Hủy đơn":
-            continue  # ngoại lệ đặt thủ công trên YCMH thì giữ nguyên
+        # Ngoại lệ đặt thủ công trên YCMH thì giữ nguyên Hủy đơn khi CHƯA có ĐMH mới (chưa tạo & chưa đặt).
+        # Nếu đã tạo ĐMH mới hoặc đặt hàng mới cho sản phẩm này, trạng thái tự động cập nhật theo ĐMH mới.
+        if (it.line_status or "") == "Hủy đơn" and p not in ordered_min and p not in created_prods:
+            continue
         # Dự kiến có hàng cuộn NGƯỢC từ ĐMH lên:
         #  - ô trên YCMH còn TRỐNG  -> ghi thẳng (đúng nhánh mà luật hiện hành cho sửa tự do)
         #  - ô đã CÓ giá trị và LỆCH -> KHÔNG ghi đè, và KHÔNG báo gì ở đây. Người sửa ĐMH đã
@@ -384,7 +387,7 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
             it.expected_date = _emax
         # Suy trạng thái theo SL/tiến độ THỰC (không bị dòng ĐMH chưa đặt làm sai):
         if p not in ordered_min:
-            if p in has_cancel:
+            if p in has_cancel and p not in created_prods:
                 it.line_status = "Hủy đơn"
             else:
                 # CR-074: có dòng ĐMH (kể cả đơn Nháp) → "Chưa đặt hàng"; không có gì → "Chưa tạo đơn mua hàng"
