@@ -1,7 +1,8 @@
-import { AlertTriangle, Check, ExternalLink } from 'lucide-react'
+import { AlertTriangle, Check, Copy, ExternalLink } from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
+import { cn } from '@/shared/utils/cn'
 
 interface DocumentNeedsReviewBannerProps {
   needsReview: boolean
@@ -18,8 +19,12 @@ interface DocumentNeedsReviewBannerProps {
 }
 
 /**
- * BĂNG "CẦN RÀ LẠI" — bật khi văn bản CHA đổi (bản gốc lên phiên bản mới, cha
- * bị bãi bỏ, ràng buộc của bản trích).
+ * BĂNG NGUỒN GỐC / "CẦN RÀ LẠI".
+ *
+ * Bản clone luôn hiện lối mở bản gốc, kể cả khi chưa có cảnh báo: pháp nhân
+ * nhận cần đặt hai bản cạnh nhau để chỉnh bản của mình trước khi ban hành. Khi
+ * bản gốc đổi thì cùng băng này chuyển sang trạng thái cảnh báo và cho xác nhận
+ * đã rà xong.
  *
  * Hệ thống chỉ **đánh dấu**, không bao giờ tự sửa nội dung văn bản con: người rà
  * mới là người quyết định.
@@ -41,19 +46,43 @@ export function DocumentNeedsReviewBanner({
   onConfirm,
   pending = false,
 }: DocumentNeedsReviewBannerProps) {
-  if (!needsReview) return null
+  const isClone = Boolean(sourceDocumentId)
+  if (!needsReview && !isClone) return null
 
   return (
-    <div className="mb-3 flex flex-wrap items-start gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
-      <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700" />
+    <div
+      className={cn(
+        'mb-3 flex flex-wrap items-start gap-3 rounded-md border px-4 py-3',
+        needsReview ? 'border-amber-300 bg-amber-50' : 'border-primary/20 bg-primary/5',
+      )}
+    >
+      {needsReview ? (
+        <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700" />
+      ) : (
+        <Copy className="mt-0.5 size-4 shrink-0 text-primary" />
+      )}
 
-      <div className="min-w-0 flex-1 text-sm text-amber-900">
-        <p className="font-medium">Văn bản này cần rà lại.</p>
-        {note && <p className="text-amber-800">{note}</p>}
-        {!sourceDocumentId && (
-          <p className="mt-1 text-amber-800">
-            Mở tab <strong>Quan hệ</strong> để tìm văn bản gốc rồi đối chiếu.
-          </p>
+      <div
+        className={cn('min-w-0 flex-1 text-sm', needsReview ? 'text-amber-900' : 'text-foreground')}
+      >
+        {needsReview ? (
+          <>
+            <p className="font-medium">Văn bản này cần rà lại.</p>
+            {note && <p className="text-amber-800">{note}</p>}
+            {!sourceDocumentId && (
+              <p className="mt-1 text-amber-800">
+                Mở tab <strong>Quan hệ</strong> để tìm văn bản gốc rồi đối chiếu.
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="font-medium">Đây là bản riêng nhận từ văn bản gốc.</p>
+            <p className="text-muted-foreground">
+              Mở bản gốc để đối chiếu, sau đó chỉnh nội dung bản này cho pháp nhân hiện tại trước
+              khi gửi ban hành.
+            </p>
+          </>
         )}
       </div>
 
@@ -66,15 +95,11 @@ export function DocumentNeedsReviewBanner({
             size="sm"
             variant="outline"
             onClick={() =>
-              window.open(
-                appRoutes.document.documentDetail(sourceDocumentId),
-                '_blank',
-                'noopener',
-              )
+              window.open(appRoutes.document.documentDetail(sourceDocumentId), '_blank', 'noopener')
             }
           >
             <ExternalLink className="size-4" />
-            Mở bản gốc để đối chiếu
+            Xem bản gốc
           </Button>
         )}
 

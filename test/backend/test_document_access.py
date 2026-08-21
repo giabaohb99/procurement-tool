@@ -276,6 +276,66 @@ def test_chia_mot_van_ban_khong_mo_cac_van_ban_khac(db, doc, seed):
     assert access_service.can(db, other, user, profile) is False
 
 
+# ── Pháp nhân nhận clone được đối chiếu bản gốc ─────────────────────────────
+def _clone_o_phap_nhan_con(db, doc, seed):
+    child = Company(code="CON", name="Công ty nhận clone", level=2, is_active=True)
+    db.add(child)
+    db.commit()
+
+    clone = service.create_document(db, DocumentCreate(
+        doc_type_id=doc.doc_type_id,
+        company_id=child.id,
+        department_id=seed.dept_id,
+        owner_employee_id=seed.emp_req_id,
+        title="Bản riêng Quy chế lương",
+        content_html="<p>Nội dung nhận từ bản gốc</p>",
+    ), OUTSIDER_USER_ID)
+    clone.source_document_id = doc.id
+    db.commit()
+    return child, clone
+
+
+def test_doc_duoc_ban_clone_thi_xem_lai_duoc_ban_goc(db, doc, seed):
+    child, clone = _clone_o_phap_nhan_con(db, doc, seed)
+    user = SimpleNamespace(id=OUTSIDER_USER_ID, employee_id=seed.emp_tp_id)
+    profile = _profile(
+        employee_id=seed.emp_tp_id,
+        company_id=child.id,
+        scope="company",
+        actions=("read", "write"),
+    )
+
+    assert access_service.can(db, clone, user, profile, "read") is True
+    #  Mở thêm đúng quyền ĐỌC bản gốc để đối chiếu, không cho sửa bản của mẹ.
+    assert access_service.can(db, doc, user, profile, "read") is True
+    assert access_service.can(db, doc, user, profile, "write") is False
+    #  Bản gốc không trộn vào danh sách chung của pháp nhân con; họ đi tới nó
+    #  bằng nút «Xem bản gốc» trên chính bản clone.
+    assert [row.id for row in _visible(db, user, profile)] == [clone.id]
+
+
+def test_cam_dich_danh_ban_goc_van_thang_quyen_doc_qua_clone(db, doc, seed):
+    child, clone = _clone_o_phap_nhan_con(db, doc, seed)
+    user = SimpleNamespace(id=OUTSIDER_USER_ID, employee_id=seed.emp_tp_id)
+    profile = _profile(
+        employee_id=seed.emp_tp_id,
+        company_id=child.id,
+        scope="company",
+        actions=("read", "write"),
+    )
+    assert access_service.can(db, clone, user, profile, "read") is True
+
+    access_service.grant(db, doc, AccessGrant(
+        subject_kind=SUBJECT_EMPLOYEE,
+        subject_id=seed.emp_tp_id,
+        effect=EFFECT_DENY,
+        can_read=True,
+        reason="Không được xem bản gốc",
+    ), OWNER_USER_ID)
+
+    assert access_service.can(db, doc, user, profile, "read") is False
+
+
 def test_van_ban_ngoai_khong_lot_qua_lop_chia_se(db, doc, seed):
     """Lớp quyền mới không được vô hiệu hóa lớp lọc `origin`."""
     from app.modules.document.model import ORIGIN_LEGAL

@@ -557,7 +557,11 @@ export function DocumentDetailPage() {
                  chỉ lặp lại cùng một danh sách bằng một cách nói khác. Muốn
                  xem bản riêng đã sinh ra chưa, ai đang lệch bản — mở tab
                  «Quan hệ», thẻ Cây tài liệu liệt kê đủ kèm tên pháp nhân. */}
-            <DocumentScopeCard documentId={documentId} canWrite={canWrite} />
+            <DocumentScopeCard
+              documentId={documentId}
+              canWrite={canWrite}
+              isClone={Boolean(record?.source_document_id)}
+            />
             <DocumentAccessCard documentId={documentId} canWrite={canWrite} />
           </DocumentRecordForm>
         </TabsContent>
