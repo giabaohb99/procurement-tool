@@ -1,4 +1,4 @@
-import { Factory, Layers, LayoutDashboard, Package, Ruler, Users } from 'lucide-react'
+import { Factory, FileText, Layers, LayoutDashboard, Package, Ruler, Users } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -51,6 +51,13 @@ export const productionModule: ErpModule = {
       path: appRoutes.production.itemGroups,
       icon: Layers,
       entity: 'item_group',
+      group: 'Danh mục',
+    },
+    {
+      label: 'Hợp đồng',
+      path: appRoutes.production.contracts,
+      icon: FileText,
+      entity: 'contract',
       group: 'Danh mục',
     },
   ],
@@ -109,6 +116,18 @@ export const productionModule: ErpModule = {
       path: `${appRoutes.production.itemGroups}/:id`,
       lazy: async () => ({
         Component: (await import('./pages/item-group-detail-page')).ItemGroupDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.production.contracts,
+      lazy: async () => ({
+        Component: (await import('./pages/contract-list-page')).ContractListPage,
+      }),
+    },
+    {
+      path: `${appRoutes.production.contracts}/:id`,
+      lazy: async () => ({
+        Component: (await import('./pages/contract-detail-page')).ContractDetailPage,
       }),
     },
   ],

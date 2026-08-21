@@ -15,6 +15,7 @@ import { Switch } from '@/shared/ui/switch'
 import { Textarea } from '@/shared/ui/textarea'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
+import { withCurrentValue } from './field-values'
 import type { CrudFormField } from './types'
 import { useCrudSourceOptions } from './use-crud'
 
@@ -186,6 +187,20 @@ function CrudSelectField({
         <Select
           value={String(controllerField.value ?? '')}
           onValueChange={(val) => {
+            // ⚠️ BỎ QUA chuỗi rỗng — KHÔNG phải người dùng chọn.
+            //
+            // Radix giữ một thẻ `<select>` ẩn để đồng bộ với form, và đồng bộ bằng
+            // cách GÁN THẲNG `select.value`. Trình duyệt ép giá trị nào chưa có
+            // `<option>` tương ứng NGAY LÚC ĐÓ về chuỗi rỗng rồi bắn `change`, Radix
+            // gọi ngược `onValueChange('')` và giá trị thật trong form bị xóa trắng.
+            // Trúng đúng hai ca hay gặp: ô nạp options từ API (options về SAU khi
+            // `reset` đổ dữ liệu) và giá trị cũ ngoài danh sách khai (mục bù của
+            // `withCurrentValue` vào danh sách chậm hơn một nhịp vẽ) — mở hợp đồng
+            // HDX0177 thì "Loại hợp đồng" và "Công ty pháp nhân" đều hiện chữ gợi ý
+            // như ô trống, bấm Lưu là ghi rỗng đè lên dữ liệu thật.
+            // Người dùng không cách nào chọn ra chuỗi rỗng (`SelectItem value=""` là
+            // lỗi của Radix), nên gặp '' thì chắc chắn là nhịp đồng bộ này.
+            if (val === '') return
             // Options kiểu boolean gửi lên dạng chuỗi, phải dựng lại đúng kiểu.
             if (val === 'true') controllerField.onChange(true)
             else if (val === 'false') controllerField.onChange(false)
@@ -197,7 +212,7 @@ function CrudSelectField({
             <SelectValue placeholder={field.placeholder || `Chọn ${field.label.toLowerCase()}`} />
           </SelectTrigger>
           <SelectContent>
-            {options.map((opt) => (
+            {withCurrentValue(options, controllerField.value).map((opt) => (
               <SelectItem key={String(opt.value)} value={String(opt.value)}>
                 {opt.label}
               </SelectItem>

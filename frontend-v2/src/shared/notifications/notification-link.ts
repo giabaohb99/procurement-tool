@@ -26,6 +26,8 @@ const PREFIX_MAP: [from: string, to: string][] = [
   ['/surveys', '/procurement/surveys'],
   ['/suppliers', '/production/suppliers'],
   ['/employees', '/hr/employees'],
+  //  Phiếu hỗ trợ: backend ghi `/tickets/12`, v2 gom vào phân hệ Hỗ trợ.
+  ['/tickets', '/support/tickets'],
 ]
 
 /**
@@ -49,6 +51,7 @@ const V2_PREFIXES = [
   '/project',
   '/report',
   '/sales',
+  '/support',
   '/system',
   '/vehicle-booking',
 ]

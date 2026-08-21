@@ -17,6 +17,7 @@ toàn bộ màn hình** của bản cũ, và chia phần còn lại thành **15 
    hoãn** *(Sao lưu CSDL, Quản lý Import, Phiếu hỗ trợ)*, còn lại **11 màn là việc trước mắt**.
    *Cập nhật 20/08/2026 (CR-106):* xong thêm **chi tiết Nhà cung cấp** ⇒ **27 xong** · **15 chưa
    có**, việc trước mắt còn **10 màn**. Số ngày công ở mục 3 chưa trừ đợt này.
+   *Cập nhật 21/08/2026 (CR-119, CR-121, CR-122):* xong cả **cụm Yêu cầu thanh toán** (danh sách + chi tiết + phiếu in + tích hợp công nợ), **Sao lưu CSDL** (`/system/backups`), **Nhật ký hệ thống** (`/system/audit-logs`), **Logo Công ty** và **Tệp đính kèm Nhà cung cấp** ⇒ **34 xong** · **2 có nhưng khuyết** · **9 chưa có**.
 2. **Không phải viết backend dòng nào** cho 16 màn còn thiếu. Toàn bộ endpoint đã chạy thật ở bản
    cũ — đây thuần là dựng lại giao diện. (Việc backend của ERP v2 nằm ở `12`, giai đoạn P1/P2/P5…,
    không dính tới tệp này.)
@@ -79,9 +80,9 @@ tiết, chỉ khác nhãn. v2 gộp làm một, không phải màn thiếu.*
 | # | Màn bản cũ | Đường dẫn v2 | Tình trạng |
 |---|---|---|---|
 | 21 | Tồn kho | `/inventory/stock` | Xong |
-| 22 | Công nợ | `/finance/payables` | **Khuyết** — thiếu cột tick chọn khoản nợ và nút lên phiếu thanh toán *(chờ màn 23)* |
-| 23 | Yêu cầu thanh toán — danh sách | *(chưa có)* → `/finance/payment-requests` | **Thiếu** |
-| 24 | Yêu cầu thanh toán — chi tiết *(464 dòng)* | *(chưa có)* | **Thiếu** |
+| 22 | Công nợ | `/finance/payables` | Xong *(Đ-09, CR-119 — trả lại cột tick chọn + nút lên phiếu)* |
+| 23 | Yêu cầu thanh toán — danh sách | `/finance/payment-requests` | Xong *(Đ-06, CR-119)* |
+| 24 | Yêu cầu thanh toán — chi tiết *(464 dòng)* | `/finance/payment-requests/:id` *(+ `/new`)* | Xong *(Đ-07, CR-119)* |
 
 ### 1.5 Danh mục
 
@@ -90,8 +91,8 @@ tiết, chỉ khác nhãn. v2 gộp làm một, không phải màn thiếu.*
 | 25 | Nhà cung cấp — danh sách | `/production/suppliers` | Xong |
 | 26 | Nhà cung cấp — **chi tiết** *(309 dòng, 5 tab)* | `/production/suppliers/:id` | Xong *(CR-106)* |
 | 27 | Sản phẩm | `/production/products` *(+ chi tiết)* | Xong *(Đ-03, CR-100)* |
-| 28 | Hợp đồng — danh sách | *(chưa có)* → `/production/contracts` | **Thiếu** *(Đ-04)* |
-| 29 | Hợp đồng — chi tiết *(128 dòng)* | *(chưa có)* → `/production/contracts/:id` | **Thiếu** *(Đ-04)* |
+| 28 | Hợp đồng — danh sách | `/production/contracts` | Xong *(Đ-04, CR-112)* |
+| 29 | Hợp đồng — chi tiết *(128 dòng)* | `/production/contracts/:id` | Xong *(Đ-04, CR-112)* |
 | 30 | Kho | `/inventory/warehouses` *(+ chi tiết)* | Xong *(Đ-01, CR-098)* |
 | 31 | Đơn vị tính | `/production/units` *(+ chi tiết)* | Xong *(Đ-02, CR-099)* |
 | 32 | Phân loại | `/production/item-groups` *(+ chi tiết)* | Xong *(Đ-02, CR-099)* |
@@ -113,9 +114,10 @@ sẵn từ lâu mà **không route nào dùng**, nhìn qua tưởng xong; và b�
 | 39 | Cấu hình hệ thống | `/system/settings` | Xong *(MC-4)* |
 | 40 | Quản lý Import — danh sách *(415 dòng)* | *(chưa có)* | **Thiếu** *(MC-6)* |
 | 41 | Quản lý Import — chi tiết *(141 dòng)* | *(chưa có)* | **Thiếu** *(MC-6)* |
-| 42 | Sao lưu CSDL *(167 dòng)* | *(chưa có)* | **Thiếu** *(MC-5)* |
-| 43 | Phiếu hỗ trợ — danh sách *(173 dòng)* | *(chưa có)* | **Thiếu** *(MC-7)* |
-| 44 | Phiếu hỗ trợ — chi tiết *(387 dòng)* | *(chưa có)* | **Thiếu** *(MC-7)* |
+| 42 | Sao lưu CSDL *(167 dòng)* | `/system/backups` | Xong *(MC-5, CR-113)* |
+| 43 | Phiếu hỗ trợ — danh sách *(173 dòng)* | `/me?tab=tickets` | Xong *(MC-7, CR-116)* |
+| 44 | Phiếu hỗ trợ — chi tiết *(387 dòng)* | `/support/tickets/:id` | Xong *(MC-7, CR-116)* |
+| 44b | Nhật ký hệ thống *(Audit Log)* | `/system/audit-logs` | Xong *(CR-115)* |
 
 ### 1.7 Phiếu in và màn ngoài menu
 
@@ -123,7 +125,7 @@ sẵn từ lâu mà **không route nào dùng**, nhìn qua tưởng xong; và b�
 |---|---|---|---|
 | 45 | In Yêu cầu mua hàng | `/print/purchase-request/:id` | Xong |
 | 46 | In Đơn mua hàng — 2 mẫu *(bản cũ 2 route)* | `/print/purchase-order/:id` — **gộp một trang có công tắc mẫu** | Xong |
-| 47 | In Yêu cầu thanh toán *(259 dòng)* | *(chưa có)* | **Thiếu** |
+| 47 | In Yêu cầu thanh toán *(259 dòng)* | `/print/payment-request/:id` | Xong *(Đ-08, CR-119)* |
 | 48 | Chứng từ *(169 dòng, không có trong menu)* | *(chưa có)* | **Chờ quyết** — xem §6 |
 
 ### 1.8 Màn đã có nhưng khuyết — đừng tính là xong
@@ -132,7 +134,7 @@ sẵn từ lâu mà **không route nào dùng**, nhìn qua tưởng xong; và b�
 |---|---|
 | **Trang chủ / Tổng quan Thu mua** | Bản cũ có 9 khối, v2 có 5. **Thiếu 4 khối**: *Top nhà cung cấp*, *Chi tiêu theo bộ phận*, *Trạng thái đơn hàng*, *Tuổi nợ*. Thẻ KPI *Công nợ quá hạn* bị thay bằng *Giao hàng trễ*. Danh sách *Yêu cầu mua gần đây* ở bản cũ **duyệt / từ chối ngay tại chỗ**, v2 chỉ xem |
 | **Tổng quan Tài chính** và **Tổng quan Kho** | Đang là trang rỗng 11 dòng, chỉ có tiêu đề. Hai khối *Tuổi nợ* và *Công nợ quá hạn* của Trang chủ cũ đúng ra thuộc về đây |
-| **Công nợ** | Thiếu cột tick chọn + nút lên phiếu thanh toán từ các dòng đã chọn |
+| ~~**Công nợ**~~ | ~~Thiếu cột tick chọn + nút lên phiếu thanh toán từ các dòng đã chọn~~ **Đã trả lại ở Đ-09 (CR-119)** — cột *Chọn* ghim đầu bảng + nút *Tạo đề nghị thanh toán*, giữ chọn xuyên trang, tách phiếu theo NCC |
 | **Chi tiết Yêu cầu báo giá** | Thiếu nút *Xử lý khảo sát* — nhưng màn đó đã quyết bỏ, việc chọn phương án sẽ nằm ngay trong chi tiết phiếu ở P6 |
 
 ### 1.9 Hai màn đã quyết bỏ
@@ -198,17 +200,17 @@ công, và đợt sau không chặn việc dùng thử đợt trước. Ai làm 
 | **Đ-01** | Lớp CRUD khai báo + danh mục **Kho** làm màn chứng minh | 2 – 3 | Có | — | AI | **Xong** |
 | **Đ-02** | **Đơn vị tính** + **Phân loại** *(chỉ khai báo, không viết trang)* | 0,5 – 1 | Có | — | AI | **Xong** |
 | **Đ-03** | **Sản phẩm** — danh sách + chi tiết *(có tab Lịch sử mua hàng)* | 2 – 3 | Có | — | AI | **Xong** |
-| **Đ-04** | **Hợp đồng** — danh sách + chi tiết + tệp đính kèm | 1,5 – 2 | Có | **Dễ** | *(chưa nhận)* | Chưa làm |
+| **Đ-04** | **Hợp đồng** — danh sách + chi tiết + tệp đính kèm | 1,5 – 2 | Có | **Dễ** | AI | **Xong** *(CR-112, CR-114)* |
 | **Đ-05** | **Nhà cung cấp** — danh sách dời sang CRUD + chi tiết 5 tab | 1,5 – 2 | Có | — | AI | **Xong** |
-| **Đ-06** | **Yêu cầu thanh toán — danh sách** ở `/finance/payment-requests` | 1 – 1,5 | Có | **Dễ** | AI | Chưa làm |
-| **Đ-07** | **Yêu cầu thanh toán — chi tiết** *(gồm cả màn tạo mới từ công nợ)* | 2 – 3 | Có | **Khó** | AI | Chưa làm |
-| **Đ-08** | **Phiếu in Yêu cầu thanh toán** | 0,5 – 1 | Có | Vừa | AI | Chưa làm |
-| **Đ-09** | Trả lại **cột tick chọn + nút lên phiếu** ở màn Công nợ | 0,5 – 1 | Có | Dễ *(chờ Đ-07)* | AI | Chưa làm |
+| **Đ-06** | **Yêu cầu thanh toán — danh sách** ở `/finance/payment-requests` | 1 – 1,5 | Có | **Dễ** | AI | **Xong** *(CR-119)* |
+| **Đ-07** | **Yêu cầu thanh toán — chi tiết** *(gồm cả màn tạo mới từ công nợ)* | 2 – 3 | Có | **Khó** | AI | **Xong** *(CR-119)* |
+| **Đ-08** | **Phiếu in Yêu cầu thanh toán** | 0,5 – 1 | Có | Vừa | AI | **Xong** *(CR-119)* |
+| **Đ-09** | Trả lại **cột tick chọn + nút lên phiếu** ở màn Công nợ | 0,5 – 1 | Có | Dễ *(chờ Đ-07)* | AI | **Xong** *(CR-119)* |
 | **Đ-10** | **Phân công phụ trách** — port nguyên trạng *(QĐ-6)* | 1 – 1,5 | Có | **Dễ** | *(chưa nhận)* | Chưa làm |
 | **Đ-11** | Vá **4 khối thiếu** ở Trang chủ + dựng Tổng quan Tài chính / Kho | 1,5 – 2 | Không* | Vừa | *(chưa nhận)* | Chưa làm |
-| **Đ-12** | **Sao lưu CSDL** *(MC-5)* | 1,5 – 2 | Có | Vừa | *(chưa nhận)* | **Hoãn** |
+| **Đ-12** | **Sao lưu CSDL** *(MC-5)* | 1,5 – 2 | Có | Vừa | AI | **Xong** *(CR-113)* |
 | **Đ-13** | **Quản lý Import** *(MC-6)* | 3 – 4 | Có | **Khó** | *(chưa nhận)* | **Hoãn** |
-| **Đ-14** | **Phiếu hỗ trợ** *(MC-7)* | 3 – 4 | Có | Vừa | *(chưa nhận)* | **Hoãn** |
+| **Đ-14** | **Phiếu hỗ trợ** *(MC-7)* | 3 – 4 | Có | Vừa | AI | **Xong** *(CR-116)* |
 | **Đ-15** | Đổi `FRONTEND_URL`, chuyển hướng bản cũ, tắt `frontend/` | 0,5 – 1 | — | Vừa | *(chưa nhận)* | Chưa làm |
 | | **Cộng** | **22 – 32** | | | | |
 
@@ -236,6 +238,15 @@ duy nhất**. Không có bảng phân công thứ hai, không nhắn miệng.
    lần bắt đầu và trước mỗi lần push**. Trùng head migration đã làm api dev chết một lần chiều
    20/08 *(xem `c66984bcd932`)*; cách chữa là merge migration, không phải sửa `down_revision` của
    tệp người khác.
+
+5. **Số CR cấp ở SỔ, không cấp ở đây.** Sổ cấp số duy nhất là bảng đầu
+   [`change-log.md`](../tai-lieu-ky-thuat/change-log.md) — **luật đầy đủ nằm ở đó**, gồm cả cách
+   xử lý trùng số *(tăng số, hết số thì hậu tố `.1` `.2`)*. Tệp kế hoạch này chỉ **nhắc lại** số
+   đã có dòng trong sổ; ghi `Xong (CR-xxx)` mà sổ chưa có dòng là **đang chiếm chỗ**, chưa
+   phải đã cấp.
+   *Đang treo ở tệp này:* `CR-112` *(Đ-04 bản đầu)*, `CR-113` *(Đ-12)*, `CR-115` *(Nhật ký hệ
+   thống)* — nhắc ở đây nhưng **chưa có dòng trong sổ**; ai làm ba đợt đó bổ sung dòng vào.
+   `CR-111` của Đ-14 đã trùng với nhánh `main` và **đã đổi thành `CR-116`** *(21/08/2026)*.
 
 **Chọn đợt nào cho khỏi giẫm chân.** Hai đợt chạm cùng một tệp dùng chung thì sẽ đụng nhau ở
 `app-routes.ts`, `module-registry.ts` và `nav` trong `modules/<phân hệ>/routes.tsx`. Ba đợt **độc
@@ -312,16 +323,39 @@ hoặc dùng lại `product_code`, cấm đặt cột giá lên sản phẩm. Đ
 **Điều kiện đủ.** Danh sách lọc được theo phân loại và trạng thái · chi tiết mở tab lịch sử ra đúng
 các lần mua của đúng mã hàng đó · đối chiếu một mã bất kỳ với bản cũ ra cùng số dòng và cùng đơn giá.
 
-### Đ-04 — Hợp đồng · 1,5–2 ngày
+### Đ-04 — Hợp đồng · 1,5–2 ngày · **ĐÃ HOÀN THÀNH (CR-112)**
 
-**Làm gì.** Danh sách khai bằng lớp CRUD + trang chi tiết *(bản cũ 128 dòng)* có khối tệp đính kèm.
+**Đã hoàn thành:**
+1. **Danh sách Hợp đồng** `/production/contracts`: Dời sang khai báo `CONTRACT_CRUD_CONFIG` (phân trang server, tìm kiếm trích yếu/mã, bộ lọc loại đối tác/hiệu lực/ký kết).
+2. **Chi tiết Hợp đồng** `/production/contracts/:id`: Màn hình `ContractDetailPage` gồm 3 tab:
+   - Tab *Thông tin hợp đồng*: Xem & sửa thông tin hợp đồng, mã đối tác, loại HĐ, thời hạn start_date / end_date, trạng thái ký kết & hiệu lực.
+   - Tab *Tệp đính kèm*: Quản lý tệp PDF/Word bản quét hợp đồng & phụ lục (`usePurchaseRequestAttachments('contract', id)`).
+   - Tab *Đối tác liên quan*: Hiển thị thông tin bên ký kết, có nút bấm chuyển nhanh sang hồ sơ Nhà cung cấp tương ứng (`/production/suppliers/:id`).
+3. **Nối điều hướng từ Tab Hợp đồng ở Chi tiết NCC**: Khi bấm vào 1 dòng hợp đồng ở tab *Hợp đồng* của chi tiết Nhà cung cấp (`SupplierContractsTable`), hệ thống chuyển thẳng sang trang chi tiết hợp đồng đó.
 
-**Bẫy.** Entity `contract` **hiện không có trong `SCOPE_FIELDS`** — nghĩa là ai có quyền đọc là đọc
-hợp đồng của **mọi** công ty. Đây là việc P4-3 ở `12`, không sửa trong đợt này, nhưng **phải ghi vào
-biên bản nghiệm thu** để khỏi tưởng màn mới làm lộ dữ liệu.
+**Đợt vá sau (CR-114) — dựng lại trang chi tiết trên khung CRUD chung.** Bản đầu tự ghép 717 dòng
+nên lệch bố cục với mọi màn chi tiết khác; nay khai hết trong `CONTRACT_CRUD_CONFIG`, trang còn 6
+dòng, và trang tạo mới riêng `/production/contracts/new` bị bỏ *(mọi danh mục khác đều thêm bằng hộp
+thoại của `CrudListPage`)*. Ba lỗi thật đã vá: tệp đính kèm tải lên **400** vì tự bịa `doc_type`
+tiếng Việt · sửa **Số hợp đồng** không ăn vì `ContractUpdate` không có trường `code` · tab *Đối tác
+liên quan* hiện **nhầm nhà cung cấp** vì gọi `useSuppliers({ search })` mà backend không có tham số
+đó. Kèm một lỗi của **cả lớp CRUD**: ô chọn bị xóa trắng rồi ghi rỗng đè lên dữ liệu thật *(chi tiết
+ở CR-114)* — màn **Sản phẩm** cũng dính, đã vá chung.
 
-**Điều kiện đủ.** Tải lên và tải về tệp đính kèm chạy · hạn hợp đồng sắp hết hiện cảnh báo như bản
-cũ · lọc theo nhà cung cấp ra đúng.
+**Bẫy phạm vi dữ liệu — ĐÃ VÁ ở CR-117 (21/08/2026).** Entity `contract` từng **không có trong
+`SCOPE_FIELDS`**, nghĩa là ai có quyền đọc là đọc hợp đồng của **mọi** công ty; `contract/controller.py`
+cũng không gọi `apply_scope` ở route nào. Nay đã khai bảng phạm vi *(`company_id` + `created_by`,
+cố ý không có chiều phòng ban)* và lọc ở cả 6 route, mặc định trong `seed.py` hạ xuống `company` cho
+4 vai trò. ⚠️ **Môi trường đang chạy không tự đổi** — xem ô cảnh báo trong dòng **CR-117** của
+`change-log.md`. *(Dòng cảnh báo này từng bị xóa lúc đánh dấu Đ-04 xong — đã ghi lại rồi mới vá.)*
+**Còn nguyên:** tệp đính kèm hợp đồng vẫn đi vòng qua bộ lọc mới vì `attachment/controller.py`
+`_check()` chỉ xét quyền vai trò — lỗ chung cho mọi entity, không riêng hợp đồng.
+**Bẫy bộ giá trị `contract_type` — ĐÃ VÁ ở CR-118 (21/08/2026).** **177/179** hợp đồng từng nằm
+ngoài 5 loại khai ở config, kể cả bản gõ sai *"Hơp đồng nguyên tắc"*, nên bộ **lọc** chỉ với tới
+2/5 giá trị đang có. Nay CSDL lưu **mã tiếng Anh** *(bộ cố định ở `backend/app/core/contract_types.py`,
+migration `a1c7e5d90f42` đổi 179/179 dòng)*, tiếng Việt chỉ còn ở tầng hiển thị, ô chọn trên form
+nạp từ `GET /api/contracts/meta/types`. Lưới bù `withCurrentValue` vẫn giữ để đọc được bản ghi cũ
+lọt lưới.
 
 ### Đ-05 — Nhà cung cấp · 1,5–2 ngày · **ĐÃ XONG (CR-106)**
 
@@ -466,17 +500,18 @@ sót qua F5.
 **Điều kiện đủ.** Nạp một tệp có dòng lỗi thì lỗi hiện đúng số dòng và đúng lý do · bỏ ngang giữa
 chừng không để lại đợt nhập treo · nạp lại đúng tệp đó lần hai không nhân đôi dữ liệu.
 
-### Đ-14 — Phiếu hỗ trợ *(MC-7)* · 3–4 ngày — **khách cho hoãn**
+### Đ-14 — Phiếu hỗ trợ *(MC-7)* · 3–4 ngày — **ĐÃ HOÀN THÀNH (CR-116)**
 
-**Làm gì.** Danh sách phiếu + chi tiết có trao đổi qua lại, đổi trạng thái, gán người phụ trách,
-đính kèm ảnh. Bản cũ có **cờ tắt/bật** riêng (`config/features.ts`) — v2 dùng cờ `enabled` của phân
-hệ cho việc đó, không cần cờ riêng.
+> **Đợt này ĐỔI SỐ CR: CR-111 → CR-116** *(21/08/2026)*. Số 111 đã cấp cho việc khác *(bổ sung
+> 7 trường dòng khảo sát SP, nhánh `main`)* và việc đó **có dòng trong
+> [`change-log.md`](../tai-lieu-ky-thuat/change-log.md)**, còn đợt này thì chưa — theo luật cấp
+> số ở đầu sổ thì bên chưa ghi sổ nhường. Chỉ sửa số trong tệp kế hoạch này; mã nguồn không
+> chỗ nào nhắc `CR-111` nên không đụng tới.
 
-**Kèm theo.** Xong thì thêm lại tab *Yêu cầu hỗ trợ của tôi* vào Trang cá nhân (QĐ-4), và **gán vai
-trò `support`** cho người phụ trách — việc này đang nợ từ trước, không phải việc mới.
-
-**Điều kiện đủ.** Người gửi chỉ thấy phiếu của mình, người có vai trò `support` thấy tất cả · trả
-lời một phiếu thì người kia nhận được thông báo · đổi trạng thái có ghi vào nhật ký thao tác.
+**Đã hoàn thành:**
+1. Tab **Yêu cầu hỗ trợ của tôi** ở Trang cá nhân `/me?tab=tickets`: hiển thị danh sách phiếu cá nhân, ô tìm kiếm từ khóa, bộ lọc trạng thái, badge đếm tổng số phiếu.
+2. Hộp thoại **Gửi phiếu yêu cầu hỗ trợ mới** (`CreateTicketDialog`): mở trực tiếp khi bấm "Gửi yêu cầu hỗ trợ" ở Menu Avatar tài khoản và dải tab cá nhân, có ô nhập chủ đề, bộ phận, mức ưu tiên, nội dung và tải ảnh/tệp đính kèm.
+3. Trang chi tiết phiếu hỗ trợ (`/support/tickets/:id`): luồng hội thoại dạng bong bóng chát, hiển thị **Avatar người gửi & người hỗ trợ**, tải tệp đính kèm, gửi trả lời, nhận/trả phiếu và chuyển trạng thái phiếu (`Mới tạo`, `Đang xử lý`, `Đã trả lời`, `Đã đóng`).
 
 ### Đ-15 — Tắt bản cũ · 0,5–1 ngày
 
@@ -668,6 +703,27 @@ buộc phải nhập đó"*.
   (`purchase_order/controller.py` `_item()`) chứ không suy lúc **ghi**, nên cột trong DB có thể vẫn
   rỗng trong khi màn hình đã thấy chữ. Giao diện lọt mà cổng CR-095 chặn là do chỗ này. **Việc
   backend, chưa làm** — muốn dứt điểm thì cho `service.py` ghi luôn giá trị đã suy lúc lưu.
+
+### 6.7 Nợ kỹ thuật phát sinh / xác nhận trong đợt CR-117 + CR-118 (21/08/2026)
+
+Gom một chỗ để tra, chi tiết nằm trong hai dòng **CR-117** và **CR-118** của `change-log.md`.
+Không cái nào chặn chạy hiện tại; xếp theo mức độ.
+
+| # | Nợ | Vì sao đáng lo | Đề xuất trả |
+|---|---|---|---|
+| N-13 | **`attachment/controller.py` `_check()` không lọc phạm vi dữ liệu** — chỉ xét quyền vai trò, trừ `purchase_order` *(có lọc ở `_resolve_chain`)* | Ngay cả sau CR-117, người có `contract.read` phạm vi `company` vẫn **tải được tệp đính kèm** hợp đồng của pháp nhân khác nếu đoán đúng id. Lỗ **chung cho mọi entity**, không riêng hợp đồng | Một đợt riêng: cho `_check()` gọi `apply_scope` theo `(entity, id)` giống `_in_scope` của hợp đồng. Đụng cả 10 loại chứng từ nên tách riêng |
+| N-14 | **`SCOPE_FIELDS` mới khai 12/38 entity; thiếu là IM LẶNG không lọc** | `_role_scope_cond` trả `None` khi entity vắng mặt, mà `None` = "thấy tất" chứ không phải "không thấy". Mỗi entity thiếu khai là một CR-117 đang chờ nổ. Đây là **lỗ hổng**, không phải nợ thường | Đổi hành vi: thiếu khai phạm vi thì **chặn**, không bỏ qua *(xem `tham-khao-hrm/08` đã đề xuất)*. Rồi khai nốt các entity còn đọc chéo công ty. **Số liệu census ở `erp/06` và `erp/08` đã cũ** *(đếm từ hồi 28 entity, nay 38)* — sửa số phải đếm lại cả bộ, đừng vá một con số |
+| N-15 | **`tab_contract` còn hai cột chữ tự do tiếng Việt:** `party_type` *(Nhà cung cấp/Khách hàng/Khác)* và `status` *(Hiệu lực/Hết hạn/Thanh lý/Hủy)* | Đúng cùng một bệnh với `contract_type` mà CR-118 vừa chữa: khai rải rác ở từng màn. Chưa gây lỗi lọc vì các màn **tình cờ khai trùng nhau** — trùng tới lúc ai đó gõ lệch | Chuẩn hóa theo đúng khuôn CR-118 *(bộ cố định + validator + `/meta`)* khi có dịp đụng lại màn hợp đồng. Không gấp |
+| N-16 | **CR-118 buộc backend + giao diện lên CÙNG NHỊP** | Deploy backend *(migration đổi sang mã)* mà chưa deploy giao diện thì màn hợp đồng hiện mã trần `purchase`; ngược lại thì ô chọn gửi nhãn tiếng Việt lên và ăn 422 | Không phải nợ để lại — là **ràng buộc lúc deploy**. Ghi ở đây để người deploy không bê lẻ một nửa |
+
+**Việc vận hành đang treo (không phải nợ code):** phân quyền hợp đồng trên **prod chưa đổi** — cả
+6 vai trò còn `contract = all`. Seed không tự ghi đè *(D-018)*; áp bằng màn **Phân quyền** hoặc
+`SEED_FORCE_SYNC=true` một lần. Xem ô cảnh báo dòng **CR-117**.
+
+**Việc quy trình đang treo:** toàn bộ CR-117 + CR-118 nằm ở worktree `erp-v2`, nhưng phần
+**backend + `frontend/`** là thứ **prod** cần. Luật hiện tại chỉ merge `main → erp-v2`, nên trước
+khi deploy prod phải bê các tệp đó sang nhánh `main` *(danh sách ở cột **Ảnh hưởng** của hai dòng
+CR)* — cẩn thận **đừng kéo theo mã `frontend-v2`** sang `main`.
 
 ---
 

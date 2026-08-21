@@ -7,6 +7,7 @@ import PurchaseHistoryTable from '../components/PurchaseHistoryTable'
 import EmployeeAccountCard from '../components/employee-account-card'
 import EmployeeAvatar from '../components/employee-avatar'
 import WarehousePurchaseLines from '../components/warehouse-purchase-lines'
+import { CONTRACT_TYPES, contractTypeLabel } from '../utils/contractTypes'
 import { fmtDateStr, fmtDateTime } from '../utils/datetime'
 import { fmtVND } from '../utils/money'
 import { initialsOf } from '../utils/name'
@@ -101,7 +102,6 @@ export const contractExpiryBadge = (e: string) => {
 }
 // Tô cả dòng HĐ sắp/hết hạn (cảnh báo trực quan)
 export const contractRowStyle = (r: any) => r.expiry === 'Hết hạn' ? { background: '#fdecea' } : r.expiry === 'Sắp hết hạn' ? { background: '#fff7ed' } : undefined
-const CONTRACT_TYPES = [{ value: 'Mua bán', label: 'Mua bán' }, { value: 'Nguyên tắc', label: 'Nguyên tắc' }, { value: 'Vận chuyển', label: 'Vận chuyển' }]
 const CONTRACT_STATUS = [{ value: 'Hiệu lực', label: 'Hiệu lực' }, { value: 'Hết hạn', label: 'Hết hạn' }, { value: 'Thanh lý', label: 'Thanh lý' }]
 
 export const PR_STATUS: Record<string, { label: string; cls: string }> = {
@@ -298,7 +298,8 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã HĐ' },
       { key: 'party_type', label: 'Đối tượng' },
       { key: 'party_name', label: 'Tên đối tượng', render: (r) => r.party_name || r.party_code },
-      { key: 'title', label: 'Trích yếu' }, { key: 'contract_type', label: 'Loại' },
+      { key: 'title', label: 'Trích yếu' },
+      { key: 'contract_type', label: 'Loại', render: (r) => contractTypeLabel(r.contract_type) || '—' },
       { key: 'end_date', label: 'Đến ngày' },
       { key: 'signed', label: 'Đã ký', render: (r) => (r.signed ? '✓' : '—') },
       { key: 'expiry', label: 'Hết hạn', render: (r) => contractExpiryBadge(r.expiry) },

@@ -36,13 +36,15 @@ def _is_owner(t: Ticket, user) -> bool:
     return bool(rid and t.requester_id == rid)
 
 
-def _name_of_user(db: Session, uid: int, cache: dict) -> str:
+def _user_info(db: Session, uid: int, cache: dict) -> dict:
     if uid in cache:
         return cache[uid]
     from app.modules.notification.service import get_user_display_name
     from app.modules.user.model import User
     u = db.get(User, uid) if uid else None
-    cache[uid] = get_user_display_name(db, u) if u else ""
+    name = get_user_display_name(db, u) if u else ""
+    avatar = (u.avatar or "") if u else ""
+    cache[uid] = {"name": name, "avatar": avatar}
     return cache[uid]
 
 
@@ -65,24 +67,30 @@ def _msg_files(db: Session, msg_ids: list[int]) -> dict:
 
 def _out(db: Session, t: Ticket, with_messages: bool = False) -> dict:
     cache: dict = {}
+    asg = _user_info(db, t.assignee_id, cache)
+    req = _user_info(db, t.created_by, cache)
     d = {
         "id": t.id, "code": t.code, "subject": t.subject, "department": t.department,
         "priority": t.priority, "priority_label": service.PRIORITY_LABELS.get(t.priority, t.priority),
         "status": t.status, "status_label": service.STATUS_LABELS.get(t.status, t.status),
         "company_id": t.company_id, "requester_id": t.requester_id,
-        "assignee_id": t.assignee_id, "assignee_name": _name_of_user(db, t.assignee_id, cache),
-        "requester_name": _name_of_user(db, t.created_by, cache),
+        "assignee_id": t.assignee_id, "assignee_name": asg["name"], "assignee_avatar": asg["avatar"],
+        "requester_name": req["name"], "requester_avatar": req["avatar"],
         "origin_url": t.origin_url,
         "created_at": t.created_at, "updated_at": t.updated_at, "closed_at": t.closed_at,
     }
     if with_messages:
         msgs = service.messages_of(db, t.id)
         fmap = _msg_files(db, [m.id for m in msgs])
-        d["messages"] = [{
-            "id": m.id, "body": m.body, "is_staff": m.is_staff,
-            "author_id": m.created_by, "author_name": _name_of_user(db, m.created_by, cache),
-            "created_at": m.created_at, "files": fmap.get(m.id, []),
-        } for m in msgs]
+        messages_out = []
+        for m in msgs:
+            aut = _user_info(db, m.created_by, cache)
+            messages_out.append({
+                "id": m.id, "body": m.body, "is_staff": m.is_staff,
+                "author_id": m.created_by, "author_name": aut["name"], "author_avatar": aut["avatar"],
+                "created_at": m.created_at, "files": fmap.get(m.id, []),
+            })
+        d["messages"] = messages_out
     return d
 
 

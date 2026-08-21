@@ -1,4 +1,4 @@
-import { LayoutDashboard, Settings, SlidersHorizontal } from 'lucide-react'
+import { Database, History, LayoutDashboard, Settings, SlidersHorizontal } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -6,18 +6,14 @@ import { appRoutes } from '@/shared/constants/app-routes'
 /**
  * Phân hệ QUẢN TRỊ HỆ THỐNG.
  *
- * Hiện mới có Cấu hình hệ thống. Sao lưu CSDL và Quản lý Import sẽ vào đúng
- * menu này khi làm xong — chưa khai ở `nav` vì mục menu trỏ vào màn chưa tồn
- * tại thì bấm ra trang 404.
- *
- * Phân quyền tài khoản KHÔNG nằm ở đây mà ở phân hệ Nhân sự: dữ liệu gốc của
- * nó là nhân sự và tài khoản. Trang tổng quan có lối tắt sang.
+ * Quản lý cấu hình hệ thống, sao lưu CSDL, nhật ký hệ thống và các tác vụ quản trị.
+ * Phân quyền tài khoản KHÔNG nằm ở đây mà ở phân hệ Nhân sự.
  */
 export const systemModule: ErpModule = {
   id: 'system',
   // Nhãn ngắn để không xuống dòng trong ô 112px; mô tả bên dưới nói rõ phạm vi.
   title: 'Quản trị',
-  description: 'Cấu hình hệ thống, sao lưu và các tác vụ quản trị.',
+  description: 'Cấu hình hệ thống, sao lưu CSDL và các tác vụ quản trị.',
   icon: Settings,
   path: appRoutes.system.root,
   accent: 'bg-slate-100 text-slate-600',
@@ -32,6 +28,17 @@ export const systemModule: ErpModule = {
       icon: SlidersHorizontal,
       entity: 'setting',
     },
+    {
+      label: 'Sao lưu CSDL',
+      path: appRoutes.system.backups,
+      icon: Database,
+      entity: 'backup',
+    },
+    {
+      label: 'Nhật ký hệ thống',
+      path: appRoutes.system.auditLogs,
+      icon: History,
+    },
   ],
 
   routes: [
@@ -45,6 +52,18 @@ export const systemModule: ErpModule = {
       path: appRoutes.system.settings,
       lazy: async () => ({
         Component: (await import('./pages/setting-page')).SettingPage,
+      }),
+    },
+    {
+      path: appRoutes.system.backups,
+      lazy: async () => ({
+        Component: (await import('./pages/backup-list-page')).BackupListPage,
+      }),
+    },
+    {
+      path: appRoutes.system.auditLogs,
+      lazy: async () => ({
+        Component: (await import('./pages/audit-log-list-page')).AuditLogListPage,
       }),
     },
   ],

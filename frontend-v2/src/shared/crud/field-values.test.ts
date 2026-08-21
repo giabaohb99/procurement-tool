@@ -5,6 +5,7 @@ import {
   percentInputToRatio,
   ratioToPercentInput,
   toApiPayload,
+  withCurrentValue,
 } from './field-values'
 import type { CrudFormField } from './types'
 
@@ -75,5 +76,36 @@ describe('field-values', () => {
 
   it('xóa trắng ô phần trăm thì gửi 0 chứ không gửi chuỗi rỗng', () => {
     expect(toApiPayload(FIELDS, { vat: '' }).vat).toBe(0)
+  })
+
+  /**
+   * Lỗi đã gặp: `contract_type` là VARCHAR tự do, 177/179 hợp đồng đang lưu
+   * ("Hợp đồng mua bán", "Hợp đồng kinh tế"…) không khớp 5 loại khai ở config.
+   * Không bù giá trị đang lưu vào danh sách thì ô chọn hiện chữ gợi ý y như ô
+   * trống — người dùng tưởng mất dữ liệu rồi chọn đại, ghi đè giá trị thật.
+   *
+   * CR-118 đã chuẩn hóa riêng cột đó sang mã tiếng Anh, nhưng lưới bù này phải ở
+   * lại: bản ghi cũ chưa chạy migration và các cột VARCHAR tự do khác vẫn y nguyên.
+   */
+  it('giá trị đang lưu nằm ngoài danh sách chọn thì vẫn hiện, không rơi mất', () => {
+    const options = [
+      { value: 'principle', label: 'Hợp đồng nguyên tắc' },
+      { value: 'purchase', label: 'Hợp đồng mua bán' },
+    ]
+
+    const shown = withCurrentValue(options, 'Hợp đồng kinh tế')
+
+    expect(shown).toHaveLength(3)
+    expect(shown.at(-1)).toEqual({ value: 'Hợp đồng kinh tế', label: 'Hợp đồng kinh tế' })
+  })
+
+  it('giá trị đã có trong danh sách hoặc còn trống thì giữ nguyên danh sách gốc', () => {
+    const options = [{ value: 3, label: 'CÔNG TY TNHH SẢN XUẤT HÓA CHẤT ABA' }]
+
+    // Ô chọn nạp từ API trả `value` kiểu số còn form giữ chuỗi — so sánh phải
+    // ép về chuỗi, không thì mỗi lần mở lại đẻ thêm một mục trùng.
+    expect(withCurrentValue(options, '3')).toBe(options)
+    expect(withCurrentValue(options, '')).toBe(options)
+    expect(withCurrentValue(options, null)).toBe(options)
   })
 })

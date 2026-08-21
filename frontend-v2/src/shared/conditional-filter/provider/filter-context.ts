@@ -37,3 +37,8 @@ export function useFilterContext() {
   }
   return context
 }
+
+export function useOptionalFilterContext() {
+  return useContext(FilterContext)
+}
+

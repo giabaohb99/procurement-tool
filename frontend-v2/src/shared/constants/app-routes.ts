@@ -77,6 +77,22 @@ export const appRoutes = {
     root: '/finance',
     /** Công nợ phải trả — bảng chỉ đọc, sinh tự động khi nhận hàng. */
     payables: '/finance/payables',
+    /** Yêu cầu thanh toán (YCTT) — lên từ khoản nợ đã tick hoặc form trắng (QĐ-5). */
+    paymentRequests: '/finance/payment-requests',
+    paymentRequestNew: '/finance/payment-requests/new',
+    paymentRequestDetail: (id: number | string) => `/finance/payment-requests/${id}`,
+    //  Bản in nằm NGOÀI khung phân hệ (không menu, không thanh tiêu đề) — cùng
+    //  chỗ với bản in của Mua hàng và Văn bản.
+    paymentRequestPrint: (id: number | string) => `/print/payment-request/${id}`,
+  },
+  /**
+   * Phân hệ HỖ TRỢ — phiếu hỗ trợ (ticket). Danh sách đứng ở gốc `/support`;
+   * chi tiết là `/support/tickets/:id` để link thông báo kiểu cũ `/tickets/12`
+   * dịch được sang (xem `notification-link.ts`).
+   */
+  support: {
+    root: '/support',
+    ticketDetail: (id: number | string) => `/support/tickets/${id}`,
   },
   customer: {
     root: '/customer',
@@ -140,6 +156,10 @@ export const appRoutes = {
     root: '/system',
     /** Cấu hình chạy nóng (email, lưu trữ, công tắc quy trình) — lưu ở DB, không phải `.env`. */
     settings: '/system/settings',
+    /** Quản lý sao lưu CSDL hệ thống. */
+    backups: '/system/backups',
+    /** Nhật ký hệ thống (Audit Logs). */
+    auditLogs: '/system/audit-logs',
   },
   production: {
     root: '/production',
@@ -155,6 +175,9 @@ export const appRoutes = {
     /** Phân loại vật tư / bao bì / nguyên liệu. */
     itemGroups: '/production/item-groups',
     itemGroupDetail: (id: number | string) => `/production/item-groups/${id}`,
+    /** Danh mục Hợp đồng. */
+    contracts: '/production/contracts',
+    contractDetail: (id: number | string) => `/production/contracts/${id}`,
   },
   hr: {
     root: '/hr',

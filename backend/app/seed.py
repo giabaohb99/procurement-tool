@@ -228,12 +228,20 @@ def seed_demo_accounts(db, company_id):
 # employee KHÔNG nằm ở đây: danh sách nhân sự phải giới hạn theo phạm vi từng vai trò
 # (phòng ban của mình) — cấu hình riêng bên dưới.
 _CATALOG_READ = {e: (["read"], "all") for e in
-                 ["supplier", "product", "warehouse", "unit", "item_group", "contract", "department", "company"]}
+                 ["supplier", "product", "warehouse", "unit", "item_group", "department", "company"]}
 
 # "Cụm danh mục" — Admin thu mua được toàn quyền thêm/sửa/xóa
 _CATALOG_CRUD = {e: (["read", "create", "write", "delete"], "all") for e in
-                 ["supplier", "product", "contract", "warehouse", "unit", "item_group",
+                 ["supplier", "product", "warehouse", "unit", "item_group",
                   "brand", "company", "category_assignee"]}
+
+# CR-117 — HỢP ĐỒNG KHÔNG phải danh mục dùng chung như ĐVT hay Kho: mỗi hợp đồng đứng tên
+# MỘT pháp nhân (`company_id`), nên phạm vi mặc định là 'company' chứ không phải 'all'.
+# Chỉ `pur_manager` và `admin` giữ 'all' (xem cả tập đoàn).
+# ⚠️ Dòng này chỉ áp cho CÀI MỚI. Môi trường đang chạy giữ nguyên phân quyền trên DB
+# (D-018) — muốn áp lại phải đặt SEED_FORCE_SYNC=true một lần, hoặc sửa tay ở màn Phân quyền.
+_CONTRACT_READ = {"contract": (["read"], "company")}
+_CONTRACT_CRUD = {"contract": (["read", "create", "write", "delete"], "company")}
 
 # Quản lý thu mua = toàn quyền như quản trị NGHIỆP VỤ: mọi entity TRỪ quản trị hệ thống
 # (user/role/setting) — full 8 hành động, phạm vi 'all'.
@@ -256,7 +264,7 @@ STD_ROLES = {
         "ticket": (["read", "create", "write"], "own"),
     }},
     "dept_head": {"name": "Trưởng phòng (duyệt PYC)", "perms": {
-        **_CATALOG_READ,
+        **_CATALOG_READ, **_CONTRACT_READ,
         "employee": (["read"], "dept"),
         "purchase_request": (["read", "approve", "export"], "dept"),
         "survey_request": (["read", "approve", "export"], "dept"),
@@ -264,7 +272,7 @@ STD_ROLES = {
         "report": (["read"], "dept"),
     }},
     "company_head": {"name": "Quản lý công ty", "perms": {
-        **_CATALOG_READ,
+        **_CATALOG_READ, **_CONTRACT_READ,
         "employee": (["read"], "company"),
         "purchase_request": (["read", "export"], "company"),
         "purchase_order": (["read", "export"], "company"),
@@ -272,7 +280,7 @@ STD_ROLES = {
         "report": (["read"], "company"),
     }},
     "pur_staff": {"name": "Nhân viên thu mua", "perms": {
-        **_CATALOG_READ,
+        **_CATALOG_READ, **_CONTRACT_READ,
         "employee": (["read"], "dept"),
         "purchase_request": (["read", "create", "write", "export"], "assigned"),
         "survey_request": (["read", "write", "export"], "proc"),
@@ -290,7 +298,7 @@ STD_ROLES = {
     # PYC/YCKS phạm vi 'proc' (chỉ thấy chứng từ đã duyệt); ĐMH phạm vi 'all'
     # (thấy + IN MỌI đơn của phòng kể cả nháp/chờ duyệt — KHÔNG duyệt).
     "pur_admin": {"name": "Admin thu mua", "perms": {
-        **_CATALOG_CRUD,
+        **_CATALOG_CRUD, **_CONTRACT_CRUD,
         "department": (["read"], "all"),
         "employee": (["read"], "all"),
         # CR-034: 'approve' ở đây KHÔNG phải duyệt thay trưởng phòng (phạm vi 'proc' không thấy
@@ -575,6 +583,20 @@ def force_resync_roles(db):
                 Permission.role_id == r.id, Permission.entity == "employee",
                 Permission.scope == "all",
             ).update({"scope": sc}, synchronize_session=False)
+    db.commit()
+
+    # CR-117: hạ phạm vi HỢP ĐỒNG từ 'all' về 'company' cho các vai trò không phải quản lý.
+    # Trước CR-117 entity `contract` không có trong SCOPE_FIELDS nên phạm vi ghi gì cũng
+    # KHÔNG lọc — mọi DB đang chạy đều để 'all' vì nó vô hại. Nay bộ lọc ăn thật, phải áp lại.
+    # Chỉ hạ dòng đang là 'all'; vai trò nào đã được chỉnh tay xuống 'own'/'dept' thì để yên.
+    # (pur_admin không nằm ở đây — nó được ghi đè trọn gói bằng resync_role_perms bên dưới.)
+    for rcode in ("dept_head", "company_head", "pur_staff"):
+        r = db.query(Role).filter(Role.code == rcode).first()
+        if r:
+            db.query(Permission).filter(
+                Permission.role_id == r.id, Permission.entity == "contract",
+                Permission.scope == "all",
+            ).update({"scope": "company"}, synchronize_session=False)
     db.commit()
 
     # Cập nhật lại 2 vai trò thu mua theo phân quyền mới:

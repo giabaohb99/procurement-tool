@@ -7,6 +7,7 @@ import { Badge } from '@/shared/ui/badge'
 import { formatPercent } from '@/shared/utils/format-money'
 import { PurchaseHistoryTable } from '../components/purchase-history-table'
 import { SupplierContractsTable } from '../components/supplier-contracts-table'
+import { SupplierFilesTab } from '../components/supplier-files-tab'
 import { SupplierPayablesPanel } from '../components/supplier-payables-panel'
 import { SupplierSurveysPanel } from '../components/supplier-surveys-panel'
 import { SUPPLIER_TYPE_LABELS, type Supplier } from '../types/supplier'
@@ -270,6 +271,11 @@ export const SUPPLIER_CRUD_CONFIG: CrudConfig<Supplier> = {
       key: 'surveys',
       label: 'Khảo sát của NCC',
       render: (supplier) => <SupplierSurveysPanel supplier={supplier} />,
+    },
+    {
+      key: 'files',
+      label: 'Tệp đính kèm',
+      render: (supplier) => <SupplierFilesTab supplierId={supplier.id} />,
     },
   ],
 }

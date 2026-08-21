@@ -219,8 +219,10 @@ màn đối chiếu số liệu khớp bản cũ trên cùng bộ dữ liệu de
 - **P4-1.** **Lớp CRUD khai báo dùng chung của v2** — danh sách, chi tiết, bộ lọc, nhập/xuất, kiểm
   quyền, khai bằng cấu hình. Làm một lần, ba phân hệ dùng (Thu mua, Nhân sự, Văn thư).
 - **P4-2.** Danh mục: Sản phẩm · Nhà cung cấp (chi tiết) · Hợp đồng · Kho · Đơn vị tính · Phân loại.
-- **P4-3.** Khai phạm vi cho **hợp đồng**, **nhận hàng**, **lịch sử mua hàng** — ba entity này hiện
+- **P4-3.** Khai phạm vi cho **hợp đồng**, **nhận hàng**, **lịch sử mua hàng** — ba entity này
   **không có trong `SCOPE_FIELDS`**, tức ai có quyền đọc là đọc hết mọi công ty.
+  **Hợp đồng đã xong (CR-117, 21/08/2026)** — khai `company_id` + `created_by`, lọc ở cả 6 route,
+  mặc định trong seed hạ xuống `company`. Còn **nhận hàng** và **lịch sử mua hàng**.
 
 *Điều kiện cần:* P4-1 xong mới làm P4-2 (làm ngược lại là viết tay 6 màn rồi phải gỡ).
 *Điều kiện đủ:* thêm một danh mục mới chỉ tốn một khối khai báo, không phải viết trang mới; test

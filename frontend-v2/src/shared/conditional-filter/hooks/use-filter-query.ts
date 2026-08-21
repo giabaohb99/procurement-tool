@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 
 import { buildRestQuery } from '../helpers/query-builder'
-import { useFilterContext } from '../provider/filter-context'
+import { useOptionalFilterContext } from '../provider/filter-context'
 
 /**
  * Query param của bộ lọc ĐÃ ÁP DỤNG — đổ thẳng vào hook danh sách:
@@ -13,12 +13,19 @@ import { useFilterContext } from '../provider/filter-context'
  * `useEffect` (vd reset về trang 1) mà không sợ vòng lặp render.
  */
 export function useFilterQuery() {
-  const { appliedState, activeCount } = useFilterContext()
+  const context = useOptionalFilterContext()
 
-  const queryParams = useMemo(() => buildRestQuery(appliedState), [appliedState])
+  const appliedState = context?.appliedState
+  const activeCount = context?.activeCount ?? 0
+
+  const queryParams = useMemo(
+    () => (appliedState ? buildRestQuery(appliedState) : {}),
+    [appliedState],
+  )
 
   /** Chuỗi ổn định để so sánh — object mới mỗi lần memo chạy lại. */
   const queryKey = useMemo(() => JSON.stringify(queryParams), [queryParams])
 
   return { queryParams, queryKey, activeCount }
 }
+

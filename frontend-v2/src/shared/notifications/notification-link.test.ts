@@ -17,6 +17,9 @@ describe('toAppPath', () => {
   it('dịch link kiểu app cũ sang đường dẫn phân hệ', () => {
     expect(toAppPath('/purchase-orders/12')).toBe('/procurement/purchase-orders/12')
     expect(toAppPath('/employees')).toBe('/hr/employees')
+    //  Thông báo phiếu hỗ trợ: backend vẫn ghi `/tickets/{id}`, phải rơi đúng
+    //  vào chi tiết phiếu ở phân hệ Hỗ trợ chứ không trả null.
+    expect(toAppPath('/tickets/12')).toBe('/support/tickets/12')
   })
 
   it('giữ nguyên link đã ở dạng phân hệ, không dịch lần hai', () => {

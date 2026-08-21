@@ -1,4 +1,19 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+from app.core.contract_types import CONTRACT_TYPE_VALUES
+
+
+def _check_contract_type(v: str | None) -> str | None:
+    """Chỉ nhận MÃ trong bộ cố định (CR-118). Chuỗi rỗng = chưa phân loại, vẫn cho qua.
+
+    Cột này từng là chữ tự do nên mỗi màn tự bịa một bộ giá trị tiếng Việt khác nhau,
+    dữ liệu thật thì lưu bộ thứ tư. Chặn ngay ở đây để không đẻ thêm giá trị lạ.
+    """
+    if v is None or v == "":
+        return v
+    if v not in CONTRACT_TYPE_VALUES:
+        raise ValueError(f"Loại hợp đồng không hợp lệ: {v}")
+    return v
 
 
 class ContractCreate(BaseModel):
@@ -15,6 +30,8 @@ class ContractCreate(BaseModel):
     status: str = "Hiệu lực"
     note: str = ""
 
+    _v_type = field_validator("contract_type")(_check_contract_type)
+
 
 class ContractUpdate(BaseModel):
     party_type: str | None = None
@@ -28,3 +45,5 @@ class ContractUpdate(BaseModel):
     signed: bool | None = None
     status: str | None = None
     note: str | None = None
+
+    _v_type = field_validator("contract_type")(_check_contract_type)

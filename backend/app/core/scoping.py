@@ -21,6 +21,11 @@ SCOPE_FIELDS = {
     "purchase_order":   {"company": "company_id", "dept_id": "department_id",
                          "dept_name": "department", "owner": "created_by"},
     "payable":          {"company": "company_id", "owner": "created_by"},
+    # Hợp đồng: neo theo PHÁP NHÂN ĐỨNG TÊN (`company_id`). Trước đây entity này không có
+    # trong bảng nên `_role_scope_cond` trả None — ai có `contract.read` là đọc hợp đồng của
+    # MỌI công ty, kể cả khi phạm vi vai trò đặt là `company`/`own`. KHÔNG có chiều phòng ban:
+    # hợp đồng thuộc pháp nhân chứ không thuộc phòng nào.
+    "contract":         {"company": "company_id", "owner": "created_by"},
     "payment_request":  {"company": "company_id", "owner": "created_by"},
     "inventory":        {"company": "company_id"},
     "survey":           {"owner": "created_by"},

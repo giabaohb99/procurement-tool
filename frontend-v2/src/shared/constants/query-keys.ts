@@ -70,8 +70,10 @@ export const queryKeys = {
       ['production', 'suppliers', params ?? {}] as const,
     supplier: (id: number) => ['production', 'suppliers', id] as const,
     /** Hợp đồng — danh mục dùng chung, đặt ở Sản xuất cùng chỗ với NCC. */
+    allContracts: ['production', 'contracts'] as const,
     contracts: (params?: Record<string, unknown>) =>
       ['production', 'contracts', params ?? {}] as const,
+    contract: (id: number) => ['production', 'contracts', id] as const,
     /** Dòng khảo sát của một NCC (`/api/survey-report/by-supplier`). */
     supplierSurveys: (params?: Record<string, unknown>) =>
       ['production', 'suppliers', 'surveys', params ?? {}] as const,
@@ -235,10 +237,25 @@ export const queryKeys = {
      */
     payableSummary: (params?: Record<string, unknown>) =>
       ['finance', 'payables', 'summary', params ?? {}] as const,
+    /** Danh sách Yêu cầu thanh toán (YCTT), lọc theo tham số truyền vào. */
+    paymentRequests: (params?: Record<string, unknown>) =>
+      ['finance', 'payment-requests', params ?? {}] as const,
+    /** Một phiếu YCTT theo id — hành động (duyệt/chi…) làm mất hiệu lực khóa này. */
+    paymentRequest: (id: number) => ['finance', 'payment-requests', id] as const,
   },
   system: {
     all: ['system'] as const,
     /** Cấu hình chạy nóng (email, lưu trữ, công tắc quy trình) — một khóa duy nhất. */
     settings: () => ['system', 'settings'] as const,
+    backups: (params?: Record<string, unknown>) => ['system', 'backups', params ?? {}] as const,
+    auditLogs: (params?: Record<string, unknown>) => ['system', 'audit-logs', params ?? {}] as const,
+  },
+  /** Phân hệ Hỗ trợ — phiếu hỗ trợ (ticket) và luồng trao đổi trong từng phiếu. */
+  support: {
+    all: ['support'] as const,
+    tickets: (params?: Record<string, unknown>) => ['support', 'tickets', params ?? {}] as const,
+    ticket: (id: number) => ['support', 'tickets', id] as const,
+    /** Tệp gửi kèm lúc TẠO phiếu (entity `ticket`) — tách khỏi tệp trong tin nhắn. */
+    ticketAttachments: (id: number) => ['support', 'tickets', id, 'attachments'] as const,
   },
 } as const

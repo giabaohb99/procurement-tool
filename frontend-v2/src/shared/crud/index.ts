@@ -6,6 +6,7 @@ export {
   percentInputToRatio,
   ratioToPercentInput,
   toApiPayload,
+  withCurrentValue,
 } from './field-values'
 export {
   getCrudQueryKey,

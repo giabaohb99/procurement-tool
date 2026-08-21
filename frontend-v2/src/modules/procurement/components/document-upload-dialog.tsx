@@ -36,9 +36,11 @@ interface UploadRow {
 interface DocumentUploadDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** `purchase_request` | `purchase_order` | `survey` — quyết định chính sách tệp ở backend. */
+  /** `purchase_request` | `purchase_order` | `survey` | `contract` — quyết định chính sách tệp ở backend. */
   entity: string
   entityId: number
+  /** Hạn mức MỘT tệp (MB) chỉ để hiện đúng câu nhắc; ngưỡng thật ở `FILE_POLICY` backend. */
+  maxSizeMb?: number
   /**
    * Loại chứng từ điền sẵn cho mục đầu tiên.
    *
@@ -60,6 +62,7 @@ export function DocumentUploadDialog({
   onOpenChange,
   entity,
   entityId,
+  maxSizeMb = 20,
   initialDocType = OTHER_DOC_TYPE,
 }: DocumentUploadDialogProps) {
   const [rows, setRows] = useState<UploadRow[]>([{ docType: initialDocType, files: [] }])
@@ -224,7 +227,7 @@ export function DocumentUploadDialog({
 
         <DialogFooter className="items-center border-t px-5 py-3 sm:justify-between">
           <span className="text-xs text-muted-foreground">
-            {totalFiles > 0 ? `Đã chọn ${totalFiles} tệp` : 'Mỗi tệp tối đa 20 MB'}
+            {totalFiles > 0 ? `Đã chọn ${totalFiles} tệp` : `Mỗi tệp tối đa ${maxSizeMb} MB`}
           </span>
           <div className="flex items-center gap-2">
             <Button

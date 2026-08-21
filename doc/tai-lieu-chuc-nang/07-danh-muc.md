@@ -250,10 +250,15 @@ Quản lý hợp đồng giữa công ty (pháp nhân nội bộ) và đối tá
 ### 4. Loại hợp đồng (`contract_type`)
 
 - Kiểu nhập: Chọn (danh sách cố định)
-- Mặc định: trống
-- Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: Mua bán / Nguyên tắc / Vận chuyển
+- Mặc định: Hợp đồng mua bán
+- Bắt buộc: Không (để trống = chưa phân loại)
+- Nguồn dữ liệu / liên kết: 7 loại cố định trong mã nguồn — Hợp đồng mua bán · Hợp đồng nguyên tắc ·
+  Hợp đồng kinh tế · Hợp đồng khuôn mẫu · Hợp đồng vận chuyển · Hợp đồng dịch vụ · Khác
 - Người sửa: Người dùng có quyền `contract:write`
+- Logic: **CSDL lưu MÃ tiếng Anh** (`purchase` · `principle` · `economic` · `template` · `transport` ·
+  `service` · `other`), tên tiếng Việt ở trên chỉ là nhãn hiển thị (CR-118). Gửi giá trị ngoài bộ này
+  thì backend trả 422. Thêm/đổi loại = sửa `backend/app/core/contract_types.py`, giao diện lấy danh sách
+  chọn qua `GET /api/contracts/meta/types` nên không phải sửa theo.
 
 ### 5. Trích yếu hợp đồng (`title`)
 

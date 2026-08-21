@@ -281,7 +281,15 @@ export function LinesTable<T>({
                       pinClass(column.key),
                     )}
                   >
-                    {renderCell(column.key, row, index)}
+                    <div
+                      className={cn(
+                        column.wrap === false
+                          ? 'truncate'
+                          : 'break-words whitespace-normal leading-snug',
+                      )}
+                    >
+                      {renderCell(column.key, row, index)}
+                    </div>
                   </TableCell>
                 ))}
               </TableRow>

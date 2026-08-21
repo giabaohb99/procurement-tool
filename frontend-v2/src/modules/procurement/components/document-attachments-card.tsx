@@ -48,10 +48,18 @@ import { DocumentStatusBadge } from './document-status-badge'
 import { DocumentUploadDialog } from './document-upload-dialog'
 
 interface DocumentAttachmentsCardProps {
-  /** `purchase_request` hoặc `purchase_order` — quyết định chính sách file ở backend. */
+  /** `purchase_request` · `purchase_order` · `contract` — quyết định chính sách file ở backend. */
   entity: string
   entityId: number
   canManage: boolean
+  /**
+   * Hạn mức dung lượng MỘT tệp, tính bằng MB — chỉ để hiện đúng câu nhắc.
+   *
+   * Ngưỡng thật nằm ở `FILE_POLICY` trong `backend/app/core/file_registry.py` và
+   * mỗi loại chứng từ một khác (hợp đồng 30 MB, chứng từ mua hàng 20 MB). Ghi
+   * cứng 20 ở đây thì người dùng hợp đồng tưởng tệp 25 MB là hỏng nên không thử.
+   */
+  maxSizeMb?: number
   /**
    * Tình trạng hồ sơ chứng từ của ĐMH, hiện CHỈ ĐỌC ở đây.
    *
@@ -78,6 +86,7 @@ export function DocumentAttachmentsCard({
   entity,
   entityId,
   canManage,
+  maxSizeMb = 20,
   documentStatus = '',
 }: DocumentAttachmentsCardProps) {
   const [openType, setOpenType] = useState(ALL)
@@ -280,8 +289,8 @@ export function DocumentAttachmentsCard({
 
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Info className="size-3.5" />
-                  Mỗi tệp tối đa 20 MB. Hỗ trợ PDF, ảnh, Word, Excel, XML, TXT, CSV, Email và
-                  CorelDRAW.
+                  Mỗi tệp tối đa {maxSizeMb} MB. Hỗ trợ PDF, ảnh, Word, Excel, XML, TXT, CSV,
+                  Email và CorelDRAW.
                   {canManage && ` Tệp mới sẽ nằm trong mục "${uploadLabel}".`}
                 </p>
               </>
@@ -295,6 +304,7 @@ export function DocumentAttachmentsCard({
         onOpenChange={(open) => setUploadDialog((current) => ({ ...current, open }))}
         entity={entity}
         entityId={entityId}
+        maxSizeMb={maxSizeMb}
         initialDocType={uploadDialog.docType}
       />
     </Card>

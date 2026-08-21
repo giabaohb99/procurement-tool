@@ -1,31 +1,48 @@
 import { useQuery } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { CheckSquare, LifeBuoy, User } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
-import { authService } from '@/core/auth/auth-service'
-import { useAuth } from '@/core/auth/use-auth'
 import { ChangePasswordCard } from '@/app/components/profile/change-password-card'
 import { ProfileIdentityCard } from '@/app/components/profile/profile-identity-card'
 import { ProfileInfoCard } from '@/app/components/profile/profile-info-card'
+import { ProfileTasksTab } from '@/app/components/profile/profile-tasks-tab'
+import { ProfileTicketsTab } from '@/app/components/profile/profile-tickets-tab'
 import { SignatureCard } from '@/app/components/profile/signature-card'
+import { authService } from '@/core/auth/auth-service'
+import { useAuth } from '@/core/auth/use-auth'
+import { usePermission } from '@/core/authorization/use-permission'
 import { queryKeys } from '@/shared/constants/query-keys'
+import { Badge } from '@/shared/ui/badge'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 
 /**
  * TRANG CÁ NHÂN — hồ sơ của chính người đang đăng nhập.
  *
- * Đứng ở tầng chung (`/me`, khung launcher) chứ không thuộc phân hệ nào: tài
- * khoản là của người dùng, không phải của Thu mua hay Nhân sự.
- *
- * Vẫn gọi lại `/api/auth/me` dù store đã có sẵn người dùng: bản trong store là
- * ảnh chụp lúc đăng nhập, phòng ban / chức danh / vai trò có thể đã được Nhân sự
- * sửa từ hôm qua. Kết quả mới được ghi ngược vào store để menu tài khoản và các
- * phiếu in dùng chung một nguồn.
+ * Gồm dải tab chuẩn:
+ * - Tab "Thông tin cá nhân": Xem hồ sơ, đổi chữ ký, đổi mật khẩu.
+ * - Tab "Việc cần làm": Danh sách việc đang chờ xử lý (YCMH, YCBG, ĐMH, giao trễ, công nợ).
+ * - Tab "Yêu cầu hỗ trợ của tôi": Các phiếu hỗ trợ người dùng đã gửi hệ thống.
  */
 export function ProfilePage() {
   const { user, setUser } = useAuth()
+  const { can } = usePermission()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [taskCount, setTaskCount] = useState<number>(0)
+  const [ticketCount, setTicketCount] = useState<number>(0)
+
+  const canReadTickets = can('ticket', 'read')
+
+  const rawTab = searchParams.get('tab')
+  const activeTab = rawTab === 'tasks' ? 'tasks' : rawTab === 'tickets' && canReadTickets ? 'tickets' : 'info'
+
+  const handleTabChange = (val: string) => {
+    setSearchParams(val === 'info' ? {} : { tab: val }, { replace: true })
+  }
 
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: queryKeys.auth.me(),
@@ -34,19 +51,15 @@ export function ProfilePage() {
 
   useEffect(() => {
     if (data) setUser(data)
-    // `setUser` lấy từ zustand nên giữ nguyên tham chiếu; chỉ chạy lại khi có
-    // dữ liệu mới thật sự.
   }, [data, setUser])
 
-  // Trong lúc chờ mạng vẫn dựng được thẻ danh tính từ bản trong store — người
-  // dùng thấy tên mình ngay, không phải nhìn khung xám toàn trang.
   const profile = data ?? user
 
   return (
     <PageContainer className="mx-auto w-full max-w-5xl">
       <PageHeader
         title="Trang cá nhân"
-        description="Thông tin tài khoản, mật khẩu và chữ ký dùng cho phiếu in"
+        description="Thông tin tài khoản, mật khẩu, chữ ký, việc cần xử lý và yêu cầu hỗ trợ"
       />
 
       {isError && !profile ? (
@@ -63,25 +76,66 @@ export function ProfilePage() {
           </button>
         </ErrorState>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="space-y-6">
           <ProfileIdentityCard profile={profile} />
 
-          {isPending && !profile ? (
-            <div className="grid gap-4 lg:grid-cols-2">
-              <Skeleton className="h-64" />
-              <Skeleton className="h-64" />
-            </div>
-          ) : (
-            <div className="grid items-start gap-4 lg:grid-cols-2">
-              <div className="flex flex-col gap-4">
-                {profile && <ProfileInfoCard profile={profile} />}
-              </div>
-              <div className="flex flex-col gap-4">
-                <SignatureCard signature={profile?.signature} />
-                <ChangePasswordCard />
-              </div>
-            </div>
-          )}
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+            <TabsList className="mb-2 flex-wrap">
+              <TabsTrigger value="info" className="gap-2">
+                <User className="size-4" />
+                <span>Thông tin cá nhân</span>
+              </TabsTrigger>
+              <TabsTrigger value="tasks" className="gap-2">
+                <CheckSquare className="size-4" />
+                <span>Việc cần làm</span>
+                {taskCount > 0 && (
+                  <Badge variant="destructive" className="h-4 px-1.5 text-[10px]">
+                    {taskCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              {canReadTickets && (
+                <TabsTrigger value="tickets" className="gap-2">
+                  <LifeBuoy className="size-4" />
+                  <span>Yêu cầu hỗ trợ của tôi</span>
+                  {ticketCount > 0 && (
+                    <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
+                      {ticketCount}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              )}
+            </TabsList>
+
+            <TabsContent value="info" className="space-y-6">
+              {isPending && !profile ? (
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Skeleton className="h-64" />
+                  <Skeleton className="h-64" />
+                </div>
+              ) : (
+                <div className="grid items-start gap-4 lg:grid-cols-2">
+                  <div className="flex flex-col gap-4">
+                    {profile && <ProfileInfoCard profile={profile} />}
+                  </div>
+                  <div className="flex flex-col gap-4">
+                    <SignatureCard signature={profile?.signature} />
+                    <ChangePasswordCard />
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="tasks" className="space-y-4">
+              <ProfileTasksTab onCountChange={setTaskCount} />
+            </TabsContent>
+
+            {canReadTickets && (
+              <TabsContent value="tickets" className="space-y-4">
+                <ProfileTicketsTab onCountChange={setTicketCount} />
+              </TabsContent>
+            )}
+          </Tabs>
         </div>
       )}
     </PageContainer>

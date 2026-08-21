@@ -68,6 +68,14 @@ export const router = createBrowserRouter([
             errorElement: <RouteErrorPage />,
           },
           {
+            path: appRoutes.finance.paymentRequestPrint(':id'),
+            lazy: async () => ({
+              Component: (await import('@/modules/finance/pages/payment-request-print-page'))
+                .PaymentRequestPrintPage,
+            }),
+            errorElement: <RouteErrorPage />,
+          },
+          {
             path: appRoutes.document.documentPrint(':id'),
             lazy: async () => ({
               Component: (await import('@/modules/document/pages/document-print-page'))

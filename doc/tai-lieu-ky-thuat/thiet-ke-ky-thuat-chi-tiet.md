@@ -154,7 +154,8 @@
 | party_code | VARCHAR(50) INDEX | Mã đối tượng | → `tab_supplier.code` (khi NCC) |
 | party_name | VARCHAR(255) | | |
 | company_id | BIGINT | Pháp nhân ký | → `tab_company.id` |
-| title, contract_type | VARCHAR | | |
+| title | VARCHAR(255) | Trích yếu | |
+| contract_type | VARCHAR(50) | **MÃ tiếng Anh** `purchase`/`principle`/`economic`/`template`/`transport`/`service`/`other`; rỗng = chưa phân loại (CR-118) | bộ giá trị ở `app/core/contract_types.py` |
 | start_date, end_date | VARCHAR(10) | | |
 | signed | BOOLEAN | Đã ký | |
 | status | VARCHAR(30) | Hiệu lực/Hết hạn/Thanh lý | |

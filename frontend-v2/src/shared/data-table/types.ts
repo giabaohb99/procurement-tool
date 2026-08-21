@@ -60,6 +60,8 @@ export interface LinesTableColumn {
    * Vẫn bật/tắt lẻ được trong menu "Cột" như mọi cột khác.
    */
   compactHidden?: boolean
+  /** `true` = cho phép chữ dài tự xuống dòng thay vì cắt bằng dấu ba chấm "…". */
+  wrap?: boolean
 }
 
 export interface DataTablePagination {

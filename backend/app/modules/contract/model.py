@@ -18,7 +18,10 @@ class Contract(Base, AuditMixin):
     party_name: Mapped[str] = mapped_column(String(255), default="")    # tên đối tượng
     company_id: Mapped[int] = mapped_column(BigInteger, default=0)       # công ty (pháp nhân mình) ký HĐ
     title: Mapped[str] = mapped_column(String(255), default="")         # tên/trích yếu HĐ
-    contract_type: Mapped[str] = mapped_column(String(50), default="")  # Mua bán/Nguyên tắc/Vận chuyển…
+    # MÃ tiếng Anh, bộ giá trị cố định ở `app/core/contract_types.py` (CR-118). Rỗng = chưa
+    # phân loại. Giữ VARCHAR(50) chứ không đổi sang Enum: thêm loại mới thì chỉ sửa danh sách
+    # trong code, không phải ALTER bảng 177 dòng trên prod.
+    contract_type: Mapped[str] = mapped_column(String(50), default="")
     start_date: Mapped[str] = mapped_column(String(10), default="")
     end_date: Mapped[str] = mapped_column(String(10), default="", index=True)
     signed: Mapped[bool] = mapped_column(Boolean, default=False)        # đã ký

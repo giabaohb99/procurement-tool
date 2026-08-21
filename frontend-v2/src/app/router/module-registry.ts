@@ -12,6 +12,7 @@ import { productionModule } from '@/modules/production/routes'
 import { projectModule } from '@/modules/project/routes'
 import { reportModule } from '@/modules/report/routes'
 import { salesModule } from '@/modules/sales/routes'
+import { supportModule } from '@/modules/support/routes'
 import { systemModule } from '@/modules/system/routes'
 import { vehicleBookingModule } from '@/modules/vehicle-booking/routes'
 import type { ErpModule } from './module-definition'
@@ -39,6 +40,7 @@ export const allModules: ErpModule[] = [
   vehicleBookingModule,
   degoCoffeeModule,
   reportModule,
+  supportModule,
   systemModule,
   // Đứng cuối: không phải phân hệ nghiệp vụ mà là link sang app Hướng dẫn sử dụng.
   helpCenterModule,

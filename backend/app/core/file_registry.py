@@ -21,6 +21,8 @@ FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
     "contract":               ("contract", _DOC, 30),
     "payment_request":        ("payment_request", _DOC, 20),
     "product":                ("product", _IMG, 5),   # ảnh sản phẩm, ≤5MB, cần write/create trên product
+    "company":                ("company", _IMG, 5),   # logo công ty / pháp nhân
+    "supplier":               ("supplier", _DOC, 20),  # đính kèm nhà cung cấp (ĐKKD, hồ sơ năng lực...)
     "ticket":                 ("ticket", _DOC, 20),   # đính kèm phiếu hỗ trợ
     "ticket_message":         ("ticket", _DOC, 20),   # đính kèm 1 tin nhắn trả lời
     "avatar":                 ("__self__", _IMG, 5),   # __self__ = chỉ cần đăng nhập (ảnh của chính mình)

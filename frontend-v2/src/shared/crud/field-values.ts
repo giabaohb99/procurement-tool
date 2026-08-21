@@ -1,4 +1,4 @@
-import type { CrudFormField } from './types'
+import type { CrudFormField, CrudOption } from './types'
 
 /**
  * Quy đổi giá trị giữa DẠNG LƯU (payload gửi backend) và DẠNG NHẬP (ô trên form).
@@ -64,6 +64,24 @@ export function buildFormDefaults(
   }
 
   return values
+}
+
+/**
+ * Bù giá trị ĐANG LƯU vào danh sách chọn khi nó không nằm trong danh sách khai.
+ *
+ * Các cột này ở backend là VARCHAR tự do, dữ liệu cũ nhập tay nên lệch bộ giá trị
+ * chuẩn (vd `contract_type` từng có "Hợp đồng kinh tế", "Hợp đồng khuôn mẫu" ngoài
+ * 5 loại khai ở config — 177/179 hợp đồng đang lưu không khớp mục nào; CR-118 đã
+ * chuẩn hóa cột đó sang mã tiếng Anh nhưng các cột tự do khác thì chưa). Radix
+ * `Select` không tìm được mục khớp thì hiện chữ gợi ý y như ô TRỐNG: người dùng
+ * tưởng dữ liệu bị mất, chọn đại một loại khác và giá trị thật bị ghi đè mà không
+ * ai biết. Hiện lại chính nó thì vừa đọc được, vừa bấm Lưu mà không đổi gì.
+ */
+export function withCurrentValue(options: CrudOption[], value: unknown): CrudOption[] {
+  const current = String(value ?? '')
+  if (!current) return options
+  if (options.some((option) => String(option.value) === current)) return options
+  return [...options, { value: current, label: current }]
 }
 
 /** Giá trị trên form -> payload gửi backend. */

@@ -23,7 +23,7 @@ export { applyClientFilter } from './helpers/apply-client-filter'
 export { buildRestQuery } from './helpers/query-builder'
 export { getValidFilterRows, isValidFilterRow } from './helpers/validators'
 export { useFilterQuery } from './hooks/use-filter-query'
-export { useFilterContext } from './provider/filter-context'
+export { useFilterContext, useOptionalFilterContext } from './provider/filter-context'
 export { FilterProvider } from './provider/filter-provider'
 export { ConditionalFilter } from './ui/filter-root'
 export type {

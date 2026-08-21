@@ -4,12 +4,12 @@ import { api } from '../api/client'
 import { askConfirm } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import { contractExpiryBadge } from '../config/cruds'
+import { CONTRACT_TYPES } from '../utils/contractTypes'
 import SearchSelect from '../components/SearchSelect'
 import DateRangePicker from '../components/DateRangePicker'
 import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
 
 const PARTY_TYPES = ['Nhà cung cấp', 'Khách hàng', 'Khác']
-const C_TYPES = ['Mua bán', 'Nguyên tắc', 'Vận chuyển', 'Dịch vụ', 'Khác']
 const C_STATUS = ['Hiệu lực', 'Hết hạn', 'Thanh lý']
 
 export default function ContractDetail() {
@@ -93,7 +93,8 @@ export default function ContractDetail() {
               onChange={(v) => setH('company_id', Number(v) || 0)} />
           </div>
           <div className="form-row"><label>Loại hợp đồng</label>
-            <SearchSelect value={c.contract_type || ''} options={C_TYPES} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('contract_type', v)} />
+            {/* Lưu MÃ (`purchase`…), hiện nhãn tiếng Việt — CR-118. Gửi giá trị ngoài bộ này backend trả 422. */}
+            <SearchSelect value={c.contract_type || ''} options={CONTRACT_TYPES} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('contract_type', v)} />
           </div>
           <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Trích yếu hợp đồng</label><input value={c.title || ''} disabled={!canEdit} onChange={(e) => setH('title', e.target.value)} /></div>
           {/* Hiệu lực hợp đồng = 1 khoảng ngày → dùng chung bộ chọn khoảng (không có nút nhanh vì là kỳ hạn tương lai) */}

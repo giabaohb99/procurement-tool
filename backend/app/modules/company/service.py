@@ -11,6 +11,29 @@ FILTERABLE = ["code", "name", "issue_code", "tax_code", "level", "is_active"]
 ENTITY = "company"
 
 
+def get_company_logo_map(db: Session, company_ids: list[int]) -> dict[int, str]:
+    if not company_ids:
+        return {}
+    from app.modules.attachment.model import FileLink, StoredFile
+
+    rows = (
+        db.query(FileLink.entity_id, StoredFile.url)
+        .join(StoredFile, StoredFile.id == FileLink.file_id)
+        .filter(
+            FileLink.entity == "company",
+            FileLink.entity_id.in_(company_ids),
+            FileLink.doc_type == "logo",
+        )
+        .order_by(FileLink.id.desc())
+        .all()
+    )
+    res: dict[int, str] = {}
+    for cid, url in rows:
+        if cid not in res:
+            res[cid] = url or ""
+    return res
+
+
 def list_companies(db: Session, base_query, pg: dict):
     total = base_query.count()
     items = base_query.order_by(Company.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
@@ -63,7 +86,7 @@ def update_company(db: Session, cid: int, data: CompanyUpdate, user_id: int) -> 
     return obj
 
 
-def delete_company(db: Session, cid: int, user_id: int) -> None:
+def delete_company(db: Session, cid: int, user_id: int):
     obj = get_company(db, cid)
     db.delete(obj)
     db.commit()

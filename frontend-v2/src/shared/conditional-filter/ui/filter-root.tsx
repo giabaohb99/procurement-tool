@@ -7,13 +7,17 @@ import { useFilterContext } from '../provider/filter-context'
 import { FilterFooter } from './filter-footer'
 import { FilterRowItem } from './filter-row'
 
+export interface ConditionalFilterProps {
+  align?: 'start' | 'center' | 'end'
+}
+
 /**
  * Nút "Bộ lọc" + popover chứa các dòng điều kiện.
  *
- * Vùng danh sách chỉ là div `overflow-y-auto` — bản gốc dùng `ScrollArea` của
- * shadcn, nhưng nó kéo theo một primitive nữa mà cái ta cần chỉ là thanh cuộn.
+ * Mặc định `align="start"` để khi nút nằm phía bên trái thanh công cụ (sau ô tìm kiếm),
+ * khung popover mở rộng sang bên phải, không bị lệch/tràn ra khỏi mép trái màn hình.
  */
-export function ConditionalFilter() {
+export function ConditionalFilter({ align = 'start' }: ConditionalFilterProps = {}) {
   const { state, config, activeCount } = useFilterContext()
   const locale = config.locale ?? {}
 
@@ -31,7 +35,7 @@ export function ConditionalFilter() {
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" className="w-[min(46rem,95vw)] p-3">
+      <PopoverContent align={align} className="w-[min(46rem,95vw)] p-3">
         <div className="max-h-[24rem] overflow-y-auto pr-1">
           {state.rows.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">

@@ -1,4 +1,4 @@
-import { Bell, Building, BriefcaseBusiness, IdCard, ListChecks, ShieldCheck } from 'lucide-react'
+import { Bell, Building, BriefcaseBusiness, IdCard, ShieldCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -94,12 +94,6 @@ export function ProfileIdentityCard({ profile }: { profile: AuthUser | null }) {
         không dựng lại bảng thứ hai.
       */}
       <div className="flex shrink-0 flex-wrap gap-2">
-        <Button variant="outline" size="sm" asChild>
-          <Link to={appRoutes.document.pendingApproval}>
-            <ListChecks className="size-4" />
-            Việc cần làm
-          </Link>
-        </Button>
         <Button variant="outline" size="sm" asChild>
           <Link to={appRoutes.notifications}>
             <Bell className="size-4" />

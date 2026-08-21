@@ -7,6 +7,7 @@ import { contractExpiryBadge, PAYMENT_TERMS_OPTIONS } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
 import PurchaseHistoryTable from '../components/PurchaseHistoryTable'
 import SupplierPayablesDashboard from '../components/supplier-payables-dashboard'
+import { contractTypeLabel } from '../utils/contractTypes'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 // ĐƠN GIÁ hiện đủ 4 số lẻ — mặc định toLocaleString chỉ cho 3, cắt mất chữ số cuối
@@ -230,7 +231,7 @@ export default function SupplierDetail() {
               <tbody>
                 {contracts.map((c) => (
                   <tr key={c.id} className="clickable" onClick={() => navigate(`/contracts/${c.id}`)}>
-                    <td>{c.code}</td><td>{c.title}</td><td>{c.contract_type}</td><td>{companyName(c.company_id)}</td>
+                    <td>{c.code}</td><td>{c.title}</td><td>{contractTypeLabel(c.contract_type)}</td><td>{companyName(c.company_id)}</td>
                     <td>{c.start_date}</td><td>{c.end_date}</td>
                     <td style={{ textAlign: 'center' }}>{c.signed ? '✓' : ''}</td><td>{contractExpiryBadge(c.expiry)}</td>
                   </tr>

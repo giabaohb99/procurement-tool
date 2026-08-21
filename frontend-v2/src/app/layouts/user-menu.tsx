@@ -12,9 +12,9 @@ import { useRef, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
+import { CreateTicketDialog } from '@/app/components/profile/create-ticket-dialog'
 import { apiPost } from '@/core/api'
 import { useAuth } from '@/core/auth/use-auth'
-import { appConfig } from '@/core/config/app-config'
 import { useTranslation } from '@/core/i18n/use-translation'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
@@ -35,6 +35,7 @@ export function UserMenu() {
   const navigate = useNavigate()
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [ticketDialogOpen, setTicketDialogOpen] = useState(false)
 
   async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -149,9 +150,7 @@ export function UserMenu() {
           <div className="p-2">
             <DropdownMenuItem
               className="min-h-10 gap-3 px-2.5 font-medium text-navy dark:text-foreground"
-              onSelect={() =>
-                window.open(appConfig.helpCenterUrl, '_blank', 'noopener,noreferrer')
-              }
+              onSelect={() => setTicketDialogOpen(true)}
             >
               <Headphones className="size-4.5 text-navy dark:text-foreground" />
               Gửi yêu cầu hỗ trợ
@@ -182,6 +181,11 @@ export function UserMenu() {
         accept="image/*"
         onChange={uploadAvatar}
         disabled={uploadingAvatar}
+      />
+
+      <CreateTicketDialog
+        open={ticketDialogOpen}
+        onOpenChange={setTicketDialogOpen}
       />
     </>
   )

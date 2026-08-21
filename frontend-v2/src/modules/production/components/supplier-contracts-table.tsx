@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
@@ -9,6 +11,7 @@ import { Card } from '@/shared/ui/card'
 import { TONE_CLASS, type StatusTone } from '@/shared/ui/status-tone'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
+import { contractTypeLabel } from '../config/contract-type-options'
 import { useContracts } from '../hooks/use-contracts'
 import type { Contract } from '../types/contract'
 
@@ -26,6 +29,7 @@ const EXPIRY_TONE: Record<string, StatusTone> = {
  * cũ, còn mã NCC là khóa duy nhất toàn hệ.
  */
 export function SupplierContractsTable({ supplierCode }: { supplierCode: string }) {
+  const navigate = useNavigate()
   const { can } = usePermission()
   const canRead = can('contract', 'read')
 
@@ -68,7 +72,12 @@ export function SupplierContractsTable({ supplierCode }: { supplierCode: string 
         hideable: false,
         cell: (c) => c.title || '—',
       },
-      { key: 'contract_type', header: 'Loại', width: 150, cell: (c) => c.contract_type || '—' },
+      {
+        key: 'contract_type',
+        header: 'Loại',
+        width: 150,
+        cell: (c) => contractTypeLabel(c.contract_type) || '—',
+      },
       {
         key: 'company_id',
         header: 'Công ty ký',
@@ -134,6 +143,7 @@ export function SupplierContractsTable({ supplierCode }: { supplierCode: string 
         isLoading={isLoading}
         isError={isError}
         onRefresh={() => refetch()}
+        onRowClick={(c) => navigate(appRoutes.production.contractDetail(c.id))}
         storageKey="production.supplier.contracts"
         emptyMessage="Chưa có hợp đồng nào với nhà cung cấp này."
         pagination={{
