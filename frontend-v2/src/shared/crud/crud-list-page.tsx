@@ -1,6 +1,6 @@
 import { Plus, Search } from 'lucide-react'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
@@ -14,6 +14,7 @@ import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { CrudFormDialog } from './crud-form-dialog'
 import type { CrudConfig } from './types'
 import { useCrudList } from './use-crud'
@@ -36,19 +37,37 @@ export function CrudListPage<T extends Record<string, any>>({ config }: CrudList
 
 function CrudListContent<T extends Record<string, any>>({ config }: CrudListPageProps<T>) {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const idKey = (config.idKey as string) || 'id'
   const searchParamName = config.searchParam || 'name'
+
+  const sortBy = searchParams.get('sort_by') || ''
+  const sortDir = (searchParams.get('sort_dir') as 'asc' | 'desc') || 'asc'
 
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const [isCreateOpen, setCreateOpen] = useState(false)
 
   const { queryParams, queryKey } = useFilterQuery()
-  const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue])
+  const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, searchParams.toString()])
 
   const params: ListParams = { page, page_size: pageSize, ...queryParams }
   if (debouncedValue) {
     params[searchParamName] = debouncedValue
+  }
+  if (sortBy) {
+    params.sort_by = sortBy
+    params.sort_dir = sortDir
+  }
+
+  // Merge quick filters from URL params
+  if (config.quickFilters) {
+    for (const qf of config.quickFilters) {
+      const val = searchParams.get(qf.key)
+      if (val !== null && val !== '') {
+        params[qf.key] = val
+      }
+    }
   }
 
   const { data, isLoading, isError } = useCrudList<T>(config.apiPath, params)
@@ -57,6 +76,23 @@ function CrudListContent<T extends Record<string, any>>({ config }: CrudListPage
     if (config.detailRoute) {
       navigate(config.detailRoute(row[idKey]))
     }
+  }
+
+  const handleSortChange = (newSortBy: string, newSortDir: 'asc' | 'desc') => {
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.set('sort_by', newSortBy)
+    nextParams.set('sort_dir', newSortDir)
+    setSearchParams(nextParams)
+  }
+
+  const handleQuickFilterChange = (key: string, value: string) => {
+    const nextParams = new URLSearchParams(searchParams)
+    if (value && value !== 'all') {
+      nextParams.set(key, value)
+    } else {
+      nextParams.delete(key)
+    }
+    setSearchParams(nextParams)
   }
 
   return (
@@ -87,6 +123,9 @@ function CrudListContent<T extends Record<string, any>>({ config }: CrudListPage
           emptyMessage={`Không tìm thấy ${config.unitLabel} nào.`}
           storageKey={config.storageKey}
           onRowClick={handleRowClick}
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           pagination={{
             page,
             pageSize,
@@ -96,19 +135,45 @@ function CrudListContent<T extends Record<string, any>>({ config }: CrudListPage
             unitLabel: config.unitLabel,
           }}
           toolbar={
-            <div className="flex flex-wrap items-center gap-2">
+            <>
               <div className="relative w-64 max-w-sm">
                 <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder={config.searchPlaceholder || `Tìm ${config.unitLabel}…`}
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
-                  className="pl-8"
+                  className="pl-8 h-9 text-xs bg-background"
                 />
               </div>
 
+              {config.quickFilters?.map((qf) => {
+                if (qf.type === 'select' && qf.options) {
+                  const val = searchParams.get(qf.key) || 'all'
+                  return (
+                    <Select
+                      key={qf.key}
+                      value={val}
+                      onValueChange={(v) => handleQuickFilterChange(qf.key, v)}
+                    >
+                      <SelectTrigger className="h-9 w-40 text-xs">
+                        <SelectValue placeholder={qf.label} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả {qf.label.toLowerCase()}</SelectItem>
+                        {qf.options.map((opt) => (
+                          <SelectItem key={String(opt.value)} value={String(opt.value)}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )
+                }
+                return null
+              })}
+
               {config.filterConfig && <ConditionalFilter />}
-            </div>
+            </>
           }
         />
       </Card>

@@ -1,10 +1,11 @@
 import { Plus, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
+import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import {
   ConditionalFilter,
   FilterProvider,
@@ -18,9 +19,11 @@ import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
+import { DateRangePresetPicker } from '@/shared/ui/date-range-preset-picker'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import {
   Select,
   SelectContent,
@@ -43,7 +46,7 @@ const ALL = 'all'
 const FILTER_CONFIG = {
   fields: SURVEY_REQUEST_FILTER_FIELDS,
   allowConjunctionToggle: true,
-  preserveParams: ['company_id', 'status'],
+  preserveParams: ['company_id', 'department_id', 'status', 'request_date_from', 'request_date_to', 'sort_by', 'sort_dir'],
 }
 
 export function SurveyRequestListPage() {
@@ -54,28 +57,71 @@ export function SurveyRequestListPage() {
   )
 }
 
-/**
- * Danh sách Yêu cầu báo giá (YCBG) — bước đầu của luồng: bộ phận nêu nhu cầu,
- * thu mua đi khảo sát giá rồi mới lên yêu cầu mua hàng.
- */
 function SurveyRequestListContent() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
+  const [departmentId, setDepartmentId] = useUrlParamState('department_id', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
+  const [reqDateFrom, setReqDateFrom] = useUrlParamState('request_date_from', '')
+  const [reqDateTo, setReqDateTo] = useUrlParamState('request_date_to', '')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
+  const sortBy = searchParams.get('sort_by') || ''
+  const sortDir = (searchParams.get('sort_dir') as 'asc' | 'desc') || 'asc'
+
   const { data: companies } = useCompanies({ page_size: 500, is_active: true })
+  const { data: departments } = useDepartments({ page_size: 500, is_active: true })
   const { queryParams, queryKey } = useFilterQuery()
 
-  const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, companyId, status])
+  const [page, setPage] = usePageResetOnFilterChange([
+    queryKey,
+    debouncedValue,
+    companyId,
+    departmentId,
+    status,
+    reqDateFrom,
+    reqDateTo,
+    sortBy,
+    sortDir,
+  ])
 
   const params: ListParams = { page, page_size: pageSize, ...queryParams }
   if (debouncedValue) params.code = debouncedValue
   if (companyId !== ALL) params.company_id = Number(companyId)
+  if (departmentId !== ALL) params.department_id = Number(departmentId)
   if (status !== ALL) params.status = status
+  if (reqDateFrom) params.request_date_from = reqDateFrom
+  if (reqDateTo) params.request_date_to = reqDateTo
+  if (sortBy) {
+    params.sort_by = sortBy
+    params.sort_dir = sortDir
+  }
 
   const { data, isLoading, isError } = useSurveyRequests(params)
+
+  const activeCount = [
+    companyId !== ALL,
+    departmentId !== ALL,
+    status !== ALL,
+    Boolean(reqDateFrom || reqDateTo),
+  ].filter(Boolean).length
+
+  const clearAllFilters = () => {
+    setCompanyId(ALL)
+    setDepartmentId(ALL)
+    setStatus(ALL)
+    setReqDateFrom('')
+    setReqDateTo('')
+  }
+
+  const handleSortChange = (newSortBy: string, newSortDir: 'asc' | 'desc') => {
+    const next = new URLSearchParams(searchParams)
+    next.set('sort_by', newSortBy)
+    next.set('sort_dir', newSortDir)
+    setSearchParams(next)
+  }
 
   const columns = useMemo<DataTableColumn<SurveyRequest>[]>(
     () => [
@@ -83,6 +129,7 @@ function SurveyRequestListContent() {
         key: 'code',
         header: 'Mã phiếu',
         width: 160,
+        sortable: true,
         hideable: false,
         cell: (sr) => <span className="truncate font-medium">{sr.code}</span>,
       },
@@ -90,19 +137,78 @@ function SurveyRequestListContent() {
       { key: 'requester', header: 'Người yêu cầu', width: 200, cell: (sr) => sr.requester || '—' },
       { key: 'department', header: 'Bộ phận', width: 180, cell: (sr) => sr.department || '—' },
       {
-        key: 'created_at',
+        key: 'request_date',
         header: 'Ngày tạo',
         width: 150,
+        sortable: true,
         cell: (sr) => formatDateTime(sr.created_at) || '—',
       },
       {
         key: 'status',
         header: 'Trạng thái',
         width: 150,
+        sortable: true,
         cell: (sr) => <StatusBadge status={sr.status} labels={SR_STATUS_LABELS} />,
       },
     ],
     [],
+  )
+
+  const filterControls = (
+    <>
+      <Select value={companyId} onValueChange={setCompanyId}>
+        <SelectTrigger className="w-full md:w-44 text-xs h-9">
+          <SelectValue placeholder="Công ty" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>Tất cả công ty</SelectItem>
+          {(companies?.items ?? []).map((company) => (
+            <SelectItem key={company.id} value={String(company.id)}>
+              {company.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={departmentId} onValueChange={setDepartmentId}>
+        <SelectTrigger className="w-full md:w-44 text-xs h-9">
+          <SelectValue placeholder="Bộ phận yêu cầu" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>Tất cả bộ phận</SelectItem>
+          {(departments?.items ?? []).map((dept) => (
+            <SelectItem key={dept.id} value={String(dept.id)}>
+              {dept.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={status} onValueChange={setStatus}>
+        <SelectTrigger className="w-full md:w-40 text-xs h-9">
+          <SelectValue placeholder="Trạng thái" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
+          {statusOptions(SR_STATUS_LABELS).map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <DateRangePresetPicker
+        from={reqDateFrom}
+        to={reqDateTo}
+        placeholder="Ngày tạo..."
+        className="w-full md:w-auto"
+        onChange={(f, t) => {
+          setReqDateFrom(f)
+          setReqDateTo(t)
+        }}
+      />
+    </>
   )
 
   return (
@@ -131,6 +237,9 @@ function SurveyRequestListContent() {
           isError={isError}
           emptyMessage="Không tìm thấy yêu cầu báo giá nào."
           storageKey="procurement.survey-requests"
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           pagination={{
             page,
             pageSize,
@@ -141,45 +250,26 @@ function SurveyRequestListContent() {
           }}
           toolbar={
             <>
-              <div className="relative min-w-56 flex-1 md:max-w-xs">
+              <div className="relative min-w-56 flex-1 max-w-xs">
                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  className="pl-9"
-                  placeholder="Tìm theo mã phiếu…"
+                  className="pl-9 h-9 text-xs"
+                  placeholder="Tìm mã phiếu, người yêu cầu, mã/tên sản phẩm…"
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                 />
               </div>
 
-              <Select value={companyId} onValueChange={setCompanyId}>
-                <SelectTrigger className="w-52">
-                  <SelectValue placeholder="Công ty" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Tất cả công ty</SelectItem>
-                  {(companies?.items ?? []).map((company) => (
-                    <SelectItem key={company.id} value={String(company.id)}>
-                      {company.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="hidden md:flex md:items-center md:gap-2">
+                {filterControls}
+                <ConditionalFilter />
+              </div>
 
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="w-44">
-                  <SelectValue placeholder="Trạng thái" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-                  {statusOptions(SR_STATUS_LABELS).map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <ConditionalFilter />
+              <QuickFilterSheet activeCount={activeCount} onClearAll={clearAllFilters}>
+                <div className="space-y-3">
+                  {filterControls}
+                </div>
+              </QuickFilterSheet>
             </>
           }
         />

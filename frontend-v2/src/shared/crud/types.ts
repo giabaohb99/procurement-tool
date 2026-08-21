@@ -53,6 +53,14 @@ export interface CrudTab<T> {
   render: (row: T) => ReactNode
 }
 
+export interface QuickFilterConfig {
+  key: string
+  label: string
+  type: 'select' | 'date-range' | 'chip'
+  options?: CrudOption[]
+  sourceUrl?: string
+}
+
 export interface CrudConfig<T> {
   /** Khóa phân quyền — khớp ENTITIES trong backend (vd 'warehouse', 'unit'). */
   entity: PermissionEntity
@@ -69,6 +77,8 @@ export interface CrudConfig<T> {
   /** Trường tìm kiếm nhanh trên thanh công cụ (mặc định 'name', hoặc 'q'). */
   searchParam?: string
   searchPlaceholder?: string
+  /** Cấu hình thanh lọc nhanh ngoài bảng. */
+  quickFilters?: QuickFilterConfig[]
   /** Cấu hình các cột hiển thị trên DataTable. */
   columns: DataTableColumn<T>[]
   /** Cấu hình bộ lọc nâng cao (ConditionalFilter). */

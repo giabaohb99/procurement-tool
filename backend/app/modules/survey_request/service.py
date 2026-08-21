@@ -12,7 +12,7 @@ from .model import (LINE_STATUSES, LS_COMPLETED, LS_RESURVEY, SurveyRequest,
 ENTITY = "survey_request"
 # request_date: cho bộ lọc điều kiện lọc theo ngày (apply_range_filters vẫn lo _from/_to)
 FILTERABLE = ["code", "status", "requester", "department", "request_date",
-              "department_id", "head_of_dept_id", "requester_id"]   # CR-088 — xem `core/ref_filter.py`
+              "department_id", "head_of_dept_id", "requester_id", "company_id", "purpose"]
 MAX_OPTIONS_PER_LINE = 5   # mỗi sản phẩm (dòng YCKS) tối đa 5 phương án khảo sát
 HEADER_FIELDS = ["company_id", "requester", "requester_id", "requester_position",
                  "department_id", "department",

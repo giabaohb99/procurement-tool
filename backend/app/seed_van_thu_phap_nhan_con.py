@@ -117,6 +117,10 @@ def seed_van_thu_phap_nhan_con(db) -> int:
                         created_by=1, updated_by=1)
             db.add(user)
             db.flush()
+        else:
+            user.password_hash = hash_password(emp_code)
+            user.is_active = True
+            db.flush()
 
         #  Gán lại vai trò + phạm vi mỗi lần seed: dữ liệu demo phải về đúng
         #  trạng thái đã hẹn, kể cả khi ai đó sửa tay trên giao diện lúc thử.

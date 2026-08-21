@@ -44,6 +44,20 @@ export const CONTRACT_CRUD_CONFIG: CrudConfig<Contract> = {
   detailRoute: (id) => appRoutes.production.contractDetail(id),
   searchParam: 'title',
   searchPlaceholder: 'Tìm theo tên, mã hợp đồng...',
+  quickFilters: [
+    {
+      key: 'party_type',
+      label: 'Bên ký kết',
+      type: 'select',
+      options: PARTY_TYPE_OPTIONS,
+    },
+    {
+      key: 'status',
+      label: 'Trạng thái',
+      type: 'select',
+      options: STATUS_OPTIONS,
+    },
+  ],
   filterConfig: {
     fields: CONTRACT_FILTER_FIELDS,
   },
@@ -62,6 +76,7 @@ export const CONTRACT_CRUD_CONFIG: CrudConfig<Contract> = {
       key: 'code',
       header: 'Số hợp đồng',
       width: 150,
+      sortable: true,
       hideable: false,
       defaultPinned: true,
       cell: (c) => <span className="font-semibold text-navy dark:text-foreground">{c.code}</span>,
@@ -70,6 +85,7 @@ export const CONTRACT_CRUD_CONFIG: CrudConfig<Contract> = {
       key: 'title',
       header: 'Tên / Trích yếu hợp đồng',
       width: 280,
+      sortable: true,
       wrap: true,
       hideable: false,
       cell: (c) => c.title || '(Không có tiêu đề)',
@@ -98,12 +114,14 @@ export const CONTRACT_CRUD_CONFIG: CrudConfig<Contract> = {
       key: 'start_date',
       header: 'Ngày ký',
       width: 110,
+      sortable: true,
       cell: (c) => formatDate(c.start_date) || '—',
     },
     {
       key: 'end_date',
       header: 'Ngày hết hạn',
       width: 120,
+      sortable: true,
       cell: (c) => formatDate(c.end_date) || 'Không thời hạn',
     },
     {
@@ -136,6 +154,7 @@ export const CONTRACT_CRUD_CONFIG: CrudConfig<Contract> = {
       key: 'status',
       header: 'Trạng thái',
       width: 120,
+      sortable: true,
       cell: (c) => (
         <Badge
           variant="outline"

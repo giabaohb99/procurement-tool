@@ -5,28 +5,27 @@ import {
   PR_STATUS_LABELS,
   SR_STATUS_LABELS,
   SURVEY_STATUS_LABELS,
+  SURVEY_TYPE_LABELS,
   statusOptions,
 } from '../types/purchase-document'
-import { fetchDepartmentOptions, fetchEmployeeOptions } from './ref-filter-options'
+import { fetchCompanyOptions, fetchDepartmentOptions, fetchEmployeeOptions } from './ref-filter-options'
 
 /**
  * Trường của BỘ LỌC NÂNG CAO cho các bảng chứng từ mua hàng.
- *
- * ⚠️ `name` PHẢI nằm trong `service.FILTERABLE` của controller tương ứng, nếu
- * không backend bỏ qua điều kiện và người dùng tưởng bộ lọc hỏng. Những tham số
- * lọc QUA BẢNG CON (company_id, item_group, assignee, invoice_no, product_code)
- * không đi qua `apply_filters` nên KHÔNG khai ở đây — chúng nằm ở thanh công cụ.
  */
 
 const STATUS_OPERATORS = ['is', 'is_not', 'in', 'not_in'] as const
 
-/**
- * Ô tham chiếu chỉ để `bằng` / `khác` — CR-088.
- *
- * KHÔNG mở `is_empty` / `is_not_empty`: backend dịch chúng thành `IS NULL`, mà cột
- * id để trống lưu **0** chứ không NULL, nên điều kiện đó không bao giờ khớp dòng nào.
- */
+/** Ô tham chiếu chỉ để `bằng` / `khác`. */
 const REF_OPERATORS: OperatorType[] = ['is', 'is_not']
+
+const COMPANY_FIELD: FilterFieldDefinition = {
+  name: 'company_id',
+  label: 'Công ty',
+  type: 'combobox',
+  operators: REF_OPERATORS,
+  fetchOptions: fetchCompanyOptions,
+}
 
 /** Ô phòng ban dùng chung — mỗi màn chỉ khác cái nhãn ("Bộ phận" / "Bộ phận yêu cầu"). */
 const DEPARTMENT_FIELD: Omit<FilterFieldDefinition, 'label'> = {
@@ -45,8 +44,10 @@ const EMPLOYEE_FIELD: Omit<FilterFieldDefinition, 'label' | 'name'> = {
 
 export const PURCHASE_REQUEST_FILTER_FIELDS: FilterFieldDefinition[] = [
   { name: 'code', label: 'Mã PYC', type: 'text' },
+  COMPANY_FIELD,
   { ...EMPLOYEE_FIELD, name: 'requester_id', label: 'Người yêu cầu' },
   { ...DEPARTMENT_FIELD, label: 'Bộ phận yêu cầu' },
+  { name: 'purpose', label: 'Mục đích', type: 'text' },
   { name: 'request_date', label: 'Ngày tạo', type: 'date' },
   { name: 'need_date', label: 'Ngày cần hàng', type: 'date' },
   { name: 'is_urgent', label: 'Đơn gấp', type: 'boolean', operators: ['is'] },
@@ -61,8 +62,10 @@ export const PURCHASE_REQUEST_FILTER_FIELDS: FilterFieldDefinition[] = [
 
 export const SURVEY_REQUEST_FILTER_FIELDS: FilterFieldDefinition[] = [
   { name: 'code', label: 'Mã phiếu', type: 'text' },
+  COMPANY_FIELD,
   { ...EMPLOYEE_FIELD, name: 'requester_id', label: 'Người yêu cầu' },
-  { ...DEPARTMENT_FIELD, label: 'Bộ phận' },
+  { ...DEPARTMENT_FIELD, label: 'Bộ phận yêu cầu' },
+  { name: 'purpose', label: 'Mục đích', type: 'text' },
   { name: 'request_date', label: 'Ngày tạo', type: 'date' },
   {
     name: 'status',
@@ -77,6 +80,7 @@ export const PURCHASE_ORDER_FILTER_FIELDS: FilterFieldDefinition[] = [
   { name: 'code', label: 'Mã ĐMH', type: 'text' },
   { name: 'misa_code', label: 'Mã MISA', type: 'text' },
   { name: 'pr_code', label: 'Mã PYC', type: 'text' },
+  COMPANY_FIELD,
   { name: 'supplier_code', label: 'Mã nhà cung cấp', type: 'text' },
   { ...EMPLOYEE_FIELD, name: 'nspt_id', label: 'NSPT phụ trách' },
   { ...DEPARTMENT_FIELD, label: 'Bộ phận' },
@@ -99,13 +103,19 @@ export const PURCHASE_ORDER_FILTER_FIELDS: FilterFieldDefinition[] = [
 ]
 
 export const SURVEY_FILTER_FIELDS: FilterFieldDefinition[] = [
-  { name: 'code', label: 'Mã phiếu', type: 'text' },
+  { name: 'code', label: 'Mã phiếu khảo sát', type: 'text' },
+  {
+    name: 'survey_type',
+    label: 'Loại khảo sát',
+    type: 'select',
+    operators: [...STATUS_OPERATORS],
+    options: Object.entries(SURVEY_TYPE_LABELS).map(([k, v]) => ({ value: k, label: v })),
+  },
   { name: 'sr_code', label: 'Mã YCBG', type: 'text' },
   { name: 'pr_code', label: 'Mã PYC', type: 'text' },
   { name: 'main_content', label: 'Nội dung chính', type: 'text' },
   { name: 'item_code', label: 'Mã hàng', type: 'text' },
-  // Phiếu khảo sát CHƯA có cột `nspt_id` (CR-087 mới neo YCMH/YCBG/ĐMH), nên ô này
-  // vẫn lọc theo TÊN. Đổi sang id ở đây là backend lặng lẽ bỏ qua điều kiện.
+  { name: 'item_group', label: 'Nhóm hàng', type: 'text' },
   { name: 'nspt', label: 'NSPT', type: 'text' },
   {
     name: 'status',

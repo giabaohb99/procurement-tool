@@ -12,7 +12,9 @@ ENTITY = "product"
 
 def list_products(db: Session, base_query, pg: dict):
     total = base_query.count()
-    items = base_query.order_by(Product.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
+    if not base_query._order_by_clauses:
+        base_query = base_query.order_by(Product.id.desc())
+    items = base_query.offset(pg["offset"]).limit(pg["limit"]).all()
     return total, items
 
 

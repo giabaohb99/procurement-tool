@@ -37,10 +37,7 @@ def _days(a: str, b: str) -> int:
 # Lọc khoảng kiểu cũ (order_date_from/_to của thanh lọc cơ bản) vẫn do apply_range_filters lo.
 FILTERABLE = ["code", "status", "supplier_code", "pr_code", "misa_code", "nspt", "is_urgent",
               "department", "document_status", "order_date",
-              # CR-088: lọc theo ID. Param trần `nspt_id=` / `department_id=` đi qua
-              # `apply_ref_filters` (có nhánh lùi cho dòng id = 0); khai ở đây là để BỘ LỌC
-              # ĐIỀU KIỆN (`nspt_id__eq=`) dùng được — bên đó khớp id thẳng, không nhánh lùi.
-              "nspt_id", "department_id"]
+              "nspt_id", "department_id", "company_id"]
 ENTITY = "purchase_order"
 
 

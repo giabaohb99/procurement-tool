@@ -126,7 +126,8 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
 
 def _list_query(request: Request, db: Session, user):
     """Bộ lọc + phạm vi của màn danh sách — dùng chung cho danh sách và xuất Excel (CR-068)."""
-    q = apply_filters(db.query(PurchaseOrder), PurchaseOrder, request, service.FILTERABLE)
+    filterable = [f for f in service.FILTERABLE if f != "code"]
+    q = apply_filters(db.query(PurchaseOrder), PurchaseOrder, request, filterable)
     q = apply_ref_filters(q, PurchaseOrder, request, db)      # CR-088: `nspt_id` / `department_id`
     q = apply_range_filters(q, PurchaseOrder, request, ["order_date"])
     q = apply_equals(q, PurchaseOrder, request, ["company_id"])
@@ -139,8 +140,27 @@ def _list_query(request: Request, db: Session, user):
         sub2_item = select(POItem.po_id).where(POItem.invoice_no.like(f"%{invoice_no}%"))
         sub2_deliv = select(PODelivery.po_id).where(PODelivery.invoice_no.like(f"%{invoice_no}%"))
         q = q.filter(or_(PurchaseOrder.id.in_(sub2_item), PurchaseOrder.id.in_(sub2_deliv)))
+    # Ô tìm kiếm nhanh: Tìm theo Mã ĐMH, Mã MISA, Mã PYC, Nhà cung cấp, Mã SP hoặc Tên SP ở dòng hàng
+    search = (request.query_params.get("code") or request.query_params.get("q") or request.query_params.get("search") or request.query_params.get("product") or "").strip()
+    if search:
+        like = f"%{search}%"
+        matching_ids = [
+            r[0] for r in db.query(POItem.po_id)
+            .filter(or_(POItem.product_code.like(like), POItem.product_name.like(like))).all()
+            if r[0]
+        ]
+        conds = [
+            PurchaseOrder.code.like(like),
+            PurchaseOrder.pr_code.like(like),
+            PurchaseOrder.misa_code.like(like),
+            PurchaseOrder.supplier_name.like(like),
+            PurchaseOrder.supplier_code.like(like),
+        ]
+        if matching_ids:
+            conds.append(PurchaseOrder.id.in_(matching_ids))
+        q = q.filter(or_(*conds))
     q = apply_scope(q, PurchaseOrder, "purchase_order", user, get_perm_profile(db, user))
-    return apply_sort_from_request(q, PurchaseOrder, request)   # sort theo cột; 'amount' tính toán -> bỏ qua
+    return apply_sort_from_request(q, PurchaseOrder, request)
 
 
 @router.get("")

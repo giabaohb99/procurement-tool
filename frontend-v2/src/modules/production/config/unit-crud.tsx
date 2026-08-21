@@ -15,6 +15,17 @@ export const UNIT_CRUD_CONFIG: CrudConfig<Unit> = {
   detailRoute: (id) => appRoutes.production.unitDetail(id),
   searchParam: 'name',
   searchPlaceholder: 'Tìm theo tên hoặc mã ĐVT…',
+  quickFilters: [
+    {
+      key: 'is_active',
+      label: 'Trạng thái',
+      type: 'select',
+      options: [
+        { value: 'true', label: 'Đang dùng' },
+        { value: 'false', label: 'Ngừng / Ẩn' },
+      ],
+    },
+  ],
   getItemName: (u) => `${u.name} (${u.code})`,
   deleteWarning: 'Dữ liệu sản phẩm và chứng từ sử dụng đơn vị tính này có thể bị ảnh hưởng.',
   chips: (u) => [
@@ -30,6 +41,7 @@ export const UNIT_CRUD_CONFIG: CrudConfig<Unit> = {
       key: 'code',
       header: 'Mã ĐVT',
       width: 140,
+      sortable: true,
       hideable: false,
       cell: (u) => <span className="font-semibold text-primary">{u.code}</span>,
     },
@@ -37,6 +49,7 @@ export const UNIT_CRUD_CONFIG: CrudConfig<Unit> = {
       key: 'name',
       header: 'Tên ĐVT',
       width: 280,
+      sortable: true,
       hideable: false,
       cell: (u) => <span className="font-medium">{u.name}</span>,
     },
@@ -44,6 +57,7 @@ export const UNIT_CRUD_CONFIG: CrudConfig<Unit> = {
       key: 'is_active',
       header: 'Trạng thái',
       width: 140,
+      sortable: true,
       cell: (u) => (
         <Badge variant={u.is_active ? 'default' : 'secondary'}>
           {u.is_active ? 'Đang dùng' : 'Ngừng'}

@@ -14,7 +14,7 @@ from .schema import AssignIn, ItemStatusIn, PRCreate, PRUpdate
 # request_date/need_date nằm trong whitelist để bộ lọc điều kiện lọc theo ngày; lọc khoảng kiểu cũ
 # (<field>_from/_to) vẫn do apply_range_filters lo.
 FILTERABLE = ["code", "status", "requester", "department", "is_urgent", "request_date", "need_date",
-              "department_id", "head_of_dept_id", "requester_id"]   # CR-088 — xem `core/ref_filter.py`
+              "department_id", "head_of_dept_id", "requester_id", "company_id", "purpose"]
 ENTITY = "purchase_request"
 
 # CR-074: tách bạch "chưa ai lập ĐMH" với "đã có ĐMH nhưng chưa bấm đặt hàng". Trước đây hai

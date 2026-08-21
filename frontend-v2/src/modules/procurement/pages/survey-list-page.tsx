@@ -1,6 +1,6 @@
 import { Plus, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
@@ -21,6 +21,7 @@ import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import {
   Select,
   SelectContent,
@@ -44,7 +45,7 @@ const ALL = 'all'
 const FILTER_CONFIG = {
   fields: SURVEY_FILTER_FIELDS,
   allowConjunctionToggle: true,
-  preserveParams: ['status', 'product_code'],
+  preserveParams: ['status', 'survey_type', 'product_code', 'sort_by', 'sort_dir'],
 }
 
 export function SurveyListPage() {
@@ -55,27 +56,45 @@ export function SurveyListPage() {
   )
 }
 
-/**
- * Danh sách Phiếu khảo sát (khảo sát NCC hoặc khảo sát sản phẩm).
- *
- * "Mã SP (NCC)" để ở thanh công cụ: mã đó nằm ở DÒNG sản phẩm của phiếu, backend
- * lọc bằng subquery nên không dùng được trong bộ lọc nâng cao.
- */
 function SurveyListContent() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [status, setStatus] = useUrlParamState('status', ALL)
+  const [surveyType, setSurveyType] = useUrlParamState('survey_type', ALL)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+
+  const sortBy = searchParams.get('sort_by') || ''
+  const sortDir = (searchParams.get('sort_dir') as 'asc' | 'desc') || 'asc'
 
   const { queryParams, queryKey } = useFilterQuery()
 
-  const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, status])
+  const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, status, surveyType, sortBy, sortDir])
 
   const params: ListParams = { page, page_size: pageSize, ...queryParams }
   if (debouncedValue) params.code = debouncedValue
   if (status !== ALL) params.status = status
+  if (surveyType !== ALL) params.survey_type = surveyType
+  if (sortBy) {
+    params.sort_by = sortBy
+    params.sort_dir = sortDir
+  }
 
   const { data, isLoading, isError } = useSurveys(params)
+
+  const activeCount = [status !== ALL, surveyType !== ALL].filter(Boolean).length
+
+  const clearAllFilters = () => {
+    setStatus(ALL)
+    setSurveyType(ALL)
+  }
+
+  const handleSortChange = (newSortBy: string, newSortDir: 'asc' | 'desc') => {
+    const next = new URLSearchParams(searchParams)
+    next.set('sort_by', newSortBy)
+    next.set('sort_dir', newSortDir)
+    setSearchParams(next)
+  }
 
   const columns = useMemo<DataTableColumn<Survey>[]>(
     () => [
@@ -83,8 +102,8 @@ function SurveyListContent() {
         key: 'code',
         header: 'Mã phiếu',
         width: 160,
+        sortable: true,
         hideable: false,
-        // 9 cột, có cột nội dung dài -> ghim mã phiếu.
         defaultPinned: true,
         cell: (survey) => <span className="truncate font-medium">{survey.code}</span>,
       },
@@ -92,6 +111,7 @@ function SurveyListContent() {
         key: 'survey_type',
         header: 'Loại',
         width: 130,
+        sortable: true,
         cell: (survey) => (
           <Badge variant="outline">
             {SURVEY_TYPE_LABELS[survey.survey_type] ?? survey.survey_type}
@@ -121,16 +141,50 @@ function SurveyListContent() {
         key: 'created_at',
         header: 'Ngày tạo',
         width: 150,
+        sortable: true,
         cell: (survey) => formatDateTime(survey.created_at) || '—',
       },
       {
         key: 'status',
         header: 'Trạng thái',
         width: 150,
+        sortable: true,
         cell: (survey) => <StatusBadge status={survey.status} labels={SURVEY_STATUS_LABELS} />,
       },
     ],
     [],
+  )
+
+  const filterControls = (
+    <>
+      <Select value={surveyType} onValueChange={setSurveyType}>
+        <SelectTrigger className="w-full md:w-44 text-xs h-9">
+          <SelectValue placeholder="Loại khảo sát" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>Tất cả loại</SelectItem>
+          {Object.entries(SURVEY_TYPE_LABELS).map(([k, v]) => (
+            <SelectItem key={k} value={k}>
+              {v}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={status} onValueChange={setStatus}>
+        <SelectTrigger className="w-full md:w-40 text-xs h-9">
+          <SelectValue placeholder="Trạng thái" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
+          {statusOptions(SURVEY_STATUS_LABELS).map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </>
   )
 
   return (
@@ -159,6 +213,9 @@ function SurveyListContent() {
           isError={isError}
           emptyMessage="Không tìm thấy phiếu khảo sát nào."
           storageKey="procurement.surveys"
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           pagination={{
             page,
             pageSize,
@@ -169,31 +226,27 @@ function SurveyListContent() {
           }}
           toolbar={
             <>
-              <div className="relative min-w-56 flex-1 md:max-w-xs">
+              {/* 1. Ô Tìm Kiếm Nhanh ở ngoài cùng bên trái */}
+              <div className="relative min-w-56 flex-1 max-w-xs">
                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  className="pl-9"
-                  placeholder="Tìm theo mã phiếu…"
+                  className="pl-9 h-9 text-xs"
+                  placeholder="Tìm mã phiếu, mã SP, tên SP, mã NCC…"
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                 />
               </div>
 
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="w-44">
-                  <SelectValue placeholder="Trạng thái" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-                  {statusOptions(SURVEY_STATUS_LABELS).map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="hidden md:flex md:items-center md:gap-2">
+                {filterControls}
+                <ConditionalFilter />
+              </div>
 
-              <ConditionalFilter />
+              <QuickFilterSheet activeCount={activeCount} onClearAll={clearAllFilters}>
+                <div className="space-y-3">
+                  {filterControls}
+                </div>
+              </QuickFilterSheet>
             </>
           }
         />

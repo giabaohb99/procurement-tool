@@ -43,13 +43,13 @@ const DEFAULT_MIN_WIDTH = 64
  * không còn đường kẻ nào. `inset shadow` nằm ngoài cơ chế collapse nên vẫn hiện.
  */
 const HEAD_CELL =
-  'relative h-9 px-3 text-xs shadow-[inset_-1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border)] last:shadow-[inset_0_-1px_0_0_var(--border)]'
-const BODY_CELL = 'min-h-10 border-r px-3 py-1.5 last:border-r-0 align-middle'
+  'relative h-10 px-3 text-[13px] font-semibold text-foreground/80 bg-muted/70 shadow-[inset_-1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border)] last:shadow-[inset_0_-1px_0_0_var(--border)]'
+const BODY_CELL = 'min-h-11 border-r px-3 py-2.5 last:border-r-0 align-middle text-[13.5px] text-foreground'
 /**
- * Nền hàng phải là màu ĐỤC (không dùng biến thể alpha kiểu `bg-muted/50`): ô của
- * cột ghim lấy `bg-inherit` từ hàng để che phần bảng đang cuộn ngang phía dưới.
+ * Nền hàng xen kẽ sọc đậm/nhạt rõ nét (zebra striping: odd bg-card, even bg-slate-100/85).
+ * Ô của cột ghim lấy `bg-inherit` từ hàng nên tự động thừa hưởng màu sọc tương ứng.
  */
-const ROW_BG = 'bg-card hover:bg-muted data-[state=selected]:bg-muted'
+const ROW_BG = 'group bg-card odd:bg-card even:bg-slate-100/85 dark:even:bg-slate-800/60 hover:bg-blue-50/70 dark:hover:bg-slate-700/60 data-[state=selected]:bg-primary/10 transition-colors'
 /** Ô báo trạng thái (đang tải / lỗi / rỗng) trải hết bảng — không kẻ dọc, cao hơn. */
 const SPAN_CELL = 'h-20 px-3 text-center'
 
@@ -75,6 +75,9 @@ export interface DataTableProps<T> {
   /** Có thì bảng nhớ cột ẩn + độ rộng + thứ tự cột vào localStorage theo khóa này. */
   storageKey?: string
   pagination?: PaginationConfig
+  sortBy?: string
+  sortDir?: 'asc' | 'desc'
+  onSortChange?: (sortBy: string, sortDir: 'asc' | 'desc') => void
   /**
    * Bảng cao bằng khung chứa: thanh công cụ và phân trang đứng yên, chỉ phần
    * dòng dữ liệu cuộn. Cần cha là flex column có chiều cao xác định — dùng kèm
@@ -104,6 +107,9 @@ export function DataTable<T>({
   toolbar,
   storageKey,
   pagination,
+  sortBy,
+  sortDir,
+  onSortChange,
   fillHeight = false,
 }: DataTableProps<T>) {
   const queryClient = useQueryClient()
@@ -285,6 +291,15 @@ export function DataTable<T>({
                   minWidth={column.minWidth ?? DEFAULT_MIN_WIDTH}
                   dragging={drag?.fromKey === column.key}
                   dropSide={drag?.overKey === column.key ? drag.side : null}
+                  sortDir={sortBy === column.key ? sortDir : null}
+                  onSort={
+                    onSortChange
+                      ? () => {
+                          const nextDir = sortBy === column.key && sortDir === 'asc' ? 'desc' : 'asc'
+                          onSortChange(column.key, nextDir)
+                        }
+                      : undefined
+                  }
                   onResize={(next) => setColumnWidth(column.key, next)}
                   onDragStart={(event) => startDrag(event, column.key, columnLabel(column.header))}
                 />

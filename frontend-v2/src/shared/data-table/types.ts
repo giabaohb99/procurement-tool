@@ -33,6 +33,8 @@ export interface DataTableColumn<T> {
    * Thích hợp cho cột Tên, Nhà cung cấp, Địa chỉ, Ghi chú.
    */
   wrap?: boolean
+  /** `true` = cột có thể sắp xếp. */
+  sortable?: boolean
 }
 
 /**

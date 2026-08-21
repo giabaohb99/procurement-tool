@@ -226,8 +226,8 @@ export function PurchaseProgressPage() {
               <div className="relative min-w-56 flex-1 md:max-w-xs">
                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  className="pl-9"
-                  placeholder="Tìm mã ĐMH / PYC / sản phẩm…"
+                  className="pl-9 h-9 text-xs"
+                  placeholder="Tìm mã ĐMH, MISA, PYC, NCC, NSPT, mã/tên sản phẩm…"
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                 />

@@ -26,7 +26,6 @@ import { useSurveyReport } from '../hooks/use-purchase-documents'
 import {
   LINE_APPROVE_STATUSES,
   type SurveyReportLine,
-  type SurveyReportSummary,
 } from '../types/survey-report'
 
 const ALL = 'all'
@@ -49,7 +48,10 @@ export function SurveyReportPage() {
   const [page, setPage] = usePageResetOnFilterChange([debouncedValue, kind, lineApprove])
 
   const params: ListParams = { page, page_size: pageSize }
-  if (debouncedValue) params.code = debouncedValue
+  if (debouncedValue) {
+    params.code = debouncedValue
+    params.q = debouncedValue
+  }
   if (kind !== ALL) params.kind = kind
   if (lineApprove !== ALL) params.line_approve = lineApprove
 
@@ -102,20 +104,21 @@ export function SurveyReportPage() {
           </span>
         ),
       },
-      { key: 'nspt', header: 'NSPT', width: 160, cell: (line) => line.nspt || '—' },
-      { key: 'date', header: 'Ngày', width: 120, cell: (line) => formatDate(line.date) || '—' },
+      { key: 'nspt', header: 'NSPT', width: 150, cell: (line) => line.nspt || '—' },
+      { key: 'date', header: 'Ngày', width: 110, cell: (line) => formatDate(line.date) || '—' },
       {
         key: 'line_approve',
         header: 'Kết quả duyệt',
-        width: 160,
+        width: 140,
         cell: (line) => <LineApproveBadge status={line.line_approve} />,
       },
       {
         key: 'line_approve_note',
         header: 'Ghi chú duyệt',
-        width: 240,
+        width: 200,
+        defaultHidden: true,
         cell: (line) => (
-          <span className="truncate" title={line.line_approve_note}>
+          <span className="truncate text-muted-foreground" title={line.line_approve_note}>
             {line.line_approve_note || '—'}
           </span>
         ),
@@ -128,30 +131,49 @@ export function SurveyReportPage() {
     <PageContainer fill>
       <PageHeader
         title="Báo cáo khảo sát"
-        description="Kết quả duyệt của từng dòng khảo sát nhà cung cấp / sản phẩm."
+        description="Tổng hợp tiến độ và kết quả duyệt từng dòng khảo sát nhà cung cấp & sản phẩm."
       />
 
-      <div className="mb-4 grid shrink-0 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {LINE_APPROVE_STATUSES.map((item) => (
-          <SummaryCard
-            key={item}
-            label={item}
-            value={summary?.[item as keyof SurveyReportSummary] ?? 0}
-            active={lineApprove === item}
-            onClick={() => setLineApprove(lineApprove === item ? ALL : item)}
-          />
-        ))}
-      </div>
-
       <Card className="flex min-h-0 flex-1 flex-col p-4">
+        {summary && (
+          <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <SummaryCard
+              label="Chờ duyệt"
+              value={summary['Chờ duyệt']}
+              active={lineApprove === 'Chờ duyệt'}
+              onClick={() => setLineApprove(lineApprove === 'Chờ duyệt' ? ALL : 'Chờ duyệt')}
+            />
+            <SummaryCard
+              label="Đã duyệt"
+              value={summary['Đã duyệt']}
+              active={lineApprove === 'Đã duyệt'}
+              onClick={() => setLineApprove(lineApprove === 'Đã duyệt' ? ALL : 'Đã duyệt')}
+            />
+            <SummaryCard
+              label="Không duyệt"
+              value={summary['Không duyệt']}
+              active={lineApprove === 'Không duyệt'}
+              onClick={() => setLineApprove(lineApprove === 'Không duyệt' ? ALL : 'Không duyệt')}
+            />
+            <SummaryCard
+              label="Thiếu thông tin"
+              value={summary['Thiếu thông tin']}
+              active={lineApprove === 'Thiếu thông tin'}
+              onClick={() =>
+                setLineApprove(lineApprove === 'Thiếu thông tin' ? ALL : 'Thiếu thông tin')
+              }
+            />
+          </div>
+        )}
+
         <DataTable
           fillHeight
           columns={columns}
           rows={data?.items}
-          getRowId={(line) => `${line.kind}-${line.line_id}`}
+          getRowId={(line) => `${line.survey_id}-${line.kind}-${line.line_id}`}
           isLoading={isLoading}
           isError={isError}
-          emptyMessage="Không có dòng khảo sát nào khớp bộ lọc."
+          emptyMessage="Không tìm thấy dòng khảo sát nào."
           storageKey="procurement.survey-report"
           pagination={{
             page,
@@ -166,8 +188,8 @@ export function SurveyReportPage() {
               <div className="relative min-w-56 flex-1 md:max-w-xs">
                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  className="pl-9"
-                  placeholder="Tìm theo mã phiếu…"
+                  className="pl-9 h-9 text-xs"
+                  placeholder="Tìm mã phiếu, mã SP, tên SP, mã NCC, NSPT…"
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                 />

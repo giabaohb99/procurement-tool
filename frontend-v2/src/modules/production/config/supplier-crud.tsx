@@ -47,6 +47,26 @@ export const SUPPLIER_CRUD_CONFIG: CrudConfig<Supplier> = {
   // ô tìm nhanh chạy thẳng vào bộ lọc LIKE của tên pháp lý.
   searchParam: 'name',
   searchPlaceholder: 'Tìm theo tên pháp lý…',
+  quickFilters: [
+    {
+      key: 'supplier_type',
+      label: 'Vai trò',
+      type: 'select',
+      options: [
+        { value: 'goods', label: 'NCC hàng hóa' },
+        { value: 'transport', label: 'Đơn vị vận chuyển' },
+      ],
+    },
+    {
+      key: 'is_active',
+      label: 'Trạng thái',
+      type: 'select',
+      options: [
+        { value: 'true', label: 'Đang giao dịch' },
+        { value: 'false', label: 'Ngừng giao dịch' },
+      ],
+    },
+  ],
   getItemName: (s) => `${s.name} (${s.code})`,
   deleteWarning:
     'Đơn mua hàng, hợp đồng, công nợ và phiếu khảo sát cũ tham chiếu tới mã nhà cung cấp này. Xóa sẽ làm mất liên kết; muốn ngừng giao dịch thì tắt "Đang giao dịch" thay vì xóa.',
@@ -69,6 +89,7 @@ export const SUPPLIER_CRUD_CONFIG: CrudConfig<Supplier> = {
       key: 'code',
       header: 'Tên viết tắt',
       width: 150,
+      sortable: true,
       hideable: false,
       defaultPinned: true,
       cell: (s) => <span className="font-semibold text-primary">{s.code}</span>,
@@ -77,6 +98,7 @@ export const SUPPLIER_CRUD_CONFIG: CrudConfig<Supplier> = {
       key: 'name',
       header: 'Tên pháp lý',
       width: 300,
+      sortable: true,
       wrap: true,
       hideable: false,
       cell: (s) => <span className="font-medium">{s.name}</span>,
@@ -85,6 +107,7 @@ export const SUPPLIER_CRUD_CONFIG: CrudConfig<Supplier> = {
       key: 'supplier_type',
       header: 'Vai trò',
       width: 180,
+      sortable: true,
       cell: (s) => SUPPLIER_TYPE_LABELS[s.supplier_type] ?? s.supplier_type,
     },
     { key: 'tax_code', header: 'Mã số thuế', width: 140, cell: (s) => s.tax_code },
@@ -101,6 +124,7 @@ export const SUPPLIER_CRUD_CONFIG: CrudConfig<Supplier> = {
       key: 'vat',
       header: 'VAT',
       width: 100,
+      sortable: true,
       align: 'right',
       // `vat` lưu dạng TỈ LỆ (0.08) — nhân 100 rồi mới định dạng, đừng đọc thẳng.
       cell: (s) => <span className="tabular-nums">{formatPercent(ratioToPercentInput(s.vat))}</span>,

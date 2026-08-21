@@ -120,107 +120,51 @@ def seed_demo_accounts(db, company_id):
     from app.modules.employee.model import Employee
     from app.core.auth import hash_password
     
-    roles_def = {
-        "staff": {
-            "name": "Nhân viên (Demo)",
-            "perms": {
-                "purchase_request": {"read": True, "create": True, "write": True, "delete": True},
-                "report": {"read": True},
-            }
-        },
-        "manager": {
-            "name": "Trưởng bộ phận (Demo)",
-            "perms": {
-                "purchase_request": {"read": True, "create": True, "write": True, "delete": True, "approve": True},
-                "report": {"read": True},
-            }
-        },
-        "manager_purchase": {
-            "name": "Trưởng phòng Thu mua (Demo)",
-            "perms": {
-                "purchase_request": {"read": True, "create": True, "write": True, "delete": True, "approve": True},
-                "report": {"read": True},
-                "survey": {"read": True, "create": True, "write": True, "approve": True},
-                "purchase_order": {"read": True, "create": True, "write": True, "approve": True},
-                "inventory": {"read": True},
-                "payable": {"read": True},
-                "payment_request": {"read": True},
-                "warehouse": {"read": True},
-                "unit": {"read": True},
-                "item_group": {"read": True},
-                "brand": {"read": True},
-                "supplier": {"read": True},
-                "product": {"read": True},
-                "contract": {"read": True},
-                "department": {"read": True},
-            }
-        },
-        "purchaser": {
-            "name": "Nhân viên Thu mua (Demo)",
-            "perms": {
-                "purchase_request": {"read": True, "create": True, "write": True, "delete": True},
-                "report": {"read": True},
-                "survey": {"read": True, "create": True, "write": True, "delete": True},
-                "purchase_order": {"read": True, "create": True, "write": True, "delete": True},
-                "inventory": {"read": True},
-                "payable": {"read": True},
-                "payment_request": {"read": True, "create": True, "write": True},
-                "warehouse": {"read": True},
-                "unit": {"read": True},
-                "item_group": {"read": True},
-                "brand": {"read": True},
-                "supplier": {"read": True},
-                "product": {"read": True},
-                "contract": {"read": True},
-                "department": {"read": True},
-            }
-        }
+    # Mapping tài khoản demo với vai trò chuẩn trong STD_ROLES
+    demo_role_map = {
+        "staff": "employee",                # DEMO_STAFF / staff@demo.com -> Nhân sự (chỉ tạo YCMH, KHÔNG xem ĐMH hay Báo cáo)
+        "manager": "dept_head",              # DEMO_MANAGER / manager@demo.com -> Trưởng phòng (duyệt YCMH/YCBG)
+        "purchaser": "pur_staff",            # DEMO_PURCHASER / purchaser@demo.com -> Nhân viên thu mua
+        "manager_purchase": "pur_manager",  # DEMO_MANAGER_PURCHASE / manager_purchase@demo.com -> Quản lý thu mua
     }
-    
-    for code, r_info in roles_def.items():
-        role = db.query(Role).filter(Role.code == code).first()
+
+    from app.core.auth import perm_cache_clear
+
+    for code, role_code in demo_role_map.items():
+        role = db.query(Role).filter(Role.code == role_code).first()
         if not role:
-            role = Role(code=code, name=r_info["name"])
-            db.add(role)
-            db.commit()
-            db.refresh(role)
-            
-        existing_perms = {p.entity: p for p in db.query(Permission).filter(Permission.role_id == role.id).all()}
-        for entity, actions in r_info["perms"].items():
-            if entity not in existing_perms:
-                perm = Permission(
-                    role_id=role.id,
-                    entity=entity,
-                    can_read=actions.get("read", False),
-                    can_create=actions.get("create", False),
-                    can_write=actions.get("write", False),
-                    can_delete=actions.get("delete", False),
-                    can_approve=actions.get("approve", False),
-                    scope="all"
-                )
-                db.add(perm)
-        db.commit()
+            continue
 
         emp_code = f"DEMO_{code.upper()}"
         emp = db.query(Employee).filter(Employee.code == emp_code).first()
         if not emp:
-            emp = Employee(code=emp_code, full_name=r_info["name"], company_id=company_id, position=r_info["name"], is_active=True)
+            emp = Employee(code=emp_code, full_name=role.name, company_id=company_id, position=role.name, is_active=True)
             db.add(emp)
             db.commit()
             db.refresh(emp)
-            
-        email = f"{code}@demo.com"
-        user = db.query(User).filter(User.email == email).first()
-        if not user:
-            user = User(email=email, employee_id=emp.id, password_hash=hash_password("demo123"), is_active=True)
-            db.add(user)
+
+        # Cập nhật tất cả tài khoản User liên kết với Employee demo này (cả dạng email staff@demo.com và DEMO_STAFF)
+        users = db.query(User).filter((User.employee_id == emp.id) | (User.email == email) | (User.email == emp_code)).all() if (email := f"{code}@demo.com") else []
+        for u in users:
+            u.password_hash = hash_password("demo123")
+            u.is_active = True
             db.commit()
-            db.refresh(user)
-            
-            # Xoá role cũ (nếu có)
-            db.query(UserRole).filter(UserRole.user_id == user.id).delete()
-            db.add(UserRole(user_id=user.id, role_id=role.id))
+            db.query(UserRole).filter(UserRole.user_id == u.id).delete()
+            db.add(UserRole(user_id=u.id, role_id=role.id))
             db.commit()
+            perm_cache_clear(u.id)
+
+    # Đồng bộ mật khẩu các tài khoản test chuẩn (TESTREQ, DEMONV, DEMOTP, DEMOQL, DEMOAD, DEMOTP2, DEMOTP3)
+    test_codes = ["TESTREQ", "DEMONV", "DEMOTP", "DEMOQL", "DEMOAD", "DEMOTP2", "DEMOTP3"]
+    for tcode in test_codes:
+        temp = db.query(Employee).filter(Employee.code == tcode).first()
+        if temp:
+            tuser = (db.query(User).filter(User.employee_id == temp.id).first()
+                     or db.query(User).filter(User.email == tcode).first())
+            if tuser:
+                tuser.password_hash = hash_password(tcode)
+                tuser.is_active = True
+                db.commit()
 
 
 # Vai trò chuẩn theo phân quyền DEGO. Mỗi entity: (danh sách hành động, phạm vi).

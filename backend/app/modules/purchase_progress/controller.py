@@ -158,8 +158,18 @@ def _build_query(request: Request, db: Session, user, prof: dict, po_scope: bool
     kw = (request.query_params.get("q") or "").strip()
     if kw:
         like = f"%{kw}%"
-        q = q.filter((PurchaseOrder.code.like(like)) | (PurchaseOrder.pr_code.like(like))
-                     | (POItem.product_code.like(like)) | (POItem.product_name.like(like)))
+        q = q.filter((PurchaseOrder.code.like(like))
+                     | (PurchaseOrder.misa_code.like(like))
+                     | (PurchaseOrder.pr_code.like(like))
+                     | (PurchaseOrder.supplier_name.like(like))
+                     | (PurchaseOrder.supplier_code.like(like))
+                     | (PurchaseOrder.department.like(like))
+                     | (PurchaseOrder.nspt.like(like))
+                     | (POItem.product_code.like(like))
+                     | (POItem.product_name.like(like))
+                     | (POItem.item_group.like(like))
+                     | (POItem.nspt.like(like))
+                     | (PODelivery.progress_note.like(like)))
 
     # ----- Bộ lọc điều kiện (CR-080) -----
     # Các ô lọc cố định phía trên chỉ còn Công ty / Tìm kiếm / Trạng thái tiến độ / Tình trạng

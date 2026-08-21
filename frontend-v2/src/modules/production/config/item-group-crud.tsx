@@ -15,6 +15,17 @@ export const ITEM_GROUP_CRUD_CONFIG: CrudConfig<ItemGroup> = {
   detailRoute: (id) => appRoutes.production.itemGroupDetail(id),
   searchParam: 'name',
   searchPlaceholder: 'Tìm theo tên phân loại…',
+  quickFilters: [
+    {
+      key: 'is_active',
+      label: 'Trạng thái',
+      type: 'select',
+      options: [
+        { value: 'true', label: 'Đang dùng' },
+        { value: 'false', label: 'Ngừng / Ẩn' },
+      ],
+    },
+  ],
   getItemName: (ig) => ig.name + (ig.code ? ` (${ig.code})` : ''),
   deleteWarning: 'Dữ liệu sản phẩm và đơn hàng thuộc phân loại này có thể bị ảnh hưởng.',
   chips: (ig) => [
@@ -39,12 +50,14 @@ export const ITEM_GROUP_CRUD_CONFIG: CrudConfig<ItemGroup> = {
       key: 'code',
       header: 'Mã',
       width: 120,
+      sortable: true,
       cell: (ig) => <span className="font-semibold text-primary">{ig.code || '—'}</span>,
     },
     {
       key: 'name',
       header: 'Phân loại',
       width: 240,
+      sortable: true,
       hideable: false,
       cell: (ig) => <span className="font-medium">{ig.name}</span>,
     },

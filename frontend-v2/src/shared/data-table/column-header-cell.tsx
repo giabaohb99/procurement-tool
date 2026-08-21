@@ -1,3 +1,4 @@
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import { useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 
 import { RequiredMark } from '@/shared/ui/required-mark'
@@ -21,15 +22,14 @@ interface ColumnHeaderCellProps<T> {
   pinnedOffset?: number
   /** Nền của cột do người dùng tự tô (xem `column-color-palette.ts`). */
   colorStyle?: CSSProperties
+  sortDir?: 'asc' | 'desc' | null
+  onSort?: () => void
   onResize: (width: number) => void
   onDragStart: (event: ReactPointerEvent<HTMLTableCellElement>) => void
 }
 
 /**
- * Ô tiêu đề: nhãn cột + bắt đầu kéo đổi vị trí + vạch kéo giãn ở mép phải.
- *
- * Trạng thái kéo do `useColumnDrag` ở `DataTable` giữ (cần biết cả hàng để tính
- * ô nào đang bị trỏ tới), ô này chỉ nhận kết quả về để vẽ.
+ * Ô tiêu đề: nhãn cột + bắt đầu kéo đổi vị trí + nút sắp xếp + vạch kéo giãn ở mép phải.
  */
 export function ColumnHeaderCell<T>({
   column,
@@ -40,11 +40,15 @@ export function ColumnHeaderCell<T>({
   dropSide,
   pinnedOffset,
   colorStyle,
+  sortDir,
+  onSort,
   onResize,
   onDragStart,
 }: ColumnHeaderCellProps<T>) {
   const [resizing, setResizing] = useState(false)
   const { label, required } = splitRequiredHeader(column.header)
+
+  const isSortable = Boolean(column.sortable && onSort)
 
   return (
     <TableHead
@@ -58,10 +62,36 @@ export function ColumnHeaderCell<T>({
       )}
       onPointerDown={onDragStart}
     >
-      <span className="pointer-events-none block truncate">
-        {label}
-        {required && <RequiredMark />}
-      </span>
+      <div
+        className={cn(
+          'flex items-center gap-1 overflow-hidden',
+          isSortable && 'cursor-pointer hover:text-foreground',
+        )}
+        onClick={(e) => {
+          if (isSortable) {
+            e.stopPropagation()
+            onSort?.()
+          }
+        }}
+      >
+        <span className="truncate">
+          {label}
+          {required && <RequiredMark />}
+        </span>
+
+        {isSortable && (
+          <span className="shrink-0 text-muted-foreground">
+            {sortDir === 'asc' ? (
+              <ArrowUp className="h-3.5 w-3.5 text-primary" />
+            ) : sortDir === 'desc' ? (
+              <ArrowDown className="h-3.5 w-3.5 text-primary" />
+            ) : (
+              <ArrowUpDown className="h-3.5 w-3.5 opacity-40 hover:opacity-100" />
+            )}
+          </span>
+        )}
+      </div>
+
       {dropSide && <ColumnDropIndicator side={dropSide} />}
       <ColumnResizeHandle
         minWidth={minWidth}

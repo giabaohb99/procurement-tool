@@ -180,7 +180,9 @@ def dept_head_(department: str = "", department_id: int = 0, db: Session = Depen
 
 def _list_query(request: Request, db: Session, user):
     """Bộ lọc + phạm vi của màn danh sách — dùng chung cho danh sách và xuất Excel (CR-068)."""
-    q = apply_filters(db.query(SurveyRequest), SurveyRequest, request, service.FILTERABLE)
+    from sqlalchemy import or_
+    filterable = [f for f in service.FILTERABLE if f != "code"]
+    q = apply_filters(db.query(SurveyRequest), SurveyRequest, request, filterable)
     q = apply_ref_filters(q, SurveyRequest, request, db)      # CR-088
     q = apply_range_filters(q, SurveyRequest, request, ["request_date"])
     q = apply_equals(q, SurveyRequest, request, ["company_id"])
@@ -192,23 +194,37 @@ def _list_query(request: Request, db: Session, user):
     if assignee:
         sub2 = select(SurveyRequestLine.survey_request_id).where(SurveyRequestLine.assignee == assignee)
         q = q.filter(SurveyRequest.id.in_(sub2))
-    # CR-069 — tìm phiếu theo SẢN PHẨM cần báo giá. Dòng YCBG chưa có mã hàng (lúc lập chỉ có mô
-    # tả), nên khớp một phần trên: "Thông số kỹ thuật" + "Yêu cầu khác" của dòng, và mã/tên SP của
-    # PHƯƠNG ÁN ĐÃ CHỐT (chốt xong mới có mã hệ thống). KHÔNG dò các cột lộ NCC
-    # (`snap_internal_code`, `supplier_*`) — người không có `supplier.read` sẽ suy ra được NCC
-    # bằng cách gõ thử mã của NCC vào ô tìm.
-    product = (request.query_params.get("product") or "").strip()
-    if product:
-        like = f"%{product}%"
-        chosen = select(SurveyRequestOption.survey_request_line_id).where(
-            SurveyRequestOption.is_chosen == True,
-            (SurveyRequestOption.system_product_code.like(like))
-            | (SurveyRequestOption.snap_product_name.like(like)))
-        sub3 = select(SurveyRequestLine.survey_request_id).where(
-            (SurveyRequestLine.requirement_detail.like(like))
-            | (SurveyRequestLine.other_requirement.like(like))
-            | (SurveyRequestLine.id.in_(chosen)))
-        q = q.filter(SurveyRequest.id.in_(sub3))
+    # Ô tìm kiếm nhanh: Tìm theo Mã phiếu, Mục đích, Người yêu cầu, Mô tả hoặc Mã/Tên sản phẩm ở dòng/phương án
+    search = (request.query_params.get("code") or request.query_params.get("q") or request.query_params.get("search") or request.query_params.get("product") or "").strip()
+    if search:
+        like = f"%{search}%"
+        chosen_line_ids = [
+            r[0] for r in db.query(SurveyRequestOption.survey_request_line_id)
+            .filter(
+                SurveyRequestOption.is_chosen == True,
+                or_(SurveyRequestOption.system_product_code.like(like), SurveyRequestOption.snap_product_name.like(like))
+            ).all() if r[0]
+        ]
+        line_conds = [
+            SurveyRequestLine.requirement_detail.like(like),
+            SurveyRequestLine.other_requirement.like(like),
+        ]
+        if chosen_line_ids:
+            line_conds.append(SurveyRequestLine.id.in_(chosen_line_ids))
+        
+        matching_sr_ids = [
+            r[0] for r in db.query(SurveyRequestLine.survey_request_id)
+            .filter(or_(*line_conds)).all() if r[0]
+        ]
+
+        conds = [
+            SurveyRequest.code.like(like),
+            SurveyRequest.purpose.like(like),
+            SurveyRequest.requester.like(like),
+        ]
+        if matching_sr_ids:
+            conds.append(SurveyRequest.id.in_(matching_sr_ids))
+        q = q.filter(or_(*conds))
     return apply_scope(q, SurveyRequest, "survey_request", user, get_perm_profile(db, user))
 
 

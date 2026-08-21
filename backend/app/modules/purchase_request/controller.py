@@ -205,9 +205,10 @@ def _out(db: Session, pr, user=None) -> dict:
 
 
 def _list_query(request: Request, db: Session, user):
-    """Câu truy vấn danh sách (lọc + phạm vi + sắp xếp) — dùng chung cho màn danh sách và xuất Excel,
-    để file xuất luôn ra ĐÚNG những phiếu người dùng đang thấy."""
-    query = apply_filters(db.query(PurchaseRequest).filter(PurchaseRequest.is_deleted == False), PurchaseRequest, request, service.FILTERABLE)
+    """Câu truy vấn danh sách (lọc + phạm vi + sắp xếp) — dùng chung cho màn danh sách và xuất Excel."""
+    from sqlalchemy import or_
+    filterable = [f for f in service.FILTERABLE if f != "code"]
+    query = apply_filters(db.query(PurchaseRequest).filter(PurchaseRequest.is_deleted == False), PurchaseRequest, request, filterable)
     query = apply_ref_filters(query, PurchaseRequest, request, db)   # CR-088
     query = apply_range_filters(query, PurchaseRequest, request, ["request_date", "need_date"])
     query = apply_equals(query, PurchaseRequest, request, ["company_id"])
@@ -219,16 +220,24 @@ def _list_query(request: Request, db: Session, user):
     if assignee:
         sub2 = select(PurchaseRequestItem.pr_id).where(PurchaseRequestItem.assignee == assignee)
         query = query.filter(PurchaseRequest.id.in_(sub2))
-    # CR-069 — tìm phiếu theo MÃ HÀNG / TÊN HÀNG ở dòng hàng (bảng con). Khớp MỘT PHẦN:
-    # gõ "5155" ra cả HOP5155 lẫn NHG5155. Cùng lối với ô tìm nhanh của màn Tiến độ mua hàng.
-    product = (request.query_params.get("product") or "").strip()
-    if product:
-        like = f"%{product}%"
-        sub3 = select(PurchaseRequestItem.pr_id).where(
-            (PurchaseRequestItem.product_code.like(like)) | (PurchaseRequestItem.product_name.like(like)))
-        query = query.filter(PurchaseRequest.id.in_(sub3))
+    # Ô tìm kiếm nhanh: Tìm theo Mã PYC, Người yêu cầu, Mục đích, Mã sản phẩm hoặc Tên sản phẩm ở dòng hàng
+    search = (request.query_params.get("code") or request.query_params.get("q") or request.query_params.get("search") or request.query_params.get("product") or "").strip()
+    if search:
+        like = f"%{search}%"
+        matching_ids = [
+            r[0] for r in db.query(PurchaseRequestItem.pr_id)
+            .filter(or_(PurchaseRequestItem.product_code.like(like), PurchaseRequestItem.product_name.like(like))).all()
+            if r[0]
+        ]
+        conds = [
+            PurchaseRequest.code.like(like),
+            PurchaseRequest.requester.like(like),
+            PurchaseRequest.purpose.like(like),
+        ]
+        if matching_ids:
+            conds.append(PurchaseRequest.id.in_(matching_ids))
+        query = query.filter(or_(*conds))
     query = apply_scope(query, PurchaseRequest, "purchase_request", user, get_perm_profile(db, user))
-    # Sort theo cột người dùng bấm (tiebreak id desc do service thêm); cột 'total' là tính toán -> bỏ qua
     return apply_sort_from_request(query, PurchaseRequest, request)
 
 

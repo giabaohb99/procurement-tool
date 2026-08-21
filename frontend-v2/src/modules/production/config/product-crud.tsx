@@ -16,6 +16,17 @@ export const PRODUCT_CRUD_CONFIG: CrudConfig<Product> = {
   detailRoute: (id) => appRoutes.production.productDetail(id),
   searchParam: 'search',
   searchPlaceholder: 'Tìm theo mã, tên, mã HH…',
+  quickFilters: [
+    {
+      key: 'is_active',
+      label: 'Trạng thái',
+      type: 'select',
+      options: [
+        { value: 'true', label: 'Đang dùng' },
+        { value: 'false', label: 'Ngừng / Ẩn' },
+      ],
+    },
+  ],
   getItemName: (p) => `${p.name} (${p.code})`,
   deleteWarning:
     'Mã sản phẩm này có thể đã được liên kết với đơn mua hàng và khảo sát. Xóa sẽ làm mất liên kết tham chiếu.',
@@ -52,6 +63,7 @@ export const PRODUCT_CRUD_CONFIG: CrudConfig<Product> = {
       key: 'code',
       header: 'Mã VTBB/NL',
       width: 140,
+      sortable: true,
       hideable: false,
       cell: (p) => <span className="font-semibold text-primary">{p.code}</span>,
     },
@@ -59,6 +71,7 @@ export const PRODUCT_CRUD_CONFIG: CrudConfig<Product> = {
       key: 'name',
       header: 'Tên VTBB/NL',
       width: 280,
+      sortable: true,
       wrap: true,
       hideable: false,
       cell: (p) => <span className="font-medium">{p.name}</span>,
@@ -67,18 +80,21 @@ export const PRODUCT_CRUD_CONFIG: CrudConfig<Product> = {
       key: 'item_group',
       header: 'Phân loại',
       width: 150,
+      sortable: true,
       cell: (p) => p.item_group || '—',
     },
     {
       key: 'unit',
       header: 'ĐVT',
       width: 90,
+      sortable: true,
       cell: (p) => p.unit || '—',
     },
     {
       key: 'hh_code',
       header: 'Mã HH',
       width: 120,
+      sortable: true,
       cell: (p) => p.hh_code || '—',
     },
     {
@@ -96,6 +112,7 @@ export const PRODUCT_CRUD_CONFIG: CrudConfig<Product> = {
       key: 'is_active',
       header: 'Trạng thái',
       width: 130,
+      sortable: true,
       cell: (p) => (
         <Badge variant={p.is_active ? 'default' : 'secondary'}>
           {p.is_active ? 'Đang dùng' : 'Ngừng'}

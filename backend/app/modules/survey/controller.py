@@ -76,15 +76,30 @@ router = APIRouter(prefix="/api/surveys", tags=["survey"])
 
 
 @router.get("")
-def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
+def list_surveys(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
           user=Depends(require("survey", "read"))):
-    q = apply_filters(db.query(Survey), Survey, request, service.FILTERABLE)
-    # Lọc theo Mã SP (NCC) = mã SP theo NCC nhập ở DÒNG sản phẩm (không phải cột header) -> subquery.
-    product_code = (request.query_params.get("product_code") or "").strip()
-    if product_code:
-        sub = (db.query(SurveyProductLine.survey_id)
-               .filter(SurveyProductLine.internal_code.like(f"%{product_code}%")).subquery())
-        q = q.filter(Survey.id.in_(sub))
+    from sqlalchemy import or_
+    filterable = [f for f in service.FILTERABLE if f != "code"]
+    q = apply_filters(db.query(Survey), Survey, request, filterable)
+    search = (request.query_params.get("code") or request.query_params.get("q") or request.query_params.get("search") or request.query_params.get("product_code") or "").strip()
+    if search:
+        like = f"%{search}%"
+        matching_ids = [
+            r[0] for r in db.query(SurveyProductLine.survey_id)
+            .filter(or_(SurveyProductLine.internal_code.like(like), SurveyProductLine.product_name.like(like))).all()
+            if r[0]
+        ]
+        conds = [
+            Survey.code.like(like),
+            Survey.pr_code.like(like),
+            Survey.sr_code.like(like),
+            Survey.item_code.like(like),
+            Survey.item_name.like(like),
+            Survey.main_content.like(like),
+        ]
+        if matching_ids:
+            conds.append(Survey.id.in_(matching_ids))
+        q = q.filter(or_(*conds))
     q = apply_scope(q, Survey, "survey", user, get_perm_profile(db, user))
     q = apply_sort_from_request(q, Survey, request)
     total, items = service.list_surveys(db, q, pg)
@@ -221,7 +236,7 @@ report_router = APIRouter(prefix="/api/survey-report", tags=["survey_report"])
 @report_router.get("/lines")
 def report_lines_(kind: str | None = Query(None), line_approve: str | None = Query(None),
                   item_group: str | None = Query(None), supplier: str | None = Query(None),
-                  code: str | None = Query(None), nspt: str | None = Query(None),
+                  code: str | None = Query(None), q: str | None = Query(None), nspt: str | None = Query(None),
                   item_code: str | None = Query(None), main_content: str | None = Query(None),
                   date_from: str | None = Query(None), date_to: str | None = Query(None),
                   sort_by: str = Query(""), sort_dir: str = Query("asc"),
@@ -230,6 +245,8 @@ def report_lines_(kind: str | None = Query(None), line_approve: str | None = Que
     base = apply_scope(db.query(Survey), Survey, "survey", user, get_perm_profile(db, user))
     rows = service.report_rows(db, base)
 
+    search_kw = (q or code or "").strip().lower()
+
     def keep(r):
         if kind and r["kind"] != kind:
             return False
@@ -237,8 +254,20 @@ def report_lines_(kind: str | None = Query(None), line_approve: str | None = Que
             return False
         if supplier and supplier.lower() not in (r["supplier_code"] or "").lower():
             return False
-        if code and code.lower() not in (r["survey_code"] or "").lower():
-            return False
+        if search_kw:
+            match = (
+                search_kw in (r.get("survey_code") or "").lower()
+                or search_kw in (r.get("content") or "").lower()
+                or search_kw in (r.get("supplier_code") or "").lower()
+                or search_kw in (r.get("item_code") or "").lower()
+                or search_kw in (r.get("item_group") or "").lower()
+                or search_kw in (r.get("main_content") or "").lower()
+                or search_kw in (r.get("nspt") or "").lower()
+                or search_kw in (r.get("sr_code") or "").lower()
+                or search_kw in (r.get("pr_code") or "").lower()
+            )
+            if not match:
+                return False
         if nspt and nspt.lower() not in (r["nspt"] or "").lower():
             return False
         if item_code and item_code.lower() not in (r["item_code"] or "").lower():

@@ -13,7 +13,9 @@ ENTITY = "supplier"
 
 def list_suppliers(db: Session, base_query, pg: dict):
     total = base_query.count()
-    items = base_query.order_by(Supplier.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
+    if not base_query._order_by_clauses:
+        base_query = base_query.order_by(Supplier.id.desc())
+    items = base_query.offset(pg["offset"]).limit(pg["limit"]).all()
     return total, items
 
 

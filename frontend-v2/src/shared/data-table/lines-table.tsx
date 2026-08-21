@@ -29,14 +29,13 @@ const DEFAULT_MIN_WIDTH = 40
  * bảng chứ không thuộc ô, nên `<thead>` dính đỉnh là mất sạch đường kẻ.
  */
 const HEAD_CELL =
-  'relative h-9 px-2 text-xs shadow-[inset_-1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border)] last:shadow-[inset_0_-1px_0_0_var(--border)]'
-/** Ô dữ liệu thấp hơn bảng danh sách: bên trong hay là ô nhập, tự cao lên rồi. */
-const BODY_CELL = 'border-r px-2 py-1.5 align-middle last:border-r-0'
+  'relative h-10 px-2.5 text-[13px] font-semibold text-foreground/80 bg-muted/70 shadow-[inset_-1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border)] last:shadow-[inset_0_-1px_0_0_var(--border)]'
+const BODY_CELL = 'border-r px-2.5 py-2 align-middle last:border-r-0 text-[13.5px] text-foreground'
 /**
- * Nền hàng phải ĐỤC: ô của cột ghim lấy `bg-inherit` từ hàng để che phần bảng
- * đang cuộn ngang phía sau. Nền alpha là lộ chữ xuyên qua cột dính.
+ * Nền hàng xen kẽ sọc đậm/nhạt rõ nét (zebra striping: odd bg-card, even bg-slate-100/85).
+ * Ô của cột ghim lấy `bg-inherit` từ hàng nên tự động thừa hưởng màu sọc tương ứng.
  */
-const ROW_BG = 'group bg-card hover:bg-muted'
+const ROW_BG = 'group bg-card odd:bg-card even:bg-slate-100/85 dark:even:bg-slate-800/60 hover:bg-blue-50/70 dark:hover:bg-slate-700/60 transition-colors'
 
 export interface LinesTableProps<T> {
   columns: LinesTableColumn[]
