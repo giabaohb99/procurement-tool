@@ -653,7 +653,20 @@ export default function PurchaseOrderDetail() {
         {!isNew && <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--border)', margin: '2px 4px' }} />}
         {/* ── Nhóm workflow + Lưu (phải) ── */}
         {!isNew && ['draft', 'rejected'].includes(po.status) && can('purchase_order', 'write') && (
-          <button className="btn secondary" disabled={!!submitBlockReason} title={submitBlockReason || undefined} onClick={() => action('submit')}><i className="ti ti-send" />Gửi duyệt</button>
+          <button
+            className="btn secondary"
+            style={submitBlockReason ? { opacity: 0.75, cursor: 'pointer' } : undefined}
+            title={submitBlockReason || undefined}
+            onClick={() => {
+              if (submitBlockReason) {
+                toast.error(submitBlockReason)
+                return
+              }
+              action('submit')
+            }}
+          >
+            <i className="ti ti-send" />Gửi duyệt
+          </button>
         )}
         {!isNew && po.status === 'submitted' && can('purchase_order', 'approve') && (
           <>
