@@ -575,7 +575,7 @@ export default function PurchaseRequestDetail() {
       price: Number(it.price) || 0, vat: Number(it.vat_pct) || 0,   // Task 4: VAT theo TỪNG DÒNG PYC
       warehouse_code: whCode(it.warehouse), note: it.note || '',
     })
-    const lines = (pr.items || []).filter((it: any) => it.product_name && it.line_status !== 'Hủy đơn')
+    const lines = (pr.items || []).filter((it: any) => it.product_name)
     const normal: any[] = [], exceeded: any[] = [], exceededMsg: string[] = []
     for (const it of lines) {
       const req = Number(it.qty) || 0
@@ -594,7 +594,7 @@ export default function PurchaseRequestDetail() {
   // YCBG không có ô mã/tên hàng nên tên hàng được gộp vào "Chi tiết thông số" để khỏi mất thông tin.
   function createSurveyRequest() {
     const lines = (pr.items || [])
-      .filter((it: any) => it.product_name && it.line_status !== 'Hủy đơn')
+      .filter((it: any) => it.product_name)
       .map((it: any) => ({
         received_date: '', result_due_date: '',
         item_group: it.item_group || '',
