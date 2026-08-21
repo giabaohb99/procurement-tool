@@ -394,8 +394,9 @@ export function DocumentDetailPage() {
             {tab === 'compose' && canWrite && !isLocked && !khoaVietVi && (
               <>
                 <DocumentImportButton
-                  onInsert={(html) =>
-                    editorRef.current?.insertContent(html) ?? Promise.resolve(false)
+                  hasContent={() => editorRef.current?.hasContent() ?? false}
+                  onInsert={(html, mode) =>
+                    editorRef.current?.insertContent(html, mode) ?? Promise.resolve(false)
                   }
                   onNavigateToTrace={(importId, page) =>
                     editorRef.current?.focusImportedPage(importId, page) ?? false

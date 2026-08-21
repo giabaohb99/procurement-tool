@@ -2,6 +2,7 @@ import { DOMSerializer } from '@tiptap/pm/model'
 import type { Editor } from '@tiptap/react'
 import { toast } from 'sonner'
 import { insertImageBlobs } from './image-size-extension'
+import { containsHtmlTable, tabSeparatedTextToTableHtml } from './spreadsheet-clipboard'
 
 /**
  * Cắt / sao chép / dán cho MENU CHUỘT PHẢI.
@@ -69,7 +70,11 @@ export async function pasteFromClipboard(editor: Editor, { plain = false } = {})
       for (const item of items) {
         if (!item.types.includes('text/html')) continue
         const html = await (await item.getType('text/html')).text()
-        editor.chain().focus().insertContent(html).run()
+        // `pasteHTML` đi qua plugin tableEditing: nếu người dùng đang bôi đen
+        // một vùng ô, dữ liệu Excel được rải vào đúng các ô đó. `insertContent`
+        // chỉ thay selection như nội dung thường và có thể tạo bảng lồng/lệch.
+        if (containsHtmlTable(html)) editor.view.pasteHTML(html)
+        else editor.chain().focus().insertContent(html).run()
         return
       }
       const images: Blob[] = []
@@ -84,7 +89,11 @@ export async function pasteFromClipboard(editor: Editor, { plain = false } = {})
     }
 
     const text = await navigator.clipboard.readText()
-    if (text) editor.chain().focus().insertContent(text).run()
+    if (text) {
+      const tableHtml = tabSeparatedTextToTableHtml(text)
+      if (tableHtml) editor.view.pasteHTML(tableHtml)
+      else editor.chain().focus().insertContent(text).run()
+    }
   } catch {
     // Chrome hỏi quyền đọc khay nhớ tạm, người dùng từ chối là rơi vào đây.
     toast.error('Trình duyệt chặn dán từ menu — bấm Ctrl+V để dán')
