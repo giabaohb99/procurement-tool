@@ -43,6 +43,9 @@ COLUMNS = [
     Col("urgency_label", "Độ khẩn", width=12),
     Col("book_name", "Sổ văn bản", width=24),
     Col("legacy_code", "Số hiệu cũ", width=16),
+    #  Bản in danh sách mang theo chỗ để bản giấy: cầm file Excel đi lấy hồ sơ
+    #  trong kho là ca dùng chính của cột này.
+    Col("storage_location", "Nơi lưu trữ cứng", width=26),
     Col("keywords", "Từ khóa", width=28),
     Col("summary", "Trích yếu", width=40),
     Col("needs_review_text", "Cần rà soát", width=14),

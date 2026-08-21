@@ -3,25 +3,26 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { INSTANCE_STATUS, TASK_STATUS } from '@/modules/approval/types/approval'
-import type { ApprovalInstance } from '@/modules/approval/types/approval'
+import type { ApprovalInstance, MyTask } from '@/modules/approval/types/approval'
 import { DocumentApprovalBanner } from './document-approval-banner'
 
-//  Ai đang đọc băng — quyết định băng nói câu nào. Mặc định là người NGOÀI cuộc
-//  (nhân sự 99), vì đó là 9/10 lượt mở trang này.
-const dangDangNhap = { employee_id: 99 }
-vi.mock('@/core/auth/use-auth', () => ({
-  useAuth: () => ({ user: dangDangNhap }),
+const DOCUMENT_ID = 135
+
+//  Việc duyệt của CHÍNH người đang đọc, lấy từ hộp việc. `null` = người ngoài
+//  cuộc, và đó là 9/10 lượt mở trang này.
+const hopViec: { viec: MyTask | null } = { viec: null }
+vi.mock('../hooks/use-my-document-approvals', () => ({
+  useMyDocumentTask: () => hopViec.viec,
 }))
 
 beforeEach(() => {
-  dangDangNhap.employee_id = 99
+  hopViec.viec = null
 })
 
-//  Băng có một <Link> sang «Việc của tôi», nên phải có Router context.
 function ve(instance: ApprovalInstance | null) {
   return render(
     <MemoryRouter>
-      <DocumentApprovalBanner instance={instance} />
+      <DocumentApprovalBanner instance={instance} documentId={DOCUMENT_ID} />
     </MemoryRouter>,
   )
 }
@@ -30,7 +31,7 @@ function phien(doi: Partial<ApprovalInstance> = {}): ApprovalInstance {
   return {
     id: 7,
     entity: 'document',
-    entity_id: 135,
+    entity_id: DOCUMENT_ID,
     entity_code: '',
     entity_title: 'Quy chế bảo mật',
     flow_id: 19,
@@ -62,6 +63,33 @@ function phien(doi: Partial<ApprovalInstance> = {}): ApprovalInstance {
   }
 }
 
+function viecCuaToi(doi: Partial<MyTask> = {}): MyTask {
+  return {
+    id: 1,
+    instance_id: 7,
+    node_seq: 2,
+    node_name: 'Pháp chế rà soát',
+    order_no: 1,
+    assignee_employee_id: 2,
+    assignee_name: 'Dego Admin',
+    status: TASK_STATUS.pending,
+    status_label: 'Đang chờ',
+    due_at: null,
+    decided_at: null,
+    entity: 'document',
+    entity_id: DOCUMENT_ID,
+    entity_code: '',
+    entity_title: 'Quy chế bảo mật',
+    started_by_name: 'Quản trị viên',
+    instance_status: INSTANCE_STATUS.running,
+    on_behalf_of_id: null,
+    on_behalf_of_name: '',
+    delegation_id: null,
+    is_overdue: false,
+    ...doi,
+  }
+}
+
 describe('DocumentApprovalBanner', () => {
   it('chưa vào bộ máy duyệt thì không chen thêm băng nào', () => {
     const { container } = ve(null)
@@ -75,26 +103,33 @@ describe('DocumentApprovalBanner', () => {
     expect(screen.getByText(/Dego Admin/)).toBeInTheDocument()
   })
 
-  it('người NGOÀI cuộc không bị đẩy sang một danh sách rỗng', () => {
+  it('người NGOÀI cuộc không thấy nút duyệt nào', () => {
     //  LỖI ĐÃ XẢY RA: băng nói với tất cả mọi người là "xử lý ở màn «Việc của
     //  tôi»". Màn đó chỉ liệt kê việc của CHÍNH người đăng nhập, nên người soạn
     //  bấm sang chỉ thấy trống trơn và tưởng hệ thống hỏng.
     ve(phien())
 
-    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
     expect(screen.getByText(/Bạn không phải làm gì/)).toBeInTheDocument()
   })
 
-  it('đúng người đang giữ việc thì mở thẳng được «Việc của tôi»', () => {
-    dangDangNhap.employee_id = 2 // = assignee_employee_id của task đang chờ
+  it('đúng người đang giữ việc thì duyệt được NGAY TẠI VĂN BẢN', () => {
+    //  Người dùng đòi đúng câu này: "vào thẳng văn bản đó duyệt". Dẫn sang hộp
+    //  việc để bấm nghĩa là ký một văn bản chưa mở ra đọc, hoặc phải đi hai vòng.
+    hopViec.viec = viecCuaToi()
 
     ve(phien())
 
     expect(screen.getByText(/Đang chờ bạn duyệt/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Việc của tôi/ })).toHaveAttribute(
-      'href',
-      '/approval/my-tasks',
-    )
+    expect(screen.getByRole('button', { name: /Duyệt \/ Trả lại/ })).toBeInTheDocument()
+  })
+
+  it('bấm THAY người khác thì nói ra trước khi bấm, không phải sau', () => {
+    hopViec.viec = viecCuaToi({ on_behalf_of_name: 'Trần Văn B' })
+
+    ve(phien())
+
+    expect(screen.getByText(/bạn bấm thay Trần Văn B/)).toBeInTheDocument()
   })
 
   it('duyệt xong TRỌN VẸN thì im lặng — không có gì để báo', () => {

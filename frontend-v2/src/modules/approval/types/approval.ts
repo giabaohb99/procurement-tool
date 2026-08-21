@@ -29,6 +29,20 @@ export const TASK_STATUS = {
   cancelled: 6,
 } as const
 
+/** Việc người duyệt đã bấm — xem `ACTION_LABELS` ở `instance_model.py`. */
+export const ACTION = {
+  start: 1,
+  approve: 2,
+  reject: 3,
+  return: 4,
+  withdraw: 5,
+  skipDuplicate: 6,
+  reassign: 7,
+  comment: 8,
+  escalate: 9,
+  finish: 10,
+} as const
+
 export const NODE_KIND = { approval: 1, cc: 2 } as const
 export const MULTI_MODE = { any: 1, all: 2, sequential: 3, quorum: 4 } as const
 export const APPROVER_KIND = {
@@ -39,6 +53,12 @@ export const APPROVER_KIND = {
   companyRep: 5,
   field: 6,
 } as const
+/**
+ * ⚠️ `escalate` (đẩy lên cấp trên) **ĐÃ BỎ** (CR-114) — backend không chạy nhánh
+ * đó nữa và cũng không trả nó về trong danh sách chọn, nên ô «Khi không tìm được
+ * người duyệt» tự mất lựa chọn này. Giữ số 2 ở đây để luồng cũ đã khai giá trị
+ * đó vẫn đọc ra nhãn thay vì hiện số thô.
+ */
 export const ON_NO_APPROVER = { fallback: 1, escalate: 2, block: 3 } as const
 
 export interface ApprovalOption {
@@ -119,7 +139,7 @@ export interface ApprovalTask {
   decided_at: string | null
 }
 
-/** Một dòng trên màn "Việc của tôi" — kèm sẵn thông tin phiếu để khỏi gọi thêm. */
+/** Một dòng của hộp việc «Chờ tôi duyệt» — kèm sẵn thông tin phiếu để khỏi gọi thêm. */
 export interface MyTask extends ApprovalTask {
   entity: string
   entity_id: number
@@ -132,6 +152,33 @@ export interface MyTask extends ApprovalTask {
   on_behalf_of_name: string
   delegation_id: number | null
   is_overdue: boolean
+}
+
+/**
+ * Một dòng của «Đã duyệt gần đây» — MỘT quyết định chính tôi đã bấm.
+ *
+ * Đọc từ dấu vết chứ không từ bảng việc: dấu vết ghi rõ *đã làm gì* (duyệt /
+ * trả lại / từ chối) kèm ý kiến, và ghi đúng tên người BẤM nên người bấm thay
+ * theo ủy quyền vẫn thấy phiếu mình đã ký.
+ */
+export interface MyDecision {
+  id: number
+  instance_id: number
+  entity: string
+  entity_id: number
+  entity_code: string
+  entity_title: string
+  node_seq: number
+  node_name: string
+  action: number
+  action_label: string
+  comment: string
+  decided_at: string
+  /** Trạng thái CUỐI của phiếu — "tôi đã duyệt" khác "phiếu đã xong". */
+  instance_status: number
+  instance_status_label: string
+  /** Có giá trị = lúc đó tôi bấm THAY người này theo ủy quyền. */
+  on_behalf_of_name: string
 }
 
 export interface ApprovalAction {

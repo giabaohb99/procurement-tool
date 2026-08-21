@@ -5,7 +5,10 @@ import { describeRow, toArray, type ConditionRow } from './node-condition'
 export function cauDieuKien(
   rows: ConditionRow[],
   fields: ConditionFieldDef[],
-  layLuaChon: (field: ConditionFieldDef) => { id: number; label: string }[],
+  //  `id` nhận cả chuỗi vì nơi gọi đưa thẳng `MultiPickerOption[]` sang, mà ô
+  //  chọn nhiều nay cho phép khóa dạng chuỗi (mục là một CẶP). Ở đây chỉ so
+  //  sánh và đổi ra nhãn nên rộng hơn không hại gì.
+  layLuaChon: (field: ConditionFieldDef) => { id: number | string; label: string }[],
 ): string {
   return rows
     .map((row) => {

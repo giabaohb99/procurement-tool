@@ -66,6 +66,64 @@ def list_departments(db: Session, q: str | None, pg: dict, is_active: bool | Non
     return total, items
 
 
+def phong_ban_cua_cac_phap_nhan(db: Session, company_ids: list[int]) -> list[dict]:
+    """Các CẶP (phòng ban × pháp nhân) trong những pháp nhân được hỏi.
+
+    Trả về **cặp** chứ không phải danh sách phòng ban, vì một phòng có thể hiện
+    diện ở nhiều pháp nhân (`tab_department_company`, A06). Ô chọn "phòng ban"
+    của khối phạm vi áp dụng phải khai đúng cặp — khai trơ trọi *"phòng Kế toán"*
+    là văn bản lan sang cả 13 công ty (xem `document/scope_service.py`).
+
+    Gộp HAI nguồn vì dữ liệu chưa đồng nhất: bảng ánh xạ A06 là nguồn đầy đủ,
+    còn `Department.company_id` là pháp nhân gốc của phòng và vẫn là thứ mã Thu
+    mua cũ đọc. Phòng nào chưa được nạp vào bảng ánh xạ mà chỉ lấy theo bảng đó
+    thì biến mất khỏi ô chọn.
+    """
+    from app.modules.company.model import Company
+
+    ids = [int(row) for row in company_ids if row]
+    if not ids:
+        return []
+
+    ten_cong_ty = {
+        row.id: row.name
+        for row in db.query(Company).filter(Company.id.in_(ids)).all()
+    }
+
+    #  Khóa là CẶP, nên hai nguồn trùng nhau tự gộp làm một.
+    cap: dict[tuple[int, int], dict] = {}
+
+    def _them(department: Department, company_id: int) -> None:
+        if company_id not in ten_cong_ty:
+            return
+        cap[(department.id, company_id)] = {
+            "department_id": department.id,
+            "department_name": department.name,
+            "department_code": department.code,
+            "company_id": company_id,
+            "company_name": ten_cong_ty[company_id],
+        }
+
+    for department, mapping in (
+        db.query(Department, DepartmentCompany)
+        .join(DepartmentCompany, DepartmentCompany.department_id == Department.id)
+        .filter(DepartmentCompany.company_id.in_(ids),
+                DepartmentCompany.is_active.is_(True),
+                Department.is_active.is_(True))
+        .all()
+    ):
+        _them(department, mapping.company_id)
+
+    for department in (
+        db.query(Department)
+        .filter(Department.company_id.in_(ids), Department.is_active.is_(True))
+        .all()
+    ):
+        _them(department, department.company_id)
+
+    return sorted(cap.values(), key=lambda row: (row["company_name"], row["department_name"]))
+
+
 def get_department(db: Session, did: int) -> Department:
     obj = db.get(Department, did)
     if not obj:

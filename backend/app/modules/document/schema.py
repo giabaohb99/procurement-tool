@@ -42,6 +42,8 @@ class DocumentBase(BaseModel):
     expire_date: date | None = None
     #  Số hiệu bản GIẤY trước khi lên hệ thống (C12) — người cũ vẫn tra theo số này.
     legacy_code: str = Field(default="", max_length=100)
+    #  Bản giấy nằm ở đâu ("Tủ A2 · Kệ 3 · Bìa 12"). Tìm kiếm chấp nhận cột này.
+    storage_location: str = Field(default="", max_length=200)
 
 
 class DocumentCreate(DocumentBase):
@@ -85,6 +87,7 @@ class DocumentUpdate(BaseModel):
     effective_date: date | None = None
     expire_date: date | None = None
     legacy_code: str | None = Field(default=None, max_length=100)
+    storage_location: str | None = Field(default=None, max_length=200)
 
 
 class ManualIssueNumberUpdate(BaseModel):

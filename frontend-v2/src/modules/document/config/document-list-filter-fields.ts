@@ -63,6 +63,9 @@ export const DOCUMENT_LIST_FILTER_FIELDS: FilterFieldDefinition[] = [
   { name: 'doc_code', label: 'Mã tài liệu', type: 'text' },
   { name: 'issue_number', label: 'Số hiệu theo sổ', type: 'text' },
   { name: 'legacy_code', label: 'Số hiệu cũ (bản giấy)', type: 'text' },
+  //  Lọc theo NGĂN TỦ: "cho tôi mọi văn bản đang nằm ở Tủ A2" là câu hỏi lúc đi
+  //  lấy hồ sơ giấy, và cũng là lúc kiểm kê kho.
+  { name: 'storage_location', label: 'Nơi lưu trữ cứng', type: 'text' },
   { name: 'keywords', label: 'Từ khóa', type: 'text' },
 
   { name: 'doc_type_id', label: 'Loại văn bản', type: 'select', fetchOptions: docTypeOptions },

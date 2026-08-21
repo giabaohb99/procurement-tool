@@ -125,6 +125,14 @@ class Document(Base, AuditMixin):
     #  Số hiệu của bản GIẤY trước khi lên hệ thống (C12). Tìm kiếm chấp nhận số
     #  này: người cũ vẫn tra theo số họ đã quen.
     legacy_code: Mapped[str] = mapped_column(String(100), default="")
+    #  NƠI LƯU TRỮ CỨNG — bản giấy có chữ ký tươi đang nằm ở đâu ("Tủ A2 · Kệ 3
+    #  · Bìa 12"). Ô chữ tự do chứ không phải danh mục: mỗi pháp nhân sắp kho
+    #  một kiểu, ép vào một bảng danh mục là đẻ ra màn khai báo mà không ai duy
+    #  trì. Gợi ý lúc nhập lấy từ chính các giá trị đã gõ (`/storage-locations`),
+    #  đó là thứ giữ cho dữ liệu đỡ mỗi người một kiểu.
+    #
+    #  Tìm kiếm chấp nhận cột này: lý do có nó là "sau này tìm lại bản giấy".
+    storage_location: Mapped[str] = mapped_column(String(200), default="")
 
     # ── Bộ trường chung C01 ──────────────────────────────────────────────────
     doc_type_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)

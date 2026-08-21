@@ -7,17 +7,30 @@ import { Input } from '@/shared/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { cn } from '@/shared/utils/cn'
 
+/**
+ * Định danh của một mục.
+ *
+ * Cho phép cả CHUỖI vì có chỗ mục không phải một bản ghi đơn mà là một CẶP —
+ * ví dụ (phòng ban × pháp nhân) ở khối phạm vi áp dụng của văn bản, khóa dạng
+ * `"4:1"`. Ép về số thì hai phòng cùng tên ở hai công ty dính làm một.
+ */
+export type MultiPickerId = number | string
+
 export interface MultiPickerOption {
-  id: number
+  id: MultiPickerId
   label: string
   /** Chữ mờ bên phải: mã, số hiệu, chức danh… — thứ để phân biệt hai dòng trùng tên. */
   hint?: string
 }
 
-interface MultiPickerProps {
-  value: number[]
-  onChange: (ids: number[]) => void
-  options: MultiPickerOption[]
+/**
+ * `Id` bám theo kiểu của `value`, nên nơi gọi truyền `number[]` vẫn nhận lại
+ * `number[]` ở `onChange` — không phải ép kiểu ở mọi chỗ đang dùng.
+ */
+interface MultiPickerProps<Id extends MultiPickerId = MultiPickerId> {
+  value: Id[]
+  onChange: (ids: Id[]) => void
+  options: (Omit<MultiPickerOption, 'id'> & { id: Id })[]
   placeholder: string
   searchPlaceholder?: string
   emptyMessage?: string
@@ -35,7 +48,7 @@ const MAX_VISIBLE = 50
  * `{id, label, hint}`. Trước đây chỉ có bản riêng cho nhân sự, và mỗi lần cần
  * chọn nhiều thứ khác lại chép ra một bản gần giống.
  */
-export function MultiPicker({
+export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
   value,
   onChange,
   options,
@@ -43,12 +56,12 @@ export function MultiPicker({
   searchPlaceholder = 'Tìm…',
   emptyMessage = 'Không tìm thấy mục nào.',
   disabled,
-}: MultiPickerProps) {
+}: MultiPickerProps<Id>) {
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
 
   const selected = useMemo(
-    () => value.map((id) => options.find((item) => item.id === id)).filter(Boolean) as MultiPickerOption[],
+    () => value.map((id) => options.find((item) => item.id === id)).filter(Boolean) as typeof options,
     [value, options],
   )
 
@@ -68,7 +81,7 @@ export function MultiPicker({
   /** Đã tick hết phần đang lọc chưa — quyết định nút là "Chọn" hay "Bỏ chọn". */
   const allPicked = filtered.length > 0 && filtered.every((item) => value.includes(item.id))
 
-  function toggle(id: number) {
+  function toggle(id: Id) {
     onChange(value.includes(id) ? value.filter((item) => item !== id) : [...value, id])
   }
 

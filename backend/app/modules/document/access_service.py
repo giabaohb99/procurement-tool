@@ -171,6 +171,28 @@ def dang_duyet_van_ban_nay(db: Session, document_id: int, employee_id: int | Non
     )
 
 
+def co_ban_clone_xem_duoc(db: Session, source_document_id: int, user,
+                          profile: dict) -> bool:
+    """Người dùng có đọc được ít nhất một bản clone của văn bản gốc hay không.
+
+    Pháp nhân nhận phải mở lại được bản gốc để đặt hai bản cạnh nhau, chỉnh bản
+    của mình rồi mới ban hành. Quyền này chỉ mở theo liên kết clone đã tồn tại,
+    không cộng bản gốc vào danh sách chung của pháp nhân nhận.
+
+    Dùng chính ``visible_condition`` của bản clone để giữ nguyên mọi luật phạm
+    vi, chia sẻ, quyền theo sổ và dòng cấm. Không suy rộng thành "cùng pháp nhân
+    là được xem", vì người có phạm vi phòng ban hẹp không mặc nhiên được đọc
+    mọi bản clone của công ty.
+    """
+    visible = visible_condition(user, profile, "read")
+    query = db.query(Document.id).filter(
+        Document.source_document_id == source_document_id,
+    )
+    if visible is not None:
+        query = query.filter(visible)
+    return query.first() is not None
+
+
 def can(db: Session, doc: Document, user, profile: dict, action: str = "read") -> bool:
     """Người này có được `action` trên ĐÚNG văn bản này không."""
     #  ĐỌC ĐƯỢC THỨ MÌNH PHẢI KÝ. Người duyệt trong luồng thường không có vai
@@ -204,6 +226,13 @@ def can(db: Session, doc: Document, user, profile: dict, action: str = "read") -
         if db.query(Document.id).filter(Document.id == doc.id,
                                         Document.book_id.in_(books)).first():
             return True
+
+    #  Bản clone luôn dẫn ngược về bản gốc để pháp nhân nhận đối chiếu trước
+    #  khi chỉnh và ban hành. Nếu người này đọc được ít nhất một bản clone của
+    #  gốc thì mở thêm quyền ĐỌC gốc, nhưng tuyệt đối không kéo theo sửa / xóa.
+    #  Dòng CẤM đích danh trên bản gốc đã được xét ở trên nên vẫn thắng.
+    if action == "read" and co_ban_clone_xem_duoc(db, doc.id, user, profile):
+        return True
 
     scope = scope_condition(Document, "document", user, profile, action)
     if scope is None:

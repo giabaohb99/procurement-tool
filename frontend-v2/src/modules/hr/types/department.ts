@@ -23,6 +23,21 @@ export const DEPARTMENT_KIND_LABELS: Record<Department['kind'], string> = {
   3: 'Ban dự án',
 }
 
+/**
+ * Một CẶP phòng ban × pháp nhân — khớp `GET /api/departments/by-companies`.
+ *
+ * Một phòng có mặt ở nhiều pháp nhân, nên nơi cần khai "phòng nào ở công ty
+ * nào" (phạm vi áp dụng của văn bản) phải làm việc trên cặp chứ không phải trên
+ * danh sách phòng ban.
+ */
+export interface DepartmentOfCompany {
+  department_id: number
+  department_name: string
+  department_code: string
+  company_id: number
+  company_name: string
+}
+
 export interface DepartmentCompany {
   id: number
   department_id: number

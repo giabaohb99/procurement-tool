@@ -4,8 +4,20 @@ import { useActiveDocumentTypes } from '@/modules/document/hooks/use-document-ty
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import type { Employee } from '@/modules/hr/types/employee'
-import type { MultiPickerOption } from '@/shared/ui/multi-picker'
 import type { ConditionFieldDef } from '../config/condition-fields'
+
+/**
+ * Một lựa chọn của ô điều kiện.
+ *
+ * Giống `MultiPickerOption` nhưng **ghim `id` là số**: giá trị của điều kiện
+ * lưu xuống backend là mảng id số (`{"field":"doc_type_id","value":[3,8]}`), nên
+ * khóa dạng chuỗi mà ô chọn nhiều nay cho phép thì không dùng được ở đây.
+ */
+interface ConditionChoice {
+  id: number
+  label: string
+  hint?: string
+}
 
 /**
  * Danh sách giá trị chọn được của từng ô điều kiện.
@@ -20,7 +32,7 @@ export function useConditionChoices(employees: Employee[]) {
   const { data: departments } = useDepartments({ page_size: 500 })
 
   return useCallback(
-    (field: ConditionFieldDef): MultiPickerOption[] => {
+    (field: ConditionFieldDef): ConditionChoice[] => {
       switch (field.source) {
         case 'level':
           return (field.choices ?? []).map((item) => ({ id: item.value, label: item.label }))

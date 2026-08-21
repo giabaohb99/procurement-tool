@@ -8,6 +8,7 @@ import type {
   ApprovalTask,
   ApprovalTrail,
   Delegation,
+  MyDecision,
   MyTask,
 } from '../types/approval'
 
@@ -55,6 +56,17 @@ export const approvalApi = {
   /** I17 — mọi thứ đang chờ tôi, của cả văn thư lẫn thu mua. */
   myTasks: (entity?: string) =>
     apiGet<Paged<MyTask>>(`${INSTANCE_URL}/my-tasks`, { params: entity ? { entity } : undefined }),
+
+  /**
+   * ĐÃ DUYỆT GẦN ĐÂY — phiếu chính tôi vừa quyết định, đọc từ dấu vết.
+   *
+   * Là màn "nhớ lại xem hôm qua mình ký cái gì", không phải sổ tra cứu: backend
+   * chặn `days` ở 365 và `limit` ở 200.
+   */
+  myHistory: (entity?: string, days = 30) =>
+    apiGet<Paged<MyDecision>>(`${INSTANCE_URL}/my-history`, {
+      params: { days, ...(entity ? { entity } : {}) },
+    }),
 
   getById: (id: number) => apiGet<ApprovalInstance>(`${INSTANCE_URL}/${id}`),
   trail: (id: number) => apiGet<ApprovalTrail>(`${INSTANCE_URL}/${id}/trail`),

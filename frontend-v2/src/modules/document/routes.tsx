@@ -5,12 +5,14 @@ import {
   Hash,
   LayoutDashboard,
   Link2,
+  ShieldCheck,
   SlidersHorizontal,
   UserCheck,
 } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { DocumentApprovalNavBadge } from './components/document-approval-nav-badge'
 
 /**
  * Phân hệ VĂN THƯ — soạn thảo, duyệt, ban hành và tra cứu văn bản.
@@ -47,6 +49,20 @@ export const documentModule: ErpModule = {
       path: appRoutes.document.documents,
       icon: Files,
       entity: 'document',
+      group: 'Nghiệp vụ',
+    },
+    {
+      //  CHỜ TÔI DUYỆT — đứng ngay dưới «Văn bản» vì đó là việc phải làm trong
+      //  ngày, còn mọi mục dưới nữa là tra cứu và khai báo.
+      //
+      //  KHÔNG khai `entity`: người duyệt trong luồng thường **không có vai trò
+      //  nào** ở phân hệ Văn bản (backend cũng đã mở đúng khe đó, xem
+      //  `doc_reader` trong `controller.py`). Gác mục này bằng `document.read`
+      //  là giấu việc của chính họ khỏi mắt họ.
+      label: 'Chờ tôi duyệt',
+      path: appRoutes.document.pendingApproval,
+      icon: ShieldCheck,
+      badge: DocumentApprovalNavBadge,
       group: 'Nghiệp vụ',
     },
     {
@@ -115,6 +131,13 @@ export const documentModule: ErpModule = {
       path: appRoutes.document.documentDetail(':id'),
       lazy: async () => ({
         Component: (await import('./pages/document-detail-page')).DocumentDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.document.pendingApproval,
+      lazy: async () => ({
+        Component: (await import('./pages/document-pending-approval-page'))
+          .DocumentPendingApprovalPage,
       }),
     },
     {

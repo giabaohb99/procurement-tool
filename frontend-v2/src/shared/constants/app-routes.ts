@@ -60,8 +60,12 @@ export const appRoutes = {
    */
   approval: {
     root: '/approval',
-    /** I17 — màn được mở nhiều nhất của cả hệ. */
-    myTasks: '/approval/my-tasks',
+    //  ⚠️ KHÔNG còn `myTasks`. Màn «Việc của tôi» (`/approval/my-tasks`) đã xóa
+    //  ngày 21/08/2026 — hộp việc nay là «Chờ tôi duyệt» trong phân hệ Văn bản
+    //  (`document.pendingApproval`), và duyệt thì bấm ngay trên văn bản. Một
+    //  danh sách thứ hai cho bấm duyệt mà chưa mở chứng từ ra đọc chính là cái
+    //  đường tắt vừa bịt. Bật bộ máy duyệt cho Thu mua thì dựng hộp việc trong
+    //  chính phân hệ đó, đừng gọi lại màn gom chung.
     flows: '/approval/flows',
     flowNew: '/approval/flows/new',
     flowDetail: (id: number | string) => `/approval/flows/${id}`,
@@ -91,6 +95,15 @@ export const appRoutes = {
     documentPrint: (id: number | string) => `/print/document/${id}`,
     /** F05 — văn bản mà chính tôi nằm trong phạm vi áp dụng. */
     appliedToMe: '/document/applied-to-me',
+    /**
+     * VĂN BẢN ĐANG CHỜ CHÍNH TÔI DUYỆT.
+     *
+     * Khác «Việc của tôi» ở phân hệ Phê duyệt: màn kia gom việc của mọi loại
+     * chứng từ và cho bấm duyệt ngay trên dòng. Màn này chỉ có văn bản và **cố
+     * ý không có nút bấm** — bấm vào dòng là mở chính văn bản ra đọc rồi duyệt
+     * tại đó, đúng thứ người dùng đòi ("vào thẳng văn bản đó duyệt").
+     */
+    pendingApproval: '/document/pending-approval',
     /** Danh sách SỔ (mỗi sổ một bộ đếm riêng), không phải danh sách văn bản. */
     books: '/document/books',
     bookNew: '/document/books/new',

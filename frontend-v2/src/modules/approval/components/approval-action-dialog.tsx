@@ -123,13 +123,19 @@ export function ApprovalActionDialog({ task, open, onOpenChange }: ApprovalActio
         {/*  Bối cảnh phiếu gom một hàng: người duyệt cần biết ai trình và hạn khi
              nào TRƯỚC khi ký, và cần một đường mở thẳng sang chứng từ để đọc. */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
-          <Link
-            to={entityLink(task.entity, task.entity_id)}
-            className="flex items-center gap-1.5 font-medium text-primary hover:underline"
-          >
-            <ExternalLink className="size-3.5" />
-            {task.entity_code || `#${task.entity_id}`}
-          </Link>
+          {/*  Loại chứng từ chưa có màn chi tiết ở v2 thì `entityLink` trả rỗng:
+               hiện chữ thường chứ đừng dựng một cái link không đi đâu. */}
+          {entityLink(task.entity, task.entity_id) ? (
+            <Link
+              to={entityLink(task.entity, task.entity_id)}
+              className="flex items-center gap-1.5 font-medium text-primary hover:underline"
+            >
+              <ExternalLink className="size-3.5" />
+              {task.entity_code || `#${task.entity_id}`}
+            </Link>
+          ) : (
+            <span className="font-medium">{task.entity_code || `#${task.entity_id}`}</span>
+          )}
           {task.started_by_name && (
             <span className="text-muted-foreground">{task.started_by_name} trình</span>
           )}

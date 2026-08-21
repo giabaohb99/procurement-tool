@@ -82,14 +82,28 @@ SKIP_MODE_LABELS = {
 #  bản nó tạo ra văn bản CÓ HIỆU LỰC mà không ai chịu trách nhiệm. Không khai
 #  giá trị thì sau này không ai bật nhầm được.
 NO_APPROVER_FALLBACK = 1  # chuyển cho người dự phòng khai ở bước
-NO_APPROVER_ESCALATE = 2  # đẩy lên cấp trên
+#  ⚠️ ĐÃ BỎ (21/08/2026, CR-114) — giữ hằng số để đọc được dữ liệu cũ, nhưng
+#  không còn là lựa chọn khai được và bộ máy KHÔNG chạy nhánh này nữa.
+#
+#  Vì sao bỏ: "đẩy lên cấp trên" là bộ máy **tự chọn một người khác** thay cho
+#  người đã khai trong luồng. Chủ đầu tư chốt: phiếu phải đi đúng luồng đã khai,
+#  không có ai thay thế ai. Bước hụt người thì dừng lại và kêu lên — người quản
+#  trị sửa luồng, chứ không phải hệ tự đoán hộ.
+NO_APPROVER_ESCALATE = 2
 NO_APPROVER_BLOCK = 3     # dừng phiếu và báo người quản trị
 
 NO_APPROVER_LABELS = {
     NO_APPROVER_FALLBACK: "Chuyển cho người dự phòng",
-    NO_APPROVER_ESCALATE: "Đẩy lên cấp trên",
+    #  Nhãn còn để phiếu/luồng cũ đã khai giá trị 2 vẫn đọc ra chữ, không hiện
+    #  số thô. Nó KHÔNG nằm trong danh sách chọn nữa — xem `NO_APPROVER_CHOICES`.
+    NO_APPROVER_ESCALATE: "Đẩy lên cấp trên (đã bỏ)",
     NO_APPROVER_BLOCK: "Dừng phiếu và báo quản trị",
 }
+
+#  Những lựa chọn CÒN KHAI ĐƯỢC — đây mới là thứ màn khai luồng đổ ra ô chọn.
+#  Tách khỏi bảng nhãn ở trên vì hai bảng trả lời hai câu khác nhau: "số này đọc
+#  là gì" (phải phủ cả dữ liệu cũ) và "được chọn cái nào" (chỉ cái còn dùng).
+NO_APPROVER_CHOICES = (NO_APPROVER_FALLBACK, NO_APPROVER_BLOCK)
 
 
 class ApprovalFlow(Base, AuditMixin):

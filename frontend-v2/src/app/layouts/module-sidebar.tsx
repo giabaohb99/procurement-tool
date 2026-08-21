@@ -174,6 +174,10 @@ function NavMenuItem({
               {/* Cỡ và màu icon do `navItemClass` quyết định để active/hover đổi theo. */}
               <item.icon />
               <span>{item.label}</span>
+              {/*  Huy hiệu đứng CUỐI dòng (`ml-auto` do chính nó mang) và tự ẩn
+                   khi không có việc — xem `ModuleNavItem.badge`. Menu thu gọn
+                   thì cả nhãn lẫn huy hiệu cùng bị ẩn bởi biến thể icon. */}
+              {item.badge && <item.badge />}
             </span>
           </SidebarMenuButton>
         )}

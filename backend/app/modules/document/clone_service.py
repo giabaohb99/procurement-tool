@@ -30,6 +30,8 @@ from .clone_plan_model import DocumentClonePlan
 from .link_model import DocumentLink
 from .model import (ALIVE_STATUSES, APPLY_MODE_CLONE, STATUS_DRAFT,
                     STATUS_LABELS, Document)
+from .scope_model import (DIM_COMPANY, DIM_DEPARTMENT, DIM_EMPLOYEE,
+                          MODE_INCLUDE, DocumentScope)
 from . import numbering
 from .service import (ATTACH_ENTITY, NUMBER_ON_DRAFT, doc_type_or_400,
                       issue_year)
@@ -149,6 +151,7 @@ def create_clones(db: Session, source: Document, company_ids: list[int],
         clone.current_version_id = version.id
 
         _copy_attachments(db, goc_version.id, version.id, actor)
+        _copy_scopes(db, source.id, clone.id, company_id, actor)
 
         #  Điều kiện 1 — liên kết ngược, `is_system` nên không màn hình nào,
         #  không hàm nào xóa được. Xóa được thì vài tháng sau có bản clone mồ
@@ -259,6 +262,67 @@ def _copy_attachments(db: Session, from_version_id: int, to_version_id: int, act
         db.add(FileLink(file_id=link.file_id, entity=ATTACH_ENTITY,
                         entity_id=to_version_id, doc_type=link.doc_type,
                         sort_order=link.sort_order, created_by=actor, updated_by=actor))
+
+
+def _copy_scopes(db: Session, source_document_id: int, clone_document_id: int,
+                 company_id: int, actor: int):
+    """Tự điền PHẠM VI BAN HÀNH của bản clone cho đúng pháp nhân nhận.
+
+    Không chép nguyên cả bảng phạm vi của bản gốc: bản gốc có thể đi xuống mười
+    hai pháp nhân, còn mỗi bản clone chỉ được đứng tên và ban hành trong MỘT
+    pháp nhân. Chép hết sẽ làm bản của Công ty A lại áp sang Công ty B, thậm chí
+    có thể sinh tiếp một vòng clone khi Công ty A ban hành.
+
+    Vì vậy chỉ giữ các dòng thật sự thuộc pháp nhân nhận:
+      * chiều pháp nhân / phòng ban khớp bằng ``company_id``;
+      * chiều cá nhân khớp theo pháp nhân của hồ sơ nhân sự.
+
+    Clone tạo tay có thể không có dòng nguồn nào khớp. Khi đó ghi rõ một dòng
+    ``Bao gồm · Pháp nhân nhận`` thay cho việc để thẻ phạm vi trống rồi trông
+    cậy vào luật mặc định ngầm.
+    """
+    source_rows = (
+        db.query(DocumentScope)
+        .filter(DocumentScope.document_id == source_document_id)
+        .order_by(DocumentScope.id.asc())
+        .all()
+    )
+
+    copied = 0
+    for row in source_rows:
+        belongs = False
+        if row.dim in (DIM_COMPANY, DIM_DEPARTMENT):
+            belongs = row.company_id == company_id
+        elif row.dim == DIM_EMPLOYEE and row.employee_id:
+            employee = db.get(Employee, row.employee_id)
+            belongs = bool(employee and employee.company_id == company_id)
+
+        if not belongs:
+            continue
+
+        db.add(DocumentScope(
+            document_id=clone_document_id,
+            dim=row.dim,
+            mode=row.mode,
+            company_id=row.company_id,
+            department_id=row.department_id,
+            employee_id=row.employee_id,
+            include_children=row.include_children,
+            created_by=actor,
+            updated_by=actor,
+        ))
+        copied += 1
+
+    if copied == 0:
+        db.add(DocumentScope(
+            document_id=clone_document_id,
+            dim=DIM_COMPANY,
+            mode=MODE_INCLUDE,
+            company_id=company_id,
+            include_children=False,
+            created_by=actor,
+            updated_by=actor,
+        ))
 
 
 def clones_of(db: Session, source_document_id: int) -> list[Document]:

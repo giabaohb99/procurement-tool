@@ -9,6 +9,24 @@ import type { DepartmentFormValues } from '../schemas/department-schema'
 import type { DepartmentCompanyInput } from '../types/department'
 
 /**
+ * Các CẶP (phòng ban × pháp nhân) của những pháp nhân đang chọn.
+ *
+ * Chưa chọn pháp nhân nào thì KHÔNG gọi: một danh sách phòng ban không kèm pháp
+ * nhân là thứ không dùng được ở nơi gọi (phạm vi áp dụng của văn bản), bày ra
+ * chỉ mời người ta chọn nhầm.
+ */
+export function useDepartmentsByCompanies(companyIds: number[]) {
+  return useQuery({
+    queryKey: queryKeys.hr.departmentsByCompanies(companyIds),
+    queryFn: () => departmentApi.byCompanies(companyIds),
+    enabled: companyIds.length > 0,
+    //  Giữ danh sách cũ trong lúc nạp danh sách mới: bỏ tick một pháp nhân là ô
+    //  chọn phòng ban chớp trắng rồi hiện lại, ngay dưới tay người đang bấm.
+    placeholderData: keepPreviousData,
+  })
+}
+
+/**
  * Danh sách phòng ban. Tham số tìm kiếm là `q` (tên phòng ban HOẶC tên trưởng
  * bộ phận), không phải `name` — xem chú thích ở `department-api.ts`.
  */

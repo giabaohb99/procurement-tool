@@ -74,11 +74,43 @@ def chan_duong_cu(db: Session, doc: Document) -> None:
     )
 
 
+def _nhan_su_cua_tai_khoan(db: Session, actor: int) -> int | None:
+    """Tài khoản đang bấm là nhân sự nào. `None` khi tài khoản chưa gắn hồ sơ."""
+    from app.modules.user.model import User
+
+    if not actor:
+        return None
+    row = db.query(User.employee_id).filter(User.id == actor).first()
+    return row[0] if row and row[0] else None
+
+
 def trinh_duyet(db: Session, doc: Document, actor: int):
-    """Trình văn bản vào bộ máy mới. `None` = chưa khai luồng, gọi đường cũ."""
+    """Trình văn bản vào bộ máy mới. `None` = chưa khai luồng, gọi đường cũ.
+
+    **Người nộp = người BẤM GỬI DUYỆT**, không phải người ghi trên phiếu.
+
+    ⚠️ Trước 20/08/2026 chỗ này lấy `drafter_employee_id or owner_employee_id`,
+    và nó chặn đứng luồng clone: bản clone chép hai ô đó **từ bản gốc**, tức
+    người của Tập đoàn. Văn thư SAM bấm gửi duyệt bản của SAM thì bộ máy lại đi
+    tìm trưởng bộ phận của người bên Tập đoàn — không ra ai, `on_no_approver` của
+    luồng mặc định là *dừng phiếu*, nên **phiếu kẹt và pháp nhân con không ban
+    hành được văn bản của mình**. Dựng lại được trên Chrome với tài khoản `VTSAM`.
+
+    Lấy người bấm cũng đúng với ý đã ghi ở `approver_resolver._phong_cua_nguoi_nop`:
+    *"thu mua lập phiếu hộ bộ phận khác thì trưởng bộ phận người nộp phải là
+    trưởng của thu mua, không phải trưởng phòng ghi trên phiếu"*. Hai chỗ giờ mới
+    nói cùng một câu.
+
+    Vẫn lùi về ô trên phiếu khi tài khoản chưa gắn hồ sơ nhân sự (tài khoản hệ
+    thống, tác vụ nền) — thà định tuyến theo phiếu còn hơn không định tuyến được.
+    """
     return instance_service.bat_dau(
         db, ENTITY, doc.id, boi_canh(doc),
-        submitter_employee_id=doc.drafter_employee_id or doc.owner_employee_id,
+        submitter_employee_id=(
+            _nhan_su_cua_tai_khoan(db, actor)
+            or doc.drafter_employee_id
+            or doc.owner_employee_id
+        ),
         actor=actor,
         entity_code=doc.doc_code or doc.issue_number or "",
         entity_title=doc.title or "",
@@ -140,3 +172,16 @@ entity_hooks.register(
     on_returned=_khi_tra_lai,
     on_withdrawn=_khi_rut_lai,
 )
+
+
+def _boi_canh_theo_id(db: Session, document_id: int) -> dict:
+    """Dựng lại bối cảnh từ id — cho lúc SỬA LUỒNG phải tính lại người duyệt.
+
+    Khác `boi_canh(doc)` ở trên đúng một chỗ: ở đây bộ máy chỉ cầm cái id, vì
+    người quản trị đang đứng ở màn Luồng duyệt chứ không mở văn bản nào.
+    """
+    doc = db.get(Document, document_id)
+    return boi_canh(doc) if doc else {}
+
+
+entity_hooks.register_subject(ENTITY, _boi_canh_theo_id)

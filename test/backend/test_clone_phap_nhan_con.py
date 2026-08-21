@@ -13,9 +13,11 @@ from fastapi import HTTPException
 from app.modules.company.model import Company
 from app.modules.doc_catalog.link_rule_model import RELATION_BASED_ON
 from app.modules.doc_catalog.model import DocType
-from app.modules.document import clone_service, link_service, service
+from app.modules.document import clone_service, link_service, scope_service, service
 from app.modules.document.model import APPLY_MODE_CLONE, STATUS_DRAFT, Document
 from app.modules.document.schema import DocumentCreate, VersionCreate
+from app.modules.document.scope_model import (DIM_COMPANY, MODE_INCLUDE,
+                                              DocumentScope)
 from app.modules.document.version_model import CHANGE_MAJOR
 
 ACTOR = 1
@@ -61,6 +63,45 @@ def test_clone_chep_noi_dung_ban_goc(db, tap_doan):
                                         None, "", ACTOR)[0]
     version = db.get(DocumentVersion, clone.current_version_id)
     assert "Điều 1" in version.content_html
+
+
+def test_clone_tu_dien_pham_vi_ban_hanh_cua_phap_nhan_nhan(db, tap_doan):
+    """Bản của Công ty A chỉ nhận phần phạm vi của A, không kéo theo Công ty B."""
+    goc = tap_doan["goc"]
+    db.add_all([
+        DocumentScope(
+            document_id=goc.id, dim=DIM_COMPANY, mode=MODE_INCLUDE,
+            company_id=tap_doan["a"].id, created_by=ACTOR, updated_by=ACTOR,
+        ),
+        DocumentScope(
+            document_id=goc.id, dim=DIM_COMPANY, mode=MODE_INCLUDE,
+            company_id=tap_doan["b"].id, created_by=ACTOR, updated_by=ACTOR,
+        ),
+    ])
+    db.commit()
+
+    clone = clone_service.create_clones(
+        db, goc, [tap_doan["a"].id], None, "", ACTOR,
+    )[0]
+    rows = scope_service.scopes_of(db, clone.id)
+
+    assert len(rows) == 1
+    assert rows[0].mode == MODE_INCLUDE
+    assert rows[0].dim == DIM_COMPANY
+    assert rows[0].company_id == tap_doan["a"].id
+
+
+def test_clone_tao_tay_khong_co_pham_vi_nguon_thi_mac_dinh_noi_nhan(db, tap_doan):
+    """Thẻ phạm vi của bản nhận không để trống dù bản gốc chưa khai nơi đó."""
+    clone = clone_service.create_clones(
+        db, tap_doan["goc"], [tap_doan["a"].id], None, "", ACTOR,
+    )[0]
+
+    rows = scope_service.scopes_of(db, clone.id)
+    assert len(rows) == 1
+    assert rows[0].dim == DIM_COMPANY
+    assert rows[0].mode == MODE_INCLUDE
+    assert rows[0].company_id == tap_doan["a"].id
 
 
 def test_khong_clone_van_ban_chua_ban_hanh(db, tap_doan, seed):

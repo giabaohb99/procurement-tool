@@ -39,6 +39,9 @@ export const documentRecordSchema = z
     effective_date: z.string(),
     expire_date: z.string(),
     legacy_code: z.string().trim().max(100, 'Tối đa 100 ký tự'),
+    //  NƠI LƯU TRỮ CỨNG — bản giấy có chữ ký tươi nằm ở đâu. Không bắt buộc:
+    //  lúc lập văn bản thì thường chưa in ra, chỗ cất là chuyện sau khi ký.
+    storage_location: z.string().trim().max(200, 'Tối đa 200 ký tự'),
   })
   // Khoảng hiệu lực ngược đầu là lỗi nhập liệu, không phải trường hợp hợp lệ.
   .refine(

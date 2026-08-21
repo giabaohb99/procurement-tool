@@ -107,7 +107,18 @@ export function DocumentDetailPage() {
   const editorRef = useRef<RichTextEditorHandle>(null)
 
   const documentId = Number(id)
-  const { data: record, isLoading } = useDocument(documentId)
+  //  Đọc phiên duyệt TRƯỚC để biết văn bản có đang chạy trong bộ máy không —
+  //  chỉ lúc đó mới cần hỏi lại bản ghi theo nhịp (xem `useDocument`).
+  const { data: approvalData } = useEntityApproval('document', documentId)
+  const approval = approvalData ?? null
+  const dangDuyetNhieuBuoc =
+    approval?.status === INSTANCE_STATUS.running || approval?.status === INSTANCE_STATUS.blocked
+
+  const {
+    data: record,
+    isLoading,
+    isError: mucKhongDocDuoc,
+  } = useDocument(documentId, { dangDuyet: dangDuyetNhieuBuoc })
   const { data: versions = [] } = useDocumentVersions(documentId)
   const { data: permissions } = useDocumentPermissions(documentId)
 
@@ -139,17 +150,29 @@ export function DocumentDetailPage() {
   const [excerptOpen, setExcerptOpen] = useState(false)
   const [issueOpen, setIssueOpen] = useState(false)
 
-  //  Phiếu này có đang chạy trong bộ máy duyệt NHIỀU BƯỚC không.
-  const { data: approvalData } = useEntityApproval('document', documentId)
-  const approval = approvalData ?? null
-  //  ⚠️ Đang chạy nhiều bước thì hai nút của luồng MỘT BƯỚC cũ phải biến mất.
-  //  Lỗi đã xảy ra: văn bản nằm ở chặng 1 chờ trưởng bộ phận, người có quyền
-  //  `document.approve` bấm «Duyệt và ban hành» là văn bản được cấp số và
-  //  chuyển hiệu lực ngay, còn phiên duyệt vẫn chạy tiếp trên một văn bản đã
-  //  ban hành. Backend nay cũng chặn (`approval_bridge.chan_duong_cu`) — ẩn nút
-  //  ở đây là để người dùng không thấy một cái nút chỉ để nhận lỗi.
-  const dangDuyetNhieuBuoc =
-    approval?.status === INSTANCE_STATUS.running || approval?.status === INSTANCE_STATUS.blocked
+  //  ⚠️ `dangDuyetNhieuBuoc` khai ở ĐẦU hàm (cạnh `useEntityApproval`) vì
+  //  `useDocument` cần nó để bật nhịp hỏi lại. Đang chạy nhiều bước thì hai nút
+  //  của luồng MỘT BƯỚC cũ phải biến mất: lỗi đã xảy ra là văn bản nằm ở chặng 1
+  //  chờ trưởng bộ phận, người có quyền `document.approve` bấm «Duyệt và ban
+  //  hành» là văn bản được cấp số và chuyển hiệu lực ngay, còn phiên duyệt vẫn
+  //  chạy tiếp trên một văn bản đã ban hành. Backend nay cũng chặn
+  //  (`approval_bridge.chan_duong_cu`) — ẩn nút ở đây là để người dùng không
+  //  thấy một cái nút chỉ để nhận lỗi.
+
+  //  MẤT QUYỀN GIỮA CHỪNG thì đá ra, đừng để họ ngồi lại (CR-114).
+  //
+  //  Ca thật: văn bản đang chờ A duyệt, người quản trị đổi người duyệt của bước
+  //  đó sang B. A không còn việc nào ở phiếu này, mà khe đọc của A vốn mở ra
+  //  CHÍNH VÌ việc đó (xem `doc_reader` ở backend) — nên từ nhịp hỏi lại kế
+  //  tiếp, API trả 404. Không xử ở đây thì A ngồi trong một trang đã chết, với
+  //  nút «Duyệt» sáng trưng, bấm vào chỉ nhận lỗi.
+  useEffect(() => {
+    if (!mucKhongDocDuoc) return
+    toast.error(
+      'Bạn không còn quyền xem văn bản này — việc duyệt có thể đã chuyển sang người khác.',
+    )
+    navigate(appRoutes.document.documents, { replace: true })
+  }, [mucKhongDocDuoc, navigate])
 
   const { can } = usePermission()
   //  Ký là hành vi PHÊ DUYỆT, không phải sửa nội dung — gác bằng `approve` đúng
@@ -470,7 +493,7 @@ export function DocumentDetailPage() {
         <DocumentAmendedBanner documentId={documentId} />
         {/*  Cũng đặt NGOÀI mọi tab: người soạn cần biết phiếu đang chờ ai, và
              nhất là biết khi nó kẹt — dù họ đang đứng ở tab nào. */}
-        <DocumentApprovalBanner instance={approval} />
+        <DocumentApprovalBanner instance={approval} documentId={documentId} />
 
         <TabsContent value="compose" className="mt-0">
           <DocumentSubmittedLockNotice submitted={khoaVietVi} />
@@ -557,7 +580,11 @@ export function DocumentDetailPage() {
                  chỉ lặp lại cùng một danh sách bằng một cách nói khác. Muốn
                  xem bản riêng đã sinh ra chưa, ai đang lệch bản — mở tab
                  «Quan hệ», thẻ Cây tài liệu liệt kê đủ kèm tên pháp nhân. */}
-            <DocumentScopeCard documentId={documentId} canWrite={canWrite} />
+            <DocumentScopeCard
+              documentId={documentId}
+              canWrite={canWrite}
+              isClone={Boolean(record?.source_document_id)}
+            />
             <DocumentAccessCard documentId={documentId} canWrite={canWrite} />
           </DocumentRecordForm>
         </TabsContent>
@@ -577,7 +604,7 @@ export function DocumentDetailPage() {
         </TabsContent>
 
         <TabsContent value="approval" className="mt-0">
-          <DocumentApprovalTab instance={approval} />
+          <DocumentApprovalTab instance={approval} documentId={documentId} />
         </TabsContent>
 
         <TabsContent value="links" className="mt-0">

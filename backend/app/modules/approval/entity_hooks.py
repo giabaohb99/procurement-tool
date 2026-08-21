@@ -93,3 +93,38 @@ def _cau_bao_hong(loi: Exception) -> str:
 
 def da_khai(entity: str) -> bool:
     return entity in _HOOKS
+
+
+#  entity → hàm `(db, entity_id) -> dict` dựng lại BỐI CẢNH của chứng từ.
+#
+#  Bối cảnh là thứ dùng để tính người duyệt (phòng chủ trì, pháp nhân, mức mật…)
+#  và để xét điều kiện rẽ nhánh. Lúc TRÌNH duyệt thì module chứng từ tự đưa vào;
+#  nhưng khi người quản trị SỬA luồng, bộ máy phải tính lại người duyệt cho phiếu
+#  đang chạy — lúc đó nó chỉ có `entity` + `entity_id` trong tay.
+_SUBJECTS: dict[str, Callable] = {}
+
+
+def register_subject(entity: str, fn: Callable) -> None:
+    """Khai hàm dựng bối cảnh cho loại chứng từ này. Xem `_SUBJECTS`."""
+    _SUBJECTS[entity] = fn
+
+
+def boi_canh(db: Session, entity: str, entity_id: int) -> dict:
+    """Bối cảnh của một chứng từ. `{}` khi loại đó chưa khai hàm hoặc chứng từ đã xóa.
+
+    Trả `{}` thay vì ném lỗi: bối cảnh rỗng làm điều kiện rẽ nhánh không khớp và
+    cách chọn người duyệt "lấy từ ô trên phiếu" không ra ai — cả hai đều dẫn tới
+    phiếu KẸT, tức là **hiện ra để người ta xử lý**. Ném lỗi ở đây thì cả thao
+    tác sửa luồng đổ, và người quản trị không hiểu vì sao.
+    """
+    fn = _SUBJECTS.get(entity)
+    if fn is None:
+        return {}
+    try:
+        return fn(db, entity_id) or {}
+    except Exception:   # noqa: BLE001 — xem ghi chú trên
+        import logging
+
+        logging.getLogger(__name__).exception(
+            "Không dựng được bối cảnh của %s #%s", entity, entity_id)
+        return {}

@@ -1,4 +1,12 @@
-import { ChevronRight, CornerDownRight, Loader2, Plus, Search, Sheet } from 'lucide-react'
+import {
+  ChevronRight,
+  CornerDownRight,
+  Loader2,
+  Plus,
+  Search,
+  Sheet,
+  ShieldCheck,
+} from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -32,6 +40,7 @@ import { DOCUMENT_LIST_FILTER_FIELDS } from '../config/document-list-filter-fiel
 import { effectiveLabel } from '../helpers/document-status'
 import { useActiveDocumentTypes } from '../hooks/use-document-types'
 import { useDocuments } from '../hooks/use-documents'
+import { useMyDocumentTasks } from '../hooks/use-my-document-approvals'
 import { secrecyLabel, urgencyLabel } from '../types/security-level'
 import { STATUS_LABELS, type DocumentRecord } from '../types/document-record'
 
@@ -73,6 +82,14 @@ function DocumentListContent() {
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
   const documentTypes = useActiveDocumentTypes()
+  //  Văn bản nào trong bảng đang chờ CHÍNH người đang xem duyệt — để đánh dấu
+  //  dòng đó. Đọc lại hộp việc đã nạp sẵn cho nút trên thanh trên, không thêm
+  //  vòng mạng nào.
+  const { items: viecDuyetCuaToi } = useMyDocumentTasks()
+  const choToiDuyet = useMemo(
+    () => new Set(viecDuyetCuaToi.map((row) => row.entity_id)),
+    [viecDuyetCuaToi],
+  )
   //  Điều kiện của bộ lọc nâng cao, đã dịch sang query param cho backend.
   const { queryParams, queryKey } = useFilterQuery()
   //  Đổi bất kỳ điều kiện nào cũng phải về trang 1 — đang ở trang 5 mà lọc còn
@@ -267,11 +284,25 @@ function DocumentListContent() {
       {
         key: 'status',
         header: 'Trạng thái',
-        width: 150,
+        width: 190,
         // Nhãn TÍNH RA lúc hiển thị (hết hạn theo ngày), không phải trạng thái thô.
         cell: (row) => {
           const label = effectiveLabel(row)
-          return <Badge variant={label.variant}>{label.text}</Badge>
+          //  «Chờ bạn duyệt» đứng CẠNH trạng thái chứ không thay thế nó: văn bản
+          //  vẫn đang ở «Đang duyệt», thứ thêm vào là *lượt của ai*. Đây là dấu
+          //  để người duyệt nhặt ra dòng của mình giữa một bảng dài mà không
+          //  phải mở từng cái.
+          return (
+            <div className="flex items-center gap-1.5">
+              <Badge variant={label.variant}>{label.text}</Badge>
+              {choToiDuyet.has(row.id) && (
+                <Badge className="gap-1 bg-primary text-primary-foreground">
+                  <ShieldCheck className="size-3" />
+                  Chờ bạn duyệt
+                </Badge>
+              )}
+            </div>
+          )
         },
       },
       {
@@ -312,6 +343,15 @@ function DocumentListContent() {
         cell: (row) => row.legacy_code,
       },
       {
+        key: 'storage_location',
+        header: 'Nơi lưu trữ cứng',
+        width: 200,
+        //  Ẩn mặc định: chỉ cần tới lúc đi lấy hồ sơ giấy hoặc kiểm kê kho,
+        //  không phải thứ đọc hằng ngày.
+        defaultHidden: true,
+        cell: (row) => row.storage_location,
+      },
+      {
         key: 'attachment_count',
         header: 'Tệp',
         width: 80,
@@ -319,7 +359,7 @@ function DocumentListContent() {
         cell: (row) => (row.attachment_count ? String(row.attachment_count) : ''),
       },
     ],
-    [dongDangBung, laConDangBung],
+    [dongDangBung, laConDangBung, choToiDuyet],
   )
 
   return (

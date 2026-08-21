@@ -100,6 +100,8 @@ export interface DocumentRecord {
   allow_manual_number: boolean
   /** Số hiệu của bản GIẤY trước khi lên hệ thống; tìm kiếm chấp nhận số này. */
   legacy_code: string
+  /** Bản giấy đang nằm ở đâu — «Tủ A2 · Kệ 3 · Bìa 12». Tìm kiếm chấp nhận cả ô này. */
+  storage_location: string
 
   doc_type_id: number
   doc_type_name: string
