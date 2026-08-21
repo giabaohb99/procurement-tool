@@ -382,7 +382,13 @@ Mỗi dòng = một NCC. Bảng tóm tắt hiện các cột chính; toàn bộ 
 Mỗi dòng = một sản phẩm / báo giá theo NCC.
 
 > **Tự điền khi thêm dòng (CR-024)** — xem ghi chú ở mục B. Dòng SP mới mồi sẵn: Ngày tiếp nhận → Ngày liên hệ,
-> Ngày dự kiến trả KQ → Ngày trả KQ, Mã VTBB/VL → Mã SP (NCC), Tên VTBB/VL → Tên SP theo NCC, ĐVT → ĐVT báo giá + ĐVT quy đổi.
+> Ngày dự kiến trả KQ → Ngày trả KQ, Mã VTBB/VL → Mã SP (NCC), Tên VTBB/VL → Tên SP theo NCC, ĐVT → ĐVT báo giá + ĐVT quy đổi,
+> và từ CR-111 mồi thêm Giá mua gần nhất + Giá mua max lấy từ Lịch sử mua hàng.
+
+> **Thứ tự cột ở bảng ngoài (CR-111).** Ba cột **Giá mua gần nhất · Giá mua max · Ngày công nợ** đứng liền
+> sau cụm *Giá theo khung · Khung SL* để so giá NCC đang chào với giá đã từng mua trong cùng tầm mắt.
+> Bốn trường mới còn lại (Tên trên hoá đơn, Hàm lượng hoạt chất, Phí VC phát sinh đến kho yêu cầu,
+> Chính sách vận chuyển) nằm ở bảng đầy đủ và trong popup chi tiết dòng, không vào **Bảng rút gọn**.
 
 **Nhóm: Lịch làm việc**
 
@@ -447,6 +453,15 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 - Logic đặc biệt: Đây là trường xác định dòng — khi Gửi duyệt, chỉ kiểm tra các trường bắt buộc của những dòng có trường này không trống
 
+### 6a. Tên trên hoá đơn (`invoice_name`) — CR-111
+
+- Kiểu nhập: Nhập tay (ô rộng cả hàng)
+- Mặc định: trống
+- Bắt buộc: Không bắt buộc khi Nháp, bắt buộc khi Gửi duyệt
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
+- Logic đặc biệt: Tên NCC sẽ ghi trên hoá đơn, chốt ngay từ khảo sát để kế toán khỏi hỏi lại lúc nhận hoá đơn. Trùng tên trường với ĐMH nhưng KHÁC cách lấy: ở ĐMH tên này suy ra từ danh mục sản phẩm, ở đây nhập tay vì hàng khảo sát chưa chắc có mã trong hệ thống.
+
 ### 7. Thông số kỹ thuật (`spec`)
 
 - Kiểu nhập: Nhập nhiều dòng
@@ -454,6 +469,15 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Bắt buộc: Không bắt buộc khi Nháp, bắt buộc khi Gửi duyệt
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
+
+### 7a. Hàm lượng hoạt chất (`active_ingredient`) — CR-111
+
+- Kiểu nhập: Nhập tay (ô rộng cả hàng)
+- Mặc định: trống
+- Bắt buộc: Không bắt buộc khi Nháp, bắt buộc khi Gửi duyệt
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
+- Logic đặc biệt: Về nghiệp vụ chỉ nguyên liệu (NL) và bán thành phẩm (BTP) mới có hàm lượng hoạt chất, nhưng hệ thống **bắt buộc cho MỌI phân loại** — cột Phân loại hiện là chữ tự do (trên prod chủ yếu là bao bì: Nhãn, NDT, Túi, Chai…) nên không tự nhận ra dòng nào là NL/BTP. Hàng không có hoạt chất thì ghi "Không có"; popup có sẵn dòng chú thích nhắc điều này.
 
 ### 8. Xuất xứ sản phẩm (`origin`)
 
@@ -496,6 +520,23 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Mặc định: trống
 - Bắt buộc: Không bắt buộc khi Nháp, bắt buộc khi Gửi duyệt
 - Nguồn dữ liệu / liên kết: —
+- Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
+
+### 12a. Giá mua gần nhất (`last_purchase_price`) — CR-111
+
+- Kiểu nhập: Nhập số (VNĐ, tối đa 4 số lẻ)
+- Mặc định: **tự điền từ Lịch sử mua hàng** của Mã VTBB/VL ở đầu phiếu — sửa đè được
+- Bắt buộc: Không (xem ghi chú cuối mục C)
+- Nguồn dữ liệu / liên kết: Bảng Lịch sử mua hàng (`tab_purchase_history`), lọc theo `product_code` = Mã VTBB/VL của phiếu
+- Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
+- Logic đặc biệt: API chi tiết phiếu trả thêm khối `price_hint` = `{last, max, count, unit, date}` (đơn giá của lần mua gần nhất, đơn giá cao nhất, số lần mua, ĐVT và ngày của lần gần nhất). Giao diện điền vào ô này khi **thêm dòng mới** và khi **mở phiếu còn sửa được mà ô đang bằng 0** — số người dùng đã gõ đè thì giữ nguyên. Phiếu khảo sát hàng chưa có mã VTBB, hoặc mã chưa từng mua, thì `price_hint` bằng 0 và ô để trống. Giá lịch sử theo ĐVT của lần mua đó, có thể khác ĐVT báo giá của dòng — cần đối chiếu trước khi so.
+
+### 12b. Giá mua max (`max_purchase_price`) — CR-111
+
+- Kiểu nhập: Nhập số (VNĐ, tối đa 4 số lẻ)
+- Mặc định: **tự điền từ Lịch sử mua hàng** (đơn giá cao nhất từng mua của mã đó) — sửa đè được
+- Bắt buộc: Không (xem ghi chú cuối mục C)
+- Nguồn dữ liệu / liên kết: như trường 12a
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
 
 ### 13. VAT % (`vat`)
@@ -547,6 +588,33 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
+
+### 18a. Phí VC phát sinh đến kho yêu cầu (`extra_shipping_cost`) — CR-111
+
+- Kiểu nhập: Nhập số (VNĐ)
+- Mặc định: 0 (hiển thị trống khi bằng 0)
+- Bắt buộc: Không (xem ghi chú cuối mục C)
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
+- Logic đặc biệt: Là cột RIÊNG, không dùng lại trường 18 (Chi phí vận chuyển theo báo giá). Trường 18 là phí NCC chào chung; trường này là phần đội thêm khi giao tới đúng kho người yêu cầu — hai khoản thương lượng riêng nên tách. Không có thì để 0.
+
+### 18b. Chính sách vận chuyển (`shipping_policy`) — CR-111
+
+- Kiểu nhập: Nhập nhiều dòng
+- Mặc định: trống
+- Bắt buộc: Không bắt buộc khi Nháp, bắt buộc khi Gửi duyệt
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
+- Logic đặc biệt: Dòng khảo sát NCC đã có trường cùng nghĩa (`delivery_policy` — "Chính sách nhận hàng"). Hai chỗ ghi độc lập, KHÔNG tự đồng bộ: bên NCC là chính sách chung của nhà cung cấp, bên đây là chính sách áp cho đúng mặt hàng này.
+
+### 18c. Ngày công nợ (`debt_policy`) — CR-111
+
+- Kiểu nhập: Chọn (ô tìm kiếm) — Tiền mặt · Công nợ 30 ngày · Công nợ 60 ngày · Công nợ 90 ngày · Trả trước
+- Mặc định: trống
+- Bắt buộc: Không bắt buộc khi Nháp, bắt buộc khi Gửi duyệt
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: NSPT/Người tạo (quyền `survey:write`) khi phiếu Nháp hoặc Bị trả lại
+- Logic đặc biệt: Đặt TRÙNG tên trường và dùng CHUNG danh sách lựa chọn với trường 21 của dòng khảo sát NCC (`debt_policy` — "Chính sách công nợ"), để sau này gom báo cáo hai bên khỏi phải ánh xạ tên cột. Hai chỗ vẫn ghi độc lập, không tự đồng bộ.
 
 ### 19. Thời gian giao hàng (`delivery_time`)
 
@@ -661,6 +729,24 @@ Mỗi dòng = một sản phẩm / báo giá theo NCC.
 - Bắt buộc: Không
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: TP/QL (quyền `survey:approve`) khi phiếu Nháp, Chờ duyệt, hoặc Bị trả lại
+
+### Ghi chú: vì sao ô SỐ không nằm trong danh sách bắt buộc (CR-111)
+
+Phiếu hỗ trợ TK20082604 liệt kê 11 trường bắt buộc, trong đó có 4 ô kiểu số: **VAT · Giá mua gần
+nhất · Giá mua max · Phí VC phát sinh đến kho yêu cầu**. Hệ thống **KHÔNG chặn** 4 ô này khi Gửi
+duyệt, có lý do:
+
+- Cột lưu số, mặc định `0`. Với ô số thì `0` vừa có nghĩa "chưa nhập" vừa là **con số hợp lệ** —
+  VAT 0% (hàng không chịu thuế), phí vận chuyển 0 (NCC giao miễn phí), giá mua gần nhất 0 (mã này
+  chưa từng mua). Chặn theo kiểu "phải khác 0" là khoá luôn các trường hợp đúng.
+- Muốn phân biệt được thì phải cho cột rỗng (nullable) và sửa ô nhập ở cả hai giao diện — việc đó
+  để lại bản ERP v2 làm một lượt, không nhét vào bản sửa nhanh này.
+- Đây cũng đúng nguyên tắc đã chốt ở CR-095 cho Đơn mua hàng: VAT **cố ý** không bắt buộc.
+
+Bù lại, **Giá mua gần nhất / Giá mua max tự điền** từ Lịch sử mua hàng (trường 12a) nên thực tế
+hiếm khi trống. Bảy trường còn lại trong phiếu hỗ trợ đều chặn thật: Tên sản phẩm · Thông số kỹ
+thuật · Hàm lượng hoạt chất · Tên trên hoá đơn · Chính sách vận chuyển · Ngày công nợ, và Đánh giá
+của LAB (chỉ khi dòng có tick "Mẫu sẵn" — giữ nguyên luật cũ, xem trường 25).
 
 ---
 

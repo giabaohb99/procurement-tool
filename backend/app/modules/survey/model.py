@@ -79,18 +79,33 @@ class SurveyProductLine(Base, AuditMixin):
     supplier_code: Mapped[str] = mapped_column(String(50), default="")
     internal_code: Mapped[str] = mapped_column(String(50), default="")      # Mã SP theo NCC (nhập tay khi khảo sát)
     product_name: Mapped[str] = mapped_column(String(255), default="")
+    # Tên ghi trên hoá đơn NCC xuất — khảo sát phải chốt sẵn, kế toán khỏi hỏi lại lúc nhận hoá
+    # đơn. Ở ĐMH cùng tên trường nhưng bên đó suy ra từ danh mục SP; ở đây nhập tay vì sản phẩm
+    # khảo sát chưa chắc có mã trong hệ thống (CR-111).
+    invoice_name: Mapped[str] = mapped_column(String(255), default="")
     spec: Mapped[str] = mapped_column(Text, default="")
+    # Hàm lượng hoạt chất — chủ yếu cho nguyên liệu / bán thành phẩm; loại khác ghi "Không có".
+    active_ingredient: Mapped[str] = mapped_column(String(255), default="")
     origin: Mapped[str] = mapped_column(String(100), default="")
     quote_unit: Mapped[str] = mapped_column(String(25), default="")
     moq: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
     price_by_volume: Mapped[float] = mapped_column(Numeric(18, 4), default=0)   # đơn giá theo sản lượng — 4 số lẻ
     volume_range: Mapped[str] = mapped_column(String(100), default="")
+    # Hai mốc giá lấy từ Lịch sử mua hàng của mã VTBB ở đầu phiếu (CR-111) — để so ngay với giá
+    # NCC đang chào. Tự điền nhưng SỬA ĐÈ được nên vẫn là cột lưu, không phải số tính lúc đọc.
+    last_purchase_price: Mapped[float] = mapped_column(Numeric(18, 4), default=0)   # giá mua gần nhất
+    max_purchase_price: Mapped[float] = mapped_column(Numeric(18, 4), default=0)    # giá mua cao nhất
     vat: Mapped[float] = mapped_column(Numeric(5, 2), default=0)
     request_qty: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
     amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
     internal_unit: Mapped[str] = mapped_column(String(25), default="")
     amount_converted: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
     shipping_cost: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    # Phí phát sinh khi giao tới ĐÚNG kho người yêu cầu — tách khỏi `shipping_cost` (phí vận
+    # chuyển theo báo giá) vì hai khoản này thương lượng riêng và không phải lúc nào cũng có.
+    extra_shipping_cost: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    shipping_policy: Mapped[str] = mapped_column(String(255), default="")   # Chính sách vận chuyển
+    debt_policy: Mapped[str] = mapped_column(String(50), default="")        # Ngày công nợ (cùng danh sách với dòng NCC)
     delivery_time: Mapped[str] = mapped_column(String(100), default="")
     delivery_place: Mapped[str] = mapped_column(String(255), default="")
     quote_file: Mapped[str] = mapped_column(String(500), default="")
