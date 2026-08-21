@@ -210,10 +210,11 @@ Khai theo ba chiều: **pháp nhân · phòng ban · cá nhân**, mỗi dòng l�
 
 **Luật đọc phạm vi:**
 1. Các dòng *bao gồm* **cộng dồn**.
-2. Dòng *loại trừ* **luôn thắng**.
-3. **Không khai dòng nào = áp cho toàn bộ pháp nhân ban hành** — mọi phòng, mọi nhân sự của chính công ty đứng tên, và chỉ công ty đó.
+2. Phạm vi cụ thể hơn được ưu tiên: **cá nhân > phòng ban > pháp nhân**.
+3. Nếu cùng một cấp thì dòng *loại trừ* thắng. Vì vậy có thể loại cả phòng rồi cho phép lại một cá nhân trong phòng đó.
+4. **Không khai dòng nào = áp cho toàn bộ pháp nhân ban hành** — mọi phòng, mọi nhân sự của chính công ty đứng tên, và chỉ công ty đó.
 
-Luật 3 là mặc định thực dụng: gần như mọi văn bản chỉ lưu hành trong đúng công ty làm ra nó, bắt người soạn khai tay một dòng "pháp nhân = công ty mình" thì ai cũng quên, và văn bản ban hành xong nằm im không tới ai mà không có gì báo. Khai **bất kỳ** dòng nào là tắt mặc định này.
+Luật 4 là mặc định thực dụng: gần như mọi văn bản chỉ lưu hành trong đúng công ty làm ra nó, bắt người soạn khai tay một dòng "pháp nhân = công ty mình" thì ai cũng quên, và văn bản ban hành xong nằm im không tới ai mà không có gì báo. Khai **bất kỳ** dòng nào là tắt mặc định này.
 
 Chọn chiều **phòng ban bắt buộc kèm pháp nhân** — "Phòng Kế toán" ở tập đoàn 13 công ty là câu hỏi thiếu vế.
 

@@ -1,13 +1,4 @@
-import {
-  Columns3,
-  Eye,
-  EyeOff,
-  GripVertical,
-  Pin,
-  PinOff,
-  RotateCcw,
-  Scaling,
-} from 'lucide-react'
+import { Columns3, Eye, EyeOff, GripVertical, Pin, PinOff, RotateCcw, Scaling } from 'lucide-react'
 import { createPortal } from 'react-dom'
 
 import { Button } from '@/shared/ui/button'
@@ -92,7 +83,8 @@ export function ColumnVisibilityMenu<T>({
         <div data-column-list className="max-h-80 overflow-y-auto">
           {columns.map((column) => {
             const hidden = hiddenColumns.includes(column.key)
-            const pinned = pinnedColumns.includes(column.key)
+            const fixedRight = column.stickyRight === true
+            const pinned = !fixedRight && pinnedColumns.includes(column.key)
             // Cột `hideable: false` luôn phải hiện -> khóa nút ẩn, vẫn cho ghim.
             const canHide = column.hideable !== false
             const dropSide = drag?.overKey === column.key ? drag.side : null
@@ -117,8 +109,13 @@ export function ColumnVisibilityMenu<T>({
                 */}
                 <button
                   type="button"
-                  title="Kéo để đổi thứ tự cột"
-                  onPointerDown={(event) => startDrag(event, column.key, columnLabel(column.header))}
+                  disabled={fixedRight}
+                  title={fixedRight ? 'Cột này luôn nằm cuối bảng' : 'Kéo để đổi thứ tự cột'}
+                  onPointerDown={
+                    fixedRight
+                      ? undefined
+                      : (event) => startDrag(event, column.key, columnLabel(column.header))
+                  }
                   className={cn(
                     ICON_BUTTON,
                     'size-6 cursor-grab touch-none active:cursor-grabbing',
@@ -156,8 +153,15 @@ export function ColumnVisibilityMenu<T>({
 
                 <button
                   type="button"
+                  disabled={fixedRight}
                   onClick={() => onTogglePin(column.key)}
-                  title={pinned ? 'Bỏ ghim cột' : 'Ghim cột sang trái'}
+                  title={
+                    fixedRight
+                      ? 'Cột này được cố định bên phải'
+                      : pinned
+                        ? 'Bỏ ghim cột'
+                        : 'Ghim cột sang trái'
+                  }
                   aria-pressed={pinned}
                   className={cn(ICON_BUTTON, pinned && 'bg-background text-primary')}
                 >
@@ -189,7 +193,7 @@ export function ColumnVisibilityMenu<T>({
       {drag &&
         createPortal(
           <div
-            className="pointer-events-none fixed z-100 flex -translate-y-1/2 translate-x-3 items-center gap-1.5 rounded-md border bg-popover px-2 py-1 text-xs font-medium text-popover-foreground shadow-md"
+            className="pointer-events-none fixed z-100 flex translate-x-3 -translate-y-1/2 items-center gap-1.5 rounded-md border bg-popover px-2 py-1 text-xs font-medium text-popover-foreground shadow-md"
             style={{ left: drag.x, top: drag.y }}
           >
             <GripVertical className="size-3.5 text-muted-foreground" />

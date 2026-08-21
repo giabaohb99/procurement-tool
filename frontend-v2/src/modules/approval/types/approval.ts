@@ -114,6 +114,7 @@ export interface ApprovalFlow {
   version_no: number
   is_active: boolean
   company_id: number | null
+  company_name: string
   priority: number
   condition: string
   node_count: number

@@ -122,6 +122,32 @@ def test_bai1_khong_co_luong_nao_thi_tra_none_de_goi_duong_cu(db, seed):
     assert _trinh(db) is None
 
 
+def test_luong_rieng_phap_nhan_thang_luong_dung_chung_du_uu_tien_thap_hon(
+        db, seed, nguoi):
+    """Bản clone phải vào luồng của nơi nhận, không theo luồng chung của gốc."""
+    dung_chung = _luong(db, code="VB-CHUNG", priority=999)
+    _buoc(db, dung_chung, 1, nguoi["a"])
+    rieng = _luong(db, code="VB-CONG-TY-CON", company_id=88, priority=0)
+    _buoc(db, rieng, 1, nguoi["b"])
+
+    instance = _trinh(db, subject={"company_id": 88}, nguoi_nop=nguoi["nop"])
+
+    assert instance.flow_id == rieng.id
+    assert [row.assignee_employee_id for row in _dang_cho(db, instance)] == [nguoi["b"]]
+
+
+def test_khong_co_luong_rieng_thi_moi_dung_luong_dung_chung(db, seed, nguoi):
+    dung_chung = _luong(db, code="VB-CHUNG")
+    _buoc(db, dung_chung, 1, nguoi["a"])
+
+    instance = _trinh(db, subject={"company_id": 99}, nguoi_nop=nguoi["nop"])
+
+    assert instance.flow_id == dung_chung.id
+    assert flow_service.chon_luong(
+        db, ENTITY, {"company_id": 99}, chi_phap_nhan=True,
+    ) is None
+
+
 # ── Bài 2 · trùng người thì tự qua, và nói rõ là tự qua ─────────────────────
 
 def test_bai2_trung_nguoi_thi_tu_qua_va_ghi_ro_ly_do(db, seed, nguoi):

@@ -1,4 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Tags } from 'lucide-react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
 import { Button } from '@/shared/ui/button'
@@ -25,13 +27,17 @@ import {
 } from '../schemas/document-numbering-rule-schema'
 import {
   NUMBERING_DIRECTIONS,
+  NUMBERING_SEPARATORS,
   NUMBERING_TOKENS,
   type DocumentNumberingRule,
   type NumberingDirection,
 } from '../types/document-numbering-rule'
+import { IssueCodeDialog } from './issue-code-dialog'
 import { ScopeChecklist, ScopeModeCard } from './numbering-rule-scope-fields'
 
 const DEFAULT_NUMBERING_PATTERN = '{STT}/{Nam}/{LoaiVB}-{PhongBan}-{PhapNhan}'
+const NUMBERING_PARTS = [...NUMBERING_TOKENS, ...NUMBERING_SEPARATORS]
+const NUMBERING_PART_MIME = 'application/x-document-numbering-token'
 
 interface DocumentNumberingRuleFormProps {
   formId: string
@@ -58,6 +64,42 @@ function emptyValues(direction: NumberingDirection): DocumentNumberingRuleFormVa
   }
 }
 
+/** Chèn thẻ đúng tại vùng con trỏ đang chọn trong ô mẫu số hiệu. */
+function chenTheVaoMau(value: string, token: string, start: number, end: number) {
+  return `${value.slice(0, start)}${token}${value.slice(end)}`
+}
+
+interface NutMauSoProps {
+  item: { token: string; label: string }
+  daDung: boolean
+  locked: boolean
+  onClick: () => void
+}
+
+/** Một thẻ mã hoặc dấu phân cách — đều bấm và kéo thả được như nhau. */
+function NutMauSo({ item, daDung, locked, onClick }: NutMauSoProps) {
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant={daDung ? 'default' : 'secondary'}
+      disabled={locked}
+      draggable={!locked}
+      aria-pressed={daDung}
+      title={`${item.token} · Bấm để thêm cuối hoặc kéo vào mẫu`}
+      className={!locked ? 'cursor-grab active:cursor-grabbing' : undefined}
+      onDragStart={(event) => {
+        event.dataTransfer.effectAllowed = 'copy'
+        event.dataTransfer.setData(NUMBERING_PART_MIME, item.token)
+        event.dataTransfer.setData('text/plain', item.token)
+      }}
+      onClick={onClick}
+    >
+      {item.label}
+    </Button>
+  )
+}
+
 /**
  * Khai báo một quy tắc đánh số — hai card: mẫu số đánh ra sao, rồi áp cho ai.
  *
@@ -71,6 +113,7 @@ export function DocumentNumberingRuleForm({
   initialDirection,
   onSubmit,
 }: DocumentNumberingRuleFormProps) {
+  const [maDialogOpen, setMaDialogOpen] = useState(false)
   const form = useForm<DocumentNumberingRuleFormValues>({
     resolver: zodResolver(documentNumberingRuleSchema),
     defaultValues: emptyValues(initialDirection),
@@ -105,6 +148,10 @@ export function DocumentNumberingRuleForm({
 
   return (
     <Form {...form}>
+      {/* Mã của các thẻ nằm ngay tại form đang dùng chúng. Trước đây nút này ở
+          trang danh sách nên người dùng vào thêm/sửa quy tắc không tìm thấy. */}
+      <IssueCodeDialog open={maDialogOpen} onOpenChange={setMaDialogOpen} />
+
       <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         <Card>
           <CardContent className="space-y-5">
@@ -153,28 +200,82 @@ export function DocumentNumberingRuleForm({
               name="pattern"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Mẫu số hiệu</FormLabel>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <FormLabel>Mẫu số hiệu</FormLabel>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setMaDialogOpen(true)}
+                    >
+                      <Tags className="size-4" />
+                      Tùy chỉnh thêm
+                    </Button>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {NUMBERING_TOKENS.map((item) => (
-                      <Button
+                      <NutMauSo
                         key={item.token}
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        disabled={locked}
-                        title={item.token}
+                        item={item}
+                        daDung={field.value.includes(item.token)}
+                        locked={locked}
                         onClick={() => field.onChange(`${field.value}${item.token}`)}
-                      >
-                        {item.label}
-                      </Button>
+                      />
                     ))}
                   </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="mr-1 text-xs font-medium text-muted-foreground">
+                      Dấu phân cách
+                    </span>
+                    {NUMBERING_SEPARATORS.map((item) => (
+                      <NutMauSo
+                        key={item.token}
+                        item={item}
+                        daDung={field.value.includes(item.token)}
+                        locked={locked}
+                        onClick={() => field.onChange(`${field.value}${item.token}`)}
+                      />
+                    ))}
+                  </div>
+                  {!locked && (
+                    <FormDescription>
+                      Bấm để thêm vào cuối, hoặc kéo thả thẻ vào đúng vị trí trong mẫu.
+                    </FormDescription>
+                  )}
                   <FormControl>
                     <Input
                       className="font-mono"
                       placeholder="Ví dụ: {STT}/{Nam}/{LoaiVB}"
                       disabled={locked}
                       {...field}
+                      onDragOver={(event) => {
+                        const coThe = event.dataTransfer.types.includes(NUMBERING_PART_MIME)
+                        if (!locked && coThe) {
+                          event.preventDefault()
+                          event.dataTransfer.dropEffect = 'copy'
+                        }
+                      }}
+                      onDrop={(event) => {
+                        const token = event.dataTransfer.getData(NUMBERING_PART_MIME)
+                        if (locked || !NUMBERING_PARTS.some((item) => item.token === token)) {
+                          return
+                        }
+
+                        event.preventDefault()
+                        const input = event.currentTarget
+                        const start = input.selectionStart ?? field.value.length
+                        const end = input.selectionEnd ?? start
+                        const next = chenTheVaoMau(field.value, token, start, end)
+                        field.onChange(next)
+
+                        // React dựng lại value sau `field.onChange`; đặt con trỏ
+                        // ở ngay sau thẻ vừa thả trong nhịp vẽ kế tiếp.
+                        requestAnimationFrame(() => {
+                          const cursor = start + token.length
+                          input.focus()
+                          input.setSelectionRange(cursor, cursor)
+                        })
+                      }}
                     />
                   </FormControl>
                   <div className="rounded-md border border-dashed bg-muted/30 px-3 py-2 text-sm">

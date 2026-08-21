@@ -1,12 +1,13 @@
 """PHẠM VI ÁP DỤNG của văn bản (F01–F05).
 
-Ba quy tắc, và quy tắc thứ ba là thứ dễ làm sai nhất:
+Bốn quy tắc, và quy tắc ngoại lệ là thứ dễ làm sai nhất:
 
 1. Các dòng bao gồm cộng dồn.
-2. Loại trừ luôn thắng bao gồm.
-3. Không có dòng nào = áp cho TOÀN BỘ PHÁP NHÂN BAN HÀNH, và chỉ pháp nhân đó.
+2. Chiều cụ thể hơn thắng: cá nhân > phòng ban > pháp nhân.
+3. Cùng một chiều thì loại trừ thắng bao gồm.
+4. Không có dòng nào = áp cho TOÀN BỘ PHÁP NHÂN BAN HÀNH, và chỉ pháp nhân đó.
 
-Quy tắc 3 đổi ngày 19/08/2026 (trước đó là "không ai thuộc phạm vi"). Bắt khai
+Quy tắc 4 đổi ngày 19/08/2026 (trước đó là "không ai thuộc phạm vi"). Bắt khai
 tay một dòng "pháp nhân = công ty mình" cho gần như mọi văn bản thì ai cũng
 quên, và văn bản ban hành xong nằm im không tới ai. Mặc định mới vẫn không làm
 rò sang công ty khác — nó dừng đúng ở pháp nhân đứng tên văn bản.
@@ -77,7 +78,7 @@ def _van_ban(db, company_id: int, status: int = STATUS_EFFECTIVE, doc_id: int = 
     return doc
 
 
-# ── Quy tắc 3 · chưa khai gì thì áp cho đúng pháp nhân ban hành ─────────────
+# ── Quy tắc 4 · chưa khai gì thì áp cho đúng pháp nhân ban hành ─────────────
 def test_chua_khai_dong_nao_thi_ap_cho_ca_phap_nhan_ban_hanh(db, to_chuc):
     """Người của công ty A thấy văn bản của công ty A, người công ty B thì không."""
     _van_ban(db, to_chuc["con_a"].id)
@@ -174,7 +175,7 @@ def test_tap_doan_kem_co_gom_don_vi_con_thi_ap_cho_moi_cong_ty_con(db, to_chuc):
     assert scope_service.applies_to(db, DOC_ID, to_chuc["b"]) is True
 
 
-# ── Quy tắc 2 · loại trừ luôn thắng ─────────────────────────────────────────
+# ── Quy tắc 2–3 · ưu tiên độ cụ thể, cùng cấp thì loại trừ thắng ─────────────
 def test_loai_tru_thang_bao_gom_cung_chieu(db, to_chuc):
     _khai(db, dim=DIM_COMPANY, company_id=to_chuc["con_a"].id, mode=MODE_INCLUDE)
     _khai(db, dim=DIM_COMPANY, company_id=to_chuc["con_a"].id, mode=MODE_EXCLUDE)
@@ -198,6 +199,16 @@ def test_loai_tru_mot_phong_ban_khoi_pham_vi_toan_tap_doan(db, to_chuc):
 
     assert scope_service.applies_to(db, DOC_ID, to_chuc["a"]) is True
     assert scope_service.applies_to(db, DOC_ID, to_chuc["b"]) is False
+
+
+def test_bao_gom_ca_nhan_thang_loai_tru_phong_ban(db, to_chuc):
+    """Cá nhân được gọi tên là ngoại lệ của dòng loại trừ phòng rộng hơn."""
+    _khai(db, dim=DIM_COMPANY, company_id=to_chuc["con_a"].id, mode=MODE_INCLUDE)
+    _khai(db, dim=DIM_DEPARTMENT, company_id=to_chuc["con_a"].id,
+          department_id=to_chuc["kt_a"].id, mode=MODE_EXCLUDE)
+    _khai(db, dim=DIM_EMPLOYEE, employee_id=to_chuc["a"].id, mode=MODE_INCLUDE)
+
+    assert scope_service.applies_to(db, DOC_ID, to_chuc["a"]) is True
 
 
 # ── F05 · văn bản áp dụng cho tôi ───────────────────────────────────────────

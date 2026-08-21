@@ -19,7 +19,7 @@ from app.modules.document import clone_service, service
 from app.modules.document.clone_service import (CLONE_DRAFTING, CLONE_ISSUED,
                                                 CLONE_SENT, CLONE_STALE,
                                                 CLONE_SUBMITTED)
-from app.modules.document.model import STATUS_DRAFT
+from app.modules.document.model import STATUS_DRAFT, Document
 from app.modules.document.schema import DocumentCreate, VersionCreate
 from app.modules.document.scope_model import (DIM_COMPANY, DIM_DEPARTMENT,
                                               MODE_EXCLUDE, MODE_INCLUDE,
@@ -141,6 +141,34 @@ def test_len_phien_ban_moi_khong_de_them_ban_clone_thu_hai(db, nen):
     _ban_hanh(db, goc)
 
     assert len(clone_service.clones_of(db, goc.id)) == 1
+
+
+def test_ban_clone_len_phien_ban_moi_van_nam_duoi_dung_ban_goc(db, nen):
+    """Bản riêng 2.0 vẫn là cùng một văn bản, không thành dòng cha mới."""
+    from app.modules.document import version_service
+    from app.modules.document.version_model import DocumentVersion
+
+    goc = _tao_nhap(db, nen)
+    _pham_vi(db, goc.id, nen["a"].id)
+    _ban_hanh(db, goc)
+    clone = clone_service.clones_of(db, goc.id)[0]
+    _ban_hanh(db, clone)
+
+    document_count = db.query(Document.id).count()
+    version_service.open_new_version(db, clone, VersionCreate(
+        change_kind=CHANGE_MAJOR,
+        change_summary="Điều chỉnh cho pháp nhân nhận",
+    ), ACTOR)
+    _ban_hanh(db, clone)
+    db.refresh(clone)
+
+    assert db.query(Document.id).count() == document_count
+    assert clone.source_document_id == goc.id
+    assert [row.id for row in clone_service.clones_of(db, goc.id)] == [clone.id]
+    assert clone_service.clones_of(db, clone.id) == []
+    assert db.query(DocumentVersion).filter(
+        DocumentVersion.document_id == clone.id,
+    ).count() == 2
 
 
 def test_ban_clone_mang_so_hieu_cua_phap_nhan_con(db, nen):

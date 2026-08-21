@@ -11,6 +11,7 @@ Ba câu phải trả lời được, và đúng theo thứ tự này:
    trạng thái ở bảng phiên duyệt.
 """
 import pytest
+from fastapi import HTTPException
 
 from app.modules.approval import action_service, instance_service
 from app.modules.approval.flow_model import (APPROVER_EMPLOYEE, SKIP_NONE,
@@ -19,12 +20,13 @@ from app.modules.approval.flow_model import (APPROVER_EMPLOYEE, SKIP_NONE,
 from app.modules.approval.instance_model import (INSTANCE_APPROVED,
                                                  INSTANCE_RUNNING,
                                                  TASK_PENDING)
+from app.modules.company.model import Company
 from app.modules.doc_catalog.model import DocType
 from app.modules.document import service
 from app.modules.document.model import (STATUS_DRAFT, STATUS_EFFECTIVE,
                                         STATUS_SUBMITTED, Document)
 from app.modules.document.schema import DocumentCreate
-from app.modules.document.version_model import VERSION_SUBMITTED
+from app.modules.document.version_model import VERSION_DRAFT, VERSION_SUBMITTED
 from app.modules.employee.model import Employee
 
 ACTOR = 1
@@ -70,6 +72,22 @@ def _luong_hai_buoc(db, nguoi):
         db.add(ApprovalNode(flow_id=flow.id, seq=seq, name=f"Bước {seq}",
                             approver_kind=APPROVER_EMPLOYEE, approver_ref=str(nguoi[ten]),
                             skip_duplicate=SKIP_NONE, created_by=ACTOR, updated_by=ACTOR))
+    db.commit()
+    return flow
+
+
+def _luong_mot_buoc(db, code, name, company_id, employee_id):
+    flow = ApprovalFlow(
+        entity=ENTITY, code=code, name=name, company_id=company_id,
+        is_active=True, created_by=ACTOR, updated_by=ACTOR,
+    )
+    db.add(flow)
+    db.flush()
+    db.add(ApprovalNode(
+        flow_id=flow.id, seq=1, name="Ban hành",
+        approver_kind=APPROVER_EMPLOYEE, approver_ref=str(employee_id),
+        skip_duplicate=SKIP_NONE, created_by=ACTOR, updated_by=ACTOR,
+    ))
     db.commit()
     return flow
 
@@ -123,6 +141,85 @@ def test_bat_co_va_co_luong_thi_mo_phien_nhieu_buoc(db, canh):
     dang_cho = [row for row in instance_service.viec_cua_phien(db, phien.id)
                 if row.status == TASK_PENDING]
     assert [row.assignee_employee_id for row in dang_cho] == [canh["nguoi"]["a"]]
+
+
+def test_ban_goc_va_clone_mo_hai_luong_rieng_theo_phap_nhan(db, canh):
+    """Clone là văn bản của nơi nhận: phiên và người duyệt không dính bản gốc."""
+    child = Company(code="CON", name="Công ty con", issue_code="CON",
+                    level=2, is_active=True)
+    db.add(child)
+    db.flush()
+    child_approver = Employee(
+        code="DUYET_CON", full_name="Người duyệt công ty con",
+        company_id=child.id, department_id=canh["seed"].dept_id, is_active=True,
+    )
+    db.add(child_approver)
+    db.commit()
+
+    clone = service.create_document(db, DocumentCreate(
+        doc_type_id=canh["doc_type"].id,
+        company_id=child.id,
+        department_id=canh["seed"].dept_id,
+        owner_employee_id=canh["seed"].emp_req_id,
+        title="Quy chế bảo mật — bản công ty con",
+        content_html="<p>Nội dung riêng.</p>",
+    ), ACTOR)
+    clone.source_document_id = canh["doc"].id
+    db.commit()
+
+    _bat_co(db)
+    root_flow = _luong_mot_buoc(
+        db, "VB-ME", "Luồng pháp nhân gốc", canh["seed"].company_id,
+        canh["nguoi"]["a"],
+    )
+    child_flow = _luong_mot_buoc(
+        db, "VB-CON", "Luồng pháp nhân con", child.id, child_approver.id,
+    )
+
+    service.submit(db, canh["doc"], ACTOR)
+    service.submit(db, clone, ACTOR)
+    root_instance = instance_service.phien_dang_chay(db, ENTITY, canh["doc"].id)
+    child_instance = instance_service.phien_dang_chay(db, ENTITY, clone.id)
+
+    assert root_instance.flow_id == root_flow.id
+    assert child_instance.flow_id == child_flow.id
+    assert root_instance.id != child_instance.id
+    assert [row.assignee_employee_id for row in instance_service.viec_cua_phien(
+        db, root_instance.id) if row.status == TASK_PENDING] == [canh["nguoi"]["a"]]
+    assert [row.assignee_employee_id for row in instance_service.viec_cua_phien(
+        db, child_instance.id) if row.status == TASK_PENDING] == [child_approver.id]
+
+
+def test_clone_thieu_luong_rieng_bi_chan_truoc_khi_doi_trang_thai(db, canh):
+    child = Company(code="CON", name="Công ty con", issue_code="CON",
+                    level=2, is_active=True)
+    db.add(child)
+    db.commit()
+    clone = service.create_document(db, DocumentCreate(
+        doc_type_id=canh["doc_type"].id,
+        company_id=child.id,
+        department_id=canh["seed"].dept_id,
+        owner_employee_id=canh["seed"].emp_req_id,
+        title="Quy chế của công ty con",
+        content_html="<p>Nội dung riêng.</p>",
+    ), ACTOR)
+    clone.source_document_id = canh["doc"].id
+    db.commit()
+
+    _bat_co(db)
+    #  Chỉ có luồng dùng chung: bản gốc dùng được, clone thì không được phép
+    #  rơi vào đây vì pháp nhân con phải có đường ký riêng của mình.
+    _luong_hai_buoc(db, canh["nguoi"])
+
+    with pytest.raises(HTTPException) as error:
+        service.submit(db, clone, ACTOR)
+
+    assert error.value.status_code == 400
+    assert "chưa có luồng duyệt Văn bản riêng" in str(error.value)
+    db.refresh(clone)
+    assert clone.status == STATUS_DRAFT
+    assert service.open_version(db, clone).status == VERSION_DRAFT
+    assert instance_service.phien_dang_chay(db, ENTITY, clone.id) is None
 
 
 def test_duyet_het_cac_buoc_thi_van_ban_duoc_BAN_HANH_that(db, canh):

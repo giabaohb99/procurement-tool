@@ -76,10 +76,16 @@ def test_hai_luong_khai_cho_hai_phap_nhan_khac_nhau_thi_khong_trung(db):
     assert flow_service.canh_bao_trung_mac_dinh(db, cong_ty_b) == ""
 
 
-def test_luong_toan_he_va_luong_theo_phap_nhan_thi_van_che_nhau(db):
-    """Luồng để trống pháp nhân áp cho MỌI pháp nhân, nên nó và luồng của một
-    pháp nhân cụ thể vẫn tranh nhau ở đúng pháp nhân đó."""
+def test_luong_toan_he_khong_che_luong_rieng_cua_phap_nhan(db):
+    """Luồng riêng luôn được xét trước; luồng toàn hệ chỉ là đường lùi."""
     _luong(db, "Ban hành toàn hệ")
     rieng = _luong(db, "Ban hành — Công ty A", company_id=1)
 
-    assert flow_service.canh_bao_trung_mac_dinh(db, rieng) != ""
+    assert flow_service.canh_bao_trung_mac_dinh(db, rieng) == ""
+
+
+def test_hai_luong_mac_dinh_cung_phap_nhan_van_canh_bao(db):
+    _luong(db, "Ban hành A — cũ", company_id=1, priority=5)
+    moi = _luong(db, "Ban hành A — mới", company_id=1, priority=1)
+
+    assert flow_service.canh_bao_trung_mac_dinh(db, moi) != ""

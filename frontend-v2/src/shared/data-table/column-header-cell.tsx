@@ -18,8 +18,14 @@ interface ColumnHeaderCellProps<T> {
   dragging?: boolean
   /** Cột kéo sẽ chèn vào trước/sau ô này; `null` = không phải đích đang trỏ. */
   dropSide?: ColumnDropSide | null
+  /** `false` với cột thao tác cố định bên phải: vẫn cho đổi độ rộng, không cho dời. */
+  draggable?: boolean
   /** Cột đang ghim: khoảng cách dính tính từ mép trái bảng. */
   pinnedOffset?: number
+  /** Cột thao tác cố định: khoảng cách dính tính từ mép phải bảng. */
+  pinnedRightOffset?: number
+  /** Bỏ vạch phải khi ô kế tiếp đã tự vẽ vạch trái (tránh hai border sát nhau). */
+  suppressRightDivider?: boolean
   /** Nền của cột do người dùng tự tô (xem `column-color-palette.ts`). */
   colorStyle?: CSSProperties
   sortDir?: 'asc' | 'desc' | null
@@ -38,7 +44,10 @@ export function ColumnHeaderCell<T>({
   minWidth,
   dragging,
   dropSide,
+  draggable = true,
   pinnedOffset,
+  pinnedRightOffset,
+  suppressRightDivider = false,
   colorStyle,
   sortDir,
   onSort,
@@ -53,14 +62,24 @@ export function ColumnHeaderCell<T>({
   return (
     <TableHead
       data-column-key={column.key}
-      style={{ width, left: pinnedOffset, ...colorStyle }}
+      style={{
+        width,
+        left: pinnedOffset,
+        right: pinnedRightOffset,
+        ...(suppressRightDivider ? { boxShadow: 'inset 0 -1px 0 0 var(--border)' } : undefined),
+        ...colorStyle,
+      }}
       className={cn(
-        'select-none transition-[opacity,box-shadow] duration-150',
-        resizing ? 'cursor-col-resize' : 'cursor-grab active:cursor-grabbing',
+        'transition-[opacity,box-shadow] duration-150 select-none',
+        resizing
+          ? 'cursor-col-resize'
+          : draggable
+            ? 'cursor-grab active:cursor-grabbing'
+            : 'cursor-default',
         dragging && 'opacity-40',
         className,
       )}
-      onPointerDown={onDragStart}
+      onPointerDown={draggable ? onDragStart : undefined}
     >
       <div
         className={cn(
@@ -93,11 +112,7 @@ export function ColumnHeaderCell<T>({
       </div>
 
       {dropSide && <ColumnDropIndicator side={dropSide} />}
-      <ColumnResizeHandle
-        minWidth={minWidth}
-        onResize={onResize}
-        onResizingChange={setResizing}
-      />
+      <ColumnResizeHandle minWidth={minWidth} onResize={onResize} onResizingChange={setResizing} />
     </TableHead>
   )
 }

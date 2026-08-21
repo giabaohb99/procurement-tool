@@ -100,12 +100,19 @@ def _danh_lai_nhanh(db: Session, cung_chang: list[ApprovalNode], actor: int) -> 
     return f"n{len(cung_chang) + 1}"
 
 
-def chon_luong(db: Session, entity: str, subject: dict) -> ApprovalFlow | None:
+def chon_luong(db: Session, entity: str, subject: dict, *,
+               chi_phap_nhan: bool = False) -> ApprovalFlow | None:
     """Luồng nào áp cho phiếu này.
 
-    Xét theo `priority` giảm dần; luồng có điều kiện mà khớp thì thắng, luồng
-    không khai điều kiện là luồng mặc định và đứng cuối hàng. Không có luồng nào
-    khớp thì trả `None` — người gọi quay về đường duyệt cũ.
+    Luồng khai ĐÚNG pháp nhân của phiếu được xét trước toàn bộ luồng dùng chung,
+    bất kể độ ưu tiên. Đây là chốt để bản clone ở pháp nhân con chạy luồng riêng
+    của nơi nhận, không vô tình đi theo luồng dùng chung đang phục vụ bản gốc.
+
+    Trong từng nhóm vẫn xét theo `priority` giảm dần: luồng có điều kiện mà khớp
+    thì thắng, luồng không khai điều kiện là mặc định và đứng cuối hàng. Không
+    có luồng riêng nào khớp mới rơi về luồng dùng chung; không có cả hai thì trả
+    `None` để người gọi quay về đường duyệt cũ. `chi_phap_nhan=True` tắt đường
+    lùi đó — bản clone dùng chốt này để bắt buộc chạy luồng riêng của nơi nhận.
     """
     ung_vien = (
         db.query(ApprovalFlow)
@@ -115,19 +122,28 @@ def chon_luong(db: Session, entity: str, subject: dict) -> ApprovalFlow | None:
     )
 
     company_id = subject.get("company_id")
-    mac_dinh: ApprovalFlow | None = None
 
-    for flow in ung_vien:
-        #  Luồng khai riêng cho một pháp nhân thì chỉ pháp nhân đó dùng.
-        if flow.company_id and str(flow.company_id) != str(company_id):
-            continue
-        if not (flow.condition or "").strip():
-            mac_dinh = mac_dinh or flow
-            continue
-        if condition_service.matches(flow.condition, subject):
-            return flow
+    def chon_trong(rows: list[ApprovalFlow]) -> ApprovalFlow | None:
+        mac_dinh: ApprovalFlow | None = None
+        for flow in rows:
+            if not (flow.condition or "").strip():
+                mac_dinh = mac_dinh or flow
+                continue
+            if condition_service.matches(flow.condition, subject):
+                return flow
+        return mac_dinh
 
-    return mac_dinh
+    rieng = [
+        flow for flow in ung_vien
+        if flow.company_id and str(flow.company_id) == str(company_id)
+    ]
+    da_chon = chon_trong(rieng)
+    if da_chon is not None:
+        return da_chon
+    if chi_phap_nhan:
+        return None
+
+    return chon_trong([flow for flow in ung_vien if not flow.company_id])
 
 
 def luong_mac_dinh_bi_che(db: Session, flow: ApprovalFlow) -> list[ApprovalFlow]:
@@ -157,10 +173,12 @@ def luong_mac_dinh_bi_che(db: Session, flow: ApprovalFlow) -> list[ApprovalFlow]
     return [
         khac for khac in cung_pham_vi
         if not (khac.condition or "").strip()
-        #  Luồng khai riêng cho một pháp nhân chỉ đụng nhau khi CÙNG pháp nhân
-        #  (hoặc cả hai đều để trống = áp cho mọi pháp nhân).
-        and (not flow.company_id or not khac.company_id
-             or str(flow.company_id) == str(khac.company_id))
+        #  Luồng riêng được xét trước luồng dùng chung nên hai nhóm KHÔNG che
+        #  nhau. Chỉ hai luồng cùng để trống, hoặc cùng đúng một pháp nhân, mới
+        #  thật sự tranh cùng một vị trí mặc định.
+        and ((not flow.company_id and not khac.company_id)
+             or (flow.company_id and khac.company_id
+                 and str(flow.company_id) == str(khac.company_id)))
     ]
 
 

@@ -32,7 +32,7 @@ from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
 
-from . import (access_service, approval_bridge, import_service, numbering,
+from . import (access_service, approval_bridge, duplicate_service, import_service, numbering,
                serializer, service, version_service)
 from .model import ORIGIN_INTERNAL, Document
 from .version_model import DocumentVersion
@@ -334,6 +334,23 @@ def create_document(
     doc = service.create_document(db, data, user.id)
     record(db, user.id, "document", doc.id, "create", f"Tạo văn bản {doc.title}")
     return success(serializer.serialize(db, doc), "Đã tạo văn bản", 201)
+
+
+@router.post("/{document_id}/copy")
+def duplicate_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(require("document", "create")),
+):
+    """Tạo bản nháp độc lập cùng pháp nhân để dựng nhanh dữ liệu thử.
+
+    Đây KHÔNG phải API clone xuống pháp nhân con ở ``clone_controller``.
+    """
+    source = _load(db, document_id, user)
+    copied = duplicate_service.duplicate(db, source, user.id)
+    record(db, user.id, "document", copied.id, "create",
+           f"Sao chép từ văn bản #{source.id}: {source.title}")
+    return success(serializer.serialize(db, copied), "Đã tạo bản sao văn bản", 201)
 
 
 @router.patch("/{document_id}")

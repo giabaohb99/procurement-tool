@@ -51,6 +51,7 @@ import { DocumentScopeCard } from '../components/document-scope-card'
 import { DocumentSignatureCard } from '../components/document-signature-card'
 import { DocumentAttachmentList } from '../components/document-attachment-list'
 import { DocumentAutosaveStatus } from '../components/document-autosave-status'
+import { DocumentCopyAction } from '../components/document-copy-action'
 import { DocumentRecordForm } from '../components/document-record-form'
 import { DocumentVersionBanner } from '../components/document-version-banner'
 import { DocumentVersionTab } from '../components/document-version-tab'
@@ -178,6 +179,7 @@ export function DocumentDetailPage() {
   //  Ký là hành vi PHÊ DUYỆT, không phải sửa nội dung — gác bằng `approve` đúng
   //  như backend làm.
   const canApprove = can('document', 'approve')
+  const canCreate = can('document', 'create')
   const canWrite = permissions?.write ?? false
   const canDelete = permissions?.delete ?? false
 
@@ -426,6 +428,8 @@ export function DocumentDetailPage() {
                 Sửa số hiệu
               </Button>
             )}
+
+            <DocumentCopyAction documentId={documentId} canCreate={canCreate} />
 
             {/* Luồng duyệt MỘT BƯỚC tạm thời — P3 thay bằng bộ máy chung. */}
             {isDraft && canWrite && (

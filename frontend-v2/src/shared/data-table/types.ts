@@ -29,6 +29,12 @@ export interface DataTableColumn<T> {
    */
   defaultPinned?: boolean
   /**
+   * Cột nghiệp vụ được CỐ ĐỊNH bên phải và luôn xếp cuối bảng. Khác
+   * `defaultPinned`, vị trí này do màn hình quy định nên người dùng không thể
+   * kéo hoặc ghim nó sang trái. Dùng cho cột thao tác dạng icon.
+   */
+  stickyRight?: boolean
+  /**
    * `true` = cho phép chữ dài tự xuống dòng thay vì cắt bằng dấu ba chấm "…".
    * Thích hợp cho cột Tên, Nhà cung cấp, Địa chỉ, Ghi chú.
    */

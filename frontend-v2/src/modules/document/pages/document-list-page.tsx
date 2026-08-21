@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { downloadFile } from '@/core/api'
 import { PermissionGate } from '@/core/authorization/permission-gate'
+import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
 import { ConditionalFilter, FilterProvider, useFilterQuery } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -25,18 +26,13 @@ import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { toast } from 'sonner'
 
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import { DOCUMENT_LIST_FILTER_FIELDS } from '../config/document-list-filter-fields'
+import { DocumentCopyAction } from '../components/document-copy-action'
 import { effectiveLabel } from '../helpers/document-status'
 import { useActiveDocumentTypes } from '../hooks/use-document-types'
 import { useDocuments } from '../hooks/use-documents'
@@ -72,6 +68,8 @@ export function DocumentListPage() {
  */
 function DocumentListContent() {
   const navigate = useNavigate()
+  const { can } = usePermission()
+  const canCreate = can('document', 'create')
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [typeId, setTypeId] = useUrlParamState('type', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
@@ -147,17 +145,14 @@ function DocumentListContent() {
   //  thường cũng là `null`, mà `null === null` là TRUE — so thẳng thì lúc chưa
   //  bung dòng nào, CẢ BẢNG bị đánh dấu là bản riêng.
   const laConDangBung = useCallback(
-    (row: DocumentRecord) =>
-      dongDangBung !== null && row.source_document_id === dongDangBung,
+    (row: DocumentRecord) => dongDangBung !== null && row.source_document_id === dongDangBung,
     [dongDangBung],
   )
 
   const rows = useMemo(() => {
     const items = data?.items ?? []
     if (!dongDangBung) return items
-    const con = (banRieng?.items ?? []).filter(
-      (row) => row.source_document_id === dongDangBung,
-    )
+    const con = (banRieng?.items ?? []).filter((row) => row.source_document_id === dongDangBung)
 
     return items.flatMap((row) => (row.id === dongDangBung ? [row, ...con] : [row]))
   }, [data?.items, banRieng?.items, dongDangBung])
@@ -197,10 +192,7 @@ function DocumentListContent() {
                   }}
                 >
                   <ChevronRight
-                    className={cn(
-                      'transition-transform',
-                      dongDangBung === row.id && 'rotate-90',
-                    )}
+                    className={cn('transition-transform', dongDangBung === row.id && 'rotate-90')}
                   />
                 </Button>
               ) : (
@@ -219,9 +211,7 @@ function DocumentListContent() {
                 )}
               >
                 {/* Chưa duyệt thì chưa có số — nói rõ chứ đừng để ô trống. */}
-                {row.display_code || (
-                  <span className="text-muted-foreground">Chưa cấp số</span>
-                )}
+                {row.display_code || <span className="text-muted-foreground">Chưa cấp số</span>}
               </span>
             </div>
           )
@@ -231,9 +221,7 @@ function DocumentListContent() {
         key: 'book_number_display',
         header: 'Số vào sổ',
         width: 130,
-        cell: (row) => (
-          <span className="tabular-nums">{row.book_number_display}</span>
-        ),
+        cell: (row) => <span className="tabular-nums">{row.book_number_display}</span>,
       },
       { key: 'title', header: 'Tên văn bản', width: 340, cell: (row) => row.title },
       {
@@ -358,8 +346,19 @@ function DocumentListContent() {
         align: 'right',
         cell: (row) => (row.attachment_count ? String(row.attachment_count) : ''),
       },
+      {
+        key: 'copy_action',
+        header: 'Thao tác',
+        width: 84,
+        align: 'center',
+        hideable: false,
+        stickyRight: true,
+        cell: (row) => (
+          <DocumentCopyAction documentId={row.id} canCreate={canCreate} placement="row" />
+        ),
+      },
     ],
-    [dongDangBung, laConDangBung, choToiDuyet],
+    [dongDangBung, laConDangBung, choToiDuyet, canCreate],
   )
 
   return (

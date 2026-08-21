@@ -77,6 +77,9 @@ export const documentApi = {
   create: (payload: DocumentInput & { content_html?: string }) =>
     apiPost<DocumentRecord>(DOCUMENT_URL, payload),
 
+  /** Tạo bản nháp độc lập cùng pháp nhân để dựng nhanh dữ liệu thử. */
+  copy: (id: number) => apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/copy`, {}),
+
   update: (id: number, payload: Partial<DocumentInput>) =>
     apiPatch<DocumentRecord>(`${DOCUMENT_URL}/${id}`, payload),
 

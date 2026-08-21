@@ -63,12 +63,15 @@ def ghi_dau_vet(db: Session, instance: ApprovalInstance, action: int, actor: int
 
 def bat_dau(db: Session, entity: str, entity_id: int, subject: dict,
             submitter_employee_id: int | None, actor: int,
-            entity_code: str = "", entity_title: str = "") -> ApprovalInstance | None:
+            entity_code: str = "", entity_title: str = "", *,
+            chi_luong_phap_nhan: bool = False) -> ApprovalInstance | None:
     """Trình một phiếu vào bộ máy. `None` = không có luồng nào áp, gọi đường cũ."""
     if phien_dang_chay(db, entity, entity_id):
         raise HTTPException(400, "Phiếu này đang có một phiên duyệt chưa kết thúc")
 
-    flow = flow_service.chon_luong(db, entity, subject)
+    flow = flow_service.chon_luong(
+        db, entity, subject, chi_phap_nhan=chi_luong_phap_nhan,
+    )
     if flow is None:
         return None
 

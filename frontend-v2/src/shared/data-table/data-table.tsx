@@ -4,13 +4,7 @@ import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { Button } from '@/shared/ui/button'
 import { Skeleton } from '@/shared/ui/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow,
-} from '@/shared/ui/table'
+import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/shared/ui/table'
 import { cn } from '@/shared/utils/cn'
 import { columnColorStyle } from './column-color-palette'
 import { ColumnHeaderCell } from './column-header-cell'
@@ -145,8 +139,7 @@ export function DataTable<T>({
   const tableRef = useRef<HTMLTableElement>(null)
 
   const columnCount = visibleColumns.length
-  const widthOf = (column: DataTableColumn<T>) =>
-    layout.columnWidths[column.key] ?? column.width
+  const widthOf = (column: DataTableColumn<T>) => layout.columnWidths[column.key] ?? column.width
 
   /**
    * Cột ghim theo đúng thứ tự đang hiện (chúng luôn đứng đầu — xem
@@ -161,8 +154,20 @@ export function DataTable<T>({
     return keys
   }, [visibleColumns, layout.pinnedColumns])
 
-  const { headerRowRef, pinnedOffsets, scrolledX } = usePinnedOffsets(pinnedKeys)
+  const pinnedRightKeys = useMemo(
+    () => visibleColumns.filter((column) => column.stickyRight).map((column) => column.key),
+    [visibleColumns],
+  )
+
+  const { headerRowRef, pinnedOffsets, pinnedRightOffsets, scrolledX } = usePinnedOffsets(
+    pinnedKeys,
+    pinnedRightKeys,
+  )
   const lastPinnedKey = pinnedKeys.at(-1)
+  const beforePinnedRightKey = useMemo(() => {
+    const firstRightIndex = visibleColumns.findIndex((column) => column.stickyRight)
+    return firstRightIndex > 0 ? visibleColumns[firstRightIndex - 1]?.key : undefined
+  }, [visibleColumns])
 
   /**
    * Co MỌI cột đang hiện cho vừa nội dung — như nháy đúp vào từng vạch kéo giãn
@@ -190,23 +195,36 @@ export function DataTable<T>({
    * phải có nền ĐỤC — xem `ROW_BG`), nếu để trong suốt thì phần bảng cuộn qua
    * bên dưới sẽ lộ xuyên qua cột đang dính.
    */
-  const pinClass = (key: string) =>
-    pinnedKeys.includes(key) &&
-    cn(
-      // MỌI ô ghim đều tắt `border-r` và tự vẽ vạch bằng `inset shadow`: ô dính
-      // nằm đè lên ô kế bên, để cả hai cùng có đường kẻ thì thành vạch đôi.
-      'sticky z-20 border-r-0 bg-inherit',
-      // Vạch luôn MẢNH 1px như mọi cột khác — vạch dày ở cột ghim cuối trông
-      // như bị kẻ viền chồng lên nhau. Ranh giới phần đứng yên / phần đang trôi
-      // báo bằng bóng đổ, và chỉ khi bảng đã cuộn ngang.
-      'shadow-[inset_-1px_0_0_0_var(--border)]',
-      key === lastPinnedKey &&
-        scrolledX &&
-        'shadow-[inset_-1px_0_0_0_var(--border),6px_0_8px_-6px_rgb(0_0_0/0.18)]',
-    )
+  const pinClass = (key: string) => {
+    if (pinnedKeys.includes(key)) {
+      return cn(
+        // MỌI ô ghim đều tắt `border-r` và tự vẽ vạch bằng `inset shadow`: ô dính
+        // nằm đè lên ô kế bên, để cả hai cùng có đường kẻ thì thành vạch đôi.
+        'sticky z-20 border-r-0 bg-inherit',
+        // Vạch luôn MẢNH 1px như mọi cột khác — vạch dày ở cột ghim cuối trông
+        // như bị kẻ viền chồng lên nhau. Ranh giới phần đứng yên / phần đang trôi
+        // báo bằng bóng đổ, và chỉ khi bảng đã cuộn ngang.
+        'shadow-[inset_-1px_0_0_0_var(--border)]',
+        key === lastPinnedKey &&
+          scrolledX &&
+          'shadow-[inset_-1px_0_0_0_var(--border),6px_0_8px_-6px_rgb(0_0_0/0.18)]',
+      )
+    }
+
+    if (pinnedRightKeys.includes(key)) {
+      // Border thật được cơ chế `border-collapse` gộp với lưới của cột kế bên
+      // thành đúng MỘT nét. Không dùng shadow: lúc đè lên dữ liệu cuộn ngang,
+      // shadow + border của bảng phía dưới sẽ trông như hai vạch song song.
+      return 'sticky z-20 border-r-0 border-l bg-inherit'
+    }
+
+    return undefined
+  }
 
   /** `left` của ô dính; `undefined` nếu cột không ghim (hoặc chưa đo xong). */
   const pinOffset = (key: string) => pinnedOffsets[key]
+  /** `right` của ô thao tác cố định bên phải. */
+  const pinRightOffset = (key: string) => pinnedRightOffsets[key]
 
   return (
     <div className={cn('flex flex-col', fillHeight && 'min-h-0 flex-1')}>
@@ -288,7 +306,10 @@ export function DataTable<T>({
                   className={cn(HEAD_CELL, alignClass(column.align), pinClass(column.key))}
                   colorStyle={columnColorStyle(layout.columnColors[column.key], 'head')}
                   pinnedOffset={pinOffset(column.key)}
+                  pinnedRightOffset={pinRightOffset(column.key)}
+                  suppressRightDivider={column.key === beforePinnedRightKey}
                   minWidth={column.minWidth ?? DEFAULT_MIN_WIDTH}
+                  draggable={!column.stickyRight}
                   dragging={drag?.fromKey === column.key}
                   dropSide={drag?.overKey === column.key ? drag.side : null}
                   sortDir={sortBy === column.key ? sortDir : null}
@@ -324,10 +345,7 @@ export function DataTable<T>({
 
             {!isLoading && isError && (
               <TableRow>
-                <TableCell
-                  colSpan={columnCount}
-                  className={cn(SPAN_CELL, 'text-destructive')}
-                >
+                <TableCell colSpan={columnCount} className={cn(SPAN_CELL, 'text-destructive')}>
                   {errorMessage}
                 </TableCell>
               </TableRow>
@@ -335,10 +353,7 @@ export function DataTable<T>({
 
             {!isLoading && !isError && rows?.length === 0 && (
               <TableRow>
-                <TableCell
-                  colSpan={columnCount}
-                  className={cn(SPAN_CELL, 'text-muted-foreground')}
-                >
+                <TableCell colSpan={columnCount} className={cn(SPAN_CELL, 'text-muted-foreground')}>
                   {emptyMessage}
                 </TableCell>
               </TableRow>
@@ -360,15 +375,13 @@ export function DataTable<T>({
                         style={{
                           width: widthOf(column),
                           left: pinOffset(column.key),
+                          right: pinRightOffset(column.key),
+                          borderRightWidth: column.key === beforePinnedRightKey ? 0 : undefined,
                           // Màu cột đặt SAU nền của hàng: ô đã tô màu giữ nguyên
                           // màu đó kể cả khi rê chuột, đúng ý "đánh dấu cột".
                           ...columnColorStyle(layout.columnColors[column.key], 'cell'),
                         }}
-                        className={cn(
-                          BODY_CELL,
-                          alignClass(column.align),
-                          pinClass(column.key),
-                        )}
+                        className={cn(BODY_CELL, alignClass(column.align), pinClass(column.key))}
                       >
                         {/*
                           Bọc `truncate` giống ô tiêu đề: kéo cột hẹp lại thì chữ
@@ -378,9 +391,7 @@ export function DataTable<T>({
                         */}
                         <div
                           className={cn(
-                            column.wrap
-                              ? 'break-words whitespace-normal leading-snug'
-                              : 'truncate',
+                            column.wrap ? 'leading-snug break-words whitespace-normal' : 'truncate',
                           )}
                           title={typeof content === 'string' ? content : undefined}
                         >
@@ -401,7 +412,7 @@ export function DataTable<T>({
           hình, khác ảnh kéo mờ và trễ nhịp của HTML5 drag-and-drop. */}
       {drag && (
         <div
-          className="pointer-events-none fixed z-50 -translate-y-1/2 translate-x-3 rounded-md border bg-popover px-2 py-1 text-xs font-medium text-popover-foreground shadow-md"
+          className="pointer-events-none fixed z-50 translate-x-3 -translate-y-1/2 rounded-md border bg-popover px-2 py-1 text-xs font-medium text-popover-foreground shadow-md"
           style={{ left: drag.x, top: drag.y }}
         >
           {drag.label}
