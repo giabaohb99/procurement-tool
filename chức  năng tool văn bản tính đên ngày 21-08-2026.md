@@ -226,6 +226,7 @@ Toàn bộ đã kiểm bằng **trình duyệt thật** (đăng nhập, thao tá
 | 7  | Phạm vi người xem sau ban hành | Đã phủ 4 ca cho cả bản gốc và clone: toàn pháp nhân; trừ cá nhân; trừ phòng; trừ phòng nhưng cho phép lại một cá nhân | Test tham số hóa `test_pham_vi_ban_hanh_theo_phap_nhan.py` |
 | 8  | Thiết lập mẫu số hiệu | Chuyển cấu hình mã tùy chỉnh vào đúng form quy tắc; đổi nhãn thành **Tùy chỉnh thêm**; thẻ được highlight, kéo thả và chèn dấu phân cách | Test form quy tắc đánh số và Chrome DevTools |
 | 9  | Tiến trình và lịch sử phê duyệt | Khối các chặng và activity history đều dùng timeline dọc; chờ xử lý nằm đầu, mới nhất trước, title/subtitle rõ và có rail nối node | Chrome đúng URL `localhost:5174/document/documents/212?tab=approval`; rail chặng 2px và rail lịch sử 2px màu `#00aeef` |
+| 10 | Email khi ban hành văn bản | Mỗi thành viên thuộc phạm vi nhận chuông và email có số hiệu, trích yếu, loại, pháp nhân, phòng chủ trì, phiên bản, ngày hiệu lực và link mở **chỉ đọc**; luật loại trừ/cho phép lại dùng chung với màn “Áp dụng cho tôi” | Test 4 ca phạm vi + lỗi hàng đợi; Chrome DevTools kiểm `?readonly=1` khóa editor, form và toàn bộ nút ghi |
 
 ### Trạng thái mã nguồn tại thời điểm cập nhật
 
@@ -237,5 +238,6 @@ Toàn bộ đã kiểm bằng **trình duyệt thật** (đăng nhập, thao tá
 - Backend trọng điểm: **99/99 ca đạt** cho phạm vi ban hành, bản clone, quyền truy cập và bộ máy duyệt.
 - Frontend: **72 tệp kiểm thử, 448/448 ca đạt**; TypeScript và ESLint đạt.
 - Chrome DevTools trên đúng `localhost:5174/document/documents/212?tab=approval`: timeline chặng và lịch sử đều có rail 2px, không tràn ngang, không có lỗi console hay request thất bại.
+- Email ban hành: backend **1093/1093 ca đạt**; worker đã nhận task `notification.send_email`. Chrome DevTools mở văn bản #214 qua `?readonly=1`: không còn nút ghi, editor không editable, trường thông tin bị khóa, không có lỗi console/request.
 
 ---

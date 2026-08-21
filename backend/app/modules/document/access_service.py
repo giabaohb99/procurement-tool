@@ -247,6 +247,17 @@ def can(db: Session, doc: Document, user, profile: dict, action: str = "read") -
         if EFFECT_ALLOW in effects:
             return True
 
+    #  Người nằm trong PHẠM VI ÁP DỤNG phải mở được chính văn bản đã ban hành
+    #  từ chuông/email, kể cả vai trò của họ không có phạm vi đọc phân hệ Văn
+    #  bản. Khe này CHỈ cấp đọc; dòng cấm đích danh ở trên vẫn thắng tuyệt đối.
+    if action == "read" and getattr(user, "employee_id", None):
+        from app.modules.employee.model import Employee
+        from . import scope_service
+
+        employee = db.get(Employee, user.employee_id)
+        if employee and employee.is_active and scope_service.applies_to(db, doc.id, employee):
+            return True
+
     #  Thành viên sổ chứa văn bản này.
     books = _book_ids(profile, action)
     if books is not None and doc.book_id:

@@ -159,6 +159,65 @@ HTML_LAYOUT = """
 </html>
 """
 
+
+# Email phát hành văn bản dùng một mẫu riêng, không dùng ``HTML_LAYOUT`` của
+# luồng mua hàng: người nhận chỉ cần ĐỌC văn bản đã chốt, không có thao tác xử
+# lý/duyệt nào trong email này.
+DOCUMENT_ISSUED_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ subject }}</title>
+</head>
+<body style="margin:0; padding:0; background:#f8fafc; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#172554;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px; background:#f8fafc;">
+    <tr><td align="center">
+      <table role="presentation" width="650" cellpadding="0" cellspacing="0" style="width:650px; max-width:100%; overflow:hidden; background:#ffffff; border:1px solid #dbe4f0; border-radius:10px;">
+        <tr>
+          <td style="padding:20px 32px; background:#0098db; border-bottom:3px solid #f5871f; color:#ffffff;">
+            <strong style="font-size:18px; letter-spacing:.5px;">DEGO HOLDING</strong>
+            <span style="float:right; font-size:13px; color:#e0f2fe;">HỆ THỐNG VĂN BẢN</span>
+          </td>
+        </tr>
+        <tr><td style="padding:36px 32px;">
+          <p style="margin:0 0 14px; font-size:15px; font-weight:600;">Kính gửi {{ recipient_name }},</p>
+          <p style="margin:0 0 22px; font-size:14px; line-height:1.65; color:#475569;">
+            Một văn bản thuộc phạm vi áp dụng của Anh/Chị vừa được ban hành. Thông tin văn bản như sau:
+          </p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:26px; background:#f1f5f9; border-radius:8px; font-size:14px;">
+            <tr><td width="34%" style="padding:18px 10px 8px 22px; color:#64748b;">Số hiệu</td><td style="padding:18px 22px 8px 10px; font-weight:700; color:#0369a1;">{{ doc_code }}</td></tr>
+            <tr><td style="padding:8px 10px 8px 22px; color:#64748b;">Trích yếu</td><td style="padding:8px 22px 8px 10px; font-weight:700;">{{ document_title }}</td></tr>
+            <tr><td style="padding:8px 10px 8px 22px; color:#64748b;">Loại văn bản</td><td style="padding:8px 22px 8px 10px;">{{ doc_type }}</td></tr>
+            <tr><td style="padding:8px 10px 8px 22px; color:#64748b;">Pháp nhân ban hành</td><td style="padding:8px 22px 8px 10px;">{{ company }}</td></tr>
+            <tr><td style="padding:8px 10px 8px 22px; color:#64748b;">Phòng chủ trì</td><td style="padding:8px 22px 8px 10px;">{{ department }}</td></tr>
+            <tr><td style="padding:8px 10px 8px 22px; color:#64748b;">Phiên bản</td><td style="padding:8px 22px 8px 10px;">{{ version_no }}</td></tr>
+            <tr><td style="padding:8px 10px 18px 22px; color:#64748b;">Hiệu lực từ</td><td style="padding:8px 22px 18px 10px;">{{ effective_date }}</td></tr>
+          </table>
+          {% if summary %}
+          <div style="margin:0 0 24px; padding:14px 18px; border-left:3px solid #0098db; background:#f8fafc; font-size:14px; line-height:1.6; color:#475569;">
+            <strong style="color:#172554;">Tóm tắt:</strong> {{ summary }}
+          </div>
+          {% endif %}
+          <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 24px;">
+            <tr><td style="border-radius:6px; background:#0098db;">
+              <a href="{{ link }}" target="_blank" style="display:inline-block; padding:13px 28px; color:#ffffff; font-size:14px; font-weight:700; text-decoration:none;">XEM VĂN BẢN (CHỈ ĐỌC)</a>
+            </td></tr>
+          </table>
+          <p style="margin:0; font-size:12px; line-height:1.6; color:#64748b;">
+            Nếu nút trên không hoạt động, sao chép liên kết này vào trình duyệt:<br>
+            <a href="{{ link }}" target="_blank" style="color:#0284c7; word-break:break-all;">{{ link }}</a>
+          </p>
+        </td></tr>
+        <tr><td align="center" style="padding:15px; border-top:1px solid #e2e8f0; background:#f8fafc; font-size:11px; color:#94a3b8;">Email tự động từ Hệ thống Văn bản DEGO Holding. Vui lòng không trả lời email này.</td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+"""
+
 ACCOUNT_CREATION_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="vi">
