@@ -19,7 +19,7 @@ import AuditTimeline from '../components/AuditTimeline'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 // ĐƠN GIÁ cho lẻ tới 4 chữ số (vd 1.668,182 đ/cái) — cắt bớt là lệch tiền khi nhân sản lượng
 const PRICE_DECIMALS = 4
-const PRICE_KEYS = ['price_by_volume', 'proposed_rate']
+const PRICE_KEYS = ['price_by_volume', 'proposed_rate', 'last_purchase_price', 'max_purchase_price']
 const APPROVE_OPTS = ['Chờ duyệt', 'Đã duyệt', 'Không duyệt', 'Thiếu thông tin']
 const APPROVE_COLOR: Record<string, string> = { 'Chờ duyệt': '#d97706', 'Đã duyệt': '#16a34a', 'Không duyệt': '#b91c1c', 'Thiếu thông tin': '#ea580c' }
 
@@ -30,8 +30,13 @@ const APPROVE_COLOR: Record<string, string> = { 'Chờ duyệt': '#d97706', 'Đ�
 const LAB_OPTS = ['Mẫu đạt', 'Mẫu không đạt']
 const LAB_COLOR: Record<string, string> = { 'Mẫu đạt': '#16a34a', 'Mẫu không đạt': '#b91c1c' }
 
-// Kiểu trường: date | text | textarea | num | check | computed | unit(chọn) | vat(nhập %) | approve(chọn) | lab(chọn đạt/không đạt)
-type SecField = { k: string; label: string; type?: string; full?: boolean }
+// CR-111 (phiếu hỗ trợ TK20082604): "Ngày công nợ" của dòng SP dùng CHUNG danh sách với
+// "Chính sách công nợ" của dòng NCC — cùng một khái niệm, để hai bên chọn lệch chữ thì sau
+// này gom báo cáo không khớp.
+const DEBT_OPTS = ['', 'Tiền mặt', 'Công nợ 30 ngày', 'Công nợ 60 ngày', 'Công nợ 90 ngày', 'Trả trước']
+
+// Kiểu trường: date | text | textarea | num | check | computed | unit(chọn) | vat(nhập %) | approve(chọn) | lab(chọn đạt/không đạt) | select(chọn theo options)
+type SecField = { k: string; label: string; type?: string; full?: boolean; options?: string[]; note?: string }
 type Section = { title: string; fields: SecField[] }
 
 const SUPPLIER_SECTIONS: Section[] = [
@@ -86,7 +91,11 @@ const PRODUCT_SECTIONS: Section[] = [
     { k: 'supplier_name', label: 'Tên pháp lý NCC', type: 'legal' },
     { k: 'internal_code', label: 'Mã SP (theo NCC)', type: 'text' },
     { k: 'product_name', label: 'Tên SP (tên NCC đặt)', type: 'text', full: true },
+    { k: 'invoice_name', label: 'Tên trên hoá đơn', type: 'text', full: true,
+      note: 'Tên NCC sẽ ghi trên hoá đơn — chốt ngay từ khảo sát để kế toán khỏi hỏi lại.' },
     { k: 'spec', label: 'Thông số kỹ thuật', type: 'textarea', full: true },
+    { k: 'active_ingredient', label: 'Hàm lượng hoạt chất', type: 'text', full: true,
+      note: 'Riêng nguyên liệu (NL) và bán thành phẩm (BTP). Loại khác thì ghi "Không có".' },
     { k: 'origin', label: 'Xuất xứ sản phẩm', type: 'text' },
   ] },
   { title: 'Báo giá & Quy đổi', fields: [
@@ -94,11 +103,19 @@ const PRODUCT_SECTIONS: Section[] = [
     { k: 'moq', label: 'MOQ tối thiểu', type: 'num' },
     { k: 'price_by_volume', label: 'Giá theo sản lượng (VNĐ)', type: 'num' },
     { k: 'volume_range', label: 'Khung sản lượng (theo ĐVT)', type: 'text' },
+    // CR-111: hai mốc giá tự lấy từ Lịch sử mua hàng của mã VTBB ở đầu phiếu, sửa đè được.
+    { k: 'last_purchase_price', label: 'Giá mua gần nhất (VNĐ)', type: 'num',
+      note: 'Tự lấy từ Lịch sử mua hàng của mã VTBB ở đầu phiếu — sửa đè được. Bằng 0 nghĩa là chưa từng mua mã này.' },
+    { k: 'max_purchase_price', label: 'Giá mua max (VNĐ)', type: 'num' },
     { k: 'vat', label: 'VAT (%)', type: 'vat' },
     { k: 'amount', label: 'Thành tiền (VNĐ)', type: 'computed' },
     { k: 'internal_unit', label: 'ĐVT (quy đổi về ĐVT Cty)', type: 'unit' },
     { k: 'amount_converted', label: 'Thành tiền (đã quy đổi)', type: 'num' },
     { k: 'shipping_cost', label: 'Chi phí vận chuyển (VNĐ)', type: 'num' },
+    { k: 'extra_shipping_cost', label: 'Phí VC phát sinh đến kho yêu cầu (VNĐ)', type: 'num',
+      note: 'Phần phí đội thêm khi giao tới đúng kho người yêu cầu. Không có thì để 0.' },
+    { k: 'shipping_policy', label: 'Chính sách vận chuyển', type: 'textarea', full: true },
+    { k: 'debt_policy', label: 'Ngày công nợ', type: 'select', options: DEBT_OPTS },
     { k: 'delivery_time', label: 'Thời gian giao hàng', type: 'text' },
     { k: 'delivery_place', label: 'Địa điểm giao/nhận hàng', type: 'text' },
     { k: 'quote_file', label: 'Link báo giá', type: 'text' },
@@ -145,7 +162,7 @@ const SUPPLIER_COLS: Col[] = [
   { key: 'invoice_policy', label: 'Chính sách hóa đơn', w: 170 },
   { key: 'reliability', label: 'Mức tin cậy', w: 130, type: 'select', options: ['', 'Cao', 'Trung bình', 'Thấp'] },
   { key: 'delivery_policy', label: 'Chính sách giao nhận', w: 170 },
-  { key: 'debt_policy', label: 'Chính sách công nợ', w: 160, type: 'select', options: ['', 'Tiền mặt', 'Công nợ 30 ngày', 'Công nợ 60 ngày', 'Công nợ 90 ngày', 'Trả trước'] },
+  { key: 'debt_policy', label: 'Chính sách công nợ', w: 160, type: 'select', options: DEBT_OPTS },
   { key: 'defect_return', label: 'Hàng lỗi/trả', w: 150 },
   { key: 'nspt_note', label: 'Nhận xét NSPT', w: 160 },
   { key: 'nspt_reason', label: 'Lý do', w: 160 },
@@ -162,18 +179,27 @@ const PRODUCT_COLS: Col[] = [
   { key: 'supplier_name', label: 'Tên pháp lý', w: 220, type: 'legal' },
   { key: 'internal_code', label: 'Mã SP (NCC)', w: 120 },
   { key: 'product_name', label: 'Tên SP theo NCC *', w: 220 },
-  { key: 'spec', label: 'Thông số KT', w: 180 },
+  { key: 'invoice_name', label: 'Tên trên hoá đơn *', w: 200 },
+  { key: 'spec', label: 'Thông số KT *', w: 180 },
+  { key: 'active_ingredient', label: 'Hàm lượng hoạt chất *', w: 170 },
   { key: 'origin', label: 'Xuất xứ', w: 100 },
   { key: 'quote_unit', label: 'ĐVT báo giá', w: 120, type: 'unit' },
   { key: 'moq', label: 'MOQ', w: 90, type: 'num' },
   { key: 'price_by_volume', label: 'Giá theo khung', w: 120, type: 'num' },
   { key: 'volume_range', label: 'Khung SL', w: 110 },
+  // CR-111: khách yêu cầu 3 cột này phải thấy được ngay ngoài bảng, đặt liền sau cụm
+  // "Giá theo khung / Khung SL" để so giá NCC chào với giá đã từng mua trong cùng tầm mắt.
+  { key: 'last_purchase_price', label: 'Giá mua gần nhất', w: 130, type: 'num' },
+  { key: 'max_purchase_price', label: 'Giá mua max', w: 120, type: 'num' },
+  { key: 'debt_policy', label: 'Ngày công nợ *', w: 150, type: 'select', options: DEBT_OPTS },
   { key: 'vat', label: 'VAT(%)', w: 90, type: 'vat' },
   { key: 'request_qty', label: 'SL YC', w: 90, type: 'num' },
   { key: 'amount', label: 'Thành tiền', w: 120, type: 'computed' },
   { key: 'internal_unit', label: 'ĐVT quy đổi', w: 120, type: 'unit' },
   { key: 'amount_converted', label: 'TT quy đổi', w: 120, type: 'num' },
   { key: 'shipping_cost', label: 'Phí VC', w: 100, type: 'num' },
+  { key: 'extra_shipping_cost', label: 'Phí VC phát sinh đến kho YC', w: 150, type: 'num' },
+  { key: 'shipping_policy', label: 'Chính sách vận chuyển *', w: 180 },
   { key: 'delivery_time', label: 'TG giao', w: 110 },
   { key: 'delivery_place', label: 'Nơi giao nhận', w: 150 },
   { key: 'quote_file', label: 'File báo giá', w: 150 },
@@ -287,6 +313,16 @@ export default function SurveyDetail() {
       const data = r.data.data
       data.supplier_lines = (data.supplier_lines || []).map((l: any) => ({ ...l, line_approve: l.line_approve || 'Chờ duyệt' }))
       data.product_lines = (data.product_lines || []).map((l: any) => ({ ...l, line_approve: l.line_approve || 'Chờ duyệt' }))
+      // CR-111: điền sẵn "Giá mua gần nhất / Giá mua max" từ Lịch sử mua hàng của mã VTBB
+      // ở đầu phiếu (backend trả ở `price_hint`). Chỉ điền khi phiếu còn sửa được và ô đang
+      // trống — số người dùng đã gõ đè là số chốt, gợi ý không được đè lên.
+      const hint = data.price_hint || {}
+      if (['draft', 'rejected'].includes(data.status) && (hint.last > 0 || hint.max > 0))
+        data.product_lines = data.product_lines.map((l: any) => ({
+          ...l,
+          last_purchase_price: Number(l.last_purchase_price) > 0 ? l.last_purchase_price : (hint.last || 0),
+          max_purchase_price: Number(l.max_purchase_price) > 0 ? l.max_purchase_price : (hint.max || 0),
+        }))
       setSv(data)
       api.get('/api/audit-logs', { params: { entity: 'survey', entity_id: id } }).then((x) => setLogs(x.data.data))
       api.get('/api/attachments', { params: { entity: 'survey', entity_id: id } }).then((x) => setFiles(x.data.data))
@@ -388,6 +424,9 @@ export default function SurveyDetail() {
       put('product_name', s.item_name)
       put('quote_unit', s.uom)
       put('internal_unit', s.uom)
+      // CR-111: mồi luôn hai mốc giá đã từng mua của mã VTBB này (backend trả ở `price_hint`).
+      put('last_purchase_price', s.price_hint?.last)
+      put('max_purchase_price', s.price_hint?.max)
     }
     return p
   }
@@ -677,6 +716,9 @@ export default function SurveyDetail() {
         onChange={(e) => setLine(tbl, i, { supplier_name: e.target.value })} />
     }
     if (t === 'unit') return <SearchSelect value={it[k] ?? ''} options={units} disabled={!ce} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setLine(tbl, i, { [k]: v })} />
+    // CR-111: ô chọn theo danh sách cố định (Ngày công nợ) — bảng ngoài đã có kiểu này,
+    // popup thì chưa nên trước đây phải khai kiểu textarea rồi mỗi người gõ một chữ.
+    if (t === 'select') return <SearchSelect value={it[k] ?? ''} options={f.options || []} disabled={!ce} placeholder="Chọn…" onChange={(v) => setLine(tbl, i, { [k]: v })} />
     // VAT: nhập tay theo % (0 ≤ VAT < 100), không còn khoá vào danh sách mức cố định
     if (t === 'vat') return <NumberInput value={it[k]} disabled={!ce} max={VAT_MAX} maxDecimals={VAT_DECIMALS} placeholder="Nhập % VAT…" onChange={(v: number) => setLine(tbl, i, { [k]: v })} />
     // CR-109: hai nút bấm thay vì ô chữ — bấm lại nút đang chọn thì bỏ chọn (chưa có KQ).
@@ -1048,6 +1090,10 @@ export default function SurveyDetail() {
                               <label style={bad ? { color: '#e06666' } : undefined}>{f.label}{bad ? ' *' : ''}</label>
                             )}
                             {lineField(f, editingTable, editingIndex)}
+                            {/* CR-111: chú thích ngắn dưới ô — trường mới thêm cần nói rõ điền gì
+                                (vd hàng không phải NL/BTP thì ghi "Không có"), khỏi bỏ trống rồi
+                                bị chặn lúc Gửi duyệt mà không hiểu vì sao. */}
+                            {f.note ? <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4, lineHeight: 1.35 }}>{f.note}</div> : null}
                           </div>
                         )
                       })}

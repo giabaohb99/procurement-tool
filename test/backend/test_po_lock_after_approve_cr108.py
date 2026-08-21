@@ -63,6 +63,12 @@ def test_da_duyet_van_cap_nhat_duoc_ho_so_chung_tu(db):
     chan_sua_don_da_duyet(db, po, POUpdate(document_status="đã đủ chứng từ", items=[_dong(it)]))
 
 
+def test_da_duyet_van_sua_duoc_ma_don_misa(db):
+    """Kế toán đối chiếu số MISA sau khi đơn đã duyệt — mã đơn MISA phải sửa được sau duyệt."""
+    po, it = _don(db)
+    chan_sua_don_da_duyet(db, po, POUpdate(misa_code="MISA-2026-001", items=[_dong(it)]))
+
+
 # ───────────────────────── Ô của DÒNG HÀNG ─────────────────────────
 @pytest.mark.parametrize("doi, nhan", [
     ({"product_code": "SP999"}, "Mã hàng"),

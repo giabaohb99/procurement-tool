@@ -38,12 +38,17 @@ class ProductLineIn(BaseModel):
     supplier_code: str = ""
     internal_code: str = ""
     product_name: str = ""
+    invoice_name: str = ""          # Tên trên hoá đơn (CR-111)
     spec: str = ""
+    active_ingredient: str = ""     # Hàm lượng hoạt chất (CR-111)
     origin: str = ""
     quote_unit: str = ""
     moq: float = 0
     price_by_volume: float = 0
     volume_range: str = ""
+    # Hai mốc giá lấy từ Lịch sử mua hàng, FE điền sẵn và cho sửa đè (CR-111).
+    last_purchase_price: float = 0
+    max_purchase_price: float = 0
     # % VAT theo phương án, nhập tay từ CR-058 → chặn 0 ≤ VAT < 100 (cột DB Numeric(5,2)).
     vat: float = Field(0, ge=0, lt=100)
     request_qty: float = 0
@@ -51,6 +56,9 @@ class ProductLineIn(BaseModel):
     internal_unit: str = ""
     amount_converted: float = 0
     shipping_cost: float = 0
+    extra_shipping_cost: float = 0  # Phí VC phát sinh đến kho yêu cầu (CR-111)
+    shipping_policy: str = ""       # Chính sách vận chuyển (CR-111)
+    debt_policy: str = ""           # Ngày công nợ (CR-111)
     delivery_time: str = ""
     delivery_place: str = ""
     quote_file: str = ""

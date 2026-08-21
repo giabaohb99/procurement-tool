@@ -705,7 +705,10 @@ export default function PurchaseOrderDetail() {
                 <input list="po-pyc-list" placeholder="Nhập/chọn mã PYC…" value={po.pr_code || ''} disabled={!headerEditable} onChange={(e) => onPickPr(e.target.value)} />
                 <datalist id="po-pyc-list">{prList.map((p) => <option key={p.id} value={p.code}>{p.purpose || ''}</option>)}</datalist>
               </div>
-              <div className="form-row"><label>Mã đơn MISA</label><input value={po.misa_code || ''} placeholder="(nếu có)" disabled={!headerEditable} onChange={(e) => setH('misa_code', e.target.value)} /></div>
+              {/* Mã đơn MISA: kế toán đối chiếu số trên phần mềm MISA nên thường điền/sửa SAU khi
+                  đơn đã duyệt. Mở ô này cả khi đơn đã duyệt (backend cũng cho, xem
+                  TRUONG_DON_SUA_SAU_DUYET ở purchase_order/service.py). */}
+              <div className="form-row"><label>Mã đơn MISA</label><input value={po.misa_code || ''} placeholder="(nếu có)" disabled={!headerEditable && !afterApproveEditable} onChange={(e) => setH('misa_code', e.target.value)} /></div>
               <div className="form-row"><label>Công ty nhận HĐ <span style={{ color: 'var(--red)' }}>*</span></label>
                 <SearchSelect value={po.company_id ? String(po.company_id) : ''} disabled={!headerEditable} placeholder="Chọn/tìm công ty…"
                   options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
@@ -761,7 +764,8 @@ export default function PurchaseOrderDetail() {
             {afterApproveEditable && (
               <div style={{ marginBottom: 12, padding: '8px 12px', borderRadius: 8, background: '#eff6ff',
                 border: '1px solid #bfdbfe', color: '#1e40af', fontSize: 12.5 }}>
-                <i className="ti ti-lock" /> Đơn đã duyệt — nội dung đã duyệt bị khóa. Mở <i className="ti ti-pencil" /> Chi tiết dòng
+                <i className="ti ti-lock" /> Đơn đã duyệt — nội dung đã duyệt bị khóa. Mã đơn MISA vẫn sửa được ở phần Thông tin chung.
+                Mở <i className="ti ti-pencil" /> Chi tiết dòng
                 để sửa Tên trên hóa đơn, Ngày dự kiến có hàng, Kho nhận, Ghi chú, Ngày giao chứng từ cho KT và các lần giao hàng.
                 {can('purchase_order', 'approve') && ' Cần đổi mã hàng / số lượng / đơn giá thì bấm "Hủy duyệt" rồi gửi duyệt lại.'}
               </div>

@@ -26,9 +26,40 @@ def _dict(obj) -> dict:
     return d
 
 
+def _price_hint(db: Session, s: Survey) -> dict:
+    """Giá mua GẦN NHẤT và CAO NHẤT của mã VTBB ở đầu phiếu (CR-111).
+
+    Lấy từ Lịch sử mua hàng để FE điền sẵn hai ô "Giá mua gần nhất" / "Giá mua max" của dòng
+    khảo sát — khỏi bắt NSPT mở màn khác tra tay rồi gõ lại. Người dùng vẫn SỬA ĐÈ được nên
+    đây chỉ là gợi ý; con số chốt vẫn nằm ở cột của dòng khảo sát.
+
+    Phiếu khảo sát hàng chưa có mã trong hệ thống thì `item_code` rỗng → trả 0, FE bỏ qua.
+    `unit` trả kèm để FE cảnh báo khi ĐVT lịch sử khác ĐVT báo giá (giá không so thẳng được).
+    """
+    from sqlalchemy import func
+
+    from app.modules.purchase_history.model import PurchaseHistory
+
+    empty = {"last": 0.0, "max": 0.0, "count": 0, "unit": "", "date": ""}
+    code = (s.item_code or "").strip()
+    if not code:
+        return empty
+    q = db.query(PurchaseHistory).filter(PurchaseHistory.product_code == code,
+                                         PurchaseHistory.price > 0)
+    # order_date là chuỗi 'YYYY-MM-DD' nên sắp xếp chữ cũng ra đúng thứ tự thời gian.
+    last = q.order_by(PurchaseHistory.order_date.desc(), PurchaseHistory.id.desc()).first()
+    if last is None:
+        return empty
+    mx = (db.query(func.max(PurchaseHistory.price))
+          .filter(PurchaseHistory.product_code == code).scalar())
+    return {"last": float(last.price or 0), "max": float(mx or 0), "count": q.count(),
+            "unit": last.unit or "", "date": last.order_date or ""}
+
+
 def _out(db: Session, s: Survey) -> dict:
     """Phiếu khảo sát GỘP: trả cả 2 bảng dòng (NCC + SP)."""
     base = _dict(s)
+    base["price_hint"] = _price_hint(db, s)
     sup = service.supplier_lines_of(db, s.id)
     prod = service.product_lines_of(db, s.id)
     base["supplier_lines"] = [_dict(x) for x in sup]

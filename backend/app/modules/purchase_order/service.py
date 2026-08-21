@@ -475,9 +475,10 @@ NHAN_TRUONG_DON = {
     "vat_rate": "VAT chung", "payment_terms": "Điều khoản thanh toán", "is_urgent": "Đơn gấp",
     "note": "Ghi chú đơn",
 }
-# Ô của ĐƠN còn sửa được sau khi duyệt: chỉ hồ sơ chứng từ (đã có endpoint riêng, cập nhật
-# được cả khi đơn Hoàn thành) — mọi ô còn lại là nội dung đã được duyệt.
-TRUONG_DON_SUA_SAU_DUYET = {"document_status"}
+# Ô của ĐƠN còn sửa được sau khi duyệt: hồ sơ chứng từ (đã có endpoint riêng, cập nhật
+# được cả khi đơn Hoàn thành) và mã đơn MISA (kế toán nhập/sửa sau khi đã duyệt trên phần
+# mềm MISA) — mọi ô còn lại là nội dung đã được duyệt.
+TRUONG_DON_SUA_SAU_DUYET = {"document_status", "misa_code"}
 
 _HUONG_DAN = "Bấm 'Hủy duyệt' để đưa đơn về Nháp, chỉnh rồi gửi duyệt lại."
 
