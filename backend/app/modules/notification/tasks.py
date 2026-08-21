@@ -11,6 +11,29 @@ from app.core.config import settings
 from app.core.database import SessionLocal
 
 from .model import Notification
+from .service import send_smtp_email
+
+
+@celery_app.task(name="notification.send_email")
+def send_email_task(
+    log_id: int,
+    to_email: str,
+    subject: str,
+    html_body: str,
+    force: bool = False,
+    apply_override: bool = True,
+) -> dict:
+    """Gửi một email đã có ``EmailLog`` bằng worker, không giữ request chờ SMTP."""
+    send_smtp_email(
+        SessionLocal,
+        log_id,
+        to_email,
+        subject,
+        html_body,
+        force=force,
+        apply_override=apply_override,
+    )
+    return {"status": "processed", "log_id": log_id}
 
 
 @celery_app.task(name="notification.cleanup")

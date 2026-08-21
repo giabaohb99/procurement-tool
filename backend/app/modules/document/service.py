@@ -396,6 +396,17 @@ def approve(db: Session, doc: Document, actor: int,
             notify_clone_created(db, doc, clone)
         db.commit()
 
+    #  Thành viên thuộc phạm vi nhận cả chuông lẫn email có link chỉ đọc. Làm
+    #  sau transaction ban hành và nuốt lỗi: SMTP/Redis hỏng không được biến
+    #  một văn bản đã cấp số thành thao tác thất bại trên màn hình.
+    try:
+        from .issue_notification import notify_document_issued
+        notify_document_issued(db, doc, version, actor)
+    except Exception:  # noqa: BLE001 — kênh thông báo là best-effort
+        import logging
+        logging.getLogger(__name__).exception(
+            "Không tạo được thông báo ban hành cho văn bản #%s", doc.id)
+
     return doc
 
 

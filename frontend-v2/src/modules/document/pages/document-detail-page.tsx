@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { useEntityApproval } from '@/modules/approval/hooks/use-approvals'
@@ -104,6 +104,8 @@ const FORM_ID = 'document-record-form'
 export function DocumentDetailPage() {
   const navigate = useNavigate()
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
+  const readonlyFromLink = searchParams.get('readonly') === '1'
   const [tab, setTab] = useUrlParamState('tab', 'compose')
   const editorRef = useRef<RichTextEditorHandle>(null)
 
@@ -178,10 +180,10 @@ export function DocumentDetailPage() {
   const { can } = usePermission()
   //  Ký là hành vi PHÊ DUYỆT, không phải sửa nội dung — gác bằng `approve` đúng
   //  như backend làm.
-  const canApprove = can('document', 'approve')
-  const canCreate = can('document', 'create')
-  const canWrite = permissions?.write ?? false
-  const canDelete = permissions?.delete ?? false
+  const canApprove = !readonlyFromLink && can('document', 'approve')
+  const canCreate = !readonlyFromLink && can('document', 'create')
+  const canWrite = !readonlyFromLink && (permissions?.write ?? false)
+  const canDelete = !readonlyFromLink && (permissions?.delete ?? false)
 
   const form = useForm<DocumentRecordFormValues>({
     resolver: zodResolver(documentRecordSchema),
@@ -271,6 +273,7 @@ export function DocumentDetailPage() {
                   <Badge variant={label.variant}>{label.text}</Badge>
                 </>
               )}
+              {readonlyFromLink && <Badge variant="outline">Chỉ đọc</Badge>}
               {/*  Chỉ nói "tự lưu" với người THẬT SỰ sửa được. Người duyệt nay
                    mở được văn bản để đọc — nói với họ là trang đang tự lưu thì
                    họ tưởng mình vừa động vào bài của người khác. */}
@@ -562,7 +565,7 @@ export function DocumentDetailPage() {
             form={form}
             isNumbered={isNumbered}
             documentId={documentId}
-            readOnly={khoaVietVi}
+            readOnly={khoaVietVi || readonlyFromLink}
             onSubmit={handleSubmitForm}
           >
             <DocumentAttachmentList
