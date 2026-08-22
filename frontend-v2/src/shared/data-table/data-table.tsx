@@ -38,12 +38,16 @@ const DEFAULT_MIN_WIDTH = 64
  */
 const HEAD_CELL =
   'relative h-10 px-3 text-[13px] font-semibold text-foreground/80 bg-muted/70 shadow-[inset_-1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border)] last:shadow-[inset_0_-1px_0_0_var(--border)]'
-const BODY_CELL = 'min-h-11 border-r px-3 py-2.5 last:border-r-0 align-middle text-[13.5px] text-foreground'
+const BODY_CELL = 'min-h-9 border-r px-3 py-1.5 last:border-r-0 align-middle text-[13.5px] text-foreground'
 /**
- * Nền hàng xen kẽ sọc đậm/nhạt rõ nét (zebra striping: odd bg-card, even bg-slate-100/85).
- * Ô của cột ghim lấy `bg-inherit` từ hàng nên tự động thừa hưởng màu sọc tương ứng.
+ * Thân bảng MỘT MÀU nền (`bg-card`) — không kẻ sọc chẵn/lẻ. Việc tách dòng đã có
+ * đường kẻ ngang lo; sọc thêm nữa làm màu tô cột và huy hiệu trạng thái khó đọc.
+ *
+ * ⚠️ MỌI nền ở đây phải ĐỤC HOÀN TOÀN — cấm hậu tố alpha kiểu `/85`, `/70`. Ô của
+ * cột ghim lấy `bg-inherit` từ hàng, nền có alpha là phần bảng cuộn ngang bên dưới
+ * hiện xuyên qua cột đang dính (đúng lỗi chữ lòi ra cạnh cột "Thao tác").
  */
-const ROW_BG = 'group bg-card odd:bg-card even:bg-slate-100/85 dark:even:bg-slate-800/60 hover:bg-blue-50/70 dark:hover:bg-slate-700/60 data-[state=selected]:bg-primary/10 transition-colors'
+const ROW_BG = 'group bg-card hover:bg-blue-50 dark:hover:bg-slate-800 data-[state=selected]:bg-blue-100 dark:data-[state=selected]:bg-slate-700 transition-colors'
 /** Ô báo trạng thái (đang tải / lỗi / rỗng) trải hết bảng — không kẻ dọc, cao hơn. */
 const SPAN_CELL = 'h-20 px-3 text-center'
 

@@ -270,20 +270,20 @@ Kẻ ô đầy đủ, mọi dòng cùng chiều cao. Các con số nằm trong `
 | | Class | Màu thực tế (light) |
 | --- | --- | --- |
 | Khung ngoài | `Card` `p-4` | `bg-card` → `#fff` |
-| Hàng tiêu đề | `h-9 px-3 text-xs`, `bg-muted` | `rgb(246,248,251)` |
-| Hàng dữ liệu | `h-10 px-3 py-0`, `bg-card` | `#fff`, hover `bg-muted` |
-| Dòng đang chọn | `data-[state=selected]:bg-muted` | như hover |
+| Hàng tiêu đề | `h-10 px-3 text-[13px]`, `bg-muted` | `rgb(246,248,251)` |
+| Hàng dữ liệu | `min-h-9 px-3 py-1.5`, `bg-card` | `#fff`, hover `bg-blue-50` |
+| Dòng đang chọn | `data-[state=selected]:bg-blue-100` | đậm hơn hover một bậc |
 | Ô báo trạng thái | `h-20`, căn giữa | — |
 | Ảnh/avatar trong ô | `size-7` | — |
 
-**Nền hàng phải ĐỤC, cấm biến thể alpha** (`bg-muted/50`, `bg-card/60`…): ô của
-cột ghim lấy `bg-inherit` từ hàng để che phần bảng đang cuộn ngang phía dưới; nền
-trong suốt là nội dung lộ xuyên qua cột dính. Cũng vì vậy `TableRow` mặc định của
-shadcn (`hover:bg-muted/50`) bị ghi đè ở hàng tiêu đề.
+**Thân bảng MỘT MÀU, không kẻ sọc chẵn/lẻ.** Đường kẻ ngang đã đủ tách dòng; sọc
+xám thêm nữa làm màu tô cột (`columnColors`) và huy hiệu trạng thái khó đọc.
 
-**Chiều cao đặt cứng kèm `py-0`, không dùng padding dọc.** Mỗi cột một loại nội
-dung (chữ, huy hiệu, ảnh); để padding tự tính thì dòng có huy hiệu cao hơn hẳn
-dòng chỉ có chữ.
+**Nền hàng phải ĐỤC, cấm biến thể alpha** (`bg-muted/50`, `bg-slate-100/85`,
+`hover:bg-blue-50/70`…): ô của cột ghim lấy `bg-inherit` từ hàng để che phần bảng
+đang cuộn ngang phía dưới; nền trong suốt là nội dung lộ xuyên qua cột dính — đúng
+lỗi chữ của cột bị cuộn khuất lòi ra bên cạnh cột "Thao tác" ghim phải. Cũng vì vậy
+`TableRow` mặc định của shadcn (`hover:bg-muted/50`) bị ghi đè ở hàng tiêu đề.
 
 ### Sáu cái bẫy CSS đã vấp — đừng vấp lại
 
