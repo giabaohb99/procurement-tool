@@ -21,6 +21,7 @@ Lý do và cái giá của cả hai lần đảo nằm ở [`00` mục 2](./00-d
 | [`04` Các bảng dữ liệu](./04-bang-du-lieu.md) | **25 bảng mới + 4 bảng sửa**, đủ cột và ý nghĩa từng cột, chỉ mục bắt buộc, ràng buộc phải đặt ở tầng dữ liệu, thứ tự chạy migration, **mười hai chỗ dễ sai nhất** | Khi bắt đầu viết mã |
 | [Nhật ký thay đổi](./CHANGELOG.md) | Bộ tài liệu này sửa gì, lúc nào, vì sao | Khi quay lại sau một thời gian, hoặc khi thấy nội dung khác với lần đọc trước |
 | [`05` Vòng đời phiên bản](./05-vong-doi-phien-ban.md) | **Đã ban hành rồi thì sửa bằng cách nào.** Hai cách khác nhau tùy loại văn bản: lên phiên bản 2.0 giữ nguyên mã, hay ra một văn bản mới sửa đổi văn bản cũ. Kèm sáu thứ bị kéo theo và bốn câu hỏi mới | Cùng lúc với `04`. Đây là chỗ dễ làm sai nhất mà không ai phát hiện |
+| [`06` Kịch bản test](./06-kich-ban-test.md) | **Chạy tay một vòng đời văn bản** trên bản LOCAL: tài khoản nào để chuyển vai, ai thấy gì, ai duyệt chặng nào, năm ca phạm vi áp dụng (loại trừ phòng ban / chừa một người trong phòng đó), phiên bản, bản trích, danh mục mức mật | Khi cần nghiệm thu hoặc sau mỗi đợt sửa phân hệ Văn bản |
 
 ---
 
