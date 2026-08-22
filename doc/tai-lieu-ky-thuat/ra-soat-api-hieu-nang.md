@@ -1,6 +1,6 @@
 # Kế hoạch rà soát code API (hiệu năng + đúng đắn truy vấn)
 
-Trạng thái: PLAN (chưa bắt đầu) · Mở ngày: 21/08/2026 · Chủ đề: đi soát lại toàn bộ
+Trạng thái: ĐANG LÀM · Mở ngày: 21/08/2026 · Chủ đề: đi soát lại toàn bộ
 endpoint API ở MỌI phân hệ, tập trung các mẫu truy vấn dễ vỡ khi dữ liệu lớn.
 
 ## 1. Vì sao có plan này
@@ -37,8 +37,8 @@ Mỗi endpoint (ưu tiên `list` / `report` / `export`) soi qua các mẫu sau:
 
 | Phân hệ | Endpoint trọng điểm | Tình trạng soát | Ghi chú |
 |---|---|---|---|
-| Thu mua | PYC list, ĐMH list, YCBG list, Khảo sát list + **report_rows**, các báo cáo | Chưa (report_rows đã vá C1) | report_rows còn C3/C4/C5 |
-| Sản xuất | HĐ, NCC, SP, Nhóm hàng, ĐVT (list) | Chưa | NCC + SP dính C7 (order_by cứng) |
+| Thu mua | PYC list, ĐMH list, YCBG list, Khảo sát list + **report_rows**, các báo cáo | Một phần | `report_rows` + `list_surveys` đã vá C1; C9 đã vá ở 4 màn (CR-127). `report_rows` còn C3/C4/C5; các báo cáo còn lại chưa soát |
+| Sản xuất | HĐ, NCC, SP, Nhóm hàng, ĐVT (list) | Một phần | NCC + SP đã vá C7; HĐ đã vá C9 (CR-127). Chưa soát C1..C5 |
 | Tài chính | YCTT, công nợ, phân bổ thanh toán, payment-request | Chưa | công nợ dễ dính C2/C3 |
 | Kho | list + báo cáo tồn/nhập/xuất | Chưa | báo cáo tổng hợp dễ C3 |
 | Nhân sự | danh sách nhân sự, phòng ban | Chưa | |
@@ -60,11 +60,20 @@ Mỗi endpoint (ưu tiên `list` / `report` / `export`) soi qua các mẫu sau:
 
 ## 5. Đã biết trước (đưa thẳng vào danh sách việc)
 
-- `survey/service.py::report_rows` — **đã** đổi IN(list) → subquery (C1), CHƯA commit.
+- `survey/service.py::report_rows` — **đã vá** C1 (IN(list) → subquery), commit `96158d1`.
   Còn tồn: nạp hết Survey vào RAM + trả không phân trang (C3/C4), lấy full object (C5).
+- `survey/controller.py::list_surveys` — **đã vá** C1 (CR-127): ô tìm kiếm gom `survey_id`
+  của bảng dòng SP ra list Python rồi `.in_(list)`, trong khi bảng thật đã hơn 5000 dòng.
+  Tách thành `search_condition()` dùng `IN (SELECT ...)`. Đây là bằng chứng cho §1: một mẫu
+  lỗi lộ ra ở endpoint này thì gần như chắc còn nguyên ở endpoint khác cùng phân hệ.
 - `supplier/service.py::list_suppliers` và `product/service.py::list_products` —
-  `order_by(id.desc())` cứng đè `apply_sort_from_request` (C7). Trùng với việc dựng
-  sort ở [14-filter-sort-man-danh-sach-v2.md](../erp/14-filter-sort-man-danh-sach-v2.md).
+  **đã vá** C7 ở `96158d1`: `order_by(id.desc())` giờ chỉ là nhánh lùi khi query chưa có
+  `order_by`, không đè `apply_sort_from_request` nữa. Trùng với việc dựng sort ở
+  [14-filter-sort-man-danh-sach-v2.md](../erp/14-filter-sort-man-danh-sach-v2.md).
+- **C9 (lọc "câm") có ca thật, không phải lo xa** — xem CR-127: whitelist của bộ lọc điều kiện
+  dùng chung với whitelist param trần, nên field FE khai mà backend loại đi thì bị bỏ qua
+  KHÔNG báo lỗi. Soát C9 ở phân hệ nào cũng phải đối chiếu danh sách field FE gửi với
+  whitelist BE, đừng chỉ đọc code backend.
 
 ## 6. Phạm vi / ràng buộc
 
