@@ -68,11 +68,20 @@ describe('DocumentDraftHolderNotice', () => {
     expect(screen.queryByText(/Mở từ/)).not.toBeInTheDocument()
   })
 
-  it('bấm "Xem bản nháp" thì gọi callback để nhảy tới đúng bản đó', async () => {
+  //  Bản ĐÃ GỬI DUYỆT cũng tính là "đang mở" (backend `open_version` lấy cả
+  //  nháp lẫn đang duyệt). Gọi nó là "bản nháp" thì người đọc đi tìm một bản
+  //  nháp không tồn tại — nên nêu số bản kèm trạng thái thật.
+  it('bản đã gửi duyệt thì gọi đúng tên trạng thái, không gọi là bản nháp', () => {
+    render(<DocumentDraftHolderNotice draft={draft({ status: 2, status_label: 'Đang duyệt' })} />)
+
+    expect(screen.getByText(/Đang duyệt/)).toBeInTheDocument()
+  })
+
+  it('bấm nút xem thì gọi callback để nhảy tới đúng bản đó', async () => {
     const onOpenDraft = vi.fn()
     render(<DocumentDraftHolderNotice draft={draft()} onOpenDraft={onOpenDraft} />)
 
-    await userEvent.click(screen.getByRole('button', { name: /Xem bản nháp/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Xem bản 2\.0/ }))
 
     expect(onOpenDraft).toHaveBeenCalledOnce()
   })

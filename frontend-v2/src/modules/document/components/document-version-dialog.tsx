@@ -15,13 +15,52 @@ import {
 import { Label } from '@/shared/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group'
 import { Textarea } from '@/shared/ui/textarea'
-import { useOpenVersion } from '../hooks/use-document-versions'
+import { cn } from '@/shared/utils/cn'
+import { soBanKeTiep } from '../helpers/next-version-no'
+import { useDocumentVersions, useOpenVersion } from '../hooks/use-document-versions'
 import { CHANGE_KIND } from '../types/document-record'
 
 interface DocumentVersionDialogProps {
   documentId: number
   open: boolean
   onOpenChange: (open: boolean) => void
+}
+
+/**
+ * Một lựa chọn mức sửa.
+ *
+ * Số bản mới TÍNH RA từ bản đang dùng chứ không ghi cứng — xem `soBanKeTiep`.
+ * Đây là câu trả lời trực tiếp cho "chọn cái này thì được gì", nên để ngay cạnh
+ * tên chứ không giấu dưới dòng mô tả.
+ */
+function MucSua({
+  giaTri,
+  dangChon,
+  ten,
+  banMoi,
+  moTa,
+}: {
+  giaTri: string
+  dangChon: boolean
+  ten: string
+  banMoi: string | null
+  moTa: string
+}) {
+  return (
+    <label
+      className={cn(
+        'flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors',
+        dangChon ? 'border-primary bg-primary/5' : 'hover:bg-muted/50',
+      )}
+    >
+      <RadioGroupItem value={giaTri} className="mt-0.5" />
+      <span>
+        <span className="font-medium">{ten}</span>
+        {banMoi && <span className="text-muted-foreground"> — bản mới sẽ là {banMoi}</span>}
+        <span className="block text-muted-foreground">{moTa}</span>
+      </span>
+    </label>
+  )
 }
 
 /**
@@ -46,6 +85,11 @@ export function DocumentVersionDialog({
   const [effectiveFrom, setEffectiveFrom] = useState('')
 
   const openVersion = useOpenVersion(documentId)
+
+  //  Bản đang dùng là gốc để backend tính số bản mới. Danh sách đã nằm sẵn
+  //  trong cache của tab Phiên bản nên đây không phải một lượt gọi thêm.
+  const { data: versions = [] } = useDocumentVersions(documentId)
+  const banDangDung = versions.find((version) => version.is_current)
 
   function handleSubmit() {
     openVersion.mutate(
@@ -100,26 +144,23 @@ export function DocumentVersionDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Mức sửa</Label>
+            {/*  Viền theo lựa chọn đang chọn: hai ô cùng viền xám thì nhìn không
+                 ra mình đang chọn cái nào, chỉ có cái chấm radio 16px nói. */}
             <RadioGroup value={changeKind} onValueChange={setChangeKind}>
-              <label className="flex items-start gap-3 rounded-md border p-3 text-sm">
-                <RadioGroupItem value={String(CHANGE_KIND.major)} className="mt-0.5" />
-                <span>
-                  <span className="font-medium">Sửa lớn</span> — lên bản 2.0.
-                  <span className="block text-muted-foreground">
-                    Đổi nội dung có ảnh hưởng tới người thực hiện; người đã đọc
-                    bản cũ phải xác nhận đã đọc lại.
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-3 rounded-md border p-3 text-sm">
-                <RadioGroupItem value={String(CHANGE_KIND.minor)} className="mt-0.5" />
-                <span>
-                  <span className="font-medium">Sửa nhỏ</span> — lên bản 1.1.
-                  <span className="block text-muted-foreground">
-                    Sửa lỗi chính tả, đổi số điện thoại — không đổi cách làm việc.
-                  </span>
-                </span>
-              </label>
+              <MucSua
+                giaTri={String(CHANGE_KIND.major)}
+                dangChon={changeKind === String(CHANGE_KIND.major)}
+                ten="Sửa lớn"
+                banMoi={soBanKeTiep(banDangDung, CHANGE_KIND.major)}
+                moTa="Đổi nội dung có ảnh hưởng tới người thực hiện; người đã đọc bản cũ phải xác nhận đã đọc lại."
+              />
+              <MucSua
+                giaTri={String(CHANGE_KIND.minor)}
+                dangChon={changeKind === String(CHANGE_KIND.minor)}
+                ten="Sửa nhỏ"
+                banMoi={soBanKeTiep(banDangDung, CHANGE_KIND.minor)}
+                moTa="Sửa lỗi chính tả, đổi số điện thoại — không đổi cách làm việc, không bắt ai đọc lại."
+              />
             </RadioGroup>
           </div>
 
@@ -145,6 +186,10 @@ export function DocumentVersionDialog({
               value={reason}
               onChange={(event) => setReason(event.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              Hiện ngay trên dòng phiên bản — đây là thứ trả lời được «vì sao có bản này»
+              khi ai đó tra lại sau vài tháng.
+            </p>
           </div>
 
           <div className="space-y-2">

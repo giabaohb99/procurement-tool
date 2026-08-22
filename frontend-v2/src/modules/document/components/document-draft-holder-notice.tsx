@@ -43,8 +43,13 @@ export function DocumentDraftHolderNotice({
       <AlertTriangle className="size-4 shrink-0 text-amber-700" />
 
       <div className="min-w-0 flex-1 text-sm text-amber-900">
+        {/*  «Bản đang mở» chứ không phải «bản nháp»: bản đã GỬI DUYỆT cũng tính
+             là đang mở (backend `open_version` lấy cả nháp lẫn đang duyệt), mà
+             gọi nó là nháp thì người đọc đi tìm một bản nháp không tồn tại.
+             Trạng thái thật để ngay trong ngoặc. */}
         <p>
-          Bản nháp <span className="font-medium">{draft.version_no}</span> đang do{' '}
+          Bản <span className="font-medium">{draft.version_no}</span>
+          {draft.status_label && ` (${draft.status_label})`} đang do{' '}
           <span className="font-medium">{holder || 'một người khác'}</span> giữ.
         </p>
         <p className="text-amber-800">
@@ -55,7 +60,7 @@ export function DocumentDraftHolderNotice({
 
       {onOpenDraft && (
         <Button type="button" variant="outline" size="sm" onClick={onOpenDraft}>
-          Xem bản nháp
+          Xem bản {draft.version_no}
           <ArrowRight className="size-4" />
         </Button>
       )}
