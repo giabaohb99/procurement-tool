@@ -26,3 +26,8 @@ doc/tai-lieu-ky-thuat/export/*.html
 # Celery beat schedule (dev)
 backend/celerybeat-schedule*
 celerybeat-schedule*
+
+# Tệp tạm Vite sinh ra cạnh vite.config.ts khi nạp config (frontend/, frontend-v2/,
+# help-center/). Bình thường Vite tự xóa sau khi nạp xong; còn sót lại là do lần chạy
+# trước bị ngắt giữa chừng — đã lỡ commit một lần trong e7dbd99.
+*.timestamp-*.mjs
