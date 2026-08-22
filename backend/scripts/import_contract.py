@@ -11,7 +11,7 @@ Chỉ nạp dòng 'Hợp đồng = Có', KHỚP được NCC (exact/fuzzy) — d
   Tên hàng hóa (col5) -> note (ghi chú)
   Ngày ký (col6)      -> start_date (YYYY-MM-DD)
   Dạng hợp đồng (col7)-> contract_type
-  signed=True, status='Hiệu lực', end_date='' (Excel không có)
+  signed=True, party_type/status theo bộ mã B-02 (xem `_da_chuan_hoa`), end_date='' (Excel không có)
 
 Đồng bộ sạch: xoá các HĐ mã 'HDX%' (do script tạo) trước rồi nạp lại — re-run an toàn,
 KHÔNG đụng HĐ nhập tay (mã HD#####).
@@ -28,6 +28,7 @@ from openpyxl import load_workbook
 
 import app.core.all_models  # noqa: F401  (đăng ký mapper)
 from app.core.database import SessionLocal
+from app.core.status_codes import CONTRACT_PARTY_TYPE, CONTRACT_STATUS
 from app.modules.contract.model import Contract
 from app.modules.supplier.model import Supplier
 from app.modules.company.model import Company
@@ -35,6 +36,20 @@ from app.modules.user.model import User
 
 FUZZY_THRESHOLD = 0.9
 CODE_PREFIX = "HDX"
+
+
+def _da_chuan_hoa(db) -> bool:
+    """CSDL này đã chạy migration B-02 chưa? Dò bằng chính dữ liệu đang có.
+
+    Script này chạy live trên CẢ BA môi trường, mà B-02 chỉ áp cho `erp-v2`/dev — prod vẫn
+    còn `status = "Hiệu lực"` cho tới ngày cắt (QĐ-10, `doc/erp/15` §4.2). Ghi mã vào một
+    CSDL chưa chuyển là làm hỏng dữ liệu mà không báo gì, nên phải hỏi trước khi ghi.
+
+    Bảng rỗng thì theo bộ mã mới — đó là hướng đi tới.
+    """
+    row = (db.query(Contract.status).filter(Contract.status != "")
+           .order_by(Contract.id.desc()).first())
+    return row is None or row[0] in CONTRACT_STATUS.values
 
 
 def _norm(s) -> str:
@@ -172,6 +187,12 @@ def run():
         bad_date = 0
         by_type = {}
         seq = 0
+        # B-02: ghi MÃ nếu CSDL đã chuyển, ghi nhãn tiếng Việt nếu chưa (prod). Xem `_da_chuan_hoa`.
+        chuan = _da_chuan_hoa(db)
+        v_party_type = "supplier" if chuan else CONTRACT_PARTY_TYPE.label_of("supplier")
+        v_status = "active" if chuan else CONTRACT_STATUS.label_of("active")
+        print(f"Bộ giá trị trạng thái: {'MÃ (đã chạy B-02)' if chuan else 'NHÃN tiếng Việt (chưa chạy B-02)'}"
+              f" -> party_type={v_party_type!r}, status={v_status!r}")
         for cur, r in recs:
             if len(r) <= 7:
                 continue
@@ -191,7 +212,7 @@ def run():
             seq += 1
             c = Contract(
                 code=f"{CODE_PREFIX}{seq:04d}",
-                party_type="Nhà cung cấp",
+                party_type=v_party_type,
                 party_code=sup.code,
                 party_name=sup.name,
                 company_id=company,
@@ -200,7 +221,7 @@ def run():
                 start_date=sdate,
                 end_date="",
                 signed=True,
-                status="Hiệu lực",
+                status=v_status,
                 note=goods,
                 created_by=uid,
                 updated_by=uid,

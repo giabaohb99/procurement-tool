@@ -342,10 +342,10 @@ export function PurchaseOrderItemsTable({
       case 'status':
         return (
           <div className="text-center">
-            <ProgressStatusBadge status={item.progress_status ?? 'Chưa đặt hàng'} />
+            <ProgressStatusBadge status={item.progress_status ?? 'not_ordered'} />
             {progressEditable && !!item.id && !locked && (
               <div className="mt-1 flex flex-wrap items-center justify-center gap-1">
-                {item.progress_status === 'Tạm ngưng' ? (
+                {item.progress_status === 'paused' ? (
                   <Button
                     variant="outline"
                     size="sm"
@@ -361,7 +361,7 @@ export function PurchaseOrderItemsTable({
                       variant="outline"
                       size="sm"
                       className="h-7 px-2 text-xs"
-                      onClick={() => onProgressChange?.(item, 'Tạm ngưng')}
+                      onClick={() => onProgressChange?.(item, 'paused')}
                     >
                       <PauseCircle />
                       Tạm ngưng
@@ -370,7 +370,7 @@ export function PurchaseOrderItemsTable({
                       variant="outline"
                       size="sm"
                       className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                      onClick={() => onProgressChange?.(item, 'Hủy đơn')}
+                      onClick={() => onProgressChange?.(item, 'cancelled')}
                     >
                       Hủy
                     </Button>
@@ -379,7 +379,7 @@ export function PurchaseOrderItemsTable({
               </div>
             )}
             {item.pause_reason &&
-              ['Tạm ngưng', 'Hủy đơn'].includes(item.progress_status ?? '') && (
+              ['paused', 'cancelled'].includes(item.progress_status ?? '') && (
                 <p className="mt-1 text-xs text-muted-foreground">
                   Lý do: {item.pause_reason}
                 </p>
@@ -402,7 +402,7 @@ export function PurchaseOrderItemsTable({
                   deliveries: [],
                   qty_received: 0,
                   qty_remaining: 0,
-                  progress_status: 'Chưa đặt hàng',
+                  progress_status: 'not_ordered',
                   pause_reason: '',
                   status_before_pause: '',
                 },

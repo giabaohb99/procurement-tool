@@ -271,7 +271,7 @@ def set_status(db: Session, rid: int, status: str, user_id: int, reason: str = "
             # Một hóa đơn có thể ứng với NHIỀU khoản nợ (mỗi lần giao 1 khoản). Chỉ trả vào
             # khoản CÒN NỢ — khoản đã tất toán phải bỏ qua, nếu không tiền dồn hết vào nó
             # (công nợ âm) còn khoản thật sự còn nợ vẫn treo, dòng ĐMH không bao giờ đủ
-            # điều kiện "Hoàn thành".
+            # điều kiện vào `completed`.
             for p in matched_payables:
                 if rem_to_pay <= 0:
                     break

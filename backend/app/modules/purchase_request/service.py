@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.status_codes import PO_PROGRESS_STATUS, PR_LINE_STATUS
 from app.core.utils import assert_unique_product_codes
 from app.modules.catalog import lead_time
 from app.modules.department.service import sync_department_ref
@@ -17,12 +18,19 @@ FILTERABLE = ["code", "status", "requester", "department", "is_urgent", "request
               "department_id", "head_of_dept_id", "requester_id", "company_id", "purpose"]
 ENTITY = "purchase_request"
 
+# B-06: cột `line_status` lưu MÃ cố định, xem PR_LINE_STATUS trong app/core/status_codes.py.
 # CR-074: tách bạch "chưa ai lập ĐMH" với "đã có ĐMH nhưng chưa bấm đặt hàng". Trước đây hai
 # tình huống này chung một nhãn nên người yêu cầu không biết NSTM đã bắt tay làm chưa.
-LINE_STATUS_NO_PO = "Chưa tạo đơn mua hàng"   # mặc định của dòng mới
-LINE_STATUS_NOT_ORDERED = "Chưa đặt hàng"     # đã có dòng ĐMH (kể cả đơn Nháp), chưa bấm đặt
+LINE_STATUS_NO_PO = "no_po"             # mặc định của dòng mới
+LINE_STATUS_NOT_ORDERED = "not_ordered"  # đã có dòng ĐMH (kể cả đơn Nháp), chưa bấm đặt
+LINE_STATUS_ORDERED = "ordered"
+LINE_STATUS_RECEIVED = "received"
+LINE_STATUS_COMPLETED = "completed"
+LINE_STATUS_CANCELLED = "cancelled"
 # Nhóm "chưa động tới" — dùng để suy trạng thái phiếu; thêm giá trị mới phải nhớ chỗ này.
 LINE_STATUS_IDLE = (LINE_STATUS_NO_PO, LINE_STATUS_NOT_ORDERED)
+# Điểm cuối của một dòng: không còn gì để làm nữa (đủ điều kiện đóng phiếu).
+LINE_STATUS_DONE = (LINE_STATUS_COMPLETED, LINE_STATUS_CANCELLED)
 
 # Task 4 — NCC 2 cụm (req = bộ phận đề xuất · pur = khảo sát/thu mua) lưu JSON ở cột supplier_info.
 _AUTO_NOTE_PREFIX = "Sinh tự động từ Yêu cầu báo giá"   # dấu hiệu phiếu tạo từ YCKS (fallback dữ liệu cũ)
@@ -85,10 +93,10 @@ def build_clusters(prev: dict, data, can_write_pur: bool, from_survey=None) -> d
         pur = _norm_cluster(data.supplier_pur.model_dump())
     return {"req": req, "pur": pur, "from_survey": fs}
 
-# Trạng thái xử lý theo DÒNG hàng (rút gọn — CR-007 #3): gộp 2 mức chứng từ kế toán
-# ("Chưa gửi ĐMH cho KT"/"Đã gửi ĐMH cho KT") vào "Đã nhận hàng"; bỏ "Tạm ngưng".
-LINE_STATUS = [LINE_STATUS_NO_PO, LINE_STATUS_NOT_ORDERED, "Đã đặt hàng", "Đã nhận hàng",
-               "Hoàn thành", "Hủy đơn"]
+# Trạng thái xử lý theo DÒNG hàng (rút gọn — CR-007 #3): gộp 2 mức chứng từ kế toán của ĐMH
+# (`doc_pending`/`doc_sent`) vào `received`; bỏ `paused`.
+# Sinh từ bộ mã dùng chung (B-06) để danh sách này không tự trôi khỏi PR_LINE_STATUS.
+LINE_STATUS = [c.value for c in PR_LINE_STATUS.codes]
 
 
 def find_dept_head(db: Session, department_name: str = "", department_id: int = 0) -> str:
@@ -263,7 +271,8 @@ def sync_head_of_dept_name(db: Session, pr: PurchaseRequest) -> None:
 
 def has_cancelled_line(db: Session, pr_id: int) -> bool:
     return db.query(PurchaseRequestItem).filter(
-        PurchaseRequestItem.pr_id == pr_id, PurchaseRequestItem.line_status == "Hủy đơn").first() is not None
+        PurchaseRequestItem.pr_id == pr_id,
+        PurchaseRequestItem.line_status == LINE_STATUS_CANCELLED).first() is not None
 
 
 def recompute_status(db: Session, pr: PurchaseRequest) -> None:
@@ -282,12 +291,12 @@ def recompute_status(db: Session, pr: PurchaseRequest) -> None:
         return
     was_completed = pr.status == "completed"
     # Dòng đã Hủy KHÔNG tính vào điều kiện hoàn thành (1 dòng hủy + các dòng còn lại đủ = vẫn hoàn thành)
-    active = [s for s in st if s != "Hủy đơn"]
-    if active and all(s == "Hoàn thành" for s in active):
+    active = [s for s in st if s != LINE_STATUS_CANCELLED]
+    if active and all(s == LINE_STATUS_COMPLETED for s in active):
         pr.status = "completed"
     # CR-074: cả hai nhãn "chưa động tới" đều tính như nhau ở đây. Trạng thái PHIẾU giữ nguyên
     # luật cũ — mới lập ĐMH mà chưa bấm đặt hàng thì phiếu vẫn ở mốc đã điều phối.
-    elif any(s not in LINE_STATUS_IDLE + ("Hủy đơn",) for s in st):
+    elif any(s not in LINE_STATUS_IDLE + (LINE_STATUS_CANCELLED,) for s in st):
         pr.status = "processing"
     else:
         pr.status = "dispatched"   # mọi dòng lùi về mức chưa đặt → về lại mốc đã điều phối
@@ -305,10 +314,21 @@ def recompute_status(db: Session, pr: PurchaseRequest) -> None:
 
 
 # Thứ tự tiến độ dòng (đồng bộ với ĐMH); dòng YCMH = mức KÉM TIẾN NHẤT trong các dòng ĐMH liên kết
-# Phải KHỚP PROGRESS_ORDER của ĐMH (Task 8 chèn "Chưa gửi ĐMH cho KT"); thiếu sẽ khiến
-# sync đặt nhầm dòng về "Chưa đặt hàng".
-_PROGRESS_ORDER = ["Chưa đặt hàng", "Đã đặt hàng", "Đã nhận hàng",
-                   "Chưa gửi ĐMH cho KT", "Đã gửi ĐMH cho KT", "Hoàn thành"]
+# Phải KHỚP PROGRESS_ORDER của ĐMH (Task 8 chèn `doc_pending`); thiếu sẽ khiến sync đặt
+# nhầm dòng về mức `not_ordered`.
+# B-06: trước đây đây là bản CHÉP TAY của list bên ĐMH — hai bản chép có thể trôi khỏi nhau mà
+# không ai biết. Nay cả hai cùng đọc PO_PROGRESS_STATUS.ordered_values (đã loại ngoại lệ
+# `paused`/`cancelled`, hai giá trị đó được xử lý riêng bên dưới).
+_PROGRESS_ORDER = list(PO_PROGRESS_STATUS.ordered_values)
+
+# Mã tiến độ của DÒNG ĐMH đọc ở đây. Không import từ `purchase_order.service` vì module đó
+# import ngược lại chỗ này (sync_urgent_group) — cả hai cùng lấy từ bộ mã dùng chung thay vì
+# gọi chéo nhau.
+_PROG_NOT_ORDERED = "not_ordered"
+_PROG_ORDERED = "ordered"
+_PROG_COMPLETED = "completed"
+_PROG_PAUSED = "paused"
+_PROG_CANCELLED = "cancelled"
 
 
 def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
@@ -318,7 +338,7 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
     - Dòng ĐMH Hủy: không cộng SL; dòng Tạm ngưng: dùng mức tiến độ trước khi tạm ngưng.
     - Trạng thái dòng YCMH rút gọn còn 6 mức; dòng bị Hủy THỦ CÔNG trên YCMH thì giữ nguyên.
     - qty_ordered/qty_received: tổng SL đặt/nhận theo product_code (đồng bộ vào DB).
-    - CR-074: sản phẩm CHƯA có dòng ĐMH nào thì mang nhãn riêng "Chưa tạo đơn mua hàng".
+    - CR-074: sản phẩm CHƯA có dòng ĐMH nào thì mang mã riêng `no_po` (Chưa tạo đơn mua hàng).
       Mốc "đã tạo đơn" tính CẢ đơn còn Nháp / Chờ duyệt / Bị trả lại — chỉ đơn đã Hủy là
       không tính, vì đơn đó chết rồi thì coi như chưa ai lập."""
     if not pr_code:
@@ -338,7 +358,7 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
                      db.query(POItem.product_code).join(PurchaseOrder, PurchaseOrder.id == POItem.po_id)
                      .filter(PurchaseOrder.pr_code == pr_code,
                              PurchaseOrder.status != "cancelled",
-                             POItem.progress_status != "Hủy đơn").distinct().all()}
+                             POItem.progress_status != _PROG_CANCELLED).distinct().all()}
     # Tổng SL đã nhận theo từng dòng ĐMH (gom các lần giao).
     recv_by_item: dict[int, float] = {}
     item_ids = [ln.id for ln in lines]
@@ -346,15 +366,15 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
         rows = (db.query(PODelivery.po_item_id, func.coalesce(func.sum(PODelivery.received_qty), 0))
                 .filter(PODelivery.po_item_id.in_(item_ids)).group_by(PODelivery.po_item_id).all())
         recv_by_item = {r[0]: float(r[1] or 0) for r in rows}
-    ordered_min: dict[str, int] = {}      # sp -> mức KÉM TIẾN NHẤT trong các dòng ĐÃ ĐẶT (>= "Đã đặt hàng")
+    ordered_min: dict[str, int] = {}      # sp -> mức KÉM TIẾN NHẤT trong các dòng ĐÃ ĐẶT (>= `ordered`)
     has_cancel: set[str] = set()          # sp có dòng Hủy đơn
     ordered_by_prod: dict[str, float] = {}   # sp -> tổng SL đã đặt
     received_by_prod: dict[str, float] = {}  # sp -> tổng SL đã nhận
     expected_max: dict[str, str] = {}        # sp -> ngày dự kiến có hàng MUỘN NHẤT trong các dòng ĐMH
     for ln in lines:
         p = ln.product_code
-        ps = ln.progress_status or "Chưa đặt hàng"
-        if ps == "Hủy đơn":
+        ps = ln.progress_status or _PROG_NOT_ORDERED
+        if ps == _PROG_CANCELLED:
             has_cancel.add(p); continue      # dòng hủy: không tính SL, không tính tiến độ
         # Dự kiến có hàng: một dòng YCMH có thể trải ra NHIỀU ĐMH (nhiều NCC, nhiều đợt) nên
         # lấy ngày MUỘN NHẤT — đó mới là lúc dòng được đáp ứng đủ. Ô trống không tính vào max.
@@ -362,8 +382,8 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
         _ed = (ln.expected_date or "").strip()
         if _ed and _ed > expected_max.get(p, ""):
             expected_max[p] = _ed
-        if ps == "Tạm ngưng":
-            ps = ln.status_before_pause or "Đã đặt hàng"   # dùng mức trước khi tạm ngưng
+        if ps == _PROG_PAUSED:
+            ps = ln.status_before_pause or _PROG_ORDERED   # dùng mức trước khi tạm ngưng
         idx = _PROGRESS_ORDER.index(ps) if ps in _PROGRESS_ORDER else 0
         # Dòng ĐMH CHƯA đặt (kể cả đơn đã duyệt nhưng chưa bấm đặt, hoặc đơn nháp mới tạo)
         # KHÔNG kéo trạng thái/tiến độ YCMH xuống — bỏ qua hoàn toàn.
@@ -373,7 +393,7 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
         received_by_prod[p] = received_by_prod.get(p, 0.0) + recv_by_item.get(ln.id, 0.0)
         cur = ordered_min.get(p)
         ordered_min[p] = idx if cur is None else min(cur, idx)
-    _DONE = _PROGRESS_ORDER.index("Hoàn thành")
+    _DONE = _PROGRESS_ORDER.index(_PROG_COMPLETED)
     
     prev_statuses = {it.id: (it.line_status or "") for it in items_of(db, pr.id)}
     new_receives = False
@@ -387,7 +407,8 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
         old_st = prev_statuses.get(it.id, "")
         # Ngoại lệ đặt thủ công trên YCMH thì giữ nguyên Hủy đơn khi CHƯA có ĐMH mới (chưa tạo & chưa đặt).
         # Nếu đã tạo ĐMH mới hoặc đặt hàng mới cho sản phẩm này, trạng thái tự động cập nhật theo ĐMH mới.
-        if (it.line_status or "") == "Hủy đơn" and p not in ordered_min and p not in created_prods:
+        if ((it.line_status or "") == LINE_STATUS_CANCELLED
+                and p not in ordered_min and p not in created_prods):
             continue
         # Dự kiến có hàng cuộn NGƯỢC từ ĐMH lên:
         #  - ô trên YCMH còn TRỐNG  -> ghi thẳng (đúng nhánh mà luật hiện hành cho sửa tự do)
@@ -401,18 +422,19 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
         # Suy trạng thái theo SL/tiến độ THỰC (không bị dòng ĐMH chưa đặt làm sai):
         if p not in ordered_min:
             if p in has_cancel and p not in created_prods:
-                it.line_status = "Hủy đơn"
+                it.line_status = LINE_STATUS_CANCELLED
             else:
-                # CR-074: có dòng ĐMH (kể cả đơn Nháp) → "Chưa đặt hàng"; không có gì → "Chưa tạo đơn mua hàng"
+                # CR-074: có dòng ĐMH (kể cả đơn Nháp) → `not_ordered`; không có gì → `no_po`
                 it.line_status = LINE_STATUS_NOT_ORDERED if p in created_prods else LINE_STATUS_NO_PO
         elif ordered_min[p] >= _DONE:
-            it.line_status = "Hoàn thành"        # mọi dòng ĐMH đã đặt đều Hoàn thành
+            it.line_status = LINE_STATUS_COMPLETED   # mọi dòng ĐMH đã đặt đều Hoàn thành
         elif received > 0:
-            it.line_status = "Đã nhận hàng"      # đã nhận (một phần trở lên)
+            it.line_status = LINE_STATUS_RECEIVED    # đã nhận (một phần trở lên)
         else:
-            it.line_status = "Đã đặt hàng"       # đã đặt, chưa nhận
+            it.line_status = LINE_STATUS_ORDERED     # đã đặt, chưa nhận
 
-        if (it.line_status in ("Đã nhận hàng", "Hoàn thành")) and (old_st not in ("Đã nhận hàng", "Hoàn thành")):
+        _DA_NHAN = (LINE_STATUS_RECEIVED, LINE_STATUS_COMPLETED)
+        if it.line_status in _DA_NHAN and old_st not in _DA_NHAN:
             new_receives = True
 
     db.commit()
@@ -470,6 +492,10 @@ def update_item_status(db: Session, pid: int, data: ItemStatusIn, user_id: int, 
         if not is_manager and (row.assignee or "") != (emp_code or "__none__"):
             continue  # NSTM chỉ sửa dòng được giao cho mình
         if it.line_status is not None:
+            # B-06: cột lưu MÃ. Chặn ngay tại cửa thay vì để giá trị lạ nằm im trong CSDL —
+            # dòng mang mã lạ rơi khỏi mọi bộ lọc VÀ khỏi cả điều kiện hoàn thành phiếu.
+            if it.line_status not in PR_LINE_STATUS.values:
+                raise HTTPException(400, f"Trạng thái dòng không hợp lệ: {it.line_status!r}")
             row.line_status = it.line_status
         if it.progress_note is not None:
             row.progress_note = it.progress_note
@@ -511,7 +537,7 @@ def cancel_pr(db: Session, pid: int, reason: str, user_id: int) -> PurchaseReque
 
 def return_pr(db: Session, pid: int, reason: str, user_id: int) -> PurchaseRequest:
     """Trả phiếu về "Bị trả lại" (rejected) — người tạo SỬA & GỬI DUYỆT LẠI được (đồng bộ YCKS).
-    Xóa nhân sự phụ trách + reset trạng thái mọi dòng về 'Chưa tạo đơn mua hàng' (CR-074)."""
+    Xóa nhân sự phụ trách + reset trạng thái mọi dòng về `no_po` (CR-074)."""
     pr = get_pr(db, pid)
     for it in items_of(db, pid):
         it.assignee = ""
@@ -527,10 +553,11 @@ def return_pr(db: Session, pid: int, reason: str, user_id: int) -> PurchaseReque
 
 def complete_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
     pr = get_pr(db, pid)
-    # Chỉ hoàn thành phiếu khi MỌI dòng đã ở điểm cuối ("Hoàn thành"/"Hủy đơn") —
+    # Chỉ hoàn thành phiếu khi MỌI dòng đã ở điểm cuối (`completed`/`cancelled`) —
     # tránh bấm Hoàn thành khi sản phẩm còn chưa đặt hàng/đang xử lý.
     items = items_of(db, pid)
-    pending = [it for it in items if (it.line_status or LINE_STATUS_NO_PO) not in ("Hoàn thành", "Hủy đơn")]
+    pending = [it for it in items
+               if (it.line_status or LINE_STATUS_NO_PO) not in LINE_STATUS_DONE]
     if not items or pending:
         raise HTTPException(400, "Chưa có sản phẩm đặt hàng hoàn tất — chỉ hoàn thành phiếu khi mọi sản phẩm đã Hoàn thành hoặc Hủy.")
     pr.status = "completed"
@@ -620,7 +647,7 @@ def urgent_reasons(std: dict, base: str, lines) -> list[str]:
     out: list[str] = []
     for it in lines or []:
         want = (getattr(it, "required_date", "") or "").strip()
-        if not want or (getattr(it, "line_status", "") or "") == "Hủy đơn":
+        if not want or (getattr(it, "line_status", "") or "") == LINE_STATUS_CANCELLED:
             continue
         group = getattr(it, "item_group", "") or ""
         due = lead_time.regulated_date(std, group, base)
@@ -695,7 +722,7 @@ def _save_items(db: Session, pr_id: int, items, user_id: int, auto_urgent: bool 
     db.flush()
     # Đồng bộ ngày cần hàng sớm nhất lên header phiếu (để lọc khoảng ngày trên CSDL chuẩn xác)
     all_req = [it.required_date for it in items_of(db, pr_id)
-               if (it.required_date or "").strip() and it.line_status != "Hủy đơn"]
+               if (it.required_date or "").strip() and it.line_status != LINE_STATUS_CANCELLED]
     if _pr:
         _pr.need_date = min(all_req) if all_req else ""
     db.commit()

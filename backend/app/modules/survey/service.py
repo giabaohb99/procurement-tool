@@ -304,10 +304,14 @@ def set_status(db: Session, sid: int, status: str, user_id: int, msg: str = "") 
     s = get_survey(db, sid)
     s.status = status
     s.updated_by = user_id
+    # B-04: ghi MÃ. Mã ở đây cố ý trùng chữ với `status` — cùng một sự kiện duyệt sinh ra cả
+    # hai cột. Nhưng KHÔNG gộp làm một: `approve_status` chỉ đổi ở hai nhánh dưới đây, nên
+    # phiếu duyệt xong rồi bị hủy vẫn giữ `approved` — nó nhớ QUYẾT ĐỊNH, còn `status` nhớ
+    # phiếu đang ở đâu.
     if status == "approved":
-        s.approve_status = "Duyệt"
+        s.approve_status = "approved"
     elif status == "rejected":
-        s.approve_status = "Không duyệt"
+        s.approve_status = "rejected"
     if msg:
         s.approve_note = msg
     db.commit()

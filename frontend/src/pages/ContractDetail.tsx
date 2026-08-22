@@ -5,19 +5,21 @@ import { askConfirm } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
 import { contractExpiryBadge } from '../config/cruds'
 import { CONTRACT_TYPES } from '../utils/contractTypes'
+import { CONTRACT_PARTY_TYPES, CONTRACT_STATUSES } from '../utils/contractStatus'
 import SearchSelect from '../components/SearchSelect'
 import DateRangePicker from '../components/DateRangePicker'
 import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
 
-const PARTY_TYPES = ['Nhà cung cấp', 'Khách hàng', 'Khác']
-const C_STATUS = ['Hiệu lực', 'Hết hạn', 'Thanh lý']
+// B-02: hai ô này lưu MÃ, hiện nhãn tiếng Việt — gửi chữ tiếng Việt lên backend trả 422.
+const PARTY_TYPES = CONTRACT_PARTY_TYPES
+const C_STATUS = CONTRACT_STATUSES
 
 export default function ContractDetail() {
   const { id } = useParams()
   const isNew = id === 'new'
   const { can } = useAuth()
   const navigate = useNavigate()
-  const [c, setC] = useState<any>({ party_type: 'Nhà cung cấp', party_code: '', party_name: '', company_id: 0, title: '', contract_type: '', start_date: '', end_date: '', signed: false, status: 'Hiệu lực', note: '' })
+  const [c, setC] = useState<any>({ party_type: 'supplier', party_code: '', party_name: '', company_id: 0, title: '', contract_type: '', start_date: '', end_date: '', signed: false, status: 'active', note: '' })
   const [suppliers, setSuppliers] = useState<any[]>([])
   const [companies, setCompanies] = useState<any[]>([])
   const [files, setFiles] = useState<any[]>([])
@@ -59,7 +61,7 @@ export default function ContractDetail() {
     try { await api.post('/api/attachments', fd); loadAll() } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi tải file') }
   }
 
-  const isNCC = c.party_type === 'Nhà cung cấp'
+  const isNCC = c.party_type === 'supplier'
 
   return (
     <div>

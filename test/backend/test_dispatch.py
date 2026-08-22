@@ -105,7 +105,7 @@ class TestRecomputeStatus:
         pr = _make_pr(db, seed)
         S.dispatch_pr(db, pr.id, seed.u_req_id)
         it = S.items_of(db, pr.id)[0]
-        it.line_status = "Đã đặt hàng"
+        it.line_status = "ordered"
         db.commit()
         S.recompute_status(db, pr)
         assert pr.status == "processing"
@@ -167,7 +167,7 @@ class TestCongTacDieuPhoi:
         """Tắt công tắc: phiếu 'Đã duyệt' có dòng đã đặt hàng vẫn tự sang 'Đang xử lý'."""
         pr = _make_pr(db, seed, status="approved", code="PYC-SW-RC")
         it = S.items_of(db, pr.id)[0]
-        it.line_status = "Đã đặt hàng"
+        it.line_status = "ordered"
         db.commit()
         S.recompute_status(db, pr)
         assert pr.status == "processing"

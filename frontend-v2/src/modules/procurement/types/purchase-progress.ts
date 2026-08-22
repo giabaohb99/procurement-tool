@@ -29,7 +29,7 @@ export interface PurchaseProgressRow {
   price: number
   vat: number
   order_amount: number
-  /** Tiến độ dòng — chuỗi tiếng Việt, xem `PROGRESS_STATUSES`. */
+  /** Tiến độ dòng — MÃ, xem `PO_PROGRESS_STATUS` trong `shared/constants/statuses`. */
   progress_status: string
   /** Lần giao thứ mấy. */
   delivery_no: number | null
@@ -66,14 +66,3 @@ export interface PurchaseProgressResult {
   show_supplier: boolean
 }
 
-/** Tiến độ của một dòng đơn hàng. Thứ tự dưới đây là thứ tự trong luồng. */
-export const PROGRESS_STATUSES = [
-  'Chưa đặt hàng',
-  'Đã đặt hàng',
-  'Đã nhận hàng',
-  'Chưa gửi ĐMH cho KT',
-  'Đã gửi ĐMH cho KT',
-  'Hoàn thành',
-  'Tạm ngưng',
-  'Hủy đơn',
-] as const

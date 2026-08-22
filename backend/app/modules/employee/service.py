@@ -7,8 +7,10 @@ from app.core.utils import generate_code
 from .model import Employee
 from .schema import EmployeeCreate, EmployeeUpdate
 
-# "status" (Chính thức / Cộng tác viên / Nghỉ việc…) trước đây thiếu trong whitelist nên ô lọc
-# Trạng thái trên UI không ăn — bổ sung vào đây để cả lọc cơ bản lẫn lọc điều kiện đều chạy.
+# "status" trước đây thiếu trong whitelist nên ô lọc Trạng thái trên UI không ăn — bổ sung vào
+# đây để cả lọc cơ bản lẫn lọc điều kiện đều chạy.
+# B-03: cột này nay lưu MÃ (`official`…), nên ô lọc phải GỬI MÃ chứ không gửi nhãn tiếng Việt.
+# Gửi nhãn thì câu lọc vẫn chạy, chỉ là ra 0 dòng — đúng cái bẫy CR-118 đã dính một lần.
 FILTERABLE = ["code", "full_name", "email", "is_active", "position", "role_names", "department_id",
               "status"]
 ENTITY = "employee"

@@ -1,8 +1,8 @@
 """Backfill TIẾN ĐỘ (đặt/nhận) từ Đơn mua hàng -> Yêu cầu mua hàng nguồn.
 
 Vì sao cần: các dòng ĐMH tạo TRƯỚC 2026-07-11 (trước khi có state-machine tiến độ)
-bị migration 5ad008ca924e đóng dấu progress_status = "Chưa đặt hàng" và KHÔNG được
-auto-nâng. Hàm đồng bộ sang YCMH bỏ qua mọi dòng còn ở "Chưa đặt hàng"
+bị migration 5ad008ca924e đóng dấu progress_status = `not_ordered` và KHÔNG được
+auto-nâng. Hàm đồng bộ sang YCMH bỏ qua mọi dòng còn ở `not_ordered`
 (if idx < 1: continue), nên cột "TIẾN ĐỘ (NHẬN / ĐẶT)" của YCMH hiển thị "—"
 dù đơn đã hoàn thành và đã nhận hàng.
 

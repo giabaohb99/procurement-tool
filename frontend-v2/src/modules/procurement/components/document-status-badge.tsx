@@ -1,4 +1,10 @@
 import { Badge } from '@/shared/ui/badge'
+import {
+  PO_DOCUMENT_STATUS,
+  PO_PROGRESS_STATUS,
+  PR_LINE_STATUS,
+  labelOf,
+} from '@/shared/constants/statuses'
 import { TONE_CLASS, type StatusTone as Tone } from '@/shared/ui/status-tone'
 import { cn } from '@/shared/utils/cn'
 
@@ -47,27 +53,19 @@ export function StatusBadge({ status, labels, className }: StatusBadgeProps) {
   )
 }
 
-/** Tình trạng hồ sơ chứng từ của ĐMH — lưu chuỗi tiếng Việt nên map riêng. */
+/** Tình trạng hồ sơ chứng từ của ĐMH — khóa là MÃ (B-06), xem `PO_DOCUMENT_STATUS`. */
 const DOCUMENT_TONE: Record<string, Tone> = {
-  'chưa có chứng từ': 'danger',
-  'đã có thông tin chứng từ': 'pending',
-  'đã đủ chứng từ': 'done',
+  none: 'danger',
+  partial: 'pending',
+  full: 'done',
 }
 
 export function DocumentStatusBadge({ status }: { status: string }) {
   if (!status) return <span className="text-muted-foreground">—</span>
 
   return (
-    <Badge
-      variant="secondary"
-      // `first-letter:uppercase` chứ không phải `capitalize`: giá trị lưu là câu
-      // tiếng Việt ("đã có thông tin chứng từ"), viết hoa mọi chữ đọc rất kỳ.
-      className={cn(
-        'border-0 first-letter:uppercase',
-        TONE_CLASS[DOCUMENT_TONE[status] ?? 'neutral'],
-      )}
-    >
-      {status}
+    <Badge variant="secondary" className={cn('border-0', TONE_CLASS[DOCUMENT_TONE[status] ?? 'neutral'])}>
+      {labelOf(PO_DOCUMENT_STATUS, status) || status}
     </Badge>
   )
 }
@@ -80,20 +78,28 @@ export function DocumentStatusBadge({ status }: { status: string }) {
  * khâu phải một màu riêng. Bảng màu bê nguyên từ v1 (`PG_COLOR`) để người dùng
  * cũ không phải học lại. Bốn màu ngoài bộ token dùng thẳng bảng màu Tailwind vì
  * chúng không mang nghĩa "thành công / cảnh báo / lỗi" nào cả.
+ *
+ * B-06: khóa là MÃ. Huy hiệu này dùng cho CẢ tiến độ dòng ĐMH lẫn trạng thái dòng
+ * YCMH — hai bộ mã dùng chung năm mã giữa chuỗi với cùng một nghĩa, YCMH chỉ thêm
+ * `no_po` ở đầu, nên gộp một bảng là đúng chứ không phải trùng lặp.
  */
 const PROGRESS_CLASS: Record<string, string> = {
-  'Chưa đặt hàng': TONE_CLASS.neutral,
-  'Đã đặt hàng': 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  'Đã nhận hàng': 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400',
-  'Chưa gửi ĐMH cho KT': 'bg-pink-500/10 text-pink-600 dark:text-pink-400',
-  'Đã gửi ĐMH cho KT': 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
-  'Hoàn thành': TONE_CLASS.done,
-  'Tạm ngưng': TONE_CLASS.pending,
-  'Hủy đơn': TONE_CLASS.danger,
+  no_po: TONE_CLASS.neutral,
+  not_ordered: TONE_CLASS.neutral,
+  ordered: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  received: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400',
+  doc_pending: 'bg-pink-500/10 text-pink-600 dark:text-pink-400',
+  doc_sent: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+  completed: TONE_CLASS.done,
+  paused: TONE_CLASS.pending,
+  cancelled: TONE_CLASS.danger,
 }
 
 export function ProgressStatusBadge({ status }: { status: string }) {
   if (!status) return <span className="text-muted-foreground">—</span>
+
+  // Nhãn của hai bộ trùng khít ở phần chung; `no_po` chỉ có ở YCMH nên tra bù bộ kia.
+  const nhan = labelOf(PO_PROGRESS_STATUS, status) || labelOf(PR_LINE_STATUS, status) || status
 
   return (
     <Badge
@@ -103,7 +109,7 @@ export function ProgressStatusBadge({ status }: { status: string }) {
         PROGRESS_CLASS[status] ?? TONE_CLASS.neutral,
       )}
     >
-      {status}
+      {nhan}
     </Badge>
   )
 }

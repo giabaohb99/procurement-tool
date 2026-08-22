@@ -63,6 +63,40 @@ def update_employee_avatar(eid: int, file: UploadFile = File(...), db: Session =
     return success({"avatar": url}, "Đã cập nhật ảnh đại diện")
 
 
+def _ma_trang_thai(raw: str) -> str:
+    """Đổi ô "Trạng thái NS" trong tệp CSV thành MÃ (B-03).
+
+    Đây là NGOẠI LỆ có chủ đích của luật "không tự dịch nhãn thành mã": tệp CSV do người
+    dùng gõ tay trong Excel, không phải giao diện mình viết ra — bắt họ gõ `maternity_leave`
+    là vô lý, mà chặn 422 giữa chừng thì hỏng cả lần nhập. Ở tầng API thì vẫn chặn thẳng.
+
+    Nhận cả ba dạng: mã sẵn (`official`), nhãn đúng (`Nghỉ thai sản`) và nhãn gõ lệch dấu /
+    lệch hoa thường (`nghi thai san`). Không nhận ra thì trả rỗng để nơi gọi tự quyết —
+    KHÔNG đoán bừa thành "Chính thức", vì đoán sai ở đây là ghi đè trạng thái thật của
+    một con người.
+    """
+    import unicodedata
+
+    from app.core.status_codes import EMPLOYEE_STATUS
+
+    v = (raw or "").strip()
+    if not v:
+        return ""
+    if v in EMPLOYEE_STATUS.values:
+        return v
+
+    def norm(s: str) -> str:
+        s = unicodedata.normalize("NFD", s)
+        s = "".join(ch for ch in s if not unicodedata.combining(ch))
+        return " ".join(s.replace("đ", "d").replace("Đ", "D").lower().split())
+
+    can = norm(v)
+    for ma, nhan in EMPLOYEE_STATUS.labels.items():
+        if norm(nhan) == can:
+            return ma
+    return ""
+
+
 class SetPasswordIn(BaseModel):
     password: str
 
@@ -150,7 +184,10 @@ def export_employees_csv(
         "phone": "Số điện thoại",
         "department_name": "Phòng ban",
         "position": "Vị trí",          # CR-022: chức danh hiển thị, KHÔNG phải phân quyền
-        "status": "Trạng thái NS",
+        # B-03: xuất NHÃN chứ không xuất mã. Cột này người dùng mở bằng Excel để đọc và
+        # để sửa rồi nhập ngược lại — đổ `official` ra đó là biến một tệp đang đọc được
+        # thành tệp phải tra cứu. Đường nhập vẫn hiểu cả nhãn lẫn mã (xem `_ma_trang_thai`).
+        "status_label": "Trạng thái NS",
     }
     return export_csv_response(items, headers_map, "employees")
 
@@ -177,8 +214,10 @@ def import_employees_csv(
     if not reader.fieldnames:
         raise HTTPException(400, "File CSV trống")
         
+    from app.core.status_codes import EMPLOYEE_STATUS
+
     created, updated, deleted = 0, 0, 0
-    for row in reader:
+    for dong, row in enumerate(reader, start=2):   # 2 = dòng đầu tiên sau hàng tiêu đề
         action = (row.get("Hành động") or "").strip().lower()
         is_active = action not in ["xóa", "delete", "ngừng"]
         
@@ -190,8 +229,18 @@ def import_employees_csv(
         # CR-022: cột "Vai trò" cũ nay là "Vị trí" (chức danh). Vẫn đọc tên cột cũ để file CSV
         # xuất trước đây import lại được, nhưng đổ vào `position` — KHÔNG cấp quyền cho tài khoản.
         position = (row.get("Vị trí") or row.get("Chức vụ") or row.get("Vai trò") or "").strip()
-        status = (row.get("Trạng thái NS") or row.get("Trạng thái") or "Chính thức").strip()
-        
+        # B-03: ô này chứa NHÃN tiếng Việt (đúng cái bản xuất CSV đổ ra) hoặc mã. Bỏ trống
+        # thì mặc định Chính thức như trước. Gõ sai thì dừng cả lần nhập và nói rõ dòng nào
+        # — im lặng cho qua là một hồ sơ nhân sự mang trạng thái không ai chọn được nữa.
+        status_raw = (row.get("Trạng thái NS") or row.get("Trạng thái") or "").strip()
+        status = _ma_trang_thai(status_raw) or ("official" if not status_raw else "")
+        if not status:
+            hop_le = " / ".join(EMPLOYEE_STATUS.labels.values())
+            raise HTTPException(
+                400, f"Dòng {dong}: trạng thái nhân sự {status_raw!r} không hợp lệ. "
+                     f"Giá trị nhận: {hop_le}.")
+
+
         if not code and not full_name:
             continue
             

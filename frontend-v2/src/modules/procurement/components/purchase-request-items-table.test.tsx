@@ -36,7 +36,7 @@ const ITEMS: PurchaseRequestItem[] = [
     required_date: '2026-05-20',
     assignee: '',
     expected_date: '',
-    line_status: 'Chưa đặt hàng',
+    line_status: 'no_po',
     progress_note: '',
     note: '',
     qty_ordered: 0,

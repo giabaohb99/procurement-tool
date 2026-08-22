@@ -26,6 +26,18 @@ def _dict(obj) -> dict:
     return d
 
 
+def _survey_dict(s: Survey) -> dict:
+    """`_dict` của PHIẾU, kèm nhãn tiếng Việt của `approve_status` (B-04).
+
+    Phải có hàm riêng vì `_dict` quét `mapper.column_attrs` — nó chỉ thấy cột thật, không thấy
+    property. Dùng cho CẢ danh sách lẫn chi tiết: chỉ gắn nhãn ở chi tiết thì cột ở bảng danh
+    sách hiện `approved` mà không lỗi gì cả.
+    """
+    d = _dict(s)
+    d["approve_status_label"] = s.approve_status_label
+    return d
+
+
 def _price_hint(db: Session, s: Survey) -> dict:
     """Giá mua GẦN NHẤT và CAO NHẤT của mã VTBB ở đầu phiếu (CR-111).
 
@@ -58,7 +70,7 @@ def _price_hint(db: Session, s: Survey) -> dict:
 
 def _out(db: Session, s: Survey) -> dict:
     """Phiếu khảo sát GỘP: trả cả 2 bảng dòng (NCC + SP)."""
-    base = _dict(s)
+    base = _survey_dict(s)
     base["price_hint"] = _price_hint(db, s)
     sup = service.supplier_lines_of(db, s.id)
     prod = service.product_lines_of(db, s.id)
@@ -118,7 +130,7 @@ def list_surveys(request: Request, pg: dict = Depends(pagination), db: Session =
     q = apply_scope(q, Survey, "survey", user, get_perm_profile(db, user))
     q = apply_sort_from_request(q, Survey, request)
     total, items = service.list_surveys(db, q, pg)
-    return success({"total": total, "items": [_dict(x) for x in items]})
+    return success({"total": total, "items": [_survey_dict(x) for x in items]})
 
 
 @router.get("/{sid}")

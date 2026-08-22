@@ -709,6 +709,10 @@ buộc phải nhập đó"*.
 Gom một chỗ để tra, chi tiết nằm trong hai dòng **CR-117** và **CR-118** của `change-log.md`.
 Không cái nào chặn chạy hiện tại; xếp theo mức độ.
 
+> **Cả bốn nợ này đã được xếp lịch ở [`15` Đổ bê tông nền ERP v2](./15-do-be-tong-nen-v2.md)**
+> *(22/08/2026)*: N-15 → đợt **B-02**, N-14 → **B-07**, N-13 → **B-08**, N-16 → ràng buộc §4.1 áp
+> cho mọi đợt. Nợ lớp CRUD ở §6.5 → **B-09**. Cầm `15` mà làm, tệp này chỉ giữ phần mô tả vấn đề.
+
 | # | Nợ | Vì sao đáng lo | Đề xuất trả |
 |---|---|---|---|
 | N-13 | **`attachment/controller.py` `_check()` không lọc phạm vi dữ liệu** — chỉ xét quyền vai trò, trừ `purchase_order` *(có lọc ở `_resolve_chain`)* | Ngay cả sau CR-117, người có `contract.read` phạm vi `company` vẫn **tải được tệp đính kèm** hợp đồng của pháp nhân khác nếu đoán đúng id. Lỗ **chung cho mọi entity**, không riêng hợp đồng | Một đợt riêng: cho `_check()` gọi `apply_scope` theo `(entity, id)` giống `_in_scope` của hợp đồng. Đụng cả 10 loại chứng từ nên tách riêng |

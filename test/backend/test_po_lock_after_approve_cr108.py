@@ -11,10 +11,11 @@ from fastapi import HTTPException
 from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
 from app.modules.purchase_order.model import POItem, PurchaseOrder
 from app.modules.purchase_order.schema import POItemIn, POUpdate
-from app.modules.purchase_order.service import chan_sua_don_da_duyet, unapprove_po
+from app.modules.purchase_order.service import (PROG_COMPLETED, PROG_ORDERED,
+                                                chan_sua_don_da_duyet, unapprove_po)
 
 
-def _don(db, status="approved", qty_received=0.0, progress_status="Đã đặt hàng"):
+def _don(db, status="approved", qty_received=0.0, progress_status=PROG_ORDERED):
     po = PurchaseOrder(code="PO-CR108", status=status, supplier_code="NCC01",
                        supplier_name="NCC Một", department="Thu mua", vat_rate=0.08)
     db.add(po)
@@ -60,7 +61,7 @@ def test_da_duyet_khong_doi_duoc_vat_chung(db):
 def test_da_duyet_van_cap_nhat_duoc_ho_so_chung_tu(db):
     """document_status có endpoint riêng, sửa được cả khi đơn Hoàn thành — không chặn."""
     po, it = _don(db)
-    chan_sua_don_da_duyet(db, po, POUpdate(document_status="đã đủ chứng từ", items=[_dong(it)]))
+    chan_sua_don_da_duyet(db, po, POUpdate(document_status="full", items=[_dong(it)]))
 
 
 def test_da_duyet_van_sua_duoc_ma_don_misa(db):
@@ -128,7 +129,7 @@ def test_don_nhap_khong_bi_chan(db):
 
 def test_dong_hoan_thanh_khong_chan_them(db):
     """Dòng Hoàn thành đã bị _save_items bỏ qua nguyên dòng — không cần chặn thêm ở đây."""
-    po, it = _don(db, progress_status="Hoàn thành")
+    po, it = _don(db, progress_status=PROG_COMPLETED)
     chan_sua_don_da_duyet(db, po, POUpdate(items=[_dong(it, price=9999)]))
 
 
@@ -155,7 +156,7 @@ def test_khong_huy_duyet_khi_da_nhan_hang(db):
 
 
 def test_khong_huy_duyet_khi_co_dong_hoan_thanh(db):
-    po, it = _don(db, progress_status="Hoàn thành")
+    po, it = _don(db, progress_status=PROG_COMPLETED)
     with pytest.raises(HTTPException) as e:
         unapprove_po(db, po.id, user_id=1, reason="x")
     assert "Hoàn thành" in e.value.detail

@@ -5,6 +5,7 @@ import type { Company } from '@/modules/hr/types/company'
 import type { Employee } from '@/modules/hr/types/employee'
 import type { Supplier } from '@/modules/production/types/supplier'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { PO_DOCUMENT_STATUS, labelOf } from '@/shared/constants/statuses'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { DatePicker } from '@/shared/ui/date-picker'
@@ -21,7 +22,7 @@ import {
 } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
 import { formatDate } from '@/shared/utils/format-date'
-import { DOCUMENT_STATUSES } from '../types/purchase-document'
+
 import {
   PAYMENT_TERMS_OPTIONS,
   type PurchaseOrderDetail,
@@ -262,15 +263,15 @@ export function PurchaseOrderInfoCard({
                 <SelectValue placeholder="Chọn tình trạng hồ sơ" />
               </SelectTrigger>
               <SelectContent>
-                {DOCUMENT_STATUSES.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
+                {PO_DOCUMENT_STATUS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           ) : (
-            <ReadOnlyValue>{data.document_status || '—'}</ReadOnlyValue>
+            <ReadOnlyValue>{labelOf(PO_DOCUMENT_STATUS, data.document_status) || '—'}</ReadOnlyValue>
           )}
         </div>
 

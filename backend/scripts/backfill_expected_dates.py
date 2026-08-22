@@ -21,7 +21,9 @@ from app.core.database import SessionLocal
 from app.core import all_models  # noqa: F401
 from app.modules.catalog import lead_time
 from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
+from app.modules.purchase_request.service import LINE_STATUS_CANCELLED
 from app.modules.purchase_order.model import PurchaseOrder, POItem, PODelivery
+from app.modules.purchase_order.service import PROG_CANCELLED
 
 
 def main(apply: bool = False) -> None:
@@ -49,7 +51,7 @@ def main(apply: bool = False) -> None:
 
             # Cập nhật dòng hàng YCMH
             for it in items:
-                if (it.line_status or "") == "Hủy đơn":
+                if (it.line_status or "") == LINE_STATUS_CANCELLED:
                     continue
                 if not (it.expected_date or "").strip():
                     new_exp = lead_time.regulated_date(std_map, it.item_group or "", base_date)
@@ -60,7 +62,8 @@ def main(apply: bool = False) -> None:
 
             # Cập nhật header need_date
             valid_reqs = [it.required_date for it in items
-                          if (it.required_date or "").strip() and (it.line_status or "") != "Hủy đơn"]
+                          if (it.required_date or "").strip()
+                          and (it.line_status or "") != LINE_STATUS_CANCELLED]
             min_req = min(valid_reqs) if valid_reqs else ""
             if min_req and pr.need_date != min_req:
                 pr_header_updated += 1
@@ -94,7 +97,7 @@ def main(apply: bool = False) -> None:
 
             po_items = db.query(POItem).filter(POItem.po_id == po.id).all()
             for it in po_items:
-                if (it.progress_status or "") == "Hủy đơn":
+                if (it.progress_status or "") == PROG_CANCELLED:
                     continue
                 if not (it.expected_date or "").strip():
                     pcode = (it.product_code or "").strip()

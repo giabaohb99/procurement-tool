@@ -1,6 +1,11 @@
 import { supplierApi } from '@/modules/production/api/supplier-api'
 import type { FilterFieldDefinition, SelectOption } from '@/shared/conditional-filter'
+import { CONTRACT_PARTY_TYPE, CONTRACT_STATUS } from '@/shared/constants/statuses'
 import { CONTRACT_TYPE_OPTIONS } from './contract-type-options'
+
+/** Bộ lọc điều kiện chỉ nhận `options` tĩnh — lấy từ bộ mã sinh tự động, không khai tay. */
+const toOptions = (set: readonly { value: string; label: string }[]) =>
+  set.map(({ value, label }) => ({ value, label }))
 
 async function fetchSupplierCodeOptions(search: string): Promise<SelectOption[]> {
   const res = await supplierApi.list({ name: search, is_active: true, page_size: 50 })
@@ -25,11 +30,9 @@ export const CONTRACT_FILTER_FIELDS: FilterFieldDefinition[] = [
     name: 'party_type',
     label: 'Bên ký kết (Loại đối tác)',
     type: 'select',
-    options: [
-      { value: 'Nhà cung cấp', label: 'Nhà cung cấp' },
-      { value: 'Khách hàng', label: 'Khách hàng' },
-      { value: 'Khác', label: 'Khác' },
-    ],
+    // B-02: lọc theo MÃ đang lưu trong DB. Trước đó ô này gửi lên chuỗi tiếng Việt,
+    // sau khi chuyển mã thì lọc kiểu nào cũng ra 0 dòng — đúng vết xe của CR-118.
+    options: toOptions(CONTRACT_PARTY_TYPE),
   },
   {
     name: 'party_code',
@@ -56,12 +59,7 @@ export const CONTRACT_FILTER_FIELDS: FilterFieldDefinition[] = [
     name: 'status',
     label: 'Trạng thái hợp đồng',
     type: 'select',
-    options: [
-      { value: 'Hiệu lực', label: 'Hiệu lực' },
-      { value: 'Hết hạn', label: 'Hết hạn' },
-      { value: 'Thanh lý', label: 'Thanh lý' },
-      { value: 'Hủy', label: 'Hủy' },
-    ],
+    options: toOptions(CONTRACT_STATUS),
   },
   {
     name: 'signed',

@@ -43,8 +43,8 @@ def _profile(scope="company", company_id=CTY_A, inc=None, exc=None):
 
 
 def _hd(db, code, company_id, created_by=99):
-    c = Contract(code=code, company_id=company_id, party_type="Nhà cung cấp",
-                 title=f"Hợp đồng {code}", status="Hiệu lực", created_by=created_by)
+    c = Contract(code=code, company_id=company_id, party_type="supplier",
+                 title=f"Hợp đồng {code}", status="active", created_by=created_by)
     db.add(c)
     db.commit()
     return c

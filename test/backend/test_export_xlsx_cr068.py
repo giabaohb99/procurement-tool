@@ -133,7 +133,7 @@ def test_ycmh_tong_tien_va_ngay_can_tinh_theo_dong(db):
     _pr_item(db, pr, product_code="SP2", product_name="SP 2", amount=5000, required_date="2026-09-05")
     # Dòng đã hủy: vẫn ra file nhưng không kéo "ngày cần hàng" đầu phiếu về sớm hơn
     _pr_item(db, pr, product_code="SP3", product_name="SP 3", amount=0,
-             required_date="2026-01-01", line_status="Hủy đơn")
+             required_date="2026-01-01", line_status="cancelled")   # B-06: cột lưu MÃ
     r = ex.build_rows(db, [pr])[0]
 
     assert r["total"] == 15800
@@ -316,7 +316,7 @@ def test_dmh_dung_bo_cot_cua_man_tien_do(db):
 
 def test_dmh_bung_theo_lan_giao(db):
     from app.modules.purchase_order import export as ex
-    po = _po(db, supplier_code="NX", pr_code="PYC-1", document_status="đã đủ chứng từ")
+    po = _po(db, supplier_code="NX", pr_code="PYC-1", document_status="full")  # B-06: cột lưu MÃ
     # Đặt 10 (10.800 gồm VAT), giao 2 lần: nhận 6 rồi nhận 4
     it = _po_item(db, po, product_code="SP1", qty_order=10, price=1000, vat=8,
                   qty_received=10, qty_remaining=0, amount=10800)

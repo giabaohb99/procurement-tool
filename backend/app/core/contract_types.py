@@ -8,15 +8,23 @@
 #
 # Nay DB lưu MÃ tiếng Anh, tiếng Việt chỉ còn ở tầng hiển thị. Đổi nhãn = sửa đúng một chỗ,
 # không phải chạy migration đổi dữ liệu như lần này.
-CONTRACT_TYPES = [
-    {"value": "purchase",  "label": "Hợp đồng mua bán"},
-    {"value": "principle", "label": "Hợp đồng nguyên tắc"},
-    {"value": "economic",  "label": "Hợp đồng kinh tế"},
-    {"value": "template",  "label": "Hợp đồng khuôn mẫu"},
-    {"value": "transport", "label": "Hợp đồng vận chuyển"},
-    {"value": "service",   "label": "Hợp đồng dịch vụ"},
-    {"value": "other",     "label": "Khác"},
-]
+#
+# B-01 (QĐ-9): bộ này chuyển sang khai bằng khung chung `status_catalog`. Đây là bài thử của
+# khung — ba tên cũ bên dưới giữ NGUYÊN kiểu và NGUYÊN thứ tự, nên endpoint
+# `/contracts/meta/types` trả về y hệt trước.
+from app.core.status_catalog import Code, CodeSet, register
 
-CONTRACT_TYPE_VALUES = {t["value"] for t in CONTRACT_TYPES}
-CONTRACT_TYPE_LABEL = {t["value"]: t["label"] for t in CONTRACT_TYPES}
+CONTRACT_TYPE_SET = register(CodeSet("contract_type", "Loại hợp đồng", [
+    Code("purchase",  "Hợp đồng mua bán"),
+    Code("principle", "Hợp đồng nguyên tắc"),
+    Code("economic",  "Hợp đồng kinh tế"),
+    Code("template",  "Hợp đồng khuôn mẫu"),
+    Code("transport", "Hợp đồng vận chuyển"),
+    Code("service",   "Hợp đồng dịch vụ"),
+    Code("other",     "Khác"),
+]))
+
+# Ba tên cũ — nơi gọi hiện tại vẫn dùng, đừng bỏ.
+CONTRACT_TYPES = CONTRACT_TYPE_SET.options
+CONTRACT_TYPE_VALUES = CONTRACT_TYPE_SET.values
+CONTRACT_TYPE_LABEL = CONTRACT_TYPE_SET.labels

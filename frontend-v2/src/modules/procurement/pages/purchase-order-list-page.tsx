@@ -33,13 +33,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { PO_DOCUMENT_STATUS } from '@/shared/constants/statuses'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { formatMoney } from '@/shared/utils/format-money'
 import { DocumentStatusBadge, StatusBadge } from '../components/document-status-badge'
 import { PURCHASE_ORDER_FILTER_FIELDS } from '../config/procurement-filter-fields'
 import { usePurchaseOrders } from '../hooks/use-purchase-documents'
 import {
-  DOCUMENT_STATUSES,
   PO_STATUS_LABELS,
   statusOptions,
   type PurchaseOrder,
@@ -281,9 +281,9 @@ function PurchaseOrderListContent() {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value={ALL}>Tất cả hồ sơ</SelectItem>
-          {DOCUMENT_STATUSES.map((val) => (
-            <SelectItem key={val} value={val}>
-              {val}
+          {PO_DOCUMENT_STATUS.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
             </SelectItem>
           ))}
         </SelectContent>

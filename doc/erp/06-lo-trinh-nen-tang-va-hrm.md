@@ -31,7 +31,7 @@ Không kiểm được tự động thì ràng buộc chỉ là lời khuyên, m
 | # | Nội dung | Hiện trạng đo được | Kiểm bằng gì |
 |---|---|---|---|
 | **R1** | Tên bảng, cột, biến, hàm, endpoint bằng **tiếng Anh**. Cấm tiếng Việt không dấu (`phan_loai`, `so_luong`). Tiếng Việt chỉ ở nhãn giao diện, nội dung dữ liệu, chú thích | **Đã là quy ước** ở [`NAMING_CONVENTIONS.md`](../../procurement-tool/doc/chung/NAMING_CONVENTIONS.md) và mã nguồn đang tuân thủ — quét 31 tệp model không thấy vi phạm | Bài kiểm duyệt metadata SQLAlchemy, so tên bảng/cột với danh sách từ tiếng Việt hay gặp. Chạy trong CI |
-| **R2** | Cột mang nghĩa trạng thái, loại, mức, cấp lưu **`SMALLINT` theo `IntEnum`**. Không lưu chuỗi | **30 cột** đang lưu chuỗi, trong đó **11 cột lưu tiếng Việt có dấu**. 145 chỗ so chuỗi (78 máy chủ + 67 giao diện). Đã có tiền lệ đúng ở module `import_tool` | Cột tên khớp `status|type|kind|level|state` mà kiểu `String` thì hỏng bài kiểm, trừ danh sách miễn trừ có ghi lý do |
+| **R2** | Cột mang nghĩa trạng thái, loại, mức, cấp lưu **giá trị thuộc một bộ mã cố định khai trong mã nguồn**, có **validator ở `schema.py` chặn giá trị ngoài bộ**. Cấm chữ tự do, cấm tiếng Việt có dấu. **Mặc định cho MỌI thứ làm mới: số** — `SMALLINT` + `IntEnum`, khuôn `import_tool` / `document/` / `approval/` *(**QĐ-11**, 22/08/2026)*. **Ngoại lệ ĐÓNG:** đúng 12 cột Thu mua ở [`15` §2.2](./15-do-be-tong-nen-v2.md) dùng **mã chuỗi tiếng Anh** *(khuôn CR-118)*, vì `status` cấp phiếu của tám chứng từ Thu mua đã là mã chuỗi — **QĐ-9**, lý do ở [`15` §2.4](./15-do-be-tong-nen-v2.md). Danh sách đó không mở rộng | **30 cột** đang lưu chuỗi, trong đó **12 cột lưu tiếng Việt có dấu** *(`15` §2.2 đếm lại ngày 22/08; bản cũ ghi 11, sót `tab_po_item.status_before_pause`)*. Khoảng **350 chỗ** so chuỗi. Khung khai chung đã dựng ở `app/core/status_catalog.py` **(B-01)** | Cột tên khớp `status/type/kind/level/state` mà **giá trị không thuộc bộ mã đã đăng ký** thì hỏng bài kiểm. **Không** kiểm theo kiểu dữ liệu — hai khuôn dùng hai kiểu khác nhau. Trừ danh sách miễn trừ có ghi lý do |
 | **R3** | Enum khai **một chỗ** ở máy chủ, **một chỗ** ở giao diện. Mỗi bảng đúng một model. Đổi cấu trúc đi qua migration | 9 tệp giao diện cùng chép lại danh sách trạng thái | Sinh tệp enum của giao diện từ máy chủ, CI chạy lại và so — khác một ký tự là hỏng. Xem H2 |
 | **R4** | Bảng nghiệp vụ có `company_id` **ngay từ migration đầu tiên**, kể cả khi bản 1 chạy một pháp nhân | **15 trên 57 bảng** có. *(Bản 2.0 ghi 14/31 — đó là đếm theo **tệp model**, mà một tệp thường khai nhiều bảng. Phân quyền chạy theo bảng, nên phải đếm theo bảng: thiếu **42 bảng**, không phải 17)* | Bài kiểm có danh sách bảng nghiệp vụ; thiếu cột là hỏng |
 | **R5** | Thiếu khai phạm vi dữ liệu thì **báo lỗi**, không lặng lẽ trả hết | Khai **9 trên 28** loại. Thiếu thì `_role_scope_cond` trả "không giới hạn". **Và ngay cả loại đã khai vẫn hở nếu endpoint quên gọi `apply_scope`** — xem khung dưới bảng | Đổi mặc định thành chặn, cộng bài kiểm duyệt đủ 28 loại **và** bài kiểm mọi endpoint đọc đều đi qua phạm vi |
@@ -187,6 +187,18 @@ Danh sách task chi tiết của H3, kèm điều kiện cần và điều kiệ
 ## 4. H1 — Bỏ tiếng Việt khỏi cơ sở dữ liệu
 
 Quy định đã có (R2), giờ là kế hoạch thi hành. Đây là hạng mục **lớn nhất về số chỗ phải sờ vào**, nhưng chia nhỏ được theo module và có đường lui ở mọi bước.
+
+> **Bản thực thi của mục này nay ở [`15` Đổ bê tông nền ERP v2](./15-do-be-tong-nen-v2.md)** — đo lại
+> bằng dữ liệu thật ngày 22/08/2026, chia thành chín đợt B-01…B-09. **Chỗ nào số liệu lệch thì lấy
+> `15`**, vì mục này đo từ 12/08/2026. Ba đính chính đã biết: bảng dưới thiếu **cột thứ 12**
+> `tab_po_item.status_before_pause`; `tab_contract.contract_type` đã được CR-118 chuẩn hóa nên
+> không còn trong danh sách; và **R2 ở mục 1 đã được viết lại trong đợt B-01** — **QĐ-9 chốt ngày
+> 22/08/2026 đi khuôn mã chuỗi tiếng Anh cho Thu mua**, không phải `SMALLINT` *(lý do đầy đủ ở
+> `15` §2.4)*.
+>
+> Thêm **QĐ-10** *(`15` §4.2)*: chín đợt này làm **thẳng trên nhánh `erp-v2`**, `main`/prod đứng
+> yên với chuỗi tiếng Việt cho tới ngày cắt sang bản mới. Nên `frontend/` **ngoài phạm vi** —
+> con số "67 chỗ giao diện" ở mục 1 chỉ còn tính phần `frontend-v2/`.
 
 ### Mười một cột đang lưu tiếng Việt
 

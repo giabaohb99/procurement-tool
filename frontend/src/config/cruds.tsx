@@ -8,6 +8,14 @@ import EmployeeAccountCard from '../components/employee-account-card'
 import EmployeeAvatar from '../components/employee-avatar'
 import WarehousePurchaseLines from '../components/warehouse-purchase-lines'
 import { CONTRACT_TYPES, contractTypeLabel } from '../utils/contractTypes'
+import {
+  CONTRACT_EXPIRY_STATES, CONTRACT_PARTY_TYPES, CONTRACT_STATUSES,
+  contractExpiryLabel, contractStatusLabel, partyTypeLabel,
+} from '../utils/contractStatus'
+import {
+  EMPLOYEE_STATUSES, PO_DOCUMENT_STATUSES, SUPPLIER_LEGAL_TYPES,
+  employeeStatusLabel, poDocumentStatusLabel, supplierLegalTypeLabel,
+} from '../utils/statusLabels'
 import { fmtDateStr, fmtDateTime } from '../utils/datetime'
 import { fmtVND } from '../utils/money'
 import { initialsOf } from '../utils/name'
@@ -72,12 +80,8 @@ const SUP_TYPE = [
   { value: 'transport', label: 'Đơn vị vận chuyển' },
 ]
 
-const EMPLOYEE_STATUS = [
-  { value: 'Chính thức', label: 'Chính thức' },
-  { value: 'Cộng tác viên', label: 'Cộng tác viên' },
-  { value: 'Nghỉ thai sản', label: 'Nghỉ thai sản' },
-  { value: 'Nghỉ việc', label: 'Nghỉ việc' },
-]
+// B-03: bộ mã dời sang `utils/statusLabels.ts`. Giữ tên cũ để phần dưới khỏi phải đổi.
+const EMPLOYEE_STATUS = EMPLOYEE_STATUSES
 
 const DEPT_ACTIVE = [{ value: 'true', label: 'Hoạt động' }, { value: 'false', label: 'Đã ẩn' }]
 
@@ -95,14 +99,14 @@ export const PAYMENT_TERMS_OPTIONS = [
   { value: 'Công nợ 20 ngày', label: 'Công nợ 20 ngày' },
 ]
 
+// B-02: `expiry` giờ là MÃ (`expired` | `expiring_soon` | `valid`), không phải chữ hiển thị.
 export const contractExpiryBadge = (e: string) => {
   if (!e) return '—'
-  const c = e === 'Hết hạn' ? { bg: '#fee2e2', fg: '#b91c1c' } : e === 'Sắp hết hạn' ? { bg: '#fef3c7', fg: '#d97706' } : { bg: '#dcfce7', fg: '#15803d' }
-  return <span className="badge" style={{ background: c.bg, color: c.fg }}>{e}</span>
+  const c = e === 'expired' ? { bg: '#fee2e2', fg: '#b91c1c' } : e === 'expiring_soon' ? { bg: '#fef3c7', fg: '#d97706' } : { bg: '#dcfce7', fg: '#15803d' }
+  return <span className="badge" style={{ background: c.bg, color: c.fg }}>{contractExpiryLabel(e)}</span>
 }
 // Tô cả dòng HĐ sắp/hết hạn (cảnh báo trực quan)
-export const contractRowStyle = (r: any) => r.expiry === 'Hết hạn' ? { background: '#fdecea' } : r.expiry === 'Sắp hết hạn' ? { background: '#fff7ed' } : undefined
-const CONTRACT_STATUS = [{ value: 'Hiệu lực', label: 'Hiệu lực' }, { value: 'Hết hạn', label: 'Hết hạn' }, { value: 'Thanh lý', label: 'Thanh lý' }]
+export const contractRowStyle = (r: any) => r.expiry === 'expired' ? { background: '#fdecea' } : r.expiry === 'expiring_soon' ? { background: '#fff7ed' } : undefined
 
 export const PR_STATUS: Record<string, { label: string; cls: string }> = {
   draft: { label: 'Nháp', cls: 'gray' },
@@ -157,21 +161,16 @@ export const poBadge = (st: string) => {
   return <span className={'badge ' + s.cls}>{s.label}</span>
 }
 
-// Hồ sơ chứng từ (Task 10b) — trạng thái cập nhật tay
+// Hồ sơ chứng từ (Task 10b) — trạng thái cập nhật tay. B-06: cột lưu MÃ, nhãn lấy ở
+// `statusLabels.ts`; ở đây chỉ còn bảng màu.
 const DOC_STATUS_BADGE: Record<string, string> = {
-  'chưa có chứng từ': 'err',
-  'đã có thông tin chứng từ': 'warn',
-  'đã đủ chứng từ': 'ok',
-}
-// Nhãn hiển thị (giá trị lưu DB giữ nguyên "đã có thông tin chứng từ")
-const DOC_STATUS_LABEL: Record<string, string> = {
-  'chưa có chứng từ': 'Chưa có chứng từ',
-  'đã có thông tin chứng từ': 'Đã có chứng từ',
-  'đã đủ chứng từ': 'Đã đủ chứng từ',
+  none: 'err',
+  partial: 'warn',
+  full: 'ok',
 }
 export const docStatusBadge = (st: string) => {
-  const v = String(st || 'chưa có chứng từ')
-  return <span className={'badge ' + (DOC_STATUS_BADGE[v] || 'gray')}>{DOC_STATUS_LABEL[v] || v}</span>
+  const v = String(st || 'none')
+  return <span className={'badge ' + (DOC_STATUS_BADGE[v] || 'gray')}>{poDocumentStatusLabel(v)}</span>
 }
 
 export const cruds: Record<string, CrudConfig> = {
@@ -226,7 +225,9 @@ export const cruds: Record<string, CrudConfig> = {
     slug: 'suppliers', entity: 'supplier', title: 'Nhà cung cấp', apiPath: '/api/suppliers', importExport: true,
     columns: [
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên pháp lý' },
-      { key: 'legal_type', label: 'Loại NCC' }, { key: 'tax_code', label: 'MST' },
+      // B-03: cột lưu mã, hiện nhãn. `legal_type_label` do API gửi kèm.
+      { key: 'legal_type', label: 'Loại NCC', render: (r) => r.legal_type_label || supplierLegalTypeLabel(r.legal_type) },
+      { key: 'tax_code', label: 'MST' },
       { key: 'supplier_type', label: 'Vai trò', render: (r) => (r.supplier_type === 'transport' ? 'Vận chuyển' : 'Bán hàng') },
       { key: 'payment_terms', label: 'Thanh toán' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
@@ -296,32 +297,31 @@ export const cruds: Record<string, CrudConfig> = {
     rowStyle: contractRowStyle,
     columns: [
       { key: 'code', label: 'Mã HĐ' },
-      { key: 'party_type', label: 'Đối tượng' },
+      { key: 'party_type', label: 'Đối tượng', render: (r) => r.party_type_label || partyTypeLabel(r.party_type) },
       { key: 'party_name', label: 'Tên đối tượng', render: (r) => r.party_name || r.party_code },
       { key: 'title', label: 'Trích yếu' },
       { key: 'contract_type', label: 'Loại', render: (r) => contractTypeLabel(r.contract_type) || '—' },
       { key: 'end_date', label: 'Đến ngày' },
       { key: 'signed', label: 'Đã ký', render: (r) => (r.signed ? '✓' : '—') },
       { key: 'expiry', label: 'Hết hạn', render: (r) => contractExpiryBadge(r.expiry) },
-      { key: 'status', label: 'Trạng thái' },
+      { key: 'status', label: 'Trạng thái', render: (r) => r.status_label || contractStatusLabel(r.status) },
     ],
     filters: [
       { key: 'code', label: 'Mã HĐ' },
       { key: 'party_name', label: 'Tên đối tượng' },
-      { key: 'status', label: 'Trạng thái', type: 'select', options: CONTRACT_STATUS },
+      { key: 'status', label: 'Trạng thái', type: 'select', options: CONTRACT_STATUSES },
       // 'expiry' và 'signed' KHÔNG đưa xuống bộ lọc điều kiện được: controller tính riêng
       // (expiry so end_date với hôm nay, signed là cột bool xử lý ngoài apply_filters).
-      { key: 'expiry', label: 'Tình trạng hết hạn', type: 'select', options: ['Còn hạn', 'Sắp hết hạn', 'Hết hạn'].map((x) => ({ value: x, label: x })) },
+      { key: 'expiry', label: 'Tình trạng hết hạn', type: 'select', options: CONTRACT_EXPIRY_STATES },
       { key: 'signed', label: 'Đã ký', type: 'select', options: [{ value: 'true', label: 'Đã ký' }, { value: 'false', label: 'Chưa ký' }] },
     ],
     // `expiry` / `signed` là cột tính toán, không lọc điều kiện được -> chỉ có ở thanh lọc cơ bản
     condFilters: [
       condText('code', 'Mã HĐ'), condText('title', 'Trích yếu'),
       condText('party_name', 'Tên đối tượng'), condText('party_code', 'Mã đối tượng'),
-      condSelect('party_type', 'Đối tượng',
-        ['Nhà cung cấp', 'Khách hàng', 'Khác'].map((x) => ({ value: x, label: x }))),
+      condSelect('party_type', 'Đối tượng', CONTRACT_PARTY_TYPES),
       condSelect('contract_type', 'Loại HĐ', CONTRACT_TYPES),
-      condSelect('status', 'Trạng thái', CONTRACT_STATUS),
+      condSelect('status', 'Trạng thái', CONTRACT_STATUSES),
       condDate('end_date', 'Ngày hết hạn'),
     ],
     fields: [],  // chi tiết dùng trang riêng (ContractDetail) — có đính kèm file
@@ -355,7 +355,12 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'email', label: 'Email' },
       { key: 'department_name', label: 'Phòng ban' },
       { key: 'position', label: 'Vị trí' },
-      { key: 'status', label: 'Trạng thái', render: (r) => badge(r.status === 'Chính thức', r.status, r.status) },
+      // B-03: so với MÃ, hiện NHÃN. So với chuỗi 'Chính thức' thì sau khi chuyển mã
+      // không dòng nào còn màu xanh nữa mà chẳng có lỗi nào nổ ra.
+      { key: 'status', label: 'Trạng thái', render: (r) => {
+        const nhan = r.status_label || employeeStatusLabel(r.status)
+        return badge(r.status === 'official', nhan, nhan)
+      } },
     ],
     filters: [
       { key: 'code', label: 'Mã NV' }, { key: 'full_name', label: 'Họ tên' },
@@ -378,7 +383,7 @@ export const cruds: Record<string, CrudConfig> = {
       // CR-022: đây là CHỨC DANH để hiển thị/in phiếu, KHÔNG cấp quyền cho tài khoản đăng nhập.
       { key: 'position', label: 'Vị trí / Chức vụ', group: 'Công việc',
         hint: 'Chỉ là chức danh hiển thị trên phiếu — không phải phân quyền. Quyền thật của tài khoản đặt ở màn "Phân quyền tài khoản".' },
-      { key: 'status', label: 'Trạng thái', type: 'select', default: 'Chính thức', group: 'Công việc', options: EMPLOYEE_STATUS },
+      { key: 'status', label: 'Trạng thái', type: 'select', default: 'official', group: 'Công việc', options: EMPLOYEE_STATUS },
     ],
   },
   roles: {
@@ -690,10 +695,7 @@ export const cruds: Record<string, CrudConfig> = {
       condSource('department_id', 'Bộ phận', DEPT_SRC),
       condDate('order_date', 'Ngày đặt'),
       { name: 'is_urgent', label: 'Đơn gấp', type: 'boolean' },
-      condSelect('document_status', 'Hồ sơ chứng từ', [
-        { value: 'chưa có chứng từ', label: 'Chưa có chứng từ' },
-        { value: 'đã có thông tin chứng từ', label: 'Đã có chứng từ' },
-        { value: 'đã đủ chứng từ', label: 'Đã đủ chứng từ' }]),
+      condSelect('document_status', 'Hồ sơ chứng từ', PO_DOCUMENT_STATUSES),
       condSelect('status', 'Trạng thái', [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
         { value: 'approved', label: 'Đã duyệt' }, { value: 'partial', label: 'Đã nhận một phần' },

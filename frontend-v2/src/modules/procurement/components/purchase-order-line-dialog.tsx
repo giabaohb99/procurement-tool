@@ -382,7 +382,7 @@ export function PurchaseOrderLineDialog({
           <div className="space-y-1.5">
             <Label>Trạng thái tiến độ</Label>
             <div className="flex min-h-9 items-center gap-2">
-              <ProgressStatusBadge status={item.progress_status ?? 'Chưa đặt hàng'} />
+              <ProgressStatusBadge status={item.progress_status ?? 'not_ordered'} />
               {item.pause_reason && (
                 <span className="text-xs text-muted-foreground">Lý do: {item.pause_reason}</span>
               )}
@@ -426,7 +426,7 @@ export function PurchaseOrderLineDialog({
           )}
           {locked && (
             <p className="text-sm text-muted-foreground">
-              Dòng đã {item.progress_status === 'Hủy đơn' ? 'hủy' : 'hoàn thành'} — không sửa được
+              Dòng đã {item.progress_status === 'cancelled' ? 'hủy' : 'hoàn thành'} — không sửa được
               lần giao.
             </p>
           )}

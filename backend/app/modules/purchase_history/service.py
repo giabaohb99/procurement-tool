@@ -1,4 +1,4 @@
-"""Lịch sử mua hàng — ghi snapshot khi dòng ĐMH "Hoàn thành" + truy vấn cho UI."""
+"""Lịch sử mua hàng — ghi snapshot khi dòng ĐMH vào `completed` + truy vấn cho UI."""
 import json
 import logging
 from datetime import date
@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 
 
 def snapshot_line(db: Session, po, item) -> PurchaseHistory | None:
-    """Ghi 1 record snapshot cho dòng vừa vào "Hoàn thành".
+    """Ghi 1 record snapshot cho dòng vừa vào `completed`.
 
     Gọi từ `purchase_order.service.auto_advance_line` — chỉ `db.add()`, KHÔNG commit
     (caller commit trong cùng transaction với việc đổi `progress_status`).

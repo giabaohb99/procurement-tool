@@ -17,7 +17,7 @@ def _po_voi_dong(db, qty_received: float):
     db.commit()
     db.refresh(po)
     it = POItem(po_id=po.id, product_code="SP001", product_name="Hàng A", unit="Cái",
-                qty_order=10, qty_received=qty_received, progress_status="Đã nhận hàng")
+                qty_order=10, qty_received=qty_received, progress_status="received")
     db.add(it)
     db.commit()
     db.refresh(it)

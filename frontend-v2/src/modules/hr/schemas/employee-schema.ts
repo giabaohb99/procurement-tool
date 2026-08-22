@@ -18,8 +18,9 @@ export const employeeSchema = z.object({
   department_id: z.number().int().min(0),
   // CR-022: CHỨC DANH hiển thị trên phiếu, KHÔNG cấp quyền.
   position: z.string().trim().max(100, 'Chức vụ tối đa 100 ký tự'),
-  // CHUỖI tự do chứ không phải enum: dữ liệu cũ có thể mang giá trị ngoài 4 lựa
-  // chọn chuẩn, ràng thành enum là mở form lên đã lặng lẽ ghi đè trạng thái thật.
+  // B-03: gửi lên là MÃ (`official`…). Vẫn để CHUỖI tự do chứ không ràng enum: dòng
+  // chưa chạy migration mang giá trị lạ thì ràng enum là mở form lên đã lặng lẽ ghi đè
+  // trạng thái thật. Mã lạ có backend chặn bằng 422, chặn hai lần không thêm gì.
   status: z.string().trim().min(1, 'Chọn tình trạng làm việc'),
   is_active: z.boolean(),
 })
@@ -33,6 +34,6 @@ export const EMPTY_EMPLOYEE_FORM: EmployeeFormValues = {
   phone: '',
   department_id: 0,
   position: '',
-  status: 'Chính thức',
+  status: 'official',
   is_active: true,
 }

@@ -106,7 +106,7 @@ def seed_van_thu_phap_nhan_con(db) -> int:
                 company_id=company.id,
                 department_id=dept_id,
                 position="Văn thư",
-                status="Chính thức",
+                status="official",     # B-03: MÃ, xem app/core/status_codes.EMPLOYEE_STATUS
                 is_active=True,
                 created_by=1, updated_by=1,
             )

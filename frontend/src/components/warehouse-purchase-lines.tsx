@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext'
 import Pagination from './Pagination'
 import SearchSelect from './SearchSelect'
 import FilterPanel, { FilterItem } from './FilterPanel'
+import { PO_PROGRESS_STATUSES, poProgressStatusLabel } from '../utils/statusLabels'
 
 /**
  * Tab "Đơn hàng về kho" ở trang chi tiết Kho.
@@ -14,14 +15,14 @@ import FilterPanel, { FilterItem } from './FilterPanel'
  */
 
 const fmtQty = (n: any) => Number(n || 0).toLocaleString('vi-VN', { maximumFractionDigits: 3 })
+// B-06: khóa là MÃ, nhãn lấy ở `statusLabels.ts`.
 const PG_COLOR: Record<string, string> = {
-  'Chưa đặt hàng': '#94a3b8', 'Đã đặt hàng': '#2563eb', 'Đã nhận hàng': '#0891b2',
-  'Chưa gửi ĐMH cho KT': '#db2777', 'Đã gửi ĐMH cho KT': '#7c3aed',
-  'Hoàn thành': '#16a34a', 'Tạm ngưng': '#d97706', 'Hủy đơn': '#dc2626',
+  not_ordered: '#94a3b8', ordered: '#2563eb', received: '#0891b2',
+  doc_pending: '#db2777', doc_sent: '#7c3aed',
+  completed: '#16a34a', paused: '#d97706', cancelled: '#dc2626',
 }
-const PROGRESS_OPTIONS = Object.keys(PG_COLOR)
 const pgBadge = (s: string) => (
-  <span className="badge" style={{ background: (PG_COLOR[s] || '#94a3b8') + '22', color: PG_COLOR[s] || '#64748b' }}>{s}</span>
+  <span className="badge" style={{ background: (PG_COLOR[s] || '#94a3b8') + '22', color: PG_COLOR[s] || '#64748b' }}>{poProgressStatusLabel(s)}</span>
 )
 
 export default function WarehousePurchaseLines({ warehouseCode }: { warehouseCode?: string }) {
@@ -71,7 +72,7 @@ export default function WarehousePurchaseLines({ warehouseCode }: { warehouseCod
             onChange={(e) => { setQ(e.target.value); setPage(1) }} />
         </FilterItem>
         <FilterItem label="Tiến độ dòng" width={200}>
-          <SearchSelect value={progress} placeholder="Tất cả" options={PROGRESS_OPTIONS}
+          <SearchSelect value={progress} placeholder="Tất cả" options={PO_PROGRESS_STATUSES}
             onChange={(v) => { setProgress(v); setPage(1) }} />
         </FilterItem>
       </FilterPanel>

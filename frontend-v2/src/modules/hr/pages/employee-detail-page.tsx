@@ -61,8 +61,9 @@ import {
   type EmployeeFormValues,
 } from '../schemas/employee-schema'
 import {
-  EMPLOYEE_STATUSES,
   employeeInitials,
+  employeeStatusLabel,
+  employeeStatusOptions,
   type EmployeeDetail,
 } from '../types/employee'
 
@@ -297,9 +298,9 @@ export function EmployeeDetailPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {statusOptions(field.value).map((status) => (
-                            <SelectItem key={status} value={status}>
-                              {status}
+                          {employeeStatusOptions(field.value).map((item) => (
+                            <SelectItem key={item.value} value={item.value}>
+                              {item.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -338,15 +339,6 @@ export function EmployeeDetailPage() {
   )
 }
 
-/**
- * 4 lựa chọn chuẩn, cộng giá trị hiện tại nếu đó là chuỗi cũ ngoài danh sách —
- * không có nó thì mở form lên ô Tình trạng trống và lưu là mất dữ liệu.
- */
-function statusOptions(current: string): string[] {
-  const options: string[] = [...EMPLOYEE_STATUSES]
-  return current && !options.includes(current) ? [current, ...options] : options
-}
-
 function identityChips(employee: EmployeeDetail): IdentityChip[] {
   const chips: IdentityChip[] = []
   if (employee.code) chips.push({ icon: Hash, text: employee.code, tone: 'code' })
@@ -355,7 +347,9 @@ function identityChips(employee: EmployeeDetail): IdentityChip[] {
     chips.push({ icon: Building2, text: employee.department_name })
   }
   if (employee.status) {
-    chips.push({ icon: UserCheck, text: employee.status, tone: 'ok' })
+    // B-03: hiện NHÃN. `status` giờ là mã, dán thẳng vào chip là người dùng đọc `official`.
+    const nhan = employee.status_label || employeeStatusLabel(employee.status)
+    chips.push({ icon: UserCheck, text: nhan, tone: 'ok' })
   }
   return chips
 }

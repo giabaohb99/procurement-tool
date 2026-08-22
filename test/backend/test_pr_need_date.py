@@ -14,9 +14,9 @@ def test_pr_need_date_synced_from_items(db, seed):
 
     items = [
         PRItemIn(product_code="VT01", product_name="Sản phẩm 1", qty=10, price=1000,
-                 required_date="2026-08-20", line_status="Chưa đặt hàng"),
+                 required_date="2026-08-20", line_status="not_ordered"),
         PRItemIn(product_code="VT02", product_name="Sản phẩm 2", qty=5, price=2000,
-                 required_date="2026-08-15", line_status="Chưa đặt hàng"),
+                 required_date="2026-08-15", line_status="not_ordered"),
     ]
     pr_service._save_items(db, pr.id, items, seed.u_req_id)
     db.refresh(pr)
@@ -33,9 +33,9 @@ def test_pr_need_date_ignores_cancelled_lines(db, seed):
 
     items = [
         PRItemIn(product_code="VT01", product_name="Sản phẩm 1", qty=10, price=1000,
-                 required_date="2026-08-10", line_status="Hủy đơn"),
+                 required_date="2026-08-10", line_status="cancelled"),
         PRItemIn(product_code="VT02", product_name="Sản phẩm 2", qty=5, price=2000,
-                 required_date="2026-08-18", line_status="Chưa đặt hàng"),
+                 required_date="2026-08-18", line_status="not_ordered"),
     ]
     pr_service._save_items(db, pr.id, items, seed.u_req_id)
     db.refresh(pr)

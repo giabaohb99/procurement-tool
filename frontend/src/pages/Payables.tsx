@@ -13,6 +13,7 @@ import { PAYABLE_COND_FILTERS } from '../config/conditional-filters'
 import Pagination from '../components/Pagination'
 import { fmtDateTime } from '../utils/datetime'
 import { fmtVND } from '../utils/money'
+import { PAYABLE_STATUSES, payableStatusLabel } from '../utils/statusLabels'
 import TableHead, { TableCells } from '../components/TableHead'
 import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
@@ -23,14 +24,10 @@ import TableScroll from '../components/TableScroll'
 const fmt = fmtVND
 const AGING_CLS: Record<string, string> = { 'Chưa đến hạn': 'gray', '1-30': 'warn', '31-60': 'warn', '61-90': 'err', '>90': 'err' }
 const agingBadge = (a: string) => <span className={'badge ' + (AGING_CLS[a] || 'gray')}>{a === 'Chưa đến hạn' ? a : a + ' ngày'}</span>
-// Nhãn trạng thái đầy đủ (DB lưu viết tắt). Giá trị lọc gửi lên vẫn dùng mã DB.
-const ST_LABEL: Record<string, string> = { 'Chờ TT': 'Chờ thanh toán', 'Trả một phần': 'Thanh toán một phần', 'Đã TT': 'Đã thanh toán' }
-const ST_OPTIONS = [
-  { value: 'Chờ TT', label: 'Chờ thanh toán' },
-  { value: 'Trả một phần', label: 'Thanh toán một phần' },
-  { value: 'Đã TT', label: 'Đã thanh toán' },
-]
-const stBadge = (s: string) => <span className={'badge ' + (s === 'Đã TT' ? 'ok' : s === 'Trả một phần' ? 'warn' : 'gray')}>{ST_LABEL[s] || s}</span>
+// Trạng thái công nợ — DB lưu MÃ tiếng Anh từ B-05, chữ tiếng Việt lấy từ bộ mã dùng chung.
+// Giá trị gửi lên khi lọc là MÃ (`option.value`), không phải nhãn.
+const ST_OPTIONS = PAYABLE_STATUSES
+const stBadge = (s: string) => <span className={'badge ' + (s === 'paid' ? 'ok' : s === 'partial' ? 'warn' : 'gray')}>{payableStatusLabel(s)}</span>
 
 /** Bộ lọc mặc định — năm hiện tại, các ô còn lại trống. Dùng cho nút "Xóa lọc". */
 const EMPTY_FILTERS = (year: number) => ({
@@ -110,7 +107,7 @@ export default function Payables() {
   }, [f, condParams])
 
   const companyName = (cid: number) => companies.find((c) => c.id === cid)?.name || '—'
-  const payable = (r: any) => r.status !== 'Đã TT' && r.remaining > 0 && !!(r.invoice_no || '').trim()
+  const payable = (r: any) => r.status !== 'paid' && r.remaining > 0 && !!(r.invoice_no || '').trim()
   const toggle = (id: number) => setSel((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id])
 
   const selSuppliers = new Set(rows.filter((r) => sel.includes(r.id)).map((r) => r.supplier_code))

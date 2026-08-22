@@ -81,7 +81,7 @@ def test_dmh_da_trung_san_nhung_khong_duoc_them_dong_trung_nua(db):
     po = _po(db)
     for _ in range(2):
         db.add(POItem(po_id=po.id, product_code="SP001", product_name="Hàng A", unit="Cái",
-                      qty_order=1, progress_status="Đã đặt hàng"))
+                      qty_order=1, progress_status="ordered"))
     db.commit()
     rows = db.query(POItem).filter(POItem.po_id == po.id).order_by(POItem.id).all()
     payload = [_po_line("SP001", id=r.id) for r in rows] + [_po_line("SP001")]

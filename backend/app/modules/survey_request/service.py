@@ -661,6 +661,7 @@ def create_prs(db: Session, sid: int, user_id: int):
     Cập nhật dòng: pr_id/pr_code/is_completed; phiếu KS → 'pr_created'."""
     from app.modules.purchase_request.model import (PurchaseRequest,
                                                     PurchaseRequestItem)
+    from app.modules.purchase_request import service as pr_service
     from app.modules.purchase_request.service import (apply_supplier_info,
                                                      find_dept_head,
                                                      find_dept_head_id)
@@ -738,7 +739,8 @@ def create_prs(db: Session, sid: int, user_id: int):
                 price=price, vat_pct=vat,
                 # Thành tiền GỒM VAT — cùng công thức với khi lưu YCMH (purchase_request/service.py)
                 amount=round(qty * price * (1 + vat / 100), 2), note="",
-                line_status="Chưa tạo đơn mua hàng", created_by=user_id, updated_by=user_id,   # CR-074
+                # CR-074 · B-06: mã cố định, xem purchase_request.service.LINE_STATUS_NO_PO
+                line_status=pr_service.LINE_STATUS_NO_PO, created_by=user_id, updated_by=user_id,
             ))
             # Liên kết YCKS-dòng <-> YCMH (đếm được nhiều lần tạo) + tự BỎ CHỌN option
             db.add(SurveyRequestPr(

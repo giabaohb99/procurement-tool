@@ -228,7 +228,7 @@ export function PurchaseRequestDetailPage() {
     : ['dispatched', 'processing']
   const allItemsDone =
     data.items.length > 0 &&
-    data.items.every((item) => ['Hoàn thành', 'Hủy đơn'].includes(item.line_status))
+    data.items.every((item) => ['completed', 'cancelled'].includes(item.line_status))
   /**
    * NSTM = nhân sự PHÒNG THU MUA; ô chọn hiện TÊN nhưng lưu MÃ nhân viên
    * (backend nối dòng YCMH với người phụ trách bằng mã).
@@ -245,7 +245,7 @@ export function PurchaseRequestDetailPage() {
   const hasUnorderedItem = data.items.some(
     (item) =>
       item.product_name &&
-      item.line_status !== 'Hủy đơn' &&
+      item.line_status !== 'cancelled' &&
       (item.qty || 0) - (progress?.ordered?.[item.product_code] ?? 0) > 0,
   )
   const canManageAttachments =

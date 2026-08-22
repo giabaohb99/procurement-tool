@@ -24,7 +24,9 @@ import type { Contract } from '../types/contract'
  */
 export function ContractPartnerTab({ contract }: { contract: Contract }) {
   const { can } = usePermission()
-  const isSupplier = contract.party_type === 'Nhà cung cấp'
+  // B-02: so với MÃ. Bản cũ so với chuỗi 'Nhà cung cấp', sau khi chuyển mã thì tab này
+  // im lặng không tra hồ sơ NCC nào nữa.
+  const isSupplier = contract.party_type === 'supplier'
   const canReadSupplier = can('supplier', 'read')
 
   const { data, isLoading } = useSuppliers(
@@ -38,7 +40,7 @@ export function ContractPartnerTab({ contract }: { contract: Contract }) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label>Loại đối tác ký kết</Label>
-          <ReadOnlyValue>{contract.party_type}</ReadOnlyValue>
+          <ReadOnlyValue>{contract.party_type_label || contract.party_type}</ReadOnlyValue>
         </div>
         <div className="space-y-1.5">
           <Label>Mã đối tác</Label>

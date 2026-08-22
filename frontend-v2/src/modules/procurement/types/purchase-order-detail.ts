@@ -183,7 +183,8 @@ export function isDeliveryStage(status: string): boolean {
 
 /** Dòng đã chốt -> khóa hẳn dòng đó. */
 export function isLineLocked(item: PurchaseOrderItem): boolean {
-  return ['Hoàn thành', 'Hủy đơn'].includes(item.progress_status ?? '')
+  // B-06: cột lưu MÃ, xem PO_PROGRESS_STATUS trong shared/constants/statuses.ts
+  return ['completed', 'cancelled'].includes(item.progress_status ?? '')
 }
 
 /**

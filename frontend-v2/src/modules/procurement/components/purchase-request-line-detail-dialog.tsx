@@ -1,6 +1,7 @@
 import { Image, Loader2, Pencil, Save, Trash2, Upload } from 'lucide-react'
 import { useRef, useState } from 'react'
 
+import { PR_LINE_STATUS, labelOf } from '@/shared/constants/statuses'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -266,7 +267,7 @@ export function PurchaseRequestLineDetailDialog({
           )}
           <LineField label="Trạng thái xử lý">
             <div className="flex min-h-9 items-center gap-2">
-              <Badge variant="outline">{draft.line_status || 'Chưa đặt hàng'}</Badge>
+              <Badge variant="outline">{labelOf(PR_LINE_STATUS, draft.line_status) || 'Chưa tạo đơn mua hàng'}</Badge>
               <span className="text-xs text-muted-foreground">Tự đồng bộ từ ĐMH</span>
             </div>
           </LineField>

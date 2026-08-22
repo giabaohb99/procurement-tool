@@ -7,7 +7,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Internal procurement tool for DEGO Holding (~20–100 users) digitizing the flow:
 **Purchase Request (PYC) → Price Survey (NCC/SP) → Purchase Order (PO) → Goods Receipt (GR) → Payables → Payment Request**, with RBAC + data-scope permissions.
 
-Domain language is **Vietnamese** — entity names, status strings, code comments, and UI labels are all in Vietnamese. Preserve this when editing. Status values stored in the DB are often Vietnamese strings (e.g. `line_status == "Hủy đơn"`), not enums.
+Domain language is **Vietnamese** — entity names, code comments, and UI labels are all in Vietnamese. Preserve this when editing.
+
+**Status columns — rule R2 (QĐ-11, 22/08/2026). For anything NEW, do not store text.** A column meaning status / type / level / stage stores a **`SMALLINT` backed by an `IntEnum`**; the API returns the number plus a label, and Vietnamese lives only in the display layer. Reference implementation: the `import_tool`, `document/`, `approval/` and `doc_catalog/` modules.
+
+Legacy exceptions, do not copy them into new code:
+- **12 columns used to hold Vietnamese text** (e.g. `line_status == "Hủy đơn"`, `tab_po_item.progress_status`). Batches B-01…B-06 converted **all twelve** to codes on branch `erp-v2` — plan and per-batch record in [`doc/erp/15-do-be-tong-nen-v2.md`](doc/erp/15-do-be-tong-nen-v2.md). Two known leftovers stay in Vietnamese and are **out of scope** of that plan: `line_approve` on the two survey line tables (§2.2) and the `STATE_*` constants in `survey_request/line_state.py` (derived, never stored).
+- **Thu mua migrates to fixed English string codes, not numbers** (QĐ-9), because its document `status` columns already use codes like `draft | submitted | approved`. Mixing two shapes inside one document is worse than the inconsistency between modules. This applies **only** to columns already in that plan — it is not a licence for new ones.
+
+Fixed code sets of either shape are declared in `backend/app/core/status_catalog.py` and registered via `app/core/code_sets.py`; `backend/scripts/gen_status_ts.py` generates the frontend copy, so never hand-write a status list in TypeScript.
 
 Stack: FastAPI 0.115 · SQLAlchemy 2.0 · Pydantic v2 · MySQL 8 · Alembic · React 18 + Vite + TS. Runs entirely via Docker Compose.
 

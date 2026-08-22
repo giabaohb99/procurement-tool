@@ -77,7 +77,7 @@ def test_dong_trong_ngay_can_hang_khong_xet(db):
 
 def test_dong_huy_don_khong_xet(db):
     pr = _pr(db)
-    _luu(db, pr, _line(required_date="2026-08-12", line_status="Hủy đơn"))
+    _luu(db, pr, _line(required_date="2026-08-12", line_status="cancelled"))
     assert pr.is_urgent is False
 
 

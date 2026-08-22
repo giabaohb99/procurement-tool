@@ -23,7 +23,9 @@ class PRItemIn(BaseModel):
     warehouse: str = ""
     required_date: str = ""
     assignee: str = ""
-    line_status: str = "Chưa tạo đơn mua hàng"   # CR-074
+    # MÃ cố định, xem PR_LINE_STATUS trong app/core/status_codes.py (B-06). CR-074: dòng mới
+    # chưa có ĐMH nào thì nằm ở `no_po`, khác với `not_ordered` (đã có ĐMH, chưa bấm đặt).
+    line_status: str = "no_po"
     progress_note: str = ""
     note: str = ""
 
@@ -108,6 +110,8 @@ class UrgentIn(BaseModel):
 
 class ItemStatusItem(BaseModel):
     id: int
+    # MÃ cố định (B-06) — service kiểm lại theo PR_LINE_STATUS trước khi ghi, gửi chữ tiếng Việt
+    # kiểu cũ sẽ bị chặn 400 chứ không lặng lẽ ghi rác vào cột.
     line_status: str | None = None
     progress_note: str | None = None
     note: str | None = None

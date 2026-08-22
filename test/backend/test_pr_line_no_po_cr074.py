@@ -7,6 +7,9 @@ Người yêu cầu nhìn vào phiếu không biết nhân sự thu mua đã b�
 Luật chốt: hễ có MỘT dòng ĐMH mang mã sản phẩm đó (kể cả đơn còn Nháp) thì dòng YCMH
 chuyển sang "Chưa đặt hàng"; đơn đã Hủy không tính. Các mốc sau ("Đã đặt hàng" trở đi)
 giữ nguyên luật cũ.
+
+B-06: cột `line_status` (YCMH) và `progress_status` (dòng ĐMH) nay lưu MÃ tiếng Anh, tiếng
+Việt trong tài liệu này chỉ còn là NHÃN. Test lấy hằng số từ service chứ không gõ chuỗi.
 """
 import pytest
 
@@ -14,7 +17,11 @@ from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 from app.modules.purchase_order.schema import POCreate, POItemIn
 from app.modules.purchase_order.service import create_po, delete_po
 from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
-from app.modules.purchase_request.service import (LINE_STATUS_NOT_ORDERED, LINE_STATUS_NO_PO,
+from app.modules.purchase_order.service import (PROG_CANCELLED, PROG_COMPLETED,
+                                                PROG_NOT_ORDERED, PROG_ORDERED, PROG_RECEIVED)
+from app.modules.purchase_request.service import (LINE_STATUS_CANCELLED, LINE_STATUS_COMPLETED,
+                                                  LINE_STATUS_NOT_ORDERED, LINE_STATUS_NO_PO,
+                                                  LINE_STATUS_ORDERED, LINE_STATUS_RECEIVED,
                                                   sync_from_purchase_orders)
 
 
@@ -29,7 +36,7 @@ def _pr(db, code="PYC1", products=("SP1",), status="dispatched"):
     return pr, rows
 
 
-def _po(db, pr_code="PYC1", product="SP1", status="approved", progress="Đã đặt hàng",
+def _po(db, pr_code="PYC1", product="SP1", status="approved", progress=PROG_ORDERED,
         qty=10, po_code="PO1"):
     po = PurchaseOrder(code=po_code, pr_code=pr_code, status=status, supplier_code="NX",
                        supplier_name="NCC Nam Xuân")
@@ -62,7 +69,7 @@ def test_khong_co_dmh_nao_thi_van_la_chua_tao_don(db):
 def test_co_dong_dmh_chua_bam_dat_thi_thanh_chua_dat_hang(db, po_status):
     """Kể cả đơn còn Nháp — người dùng chốt "cứ tạo đơn là đổi nhãn"."""
     _, rows = _pr(db)
-    _po(db, status=po_status, progress="Chưa đặt hàng")
+    _po(db, status=po_status, progress=PROG_NOT_ORDERED)
     sync_from_purchase_orders(db, "PYC1")
     db.refresh(rows[0])
     assert rows[0].line_status == LINE_STATUS_NOT_ORDERED
@@ -71,7 +78,7 @@ def test_co_dong_dmh_chua_bam_dat_thi_thanh_chua_dat_hang(db, po_status):
 def test_don_da_huy_thi_coi_nhu_chua_ai_lap(db):
     """Đơn Hủy là đơn chết — dòng YCMH phải quay về "Chưa tạo đơn mua hàng" để có người lập lại."""
     _, rows = _pr(db)
-    _po(db, status="cancelled", progress="Chưa đặt hàng")
+    _po(db, status="cancelled", progress=PROG_NOT_ORDERED)
     sync_from_purchase_orders(db, "PYC1")
     db.refresh(rows[0])
     assert rows[0].line_status == LINE_STATUS_NO_PO
@@ -79,7 +86,7 @@ def test_don_da_huy_thi_coi_nhu_chua_ai_lap(db):
 
 def test_san_pham_khac_trong_cung_phieu_khong_bi_lay_nhan(db):
     _, rows = _pr(db, products=("SP1", "SP2"))
-    _po(db, product="SP1", status="draft", progress="Chưa đặt hàng")
+    _po(db, product="SP1", status="draft", progress=PROG_NOT_ORDERED)
     sync_from_purchase_orders(db, "PYC1")
     db.refresh(rows[0]); db.refresh(rows[1])
     assert rows[0].line_status == LINE_STATUS_NOT_ORDERED
@@ -90,36 +97,36 @@ def test_san_pham_khac_trong_cung_phieu_khong_bi_lay_nhan(db):
 
 def test_da_bam_dat_hang_van_ra_da_dat_hang(db):
     _, rows = _pr(db)
-    _po(db, progress="Đã đặt hàng")
+    _po(db, progress=PROG_ORDERED)
     sync_from_purchase_orders(db, "PYC1")
     db.refresh(rows[0])
-    assert rows[0].line_status == "Đã đặt hàng"
+    assert rows[0].line_status == LINE_STATUS_ORDERED
 
 
 def test_da_nhan_hang_van_ra_da_nhan_hang(db):
     _, rows = _pr(db)
-    po, po_it = _po(db, progress="Đã nhận hàng")
+    po, po_it = _po(db, progress=PROG_RECEIVED)
     db.add(PODelivery(po_id=po.id, po_item_id=po_it.id, delivery_no=1, received_qty=4))
     db.commit()
     sync_from_purchase_orders(db, "PYC1")
     db.refresh(rows[0])
-    assert rows[0].line_status == "Đã nhận hàng"
+    assert rows[0].line_status == LINE_STATUS_RECEIVED
 
 
 def test_moi_dong_dmh_hoan_thanh_van_ra_hoan_thanh(db):
     _, rows = _pr(db)
-    _po(db, progress="Hoàn thành")
+    _po(db, progress=PROG_COMPLETED)
     sync_from_purchase_orders(db, "PYC1")
     db.refresh(rows[0])
-    assert rows[0].line_status == "Hoàn thành"
+    assert rows[0].line_status == LINE_STATUS_COMPLETED
 
 
 def test_dong_dmh_bi_huy_van_ra_huy_don(db):
     _, rows = _pr(db)
-    _po(db, progress="Hủy đơn")
+    _po(db, progress=PROG_CANCELLED)
     sync_from_purchase_orders(db, "PYC1")
     db.refresh(rows[0])
-    assert rows[0].line_status == "Hủy đơn"
+    assert rows[0].line_status == LINE_STATUS_CANCELLED
 
 
 # --- Trạng thái PHIẾU giữ nguyên luật cũ -------------------------------------------
@@ -127,7 +134,7 @@ def test_dong_dmh_bi_huy_van_ra_huy_don(db):
 def test_moi_lap_don_nhap_thi_phieu_van_o_da_dieu_phoi(db):
     """Nhãn dòng đổi nhưng phiếu KHÔNG được nhảy sang "Đang xử lý" — chưa đặt hàng thật."""
     pr, _ = _pr(db)
-    _po(db, status="draft", progress="Chưa đặt hàng")
+    _po(db, status="draft", progress=PROG_NOT_ORDERED)
     sync_from_purchase_orders(db, "PYC1")
     db.refresh(pr)
     assert pr.status == "dispatched"
@@ -135,7 +142,7 @@ def test_moi_lap_don_nhap_thi_phieu_van_o_da_dieu_phoi(db):
 
 def test_bam_dat_hang_roi_thi_phieu_sang_dang_xu_ly(db):
     pr, _ = _pr(db)
-    _po(db, progress="Đã đặt hàng")
+    _po(db, progress=PROG_ORDERED)
     sync_from_purchase_orders(db, "PYC1")
     db.refresh(pr)
     assert pr.status == "processing"

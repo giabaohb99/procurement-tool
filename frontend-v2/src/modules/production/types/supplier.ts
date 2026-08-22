@@ -5,7 +5,10 @@ export interface Supplier {
   code: string
   /** Tên pháp lý đầy đủ. */
   name: string
+  /** MÃ tiếng Anh (B-03): `company` | `individual` | `partnership` | `household`; rỗng = chưa chọn. */
   legal_type: string
+  /** Nhãn tiếng Việt của `legal_type`, backend gửi kèm. Rỗng khi chưa chọn hoặc mã lạ. */
+  legal_type_label: string
   tax_code: string
   address: string
   /** `goods` = NCC bán hàng, `transport` = đơn vị vận chuyển. */

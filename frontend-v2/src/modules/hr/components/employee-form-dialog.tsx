@@ -36,7 +36,7 @@ import {
   employeeSchema,
   type EmployeeFormValues,
 } from '../schemas/employee-schema'
-import { EMPLOYEE_STATUSES, type Employee } from '../types/employee'
+import { employeeStatusOptions, type Employee } from '../types/employee'
 import { ActiveStatusSelect } from './active-status-select'
 import { LookupSelect } from './lookup-select'
 
@@ -45,15 +45,6 @@ interface EmployeeFormDialogProps {
   onOpenChange: (open: boolean) => void
   /** Có = sửa, không có = thêm mới. */
   employee?: Employee | null
-}
-
-/**
- * 4 lựa chọn chuẩn, cộng thêm giá trị hiện tại nếu đó là chuỗi cũ ngoài danh
- * sách — không có nó thì mở form lên ô Tình trạng sẽ trống và lưu là mất dữ liệu.
- */
-function statusOptions(current: string): string[] {
-  const options: string[] = [...EMPLOYEE_STATUSES]
-  return current && !options.includes(current) ? [current, ...options] : options
 }
 
 /** Form thêm/sửa hồ sơ nhân sự. */
@@ -215,9 +206,9 @@ export function EmployeeFormDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {statusOptions(field.value).map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status}
+                        {employeeStatusOptions(field.value).map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
                           </SelectItem>
                         ))}
                       </SelectContent>

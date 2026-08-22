@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.status_codes import PO_DELIVERY_STATUS, PO_DOCUMENT_STATUS, PO_PROGRESS_STATUS
 from app.core.utils import assert_unique_product_codes
 from app.modules.catalog import lead_time
 from app.modules.department.service import sync_department_ref
@@ -39,6 +40,29 @@ FILTERABLE = ["code", "status", "supplier_code", "pr_code", "misa_code", "nspt",
               "department", "document_status", "order_date",
               "nspt_id", "department_id", "company_id"]
 ENTITY = "purchase_order"
+
+# ── Mã trạng thái của cụm ĐMH (B-06) ─────────────────────────────────────────────────────
+# Đặt tên cho mã thay vì gõ chuỗi trần ở từng chỗ: `_recalc` ghi bốn cột này, còn hơn chục chỗ
+# khác trong ba phân hệ đọc chúng. Gõ thẳng chuỗi là lần sau đổi mã sẽ sót đúng một chỗ, mà chỗ
+# sót đó im lặng cho ra trạng thái sai chứ không nổ.
+DELIV_PENDING = "pending"
+DELIV_SHORT = "short"
+DELIV_DEFECT = "defect"
+DELIV_RECEIVED = "received"
+
+LINE_NOT_DELIVERED = "not_delivered"
+LINE_PARTIAL = "partial"
+LINE_FULL = "full"
+
+# Tiến độ dòng — xem thêm PROGRESS_ORDER / PROGRESS_EXCEPTIONS ở giữa tệp.
+PROG_NOT_ORDERED = "not_ordered"
+PROG_ORDERED = "ordered"
+PROG_RECEIVED = "received"
+PROG_DOC_PENDING = "doc_pending"
+PROG_DOC_SENT = "doc_sent"
+PROG_COMPLETED = "completed"
+PROG_PAUSED = "paused"
+PROG_CANCELLED = "cancelled"
 
 
 def get_po(db: Session, pid: int) -> PurchaseOrder:
@@ -135,7 +159,7 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
         if iid and iid in existing_items:
             it = existing_items[iid]
             # Dòng đã Hoàn thành / Hủy đơn → KHÓA: giữ nguyên, không cho sửa (kể cả lần giao)
-            if (it.progress_status or "") in ("Hoàn thành", "Hủy đơn"):
+            if (it.progress_status or "") in (PROG_COMPLETED, PROG_CANCELLED):
                 keep_item_ids.add(it.id)
                 continue
             # Dòng ĐÃ NHẬN HÀNG → khóa nhận diện sản phẩm. Đổi mã hàng/tên hàng/ĐVT lúc này
@@ -287,25 +311,29 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
             d.diff_regulated = _days(d.regulated_date, d.received_date) if (d.regulated_date and d.received_date) else 0
             d.diff_required = _days(d.regulated_date, it.required_date) if (d.regulated_date and it.required_date) else 0
             ship_q = float(d.ship_qty or 0)
+            # Mã B-06, xem PO_DELIVERY_STATUS. `qc_result` KHÔNG thuộc bộ mã nào — nó là ô chữ
+            # tự do người dùng gõ, chỉ tình cờ cũng mang chữ "Lỗi"; đừng gộp hai thứ làm một.
             if recv <= 0:
-                d.status = "Chờ giao"
+                d.status = DELIV_PENDING
             elif d.qc_result == "Lỗi":
-                d.status = "Lỗi"
+                d.status = DELIV_DEFECT
             elif ship_q > 0 and recv + 0.001 < ship_q:
-                d.status = "Giao thiếu"
+                d.status = DELIV_SHORT
             else:
-                d.status = "Đã nhận"
+                d.status = DELIV_RECEIVED
 
         it.qty_received = round(recv_sum, 3)
         it.qty_remaining = round(qty_order - recv_sum, 3)
         # Thành tiền đơn hàng = SL THỰC NHẬN × đơn giá × (1+VAT) (đã chốt)
         it.amount = round(recv_sum * float(it.price or 0) * (1 + vat / 100), 2)
+        # Mã B-06, xem PO_ITEM_LINE_STATUS. Là HÀM của hai con số nên `LINE_FULL` không phải
+        # trạng thái kết: tăng SL đặt của một dòng đã đủ là nó tự lùi về `LINE_PARTIAL`.
         if recv_sum <= 0:
-            it.line_status = "Chưa giao"
+            it.line_status = LINE_NOT_DELIVERED
         elif recv_sum + 0.001 < qty_order:
-            it.line_status = "Đang giao"
+            it.line_status = LINE_PARTIAL
         else:
-            it.line_status = "Đủ"
+            it.line_status = LINE_FULL
         total_order += qty_order
         total_received += recv_sum
 
@@ -436,7 +464,7 @@ def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
     recompute_effects(db, po, user_id)
     db.commit()
     db.refresh(po)
-    # CR-074: dòng YCMH phải đổi sang "Chưa đặt hàng" NGAY khi đơn vừa được lập, kể cả đơn Nháp.
+    # CR-074: dòng YCMH phải đổi sang `not_ordered` NGAY khi đơn vừa được lập, kể cả đơn Nháp.
     _sync_pr(db, po.pr_code)
     record(db, user_id, ENTITY, po.id, "create")
     return po
@@ -457,7 +485,7 @@ TRUONG_DONG_SUA_SAU_DUYET = {
     "warehouse_code",          # Kho nhận mặc định
     "note",                    # Ghi chú
     # Ngày giao chứng từ cho KT: KHÔNG có trong phiếu hỗ trợ nhưng bắt buộc phải để mở.
-    # Nó là điều kiện của bước tiến độ "Đã gửi ĐMH cho KT" (xem _step_ok) mà bước đó chỉ
+    # Nó là điều kiện của bước tiến độ `doc_sent` (xem _step_ok) mà bước đó chỉ
     # xảy ra SAU khi duyệt — khóa lại thì mọi dòng đều kẹt tiến độ, không đơn nào xong.
     "document_delivery_date",
 }
@@ -525,7 +553,7 @@ def chan_sua_don_da_duyet(db: Session, po: PurchaseOrder, data: POUpdate) -> Non
         if it is None:
             raise HTTPException(400, "Dòng hàng không thuộc đơn này.")
         # Dòng Hoàn thành / Hủy đơn: _save_items đã bỏ qua nguyên dòng, không cần chặn thêm.
-        if (it.progress_status or "") in ("Hoàn thành", "Hủy đơn"):
+        if (it.progress_status or "") in (PROG_COMPLETED, PROG_CANCELLED):
             continue
         ten_dong = (it.product_name or "").strip() or (it.product_code or "").strip() or f"#{it.id}"
         for k, v in r.items():
@@ -550,7 +578,7 @@ def unapprove_po(db: Session, pid: int, user_id: int, reason: str = "") -> Purch
     if any(float(i.qty_received or 0) > 0 for i in items):
         raise HTTPException(400, "Đơn đã nhận hàng — không hủy duyệt được. Hàng đã vào kho và đã sinh công nợ; "
                                  "muốn dừng thì hủy từng dòng ở cột Trạng thái.")
-    if any((i.progress_status or "") == "Hoàn thành" for i in items):
+    if any((i.progress_status or "") == PROG_COMPLETED for i in items):
         raise HTTPException(400, "Đơn có dòng đã Hoàn thành — không hủy duyệt được.")
     dinh_yctt = db.query(PaymentRequestLine.id).join(
         PaymentRequest, PaymentRequest.id == PaymentRequestLine.request_id
@@ -606,7 +634,8 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
     return po
 
 
-DOCUMENT_STATUSES = ("chưa có chứng từ", "đã có thông tin chứng từ", "đã đủ chứng từ")
+# B-06: mã cố định, xem PO_DOCUMENT_STATUS. Trước đây là ba chuỗi tiếng Việt VIẾT THƯỜNG gõ tay.
+DOCUMENT_STATUSES = tuple(PO_DOCUMENT_STATUS.ordered_values)
 
 
 def set_document_status(db: Session, pid: int, value: str, user_id: int) -> PurchaseOrder:
@@ -640,7 +669,7 @@ def delete_po(db: Session, pid: int, user_id: int):
     _pr_code = po.pr_code
     db.delete(po)
     db.commit()
-    # CR-074: xóa đơn xong thì dòng YCMH phải quay lại "Chưa tạo đơn mua hàng" nếu không còn
+    # CR-074: xóa đơn xong thì dòng YCMH phải quay lại `no_po` nếu không còn
     # đơn nào khác — nên phải đồng bộ lại, lấy mã YCMH trước khi xóa.
     _sync_pr(db, _pr_code)
     record(db, user_id, ENTITY, pid, "delete")
@@ -721,11 +750,14 @@ def thieu_truong_dong(item: POItem) -> list[str]:
 
 
 # ───────────────────────── Máy trạng thái TIẾN ĐỘ của DÒNG ĐMH (progress_status) ─────────────────────────
-# Luồng chính tuần tự; Tạm ngưng/Hủy là ngoại lệ bấm nút, cần lý do.
-# Task 8: tách "Chưa gửi ĐMH cho KT" (có số hóa đơn) → "Đã gửi ĐMH cho KT" (có ngày giao chứng từ).
-PROGRESS_ORDER = ["Chưa đặt hàng", "Đã đặt hàng", "Đã nhận hàng",
-                  "Chưa gửi ĐMH cho KT", "Đã gửi ĐMH cho KT", "Hoàn thành"]
-PROGRESS_EXCEPTIONS = ["Tạm ngưng", "Hủy đơn"]
+# Luồng chính tuần tự; `paused`/`cancelled` là ngoại lệ bấm nút, cần lý do.
+# Task 8: tách `doc_pending` (có số hóa đơn) → `doc_sent` (có ngày giao chứng từ).
+#
+# B-06: hai list này KHÔNG còn gõ tay — sinh từ PO_PROGRESS_STATUS để không thể lệch với bộ mã.
+# `ordered_values` đã loại sẵn hai mã `is_exception`, nên `PROGRESS_ORDER.index(...)` vẫn cho đúng
+# số bước như trước; `PROGRESS_EXCEPTIONS` chính là phần bị loại ra đó.
+PROGRESS_ORDER = list(PO_PROGRESS_STATUS.ordered_values)
+PROGRESS_EXCEPTIONS = [c.value for c in PO_PROGRESS_STATUS.codes if c.is_exception]
 
 
 def is_line_paid(db: Session, po: PurchaseOrder, item: POItem) -> bool:
@@ -793,14 +825,14 @@ def highest_satisfied_step(db: Session, po: PurchaseOrder, item: POItem) -> int:
 
 def auto_advance_line(db: Session, po: PurchaseOrder, item: POItem) -> bool:
     """Chỉ TIẾN (forward-only). Bỏ qua dòng ở điểm cuối/tạm ngưng. Trả True nếu có đổi."""
-    if item.progress_status in ("Hoàn thành", "Hủy đơn", "Tạm ngưng"):
+    if item.progress_status in (PROG_COMPLETED, PROG_CANCELLED, PROG_PAUSED):
         return False
     cur = PROGRESS_ORDER.index(item.progress_status) if item.progress_status in PROGRESS_ORDER else 0
     target = highest_satisfied_step(db, po, item)
     if target > cur:
         item.progress_status = PROGRESS_ORDER[target]
-        if item.progress_status == "Hoàn thành":
-            # Chốt LỊCH SỬ MUA HÀNG: đây là chỗ DUY NHẤT dòng vào "Hoàn thành"
+        if item.progress_status == PROG_COMPLETED:
+            # Chốt LỊCH SỬ MUA HÀNG: đây là chỗ DUY NHẤT dòng vào `completed`
             # (set_item_progress chặn set tay các trạng thái trong PROGRESS_ORDER), và hàm này
             # bỏ qua dòng đã ở điểm cuối → mỗi dòng chỉ ghi snapshot đúng 1 lần.
             # Chỉ add(), caller commit cùng transaction với việc đổi progress_status.
@@ -831,20 +863,20 @@ def set_item_progress(db: Session, pid: int, item_id: int, target: str, reason: 
     item = db.query(POItem).filter(POItem.id == item_id, POItem.po_id == pid).first()
     if not item:
         raise HTTPException(404, "Không tìm thấy dòng hàng.")
-    if item.progress_status in ("Hủy đơn", "Hoàn thành"):
-        done = "hoàn thành" if item.progress_status == "Hoàn thành" else "hủy"
+    if item.progress_status in (PROG_CANCELLED, PROG_COMPLETED):
+        done = "hoàn thành" if item.progress_status == PROG_COMPLETED else "hủy"
         raise HTTPException(400, f"Dòng đã {done} — không thể đổi trạng thái (điểm cuối).")
 
     if target == "__resume__":
         # Tiếp tục đơn từ Tạm ngưng → khôi phục trạng thái trước đó
-        if item.progress_status != "Tạm ngưng":
+        if item.progress_status != PROG_PAUSED:
             raise HTTPException(400, "Dòng không ở trạng thái Tạm ngưng.")
-        item.progress_status = item.status_before_pause or "Chưa đặt hàng"
+        item.progress_status = item.status_before_pause or PROG_NOT_ORDERED
         item.status_before_pause = ""
     elif target in PROGRESS_EXCEPTIONS:
         if not (reason or "").strip():
-            raise HTTPException(400, f"Cần nhập lý do {target.lower()}.")
-        if target == "Tạm ngưng":
+            raise HTTPException(400, f"Cần nhập lý do {PO_PROGRESS_STATUS.label_of(target).lower()}.")
+        if target == PROG_PAUSED:
             item.status_before_pause = item.progress_status
         item.pause_reason = reason.strip()
         item.progress_status = target
@@ -855,7 +887,8 @@ def set_item_progress(db: Session, pid: int, item_id: int, target: str, reason: 
 
     item.updated_by = user_id
     db.commit()
-    record(db, user_id, ENTITY, pid, "item_progress", f"{item.product_name}: {target if target != '__resume__' else 'Tiếp tục'}")
+    nhan = "Tiếp tục" if target == "__resume__" else PO_PROGRESS_STATUS.label_of(target, target)
+    record(db, user_id, ENTITY, pid, "item_progress", f"{item.product_name}: {nhan}")
     _sync_pr(db, po.pr_code)   # đồng bộ tiến độ sang YCMH nguồn
     db.refresh(po)
     return po

@@ -132,13 +132,6 @@ export const SURVEY_STATUS_LABELS: Record<string, string> = {
   cancelled: 'Đã từ chối',
 }
 
-/** Tình trạng hồ sơ chứng từ của ĐMH — giá trị lưu thẳng tiếng Việt. */
-export const DOCUMENT_STATUSES = [
-  'chưa có chứng từ',
-  'đã có thông tin chứng từ',
-  'đã đủ chứng từ',
-] as const
-
 export const SURVEY_TYPE_LABELS: Record<string, string> = {
   supplier: 'Khảo sát NCC',
   product: 'Khảo sát SP',

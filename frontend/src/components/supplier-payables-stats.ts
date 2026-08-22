@@ -14,17 +14,28 @@ export const AGING_ORDER = ['Chưa đến hạn', '1-30', '31-60', '61-90', '>90
 export const AGING_COLOR: Record<string, string> = {
   'Chưa đến hạn': '#16a34a', '1-30': '#F6AD37', '31-60': '#EA580C', '61-90': '#DC2626', '>90': '#991B1B',
 }
+/**
+ * Khóa trạng thái dùng trong dashboard này = MÃ của B-05 (`unpaid | partial | paid`) CỘNG
+ * THÊM một khóa bịa: `ST_CREDIT`.
+ *
+ * `ST_CREDIT` KHÔNG có trong `tab_payable.status` và không có trong bộ mã ở
+ * `backend/app/core/status_codes.py` — nó chỉ tồn tại ở màn này, suy ra từ `remaining < 0`
+ * (xem `rowStatus`). Đừng gửi nó lên API làm tham số lọc: backend không có dòng nào mang
+ * giá trị đó nên bảng sẽ rỗng mà không báo lỗi gì.
+ */
+export const ST_CREDIT = 'credit'
 export const ST_LABEL: Record<string, string> = {
-  'Chờ TT': 'Chờ thanh toán', 'Trả một phần': 'Thanh toán một phần', 'Đã TT': 'Đã thanh toán', 'Trả dư': 'Trả dư / ghi có',
+  unpaid: 'Chờ thanh toán', partial: 'Thanh toán một phần', paid: 'Đã thanh toán',
+  [ST_CREDIT]: 'Trả dư / ghi có',
 }
 export const ST_COLOR: Record<string, string> = {
-  'Chờ TT': '#8592ae', 'Trả một phần': '#F6AD37', 'Đã TT': '#16a34a', 'Trả dư': '#0284c7',
+  unpaid: '#8592ae', partial: '#F6AD37', paid: '#16a34a', [ST_CREDIT]: '#0284c7',
 }
-export const ST_KEYS = ['Chờ TT', 'Trả một phần', 'Đã TT', 'Trả dư']
+export const ST_KEYS = ['unpaid', 'partial', 'paid', ST_CREDIT]
 export const agingLabel = (a: string) => (a === 'Chưa đến hạn' ? a : `Quá hạn ${a} ngày`)
 
-/** Trạng thái hiển thị — khoản âm ghi đè thành "Trả dư" dù DB vẫn lưu "Đã TT". */
-export const rowStatus = (p: any) => ((p.remaining || 0) < 0 ? 'Trả dư' : p.status)
+/** Trạng thái hiển thị — khoản âm ghi đè thành "Trả dư" dù DB vẫn lưu `paid`. */
+export const rowStatus = (p: any) => ((p.remaining || 0) < 0 ? ST_CREDIT : p.status)
 
 /** Rút gọn tiền cho nhãn biểu đồ (KPI vẫn hiện đủ số). */
 export const short = (v: number) => {
@@ -95,9 +106,9 @@ export function buildPayableStats(rows: any[]) {
   const byStatus = ST_KEYS.map((k) => {
     const g = rows.filter((p) => rowStatus(p) === k)
     // Nhóm "Trả dư" đo bằng số dư âm (tổng phát sinh của phiếu điều chỉnh giảm không nói lên gì)
-    const value = k === 'Trả dư' ? sum(g, (p) => p.remaining) : sum(g, (p) => p.total)
+    const value = k === ST_CREDIT ? sum(g, (p) => p.remaining) : sum(g, (p) => p.total)
     return { label: ST_LABEL[k], value, color: ST_COLOR[k], note: g.length ? `${g.length} khoản` : '' }
-  }).filter((x) => x.note || x.label !== ST_LABEL['Trả dư'])   // ẩn dòng "Trả dư" khi không có
+  }).filter((x) => x.note || x.label !== ST_LABEL[ST_CREDIT])   // ẩn dòng "Trả dư" khi không có
 
   // Phát sinh theo tháng — 6 tháng gần nhất CÓ dữ liệu
   const m = new Map<string, number>()

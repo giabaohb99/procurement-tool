@@ -1,13 +1,13 @@
 import { Badge } from '@/shared/ui/badge'
 import { TONE_CLASS, type StatusTone } from '@/shared/ui/status-tone'
 import { cn } from '@/shared/utils/cn'
-import { PAYABLE_STATUS_LABELS, agingLabel } from '../types/payable'
+import { agingLabel, payableStatusLabel } from '../types/payable'
 
-/** Trạng thái trả tiền. Khóa là chuỗi VIẾT TẮT lưu trong DB, không phải mã enum. */
+/** Màu theo MÃ trạng thái (B-05). Mã lạ rơi về `neutral` chứ không mất badge. */
 const STATUS_TONE: Record<string, StatusTone> = {
-  'Chờ TT': 'neutral',
-  'Trả một phần': 'pending',
-  'Đã TT': 'done',
+  unpaid: 'neutral',
+  partial: 'pending',
+  paid: 'done',
 }
 
 export function PayableStatusBadge({ status }: { status: string }) {
@@ -15,7 +15,7 @@ export function PayableStatusBadge({ status }: { status: string }) {
 
   return (
     <Badge variant="secondary" className={cn('border-0', TONE_CLASS[STATUS_TONE[status] ?? 'neutral'])}>
-      {PAYABLE_STATUS_LABELS[status] ?? status}
+      {payableStatusLabel(status)}
     </Badge>
   )
 }

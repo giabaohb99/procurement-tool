@@ -7,7 +7,30 @@ Cột NCC + khối vận chuyển bị bỏ khỏi file với người không c�
 `_SUPPLIER_HIDDEN` của API danh sách (dữ liệu cũng đã bị gỡ khỏi row trước khi tới đây).
 """
 from app.core.export_xlsx import Col
+from app.core.status_codes import (PO_DELIVERY_STATUS, PO_DOCUMENT_STATUS,
+                                   PO_ITEM_LINE_STATUS, PO_PROGRESS_STATUS)
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
+
+# Bốn cột của B-06 lưu MÃ tiếng Anh. File Excel là để NGƯỜI đọc nên phải dịch ngược ngay trước
+# khi ghi. `row_values` cố ý KHÔNG dịch sẵn: cùng hàm đó nuôi luôn API danh sách, mà giao diện
+# cần MÃ để tô màu badge và để gửi lại làm tham số lọc.
+_BO_MA_THEO_COT = {
+    "progress_status": PO_PROGRESS_STATUS,
+    "line_status": PO_ITEM_LINE_STATUS,
+    "delivery_status": PO_DELIVERY_STATUS,
+    "document_status": PO_DOCUMENT_STATUS,
+}
+
+
+def dich_ma(r: dict) -> dict:
+    """Đổi MÃ trạng thái trong một hàng sang nhãn tiếng Việt — CHỈ dùng cho file xuất.
+
+    Sửa tại chỗ và trả về chính `r`. Mã lạ giữ nguyên chứ không nuốt thành ô trống.
+    """
+    for k, bo in _BO_MA_THEO_COT.items():
+        if k in r:
+            r[k] = bo.label_of(r[k]) or (r[k] or "")
+    return r
 
 # Key bị GỠ KHỎI DỮ LIỆU với người không có `supplier.read` (rộng hơn `SUPPLIER_ONLY`
 # bên dưới vì có cả key không lên bảng, vd `ship_unit`).
@@ -115,7 +138,8 @@ def row_values(po: PurchaseOrder, it: POItem, dl: PODelivery | None, show_suppli
         "supplier_ready": bool(it.supplier_ready),
         "unit": it.unit, "qty_request": float(it.qty_request or 0),
         "qty_order": qty_order, "price": price, "vat": vat, "order_amount": order_amount,
-        "line_status": it.line_status, "progress_status": it.progress_status or "Chưa đặt hàng",
+        "line_status": it.line_status,
+        "progress_status": it.progress_status or PO_PROGRESS_STATUS.ordered_values[0],
         "document_delivery_date": it.document_delivery_date or "",
         # ----- Lần giao -----
         "delivery_id": dl.id if dl else None,

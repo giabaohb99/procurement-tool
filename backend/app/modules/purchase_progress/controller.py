@@ -270,6 +270,6 @@ def export_xlsx(request: Request, cols: str = "", db: Session = Depends(get_db),
         r = _row(po, it, dl, show_supplier)
         r["stt"] = i
         r["company"] = company_name.get(po.company_id, "")
-        rows.append(r)
+        rows.append(ex.dich_ma(r))   # B-06: cột trạng thái lưu MÃ, file xuất hiện chữ
     columns = pick_columns(ex.columns_for(show_supplier), cols)
     return xlsx_response(ex.FILE_NAME, columns, rows, ex.SHEET_TITLE)

@@ -87,7 +87,7 @@ def _delete_dup(db, apply: bool, max_days: int, match_qty: bool, csv_path: str, 
     """XÓA dòng legacy TRÙNG với lịch sử hệ thống đã tự chốt.
 
     Cùng một lần mua bị đếm 2 lần (1 dòng nhập từ Excel + 1 dòng hệ thống chốt khi ĐMH
-    "Hoàn thành") thì bảng lịch sử hiện 2 dòng giống nhau, tham chiếu giá đọc ra sai.
+    vào `completed`) thì bảng lịch sử hiện 2 dòng giống nhau, tham chiếu giá đọc ra sai.
     Bản hệ thống mới là bản đúng (gắn với ĐMH thật) nên giữ lại, bỏ bản legacy.
 
     LUÔN ép trùng SỐ LƯỢNG **và** ĐƠN GIÁ, bất kể cờ --match-qty. Lý do rút từ dữ liệu thật

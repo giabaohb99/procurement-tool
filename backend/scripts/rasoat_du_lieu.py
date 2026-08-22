@@ -16,7 +16,8 @@ from app.core.database import SessionLocal
 from app.modules.employee.model import Employee
 from app.modules.payable.model import Payable
 from app.modules.purchase_order.model import POItem, PurchaseOrder
-from app.modules.purchase_order.service import PROGRESS_ORDER, highest_satisfied_step
+from app.modules.purchase_order.service import (PROG_CANCELLED, PROG_COMPLETED, PROG_PAUSED,
+                                                PROGRESS_ORDER, highest_satisfied_step)
 from app.modules.role.model import Role
 from app.modules.user.model import User, UserRole
 
@@ -75,7 +76,7 @@ p("=" * 78)
 p("2. DÒNG ĐMH ĐỦ ĐIỀU KIỆN NHƯNG TRẠNG THÁI CHƯA TIẾN")
 p("=" * 78)
 items = (db.query(POItem)
-         .filter(POItem.progress_status.notin_(["Hoàn thành", "Hủy đơn", "Tạm ngưng"]))
+         .filter(POItem.progress_status.notin_([PROG_COMPLETED, PROG_CANCELLED, PROG_PAUSED]))
          .all())
 p(f"Số dòng đang mở: {len(items)}")
 stuck = []
@@ -89,8 +90,8 @@ for it in items:
     top = highest_satisfied_step(db, po, it)
     if top > cur:
         stuck.append((po, it, it.progress_status, PROGRESS_ORDER[top]))
-p(f"Dòng lẽ ra phải tiến: {len(stuck)}  (trong đó lên 'Hoàn thành': "
-  f"{sum(1 for s in stuck if s[3] == 'Hoàn thành')})")
+p(f"Dòng lẽ ra phải tiến: {len(stuck)}  (trong đó lên '{PROG_COMPLETED}': "
+  f"{sum(1 for s in stuck if s[3] == PROG_COMPLETED)})")
 for po, it, cur, tgt in stuck[:60]:
     p(f"  - {po.code:<12} dong#{it.id:<6} {(it.product_name or '')[:32]:<32} {cur:<22} -> {tgt}")
 

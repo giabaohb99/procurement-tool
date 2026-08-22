@@ -5,12 +5,12 @@ from app.core.base_model import Base, AuditMixin
 
 
 class PurchaseHistory(Base, AuditMixin):
-    """Lịch sử mua hàng — SNAPSHOT 1 dòng hàng của ĐMH tại thời điểm dòng đó "Hoàn thành".
+    """Lịch sử mua hàng — SNAPSHOT 1 dòng hàng của ĐMH tại thời điểm dòng đó vào `completed`.
 
     1 record = 1 dòng hàng (line item). ĐMH có 2 dòng → 2 record.
     Phục vụ 2 màn: chi tiết Sản phẩm (lọc `product_code`) và chi tiết NCC (lọc `supplier_code`).
 
-    BẤT BIẾN: ghi 1 lần, không sửa/xóa. An toàn vì dòng đã "Hoàn thành" là điểm cuối và bị
+    BẤT BIẾN: ghi 1 lần, không sửa/xóa. An toàn vì dòng đã `completed` là điểm cuối và bị
     khóa sửa (purchase_order/service.py) — `auto_advance_line` bỏ qua dòng đã ở điểm cuối nên
     hook ghi chỉ chạy đúng 1 lần cho mỗi dòng. `po_item_id` unique là lớp bảo hiểm.
 
@@ -32,7 +32,7 @@ class PurchaseHistory(Base, AuditMixin):
     # MySQL cho phép nhiều NULL trong unique index nên vẫn giữ được lớp chống ghi trùng
     # cho dòng sinh từ luồng chạy thật.
     po_item_id: Mapped[int | None] = mapped_column(BigInteger, unique=True, nullable=True)
-    # system = chốt tự động khi dòng ĐMH "Hoàn thành" | legacy = nhập từ file lịch sử cũ
+    # system = chốt tự động khi dòng ĐMH vào `completed` | legacy = nhập từ file lịch sử cũ
     source: Mapped[str] = mapped_column(String(10), default="system", index=True)
     # Khóa nguồn của dòng dữ liệu cũ (file + sheet + số dòng) — để truy ngược và chống nhập trùng.
     # NULL với dòng sinh từ hệ thống.
@@ -56,7 +56,7 @@ class PurchaseHistory(Base, AuditMixin):
     price: Mapped[float] = mapped_column(Numeric(18, 4), default=0)
     vat: Mapped[float] = mapped_column(Numeric(5, 2), default=0)              # % VAT của dòng
     amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
-    completed_at: Mapped[str] = mapped_column(String(10), default="")         # ngày dòng vào "Hoàn thành"
+    completed_at: Mapped[str] = mapped_column(String(10), default="")         # ngày dòng vào `completed`
 
     # ── Phần còn lại của "Thông tin chung" + dòng hàng (JSON, không lọc/sort) ──
     # {pr_code, misa_code, nspt, payment_terms, is_urgent, po_note, department,

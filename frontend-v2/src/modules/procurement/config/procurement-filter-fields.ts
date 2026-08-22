@@ -1,6 +1,6 @@
 import type { FilterFieldDefinition, OperatorType } from '@/shared/conditional-filter'
+import { PO_DOCUMENT_STATUS } from '@/shared/constants/statuses'
 import {
-  DOCUMENT_STATUSES,
   PO_STATUS_LABELS,
   PR_STATUS_LABELS,
   SR_STATUS_LABELS,
@@ -91,7 +91,7 @@ export const PURCHASE_ORDER_FILTER_FIELDS: FilterFieldDefinition[] = [
     label: 'Hồ sơ chứng từ',
     type: 'select',
     operators: [...STATUS_OPERATORS],
-    options: DOCUMENT_STATUSES.map((value) => ({ value, label: value })),
+    options: PO_DOCUMENT_STATUS.map(({ value, label }) => ({ value, label })),
   },
   {
     name: 'status',

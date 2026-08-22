@@ -15,11 +15,14 @@ import { contractTypeLabel } from '../config/contract-type-options'
 import { useContracts } from '../hooks/use-contracts'
 import type { Contract } from '../types/contract'
 
-/** Tình trạng hiệu lực do backend tính. Hết hạn = đỏ, sắp hết = vàng để lọt mắt. */
+/**
+ * Tình trạng hiệu lực do backend tính. Hết hạn = đỏ, sắp hết = vàng để lọt mắt.
+ * B-02: khóa là MÃ (`expired`…), không phải nhãn — đổi chữ hiển thị không làm mất màu.
+ */
 const EXPIRY_TONE: Record<string, StatusTone> = {
-  'Hết hạn': 'danger',
-  'Sắp hết hạn': 'pending',
-  'Còn hạn': 'done',
+  expired: 'danger',
+  expiring_soon: 'pending',
+  valid: 'done',
 }
 
 /**
@@ -104,7 +107,7 @@ export function SupplierContractsTable({ supplierCode }: { supplierCode: string 
         cell: (c) =>
           c.expiry ? (
             <Badge variant="secondary" className={cn('border-0', TONE_CLASS[EXPIRY_TONE[c.expiry] ?? 'neutral'])}>
-              {c.expiry}
+              {c.expiry_label || c.expiry}
             </Badge>
           ) : (
             <span className="text-muted-foreground">Không thời hạn</span>
@@ -120,7 +123,12 @@ export function SupplierContractsTable({ supplierCode }: { supplierCode: string 
           </Badge>
         ),
       },
-      { key: 'status', header: 'Trạng thái', width: 140, cell: (c) => c.status || '—' },
+      {
+        key: 'status',
+        header: 'Trạng thái',
+        width: 140,
+        cell: (c) => c.status_label || c.status || '—',
+      },
       { key: 'note', header: 'Ghi chú', width: 240, wrap: true, defaultHidden: true, cell: (c) => c.note || '—' },
     ],
     [companyNames],

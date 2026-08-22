@@ -6,7 +6,7 @@ CHỈ DÙNG CHO LOCAL. Mọi dòng sinh ra đều có invoice_no bắt đầu b�
     docker compose exec -T api python -m scripts.seed_demo_payables --supplier "Cẩm Hùng" --clear   # chỉ xóa
 
 Dữ liệu trải đủ 5 mốc tuổi nợ (chưa đến hạn → quá hạn >90 ngày), cả 2 luồng nợ
-(hàng hóa / vận chuyển) và cả 3 trạng thái (Chờ TT / Trả một phần / Đã TT),
+(hàng hóa / vận chuyển) và cả 3 trạng thái (unpaid / partial / paid),
 phát sinh rải trong 6 tháng gần nhất để biểu đồ theo tháng có cột.
 """
 import argparse
@@ -14,6 +14,7 @@ from datetime import date, timedelta
 
 from app.core.database import SessionLocal
 from app.modules.payable.model import Payable
+from app.modules.payable.service import recalc_status
 from app.modules.supplier.model import Supplier
 
 VAT_RATE = 0.08
@@ -67,18 +68,19 @@ def main(supplier_code: str, clear_only: bool) -> None:
             vat = round(amount * VAT_RATE, 2)
             total = round(amount + vat, 2)
             paid = round(total * paid_pct, 2)
-            remaining = round(total - paid, 2)
-            # Bám đúng service.recalc_status: phiếu điều chỉnh giảm (total âm, chưa trả) vẫn là "Chờ TT"
-            status = "Chờ TT" if paid <= 0 else ("Trả một phần" if paid + 0.01 < total else "Đã TT")
-            db.add(Payable(
+            p = Payable(
                 company_id=sup.company_id if hasattr(sup, "company_id") else 0,
                 supplier_code=sup.code, supplier_name=sup.name,
                 source_type=source, ref_type="delivery", ref_id=0,
                 po_id=0, po_code=f"PO-DEMO-{i:03d}", invoice_no=f"{DEMO_PREFIX}{i:03d}",
                 incur_date=incur.isoformat(), period=str(incur.year), due_date=due.isoformat(),
-                amount=amount, vat=vat, total=total,
-                paid_amount=paid, remaining=remaining, status=status,
-            ))
+                amount=amount, vat=vat, total=total, paid_amount=paid,
+            )
+            # Gọi thẳng recalc_status thay vì chép lại luật: bản chép tay ở đây từng phải kèm
+            # chú thích "bám đúng service.recalc_status" — nghĩa là nó đã là bản sao chờ lệch.
+            # Nó cũng đặt luôn `remaining` và `status` (mã B-05).
+            recalc_status(p)
+            db.add(p)
         db.commit()
         print(f"Đã nạp {len(ROWS)} khoản công nợ mẫu cho '{sup.code}' ({sup.name}).")
     finally:

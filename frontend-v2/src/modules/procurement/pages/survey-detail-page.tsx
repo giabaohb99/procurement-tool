@@ -22,6 +22,7 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { SURVEY_APPROVE_STATUS, labelOf } from '@/shared/constants/statuses'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -812,7 +813,9 @@ function createEmptySurvey(
     item_name: '',
     uom: '',
     proposed_rate: 0,
-    approve_status: '',
+    // Phiếu mới chưa ai xét duyệt — `pending` là MÃ cho tình trạng đó (B-04), không phải rỗng.
+    approve_status: 'pending',
+    approve_status_label: labelOf(SURVEY_APPROVE_STATUS, 'pending'),
     approve_note: '',
     status: 'draft',
     created_at: new Date().toISOString(),

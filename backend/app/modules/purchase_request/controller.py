@@ -7,6 +7,7 @@ from app.core.base_controller import apply_filters, apply_range_filters, apply_e
 from app.core.ref_filter import apply_ref_filters
 from app.core.database import get_db
 from app.core.response import success
+from app.core.status_codes import PR_LINE_STATUS
 from app.modules.notification.service import trigger_notification
 
 from sqlalchemy import func, select
@@ -190,7 +191,10 @@ def _out(db: Session, pr, user=None) -> dict:
              "amount": float(i.amount or 0),
              "warehouse": i.warehouse, "required_date": i.required_date, "assignee": i.assignee,
              "expected_date": i.expected_date,
-             "line_status": i.line_status, "progress_note": i.progress_note, "note": i.note,
+             "line_status": i.line_status,
+             # B-06: cột lưu MÃ, giao diện dùng mã để tô màu/lọc nên phải trả kèm nhãn
+             "line_status_label": PR_LINE_STATUS.label_of(i.line_status),
+             "progress_note": i.progress_note, "note": i.note,
              "qty_ordered": float(i.qty_ordered or 0), "qty_received": float(i.qty_received or 0),
              "product_id": pid_ or 0,                          # 0 = code không khớp catalog
              "product_thumbnail_url": thumb_by_pid.get(pid_, "") if pid_ else ""}
@@ -268,14 +272,15 @@ def list_pr(
             PurchaseRequestItem.pr_id.in_(pr_ids),
             PurchaseRequestItem.required_date != "",
             PurchaseRequestItem.required_date.isnot(None),
-            PurchaseRequestItem.line_status != "Hủy đơn"
+            PurchaseRequestItem.line_status != service.LINE_STATUS_CANCELLED
         ).group_by(PurchaseRequestItem.pr_id).all()
         need_dates = {r[0]: r[1] for r in need_rows if r[1]}
 
     cancelled_ids = set()
     if pr_ids:
         cancelled_ids = {r[0] for r in db.query(PurchaseRequestItem.pr_id).filter(
-            PurchaseRequestItem.pr_id.in_(pr_ids), PurchaseRequestItem.line_status == "Hủy đơn").distinct().all()}
+            PurchaseRequestItem.pr_id.in_(pr_ids),
+            PurchaseRequestItem.line_status == service.LINE_STATUS_CANCELLED).distinct().all()}
 
     can_see_supplier = user_has_permission(db, user, "supplier", "read")   # Task 5
     out_items = []
@@ -396,11 +401,13 @@ def order_progress(pid: int, db: Session = Depends(get_db), user=Depends(require
     if not pr:
         raise HTTPException(403, "Ngoài phạm vi được phép xem")
     from app.modules.purchase_order.model import PurchaseOrder, POItem
+    from app.modules.purchase_order import service as po_service
     rows = (db.query(POItem.product_code, func.coalesce(func.sum(POItem.qty_order), 0))
             .join(PurchaseOrder, PurchaseOrder.id == POItem.po_id)
             .filter(PurchaseOrder.pr_code == pr.code,
                     PurchaseOrder.status.notin_(["draft", "submitted", "cancelled", "rejected"]),
-                    POItem.progress_status.notin_(["Chưa đặt hàng", "Hủy đơn"]))
+                    POItem.progress_status.notin_([po_service.PROG_NOT_ORDERED,
+                                                   po_service.PROG_CANCELLED]))
             .group_by(POItem.product_code).all())
     ordered = {code: float(qty or 0) for code, qty in rows if code}
     return success({"ordered": ordered})

@@ -603,10 +603,10 @@ export function PurchaseOrderDetailPage() {
 
       <PurchaseOrderReasonDialog
         open={progressFor !== null}
-        title={progressFor?.status === 'Hủy đơn' ? 'Hủy dòng hàng' : 'Tạm ngưng dòng hàng'}
+        title={progressFor?.status === 'cancelled' ? 'Hủy dòng hàng' : 'Tạm ngưng dòng hàng'}
         description={`Sản phẩm: ${progressFor?.item.product_name || progressFor?.item.product_code || ''}`}
         pending={setItemProgress.isPending}
-        destructive={progressFor?.status === 'Hủy đơn'}
+        destructive={progressFor?.status === 'cancelled'}
         onClose={() => setProgressFor(null)}
         onConfirm={async (reason) => {
           if (!progressFor) return

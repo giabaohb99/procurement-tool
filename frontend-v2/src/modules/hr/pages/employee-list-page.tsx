@@ -34,7 +34,7 @@ import { EMPLOYEE_FILTER_FIELDS } from '../config/hr-filter-fields'
 import { useDepartments } from '../hooks/use-departments'
 import { useEmployees } from '../hooks/use-employees'
 import {
-  EMPLOYEE_STATUSES,
+  EMPLOYEE_STATUS_OPTIONS,
   employeeInitials,
   type Employee,
 } from '../types/employee'
@@ -138,8 +138,10 @@ function EmployeeListContent() {
         header: 'Tình trạng',
         width: 140,
         cell: (e) => (
-          <Badge variant={e.status === 'Chính thức' ? 'default' : 'secondary'}>
-            {e.status || '—'}
+          // B-03: so với MÃ, hiện NHÃN. Bản cũ so với chuỗi 'Chính thức' — sau khi
+          // chuyển mã thì không dòng nào còn tô đậm nữa mà chẳng có lỗi nào nổ ra.
+          <Badge variant={e.status === 'official' ? 'default' : 'secondary'}>
+            {e.status_label || e.status || '—'}
           </Badge>
         ),
       },
@@ -213,9 +215,9 @@ function EmployeeListContent() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ALL}>Tất cả tình trạng</SelectItem>
-                  {EMPLOYEE_STATUSES.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {item}
+                  {EMPLOYEE_STATUS_OPTIONS.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

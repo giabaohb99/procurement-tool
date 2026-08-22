@@ -97,7 +97,7 @@ export const EMPTY_PURCHASE_REQUEST_ITEM: PurchaseRequestItem = {
   required_date: '',
   assignee: '',
   expected_date: '',
-  line_status: 'Chưa đặt hàng',
+  line_status: 'no_po',   // B-06: MÃ, khớp mặc định của backend
   progress_note: '',
   note: '',
   qty_ordered: 0,
@@ -570,7 +570,7 @@ export function PurchaseRequestItemsTable({
         title={`Danh sách sản phẩm (${items.length} dòng)`}
         emptyMessage="Chưa có sản phẩm nào."
         rowClassName={(item) =>
-          item.line_status === 'Hủy đơn' ? 'opacity-60' : undefined
+          item.line_status === 'cancelled' ? 'opacity-60' : undefined
         }
         actions={
           editing ? (

@@ -7,6 +7,11 @@ import {
 } from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
+import {
+  CONTRACT_PARTY_TYPE,
+  CONTRACT_STATUS,
+  type StatusOption,
+} from '@/shared/constants/statuses'
 import type { CrudConfig } from '@/shared/crud'
 import { Badge } from '@/shared/ui/badge'
 import { TONE_CLASS, type StatusTone } from '@/shared/ui/status-tone'
@@ -18,21 +23,32 @@ import { ContractFilesTab } from '../components/contract-files-tab'
 import { ContractPartnerTab } from '../components/contract-partner-tab'
 import type { Contract } from '../types/contract'
 
+/**
+ * Tô màu theo MÃ tình trạng hạn (B-02), không theo nhãn tiếng Việt nữa.
+ *
+ * Trước đây khóa là chuỗi hiển thị, nên sửa một chữ trong nhãn là mất màu mà không ai
+ * biết — hỏng lặng lẽ, chỉ lộ ra khi có người nhìn kỹ cột đó.
+ */
 const EXPIRY_TONE: Record<string, StatusTone> = {
-  'Hết hạn': 'danger',
-  'Sắp hết hạn': 'pending',
-  'Còn hạn': 'done',
+  expired: 'danger',
+  expiring_soon: 'pending',
+  valid: 'done',
 }
 
-const PARTY_TYPE_OPTIONS = ['Nhà cung cấp', 'Khách hàng', 'Khác'].map((v) => ({
-  value: v,
-  label: v,
-}))
+/**
+ * Màu viền của trạng thái hợp đồng. `expired`/`cancelled` rơi vào nhánh xám mặc định.
+ */
+const STATUS_CLASS: Record<string, string> = {
+  active: 'border-emerald-500 text-emerald-600 bg-emerald-50',
+  liquidated: 'border-blue-500 text-blue-600 bg-blue-50',
+}
 
-const STATUS_OPTIONS = ['Hiệu lực', 'Hết hạn', 'Thanh lý', 'Hủy'].map((v) => ({
-  value: v,
-  label: v,
-}))
+// Ô chọn dựng từ bộ mã sinh tự động (`@/shared/constants/statuses`) — không khai lại tay.
+const toOptions = (set: readonly StatusOption[]) =>
+  set.map(({ value, label }) => ({ value, label }))
+
+const PARTY_TYPE_OPTIONS = toOptions(CONTRACT_PARTY_TYPE)
+const STATUS_OPTIONS = toOptions(CONTRACT_STATUS)
 
 export const CONTRACT_CRUD_CONFIG: CrudConfig<Contract> = {
   entity: 'contract',
@@ -66,7 +82,10 @@ export const CONTRACT_CRUD_CONFIG: CrudConfig<Contract> = {
     'Xóa hợp đồng sẽ giải phóng các tệp đính kèm văn bản hợp đồng này. Bạn có chắc chắn muốn xóa không?',
   chips: (c) => [
     ...(c.code ? [{ icon: Hash, text: c.code, tone: 'code' as const }] : []),
-    { icon: UserCheck, text: `${c.party_type}: ${c.party_name || c.party_code || 'Chưa chọn'}` },
+    {
+      icon: UserCheck,
+      text: `${c.party_type_label || c.party_type}: ${c.party_name || c.party_code || 'Chưa chọn'}`,
+    },
     { icon: FileText, text: contractTypeLabel(c.contract_type) || 'Chưa phân loại' },
     { icon: Calendar, text: c.end_date ? `Hết hạn: ${formatDate(c.end_date)}` : 'Không thời hạn' },
     { icon: FileCheck, text: c.signed ? 'Đã ký kết' : 'Chưa ký' },
@@ -99,7 +118,7 @@ export const CONTRACT_CRUD_CONFIG: CrudConfig<Contract> = {
         <div>
           <div className="font-medium text-foreground">{c.party_name || '—'}</div>
           <div className="text-xs text-muted-foreground">
-            {c.party_type} {c.party_code ? `(${c.party_code})` : ''}
+            {c.party_type_label || c.party_type} {c.party_code ? `(${c.party_code})` : ''}
           </div>
         </div>
       ),
@@ -134,7 +153,7 @@ export const CONTRACT_CRUD_CONFIG: CrudConfig<Contract> = {
             variant="secondary"
             className={cn('border-0', TONE_CLASS[EXPIRY_TONE[c.expiry] ?? 'neutral'])}
           >
-            {c.expiry}
+            {c.expiry_label || c.expiry}
           </Badge>
         ) : (
           <span className="text-xs text-muted-foreground">Không thời hạn</span>
@@ -158,15 +177,9 @@ export const CONTRACT_CRUD_CONFIG: CrudConfig<Contract> = {
       cell: (c) => (
         <Badge
           variant="outline"
-          className={cn(
-            c.status === 'Hiệu lực'
-              ? 'border-emerald-500 text-emerald-600 bg-emerald-50'
-              : c.status === 'Thanh lý'
-              ? 'border-blue-500 text-blue-600 bg-blue-50'
-              : 'border-slate-300 text-slate-600 bg-slate-50',
-          )}
+          className={cn(STATUS_CLASS[c.status] ?? 'border-slate-300 text-slate-600 bg-slate-50')}
         >
-          {c.status || 'Hiệu lực'}
+          {c.status_label || c.status || '—'}
         </Badge>
       ),
     },
@@ -202,7 +215,7 @@ export const CONTRACT_CRUD_CONFIG: CrudConfig<Contract> = {
       label: 'Loại đối tác ký kết',
       type: 'select',
       options: PARTY_TYPE_OPTIONS,
-      defaultValue: 'Nhà cung cấp',
+      defaultValue: 'supplier',
     },
     {
       name: 'party_code',
@@ -259,7 +272,7 @@ export const CONTRACT_CRUD_CONFIG: CrudConfig<Contract> = {
       label: 'Trạng thái hợp đồng',
       type: 'select',
       options: STATUS_OPTIONS,
-      defaultValue: 'Hiệu lực',
+      defaultValue: 'active',
     },
     {
       name: 'note',

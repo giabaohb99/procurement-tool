@@ -6,7 +6,9 @@ from sqlalchemy.orm import Session
 from app.core.audit import record
 from app.core.auth import get_perm_profile, require
 from app.core.base_controller import apply_filters, apply_range_filters, apply_sort_from_request, pagination
-from app.core.contract_types import CONTRACT_TYPES
+from app.core.contract_types import CONTRACT_TYPE_LABEL, CONTRACT_TYPES
+from app.core.status_codes import (CONTRACT_EXPIRY, CONTRACT_PARTY_TYPE,
+                                   CONTRACT_STATUS)
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope
@@ -29,6 +31,12 @@ FILTER_OPS = FILTERABLE + ["signed", "start_date"]
 
 
 def expiry_state(end_date: str) -> str:
+    """MÃ tình trạng hạn, bộ `CONTRACT_EXPIRY` (B-02). Rỗng = hợp đồng không đặt hạn.
+
+    Đây là giá trị TÍNH ra, không phải cột — nên B-02 không cần migration cho nó. Nhưng nó
+    từng là chuỗi tiếng Việt đi qua API *và* làm giá trị tham số URL (`?expiry=Hết hạn`),
+    tức tiếng Việt có dấu trong query string.
+    """
     if not end_date:
         return ""
     try:
@@ -37,15 +45,15 @@ def expiry_state(end_date: str) -> str:
         return ""
     days = (d - datetime.now().date()).days
     if days < 0:
-        return "Hết hạn"
+        return "expired"
     if days <= 30:
-        return "Sắp hết hạn"
-    return "Còn hạn"
+        return "expiring_soon"
+    return "valid"
 
 
 def _fill_party(db: Session, c: Contract):
     """Điền tên đối tượng: nếu là Nhà cung cấp thì tra theo mã NCC."""
-    if c.party_type == "Nhà cung cấp" and c.party_code:
+    if c.party_type == "supplier" and c.party_code:
         s = db.query(Supplier).filter(Supplier.code == c.party_code).first()
         if s:
             c.party_name = s.name
@@ -70,10 +78,18 @@ def _in_scope(db: Session, cid: int, user, action: str = "read") -> Contract:
 
 
 def _out(c: Contract) -> dict:
+    # B-02: ba trường `party_type` / `status` / `expiry` trả MÃ; nhãn tiếng Việt đi kèm ở
+    # `*_label` để giao diện cũ (`frontend/`, service `web` ở dev) chỉ phải đổi chỗ đọc chứ
+    # không phải tự khai lại bảng nhãn. Xem `doc/erp/15` §4.1.
+    expiry = expiry_state(c.end_date)
     return {"id": c.id, "code": c.code, "party_type": c.party_type, "party_code": c.party_code,
             "party_name": c.party_name, "company_id": c.company_id, "title": c.title,
             "contract_type": c.contract_type, "start_date": c.start_date, "end_date": c.end_date,
-            "signed": bool(c.signed), "status": c.status, "note": c.note, "expiry": expiry_state(c.end_date)}
+            "signed": bool(c.signed), "status": c.status, "note": c.note, "expiry": expiry,
+            "party_type_label": CONTRACT_PARTY_TYPE.label_of(c.party_type),
+            "status_label": CONTRACT_STATUS.label_of(c.status),
+            "expiry_label": CONTRACT_EXPIRY.label_of(expiry),
+            "contract_type_label": CONTRACT_TYPE_LABEL.get(c.contract_type, "")}
 
 
 @router.get("")
@@ -91,11 +107,11 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
         today = datetime.now().date()
         tstr = today.strftime("%Y-%m-%d")
         t30 = (today + timedelta(days=30)).strftime("%Y-%m-%d")
-        if expiry == "Hết hạn":
+        if expiry == "expired":
             q = q.filter(Contract.end_date != "", Contract.end_date < tstr)
-        elif expiry == "Sắp hết hạn":
+        elif expiry == "expiring_soon":
             q = q.filter(Contract.end_date >= tstr, Contract.end_date <= t30)
-        elif expiry == "Còn hạn":
+        elif expiry == "valid":
             q = q.filter(Contract.end_date > t30)
     total = q.count()
     q = apply_sort_from_request(q, Contract, request, default=Contract.id.desc())

@@ -2,6 +2,7 @@ from sqlalchemy import BigInteger, Boolean, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
+from app.core.status_codes import SURVEY_APPROVE_STATUS
 
 
 class Survey(Base, AuditMixin):
@@ -27,10 +28,22 @@ class Survey(Base, AuditMixin):
     item_name: Mapped[str] = mapped_column(String(255), default="")         # Tên VTBB (tự điền theo mã)
     uom: Mapped[str] = mapped_column(String(25), default="")               # ĐVT
     proposed_rate: Mapped[float] = mapped_column(Numeric(18, 4), default=0)  # Giá đề xuất — đơn giá giữ 4 số lẻ
-    approve_status: Mapped[str] = mapped_column(String(20), default="")   # Duyệt|Không duyệt
+    # B-04: MÃ, xem `SURVEY_APPROVE_STATUS`. Mặc định `pending` chứ KHÔNG còn là chuỗi rỗng —
+    # "chưa xét duyệt" là một trạng thái có tên, không phải dữ liệu thiếu.
+    approve_status: Mapped[str] = mapped_column(String(20), default="pending")
     approve_note: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(30), default="draft")
     import_key: Mapped[str] = mapped_column(String(160), default="", index=True)  # khoá idempotent khi import (phân loại::NCC)
+
+    @property
+    def approve_status_label(self) -> str:
+        """Nhãn tiếng Việt của `approve_status` (B-04). Mã lạ -> rỗng.
+
+        Trả rỗng chứ không trả lại chính mã: nhìn dữ liệu là biết ngay dòng nào chưa chạy
+        migration. Cột này đi ra API qua `_survey_dict()` ở controller — `_dict()` chỉ quét
+        cột thật nên property phải được thêm tay ở đó, thêm ở đây thôi là chưa đủ.
+        """
+        return SURVEY_APPROVE_STATUS.label_of(self.approve_status)
 
 
 class SurveySupplierLine(Base, AuditMixin):

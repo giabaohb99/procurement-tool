@@ -4,7 +4,7 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { CHART_COLORS, CHART_NEUTRAL, type ChartDatum } from '@/shared/ui/chart'
 import type { DonutSlice } from '@/shared/ui/donut-chart'
 import type { Employee } from '../types/employee'
-import { EMPLOYEE_STATUSES } from '../types/employee'
+import { EMPLOYEE_STATUS_OPTIONS } from '../types/employee'
 import { useCompanies } from './use-companies'
 import { useDepartments } from './use-departments'
 import { useEmployees } from './use-employees'
@@ -136,27 +136,33 @@ function groupCount(employees: Employee[], keyOf: (employee: Employee) => string
   return [...head, { label: `Khác (${tail.length} mục)`, value: sum(tail) }]
 }
 
+const KHAC = 'Khác'
+
 /**
  * Lát bánh theo trạng thái nhân sự. Màu bám THỨ TỰ CỐ ĐỊNH của
- * `EMPLOYEE_STATUSES`, không bám thứ hạng số lượng — có vậy "Chính thức" mới
+ * `EMPLOYEE_STATUS_OPTIONS`, không bám thứ hạng số lượng — có vậy "Chính thức" mới
  * luôn là một màu dù dữ liệu đổi. Trạng thái lạ (dữ liệu cũ, để trống) gom vào
  * "Khác" màu xám.
+ *
+ * B-03: đếm theo MÃ, chỉ đổi sang nhãn lúc dựng lát. Đếm theo nhãn thì sửa một chữ
+ * trong nhãn là mọi nhân sự rơi hết vào "Khác".
  */
 function buildStatusSlices(employees: Employee[]): DonutSlice[] {
   const counter = new Map<string, number>()
+  const biet = new Set(EMPLOYEE_STATUS_OPTIONS.map((o) => o.value))
   for (const employee of employees) {
-    const status = employee.status?.trim() || 'Khác'
-    const key = (EMPLOYEE_STATUSES as readonly string[]).includes(status) ? status : 'Khác'
+    const status = employee.status?.trim() || ''
+    const key = biet.has(status) ? status : KHAC
     counter.set(key, (counter.get(key) ?? 0) + 1)
   }
 
-  const slices: DonutSlice[] = EMPLOYEE_STATUSES.map((status, index) => ({
-    label: status,
-    value: counter.get(status) ?? 0,
+  const slices: DonutSlice[] = EMPLOYEE_STATUS_OPTIONS.map(({ value, label }, index) => ({
+    label,
+    value: counter.get(value) ?? 0,
     color: CHART_COLORS[index],
   }))
 
-  const other = counter.get('Khác') ?? 0
+  const other = counter.get(KHAC) ?? 0
   if (other > 0) slices.push({ label: 'Khác', value: other, color: CHART_NEUTRAL })
 
   // Bỏ lát rỗng để chú giải không liệt kê một loạt số 0.

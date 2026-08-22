@@ -7,7 +7,7 @@
 export interface Contract {
   id: number
   code: string
-  /** `Nhà cung cấp` | `Khách hàng` — DB lưu thẳng chuỗi tiếng Việt, không phải mã enum. */
+  /** MÃ `supplier` | `customer` | `other` (B-02). Hiển thị thì dùng `party_type_label`. */
   party_type: string
   /** Mã đối tác. Với NCC đây chính là `Supplier.code`. */
   party_code: string
@@ -18,15 +18,27 @@ export interface Contract {
   start_date: string
   end_date: string
   signed: boolean
+  /** MÃ `active` | `expired` | `liquidated` | `cancelled` (B-02). */
   status: string
   note: string
   /**
    * Tình trạng hiệu lực do BACKEND tính theo `end_date` so với hôm nay —
-   * `Hết hạn` | `Sắp hết hạn` (còn ≤ 30 ngày) | `Còn hạn` | rỗng (không có hạn).
+   * MÃ `expired` | `expiring_soon` (còn ≤ 30 ngày) | `valid` | rỗng (không có hạn).
    * Không tính lại ở frontend: máy người dùng lệch giờ là ra kết quả khác.
+   *
+   * ⚠️ `expired` của bộ này KHÁC `expired` của `status`: cái này TÍNH từ ngày hết hạn,
+   * cái kia do người dùng đặt tay. Một hợp đồng quá hạn mà chưa ai đụng vào thì
+   * `expiry = "expired"` nhưng `status` vẫn là `active`.
    */
   expiry: string
+  /**
+   * Nhãn tiếng Việt backend gửi kèm cho bốn cột mã ở trên (B-02).
+   *
+   * Có sẵn nhãn nhưng chỗ nào vẽ ĐỒNG BỘ (chip, ô chọn, bộ lọc) vẫn tra từ
+   * `@/shared/constants/statuses` — nhãn chỉ đi cùng bản ghi, không đi cùng ô chọn rỗng.
+   */
+  party_type_label: string
+  status_label: string
+  expiry_label: string
+  contract_type_label: string
 }
-
-/** Tình trạng hiệu lực, theo đúng thứ tự "cần xử lý trước" của người dùng. */
-export const CONTRACT_EXPIRY_STATES = ['Hết hạn', 'Sắp hết hạn', 'Còn hạn'] as const

@@ -9,6 +9,7 @@ Phiếu chưa có dòng hàng nào vẫn ra một hàng (cụm dòng để trố
 from sqlalchemy.orm import Session
 
 from app.core.export_xlsx import Col
+from app.core.status_codes import PR_LINE_STATUS
 from .model import PurchaseRequest, PurchaseRequestItem
 
 # Nhãn tiếng Việt của trạng thái — khớp badge trên màn danh sách
@@ -84,7 +85,7 @@ def build_rows(db: Session, prs: list[PurchaseRequest]) -> list[dict]:
         # Tổng tiền + ngày cần hàng tính y như màn danh sách (theo dòng, bỏ dòng đã hủy)
         total = round(sum(float(it.amount or 0) for it in lines), 2)
         need_dates = [it.required_date for it in lines
-                      if it.required_date and it.line_status != "Hủy đơn"]
+                      if it.required_date and it.line_status != "cancelled"]
         head = {
             "code": pr.code,
             "created_at": pr.created_at,
@@ -113,7 +114,8 @@ def build_rows(db: Session, prs: list[PurchaseRequest]) -> list[dict]:
                 "required_date": it.required_date,
                 "expected_date": it.expected_date,
                 "assignee_name": names.get(it.assignee, it.assignee or ""),
-                "line_status": it.line_status,
+                # B-06: cột lưu MÃ, file xuất phải ra chữ cho người đọc
+                "line_status": PR_LINE_STATUS.label_of(it.line_status, it.line_status or ""),
                 "qty_ordered": float(it.qty_ordered or 0),
                 "qty_received": float(it.qty_received or 0),
                 "note": it.note,

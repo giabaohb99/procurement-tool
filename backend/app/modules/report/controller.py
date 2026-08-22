@@ -12,6 +12,7 @@ from app.core.response import success
 from .excel import build_report_workbook
 from app.modules.inventory.model import Inventory
 from app.modules.payable.model import Payable
+from app.modules.payable.service import ST_PAID
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 from . import service as report_service
 
@@ -269,7 +270,7 @@ def procurement(request: Request, db: Session = Depends(get_db),
         return {"total": round(tot, 2), "paid": round(paid, 2), "remaining": round(tot - paid, 2)}
 
     overdue = sum(float(p.remaining or 0) for p in pays
-                  if p.status != "Đã TT" and p.due_date and p.due_date < today)
+                  if p.status != ST_PAID and p.due_date and p.due_date < today)
 
     late = [d for d in delivs if (d.diff_promise or 0) < 0 or (d.diff_regulated or 0) < 0]
     late_list = [{"po_code": po_code.get(d.po_id, ""), "product": item_name.get(d.po_item_id, ""),

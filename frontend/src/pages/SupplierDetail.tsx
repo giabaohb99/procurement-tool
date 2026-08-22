@@ -8,12 +8,14 @@ import SearchSelect from '../components/SearchSelect'
 import PurchaseHistoryTable from '../components/PurchaseHistoryTable'
 import SupplierPayablesDashboard from '../components/supplier-payables-dashboard'
 import { contractTypeLabel } from '../utils/contractTypes'
+import { SUPPLIER_LEGAL_TYPES } from '../utils/statusLabels'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 // ĐƠN GIÁ hiện đủ 4 số lẻ — mặc định toLocaleString chỉ cho 3, cắt mất chữ số cuối
 const fmtPrice = (n: any) => Number(n || 0).toLocaleString('vi-VN', { maximumFractionDigits: 4 })
 const SUP_TYPE = [{ value: 'goods', label: 'NCC bán hàng' }, { value: 'transport', label: 'Đơn vị vận chuyển' }]
-const LEGAL_TYPE = ['Công ty', 'Cá nhân', 'Hợp danh', 'Hộ kinh doanh']
+// B-03: ô này gửi MÃ xuống DB, chữ tiếng Việt chỉ là nhãn.
+const LEGAL_TYPE = SUPPLIER_LEGAL_TYPES
 const TABS = [
   { key: 'info', label: 'Thông tin' },
   { key: 'contracts', label: 'Hợp đồng' },

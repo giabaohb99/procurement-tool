@@ -29,4 +29,6 @@ class Payable(Base, AuditMixin):
     total: Mapped[float] = mapped_column(Numeric(18, 2), default=0)    # phải trả = amount + vat
     paid_amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
     remaining: Mapped[float] = mapped_column(Numeric(18, 2), default=0)  # tính sẵn = total - paid
-    status: Mapped[str] = mapped_column(String(20), default="Chờ TT", index=True)  # Chờ TT | Trả một phần | Đã TT
+    # MÃ cố định, xem PAYABLE_STATUS trong app/core/status_codes.py (B-05): unpaid | partial | paid.
+    # Không ai nhập cột này — service.recalc_status() tính lại từ paid_amount so với total.
+    status: Mapped[str] = mapped_column(String(20), default="unpaid", index=True)

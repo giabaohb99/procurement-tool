@@ -4,9 +4,19 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+from app.core.status_codes import PAYABLE_STATUS
+
 from .model import Payable
 
 FILTERABLE = ["supplier_code", "po_code", "invoice_no", "source_type", "status"]
+
+# Ba giá trị của `Payable.status` (B-05). Đặt tên ở đây vì NĂM chỗ ngoài phân hệ này so sánh
+# với `paid` để loại nợ đã tất toán — cảnh báo, hai khối Trang chủ, thẻ tổng hợp công nợ và
+# báo cáo mua hàng. Gõ thẳng chuỗi ở từng chỗ là lần sau đổi mã sẽ sót đúng một chỗ, mà chỗ
+# sót đó im lặng trả ra số tiền sai chứ không nổ.
+ST_UNPAID = "unpaid"
+ST_PARTIAL = "partial"
+ST_PAID = "paid"
 
 
 def debt_days(payment_terms: str) -> int:
@@ -43,15 +53,25 @@ def calc_due(incur_date: str, days: int) -> str:
 
 
 def recalc_status(p: Payable):
+    """Tính lại trạng thái + số còn lại từ hai con số tiền. Gọi sau MỖI lần phân bổ thanh toán.
+
+    Trạng thái ở đây là HÀM của (paid, total), không phải máy trạng thái: sửa `total` của một
+    khoản đã tất toán là nó tự lùi về `partial`. Vì vậy `paid` không phải trạng thái kết.
+    """
     paid = float(p.paid_amount or 0)
     total = float(p.total or 0)
     p.remaining = round(total - paid, 2)   # tính sẵn, không sum lúc đọc
     if paid <= 0:
-        p.status = "Chờ TT"
+        p.status = ST_UNPAID
     elif paid + 0.01 < total:
-        p.status = "Trả một phần"
+        p.status = ST_PARTIAL
     else:
-        p.status = "Đã TT"
+        p.status = ST_PAID
+
+
+def status_label(v: str) -> str:
+    """Nhãn tiếng Việt của mã trạng thái. Mã lạ thì trả về chính nó, không nuốt mất."""
+    return PAYABLE_STATUS.label_of(v) or (v or "")
 
 
 def upsert(db: Session, *, source_type: str, ref_id: int, company_id: int, supplier_code: str,

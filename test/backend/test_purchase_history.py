@@ -10,7 +10,8 @@ from app.modules.company.model import Company
 from app.modules.purchase_history.model import PurchaseHistory
 from app.modules.purchase_history.service import list_history, snapshot_line
 from app.modules.purchase_order.model import POItem, PurchaseOrder
-from app.modules.purchase_order.service import auto_advance_line
+from app.modules.purchase_order.service import (PROG_COMPLETED, PROG_DOC_SENT, PROG_ORDERED,
+                                                auto_advance_line)
 
 PG = {"offset": 0, "limit": 50}
 
@@ -31,7 +32,7 @@ def _po(db, **doi):
 def _item(db, po, **doi):
     base = dict(po_id=po.id, product_code="SP001", product_name="Hàng A", unit="Cái",
                 qty_order=2000, price=156, vat=8, amount=336960, qty_received=2000,
-                invoice_no="HD001", progress_status="Đã gửi ĐMH cho KT")
+                invoice_no="HD001", progress_status=PROG_DOC_SENT)
     base.update(doi)
     it = POItem(**base)
     db.add(it)
@@ -103,7 +104,7 @@ def test_dong_vao_hoan_thanh_thi_tu_ghi_lich_su(db, monkeypatch):
     assert auto_advance_line(db, po, it) is True
     db.commit()
 
-    assert it.progress_status == "Hoàn thành"
+    assert it.progress_status == PROG_COMPLETED
     assert db.query(PurchaseHistory).count() == 1
 
 
@@ -112,7 +113,7 @@ def test_dong_chua_hoan_thanh_thi_khong_ghi(db, monkeypatch):
     monkeypatch.setattr(po_service, "highest_satisfied_step", lambda *a, **k: 2)  # "Đã nhận hàng"
 
     po = _po(db)
-    it = _item(db, po, progress_status="Đã đặt hàng")
+    it = _item(db, po, progress_status=PROG_ORDERED)
     auto_advance_line(db, po, it)
     db.commit()
 

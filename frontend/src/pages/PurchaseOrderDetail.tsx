@@ -22,6 +22,7 @@ import { fmtSize, fileIcon } from '../utils/file-type'
 import { newDupCodes } from '../utils/lines'
 import { normGroup, regulatedDate, stdDaysMap, stdDaysOf } from '../utils/lead-time'
 import { fmtDateStr } from '../utils/datetime'
+import { poDeliveryStatusLabel, poProgressStatusLabel } from '../utils/statusLabels'
 
 const API = '/api/purchase-orders'
 // Ô/cột ĐƠN GIÁ cho lẻ tới 4 chữ số thập phân — giá quy đổi hay lẻ tới phần nghìn đồng
@@ -44,17 +45,13 @@ const CurrencyInput = ({ value, onChange, disabled, style, className }: any) =>
 const POPUP_TEXT = { minHeight: 40, fontSize: 14 }
 
 // Màu badge TIẾN ĐỘ dòng ĐMH (progress_status). 4 bước thường TỰ ĐỘNG theo dữ liệu (backend);
-// tay chỉ còn Tạm ngưng / Hủy đơn / Tiếp tục.
+// tay chỉ còn Tạm ngưng / Hủy đơn / Tiếp tục. B-06: khóa là MÃ, nhãn ở `statusLabels.ts`.
+const PG_PAUSED = 'paused'
+const PG_CANCELLED = 'cancelled'
 const PG_COLOR: Record<string, string> = {
-  'Chưa đặt hàng': '#94a3b8', 'Đã đặt hàng': '#2563eb', 'Đã nhận hàng': '#0891b2',
-  'Chưa gửi ĐMH cho KT': '#db2777', 'Đã gửi ĐMH cho KT': '#7c3aed',
-  'Hoàn thành': '#16a34a', 'Tạm ngưng': '#d97706', 'Hủy đơn': '#dc2626',
-}
-
-// Trạng thái hồ sơ chứng từ (cập nhật tay, Task 10b)
-const DOC_STATUS_OPTS = ['chưa có chứng từ', 'đã có thông tin chứng từ', 'đã đủ chứng từ']
-const DOC_STATUS_COLOR: Record<string, string> = {
-  'chưa có chứng từ': '#dc2626', 'đã có thông tin chứng từ': '#d97706', 'đã đủ chứng từ': '#16a34a',
+  not_ordered: '#94a3b8', ordered: '#2563eb', received: '#0891b2',
+  doc_pending: '#db2777', doc_sent: '#7c3aed',
+  completed: '#16a34a', paused: '#d97706', cancelled: '#dc2626',
 }
 
 const emptyItem = {
@@ -237,7 +234,7 @@ export default function PurchaseOrderDetail() {
   // Tiến độ dòng: người phụ trách cập nhật khi đơn đã duyệt trở đi
   const progressEditable = !isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'write')
   // Dòng đã Hoàn thành / Hủy đơn → khóa HẲN dòng đó (kể cả bảng vận chuyển), không sửa gì được
-  const lineLocked = (it: any) => ['Hoàn thành', 'Hủy đơn'].includes(it?.progress_status || '')
+  const lineLocked = (it: any) => ['completed', PG_CANCELLED].includes(it?.progress_status || '')
   // Dòng ĐÃ NHẬN HÀNG → khóa nhận diện sản phẩm (Mã hàng, ĐVT). Đổi lúc này sẽ dời
   // phiếu nhập kho + tồn kho đã ghi theo mã cũ sang mã khác. Backend cũng chặn.
   const lineReceived = (it: any) => Number(it?.qty_received || 0) > 0
@@ -301,7 +298,7 @@ export default function PurchaseOrderDetail() {
     const src = s.items[i]
     // Dòng mới: reset tiến độ + tiền + lần giao (chưa lưu nên chưa có id/công nợ)
     const copy = { ...src, id: undefined, qty_received: 0, qty_remaining: 0, line_status: '', deliveries: [],
-      progress_status: 'Chưa đặt hàng', pause_reason: '', status_before_pause: '',
+      progress_status: 'not_ordered', pause_reason: '', status_before_pause: '',
       goods_total: 0, paid_total: 0, remaining_total: 0 }
     const items = [...s.items]; items.splice(i + 1, 0, copy); return recalcUrgent({ ...s, items })
   })
@@ -543,10 +540,12 @@ export default function PurchaseOrderDetail() {
 
   // Cập nhật trạng thái tiến độ 1 dòng (Hủy/Tạm ngưng cần lý do); backend gate điều kiện + toast cột thiếu
   async function setProgress(item: any, status: string) {
-    if (status === (item.progress_status || 'Chưa đặt hàng')) return
+    if (status === (item.progress_status || 'not_ordered')) return
     let reason = ''
-    if (status === 'Tạm ngưng' || status === 'Hủy đơn') {
-      const r = await askPrompt({ title: status, message: `Lý do ${status.toLowerCase()}:`, confirmText: status })
+    if (status === PG_PAUSED || status === PG_CANCELLED) {
+      // Hộp thoại nói tiếng Việt nên phải dịch MÃ ra nhãn trước khi ghép câu.
+      const nhan = poProgressStatusLabel(status)
+      const r = await askPrompt({ title: nhan, message: `Lý do ${nhan.toLowerCase()}:`, confirmText: nhan })
       if (r === null || !r.trim()) return
       reason = r.trim()
     }
@@ -644,7 +643,7 @@ export default function PurchaseOrderDetail() {
             )}
           </div>
         )}
-        {!isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'cancel') && !items.some((it: any) => it.progress_status === 'Hoàn thành') && (
+        {!isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'cancel') && !items.some((it: any) => it.progress_status === 'completed') && (
           <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={async () => { const r = await askPrompt({ title: 'Hủy đơn', message: 'Lý do hủy đơn (bắt buộc — khóa đơn, không sửa lại được):', confirmText: 'Hủy đơn' }); if (r !== null) { if (!r.trim()) { toast.error('Vui lòng nhập lý do hủy'); return } action('cancel', { reason: r }) } }}><i className="ti ti-ban" />Hủy</button>
         )}
         {!isNew && canDelete && can('purchase_order', 'delete') && (
@@ -853,25 +852,25 @@ export default function PurchaseOrderDetail() {
                         </div>
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        {progressEditable && it.id && !['Hủy đơn', 'Hoàn thành'].includes(it.progress_status) ? (
-                          it.progress_status === 'Tạm ngưng' ? (
+                        {progressEditable && it.id && ![PG_CANCELLED, 'completed'].includes(it.progress_status) ? (
+                          it.progress_status === PG_PAUSED ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
-                              <span className="badge" style={{ background: PG_COLOR['Tạm ngưng'] + '22', color: PG_COLOR['Tạm ngưng'] }}>Tạm ngưng</span>
+                              <span className="badge" style={{ background: PG_COLOR[PG_PAUSED] + '22', color: PG_COLOR[PG_PAUSED] }}>Tạm ngưng</span>
                               <button className="btn ghost" style={{ height: 26, fontSize: 11, padding: '0 8px' }} onClick={() => resumeProgress(it)}><i className="ti ti-player-play" />Tiếp tục</button>
                             </div>
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
-                              <span className="badge" title="Trạng thái tự động theo dữ liệu" style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{it.progress_status || 'Chưa đặt hàng'}</span>
+                              <span className="badge" title="Trạng thái tự động theo dữ liệu" style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{poProgressStatusLabel(it.progress_status || 'not_ordered')}</span>
                               <div style={{ display: 'flex', gap: 4 }}>
-                                <button className="btn ghost" style={{ height: 24, fontSize: 11, padding: '0 6px' }} onClick={() => setProgress(it, 'Tạm ngưng')}><i className="ti ti-player-pause" />Tạm ngưng</button>
-                                <button className="btn ghost" style={{ height: 24, fontSize: 11, padding: '0 6px', color: 'var(--red)' }} onClick={() => setProgress(it, 'Hủy đơn')}>Hủy</button>
+                                <button className="btn ghost" style={{ height: 24, fontSize: 11, padding: '0 6px' }} onClick={() => setProgress(it, PG_PAUSED)}><i className="ti ti-player-pause" />Tạm ngưng</button>
+                                <button className="btn ghost" style={{ height: 24, fontSize: 11, padding: '0 6px', color: 'var(--red)' }} onClick={() => setProgress(it, PG_CANCELLED)}>Hủy</button>
                               </div>
                             </div>
                           )
                         ) : (
-                          <span className="badge" title={!it.id ? 'Lưu đơn để cập nhật trạng thái cho dòng mới' : undefined} style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{it.progress_status || 'Chưa đặt hàng'}</span>
+                          <span className="badge" title={!it.id ? 'Lưu đơn để cập nhật trạng thái cho dòng mới' : undefined} style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{poProgressStatusLabel(it.progress_status || 'not_ordered')}</span>
                         )}
-                        {it.pause_reason && ['Tạm ngưng', 'Hủy đơn'].includes(it.progress_status) && (
+                        {it.pause_reason && [PG_PAUSED, PG_CANCELLED].includes(it.progress_status) && (
                           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }} title={it.pause_reason}>Lý do: {it.pause_reason}</div>
                         )}
                       </td>
@@ -932,7 +931,7 @@ export default function PurchaseOrderDetail() {
               editable={headerEditable || afterApproveEditable}
               isNew={isNew}
               showDocumentStatus={true}
-              documentStatus={po.document_status || 'chưa có chứng từ'}
+              documentStatus={po.document_status || 'none'}
               onDocumentStatusChange={setDocStatus}
               showChainDetailButton={true}
               onRefresh={loadAll}
@@ -1021,25 +1020,25 @@ export default function PurchaseOrderDetail() {
                     <div className="form-row">
                       <label>Trạng thái tiến độ</label>
                       <div>
-                        {progressEditable && it.id && !['Hủy đơn', 'Hoàn thành'].includes(it.progress_status) ? (
-                          it.progress_status === 'Tạm ngưng' ? (
+                        {progressEditable && it.id && ![PG_CANCELLED, 'completed'].includes(it.progress_status) ? (
+                          it.progress_status === PG_PAUSED ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
-                              <span className="badge" style={{ background: PG_COLOR['Tạm ngưng'] + '22', color: PG_COLOR['Tạm ngưng'] }}>Tạm ngưng</span>
+                              <span className="badge" style={{ background: PG_COLOR[PG_PAUSED] + '22', color: PG_COLOR[PG_PAUSED] }}>Tạm ngưng</span>
                               <button className="btn ghost" style={{ height: 26, fontSize: 11, padding: '0 8px' }} onClick={() => resumeProgress(it)}><i className="ti ti-player-play" />Tiếp tục</button>
                             </div>
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
-                              <span className="badge" title="Trạng thái tự động theo dữ liệu" style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{it.progress_status || 'Chưa đặt hàng'}</span>
+                              <span className="badge" title="Trạng thái tự động theo dữ liệu" style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{poProgressStatusLabel(it.progress_status || 'not_ordered')}</span>
                               <div style={{ display: 'flex', gap: 4 }}>
-                                <button className="btn ghost" style={{ height: 24, fontSize: 11, padding: '0 6px' }} onClick={() => setProgress(it, 'Tạm ngưng')}><i className="ti ti-player-pause" />Tạm ngưng</button>
-                                <button className="btn ghost" style={{ height: 24, fontSize: 11, padding: '0 6px', color: 'var(--red)' }} onClick={() => setProgress(it, 'Hủy đơn')}>Hủy</button>
+                                <button className="btn ghost" style={{ height: 24, fontSize: 11, padding: '0 6px' }} onClick={() => setProgress(it, PG_PAUSED)}><i className="ti ti-player-pause" />Tạm ngưng</button>
+                                <button className="btn ghost" style={{ height: 24, fontSize: 11, padding: '0 6px', color: 'var(--red)' }} onClick={() => setProgress(it, PG_CANCELLED)}>Hủy</button>
                               </div>
                             </div>
                           )
                         ) : (
-                          <span className="badge" title={!it.id ? 'Lưu đơn để cập nhật trạng thái cho dòng mới' : undefined} style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{it.progress_status || 'Chưa đặt hàng'}</span>
+                          <span className="badge" title={!it.id ? 'Lưu đơn để cập nhật trạng thái cho dòng mới' : undefined} style={{ background: (PG_COLOR[it.progress_status] || '#94a3b8') + '22', color: PG_COLOR[it.progress_status] || '#64748b' }}>{poProgressStatusLabel(it.progress_status || 'not_ordered')}</span>
                         )}
-                        {it.pause_reason && ['Tạm ngưng', 'Hủy đơn'].includes(it.progress_status) && (
+                        {it.pause_reason && [PG_PAUSED, PG_CANCELLED].includes(it.progress_status) && (
                           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>Lý do: {it.pause_reason}</div>
                         )}
                       </div>
@@ -1073,7 +1072,7 @@ export default function PurchaseOrderDetail() {
               <h4 style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--navy)', borderTop: '1px solid var(--border)', paddingTop: 14 }}>Giao hàng (nhiều lần)</h4>
               {isNew && <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10 }}>Lưu đơn (Tạo) trước rồi mới thêm lần giao.</div>}
               {!isNew && !deliveryEditable && <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10 }}>Chỉ thêm/sửa lần giao khi đơn đã được duyệt.</div>}
-              {lineLocked(items[editingItemIdx]) && <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10 }}>Dòng đã {items[editingItemIdx].progress_status === 'Hủy đơn' ? 'hủy' : 'hoàn thành'} — không sửa được lần giao.</div>}
+              {lineLocked(items[editingItemIdx]) && <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10 }}>Dòng đã {items[editingItemIdx].progress_status === PG_CANCELLED ? 'hủy' : 'hoàn thành'} — không sửa được lần giao.</div>}
               {deliveryEditable && !lineLocked(items[editingItemIdx]) && (
                 <button className="btn ghost" style={{ height: 30, fontSize: 13, marginBottom: 10 }} onClick={() => addDelivery(editingItemIdx)}><i className="ti ti-plus" />Thêm lần giao</button>
               )}
@@ -1152,7 +1151,7 @@ export default function PurchaseOrderDetail() {
                           <td style={{ textAlign: 'center', color: (d.diff_promise < 0 ? 'var(--red)' : 'var(--muted)'), fontWeight: d.diff_promise < 0 ? 600 : 400 }}>{d.received_date ? (d.diff_promise ?? 0) : '—'}</td>
                           <td style={{ textAlign: 'center', color: (d.diff_regulated < 0 ? 'var(--red)' : 'var(--muted)'), fontWeight: d.diff_regulated < 0 ? 600 : 400 }}>{d.received_date ? (d.diff_regulated ?? 0) : '—'}</td>
                           <td style={{ textAlign: 'center', color: (d.diff_required < 0 ? 'var(--red)' : 'var(--muted)') }}>{items[ii].required_date ? (d.diff_required ?? 0) : '—'}</td>
-                          <td style={{ textAlign: 'center', fontSize: 12 }}>{d.status ? <span className={'badge ' + (d.status === 'Đã nhận' ? 'ok' : d.status === 'Lỗi' ? 'err' : 'warn')}>{d.status}</span> : '—'}</td>
+                          <td style={{ textAlign: 'center', fontSize: 12 }}>{d.status ? <span className={'badge ' + (d.status === 'received' ? 'ok' : d.status === 'defect' ? 'err' : 'warn')}>{poDeliveryStatusLabel(d.status)}</span> : '—'}</td>
                           <td>
                             <CurrencyInput
                               style={{ width: 100 }}

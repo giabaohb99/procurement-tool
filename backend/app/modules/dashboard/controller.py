@@ -113,6 +113,7 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
     from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
     from app.modules.purchase_order.model import PurchaseOrder, POItem, PODelivery
     from app.modules.payable.model import Payable
+    from app.modules.payable.service import ST_PAID
     from app.modules.contract.model import Contract
     from app.modules.inventory.model import Inventory
     from app.modules.survey.model import Survey
@@ -243,7 +244,7 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
 
     # ===== Công nợ =====
     if can("payable"):
-        pays = apply_scope(db.query(Payable), Payable, "payable", user, prof).filter(Payable.status != "Đã TT").all()
+        pays = apply_scope(db.query(Payable), Payable, "payable", user, prof).filter(Payable.status != ST_PAID).all()
         kpi["due_soon"] = round(sum(float(p.remaining or 0) for p in pays if p.due_date and tstr <= p.due_date <= in7), 0)
         kpi["overdue"] = round(sum(float(p.remaining or 0) for p in pays if p.due_date and p.due_date < tstr), 0)
         aging = {"Chưa đến hạn": 0.0, "1–30 ngày": 0.0, "31–60 ngày": 0.0, "> 60 ngày": 0.0}
@@ -260,8 +261,9 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
 
     # ===== Hợp đồng (dùng chung) =====
     if can("contract"):
+        # B-02: mã của bộ `CONTRACT_STATUS` (`app/core/status_codes.py`), trước là "Thanh lý".
         kpi["contract_expiring"] = db.query(Contract).filter(
-            Contract.status != "Thanh lý", Contract.end_date != "", Contract.end_date <= in30).count()
+            Contract.status != "liquidated", Contract.end_date != "", Contract.end_date <= in30).count()
 
     # ===== Tồn kho =====
     if can("inventory"):
@@ -312,6 +314,7 @@ def my_tasks(request: Request, db: Session = Depends(get_db), user=Depends(get_c
     from app.modules.survey_request.model import SurveyRequest
     from app.modules.purchase_order.model import PurchaseOrder, PODelivery
     from app.modules.payable.model import Payable
+    from app.modules.payable.service import ST_PAID
 
     prof = get_perm_profile(db, user)
 
@@ -362,7 +365,7 @@ def my_tasks(request: Request, db: Session = Depends(get_db), user=Depends(get_c
                                   "date": exp, "link": f"/purchase-orders/{d.po_id}"})
 
     if can("payable"):
-        rows = (apply_scope(db.query(Payable).filter(Payable.status != "Đã TT", Payable.remaining > 0,
+        rows = (apply_scope(db.query(Payable).filter(Payable.status != ST_PAID, Payable.remaining > 0,
                                                      Payable.due_date != "", Payable.due_date < today),
                             Payable, "payable", user, prof)
                 .order_by(Payable.due_date).limit(300).all())

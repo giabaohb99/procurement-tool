@@ -36,8 +36,8 @@ import { usePayableSummary, usePayables } from '../hooks/use-payables'
 import {
   AGING_BUCKETS,
   PAYABLE_SOURCE_LABELS,
+  PAYABLE_STATUS_OPTIONS,
   agingLabel,
-  payableStatusOptions,
   type Payable,
 } from '../types/payable'
 
@@ -128,7 +128,7 @@ function PayableListContent() {
   // Chỉ tick được khoản CHƯA tất toán, CÒN nợ và ĐÃ có số hóa đơn — đúng ba điều
   // kiện backend cần để lên đề nghị thanh toán.
   const isPayable = useCallback(
-    (p: Payable) => p.status !== 'Đã TT' && p.remaining > 0 && p.invoice_no.trim() !== '',
+    (p: Payable) => p.status !== 'paid' && p.remaining > 0 && p.invoice_no.trim() !== '',
     [],
   )
 
@@ -401,7 +401,7 @@ function PayableListContent() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-                  {payableStatusOptions().map((option) => (
+                  {PAYABLE_STATUS_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>

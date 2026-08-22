@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { AGING_BUCKETS, agingLabel, payableStatusOptions } from './payable'
+import { PAYABLE_STATUS_OPTIONS, AGING_BUCKETS, agingLabel, payableStatusLabel } from './payable'
 
 describe('agingLabel', () => {
   it('gắn chữ "ngày" vào khoảng số để đọc trên bảng không tưởng là tiền', () => {
@@ -23,14 +23,21 @@ describe('agingLabel', () => {
   })
 })
 
-describe('payableStatusOptions', () => {
-  it('gửi lên chuỗi VIẾT TẮT của DB, chỉ hiện ra nhãn đầy đủ', () => {
-    // Gửi nhãn đầy đủ ("Đã thanh toán") thì backend lọc không khớp dòng nào mà
+describe('trạng thái công nợ', () => {
+  it('ô lọc gửi lên MÃ, chỉ hiện ra nhãn tiếng Việt', () => {
+    // Gửi nhãn ("Đã thanh toán") thay vì mã thì backend lọc không khớp dòng nào mà
     // cũng không báo lỗi — bảng rỗng trông y như "chưa có công nợ".
-    expect(payableStatusOptions()).toEqual([
-      { value: 'Chờ TT', label: 'Chờ thanh toán' },
-      { value: 'Trả một phần', label: 'Thanh toán một phần' },
-      { value: 'Đã TT', label: 'Đã thanh toán' },
+    expect(PAYABLE_STATUS_OPTIONS).toEqual([
+      { value: 'unpaid', label: 'Chờ thanh toán' },
+      { value: 'partial', label: 'Thanh toán một phần' },
+      { value: 'paid', label: 'Đã thanh toán' },
     ])
+  })
+
+  it('mã lạ (dòng chưa chạy migration B-05) vẫn hiện ra nguyên văn, không nuốt mất', () => {
+    // Bỏ trắng ô trạng thái là người dùng tưởng khoản nợ không có trạng thái nào.
+    expect(payableStatusLabel('Đã TT')).toBe('Đã TT')
+    expect(payableStatusLabel('paid')).toBe('Đã thanh toán')
+    expect(payableStatusLabel('')).toBe('')
   })
 })

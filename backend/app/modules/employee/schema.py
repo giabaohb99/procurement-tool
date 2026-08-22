@@ -1,5 +1,7 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+from app.core.status_codes import EMPLOYEE_STATUS
 
 
 class EmployeeBase(BaseModel):
@@ -11,12 +13,24 @@ class EmployeeBase(BaseModel):
     department_id: int = 0
     position: str = ""
     role_name: str = ""
-    status: str = "Chính thức"
+    status: str = "official"      # B-03: MÃ, xem `EMPLOYEE_STATUS`
     is_active: bool = True
 
 
 class EmployeeCreate(EmployeeBase):
-    pass
+    # Chặn ở CẢ Create lẫn Update. Chỉ chặn một bên thì màn còn lại vẫn ghi chữ tự do vào
+    # lại cột, và cột lại đẻ giá trị lạ đúng như trước B-03.
+    #
+    # Cố ý KHÔNG nhận "Chính thức" rồi âm thầm đổi thành `official`: dịch hộ thì bản giao
+    # diện chưa vá vẫn chạy được và sẽ không ai vá nữa. Thà 422 ngay lúc deploy.
+    # (Đường CSV nhập từ tệp người dùng là ngoại lệ có chủ đích — nó dịch, xem controller.)
+    #
+    # `allow_blank=False`: khác `legal_type` của NCC (rỗng = chưa chọn, và là tình trạng của
+    # gần hết dữ liệu thật), nhân sự thì LUÔN có tình trạng làm việc — rỗng không mang nghĩa gì.
+    @field_validator("status")
+    @classmethod
+    def _kiem_status(cls, v: str) -> str:
+        return EMPLOYEE_STATUS.validate(v, allow_blank=False)
 
 
 class EmployeeUpdate(BaseModel):
@@ -30,10 +44,23 @@ class EmployeeUpdate(BaseModel):
     status: str | None = None
     is_active: bool | None = None
 
+    @field_validator("status")
+    @classmethod
+    def _kiem_status(cls, v: str | None) -> str | None:
+        # `None` = không gửi trường này (PATCH), cho qua. Nhưng `""` là CÓ gửi và gửi rỗng:
+        # hồ sơ mang giá trị cũ ngoài bộ mã thì ô chọn không khớp mục nào, để rỗng lọt qua là
+        # bấm lưu xong xóa trắng trạng thái thật của một con người mà không ai biết.
+        if v is None:
+            return None
+        return EMPLOYEE_STATUS.validate(v, allow_blank=False)
+
 
 class EmployeeOut(EmployeeBase):
     id: int
     code: str
+    # B-03: nhãn tiếng Việt gửi kèm để giao diện khỏi khai lại bảng mã bằng tay.
+    # Đọc từ `Employee.status_label` (property trên model).
+    status_label: str = ""
     department_name: str | None = None
     manager_name: str | None = None
     created_at: datetime | None = None

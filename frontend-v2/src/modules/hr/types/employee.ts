@@ -1,3 +1,5 @@
+import { EMPLOYEE_STATUS, labelOf } from '@/shared/constants/statuses'
+
 /** Nhân viên — khớp `EmployeeOut` của backend. */
 export interface Employee {
   id: number
@@ -14,7 +16,10 @@ export interface Employee {
    * "Phân quyền tài khoản". Giữ lại vì dữ liệu cũ vẫn còn.
    */
   role_name: string
+  /** MÃ tiếng Anh (B-03): `official` | `collaborator` | `maternity_leave` | `resigned`. */
   status: string
+  /** Nhãn tiếng Việt của `status`, backend gửi kèm. Rỗng khi mã lạ. */
+  status_label: string
   is_active: boolean
   department_name?: string | null
   manager_name?: string | null
@@ -28,17 +33,37 @@ export interface EmployeeDetail extends Employee {
 }
 
 /**
- * Trạng thái nhân sự lưu thẳng CHUỖI TIẾNG VIỆT xuống DB (không phải mã enum),
- * nên danh sách này vừa là options của form vừa là giá trị thật gửi lên API.
+ * Tình trạng làm việc — B-03: cột lưu MÃ tiếng Anh, tiếng Việt chỉ còn ở nhãn.
+ *
+ * Bộ mã sinh từ `backend/app/core/status_codes.py`, KHÔNG khai lại ở đây: khai tay là
+ * sớm muộn lệch với bộ backend đang chặn, mà lệch kiểu đó chỉ lộ ra khi người dùng bấm
+ * lưu và ăn 422.
  */
-export const EMPLOYEE_STATUSES = [
-  'Chính thức',
-  'Cộng tác viên',
-  'Nghỉ thai sản',
-  'Nghỉ việc',
-] as const
+export const EMPLOYEE_STATUS_OPTIONS = EMPLOYEE_STATUS.map(({ value, label }) => ({
+  value,
+  label,
+}))
 
-export type EmployeeStatus = (typeof EMPLOYEE_STATUSES)[number]
+/** Nhãn của một mã tình trạng. Mã lạ thì trả NGUYÊN mã, không trả rỗng. */
+export function employeeStatusLabel(value?: string | null): string {
+  const v = (value ?? '').trim()
+  if (!v) return ''
+  return labelOf(EMPLOYEE_STATUS, v) || v
+}
+
+/**
+ * Options cho ô chọn Tình trạng, kèm giá trị hiện tại nếu nó nằm NGOÀI bộ mã.
+ *
+ * Giá trị lạ = dòng chưa chạy migration B-03 (hoặc do nơi khác ghi vào). Vẫn phải hiện
+ * ra: bỏ đi thì mở form lên ô trống, người dùng không biết hồ sơ đang mang trạng thái
+ * gì. Chọn lại đúng nó rồi lưu thì backend trả 422 — cố ý, vì giá trị đó không còn ghi
+ * xuống được nữa; câu lỗi nói rõ hơn là im lặng ghi đè.
+ */
+export function employeeStatusOptions(current?: string | null) {
+  const v = (current ?? '').trim()
+  if (!v || EMPLOYEE_STATUS_OPTIONS.some((o) => o.value === v)) return EMPLOYEE_STATUS_OPTIONS
+  return [{ value: v, label: `${v} (giá trị cũ)` }, ...EMPLOYEE_STATUS_OPTIONS]
+}
 
 /**
  * "Trần Minh Được" -> "TĐ". Dùng khi chưa có ảnh đại diện.

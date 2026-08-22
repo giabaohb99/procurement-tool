@@ -20,15 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { PO_PROGRESS_STATUS } from '@/shared/constants/statuses'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import { cn } from '@/shared/utils/cn'
 import { DocumentStatusBadge, ProgressStatusBadge } from '../components/document-status-badge'
 import { usePurchaseProgress } from '../hooks/use-purchase-documents'
-import {
-  PROGRESS_STATUSES,
-  type PurchaseProgressRow,
-} from '../types/purchase-progress'
+import type { PurchaseProgressRow } from '../types/purchase-progress'
 
 const ALL = 'all'
 
@@ -267,9 +265,9 @@ export function PurchaseProgressPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ALL}>Tất cả tiến độ</SelectItem>
-                  {PROGRESS_STATUSES.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {item}
+                  {PO_PROGRESS_STATUS.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

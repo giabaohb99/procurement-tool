@@ -104,7 +104,7 @@ def test_gui_duyet_don_du_thong_tin_thi_qua(db, status):
 def _po_voi_dong(db, **doi):
     """Đơn Nháp có đúng 1 dòng hàng, `doi` để bỏ trống ô muốn thử."""
     po = _po(db, co_dong_hang=False)
-    db.add(POItem(po_id=po.id, progress_status="Chưa đặt hàng", **dong_day_du(**doi)))
+    db.add(POItem(po_id=po.id, progress_status="not_ordered", **dong_day_du(**doi)))
     db.commit()
     return po
 
@@ -155,8 +155,8 @@ def test_o_khong_bat_buoc_de_trong_van_gui_duyet_duoc(db):
 def test_bao_dich_danh_dong_nao_thieu_o_nao(db):
     """Báo chung chung thì người lập phải mở lần lượt từng dòng để dò."""
     po = _po(db, co_dong_hang=False)
-    db.add(POItem(po_id=po.id, progress_status="Chưa đặt hàng", **dong_day_du()))
-    db.add(POItem(po_id=po.id, progress_status="Chưa đặt hàng",
+    db.add(POItem(po_id=po.id, progress_status="not_ordered", **dong_day_du()))
+    db.add(POItem(po_id=po.id, progress_status="not_ordered",
                   **dong_day_du(product_code="SP002", unit="", price=0)))
     db.commit()
     with pytest.raises(HTTPException) as e:

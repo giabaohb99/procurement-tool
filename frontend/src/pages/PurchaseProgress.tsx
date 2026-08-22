@@ -17,6 +17,9 @@ import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 import { useUrlFilters } from '../hooks/use-url-filters'
 import { fmtVND } from '../utils/money'
+import {
+  PO_PROGRESS_STATUSES, poDeliveryStatusLabel, poDocumentStatusLabel, poProgressStatusLabel,
+} from '../utils/statusLabels'
 import { toast } from '../components/toast'
 import TableScroll from '../components/TableScroll'
 
@@ -27,13 +30,13 @@ const NOWRAP = { whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow
 const MUTED = { color: 'var(--muted)' } as const
 const R = { textAlign: 'right' as const }
 
-// Trạng thái tiến độ dòng (đồng bộ ĐMH) — dùng cho filter + badge màu
+// Trạng thái tiến độ dòng (đồng bộ ĐMH) — dùng cho filter + badge màu.
+// B-06: khóa là MÃ, nhãn lấy ở `statusLabels.ts`.
 const PG_COLOR: Record<string, string> = {
-  'Chưa đặt hàng': '#94a3b8', 'Đã đặt hàng': '#2563eb', 'Đã nhận hàng': '#0891b2',
-  'Chưa gửi ĐMH cho KT': '#db2777', 'Đã gửi ĐMH cho KT': '#7c3aed',
-  'Hoàn thành': '#16a34a', 'Tạm ngưng': '#d97706', 'Hủy đơn': '#dc2626',
+  not_ordered: '#94a3b8', ordered: '#2563eb', received: '#0891b2',
+  doc_pending: '#db2777', doc_sent: '#7c3aed',
+  completed: '#16a34a', paused: '#d97706', cancelled: '#dc2626',
 }
-const PG_OPTS = Object.keys(PG_COLOR)
 
 /** Bộ lọc rỗng — dùng cho khởi tạo và nút "Xóa lọc".
  *
@@ -53,7 +56,7 @@ const EMPTY_FILTERS = {
   order_date_from: '', order_date_to: '',
 }
 const pgBadge = (s: string) =>
-  <span className="badge" style={{ background: (PG_COLOR[s] || '#94a3b8') + '22', color: PG_COLOR[s] || '#64748b', whiteSpace: 'nowrap' }}>{s || '—'}</span>
+  <span className="badge" style={{ background: (PG_COLOR[s] || '#94a3b8') + '22', color: PG_COLOR[s] || '#64748b', whiteSpace: 'nowrap' }}>{poProgressStatusLabel(s) || '—'}</span>
 
 // CL quy định − nhận: <0 = trễ (đỏ), >=0 = đúng/sớm (xanh)
 const diffCell = (n: number) =>
@@ -136,9 +139,9 @@ const COLS: Col[] = [
   { key: 'shipping_unit_price', hide: true, label: 'Đơn giá VC', w: 96, sort: 'shipping_unit_price', sup: true, td: R, cell: (r) => fmtPrice(r.shipping_unit_price) },
   { key: 'shipping_amount', hide: true, label: 'Tiền VC', w: 108, sort: 'shipping_amount', sup: true, td: R, cell: (r) => fmtVND(r.shipping_amount) },
   { key: 'qc_result', hide: true, label: 'QC', w: 64, sort: 'qc_result', cell: (r) => r.qc_result },
-  { key: 'delivery_status', hide: true, label: 'TT giao', w: 108, sort: 'delivery_status', cell: (r) => r.delivery_status },
+  { key: 'delivery_status', hide: true, label: 'TT giao', w: 108, sort: 'delivery_status', cell: (r) => poDeliveryStatusLabel(r.delivery_status) },
   { key: 'amount', label: 'Thành tiền nhận', w: 128, td: { ...R, fontWeight: 600 }, cell: (r) => fmtVND(r.amount) },
-  { key: 'document_status', label: 'Hồ sơ CT', w: 150, sort: 'document_status', cell: (r) => r.document_status },
+  { key: 'document_status', label: 'Hồ sơ CT', w: 150, sort: 'document_status', cell: (r) => poDocumentStatusLabel(r.document_status) },
 ]
 
 export default function PurchaseProgress() {
@@ -278,7 +281,7 @@ export default function PurchaseProgress() {
         </FilterItem>
         <FilterItem label="Trạng thái tiến độ">
           <SearchSelect value={f.status} placeholder="Tất cả"
-            options={PG_OPTS.map((s) => ({ value: s, label: s }))}
+            options={PO_PROGRESS_STATUSES}
             onChange={(v) => setFilter('status', v)} />
         </FilterItem>
         <FilterItem label="Tình trạng nhận" width={200}>

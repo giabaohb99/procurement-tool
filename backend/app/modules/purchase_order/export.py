@@ -15,6 +15,7 @@ Hai cột tiền dễ nhầm:
 from sqlalchemy.orm import Session
 
 from app.core.export_xlsx import Col
+from app.core.status_codes import PO_DOCUMENT_STATUS, PO_ITEM_LINE_STATUS
 from app.modules.company.model import Company
 from app.modules.purchase_progress import export as progress_ex
 from .model import PODelivery, POItem, PurchaseOrder
@@ -25,12 +26,9 @@ STATUS_LABEL = {
     "rejected": "Bị trả lại", "cancelled": "Đã từ chối", "processing": "Đang xử lý",
 }
 
-# Hồ sơ chứng từ: giá trị lưu DB đã là tiếng Việt, chỉ chỉnh cách viết cho khớp nhãn trên bảng
-DOC_STATUS_LABEL = {
-    "chưa có chứng từ": "Chưa có chứng từ",
-    "đã có thông tin chứng từ": "Đã có chứng từ",
-    "đã đủ chứng từ": "Đã đủ chứng từ",
-}
+# Hồ sơ chứng từ (B-06): cột lưu MÃ, nhãn lấy từ bộ mã dùng chung. Trước B-06 cột lưu chữ tiếng
+# Việt viết thường và bảng dịch tay ở đây tồn tại chỉ để viết hoa lại — nay hết việc.
+DOC_STATUS_LABEL = dict(PO_DOCUMENT_STATUS.labels)
 
 # Cụm đầu đơn — key trùng cột trên bảng danh sách ĐMH, người dùng ẩn/hiện cột nào thì file theo cột đó
 HEADER_COLS = [
@@ -122,7 +120,8 @@ def build_rows(db: Session, pos: list[PurchaseOrder], show_supplier: bool = True
             rows.append(dict(head))
             continue
         for i, (it, dl) in enumerate(lines, start=1):
-            r = progress_ex.row_values(po, it, dl, show_supplier)
+            # B-06: cột trạng thái lưu MÃ, file xuất hiện chữ (`head` đã dịch sẵn phần đầu đơn)
+            r = progress_ex.dich_ma(progress_ex.row_values(po, it, dl, show_supplier))
             r["recv_amount"] = r.pop("amount", 0)
             r["company"] = company_name.get(po.company_id, "")
             r["line_no"] = i

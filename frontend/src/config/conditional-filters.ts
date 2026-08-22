@@ -1,4 +1,7 @@
 import type { FilterFieldDefinition, OperatorType } from '../components/conditional-filter'
+import {
+  PAYABLE_STATUSES, PO_DELIVERY_STATUSES, PO_DOCUMENT_STATUSES, PO_PROGRESS_STATUSES,
+} from '../utils/statusLabels'
 
 // Khai báo BỘ LỌC ĐIỀU KIỆN dùng chung.
 //
@@ -41,10 +44,8 @@ export const PAYABLE_COND_FILTERS: FilterFieldDefinition[] = [
   condText('invoice_no', 'Số hóa đơn'),
   condSelect('source_type', 'Loại nợ', [
     { value: 'goods', label: 'Hàng hóa' }, { value: 'shipping', label: 'Vận chuyển' }]),
-  condSelect('status', 'Trạng thái', [
-    { value: 'Chờ TT', label: 'Chờ thanh toán' },
-    { value: 'Trả một phần', label: 'Thanh toán một phần' },
-    { value: 'Đã TT', label: 'Đã thanh toán' }]),
+  // Giá trị gửi lên là MÃ (`unpaid | partial | paid`) từ B-05, không phải nhãn tiếng Việt.
+  condSelect('status', 'Trạng thái', PAYABLE_STATUSES),
 ]
 
 /** Công nợ trong tab NCC — như trên nhưng BỎ cột "Nhà cung cấp" vì màn đã khóa theo 1 NCC. */
@@ -81,10 +82,7 @@ export const purchaseProgressCondFilters = (showSupplier: boolean): FilterFieldD
   condSource('department_id', 'Bộ phận', DEPT_SRC),
   condSource('nspt_id', 'NSPT phụ trách', EMP_SRC),
   condDate('order_date', 'Ngày đặt hàng'),
-  condSelect('document_status', 'Hồ sơ chứng từ', [
-    { value: 'chưa có chứng từ', label: 'Chưa có chứng từ' },
-    { value: 'đã có thông tin chứng từ', label: 'Đã có chứng từ' },
-    { value: 'đã đủ chứng từ', label: 'Đã đủ chứng từ' }]),
+  condSelect('document_status', 'Hồ sơ chứng từ', PO_DOCUMENT_STATUSES),
   ...(showSupplier ? [
     condSource('supplier_code', 'Mã NCC', { url: '/api/suppliers', value: 'code', label: 'name' }),
     condText('supplier_name', 'Tên nhà cung cấp'),
@@ -96,10 +94,7 @@ export const purchaseProgressCondFilters = (showSupplier: boolean): FilterFieldD
   condDate('required_date', 'Ngày cần'), condDate('expected_date', 'Dự kiến nhận'),
   condNumber('qty_request', 'SL yêu cầu'), condNumber('qty_order', 'SL đặt'),
   condNumber('price', 'Đơn giá'), condNumber('vat', 'VAT %'),
-  condSelect('progress_status', 'Tiến độ dòng', [
-    'Chưa đặt hàng', 'Đã đặt hàng', 'Đã nhận hàng', 'Chưa gửi ĐMH cho KT',
-    'Đã gửi ĐMH cho KT', 'Hoàn thành', 'Tạm ngưng', 'Hủy đơn',
-  ].map((s) => ({ value: s, label: s }))),
+  condSelect('progress_status', 'Tiến độ dòng', PO_PROGRESS_STATUSES),
   // Lần giao
   condNumber('delivery_no', 'Lần giao'),
   condSource('warehouse_code', 'Kho', { url: '/api/warehouses', value: 'code', label: 'name' }),
@@ -109,7 +104,9 @@ export const purchaseProgressCondFilters = (showSupplier: boolean): FilterFieldD
   condNumber('diff_promise', 'CL cam kết'), condNumber('diff_regulated', 'CL quy định'),
   condNumber('diff_required', 'CL vs yêu cầu'),
   condText('delivery_invoice_no', 'Số hóa đơn'), condText('qc_result', 'Kết quả QC'),
-  condText('delivery_status', 'Trạng thái giao'),
+  // B-06: cột lưu MÃ nên ô CHỮ hết dùng được (gõ "Đã nhận" không khớp `received`) — đổi hẳn
+  // sang ô CHỌN, người dùng cũng bớt phải nhớ dấu tiếng Việt.
+  condSelect('delivery_status', 'Trạng thái giao', PO_DELIVERY_STATUSES),
   ...(showSupplier ? [
     condSource('carrier_code', 'Mã ĐVVC', { url: '/api/suppliers', value: 'code', label: 'name' }),
     condText('carrier_name', 'Đơn vị vận chuyển'),

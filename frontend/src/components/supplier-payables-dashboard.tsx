@@ -7,7 +7,7 @@ import { SUPPLIER_PAYABLE_COND_FILTERS } from '../config/conditional-filters'
 import SupplierPayablesFilters from './supplier-payables-filters'
 import {
   agingLabel, AGING_COLOR, applyPayableFilters, buildPayableStats, EMPTY_PAYABLE_FILTERS,
-  hasFilter, PayableFilters, rowStatus, short, ST_COLOR, ST_LABEL,
+  hasFilter, PayableFilters, rowStatus, short, ST_COLOR, ST_CREDIT, ST_LABEL,
 } from './supplier-payables-stats'
 
 /**
@@ -259,11 +259,11 @@ function Dashboard({ supplierCode, cond, kpi, contractCount }: {
                       <td>{p.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa'}</td><td>{p.po_code}</td><td>{p.invoice_no}</td>
                       <td>{p.incur_date}</td><td>{p.due_date}</td>
                       <td style={{ textAlign: 'right' }}>{fmtVND(p.total)}</td><td style={{ textAlign: 'right' }}>{fmtVND(p.paid_amount)}</td>
-                      <td style={{ textAlign: 'right', fontWeight: 600, color: p.remaining < 0 ? ST_COLOR['Trả dư'] : undefined }}>{fmtVND(p.remaining)}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600, color: p.remaining < 0 ? ST_COLOR[ST_CREDIT] : undefined }}>{fmtVND(p.remaining)}</td>
                       <td>
                         {/* chưa có class badge cho "Trả dư" nên tô màu trực tiếp */}
-                        <span className={'badge ' + (st === 'Đã TT' ? 'ok' : st === 'Trả một phần' ? 'warn' : 'gray')}
-                          style={st === 'Trả dư' ? { background: '#e0f2fe', color: ST_COLOR['Trả dư'] } : undefined}>
+                        <span className={'badge ' + (st === 'paid' ? 'ok' : st === 'partial' ? 'warn' : 'gray')}
+                          style={st === ST_CREDIT ? { background: '#e0f2fe', color: ST_COLOR[ST_CREDIT] } : undefined}>
                           {ST_LABEL[st] || st}
                         </span>
                       </td>

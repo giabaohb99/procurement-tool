@@ -25,7 +25,10 @@ def _out(db: Session, p: Payable) -> dict:
         "incur_date": p.incur_date, "due_date": p.due_date, "created_at": p.created_at,
         "amount": float(p.amount or 0), "vat": float(p.vat or 0), "total": float(p.total or 0),
         "paid_amount": float(p.paid_amount or 0), "remaining": float(p.remaining or 0),
-        "status": p.status, "aging": service.aging_bucket(p.due_date),
+        # `status` là MÃ (`unpaid | partial | paid`, B-05); `status_label` là chữ để hiện.
+        # Giao diện đừng tự dịch mã sang tiếng Việt — dùng nhãn gửi kèm.
+        "status": p.status, "status_label": service.status_label(p.status),
+        "aging": service.aging_bucket(p.due_date),
     }
 
 
@@ -102,7 +105,7 @@ def summary(request: Request, db: Session = Depends(get_db), user=Depends(requir
     today = _today().strftime("%Y-%m-%d")
     q = _filtered(db, request, user)
     overdue_case = case(
-        (((Payable.status != "Đã TT") & (Payable.due_date != "") & (Payable.due_date < today)), Payable.remaining),
+        (((Payable.status != service.ST_PAID) & (Payable.due_date != "") & (Payable.due_date < today)), Payable.remaining),
         else_=0,
     )
     row = q.with_entities(

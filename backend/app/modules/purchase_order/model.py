@@ -33,9 +33,9 @@ class PurchaseOrder(Base, AuditMixin):
     is_urgent: Mapped[bool] = mapped_column(Boolean, default=False)
     status: Mapped[str] = mapped_column(String(30), default="draft")
     # draft | submitted | approved | partial | received | cancelled
-    # Trạng thái hồ sơ chứng từ — người dùng cập nhật TAY (Task 10b):
-    #   "chưa có chứng từ" · "đã có thông tin chứng từ" · "đã đủ chứng từ"
-    document_status: Mapped[str] = mapped_column(String(30), default="chưa có chứng từ", index=True)
+    # Trạng thái hồ sơ chứng từ — người dùng cập nhật TAY (Task 10b).
+    # MÃ cố định, xem PO_DOCUMENT_STATUS trong app/core/status_codes.py (B-06): none | partial | full.
+    document_status: Mapped[str] = mapped_column(String(30), default="none", index=True)
     note: Mapped[str] = mapped_column(Text, default="")
     approve_note: Mapped[str] = mapped_column(Text, default="")
 
@@ -67,13 +67,20 @@ class POItem(Base, AuditMixin):
     amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)        # qty_order*price*(1+vat%)
     qty_received: Mapped[float] = mapped_column(Numeric(18, 3), default=0)  # auto = Σ giao đã nhận
     qty_remaining: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
-    line_status: Mapped[str] = mapped_column(String(30), default="")        # Chưa giao/Đang giao/Đủ
+    # MÃ cố định, xem PO_ITEM_LINE_STATUS (B-06): not_delivered | partial | full. Rỗng = chưa
+    # được tính lần nào; service._recalc tính lại từ SL nhận so với SL đặt, không ai nhập tay.
+    line_status: Mapped[str] = mapped_column(String(30), default="")
     warehouse_code: Mapped[str] = mapped_column(String(50), default="")     # kho mặc định cho dòng
     note: Mapped[str] = mapped_column(String(255), default="")
-    progress_status: Mapped[str] = mapped_column(String(40), default="Chưa đặt hàng", index=True)  # cột P — máy trạng thái tiến độ (lọc ở màn Tiến độ mua hàng)
+    # MÃ cố định, xem PO_PROGRESS_STATUS (B-06) — cột P, máy trạng thái tiến độ (lọc ở màn
+    # Tiến độ mua hàng). THỨ TỰ trong bộ mã là logic: service.PROGRESS_ORDER lấy từ đó.
+    progress_status: Mapped[str] = mapped_column(String(40), default="not_ordered", index=True)
     pay_confirm_date: Mapped[str] = mapped_column(String(10), default="")   # AU — Ngày KT xác nhận thanh toán
     pause_reason: Mapped[str] = mapped_column(String(500), default="")      # AV — Lý do hủy/tạm ngưng
-    status_before_pause: Mapped[str] = mapped_column(String(40), default="")  # AW — trạng thái trước khi tạm ngưng
+    # AW — bản chụp `progress_status` ngay trước khi Tạm ngưng, cùng bộ mã PO_PROGRESS_STATUS.
+    # Rỗng = dòng chưa từng tạm ngưng. Đổi bộ mã của cột trên thì PHẢI đổi cột này cùng lúc,
+    # nếu không nút "Bỏ tạm ngưng" khôi phục sai trạng thái mà không báo lỗi (xem B-06 nhịp 2).
+    status_before_pause: Mapped[str] = mapped_column(String(40), default="")
 
 
 class PODelivery(Base, AuditMixin):
@@ -103,6 +110,8 @@ class PODelivery(Base, AuditMixin):
     shipping_unit_price: Mapped[float] = mapped_column(Numeric(18, 4), default=0)   # đơn giá vận chuyển — cũng cho 4 số lẻ
     shipping_amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
     qc_result: Mapped[str] = mapped_column(String(20), default="")          # Đạt | Thiếu | Lỗi
-    status: Mapped[str] = mapped_column(String(30), default="")            # trạng thái giao (P)
+    # MÃ cố định, xem PO_DELIVERY_STATUS (B-06): pending | short | defect | received.
+    # service._recalc tính lại sau mỗi lần sửa lần giao, không ai nhập tay.
+    status: Mapped[str] = mapped_column(String(30), default="")
     extra_request: Mapped[str] = mapped_column(Text, default="")           # yêu cầu khác (AC)
     progress_note: Mapped[str] = mapped_column(Text, default="")           # chi tiết tiến độ (AG)

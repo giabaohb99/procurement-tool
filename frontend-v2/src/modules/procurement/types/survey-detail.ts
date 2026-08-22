@@ -63,7 +63,17 @@ export interface SurveyDetail {
   uom: string
   proposed_rate: number
 
+  /**
+   * Kết quả duyệt — MÃ cố định (`pending | approved | rejected`), xem `SURVEY_APPROVE_STATUS`
+   * trong `@/shared/constants/statuses`. Backend suy ra từ `status` lúc duyệt, form không gửi
+   * trường này lên bao giờ.
+   *
+   * KHÔNG phải bản sao của `status`: phiếu duyệt xong rồi bị hủy vẫn giữ `approved` ở đây.
+   */
   approve_status: string
+  /** Nhãn tiếng Việt của `approve_status`, backend gắn sẵn. Muốn hiện thì dùng cái này —
+   *  đừng tự viết bảng dịch mã sang tiếng Việt trong TS. */
+  approve_status_label: string
   /** Lý do trả lại / từ chối cũng nằm ở đây — bảng `tab_survey` không có cột riêng. */
   approve_note: string
   status: string

@@ -12,6 +12,7 @@ from app.core.database import get_db
 from app.core.response import success
 from app.modules.contract.model import Contract
 from app.modules.payable.model import Payable
+from app.modules.payable.service import ST_PAID
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 
 router = APIRouter(prefix="/api/alerts", tags=["alert"])
@@ -51,7 +52,7 @@ def build(db: Session, user=None) -> dict:
 
     # 2) Công nợ: chưa trả xong, đến/quá hạn
     if see_payable:
-        for p in db.query(Payable).filter(Payable.status != "Đã TT").all():
+        for p in db.query(Payable).filter(Payable.status != ST_PAID).all():
             if not p.due_date:
                 continue
             # Click vào cảnh báo -> nhảy tới màn Công nợ, lọc sẵn theo NCC của khoản nợ
@@ -64,7 +65,8 @@ def build(db: Session, user=None) -> dict:
 
     # 3) Hợp đồng sắp hết hạn / hết hạn
     if see_contract:
-        for c in db.query(Contract).filter(Contract.status != "Thanh lý").all():
+        # B-02: mã của bộ `CONTRACT_STATUS` (`app/core/status_codes.py`), trước là "Thanh lý".
+        for c in db.query(Contract).filter(Contract.status != "liquidated").all():
             if not c.end_date:
                 continue
             link = f"/contracts/{c.id}"

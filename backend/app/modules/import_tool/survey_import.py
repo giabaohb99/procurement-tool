@@ -268,7 +268,10 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
         s = db.query(Survey).filter(Survey.import_key == survey_key).first()
         was_new = s is None
         if not s:
-            s = Survey(import_key=survey_key, survey_type="combined", status="approved", approve_status="Duyệt",
+            # B-04: `approve_status` ghi MÃ (xem app/core/status_codes.SURVEY_APPROVE_STATUS).
+            # Bộ nhập này chạy TRONG app nên CSDL luôn cùng nhịp với mã nguồn — khác
+            # `scripts/import_survey_history.py` chạy ngoài, bên đó phải dò trước khi ghi.
+            s = Survey(import_key=survey_key, survey_type="combined", status="approved", approve_status="approved",
                        item_group=hdr["ig"], received_date=hdr["received"], result_due_date=hdr["due"],
                        requirement_detail=hdr["detail"], main_content=(hdr["detail"] or hdr["ig"])[:500],
                        request_qty=hdr["qty"], uom=hdr["uom"], proposed_rate=hdr["rate"], nspt=hdr["nspt"],

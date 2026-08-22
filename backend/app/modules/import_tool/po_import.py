@@ -5,13 +5,14 @@ Khoá gom:
     └ (Mã SP L + Số HĐ AE)       -> POItem  (số HĐ thuộc dòng hàng)
         └ mỗi dòng Excel         -> PODelivery
 Sau khi dựng PO+dòng+lần giao -> recompute_effects() tự sinh nhập kho + tồn + công nợ.
-Dòng "Hoàn thành" -> tạo YCTT + ghi ĐÃ CHI + chốt LỊCH SỬ MUA HÀNG (chỉ ở chế độ Ghi).
+Dòng vào `completed` -> tạo YCTT + ghi ĐÃ CHI + chốt LỊCH SỬ MUA HÀNG (chỉ ở chế độ Ghi).
 """
 import json
 from datetime import datetime
 
 from sqlalchemy import inspect as sa_inspect
 
+from app.core.status_codes import PO_PROGRESS_STATUS
 from app.modules.catalog.model import ItemGroup, Unit, Warehouse
 from app.modules.company.model import Company
 from app.modules.department.service import sync_department_ref
@@ -40,12 +41,21 @@ def _scode(v) -> str:
         return str(v)
     return _s(v)
 
-# tên cột "Trạng thái" (P) -> progress_status chuẩn của POItem
+# Chữ ở cột "Trạng thái" (P) của file Misa -> MÃ progress_status của POItem (B-06, xem
+# PO_PROGRESS_STATUS trong app/core/status_codes.py).
+#
+# ⚠️ "đang giao" trước B-06 được dịch thành "Đang giao hàng" — một chuỗi KHÔNG có trong máy
+# trạng thái. Dòng nào nhận nó sẽ rơi khỏi mọi bộ lọc và `PROGRESS_ORDER.index(...)` coi như
+# bước 0. Kiểm kê ngày 22/08/2026 không thấy dòng nào mang giá trị đó trên cả ba môi trường
+# nên nhánh này chưa từng chạy thật; nay xếp về `ordered` (đã đặt, hàng đang trên đường) —
+# đúng nghĩa nhất trong sáu bước của chuỗi.
 _PROGRESS = {
-    "hoàn thành": "Hoàn thành", "đã nhận": "Đã nhận hàng", "đang giao": "Đang giao hàng",
-    "đã đặt hàng": "Đã đặt hàng", "chưa đặt hàng": "Chưa đặt hàng", "hủy đơn": "Hủy đơn",
-    "tạm ngưng": "Tạm ngưng", "đã đặt": "Đã đặt hàng",
+    "hoàn thành": "completed", "đã nhận": "received", "đang giao": "ordered",
+    "đã đặt hàng": "ordered", "chưa đặt hàng": "not_ordered", "hủy đơn": "cancelled",
+    "tạm ngưng": "paused", "đã đặt": "ordered",
 }
+# Ô trống / chữ không nhận ra: về bước đầu chuỗi rồi để auto_advance_line kéo lên theo dữ liệu thật.
+PROG_MAC_DINH = PO_PROGRESS_STATUS.ordered_values[0]
 
 
 def _last_row(ws) -> int:
@@ -224,15 +234,28 @@ def run(db, batch: ImportBatch, wb, apply: bool, default_nspt: str = "") -> None
             log(0, LogLevel.INFO, "po_update", f"Cập nhật đơn {po.code} (Misa {misa})", ref_key=misa, target_code=po.code)
         return po, was_new
 
-    def upsert_item(po, d):
+    def upsert_item(po, d, r=0):
         it = db.query(POItem).filter(POItem.po_id == po.id, POItem.product_code == d["product_code"],
                                      POItem.invoice_no == d["invoice_no"]).first()
+        # B-06: cột lưu MÃ. Trước đây chữ lạ trong file được GHI THẲNG vào cột (`d["progress"]`
+        # làm giá trị mặc định của .get) nên một ô gõ sai là một dòng mang trạng thái không tồn
+        # tại, không lọc ra được và không ai biết. Nay chữ lạ lùi về `not_ordered` + ghi log để
+        # người nạp thấy — auto_advance_line ở cuối `run` sẽ tự kéo dòng lên mức thực tế.
+        _tho = _ncode(d["progress"]).lower()
+        _prog = _PROGRESS.get(_tho, "")
+        if not _prog:
+            _prog = PROG_MAC_DINH
+            if _tho:
+                log(r, LogLevel.WARNING, "progress_unknown",
+                    f"Trạng thái '{d['progress']}' không nhận ra — tạm để "
+                    f"'{PO_PROGRESS_STATUS.label_of(PROG_MAC_DINH)}'",
+                    ref_key=d["product_code"], target_code=po.code)
         fields = dict(product_code=d["product_code"], product_name=d["product_name"], invoice_name=d["invoice_name"],
                       item_group=d["item_group"], spec=d["spec"], fg_code=d["fg_code"], fg_name=d["fg_name"],
                       invoice_no=d["invoice_no"], supplier_ready=d["supplier_ready"], required_date=d["required_date"],
                       unit=d["unit"], qty_request=d["qty_request"], qty_order=d["qty_order"], price=d["price"],
                       vat=d["vat"], warehouse_code=d["warehouse"], note=d["note"][:255],
-                      progress_status=_PROGRESS.get(_ncode(d["progress"]).lower(), d["progress"] or "Chưa đặt hàng"))
+                      progress_status=_prog)
         fields, _t = _fit(POItem, fields)
         if it is None:
             it = POItem(po_id=po.id, created_by=uid, updated_by=uid, **fields)
@@ -289,7 +312,7 @@ def run(db, batch: ImportBatch, wb, apply: bool, default_nspt: str = "") -> None
             irows = item_rows[k]
             r0, d0 = irows[0]
             ensure_product(d0["product_code"], d0["product_name"], d0["unit"], d0["item_group"], r0)
-            it = upsert_item(po, d0)
+            it = upsert_item(po, d0, r0)
             xs = {round(_n(x["qty_order"]), 3) for _, x in irows}
             if len(xs) > 1:
                 log(r0, LogLevel.REVIEW, "qty_order_mismatch",
@@ -297,7 +320,7 @@ def run(db, batch: ImportBatch, wb, apply: bool, default_nspt: str = "") -> None
             for r, d in irows:
                 upsert_delivery(po, it, d, r)
             db.flush()
-            if it.progress_status == "Hoàn thành":
+            if it.progress_status == po_service.PROG_COMPLETED:
                 done_items.append(it)
         db.flush()
         po_service.recompute_effects(db, po, uid)
@@ -311,7 +334,7 @@ def run(db, batch: ImportBatch, wb, apply: bool, default_nspt: str = "") -> None
             # chỗ nào chốt lịch sử mua hàng. Chốt tại đây, sau recompute_effects để
             # số lượng/thành tiền trong snapshot là số đã tính lại. snapshot_line_safe
             # idempotent theo po_item_id nên dòng vừa được auto_advance chốt rồi không ghi trùng.
-            if it.progress_status == "Hoàn thành":
+            if it.progress_status == po_service.PROG_COMPLETED:
                 ph_service.snapshot_line_safe(db, po, it)
         changes.append({"survey_id": po.id, "was_new": was_new, "snapshot": snap})
 

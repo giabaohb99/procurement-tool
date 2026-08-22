@@ -2,6 +2,7 @@ from sqlalchemy import BigInteger, Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base_model import Base, AuditMixin
+from app.core.status_codes import EMPLOYEE_STATUS
 
 
 class Employee(Base, AuditMixin):
@@ -19,7 +20,9 @@ class Employee(Base, AuditMixin):
     # CR-022: KHÔNG dùng nữa. Trước đây ô "Vai trò" ở màn Nhân sự tự cấp quyền cho tài khoản; nay
     # quyền chỉ gán ở "Phân quyền tài khoản" (tab_user_role). Cột giữ lại để không mất dữ liệu cũ.
     role_name: Mapped[str] = mapped_column(String(100), default="")
-    status: Mapped[str] = mapped_column(String(50), default="Chính thức")
+    # B-03: lưu MÃ tiếng Anh (`app/core/status_codes.EMPLOYEE_STATUS`), không lưu chữ tiếng Việt.
+    # Nhãn hiển thị đi kèm ở `status_label` bên dưới.
+    status: Mapped[str] = mapped_column(String(50), default="official")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     department = relationship(
@@ -53,3 +56,13 @@ class Employee(Base, AuditMixin):
     @property
     def avatar(self) -> str:
         return (self.user.avatar or "") if self.user else ""
+
+    @property
+    def status_label(self) -> str:
+        """Nhãn tiếng Việt của `status` (B-03).
+
+        Mã lạ -> trả rỗng chứ KHÔNG trả lại chính mã: giao diện đã có sẵn nhánh lùi
+        `status_label || status`, còn ở đây trả rỗng thì nhìn dữ liệu là biết ngay dòng nào
+        chưa chạy migration. Cột này cũng là cột XUẤT CSV (xem controller) nên đừng bỏ.
+        """
+        return EMPLOYEE_STATUS.label_of(self.status)

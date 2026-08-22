@@ -37,6 +37,7 @@ from app.modules.purchase_progress.controller import router as purchase_progress
 from app.modules.survey_progress.controller import router as survey_progress_router
 from app.modules.report.controller import router as report_router
 from app.modules.contract.controller import router as contract_router
+from app.modules.meta.controller import router as meta_router
 from app.modules.alert.controller import router as alert_router
 from app.modules.purchase_request.controller import router as pr_router
 from app.modules.company.controller import router as company_router
@@ -150,6 +151,7 @@ app.include_router(payable_router)
 app.include_router(payment_request_router)
 app.include_router(report_router)
 app.include_router(contract_router)
+app.include_router(meta_router)
 app.include_router(alert_router)
 app.include_router(setting_router)
 app.include_router(notification_router)

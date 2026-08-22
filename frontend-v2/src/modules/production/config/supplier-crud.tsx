@@ -1,6 +1,7 @@
 import { Building2, CircleCheck, CircleX, Hash, Percent, Receipt, Truck } from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
+import { SUPPLIER_LEGAL_TYPE } from '@/shared/constants/statuses'
 import type { CrudConfig } from '@/shared/crud'
 import { ratioToPercentInput } from '@/shared/crud'
 import { Badge } from '@/shared/ui/badge'
@@ -12,11 +13,11 @@ import { SupplierPayablesPanel } from '../components/supplier-payables-panel'
 import { SupplierSurveysPanel } from '../components/supplier-surveys-panel'
 import { SUPPLIER_TYPE_LABELS, type Supplier } from '../types/supplier'
 
-/** Tư cách pháp lý của bên bán — khớp bộ giá trị bản đang chạy thật. */
-const LEGAL_TYPE_OPTIONS = ['Công ty', 'Cá nhân', 'Hợp danh', 'Hộ kinh doanh'].map((value) => ({
-  value,
-  label: value,
-}))
+/**
+ * Tư cách pháp lý của bên bán. B-03: cột lưu MÃ tiếng Anh, bộ mã sinh từ
+ * `backend/app/core/status_codes.py` — không khai lại tay ở đây.
+ */
+const LEGAL_TYPE_OPTIONS = SUPPLIER_LEGAL_TYPE.map(({ value, label }) => ({ value, label }))
 
 /**
  * Hình thức thanh toán — danh sách CỐ ĐỊNH, không phải danh mục trong CSDL.

@@ -1,10 +1,13 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.core.status_codes import SUPPLIER_LEGAL_TYPE
 
 
 class SupplierBase(BaseModel):
     code: str = ""
     name: str
-    legal_type: str = ""          # Công ty | Cá nhân | Hợp danh | Hộ kinh doanh
+    # B-03: MÃ tiếng Anh (`SUPPLIER_LEGAL_TYPE`). Rỗng = chưa chọn, vẫn hợp lệ.
+    legal_type: str = ""
     tax_code: str = ""
     address: str = ""
     supplier_type: str = "goods"  # goods | transport
@@ -21,7 +24,11 @@ class SupplierBase(BaseModel):
 
 
 class SupplierCreate(SupplierBase):
-    pass
+    # Chặn ở CẢ Create lẫn Update — xem ghi chú cùng ý ở `employee/schema.py`.
+    @field_validator("legal_type")
+    @classmethod
+    def _kiem_legal_type(cls, v: str) -> str:
+        return SUPPLIER_LEGAL_TYPE.validate(v)
 
 
 class SupplierUpdate(BaseModel):
@@ -39,7 +46,14 @@ class SupplierUpdate(BaseModel):
     vat: float | None = Field(None, ge=0, lt=1)   # tỉ lệ, dưới 1 = dưới 100% (CR-058)
     is_active: bool | None = None
 
+    @field_validator("legal_type")
+    @classmethod
+    def _kiem_legal_type(cls, v: str | None) -> str | None:
+        return SUPPLIER_LEGAL_TYPE.validate(v)
+
 
 class SupplierOut(SupplierBase):
     id: int
+    # B-03: nhãn tiếng Việt gửi kèm; đọc từ `Supplier.legal_type_label`.
+    legal_type_label: str = ""
     model_config = {"from_attributes": True}

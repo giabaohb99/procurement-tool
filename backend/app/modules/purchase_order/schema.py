@@ -94,9 +94,9 @@ class RejectIn(BaseModel):
 
 
 class ItemProgressIn(BaseModel):
-    status: str                    # trạng thái tiến độ đích (hoặc "__resume__" để tiếp tục từ Tạm ngưng)
-    reason: str = ""               # bắt buộc khi Tạm ngưng / Hủy đơn
+    status: str                    # MÃ tiến độ đích (hoặc "__resume__" để bỏ `paused`), xem PO_PROGRESS_STATUS
+    reason: str = ""               # bắt buộc khi `paused` / `cancelled`
 
 
 class DocumentStatusIn(BaseModel):
-    document_status: str           # chưa có chứng từ | đã có thông tin chứng từ | đã đủ chứng từ
+    document_status: str           # MÃ (B-06): none | partial | full — xem PO_DOCUMENT_STATUS

@@ -1,3 +1,5 @@
+import { PAYABLE_STATUS, labelOf } from '@/shared/constants/statuses'
+
 /**
  * Công nợ phải trả — khớp `_out()` của `backend/app/modules/payable/controller.py`.
  *
@@ -33,7 +35,16 @@ export interface Payable {
   paid_amount: number
   /** Tính sẵn ở backend = total - paid_amount, KHÔNG cộng lại ở đây. */
   remaining: number
+  /**
+   * MÃ tiếng Anh (B-05): `unpaid` | `partial` | `paid`.
+   *
+   * KHÔNG do người dùng chọn — backend tính lại từ `paid_amount` so với `total` sau mỗi
+   * lần phân bổ thanh toán, nên nó có thể LÙI (`paid` -> `partial`) khi hóa đơn đổi số.
+   * Đừng coi `paid` là trạng thái kết.
+   */
   status: string
+  /** Nhãn tiếng Việt của `status`, backend gửi kèm. Rỗng khi mã lạ. */
+  status_label: string
   /** Nhóm tuổi nợ, backend tính theo `due_date` so với hôm nay. */
   aging: string
 }
@@ -55,13 +66,24 @@ export const PAYABLE_SOURCE_LABELS: Record<string, string> = {
 }
 
 /**
- * DB lưu chuỗi VIẾT TẮT tiếng Việt (không phải mã enum). Giá trị gửi lên khi lọc
- * phải là chuỗi gốc bên trái, chỉ phần hiện ra mới dùng nhãn đầy đủ.
+ * Trạng thái công nợ — sinh từ `backend/app/core/status_codes.py`, KHÔNG khai lại ở đây.
+ *
+ * Trước B-05 chỗ này là một bảng dịch tay `'Chờ TT' -> 'Chờ thanh toán'`: DB lưu chữ viết
+ * tắt, màn hình hiện chữ đầy đủ. Nay DB lưu MÃ (`unpaid | partial | paid`) và nhãn đầy đủ
+ * nằm trong bộ mã dùng chung, nên không còn hai bảng chữ phải giữ cho khớp nữa.
+ *
+ * Giá trị gửi lên khi LỌC phải là `value` (mã), không phải nhãn.
  */
-export const PAYABLE_STATUS_LABELS: Record<string, string> = {
-  'Chờ TT': 'Chờ thanh toán',
-  'Trả một phần': 'Thanh toán một phần',
-  'Đã TT': 'Đã thanh toán',
+export const PAYABLE_STATUS_OPTIONS = PAYABLE_STATUS.map(({ value, label }) => ({
+  value,
+  label,
+}))
+
+/** Nhãn của một mã trạng thái. Mã lạ thì trả NGUYÊN mã, không trả rỗng. */
+export function payableStatusLabel(value?: string | null): string {
+  const v = (value ?? '').trim()
+  if (!v) return ''
+  return labelOf(PAYABLE_STATUS, v) || v
 }
 
 /** Thứ tự đúng bằng thứ tự backend phân nhóm trong `service.aging_bucket`. */
@@ -74,9 +96,4 @@ export const AGING_BUCKETS = ['Chưa đến hạn', '1-30', '31-60', '61-90', '>
 export function agingLabel(bucket: string): string {
   if (!bucket) return ''
   return bucket === 'Chưa đến hạn' ? bucket : `${bucket} ngày`
-}
-
-/** Đổi bảng nhãn thành mảng option cho ô chọn, giữ nguyên thứ tự khai báo. */
-export function payableStatusOptions(): { value: string; label: string }[] {
-  return Object.entries(PAYABLE_STATUS_LABELS).map(([value, label]) => ({ value, label }))
 }

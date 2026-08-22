@@ -17,7 +17,7 @@ def assert_unique_product_codes(new_codes: Iterable[str],
     thật khi đối chiếu.
 
     CHỈ CHẶN TRÙNG MỚI (số lần xuất hiện của một mã tăng so với dữ liệu đang lưu). Dữ liệu đã
-    trùng sẵn vẫn lưu lại được — vì dòng ĐMH "Hoàn thành"/"Hủy đơn" bị khóa, giao diện không
+    trùng sẵn vẫn lưu lại được — vì dòng ĐMH `completed`/`cancelled` bị khóa, giao diện không
     cho xóa, nên chặn cứng sẽ khóa chết những đơn cũ đã lỡ trùng, không ai sửa được nữa.
     """
     def _count(codes: Iterable[str]) -> Counter:

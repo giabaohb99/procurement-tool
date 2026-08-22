@@ -7,6 +7,7 @@ import { toast } from './toast'
 import DocumentUploadModal from './DocumentUploadModal'
 import FileDropzone from './FileDropzone'
 import { fmtSize, fileIcon } from '../utils/file-type'
+import { poDocumentStatusLabel } from '../utils/statusLabels'
 
 export type AttachmentFile = {
   id: number
@@ -20,24 +21,22 @@ export type AttachmentFile = {
   entity_id?: number
 }
 
-// Cấu hình trạng thái hồ sơ chứng từ (màu sắc, icon, nhãn)
-const DOC_STATUS_MAP: Record<string, { label: string; bg: string; color: string; border: string; icon: string }> = {
-  'chưa có chứng từ': {
-    label: 'Chưa có chứng từ',
+// Cấu hình trạng thái hồ sơ chứng từ (màu sắc, icon). B-06: khóa là MÃ; nhãn lấy ở
+// `statusLabels.ts` chứ không chép lại, thứ tự khai báo cũng là thứ tự trong menu chọn.
+const DOC_STATUS_MAP: Record<string, { bg: string; color: string; border: string; icon: string }> = {
+  none: {
     bg: '#fef2f2',
     color: '#dc2626',
     border: '#fca5a5',
     icon: 'ti-alert-circle',
   },
-  'đã có thông tin chứng từ': {
-    label: 'Đã có chứng từ',
+  partial: {
     bg: '#fffbe6',
     color: '#b45309',
     border: '#fde68a',
     icon: 'ti-file-text',
   },
-  'đã đủ chứng từ': {
-    label: 'Đã đủ chứng từ',
+  full: {
     bg: '#ecfdf5',
     color: '#047857',
     border: '#6ee7b7',
@@ -232,7 +231,7 @@ export default function DocumentAttachmentSection({
   isNew = false,
   maxSizeMb = 20,
   showDocumentStatus = false,
-  documentStatus = 'chưa có chứng từ',
+  documentStatus = 'none',
   onDocumentStatusChange,
   showChainDetailButton = false,
   onRefresh,
@@ -282,10 +281,10 @@ export default function DocumentAttachmentSection({
   useEffect(() => {
     if (!showDocumentStatus || !onDocumentStatusChange || isNew) return
 
-    if (files.length > 0 && documentStatus === 'chưa có chứng từ') {
-      onDocumentStatusChange('đã có thông tin chứng từ')
-    } else if (files.length === 0 && documentStatus === 'đã có thông tin chứng từ') {
-      onDocumentStatusChange('chưa có chứng từ')
+    if (files.length > 0 && documentStatus === 'none') {
+      onDocumentStatusChange('partial')
+    } else if (files.length === 0 && documentStatus === 'partial') {
+      onDocumentStatusChange('none')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [files.length])
@@ -337,7 +336,7 @@ export default function DocumentAttachmentSection({
     }
   }
 
-  const currentStatusConfig = DOC_STATUS_MAP[documentStatus] || DOC_STATUS_MAP['chưa có chứng từ']
+  const currentStatusConfig = DOC_STATUS_MAP[documentStatus] || DOC_STATUS_MAP.none
 
   // Nhóm danh sách file theo Loại chứng từ
   const groupedFiles = files.reduce((acc, f) => {
@@ -421,7 +420,7 @@ export default function DocumentAttachmentSection({
                   }}
                 >
                   <i className={'ti ' + currentStatusConfig.icon} style={{ fontSize: 14 }} />
-                  <span>{currentStatusConfig.label}</span>
+                  <span>{poDocumentStatusLabel(documentStatus) || poDocumentStatusLabel('none')}</span>
                   {canWrite && <i className="ti ti-chevron-down" style={{ fontSize: 12, opacity: 0.7 }} />}
                 </button>
               </div>
@@ -476,7 +475,7 @@ export default function DocumentAttachmentSection({
                         onMouseLeave={(e) => (e.currentTarget.style.background = isSelected ? '#f8fafc' : 'transparent')}
                       >
                         <i className={'ti ' + cfg.icon} style={{ fontSize: 15 }} />
-                        <span style={{ flex: 1 }}>{cfg.label}</span>
+                        <span style={{ flex: 1 }}>{poDocumentStatusLabel(statusKey)}</span>
                         {isSelected && <i className="ti ti-check" style={{ fontSize: 14, color: 'var(--teal)' }} />}
                       </button>
                     )

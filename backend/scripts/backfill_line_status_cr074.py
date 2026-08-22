@@ -1,10 +1,12 @@
-"""CR-074 — gắn nhãn "Chưa tạo đơn mua hàng" cho các dòng YCMH cũ.
+"""CR-074 — gắn mã `no_po` (Chưa tạo đơn mua hàng) cho các dòng YCMH cũ.
 
-Trước CR-074 dòng YCMH chưa có ĐMH nào cũng mang nhãn "Chưa đặt hàng", lẫn với dòng đã
+Trước CR-074 dòng YCMH chưa có ĐMH nào cũng mang mã `not_ordered`, lẫn với dòng đã
 có đơn nhưng chưa bấm đặt hàng. Script này tách dữ liệu cũ ra đúng hai nhóm:
 
-  dòng đang "Chưa đặt hàng" + KHÔNG có dòng ĐMH nào (mã sản phẩm + mã YCMH) → "Chưa tạo đơn mua hàng"
-  dòng đang "Chưa đặt hàng" + CÓ dòng ĐMH (kể cả đơn Nháp, trừ đơn đã Hủy)   → giữ nguyên
+  dòng đang `not_ordered` + KHÔNG có dòng ĐMH nào (mã sản phẩm + mã YCMH) → `no_po`
+  dòng đang `not_ordered` + CÓ dòng ĐMH (kể cả đơn Nháp, trừ đơn đã Hủy)  → giữ nguyên
+
+B-06: hai mã trên đọc từ `purchase_request.service`, script tự đi theo khi bộ mã đổi.
 
 CỐ Ý KHÔNG gọi `sync_from_purchase_orders`: hàm đó suy lại cả trạng thái PHIẾU và có thể
 bắn thông báo "đã nhận hàng"/"hoàn thành" cho hàng loạt người dùng. Ở đây chỉ sửa đúng

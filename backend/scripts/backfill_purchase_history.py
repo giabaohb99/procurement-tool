@@ -1,10 +1,10 @@
-"""Backfill LỊCH SỬ MUA HÀNG cho các dòng ĐMH đã "Hoàn thành" từ trước.
+"""Backfill LỊCH SỬ MUA HÀNG cho các dòng ĐMH đã hoàn thành từ trước.
 
 Chạy TRONG container api (LUÔN chạy thử trước, chỉ ghi khi có --apply):
     # 1. Xem đơn cũ đang nằm ở tiến độ nào, thiếu bao nhiêu bản ghi lịch sử
     docker compose exec -T api python -m scripts.backfill_purchase_history --stats
 
-    # 2. Mặc định: chỉ dòng "Hoàn thành"
+    # 2. Mặc định: chỉ dòng tiến độ `completed` (Hoàn thành)
     docker compose exec -T api python -m scripts.backfill_purchase_history
     docker compose exec -T api python -m scripts.backfill_purchase_history --apply
 
@@ -12,18 +12,19 @@ Chạy TRONG container api (LUÔN chạy thử trước, chỉ ghi khi có --app
     docker compose exec -T api python -m scripts.backfill_purchase_history --include-received
     docker compose exec -T api python -m scripts.backfill_purchase_history --include-received --apply
 
-    # 4. Hoặc tự chỉ định trạng thái nào được tính là đã mua xong
+    # 4. Hoặc tự chỉ định trạng thái nào được tính là đã mua xong (B-06: truyền MÃ, không
+    #    truyền chữ tiếng Việt — xem PO_PROGRESS_STATUS trong app/core/status_codes.py)
     docker compose exec -T api python -m scripts.backfill_purchase_history \
-        --status "Hoàn thành,Đã gửi ĐMH cho KT" --apply
+        --status "completed,doc_sent" --apply
 
 Vì sao cần: bảng `tab_purchase_history` chỉ được ghi tại đúng 1 chỗ —
-`purchase_order.service.auto_advance_line` khi dòng CHUYỂN sang "Hoàn thành". Những dòng
-đã ở "Hoàn thành" trước khi có tính năng (hoặc do import Misa gán thẳng cột tiến độ) không
+`purchase_order.service.auto_advance_line` khi dòng CHUYỂN sang `completed`. Những dòng
+đã ở `completed` trước khi có tính năng (hoặc do import Misa gán thẳng cột tiến độ) không
 đi qua chỗ đó nên chưa có snapshot. Script dựng lại phần thiếu, dùng chính
 `purchase_history.service.snapshot_line` để record giống hệt luồng chạy thật.
 
-Dòng ĐÃ HỦY (tiến độ/line_status "Hủy đơn", hoặc đơn `status = cancelled`) luôn bị loại,
-kể cả khi đã lỡ nhận hàng — lịch sử mua hàng không tính đơn hủy.
+Dòng ĐÃ HỦY (tiến độ `cancelled`, hoặc đơn `status = cancelled`) luôn bị loại, kể cả khi
+đã lỡ nhận hàng — lịch sử mua hàng không tính đơn hủy.
 
 Ngày chốt (`completed_at`) suy ra theo thứ tự ưu tiên, KHÔNG đóng dấu ngày chạy script:
   1. Ngày YCTT đã chi gần nhất của dòng (đúng nghĩa "hoàn thành" = đã thanh toán)
@@ -41,11 +42,13 @@ from sqlalchemy import and_, case, func, or_
 
 import app.core.all_models  # noqa: F401 — nạp đủ model để SQLAlchemy dựng được mapper
 from app.core.database import SessionLocal
+from app.core.status_codes import PO_PROGRESS_STATUS
 from app.modules.payable.model import Payable
 from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
 from app.modules.purchase_history.model import PurchaseHistory
 from app.modules.purchase_history.service import snapshot_line
 from app.modules.purchase_order.model import POItem, PODelivery, PurchaseOrder
+from app.modules.purchase_order.service import PROG_CANCELLED, PROG_COMPLETED
 
 BATCH = 200
 
@@ -84,9 +87,12 @@ def _print_stats(db) -> None:
                      func.sum(case((POItem.qty_received > 0, 1), else_=0)))
             .outerjoin(PurchaseHistory, PurchaseHistory.po_item_id == POItem.id)
             .group_by(POItem.progress_status).all())
-    print(f"{'Tiến độ dòng':<26}{'Tổng':>8}{'Thiếu LS':>10}{'Đã nhận':>10}")
+    print(f"{'Tiến độ dòng':<40}{'Tổng':>8}{'Thiếu LS':>10}{'Đã nhận':>10}")
     for st, total, missing, received in sorted(rows, key=lambda r: -r[1]):
-        print(f"{(st or '(trống)'):<26}{total:>8}{int(missing or 0):>10}{int(received or 0):>10}")
+        # B-06: cột lưu MÃ. In kèm nhãn để người chạy đối chiếu, nhưng --status vẫn nhận MÃ.
+        nhan = PO_PROGRESS_STATUS.label_of(st or "")
+        ten = (f"{st} — {nhan}" if nhan else (st or "(trống)"))
+        print(f"{ten:<40}{total:>8}{int(missing or 0):>10}{int(received or 0):>10}")
     print("\nCột 'Thiếu LS' = số dòng chưa có bản ghi lịch sử mua hàng.")
 
 
@@ -137,9 +143,12 @@ def main(apply: bool, statuses: list[str], include_received: bool, stats: bool,
         eligible = POItem.progress_status.in_(statuses)
         if include_received:
             eligible = or_(eligible, POItem.qty_received > 0)
-        # Không đưa dòng đã hủy vào lịch sử mua hàng dù có phát sinh nhận hàng
-        not_cancelled = and_(POItem.progress_status != "Hủy đơn",
-                             func.coalesce(POItem.line_status, "") != "Hủy đơn",
+        # Không đưa dòng đã hủy vào lịch sử mua hàng dù có phát sinh nhận hàng.
+        # B-06: bỏ vế `POItem.line_status != "Hủy đơn"` từng đứng ở đây — cột đó là mức GIAO
+        # HÀNG của dòng (not_delivered/partial/full, xem PO_ITEM_LINE_STATUS), không bao giờ
+        # mang giá trị hủy, nên vế đó chưa từng lọc được gì. Việc hủy dòng nằm ở
+        # `progress_status`, đã có ở vế đầu.
+        not_cancelled = and_(POItem.progress_status != PROG_CANCELLED,
                              PurchaseOrder.status != "cancelled")
 
         base = (db.query(POItem, PurchaseOrder)
@@ -202,9 +211,9 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Đồng bộ lịch sử mua hàng cho đơn ĐMH cũ")
     ap.add_argument("--apply", action="store_true", help="Ghi vào DB (mặc định chỉ chạy thử, in ra)")
     ap.add_argument("--stats", action="store_true", help="Chỉ in phân bố tiến độ dòng × thiếu lịch sử")
-    ap.add_argument("--status", default="Hoàn thành",
-                    help='Các tiến độ được coi là đã mua xong, cách nhau bằng dấu phẩy '
-                         '(mặc định "Hoàn thành")')
+    ap.add_argument("--status", default=PROG_COMPLETED,
+                    help='MÃ tiến độ được coi là đã mua xong, cách nhau bằng dấu phẩy '
+                         f'(mặc định "{PROG_COMPLETED}"; xem PO_PROGRESS_STATUS)')
     ap.add_argument("--include-received", action="store_true",
                     help="Lấy thêm mọi dòng ĐÃ NHẬN HÀNG dù cột tiến độ chưa chuẩn (đơn cũ/import Misa)")
     ap.add_argument("--csv", default="/app/backfill_purchase_history.csv",

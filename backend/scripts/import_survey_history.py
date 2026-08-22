@@ -38,6 +38,7 @@ import openpyxl
 from sqlalchemy import text
 from app.core import all_models  # noqa: F401  (đăng ký mọi mapper)
 from app.core.database import SessionLocal
+from app.core.status_codes import SURVEY_APPROVE_STATUS
 from app.core.utils import generate_code
 from app.modules.supplier.model import Supplier
 from app.modules.product.model import Product
@@ -55,6 +56,22 @@ SEED_TAG = "SEED-KHAOSAT-LICHSU"
 
 # Kho/VP nội bộ — KHÔNG phải NCC, bỏ mọi dòng của chúng.
 SKIP_SUPPLIERS = {"kho vtbb sx", "vp b19"}
+
+
+def _ma_duyet(db) -> str:
+    """Giá trị cần ghi vào `Survey.approve_status` — dò xem CSDL này đã chạy B-04 chưa.
+
+    Script chạy LIVE ngoài app trên cả ba môi trường, mà B-04 chỉ áp cho `erp-v2`/dev — prod
+    vẫn còn chữ "Duyệt" cho tới ngày cắt (QĐ-10, `doc/erp/15` §4.2). Ghi mã vào CSDL chưa
+    chuyển là làm hỏng dữ liệu mà không báo gì. Cùng khuôn `_da_chuan_hoa()` của
+    `scripts/import_contract.py` (B-02).
+
+    Bảng rỗng thì theo bộ mã mới — đó là hướng đi tới.
+    """
+    row = (db.query(Survey.approve_status).filter(Survey.approve_status != "")
+           .order_by(Survey.id.desc()).first())
+    da_chuyen = row is None or row[0] in SURVEY_APPROVE_STATUS.values
+    return "approved" if da_chuyen else "Duyệt"
 
 # Cột (0-based) theo header đã xác nhận.
 C_DATE, C_SUP, C_GROUP, C_CODE, C_NAME, C_UOM = 1, 2, 3, 4, 5, 6
@@ -325,6 +342,7 @@ def main():
     # 3. Tạo PHIẾU KHẢO SÁT (Survey) + dòng SP (mỗi NCC 1 dòng). KHÔNG tạo YCBG.
     # Sinh mã theo BATCH (đếm 1 lần rồi tăng cục bộ) — tránh quét DB mỗi phiếu.
     sv_seq = _max_seq(db, Survey.code, "KS")
+    ma_duyet = _ma_duyet(db)   # B-04: mã hay chữ, tùy CSDL này đã chuyển chưa
 
     n_phieu = n_sp = 0
     total = len(phieu_plan)
@@ -338,7 +356,7 @@ def main():
         # ĐỨNG ĐỘC LẬP: survey_request_id=0, sr_code="" (không gắn Yêu cầu báo giá).
         sv = Survey(
             code=f"KS{sv_seq:05d}", survey_type="combined", status="approved",
-            approve_status="Duyệt", survey_request_id=0, sr_code="",
+            approve_status=ma_duyet, survey_request_id=0, sr_code="",
             item_group=group, main_content=f"Khao sat gia lich su - {code}",
             requirement_detail=name,
             received_date=ldate, result_due_date=ldate,

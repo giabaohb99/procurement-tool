@@ -1,5 +1,5 @@
 import type { FilterFieldDefinition } from '@/shared/conditional-filter'
-import { EMPLOYEE_STATUSES } from '../types/employee'
+import { EMPLOYEE_STATUS_OPTIONS } from '../types/employee'
 
 /**
  * Khai báo trường cho BỘ LỌC NÂNG CAO của từng bảng trong phân hệ Nhân sự.
@@ -32,7 +32,9 @@ export const EMPLOYEE_FILTER_FIELDS: FilterFieldDefinition[] = [
     type: 'select',
     // Thêm in/not_in để lọc kiểu "Chính thức HOẶC Cộng tác viên" trong một dòng.
     operators: ['is', 'is_not', 'in', 'not_in', 'is_empty', 'is_not_empty'],
-    options: EMPLOYEE_STATUSES.map((status) => ({ label: status, value: status })),
+    // B-03: `value` phải là MÃ vì cột đã lưu mã. Gửi nhãn thì backend vẫn nhận câu lọc,
+    // chỉ là trả về 0 dòng mà không báo lỗi gì — đúng bẫy CR-118 đã dính một lần.
+    options: EMPLOYEE_STATUS_OPTIONS.map(({ value, label }) => ({ label, value })),
   },
   {
     name: 'is_active',

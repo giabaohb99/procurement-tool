@@ -13,7 +13,7 @@ Kịch bản phủ đủ thứ cần kiểm chứng trên UI:
   · 1 SP mua nhiều lần, nhiều NCC, giá tăng dần  → màn Sản phẩm: so giá + sắp xếp mới nhất trước
   · 1 ĐMH có 2 dòng hàng                          → ra 2 record (đúng yêu cầu gốc)
   · 1 NCC bán nhiều SP qua nhiều đơn              → màn NCC
-  · 1 dòng CHƯA "Hoàn thành"                      → PHẢI không xuất hiện trong lịch sử
+  · 1 dòng CHƯA hoàn thành                        → PHẢI không xuất hiện trong lịch sử
 """
 import app.core.all_models  # noqa: F401 — nạp mapper trước khi query
 
@@ -21,6 +21,7 @@ from app.core.database import SessionLocal
 from app.modules.purchase_history.model import PurchaseHistory
 from app.modules.purchase_history.service import snapshot_line
 from app.modules.purchase_order.model import POItem, PurchaseOrder
+from app.modules.purchase_order.service import PROG_COMPLETED, PROG_RECEIVED
 from app.modules.supplier.model import Supplier
 
 DEMO_PREFIX = "PODEMO"
@@ -101,7 +102,8 @@ def run():
                 payment_terms="Công nợ 30 ngày",
                 is_urgent=urgent,
                 status="completed" if tat_ca_xong else "received",
-                document_status="đã đủ chứng từ" if tat_ca_xong else "chưa có chứng từ",
+                # B-06: cột lưu MÃ, xem PO_DOCUMENT_STATUS trong app/core/status_codes.py
+                document_status="full" if tat_ca_xong else "none",
                 note="Dữ liệu demo cho màn Lịch sử mua hàng",
             )
             db.add(po)
@@ -116,19 +118,19 @@ def run():
                     product_code=sp_code, product_name=sp_name, unit=unit,
                     qty_order=qty, qty_request=qty, qty_received=qty, qty_remaining=0,
                     price=price, vat=VAT, amount=thanh_tien,
-                    line_status="Đủ",
+                    line_status="full",  # B-06: mức giao hàng của dòng, xem PO_ITEM_LINE_STATUS
                     invoice_no=f"HD{code[-2:]}{sp_code[-3:]}",
                     invoice_date=order_date,
                     document_delivery_date=order_date if xong else "",
                     required_date=order_date,
-                    progress_status="Hoàn thành" if xong else "Đã nhận hàng",
+                    progress_status=PROG_COMPLETED if xong else PROG_RECEIVED,
                 )
                 db.add(it)
                 db.commit()
                 db.refresh(it)
                 so_dong += 1
 
-                # Chỉ dòng "Hoàn thành" mới có lịch sử — dùng đúng hàm production
+                # Chỉ dòng đã hoàn thành mới có lịch sử — dùng đúng hàm production
                 if xong:
                     snapshot_line(db, po, it)
                     db.commit()

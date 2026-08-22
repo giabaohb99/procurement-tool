@@ -126,7 +126,7 @@ export function buildPurchaseOrderLines(
   const exceededMessages: string[] = []
 
   for (const item of items) {
-    if (!item.product_name || item.line_status === 'Hủy đơn') continue
+    if (!item.product_name || item.line_status === 'cancelled') continue
 
     const requested = Number(item.qty) || 0
     const ordered = Number(orderedByCode[item.product_code] || 0)

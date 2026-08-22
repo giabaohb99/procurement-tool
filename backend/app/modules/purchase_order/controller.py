@@ -8,6 +8,8 @@ from app.core.ref_filter import apply_ref_filters
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope
+from app.core.status_codes import (PO_DELIVERY_STATUS, PO_DOCUMENT_STATUS,
+                                   PO_ITEM_LINE_STATUS, PO_PROGRESS_STATUS)
 from app.modules.company.model import Company
 from app.modules.supplier.model import Supplier
 from app.modules.catalog.model import Warehouse
@@ -49,7 +51,9 @@ def _delivery(d, pay=None) -> dict:
             "invoice_no": d.invoice_no, "invoice_date": getattr(d, "invoice_date", "") or "",
             "shipping_unit_price": float(d.shipping_unit_price or 0),
             "shipping_amount": float(d.shipping_amount or 0), "qc_result": d.qc_result,
-            "status": d.status, "extra_request": d.extra_request, "progress_note": d.progress_note,
+            # MÃ (B-06) + nhãn gửi kèm, xem chú thích ở `_item` bên dưới.
+            "status": d.status, "status_label": PO_DELIVERY_STATUS.label_of(d.status),
+            "extra_request": d.extra_request, "progress_note": d.progress_note,
             # Công nợ HÀNG của lần giao này (đã trả / còn lại)
             "goods_total": float(pay.total or 0) if pay else 0.0,
             "paid": float(pay.paid_amount or 0) if pay else 0.0,
@@ -78,9 +82,16 @@ def _item(db, it, pay_by_del: dict, inv_by_code: dict | None = None,
             "unit": it.unit, "qty_request": float(it.qty_request or 0), "qty_order": qty_order,
             "price": float(it.price or 0), "vat": float(it.vat or 0), "amount": float(it.amount or 0),
             "qty_received": float(it.qty_received or 0), "qty_remaining": float(it.qty_remaining or 0),
-            "line_status": it.line_status, "warehouse_code": it.warehouse_code, "note": it.note,
-            "progress_status": it.progress_status or "Chưa đặt hàng",
+            # `line_status` / `progress_status` là MÃ (B-06); `*_label` là chữ để hiện.
+            # Giao diện đừng tự dịch mã sang tiếng Việt — dùng nhãn gửi kèm.
+            "line_status": it.line_status,
+            "line_status_label": PO_ITEM_LINE_STATUS.label_of(it.line_status),
+            "warehouse_code": it.warehouse_code, "note": it.note,
+            "progress_status": it.progress_status or service.PROG_NOT_ORDERED,
+            "progress_status_label": PO_PROGRESS_STATUS.label_of(
+                it.progress_status or service.PROG_NOT_ORDERED),
             "pause_reason": it.pause_reason or "", "status_before_pause": it.status_before_pause or "",
+            "status_before_pause_label": PO_PROGRESS_STATUS.label_of(it.status_before_pause or ""),
             # Giao thiếu: tổng SL đã nhận < SL đặt (dùng cho badge cảnh báo ở FE)
             "is_short_delivery": bool(qty_order > 0 and float(it.qty_received or 0) + 0.001 < qty_order),
             # Tiền theo DÒNG: đặt hàng (SL đặt) · tiền hàng đã nhận (có công nợ) · đã trả · còn lại
@@ -94,6 +105,9 @@ def _item(db, it, pay_by_del: dict, inv_by_code: dict | None = None,
 def _out(db: Session, po: PurchaseOrder) -> dict:
     d = {c: getattr(po, c) for c in HEADER}
     d["vat_rate"] = float(po.vat_rate or 0)
+    # `document_status` là MÃ (B-06) — trước đây nó là chữ tiếng Việt VIẾT THƯỜNG nên mỗi màn
+    # lại tự viết hoa một kiểu ("Đã có chứng từ" ở ô lọc, "đã có thông tin chứng từ" ở bảng).
+    d["document_status_label"] = PO_DOCUMENT_STATUS.label_of(po.document_status)
     # Công nợ theo lần giao: HÀNG (goods) hiện đã trả/còn lại trên dòng; gom cả VẬN CHUYỂN cho tổng chưa trả
     all_pays = db.query(Payable).filter(Payable.po_id == po.id, Payable.ref_type == "delivery").all()
     pay_by_del = {p.ref_id: p for p in all_pays if p.source_type == "goods"}
@@ -176,7 +190,7 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
         row = {c: getattr(p, c) for c in HEADER}
         row["created_at"] = p.created_at   # thời điểm tạo (có giờ) — hiển thị giờ VN ở list
         # Tiền hàng ở danh sách = GIÁ TRỊ ĐẶT HÀNG (SL đặt × đơn giá × VAT) — ổn định, không về 0
-        # khi dòng chuyển "Đã đặt hàng" mà chưa nhận (it.amount tính theo SL thực nhận).
+        # khi dòng chuyển sang `ordered` mà chưa nhận (it.amount tính theo SL thực nhận).
         row["amount"] = round(sum(
             float(i.qty_order or 0) * float(i.price or 0) * (1 + float(i.vat or 0) / 100)
             for i in service.items_of(db, p.id)), 2)
@@ -277,7 +291,11 @@ def list_po_lines(request: Request, pg: dict = Depends(pagination), db: Session 
         "qty_order": float(it.qty_order or 0), "qty_received": float(it.qty_received or 0),
         "qty_remaining": float(it.qty_remaining or 0),
         "qty_received_here": _recv_here(it) if wh else 0.0,
-        "line_status": it.line_status, "progress_status": it.progress_status or "Chưa đặt hàng",
+        "line_status": it.line_status,
+        "line_status_label": PO_ITEM_LINE_STATUS.label_of(it.line_status),
+        "progress_status": it.progress_status or service.PROG_NOT_ORDERED,
+        "progress_status_label": PO_PROGRESS_STATUS.label_of(
+            it.progress_status or service.PROG_NOT_ORDERED),
     } for po, it in rows]
     return success({"total": total, "items": items})
 
@@ -454,7 +472,8 @@ def cancel_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
     if service.get_po(db, pid).status in ("cancelled", "completed"):
         raise HTTPException(400, "Đơn đã Hủy/Hoàn thành — không hủy lại được")
     # Có sản phẩm nào đã Hoàn thành → KHÔNG cho hủy
-    if db.query(POItem).filter(POItem.po_id == pid, POItem.progress_status == "Hoàn thành").first():
+    if db.query(POItem).filter(POItem.po_id == pid,
+                               POItem.progress_status == service.PROG_COMPLETED).first():
         raise HTTPException(400, "Đơn có sản phẩm đã Hoàn thành — không thể hủy")
     return success(_out(db, service.set_status(db, pid, "cancelled", user.id, data.reason)), "Đã hủy đơn")
 
@@ -462,11 +481,12 @@ def cancel_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
 @router.post("/{pid}/complete")
 def complete_po(pid: int, db: Session = Depends(get_db),
                 user=Depends(require("purchase_order", "write"))):
-    # Chỉ cho Hoàn thành ĐƠN khi MỌI dòng đã ở điểm cuối ("Hoàn thành"/"Hủy đơn") —
-    # giữ header nhất quán với tiến độ dòng (tránh đơn "Hoàn thành" mà dòng chưa nhập
+    # Chỉ cho Hoàn thành ĐƠN khi MỌI dòng đã ở điểm cuối (`completed`/`cancelled`) —
+    # giữ header nhất quán với tiến độ dòng (tránh đơn đã hoàn thành mà dòng chưa nhập
     # Số HĐ / chưa thanh toán, dẫn tới không tạo được Yêu cầu thanh toán).
     lines = db.query(POItem).filter(POItem.po_id == pid).all()
-    pending = [it for it in lines if (it.progress_status or "") not in ("Hoàn thành", "Hủy đơn")]
+    pending = [it for it in lines
+               if (it.progress_status or "") not in (service.PROG_COMPLETED, service.PROG_CANCELLED)]
     if pending:
         names = ", ".join((it.product_name or it.product_code or f"#{it.id}") for it in pending[:5])
         more = f" (+{len(pending) - 5} dòng nữa)" if len(pending) > 5 else ""
