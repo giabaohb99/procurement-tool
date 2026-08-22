@@ -1,5 +1,5 @@
 import { ArrowLeft, Check, Printer, X } from 'lucide-react'
-import { useEffect, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -72,6 +72,7 @@ export function PaymentRequestPrintPage() {
   const navigate = useNavigate()
   const paymentRequestId = Number(id)
   const { data: req, isLoading, isError } = usePaymentRequestPrintData(paymentRequestId)
+  const [taxMode, setTaxMode] = useState(false)
 
   useEffect(() => {
     if (!req?.code) return
@@ -81,6 +82,25 @@ export function PaymentRequestPrintPage() {
       document.title = previousTitle
     }
   }, [req?.code])
+
+  // Gom các dòng trùng chứng từ (ví dụ 256) lại thành 1 dòng + tổng tiền
+  const lines = req?.lines
+  const groupedLines = useMemo(() => {
+    if (!lines || !Array.isArray(lines)) return []
+    const map = new Map<string, any>()
+    for (const l of lines) {
+      const invNo = (l.invoice_no || '').trim()
+      const invDate = (l.invoice_date || '').trim()
+      const key = `${invNo}||${invDate}`
+      if (map.has(key)) {
+        const existing = map.get(key)
+        existing.amount = (Number(existing.amount) || 0) + (Number(l.amount) || 0)
+      } else {
+        map.set(key, { ...l, amount: Number(l.amount) || 0 })
+      }
+    }
+    return Array.from(map.values())
+  }, [lines])
 
   if (isLoading) {
     return (
@@ -124,6 +144,25 @@ export function PaymentRequestPrintPage() {
           <X />
           Đóng
         </Button>
+
+        <div className="ml-auto inline-flex overflow-hidden rounded-md border bg-background">
+          {[
+            { v: false, t: 'Mẫu thường' },
+            { v: true, t: 'Mẫu thuế' },
+          ].map((tab) => (
+            <button
+              key={tab.t}
+              onClick={() => setTaxMode(tab.v)}
+              className={`px-4 py-1.5 text-sm font-medium transition-colors ${
+                taxMode === tab.v
+                  ? 'bg-sky-600 text-white'
+                  : 'bg-background text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+              }`}
+            >
+              {tab.t}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div
@@ -159,16 +198,16 @@ export function PaymentRequestPrintPage() {
         <div style={sectionHead}>THÔNG TIN CHUNG</div>
         <div style={{ lineHeight: 1.55 }}>
           <div style={lbl}>
-            <b>Người đề nghị thanh toán:</b> {req.created_by_name || ''}
+            <b>Người đề nghị thanh toán:</b> {taxMode ? '' : (req.created_by_name || '')}
           </div>
           <div style={lbl}>
-            <b>Chức vụ:</b> {dot(req.created_by_position)}
+            <b>Chức vụ:</b> {taxMode ? '' : dot(req.created_by_position)}
           </div>
           <div style={lbl}>
-            <b>Hiện công tác tại bộ phận:</b> {dot(req.created_by_dept)}
+            <b>Hiện công tác tại bộ phận:</b> {taxMode ? '' : dot(req.created_by_dept)}
           </div>
           <div style={lbl}>
-            <b>Trưởng phòng ban/bộ phận:</b> {dot(req.dept_manager)}
+            <b>Trưởng phòng ban/bộ phận:</b> {taxMode ? '' : dot(req.dept_manager)}
           </div>
         </div>
 
@@ -220,14 +259,14 @@ export function PaymentRequestPrintPage() {
             </tr>
           </thead>
           <tbody>
-            {req.lines.map((line, index) => (
+            {groupedLines.map((line, index) => (
               <tr key={line.id ?? index}>
                 <td style={{ ...cellCenter, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{line.invoice_no}</td>
                 {/* CR-066: chưa có hóa đơn thì in trắng để điền tay — không lấy ngày phát sinh thay thế. */}
                 <td style={cellCenter}>{formatDate(line.invoice_date)}</td>
                 {/* Diễn giải gộp cho mọi dòng (rowSpan) — chỉ vẽ ở dòng đầu. */}
                 {index === 0 && (
-                  <td style={{ ...cell, verticalAlign: 'middle' }} rowSpan={req.lines.length || 1}>
+                  <td style={{ ...cell, verticalAlign: 'middle' }} rowSpan={groupedLines.length || 1}>
                     {content}
                   </td>
                 )}
@@ -236,7 +275,7 @@ export function PaymentRequestPrintPage() {
                 <td style={cell} />
               </tr>
             ))}
-            {req.lines.length === 0 && (
+            {groupedLines.length === 0 && (
               <tr>
                 <td style={cell} />
                 <td style={cell} />
