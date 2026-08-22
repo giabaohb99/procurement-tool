@@ -220,7 +220,23 @@ def co_ban_clone_xem_duoc(db: Session, source_document_id: int, user,
 
 
 def can(db: Session, doc: Document, user, profile: dict, action: str = "read") -> bool:
-    """Người này có được `action` trên ĐÚNG văn bản này không."""
+    """Người này có được `action` trên ĐÚNG văn bản này không.
+
+    ⚠️ **KHÔNG ĐỌC ĐƯỢC THÌ KHÔNG LÀM GÌ ĐƯỢC** (thêm 22/08/2026).
+
+    Quyền đọc tới từ nhiều nguồn (phạm vi vai trò, chia đích danh, thành viên sổ,
+    phạm vi áp dụng, đang duyệt), và dòng CẤM đích danh tick từng hành động
+    riêng. Nên có tổ hợp đọc bị cấm mà ghi vẫn lọt: bắt được ở văn bản 352 —
+    nhân viên thu mua bị cấm ĐỌC bằng một dòng chia sẻ, nhưng vẫn `write = True`
+    nhờ là **người quản lý quyển sổ** chứa văn bản đó. Kết quả là họ sửa được số
+    hiệu của một văn bản mà mở ra là 404.
+
+    Sửa thứ mình không mở được là vô nghĩa ở mọi tình huống, nên chặn một lần ở
+    đây thay vì vá từng nguồn quyền.
+    """
+    if action != "read" and not can(db, doc, user, profile, "read"):
+        return False
+
     #  ĐỌC ĐƯỢC THỨ MÌNH PHẢI KÝ. Người duyệt trong luồng thường không có vai
     #  trò nào trên phân hệ Văn bản — bộ máy duyệt chỉ hỏi "anh có việc ở phiếu
     #  này không", không hỏi phân quyền. Thiếu ngoại lệ này thì họ bấm từ «Việc

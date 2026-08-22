@@ -8,13 +8,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
-from app.core.auth import get_current_user, require
+from app.core.auth import get_current_user, get_perm_profile, require
 from app.core.database import get_db
 from app.core.response import success
 from app.modules.company.model import Company
 from app.modules.employee.model import Employee
 
-from . import scope_service, serializer
+from . import access_service, scope_service, serializer
 from .controller import _load
 from .model import Document
 from .scope_model import (DIM_COMPANY, DIM_DEPARTMENT, DIM_EMPLOYEE,
@@ -76,7 +76,24 @@ def applies_to_me(db: Session = Depends(get_db), user=Depends(get_current_user))
         return success({"total": 0, "items": []})
 
     docs = db.query(Document).filter(Document.id.in_(ids)).all()
-    return success({"total": len(docs), "items": serializer.serialize_many(db, docs)})
+
+    #  BỎ những văn bản người này KHÔNG MỞ ĐƯỢC.
+    #
+    #  `document_ids_for` chỉ đọc `tab_document_scope` — nó trả lời "phạm vi áp
+    #  dụng có bao gồm tôi không". Nó KHÔNG biết tới `tab_document_access`, nơi
+    #  chứa các dòng chia sẻ / CẤM đích danh. Nên người bị cấm đọc một văn bản
+    #  vẫn thấy nó nằm trong «Áp dụng cho tôi», bấm vào thì nhận 404 (`can()`
+    #  xét dòng cấm và từ chối).
+    #
+    #  Đúng cái bẫy đã ghi ở `doc/erp/van-thu/06-kich-ban-test.md` §4.6: danh
+    #  sách rộng hơn thứ mở được. Lọc lại bằng chính `can()` để hai đường không
+    #  bao giờ lệch nhau nữa.
+    profile = get_perm_profile(db, user)
+    doc_xem_duoc = [doc for doc in docs
+                    if access_service.can(db, doc, user, profile, "read")]
+
+    return success({"total": len(doc_xem_duoc),
+                    "items": serializer.serialize_many(db, doc_xem_duoc)})
 
 
 @router.get("/{document_id}/scopes")
