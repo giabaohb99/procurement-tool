@@ -236,16 +236,25 @@ function ApprovalFlowListContent() {
         description="Khai bằng giao diện — thêm bước, đổi người duyệt, rẽ nhánh mà không phải sửa mã."
         actions={
           <>
-            {/*  Lối sang công tắc bật bộ máy: cột Trạng thái bên dưới có nhắc
-                 tới nó ("Chờ bật bộ máy") nên phải với tới được từ đây. */}
-            <Button variant="outline" onClick={() => navigate(appRoutes.approval.engine)}>
-              <Power className="size-4" />
-              Bật bộ máy
-            </Button>
-            <Button onClick={() => navigate(appRoutes.approval.flowNew)}>
-              <Plus className="size-4" />
-              Tạo luồng
-            </Button>
+            {/*  Hai nút này GÁC QUYỀN, như nút xóa ở cột thao tác. Người chỉ có
+                 `approval_flow: read` (văn thư pháp nhân chẳng hạn) vào màn này
+                 để XEM luồng nào đang áp cho văn bản của mình — bày nút cho họ
+                 là dẫn thẳng vào 403 ở `PUT /switches` (`write`) và `POST` luồng
+                 (`create`). */}
+            {can('approval_flow', 'write') && (
+              //  Lối sang công tắc bật bộ máy: cột Trạng thái bên dưới có nhắc
+              //  tới nó ("Chờ bật bộ máy") nên phải với tới được từ đây.
+              <Button variant="outline" onClick={() => navigate(appRoutes.approval.engine)}>
+                <Power className="size-4" />
+                Bật bộ máy
+              </Button>
+            )}
+            {can('approval_flow', 'create') && (
+              <Button onClick={() => navigate(appRoutes.approval.flowNew)}>
+                <Plus className="size-4" />
+                Tạo luồng
+              </Button>
+            )}
           </>
         }
       />
