@@ -181,8 +181,11 @@ def dept_head_(department: str = "", department_id: int = 0, db: Session = Depen
 def _list_query(request: Request, db: Session, user):
     """Bộ lọc + phạm vi của màn danh sách — dùng chung cho danh sách và xuất Excel (CR-068)."""
     from sqlalchemy import or_
+    # `code` chỉ bị loại khỏi lọc TRẦN (nhường cho ô tìm kiếm đa trường), bộ lọc điều kiện
+    # `code__contains=...` vẫn phải chạy -> truyền FILTERABLE đầy đủ cho vế operator.
     filterable = [f for f in service.FILTERABLE if f != "code"]
-    q = apply_filters(db.query(SurveyRequest), SurveyRequest, request, filterable)
+    q = apply_filters(db.query(SurveyRequest), SurveyRequest, request, filterable,
+                      operator_filterable=service.FILTERABLE)
     q = apply_ref_filters(q, SurveyRequest, request, db)      # CR-088
     q = apply_range_filters(q, SurveyRequest, request, ["request_date"])
     q = apply_equals(q, SurveyRequest, request, ["company_id"])

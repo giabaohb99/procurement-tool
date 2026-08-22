@@ -126,8 +126,11 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
 
 def _list_query(request: Request, db: Session, user):
     """Bộ lọc + phạm vi của màn danh sách — dùng chung cho danh sách và xuất Excel (CR-068)."""
+    # `code` chỉ bị loại khỏi lọc TRẦN (nhường cho ô tìm kiếm đa trường), bộ lọc điều kiện
+    # `code__contains=...` vẫn phải chạy -> truyền FILTERABLE đầy đủ cho vế operator.
     filterable = [f for f in service.FILTERABLE if f != "code"]
-    q = apply_filters(db.query(PurchaseOrder), PurchaseOrder, request, filterable)
+    q = apply_filters(db.query(PurchaseOrder), PurchaseOrder, request, filterable,
+                      operator_filterable=service.FILTERABLE)
     q = apply_ref_filters(q, PurchaseOrder, request, db)      # CR-088: `nspt_id` / `department_id`
     q = apply_range_filters(q, PurchaseOrder, request, ["order_date"])
     q = apply_equals(q, PurchaseOrder, request, ["company_id"])

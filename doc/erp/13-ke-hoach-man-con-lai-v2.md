@@ -206,7 +206,7 @@ công, và đợt sau không chặn việc dùng thử đợt trước. Ai làm 
 | **Đ-07** | **Yêu cầu thanh toán — chi tiết** *(gồm cả màn tạo mới từ công nợ)* | 2 – 3 | Có | **Khó** | AI | **Xong** *(CR-119)* |
 | **Đ-08** | **Phiếu in Yêu cầu thanh toán** | 0,5 – 1 | Có | Vừa | AI | **Xong** *(CR-119)* |
 | **Đ-09** | Trả lại **cột tick chọn + nút lên phiếu** ở màn Công nợ | 0,5 – 1 | Có | Dễ *(chờ Đ-07)* | AI | **Xong** *(CR-119)* |
-| **Đ-10** | **Phân công phụ trách** — port nguyên trạng *(QĐ-6)* | 1 – 1,5 | Có | **Dễ** | *(chưa nhận)* | Chưa làm |
+| **Đ-10** | **Phân công phụ trách** — port nguyên trạng *(QĐ-6)* | 1 – 1,5 | Có | **Dễ** | AI | **Xong** *(CR-126)* |
 | **Đ-11** | Vá **4 khối thiếu** ở Trang chủ + dựng Tổng quan Tài chính / Kho | 1,5 – 2 | Không* | Vừa | *(chưa nhận)* | Chưa làm |
 | **Đ-12** | **Sao lưu CSDL** *(MC-5)* | 1,5 – 2 | Có | Vừa | AI | **Xong** *(CR-113)* |
 | **Đ-13** | **Quản lý Import** *(MC-6)* | 3 – 4 | Có | **Khó** | *(chưa nhận)* | **Hoãn** |

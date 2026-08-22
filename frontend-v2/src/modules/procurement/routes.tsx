@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   ShoppingCart,
   Truck,
+  UserCheck,
 } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
@@ -87,6 +88,13 @@ export const procurementModule: ErpModule = {
       icon: BarChart3,
       entity: 'survey',
       group: 'Khảo sát',
+    },
+    {
+      label: 'Phân công phụ trách',
+      path: appRoutes.procurement.categoryAssignees,
+      icon: UserCheck,
+      entity: 'category_assignee',
+      group: 'Cấu hình',
     },
   ],
 
@@ -191,6 +199,18 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.purchaseReport,
       lazy: async () => ({
         Component: (await import('./pages/purchase-report-page')).PurchaseReportPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.categoryAssignees,
+      lazy: async () => ({
+        Component: (await import('./pages/category-assignee-list-page')).CategoryAssigneeListPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.categoryAssigneeNew,
+      lazy: async () => ({
+        Component: (await import('./pages/category-assignee-form-page')).CategoryAssigneeFormPage,
       }),
     },
   ],

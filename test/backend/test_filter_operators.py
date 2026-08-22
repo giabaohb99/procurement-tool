@@ -185,3 +185,57 @@ def test_loc_dieu_kien_tren_query_co_join(db):
     q = apply_operator_filters(q, CategoryAssignee, req(f"item_group_id__eq={g1.id}"), CA_FILTERABLE)
     rows = q.all()
     assert len(rows) == 1 and rows[0][1] == "Thùng"
+
+
+# ── Hai whitelist tách rời: lọc TRẦN vs bộ lọc điều kiện ────────────────────────
+# Bốn màn Thu mua bỏ `code` khỏi whitelist trần để nhường param `code=` cho ô tìm kiếm đa
+# trường (mã HOẶC tên hàng HOẶC người yêu cầu). Trước đây cùng danh sách đó chảy luôn xuống
+# bộ lọc điều kiện, nên `code__contains=...` bị BỎ QUA IM LẶNG: người dùng chọn điều kiện,
+# bấm Áp dụng, danh sách không đổi và cũng không có lỗi nào hiện ra.
+TRAN = [f for f in FILTERABLE if f != "code"]
+
+
+def test_code_ngoai_whitelist_tran_thi_param_tran_khong_loc(db, pos):
+    """Vẫn giữ nguyên chủ đích cũ: `code=` không còn là bộ lọc, để controller tự xử lý."""
+    q = apply_filters(db.query(PurchaseOrder), PurchaseOrder, req("code=PO001"), TRAN)
+    assert {o.code for o in q.all()} == {"PO001", "PO002", "PO003", "PO004"}
+
+
+def test_code_ngoai_whitelist_tran_van_loc_duoc_bang_operator(db, pos):
+    q = apply_filters(db.query(PurchaseOrder), PurchaseOrder, req("code__contains=PO00"), TRAN,
+                      operator_filterable=FILTERABLE)
+    assert {o.code for o in q.all()} == {"PO001", "PO002", "PO003", "PO004"}
+    q = apply_filters(db.query(PurchaseOrder), PurchaseOrder, req("code__eq=PO002"), TRAN,
+                      operator_filterable=FILTERABLE)
+    assert {o.code for o in q.all()} == {"PO002"}
+
+
+def test_khong_truyen_operator_filterable_thi_dung_lai_whitelist_tran(db, pos):
+    """Giữ tương thích cho hàng chục màn đang gọi apply_filters bằng 4 tham số."""
+    q = apply_filters(db.query(PurchaseOrder), PurchaseOrder, req("code__eq=PO002"), TRAN)
+    assert {o.code for o in q.all()} == {"PO001", "PO002", "PO003", "PO004"}
+
+
+def test_hop_dong_loc_duoc_da_ky_va_ngay_bat_dau(db):
+    """Màn Hợp đồng khai `signed` + `start_date` ở bộ lọc nâng cao nhưng backend không nhận.
+
+    `signed` là cột bool nên KHÔNG được đưa vào whitelist trần (param trần sẽ dịch thành
+    LIKE '%true%'); nó chỉ mở cho vế operator qua FILTER_OPS.
+    """
+    from app.modules.contract.controller import FILTER_OPS, FILTERABLE as C_FILTERABLE
+    from app.modules.contract.model import Contract
+
+    db.add_all([
+        Contract(code="HD01", title="Khung 2026", signed=True, start_date="2026-01-01"),
+        Contract(code="HD02", title="Khung 2025", signed=False, start_date="2025-06-01"),
+    ])
+    db.commit()
+
+    def run(qs: str) -> set[str]:
+        q = apply_filters(db.query(Contract), Contract, req(qs), C_FILTERABLE,
+                          operator_filterable=FILTER_OPS)
+        return {c.code for c in q.all()}
+
+    assert run("signed__eq=true") == {"HD01"}
+    assert run("signed__eq=false") == {"HD02"}
+    assert run("start_date__gte=2026-01-01") == {"HD01"}

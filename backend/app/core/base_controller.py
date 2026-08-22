@@ -17,15 +17,23 @@ def pagination(
     }
 
 
-def apply_filters(query, model, request: Request, filterable: list[str]):
+def apply_filters(query, model, request: Request, filterable: list[str],
+                  operator_filterable: list[str] | None = None):
     """Filter động: đọc query params, chỉ áp dụng các trường nằm trong whitelist.
 
     Hai loại param cùng chạy qua đây:
 
     1. Param TRẦN `<field>=<val>` — hành vi cũ, giữ nguyên: text -> LIKE %val%, `is_*` -> bool,
-       `id`/`*_id` -> so khớp chính xác. Luôn nối bằng AND.
+       `id`/`*_id` -> so khớp chính xác. Luôn nối bằng AND. Whitelist là `filterable`.
     2. Param CÓ OPERATOR `<field>__<op>=<val>` (+ `conjunction=and|or`) — bộ lọc điều kiện,
-       xem `app/core/filter_operators.py`.
+       xem `app/core/filter_operators.py`. Whitelist là `operator_filterable`, bỏ trống thì
+       dùng luôn `filterable`.
+
+    HAI whitelist tách rời vì có cột phải loại khỏi lọc TRẦN nhưng vẫn phải lọc được ở bộ lọc
+    điều kiện. Điển hình là `code`: bốn màn Thu mua nhường param trần `code=` cho ô tìm kiếm đa
+    trường (mã HOẶC tên hàng HOẶC người yêu cầu), nên phải bỏ `code` khỏi `filterable`; nhưng
+    trước đây cùng danh sách đó chảy luôn xuống bộ lọc điều kiện, khiến `code__contains=...`
+    bị BỎ QUA IM LẶNG — người dùng bấm lọc mà danh sách không đổi, cũng không báo lỗi.
     """
     for key, raw in request.query_params.items():
         val = raw.strip() if isinstance(raw, str) else raw   # cắt space thừa để LIKE khớp
@@ -54,7 +62,8 @@ def apply_filters(query, model, request: Request, filterable: list[str]):
                 col = getattr(model, db_col_name)
                 val_list = [v.strip() for v in val.split(",")]
                 query = query.filter(col.in_(val_list))
-    return apply_operator_filters(query, model, request, filterable)
+    return apply_operator_filters(query, model, request,
+                                  filterable if operator_filterable is None else operator_filterable)
 
 
 def apply_sort(query, model, sort_by: str | None, sort_dir: str = "asc", default=None):

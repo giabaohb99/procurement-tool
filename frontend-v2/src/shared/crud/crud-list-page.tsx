@@ -1,5 +1,5 @@
 import { Plus, Search } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
@@ -24,9 +24,27 @@ interface CrudListPageProps<T> {
 }
 
 export function CrudListPage<T extends Record<string, any>>({ config }: CrudListPageProps<T>) {
-  if (config.filterConfig) {
+  /**
+   * Bấm "Áp dụng" ở bộ lọc nâng cao là VIẾT LẠI toàn bộ query string, chỉ chừa lại
+   * `searchParamName` + `preserveParams` (xem `use-filter-url-sync.ts`). Khai thiếu tên nào
+   * thì tên đó bay khỏi URL — trước đây màn Hợp đồng mất sạch lọc nhanh và thứ tự sắp xếp
+   * mỗi lần thêm một điều kiện nâng cao.
+   *
+   * Khóa lọc nhanh và `sort_by`/`sort_dir` do chính `CrudListContent` sinh ra nên gom sẵn ở
+   * đây, khỏi bắt từng màn tự nhớ khai lại.
+   */
+  const filterConfig = useMemo(() => {
+    if (!config.filterConfig) return undefined
+    const auto = [...(config.quickFilters ?? []).map((qf) => qf.key), 'sort_by', 'sort_dir']
+    return {
+      ...config.filterConfig,
+      preserveParams: [...new Set([...(config.filterConfig.preserveParams ?? []), ...auto])],
+    }
+  }, [config.filterConfig, config.quickFilters])
+
+  if (filterConfig) {
     return (
-      <FilterProvider config={config.filterConfig}>
+      <FilterProvider config={filterConfig}>
         <CrudListContent config={config} />
       </FilterProvider>
     )

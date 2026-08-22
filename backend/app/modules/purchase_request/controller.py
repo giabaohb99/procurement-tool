@@ -207,8 +207,10 @@ def _out(db: Session, pr, user=None) -> dict:
 def _list_query(request: Request, db: Session, user):
     """Câu truy vấn danh sách (lọc + phạm vi + sắp xếp) — dùng chung cho màn danh sách và xuất Excel."""
     from sqlalchemy import or_
+    # `code` bị loại khỏi lọc TRẦN vì param `code=` dưới đây là ô tìm kiếm đa trường; nhưng bộ
+    # lọc điều kiện (`code__contains=...`) vẫn phải lọc được nên giữ nguyên FILTERABLE đầy đủ.
     filterable = [f for f in service.FILTERABLE if f != "code"]
-    query = apply_filters(db.query(PurchaseRequest).filter(PurchaseRequest.is_deleted == False), PurchaseRequest, request, filterable)
+    query = apply_filters(db.query(PurchaseRequest).filter(PurchaseRequest.is_deleted == False), PurchaseRequest, request, filterable, operator_filterable=service.FILTERABLE)
     query = apply_ref_filters(query, PurchaseRequest, request, db)   # CR-088
     query = apply_range_filters(query, PurchaseRequest, request, ["request_date", "need_date"])
     query = apply_equals(query, PurchaseRequest, request, ["company_id"])

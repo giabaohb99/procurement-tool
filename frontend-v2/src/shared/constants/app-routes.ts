@@ -53,6 +53,9 @@ export const appRoutes = {
     surveyReport: '/procurement/survey-report',
     /** Báo cáo mua hàng — tám tab trên cùng một bộ lọc công ty / năm. */
     purchaseReport: '/procurement/purchase-report',
+    /** Phân công phụ trách NSTM theo phân loại. */
+    categoryAssignees: '/procurement/category-assignees',
+    categoryAssigneeNew: '/procurement/category-assignees/new',
   },
   /**
    * Bộ máy phê duyệt dùng chung — không nằm trong phân hệ nào vì «Việc của tôi»

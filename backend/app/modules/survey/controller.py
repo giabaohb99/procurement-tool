@@ -75,31 +75,46 @@ def _out(db: Session, s: Survey) -> dict:
 router = APIRouter(prefix="/api/surveys", tags=["survey"])
 
 
+def search_condition(keyword: str):
+    """Điều kiện của ô tìm kiếm đa trường: 6 cột trên phiếu HOẶC mã/tên hàng ở bảng dòng SP.
+
+    Vế bảng dòng dùng SUBQUERY, KHÔNG gom id ra Python rồi `.in_(list)`: bảng dòng SP trên
+    thật đã hơn 5000 dòng, gõ một từ phổ biến là SQLAlchemy nhồi hàng nghìn tham số thẳng vào
+    câu SQL (mẫu C1 trong doc/tai-lieu-ky-thuat/ra-soat-api-hieu-nang.md — đúng lỗi đã vá ở
+    `service.report_rows`).
+    """
+    from sqlalchemy import or_, select
+
+    like = f"%{keyword}%"
+    # `survey_id > 0` giữ đúng chốt chặn `if r[0]` của bản cũ: dòng nhập từ Excel có thể để
+    # survey_id = 0 (chưa gắn phiếu nào), không được kéo theo gì cả.
+    line_sub = select(SurveyProductLine.survey_id).where(
+        SurveyProductLine.survey_id > 0,
+        or_(SurveyProductLine.internal_code.like(like),
+            SurveyProductLine.product_name.like(like)),
+    )
+    return or_(
+        Survey.code.like(like),
+        Survey.pr_code.like(like),
+        Survey.sr_code.like(like),
+        Survey.item_code.like(like),
+        Survey.item_name.like(like),
+        Survey.main_content.like(like),
+        Survey.id.in_(line_sub),
+    )
+
+
 @router.get("")
 def list_surveys(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
           user=Depends(require("survey", "read"))):
-    from sqlalchemy import or_
+    # `code` chỉ bị loại khỏi lọc TRẦN (nhường cho ô tìm kiếm đa trường ngay dưới), bộ lọc điều
+    # kiện `code__contains=...` vẫn phải chạy -> truyền FILTERABLE đầy đủ cho vế operator.
     filterable = [f for f in service.FILTERABLE if f != "code"]
-    q = apply_filters(db.query(Survey), Survey, request, filterable)
+    q = apply_filters(db.query(Survey), Survey, request, filterable,
+                      operator_filterable=service.FILTERABLE)
     search = (request.query_params.get("code") or request.query_params.get("q") or request.query_params.get("search") or request.query_params.get("product_code") or "").strip()
     if search:
-        like = f"%{search}%"
-        matching_ids = [
-            r[0] for r in db.query(SurveyProductLine.survey_id)
-            .filter(or_(SurveyProductLine.internal_code.like(like), SurveyProductLine.product_name.like(like))).all()
-            if r[0]
-        ]
-        conds = [
-            Survey.code.like(like),
-            Survey.pr_code.like(like),
-            Survey.sr_code.like(like),
-            Survey.item_code.like(like),
-            Survey.item_name.like(like),
-            Survey.main_content.like(like),
-        ]
-        if matching_ids:
-            conds.append(Survey.id.in_(matching_ids))
-        q = q.filter(or_(*conds))
+        q = q.filter(search_condition(search))
     q = apply_scope(q, Survey, "survey", user, get_perm_profile(db, user))
     q = apply_sort_from_request(q, Survey, request)
     total, items = service.list_surveys(db, q, pg)

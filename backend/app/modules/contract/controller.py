@@ -20,6 +20,12 @@ router = APIRouter(prefix="/api/contracts", tags=["contract"])
 # lọc khoảng kiểu cũ (end_date_from/_to) vẫn do apply_range_filters lo.
 FILTERABLE = ["code", "party_type", "party_code", "party_name", "status", "contract_type", "title",
               "end_date"]
+# Trường CHỈ mở cho bộ lọc điều kiện, không mở cho param trần:
+# - `signed` là cột bool, param trần `signed=true` đã có nhánh riêng trong `list_` bên dưới; để
+#   nó vào whitelist trần thì `apply_filters` sẽ dịch thành LIKE '%true%' — sai kiểu.
+# - `start_date` không có ô lọc trần nào, chỉ dùng ở bộ lọc nâng cao.
+# Thiếu hai tên này thì FE gửi `signed__eq` / `start_date__gte` mà backend BỎ QUA im lặng.
+FILTER_OPS = FILTERABLE + ["signed", "start_date"]
 
 
 def expiry_state(end_date: str) -> str:
@@ -73,7 +79,7 @@ def _out(c: Contract) -> dict:
 @router.get("")
 def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
           user=Depends(require("contract", "read"))):
-    q = apply_filters(db.query(Contract), Contract, request, FILTERABLE)
+    q = apply_filters(db.query(Contract), Contract, request, FILTERABLE, operator_filterable=FILTER_OPS)
     q = apply_scope(q, Contract, "contract", user, get_perm_profile(db, user))
     q = apply_range_filters(q, Contract, request, ["end_date"])   # khoảng ngày hết hạn
     signed = request.query_params.get("signed")
