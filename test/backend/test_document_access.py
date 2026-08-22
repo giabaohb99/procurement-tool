@@ -308,17 +308,26 @@ def test_doc_duoc_ban_clone_thi_xem_lai_duoc_ban_goc(db, doc, seed):
 
     assert access_service.can(db, clone, user, profile, "read") is True
     #  Mở thêm đúng quyền ĐỌC bản gốc để đối chiếu, không cho sửa bản của mẹ.
+    #  Đây là đường mà nút «Xem bản gốc» ở trang chi tiết đi qua — `can()` có
+    #  nhánh riêng (`co_ban_clone_xem_duoc`), không phụ thuộc danh sách.
     assert access_service.can(db, doc, user, profile, "read") is True
     assert access_service.can(db, doc, user, profile, "write") is False
-    #  Danh sách cần cả gốc lẫn clone trước khi gom; thiếu gốc thì giao diện
-    #  buộc phải bày clone thành một dòng cấp cao như văn bản mới.
+
+    #  DANH SÁCH chỉ có bản riêng của chính pháp nhân con (đổi 22/08/2026).
+    #
+    #  Trước đây danh sách kéo cả bản gốc vào để giao diện gom clone thành nhánh
+    #  bung. Nhưng `an_ban_rieng_co_goc_xem_duoc` lại giấu bản riêng khi bản gốc
+    #  CŨNG xem được, nên kết quả lộn ngược: văn thư pháp nhân con mở danh sách
+    #  ra thấy dòng của CÔNG TY MẸ, còn văn bản của chính họ bị giấu vào nhánh.
     visible = _visible(db, user, profile)
-    assert {row.id for row in visible} == {doc.id, clone.id}
+    assert {row.id for row in visible} == {clone.id}
 
     cond = access_service.visible_condition(user, profile, "read")
     query = documents_query(db).filter(cond)
-    assert [row.id for row in an_ban_rieng_co_goc_xem_duoc(query).all()] == [doc.id]
-    assert dem_ban_rieng(query, [doc.id]) == {doc.id: 1}
+    #  Bản gốc không xem được trong danh sách nên bản riêng KHÔNG bị gom — nó
+    #  chính là văn bản của pháp nhân này.
+    assert [row.id for row in an_ban_rieng_co_goc_xem_duoc(query).all()] == [clone.id]
+    assert dem_ban_rieng(query, [clone.id]) == {}
 
 
 def test_cam_dich_danh_ban_goc_van_thang_quyen_doc_qua_clone(db, doc, seed):

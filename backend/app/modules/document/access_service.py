@@ -125,10 +125,24 @@ def visible_condition(user, profile: dict, action: str = "read"):
     Trả `None` nghĩa là **không lọc gì** — chỉ xảy ra khi vai trò cho thấy tất cả
     và không có dòng cấm nào áp lên người này.
 
-    Riêng quyền ĐỌC: nếu người dùng thấy một bản clone thì danh sách phải hiện
-    thêm bản gốc của nó. Giao diện cần dòng gốc để gom bản clone vào nhánh bung;
-    chỉ mở được gốc bằng URL mà không có nó trong danh sách sẽ làm bản clone
-    đứng thành một dòng cấp cao, trông như một văn bản hoàn toàn mới.
+    ⚠️ **KHÔNG kéo bản gốc theo bản clone** (bỏ ngày 22/08/2026).
+
+    Trước đây quyền ĐỌC có cộng thêm một vế: thấy bản clone thì thấy luôn bản gốc
+    của nó, với lý do "giao diện cần dòng gốc để gom bản clone vào nhánh bung".
+    Nhưng ghép với `an_ban_rieng_co_goc_xem_duoc` — hàm giấu bản riêng khi bản
+    gốc CŨNG xem được — thì kết quả lộn ngược đúng ở pháp nhân con:
+
+      văn thư SAM mở danh sách, thấy dòng **02/2026/VBĐ-DEGO của DEGO** kèm mũi
+      tên bung, còn văn bản của chính họ (**01/2026/TB-SAM**) bị giấu vào nhánh.
+
+    Tức là người ở pháp nhân con nhận về một dòng của công ty khác như thể đó là
+    văn bản của mình, và phải bung ra mới tìm thấy bản của mình. Vế kéo-theo này
+    chỉ phục vụ đúng nhóm người đó, mà với họ nó lại sai — người ở pháp nhân mẹ
+    vốn đã thấy bản gốc bằng phạm vi của chính mình.
+
+    Bỏ vế đó thì mỗi bên thấy đúng phần của mình: mẹ vẫn có cây bung như cũ, con
+    thấy thẳng bản riêng của con. Muốn đối chiếu thì trang chi tiết đã có sẵn nút
+    **«Xem bản gốc»** (`document-needs-review-banner.tsx`).
     """
     scope = scope_condition(Document, "document", user, profile, action)
     allow = _document_ids(profile, action, EFFECT_ALLOW)
@@ -157,22 +171,7 @@ def visible_condition(user, profile: dict, action: str = "read"):
 
     #  `None` = đã thấy tất cả, không cần cộng nguồn quyền nào. Các hành động
     #  sửa / xóa tuyệt đối không được kéo theo từ bản clone sang bản gốc.
-    if action != "read" or direct is None:
-        return direct
-
-    #  Chỉ lấy MỘT tầng gốc của những clone đọc được bằng quyền trực tiếp. Không
-    #  dùng lại `visible_condition()` trong truy vấn con vì sẽ tự đệ quy vô hạn.
-    #  Cùng một bảng ở hai scope SQL khác nhau nên truy vấn con vẫn độc lập với
-    #  dòng `Document` bên ngoài.
-    source_ids = (
-        select(Document.source_document_id)
-        .where(Document.source_document_id.isnot(None), direct)
-    )
-    source_visible = Document.id.in_(source_ids)
-    #  Dòng CẤM đích danh trên BẢN GỐC vẫn thắng quyền đọc kéo theo từ clone.
-    if not_denied is not None:
-        source_visible = and_(source_visible, not_denied)
-    return or_(direct, source_visible)
+    return direct
 
 
 def dang_duyet_van_ban_nay(db: Session, document_id: int, employee_id: int | None) -> bool:
