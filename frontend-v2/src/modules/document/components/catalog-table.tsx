@@ -32,6 +32,18 @@ interface CatalogTableProps<T extends { id: number; is_active: boolean }> {
   filterRows?: (rows: T[]) => T[]
   /** Ô lọc riêng của từng danh mục, chèn sau select trạng thái. */
   extraToolbar?: ReactNode
+  /**
+   * Bày ô lọc *Đang dùng / Ngừng*. Tắt cho danh mục mà mọi dòng luôn `is_active`
+   * — ô lọc trên một cột không bao giờ đổi giá trị thì chọn "Ngừng" chỉ làm
+   * trắng bảng, còn "Đang dùng" thì y hệt "Tất cả": bày ra là hứa một thứ danh
+   * mục đó không có.
+   */
+  showStatusFilter?: boolean
+  /**
+   * Khóa nhận dạng một dòng. Mặc định là `id`, nhưng danh mục nào gộp nhiều
+   * thang vào một bảng thì `id` KHÔNG còn duy nhất — xem `SecurityLevelCatalog`.
+   */
+  getRowId?: (row: T) => string | number
 }
 
 /**
@@ -54,6 +66,8 @@ export function CatalogTable<T extends { id: number; is_active: boolean }>({
   emptyMessage = 'Không có bản ghi nào khớp điều kiện đang lọc.',
   filterRows,
   extraToolbar,
+  showStatusFilter = true,
+  getRowId = (row) => row.id,
 }: CatalogTableProps<T>) {
   const navigate = useNavigate()
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
@@ -62,12 +76,15 @@ export function CatalogTable<T extends { id: number; is_active: boolean }>({
   const rows = useMemo(() => {
     const needle = debouncedValue.trim().toLowerCase()
     const found = items.filter((item) => {
-      if (status !== ALL && item.is_active !== (status === 'active')) return false
+      //  Ô lọc bị tắt mà URL vẫn còn `?status=inactive` (dán lại link cũ) thì
+      //  bảng trắng trơn và không còn ô nào để gỡ điều kiện ra.
+      if (showStatusFilter && status !== ALL && item.is_active !== (status === 'active'))
+        return false
       if (!needle) return true
       return searchFields(item).some((field) => (field ?? '').toLowerCase().includes(needle))
     })
     return filterRows ? filterRows(found) : found
-  }, [items, status, debouncedValue, searchFields, filterRows])
+  }, [items, status, showStatusFilter, debouncedValue, searchFields, filterRows])
 
   return (
     // Bọc `Card` giống mọi màn danh sách khác (Nhân sự, Thu mua) — bảng đặt
@@ -76,7 +93,7 @@ export function CatalogTable<T extends { id: number; is_active: boolean }>({
       <DataTable
         columns={columns}
         rows={rows}
-        getRowId={(row) => row.id}
+        getRowId={getRowId}
         storageKey={storageKey}
         fillHeight
         onRowClick={detailPath ? (row) => navigate(detailPath(row.id)) : undefined}
@@ -93,16 +110,18 @@ export function CatalogTable<T extends { id: number; is_active: boolean }>({
               />
             </div>
 
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-44">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-                <SelectItem value="active">Đang dùng</SelectItem>
-                <SelectItem value="inactive">Ngừng</SelectItem>
-              </SelectContent>
-            </Select>
+            {showStatusFilter && (
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
+                  <SelectItem value="active">Đang dùng</SelectItem>
+                  <SelectItem value="inactive">Ngừng</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
 
             {extraToolbar}
           </>

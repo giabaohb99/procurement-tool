@@ -1,3 +1,4 @@
+import { AlertTriangle } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
@@ -20,6 +21,7 @@ import {
 } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
 import { useSecurityLevelOptions } from '../hooks/use-document-catalogs'
+import { CONFIDENTIAL_MAT } from '../types/security-level'
 import { useStorageLocations } from '../hooks/use-documents'
 import type { DocumentRecordFormValues } from '../schemas/document-record-schema'
 
@@ -80,12 +82,26 @@ export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) 
                 ))}
               </SelectContent>
             </Select>
-            {/* Nói thẳng giới hạn hiện tại: cột đã ghi xuống nhưng lớp kiểm mức
-                mật là việc của P5, chưa có. */}
+            {/*  Câu giải thích LẤY TỪ DANH MỤC (`security-level.ts`, cùng nguồn
+                 với màn «Thiết lập văn bản › Mức mật / khẩn»), không tự viết
+                 lại ở đây: hai chỗ nói hai kiểu về cùng một mức là người dùng
+                 không biết tin chỗ nào. */}
             <FormDescription>
-              Mặc định theo loại văn bản. Lớp kiểm mức mật chưa bật — chưa đưa
-              văn bản mật thật vào hệ thống.
+              {confidentialLevels.find((level) => level.id === field.value)?.description}
             </FormDescription>
+
+            {/*  Câu trên vừa hứa "chỉ người được cấp mức Mật mới đọc được" —
+                 mà lớp kiểm mức mật CHƯA có (P5, xem đầu `document/controller.py`).
+                 Không nói ra thì đây thành lời hứa suông, người ta tưởng đóng
+                 dấu Mật là hệ thống tự chặn. Chỉ cảnh báo từ mức Mật trở lên:
+                 Công khai / Nội bộ không hứa hẹn gì để mà thất hứa. */}
+            {field.value >= CONFIDENTIAL_MAT && (
+              <p className="flex items-start gap-1.5 text-xs text-amber-800">
+                <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-700" />
+                Lớp kiểm mức mật CHƯA bật — hệ thống chưa tự chặn người không đủ mức. Đừng
+                đưa văn bản mật thật vào cho tới khi có.
+              </p>
+            )}
             <FormMessage />
           </FormItem>
         )}
@@ -118,6 +134,10 @@ export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) 
                 ))}
               </SelectContent>
             </Select>
+            {/*  Cũng lấy từ danh mục, cùng lý do với mức mật ở trên. */}
+            <FormDescription>
+              {urgencyLevels.find((level) => level.id === field.value)?.description}
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}

@@ -113,6 +113,13 @@ export const URGENCY_LEVELS: SecurityLevel[] = [
 
 export const SECURITY_LEVELS: SecurityLevel[] = [...CONFIDENTIAL_LEVELS, ...URGENCY_LEVELS]
 
+/**
+ * Ngưỡng "văn bản thật sự mật" — từ mức này trở lên thì mô tả có HỨA hệ thống
+ * sẽ chặn người không đủ mức. Dùng để biết chỗ nào cần nói thêm rằng lớp kiểm
+ * mức mật chưa bật (P5).
+ */
+export const CONFIDENTIAL_MAT = 3
+
 /** Tên mức mật theo số lưu trong DB; số lạ thì trả về chính con số đó. */
 export function secrecyLabel(level: number): string {
   return CONFIDENTIAL_LEVELS.find((item) => item.id === level)?.name ?? String(level)

@@ -60,6 +60,15 @@ export function SecurityLevelCatalog() {
       columns={columns}
       searchFields={(row) => [row.code, row.name]}
       searchPlaceholder="Tìm theo mã hoặc tên mức…"
+      //  ⚠️ `id` KHÔNG duy nhất trong bảng này: nó là giá trị lưu xuống DB của
+      //  TỪNG THANG, nên Công khai và Thường cùng `id = 1`, Nội bộ và Khẩn cùng
+      //  `id = 2`… Bảng gộp cả hai thang nên phải ghép thêm `kind`, không thì
+      //  React trùng key và có quyền bỏ bớt hoặc nhân đôi dòng.
+      getRowId={(row) => `${row.kind}-${row.id}`}
+      //  Bảy dòng này `is_active` luôn `true` (trường chỉ tồn tại cho `CatalogTable`
+      //  khỏi phải rẽ nhánh — xem `types/security-level.ts`). Ô lọc trạng thái ở
+      //  đây chọn "Ngừng" là bảng trắng, chọn "Đang dùng" thì y hệt "Tất cả".
+      showStatusFilter={false}
     />
   )
 }

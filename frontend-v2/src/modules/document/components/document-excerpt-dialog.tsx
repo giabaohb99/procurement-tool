@@ -209,6 +209,10 @@ export function DocumentExcerptDialog({
                 ))}
               </SelectContent>
             </Select>
+            {/*  Cùng câu với danh mục Mức mật, không viết lại. */}
+            <p className="text-xs text-muted-foreground">
+              {chonDuoc.find((level) => level.id === Number(secrecy))?.description}
+            </p>
           </div>
 
           <div className="flex gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
