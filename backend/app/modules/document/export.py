@@ -18,10 +18,9 @@ from app.core.export_xlsx import Col
 FILE_NAME = "danh-sach-van-ban"
 SHEET_TITLE = "Văn bản"
 
-#  Nhãn cho hai thang chỉ khai bằng số ở backend. Chép ở đây thay vì import từ
-#  giao diện: file Excel phải đọc được kể cả khi ai đó đổi nhãn trên màn hình.
-SECRECY_LABELS = {1: "Công khai", 2: "Nội bộ", 3: "Mật", 4: "Tuyệt mật"}
-URGENCY_LABELS = {1: "Thường", 2: "Khẩn", 3: "Hỏa tốc"}
+#  Nhãn mức mật / độ khẩn KHÔNG còn khai ở đây — chúng là danh mục sửa được, đọc
+#  từ DB qua `doc_catalog.security_level_service`. Giữ bản chép ở đây thì đổi tên
+#  mức trên màn hình xong file Excel vẫn in chữ cũ.
 ORIGIN_LABELS = {1: "Nội bộ ban hành", 2: "Văn bản pháp luật ngoài", 3: "Văn bản đến"}
 
 #  `key` trùng key cột trên bảng danh sách để `pick_columns` giữ được đúng thứ
@@ -54,15 +53,20 @@ COLUMNS = [
 ]
 
 
-def build_rows(rows: list[dict]) -> list[dict]:
+def build_rows(db, rows: list[dict]) -> list[dict]:
     """Bồi thêm mấy ô mà bảng danh sách vẽ bằng badge chứ không phải chữ.
 
     Trên màn hình, mức mật / độ khẩn / cờ rà soát hiện bằng badge màu; đổ thẳng
     số 2, 3 vào Excel thì người nhận file không đọc ra gì.
     """
+    from app.modules.doc_catalog.security_level_service import label, label_maps
+
+    #  Tra MỘT LẦN cho cả danh sách, không mỗi dòng một truy vấn.
+    nhan_mat, nhan_khan = label_maps(db)
+
     for row in rows:
-        row["secrecy_label"] = SECRECY_LABELS.get(row.get("secrecy_level"), "")
-        row["urgency_label"] = URGENCY_LABELS.get(row.get("urgency"), "")
+        row["secrecy_label"] = label(nhan_mat, row.get("secrecy_level"))
+        row["urgency_label"] = label(nhan_khan, row.get("urgency"))
         row["needs_review_text"] = "Cần rà soát" if row.get("needs_review") else ""
         #  Bản riêng của pháp nhân con: nói rõ ra, nếu không thì trong file
         #  Excel nó nằm lẫn giữa các bản gốc mà không có gì phân biệt.

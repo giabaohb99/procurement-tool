@@ -36,8 +36,12 @@ import { DocumentCopyAction } from '../components/document-copy-action'
 import { effectiveLabel } from '../helpers/document-status'
 import { useActiveDocumentTypes } from '../hooks/use-document-types'
 import { useDocuments } from '../hooks/use-documents'
+import { useSecurityLevelLabel } from '../hooks/use-document-catalogs'
 import { useMyDocumentTasks } from '../hooks/use-my-document-approvals'
-import { secrecyLabel, urgencyLabel } from '../types/security-level'
+import {
+  SECURITY_LEVEL_KIND_CONFIDENTIAL,
+  SECURITY_LEVEL_KIND_URGENCY,
+} from '../types/security-level'
 import { STATUS_LABELS, type DocumentRecord } from '../types/document-record'
 
 const ALL = 'all'
@@ -80,6 +84,7 @@ function DocumentListContent() {
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
   const documentTypes = useActiveDocumentTypes()
+  const securityLevelLabel = useSecurityLevelLabel()
   //  Văn bản nào trong bảng đang chờ CHÍNH người đang xem duyệt — để đánh dấu
   //  dòng đó. Đọc lại hộp việc đã nạp sẵn cho nút trên thanh trên, không thêm
   //  vòng mạng nào.
@@ -305,7 +310,7 @@ function DocumentListContent() {
         width: 120,
         cell: (row) => (
           <Badge variant="outline" className="font-normal">
-            {secrecyLabel(row.secrecy_level)}
+            {securityLevelLabel(SECURITY_LEVEL_KIND_CONFIDENTIAL, row.secrecy_level)}
           </Badge>
         ),
       },
@@ -314,7 +319,7 @@ function DocumentListContent() {
         header: 'Độ khẩn',
         width: 110,
         defaultHidden: true,
-        cell: (row) => urgencyLabel(row.urgency),
+        cell: (row) => securityLevelLabel(SECURITY_LEVEL_KIND_URGENCY, row.urgency),
       },
       {
         key: 'owner_name',
@@ -358,7 +363,7 @@ function DocumentListContent() {
         ),
       },
     ],
-    [dongDangBung, laConDangBung, choToiDuyet, canCreate],
+    [dongDangBung, laConDangBung, choToiDuyet, canCreate, securityLevelLabel],
   )
 
   return (

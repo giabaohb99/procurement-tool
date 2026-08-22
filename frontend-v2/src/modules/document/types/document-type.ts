@@ -31,9 +31,6 @@ export const NUMBER_WHEN_LABELS: Record<NumberWhen, string> = {
   2: 'Khi được duyệt',
 }
 
-/** Mức mật — thang cố định, khai trong mã chứ không phải danh mục sửa được. */
-export type SecrecyLevel = 1 | 2 | 3 | 4
-
 /** Nhóm A–F của danh mục 32 loại. Rỗng = chưa xếp nhóm. */
 export const DOC_GROUP_LABELS: Record<string, string> = {
   A: 'A · Tài liệu hệ thống',
@@ -54,7 +51,8 @@ export interface DocumentType {
 
   id_scheme: IdScheme
   number_when: NumberWhen
-  default_secrecy: SecrecyLevel
+  /** `value` của một bậc trong thang Mức mật (`tab_security_level`), không phải id cố định. */
+  default_secrecy: number
   is_confidential_type: boolean
 
   needs_approval: boolean

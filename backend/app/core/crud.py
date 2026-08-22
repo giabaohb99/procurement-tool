@@ -11,12 +11,19 @@ from app.core.response import success
 
 def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchema,
                      filterable, unique_field="code", code_prefix=None, csv_headers=None,
-                     before_update=None):
-    """`before_update(db, obj, values)` — chốt chặn riêng của từng danh mục.
+                     before_create=None, before_update=None, before_delete=None):
+    """Ba chốt chặn riêng của từng danh mục, đều tùy chọn.
 
-    Gọi TRƯỚC khi gán giá trị, nên `obj` còn mang dữ liệu cũ để so sánh (vd "mã
-    này đã cấp số chưa"). Danh mục nào không cần thì bỏ trống — đừng vì một chốt
-    chặn mà viết tay lại cả bộ CRUD.
+    - `before_create(db, data)` — gọi trước khi dựng bản ghi. Dùng cho ràng buộc
+      duy nhất phức hợp mà `unique_field` (chỉ một cột) không diễn tả nổi.
+    - `before_update(db, obj, values)` — gọi TRƯỚC khi gán giá trị, nên `obj` còn
+      mang dữ liệu cũ để so sánh (vd "mã này đã cấp số chưa").
+    - `before_delete(db, obj)` — chỗ duy nhất chặn được việc xóa một dòng danh mục
+      mà nơi khác đang trỏ tới. Không có nó thì mọi danh mục dùng bộ sinh này đều
+      xóa được thoải mái và để lại dữ liệu mồ côi.
+
+    Danh mục nào không cần thì bỏ trống — đừng vì một chốt chặn mà viết tay lại
+    cả bộ CRUD.
     """
     router = APIRouter(prefix=prefix, tags=[entity])
 
@@ -51,6 +58,8 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
             val = getattr(data, unique_field)
             if db.query(Model).filter(getattr(Model, unique_field) == val).first():
                 raise HTTPException(400, f"{unique_field} đã tồn tại")
+        if before_create:
+            before_create(db, data)
         o = Model(**data.model_dump(), created_by=user.id, updated_by=user.id)
         db.add(o)
         db.commit()
@@ -81,6 +90,8 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         o = db.get(Model, oid)
         if not o:
             raise HTTPException(404, "Không tìm thấy")
+        if before_delete:
+            before_delete(db, o)
         db.delete(o)
         db.commit()
         record(db, user.id, entity, oid, "delete")

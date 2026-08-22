@@ -35,8 +35,12 @@ class DocumentBase(BaseModel):
     keywords: str = Field(default="", max_length=500)
 
     #  Bỏ trống thì service lấy `default_secrecy` của loại văn bản.
-    secrecy_level: int | None = Field(default=None, ge=1, le=4)
-    urgency: int = Field(default=1, ge=1, le=3)
+    #  ⚠️ Dải ở đây chỉ chặn gõ nhầm. Dải THẬT là danh mục Mức mật / Độ khẩn,
+    #  kiểm ở `service.py` bằng `security_level_service.ensure_valid` — Pydantic
+    #  không với tới DB được, mà khóa cứng `le=4` thì thêm bậc mới vào danh mục
+    #  xong vẫn không lưu nổi văn bản mang bậc đó.
+    secrecy_level: int | None = Field(default=None, ge=1, le=99)
+    urgency: int = Field(default=1, ge=1, le=99)
 
     effective_date: date | None = None
     expire_date: date | None = None
@@ -82,8 +86,9 @@ class DocumentUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=500)
     summary: str | None = None
     keywords: str | None = Field(default=None, max_length=500)
-    secrecy_level: int | None = Field(default=None, ge=1, le=4)
-    urgency: int | None = Field(default=None, ge=1, le=3)
+    #  Dải thật kiểm ở service — xem ghi chú ở `DocumentCreate`.
+    secrecy_level: int | None = Field(default=None, ge=1, le=99)
+    urgency: int | None = Field(default=None, ge=1, le=99)
     effective_date: date | None = None
     expire_date: date | None = None
     legacy_code: str | None = Field(default=None, max_length=100)

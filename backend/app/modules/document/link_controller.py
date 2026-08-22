@@ -41,7 +41,8 @@ class LinkCreate(BaseModel):
 class ExcerptCreate(BaseModel):
     title: str = Field(min_length=1, max_length=500)
     content_html: str
-    secrecy_level: int = Field(ge=1, le=4)
+    #  Dải thật kiểm ở `excerpt_service` theo danh mục Mức mật.
+    secrecy_level: int = Field(ge=1, le=99)
     note: str = ""
 
 

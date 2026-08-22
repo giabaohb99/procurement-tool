@@ -199,3 +199,34 @@ DOC_TYPE_LINK_RULES = [
     ("QD", 1, "QD", False, 0, 0),     # Quyết định mới thay quyết định cũ
     ("QT", 7, "CS", False, 0, 0),     # Quy trình căn cứ theo Chính sách
 ]
+
+
+#  ── MỨC MẬT và ĐỘ KHẨN ────────────────────────────────────────────────────────
+#  Bảy dòng này trước 22/08/2026 khai cứng trong mã ở hai nơi (giao diện và
+#  `document/export.py`). Nay là danh mục sửa được, nhưng vẫn phải seed đủ bộ
+#  gốc: `value` chính là con số đang nằm trên hàng nghìn `tab_document`, thiếu
+#  dòng nào là số đó không tra ra tên.
+#
+#  ⚠️ `value` KHÔNG được đổi. Nó vừa là số lưu trên văn bản vừa là thứ bậc, và
+#  các điều kiện luồng duyệt đã cấu hình đang trỏ vào chính con số này. Chi tiết
+#  ở đầu `modules/doc_catalog/security_level_model.py`.
+KIND_CONFIDENTIAL = 1
+KIND_URGENCY = 2
+
+SECURITY_LEVELS = [
+    {"kind": KIND_CONFIDENTIAL, "value": 1, "code": "CONGKHAI", "name": "Công khai",
+     "description": "Ai trong tập đoàn cũng đọc được, gửi ra ngoài cũng không sao."},
+    {"kind": KIND_CONFIDENTIAL, "value": 2, "code": "NOIBO", "name": "Nội bộ",
+     "description": "Người trong tập đoàn đọc được, không gửi ra ngoài. "
+                    "Cũng là mức mặc định của một người khi chưa được cấp mức nào khác."},
+    {"kind": KIND_CONFIDENTIAL, "value": 3, "code": "MAT", "name": "Mật",
+     "description": "Chỉ người đã được cấp mức Mật mới đọc được, và mức cấp đó có thời hạn."},
+    {"kind": KIND_CONFIDENTIAL, "value": 4, "code": "TUYETMAT", "name": "Tuyệt mật",
+     "description": "Chỉ xem trên web, không cho tải tệp, có dấu chìm mang tên người xem."},
+    {"kind": KIND_URGENCY, "value": 1, "code": "THUONG", "name": "Thường",
+     "description": "Xử lý theo thứ tự thông thường."},
+    {"kind": KIND_URGENCY, "value": 2, "code": "KHAN", "name": "Khẩn",
+     "description": "Xử lý trong ngày."},
+    {"kind": KIND_URGENCY, "value": 3, "code": "HOATOC", "name": "Hỏa tốc",
+     "description": "Chuyển và xử lý tức thì."},
+]

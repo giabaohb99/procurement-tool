@@ -34,6 +34,7 @@ from app.modules.ticket import model as _ticket  # noqa: F401
 from app.modules.comment import model as _comment  # noqa: F401
 from app.modules.doc_catalog import model as _doc_catalog  # noqa: F401
 from app.modules.doc_catalog import book_model as _doc_book  # noqa: F401
+from app.modules.doc_catalog import security_level_model as _security_level  # noqa: F401
 from app.modules.doc_catalog import numbering_rule_model as _numbering_rule  # noqa: F401
 from app.modules.doc_catalog import link_rule_model as _doc_type_link_rule  # noqa: F401
 from app.modules.document import model as _document  # noqa: F401

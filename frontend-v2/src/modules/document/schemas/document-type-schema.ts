@@ -22,7 +22,9 @@ export const documentTypeSchema = z.object({
 
   id_scheme: z.union([z.literal(1), z.literal(2)]),
   number_when: z.union([z.literal(1), z.literal(2)]),
-  default_secrecy: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+  // Mức mật nay là danh mục sửa được (`tab_security_level`), không còn dải cố
+  // định 1–4 — chặn trên chỉ để bắt gõ nhầm, giống `VALUE_MAX` phía backend.
+  default_secrecy: z.coerce.number().int('Nhập số nguyên').min(1, 'Tối thiểu 1').max(99, 'Tối đa 99'),
 
   // Chu kỳ rà soát / thời hạn lưu tính bằng THÁNG. 0 = không đặt.
   review_cycle_months: z.coerce

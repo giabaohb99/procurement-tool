@@ -12,6 +12,11 @@ from .issue_code_guard import ensure_doc_type_code_free
 from .model import DocType, ExternalParty
 from .schema import (DocTypeCreate, DocTypeOut, DocTypeUpdate,
                      ExternalPartyCreate, ExternalPartyOut, ExternalPartyUpdate)
+from .security_level_guard import before_create as _sl_before_create
+from .security_level_guard import before_delete as _sl_before_delete
+from .security_level_model import SecurityLevel
+from .security_level_schema import (SecurityLevelCreate, SecurityLevelOut,
+                                    SecurityLevelUpdate)
 
 
 def _guard_doc_type(db, obj, values: dict):
@@ -36,6 +41,18 @@ doc_type_router = make_crud_router(
     before_update=_guard_doc_type,
     csv_headers={"id": "ID", "code": "Mã loại", "name": "Tên loại văn bản",
                  "group_code": "Nhóm", "description": "Mô tả"})
+
+#  Mức mật / độ khẩn. Không khai `code_prefix`: mã ở đây là chữ có nghĩa
+#  (CONGKHAI, TUYETMAT) chứ không phải số chạy — nó xuất hiện trong tài liệu vận
+#  hành và trong mã nguồn cũ, tự sinh ra `MML001` là mất luôn manh mối.
+security_level_router = make_crud_router(
+    "/api/security-levels", "security_level", SecurityLevel,
+    SecurityLevelCreate, SecurityLevelUpdate, SecurityLevelOut,
+    ["code", "name", "kind", "value", "is_active"],
+    before_create=_sl_before_create,
+    before_delete=_sl_before_delete,
+    csv_headers={"id": "ID", "code": "Mã", "name": "Tên mức", "kind": "Thang",
+                 "value": "Bậc", "description": "Mô tả"})
 
 external_party_router = make_crud_router(
     "/api/external-parties", "external_party", ExternalParty,

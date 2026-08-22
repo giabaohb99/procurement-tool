@@ -1,9 +1,15 @@
-import { CONFIDENTIAL_LEVELS, URGENCY_LEVELS } from '@/modules/document/types/security-level'
+import {
+  FALLBACK_CONFIDENTIAL_LEVELS,
+  FALLBACK_URGENCY_LEVELS,
+} from '@/modules/document/types/security-level'
 import type { ConditionOp } from '../helpers/node-condition'
 
 /**
- * Giá trị của ô lấy ở đâu ra. `level` là thang cố định khai ngay tại đây; ba
- * nguồn còn lại là danh mục động, bộ dựng nạp bằng hook của phân hệ tương ứng.
+ * Giá trị của ô lấy ở đâu ra. `level` dùng BẢN DỰ PHÒNG khai ngay tại đây (mảng
+ * này dựng lúc import module, không gọi được hook) vì mức mật / độ khẩn nay là
+ * danh mục sửa được — không còn là nguồn chân lý, xem đầu
+ * `modules/document/types/security-level.ts`. Ba nguồn còn lại là danh mục
+ * động, bộ dựng nạp bằng hook của phân hệ tương ứng.
  */
 export type ConditionValueSource = 'level' | 'doc_type' | 'company' | 'department' | 'employee'
 
@@ -37,7 +43,10 @@ export const DOCUMENT_CONDITION_FIELDS: ConditionFieldDef[] = [
     label: 'Mức mật',
     source: 'level',
     ops: OPS_THANG,
-    choices: CONFIDENTIAL_LEVELS.map((item) => ({ value: item.id, label: item.name })),
+    // `.value`, KHÔNG phải `.id`: điều kiện lưu xuống DB dạng
+    // `{"field":"secrecy_level","op":"gte","value":3}`, so trực tiếp với con số
+    // trên văn bản (`tab_document.secrecy_level`), không phải khóa chính danh mục.
+    choices: FALLBACK_CONFIDENTIAL_LEVELS.map((item) => ({ value: item.value, label: item.name })),
     hint: 'Ví dụ: chỉ văn bản từ Mật trở lên mới qua bước này.',
   },
   {
@@ -45,7 +54,7 @@ export const DOCUMENT_CONDITION_FIELDS: ConditionFieldDef[] = [
     label: 'Độ khẩn',
     source: 'level',
     ops: OPS_THANG,
-    choices: URGENCY_LEVELS.map((item) => ({ value: item.id, label: item.name })),
+    choices: FALLBACK_URGENCY_LEVELS.map((item) => ({ value: item.value, label: item.name })),
   },
   { name: 'doc_type_id', label: 'Loại văn bản', source: 'doc_type', ops: OPS_DANH_MUC },
   { name: 'company_id', label: 'Pháp nhân', source: 'company', ops: OPS_DANH_MUC },

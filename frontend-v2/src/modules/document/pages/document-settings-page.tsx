@@ -48,8 +48,8 @@ const TABS: CatalogTab[] = [
     label: 'Mức mật / khẩn',
     icon: ShieldAlert,
     description:
-      'Thang cố định, chỉ để tra cứu — mức mật quyết định ai được đọc, độ khẩn quyết định phải xử lý nhanh tới đâu.',
-    // Không có `newPath`: đây là thang khai trong mã, không thêm sửa được.
+      'Mức mật quyết định ai được đọc, độ khẩn quyết định phải xử lý nhanh tới đâu. Thêm được bậc mới; bậc đã tạo thì khóa thang và con số, chỉ sửa được tên/mô tả/trạng thái.',
+    newPath: appRoutes.document.securityLevelNew,
     Catalog: SecurityLevelCatalog,
   },
   {
@@ -69,8 +69,9 @@ const TABS: CatalogTab[] = [
  * năm người dùng động tới một lần lúc khai báo ban đầu, trong khi công việc hằng
  * ngày (văn bản, sổ văn bản) chỉ có hai dòng. Gom lại còn một mục "Thiết lập".
  *
- * Tab "Mức mật / khẩn" **chỉ đọc**: đó là thang cố định khai trong mã, không
- * phải danh mục (lý do ở `types/security-level.ts`).
+ * Tab "Mức mật / khẩn" từ 22/08/2026 là danh mục CRUD thật (trước đó khai
+ * cứng trong mã) — thêm được bậc mới, còn bậc đã tạo thì khóa thang và con số
+ * (lý do ở `types/security-level.ts`).
  *
  * Tab đang xem ghi lên URL (`?tab=`) nên gửi link cho người khác vẫn ra đúng
  * danh mục, và nút "Về danh sách" ở các trang chi tiết quay lại đúng chỗ.

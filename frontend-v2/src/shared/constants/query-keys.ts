@@ -121,6 +121,8 @@ export const queryKeys = {
     issueCodes: () => ['document', 'issue-codes'] as const,
     docTypes: () => ['document', 'doc-types'] as const,
     docType: (id: number) => ['document', 'doc-types', id] as const,
+    securityLevels: () => ['document', 'security-levels'] as const,
+    securityLevel: (id: number) => ['document', 'security-levels', id] as const,
     templates: (params?: Record<string, unknown>) =>
       ['document', 'templates', params ?? {}] as const,
     template: (id: number) => ['document', 'templates', id] as const,

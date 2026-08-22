@@ -35,7 +35,7 @@ def doc(db, seed):
 
 
 def _dong(db, doc) -> dict:
-    return ex.build_rows(serializer.serialize_many(db, [doc]))[0]
+    return ex.build_rows(db, serializer.serialize_many(db, [doc]))[0]
 
 
 def test_muc_mat_va_do_khan_ra_chu_khong_ra_so(db, doc):

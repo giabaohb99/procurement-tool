@@ -33,8 +33,11 @@ export const documentRecordSchema = z
     summary: z.string().trim().max(2000, 'Tối đa 2000 ký tự'),
     keywords: z.string().trim().max(500, 'Tối đa 500 ký tự'),
 
-    secrecy_level: z.coerce.number().int().min(1).max(4),
-    urgency: z.coerce.number().int().min(1).max(3),
+    // Mức mật / độ khẩn nay là danh mục sửa được (`tab_security_level`), dải
+    // hợp lệ thật do backend kiểm theo danh mục — hai chặn dưới đây chỉ khớp
+    // biên `VALUE_MAX` của backend (bắt gõ nhầm, không phải luật nghiệp vụ).
+    secrecy_level: z.coerce.number().int().min(1).max(99),
+    urgency: z.coerce.number().int().min(1).max(99),
 
     effective_date: z.string(),
     expire_date: z.string(),

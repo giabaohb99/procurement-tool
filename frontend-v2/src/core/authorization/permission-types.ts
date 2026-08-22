@@ -58,6 +58,7 @@ export const ENTITIES = [
   'external_party',
   'document_book',
   'document',
+  'security_level',
   // Bộ máy phê duyệt dùng chung — không thuộc phân hệ nào.
   'approval_flow',
 ] as const

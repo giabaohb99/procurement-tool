@@ -15,6 +15,10 @@ from sqlalchemy.orm import Session
 
 from app.modules.attachment.model import FileLink
 from app.modules.doc_catalog.model import DocType
+from app.modules.doc_catalog.security_level_model import (KIND_CONFIDENTIAL,
+                                                          KIND_URGENCY)
+from app.modules.doc_catalog.security_level_service import (ensure_valid,
+                                                            value_of_code)
 
 from . import numbering
 from .model import (ALIVE_STATUSES, APPLY_MODE_LABELS, STATUS_APPROVED, STATUS_DRAFT,
@@ -98,15 +102,20 @@ def create_document(db: Session, data: DocumentCreate, actor: int) -> Document:
     bản ghi hỏng thì số đó biến mất khỏi sổ, không ai giải thích được lỗ hổng.
     """
     doc_type = doc_type_or_400(db, data.doc_type_id)
+    #  Dải hợp lệ là DANH MỤC, không phải một hằng số trong mã — xem
+    #  `doc_catalog/security_level_service.ensure_valid`.
+    ensure_valid(db, KIND_CONFIDENTIAL, data.secrecy_level)
+    ensure_valid(db, KIND_URGENCY, data.urgency)
 
     payload = data.model_dump(exclude={"content_html", "secrecy_level"})
     doc = Document(
         **payload,
         #  Bỏ trống thì theo mặc định của loại; loại đánh dấu "cả loại là loại
-        #  bảo mật" thì kéo lên ít nhất mức Mật.
+        #  bảo mật" thì kéo lên ít nhất mức Mật. Tra mức Mật theo MÃ chứ không
+        #  viết số 3 vào mã — xem `value_of_code`.
         secrecy_level=max(
             data.secrecy_level or doc_type.default_secrecy,
-            3 if doc_type.is_confidential_type else 1,
+            value_of_code(db, "MAT") if doc_type.is_confidential_type else 1,
         ),
         status=STATUS_DRAFT,
         created_by=actor, updated_by=actor,
@@ -166,6 +175,9 @@ def update_document(db: Session, doc: Document, data: DocumentUpdate, actor: int
     #  E11 (c) — kiểm LẠI ở đây chứ không chỉ lúc tạo bản trích: người dùng nâng
     #  mức mật sau đó thì bản trích thành ra mật hơn cả bản gốc, tức là phần nội
     #  dung ít hơn lại được canh chặt hơn phần đầy đủ.
+    ensure_valid(db, KIND_CONFIDENTIAL, values.get("secrecy_level"))
+    ensure_valid(db, KIND_URGENCY, values.get("urgency"))
+
     if "secrecy_level" in values:
         from .excerpt_service import ensure_secrecy_within_source, source_link_of
 

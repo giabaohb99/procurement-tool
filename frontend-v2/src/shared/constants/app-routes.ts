@@ -151,6 +151,9 @@ export const appRoutes = {
     /** Đơn vị gửi nhận bên ngoài. */
     partnerNew: '/document/partners/new',
     partnerDetail: (id: number | string) => `/document/partners/${id}`,
+    /** Mức mật / độ khẩn — danh mục CRUD từ 22/08/2026 (trước đó khai cứng). */
+    securityLevelNew: '/document/security-levels/new',
+    securityLevelDetail: (id: number | string) => `/document/security-levels/${id}`,
   },
   report: {
     root: '/report',

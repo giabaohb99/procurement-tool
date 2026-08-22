@@ -5,7 +5,7 @@ import type { FilterFieldDefinition, SelectOption } from '@/shared/conditional-f
 import { docTypeApi } from '../api/doc-catalog-api'
 import { documentBookApi } from '../api/document-book-api'
 import { STATUS_LABELS } from '../types/document-record'
-import { CONFIDENTIAL_LEVELS, URGENCY_LEVELS } from '../types/security-level'
+import { FALLBACK_CONFIDENTIAL_LEVELS, FALLBACK_URGENCY_LEVELS } from '../types/security-level'
 
 /**
  * Trường của BỘ LỌC NÂNG CAO trên danh sách VĂN BẢN.
@@ -94,13 +94,23 @@ export const DOCUMENT_LIST_FILTER_FIELDS: FilterFieldDefinition[] = [
     name: 'secrecy_level',
     label: 'Mức mật',
     type: 'select',
-    options: CONFIDENTIAL_LEVELS.map((item) => ({ value: String(item.id), label: item.name })),
+    // `options` tĩnh: mảng này dựng lúc IMPORT MODULE nên không gọi được hook —
+    // dùng BẢN DỰ PHÒNG (`FALLBACK_CONFIDENTIAL_LEVELS`), không phải nguồn chân
+    // lý. Value gửi đi PHẢI là `.value` (con số thật trên văn bản), không phải
+    // `.id` (khóa chính) — xem cảnh báo đầu `types/security-level.ts`.
+    options: FALLBACK_CONFIDENTIAL_LEVELS.map((item) => ({
+      value: String(item.value),
+      label: item.name,
+    })),
   },
   {
     name: 'urgency',
     label: 'Độ khẩn',
     type: 'select',
-    options: URGENCY_LEVELS.map((item) => ({ value: String(item.id), label: item.name })),
+    options: FALLBACK_URGENCY_LEVELS.map((item) => ({
+      value: String(item.value),
+      label: item.name,
+    })),
   },
 
   { name: 'effective_date', label: 'Ngày hiệu lực', type: 'date' },

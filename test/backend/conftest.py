@@ -39,11 +39,31 @@ def db():
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
     session = Session()
+    _nap_muc_mat(session)
     try:
         yield session
     finally:
         session.close()
         engine.dispose()
+
+
+def _nap_muc_mat(session):
+    """Bảy bậc Mức mật / Độ khẩn — nạp cho MỌI test, không đợi fixture `seed`.
+
+    Từ 22/08/2026 hai thang này là danh mục dưới DB chứ không còn là hằng số
+    trong mã, và `document/service.py` kiểm giá trị gửi lên theo đúng danh mục
+    đó. Bảng trống thì mọi test tạo văn bản đều ăn 400 — mà ở chạy thật bảng
+    luôn có dữ liệu (`seed_document_phase1` chạy ở mỗi lần khởi động), nên để
+    trống là test dựng sai hiện trạng chứ không phải bắt được lỗi.
+    """
+    from app.modules.doc_catalog.security_level_model import SecurityLevel
+    from app.seed_data.document_phase1 import SECURITY_LEVELS
+
+    session.add_all([
+        SecurityLevel(**values, is_active=True, created_by=1, updated_by=1)
+        for values in SECURITY_LEVELS
+    ])
+    session.commit()
 
 
 # ── Fixture seed ─────────────────────────────────────────────────────────────────

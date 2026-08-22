@@ -250,5 +250,17 @@ export const documentModule: ErpModule = {
         Component: (await import('./pages/document-partner-detail-page')).DocumentPartnerDetailPage,
       }),
     },
+    {
+      path: appRoutes.document.securityLevelNew,
+      lazy: async () => ({
+        Component: (await import('./pages/security-level-detail-page')).SecurityLevelDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.document.securityLevelDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/security-level-detail-page')).SecurityLevelDetailPage,
+      }),
+    },
   ],
 }

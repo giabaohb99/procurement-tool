@@ -28,7 +28,8 @@ import { formatDate } from '@/shared/utils/format-date'
 import { DOCUMENT_APPLIED_FILTER_FIELDS } from '../config/document-applied-filter-fields'
 import { effectiveLabel } from '../helpers/document-status'
 import { useDocumentsAppliedToMe } from '../hooks/use-document-scopes'
-import { secrecyLabel } from '../types/security-level'
+import { useSecurityLevelLabel } from '../hooks/use-document-catalogs'
+import { SECURITY_LEVEL_KIND_CONFIDENTIAL } from '../types/security-level'
 import type { DocumentRecord } from '../types/document-record'
 
 const ALL = 'all'
@@ -68,6 +69,7 @@ function DocumentsAppliedToMeContent() {
   const navigate = useNavigate()
   const { data, isLoading, isError } = useDocumentsAppliedToMe()
   const { appliedState } = useFilterContext()
+  const secrecyLabel = useSecurityLevelLabel()
 
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [review, setReview] = useUrlParamState('review', ALL)
@@ -145,7 +147,7 @@ function DocumentsAppliedToMeContent() {
         defaultHidden: true,
         cell: (row) => (
           <Badge variant="outline" className="font-normal">
-            {secrecyLabel(row.secrecy_level)}
+            {secrecyLabel(SECURITY_LEVEL_KIND_CONFIDENTIAL, row.secrecy_level)}
           </Badge>
         ),
       },
@@ -157,7 +159,7 @@ function DocumentsAppliedToMeContent() {
         cell: (row) => row.owner_name,
       },
     ],
-    [],
+    [secrecyLabel],
   )
 
   return (

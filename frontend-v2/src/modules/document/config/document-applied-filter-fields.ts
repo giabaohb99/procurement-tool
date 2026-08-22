@@ -1,6 +1,6 @@
 import type { FilterFieldDefinition } from '@/shared/conditional-filter'
 import { STATUS_LABELS } from '../types/document-record'
-import { CONFIDENTIAL_LEVELS, URGENCY_LEVELS } from '../types/security-level'
+import { FALLBACK_CONFIDENTIAL_LEVELS, FALLBACK_URGENCY_LEVELS } from '../types/security-level'
 
 /**
  * Trường của BỘ LỌC NÂNG CAO trên màn "Văn bản áp dụng cho tôi" (F05).
@@ -32,13 +32,22 @@ export const DOCUMENT_APPLIED_FILTER_FIELDS: FilterFieldDefinition[] = [
     name: 'secrecy_level',
     label: 'Mức mật',
     type: 'select',
-    options: CONFIDENTIAL_LEVELS.map((item) => ({ value: String(item.id), label: item.name })),
+    // Options tĩnh (module nạp lúc import, không gọi được hook) → bản dự phòng,
+    // không phải nguồn chân lý. Value PHẢI là `.value`, không phải `.id` — xem
+    // cảnh báo đầu `types/security-level.ts`.
+    options: FALLBACK_CONFIDENTIAL_LEVELS.map((item) => ({
+      value: String(item.value),
+      label: item.name,
+    })),
   },
   {
     name: 'urgency',
     label: 'Độ khẩn',
     type: 'select',
-    options: URGENCY_LEVELS.map((item) => ({ value: String(item.id), label: item.name })),
+    options: FALLBACK_URGENCY_LEVELS.map((item) => ({
+      value: String(item.value),
+      label: item.name,
+    })),
   },
   { name: 'effective_date', label: 'Ngày hiệu lực', type: 'date' },
   { name: 'expire_date', label: 'Ngày hết hiệu lực', type: 'date' },

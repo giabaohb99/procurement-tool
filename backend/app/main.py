@@ -17,7 +17,8 @@ from app.modules.doc_catalog.issue_code_controller import router as issue_code_r
 from app.modules.doc_catalog.numbering_rule_controller import router as numbering_rule_router
 from app.modules.doc_catalog.link_rule_controller import router as link_rule_router
 from app.modules.doc_catalog.controller import (doc_type_router,
-                                               external_party_router)
+                                               external_party_router,
+                                               security_level_router)
 from app.modules.document.controller import router as document_router
 from app.modules.document.link_controller import router as document_link_router
 from app.modules.document.scope_controller import router as document_scope_router
@@ -118,6 +119,7 @@ app.include_router(item_group_router)
 app.include_router(brand_router)
 app.include_router(doc_type_router)
 app.include_router(external_party_router)
+app.include_router(security_level_router)
 app.include_router(document_book_router)
 app.include_router(numbering_rule_router)
 app.include_router(issue_code_router)

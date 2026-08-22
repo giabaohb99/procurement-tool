@@ -27,7 +27,8 @@ import {
   splitHtmlSections,
   suggestExcerptTitle,
 } from '../helpers/split-html-sections'
-import { CONFIDENTIAL_LEVELS } from '../types/security-level'
+import { useSecurityLevelOptions } from '../hooks/use-document-catalogs'
+import { SECURITY_LEVEL_KIND_CONFIDENTIAL } from '../types/security-level'
 
 interface DocumentExcerptDialogProps {
   open: boolean
@@ -90,9 +91,11 @@ export function DocumentExcerptDialog({
   }
   const [secrecy, setSecrecy] = useState(String(Math.max(1, sourceSecrecy - 1)))
 
-  //  Chỉ hiện mức ≤ gốc. Backend chặn lần nữa, nhưng bày ra một lựa chọn không
-  //  bao giờ lưu được thì người dùng bấm rồi mới biết là sai.
-  const chonDuoc = CONFIDENTIAL_LEVELS.filter((level) => level.id <= sourceSecrecy)
+  const confidentialLevels = useSecurityLevelOptions(SECURITY_LEVEL_KIND_CONFIDENTIAL)
+  //  Chỉ hiện mức ≤ gốc (so theo `value`, con số thật lưu trên văn bản — KHÔNG
+  //  phải `id`/khóa chính). Backend chặn lần nữa, nhưng bày ra một lựa chọn
+  //  không bao giờ lưu được thì người dùng bấm rồi mới biết là sai.
+  const chonDuoc = confidentialLevels.filter((level) => level.value <= sourceSecrecy)
 
   function handleSubmit() {
     onSubmit({
@@ -201,7 +204,7 @@ export function DocumentExcerptDialog({
                 {chonDuoc.map((level) => (
                   <SelectItem
                     key={level.id}
-                    value={String(level.id)}
+                    value={String(level.value)}
                     description={level.description}
                   >
                     {level.name}
@@ -211,7 +214,7 @@ export function DocumentExcerptDialog({
             </Select>
             {/*  Cùng câu với danh mục Mức mật, không viết lại. */}
             <p className="text-xs text-muted-foreground">
-              {chonDuoc.find((level) => level.id === Number(secrecy))?.description}
+              {chonDuoc.find((level) => level.value === Number(secrecy))?.description}
             </p>
           </div>
 

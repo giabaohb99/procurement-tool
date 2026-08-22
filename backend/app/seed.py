@@ -22,6 +22,7 @@ from app.modules.company.model import Company
 from app.modules.department.model import Department, DepartmentCompany
 from app.modules.doc_catalog.book_model import DocumentBook
 from app.modules.doc_catalog.model import DocType, ExternalParty
+from app.modules.doc_catalog.security_level_model import SecurityLevel
 from app.modules.employee.model import Employee
 from app.modules.product.model import Product
 from app.modules.purchase_request.model import (PurchaseRequest,  # noqa: F401
@@ -39,6 +40,7 @@ from app.modules.survey.model import (Survey, SurveyProductLine,  # noqa: F401
                                       SurveySupplierLine)
 from app.modules.user.model import User, UserRole
 from app.seed_data.document_phase1 import (ALL_DOC_TYPES, DOC_TYPE_LINK_RULES,
+                                          SECURITY_LEVELS,
                                            DEPARTMENT_DOCUMENT_CONFIG,
                                            DOCUMENT_COMPANIES)
 from app.modules.notification.model import Notification, EmailLog  # noqa: F401
@@ -590,6 +592,18 @@ def seed_document_phase1(db):
         row = DocType(**values)
         db.add(row)
         existing_types[values["code"].upper()] = row
+        changed += 1
+
+    #  Mức mật / độ khẩn. Insert-only theo `code`: bảy dòng gốc phải luôn có
+    #  mặt (số trên `tab_document` mới tra ra tên), nhưng tên và mô tả thì quản
+    #  trị sửa được trên giao diện — seed chạy lại ở mỗi lần deploy, ghi đè là
+    #  xóa mất chữ người ta vừa sửa.
+    existing_levels = {row.code.upper() for row in db.query(SecurityLevel).all()}
+    for values in SECURITY_LEVELS:
+        if values["code"].upper() in existing_levels:
+            continue
+        db.add(SecurityLevel(**values, is_active=True))
+        existing_levels.add(values["code"].upper())
         changed += 1
 
     existing_companies = {row.code.upper(): row for row in db.query(Company).all()}

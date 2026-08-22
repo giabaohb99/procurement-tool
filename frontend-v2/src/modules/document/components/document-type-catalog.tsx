@@ -11,6 +11,7 @@ import type { DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
 import { DOCUMENT_TYPE_FILTER_FIELDS } from '../config/document-filter-fields'
 import { useDocumentTypes } from '../hooks/use-document-types'
+import { useSecurityLevelLabel } from '../hooks/use-document-catalogs'
 import {
   DOCUMENT_TYPE_FLAGS,
   DOC_GROUP_LABELS,
@@ -18,7 +19,7 @@ import {
   documentCodeSample,
   type DocumentType,
 } from '../types/document-type'
-import { secrecyLabel } from '../types/security-level'
+import { SECURITY_LEVEL_KIND_CONFIDENTIAL } from '../types/security-level'
 import { CatalogTable } from './catalog-table'
 
 const FILTER_CONFIG = {
@@ -43,6 +44,7 @@ export function DocumentTypeCatalog() {
 
 function DocumentTypeCatalogContent() {
   const { items, isLoading } = useDocumentTypes()
+  const secrecyLabel = useSecurityLevelLabel()
 
   // Lọc tại chỗ chứ không gửi query param: danh mục dưới 100 dòng, đã nạp cả
   // danh sách rồi thì lọc ở client nhanh hơn và đỡ một vòng gọi mỗi lần gõ.
@@ -99,7 +101,7 @@ function DocumentTypeCatalogContent() {
         header: 'Mức mật mặc định',
         width: 150,
         defaultHidden: true,
-        cell: (row) => secrecyLabel(row.default_secrecy),
+        cell: (row) => secrecyLabel(SECURITY_LEVEL_KIND_CONFIDENTIAL, row.default_secrecy),
       },
       {
         key: 'group_code',
@@ -131,7 +133,7 @@ function DocumentTypeCatalogContent() {
         ),
       },
     ],
-    [],
+    [secrecyLabel],
   )
 
   return (

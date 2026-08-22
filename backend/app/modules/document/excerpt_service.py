@@ -20,6 +20,8 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.modules.doc_catalog.link_rule_model import RELATION_EXCERPT
+from app.modules.doc_catalog.security_level_model import KIND_CONFIDENTIAL
+from app.modules.doc_catalog.security_level_service import ensure_valid
 
 from .link_model import DocumentLink
 from .model import STATUS_DRAFT, STATUS_EXPIRED, Document
@@ -37,6 +39,8 @@ def create_excerpt(db: Session, source: Document, title: str, content_html: str,
 
     #  (c) — chặn ở đây, và chặn lại lần nữa ở `update_document` vì người dùng có
     #  thể nâng mức mật sau khi bản trích đã tạo.
+    #  Dải hợp lệ theo DANH MỤC, không phải `le=4` trong schema.
+    ensure_valid(db, KIND_CONFIDENTIAL, secrecy_level)
     ensure_secrecy_within_source(secrecy_level, source.secrecy_level)
 
     excerpt = Document(

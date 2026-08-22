@@ -21,7 +21,11 @@ import {
 } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
 import { useSecurityLevelOptions } from '../hooks/use-document-catalogs'
-import { CONFIDENTIAL_MAT } from '../types/security-level'
+import {
+  CONFIDENTIAL_MAT_VALUE,
+  SECURITY_LEVEL_KIND_CONFIDENTIAL,
+  SECURITY_LEVEL_KIND_URGENCY,
+} from '../types/security-level'
 import { useStorageLocations } from '../hooks/use-documents'
 import type { DocumentRecordFormValues } from '../schemas/document-record-schema'
 
@@ -44,8 +48,8 @@ interface DocumentExtraInfoFieldsProps {
  * công khai. Đặt cạnh nhau nhưng không bao giờ gộp.
  */
 export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) {
-  const confidentialLevels = useSecurityLevelOptions('confidential')
-  const urgencyLevels = useSecurityLevelOptions('urgent')
+  const confidentialLevels = useSecurityLevelOptions(SECURITY_LEVEL_KIND_CONFIDENTIAL)
+  const urgencyLevels = useSecurityLevelOptions(SECURITY_LEVEL_KIND_URGENCY)
   const { data: employees } = useEmployees({ page_size: 1000, is_active: true })
   const { data: storageLocations = [] } = useStorageLocations()
 
@@ -74,7 +78,7 @@ export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) 
                 {confidentialLevels.map((level) => (
                   <SelectItem
                     key={level.id}
-                    value={String(level.id)}
+                    value={String(level.value)}
                     description={level.description}
                   >
                     {level.name}
@@ -87,7 +91,7 @@ export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) 
                  lại ở đây: hai chỗ nói hai kiểu về cùng một mức là người dùng
                  không biết tin chỗ nào. */}
             <FormDescription>
-              {confidentialLevels.find((level) => level.id === field.value)?.description}
+              {confidentialLevels.find((level) => level.value === field.value)?.description}
             </FormDescription>
 
             {/*  Câu trên vừa hứa "chỉ người được cấp mức Mật mới đọc được" —
@@ -95,7 +99,7 @@ export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) 
                  Không nói ra thì đây thành lời hứa suông, người ta tưởng đóng
                  dấu Mật là hệ thống tự chặn. Chỉ cảnh báo từ mức Mật trở lên:
                  Công khai / Nội bộ không hứa hẹn gì để mà thất hứa. */}
-            {field.value >= CONFIDENTIAL_MAT && (
+            {field.value >= CONFIDENTIAL_MAT_VALUE && (
               <p className="flex items-start gap-1.5 text-xs text-amber-800">
                 <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-700" />
                 Lớp kiểm mức mật CHƯA bật — hệ thống chưa tự chặn người không đủ mức. Đừng
@@ -126,7 +130,7 @@ export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) 
                 {urgencyLevels.map((level) => (
                   <SelectItem
                     key={level.id}
-                    value={String(level.id)}
+                    value={String(level.value)}
                     description={level.description}
                   >
                     {level.name}
@@ -136,7 +140,7 @@ export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) 
             </Select>
             {/*  Cũng lấy từ danh mục, cùng lý do với mức mật ở trên. */}
             <FormDescription>
-              {urgencyLevels.find((level) => level.id === field.value)?.description}
+              {urgencyLevels.find((level) => level.value === field.value)?.description}
             </FormDescription>
             <FormMessage />
           </FormItem>

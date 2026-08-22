@@ -12,7 +12,7 @@ ENTITIES = [
     "report", "setting", "category_assignee", "survey_request", "import", "backup",
     "help_article", "ticket",
     # Phân hệ Văn thư
-    "doc_type", "external_party", "document_book", "document",
+    "doc_type", "external_party", "document_book", "document", "security_level",
     # Phân hệ Duyệt dấu
     "seal_request", "seal_type",
     # Phân hệ Đặt xe
@@ -56,6 +56,7 @@ ENTITY_LABELS = {
     "ticket": "Phiếu hỗ trợ",
     "doc_type": "Loại văn bản (Văn thư)",
     "external_party": "Đơn vị gửi nhận (Văn thư)",
+    "security_level": "Mức mật / Độ khẩn (Văn thư)",
     "document_book": "Sổ văn bản (Văn thư)",
     "document": "Văn bản (Văn thư)",
     "seal_request": "Yêu cầu duyệt dấu",

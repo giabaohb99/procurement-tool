@@ -287,7 +287,7 @@ def export_xlsx(
 
     docs = query.order_by(Document.id.desc()).all()
     check_row_limit(len(docs))
-    rows = ex.build_rows(serializer.serialize_many(db, docs))
+    rows = ex.build_rows(db, serializer.serialize_many(db, docs))
     return xlsx_response(ex.FILE_NAME, pick_columns(ex.COLUMNS, cols), rows,
                          ex.SHEET_TITLE)
 

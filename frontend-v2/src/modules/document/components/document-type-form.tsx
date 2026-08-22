@@ -27,7 +27,8 @@ import {
   documentTypeSchema,
   type DocumentTypeFormValues,
 } from '../schemas/document-type-schema'
-import { CONFIDENTIAL_LEVELS } from '../types/security-level'
+import { useSecurityLevelOptions } from '../hooks/use-document-catalogs'
+import { SECURITY_LEVEL_KIND_CONFIDENTIAL } from '../types/security-level'
 import {
   DOCUMENT_TYPE_FLAGS,
   DOC_GROUP_LABELS,
@@ -78,6 +79,7 @@ export function DocumentTypeForm({
 
   const idScheme = form.watch('id_scheme')
   const code = form.watch('code')
+  const confidentialLevels = useSecurityLevelOptions(SECURITY_LEVEL_KIND_CONFIDENTIAL)
 
   return (
     <Form {...form}>
@@ -295,9 +297,7 @@ export function DocumentTypeForm({
                     <FormLabel>Mức mật mặc định</FormLabel>
                     <Select
                       value={String(field.value)}
-                      onValueChange={(value) =>
-                        field.onChange(Number(value) as 1 | 2 | 3 | 4)
-                      }
+                      onValueChange={(value) => field.onChange(Number(value))}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -305,10 +305,10 @@ export function DocumentTypeForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {CONFIDENTIAL_LEVELS.map((level) => (
+                        {confidentialLevels.map((level) => (
                           <SelectItem
                             key={level.id}
-                            value={String(level.id)}
+                            value={String(level.value)}
                             description={level.description}
                           >
                             {level.name}
