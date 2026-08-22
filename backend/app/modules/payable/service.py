@@ -15,6 +15,23 @@ def debt_days(payment_terms: str) -> int:
     return int(m.group(1)) if m else 0
 
 
+def get_invoice_date(db: Session, p: Payable) -> str:
+    """Dò ngày hóa đơn từ đợt giao hàng PODelivery -> POItem -> incur_date."""
+    if p and p.ref_type == "delivery" and p.ref_id:
+        from app.modules.purchase_order.model import PODelivery, POItem
+        d = db.get(PODelivery, p.ref_id)
+        if d:
+            if (d.invoice_date or "").strip():
+                return d.invoice_date
+            if d.po_item_id:
+                it = db.get(POItem, d.po_item_id)
+                if it and (it.invoice_date or "").strip():
+                    return it.invoice_date
+    if p and (p.invoice_no or "").strip() and (p.incur_date or "").strip():
+        return p.incur_date
+    return ""
+
+
 def calc_due(incur_date: str, days: int) -> str:
     if not incur_date:
         incur_date = datetime.now().strftime("%Y-%m-%d")

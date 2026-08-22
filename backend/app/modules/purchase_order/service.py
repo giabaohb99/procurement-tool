@@ -178,8 +178,14 @@ def _save_deliveries(db: Session, po: PurchaseOrder, item: POItem, delivs, user_
     keep = set()
     for raw in delivs:
         data = raw.model_dump()
-        if (data.get("invoice_no") or "").strip() and not (data.get("invoice_date") or "").strip():
-            data["invoice_date"] = date.today().isoformat()
+        inv_no = (data.get("invoice_no") or "").strip() or (item.invoice_no or "").strip()
+        inv_date = (data.get("invoice_date") or "").strip() or (item.invoice_date or "").strip()
+        if inv_no and not inv_date:
+            inv_date = date.today().isoformat()
+        if inv_no:
+            data["invoice_no"] = inv_no
+        if inv_date:
+            data["invoice_date"] = inv_date
         did = data.pop("id", None)
         if did and did in existing:
             d = existing[did]
