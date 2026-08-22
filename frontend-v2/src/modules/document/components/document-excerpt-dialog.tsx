@@ -1,4 +1,4 @@
-import { AlertTriangle, Code2, ListTree } from 'lucide-react'
+import { AlertTriangle, ListTree } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { Button } from '@/shared/ui/button'
@@ -20,7 +20,8 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { Checkbox } from '@/shared/ui/checkbox'
-import { Textarea } from '@/shared/ui/textarea'
+import { RichTextField } from '@/shared/ui/rich-text-editor'
+import { isBlankHtml } from '@/shared/utils/is-blank-html'
 import {
   joinSections,
   splitHtmlSections,
@@ -67,8 +68,6 @@ export function DocumentExcerptDialog({
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [dangTick, setDangTick] = useState<string[]>([])
-  //  Chọn theo mục lục thì bày XEM TRƯỚC; ai cần cắt tay từng đoạn mới bung mã ra.
-  const [suaTay, setSuaTay] = useState(false)
 
   //  Cắt bài gốc thành mục MỘT LẦN mỗi lần nội dung đổi — bài dài vài trăm KB,
   //  cắt lại ở mỗi lần gõ tên bản trích là phí.
@@ -104,7 +103,6 @@ export function DocumentExcerptDialog({
     setTitle('')
     setContent('')
     setDangTick([])
-    setSuaTay(false)
   }
 
   return (
@@ -162,44 +160,35 @@ export function DocumentExcerptDialog({
           )}
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="excerpt-content">
-                Phần nội dung được trích<span className="text-destructive"> *</span>
-              </Label>
-              {/*  Bày mã HTML ra cho người làm văn thư là bắt họ đọc thứ không
-                   phải việc của họ. Mặc định xem trước; ai cần cắt tay từng đoạn
-                   thì bấm để bung mã. */}
-              {content && cacMuc.length > 0 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSuaTay((truoc) => !truoc)}
-                >
-                  <Code2 className="size-4" />
-                  {suaTay ? 'Xem trước' : 'Sửa mã'}
-                </Button>
-              )}
-            </div>
+            <Label>
+              Phần nội dung được trích<span className="text-destructive"> *</span>
+            </Label>
 
-            {content && cacMuc.length > 0 && !suaTay ? (
-              <div
-                className="doc-excerpt-preview max-h-64 overflow-y-auto rounded-md border px-4 py-3 text-sm"
-                dangerouslySetInnerHTML={{ __html: content }}
-              />
-            ) : (
-            <Textarea
-              id="excerpt-content"
-              rows={8}
+            {/*  Ô SOẠN THẢO, không phải `<textarea>`: giá trị này đi thẳng vào
+                 `content_html` nên phải giữ được định dạng của bản gốc — xem
+                 phần đầu `rich-text-field.tsx`. Trước đây văn bản chưa chia mục
+                 thì rơi vào một ô chữ trơn, dán vào là mất đậm/nghiêng, mất
+                 bảng, mất cả ngắt đoạn.
+
+                 Cặp «Xem trước / Sửa mã» cũ bỏ luôn: nó chỉ tồn tại vì ô nhập
+                 là chữ trơn nên phải có một khối riêng để nhìn ra hình văn bản.
+                 Ô này đã vừa gõ vừa hiện đúng hình, mà bày mã HTML ra cho người
+                 làm văn thư thì vốn là bắt họ đọc thứ không phải việc của họ.
+
+                 `key` đổi theo các mục đang tick: `RichTextField` chỉ đọc
+                 `defaultValue` MỘT LẦN lúc dựng (bám theo prop thì con trỏ nhảy
+                 về đầu ở mỗi phím gõ). Tick thêm một mục là dựng lại ô với nội
+                 dung mới — không có nó thì tick xong ô vẫn nằm im. */}
+            <RichTextField
+              key={dangTick.join('-')}
+              defaultValue={content}
+              onChange={setContent}
               placeholder={
                 cacMuc.length
                   ? 'Tick mục ở trên, hoặc dán tay phần cần chia vào đây.'
-                  : 'Văn bản gốc chưa chia mục — dán đúng phần nội dung cần chia vào đây.'
+                  : 'Dán phần nội dung cần chia vào đây — định dạng của bản gốc được giữ nguyên.'
               }
-              value={content}
-              onChange={(event) => setContent(event.target.value)}
             />
-            )}
           </div>
 
           <div className="space-y-2">
@@ -232,10 +221,13 @@ export function DocumentExcerptDialog({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Hủy
           </Button>
+          {/*  Đo nội dung bằng `isBlankHtml`, KHÔNG phải `content.trim()`: ô
+               soạn thảo chưa gõ gì vẫn trả `<p></p>` nên phép kiểm cũ luôn cho
+               là "đã có nội dung" và nút sáng lên với bản trích rỗng ruột. */}
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={!title.trim() || !content.trim() || isPending}
+            disabled={!title.trim() || isBlankHtml(content) || isPending}
           >
             Tạo bản trích
           </Button>

@@ -425,38 +425,69 @@
   content: counter(doc-muc3, lower-alpha) ') ';
 }
 
-/* Khối XEM TRƯỚC phần nội dung sắp trích (hộp thoại Tạo bản trích). Chỉ cần
-   đọc được ra hình văn bản, không cần đúng khổ giấy — nên khai riêng vài luật
-   thay vì mượn `.doc-page` (thứ kéo theo cả bề ngang 794px và bóng đổ). */
+/* Khối XEM TRƯỚC phần nội dung sắp trích (hộp thoại Tạo bản trích) và Ô NHẬP
+   rich text gọn (`rich-text-field.tsx`). Chỉ cần đọc được ra hình văn bản,
+   không cần đúng khổ giấy — nên khai riêng vài luật thay vì mượn `.doc-page`
+   (thứ kéo theo cả bề ngang 794px và bóng đổ).
+
+   Hai chỗ dùng CHUNG bộ luật: ô nhập và khối xem trước là hai mặt của cùng một
+   nội dung, khai lệch nhau thì soạn xong bấm "Xem trước" lại thấy một hình
+   khác — người dùng không biết bản nào mới là bản sắp chia ra ngoài. */
 .doc-excerpt-preview h1,
 .doc-excerpt-preview h2,
-.doc-excerpt-preview h3 {
+.doc-excerpt-preview h3,
+.doc-rich-field h1,
+.doc-rich-field h2,
+.doc-rich-field h3 {
   margin-bottom: 0.25rem;
   font-weight: 700;
 }
-.doc-excerpt-preview h1 { font-size: 1.15em; }
-.doc-excerpt-preview h2 { font-size: 1.08em; }
+.doc-excerpt-preview h1,
+.doc-rich-field h1 { font-size: 1.15em; }
+.doc-excerpt-preview h2,
+.doc-rich-field h2 { font-size: 1.08em; }
 .doc-excerpt-preview p + p,
 .doc-excerpt-preview * + h1,
 .doc-excerpt-preview * + h2,
-.doc-excerpt-preview * + h3 {
+.doc-excerpt-preview * + h3,
+.doc-rich-field p + p,
+.doc-rich-field * + h1,
+.doc-rich-field * + h2,
+.doc-rich-field * + h3 {
   margin-top: 0.5rem;
 }
 .doc-excerpt-preview ul,
-.doc-excerpt-preview ol {
+.doc-excerpt-preview ol,
+.doc-rich-field ul,
+.doc-rich-field ol {
   margin-top: 0.35rem;
   padding-left: 1.4em;
   list-style: revert;
 }
-.doc-excerpt-preview table {
+.doc-excerpt-preview table,
+.doc-rich-field table {
   width: 100%;
   border-collapse: collapse;
   margin-block: 0.5rem;
 }
 .doc-excerpt-preview th,
-.doc-excerpt-preview td {
+.doc-excerpt-preview td,
+.doc-rich-field th,
+.doc-rich-field td {
   border: 1px solid var(--border);
   padding: 4px 6px;
+}
+
+/* Vùng gõ của ô rich text gọn. Cuộn trong ô chứ không đẩy hộp thoại dài ra —
+   hộp thoại cao quá màn hình là nút Lưu trôi khỏi tầm mắt. */
+.doc-rich-field {
+  min-height: 9rem;
+  max-height: 22rem;
+  overflow-y: auto;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  outline: none;
 }
 
 .doc-page ul,

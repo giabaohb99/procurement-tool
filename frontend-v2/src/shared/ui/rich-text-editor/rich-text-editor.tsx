@@ -1,10 +1,4 @@
-import { Subscript } from '@tiptap/extension-subscript'
-import { Superscript } from '@tiptap/extension-superscript'
-import { TableKit } from '@tiptap/extension-table'
-import { TextAlign } from '@tiptap/extension-text-align'
-import { TextStyleKit } from '@tiptap/extension-text-style'
 import { EditorContent, useEditor, type Editor } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
 import {
   forwardRef,
   useEffect,
@@ -16,15 +10,14 @@ import {
 import { PaginationPlus } from 'tiptap-pagination-plus'
 
 import { cn } from '@/shared/utils/cn'
+import { contentExtensions } from './content-extensions'
 import { EditorContextMenu } from './editor-context-menu'
 import { applyImportedContent, hasEditorContent, type DocumentImportMode } from './editor-import'
 import { EditorOutlinePanel } from './editor-outline-panel'
 import { EditorRuler, type PageMargins } from './editor-ruler'
 import { EditorToolbar } from './editor-toolbar'
 import { EditorVerticalRuler } from './editor-vertical-ruler'
-import { ImageWithSize } from './image-size-extension'
 import { ImportTrace } from './import-trace-extension'
-import { KeepSelectionVisible } from './keep-selection-visible-extension'
 import {
   A4_HEIGHT_PX,
   A4_WIDTH_PX,
@@ -33,14 +26,6 @@ import {
   MARGIN_TOP_MM,
   mmToPx,
 } from './page-format'
-import { ParagraphFormat } from './paragraph-format-extension'
-import {
-  TableCellWithBackground,
-  TableHeaderWithBackground,
-} from './table-cell-background-extension'
-import { TableWithColumnResizing } from './table-column-resizing-extension'
-import { TableRowWithHeight } from './table-row-resizing-extension'
-import { SpreadsheetPaste } from './spreadsheet-paste-extension'
 import { useFillViewportHeight } from './use-fill-viewport-height'
 
 /** Khổ giấy và lề — số gốc ở `page-format.ts`, dùng chung với bản in. */
@@ -203,43 +188,12 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 
     const editor = useEditor({
       extensions: [
-        // StarterKit v3 đã gồm sẵn Bold/Italic/Underline/Strike, tiêu đề, danh
-        // sách, trích dẫn, đường kẻ ngang, LIÊN KẾT và lịch sử hoàn tác.
-        StarterKit,
-        // Phông, cỡ chữ, màu chữ, màu nền chữ.
-        TextStyleKit,
-        // Chỉ số trên / dưới — cần cho ký hiệu m², số mũ trong phụ lục.
-        Subscript,
-        Superscript,
-        // Excel đính kèm cả bảng lẫn ảnh xem trước; ưu tiên bảng để dán vào các
-        // ô đang bôi đen thay vì biến vùng Excel thành một tấm hình.
-        SpreadsheetPaste,
-        ImageWithSize.configure({ inline: false, allowBase64: true }),
+        //  Lược đồ nội dung dùng chung với ô rich text trong hộp thoại — xem
+        //  `content-extensions.ts`. Ở đây chỉ thêm phần dàn TRANG GIẤY.
+        ...contentExtensions(),
+        // Vết tích nguồn nhập (trang PDF nào ra node nào) — chỉ trang soạn thảo
+        // toàn màn hình mới có luồng nhập tệp nên không đưa vào lược đồ chung.
         ImportTrace,
-        // Giữ vệt bôi đen khi bấm sang thanh công cụ — nếu không, mở một ô chọn
-        // là vùng đã bôi biến mất trước mắt và người dùng tưởng bị mất chọn.
-        KeepSelectionVisible,
-        // Giãn dòng + thụt lề đầu dòng, xem `paragraph-format-extension.ts`.
-        ParagraphFormat,
-        TextAlign.configure({ types: ['heading', 'paragraph'] }),
-        // Tắt ô / ô tiêu đề / hàng mặc định để thay bằng bản có thêm MÀU NỀN
-        // (`table-cell-background-extension.ts`) và KÉO CAO HÀNG
-        // (`table-row-resizing-extension.ts`).
-        // Tắt luôn cả bảng mặc định: phần kéo cột dựng sẵn làm bảng phình quá
-        // khổ giấy, thay bằng bản kéo cột kiểu Word ở
-        // `table-column-resizing-extension.ts`.
-        TableKit.configure({
-          table: false,
-          tableCell: false,
-          tableHeader: false,
-          tableRow: false,
-        }),
-        // `resizable: false` để tắt phần kéo cột dựng sẵn, nhưng vẫn giữ nguyên
-        // phần còn lại của bảng (vùng chọn ô, `<colgroup>` giữ bề rộng cột).
-        TableWithColumnResizing.configure({ resizable: false }),
-        TableCellWithBackground,
-        TableHeaderWithBackground,
-        TableRowWithHeight,
         // Gõ quá một trang thì tự sang TRANG MỚI như Google Docs, thay vì kéo
         // dài mãi một tờ giấy — soạn công văn phải biết nội dung tràn sang trang
         // thứ mấy. Số đo lấy theo A4 ở 96dpi, khớp `.doc-page` trong `index.css`.
