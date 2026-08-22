@@ -50,13 +50,23 @@ def matching_payables(db: Session, supplier_code: str, source_type: str,
 
 
 def delivery_invoice_date(db: Session, payables: list[Payable]) -> str:
-    """Ngày hóa đơn gốc = tab_po_delivery.invoice_date của lần giao sinh ra khoản nợ."""
-    from app.modules.purchase_order.model import PODelivery
+    """Ngày hóa đơn gốc = tab_po_delivery.invoice_date hoặc POItem.invoice_date hoặc incur_date của đợt giao."""
+    from app.modules.purchase_order.model import PODelivery, POItem
     for p in payables:
-        if p and p.ref_type == "delivery" and p.ref_id:
+        if not p:
+            continue
+        if p.ref_type == "delivery" and p.ref_id:
             d = db.get(PODelivery, p.ref_id)
-            if d and (d.invoice_date or "").strip():
-                return d.invoice_date
+            if d:
+                if (d.invoice_date or "").strip():
+                    return d.invoice_date
+                if d.po_item_id:
+                    it = db.get(POItem, d.po_item_id)
+                    if it and (it.invoice_date or "").strip():
+                        return it.invoice_date
+        # Có số hóa đơn mà chưa gõ ngày hóa đơn riêng -> mặc định lấy ngày phát sinh công nợ (ngày nhận hàng)
+        if (p.invoice_no or "").strip() and (p.incur_date or "").strip():
+            return p.incur_date
     return ""
 
 
