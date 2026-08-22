@@ -94,19 +94,29 @@ shadcn/Radix + TanStack Query + zustand). Backend không đổi: v2 gọi đúng
 Phân xử khi có yêu cầu mới: **sửa lỗi** màn đang chạy thật → `frontend/`; **tính năng mới**
 → `frontend-v2/`, màn đó chưa có ở v2 thì dựng màn đó trước. `frontend/` chưa được tắt vì v2
 còn thiếu màn. **Số đo đầy đủ và kế hoạch dời nằm ở `doc/erp/13-ke-hoach-man-con-lai-v2.md`**
-(bản 2.0, xem **CR-097**): bản cũ có **48 màn** — 26 xong · **3 có nhưng KHUYẾT** · 16 chưa có ·
-2 đã bỏ · 1 chờ quyết. Phần còn lại chia **15 đợt Đ-01 … Đ-15**, 22–32 ngày công.
+(bản 2.0, xem **CR-097**): bản cũ có **48 màn** — *(đếm 21/08/2026, CR-119/121/122)* **34 xong** ·
+**2 có nhưng KHUYẾT** · **9 chưa có** · 2 đã bỏ · 1 chờ quyết. Chia **15 đợt Đ-01 … Đ-15**: đã
+xong **Đ-01…Đ-10, Đ-12, Đ-14**; còn **Đ-11** (vá Trang chủ + dựng hai màn Tổng quan) và **Đ-15**
+(tắt `frontend/`); riêng **Đ-13** *Quản lý Import* đang **hoãn**.
+⚠️ Mấy con số này cũ rất nhanh — **luôn mở §0 và bảng §3 của `13-...md` để lấy số mới nhất**,
+đừng trích lại dòng này.
 ⚠️ **NHẬN ĐỢT TRƯỚC KHI LÀM.** Nhiều người cùng đẩy lên `erp-v2`, nên cột ***Ai làm*** trong bảng
 §3 của `13-...md` là **chỗ ghi phân công duy nhất** — luật bốn dòng ở §3.1: ghi tên + đổi
 *Đang làm* rồi **push riêng dòng đó ngay** trước khi gõ mã, xong thì đổi *Xong (CR-xxx)*, bỏ
 giữa chừng thì trả về *(chưa nhận)*. `git fetch` trước mỗi lần bắt đầu và trước mỗi lần push.
-Trong 16 màn thiếu, **chặn nghiệp vụ chỉ còn Yêu cầu thanh toán** (danh sách + chi tiết + phiếu
-in, đặt ở `/finance/payment-requests` theo QĐ-5); 5 màn thuộc ba thứ khách cho **hoãn** (MC-5 Sao
-lưu CSDL, MC-6 Quản lý Import, MC-7 Phiếu hỗ trợ); còn lại là danh mục (Sản phẩm, Hợp đồng ×2,
-Kho, ĐVT, Phân loại, chi tiết NCC) và Phân công phụ trách. *Tiến độ báo giá* và *Xử lý khảo sát*
-(`SurveyRequestProcess.tsx`) **đã quyết BỎ** — xem `doc/erp/12-...` mục 2.7.
-**Đừng tin cột "xong" mà bỏ qua §1.8 của `13`:** Trang chủ v2 thiếu 4 khối, Tổng quan Tài chính và
-Tổng quan Kho vẫn là trang rỗng, màn Công nợ thiếu cột tick chọn để lên phiếu thanh toán.
+**Cụm Yêu cầu thanh toán ĐÃ XONG** (Đ-06/07/08, CR-119): danh sách + chi tiết + phiếu in ở
+`/finance/payment-requests` theo QĐ-5 — `modules/finance/pages/payment-request-{list,detail,print}-page.tsx`,
+route in đăng ở `app/router/app-router.tsx`. Bản in cũng đã có **gom dòng trùng số chứng từ** và
+tab *Mẫu thuế* giống hệt bản v1 (CR-127). Nghĩa là **không còn màn nào chặn nghiệp vụ** — dòng
+"chặn nghiệp vụ chỉ còn Yêu cầu thanh toán" ở các bản CLAUDE.md trước nay đã sai, bỏ đi.
+Trong 9 màn còn thiếu, nặng nhất là *Quản lý Import* (MC-6) và khách đã cho **hoãn**; danh sách
+đầy đủ ở §1 của `13-...md`. *Tiến độ báo giá* và *Xử lý khảo sát* (`SurveyRequestProcess.tsx`)
+**đã quyết BỎ** — xem `doc/erp/12-...` mục 2.7.
+**Đừng tin cột "xong" mà bỏ qua §1.8 của `13`:** Trang chủ v2 thiếu 4 khối (*Top nhà cung cấp*,
+*Chi tiêu theo bộ phận*, *Trạng thái đơn hàng*, *Tuổi nợ*), Tổng quan Tài chính và Tổng quan Kho
+vẫn là trang rỗng 11 dòng, chi tiết Yêu cầu báo giá thiếu nút *Xử lý khảo sát* (màn đó đã bỏ nên
+việc chọn phương án sẽ dời vào chính màn chi tiết ở P6). Màn **Công nợ đã đủ** cột tick chọn +
+nút *Tạo đề nghị thanh toán* từ Đ-09 (CR-119) — chỗ này tài liệu cũ ghi thiếu.
 **Đã xong MC-1…MC-4** (CR-094): Đặt lại mật khẩu · Thông báo (`/notifications`) · Trang cá
 nhân (`/me`) · Cấu hình hệ thống (`/system/settings`, phân hệ Quản trị nay **bật**).
 **Đã xong Đ-01** (CR-098): Dựng khung Generic Declarative CRUD (`frontend-v2/src/shared/crud/`)
@@ -151,7 +161,7 @@ YCBG thì backend **không kiểm**, luật chỉ nằm ở giao diện. Đừng
 Vừa dời xong: **chi tiết Phiếu khảo sát** (`procurement/pages/survey-detail-page.tsx`, xem
 CR-091), **chi tiết Yêu cầu báo giá** (`procurement/pages/survey-request-detail-page.tsx` —
 còn khuyết nút *Xử lý khảo sát*, chờ màn đó), **Công nợ**
-(`finance/pages/payable-list-page.tsx` — cột tick chọn tạm khuyết, chờ màn Yêu cầu thanh toán),
+(`finance/pages/payable-list-page.tsx` — cột tick chọn đã có lại ở Đ-09/CR-119),
 **Tồn kho** (`inventory/pages/inventory-list-page.tsx`) và **Báo cáo mua hàng**
 (`procurement/pages/purchase-report-page.tsx` — tám tab, dữ liệu vẫn gom theo TÊN phòng
 ban / NSPT, xem N-008 trong `doc/tai-lieu-ky-thuat/change-log.md`).
