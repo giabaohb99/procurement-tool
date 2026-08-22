@@ -103,7 +103,12 @@ export function DocumentNeedsReviewBanner({
           </Button>
         )}
 
-        {canWrite && onConfirm && (
+        {/*  CHỈ khi đang có dấu «cần rà lại». Việc duy nhất của nút này là GỠ
+            cái dấu đó, nên bản riêng chưa bị đánh dấu mà bày nút ra thì bấm vào
+            chỉ nhận đúng một câu từ chối: *«Văn bản này không có dấu cần rà
+            lại»* (`service.py::xac_nhan_ra_soat`). Người dùng gõ xong lý do,
+            bấm xác nhận, rồi ăn báo đỏ — mà họ không làm gì sai cả. */}
+        {needsReview && canWrite && onConfirm && (
           <Button type="button" size="sm" disabled={pending} onClick={onConfirm}>
             <Check className="size-4" />
             Đã rà xong

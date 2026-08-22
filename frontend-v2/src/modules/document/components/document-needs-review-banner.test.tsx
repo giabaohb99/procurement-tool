@@ -40,4 +40,42 @@ describe('DocumentNeedsReviewBanner', () => {
     expect(screen.getByText(/phiên bản 2.0/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Xem bản gốc/i })).toBeInTheDocument()
   })
+
+  //  LỖI THẬT (22/08/2026): bản riêng chưa bị đánh dấu vẫn bày nút «Đã rà xong».
+  //  Người dùng gõ lý do, bấm xác nhận, rồi ăn báo đỏ «Văn bản này không có dấu
+  //  cần rà lại» — mà họ không làm gì sai. Việc duy nhất của nút là GỠ cái dấu
+  //  đó, nên không có dấu thì không có việc để làm.
+  it('bản riêng CHƯA bị đánh dấu thì không bày nút xác nhận đã rà xong', () => {
+    render(
+      <DocumentNeedsReviewBanner
+        needsReview={false}
+        note=""
+        sourceDocumentId={42}
+        canWrite
+        onConfirm={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText(/bản riêng nhận từ văn bản gốc/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Đã rà xong/i })).not.toBeInTheDocument()
+  })
+
+  it('có dấu cần rà lại thì mới bày nút, và bấm là gọi callback', async () => {
+    const user = userEvent.setup()
+    const onConfirm = vi.fn()
+
+    render(
+      <DocumentNeedsReviewBanner needsReview note="" sourceDocumentId={42} canWrite onConfirm={onConfirm} />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /Đã rà xong/i }))
+
+    expect(onConfirm).toHaveBeenCalledOnce()
+  })
+
+  it('không có quyền sửa thì không bày nút dù đang có dấu', () => {
+    render(<DocumentNeedsReviewBanner needsReview note="" canWrite={false} onConfirm={vi.fn()} />)
+
+    expect(screen.queryByRole('button', { name: /Đã rà xong/i })).not.toBeInTheDocument()
+  })
 })
