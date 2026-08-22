@@ -67,12 +67,35 @@ def _gan_truong_phong(db, nguoi) -> None:
     (`_truong_bo_phan` đọc `Department.manager_id`). Phòng bỏ trống cột đó thì
     bước 1 không tìm ra ai, phiên duyệt rơi thẳng vào trạng thái **KẸT** và
     không sinh việc nào — màn «Việc của tôi» trống trơn dù luồng khai đúng.
+
+    ⚠️ **Người này PHẢI KHÁC `chanh_vp`** (22/08/2026). Trước đây cả hai là một,
+    nên mọi luồng hai bước sụp thành một chữ ký: bước 1 «trưởng bộ phận người
+    nộp» và bước 2 «Chánh Văn phòng ký» ra cùng một người, bước 2 **tự qua vì
+    trùng người** và văn bản ban hành xong chỉ có ĐÚNG MỘT người ký — trong khi
+    nhìn cấu hình luồng thì tưởng có hai. Luật tự-qua là cố ý và đúng; cái sai
+    nằm ở chỗ dữ liệu mẫu chọn trùng người.
     """
     from app.modules.department.model import Department
 
+    truong_bp = nguoi["truong_bp"]
+    chanh_vp_id = nguoi["chanh_vp"].id
+
     for phong in db.query(Department).filter(
             (Department.manager_id.is_(None)) | (Department.manager_id == 0)).all():
-        phong.manager_id = nguoi["chanh_vp"].id
+        phong.manager_id = truong_bp.id
+
+    #  VÁ dữ liệu do chính bản seed cũ gán sai: phòng nào đang để `chanh_vp` làm
+    #  trưởng phòng thì chuyển sang `truong_bp`. Không vá thì mọi máy đã seed
+    #  trước 22/08/2026 vẫn dính lỗi hai-bước-một-chữ-ký, vì vòng lặp bên trên
+    #  chỉ điền phòng CÒN TRỐNG.
+    #
+    #  Chỉ đụng đúng giá trị mà seed cũ ghi ra, và đây là seed DEMO chạy ở local
+    #  — không phải nơi có trưởng phòng thật do người dùng khai.
+    if truong_bp.id != chanh_vp_id:
+        for phong in db.query(Department).filter(
+                Department.manager_id == chanh_vp_id).all():
+            phong.manager_id = truong_bp.id
+
     db.commit()
 
 
@@ -109,7 +132,17 @@ def _nguoi(db) -> dict[str, Employee]:
     if not ds:
         raise SystemExit("Chưa có nhân sự — chạy `python -m app.seed` trước.")
     lay = lambda i: ds[i] if i < len(ds) else ds[-1]  # noqa: E731
-    return {"tgd": lay(0), "phap_che": lay(1), "tai_chinh": lay(2), "chanh_vp": lay(3)}
+    chanh_vp = lay(3)
+
+    #  TRƯỞNG BỘ PHẬN mặc định của các phòng chưa khai — phải KHÁC `chanh_vp`,
+    #  xem `_gan_truong_phong`. Lấy người thứ 5; máy chỉ có vài nhân sự thì tìm
+    #  bất kỳ ai khác `chanh_vp` để ít nhất luồng hai bước vẫn ra hai người.
+    truong_bp = lay(4)
+    if truong_bp.id == chanh_vp.id:
+        truong_bp = next((e for e in ds if e.id != chanh_vp.id), chanh_vp)
+
+    return {"tgd": lay(0), "phap_che": lay(1), "tai_chinh": lay(2),
+            "chanh_vp": chanh_vp, "truong_bp": truong_bp}
 
 
 class _Xuong:

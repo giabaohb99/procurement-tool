@@ -1,5 +1,6 @@
 import { allModules } from '@/app/router/module-registry'
 import { useAuth } from '@/core/auth/use-auth'
+import { canOpenModule } from '@/app/router/module-visibility'
 import { usePermission } from '@/core/authorization/use-permission'
 import { formatWeekdayDate } from '@/shared/utils/format-date'
 import { ModuleCard } from './module-card'
@@ -18,16 +19,18 @@ const STATE_ORDER = { ready: 0, locked: 1, 'coming-soon': 2 } as const
 
 export function ModuleLauncherPage() {
   const { user } = useAuth()
-  const { canAccess } = usePermission()
+  const { can } = usePermission()
 
   const modules = allModules
     .map((module) => ({
       module,
+      //  Khóa khi KHÔNG THẤY ĐƯỢC MỤC NÀO bên trong, không phải khi thiếu
+      //  quyền trên `module.entity` — xem `module-visibility.ts`.
       state: !module.enabled
         ? ('coming-soon' as const)
-        : module.entity && !canAccess(module.entity)
-          ? ('locked' as const)
-          : ('ready' as const),
+        : canOpenModule(module, can)
+          ? ('ready' as const)
+          : ('locked' as const),
     }))
     // Sắp xếp ổn định nên trong từng nhóm trạng thái vẫn giữ nguyên thứ tự khai
     // trong `module-registry.ts`.
