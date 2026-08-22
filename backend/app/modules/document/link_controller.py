@@ -18,7 +18,7 @@ from app.modules.doc_catalog.link_rule_model import RELATION_LABELS
 
 from . import (excerpt_service, issue_service, link_serializer, link_service,
                parent_change_service, supersede_service)
-from .controller import _load
+from .controller import _load, doc_reader
 from .link_serializer import summary_of
 
 router = APIRouter(prefix="/api/documents", tags=["document-link"])
@@ -137,7 +137,7 @@ def issue_preview(
 def amended_by(
     document_id: int,
     db: Session = Depends(get_db),
-    user=Depends(require("document", "read")),
+    user=Depends(doc_reader),
 ):
     """J10 — văn bản này đã bị sửa đổi / thay thế / bãi bỏ bởi những văn bản nào.
 
@@ -145,6 +145,13 @@ def amended_by(
     đổi trạng thái, nên Quyết định 15 bị sửa Điều 5 vẫn hiện "Có hiệu lực" — người
     mở nó đọc Điều 5 cũ rồi làm sai, và không ai phát hiện ra vì mọi thứ trông
     vẫn đúng.
+
+    Gác bằng `doc_reader` chứ KHÔNG phải `require("document", "read")`: đây là
+    một endpoint ĐỌC MỘT văn bản, và người duyệt trong luồng thường không có vai
+    trò nào ở phân hệ Văn bản (xem docstring của `doc_reader`). Dùng lớp 1 thì
+    chính người sắp ký nhận 403 ở đây — cái băng "văn bản này đã bị sửa đổi bởi…"
+    lặng lẽ không hiện, đúng người cần nó nhất lại là người không thấy. Quyền
+    thật vẫn do `_load` → `ensure_can` gác như mọi chỗ khác.
     """
     doc = _load(db, document_id, user)
     return success(supersede_service.amended_by(db, doc.id))

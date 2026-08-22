@@ -2,8 +2,10 @@ import { Building2, MinusCircle, PlusCircle, User, Users, X } from 'lucide-react
 
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
+import { chiToanDongLoaiTru } from '../helpers/scope-only-exclude'
 import { SCOPE_DIM, SCOPE_MODE, type PendingScope } from '../types/document-scope'
 import { DocumentScopeAddForm } from './document-scope-add-form'
+import { DocumentScopeOnlyExcludeNotice } from './document-scope-only-exclude-notice'
 
 export type { PendingScope }
 
@@ -53,6 +55,13 @@ export function DocumentScopeFields({ rows, onChange }: DocumentScopeFieldsProps
             </p>
           </div>
         </div>
+      )}
+
+      {/*  Ghi chú "bỏ trống được" ở trên biến mất ngay khi có dòng đầu tiên. Nếu
+           dòng đó lại là loại trừ thì màn hình không còn nói gì cả, trong khi
+           người dùng vừa vô tình khai ra một văn bản không tới ai. */}
+      {chiToanDongLoaiTru(rows.map((row) => row.values.mode)) && (
+        <DocumentScopeOnlyExcludeNotice />
       )}
 
       {rows.length > 0 && (
