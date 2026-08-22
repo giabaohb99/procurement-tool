@@ -35,12 +35,19 @@ build lại code CŨ.
 | `backend/` | **`main`** | Prod đang chạy backend này. Sửa xong merge sang `erp-v2`. |
 | `frontend/` | **`main`** | Đây là giao diện **đang chạy thật** cho người dùng. Đã đóng băng: chỉ vá lỗi. |
 | `help-center/` | **`main`** | Đang chạy thật ở `help.degoholding.vn`. |
-| `frontend-v2/` | **`erp-v2`** | Giao diện ERP mới, prod chưa bật. **Tuyệt đối không đưa sang `main`.** |
+| `frontend-v2/` | **`erp-v2`** | Giao diện ERP mới. **Không mang thêm sang `main`** (xem ghi chú dưới). |
 | `doc/erp/`, `ke-hoach/` | **`erp-v2`** | Tài liệu của việc đang làm dở. |
 | `doc/tai-lieu-ky-thuat/` | theo commit đi kèm | change-log đi cùng commit sửa mã. |
 
 Tính năng mới của giao diện → `frontend-v2/` trên `erp-v2`.
 Vá lỗi màn đang chạy thật → `frontend/` trên `main`.
+
+> **Ghi chú về `frontend-v2/` trên `main`.** Thư mục này **đã có sẵn trên `main`** (khoảng 355 tệp,
+> vào từ commit `e5f9b4d` thời còn nhánh `bao`), nhưng là **bản CŨ và đứng yên** — `erp-v2` nay đã
+> 791 tệp. Đừng dùng nó, đừng sửa nó, và đừng "đồng bộ cho khớp": `docker-compose.production.yml`
+> **không có service `erp`** nên prod không hề build thư mục này; nó chỉ nằm đó chờ tới đợt Đ-15
+> mới chính thức lên prod. Nếu thấy một commit định merge `erp-v2` vào `main` "để cập nhật
+> frontend-v2" — đó chính là kịch bản sự cố ở mục A.4.
 
 ### A.2. Chiều merge — MỘT CHIỀU
 
