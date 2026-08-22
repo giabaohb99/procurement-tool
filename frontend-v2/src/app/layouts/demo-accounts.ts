@@ -2,10 +2,17 @@
  * DANH SÁCH TÀI KHOẢN DEMO — chỉ dùng cho bản chạy DEV.
  *
  * ⚠️ Tệp này chứa mật khẩu. Nó **không được lọt vào bản build thật**, và chỗ chặn
- * duy nhất là: mọi nơi đọc `DEMO_ACCOUNTS` đều phải nằm sau `import.meta.env.DEV`.
- * Vite thay hằng đó bằng `false` khi build, nên Rollup cắt sạch nhánh chết và cả
- * mô-đun này. Đã kiểm bằng cách `grep` mật khẩu trong `dist/` sau khi build —
- * thêm nơi dùng mới thì kiểm lại, đừng tin suông.
+ * duy nhất là: mọi nơi đọc `DEMO_ACCOUNTS` đều phải nằm sau `HIEN_MENU_DEV` của
+ * `demo-account-switcher.tsx`. Hai hằng trong đó (`import.meta.env.DEV` và
+ * `VITE_DEVELOPER_MODE`) đều được Vite thay bằng giá trị thật lúc build, nên khi
+ * build KHÔNG khai `VITE_DEVELOPER_MODE` thì cả biểu thức gập thành `false` và
+ * Rollup cắt sạch nhánh chết lẫn mô-đun này. Đã kiểm bằng cách `grep` mật khẩu
+ * trong `dist/` sau khi build — thêm nơi dùng mới thì kiểm lại, đừng tin suông.
+ *
+ * Ngược lại: bản chạy trên máy chủ DEV CÓ khai biến đó, tức mật khẩu ở đây nằm
+ * trong gói JS mà deverp phục vụ công khai. Chấp nhận được vì đúng bằng những gì
+ * bản v1 (devthumua) đang làm và đây là tài khoản của CSDL dev; đừng đặt tài
+ * khoản của hệ thật vào danh sách này.
  *
  * Đây là mật khẩu của CSDL seed dùng cho máy lập trình, không phải của hệ thật.
  */

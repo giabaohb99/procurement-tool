@@ -19,6 +19,12 @@ ENV VITE_APP_NAME=$VITE_APP_NAME
 # Trung tâm Hướng dẫn sử dụng là app riêng (subdomain riêng) — menu HDSD link ra đây.
 ARG VITE_HELP_URL=""
 ENV VITE_HELP_URL=$VITE_HELP_URL
+# `dev` = bật menu "Đổi tài khoản nhanh" (cùng tên biến với bản v1, xem
+# `frontend-v2/src/app/layouts/demo-account-switcher.tsx`). Mặc định RỖNG, và
+# `docker-compose.production.yml` không truyền: gói JS của bản thật phải sạch mật
+# khẩu demo. Đổi mặc định ở đây là làm rò mật khẩu ra prod.
+ARG VITE_DEVELOPER_MODE=""
+ENV VITE_DEVELOPER_MODE=$VITE_DEVELOPER_MODE
 RUN npm run build
 
 FROM nginx:alpine

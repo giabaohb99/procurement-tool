@@ -15,16 +15,26 @@ import {
 import { DEMO_ACCOUNTS, type DemoAccount } from './demo-accounts'
 
 /**
+ * Máy lập trình (`npm run dev`) thì `DEV` đã bật sẵn, khỏi khai gì thêm. Bản đóng
+ * gói — kể cả bản chạy trên máy chủ DEV — `DEV` là `false`, nên phải có công tắc
+ * riêng: `VITE_DEVELOPER_MODE=dev` truyền vào lúc build. Cố ý dùng ĐÚNG tên biến
+ * của bản v1 (`frontend/src/layouts/AppLayout.tsx`) để một dòng duy nhất trong
+ * `.env.dev` bật menu này cho cả hai app.
+ */
+const HIEN_MENU_DEV = import.meta.env.DEV || import.meta.env.VITE_DEVELOPER_MODE === 'dev'
+
+/**
  * ĐỔI TÀI KHOẢN NHANH — **chỉ có ở bản chạy DEV**, để trình diễn.
  *
  * Demo phân quyền phải cho người xem thấy CÙNG MỘT MÀN HÌNH đổi ra sao theo vai
  * trò. Đăng xuất rồi gõ lại tài khoản mật khẩu mỗi lần là mất mạch nói chuyện, mà
  * người trình bày cũng phải nhớ chín cặp tài khoản.
  *
- * ⚠️ Không bao giờ được lọt vào bản build thật: `import.meta.env.DEV` là hằng số
- * Vite thay lúc build, nên ở prod dòng dưới thành `if (true) return null` và
- * Rollup cắt luôn cả phần thân lẫn mô-đun `demo-accounts` chứa mật khẩu. Sửa
- * component này thì phải build lại và `grep` mật khẩu trong `dist/` để chắc.
+ * ⚠️ Không bao giờ được lọt vào bản build thật: cả hai vế của `HIEN_MENU_DEV` đều
+ * là hằng số Vite thay lúc build, nên ở prod (không khai `VITE_DEVELOPER_MODE`)
+ * nó gập thành `false` ngay lúc đóng gói, dòng canh dưới thành `if (true) return
+ * null` và Rollup cắt luôn cả phần thân lẫn mô-đun `demo-accounts` chứa mật khẩu.
+ * Sửa component này thì phải build lại và `grep` mật khẩu trong `dist/` để chắc.
  *
  * **Đứng nguyên trang** sau khi đổi, không nhảy về màn chọn phân hệ: cái đáng
  * xem là màn hình đang mở khác đi thế nào. Bộ nhớ đệm truy vấn bị `logout()`
@@ -34,7 +44,7 @@ export function DemoAccountSwitcher() {
   const { user, login, logout } = useAuth()
   const [dangDoi, setDangDoi] = useState<string | null>(null)
 
-  if (!import.meta.env.DEV) return null
+  if (!HIEN_MENU_DEV) return null
 
   async function doiSang(account: DemoAccount) {
     if (account.username === user?.emp_code) return

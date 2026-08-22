@@ -56,6 +56,7 @@ services:
         VITE_API_URL: ""                                # rỗng = gọi cùng origin, nginx proxy /api -> api:8000
         VITE_APP_NAME: "DEGO ERP (dev)"
         VITE_HELP_URL: "https://devhelp.degoholding.vn"
+        VITE_DEVELOPER_MODE: "${VITE_DEVELOPER_MODE:-}"  # =dev thì hiện "Đổi tài khoản nhanh", giống `web`
     container_name: erp-dev
     restart: always
     depends_on:
