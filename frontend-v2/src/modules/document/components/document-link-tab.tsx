@@ -1,7 +1,13 @@
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, ArrowDownLeft, ArrowUpRight } from 'lucide-react'
 import { useMemo } from 'react'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/shared/ui/card'
 import {
   useAddDocumentLink,
   useDeleteDocumentLink,
@@ -74,6 +80,11 @@ export function DocumentLinkTab({ documentId, canWrite }: DocumentLinkTabProps) 
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Khai quan hệ</CardTitle>
+            <CardDescription>
+              Ô hiện ra theo quy tắc của loại văn bản này — không phải nhớ. Dấu{' '}
+              <span className="text-destructive">*</span> là quan hệ bắt buộc, thiếu thì
+              không gửi duyệt được.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <DocumentLinkAddForm
@@ -90,7 +101,15 @@ export function DocumentLinkTab({ documentId, canWrite }: DocumentLinkTabProps) 
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Văn bản này trỏ tới ({outgoing.length})</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ArrowUpRight className="size-4 text-muted-foreground" />
+            Văn bản này trỏ tới ({outgoing.length})
+          </CardTitle>
+          {/*  Hai thẻ danh sách trông y hệt nhau, chỉ khác đúng một thẻ có nút
+               gỡ. Không nói ra thì người dùng đọc thành "chỗ này lỗi, mất nút". */}
+          <CardDescription>
+            Quan hệ do chính văn bản này khai ra — gỡ được ngay tại đây.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {outgoing.length === 0 ? (
@@ -112,9 +131,14 @@ export function DocumentLinkTab({ documentId, canWrite }: DocumentLinkTabProps) 
       {incoming.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ArrowDownLeft className="size-4 text-muted-foreground" />
               Văn bản khác trỏ tới đây ({incoming.length})
             </CardTitle>
+            <CardDescription>
+              Do văn bản bên kia khai, không phải văn bản này — muốn gỡ thì mở văn bản đó ra
+              gỡ. Ở đây chỉ xem.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="divide-y">

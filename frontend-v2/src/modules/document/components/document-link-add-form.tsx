@@ -1,8 +1,11 @@
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
 
+import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
+import { HelpHint } from '@/shared/ui/help-hint'
 import { Label } from '@/shared/ui/label'
+import { RequiredMark } from '@/shared/ui/required-mark'
 import {
   Select,
   SelectContent,
@@ -10,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import type { DocumentLinkSlot } from '../types/document-link'
+import { RELATION_HINTS, type DocumentLinkSlot } from '../types/document-link'
 
 interface DocumentLinkAddFormProps {
   slots: DocumentLinkSlot[]
@@ -62,18 +65,38 @@ export function DocumentLinkAddForm({
 
         return (
           <div key={slot.rule_id} className="space-y-2">
-            <Label>
-              {/*  Kèm loại đích: hai dòng quy tắc cùng quan hệ mà chỉ ghi "Thuộc
-                   về" thì trên màn hình ra hai ô y hệt nhau, không biết ô nào
-                   đang bắt buộc. */}
-              {slot.relation_label} → {slot.target_type_name}
-              {slot.is_required && <span className="text-destructive"> *</span>}
-              <span className="ml-2 font-normal text-muted-foreground">
+            {/*  Ba mẩu thông tin khác loại nhau nên tách hẳn ra, không dính
+                 thành một dòng chữ: quan hệ + loại đích là NHÃN, "bắt buộc" là
+                 RÀNG BUỘC, "đã khai n/m" là TÌNH TRẠNG. Gộp lại thì đọc ra
+                 "Kèm theo → Quyết định * đã khai 1/1" — không ai biết dấu sao
+                 và con số kia nói về cái gì. */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <Label className="font-medium">
+                {/*  Kèm loại đích: hai dòng quy tắc cùng quan hệ mà chỉ ghi "Thuộc
+                     về" thì trên màn hình ra hai ô y hệt nhau, không biết ô nào
+                     đang bắt buộc. */}
+                {slot.relation_label} → {slot.target_type_name}
+                {slot.is_required && (
+                  <RequiredMark hint="Quan hệ bắt buộc — thiếu thì không gửi duyệt được." />
+                )}
+              </Label>
+
+              <HelpHint label={`Quan hệ «${slot.relation_label}» nghĩa là gì`}>
+                {RELATION_HINTS[slot.relation]}
+              </HelpHint>
+
+              {slot.is_required && (
+                <Badge variant="outline" className="border-destructive/40 font-normal text-destructive">
+                  bắt buộc
+                </Badge>
+              )}
+
+              <span className="text-xs text-muted-foreground">
                 {slot.max_count > 0
-                  ? `đã khai ${daCo}/${slot.max_count}`
-                  : `đã khai ${daCo}`}
+                  ? `đã khai ${daCo} trên tối đa ${slot.max_count}`
+                  : `đã khai ${daCo} · không giới hạn`}
               </span>
-            </Label>
+            </div>
 
             <div className="flex gap-2">
               <Select
@@ -84,11 +107,18 @@ export function DocumentLinkAddForm({
                 }
               >
                 <SelectTrigger className="flex-1">
+                  {/*  Lý do bị khóa phải nằm NGAY TRONG ô, không phải ở dòng chữ
+                       mờ bên dưới: người dùng bấm vào ô, thấy nó trơ ra, và đọc
+                       "Chọn văn bản…" — nghĩa là ô mời chọn mà không cho chọn.
+                       Người dùng báo đúng lỗi này ("sao chỗ này chặn không cho
+                       tôi chọn"), dù câu giải thích đã có sẵn ở ngay bên dưới. */}
                   <SelectValue
                     placeholder={
-                      slot.options.length === 0
-                        ? 'Chưa có văn bản nào đang hiệu lực để chọn'
-                        : 'Chọn văn bản…'
+                      daDu
+                        ? `Đã khai đủ ${slot.max_count} — gỡ bớt bên dưới rồi mới khai thêm được`
+                        : slot.options.length === 0
+                          ? 'Chưa có văn bản nào đang hiệu lực để chọn'
+                          : 'Chọn văn bản…'
                     }
                   />
                 </SelectTrigger>
@@ -116,9 +146,12 @@ export function DocumentLinkAddForm({
               </Button>
             </div>
 
+            {/*  Câu này KHÔNG lặp lại placeholder ở trên — nó trả lời câu hỏi
+                 tiếp theo: gỡ ở chỗ nào. */}
             {daDu && (
               <p className="text-xs text-muted-foreground">
-                Đã đủ số lượng tối đa. Gỡ bớt bên dưới rồi mới khai thêm được.
+                Ô này đã đủ số lượng tối đa. Gỡ một dòng ở thẻ «Văn bản này trỏ tới» bên
+                dưới rồi mới khai thêm được.
               </p>
             )}
           </div>

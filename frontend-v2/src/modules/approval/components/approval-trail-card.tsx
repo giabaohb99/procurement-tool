@@ -204,8 +204,17 @@ export function ApprovalTrailCard({ instanceId, className }: ApprovalTrailCardPr
                 </div>
               )}
 
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <h3 className="text-sm font-semibold">Hoạt động</h3>
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold">Hoạt động</h3>
+                  {/*  CHIỀU ĐỌC phải nói ra. Danh sách này đảo ngược (mới nhất
+                       trên cùng) trong khi ô «Bắt đầu» ở dải tóm tắt lại là mốc
+                       CŨ NHẤT — người đọc mặc định trên-xuống là xuôi thời gian
+                       nên hiểu ngược toàn bộ trình tự ký. */}
+                  <Badge variant="outline" className="font-normal">
+                    mới nhất trước
+                  </Badge>
+                </div>
                 <span className="text-xs text-muted-foreground tabular-nums">
                   {lines.length} mốc đã ghi nhận
                 </span>
@@ -322,12 +331,15 @@ function ApprovalEvent({ line, showRail }: { line: ApprovalAction; showRail: boo
           </p>
         )}
 
+        {/*  Chặng để thành huy hiệu: đây là thứ nối mốc này với thẻ «Luồng» ở
+             trên, mà chữ mờ 12px thì lẫn mất giữa ý kiến và dòng ủy quyền. */}
         {(line.node_seq > 0 || line.node_name) && (
-          <p className="mt-1.5 text-xs text-muted-foreground">
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
             {line.node_seq > 0 && (
-              <span className="font-medium text-foreground">Chặng {line.node_seq}</span>
+              <Badge variant="outline" className="font-normal">
+                Chặng {line.node_seq}
+              </Badge>
             )}
-            {line.node_seq > 0 && line.node_name && <span aria-hidden="true">: </span>}
             {line.node_name}
           </p>
         )}

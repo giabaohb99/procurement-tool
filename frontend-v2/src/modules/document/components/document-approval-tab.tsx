@@ -7,7 +7,14 @@ import { INSTANCE_STATUS, TASK_STATUS } from '@/modules/approval/types/approval'
 import type { ApprovalInstance, ApprovalTask } from '@/modules/approval/types/approval'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/shared/ui/card'
+import { HelpHint } from '@/shared/ui/help-hint'
 import { cn } from '@/shared/utils/cn'
 import { useMyDocumentTask } from '../hooks/use-my-document-approvals'
 
@@ -30,36 +37,60 @@ function trangThaiChang(viec: ApprovalTask[], seq: number, instance: ApprovalIns
   return instance.current_seq > seq ? 'khong-chay' : 'chua-toi'
 }
 
+/**
+ * Bộ mặt của từng trạng thái chặng.
+ *
+ * `huy_hieu` tô CÙNG TÔNG với `nut` (chấm tròn trên đường kẻ) để hai thứ đọc ra
+ * một trạng thái, không phải hai. Trước đây nhãn là chữ mờ 12px nằm cạnh tiêu đề
+ * chặng, nên "Đã duyệt" và "Tự qua vì trùng người" — hai chuyện KHÁC HẲN nhau
+ * về trách nhiệm — trông y như nhau khi lướt mắt.
+ *
+ * `giai_thich` là câu cho nút `?`: mấy nhãn này ngắn tới mức mơ hồ ("Không chạy"
+ * là lỗi hay là bình thường?).
+ */
 const HINH = {
   xong: {
     icon: Check,
     nut: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    huy_hieu: 'border-emerald-200 bg-emerald-50 text-emerald-700',
     nhan: 'Đã duyệt',
+    giai_thich: 'Người ở chặng này đã ký duyệt.',
   },
   'dang-cho': {
     icon: CircleDot,
     nut: 'border-sky-200 bg-sky-50 text-sky-700',
+    huy_hieu: 'border-sky-200 bg-sky-50 text-sky-700',
     nhan: 'Đang chờ',
+    giai_thich: 'Phiếu đang nằm ở chặng này, chờ người bên dưới xử lý.',
   },
   'tu-choi': {
     icon: X,
     nut: 'border-destructive/30 bg-destructive/5 text-destructive',
+    huy_hieu: 'border-destructive/30 bg-destructive/5 text-destructive',
     nhan: 'Từ chối',
+    giai_thich: 'Người ở chặng này đã từ chối, luồng dừng tại đây.',
   },
   'tu-qua': {
     icon: MinusCircle,
     nut: 'border-border bg-muted text-muted-foreground',
+    huy_hieu: 'border-border bg-muted text-muted-foreground',
     nhan: 'Tự qua vì trùng người',
+    giai_thich:
+      'Người của chặng này đã ký ở một chặng trước, nên hệ thống bỏ qua — KHÔNG phải có thêm một người xem xét.',
   },
   'chua-toi': {
     icon: CircleDashed,
     nut: 'border-border bg-background text-muted-foreground',
+    huy_hieu: 'border-border bg-background text-muted-foreground',
     nhan: 'Chưa tới lượt',
+    giai_thich: 'Phiếu chưa đi tới chặng này.',
   },
   'khong-chay': {
     icon: CircleDashed,
     nut: 'border-border bg-muted text-muted-foreground',
+    huy_hieu: 'border-border bg-muted text-muted-foreground',
     nhan: 'Không chạy',
+    giai_thich: 'Luồng đã dừng trước khi tới chặng này — bình thường, không phải lỗi.',
   },
 } as const
 
@@ -105,10 +136,15 @@ export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTa
   return (
     <div className="space-y-4">
       <Card className="gap-0 py-0">
-        <CardHeader className="flex min-h-16 flex-row items-center justify-between gap-4 border-b px-5 py-4">
-          <CardTitle className="text-base">
-            Luồng «{instance.flow_name}» bản {instance.flow_version}
-          </CardTitle>
+        <CardHeader className="flex min-h-16 flex-row items-start justify-between gap-4 border-b px-5 py-4">
+          <div className="min-w-0">
+            <CardTitle className="text-base">
+              Luồng «{instance.flow_name}» bản {instance.flow_version}
+            </CardTitle>
+            <CardDescription className="mt-0.5">
+              Đường đi của phiếu, đọc từ trên xuống theo thứ tự chặng.
+            </CardDescription>
+          </div>
           <div className="flex items-center gap-3">
             <Badge
               variant={
@@ -139,7 +175,7 @@ export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTa
               const ten =
                 (instance.steps ?? []).find((buoc) => buoc.seq === seq)?.name || `Bước ${seq}`
               const trang_thai = trangThaiChang(viec, seq, instance)
-              const { icon: Icon, nut, nhan } = HINH[trang_thai]
+              const { icon: Icon, nut, huy_hieu, nhan, giai_thich } = HINH[trang_thai]
               const nguoi = viec.filter((row) => row.node_seq === seq)
               const dangHienTai = instance.status === INSTANCE_STATUS.running && seq === instance.current_seq
 
@@ -167,33 +203,52 @@ export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTa
                   </span>
 
                   <div className="min-w-0 flex-1 pt-1">
-                    <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-2">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <h3 className="text-sm leading-5 font-semibold">
                         Chặng {seq} · {ten}
                       </h3>
-                      <span
-                        className={cn(
-                          'text-xs font-medium',
-                          dangHienTai ? 'text-primary' : 'text-muted-foreground',
-                        )}
-                      >
+
+                      {/*  Huy hiệu cùng tông với chấm tròn, không còn là chữ mờ
+                           lẫn vào tiêu đề — xem ghi chú ở `HINH`. */}
+                      <Badge variant="outline" className={cn('font-normal', huy_hieu)}>
                         {nhan}
-                      </span>
+                      </Badge>
+                      <HelpHint label={`«${nhan}» nghĩa là gì`}>{giai_thich}</HelpHint>
+
+                      {/*  `aria-current` ở `<li>` chỉ trình đọc màn hình mới nghe
+                           thấy. Người nhìn bằng mắt cũng cần biết phiếu ĐANG nằm
+                           ở đâu trong luồng bốn bước. */}
+                      {dangHienTai && (
+                        <Badge className="font-normal">phiếu đang ở đây</Badge>
+                      )}
                     </div>
+
+                    {/*  Tên người phải có NHÃN. Đứng trơ một mình dưới tiêu đề
+                         chặng thì không đọc ra được đó là người phải ký, người
+                         đã ký, hay người soạn. */}
                     {nguoi.length > 0 && (
-                      <ul className="mt-1 space-y-1">
-                        {nguoi.map((row) => (
-                          <li key={row.id} className="text-sm leading-5 text-muted-foreground">
-                            <span className="font-medium text-foreground">{row.assignee_name}</span>
-                            {nguoi.length > 1 && (
-                              <>
-                                <span aria-hidden="true"> · </span>
-                                {row.status_label}
-                              </>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
+                      <div className="mt-1.5 text-sm leading-5">
+                        <span className="text-xs text-muted-foreground">
+                          {nguoi.length > 1 ? 'Người duyệt chặng này:' : 'Người duyệt:'}
+                        </span>
+                        <ul className="mt-0.5 space-y-1">
+                          {nguoi.map((row) => (
+                            <li key={row.id} className="text-muted-foreground">
+                              <span className="font-medium text-foreground">
+                                {row.assignee_name}
+                              </span>
+                              {/*  Nhiều người cùng chặng thì mỗi người một trạng
+                                   thái riêng — thấy ngay còn thiếu chữ ký nào. */}
+                              {nguoi.length > 1 && (
+                                <>
+                                  <span aria-hidden="true"> · </span>
+                                  {row.status_label}
+                                </>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
                   </div>
                 </li>

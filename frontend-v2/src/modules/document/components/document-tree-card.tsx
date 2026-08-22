@@ -1,12 +1,16 @@
-import { AlertTriangle, Building2, CornerDownRight, FolderTree } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { FileText, FolderTree } from 'lucide-react'
 
-import { appRoutes } from '@/shared/constants/app-routes'
 import { Badge } from '@/shared/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
-import { cn } from '@/shared/utils/cn'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/shared/ui/card'
 import { useDocumentTree } from '../hooks/use-document-links'
 import type { DocumentTreeNode } from '../types/document-link'
+import { CloneLink, TreeNode } from './document-tree-node'
 
 interface DocumentTreeCardProps {
   documentId: number
@@ -24,6 +28,10 @@ interface DocumentTreeCardProps {
  * sách: chúng trả lời hai câu khác hẳn nhau — *"văn bản nào thuộc về văn bản
  * này"* và *"văn bản này đã tách bản cho pháp nhân nào"*. Trộn lại thì mỗi dòng
  * phải tự giải thích mình thuộc loại gì, và cả khối thành một dải chữ dài.
+ *
+ * Cây bắt đầu bằng chính VĂN BẢN ĐANG MỞ. Trước đây cây vẽ thẳng từ các con:
+ * mọi dòng đều thụt lề so với một cái gốc vô hình, nên không đọc ra được dòng
+ * nào là con của dòng nào, mà cũng chẳng biết mình đang đứng ở đâu trong cây.
  */
 export function DocumentTreeCard({ documentId }: DocumentTreeCardProps) {
   const { data: tree } = useDocumentTree(documentId)
@@ -38,9 +46,15 @@ export function DocumentTreeCard({ documentId }: DocumentTreeCardProps) {
           <FolderTree className="size-4 text-muted-foreground" />
           Cây tài liệu
         </CardTitle>
+        <CardDescription>
+          Những văn bản nằm DƯỚI văn bản này — văn bản con theo quan hệ, và bản riêng đã tách
+          cho pháp nhân con. Tối đa 3 cấp.
+        </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {tree && <GocCay node={tree} />}
+
         {children.length === 0 && (
           <p className="text-sm text-muted-foreground">
             Chưa có văn bản nào thuộc về văn bản này, cũng chưa tách bản riêng cho pháp
@@ -49,27 +63,61 @@ export function DocumentTreeCard({ documentId }: DocumentTreeCardProps) {
         )}
 
         {quanHe.length > 0 && (
-          <ul className="space-y-0.5">
+          <NhomCay tieuDe={`Văn bản thuộc về văn bản này (${quanHe.length})`}>
             {quanHe.map((node) => (
               <TreeNode key={node.id} node={node} level={0} />
             ))}
-          </ul>
+          </NhomCay>
         )}
 
         {banRieng.length > 0 && (
-          <section className="space-y-1">
-            <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              Bản riêng ở pháp nhân con ({banRieng.length})
-            </h3>
-            <ul className="space-y-0.5">
-              {banRieng.map((node) => (
-                <CloneNode key={node.id} node={node} />
-              ))}
-            </ul>
-          </section>
+          <NhomCay tieuDe={`Bản riêng ở pháp nhân con (${banRieng.length})`}>
+            {banRieng.map((node) => (
+              <CloneNode key={node.id} node={node} />
+            ))}
+          </NhomCay>
         )}
       </CardContent>
     </Card>
+  )
+}
+
+/**
+ * Dòng GỐC — chính văn bản đang mở, không bấm được vì bấm sẽ tự dẫn về đây.
+ *
+ * Có nó thì phần thụt lề bên dưới mới có mốc để so, và người dùng đọc ra ngay
+ * "mình đang đứng ở đâu" thay vì phải đoán từ tiêu đề trang.
+ */
+function GocCay({ node }: { node: DocumentTreeNode }) {
+  return (
+    <div className="flex items-center gap-3 rounded-md border bg-muted/40 px-3 py-2">
+      <FileText className="size-4 shrink-0 text-muted-foreground" />
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{node.title}</p>
+        <p className="truncate text-xs text-muted-foreground">
+          {[node.display_code || 'chưa cấp số', node.version_no && `bản ${node.version_no}`]
+            .filter(Boolean)
+            .join(' · ')}
+        </p>
+      </div>
+
+      <Badge variant="secondary" className="shrink-0 font-normal">
+        đang mở
+      </Badge>
+    </div>
+  )
+}
+
+/** Hai nhánh của cây có tiêu đề CÂN NHAU — trước đây chỉ nhánh bản riêng có. */
+function NhomCay({ tieuDe, children }: { tieuDe: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-1">
+      <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        {tieuDe}
+      </h3>
+      <ul className="space-y-0.5">{children}</ul>
+    </section>
   )
 }
 
@@ -78,111 +126,6 @@ function CloneNode({ node }: { node: DocumentTreeNode }) {
   return (
     <li>
       <CloneLink node={node} />
-    </li>
-  )
-}
-
-/**
- * Dòng BẢN RIÊNG — dùng ở CẢ hai chỗ: nhóm "Bản riêng" ở cấp một, và lẫn trong
- * cây ở cấp sâu.
- *
- * ⚠️ Trước 20/08/2026 chỉ cấp MỘT mới tách được bản riêng ra (`children.filter`
- * chạy đúng một lần ở gốc), còn `TreeNode` đệ quy thì không hề xét `kind`. Bản
- * clone nằm sâu vì thế bị vẽ như một quan hệ thường: lấy `title` — mà tiêu đề
- * chép nguyên của gốc nên trùng hệt — rồi `relation_label` và `display_code`
- * đều rỗng. Kết quả là mấy dòng **giống hệt nhau, không tên pháp nhân, không số
- * hiệu**, không ai đoán được là gì (người dùng bắt được trên cây của văn bản 204).
- */
-function CloneLink({ node }: { node: DocumentTreeNode }) {
-  return (
-    <Link
-        to={appRoutes.document.documentDetail(node.id)}
-        className="flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted"
-      >
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-violet-50 text-violet-600">
-          <Building2 className="size-4" />
-        </span>
-
-        {/*  `min-w-0` là bắt buộc: tên pháp nhân dài (viết hoa toàn bộ) sẽ nong
-             ô flex ra và đẩy huy hiệu trạng thái tràn khỏi thẻ. */}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{node.company_name || node.title}</p>
-          <p className="truncate text-xs text-muted-foreground">
-            {[
-              node.display_code || 'chưa cấp số',
-              node.version_no && `bản ${node.version_no}`,
-              node.clone_status_label,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </p>
-        </div>
-
-        {node.is_outdated && (
-          <span className="flex shrink-0 items-center gap-1 text-xs text-amber-700">
-            <AlertTriangle className="size-3.5" />
-            lệch bản
-          </span>
-        )}
-
-      <Badge variant="outline" className="shrink-0">
-        {node.status_label}
-      </Badge>
-    </Link>
-  )
-}
-
-/** Một văn bản CON theo quan hệ, đệ quy theo cấp. */
-function TreeNode({ node, level }: { node: DocumentTreeNode; level: number }) {
-  return (
-    <li>
-      {/*  Thụt lề bằng padding theo cấp, không lồng `<ul>` nhiều tầng: lồng sâu
-           thì trên màn hẹp cây bị đẩy tràn ra ngoài khung. */}
-      <div style={{ paddingLeft: `${level * 20}px` }}>
-        {/*  Bản riêng ở CẤP SÂU vẫn phải đọc ra là bản riêng — xem `CloneLink`. */}
-        {node.kind === 'clone' ? (
-          <CloneLink node={node} />
-        ) : (
-        <Link
-          to={appRoutes.document.documentDetail(node.id)}
-          className="flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted"
-        >
-          <CornerDownRight className="size-4 shrink-0 text-muted-foreground" />
-
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{node.title}</p>
-            <p className="truncate text-xs text-muted-foreground">
-              {[
-                node.relation_label,
-                node.display_code,
-                node.version_no && `bản ${node.version_no}`,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </p>
-          </div>
-
-          {(node.needs_review || node.is_outdated) && (
-            <AlertTriangle
-              className="size-3.5 shrink-0 text-amber-700"
-              aria-label="Cần rà lại"
-            />
-          )}
-
-          <Badge variant="outline" className={cn('shrink-0')}>
-            {node.status_label}
-          </Badge>
-        </Link>
-        )}
-      </div>
-
-      {node.children.length > 0 && (
-        <ul className="space-y-0.5">
-          {node.children.map((child) => (
-            <TreeNode key={child.id} node={child} level={level + 1} />
-          ))}
-        </ul>
-      )}
     </li>
   )
 }
