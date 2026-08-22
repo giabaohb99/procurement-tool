@@ -103,13 +103,25 @@ function SelectLabel({
 function SelectItem({
   className,
   children,
+  description,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Item>) {
+}: React.ComponentProps<typeof SelectPrimitive.Item> & {
+  /**
+   * Dòng phụ giải thích lựa chọn này, hiện trong danh sách bung ra.
+   *
+   * ⚠️ Cố ý nằm NGOÀI `ItemText`: Radix chiếu nguyên nội dung `ItemText` lên ô
+   * chọn khi mục được chọn, nên nhét câu giải thích vào trong là ô chọn cao 36px
+   * phải chứa hai dòng chữ. Để ngoài thì danh sách có dòng phụ, còn ô chọn vẫn
+   * chỉ mỗi cái tên.
+   */
+  description?: React.ReactNode
+}) {
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
         "relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        description && "flex-col items-start gap-0.5",
         className
       )}
       {...props}
@@ -123,6 +135,17 @@ function SelectItem({
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+      {/*  `<p>` chứ không phải `<span>`: luật `*:[span]:last:flex` ở trên nhắm
+           vào thẻ span CUỐI CÙNG — để span thì nó cướp mất luật đó của
+           `ItemText`. */}
+      {description && (
+        <p
+          data-slot="select-item-description"
+          className="max-w-80 text-xs leading-snug text-pretty text-muted-foreground"
+        >
+          {description}
+        </p>
+      )}
     </SelectPrimitive.Item>
   )
 }

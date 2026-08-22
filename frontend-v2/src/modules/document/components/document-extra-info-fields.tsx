@@ -64,9 +64,17 @@ export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) 
                   <SelectValue />
                 </SelectTrigger>
               </FormControl>
+              {/*  Bốn cái tên "Công khai · Nội bộ · Mật · Tuyệt mật" nghe thì
+                   hiểu, nhưng người soạn cần biết CHỌN CÁI NÀY THÌ SAO — ai đọc
+                   được, có tải tệp được không. Câu đó đã có sẵn ở
+                   `security-level.ts`, trước giờ chỉ nằm trong màn danh mục. */}
               <SelectContent>
                 {confidentialLevels.map((level) => (
-                  <SelectItem key={level.id} value={String(level.id)}>
+                  <SelectItem
+                    key={level.id}
+                    value={String(level.id)}
+                    description={level.description}
+                  >
                     {level.name}
                   </SelectItem>
                 ))}
@@ -100,7 +108,11 @@ export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) 
               </FormControl>
               <SelectContent>
                 {urgencyLevels.map((level) => (
-                  <SelectItem key={level.id} value={String(level.id)}>
+                  <SelectItem
+                    key={level.id}
+                    value={String(level.id)}
+                    description={level.description}
+                  >
                     {level.name}
                   </SelectItem>
                 ))}

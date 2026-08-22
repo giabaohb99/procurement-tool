@@ -31,7 +31,14 @@ export interface SecurityLevel {
   is_active: boolean
 }
 
-/** Bốn mức mật. Chưa cấp gì cho một người thì người đó ở mức 2 Nội bộ. */
+/**
+ * Bốn mức mật. Chưa cấp gì cho một người thì người đó ở mức 2 Nội bộ.
+ *
+ * `description` viết từ góc nhìn **VĂN BẢN** — trả lời "đóng dấu mức này thì ai
+ * đọc được, bị chặn cái gì". Đây là câu hiện làm dòng phụ trong ô chọn mức mật
+ * lúc tạo văn bản, nên nó phải giúp người soạn CHỌN được; câu mô tả quyền của
+ * người đọc thì không giúp gì cho việc đó.
+ */
 export const CONFIDENTIAL_LEVELS: SecurityLevel[] = [
   {
     id: 1,
@@ -48,7 +55,8 @@ export const CONFIDENTIAL_LEVELS: SecurityLevel[] = [
     name: 'Nội bộ',
     kind: 'confidential',
     rank: 2,
-    description: 'Mức mặc định của mọi người khi chưa được cấp mức nào khác.',
+    description:
+      'Người trong tập đoàn đọc được, không gửi ra ngoài. Cũng là mức mặc định của một người khi chưa được cấp mức nào khác.',
     is_active: true,
   },
   {
@@ -57,7 +65,8 @@ export const CONFIDENTIAL_LEVELS: SecurityLevel[] = [
     name: 'Mật',
     kind: 'confidential',
     rank: 3,
-    description: 'Phải được cấp mức mật tường minh, có thời hạn.',
+    description:
+      'Chỉ người đã được cấp mức Mật mới đọc được, và mức cấp đó có thời hạn.',
     is_active: true,
   },
   {

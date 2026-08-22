@@ -199,7 +199,11 @@ export function DocumentExcerptDialog({
               </SelectTrigger>
               <SelectContent>
                 {chonDuoc.map((level) => (
-                  <SelectItem key={level.id} value={String(level.id)}>
+                  <SelectItem
+                    key={level.id}
+                    value={String(level.id)}
+                    description={level.description}
+                  >
                     {level.name}
                   </SelectItem>
                 ))}

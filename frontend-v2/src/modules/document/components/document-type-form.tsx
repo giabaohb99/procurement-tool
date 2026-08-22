@@ -306,7 +306,11 @@ export function DocumentTypeForm({
                       </FormControl>
                       <SelectContent>
                         {CONFIDENTIAL_LEVELS.map((level) => (
-                          <SelectItem key={level.id} value={String(level.id)}>
+                          <SelectItem
+                            key={level.id}
+                            value={String(level.id)}
+                            description={level.description}
+                          >
                             {level.name}
                           </SelectItem>
                         ))}
