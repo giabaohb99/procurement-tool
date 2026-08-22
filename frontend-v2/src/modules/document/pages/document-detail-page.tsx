@@ -378,8 +378,12 @@ export function DocumentDetailPage() {
                 )}
 
                 {/*  C19 — chỉ trích được từ văn bản ĐÃ BAN HÀNH: trích từ một
-                     bản nháp là chia ra ngoài thứ chưa ai duyệt. */}
-                {isIssued && (
+                     bản nháp là chia ra ngoài thứ chưa ai duyệt.
+                     Kèm `canCreate`: bản trích là một VĂN BẢN MỚI, backend đòi
+                     `document: create` (`link_controller.create_excerpt`). Người
+                     chỉ có quyền đọc mà thấy mục này thì gõ xong cả nội dung
+                     trích mới nhận 403 — mất công vô ích. */}
+                {isIssued && canCreate && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onSelect={() => setExcerptOpen(true)}>
