@@ -37,6 +37,7 @@ function docTien(amount: number): string {
 export default function PrintPaymentRequest() {
   const { id } = useParams()
   const [req, setReq] = useState<any>(null)
+  const [taxMode, setTaxMode] = useState(false)
   // Phiếu đã bị xóa / không có quyền in -> API trả 404·403. Không bắt lỗi thì trang kẹt
   // "Đang tải..." vĩnh viễn, người dùng tưởng hệ thống treo.
   const [notFound, setNotFound] = useState(false)
@@ -48,6 +49,25 @@ export default function PrintPaymentRequest() {
   }, [id])
   // Tên file gợi ý khi lưu PDF = Mã YCTT + ngày yêu cầu (xem chú thích ở usePrintTitle).
   usePrintTitle(req ? tenFileIn(req.code, req.request_date) : '')
+
+  // Gom các dòng trùng chứng từ (ví dụ 256) lại thành 1 dòng + tổng tiền
+  const groupedLines = useMemo(() => {
+    if (!req?.lines || !Array.isArray(req.lines)) return []
+    const map = new Map<string, any>()
+    for (const l of req.lines) {
+      const invNo = (l.invoice_no || '').trim()
+      const invDate = (l.invoice_date || '').trim()
+      const key = `${invNo}||${invDate}`
+      if (map.has(key)) {
+        const existing = map.get(key)
+        existing.amount = (Number(existing.amount) || 0) + (Number(l.amount) || 0)
+      } else {
+        map.set(key, { ...l, amount: Number(l.amount) || 0 })
+      }
+    }
+    return Array.from(map.values())
+  }, [req?.lines])
+
   if (notFound) return (
     <NotFound backTo="/payment-requests"
               message="Phiếu yêu cầu thanh toán này không tồn tại, đã bị xóa hoặc bạn không có quyền in." />
@@ -70,9 +90,29 @@ export default function PrintPaymentRequest() {
   return (
     <div style={{ background: '#eee', minHeight: '100vh', padding: 16 }}>
       <style>{`@media print { .no-print { display:none } body { background:#fff } } @page { size: A4 portrait; margin: 12mm }`}</style>
-      <div className="no-print" style={{ maxWidth: 800, margin: '0 auto 12px', display: 'flex', gap: 8 }}>
+      <div className="no-print" style={{ maxWidth: 800, margin: '0 auto 12px', display: 'flex', gap: 8, alignItems: 'center' }}>
         <button className="btn" onClick={() => window.print()}>In / Lưu PDF</button>
         <button className="btn ghost" onClick={() => window.close()}>Đóng</button>
+        <span style={{ flex: 1 }} />
+        <div style={{ display: 'inline-flex', border: '1px solid #d9e0ea', borderRadius: 8, overflow: 'hidden' }}>
+          {[{ v: false, t: 'Mẫu thường' }, { v: true, t: 'Mẫu thuế' }].map((tab) => (
+            <button
+              key={tab.t}
+              onClick={() => setTaxMode(tab.v)}
+              style={{
+                padding: '7px 16px',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 13,
+                fontWeight: 500,
+                background: taxMode === tab.v ? '#00AEEF' : '#fff',
+                color: taxMode === tab.v ? '#fff' : '#475569',
+              }}
+            >
+              {tab.t}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="print-doc" style={{ maxWidth: 800, margin: '0 auto', background: '#fff', padding: '24px 30px', fontFamily: 'Arial, sans-serif', color: '#000' }}>
@@ -95,10 +135,10 @@ export default function PrintPaymentRequest() {
         {/* Thông tin chung */}
         <div style={SH}>THÔNG TIN CHUNG</div>
         <div style={{ lineHeight: 1.55 }}>
-          <div style={lbl}><b>Người đề nghị thanh toán:</b> {req.created_by_name || ''}</div>
-          <div style={lbl}><b>Chức vụ:</b> {dot(req.created_by_position)}</div>
-          <div style={lbl}><b>Hiện công tác tại bộ phận:</b> {dot(req.created_by_dept)}</div>
-          <div style={lbl}><b>Trưởng phòng ban/bộ phận:</b> {dot(req.dept_manager)}</div>
+          <div style={lbl}><b>Người đề nghị thanh toán:</b> {taxMode ? '' : (req.created_by_name || '')}</div>
+          <div style={lbl}><b>Chức vụ:</b> {taxMode ? '' : dot(req.created_by_position)}</div>
+          <div style={lbl}><b>Hiện công tác tại bộ phận:</b> {taxMode ? '' : dot(req.created_by_dept)}</div>
+          <div style={lbl}><b>Trưởng phòng ban/bộ phận:</b> {taxMode ? '' : dot(req.dept_manager)}</div>
         </div>
 
         {/* Nội dung thanh toán */}
@@ -130,21 +170,21 @@ export default function PrintPaymentRequest() {
             </tr>
           </thead>
           <tbody>
-            {req.lines.map((l: any, i: number) => (
+            {groupedLines.map((l: any, i: number) => (
               <tr key={i}>
                 <td style={{ ...cell, textAlign: 'center', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{l.invoice_no}</td>
                 {/* CR-066: chưa có hóa đơn thì in TRẮNG để điền tay — không lấy ngày phát sinh thay thế */}
                 <td style={{ ...cell, textAlign: 'center' }}>{dmy(l.invoice_date)}</td>
                 {/* Diễn giải GỘP cho mọi dòng (rowSpan) — chỉ render ở dòng đầu */}
                 {i === 0 && (
-                  <td style={{ ...cell, verticalAlign: 'middle' }} rowSpan={req.lines.length || 1}>{noiDung}</td>
+                  <td style={{ ...cell, verticalAlign: 'middle' }} rowSpan={groupedLines.length || 1}>{noiDung}</td>
                 )}
                 <td style={{ ...cell, textAlign: 'right' }}>{fmt(l.amount)}</td>
                 <td style={cell} />
                 <td style={cell} />
               </tr>
             ))}
-            {req.lines.length === 0 && (
+            {groupedLines.length === 0 && (
               <tr><td style={cell} /><td style={cell} /><td style={cell}>{noiDung}</td><td style={cell} /><td style={cell} /><td style={cell} /></tr>
             )}
             <tr>
