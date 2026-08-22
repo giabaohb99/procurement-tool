@@ -1,13 +1,20 @@
 # Dev-UAT — CSDL là MySQL 8.4 chạy riêng ('procurement-mysql', net 'dego-db', xem ~/procurement-db/
 # trên VPS), database RIÊNG 'procurement_dev' — CÙNG máy chủ CSDL với prod, khác database.
-# Chạy: docker compose -p procurement-dev --env-file .env.dev -f docker-compose.dev.yml up -d --build
+# Chạy: docker compose --env-file .env.dev -f docker-compose.dev.yml up -d --build
+#   ⚠ KHÔNG truyền `-p procurement-dev`. Stack dev đang chạy thật nằm dưới project
+#   `procurement-tool-dev` (tên mặc định theo thư mục); thêm `-p` là compose tưởng đây là stack
+#   khác, đẻ ra một bộ container song song rồi chết ở `Conflict. The container name "/erp-dev"
+#   is already in use`. Kiểm: docker ps --format '{{.Names}}\t{{.Label "com.docker.compose.project"}}'
 #
 # ⚠ Trên VPS, ~/procurement-tool-dev và ~/procurement-tool là HAI WORKTREE của cùng 1 repo git,
-#   nên phải giữ KHÁC NHÁNH: dev = `bao`, prod = `main`. Nếu để chung nhánh thì lần deploy sau
+#   nên phải giữ KHÁC NHÁNH: dev = `erp-v2`, prod = `main`. Nếu để chung nhánh thì lần deploy sau
 #   `git pull` ở worktree này sẽ dời ref chung, worktree kia báo "Already up to date" và im lặng
 #   build lại code CŨ. Cập nhật code luôn bằng:
-#       cd ~/procurement-tool-dev && git fetch origin && git reset --hard origin/bao
+#       cd ~/procurement-tool-dev && git fetch origin && git reset --hard origin/erp-v2
 #   rồi kiểm `git status --short` phải RỖNG trước khi build.
+#   (Từ 18/08/2026 dev đổi từ `bao` sang `erp-v2`; `bao` được merge vào `erp-v2` chứ không bỏ.)
+#
+# Luật nhánh + quy trình deploy đầy đủ: doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md
 # Khác prod: KHÔNG celery-beat, KHÔNG db-forward; web build cho domain devthumua.
 services:
   api:
