@@ -65,6 +65,40 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
     )
   }
 
+  //  BỊ TRẢ VỀ / ĐÃ TỪ CHỐI — băng này là lý do phần lớn việc sửa 24/08/2026.
+  //  Trước đó hàm trả `null` ngay khi phiên không còn chạy, nên người soạn mở
+  //  văn bản vừa bị trả ra chỉ thấy trạng thái trơ trọi: lý do nằm ở dấu vết tab
+  //  Phê duyệt và trong `change_reason` của phiên bản — hai chỗ không ai nghĩ để
+  //  mở. Câu người ta cần là "bị trả vì sao, giờ làm gì", nên nó phải nằm ngay
+  //  đây, trên mọi tab.
+  const biTraVe = instance.status === INSTANCE_STATUS.returned
+  const biTuChoi = instance.status === INSTANCE_STATUS.rejected
+  if (biTraVe || biTuChoi) {
+    return (
+      <div className="mb-3 flex gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3">
+        <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+        <div className="text-sm">
+          <p className="font-medium">
+            {biTraVe ? 'Văn bản bị trả về.' : 'Văn bản đã bị từ chối.'}
+          </p>
+          {instance.finish_reason && (
+            <p className="mt-0.5">
+              <span className="text-muted-foreground">Lý do: </span>
+              {instance.finish_reason}
+            </p>
+          )}
+          {/*  Nói luôn bước kế tiếp: hai ca này khác nhau đúng ở chỗ đó, mà đó
+               cũng là câu người soạn đang cần. */}
+          <p className="mt-0.5 text-muted-foreground">
+            {biTraVe
+              ? 'Sửa lại nội dung rồi bấm Gửi duyệt lần nữa. Dấu vết đầy đủ ở tab Phê duyệt.'
+              : 'Văn bản đã khóa sửa. Muốn làm lại thì bấm Sao chép để có bản nháp mới.'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   if (!dangChay) return null
 
   //  ĐANG CHỜ TÔI: băng đổi hẳn màu và mọc thêm nút. Cùng một màu xám với ca

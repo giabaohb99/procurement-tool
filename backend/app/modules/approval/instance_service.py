@@ -6,6 +6,7 @@ và đi đâu tiếp*.
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from . import approver_resolver, entity_hooks, flow_service, task_notification
@@ -89,7 +90,19 @@ def bat_dau(db: Session, entity: str, entity_id: int, subject: dict,
         created_by=actor, updated_by=actor,
     )
     db.add(instance)
-    db.flush()
+
+    try:
+        db.flush()
+    except IntegrityError:
+        #  Chốt chặn THẬT là `running_slot` + UNIQUE ở tầng dữ liệu; câu kiểm
+        #  `phien_dang_chay` bên trên chỉ để có câu báo đẹp cho ca thường.
+        #  Rơi vào đây nghĩa là một lượt bấm khác vừa ghi xong giữa hai câu lệnh
+        #  của ta — đúng ca NHẤP ĐÚP nút «Gửi duyệt» (dựng lại được 24/08/2026,
+        #  trước khi có ràng buộc thì ra HAI phiếu duyệt cùng chạy).
+        db.rollback()
+        raise HTTPException(
+            409, "Phiếu duyệt của chứng từ này vừa được mở bởi một lượt bấm khác. "
+                 "Tải lại trang để xem phiếu đang chạy.")
 
     ghi_dau_vet(db, instance, ACTION_START, actor,
                 actor_employee_id=submitter_employee_id,
@@ -316,3 +329,35 @@ def mo_viec_ke_tiep_trong_buoc(db: Session, instance: ApprovalInstance, node) ->
         db.flush()
         #  Tới lượt ai thì báo người đó — việc của họ vừa từ "chờ" sang "phải làm".
         task_notification.bao_viec_moi(db, instance, [cho[0]])
+
+
+def xoa_theo_chung_tu(db: Session, entity: str, entity_id: int) -> int:
+    """Chứng từ bị XÓA thì dọn luôn phiếu duyệt của nó. Trả về số phiếu đã dọn.
+
+    Không dọn thì phiếu duyệt nằm lại trỏ vào một chứng từ không còn tồn tại —
+    lỗi dựng lại được 24/08/2026 trên đường đi hoàn toàn hợp lệ: tạo văn bản →
+    gửi duyệt → bị **trả về** → bấm **Xóa** (luật cho phép xóa ở trạng thái đó,
+    nút có sẵn trên màn hình) → phiếu duyệt vẫn còn. Rác cứ thế tích lại, và mọi
+    thống kê đếm theo phiếu duyệt đều đếm cả những phiếu không còn chứng từ.
+
+    Xóa CẢ dấu vết chứ không giữ lại: dấu vết duyệt là để trả lời *"ai duyệt cái
+    này"* — cái đó không còn thì dấu vết cũng hết chỗ bám. Chứng từ nào cần giữ
+    vết thì luật đã không cho xóa (đã cấp số → bãi bỏ; đã từ chối → khóa lại).
+
+    **Gọi TRƯỚC khi xóa hàng của chứng từ**, trong cùng một giao dịch — gọi sau
+    thì lỡ vỡ ở giữa là mất chứng từ mà phiếu vẫn còn, đúng cái ta đang chữa.
+    """
+    ids = [row[0] for row in db.query(ApprovalInstance.id)
+           .filter(ApprovalInstance.entity == entity,
+                   ApprovalInstance.entity_id == entity_id).all()]
+    if not ids:
+        return 0
+
+    db.query(ApprovalAction).filter(
+        ApprovalAction.instance_id.in_(ids)).delete(synchronize_session=False)
+    db.query(ApprovalTask).filter(
+        ApprovalTask.instance_id.in_(ids)).delete(synchronize_session=False)
+    db.query(ApprovalInstance).filter(
+        ApprovalInstance.id.in_(ids)).delete(synchronize_session=False)
+    db.flush()
+    return len(ids)

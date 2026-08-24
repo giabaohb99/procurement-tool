@@ -22,25 +22,38 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.base_model import AuditMixin, Base
 
 VERSION_DRAFT = 1       # nháp — đang gõ, sửa được
-VERSION_SUBMITTED = 2   # đang duyệt — ĐÓNG BĂNG (rút phiếu / bị trả lại thì về nháp)
+VERSION_SUBMITTED = 2   # đang duyệt — ĐÓNG BĂNG (rút phiếu thì về nháp)
 VERSION_APPROVED = 3    # đã duyệt — KHÓA, bất biến
 VERSION_SUPERSEDED = 4  # đã bị phiên bản sau thay thế
+#  Hai mã của nhịp kết thúc phiên duyệt (24/08/2026) — song song với
+#  `STATUS_RETURNED` / `STATUS_REJECTED` ở `model.py`.
+#
+#  Thang này phải có hai mã riêng vì từ bản 2.0 trở đi **văn bản không đổi trạng
+#  thái**: bản 1.0 vẫn đang có hiệu lực trong lúc bản 2.0 chờ duyệt, nên chỗ duy
+#  nhất nói được "bản 2.0 vừa bị trả" là chính dòng phiên bản.
+VERSION_RETURNED = 5    # bị trả về — sửa được, gửi duyệt lại được, VẪN giữ open_slot
+VERSION_REJECTED = 6    # đã từ chối — KHÓA, nhả open_slot để mở được bản mới
 
 VERSION_STATUS_LABELS = {
     VERSION_DRAFT: "Nháp",
     VERSION_SUBMITTED: "Đang duyệt",
     VERSION_APPROVED: "Đã duyệt",
     VERSION_SUPERSEDED: "Đã thay thế",
+    VERSION_RETURNED: "Trả về",
+    VERSION_REJECTED: "Đã từ chối",
 }
 
-#  Phiên bản còn "đang mở" = CHƯA CHỐT, tức là còn đường quay lại sửa. Đúng hai
+#  Phiên bản còn "đang mở" = CHƯA CHỐT, tức là còn đường quay lại sửa. Đúng ba
 #  trạng thái này, và đây cũng là điều kiện của cột sinh `open_slot` bên dưới —
-#  sửa một chỗ phải sửa cả hai.
+#  sửa một chỗ phải sửa cả hai (cột sinh nằm trong DB nên còn phải kèm migration).
 #
 #  ⚠️ "Đang mở" KHÁC "đang ghi được": bản ở trạng thái đang duyệt vẫn giữ chỗ
 #  `open_slot` (chưa mở được bản nháp thứ hai) nhưng KHÔNG ghi nội dung được
 #  nữa — xem `version_service.chan_khi_dang_duyet`.
-OPEN_STATUSES = (VERSION_DRAFT, VERSION_SUBMITTED)
+#
+#  «Đã từ chối» CỐ Ý không nằm ở đây: bản đó chết hẳn, phải nhả chỗ cho một bản
+#  mới, không thì văn bản bị một phiên bản từ chối chặn vĩnh viễn.
+OPEN_STATUSES = (VERSION_DRAFT, VERSION_SUBMITTED, VERSION_RETURNED)
 
 CHANGE_MAJOR = 1  # sửa lớn → lên 2.0, mặc định bắt xác nhận lại
 CHANGE_MINOR = 2  # sửa nhỏ → lên 1.1 (sửa lỗi chính tả, đổi số điện thoại…)
@@ -87,9 +100,13 @@ class DocumentVersion(Base, AuditMixin):
     #  Cột SINH, không ghi tay: bằng `document_id` khi phiên bản còn mở, NULL khi
     #  đã chốt. UNIQUE trên cột này = mỗi văn bản nhiều nhất một bản đang mở
     #  (nhiều NULL thì UNIQUE vẫn cho qua, ở cả MySQL lẫn SQLite).
+    #
+    #  Danh sách mã phải khớp `OPEN_STATUSES` — viết thẳng số vì biểu thức này đi
+    #  vào DDL. Đổi ở đây thì phải kèm migration sửa cột trên MySQL đang chạy
+    #  (SQLite của bộ kiểm dựng bảng lại từ model nên tự khớp).
     open_slot: Mapped[int | None] = mapped_column(
         BigInteger,
-        Computed("CASE WHEN status IN (1, 2) THEN document_id ELSE NULL END", persisted=False),
+        Computed("CASE WHEN status IN (1, 2, 5) THEN document_id ELSE NULL END", persisted=False),
         nullable=True,
     )
 

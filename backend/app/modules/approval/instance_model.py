@@ -7,8 +7,8 @@ Ba bảng, ba nhiệm vụ tách bạch:
 """
 from datetime import datetime
 
-from sqlalchemy import (BigInteger, DateTime, Index, Integer, SmallInteger,
-                        String, Text)
+from sqlalchemy import (BigInteger, Computed, DateTime, Index, Integer,
+                        SmallInteger, String, Text, UniqueConstraint)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import AuditMixin, Base
@@ -91,10 +91,34 @@ class ApprovalInstance(Base, AuditMixin):
     __table_args__ = (
         #  Tra ngược từ chứng từ sang phiên chạy — mỗi lần mở một phiếu ra xem.
         Index("ix_approval_instance_entity", "entity", "entity_id", "status"),
+        #  MỖI CHỨNG TỪ NHIỀU NHẤT MỘT PHIẾU ĐANG MỞ — ép ở tầng dữ liệu, xem
+        #  `running_slot` bên dưới.
+        UniqueConstraint("entity", "running_slot", name="uq_one_running_instance"),
     )
 
     entity: Mapped[str] = mapped_column(String(50))
     entity_id: Mapped[int] = mapped_column(BigInteger)
+
+    #  Cột SINH, không ghi tay: bằng `entity_id` khi phiếu CÒN MỞ, NULL khi đã
+    #  kết thúc. UNIQUE trên `(entity, running_slot)` = mỗi chứng từ nhiều nhất
+    #  một phiếu đang chạy (nhiều NULL thì UNIQUE vẫn cho qua, ở cả MySQL lẫn
+    #  SQLite).
+    #
+    #  ⚠️ Câu `SELECT` kiểm trước trong `bat_dau()` KHÔNG đủ, và đây là lỗi đã
+    #  dựng lại được (24/08/2026): nhấp đúp nút «Gửi duyệt» thì hai lượt chạy
+    #  sát nhau, cả hai đều đọc thấy "chưa có phiếu nào" rồi cùng ghi → **hai
+    #  phiếu duyệt cùng chạy trên một văn bản**. Người duyệt nhận hai phiếu
+    #  trùng; duyệt xong phiếu A là văn bản ban hành, phiếu B vẫn tiếp tục chạy
+    #  trên một văn bản đã ban hành. Cùng đúng loại lỗi mà cột `open_slot` của
+    #  phiên bản văn bản đã bịt bằng cách này.
+    #
+    #  Danh sách mã phải khớp `INSTANCE_OPEN_STATUSES`; biểu thức đi vào DDL nên
+    #  viết thẳng số, đổi ở đây thì phải kèm migration.
+    running_slot: Mapped[int | None] = mapped_column(
+        BigInteger,
+        Computed("CASE WHEN status IN (1, 6) THEN entity_id ELSE NULL END", persisted=False),
+        nullable=True,
+    )
     #  Nhãn để hiện trên màn "Việc của tôi" mà không phải nạp bảng gốc lên.
     entity_code: Mapped[str] = mapped_column(String(100), default="")
     entity_title: Mapped[str] = mapped_column(String(500), default="")

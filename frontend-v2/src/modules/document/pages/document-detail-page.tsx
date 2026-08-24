@@ -89,7 +89,7 @@ import {
   documentRecordSchema,
   type DocumentRecordFormValues,
 } from '../schemas/document-record-schema'
-import { DOCUMENT_STATUS, VERSION_STATUS } from '../types/document-record'
+import { DOCUMENT_STATUS, EDITABLE_STATUSES, VERSION_STATUS } from '../types/document-record'
 
 const FORM_ID = 'document-record-form'
 
@@ -234,30 +234,45 @@ export function DocumentDetailPage() {
   }
 
   const isNumbered = Boolean(record?.doc_code || record?.issue_number)
-  //  Backend chỉ cho xóa văn bản CÒN LÀ NHÁP và CHƯA cấp số (`service.py`
-  //  `delete_document`). Nút xóa phải bám đúng hai điều kiện đó, không thì
-  //  người có quyền vẫn thấy nút rồi bấm vào chỉ nhận lỗi 400.
-  const isRemovable = record?.status === DOCUMENT_STATUS.draft && !isNumbered
+  //  Backend chỉ cho xóa văn bản CÒN SỬA ĐƯỢC (nháp hoặc bị trả về) và CHƯA cấp
+  //  số (`service.py` `delete_document`). Nút xóa phải bám đúng hai điều kiện
+  //  đó, không thì người có quyền vẫn thấy nút rồi bấm vào chỉ nhận lỗi 400.
+  const isRemovable = EDITABLE_STATUSES.includes(record?.status ?? 0) && !isNumbered
   //  Đã ban hành: đã duyệt (chờ tới ngày) hoặc đang có hiệu lực.
   const isIssued =
     record?.status === DOCUMENT_STATUS.approved || record?.status === DOCUMENT_STATUS.effective
   const isLocked = version?.is_locked ?? true
   const label = record ? effectiveLabel(record) : null
 
-  // Bản đang mở (nháp hoặc đang duyệt)
+  // Bản đang mở (nháp · đang duyệt · bị trả về)
   const openVersion = versions.find((item) => !item.is_locked)
+  //  «Bị trả về» đi CHUNG nhánh với nháp: cả nút *Gửi duyệt* lẫn quyền gõ nội
+  //  dung đều bám cờ này, mà cả mục đích của trạng thái đó là sửa rồi gửi lại.
+  //  Tách ra thành nhánh riêng là văn bản bị trả nằm chết, không nút nào bấm được.
   const isDraft = openVersion
-    ? openVersion.status === VERSION_STATUS.draft
-    : record?.status === DOCUMENT_STATUS.draft
+    ? openVersion.status === VERSION_STATUS.draft ||
+      openVersion.status === VERSION_STATUS.returned
+    : EDITABLE_STATUSES.includes(record?.status ?? 0)
   const isSubmitted = openVersion
     ? openVersion.status === VERSION_STATUS.submitted
     : record?.status === DOCUMENT_STATUS.submitted
+
+  //  ĐÃ TỪ CHỐI thì khóa hẳn — không còn đường gửi lại, gõ tiếp chỉ là gõ vào
+  //  một bản chết. Backend chặn bằng 409 (`chan_sua_khi_dang_duyet` +
+  //  `chan_khi_dang_duyet`); ở đây khóa để nút *Lưu nội dung* đừng bày ra.
+  //
+  //  ⚠️ KHÔNG suy được từ `is_locked`: cột đó chỉ bật lúc DUYỆT XONG, nên bản bị
+  //  từ chối vẫn `is_locked = false` — đúng cái bẫy đã ghi ở `document-version-row`.
+  //  Đọc trạng thái của BẢN ĐANG XEM (bản 2.0 bị từ chối thì văn bản vẫn «Có
+  //  hiệu lực» bằng bản 1.0, nên nhìn `record.status` là không thấy gì).
+  const daTuChoi =
+    version?.status === VERSION_STATUS.rejected || record?.status === DOCUMENT_STATUS.rejected
 
   //  ĐANG TRÌNH DUYỆT thì đóng băng nội dung VÀ bộ trường chung (19/08/2026).
   //  Backend đã chặn (`version_service.chan_khi_dang_duyet`,
   //  `service.chan_sua_khi_dang_duyet`) — khóa ở đây để người dùng không gõ cả
   //  đoạn rồi mới nhận 409, và để tự động lưu không bắn lỗi theo từng nhịp gõ.
-  const khoaVietVi = isSubmitted
+  const khoaVietVi = isSubmitted || daTuChoi
 
   return (
     // `Tabs` bọc CẢ khung trang để hàng tab nằm cạnh tiêu đề — trang soạn thảo
@@ -505,7 +520,7 @@ export function DocumentDetailPage() {
                 })
             : undefined
         }
-        deleteConfirmDescription="Chỉ xóa được văn bản còn là nháp và chưa cấp số. Văn bản đã ban hành thì bãi bỏ, không xóa."
+        deleteConfirmDescription="Chỉ xóa được văn bản còn là nháp hoặc bị trả về, và chưa cấp số. Văn bản đã ban hành thì bãi bỏ, không xóa."
       >
         {/*  J10 — đặt NGOÀI mọi `TabsContent` để hiện ở mọi tab. Cảnh báo bắt
              buộc mà giấu sau một cú bấm thì cũng như không có. */}
@@ -515,7 +530,11 @@ export function DocumentDetailPage() {
         <DocumentApprovalBanner instance={approval} documentId={documentId} />
 
         <TabsContent value="compose" className="mt-0">
-          <DocumentSubmittedLockNotice submitted={khoaVietVi} />
+          {/*  Truyền `isSubmitted` chứ KHÔNG phải `khoaVietVi`: băng vàng này nói
+               "đang trình duyệt", mà ca đã-từ-chối đã có băng đỏ riêng nói đúng
+               chuyện của nó. Dùng chung cờ là văn bản bị từ chối lại đọc thành
+               đang chờ ai đó ký. */}
+          <DocumentSubmittedLockNotice submitted={isSubmitted} />
 
           {record && (
             <DocumentNeedsReviewBanner
@@ -569,7 +588,11 @@ export function DocumentDetailPage() {
         </TabsContent>
 
         <TabsContent value="info" className="mt-0 space-y-4">
-          <DocumentSubmittedLockNotice submitted={khoaVietVi} />
+          {/*  Truyền `isSubmitted` chứ KHÔNG phải `khoaVietVi`: băng vàng này nói
+               "đang trình duyệt", mà ca đã-từ-chối đã có băng đỏ riêng nói đúng
+               chuyện của nó. Dùng chung cờ là văn bản bị từ chối lại đọc thành
+               đang chờ ai đó ký. */}
+          <DocumentSubmittedLockNotice submitted={isSubmitted} />
 
           <DocumentRecordForm
             formId={FORM_ID}

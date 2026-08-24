@@ -33,6 +33,10 @@ const GIAI_THICH_TRANG_THAI: Record<number, string> = {
     'Đã ký duyệt và khóa lại. Muốn đổi nội dung thì mở phiên bản mới, không sửa đè lên bản này.',
   [VERSION_STATUS.superseded]:
     'Đã có bản mới hơn thay chỗ. Vẫn giữ nguyên để tra cứu — người còn cầm giấy tờ theo bản này phải tìm ra được.',
+  [VERSION_STATUS.returned]:
+    'Người duyệt đã trả về kèm lý do. Sửa lại rồi gửi duyệt lần nữa trên chính bản này — số bản không nhảy.',
+  [VERSION_STATUS.rejected]:
+    'Người duyệt đã từ chối bản này. Nó khóa lại và không gửi duyệt lại được; cần thì mở một phiên bản mới.',
 }
 
 /**
@@ -47,11 +51,15 @@ const GIAI_THICH_TRANG_THAI: Record<number, string> = {
 const LY_DO_KHOA: Record<number, string> = {
   [VERSION_STATUS.draft]: 'Bản nháp — mở ra gõ trực tiếp được, tới khi gửi duyệt thì đóng lại.',
   [VERSION_STATUS.submitted]:
-    'Đang trình duyệt nên đóng băng: người duyệt đọc bản nào thì ký đúng bản đó. Bị trả lại hay rút phiếu thì văn bản về Nháp và gõ tiếp được.',
+    'Đang trình duyệt nên đóng băng: người duyệt đọc bản nào thì ký đúng bản đó. Bị trả về thì bản chuyển sang «Trả về» và gõ tiếp được; rút phiếu thì về Nháp.',
   [VERSION_STATUS.approved]:
     'Bản đã chốt thì khóa một chiều, mở ra chỉ đọc. Cần đổi nội dung thì mở một phiên bản mới.',
   [VERSION_STATUS.superseded]:
     'Bản cũ giữ nguyên hiện trạng lúc còn hiệu lực — sửa vào đây là sửa lịch sử.',
+  [VERSION_STATUS.returned]:
+    'Bị trả về nên mở lại cho gõ tiếp — đó là cả mục đích của trạng thái này.',
+  [VERSION_STATUS.rejected]:
+    'Đã từ chối nên khóa: gõ tiếp cũng không có nút nào gửi lại được. Mở phiên bản mới nếu vẫn cần.',
 }
 
 /**
@@ -88,6 +96,11 @@ function tongChamSo(version: DocumentVersion) {
     return 'border-dashed border-amber-400 bg-amber-50 text-amber-700'
   if (version.status === VERSION_STATUS.submitted)
     return 'border-dashed border-sky-400 bg-sky-50 text-sky-700'
+  //  Trả về / từ chối: đỏ, và trả về vẫn để viền đứt vì bản đó còn đang mở.
+  if (version.status === VERSION_STATUS.returned)
+    return 'border-dashed border-destructive/60 bg-destructive/10 text-destructive'
+  if (version.status === VERSION_STATUS.rejected)
+    return 'border-destructive/40 bg-destructive/5 text-destructive'
   return 'border-border bg-muted text-muted-foreground'
 }
 
@@ -120,7 +133,10 @@ export function DocumentVersionRow({
   cuoiDanhSach,
 }: DocumentVersionRowProps) {
   const mucSua = nhanMucSua(version.change_kind)
-  const suaDuoc = version.status === VERSION_STATUS.draft
+  //  Bản bị TRẢ VỀ cũng sửa được — backend mở đúng như bản nháp
+  //  (`version_service.chan_khi_dang_duyet` chỉ chặn «đang duyệt» và «đã từ chối»).
+  const suaDuoc =
+    version.status === VERSION_STATUS.draft || version.status === VERSION_STATUS.returned
 
   return (
     <li className="relative">

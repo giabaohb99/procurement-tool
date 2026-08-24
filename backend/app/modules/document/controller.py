@@ -439,9 +439,9 @@ def reject_document(
 ):
     doc = _load(db, document_id, user)
     approval_bridge.chan_duong_cu(db, doc)
-    doc = service.reject(db, doc, data.reason, user.id)
-    record(db, user.id, "document", doc.id, "update", f"Trả lại: {data.reason}")
-    return success(serializer.serialize(db, doc), "Đã trả lại bản nháp")
+    doc = service.tra_lai(db, doc, data.reason, user.id)
+    record(db, user.id, "document", doc.id, "update", f"Trả về: {data.reason}")
+    return success(serializer.serialize(db, doc), "Đã trả về cho người soạn")
 
 
 @router.post("/{document_id}/reviewed")

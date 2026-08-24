@@ -15,20 +15,32 @@ from app.core.database import get_db
 from app.core.response import success
 
 from . import action_service, serializer, task_service
+from .concurrency import chay_chiu_tranh_chap
 from .instance_model import ApprovalInstance, ApprovalTask
 
 router = APIRouter(prefix="/api/approvals", tags=["approval"])
 
 
+#  Bằng ĐÚNG bề rộng cột `tab_approval_instance.finish_reason`. Không khai giới
+#  hạn ở đây thì một đoạn nhận xét dài đi thẳng xuống CSDL và nổ
+#  `Data too long for column 'finish_reason'` → người duyệt nhận `500` trần
+#  (dựng lại được 24/08/2026 với lý do 5000 ký tự). Chặn ở cửa thì ra `422` kèm
+#  câu chỉ rõ ô nào quá dài.
+DAI_TOI_DA_LY_DO = 1000
+#  `comment` nằm ở cột `Text` nên rộng hơn nhiều, nhưng vẫn phải có trần: không
+#  ai gõ tay 20 nghìn ký tự vào ô ý kiến, mà dán nhầm cả tệp thì có.
+DAI_TOI_DA_Y_KIEN = 5000
+
+
 class ActionIn(BaseModel):
-    comment: str = ""
+    comment: str = Field("", max_length=DAI_TOI_DA_Y_KIEN)
     #  Bối cảnh phiếu để tính điều kiện rẽ nhánh của bước kế. Module chứng từ
     #  gửi lên; bộ máy duyệt cố ý không biết đọc bảng của chứng từ.
     subject: dict = {}
 
 
 class ReasonIn(BaseModel):
-    reason: str = ""
+    reason: str = Field("", max_length=DAI_TOI_DA_LY_DO)
     subject: dict = {}
     to_seq: int | None = None
 
@@ -159,32 +171,37 @@ def approve(instance_id: int, data: ActionIn, db: Session = Depends(get_db),
     """Không dùng `require(...)`: quyền ở đây là **có việc đang chờ mình hay
     không**, chuyện đó do `viec_dang_cho_cua` xét. Gắn thêm một quyền theo vai
     trò nữa thì người được giao việc lại không bấm được."""
-    instance = action_service.duyet(db, _load(db, instance_id), _employee_id(user),
-                                    user.id, data.subject, data.comment)
+    #  Nạp lại phiếu BÊN TRONG hàm: hai người bấm cùng lúc thì lượt thua bị
+    #  cuộn lại và chạy lại, mà chạy lại trên một đối tượng ORM đã hết hạn là
+    #  ghi đè bằng trạng thái của lượt hỏng — xem `concurrency.py`.
+    instance = chay_chiu_tranh_chap(db, lambda: action_service.duyet(
+        db, _load(db, instance_id), _employee_id(user),
+        user.id, data.subject, data.comment))
     return success(serializer.instance_out(db, instance), "Đã duyệt")
 
 
 @router.post("/{instance_id}/reject")
 def reject(instance_id: int, data: ReasonIn, db: Session = Depends(get_db),
            user=Depends(get_current_user)):
-    instance = action_service.tu_choi(db, _load(db, instance_id), _employee_id(user),
-                                      user.id, data.reason)
+    instance = chay_chiu_tranh_chap(db, lambda: action_service.tu_choi(
+        db, _load(db, instance_id), _employee_id(user), user.id, data.reason))
     return success(serializer.instance_out(db, instance), "Đã từ chối")
 
 
 @router.post("/{instance_id}/return")
 def return_(instance_id: int, data: ReasonIn, db: Session = Depends(get_db),
             user=Depends(get_current_user)):
-    instance = action_service.tra_lai(db, _load(db, instance_id), _employee_id(user),
-                                      user.id, data.reason, data.subject, data.to_seq)
+    instance = chay_chiu_tranh_chap(db, lambda: action_service.tra_lai(
+        db, _load(db, instance_id), _employee_id(user),
+        user.id, data.reason, data.subject, data.to_seq))
     return success(serializer.instance_out(db, instance), "Đã trả lại")
 
 
 @router.post("/{instance_id}/withdraw")
 def withdraw(instance_id: int, data: ReasonIn, db: Session = Depends(get_db),
              user=Depends(get_current_user)):
-    instance = action_service.rut_lai(db, _load(db, instance_id), _employee_id(user),
-                                      user.id, data.reason)
+    instance = chay_chiu_tranh_chap(db, lambda: action_service.rut_lai(
+        db, _load(db, instance_id), _employee_id(user), user.id, data.reason))
     return success(serializer.instance_out(db, instance), "Đã rút lại")
 
 
@@ -192,8 +209,8 @@ def withdraw(instance_id: int, data: ReasonIn, db: Session = Depends(get_db),
 def comment(instance_id: int, data: ActionIn, db: Session = Depends(get_db),
             user=Depends(get_current_user)):
     """I16 — trao đổi ngay trên phiếu, không qua chat riêng."""
-    action_service.gop_y(db, _load(db, instance_id), _employee_id(user),
-                         user.id, data.comment)
+    chay_chiu_tranh_chap(db, lambda: action_service.gop_y(
+        db, _load(db, instance_id), _employee_id(user), user.id, data.comment))
     return success(None, "Đã ghi ý kiến")
 
 

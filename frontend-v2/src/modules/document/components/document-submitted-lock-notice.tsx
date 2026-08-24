@@ -9,8 +9,9 @@ interface DocumentSubmittedLockNoticeProps {
  * Băng báo VÌ SAO không gõ được — hiện khi văn bản đang trình duyệt.
  *
  * Không có băng này thì người soạn mở trang, thấy trang giấy xám ngắt và không
- * bấm được vào đâu, rồi đi hỏi "hệ hỏng à". Nói luôn cả đường ra: rút phiếu thì
- * văn bản về Nháp và sửa tiếp được (D-029).
+ * bấm được vào đâu, rồi đi hỏi "hệ hỏng à". Nói luôn cả đường ra (D-029): rút
+ * phiếu → văn bản về **Nháp**, hoặc chờ người duyệt **trả về** → văn bản sang
+ * «Trả về». Hai đường khác tên nhưng cùng một kết quả: gõ tiếp được.
  */
 export function DocumentSubmittedLockNotice({ submitted }: DocumentSubmittedLockNoticeProps) {
   if (!submitted) return null
@@ -21,8 +22,9 @@ export function DocumentSubmittedLockNotice({ submitted }: DocumentSubmittedLock
       <span>
         <strong>Đang trình duyệt nên nội dung và thông tin đã khóa.</strong> Người duyệt phải ký
         đúng bản họ đọc — sửa được lúc này thì bản ban hành sẽ khác bản đã xem. Muốn sửa: mở tab{' '}
-        <strong>Phê duyệt</strong> rồi <strong>rút phiếu</strong>, hoặc chờ người duyệt trả lại;
-        văn bản về <strong>Nháp</strong> là gõ tiếp được.
+        <strong>Phê duyệt</strong> rồi <strong>rút phiếu</strong> (văn bản về{' '}
+        <strong>Nháp</strong>), hoặc chờ người duyệt <strong>trả về</strong> — cả hai đường đều
+        mở lại nội dung cho gõ tiếp.
       </span>
     </div>
   )

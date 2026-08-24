@@ -162,17 +162,33 @@ def _khi_duyet_xong(db: Session, document_id: int, instance) -> None:
 
 
 def _khi_tu_choi(db: Session, document_id: int, instance) -> None:
+    """Từ chối → văn bản **Đã từ chối**: khóa sửa, làm lại thì sao chép.
+
+    Từ 24/08/2026 đây KHÔNG còn cùng đường với «trả lại». Trước đó cả hai đều đổ
+    về Nháp, nên người soạn mở văn bản ra chỉ thấy «Nháp» và không cách nào biết
+    nó vừa bị dẹp hay đang được mời sửa lại.
+    """
     from . import service
 
     doc = db.get(Document, document_id)
     if doc is not None:
-        service.reject(db, doc, instance.finish_reason or "Bị từ chối", instance.updated_by or 0)
+        service.tu_choi(db, doc, instance.finish_reason or "Bị từ chối",
+                        instance.updated_by or 0)
 
 
 def _khi_tra_lai(db: Session, document_id: int, instance) -> None:
-    """Trả lại cũng đưa bản nháp về trạng thái sửa được — cùng đường với từ chối
-    ở phía văn bản, khác nhau ở chỗ phiếu duyệt còn gửi lại được."""
-    _khi_tu_choi(db, document_id, instance)
+    """Trả lại → văn bản **Trả về**: sửa được và gửi duyệt lại được.
+
+    Chỉ chạy khi phiếu trả về TẬN người nộp (`INSTANCE_RETURNED`). Trả về một
+    bước phía trước thì phiên vẫn chạy, bộ máy không gọi hook nào — đúng vậy, văn
+    bản phải giữ nguyên «Đang duyệt» vì nó vẫn đang trong luồng.
+    """
+    from . import service
+
+    doc = db.get(Document, document_id)
+    if doc is not None:
+        service.tra_lai(db, doc, instance.finish_reason or "Bị trả về",
+                        instance.updated_by or 0)
 
 
 def _khi_rut_lai(db: Session, document_id: int, instance) -> None:
@@ -181,16 +197,18 @@ def _khi_rut_lai(db: Session, document_id: int, instance) -> None:
     Phải có nhịp này, không thì rút xong văn bản kẹt ở *đang duyệt*: gửi duyệt
     lại không được (đường gửi chỉ nhận bản nháp), mà nút ban hành MỘT BƯỚC lại
     mở ra vì `chan_duong_cu` chỉ khóa khi phiên còn đang chạy — thành đường tắt
-    ban hành không ai ký. Dùng lại `service.reject()` chứ không tự đặt trạng
-    thái: luật "bản đầu về nháp, bản thứ hai giữ nguyên vì bản trước còn hiệu
-    lực" nằm ở đó, chép ra đây là sớm muộn hai bên lệch nhau.
+    ban hành không ai ký. Dùng lại `service.rut_phieu()` chứ không tự đặt trạng
+    thái: luật "bản đầu đổi trạng thái, bản thứ hai giữ nguyên vì bản trước còn
+    hiệu lực" nằm ở đó, chép ra đây là sớm muộn hai bên lệch nhau.
+
+    Về **Nháp** chứ không phải «Trả về»: chính người nộp rút, không ai trả gì cho
+    họ cả.
     """
     from . import service
 
     doc = db.get(Document, document_id)
     if doc is not None:
-        service.reject(db, doc, f"[Rút phiếu] {instance.finish_reason or ''}".strip(),
-                       instance.updated_by or 0)
+        service.rut_phieu(db, doc, instance.finish_reason or "", instance.updated_by or 0)
 
 
 entity_hooks.register(

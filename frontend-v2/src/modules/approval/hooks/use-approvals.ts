@@ -206,13 +206,38 @@ interface ApprovalActionInput {
 }
 
 /**
+ * Họ query của CHÍNH CHỨNG TỪ, theo `entity` của phiếu duyệt.
+ *
+ * Một cú bấm duyệt / trả lại / từ chối đổi trạng thái của chứng từ chứ không chỉ
+ * của phiên duyệt, nên nạp lại mỗi cụm `approval` là chưa đủ.
+ *
+ * ⚠️ LỖI ĐÃ XẢY RA (24/08/2026): trả lại một văn bản ngay trên trang chi tiết thì
+ * băng đổi thành «Văn bản bị trả về» nhưng nhãn trạng thái ở đầu trang vẫn ghi
+ * «Đang duyệt», nội dung vẫn khóa, nút *Gửi duyệt* vẫn chưa hiện — tới khi người
+ * dùng tự F5. Một trang tự mâu thuẫn với chính nó, và người đọc thì kết luận là
+ * bấm chưa ăn. Cùng đúng loại lỗi đã vá ở `use-documents.ts::refresh`, chỉ là ở
+ * đầu bên kia.
+ */
+const HO_QUERY_CUA_CHUNG_TU: Record<string, readonly string[]> = {
+  document: queryKeys.document.all,
+  purchase_request: queryKeys.procurement.all,
+  survey_request: queryKeys.procurement.all,
+  purchase_order: queryKeys.procurement.all,
+}
+
+/**
  * MỘT hook cho cả năm thao tác thay vì năm hook riêng.
  *
  * Năm `useMutation` riêng thì màn hình phải theo dõi năm cờ `isPending`, và chỉ
  * cần quên một cái là người dùng bấm được nút thứ hai trong lúc nút thứ nhất
  * còn đang chạy.
+ *
+ * `entity` là loại chứng từ của phiếu (`task.entity`) — để nạp lại luôn dữ liệu
+ * chứng từ, xem `HO_QUERY_CUA_CHUNG_TU`. Bỏ trống thì chỉ nạp lại cụm duyệt, và
+ * màn chi tiết chứng từ sẽ hiện số liệu cũ cho tới lần F5 kế tiếp.
  */
-export function useApprovalAction(instanceId: number) {
+export function useApprovalAction(instanceId: number, entity?: string) {
+  const queryClient = useQueryClient()
   const invalidate = useInvalidateApproval()
 
   return useMutation({
@@ -226,6 +251,10 @@ export function useApprovalAction(instanceId: number) {
     onSuccess: (_data, variables) => {
       toast.success(NHAN_THANH_CONG[variables.kind])
       invalidate()
+      //  «Ghi ý kiến» KHÔNG đổi trạng thái chứng từ (xem `action_service.gop_y`)
+      //  nên không cần kéo cả họ query của nó về lại.
+      const ho = variables.kind !== 'comment' && entity ? HO_QUERY_CUA_CHUNG_TU[entity] : undefined
+      if (ho) void queryClient.invalidateQueries({ queryKey: ho })
     },
     onError: (error) => toast.error(extractErrorMessage(error)),
   })

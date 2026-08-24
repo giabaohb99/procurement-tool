@@ -24,9 +24,14 @@ from app.modules.company.model import Company
 from app.modules.doc_catalog.model import DocType
 from app.modules.document import service
 from app.modules.document.model import (STATUS_DRAFT, STATUS_EFFECTIVE,
+                                        STATUS_REJECTED, STATUS_RETURNED,
                                         STATUS_SUBMITTED, Document)
 from app.modules.document.schema import DocumentCreate
-from app.modules.document.version_model import VERSION_DRAFT, VERSION_SUBMITTED
+from app.modules.document.version_model import (VERSION_DRAFT,
+                                                VERSION_REJECTED,
+                                                VERSION_RETURNED,
+                                                VERSION_SUBMITTED,
+                                                DocumentVersion)
 from app.modules.employee.model import Employee
 
 ACTOR = 1
@@ -248,7 +253,12 @@ def test_duyet_het_cac_buoc_thi_van_ban_duoc_BAN_HANH_that(db, canh):
     assert service.open_version(db, doc) is None, "Phiên bản phải bị khóa sau khi ban hành"
 
 
-def test_tu_choi_thi_van_ban_ve_lai_ban_nhap_sua_duoc(db, canh):
+def test_tu_choi_thi_van_ban_bi_khoa_o_da_tu_choi(db, canh):
+    """Từ chối = HẾT ĐƯỜNG: văn bản sang «Đã từ chối», bản đó nhả chỗ đang mở.
+
+    Trước 24/08/2026 nó về Nháp y như trả về, nên mở văn bản ra không ai biết nó
+    vừa bị dẹp hay đang được mời sửa lại. Lý do vẫn phải ghi lại được.
+    """
     _bat_co(db)
     _luong_hai_buoc(db, canh["nguoi"])
     doc = service.submit(db, canh["doc"], ACTOR)
@@ -257,8 +267,37 @@ def test_tu_choi_thi_van_ban_ve_lai_ban_nhap_sua_duoc(db, canh):
     action_service.tu_choi(db, phien, canh["nguoi"]["a"], ACTOR, "Thiếu căn cứ pháp lý")
 
     db.refresh(doc)
-    assert doc.status == STATUS_DRAFT
-    #  Bản nháp phải mở lại được để người soạn sửa tiếp.
-    version = service.open_version(db, doc)
-    assert version is not None
-    assert "Thiếu căn cứ pháp lý" in version.change_reason
+    assert doc.status == STATUS_REJECTED
+    assert service.open_version(db, doc) is None, "Bản bị từ chối phải nhả open_slot"
+    ban = db.get(DocumentVersion, doc.current_version_id)
+    assert ban.status == VERSION_REJECTED
+    assert "Thiếu căn cứ pháp lý" in ban.change_reason
+
+
+def test_tra_lai_thi_van_ban_sang_tra_ve_va_gui_duyet_lai_duoc(db, canh):
+    """Trả lại = CÒN ĐƯỜNG: «Trả về», sửa được, và gửi duyệt lại được ngay.
+
+    Đây là ca người dùng gặp nhiều nhất, và cũng là chỗ dễ hỏng nhất: nếu bản bị
+    trả nhả `open_slot` thì `submit()` không tìm thấy bản nào để gửi, văn bản nằm
+    chết mà giao diện vẫn bày nút *Gửi duyệt*.
+    """
+    _bat_co(db)
+    _luong_hai_buoc(db, canh["nguoi"])
+    doc = service.submit(db, canh["doc"], ACTOR)
+    phien = instance_service.phien_dang_chay(db, ENTITY, doc.id)
+
+    action_service.tra_lai(db, phien, canh["nguoi"]["a"], ACTOR, "Sửa lại mục 2", {})
+
+    db.refresh(doc)
+    assert doc.status == STATUS_RETURNED
+    ban = service.open_version(db, doc)
+    assert ban is not None, "Bản bị trả về phải CÒN đang mở để sửa tiếp"
+    assert ban.status == VERSION_RETURNED
+    assert "Sửa lại mục 2" in ban.change_reason
+
+    #  Gửi lại: mở đúng một phiên MỚI, và văn bản trở lại «Đang duyệt».
+    service.submit(db, doc, ACTOR)
+    db.refresh(doc)
+    assert doc.status == STATUS_SUBMITTED
+    phien_moi = instance_service.phien_dang_chay(db, ENTITY, doc.id)
+    assert phien_moi is not None and phien_moi.id != phien.id
