@@ -335,6 +335,51 @@ def list_access(db: Session, doc: Document, include_revoked: bool = True) -> lis
                       DocumentAccess.effect.desc(), DocumentAccess.id.desc()).all()
 
 
+def chan_tu_cam_chinh_minh(db: Session, data, actor: int) -> None:
+    """KHÔNG ai được tự đưa mình vào dòng CẤM — kể cả bằng cách gọi thẳng API.
+
+    Nhìn bảng luật ở đầu tệp: *cấm đích danh* thắng tất cả, **kể cả người tạo,
+    kể cả admin**. Nên tự cấm mình là tự khóa mình ra ngoài một văn bản mà chỉ
+    mình có quyền sửa — và vì không mở được nữa nên cũng không còn đường vào để
+    gỡ dòng cấm đó. Chỉ người khác cứu được.
+
+    Lỗi người dùng đã dính thật (24/08/2026): tự chặn xong, danh sách hiện «Tổng
+    0 văn bản» kèm ba toast đỏ liên tiếp. Giao diện nay đã bỏ tên mình khỏi ô
+    chọn, nhưng ẩn nút không phải là chốt chặn — gọi thẳng API vẫn tự chặn được
+    (dựng lại được trước khi có hàm này).
+
+    Chặn cả PHÒNG BAN và PHÁP NHÂN của mình: chặn phòng mình thì mình nằm trong
+    phòng đó, kết cục y hệt. **Vai trò thì không chặn** — người ta có thể giữ
+    nhiều vai trò và bỏ một vai trò không đồng nghĩa mất quyền xem.
+    """
+    if data.effect != EFFECT_DENY:
+        return
+
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    emp_id = db.query(User.employee_id).filter(User.id == actor).scalar()
+    if not emp_id:
+        return
+    emp = db.get(Employee, emp_id)
+    if emp is None:
+        return
+
+    cua_minh = {
+        SUBJECT_EMPLOYEE: emp.id,
+        SUBJECT_DEPARTMENT: emp.department_id or 0,
+        SUBJECT_COMPANY: emp.company_id or 0,
+    }
+    if cua_minh.get(data.subject_kind) and cua_minh[data.subject_kind] == data.subject_id:
+        ten = {SUBJECT_EMPLOYEE: "chính mình",
+               SUBJECT_DEPARTMENT: "phòng ban của mình",
+               SUBJECT_COMPANY: "pháp nhân của mình"}[data.subject_kind]
+        raise HTTPException(
+            400, f"Không chặn được {ten}: dòng cấm thắng cả quyền của người tạo, "
+                 "nên bạn sẽ không mở lại được văn bản này và cũng không còn đường "
+                 "vào để gỡ. Nhờ người khác chặn hộ nếu thật sự cần.")
+
+
 def grant(db: Session, doc: Document, data, actor: int) -> DocumentAccess:
     """Chia quyền cho một đối tượng. Đã có dòng còn sống thì SỬA dòng đó.
 
@@ -343,6 +388,8 @@ def grant(db: Session, doc: Document, data, actor: int) -> DocumentAccess:
     """
     if data.valid_from and data.valid_to and data.valid_from > data.valid_to:
         raise HTTPException(400, "Ngày hết hạn phải sau ngày bắt đầu")
+
+    chan_tu_cam_chinh_minh(db, data, actor)
 
     existing = (db.query(DocumentAccess)
                 .filter(DocumentAccess.document_id == doc.id,

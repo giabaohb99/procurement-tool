@@ -40,6 +40,10 @@ def _me_payload(db: Session, user) -> dict:
         "avatar": getattr(user, 'avatar', ''),
         "signature": getattr(user, 'signature', ''),
         "phone": emp.phone if emp else "",
+        #  CẢ id lẫn tên: màn Tạo văn bản tự điền ô «Phòng chủ trì» theo phòng
+        #  của người đang đăng nhập, mà dò theo TÊN thì sai — một tên phòng có
+        #  mặt ở nhiều pháp nhân (xem `department/service.py`).
+        "department_id": emp.department_id if emp else 0,
         "department_name": emp.department_name if emp else "",
         "role_name": emp.role_name if emp else "",
         "position": emp.position if emp else "",

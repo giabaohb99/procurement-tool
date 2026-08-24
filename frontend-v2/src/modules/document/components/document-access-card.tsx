@@ -53,7 +53,7 @@ export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardP
       <CardContent>
         <p className="mb-3 text-sm text-muted-foreground">
           Ngoài những người thấy văn bản này theo phạm vi vai trò của họ. Dòng
-          <span className="font-medium"> Cấm </span>
+          <span className="font-medium"> Không cho phép </span>
           thắng mọi dòng cho phép.
         </p>
 

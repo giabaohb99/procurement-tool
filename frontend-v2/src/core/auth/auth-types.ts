@@ -12,6 +12,7 @@ export interface AuthUser {
   avatar?: string
   signature?: string
   phone?: string
+  department_id?: number
   department_name?: string
   role_name?: string
   position?: string

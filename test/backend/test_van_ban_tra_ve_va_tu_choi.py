@@ -29,7 +29,7 @@ from app.modules.doc_catalog.model import DocType
 from app.modules.document import service, version_service
 from app.modules.document.model import (STATUS_DRAFT, STATUS_EFFECTIVE,
                                         STATUS_REJECTED, STATUS_RETURNED,
-                                        STATUS_SUBMITTED)
+                                        STATUS_SUBMITTED, Document)
 from app.modules.document.schema import (DocumentCreate, VersionContentUpdate,
                                          VersionCreate)
 from app.modules.document.version_model import (CHANGE_MAJOR,
@@ -249,3 +249,84 @@ def test_xoa_van_ban_thi_don_luon_QUAN_HE(db, doc):
                    | (DocumentLink.target_document_id == doc_id)).count())
     assert con == 0, "Xóa văn bản phải dọn quan hệ CẢ HAI CHIỀU"
 
+
+
+def test_khong_tu_cam_chinh_minh_duoc(db, doc, seed):
+    """Tự đưa mình vào dòng CẤM là tự khóa mình ra khỏi văn bản của chính mình.
+
+    Dòng cấm thắng tất cả — kể cả người tạo, kể cả admin (xem bảng luật đầu
+    `access_service.py`). Nên tự cấm xong thì không mở lại được, mà cũng không
+    còn đường vào để gỡ dòng cấm đó.
+
+    Lỗi người dùng dính thật 24/08/2026. Giao diện đã bỏ tên mình khỏi ô chọn,
+    nhưng ẩn nút không phải chốt chặn — bài này gọi thẳng tầng dịch vụ, đúng như
+    một người gọi thẳng API.
+    """
+    from app.modules.document import access_service
+    from app.modules.document.access_model import (EFFECT_ALLOW, EFFECT_DENY,
+                                                   SUBJECT_COMPANY,
+                                                   SUBJECT_DEPARTMENT,
+                                                   SUBJECT_EMPLOYEE)
+    from app.modules.document.schema import AccessGrant
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    #  ACTOR phải là một tài khoản CÓ hồ sơ nhân sự thì mới có gì để so.
+    user = db.query(User).filter(User.employee_id.isnot(None)).first()
+    emp_id = user.employee_id
+    emp = db.get(Employee, emp_id)
+
+    def _cam(kind: int, subject_id: int, effect: int = EFFECT_DENY):
+        return AccessGrant(subject_kind=kind, subject_id=subject_id, effect=effect,
+                           can_read=True, can_write=False, can_delete=False,
+                           valid_from=None, valid_to=None, reason="")
+
+    with pytest.raises(HTTPException) as loi:
+        access_service.grant(db, doc, _cam(SUBJECT_EMPLOYEE, emp_id), user.id)
+    assert loi.value.status_code == 400
+    assert "chính mình" in loi.value.detail
+
+    if emp.department_id:
+        with pytest.raises(HTTPException):
+            access_service.grant(db, doc, _cam(SUBJECT_DEPARTMENT, emp.department_id), user.id)
+    if emp.company_id:
+        with pytest.raises(HTTPException):
+            access_service.grant(db, doc, _cam(SUBJECT_COMPANY, emp.company_id), user.id)
+
+    #  Đối chứng: CHO PHÉP chính mình thì bình thường, và cấm NGƯỜI KHÁC cũng vậy.
+    access_service.grant(db, doc, _cam(SUBJECT_EMPLOYEE, emp_id, EFFECT_ALLOW), user.id)
+    access_service.grant(db, doc, _cam(SUBJECT_EMPLOYEE, emp_id + 999), user.id)
+
+
+def test_tu_bo_duoc_ban_nhap_cua_minh_du_khong_co_quyen_xoa(db, doc):
+    """Nút «Hủy» ở màn Tạo văn bản phải dọn được bản nháp nó vừa sinh ra.
+
+    Từ 24/08/2026 bấm «Tiếp tục» là ghi một bản nháp THẬT xuống CSDL để quay lại
+    không mất dữ liệu. Nhưng vai trò soạn thảo tiêu chuẩn (`vanban_sua`) cố ý
+    không có `delete`, nên nút «Hủy» gọi `DELETE /documents/{id}` ăn **403** —
+    dựng lại được: bản nháp nằm lại vĩnh viễn, chính người tạo cũng không xóa nổi.
+
+    Cửa `bo_ban_nhap_cua_minh` hẹp ở đúng ba chốt, kiểm cả ba dưới đây.
+    """
+    doc.created_by = 7
+    db.commit()
+
+    #  Người khác thì không.
+    with pytest.raises(HTTPException) as loi:
+        service.bo_ban_nhap_cua_minh(db, doc, actor=8)
+    assert loi.value.status_code == 403
+
+    #  Không phải Nháp thì không — «Trả về» đã qua tay người duyệt, bỏ nó là xóa
+    #  thật nên vẫn phải có quyền `delete`.
+    doc.status = STATUS_RETURNED
+    db.commit()
+    with pytest.raises(HTTPException) as loi:
+        service.bo_ban_nhap_cua_minh(db, doc, actor=7)
+    assert loi.value.status_code == 400
+
+    #  Chính chủ + đang Nháp thì xóa được, không cần quyền `delete`.
+    doc.status = STATUS_DRAFT
+    db.commit()
+    doc_id = doc.id
+    service.bo_ban_nhap_cua_minh(db, doc, actor=7)
+    assert db.get(Document, doc_id) is None

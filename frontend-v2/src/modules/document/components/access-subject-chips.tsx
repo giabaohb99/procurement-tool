@@ -8,7 +8,8 @@ const CHIP_LIMIT = 12
 
 interface SubjectChipsProps {
   items: { key: string; label: string }[]
-  onRemove: (key: string) => void
+  /** Bỏ trống = dải CHỈ ĐỌC (hộp «Sửa quyền cụm» chỉ để rà lại, không xóa ở đó). */
+  onRemove?: (key: string) => void
 }
 
 /**
@@ -29,18 +30,23 @@ export function SubjectChips({ items, onRemove }: SubjectChipsProps) {
       {shown.map((item) => (
         <span
           key={item.key}
-          className="inline-flex max-w-44 items-center gap-1 rounded-md border py-0.5 pr-1 pl-2 text-xs"
+          className={cn(
+            'inline-flex max-w-44 items-center gap-1 rounded-md border py-0.5 pl-2 text-xs',
+            onRemove ? 'pr-1' : 'pr-2',
+          )}
         >
           <span className="truncate">{item.label}</span>
-          <button
-            type="button"
-            title={`Bỏ ${item.label}`}
-            aria-label={`Bỏ ${item.label}`}
-            onClick={() => onRemove(item.key)}
-            className="shrink-0 rounded-sm p-0.5 text-muted-foreground hover:bg-muted focus-visible:outline-none"
-          >
-            <X className="size-3" />
-          </button>
+          {onRemove && (
+            <button
+              type="button"
+              title={`Bỏ ${item.label}`}
+              aria-label={`Bỏ ${item.label}`}
+              onClick={() => onRemove(item.key)}
+              className="shrink-0 rounded-sm p-0.5 text-muted-foreground hover:bg-muted focus-visible:outline-none"
+            >
+              <X className="size-3" />
+            </button>
+          )}
         </span>
       ))}
 

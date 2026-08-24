@@ -1,6 +1,7 @@
 import { ChevronDown, Plus, Search, TriangleAlert } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { useAuth } from '@/core/auth/use-auth'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
@@ -22,6 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
+import { idKhongDuocTuChan } from '../helpers/khong-tu-chan-chinh-minh'
 import { SubjectChips } from './access-subject-chips'
 import {
   EFFECT,
@@ -117,12 +119,13 @@ function AccessForm({ pending, existing, onCancel, onSubmit }: AccessFormProps) 
   const [validTo, setValidTo] = useState('')
   const [reason, setReason] = useState('')
 
+  const { user } = useAuth()
   const { data: employees } = useEmployees({ page_size: 1000, is_active: true })
   const { data: departments } = useDepartments({ page_size: 500 })
   const { data: companies } = useCompanies({ page_size: 200, is_active: true })
   const { data: roles } = useRoles()
 
-  const options = useMemo(() => {
+  const optionsTatCa = useMemo(() => {
     switch (Number(subjectKind)) {
       case SUBJECT_KIND.department:
         return (departments?.items ?? [])
@@ -180,6 +183,14 @@ function AccessForm({ pending, existing, onCancel, onSubmit }: AccessFormProps) 
 
   const isDeny = Number(effect) === EFFECT.deny
   const kindLabel = SUBJECT_KIND_LABELS[Number(subjectKind)].toLowerCase()
+
+  //  TỰ CHẶN CHÍNH MÌNH — luật nằm ở `idKhongDuocTuChan`, đọc chú thích ở đó.
+  const idTuChan = idKhongDuocTuChan(Number(subjectKind), user, isDeny)
+  const tenTuChan = optionsTatCa.find((option) => option.id === idTuChan)?.label ?? ''
+  //  Bỏ khỏi DANH SÁCH CHỌN luôn, không chỉ báo lỗi sau khi bấm: chọn được rồi
+  //  mới bị mắng là bắt người ta làm lại một việc lẽ ra không nên mời họ làm.
+  const options = optionsTatCa.filter((option) => option.id !== idTuChan)
+
   const selectedOptions = options.filter((option) => selectedIds.includes(option.id))
   const allowDrafts = drafts.filter((row) => row.values.effect === EFFECT.allow)
   const denyDrafts = drafts.filter((row) => row.values.effect === EFFECT.deny)
@@ -240,6 +251,19 @@ function AccessForm({ pending, existing, onCancel, onSubmit }: AccessFormProps) 
           </div>
         </div>
 
+        {/*  Nói RA vì sao thiếu: lọc lặng lẽ thì người dùng tìm tên mình mãi
+             không thấy rồi tưởng danh sách hỏng. */}
+        {isDeny && tenTuChan && (
+          <p className="flex items-start gap-2 rounded-md border border-sky-300 bg-sky-50 px-3 py-2 text-xs text-sky-900">
+            <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+            <span>
+              Không chặn được chính mình — <span className="font-medium">{tenTuChan}</span> đã được
+              bỏ khỏi danh sách. Tự chặn thì văn bản vừa lập xong bạn không mở lại được, mà cũng
+              không còn đường vào để gỡ.
+            </span>
+          </p>
+        )}
+
         {conflicts.length > 0 && (
           <p className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
             <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
@@ -271,12 +295,16 @@ function AccessForm({ pending, existing, onCancel, onSubmit }: AccessFormProps) 
             </label>
             <label className="flex items-center gap-2 text-sm">
               <RadioGroupItem value={String(EFFECT.deny)} />
-              Cấm
+              {/*  Gọi ĐÚNG MỘT TÊN ở mọi chỗ: nút chọn ở đây, tiêu đề cụm bên
+                   ngoài, câu giải thích. Trước 24/08/2026 chỗ này ghi «Cấm» còn
+                   cụm bên ngoài ghi «Không cho phép» — người dùng phải tự đoán
+                   hai chữ đó là một. */}
+              Không cho phép
             </label>
           </RadioGroup>
           <p className="text-xs text-muted-foreground">
             {isDeny
-              ? 'Cấm thắng mọi dòng cho phép và thắng cả phạm vi vai trò — người bị cấm không còn thấy văn bản này trong danh sách.'
+              ? '«Không cho phép» thắng mọi dòng cho phép và thắng cả phạm vi vai trò — người bị chặn không còn thấy văn bản này trong danh sách.'
               : 'Người được chia sẽ thấy và mở được văn bản này kể cả khi nó nằm ngoài phạm vi vai trò của họ.'}
           </p>
         </div>
@@ -352,7 +380,7 @@ function AccessForm({ pending, existing, onCancel, onSubmit }: AccessFormProps) 
           disabled={selectedIds.length === 0}
         >
           <Plus className="size-4" />
-          {isDeny ? 'Thêm cụm cấm' : 'Thêm cụm cho phép'}
+          {isDeny ? 'Thêm cụm không cho phép' : 'Thêm cụm cho phép'}
         </Button>
         <Button type="button" onClick={handleSubmit} disabled={total === 0 || pending}>
           Xong{total > 0 && ` (${total})`}

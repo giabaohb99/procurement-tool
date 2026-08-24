@@ -16,17 +16,39 @@ export function today(): string {
  * định nghiệp vụ (thường là đầu tháng sau), điền sẵn hôm nay thì người soạn dễ
  * bấm lưu luôn mà không để ý.
  */
-export function emptyDocumentForm(): DocumentRecordFormValues {
+/**
+ * Vài ô suy được thẳng từ HỒ SƠ NGƯỜI ĐANG ĐĂNG NHẬP — xem `emptyDocumentForm`.
+ *
+ * Khai riêng một kiểu thay vì nhận cả `AuthUser`: helper này thuần, không cần
+ * biết tới tầng xác thực, và chỗ gọi phải nói rõ nó đang mượn những ô nào.
+ */
+export interface DocumentFormSeed {
+  company_id?: number
+  department_id?: number
+  employee_id?: number
+}
+
+export function emptyDocumentForm(seed: DocumentFormSeed = {}): DocumentRecordFormValues {
   return {
     doc_type_id: 0,
-    company_id: 0,
+    //  TỰ ĐIỀN theo tài khoản đang đăng nhập (24/08/2026). Chín trên mười lần
+    //  người soạn lập văn bản cho chính pháp nhân và phòng của mình, và chính
+    //  họ là người chịu trách nhiệm nội dung — bắt chọn lại bốn ô đó mỗi lần là
+    //  bắt gõ lại thứ hệ đã biết. Sửa được như thường, đây chỉ là giá trị mở sẵn.
+    //
+    //  ⚠️ Vẫn để 0 khi tài khoản chưa gắn hồ sơ nhân sự (tài khoản hệ thống):
+    //  điền bừa một số 0 vào ô bắt buộc thì form báo lỗi ở một ô người dùng chưa
+    //  hề đụng tới.
+    company_id: seed.company_id || 0,
     //  0 = chưa chọn. Phòng chủ trì BẮT BUỘC (bước đầu luồng duyệt hỏi trưởng
     //  bộ phận của phòng này) nên nó đi cùng kiểu với các ô bắt buộc khác, chứ
     //  không còn `null` như ô tùy chọn.
-    department_id: 0,
+    department_id: seed.department_id || 0,
     book_id: null,
-    owner_employee_id: 0,
-    drafter_employee_id: null,
+    owner_employee_id: seed.employee_id || 0,
+    //  Người SOẠN mặc định là người đang gõ — khác «người chịu trách nhiệm nội
+    //  dung» ở chỗ ai hỏi thì trả lời, nhưng lúc lập mới thì thường là một người.
+    drafter_employee_id: seed.employee_id || null,
     signer_employee_id: null,
     title: '',
     summary: '',

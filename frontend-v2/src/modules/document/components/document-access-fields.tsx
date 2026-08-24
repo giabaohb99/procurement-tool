@@ -89,8 +89,8 @@ export function DocumentAccessFields({ rows, onChange, bookName }: DocumentAcces
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
               Mở thêm cho người ngoài phạm vi, hoặc chặn đích danh.{' '}
-              <span className="font-medium text-foreground">Cấm</span> thắng tất cả — kể cả người
-              trong sổ và người có phạm vi vai trò.
+              <span className="font-medium text-foreground">Không cho phép</span> thắng tất cả —
+              kể cả người trong sổ và người có phạm vi vai trò.
             </p>
             {/* MỘT nút: chiều tác động (cho phép / cấm) chọn ngay trong hộp,
                 cùng lượt với danh sách đối tượng. Tách hai nút ở đây là hỏi
@@ -135,7 +135,7 @@ export function DocumentAccessFields({ rows, onChange, bookName }: DocumentAcces
         open={editing !== null}
         onOpenChange={(isOpen) => !isOpen && setEditing(null)}
         deny={editing === EFFECT.deny}
-        count={(editing === EFFECT.deny ? denyRows : allowRows).length}
+        rows={editing === EFFECT.deny ? denyRows : allowRows}
         onApply={(patch) => {
           //  Áp bộ quyền mới cho MỌI dòng trong cụm — sửa từng dòng một thì
           //  cụm mười người là mười lần khai lại y hệt nhau.

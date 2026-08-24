@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { extractErrorMessage } from '@/core/api'
+import { useAuth } from '@/core/auth/use-auth'
 import { purchaseRequestSupportApi } from '@/modules/procurement/api/purchase-request-support-api'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
@@ -28,7 +29,11 @@ import { cloneTargetsFromScopes } from '../helpers/clone-targets-from-scopes'
 import { emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
 import { useDocumentBooks } from '../hooks/use-document-books'
 import { useActiveDocumentTypes } from '../hooks/use-document-types'
-import { useDocumentPrerequisites, useSaveDocument } from '../hooks/use-documents'
+import {
+  useBoBanNhap,
+  useDocumentPrerequisites,
+  useSaveDocument,
+} from '../hooks/use-documents'
 import { useDocumentTemplate } from '../hooks/use-document-templates'
 import {
   documentRecordSchema,
@@ -45,12 +50,12 @@ import type { DocumentClonePlanInput } from '../types/document-clone'
 const STEPS = [
   {
     title: 'Thông tin chính',
-    description: 'Tên, loại, pháp nhân, quyền truy cập',
+    description: 'Tên, loại, pháp nhân, phòng chủ trì',
     fields: MAIN_INFO_FIELDS,
   },
   {
-    title: 'Phạm vi áp dụng',
-    description: 'Áp cho ai, có tách bản riêng không',
+    title: 'Phạm vi & quyền',
+    description: 'Áp cho ai, ai được xem, có tách bản riêng không',
     fields: [],
   },
   {
@@ -75,7 +80,13 @@ const LAST_STEP = STEPS.length - 1
  */
 export function DocumentCreatePage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [step, setStep] = useState(0)
+  //  Id BẢN NHÁP đã sinh ở bước 1. Khác `null` nghĩa là văn bản đã tồn tại trên
+  //  máy chủ, nên từ đó trở đi mọi lần lưu là SỬA chứ không tạo thêm cái nữa —
+  //  quay lại bước 1 rồi bấm «Tiếp tục» lần hai không được đẻ ra hai văn bản.
+  const [draftId, setDraftId] = useState<number | null>(null)
+  const [draftVersionId, setDraftVersionId] = useState<number | null>(null)
   const [templateId, setTemplateId] = useState<number | null>(null)
   //  Quyền khai ở khối cuối thẻ thông tin chính phải chờ có id văn bản mới gửi
   //  được, nên giữ tạm ở đây.
@@ -98,13 +109,19 @@ export function DocumentCreatePage() {
   //  nhưng đọc lại là thêm một đường dữ liệu thứ hai cho cùng một việc).
   const [choXacNhan, setChoXacNhan] = useState<DocumentRecordFormValues | null>(null)
   const save = useSaveDocument()
+  const boNhap = useBoBanNhap()
   const selectedTemplate = useDocumentTemplate(templateId)
   const { items: books } = useDocumentBooks()
   const documentTypes = useActiveDocumentTypes()
 
   const form = useForm<DocumentRecordFormValues>({
     resolver: zodResolver(documentRecordSchema),
-    defaultValues: emptyDocumentForm(),
+    //  Mở sẵn theo hồ sơ người đang đăng nhập — xem `emptyDocumentForm`.
+    defaultValues: emptyDocumentForm({
+      company_id: user?.company_id,
+      department_id: user?.department_id,
+      employee_id: user?.employee_id,
+    }),
   })
 
   //  Pháp nhân nhận bản riêng = các pháp nhân khai ở khối phạm vi, trừ nơi ban
@@ -120,13 +137,67 @@ export function DocumentCreatePage() {
   //  nhịp bấm thì người dùng phải chờ một vòng mạng ở đúng nhịp sốt ruột nhất.
   const { data: thieuTienQuyet } = useDocumentPrerequisites(docTypeId)
 
+  /**
+   * Bấm «Tiếp tục» ở BƯỚC 1 thì SINH LUÔN BẢN NHÁP trên máy chủ.
+   *
+   * Trước đây văn bản chỉ ra đời ở nút cuối cùng, nên bấm nút lùi của trình
+   * duyệt — hoặc đóng nhầm tab — ở bước 2, bước 3 là mất sạch bộ thông tin chính
+   * vừa chọn xong (yêu cầu người dùng 24/08/2026). Nay bước 1 xong là văn bản đã
+   * nằm trong danh sách ở trạng thái *Nháp*, quay lại lúc nào cũng còn.
+   *
+   * Lần bấm thứ hai (quay lại rồi tiếp tục lại) là **SỬA** bản nháp đó, không đẻ
+   * thêm — chốt bằng `draftId`.
+   *
+   * ⚠️ Loại văn bản cấp số ngay lúc lưu nháp (`number_when = 1`) sẽ **ăn một số
+   * hiệu** tại đây. Bỏ giữa chừng thì bản nháp vẫn nằm đó mang số — người dùng
+   * xóa nó ở danh sách được, và nút «Hủy» bên dưới cũng dọn hộ.
+   */
   async function goNext() {
     const valid = await form.trigger([...STEPS[step].fields])
     if (!valid) {
       toast.error(`Còn ô bắt buộc chưa nhập ở bước ${STEPS[step].title}`)
       return
     }
+
+    if (step === 0) {
+      try {
+        const record = await save.mutateAsync({
+          id: draftId ?? undefined,
+          values: {
+            ...formToPayload(form.getValues()),
+            //  Nội dung mẫu chỉ chép LÚC TẠO. Lần sửa sau mà gửi lại là đè lên
+            //  phần người ta đã gõ ở tab Soạn thảo.
+            ...(draftId ? {} : { content_html: selectedTemplate.data?.content_html ?? '' }),
+          },
+        })
+        setDraftId(record.id)
+        if (record.current_version_id) setDraftVersionId(record.current_version_id)
+      } catch (error) {
+        toast.error(extractErrorMessage(error))
+        return
+      }
+    }
+
     setStep(step + 1)
+  }
+
+  /**
+   * Bỏ giữa chừng thì DỌN bản nháp vừa sinh.
+   *
+   * Không dọn thì mỗi lần người dùng mở form rồi đổi ý là một bản nháp rác nằm
+   * lại trong danh sách — và với loại cấp số ngay thì còn ăn luôn một số hiệu.
+   * Xóa hụt (đã cấp số, hoặc mất mạng) thì kệ, vẫn rời trang: bản nháp còn đó
+   * người dùng xóa tay được, giữ họ lại trong form mới là vô lý.
+   */
+  async function huyBo() {
+    if (draftId) {
+      try {
+        await boNhap.mutateAsync(draftId)
+      } catch {
+        toast.error('Chưa xóa được bản nháp vừa sinh — mở danh sách để xóa lại.')
+      }
+    }
+    navigate(appRoutes.document.documentsTab('outgoing'))
   }
 
   /**
@@ -224,17 +295,20 @@ export function DocumentCreatePage() {
   function taoVanBan(values: DocumentRecordFormValues) {
     save.mutate(
       {
+        //  Bước 1 đã sinh bản nháp rồi thì đây là lượt SỬA nó — tạo lần nữa là
+        //  ra hai văn bản cho một lần lập.
+        id: draftId ?? undefined,
         values: {
           ...formToPayload(values),
-          content_html: selectedTemplate.data?.content_html ?? '',
+          ...(draftId ? {} : { content_html: selectedTemplate.data?.content_html ?? '' }),
         },
       },
       {
         onSuccess: async (record) => {
           //  `current_version_id` do chính lượt tạo đặt (`service.create` dựng
           //  phiên bản 1.0 rồi trỏ vào nó) nên đây là id có thật, không phải
-          //  đoán.
-          await guiPhanXepHang(record.id, record.current_version_id)
+          //  đoán. Lượt SỬA không trả cột đó nên lấy lại cái đã nhớ từ bước 1.
+          await guiPhanXepHang(record.id, record.current_version_id ?? draftVersionId)
           navigate(appRoutes.document.documentDetail(record.id), { replace: true })
         },
       },
@@ -276,16 +350,6 @@ export function DocumentCreatePage() {
                 templateId={templateId}
                 onTemplateChange={setTemplateId}
               />
-
-              {/* Quyền truy cập nằm CUỐI chính thẻ này, không tách thẻ riêng và
-                  càng không tách bước riêng: khai xong ai được xem ngay lúc lập
-                  văn bản thì không còn khoảng hở "đã tạo nhưng chưa chặn ai",
-                  mà form cũng không dài thêm vì mặc định nó chỉ là một dòng. */}
-              <DocumentAccessFields
-                rows={pendingAccess}
-                onChange={setPendingAccess}
-                bookName={books.find((book) => book.id === Number(form.watch('book_id')))?.name}
-              />
             </FormCard>
           </div>
 
@@ -293,6 +357,18 @@ export function DocumentCreatePage() {
             <div className="space-y-4">
               <FormCard title="Phạm vi áp dụng" icon={Target} iconClassName="text-sky-600">
                 <DocumentScopeFields rows={pendingScopes} onChange={setPendingScopes} />
+
+                {/*  QUYỀN TRUY CẬP đứng NGAY DƯỚI phạm vi (dời xuống 24/08/2026
+                     theo yêu cầu người dùng). Hai khối trả lời hai nửa của cùng
+                     một câu «ai đụng được văn bản này»: phạm vi mở theo diện,
+                     quyền truy cập vá thêm hoặc chặn đích danh. Đặt cạnh nhau
+                     thì rà một lượt là xong; để tách ở hai bước như trước thì
+                     phải nhớ mình vừa khai gì ở bước trên. */}
+                <DocumentAccessFields
+                  rows={pendingAccess}
+                  onChange={setPendingAccess}
+                  bookName={books.find((book) => book.id === Number(form.watch('book_id')))?.name}
+                />
               </FormCard>
 
               {/*  Thẻ này chỉ hiện khi phạm vi đã có pháp nhân ngoài nơi ban
@@ -342,11 +418,7 @@ export function DocumentCreatePage() {
             </Button>
 
             <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => navigate(appRoutes.document.documentsTab('outgoing'))}
-              >
+              <Button type="button" variant="ghost" onClick={huyBo}>
                 Hủy
               </Button>
 

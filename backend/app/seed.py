@@ -280,15 +280,21 @@ STD_ROLES = {
     # tick một kiểu. Không tài khoản nào bị gán tự động — việc gán làm ở màn
     # *Nhân sự ▸ Phân quyền tài khoản ▸ tab Người dùng*.
     #
-    # ⚠️ BỐN entity đọc kèm không phải thừa: thiếu chúng thì form Tạo/Sửa văn bản
+    # ⚠️ MẤY entity đọc kèm không phải thừa: thiếu chúng thì form Tạo/Sửa văn bản
     # rỗng sạch mọi ô bắt buộc (loại · pháp nhân · phòng · người chịu trách
     # nhiệm) và không lưu nổi — đã bị đúng lỗi đó với vai trò `vanthu_cty`.
+    #
+    # `security_level` là cái dễ quên nhất vì ô của nó nằm tận BƯỚC 3: thiếu nó
+    # thì `/api/security-levels` trả 403, ô «Mức mật» rỗng danh sách, và form
+    # gửi lên `secrecy_level = 0` → `422` báo lỗi ở một ô người dùng chưa hề mở
+    # tới (dựng lại được 24/08/2026 với tài khoản DEMOTP).
     "vanban_xem": {"name": "Văn bản — chỉ xem", "perms": {
         #  ĐÚNG một hành động. Không `print`, không `export`: "không thao tác gì"
         #  thì cũng không mang văn bản ra ngoài được.
         "document": (["read"], "company"),
         "doc_type": (["read"], "all"),
         "document_book": (["read"], "all"),
+        "security_level": (["read"], "all"),
         "company": (["read"], "all"),
         "department": (["read"], "all"),
         "employee": (["read"], "all"),
@@ -300,6 +306,7 @@ STD_ROLES = {
         "document": (["read", "create", "write", "print", "export"], "company"),
         "doc_type": (["read"], "all"),
         "document_book": (["read"], "all"),
+        "security_level": (["read"], "all"),
         "company": (["read"], "all"),
         "department": (["read"], "all"),
         "employee": (["read"], "all"),

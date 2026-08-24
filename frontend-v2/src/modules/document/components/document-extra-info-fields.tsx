@@ -63,7 +63,17 @@ export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) 
             <FormLabel>Mức mật</FormLabel>
             <Select
               value={String(field.value)}
-              onValueChange={(value) => field.onChange(Number(value))}
+              //  ⚠️ BỎ QUA giá trị RỖNG. Khi danh mục mức mật nạp hụt (tài khoản
+              //  thiếu quyền đọc `security_level` thì API trả 403 và danh sách
+              //  rỗng), ô chọn không còn mục nào khớp và bắn ra chuỗi rỗng —
+              //  `Number('')` là **0**, mà 0 nằm ngoài dải hợp lệ. Kết quả đã
+              //  dựng lại được 24/08/2026: bấm Tiếp tục ở bước 1 nhận `422
+              //  secrecy_level must be >= 1`, tức là hỏng vì MỘT Ô Ở BƯỚC 3 mà
+              //  người dùng chưa hề mở tới. Giữ nguyên giá trị cũ thì hỏng lắm
+              //  cũng chỉ là không đổi được mức, và câu 403 hiện ở đúng chỗ.
+              onValueChange={(value) => {
+                if (value) field.onChange(Number(value))
+              }}
             >
               <FormControl>
                 <SelectTrigger className="w-full">
@@ -119,7 +129,10 @@ export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) 
             <FormLabel>Độ khẩn</FormLabel>
             <Select
               value={String(field.value)}
-              onValueChange={(value) => field.onChange(Number(value))}
+              onValueChange={(value) => {
+                //  Cùng lý do với ô «Mức mật» ở trên.
+                if (value) field.onChange(Number(value))
+              }}
             >
               <FormControl>
                 <SelectTrigger className="w-full">

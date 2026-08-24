@@ -387,6 +387,22 @@ def update_issue_number(
     return success(serializer.serialize(db, doc), "Đã cập nhật số hiệu")
 
 
+@router.delete("/{document_id}/ban-nhap")
+def bo_ban_nhap(
+    document_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(require("document", "create")),
+):
+    """Nút «Hủy» ở màn Tạo văn bản — dọn bản nháp mà chính mình vừa mở.
+
+    Đi cùng `create` chứ không phải `delete`: xem `service.bo_ban_nhap_cua_minh`.
+    """
+    doc = _load(db, document_id, user, "read")
+    service.bo_ban_nhap_cua_minh(db, doc, user.id)
+    record(db, user.id, "document", document_id, "delete", "Bỏ bản nháp đang soạn dở")
+    return success(None, "Đã bỏ bản nháp")
+
+
 @router.delete("/{document_id}")
 def delete_document(
     document_id: int,

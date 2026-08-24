@@ -298,6 +298,30 @@ def delete_document(db: Session, doc: Document):
     db.commit()
 
 
+def bo_ban_nhap_cua_minh(db: Session, doc: Document, actor: int) -> None:
+    """Bỏ BẢN NHÁP DO CHÍNH MÌNH vừa mở ra — không đòi quyền `delete`.
+
+    Từ 24/08/2026 màn *Tạo văn bản* bấm «Tiếp tục» là đã ghi một bản nháp thật
+    xuống CSDL (để quay lại không mất dữ liệu đã gõ), nên nút «Hủy» buộc phải dọn
+    được cái nháp đó. Nhưng vai trò soạn thảo tiêu chuẩn (`vanban_sua`) **cố ý
+    không có `delete`** — không cho xóa văn bản của người khác. Kết quả dựng lại
+    được: bấm Tiếp tục rồi bấm Hủy → **403**, và bản nháp nằm lại vĩnh viễn vì
+    chính người tạo cũng không có quyền xóa nó.
+
+    Nên tách một cửa hẹp riêng: **tự bỏ nháp của mình** đi cùng quyền `create`,
+    vì đúng là mặt sau của thao tác vừa tạo ra nó. Hẹp ở ba chốt:
+    - chỉ trạng thái **Nháp** (còn «Trả về» đã đi qua tay người duyệt, bỏ nó là
+      xóa thật, vẫn phải có `delete`);
+    - chỉ **tài khoản đã tạo** ra nó;
+    - chưa cấp số — chốt này `delete_document` bên dưới giữ.
+    """
+    if doc.status != STATUS_DRAFT:
+        raise HTTPException(400, "Chỉ bỏ được văn bản đang ở trạng thái nháp")
+    if doc.created_by != actor:
+        raise HTTPException(403, "Chỉ người tạo mới bỏ được bản nháp này")
+    delete_document(db, doc)
+
+
 # ── Luồng duyệt một bước (TẠM — P3 thay) ─────────────────────────────────────
 def submit(db: Session, doc: Document, actor: int) -> Document:
     """Trình bản đang mở đi duyệt. Nhận cả bản **bị trả về** — đó là cả mục đích
