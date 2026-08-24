@@ -35,8 +35,13 @@ interface DocumentNeedsReviewBannerProps {
  * sửa xong, ban hành xong thì băng vàng vẫn treo vĩnh viễn. Vài tháng là văn bản
  * nào cũng đeo băng, và đúng lúc cảnh báo cần được chú ý thì không ai nhìn nữa.
  *
- * Nay có hai nút, và nút xác nhận **bắt ghi kết luận** — "đã đối chiếu, vẫn
- * đúng" khác hẳn "đã sửa theo Chương II" nếu về sau có tranh chấp.
+ * Nay có hai nút, và nút rà **bắt ghi kết luận** — "đã đối chiếu, vẫn đúng" khác
+ * hẳn "đã sửa theo Chương II" nếu về sau có tranh chấp.
+ *
+ * Nút ghi "Rà lại" chứ không phải "Đã rà xong": bấm vào là MỞ hộp rà
+ * (`document-review-dialog.tsx`) để chọn kết luận — giữ nguyên, hay phải sửa và
+ * mở luôn phiên bản mới. Đặt tên theo kết quả trong khi nó mới là bước bắt đầu
+ * thì người dùng ngại bấm vì tưởng bấm phát là xong.
  */
 export function DocumentNeedsReviewBanner({
   needsReview,
@@ -111,7 +116,7 @@ export function DocumentNeedsReviewBanner({
         {needsReview && canWrite && onConfirm && (
           <Button type="button" size="sm" disabled={pending} onClick={onConfirm}>
             <Check className="size-4" />
-            Đã rà xong
+            Rà lại
           </Button>
         )}
       </div>

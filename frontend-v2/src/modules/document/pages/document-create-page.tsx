@@ -5,6 +5,8 @@ import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
+import { extractErrorMessage } from '@/core/api'
+import { purchaseRequestSupportApi } from '@/modules/procurement/api/purchase-request-support-api'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Form } from '@/shared/ui/form'
@@ -19,6 +21,7 @@ import { DocumentAccessFields, type PendingAccess } from '../components/document
 import { DocumentClonePlanFields } from '../components/document-clone-plan-fields'
 import { DocumentExtraInfoFields } from '../components/document-extra-info-fields'
 import { DocumentMainInfoFields, MAIN_INFO_FIELDS } from '../components/document-main-info-fields'
+import { DocumentPendingAttachments } from '../components/document-pending-attachments'
 import { DocumentPrerequisiteDialog } from '../components/document-prerequisite-dialog'
 import { DocumentScopeFields, type PendingScope } from '../components/document-scope-fields'
 import { cloneTargetsFromScopes } from '../helpers/clone-targets-from-scopes'
@@ -52,7 +55,7 @@ const STEPS = [
   },
   {
     title: 'Thông tin bổ sung',
-    description: 'Mức mật, hiệu lực, từ khóa',
+    description: 'Mức mật, hiệu lực, từ khóa, tệp đính kèm',
     fields: [],
   },
 ] as const
@@ -86,6 +89,9 @@ export function DocumentCreatePage() {
     due_date: '',
     note: '',
   })
+  //  Tệp đính kèm cũng xếp hàng: chúng treo vào PHIÊN BẢN, mà phiên bản 1.0 chỉ
+  //  ra đời cùng lúc với văn bản.
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
   //  Bộ giá trị đang chờ người dùng trả lời hộp cảnh báo thiếu văn bản tiên
   //  quyết. Khác `null` = hộp đang mở. Giữ luôn cả `values` để lúc bấm "Vẫn
   //  tạo" không phải đọc lại form (người dùng không sửa được gì khi hộp đang mở,
@@ -132,7 +138,7 @@ export function DocumentCreatePage() {
    * còn tệ hơn — mỗi phần đều có chỗ khai lại ở trang chi tiết, và câu báo lỗi
    * nói rõ phải mở tab nào.
    */
-  async function guiPhanXepHang(documentId: number) {
+  async function guiPhanXepHang(documentId: number, versionId: number | null) {
     const hongQuyen: string[] = []
     for (const row of pendingAccess) {
       try {
@@ -169,6 +175,23 @@ export function DocumentCreatePage() {
         })
       } catch {
         toast.error('Chưa ghi được kế hoạch clone — khai lại ở thẻ «Bản clone ở pháp nhân con».')
+      }
+    }
+
+    //  Tệp gửi MỘT LƯỢT chứ không từng tệp một: API nhận nhiều tệp trong một
+    //  lần gọi, và người dùng chỉ cần biết "đính kèm được hay không".
+    if (pendingFiles.length > 0 && versionId) {
+      try {
+        await purchaseRequestSupportApi.uploadAttachments(
+          'document_version',
+          versionId,
+          pendingFiles,
+        )
+        toast.success(`Đã đính kèm ${pendingFiles.length} tệp`)
+      } catch (error) {
+        //  Nói nguyên câu của backend: gần như luôn là "tệp quá lớn" hoặc "đuôi
+        //  tệp không cho phép" — người dùng cần biết tệp nào phải đổi.
+        toast.error(`Chưa tải được tệp đính kèm — ${extractErrorMessage(error)}`)
       }
     }
   }
@@ -208,7 +231,10 @@ export function DocumentCreatePage() {
       },
       {
         onSuccess: async (record) => {
-          await guiPhanXepHang(record.id)
+          //  `current_version_id` do chính lượt tạo đặt (`service.create` dựng
+          //  phiên bản 1.0 rồi trỏ vào nó) nên đây là id có thật, không phải
+          //  đoán.
+          await guiPhanXepHang(record.id, record.current_version_id)
           navigate(appRoutes.document.documentDetail(record.id), { replace: true })
         },
       },
@@ -226,7 +252,7 @@ export function DocumentCreatePage() {
             size="icon"
             title="Về danh sách"
             aria-label="Về danh sách"
-            onClick={() => navigate(appRoutes.document.documents)}
+            onClick={() => navigate(appRoutes.document.documentsTab('outgoing'))}
           >
             <ArrowLeft className="size-4" />
           </Button>
@@ -293,10 +319,15 @@ export function DocumentCreatePage() {
             </div>
           </div>
 
-          <div className={step === 2 ? undefined : 'hidden'}>
+          <div className={step === 2 ? 'space-y-5' : 'hidden'}>
             <FormCard title="Thông tin bổ sung" icon={Layers} iconClassName="text-emerald-600">
               <DocumentExtraInfoFields form={form} />
             </FormCard>
+
+            {/*  Đính kèm ở BƯỚC CUỐI, ngay trên nút Tạo: tệp là thứ người soạn
+                 cầm sẵn trong tay lúc lập văn bản, chứ không phải thông tin phải
+                 nghĩ như tên hay phạm vi. */}
+            <DocumentPendingAttachments files={pendingFiles} onChange={setPendingFiles} />
           </div>
 
           <div className="flex items-center justify-between gap-3">
@@ -314,7 +345,7 @@ export function DocumentCreatePage() {
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => navigate(appRoutes.document.documents)}
+                onClick={() => navigate(appRoutes.document.documentsTab('outgoing'))}
               >
                 Hủy
               </Button>
