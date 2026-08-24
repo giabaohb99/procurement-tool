@@ -260,49 +260,45 @@ export default function PurchaseRequestDetail() {
   // CR-082 — các dòng khiến phiếu thành Đơn gấp (rỗng = không dòng nào vi phạm).
   const urgentLines = useMemo(() => urgentLinesPR(pr.items || [], pr.request_date || '', stdMap),
     [pr.items, pr.request_date, stdMap])
-  // Tự tính lại cờ Đơn gấp khi dữ liệu nguồn (ngày tiếp nhận / dòng hàng) đổi.
+  // Tự tính lại cờ Đơn gấp khi dữ liệu nguồn (ngày tiếp nhận / dòng hàng) đổi. CR-082: chỉ BẬT,
+  // KHÔNG bao giờ tự tắt — chiều tắt nằm ở effect bên dưới (CR-133).
+  const recalcUrgent = (next: any) => {
+    if (Object.keys(stdMap).length === 0 || next.is_urgent) return next
+    return urgentLinesPR(next.items || [], next.request_date, stdMap).length
+      ? { ...next, is_urgent: true } : next
+  }
+  // CR-133 — chiều TẮT của cờ Đơn gấp.
   //
   // CR-082 chỉ có chiều BẬT. Ticket 24/08/2026 (PYC22082603): chọn ngày cần hàng sớm hơn quy định
   // thì phiếu bật Đơn gấp kèm dòng chú thích; chọn LẠI cho đúng quy định thì chú thích biến mất
-  // nhưng ô tick vẫn còn — phiếu đi tiếp với cờ gấp không còn lý do nào chống lưng. Nay có chiều TẮT.
+  // nhưng ô tick vẫn còn — phiếu đi tiếp với cờ gấp không còn lý do nào chống lưng.
   //
-  // Chỉ tắt được cờ do CHÍNH LUẬT NÀY bật (`_urgentAuto`). Người dùng tự tick thì cờ thuộc về họ,
-  // hệ thống không gỡ. `_urgentAuto` sống trong state của màn, KHÔNG nằm trong body gửi lên API.
+  // Chỉ được gỡ cờ do CHÍNH LUẬT NÀY bật; người dùng tự tick thì cờ thuộc về họ. Dấu chủ sở hữu
+  // để trong ref `urgentAuto`, KHÔNG để trong state `pr`: `loadAll()` gọi `setPr(data)` thay
+  // nguyên cục nên mọi khóa phụ gắn vào `pr` đều bị xóa sạch sau mỗi lần nạp lại phiếu.
+  // Ref gắn kèm `key` (id phiếu) vì React Router dùng lại đúng một instance khi nhảy giữa hai
+  // phiếu — không có key thì cờ của phiếu trước sẽ theo sang phiếu sau.
+  //
+  // Còn dòng vi phạm ⇒ luật sở hữu cờ (nó cưỡng bức bật, người dùng bỏ tick cũng bị bật lại),
+  // nên cứ đánh dấu là của luật. Hết dòng vi phạm ⇒ chỉ gỡ nếu dấu đang thuộc về luật; phiếu mở
+  // ra đã gấp sẵn mà không dòng nào vi phạm thì đó là người bật tay, không đụng vào.
   // Chiều tắt cũng chỉ áp cho phiếu còn sửa được: phiếu đã duyệt lưu ô tick thẳng qua API nên bỏ
   // tick ngầm ở client sẽ lệch với server.
-  const recalcUrgent = (next: any) => {
-    if (Object.keys(stdMap).length === 0) return next
-    const viPham = urgentLinesPR(next.items || [], next.request_date, stdMap).length > 0
-    if (viPham) return next.is_urgent ? next : { ...next, is_urgent: true, _urgentAuto: true }
-    if (!editable || !next.is_urgent || !next._urgentAuto) return next
-    return { ...next, is_urgent: false, _urgentAuto: false }
-  }
-  // Phiếu MỞ TỪ SERVER đã mang sẵn cờ gấp thì phải đoán xem cờ đó của ai — chạy ĐÚNG MỘT LẦN cho
-  // mỗi phiếu, ngay khi cả dữ liệu phiếu lẫn danh mục QĐ đã sẵn sàng. Đang có dòng vi phạm ⇒ cờ đó
-  // đúng bằng thứ backend tự bật lúc lưu, coi như của hệ thống, sửa ngày cho đúng QĐ là tắt được.
-  // Cờ gấp mà KHÔNG dòng nào vi phạm ⇒ chắc chắn người bật tay, không đụng vào.
-  // Chỉ chạy một lần nên tick tay GIỮA CHỪNG không bao giờ bị luật nhận vơ.
-  const urgentSrcOf = useRef<number | null>(null)
+  const urgentAuto = useRef<{ key: string; val: boolean }>({ key: '', val: false })
+  const urgentDoc = isNew ? 'new' : String(id)
   useEffect(() => {
     if (!editable || Object.keys(stdMap).length === 0) return
-    const key = isNew ? 0 : Number(pr.id) || 0
-    if (!key || urgentSrcOf.current === key) return
-    urgentSrcOf.current = key
-    if (pr.is_urgent && urgentLines.length > 0) setPr((s: any) => ({ ...s, _urgentAuto: true }))
+    if (urgentAuto.current.key !== urgentDoc) urgentAuto.current = { key: urgentDoc, val: false }
+    if (urgentLines.length > 0) {
+      urgentAuto.current.val = true
+      setPr((s: any) => (s.is_urgent ? s : { ...s, is_urgent: true }))
+      return
+    }
+    if (!urgentAuto.current.val) return
+    urgentAuto.current.val = false
+    setPr((s: any) => (s.is_urgent ? { ...s, is_urgent: false } : s))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editable, stdMap, pr.id, isNew])
-  // Phiếu còn sửa được (mới / nháp / bị trả lại): có dòng vi phạm thì bật cờ ngay khi mở phiếu và
-  // sau khi danh mục QĐ nạp xong — để ô tick khớp với những gì backend sẽ ghi lúc Lưu; hết dòng vi
-  // phạm thì gỡ lại cờ do chính luật này bật. Phiếu đã duyệt giữ nguyên hiển thị, vì ô tick ở đó
-  // lưu thẳng qua API.
-  useEffect(() => {
-    if (!editable || Object.keys(stdMap).length === 0) return
-    setPr((s: any) => {
-      if (urgentLines.length > 0) return s.is_urgent ? s : { ...s, is_urgent: true, _urgentAuto: true }
-      return s.is_urgent && s._urgentAuto ? { ...s, is_urgent: false, _urgentAuto: false } : s
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editable, urgentLines.length, stdMap])
+  }, [editable, urgentLines.length, stdMap, urgentDoc])
 
   const setH = (k: string, v: any) =>
     setPr((s: any) => (k === 'request_date' ? recalcUrgent({ ...s, request_date: v }) : { ...s, [k]: v }))
@@ -369,8 +365,10 @@ export default function PurchaseRequestDetail() {
 
   // Bật/tắt Đơn gấp. Phiếu còn sửa (nháp/mới) -> cập nhật local, lưu theo nút Lưu. Phiếu đã duyệt -> auto-lưu ngay + đồng bộ ĐMH.
   async function toggleUrgent(v: boolean) {
-    // Người dùng tự bấm ⇒ cờ thuộc về họ: bỏ dấu `_urgentAuto` để luật tự động không gỡ tick này.
-    setPr((s: any) => ({ ...s, is_urgent: v, _urgentAuto: false }))
+    // CR-133 — người dùng tự bấm ⇒ cờ thuộc về họ: trả dấu chủ sở hữu về tay người dùng để luật
+    // tự động không gỡ tick này.
+    urgentAuto.current = { key: urgentDoc, val: false }
+    setH('is_urgent', v)
     if (!isNew && !editable && pr.id) {
       try { await api.patch(`${API}/${id}/urgent`, { is_urgent: v }); toast.success('Đã cập nhật Đơn gấp'); loadAll() }
       catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi cập nhật Đơn gấp'); loadAll() }
