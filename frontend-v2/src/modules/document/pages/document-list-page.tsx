@@ -2,6 +2,7 @@ import { Inbox, Plus, Send } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
+import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { PageContainer } from '@/shared/ui/page-container'
@@ -43,7 +44,15 @@ const MO_TA: Record<string, string> = {
 export function DocumentListPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const tab = searchParams.get('tab') === DEN ? DEN : DI
+  const { can } = usePermission()
+
+  //  Nhân sự thường KHÔNG có quyền `document.read` — họ chỉ được xem «Văn bản
+  //  đến» (`/api/documents/applies-to-me`, backend mở cho mọi tài khoản đăng
+  //  nhập). Tab «Văn bản đi» gọi `/api/documents` (gác `document.read`), nên khi
+  //  thiếu quyền phải ẩn HẲN cả nút tab lẫn nội dung — Radix mount sẵn mọi
+  //  `TabsContent`, để lại là component con vẫn gọi API và ăn 403.
+  const xemDuocVanBanDi = can('document', 'read')
+  const tab = !xemDuocVanBanDi ? DEN : searchParams.get('tab') === DEN ? DEN : DI
 
   function doiTab(next: string) {
     setSearchParams(next === DI ? {} : { tab: next }, { replace: true })
@@ -69,16 +78,21 @@ export function DocumentListPage() {
           }
         />
 
-        <TabsList className="mb-3 self-start">
-          <TabsTrigger value={DEN}>
-            <Inbox className="size-4" />
-            Văn bản đến
-          </TabsTrigger>
-          <TabsTrigger value={DI}>
-            <Send className="size-4" />
-            Văn bản đi
-          </TabsTrigger>
-        </TabsList>
+        {/*  Chỉ dựng thanh tab khi có cả hai tab. Người chỉ xem được «Văn bản
+             đến» thì một tab đơn độc trông như lỗi — bỏ hẳn, tiêu đề trang đã
+             nói rõ đang xem gì. */}
+        {xemDuocVanBanDi && (
+          <TabsList className="mb-3 self-start">
+            <TabsTrigger value={DEN}>
+              <Inbox className="size-4" />
+              Văn bản đến
+            </TabsTrigger>
+            <TabsTrigger value={DI}>
+              <Send className="size-4" />
+              Văn bản đi
+            </TabsTrigger>
+          </TabsList>
+        )}
 
         {/*  `TabsContent` phải tự là cột flex co được, nếu không `Card flex-1`
              bên trong không có gì để bám và bảng tụt về chiều cao nội dung. */}
@@ -86,9 +100,11 @@ export function DocumentListPage() {
           <IncomingDocumentsTab />
         </TabsContent>
 
-        <TabsContent value={DI} className="mt-0 flex min-h-0 flex-1 flex-col">
-          <OutgoingDocumentsTab />
-        </TabsContent>
+        {xemDuocVanBanDi && (
+          <TabsContent value={DI} className="mt-0 flex min-h-0 flex-1 flex-col">
+            <OutgoingDocumentsTab />
+          </TabsContent>
+        )}
       </PageContainer>
     </Tabs>
   )

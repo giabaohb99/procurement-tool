@@ -45,10 +45,15 @@ export const documentModule: ErpModule = {
       end: true,
     },
     {
+      //  KHÔNG gác `entity`: màn này có tab «Văn bản đến» (`/applies-to-me`) mà
+      //  backend mở cho MỌI tài khoản đăng nhập — nhân sự thường phải xem được
+      //  văn bản áp dụng cho họ (ban hành trong pháp nhân của họ). Tab «Văn bản
+      //  đi» (gọi `/api/documents`, gác `document.read`) do CHÍNH trang tự ẩn
+      //  khi thiếu quyền, nên bỏ khóa ở đây không làm lộ danh sách gác quyền.
+      //  Cùng một lẽ với «Chờ tôi duyệt» ngay bên dưới.
       label: 'Văn bản',
       path: appRoutes.document.documents,
       icon: Files,
-      entity: 'document',
       group: 'Nghiệp vụ',
     },
     {
