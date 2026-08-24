@@ -42,20 +42,22 @@ cũng không để lại hệ nửa vời.*
 
 | Việc | Loại | Ở đâu | Trạng thái |
 |---|---|---|---|
-| **Đ-11** — vá Trang chủ (4 khối thiếu + duyệt nhanh) và dựng **Tổng quan Tài chính** / **Tổng quan Kho** *(đang là trang trắng 11 dòng)* | Màn hình | `13` §3 Đ-11 | **Việc màn hình trước mắt duy nhất còn lại** · 1,5–2 ngày |
+| **Đ-11** — vá Trang chủ (4 khối thiếu + duyệt nhanh) và dựng **Tổng quan Tài chính** / **Tổng quan Kho** | Màn hình | `13` §3 Đ-11 | **Xong 24/08/2026** *(CR-132 — đánh lại số từ CR-129 vì trùng)* |
+| **Tối ưu UX & Phân quyền Thu mua v2** — Fix 4 trang chi tiết, mở Tiến độ mua hàng cho NV/Trưởng phòng YC, thêm 7 tài khoản Test DB, chuẩn hóa màu sắc & ô rỗng | UI/UX & PQ | `13` §1 | **Xong 24/08/2026** *(Fix detail pages, Tiến độ mua hàng nav, Switch user, Zebra striping, Null empty cells)* |
+| Gác quyền ở tầng **route** — thanh bên đã lọc, đường dẫn thì chưa | Nợ | `13` §3 Đ-11 *(cuối mục)* | Hở ra từ Đ-11 · chưa xếp đợt |
 | **Đ-13** — Quản lý Import | Màn hình | `13` §3 Đ-13 | Khách hoãn — và **chặn Đ-15** |
 | **Đ-15** — tắt bản cũ | Vận hành | `13` §3 Đ-15 | Chờ Đ-13 |
 | Chi tiết *Yêu cầu báo giá* thiếu nút *Xử lý khảo sát* | Khuyết | `13` §1.8 | Tự hết khi P6 gộp phiếu, **không làm riêng** |
-| **N-14** — `SCOPE_FIELDS` khai 12/38 entity, thiếu khai thì **không lọc** chứ không phải chặn | **Lỗ hổng** | `13` §6.7 · `06` H4 | → **B-07** |
-| **N-13** — `attachment/controller.py` `_check()` không lọc phạm vi | **Lỗ hổng** | `13` §6.7 · `06` H17 | → **B-08** |
+| **N-14** — `SCOPE_FIELDS` khai 12/38 entity, thiếu khai thì **không lọc** chứ không phải chặn | ~~Lỗ hổng~~ **ĐÃ VÁ** | `13` §6.7 · `06` H4 | **B-07 xong 24/08/2026** *(CR-131 — nay 39/39; ⚠️ trước khi lên prod phải gắn `company_id` cho 17 nhân sự)* |
+| **N-13** — `attachment/controller.py` `_check()` không lọc phạm vi | ~~Lỗ hổng~~ **ĐÃ VÁ** | `13` §6.7 · `06` H17 | **B-08 xong 24/08/2026** *(CR-130, dev/prod chờ deploy)* |
 | **N-15** — `tab_contract.party_type` + `.status` còn chữ tự do | ~~Nợ~~ **ĐÃ TRẢ** | `13` §6.7 | **B-02 xong 22/08/2026** *(dev/prod chờ deploy)* |
 | **N-16** — CR-118 buộc backend và giao diện lên cùng nhịp | Ràng buộc deploy | `13` §6.7 | → §4.1, áp cho **mọi** đợt của tệp này |
 | Nợ lớp CRUD — 4 dòng còn lại *(6 cảnh báo `no-explicit-any`, khóa query chi tiết viết tay, `import` giữa `types.ts`, `config.exportXlsx` khai mà không dùng)* | Nợ | `13` §6.5 | → **B-09** |
 | Phân quyền hợp đồng trên **prod** chưa đổi — cả 6 vai trò còn `contract = all` | **Vận hành** | `13` §6.7 | Không phải việc code · làm bằng màn *Phân quyền* hoặc `SEED_FORCE_SYNC=true` một lần |
 
-**Đọc bảng này thế nào.** Chỉ **Đ-11** là việc dựng màn hình. Tất cả phần còn lại là gia cố nền —
-người dùng không thấy gì mới, nhưng đây là thứ quyết định các phân hệ sau (văn thư, HRM) có xây lên
-được hay không.
+**Đọc bảng này thế nào.** Đ-11 xong rồi thì **không còn việc dựng màn hình nào trước mắt** — phần
+còn lại của bảng là gia cố nền: người dùng không thấy gì mới, nhưng đây là thứ quyết định các phân
+hệ sau (văn thư, HRM) có xây lên được hay không.
 
 ---
 
@@ -227,10 +229,12 @@ mà bài kiểm đó chưa viết, nên lỗi sẽ nổ ở tương lai chứ kh
 Mỗi đợt **nghiệm thu riêng**, dừng lại sau bất kỳ đợt nào cũng không để hệ nửa vời. Ngày công là
 ước lượng cho một người.
 
-> **Tiến độ 22/08/2026: xong B-01 · B-02 · B-03 · B-04 · B-05 · B-06**, tất cả mới chạy migration
-> ở **local** và **chưa đẩy lên `erp-v2`** — sáu đợt đẩy chung một lần. **Hết B-06 là 12/12 cột
-> chữ tiếng Việt đã thành mã**; ba đợt còn lại (B-07 · B-08 · B-09) là nhóm **lỗ hổng phạm vi**,
-> không đụng dữ liệu nữa.
+> **Tiến độ 24/08/2026: xong B-01 · B-02 · B-03 · B-04 · B-05 · B-06 · B-07 · B-08.** Sáu đợt đầu
+> đã đẩy chung một lần lên `erp-v2` *(`39fa09b`)*; **hết B-06 là 12/12 cột chữ tiếng Việt đã thành
+> mã**. **B-08** *(CR-130)* và **B-07** *(CR-131)* xong cùng ngày — **hết hai nhóm lỗ hổng phạm
+> vi**, không đụng dữ liệu, không migration. Chỉ còn **B-09** *(nợ lớp CRUD)*.
+> ⚠️ **B-07 có một điều kiện dữ liệu trước khi cắt sang prod** — 17 nhân sự trên prod chưa gắn
+> `company_id`; đọc kỹ ô cảnh báo trong mục **B-07** ngay dưới.
 
 ### Thứ tự
 
@@ -586,34 +590,154 @@ không tiến bước được.
 
 ---
 
-### B-07 — N-14: khai đủ phạm vi và đổi mặc định thành **chặn** · 2–3 ngày
+### B-07 — N-14: khai đủ phạm vi và đổi mặc định thành **chặn** · **ĐÃ XONG 24/08/2026**
 
 **Đây là lỗ hổng, không phải nợ.** `_role_scope_cond` trả `None` khi entity vắng mặt trong
 `SCOPE_FIELDS`, mà `None` = **thấy tất**. Mới khai 12/38 entity.
 
-**Làm gì.** (a) Khai nốt các entity còn đọc chéo công ty — loại nào cố ý công khai thì **khai rõ là
-công khai**, không để trống. (b) Đổi hành vi mặc định: thiếu khai thì **chặn**. (c) Bài kiểm duyệt
-đủ 38 entity.
+> **Đã làm** *(CR-131)*. `SCOPE_FIELDS` nay khai **39/39** — thêm **27 entity**: **7 khai chiều
+> thật** *(`company` · `department` · `user` · `approval_flow` · `goods_receipt` · `seal_request` ·
+> `vehicle_booking`)* và **20 khai công khai** bằng nhãn mới `PUBLIC`. Mặc định đảo chiều: entity
+> **không có trong `SCOPE_FIELDS` thì `false()`** — chặn sạch, kèm một dòng `ERROR` ở logger
+> `app.scoping`. Bốn nhánh rơi tự do cũ *(không có cột pháp nhân · không có chiều nào · chưa gắn
+> pháp nhân · chuỗi phạm vi lạ)* gom về helper `_chan()`, mỗi lần chặn ghi một dòng `WARNING` đủ
+> tra *(user · entity · scope · lý do)*.
+>
+> **`PUBLIC` là lớp con của `dict` và rỗng** *(`class _Public(dict)`)*, nên mọi chỗ đang gọi
+> `f.get("company")` chạy nguyên như cũ; phân biệt nằm ở `entity in SCOPE_FIELDS` và
+> `isinstance(f, _Public)`. Chọn cách này để "cố ý công khai" khác hẳn "quên khai" — hai thứ trước
+> đây trông y hệt nhau vì cùng ra `None`.
+>
+> **Khai không thôi thì KHÔNG đổi gì.** Đo trước khi làm mới thấy: 27 entity mới khai chẳng có chỗ
+> nào gọi `apply_scope`/`scope_condition` cả, khai vào là chữ chết. Phải đấu dây:
+> **`core/crud.py`** *(`make_crud_router` trước nay **không lọc phạm vi một dòng nào** — nay
+> `list_items` gọi `apply_scope` rồi mới `count()`, `get/update/delete` đi qua `get_scoped`,
+> `export_csv` lọc trước khi xuất, `import_csv` bỏ qua dòng **cập nhật** nằm ngoài phạm vi và báo số
+> đã bỏ)*, **`company/controller.py`**, **`department/controller.py` + `service.py`**,
+> **`user/controller.py` + `service.py`**, **`approval/flow_controller.py`**.
+>
+> **Hàm mới `get_scoped(db, model, entity, oid, user, profile, action)`** — bịt đường vòng gõ thẳng
+> id vào URL: danh sách giấu đúng nhưng `db.get(Model, id)` thì đi thẳng khóa chính. Nơi gọi trả
+> **404 "Không tìm thấy"** y như id không tồn tại *(K03: 403 là xác nhận có tồn tại)*.
+>
+> **Test.** `test/backend/test_pham_vi_khai_du_b07.py` *(21 ca)*. Bài giữ là
+> `test_moi_entity_deu_phai_duoc_khai_pham_vi`: thêm entity vào `ENTITIES` mà quên khai là **test
+> đỏ ngay**, không có lựa chọn thứ ba. Kèm bài chốt cứng **39/39** và bài bắt khai thừa. Chạy
+> hồi quy: phạm vi/phòng ban/tài khoản **93 qua** · phê duyệt **76 qua** · văn thư **337 qua**.
+>
+> **Chạy thử trên dữ liệu thật (local).** Tài khoản tạm có `company.read` phạm vi `company`:
+> `/api/companies` từ **14 xuống 1**, chi tiết công ty của mình **200**, chi tiết công ty khác
+> **404**. Dọn sạch tài khoản/vai trò tạm sau khi đo.
 
-**Bẫy.** Đổi mặc định thành chặn là thay đổi **có thể làm người dùng mất dữ liệu đang thấy**. Phải
-bật sau (a), không bật cùng lúc, và phải có một vòng chạy thử trên dev với tài khoản thật của từng
-vai trò.
-**Số liệu census ở `06` và `08` đã cũ** — đếm từ hồi 28 entity, nay 38. Sửa số thì đếm lại cả bộ,
+**⚠️ Điều kiện TRƯỚC KHI cắt sang prod — phải sửa DỮ LIỆU.** Nhánh `scope == "company"` mà
+`profile["company_id"] == 0` trước đây trả `None` *(ghi là "công ty" nhưng rộng đúng bằng "tất
+cả")*, nay **chặn**. Đếm thật:
+
+| | Entity có chiều pháp nhân | Người giữ `scope=company` | Trong đó `company_id = 0` |
+|---|---|---|---|
+| **prod** | 8 | 17 *(user 11–29, nhân sự 233–251)* | **17 — tất cả** |
+| **dev** | 11 | 36 | **22** |
+
+Những người này sẽ mất đúng **ba màn**: **Tồn kho** · **Công nợ** · **Đề nghị thanh toán**. Hôm nay
+họ đang thấy dữ liệu của **cả 13 pháp nhân** trên ba màn đó — chính là thứ rò mà `scope=company`
+sinh ra để chặn. Cách chữa là **gắn `company_id` cho hồ sơ nhân sự**, không phải nới lại điều kiện;
+mỗi người thuộc pháp nhân nào là **đầu vào nghiệp vụ**, mã nguồn không đoán được.
+
+**Bẫy 1 — `tab_company` lấy `id` làm chiều pháp nhân**, không phải `company_id`; `tab_user` thì
+**không có** chiều pháp nhân nào *(chiều đó nằm ở hồ sơ nhân sự)* nên chỉ khai `self`: `own` = chính
+mình, `dept`/`company` = chặn.
+
+**Bẫy 2 — phòng ban phục vụ nhiều pháp nhân.** `tab_department` có `company_id`, nhưng
+`tab_department_company` *(A06/CR-117)* cho một phòng có mặt ở nhiều nơi. Cố ý **chưa** OR bảng ánh
+xạ đó vào: `scope_condition` không tách được vế điều kiện-vai-trò với vế loại-trừ-đích-danh, ORing
+thêm là **vô hiệu hóa im lặng** phần loại trừ. Đã ghi chú ngay tại `SCOPE_FIELDS["department"]`.
+
+**Bẫy 3 — hồ sơ quyền cache 60 giây.** Từ đợt này **mọi controller** đều gọi `get_perm_profile`,
+mà `_PERM_CACHE` là biến toàn cục theo `user.id` trong khi mỗi test dựng DB mới với id bắt đầu từ 1
+→ test sau đọc trúng hồ sơ của test trước. `conftest.py` nay `perm_cache_clear()` ở fixture `db`, và
+có fixture mới `cap_quyen(user_id, entity, scope=..., **hành_động)` để test gọi thẳng hàm controller
+đứng đúng tư thế người dùng thật *(ba ca của `test_bo_may_phe_duyet.py` phải sửa vì lẽ đó — chúng
+truyền `SimpleNamespace(id=...)` trơ, không grant nào, nay đúng nghĩa là không thấy gì)*.
+
+**Bẫy 4 — ba entity khai mà chưa có chỗ dùng.** `goods_receipt` · `seal_request` ·
+`vehicle_booking` **chưa có controller nào**. Khai trước là để lúc dựng màn thì đã có chiều sẵn,
+đừng tưởng đã siết.
+**Số liệu census ở `06` và `08` đã cũ** — đếm từ hồi 28 entity, nay 39. Sửa số thì đếm lại cả bộ,
 đừng vá một con số.
+
+**Điều kiện đủ.** Thêm entity mới mà quên khai `SCOPE_FIELDS` thì test đỏ · người có phạm vi
+`company` không đọc/sửa/xóa được bản ghi pháp nhân khác **kể cả gõ thẳng id vào URL** · danh mục
+dùng chung *(nhà cung cấp, sản phẩm, kho, đơn vị tính, phân loại, vai trò…)* **không đổi hành vi** ·
+nhập CSV không lặng lẽ ghi đè dòng ngoài phạm vi.
 
 ---
 
-### B-08 — N-13: tệp đính kèm đi qua `apply_scope` · 1,5–2 ngày
+### B-08 — N-13: tệp đính kèm đi qua `apply_scope` · **ĐÃ XONG 24/08/2026**
 
 `attachment/controller.py` `_check()` chỉ xét quyền vai trò, không lọc phạm vi — trừ
 `purchase_order` có lọc ở `_resolve_chain`. Người có `contract.read` phạm vi `company` vẫn **tải
 được** đính kèm hợp đồng của pháp nhân khác nếu đoán đúng id. **Lỗ chung cho cả 10 loại chứng từ.**
 
-**Làm gì.** Cho `_check()` gọi `apply_scope` theo `(entity, id)` giống `_in_scope` của hợp đồng.
+> **Đã làm** *(CR-130)*. `core/attachment_scope.py` **tệp mới** — `parent_records()` tra ngược từ
+> `(entity, entity_id)` ra **chứng từ cha** cho đủ **16 entity** của `FILE_POLICY`, `ensure_in_scope()`
+> gọi `apply_scope` trên chứng từ cha đó, `reachable_from_scoped_po()` là đường lùi theo chuỗi.
+> `attachment/controller.py`: `_check()` nhận thêm `entity_id` và gọi `ensure_in_scope` —
+> **5 chỗ gọi** truyền id vào *(`list_attachments` · `reorder` · `upload` · `register_files` ·
+> `remove`)*, `download_one` gắn đường lùi. Đúng khuôn hai lớp của `comment/service.resolve_doc`:
+> quyền vai trò trước, phạm vi dữ liệu sau.
+>
+> **Văn bản đi lối riêng.** `document_version` **không** dùng `apply_scope` mà gọi
+> `document/access_service.ensure_can` — quyền đọc một văn bản còn tới từ chia sẻ đích danh, thành
+> viên sổ, phạm vi áp dụng và việc đang duyệt, mà `apply_scope` chỉ biết **thu hẹp** chứ không biết
+> cộng thêm. Giữ nguyên luật **404-khi-không-đọc-được** *(K03: 403 là xác nhận có tồn tại)*.
+>
+> **Test.** `test/backend/test_pham_vi_dinh_kem_b08.py` *(22 test)* — có bài quét `FILE_POLICY` bắt
+> mọi entity đính kèm phải tra được chứng từ cha, nên **thêm entity mới mà quên khai là test đỏ**.
+> Chạy cùng 8 tệp test có đụng đính kèm: **112 qua**. Không đụng `frontend-v2`.
+>
+> **Chạy thử trên dữ liệu thật (local, 51 tệp).** `pur_manager` *(scope `all`)*: **33 tải được** ·
+> 17 × 404 *(link mồ côi — dòng cha đã bị xóa, trước đây vẫn tải được)* · 1 × 500 *(NoSuchKey của R2,
+> lỗi cũ không thuộc đợt này)*. `DEMO_PURCHASER`: **luật cũ cho qua cả 51**, nay còn **7**,
+> **26 tệp bị chặn 403**. Đó chính là kích thước lỗ.
 
-**Bẫy.** Đụng cả 10 loại chứng từ nên **phải là đợt riêng**, đừng nhét vào một đợt khác. Và trước
-khi bật chặn, xem `06` H4(b): thu nhật ký truy cập đủ rồi mới chặn, không thì có người đang dùng
-hợp lệ mà bị khóa không hiểu vì sao.
+**Bắt được lỗi cũ khi làm.** `_resolve_chain` nhập `PurchaseOrderItem` — lớp thật tên `POItem` —
+nên `GET /api/attachments/chain` và `/chain/zip` **nổ 500 mọi lượt gọi từ CR-007/008 tới nay**, trên
+**cả `main`**. Hai cột trong cùng hàm cũng sai tên *(`purchase_order_id` · `purchase_request_id`,
+thật là `po_id` · `pr_id`)*. Đã vá trên `erp-v2`; **`main` chưa vá** — theo QĐ-10 việc đó là một
+hotfix riêng, không gộp vào đây.
+
+**Bẫy 1 — `entity_id` phần nhiều là id DÒNG, không phải id chứng từ.** Năm loại treo vào dòng
+*(`purchase_request_line_image` · `survey_line` · `survey_request_line` · `delivery` ·
+`ticket_message`)*. `survey_line` còn **không nói rõ** là dòng NCC hay dòng sản phẩm, mà hai bảng
+đánh id riêng nên cùng một số có nghĩa ở cả hai — phải tra cả hai và cho qua nếu **một trong hai**
+phiếu khảo sát nằm trong phạm vi, đúng bằng thứ lối tải lên đang cho phép.
+
+**Bẫy 2 — siết thẳng là trang «Chứng từ» tự bắn vào chân mình.** Trang đó liệt kê cả chuỗi
+PO → PYC → PKS → YCKS rồi cho bấm tải từng dòng; những dòng PYC/PKS/YCKS thường **ngoài** phạm vi
+vai trò của người xem đơn. Nên có `reachable_from_scoped_po`: chỉ dùng cho **lượt tải một tệp**, và
+không mở thêm gì so với hiện trạng — `/chain/zip` vốn đã cho tải **trọn** chuỗi cho bất kỳ ai mở
+được đơn, đường lùi chỉ thay "tải cả gói" bằng "tải từng tệp" trên **cùng một tập tệp**.
+
+**Bẫy 3 — entity chưa khai trong `SCOPE_FIELDS` thì đây là hàm rỗng.** `product` · `company` ·
+`supplier` vẫn khai trong `parent_records` nhưng `apply_scope` không sinh mệnh đề nào cho chúng.
+Đó là phần việc của **B-07**; khai thêm ở `SCOPE_FIELDS` là đính kèm **siết theo**, không phải mở
+lại tệp này.
+
+**Bẫy 4 — H4(b) đòi nhật ký trước khi chặn.** Đợt này chặn ngay *(chỉ chạy `erp-v2`/dev, prod đứng
+yên theo QĐ-10)* nhưng **mỗi lần chặn ghi một dòng `WARNING`** ở logger `app.attachment.scope`, đủ
+để tra: user nào, entity nào, id nào. **Đọc log đó trước khi cắt sang prod.**
+
+**Điều kiện đủ.** Người có quyền đọc loại chứng từ nhưng phạm vi khác pháp nhân **không** tải được
+đính kèm của pháp nhân kia · người xem được một đơn vẫn tải được đủ tệp trong chuỗi của đơn đó ·
+đính kèm văn bản chia sẻ đích danh **vẫn tải được** · gắn tệp lúc **tạo mới** chứng từ không bị chặn.
+
+**Còn nợ sau đợt này — hai thứ lộ ra lúc chạy thử, cố ý để ngoài phạm vi.** *(a)* **`tab_file_link`
+mồ côi.** Sửa dòng chứng từ theo kiểu **xóa rồi tạo lại** làm `entity_id` của link trỏ vào dòng
+không còn tồn tại — local có **17/51 dòng như vậy**. Trước đợt này chúng vẫn tải được, nay trả
+404 đúng nghĩa. Chúng vốn **không hiện trên màn nào** *(danh sách đính kèm lọc theo `entity_id`
+mới)* nên không ai mất tệp, nhưng nên có một lượt dọn và một ràng buộc lúc sửa dòng. *(b)*
+**`storage.download_bytes` để `NoSuchKey` của R2 lọt lên thành 500** thay vì 404 — đối tượng có
+trong CSDL mà mất trong bucket. Là lỗi cũ, không sinh ra từ đợt này.
 
 ---
 

@@ -26,6 +26,20 @@ export const CHART_COLORS = [
 /** Xám trung tính cho nhóm gom "Khác" — không nằm trong dải phân loại. */
 export const CHART_NEUTRAL = 'var(--chart-neutral)'
 
+/**
+ * Thang MỨC ĐỘ cho chuỗi xếp theo thứ tự tốt → xấu (tuổi nợ, mức quá hạn).
+ *
+ * Khác `CHART_COLORS` ở chỗ màu ở đây MANG NGHĨA — xanh là ổn, đỏ là gấp — nên
+ * lấy thẳng token trạng thái dùng chung (`status-tone.ts` dùng đúng bộ này cho
+ * huy hiệu), người đọc mới thấy biểu đồ và huy hiệu nói cùng một thứ tiếng.
+ */
+export const CHART_SEVERITY = [
+  'var(--success)',
+  'var(--warning)',
+  'var(--chart-2)',
+  'var(--destructive)',
+] as const
+
 interface ChartCardProps {
   title: string
   /** Câu mô tả ngắn dưới tiêu đề — nói rõ biểu đồ đếm cái gì. */

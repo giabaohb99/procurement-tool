@@ -1,7 +1,8 @@
-import { HandHelping, Loader2, Search } from 'lucide-react'
+import { HandHelping, Loader2, Plus, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { CreateTicketDialog } from '@/app/components/profile/create-ticket-dialog'
 import { useAuth } from '@/core/auth/use-auth'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
@@ -55,6 +56,7 @@ export function TicketListPage() {
   const { can } = usePermission()
   const isHandler = can('ticket', 'delete')
 
+  const [createOpen, setCreateOpen] = useState(false)
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [priority, setPriority] = useUrlParamState('priority', ALL)
@@ -74,7 +76,7 @@ export function TicketListPage() {
   if (priority !== ALL) params.priority = priority
   if (isHandler && assignee !== ALL) params.assignee = assignee
 
-  const { data, isLoading, isError } = useTickets(params)
+  const { data, isLoading, isError, refetch } = useTickets(params)
   const take = useTakeTicket()
 
   const columns = useMemo<DataTableColumn<Ticket>[]>(
@@ -185,6 +187,12 @@ export function TicketListPage() {
             ? 'Toàn bộ phiếu người dùng gửi lên. Bấm Nhận để tự gán mình làm người xử lý.'
             : 'Các phiếu hỗ trợ bạn đã gửi và tình trạng xử lý của chúng.'
         }
+        actions={
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="size-4" />
+            Tạo phiếu hỗ trợ
+          </Button>
+        }
       />
 
       <Card className="flex min-h-0 flex-1 flex-col p-4">
@@ -264,6 +272,12 @@ export function TicketListPage() {
           }
         />
       </Card>
+
+      <CreateTicketDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onSuccess={() => refetch()}
+      />
     </PageContainer>
   )
 }

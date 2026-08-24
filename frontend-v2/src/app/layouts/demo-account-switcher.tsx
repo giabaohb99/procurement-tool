@@ -108,7 +108,10 @@ export function DemoAccountSwitcher() {
               {ten}
             </DropdownMenuLabel>
             {DEMO_ACCOUNTS.filter((row) => row.group === ten).map((row) => {
-              const dangDung = row.username === user?.emp_code
+              const dangDung =
+                row.username === user?.emp_code ||
+                row.username === user?.email ||
+                row.username === user?.full_name
               return (
                 <DropdownMenuItem
                   key={row.username}

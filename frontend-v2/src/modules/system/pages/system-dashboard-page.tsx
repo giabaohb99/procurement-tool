@@ -1,8 +1,11 @@
 import { Database, FileUp, History, ShieldCheck, SlidersHorizontal } from 'lucide-react'
 
+import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Card, CardContent } from '@/shared/ui/card'
 import { ModuleDashboard } from '@/shared/ui/module-dashboard'
+import { PageContainer } from '@/shared/ui/page-container'
+import { PageHeader } from '@/shared/ui/page-header'
 
 /**
  * Trang Tổng quan phân hệ Quản trị hệ thống.
@@ -11,6 +14,21 @@ import { ModuleDashboard } from '@/shared/ui/module-dashboard'
  * Sao lưu CSDL, Nhật ký thao tác hệ thống và Lối tắt Phân quyền tài khoản.
  */
 export function SystemDashboardPage() {
+  const { can } = usePermission()
+  const canSetting = can('setting', 'write') || can('setting', 'create') || can('setting', 'delete')
+  const canBackup = can('backup', 'read') || can('backup', 'write')
+
+  if (!canSetting && !canBackup) {
+    return (
+      <PageContainer>
+        <PageHeader title="Quản trị hệ thống" description="Cấu hình hệ thống và sao lưu dữ liệu." />
+        <div className="rounded-lg border border-rose-200 bg-rose-50 p-6 text-center text-rose-800 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200">
+          Bạn không có quyền truy cập Phân hệ Quản trị hệ thống.
+        </div>
+      </PageContainer>
+    )
+  }
+
   return (
     <ModuleDashboard
       title="Quản trị hệ thống"

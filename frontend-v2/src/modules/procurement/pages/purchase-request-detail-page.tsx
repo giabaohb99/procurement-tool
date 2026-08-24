@@ -199,7 +199,7 @@ export function PurchaseRequestDetailPage() {
     )
   }
 
-  if ((!isNew && (isError || !serverData)) || !draft) {
+  if (!isNew && (isError || !serverData)) {
     return (
       <ErrorState
         title="Không mở được phiếu"
@@ -214,9 +214,9 @@ export function PurchaseRequestDetailPage() {
   }
 
   // Biến ổn định để các callback bên dưới giữ được kiểu non-null sau nhánh lỗi.
-  const data = serverData ?? draft
+  const data = serverData ?? draft ?? createEmptyPurchaseRequest(user)
   const loadedData = data
-  const loadedDraft = draft
+  const loadedDraft = draft ?? data
 
   const editable = isEditable(data.status)
   const closed = isClosed(data.status)
@@ -252,7 +252,7 @@ export function PurchaseRequestDetailPage() {
     editable && (can('purchase_request', 'write') || can('purchase_request', 'create'))
   const canManageLineAttachments =
     can('purchase_request', 'write') || can('purchase_request', 'create')
-  const selectedLine = lineIndex === null ? null : draft.items[lineIndex] ?? null
+  const selectedLine = lineIndex === null ? null : loadedDraft.items[lineIndex] ?? null
   const canEditSelectedLine = selectedLine
     ? canAssign || canManage || (!!selectedLine.assignee && selectedLine.assignee === user?.emp_code)
     : false
@@ -451,7 +451,7 @@ export function PurchaseRequestDetailPage() {
           {isNew ? 'Tạo Yêu cầu mua hàng mới' : data.code || 'Phiếu nháp'}
         </h1>
         {!isNew && <StatusBadge status={data.status} labels={PR_STATUS_LABELS} />}
-        {draft.is_urgent && (
+        {loadedDraft.is_urgent && (
           <Badge variant="secondary" className="border-0 bg-warning/10 text-warning">
             Đơn gấp
           </Badge>
@@ -621,7 +621,7 @@ export function PurchaseRequestDetailPage() {
 
       <div className="min-w-0 space-y-4">
           <PurchaseRequestInfoCard
-            data={draft}
+            data={loadedDraft}
             editing={editing}
             companies={companiesData?.items}
             employees={employeesData?.items}
@@ -642,7 +642,7 @@ export function PurchaseRequestDetailPage() {
                   size="sm"
                   onClick={() =>
                     patch({
-                      items: [...draft.items, { ...EMPTY_PURCHASE_REQUEST_ITEM }],
+                      items: [...loadedDraft.items, { ...EMPTY_PURCHASE_REQUEST_ITEM }],
                     })
                   }
                 >
@@ -661,7 +661,7 @@ export function PurchaseRequestDetailPage() {
                 </p>
               )}
               <PurchaseRequestItemsTable
-                items={draft.items}
+                items={loadedDraft.items}
                 editing={editing}
                 documentEditable={editable}
                 onStartEditing={() => setEditing(true)}
@@ -679,7 +679,7 @@ export function PurchaseRequestDetailPage() {
             </CardContent>
           </Card>
 
-          <PurchaseRequestSupplierCard data={draft} editing={editing} onChange={patch} />
+          <PurchaseRequestSupplierCard data={loadedDraft} editing={editing} onChange={patch} />
 
           <DocumentAttachmentsCard
             entity="purchase_request"

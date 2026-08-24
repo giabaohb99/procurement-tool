@@ -37,17 +37,15 @@ const DEFAULT_MIN_WIDTH = 64
  * không còn đường kẻ nào. `inset shadow` nằm ngoài cơ chế collapse nên vẫn hiện.
  */
 const HEAD_CELL =
-  'relative h-10 px-3 text-[13px] font-semibold text-foreground/80 bg-muted/70 shadow-[inset_-1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border)] last:shadow-[inset_0_-1px_0_0_var(--border)]'
+  'relative h-10 px-3 text-[13px] font-bold text-slate-900 dark:text-slate-100 bg-slate-200/80 dark:bg-slate-800/90 shadow-[inset_-1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border)] last:shadow-[inset_0_-1px_0_0_var(--border)]'
 const BODY_CELL = 'min-h-9 border-r px-3 py-1.5 last:border-r-0 align-middle text-[13.5px] text-foreground'
 /**
- * Thân bảng MỘT MÀU nền (`bg-card`) — không kẻ sọc chẵn/lẻ. Việc tách dòng đã có
- * đường kẻ ngang lo; sọc thêm nữa làm màu tô cột và huy hiệu trạng thái khó đọc.
- *
- * ⚠️ MỌI nền ở đây phải ĐỤC HOÀN TOÀN — cấm hậu tố alpha kiểu `/85`, `/70`. Ô của
- * cột ghim lấy `bg-inherit` từ hàng, nền có alpha là phần bảng cuộn ngang bên dưới
- * hiện xuyên qua cột đang dính (đúng lỗi chữ lòi ra cạnh cột "Thao tác").
+ * Thân bảng HÀNG CHẴN LẺ ĐẬM NHẠT XEN KẼ (Zebra striping đậm rõ màu):
+ * Hàng lẻ (odd): nền trắng bg-card
+ * Hàng chẵn (even): nền xám rõ màu `even:bg-slate-100 dark:even:bg-slate-800/60`
+ * Hover: `hover:bg-sky-50 dark:hover:bg-slate-800`
  */
-const ROW_BG = 'group bg-card hover:bg-blue-50 dark:hover:bg-slate-800 data-[state=selected]:bg-blue-100 dark:data-[state=selected]:bg-slate-700 transition-colors'
+const ROW_BG = 'group odd:bg-card even:bg-slate-100 dark:even:bg-slate-800/60 hover:bg-sky-100/70 dark:hover:bg-slate-800 data-[state=selected]:bg-blue-100 dark:data-[state=selected]:bg-slate-700 transition-colors'
 /** Ô báo trạng thái (đang tải / lỗi / rỗng) trải hết bảng — không kẻ dọc, cao hơn. */
 const SPAN_CELL = 'h-20 px-3 text-center'
 
@@ -372,7 +370,10 @@ export function DataTable<T>({
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
                   {visibleColumns.map((column) => {
-                    const content = column.cell(row)
+                    let content = column.cell(row)
+                    if (typeof content === 'string' && (content === '—' || content === '-')) {
+                      content = ''
+                    }
                     return (
                       <TableCell
                         key={column.key}

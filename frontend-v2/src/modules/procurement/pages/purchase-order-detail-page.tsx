@@ -192,7 +192,7 @@ export function PurchaseOrderDetailPage() {
     )
   }
 
-  if ((!isNew && (isError || !serverData)) || !draft) {
+  if (!isNew && (isError || !serverData)) {
     return (
       <ErrorState
         title="Không mở được đơn mua hàng"
@@ -206,7 +206,7 @@ export function PurchaseOrderDetailPage() {
     )
   }
 
-  const data = draft
+  const data = draft ?? serverData ?? createEmptyPurchaseOrder()
   /** Đơn đã chốt/hủy — khóa cứng, kể cả hồ sơ chứng từ cũng theo mốc này. */
   const locked = isPurchaseOrderLocked(data.status)
   const approved = isPurchaseOrderApproved(data.status)

@@ -18,13 +18,17 @@ import type {
 /**
  * Danh sách YCTT. `keepPreviousData`: đổi trang / bộ lọc thì giữ bảng cũ thay vì
  * nháy sang khung rỗng.
+ *
+ * `enabled`: dành cho những trang mượn danh sách này để đếm (bảng Tổng quan) —
+ * người không có quyền `payment_request.read` thì đừng gọi, gọi là ăn 403 vô ích.
  */
-export function usePaymentRequests(params: ListParams = {}) {
+export function usePaymentRequests(params: ListParams = {}, options: { enabled?: boolean } = {}) {
   const query: ListParams = { page: 1, page_size: appConfig.defaultPageSize, ...params }
   return useQuery({
     queryKey: queryKeys.finance.paymentRequests(query),
     queryFn: () => paymentRequestApi.list(query),
     placeholderData: keepPreviousData,
+    enabled: options.enabled ?? true,
   })
 }
 

@@ -202,7 +202,7 @@ export function SurveyRequestDetailPage() {
     )
   }
 
-  if ((!isNew && (isError || !serverData)) || !draft) {
+  if (!isNew && (isError || !serverData)) {
     return (
       <ErrorState
         title="Không mở được phiếu"
@@ -217,8 +217,8 @@ export function SurveyRequestDetailPage() {
   }
 
   // Biến ổn định để các callback bên dưới giữ được kiểu non-null sau nhánh lỗi.
-  const data = serverData ?? draft
-  const loadedDraft = draft
+  const data = serverData ?? draft ?? createEmptySurveyRequest(user)
+  const loadedDraft = draft ?? data
   const status = data.status
 
   /**

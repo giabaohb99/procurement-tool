@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 import type { ComponentType } from 'react'
 import type { RouteObject } from 'react-router-dom'
 
-import type { PermissionEntity } from '@/core/authorization/permission-types'
+import type { PermissionAction, PermissionEntity } from '@/core/authorization/permission-types'
 
 /** Một mục trong menu trái của module. */
 export interface ModuleNavItem {
@@ -12,6 +12,10 @@ export interface ModuleNavItem {
   icon: LucideIcon
   /** Thiếu quyền trên entity này thì ẩn mục. Bỏ trống = luôn hiện. */
   entity?: PermissionEntity
+  /** Kiểm tra đúng hành động này trên entity (`read`, `create`, `write`, ...). */
+  action?: PermissionAction
+  /** Mục quản lý (danh mục, hệ thống): yêu cầu quyền quản lý (`write` | `create` | `delete`). */
+  manage?: boolean
   /** Chỉ sáng khi khớp CHÍNH XÁC path (dùng cho mục Tổng quan của module). */
   end?: boolean
   /**

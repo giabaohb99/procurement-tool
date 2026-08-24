@@ -40,9 +40,12 @@ describe('ProgressStatusBadge', () => {
     expect(screen.getByText('ma_la')).toBeInTheDocument()
   })
 
-  it('rỗng thì hiện gạch ngang', () => {
-    render(<ProgressStatusBadge status="" />)
-    expect(screen.getByText('—')).toBeInTheDocument()
+  it('rỗng thì để trắng, không vẽ huy hiệu nào', () => {
+    // Trước đây trả về gạch ngang. Đợt chuẩn hóa ô rỗng (24/08/2026) bỏ hết gạch
+    // ngang giữ chỗ ở bảng và ô xem — ô rỗng để trắng. Huy hiệu vì thế không
+    // được vẽ gì, kẻo bảng lại có gạch ngang trong khi các cột khác đã để trắng.
+    const { container } = render(<ProgressStatusBadge status="" />)
+    expect(container).toBeEmptyDOMElement()
   })
 })
 

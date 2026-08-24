@@ -178,16 +178,16 @@ function PurchaseRequestListContent() {
         header: 'Ngày tạo',
         width: 150,
         sortable: true,
-        cell: (pr) => formatDateTime(pr.created_at) || '—',
+        cell: (pr) => formatDateTime(pr.created_at) || '',
       },
-      { key: 'requester', header: 'Người yêu cầu', width: 200, cell: (pr) => pr.requester || '—' },
-      { key: 'department', header: 'Bộ phận', width: 180, cell: (pr) => pr.department || '—' },
+      { key: 'requester', header: 'Người yêu cầu', width: 200, cell: (pr) => pr.requester || '' },
+      { key: 'department', header: 'Bộ phận', width: 180, cell: (pr) => pr.department || '' },
       {
         key: 'need_date',
         header: 'Cần hàng',
         width: 120,
         sortable: true,
-        cell: (pr) => formatDate(pr.need_date) || '—',
+        cell: (pr) => formatDate(pr.need_date) || '',
       },
       {
         key: 'total',
@@ -206,9 +206,7 @@ function PurchaseRequestListContent() {
             <Badge variant="secondary" className="border-0 bg-warning/10 text-warning">
               Gấp
             </Badge>
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          ),
+          ) : null,
       },
       {
         key: 'status',

@@ -136,6 +136,7 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
     kpi = {}
     cost_12m, categories, top_suppliers, dept_spend = [], [], [], []
     po_status, ap_aging, recent_pos, recent_prs, low_stock = [], [], [], [], []
+    top_debt_suppliers = []
     pending_prs_list, pending_srs_list, pending_surveys_list, late_deliveries_list = [], [], [], []
     target_year = str(today.year)
 
@@ -248,16 +249,24 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
         kpi["due_soon"] = round(sum(float(p.remaining or 0) for p in pays if p.due_date and tstr <= p.due_date <= in7), 0)
         kpi["overdue"] = round(sum(float(p.remaining or 0) for p in pays if p.due_date and p.due_date < tstr), 0)
         aging = {"Chưa đến hạn": 0.0, "1–30 ngày": 0.0, "31–60 ngày": 0.0, "> 60 ngày": 0.0}
+        debt_by_supplier = {}
         for p in pays:
             rem = float(p.remaining or 0)
             if rem <= 0:
                 continue
+            nm = p.supplier_name or p.supplier_code or "(Không rõ)"
+            debt_by_supplier[nm] = debt_by_supplier.get(nm, 0.0) + rem
             if not p.due_date or p.due_date >= tstr:
                 aging["Chưa đến hạn"] += rem
             else:
                 od = (today - datetime.strptime(p.due_date, "%Y-%m-%d").date()).days
                 aging["1–30 ngày" if od <= 30 else "31–60 ngày" if od <= 60 else "> 60 ngày"] += rem
         ap_aging = [{"label": k2, "value": round(v, 0)} for k2, v in aging.items()]
+        # NỢ CÒN LẠI theo NCC — đừng nhầm với `top_suppliers`: cái kia là CHI TIÊU
+        # tính trên dòng đơn mua và nằm trong khối `purchase_order`, người chỉ có
+        # quyền Công nợ sẽ không nhận được. Trang Tài chính cần đúng số này.
+        top_debt_suppliers = [{"name": k2, "value": round(v, 0)}
+                              for k2, v in sorted(debt_by_supplier.items(), key=lambda x: -x[1])[:5]]
 
     # ===== Hợp đồng (dùng chung) =====
     if can("contract"):
@@ -288,6 +297,7 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
         "cost_12m": cost_12m,
         "categories": categories,
         "top_suppliers": top_suppliers,
+        "top_debt_suppliers": top_debt_suppliers,
         "dept_spend": dept_spend,
         "po_status": po_status,
         "ap_aging": ap_aging,

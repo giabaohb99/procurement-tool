@@ -22,10 +22,13 @@ export function usePayables(params: ListParams = {}) {
  * Bốn số tổng ở đầu trang. Nhận ĐÚNG bộ lọc của bảng nhưng BỎ phân trang: tổng
  * phải tính trên cả tập kết quả, không phải trên 20 dòng đang hiện.
  */
-export function usePayableSummary(params: ListParams = {}) {
+export function usePayableSummary(params: ListParams = {}, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.finance.payableSummary(params),
     queryFn: () => payableApi.summary(params),
     placeholderData: keepPreviousData,
+    // Trang Tổng quan mượn số này nên phải tắt được: không có `payable.read`
+    // thì gọi chỉ để nhận 403.
+    enabled: options.enabled ?? true,
   })
 }

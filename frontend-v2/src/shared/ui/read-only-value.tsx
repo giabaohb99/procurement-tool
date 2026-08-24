@@ -24,7 +24,8 @@ interface ReadOnlyValueProps {
  * Ở đây phần lớn màn là XEM chứng từ, nên hiện thẳng dạng chữ đúng hơn.
  */
 export function ReadOnlyValue({ children, multiline = false, className }: ReadOnlyValueProps) {
-  const empty = children === null || children === undefined || children === ''
+  const isDash = typeof children === 'string' && (children === '—' || children === '-')
+  const empty = children === null || children === undefined || children === '' || isDash
 
   return (
     <div
@@ -36,7 +37,7 @@ export function ReadOnlyValue({ children, multiline = false, className }: ReadOn
         className,
       )}
     >
-      {empty ? <span className="text-muted-foreground">—</span> : children}
+      {empty ? null : children}
     </div>
   )
 }

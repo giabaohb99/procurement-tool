@@ -82,7 +82,7 @@ docker compose exec erp npm run typecheck     # tsc --noEmit — phải 0 lỗi
 **Two-axis permission system** (this is the core concept — spans `core/permissions.py`, `core/auth.py`, `core/scoping.py`):
 
 1. **Actions belong to ROLES** — a `(entity × action)` matrix. Guard endpoints with the dependency `require(entity, action)` from `core/auth.py`. `ACTIONS = read·create·write·delete·approve·cancel·print·export`. `ENTITIES` are the canonical list in `core/permissions.py`.
-2. **Data scope belongs to USERS** — each `(user × role)` grant carries its own scope (`own·assigned·proc·dept·company·all`) plus explicit include/exclude by company/department/employee. `apply_scope(query, Model, entity, user, profile)` filters a query as the **OR (union)** of every grant that has `action` on that entity. Which columns a scope filters on per entity is defined in `SCOPE_FIELDS` in `scoping.py` — an entity missing a dimension there simply isn't filtered on it.
+2. **Data scope belongs to USERS** — each `(user × role)` grant carries its own scope (`own·assigned·proc·dept·company·all`) plus explicit include/exclude by company/department/employee. `apply_scope(query, Model, entity, user, profile)` filters a query as the **OR (union)** of every grant that has `action` on that entity. Which columns a scope filters on per entity is defined in `SCOPE_FIELDS` in `scoping.py`. **Every entity in `ENTITIES` must be declared there** (B-07/CR-131, branch `erp-v2`): either with real columns, or with the `PUBLIC` sentinel when it is deliberately unfiltered. An entity that is missing, or a scope that cannot be turned into a condition, now **blocks everything** (`false()`) and logs a warning to `app.scoping` — it no longer falls through to "see all". A test asserts 39/39, so adding an entity without declaring it turns the suite red. Fetching a single row by id must go through `get_scoped(...)`, not `db.get(...)`, or the list filter is trivially bypassed by typing an id into the URL.
 
 A typical list endpoint composes both: `require(...)` as the route dependency, then `apply_scope(apply_filters(query, ...), ...)`. See `modules/purchase_request/controller.py` for the canonical example.
 
@@ -102,10 +102,10 @@ shadcn/Radix + TanStack Query + zustand). Backend không đổi: v2 gọi đúng
 Phân xử khi có yêu cầu mới: **sửa lỗi** màn đang chạy thật → `frontend/`; **tính năng mới**
 → `frontend-v2/`, màn đó chưa có ở v2 thì dựng màn đó trước. `frontend/` chưa được tắt vì v2
 còn thiếu màn. **Số đo đầy đủ và kế hoạch dời nằm ở `doc/erp/13-ke-hoach-man-con-lai-v2.md`**
-(bản 2.0, xem **CR-097**): bản cũ có **48 màn** — *(đếm 21/08/2026, CR-119/121/122)* **34 xong** ·
-**2 có nhưng KHUYẾT** · **9 chưa có** · 2 đã bỏ · 1 chờ quyết. Chia **15 đợt Đ-01 … Đ-15**: đã
-xong **Đ-01…Đ-10, Đ-12, Đ-14**; còn **Đ-11** (vá Trang chủ + dựng hai màn Tổng quan) và **Đ-15**
-(tắt `frontend/`); riêng **Đ-13** *Quản lý Import* đang **hoãn**.
+(bản 2.0, xem **CR-097**): bản cũ có **48 màn** — *(đếm 24/08/2026, CR-132)* **35 xong** ·
+**1 có nhưng KHUYẾT** · **9 chưa có** · 2 đã bỏ · 1 chờ quyết. Chia **15 đợt Đ-01 … Đ-15**: đã
+xong **Đ-01…Đ-12, Đ-14**; còn mỗi **Đ-15** (tắt `frontend/`), mà nó chờ **Đ-13** *Quản lý Import*
+đang **hoãn**. Nghĩa là **không còn việc dựng màn hình nào trước mắt**.
 ⚠️ Mấy con số này cũ rất nhanh — **luôn mở §0 và bảng §3 của `13-...md` để lấy số mới nhất**,
 đừng trích lại dòng này.
 ⚠️ **NHẬN ĐỢT TRƯỚC KHI LÀM.** Nhiều người cùng đẩy lên `erp-v2`, nên cột ***Ai làm*** trong bảng
@@ -120,11 +120,17 @@ tab *Mẫu thuế* giống hệt bản v1 (CR-127). Nghĩa là **không còn mà
 Trong 9 màn còn thiếu, nặng nhất là *Quản lý Import* (MC-6) và khách đã cho **hoãn**; danh sách
 đầy đủ ở §1 của `13-...md`. *Tiến độ báo giá* và *Xử lý khảo sát* (`SurveyRequestProcess.tsx`)
 **đã quyết BỎ** — xem `doc/erp/12-...` mục 2.7.
-**Đừng tin cột "xong" mà bỏ qua §1.8 của `13`:** Trang chủ v2 thiếu 4 khối (*Top nhà cung cấp*,
-*Chi tiêu theo bộ phận*, *Trạng thái đơn hàng*, *Tuổi nợ*), Tổng quan Tài chính và Tổng quan Kho
-vẫn là trang rỗng 11 dòng, chi tiết Yêu cầu báo giá thiếu nút *Xử lý khảo sát* (màn đó đã bỏ nên
-việc chọn phương án sẽ dời vào chính màn chi tiết ở P6). Màn **Công nợ đã đủ** cột tick chọn +
-nút *Tạo đề nghị thanh toán* từ Đ-09 (CR-119) — chỗ này tài liệu cũ ghi thiếu.
+**Đã xong Đ-11** (CR-132 — số cũ CR-129 bị trùng nên đánh lại): Trang chủ có lại đủ 4 khối
+(*Top nhà cung cấp*, *Chi tiêu theo bộ phận*, *Trạng thái đơn hàng*, *Tuổi nợ*) và thao tác nhanh
+*Duyệt / Trả lại* YCMH; **Tổng quan Tài chính** và **Tổng quan Kho** đã dựng xong. §1.8 của `13`
+nay chỉ còn một dòng: chi tiết Yêu cầu báo giá thiếu nút *Xử lý khảo sát* (màn đó đã bỏ nên việc
+chọn phương án sẽ dời vào chính màn chi tiết ở P6).
+⚠️ **`/api/dashboard/overview` chỉ đòi đăng nhập, rồi gác TỪNG KHỐI bên trong bằng `can(entity)`
+và BỎ HẲN khóa** khi thiếu quyền — nên đọc nhầm khóa của phân hệ khác thì không ai ăn 403, chỉ
+thấy **0** vĩnh viễn. Mọi khóa trong `DashboardOverview.kpi` là **tùy chọn**, luôn đọc kèm `?? 0`.
+Hai khóa dễ nhầm nhất: `top_suppliers` = **CHI TIÊU** theo NCC *(khối `purchase_order`)*, còn
+`top_debt_suppliers` = **NỢ CÒN LẠI** *(khối `payable`)*. Xem `test/backend/test_tong_quan_thu_mua.py`.
+Màn **Công nợ đã đủ** cột tick chọn + nút *Tạo đề nghị thanh toán* từ Đ-09 (CR-119).
 **Đã xong MC-1…MC-4** (CR-094): Đặt lại mật khẩu · Thông báo (`/notifications`) · Trang cá
 nhân (`/me`) · Cấu hình hệ thống (`/system/settings`, phân hệ Quản trị nay **bật**).
 **Đã xong Đ-01** (CR-098): Dựng khung Generic Declarative CRUD (`frontend-v2/src/shared/crud/`)

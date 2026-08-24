@@ -106,5 +106,14 @@
 4. Kiểm tra khớp:  `docker compose exec api sh -c "cd /app && alembic check"`  → "No new upgrade operations detected"
 - Lùi 1 bước: `alembic downgrade -1`. Migration lưu ở `backend/migrations/versions/`.
 
+## Cập nhật Giao diện v2 & Phân quyền (2026-08)
+- [x] Fix màn chi tiết chứng từ không mở được (Bỏ logic `!draft` sai ở 4 trang chi tiết: YCBG, YCMH, ĐMH, Phiếu khảo sát).
+- [x] Màn hình Tiến độ mua hàng (`/procurement/purchase-progress`): Cập nhật nav item `entity: 'purchase_request'` để Nhân viên & Trưởng phòng phòng YC truy cập được menu trái đúng logic Backend.
+- [x] Bổ sung cụm tài khoản Test có data (`TESTREQ`, `DEMONV`, `DEMOTP`, `DEMOQL`, `DEMOAD`, `DEMOTP2`, `DEMOTP3`) vào menu Đổi tài khoản nhanh (Dev).
+- [x] Tùy chỉnh màu sọc chẵn/lẻ bảng (`even:bg-slate-100`), khôi phục font 13.5px & limit 20.
+- [x] Nổi bật tiêu đề cột (`HEAD_CELL` font-bold text-slate-900).
+- [x] Chuẩn hóa ô trống: Hiển thị khoảng trắng phẳng rỗng (`""` / `null`) thay vì dấu gạch `"-"` hay `"—"` trên toàn bộ bảng danh sách, bảng dòng & các thẻ chi tiết.
+
 ---
 **Đăng nhập:** `degoadmin` / `dego2026` (đổi qua `.env`). Web: http://localhost:8080 · API: http://localhost:8000/docs
+

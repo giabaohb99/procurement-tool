@@ -42,6 +42,7 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.permissions,
       icon: ShieldCheck,
       entity: 'role',
+      manage: true,
       group: 'Quản trị',
     },
   ],

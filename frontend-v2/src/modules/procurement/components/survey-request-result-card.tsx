@@ -373,7 +373,7 @@ function OptionField({
   return (
     <div>
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className={cn('break-words', strong && 'font-semibold')}>{value || '—'}</dd>
+      <dd className={cn('break-words', strong && 'font-semibold')}>{value || ''}</dd>
     </div>
   )
 }

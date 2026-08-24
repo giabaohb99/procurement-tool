@@ -29,28 +29,26 @@ export interface DemoAccount {
 
 export const DEMO_ACCOUNTS: DemoAccount[] = [
   { username: 'DEGO0001', password: 'admin', label: 'Dego Admin', group: 'Quản trị', hint: 'toàn quyền' },
-  { username: 'admin', password: 'admin', label: 'Quản trị viên', group: 'Quản trị', hint: 'toàn quyền' },
+  { username: 'admin', password: 'admin', label: 'Quản trị viên (admin)', group: 'Quản trị', hint: 'toàn quyền' },
 
-  { username: 'DEMO_MANAGER', password: 'demo123', label: 'Trưởng bộ phận', group: 'Duyệt · Văn thư', hint: 'người duyệt bước 1' },
-  { username: 'DEMO_STAFF', password: 'demo123', label: 'Nhân viên', group: 'Duyệt · Văn thư', hint: 'người trình' },
+  // Các tài khoản test chính có dữ liệu mẫu DB
+  { username: 'TESTREQ', password: 'TESTREQ', label: 'TESTREQ', group: 'Tài khoản Test (Data)', hint: 'người tạo phiếu test' },
+  { username: 'DEMONV', password: 'DEMONV', label: 'DEMONV', group: 'Tài khoản Test (Data)', hint: 'nhân viên' },
+  { username: 'DEMOTP', password: 'DEMOTP', label: 'DEMOTP', group: 'Tài khoản Test (Data)', hint: 'trưởng phòng' },
+  { username: 'DEMOQL', password: 'DEMOQL', label: 'DEMOQL', group: 'Tài khoản Test (Data)', hint: 'quản lý' },
+  { username: 'DEMOAD', password: 'DEMOAD', label: 'DEMOAD', group: 'Tài khoản Test (Data)', hint: 'admin demo' },
+  { username: 'DEMOTP2', password: 'DEMOTP2', label: 'DEMOTP2', group: 'Tài khoản Test (Data)', hint: 'trưởng phòng 2' },
+  { username: 'DEMOTP3', password: 'DEMOTP3', label: 'DEMOTP3', group: 'Tài khoản Test (Data)', hint: 'trưởng phòng 3' },
+
+  { username: 'DEMO_MANAGER', password: 'demo123', label: 'Trưởng bộ phận (DEMO_MANAGER)', group: 'Duyệt · Văn thư', hint: 'người duyệt bước 1' },
+  { username: 'DEMO_STAFF', password: 'demo123', label: 'Nhân viên (DEMO_STAFF)', group: 'Duyệt · Văn thư', hint: 'người trình' },
   { username: 'TESTMEDEGO', password: 'TESTMEDEGO', label: 'Văn thư DEGO HOLDING', group: 'Duyệt · Văn thư', hint: 'pháp nhân mẹ' },
   { username: 'TESTCONAGRI', password: 'TESTCONAGRI', label: 'Văn thư AGRIPLANT', group: 'Duyệt · Văn thư', hint: 'pháp nhân con' },
 
   { username: 'DEMO_MANAGER_PURCHASE', password: 'demo123', label: 'Trưởng phòng Thu mua', group: 'Thu mua' },
   { username: 'DEMO_PURCHASER', password: 'demo123', label: 'Nhân viên Thu mua', group: 'Thu mua' },
 
-  //  Văn thư ở TỪNG pháp nhân con — do `seed_van_thu_phap_nhan_con.py` tạo, mật
-  //  khẩu = mã nhân viên. Đây là nửa sau của luồng clone: ban hành ở Tập đoàn
-  //  xong, đổi sang một trong những tài khoản này để xem bản nháp đã nằm sẵn ở
-  //  công ty đó, sửa lại rồi tự ban hành với số hiệu riêng.
-  //
-  //  Mỗi tài khoản chỉ thấy văn bản của CHÍNH pháp nhân mình (phạm vi dữ liệu
-  //  `company`) — đó mới là thứ đáng cho người xem demo thấy.
-  //
-  //  ⚠️ Viết TAY từng dòng, đừng rút gọn bằng `.map()` cho ngắn. Đã thử và
-  //  `npm run kiem:bundle` bắt được: Rollup không chứng minh được lời gọi `.map()`
-  //  là vô hại nên giữ nguyên cả mô-đun, và **12 mật khẩu lọt thẳng vào bản build
-  //  thật**. Mảng literal thuần thì nó cắt sạch.
+  // Văn thư ở TỪNG pháp nhân con — do `seed_van_thu_phap_nhan_con.py` tạo
   { username: 'VTAGRIPLANT', password: 'VTAGRIPLANT', label: 'Văn thư AGRIPLANT', group: 'Pháp nhân con' },
   { username: 'VTSAM', password: 'VTSAM', label: 'Văn thư SAM', group: 'Pháp nhân con' },
   { username: 'VTICARE', password: 'VTICARE', label: 'Văn thư Dược phẩm ICARE', group: 'Pháp nhân con' },

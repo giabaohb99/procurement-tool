@@ -72,7 +72,7 @@ export function PurchaseProgressPage() {
   // useCallback để đưa được vào deps của `columns` mà không phá memo:
   // hàm khai báo thẳng trong thân component sẽ đổi danh tính mỗi lần render.
   const companyName = useCallback(
-    (id: number) => (companies?.items ?? []).find((company) => company.id === id)?.name ?? '—',
+    (id: number) => (companies?.items ?? []).find((company) => company.id === id)?.name ?? '',
     [companies],
   )
 
@@ -88,10 +88,10 @@ export function PurchaseProgressPage() {
         defaultPinned: true,
         cell: (row) => <span className="truncate font-medium">{row.po_code}</span>,
       },
-      { key: 'misa_code', header: 'Mã MISA', width: 120, defaultHidden: true, cell: (r) => r.misa_code || '—' },
-      { key: 'pr_code', header: 'Mã PYC', width: 130, cell: (r) => r.pr_code || '—' },
+      { key: 'misa_code', header: 'Mã MISA', width: 120, defaultHidden: true, cell: (r) => r.misa_code || '' },
+      { key: 'pr_code', header: 'Mã PYC', width: 130, cell: (r) => r.pr_code || '' },
       { key: 'company', header: 'Công ty', width: 190, cell: (r) => companyName(r.company_id) },
-      { key: 'department', header: 'Bộ phận', width: 150, cell: (r) => r.department || '—' },
+      { key: 'department', header: 'Bộ phận', width: 150, cell: (r) => r.department || '' },
       {
         key: 'supplier_name',
         header: 'Nhà cung cấp',
@@ -99,25 +99,25 @@ export function PurchaseProgressPage() {
         supplierOnly: true,
         cell: (r) => (
           <span className="truncate" title={r.supplier_name}>
-            {r.supplier_name || r.supplier_code || '—'}
+            {r.supplier_name || r.supplier_code || ''}
           </span>
         ),
       },
-      { key: 'nspt', header: 'NSPT', width: 160, cell: (r) => r.nspt || '—' },
-      { key: 'order_date', header: 'Ngày ĐH', width: 110, cell: (r) => formatDate(r.order_date) || '—' },
-      { key: 'product_code', header: 'Mã SP', width: 150, cell: (r) => r.product_code || '—' },
+      { key: 'nspt', header: 'NSPT', width: 160, cell: (r) => r.nspt || '' },
+      { key: 'order_date', header: 'Ngày ĐH', width: 110, cell: (r) => formatDate(r.order_date) || '' },
+      { key: 'product_code', header: 'Mã SP', width: 150, cell: (r) => r.product_code || '' },
       {
         key: 'product_name',
         header: 'Tên SP',
         width: 240,
         cell: (r) => (
           <span className="truncate" title={r.product_name}>
-            {r.product_name || '—'}
+            {r.product_name || ''}
           </span>
         ),
       },
-      { key: 'item_group', header: 'Nhóm hàng', width: 150, defaultHidden: true, cell: (r) => r.item_group || '—' },
-      { key: 'unit', header: 'ĐVT', width: 80, cell: (r) => r.unit || '—' },
+      { key: 'item_group', header: 'Nhóm hàng', width: 150, defaultHidden: true, cell: (r) => r.item_group || '' },
+      { key: 'unit', header: 'ĐVT', width: 80, cell: (r) => r.unit || '' },
       {
         key: 'qty_order',
         header: 'SL đặt',
@@ -147,15 +147,15 @@ export function PurchaseProgressPage() {
         width: 180,
         cell: (r) => <ProgressStatusBadge status={r.progress_status} />,
       },
-      { key: 'delivery_no', header: 'Lần giao', width: 100, align: 'right', defaultHidden: true, cell: (r) => r.delivery_no ?? '—' },
-      { key: 'warehouse_code', header: 'Kho', width: 120, defaultHidden: true, cell: (r) => r.warehouse_code || '—' },
+      { key: 'delivery_no', header: 'Lần giao', width: 100, align: 'right', defaultHidden: true, cell: (r) => r.delivery_no ?? '' },
+      { key: 'warehouse_code', header: 'Kho', width: 120, defaultHidden: true, cell: (r) => r.warehouse_code || '' },
       {
         key: 'carrier_name',
         header: 'Đơn vị VC',
         width: 180,
         defaultHidden: true,
         supplierOnly: true,
-        cell: (r) => r.carrier_name || '—',
+        cell: (r) => r.carrier_name || '',
       },
       {
         key: 'received_qty',
@@ -164,7 +164,7 @@ export function PurchaseProgressPage() {
         align: 'right',
         cell: (r) => <span className="tabular-nums">{formatQuantity(r.received_qty) || 0}</span>,
       },
-      { key: 'received_date', header: 'Ngày nhận', width: 120, cell: (r) => formatDate(r.received_date) || '—' },
+      { key: 'received_date', header: 'Ngày nhận', width: 120, cell: (r) => formatDate(r.received_date) || '' },
       {
         key: 'diff_regulated',
         header: 'CL quy định',

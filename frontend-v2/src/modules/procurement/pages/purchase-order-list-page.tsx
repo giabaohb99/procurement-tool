@@ -172,14 +172,14 @@ function PurchaseOrderListContent() {
         width: 130,
         sortable: true,
         defaultHidden: true,
-        cell: (po) => po.misa_code || '—',
+        cell: (po) => po.misa_code || '',
       },
       {
         key: 'order_date',
         header: 'Ngày đặt',
         width: 150,
         sortable: true,
-        cell: (po) => formatDateTime(po.created_at) || '—',
+        cell: (po) => formatDateTime(po.created_at) || '',
       },
       {
         key: 'supplier',
@@ -187,12 +187,12 @@ function PurchaseOrderListContent() {
         width: 240,
         cell: (po) => (
           <span className="truncate" title={po.supplier_name}>
-            {po.supplier_name || po.supplier_code || '—'}
+            {po.supplier_name || po.supplier_code || ''}
           </span>
         ),
       },
-      { key: 'pr_code', header: 'Mã PYC', width: 140, cell: (po) => po.pr_code || '—' },
-      { key: 'nspt', header: 'NSPT', width: 170, defaultHidden: true, cell: (po) => po.nspt || '—' },
+      { key: 'pr_code', header: 'Mã PYC', width: 140, cell: (po) => po.pr_code || '' },
+      { key: 'nspt', header: 'NSPT', width: 170, defaultHidden: true, cell: (po) => po.nspt || '' },
       {
         key: 'amount',
         header: 'Tiền hàng',
@@ -210,9 +210,7 @@ function PurchaseOrderListContent() {
             <Badge variant="secondary" className="border-0 bg-warning/10 text-warning">
               Gấp
             </Badge>
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          ),
+          ) : null,
       },
       {
         key: 'document_status',

@@ -21,23 +21,34 @@ export const systemModule: ErpModule = {
   entity: 'setting',
 
   nav: [
-    { label: 'Tổng quan', path: appRoutes.system.root, icon: LayoutDashboard, end: true },
+    {
+      label: 'Tổng quan',
+      path: appRoutes.system.root,
+      icon: LayoutDashboard,
+      end: true,
+      entity: 'setting',
+      manage: true,
+    },
     {
       label: 'Cấu hình hệ thống',
       path: appRoutes.system.settings,
       icon: SlidersHorizontal,
       entity: 'setting',
+      manage: true,
     },
     {
       label: 'Sao lưu CSDL',
       path: appRoutes.system.backups,
       icon: Database,
       entity: 'backup',
+      manage: true,
     },
     {
       label: 'Nhật ký hệ thống',
       path: appRoutes.system.auditLogs,
       icon: History,
+      entity: 'setting',
+      manage: true,
     },
   ],
 

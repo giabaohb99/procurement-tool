@@ -18,6 +18,8 @@ toàn bộ màn hình** của bản cũ, và chia phần còn lại thành **15 
    *Cập nhật 20/08/2026 (CR-106):* xong thêm **chi tiết Nhà cung cấp** ⇒ **27 xong** · **15 chưa
    có**, việc trước mắt còn **10 màn**. Số ngày công ở mục 3 chưa trừ đợt này.
    *Cập nhật 21/08/2026 (CR-119, CR-121, CR-122):* xong cả **cụm Yêu cầu thanh toán** (danh sách + chi tiết + phiếu in + tích hợp công nợ), **Sao lưu CSDL** (`/system/backups`), **Nhật ký hệ thống** (`/system/audit-logs`), **Logo Công ty** và **Tệp đính kèm Nhà cung cấp** ⇒ **34 xong** · **2 có nhưng khuyết** · **9 chưa có**.
+   *Cập nhật 24/08/2026 (Đ-11, CR-132):* **Trang chủ** đã đủ 9 khối + thao tác nhanh, **Tổng quan Tài chính** và **Tổng quan Kho** đã dựng ⇒ **35 xong** · **1 có nhưng khuyết** *(chi tiết Yêu cầu báo giá, chờ P6)* · **9 chưa có** — trong đó **5 màn thuộc ba thứ khách hoãn**.
+   *Cập nhật 24/08/2026 (Tối ưu UX & Phân quyền Thu mua v2):* Fix 4 màn chi tiết chứng từ (YCBG, YCMH, ĐMH, Phiếu KS) mở lại bình thường; mở màn Tiến độ mua hàng (`/procurement/purchase-progress`) cho Nhân viên & Trưởng phòng YC; bổ sung 7 tài khoản Test có data (`TESTREQ`, `DEMONV`, `DEMOTP`, `DEMOQL`, `DEMOAD`, `DEMOTP2`, `DEMOTP3`) vào menu Switch User (Dev); tùy chỉnh màu sọc chẵn/lẻ bảng, font-bold tên cột, phẳng hóa ô trống rỗng trên toàn bộ bảng & màn chi tiết.
 2. **Không phải viết backend dòng nào** cho 16 màn còn thiếu. Toàn bộ endpoint đã chạy thật ở bản
    cũ — đây thuần là dựng lại giao diện. (Việc backend của ERP v2 nằm ở `12`, giai đoạn P1/P2/P5…,
    không dính tới tệp này.)
@@ -44,7 +46,7 @@ Cột **Tình trạng**: `Xong` · `Khuyết` (có màn nhưng thiếu phần) �
 | 1 | Đăng nhập | `/login` | Xong |
 | 2 | Quên mật khẩu | `/forgot-password` | Xong |
 | 3 | Đặt lại mật khẩu | `/reset-password` | Xong *(MC-1)* |
-| 4 | Trang chủ *(437 dòng)* | `/procurement` + `/` (màn chọn phân hệ) | **Khuyết** — xem §1.8 |
+| 4 | Trang chủ *(437 dòng)* | `/procurement` + `/` (màn chọn phân hệ) | Xong *(Đ-11, CR-132)* |
 | 5 | Thông báo | `/notifications` | Xong *(MC-2)* |
 | 6 | Trang cá nhân | `/me` | Xong *(MC-3)* |
 | 7 | Trung tâm HDSD *(app riêng)* | link ra ngoài, `helpCenterModule` | Xong |
@@ -132,10 +134,11 @@ sẵn từ lâu mà **không route nào dùng**, nhìn qua tưởng xong; và b�
 
 | Màn | Còn thiếu gì |
 |---|---|
-| **Trang chủ / Tổng quan Thu mua** | Bản cũ có 9 khối, v2 có 5. **Thiếu 4 khối**: *Top nhà cung cấp*, *Chi tiêu theo bộ phận*, *Trạng thái đơn hàng*, *Tuổi nợ*. Thẻ KPI *Công nợ quá hạn* bị thay bằng *Giao hàng trễ*. Danh sách *Yêu cầu mua gần đây* ở bản cũ **duyệt / từ chối ngay tại chỗ**, v2 chỉ xem |
-| **Tổng quan Tài chính** và **Tổng quan Kho** | Đang là trang rỗng 11 dòng, chỉ có tiêu đề. Hai khối *Tuổi nợ* và *Công nợ quá hạn* của Trang chủ cũ đúng ra thuộc về đây |
+| ~~**Trang chủ / Tổng quan Thu mua**~~ | ~~Bản cũ có 9 khối, v2 có 5. **Thiếu 4 khối**: *Top nhà cung cấp*, *Chi tiêu theo bộ phận*, *Trạng thái đơn hàng*, *Tuổi nợ*. Danh sách *Yêu cầu mua gần đây* ở bản cũ **duyệt / từ chối ngay tại chỗ**, v2 chỉ xem~~ **Đã vá ở Đ-11 (CR-132)** — đủ 4 khối, thao tác nhanh *Duyệt / Trả lại* đã có lại |
+| ~~**Tổng quan Tài chính** và **Tổng quan Kho**~~ | ~~Đang là trang rỗng 11 dòng, chỉ có tiêu đề~~ **Đã dựng ở Đ-11 (CR-132)** — hai khối *Tuổi nợ* và *Công nợ quá hạn* nay nằm đúng chỗ, bên Tài chính |
 | ~~**Công nợ**~~ | ~~Thiếu cột tick chọn + nút lên phiếu thanh toán từ các dòng đã chọn~~ **Đã trả lại ở Đ-09 (CR-119)** — cột *Chọn* ghim đầu bảng + nút *Tạo đề nghị thanh toán*, giữ chọn xuyên trang, tách phiếu theo NCC |
 | **Chi tiết Yêu cầu báo giá** | Thiếu nút *Xử lý khảo sát* — nhưng màn đó đã quyết bỏ, việc chọn phương án sẽ nằm ngay trong chi tiết phiếu ở P6 |
+| **Xem ảnh đính kèm** *(chung nhiều màn — không tính là một màn riêng)* | Bản cũ `AttachmentGallery` bấm ảnh **mở lightbox xem tại chỗ + lật qua lại**; v2 **chưa có bộ xem ảnh dùng chung** nên mọi ảnh bọc `<a target="_blank">` → **bấm là bung tab mới**. Rải khắp các màn có đính kèm: Ticket (`support/pages/ticket-detail-page.tsx`), đính kèm dòng (`procurement/components/line-attachments.tsx`), bộ chứng từ (`document-attachments-card.tsx`), file giao hàng ĐMH (`purchase-order-delivery-files.tsx`). Cần **một** component lightbox dùng chung thay hành vi mở tab, sửa một lần dùng mọi nơi — đừng vá lẻ từng màn. *(Lưu ý: **avatar** nhân sự/cá nhân và **cột ảnh sản phẩm** ĐÃ có thumbnail đúng — không thuộc khoản này.)* |
 
 ### 1.9 Hai màn đã quyết bỏ
 
@@ -207,7 +210,7 @@ công, và đợt sau không chặn việc dùng thử đợt trước. Ai làm 
 | **Đ-08** | **Phiếu in Yêu cầu thanh toán** | 0,5 – 1 | Có | Vừa | AI | **Xong** *(CR-119)* |
 | **Đ-09** | Trả lại **cột tick chọn + nút lên phiếu** ở màn Công nợ | 0,5 – 1 | Có | Dễ *(chờ Đ-07)* | AI | **Xong** *(CR-119)* |
 | **Đ-10** | **Phân công phụ trách** — port nguyên trạng *(QĐ-6)* | 1 – 1,5 | Có | **Dễ** | AI | **Xong** *(CR-126)* |
-| **Đ-11** | Vá **4 khối thiếu** ở Trang chủ + dựng Tổng quan Tài chính / Kho | 1,5 – 2 | Không* | Vừa | *(chưa nhận)* | Chưa làm |
+| **Đ-11** | Vá **4 khối thiếu** ở Trang chủ + dựng Tổng quan Tài chính / Kho | 1,5 – 2 | Không* | Vừa | AI | **Xong** *(CR-132)* |
 | **Đ-12** | **Sao lưu CSDL** *(MC-5)* | 1,5 – 2 | Có | Vừa | AI | **Xong** *(CR-113)* |
 | **Đ-13** | **Quản lý Import** *(MC-6)* | 3 – 4 | Có | **Khó** | *(chưa nhận)* | **Hoãn** |
 | **Đ-14** | **Phiếu hỗ trợ** *(MC-7)* | 3 – 4 | Có | Vừa | AI | **Xong** *(CR-116)* |
@@ -462,19 +465,37 @@ về đơn vị xử lý*. Port bây giờ là để tắt được bản cũ s�
 
 **Điều kiện đủ.** Gán và gỡ người phụ trách chạy · phiếu mới sinh ra vẫn về đúng người như bản cũ.
 
-### Đ-11 — Vá Trang chủ và hai trang tổng quan · 1,5–2 ngày
+### Đ-11 — Vá Trang chủ và hai trang tổng quan · 1,5–2 ngày — **ĐÃ HOÀN THÀNH (CR-132)**
 
-**Làm gì.** Thêm 4 khối còn thiếu vào Tổng quan Thu mua *(Top nhà cung cấp · Chi tiêu theo bộ phận ·
-Trạng thái đơn hàng · Tuổi nợ)*, trả lại nút duyệt / từ chối nhanh ở danh sách *Yêu cầu mua gần
-đây*, và dựng nội dung cho **Tổng quan Tài chính** và **Tổng quan Kho** *(đang là trang rỗng 11
-dòng)*.
+> **ĐỔI SỐ CR: CR-129 → CR-132** *(24/08/2026)*. Số 129 đã cấp cho đợt lọc nhanh + sắp xếp màn danh
+> sách và số đó **đã có dòng trong `change-log.md`**; hai việc trùng số thì tra ngược không ra. Số
+> trống kế tiếp lúc ghi nhận là 132 *(130 = B-08 vá lỗ đính kèm, 131 = B-07 khai đủ phạm vi)*.
 
-**Chỗ cần quyết khi làm.** *Tuổi nợ* và *Công nợ quá hạn* thuộc về Tài chính hơn là Thu mua — đưa
-sang Tổng quan Tài chính thì đúng phân hệ, nhưng người mua hàng mất một thứ họ quen nhìn. Đề xuất:
-**để ở cả hai**, cùng đọc một endpoint.
+**Đã hoàn thành (CR-132):**
+1. **Trang chủ / Tổng quan Thu mua (`/procurement`):** Bổ sung 4 khối phân tích chi tiết *(Top nhà cung cấp, Chi tiêu theo bộ phận, Trạng thái đơn hàng PO, Tuổi nợ công nợ)*, bọc kiểm tra phân quyền `can('purchase_order', 'read')` và `can('payable', 'read')`. Thêm cột **Thao tác nhanh Duyệt / Trả lại YCMH** tại bảng *Yêu cầu mua gần đây* khi phiếu ở trạng thái `submitted` và người dùng có quyền `purchase_request.approve`.
+2. **Tổng quan Tài chính (`/finance`):** Dựng trang đầy đủ với các thẻ KPI *(Tổng công nợ còn lại, Đã thanh toán, Nợ quá hạn, Sắp đến hạn 7 ngày, YCTT chờ duyệt)*, Biểu đồ Phân tích Tuổi nợ (AP Aging), Top nhà cung cấp công nợ lớn và Bảng Đề nghị thanh toán gần đây (phân quyền `payable.read` & `payment_request.read`).
+3. **Tổng quan Kho (`/inventory`):** Dựng trang hoàn chỉnh với các thẻ KPI *(Giá trị tài sản tồn kho, Sản phẩm hết hàng/tồn thấp, Tổng số dòng tồn)*, Bảng cảnh báo sản phẩm tồn thấp/hết hàng kèm nút bấm nhanh "Mua" (Tạo YCMH) và dải lối tắt tra cứu kho (phân quyền `inventory.read`).
 
-**Điều kiện đủ.** Bốn khối ra số khớp bản cũ · duyệt nhanh từ trang chủ chạy và cập nhật ngay số ở
-thẻ KPI · hai trang tổng quan còn lại không còn là trang trắng.
+**Ba bẫy đã vấp và đã sửa trong chính đợt này** — ghi lại vì cả ba đều là *sai âm thầm*, giao diện
+vẫn vẽ ra bình thường, không có lỗi nào để mà thấy:
+
+- **Mượn nhầm khóa của phân hệ khác.** Thẻ *«YCTT chờ duyệt»* bên Tài chính lấy `kpi.pr_pending`,
+  mà khóa đó là **Yêu cầu MUA HÀNG** và nằm trong khối `purchase_order` của `/dashboard/overview`.
+  Kế toán chỉ có quyền `payment_request` sẽ thấy **0** vĩnh viễn. Nay đếm thẳng từ
+  `/api/payment-requests?status=submitted&page_size=1` và chỉ đọc `total`.
+- **Nhãn nói một đằng, số một nẻo.** *«Top NCC công nợ lớn»* lấy `top_suppliers` — đó là **CHI TIÊU**
+  tính trên dòng đơn mua, không phải nợ. Nay backend trả thêm `top_debt_suppliers` tính trong khối
+  `payable` *(cộng dồn `remaining` theo NCC, bỏ khoản đã tất toán)*; test ở
+  `test/backend/test_tong_quan_thu_mua.py`.
+- **Nút «Từ chối» thật ra là «Trả lại».** Nút bấm nhanh gọi `/purchase-requests/{id}/reject`, mà
+  endpoint đó đặt phiếu về `rejected` = *«Bị trả lại»* — người yêu cầu sửa rồi gửi lại được. *«Đã từ
+  chối»* là `cancelled`, do `/cancel` lo và khóa hẳn phiếu. Nhãn đã sửa cho đúng việc nó làm.
+
+**Vẫn còn nợ sau Đ-11** *(không thuộc phạm vi đợt này, chưa xếp đợt)*: **route chưa được gác**.
+`visibleNavItems` chỉ giấu mục trên thanh bên, gõ thẳng đường dẫn vào ô địa chỉ thì màn vẫn mở —
+đúng là backend chặn nên không rò dữ liệu, nhưng người dùng nhận một trang lỗi 403 thay vì bị chặn
+tử tế. Cần một `<RequirePermission entity action>` bọc ở tầng khai báo route, và mọi mục *«Tổng
+quan»* phải khai `entity` thì ô phân hệ ở trang chọn mới khóa được theo quyền.
 
 ### Đ-12 — Sao lưu CSDL *(MC-5)* · 1,5–2 ngày — **khách cho hoãn**
 
@@ -715,8 +736,8 @@ Không cái nào chặn chạy hiện tại; xếp theo mức độ.
 
 | # | Nợ | Vì sao đáng lo | Đề xuất trả |
 |---|---|---|---|
-| N-13 | **`attachment/controller.py` `_check()` không lọc phạm vi dữ liệu** — chỉ xét quyền vai trò, trừ `purchase_order` *(có lọc ở `_resolve_chain`)* | Ngay cả sau CR-117, người có `contract.read` phạm vi `company` vẫn **tải được tệp đính kèm** hợp đồng của pháp nhân khác nếu đoán đúng id. Lỗ **chung cho mọi entity**, không riêng hợp đồng | Một đợt riêng: cho `_check()` gọi `apply_scope` theo `(entity, id)` giống `_in_scope` của hợp đồng. Đụng cả 10 loại chứng từ nên tách riêng |
-| N-14 | **`SCOPE_FIELDS` mới khai 12/38 entity; thiếu là IM LẶNG không lọc** | `_role_scope_cond` trả `None` khi entity vắng mặt, mà `None` = "thấy tất" chứ không phải "không thấy". Mỗi entity thiếu khai là một CR-117 đang chờ nổ. Đây là **lỗ hổng**, không phải nợ thường | Đổi hành vi: thiếu khai phạm vi thì **chặn**, không bỏ qua *(xem `tham-khao-hrm/08` đã đề xuất)*. Rồi khai nốt các entity còn đọc chéo công ty. **Số liệu census ở `erp/06` và `erp/08` đã cũ** *(đếm từ hồi 28 entity, nay 38)* — sửa số phải đếm lại cả bộ, đừng vá một con số |
+| N-13 ~~nợ~~ **ĐÃ TRẢ — B-08 / CR-130, 24/08/2026** | **`attachment/controller.py` `_check()` không lọc phạm vi dữ liệu** — chỉ xét quyền vai trò, trừ `purchase_order` *(có lọc ở `_resolve_chain`)* | Ngay cả sau CR-117, người có `contract.read` phạm vi `company` vẫn **tải được tệp đính kèm** hợp đồng của pháp nhân khác nếu đoán đúng id. Lỗ **chung cho mọi entity**, không riêng hợp đồng | Một đợt riêng: cho `_check()` gọi `apply_scope` theo `(entity, id)` giống `_in_scope` của hợp đồng. Đụng cả 10 loại chứng từ nên tách riêng |
+| N-14 ~~nợ~~ **ĐÃ TRẢ — B-07 / CR-131, 24/08/2026** | **`SCOPE_FIELDS` mới khai 12/38 entity; thiếu là IM LẶNG không lọc** | `_role_scope_cond` trả `None` khi entity vắng mặt, mà `None` = "thấy tất" chứ không phải "không thấy". Mỗi entity thiếu khai là một CR-117 đang chờ nổ. Đây là **lỗ hổng**, không phải nợ thường | Đã khai **39/39** *(7 chiều thật + 20 nhãn `PUBLIC`)*, thiếu khai nay **chặn** kèm log, và đấu `apply_scope`/`get_scoped` vào `core/crud.py` + 4 controller viết tay — vì khai không thôi thì không đổi gì. ⚠️ **Điều kiện dữ liệu trước khi lên prod:** 17 nhân sự *(user 11–29)* giữ `scope=company` mà `company_id = 0` sẽ mất ba màn Tồn kho · Công nợ · Đề nghị thanh toán — phải gắn pháp nhân cho họ. Chi tiết ở [`15` §B-07](./15-do-be-tong-nen-v2.md) |
 | N-15 | **`tab_contract` còn hai cột chữ tự do tiếng Việt:** `party_type` *(Nhà cung cấp/Khách hàng/Khác)* và `status` *(Hiệu lực/Hết hạn/Thanh lý/Hủy)* | Đúng cùng một bệnh với `contract_type` mà CR-118 vừa chữa: khai rải rác ở từng màn. Chưa gây lỗi lọc vì các màn **tình cờ khai trùng nhau** — trùng tới lúc ai đó gõ lệch | Chuẩn hóa theo đúng khuôn CR-118 *(bộ cố định + validator + `/meta`)* khi có dịp đụng lại màn hợp đồng. Không gấp |
 | N-16 | **CR-118 buộc backend + giao diện lên CÙNG NHỊP** | Deploy backend *(migration đổi sang mã)* mà chưa deploy giao diện thì màn hợp đồng hiện mã trần `purchase`; ngược lại thì ô chọn gửi nhãn tiếng Việt lên và ăn 422 | Không phải nợ để lại — là **ràng buộc lúc deploy**. Ghi ở đây để người deploy không bê lẻ một nửa |
 
@@ -728,6 +749,55 @@ Không cái nào chặn chạy hiện tại; xếp theo mức độ.
 **backend + `frontend/`** là thứ **prod** cần. Luật hiện tại chỉ merge `main → erp-v2`, nên trước
 khi deploy prod phải bê các tệp đó sang nhánh `main` *(danh sách ở cột **Ảnh hưởng** của hai dòng
 CR)* — cẩn thận **đừng kéo theo mã `frontend-v2`** sang `main`.
+
+### 6.8 Nợ nền tảng so với ERP chuẩn (ERPNext/Frappe) — rà 24/08/2026
+
+Đây **không phải** tính năng nghiệp vụ mà là mấy thứ hạ tầng "chìm phía dưới" mà Frappe cho
+sẵn, hệ mình tự viết nên còn thiếu. Ghi lại để nhặt dần, **không cái nào chặn chạy**. Trạng thái:
+**Có** = xong · **Nửa** = có phần lõi, thiếu vỏ · **Chưa** = chưa có.
+
+*Vòng đời chứng từ*
+
+| # | Nợ | Trạng thái | Ghi chú vị trí |
+|---|---|---|---|
+| NF-01 | **Thùng rác / xóa mềm + khôi phục** | Chưa | Đang xóa cứng, lỡ tay là mất, không undo |
+| NF-02 | **Bộ lọc đã lưu / góc nhìn của tôi** (saved views) | Chưa | Lọc xong rời trang là mất |
+| NF-03 | **Tìm kiếm toàn cục** (awesomebar) | Chưa | `cmdk` đã bỏ khỏi bộ lọc, không có ô tìm chung |
+| NF-04 | **@nhắc tên trong bình luận** → bắn thông báo | Nửa | Backend đã đỡ `mentions` ([comment/controller.py:36](../../backend/app/modules/comment/controller.py:36)); thiếu giao diện gõ @ |
+| NF-05 | Lịch sử sửa **từng trường** (version diff) | Nửa | Audit `record()` ghi hành động, chưa lưu cũ→mới từng trường |
+| NF-06 | Cấp số tự động cấu hình được (naming series) | Nửa | Có `generate_code(prefix)` ([core/crud.py:63](../../backend/app/core/crud.py:63)); chưa cấu hình định dạng năm/tháng/reset |
+| NF-07 | Nộp / Hủy / Sửa đổi bản (khóa bất biến sau duyệt) | Nửa | Chỉ văn thư có `amended-by`/supersede; thu mua chưa khóa sau duyệt |
+| NF-08 | **Nhãn dán (tags) tự do + lọc theo nhãn** | Chưa | |
+| NF-09 | Thao tác hàng loạt trong danh sách (bulk duyệt/xóa/sửa) | Chưa | |
+| NF-10 | Xem ảnh tại chỗ (lightbox) — *xem §1.8* | Chưa | Mọi ảnh đang `<a target="_blank">`, bấm là bung tab mới |
+
+*Bảo mật & tài khoản*
+
+| # | Nợ | Trạng thái | Ghi chú |
+|---|---|---|---|
+| NF-11 | **2FA / xác thực 2 lớp** | Chưa | |
+| NF-12 | **Lịch sử đăng nhập + phiên đang hoạt động** (đăng xuất từ xa) | Chưa | Mới có quên mật khẩu |
+| NF-13 | Chính sách mật khẩu (độ mạnh / hết hạn) | Chưa rõ | Chưa soi kỹ, cần kiểm |
+
+*Tích hợp & vận hành*
+
+| # | Nợ | Trạng thái | Ghi chú |
+|---|---|---|---|
+| NF-14 | **Webhook** (bắn sự kiện ra hệ ngoài) | Chưa | |
+| NF-15 | **API key / token cá nhân** cho tích hợp | Chưa | Mới có JWT phiên đăng nhập |
+| NF-16 | Trường tùy biến từ UI (Custom Field) | Chưa | Đặc sản Frappe; tool riêng thêm trường bằng sửa code là bình thường — ưu tiên thấp |
+| NF-17 | Màn xem **Error log / job nền** trong UI | Chưa | Lỗi phải chui vào log container |
+| NF-18 | Báo cáo / digest gửi định kỳ qua email | Chưa | |
+| NF-19 | Tùy biến mẫu in từ UI | Chưa | Mẫu in đang hardcode |
+
+**Đã có, không phải nợ:** sao lưu tự động (Celery R2 2 lần/ngày), nhật ký audit có màn xem
+(`/system/audit-logs`), cấu hình hệ thống (`/system/settings`), tài liệu API (FastAPI `/docs`),
+avatar + cột ảnh sản phẩm có thumbnail.
+
+**Năm cái nhỏ mà đáng làm trước** (rẻ, ai cũng đụng hằng ngày): NF-10 *(lightbox — đang làm)* ·
+NF-01 *(xóa mềm)* · NF-02 *(bộ lọc đã lưu)* · NF-03 *(tìm kiếm toàn cục)* · NF-04 *(@nhắc tên,
+backend đã đỡ nửa đường)*. Mấy cái nặng/ít dùng (2FA, webhook, custom field từ UI, submit-cancel-amend
+toàn hệ) để nhóm sau.
 
 ---
 

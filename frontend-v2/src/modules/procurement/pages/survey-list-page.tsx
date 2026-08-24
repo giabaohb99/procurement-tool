@@ -118,31 +118,31 @@ function SurveyListContent() {
           </Badge>
         ),
       },
-      { key: 'sr_code', header: 'Mã YCBG', width: 140, cell: (survey) => survey.sr_code || '—' },
+      { key: 'sr_code', header: 'Mã YCBG', width: 140, cell: (survey) => survey.sr_code || '' },
       {
         key: 'main_content',
         header: 'Nội dung chính',
         width: 280,
         cell: (survey) => (
           <span className="truncate" title={survey.main_content}>
-            {survey.main_content || '—'}
+            {survey.main_content || ''}
           </span>
         ),
       },
-      { key: 'item_code', header: 'Mã hàng', width: 140, cell: (survey) => survey.item_code || '—' },
+      { key: 'item_code', header: 'Mã hàng', width: 140, cell: (survey) => survey.item_code || '' },
       {
         key: 'item_group',
         header: 'Nhóm hàng',
         width: 160,
-        cell: (survey) => survey.item_group || '—',
+        cell: (survey) => survey.item_group || '',
       },
-      { key: 'nspt', header: 'NSPT', width: 170, cell: (survey) => survey.nspt || '—' },
+      { key: 'nspt', header: 'NSPT', width: 170, cell: (survey) => survey.nspt || '' },
       {
         key: 'created_at',
         header: 'Ngày tạo',
         width: 150,
         sortable: true,
-        cell: (survey) => formatDateTime(survey.created_at) || '—',
+        cell: (survey) => formatDateTime(survey.created_at) || '',
       },
       {
         key: 'status',

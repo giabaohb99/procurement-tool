@@ -65,7 +65,7 @@ export const procurementModule: ErpModule = {
       label: 'Tiến độ mua hàng',
       path: appRoutes.procurement.purchaseProgress,
       icon: Truck,
-      entity: 'purchase_order',
+      entity: 'purchase_request',
       group: 'Mua hàng',
     },
     {
@@ -94,6 +94,7 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.categoryAssignees,
       icon: UserCheck,
       entity: 'category_assignee',
+      manage: true,
       group: 'Cấu hình',
     },
   ],

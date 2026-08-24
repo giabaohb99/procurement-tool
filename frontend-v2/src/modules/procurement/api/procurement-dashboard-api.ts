@@ -33,6 +33,14 @@ export interface RecentPurchaseRequest {
   total: number
 }
 
+export interface LowStockItem {
+  product_code: string
+  product_name: string
+  qty: number
+  unit: string
+  warehouse_code: string
+}
+
 /**
  * `GET /api/dashboard/overview` — backend gom sẵn mọi số liệu của trang tổng
  * quan trong MỘT lần gọi (KPI, chi phí 12 tháng, cảnh báo, chứng từ gần đây) và
@@ -40,27 +48,39 @@ export interface RecentPurchaseRequest {
  */
 export interface DashboardOverview {
   year: string
+  /**
+   * Mọi khóa đều CÓ THỂ THIẾU: backend chỉ tính khối nào người dùng có quyền
+   * Xem entity tương ứng (`pr_pending` cần `purchase_request`, `due_soon` /
+   * `overdue` cần `payable`…), khối bị gác thì khóa không xuất hiện. Luôn đọc
+   * kèm `?? 0` và đừng mượn khóa của phân hệ khác để lấp chỗ trống.
+   */
   kpi: {
-    pr_pending: number
-    sr_pending: number
-    po_ordered: number
-    late_deliveries: number
-    survey_pending: number
-    due_soon: number
-    overdue: number
-    contract_expiring: number
-    inv_value: number
-    out_of_stock: number
+    pr_pending?: number
+    sr_pending?: number
+    po_ordered?: number
+    late_deliveries?: number
+    survey_pending?: number
+    due_soon?: number
+    overdue?: number
+    contract_expiring?: number
+    inv_value?: number
+    out_of_stock?: number
   }
   /** Giá trị NHẬN HÀNG theo tháng của năm đang xem. */
   cost_12m: MonthlyCost[]
   categories: { name: string; cost: number; pct: number }[]
+  /** CHI TIÊU theo NCC (tính trên dòng đơn mua) — thuộc khối `purchase_order`. */
   top_suppliers: NamedValue[]
+  /** NỢ CÒN LẠI theo NCC — thuộc khối `payable`. Đừng nhầm với `top_suppliers`. */
+  top_debt_suppliers: NamedValue[]
   dept_spend: NamedValue[]
   po_status: { key: string; label: string; value: number }[]
+  ap_aging: { label: string; value: number }[]
   alerts: DashboardAlert[]
   alert_total: number
   recent_prs: RecentPurchaseRequest[]
+  low_stock: LowStockItem[]
+  can: Record<string, boolean>
 }
 
 export const procurementDashboardApi = {

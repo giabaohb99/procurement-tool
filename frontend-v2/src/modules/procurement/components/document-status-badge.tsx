@@ -41,7 +41,7 @@ interface StatusBadgeProps {
 
 /** Huy hiệu trạng thái chứng từ. Mã lạ thì hiện nguyên mã, tông trung tính. */
 export function StatusBadge({ status, labels, className }: StatusBadgeProps) {
-  if (!status) return <span className="text-muted-foreground">—</span>
+  if (!status) return null
 
   return (
     <Badge
@@ -61,7 +61,7 @@ const DOCUMENT_TONE: Record<string, Tone> = {
 }
 
 export function DocumentStatusBadge({ status }: { status: string }) {
-  if (!status) return <span className="text-muted-foreground">—</span>
+  if (!status) return null
 
   return (
     <Badge variant="secondary" className={cn('border-0', TONE_CLASS[DOCUMENT_TONE[status] ?? 'neutral'])}>
@@ -96,7 +96,7 @@ const PROGRESS_CLASS: Record<string, string> = {
 }
 
 export function ProgressStatusBadge({ status }: { status: string }) {
-  if (!status) return <span className="text-muted-foreground">—</span>
+  if (!status) return null
 
   // Nhãn của hai bộ trùng khít ở phần chung; `no_po` chỉ có ở YCMH nên tra bù bộ kia.
   const nhan = labelOf(PO_PROGRESS_STATUS, status) || labelOf(PR_LINE_STATUS, status) || status
@@ -139,7 +139,7 @@ export function SurveyLineStateBadge({
   tone: string
   className?: string
 }) {
-  if (!state) return <span className="text-muted-foreground">—</span>
+  if (!state) return null
 
   return (
     <Badge
@@ -160,7 +160,7 @@ const LINE_APPROVE_TONE: Record<string, Tone> = {
 }
 
 export function LineApproveBadge({ status }: { status: string }) {
-  if (!status) return <span className="text-muted-foreground">—</span>
+  if (!status) return null
 
   return (
     <Badge
@@ -179,7 +179,7 @@ const LAB_RESULT_TONE: Record<string, Tone> = {
 }
 
 export function LabResultBadge({ result }: { result: string }) {
-  if (!result) return <span className="text-muted-foreground">—</span>
+  if (!result) return null
 
   return (
     <Badge
