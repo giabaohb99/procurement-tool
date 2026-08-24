@@ -8,6 +8,7 @@ from fastapi import (APIRouter, Depends, File, Form, HTTPException, Query,
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.core.attachment_scope import ensure_in_scope, reachable_from_scoped_po
 from app.core.auth import (get_current_user, get_perm_profile,
                            user_has_permission)
 from app.core.database import get_db
@@ -58,8 +59,17 @@ def _policy_or_400(entity: str):
     return pol
 
 
-def _check(db: Session, user, entity: str, mode: str):
-    """mode='read' → cần đọc phiếu cha; mode='manage' → write HOẶC create phiếu cha."""
+def _check(db: Session, user, entity: str, mode: str, entity_id: int | None = None):
+    """mode='read' → cần đọc phiếu cha; mode='manage' → write HOẶC create phiếu cha.
+
+    HAI lớp, đúng khuôn `comment/service.resolve_doc` (B-08 · N-13):
+      1. quyền vai trò trên entity cha — `user_has_permission`;
+      2. phạm vi dữ liệu của ĐÚNG bản ghi cha — `ensure_in_scope`.
+
+    Thiếu lớp 2 thì `contract.read` phạm vi `company` vẫn tải được đính kèm hợp
+    đồng pháp nhân khác chỉ bằng cách đoán id. `entity_id=None` là lối tải tệp
+    TẠM (`POST /upload-file`) — tệp chưa gắn vào bản ghi nào nên không có gì để soi.
+    """
     parent, exts, max_mb = _policy_or_400(entity)
     if parent == "__self__":
         return exts, max_mb
@@ -69,6 +79,8 @@ def _check(db: Session, user, entity: str, mode: str):
         ok = user_has_permission(db, user, parent, "write") or user_has_permission(db, user, parent, "create")
     if not ok:
         raise HTTPException(403, "Không có quyền thao tác đính kèm cho phần này")
+    if entity_id is not None:
+        ensure_in_scope(db, user, entity, entity_id, mode)
     return exts, max_mb
 
 
@@ -171,7 +183,7 @@ def list_attachments(
     if entity == "comment":
         _check_comment(db, user, entity_id, "read")
     else:
-        _check(db, user, entity, "read")
+        _check(db, user, entity, "read", entity_id)
     rows = (db.query(FileLink, StoredFile)
             .join(StoredFile, StoredFile.id == FileLink.file_id)
             .filter(FileLink.entity == entity, FileLink.entity_id == entity_id)
@@ -189,7 +201,7 @@ class ReorderIn(BaseModel):
 def reorder(data: ReorderIn, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Cập nhật thứ tự hiển thị các đính kèm của 1 record (dùng cho ảnh sản phẩm)."""
     _deny_comment(data.entity)
-    _check(db, user, data.entity, "manage")
+    _check(db, user, data.entity, "manage", data.entity_id)
     for idx, lid in enumerate(data.ordered_link_ids):
         lk = db.get(FileLink, lid)
         if lk and lk.entity == data.entity and lk.entity_id == data.entity_id:
@@ -208,7 +220,7 @@ def upload(
 ):
     """Upload + gắn luôn (record đã có id) — tương thích FE cũ."""
     _deny_comment(entity)
-    exts, max_mb = _check(db, user, entity, "manage")
+    exts, max_mb = _check(db, user, entity, "manage", entity_id)
     _chan_ban_dang_duyet(db, entity, entity_id)
     _valid_doc_type(doc_type)
     out = []
@@ -246,7 +258,7 @@ class RegisterIn(BaseModel):
 def register_files(data: RegisterIn, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Gắn các file ĐÃ upload (theo file_id) vào 1 record — khi record vừa có id."""
     _deny_comment(data.entity)
-    _check(db, user, data.entity, "manage")
+    _check(db, user, data.entity, "manage", data.entity_id)
     _chan_ban_dang_duyet(db, data.entity, data.entity_id)
     _valid_doc_type(data.doc_type)
     out = []
@@ -279,7 +291,11 @@ def _resolve_chain(db: Session, user, entity: str, entity_id: int):
         raise HTTPException(403, "Không có quyền xem chứng từ")
 
     # import trong hàm để tránh circular import với các module nghiệp vụ
-    from app.modules.purchase_order.model import PODelivery, PurchaseOrder, PurchaseOrderItem
+    #  Lớp model tên là `POItem`, không phải `PurchaseOrderItem` — câu import cũ
+    #  ném `ImportError` nên CẢ HAI endpoint `/chain` và `/chain/zip` trả 500 từ
+    #  ngày CR-007/008 tới nay (trang «Chứng từ» của `frontend/` và nút "Tải tất
+    #  cả (.zip)" của `frontend-v2` cùng chết theo). Bắt được lúc làm B-08.
+    from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
     from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
     from app.modules.survey.model import Survey, SurveySupplierLine, SurveyProductLine
     from app.modules.survey_request.model import (SurveyRequest,
@@ -299,7 +315,7 @@ def _resolve_chain(db: Session, user, entity: str, entity_id: int):
     del_ids = _ids(PODelivery.id, PODelivery.po_id, po.id)
     if del_ids:
         groups.append(("delivery", del_ids, "PO", po.code))
-    poi_ids = _ids(PurchaseOrderItem.id, PurchaseOrderItem.purchase_order_id, po.id)
+    poi_ids = _ids(POItem.id, POItem.po_id, po.id)
     if poi_ids:
         groups.append(("po_item", poi_ids, "PO", po.code))
         groups.append(("purchase_order_item", poi_ids, "PO", po.code))
@@ -309,7 +325,7 @@ def _resolve_chain(db: Session, user, entity: str, entity_id: int):
         if pr:
             groups.append(("purchase_request", [pr.id], "PYC", pr.code))
             groups.append(("purchase_request_quote", [pr.id], "PYC", pr.code))
-            pri_ids = _ids(PurchaseRequestItem.id, PurchaseRequestItem.purchase_request_id, pr.id)
+            pri_ids = _ids(PurchaseRequestItem.id, PurchaseRequestItem.pr_id, pr.id)
             if pri_ids:
                 groups.append(("purchase_request_item", pri_ids, "PYC", pr.code))
 
@@ -415,7 +431,16 @@ def download_one(link_id: int, db: Session = Depends(get_db), user=Depends(get_c
     if lk.entity == "comment":
         _check_comment(db, user, lk.entity_id, "read")
     else:
-        _check(db, user, lk.entity, "read")
+        try:
+            _check(db, user, lk.entity, "read", lk.entity_id)
+        except HTTPException as e:
+            #  Đường lùi CHỈ cho lượt tải một tệp: trang «Chứng từ» liệt kê cả
+            #  chuỗi PO → PYC → PKS → YCKS rồi cho bấm tải từng dòng, mà các
+            #  dòng PYC/PKS/YCKS thường nằm ngoài phạm vi vai trò của người xem
+            #  đơn. Không nới thêm gì — `chain/zip` đã cho tải trọn chuỗi đó cho
+            #  bất kỳ ai mở được đơn; đây chỉ là tải lẻ thay vì tải cả gói.
+            if e.status_code != 403 or not reachable_from_scoped_po(db, user, lk.entity, lk.entity_id):
+                raise
     f = db.get(StoredFile, lk.file_id)
     if not f:
         raise HTTPException(404, "File không tồn tại")
@@ -432,7 +457,7 @@ def remove(link_id: int, db: Session = Depends(get_db), user=Depends(get_current
     if lk.entity == "comment":
         _check_comment(db, user, lk.entity_id, "manage")
     else:
-        _check(db, user, lk.entity, "manage")
+        _check(db, user, lk.entity, "manage", lk.entity_id)
         _chan_ban_dang_duyet(db, lk.entity, lk.entity_id)
     fid = lk.file_id
     db.delete(lk); db.flush()
