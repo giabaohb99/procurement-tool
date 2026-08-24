@@ -8,6 +8,7 @@ export interface AuthUser {
   employee_id?: number
   emp_code?: string
   company_id?: number
+  company_name?: string
   avatar?: string
   signature?: string
   phone?: string

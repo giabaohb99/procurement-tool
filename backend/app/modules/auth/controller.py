@@ -35,6 +35,7 @@ def _me_payload(db: Session, user) -> dict:
         "employee_id": user.employee_id,
         "emp_code": emp.code if emp else "",
         "company_id": emp.company_id if emp else 0,
+        "company_name": emp.company_name if emp else "",
         "full_name": emp.full_name if emp else user.email,
         "avatar": getattr(user, 'avatar', ''),
         "signature": getattr(user, 'signature', ''),

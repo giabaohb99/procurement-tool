@@ -32,6 +32,15 @@ class Employee(Base, AuditMixin):
         viewonly=True
     )
 
+    # Pháp nhân chủ quản — nối theo company_id giống department. Chỉ đọc: hồ sơ
+    # nhân sự do phân hệ Nhân sự quản lý, ở đây không sửa qua quan hệ này.
+    company = relationship(
+        "Company",
+        primaryjoin="foreign(Employee.company_id) == Company.id",
+        uselist=False,
+        viewonly=True
+    )
+
     # Tài khoản đăng nhập gắn với nhân sự (nếu đã được cấp). Ảnh đại diện chỉ lưu MỘT chỗ
     # là tab_user.avatar — nhân sự đọc ké qua đây để khỏi có 2 nguồn dữ liệu lệch nhau.
     user = relationship(
@@ -44,6 +53,10 @@ class Employee(Base, AuditMixin):
     @property
     def department_name(self) -> str | None:
         return self.department.name if self.department else None
+
+    @property
+    def company_name(self) -> str | None:
+        return self.company.name if self.company else None
 
     @property
     def manager_name(self) -> str | None:

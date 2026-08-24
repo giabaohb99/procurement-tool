@@ -1,6 +1,7 @@
 import {
   BriefcaseBusiness,
   Building,
+  Building2,
   IdCard,
   Info,
   Mail,
@@ -24,6 +25,7 @@ interface ProfileField {
 const HR_FIELDS: ProfileField[] = [
   { key: 'full_name', label: 'Họ và tên', icon: User },
   { key: 'emp_code', label: 'Mã nhân viên', icon: IdCard },
+  { key: 'company_name', label: 'Công ty / Pháp nhân', icon: Building2 },
   { key: 'department_name', label: 'Phòng ban', icon: Building },
   { key: 'position', label: 'Vị trí / Chức vụ', icon: BriefcaseBusiness },
   { key: 'role_name', label: 'Vai trò', icon: ShieldCheck },
