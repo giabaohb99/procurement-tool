@@ -55,20 +55,46 @@ def viec_dang_cho_cua(db: Session, instance: ApprovalInstance,
     raise HTTPException(403, "Bạn không có việc nào đang chờ ở phiếu này")
 
 
+def chiem_viec(db: Session, task: ApprovalTask, trang_thai_moi: int, actor: int) -> None:
+    """CHIẾM một việc bằng MỘT câu UPDATE có điều kiện — để CSDL phân xử.
+
+    ⚠️ Gán thẳng `task.status = …` là **đọc rồi mới ghi**, và hai lượt chạy sát
+    nhau đều đọc thấy «Đang chờ» rồi cùng ghi. Lỗi dựng lại được 24/08/2026:
+    **nhấp đúp nút «Duyệt» ở bước cuối thì CẢ HAI cú đều thành công** — dấu vết
+    ghi hai dòng *Duyệt* và hai dòng *Kết thúc* cho một người bấm một lần.
+    Văn bản không hỏng (hàm ban hành thấy phiên bản đã khóa nên lần hai ném lỗi
+    và bị nuốt), nhưng **bản in dấu vết nói người ta ký hai lần** — mà cả lý do
+    tồn tại của dấu vết là để trả lời "ai duyệt cái này", nên nó nói sai là hỏng
+    đúng thứ đáng giá nhất.
+    """
+    so_dong = (
+        db.query(ApprovalTask)
+        .filter(ApprovalTask.id == task.id, ApprovalTask.status == TASK_PENDING)
+        .update({"status": trang_thai_moi, "decided_at": datetime.now(),
+                 "updated_by": actor}, synchronize_session=False)
+    )
+    if so_dong != 1:
+        #  Không phải lỗi hệ: đúng nghĩa "người khác (hoặc chính bạn, lượt bấm
+        #  trước) vừa xử lý xong việc này". Cùng câu với `concurrency.py`.
+        db.rollback()
+        raise HTTPException(
+            409, "Việc này vừa được xử lý cùng lúc. "
+                 "Tải lại trang để xem phiếu đang ở đâu rồi thao tác tiếp.")
+    #  ⚠️ FLUSH/REFRESH BẮT BUỘC, không phải cho gọn. Phiên làm việc của hệ chạy
+    #  `autoflush=False`, nên nếu không đồng bộ lại thì mọi truy vấn phía sau
+    #  vẫn đọc trạng thái CŨ. Đúng lỗi đã bắt được: bước lẽ ra tự qua vì trùng
+    #  người lại hỏi người ta ký lần nữa, vì lúc xét trùng nó chưa thấy chữ ký
+    #  vừa đặt.
+    db.flush()
+    db.refresh(task)
+
+
 def duyet(db: Session, instance: ApprovalInstance, actor_employee_id: int,
           actor: int, subject: dict, y_kien: str = "") -> ApprovalInstance:
     _dang_mo(instance)
     task, delegation_id = viec_dang_cho_cua(db, instance, actor_employee_id)
 
-    task.status = TASK_APPROVED
-    task.decided_at = datetime.now()
-    task.updated_by = actor
-    #  ⚠️ FLUSH BẮT BUỘC, không phải cho gọn. Phiên làm việc của hệ chạy
-    #  `autoflush=False`, nên nếu chỉ gán thuộc tính thì mọi truy vấn phía sau
-    #  vẫn đọc trạng thái CŨ. Đúng lỗi đã bắt được: bước lẽ ra tự qua vì trùng
-    #  người lại hỏi người ta ký lần nữa, vì lúc xét trùng nó chưa thấy chữ ký
-    #  vừa đặt.
-    db.flush()
+    chiem_viec(db, task, TASK_APPROVED, actor)
 
     instance_service.ghi_dau_vet(
         db, instance, ACTION_APPROVE, actor, node_seq=task.node_seq,
@@ -100,10 +126,7 @@ def tu_choi(db: Session, instance: ApprovalInstance, actor_employee_id: int,
     ly_do = _bat_buoc_ly_do(ly_do, "từ chối")
     task, delegation_id = viec_dang_cho_cua(db, instance, actor_employee_id)
 
-    task.status = TASK_REJECTED
-    task.decided_at = datetime.now()
-    task.updated_by = actor
-    db.flush()   # xem ghi chú ở `duyet`
+    chiem_viec(db, task, TASK_REJECTED, actor)
 
     instance_service.ghi_dau_vet(
         db, instance, ACTION_REJECT, actor, node_seq=task.node_seq,
@@ -138,10 +161,7 @@ def tra_lai(db: Session, instance: ApprovalInstance, actor_employee_id: int,
     ly_do = _bat_buoc_ly_do(ly_do, "trả lại")
     task, delegation_id = viec_dang_cho_cua(db, instance, actor_employee_id)
 
-    task.status = TASK_CANCELLED
-    task.decided_at = datetime.now()
-    task.updated_by = actor
-    db.flush()   # xem ghi chú ở `duyet`
+    chiem_viec(db, task, TASK_CANCELLED, actor)
 
     instance_service.ghi_dau_vet(
         db, instance, ACTION_RETURN, actor, node_seq=task.node_seq,

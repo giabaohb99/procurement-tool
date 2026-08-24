@@ -1,6 +1,6 @@
 # Báo cáo kiểm thử 7 tài khoản + Hướng dẫn phân quyền Văn bản trên giao diện
 
-**Ngày:** 24/08/2026 (vòng 1 + vòng 2 stress) · **Nhánh:** `erp-v2` (đã đồng bộ tới `37ca83d`) · **Môi trường:** local, CSDL vừa
+**Ngày:** 24/08/2026 (vòng 1 nghiệp vụ · vòng 2 chịu tải phiếu · vòng 3 chịu tải LUỒNG) · **Nhánh:** `erp-v2` (đã đồng bộ tới `37ca83d`) · **Môi trường:** local, CSDL vừa
 đồng bộ từ dev · **Giao diện:** http://localhost:8083 (frontend-v2)
 
 Báo cáo gồm hai phần: **A. kết quả kiểm thử** (từng ca, từng kết quả) và **B. hướng dẫn thao tác
@@ -185,7 +185,55 @@ người thua tải lại trang rồi tự quyết định lần nữa.
 **Cổng kiểm sau khi vá:** pytest **1373 xanh** (thêm 12 ca mới cho bốn lỗi này) · `npm run check`
 **0 lỗi · 536 test xanh** · `start.sh` migrate + seed chạy sạch, alembic một head.
 
-## A7. Dữ liệu sau khi kiểm — ĐÃ DỌN SẠCH
+## A6b. KIỂM CHỊU TẢI **LUỒNG PHÊ DUYỆT** (vòng 3) — 34 ca, **1 lỗi mới · đã vá**
+
+Vòng 2 ép phần *chạy* của phiếu. Vòng này ép phần **cấu hình luồng** và chỗ nó giao với văn bản:
+sửa/xóa/tắt luồng khi phiếu đang chạy, bật/tắt bộ máy giữa chừng, luật chọn luồng, người duyệt
+biến mất, và tải nặng.
+
+### Lỗi mới — L-05 · nhấp đúp «Duyệt» ghi CHỮ KÝ HAI LẦN
+
+| | Nội dung |
+| --- | --- |
+| **Dựng lại** | Bấm *Duyệt* hai lần sát nhau ở bước cuối (nhấp đúp) |
+| **Trước khi vá** | **Cả hai cú đều thành công.** Dấu vết ghi **2 dòng «Duyệt»** và **2 dòng «Kết thúc»** cho một người bấm một lần |
+| **Thiệt hại** | Văn bản KHÔNG hỏng (hàm ban hành thấy phiên bản đã khóa nên lần hai ném lỗi và bị nuốt; số hiệu vẫn cấp một lần) — nhưng **bản in dấu vết nói người ta ký hai lần**, mà cả lý do tồn tại của dấu vết là trả lời *"ai duyệt cái này"* |
+| **Gốc** | `task.status = TASK_APPROVED` là **đọc rồi mới ghi**; hai lượt cùng đọc thấy «Đang chờ» rồi cùng ghi |
+| **Cách chữa** | **Chiếm việc bằng MỘT câu UPDATE có điều kiện** (`WHERE id=? AND status=PENDING`) — để CSDL phân xử. `rowcount != 1` → **409**. Áp cho cả *duyệt · từ chối · trả lại* |
+| **Sau khi vá** | Chạy lại **3/3 lượt**: một cú ăn, một cú `409`, dấu vết đúng **một** dòng Duyệt + **một** dòng Kết thúc |
+
+### 33 ca còn lại — ĐẠT
+
+**Sửa/xóa/tắt luồng khi phiếu đang chạy (6 ca).** Thêm bước 3 khi phiếu đang chạy → phiếu cũ vẫn
+ban hành sau đúng 2 lần duyệt (**bản chụp luồng** chạy đúng). Xóa bước mà phiếu đang đứng → phiếu
+vẫn đi tiếp. **Xóa luồng còn phiếu chạy → chặn kèm chỉ đường** «tắt luồng thay vì xóa». Tắt luồng →
+phiếu đang chạy **vẫn duyệt xong**, văn bản mới rơi về luồng khác.
+
+**Bật/tắt bộ máy giữa chừng (9 ca).** Tắt bộ máy **không cắt ngang** phiếu đang chạy. Văn bản gửi
+lúc TẮT không sinh phiếu và **ban hành được bằng đường một bước**. Gửi lúc TẮT rồi BẬT lại →
+**vẫn còn lối ra**, không kẹt vĩnh viễn. Bật lại thì văn bản mới sinh phiếu bình thường.
+
+**Luật chọn luồng (5 ca).** Khác ưu tiên → chọn cao hơn. **Hòa ưu tiên → chọn ổn định** (3 lượt ra
+cùng một luồng). Luồng khai **đúng pháp nhân thắng** luồng dùng chung dù ưu tiên 1 so với 999.
+**Không luồng nào khớp** → văn bản không kẹt, vẫn về đường một bước.
+
+**Người duyệt (11 ca).** Bước chỉ có **người nộp** → phiếu **KẸT** với lý do rõ, hiện ra được, và
+người nộp **rút được** (có lối ra). Người duyệt **bị khóa tài khoản** → không đăng nhập được, nhưng
+**chuyển việc** sang người khác rồi duyệt tiếp được. Trả về **bước không có thật** / **chính bước
+đang đứng** → chặn. Trả về bước phía trước hợp lệ → phiếu **còn sống**, quay lại bước đó, kết quả
+các bước sau bị hủy đúng. Rút phiếu **sau khi đã có chữ ký** → chặn. Người **không phải người nộp**
+rút phiếu → chặn. **Người nộp tự duyệt** phiếu mình → chặn. Ghi ý kiến → không đổi trạng thái.
+
+**Tải (3 ca).** **20 văn bản** trọn vòng 2 bước song song trong **2,5 giây**, ban hành 20/20,
+**không trùng số**; sửa luồng ngay giữa lúc 20 phiếu đang chạy cũng không hỏng phiếu nào.
+
+### Một điểm KHÔNG phải lỗi nhưng người khai luồng cần biết
+
+**Thêm một bước cho CÙNG một người thì bước đó tự qua** — dấu vết ghi *«Tự qua vì trùng người
+duyệt»*. Nghĩa là thêm bước không đồng nghĩa với thêm một chữ ký. Điều đáng khen: nó **ghi thẳng ra**
+chứ không giả vờ có thêm người xem xét.
+
+## A7. Dữ liệu sau khi kiểm — ĐÃ DỌN SẠCH (cả ba vòng)
 
 - Bãi bỏ #370, xóa #371 và **toàn bộ 18 văn bản rác** của các vòng kiểm.
 - Xóa **20 phiếu duyệt mồ côi** (kèm việc và dấu vết của chúng).

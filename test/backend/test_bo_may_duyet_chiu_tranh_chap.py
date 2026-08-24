@@ -6,7 +6,8 @@ Vòng kiểm đầu chỉ đi đường đẹp nên cả bốn đều lọt. Ép
   L-01  nhấp đúp «Gửi duyệt» → HAI phiếu duyệt cùng chạy trên một chứng từ;
   L-02  hai người thao tác cùng lúc → một người nhận `500` (kẹt khóa CSDL);
   L-03  lý do dài quá bề rộng cột → `500` trần;
-  L-04  xóa chứng từ xong, phiếu duyệt nằm lại trỏ vào chứng từ không còn.
+  L-04  xóa chứng từ xong, phiếu duyệt nằm lại trỏ vào chứng từ không còn;
+  L-05  nhấp đúp «Duyệt» ở bước cuối -> CẢ HAI cú ăn, dấu vết ghi ký hai lần.
 
 ⚠️ L-01 và L-02 là chuyện CẠNH TRANH THẬT giữa hai kết nối, mà bộ kiểm này chạy
 SQLite một luồng nên không dựng lại được cảnh đó. Cái kiểm được ở đây — và cũng
@@ -21,12 +22,15 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy.exc import OperationalError
 
+from app.modules.approval.action_service import chiem_viec
 from app.modules.approval.concurrency import chay_chiu_tranh_chap
 from app.modules.approval.instance_model import (INSTANCE_APPROVED,
                                                  INSTANCE_BLOCKED,
                                                  INSTANCE_RETURNED,
                                                  INSTANCE_RUNNING,
-                                                 ApprovalInstance)
+                                                 TASK_APPROVED, TASK_CANCELLED,
+                                                 TASK_PENDING, TASK_REJECTED,
+                                                 ApprovalInstance, ApprovalTask)
 from app.modules.approval.instance_controller import (DAI_TOI_DA_LY_DO,
                                                       ReasonIn)
 
@@ -145,6 +149,49 @@ def test_khong_thu_lai_khi_chay_tron(db):
 
     assert chay_chiu_tranh_chap(db, viec) == "ok"
     assert lan["dem"] == 1, "Chạy trót lọt thì tuyệt đối không chạy lại — nó ghi CSDL"
+
+
+# ── L-05 · một việc chỉ được XỬ LÝ MỘT LẦN (chống nhấp đúp) ─────────────────
+
+def _viec(db, status: int = TASK_PENDING) -> ApprovalTask:
+    row = ApprovalTask(instance_id=1, node_seq=1, order_no=1,
+                       assignee_employee_id=5, status=status,
+                       created_by=ACTOR, updated_by=ACTOR)
+    db.add(row)
+    db.flush()
+    return row
+
+
+def test_chiem_viec_lan_hai_bi_chan(db):
+    """Nhấp đúp «Duyệt» → cú thứ hai phải trượt, không được ghi thêm chữ ký.
+
+    Lỗi dựng lại được 24/08/2026: gán thẳng `task.status = …` là đọc rồi mới
+    ghi, hai lượt cùng đọc thấy «Đang chờ» rồi cùng ghi — dấu vết ra HAI dòng
+    *Duyệt* và HAI dòng *Kết thúc* cho một người bấm một lần.
+    """
+    task = _viec(db)
+    chiem_viec(db, task, TASK_APPROVED, ACTOR)
+    assert task.status == TASK_APPROVED
+
+    with pytest.raises(HTTPException) as loi:
+        chiem_viec(db, task, TASK_APPROVED, ACTOR)
+    assert loi.value.status_code == 409
+    assert "vừa được xử lý" in loi.value.detail
+
+
+def test_khong_chiem_duoc_viec_da_bi_huy(db):
+    """Việc đã hủy (phiếu bị trả lại) thì không ai bấm lên nó được nữa."""
+    task = _viec(db, status=TASK_CANCELLED)
+    with pytest.raises(HTTPException) as loi:
+        chiem_viec(db, task, TASK_APPROVED, ACTOR)
+    assert loi.value.status_code == 409
+
+
+def test_chiem_viec_ghi_dung_trang_thai_va_moc_gio(db):
+    task = _viec(db)
+    chiem_viec(db, task, TASK_REJECTED, ACTOR)
+    assert task.status == TASK_REJECTED
+    assert task.decided_at is not None, "Phải đóng mốc giờ quyết định"
 
 
 # ── L-03 · lý do quá khổ bị chặn ở CỬA, không xuống tới CSDL ─────────────────
