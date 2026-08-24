@@ -52,7 +52,7 @@ cũng không để lại hệ nửa vời.*
 | **N-13** — `attachment/controller.py` `_check()` không lọc phạm vi | ~~Lỗ hổng~~ **ĐÃ VÁ** | `13` §6.7 · `06` H17 | **B-08 xong 24/08/2026** *(CR-130, dev/prod chờ deploy)* |
 | **N-15** — `tab_contract.party_type` + `.status` còn chữ tự do | ~~Nợ~~ **ĐÃ TRẢ** | `13` §6.7 | **B-02 xong 22/08/2026** *(dev/prod chờ deploy)* |
 | **N-16** — CR-118 buộc backend và giao diện lên cùng nhịp | Ràng buộc deploy | `13` §6.7 | → §4.1, áp cho **mọi** đợt của tệp này |
-| Nợ lớp CRUD — 4 dòng còn lại *(6 cảnh báo `no-explicit-any`, khóa query chi tiết viết tay, `import` giữa `types.ts`, `config.exportXlsx` khai mà không dùng)* | Nợ | `13` §6.5 | → **B-09** |
+| ~~Nợ lớp CRUD — 4 dòng còn lại~~ **ĐÃ TRẢ** *(7 cảnh báo `no-explicit-any` → `CrudRecord`, khóa query qua helper, `import` dời lên đầu, bỏ `config.exportXlsx`)* | Nợ → **hết** | `13` §6.5 | **B-09 xong 24/08/2026** *(CR-142)* |
 | Phân quyền hợp đồng trên **prod** chưa đổi — cả 6 vai trò còn `contract = all` | **Vận hành** | `13` §6.7 | Không phải việc code · làm bằng màn *Phân quyền* hoặc `SEED_FORCE_SYNC=true` một lần |
 
 **Đọc bảng này thế nào.** Đ-11 xong rồi thì **không còn việc dựng màn hình nào trước mắt** — phần
@@ -229,10 +229,12 @@ mà bài kiểm đó chưa viết, nên lỗi sẽ nổ ở tương lai chứ kh
 Mỗi đợt **nghiệm thu riêng**, dừng lại sau bất kỳ đợt nào cũng không để hệ nửa vời. Ngày công là
 ước lượng cho một người.
 
-> **Tiến độ 24/08/2026: xong B-01 · B-02 · B-03 · B-04 · B-05 · B-06 · B-07 · B-08.** Sáu đợt đầu
-> đã đẩy chung một lần lên `erp-v2` *(`39fa09b`)*; **hết B-06 là 12/12 cột chữ tiếng Việt đã thành
-> mã**. **B-08** *(CR-130)* và **B-07** *(CR-131)* xong cùng ngày — **hết hai nhóm lỗ hổng phạm
-> vi**, không đụng dữ liệu, không migration. Chỉ còn **B-09** *(nợ lớp CRUD)*.
+> **Tiến độ 24/08/2026: xong CẢ CHÍN ĐỢT B-01 … B-09.** Sáu đợt đầu đã đẩy chung một lần lên
+> `erp-v2` *(`39fa09b`)*; **hết B-06 là 12/12 cột chữ tiếng Việt đã thành mã**. **B-08** *(CR-130)*
+> và **B-07** *(CR-131)* xong cùng ngày — **hết hai nhóm lỗ hổng phạm vi**, không đụng dữ liệu,
+> không migration. **B-09** *(CR-142)* trả nốt nợ lớp CRUD: hết 7 cảnh báo `no-explicit-any`, khóa
+> query qua helper, sáu type thực thể đổi `interface → type` để thỏa `CrudRecord`. **Nền v2 đã đổ
+> xong bê tông** — khuôn generic sạch để nhân bản tiếp.
 > ⚠️ **B-07 có một điều kiện dữ liệu trước khi cắt sang prod** — 17 nhân sự trên prod chưa gắn
 > `company_id`; đọc kỹ ô cảnh báo trong mục **B-07** ngay dưới.
 
@@ -741,13 +743,31 @@ trong CSDL mà mất trong bucket. Là lỗi cũ, không sinh ra từ đợt nà
 
 ---
 
-### B-09 — Trả nốt nợ lớp CRUD · 0,5–1 ngày
+### B-09 — Trả nốt nợ lớp CRUD · **ĐÃ XONG 24/08/2026** *(CR-142)*
 
-Bốn dòng còn lại ở `13` §6.5: 6 cảnh báo `no-explicit-any` trong chữ ký export · khóa query *chi
-tiết* và hai chỗ `invalidateQueries` còn viết tay thay vì qua `getCrudQueryKey` · một câu `import`
-nằm giữa `shared/crud/types.ts` · `config.exportXlsx` khai ra mà không chỗ nào dùng.
+Bốn dòng còn lại ở `13` §6.5, nay trả sạch:
 
-Để cuối vì nó không chặn ai, nhưng **phải trả trước khi lớp CRUD được nhân bản thêm lần nữa**.
+1. **7 cảnh báo `no-explicit-any` của lớp CRUD** — thay `<T extends Record<string, any>>` bằng ràng
+   buộc mới `CrudRecord = Record<string, unknown>` *(cố ý dùng `unknown`, không `any`, theo
+   `typescript.md`: "không để `any` lọt vào chữ ký export")* ở cả `crud-list-page` ·
+   `crud-detail-page` · `crud-form-dialog`; khối `(res as any).items` trong `use-crud.ts` narrow
+   bằng `'items' in res` + kiểm `Array.isArray`. `purchase-history-table` đổi `extra?: any` →
+   `Record<string, unknown>`. **Hệ quả kiểu học phải trả kèm:** `interface` KHÔNG có chỉ mục ngầm
+   nên không thỏa `Record<string, unknown>` *(đây chính là lý do bản gốc phải nới thành `any`)* —
+   sáu type thực thể (`Warehouse` · `Contract` · `ItemGroup` · `Product` · `Supplier` · `Unit`)
+   đổi từ `interface` sang `type` để thỏa ràng buộc, không cần ép kiểu chỗ nào.
+2. **Khóa query viết tay** — thêm ba helper cạnh nhau ở `use-crud.ts`: `getCrudRootKey` ·
+   `getCrudQueryKey` · `getCrudDetailKey` *(ngoại lệ khóa co-locate đã chốt ở CR-098)*; khóa *chi
+   tiết* và hai chỗ `invalidateQueries` nay đều qua helper, hết viết tay.
+3. **`import` giữa `types.ts`** — dời `import type { IdentityChip }` lên khối import đầu tệp.
+4. **`config.exportXlsx`** — khai mà không nơi nào dùng, xóa cả trường lẫn chú thích.
+
+Cổng `frontend-v2`: typecheck **0 lỗi** · lint **0 lỗi / 23 cảnh báo** *(giảm 7 — hết sạch nhóm
+`no-explicit-any` của lớp CRUD; số còn lại là cảnh báo cũ ngoài phạm vi CRUD)* · vitest **85 tệp /
+532 ca xanh**. Không đụng backend, không migration.
+
+Để cuối vì nó không chặn ai, nhưng **phải trả trước khi lớp CRUD được nhân bản thêm lần nữa** —
+nay khuôn generic đã sạch để nhân bản tiếp.
 
 ---
 

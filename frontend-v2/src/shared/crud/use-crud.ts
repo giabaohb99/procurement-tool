@@ -6,9 +6,23 @@ import { appConfig } from '@/core/config/app-config'
 import type { ListParams, PaginatedResult } from '@/shared/types/api'
 import type { CrudOption } from './types'
 
-/** Khóa cache chung cho CRUD query theo apiPath */
+/**
+ * Khóa cache của lớp CRUD chung. Ba dạng chung một gốc `['crud', apiPath]` để
+ * `invalidate` theo gốc quét sạch cả danh sách lẫn chi tiết của cùng apiPath —
+ * đừng viết mảng khóa thẳng tại chỗ, lệch một phần tử là invalidate trượt.
+ */
+export function getCrudRootKey(apiPath: string) {
+  return ['crud', apiPath] as const
+}
+
+/** Khóa DANH SÁCH — theo tham số lọc/phân trang. */
 export function getCrudQueryKey(apiPath: string, params?: Record<string, unknown>) {
   return ['crud', apiPath, params ?? {}] as const
+}
+
+/** Khóa CHI TIẾT một bản ghi — chèn `'detail'` để không đụng khóa danh sách. */
+export function getCrudDetailKey(apiPath: string, id: string | number | undefined) {
+  return ['crud', apiPath, 'detail', id] as const
 }
 
 export function useCrudList<T>(apiPath: string, params: ListParams = {}) {
@@ -27,7 +41,7 @@ export function useCrudList<T>(apiPath: string, params: ListParams = {}) {
 
 export function useCrudDetail<T>(apiPath: string, id: string | number | undefined) {
   return useQuery({
-    queryKey: ['crud', apiPath, 'detail', id],
+    queryKey: getCrudDetailKey(apiPath, id),
     queryFn: () => apiGet<T>(`${apiPath}/${id}`),
     enabled: Boolean(id && id !== '0' && id !== 'new'),
   })
@@ -45,7 +59,7 @@ export function useCrudSave<T, TValues extends Record<string, unknown> = Record<
 
     onSuccess: (_data, variables) => {
       toast.success(variables.id ? `Đã cập nhật ${title.toLowerCase()}` : `Đã thêm ${title.toLowerCase()}`)
-      void queryClient.invalidateQueries({ queryKey: ['crud', apiPath] })
+      void queryClient.invalidateQueries({ queryKey: getCrudRootKey(apiPath) })
     },
   })
 }
@@ -57,7 +71,7 @@ export function useCrudDelete(apiPath: string, title: string) {
     mutationFn: (id: string | number) => apiDelete(`${apiPath}/${id}`),
     onSuccess: () => {
       toast.success(`Đã xóa ${title.toLowerCase()}`)
-      void queryClient.invalidateQueries({ queryKey: ['crud', apiPath] })
+      void queryClient.invalidateQueries({ queryKey: getCrudRootKey(apiPath) })
     },
   })
 }
@@ -76,8 +90,9 @@ export function useCrudSourceOptions(source?: { url: string; valueKey?: string; 
       let items: Record<string, unknown>[] = []
       if (Array.isArray(res)) {
         items = res
-      } else if (res && typeof res === 'object' && 'items' in res && Array.isArray((res as any).items)) {
-        items = (res as any).items
+      } else if (res && typeof res === 'object' && 'items' in res) {
+        const inner = (res as { items: unknown }).items
+        if (Array.isArray(inner)) items = inner
       }
       return items.map((item) => ({
         value: String(item[valueKey] ?? ''),

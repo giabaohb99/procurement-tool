@@ -1,4 +1,4 @@
-export interface ItemGroup {
+export type ItemGroup = {
   id: number
   code?: string
   name: string

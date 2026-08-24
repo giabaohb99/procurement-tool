@@ -10,6 +10,8 @@ export {
 } from './field-values'
 export {
   getCrudQueryKey,
+  getCrudDetailKey,
+  getCrudRootKey,
   useCrudList,
   useCrudDetail,
   useCrudSave,

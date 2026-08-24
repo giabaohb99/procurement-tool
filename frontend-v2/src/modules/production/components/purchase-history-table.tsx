@@ -21,7 +21,7 @@ interface PurchaseHistoryTableProps {
   supplierCode?: string
 }
 
-function legacyOrigin(extra?: Record<string, any>): string {
+function legacyOrigin(extra?: Record<string, unknown>): string {
   if (!extra) return 'Lần mua trước khi dùng hệ thống — không có đơn mua hàng để mở.'
   const parts = [extra.nguon, extra.sheet, extra.dong_excel ? `dòng ${extra.dong_excel}` : ''].filter(Boolean)
   return parts.length

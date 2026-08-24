@@ -667,14 +667,15 @@ treo lại rồi tải nhầm sang lượt lưu sau.
 
 Rà lại `shared/crud/` (dựng ở CR-098) thấy các chỗ sau; chưa cái nào chặn chạy, nhưng **đợt Đ-04 và
 Đ-05 sẽ nhân bản chúng lên gấp đôi** nên trả sớm rẻ hơn. **Cột *Tình trạng* rà lại 20/08/2026 sau
-CR-106** — bốn dòng đã trả, bốn dòng còn nợ:
+CR-106** — bốn dòng đã trả, bốn dòng còn nợ. **Bốn dòng còn lại nay trả nốt ở B-09 (CR-142,
+24/08/2026)** — §6.5 đã đóng hẳn:
 
 | Chỗ | Vấn đề | Vì sao phải sửa | Tình trạng |
 |---|---|---|---|
-| `crud-detail-page.tsx`, `crud-form-dialog.tsx`, `crud-list-page.tsx`, `use-crud.ts` | `no-explicit-any` — `any` lọt vào chữ ký export `CrudListPage<T extends Record<string, any>>` | `typescript.md`: *"Never let `any` leak into a public/exported signature"*. Dùng `unknown` + thu hẹp, hoặc ràng generic vào kiểu bản ghi thật | **Còn nợ** — nay còn **6 cảnh báo** *(cộng 1 ở `purchase-history-table.tsx`)*, không còn 25 |
-| `use-crud.ts` | Khóa query viết thẳng tại chỗ `['crud', apiPath, …]` | `naming.md`: khóa phải khai ở `shared/constants/query-keys.ts`, không thì `invalidate` trượt âm thầm | **Còn nợ** — danh sách đã có `getCrudQueryKey`, nhưng khóa *chi tiết* và hai chỗ `invalidateQueries` vẫn viết tay |
-| `shared/crud/types.ts` | Một câu `import` nằm **giữa tệp** *(nay ở dòng 48)* | Khó thấy phụ thuộc, và là chỗ dễ đẻ vòng lặp import | **Còn nợ** |
-| `CrudConfig` | `config.exportXlsx` khai ra nhưng **không chỗ nào dùng** | Đọc khai báo tưởng có xuất Excel, thật ra không | **Còn nợ** — riêng NCC thì backend cũng chỉ có `/export/csv`, không có xlsx |
+| `crud-detail-page.tsx`, `crud-form-dialog.tsx`, `crud-list-page.tsx`, `use-crud.ts` | `no-explicit-any` — `any` lọt vào chữ ký export `CrudListPage<T extends Record<string, any>>` | `typescript.md`: *"Never let `any` leak into a public/exported signature"*. Dùng `unknown` + thu hẹp, hoặc ràng generic vào kiểu bản ghi thật | ~~Còn nợ~~ **Đã trả (B-09)** — ràng buộc mới `CrudRecord = Record<string, unknown>`; khối `res.items` narrow bằng `'items' in res`; sáu type thực thể đổi `interface → type` để thỏa. Hết 7 cảnh báo, cả dòng ở `purchase-history-table.tsx` |
+| `use-crud.ts` | Khóa query viết thẳng tại chỗ `['crud', apiPath, …]` | `naming.md`: khóa phải khai ở `shared/constants/query-keys.ts`, không thì `invalidate` trượt âm thầm | ~~Còn nợ~~ **Đã trả (B-09)** — ba helper co-locate `getCrudRootKey` · `getCrudQueryKey` · `getCrudDetailKey`; khóa *chi tiết* và hai `invalidateQueries` đều qua helper |
+| `shared/crud/types.ts` | Một câu `import` nằm **giữa tệp** *(nay ở dòng 48)* | Khó thấy phụ thuộc, và là chỗ dễ đẻ vòng lặp import | ~~Còn nợ~~ **Đã trả (B-09)** — dời lên khối import đầu tệp |
+| `CrudConfig` | `config.exportXlsx` khai ra nhưng **không chỗ nào dùng** | Đọc khai báo tưởng có xuất Excel, thật ra không | ~~Còn nợ~~ **Đã trả (B-09)** — xóa cả trường lẫn chú thích |
 | `crud-form-dialog.tsx` | Ghép class bằng **template string** | `styling.md` **CẤM** — bỏ qua `tailwind-merge` nên class đè nhau im lặng. Đổi sang `cn()` | ~~Còn nợ~~ **Đã trả** |
 | `crud-detail-page.tsx` | Khối form + `renderExtra` + `AuditTimeline` bị **chép nguyên hai lần** cho nhánh có tab và nhánh không tab | Sửa một chỗ quên chỗ kia là hai màn lệch nhau | ~~Còn nợ~~ **Đã trả** — gom thành `infoPanel` dựng một lần |
 | `crud-detail-page.tsx` vs `crud-form-dialog.tsx` | `FormFieldItem`/`SelectField` và `DetailFormFieldItem`/`DetailSelectField` **trùng nhau ~85 dòng** | Cùng một ô nhập mà hai bản, sửa quy tắc hiển thị phải nhớ cả hai | ~~Còn nợ~~ **Đã trả** — gộp về `crud-field.tsx` |
@@ -806,8 +807,9 @@ toàn hệ) để nhóm sau.
 Áp cho **mọi** đợt, không có ngoại lệ:
 
 - `docker compose exec erp npm run check` xanh cả ba cổng — typecheck **0 lỗi**, lint **0 lỗi**,
-  test xanh hết. Cảnh báo lint: mốc cũ là **6**, hiện **13** *(6 `react-refresh` cũ + 7
-  `no-explicit-any` của lớp CRUD, xem §6.5)* — **đừng thêm mới**, và trả về 6 khi dọn xong §6.5.
+  test xanh hết. Cảnh báo lint: sau **B-09 (CR-142)** nhóm 7 `no-explicit-any` của lớp CRUD đã hết
+  sạch (§6.5 đóng); tổng còn **23** đều là cảnh báo cũ NGOÀI lớp CRUD *(`react-refresh` + vài chỗ
+  tích lũy từ CR-132/135…141)* — **đừng thêm mới**, dọn dần khi đụng tới từng tệp.
 - Mỗi đợt có **ít nhất một tệp test đặt cạnh tệp nó kiểm**, tên `it(...)` bằng tiếng Việt, mô tả
   hành vi. Ưu tiên phần dễ sai âm thầm: kiểm tra dữ liệu nhập, dịch bộ lọc, tính tiền.
 - Màn nào có phân quyền thì phải có bài kiểm **thiếu quyền không thấy mục menu** — ẩn nút ở giao

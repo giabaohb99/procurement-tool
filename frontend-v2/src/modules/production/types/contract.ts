@@ -4,7 +4,7 @@
  * Đặt ở phân hệ Sản xuất vì hợp đồng gắn với danh mục ĐỐI TÁC (nhà cung cấp,
  * khách hàng) chứ không thuộc một chứng từ mua hàng nào.
  */
-export interface Contract {
+export type Contract = {
   id: number
   code: string
   /** MÃ `supplier` | `customer` | `other` (B-02). Hiển thị thì dùng `party_type_label`. */

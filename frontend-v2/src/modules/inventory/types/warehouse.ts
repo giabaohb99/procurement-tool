@@ -1,4 +1,4 @@
-export interface Warehouse {
+export type Warehouse = {
   id: number
   code: string
   name: string

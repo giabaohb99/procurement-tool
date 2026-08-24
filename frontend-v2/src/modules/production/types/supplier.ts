@@ -1,5 +1,5 @@
 /** Nhà cung cấp — khớp `SupplierOut` của backend (`modules/supplier/schema.py`). */
-export interface Supplier {
+export type Supplier = {
   id: number
   /** Tên viết tắt, duy nhất toàn hệ. */
   code: string

@@ -12,7 +12,7 @@ import {
 } from '@/shared/ui/dialog'
 import { CrudField } from './crud-field'
 import { buildFormDefaults, toApiPayload } from './field-values'
-import type { CrudConfig } from './types'
+import type { CrudConfig, CrudRecord } from './types'
 import { useCrudSave } from './use-crud'
 
 interface CrudFormDialogProps<T> {
@@ -22,7 +22,7 @@ interface CrudFormDialogProps<T> {
   item?: T | null
 }
 
-export function CrudFormDialog<T extends Record<string, any>>({
+export function CrudFormDialog<T extends CrudRecord>({
   open,
   onOpenChange,
   config,
@@ -51,7 +51,7 @@ export function CrudFormDialog<T extends Record<string, any>>({
 
   const onSubmit = async (values: Record<string, unknown>) => {
     const idKey = (config.idKey as string) || 'id'
-    const id = item ? item[idKey] : undefined
+    const id = item ? (item[idKey] as string | number) : undefined
 
     await saveMutation.mutateAsync({ id, values: toApiPayload(config.formFields, values) })
     onOpenChange(false)

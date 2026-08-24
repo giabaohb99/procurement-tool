@@ -3,6 +3,14 @@ import type { ReactNode } from 'react'
 import type { PermissionEntity } from '@/core/authorization/permission-types'
 import type { FilterFieldDefinition } from '@/shared/conditional-filter'
 import type { DataTableColumn } from '@/shared/data-table'
+import type { IdentityChip } from '@/shared/ui/record-identity-card'
+
+/**
+ * Ràng buộc chung cho bản ghi mà lớp CRUD thao tác: khóa chuỗi, giá trị CHƯA
+ * biết kiểu. Cố ý dùng `unknown` chứ không `any` — `typescript.md` cấm để `any`
+ * lọt vào chữ ký export; truy cập vào phải tự thu hẹp (String/Number/ép kiểu).
+ */
+export type CrudRecord = Record<string, unknown>
 
 export interface CrudOption {
   value: string | number | boolean
@@ -44,8 +52,6 @@ export interface CrudFormField {
    */
   defaultValue?: unknown
 }
-
-import type { IdentityChip } from '@/shared/ui/record-identity-card'
 
 export interface CrudTab<T> {
   key: string
@@ -89,8 +95,6 @@ export interface CrudConfig<T> {
   }
   /** Cấu hình các trường trong Form thêm / sửa. */
   formFields: CrudFormField[]
-  /** Cho phép xuất file Excel qua GET {apiPath}/export/xlsx. */
-  exportXlsx?: boolean
   /** Đường dẫn trang danh sách (vd '/inventory/warehouses'). */
   listRoute?: string
   /** Đường dẫn tới trang chi tiết (vd (id) => `/inventory/warehouses/${id}`). */

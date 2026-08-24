@@ -198,9 +198,11 @@ Docker; code bind-mount nên HMR chạy. Gọi API bằng đường **tương đ
   Đây là bản mô phỏng giao diện; kiểu dữ liệu của nó **chưa khớp** thiết kế ở `ke-hoach/erp/van-thu/04-bang-du-lieu.md`.
 - **Kiểm tra trước khi giao: `docker compose exec erp npm run check`** — gộp ba cổng:
   - `typecheck` (`tsc --noEmit`) phải **0 lỗi** (khác `frontend/`, bên đó baseline là đúng 4 lỗi cũ);
-  - `lint` (**ESLint 10** flat config, `eslint.config.js`) phải **0 lỗi**. Cảnh báo hiện còn **13**
-    (6 `react-refresh/only-export-components` + 7 `no-explicit-any` của lớp CRUD, xem
-    `doc/erp/13-...md` §6.5) — đừng thêm mới. `typescript` ghim ở **5.9.3**,
+  - `lint` (**ESLint 10** flat config, `eslint.config.js`) phải **0 lỗi**. Cảnh báo hiện còn **23**
+    (đều NGOÀI lớp CRUD — `react-refresh/only-export-components` + vài chỗ tích lũy từ các CR văn
+    thư/Trang chủ). Nhóm 7 `no-explicit-any` của lớp CRUD **đã hết** sau B-09/CR-142
+    (`shared/crud/` ràng `CrudRecord`, §6.5 của `doc/erp/13-...md` đóng) — đừng thêm mới.
+    `typescript` ghim ở **5.9.3**,
     KHÔNG nâng lên 7 vì `typescript-eslint@8` chưa chạy được trên TS 7 (xem D-027);
   - `test` (**Vitest 4** + jsdom + Testing Library, cấu hình `vitest.config.ts`) phải xanh hết.
 - **Test đặt cạnh tệp nó kiểm** (`format-money.ts` → `format-money.test.ts`); luật đầy đủ ở

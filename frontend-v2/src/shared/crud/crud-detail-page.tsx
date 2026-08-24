@@ -16,14 +16,14 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { CrudField } from './crud-field'
 import { buildFormDefaults, toApiPayload } from './field-values'
-import type { CrudConfig } from './types'
+import type { CrudConfig, CrudRecord } from './types'
 import { useCrudDelete, useCrudDetail, useCrudSave } from './use-crud'
 
 interface CrudDetailPageProps<T> {
   config: CrudConfig<T>
 }
 
-export function CrudDetailPage<T extends Record<string, any>>({
+export function CrudDetailPage<T extends CrudRecord>({
   config,
 }: CrudDetailPageProps<T>) {
   const { id } = useParams()
@@ -84,13 +84,13 @@ export function CrudDetailPage<T extends Record<string, any>>({
 
   const onSubmit = async (values: Record<string, unknown>) => {
     await saveMutation.mutateAsync({
-      id: item[idKey],
+      id: item[idKey] as string | number,
       values: toApiPayload(config.formFields, values),
     })
   }
 
   const handleDelete = async () => {
-    await deleteMutation.mutateAsync(item[idKey])
+    await deleteMutation.mutateAsync(item[idKey] as string | number)
     navigate(listUrl)
   }
 

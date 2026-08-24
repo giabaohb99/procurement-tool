@@ -16,14 +16,14 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { CrudFormDialog } from './crud-form-dialog'
-import type { CrudConfig } from './types'
+import type { CrudConfig, CrudRecord } from './types'
 import { useCrudList } from './use-crud'
 
 interface CrudListPageProps<T> {
   config: CrudConfig<T>
 }
 
-export function CrudListPage<T extends Record<string, any>>({ config }: CrudListPageProps<T>) {
+export function CrudListPage<T extends CrudRecord>({ config }: CrudListPageProps<T>) {
   /**
    * Bấm "Áp dụng" ở bộ lọc nâng cao là VIẾT LẠI toàn bộ query string, chỉ chừa lại
    * `searchParamName` + `preserveParams` (xem `use-filter-url-sync.ts`). Khai thiếu tên nào
@@ -53,7 +53,7 @@ export function CrudListPage<T extends Record<string, any>>({ config }: CrudList
   return <CrudListContent config={config} />
 }
 
-function CrudListContent<T extends Record<string, any>>({ config }: CrudListPageProps<T>) {
+function CrudListContent<T extends CrudRecord>({ config }: CrudListPageProps<T>) {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const idKey = (config.idKey as string) || 'id'
@@ -92,7 +92,7 @@ function CrudListContent<T extends Record<string, any>>({ config }: CrudListPage
 
   const handleRowClick = (row: T) => {
     if (config.detailRoute) {
-      navigate(config.detailRoute(row[idKey]))
+      navigate(config.detailRoute(row[idKey] as string | number))
     }
   }
 
