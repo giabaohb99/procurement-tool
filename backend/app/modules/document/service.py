@@ -8,6 +8,7 @@ mò khắp nơi.
 
 Phần dựng bản ghi trả về nằm ở `serializer.py`.
 """
+import logging
 from datetime import date
 
 from fastapi import HTTPException
@@ -355,6 +356,10 @@ def approve(db: Session, doc: Document, actor: int,
     previous = db.get(DocumentVersion, version.prev_version_id) if version.prev_version_id else None
     effective = version.effective_from or doc.effective_date or date.today()
 
+    #  Văn bản bị chính lượt ban hành này BÃI BỎ (quan hệ *bãi bỏ*). Khai ngoài
+    #  nhánh `if` để phần gửi thông báo sau commit lúc nào cũng có biến để đọc.
+    bi_bai_bo: list[Document] = []
+
     if effective <= date.today():
         switch_current(db, doc, version, previous)
         #  J10 — ba tác động tự động: văn bản này *thay thế* cái nào thì cái đó
@@ -365,7 +370,9 @@ def approve(db: Session, doc: Document, actor: int,
         #  ⚠️ Chỉ chạy khi văn bản mới THẬT SỰ có hiệu lực. Ban hành hôm nay mà
         #  áp dụng từ tháng sau thì văn bản cũ còn hiệu lực nguyên tháng đó —
         #  đổi trạng thái sớm là khai tử một văn bản đang còn giá trị.
-        apply_supersede(db, doc, actor)
+        #  Giữ lại danh sách văn bản bị BÃI BỎ để báo cho pháp nhân con SAU
+        #  commit — xem `bao_bai_bo_theo_quan_he`.
+        bi_bai_bo.extend(apply_supersede(db, doc, actor))
         #  E07 — cha lên phiên bản mới thì MỌI văn bản con bị xử lý theo cột
         #  `on_parent_new_version` của quy tắc quan hệ. Bản trích là trường hợp
         #  đặc biệt: cột đó bị khóa cứng ở mức "đánh dấu cần rà lại" (E11 a).
@@ -407,6 +414,10 @@ def approve(db: Session, doc: Document, actor: int,
         for clone in clones:
             notify_clone_created(db, doc, clone)
         db.commit()
+
+    #  Văn bản CŨ vừa bị bãi bỏ bởi chính văn bản này: pháp nhân con giữ bản
+    #  riêng của nó phải được báo, y như khi bấm nút «Bãi bỏ».
+    bao_bai_bo_theo_quan_he(db, bi_bai_bo, doc, actor)
 
     #  Thành viên thuộc phạm vi nhận cả chuông lẫn email có link chỉ đọc. Làm
     #  sau transaction ban hành và nuốt lỗi: SMTP/Redis hỏng không được biến
@@ -509,6 +520,11 @@ def revoke(db: Session, doc: Document, reason: str, actor: int) -> Document:
     LÝ DO ghi vào nhật ký thao tác (`audit`) ở tầng controller, không thêm cột
     riêng: sổ nhật ký đã hiện ngay trên trang chi tiết, mà thêm cột là phải
     ALTER một bảng đang chạy.
+
+    ⚠️ **Bãi bỏ CŨNG là một thay đổi về quyền xem** (24/08/2026): từ đây văn bản
+    chỉ còn người tạo · người chịu trách nhiệm · người bãi bỏ · người giữ sổ mở
+    được — xem `revoke_access.py`. Câu "tra sổ vẫn ra" ở trên vẫn đúng, nhưng chỉ
+    còn đúng với người giữ sổ, không còn đúng với cả phòng.
     """
     if doc.status == STATUS_REVOKED:
         raise HTTPException(400, "Văn bản đã bãi bỏ rồi")
@@ -531,6 +547,18 @@ def revoke(db: Session, doc: Document, reason: str, actor: int) -> Document:
     doc.updated_by = actor
     db.commit()
     db.refresh(doc)
+
+    #  BÁO CHO PHÁP NHÂN CON đang giữ bản riêng — chuông + thư. Chạy SAU commit
+    #  và tự nuốt lỗi, cùng lý lẽ với thư ban hành: văn bản đã bãi bỏ rồi, không
+    #  được để SMTP hay broker kéo đổ nó.
+    try:
+        from .revoke_notification import notify_clones_revoked
+
+        notify_clones_revoked(db, doc, reason, actor)
+    except Exception:  # noqa: BLE001
+        logging.getLogger(__name__).exception(
+            "Không gửi được thông báo bãi bỏ văn bản #%s", doc.id)
+
     return doc
 
 
@@ -565,6 +593,9 @@ def activate_due_versions(db: Session, document_id: int | None = None) -> int:
         q = q.filter(Document.id == document_id)
 
     changed = 0
+    #  Văn bản bị bãi bỏ theo quan hệ trong cả lượt quét này — gom lại, báo một
+    #  lần sau commit (xem `bao_bai_bo_theo_quan_he`).
+    bi_bai_bo: list[tuple[Document, Document]] = []
     for doc, version in q.all():
         #  Văn bản đã trỏ đúng bản này rồi thì chỉ còn thiếu việc đổi trạng thái —
         #  trường hợp bản ĐẦU TIÊN duyệt trước ngày hiệu lực (`current_version_id`
@@ -572,7 +603,7 @@ def activate_due_versions(db: Session, document_id: int | None = None) -> int:
         if doc.current_version_id == version.id:
             if doc.status == STATUS_APPROVED:
                 switch_current(db, doc, version, None)
-                _apply_effective_side_effects(db, doc)
+                bi_bai_bo += [(cu, doc) for cu in _apply_effective_side_effects(db, doc)]
                 changed += 1
             continue
         current = db.get(DocumentVersion, doc.current_version_id) if doc.current_version_id else None
@@ -581,15 +612,49 @@ def activate_due_versions(db: Session, document_id: int | None = None) -> int:
         if current and (current.major, current.minor) > (version.major, version.minor):
             continue
         switch_current(db, doc, version, current)
-        _apply_effective_side_effects(db, doc)
+        bi_bai_bo += [(cu, doc) for cu in _apply_effective_side_effects(db, doc)]
         changed += 1
 
     if changed:
         db.commit()
+
+    #  Actor 0 = hệ thống: tới ngày hiệu lực thì chính hệ đẩy văn bản cũ sang
+    #  bãi bỏ, không phải ai bấm.
+    for cu, moi in bi_bai_bo:
+        bao_bai_bo_theo_quan_he(db, [cu], moi, 0)
+
     return changed
 
 
-def _apply_effective_side_effects(db: Session, doc: Document):
+def bao_bai_bo_theo_quan_he(db: Session, bi_bai_bo: list[Document],
+                            boi_van_ban: Document, actor: int) -> None:
+    """Báo cho pháp nhân con của những văn bản vừa bị bãi bỏ BỞI MỘT VĂN BẢN KHÁC.
+
+    Có HAI đường đưa một văn bản sang trạng thái bãi bỏ: bấm nút «Bãi bỏ»
+    (`revoke`) và ban hành một văn bản mang quan hệ *bãi bỏ* (`apply_supersede`).
+    Đường thứ hai trước đây **không báo cho ai** — cùng một chuyện với người nhận
+    mà chỉ vì người ban hành thao tác kiểu khác.
+
+    ⚠️ Gọi **sau commit**: hàm gửi thư tự commit để `EmailLog` tồn tại trước khi
+    tác vụ nền đọc tới. Nuốt lỗi vì văn bản mới đã ban hành xong rồi.
+    """
+    if not bi_bai_bo:
+        return
+
+    ly_do = (
+        f"Bị bãi bỏ bởi {boi_van_ban.doc_code or boi_van_ban.issue_number or boi_van_ban.title}"
+    )
+    for cu in bi_bai_bo:
+        try:
+            from .revoke_notification import notify_clones_revoked
+
+            notify_clones_revoked(db, cu, ly_do, actor)
+        except Exception:  # noqa: BLE001 — kênh thông báo là best-effort
+            logging.getLogger(__name__).exception(
+                "Không gửi được thông báo bãi bỏ (theo quan hệ) cho văn bản #%s", cu.id)
+
+
+def _apply_effective_side_effects(db: Session, doc: Document) -> list[Document]:
     """Việc phải làm khi một văn bản THẬT SỰ có hiệu lực, dù tới đường nào.
 
     `approve()` chạy phần này khi ban hành mà hiệu lực ngay. Văn bản hẹn hiệu lực
@@ -605,7 +670,7 @@ def _apply_effective_side_effects(db: Session, doc: Document):
     from .supersede_service import apply_supersede
 
     #  Actor 0 = hệ thống. Đây đúng là hệ thống làm, không phải người nào bấm.
-    apply_supersede(db, doc, 0)
+    bi_bai_bo = apply_supersede(db, doc, 0)
     apply_new_version(
         db, doc,
         f"Văn bản cha đã có hiệu lực từ {date.today():%d/%m/%Y}. "
@@ -613,6 +678,10 @@ def _apply_effective_side_effects(db: Session, doc: Document):
     )
     if mark_clones_for_review(db, doc):
         notify_clones_stale(db, doc, clones_of(db, doc.id))
+
+    #  Chưa gửi được thông báo bãi bỏ ở đây — `activate_due_versions` mới là chỗ
+    #  commit. Đẩy danh sách lên cho nó.
+    return bi_bai_bo
 
 
 # ── Gợi ý văn bản đã có (B05) ────────────────────────────────────────────────

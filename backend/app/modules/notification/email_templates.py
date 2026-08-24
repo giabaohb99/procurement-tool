@@ -218,6 +218,56 @@ DOCUMENT_ISSUED_TEMPLATE = """
 </html>
 """
 
+#  BÃI BỎ — gửi cho pháp nhân con đang giữ bản riêng (xem
+#  `document/revoke_notification.py`). Dải đầu thư màu ĐỎ chứ không xanh như thư
+#  ban hành: hai tin trái ngược nhau mà nhìn giống hệt thì người nhận lướt qua.
+DOCUMENT_REVOKED_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ subject }}</title>
+</head>
+<body style="margin:0; padding:0; background:#f8fafc; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#172554;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px; background:#f8fafc;">
+    <tr><td align="center">
+      <table role="presentation" width="650" cellpadding="0" cellspacing="0" style="width:650px; max-width:100%; overflow:hidden; background:#ffffff; border:1px solid #dbe4f0; border-radius:10px;">
+        <tr>
+          <td style="padding:20px 32px; background:#dc2626; border-bottom:3px solid #7f1d1d; color:#ffffff;">
+            <strong style="font-size:18px; letter-spacing:.5px;">DEGO HOLDING</strong>
+            <span style="float:right; font-size:13px; color:#fee2e2;">HỆ THỐNG VĂN BẢN</span>
+          </td>
+        </tr>
+        <tr><td style="padding:36px 32px;">
+          <p style="margin:0 0 22px; font-size:14px; line-height:1.65; color:#475569;">
+            Văn bản gốc mà pháp nhân của Anh/Chị đang căn cứ theo <strong>đã bị bãi bỏ</strong>.
+            Bản riêng của pháp nhân cần được rà lại xem còn dùng được không.
+          </p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:26px; background:#fef2f2; border-radius:8px; font-size:14px;">
+            <tr><td width="34%" style="padding:18px 10px 8px 22px; color:#64748b;">Văn bản gốc</td><td style="padding:18px 22px 8px 10px; font-weight:700; color:#b91c1c;">{{ doc_code }}</td></tr>
+            <tr><td style="padding:8px 10px 8px 22px; color:#64748b;">Trích yếu</td><td style="padding:8px 22px 8px 10px; font-weight:700;">{{ document_title }}</td></tr>
+            <tr><td style="padding:8px 10px 8px 22px; color:#64748b;">Bản riêng của bạn</td><td style="padding:8px 22px 8px 10px;">{{ clone_title }}</td></tr>
+            <tr><td style="padding:8px 10px 18px 22px; color:#64748b;">Lý do bãi bỏ</td><td style="padding:8px 22px 18px 10px;">{{ reason }}</td></tr>
+          </table>
+          <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 24px;">
+            <tr><td style="border-radius:6px; background:#dc2626;">
+              <a href="{{ link }}" target="_blank" style="display:inline-block; padding:13px 28px; color:#ffffff; font-size:14px; font-weight:700; text-decoration:none;">MỞ BẢN RIÊNG ĐỂ RÀ LẠI</a>
+            </td></tr>
+          </table>
+          <p style="margin:0; font-size:12px; line-height:1.6; color:#64748b;">
+            Nếu nút trên không hoạt động, sao chép liên kết này vào trình duyệt:<br>
+            <a href="{{ link }}" target="_blank" style="color:#0284c7; word-break:break-all;">{{ link }}</a>
+          </p>
+        </td></tr>
+        <tr><td align="center" style="padding:15px; border-top:1px solid #e2e8f0; background:#f8fafc; font-size:11px; color:#94a3b8;">Email tự động từ Hệ thống Văn bản DEGO Holding. Vui lòng không trả lời email này.</td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+"""
+
 ACCOUNT_CREATION_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="vi">

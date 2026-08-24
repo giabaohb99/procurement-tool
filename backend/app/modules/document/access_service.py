@@ -36,6 +36,7 @@ from app.core.scoping import scope_condition
 from .access_model import (EFFECT_ALLOW, EFFECT_DENY, SUBJECT_COMPANY,
                            SUBJECT_DEPARTMENT, SUBJECT_EMPLOYEE, SUBJECT_ROLE,
                            DocumentAccess)
+from . import revoke_access
 from .model import Document
 
 #  Vai trò trong sổ — khớp `tab_document_book_member.role`.
@@ -169,6 +170,13 @@ def visible_condition(user, profile: dict, action: str = "read"):
         not_denied = ~Document.id.in_(deny)
         direct = not_denied if base is None else and_(base, not_denied)
 
+    #  VĂN BẢN ĐÃ BÃI BỎ chỉ còn người tạo / người chịu trách nhiệm / người bãi
+    #  bỏ / người giữ sổ nhìn thấy (xem `revoke_access.py`). Nhân với điều kiện
+    #  chứ không thay thế: bãi bỏ **thu hẹp** tầm nhìn, không mở thêm cho ai.
+    han_che = revoke_access.dieu_kien_loc(user, profile)
+    if han_che is not None:
+        direct = han_che if direct is None else and_(direct, han_che)
+
     #  `None` = đã thấy tất cả, không cần cộng nguồn quyền nào. Các hành động
     #  sửa / xóa tuyệt đối không được kéo theo từ bản clone sang bản gốc.
     return direct
@@ -235,6 +243,12 @@ def can(db: Session, doc: Document, user, profile: dict, action: str = "read") -
     đây thay vì vá từng nguồn quyền.
     """
     if action != "read" and not can(db, doc, user, profile, "read"):
+        return False
+
+    #  ĐÃ BÃI BỎ thì chặn TRƯỚC mọi khe cấp quyền bên dưới — người duyệt cũ,
+    #  dòng chia đích danh, phạm vi áp dụng, thành viên sổ, bản clone: khe nào
+    #  cũng phải đóng. Đặt sau chúng thì mỗi khe là một đường vòng.
+    if not revoke_access.con_xem_duoc(doc, user, profile):
         return False
 
     #  ĐỌC ĐƯỢC THỨ MÌNH PHẢI KÝ. Người duyệt trong luồng thường không có vai

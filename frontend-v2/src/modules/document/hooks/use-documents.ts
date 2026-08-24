@@ -34,17 +34,26 @@ export function useDocuments(params: DocumentListParams = {}) {
  */
 const NHIP_DANG_DUYET_MS = 20_000
 
+/**
+ * Nhịp hỏi lại khi văn bản chỉ đang MỞ ĐỌC.
+ *
+ * Thưa hơn hẳn nhịp đang duyệt vì việc cần bắt ở đây hiếm hơn nhiều: người khác
+ * **bãi bỏ** văn bản trong lúc mình đang đọc. Bãi bỏ nay thu hồi luôn quyền xem
+ * (`revoke_access.py` ở backend) nên nhịp này chính là thứ khiến người đọc bị đá
+ * ra thay vì ngồi lại với một trang đã chết — trước đây `false`, tức là **không
+ * bao giờ** biết.
+ */
+const NHIP_DOC_MS = 60_000
+
 export function useDocument(id?: number, options: { dangDuyet?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.document.record(id ?? 0),
     queryFn: () => documentApi.getById(id as number),
     enabled: typeof id === 'number' && id > 0,
-    //  Chỉ poll lúc phiếu đang chạy. Văn bản đã ban hành thì không ai đổi người
-    //  duyệt được nữa, hỏi lại đều đặn chỉ tốn đường truyền.
-    refetchInterval: options.dangDuyet ? NHIP_DANG_DUYET_MS : false,
+    refetchInterval: options.dangDuyet ? NHIP_DANG_DUYET_MS : NHIP_DOC_MS,
     //  Quay lại tab là hỏi ngay, không đợi hết nhịp: người dùng chuyển sang màn
     //  khác rồi quay về là lúc hay gặp nhất.
-    refetchOnWindowFocus: options.dangDuyet,
+    refetchOnWindowFocus: true,
   })
 }
 

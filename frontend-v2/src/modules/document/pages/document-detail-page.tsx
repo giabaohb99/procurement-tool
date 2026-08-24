@@ -60,6 +60,7 @@ import { DocumentExcerptDialog } from '../components/document-excerpt-dialog'
 import { DocumentImportButton } from '../components/document-import-button'
 import { DocumentIssueDialog } from '../components/document-issue-dialog'
 import { DocumentNeedsReviewBanner } from '../components/document-needs-review-banner'
+import { DocumentReviewDialog } from '../components/document-review-dialog'
 import { DocumentPageFrameDialog } from '../components/document-page-frame-dialog'
 import { DocumentSubmittedLockNotice } from '../components/document-submitted-lock-notice'
 import { useCreateExcerpt } from '../hooks/use-document-links'
@@ -131,7 +132,10 @@ export function DocumentDetailPage() {
   const [pickedVersionId, setPickedVersionId] = useState<number | null>(null)
   //  Hộp hỏi lý do đang mở cho việc gì (`null` = đang đóng). Hai việc dùng
   //  chung một hộp vì chỉ khác chữ.
-  const [reasonFor, setReasonFor] = useState<'revoke' | 'reject' | 'reviewed' | null>(null)
+  const [reasonFor, setReasonFor] = useState<'revoke' | 'reject' | null>(null)
+  //  Rà lại KHÔNG dùng chung hộp hỏi lý do: nó còn phải hỏi kết luận rà ra là
+  //  giữ nguyên hay phải sửa, và ở vế "phải sửa" thì mở luôn phiên bản mới.
+  const [reviewOpen, setReviewOpen] = useState(false)
   const [numberDialogOpen, setNumberDialogOpen] = useState(false)
   const autoVersion =
     versions.find((item) => !item.is_locked) ??
@@ -171,10 +175,13 @@ export function DocumentDetailPage() {
   //  nút «Duyệt» sáng trưng, bấm vào chỉ nhận lỗi.
   useEffect(() => {
     if (!mucKhongDocDuoc) return
+    //  Hai nguyên nhân, nói cả hai: văn bản vừa bị BÃI BỎ (bãi bỏ thu hồi luôn
+    //  quyền xem — `revoke_access.py`), hoặc việc duyệt đã chuyển người. Câu cũ
+    //  chỉ nói vế thứ hai nên người bị đá ra vì bãi bỏ đọc xong càng khó hiểu.
     toast.error(
-      'Bạn không còn quyền xem văn bản này — việc duyệt có thể đã chuyển sang người khác.',
+      'Bạn không còn quyền xem văn bản này — văn bản có thể vừa bị bãi bỏ, hoặc việc duyệt đã chuyển sang người khác.',
     )
-    navigate(appRoutes.document.documents, { replace: true })
+    navigate(appRoutes.document.documentsTab('outgoing'), { replace: true })
   }, [mucKhongDocDuoc, navigate])
 
   const { can } = usePermission()
@@ -292,7 +299,7 @@ export function DocumentDetailPage() {
         }
         formId={FORM_ID}
         isCreating={false}
-        backTo={appRoutes.document.documents}
+        backTo={appRoutes.document.documentsTab('outgoing')}
         isMissing={!isLoading && !record}
         missingTitle="Không tìm thấy văn bản"
         audit={{ entity: 'document', id: documentId }}
@@ -494,7 +501,7 @@ export function DocumentDetailPage() {
           record && canDelete && isRemovable
             ? () =>
                 remove.mutate(record.id, {
-                  onSuccess: () => navigate(appRoutes.document.documents),
+                  onSuccess: () => navigate(appRoutes.document.documentsTab('outgoing')),
                 })
             : undefined
         }
@@ -519,7 +526,7 @@ export function DocumentDetailPage() {
               sourceDocumentId={record.source_document_id}
               canWrite={canWrite}
               pending={workflow.confirmReviewed.isPending}
-              onConfirm={() => setReasonFor('reviewed')}
+              onConfirm={() => setReviewOpen(true)}
             />
           )}
 
@@ -575,6 +582,7 @@ export function DocumentDetailPage() {
             <DocumentAttachmentList
               versionId={versionId}
               readOnly={!canWrite || isLocked || khoaVietVi}
+              documentCode={record?.display_code}
             />
             {/*  Phạm vi áp dụng (F01–F04) khác QUYỀN TRUY CẬP: phạm vi trả lời
                  "văn bản này áp cho ai phải làm theo", quyền trả lời "ai được
@@ -676,52 +684,37 @@ export function DocumentDetailPage() {
         <ReasonConfirmDialog
           open={reasonFor !== null}
           onOpenChange={(open) => !open && setReasonFor(null)}
-          title={
-            reasonFor === 'revoke'
-              ? 'Bãi bỏ văn bản?'
-              : reasonFor === 'reviewed'
-                ? 'Xác nhận đã rà soát xong?'
-                : 'Trả lại bản nháp?'
-          }
+          title={reasonFor === 'revoke' ? 'Bãi bỏ văn bản?' : 'Trả lại bản nháp?'}
           description={
             reasonFor === 'revoke'
               ? `${record?.display_code || 'Văn bản'} chuyển sang trạng thái "Bãi bỏ" và hết hiệu lực kể từ hôm nay. Số hiệu vẫn giữ nguyên trong sổ, không xóa được.`
-              : reasonFor === 'reviewed'
-                ? 'Gỡ dấu "cần rà lại" khỏi văn bản. Kết luận bên dưới vào nhật ký thao tác — người sau đọc lại phải biết bạn đã đối chiếu ra điều gì.'
-                : 'Người soạn nhận lại bản nháp kèm lý do bên dưới để sửa tiếp.'
+              : 'Người soạn nhận lại bản nháp kèm lý do bên dưới để sửa tiếp.'
           }
           placeholder={
             reasonFor === 'revoke'
               ? 'Ví dụ: đã thay bằng công văn 05/2026/CV-DEGO'
-              : reasonFor === 'reviewed'
-                ? 'Ví dụ: đã đối chiếu bản 2.0, phần của pháp nhân mình vẫn đúng, không phải sửa'
-                : 'Ví dụ: thiếu căn cứ ở mục 2'
+              : 'Ví dụ: thiếu căn cứ ở mục 2'
           }
-          confirmText={
-            reasonFor === 'revoke'
-              ? 'Bãi bỏ'
-              : reasonFor === 'reviewed'
-                ? 'Xác nhận đã rà xong'
-                : 'Trả lại'
-          }
+          confirmText={reasonFor === 'revoke' ? 'Bãi bỏ' : 'Trả lại'}
           destructive={reasonFor === 'revoke'}
-          pending={
-            reasonFor === 'revoke'
-              ? workflow.revoke.isPending
-              : reasonFor === 'reviewed'
-                ? workflow.confirmReviewed.isPending
-                : workflow.reject.isPending
-          }
+          pending={reasonFor === 'revoke' ? workflow.revoke.isPending : workflow.reject.isPending}
           onConfirm={(reason) => {
-            const action =
-              reasonFor === 'revoke'
-                ? workflow.revoke
-                : reasonFor === 'reviewed'
-                  ? workflow.confirmReviewed
-                  : workflow.reject
+            const action = reasonFor === 'revoke' ? workflow.revoke : workflow.reject
             action.mutate(reason, { onSuccess: () => setReasonFor(null) })
           }}
         />
+
+        {/*  RÀ LẠI theo bản gốc. Hộp thoại tự giữ hai mutation của nó (gỡ dấu +
+             mở phiên bản) để chạy đúng thứ tự và giữ câu lỗi 409 ở lại tại chỗ. */}
+        {record && (
+          <DocumentReviewDialog
+            documentId={documentId}
+            open={reviewOpen}
+            onOpenChange={setReviewOpen}
+            note={record.needs_review_note}
+            sourceDocumentId={record.source_document_id}
+          />
+        )}
         {record && (
           <ManualIssueNumberDialog
             open={numberDialogOpen}
