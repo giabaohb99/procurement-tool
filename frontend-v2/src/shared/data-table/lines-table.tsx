@@ -34,8 +34,14 @@ const BODY_CELL = 'border-r px-2.5 py-1.5 align-middle last:border-r-0 text-[13.
 /**
  * Nền hàng xen kẽ sọc đậm/nhạt rõ nét (zebra striping: odd bg-card, even bg-slate-100).
  * Ô của cột ghim lấy `bg-inherit` từ hàng nên tự động thừa hưởng màu sọc tương ứng.
+ *
+ * ⚠️ Và **chính vì `bg-inherit` mà nền hàng không được có ALPHA**: hàng trong
+ * suốt bao nhiêu thì ô cột ghim trong suốt bấy nhiêu, để lộ nội dung đang trôi
+ * ngang bên dưới. Lỗi thật 24/08/2026 — nền hover cũ là `bg-sky-100/70` nên rê
+ * chuột vào một hàng của bảng đang cuộn ngang là hai dòng chữ chồng lên nhau.
+ * Giữ hệt luật của `data-table.tsx`, hai bảng này phải nói cùng một câu.
  */
-const ROW_BG = 'group odd:bg-card even:bg-slate-100 dark:even:bg-slate-800/60 hover:bg-sky-100/70 dark:hover:bg-slate-800 transition-colors'
+const ROW_BG = 'group odd:bg-card even:bg-slate-100 dark:even:bg-slate-800/60 hover:bg-sky-100 dark:hover:bg-slate-800 transition-colors'
 
 export interface LinesTableProps<T> {
   columns: LinesTableColumn[]
