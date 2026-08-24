@@ -218,3 +218,34 @@ def test_xoa_van_ban_thi_don_luon_phieu_duyet(db, doc):
     con_viec = db.query(ApprovalTask).filter(ApprovalTask.instance_id == phien_id).count()
     con_vet = db.query(ApprovalAction).filter(ApprovalAction.instance_id == phien_id).count()
     assert (con_phien, con_viec, con_vet) == (0, 0, 0), "Xóa văn bản phải dọn sạch phiếu duyệt"
+
+
+def test_xoa_van_ban_thi_don_luon_QUAN_HE(db, doc):
+    """Xóa chứng từ mà để quan hệ nằm lại là đẻ dòng trỏ vào chỗ trống.
+
+    Tìm ra khi soi dữ liệu dev 24/08/2026: hai dòng quan hệ mồ côi có từ 19/08 và
+    21/08. Văn bản còn sống mở tab «Quan hệ» ra thì thấy một dòng *Có kèm theo*
+    trỏ vào `document: null` — không biết nó từng là gì, cũng không bấm đi đâu được.
+    """
+    from app.modules.doc_catalog.link_rule_model import RELATION_REFERENCE
+    from app.modules.document.link_model import DocumentLink
+
+    khac = service.create_document(db, DocumentCreate(
+        doc_type_id=doc.doc_type_id, company_id=doc.company_id,
+        department_id=doc.department_id, owner_employee_id=doc.owner_employee_id,
+        title="Văn bản còn sống", content_html="<p>x</p>"), ACTOR)
+    #  Hai chiều: văn bản sắp xóa vừa là nguồn vừa là đích của một quan hệ.
+    db.add(DocumentLink(source_document_id=doc.id, target_document_id=khac.id,
+                        relation=RELATION_REFERENCE, created_by=ACTOR, updated_by=ACTOR))
+    db.add(DocumentLink(source_document_id=khac.id, target_document_id=doc.id,
+                        relation=RELATION_REFERENCE, created_by=ACTOR, updated_by=ACTOR))
+    db.commit()
+    doc_id = doc.id
+
+    service.delete_document(db, doc)
+
+    con = (db.query(DocumentLink)
+           .filter((DocumentLink.source_document_id == doc_id)
+                   | (DocumentLink.target_document_id == doc_id)).count())
+    assert con == 0, "Xóa văn bản phải dọn quan hệ CẢ HAI CHIỀU"
+

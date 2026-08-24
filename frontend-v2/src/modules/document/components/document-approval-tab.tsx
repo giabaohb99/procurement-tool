@@ -24,6 +24,71 @@ interface DocumentApprovalTabProps {
   documentId: number
 }
 
+/**
+ * NGƯỜI DUYỆT CỦA MỘT CHẶNG — mặc định hiện ĐÚNG MỘT người.
+ *
+ * ⚠️ Bỏ hẳn những lượt giao việc **đã hủy**. Trả phiếu về một bước phía trước
+ * thì bộ máy hủy việc cũ rồi mở việc mới, nên chặng đó tích lại nhiều lượt giao
+ * cho cùng những con người ấy. Bản cũ liệt kê tất — người dùng thấy bốn dòng,
+ * ba dòng «Đã hủy», hai dòng trùng tên nhau, và không đọc ra ai mới là người
+ * thật sự đã ký (ảnh người dùng gửi 24/08/2026). Dấu vết đầy đủ vẫn còn nguyên
+ * ở thẻ «Dấu vết duyệt» ngay bên dưới — đó mới là chỗ để tra từng lượt bấm.
+ *
+ * Xếp người ĐÃ QUYẾT lên trước: câu người đọc cần là *"ai ký chặng này"*, không
+ * phải *"ai được giao"*.
+ */
+function NguoiDuyetChang({ viec }: { viec: ApprovalTask[] }) {
+  const [moRong, setMoRong] = useState(false)
+
+  const conHieuLuc = viec.filter((row) => row.status !== TASK_STATUS.cancelled)
+  const daQuyet = (row: ApprovalTask) =>
+    row.status === TASK_STATUS.approved ||
+    row.status === TASK_STATUS.rejected ||
+    row.status === TASK_STATUS.skippedDuplicate
+  const xepHang = [
+    ...conHieuLuc.filter(daQuyet),
+    ...conHieuLuc.filter((row) => !daQuyet(row)),
+  ]
+  if (xepHang.length === 0) return null
+
+  const hien = moRong ? xepHang : xepHang.slice(0, 1)
+  const conLai = xepHang.length - hien.length
+
+  return (
+    <div className="mt-1.5 text-sm leading-5">
+      <span className="text-xs text-muted-foreground">
+        {xepHang.length > 1 ? 'Người duyệt chặng này:' : 'Người duyệt:'}
+      </span>
+      <ul className="mt-0.5 space-y-1">
+        {hien.map((row) => (
+          <li key={row.id} className="text-muted-foreground">
+            <span className="font-medium text-foreground">{row.assignee_name}</span>
+            {/*  Nhiều người cùng chặng thì mỗi người một trạng thái riêng —
+                 thấy ngay còn thiếu chữ ký nào. */}
+            {xepHang.length > 1 && (
+              <>
+                <span aria-hidden="true"> · </span>
+                {row.status_label}
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+      {(conLai > 0 || moRong) && (
+        <Button
+          type="button"
+          variant="link"
+          size="sm"
+          className="h-auto p-0 text-xs"
+          onClick={() => setMoRong((truoc) => !truoc)}
+        >
+          {moRong ? 'Thu gọn' : `Xem thêm ${conLai} người`}
+        </Button>
+      )}
+    </div>
+  )
+}
+
 /** Bộ mặt của một chặng, gộp từ trạng thái các việc thuộc chặng đó. */
 function trangThaiChang(viec: ApprovalTask[], seq: number, instance: ApprovalInstance) {
   const cua = viec.filter((row) => row.node_seq === seq)
@@ -226,30 +291,7 @@ export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTa
                     {/*  Tên người phải có NHÃN. Đứng trơ một mình dưới tiêu đề
                          chặng thì không đọc ra được đó là người phải ký, người
                          đã ký, hay người soạn. */}
-                    {nguoi.length > 0 && (
-                      <div className="mt-1.5 text-sm leading-5">
-                        <span className="text-xs text-muted-foreground">
-                          {nguoi.length > 1 ? 'Người duyệt chặng này:' : 'Người duyệt:'}
-                        </span>
-                        <ul className="mt-0.5 space-y-1">
-                          {nguoi.map((row) => (
-                            <li key={row.id} className="text-muted-foreground">
-                              <span className="font-medium text-foreground">
-                                {row.assignee_name}
-                              </span>
-                              {/*  Nhiều người cùng chặng thì mỗi người một trạng
-                                   thái riêng — thấy ngay còn thiếu chữ ký nào. */}
-                              {nguoi.length > 1 && (
-                                <>
-                                  <span aria-hidden="true"> · </span>
-                                  {row.status_label}
-                                </>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    <NguoiDuyetChang viec={nguoi} />
                   </div>
                 </li>
               )

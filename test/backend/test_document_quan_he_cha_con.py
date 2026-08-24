@@ -454,3 +454,72 @@ def test_bai_bo_cha_muc_khong_lam_gi_thi_con_khong_bi_dung(db, catalog):
     db.refresh(bieu_mau)
     assert bieu_mau.needs_review is False
     assert bieu_mau.status != STATUS_EXPIRED
+
+
+# ── E08 · quan hệ NGƯỢC CHIỀU không phải quan hệ cha–con ─────────────────────
+def test_thong_bao_bai_bo_KHONG_tu_danh_dau_chinh_minh(db, catalog):
+    """Văn bản đi BÃI BỎ không phải là con của văn bản bị bãi bỏ.
+
+    Lỗi dựng lại được trên dữ liệu thật 24/08/2026 (văn bản #368 «Thông báo bãi
+    bỏ Văn bản nghỉ lễ 02/09» trên dev): ban hành thông báo bãi bỏ → nó bãi bỏ
+    văn bản đích → E08 quét MỌI quan hệ trỏ vào văn bản đích, gặp luôn quan hệ
+    *bãi bỏ* của chính thông báo đó → đánh dấu thông báo «Văn bản cha «…» đã bị
+    bãi bỏ, rà lại đi». Nó vừa bãi bỏ cái đó xong.
+
+    Và vì MỌI thông báo bãi bỏ đều có đúng quan hệ này nên đây là báo động sai
+    CÓ HỆ THỐNG — thứ làm người dùng quen mắt với băng vàng rồi thôi không đọc.
+    """
+    from app.modules.doc_catalog.link_rule_model import RELATION_REVOKE
+    from app.modules.document.model import STATUS_REVOKED
+
+    #  Quan hệ «bãi bỏ» phải có dòng quy tắc thì mới khai được (E03).
+    db.add(DocTypeLinkRule(source_type_id=catalog["QT"].id, relation=RELATION_REVOKE,
+                           target_type_id=catalog["QT"].id, is_required=False))
+    db.commit()
+
+    bi_bai_bo = _ban_hanh(db, _tao(db, catalog, "QT", "Quy trình cũ"))
+    thong_bao = _tao(db, catalog, "QT", "Thông báo bãi bỏ Quy trình cũ")
+    link_service.add_link(db, thong_bao, RELATION_REVOKE, bi_bai_bo.id, "", ACTOR)
+    _ban_hanh(db, thong_bao)
+
+    db.refresh(bi_bai_bo)
+    db.refresh(thong_bao)
+    assert bi_bai_bo.status == STATUS_REVOKED, "Thông báo phải bãi bỏ được văn bản đích"
+    assert thong_bao.needs_review is False, \
+        "Văn bản ĐI bãi bỏ không được tự treo băng «cha đã bị bãi bỏ» lên chính nó"
+    assert thong_bao.needs_review_note == ""
+
+
+def test_van_ban_THAY_THE_cung_khong_bi_danh_dau(db, catalog):
+    """«A thay thế B» — A là bản kế nhiệm, không phải kẻ phụ thuộc vào B."""
+    from app.modules.doc_catalog.link_rule_model import RELATION_REPLACE
+    from app.modules.document.model import STATUS_REPLACED
+
+    db.add(DocTypeLinkRule(source_type_id=catalog["QT"].id, relation=RELATION_REPLACE,
+                           target_type_id=catalog["QT"].id, is_required=False))
+    db.commit()
+
+    ban_cu = _ban_hanh(db, _tao(db, catalog, "QT", "Quy trình bản cũ"))
+    ban_moi = _tao(db, catalog, "QT", "Quy trình bản mới")
+    link_service.add_link(db, ban_moi, RELATION_REPLACE, ban_cu.id, "", ACTOR)
+    _ban_hanh(db, ban_moi)
+
+    db.refresh(ban_cu)
+    db.refresh(ban_moi)
+    assert ban_cu.status == STATUS_REPLACED
+    assert ban_moi.needs_review is False
+
+
+def test_con_THAT_SU_thi_van_bi_danh_dau_nhu_cu(db, catalog):
+    """Chốt chặn đối chứng: lọc bớt hai quan hệ ngược chiều KHÔNG được làm hỏng
+    đường chính — biểu mẫu «thuộc về» quy trình vẫn phải bị đánh dấu khi cha bãi bỏ."""
+    quy_trinh = _ban_hanh(db, _tao(db, catalog, "QT", "Quy trình còn con"))
+    bieu_mau = _tao(db, catalog, "BM", "Biểu mẫu của quy trình")
+    link_service.add_link(db, bieu_mau, RELATION_BELONGS, quy_trinh.id, "", ACTOR)
+    _ban_hanh(db, bieu_mau)
+
+    service.revoke(db, quy_trinh, "Bỏ quy trình", ACTOR)
+
+    db.refresh(bieu_mau)
+    assert bieu_mau.needs_review is True, "Con thật sự vẫn phải được nhắc rà lại"
+    assert "đã bị bãi bỏ" in bieu_mau.needs_review_note

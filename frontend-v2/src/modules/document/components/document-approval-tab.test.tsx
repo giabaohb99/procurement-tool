@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { INSTANCE_STATUS, TASK_STATUS } from '@/modules/approval/types/approval'
@@ -106,4 +107,66 @@ describe('DocumentApprovalTab', () => {
     )
     expect(within(timeline).getByText('Đã duyệt')).toBeVisible()
   })
+
+
+  //  Ảnh người dùng gửi 24/08/2026: chặng 1 hiện BỐN dòng — ba dòng «Đã hủy»,
+  //  hai dòng trùng tên nhau — và không đọc ra ai mới là người thật sự đã ký.
+  //  Việc bị hủy sinh ra khi trả phiếu về một bước phía trước: bộ máy hủy việc
+  //  cũ rồi mở việc mới, nên chặng đó tích lại nhiều lượt giao cho cùng những
+  //  con người ấy.
+  it('bỏ hẳn lượt giao việc ĐÃ HỦY, chỉ hiện người thật sự còn hiệu lực', () => {
+    render(
+      <DocumentApprovalTab
+        documentId={212}
+        instance={phien({
+          tasks: [
+            viec({ id: 1, status: TASK_STATUS.cancelled, status_label: 'Đã hủy',
+                   assignee_name: 'Trưởng bộ phận (Demo)' }),
+            viec({ id: 2, status: TASK_STATUS.cancelled, status_label: 'Đã hủy',
+                   assignee_name: 'Trưởng phòng Thu mua (Demo)' }),
+            viec({ id: 3, status: TASK_STATUS.approved, status_label: 'Đã duyệt',
+                   assignee_name: 'Nhân viên Thu mua (Demo)' }),
+          ],
+        })}
+      />,
+    )
+
+    expect(screen.getByText('Nhân viên Thu mua (Demo)')).toBeVisible()
+    expect(screen.queryByText('Đã hủy')).not.toBeInTheDocument()
+    expect(screen.queryByText('Trưởng bộ phận (Demo)')).not.toBeInTheDocument()
+  })
+
+  it('chỉ hiện MỘT người, còn lại giấu sau nút «Xem thêm»', async () => {
+    const user = userEvent.setup()
+    render(
+      <DocumentApprovalTab
+        documentId={212}
+        instance={phien({
+          tasks: [
+            viec({ id: 1, status: TASK_STATUS.approved, status_label: 'Đã duyệt',
+                   assignee_name: 'Người đã ký' }),
+            viec({ id: 2, assignee_name: 'Người còn chờ' }),
+            viec({ id: 3, assignee_name: 'Người nữa' }),
+          ],
+        })}
+      />,
+    )
+
+    //  Người ĐÃ QUYẾT phải đứng đầu: câu người đọc cần là "ai ký chặng này".
+    expect(screen.getByText('Người đã ký')).toBeVisible()
+    expect(screen.queryByText('Người còn chờ')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Xem thêm 2 người' }))
+    expect(screen.getByText('Người còn chờ')).toBeVisible()
+    expect(screen.getByText('Người nữa')).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: 'Thu gọn' }))
+    expect(screen.queryByText('Người còn chờ')).not.toBeInTheDocument()
+  })
+
+  it('một người thì không bày nút xem thêm', () => {
+    render(<DocumentApprovalTab documentId={212} instance={phien()} />)
+    expect(screen.queryByRole('button', { name: /Xem thêm/ })).not.toBeInTheDocument()
+  })
 })
+

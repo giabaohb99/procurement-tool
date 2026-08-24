@@ -12,6 +12,7 @@ import logging
 from datetime import date
 
 from fastapi import HTTPException
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.modules.attachment.model import FileLink
@@ -270,6 +271,18 @@ def delete_document(db: Session, doc: Document):
     from app.modules.approval import instance_service
 
     instance_service.xoa_theo_chung_tu(db, "document", doc.id)
+
+    #  Và dọn QUAN HỆ — cả hai chiều. Cùng một loại lỗi, tìm ra ngay sau đó khi
+    #  soi dữ liệu dev: hai dòng quan hệ mồ côi có từ 19/08 và 21/08. Văn bản
+    #  còn sống mở tab «Quan hệ» ra thì thấy một dòng *Có kèm theo* trỏ vào chỗ
+    #  trống (`document: null`) — người đọc không biết nó từng là cái gì, mà cũng
+    #  không bấm vào đâu được.
+    from .link_model import DocumentLink
+
+    db.query(DocumentLink).filter(
+        or_(DocumentLink.source_document_id == doc.id,
+            DocumentLink.target_document_id == doc.id)
+    ).delete(synchronize_session=False)
 
     version_ids = [
         row[0] for row in

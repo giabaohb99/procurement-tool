@@ -22,6 +22,8 @@ from app.modules.doc_catalog.link_rule_model import (NEW_VERSION_ASK,
                                                      OBSOLETE_REVIEW,
                                                      RELATION_EXCERPT,
                                                      RELATION_LABELS,
+                                                     RELATION_REPLACE,
+                                                     RELATION_REVOKE,
                                                      DocTypeLinkRule)
 
 from .link_model import DocumentLink
@@ -36,12 +38,34 @@ EXCERPT_FALLBACK = {
 }
 
 
+#  HAI QUAN HỆ NGƯỢC CHIỀU — trỏ vào cha nhưng KHÔNG phải con.
+#
+#  «A thay thế B» và «A bãi bỏ B» nghĩa là A **khai tử** B; A là công cụ, không
+#  phải kẻ phụ thuộc. Mọi quan hệ còn lại (sửa đổi · bổ sung · hướng dẫn · kèm
+#  theo · thuộc về · căn cứ theo · tham chiếu · trích từ) đều mang nghĩa "tôi
+#  dựa vào anh", nên cha chết thì con phải rà lại.
+#
+#  ⚠️ Không loại hai cái này ra thì sinh **báo động tự trỏ vào mình**, dựng lại
+#  được trên dữ liệu thật (văn bản #368 «Thông báo bãi bỏ Văn bản nghỉ lễ 02/09»
+#  ngày 24/08/2026): ban hành thông báo bãi bỏ → nó bãi bỏ văn bản #339 → E08
+#  quét mọi quan hệ trỏ vào #339, gặp luôn quan hệ *bãi bỏ* của chính #368 →
+#  đánh dấu #368 «Văn bản cha «…» đã bị bãi bỏ, rà lại đi». Nó vừa bãi bỏ cái
+#  đó xong. Và vì MỌI thông báo bãi bỏ đều có đúng quan hệ này nên đây là báo
+#  động sai **có hệ thống**, không phải ca hiếm — đúng thứ làm người dùng quen
+#  mắt với băng vàng rồi thôi không đọc nữa (xem CR-141).
+QUAN_HE_NGUOC_CHIEU = (RELATION_REPLACE, RELATION_REVOKE)
+
+
 def _children_links(db: Session, parent_id: int) -> list[DocumentLink]:
-    """Văn bản con = văn bản TRỎ VÀO cha. "Biểu mẫu thuộc về Quy trình" ghi
-    Biểu mẫu là nguồn, nên con nằm ở chiều đi vào."""
+    """Văn bản con = văn bản TRỎ VÀO cha, TRỪ hai quan hệ ngược chiều.
+
+    "Biểu mẫu thuộc về Quy trình" ghi Biểu mẫu là nguồn, nên con nằm ở chiều đi
+    vào — xem `QUAN_HE_NGUOC_CHIEU` cho hai ngoại lệ.
+    """
     return (
         db.query(DocumentLink)
-        .filter(DocumentLink.target_document_id == parent_id)
+        .filter(DocumentLink.target_document_id == parent_id,
+                DocumentLink.relation.notin_(QUAN_HE_NGUOC_CHIEU))
         .order_by(DocumentLink.relation.asc(), DocumentLink.id.asc())
         .all()
     )
