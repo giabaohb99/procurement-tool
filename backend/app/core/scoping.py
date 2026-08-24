@@ -3,10 +3,32 @@
 Mỗi vai trò của user là 1 grant: có quyền hành động + phạm vi riêng
 (cấp bậc own/dept/company/all theo vai trò + chọn cụ thể công ty/phòng ban/nhân sự + loại trừ).
 `apply_scope` = HỢP (OR) điều kiện của mọi grant có quyền `action` trên entity.
+
+**B-07 — thiếu khai là CHẶN, không phải bỏ qua.** Trước đợt này `_role_scope_cond` trả `None`
+cho entity vắng mặt trong `SCOPE_FIELDS`, mà `None` nghĩa là *thấy tất*. Mới khai 12/39 entity
+nên 27 entity còn lại im lặng không lọc gì. Nay `SCOPE_FIELDS` phải khai **đủ 39** — loại nào
+cố ý không lọc thì khai thẳng là `PUBLIC`, kèm lý do — và entity lạ thì trả `false()`.
+`test/backend/test_pham_vi_khai_du_b07.py` chốt con số 39/39, nên thêm entity mới vào
+`core/permissions.ENTITIES` mà quên khai ở đây là **test đỏ**, không phải lỗ hổng lặng lẽ.
 """
+import logging
+
 from sqlalchemy import and_, false, or_, select
 
 from app.core.auth import get_perm_profile  # noqa: F401  (re-export tiện dùng)
+
+log = logging.getLogger("app.scoping")
+
+
+class _Public(dict):
+    """Nhãn 'entity này CỐ Ý không lọc phạm vi' — khác hẳn với 'quên khai'.
+
+    Kế thừa `dict` rỗng để mọi chỗ đang gọi `f.get("company")` chạy nguyên như cũ;
+    phần phân biệt nằm ở `entity in SCOPE_FIELDS` chứ không ở giá trị.
+    """
+
+
+PUBLIC = _Public()
 
 # Entity → tên cột theo từng chiều. Thiếu chiều nào = không lọc theo chiều đó.
 #
@@ -39,6 +61,66 @@ SCOPE_FIELDS = {
     # — hai thứ khác nhau, người tạo hộ vẫn phải thấy phiếu mình vừa nhập.
     "document":         {"company": "company_id", "dept_id": "department_id",
                          "owner": "created_by"},
+
+    # ------------------------------------------------------------------ B-07
+    # Từ đây xuống là 27 entity trước kia KHÔNG có mặt trong bảng này. Vắng mặt
+    # không phải "không cần lọc" — nó là *thấy tất*, vì `_role_scope_cond` trả
+    # `None`. Nay mỗi entity phải nằm ở đúng một trong hai nhóm dưới.
+
+    # --- Nhóm 1: CÓ chiều thật, nay lọc thật ---
+    # Pháp nhân: chiều của chính nó là `id`, không phải `company_id`.
+    "company":          {"company": "id"},
+    # Phòng ban: neo theo pháp nhân chủ quản. CẨN THẬN — `tab_department_company`
+    # cho phép một phòng phục vụ nhiều pháp nhân, nên `company_id` ở đây chỉ là
+    # pháp nhân CHÍNH. Ai cần "thấy phòng của mọi pháp nhân mình phục vụ" thì
+    # dùng phần chọn đích danh (`_dept_include_cond`), đừng nới lỏng dòng này.
+    "department":       {"company": "company_id", "owner": "created_by"},
+    # Tài khoản: `tab_user` KHÔNG có `company_id` — chiều pháp nhân nằm ở nhân sự
+    # gắn kèm. Chỉ khai `self` để `own` nghĩa là "tài khoản của chính tôi";
+    # `dept`/`company` sẽ rơi xuống chặn, đúng ý: người xem hẹp không duyệt danh
+    # sách tài khoản toàn hệ.
+    "user":             {"self": "employee_id"},
+    "approval_flow":    {"company": "company_id", "owner": "created_by"},
+    "goods_receipt":    {"company": "company_id", "owner": "created_by"},
+    "seal_request":     {"company": "company_id", "dept_id": "department_id",
+                         "owner": "created_by"},
+    "vehicle_booking":  {"company": "company_id", "dept_id": "department_id",
+                         "owner": "created_by"},
+
+    # --- Nhóm 2: CỐ Ý công khai (xem `PUBLIC`) ---
+    # 2a. Dữ liệu gốc dùng chung MỌI pháp nhân. Sản phẩm và nhà cung cấp là chỗ
+    # các phân hệ nối vào nhau bằng CHUỖI `product_code` / mã NCC (xem
+    # `mo-hinh-du-lieu-san-pham.md`). Lọc chúng theo pháp nhân là cắt đứt chính
+    # mối nối đó: đơn của công ty A trỏ vào mã sản phẩm do công ty B nhập.
+    # Muốn giấu NCC thì tắt bằng QUYỀN `supplier.read`, không phải bằng phạm vi.
+    "product":          PUBLIC,
+    "supplier":         PUBLIC,
+    # 2b. Danh mục KHÔNG có chiều pháp nhân trong bảng. Đây là khoảng trống của
+    # mô hình dữ liệu chứ không phải của tệp này — ngày nào thêm `company_id`
+    # vào bảng nào thì đổi luôn dòng tương ứng ở đây.
+    "warehouse":        PUBLIC,
+    "unit":             PUBLIC,
+    "item_group":       PUBLIC,
+    "brand":            PUBLIC,
+    "doc_type":         PUBLIC,
+    "security_level":   PUBLIC,
+    "external_party":   PUBLIC,
+    "seal_type":        PUBLIC,
+    "vehicle":          PUBLIC,
+    "driver":           PUBLIC,
+    "help_article":     PUBLIC,
+    "category_assignee": PUBLIC,
+    "role":             PUBLIC,
+    "setting":          PUBLIC,
+    # 2c. Quyền HÀNH ĐỘNG, không có bảng nào để lọc. `report`/`backup` là ô tick
+    # trong ma trận phân quyền; `payment`/`import` thì đến model cũng không có
+    # (không một chỗ nào gọi `require("payment", ...)`) — khai ra đây để bài
+    # kiểm 39/39 khỏi phải chừa ngoại lệ, và để ai xóa chúng khỏi `ENTITIES`
+    # thì thấy luôn là xóa được.
+    "report":           PUBLIC,
+    "backup":           PUBLIC,
+    "import":           PUBLIC,
+    "payment":          PUBLIC,
 }
 
 
@@ -78,12 +160,33 @@ def _emp_match(model, col_id: str, col_name: str, emp_id: int, emp_name: str):
     return or_(*cs) if len(cs) > 1 else cs[0]
 
 
+def _chan(entity, scope, user, ly_do):
+    """Phạm vi hẹp nhưng không dựng nổi điều kiện → CHẶN, và nói ra vì sao — B-07.
+
+    Trước đợt này mọi nhánh kiểu này đều lặng lẽ `return None`, mà `None` là *thấy tất*:
+    phạm vi đặt hẹp bao nhiêu cũng vô nghĩa và không có một dòng log nào để biết. Dòng
+    WARNING dưới đây chính là thứ để đi gom danh sách người bị ảnh hưởng — đừng bỏ nó khi
+    dọn log, và khi thấy nó nổi lên thì việc phải làm gần như luôn là **sửa dữ liệu**
+    (gắn pháp nhân/phòng ban cho nhân sự), không phải nới lại điều kiện ở đây.
+    """
+    log.warning("scope chan: entity=%s scope=%s user=%s — %s",
+                entity, scope, getattr(user, "id", None), ly_do)
+    return false()
+
+
 def _role_scope_cond(model, entity, scope, user, profile):
     """Điều kiện theo cấp bậc vai trò (own/dept/company/all). None = 'all' (không giới hạn)."""
     if scope == "all":
         return None
-    f = SCOPE_FIELDS.get(entity)
-    if not f:
+    # B-07: KHÔNG khai = CHẶN. Trước đây nhánh này trả `None` nên 27 entity vắng mặt trong
+    # `SCOPE_FIELDS` được xem thoải mái bất kể phạm vi vai trò. Entity cố ý không lọc thì
+    # phải khai thẳng là `PUBLIC` ở trên; rơi vào đây nghĩa là ai đó vừa thêm entity mới
+    # vào `core/permissions.ENTITIES` mà quên khai (bài kiểm 39/39 sẽ đỏ).
+    if entity not in SCOPE_FIELDS:
+        log.error("scope thieu khai: entity=%s chua co trong SCOPE_FIELDS — dang chan het", entity)
+        return false()
+    f = SCOPE_FIELDS[entity]
+    if isinstance(f, _Public):
         return None
     company_id = profile.get("company_id") or 0
     dept_name = profile.get("dept_name") or ""
@@ -160,12 +263,24 @@ def _role_scope_cond(model, entity, scope, user, profile):
             cs.append(dc if dc is not None else false())
         elif f.get("owner"):
             cs.append(getattr(model, f["owner"]) == user.id)
-        return and_(*cs) if cs else None
+        if not cs:
+            return _chan(entity, scope, user, "entity khong co chieu phong ban lan chu so huu")
+        return and_(*cs)
 
     if scope == "company":
-        if f.get("company") and company_id:
-            return getattr(model, f["company"]) == company_id
-    return None
+        if not f.get("company"):
+            # Entity không có cột pháp nhân (vd. `survey`, `user`). Không có gì để lọc mà vẫn
+            # trả None thì "company" hóa ra rộng bằng "all" — đúng lỗ N-14.
+            return _chan(entity, scope, user, "entity khong co cot phap nhan")
+        if not company_id:
+            # NGƯỜI DÙNG CHƯA GẮN PHÁP NHÂN. Cùng luật với nhánh `dept` ở trên (chưa gắn
+            # phòng → không thấy gì): thiếu dữ liệu thì chặn, chứ mở toang là nguy hiểm hơn.
+            # ⚠️ Trước khi đưa lên môi trường thật phải gắn `company_id` cho nhân sự — xem
+            # phần B-07 trong `doc/erp/15-do-be-tong-nen-v2.md`, đã đếm sẵn số người dính.
+            return _chan(entity, scope, user, "nguoi dung chua gan phap nhan (company_id=0)")
+        return getattr(model, f["company"]) == company_id
+
+    return _chan(entity, scope, user, "pham vi la khong hieu duoc")
 
 
 def _explicit_cond(model, entity, scopeconf):
@@ -240,3 +355,17 @@ def apply_scope(query, model, entity: str, user, profile: dict, action: str = "r
     """Lọc query theo HỢP các grant có quyền `action` trên entity."""
     cond = scope_condition(model, entity, user, profile, action)
     return query if cond is None else query.filter(cond)
+
+
+def get_scoped(db, model, entity: str, oid: int, user, profile: dict, action: str = "read"):
+    """Lấy MỘT bản ghi, chỉ khi nó nằm trong phạm vi — trả `None` nếu không.
+
+    Sinh ra cho các endpoint lấy/sửa/xóa một dòng: `db.get(Model, oid)` đi thẳng vào khóa
+    chính nên bỏ qua sạch phần lọc phạm vi — danh sách giấu đúng, nhưng gõ thẳng id vào URL
+    là ra. Nơi gọi cứ trả **404 "Không tìm thấy"** như với id không tồn tại: người ngoài
+    phạm vi không cần biết bản ghi đó có thật hay không, và cũng không phải thêm mã lỗi mới.
+    """
+    cond = scope_condition(model, entity, user, profile, action)
+    if cond is None:
+        return db.get(model, oid)
+    return db.query(model).filter(model.id == oid, cond).first()

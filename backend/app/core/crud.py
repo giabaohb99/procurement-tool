@@ -7,6 +7,7 @@ from app.core.auth import require
 from app.core.base_controller import apply_filters, apply_sort, pagination
 from app.core.database import get_db
 from app.core.response import success
+from app.core.scoping import apply_scope, get_perm_profile, get_scoped
 
 
 def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchema,
@@ -24,6 +25,13 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
 
     Danh mục nào không cần thì bỏ trống — đừng vì một chốt chặn mà viết tay lại
     cả bộ CRUD.
+
+    **Phạm vi dữ liệu (B-07).** Bộ sinh này trước đây CHỈ chặn theo hành động
+    (`require`), không hề gọi `apply_scope` — nên mọi danh mục dựng bằng nó đều
+    bỏ qua trục phạm vi, kể cả khi vai trò đặt `own`/`dept`. Nay cả năm endpoint
+    đọc/sửa/xóa/xuất đều đi qua phạm vi. Các danh mục hiện dùng bộ sinh này đều
+    khai `PUBLIC` trong `SCOPE_FIELDS` nên hành vi không đổi; phần nối này là để
+    danh mục CÓ chiều pháp nhân sau này không phải nhớ tự thêm.
     """
     router = APIRouter(prefix=prefix, tags=[entity])
 
@@ -35,14 +43,15 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
                    sort_by: str | None = None, sort_dir: str = "asc",
                    db: Session = Depends(get_db), user=Depends(require(entity, "read"))):
         q = apply_filters(db.query(Model), Model, request, filterable)
-        total = q.count()
+        q = apply_scope(q, Model, entity, user, get_perm_profile(db, user))
+        total = q.count()   # đếm SAU khi lọc phạm vi, kẻo phân trang lệch số
         q = apply_sort(q, Model, sort_by, sort_dir)   # whitelist cột; mặc định id desc
         items = q.offset(pg["offset"]).limit(pg["limit"]).all()
         return success({"total": total, "items": [out(i) for i in items]})
 
     @router.get("/{oid}")
     def get_item(oid: int, db: Session = Depends(get_db), user=Depends(require(entity, "read"))):
-        o = db.get(Model, oid)
+        o = get_scoped(db, Model, entity, oid, user, get_perm_profile(db, user))
         if not o:
             raise HTTPException(404, "Không tìm thấy")
         return success(out(o))
@@ -70,7 +79,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
     @router.patch("/{oid}")
     def update_item(oid: int, data: UpdateSchema, db: Session = Depends(get_db),
                     user=Depends(require(entity, "write"))):
-        o = db.get(Model, oid)
+        o = get_scoped(db, Model, entity, oid, user, get_perm_profile(db, user), "write")
         if not o:
             raise HTTPException(404, "Không tìm thấy")
         values = data.model_dump(exclude_unset=True)
@@ -87,7 +96,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
     @router.delete("/{oid}")
     def delete_item(oid: int, db: Session = Depends(get_db),
                     user=Depends(require(entity, "delete"))):
-        o = db.get(Model, oid)
+        o = get_scoped(db, Model, entity, oid, user, get_perm_profile(db, user), "delete")
         if not o:
             raise HTTPException(404, "Không tìm thấy")
         if before_delete:
@@ -107,6 +116,9 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         ):
             from app.core.csv_utils import export_csv_response
             q = apply_filters(db.query(Model), Model, request, filterable)
+            # Xuất file phải cùng phạm vi với xem trên màn hình, kẻo bấm Xuất là
+            # lấy được nguyên bảng thứ mà danh sách vừa giấu đi.
+            q = apply_scope(q, Model, entity, user, get_perm_profile(db, user))
             if ids:
                 id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
                 if id_list:
@@ -122,12 +134,17 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         ):
             import csv
             from io import StringIO
+            from app.core.scoping import scope_condition
             content = file.file.read().decode("utf-8")
             reader = csv.DictReader(StringIO(content))
             if not reader.fieldnames:
                 raise HTTPException(400, "File CSV trống")
-                
-            created, updated, deleted = 0, 0, 0
+
+            # Nhập file là đường vòng để SỬA/XÓA bản ghi bằng mã, nên nó phải chịu đúng
+            # phạm vi như nút sửa trên màn hình. Dòng nào trỏ vào bản ghi ngoài phạm vi
+            # thì BỎ QUA và đếm riêng — không lặng lẽ ghi đè, cũng không dừng cả file.
+            scope_cond = scope_condition(Model, entity, user, get_perm_profile(db, user), "write")
+            created, updated, deleted, bo_qua = 0, 0, 0, 0
             for row in reader:
                 action = row.get("Hành động", "").strip().lower()
                 is_active = action not in ["xóa", "delete", "ngừng"]
@@ -145,6 +162,11 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
                 if not existing and getattr(Model, "name", None) is not None and "name" in data and data["name"]:
                     existing = db.query(Model).filter(Model.name == data["name"]).first()
                     
+                if existing is not None and scope_cond is not None:
+                    if db.query(Model.id).filter(Model.id == existing.id, scope_cond).first() is None:
+                        bo_qua += 1
+                        continue
+
                 if existing:
                     if action in ["xóa", "delete"]:
                         db.delete(existing)
@@ -167,6 +189,9 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
                     created += 1
                     
             db.commit()
-            return success(None, f"Nhập file thành công. Thêm mới {created}, cập nhật {updated}, ẩn {deleted}.")
+            msg = f"Nhập file thành công. Thêm mới {created}, cập nhật {updated}, ẩn {deleted}."
+            if bo_qua:
+                msg += f" Bỏ qua {bo_qua} dòng ngoài phạm vi của bạn."
+            return success(None, msg)
             
     return router

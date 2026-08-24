@@ -45,10 +45,17 @@ def sync_department_ref(db: Session, obj) -> None:
 
 
 def list_departments(db: Session, q: str | None, pg: dict, is_active: bool | None = None,
-                     sort_by: str = "", sort_dir: str = "asc", request=None):
+                     sort_by: str = "", sort_dir: str = "asc", request=None, scope_cond=None):
+    """`scope_cond` — điều kiện phạm vi do controller dựng sẵn (B-07), `None` = thấy tất.
+
+    Nhận điều kiện đã dựng thay vì tự gọi `apply_scope` để tầng service không phải biết
+    tới user/profile; phần đếm `total` nằm SAU chỗ lọc nên số trang khớp với số dòng.
+    """
     from app.core.base_controller import apply_sort
     from app.core.filter_operators import apply_operator_filters
     query = db.query(Department)
+    if scope_cond is not None:
+        query = query.filter(scope_cond)
     # Bộ lọc điều kiện (`name__contains=...`) — ô "Tìm kiếm" chung `q` bên dưới vẫn giữ nguyên
     if request is not None:
         query = apply_operator_filters(query, Department, request, FILTERABLE)

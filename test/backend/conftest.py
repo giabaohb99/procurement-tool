@@ -39,6 +39,12 @@ def db():
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
     session = Session()
+    # Hồ sơ quyền được cache in-process 60s theo `user.id` (`_PERM_CACHE` trong core/auth.py).
+    # Mỗi test dựng một DB in-memory MỚI nhưng id vẫn bắt đầu từ 1, nên không xóa cache là
+    # test sau đọc trúng hồ sơ quyền của test trước — sai âm thầm và phụ thuộc thứ tự chạy.
+    # Từ B-07 các controller đều gọi `get_perm_profile`, nên chỗ này thành bắt buộc.
+    from app.core.auth import perm_cache_clear
+    perm_cache_clear()
     _nap_muc_mat(session)
     try:
         yield session
@@ -270,3 +276,35 @@ def seed(db):
         sup_id=sup.id,
         sup_name=sup.name,
     )
+
+
+@pytest.fixture(scope="function")
+def cap_quyen(db):
+    """Cấp cho một tài khoản một vai trò thật, kèm phạm vi — B-07.
+
+    Từ B-07 các controller đều đi qua `apply_scope`/`get_scoped`, nên test gọi thẳng hàm
+    controller với một `SimpleNamespace(id=...)` trơ sẽ ăn 404: tài khoản đó không có
+    grant nào, mà "không grant" nghĩa là không thấy gì (đúng như chạy thật). Fixture này
+    dựng vai trò + quyền + gán vai trò để test đứng đúng tư thế người dùng thật.
+
+        cap_quyen(user_id, "approval_flow", scope="all", read=True, write=True)
+    """
+    from app.core.auth import perm_cache_clear
+    from app.modules.role.model import Permission, Role
+    from app.modules.user.model import UserRole
+
+    dem = {"n": 0}
+
+    def _cap(user_id: int, entity: str, scope: str = "all", **hanh_dong):
+        dem["n"] += 1
+        role = Role(code=f"VT_TEST_{dem['n']}", name=f"Vai trò test {dem['n']}")
+        db.add(role)
+        db.flush()
+        co = {f"can_{ten}": bool(gt) for ten, gt in hanh_dong.items()}
+        db.add(Permission(role_id=role.id, entity=entity, scope=scope, **co))
+        db.add(UserRole(user_id=user_id, role_id=role.id))
+        db.flush()
+        perm_cache_clear(user_id)   # hồ sơ quyền cache 60s, không xóa là đọc trúng bản cũ
+        return role
+
+    return _cap

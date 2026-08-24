@@ -5,12 +5,28 @@ from app.core.auth import require
 from app.core.base_controller import pagination
 from app.core.database import get_db
 from app.core.response import success
+from app.core.scoping import get_perm_profile, get_scoped, scope_condition
 
 from . import service
 from .schema import (DepartmentCompanyOut, DepartmentCompanyReplace,
                      DepartmentCreate, DepartmentOut, DepartmentUpdate)
 
 router = APIRouter(prefix="/api/departments", tags=["department"])
+
+
+def _dieu_kien_pham_vi(db, user, action: str = "read"):
+    from .model import Department
+    return scope_condition(Department, "department", user, get_perm_profile(db, user), action)
+
+
+def _phong_trong_pham_vi(db, did: int, user, action: str):
+    """Phòng ban #did nếu nằm trong phạm vi, không thì 404 — B-07."""
+    from .model import Department
+    obj = get_scoped(db, Department, "department", did, user, get_perm_profile(db, user), action)
+    if not obj:
+        from fastapi import HTTPException
+        raise HTTPException(404, "Không tìm thấy phòng ban")
+    return obj
 
 
 @router.get("")
@@ -25,7 +41,8 @@ def list_departments(
     user=Depends(require("department", "read")),
 ):
     # request đi kèm để service gắn BỘ LỌC ĐIỀU KIỆN (`<field>__<op>`), xem core/filter_operators.py
-    total, items = service.list_departments(db, q, pg, is_active, sort_by, sort_dir, request)
+    total, items = service.list_departments(db, q, pg, is_active, sort_by, sort_dir, request,
+                                            scope_cond=_dieu_kien_pham_vi(db, user))
     # manager_id (chọn cứng) + manager_name (property của model) tự lấy qua model_validate
     res = [DepartmentOut.model_validate(i).model_dump() for i in items]
     return success({
@@ -54,7 +71,7 @@ def list_by_companies(
 
 @router.get("/{did}")
 def get_department(did: int, db: Session = Depends(get_db), user=Depends(require("department", "read"))):
-    obj = service.get_department(db, did)
+    obj = _phong_trong_pham_vi(db, did, user, "read")
     return success(DepartmentOut.model_validate(obj).model_dump())
 
 
@@ -72,6 +89,7 @@ def update_department(
     did: int, data: DepartmentUpdate, db: Session = Depends(get_db),
     user=Depends(require("department", "write")),
 ):
+    _phong_trong_pham_vi(db, did, user, "write")
     obj = service.update_department(db, did, data, user.id)
     return success(DepartmentOut.model_validate(obj).model_dump(), "Đã cập nhật")
 
@@ -80,6 +98,7 @@ def update_department(
 def delete_department(
     did: int, db: Session = Depends(get_db), user=Depends(require("department", "delete"))
 ):
+    _phong_trong_pham_vi(db, did, user, "delete")
     service.delete_department(db, did, user.id)
     return success(None, "Đã xóa")
 
@@ -90,6 +109,7 @@ def list_department_companies(
     db: Session = Depends(get_db),
     user=Depends(require("department", "read")),
 ):
+    _phong_trong_pham_vi(db, did, user, "read")
     rows = service.list_department_companies(db, did)
     return success([DepartmentCompanyOut.model_validate(row).model_dump() for row in rows])
 
@@ -101,6 +121,7 @@ def replace_department_companies(
     db: Session = Depends(get_db),
     user=Depends(require("department", "write")),
 ):
+    _phong_trong_pham_vi(db, did, user, "write")
     rows = service.replace_department_companies(db, did, data.items, user.id)
     return success(
         [DepartmentCompanyOut.model_validate(row).model_dump() for row in rows],
@@ -118,6 +139,9 @@ def export_departments_csv(
     from .model import Department
     
     query = db.query(Department)
+    cond = _dieu_kien_pham_vi(db, user)   # xuất file phải cùng phạm vi với danh sách
+    if cond is not None:
+        query = query.filter(cond)
     if q:
         query = query.filter(Department.name.like(f"%{q}%"))
     if ids:
@@ -157,7 +181,9 @@ def import_departments_csv(
     if not reader.fieldnames:
         raise HTTPException(400, "File CSV trống")
         
-    created, updated, deleted = 0, 0, 0
+    # Nhập file sửa/xóa được bản ghi bằng mã → phải chịu đúng phạm vi như nút sửa.
+    scope_cond = _dieu_kien_pham_vi(db, user, "write")
+    created, updated, deleted, bo_qua = 0, 0, 0, 0
     for row in reader:
         status_str = (row.get("Trạng thái") or row.get("Hành động") or "").strip().lower()
         is_active = status_str not in ["xóa", "delete", "ngừng", "đã ẩn", "ẩn", "false"]
@@ -174,6 +200,11 @@ def import_departments_csv(
             continue
             
         existing = db.query(Department).filter(Department.code == code).first() if code else None
+        if existing is not None and scope_cond is not None:
+            if db.query(Department.id).filter(Department.id == existing.id,
+                                              scope_cond).first() is None:
+                bo_qua += 1
+                continue
         if existing:
             if status_str in ["xóa", "delete"]:
                 db.delete(existing)
@@ -199,4 +230,7 @@ def import_departments_csv(
             created += 1
             
     db.commit()
-    return success(None, f"Nhập file thành công. Thêm mới {created}, cập nhật {updated}, ẩn {deleted}.")
+    msg = f"Nhập file thành công. Thêm mới {created}, cập nhật {updated}, ẩn {deleted}."
+    if bo_qua:
+        msg += f" Bỏ qua {bo_qua} dòng ngoài phạm vi của bạn."
+    return success(None, msg)

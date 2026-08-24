@@ -11,6 +11,7 @@ from app.core.audit import record
 from app.core.auth import require
 from app.core.database import get_db
 from app.core.response import success
+from app.core.scoping import apply_scope, get_perm_profile, get_scoped
 
 from . import entity_hooks, flow_service, flow_sync_service, serializer
 from .flow_model import (APPROVER_KIND_LABELS, MULTI_MODE_LABELS,
@@ -106,7 +107,8 @@ def set_switch(data: SwitchIn, db: Session = Depends(get_db),
 @router.get("")
 def list_flows(entity: str = "", db: Session = Depends(get_db),
                user=Depends(require("approval_flow", "read"))):
-    query = db.query(ApprovalFlow)
+    query = apply_scope(db.query(ApprovalFlow), ApprovalFlow, "approval_flow",
+                        user, get_perm_profile(db, user))
     if entity:
         query = query.filter(ApprovalFlow.entity == entity)
     rows = query.order_by(ApprovalFlow.entity.asc(), ApprovalFlow.priority.desc(),
@@ -132,13 +134,13 @@ def create_flow(data: FlowIn, db: Session = Depends(get_db),
 @router.get("/{flow_id}")
 def get_flow(flow_id: int, db: Session = Depends(get_db),
              user=Depends(require("approval_flow", "read"))):
-    return success(serializer.flow_out(db, _load(db, flow_id), kem_buoc=True))
+    return success(serializer.flow_out(db, _load(db, flow_id, user), kem_buoc=True))
 
 
 @router.patch("/{flow_id}")
 def update_flow(flow_id: int, data: FlowIn, db: Session = Depends(get_db),
                 user=Depends(require("approval_flow", "write"))):
-    flow = _load(db, flow_id)
+    flow = _load(db, flow_id, user, "write")
     for ten, gia_tri in data.model_dump().items():
         setattr(flow, ten, gia_tri)
     _len_ban_moi(db, flow, user.id)
@@ -150,7 +152,7 @@ def update_flow(flow_id: int, data: FlowIn, db: Session = Depends(get_db),
 @router.delete("/{flow_id}")
 def delete_flow(flow_id: int, db: Session = Depends(get_db),
                 user=Depends(require("approval_flow", "delete"))):
-    flow = _load(db, flow_id)
+    flow = _load(db, flow_id, user, "delete")
     _chan_khi_dang_chay(db, flow.id)
     db.query(ApprovalNode).filter(ApprovalNode.flow_id == flow.id).delete()
     db.delete(flow)
@@ -165,7 +167,7 @@ def add_node(flow_id: int, data: NodeIn, as_branch: bool = False,
              user=Depends(require("approval_flow", "write"))):
     """Thêm một bước. `as_branch=true` = nhánh song song của chặng đó, mặc định
     là chèn hẳn một chặng mới tại vị trí `seq`."""
-    flow = _load(db, flow_id)
+    flow = _load(db, flow_id, user, "write")
     node = flow_service.them_buoc(db, flow.id, data.model_dump(), user.id,
                                   la_nhanh=as_branch)
     _len_ban_moi(db, flow, user.id)
@@ -176,7 +178,7 @@ def add_node(flow_id: int, data: NodeIn, as_branch: bool = False,
 @router.patch("/{flow_id}/nodes/{node_id}")
 def update_node(flow_id: int, node_id: int, data: NodeIn, db: Session = Depends(get_db),
                 user=Depends(require("approval_flow", "write"))):
-    flow = _load(db, flow_id)
+    flow = _load(db, flow_id, user, "write")
     node = db.get(ApprovalNode, node_id)
     if node is None or node.flow_id != flow.id:
         raise HTTPException(404, "Không tìm thấy bước này")
@@ -216,7 +218,7 @@ def reorder_nodes(flow_id: int, data: ReorderIn, db: Session = Depends(get_db),
     diện tính thì hai người kéo cùng lúc sẽ ra hai bộ số khác nhau, và bộ nào ghi
     sau thắng mà không ai biết.
     """
-    flow = _load(db, flow_id)
+    flow = _load(db, flow_id, user, "write")
     theo_id = {node.id: node for node in flow_service.nodes_of(db, flow.id)}
 
     #  ⚠️ HAI LƯỢT, không phải một. `UNIQUE(flow_id, seq, branch_key)` nổ ngay
@@ -247,7 +249,7 @@ def reorder_nodes(flow_id: int, data: ReorderIn, db: Session = Depends(get_db),
 @router.delete("/{flow_id}/nodes/{node_id}")
 def delete_node(flow_id: int, node_id: int, db: Session = Depends(get_db),
                 user=Depends(require("approval_flow", "write"))):
-    flow = _load(db, flow_id)
+    flow = _load(db, flow_id, user, "write")
     node = db.get(ApprovalNode, node_id)
     if node is None or node.flow_id != flow.id:
         raise HTTPException(404, "Không tìm thấy bước này")
@@ -256,8 +258,16 @@ def delete_node(flow_id: int, node_id: int, db: Session = Depends(get_db),
     return success(None, "Đã xóa bước")
 
 
-def _load(db: Session, flow_id: int) -> ApprovalFlow:
-    flow = db.get(ApprovalFlow, flow_id)
+def _load(db: Session, flow_id: int, user, action: str = "read") -> ApprovalFlow:
+    """Nạp luồng duyệt, CÓ kiểm phạm vi — B-07.
+
+    `ApprovalFlow` có `company_id` nên luồng duyệt là dữ liệu của từng pháp nhân. Trước
+    B-07 hàm này gọi thẳng `db.get`, nên ai có `approval_flow.write` là sửa được bộ máy
+    duyệt của MỌI pháp nhân — hỏng ở đây thì hỏng cả đường duyệt chứng từ, không chỉ một
+    phiếu. Đây là chốt duy nhất của mọi endpoint có `flow_id`, giữ nguyên như vậy.
+    """
+    flow = get_scoped(db, ApprovalFlow, "approval_flow", flow_id, user,
+                      get_perm_profile(db, user), action)
     if flow is None:
         raise HTTPException(404, "Không tìm thấy luồng duyệt")
     return flow

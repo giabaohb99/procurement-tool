@@ -36,8 +36,12 @@ def orphan_user_ids(db: Session) -> list[int]:
 
 
 def list_users(db: Session, pg: dict, search: str = "", department: str = "", role_id: int = 0,
-               sort: str = "", employee_id: int = 0, no_role: bool = False, orphan: bool = False):
+               sort: str = "", employee_id: int = 0, no_role: bool = False, orphan: bool = False,
+               scope_cond=None):
+    """`scope_cond` — điều kiện phạm vi controller dựng sẵn (B-07), `None` = thấy tất."""
     query = db.query(User)
+    if scope_cond is not None:
+        query = query.filter(scope_cond)
     if employee_id:   # tra CHÍNH XÁC tài khoản của 1 nhân sự (dùng cho nút "Phân quyền tài khoản")
         query = query.filter(User.employee_id == employee_id)
     if no_role:       # chưa được gán vai trò nào -> vào hệ thống nhưng chưa dùng được gì
