@@ -49,6 +49,26 @@ const ROW_BG = 'group odd:bg-card even:bg-slate-100 dark:even:bg-slate-800/60 ho
 /** Ô báo trạng thái (đang tải / lỗi / rỗng) trải hết bảng — không kẻ dọc, cao hơn. */
 const SPAN_CELL = 'h-20 px-3 text-center'
 
+/**
+ * Vạch kẻ của Ô CỘT GHIM, viết sẵn thành hằng chứ không ghép chuỗi lúc chạy:
+ * Tailwind quét MÃ NGUỒN để sinh class, tên class ghép động sẽ không có CSS nào
+ * cả. Hậu tố `_HEAD` kèm vạch đáy của hàng tiêu đề, `_DROP` kèm bóng đổ báo có
+ * nội dung đang trôi bên dưới.
+ *
+ * Bản `last:` của cột ghim phải là BẮT BUỘC với cột dính bên phải: nó luôn là ô
+ * cuối hàng, mà `HEAD_CELL` có sẵn `last:shadow-…` (chỉ vạch đáy) — biến thể
+ * `last:` có độ ưu tiên cao hơn class thường nên không ghi đè đúng biến thể đó
+ * thì vạch trái bị nuốt mất. Đó chính là lỗi "ghim cột phải mà không có border".
+ */
+const PIN_LEFT = 'shadow-[inset_-1px_0_0_0_var(--border)]'
+const PIN_LEFT_HEAD = 'shadow-[inset_-1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border)]'
+const PIN_LEFT_DROP = 'shadow-[inset_-1px_0_0_0_var(--border),6px_0_8px_-6px_rgb(0_0_0/0.18)]'
+const PIN_LEFT_HEAD_DROP =
+  'shadow-[inset_-1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border),6px_0_8px_-6px_rgb(0_0_0/0.18)]'
+const PIN_RIGHT = 'shadow-[inset_1px_0_0_0_var(--border)] last:shadow-[inset_1px_0_0_0_var(--border)]'
+const PIN_RIGHT_HEAD =
+  'shadow-[inset_1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border)] last:shadow-[inset_1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border)]'
+
 export interface DataTableProps<T> {
   columns: DataTableColumn<T>[]
   rows: T[] | undefined
@@ -196,9 +216,15 @@ export function DataTable<T>({
    * Class của ô thuộc cột ghim. Nền `bg-inherit` để ăn theo nền của HÀNG (hàng
    * phải có nền ĐỤC — xem `ROW_BG`), nếu để trong suốt thì phần bảng cuộn qua
    * bên dưới sẽ lộ xuyên qua cột đang dính.
+   *
+   * `head` = ô này nằm ở hàng tiêu đề, phải kẻ thêm VẠCH ĐÁY: chuỗi shadow ở
+   * đây ghi đè shadow của `HEAD_CELL` (tailwind-merge, cùng nhóm `shadow`, cái
+   * sau thắng) nên không tự vẽ lại thì hàng tiêu đề thủng một đoạn ngay dưới
+   * cột ghim.
    */
-  const pinClass = (key: string) => {
+  const pinClass = (key: string, head = false) => {
     if (pinnedKeys.includes(key)) {
+      const doBong = key === lastPinnedKey && scrolledX
       return cn(
         // MỌI ô ghim đều tắt `border-r` và tự vẽ vạch bằng `inset shadow`: ô dính
         // nằm đè lên ô kế bên, để cả hai cùng có đường kẻ thì thành vạch đôi.
@@ -206,18 +232,25 @@ export function DataTable<T>({
         // Vạch luôn MẢNH 1px như mọi cột khác — vạch dày ở cột ghim cuối trông
         // như bị kẻ viền chồng lên nhau. Ranh giới phần đứng yên / phần đang trôi
         // báo bằng bóng đổ, và chỉ khi bảng đã cuộn ngang.
-        'shadow-[inset_-1px_0_0_0_var(--border)]',
-        key === lastPinnedKey &&
-          scrolledX &&
-          'shadow-[inset_-1px_0_0_0_var(--border),6px_0_8px_-6px_rgb(0_0_0/0.18)]',
+        doBong
+          ? head
+            ? PIN_LEFT_HEAD_DROP
+            : PIN_LEFT_DROP
+          : head
+            ? PIN_LEFT_HEAD
+            : PIN_LEFT,
       )
     }
 
     if (pinnedRightKeys.includes(key)) {
-      // Border thật được cơ chế `border-collapse` gộp với lưới của cột kế bên
-      // thành đúng MỘT nét. Không dùng shadow: lúc đè lên dữ liệu cuộn ngang,
-      // shadow + border của bảng phía dưới sẽ trông như hai vạch song song.
-      return 'sticky z-20 border-r-0 border-l bg-inherit'
+      //  ⚠️ KHÔNG dùng `border-l`: preflight đặt `border-collapse: collapse`, ở
+      //  chế độ đó viền thuộc về bảng chứ không thuộc ô, nên ô `position: sticky`
+      //  bị bỏ mất viền — cột ghim phải trôi lơ lửng không một nét kẻ nào (đúng
+      //  lỗi phải vá ở đây). Vạch vẽ bằng `inset shadow` như hàng tiêu đề dính.
+      //
+      //  Vạch của cột KẾ BÊN đã được tắt (`beforePinnedRightKey`) nên không có
+      //  chuyện hai nét 1px nằm sát nhau.
+      return cn('sticky z-20 border-r-0 border-l-0 bg-inherit', head ? PIN_RIGHT_HEAD : PIN_RIGHT)
     }
 
     return undefined
@@ -291,7 +324,17 @@ export function DataTable<T>({
             dòng trôi qua bên dưới không lộ ra khi tiêu đề dính đỉnh, vừa để ô
             của cột ghim `bg-inherit` che được phần bảng cuộn ngang phía sau.
           */}
-          <TableHeader className={cn('bg-muted', fillHeight && 'sticky top-0 z-30')}>
+          {/*
+            `[&_tr]:border-b-0` GỠ vạch đáy mà `TableHeader` của shadcn tự đặt
+            lên hàng tiêu đề. Không thừa: ô tiêu đề đã tự vẽ vạch đáy bằng
+            `inset shadow` (xem `HEAD_CELL`), giữ cả hai là hai đường 1px nằm sát
+            nhau — hàng tiêu đề trông dày gấp đôi mọi đường kẻ khác trong bảng.
+            Bỏ cái `border` chứ không bỏ cái `shadow`, vì `border-collapse` làm
+            border của hàng tiêu đề dính đỉnh biến mất khi cuộn.
+          */}
+          <TableHeader
+            className={cn('bg-muted [&_tr]:border-b-0', fillHeight && 'sticky top-0 z-30')}
+          >
             {/*
               `hover:bg-muted` KHÔNG thừa: `TableRow` của shadcn mặc định có
               `hover:bg-muted/50` — nền CÓ ALPHA. Rê chuột lên hàng tiêu đề đang
@@ -305,7 +348,7 @@ export function DataTable<T>({
                   key={column.key}
                   column={column}
                   width={widthOf(column)}
-                  className={cn(HEAD_CELL, alignClass(column.align), pinClass(column.key))}
+                  className={cn(HEAD_CELL, alignClass(column.align), pinClass(column.key, true))}
                   colorStyle={columnColorStyle(layout.columnColors[column.key], 'head')}
                   pinnedOffset={pinOffset(column.key)}
                   pinnedRightOffset={pinRightOffset(column.key)}

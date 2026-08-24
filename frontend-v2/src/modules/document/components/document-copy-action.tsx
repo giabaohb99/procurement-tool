@@ -3,7 +3,18 @@ import { useNavigate } from 'react-router-dom'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
+import { cn } from '@/shared/utils/cn'
 import { useCopyDocument } from '../hooks/use-documents'
+
+/**
+ * Nút trên DÒNG BẢNG phải cao **24px**, không phải 32px của `icon-sm`.
+ *
+ * Ô của `DataTable` là `min-h-9` + `py-1.5`, nên chỗ trống cho nội dung đúng
+ * 23px: nhét một nút 32px vào là **cả bảng cao thêm 9px mỗi dòng** — đó là lý do
+ * bảng «Văn bản đi» trông thưa hơn hẳn «Văn bản đến» dù hai bảng cùng một khung.
+ * Vùng bấm 24px vẫn thoải mái vì cả ô là vùng chờ chuột.
+ */
+const NUT_TREN_DONG = 'size-6 -my-px'
 
 interface DocumentCopyActionProps {
   documentId: number
@@ -27,6 +38,7 @@ export function DocumentCopyAction({
       type="button"
       variant="outline"
       size={placement === 'row' ? 'icon-sm' : 'default'}
+      className={cn(placement === 'row' && NUT_TREN_DONG)}
       aria-label={placement === 'row' ? 'Sao chép' : undefined}
       disabled={copyDocument.isPending}
       title="Tạo một văn bản nháp mới giống bản ghi này"
