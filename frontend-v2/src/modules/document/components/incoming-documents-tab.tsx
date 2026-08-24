@@ -15,8 +15,6 @@ import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { Badge } from '@/shared/ui/badge'
 import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
-import { PageContainer } from '@/shared/ui/page-container'
-import { PageHeader } from '@/shared/ui/page-header'
 import {
   Select,
   SelectContent,
@@ -37,27 +35,28 @@ const ALL = 'all'
 /**
  * `preserveParams`: thiếu tên nào ở đây thì bấm "Áp dụng" bộ lọc nâng cao sẽ
  * xóa mất tham số đó khỏi URL. Không cần kể `q` — `searchParamName` giữ sẵn.
+ * `tab` phải có, nếu không áp bộ lọc xong là màn hình nhảy về tab kia.
  */
 const FILTER_CONFIG = {
   fields: DOCUMENT_APPLIED_FILTER_FIELDS,
   allowConjunctionToggle: true,
-  preserveParams: ['review'],
+  preserveParams: ['review', 'tab'],
 }
 
-export function DocumentsAppliedToMePage() {
+export function IncomingDocumentsTab() {
   return (
     <FilterProvider config={FILTER_CONFIG}>
-      <DocumentsAppliedToMeContent />
+      <IncomingDocumentsContent />
     </FilterProvider>
   )
 }
 
 /**
- * F05 — VĂN BẢN ÁP DỤNG CHO TÔI.
+ * VĂN BẢN ĐẾN — những văn bản mà người đang đăng nhập **nằm trong phạm vi áp
+ * dụng**, tức là phải làm theo (F05, trước đây là màn riêng "Áp dụng cho tôi").
  *
- * Danh sách này KHÁC "tất cả văn bản tôi đọc được": ở đây chỉ những văn bản mà
- * người đang đăng nhập **nằm trong phạm vi áp dụng**, tức là phải làm theo. Đọc
- * được mà không thuộc phạm vi thì không hiện ở đây.
+ * Khác "tất cả văn bản tôi đọc được": đọc được mà không thuộc phạm vi áp dụng
+ * thì không hiện ở đây — đó là tab «Văn bản đi» bên cạnh.
  *
  * ⚠️ Tìm và lọc chạy NGAY TẠI TRÌNH DUYỆT, khác mọi màn danh sách khác trong
  * hệ. Không phải chọn cho tiện: `/api/documents/applies-to-me` tính phạm vi bằng
@@ -65,7 +64,7 @@ export function DocumentsAppliedToMePage() {
  * vào, mà đằng nào nó cũng trả hết một lượt. Ngày nào endpoint nhận được tham số
  * lọc thì đổi sang `useFilterQuery` như các màn khác.
  */
-function DocumentsAppliedToMeContent() {
+function IncomingDocumentsContent() {
   const navigate = useNavigate()
   const { data, isLoading, isError } = useDocumentsAppliedToMe()
   const { appliedState } = useFilterContext()
@@ -163,61 +162,54 @@ function DocumentsAppliedToMeContent() {
   )
 
   return (
-    <PageContainer fill>
-      <PageHeader
-        title="Văn bản áp dụng cho tôi"
-        description="Những văn bản mà bạn nằm trong phạm vi áp dụng — không phải mọi văn bản bạn đọc được."
+    <Card className="flex min-h-0 flex-1 flex-col p-4">
+      <DataTable
+        columns={columns}
+        rows={rows}
+        getRowId={(row) => row.id}
+        storageKey="document.applies-to-me"
+        fillHeight
+        isLoading={isLoading}
+        isError={isError}
+        onRowClick={(row) => navigate(appRoutes.document.documentDetail(row.id))}
+        emptyMessage={
+          //  Phân biệt "chưa có gì" với "lọc không ra gì": hai câu này dẫn tới
+          //  hai hành động khác hẳn nhau — một bên đi hỏi người khai phạm vi,
+          //  một bên chỉ cần xóa điều kiện lọc.
+          (data?.items?.length ?? 0) > 0
+            ? 'Không có văn bản nào khớp điều kiện đang lọc.'
+            : 'Chưa có văn bản nào áp dụng cho bạn.'
+        }
+        toolbar={
+          <>
+            <div className="relative w-full max-w-xs">
+              <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                placeholder="Tìm theo trích yếu, số hiệu, loại, từ khóa…"
+                value={keyword}
+                onChange={(event) => setKeyword(event.target.value)}
+              />
+            </div>
+
+            {/*  Lọc nhanh "Cần rà lại" để sẵn ngoài thanh công cụ chứ không
+                 giấu trong bộ lọc nâng cao: đó là lý do chính người ta mở tab
+                 này ra — văn bản mình phải làm theo vừa bị đổi. */}
+            <Select value={review} onValueChange={setReview}>
+              <SelectTrigger className="w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>Tất cả văn bản</SelectItem>
+                <SelectItem value="yes">Cần rà lại</SelectItem>
+                <SelectItem value="no">Không cần rà lại</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <ConditionalFilter />
+          </>
+        }
       />
-
-      <Card className="flex min-h-0 flex-1 flex-col p-4">
-        <DataTable
-          columns={columns}
-          rows={rows}
-          getRowId={(row) => row.id}
-          storageKey="document.applies-to-me"
-          fillHeight
-          isLoading={isLoading}
-          isError={isError}
-          onRowClick={(row) => navigate(appRoutes.document.documentDetail(row.id))}
-          emptyMessage={
-            //  Phân biệt "chưa có gì" với "lọc không ra gì": hai câu này dẫn tới
-            //  hai hành động khác hẳn nhau — một bên đi hỏi người khai phạm vi,
-            //  một bên chỉ cần xóa điều kiện lọc.
-            (data?.items?.length ?? 0) > 0
-              ? 'Không có văn bản nào khớp điều kiện đang lọc.'
-              : 'Chưa có văn bản nào áp dụng cho bạn.'
-          }
-          toolbar={
-            <>
-              <div className="relative w-full max-w-xs">
-                <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  className="pl-9"
-                  placeholder="Tìm theo trích yếu, số hiệu, loại, từ khóa…"
-                  value={keyword}
-                  onChange={(event) => setKeyword(event.target.value)}
-                />
-              </div>
-
-              {/*  Lọc nhanh "Cần rà lại" để sẵn ngoài thanh công cụ chứ không
-                   giấu trong bộ lọc nâng cao: đó là lý do chính người ta mở màn
-                   hình này ra — văn bản mình phải làm theo vừa bị đổi. */}
-              <Select value={review} onValueChange={setReview}>
-                <SelectTrigger className="w-44">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Tất cả văn bản</SelectItem>
-                  <SelectItem value="yes">Cần rà lại</SelectItem>
-                  <SelectItem value="no">Không cần rà lại</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <ConditionalFilter />
-            </>
-          }
-        />
-      </Card>
-    </PageContainer>
+    </Card>
   )
 }

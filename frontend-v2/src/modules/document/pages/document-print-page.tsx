@@ -64,7 +64,7 @@ export function DocumentPrintPage() {
         title="Không mở được bản in"
         description="Văn bản có thể đã bị xóa, hoặc bạn không có quyền đọc văn bản này."
       >
-        <Button variant="outline" onClick={() => navigate(appRoutes.document.documents)}>
+        <Button variant="outline" onClick={() => navigate(appRoutes.document.documentsTab('outgoing'))}>
           <ArrowLeft />
           Về danh sách
         </Button>

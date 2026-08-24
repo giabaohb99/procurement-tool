@@ -107,12 +107,23 @@ export const appRoutes = {
     root: '/document',
     /** Văn bản đến / đi / nội bộ. */
     documents: '/document/documents',
+    /**
+     * Màn Văn bản mở sẵn ở một tab. Mặc định là «đi» (chính là màn Văn bản cũ)
+     * nên đường dẫn của nó SẠCH, không đeo `?tab=`.
+     */
+    documentsTab: (tab: 'incoming' | 'outgoing') =>
+      tab === 'outgoing' ? '/document/documents' : `/document/documents?tab=${tab}`,
     documentNew: '/document/documents/new',
     documentDetail: (id: number | string) => `/document/documents/${id}`,
     //  Bản in nằm NGOÀI khung phân hệ (không menu, không thanh tiêu đề) — cùng
     //  chỗ với bản in của Mua hàng.
     documentPrint: (id: number | string) => `/print/document/${id}`,
-    /** F05 — văn bản mà chính tôi nằm trong phạm vi áp dụng. */
+    /**
+     * F05 — văn bản mà chính tôi nằm trong phạm vi áp dụng.
+     *
+     * ⚠️ KHÔNG còn là một màn riêng: nay là tab «Văn bản đến» của `documents`.
+     * Đường dẫn giữ lại chỉ để CHUYỂN HƯỚNG cho link cũ, đừng trỏ menu vào đây.
+     */
     appliedToMe: '/document/applied-to-me',
     /**
      * VĂN BẢN ĐANG CHỜ CHÍNH TÔI DUYỆT.

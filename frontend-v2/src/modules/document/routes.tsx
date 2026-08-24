@@ -7,8 +7,8 @@ import {
   Link2,
   ShieldCheck,
   SlidersHorizontal,
-  UserCheck,
 } from 'lucide-react'
+import { Navigate } from 'react-router-dom'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -87,15 +87,6 @@ export const documentModule: ErpModule = {
       icon: Hash,
       entity: 'doc_type',
       group: 'Danh mục',
-    },
-    {
-      label: 'Áp dụng cho tôi',
-      path: appRoutes.document.appliedToMe,
-      //  Người + dấu tích: màn này liệt kê văn bản mà TÔI nằm trong phạm vi áp
-      //  dụng. `Target` (vòng tròn đồng tâm) đọc ra "mục tiêu", không dính gì
-      //  tới việc ai phải tuân theo văn bản nào.
-      icon: UserCheck,
-      entity: 'document',
     },
     {
       label: 'Quy tắc quan hệ',
@@ -186,11 +177,11 @@ export const documentModule: ErpModule = {
       }),
     },
     {
+      //  Màn «Áp dụng cho tôi» nay là tab «Văn bản đến» của màn Văn bản. Giữ
+      //  đường dẫn cũ để link đã gửi cho nhau và trang đã ghim còn mở được —
+      //  chuyển hướng chứ không để 404.
       path: appRoutes.document.appliedToMe,
-      lazy: async () => ({
-        Component: (await import('./pages/documents-applied-to-me-page'))
-          .DocumentsAppliedToMePage,
-      }),
+      element: <Navigate to={appRoutes.document.documents} replace />,
     },
     {
       path: appRoutes.document.linkRules,
