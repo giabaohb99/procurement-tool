@@ -22,6 +22,7 @@ import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { FileDropzone } from '@/shared/ui/file-dropzone'
+import { ImageLightbox, useImageLightbox } from '@/shared/ui/image-lightbox'
 import {
   Select,
   SelectContent,
@@ -102,6 +103,12 @@ export function DocumentAttachmentsCard({
 
   const options = useMemo(() => withOtherType(documentTypes ?? []), [documentTypes])
   const groups = useMemo(() => groupAttachmentsByType(files ?? [], options), [files, options])
+  // Bấm ảnh mở lightbox tại chỗ, lật qua lại trong TẤT CẢ ảnh của chứng từ.
+  const imageFiles = useMemo(
+    () => (files ?? []).filter((f) => f.content_type?.startsWith('image/')),
+    [files],
+  )
+  const lightbox = useImageLightbox()
   // Xóa hết tệp của mục đang mở thì mục đó biến mất khỏi hàng chip — không quay
   // về "Tất cả" là màn hình còn mỗi hàng chip với một khoảng trống bên dưới.
   const activeType = groups.some((group) => group.type === openType) ? openType : ALL
@@ -281,6 +288,11 @@ export function DocumentAttachmentsCard({
                           canDelete={canManage}
                           pending={remove.isPending}
                           onDelete={() => void remove.mutateAsync(file.id)}
+                          onView={
+                            file.content_type?.startsWith('image/')
+                              ? () => lightbox.openAt(imageFiles.indexOf(file))
+                              : undefined
+                          }
                         />
                       ))}
                     </div>
@@ -307,6 +319,13 @@ export function DocumentAttachmentsCard({
         maxSizeMb={maxSizeMb}
         initialDocType={uploadDialog.docType}
       />
+
+      {imageFiles.length > 0 && (
+        <ImageLightbox
+          images={imageFiles.map((f) => ({ url: f.url, name: f.filename }))}
+          {...lightbox.bind}
+        />
+      )}
     </Card>
   )
 }
@@ -354,11 +373,14 @@ function AttachmentRow({
   canDelete,
   pending,
   onDelete,
+  onView,
 }: {
   file: AttachmentFile
   canDelete: boolean
   pending: boolean
   onDelete: () => void
+  /** Có = tệp ảnh: bấm tên mở lightbox tại chỗ thay vì mở tab mới. */
+  onView?: () => void
 }) {
   // `attachmentIcon` chỉ TRA CỨU và trả về một trong các icon lucide khai báo sẵn ở
   // cấp module, không tạo component mới mỗi lần render -> không có chuyện remount.
@@ -386,15 +408,26 @@ function AttachmentRow({
       {/* eslint-disable-next-line react-hooks/static-components */}
       <Icon className="size-5 shrink-0 text-primary" />
       <div className="min-w-0 flex-1">
-        <a
-          className="block truncate text-sm font-medium text-navy hover:text-primary hover:underline dark:text-foreground"
-          href={file.url}
-          target="_blank"
-          rel="noreferrer"
-          title={file.filename}
-        >
-          {file.filename}
-        </a>
+        {onView ? (
+          <button
+            type="button"
+            className="block max-w-full truncate text-left text-sm font-medium text-navy hover:text-primary hover:underline dark:text-foreground"
+            onClick={onView}
+            title={file.filename}
+          >
+            {file.filename}
+          </button>
+        ) : (
+          <a
+            className="block truncate text-sm font-medium text-navy hover:text-primary hover:underline dark:text-foreground"
+            href={file.url}
+            target="_blank"
+            rel="noreferrer"
+            title={file.filename}
+          >
+            {file.filename}
+          </a>
+        )}
         <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
       </div>
       <Button

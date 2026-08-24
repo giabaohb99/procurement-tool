@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
+import { ImageLightbox, useImageLightbox } from '@/shared/ui/image-lightbox'
 import {
   MentionInput,
   type MentionInputHandle,
@@ -407,18 +408,26 @@ function CommentComposer({
 }
 
 function CommentFiles({ files }: { files: PurchaseRequestComment['files'] }) {
+  const imageFiles = (files ?? []).filter((file) => file.is_image)
+  const lightbox = useImageLightbox()
   if (!files?.length) return null
   return (
     <div className="mt-2 flex flex-wrap gap-2">
       {files.map((file) =>
         file.is_image ? (
-          <a key={file.link_id} href={file.url} target="_blank" rel="noreferrer">
+          <button
+            key={file.link_id}
+            type="button"
+            title={file.filename}
+            onClick={() => lightbox.openAt(imageFiles.indexOf(file))}
+            className="block leading-none"
+          >
             <img
               className="size-20 rounded-md border object-cover"
               src={file.url}
               alt={file.filename}
             />
-          </a>
+          </button>
         ) : (
           <a
             key={file.link_id}
@@ -431,6 +440,12 @@ function CommentFiles({ files }: { files: PurchaseRequestComment['files'] }) {
             <span className="truncate">{file.filename}</span>
           </a>
         ),
+      )}
+      {imageFiles.length > 0 && (
+        <ImageLightbox
+          images={imageFiles.map((f) => ({ url: f.url, name: f.filename }))}
+          {...lightbox.bind}
+        />
       )}
     </div>
   )

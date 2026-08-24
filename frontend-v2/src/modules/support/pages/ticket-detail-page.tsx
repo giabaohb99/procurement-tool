@@ -33,6 +33,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { ImageLightbox } from '@/shared/ui/image-lightbox'
 import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Textarea } from '@/shared/ui/textarea'
@@ -185,9 +186,7 @@ function TicketDetailView({
           </div>
           {introFiles.length > 0 && (
             <div className="mt-2.5 flex flex-wrap gap-2">
-              {introFiles.map((file) => (
-                <TicketFileChip key={file.id} file={file} />
-              ))}
+              <TicketFileList files={introFiles} />
             </div>
           )}
         </div>
@@ -364,9 +363,7 @@ function MessageBubble({ message }: { message: TicketMessage }) {
         )}
         {files.length > 0 && (
           <div className={cn('flex flex-wrap gap-2', staff ? 'justify-end' : 'justify-start')}>
-            {files.map((file) => (
-              <TicketFileChip key={file.id} file={file} compact />
-            ))}
+            <TicketFileList files={files} compact />
           </div>
         )}
       </div>
@@ -511,25 +508,52 @@ function ReplyComposer({
   )
 }
 
-/** Một tệp đính kèm: ảnh xem ngay, tệp khác là thẻ bấm mở tab mới. */
-function TicketFileChip({ file, compact }: { file: TicketFile; compact?: boolean }) {
-  if (isImage(file)) {
-    return (
-      <a
-        href={file.url}
-        target="_blank"
-        rel="noreferrer"
-        title={file.filename}
-        className="block overflow-hidden rounded-lg border leading-none"
-      >
-        <img
-          src={file.url}
-          alt={file.filename}
-          className={cn('block max-h-44 object-cover', compact ? 'max-w-50' : 'max-w-60')}
+/**
+ * Danh sách tệp của một cụm (mô tả đầu phiếu hoặc một tin nhắn). Ảnh mở bằng
+ * lightbox tại chỗ và chuyển qua lại trong CÙNG cụm; tệp khác vẫn mở tab mới.
+ */
+function TicketFileList({ files, compact }: { files: TicketFile[]; compact?: boolean }) {
+  const images = files.filter(isImage)
+  const [lightbox, setLightbox] = useState<number | null>(null)
+
+  return (
+    <>
+      {files.map((file) =>
+        isImage(file) ? (
+          <button
+            key={file.id}
+            type="button"
+            title={file.filename}
+            onClick={() => setLightbox(images.indexOf(file))}
+            className="block overflow-hidden rounded-lg border leading-none"
+          >
+            <img
+              src={file.url}
+              alt={file.filename}
+              className={cn('block max-h-44 object-cover', compact ? 'max-w-50' : 'max-w-60')}
+            />
+          </button>
+        ) : (
+          <TicketFileChip key={file.id} file={file} />
+        ),
+      )}
+      {images.length > 0 && (
+        <ImageLightbox
+          images={images.map((f) => ({ url: f.url, name: f.filename }))}
+          index={lightbox ?? 0}
+          open={lightbox !== null}
+          onOpenChange={(o) => {
+            if (!o) setLightbox(null)
+          }}
+          onIndexChange={setLightbox}
         />
-      </a>
-    )
-  }
+      )}
+    </>
+  )
+}
+
+/** Một tệp KHÔNG phải ảnh: thẻ bấm mở tab mới. */
+function TicketFileChip({ file }: { file: TicketFile }) {
   return (
     <a
       href={file.url}

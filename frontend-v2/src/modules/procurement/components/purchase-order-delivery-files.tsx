@@ -2,11 +2,14 @@ import { Upload, X } from 'lucide-react'
 import { useRef } from 'react'
 
 import { Button } from '@/shared/ui/button'
+import { ImageLightbox, useImageLightbox } from '@/shared/ui/image-lightbox'
 import {
   useDeletePurchaseRequestAttachment,
   usePurchaseRequestAttachments,
   useUploadPurchaseRequestAttachments,
 } from '../hooks/use-purchase-request-support'
+
+const IMAGE_PATTERN = /\.(jpe?g|png|webp|gif)$/i
 
 interface PurchaseOrderDeliveryFilesProps {
   /** Thiếu id = lần giao chưa lưu — tệp giữ tạm ở trang, lưu đơn xong mới tải lên. */
@@ -44,6 +47,11 @@ export function PurchaseOrderDeliveryFiles({
   )
   const remove = useDeletePurchaseRequestAttachment('delivery', deliveryId ?? 0)
 
+  const isImageFile = (f: { content_type: string; filename: string }) =>
+    f.content_type.startsWith('image/') || IMAGE_PATTERN.test(f.filename)
+  const imageFiles = (files ?? []).filter(isImageFile)
+  const lightbox = useImageLightbox()
+
   return (
     <div className="space-y-1">
       {editable && (
@@ -76,15 +84,26 @@ export function PurchaseOrderDeliveryFiles({
 
       {(files ?? []).map((file) => (
         <div key={file.id} className="flex items-center gap-1">
-          <a
-            href={file.url}
-            target="_blank"
-            rel="noreferrer"
-            title={file.filename}
-            className="min-w-0 flex-1 truncate text-xs text-primary hover:underline"
-          >
-            {file.filename}
-          </a>
+          {isImageFile(file) ? (
+            <button
+              type="button"
+              title={file.filename}
+              onClick={() => lightbox.openAt(imageFiles.indexOf(file))}
+              className="min-w-0 flex-1 truncate text-left text-xs text-primary hover:underline"
+            >
+              {file.filename}
+            </button>
+          ) : (
+            <a
+              href={file.url}
+              target="_blank"
+              rel="noreferrer"
+              title={file.filename}
+              className="min-w-0 flex-1 truncate text-xs text-primary hover:underline"
+            >
+              {file.filename}
+            </a>
+          )}
           {editable && (
             <Button
               variant="ghost"
@@ -126,6 +145,13 @@ export function PurchaseOrderDeliveryFiles({
 
       {!deliveryId && pendingFiles.length > 0 && (
         <p className="text-xs text-muted-foreground">Tệp sẽ được tải lên khi bấm Lưu đơn.</p>
+      )}
+
+      {imageFiles.length > 0 && (
+        <ImageLightbox
+          images={imageFiles.map((f) => ({ url: f.url, name: f.filename }))}
+          {...lightbox.bind}
+        />
       )}
     </div>
   )

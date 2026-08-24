@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from 'react'
 
 import { Button } from '@/shared/ui/button'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
+import { ImageLightbox, useImageLightbox } from '@/shared/ui/image-lightbox'
 import { Skeleton } from '@/shared/ui/skeleton'
 import {
   useDeletePurchaseRequestAttachment,
@@ -59,6 +60,10 @@ export function LineAttachments({
   )
 
   const files = data ?? []
+  const isImageFile = (f: { content_type: string; filename: string }) =>
+    f.content_type.startsWith('image/') || IMAGE_PATTERN.test(f.filename)
+  const imageFiles = files.filter(isImageFile)
+  const lightbox = useImageLightbox()
 
   return (
     <section className="rounded-lg border p-3">
@@ -110,15 +115,20 @@ export function LineAttachments({
 
       <div className="flex flex-wrap gap-2">
         {files.map((file) =>
-          file.content_type.startsWith('image/') || IMAGE_PATTERN.test(file.filename) ? (
+          isImageFile(file) ? (
             <div key={file.id} className="group relative">
-              <a href={file.url} target="_blank" rel="noreferrer">
+              <button
+                type="button"
+                title={file.filename}
+                onClick={() => lightbox.openAt(imageFiles.indexOf(file))}
+                className="block leading-none"
+              >
                 <img
                   className="size-20 rounded-md border object-cover"
                   src={file.url}
                   alt={file.filename}
                 />
-              </a>
+              </button>
               {canManage && (
                 <div className="absolute right-1 top-1 rounded-md bg-background/90 opacity-0 shadow-sm transition-opacity focus-within:opacity-100 group-hover:opacity-100">
                   <ConfirmIconButton
@@ -191,6 +201,13 @@ export function LineAttachments({
           </div>
         ))}
       </div>
+
+      {imageFiles.length > 0 && (
+        <ImageLightbox
+          images={imageFiles.map((f) => ({ url: f.url, name: f.filename }))}
+          {...lightbox.bind}
+        />
+      )}
     </section>
   )
 }

@@ -138,7 +138,7 @@ sẵn từ lâu mà **không route nào dùng**, nhìn qua tưởng xong; và b�
 | ~~**Tổng quan Tài chính** và **Tổng quan Kho**~~ | ~~Đang là trang rỗng 11 dòng, chỉ có tiêu đề~~ **Đã dựng ở Đ-11 (CR-132)** — hai khối *Tuổi nợ* và *Công nợ quá hạn* nay nằm đúng chỗ, bên Tài chính |
 | ~~**Công nợ**~~ | ~~Thiếu cột tick chọn + nút lên phiếu thanh toán từ các dòng đã chọn~~ **Đã trả lại ở Đ-09 (CR-119)** — cột *Chọn* ghim đầu bảng + nút *Tạo đề nghị thanh toán*, giữ chọn xuyên trang, tách phiếu theo NCC |
 | **Chi tiết Yêu cầu báo giá** | Thiếu nút *Xử lý khảo sát* — nhưng màn đó đã quyết bỏ, việc chọn phương án sẽ nằm ngay trong chi tiết phiếu ở P6 |
-| **Xem ảnh đính kèm** *(chung nhiều màn — không tính là một màn riêng)* | Bản cũ `AttachmentGallery` bấm ảnh **mở lightbox xem tại chỗ + lật qua lại**; v2 **chưa có bộ xem ảnh dùng chung** nên mọi ảnh bọc `<a target="_blank">` → **bấm là bung tab mới**. Rải khắp các màn có đính kèm: Ticket (`support/pages/ticket-detail-page.tsx`), đính kèm dòng (`procurement/components/line-attachments.tsx`), bộ chứng từ (`document-attachments-card.tsx`), file giao hàng ĐMH (`purchase-order-delivery-files.tsx`). Cần **một** component lightbox dùng chung thay hành vi mở tab, sửa một lần dùng mọi nơi — đừng vá lẻ từng màn. *(Lưu ý: **avatar** nhân sự/cá nhân và **cột ảnh sản phẩm** ĐÃ có thumbnail đúng — không thuộc khoản này.)* |
+| ~~**Xem ảnh đính kèm**~~ *(chung nhiều màn — không tính là một màn riêng)* | ~~Bản cũ `AttachmentGallery` bấm ảnh mở lightbox tại chỗ; v2 bọc `<a target="_blank">` nên bấm là bung tab mới.~~ **Đã xong:** dựng component dùng chung `shared/ui/image-lightbox.tsx` + hook `useImageLightbox` (nút ‹ › + phím mũi tên + bộ đếm + dải thumbnail) và **nối cả 5 chỗ có đính kèm ảnh**: Ticket, đính kèm dòng (`line-attachments.tsx`), bình luận (`document-comments.tsx`), bộ chứng từ (`document-attachments-card.tsx`), file giao hàng ĐMH (`purchase-order-delivery-files.tsx`) — chuyển ảnh trong CÙNG cụm. *(Avatar và cột ảnh sản phẩm đã có thumbnail sẵn, không thuộc khoản này; muốn bấm-để-phóng-to ở đó thì mở việc riêng.)* |
 
 ### 1.9 Hai màn đã quyết bỏ
 
@@ -769,7 +769,7 @@ sẵn, hệ mình tự viết nên còn thiếu. Ghi lại để nhặt dần, *
 | NF-07 | Nộp / Hủy / Sửa đổi bản (khóa bất biến sau duyệt) | Nửa | Chỉ văn thư có `amended-by`/supersede; thu mua chưa khóa sau duyệt |
 | NF-08 | **Nhãn dán (tags) tự do + lọc theo nhãn** | Chưa | |
 | NF-09 | Thao tác hàng loạt trong danh sách (bulk duyệt/xóa/sửa) | Chưa | |
-| NF-10 | Xem ảnh tại chỗ (lightbox) — *xem §1.8* | Chưa | Mọi ảnh đang `<a target="_blank">`, bấm là bung tab mới |
+| NF-10 | Xem ảnh tại chỗ (lightbox) — *xem §1.8* | Có | `shared/ui/image-lightbox.tsx` + hook, đã nối cả 5 chỗ đính kèm ảnh |
 
 *Bảo mật & tài khoản*
 
@@ -794,7 +794,7 @@ sẵn, hệ mình tự viết nên còn thiếu. Ghi lại để nhặt dần, *
 (`/system/audit-logs`), cấu hình hệ thống (`/system/settings`), tài liệu API (FastAPI `/docs`),
 avatar + cột ảnh sản phẩm có thumbnail.
 
-**Năm cái nhỏ mà đáng làm trước** (rẻ, ai cũng đụng hằng ngày): NF-10 *(lightbox — đang làm)* ·
+**Năm cái nhỏ mà đáng làm trước** (rẻ, ai cũng đụng hằng ngày): ~~NF-10 *(lightbox)*~~ **xong** ·
 NF-01 *(xóa mềm)* · NF-02 *(bộ lọc đã lưu)* · NF-03 *(tìm kiếm toàn cục)* · NF-04 *(@nhắc tên,
 backend đã đỡ nửa đường)*. Mấy cái nặng/ít dùng (2FA, webhook, custom field từ UI, submit-cancel-amend
 toàn hệ) để nhóm sau.
