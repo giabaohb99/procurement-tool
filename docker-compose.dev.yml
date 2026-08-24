@@ -10,7 +10,8 @@
 #   rồi kiểm `git status --short` phải RỖNG trước khi build.
 #   (Từ 18/08/2026 dev đổi từ `bao` sang `erp-v2` để chạy song song hai giao diện; `bao` được
 #   merge vào `erp-v2` chứ không bỏ — nhánh tính năng nào cũng phải về `erp-v2` mới lên dev.)
-# Khác prod: KHÔNG celery-beat, KHÔNG db-forward; web build cho domain devthumua.
+# Khác prod: KHÔNG db-forward; web build cho domain devthumua. Có celery-beat (1 lần/ngày,
+# BACKUP_ONCE_DAILY=true) — chỉ stack này chạy beat, devthumua dùng chung DB không thêm beat.
 # Có thêm `erp` (frontend-v2) mà prod chưa có — giao diện mới chạy song song bản cũ để đối chiếu.
 services:
   api:
@@ -103,6 +104,24 @@ services:
       - dego-db
       - procurement-internal
 
+  # Bật lại beat cho dev (prod vốn có, dev trước đây tắt). Dev đặt BACKUP_ONCE_DAILY=true
+  # trong .env.dev nên chỉ chạy sao lưu 1 lần/ngày (01:00). CHỈ stack deverp này chạy beat —
+  # devthumua dùng chung DB, thêm beat nữa là nhân đôi bản sao lưu.
+  celery-beat:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    env_file: .env.dev
+    restart: always
+    command: celery -A app.core.celery_app beat -l info --scheduler celery.beat:PersistentScheduler --schedule /app/beatdata/celerybeat-schedule
+    depends_on:
+      - redis
+      - celery-worker
+    volumes:
+      - beat_data:/app/beatdata   # giữ mốc lịch (celerybeat-schedule) qua các lần dựng lại
+    networks:
+      - procurement-internal
+
 networks:
   dego-db:
     external: true
@@ -113,3 +132,4 @@ networks:
 
 volumes:
   redis_data:
+  beat_data:

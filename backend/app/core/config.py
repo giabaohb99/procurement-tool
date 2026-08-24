@@ -89,6 +89,9 @@ class Settings(BaseSettings):
 
     # --- Sao lưu CSDL ---
     BACKUP_KEEP: int = 30   # số bản backup giữ lại (2 lần/ngày -> ~15 ngày)
+    # Prod chạy 2 lần/ngày (01:00 + 13:00). Dev đặt =true để chỉ chạy 1 lần/ngày
+    # (01:00) — dữ liệu dev đồng bộ từ prod nên không cần dày.
+    BACKUP_ONCE_DAILY: bool = False
 
     # --- Dọn dẹp ---
     NOTIFICATION_KEEP_DAYS: int = 10   # thông báo cũ hơn N ngày sẽ tự xóa

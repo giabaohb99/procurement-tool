@@ -15,6 +15,22 @@ celery_app = Celery(
     backend=settings.CELERY_RESULT_BACKEND,
 )
 
+# Lịch sao lưu CSDL. Prod: 2 lần/ngày (01:00 + 13:00). Dev đặt BACKUP_ONCE_DAILY=true
+# để chỉ giữ lịch sáng — một dãy dict dựng động, không viết cứng hai lịch ở dưới.
+_backup_schedule = {
+    "backup-db-sang": {
+        "task": "backup.run",
+        "schedule": crontab(hour=1, minute=0),   # 01:00 VN
+        "kwargs": {"source": "auto", "actor_id": 0},
+    },
+}
+if not settings.BACKUP_ONCE_DAILY:
+    _backup_schedule["backup-db-chieu"] = {
+        "task": "backup.run",
+        "schedule": crontab(hour=13, minute=0),  # 13:00 VN
+        "kwargs": {"source": "auto", "actor_id": 0},
+    }
+
 celery_app.conf.update(
     # Múi giờ VN — mọi crontab + timestamp theo giờ Hà Nội (khỏi cộng trừ 7h)
     timezone="Asia/Ho_Chi_Minh",
@@ -43,18 +59,9 @@ celery_app.conf.update(
     task_acks_late=True,
     task_reject_on_worker_lost=True,
 
-    # Lịch beat — giờ Hà Nội (enable_utc=False). Sao lưu CSDL 2 lần/ngày.
+    # Lịch beat — giờ Hà Nội (enable_utc=False). Sao lưu CSDL: xem _backup_schedule.
     beat_schedule={
-        "backup-db-sang": {
-            "task": "backup.run",
-            "schedule": crontab(hour=1, minute=0),   # 01:00 VN
-            "kwargs": {"source": "auto", "actor_id": 0},
-        },
-        "backup-db-chieu": {
-            "task": "backup.run",
-            "schedule": crontab(hour=13, minute=0),  # 13:00 VN
-            "kwargs": {"source": "auto", "actor_id": 0},
-        },
+        **_backup_schedule,
         "cleanup-notifications": {
             "task": "notification.cleanup",
             "schedule": crontab(hour=2, minute=30),  # 02:30 VN, mỗi ngày
