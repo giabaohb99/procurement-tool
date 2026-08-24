@@ -37,6 +37,7 @@ export function emptyDocumentForm(): DocumentRecordFormValues {
     urgency: 1,
     effective_date: '',
     expire_date: '',
+    attachment_view_until: '',
     legacy_code: '',
     storage_location: '',
   }
@@ -61,6 +62,7 @@ export function documentToForm(record: DocumentRecord): DocumentRecordFormValues
     urgency: record.urgency,
     effective_date: record.effective_date ?? '',
     expire_date: record.expire_date ?? '',
+    attachment_view_until: record.attachment_view_until ?? '',
     legacy_code: record.legacy_code ?? '',
     storage_location: record.storage_location ?? '',
   }
@@ -72,5 +74,6 @@ export function formToPayload(values: DocumentRecordFormValues) {
     ...values,
     effective_date: values.effective_date || null,
     expire_date: values.expire_date || null,
+    attachment_view_until: values.attachment_view_until || null,
   }
 }

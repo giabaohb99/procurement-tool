@@ -76,6 +76,17 @@ class Settings(BaseSettings):
     # `pr_dispatch_enabled`, lưu DB, đổi có hiệu lực ngay, không cần deploy).
     PR_DISPATCH_ENABLED: bool = True
 
+    # --- Cảnh báo mở/tải tệp đính kèm văn bản (xem `document/file_access_log.py`) ---
+    #  Bao nhiêu lượt mở/tải của CÙNG một người trong cửa sổ thì coi là bất
+    #  thường. **0 = tắt hẳn phần cảnh báo**, vẫn ghi nhật ký như thường.
+    #  20 lượt / 10 phút: người làm việc bình thường mở vài tệp một lúc; hai chục
+    #  tệp trong mười phút là dấu hiệu đang gom tài liệu, không phải đang đọc.
+    DOC_FILE_ALERT_THRESHOLD: int = 20
+    DOC_FILE_ALERT_WINDOW_MIN: int = 10
+    #  Ai nhận cảnh báo — email hoặc mã nhân viên, ngăn cách bằng dấu phẩy.
+    #  Bỏ trống = tự suy ra người có quyền đọc văn bản ở phạm vi TOÀN HỆ.
+    DOC_FILE_ALERT_RECIPIENTS: str = ""
+
     # --- Sao lưu CSDL ---
     BACKUP_KEEP: int = 30   # số bản backup giữ lại (2 lần/ngày -> ~15 ngày)
 

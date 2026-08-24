@@ -41,6 +41,9 @@ export const documentRecordSchema = z
 
     effective_date: z.string(),
     expire_date: z.string(),
+    //  Hạn XEM TỆP đính kèm — không ràng buộc với hai ngày hiệu lực ở trên:
+    //  tài liệu hết hiệu lực vẫn có thể cho xem tệp, và ngược lại.
+    attachment_view_until: z.string(),
     legacy_code: z.string().trim().max(100, 'Tối đa 100 ký tự'),
     //  NƠI LƯU TRỮ CỨNG — bản giấy có chữ ký tươi nằm ở đâu. Không bắt buộc:
     //  lúc lập văn bản thì thường chưa in ra, chỗ cất là chuyện sau khi ký.

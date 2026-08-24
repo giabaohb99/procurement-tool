@@ -131,6 +131,7 @@ def base_fields(doc: Document) -> dict:
         "status_label": STATUS_LABELS.get(doc.status, str(doc.status)),
         "effective_date": doc.effective_date,
         "expire_date": doc.expire_date,
+        "attachment_view_until": doc.attachment_view_until,
         "current_version_id": doc.current_version_id,
         #  Bản gốc của BẢN RIÊNG. Danh sách dựa vào cột này để thụt lề dòng con
         #  và để biết dòng nào là bản riêng của dòng nào.

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Download, FileText, Loader2, Paperclip, X } from 'lucide-react'
-import { useRef } from 'react'
+import { Download, Eye, FileText, Loader2, Paperclip, X } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { downloadFile, extractErrorMessage } from '@/core/api'
@@ -11,6 +11,8 @@ import {
 import { Button } from '@/shared/ui/button'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { FormCard } from '@/shared/ui/form-card'
+import { xemTaiChoDuoc } from '../helpers/inline-viewable'
+import { AttachmentViewerDialog } from './attachment-viewer-dialog'
 
 /**
  * Đính kèm treo vào **PHIÊN BẢN**, không vào văn bản (`entity = 'document_version'`).
@@ -37,14 +39,19 @@ interface DocumentAttachmentListProps {
   versionId: number | null
   /** Bản đã duyệt là bất biến — chỉ xem, không thêm không gỡ. */
   readOnly?: boolean
+  /** Số hiệu văn bản — in vào watermark của khung xem. */
+  documentCode?: string
 }
 
 export function DocumentAttachmentList({
   versionId,
   readOnly = false,
+  documentCode,
 }: DocumentAttachmentListProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const queryClient = useQueryClient()
+  //  Tệp đang mở trong khung xem tại chỗ. `null` = khung đang đóng.
+  const [dangXem, setDangXem] = useState<AttachmentFile | null>(null)
 
   const queryKey = ['document', 'attachments', versionId ?? 0] as const
 
@@ -146,6 +153,22 @@ export function DocumentAttachmentList({
                 </p>
               </div>
 
+              {/*  XEM TẠI CHỖ đứng TRƯỚC nút tải: phần lớn lượt mở tệp là để
+                   liếc một cái, không phải để giữ một bản trên máy. Chỉ hiện với
+                   kiểu tệp backend cho mở tại chỗ (ảnh + PDF) — kiểu khác bấm
+                   vào chỉ nhận 415. */}
+              {xemTaiChoDuoc(file.content_type, file.filename) && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  title="Xem tại chỗ"
+                  onClick={() => setDangXem(file)}
+                >
+                  <Eye className="size-4" />
+                </Button>
+              )}
+
               <Button
                 type="button"
                 variant="ghost"
@@ -176,6 +199,14 @@ export function DocumentAttachmentList({
           ))}
         </ul>
       )}
+
+      <AttachmentViewerDialog
+        linkId={dangXem?.id ?? null}
+        filename={dangXem?.filename ?? ''}
+        contentType={dangXem?.content_type}
+        documentCode={documentCode}
+        onClose={() => setDangXem(null)}
+      />
     </FormCard>
   )
 }

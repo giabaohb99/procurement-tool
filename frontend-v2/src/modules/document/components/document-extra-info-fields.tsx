@@ -259,6 +259,28 @@ export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) 
         )}
       />
 
+      {/*  HẠN XEM TỆP — khác hẳn «Hết hiệu lực» ở trên, nên đứng ngay cạnh nó để
+           người khai nhìn thấy cả hai mà phân biệt: văn bản hết hiệu lực thì vẫn
+           phải tra lại được, còn cái này khóa chính TỆP đính kèm. */}
+      <FormField
+        control={form.control}
+        name="attachment_view_until"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Xem tệp đính kèm tới ngày</FormLabel>
+            <FormControl>
+              <DatePicker value={field.value} onChange={field.onChange} />
+            </FormControl>
+            <FormDescription>
+              Quá ngày này thì <strong>không ai mở hay tải được tệp đính kèm</strong> của văn
+              bản nữa (kể cả bằng đường dẫn cũ). Hết ngày đã chọn vẫn còn xem được. Trống =
+              không đặt hạn.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       <FormField
         control={form.control}
         name="keywords"

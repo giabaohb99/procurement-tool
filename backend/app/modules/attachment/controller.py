@@ -19,6 +19,7 @@ from app.core.response import success
 from app.core.scoping import apply_scope
 from app.core.storage import (dated_key, delete_key, download_bytes,
                               upload_fileobj)
+from app.modules.document.file_access_log import ACTION_TAI, ACTION_XEM
 
 from .model import FileLink, StoredFile
 from .service import _delete_file_if_orphan
@@ -422,9 +423,96 @@ def chain_zip(entity: str = Query(...), entity_id: int = Query(...),
                     headers={"Content-Disposition": _content_disposition(fname)})
 
 
+#  KIỂU TỆP ĐƯỢC PHÉP MỞ TẠI CHỖ.
+#
+#  ⚠️ Danh sách TRẮNG, không phải danh sách đen — và **SVG cố ý không có mặt**.
+#  Trả tệp `inline` từ chính miền của API nghĩa là nội dung tệp chạy trong ngữ
+#  cảnh của API: một tệp `.html` hay `.svg` do người dùng tải lên có thể mang mã
+#  JavaScript, mở ra là nó đọc được cookie/token của miền đó. Ảnh raster và PDF
+#  thì trình duyệt vẽ chứ không chạy.
+KIEU_XEM_TAI_CHO = {
+    "image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp",
+    "application/pdf",
+}
+
+
+@router.get("/{link_id}/view")
+def view_one(link_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """XEM TẠI CHỖ — trả `inline` để nhúng thẳng vào trang, không ép tải về.
+
+    Khác `/download` đúng hai điểm: `Content-Disposition: inline` và **chỉ nhận
+    kiểu tệp an toàn** (`KIEU_XEM_TAI_CHO`). Kiểu khác vẫn phải đi đường tải về —
+    thà bắt tải còn hơn mở một tệp có thể chạy mã ngay trên miền của API.
+    """
+    lk, f = _lay_file_co_quyen(db, user, link_id, ACTION_XEM)
+
+    kieu = (f.content_type or "").split(";")[0].strip().lower()
+    if kieu not in KIEU_XEM_TAI_CHO:
+        raise HTTPException(415, "Kiểu tệp này không xem tại chỗ được — tải về để mở.")
+
+    return Response(
+        content=download_bytes(f.file_key),
+        media_type=kieu,
+        headers={
+            "Content-Disposition": f"inline; filename*=UTF-8''{quote(f.filename)}",
+            #  `nosniff`: cấm trình duyệt tự đoán lại kiểu tệp — đoán sai một
+            #  lần là danh sách trắng ở trên thành vô nghĩa.
+            "X-Content-Type-Options": "nosniff",
+            #  `sandbox`: nội dung chạy như đến từ một gốc khác, không đụng được
+            #  cookie/token của miền API. Chốt chặn thứ hai sau danh sách trắng.
+            "Content-Security-Policy": "sandbox; default-src 'none'; img-src 'self' data:",
+            #  Hạn xem hết là hết — không để bản sao nằm lại trong bộ nhớ đệm
+            #  của trình duyệt rồi mở lại được sau đó.
+            "Cache-Control": "no-store, no-cache, must-revalidate, private",
+        },
+    )
+
+
+@router.get("/{link_id}/preview")
+def preview_one(link_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """XEM TẠI CHỖ tệp WORD (và .md/.html) — chuyển sang HTML rồi trả về.
+
+    Word không có trình xem sẵn trong trình duyệt, nên khác ảnh và PDF: không
+    nhúng thẳng tệp gốc được mà phải đổi sang HTML trước.
+
+    Dùng lại **đúng bộ chuyển của chức năng nhập tệp** (`parse_document_file`) —
+    bộ đó tự đọc OpenXML nên image API không phải kéo theo LibreOffice hàng trăm
+    MB, và HTML ra đã đi qua `sanitize_html`. Một bộ chuyển cho cả nhập lẫn xem
+    thì thứ người dùng xem trước đúng bằng thứ họ sẽ nhận nếu bấm nhập.
+
+    PDF và ảnh KHÔNG đi đường này — chúng nhúng thẳng qua `/view`, trình duyệt
+    vẽ đẹp hơn mọi bản chuyển đổi.
+    """
+    lk, f = _lay_file_co_quyen(db, user, link_id, ACTION_XEM)
+
+    from app.modules.document.import_service import parse_document_file
+
+    try:
+        ket_qua = parse_document_file(f.filename, download_bytes(f.file_key))
+    except ValueError as loi:
+        #  415 = "hiểu yêu cầu nhưng không xử được kiểu tệp này". Câu của
+        #  `parse_document_file` đã nói rõ vì sao (sai đuôi, tệp rỗng, quá lớn).
+        raise HTTPException(415, str(loi))
+
+    return success({"filename": f.filename, "html": ket_qua["content_html"]})
+
+
 @router.get("/{link_id}/download")
 def download_one(link_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Tải 1 file (ép attachment, đúng tên gốc). Quyền theo entity cha của link."""
+    lk, f = _lay_file_co_quyen(db, user, link_id, ACTION_TAI)
+    data = download_bytes(f.file_key)
+    return Response(content=data, media_type=f.content_type or "application/octet-stream",
+                    headers={"Content-Disposition": _content_disposition(f.filename)})
+
+
+def _lay_file_co_quyen(db: Session, user, link_id: int,
+                       hanh_dong: str) -> tuple[FileLink, StoredFile]:
+    """Tra link + kiểm quyền + kiểm HẠN XEM. Dùng chung cho cả xem lẫn tải.
+
+    Gom một chỗ vì hai đường phải chặn y hệt nhau: chặn ở đường xem mà quên
+    đường tải thì hạn xem chỉ là một cái nút bị ẩn.
+    """
     lk = db.get(FileLink, link_id)
     if not lk:
         raise HTTPException(404, "Không tìm thấy file")
@@ -441,12 +529,43 @@ def download_one(link_id: int, db: Session = Depends(get_db), user=Depends(get_c
             #  bất kỳ ai mở được đơn; đây chỉ là tải lẻ thay vì tải cả gói.
             if e.status_code != 403 or not reachable_from_scoped_po(db, user, lk.entity, lk.entity_id):
                 raise
+
+    #  HẠN XEM xét SAU quyền: hết hạn là 403 «chỉ xem được tới ngày…», khác hẳn
+    #  «không có quyền». Đặt trước phần quyền thì người vốn không được xem lại
+    #  nhận đúng ngày hết hạn của một tệp họ không được biết là có.
+    from app.modules.document.attachment_window import chan_neu_het_han
+    chan_neu_het_han(db, lk.entity, lk.entity_id)
+
     f = db.get(StoredFile, lk.file_id)
     if not f:
         raise HTTPException(404, "File không tồn tại")
-    data = download_bytes(f.file_key)
-    return Response(content=data, media_type=f.content_type or "application/octet-stream",
-                    headers={"Content-Disposition": _content_disposition(f.filename)})
+
+    _ghi_nhat_ky_neu_la_van_ban(db, lk, user, f.filename, hanh_dong)
+    return lk, f
+
+
+def _ghi_nhat_ky_neu_la_van_ban(db: Session, lk: FileLink, user, ten_tep: str,
+                                hanh_dong: str) -> None:
+    """Ghi lượt mở/tải vào nhật ký của VĂN BẢN và báo động nếu bất thường.
+
+    Chỉ đính kèm văn bản mới ghi. Ghi cho mọi entity thì nhật ký phình lên vì
+    những lượt xem chẳng ai cần tra (ảnh trong bình luận, chứng từ ĐMH), mà đúng
+    thứ cần tìm lại chìm trong đó.
+
+    ⚠️ **Nuốt lỗi.** Người dùng có quyền, tệp có thật, mà bấm vào lại nhận lỗi
+    chỉ vì bảng nhật ký trục trặc là đổi một phiền toái nhỏ lấy một sự cố lớn.
+    """
+    from app.modules.document.attachment_window import van_ban_cua_dinh_kem
+    from app.modules.document.file_access_log import ghi_va_canh_bao
+
+    try:
+        doc = van_ban_cua_dinh_kem(db, lk.entity, lk.entity_id)
+        if doc is not None:
+            ghi_va_canh_bao(db, doc, user, hanh_dong, ten_tep)
+    except Exception:  # noqa: BLE001 — nhật ký hỏng không được chặn việc mở tệp
+        import logging
+        logging.getLogger(__name__).exception(
+            "Không ghi được nhật ký mở tệp #%s", lk.id)
 
 
 @router.delete("/{link_id}")

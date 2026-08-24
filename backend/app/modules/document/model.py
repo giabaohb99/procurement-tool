@@ -169,6 +169,17 @@ class Document(Base, AuditMixin):
     issued_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     #  Hạn rà soát định kỳ. Chưa có màn nhắc — thuộc phase sau.
     next_review_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    #  XEM TỆP ĐÍNH KÈM TỚI NGÀY NÀO. Quá ngày này thì mọi tệp đính kèm của văn
+    #  bản **không mở ra và không tải về được nữa** — dùng cho tài liệu chỉ cho
+    #  xem trong một khoảng (bảng lương kỳ này, hồ sơ thầu tới ngày mở thầu).
+    #
+    #  Đặt trên VĂN BẢN chứ không trên từng tệp: người dùng nghĩ theo "tài liệu
+    #  này chỉ cho xem tới ngày X", không nghĩ theo từng tệp một. Rỗng = không
+    #  đặt hạn, xem như trước.
+    #
+    #  ⚠️ Đây KHÔNG phải `expire_date` (ngày văn bản hết hiệu lực): văn bản hết
+    #  hiệu lực vẫn phải tra lại được, còn cái này là hạn xem TỆP.
+    attachment_view_until: Mapped[date | None] = mapped_column(Date, nullable=True)
     #  CẦN RÀ LẠI — bật khi văn bản CHA đổi (lên phiên bản mới hoặc bị bãi bỏ) và
     #  quy tắc quan hệ khai `on_parent_* = 2`. Hệ thống chỉ ĐÁNH DẤU, tuyệt đối
     #  không tự sửa nội dung con: người sửa quyết định, quyết định đó vào nhật ký.

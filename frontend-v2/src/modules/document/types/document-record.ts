@@ -136,6 +136,8 @@ export interface DocumentRecord {
   status_label: string
   effective_date: string | null
   expire_date: string | null
+  /** Hạn XEM TỆP ĐÍNH KÈM — quá ngày này thì tệp không mở/tải được nữa. */
+  attachment_view_until: string | null
 
   /**
    * SỔ VĂN BẢN chứa văn bản này (có thể trống).

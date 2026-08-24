@@ -44,6 +44,9 @@ class DocumentBase(BaseModel):
 
     effective_date: date | None = None
     expire_date: date | None = None
+    #  Hạn XEM TỆP ĐÍNH KÈM — khác `expire_date` (hạn hiệu lực của văn bản).
+    #  Quá ngày này thì tệp không mở/tải được nữa; rỗng = không đặt hạn.
+    attachment_view_until: date | None = None
     #  Số hiệu bản GIẤY trước khi lên hệ thống (C12) — người cũ vẫn tra theo số này.
     legacy_code: str = Field(default="", max_length=100)
     #  Bản giấy nằm ở đâu ("Tủ A2 · Kệ 3 · Bìa 12"). Tìm kiếm chấp nhận cột này.
@@ -91,6 +94,9 @@ class DocumentUpdate(BaseModel):
     urgency: int | None = Field(default=None, ge=1, le=99)
     effective_date: date | None = None
     expire_date: date | None = None
+    #  Hạn XEM TỆP ĐÍNH KÈM — khác `expire_date` (hạn hiệu lực của văn bản).
+    #  Quá ngày này thì tệp không mở/tải được nữa; rỗng = không đặt hạn.
+    attachment_view_until: date | None = None
     legacy_code: str | None = Field(default=None, max_length=100)
     storage_location: str | None = Field(default=None, max_length=200)
 

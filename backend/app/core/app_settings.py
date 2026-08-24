@@ -24,6 +24,11 @@ REGISTRY = {
     "r2_bucket": ("str", "R2_BUCKET"),
     "r2_public_url": ("str", "R2_PUBLIC_URL"),
     "pr_dispatch_enabled": ("bool", "PR_DISPATCH_ENABLED"),
+    #  Cảnh báo mở/tải tệp đính kèm văn bản — sửa được ngay trên màn Cấu hình
+    #  hệ thống, không cần deploy (đúng thứ cần khi đang có nghi vấn rò tài liệu).
+    "doc_file_alert_threshold": ("int", "DOC_FILE_ALERT_THRESHOLD"),
+    "doc_file_alert_window_min": ("int", "DOC_FILE_ALERT_WINDOW_MIN"),
+    "doc_file_alert_recipients": ("str", "DOC_FILE_ALERT_RECIPIENTS"),
 }
 
 # key bí mật → thuộc tính fallback .env — NHẬP được nhưng không hiển thị lại
