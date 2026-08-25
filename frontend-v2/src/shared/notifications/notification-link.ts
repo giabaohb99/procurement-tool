@@ -40,6 +40,7 @@ const PREFIX_MAP: [from: string, to: string][] = [
 const V2_PREFIXES = [
   '/approval',
   '/approval-seal',
+  '/assistant',
   '/customer',
   '/dego-coffee',
   '/document',
