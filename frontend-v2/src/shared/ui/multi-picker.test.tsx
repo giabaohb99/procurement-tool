@@ -51,7 +51,7 @@ describe('MultiPicker', () => {
   })
 })
 
-/** 40 mục để vượt ngưỡng gập chip (12). Ghim `id: number` để `value` khớp kiểu. */
+/** 40 mục để vượt ngưỡng gập chip (10). Ghim `id: number` để `value` khớp kiểu. */
 const NHIEU: (MultiPickerOption & { id: number })[] = Array.from({ length: 40 }, (_, i) => ({
   id: i + 1,
   label: `Nhân sự ${i + 1}`,
@@ -76,8 +76,8 @@ describe('MultiPicker — dải chip khi chọn nhiều', () => {
     //  mất — người dùng tưởng form hỏng.
     dungNhieuChip(NHIEU.map((item) => item.id))
 
-    expect(screen.getAllByRole('button', { name: /^Bỏ Nhân sự/ })).toHaveLength(12)
-    expect(screen.getByRole('button', { name: '+ 28 nữa' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /^Bỏ Nhân sự/ })).toHaveLength(10)
+    expect(screen.getByRole('button', { name: /Xem thêm 30/ })).toBeInTheDocument()
   })
 
   it('nút mở nói SỐ LƯỢNG đã chọn thay cho câu mời chọn', () => {
@@ -92,31 +92,65 @@ describe('MultiPicker — dải chip khi chọn nhiều', () => {
     const nguoi = userEvent.setup()
     dungNhieuChip(NHIEU.map((item) => item.id))
 
-    await nguoi.click(screen.getByRole('button', { name: '+ 28 nữa' }))
+    await nguoi.click(screen.getByRole('button', { name: /Xem thêm 30/ }))
     expect(screen.getAllByRole('button', { name: /^Bỏ Nhân sự/ })).toHaveLength(40)
 
-    await nguoi.click(screen.getByRole('button', { name: 'Thu gọn' }))
-    expect(screen.getAllByRole('button', { name: /^Bỏ Nhân sự/ })).toHaveLength(12)
+    await nguoi.click(screen.getByRole('button', { name: /Thu gọn/ }))
+    expect(screen.getAllByRole('button', { name: /^Bỏ Nhân sự/ })).toHaveLength(10)
+  })
+
+  it('bung ra thì dải chip ĐÓNG KHUNG và cuộn, không dựng lại bức tường vừa dỡ', async () => {
+    //  Bung mà thả trôi thì 200 chip lại đẩy phần dưới của form đi mất — đúng
+    //  cái lỗi ban đầu, chỉ khác là phải bấm một nút mới thấy.
+    const nguoi = userEvent.setup()
+    dungNhieuChip(NHIEU.map((item) => item.id))
+    await nguoi.click(screen.getByRole('button', { name: /Xem thêm 30/ }))
+
+    const chip = screen.getAllByRole('button', { name: /^Bỏ Nhân sự/ })[0]
+    const khung = chip.closest('div')
+    expect(khung?.className).toMatch(/overflow-y-auto/)
+    expect(khung?.className).toMatch(/max-h-/)
+  })
+
+  it('gập lại thì bỏ khung cuộn, không để lại ô trống lửng', async () => {
+    const nguoi = userEvent.setup()
+    dungNhieuChip(NHIEU.map((item) => item.id))
+    await nguoi.click(screen.getByRole('button', { name: /Xem thêm 30/ }))
+    await nguoi.click(screen.getByRole('button', { name: /Thu gọn/ }))
+
+    const chip = screen.getAllByRole('button', { name: /^Bỏ Nhân sự/ })[0]
+    expect(chip.closest('div')?.className).not.toMatch(/overflow-y-auto/)
+  })
+
+  it('nút thao tác KHÔNG nằm lẫn trong dải chip', () => {
+    //  «Xem thêm» / «Bỏ hết» không phải là "một người đã chọn"; để lẫn giữa các
+    //  chip thì người dùng đọc nhầm thành một mục nữa trong danh sách.
+    dungNhieuChip(NHIEU.map((item) => item.id))
+    const chip = screen.getAllByRole('button', { name: /^Bỏ Nhân sự/ })[0]
+    const daiChip = chip.closest('div')
+
+    expect(daiChip?.contains(screen.getByRole('button', { name: /Xem thêm/ }))).toBe(false)
+    expect(daiChip?.contains(screen.getByRole('button', { name: 'Bỏ hết' }))).toBe(false)
   })
 
   it('ít hơn ngưỡng thì không hiện nút bung', () => {
     dungNhieuChip([1, 2])
-    expect(screen.queryByRole('button', { name: /nữa$/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Thu gọn' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Xem thêm/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Thu gọn/ })).not.toBeInTheDocument()
   })
 
-  it('ĐÚNG 12 (bằng ngưỡng) thì hiện hết, không bày nút bung thừa', () => {
-    //  Ca biên: `slice(0, 12)` của đúng 12 phần tử vẫn là 12, phần dư = 0. Sai
-    //  dấu so sánh một chút là hiện «+ 0 nữa».
-    dungNhieuChip(NHIEU.slice(0, 12).map((item) => item.id))
-    expect(screen.getAllByRole('button', { name: /^Bỏ Nhân sự/ })).toHaveLength(12)
-    expect(screen.queryByRole('button', { name: /nữa$/ })).not.toBeInTheDocument()
+  it('ĐÚNG 10 (bằng ngưỡng) thì hiện hết, không bày nút bung thừa', () => {
+    //  Ca biên: `slice(0, 10)` của đúng 10 phần tử vẫn là 10, phần dư = 0. Sai
+    //  dấu so sánh một chút là hiện «Xem thêm 0».
+    dungNhieuChip(NHIEU.slice(0, 10).map((item) => item.id))
+    expect(screen.getAllByRole('button', { name: /^Bỏ Nhân sự/ })).toHaveLength(10)
+    expect(screen.queryByRole('button', { name: /Xem thêm/ })).not.toBeInTheDocument()
   })
 
-  it('13 mục thì gập còn 12 và báo đúng «+ 1 nữa»', () => {
-    dungNhieuChip(NHIEU.slice(0, 13).map((item) => item.id))
-    expect(screen.getAllByRole('button', { name: /^Bỏ Nhân sự/ })).toHaveLength(12)
-    expect(screen.getByRole('button', { name: '+ 1 nữa' })).toBeInTheDocument()
+  it('11 mục thì gập còn 10 và báo đúng «Xem thêm 1»', () => {
+    dungNhieuChip(NHIEU.slice(0, 11).map((item) => item.id))
+    expect(screen.getAllByRole('button', { name: /^Bỏ Nhân sự/ })).toHaveLength(10)
+    expect(screen.getByRole('button', { name: /Xem thêm 1$/ })).toBeInTheDocument()
   })
 
   it('id đã chọn nhưng KHÔNG còn trong danh mục thì không đếm, không vẽ chip ma', () => {

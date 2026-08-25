@@ -1,4 +1,4 @@
-import { Check, Search, X } from 'lucide-react'
+import { Check, ChevronDown, ChevronUp, Search, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { Badge } from '@/shared/ui/badge'
@@ -41,14 +41,22 @@ interface MultiPickerProps<Id extends MultiPickerId = MultiPickerId> {
 const MAX_VISIBLE = 50
 
 /**
- * Số chip bày ra trước khi gộp thành một câu đếm.
+ * Số chip bày ra trước khi gộp lại; muốn xem hết thì bấm «Xem thêm».
  *
  * Khách báo 25/08/2026: sổ văn bản chọn ~200 người xem, mỗi người một chip nên
- * dải chip cao hơn cả màn hình — ô «Người quản lý» ngay dưới bị đẩy đi mất, người
- * dùng tưởng form hỏng. Mười hai chip là vừa đủ để nhìn ra "đang chọn những ai"
- * mà không nuốt mất phần còn lại của form.
+ * dải chip cao hơn cả màn hình — ô «Người quản lý» ngay dưới bị đẩy đi mất,
+ * người dùng tưởng form hỏng. Mười chip là đủ nhận ra "đang chọn những ai" mà
+ * vẫn gọn trong hai hàng (khách chốt con số này).
  */
-const MAX_CHIPS = 12
+const MAX_CHIPS = 10
+
+/**
+ * Chiều cao tối đa của dải chip khi ĐÃ bung.
+ *
+ * Bung ra mà thả trôi thì 200 chip lại dựng đúng bức tường vừa dỡ. Cho nó cuộn
+ * trong khung riêng: xem được hết mà phần dưới của form không bị đẩy đi đâu cả.
+ */
+const CAO_TOI_DA_KHI_BUNG = 'max-h-44 overflow-y-auto'
 
 /**
  * Chọn NHIỀU mục từ một danh sách có sẵn: nút mở, ô tìm, danh sách tick, và dải
@@ -90,8 +98,8 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
 
   const matches = useMemo(() => filtered.slice(0, MAX_VISIBLE), [filtered])
 
+  const conNhieuHonMucGap = selected.length > MAX_CHIPS
   const chipHienRa = xemHetChip ? selected : selected.slice(0, MAX_CHIPS)
-  const conAn = selected.length - chipHienRa.length
 
   /** Đã tick hết phần đang lọc chưa — quyết định nút là "Chọn" hay "Bỏ chọn". */
   const allPicked = filtered.length > 0 && filtered.every((item) => value.includes(item.id))
@@ -198,57 +206,72 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
       </Popover>
 
       {selected.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1">
-          {chipHienRa.map((item) => (
-            <Badge key={item.id} variant="secondary" className="gap-1 font-normal">
-              {item.label}
-              <button
-                type="button"
-                aria-label={`Bỏ ${item.label}`}
-                onClick={() => toggle(item.id)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <X className="size-3" />
-              </button>
-            </Badge>
-          ))}
+        <div className="space-y-1.5">
+          {/*  Dải chip. Khi bung thì đóng khung + cho cuộn, không để nó đẩy phần
+               dưới của form đi (xem `CAO_TOI_DA_KHI_BUNG`). */}
+          <div
+            className={cn(
+              'flex flex-wrap gap-1',
+              xemHetChip && conNhieuHonMucGap && `${CAO_TOI_DA_KHI_BUNG} rounded-md border p-2`,
+            )}
+          >
+            {chipHienRa.map((item) => (
+              <Badge key={item.id} variant="secondary" className="gap-1 font-normal">
+                {item.label}
+                <button
+                  type="button"
+                  aria-label={`Bỏ ${item.label}`}
+                  onClick={() => toggle(item.id)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
 
-          {/*  Gập / bung. Không giấu hẳn phần dư: bỏ một người trong số 200 vẫn
-               phải làm được, chỉ là không bày sẵn cả 200 chip. */}
-          {conAn > 0 && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs text-muted-foreground"
-              onClick={() => setXemHetChip(true)}
-            >
-              + {conAn} nữa
-            </Button>
-          )}
-          {xemHetChip && selected.length > MAX_CHIPS && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs text-muted-foreground"
-              onClick={() => setXemHetChip(false)}
-            >
-              Thu gọn
-            </Button>
-          )}
+          {/*  HÀNG THAO TÁC riêng, không trộn vào dải chip: hai nút này không
+               phải là "một người đã chọn" nên đứng lẫn giữa các chip là đọc
+               nhầm. Trái = xem thêm / thu gọn, phải = bỏ hết. */}
+          {(conNhieuHonMucGap || selected.length > 1) && (
+            <div className="flex items-center justify-between gap-2">
+              {conNhieuHonMucGap ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+                  onClick={() => setXemHetChip((truoc) => !truoc)}
+                >
+                  {xemHetChip ? (
+                    <>
+                      <ChevronUp className="size-3.5" />
+                      Thu gọn
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="size-3.5" />
+                      Xem thêm {selected.length - MAX_CHIPS}
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <span />
+              )}
 
-          {selected.length > 1 && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
-              onClick={() => onChange([])}
-              disabled={disabled}
-            >
-              Bỏ hết
-            </Button>
+              {selected.length > 1 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
+                  onClick={() => onChange([])}
+                  disabled={disabled}
+                >
+                  Bỏ hết
+                </Button>
+              )}
+            </div>
           )}
         </div>
       )}
