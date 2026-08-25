@@ -12,6 +12,19 @@ export interface ModuleNavItem {
   icon: LucideIcon
   /** Thiếu quyền trên entity này thì ẩn mục. Bỏ trống = luôn hiện. */
   entity?: PermissionEntity
+  /**
+   * Mục gom NHIỀU màn con dùng khóa khác nhau — hiện khi có quyền trên **bất kỳ**
+   * khóa nào trong đây, rồi để chính trang tự ẩn phần không được xem.
+   *
+   * Sinh ra cho «Thiết lập văn bản»: một mục menu chứa bốn tab chạy trên bốn
+   * khóa (`doc_type` · `doc_template` · `security_level` · `external_party`).
+   * Gác bằng một khóa duy nhất thì người chỉ giữ *Đơn vị gửi nhận* không vào nổi
+   * trang chứa đúng tab của mình, còn người có khóa gác mà thiếu khóa của tab
+   * thì vào được rồi bấm tab ăn 403 (CR-157).
+   *
+   * Khai cùng `entity` thì `entity` được xét trước.
+   */
+  entities?: PermissionEntity[]
   /** Kiểm tra đúng hành động này trên entity (`read`, `create`, `write`, ...). */
   action?: PermissionAction
   /** Mục quản lý (danh mục, hệ thống): yêu cầu quyền quản lý (`write` | `create` | `delete`). */

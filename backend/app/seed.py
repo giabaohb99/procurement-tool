@@ -305,6 +305,11 @@ STD_ROLES = {
         #  mình, không xóa, không bãi bỏ văn bản đã ban hành.
         "document": (["read", "create", "write", "print", "export"], "company"),
         "doc_type": (["read"], "all"),
+        #  Người SOẠN phải đọc được thư viện mẫu — ô «Dùng mẫu» ở bước 1 của màn
+        #  Tạo văn bản gọi `/api/document-templates`. Từ CR-157 nó có khóa riêng
+        #  (`doc_template`) nên không còn đi kèm `doc_type` nữa; thiếu dòng này
+        #  là ô mẫu rỗng và người soạn ăn toast 403 ngay lúc mở màn.
+        "doc_template": (["read"], "all"),
         "document_book": (["read"], "all"),
         "security_level": (["read"], "all"),
         "company": (["read"], "all"),

@@ -70,3 +70,33 @@ describe('visibleNavItems', () => {
     ])
   })
 })
+
+describe('mục gom nhiều màn con (`entities`)', () => {
+  //  «Thiết lập văn bản» là MỘT mục menu chứa bốn tab chạy trên bốn khóa khác
+  //  nhau. Trước CR-157 nó gác bằng đúng `doc_type`, nên người chỉ giữ *Đơn vị
+  //  gửi nhận* không vào nổi trang chứa đúng tab của mình.
+  const thietLap = [
+    {
+      label: 'Thiết lập văn bản',
+      path: '/d/settings',
+      icon: FileText,
+      entities: ['doc_type', 'doc_template', 'security_level', 'external_party'],
+    },
+  ] as ErpModule['nav']
+
+  it('có quyền trên BẤT KỲ khóa nào là hiện mục', () => {
+    expect(visibleNavItems(phanHe(thietLap), choPhep('external_party'))).toHaveLength(1)
+    expect(visibleNavItems(phanHe(thietLap), choPhep('doc_type'))).toHaveLength(1)
+  })
+
+  it('không có khóa nào thì ẩn — đừng biến nó thành mục ai cũng thấy', () => {
+    expect(visibleNavItems(phanHe(thietLap), choPhep('document'))).toHaveLength(0)
+  })
+
+  it('mảng rỗng thì coi như không gác, giống mục bỏ trống `entity`', () => {
+    const nav = [
+      { label: 'Chờ tôi duyệt', path: '/d/pending', icon: FileText, entities: [] },
+    ] as ErpModule['nav']
+    expect(visibleNavItems(phanHe(nav), choPhep())).toHaveLength(1)
+  })
+})

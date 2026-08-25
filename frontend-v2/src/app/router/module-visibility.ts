@@ -1,4 +1,4 @@
-import type { ErpModule } from '@/app/router/module-definition'
+import type { ErpModule, ModuleNavItem } from '@/app/router/module-definition'
 import type { PermissionAction, PermissionEntity } from '@/core/authorization/permission-types'
 
 /** Đúng chữ ký của `can` từ `usePermission()`. */
@@ -33,11 +33,18 @@ export function canManageEntity(entity: PermissionEntity, can: CanFn): boolean {
  * lại lệch nhau đúng kiểu trên.
  */
 export function visibleNavItems(module: ErpModule, can: CanFn) {
+  const duocXem = (entity: PermissionEntity, item: ModuleNavItem) => {
+    if (item.action) return can(entity, item.action)
+    if (item.manage) return canManageEntity(entity, can)
+    return can(entity, 'read')
+  }
+
   return module.nav.filter((item) => {
-    if (!item.entity) return true
-    if (item.action) return can(item.entity, item.action)
-    if (item.manage) return canManageEntity(item.entity, can)
-    return can(item.entity, 'read')
+    if (item.entity) return duocXem(item.entity, item)
+    //  Mục gom nhiều màn con: có quyền trên BẤT KỲ khóa nào là hiện, phần không
+    //  được xem do chính trang tự ẩn. Xem `ModuleNavItem.entities`.
+    if (item.entities?.length) return item.entities.some((khoa) => duocXem(khoa, item))
+    return true
   })
 }
 

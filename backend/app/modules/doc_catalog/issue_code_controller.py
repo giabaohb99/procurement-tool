@@ -34,14 +34,14 @@ class IssueCodeUpdate(BaseModel):
 
 @router.get("")
 def list_issue_codes(db: Session = Depends(get_db),
-                     user=Depends(require("doc_type", "read"))):
+                     user=Depends(require("doc_numbering_rule", "read"))):
     """Mọi mã đang đi vào số hiệu, gom theo bốn thẻ của mẫu."""
     return success(service.danh_sach(db))
 
 
 @router.patch("")
 def update_issue_code(data: IssueCodeUpdate, db: Session = Depends(get_db),
-                      user=Depends(require("doc_type", "write"))):
+                      user=Depends(require("doc_numbering_rule", "write"))):
     ket_qua = service.sua(db, data.kind, data.id, data.issue_code,
                           company_id=data.company_id, force=data.force)
 

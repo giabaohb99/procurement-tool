@@ -19,7 +19,7 @@ router = APIRouter(prefix="/api/document-numbering-rules", tags=["document-numbe
 def list_rules(
     direction: int | None = Query(default=None, ge=1, le=3),
     db: Session = Depends(get_db),
-    user=Depends(require("doc_type", "read")),
+    user=Depends(require("doc_numbering_rule", "read")),
 ):
     rows = service.list_rules(db, direction)
     return success({"total": len(rows), "items": [service.serialize(db, row) for row in rows]})
@@ -29,7 +29,7 @@ def list_rules(
 def get_rule(
     rule_id: int,
     db: Session = Depends(get_db),
-    user=Depends(require("doc_type", "read")),
+    user=Depends(require("doc_numbering_rule", "read")),
 ):
     return success(service.serialize(db, service.get_rule(db, rule_id)))
 
@@ -38,7 +38,7 @@ def get_rule(
 def create_rule(
     data: DocumentNumberingRuleCreate,
     db: Session = Depends(get_db),
-    user=Depends(require("doc_type", "create")),
+    user=Depends(require("doc_numbering_rule", "create")),
 ):
     rule = service.create_rule(db, data, user.id)
     record(db, user.id, "document_numbering_rule", rule.id, "create")
@@ -50,7 +50,7 @@ def update_rule(
     rule_id: int,
     data: DocumentNumberingRuleUpdate,
     db: Session = Depends(get_db),
-    user=Depends(require("doc_type", "write")),
+    user=Depends(require("doc_numbering_rule", "write")),
 ):
     rule = service.update_rule(db, rule_id, data, user.id)
     record(db, user.id, "document_numbering_rule", rule.id, "update")
@@ -61,7 +61,7 @@ def update_rule(
 def delete_rule(
     rule_id: int,
     db: Session = Depends(get_db),
-    user=Depends(require("doc_type", "delete")),
+    user=Depends(require("doc_numbering_rule", "delete")),
 ):
     service.delete_rule(db, rule_id)
     record(db, user.id, "document_numbering_rule", rule_id, "delete")

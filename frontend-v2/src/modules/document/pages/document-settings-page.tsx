@@ -2,6 +2,8 @@ import { LibraryBig, Plus, ShieldAlert, Tags, Users } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import type { PermissionEntity } from '@/core/authorization/permission-types'
+import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { Button } from '@/shared/ui/button'
@@ -22,6 +24,13 @@ interface CatalogTab {
   description: string
   /** Trang thêm mới của danh mục này. Bỏ trống = danh mục chỉ đọc. */
   newPath?: string
+  /**
+   * Khóa quyền của riêng tab này — bốn tab chạy trên bốn khóa khác nhau.
+   *
+   * Thiếu quyền thì tab **không hiện**, thay vì hiện rồi bấm vào ăn 403 ở
+   * `/api/security-levels` hay `/api/external-parties` (CR-157).
+   */
+  entity: PermissionEntity
   Catalog: ComponentType
 }
 
@@ -33,6 +42,7 @@ const TABS: CatalogTab[] = [
     description:
       'Loại văn bản quyết định số hiệu, mức mật mặc định và các bước bắt buộc của văn bản thuộc loại đó.',
     newPath: appRoutes.document.typeNew,
+    entity: 'doc_type',
     Catalog: DocumentTypeCatalog,
   },
   {
@@ -41,6 +51,7 @@ const TABS: CatalogTab[] = [
     icon: LibraryBig,
     description: 'Quản lý nội dung mẫu theo từng loại văn bản để người soạn dùng làm điểm bắt đầu.',
     newPath: appRoutes.document.templateNew,
+    entity: 'doc_template',
     Catalog: DocumentTemplateCatalog,
   },
   {
@@ -50,6 +61,7 @@ const TABS: CatalogTab[] = [
     description:
       'Mức mật quyết định ai được đọc, độ khẩn quyết định phải xử lý nhanh tới đâu. Thêm được bậc mới; bậc đã tạo thì khóa thang và con số, chỉ sửa được tên/mô tả/trạng thái.',
     newPath: appRoutes.document.securityLevelNew,
+    entity: 'security_level',
     Catalog: SecurityLevelCatalog,
   },
   {
@@ -58,6 +70,7 @@ const TABS: CatalogTab[] = [
     icon: Users,
     description: 'Cơ quan, doanh nghiệp, cá nhân và đơn vị nội bộ trao đổi văn bản với công ty.',
     newPath: appRoutes.document.partnerNew,
+    entity: 'external_party',
     Catalog: DocumentPartnerCatalog,
   },
 ]
@@ -78,9 +91,27 @@ const TABS: CatalogTab[] = [
  */
 export function DocumentSettingsPage() {
   const navigate = useNavigate()
+  const { can } = usePermission()
   const [tab, setTab] = useUrlParamState('tab', TABS[0].value)
 
-  const current = TABS.find((item) => item.value === tab) ?? TABS[0]
+  //  Mỗi tab một khóa riêng từ CR-157. Menu chỉ hỏi «có BẤT KỲ khóa nào không»,
+  //  nên vào tới đây rồi vẫn có thể thiếu khóa của vài tab — trang tự lọc.
+  const tabDuocXem = TABS.filter((item) => can(item.entity, 'read'))
+
+  //  `?tab=` trên URL có thể trỏ vào tab người này không được xem (link người
+  //  khác gửi, hoặc quyền vừa bị gỡ). Rơi về tab đầu tiên họ xem được.
+  const current = tabDuocXem.find((item) => item.value === tab) ?? tabDuocXem[0]
+
+  if (!current) {
+    return (
+      <PageContainer>
+        <PageHeader
+          title="Thiết lập văn bản"
+          description="Bạn không có quyền xem danh mục nền nào của phân hệ Văn thư."
+        />
+      </PageContainer>
+    )
+  }
 
   return (
     <PageContainer fill>
@@ -101,7 +132,7 @@ export function DocumentSettingsPage() {
 
       <Tabs value={current.value} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col">
         <TabsList>
-          {TABS.map(({ value, label, icon: Icon }) => (
+          {tabDuocXem.map(({ value, label, icon: Icon }) => (
             <TabsTrigger key={value} value={value}>
               <Icon className="size-4" />
               {label}
