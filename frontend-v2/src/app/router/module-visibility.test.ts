@@ -100,3 +100,35 @@ describe('mục gom nhiều màn con (`entities`)', () => {
     expect(visibleNavItems(phanHe(nav), choPhep())).toHaveLength(1)
   })
 })
+
+describe('phân hệ LINK RA NGOÀI', () => {
+  /** Đúng hình dạng `helpCenterModule`: không màn hình nào trong app này. */
+  function linkRaNgoai(): ErpModule {
+    return {
+      id: 'help-center',
+      title: 'Hướng dẫn sử dụng',
+      path: '',
+      externalUrl: () => 'http://localhost:8082',
+      enabled: true,
+      nav: [],
+      routes: [],
+    } as unknown as ErpModule
+  }
+
+  //  LỖI KHÁCH BÁO 25/08/2026: ô «Hướng dẫn sử dụng» đeo ổ khóa, không ai bấm
+  //  vào được — kể cả admin. `canOpenModule` đo bằng "còn mục menu nào hiện
+  //  không", mà phân hệ link ra ngoài có `nav: []` theo đúng bản chất nên luôn
+  //  ra 0. Tài liệu dùng hệ thống mà không ai mở được là hỏng đúng chỗ đáng giá.
+  it('luôn mở, kể cả tài khoản không có quyền nào', () => {
+    expect(canOpenModule(linkRaNgoai(), choPhep())).toBe(true)
+  })
+
+  it('không phụ thuộc quyền của người dùng', () => {
+    expect(canOpenModule(linkRaNgoai(), choPhep('help_article'))).toBe(true)
+  })
+
+  //  Chốt chiều ngược: đừng nới thành "phân hệ nào không có mục menu cũng mở".
+  it('phân hệ THƯỜNG mà không thấy mục nào thì vẫn khóa', () => {
+    expect(canOpenModule(phanHe([]), choPhep())).toBe(false)
+  })
+})

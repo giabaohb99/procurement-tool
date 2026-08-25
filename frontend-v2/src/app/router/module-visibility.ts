@@ -49,5 +49,16 @@ export function visibleNavItems(module: ErpModule, can: CanFn) {
 }
 
 export function canOpenModule(module: ErpModule, can: CanFn) {
+  //  ⚠️ Phân hệ LINK RA NGOÀI luôn mở. Nó không có mục menu nào theo đúng bản
+  //  chất (`nav: []` — màn hình nằm ở app khác), nên đo bằng "còn mục nào hiện
+  //  không" là ra 0 với MỌI người và thẻ đeo ổ khóa vĩnh viễn — kể cả admin.
+  //
+  //  Đúng cái đã xảy ra với **Hướng dẫn sử dụng**: tài liệu dùng hệ thống, khu
+  //  người dùng của nó vốn CÔNG KHAI (xem `modules/help/routes.tsx`), mà không
+  //  ai bấm vào được. `ModuleCard` thì đã có sẵn nhánh `ready && externalUrl` để
+  //  vẽ biểu tượng mở-tab-mới — nhánh đó là mã chết cho tới hôm nay, bằng chứng
+  //  là ý định vốn phải mở (25/08/2026).
+  if (module.externalUrl) return true
+
   return visibleNavItems(module, can).length > 0
 }
