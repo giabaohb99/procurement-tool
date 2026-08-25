@@ -229,8 +229,11 @@ export function DocumentDetailPage() {
       ngay: new Date().toLocaleDateString('vi-VN'),
     })
 
+  //  Nhận diện theo MÃ loại chứ không theo id — id khác nhau giữa các môi trường.
+  const laNghiPhep = (record?.doc_type_code || '').toUpperCase() === 'GNP'
+
   function handleSubmitForm(values: DocumentRecordFormValues) {
-    save.mutate({ id: documentId, values: formToPayload(values) })
+    save.mutate({ id: documentId, values: formToPayload(values, laNghiPhep) })
   }
 
   const isNumbered = Boolean(record?.doc_code || record?.issue_number)
@@ -599,6 +602,7 @@ export function DocumentDetailPage() {
             form={form}
             isNumbered={isNumbered}
             documentId={documentId}
+            laNghiPhep={laNghiPhep}
             readOnly={khoaVietVi || readonlyFromLink}
             onSubmit={handleSubmitForm}
           >

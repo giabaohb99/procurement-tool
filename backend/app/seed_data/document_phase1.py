@@ -22,6 +22,7 @@ def _doc_type(
     needs_signature: bool = True,
     review_cycle_months: int = 0,
     retention_months: int = 120,
+    is_personal: bool = False,
 ) -> dict:
     return {
         "code": code,
@@ -32,6 +33,9 @@ def _doc_type(
         "number_when": 2,
         "default_secrecy": 2,
         "is_confidential_type": False,
+        #  Loại VĂN BẢN CÁ NHÂN — bỏ qua phạm vi vai trò, chỉ người có chân
+        #  trong tờ đơn mới thấy (`document/access_service`).
+        "is_personal": is_personal,
         "needs_approval": True,
         "needs_signature": needs_signature,
         "needs_decision": needs_decision,
@@ -91,8 +95,11 @@ OFFICIAL_DOC_TYPES = [
     # F · Giấy tờ và phiếu hành chính.
     _doc_type("GM", "Giấy mời", "F", "Mời cá nhân hoặc đơn vị tham dự sự kiện, cuộc họp."),
     _doc_type("GGT", "Giấy giới thiệu", "F", "Giới thiệu người của đơn vị đến liên hệ công tác."),
+    #  ⚠️ CÁ NHÂN. Đơn nghỉ phép là dữ liệu của một người: không được đi theo
+    #  phạm vi vai trò, nếu không thì `document.read` phạm vi công ty nghĩa là cả
+    #  công ty đọc được đơn xin nghỉ ốm của từng người.
     _doc_type("GNP", "Giấy nghỉ phép", "F", "Xác nhận hoặc đề nghị nghỉ phép theo quy định.",
-              needs_signature=False),
+              needs_signature=False, is_personal=True),
     _doc_type("PG", "Phiếu gửi", "F", "Phiếu kèm hồ sơ hoặc tài liệu được gửi đi.",
               needs_signature=False),
     _doc_type("PC", "Phiếu chuyển", "F", "Chuyển hồ sơ hoặc công việc tới đơn vị xử lý.",

@@ -1,4 +1,4 @@
-"""SÁU CÁCH CHỌN NGƯỜI DUYỆT (I03).
+"""BẢY CÁCH CHỌN NGƯỜI DUYỆT (I03).
 
 Trả về **danh sách employee_id**, đã bỏ trùng và giữ nguyên thứ tự khai — thứ tự
 có nghĩa với bước `lần lượt`.
@@ -15,8 +15,8 @@ from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 
 from .flow_model import (APPROVER_COMPANY_REP, APPROVER_DEPT_HEAD,
-                         APPROVER_EMPLOYEE, APPROVER_FIELD,
-                         APPROVER_LEVEL_UP, APPROVER_ROLE)
+                         APPROVER_DEPT_HEAD_OF, APPROVER_EMPLOYEE,
+                         APPROVER_FIELD, APPROVER_LEVEL_UP, APPROVER_ROLE)
 
 #  Lên quá số cấp này thì dừng — cây phòng ban khai vòng (A là cha của B, B là
 #  cha của A) sẽ treo vòng lặp, mà dữ liệu khai tay thì chuyện đó xảy ra thật.
@@ -39,6 +39,8 @@ def resolve(db: Session, node, subject: dict, submitter_employee_id: int | None)
         ids = _dai_dien_phap_nhan(db, subject)
     elif kind == APPROVER_FIELD:
         ids = _tu_o_tren_phieu(subject, node.approver_ref)
+    elif kind == APPROVER_DEPT_HEAD_OF:
+        ids = _truong_cua_phong_chi_dinh(db, node.approver_ref)
     else:
         ids = []
 
@@ -123,6 +125,36 @@ def _truong_bo_phan(db: Session, submitter_employee_id: int | None, subject: dic
     if phong.manager_id == submitter_employee_id:
         return []
     return [phong.manager_id]
+
+
+def _truong_cua_phong_chi_dinh(db: Session, raw: str) -> list[int]:
+    """Trưởng bộ phận của những phòng ban ĐƯỢC KHAI THẲNG trong bước.
+
+    Khác `_truong_bo_phan` ở đúng một chỗ, và đó là chỗ quan trọng: hàm kia bám
+    theo phòng của NGƯỜI NỘP, hàm này bám theo phòng GHI TRONG LUỒNG. Nhờ vậy
+    khai được những bước có thật mà trước đây không khai nổi — «đơn nghỉ phép của
+    mọi phòng đều qua trưởng phòng Nhân sự», «hợp đồng qua trưởng phòng Pháp chế».
+
+    Khai đích danh một CON NGƯỜI cũng ra kết quả giống hệt hôm nay, nhưng người
+    đó chuyển việc là luồng trỏ sai mà không có gì báo. Trỏ vào GHẾ thì đổi người
+    ngồi ghế là luồng tự đi theo.
+
+    Khai được NHIỀU phòng: một bước có thể cần cả trưởng Nhân sự lẫn trưởng Tài
+    chính cùng ký. Giữ nguyên thứ tự khai vì bước «lần lượt» đọc thứ tự đó.
+    """
+    phong_ids = _refs_as_ints(raw)
+    if not phong_ids:
+        return []
+
+    #  Một câu truy vấn cho cả danh sách, rồi xếp lại theo ĐÚNG thứ tự khai —
+    #  `IN (...)` không hứa thứ tự trả về.
+    truong_theo_phong = {
+        row[0]: row[1] for row in
+        db.query(Department.id, Department.manager_id)
+        .filter(Department.id.in_(phong_ids)).all()
+    }
+    return [truong_theo_phong[pid] for pid in phong_ids
+            if truong_theo_phong.get(pid)]
 
 
 def _len_n_cap(db: Session, submitter_employee_id: int | None, subject: dict,

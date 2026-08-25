@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, ArrowRight, Copy, Info, Layers, PenLine, Target } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CalendarDays, Copy, Info, Layers, PenLine, Target } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
@@ -21,12 +21,14 @@ import { documentAccessApi } from '../api/document-api'
 import { DocumentAccessFields, type PendingAccess } from '../components/document-access-fields'
 import { DocumentClonePlanFields } from '../components/document-clone-plan-fields'
 import { DocumentExtraInfoFields } from '../components/document-extra-info-fields'
+import { DocumentLeaveFields } from '../components/document-leave-fields'
 import { DocumentMainInfoFields, MAIN_INFO_FIELDS } from '../components/document-main-info-fields'
 import { DocumentPendingAttachments } from '../components/document-pending-attachments'
 import { DocumentPrerequisiteDialog } from '../components/document-prerequisite-dialog'
 import { DocumentScopeFields, type PendingScope } from '../components/document-scope-fields'
 import { cloneTargetsFromScopes } from '../helpers/clone-targets-from-scopes'
 import { emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
+import { LEAVE_FIELDS } from '../helpers/so-ngay-nghi-phep'
 import { useDocumentBooks } from '../hooks/use-document-books'
 import { useActiveDocumentTypes } from '../hooks/use-document-types'
 import {
@@ -133,6 +135,10 @@ export function DocumentCreatePage() {
   )
 
   const docTypeId = Number(form.watch('doc_type_id')) || 0
+  //  GIẤY NGHỈ PHÉP có thêm 8 ô riêng, lưu vào `metadata`. Nhận diện theo MÃ
+  //  loại chứ không theo id: id khác nhau giữa các môi trường, mã thì không.
+  const laNghiPhep =
+    documentTypes.find((item) => item.id === docTypeId)?.code?.toUpperCase() === 'GNP'
   //  Hỏi ngay khi chọn loại dù hộp cảnh báo chỉ hiện lúc bấm Tạo — hỏi đúng
   //  nhịp bấm thì người dùng phải chờ một vòng mạng ở đúng nhịp sốt ruột nhất.
   const { data: thieuTienQuyet } = useDocumentPrerequisites(docTypeId)
@@ -153,7 +159,12 @@ export function DocumentCreatePage() {
    * xóa nó ở danh sách được, và nút «Hủy» bên dưới cũng dọn hộ.
    */
   async function goNext() {
-    const valid = await form.trigger([...STEPS[step].fields])
+    //  Bước 1 có thêm ô của khối nghỉ phép — chỉ kiểm khi khối đó đang hiện.
+    const oCanKiem =
+      step === 0 && laNghiPhep
+        ? [...STEPS[step].fields, ...LEAVE_FIELDS]
+        : [...STEPS[step].fields]
+    const valid = await form.trigger(oCanKiem)
     if (!valid) {
       toast.error(`Còn ô bắt buộc chưa nhập ở bước ${STEPS[step].title}`)
       return
@@ -164,7 +175,7 @@ export function DocumentCreatePage() {
         const record = await save.mutateAsync({
           id: draftId ?? undefined,
           values: {
-            ...formToPayload(form.getValues()),
+            ...formToPayload(form.getValues(), laNghiPhep),
             //  Nội dung mẫu chỉ chép LÚC TẠO. Lần sửa sau mà gửi lại là đè lên
             //  phần người ta đã gõ ở tab Soạn thảo.
             ...(draftId ? {} : { content_html: selectedTemplate.data?.content_html ?? '' }),
@@ -299,7 +310,7 @@ export function DocumentCreatePage() {
         //  ra hai văn bản cho một lần lập.
         id: draftId ?? undefined,
         values: {
-          ...formToPayload(values),
+          ...formToPayload(values, laNghiPhep),
           ...(draftId ? {} : { content_html: selectedTemplate.data?.content_html ?? '' }),
         },
       },
@@ -351,6 +362,21 @@ export function DocumentCreatePage() {
                 onTemplateChange={setTemplateId}
               />
             </FormCard>
+
+            {/*  Thẻ RIÊNG chứ không nhét vào thẻ trên: tám ô nghỉ phép là một
+                 cụm nghiệp vụ khác hẳn bộ trường chung, trộn vào là người dùng
+                 phải dò xem ô nào thuộc về đâu. Chỉ hiện với loại Giấy nghỉ
+                 phép — loại khác thì cụm này không có nghĩa gì. */}
+            {laNghiPhep && (
+              <FormCard
+                title="Thông tin nghỉ phép"
+                icon={CalendarDays}
+                iconClassName="text-amber-600"
+                className="mt-4"
+              >
+                <DocumentLeaveFields form={form} />
+              </FormCard>
+            )}
           </div>
 
           <div className={step === 1 ? undefined : 'hidden'}>

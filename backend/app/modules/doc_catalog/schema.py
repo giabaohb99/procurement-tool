@@ -24,6 +24,9 @@ class DocTypeCreate(BaseModel):
     number_when: int = 2
     default_secrecy: int = 2
     is_confidential_type: bool = False
+    #  Loại VĂN BẢN CÁ NHÂN (đơn nghỉ phép…) — bỏ qua phạm vi vai trò, chỉ người
+    #  có chân trong tờ đơn mới thấy. Xem `document/access_service`.
+    is_personal: bool = False
 
     needs_approval: bool = False
     needs_signature: bool = False
@@ -54,6 +57,7 @@ class DocTypeUpdate(BaseModel):
     number_when: int | None = None
     default_secrecy: int | None = None
     is_confidential_type: bool | None = None
+    is_personal: bool | None = None
 
     needs_approval: bool | None = None
     needs_signature: bool | None = None

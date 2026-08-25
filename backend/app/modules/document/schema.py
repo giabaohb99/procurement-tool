@@ -52,6 +52,13 @@ class DocumentBase(BaseModel):
     #  Bản giấy nằm ở đâu ("Tủ A2 · Kệ 3 · Bìa 12"). Tìm kiếm chấp nhận cột này.
     storage_location: str = Field(default="", max_length=200)
 
+    #  THÔNG TIN RIÊNG CỦA LOẠI — đơn nghỉ phép khai 8 ô ở đây.
+    #
+    #  ⚠️ KHÔNG nhận bừa: `document/type_metadata.py` quy định hình dạng theo mã
+    #  loại, khóa lạ bị loại bỏ chứ không lưu, và loại chưa khai hình dạng thì
+    #  không lưu gì cả. Nhận bừa là sáu tháng nữa không ai biết trong đó có gì.
+    metadata: dict | None = None
+
 
 class DocumentCreate(DocumentBase):
     """Tạo văn bản.
@@ -99,6 +106,12 @@ class DocumentUpdate(BaseModel):
     attachment_view_until: date | None = None
     legacy_code: str | None = Field(default=None, max_length=100)
     storage_location: str | None = Field(default=None, max_length=200)
+    #  THÔNG TIN RIÊNG CỦA LOẠI — đơn nghỉ phép khai 8 ô ở đây.
+    #
+    #  ⚠️ KHÔNG nhận bừa: `document/type_metadata.py` quy định hình dạng theo mã
+    #  loại, khóa lạ bị loại bỏ chứ không lưu, và loại chưa khai hình dạng thì
+    #  không lưu gì cả. Nhận bừa là sáu tháng nữa không ai biết trong đó có gì.
+    metadata: dict | None = None
 
 
 class ManualIssueNumberUpdate(BaseModel):

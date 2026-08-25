@@ -1,10 +1,11 @@
-import { Info, Layers } from 'lucide-react'
+import { CalendarDays, Info, Layers } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import { Form } from '@/shared/ui/form'
 import { FormCard } from '@/shared/ui/form-card'
 import { DocumentExtraInfoFields } from './document-extra-info-fields'
+import { DocumentLeaveFields } from './document-leave-fields'
 import { DocumentMainInfoFields } from './document-main-info-fields'
 import type { DocumentRecordFormValues } from '../schemas/document-record-schema'
 
@@ -15,6 +16,8 @@ interface DocumentRecordFormProps {
   isNumbered: boolean
   /** Văn bản đang sửa — bỏ chính nó ra khỏi khối gợi ý văn bản trùng. */
   documentId?: number
+  /** Loại là Giấy nghỉ phép: mở thêm thẻ tám ô riêng, lưu vào `metadata`. */
+  laNghiPhep?: boolean
   /**
    * Khóa BỘ TRƯỜNG CHUNG (đang trình duyệt). Chỉ khóa hai thẻ trường ở trên —
    * phạm vi áp dụng và chia quyền đọc nằm trong `children` và vẫn sửa được:
@@ -38,6 +41,7 @@ export function DocumentRecordForm({
   form,
   isNumbered,
   documentId,
+  laNghiPhep = false,
   readOnly = false,
   onSubmit,
   children,
@@ -55,6 +59,17 @@ export function DocumentRecordForm({
               excludeId={documentId}
             />
           </FormCard>
+
+          {/* Cùng chỗ, cùng biểu tượng với trang tạo mới. */}
+          {laNghiPhep && (
+            <FormCard
+              title="Thông tin nghỉ phép"
+              icon={CalendarDays}
+              iconClassName="text-amber-600"
+            >
+              <DocumentLeaveFields form={form} />
+            </FormCard>
+          )}
 
           {/* Cùng thứ tự và cùng biểu tượng với hai bước của trang tạo mới — đảo
               đi thì người dùng phải dò lại xem ô mình vừa khai nằm ở đâu. */}

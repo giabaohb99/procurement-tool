@@ -43,6 +43,15 @@ APPROVER_DEPT_HEAD = 3    # trưởng phòng người nộp  → không cần re
 APPROVER_LEVEL_UP = 4     # lên N cấp              → approver_ref = số cấp
 APPROVER_COMPANY_REP = 5  # người đại diện pháp nhân → không cần ref
 APPROVER_FIELD = 6        # lấy từ một ô trên phiếu → approver_ref = tên cột
+#  Trưởng bộ phận của MỘT PHÒNG BAN CỤ THỂ, không phải phòng của người nộp.
+#  `approver_ref` = danh sách department_id, ngăn bằng dấu phẩy.
+#
+#  Vì sao cần: `APPROVER_DEPT_HEAD` luôn bám theo phòng của người trình, nên
+#  không khai được những bước có thật như «đơn nghỉ phép của mọi phòng đều phải
+#  qua trưởng phòng Nhân sự» hay «hợp đồng qua trưởng phòng Pháp chế». Trước đây
+#  muốn thế phải khai đích danh một CON NGƯỜI (`APPROVER_EMPLOYEE`) — người đó
+#  đổi vị trí là luồng trỏ sai mà không có gì báo.
+APPROVER_DEPT_HEAD_OF = 7
 
 APPROVER_KIND_LABELS = {
     APPROVER_EMPLOYEE: "Người cụ thể",
@@ -51,6 +60,7 @@ APPROVER_KIND_LABELS = {
     APPROVER_LEVEL_UP: "Lên N cấp quản lý",
     APPROVER_COMPANY_REP: "Người đại diện pháp nhân",
     APPROVER_FIELD: "Lấy từ một ô trên phiếu",
+    APPROVER_DEPT_HEAD_OF: "Trưởng bộ phận của phòng ban chỉ định",
 }
 
 # ── Nhiều người trong một bước (I05) ────────────────────────────────────────

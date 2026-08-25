@@ -140,6 +140,13 @@ export interface DocumentRecord {
   legacy_code: string
   /** Bản giấy đang nằm ở đâu — «Tủ A2 · Kệ 3 · Bìa 12». Tìm kiếm chấp nhận cả ô này. */
   storage_location: string
+  /**
+   * Thông tin RIÊNG của loại văn bản — Giấy nghỉ phép khai 8 ô ở đây.
+   *
+   * Hình dạng do backend quy định theo mã loại (`document/type_metadata.py`),
+   * khóa lạ bị loại bỏ chứ không lưu. `null` với loại chưa khai hình dạng.
+   */
+  metadata: Record<string, unknown> | null
 
   doc_type_id: number
   doc_type_name: string

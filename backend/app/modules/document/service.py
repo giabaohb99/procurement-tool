@@ -17,6 +17,8 @@ from sqlalchemy.orm import Session
 
 from app.modules.attachment.model import FileLink
 from app.modules.doc_catalog.model import DocType
+
+from . import type_metadata
 from app.modules.doc_catalog.security_level_model import (KIND_CONFIDENTIAL,
                                                           KIND_URGENCY)
 from app.modules.doc_catalog.security_level_service import (ensure_valid,
@@ -117,9 +119,16 @@ def create_document(db: Session, data: DocumentCreate, actor: int) -> Document:
     ensure_valid(db, KIND_CONFIDENTIAL, data.secrecy_level)
     ensure_valid(db, KIND_URGENCY, data.urgency)
 
-    payload = data.model_dump(exclude={"content_html", "secrecy_level"})
+    #  ⚠️ `metadata` PHẢI tách khỏi payload. Thuộc tính Python của cột đó tên là
+    #  `meta` (SQLAlchemy giữ riêng tên `metadata` cho `Base.metadata`), nên để
+    #  nguyên trong payload là `Document(metadata=...)` nổ ngay.
+    payload = data.model_dump(exclude={"content_html", "secrecy_level", "metadata"})
     doc = Document(
         **payload,
+        #  Người nghỉ mặc định là NGƯỜI CHỊU TRÁCH NHIỆM của văn bản — với đơn
+        #  nghỉ phép hai thứ đó là một. Khai tường minh trong metadata thì thắng.
+        meta=type_metadata.lam_sach(doc_type.code, data.metadata,
+                                    data.owner_employee_id),
         #  Bỏ trống thì theo mặc định của loại; loại đánh dấu "cả loại là loại
         #  bảo mật" thì kéo lên ít nhất mức Mật. Tra mức Mật theo MÃ chứ không
         #  viết số 3 vào mã — xem `value_of_code`.
@@ -204,6 +213,16 @@ def update_document(db: Session, doc: Document, data: DocumentUpdate, actor: int
             source = db.get(Document, link.target_document_id)
             if source:
                 ensure_secrecy_within_source(values["secrecy_level"], source.secrecy_level)
+
+    #  ⚠️ `metadata` KHÔNG đi qua vòng `setattr` bên dưới. Thuộc tính đó trên lớp
+    #  khai báo là `Base.metadata` (đối tượng MetaData của SQLAlchemy); gán đè lên
+    #  bản ghi thì nó nằm trong `__dict__` của instance và **không bao giờ xuống
+    #  CSDL** — mất dữ liệu im lặng, API vẫn trả 200.
+    if "metadata" in values:
+        loai = db.get(DocType, values.get("doc_type_id", doc.doc_type_id))
+        doc.meta = type_metadata.lam_sach(
+            loai.code if loai else "", values.pop("metadata"),
+            values.get("owner_employee_id", doc.owner_employee_id))
 
     for key, value in values.items():
         setattr(doc, key, value)
@@ -348,6 +367,14 @@ def submit(db: Session, doc: Document, actor: int) -> Document:
     #  ban hành ra cũng không ai biết nó hướng dẫn cho cái gì.
     from .link_service import ensure_required_links
     ensure_required_links(db, doc)
+
+    #  Phần RIÊNG CỦA LOẠI phải khai đủ trước khi gửi. Người duyệt mở đơn nghỉ
+    #  phép ra mà không có ngày nghỉ lẫn lý do thì họ duyệt cái gì.
+    #
+    #  Chặn ở lúc GỬI, không phải lúc lưu nháp — cùng luật với `required-fields.ts`
+    #  của Thu mua: lưu dở dang là quyền của người soạn, gửi đi mới là cam kết.
+    loai = db.get(DocType, doc.doc_type_id)
+    type_metadata.bat_buoc_khi_gui_duyet(loai.code if loai else "", doc.meta)
 
     #  Kiểm TRA LUỒNG trước khi chuyển bản nháp sang «Đang duyệt». Bản clone
     #  bắt buộc có luồng riêng của pháp nhân nhận; chặn sau `db.commit()` sẽ để

@@ -62,6 +62,20 @@ export function emptyDocumentForm(seed: DocumentFormSeed = {}): DocumentRecordFo
     attachment_view_until: '',
     legacy_code: '',
     storage_location: '',
+    //  Khối nghỉ phép mở sẵn ở giá trị trung tính. Nó chỉ HIỆN khi loại văn bản
+    //  là Giấy nghỉ phép; loại khác thì `formToPayload` không gửi nó lên.
+    leave: {
+      employee_id: 0,
+      leave_type: 'annual',
+      from_date: '',
+      from_session: 'full',
+      to_date: '',
+      to_session: 'full',
+      total_days: '',
+      reason: '',
+      handover_employee_id: 0,
+      contact_phone: '',
+    },
   }
 }
 
@@ -87,15 +101,39 @@ export function documentToForm(record: DocumentRecord): DocumentRecordFormValues
     attachment_view_until: record.attachment_view_until ?? '',
     legacy_code: record.legacy_code ?? '',
     storage_location: record.storage_location ?? '',
+    //  Đọc ngược từ `metadata` để mở lại đơn nghỉ phép là thấy nguyên số liệu cũ.
+    leave: {
+      employee_id: Number(record.metadata?.employee_id ?? 0),
+      leave_type: String(record.metadata?.leave_type ?? 'annual'),
+      from_date: String(record.metadata?.from_date ?? ''),
+      from_session: String(record.metadata?.from_session ?? 'full'),
+      to_date: String(record.metadata?.to_date ?? ''),
+      to_session: String(record.metadata?.to_session ?? 'full'),
+      total_days: record.metadata?.total_days === undefined
+        ? ''
+        : Number(record.metadata.total_days),
+      reason: String(record.metadata?.reason ?? ''),
+      handover_employee_id: Number(record.metadata?.handover_employee_id ?? 0),
+      contact_phone: String(record.metadata?.contact_phone ?? ''),
+    },
   }
 }
 
-/** Giá trị form → payload API. Ngày rỗng phải gửi `null`, không phải `""`. */
-export function formToPayload(values: DocumentRecordFormValues) {
+/** Giá trị form → payload API. Ngày rỗng phải gửi `null`, không phải `""`.
+ *
+ * `laNghiPhep` quyết định có gửi khối nghỉ phép hay không. Gửi kèm cho loại khác
+ * cũng vô hại (backend loại bỏ metadata của loại chưa khai hình dạng), nhưng gửi
+ * một cục dữ liệu rỗng lên mỗi lần lưu công văn thì đọc log ra không hiểu gì.
+ */
+export function formToPayload(values: DocumentRecordFormValues, laNghiPhep = false) {
+  const { leave, ...chung } = values
   return {
-    ...values,
+    ...chung,
     effective_date: values.effective_date || null,
     expire_date: values.expire_date || null,
     attachment_view_until: values.attachment_view_until || null,
+    metadata: laNghiPhep && leave
+      ? { ...leave, total_days: leave.total_days === '' ? undefined : leave.total_days }
+      : undefined,
   }
 }
