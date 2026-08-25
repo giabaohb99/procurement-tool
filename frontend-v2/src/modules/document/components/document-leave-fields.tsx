@@ -49,12 +49,21 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
   const { data: employees } = useEmployees({ page_size: 2000 })
   const nhanSu = employees?.items ?? []
 
-  const goiY = soNgayGoiY(
-    form.watch('leave.from_date'),
-    form.watch('leave.to_date'),
-    form.watch('leave.from_session'),
-    form.watch('leave.to_session'),
-  )
+  const tuNgay = form.watch('leave.from_date')
+  const denNgay = form.watch('leave.to_date')
+  const goiY = soNgayGoiY(tuNgay, denNgay, form.watch('leave.from_session'),
+                          form.watch('leave.to_session'))
+
+  //  NGHỈ TRONG MỘT NGÀY là ca hay gặp nhất — «chiều thứ Sáu», «sáng mai».
+  //
+  //  Bắt khai đủ bốn ô (từ ngày · buổi · đến ngày · buổi) cho một buổi nghỉ là
+  //  bốn thao tác cho việc nhỏ nhất, và hai ô «Buổi» lúc đó nói về CÙNG một
+  //  buổi nên đặt lệch nhau là ra dữ liệu vô nghĩa. Nên: chọn ngày bắt đầu thì
+  //  ngày kết thúc bám theo, và khi hai ngày trùng nhau thì gộp còn MỘT ô buổi.
+  if (useHasChanged(tuNgay) && tuNgay && (!denNgay || denNgay < tuNgay)) {
+    form.setValue('leave.to_date', tuNgay)
+  }
+  const nghiTrongMotNgay = !!tuNgay && tuNgay === denNgay
 
   //  ĐIỀN SẴN số ngày, không để trống chờ người dùng gõ.
   //
@@ -68,15 +77,24 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
     form.setValue('leave.total_days', goiY > 0 ? goiY : '')
   }
 
-  /** Ô chọn buổi — dùng hai lần, khai một lần. */
-  const oBuoi = (ten: 'leave.from_session' | 'leave.to_session') => (
+  /** Ô chọn buổi. `gopCaHai` = nghỉ trong một ngày, một ô nói cho cả hai đầu. */
+  const oBuoi = (ten: 'leave.from_session' | 'leave.to_session', gopCaHai = false) => (
     <FormField
       control={form.control}
       name={ten}
       render={({ field }) => (
         <FormItem className="md:col-span-2">
           <FormLabel>Buổi</FormLabel>
-          <Select value={field.value} onValueChange={field.onChange}>
+          <Select
+            value={field.value}
+            onValueChange={(value) => {
+              field.onChange(value)
+              //  Giữ hai đầu bằng nhau: backend tính ngày công theo buổi ĐI khi
+              //  cùng ngày, nhưng để lệch thì metadata lưu ra một khoảng vô
+              //  nghĩa («sáng → chiều» của cùng một ngày).
+              if (gopCaHai) form.setValue('leave.to_session', value)
+            }}
+          >
             <FormControl>
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -169,7 +187,7 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
         control={form.control}
         name="leave.from_date"
         render={({ field }) => (
-          <FormItem className="md:col-span-4">
+          <FormItem className={nghiTrongMotNgay ? 'md:col-span-5' : 'md:col-span-4'}>
             <FormLabel>
               Từ ngày
               <RequiredMark />
@@ -185,13 +203,13 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
           </FormItem>
         )}
       />
-      {oBuoi('leave.from_session')}
+      {!nghiTrongMotNgay && oBuoi('leave.from_session')}
 
       <FormField
         control={form.control}
         name="leave.to_date"
         render={({ field }) => (
-          <FormItem className="md:col-span-4">
+          <FormItem className={nghiTrongMotNgay ? 'md:col-span-5' : 'md:col-span-4'}>
             <FormLabel>
               Đến ngày
               <RequiredMark />
@@ -203,7 +221,8 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
           </FormItem>
         )}
       />
-      {oBuoi('leave.to_session')}
+      {/*  Cùng ngày → MỘT ô buổi, gắn vào đầu ĐI và tự đồng bộ đầu VỀ. */}
+      {nghiTrongMotNgay ? oBuoi('leave.from_session', true) : oBuoi('leave.to_session')}
 
       {/* ── Hàng 3: mấy ngày · ai gánh việc · gọi số nào ───────────────── */}
       <FormField
