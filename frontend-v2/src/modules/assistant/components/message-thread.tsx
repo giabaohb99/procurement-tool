@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 
 import { cn } from '@/shared/utils/cn'
 import type { AssistantMessage } from '../types/assistant'
+import { MarkdownMessage } from './markdown-message'
 
 /**
  * Câu hỏi mẫu gợi sẵn để người dùng biết trợ lý tra được gì (khỏi "không biết hỏi gì").
@@ -115,11 +116,13 @@ function MessageBubble({ role, content }: MessageBubbleProps) {
       )}
       <div
         className={cn(
-          'max-w-[80%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap',
-          isUser ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground',
+          'max-w-[80%] rounded-lg px-3 py-2 text-sm',
+          isUser
+            ? 'bg-primary whitespace-pre-wrap text-primary-foreground'
+            : 'bg-secondary text-foreground',
         )}
       >
-        {content}
+        {isUser ? content : <MarkdownMessage content={content} />}
       </div>
     </div>
   )
