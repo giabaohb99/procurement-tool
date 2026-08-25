@@ -67,7 +67,7 @@ export function DocumentListPage() {
           actions={
             //  «Tạo văn bản» đứng ở đầu trang cho cả hai tab: soạn một văn bản
             //  mới là việc bắt đầu từ đây bất kể đang đứng ở tab nào. Còn
-            //  «Xuất Excel» thì nằm trong thanh công cụ của tab đi, vì nó xuất
+            //  «Export» thì nằm trong thanh công cụ của tab đi, vì nó xuất
             //  đúng bộ điều kiện đang lọc ở đó.
             <PermissionGate entity="document" action="create">
               <Button onClick={() => navigate(appRoutes.document.documentNew)}>

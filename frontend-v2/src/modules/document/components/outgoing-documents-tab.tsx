@@ -227,13 +227,16 @@ function OutgoingDocumentsContent() {
 
             <ConditionalFilter />
 
-            {/*  Xuất Excel nằm ở THANH CÔNG CỤ chứ không ở đầu trang: file tải
+            {/*  Nút xuất nằm ở THANH CÔNG CỤ chứ không ở đầu trang: file tải
                  về đúng bằng bộ điều kiện đang lọc, nên nó thuộc về hàng chứa
-                 mấy ô lọc — mà đầu trang giờ là của cả hai tab. */}
+                 mấy ô lọc — mà đầu trang giờ là của cả hai tab.
+                 Nhãn «Export» là chữ khách chọn (25/08/2026), không phải sót
+                 dịch — đừng "sửa" về «Xuất Excel». Tên tệp tải về vẫn giữ
+                 tiếng Việt không dấu. */}
             <PermissionGate entity="document" action="export">
               <Button variant="outline" onClick={() => void xuatExcel()} disabled={dangXuat}>
                 {dangXuat ? <Loader2 className="size-4 animate-spin" /> : <Sheet className="size-4" />}
-                Xuất Excel
+                Export
               </Button>
             </PermissionGate>
           </>

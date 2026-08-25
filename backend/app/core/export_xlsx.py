@@ -6,7 +6,7 @@ mỗi màn khai báo bộ cột (`Col`) rồi gọi `xlsx_response`. Quy ước 
 - Số giữ nguyên KIỂU SỐ (không kèm chữ "đ") để cộng / lọc / pivot ngay trong Excel.
 - Ngày lưu dạng chuỗi 'YYYY-MM-DD' được đổi sang kiểu ngày của Excel (hiện dd/mm/yyyy),
   còn `created_at` là mốc UTC nên phải quy về giờ VN cho khớp màn hình.
-- Dòng tiêu đề in đậm, nền xám, đóng băng để cuộn vẫn thấy.
+- Dòng tiêu đề in đậm, CHỮ ĐEN trên nền xanh nhạt, đóng băng để cuộn vẫn thấy.
 
 Phạm vi dữ liệu và việc che cột nhạy cảm KHÔNG xử lý ở đây — mỗi màn tự dựng câu truy vấn
 đã qua `apply_scope` rồi mới đưa dòng vào đây.
@@ -26,6 +26,16 @@ MAX_ROWS = 5000
 """Trần số dòng cho một lần xuất — vượt thì bắt lọc bớt hoặc tự tick chọn."""
 
 VN_OFFSET = timedelta(hours=7)
+
+#  DÒNG TIÊU ĐỀ: chữ ĐEN trên nền xanh nhạt (khách báo 25/08/2026).
+#  Bản cũ là chữ TRẮNG trên nền xanh đậm `1F3864`. Đẹp khi mọi thứ nguyên vẹn,
+#  nhưng chữ trắng chỉ đọc được KHI CÒN NỀN: file đi qua một vòng chuyển đổi
+#  (mở bằng Google Sheets / LibreOffice, dán sang bảng khác, xem trước trong
+#  Outlook) là nền rơi trước, chữ trắng ở lại — người nhận thấy hàng tiêu đề
+#  trắng trơn, phải bấm từng ô đọc thanh công thức mới biết cột nào là cột nào.
+#  Chữ đen thì mất nền vẫn đọc được, nên chọn phía hỏng-mà-vẫn-dùng-được.
+HEAD_TEXT = "000000"
+HEAD_BG = "D9E2F3"
 
 _FORMATS = {
     "money": "#,##0",          # tiền: thành tiền, tổng tiền
@@ -123,8 +133,8 @@ def xlsx_response(filename: str, columns: list[Col], rows: list[dict], sheet_tit
     ws = wb.active
     ws.title = (sheet_title or "Du lieu")[:31]
 
-    head_font = Font(bold=True, color="FFFFFF")
-    head_fill = PatternFill("solid", fgColor="1F3864")
+    head_font = Font(bold=True, color=HEAD_TEXT)
+    head_fill = PatternFill("solid", fgColor=HEAD_BG)
     for i, col in enumerate(columns, start=1):
         c = ws.cell(row=1, column=i, value=col.label)
         c.font = head_font

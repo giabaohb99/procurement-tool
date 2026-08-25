@@ -17,7 +17,8 @@ import pytest
 from fastapi import HTTPException
 
 from app.core.export_xlsx import (
-    MAX_ROWS, Col, cell_value, check_row_limit, parse_ids, pick_columns, xlsx_response,
+    HEAD_BG, HEAD_TEXT, MAX_ROWS, Col, cell_value, check_row_limit, parse_ids,
+    pick_columns, xlsx_response,
 )
 
 
@@ -88,6 +89,23 @@ def test_xlsx_response_dung_header_dinh_dang_va_ten_file():
     assert ws.auto_filter.ref == "A1:B2"
     cd = resp.headers["content-disposition"]
     assert cd.startswith('attachment; filename="yeu-cau-mua-hang-') and cd.endswith('.xlsx"')
+
+
+def test_dong_tieu_de_chu_den_doc_duoc_ca_khi_mat_nen():
+    """Khách báo 25/08/2026: mở file ra hàng tiêu đề trắng trơn, không đọc được cột nào.
+
+    Bản cũ là chữ TRẮNG trên nền xanh đậm — chỉ đọc được khi còn nền, mà nền là
+    thứ rơi đầu tiên lúc file đi qua một vòng chuyển đổi. Nên hai điều kiện:
+    chữ phải ĐEN, và chữ không được trùng màu nền (dù có đổi tông nền sau này).
+    """
+    resp = xlsx_response("thu", [Col("code", "Số hiệu")], [{"code": "VB-1"}], "Văn bản")
+    o = _load(resp).active["A1"]
+
+    assert o.value == "Số hiệu"
+    assert o.font.color.rgb.endswith(HEAD_TEXT) and HEAD_TEXT == "000000"
+    assert o.fill.fill_type == "solid" and o.fill.fgColor.rgb.endswith(HEAD_BG)
+    assert HEAD_TEXT != HEAD_BG
+    assert o.font.bold
 
 
 # ── YCMH ────────────────────────────────────────────────────────────────────────
