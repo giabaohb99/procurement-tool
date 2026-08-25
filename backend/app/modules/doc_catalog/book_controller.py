@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
-from app.core.auth import get_perm_profile, require
+from app.core.auth import get_current_user, get_perm_profile, require
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
@@ -25,13 +25,34 @@ router = APIRouter(prefix="/api/document-books", tags=["document_book"])
 FILTERABLE = ["code", "name", "kind", "company_id", "is_active"]
 
 
+def nguoi_doc_so(user=Depends(get_current_user)):
+    """Cổng vào của BA endpoint ĐỌC sổ — chỉ cần đăng nhập.
+
+    Cố ý bỏ `require("document_book", "read")` và giao toàn bộ việc gác cho lớp
+    dưới (`dieu_kien_xem_so` / `so_xem_duoc_hoac_404`), vì lớp đó hỏi sai câu:
+    nó hỏi *"vai trò của anh có được đụng vào danh mục Sổ văn bản không"*, trong
+    khi **quyền xem sổ còn tới từ chính bảng thành viên** — văn thư thêm ai đó
+    vào ô «Người xem sổ» là đã quyết định cho người ấy xem.
+
+    Hệ quả của việc hỏi sai câu, khách báo 25/08/2026: chia sổ cho một người
+    xong họ **không thấy sổ đó ở trang của mình** — mà không phải vì bộ lọc, mà
+    vì họ ăn **403 ngay ở cửa**, trước khi bộ lọc kịp chạy. Người được chia sổ
+    thường là nhân sự nghiệp vụ, không có vai trò nào trên danh mục Sổ văn bản.
+    Cùng một cái bẫy và cùng cách chữa với `document/controller.doc_reader`.
+
+    ⚠️ CHỈ ba cửa ĐỌC. Tạo · sửa · xóa vẫn giữ nguyên `require(...)`: được cho
+    xem một quyển sổ không có nghĩa là được khai sổ mới hay xóa sổ của người khác.
+    """
+    return user
+
+
 @router.get("")
 def list_books(
     request: Request,
     year: int | None = Query(None, description="Năm tính số kế tiếp; mặc định năm nay"),
     pg: dict = Depends(pagination),
     db: Session = Depends(get_db),
-    user=Depends(require("document_book", "read")),
+    user=Depends(nguoi_doc_so),
 ):
     profile = get_perm_profile(db, user)
     q = apply_filters(db.query(DocumentBook), DocumentBook, request, FILTERABLE)
@@ -58,7 +79,7 @@ def get_book(
     book_id: int,
     year: int | None = Query(None),
     db: Session = Depends(get_db),
-    user=Depends(require("document_book", "read")),
+    user=Depends(nguoi_doc_so),
 ):
     book = service.so_xem_duoc_hoac_404(db, book_id, user, get_perm_profile(db, user))
     return success(service.serialize(db, book, year))
@@ -107,7 +128,7 @@ def get_counter(
     book_id: int,
     year: int | None = Query(None),
     db: Session = Depends(get_db),
-    user=Depends(require("document_book", "read")),
+    user=Depends(nguoi_doc_so),
 ):
     """Tình trạng bộ đếm của sổ trong một năm — dùng cho khối "Bộ đếm" trên trang chi tiết."""
     book = service.so_xem_duoc_hoac_404(db, book_id, user, get_perm_profile(db, user))

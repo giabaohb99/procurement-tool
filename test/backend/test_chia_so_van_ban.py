@@ -186,3 +186,76 @@ def test_vua_quan_ly_vua_nguoi_xem_thi_danh_sach_KHONG_nhan_doi(db, canh, cap_qu
     db.commit()
 
     assert _danh_sach(db, canh["tk_b"]) == [canh["so"].code]
+
+
+# ── Cửa vào: được chia sổ thì KHÔNG cần vai trò trên danh mục Sổ ─────────────
+
+def test_bo_loc_cho_qua_nguoi_duoc_chia_du_KHONG_co_vai_tro(db, canh):
+    """Nửa BỘ LỌC của việc chia sổ (nửa CỬA nằm ở bài kiểm cuối tệp).
+
+    Người được chia thường là nhân sự nghiệp vụ, KHÔNG có vai trò nào trên danh
+    mục Sổ. Bộ lọc phải cho họ qua bằng chính tư cách thành viên.
+    """
+    from app.modules.doc_catalog.book_model import DocumentBookMember
+
+    _, tk_ngoai = _nguoi(db, "SO_NGOAI", canh["cty_b"], 0)
+    nv_ngoai = db.query(Employee).filter(Employee.code == "SO_NGOAI").one()
+    db.add(DocumentBookMember(book_id=canh["so"].id, employee_id=nv_ngoai.id,
+                              role=2, created_by=ACTOR, updated_by=ACTOR))
+    db.commit()
+
+    #  Không cấp vai trò `document_book` nào cho người này — đúng bối cảnh thật.
+    assert get_perm_profile(db, tk_ngoai)["perms_union"].get("document_book") is None
+    assert canh["so"].code in _danh_sach(db, tk_ngoai)
+
+
+def test_nguoi_NGOAI_CUOC_van_khong_thay_gi(db, canh):
+    """CẶP ĐỐI CHỨNG. Mở cửa cho người được chia không được biến nó thành cửa mở
+    toang: người không có vai trò VÀ không phải thành viên vẫn phải thấy rỗng."""
+    _, tk_la = _nguoi(db, "SO_LA", canh["cty_b"], 0)
+    db.commit()
+
+    assert get_perm_profile(db, tk_la)["perms_union"].get("document_book") is None
+    assert _danh_sach(db, tk_la) == []
+
+
+def test_nguoi_ngoai_cuoc_go_thang_id_len_URL_an_404(db, canh):
+    from fastapi import HTTPException
+
+    _, tk_la = _nguoi(db, "SO_LA2", canh["cty_b"], 0)
+    db.commit()
+
+    with pytest.raises(HTTPException) as loi:
+        book_service.so_xem_duoc_hoac_404(
+            db, canh["so"].id, tk_la, get_perm_profile(db, tk_la))
+    assert loi.value.status_code == 404
+
+
+def test_ba_cua_DOC_mo_cho_nguoi_dang_nhap_con_GHI_thi_khong(db):
+    """⚠️ Bài kiểm giữ nửa CỬA của việc chia sổ — lỗ khách báo 25/08/2026.
+
+    Ba endpoint đọc sổ từng gác bằng `require("document_book", "read")`, một câu
+    hỏi thuần vai trò. Nhưng quyền xem sổ còn tới từ **chính bảng thành viên**:
+    văn thư thêm ai đó vào ô «Người xem sổ» là đã quyết định cho người ấy xem.
+    Người được chia không có vai trò nào trên danh mục Sổ nên ăn **403 ngay ở
+    cửa**, trước khi bộ lọc kịp chạy — và kết luận là «chia sổ không có tác
+    dụng». Cùng cái bẫy, cùng cách chữa với `document/controller.doc_reader`.
+
+    Kiểm bằng cách ĐỌC MÃ chứ không gọi route: `httpx` không có trong container
+    nên chưa dựng được `TestClient`. Đây là bài duy nhất trong tệp chạm tới lớp
+    cửa — mấy bài kia gọi thẳng `dieu_kien_xem_so` nên đi vòng qua nó.
+
+    Ranh giới của ngoại lệ quan trọng ngang bản thân nó: được cho xem một quyển
+    sổ KHÔNG có nghĩa là được khai sổ mới hay xóa sổ của người khác.
+    """
+    import re
+
+    from pathlib import Path
+
+    import app as goi_app
+
+    ma = (Path(goi_app.__file__).resolve().parent
+          / "modules" / "doc_catalog" / "book_controller.py").read_text(encoding="utf-8")
+    assert len(re.findall(r"Depends\(nguoi_doc_so\)", ma)) == 3, "đúng ba cửa ĐỌC"
+    for hanh_dong in ("create", "write", "delete"):
+        assert f'require("document_book", "{hanh_dong}")' in ma, hanh_dong
