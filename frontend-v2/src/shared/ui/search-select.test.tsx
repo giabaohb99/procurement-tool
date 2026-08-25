@@ -96,4 +96,40 @@ describe('SearchSelect', () => {
       expect(screen.getByText(item.label)).toBeInTheDocument()
     }
   })
+
+  it('danh sách dài bị cắt thì NÓI RA còn bao nhiêu, không im lặng', async () => {
+    //  Ô chọn nhân sự nạp cả nghìn dòng nhưng chỉ vẽ 60. Cắt mà không nói thì
+    //  người dùng cuộn tới đáy, không thấy tên mình cần, rồi kết luận là hệ
+    //  thống chưa có người đó.
+    const nhieu = Array.from({ length: 75 }, (_, i) => ({
+      value: String(i),
+      label: `Nhân sự ${i}`,
+    }))
+    const nguoi = userEvent.setup()
+    render(<SearchSelect value="" onChange={vi.fn()} options={nhieu} placeholder="Chọn" />)
+    await nguoi.click(screen.getByRole('combobox'))
+
+    expect(screen.getByText(/Còn 15 mục nữa/)).toBeInTheDocument()
+  })
+
+  it('lọc còn ít hơn mức cắt thì KHÔNG hiện câu «còn … mục»', async () => {
+    const nhieu = Array.from({ length: 75 }, (_, i) => ({
+      value: String(i),
+      label: `Nhân sự ${i}`,
+    }))
+    const nguoi = userEvent.setup()
+    render(
+      <SearchSelect
+        value=""
+        onChange={vi.fn()}
+        options={nhieu}
+        placeholder="Chọn"
+        searchPlaceholder="Tìm theo tên hoặc mã loại…"
+      />,
+    )
+    await nguoi.click(screen.getByRole('combobox'))
+    await nguoi.type(screen.getByPlaceholderText(/Tìm theo tên/), 'Nhân sự 7')
+
+    expect(screen.queryByText(/Còn \d+ mục nữa/)).not.toBeInTheDocument()
+  })
 })

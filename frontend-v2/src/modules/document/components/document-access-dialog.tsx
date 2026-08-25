@@ -89,7 +89,7 @@ export function DocumentAccessDialog({
           <DialogTitle>{initial ? 'Sửa quyền truy cập' : 'Chia quyền truy cập'}</DialogTitle>
           <DialogDescription>
             {initial
-              ? 'Đổi được cả đối tượng, chiều tác động, bộ quyền và hạn. Đổi sang đối tượng khác thì dòng cũ tự được thu hồi.'
+              ? 'Đổi được cả đối tượng, chiều tác động, bộ quyền và hạn. Đổi sang đối tượng khác thì dòng cũ tự được hủy.'
               : 'Mở thêm cho người ngoài phạm vi vai trò, hoặc chặn đích danh một người vốn đang xem được.'}
           </DialogDescription>
         </DialogHeader>

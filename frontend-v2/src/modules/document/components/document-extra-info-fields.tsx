@@ -12,6 +12,7 @@ import {
   FormMessage,
 } from '@/shared/ui/form'
 import { Input } from '@/shared/ui/input'
+import { SearchSelect } from '@/shared/ui/search-select'
 import {
   Select,
   SelectContent,
@@ -166,26 +167,30 @@ export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) 
         render={({ field }) => (
           <FormItem>
             <FormLabel>Người ký</FormLabel>
-            <Select
-              value={field.value ? String(field.value) : NONE}
-              onValueChange={(value) =>
-                field.onChange(value === NONE ? null : Number(value))
-              }
-            >
-              <FormControl>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Chọn người ký" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value={NONE}>-- Chưa chọn --</SelectItem>
-                {(employees?.items ?? []).map((employee) => (
-                  <SelectItem key={employee.id} value={String(employee.id)}>
-                    {employee.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/*  Ô GÕ TÌM, không phải `Select`: danh sách nhân sự lên tới cả
+                 nghìn dòng nên cuộn tay là không dùng nổi (khách báo
+                 25/08/2026). Hai ô «Mức mật» / «Độ khẩn» ngay trên vẫn để
+                 `Select` — ba bốn mục và mỗi mục còn kèm một câu giải thích,
+                 gắn ô tìm vào đó chỉ tổ thêm một bước bấm. */}
+            <FormControl>
+              <SearchSelect
+                value={field.value ? String(field.value) : NONE}
+                onChange={(value) => field.onChange(value === NONE ? null : Number(value))}
+                options={[
+                  { value: NONE, label: '-- Chưa chọn --' },
+                  ...(employees?.items ?? []).map((employee) => ({
+                    value: String(employee.id),
+                    //  Kèm mã: trùng họ tên là chuyện thường, mà ký sai người
+                    //  thì văn bản hỏng ở đúng chỗ không sửa lại được.
+                    label: employee.code
+                      ? `${employee.full_name} · ${employee.code}`
+                      : employee.full_name,
+                  })),
+                ]}
+                placeholder="Chọn người ký"
+                searchPlaceholder="Gõ tên hoặc mã nhân viên…"
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}

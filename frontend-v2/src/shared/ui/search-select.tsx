@@ -87,14 +87,14 @@ export function SearchSelect({
     [options, value],
   )
 
-  const matches = useMemo(() => {
+  const { matches, conLai } = useMemo(() => {
     const needle = boDau(keyword.trim())
     const rows = needle
       ? options.filter((option) =>
           [option.label, option.value].some((field) => boDau(field).includes(needle)),
         )
       : options
-    return rows.slice(0, MAX_VISIBLE)
+    return { matches: rows.slice(0, MAX_VISIBLE), conLai: Math.max(rows.length - MAX_VISIBLE, 0) }
   }, [options, keyword])
 
   return (
@@ -178,6 +178,15 @@ export function SearchSelect({
               <span className="flex-1 whitespace-pre-wrap break-words">{option.label}</span>
             </button>
           ))}
+
+          {/*  NÓI RA phần bị cắt. Danh sách nhân sự lên tới cả nghìn dòng, cắt
+               còn 60 mà im lặng thì người dùng cuộn tới đáy, không thấy tên
+               mình cần, và kết luận là hệ thống chưa có người đó. */}
+          {conLai > 0 && (
+            <p className="px-2 py-2 text-center text-xs text-muted-foreground">
+              Còn {conLai} mục nữa — gõ để tìm.
+            </p>
+          )}
         </div>
       </PopoverContent>
     </Popover>

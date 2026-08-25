@@ -12,7 +12,7 @@ import {
   FormMessage,
 } from '@/shared/ui/form'
 import { Input } from '@/shared/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { SearchSelect } from '@/shared/ui/search-select'
 import { useDocumentBooks } from '../hooks/use-document-books'
 import { useActiveDocumentTemplates } from '../hooks/use-document-templates'
 import { useActiveDocumentTypes } from '../hooks/use-document-types'
@@ -88,8 +88,21 @@ export function DocumentMainInfoFields({
     book_id: bookId,
   })
 
-  const employeeOptions = employees?.items ?? []
-  const departmentOptions = (departments?.items ?? []).filter((item) => item.is_active)
+  //  Mọi ô chọn ở đây đều là `SearchSelect` (có ô gõ tìm) chứ không phải
+  //  `Select` — khách yêu cầu 25/08/2026. Lý do đo được: loại văn bản 33 dòng,
+  //  nhân sự tới cả nghìn, mà `Select` của shadcn không có ô tìm; thứ duy nhất
+  //  để lần là typeahead của trình duyệt, và nó chỉ khớp từ ĐẦU nhãn.
+  //  `SearchSelect` khớp GIỮA chuỗi và **bỏ dấu** khi so, nên gõ "nghi phep"
+  //  vẫn ra «Giấy nghỉ phép».
+  const employeeOptions = (employees?.items ?? []).map((employee) => ({
+    value: String(employee.id),
+    //  Kèm mã nhân viên: công ty có người trùng họ tên, chọn nhầm thì văn bản
+    //  đứng tên sai người. Mã cũng là thứ gõ tìm được.
+    label: employee.code ? `${employee.full_name} · ${employee.code}` : employee.full_name,
+  }))
+  const departmentOptions = (departments?.items ?? [])
+    .filter((item) => item.is_active)
+    .map((item) => ({ value: String(item.id), label: item.name }))
 
   /** Chọn loại xong thì kéo theo mức mật mặc định của loại đó. */
   function handleTypeChange(value: string) {
@@ -129,29 +142,24 @@ export function DocumentMainInfoFields({
               Loại văn bản
               <Required />
             </FormLabel>
-            <Select
-              value={field.value ? String(field.value) : ''}
-              onValueChange={handleTypeChange}
-              disabled={isNumbered}
-            >
-              <FormControl>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Chọn loại văn bản" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {documentTypes.map((type) => (
-                  <SelectItem key={type.id} value={String(type.id)}>
-                    {/*  TÊN đứng trước, MÃ đứng sau. `Select` không có ô tìm;
-                         thứ duy nhất để lần trong 33 dòng là typeahead của trình
-                         duyệt, mà nó khớp từ ĐẦU nhãn. Để mã trước thì gõ «giấy
-                         nghỉ phép» không nhảy tới đâu và người dùng kết luận là
-                         danh mục không có loại đó (khách báo 25/08/2026). */}
-                    {type.name} · {type.code}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FormControl>
+              {/*  TÊN đứng trước, MÃ đứng sau — giữ nguyên thứ tự đã chốt hôm
+                   trước. Nay ô đã có chỗ gõ tìm nên thứ tự không còn là thứ
+                   duy nhất để lần, nhưng người ta vẫn nhớ TÊN loại chứ ít khi
+                   nhớ mã, nên tên vẫn phải đứng trước. Gõ mã cũng ra: ô tìm so
+                   cả `value` lẫn `label`. */}
+              <SearchSelect
+                value={field.value ? String(field.value) : ''}
+                onChange={handleTypeChange}
+                options={documentTypes.map((type) => ({
+                  value: String(type.id),
+                  label: `${type.name} · ${type.code}`,
+                }))}
+                placeholder="Chọn loại văn bản"
+                searchPlaceholder="Gõ tên hoặc mã loại…"
+                disabled={isNumbered}
+              />
+            </FormControl>
             <FormDescription>
               {isNumbered
                 ? 'Không đổi được: văn bản đã cấp số theo loại này.'
@@ -168,25 +176,20 @@ export function DocumentMainInfoFields({
           {/*  KHÔNG khóa ô khi đang nạp — chỉ khóa khi chưa chọn loại. Khóa rồi
                mở lại sau vài trăm mili giây làm ô nhấp nháy xám, và ai vừa bấm
                vào đúng nhịp đó thì bấm hụt. */}
-          <Select
+          <SearchSelect
             value={templateId ? String(templateId) : NONE}
-            onValueChange={(value) => onTemplateChange(value === NONE ? null : Number(value))}
+            onChange={(value) => onTemplateChange(value === NONE ? null : Number(value))}
+            options={[
+              { value: NONE, label: '-- Không dùng văn bản mẫu --' },
+              ...templates.items.map((template) => ({
+                value: String(template.id),
+                label: template.name,
+              })),
+            ]}
+            placeholder={docTypeId ? 'Chọn văn bản mẫu' : 'Chọn loại văn bản trước'}
+            searchPlaceholder="Gõ tên mẫu…"
             disabled={!docTypeId}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue
-                placeholder={docTypeId ? 'Chọn văn bản mẫu' : 'Chọn loại văn bản trước'}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={NONE}>-- Không dùng văn bản mẫu --</SelectItem>
-              {templates.items.map((template) => (
-                <SelectItem key={template.id} value={String(template.id)}>
-                  {template.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          />
           {/*  `min-h-10` giữ chỗ sẵn hai dòng: bốn câu dưới đây dài ngắn khác
                nhau, đổi câu mà không giữ chỗ thì cả hàng lưới xô lên xuống. */}
           <FormDescription className="min-h-10">
@@ -210,24 +213,19 @@ export function DocumentMainInfoFields({
               Pháp nhân ban hành
               <Required />
             </FormLabel>
-            <Select
-              value={field.value ? String(field.value) : ''}
-              onValueChange={(value) => field.onChange(Number(value))}
-              disabled={isNumbered}
-            >
-              <FormControl>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Chọn pháp nhân" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {(companies?.items ?? []).map((company) => (
-                  <SelectItem key={company.id} value={String(company.id)}>
-                    {company.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FormControl>
+              <SearchSelect
+                value={field.value ? String(field.value) : ''}
+                onChange={(value) => field.onChange(Number(value))}
+                options={(companies?.items ?? []).map((company) => ({
+                  value: String(company.id),
+                  label: company.name,
+                }))}
+                placeholder="Chọn pháp nhân"
+                searchPlaceholder="Gõ tên pháp nhân…"
+                disabled={isNumbered}
+              />
+            </FormControl>
             <FormDescription>
               {isNumbered
                 ? 'Không đổi được: văn bản đã cấp số theo pháp nhân này.'
@@ -248,23 +246,15 @@ export function DocumentMainInfoFields({
             </FormLabel>
             {/*  Không còn mục "-- Chưa chọn --": bước đầu luồng duyệt hỏi trưởng
                 bộ phận CỦA PHÒNG NÀY, để trống là phiếu duyệt kẹt ngay khi gửi. */}
-            <Select
-              value={field.value ? String(field.value) : undefined}
-              onValueChange={(value) => field.onChange(Number(value))}
-            >
-              <FormControl>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Chọn phòng chủ trì" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {departmentOptions.map((department) => (
-                  <SelectItem key={department.id} value={String(department.id)}>
-                    {department.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FormControl>
+              <SearchSelect
+                value={field.value ? String(field.value) : ''}
+                onChange={(value) => field.onChange(Number(value))}
+                options={departmentOptions}
+                placeholder="Chọn phòng chủ trì"
+                searchPlaceholder="Gõ tên phòng…"
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}
@@ -276,26 +266,20 @@ export function DocumentMainInfoFields({
         render={({ field }) => (
           <FormItem>
             <FormLabel>Vào sổ</FormLabel>
-            <Select
-              value={field.value ? String(field.value) : NONE}
-              onValueChange={(value) => field.onChange(value === NONE ? null : Number(value))}
-            >
-              <FormControl>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Không vào sổ" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value={NONE}>-- Không vào sổ --</SelectItem>
-                {books
-                  .filter((book) => book.is_active)
-                  .map((book) => (
-                    <SelectItem key={book.id} value={String(book.id)}>
-                      {book.name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+            <FormControl>
+              <SearchSelect
+                value={field.value ? String(field.value) : NONE}
+                onChange={(value) => field.onChange(value === NONE ? null : Number(value))}
+                options={[
+                  { value: NONE, label: '-- Không vào sổ --' },
+                  ...books
+                    .filter((book) => book.is_active)
+                    .map((book) => ({ value: String(book.id), label: book.name })),
+                ]}
+                placeholder="Không vào sổ"
+                searchPlaceholder="Gõ tên sổ…"
+              />
+            </FormControl>
             {/* Nói rõ vào sổ được thêm cái gì — không thì người dùng bỏ trống cho
                 nhanh rồi sau đó thắc mắc vì sao đồng nghiệp không xem được. */}
             <FormDescription>
@@ -328,23 +312,15 @@ export function DocumentMainInfoFields({
               Người chịu trách nhiệm nội dung
               <Required />
             </FormLabel>
-            <Select
-              value={field.value ? String(field.value) : ''}
-              onValueChange={(value) => field.onChange(Number(value))}
-            >
-              <FormControl>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Chọn người chịu trách nhiệm" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {employeeOptions.map((employee) => (
-                  <SelectItem key={employee.id} value={String(employee.id)}>
-                    {employee.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FormControl>
+              <SearchSelect
+                value={field.value ? String(field.value) : ''}
+                onChange={(value) => field.onChange(Number(value))}
+                options={employeeOptions}
+                placeholder="Chọn người chịu trách nhiệm"
+                searchPlaceholder="Gõ tên hoặc mã nhân viên…"
+              />
+            </FormControl>
             <FormDescription>
               Người trả lời khi có ai hỏi về văn bản này — khác người ngồi gõ.
             </FormDescription>
@@ -359,24 +335,15 @@ export function DocumentMainInfoFields({
         render={({ field }) => (
           <FormItem>
             <FormLabel>Người soạn</FormLabel>
-            <Select
-              value={field.value ? String(field.value) : NONE}
-              onValueChange={(value) => field.onChange(value === NONE ? null : Number(value))}
-            >
-              <FormControl>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Chọn người soạn" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value={NONE}>-- Chưa chọn --</SelectItem>
-                {employeeOptions.map((employee) => (
-                  <SelectItem key={employee.id} value={String(employee.id)}>
-                    {employee.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FormControl>
+              <SearchSelect
+                value={field.value ? String(field.value) : NONE}
+                onChange={(value) => field.onChange(value === NONE ? null : Number(value))}
+                options={[{ value: NONE, label: '-- Chưa chọn --' }, ...employeeOptions]}
+                placeholder="Chọn người soạn"
+                searchPlaceholder="Gõ tên hoặc mã nhân viên…"
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}

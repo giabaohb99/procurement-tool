@@ -100,7 +100,7 @@ export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardP
 
                   {!row.is_active && (
                     <p className="mt-1 text-xs text-destructive">
-                      Đã thu hồi {formatDateTime(row.revoked_at)}
+                      Đã hủy {formatDateTime(row.revoked_at)}
                       {row.revoked_by_name && ` bởi ${row.revoked_by_name}`}
                       {row.revoke_reason && ` — ${row.revoke_reason}`}
                     </p>
@@ -123,13 +123,19 @@ export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardP
                 {row.is_active && canWrite && (
                   <ConfirmIconButton
                     icon={Ban}
-                    title="Thu hồi"
+                    title="Hủy quyền"
                     destructive
-                    confirmTitle={`Thu hồi quyền của ${row.subject_name}?`}
-                    confirmDescription="Dòng này vẫn ở lại bảng kèm mốc thu hồi — nhật ký chia sẻ chỉ thêm, không xóa."
-                    confirmLabel="Thu hồi"
+                    confirmTitle={`Hủy quyền của ${row.subject_name}?`}
+                    confirmDescription="Dòng này vẫn ở lại bảng kèm mốc hủy — nhật ký chia sẻ chỉ thêm, không xóa."
+                    //  ⚠️ KHÔNG để trống nhãn này thành «Hủy» trơn: nút bỏ qua
+                    //  của hộp xác nhận cũng đang là «Hủy» (xem
+                    //  `confirm-icon-button.tsx`). Hai nút cạnh nhau cùng chữ
+                    //  «Hủy», một cái bỏ qua một cái thi hành, trên đúng một
+                    //  thao tác không hoàn tác được — thêm chữ «quyền» là đủ
+                    //  tách hai nghĩa mà vẫn đúng từ khách yêu cầu.
+                    confirmLabel="Hủy quyền"
                     onConfirm={() =>
-                      revoke.mutate({ accessId: row.id, reason: 'Thu hồi từ trang văn bản' })
+                      revoke.mutate({ accessId: row.id, reason: 'Hủy từ trang văn bản' })
                     }
                   />
                 )}

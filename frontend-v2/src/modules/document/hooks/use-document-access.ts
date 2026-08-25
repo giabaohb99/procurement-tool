@@ -59,7 +59,7 @@ export function useRevokeAccess(documentId: number) {
     mutationFn: ({ accessId, reason }: { accessId: number; reason: string }) =>
       documentAccessApi.revoke(documentId, accessId, reason),
     onSuccess: () => {
-      toast.success('Đã thu hồi quyền truy cập')
+      toast.success('Đã hủy quyền truy cập')
       void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
     },
   })
