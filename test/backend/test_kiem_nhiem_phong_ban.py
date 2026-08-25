@@ -316,3 +316,46 @@ def test_tao_moi_nhan_su_co_luon_dong_kiem_nhiem(db, seed, san):
         department_id=san["phong"]["P_KT"]), ACTOR)
 
     assert dv.phong_ban_cua(db, moi.id) == [san["phong"]["P_KT"]]
+
+
+# ── Kiêm nhiệm là thứ RIÊNG, không gộp với phòng chính ───────────────────────
+
+def test_kiem_nhiem_KHONG_gom_phong_chinh(db, san):
+    """Phòng chính là ô «Phòng ban» của hồ sơ, kiêm nhiệm là các phòng phụ trách
+    THÊM. Gộp hai cái vào một danh sách rồi quy ước «phần tử đầu là phòng chính»
+    là dựng ra một luật ngầm mà người dùng không có cách nào biết."""
+    dv.dat_kiem_nhiem(db, san["nguoi"],
+                      [san["phong"]["P_IT"], san["phong"]["P_NS"]], ACTOR)
+    db.commit()
+
+    kiem = dv.kiem_nhiem_cua(db, san["nguoi"].id)
+    assert set(kiem) == {san["phong"]["P_IT"], san["phong"]["P_NS"]}
+    assert san["phong"]["P_KT"] not in kiem, "phòng chính không phải kiêm nhiệm"
+
+
+def test_dat_kiem_nhiem_KHONG_dong_toi_phong_chinh(db, san):
+    dv.dat_kiem_nhiem(db, san["nguoi"], [san["phong"]["P_IT"]], ACTOR)
+    db.commit()
+
+    assert san["nguoi"].department_id == san["phong"]["P_KT"]
+
+
+def test_chon_nham_chinh_phong_chinh_lam_kiem_nhiem_thi_bi_loc(db, san):
+    """Người dùng chọn trùng thì lọc đi, đừng đẻ ra dòng trùng nghĩa."""
+    dv.dat_kiem_nhiem(db, san["nguoi"],
+                      [san["phong"]["P_KT"], san["phong"]["P_IT"]], ACTOR)
+    db.commit()
+
+    assert dv.kiem_nhiem_cua(db, san["nguoi"].id) == [san["phong"]["P_IT"]]
+    assert set(dv.phong_ban_cua(db, san["nguoi"].id)) == {
+        san["phong"]["P_KT"], san["phong"]["P_IT"]}
+
+
+def test_kiem_nhiem_VAN_mo_dung_pham_vi_du_lieu(db, san):
+    """Cái đích của cả tính năng: phụ trách thêm phòng thì thấy được phiếu phòng đó."""
+    dv.dat_kiem_nhiem(db, san["nguoi"], [san["phong"]["P_IT"]], ACTOR)
+    db.commit()
+    perm_cache_clear(san["tai_khoan"].id)
+
+    profile = get_perm_profile(db, san["tai_khoan"])
+    assert set(profile["dept_ids"]) == {san["phong"]["P_KT"], san["phong"]["P_IT"]}

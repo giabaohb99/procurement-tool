@@ -316,12 +316,13 @@ export function EmployeeDetailPage() {
             </Card>
 
             <div className="space-y-5">
-              {/*  Đứng TRƯỚC thẻ tài khoản: phòng ban và vai trò là hai nửa của
-                   cùng một câu «người này thấy được gì», mà phòng ban là nửa dễ
+              {/*  Đứng TRƯỚC thẻ tài khoản: kiêm nhiệm và vai trò là hai nửa của
+                   cùng một câu «người này thấy được gì», mà kiêm nhiệm là nửa dễ
                    bị quên hơn. */}
               <EmployeeDepartmentCard
                 employeeId={employee.id}
                 companyId={employee.company_id}
+                primaryDepartmentId={employee.department_id}
                 canWrite={canWrite}
                 laChinhMinh={dangDangNhap?.employee_id === employee.id}
               />

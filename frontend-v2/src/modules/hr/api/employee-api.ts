@@ -19,21 +19,21 @@ export const employeeApi = {
   remove: (id: number) => apiDelete<null>(`${BASE_URL}/${id}`),
 
   /**
-   * KIÊM NHIỆM — phòng ban của một nhân sự. Phòng CHÍNH đứng đầu danh sách.
+   * KIÊM NHIỆM — những phòng người này phụ trách THÊM, ngoài phòng chính.
    *
    * Cửa RIÊNG chứ không nhét vào `update`: đổi phòng ban là đổi PHẠM VI DỮ LIỆU
    * của người đó, nên backend gác nó bằng ba chốt chống vượt quyền mà cột
    * `department_id` thường không có (xem `employee/department_service.py`).
    */
   getDepartments: (id: number) =>
-    apiGet<{ department_ids: number[]; primary_department_id: number }>(
+    apiGet<{ primary_department_id: number; extra_department_ids: number[] }>(
       `${BASE_URL}/${id}/departments`,
     ),
 
-  setDepartments: (id: number, departmentIds: number[], primaryId?: number) =>
+  /** Chỉ đặt phòng KIÊM NHIỆM. Phòng chính đổi ở ô «Phòng ban» của hồ sơ. */
+  setDepartments: (id: number, extraDepartmentIds: number[]) =>
     httpClient.put(`${BASE_URL}/${id}/departments`, {
-      department_ids: departmentIds,
-      primary_department_id: primaryId ?? null,
+      extra_department_ids: extraDepartmentIds,
     }),
 
   /**

@@ -144,6 +144,16 @@ def update_employee(
     eid: int, data: EmployeeUpdate, db: Session = Depends(get_db),
     user=Depends(require("employee", "write")),
 ):
+    #  ⚠️ Đổi ô «Phòng ban» của hồ sơ CŨNG là đổi phạm vi dữ liệu người đó nhìn
+    #  thấy — y hệt thêm một phòng kiêm nhiệm. Trước CR-167 cửa này không có chốt
+    #  nào: vai trò `employee.write` phạm vi *own* là có thật, nên tự đổi phòng
+    #  của mình sang phòng khác là đọc được dữ liệu phòng đó, không cần đụng tới
+    #  màn Phân quyền. Hai cửa cùng đổi một thứ thì phải cùng một luật.
+    if data.department_id is not None:
+        profile = get_perm_profile(db, user)
+        department_service.chan_tu_sua_phong_ban_cua_minh(db, eid, user)
+        department_service.chan_gan_phong_ngoai_tam(db, [data.department_id], user, profile)
+
     obj = service.update_employee(db, eid, data, user.id)
     return success(EmployeeOut.model_validate(obj).model_dump(), "Đã cập nhật")
 
@@ -169,50 +179,51 @@ def _nhan_su_trong_pham_vi(db, eid: int, user, profile, action: str = "read"):
     return obj
 
 
-class PhongBanIn(BaseModel):
-    """Đặt LẠI toàn bộ danh sách phòng ban của một nhân sự."""
+class KiemNhiemIn(BaseModel):
+    """Đặt lại danh sách phòng KIÊM NHIỆM. Phòng chính KHÔNG đi qua đây."""
 
-    department_ids: list[int] = []
-    #  Bỏ trống = lấy phần tử đầu của danh sách làm phòng chính.
-    primary_department_id: int | None = None
+    extra_department_ids: list[int] = []
 
 
 @router.get("/{eid}/departments")
 def list_employee_departments(
     eid: int, db: Session = Depends(get_db), user=Depends(require("employee", "read")),
 ):
-    """Phòng ban của một nhân sự — phòng CHÍNH đứng đầu."""
+    """Phòng chính + phòng kiêm nhiệm, TÁCH BẠCH hai khóa.
+
+    Không gộp thành một danh sách rồi quy ước «phần tử đầu là phòng chính»: đó
+    là một luật ngầm mà người dùng không có cách nào biết, và nó làm ô «Phòng
+    ban» của hồ sơ thành thừa.
+    """
     emp = _nhan_su_trong_pham_vi(db, eid, user, get_perm_profile(db, user))
-    return success({"department_ids": department_service.phong_ban_cua(db, emp.id),
-                    "primary_department_id": emp.department_id or 0})
+    return success({"primary_department_id": emp.department_id or 0,
+                    "extra_department_ids": department_service.kiem_nhiem_cua(db, emp.id)})
 
 
 @router.put("/{eid}/departments")
 def set_employee_departments(
-    eid: int, data: PhongBanIn, db: Session = Depends(get_db),
+    eid: int, data: KiemNhiemIn, db: Session = Depends(get_db),
     user=Depends(require("employee", "write")),
 ):
-    """KIÊM NHIỆM — đặt lại danh sách phòng ban.
+    """KIÊM NHIỆM — đặt lại các phòng phụ trách THÊM. Phòng chính giữ nguyên.
 
-    ⚠️ Ba chốt chặn phải chạy TRƯỚC khi ghi, và đúng thứ tự này. Gán phòng ban
-    là mở rộng phạm vi dữ liệu của người nhận, đúng bằng việc tick thêm một ô
-    trong ma trận quyền — chỉ là qua một cửa trông hiền lành hơn. Lý lẽ đầy đủ ở
-    `employee/department_service.py`.
+    Phòng chính đổi ở ô «Phòng ban» của hồ sơ (`PATCH /employees/{id}`) — hai
+    thao tác khác nhau thì hai cửa khác nhau. Cả hai cửa đều qua đúng ba chốt
+    chống vượt quyền dưới đây, vì cả hai đều đổi phạm vi dữ liệu người đó nhìn
+    thấy. Lý lẽ đầy đủ ở `employee/department_service.py`.
     """
     profile = get_perm_profile(db, user)
     emp = _nhan_su_trong_pham_vi(db, eid, user, profile, "write")
 
     department_service.chan_tu_sua_phong_ban_cua_minh(db, emp.id, user)
-    department_service.chan_gan_phong_ngoai_tam(db, data.department_ids, user, profile)
-    ids = department_service.dat_phong_ban(
-        db, emp, data.department_ids, user.id,
-        phong_chinh=data.primary_department_id)
+    department_service.chan_gan_phong_ngoai_tam(db, data.extra_department_ids, user, profile)
+    ids = department_service.dat_kiem_nhiem(db, emp, data.extra_department_ids, user.id)
     db.commit()
 
     audit_record(db, user.id, "employee", emp.id, "update",
-                 f"Đặt lại phòng ban kiêm nhiệm: {ids}")
-    return success({"department_ids": ids, "primary_department_id": emp.department_id or 0},
-                   "Đã cập nhật phòng ban")
+                 f"Đặt lại phòng kiêm nhiệm: {ids}")
+    return success({"primary_department_id": emp.department_id or 0,
+                    "extra_department_ids": ids}, "Đã cập nhật phòng kiêm nhiệm")
 
 
 @router.delete("/{eid}")

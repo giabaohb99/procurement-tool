@@ -29,6 +29,34 @@ from .department_model import EmployeeDepartment
 from .model import Employee
 
 
+def kiem_nhiem_cua(db: Session, employee_id: int) -> list[int]:
+    """Phòng KIÊM NHIỆM — các phòng NGOÀI phòng chính.
+
+    Phòng chính không nằm trong danh sách này: nó là ô «Phòng ban» của hồ sơ,
+    một thứ khác hẳn. Gộp hai cái vào một danh sách rồi quy ước «phần tử đầu là
+    phòng chính» là dựng ra một luật ngầm mà người dùng không có cách nào biết.
+    """
+    from .model import Employee
+
+    emp = db.get(Employee, employee_id)
+    chinh = emp.department_id if emp else 0
+    return [x for x in phong_ban_cua(db, employee_id) if x != chinh]
+
+
+def dat_kiem_nhiem(db: Session, employee: Employee, extra_ids: list[int],
+                   actor: int) -> list[int]:
+    """Đặt lại danh sách phòng KIÊM NHIỆM. Phòng chính giữ nguyên.
+
+    Phòng chính đổi ở ô «Phòng ban» của hồ sơ, không đổi qua đây — hai thao tác
+    khác nhau thì hai cửa khác nhau.
+    """
+    chinh = employee.department_id or 0
+    sach = [x for x in dict.fromkeys(int(v) for v in extra_ids if v) if x != chinh]
+    dat_phong_ban(db, employee, ([chinh] if chinh else []) + sach, actor,
+                  phong_chinh=chinh or None)
+    return sach
+
+
 def phong_ban_cua(db: Session, employee_id: int) -> list[int]:
     """Mọi phòng ban của một nhân sự, PHÒNG CHÍNH đứng đầu.
 

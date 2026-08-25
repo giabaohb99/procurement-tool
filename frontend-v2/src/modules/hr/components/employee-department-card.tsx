@@ -13,27 +13,29 @@ interface EmployeeDepartmentCardProps {
   employeeId: number
   /** Nhân sự thuộc pháp nhân nào — chỉ chọn được phòng của chính pháp nhân đó. */
   companyId: number
+  /** Phòng CHÍNH, lấy từ ô «Phòng ban» của hồ sơ. Chỉ để loại khỏi danh sách chọn. */
+  primaryDepartmentId: number
   canWrite: boolean
   /** Đúng tài khoản đang đăng nhập: khóa lại, không ai tự đổi phòng của mình. */
   laChinhMinh: boolean
 }
 
 /**
- * KIÊM NHIỆM PHÒNG BAN — một nhân sự có chân ở nhiều phòng.
+ * KIÊM NHIỆM — những phòng người này phụ trách **THÊM**, ngoài phòng chính.
  *
- * Thẻ RIÊNG chứ không nhét vào form hồ sơ, vì đây không phải một ô thông tin
- * như «Vị trí / Chức vụ»: phòng ban quyết định **phạm vi dữ liệu** người đó nhìn
- * thấy, và backend gác nó bằng ba chốt chống vượt quyền mà form hồ sơ không có
- * (xem `employee/department_service.py`). Trộn vào cùng nút Lưu là làm mờ đúng
- * chỗ cần rõ.
+ * ⚠️ Phòng CHÍNH không nằm ở đây. Nó là ô «Phòng ban» trong khối *Công việc*
+ * của hồ sơ, và vẫn đổi ở đúng chỗ đó. Bản đầu gộp cả hai vào một ô rồi quy ước
+ * «phần tử đầu là phòng chính» — một luật ngầm mà người dùng không có cách nào
+ * biết, và làm ô «Phòng ban» của hồ sơ thành thừa (khách bác 25/08/2026).
  *
- * Phòng ĐẦU TIÊN trong danh sách là **phòng chính** — nó khớp với
- * `tab_employee.department_id`, thứ mà bối cảnh phiếu và thông báo cho trưởng
- * phòng vẫn đọc.
+ * Thẻ RIÊNG chứ không nhét vào form hồ sơ: backend gác cửa này bằng ba chốt
+ * chống vượt quyền (xem `employee/department_service.py`), trộn chung vào cùng
+ * một nút Lưu là làm mờ đúng chỗ cần rõ.
  */
 export function EmployeeDepartmentCard({
   employeeId,
   companyId,
+  primaryDepartmentId,
   canWrite,
   laChinhMinh,
 }: EmployeeDepartmentCardProps) {
@@ -42,15 +44,19 @@ export function EmployeeDepartmentCard({
   const luu = useSaveEmployeeDepartments(employeeId)
 
   const [dangChon, setDangChon] = useState<number[]>([])
-  //  Chỉ đồng bộ khi người dùng CHƯA tick dở — cùng lỗi đã gặp ở màn Phân quyền
+  //  Chỉ đồng bộ khi người dùng CHƯA chọn dở — cùng lỗi đã gặp ở màn Phân quyền
   //  (CR-156): một lượt nạp lại rơi vào giữa lúc đang chọn là mất thứ vừa chọn.
   const [dangChonDo, setDangChonDo] = useState(false)
-  if (useHasChanged(data) && !dangChonDo) setDangChon(data?.department_ids ?? [])
+  if (useHasChanged(data) && !dangChonDo) setDangChon(data?.extra_department_ids ?? [])
 
-  //  Chỉ phòng CÙNG PHÁP NHÂN — backend chặn gán chéo pháp nhân, bày ra ở đây
-  //  rồi để người dùng ăn lỗi lúc bấm Lưu là bắt họ đoán luật.
+  //  Bỏ PHÒNG CHÍNH khỏi danh sách chọn: nó không phải kiêm nhiệm, và chọn lại
+  //  chính nó ở đây thì backend cũng lọc ra.
+  //  Chỉ phòng CÙNG PHÁP NHÂN — backend chặn gán chéo pháp nhân, bày ra rồi để
+  //  người dùng ăn lỗi lúc bấm Lưu là bắt họ đoán luật.
   const chonDuoc = (departments?.items ?? []).filter(
-    (item) => !companyId || !item.company_id || item.company_id === companyId,
+    (item) =>
+      item.id !== primaryDepartmentId &&
+      (!companyId || !item.company_id || item.company_id === companyId),
   )
 
   if (isLoading) return <Skeleton className="h-40 w-full" />
@@ -58,18 +64,16 @@ export function EmployeeDepartmentCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Phòng ban &amp; kiêm nhiệm</CardTitle>
+        <CardTitle className="text-base">Kiêm nhiệm</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Phòng <strong>đầu tiên</strong> là phòng chính. Thêm phòng là mở rộng phạm vi
-          dữ liệu người này nhìn thấy — không phải chỉ đổi chức danh.
+          Những phòng người này phụ trách thêm, ngoài phòng ban chính.
         </p>
       </CardHeader>
 
       <CardContent className="space-y-3">
         {laChinhMinh && (
           <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            Đây là hồ sơ của chính bạn nên chỉ xem được. Phòng ban quyết định phạm vi dữ
-            liệu bạn nhìn thấy, nên phải nhờ một quản trị khác đổi — chốt hai người.
+            Đây là hồ sơ của chính bạn nên chỉ xem được — nhờ một quản trị khác đổi.
           </p>
         )}
 
@@ -80,7 +84,7 @@ export function EmployeeDepartmentCard({
             setDangChon(ids)
           }}
           departments={chonDuoc}
-          placeholder="Chưa gán phòng ban nào"
+          placeholder="Không kiêm nhiệm phòng nào"
           disabled={!canWrite || laChinhMinh}
         />
 
@@ -88,15 +92,12 @@ export function EmployeeDepartmentCard({
           <Button
             size="sm"
             onClick={() =>
-              luu.mutate(
-                { ids: dangChon, primaryId: dangChon[0] },
-                { onSuccess: () => setDangChonDo(false) },
-              )
+              luu.mutate(dangChon, { onSuccess: () => setDangChonDo(false) })
             }
             disabled={luu.isPending}
           >
             {luu.isPending ? <Loader2 className="animate-spin" /> : <Save />}
-            Lưu phòng ban
+            Lưu kiêm nhiệm
           </Button>
         )}
       </CardContent>
