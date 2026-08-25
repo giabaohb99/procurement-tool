@@ -97,6 +97,35 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                  details=exc.errors())
 
 
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """Lỗi KHÔNG lường trước — trả đúng phong bì kèm một MÃ SỰ CỐ tra được.
+
+    Trước 25/08/2026 chỗ này bỏ trống, nên mọi lỗi ngoài dự tính rơi ra ngoài
+    thành `500 Internal Server Error` **thân rỗng, không phải JSON**. Giao diện
+    không bóc được phong bì nên chỉ hiện đúng một dòng «Request failed with
+    status code 500»: người dùng không biết chuyện gì, người sửa cũng không có
+    gì để lần — phải mò lại từ log container mà không biết dòng nào là của họ.
+
+    Nay mỗi lần nổ sinh một mã ngắn, in ra log **cùng** trả về cho người dùng:
+    họ đọc mã đó cho quản trị, quản trị `grep` đúng một dòng là ra vết đầy đủ.
+
+    Vẫn KHÔNG bày ruột gan (tên bảng, câu SQL) ra màn hình — thông điệp kỹ thuật
+    chỉ nằm trong log.
+    """
+    import logging
+    import uuid
+
+    ma_su_co = uuid.uuid4().hex[:8].upper()
+    logging.getLogger("app.error").exception(
+        "[%s] %s %s — %s", ma_su_co, request.method, request.url.path, exc)
+    return error(
+        f"Hệ thống gặp lỗi không lường trước. Gửi mã sự cố {ma_su_co} cho quản trị "
+        "để tra nguyên nhân.",
+        code="internal_error", status_code=500, details={"ma_su_co": ma_su_co},
+    )
+
+
 @app.get("/api/health")
 def health():
     return {"success": True, "message": "ok"}

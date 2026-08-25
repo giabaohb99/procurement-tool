@@ -281,10 +281,38 @@ def _len_ban_moi(db: Session, flow: ApprovalFlow, actor: int) -> None:
     nhưng vẫn phải tăng, không thì hai luồng khác hẳn nhau cùng mang số 1 và
     bản in dấu vết nói sai phiếu chạy theo luồng nào.
     """
-    flow.version_no += 1
+    flow.version_no = _ban_ke_tiep(db, flow)
     flow.updated_by = actor
     db.commit()
     record(db, actor, "approval_flow", flow.id, "update", f"Lên bản {flow.version_no}")
+
+
+def _ban_ke_tiep(db: Session, flow: ApprovalFlow) -> int:
+    """Số bản kế tiếp CÒN TRỐNG của cặp (entity, code).
+
+    ⚠️ Không phải `version_no + 1`. Bảng có `UNIQUE(entity, code, version_no)`,
+    mà `code` **được phép bỏ trống** — nên hai luồng khác nhau cùng mã rỗng là
+    chuyện bình thường trên dữ liệu thật. Lúc đó luồng B lên bản 2 sẽ đâm vào
+    luồng A đang giữ bản 2, `IntegrityError` bay thẳng ra ngoài thành **500 trần
+    không có nội dung** — người dùng chỉ thấy «Request failed with status code
+    500» và bước vừa khai biến mất (lỗi khách báo 25/08/2026, dựng lại được:
+    `Duplicate entry 'document--2' for key 'uq_approval_flow_code_version'`).
+
+    Nhảy qua số đã có người giữ: số bản chỉ để người đọc tra lịch sử, không cần
+    liên tục — kẹt không sửa nổi luồng mới là cái giá đắt hơn nhiều.
+    """
+    dang_dung = {
+        row[0] for row in
+        db.query(ApprovalFlow.version_no)
+        .filter(ApprovalFlow.entity == flow.entity,
+                ApprovalFlow.code == flow.code,
+                ApprovalFlow.id != flow.id)
+        .all()
+    }
+    ke_tiep = (flow.version_no or 0) + 1
+    while ke_tiep in dang_dung:
+        ke_tiep += 1
+    return ke_tiep
 
 
 def _chan_khi_dang_chay(db: Session, flow_id: int) -> None:
