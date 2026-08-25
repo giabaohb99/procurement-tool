@@ -163,16 +163,23 @@ Tám câu Q1–Q8 **đã chốt hết ngày 18/08/2026** (mục 1). Còn lại b
 Đây là **việc phải làm trước tiên trong phần code**, vì hai lỗ hổng dưới đây hôm nay vô hại (chỉ
 một pháp nhân dùng thật) nhưng bật đa pháp nhân là thành lộ dữ liệu chéo công ty ngay ngày đầu.
 
-- **P1-1.** Bậc `proc` phải AND thêm điều kiện pháp nhân. Hiện `_role_scope_cond` trả về điều kiện
-  "mọi phiếu đã duyệt" **không kèm lọc công ty**, nên nhân viên thu mua của công ty con sẽ thấy
-  phiếu đã duyệt của mọi công ty.
-- **P1-2.** Chiều phòng ban khớp theo **ID** thay vì theo **tên chuỗi**. Hai công ty cùng có
-  "Phòng Thu Mua" là thấy chéo nhau. Trùng hạng mục **DB15** ở `08`.
-- **P1-3.** Bộ test rò rỉ chéo pháp nhân cho cả sáu bậc phạm vi.
+- **P1-1. XONG (CR-145, 24/08).** Bậc `proc` nay AND thêm pháp nhân qua helper `_proc_status_cond`
+  trong `scoping.py` — áp cho `purchase_request` (`approved|dispatched`) và `purchase_order`
+  (`approved`). **CHỈ thu hẹp khi người xem đã gắn `company_id` (>0)**; nhân sự chưa gắn
+  (`company_id=0` — trạng thái prod hiện tại) giữ nguyên hành vi cũ để Thu mua không gián đoạn.
+  `survey_request` không đụng: nhánh nhặt-việc của nó đã lọc theo `emp_code` (duy nhất mỗi người)
+  nên không lộ chéo công ty.
+- **P1-2. XONG (CR-086).** Chiều phòng ban đã khớp theo **ID** (`_dept_match`), tên chuỗi chỉ còn là
+  đường lùi cho phiếu cũ `department_id=0`. Trùng hạng mục **DB15** ở `08`.
+- **P1-3.** Bộ test rò rỉ chéo pháp nhân. **Đã có** cho bậc `proc` (`test_proc_loc_cong_ty_p1.py` —
+  5 ca: gắn pháp nhân thì không nhặt phiếu công ty khác + tương thích ngược `company_id=0` + phiếu
+  do mình tạo vẫn thấy). Các bậc own/dept/company/all đã có ở `test_pham_vi_khai_du_b07.py`. Còn
+  thiếu: ca chạy qua **API/URL trực tiếp** trên dev (khâu nghiệm thu tay).
 
-*Điều kiện đủ:* test P1-3 xanh; chạy lại toàn bộ `test/backend` không hỏng bài nào; trên dev, tài
-khoản thu mua của công ty con **không** truy được phiếu của công ty khác qua API lẫn qua URL trực
-tiếp.
+*Điều kiện đủ:* test P1-3 xanh; chạy lại toàn bộ `test/backend` không hỏng bài nào *(đã chạy 143 ca
+nhánh proc + 26 ca phạm vi, xanh hết)*; trên dev, tài khoản thu mua của công ty con **không** truy
+được phiếu của công ty khác qua API lẫn qua URL trực tiếp *(chờ nghiệm thu tay khi bật đa pháp nhân
+trên dev)*.
 
 ### P2 — Nền pháp nhân *(8–12 ngày)*
 
@@ -259,9 +266,15 @@ liệu cũ** — đó là chỗ rẻ hơn hẳn so với hướng cũ.
 - **P6-2.** Khối phương án: dòng **chưa có mã** thì phương án gợi ý mã (`system_product_code` đã có
   sẵn trên `tab_survey_request_option`), chọn xong điền mã lên dòng; dòng **đã có mã** thì lọc
   phương án theo đúng mã đó.
-- **P6-3.** **Chọn phương án là tạo thẳng đơn mua hàng** — nhân sự thu mua tạo, lấy giá/VAT/nhà
-  cung cấp/thời gian giao từ bản chụp của phương án; bỏ hẳn bước sinh YCMH trung gian. Chỉnh máy
-  trạng thái phiếu và trạng thái dòng cho khớp.
+- **P6-3.** **Phân vai chốt phương án — CHỐT 24/08/2026.** Tách rõ hai hành động:
+  *(a)* **Bộ phận yêu cầu CHỐT phương án** cho từng dòng (mỗi dòng chọn đúng một phương án NCC
+  trong số phương án thu mua đã khảo sát). *(b)* **Nhân sự thu mua tạo thẳng đơn mua hàng** từ các
+  dòng đã chốt, lấy giá/VAT/nhà cung cấp/thời gian giao từ bản chụp của phương án; bỏ hẳn bước sinh
+  YCMH trung gian. Đúng lời khách: "bên yêu cầu chốt cái nào thì mình (thu mua) đi mua cái đó".
+  *(Bản 1.2 trước ghi thu mua tự chọn phương án — nay đảo: quyền chốt phương án về bộ phận yêu
+  cầu, thu mua chỉ khảo sát + thực thi đơn.)* Kéo theo: thêm quyền/hành động "chốt phương án" cho
+  vai trò bộ phận yêu cầu, và một bước trạng thái dòng "đã chốt phương án" trước bước "đã lên đơn".
+  Chỉnh máy trạng thái phiếu và trạng thái dòng cho khớp.
 - **P6-4.** **Đồng bộ ngược** `qty_ordered` · `qty_received` · `line_status` từ đơn mua hàng về
   `tab_survey_request_line`. **Đây là chỗ dễ vỡ nhất của cả kế hoạch** — hôm nay nó đang đồng bộ về
   `tab_purchase_request_item`, và màn Tiến độ mua hàng đọc chính mấy cột đó. Viết test trước khi
@@ -273,7 +286,9 @@ liệu cũ** — đó là chỗ rẻ hơn hẳn so với hướng cũ.
 - **P6-7.** Phiếu khảo sát (chi tiết) port sang v2 — giữ nguyên vai trò **sổ giá**.
 - **P6-8.** Bật bằng cờ tính năng; `frontend/` giữ nguyên hai màn cũ cho tới khi v2 chạy ổn.
 
-*Điều kiện cần:* P2 xong.
+*Điều kiện cần:* **P1 xong** *(đã xong 24/08)*. ~~P2 xong~~ — P2 hoãn, P6 làm độc lập với nền pháp
+nhân (xem khối cập nhật §4). Bỏ **P6-7b** (map người xử lý theo cặp *pháp nhân, phòng ban*) khỏi
+phạm vi P6, giữ cách phân bổ NSTM hiện tại.
 *Điều kiện đủ:* một phiếu đi trọn vòng *yêu cầu → so phương án → chọn → đơn mua hàng → nhận hàng →
 công nợ* trên dev, **không qua bước YCMH nào**; đơn cũ tạo trước ngày đổi vẫn chạy đúng tiến độ và
 vẫn đồng bộ số lượng; phiếu YCMH cũ mở lên đọc được, không sửa được; tắt cờ là về đúng hành vi cũ.
@@ -332,15 +347,28 @@ ty con, số cộng dồn khớp tổng các phần.
 
 ## 4. Thứ tự và hai luồng chạy song song
 
+> **CẬP NHẬT 24/08/2026 — P2 HOÃN, LÀM P6 TRƯỚC.** Khách chốt: tận dụng nền phạm vi hiện có
+> (đã xong B-07 + P1) thay cho nền pháp nhân đầy đủ. Nhân sự **bắt buộc thuộc một công ty**
+> (ràng buộc lưu trữ); "các công ty liên quan" cấu hình tay bằng `scope=all` + danh sách công ty
+> được cấp — phòng Thu mua và Sản xuất tự đưa bảng phạm vi; vẫn có vai trò giám đốc thu mua /
+> tổng giám đốc `scope=all` nắm hết. **P6 (gộp phiếu) làm ngay sau P1**, không chờ P2. **P2 thành
+> nợ kỹ thuật**, quay lại **khi HRM chuẩn hết** (đã ghi ở [`02` mục 6](./02-dai-han.md)). Đường
+> găng mới: **P1 (xong) → P6**. P6-7b (map người xử lý theo cặp *pháp nhân, phòng ban*) bỏ khỏi
+> P6, giữ cách phân bổ NSTM hiện tại. Ba đánh đổi của việc hoãn P2: cấu hình phạm vi bằng tay dày
+> lên khi nhiều pháp nhân · phải gắn `company_id` cho nhân sự trước khi bật · bậc `proc` nhặt-việc
+> chỉ khóa đúng công ty của người đó *(muốn nhặt đa công ty thì dùng `scope=all` + include)*.
+
 ```
-Luồng NỀN (backend)   P0 → P1 → P2 ┬→ P5 → ...
-                                   ├→ P6 → P7
-                                   └→ P8 → P9
-Luồng GIAO DIỆN (v2)  P3 ────────→ P4 ┘   (P3 và P4 không chờ P1/P2)
+Luồng NỀN (backend)   P0 → P1 →[P6]→ P7 → P9     (P2 HOÃN — nợ kỹ thuật, trả khi HRM chuẩn)
+                                                  P5, P8 kéo theo P2 nên hoãn cùng
+Luồng GIAO DIỆN (v2)  P3 ────────→ P4             (P3 và P4 không chờ P1)
 ```
 
-- **P0 → P1 → P2 là dây chuyền cứng.** Không được nhảy cóc: P2 nới quyền xuyên công ty, mà P1 là
-  chỗ bịt lỗ hổng, làm ngược thứ tự là mở rộng một hệ đang hở.
+- **P0 → P1 là dây chuyền cứng còn lại.** P1 bịt lỗ hổng phạm vi (đã xong 24/08), là điều kiện đủ
+  để bật cho nhiều công ty dùng chung mà không lộ dữ liệu chéo.
+- ~~**P0 → P1 → P2 là dây chuyền cứng.** Không được nhảy cóc: P2 nới quyền xuyên công ty, mà P1 là
+  chỗ bịt lỗ hổng, làm ngược thứ tự là mở rộng một hệ đang hở.~~ *(P2 đã hoãn — xem khối cập nhật
+  trên. P6 không nới quyền xuyên công ty nên không dính lý do "làm ngược thứ tự".)*
 - **P3 và P4 chạy song song ngay từ đầu**, không chờ nền, vì bốn màn ở P3 không đụng pháp nhân.
 - **P5, P6, P8 chạy song song được** sau khi P2 xong, nếu có nhiều người.
 - **P7 phải sau P6-1**; **P9 phải sau cùng.**

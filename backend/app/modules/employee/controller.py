@@ -1,5 +1,3 @@
-import uuid
-
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -45,20 +43,18 @@ def update_employee_avatar(eid: int, file: UploadFile = File(...), db: Session =
     """Đổi ảnh đại diện của nhân sự. Ảnh lưu vào TÀI KHOẢN đăng nhập của nhân sự đó
     (tab_user.avatar) — cùng chỗ với ảnh người dùng tự đổi ở Trang cá nhân, tránh 2 nguồn lệch nhau.
     Nhân sự chưa có tài khoản thì chưa có chỗ lưu ảnh → yêu cầu tạo tài khoản trước."""
-    from app.core.storage import env_prefix, safe_name, upload_fileobj
     from app.modules.user.model import User
+    from app.modules.user.service import set_user_avatar
 
     emp = service.get_employee(db, eid)
     u = db.query(User).filter(User.employee_id == eid).first()
     if not u:
         raise HTTPException(400, "Nhân sự chưa có tài khoản đăng nhập — hãy tạo tài khoản trước khi đặt ảnh đại diện")
     try:
-        key = f"{env_prefix()}/avatar/{u.id}/{uuid.uuid4().hex[:12]}-{safe_name(file.filename or 'avatar')}"
-        url = upload_fileobj(file.file, key, file.content_type or "")
+        url = set_user_avatar(db, u, fileobj=file.file, filename=file.filename or "avatar",
+                              content_type=file.content_type or "", actor_id=user.id)
     except Exception as e:
         raise HTTPException(400, f"Lỗi tải ảnh: {str(e)}")
-    u.avatar = url
-    db.commit()
     audit_record(db, user.id, "employee", eid, "update", f"Đổi ảnh đại diện nhân sự {emp.code}")
     return success({"avatar": url}, "Đã cập nhật ảnh đại diện")
 

@@ -151,6 +151,105 @@ Phạm vi bản 1 chốt sau khảo sát, theo bộ câu hỏi [`03`](./03-cau-h
 | Quản lý dự án (Project-M) | Đã có, app riêng |
 | Phiếu hỗ trợ | Đã có |
 | Sao lưu và phục hồi | Đã có |
+| **Trợ lý AI (2 nhánh: gói tri thức + RAG toàn hệ)** | **Kế hoạch — xem 3.7; nhánh gói tri thức ưu tiên sớm** |
+
+### 3.7 Trợ lý AI — HAI sản phẩm tách riêng (ghi 24–25/08/2026)
+
+Rà lại 25/08/2026: đây thực chất là **hai sản phẩm khác nhau**, đừng gộp. Nhánh **AI-1** làm được
+sớm và độc lập; nhánh **AI-2** khó, để sau.
+
+#### AI-1 — Trợ lý "gói tri thức" (ưu tiên, khách muốn lên trước)
+
+Khách đã tự đóng gói và **chạy được ngay trên Claude.ai Project**: một thư mục ~12 file (quy định
+hệ thống công việc, hướng dẫn vận hành trợ lý, bộ câu hỏi, ngữ cảnh, bảng thuật ngữ, gói hợp
+nhất...) dán vào Instructions + nạp vào Project Knowledge. Mục đích: **hỗ trợ lãnh đạo/nhà máy lên
+kế hoạch, hiểu và tối ưu quy trình** — hỏi một nghiệp vụ thì trả lời theo kiến thức trong gói, và
+rà soát/đề xuất cập nhật quy trình cũ.
+
+Đánh giá + hướng làm:
+- **Đây là "gói tri thức có người biên soạn", KHÁC hẳn AI-2.** Nguồn là bộ file cố định, không
+  phải chứng từ động; người dùng là số ít sếp/quản lý; **phân quyền theo GÓI** (ai được hỏi gói
+  nào), không phải theo từng bản ghi → **crux lọc-quyền-theo-role của AI-2 gần như biến mất ở đây.**
+- **CHƯA cần vector DB.** Gói ~1MB thì nạp thẳng vào ngữ cảnh Claude + **prompt caching** (phần gói
+  được cache, mỗi câu chỉ tính ~10%). Bỏ được cả Qdrant lẫn embedding ở giai đoạn này. Chỉ khi gói
+  phình hàng trăm tài liệu mới cần RAG.
+- **Model Opus/Sonnet, KHÔNG phải Haiku** — việc là tư vấn thiết kế/tối ưu quy trình theo khung
+  chuẩn, cần suy luận mạnh và bám khung nghiêm; ngược với trợ lý tra cứu rẻ tiền.
+- **Ranh giới đọc/đề xuất vs sửa (khách đã đặt sẵn trong Instructions, giữ nguyên):** AI chỉ đánh
+  giá + đề xuất, **không tự viết lại/không tự ban hành**; cập nhật quy trình cũ = AI đề xuất →
+  người có thẩm quyền duyệt → ghi thành **phiên bản mới** của gói. AI không ghi đè bản gốc.
+- **Chống bịa:** buộc trả lời có trích nguồn trong gói, nói thẳng "không có trong tài liệu" thay
+  vì đoán (khách đã có quy tắc "phân biệt dẫn chứng vs suy luận").
+- **Phần "sản phẩm" thật sự phải xây nằm ở QUẢN LÝ GÓI**, không phải chỗ gọi AI: upload nhiều file,
+  sửa, **đánh phiên bản**, ai sở hữu/duy trì, **nhiều gói cho nhiều mục đích** (tổ chức nhà máy,
+  lập kế hoạch...), chọn gói khi hỏi — như cơ chế Project của Claude nhưng dựng trong ERP, có phân
+  quyền + lưu lịch sử hỏi. Chất lượng = chất lượng gói → cần người nghiệp vụ duy trì.
+- **Độc lập với P6/đa pháp nhân**, chen lên trước được; đánh đổi là P6 (gộp phiếu) lùi lại — khách
+  quyết ưu tiên. Trong lúc xây bản tích hợp, sếp **dùng tạm bản Claude.ai Project** đã có.
+- **Còn chốt:** làm app riêng (như Help Center/Project-M) hay phân hệ trong ERP; danh sách gói ban
+  đầu; ai được hỏi gói nào.
+
+#### AI-2 — Trợ lý tài liệu toàn hệ có phân quyền (để sau, khó)
+
+Ý tưởng: một trợ lý cho người dùng **hỏi bằng ngôn ngữ tự nhiên**, AI đọc tài liệu của
+**Văn thư** và các nguồn khác rồi trả lời có trích dẫn nguồn. Dùng **API của Claude** để sinh câu
+trả lời, một **cơ sở dữ liệu vector** để tìm đoạn liên quan (RAG).
+
+**PHÂN BIỆT CỐT TỬ (rà 25/08/2026) — hai loại câu hỏi, hai công cụ khác nhau, đừng lẫn:**
+
+| | Loại A — dữ liệu CÓ CẤU TRÚC | Loại B — văn bản TỰ DO |
+|---|---|---|
+| Ví dụ | "HĐ với NCC nào còn hạn/hết hạn bao nhiêu", "sản phẩm mã A giá ổn nhất, đã mua của ai" | "quy trình nghiệm thu mấy bước", "điều khoản phạt trong HĐ nói gì" |
+| Công cụ đúng | **Truy vấn CSDL / gọi API sẵn có** (`contract.end_date/status`, `purchase_history`) | **Qdrant vector search + RAG** |
+| Vector hóa? | **KHÔNG** — vector tìm gần-nghĩa, không lọc/tính/tổng hợp chính xác → bỏ sót + bịa số | **CÓ** — đúng việc của vector |
+| Phân quyền | **Tự đúng** vì gọi API đã gác `apply_scope`; không cần gắn nhãn quyền từng chunk | Phải gắn nhãn quyền vào chunk (crux dưới đây) |
+
+→ Các ví dụ khách nêu ("còn hạn", "giá ổn nhất", "đã mua của ai") **đều là loại A** — dữ liệu đã
+nằm sẵn ở `contract`/`purchase_history`, **đừng vector hóa**, cho AI gọi API. **Trợ lý cuối là bản
+LAI:** Claude điều phối (tool use) — hỏi số liệu thì gọi truy vấn, hỏi nội dung thì Qdrant, rồi
+tổng hợp. Qdrant chỉ dùng cho loại B (HDSD, quy trình, nội dung văn bản dài).
+
+**Văn thư làm kho chung — ranh giới đúng (rà 25/08/2026):** Văn thư là kho quản lý **FILE + hồ sơ**
+trung tâm cho loại **CHƯA có nhà riêng** (hợp đồng lao động = "văn bản loại hợp đồng", gắn nhân
+viên, có danh sách HĐ; công văn, quyết định, quy trình). **Thứ đã có bảng nghiệp vụ riêng thì giữ
+nguyên** (HĐ NCC ở `contract`, chứng từ thu mua) — Văn thư đừng ôm lại dữ liệu, cùng lắm chuẩn hóa
+chỗ đính kèm file. Quy tắc: **Văn thư giữ FILE + metadata hồ sơ, KHÔNG ôm dữ liệu nghiệp vụ có cấu
+trúc** (giá/số lượng/trạng thái). Dù Văn thư ôm hết hay không **cũng không đổi kiến trúc AI** — AI
+luôn cần *(chữ hoặc cách truy vấn, nhãn quyền, link gốc)* qua "đầu nối".
+
+**Điểm cốt lõi khách nhấn mạnh — và cũng là chỗ khó nhất: chỉ một DB vector chung, nhưng KẾT QUẢ
+phải bị RÀNG BUỘC theo quyền của người hỏi.** Không tách kho vector theo từng người; thay vào đó
+mỗi đoạn (chunk) nạp vào vector kèm **nhãn phân quyền** (chủ sở hữu / phòng ban / công ty / mức
+mật) lấy từ chính tài liệu gốc, và lúc truy vấn **lọc theo quyền của người hỏi TRƯỚC khi** đưa
+đoạn cho Claude — nếu không, AI sẽ vô tình đọc trích tài liệu mà người đó không được xem. Ràng
+buộc này phải trùng khớp với hệ phạm vi hai trục sẵn có (`apply_scope`/`scope_condition`), không
+đẻ luật quyền song song.
+
+**Hướng đã chốt sơ bộ 25/08/2026:**
+
+- **Tách hai lớp, KHÔNG dồn mọi thứ vào Văn thư.** Hợp đồng NCC, chứng từ thu mua đã có bảng
+  riêng; hợp đồng lao động sẽ thuộc HRM — copy sang Văn thư là nhân đôi dữ liệu và lệch quyền.
+  Lớp **lưu trữ** để mỗi loại tài liệu ở đúng module của nó; Văn thư chỉ giữ tài liệu **tự do**
+  (công văn, quyết định, quy trình) không thuộc module nào. Lớp **chỉ mục AI** dựng **một "đầu nối"
+  cho mỗi loại nguồn**, khai báo cách lấy *(chữ, nhãn quyền entity+scope, đường về bản gốc)*. AI
+  đánh chỉ mục **từ nguồn**, không cần gom về Văn thư. Bản chất mỗi thứ AI cần chỉ là ba phần đó —
+  không phải "văn bản" theo nghĩa Văn thư.
+- **Ràng buộc thứ tự:** Văn thư **chưa có backend** (localStorage). Muốn AI đọc tài liệu Văn thư
+  thì phải làm **backend + mô hình quyền tài liệu cho Văn thư trước**. Hợp đồng/chứng từ thì nguồn
+  đã sẵn, nối đầu nối là index được.
+- **Kho vector:** nghiêng về **Qdrant** (một container, lọc payload theo quyền mạnh, hợp VPS nhỏ);
+  phương án cực gọn lúc đầu là **Chroma**. Tránh dồn vào pgvector vì hệ đang MySQL.
+- **Embedding chạy LOCAL** (bge-m3 hoặc multilingual-e5-base) để **không gửi hợp đồng nhạy cảm ra
+  ngoài**. Nhưng **bước sinh câu trả lời vẫn gửi đoạn trích + câu hỏi cho Claude API (Anthropic)** —
+  cần khách đồng ý (bật chế độ không lưu giữ / DPA); tài liệu tuyệt mật thì loại khỏi phạm vi AI.
+- **Reindex khi nguồn đổi quyền / sửa / xóa:** phát tín hiệu cập nhật hoặc xóa đoạn + nhãn quyền
+  trong vector (móc vào tầng audit/mutation, kèm job quét đối chiếu định kỳ). Ràng buộc cứng.
+- **Model + chi phí:** mặc định **Haiku 4.5 / Sonnet** cho hỏi-đáp (rẻ), nâng model khi cần suy
+  luận sâu. Embedding local gần như miễn phí; mỗi câu hỏi cỡ chục–vài trăm đồng. **Giai đoạn 1 chỉ
+  mở cho ban lãnh đạo**, tối ưu chi phí xong mới mở cho nhân viên.
+
+Còn phải chốt khi thiết kế chi tiết: danh sách chính xác nguồn nào đưa vào phạm vi AI; cách chia
+đoạn (chunk) cho chứng từ có cấu trúc vs văn bản dài; nhật ký hỏi-đáp để rà soát; giới hạn tần suất.
 
 ---
 
@@ -190,6 +289,7 @@ Vòng 1 chấp nhận không đụng cơ sở dữ liệu cũ. Đó là dời n�
 | Cột `created_by` không nói rõ là tài khoản hay nhân sự | Vòng 2 hoặc vòng 3 | Người mới vào sẽ hiểu nhầm. Đã có tiền lệ với `assignee_id` |
 | 75 file migration chưa gộp mốc | Trước vòng 3 | Năm phân hệ thì thành ba trăm file, dựng môi trường mới mất hàng giờ |
 | Chưa có kiểm thử tự động đầy đủ | Bồi dần mỗi vòng | Càng nhiều phân hệ, sửa một chỗ càng dễ vỡ chỗ khác mà không ai biết |
+| **Nền pháp nhân đầy đủ (P2 của kế hoạch 12) — HOÃN có chủ đích 24/08/2026.** Tạm dùng nền phạm vi hiện có: nhân sự **bắt buộc thuộc một công ty** (ràng buộc lưu trữ, khách chốt), "các công ty liên quan" cấu hình tay bằng `scope=all` + danh sách công ty được cấp; phòng Thu mua và Sản xuất tự đưa bảng phạm vi. Bỏ tạm bậc "công ty và cấp dưới" nở tự động theo cây `parent`, bậc "chỉ các công ty được cấp" gọn, và map người xử lý theo cặp *(pháp nhân, phòng ban)*. | **Khi HRM chuẩn hết** (vòng 1 hoàn thiện) thì quay lại làm P2 đầy đủ | Số pháp nhân/nhà máy phình to thì cấu hình phạm vi bằng tay dày lên, dễ sót; báo cáo cộng dồn theo cây pháp nhân chưa có |
 
 ---
 

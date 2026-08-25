@@ -764,7 +764,7 @@ sẵn, hệ mình tự viết nên còn thiếu. Ghi lại để nhặt dần, *
 | NF-01 | **Thùng rác / xóa mềm + khôi phục** | Chưa | Đang xóa cứng, lỡ tay là mất, không undo |
 | NF-02 | **Bộ lọc đã lưu / góc nhìn của tôi** (saved views) | Chưa | Lọc xong rời trang là mất |
 | NF-03 | **Tìm kiếm toàn cục** (awesomebar) | Chưa | `cmdk` đã bỏ khỏi bộ lọc, không có ô tìm chung |
-| NF-04 | **@nhắc tên trong bình luận** → bắn thông báo | Nửa | Backend đã đỡ `mentions` ([comment/controller.py:36](../../backend/app/modules/comment/controller.py:36)); thiếu giao diện gõ @ |
+| NF-04 | ~~**@nhắc tên trong bình luận** → bắn thông báo~~ **XONG (24/08)** | Xong | Đã đủ CẢ HAI đầu: giao diện gõ @ (`shared/ui/mention-input/` + `document-comments.tsx`, gắn ở 4 màn chi tiết YCMH/ĐMH/YCBG/Phiếu khảo sát) chèn thẻ `@[id]`; backend `save_mentions` + `_notify_new` ([comment/controller.py:101](../../backend/app/modules/comment/controller.py:101)) bắn chuông riêng "được nhắc tên" + Web Push, tách khỏi chuông "bình luận mới". Dòng "thiếu giao diện gõ @" trước đây đã lỗi thời |
 | NF-05 | Lịch sử sửa **từng trường** (version diff) | Nửa | Audit `record()` ghi hành động, chưa lưu cũ→mới từng trường |
 | NF-06 | Cấp số tự động cấu hình được (naming series) | Nửa | Có `generate_code(prefix)` ([core/crud.py:63](../../backend/app/core/crud.py:63)); chưa cấu hình định dạng năm/tháng/reset |
 | NF-07 | Nộp / Hủy / Sửa đổi bản (khóa bất biến sau duyệt) | Nửa | Chỉ văn thư có `amended-by`/supersede; thu mua chưa khóa sau duyệt |
@@ -799,6 +799,27 @@ avatar + cột ảnh sản phẩm có thumbnail.
 NF-01 *(xóa mềm)* · NF-02 *(bộ lọc đã lưu)* · NF-03 *(tìm kiếm toàn cục)* · NF-04 *(@nhắc tên,
 backend đã đỡ nửa đường)*. Mấy cái nặng/ít dùng (2FA, webhook, custom field từ UI, submit-cancel-amend
 toàn hệ) để nhóm sau.
+
+> ⚠️ Đính chính dòng "đã có, không phải nợ" ở trên: **avatar** đã chạy từ đầu bằng **cột chuỗi
+> URL** `tab_user.avatar`, nay (CR-143) đổi sang **`tab_user.avatar_file_id` → `tab_file`** (bigint,
+> KHÔNG qua `file_link`), tải cả ảnh Google về storage và dọn ảnh cũ — xem **NF-21** ở §6.9.
+
+### 6.9 Rà giao diện + hạ tầng v2 — 24/08/2026 *(sau khi khép B-09)*
+
+Ghi lại mấy điểm lộ ra khi rà **cụm yêu cầu · phân quyền · dashboard các cụm**. Kèm phán đoán "có
+đáng làm không" để lần sau khỏi cân lại từ đầu — **không cái nào chặn chạy**.
+
+| # | Điều thấy | Đáng làm? | Hướng xử lý |
+|---|---|---|---|
+| NF-20 | ~~**Route chưa khóa theo quyền.** Gõ thẳng URL vào màn không có quyền thì trang vẫn mở, backend trả 403, người dùng thấy trang lỗi thay vì bị chặn tử tế.~~ **XONG (CR-144, 24/08)** — chặn **tập trung ở `ModuleLayout`** thay vì bọc từng route (khỏi sửa 15 module): thêm **`canAccessRoute(module, pathname, can)`** dùng **cùng nguồn luật với menu** *(`visibleNavItems`)* — quyền của màn = quyền của mục thanh bên khớp path DÀI NHẤT, nên trang chi tiết ăn theo quyền mục danh sách; mục con cố ý không gác entity thì vẫn mở. Phân hệ không mở được → đá về màn chọn phân hệ; màn cụ thể ngoài quyền → giữ khung + menu, ruột là **trang 403** (`forbidden-page.tsx`) để chọn màn khác. **Chưa gác** route *in* (`*Print`) — nằm ngoài `ModuleLayout`, backend vẫn chặn dữ liệu | — | Đã làm |
+| NF-21 | ~~**Avatar lưu riêng, ảnh cũ mồ côi.** `tab_user.avatar` giữ URL công khai R2; đổi avatar tạo key mới, key cũ không ai xóa → rác R2. Thêm: entity `"avatar"` thừa trong `file_registry.py`.~~ **XONG (CR-143, 24/08)** — đổi cột thành **`avatar_file_id` bigint → `tab_file`** (KHÔNG qua `file_link`, đúng như phán đoán bên phải). Đọc URL qua `@property User.avatar` + `relationship(lazy="selectin")` nên danh sách vẫn nạp gộp không N+1; ghi qua `user/service.set_user_avatar` — **xóa hẳn file cũ** khi đổi. Ảnh **Google** nay **tải về storage của mình** (`sync_google_avatar`), hết URL ngoài → một nguồn duy nhất. Đã **bỏ** entity `"avatar"` thừa. Migration `a3f7c012e9b5` backfill ảnh R2 nội bộ, bỏ qua URL Google *(tự đồng bộ lần login sau)* | — | Đã làm |
+| NF-22 | **Dashboard Tồn kho chưa có đồ thị trực quan** — mới là 3 thẻ KPI + **bảng** cảnh báo tồn thấp *(khung `ChartCard` nhưng ruột là bảng)*. Đã gác quyền `inventory.read` đàng hoàng | Tùy — chỉ là polish, không gấp | Thêm một biểu đồ tồn theo nhóm/kho nếu muốn trực quan hơn |
+| NF-23 | **Dashboard Sản xuất trống biểu đồ** — chỉ 2 thẻ đếm NCC + 1 lối tắt | **Chưa làm được** | Chặn bởi backend: **chưa có module sản xuất** (không bảng/endpoint, chưa có entity `production` trong `core/permissions.py`). Dựng dashboard thật chỉ sau khi có module — đã ghi trong chính chú thích trang |
+
+**Điểm ĐÃ ỔN, không cần đụng:** cụm yêu cầu (YCMH · YCBG/Khảo sát · YCTT) đủ danh sách + chi tiết +
+bản in, nút hành động gác `PermissionGate`/`can()` chuẩn; dashboard **Thu mua** và **Tài chính** có
+biểu đồ thật (thanh ngang: Top NCC · Chi tiêu bộ phận · Trạng thái đơn · Tuổi nợ) và gác quyền từng
+khối — tùy tài khoản thấy khác nhau đúng như mong đợi.
 
 ---
 

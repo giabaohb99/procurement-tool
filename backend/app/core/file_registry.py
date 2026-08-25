@@ -25,11 +25,12 @@ FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
     "supplier":               ("supplier", _DOC, 20),  # đính kèm nhà cung cấp (ĐKKD, hồ sơ năng lực...)
     "ticket":                 ("ticket", _DOC, 20),   # đính kèm phiếu hỗ trợ
     "ticket_message":         ("ticket", _DOC, 20),   # đính kèm 1 tin nhắn trả lời
-    "avatar":                 ("__self__", _IMG, 5),   # __self__ = chỉ cần đăng nhập (ảnh của chính mình)
+    # (Ảnh đại diện KHÔNG nằm trong bảng này: nó không đi qua FileLink mà lưu thẳng
+    #  tab_user.avatar_file_id → tab_file, quản lý qua user/service.set_user_avatar.)
     # Đính kèm bình luận (CR-033). Bình luận treo được vào NHIỀU loại chứng từ khác nhau nên
     # không có một entity cha cố định để điền vào đây — quyền thật do API bình luận quyết
     # (`comment/service.resolve_doc`: quyền đọc + phạm vi dữ liệu của chính chứng từ đó).
-    # `__self__` ở đây chỉ mở bước TẢI FILE TẠM (chưa gắn vào đâu), giống ảnh đại diện;
+    # `__self__` ở đây chỉ mở bước TẢI FILE TẠM (chưa gắn vào đâu);
     # còn gắn/đọc/xóa link đều đi qua nhánh riêng trong `attachment/controller.py`.
     "comment":                ("__self__", _DOC, 20),
     # Đính kèm của văn bản treo vào PHIÊN BẢN (`entity_id` = id phiên bản), không

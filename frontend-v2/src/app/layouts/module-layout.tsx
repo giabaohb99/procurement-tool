@@ -1,8 +1,11 @@
 import type { CSSProperties } from 'react'
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 
+import { canAccessRoute, canOpenModule } from '@/app/router/module-visibility'
 import { useActiveModule } from '@/app/router/use-active-module'
+import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { ForbiddenPage } from '@/shared/ui/forbidden-page'
 import { SidebarInset, SidebarProvider } from '@/shared/ui/sidebar'
 import { ModuleSidebar } from './module-sidebar'
 import { ModuleTopbar } from './module-topbar'
@@ -15,10 +18,20 @@ import { useSidebarWidth } from './use-sidebar-width'
  */
 export function ModuleLayout() {
   const activeModule = useActiveModule()
+  const { pathname } = useLocation()
+  const { can } = usePermission()
   const { width, setWidth } = useSidebarWidth()
 
   // URL không thuộc phân hệ nào (vd gõ tay đường dẫn sai) -> về màn chọn phân hệ.
   if (!activeModule) return <Navigate to={appRoutes.launcher} replace />
+
+  // Không có mục nào trong phân hệ này -> không cho vào khung (khỏi thấy menu trống).
+  // Gõ thẳng URL một phân hệ ngoài quyền cũng bị đá về màn chọn phân hệ (NF-20).
+  if (!canOpenModule(activeModule, can)) return <Navigate to={appRoutes.launcher} replace />
+
+  // Vào được phân hệ nhưng màn cụ thể ngoài quyền -> giữ khung + menu, ruột là 403
+  // để người dùng chọn màn khác mình có quyền.
+  const allowed = canAccessRoute(activeModule, pathname, can)
 
   return (
     // SidebarProvider lo trạng thái thu/mở, ngăn kéo mobile, phím tắt ⌘B và ghi
@@ -53,7 +66,7 @@ export function ModuleLayout() {
           `fill`, nội dung dài hơn màn hình thì vẫn phải cuộn được.
         */}
         <main className="min-h-0 min-w-0 flex-1 overflow-auto bg-secondary">
-          <Outlet />
+          {allowed ? <Outlet /> : <ForbiddenPage />}
         </main>
       </SidebarInset>
     </SidebarProvider>

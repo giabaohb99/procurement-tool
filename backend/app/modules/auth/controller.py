@@ -120,12 +120,10 @@ def change_password(data: dict, user=Depends(get_current_user), db: Session = De
 
 @router.post("/avatar")
 def update_avatar(file: UploadFile = File(...), user=Depends(get_current_user), db: Session = Depends(get_db)):
-    from app.core.storage import env_prefix, safe_name, upload_fileobj
+    from app.modules.user.service import set_user_avatar
     try:
-        key = f"{env_prefix()}/avatar/{user.id}/{uuid.uuid4().hex[:12]}-{safe_name(file.filename or 'avatar')}"
-        url = upload_fileobj(file.file, key, file.content_type or "")
-        user.avatar = url
-        db.commit()
+        url = set_user_avatar(db, user, fileobj=file.file, filename=file.filename or "avatar",
+                              content_type=file.content_type or "", actor_id=user.id)
         return success({"avatar": url}, "Đã cập nhật ảnh đại diện")
     except Exception as e:
         raise HTTPException(400, f"Lỗi tải ảnh: {str(e)}")

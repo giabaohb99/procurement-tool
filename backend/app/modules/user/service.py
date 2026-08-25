@@ -18,6 +18,48 @@ _SKIP_REF_TABLES = {"tab_audit_log", "tab_user", "tab_user_role", "tab_user_scop
                     "tab_notification", "tab_push_subscription"}
 
 
+def set_user_avatar(db: Session, user: User, *, fileobj, filename: str,
+                    content_type: str, actor_id: int) -> str:
+    """Đổi ảnh đại diện: tải file mới lên storage, trỏ avatar_file_id sang nó, rồi XÓA
+    file cũ (hết ảnh mồ côi). Trả về URL để phản hồi cho client. Commit tại đây."""
+    from app.modules.attachment.service import create_stored_file, delete_stored_file
+    old = user.avatar_file_id
+    sf = create_stored_file(db, fileobj=fileobj, filename=filename,
+                            content_type=content_type, category="avatar", actor_id=actor_id)
+    user.avatar_file_id = sf.id
+    db.flush()
+    if old and old != sf.id:
+        delete_stored_file(db, old)
+    db.commit()
+    return sf.url
+
+
+def sync_google_avatar(db: Session, user: User, picture_url: str):
+    """Lần đầu đăng nhập Google mà chưa có ảnh: TẢI ảnh Google về storage của mình để
+    chỉ còn một nguồn (không giữ URL Google ngoài). KHÔNG commit — người gọi commit.
+    Lỗi tải tuyệt đối không được làm hỏng đăng nhập → nuốt mọi ngoại lệ."""
+    if user.avatar_file_id or not picture_url:
+        return
+    try:
+        from io import BytesIO
+
+        import requests as _http
+
+        from app.modules.attachment.service import create_stored_file
+        r = _http.get(picture_url, timeout=5)
+        if r.status_code != 200 or not r.content:
+            return
+        ct = (r.headers.get("content-type") or "image/jpeg").split(";")[0].strip()
+        ext = "png" if "png" in ct else "jpg"
+        sf = create_stored_file(db, fileobj=BytesIO(r.content),
+                                filename=f"google-{user.id}.{ext}",
+                                content_type=ct, category="avatar", actor_id=user.id)
+        user.avatar_file_id = sf.id
+        db.flush()
+    except Exception:
+        pass
+
+
 def _role_ids(db: Session, user_id: int) -> list[int]:
     return [ur.role_id for ur in db.query(UserRole).filter(UserRole.user_id == user_id).all()]
 

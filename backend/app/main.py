@@ -61,6 +61,7 @@ from app.modules.help_center.controller import router as help_center_router
 from app.modules.faq.controller import router as faq_router
 from app.modules.ticket.controller import router as ticket_router
 from app.modules.comment.controller import router as comment_router
+from app.modules.assistant.controller import router as assistant_router
 from app.modules.approval.flow_controller import router as approval_flow_router
 from app.modules.approval.instance_controller import router as approval_router
 from app.modules.approval.delegation_controller import router as delegation_router
@@ -164,6 +165,7 @@ app.include_router(help_center_router)
 app.include_router(faq_router)
 app.include_router(ticket_router)
 app.include_router(comment_router)
+app.include_router(assistant_router)
 #  Bộ máy phê duyệt dùng chung — không thuộc phân hệ nào, mọi loại chứng từ
 #  đều chạy qua nó.
 app.include_router(approval_flow_router)

@@ -96,6 +96,19 @@ class Settings(BaseSettings):
     # --- Dọn dẹp ---
     NOTIFICATION_KEEP_DAYS: int = 10   # thông báo cũ hơn N ngày sẽ tự xóa
 
+    # --- Trợ lý AI (Phase 0: nền lớp provider) ---
+    # Tắt mặc định — bật ở .env môi trường muốn dùng. Off thì endpoint /api/assistant trả 403.
+    AI_ENABLED: bool = False
+    # Key nhà cung cấp model. Để trống = nhà đó coi như CHƯA cấu hình.
+    ANTHROPIC_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
+    # Nhà mặc định khi request không chỉ định (claude | gemini).
+    AI_DEFAULT_PROVIDER: str = "claude"
+    # Model mặc định mỗi nhà. Lưu ý Gemini "-latest" là ALIAS tự nhảy version —
+    # chạy thật nên ghim bản cụ thể (vd gemini-3.7-flash).
+    AI_CLAUDE_MODEL: str = "claude-sonnet-5"
+    AI_GEMINI_MODEL: str = "gemini-flash-latest"
+
     # --- Celery / Redis ---
     # Broker + result backend dùng chung 1 Redis (đủ cho quy mô ~20-100 user).
     REDIS_URL: str = "redis://redis:6379/0"

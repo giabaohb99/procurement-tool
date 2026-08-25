@@ -1,7 +1,12 @@
+from typing import TYPE_CHECKING, Optional
+
 from sqlalchemy import BigInteger, Boolean, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base_model import Base, AuditMixin
+
+if TYPE_CHECKING:
+    from app.modules.attachment.model import StoredFile
 
 
 class User(Base, AuditMixin):
@@ -11,10 +16,32 @@ class User(Base, AuditMixin):
     google_sub: Mapped[str] = mapped_column(String(100), default="")
     password_hash: Mapped[str] = mapped_column(String(255), default="")
     employee_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
-    avatar: Mapped[str] = mapped_column(String(500), default="")
+    # Ảnh đại diện = 1 file trong hệ thống (tab_file.id), 0 = chưa có. KHÔNG lưu URL
+    # chuỗi nữa: mọi ảnh — kể cả ảnh Google — đều tải hẳn về storage của mình để chỉ
+    # còn MỘT nguồn, và đổi ảnh thì xóa được file cũ (hết file rác). Đọc URL qua
+    # property `avatar` bên dưới; ghi thì đi qua user/service.set_user_avatar().
+    avatar_file_id: Mapped[int] = mapped_column(BigInteger, default=0)
     # Ảnh chữ ký cá nhân (URL trên storage) — người dùng tự tải lên ở Trang cá nhân
     signature: Mapped[str] = mapped_column(String(500), default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # viewonly + lazy="selectin": danh sách nhiều user nạp gộp file trong 1 truy vấn
+    # IN, khỏi N+1 ở màn danh sách nhân sự/bình luận. Không có FK cứng nên phải
+    # chỉ rõ primaryjoin + foreign().
+    avatar_file: Mapped[Optional["StoredFile"]] = relationship(
+        "StoredFile",
+        primaryjoin="foreign(User.avatar_file_id) == StoredFile.id",
+        viewonly=True,
+        uselist=False,
+        lazy="selectin",
+    )
+
+    @property
+    def avatar(self) -> str:
+        """URL ảnh đại diện để hiển thị — giữ nguyên kiểu chuỗi như trước để mọi nơi
+        đang đọc `user.avatar` (đăng nhập, bình luận, phiếu hỗ trợ, nhân sự) không đổi."""
+        f = self.avatar_file
+        return (f.url or "") if f else ""
 
 
 class UserRole(Base, AuditMixin):

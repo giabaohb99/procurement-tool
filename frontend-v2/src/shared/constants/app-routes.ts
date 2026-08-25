@@ -97,6 +97,14 @@ export const appRoutes = {
     root: '/support',
     ticketDetail: (id: number | string) => `/support/tickets/${id}`,
   },
+  /**
+   * Trợ lý AI — trang hỏi đáp trên nền gói tri thức (AI-1). Một hội thoại đang mở
+   * đeo id trên query (`?c=`) chứ không tách route riêng: cả trang là một khối,
+   * đổi hội thoại chỉ là đổi khối bên phải, không phải điều hướng sang màn khác.
+   */
+  assistant: {
+    root: '/assistant',
+  },
   customer: {
     root: '/customer',
   },

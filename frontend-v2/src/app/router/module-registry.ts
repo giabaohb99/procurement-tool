@@ -1,5 +1,6 @@
 import { approvalModule } from '@/modules/approval/routes'
 import { approvalSealModule } from '@/modules/approval-seal/routes'
+import { assistantModule } from '@/modules/assistant/routes'
 import { customerModule } from '@/modules/customer/routes'
 import { degoCoffeeModule } from '@/modules/dego-coffee/routes'
 import { documentModule } from '@/modules/document/routes'
@@ -41,6 +42,7 @@ export const allModules: ErpModule[] = [
   degoCoffeeModule,
   reportModule,
   supportModule,
+  assistantModule,
   systemModule,
   // Đứng cuối: không phải phân hệ nghiệp vụ mà là link sang app Hướng dẫn sử dụng.
   helpCenterModule,

@@ -61,6 +61,8 @@ export const ENTITIES = [
   'security_level',
   // Bộ máy phê duyệt dùng chung — không thuộc phân hệ nào.
   'approval_flow',
+  // Trợ lý AI — cổng quyền thuần (chỉ ban lãnh đạo), khai PUBLIC ở scoping backend.
+  'assistant',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

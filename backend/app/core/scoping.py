@@ -6,9 +6,9 @@ Mỗi vai trò của user là 1 grant: có quyền hành động + phạm vi ri�
 
 **B-07 — thiếu khai là CHẶN, không phải bỏ qua.** Trước đợt này `_role_scope_cond` trả `None`
 cho entity vắng mặt trong `SCOPE_FIELDS`, mà `None` nghĩa là *thấy tất*. Mới khai 12/39 entity
-nên 27 entity còn lại im lặng không lọc gì. Nay `SCOPE_FIELDS` phải khai **đủ 39** — loại nào
-cố ý không lọc thì khai thẳng là `PUBLIC`, kèm lý do — và entity lạ thì trả `false()`.
-`test/backend/test_pham_vi_khai_du_b07.py` chốt con số 39/39, nên thêm entity mới vào
+nên 27 entity còn lại im lặng không lọc gì. Nay `SCOPE_FIELDS` phải khai **đủ mọi entity** — loại
+nào cố ý không lọc thì khai thẳng là `PUBLIC`, kèm lý do — và entity lạ thì trả `false()`.
+`test/backend/test_pham_vi_khai_du_b07.py` chốt con số ENTITIES == SCOPE_FIELDS, nên thêm entity mới vào
 `core/permissions.ENTITIES` mà quên khai ở đây là **test đỏ**, không phải lỗ hổng lặng lẽ.
 """
 import logging
@@ -115,12 +115,15 @@ SCOPE_FIELDS = {
     # 2c. Quyền HÀNH ĐỘNG, không có bảng nào để lọc. `report`/`backup` là ô tick
     # trong ma trận phân quyền; `payment`/`import` thì đến model cũng không có
     # (không một chỗ nào gọi `require("payment", ...)`) — khai ra đây để bài
-    # kiểm 39/39 khỏi phải chừa ngoại lệ, và để ai xóa chúng khỏi `ENTITIES`
+    # kiểm ENTITIES == SCOPE_FIELDS khỏi phải chừa ngoại lệ, và để ai xóa chúng khỏi `ENTITIES`
     # thì thấy luôn là xóa được.
     "report":           PUBLIC,
     "backup":           PUBLIC,
     "import":           PUBLIC,
     "payment":          PUBLIC,
+    # `assistant` là cổng require() thuần (chỉ ban lãnh đạo), không có bảng nào
+    # để lọc theo dòng — dữ liệu bot đọc đã đi qua apply_scope của từng tool.
+    "assistant":        PUBLIC,
 }
 
 
@@ -160,6 +163,21 @@ def _emp_match(model, col_id: str, col_name: str, emp_id: int, emp_name: str):
     return or_(*cs) if len(cs) > 1 else cs[0]
 
 
+def _proc_status_cond(model, f, company_id: int, statuses: list[str]):
+    """Nhánh "nhặt việc" của bậc `proc`: phiếu ở các trạng thái đã duyệt — P1-1 (kế hoạch 12).
+
+    AND thêm pháp nhân của người xem để thu mua công ty con không nhặt được phiếu công ty
+    khác. `company_id = 0` (nhân sự chưa gắn pháp nhân — dữ liệu prod hiện tại) thì KHÔNG
+    thu hẹp, giữ đúng hành vi cũ để Thu mua không gián đoạn; gắn công ty rồi thì tự lọc.
+    Entity không khai chiều `company` cũng không thu hẹp — nhưng cả hai chỗ đang gọi
+    (`purchase_request`, `purchase_order`) đều có cột này.
+    """
+    status_cond = getattr(model, "status").in_(statuses)
+    if company_id and f.get("company"):
+        return and_(status_cond, getattr(model, f["company"]) == company_id)
+    return status_cond
+
+
 def _chan(entity, scope, user, ly_do):
     """Phạm vi hẹp nhưng không dựng nổi điều kiện → CHẶN, và nói ra vì sao — B-07.
 
@@ -181,7 +199,7 @@ def _role_scope_cond(model, entity, scope, user, profile):
     # B-07: KHÔNG khai = CHẶN. Trước đây nhánh này trả `None` nên 27 entity vắng mặt trong
     # `SCOPE_FIELDS` được xem thoải mái bất kể phạm vi vai trò. Entity cố ý không lọc thì
     # phải khai thẳng là `PUBLIC` ở trên; rơi vào đây nghĩa là ai đó vừa thêm entity mới
-    # vào `core/permissions.ENTITIES` mà quên khai (bài kiểm 39/39 sẽ đỏ).
+    # vào `core/permissions.ENTITIES` mà quên khai (bài kiểm ENTITIES == SCOPE_FIELDS sẽ đỏ).
     if entity not in SCOPE_FIELDS:
         log.error("scope thieu khai: entity=%s chua co trong SCOPE_FIELDS — dang chan het", entity)
         return false()
@@ -202,8 +220,14 @@ def _role_scope_cond(model, entity, scope, user, profile):
             # "proc" (NV/Admin thu mua): thấy thêm MỌI phiếu đã duyệt để nhặt việc + phân bổ.
             # CR-034: gồm cả 'approved' (TP duyệt xong, ĐANG CHỜ ĐIỀU PHỐI) — thiếu trạng thái này
             # thì chính người phải điều phối lại không nhìn thấy phiếu.
+            # P1-1 (kế hoạch 12): nhánh này TRƯỚC ĐÂY không kèm lọc pháp nhân, nên bật đa pháp
+            # nhân là thu mua công ty con nhặt được phiếu đã duyệt của MỌI công ty. AND thêm
+            # công ty của người xem — nhưng CHỈ khi họ đã gắn `company_id`. Nhân sự chưa gắn
+            # (dữ liệu prod hiện tại, company_id=0) giữ nguyên hành vi cũ để Thu mua không gián
+            # đoạn; gắn company_id (bước bật đa pháp nhân) thì tự lọc đúng công ty.
             if scope == "proc":
-                conds.append(model.status.in_(["approved", "dispatched"]))
+                conds.append(_proc_status_cond(model, f, company_id,
+                                                ["approved", "dispatched"]))
             if profile.get("employee_id"):
                 conds.append(model.assignee_id == profile["employee_id"])
             if profile.get("emp_code"):
@@ -231,7 +255,7 @@ def _role_scope_cond(model, entity, scope, user, profile):
             # CR-087: khớp bằng `nspt_id`; tên chỉ còn là đường lùi cho đơn cũ (`nspt_id = 0`).
             conds = [model.created_by == user.id]
             if scope == "proc":
-                conds.append(model.status == "approved")
+                conds.append(_proc_status_cond(model, f, company_id, ["approved"]))
             ec = _emp_match(model, "nspt_id", "nspt",
                             profile.get("employee_id") or 0, profile.get("emp_name") or "")
             if ec is not None:

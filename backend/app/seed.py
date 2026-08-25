@@ -224,6 +224,7 @@ STD_ROLES = {
         "purchase_order": (["read", "export"], "company"),
         "ticket": (["read", "create", "write"], "own"),
         "report": (["read"], "company"),
+        "assistant": (["read"], "all"),   # Trợ lý AI — vai trò lãnh đạo
     }},
     "pur_staff": {"name": "Nhân viên thu mua", "perms": {
         **_CATALOG_READ, **_CONTRACT_READ,

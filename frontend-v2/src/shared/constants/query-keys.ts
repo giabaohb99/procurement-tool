@@ -260,4 +260,12 @@ export const queryKeys = {
     /** Tệp gửi kèm lúc TẠO phiếu (entity `ticket`) — tách khỏi tệp trong tin nhắn. */
     ticketAttachments: (id: number) => ['support', 'tickets', id, 'attachments'] as const,
   },
+  /** Trợ lý AI — nhà cung cấp, danh sách hội thoại và từng hội thoại kèm tin. */
+  assistant: {
+    all: ['assistant'] as const,
+    /** Nhà cung cấp + model mặc định — gần như bất biến trong phiên. */
+    providers: () => ['assistant', 'providers'] as const,
+    conversations: () => ['assistant', 'conversations'] as const,
+    conversation: (id: number) => ['assistant', 'conversations', id] as const,
+  },
 } as const

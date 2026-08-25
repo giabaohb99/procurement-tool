@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import { FileText } from 'lucide-react'
 
-import type { PermissionEntity } from '@/core/authorization/permission-types'
+import type { PermissionAction, PermissionEntity } from '@/core/authorization/permission-types'
 import type { ErpModule } from './module-definition'
-import { canOpenModule, visibleNavItems } from './module-visibility'
+import { canAccessRoute, canOpenModule, visibleNavItems } from './module-visibility'
 
 function phanHe(nav: ErpModule['nav'], entity?: string): ErpModule {
   return { id: 'x', title: 'X', path: '/x', enabled: true, entity, nav } as ErpModule
@@ -68,5 +68,56 @@ describe('visibleNavItems', () => {
       'Tổng quan',
       'Sổ',
     ])
+  })
+})
+
+/** `can` giả lập theo (entity, action): map entity -> tập action được phép. */
+function choPhepDay(map: Record<string, PermissionAction[]>) {
+  return (entity: PermissionEntity, action: PermissionAction) =>
+    (map[entity] ?? []).includes(action)
+}
+
+describe('canAccessRoute', () => {
+  const navEmp = [
+    { label: 'Nhân sự', path: '/x/emp', entity: 'employee', icon: FileText },
+  ] as ErpModule['nav']
+
+  it('trang chi tiết ăn theo quyền của mục danh sách khớp path dài nhất', () => {
+    // /x/emp/5 không có mục riêng -> lấy quyền của /x/emp (entity=employee, read).
+    expect(canAccessRoute(phanHe(navEmp), '/x/emp/5', choPhep())).toBe(false)
+    expect(canAccessRoute(phanHe(navEmp), '/x/emp/5', choPhep('employee'))).toBe(true)
+  })
+
+  it('mục cụ thể hơn mà cố ý KHÔNG gác quyền thì cho xem, dù không có quyền entity cha', () => {
+    // Mục con công khai (không entity) phải thắng mục cha có entity nhờ path dài hơn —
+    // nếu ưu tiên nhầm mục cha, màn công khai sẽ bị khóa oan.
+    const nav = [
+      { label: 'Nhân sự', path: '/x/emp', entity: 'employee', icon: FileText },
+      { label: 'Danh bạ công khai', path: '/x/emp/dir', icon: FileText },
+    ] as ErpModule['nav']
+
+    expect(canAccessRoute(phanHe(nav), '/x/emp/dir/9', choPhep())).toBe(true)
+  })
+
+  it('không mục nào khớp thì cho xem (backend vẫn gác)', () => {
+    expect(canAccessRoute(phanHe(navEmp), '/x/khac', choPhep())).toBe(true)
+  })
+
+  it('mục khai action riêng thì hỏi đúng action đó, không phải read', () => {
+    const nav = [
+      { label: 'Chờ duyệt', path: '/x/duyet', entity: 'document', action: 'approve', icon: FileText },
+    ] as ErpModule['nav']
+
+    expect(canAccessRoute(phanHe(nav), '/x/duyet', choPhepDay({ document: ['read'] }))).toBe(false)
+    expect(canAccessRoute(phanHe(nav), '/x/duyet', choPhepDay({ document: ['approve'] }))).toBe(true)
+  })
+
+  it('mục quản lý (manage) đòi quyền tạo/sửa/xóa, read thuần không đủ', () => {
+    const nav = [
+      { label: 'Danh mục', path: '/x/dm', entity: 'unit', manage: true, icon: FileText },
+    ] as ErpModule['nav']
+
+    expect(canAccessRoute(phanHe(nav), '/x/dm', choPhepDay({ unit: ['read'] }))).toBe(false)
+    expect(canAccessRoute(phanHe(nav), '/x/dm', choPhepDay({ unit: ['write'] }))).toBe(true)
   })
 })

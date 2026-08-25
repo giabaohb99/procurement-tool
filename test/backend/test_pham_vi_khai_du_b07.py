@@ -67,10 +67,10 @@ def test_khong_khai_thua_entity_khong_ton_tai():
     assert thua == [], f"khai thừa, không có trong ENTITIES: {thua}"
 
 
-def test_du_39_entity():
+def test_du_40_entity():
     """Chốt cứng con số để lần sau đọc test là biết ngay quy mô."""
-    assert len(ENTITIES) == 39
-    assert len(SCOPE_FIELDS) == 39
+    assert len(ENTITIES) == 40
+    assert len(SCOPE_FIELDS) == 40
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

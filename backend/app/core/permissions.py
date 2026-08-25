@@ -20,6 +20,9 @@ ENTITIES = [
     # Bộ máy phê duyệt dùng chung — KHÔNG thuộc phân hệ nào, mọi loại chứng từ
     # đều chạy qua nó.
     "approval_flow",
+    # Trợ lý AI — cổng bật/tắt theo vai trò (chỉ ban lãnh đạo). Không có bảng
+    # dữ liệu để lọc theo dòng nên khai PUBLIC ở scoping.
+    "assistant",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -65,6 +68,7 @@ ENTITY_LABELS = {
     "vehicle": "Phương tiện (Xe)",
     "driver": "Tài xế",
     "approval_flow": "Luồng phê duyệt (dùng chung)",
+    "assistant": "Trợ lý AI",
 }
 
 ACTION_LABELS = {

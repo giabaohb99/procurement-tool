@@ -69,7 +69,7 @@ def google_login(db: Session, credential: str) -> User:
 
     # 3. Create user if not exists
     if not user:
-        user = User(email=email, employee_id=emp.id, is_active=True, google_sub=idinfo.get("sub", ""), avatar=idinfo.get("picture", ""))
+        user = User(email=email, employee_id=emp.id, is_active=True, google_sub=idinfo.get("sub", ""))
         db.add(user)
         db.flush()
         # CR-022: KHÔNG gán vai trò theo ô "Vai trò" của hồ sơ nhân sự (ô đó nay chỉ là "Vị trí").
@@ -82,8 +82,11 @@ def google_login(db: Session, credential: str) -> User:
     else:
         if not user.google_sub:
             user.google_sub = idinfo.get("sub", "")
-        if not user.avatar and idinfo.get("picture"):
-            user.avatar = idinfo.get("picture", "")
-            
+
+    # Chưa có ảnh thì tải ảnh Google về storage của mình (một nguồn duy nhất).
+    # Best-effort: lỗi tải không làm hỏng đăng nhập.
+    from app.modules.user.service import sync_google_avatar
+    sync_google_avatar(db, user, idinfo.get("picture", ""))
+
     db.commit()
     return user

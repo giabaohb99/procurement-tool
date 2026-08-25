@@ -1,4 +1,4 @@
-import type { ErpModule } from '@/app/router/module-definition'
+import type { ErpModule, ModuleNavItem } from '@/app/router/module-definition'
 import type { PermissionAction, PermissionEntity } from '@/core/authorization/permission-types'
 
 /** Đúng chữ ký của `can` từ `usePermission()`. */
@@ -33,14 +33,34 @@ export function canManageEntity(entity: PermissionEntity, can: CanFn): boolean {
  * lại lệch nhau đúng kiểu trên.
  */
 export function visibleNavItems(module: ErpModule, can: CanFn) {
-  return module.nav.filter((item) => {
-    if (!item.entity) return true
-    if (item.action) return can(item.entity, item.action)
-    if (item.manage) return canManageEntity(item.entity, can)
-    return can(item.entity, 'read')
-  })
+  return module.nav.filter((item) => itemAllowed(item, can))
 }
 
 export function canOpenModule(module: ErpModule, can: CanFn) {
   return visibleNavItems(module, can).length > 0
+}
+
+/** Áp đúng ba nhánh của `visibleNavItems` cho MỘT mục — dùng lại cho cả menu lẫn route. */
+function itemAllowed(item: ModuleNavItem, can: CanFn): boolean {
+  if (!item.entity) return true
+  if (item.action) return can(item.entity, item.action)
+  if (item.manage) return canManageEntity(item.entity, can)
+  return can(item.entity, 'read')
+}
+
+/**
+ * Người dùng có được XEM màn ứng với `pathname` trong `module` không.
+ *
+ * Chốt chặn thật vẫn ở backend (`require`); đây chỉ để **gõ thẳng URL** một màn
+ * không có quyền thì bị chặn tử tế (trang 403) thay vì mở ra rồi API trả lỗi —
+ * vá NF-20. Cùng nguồn luật với menu: quyền của màn = quyền của mục thanh bên
+ * khớp path DÀI NHẤT (để trang chi tiết `/x/y/5` ăn theo quyền của mục danh sách
+ * `/x/y`). Mục khai path cụ thể hơn mà KHÔNG có `entity` thì đó là chủ ý mở công
+ * khai — tôn trọng, cho xem. Không mục nào khớp cũng cho xem (backend vẫn gác).
+ */
+export function canAccessRoute(module: ErpModule, pathname: string, can: CanFn): boolean {
+  const item = [...module.nav]
+    .filter((i) => pathname === i.path || pathname.startsWith(`${i.path}/`))
+    .sort((a, b) => b.path.length - a.path.length)[0]
+  return item ? itemAllowed(item, can) : true
 }
