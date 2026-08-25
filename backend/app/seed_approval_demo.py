@@ -179,6 +179,26 @@ class _Xuong:
         self.db.flush()
         return node
 
+    def phong_nhan_su(self) -> str:
+        """Id phòng Nhân sự dạng chuỗi, cho `approver_ref` của bước «trưởng bộ
+        phận của phòng ban chỉ định».
+
+        Dò theo MÃ trước rồi mới tới chuỗi con trong tên: tên phòng khác nhau
+        giữa các nơi ("Phòng Nhân sự", "Phòng Nhân sự - Hành chính"). Không thấy
+        thì trả rỗng — bước rơi về người dự phòng, chứ không trỏ bừa vào một
+        phòng khác.
+        """
+        from app.modules.department.model import Department
+
+        phong = (self.db.query(Department)
+                 .filter(Department.code.in_(("PBA007", "NS", "HCNS")))
+                 .order_by(Department.id).first())
+        if phong is None:
+            phong = (self.db.query(Department)
+                     .filter(Department.name.ilike("%nhân sự%"))
+                     .order_by(Department.id).first())
+        return str(phong.id) if phong else ""
+
     def dieu_kien_loai(self, *ma_loai: str) -> str:
         """`[{"field":"doc_type_id","op":"in","value":[...]}]` — đúng dạng bộ dựng
         điều kiện trên giao diện sinh ra, để mở lên sửa được chứ không thành

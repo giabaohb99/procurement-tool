@@ -52,6 +52,16 @@ export const APPROVER_KIND = {
   levelUp: 4,
   companyRep: 5,
   field: 6,
+  /**
+   * Trưởng bộ phận của PHÒNG BAN CHỈ ĐỊNH — `approver_ref` là danh sách id
+   * phòng ban, ngăn bằng dấu phẩy.
+   *
+   * Khác `deptHead` ở chỗ nó KHÔNG bám theo phòng của người nộp. Nhờ vậy khai
+   * được bước có thật như «đơn nghỉ phép của mọi phòng đều qua trưởng phòng
+   * Nhân sự» mà không phải khai đích danh một con người — người đó chuyển việc
+   * là luồng trỏ sai mà không có gì báo (CR-159).
+   */
+  deptHeadOf: 7,
 } as const
 /**
  * ⚠️ `escalate` (đẩy lên cấp trên) **ĐÃ BỎ** (CR-114) — backend không chạy nhánh

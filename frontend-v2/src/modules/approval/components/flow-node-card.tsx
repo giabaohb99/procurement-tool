@@ -5,7 +5,17 @@ import { AlertTriangle, Copy, GripVertical, Trash2, Users } from 'lucide-react'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/utils/cn'
-import { NODE_KIND, type ApprovalNode } from '../types/approval'
+import { APPROVER_KIND, NODE_KIND, type ApprovalNode } from '../types/approval'
+
+/**
+ * Những cách chọn người duyệt BẮT BUỘC có `approver_ref`.
+ *
+ * Bỏ trống là bước không tìm được ai và phiếu kẹt lúc chạy, nên cảnh báo ngay
+ * trên thẻ chứ không đợi mở bảng thuộc tính. Trước CR-159 chỗ này khóa cứng vào
+ * mỗi «Người cụ thể» (`=== 1`), nên khai «trưởng bộ phận của phòng ban chỉ định»
+ * mà quên chọn phòng thì không có gì báo.
+ */
+const CAN_REF = [APPROVER_KIND.employee, APPROVER_KIND.deptHeadOf] as number[]
 
 interface FlowNodeCardProps {
   node: ApprovalNode
@@ -94,7 +104,7 @@ export function FlowNodeCard({
 
           {/*  Bước rẽ nhánh mà không ai duyệt được thì phiếu kẹt — cảnh báo ngay
                trên thẻ, không đợi mở bảng thuộc tính mới thấy. */}
-          {!node.approver_ref && node.approver_kind === 1 && (
+          {!node.approver_ref && CAN_REF.includes(node.approver_kind) && (
             <p className="mt-1 flex items-center gap-1 text-xs text-amber-800">
               <AlertTriangle className="size-3.5 shrink-0" />
               Chưa chọn người duyệt
