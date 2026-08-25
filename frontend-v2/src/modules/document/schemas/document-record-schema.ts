@@ -48,6 +48,29 @@ export const documentRecordSchema = z
     //  NƠI LƯU TRỮ CỨNG — bản giấy có chữ ký tươi nằm ở đâu. Không bắt buộc:
     //  lúc lập văn bản thì thường chưa in ra, chỗ cất là chuyện sau khi ký.
     storage_location: z.string().trim().max(200, 'Tối đa 200 ký tự'),
+
+    /**
+     * Phần RIÊNG của Giấy nghỉ phép — gom vào `metadata` lúc gửi lên.
+     *
+     * Để lỏng ở đây có chủ ý: khối này chỉ hiện khi loại văn bản là `GNP`, mà
+     * zod thì không biết loại nào đang chọn. Ràng buộc thật nằm ở hai chỗ —
+     * `LEAVE_FIELDS` kiểm lúc bấm «Tiếp tục» (chỉ khi khối đang hiện), và
+     * backend `type_metadata.py` là chốt cuối.
+     */
+    leave: z
+      .object({
+        employee_id: z.coerce.number().int().min(0),
+        leave_type: z.string(),
+        from_date: z.string(),
+        from_session: z.string(),
+        to_date: z.string(),
+        to_session: z.string(),
+        total_days: z.union([z.coerce.number().min(0), z.literal('')]),
+        reason: z.string().trim().max(500, 'Tối đa 500 ký tự'),
+        handover_employee_id: z.coerce.number().int().min(0),
+        contact_phone: z.string().trim().max(30, 'Tối đa 30 ký tự'),
+      })
+      .optional(),
   })
   // Khoảng hiệu lực ngược đầu là lỗi nhập liệu, không phải trường hợp hợp lệ.
   .refine(

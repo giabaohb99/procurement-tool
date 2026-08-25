@@ -19,7 +19,7 @@ from app.modules.doc_catalog.model import DocType
 
 from . import access_service, serializer
 from .model import (STATUS_APPROVED, STATUS_DRAFT, STATUS_EFFECTIVE,
-                    STATUS_SUBMITTED, Document)
+                    STATUS_RETURNED, STATUS_SUBMITTED, Document)
 from .query import documents_query
 
 #  Văn bản hết hiệu lực trong bao nhiêu ngày tới thì coi là "sắp hết".
@@ -217,6 +217,9 @@ def _viec_can_xu_ly(db: Session, user, profile, hom_nay: date,
 
     can_ra_lai = nen.filter(Document.needs_review.is_(True)).count()
     cho_duyet = nen.filter(Document.status == STATUS_SUBMITTED).count()
+    #  Bị trả về là việc CỦA NGƯỜI SOẠN và có hạn ngầm: người duyệt đang chờ bản
+    #  sửa. Không nêu ra đây thì nó lẫn vào đống nháp và nằm im.
+    bi_tra_ve = nen.filter(Document.status == STATUS_RETURNED).count()
     nhap_treo = nen.filter(
         Document.status == STATUS_DRAFT,
         Document.created_at <= hom_nay - timedelta(days=NHAP_TREO_NGAY),
@@ -226,6 +229,9 @@ def _viec_can_xu_ly(db: Session, user, profile, hom_nay: date,
         {"key": "needs_review", "label": "Văn bản cần rà lại",
          "hint": "Văn bản cha đã đổi hoặc bị bãi bỏ", "count": can_ra_lai,
          "tone": "warning"},
+        {"key": "returned", "label": "Bị trả về, chờ sửa lại",
+         "hint": "Người duyệt đã trả về — sửa rồi gửi duyệt lại",
+         "count": bi_tra_ve, "tone": "warning"},
         {"key": "submitted", "label": "Đang chờ duyệt",
          "hint": "Chờ người có quyền phê duyệt", "count": cho_duyet,
          "tone": "default"},

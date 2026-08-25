@@ -22,9 +22,10 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from .clone_service import (CLONE_DRAFTING, CLONE_ISSUED, CLONE_SUBMITTED,
-                            clones_of, create_clones)
-from .model import (ALIVE_STATUSES, STATUS_DRAFT, STATUS_SUBMITTED, Document)
+from .clone_service import (CLONE_DRAFTING, CLONE_ISSUED, CLONE_REJECTED,
+                            CLONE_SUBMITTED, clones_of, create_clones)
+from .model import (ALIVE_STATUSES, STATUS_DRAFT, STATUS_REJECTED,
+                    STATUS_RETURNED, STATUS_SUBMITTED, Document)
 from .scope_model import DIM_COMPANY, MODE_INCLUDE, DocumentScope
 
 
@@ -105,8 +106,14 @@ def _trang_thai_tuong_ung(doc: Document) -> int | None:
         return CLONE_ISSUED
     if doc.status == STATUS_SUBMITTED:
         return CLONE_SUBMITTED
-    if doc.status == STATUS_DRAFT:
+    #  Bị trả về vẫn là "đang soạn" dưới mắt pháp nhân mẹ: nơi nhận còn đang làm,
+    #  chỉ là vòng thứ hai. Cột này trả lời "bản của công ty đó tới đâu rồi", chứ
+    #  không kể lại từng nhịp trong nội bộ họ.
+    if doc.status in (STATUS_DRAFT, STATUS_RETURNED):
         return CLONE_DRAFTING
+    #  Từ chối thì đúng nghĩa cột: pháp nhân con KHÔNG áp dụng bản này.
+    if doc.status == STATUS_REJECTED:
+        return CLONE_REJECTED
     #  Bị thay thế / hết hiệu lực / bãi bỏ: đó vẫn là một bản ĐÃ TỪNG ban hành,
     #  đừng kéo ngược về "đang soạn".
     return None

@@ -163,7 +163,7 @@ Tám câu Q1–Q8 **đã chốt hết ngày 18/08/2026** (mục 1). Còn lại b
 Đây là **việc phải làm trước tiên trong phần code**, vì hai lỗ hổng dưới đây hôm nay vô hại (chỉ
 một pháp nhân dùng thật) nhưng bật đa pháp nhân là thành lộ dữ liệu chéo công ty ngay ngày đầu.
 
-- **P1-1. XONG (CR-145, 24/08).** Bậc `proc` nay AND thêm pháp nhân qua helper `_proc_status_cond`
+- **P1-1. XONG (CR-164, 24/08).** Bậc `proc` nay AND thêm pháp nhân qua helper `_proc_status_cond`
   trong `scoping.py` — áp cho `purchase_request` (`approved|dispatched`) và `purchase_order`
   (`approved`). **CHỈ thu hẹp khi người xem đã gắn `company_id` (>0)**; nhân sự chưa gắn
   (`company_id=0` — trạng thái prod hiện tại) giữ nguyên hành vi cũ để Thu mua không gián đoạn.

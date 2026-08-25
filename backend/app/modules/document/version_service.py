@@ -22,7 +22,8 @@ from .schema import VersionContentUpdate, VersionCreate
 from .serializer import holder_name
 from .service import ATTACH_ENTITY, open_version
 from .version_model import (CHANGE_MAJOR, VERSION_APPROVED, VERSION_DRAFT,
-                            VERSION_SUBMITTED, DocumentVersion)
+                            VERSION_REJECTED, VERSION_SUBMITTED,
+                            DocumentVersion)
 
 
 def list_versions(db: Session, doc: Document) -> list[DocumentVersion]:
@@ -95,10 +96,24 @@ def open_new_version(db: Session, doc: Document, data: VersionCreate,
 
     #  Sửa lớn lên 2.0, sửa nhỏ lên 1.1 — chính chỗ này là lý do bắt người dùng
     #  chọn `change_kind` thay vì tự đoán.
+    #
+    #  ⚠️ Đếm từ SỐ CAO NHẤT ĐÃ TỪNG DÙNG, không phải từ bản đang dùng. Hai số đó
+    #  bằng nhau ở đường đi thường ngày, nhưng lệch khi có một bản **bị từ chối**:
+    #  bản 1.0 đang có hiệu lực, bản 2.0 bị từ chối và nằm lại trong bảng, thì
+    #  đếm từ bản đang dùng sẽ ra 2.0 lần nữa và đâm vào `uq_version_no` — mà
+    #  `IntegrityError` bên dưới lại dịch thành câu "một bản nháp khác vừa được
+    #  mở", tức là báo sai hẳn nguyên nhân. Số đã dùng thì cháy: nó nằm trong dấu
+    #  vết duyệt mà người ta đã đọc, tái sử dụng là hai bản khác nhau cùng một số.
+    cao_nhat = (
+        db.query(DocumentVersion)
+        .filter(DocumentVersion.document_id == doc.id)
+        .order_by(DocumentVersion.major.desc(), DocumentVersion.minor.desc())
+        .first()
+    ) or base
     if data.change_kind == CHANGE_MAJOR:
-        major, minor = base.major + 1, 0
+        major, minor = cao_nhat.major + 1, 0
     else:
-        major, minor = base.major, base.minor + 1
+        major, minor = cao_nhat.major, cao_nhat.minor + 1
 
     version = DocumentVersion(
         document_id=doc.id, major=major, minor=minor, status=VERSION_DRAFT,
@@ -174,14 +189,22 @@ def chan_khi_dang_duyet(version: DocumentVersion) -> None:
     ký trên bản B, dấu vết ghi "đã duyệt" cho cả hai. `content_sha256` chỉ tính
     lúc khóa nên sau đó không còn gì để đối chiếu ngược.
 
-    Đường ra cho người soạn: **Rút phiếu** (hoặc người duyệt trả lại) → văn bản
-    về Nháp → sửa tiếp. Không ai bị kẹt.
+    Đường ra cho người soạn: **Rút phiếu** (về Nháp) hoặc người duyệt **trả về**
+    (bản sang «Trả về», ghi được ngay). Không ai bị kẹt.
+
+    Bản **ĐÃ TỪ CHỐI** khóa luôn ở đây: nó không còn đường gửi lại, gõ tiếp chỉ
+    là gõ vào một bản chết. Muốn làm lại thì mở phiên bản mới — nó đã nhả
+    `open_slot` nên mở được.
     """
     if version.status == VERSION_SUBMITTED:
         raise HTTPException(409,
                             f"Phiên bản {version.version_no} đang trình duyệt nên khóa nội dung. "
-                            "Muốn sửa thì rút phiếu duyệt (hoặc chờ người duyệt trả lại) — "
-                            "văn bản về Nháp rồi sửa tiếp.")
+                            "Muốn sửa thì rút phiếu duyệt (hoặc chờ người duyệt trả về) — "
+                            "sửa tiếp rồi gửi duyệt lại.")
+    if version.status == VERSION_REJECTED:
+        raise HTTPException(409,
+                            f"Phiên bản {version.version_no} đã bị từ chối nên khóa nội dung. "
+                            "Muốn làm lại thì mở phiên bản mới.")
 
 
 def _copy_attachments(db: Session, from_version_id: int, to_version_id: int, actor: int):

@@ -12,7 +12,12 @@ ENTITIES = [
     "report", "setting", "category_assignee", "survey_request", "import", "backup",
     "help_article", "ticket",
     # Phân hệ Văn thư
-    "doc_type", "external_party", "document_book", "document", "security_level",
+    #  ⚠️ MỘT KHÓA = MỘT MÀN HÌNH. Trước 25/08/2026 bốn màn danh mục (Loại văn
+    #  bản · Thư viện mẫu · Quy tắc đánh số · Quy tắc quan hệ) dùng CHUNG khóa
+    #  `doc_type`, nên cho ai sửa quy tắc đánh số là cho họ sửa luôn loại văn
+    #  bản — ba việc do ba người khác nhau làm mà không tách được (CR-157).
+    "doc_type", "doc_template", "doc_numbering_rule", "doc_link_rule",
+    "external_party", "document_book", "document", "security_level",
     # Phân hệ Duyệt dấu
     "seal_request", "seal_type",
     # Phân hệ Đặt xe
@@ -57,11 +62,16 @@ ENTITY_LABELS = {
     "backup": "Sao lưu CSDL",
     "help_article": "Hướng dẫn sử dụng (Help Center)",
     "ticket": "Phiếu hỗ trợ",
-    "doc_type": "Loại văn bản (Văn thư)",
-    "external_party": "Đơn vị gửi nhận (Văn thư)",
-    "security_level": "Mức mật / Độ khẩn (Văn thư)",
-    "document_book": "Sổ văn bản (Văn thư)",
-    "document": "Văn bản (Văn thư)",
+    #  Nhãn đi theo ĐƯỜNG MENU chứ không theo tên bảng: người khai quyền tìm
+    #  theo thứ họ bấm trên màn hình, không theo thứ lập trình viên đặt tên.
+    "doc_type": "Văn thư › Thiết lập › Loại văn bản",
+    "doc_template": "Văn thư › Thiết lập › Thư viện văn bản mẫu",
+    "doc_numbering_rule": "Văn thư › Quy tắc đánh số",
+    "doc_link_rule": "Văn thư › Quy tắc quan hệ",
+    "external_party": "Văn thư › Thiết lập › Đơn vị gửi nhận",
+    "security_level": "Văn thư › Thiết lập › Mức mật / Độ khẩn",
+    "document_book": "Văn thư › Sổ văn bản",
+    "document": "Văn thư › Văn bản",
     "seal_request": "Yêu cầu duyệt dấu",
     "seal_type": "Loại con dấu",
     "vehicle_booking": "Yêu cầu đặt xe",

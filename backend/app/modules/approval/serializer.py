@@ -80,13 +80,41 @@ def node_out(db: Session, node: ApprovalNode) -> dict:
 
 
 def _ten_nguoi_duyet(db: Session, node: ApprovalNode) -> str:
-    """Chỉ dựng được tên khi bước chỉ đích danh người; các cách khác tính lúc chạy."""
-    from .flow_model import APPROVER_EMPLOYEE
+    """Tên hiện trên thẻ bước. Rỗng = cách chọn này chỉ tính được lúc chạy.
 
-    if node.approver_kind != APPROVER_EMPLOYEE:
-        return ""
+    Hai cách chọn dựng được tên ngay lúc khai luồng, và cả hai đều nên dựng:
+    thẻ bước ghi mỗi «Người cụ thể» thì người khai phải mở bảng thuộc tính ra
+    mới biết mình vừa cử ai.
+    """
+    from .flow_model import APPROVER_DEPT_HEAD_OF, APPROVER_EMPLOYEE
+
     ids = [int(phan) for phan in (node.approver_ref or "").split(",") if phan.strip().isdigit()]
-    return ", ".join(_ten(db, employee_id) for employee_id in ids)
+    if not ids:
+        return ""
+
+    if node.approver_kind == APPROVER_EMPLOYEE:
+        return ", ".join(_ten(db, employee_id) for employee_id in ids)
+
+    if node.approver_kind == APPROVER_DEPT_HEAD_OF:
+        #  Ghi theo dạng «Trưởng phòng Nhân sự (Nguyễn Văn A)»: người khai chọn
+        #  cái GHẾ, nên cần thấy CẢ tên phòng lẫn ai đang ngồi ghế đó. Phòng bỏ
+        #  trống ghế trưởng thì nói thẳng — chọn vào đó là bước kẹt lúc chạy.
+        from app.modules.department.model import Department
+
+        theo_id = {row.id: row for row in
+                   db.query(Department).filter(Department.id.in_(ids)).all()}
+        phan = []
+        for phong_id in ids:
+            phong = theo_id.get(phong_id)
+            if phong is None:
+                phan.append(f"#{phong_id} (không còn)")
+                continue
+            nguoi = _ten(db, phong.manager_id) if phong.manager_id else ""
+            phan.append(f"Trưởng {phong.name}"
+                        + (f" ({nguoi})" if nguoi else " (chưa có trưởng bộ phận)"))
+        return " · ".join(phan)
+
+    return ""
 
 
 def instance_out(db: Session, instance: ApprovalInstance, kem_chi_tiet: bool = False) -> dict:

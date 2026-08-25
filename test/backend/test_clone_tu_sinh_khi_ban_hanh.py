@@ -209,8 +209,10 @@ def test_clone_bi_tra_lai_thi_ve_dang_soan(db, nen):
     clone = clone_service.clones_of(db, goc.id)[0]
 
     service.submit(db, clone, ACTOR)
-    service.reject(db, clone, "Sai tên công ty", ACTOR)
+    service.tra_lai(db, clone, "Sai tên công ty", ACTOR)
 
+    #  Cột theo dõi ở bản gốc trả lời "bản của pháp nhân đó tới đâu rồi", nên bị
+    #  trả về vẫn là *đang soạn* — nó không kể lại từng nhịp trong nội bộ nơi nhận.
     assert clone.clone_status == CLONE_DRAFTING
 
 

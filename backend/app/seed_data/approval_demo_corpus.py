@@ -14,6 +14,7 @@ nên luồng mặc định cố ý để trống điều kiện và ưu tiên th
 import json
 
 from app.modules.approval.flow_model import (APPROVER_DEPT_HEAD,
+                                             APPROVER_DEPT_HEAD_OF,
                                              APPROVER_EMPLOYEE, MULTI_ALL,
                                              NODE_CC, ROLE_CHECK,
                                              ROLE_EXECUTE)
@@ -85,7 +86,28 @@ def dung_luong(x, nguoi) -> list:
            ai=APPROVER_EMPLOYEE, ref=str(nguoi["chanh_vp"].id))
     ra.append(mac_dinh)
 
-    # ── 4. Đơn mua hàng — bộ máy này dùng chung, không riêng văn bản ─────────
+    # ── 4. ĐƠN NGHỈ PHÉP — chặng 2 trỏ vào GHẾ, không trỏ vào người ─────────
+    #
+    #  Ưu tiên 30, cao hơn mọi luồng văn bản ở trên: điều kiện của chúng vốn
+    #  không phủ `GNP`, nhưng dựa vào điều đó là dựa vào một chi tiết có thể đổi.
+    #
+    #  ⚠️ Cả hai chặng đều có NGƯỜI DỰ PHÒNG vì luật I08 bỏ người nộp khỏi danh
+    #  sách người duyệt: trưởng phòng tự xin nghỉ thì chặng 1 rỗng, mà quản lý
+    #  thì cũng phải nghỉ phép. Không khai dự phòng là những đơn đó kẹt.
+    nghi_phep = x.luong(
+        "document", "VB_NGHI_PHEP", "Duyệt đơn nghỉ phép",
+        "Trưởng bộ phận của người xin nghỉ duyệt trước, rồi tới trưởng phòng "
+        "Nhân sự. Chặng 2 trỏ vào GHẾ trưởng phòng Nhân sự nên đổi người ngồi "
+        "ghế thì luồng tự đi theo.",
+        dieu_kien=x.dieu_kien_loai("GNP"), uu_tien=30)
+    x.buoc(nghi_phep, 1, "Trưởng bộ phận duyệt",
+           ai=APPROVER_DEPT_HEAD, han_gio=24, du_phong=nguoi["chanh_vp"].id)
+    x.buoc(nghi_phep, 2, "Trưởng phòng Nhân sự duyệt",
+           ai=APPROVER_DEPT_HEAD_OF, ref=x.phong_nhan_su(), han_gio=24,
+           du_phong=nguoi["tgd"].id)
+    ra.append(nghi_phep)
+
+    # ── 5. Đơn mua hàng — bộ máy này dùng chung, không riêng văn bản ─────────
     mua_hang = x.luong(
         "purchase_order", "PO_CHUAN", "Duyệt đơn mua hàng",
         "Trưởng bộ phận duyệt rồi Quản lý thu mua ký. Bộ máy duyệt dùng chung "

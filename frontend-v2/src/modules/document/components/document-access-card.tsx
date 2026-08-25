@@ -1,4 +1,4 @@
-import { Ban, ShieldCheck, UserPlus } from 'lucide-react'
+import { Ban, Pencil, ShieldCheck, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 
 import { Badge } from '@/shared/ui/badge'
@@ -8,7 +8,7 @@ import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { cn } from '@/shared/utils/cn'
 import { formatDate, formatDateTime } from '@/shared/utils/format-date'
 import { useDocumentAccess, useGrantAccess, useRevokeAccess } from '../hooks/use-document-access'
-import { EFFECT } from '../types/document-access'
+import { EFFECT, type DocumentAccess } from '../types/document-access'
 import { DocumentAccessDialog } from './document-access-dialog'
 
 interface DocumentAccessCardProps {
@@ -32,6 +32,10 @@ export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardP
   const grant = useGrantAccess(documentId)
   const revoke = useRevokeAccess(documentId)
   const [dialogOpen, setDialogOpen] = useState(false)
+  //  Dòng đang sửa. `grant` ở backend là ghi đè theo (văn bản, đối tượng, chiều)
+  //  nên sửa một dòng chính là cấp lại đúng dòng đó với bộ quyền mới — không cần
+  //  cửa API riêng, và cũng không đẻ thêm dòng thứ hai cho cùng một người.
+  const [dongDangSua, setDongDangSua] = useState<DocumentAccess | null>(null)
 
   const active = rows.filter((row) => row.is_active)
 
@@ -53,7 +57,7 @@ export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardP
       <CardContent>
         <p className="mb-3 text-sm text-muted-foreground">
           Ngoài những người thấy văn bản này theo phạm vi vai trò của họ. Dòng
-          <span className="font-medium"> Cấm </span>
+          <span className="font-medium"> Không cho phép </span>
           thắng mọi dòng cho phép.
         </p>
 
@@ -104,6 +108,19 @@ export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardP
                 </div>
 
                 {row.is_active && canWrite && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    title="Sửa quyền"
+                    aria-label={`Sửa quyền của ${row.subject_name}`}
+                    onClick={() => setDongDangSua(row)}
+                  >
+                    <Pencil />
+                  </Button>
+                )}
+
+                {row.is_active && canWrite && (
                   <ConfirmIconButton
                     icon={Ban}
                     title="Thu hồi"
@@ -133,6 +150,50 @@ export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardP
           setDialogOpen(false)
         }}
       />
+
+      {dongDangSua && (
+        <DocumentAccessDialog
+          open
+          onOpenChange={(open) => !open && setDongDangSua(null)}
+          pending={grant.isPending || revoke.isPending}
+          initial={{
+            subjectLabel: dongDangSua.subject_name,
+            values: {
+              subject_kind: dongDangSua.subject_kind,
+              subject_id: dongDangSua.subject_id,
+              effect: dongDangSua.effect,
+              can_read: true,
+              can_write: dongDangSua.can_write,
+              can_delete: dongDangSua.can_delete,
+              valid_from: dongDangSua.valid_from,
+              valid_to: dongDangSua.valid_to,
+              reason: dongDangSua.reason,
+            },
+          }}
+          onSubmit={async (rows) => {
+            for (const row of rows) await grant.mutateAsync(row.values)
+
+            //  Đổi sang đối tượng khác (hoặc đổi chiều tác động) thì dòng vừa
+            //  ghi là một dòng MỚI — dòng cũ vẫn còn hiệu lực. Không thu hồi nó
+            //  thì người dùng tưởng mình vừa "sửa", trong khi thực tế là vừa
+            //  chia thêm cho một người nữa mà người cũ vẫn giữ nguyên quyền.
+            const conNguyen = rows.some(
+              (row) =>
+                row.values.subject_kind === dongDangSua.subject_kind &&
+                row.values.subject_id === dongDangSua.subject_id &&
+                row.values.effect === dongDangSua.effect,
+            )
+            if (!conNguyen) {
+              await revoke.mutateAsync({
+                accessId: dongDangSua.id,
+                reason: 'Sửa lại dòng chia quyền',
+              })
+            }
+
+            setDongDangSua(null)
+          }}
+        />
+      )}
     </Card>
   )
 }

@@ -8,7 +8,11 @@ bản B, dấu vết ghi "đã duyệt" cho cả hai, mà `content_sha256` chỉ
 nên sau đó không còn gì đối chiếu ngược.
 
 Ghi chú cũ trong `version_model` nói cố ý cho sửa ("trả lại thì gõ tiếp"). Lý do
-đó chết từ D-029: trả lại / rút phiếu là văn bản **về Nháp** rồi mới gõ tiếp.
+đó chết từ D-029: phải TRẢ VỀ / RÚT PHIẾU rồi mới gõ tiếp.
+
+Cập nhật 24/08/2026 — ba nhịp kết thúc phiên duyệt nay đi ba đường khác nhau:
+trả về → «Trả về (9)» *sửa được*, từ chối → «Đã từ chối (10)» *khóa*, rút phiếu
+→ Nháp. Bài kiểm dưới đây canh đúng ranh giới đó.
 
 Bài kiểm gọi thẳng tầng dịch vụ, đúng như một người gọi thẳng API sẽ làm — ẩn
 nút trên giao diện không phải là chốt chặn.
@@ -19,7 +23,8 @@ from fastapi import HTTPException
 from app.modules.company.model import Company
 from app.modules.doc_catalog.model import DocType
 from app.modules.document import service, version_service
-from app.modules.document.model import STATUS_DRAFT, STATUS_SUBMITTED
+from app.modules.document.model import (STATUS_DRAFT, STATUS_REJECTED,
+                                        STATUS_RETURNED, STATUS_SUBMITTED)
 from app.modules.document.schema import (DocumentCreate, DocumentUpdate,
                                          VersionContentUpdate)
 from app.modules.document.version_model import DocumentVersion
@@ -94,16 +99,42 @@ def test_gui_duyet_roi_thi_khong_doi_duoc_tieu_de_va_muc_mat(db, doc):
 
 
 def test_bi_tra_lai_thi_sua_tiep_duoc(db, doc):
-    """Đường ra phải còn: trả lại → về Nháp → gõ tiếp. Không ai bị kẹt."""
+    """Đường ra phải còn: trả về → gõ tiếp được. Không ai bị kẹt.
+
+    Từ 24/08/2026 nó về «Trả về (9)» chứ không về Nháp — nhưng CÁI PHẢI GIỮ là
+    ghi được nội dung và sửa được trường chung, đúng như hồi còn về Nháp.
+    """
     service.submit(db, doc, ACTOR)
-    service.reject(db, doc, "thiếu căn cứ ở mục 2", ACTOR)
+    service.tra_lai(db, doc, "thiếu căn cứ ở mục 2", ACTOR)
 
     version_service.save_content(
         db, _ban(db, doc), VersionContentUpdate(content_html="<p>Sửa sau khi bị trả.</p>"), ACTOR)
     service.update_document(db, doc, DocumentUpdate(title="Tiêu đề sửa sau khi bị trả"), ACTOR)
 
-    assert doc.status == STATUS_DRAFT
+    assert doc.status == STATUS_RETURNED
     assert _ban(db, doc).content_html == "<p>Sửa sau khi bị trả.</p>"
+
+
+def test_bi_tu_choi_thi_khoa_han(db, doc):
+    """Từ chối KHÁC trả về: khóa cả nội dung lẫn trường chung, không gửi lại được.
+
+    Trước 24/08/2026 hai nhịp này đi chung `service.reject()` nên từ chối cũng mở
+    ra cho gõ tiếp — người soạn sửa cả buổi rồi mới thấy không có nút nào gửi lại.
+    """
+    service.submit(db, doc, ACTOR)
+    service.tu_choi(db, doc, "không duyệt nhu cầu này", ACTOR)
+
+    assert doc.status == STATUS_REJECTED
+    #  Bản bị từ chối NHẢ chỗ `open_slot` nên không còn bản nào "đang mở".
+    assert service.open_version(db, doc) is None
+
+    with pytest.raises(HTTPException) as loi:
+        service.update_document(db, doc, DocumentUpdate(title="Cố sửa bản đã từ chối"), ACTOR)
+    assert loi.value.status_code == 409
+
+    with pytest.raises(HTTPException) as loi_gui:
+        service.submit(db, doc, ACTOR)
+    assert loi_gui.value.status_code == 400
 
 
 def test_da_duyet_van_bao_dung_cau_cu(db, doc):

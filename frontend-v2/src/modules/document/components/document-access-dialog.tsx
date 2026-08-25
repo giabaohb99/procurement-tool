@@ -1,6 +1,7 @@
 import { ChevronDown, Plus, Search, TriangleAlert } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { useAuth } from '@/core/auth/use-auth'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
@@ -22,6 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
+import { idKhongDuocTuChan } from '../helpers/khong-tu-chan-chinh-minh'
 import { SubjectChips } from './access-subject-chips'
 import {
   EFFECT,
@@ -36,6 +38,16 @@ interface DocumentAccessDialogProps {
   pending?: boolean
   /** Các dòng đã khai trước đó — dùng để cảnh báo khi khai chồng chiều. */
   existing?: DocumentAccessDraft[]
+  /**
+   * Nạp sẵn MỘT DÒNG ĐÃ CẤP để sửa lại — trang chi tiết truyền vào khi bấm biểu
+   * tượng bút chì trên một dòng quyền.
+   *
+   * Cố ý dùng LẠI hộp khai mới thay vì dựng một hộp sửa rút gọn: hộp rút gọn chỉ
+   * cho đổi bộ quyền / hạn / lý do, nên "chia nhầm người" — lỗi hay gặp nhất —
+   * lại là thứ duy nhất nó không sửa được, người dùng phải thu hồi rồi chia lại
+   * (25/08/2026).
+   */
+  initial?: DocumentAccessDraft
   /**
    * Nhận CẢ LƯỢT khai. Trang chi tiết gửi thẳng lên máy chủ; trang tạo văn bản
    * xếp hàng chờ vì lúc đó văn bản còn chưa có id.
@@ -64,6 +76,7 @@ export function DocumentAccessDialog({
   onOpenChange,
   pending = false,
   existing = [],
+  initial,
   onSubmit,
 }: DocumentAccessDialogProps) {
   return (
@@ -73,18 +86,27 @@ export function DocumentAccessDialog({
           dưới, người dùng tưởng mất nút. Header và footer ghim tại chỗ. */}
       <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Chia quyền truy cập</DialogTitle>
+          <DialogTitle>{initial ? 'Sửa quyền truy cập' : 'Chia quyền truy cập'}</DialogTitle>
           <DialogDescription>
-            Mở thêm cho người ngoài phạm vi vai trò, hoặc chặn đích danh một người vốn đang xem
-            được.
+            {initial
+              ? 'Đổi được cả đối tượng, chiều tác động, bộ quyền và hạn. Đổi sang đối tượng khác thì dòng cũ tự được thu hồi.'
+              : 'Mở thêm cho người ngoài phạm vi vai trò, hoặc chặn đích danh một người vốn đang xem được.'}
           </DialogDescription>
         </DialogHeader>
 
         {/* Ô nhập nằm trong component con nên đóng hộp là mọi thứ đã khai tự
-            mất — mở lại là một lượt khai MỚI, khỏi phải tự dọn. */}
+            mất — mở lại là một lượt khai MỚI, khỏi phải tự dọn. `key` đổi theo
+            dòng đang sửa: sửa người A rồi mở người B mà không dựng lại thì hộp
+            hiện nguyên bộ quyền của A. */}
         <AccessForm
+          key={
+            initial
+              ? `${initial.values.subject_kind}.${initial.values.subject_id}.${initial.values.effect}`
+              : 'moi'
+          }
           pending={pending}
           existing={existing}
+          initial={initial}
           onCancel={() => onOpenChange(false)}
           onSubmit={onSubmit}
         />
@@ -96,6 +118,7 @@ export function DocumentAccessDialog({
 interface AccessFormProps {
   pending: boolean
   existing: DocumentAccessDraft[]
+  initial?: DocumentAccessDraft
   onCancel: () => void
   onSubmit: (rows: DocumentAccessDraft[]) => void
 }
@@ -105,24 +128,30 @@ function draftKey(row: DocumentAccessDraft) {
   return `${row.values.subject_kind}-${row.values.subject_id}`
 }
 
-function AccessForm({ pending, existing, onCancel, onSubmit }: AccessFormProps) {
-  const [subjectKind, setSubjectKind] = useState(String(SUBJECT_KIND.employee))
-  const [selectedIds, setSelectedIds] = useState<number[]>([])
+function AccessForm({ pending, existing, initial, onCancel, onSubmit }: AccessFormProps) {
+  const dangSua = Boolean(initial)
+  const [subjectKind, setSubjectKind] = useState(
+    String(initial?.values.subject_kind ?? SUBJECT_KIND.employee),
+  )
+  const [selectedIds, setSelectedIds] = useState<number[]>(
+    initial ? [initial.values.subject_id] : [],
+  )
   //  Danh sách khai được trong CHÍNH lần mở hộp này: cho phép một cụm, cấm một
   //  cụm, rồi mới đóng — thay vì đóng mở lại hộp cho mỗi chiều tác động.
   const [drafts, setDrafts] = useState<DocumentAccessDraft[]>([])
-  const [effect, setEffect] = useState(String(EFFECT.allow))
-  const [canWrite, setCanWrite] = useState(false)
-  const [canDelete, setCanDelete] = useState(false)
-  const [validTo, setValidTo] = useState('')
-  const [reason, setReason] = useState('')
+  const [effect, setEffect] = useState(String(initial?.values.effect ?? EFFECT.allow))
+  const [canWrite, setCanWrite] = useState(initial?.values.can_write ?? false)
+  const [canDelete, setCanDelete] = useState(initial?.values.can_delete ?? false)
+  const [validTo, setValidTo] = useState(initial?.values.valid_to ?? '')
+  const [reason, setReason] = useState(initial?.values.reason ?? '')
 
+  const { user } = useAuth()
   const { data: employees } = useEmployees({ page_size: 1000, is_active: true })
   const { data: departments } = useDepartments({ page_size: 500 })
   const { data: companies } = useCompanies({ page_size: 200, is_active: true })
   const { data: roles } = useRoles()
 
-  const options = useMemo(() => {
+  const optionsTatCa = useMemo(() => {
     switch (Number(subjectKind)) {
       case SUBJECT_KIND.department:
         return (departments?.items ?? [])
@@ -180,6 +209,14 @@ function AccessForm({ pending, existing, onCancel, onSubmit }: AccessFormProps) 
 
   const isDeny = Number(effect) === EFFECT.deny
   const kindLabel = SUBJECT_KIND_LABELS[Number(subjectKind)].toLowerCase()
+
+  //  TỰ CHẶN CHÍNH MÌNH — luật nằm ở `idKhongDuocTuChan`, đọc chú thích ở đó.
+  const idTuChan = idKhongDuocTuChan(Number(subjectKind), user, isDeny)
+  const tenTuChan = optionsTatCa.find((option) => option.id === idTuChan)?.label ?? ''
+  //  Bỏ khỏi DANH SÁCH CHỌN luôn, không chỉ báo lỗi sau khi bấm: chọn được rồi
+  //  mới bị mắng là bắt người ta làm lại một việc lẽ ra không nên mời họ làm.
+  const options = optionsTatCa.filter((option) => option.id !== idTuChan)
+
   const selectedOptions = options.filter((option) => selectedIds.includes(option.id))
   const allowDrafts = drafts.filter((row) => row.values.effect === EFFECT.allow)
   const denyDrafts = drafts.filter((row) => row.values.effect === EFFECT.deny)
@@ -236,6 +273,10 @@ function AccessForm({ pending, existing, onCancel, onSubmit }: AccessFormProps) 
               value={selectedIds}
               onChange={setSelectedIds}
               kindLabel={kindLabel}
+              ghiChuThieu={
+                tenTuChan &&
+                `Đã bỏ ${tenTuChan} khỏi danh sách — tự chặn thì bạn không mở lại được văn bản này, mà cũng không còn đường vào để gỡ.`
+              }
             />
           </div>
         </div>
@@ -271,12 +312,16 @@ function AccessForm({ pending, existing, onCancel, onSubmit }: AccessFormProps) 
             </label>
             <label className="flex items-center gap-2 text-sm">
               <RadioGroupItem value={String(EFFECT.deny)} />
-              Cấm
+              {/*  Gọi ĐÚNG MỘT TÊN ở mọi chỗ: nút chọn ở đây, tiêu đề cụm bên
+                   ngoài, câu giải thích. Trước 24/08/2026 chỗ này ghi «Cấm» còn
+                   cụm bên ngoài ghi «Không cho phép» — người dùng phải tự đoán
+                   hai chữ đó là một. */}
+              Không cho phép
             </label>
           </RadioGroup>
           <p className="text-xs text-muted-foreground">
             {isDeny
-              ? 'Cấm thắng mọi dòng cho phép và thắng cả phạm vi vai trò — người bị cấm không còn thấy văn bản này trong danh sách.'
+              ? '«Không cho phép» thắng mọi dòng cho phép và thắng cả phạm vi vai trò — người bị chặn không còn thấy văn bản này trong danh sách.'
               : 'Người được chia sẽ thấy và mở được văn bản này kể cả khi nó nằm ngoài phạm vi vai trò của họ.'}
           </p>
         </div>
@@ -344,18 +389,22 @@ function AccessForm({ pending, existing, onCancel, onSubmit }: AccessFormProps) 
         <Button type="button" variant="ghost" onClick={onCancel}>
           Hủy
         </Button>
-        {/* Hai nút: một để khai tiếp cụm nữa (hộp ở lại), một để chốt cả lượt. */}
-        <Button
-          type="button"
-          variant="outline"
-          onClick={addToList}
-          disabled={selectedIds.length === 0}
-        >
-          <Plus className="size-4" />
-          {isDeny ? 'Thêm cụm cấm' : 'Thêm cụm cho phép'}
-        </Button>
+        {/* Hai nút: một để khai tiếp cụm nữa (hộp ở lại), một để chốt cả lượt.
+            Lúc SỬA một dòng thì bỏ nút thêm cụm — mở ra để sửa đúng dòng đó, gom
+            thêm cụm khác vào cùng lượt chỉ làm rối chuyện đang làm. */}
+        {!dangSua && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={addToList}
+            disabled={selectedIds.length === 0}
+          >
+            <Plus className="size-4" />
+            {isDeny ? 'Thêm cụm không cho phép' : 'Thêm cụm cho phép'}
+          </Button>
+        )}
         <Button type="button" onClick={handleSubmit} disabled={total === 0 || pending}>
-          Xong{total > 0 && ` (${total})`}
+          {dangSua ? 'Lưu' : `Xong${total > 0 ? ` (${total})` : ''}`}
         </Button>
       </DialogFooter>
     </>
@@ -373,6 +422,16 @@ interface SubjectMultiSelectProps {
   onChange: (ids: number[]) => void
   /** "người" · "phòng ban" … — dùng cho chữ gợi ý và ô tìm. */
   kindLabel: string
+  /**
+   * Vì sao danh sách THIẾU một dòng lẽ ra phải có (hiện đúng một trường hợp:
+   * chính mình bị bỏ khỏi cụm «không cho phép»).
+   *
+   * Đặt TRONG ô chọn chứ không phải một băng riêng ngoài hộp thoại: nó chỉ có
+   * nghĩa lúc người dùng mở danh sách ra tìm mà không thấy tên. Để ngoài thì
+   * lúc chưa chọn gì đã thấy cả một băng cảnh báo cho việc mình chưa làm —
+   * đúng chỗ người dùng bắt lỗi ngày 25/08/2026.
+   */
+  ghiChuThieu?: string
 }
 
 /**
@@ -382,7 +441,13 @@ interface SubjectMultiSelectProps {
  * chỗ nhận được nhiều lựa chọn — đổi hẳn sang danh sách bày sẵn thì hộp thoại
  * phình gấp đôi cho một việc thường chỉ chọn một, hai người.
  */
-function SubjectMultiSelect({ options, value, onChange, kindLabel }: SubjectMultiSelectProps) {
+function SubjectMultiSelect({
+  options,
+  value,
+  onChange,
+  kindLabel,
+  ghiChuThieu,
+}: SubjectMultiSelectProps) {
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
 
@@ -463,6 +528,15 @@ function SubjectMultiSelect({ options, value, onChange, kindLabel }: SubjectMult
             })
           )}
         </ul>
+
+        {/*  Nói RA vì sao thiếu: lọc lặng lẽ thì người dùng tìm tên mình mãi
+             không thấy rồi tưởng danh sách hỏng. */}
+        {ghiChuThieu && (
+          <p className="flex items-start gap-2 border-t bg-sky-50 px-2 py-1.5 text-xs text-sky-900">
+            <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+            <span>{ghiChuThieu}</span>
+          </p>
+        )}
 
         <div className="flex items-center justify-between gap-2 border-t bg-muted/40 px-2 py-1.5">
           <span className="text-xs text-muted-foreground tabular-nums">

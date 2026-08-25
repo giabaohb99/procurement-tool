@@ -58,6 +58,24 @@ export const EMPLOYEE_STATUS: readonly StatusOption[] = [
   {"value": "resigned", "label": "Nghỉ việc", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
+/** Buổi nghỉ */
+export const LEAVE_SESSION: readonly StatusOption[] = [
+  {"value": "full", "label": "Cả ngày", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "morning", "label": "Buổi sáng", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "afternoon", "label": "Buổi chiều", "sort_order": 0, "is_terminal": false, "is_exception": false},
+]
+
+/** Loại nghỉ phép */
+export const LEAVE_TYPE: readonly StatusOption[] = [
+  {"value": "annual", "label": "Phép năm", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "unpaid", "label": "Nghỉ không lương", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "sick", "label": "Nghỉ ốm đau", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "maternity", "label": "Nghỉ thai sản", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "wedding", "label": "Nghỉ cưới hỏi", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "funeral", "label": "Nghỉ tang chế", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "comp_off", "label": "Nghỉ bù", "sort_order": 0, "is_terminal": false, "is_exception": false},
+]
+
 /** Trạng thái công nợ */
 export const PAYABLE_STATUS: readonly StatusOption[] = [
   {"value": "unpaid", "label": "Chờ thanh toán", "sort_order": 1, "is_terminal": false, "is_exception": false},
@@ -131,6 +149,8 @@ export const STATUS_SETS = {
   contract_status: CONTRACT_STATUS,
   contract_type: CONTRACT_TYPE,
   employee_status: EMPLOYEE_STATUS,
+  leave_session: LEAVE_SESSION,
+  leave_type: LEAVE_TYPE,
   payable_status: PAYABLE_STATUS,
   po_delivery_status: PO_DELIVERY_STATUS,
   po_document_status: PO_DOCUMENT_STATUS,

@@ -54,7 +54,12 @@ export const ENTITIES = [
   'help_article',
   'ticket',
   // Phân hệ Văn thư — phải khớp `ENTITIES` trong backend `core/permissions.py`.
+  //  MỘT KHÓA = MỘT MÀN HÌNH (CR-157). Trước đó bốn màn danh mục dùng chung
+  //  `doc_type` nên không tách được ba nhóm việc khai báo khác nhau.
   'doc_type',
+  'doc_template',
+  'doc_numbering_rule',
+  'doc_link_rule',
   'external_party',
   'document_book',
   'document',

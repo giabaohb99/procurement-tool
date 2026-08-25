@@ -37,15 +37,35 @@ export function visibleNavItems(module: ErpModule, can: CanFn) {
 }
 
 export function canOpenModule(module: ErpModule, can: CanFn) {
+  //  ⚠️ Phân hệ LINK RA NGOÀI luôn mở. Nó không có mục menu nào theo đúng bản
+  //  chất (`nav: []` — màn hình nằm ở app khác), nên đo bằng "còn mục nào hiện
+  //  không" là ra 0 với MỌI người và thẻ đeo ổ khóa vĩnh viễn — kể cả admin.
+  //
+  //  Đúng cái đã xảy ra với **Hướng dẫn sử dụng**: tài liệu dùng hệ thống, khu
+  //  người dùng của nó vốn CÔNG KHAI (xem `modules/help/routes.tsx`), mà không
+  //  ai bấm vào được. `ModuleCard` thì đã có sẵn nhánh `ready && externalUrl` để
+  //  vẽ biểu tượng mở-tab-mới — nhánh đó là mã chết cho tới hôm nay, bằng chứng
+  //  là ý định vốn phải mở (25/08/2026).
+  if (module.externalUrl) return true
+
   return visibleNavItems(module, can).length > 0
 }
 
-/** Áp đúng ba nhánh của `visibleNavItems` cho MỘT mục — dùng lại cho cả menu lẫn route. */
+/** Quyền cho MỘT khóa theo `action` | `manage` | `read` của mục. */
+function entityAllowed(item: ModuleNavItem, entity: PermissionEntity, can: CanFn): boolean {
+  if (item.action) return can(entity, item.action)
+  if (item.manage) return canManageEntity(entity, can)
+  return can(entity, 'read')
+}
+
+/** Áp đúng luật hiển thị của `visibleNavItems` cho MỘT mục — dùng lại cho cả menu lẫn route. */
 function itemAllowed(item: ModuleNavItem, can: CanFn): boolean {
-  if (!item.entity) return true
-  if (item.action) return can(item.entity, item.action)
-  if (item.manage) return canManageEntity(item.entity, can)
-  return can(item.entity, 'read')
+  if (item.entity) return entityAllowed(item, item.entity, can)
+  //  Mục gom nhiều màn con: có quyền trên BẤT KỲ khóa nào là hiện, phần không
+  //  được xem do chính trang tự ẩn. Xem `ModuleNavItem.entities`.
+  if (item.entities?.length) return item.entities.some((khoa) => entityAllowed(item, khoa, can))
+  //  Không khai khóa nào = luôn hiện (chủ ý — xem chú thích ở visibleNavItems).
+  return true
 }
 
 /**

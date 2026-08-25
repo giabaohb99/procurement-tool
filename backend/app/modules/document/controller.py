@@ -387,6 +387,22 @@ def update_issue_number(
     return success(serializer.serialize(db, doc), "Đã cập nhật số hiệu")
 
 
+@router.delete("/{document_id}/ban-nhap")
+def bo_ban_nhap(
+    document_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(require("document", "create")),
+):
+    """Nút «Hủy» ở màn Tạo văn bản — dọn bản nháp mà chính mình vừa mở.
+
+    Đi cùng `create` chứ không phải `delete`: xem `service.bo_ban_nhap_cua_minh`.
+    """
+    doc = _load(db, document_id, user, "read")
+    service.bo_ban_nhap_cua_minh(db, doc, user.id)
+    record(db, user.id, "document", document_id, "delete", "Bỏ bản nháp đang soạn dở")
+    return success(None, "Đã bỏ bản nháp")
+
+
 @router.delete("/{document_id}")
 def delete_document(
     document_id: int,
@@ -439,9 +455,9 @@ def reject_document(
 ):
     doc = _load(db, document_id, user)
     approval_bridge.chan_duong_cu(db, doc)
-    doc = service.reject(db, doc, data.reason, user.id)
-    record(db, user.id, "document", doc.id, "update", f"Trả lại: {data.reason}")
-    return success(serializer.serialize(db, doc), "Đã trả lại bản nháp")
+    doc = service.tra_lai(db, doc, data.reason, user.id)
+    record(db, user.id, "document", doc.id, "update", f"Trả về: {data.reason}")
+    return success(serializer.serialize(db, doc), "Đã trả về cho người soạn")
 
 
 @router.post("/{document_id}/reviewed")

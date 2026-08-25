@@ -171,4 +171,38 @@ describe('DocumentApprovalBanner', () => {
     expect(screen.getByText(/đang kẹt/)).toBeInTheDocument()
     expect(screen.getByText(/không tìm được người duyệt/)).toBeInTheDocument()
   })
+
+  //  LỖI ĐÃ XẢY RA (sửa 24/08/2026): hàm này trả `null` ngay khi phiên không còn
+  //  chạy, nên người soạn mở văn bản vừa bị trả về chỉ thấy nhãn trạng thái trơ
+  //  trọi. Lý do nằm trong dấu vết tab Phê duyệt và `change_reason` của phiên bản
+  //  — hai chỗ không ai nghĩ để mở. Câu người ta cần là "bị trả vì sao, giờ làm gì".
+  it('bị TRẢ VỀ thì hiện lý do và nói luôn bước kế tiếp', () => {
+    ve(
+      phien({
+        status: INSTANCE_STATUS.returned,
+        status_label: 'Trả lại',
+        tasks: [],
+        finish_reason: 'Chương II chưa khớp quy định mới',
+      }),
+    )
+
+    expect(screen.getByText(/bị trả về/i)).toBeInTheDocument()
+    expect(screen.getByText(/Chương II chưa khớp quy định mới/)).toBeInTheDocument()
+    expect(screen.getByText(/Gửi duyệt lần nữa/)).toBeInTheDocument()
+  })
+
+  it('bị TỪ CHỐI thì chỉ đường Sao chép, không mời gửi duyệt lại', () => {
+    ve(
+      phien({
+        status: INSTANCE_STATUS.rejected,
+        status_label: 'Từ chối',
+        tasks: [],
+        finish_reason: 'Không duyệt nhu cầu này',
+      }),
+    )
+
+    expect(screen.getByText(/đã bị từ chối/i)).toBeInTheDocument()
+    expect(screen.getByText(/Sao chép/)).toBeInTheDocument()
+    expect(screen.queryByText(/Gửi duyệt lần nữa/)).not.toBeInTheDocument()
+  })
 })

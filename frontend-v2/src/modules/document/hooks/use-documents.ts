@@ -184,6 +184,23 @@ export function useDeleteDocument() {
   })
 }
 
+/**
+ * Bỏ bản nháp do chính mình vừa mở ở màn *Tạo văn bản* (nút «Hủy»).
+ *
+ * KHÔNG báo toast xanh: đây là thao tác dọn dẹp ngầm khi người dùng rời form,
+ * họ không «làm» gì để mà được xác nhận. Bên gọi tự bắt lỗi.
+ */
+export function useBoBanNhap() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: number) => documentApi.boBanNhap(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
+    },
+  })
+}
+
 export function useUpdateDocumentIssueNumber(documentId: number) {
   const queryClient = useQueryClient()
   return useMutation({

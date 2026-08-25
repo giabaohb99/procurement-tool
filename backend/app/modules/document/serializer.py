@@ -116,6 +116,10 @@ def base_fields(doc: Document) -> dict:
         "issue_year": doc.issue_year,
         "legacy_code": doc.legacy_code,
         "storage_location": doc.storage_location,
+        #  Thông tin riêng của loại (đơn nghỉ phép…). Tên ra API là `metadata`
+        #  đúng như khách yêu cầu; trong mã gọi là `meta` vì SQLAlchemy giữ riêng
+        #  tên kia — xem ghi chú ở `model.py`.
+        "metadata": doc.meta or None,
         "doc_type_id": doc.doc_type_id,
         "company_id": doc.company_id,
         "department_id": doc.department_id,

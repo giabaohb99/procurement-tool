@@ -33,7 +33,7 @@ export const EFFECT = { allow: 1, deny: 2 } as const
 
 export const EFFECT_LABELS: Record<number, string> = {
   1: 'Cho phép',
-  2: 'Cấm',
+  2: 'Không cho phép',
 }
 
 export interface DocumentAccess {

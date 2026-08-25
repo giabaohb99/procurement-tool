@@ -24,6 +24,16 @@ export const DOCUMENT_STATUS = {
   expired: 6,
   revoked: 7,
   archived: 8,
+  /**
+   * Bị trả về — CÒN đường đi tiếp: sửa rồi gửi duyệt lại trên chính văn bản này.
+   *
+   * Trước 24/08/2026 trả lại và từ chối đều đổ về `draft`, nên mở văn bản ra chỉ
+   * thấy «Nháp» và không cách nào biết nó vừa bị trả (lý do chỉ nằm ở dấu vết
+   * tab Phê duyệt). Hai mã dưới đây tách đúng chỗ đó ra.
+   */
+  returned: 9,
+  /** Đã từ chối — HẾT đường: khóa sửa, muốn làm lại thì *Sao chép*. */
+  rejected: 10,
 } as const
 
 export const STATUS_LABELS: Record<number, string> = {
@@ -35,7 +45,21 @@ export const STATUS_LABELS: Record<number, string> = {
   6: 'Hết hiệu lực',
   7: 'Bãi bỏ',
   8: 'Lưu trữ',
+  9: 'Trả về',
+  10: 'Đã từ chối',
 }
+
+/**
+ * Trạng thái mà văn bản còn SỬA ĐƯỢC và còn GỬI DUYỆT lại được.
+ *
+ * Dùng hằng này thay vì so `=== DOCUMENT_STATUS.draft` rải rác: bỏ sót một chỗ
+ * là văn bản bị trả về mất nút *Gửi duyệt* hoặc bị khóa ô nhập, mà lỗi đó chỉ
+ * lộ ra khi có người thật bị trả phiếu.
+ */
+export const EDITABLE_STATUSES: readonly number[] = [
+  DOCUMENT_STATUS.draft,
+  DOCUMENT_STATUS.returned,
+]
 
 export const STATUS_VARIANTS: Record<number, 'default' | 'secondary' | 'outline' | 'destructive'> =
   {
@@ -47,6 +71,11 @@ export const STATUS_VARIANTS: Record<number, 'default' | 'secondary' | 'outline'
     6: 'secondary',
     7: 'destructive',
     8: 'outline',
+    //  Cả hai đều đỏ: đây là hai trạng thái người soạn PHẢI để ý, khác hẳn đám
+    //  xám "đang chạy bình thường". Nhãn phân biệt hai ca, màu chỉ để nó nhảy ra
+    //  khỏi danh sách.
+    9: 'destructive',
+    10: 'destructive',
   }
 
 /** Trạng thái của PHIÊN BẢN — thang riêng, xem chú thích đầu tệp. */
@@ -55,6 +84,13 @@ export const VERSION_STATUS = {
   submitted: 2,
   approved: 3,
   superseded: 4,
+  /**
+   * Bị trả về. Thang phiên bản phải có mã riêng vì từ bản 2.0 trở đi **văn bản
+   * không đổi trạng thái** — bản 1.0 vẫn đang có hiệu lực trong lúc bản 2.0 chờ
+   * duyệt, nên chỗ duy nhất nói được "bản 2.0 vừa bị trả" là dòng phiên bản.
+   */
+  returned: 5,
+  rejected: 6,
 } as const
 
 export const VERSION_STATUS_LABELS: Record<number, string> = {
@@ -62,6 +98,8 @@ export const VERSION_STATUS_LABELS: Record<number, string> = {
   2: 'Đang duyệt',
   3: 'Đã duyệt',
   4: 'Đã thay thế',
+  5: 'Trả về',
+  6: 'Đã từ chối',
 }
 
 export const CHANGE_KIND = { major: 1, minor: 2 } as const
@@ -102,6 +140,13 @@ export interface DocumentRecord {
   legacy_code: string
   /** Bản giấy đang nằm ở đâu — «Tủ A2 · Kệ 3 · Bìa 12». Tìm kiếm chấp nhận cả ô này. */
   storage_location: string
+  /**
+   * Thông tin RIÊNG của loại văn bản — Giấy nghỉ phép khai 8 ô ở đây.
+   *
+   * Hình dạng do backend quy định theo mã loại (`document/type_metadata.py`),
+   * khóa lạ bị loại bỏ chứ không lưu. `null` với loại chưa khai hình dạng.
+   */
+  metadata: Record<string, unknown> | null
 
   doc_type_id: number
   doc_type_name: string

@@ -92,6 +92,15 @@ export const documentApi = {
 
   remove: (id: number) => apiDelete<null>(`${DOCUMENT_URL}/${id}`),
 
+  /**
+   * Bỏ bản nháp mà chính mình vừa mở ra ở màn *Tạo văn bản* (nút «Hủy»).
+   *
+   * Cửa RIÊNG chứ không dùng `remove`: vai trò soạn thảo tiêu chuẩn không có
+   * quyền `delete`, nên gọi `remove` thì người dùng ăn 403 và bản nháp nằm lại
+   * mãi mãi. Xem `document/service.bo_ban_nhap_cua_minh`.
+   */
+  boBanNhap: (id: number) => apiDelete<null>(`${DOCUMENT_URL}/${id}/ban-nhap`),
+
   submit: (id: number) => apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/submit`, {}),
   /** `applyMode` = cơ chế áp dụng chọn lúc ban hành (F13). Bỏ trống là giữ nguyên. */
   approve: (id: number, applyMode?: number) =>

@@ -102,7 +102,13 @@ SCOPE_FIELDS = {
     "unit":             PUBLIC,
     "item_group":       PUBLIC,
     "brand":            PUBLIC,
+    #  Bốn danh mục nền của Văn thư: dùng chung cho mọi pháp nhân, không có cột
+    #  nào để lọc. Tách khóa ra bốn cái là để phân quyền THEO MÀN HÌNH (CR-157),
+    #  không đổi gì về phạm vi dữ liệu.
     "doc_type":         PUBLIC,
+    "doc_template":     PUBLIC,
+    "doc_numbering_rule": PUBLIC,
+    "doc_link_rule":    PUBLIC,
     "security_level":   PUBLIC,
     "external_party":   PUBLIC,
     "seal_type":        PUBLIC,

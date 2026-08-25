@@ -181,3 +181,112 @@ def serialize(db: Session, book: DocumentBook, year: int | None = None) -> dict:
         "manager_names": names(manager_ids),
         "viewer_names": names(viewer_ids),
     }
+
+
+def so_minh_la_thanh_vien(employee_id: int | None):
+    """Truy vấn con: id các sổ mà nhân sự này ĐƯỢC KHAI ĐÍCH DANH (quản lý hoặc xem).
+
+    `None` khi tài khoản chưa gắn hồ sơ nhân sự — lúc đó không có gì để cộng thêm.
+    """
+    from sqlalchemy import select
+
+    if not employee_id:
+        return None
+    return (select(DocumentBookMember.book_id)
+            .where(DocumentBookMember.employee_id == employee_id))
+
+
+def dieu_kien_xem_so(user, profile: dict):
+    """Điều kiện lọc DANH SÁCH SỔ = phạm vi vai trò **HỢP** các sổ chia đích danh.
+
+    ⚠️ Đây là lỗi khách báo 24/08/2026: thêm người vào ô *Người xem sổ*, lưu xong,
+    người đó mở trang **Sổ văn bản** vẫn thấy «Chưa có sổ văn bản đến nào khớp».
+    Bảng `tab_document_book_member` có dòng, nhưng câu truy vấn danh sách chỉ chạy
+    `apply_scope` — mà phạm vi vai trò chỉ biết THU HẸP (pháp nhân, người tạo),
+    không biết mở thêm. Nhân viên có phạm vi `own` thì chỉ thấy sổ do chính họ mở,
+    tức là không thấy gì — đúng bằng việc ô *Người xem sổ* không có tác dụng nào.
+
+    Cùng cách ghép với `document/access_service.visible_condition`: chia đích danh
+    là một NGUỒN QUYỀN CỘNG THÊM, không phải một bộ lọc.
+
+    Trả `None` = thấy tất cả (giữ đúng nghĩa của `scope_condition`).
+    """
+    from sqlalchemy import or_
+
+    from app.core.scoping import scope_condition
+
+    pham_vi = scope_condition(DocumentBook, "document_book", user, profile, "read")
+    if pham_vi is None:
+        return None
+
+    cua_toi = so_minh_la_thanh_vien(profile.get("employee_id")
+                                    or getattr(user, "employee_id", None))
+    if cua_toi is None:
+        return pham_vi
+    return or_(pham_vi, DocumentBook.id.in_(cua_toi))
+
+
+def dieu_kien_sua_so(user, profile: dict, action: str = "write"):
+    """Điều kiện được SỬA / XÓA một quyển sổ.
+
+    Khác `dieu_kien_xem_so` ở nguồn cộng thêm: chỉ **người quản lý sổ** (vai 1),
+    không phải mọi thành viên. Đúng câu chú thích ngay dưới ô *Người quản lý*
+    trên giao diện — *«Sửa, đóng và xóa được sổ»* — mà trước đây backend không
+    hề đọc tới: sửa sổ chỉ xét quyền vai trò `document_book.write`, không xét
+    phạm vi và cũng không xét ai quản lý sổ nào.
+
+    Vẫn phải có quyền vai trò `write` mới vào tới đây (`require(...)` ở tầng
+    controller). Hàm này chỉ trả lời câu thứ hai: **quyển nào**.
+    """
+    from sqlalchemy import or_
+
+    from app.core.scoping import scope_condition
+
+    pham_vi = scope_condition(DocumentBook, "document_book", user, profile, action)
+    if pham_vi is None:
+        return None
+
+    employee_id = profile.get("employee_id") or getattr(user, "employee_id", None)
+    if not employee_id:
+        return pham_vi
+
+    from sqlalchemy import select
+
+    quan_ly = (select(DocumentBookMember.book_id)
+               .where(DocumentBookMember.employee_id == employee_id,
+                      DocumentBookMember.role == ROLE_MANAGER))
+    return or_(pham_vi, DocumentBook.id.in_(quan_ly))
+
+
+def so_sua_duoc_hoac_404(db: Session, book_id: int, user, profile: dict,
+                         action: str = "write") -> DocumentBook:
+    """Như `so_xem_duoc_hoac_404` nhưng cho SỬA / XÓA. Xem `dieu_kien_sua_so`."""
+    return _so_hoac_404(db, book_id, dieu_kien_sua_so(user, profile, action))
+
+
+def so_xem_duoc_hoac_404(db: Session, book_id: int, user, profile: dict) -> DocumentBook:
+    """Lấy MỘT sổ, đã kiểm quyền xem trên chính nó.
+
+    ⚠️ Trước 25/08/2026 ba endpoint đọc một sổ chỉ `db.get(...)`: lọc ở danh sách
+    bao nhiêu cũng vô nghĩa vì gõ thẳng id lên URL là mở được sổ của pháp nhân
+    khác — kèm tên người quản lý, người xem và cả bộ đếm. Đúng cái bẫy `get_scoped`
+    đã ghi trong CLAUDE.md.
+    """
+    return _so_hoac_404(db, book_id, dieu_kien_xem_so(user, profile))
+
+
+def _so_hoac_404(db: Session, book_id: int, dieu_kien) -> DocumentBook:
+    book = db.get(DocumentBook, book_id)
+    if not book:
+        raise HTTPException(404, "Không tìm thấy sổ")
+    if dieu_kien is None:
+        return book
+
+    thay = (db.query(DocumentBook.id)
+            .filter(DocumentBook.id == book_id, dieu_kien)
+            .first())
+    if not thay:
+        #  404 chứ không 403 — cùng lý lẽ với văn bản: nói "có sổ này nhưng anh
+        #  không được xem" thì chính câu đó đã lộ thứ cần giấu.
+        raise HTTPException(404, "Không tìm thấy sổ")
+    return book

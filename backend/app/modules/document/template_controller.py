@@ -40,7 +40,7 @@ def list_templates(
     sort_by: str | None = None,
     sort_dir: str = "asc",
     db: Session = Depends(get_db),
-    user=Depends(require("doc_type", "read")),
+    user=Depends(require("doc_template", "read")),
 ):
     # Danh sách cố ý KHÔNG trả `content_html`: một mẫu có thể dài vài trăm KB,
     # tải hết thân bài chỉ để vẽ bảng tên mẫu là lãng phí.
@@ -63,7 +63,7 @@ def list_templates(
 def get_template(
     template_id: int,
     db: Session = Depends(get_db),
-    user=Depends(require("doc_type", "read")),
+    user=Depends(require("doc_template", "read")),
 ):
     template = template_service.get_or_404(db, template_id)
     return success(_serialize(db, template, detail=True))
@@ -73,7 +73,7 @@ def get_template(
 def create_template(
     data: DocumentTemplateCreate,
     db: Session = Depends(get_db),
-    user=Depends(require("doc_type", "create")),
+    user=Depends(require("doc_template", "create")),
 ):
     template = template_service.create_template(db, data, user.id)
     record(db, user.id, "document_template", template.id, "create")
@@ -85,7 +85,7 @@ def update_template(
     template_id: int,
     data: DocumentTemplateUpdate,
     db: Session = Depends(get_db),
-    user=Depends(require("doc_type", "write")),
+    user=Depends(require("doc_template", "write")),
 ):
     template = template_service.get_or_404(db, template_id)
     template = template_service.update_template(db, template, data, user.id)
@@ -97,7 +97,7 @@ def update_template(
 def delete_template(
     template_id: int,
     db: Session = Depends(get_db),
-    user=Depends(require("doc_type", "delete")),
+    user=Depends(require("doc_template", "delete")),
 ):
     template = template_service.get_or_404(db, template_id)
     template_service.delete_template(db, template)

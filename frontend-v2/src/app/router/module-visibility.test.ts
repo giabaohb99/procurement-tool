@@ -121,3 +121,65 @@ describe('canAccessRoute', () => {
     expect(canAccessRoute(phanHe(nav), '/x/dm', choPhepDay({ unit: ['write'] }))).toBe(true)
   })
 })
+
+describe('mục gom nhiều màn con (`entities`)', () => {
+  //  «Thiết lập văn bản» là MỘT mục menu chứa bốn tab chạy trên bốn khóa khác
+  //  nhau. Trước CR-157 nó gác bằng đúng `doc_type`, nên người chỉ giữ *Đơn vị
+  //  gửi nhận* không vào nổi trang chứa đúng tab của mình.
+  const thietLap = [
+    {
+      label: 'Thiết lập văn bản',
+      path: '/d/settings',
+      icon: FileText,
+      entities: ['doc_type', 'doc_template', 'security_level', 'external_party'],
+    },
+  ] as ErpModule['nav']
+
+  it('có quyền trên BẤT KỲ khóa nào là hiện mục', () => {
+    expect(visibleNavItems(phanHe(thietLap), choPhep('external_party'))).toHaveLength(1)
+    expect(visibleNavItems(phanHe(thietLap), choPhep('doc_type'))).toHaveLength(1)
+  })
+
+  it('không có khóa nào thì ẩn — đừng biến nó thành mục ai cũng thấy', () => {
+    expect(visibleNavItems(phanHe(thietLap), choPhep('document'))).toHaveLength(0)
+  })
+
+  it('mảng rỗng thì coi như không gác, giống mục bỏ trống `entity`', () => {
+    const nav = [
+      { label: 'Chờ tôi duyệt', path: '/d/pending', icon: FileText, entities: [] },
+    ] as ErpModule['nav']
+    expect(visibleNavItems(phanHe(nav), choPhep())).toHaveLength(1)
+  })
+})
+
+describe('phân hệ LINK RA NGOÀI', () => {
+  /** Đúng hình dạng `helpCenterModule`: không màn hình nào trong app này. */
+  function linkRaNgoai(): ErpModule {
+    return {
+      id: 'help-center',
+      title: 'Hướng dẫn sử dụng',
+      path: '',
+      externalUrl: () => 'http://localhost:8082',
+      enabled: true,
+      nav: [],
+      routes: [],
+    } as unknown as ErpModule
+  }
+
+  //  LỖI KHÁCH BÁO 25/08/2026: ô «Hướng dẫn sử dụng» đeo ổ khóa, không ai bấm
+  //  vào được — kể cả admin. `canOpenModule` đo bằng "còn mục menu nào hiện
+  //  không", mà phân hệ link ra ngoài có `nav: []` theo đúng bản chất nên luôn
+  //  ra 0. Tài liệu dùng hệ thống mà không ai mở được là hỏng đúng chỗ đáng giá.
+  it('luôn mở, kể cả tài khoản không có quyền nào', () => {
+    expect(canOpenModule(linkRaNgoai(), choPhep())).toBe(true)
+  })
+
+  it('không phụ thuộc quyền của người dùng', () => {
+    expect(canOpenModule(linkRaNgoai(), choPhep('help_article'))).toBe(true)
+  })
+
+  //  Chốt chiều ngược: đừng nới thành "phân hệ nào không có mục menu cũng mở".
+  it('phân hệ THƯỜNG mà không thấy mục nào thì vẫn khóa', () => {
+    expect(canOpenModule(phanHe([]), choPhep())).toBe(false)
+  })
+})

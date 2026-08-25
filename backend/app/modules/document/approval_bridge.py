@@ -53,6 +53,21 @@ def phien_dang_chay(db: Session, document_id: int):
     return instance_service.phien_dang_chay(db, ENTITY, document_id)
 
 
+def phien_moi_nhat(db: Session, document_id: int):
+    """Phiên duyệt GẦN NHẤT của văn bản, kể cả phiên đã kết thúc.
+
+    Khác `phien_dang_chay`: dùng để GIẢI THÍCH, không để chặn — xem
+    `chan_duong_cu`.
+    """
+    from app.modules.approval.instance_model import ApprovalInstance
+
+    return (db.query(ApprovalInstance)
+            .filter(ApprovalInstance.entity == ENTITY,
+                    ApprovalInstance.entity_id == document_id)
+            .order_by(ApprovalInstance.id.desc())
+            .first())
+
+
 def chan_duong_cu(db: Session, doc: Document) -> None:
     """Khóa hai nút duyệt MỘT BƯỚC khi phiếu đang chạy trong bộ máy nhiều bước.
 
@@ -65,12 +80,59 @@ def chan_duong_cu(db: Session, doc: Document) -> None:
     bước gọi `service.approve()` khi duyệt xong, đặt ở đó là nó tự chặn mình.
     """
     phien = phien_dang_chay(db, doc.id)
-    if phien is None:
+    if phien is not None:
+        raise HTTPException(
+            400,
+            "Văn bản này đang chạy trong luồng duyệt nhiều bước — xử lý ở màn "
+            "«Việc của tôi» chứ không ban hành thẳng ở đây.",
+        )
+    _noi_ro_phien_da_ket_thuc(db, doc)
+
+
+def _noi_ro_phien_da_ket_thuc(db: Session, doc: Document) -> None:
+    """Nói RÕ vì sao không ban hành được, thay câu «Không có bản nào đang chờ duyệt».
+
+    Ca người dùng gặp (24/08/2026): người duyệt bấm *Trả lại*, rồi ai đó bấm
+    *Duyệt và ban hành* và nhận đúng một dòng đỏ **«Không có bản nào đang chờ
+    duyệt»** — câu này đọc như hệ hỏng, trong khi sự thật là phiên duyệt vừa kết
+    thúc bằng *Trả lại* nên chẳng còn gì để ban hành.
+
+    ⚠️ **Không chặn thêm bất cứ đường nào.** Chỉ nói lại cho tử tế đúng cái lỗi
+    mà `service.approve()` / `service.tu_choi()` sắp ném ra: chốt duy nhất là
+    "bản đang mở KHÔNG ở trạng thái chờ duyệt", tức đường cũ vốn đã hỏng dù có
+    hàm này hay không. Chờ duyệt thật thì hàm này im lặng — kể cả khi văn bản có
+    một phiên duyệt cũ đã đóng (bị trả về, sửa xong rồi gửi duyệt lại bằng đường
+    một bước vì luồng nhiều bước không còn khớp).
+    """
+    from .service import open_version
+    from .version_model import VERSION_SUBMITTED
+
+    version = open_version(db, doc)
+    if version is not None and version.status == VERSION_SUBMITTED:
         return
+
+    from app.modules.approval.instance_model import (INSTANCE_REJECTED,
+                                                     INSTANCE_RETURNED,
+                                                     INSTANCE_STATUS_LABELS,
+                                                     INSTANCE_WITHDRAWN)
+
+    phien = phien_moi_nhat(db, doc.id)
+    #  CHỈ ba kết cục «không đi tiếp được» mới cần giải thích. Phiên **đã duyệt**
+    #  thì im lặng: văn bản đã ban hành rồi, và chốt cũ có một bài kiểm giữ đúng
+    #  điều đó — hết phiên là đường một bước dùng lại được bình thường
+    #  (`test_van_ban_dang_duyet_khong_di_tat.py`).
+    if phien is None or phien.status not in (
+            INSTANCE_RETURNED, INSTANCE_REJECTED, INSTANCE_WITHDRAWN):
+        return
+
+    nhan = INSTANCE_STATUS_LABELS.get(phien.status, "đã kết thúc")
+    ngay = phien.finished_at.strftime("%d/%m/%Y %H:%M") if phien.finished_at else ""
+    ly_do = f" — lý do: {phien.finish_reason}" if phien.finish_reason else ""
     raise HTTPException(
         400,
-        "Văn bản này đang chạy trong luồng duyệt nhiều bước — xử lý ở màn "
-        "«Việc của tôi» chứ không ban hành thẳng ở đây.",
+        f"Không ban hành được: phiên duyệt của văn bản này đã kết thúc ở trạng thái "
+        f"«{nhan}»{f' lúc {ngay}' if ngay else ''}{ly_do}. "
+        "Người soạn sửa lại rồi gửi duyệt lần nữa thì mới có bản để ban hành.",
     )
 
 
@@ -147,6 +209,28 @@ def dam_bao_co_luong_rieng(db: Session, doc: Document) -> None:
 
 # ── Hàm chạy khi phiên duyệt kết thúc ───────────────────────────────────────
 
+def _ghi_nhat_ky(db: Session, document_id: int, instance, action: str, cau: str) -> None:
+    """Ghi kết cục vào NHẬT KÝ THAO TÁC của chính văn bản.
+
+    ⚠️ Thiếu nhịp này thì thẻ *Lịch sử thao tác* của văn bản dừng lại ở dòng
+    «Gửi duyệt»: người soạn mở ra thấy trạng thái đã thành «Trả về» mà không có
+    một dòng nào nói ai trả, lúc nào, vì sao (lỗi khách báo 24/08/2026). Dấu vết
+    phiên duyệt có ghi, nhưng đó là thẻ khác — và nó biến mất khỏi tầm mắt ngay
+    khi người ta gửi duyệt lại lần sau.
+
+    Đặt ở đây chứ không ở `service`: đường ĐI QUA CONTROLLER (luồng một bước) đã
+    tự ghi nhật ký rồi, còn đường qua bộ máy nhiều bước thì không đi qua
+    controller nào của văn bản cả.
+    """
+    from app.core.audit import record
+
+    record(db, instance.updated_by or 0, ENTITY, document_id, action, cau)
+
+
+def _ly_do(instance, mac_dinh: str) -> str:
+    return (instance.finish_reason or "").strip() or mac_dinh
+
+
 def _khi_duyet_xong(db: Session, document_id: int, instance) -> None:
     """Duyệt hết các bước = ban hành: cấp số, khóa phiên bản, chuyển hiệu lực.
 
@@ -159,20 +243,42 @@ def _khi_duyet_xong(db: Session, document_id: int, instance) -> None:
     doc = db.get(Document, document_id)
     if doc is not None:
         service.approve(db, doc, instance.updated_by or 0)
+        #  Câu ghi KHÔNG lặp lại nhãn hành động: giao diện đã in "Duyệt: …" nên
+        #  ghi thêm chữ "duyệt" nữa thành "Duyệt: Duyệt xong…".
+        _ghi_nhat_ky(db, document_id, instance, "approved",
+                     "Xong hết các bước của luồng — ban hành")
 
 
 def _khi_tu_choi(db: Session, document_id: int, instance) -> None:
+    """Từ chối → văn bản **Đã từ chối**: khóa sửa, làm lại thì sao chép.
+
+    Từ 24/08/2026 đây KHÔNG còn cùng đường với «trả lại». Trước đó cả hai đều đổ
+    về Nháp, nên người soạn mở văn bản ra chỉ thấy «Nháp» và không cách nào biết
+    nó vừa bị dẹp hay đang được mời sửa lại.
+    """
     from . import service
 
     doc = db.get(Document, document_id)
     if doc is not None:
-        service.reject(db, doc, instance.finish_reason or "Bị từ chối", instance.updated_by or 0)
+        ly_do = _ly_do(instance, "Bị từ chối")
+        service.tu_choi(db, doc, ly_do, instance.updated_by or 0)
+        _ghi_nhat_ky(db, document_id, instance, "rejected", ly_do)
 
 
 def _khi_tra_lai(db: Session, document_id: int, instance) -> None:
-    """Trả lại cũng đưa bản nháp về trạng thái sửa được — cùng đường với từ chối
-    ở phía văn bản, khác nhau ở chỗ phiếu duyệt còn gửi lại được."""
-    _khi_tu_choi(db, document_id, instance)
+    """Trả lại → văn bản **Trả về**: sửa được và gửi duyệt lại được.
+
+    Chỉ chạy khi phiếu trả về TẬN người nộp (`INSTANCE_RETURNED`). Trả về một
+    bước phía trước thì phiên vẫn chạy, bộ máy không gọi hook nào — đúng vậy, văn
+    bản phải giữ nguyên «Đang duyệt» vì nó vẫn đang trong luồng.
+    """
+    from . import service
+
+    doc = db.get(Document, document_id)
+    if doc is not None:
+        ly_do = _ly_do(instance, "Bị trả về")
+        service.tra_lai(db, doc, ly_do, instance.updated_by or 0)
+        _ghi_nhat_ky(db, document_id, instance, "returned", ly_do)
 
 
 def _khi_rut_lai(db: Session, document_id: int, instance) -> None:
@@ -181,16 +287,20 @@ def _khi_rut_lai(db: Session, document_id: int, instance) -> None:
     Phải có nhịp này, không thì rút xong văn bản kẹt ở *đang duyệt*: gửi duyệt
     lại không được (đường gửi chỉ nhận bản nháp), mà nút ban hành MỘT BƯỚC lại
     mở ra vì `chan_duong_cu` chỉ khóa khi phiên còn đang chạy — thành đường tắt
-    ban hành không ai ký. Dùng lại `service.reject()` chứ không tự đặt trạng
-    thái: luật "bản đầu về nháp, bản thứ hai giữ nguyên vì bản trước còn hiệu
-    lực" nằm ở đó, chép ra đây là sớm muộn hai bên lệch nhau.
+    ban hành không ai ký. Dùng lại `service.rut_phieu()` chứ không tự đặt trạng
+    thái: luật "bản đầu đổi trạng thái, bản thứ hai giữ nguyên vì bản trước còn
+    hiệu lực" nằm ở đó, chép ra đây là sớm muộn hai bên lệch nhau.
+
+    Về **Nháp** chứ không phải «Trả về»: chính người nộp rút, không ai trả gì cho
+    họ cả.
     """
     from . import service
 
     doc = db.get(Document, document_id)
     if doc is not None:
-        service.reject(db, doc, f"[Rút phiếu] {instance.finish_reason or ''}".strip(),
-                       instance.updated_by or 0)
+        ly_do = _ly_do(instance, "")
+        service.rut_phieu(db, doc, ly_do, instance.updated_by or 0)
+        _ghi_nhat_ky(db, document_id, instance, "withdrawn", ly_do or "Người nộp tự rút")
 
 
 entity_hooks.register(
@@ -213,3 +323,23 @@ def _boi_canh_theo_id(db: Session, document_id: int) -> dict:
 
 
 entity_hooks.register_subject(ENTITY, _boi_canh_theo_id)
+
+
+def _doc_duoc_van_ban(db: Session, document_id: int, user) -> bool:
+    """Người này có đọc được văn bản của phiếu duyệt đó không.
+
+    Bộ máy duyệt hỏi qua đây để biết ai được xem phiếu và ai được ghi ý kiến —
+    xem `entity_hooks._READERS`. Dùng lại đúng luật đọc của văn bản
+    (`access_service.can`), không chép một bản luật thứ hai.
+    """
+    from app.core.auth import get_perm_profile
+
+    from . import access_service
+
+    doc = db.get(Document, document_id)
+    if doc is None:
+        return False
+    return access_service.can(db, doc, user, get_perm_profile(db, user), "read")
+
+
+entity_hooks.register_reader(ENTITY, _doc_duoc_van_ban)

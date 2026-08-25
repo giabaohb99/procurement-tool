@@ -12,23 +12,29 @@ import logging
 from datetime import date
 
 from fastapi import HTTPException
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.modules.attachment.model import FileLink
 from app.modules.doc_catalog.model import DocType
+
+from . import type_metadata
 from app.modules.doc_catalog.security_level_model import (KIND_CONFIDENTIAL,
                                                           KIND_URGENCY)
 from app.modules.doc_catalog.security_level_service import (ensure_valid,
                                                             value_of_code)
 
 from . import numbering
-from .model import (ALIVE_STATUSES, APPLY_MODE_LABELS, STATUS_APPROVED, STATUS_DRAFT,
-                    STATUS_EFFECTIVE, STATUS_REVOKED, STATUS_SUBMITTED,
-                    Document)
+from .model import (ALIVE_STATUSES, APPLY_MODE_LABELS, EDITABLE_STATUSES,
+                    STATUS_APPROVED, STATUS_DRAFT, STATUS_EFFECTIVE,
+                    STATUS_REJECTED, STATUS_RETURNED, STATUS_REVOKED,
+                    STATUS_SUBMITTED, Document)
 from .query import documents_query
 from .schema import DocumentCreate, DocumentUpdate
-from .version_model import (VERSION_APPROVED, VERSION_DRAFT, VERSION_SUBMITTED,
-                            VERSION_SUPERSEDED, DocumentVersion)
+from .version_model import (OPEN_STATUSES, VERSION_APPROVED, VERSION_DRAFT,
+                            VERSION_REJECTED, VERSION_RETURNED,
+                            VERSION_SUBMITTED, VERSION_SUPERSEDED,
+                            DocumentVersion)
 
 #  Cấp số lúc nào — `doc_type.number_when`.
 NUMBER_ON_DRAFT = 1
@@ -57,11 +63,16 @@ def get_or_404(db: Session, document_id: int) -> Document:
 
 
 def open_version(db: Session, doc: Document) -> DocumentVersion | None:
-    """Phiên bản đang mở (nháp hoặc đang duyệt). Nhiều nhất một — ép bởi `open_slot`."""
+    """Phiên bản đang mở (nháp · đang duyệt · bị trả về). Nhiều nhất một — ép bởi `open_slot`.
+
+    Dùng thẳng `OPEN_STATUSES` chứ không liệt kê lại: danh sách này còn là biểu
+    thức của cột sinh `open_slot`, hai chỗ lệch nhau là câu truy vấn bỏ sót đúng
+    cái phiên bản mà UNIQUE vẫn đang giữ chỗ.
+    """
     return (
         db.query(DocumentVersion)
         .filter(DocumentVersion.document_id == doc.id,
-                DocumentVersion.status.in_((VERSION_DRAFT, VERSION_SUBMITTED)))
+                DocumentVersion.status.in_(OPEN_STATUSES))
         .order_by(DocumentVersion.major.desc(), DocumentVersion.minor.desc())
         .first()
     )
@@ -108,9 +119,16 @@ def create_document(db: Session, data: DocumentCreate, actor: int) -> Document:
     ensure_valid(db, KIND_CONFIDENTIAL, data.secrecy_level)
     ensure_valid(db, KIND_URGENCY, data.urgency)
 
-    payload = data.model_dump(exclude={"content_html", "secrecy_level"})
+    #  ⚠️ `metadata` PHẢI tách khỏi payload. Thuộc tính Python của cột đó tên là
+    #  `meta` (SQLAlchemy giữ riêng tên `metadata` cho `Base.metadata`), nên để
+    #  nguyên trong payload là `Document(metadata=...)` nổ ngay.
+    payload = data.model_dump(exclude={"content_html", "secrecy_level", "metadata"})
     doc = Document(
         **payload,
+        #  Người nghỉ mặc định là NGƯỜI CHỊU TRÁCH NHIỆM của văn bản — với đơn
+        #  nghỉ phép hai thứ đó là một. Khai tường minh trong metadata thì thắng.
+        meta=type_metadata.lam_sach(doc_type.code, data.metadata,
+                                    data.owner_employee_id),
         #  Bỏ trống thì theo mặc định của loại; loại đánh dấu "cả loại là loại
         #  bảo mật" thì kéo lên ít nhất mức Mật. Tra mức Mật theo MÃ chứ không
         #  viết số 3 vào mã — xem `value_of_code`.
@@ -151,10 +169,18 @@ def chan_sua_khi_dang_duyet(doc: Document) -> None:
 
     Cùng luật với nội dung, xem `version_service.chan_khi_dang_duyet`: muốn sửa
     thì rút phiếu → văn bản về Nháp.
+
+    Văn bản **ĐÃ TỪ CHỐI** cũng khóa ở đây, vì lý do khác: nó không còn đường đi
+    tiếp nào cả. Cho sửa thì người soạn gõ cả buổi rồi mới phát hiện không có nút
+    nào gửi lại được — đường đúng là *Sao chép* ra một bản nháp mới.
+    Còn **TRẢ VỀ** thì mở, đó chính là chỗ để sửa rồi gửi duyệt lại.
     """
     if doc.status == STATUS_SUBMITTED:
         raise HTTPException(409, "Văn bản đang trình duyệt nên khóa thông tin. "
                                  "Muốn sửa thì rút phiếu duyệt (hoặc chờ người duyệt trả lại).")
+    if doc.status == STATUS_REJECTED:
+        raise HTTPException(409, "Văn bản đã bị từ chối nên khóa. "
+                                 "Muốn làm lại thì bấm «Sao chép» để có bản nháp mới.")
 
 
 def update_document(db: Session, doc: Document, data: DocumentUpdate, actor: int) -> Document:
@@ -187,6 +213,16 @@ def update_document(db: Session, doc: Document, data: DocumentUpdate, actor: int
             source = db.get(Document, link.target_document_id)
             if source:
                 ensure_secrecy_within_source(values["secrecy_level"], source.secrecy_level)
+
+    #  ⚠️ `metadata` KHÔNG đi qua vòng `setattr` bên dưới. Thuộc tính đó trên lớp
+    #  khai báo là `Base.metadata` (đối tượng MetaData của SQLAlchemy); gán đè lên
+    #  bản ghi thì nó nằm trong `__dict__` của instance và **không bao giờ xuống
+    #  CSDL** — mất dữ liệu im lặng, API vẫn trả 200.
+    if "metadata" in values:
+        loai = db.get(DocType, values.get("doc_type_id", doc.doc_type_id))
+        doc.meta = type_metadata.lam_sach(
+            loai.code if loai else "", values.pop("metadata"),
+            values.get("owner_employee_id", doc.owner_employee_id))
 
     for key, value in values.items():
         setattr(doc, key, value)
@@ -239,10 +275,33 @@ def delete_document(db: Session, doc: Document):
     Đã cấp số thì số đó đã nằm trong sổ; xóa bản ghi đi là sổ thủng một lỗ không
     giải thích được. Cách đúng là bãi bỏ, giữ nguyên dòng.
     """
-    if doc.status != STATUS_DRAFT:
-        raise HTTPException(400, "Chỉ xóa được văn bản đang ở trạng thái nháp")
+    #  Cả «Trả về»: bản đó chưa từng được ban hành nên chưa có gì trong sổ để mà
+    #  thủng. Bắt người soạn giữ lại một bản nháp bị trả mà họ đã quyết định bỏ
+    #  thì danh sách chỉ dài thêm.
+    if doc.status not in EDITABLE_STATUSES:
+        raise HTTPException(400, "Chỉ xóa được văn bản đang ở trạng thái nháp hoặc bị trả về")
     if doc.doc_code or doc.issue_number:
         raise HTTPException(400, "Văn bản đã cấp số, không xóa được. Hãy bãi bỏ văn bản.")
+
+    #  Dọn PHIẾU DUYỆT trước khi xóa văn bản, trong cùng giao dịch. Văn bản ở
+    #  «Trả về» thì gần như luôn CÓ một phiếu duyệt đã đóng — không dọn thì nó
+    #  nằm lại trỏ vào một văn bản không còn tồn tại (lỗi dựng lại được
+    #  24/08/2026 trên đúng đường hợp lệ: tạo → gửi duyệt → bị trả về → Xóa).
+    from app.modules.approval import instance_service
+
+    instance_service.xoa_theo_chung_tu(db, "document", doc.id)
+
+    #  Và dọn QUAN HỆ — cả hai chiều. Cùng một loại lỗi, tìm ra ngay sau đó khi
+    #  soi dữ liệu dev: hai dòng quan hệ mồ côi có từ 19/08 và 21/08. Văn bản
+    #  còn sống mở tab «Quan hệ» ra thì thấy một dòng *Có kèm theo* trỏ vào chỗ
+    #  trống (`document: null`) — người đọc không biết nó từng là cái gì, mà cũng
+    #  không bấm vào đâu được.
+    from .link_model import DocumentLink
+
+    db.query(DocumentLink).filter(
+        or_(DocumentLink.source_document_id == doc.id,
+            DocumentLink.target_document_id == doc.id)
+    ).delete(synchronize_session=False)
 
     version_ids = [
         row[0] for row in
@@ -258,8 +317,41 @@ def delete_document(db: Session, doc: Document):
     db.commit()
 
 
+def bo_ban_nhap_cua_minh(db: Session, doc: Document, actor: int) -> None:
+    """Bỏ BẢN NHÁP DO CHÍNH MÌNH vừa mở ra — không đòi quyền `delete`.
+
+    Từ 24/08/2026 màn *Tạo văn bản* bấm «Tiếp tục» là đã ghi một bản nháp thật
+    xuống CSDL (để quay lại không mất dữ liệu đã gõ), nên nút «Hủy» buộc phải dọn
+    được cái nháp đó. Nhưng vai trò soạn thảo tiêu chuẩn (`vanban_sua`) **cố ý
+    không có `delete`** — không cho xóa văn bản của người khác. Kết quả dựng lại
+    được: bấm Tiếp tục rồi bấm Hủy → **403**, và bản nháp nằm lại vĩnh viễn vì
+    chính người tạo cũng không có quyền xóa nó.
+
+    Nên tách một cửa hẹp riêng: **tự bỏ nháp của mình** đi cùng quyền `create`,
+    vì đúng là mặt sau của thao tác vừa tạo ra nó. Hẹp ở ba chốt:
+    - chỉ trạng thái **Nháp** (còn «Trả về» đã đi qua tay người duyệt, bỏ nó là
+      xóa thật, vẫn phải có `delete`);
+    - chỉ **tài khoản đã tạo** ra nó;
+    - chưa cấp số — chốt này `delete_document` bên dưới giữ.
+    """
+    if doc.status != STATUS_DRAFT:
+        raise HTTPException(400, "Chỉ bỏ được văn bản đang ở trạng thái nháp")
+    if doc.created_by != actor:
+        raise HTTPException(403, "Chỉ người tạo mới bỏ được bản nháp này")
+    delete_document(db, doc)
+
+
 # ── Luồng duyệt một bước (TẠM — P3 thay) ─────────────────────────────────────
 def submit(db: Session, doc: Document, actor: int) -> Document:
+    """Trình bản đang mở đi duyệt. Nhận cả bản **bị trả về** — đó là cả mục đích
+    của trạng thái đó: sửa xong thì gửi lại trên chính văn bản này, không phải
+    dựng bản mới."""
+    #  Nói thẳng ở đây thay vì để rơi xuống câu "không có bản nháp nào": văn bản
+    #  bị từ chối thì `open_version` không thấy gì cả, mà câu đó không gợi được
+    #  đường ra nào cho người đọc.
+    if doc.status == STATUS_REJECTED:
+        raise HTTPException(400, "Văn bản đã bị từ chối, không gửi duyệt lại được. "
+                                 "Bấm «Sao chép» để có bản nháp mới.")
     version = open_version(db, doc)
     if not version:
         raise HTTPException(400, "Văn bản không có bản nháp nào để gửi duyệt")
@@ -275,6 +367,14 @@ def submit(db: Session, doc: Document, actor: int) -> Document:
     #  ban hành ra cũng không ai biết nó hướng dẫn cho cái gì.
     from .link_service import ensure_required_links
     ensure_required_links(db, doc)
+
+    #  Phần RIÊNG CỦA LOẠI phải khai đủ trước khi gửi. Người duyệt mở đơn nghỉ
+    #  phép ra mà không có ngày nghỉ lẫn lý do thì họ duyệt cái gì.
+    #
+    #  Chặn ở lúc GỬI, không phải lúc lưu nháp — cùng luật với `required-fields.ts`
+    #  của Thu mua: lưu dở dang là quyền của người soạn, gửi đi mới là cam kết.
+    loai = db.get(DocType, doc.doc_type_id)
+    type_metadata.bat_buoc_khi_gui_duyet(loai.code if loai else "", doc.meta)
 
     #  Kiểm TRA LUỒNG trước khi chuyển bản nháp sang «Đang duyệt». Bản clone
     #  bắt buộc có luồng riêng của pháp nhân nhận; chặn sau `db.commit()` sẽ để
@@ -433,26 +533,38 @@ def approve(db: Session, doc: Document, actor: int,
     return doc
 
 
-def reject(db: Session, doc: Document, reason: str, actor: int) -> Document:
-    """Trả lại bản nháp kèm lý do. Bản nháp giữ nguyên nội dung để sửa tiếp."""
+def _dong_phien_duyet(db: Session, doc: Document, reason: str, actor: int, *,
+                      nhan: str, trang_thai_ban: int,
+                      trang_thai_van_ban: int) -> Document:
+    """Nền chung của BA nhịp kết thúc phiên duyệt: trả về · từ chối · rút phiếu.
+
+    Ba nhịp khác nhau đúng hai con số (trạng thái phiên bản, trạng thái văn bản)
+    và cái nhãn ghi vào lý do sửa. Mọi thứ còn lại — chốt "có bản nào đang chờ
+    duyệt không", luật *bản thứ hai trở đi giữ nguyên trạng thái văn bản*, đồng
+    bộ cột theo dõi bản clone — phải giống nhau tuyệt đối, nên nằm một chỗ. Chép
+    ra ba bản là sớm muộn có một bản quên luật bản 2.0 và kéo văn bản đang có
+    hiệu lực về nháp.
+
+    ⚠️ Ở đây từng có một khối F13 (chốt cơ chế áp dụng) bị chép nhầm từ
+    `approve()` sang. Hàm cũ không có tham số `apply_mode` nên MỌI lần trả lại
+    văn bản đều nổ `NameError` — im lặng cho tới 17/08 vì chưa bài kiểm nào gọi
+    tới. Đã bỏ: chốt cơ chế áp dụng là việc của lúc BAN HÀNH.
+    """
     version = open_version(db, doc)
     if not version or version.status != VERSION_SUBMITTED:
         raise HTTPException(400, "Không có bản nào đang chờ duyệt")
 
-    #  ⚠️ Ở đây từng có một khối F13 (chốt cơ chế áp dụng) bị chép nhầm từ
-    #  `approve()` sang. Hàm này không có tham số `apply_mode` nên MỌI lần trả
-    #  lại văn bản đều nổ `NameError` — im lặng cho tới 17/08 vì chưa bài kiểm
-    #  nào gọi `reject()`. Đã bỏ: chốt cơ chế áp dụng là việc của lúc BAN HÀNH,
-    #  trả lại thì chưa ban hành gì cả.
-    version.status, version.updated_by = VERSION_DRAFT, actor
+    version.status, version.updated_by = trang_thai_ban, actor
     version.change_reason = (
-        f"{version.change_reason}\n[Trả lại] {reason}".strip()
-        if version.change_reason else f"[Trả lại] {reason}"
+        f"{version.change_reason}\n[{nhan}] {reason}".strip()
+        if version.change_reason else f"[{nhan}] {reason}"
     )
-    #  Bản đầu tiên bị trả về nháp; bản thứ hai trở đi thì VĂN BẢN giữ nguyên
-    #  trạng thái vì bản trước đó vẫn đang có hiệu lực.
+    #  Bản đầu tiên kéo cả văn bản theo; bản thứ hai trở đi thì VĂN BẢN GIỮ
+    #  NGUYÊN trạng thái vì bản trước đó vẫn đang có hiệu lực — chỗ dễ sai số 7
+    #  của `van-thu/02`. Lúc đó chỗ duy nhất nói được "bản này vừa bị trả" là
+    #  dòng phiên bản, nên nó phải có thang trạng thái riêng.
     if version.prev_version_id is None:
-        doc.status = STATUS_DRAFT
+        doc.status = trang_thai_van_ban
     doc.updated_by = actor
 
     #  Bản clone bị trả lại thì quay về "Đang soạn" ở bảng theo dõi — để nguyên
@@ -463,6 +575,39 @@ def reject(db: Session, doc: Document, reason: str, actor: int) -> Document:
     db.commit()
     db.refresh(doc)
     return doc
+
+
+def tra_lai(db: Session, doc: Document, reason: str, actor: int) -> Document:
+    """TRẢ VỀ kèm lý do — còn đường đi tiếp: sửa rồi **gửi duyệt lại**.
+
+    Nội dung giữ nguyên để sửa tiếp, và phiên bản vẫn giữ `open_slot` nên không
+    ai mở được một bản nháp thứ hai chen vào giữa.
+    """
+    return _dong_phien_duyet(db, doc, reason, actor, nhan="Trả về",
+                             trang_thai_ban=VERSION_RETURNED,
+                             trang_thai_van_ban=STATUS_RETURNED)
+
+
+def tu_choi(db: Session, doc: Document, reason: str, actor: int) -> Document:
+    """TỪ CHỐI kèm lý do — hết đường: khóa sửa, muốn làm lại thì *Sao chép*.
+
+    Phiên bản **nhả `open_slot`** (xem `OPEN_STATUSES`): bản đó chết hẳn, giữ chỗ
+    thì văn bản bị nó chặn vĩnh viễn, không mở nổi bản mới.
+    """
+    return _dong_phien_duyet(db, doc, reason, actor, nhan="Từ chối",
+                             trang_thai_ban=VERSION_REJECTED,
+                             trang_thai_van_ban=STATUS_REJECTED)
+
+
+def rut_phieu(db: Session, doc: Document, reason: str, actor: int) -> Document:
+    """NGƯỜI NỘP TỰ RÚT — về Nháp, không phải "bị trả".
+
+    Cố ý khác hai nhịp trên: không ai trả gì cho ai, nên đừng treo lên phiếu một
+    trạng thái đọc như bị người khác đánh giá.
+    """
+    return _dong_phien_duyet(db, doc, reason, actor, nhan="Rút phiếu",
+                             trang_thai_ban=VERSION_DRAFT,
+                             trang_thai_van_ban=STATUS_DRAFT)
 
 
 def xac_nhan_da_ra_soat(db: Session, doc: Document, ket_luan: str, actor: int) -> Document:

@@ -37,7 +37,8 @@ doc_type_router = make_crud_router(
     "/api/doc-types", "doc_type", DocType,
     DocTypeCreate, DocTypeUpdate, DocTypeOut,
     ["code", "name", "group_code", "is_active", "id_scheme", "default_secrecy",
-     "is_confidential_type", "needs_approval", "needs_signature", "needs_decision"],
+     "is_confidential_type", "is_personal", "needs_approval", "needs_signature",
+     "needs_decision"],
     before_update=_guard_doc_type,
     csv_headers={"id": "ID", "code": "Mã loại", "name": "Tên loại văn bản",
                  "group_code": "Nhóm", "description": "Mô tả"})

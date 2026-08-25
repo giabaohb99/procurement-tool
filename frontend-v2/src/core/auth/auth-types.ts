@@ -12,9 +12,19 @@ export interface AuthUser {
   avatar?: string
   signature?: string
   phone?: string
+  department_id?: number
   department_name?: string
   role_name?: string
   position?: string
+  /**
+   * Vai trò ĐANG GIỮ (id), không phải quyền — quyền nằm ở `permissions`.
+   *
+   * Màn Phân quyền dùng nó để khóa ma trận của chính vai trò mình đang giữ.
+   * Backend đã chặn cửa đó (`core/privilege_escalation.py`), nhưng để người
+   * dùng tick thoải mái rồi mới ăn 403 lúc bấm Lưu thì họ tưởng hệ hỏng chứ
+   * không tưởng là có luật.
+   */
+  role_ids?: number[]
   permissions: PermissionMap
 }
 

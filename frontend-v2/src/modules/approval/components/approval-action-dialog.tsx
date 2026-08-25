@@ -38,6 +38,17 @@ interface ApprovalActionDialogProps {
 /** Ba việc BẮT BUỘC nêu lý do — backend chặn, giao diện nói trước cho đỡ mất công. */
 const CAN_LY_DO: ApprovalActionKind[] = ['reject', 'return', 'withdraw']
 
+/**
+ * Trần độ dài, phải khớp `DAI_TOI_DA_LY_DO` / `DAI_TOI_DA_Y_KIEN` ở
+ * `backend/app/modules/approval/instance_controller.py`.
+ *
+ * `1000` là ĐÚNG bề rộng cột `finish_reason`. Trước 24/08/2026 không nơi nào
+ * chặn: dán một đoạn dài vào ô lý do là nhận `500` trần, log ghi
+ * `Data too long for column`.
+ */
+const DAI_TOI_DA_LY_DO = 1000
+const DAI_TOI_DA_Y_KIEN = 5000
+
 /** Nhãn trên NÚT XÁC NHẬN — câu mệnh lệnh, khác nhãn trên thẻ chọn. */
 const NHAN_XAC_NHAN: Record<ApprovalActionKind, string> = {
   approve: 'Duyệt phiếu',
@@ -91,10 +102,13 @@ const VIEC = [
 export function ApprovalActionDialog({ task, open, onOpenChange }: ApprovalActionDialogProps) {
   const [kind, setKind] = useState<ApprovalActionKind>('approve')
   const [text, setText] = useState('')
-  const action = useApprovalAction(task.instance_id)
+  //  Truyền `entity` để hook nạp lại luôn dữ liệu CHỨNG TỪ, không chỉ phiên duyệt
+  //  — không thì trang chi tiết còn hiện trạng thái cũ tới lúc người dùng tự F5.
+  const action = useApprovalAction(task.instance_id, task.entity)
 
   const canLyDo = CAN_LY_DO.includes(kind)
   const thieuLyDo = canLyDo && !text.trim()
+  const gioiHan = canLyDo ? DAI_TOI_DA_LY_DO : DAI_TOI_DA_Y_KIEN
 
   function handleSubmit() {
     action.mutate(
@@ -190,6 +204,11 @@ export function ApprovalActionDialog({ task, open, onOpenChange }: ApprovalActio
           <Textarea
             id="approval-comment"
             rows={3}
+            //  Chặn ngay ở ô nhập, không để người ta gõ xong cả đoạn rồi mới
+            //  biết là quá dài. Backend cũng chặn (`DAI_TOI_DA_LY_DO`) — trước
+            //  24/08/2026 không nơi nào chặn nên một lý do dài quá cỡ cột đi
+            //  thẳng xuống CSDL và trả về `500` trần.
+            maxLength={canLyDo ? DAI_TOI_DA_LY_DO : DAI_TOI_DA_Y_KIEN}
             aria-invalid={thieuLyDo || undefined}
             placeholder={
               canLyDo
@@ -203,6 +222,13 @@ export function ApprovalActionDialog({ task, open, onOpenChange }: ApprovalActio
             <p className="flex items-center gap-1.5 text-sm text-destructive">
               <AlertTriangle className="size-3.5" />
               Phải nêu lý do thì người nộp mới biết sửa gì.
+            </p>
+          )}
+          {/*  Chỉ đếm khi đã gõ quá 4/5 hạn mức: hiện sẵn bộ đếm cho một ô mà
+               99% lượt dùng chỉ gõ một dòng là bày ra thứ chẳng ai cần. */}
+          {text.length > gioiHan * 0.8 && (
+            <p className="text-right text-xs text-muted-foreground">
+              {text.length}/{gioiHan} ký tự
             </p>
           )}
         </div>

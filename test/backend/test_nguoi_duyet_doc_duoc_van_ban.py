@@ -114,3 +114,52 @@ def test_van_ban_khac_thi_khong_theo_lay(db, canh, seed):
     ), ACTOR)
 
     assert _doc_duoc(db, khac, canh["tk_duyet"]) is False
+
+
+# ── Chiều ngược: KHÔNG đọc được văn bản thì cũng không đọc được PHIẾU của nó ──
+
+def test_nguoi_la_khong_doc_duoc_phien_duyet_va_khong_ghi_duoc_y_kien(db, canh):
+    """Lỗ bắt được 25/08/2026 khi chịu tải bốn nút của hộp «Duyệt / Trả lại».
+
+    Văn thư pháp nhân khác mở `/api/documents/507` ăn **404**, nhưng
+    `/api/approvals/of/document/507` trả **200** kèm tên văn bản, tên luồng, tên
+    người đang duyệt — và `/comment` cho họ ghi thẳng vào dấu vết phiếu, thứ sẽ
+    nằm trên bản in phê duyệt.
+
+    Bộ máy duyệt cố ý không biết đọc bảng văn bản, nên nó hỏi ngược qua
+    `entity_hooks.doc_duoc` — hàm mà module Văn bản tự khai.
+    """
+    from app.modules.approval import entity_hooks, instance_service
+
+    phien = instance_service.phien_dang_chay(db, ENTITY, canh["doc"].id)
+
+    assert entity_hooks.doc_duoc(db, phien, canh["tk_duyet"]) is True
+    assert entity_hooks.doc_duoc(db, phien, canh["tk_la"]) is False
+
+
+def test_loai_chung_tu_chua_khai_ham_kiem_thi_khong_bi_khoa_oan(db, canh):
+    """Siết ở bộ máy duyệt không được lặng lẽ khóa phiếu của phân hệ khác.
+
+    Thu mua chưa khai hàm kiểm quyền đọc, nên phiếu của nó phải chạy y như cũ.
+    """
+    from app.modules.approval import entity_hooks, instance_service
+
+    phien = instance_service.phien_dang_chay(db, ENTITY, canh["doc"].id)
+    phien.entity = "purchase_request"      # loại chưa khai `_READERS`
+
+    assert entity_hooks.doc_duoc(db, phien, canh["tk_la"]) is True
+
+
+def test_khong_ghi_duoc_y_kien_vao_phien_DA_KET_THUC(db, canh):
+    """Ý kiến nằm chung bảng với quyết định và đi thẳng lên bản in dấu vết —
+    cho ghi tiếp sau khi phiếu đóng nghĩa là tờ giấy đã ký vẫn dài thêm được."""
+    from app.modules.approval import action_service, instance_service
+
+    phien = instance_service.phien_dang_chay(db, ENTITY, canh["doc"].id)
+    action_service.gop_y(db, phien, canh["tk_duyet"].employee_id, ACTOR, "Còn mở thì ghi được")
+
+    action_service.duyet(db, phien, canh["tk_duyet"].employee_id, ACTOR, {})
+
+    with pytest.raises(HTTPException) as loi:
+        action_service.gop_y(db, phien, canh["tk_duyet"].employee_id, ACTOR, "Ghi thêm sau khi đóng")
+    assert loi.value.status_code == 400

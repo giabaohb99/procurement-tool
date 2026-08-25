@@ -1,8 +1,10 @@
 import { ChevronDown, Settings2 } from 'lucide-react'
 import { useState } from 'react'
 
+import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { Button } from '@/shared/ui/button'
+import { DepartmentMultiSelect } from '@/shared/ui/department-multi-select'
 import { EmployeeMultiSelect } from '@/shared/ui/employee-multi-select'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
@@ -58,6 +60,9 @@ export function ApprovalNodeForm({
 }: ApprovalNodeFormProps) {
   const { data: options } = useApprovalOptions()
   const { data: employeePage } = useEmployees({ page_size: 1000, is_active: true })
+  //  Cả danh sách phòng ban của mọi pháp nhân: luồng có thể trỏ sang phòng của
+  //  pháp nhân khác (Nhân sự tập đoàn duyệt phép cho công ty con chẳng hạn).
+  const { data: departmentPage } = useDepartments({ page_size: 1000 })
   const [moNangCao, setMoNangCao] = useState(false)
 
   const [form, setForm] = useState<Partial<ApprovalNode>>(() => ({
@@ -83,6 +88,8 @@ export function ApprovalNodeForm({
   }
 
   const chonDichDanh = form.approver_kind === APPROVER_KIND.employee
+  //  Chọn GHẾ chứ không chọn người: `approver_ref` là danh sách id phòng ban.
+  const chonPhongBan = form.approver_kind === APPROVER_KIND.deptHeadOf
   //  Chỉ ba cách cần ô nhập; ba cách còn lại (trưởng bộ phận, đại diện pháp
   //  nhân, đích danh) tự suy ra người nên bày ô trống chỉ tổ làm người dùng
   //  tưởng mình quên điền.
@@ -130,6 +137,21 @@ export function ApprovalNodeForm({
             employees={employeePage?.items ?? []}
             placeholder="Chọn người duyệt…"
           />
+        )}
+
+        {chonPhongBan && (
+          <>
+            <DepartmentMultiSelect
+              value={danhSachId(form.approver_ref)}
+              onChange={(ids) => dat('approver_ref', ghepId(ids))}
+              departments={departmentPage?.items ?? []}
+              placeholder="Chọn phòng ban…"
+            />
+            <p className="text-xs text-muted-foreground">
+              Bước giao cho TRƯỞNG BỘ PHẬN của những phòng này, không phải phòng của
+              người nộp. Đổi người làm trưởng phòng thì luồng tự đi theo.
+            </p>
+          </>
         )}
 
         {canOThem && (

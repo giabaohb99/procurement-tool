@@ -1,12 +1,14 @@
 import { Loader2, Save, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
+import { useAuth } from '@/core/auth/use-auth'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
+import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -37,6 +39,7 @@ export function RolePermissionPage() {
   const [matrix, setMatrix] = useState<Record<string, RolePermissionRow>>({})
 
   const { can } = usePermission()
+  const { user } = useAuth()
   const { data: roles, isLoading: rolesLoading } = useRoles()
   const { data: meta, isLoading: metaLoading } = usePermissionMeta()
   const { data: savedRows, isFetching: permissionsLoading } = useRolePermissions(
@@ -51,7 +54,14 @@ export function RolePermissionPage() {
   }
 
   const selectedRole = roles?.find((role) => role.id === selectedRoleId) ?? null
-  const canWriteRole = can('role', 'write')
+
+  //  Vai trò MÌNH ĐANG GIỮ thì chỉ xem, không sửa. Tick thêm một ô vào đây là
+  //  quyền của chính mình lên ngay ở request sau — cửa sau của tự nâng quyền,
+  //  backend đã chặn bằng `privilege_escalation.chan_sua_vai_tro_cua_chinh_minh`.
+  //  Khóa luôn ở giao diện để người ta biết là có LUẬT, chứ không tick xong hai
+  //  chục ô rồi ăn 403 và tưởng hệ hỏng (CR-158).
+  const dangGiuVaiTroNay = !!selectedRoleId && !!user?.role_ids?.includes(selectedRoleId)
+  const canWriteRole = can('role', 'write') && !dangGiuVaiTroNay
 
   async function handleSave() {
     if (!selectedRoleId || !meta) return
@@ -117,7 +127,10 @@ export function RolePermissionPage() {
 
                     <div className="flex items-center gap-2">
                       <PermissionGate entity="role" action="write">
-                        <Button onClick={handleSave} disabled={savePermissions.isPending}>
+                        <Button
+                          onClick={handleSave}
+                          disabled={savePermissions.isPending || dangGiuVaiTroNay}
+                        >
                           {savePermissions.isPending ? (
                             <Loader2 className="animate-spin" />
                           ) : (
@@ -128,19 +141,30 @@ export function RolePermissionPage() {
                       </PermissionGate>
 
                       <PermissionGate entity="role" action="delete">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="text-destructive hover:text-destructive"
+                        {/*  Trước 25/08/2026 nút này XÓA NGAY, không hỏi gì: một
+                             biểu tượng nhỏ cạnh nút Lưu, bấm nhầm là mất cả vai
+                             trò lẫn ma trận quyền của nó. */}
+                        <ConfirmIconButton
+                          icon={Trash2}
                           title="Xóa vai trò"
-                          onClick={handleDelete}
+                          destructive
                           disabled={deleteRole.isPending}
-                        >
-                          <Trash2 />
-                        </Button>
+                          confirmTitle={`Xóa vai trò «${selectedRole.name}»?`}
+                          confirmDescription="Ma trận quyền của vai trò này sẽ mất theo. Vai trò đang gán cho tài khoản nào thì phải gỡ hết mới xóa được."
+                          confirmLabel="Xóa vai trò"
+                          onConfirm={handleDelete}
+                        />
                       </PermissionGate>
                     </div>
                   </div>
+
+                  {dangGiuVaiTroNay && (
+                    <p className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                      Bạn đang giữ vai trò này nên chỉ xem được, không sửa. Tự tick
+                      thêm quyền cho vai trò của chính mình là tự nâng quyền — nhờ
+                      một quản trị khác thao tác.
+                    </p>
+                  )}
 
                   {metaLoading || permissionsLoading || !meta ? (
                     <Skeleton className="h-96 w-full" />

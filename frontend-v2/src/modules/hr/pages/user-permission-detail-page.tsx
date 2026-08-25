@@ -2,6 +2,7 @@ import { ArrowLeft, Filter, Loader2, Save } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
+import { useAuth } from '@/core/auth/use-auth'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
@@ -31,13 +32,35 @@ export function UserPermissionDetailPage() {
 
   const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([])
   const [scopeRoleId, setScopeRoleId] = useState<number | null>(null)
+  // Người dùng đã tick/bỏ tick chưa, tính từ lần đồng bộ gần nhất với máy chủ.
+  const [dangTickDo, setDangTickDo] = useState(false)
 
+  const { user: dangDangNhap } = useAuth()
   const { data: account, isLoading, isError } = useUserAccount(userId)
   const { data: roles } = useRoles()
   const assignRoles = useAssignRoles(userId)
 
+  //  KHÔNG TỰ SỬA QUYỀN CỦA CHÍNH MÌNH — chốt hai người. Backend chặn ở
+  //  `core/privilege_escalation.py`; ở đây khóa luôn giao diện để người dùng
+  //  thấy LUẬT chứ không tick xong rồi ăn 403 và tưởng hệ hỏng (CR-158).
+  const laChinhMinh = !!dangDangNhap && dangDangNhap.id === userId
+
+  // Đổi sang tài khoản khác thì mọi thứ tick dở không còn nghĩa gì.
+  if (useHasChanged(userId)) {
+    setDangTickDo(false)
+    setSelectedRoleIds([])
+  }
+
   // Tài khoản vừa tải về / vừa lưu xong -> đồng bộ lại các vai trò đang tick.
-  if (useHasChanged(account)) setSelectedRoleIds(account?.role_ids ?? [])
+  //
+  // ⚠️ CHỈ đồng bộ khi người dùng CHƯA tick dở. React Query nạp lại `account`
+  // bất cứ lúc nào (hết hạn 30 giây rồi mount lại, một thao tác khác gọi
+  // `invalidateQueries(['hr'])`, người khác vừa sửa cùng tài khoản...). Bản cũ
+  // đồng bộ theo MỌI lượt nạp lại, nên một lượt nạp rơi vào giữa lúc đang tick
+  // là các ô vừa chọn lặng lẽ quay về bản đã lưu — không báo gì, và cú bấm
+  // «Lưu vai trò» ngay sau đó ghi xuống đúng bản cũ. Người dùng thấy toast
+  // «Đã lưu vai trò» rồi vào lại thì mất quyền vừa chọn (khách báo 25/08/2026).
+  if (useHasChanged(account) && !dangTickDo) setSelectedRoleIds(account?.role_ids ?? [])
 
   if (isLoading) {
     return (
@@ -62,12 +85,19 @@ export function UserPermissionDetailPage() {
     )
   }
 
-  const toggleRole = (roleId: number) =>
+  const toggleRole = (roleId: number) => {
+    setDangTickDo(true)
     setSelectedRoleIds((current) =>
       current.includes(roleId)
         ? current.filter((x) => x !== roleId)
         : [...current, roleId],
     )
+  }
+
+  // Lưu xong thì bản của máy chủ mới là bản chuẩn, mở lại đường đồng bộ để lượt
+  // nạp lại ngay sau đó (do `invalidateQueries`) ăn vào state.
+  const luuVaiTro = () =>
+    assignRoles.mutate(selectedRoleIds, { onSuccess: () => setDangTickDo(false) })
 
   const scopeRoleName = roles?.find((role) => role.id === scopeRoleId)?.name ?? ''
 
@@ -83,8 +113,8 @@ export function UserPermissionDetailPage() {
 
         <PermissionGate entity="user" action="write">
           <Button
-            onClick={() => assignRoles.mutate(selectedRoleIds)}
-            disabled={assignRoles.isPending}
+            onClick={luuVaiTro}
+            disabled={assignRoles.isPending || laChinhMinh}
           >
             {assignRoles.isPending ? <Loader2 className="animate-spin" /> : <Save />}
             Lưu vai trò
@@ -99,6 +129,14 @@ export function UserPermissionDetailPage() {
           {account.department_name || 'Chưa có phòng ban'}
         </p>
       </div>
+
+      {laChinhMinh && (
+        <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Đây là tài khoản của chính bạn nên chỉ xem được. Đổi quyền của mình phải
+          nhờ một quản trị khác — chốt hai người của phân quyền, tránh việc một
+          người tự nâng mình lên quản trị hệ thống bằng một lần bấm.
+        </p>
+      )}
 
       <Card>
         <CardHeader>
@@ -125,7 +163,11 @@ export function UserPermissionDetailPage() {
                 )}
               >
                 <label className="flex h-full min-w-0 flex-1 cursor-pointer items-center gap-3">
-                  <Checkbox checked={checked} onCheckedChange={() => toggleRole(role.id)} />
+                  <Checkbox
+                    checked={checked}
+                    disabled={laChinhMinh}
+                    onCheckedChange={() => toggleRole(role.id)}
+                  />
                   <span className="truncate font-medium text-navy">{role.name}</span>
                   <span className="shrink-0 font-mono text-xs text-muted-foreground">
                     {role.code}
@@ -137,6 +179,7 @@ export function UserPermissionDetailPage() {
                     variant="outline"
                     size="sm"
                     className="shrink-0"
+                    disabled={laChinhMinh}
                     onClick={() => setScopeRoleId(role.id)}
                   >
                     <Filter />

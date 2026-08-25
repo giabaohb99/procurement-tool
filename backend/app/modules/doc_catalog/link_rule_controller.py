@@ -21,7 +21,7 @@ router = APIRouter(prefix="/api/doc-type-link-rules", tags=["doc-type-link-rule"
 
 
 @router.get("/options")
-def list_options(user=Depends(require("doc_type", "read"))):
+def list_options(user=Depends(require("doc_link_rule", "read"))):
     """Danh sách giá trị cho form — để giao diện khỏi chép cứng nhãn tiếng Việt.
 
     Chép cứng thì đổi nhãn ở backend mà giao diện vẫn hiện nhãn cũ, và không ai
@@ -47,7 +47,7 @@ def list_options(user=Depends(require("doc_type", "read"))):
 def list_rules(
     source_type_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
-    user=Depends(require("doc_type", "read")),
+    user=Depends(require("doc_link_rule", "read")),
 ):
     rows = service.list_rules(db)
     if source_type_id:
@@ -59,7 +59,7 @@ def list_rules(
 def get_rule(
     rule_id: int,
     db: Session = Depends(get_db),
-    user=Depends(require("doc_type", "read")),
+    user=Depends(require("doc_link_rule", "read")),
 ):
     return success(service.serialize(db, service.get_or_404(db, rule_id)))
 
@@ -68,7 +68,7 @@ def get_rule(
 def create_rule(
     data: DocTypeLinkRuleCreate,
     db: Session = Depends(get_db),
-    user=Depends(require("doc_type", "create")),
+    user=Depends(require("doc_link_rule", "create")),
 ):
     rule = service.create_rule(db, data, user.id)
     record(db, user.id, "doc_type_link_rule", rule.id, "create")
@@ -80,7 +80,7 @@ def update_rule(
     rule_id: int,
     data: DocTypeLinkRuleUpdate,
     db: Session = Depends(get_db),
-    user=Depends(require("doc_type", "write")),
+    user=Depends(require("doc_link_rule", "write")),
 ):
     rule = service.update_rule(db, service.get_or_404(db, rule_id), data, user.id)
     record(db, user.id, "doc_type_link_rule", rule.id, "update")
@@ -91,7 +91,7 @@ def update_rule(
 def delete_rule(
     rule_id: int,
     db: Session = Depends(get_db),
-    user=Depends(require("doc_type", "delete")),
+    user=Depends(require("doc_link_rule", "delete")),
 ):
     service.delete_rule(db, service.get_or_404(db, rule_id))
     record(db, user.id, "doc_type_link_rule", rule_id, "delete")

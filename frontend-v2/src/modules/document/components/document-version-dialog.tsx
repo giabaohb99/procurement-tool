@@ -86,10 +86,10 @@ export function DocumentVersionDialog({
 
   const openVersion = useOpenVersion(documentId)
 
-  //  Bản đang dùng là gốc để backend tính số bản mới. Danh sách đã nằm sẵn
-  //  trong cache của tab Phiên bản nên đây không phải một lượt gọi thêm.
+  //  CẢ danh sách phiên bản, vì số bản mới tính từ số CAO NHẤT đã từng dùng chứ
+  //  không từ bản đang dùng (xem `soBanKeTiep`). Danh sách đã nằm sẵn trong cache
+  //  của tab Phiên bản nên đây không phải một lượt gọi thêm.
   const { data: versions = [] } = useDocumentVersions(documentId)
-  const banDangDung = versions.find((version) => version.is_current)
 
   function handleSubmit() {
     openVersion.mutate(
@@ -151,14 +151,14 @@ export function DocumentVersionDialog({
                 giaTri={String(CHANGE_KIND.major)}
                 dangChon={changeKind === String(CHANGE_KIND.major)}
                 ten="Sửa lớn"
-                banMoi={soBanKeTiep(banDangDung, CHANGE_KIND.major)}
+                banMoi={soBanKeTiep(versions, CHANGE_KIND.major)}
                 moTa="Đổi nội dung có ảnh hưởng tới người thực hiện; người đã đọc bản cũ phải xác nhận đã đọc lại."
               />
               <MucSua
                 giaTri={String(CHANGE_KIND.minor)}
                 dangChon={changeKind === String(CHANGE_KIND.minor)}
                 ten="Sửa nhỏ"
-                banMoi={soBanKeTiep(banDangDung, CHANGE_KIND.minor)}
+                banMoi={soBanKeTiep(versions, CHANGE_KIND.minor)}
                 moTa="Sửa lỗi chính tả, đổi số điện thoại — không đổi cách làm việc, không bắt ai đọc lại."
               />
             </RadioGroup>

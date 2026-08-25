@@ -77,7 +77,6 @@ export function DocumentReviewDialog({
   //  Danh sách phiên bản đã nằm sẵn trong cache của trang chi tiết — đây không
   //  phải một lượt gọi thêm.
   const { data: versions = [] } = useDocumentVersions(documentId)
-  const banDangDung = versions.find((version) => version.is_current)
   const banNhapDangMo = versions.find((version) => !version.is_locked)
 
   //  Cùng điều kiện backend kiểm (`version_service.open_new_version`), nói
@@ -227,7 +226,7 @@ export function DocumentReviewDialog({
                   },
                 ].map((muc) => {
                   const dangChon = changeKind === String(muc.value)
-                  const banMoi = soBanKeTiep(banDangDung, muc.value)
+                  const banMoi = soBanKeTiep(versions, muc.value)
                   return (
                     <label
                       key={muc.value}

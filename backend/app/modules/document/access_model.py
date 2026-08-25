@@ -49,7 +49,10 @@ SUBJECT_LABELS = {
 EFFECT_ALLOW = 1
 EFFECT_DENY = 2
 
-EFFECT_LABELS = {EFFECT_ALLOW: "Cho phép", EFFECT_DENY: "Cấm"}
+#  "Không cho phép" chứ không phải "Cấm" — CR-149 đã đổi chữ ở toàn bộ giao diện
+#  soạn thảo, nhưng nhãn ĐỌC RA từ đây thì sót lại, nên thẻ trên trang chi tiết
+#  vẫn ghi «Cấm» trong khi hộp chia quyền ghi «Không cho phép» (25/08/2026).
+EFFECT_LABELS = {EFFECT_ALLOW: "Cho phép", EFFECT_DENY: "Không cho phép"}
 
 
 class DocumentAccess(Base, AuditMixin):

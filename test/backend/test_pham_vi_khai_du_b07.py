@@ -67,10 +67,16 @@ def test_khong_khai_thua_entity_khong_ton_tai():
     assert thua == [], f"khai thừa, không có trong ENTITIES: {thua}"
 
 
-def test_du_40_entity():
-    """Chốt cứng con số để lần sau đọc test là biết ngay quy mô."""
-    assert len(ENTITIES) == 40
-    assert len(SCOPE_FIELDS) == 40
+def test_du_43_entity():
+    """Chốt cứng con số để lần sau đọc test là biết ngay quy mô.
+
+    39 → 42 ngày 25/08/2026 (CR-157): tách `doc_template`, `doc_numbering_rule`,
+    `doc_link_rule` ra khỏi `doc_type` để phân quyền Văn thư đi theo MÀN HÌNH
+    chứ không theo tên bảng.
+    42 → 43: thêm entity `assistant` cho Trợ lý AI (gác `assistant.read`).
+    """
+    assert len(ENTITIES) == 43
+    assert len(SCOPE_FIELDS) == 43
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

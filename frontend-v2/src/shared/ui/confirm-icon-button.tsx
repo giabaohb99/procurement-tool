@@ -50,7 +50,13 @@ export function ConfirmIconButton({
 
   return (
     <>
+      {/*  `type="button"` KHÔNG được bỏ: nút này hay nằm lọt trong một `<form>`
+           (thẻ quyền truy cập của văn bản nằm ngay trong form thông tin), mà
+           `<button>` không ghi type thì mặc định là **submit**. Hậu quả người
+           dùng thấy: bấm biểu tượng thu hồi, hộp xác nhận mới hiện ra thôi mà
+           toast «Cập nhật văn bản» đã nhảy — form vừa bị gửi đi (25/08/2026). */}
       <Button
+        type="button"
         variant="ghost"
         size="icon-sm"
         title={title}

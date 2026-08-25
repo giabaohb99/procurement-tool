@@ -13,7 +13,8 @@ import {
 } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
-import type { DocumentAccessInput } from '../types/document-access'
+import { SubjectChips } from './access-subject-chips'
+import type { DocumentAccessDraft, DocumentAccessInput } from '../types/document-access'
 
 /** Phần khai lại được cho cả cụm — đối tượng và chiều tác động thì không. */
 type GroupPatch = Pick<DocumentAccessInput, 'can_write' | 'can_delete' | 'valid_to' | 'reason'>
@@ -21,10 +22,18 @@ type GroupPatch = Pick<DocumentAccessInput, 'can_write' | 'can_delete' | 'valid_
 interface AccessGroupEditDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Cụm đang sửa là cụm CẤM — đổi chữ cho khỏi nhầm với cụm cho phép. */
+  /** Cụm đang sửa là cụm KHÔNG CHO PHÉP — đổi chữ cho khỏi nhầm với cụm cho phép. */
   deny: boolean
-  /** Số đối tượng trong cụm, để nói rõ thay đổi này chạm tới bao nhiêu người. */
-  count: number
+  /**
+   * CÁC DÒNG ĐANG CÓ trong cụm. Hộp mở ra phải hiện đúng thứ đã khai — cả bộ
+   * quyền lẫn danh sách đối tượng.
+   *
+   * ⚠️ Trước 24/08/2026 hộp này chỉ nhận mỗi `count` và mở ra với form TRẮNG:
+   * người dùng bấm «Sửa» để xem lại mình đã cho những ai, được làm gì, hạn tới
+   * bao giờ — và thấy một form rỗng y như khai mới. Bấm «Áp cho cả cụm» là ghi
+   * đè hết bằng giá trị trắng đó.
+   */
+  rows: DocumentAccessDraft[]
   onApply: (patch: GroupPatch) => void
 }
 
@@ -39,21 +48,46 @@ export function AccessGroupEditDialog({
   open,
   onOpenChange,
   deny,
-  count,
+  rows,
   onApply,
 }: AccessGroupEditDialogProps) {
+  //  Cả cụm dùng chung một bộ quyền nên đọc ở dòng đầu là đủ — cùng cách đọc
+  //  với dòng tóm tắt bên ngoài (`AccessGroup`).
+  const hienTai = rows[0]?.values
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Sửa quyền cụm {deny ? 'không cho phép' : 'cho phép'}</DialogTitle>
           <DialogDescription>
-            Áp cho cả {count} đối tượng trong cụm. Muốn khác nhau thì tách thành cụm riêng.
+            Áp cho cả {rows.length} đối tượng trong cụm. Muốn khác nhau thì tách thành cụm riêng.
           </DialogDescription>
         </DialogHeader>
 
-        {/* Ô nhập nằm trong component con nên đóng hộp là chữ đã gõ tự mất. */}
-        <GroupForm deny={deny} onCancel={() => onOpenChange(false)} onApply={onApply} />
+        {/*  Hiện luôn ĐANG ÁP CHO AI. Con số "3 đối tượng" không đủ để rà lại
+             trước khi ghi đè — người ta bấm Sửa chính là để xem lại danh sách. */}
+        {rows.length > 0 && (
+          <div className="space-y-1.5">
+            <Label>Đang áp cho</Label>
+            <SubjectChips
+              items={rows.map((row) => ({
+                key: `${row.values.subject_kind}-${row.values.subject_id}`,
+                label: row.subjectLabel || '(chưa rõ tên)',
+              }))}
+            />
+          </div>
+        )}
+
+        {/* Ô nhập nằm trong component con nên đóng hộp là chữ đã gõ tự mất.
+            `key` đổi theo cụm để mở cụm khác là nạp lại đúng giá trị của cụm đó. */}
+        <GroupForm
+          key={deny ? 'deny' : 'allow'}
+          deny={deny}
+          hienTai={hienTai}
+          onCancel={() => onOpenChange(false)}
+          onApply={onApply}
+        />
       </DialogContent>
     </Dialog>
   )
@@ -61,15 +95,17 @@ export function AccessGroupEditDialog({
 
 interface GroupFormProps {
   deny: boolean
+  /** Bộ quyền đang áp cho cụm — mở hộp ra là thấy đúng nó, không phải form trắng. */
+  hienTai?: DocumentAccessInput
   onCancel: () => void
   onApply: (patch: GroupPatch) => void
 }
 
-function GroupForm({ deny, onCancel, onApply }: GroupFormProps) {
-  const [canWrite, setCanWrite] = useState(false)
-  const [canDelete, setCanDelete] = useState(false)
-  const [validTo, setValidTo] = useState('')
-  const [reason, setReason] = useState('')
+function GroupForm({ deny, hienTai, onCancel, onApply }: GroupFormProps) {
+  const [canWrite, setCanWrite] = useState(hienTai?.can_write ?? false)
+  const [canDelete, setCanDelete] = useState(hienTai?.can_delete ?? false)
+  const [validTo, setValidTo] = useState(hienTai?.valid_to ?? '')
+  const [reason, setReason] = useState(hienTai?.reason ?? '')
 
   return (
     <>

@@ -120,6 +120,98 @@ def _book_ids(profile: dict, action: str):
                         DocumentBookMember.role.in_(roles))))
 
 
+def _loai_ca_nhan_ids(db_hoac_none=None):
+    """Id của những LOẠI văn bản bật cờ «văn bản cá nhân».
+
+    Trả về một `select(...)` để nhét thẳng vào `IN (...)` — không truy vấn ở đây,
+    vì `visible_condition` cố ý không nhận `Session` (nó chỉ dựng điều kiện).
+    """
+    from app.modules.doc_catalog.model import DocType
+
+    return select(DocType.id).where(DocType.is_personal.is_(True))
+
+
+def dieu_kien_van_ban_ca_nhan(user, profile: dict):
+    """VĂN BẢN CÁ NHÂN — ai được thấy. Trả điều kiện SQL, `None` = thấy tất cả.
+
+    Đơn nghỉ phép, đơn từ chức, phiếu lương… là dữ liệu của MỘT người. Phạm vi
+    vai trò không hợp với chúng: `document.read` phạm vi *công ty* vốn nghĩa là
+    "đọc mọi văn bản của pháp nhân", mà áp lên đơn nghỉ phép thì thành cả công ty
+    đọc được đơn xin nghỉ ốm của từng người — kể cả đồng nghiệp ngồi cạnh.
+
+    Nên với loại bật `is_personal`, phạm vi vai trò **không tính nữa**. Chỉ bốn
+    nguồn quyền còn hiệu lực, đều là "có chân trong chính tờ đơn":
+
+      1. người NGHỈ  — `metadata.employee_id`, hoặc `owner_employee_id`;
+      2. người TẠO   — trợ lý lập hộ vẫn phải mở lại được thứ mình vừa lập;
+      3. người ĐANG hoặc ĐÃ duyệt — ký rồi thì phải xem lại được thứ mình đã ký;
+      4. được CHIA ĐÍCH DANH.
+
+    Vai trò có phạm vi *tất cả* (HR, quản trị) vẫn thấy — đó là chủ ý: nhân sự
+    phải tổng hợp được ngày phép, và người quản trị phải gỡ được phiếu kẹt. Ai
+    được `all` là quyết định của người khai quyền, không phải của hàm này.
+
+    ⚠️ Trả về điều kiện dạng "HOẶC không phải loại cá nhân, HOẶC có chân trong
+    đơn" — nhân vào điều kiện chung chứ không thay thế nó. Thay thế là vô tình
+    mở thêm cho người vốn không đọc được văn bản thường.
+    """
+    employee_id = profile.get("employee_id") or 0
+    user_id = getattr(user, "id", 0) or 0
+
+    khong_phai_ca_nhan = ~Document.doc_type_id.in_(_loai_ca_nhan_ids())
+
+    co_chan = [Document.created_by == user_id]
+    if employee_id:
+        co_chan.append(Document.owner_employee_id == employee_id)
+        #  Người nghỉ ghi trong metadata. MySQL 8 và SQLite đều đọc được JSON
+        #  bằng toán tử của SQLAlchemy; so bằng CHUỖI vì JSON không hứa kiểu số.
+        co_chan.append(
+            Document.meta["employee_id"].as_string() == str(employee_id))
+        co_chan.append(Document.id.in_(_van_ban_minh_co_viec_duyet(employee_id)))
+
+    return or_(khong_phai_ca_nhan, *co_chan)
+
+
+def _la_van_ban_ca_nhan(db: Session, doc: Document) -> bool:
+    """Loại của văn bản này có bật cờ «văn bản cá nhân» không."""
+    from app.modules.doc_catalog.model import DocType
+
+    if not doc.doc_type_id:
+        return False
+    loai = db.get(DocType, doc.doc_type_id)
+    return bool(loai and loai.is_personal)
+
+
+def _co_chan_trong_don(doc: Document, user, profile: dict) -> bool:
+    """Người này là NGƯỜI NGHỈ hay NGƯỜI LẬP tờ đơn.
+
+    Hai vai còn lại (đang/đã duyệt · được chia đích danh) đã xét ở trên trong
+    `can()` nên không lặp lại ở đây.
+    """
+    employee_id = profile.get("employee_id") or 0
+    if doc.created_by and doc.created_by == (getattr(user, "id", 0) or 0):
+        return True
+    if not employee_id:
+        return False
+    if doc.owner_employee_id and doc.owner_employee_id == employee_id:
+        return True
+    return str((doc.meta or {}).get("employee_id") or "") == str(employee_id)
+
+
+def _van_ban_minh_co_viec_duyet(employee_id: int):
+    """Id văn bản mà người này đang hoặc ĐÃ có một việc duyệt.
+
+    Bản SQL của `dang_duyet_van_ban_nay` — dùng cho danh sách. Hai chỗ phải nói
+    cùng một câu, lệch nhau là chi tiết mở được mà danh sách không hiện.
+    """
+    from app.modules.approval.instance_model import ApprovalInstance, ApprovalTask
+
+    return (select(ApprovalInstance.entity_id)
+            .join(ApprovalTask, ApprovalTask.instance_id == ApprovalInstance.id)
+            .where(and_(ApprovalInstance.entity == "document",
+                        ApprovalTask.assignee_employee_id == employee_id)))
+
+
 def visible_condition(user, profile: dict, action: str = "read"):
     """Điều kiện lọc danh sách văn bản cho người đang đăng nhập.
 
@@ -150,18 +242,47 @@ def visible_condition(user, profile: dict, action: str = "read"):
     deny = _document_ids(profile, action, EFFECT_DENY)
     books = _book_ids(profile, action)
 
-    #  Hai nguồn CỘNG THÊM vào phạm vi vai trò: chia đích danh và thành viên sổ.
+    #  Ba nguồn CỘNG THÊM vào phạm vi vai trò: chia đích danh, thành viên sổ, và
+    #  việc duyệt của chính mình.
     extra = []
     if allow is not None:
         extra.append(Document.id.in_(allow))
     if books is not None:
         extra.append(and_(Document.book_id.isnot(None), Document.book_id.in_(books)))
 
+    #  ĐANG / ĐÃ DUYỆT — `can()` vẫn luôn mở quyền đọc cho người có việc ở phiếu
+    #  (xem `dang_duyet_van_ban_nay`), nhưng danh sách trước đây KHÔNG biết tới
+    #  nguồn này. Hệ quả: trưởng bộ phận mở được văn bản từ «Chờ tôi duyệt» mà gõ
+    #  đúng tiêu đề đó vào ô tìm kiếm lại không ra gì — hai tầng nói hai câu khác
+    #  nhau về cùng một văn bản, đúng cái bẫy `van-thu/06` §4.6 cảnh báo.
+    #
+    #  Chỉ CỘNG THÊM đúng những văn bản họ vốn đã mở được, nên không nới quyền
+    #  cho ai; và cũng chỉ ở chiều ĐỌC.
+    if action == "read" and (profile.get("employee_id") or 0):
+        extra.append(Document.id.in_(
+            _van_ban_minh_co_viec_duyet(profile["employee_id"])))
+
     if extra:
         #  `scope is None` = vai trò đã thấy tất cả, không cần cộng thêm gì.
         base = None if scope is None else or_(scope, *extra)
     else:
         base = scope
+
+    #  VĂN BẢN CÁ NHÂN (đơn nghỉ phép…) — thu hẹp, đặt NGAY SAU phần cộng thêm.
+    #
+    #  Đặt ở đây chứ không sớm hơn là có lý do: nó phải chặn được cả hai nguồn
+    #  cộng thêm bên trên. Chia đích danh thì vẫn cho qua (đó là một trong bốn
+    #  nguồn hợp lệ), nhưng «thành viên sổ» thì KHÔNG — quẳng đơn nghỉ phép vào
+    #  một quyển sổ chung là cả phòng Hành chính đọc được, đúng thứ đang chặn.
+    #
+    #  `scope is None` = vai trò phạm vi *tất cả* (HR, quản trị) → không siết.
+    if scope is not None:
+        ca_nhan = dieu_kien_van_ban_ca_nhan(user, profile)
+        #  Chia đích danh thắng: dòng CHO PHÉP là quyết định có ý thức của người
+        #  giữ văn bản, không phải hệ quả của một phạm vi khai rộng tay.
+        if allow is not None:
+            ca_nhan = or_(ca_nhan, Document.id.in_(allow))
+        base = ca_nhan if base is None else and_(base, ca_nhan)
 
     if deny is None:
         direct = base
@@ -276,6 +397,20 @@ def can(db: Session, doc: Document, user, profile: dict, action: str = "read") -
         if EFFECT_ALLOW in effects:
             return True
 
+    #  ── VĂN BẢN CÁ NHÂN — chốt chặn, đặt ĐÚNG CHỖ NÀY ────────────────────────
+    #
+    #  Trên chỗ này là ba nguồn quyền HỢP LỆ với đơn nghỉ phép và đều đã trả về
+    #  `True` nếu khớp: người đang/đã duyệt · dòng chia đích danh · (dòng CẤM đã
+    #  chặn từ trước). Dưới chỗ này là bốn nguồn KHÔNG được phép mở đơn của người
+    #  khác — phạm vi áp dụng, thành viên sổ, bản clone, phạm vi vai trò.
+    #
+    #  Nên nếu tới đây mà là văn bản cá nhân thì chỉ còn đúng hai người được đi
+    #  tiếp: người nghỉ và người lập đơn. Còn lại chặn thẳng, trừ vai trò phạm vi
+    #  *tất cả* (HR, quản trị) — họ phải tổng hợp được ngày phép và gỡ được phiếu
+    #  kẹt. Xem `dieu_kien_van_ban_ca_nhan` để đối chiếu với bản dùng cho danh sách.
+    if _la_van_ban_ca_nhan(db, doc) and not _co_chan_trong_don(doc, user, profile):
+        return scope_condition(Document, "document", user, profile, action) is None
+
     #  Người nằm trong PHẠM VI ÁP DỤNG phải mở được chính văn bản đã ban hành
     #  từ chuông/email, kể cả vai trò của họ không có phạm vi đọc phân hệ Văn
     #  bản. Khe này CHỈ cấp đọc; dòng cấm đích danh ở trên vẫn thắng tuyệt đối.
@@ -335,6 +470,51 @@ def list_access(db: Session, doc: Document, include_revoked: bool = True) -> lis
                       DocumentAccess.effect.desc(), DocumentAccess.id.desc()).all()
 
 
+def chan_tu_cam_chinh_minh(db: Session, data, actor: int) -> None:
+    """KHÔNG ai được tự đưa mình vào dòng CẤM — kể cả bằng cách gọi thẳng API.
+
+    Nhìn bảng luật ở đầu tệp: *cấm đích danh* thắng tất cả, **kể cả người tạo,
+    kể cả admin**. Nên tự cấm mình là tự khóa mình ra ngoài một văn bản mà chỉ
+    mình có quyền sửa — và vì không mở được nữa nên cũng không còn đường vào để
+    gỡ dòng cấm đó. Chỉ người khác cứu được.
+
+    Lỗi người dùng đã dính thật (24/08/2026): tự chặn xong, danh sách hiện «Tổng
+    0 văn bản» kèm ba toast đỏ liên tiếp. Giao diện nay đã bỏ tên mình khỏi ô
+    chọn, nhưng ẩn nút không phải là chốt chặn — gọi thẳng API vẫn tự chặn được
+    (dựng lại được trước khi có hàm này).
+
+    Chặn cả PHÒNG BAN và PHÁP NHÂN của mình: chặn phòng mình thì mình nằm trong
+    phòng đó, kết cục y hệt. **Vai trò thì không chặn** — người ta có thể giữ
+    nhiều vai trò và bỏ một vai trò không đồng nghĩa mất quyền xem.
+    """
+    if data.effect != EFFECT_DENY:
+        return
+
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    emp_id = db.query(User.employee_id).filter(User.id == actor).scalar()
+    if not emp_id:
+        return
+    emp = db.get(Employee, emp_id)
+    if emp is None:
+        return
+
+    cua_minh = {
+        SUBJECT_EMPLOYEE: emp.id,
+        SUBJECT_DEPARTMENT: emp.department_id or 0,
+        SUBJECT_COMPANY: emp.company_id or 0,
+    }
+    if cua_minh.get(data.subject_kind) and cua_minh[data.subject_kind] == data.subject_id:
+        ten = {SUBJECT_EMPLOYEE: "chính mình",
+               SUBJECT_DEPARTMENT: "phòng ban của mình",
+               SUBJECT_COMPANY: "pháp nhân của mình"}[data.subject_kind]
+        raise HTTPException(
+            400, f"Không chặn được {ten}: dòng cấm thắng cả quyền của người tạo, "
+                 "nên bạn sẽ không mở lại được văn bản này và cũng không còn đường "
+                 "vào để gỡ. Nhờ người khác chặn hộ nếu thật sự cần.")
+
+
 def grant(db: Session, doc: Document, data, actor: int) -> DocumentAccess:
     """Chia quyền cho một đối tượng. Đã có dòng còn sống thì SỬA dòng đó.
 
@@ -343,6 +523,8 @@ def grant(db: Session, doc: Document, data, actor: int) -> DocumentAccess:
     """
     if data.valid_from and data.valid_to and data.valid_from > data.valid_to:
         raise HTTPException(400, "Ngày hết hạn phải sau ngày bắt đầu")
+
+    chan_tu_cam_chinh_minh(db, data, actor)
 
     existing = (db.query(DocumentAccess)
                 .filter(DocumentAccess.document_id == doc.id,

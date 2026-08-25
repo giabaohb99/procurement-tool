@@ -50,7 +50,24 @@ class DocType(Base, AuditMixin):
     # Mức mật mặc định 1 Công khai · 2 Nội bộ · 3 Mật · 4 Tuyệt mật
     default_secrecy: Mapped[int] = mapped_column(SmallInteger, default=2)
     # Cả loại là loại bảo mật — mọi văn bản thuộc loại mặc định ở mức cao
+    #
+    # ⚠️ Cột này CHỈ đặt mức mật mặc định lúc tạo (`document/service.py`). Nó
+    # KHÔNG gác quyền đọc — `secrecy_level` hiện chỉ là nhãn hiển thị, không chỗ
+    # nào trong `access_service` nhìn tới nó. Muốn giấu thật thì dùng
+    # `is_personal` ngay dưới.
     is_confidential_type: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    #  VĂN BẢN CÁ NHÂN — đơn nghỉ phép, đơn từ chức, phiếu lương…
+    #
+    #  Loại bật cờ này thì văn bản của nó **không đi theo phạm vi vai trò** nữa.
+    #  Người có `document.read` phạm vi *công ty* vốn đọc được mọi văn bản trong
+    #  pháp nhân; với đơn nghỉ phép thì đó là cả công ty đọc được đơn xin nghỉ
+    #  ốm của từng người. Chỉ những người CÓ CHÂN trong tờ đơn mới thấy: người
+    #  nghỉ · người tạo · người đang/đã duyệt · người được chia đích danh · vai
+    #  trò phạm vi *tất cả* (HR/quản trị).
+    #
+    #  Luật đầy đủ ở `document/access_service.dieu_kien_van_ban_ca_nhan`.
+    is_personal: Mapped[bool] = mapped_column(Boolean, default=False)
 
     needs_approval: Mapped[bool] = mapped_column(Boolean, default=False)
     needs_signature: Mapped[bool] = mapped_column(Boolean, default=False)

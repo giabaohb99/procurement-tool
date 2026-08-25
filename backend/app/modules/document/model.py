@@ -18,8 +18,8 @@ Ba cái bẫy, đọc trước khi sửa (`van-thu/05`, `02` mục 6):
 """
 from datetime import date, datetime
 
-from sqlalchemy import (BigInteger, Boolean, CheckConstraint, Date, DateTime,
-                        Index, Integer, SmallInteger, String, Text,
+from sqlalchemy import (JSON, BigInteger, Boolean, CheckConstraint, Date,
+                        DateTime, Index, Integer, SmallInteger, String, Text,
                         UniqueConstraint)
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -41,6 +41,19 @@ STATUS_REPLACED = 5     # đã bị thay thế bởi văn bản khác
 STATUS_EXPIRED = 6      # hết hiệu lực theo ngày
 STATUS_REVOKED = 7      # bãi bỏ
 STATUS_ARCHIVED = 8     # lưu trữ
+#  Hai nhịp KẾT THÚC PHIÊN DUYỆT, tách khỏi Nháp từ 24/08/2026.
+#
+#  Trước đó cả «trả lại», «từ chối» và «rút phiếu» đều kéo văn bản về Nháp (1).
+#  Mở văn bản ra thì nó trông y như bản chưa từng gửi duyệt: người soạn không
+#  biết nó VỪA BỊ TRẢ, mà lý do thì nằm trong `change_reason` và dấu vết tab Phê
+#  duyệt — hai chỗ không ai mở khi chỉ liếc trạng thái.
+#
+#  Hai mã này khác nhau ở chỗ CÒN ĐƯỜNG ĐI hay không, nên không gộp được:
+#    * Trả về      → sửa rồi GỬI DUYỆT LẠI trên chính văn bản đó;
+#    * Đã từ chối  → hết đường, khóa sửa; muốn làm lại thì *Sao chép* ra bản mới.
+#  Rút phiếu vẫn về Nháp: người nộp tự rút thì chẳng ai trả gì cho ai.
+STATUS_RETURNED = 9     # bị trả về — sửa được, gửi duyệt lại được
+STATUS_REJECTED = 10    # đã từ chối — KHÓA, muốn làm lại thì sao chép
 
 STATUS_LABELS = {
     STATUS_DRAFT: "Nháp",
@@ -51,7 +64,14 @@ STATUS_LABELS = {
     STATUS_EXPIRED: "Hết hiệu lực",
     STATUS_REVOKED: "Bãi bỏ",
     STATUS_ARCHIVED: "Lưu trữ",
+    STATUS_RETURNED: "Trả về",
+    STATUS_REJECTED: "Đã từ chối",
 }
+
+#  Trạng thái mà văn bản còn SỬA ĐƯỢC và còn GỬI DUYỆT được. Dùng một hằng chứ
+#  không so `== STATUS_DRAFT` rải rác: bỏ sót một chỗ là văn bản bị trả về không
+#  gửi lại được, mà lỗi đó chỉ lộ ra khi có người thật bị trả phiếu.
+EDITABLE_STATUSES = (STATUS_DRAFT, STATUS_RETURNED)
 
 #  ── Cơ chế áp dụng cho pháp nhân con (F13) ──────────────────────────────────
 #
@@ -236,5 +256,21 @@ class Document(Base, AuditMixin):
     book_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     book_seq_no: Mapped[int | None] = mapped_column(Integer, nullable=True)
     book_year: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+
+    # ── Thông tin RIÊNG CỦA TỪNG LOẠI văn bản ────────────────────────────────
+    #  Đơn nghỉ phép cần: người nghỉ, loại nghỉ, từ/đến ngày kèm buổi, số ngày,
+    #  lý do, người bàn giao, số liên lạc. Hợp đồng sẽ cần bộ khác. Thêm mỗi loại
+    #  một cụm cột là bảng này phình ra và 90% cột luôn NULL với 90% văn bản.
+    #
+    #  ⚠️ Đây KHÔNG phải chỗ đổ dữ liệu tùy tiện. Hình dạng của nó do loại văn
+    #  bản quy định (`document/type_metadata.py`), backend kiểm trước khi ghi, và
+    #  khóa lạ bị loại bỏ chứ không lưu — nếu không thì sáu tháng nữa không ai
+    #  biết trong đó có gì và module Nghỉ phép đọc ra rác.
+    #
+    #  ⚠️ TÊN THUỘC TÍNH PYTHON PHẢI KHÁC `metadata`. SQLAlchemy declarative giữ
+    #  riêng tên đó cho `Base.metadata`; khai trùng là nổ ngay lúc nạp module,
+    #  không phải lúc chạy truy vấn. Nên cột dưới CSDL tên `metadata` (đúng thứ
+    #  khách yêu cầu, và API cũng trả ra tên đó), còn trong mã gọi là `meta`.
+    meta: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

@@ -273,6 +273,50 @@ STD_ROLES = {
     "support": {"name": "Nhân viên hỗ trợ", "perms": {
         "ticket": (["read", "create", "write", "delete"], "all"),
     }},
+    # ── Hai vai trò MẪU cho phân hệ Văn bản (24/08/2026) ─────────────────────
+    #
+    # Chúng trả lời đúng hai câu hay bị hỏi nhất: "nhân viên chỉ được XEM văn
+    # bản" và "được SỬA nhưng không được XÓA". Khai sẵn ở đây để mọi môi trường
+    # có mẫu bấm-là-dùng, thay vì mỗi người tự tick lại 8 ô từ đầu và mỗi nơi
+    # tick một kiểu. Không tài khoản nào bị gán tự động — việc gán làm ở màn
+    # *Nhân sự ▸ Phân quyền tài khoản ▸ tab Người dùng*.
+    #
+    # ⚠️ MẤY entity đọc kèm không phải thừa: thiếu chúng thì form Tạo/Sửa văn bản
+    # rỗng sạch mọi ô bắt buộc (loại · pháp nhân · phòng · người chịu trách
+    # nhiệm) và không lưu nổi — đã bị đúng lỗi đó với vai trò `vanthu_cty`.
+    #
+    # `security_level` là cái dễ quên nhất vì ô của nó nằm tận BƯỚC 3: thiếu nó
+    # thì `/api/security-levels` trả 403, ô «Mức mật» rỗng danh sách, và form
+    # gửi lên `secrecy_level = 0` → `422` báo lỗi ở một ô người dùng chưa hề mở
+    # tới (dựng lại được 24/08/2026 với tài khoản DEMOTP).
+    "vanban_xem": {"name": "Văn bản — chỉ xem", "perms": {
+        #  ĐÚNG một hành động. Không `print`, không `export`: "không thao tác gì"
+        #  thì cũng không mang văn bản ra ngoài được.
+        "document": (["read"], "company"),
+        "doc_type": (["read"], "all"),
+        "document_book": (["read"], "all"),
+        "security_level": (["read"], "all"),
+        "company": (["read"], "all"),
+        "department": (["read"], "all"),
+        "employee": (["read"], "all"),
+    }},
+    "vanban_sua": {"name": "Văn bản — soạn & sửa (không xóa, không duyệt)", "perms": {
+        #  Cố ý KHÔNG có `delete`, `approve`, `cancel`: soạn được, sửa được, gửi
+        #  duyệt được (gửi duyệt tính là `write`), nhưng không tự duyệt bài của
+        #  mình, không xóa, không bãi bỏ văn bản đã ban hành.
+        "document": (["read", "create", "write", "print", "export"], "company"),
+        "doc_type": (["read"], "all"),
+        #  Người SOẠN phải đọc được thư viện mẫu — ô «Dùng mẫu» ở bước 1 của màn
+        #  Tạo văn bản gọi `/api/document-templates`. Từ CR-157 nó có khóa riêng
+        #  (`doc_template`) nên không còn đi kèm `doc_type` nữa; thiếu dòng này
+        #  là ô mẫu rỗng và người soạn ăn toast 403 ngay lúc mở màn.
+        "doc_template": (["read"], "all"),
+        "document_book": (["read"], "all"),
+        "security_level": (["read"], "all"),
+        "company": (["read"], "all"),
+        "department": (["read"], "all"),
+        "employee": (["read"], "all"),
+    }},
 }
 
 
@@ -973,6 +1017,17 @@ def run():
             seed_demo_accounts(db, company.id)
         else:
             print("Bỏ qua seed tài khoản demo (SEED_DEMO_ACCOUNTS=false).")
+
+        # Bảy tài khoản của nhóm «Tài khoản Test (Data)» trong menu đổi tài khoản
+        # nhanh — CHỈ local. Trước 24/08/2026 bảy dòng đó nằm trong menu mà không
+        # có bản ghi nào trong CSDL, bấm vào chỉ ăn toast lỗi.
+        # CHẠY SAU seed_standard_roles vì nó gán vai trò chuẩn.
+        if getattr(settings, "SEED_DEMO_ACCOUNTS", True):
+            from app.seed_tai_khoan_test import seed_tai_khoan_test
+
+            n_test = seed_tai_khoan_test(db, company.id)
+            if n_test:
+                print(f"Tạo {n_test} tài khoản test (TESTREQ, DEMONV, DEMOTP…).")
 
         # Phân công NSTM mẫu — CHẠY SAU seed_demo_accounts vì tham chiếu mã nhân sự demo
         n_assign = seed_category_assignees(db)

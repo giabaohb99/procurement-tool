@@ -61,7 +61,13 @@ def sync_google_avatar(db: Session, user: User, picture_url: str):
 
 
 def _role_ids(db: Session, user_id: int) -> list[int]:
-    return [ur.role_id for ur in db.query(UserRole).filter(UserRole.user_id == user_id).all()]
+    #  SẮP XẾP để hai lần đọc cùng một dữ liệu ra cùng một mảng. Không sắp thì thứ
+    #  tự chạy theo thứ tự chèn — mà `assign_roles` xóa sạch rồi chèn lại theo thứ
+    #  tự người dùng tick, nên cùng một bộ vai trò vẫn ra mảng khác nhau. React
+    #  Query so sánh theo nội dung để giữ nguyên danh tính object; mảng đổi thứ tự
+    #  là object đổi danh tính, và mọi state cục bộ bám theo nó bị dựng lại.
+    return sorted(
+        ur.role_id for ur in db.query(UserRole).filter(UserRole.user_id == user_id).all())
 
 
 def default_role_ids(db: Session) -> list[int]:

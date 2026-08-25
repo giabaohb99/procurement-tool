@@ -8,6 +8,7 @@ TypeScript sinh ra, mà lại KHÔNG báo lỗi gì.
 """
 
 from app.core import contract_types  # noqa: F401
+from app.core import leave_codes  # noqa: F401
 from app.core import status_codes  # noqa: F401
 
 __all__: list[str] = []

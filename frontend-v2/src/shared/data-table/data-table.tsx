@@ -42,10 +42,23 @@ const BODY_CELL = 'min-h-9 border-r px-3 py-1.5 last:border-r-0 align-middle tex
 /**
  * Thân bảng HÀNG CHẴN LẺ ĐẬM NHẠT XEN KẼ (Zebra striping đậm rõ màu):
  * Hàng lẻ (odd): nền trắng bg-card
- * Hàng chẵn (even): nền xám rõ màu `even:bg-slate-100 dark:even:bg-slate-800/60`
- * Hover: `hover:bg-sky-50 dark:hover:bg-slate-800`
+ * Hàng chẵn (even): nền xám rõ màu `even:bg-slate-100`
+ * Hover: `hover:bg-sky-100`
+ *
+ * ⚠️ **NỀN HÀNG PHẢI ĐỤC, TUYỆT ĐỐI KHÔNG ALPHA.** Ô của cột GHIM lấy
+ * `bg-inherit` từ hàng (xem `PIN_*` bên dưới), nên hàng trong suốt bao nhiêu thì
+ * ô ghim trong suốt bấy nhiêu — và nội dung đang trôi ngang BÊN DƯỚI nó hiện
+ * xuyên qua. Lỗi thật đã bắt được 24/08/2026: nền hover là `bg-sky-100/70` nên
+ * cứ rê chuột vào một hàng của bảng đang cuộn ngang là chữ ở cột ghim chồng lên
+ * chữ của cột đang trôi qua, đọc không ra chữ nào.
+ *
+ * Cùng một bài học đã ghi ở hàng TIÊU ĐỀ bên dưới (`bg-muted hover:bg-muted`)
+ * mà lúc đó chưa soi lại thân bảng.
+ *
+ * Mấy lớp `dark:` giữ nguyên vì chưa có đường nào bật chế độ tối; ngày bật lên
+ * thì phải soi lại đúng chỗ này — `dark:even:bg-slate-800/60` cũng đang có alpha.
  */
-const ROW_BG = 'group odd:bg-card even:bg-slate-100 dark:even:bg-slate-800/60 hover:bg-sky-100/70 dark:hover:bg-slate-800 data-[state=selected]:bg-blue-100 dark:data-[state=selected]:bg-slate-700 transition-colors'
+const ROW_BG = 'group odd:bg-card even:bg-slate-100 dark:even:bg-slate-800/60 hover:bg-sky-100 dark:hover:bg-slate-800 data-[state=selected]:bg-blue-100 dark:data-[state=selected]:bg-slate-700 transition-colors'
 /** Ô báo trạng thái (đang tải / lỗi / rỗng) trải hết bảng — không kẻ dọc, cao hơn. */
 const SPAN_CELL = 'h-20 px-3 text-center'
 

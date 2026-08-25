@@ -80,24 +80,28 @@ export const documentModule: ErpModule = {
     // Các danh mục nền gom vào MỘT mục menu: chúng chỉ được đụng tới lúc khai
     // báo ban đầu, để mỗi cái một dòng thì menu dài hơn cả phần việc hằng ngày.
     {
+      //  Bốn tab, bốn khóa khác nhau — nên gác bằng `entities` (có bất kỳ khóa
+      //  nào là vào được) rồi để trang tự ẩn tab. Gác bằng một khóa duy nhất
+      //  thì người chỉ giữ *Đơn vị gửi nhận* không vào nổi trang chứa đúng tab
+      //  của mình (CR-157).
       label: 'Thiết lập văn bản',
       path: appRoutes.document.settings,
       icon: SlidersHorizontal,
-      entity: 'doc_type',
+      entities: ['doc_type', 'doc_template', 'security_level', 'external_party'],
       group: 'Danh mục',
     },
     {
       label: 'Quy tắc đánh số',
       path: appRoutes.document.numberingRules,
       icon: Hash,
-      entity: 'doc_type',
+      entity: 'doc_numbering_rule',
       group: 'Danh mục',
     },
     {
       label: 'Quy tắc quan hệ',
       path: appRoutes.document.linkRules,
       icon: Link2,
-      entity: 'doc_type',
+      entity: 'doc_link_rule',
       group: 'Danh mục',
     },
   ],
