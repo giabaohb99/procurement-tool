@@ -200,7 +200,11 @@ function ResultLineBlock({
           </p>
         )
       ) : (
-        <div className="grid gap-3 xl:grid-cols-2">
+        //  Cột tự lấp theo bề rộng, mỗi option ghim trong khoảng 18–22rem: màn
+        //  rộng thì xếp nhiều option/hàng, còn dòng chỉ có MỘT phương án cũng
+        //  không kéo dài nửa màn (lỗi "to đùng" trên màn ultrawide). Không dùng
+        //  1fr để cột lẻ khỏi giãn hết chỗ trống.
+        <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(18rem,22rem))]">
           {options.map((option) => (
             <OptionCard
               key={option.id}
@@ -284,7 +288,7 @@ function OptionCard({
 
       <p className="mb-2 font-medium">{option.snap_product_name || '—'}</p>
 
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs sm:grid-cols-3">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
         <OptionField label="Mã VTBB" value={option.system_product_code} />
         <OptionField label="Ngày khảo sát" value={formatDate(option.survey_result_date)} />
         <OptionField
