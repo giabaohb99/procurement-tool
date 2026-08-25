@@ -56,6 +56,28 @@ class HandoverIn(BaseModel):
     reason: str = ""
 
 
+def _boi_canh(db: Session, instance: ApprovalInstance, gui_len: dict) -> dict:
+    """Bối cảnh phiếu — LẤY TỪ MÁY CHỦ khi loại chứng từ tự dựng được.
+
+    ⚠️ Đây không phải chuyện gọn gàng. `subject` quyết định hai thứ nặng: bước
+    kế chạy NHÁNH nào (`condition_service`), và với cách chọn người duyệt «lấy
+    từ ô trên phiếu» thì nó quyết định luôn AI duyệt bước kế
+    (`approver_resolver._tu_o_tren_phieu`). Mà dict ấy trước đây đi thẳng từ
+    thân request của **chính người đang bấm Duyệt** xuống bộ máy, không ai đối
+    chiếu với chứng từ.
+
+    Nghĩa là người duyệt bước 1 gửi kèm `{"nguoi_ky": <id người quen>}` là tự chỉ
+    định người duyệt bước 2, hoặc `{"total": 0}` để phiếu né nhánh phải trình
+    giám đốc — vẫn đủ chữ ký, vẫn đúng luồng trên giấy tờ (25/08/2026).
+
+    `entity_hooks.boi_canh` đọc thẳng chứng từ nên không sửa được từ ngoài. Loại
+    chứng từ CHƯA khai hàm dựng bối cảnh thì vẫn dùng dict gửi lên — siết tới
+    mức khóa luôn các phân hệ chưa tới lượt là đổi thứ đang chạy.
+    """
+    tu_may_chu = entity_hooks.boi_canh(db, instance.entity, instance.entity_id)
+    return tu_may_chu if tu_may_chu else (gui_len or {})
+
+
 def _employee_id(user) -> int:
     if not getattr(user, "employee_id", None):
         raise HTTPException(
@@ -179,10 +201,12 @@ def approve(instance_id: int, data: ActionIn, db: Session = Depends(get_db),
     #  Nạp lại phiếu BÊN TRONG hàm: hai người bấm cùng lúc thì lượt thua bị
     #  cuộn lại và chạy lại, mà chạy lại trên một đối tượng ORM đã hết hạn là
     #  ghi đè bằng trạng thái của lượt hỏng — xem `concurrency.py`.
-    instance = chay_chiu_tranh_chap(db, lambda: action_service.duyet(
-        db, _load(db, instance_id), _employee_id(user),
-        user.id, data.subject, data.comment))
-    return success(serializer.instance_out(db, instance), "Đã duyệt")
+    def chay():
+        instance = _load(db, instance_id)
+        return action_service.duyet(db, instance, _employee_id(user), user.id,
+                                    _boi_canh(db, instance, data.subject), data.comment)
+
+    return success(serializer.instance_out(db, chay_chiu_tranh_chap(db, chay)), "Đã duyệt")
 
 
 @router.post("/{instance_id}/reject")
@@ -196,10 +220,13 @@ def reject(instance_id: int, data: ReasonIn, db: Session = Depends(get_db),
 @router.post("/{instance_id}/return")
 def return_(instance_id: int, data: ReasonIn, db: Session = Depends(get_db),
             user=Depends(get_current_user)):
-    instance = chay_chiu_tranh_chap(db, lambda: action_service.tra_lai(
-        db, _load(db, instance_id), _employee_id(user),
-        user.id, data.reason, data.subject, data.to_seq))
-    return success(serializer.instance_out(db, instance), "Đã trả lại")
+    def chay():
+        instance = _load(db, instance_id)
+        return action_service.tra_lai(db, instance, _employee_id(user), user.id,
+                                      data.reason, _boi_canh(db, instance, data.subject),
+                                      data.to_seq)
+
+    return success(serializer.instance_out(db, chay_chiu_tranh_chap(db, chay)), "Đã trả lại")
 
 
 @router.post("/{instance_id}/withdraw")

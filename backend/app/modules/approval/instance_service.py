@@ -17,7 +17,7 @@ from .instance_model import (ACTION_APPROVE, ACTION_FINISH,
                              ACTION_SKIP_DUPLICATE, ACTION_START,
                              INSTANCE_APPROVED, INSTANCE_BLOCKED,
                              INSTANCE_OPEN_STATUSES, INSTANCE_RUNNING,
-                             TASK_APPROVED, TASK_PENDING,
+                             TASK_APPROVED, TASK_CANCELLED, TASK_PENDING,
                              TASK_SKIPPED_DUPLICATE, TASK_WAITING,
                              ApprovalAction, ApprovalInstance, ApprovalTask)
 
@@ -281,8 +281,18 @@ def _ket(db: Session, instance: ApprovalInstance, ly_do: str) -> None:
 # ── Đi tiếp ─────────────────────────────────────────────────────────────────
 
 def chang_da_xong(db: Session, instance: ApprovalInstance, node) -> bool:
-    """Chặng hiện tại đã đủ điều kiện đi tiếp chưa — phần `multi_mode` của I05."""
-    viec = [row for row in viec_cua_phien(db, instance.id) if row.node_seq == node.seq]
+    """Chặng hiện tại đã đủ điều kiện đi tiếp chưa — phần `multi_mode` của I05.
+
+    ⚠️ **Bỏ việc ĐÃ HỦY ra khỏi phép đếm.** Chúng là dấu vết của một lượt duyệt
+    trước, không phải người đang giữ việc. Với ba chế độ kia không khác gì, nhưng
+    biểu quyết theo tỷ lệ lấy `len(viec)` làm MẪU SỐ nên đếm cả việc hủy là mẫu
+    số phình lên sau mỗi lần trả về một bước: chặng 3 người bị trả về rồi mở lại
+    có 3 việc hủy + 3 việc mới, tỷ lệ 100% đòi 6 phiếu thuận trong khi nhiều
+    nhất chỉ có 3 — cả hội đồng đã bấm Duyệt mà phiếu treo vĩnh viễn ở đó. Tỷ lệ
+    50% thì không treo nhưng lặng lẽ đòi 3 người thay vì 2 (25/08/2026).
+    """
+    viec = [row for row in viec_cua_phien(db, instance.id)
+            if row.node_seq == node.seq and row.status != TASK_CANCELLED]
     if not viec:
         return True
 
