@@ -19,3 +19,15 @@ nhồi thẳng tài liệu đứng yên vào ngữ cảnh.
   gọn, đúng trọng tâm.
 - "Quyền theo gói" (mỗi nhóm người dùng thấy gói khác nhau) là việc của Phase sau —
   hiện mọi người có quyền `assistant.read` dùng chung một gói.
+
+## Gói tri thức Nhà máy DEGO Organic
+
+- `nhamay-tri-thuc-co-dong.md` là bản CHƯNG CẤT từ bộ 11 tài liệu gốc của nhà máy
+  (quy định hệ thống công việc QĐ.HT.01, hướng dẫn vận hành trợ lý HD.HT.01, gói hợp
+  nhất...). Giữ nguyên văn mọi quyết định / quy tắc / định nghĩa / bộ câu hỏi / mã tài
+  liệu; bỏ phần lặp, biểu mẫu trống, ví dụ. Đo thật: ~12k input token/lượt, giảm ~81%
+  so với nạp cả 11 file (~65k).
+- 11 file gốc KHÔNG để trong thư mục này (kẻo bị nạp chồng cả 65k + 12k token). Chúng
+  nằm ở `../knowledge-source/` — không bị bộ nạp đọc, giữ lại để làm RAG/tra chi tiết
+  sau. Chưng cất thì mất chi tiết: câu hỏi sâu ngoài phần đã giữ, bot sẽ nói "không có
+  trong tài liệu" thay vì bịa — đây là đánh đổi có chủ đích.
