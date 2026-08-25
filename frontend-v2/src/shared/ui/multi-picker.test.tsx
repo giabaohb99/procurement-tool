@@ -105,6 +105,35 @@ describe('MultiPicker — dải chip khi chọn nhiều', () => {
     expect(screen.queryByRole('button', { name: 'Thu gọn' })).not.toBeInTheDocument()
   })
 
+  it('ĐÚNG 12 (bằng ngưỡng) thì hiện hết, không bày nút bung thừa', () => {
+    //  Ca biên: `slice(0, 12)` của đúng 12 phần tử vẫn là 12, phần dư = 0. Sai
+    //  dấu so sánh một chút là hiện «+ 0 nữa».
+    dungNhieuChip(NHIEU.slice(0, 12).map((item) => item.id))
+    expect(screen.getAllByRole('button', { name: /^Bỏ Nhân sự/ })).toHaveLength(12)
+    expect(screen.queryByRole('button', { name: /nữa$/ })).not.toBeInTheDocument()
+  })
+
+  it('13 mục thì gập còn 12 và báo đúng «+ 1 nữa»', () => {
+    dungNhieuChip(NHIEU.slice(0, 13).map((item) => item.id))
+    expect(screen.getAllByRole('button', { name: /^Bỏ Nhân sự/ })).toHaveLength(12)
+    expect(screen.getByRole('button', { name: '+ 1 nữa' })).toBeInTheDocument()
+  })
+
+  it('id đã chọn nhưng KHÔNG còn trong danh mục thì không đếm, không vẽ chip ma', () => {
+    //  `selected` lọc theo `options`, nên id mồ côi (nhân sự đã nghỉ, bị gỡ khỏi
+    //  danh sách `is_active`) phải rụng khỏi cả số đếm lẫn dải chip — nếu không,
+    //  nút mở nói «Đã chọn 3» trong khi chỉ vẽ ra 2 chip.
+    dungNhieuChip([1, 2, 999_999])
+    expect(screen.getByRole('button', { name: /Đã chọn 2/ })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /^Bỏ Nhân sự/ })).toHaveLength(2)
+  })
+
+  it('chưa chọn gì thì nút mở vẫn là câu mời', () => {
+    dungNhieuChip([])
+    expect(screen.getByRole('button', { name: /Chọn người được xem/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Đã chọn/ })).not.toBeInTheDocument()
+  })
+
   it('«Bỏ hết» xóa sạch lựa chọn trong một lần bấm', async () => {
     const nguoi = userEvent.setup()
     const onChange = dungNhieuChip([1, 2, 3])

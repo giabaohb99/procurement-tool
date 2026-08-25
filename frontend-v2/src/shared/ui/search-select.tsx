@@ -113,9 +113,17 @@ export function SearchSelect({
           aria-expanded={open}
           disabled={disabled}
           className={cn(
-            'w-full justify-between gap-1 px-2 font-normal',
-            size === 'sm' && 'h-8 text-sm',
-            wrap ? 'h-auto min-h-8 items-start py-1.5 text-left' : 'truncate',
+            //  `text-left` phải áp cho MỌI trường hợp: trình duyệt mặc định
+            //  `button { text-align: center }`, mà chữ nằm trong `<span>` con
+            //  nên `justify-between` của flex không cứu được — nó xếp vị trí
+            //  cái span, còn chữ BÊN TRONG span vẫn căn giữa. Trước 25/08/2026
+            //  `text-left` chỉ nằm ở nhánh `wrap`, nên ô chọn ở form dựng đứng
+            //  hiện chữ giữa ô, lệch hẳn so với các ô nhập bên cạnh.
+            //  `px-3` để thẳng hàng với `Input` (cũng `px-3`); cỡ `sm` dùng
+            //  trong bảng thì giữ `px-2` cho đỡ chật.
+            'w-full justify-between gap-1 text-left font-normal',
+            size === 'sm' ? 'h-8 px-2 text-sm' : 'px-3',
+            wrap ? 'h-auto min-h-8 items-start py-1.5' : 'truncate',
             !value && 'text-muted-foreground',
             className,
           )}

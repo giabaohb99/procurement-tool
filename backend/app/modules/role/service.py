@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.auth import perm_cache_clear
@@ -51,7 +52,15 @@ def get_role(db: Session, rid: int) -> Role:
 def create_role(db: Session, data: RoleCreate, user_id: int) -> Role:
     if db.query(Role).filter(Role.code == data.code).first():
         raise HTTPException(400, "Mã vai trò đã tồn tại")
-    obj = Role(code=data.code, name=data.name, description=data.description, created_by=user_id, updated_by=user_id)
+    #  Vai trò mới xuống CUỐI danh sách, không để mặc định 0.
+    #  Ép ra được 25/08/2026: người quản trị xếp tay 17 vai trò xong thêm một
+    #  vai trò mới, nó mang `sort_order = 0` nên nhảy lên **đứng đầu**, trên cả
+    #  «Quản trị hệ thống» — phá đúng cái thứ tự họ vừa dựng. Thứ mới thêm thì
+    #  người ta trông nó ở cuối. Danh sách chưa ai xếp (toàn 0) thì vai trò mới
+    #  nhận 1, vẫn nằm cuối — đúng như xếp theo `id` trước đây.
+    ke_tiep = (db.query(func.max(Role.sort_order)).scalar() or 0) + 1
+    obj = Role(code=data.code, name=data.name, description=data.description,
+               sort_order=ke_tiep, created_by=user_id, updated_by=user_id)
     db.add(obj)
     db.commit()
     db.refresh(obj)

@@ -96,9 +96,13 @@ def test_doi_ten_khong_dung_toi_thu_tu(db):
 
 
 def test_vai_tro_moi_tao_khong_can_khai_sort_order(db):
-    """Cột NOT NULL mà không có mặc định phía Python là mọi lệnh tạo vai trò đều đỏ."""
+    """Người gọi KHÔNG phải tự tính `sort_order` — service tự đặt.
+
+    Cột NOT NULL mà không ai điền là mọi lệnh tạo vai trò đều đỏ. Vị trí cụ thể
+    (cuối danh sách) do hai bài `test_vai_tro_moi_*` bên dưới giữ.
+    """
     obj = service.create_role(db, RoleCreate(code="moi", name="Mới"), user_id=1)
-    assert obj.sort_order == 0
+    assert obj.sort_order is not None and obj.sort_order >= 1
 
 
 def test_route_order_khai_truoc_route_id():
@@ -118,3 +122,69 @@ def test_khong_tim_thay_vai_tro_thi_404(db):
     with pytest.raises(HTTPException) as e:
         service.get_role(db, 999_999)
     assert e.value.status_code == 404
+
+
+def test_vai_tro_moi_xuong_CUOI_danh_sach_da_xep(db):
+    """Ép ra được 25/08/2026 khi ép thử CR-172.
+
+    Người quản trị xếp tay 17 vai trò xong thêm một vai trò mới; nó mang
+    `sort_order = 0` mặc định nên **nhảy lên đứng đầu**, trên cả «Quản trị hệ
+    thống» — phá đúng cái thứ tự họ vừa dựng.
+    """
+    a, b = _vai_tro(db, "aaa"), _vai_tro(db, "bbb")
+    db.commit()
+    service.sap_xep_vai_tro(db, [a.id, b.id], user_id=1)
+
+    moi = service.create_role(db, RoleCreate(code="moi", name="Mới"), user_id=1)
+
+    assert moi.sort_order == 3
+    assert [r.code for r in service.list_roles_query(db).all()][-1] == "moi"
+
+
+def test_danh_sach_chua_ai_xep_thi_vai_tro_moi_van_nam_cuoi(db):
+    """Mọi vai trò cũ đều `sort_order = 0`; vai trò mới nhận 1 nên vẫn đứng cuối."""
+    _vai_tro(db, "aaa"), _vai_tro(db, "bbb")
+    db.commit()
+
+    moi = service.create_role(db, RoleCreate(code="moi", name="Mới"), user_id=1)
+
+    assert moi.sort_order == 1
+    assert [r.code for r in service.list_roles_query(db).all()][-1] == "moi"
+
+
+# ── Ràng buộc tên / mã ─────────────────────────────────────────────────────────
+#  Cả ba ca dưới đây LỌT trước 25/08/2026. Trước CR-172 không ai đổi tên vai trò
+#  từ giao diện được nên chưa ai chạm tới; nay có nút bút chì nên nó thành cửa
+#  thật, phải đóng.
+@pytest.mark.parametrize("ten", ["", "   ", "\t\n"])
+def test_ten_rong_bi_chan(ten):
+    """Vai trò không tên = một dòng TRẮNG trong cột trái màn Phân quyền."""
+    from pydantic import ValidationError
+
+    from app.modules.role.schema import RoleUpdate
+    with pytest.raises(ValidationError):
+        RoleUpdate(name=ten)
+
+
+def test_ten_dai_hon_cot_bi_chan_o_tang_schema():
+    """Cột `name` chỉ 100 ký tự. Không chặn ở schema thì vỡ dưới MySQL và người
+    dùng nhận **500 internal_error** thay vì một câu nói rõ sai chỗ nào."""
+    from pydantic import ValidationError
+
+    from app.modules.role.schema import RoleCreate as RC, RoleUpdate
+    with pytest.raises(ValidationError):
+        RoleUpdate(name="X" * 101)
+    with pytest.raises(ValidationError):
+        RC(code="ma", name="X" * 101)
+    with pytest.raises(ValidationError):
+        RC(code="M" * 51, name="Tên")
+
+
+def test_ten_bi_cat_khoang_trang_thua():
+    from app.modules.role.schema import RoleUpdate
+    assert RoleUpdate(name="  Văn thư  ").name == "Văn thư"
+
+
+def test_ten_dung_tran_100_ky_tu_van_qua():
+    from app.modules.role.schema import RoleUpdate
+    assert len(RoleUpdate(name="X" * 100).name) == 100

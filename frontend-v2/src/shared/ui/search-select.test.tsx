@@ -97,6 +97,32 @@ describe('SearchSelect', () => {
     }
   })
 
+  it('chữ trong ô căn TRÁI, không rơi vào giữa ô', () => {
+    //  Khách báo 25/08/2026: chữ trong ô chọn nằm giữa ô, lệch hẳn so với các ô
+    //  nhập bên cạnh. Gốc: trình duyệt mặc định `button { text-align: center }`,
+    //  mà chữ nằm trong `<span>` con nên `justify-between` của flex không cứu
+    //  được — nó xếp vị trí cái span, chữ BÊN TRONG span vẫn căn giữa. Trước đó
+    //  `text-left` chỉ được gắn ở nhánh `wrap`.
+    dung()
+    expect(screen.getByRole('combobox').className).toMatch(/\btext-left\b/)
+  })
+
+  it('ô kiểu `wrap` (dùng trong bảng) cũng vẫn căn trái', () => {
+    render(
+      <SearchSelect value="" onChange={vi.fn()} options={LOAI_VAN_BAN} placeholder="Chọn" wrap />,
+    )
+    expect(screen.getByRole('combobox').className).toMatch(/\btext-left\b/)
+  })
+
+  it('giá trị KHÔNG còn trong danh mục vẫn hiện nguyên văn, không để ô trống', () => {
+    //  Dữ liệu cũ hay trỏ tới mã đã bị gỡ khỏi danh mục. Giấu đi thì người dùng
+    //  tưởng ô chưa chọn gì rồi chọn đè, mất luôn giá trị cũ mà không hay.
+    render(
+      <SearchSelect value="999" onChange={vi.fn()} options={LOAI_VAN_BAN} placeholder="Chọn" />,
+    )
+    expect(screen.getByRole('combobox')).toHaveTextContent('999')
+  })
+
   it('danh sách dài bị cắt thì NÓI RA còn bao nhiêu, không im lặng', async () => {
     //  Ô chọn nhân sự nạp cả nghìn dòng nhưng chỉ vẽ 60. Cắt mà không nói thì
     //  người dùng cuộn tới đáy, không thấy tên mình cần, rồi kết luận là hệ
