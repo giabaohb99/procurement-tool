@@ -31,13 +31,29 @@ export function UserPermissionDetailPage() {
 
   const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([])
   const [scopeRoleId, setScopeRoleId] = useState<number | null>(null)
+  // Người dùng đã tick/bỏ tick chưa, tính từ lần đồng bộ gần nhất với máy chủ.
+  const [dangTickDo, setDangTickDo] = useState(false)
 
   const { data: account, isLoading, isError } = useUserAccount(userId)
   const { data: roles } = useRoles()
   const assignRoles = useAssignRoles(userId)
 
+  // Đổi sang tài khoản khác thì mọi thứ tick dở không còn nghĩa gì.
+  if (useHasChanged(userId)) {
+    setDangTickDo(false)
+    setSelectedRoleIds([])
+  }
+
   // Tài khoản vừa tải về / vừa lưu xong -> đồng bộ lại các vai trò đang tick.
-  if (useHasChanged(account)) setSelectedRoleIds(account?.role_ids ?? [])
+  //
+  // ⚠️ CHỈ đồng bộ khi người dùng CHƯA tick dở. React Query nạp lại `account`
+  // bất cứ lúc nào (hết hạn 30 giây rồi mount lại, một thao tác khác gọi
+  // `invalidateQueries(['hr'])`, người khác vừa sửa cùng tài khoản...). Bản cũ
+  // đồng bộ theo MỌI lượt nạp lại, nên một lượt nạp rơi vào giữa lúc đang tick
+  // là các ô vừa chọn lặng lẽ quay về bản đã lưu — không báo gì, và cú bấm
+  // «Lưu vai trò» ngay sau đó ghi xuống đúng bản cũ. Người dùng thấy toast
+  // «Đã lưu vai trò» rồi vào lại thì mất quyền vừa chọn (khách báo 25/08/2026).
+  if (useHasChanged(account) && !dangTickDo) setSelectedRoleIds(account?.role_ids ?? [])
 
   if (isLoading) {
     return (
@@ -62,12 +78,19 @@ export function UserPermissionDetailPage() {
     )
   }
 
-  const toggleRole = (roleId: number) =>
+  const toggleRole = (roleId: number) => {
+    setDangTickDo(true)
     setSelectedRoleIds((current) =>
       current.includes(roleId)
         ? current.filter((x) => x !== roleId)
         : [...current, roleId],
     )
+  }
+
+  // Lưu xong thì bản của máy chủ mới là bản chuẩn, mở lại đường đồng bộ để lượt
+  // nạp lại ngay sau đó (do `invalidateQueries`) ăn vào state.
+  const luuVaiTro = () =>
+    assignRoles.mutate(selectedRoleIds, { onSuccess: () => setDangTickDo(false) })
 
   const scopeRoleName = roles?.find((role) => role.id === scopeRoleId)?.name ?? ''
 
@@ -83,7 +106,7 @@ export function UserPermissionDetailPage() {
 
         <PermissionGate entity="user" action="write">
           <Button
-            onClick={() => assignRoles.mutate(selectedRoleIds)}
+            onClick={luuVaiTro}
             disabled={assignRoles.isPending}
           >
             {assignRoles.isPending ? <Loader2 className="animate-spin" /> : <Save />}
