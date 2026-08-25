@@ -60,8 +60,13 @@ def subject_pairs(profile: dict) -> list[tuple[int, int]]:
     pairs: list[tuple[int, int]] = []
     if profile.get("employee_id"):
         pairs.append((SUBJECT_EMPLOYEE, profile["employee_id"]))
-    if profile.get("dept_id"):
-        pairs.append((SUBJECT_DEPARTMENT, profile["dept_id"]))
+    #  KIÊM NHIỆM (CR-167) — chia văn bản cho «phòng Kế toán» thì người kiêm
+    #  nhiệm phòng đó phải nhận, dù phòng CHÍNH của họ là phòng khác. Lùi về
+    #  phòng chính khi hồ sơ quyền chưa có danh sách.
+    for department_id in (profile.get("dept_ids")
+                          or ([profile["dept_id"]] if profile.get("dept_id") else [])):
+        if department_id:
+            pairs.append((SUBJECT_DEPARTMENT, department_id))
     if profile.get("company_id"):
         pairs.append((SUBJECT_COMPANY, profile["company_id"]))
     for grant in profile.get("grants", []):

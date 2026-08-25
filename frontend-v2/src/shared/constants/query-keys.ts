@@ -87,6 +87,7 @@ export const queryKeys = {
     all: ['hr'] as const,
     employees: (params?: Record<string, unknown>) => ['hr', 'employees', params ?? {}] as const,
     employee: (id: number) => ['hr', 'employees', id] as const,
+    employeeDepartments: (id: number) => ['hr', 'employees', id, 'departments'] as const,
     departments: (params?: Record<string, unknown>) => ['hr', 'departments', params ?? {}] as const,
     department: (id: number) => ['hr', 'departments', id] as const,
     departmentCompanies: (id: number) => ['hr', 'departments', id, 'companies'] as const,

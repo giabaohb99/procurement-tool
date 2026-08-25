@@ -213,8 +213,13 @@ def _role_scope_cond(model, entity, scope, user, profile):
     if isinstance(f, _Public):
         return None
     company_id = profile.get("company_id") or 0
-    dept_name = profile.get("dept_name") or ""
-    dept_id = profile.get("dept_id") or 0
+    #  KIÊM NHIỆM (CR-167) — người này có thể có chân ở NHIỀU phòng, phạm vi bậc
+    #  «phòng ban» phải mở đủ cả. Lùi về phòng chính khi hồ sơ quyền chưa có
+    #  danh sách (bản cache cũ còn sống trong 60 giây sau khi nâng cấp).
+    dept_ids = [x for x in (profile.get("dept_ids") or []) if x] \
+        or ([profile["dept_id"]] if profile.get("dept_id") else [])
+    dept_names = [x for x in (profile.get("dept_names") or []) if x] \
+        or ([profile["dept_name"]] if profile.get("dept_name") else [])
 
     # "Được giao": của mình HOẶC được phân bổ cho mình (áp cho PYC)
     if scope in ("assigned", "proc"):
@@ -286,8 +291,7 @@ def _role_scope_cond(model, entity, scope, user, profile):
         if f.get("company") and company_id:
             cs.append(getattr(model, f["company"]) == company_id)
         if f.get("dept_id") or f.get("dept_name"):
-            dc = _dept_match(model, f, [dept_id] if dept_id else [],
-                             [dept_name] if dept_name else [])
+            dc = _dept_match(model, f, dept_ids, dept_names)
             # Người dùng chưa gắn phòng nào → không có gì để so → không thấy gì. (Luật cũ so
             # `department == ""` nên cũng gần như không ra phiếu nào; ở đây nói thẳng ra.)
             cs.append(dc if dc is not None else false())

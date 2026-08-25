@@ -7,6 +7,7 @@ from app.modules.catalog import model as _catalog  # noqa: F401
 from app.modules.company import model as _company  # noqa: F401
 from app.modules.department import model as _department  # noqa: F401
 from app.modules.employee import model as _employee  # noqa: F401
+from app.modules.employee import department_model as _employee_department  # noqa: F401
 from app.modules.supplier import model as _supplier  # noqa: F401
 from app.modules.product import model as _product  # noqa: F401
 from app.modules.survey import model as _survey  # noqa: F401

@@ -87,10 +87,37 @@ def create_employee(db: Session, data: EmployeeCreate, user_id: int) -> Employee
         raise HTTPException(400, "Mã nhân viên đã tồn tại")
     obj = Employee(**data.model_dump(), created_by=user_id, updated_by=user_id)
     db.add(obj)
+    db.flush()
+    _dong_bo_phong_chinh(db, obj, user_id)
     db.commit()
     db.refresh(obj)
     record(db, user_id, ENTITY, obj.id, "create")
     return obj
+
+
+def _dong_bo_phong_chinh(db: Session, obj: Employee, user_id: int) -> None:
+    """Giữ `tab_employee_department` khớp với `tab_employee.department_id`.
+
+    ⚠️ KIÊM NHIỆM (CR-167) có HAI nguồn ghi phòng ban: cửa riêng
+    `PUT /employees/{id}/departments`, và cột `department_id` mà màn hồ sơ, CSV
+    import và seed vẫn ghi thẳng. Không nối hai nguồn thì chúng trôi khỏi nhau —
+    hồ sơ hiện một phòng, phạm vi dữ liệu chạy theo phòng khác, mà không chỗ nào
+    báo.
+
+    Ở đây chỉ đụng tới PHÒNG CHÍNH: đổi `department_id` là đổi dòng `is_primary`,
+    các phòng kiêm nhiệm khác giữ nguyên. Đổi cả danh sách thì dùng cửa riêng —
+    nó có ba chốt chống vượt quyền, cột này thì không.
+    """
+    from .department_service import dat_phong_ban, phong_ban_cua
+
+    dang_co = phong_ban_cua(db, obj.id)
+    moi = obj.department_id or 0
+    if dang_co and dang_co[0] == moi:
+        return                        # phòng chính không đổi
+
+    con_lai = [x for x in dang_co if x != moi]
+    dat_phong_ban(db, obj, ([moi] if moi else []) + con_lai, user_id,
+                  phong_chinh=moi or None)
 
 
 def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -> Employee:
@@ -100,6 +127,8 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
     for key, value in fields.items():
         setattr(obj, key, value)
     obj.updated_by = user_id
+    if "department_id" in fields:
+        _dong_bo_phong_chinh(db, obj, user_id)
     db.commit()
     db.refresh(obj)
     record(db, user_id, ENTITY, obj.id, "update")

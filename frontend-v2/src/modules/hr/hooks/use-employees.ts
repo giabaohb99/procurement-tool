@@ -40,6 +40,30 @@ export function useEmployee(id: number) {
  * Lỗi đã được http-client toast sẵn (không phải GET) nên ở đây chỉ lo báo
  * thành công và làm mới cache.
  */
+/** Phòng ban (kể cả kiêm nhiệm) của một nhân sự. Phòng CHÍNH đứng đầu. */
+export function useEmployeeDepartments(employeeId: number) {
+  return useQuery({
+    queryKey: queryKeys.hr.employeeDepartments(employeeId),
+    queryFn: () => employeeApi.getDepartments(employeeId),
+    enabled: employeeId > 0,
+  })
+}
+
+export function useSaveEmployeeDepartments(employeeId: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ ids, primaryId }: { ids: number[]; primaryId?: number }) =>
+      employeeApi.setDepartments(employeeId, ids, primaryId),
+    onSuccess: () => {
+      toast.success('Đã cập nhật phòng ban')
+      //  Đổi phòng ban là đổi cả `department_id` trên hồ sơ, nên phải nạp lại
+      //  cả nhánh nhân sự chứ không riêng khóa phòng ban.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.all })
+    },
+  })
+}
+
 export function useSaveEmployee() {
   const queryClient = useQueryClient()
 

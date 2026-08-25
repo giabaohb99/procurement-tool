@@ -9,7 +9,7 @@ from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope
 
-from . import service
+from . import department_service, service
 from .schema import EmployeeCreate, EmployeeDetailOut, EmployeeOut, EmployeeUpdate
 
 router = APIRouter(prefix="/api/employees", tags=["employee"])
@@ -146,6 +146,73 @@ def update_employee(
 ):
     obj = service.update_employee(db, eid, data, user.id)
     return success(EmployeeOut.model_validate(obj).model_dump(), "Đã cập nhật")
+
+
+def _nhan_su_trong_pham_vi(db, eid: int, user, profile, action: str = "read"):
+    """Hồ sơ nhân sự NẰM TRONG phạm vi của người đang thao tác, không thì 404.
+
+    ⚠️ `GET /api/employees/{eid}` cũ dùng `service.get_employee` — **không xét
+    phạm vi**. Hai cửa dưới đây là cửa GHI (đổi phòng ban = đổi tầm nhìn dữ
+    liệu) nên phải xét: lọc ở danh sách bao nhiêu cũng vô nghĩa nếu gõ thẳng id
+    lên URL là sửa được hồ sơ ngoài phạm vi.
+
+    404 chứ không 403, cùng lý lẽ với `document.ensure_can`: nói "có hồ sơ này
+    nhưng anh không được xem" thì chính câu đó đã lộ thứ cần giấu.
+    """
+    from app.core.scoping import get_scoped
+
+    from .model import Employee
+
+    obj = get_scoped(db, Employee, "employee", eid, user, profile, action)
+    if obj is None:
+        raise HTTPException(404, "Không tìm thấy nhân viên")
+    return obj
+
+
+class PhongBanIn(BaseModel):
+    """Đặt LẠI toàn bộ danh sách phòng ban của một nhân sự."""
+
+    department_ids: list[int] = []
+    #  Bỏ trống = lấy phần tử đầu của danh sách làm phòng chính.
+    primary_department_id: int | None = None
+
+
+@router.get("/{eid}/departments")
+def list_employee_departments(
+    eid: int, db: Session = Depends(get_db), user=Depends(require("employee", "read")),
+):
+    """Phòng ban của một nhân sự — phòng CHÍNH đứng đầu."""
+    emp = _nhan_su_trong_pham_vi(db, eid, user, get_perm_profile(db, user))
+    return success({"department_ids": department_service.phong_ban_cua(db, emp.id),
+                    "primary_department_id": emp.department_id or 0})
+
+
+@router.put("/{eid}/departments")
+def set_employee_departments(
+    eid: int, data: PhongBanIn, db: Session = Depends(get_db),
+    user=Depends(require("employee", "write")),
+):
+    """KIÊM NHIỆM — đặt lại danh sách phòng ban.
+
+    ⚠️ Ba chốt chặn phải chạy TRƯỚC khi ghi, và đúng thứ tự này. Gán phòng ban
+    là mở rộng phạm vi dữ liệu của người nhận, đúng bằng việc tick thêm một ô
+    trong ma trận quyền — chỉ là qua một cửa trông hiền lành hơn. Lý lẽ đầy đủ ở
+    `employee/department_service.py`.
+    """
+    profile = get_perm_profile(db, user)
+    emp = _nhan_su_trong_pham_vi(db, eid, user, profile, "write")
+
+    department_service.chan_tu_sua_phong_ban_cua_minh(db, emp.id, user)
+    department_service.chan_gan_phong_ngoai_tam(db, data.department_ids, user, profile)
+    ids = department_service.dat_phong_ban(
+        db, emp, data.department_ids, user.id,
+        phong_chinh=data.primary_department_id)
+    db.commit()
+
+    audit_record(db, user.id, "employee", emp.id, "update",
+                 f"Đặt lại phòng ban kiêm nhiệm: {ids}")
+    return success({"department_ids": ids, "primary_department_id": emp.department_id or 0},
+                   "Đã cập nhật phòng ban")
 
 
 @router.delete("/{eid}")

@@ -19,6 +19,24 @@ export const employeeApi = {
   remove: (id: number) => apiDelete<null>(`${BASE_URL}/${id}`),
 
   /**
+   * KIÊM NHIỆM — phòng ban của một nhân sự. Phòng CHÍNH đứng đầu danh sách.
+   *
+   * Cửa RIÊNG chứ không nhét vào `update`: đổi phòng ban là đổi PHẠM VI DỮ LIỆU
+   * của người đó, nên backend gác nó bằng ba chốt chống vượt quyền mà cột
+   * `department_id` thường không có (xem `employee/department_service.py`).
+   */
+  getDepartments: (id: number) =>
+    apiGet<{ department_ids: number[]; primary_department_id: number }>(
+      `${BASE_URL}/${id}/departments`,
+    ),
+
+  setDepartments: (id: number, departmentIds: number[], primaryId?: number) =>
+    httpClient.put(`${BASE_URL}/${id}/departments`, {
+      department_ids: departmentIds,
+      primary_department_id: primaryId ?? null,
+    }),
+
+  /**
    * Ảnh lưu vào TÀI KHOẢN đăng nhập của nhân sự (`tab_user.avatar`), cùng chỗ
    * với ảnh người dùng tự đổi ở trang cá nhân. Nhân sự chưa có tài khoản thì
    * backend trả 400 — xem `employee/controller.py`.

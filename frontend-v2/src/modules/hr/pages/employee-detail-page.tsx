@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
+import { useAuth } from '@/core/auth/use-auth'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
 import { AuditTimeline } from '@/shared/audit'
@@ -30,6 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ActiveStatusSelect } from '../components/active-status-select'
 import { EmployeeAccountCard } from '../components/employee-account-card'
+import { EmployeeDepartmentCard } from '../components/employee-department-card'
 import { LookupSelect } from '../components/lookup-select'
 import { useDepartments } from '../hooks/use-departments'
 import {
@@ -57,6 +59,7 @@ export function EmployeeDetailPage() {
   const employeeId = Number(id)
 
   const { can } = usePermission()
+  const { user: dangDangNhap } = useAuth()
   const canWrite = can('employee', 'write')
 
   const { data: employee, isLoading, isError } = useEmployee(employeeId)
@@ -313,6 +316,15 @@ export function EmployeeDetailPage() {
             </Card>
 
             <div className="space-y-5">
+              {/*  Đứng TRƯỚC thẻ tài khoản: phòng ban và vai trò là hai nửa của
+                   cùng một câu «người này thấy được gì», mà phòng ban là nửa dễ
+                   bị quên hơn. */}
+              <EmployeeDepartmentCard
+                employeeId={employee.id}
+                companyId={employee.company_id}
+                canWrite={canWrite}
+                laChinhMinh={dangDangNhap?.employee_id === employee.id}
+              />
               <EmployeeAccountCard employeeId={employee.id} email={employee.email} />
               <AuditTimeline entity="employee" entityId={employeeId} />
             </div>

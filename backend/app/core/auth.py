@@ -180,21 +180,37 @@ def get_perm_profile(db: Session, user) -> dict:
         perms_union.setdefault("survey_request", {a: False for a in ACTIONS})["process"] = True
 
     company_id, dept_name, emp_code, dept_id, emp_name = 0, "", "", 0, ""
+    dept_ids: list[int] = []
+    dept_names: list[str] = []
     if getattr(user, "employee_id", 0):
-        from app.modules.employee.model import Employee
         from app.modules.department.model import Department
+        from app.modules.employee.department_service import phong_ban_cua
+        from app.modules.employee.model import Employee
         emp = db.get(Employee, user.employee_id)
         if emp:
             company_id = emp.company_id or 0
             emp_code = emp.code or ""
             emp_name = emp.full_name or ""   # dùng khớp NSPT (ĐMH lưu theo tên)
             dept_id = emp.department_id or 0
-            if emp.department_id:
-                dep = db.get(Department, emp.department_id)
-                dept_name = dep.name if dep else ""
+
+            #  KIÊM NHIỆM (CR-167) — người này có chân ở những phòng nào. Phòng
+            #  CHÍNH đứng đầu danh sách; `dept_id` / `dept_name` số ít vẫn là
+            #  phòng chính, giữ nguyên cho những nơi chỉ dùng được một phòng.
+            #
+            #  ⚠️ Lùi về đúng phòng chính khi bảng kiêm nhiệm chưa có dòng nào
+            #  (hồ sơ tạo trước migration, hoặc dữ liệu nhập tay): thiếu nhánh
+            #  này là người đó mất sạch phạm vi phòng ban.
+            dept_ids = phong_ban_cua(db, user.employee_id) or ([dept_id] if dept_id else [])
+            if dept_ids:
+                ten_phong = dict(db.query(Department.id, Department.name)
+                                 .filter(Department.id.in_(dept_ids)).all())
+                dept_names = [ten_phong[i] for i in dept_ids if ten_phong.get(i)]
+                dept_name = ten_phong.get(dept_id, "")
 
     profile = {"grants": grants, "perms_union": perms_union, "company_id": company_id,
                "dept_name": dept_name, "dept_id": dept_id, "emp_code": emp_code, "emp_name": emp_name,
+               #  Danh sách ĐẦY ĐỦ cho phạm vi dữ liệu — xem `core/scoping._dept_match`.
+               "dept_ids": dept_ids, "dept_names": dept_names,
                "employee_id": getattr(user, "employee_id", 0) or 0}
     _PERM_CACHE[user.id] = (profile, now + _PERM_TTL)
     return profile
