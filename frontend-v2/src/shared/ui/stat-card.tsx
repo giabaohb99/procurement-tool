@@ -31,7 +31,10 @@ export function StatCard({
 }: StatCardProps) {
   return (
     <Card className="gap-2">
-      <CardHeader className="flex-row items-center gap-2 pb-0">
+      {/*  `flex` chứ không chỉ `flex-row`: `CardHeader` gốc là `grid`, hai lớp khác
+           nhóm nên `grid` vẫn thắng — thiếu chữ này thì biểu tượng và nhãn xếp
+           CHỒNG lên nhau thay vì nằm cạnh (đo được 25/08/2026: y=229 vs y=269). */}
+      <CardHeader className="flex flex-row items-center gap-2 pb-0">
         <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
           <Icon className="size-4" />
         </span>

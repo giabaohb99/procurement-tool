@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { cn } from '@/shared/utils/cn'
 import { useBookCounter } from '../hooks/use-document-books'
 
 interface BookCounterCardProps {
@@ -35,7 +36,12 @@ export function BookCounterCard({ bookId, year, onYearChange }: BookCounterCardP
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0">
+      {/*  Phải ghi `flex` chứ không chỉ `flex-row`: `CardHeader` gốc là `grid`,
+           mà `grid` và `flex-row` KHÁC nhóm trong tailwind-merge nên cả hai cùng
+           sống — `display: grid` thắng và `flex-row` thành vô nghĩa. Hậu quả:
+           ô chọn năm rơi xuống hàng dưới thay vì đứng cạnh tiêu đề (đo được
+           25/08/2026: tiêu đề y=688, ô chọn y=720). */}
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle className="flex items-center gap-2 text-base">
           <Hash className="size-4 text-muted-foreground" />
           Bộ đếm
@@ -85,9 +91,12 @@ function Figure({
   return (
     <div>
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={mono ? 'font-mono text-lg font-medium' : 'text-lg font-medium'}>
-        {value}
-      </p>
+      {/*  `text-base` chứ không phải `text-lg`: ba con số này là ô CHỈ XEM, không
+           phải tiêu đề. Để `text-lg` (18px) thì chúng to hơn cả tiêu đề thẻ
+           «Bộ đếm» (16px) — đọc như thể chúng quan trọng hơn tên của chính khối
+           chứa chúng. Chữ đẳng khoảng thêm `tabular-nums` cho các chữ số thẳng
+           cột khi đổi năm. */}
+      <p className={cn('text-base font-medium', mono && 'font-mono tabular-nums')}>{value}</p>
     </div>
   )
 }

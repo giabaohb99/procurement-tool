@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 import { BookCounterCard } from '../components/book-counter-card'
-import { BookEntriesCard } from '../components/book-entries-card'
 import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentBookForm } from '../components/document-book-form'
 import {
@@ -73,11 +72,12 @@ export function DocumentBookDetailPage() {
         }
       />
 
+      {/*  KHÔNG còn bảng «Văn bản trong sổ» ở đây (khách bỏ 25/08/2026): tra văn
+           bản theo sổ thì lọc ngay ở màn Văn bản, không cần dựng lại một bảng
+           thứ hai trong trang khai báo sổ. Trang này giờ chỉ còn hai việc — khai
+           sổ và xem bộ đếm. Thành phần cũ nằm trong lịch sử git nếu cần lấy lại. */}
       {!isCreating && book && (
-        <>
-          <BookCounterCard bookId={book.id} year={year} onYearChange={setYear} />
-          <BookEntriesCard bookId={book.id} year={year} />
-        </>
+        <BookCounterCard bookId={book.id} year={year} onYearChange={setYear} />
       )}
     </DetailPageShell>
   )

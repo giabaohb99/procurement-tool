@@ -41,7 +41,10 @@ export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardP
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0">
+      {/*  `flex` chứ không chỉ `flex-row`: `CardHeader` gốc là `grid`, mà hai lớp
+           này khác nhóm trong tailwind-merge nên `grid` vẫn thắng và nút bên
+           phải rơi xuống hàng dưới. */}
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle className="flex items-center gap-2 text-base">
           <ShieldCheck className="size-4 text-muted-foreground" />
           Quyền truy cập ({active.length})
