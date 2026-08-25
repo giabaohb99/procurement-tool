@@ -7,7 +7,7 @@ import { cn } from '@/shared/utils/cn'
 
 /** Ánh xạ từng phần tử Markdown sang lớp Tailwind — thay cho plugin `prose` (dự án không cài typography). */
 const components: Components = {
-  p: ({ children }) => <p className="leading-relaxed">{children}</p>,
+  p: ({ children }) => <p className="leading-7">{children}</p>,
   strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
   em: ({ children }) => <em className="italic">{children}</em>,
   a: ({ children, href }) => (
@@ -20,12 +20,15 @@ const components: Components = {
       {children}
     </a>
   ),
-  ul: ({ children }) => <ul className="list-disc space-y-1 pl-5">{children}</ul>,
-  ol: ({ children }) => <ol className="list-decimal space-y-1 pl-5">{children}</ol>,
-  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-  h1: ({ children }) => <h1 className="mt-1 text-base font-semibold">{children}</h1>,
-  h2: ({ children }) => <h2 className="mt-1 text-sm font-semibold">{children}</h2>,
-  h3: ({ children }) => <h3 className="mt-1 text-sm font-medium">{children}</h3>,
+  ul: ({ children }) => <ul className="list-disc space-y-1.5 pl-5 marker:text-muted-foreground">{children}</ul>,
+  ol: ({ children }) => <ol className="list-decimal space-y-1.5 pl-5 marker:text-muted-foreground">{children}</ol>,
+  li: ({ children }) => <li className="leading-7">{children}</li>,
+  //  Tiêu đề trong câu trả lời chỉ nhỉnh hơn chữ thường một chút. Chữ nay nằm
+  //  TRẦN trên nền trang (không còn bong bóng) nên h1 to như tiêu đề trang sẽ
+  //  tranh chỗ với tiêu đề thật của màn hình.
+  h1: ({ children }) => <h1 className="mt-4 mb-1 text-base font-semibold text-navy">{children}</h1>,
+  h2: ({ children }) => <h2 className="mt-4 mb-1 text-[0.95rem] font-semibold text-navy">{children}</h2>,
+  h3: ({ children }) => <h3 className="mt-3 mb-1 text-sm font-semibold text-navy">{children}</h3>,
   blockquote: ({ children }) => (
     <blockquote className="border-l-2 border-border pl-3 text-muted-foreground italic">
       {children}
@@ -48,9 +51,9 @@ const components: Components = {
     </div>
   ),
   th: ({ children }) => (
-    <th className="border border-border bg-muted px-2 py-1 text-left font-medium">{children}</th>
+    <th className="border border-border bg-muted px-2.5 py-1.5 text-left font-medium">{children}</th>
   ),
-  td: ({ children }) => <td className="border border-border px-2 py-1 align-top">{children}</td>,
+  td: ({ children }) => <td className="border border-border px-2.5 py-1.5 align-top">{children}</td>,
 }
 
 interface MarkdownMessageProps {
@@ -61,7 +64,7 @@ interface MarkdownMessageProps {
 /** Hiển thị nội dung Markdown của Trợ lý (chỉ dùng cho tin của bot, không dùng cho tin người dùng). */
 export function MarkdownMessage({ content, className }: MarkdownMessageProps) {
   return (
-    <div className={cn('space-y-2 break-words', className)}>
+    <div className={cn('space-y-3 break-words', className)}>
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {content}
       </ReactMarkdown>
