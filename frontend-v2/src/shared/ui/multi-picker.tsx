@@ -41,6 +41,16 @@ interface MultiPickerProps<Id extends MultiPickerId = MultiPickerId> {
 const MAX_VISIBLE = 50
 
 /**
+ * Số chip bày ra trước khi gộp thành một câu đếm.
+ *
+ * Khách báo 25/08/2026: sổ văn bản chọn ~200 người xem, mỗi người một chip nên
+ * dải chip cao hơn cả màn hình — ô «Người quản lý» ngay dưới bị đẩy đi mất, người
+ * dùng tưởng form hỏng. Mười hai chip là vừa đủ để nhìn ra "đang chọn những ai"
+ * mà không nuốt mất phần còn lại của form.
+ */
+const MAX_CHIPS = 12
+
+/**
  * Chọn NHIỀU mục từ một danh sách có sẵn: nút mở, ô tìm, danh sách tick, và dải
  * chip của những mục đã chọn.
  *
@@ -59,6 +69,8 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
 }: MultiPickerProps<Id>) {
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
+  //  Bung hết dải chip. Mặc định gập lại — xem `MAX_CHIPS`.
+  const [xemHetChip, setXemHetChip] = useState(false)
 
   const selected = useMemo(
     () => value.map((id) => options.find((item) => item.id === id)).filter(Boolean) as typeof options,
@@ -77,6 +89,9 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
   }, [options, keyword])
 
   const matches = useMemo(() => filtered.slice(0, MAX_VISIBLE), [filtered])
+
+  const chipHienRa = xemHetChip ? selected : selected.slice(0, MAX_CHIPS)
+  const conAn = selected.length - chipHienRa.length
 
   /** Đã tick hết phần đang lọc chưa — quyết định nút là "Chọn" hay "Bỏ chọn". */
   const allPicked = filtered.length > 0 && filtered.every((item) => value.includes(item.id))
@@ -104,10 +119,16 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
             type="button"
             variant="outline"
             disabled={disabled}
-            className="w-full justify-start font-normal text-muted-foreground"
+            className={cn(
+              'w-full justify-start font-normal',
+              selected.length === 0 && 'text-muted-foreground',
+            )}
           >
             <Search className="size-4" />
-            {placeholder}
+            {/*  Có chọn rồi thì nút nói SỐ LƯỢNG, không lặp lại câu mời chọn:
+                 với dải chip đã gập, đây là chỗ duy nhất đọc ra "đang chọn bao
+                 nhiêu" mà không phải đếm tay. */}
+            {selected.length > 0 ? `Đã chọn ${selected.length}` : placeholder}
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-80 p-0">
@@ -177,8 +198,8 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
       </Popover>
 
       {selected.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {selected.map((item) => (
+        <div className="flex flex-wrap items-center gap-1">
+          {chipHienRa.map((item) => (
             <Badge key={item.id} variant="secondary" className="gap-1 font-normal">
               {item.label}
               <button
@@ -191,6 +212,44 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
               </button>
             </Badge>
           ))}
+
+          {/*  Gập / bung. Không giấu hẳn phần dư: bỏ một người trong số 200 vẫn
+               phải làm được, chỉ là không bày sẵn cả 200 chip. */}
+          {conAn > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs text-muted-foreground"
+              onClick={() => setXemHetChip(true)}
+            >
+              + {conAn} nữa
+            </Button>
+          )}
+          {xemHetChip && selected.length > MAX_CHIPS && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs text-muted-foreground"
+              onClick={() => setXemHetChip(false)}
+            >
+              Thu gọn
+            </Button>
+          )}
+
+          {selected.length > 1 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
+              onClick={() => onChange([])}
+              disabled={disabled}
+            >
+              Bỏ hết
+            </Button>
+          )}
         </div>
       )}
     </div>

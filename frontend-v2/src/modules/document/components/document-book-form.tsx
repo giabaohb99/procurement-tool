@@ -82,7 +82,16 @@ export function DocumentBookForm({ formId, book, onSubmit }: DocumentBookFormPro
       <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         <Card>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-3">
+            {/*  MỘT LƯỚI 2 CỘT CHO CẢ THẺ, và `items-start` ở mọi hàng.
+                 Trước 25/08/2026 hàng đầu là `grid-cols-3` (Mã sổ 1 cột, Tên sổ
+                 2 cột) còn các hàng dưới là `grid-cols-2`, nên đường chia cột
+                 chạy zíc zắc dọc form: đo được 666 → 855 → 855 → 666.
+                 Thiếu `items-start` còn hỏng theo chiều dọc: ô lưới mặc định
+                 CĂNG ra cho bằng hàng, mà `FormItem` là `grid` với hàng `auto`
+                 nên phần dư bị chia đều cho các hàng con — ô nào ít dòng hơn
+                 (Tên sổ không có câu mô tả) thì nhãn và ô nhập bị đẩy giãn ra.
+                 Đo được: ô nhập «Tên sổ» thấp hơn «Mã sổ» đúng 14px. */}
+            <div className="grid items-start gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="code"
@@ -113,18 +122,24 @@ export function DocumentBookForm({ formId, book, onSubmit }: DocumentBookFormPro
                 control={form.control}
                 name="name"
                 render={({ field }) => (
-                  <FormItem className="sm:col-span-2">
-                    <FormLabel>Tên sổ</FormLabel>
+                  <FormItem>
+                    <FormLabel>
+                      Tên sổ <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="VD: Sổ công văn đến 2026" {...field} />
                     </FormControl>
+                    {/*  Có câu mô tả để hàng này cân với ô «Mã sổ» bên trái, và
+                         cũng để nói rõ tên sổ là thứ người dùng NHÌN THẤY khắp
+                         nơi — khác mã sổ vốn chỉ là khóa của bộ đếm. */}
+                    <FormDescription>Tên hiện trong ô chọn sổ khi soạn văn bản.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid items-start gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="kind"
@@ -159,7 +174,12 @@ export function DocumentBookForm({ formId, book, onSubmit }: DocumentBookFormPro
                 name="company_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Pháp nhân</FormLabel>
+                    {/*  Có dấu sao vì `company_id` bị chặn ở `min(1)` trong
+                         `document-book-schema.ts` — trước đây bắt buộc thật mà
+                         không vẽ sao, người khai chỉ biết lúc bấm Lưu. */}
+                    <FormLabel>
+                      Pháp nhân <span className="text-destructive">*</span>
+                    </FormLabel>
                     <Select
                       value={field.value ? String(field.value) : ''}
                       onValueChange={(value) => field.onChange(Number(value))}
@@ -198,7 +218,7 @@ export function DocumentBookForm({ formId, book, onSubmit }: DocumentBookFormPro
             />
 
             {/* ===== Người dùng sổ — chỉ định đích danh, không theo phòng ban ===== */}
-            <div className="grid gap-4 border-t pt-4 sm:grid-cols-2">
+            <div className="grid items-start gap-4 border-t pt-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="manager_ids"
@@ -255,7 +275,7 @@ export function DocumentBookForm({ formId, book, onSubmit }: DocumentBookFormPro
               </p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid items-start gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="number_prefix"
@@ -295,26 +315,31 @@ export function DocumentBookForm({ formId, book, onSubmit }: DocumentBookFormPro
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="reset_yearly"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start gap-3 pt-8">
-                    <FormControl>
-                      <Checkbox
-                        className="mt-0.5"
-                        checked={field.value}
-                        onCheckedChange={(checked) => field.onChange(checked === true)}
-                      />
-                    </FormControl>
-                    <div className="space-y-1">
-                      <FormLabel>Đếm lại mỗi năm</FormLabel>
-                      <FormDescription>Đúng lệ hành chính, nên để bật.</FormDescription>
-                    </div>
-                  </FormItem>
-                )}
-              />
             </div>
+
+            {/*  Ô tick xuống HÀNG RIÊNG, không chen làm cột thứ ba. Bản cũ phải
+                 chèn `pt-8` để đẩy nó xuống cho ngang hàng ô nhập bên cạnh —
+                 một con số phỏng chừng theo chiều cao nhãn, mà nhãn xuống dòng
+                 (màn hẹp, hoặc đổi chữ) là lệch ngay. */}
+            <FormField
+              control={form.control}
+              name="reset_yearly"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start gap-3">
+                  <FormControl>
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={field.value}
+                      onCheckedChange={(checked) => field.onChange(checked === true)}
+                    />
+                  </FormControl>
+                  <div className="space-y-1">
+                    <FormLabel>Đếm lại mỗi năm</FormLabel>
+                    <FormDescription>Đúng lệ hành chính, nên để bật.</FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

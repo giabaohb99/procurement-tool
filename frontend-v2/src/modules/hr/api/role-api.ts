@@ -23,6 +23,15 @@ export const roleApi = {
 
   remove: (id: number) => apiDelete<null>(`${BASE_URL}/${id}`),
 
+  /**
+   * Lưu thứ tự hiện của danh sách vai trò.
+   *
+   * Gửi TRỌN dãy id theo đúng thứ tự muốn có, không gửi từng cặp (id, vị trí):
+   * kéo một dòng lên đầu là mọi dòng dưới đổi số.
+   */
+  saveOrder: (roleIds: number[]) =>
+    httpClient.put<SuccessEnvelope<null>>(`${BASE_URL}/order`, { role_ids: roleIds }),
+
   getPermissions: (roleId: number) =>
     apiGet<RolePermissionRow[]>(`${BASE_URL}/${roleId}/permissions`),
 

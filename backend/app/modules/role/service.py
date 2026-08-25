@@ -7,8 +7,34 @@ from .schema import PermissionUpdate, RoleCreate, RoleUpdate
 
 
 def list_roles_query(db: Session):
-    """Query thô để controller còn gắn thêm bộ lọc (apply_filters) trước khi .all()."""
-    return db.query(Role).order_by(Role.id)
+    """Query thô để controller còn gắn thêm bộ lọc (apply_filters) trước khi .all().
+
+    Xếp theo THỨ TỰ NGƯỜI QUẢN TRỊ ĐẶT, `id` chỉ là khóa phụ để hai vai trò cùng
+    `sort_order` (mặc định 0 cho tới lần kéo thả đầu tiên) không đảo chỗ nhau
+    giữa hai lần nạp — danh sách nhảy lung tung là người dùng mất dấu vai trò
+    mình vừa bấm.
+    """
+    return db.query(Role).order_by(Role.sort_order, Role.id)
+
+
+def sap_xep_vai_tro(db: Session, role_ids: list[int], user_id: int) -> None:
+    """Ghi lại thứ tự vai trò theo đúng dãy `role_ids` nhận được.
+
+    Nhận **toàn bộ** dãy chứ không nhận từng cặp (id, vị trí): kéo một dòng lên
+    đầu là mọi dòng phía dưới đổi số, gửi từng cặp thì client phải tự tính lại
+    hết rồi bắn N request — nửa chừng đứt mạng là thứ tự vỡ.
+
+    Id lạ (vai trò vừa bị người khác xóa) thì **bỏ qua**, không dựng 404: người
+    dùng vẫn đang kéo trên danh sách cũ, chặn cả lượt vì một dòng đã biến mất là
+    vứt luôn công sắp xếp của họ.
+    """
+    for vi_tri, rid in enumerate(role_ids, start=1):
+        obj = db.get(Role, rid)
+        if obj is None:
+            continue
+        obj.sort_order = vi_tri
+        obj.updated_by = user_id
+    db.commit()
 
 
 def list_roles(db: Session):

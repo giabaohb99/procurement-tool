@@ -4,6 +4,8 @@ export interface Role {
   code: string
   name: string
   description: string
+  /** Thứ tự hiện do người quản trị kéo thả. Vai trò chưa xếp thì là 0. */
+  sort_order: number
 }
 
 /** Một cặp key/label do backend trả ở `/api/roles/meta`. */

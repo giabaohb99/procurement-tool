@@ -47,6 +47,38 @@ export function useCreateRole() {
   })
 }
 
+/** Đổi tên / mô tả một vai trò. Không đụng tới ma trận quyền. */
+export function useUpdateRole() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ roleId, name }: { roleId: number; name: string }) =>
+      roleApi.update(roleId, { name }),
+    onSuccess: () => {
+      toast.success('Đã đổi tên vai trò')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.roles() })
+    },
+  })
+}
+
+/**
+ * Lưu thứ tự vai trò sau khi kéo thả.
+ *
+ * KHÔNG toast lúc thành công: mỗi lần thả một dòng là một lần gọi, mà người ta
+ * hay kéo liên tiếp mấy dòng — bắn toast mỗi lần thì màn hình đầy bóng thông báo
+ * trong khi bản thân danh sách đã tự nói kết quả rồi. Lỗi thì vẫn phải báo, vì
+ * lúc đó thứ nhìn thấy (đã đổi chỗ) khác thứ đã lưu.
+ */
+export function useSaveRoleOrder() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (roleIds: number[]) => roleApi.saveOrder(roleIds),
+    onError: () => toast.error('Không lưu được thứ tự vai trò — tải lại trang để xem thứ tự thật.'),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.hr.roles() }),
+  })
+}
+
 export function useDeleteRole() {
   const queryClient = useQueryClient()
 

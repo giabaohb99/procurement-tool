@@ -11,7 +11,7 @@ from app.core.response import success
 
 from . import service
 from .model import Role
-from .schema import PermissionUpdate, RoleCreate, RoleOut, RoleUpdate
+from .schema import PermissionUpdate, RoleCreate, RoleOrder, RoleOut, RoleUpdate
 
 router = APIRouter(prefix="/api/roles", tags=["role"])
 
@@ -41,6 +41,23 @@ def list_roles(request: Request, db: Session = Depends(get_db),
 def create_role(data: RoleCreate, db: Session = Depends(get_db), user=Depends(require("role", "create"))):
     obj = service.create_role(db, data, user.id)
     return success(RoleOut.model_validate(obj).model_dump(), "Đã tạo vai trò", 201)
+
+
+@router.put("/order")
+def sap_xep_vai_tro(
+    data: RoleOrder, db: Session = Depends(get_db),
+    user=Depends(require("role", "write")),
+):
+    """Lưu THỨ TỰ HIỆN của danh sách vai trò (kéo thả ở màn Phân quyền).
+
+    ⚠️ Khai TRƯỚC mọi route `/{rid}` kẻo "order" bị đọc thành id vai trò.
+
+    Không gác bằng `privilege_escalation`: đổi chỗ hai dòng trong danh sách
+    không cấp thêm cho ai quyền gì — khác hẳn việc tick ô trong ma trận. Vẫn
+    đòi `role.write` vì đây là thứ mọi người quản trị khác đều nhìn thấy.
+    """
+    service.sap_xep_vai_tro(db, data.role_ids, user.id)
+    return success(None, "Đã lưu thứ tự vai trò")
 
 
 @router.get("/{rid}")

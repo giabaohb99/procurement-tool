@@ -12,11 +12,18 @@ class RoleUpdate(BaseModel):
     description: str | None = None
 
 
+class RoleOrder(BaseModel):
+    """Toàn bộ dãy vai trò theo đúng thứ tự muốn lưu."""
+
+    role_ids: list[int]
+
+
 class RoleOut(BaseModel):
     id: int
     code: str
     name: str
     description: str = ""
+    sort_order: int = 0
     model_config = {"from_attributes": True}
 
 
