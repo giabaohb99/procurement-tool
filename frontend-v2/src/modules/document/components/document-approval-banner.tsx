@@ -91,7 +91,7 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
                cũng là câu người soạn đang cần. */}
           <p className="mt-0.5 text-muted-foreground">
             {biTraVe
-              ? 'Sửa lại nội dung rồi bấm Gửi duyệt lần nữa. Dấu vết đầy đủ ở tab Phê duyệt.'
+              ? 'Sửa lại nội dung rồi bấm Gửi duyệt lần nữa.'
               : 'Văn bản đã khóa sửa. Muốn làm lại thì bấm Sao chép để có bản nháp mới.'}
           </p>
         </div>

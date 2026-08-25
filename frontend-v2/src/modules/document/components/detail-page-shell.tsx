@@ -156,9 +156,14 @@ export function DetailPageShell({
 
       {children}
 
-      {/* Chỉ bản ghi đã tồn tại mới có lịch sử để xem. */}
+      {/* Chỉ bản ghi đã tồn tại mới có lịch sử để xem.
+
+          `showMessage`: với văn bản, TIN NẰM Ở CÂU chứ không ở nhãn hành động —
+          «Trả về người nộp: sai thể thức», «Mở phiên bản 2.0: sửa điều 3». Tắt
+          nó đi thì cả thẻ chỉ còn một cột «… — Cập nhật» lặp lại, đọc xong
+          không biết chuyện gì đã xảy ra (khách báo 24/08/2026 là «không log»). */}
       {!isCreating && showHistory && audit && (
-        <AuditTimeline entity={audit.entity} entityId={audit.id} />
+        <AuditTimeline entity={audit.entity} entityId={audit.id} showMessage />
       )}
       {!isCreating && showHistory && !audit && history && <RecordHistoryCard entries={history} />}
     </PageContainer>

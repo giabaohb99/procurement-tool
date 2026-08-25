@@ -19,6 +19,9 @@ ACTION_LABEL = {
     "submitted": "Gửi duyệt",
     "approved": "Duyệt",
     "rejected": "Từ chối",
+    #  Hai kết cục của bộ máy duyệt nhiều bước — xem `document/approval_bridge`.
+    "returned": "Trả về",
+    "withdrawn": "Rút phiếu",
     "dispatched": "Điều phối",
     "paid": "Ghi nhận đã chi",
     "cancelled": "Hủy",

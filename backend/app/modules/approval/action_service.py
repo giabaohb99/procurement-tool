@@ -95,6 +95,12 @@ def duyet(db: Session, instance: ApprovalInstance, actor_employee_id: int,
     task, delegation_id = viec_dang_cho_cua(db, instance, actor_employee_id)
 
     chiem_viec(db, task, TASK_APPROVED, actor)
+    #  ⚠️ Đặt TRƯỚC khi đi tiếp, không phải sau. Duyệt nốt bước cuối thì
+    #  `di_tiep` gọi thẳng hook của chứng từ, mà hook đọc `instance.updated_by`
+    #  để biết AI vừa quyết — đọc lúc chưa gán là ra người ghi trước đó (thường
+    #  là người gửi duyệt). Hậu quả: văn bản ban hành mang tên người soạn ở cột
+    #  người sửa cuối, và dòng nhật ký ghi sai người duyệt.
+    instance.updated_by = actor
 
     instance_service.ghi_dau_vet(
         db, instance, ACTION_APPROVE, actor, node_seq=task.node_seq,
@@ -113,7 +119,6 @@ def duyet(db: Session, instance: ApprovalInstance, actor_employee_id: int,
     elif node is not None:
         instance_service.mo_viec_ke_tiep_trong_buoc(db, instance, node)
 
-    instance.updated_by = actor
     db.commit()
     db.refresh(instance)
     return instance
@@ -162,6 +167,9 @@ def tra_lai(db: Session, instance: ApprovalInstance, actor_employee_id: int,
     task, delegation_id = viec_dang_cho_cua(db, instance, actor_employee_id)
 
     chiem_viec(db, task, TASK_CANCELLED, actor)
+    #  Gán TRƯỚC hook, cùng lý do như ở `duyet` — nếu không thì văn bản bị trả
+    #  về lại mang tên người GỬI DUYỆT trong nhật ký, đúng người không làm việc đó.
+    instance.updated_by = actor
 
     instance_service.ghi_dau_vet(
         db, instance, ACTION_RETURN, actor, node_seq=task.node_seq,
@@ -186,7 +194,6 @@ def tra_lai(db: Session, instance: ApprovalInstance, actor_employee_id: int,
         instance.status = INSTANCE_RUNNING
         instance_service.mo_chang(db, instance, subject, ve_buoc)
 
-    instance.updated_by = actor
     db.commit()
     db.refresh(instance)
     return instance
