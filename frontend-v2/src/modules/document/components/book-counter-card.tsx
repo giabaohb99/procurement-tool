@@ -91,12 +91,16 @@ function Figure({
   return (
     <div>
       <p className="text-xs text-muted-foreground">{label}</p>
-      {/*  `text-base` chứ không phải `text-lg`: ba con số này là ô CHỈ XEM, không
-           phải tiêu đề. Để `text-lg` (18px) thì chúng to hơn cả tiêu đề thẻ
-           «Bộ đếm» (16px) — đọc như thể chúng quan trọng hơn tên của chính khối
-           chứa chúng. Chữ đẳng khoảng thêm `tabular-nums` cho các chữ số thẳng
-           cột khi đổi năm. */}
-      <p className={cn('text-base font-medium', mono && 'font-mono tabular-nums')}>{value}</p>
+      {/*  `text-sm` — ĐÚNG cỡ của `shared/ui/read-only-value.tsx`, vì ba thứ này
+           chính là ô chỉ xem chứ không phải tiêu đề.
+           Đã phải hạ hai lần: `text-lg` (18px) to hơn cả tiêu đề thẻ «Bộ đếm»
+           (16px), rồi `text-base` vẫn bị kêu to ở ô MÃ. Lý do ô mã trông to hơn
+           hai ô kia dù cùng số đo: chữ đẳng khoảng có bề ngang và chiều cao chữ
+           thường lớn hơn font giao diện ở cùng `font-size` (đo được: 16px mono
+           cao 12.10px / rộng 106px, so với 11.82px / 102px của font thường).
+           Cả `font-mono` trong dự án cũng đi kèm cỡ nhỏ — chính giá trị này ở
+           màn danh sách Sổ là `font-mono text-xs`. */}
+      <p className={cn('text-sm font-medium', mono && 'font-mono tabular-nums')}>{value}</p>
     </div>
   )
 }
