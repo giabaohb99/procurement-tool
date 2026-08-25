@@ -95,6 +95,43 @@ def da_khai(entity: str) -> bool:
     return entity in _HOOKS
 
 
+#  entity → hàm `(db, entity_id, user) -> bool`: người này ĐỌC ĐƯỢC chứng từ đó không.
+#
+#  Bộ máy duyệt không biết đọc bảng của chứng từ, nhưng nó vẫn phải trả lời được
+#  câu "ai được xem phiếu duyệt này". Trước đây bốn endpoint đọc phiếu chỉ đòi
+#  ĐĂNG NHẬP, với lý do "quyền đọc chính chứng từ do module của nó gác" — mà
+#  không chỗ nào gác thật. Dựng lại được (25/08/2026): văn thư pháp nhân SAM mở
+#  `/api/documents/507` ăn **404**, nhưng `/api/approvals/of/document/507` trả
+#  **200** kèm tên văn bản, tên luồng, tên người đang duyệt — và `/comment` cho
+#  họ ghi thẳng vào dấu vết phiếu, thứ sẽ nằm trên bản in phê duyệt.
+_READERS: dict[str, Callable] = {}
+
+
+def register_reader(entity: str, fn: Callable) -> None:
+    """Khai hàm kiểm quyền ĐỌC chứng từ cho loại này. Xem `_READERS`."""
+    _READERS[entity] = fn
+
+
+def doc_duoc(db: Session, instance, user) -> bool:
+    """Người này có được xem phiếu duyệt của chứng từ đó không.
+
+    Loại chứng từ **chưa khai** hàm kiểm thì trả `True` — giữ nguyên hành vi cũ
+    cho các phân hệ khác, để việc siết ở đây không lặng lẽ khóa phiếu của thu
+    mua. Mỗi module tự khai khi đến lượt mình.
+    """
+    fn = _READERS.get(instance.entity)
+    if fn is None:
+        return True
+    try:
+        return bool(fn(db, instance.entity_id, user))
+    except Exception:   # noqa: BLE001 — chứng từ đã xóa, hồ sơ hỏng…
+        import logging
+
+        logging.getLogger(__name__).exception(
+            "Không kiểm được quyền đọc %s #%s", instance.entity, instance.entity_id)
+        return False
+
+
 #  entity → hàm `(db, entity_id) -> dict` dựng lại BỐI CẢNH của chứng từ.
 #
 #  Bối cảnh là thứ dùng để tính người duyệt (phòng chủ trì, pháp nhân, mức mật…)

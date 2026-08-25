@@ -242,7 +242,14 @@ def gop_y(db: Session, instance: ApprovalInstance, actor_employee_id: int,
     Không đổi trạng thái gì. Nằm chung bảng dấu vết để bản in đọc được theo đúng
     thứ tự thời gian: ý kiến tách khỏi quyết định thì đọc lại không hiểu vì sao
     người ta duyệt.
+
+    ⚠️ **Phiếu đã kết thúc thì thôi.** Chính vì ý kiến nằm chung bảng với quyết
+    định và đi thẳng lên bản in dấu vết, cho ghi tiếp sau khi phiếu đóng nghĩa
+    là tờ giấy đã ký vẫn dài thêm được. Hộp thoại trên giao diện chỉ mở khi còn
+    việc đang chờ nên không ai gặp; nhưng cửa API thì trước đây vẫn nhận
+    (25/08/2026).
     """
+    _dang_mo(instance)
     noi_dung = (noi_dung or "").strip()
     if not noi_dung:
         raise HTTPException(400, "Chưa nhập ý kiến")

@@ -7,7 +7,7 @@ sổ mà không ai biết. Màn hình chỉ đọc `next_no` để xem trước.
 """
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
@@ -15,7 +15,6 @@ from app.core.auth import get_perm_profile, require
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
-from app.core.scoping import apply_scope
 
 from . import book_service as service
 from .book_model import DocumentBook
@@ -36,7 +35,12 @@ def list_books(
 ):
     profile = get_perm_profile(db, user)
     q = apply_filters(db.query(DocumentBook), DocumentBook, request, FILTERABLE)
-    q = apply_scope(q, DocumentBook, "document_book", user, profile)
+    #  KHÔNG dùng `apply_scope`: phạm vi vai trò chỉ biết thu hẹp, mà sổ còn được
+    #  chia ĐÍCH DANH qua `tab_document_book_member` — nguồn quyền cộng thêm đó
+    #  phải OR vào, xem `service.dieu_kien_xem_so`.
+    dieu_kien = service.dieu_kien_xem_so(user, profile)
+    if dieu_kien is not None:
+        q = q.filter(dieu_kien)
 
     total = q.count()
     items = (
@@ -56,9 +60,7 @@ def get_book(
     db: Session = Depends(get_db),
     user=Depends(require("document_book", "read")),
 ):
-    book = db.get(DocumentBook, book_id)
-    if not book:
-        raise HTTPException(404, "Không tìm thấy sổ")
+    book = service.so_xem_duoc_hoac_404(db, book_id, user, get_perm_profile(db, user))
     return success(service.serialize(db, book, year))
 
 
@@ -104,9 +106,7 @@ def get_counter(
     user=Depends(require("document_book", "read")),
 ):
     """Tình trạng bộ đếm của sổ trong một năm — dùng cho khối "Bộ đếm" trên trang chi tiết."""
-    book = db.get(DocumentBook, book_id)
-    if not book:
-        raise HTTPException(404, "Không tìm thấy sổ")
+    book = service.so_xem_duoc_hoac_404(db, book_id, user, get_perm_profile(db, user))
 
     year = year or date.today().year
     data = service.serialize(db, book, year)

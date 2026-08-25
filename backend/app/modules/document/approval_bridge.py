@@ -323,3 +323,23 @@ def _boi_canh_theo_id(db: Session, document_id: int) -> dict:
 
 
 entity_hooks.register_subject(ENTITY, _boi_canh_theo_id)
+
+
+def _doc_duoc_van_ban(db: Session, document_id: int, user) -> bool:
+    """Người này có đọc được văn bản của phiếu duyệt đó không.
+
+    Bộ máy duyệt hỏi qua đây để biết ai được xem phiếu và ai được ghi ý kiến —
+    xem `entity_hooks._READERS`. Dùng lại đúng luật đọc của văn bản
+    (`access_service.can`), không chép một bản luật thứ hai.
+    """
+    from app.core.auth import get_perm_profile
+
+    from . import access_service
+
+    doc = db.get(Document, document_id)
+    if doc is None:
+        return False
+    return access_service.can(db, doc, user, get_perm_profile(db, user), "read")
+
+
+entity_hooks.register_reader(ENTITY, _doc_duoc_van_ban)

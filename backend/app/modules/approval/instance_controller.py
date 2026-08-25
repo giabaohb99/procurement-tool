@@ -14,7 +14,7 @@ from app.core.auth import get_current_user, require
 from app.core.database import get_db
 from app.core.response import success
 
-from . import action_service, serializer, task_service
+from . import action_service, entity_hooks, serializer, task_service
 from .concurrency import chay_chiu_tranh_chap
 from .instance_model import ApprovalInstance, ApprovalTask
 
@@ -111,10 +111,15 @@ def phien_cua_chung_tu(entity: str, entity_id: int, db: Session = Depends(get_db
     Trả cả phiên ĐÃ kết thúc, vì `finish_reason` là chỗ duy nhất nói được câu
     "đã duyệt hết các bước nhưng chưa ban hành được vì …".
 
-    Ai đăng nhập cũng gọi được: quyền đọc chính chứng từ đó do module của nó
-    gác, ở đây chỉ có tiến trình duyệt.
+    ⚠️ Ai đăng nhập cũng GỌI được, nhưng chỉ người ĐỌC ĐƯỢC CHỨNG TỪ mới nhận
+    được dữ liệu. Câu cũ ở đây ghi "quyền đọc chứng từ do module của nó gác" —
+    mà module của nó không gác đường này, nên văn thư pháp nhân khác mở
+    `/api/documents/507` ăn 404 vẫn đọc được tên văn bản, tên luồng và tên người
+    đang duyệt qua đây (25/08/2026).
+
+    Không được đọc thì trả `null` y như chứng từ chưa vào bộ máy: đó đã là câu
+    trả lời đúng với họ, và không lộ thêm việc "có phiếu nhưng anh không được xem".
     """
-    del user
     instance = (
         db.query(ApprovalInstance)
         .filter(ApprovalInstance.entity == entity,
@@ -122,7 +127,7 @@ def phien_cua_chung_tu(entity: str, entity_id: int, db: Session = Depends(get_db
         .order_by(ApprovalInstance.id.desc())
         .first()
     )
-    if instance is None:
+    if instance is None or not entity_hooks.doc_duoc(db, instance, user):
         return success(None)
     return success(serializer.instance_out(db, instance, kem_chi_tiet=True))
 
@@ -143,7 +148,7 @@ def handover(data: HandoverIn, db: Session = Depends(get_db),
 @router.get("/{instance_id}")
 def get_instance(instance_id: int, db: Session = Depends(get_db),
                  user=Depends(get_current_user)):
-    return success(serializer.instance_out(db, _load(db, instance_id), kem_chi_tiet=True))
+    return success(serializer.instance_out(db, _load(db, instance_id, user), kem_chi_tiet=True))
 
 
 @router.get("/{instance_id}/trail")
@@ -155,7 +160,7 @@ def trail(instance_id: int, db: Session = Depends(get_db),
     một tờ giấy in ra được, không phải một ảnh chụp màn hình"*. Câu chữ dựng ở
     backend để bản in trên web và bản xuất ra tệp không bao giờ lệch nhau.
     """
-    instance = _load(db, instance_id)
+    instance = _load(db, instance_id, user)
     return success({
         "instance": serializer.instance_out(db, instance),
         "lines": [serializer.action_out(db, row)
@@ -210,7 +215,7 @@ def comment(instance_id: int, data: ActionIn, db: Session = Depends(get_db),
             user=Depends(get_current_user)):
     """I16 — trao đổi ngay trên phiếu, không qua chat riêng."""
     chay_chiu_tranh_chap(db, lambda: action_service.gop_y(
-        db, _load(db, instance_id), _employee_id(user), user.id, data.comment))
+        db, _load(db, instance_id, user), _employee_id(user), user.id, data.comment))
     return success(None, "Đã ghi ý kiến")
 
 
@@ -225,8 +230,21 @@ def reassign(task_id: int, data: ReassignIn, db: Session = Depends(get_db),
     return success(serializer.task_out(db, task), "Đã chuyển người xử lý")
 
 
-def _load(db: Session, instance_id: int) -> ApprovalInstance:
+def _load(db: Session, instance_id: int, user=None) -> ApprovalInstance:
+    """Lấy phiên duyệt. Truyền `user` để kiểm luôn quyền ĐỌC CHỨNG TỪ của phiếu.
+
+    ⚠️ `user` không phải tùy chọn cho vui: bốn đường đọc/ghi phiếu trước đây chỉ
+    đòi đăng nhập, nên người của pháp nhân khác — mở chính văn bản đó thì ăn 404
+    — vẫn đọc được tên văn bản, tên luồng, tên người đang duyệt, và ghi được ý
+    kiến vào dấu vết (25/08/2026). Bỏ trống chỉ ở những đường đã tự kiểm bằng
+    "có việc đang chờ mình hay không" (duyệt · trả lại · từ chối · rút).
+
+    Trả **404**, không phải 403: nói "có phiếu này nhưng anh không được xem" thì
+    chính câu đó đã lộ thứ cần giấu — cùng lý lẽ với `document.ensure_can`.
+    """
     instance = db.get(ApprovalInstance, instance_id)
     if instance is None:
+        raise HTTPException(404, "Không tìm thấy phiên duyệt")
+    if user is not None and not entity_hooks.doc_duoc(db, instance, user):
         raise HTTPException(404, "Không tìm thấy phiên duyệt")
     return instance
