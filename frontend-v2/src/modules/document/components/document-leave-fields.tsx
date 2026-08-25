@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { LEAVE_SESSION, LEAVE_TYPE } from '@/shared/constants/statuses'
+import { DatePicker } from '@/shared/ui/date-picker'
 import {
   FormControl,
   FormDescription,
@@ -14,6 +16,7 @@ import { Input } from '@/shared/ui/input'
 import { RequiredMark } from '@/shared/ui/required-mark'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
+import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import type { DocumentRecordFormValues } from '../schemas/document-record-schema'
 import { soNgayGoiY } from '../helpers/so-ngay-nghi-phep'
 
@@ -24,64 +27,123 @@ interface DocumentLeaveFieldsProps {
 /**
  * TÁM Ô CỦA GIẤY NGHỈ PHÉP. Chỉ hiện khi loại văn bản đang chọn là `GNP`.
  *
- * Giá trị gom vào `metadata` của văn bản (`tab_document.metadata`), không đẻ
- * thêm cột: mỗi loại một cụm cột thì bảng phình ra và 90% cột luôn NULL với 90%
- * văn bản. Module Nghỉ phép sau này đọc thẳng từ đó.
+ * Giá trị gom vào `metadata` của văn bản, không đẻ thêm cột — mỗi loại một cụm
+ * cột thì bảng phình ra và 90% cột luôn NULL với 90% văn bản.
+ *
+ * **Bố cục 12 cột, xếp theo CÂU HỎI chứ không theo thứ tự cột trong CSDL:**
+ *
+ *     ai nghỉ ─────────────┐  nghỉ kiểu gì ──────┐
+ *     từ ngày ─┐ buổi ─┐ đến ngày ─┐ buổi ─┐  ← cả khoảng thời gian trên MỘT hàng
+ *     mấy ngày ─┐ ai gánh việc ────┐ gọi số nào ─┐
+ *     vì sao ──────────────────────────────────┘
+ *
+ * Bản đầu xếp hai cột đều nhau nên «Số liên lạc» đứng trơ một mình chiếm nửa
+ * hàng, còn «Từ ngày» và «Đến ngày» nằm hai hàng khác nhau — mắt phải nhảy qua
+ * lại mới ghép được thành một khoảng.
  *
  * Danh sách *loại nghỉ* và *buổi* lấy từ `@/shared/constants/statuses` — tệp
  * SINH TỰ ĐỘNG từ `backend/app/core/leave_codes.py`. Đừng gõ tay danh sách thứ
- * hai ở đây, hai đầu lệch nhau là ô chọn hiện mã lạ mà không ai biết vì sao.
+ * hai ở đây.
  */
 export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
   const { data: employees } = useEmployees({ page_size: 2000 })
   const nhanSu = employees?.items ?? []
 
-  const tuNgay = form.watch('leave.from_date')
-  const denNgay = form.watch('leave.to_date')
-  const buoiDi = form.watch('leave.from_session')
-  const buoiVe = form.watch('leave.to_session')
-  const goiY = soNgayGoiY(tuNgay, denNgay, buoiDi, buoiVe)
+  const goiY = soNgayGoiY(
+    form.watch('leave.from_date'),
+    form.watch('leave.to_date'),
+    form.watch('leave.from_session'),
+    form.watch('leave.to_session'),
+  )
+
+  //  ĐIỀN SẴN số ngày, không để trống chờ người dùng gõ.
+  //
+  //  Bỏ trống KHÔNG làm con số biến mất: backend tự tính đúng công thức này rồi
+  //  lưu xuống (`type_metadata.lam_sach`). Nên ô rỗng chỉ GIẤU đi một con số có
+  //  thể sai — nghỉ thứ Sáu đến thứ Hai ra 4 ngày vì công thức đếm cả cuối tuần
+  //  (hệ chưa có bảng lịch làm việc). Điền sẵn thì người lập đơn nhìn thấy ngay
+  //  và sửa được; để trống thì họ gửi đi mà không biết mình vừa khai 4 ngày phép.
+  const [tuSuaSoNgay, setTuSuaSoNgay] = useState(false)
+  if (useHasChanged(goiY) && !tuSuaSoNgay) {
+    form.setValue('leave.total_days', goiY > 0 ? goiY : '')
+  }
+
+  /** Ô chọn buổi — dùng hai lần, khai một lần. */
+  const oBuoi = (ten: 'leave.from_session' | 'leave.to_session') => (
+    <FormField
+      control={form.control}
+      name={ten}
+      render={({ field }) => (
+        <FormItem className="md:col-span-2">
+          <FormLabel>Buổi</FormLabel>
+          <Select value={field.value} onValueChange={field.onChange}>
+            <FormControl>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {LEAVE_SESSION.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
+
+  /** Ô chọn nhân sự — người nghỉ và người bàn giao dùng chung khuôn. */
+  const oNhanSu = (
+    ten: 'leave.employee_id' | 'leave.handover_employee_id',
+    nhan: string,
+    nhanRong: string,
+  ) => (
+    <FormField
+      control={form.control}
+      name={ten}
+      render={({ field }) => (
+        <FormItem className="md:col-span-6">
+          <FormLabel>{nhan}</FormLabel>
+          <Select
+            value={String(field.value || 0)}
+            onValueChange={(value) => field.onChange(Number(value))}
+          >
+            <FormControl>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              <SelectItem value="0">{nhanRong}</SelectItem>
+              {nhanSu.map((item) => (
+                <SelectItem key={item.id} value={String(item.id)}>
+                  {item.full_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <FormField
-        control={form.control}
-        name="leave.employee_id"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Người nghỉ</FormLabel>
-            <Select
-              value={String(field.value || 0)}
-              onValueChange={(value) => field.onChange(Number(value))}
-            >
-              <FormControl>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Mặc định: người chịu trách nhiệm" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value="0">— Theo người chịu trách nhiệm —</SelectItem>
-                {nhanSu.map((item) => (
-                  <SelectItem key={item.id} value={String(item.id)}>
-                    {item.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormDescription>
-              Hành chính lập hộ thì chọn đúng người nghỉ — đơn sẽ hiện trong danh sách
-              của họ.
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+    // `items-start`: ô nào có dòng chú thích thì cao hơn, không có nó là cả hàng
+    // bị kéo giãn theo ô cao nhất và nhãn lệch nhau.
+    <div className="grid items-start gap-x-4 gap-y-3 md:grid-cols-12">
+      {/* ── Hàng 1: ai nghỉ, nghỉ kiểu gì ─────────────────────────────── */}
+      {oNhanSu('leave.employee_id', 'Người nghỉ', '— Theo người chịu trách nhiệm —')}
 
       <FormField
         control={form.control}
         name="leave.leave_type"
         render={({ field }) => (
-          <FormItem>
+          <FormItem className="md:col-span-6">
             <FormLabel>Loại nghỉ</FormLabel>
             <Select value={field.value} onValueChange={field.onChange}>
               <FormControl>
@@ -102,167 +164,96 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
         )}
       />
 
-      {/*  Ngày và BUỔI đi liền nhau: nửa ngày phép là chuyện thường, tách ra hai
-           chỗ thì người ta khai một ngày cho một buổi. */}
-      <div className="grid grid-cols-[1fr_auto] gap-2">
-        <FormField
-          control={form.control}
-          name="leave.from_date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                Từ ngày
-                <RequiredMark />
-              </FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="leave.from_session"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Buổi</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {LEAVE_SESSION.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
+      {/* ── Hàng 2: cả khoảng thời gian trên MỘT hàng ──────────────────── */}
+      <FormField
+        control={form.control}
+        name="leave.from_date"
+        render={({ field }) => (
+          <FormItem className="md:col-span-4">
+            <FormLabel>
+              Từ ngày
+              <RequiredMark />
+            </FormLabel>
+            <FormControl>
+              {/*  `DatePicker` chứ không phải `<input type="date">`: ô nguyên bản
+                   hiện theo locale của MÁY, nên máy đặt tiếng Anh ra
+                   «mm/dd/yyyy» — lệch hẳn với các ô ngày khác của chính form
+                   này (Ngày hiệu lực, Ngày hết hiệu lực). */}
+              <DatePicker value={field.value ?? ''} onChange={field.onChange} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      {oBuoi('leave.from_session')}
 
-      <div className="grid grid-cols-[1fr_auto] gap-2">
-        <FormField
-          control={form.control}
-          name="leave.to_date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                Đến ngày
-                <RequiredMark />
-              </FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="leave.to_session"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Buổi</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {LEAVE_SESSION.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
+      <FormField
+        control={form.control}
+        name="leave.to_date"
+        render={({ field }) => (
+          <FormItem className="md:col-span-4">
+            <FormLabel>
+              Đến ngày
+              <RequiredMark />
+            </FormLabel>
+            <FormControl>
+              <DatePicker value={field.value ?? ''} onChange={field.onChange} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      {oBuoi('leave.to_session')}
 
+      {/* ── Hàng 3: mấy ngày · ai gánh việc · gọi số nào ───────────────── */}
       <FormField
         control={form.control}
         name="leave.total_days"
         render={({ field }) => (
-          <FormItem>
+          <FormItem className="md:col-span-3">
             <FormLabel>Tổng số ngày</FormLabel>
             <FormControl>
               <Input
                 type="number"
                 step="0.5"
                 min="0"
-                placeholder={goiY ? String(goiY) : ''}
                 {...field}
+                onChange={(event) => {
+                  //  Người dùng đã tự gõ thì thôi đừng ghi đè nữa — đổi ngày sau
+                  //  đó không được xóa con số họ vừa chỉnh.
+                  setTuSuaSoNgay(true)
+                  field.onChange(event)
+                }}
               />
             </FormControl>
-            <FormDescription>
-              {goiY
-                ? `Gợi ý ${goiY} ngày — đếm cả cuối tuần và ngày lễ vì hệ chưa có lịch làm việc. Bỏ trống thì lấy số này.`
-                : 'Bỏ trống thì hệ tự tính theo khoảng ngày ở trên.'}
-            </FormDescription>
+            <FormDescription>Đếm cả cuối tuần — sửa lại nếu cần</FormDescription>
             <FormMessage />
           </FormItem>
         )}
       />
 
-      <FormField
-        control={form.control}
-        name="leave.handover_employee_id"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Người bàn giao công việc</FormLabel>
-            <Select
-              value={String(field.value || 0)}
-              onValueChange={(value) => field.onChange(Number(value))}
-            >
-              <FormControl>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Chưa chọn" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value="0">— Không bàn giao —</SelectItem>
-                {nhanSu.map((item) => (
-                  <SelectItem key={item.id} value={String(item.id)}>
-                    {item.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {oNhanSu('leave.handover_employee_id', 'Người bàn giao công việc', '— Không bàn giao —')}
 
       <FormField
         control={form.control}
         name="leave.contact_phone"
         render={({ field }) => (
-          <FormItem>
+          <FormItem className="md:col-span-3">
             <FormLabel>Số liên lạc khi nghỉ</FormLabel>
             <FormControl>
-              <Input placeholder="Số gọi được trong thời gian nghỉ" {...field} />
+              <Input placeholder="Số gọi được khi nghỉ" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
 
+      {/* ── Hàng 4: vì sao ─────────────────────────────────────────────── */}
       <FormField
         control={form.control}
         name="leave.reason"
         render={({ field }) => (
-          <FormItem className="md:col-span-2">
+          <FormItem className="md:col-span-12">
             <FormLabel>
               Lý do nghỉ
               <RequiredMark />

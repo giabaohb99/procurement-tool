@@ -34,6 +34,28 @@ interface SearchSelectProps {
 const MAX_VISIBLE = 60
 
 /**
+ * Chuẩn hóa để so: bỏ dấu, thường hóa.
+ *
+ * Người Việt gõ ô tìm thường KHÔNG bỏ dấu — "nghi phep", "phap nhan", "don vi".
+ * So thô thì "nghi" không khớp "nghỉ" và người dùng kết luận là danh mục không
+ * có mục đó, dù nó nằm ngay đấy (khách báo 25/08/2026 với loại văn bản «Giấy
+ * nghỉ phép»).
+ *
+ * `normalize('NFD')` tách dấu thành ký tự tổ hợp riêng rồi xóa chúng đi. Riêng
+ * **đ / Đ** không phải chữ d có dấu nên NFD không đụng tới, phải thay tay.
+ *
+ * Chỉ dùng để SO, không đụng tới chuỗi hiện ra — nhãn vẫn nguyên dấu.
+ */
+function boDau(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+}
+
+/**
  * Chọn MỘT mục từ danh sách dài, có ô tìm.
  *
  * `Select` của shadcn không tìm được, mà danh mục NCC / nhóm hàng / ĐVT lên tới
@@ -66,10 +88,10 @@ export function SearchSelect({
   )
 
   const matches = useMemo(() => {
-    const needle = keyword.trim().toLowerCase()
+    const needle = boDau(keyword.trim())
     const rows = needle
       ? options.filter((option) =>
-          [option.label, option.value].some((field) => field.toLowerCase().includes(needle)),
+          [option.label, option.value].some((field) => boDau(field).includes(needle)),
         )
       : options
     return rows.slice(0, MAX_VISIBLE)

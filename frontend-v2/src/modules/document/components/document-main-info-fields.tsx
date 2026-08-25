@@ -142,7 +142,12 @@ export function DocumentMainInfoFields({
               <SelectContent>
                 {documentTypes.map((type) => (
                   <SelectItem key={type.id} value={String(type.id)}>
-                    {type.code} · {type.name}
+                    {/*  TÊN đứng trước, MÃ đứng sau. `Select` không có ô tìm;
+                         thứ duy nhất để lần trong 33 dòng là typeahead của trình
+                         duyệt, mà nó khớp từ ĐẦU nhãn. Để mã trước thì gõ «giấy
+                         nghỉ phép» không nhảy tới đâu và người dùng kết luận là
+                         danh mục không có loại đó (khách báo 25/08/2026). */}
+                    {type.name} · {type.code}
                   </SelectItem>
                 ))}
               </SelectContent>
