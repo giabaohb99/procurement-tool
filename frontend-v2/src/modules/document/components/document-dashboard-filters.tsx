@@ -1,7 +1,11 @@
 import { Building2, CalendarRange, Network } from 'lucide-react'
 
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
-import { useDepartments } from '@/modules/hr/hooks/use-departments'
+import {
+  useDepartments,
+  useDepartmentsByCompanies,
+} from '@/modules/hr/hooks/use-departments'
+import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import {
   Select,
   SelectContent,
@@ -18,10 +22,15 @@ interface DocumentDashboardFiltersProps {
   companyId?: number
   departmentId?: number
   rangeKey: DateRangeKey
+  /** Khoảng ngày tự chọn — chỉ có nghĩa khi `rangeKey === 'custom'`. */
+  fromDate?: string
+  toDate?: string
   onChange: (next: {
     companyId?: number
     departmentId?: number
     rangeKey: DateRangeKey
+    fromDate?: string
+    toDate?: string
   }) => void
 }
 
@@ -41,16 +50,29 @@ export function DocumentDashboardFilters({
   companyId,
   departmentId,
   rangeKey,
+  fromDate,
+  toDate,
   onChange,
 }: DocumentDashboardFiltersProps) {
   const { data: companies } = useCompanies({ page_size: 200, is_active: true })
   const { data: departments } = useDepartments({ page_size: 500 })
+  //  ⚠️ HỎI BACKEND, đừng lọc `company_id` ở client. Một phòng có mặt ở NHIỀU
+  //  pháp nhân (`tab_department_company`), còn `Department.company_id` chỉ là
+  //  pháp nhân GỐC — lọc theo mình nó thì phòng phục vụ pháp nhân khác biến mất
+  //  khỏi ô chọn. `by-companies` gộp cả hai nguồn (xem
+  //  `department/service.phong_ban_cua_cac_phap_nhan`).
+  const { data: capPhongBan } = useDepartmentsByCompanies(companyId ? [companyId] : [])
 
-  //  Chọn pháp nhân rồi thì chỉ hiện phòng của pháp nhân đó — danh sách phòng
-  //  của cả tập đoàn dài vài chục dòng, mà quá nửa không thuộc nơi đang xem.
-  const departmentOptions = (departments?.items ?? []).filter(
-    (item) => item.is_active && (!companyId || item.company_id === companyId),
-  )
+  const departmentOptions = companyId
+    ? (capPhongBan ?? []).map((cap) => ({ id: cap.department_id, name: cap.department_name }))
+    : (departments?.items ?? [])
+        .filter((item) => item.is_active)
+        .map((item) => ({ id: item.id, name: item.name }))
+
+  //  Pháp nhân CHƯA khai phòng ban nào là chuyện có thật trên dữ liệu đang chạy
+  //  (13 pháp nhân, phòng ban mới khai cho 2). Ô chọn bung ra rỗng trơn mà không
+  //  nói gì thì người dùng tưởng hệ hỏng — nói thẳng ra là thiếu khai báo.
+  const chuaKhaiPhongBan = Boolean(companyId) && departmentOptions.length === 0
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -63,6 +85,8 @@ export function DocumentDashboardFilters({
             companyId: next === TAT_CA ? undefined : Number(next),
             departmentId: undefined,
             rangeKey,
+            fromDate,
+            toDate,
           })
         }
       >
@@ -87,6 +111,8 @@ export function DocumentDashboardFilters({
             companyId,
             departmentId: next === TAT_CA ? undefined : Number(next),
             rangeKey,
+            fromDate,
+            toDate,
           })
         }
       >
@@ -96,6 +122,11 @@ export function DocumentDashboardFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value={TAT_CA}>Tất cả phòng ban</SelectItem>
+          {chuaKhaiPhongBan && (
+            <p className="px-2 py-3 text-xs text-muted-foreground">
+              Pháp nhân này chưa khai phòng ban nào. Khai ở <strong>Nhân sự ▸ Phòng ban</strong>.
+            </p>
+          )}
           {departmentOptions.map((department) => (
             <SelectItem key={department.id} value={String(department.id)}>
               {department.name}
@@ -107,7 +138,13 @@ export function DocumentDashboardFilters({
       <Select
         value={rangeKey}
         onValueChange={(next) =>
-          onChange({ companyId, departmentId, rangeKey: next as DateRangeKey })
+          onChange({
+            companyId,
+            departmentId,
+            rangeKey: next as DateRangeKey,
+            fromDate,
+            toDate,
+          })
         }
       >
         <SelectTrigger className="w-auto min-w-40 gap-2">
@@ -122,6 +159,18 @@ export function DocumentDashboardFilters({
           ))}
         </SelectContent>
       </Select>
+
+      {/*  Chỉ hiện khi thật sự cần: bày sẵn một ô lịch cạnh ô mức thời gian là
+           hai thứ cùng trả lời một câu, người dùng phải đoán cái nào đang ăn. */}
+      {rangeKey === 'custom' && (
+        <DateRangePicker
+          from={fromDate}
+          to={toDate}
+          onChange={(from, to) =>
+            onChange({ companyId, departmentId, rangeKey: 'custom', fromDate: from, toDate: to })
+          }
+        />
+      )}
     </div>
   )
 }

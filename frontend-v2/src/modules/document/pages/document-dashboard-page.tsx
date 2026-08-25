@@ -36,9 +36,14 @@ export function DocumentDashboardPage() {
   const [companyId, setCompanyId] = useState<number | undefined>()
   const [departmentId, setDepartmentId] = useState<number | undefined>()
   const [rangeKey, setRangeKey] = useState<DateRangeKey>('all')
+  //  Khoảng ngày TỰ CHỌN — chỉ có nghĩa khi `rangeKey === 'custom'`. Giữ ở đây
+  //  chứ không suy ra từ `rangeKey` như mấy mức bày sẵn: hai đầu do người dùng
+  //  chấm trên lịch, không có công thức nào tính ra được.
+  const [fromDate, setFromDate] = useState<string | undefined>()
+  const [toDate, setToDate] = useState<string | undefined>()
 
   const { data, isLoading } = useDocumentDashboard(
-    toDashboardParams(companyId, departmentId, rangeKey),
+    toDashboardParams(companyId, departmentId, rangeKey, { from: fromDate, to: toDate }),
   )
 
   const kpi = data?.kpi
@@ -56,10 +61,14 @@ export function DocumentDashboardPage() {
         companyId={companyId}
         departmentId={departmentId}
         rangeKey={rangeKey}
+        fromDate={fromDate}
+        toDate={toDate}
         onChange={(next) => {
           setCompanyId(next.companyId)
           setDepartmentId(next.departmentId)
           setRangeKey(next.rangeKey)
+          setFromDate(next.fromDate)
+          setToDate(next.toDate)
         }}
       />
 

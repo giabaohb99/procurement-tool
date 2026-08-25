@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { DATE_RANGES, type DateRangeKey } from './dashboard-date-range'
+import {
+  DATE_RANGES,
+  toDashboardParams,
+  type DateRangeKey,
+} from './dashboard-date-range'
 
 function giai(key: DateRangeKey) {
   const range = DATE_RANGES.find((item) => item.key === key)
@@ -48,5 +52,36 @@ describe('DATE_RANGES', () => {
 
     //  2026 không nhuận: lùi 6 ngày từ 02/03 phải ra 24/02, không phải 26/02.
     expect(giai('week').from).toBe('2026-02-24')
+  })
+})
+
+describe('khoảng ngày TỰ CHỌN', () => {
+  it('mức «custom» lấy hai đầu người dùng chấm trên lịch', () => {
+    //  Hai đầu KHÔNG suy được từ `rangeKey` như mấy mức bày sẵn — chúng nằm ở
+    //  state của trang và truyền vào qua tham số cuối.
+    expect(
+      toDashboardParams(undefined, undefined, 'custom', {
+        from: '2026-09-11',
+        to: '2026-09-14',
+      }),
+    ).toMatchObject({ from_date: '2026-09-11', to_date: '2026-09-14' })
+  })
+
+  it('mức bày sẵn thì BỎ QUA khoảng tự chọn còn sót lại', () => {
+    //  Người dùng chấm một khoảng rồi đổi về «Hôm nay»: khoảng cũ vẫn nằm trong
+    //  state, ăn nhầm nó là trang hiện số liệu của kỳ họ vừa bỏ.
+    const ra = toDashboardParams(undefined, undefined, 'today', {
+      from: '2020-01-01',
+      to: '2020-12-31',
+    })
+    expect(ra.from_date).not.toBe('2020-01-01')
+  })
+
+  it('chọn «custom» mà chưa chấm ngày nào thì không gửi tham số rỗng lên backend', () => {
+    //  `from_date=` là một tham số CÓ MẶT nhưng vô nghĩa — backend sẽ đem so với
+    //  chuỗi rỗng thay vì bỏ qua.
+    const ra = toDashboardParams(undefined, undefined, 'custom', { from: '', to: '' })
+    expect(ra.from_date).toBeUndefined()
+    expect(ra.to_date).toBeUndefined()
   })
 })

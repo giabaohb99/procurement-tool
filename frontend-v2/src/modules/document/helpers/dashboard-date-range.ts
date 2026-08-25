@@ -8,7 +8,10 @@
  * Mọi mức đều tính theo NGÀY LẬP văn bản (`created_at`) — xem `DashboardFilters`
  * bên backend để biết vì sao không phải ngày hiệu lực.
  */
-export type DateRangeKey = 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all'
+export type DateRangeKey =
+  | 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all'
+  /** Khoảng do người dùng tự chọn trên lịch — hai đầu nằm ở state của trang. */
+  | 'custom'
 
 export interface ResolvedRange {
   /** `YYYY-MM-DD`, hoặc `undefined` nếu mức này không chặn đầu nào. */
@@ -68,6 +71,13 @@ export const DATE_RANGES: {
     //  Không chặn đầu nào — backend bỏ qua tham số rỗng.
     resolve: () => ({}),
   },
+  {
+    key: 'custom',
+    label: 'Khoảng ngày…',
+    //  Hai đầu KHÔNG suy được từ đây — chúng do người dùng chọn trên lịch và
+    //  nằm ở state của trang. `toDashboardParams` nhận riêng qua tham số cuối.
+    resolve: () => ({}),
+  },
 ]
 
 /**
@@ -81,12 +91,19 @@ export function toDashboardParams(
   companyId: number | undefined,
   departmentId: number | undefined,
   rangeKey: DateRangeKey,
+  /** Chỉ dùng khi `rangeKey === 'custom'` — khoảng người dùng chọn trên lịch. */
+  khoangTuChon?: ResolvedRange,
 ): { company_id?: number; department_id?: number; from_date?: string; to_date?: string } {
-  const khoang = DATE_RANGES.find((item) => item.key === rangeKey)?.resolve()
+  const khoang =
+    rangeKey === 'custom'
+      ? khoangTuChon ?? {}
+      : DATE_RANGES.find((item) => item.key === rangeKey)?.resolve()
   return {
     company_id: companyId,
     department_id: departmentId,
-    from_date: khoang?.from,
-    to_date: khoang?.to,
+    //  Chuỗi rỗng phải thành `undefined`: gửi `from_date=` lên backend là một
+    //  tham số có mặt nhưng vô nghĩa, và `apply_filters` sẽ so với chuỗi rỗng.
+    from_date: khoang?.from || undefined,
+    to_date: khoang?.to || undefined,
   }
 }
