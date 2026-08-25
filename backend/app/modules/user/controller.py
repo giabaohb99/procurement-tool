@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
 from app.core.base_controller import pagination
 from app.core.database import get_db
+from app.core import privilege_escalation
 from app.core.response import success
 from app.core.scoping import get_perm_profile, get_scoped, scope_condition
 
@@ -76,6 +77,12 @@ def assign_roles(
     user=Depends(require("user", "write")),
 ):
     _chan_ngoai_pham_vi(db, user_id, user, "write")
+    #  Ba chốt chống tự nâng quyền — xem `core/privilege_escalation.py`. Không có
+    #  chúng thì bất kỳ ai có `user.write` tự phong quản trị hệ thống bằng đúng
+    #  một lần bấm trên chính trang của mình (dựng lại được 25/08/2026).
+    privilege_escalation.chan_tu_sua_quyen_cua_minh(user_id, user)
+    privilege_escalation.chan_vai_tro_khong_ton_tai(db, data.role_ids)
+    privilege_escalation.chan_gan_vai_tro_vuot_quyen(db, user, data.role_ids)
     service.assign_roles(db, user_id, data, user.id)
     return success(None, "Đã gán vai trò")
 
@@ -86,6 +93,13 @@ def set_active(
     user=Depends(require("user", "write")),
 ):
     _chan_ngoai_pham_vi(db, user_id, user, "write")
+    #  Tự khóa mình là tự đá mình ra khỏi hệ: đăng nhập lại không được, mà cửa mở
+    #  khóa lại nằm sau đúng cái đăng nhập đó. Người khác gỡ hộ được — trừ khi
+    #  người vừa bấm là quản trị duy nhất, lúc đó cả hệ mất đường vào.
+    if user_id == user.id and not data.is_active:
+        raise HTTPException(
+            403, "Không tự khóa tài khoản của chính mình được — khóa xong bạn "
+                 "không đăng nhập lại để mở ra được nữa.")
     service.set_active(db, user_id, data.is_active, user.id)
     return success(None, "Đã mở khóa tài khoản" if data.is_active else "Đã khóa tài khoản")
 
@@ -123,5 +137,7 @@ def get_scope(user_id: int, role_id: int, db: Session = Depends(get_db), user=De
 def set_scope(user_id: int, role_id: int, data: ScopeUpdate, db: Session = Depends(get_db),
               user=Depends(require("user", "write"))):
     _chan_ngoai_pham_vi(db, user_id, user, "write")
+    #  Phạm vi dữ liệu cũng là quyền: tự đặt cho mình `all` là thấy toàn bộ hệ.
+    privilege_escalation.chan_tu_sua_quyen_cua_minh(user_id, user)
     service.set_user_scope(db, user_id, role_id, data, user.id)
     return success(None, "Đã lưu phạm vi")

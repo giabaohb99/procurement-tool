@@ -48,9 +48,34 @@ def delete_role(db: Session, rid: int, user_id: int) -> None:
     # danh sách chặn trước đây viết hoa nên không khớp -> vẫn xóa được vai trò quản trị hệ thống.
     if (obj.code or "").strip().upper() in ("ADMIN", "ADMINISTRATOR"):
         raise HTTPException(400, "Không được xóa vai trò mặc định của hệ thống")
+
+    #  ⚠️ CÒN NGƯỜI GIỮ THÌ KHÔNG XÓA. `tab_user_role` không có khóa ngoại nên
+    #  CSDL không đỡ hộ: xóa vai trò xong dòng gán ở lại, trỏ vào một vai trò
+    #  không còn tồn tại. Người dùng lặng lẽ mất quyền — không thông báo, không
+    #  dấu vết, và màn Phân quyền của họ hiện ít hơn đúng một dòng mà không ai
+    #  đọc ra vì sao. Dòng rác thì mọi thống kê đếm theo vai trò đều đếm cả.
+    #  Dựng lại được 25/08/2026: xóa một vai trò đang có người giữ ăn 200 gọn ơ.
+    #
+    #  Chặn chứ không tự gỡ gán: gỡ hộ là quyết định thay người quản trị về việc
+    #  «những người này từ nay không còn vai trò nào» — cùng lẽ với chỗ chặn xóa
+    #  luồng duyệt còn phiếu đang chạy.
+    from app.modules.user.model import UserRole, UserScope
+
+    con_giu = db.query(UserRole).filter(UserRole.role_id == rid).count()
+    if con_giu:
+        raise HTTPException(
+            400,
+            f"Vai trò này đang gán cho {con_giu} tài khoản nên chưa xóa được. "
+            "Gỡ vai trò khỏi các tài khoản đó trước — hoặc để nguyên nếu chỉ muốn "
+            "ngừng dùng.")
+
     db.query(Permission).filter(Permission.role_id == rid).delete()
+    #  Phạm vi lưu theo cặp (tài khoản × vai trò): vai trò đi rồi thì mấy dòng
+    #  này cũng hết chỗ bám.
+    db.query(UserScope).filter(UserScope.role_id == rid).delete()
     db.delete(obj)
     db.commit()
+    perm_cache_clear()
 
 
 def get_permissions(db: Session, rid: int):

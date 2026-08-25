@@ -11,7 +11,7 @@ from app.core.database import get_db
 from app.core.limiter import limiter
 from app.core.response import success
 from app.modules.employee.model import Employee
-from app.modules.user.model import User
+from app.modules.user.model import User, UserRole
 
 from . import service
 from . import schema, service
@@ -47,6 +47,13 @@ def _me_payload(db: Session, user) -> dict:
         "department_name": emp.department_name if emp else "",
         "role_name": emp.role_name if emp else "",
         "position": emp.position if emp else "",
+        #  Vai trò ĐANG GIỮ, không phải quyền. Màn Phân quyền cần nó để khóa ma
+        #  trận của chính vai trò mình đang giữ — backend đã chặn cửa đó
+        #  (`privilege_escalation`), nhưng để người dùng tick thoải mái rồi mới
+        #  ăn 403 lúc bấm Lưu thì họ tưởng hệ hỏng, không tưởng là có luật.
+        "role_ids": sorted(
+            row[0] for row in
+            db.query(UserRole.role_id).filter(UserRole.user_id == user.id).all()),
         "permissions": get_user_permissions(db, user),
     }
 

@@ -21,6 +21,12 @@ vi.mock('@/core/api', () => ({
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
+//  Ai đang đăng nhập — trang khóa lại khi đó là tài khoản của chính họ.
+let dangDangNhapId = 99
+vi.mock('@/core/auth/use-auth', () => ({
+  useAuth: () => ({ user: { id: dangDangNhapId } }),
+}))
+
 //  Trang chỉ cần biết «được ghi» — chốt quyền thật nằm ở backend.
 vi.mock('@/core/authorization/permission-gate', () => ({
   PermissionGate: ({ children }: { children: ReactNode }) => children,
@@ -67,6 +73,7 @@ function dung() {
 }
 
 beforeEach(() => {
+  dangDangNhapId = 99
   apiGet.mockReset()
   httpPut.mockReset()
   httpPut.mockResolvedValue({ data: { success: true, message: 'Đã gán vai trò', data: null } })
@@ -127,5 +134,24 @@ describe('UserPermissionDetailPage', () => {
     await queryClient.refetchQueries({ queryKey: ['hr', 'users', 31] })
 
     expect(await screen.findByRole('checkbox', { name: /Quản trị hệ thống/ })).toBeChecked()
+  })
+
+  it('trang của CHÍNH MÌNH thì khóa lại — không tự nâng quyền được', async () => {
+    //  Backend đã chặn (`core/privilege_escalation.py`), nhưng để người dùng tick
+    //  thoải mái rồi mới ăn 403 lúc bấm Lưu thì họ tưởng hệ hỏng chứ không tưởng
+    //  là có luật. Trước 25/08/2026 bất kỳ ai có `user.write` đều tự phong quản
+    //  trị hệ thống bằng đúng một lần bấm trên trang này.
+    dangDangNhapId = 31
+    apiGet.mockImplementation((url: string) =>
+      url === '/api/users/31'
+        ? Promise.resolve(taiKhoan([2]))
+        : Promise.resolve(VAI_TRO),
+    )
+
+    dung()
+
+    expect(await screen.findByRole('checkbox', { name: /Quản trị hệ thống/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Lưu vai trò/ })).toBeDisabled()
+    expect(screen.getByText(/chốt hai người/)).toBeInTheDocument()
   })
 })

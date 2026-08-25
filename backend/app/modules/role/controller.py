@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import require
 from app.core.base_controller import apply_filters
 from app.core.database import get_db
+from app.core import privilege_escalation
 from app.core.permissions import (ACTION_LABELS, ACTIONS, ENTITIES,
                                   ENTITY_LABELS, SCOPE_LABELS, SCOPES)
 from app.core.response import success
@@ -75,5 +76,11 @@ def set_permissions(
     rid: int, data: PermissionUpdate, db: Session = Depends(get_db),
     user=Depends(require("role", "write")),
 ):
+    #  Cửa sau thứ ba của tự nâng quyền: không đụng tới tài khoản nào cả, chỉ
+    #  tick thêm ô vào ma trận của CHÍNH vai trò mình đang giữ. Xem
+    #  `core/privilege_escalation.py`.
+    privilege_escalation.chan_sua_vai_tro_cua_chinh_minh(db, rid, user)
+    privilege_escalation.chan_cap_vuot_quyen(
+        db, user, privilege_escalation.quyen_trong_ma_tran(data.permissions))
     service.set_permissions(db, rid, data, user.id)
     return success(None, "Đã cập nhật phân quyền")
