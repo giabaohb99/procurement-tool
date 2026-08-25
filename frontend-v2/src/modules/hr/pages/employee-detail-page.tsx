@@ -1,13 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import {
-  ArrowLeft,
-  Briefcase,
-  Building2,
-  Hash,
-  Loader2,
-  Save,
-  UserCheck,
-} from 'lucide-react'
+import { ArrowLeft, Briefcase, Building2, Hash, Loader2, Save, UserCheck } from 'lucide-react'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -33,17 +25,8 @@ import {
 import { FormSection } from '@/shared/ui/form-section'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
-import {
-  RecordIdentityCard,
-  type IdentityChip,
-} from '@/shared/ui/record-identity-card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { RecordIdentityCard, type IdentityChip } from '@/shared/ui/record-identity-card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ActiveStatusSelect } from '../components/active-status-select'
 import { EmployeeAccountCard } from '../components/employee-account-card'
@@ -254,6 +237,7 @@ export function EmployeeDetailPage() {
                         disabled={!canWrite}
                         placeholder="Chọn phòng ban"
                         emptyLabel="— Chưa gán phòng ban —"
+                        fallbackLabel={employee.department_name ?? ''}
                         items={(departments?.items ?? []).map((d) => ({
                           id: d.id,
                           label: d.name,

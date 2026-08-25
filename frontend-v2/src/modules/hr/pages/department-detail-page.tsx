@@ -290,6 +290,12 @@ export function DepartmentDetailPage() {
                       placeholder="Chọn nhân sự"
                       emptyLabel="— Chưa chỉ định —"
                       items={managerOptions}
+                      //  Trưởng bộ phận CÓ THỂ nằm ngoài `managerOptions` một
+                      //  cách hợp lệ: danh sách lọc theo pháp nhân gốc, mà dữ
+                      //  liệu cũ có phòng ở pháp nhân này lại giữ trưởng phòng
+                      //  của pháp nhân khác. Không có nhãn dự phòng thì ô hiện
+                      //  trống, đọc thành «chưa chỉ định» — sai hẳn.
+                      fallbackLabel={department.manager_name ?? undefined}
                     />
                     <FormDescription>
                       Người duyệt/ký thay mặt phòng ban trong luồng mua hàng.

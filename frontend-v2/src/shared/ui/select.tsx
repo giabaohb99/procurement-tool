@@ -6,10 +6,39 @@ import { Select as SelectPrimitive } from "radix-ui"
 
 import { cn } from "@/shared/utils/cn"
 
+/**
+ * ⚠️ SỬA SO VỚI BẢN SHADCN GỐC — **bỏ qua `onValueChange("")`**. Đây là chỗ mất
+ * dữ liệu, không phải chuyện thẩm mỹ (lỗi khách báo 24/08/2026).
+ *
+ * Radix dựng kèm một thẻ `<select>` NGUYÊN BẢN ẩn đi (cho autofill và reset
+ * form). Danh mục ở các form chi tiết nạp **bất đồng bộ**, nên có một nhịp mà
+ * `value` đã là `"5"` trong khi `<option value="5">` chưa kịp sinh ra. Trình
+ * duyệt thấy select không có option nào khớp thì kéo giá trị về **rỗng** và bắn
+ * sự kiện `change` — Radix chuyển tiếp thành `onValueChange("")`, y như người
+ * dùng vừa tự tay chọn. Bên gọi thường viết `Number(value)` → thành **0**, ghi
+ * đè trường trong form, và lần bấm *Lưu* kế tiếp gửi số 0 đó xuống máy chủ.
+ *
+ * Triệu chứng người dùng thấy: chọn trưởng bộ phận (hoặc phòng ban của nhân sự),
+ * bấm Lưu, ô trở lại «— Chưa chỉ định —» và dữ liệu mất thật.
+ *
+ * Chặn được ở đây vì **Radix cấm `<SelectItem value="">`**: chuỗi rỗng không bao
+ * giờ là lựa chọn hợp lệ của người dùng, nên bỏ qua nó không che mất thao tác
+ * nào. Vá một chỗ thay vì rải `if (!next) return` ra vài chục ô chọn.
+ */
 function Select({
+  onValueChange,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
-  return <SelectPrimitive.Root data-slot="select" {...props} />
+  return (
+    <SelectPrimitive.Root
+      data-slot="select"
+      onValueChange={(value) => {
+        if (!value) return
+        onValueChange?.(value)
+      }}
+      {...props}
+    />
+  )
 }
 
 function SelectGroup({
