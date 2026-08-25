@@ -226,6 +226,44 @@ def dieu_kien_xem_so(user, profile: dict):
     return or_(pham_vi, DocumentBook.id.in_(cua_toi))
 
 
+def dieu_kien_sua_so(user, profile: dict, action: str = "write"):
+    """Điều kiện được SỬA / XÓA một quyển sổ.
+
+    Khác `dieu_kien_xem_so` ở nguồn cộng thêm: chỉ **người quản lý sổ** (vai 1),
+    không phải mọi thành viên. Đúng câu chú thích ngay dưới ô *Người quản lý*
+    trên giao diện — *«Sửa, đóng và xóa được sổ»* — mà trước đây backend không
+    hề đọc tới: sửa sổ chỉ xét quyền vai trò `document_book.write`, không xét
+    phạm vi và cũng không xét ai quản lý sổ nào.
+
+    Vẫn phải có quyền vai trò `write` mới vào tới đây (`require(...)` ở tầng
+    controller). Hàm này chỉ trả lời câu thứ hai: **quyển nào**.
+    """
+    from sqlalchemy import or_
+
+    from app.core.scoping import scope_condition
+
+    pham_vi = scope_condition(DocumentBook, "document_book", user, profile, action)
+    if pham_vi is None:
+        return None
+
+    employee_id = profile.get("employee_id") or getattr(user, "employee_id", None)
+    if not employee_id:
+        return pham_vi
+
+    from sqlalchemy import select
+
+    quan_ly = (select(DocumentBookMember.book_id)
+               .where(DocumentBookMember.employee_id == employee_id,
+                      DocumentBookMember.role == ROLE_MANAGER))
+    return or_(pham_vi, DocumentBook.id.in_(quan_ly))
+
+
+def so_sua_duoc_hoac_404(db: Session, book_id: int, user, profile: dict,
+                         action: str = "write") -> DocumentBook:
+    """Như `so_xem_duoc_hoac_404` nhưng cho SỬA / XÓA. Xem `dieu_kien_sua_so`."""
+    return _so_hoac_404(db, book_id, dieu_kien_sua_so(user, profile, action))
+
+
 def so_xem_duoc_hoac_404(db: Session, book_id: int, user, profile: dict) -> DocumentBook:
     """Lấy MỘT sổ, đã kiểm quyền xem trên chính nó.
 
@@ -234,13 +272,16 @@ def so_xem_duoc_hoac_404(db: Session, book_id: int, user, profile: dict) -> Docu
     khác — kèm tên người quản lý, người xem và cả bộ đếm. Đúng cái bẫy `get_scoped`
     đã ghi trong CLAUDE.md.
     """
+    return _so_hoac_404(db, book_id, dieu_kien_xem_so(user, profile))
+
+
+def _so_hoac_404(db: Session, book_id: int, dieu_kien) -> DocumentBook:
     book = db.get(DocumentBook, book_id)
     if not book:
         raise HTTPException(404, "Không tìm thấy sổ")
-
-    dieu_kien = dieu_kien_xem_so(user, profile)
     if dieu_kien is None:
         return book
+
     thay = (db.query(DocumentBook.id)
             .filter(DocumentBook.id == book_id, dieu_kien)
             .first())

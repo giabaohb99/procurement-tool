@@ -125,3 +125,64 @@ def _sua(**doi):
     from app.modules.doc_catalog.book_schema import DocumentBookUpdate
 
     return DocumentBookUpdate(**doi)
+
+
+# ── Chiều GHI: sửa / xóa sổ ──────────────────────────────────────────────────
+
+def test_co_quyen_ghi_nhung_so_cua_phap_nhan_KHAC_thi_khong_sua_duoc(db, canh, cap_quyen):
+    """Quyền vai trò `write` nói "được sửa sổ", KHÔNG nói "sổ của mọi pháp nhân".
+
+    Trước 25/08/2026 hai endpoint sửa / xóa sổ không gọi một hàm phạm vi nào —
+    ai có `document_book.write` là sửa được mọi quyển, kể cả sổ của pháp nhân
+    khác. Cùng họ lỗi với chỗ đọc sổ ở trên.
+    """
+    cap_quyen(canh["tk_b"].id, "document_book", scope="company", write=True, delete=True)
+    profile = get_perm_profile(db, canh["tk_b"])
+
+    for hanh_dong in ("write", "delete"):
+        with pytest.raises(HTTPException) as loi:
+            book_service.so_sua_duoc_hoac_404(
+                db, canh["so"].id, canh["tk_b"], profile, hanh_dong)
+        assert loi.value.status_code == 404, hanh_dong
+
+
+def test_NGUOI_QUAN_LY_so_thi_sua_duoc_du_o_phap_nhan_khac(db, canh, cap_quyen):
+    """Đúng câu chú thích dưới ô *Người quản lý*: «Sửa, đóng và xóa được sổ».
+
+    Trước đây câu đó là chữ suông — backend không đọc tới bảng thành viên khi
+    xét quyền sửa.
+    """
+    cap_quyen(canh["tk_b"].id, "document_book", scope="company", write=True, delete=True)
+    book_service.update_book(db, canh["so"].id,
+                             _sua(manager_ids=[canh["nv_b"].id]), ACTOR)
+    db.commit()
+    profile = get_perm_profile(db, canh["tk_b"])
+
+    assert book_service.so_sua_duoc_hoac_404(
+        db, canh["so"].id, canh["tk_b"], profile, "write").id == canh["so"].id
+
+
+def test_chi_NGUOI_XEM_thi_van_khong_sua_duoc(db, canh, cap_quyen):
+    """Chia để đọc không phải là chia để sửa — hai vai khác nhau."""
+    cap_quyen(canh["tk_b"].id, "document_book", scope="company", write=True)
+    book_service.update_book(db, canh["so"].id,
+                             _sua(viewer_ids=[canh["nv_b"].id]), ACTOR)
+    db.commit()
+    profile = get_perm_profile(db, canh["tk_b"])
+
+    #  Xem thì được…
+    assert book_service.so_xem_duoc_hoac_404(
+        db, canh["so"].id, canh["tk_b"], profile).id == canh["so"].id
+    #  …sửa thì không.
+    with pytest.raises(HTTPException) as loi:
+        book_service.so_sua_duoc_hoac_404(db, canh["so"].id, canh["tk_b"], profile, "write")
+    assert loi.value.status_code == 404
+
+
+def test_vua_quan_ly_vua_nguoi_xem_thi_danh_sach_KHONG_nhan_doi(db, canh, cap_quyen):
+    """Một người khai ở cả hai vai là chuyện thường; sổ không được hiện hai dòng."""
+    book_service.update_book(db, canh["so"].id, _sua(
+        manager_ids=[canh["nv_b"].id], viewer_ids=[canh["nv_b"].id]), ACTOR)
+    db.commit()
+
+    assert _danh_sach(db, canh["tk_b"]) == [canh["so"].code]

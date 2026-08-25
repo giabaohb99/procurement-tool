@@ -82,6 +82,9 @@ def update_book(
     db: Session = Depends(get_db),
     user=Depends(require("document_book", "write")),
 ):
+    #  Kiểm QUYỂN NÀO trước khi sửa: quyền vai trò `write` chỉ nói "được sửa sổ",
+    #  không nói "được sửa sổ của pháp nhân khác". Xem `service.dieu_kien_sua_so`.
+    service.so_sua_duoc_hoac_404(db, book_id, user, get_perm_profile(db, user))
     book = service.update_book(db, book_id, data, user.id)
     record(db, user.id, "document_book", book.id, "update")
     return success(service.serialize(db, book), "Đã cập nhật")
@@ -93,6 +96,7 @@ def delete_book(
     db: Session = Depends(get_db),
     user=Depends(require("document_book", "delete")),
 ):
+    service.so_sua_duoc_hoac_404(db, book_id, user, get_perm_profile(db, user), "delete")
     service.delete_book(db, book_id)
     record(db, user.id, "document_book", book_id, "delete")
     return success(None, "Đã xóa sổ")
