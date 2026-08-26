@@ -45,17 +45,17 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
 
   const pending = (instance.tasks ?? []).filter((row) => row.status === TASK_STATUS.pending)
   const isRunning = instance.status === INSTANCE_STATUS.running
-  const ket = instance.status === INSTANCE_STATUS.blocked
+  const end = instance.status === INSTANCE_STATUS.blocked
   //  Đã duyệt xong mà vẫn còn lý do ghi lại = có gì đó chưa hoàn tất được.
   const incomplete = instance.status === INSTANCE_STATUS.approved && Boolean(instance.finish_reason)
 
-  if (ket || incomplete) {
+  if (end || incomplete) {
     return (
       <div className="mb-3 flex gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3">
         <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
         <div className="text-sm">
           <p className="font-medium">
-            {ket ? 'Phiếu duyệt đang kẹt.' : 'Đã duyệt hết các bước nhưng văn bản CHƯA ban hành.'}
+            {end ? 'Phiếu duyệt đang kẹt.' : 'Đã duyệt hết các bước nhưng văn bản CHƯA ban hành.'}
           </p>
           {instance.finish_reason && (
             <p className="text-muted-foreground">{instance.finish_reason}</p>

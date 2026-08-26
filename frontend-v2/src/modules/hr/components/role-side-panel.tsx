@@ -75,9 +75,9 @@ export function RoleSidePanel({ roles, selectedId, onSelect }: RoleSidePanelProp
     const den = ids.indexOf(Number(over.id))
     if (tu < 0 || den < 0) return
 
-    const moi = arrayMove(ids, tu, den)
-    setThuTuTamThoi(moi)
-    saveOrder.mutate(moi)
+    const latest = arrayMove(ids, tu, den)
+    setThuTuTamThoi(latest)
+    saveOrder.mutate(latest)
   }
 
   async function submitNewRole() {

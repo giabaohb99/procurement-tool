@@ -4,13 +4,13 @@ import { fillPageMarkers, hasPageMarkerContent, PAGE_MARKERS } from './page-mark
 
 describe('fillPageMarkers', () => {
   it('thay đủ các thẻ trong một dòng', () => {
-    const ra = fillPageMarkers('{{so_hieu}} — trang {{trang}}/{{tong_trang}}', {
+    const out = fillPageMarkers('{{so_hieu}} — trang {{trang}}/{{tong_trang}}', {
       docNumber: '08/2026/TB-DEGO',
       trang: 2,
       totalPages: 5,
     })
 
-    expect(ra).toBe('08/2026/TB-DEGO — trang 2/5')
+    expect(out).toBe('08/2026/TB-DEGO — trang 2/5')
   })
 
   it('thẻ chưa có giá trị thì để TRỐNG, không để lại thẻ thô', () => {
@@ -36,8 +36,8 @@ describe('fillPageMarkers', () => {
 
   it('mọi thẻ được gợi ý trên giao diện đều thay được', () => {
     //  Gợi ý một thẻ mà không thay nổi thì người dùng gõ đúng vẫn ra thẻ thô.
-    const mau = PAGE_MARKERS.map((m) => m.the).join(' ')
-    const ra = fillPageMarkers(mau, {
+    const template = PAGE_MARKERS.map((m) => m.the).join(' ')
+    const out = fillPageMarkers(template, {
       trang: 1,
       totalPages: 2,
       docNumber: 'A',
@@ -45,7 +45,7 @@ describe('fillPageMarkers', () => {
       ngay: '19/08/2026',
     })
 
-    expect(ra).not.toMatch(/\{\{/)
+    expect(out).not.toMatch(/\{\{/)
   })
 })
 

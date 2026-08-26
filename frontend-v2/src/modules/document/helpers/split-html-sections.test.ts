@@ -20,9 +20,9 @@ const BAI = `
 
 describe('splitHtmlSections', () => {
   it('cắt theo tiêu đề, giữ đúng tên và cấp', () => {
-    const muc = splitHtmlSections(BAI)
+    const item = splitHtmlSections(BAI)
 
-    expect(muc.map((m) => [m.level, m.title])).toEqual([
+    expect(item.map((m) => [m.level, m.title])).toEqual([
       [1, 'Chương I. Quy định chung'],
       [2, 'Điều 1. Phạm vi'],
       [2, 'Điều 2. Giải thích'],
@@ -49,9 +49,9 @@ describe('splitHtmlSections', () => {
 
   it('bỏ phần trước tiêu đề đầu tiên — đó là khối đầu văn bản', () => {
     //  Chép quốc hiệu sang bản trích là thành hai khối đầu chồng nhau.
-    const muc = splitHtmlSections(BAI)
+    const item = splitHtmlSections(BAI)
 
-    expect(muc.every((m) => !m.html.includes('CỘNG HÒA'))).toBe(true)
+    expect(item.every((m) => !m.html.includes('CỘNG HÒA'))).toBe(true)
   })
 
   it('văn bản chưa chia mục thì trả rỗng, không nổ', () => {
@@ -60,21 +60,21 @@ describe('splitHtmlSections', () => {
   })
 
   it('giữ nguyên bảng và danh sách nằm trong mục', () => {
-    const muc = splitHtmlSections(
+    const item = splitHtmlSections(
       '<h1>A</h1><table><tbody><tr><td><p>ô</p></td></tr></tbody></table><ul><li>ý</li></ul>',
     )
 
-    expect(muc[0].html).toContain('<table>')
-    expect(muc[0].html).toContain('<ul>')
+    expect(item[0].html).toContain('<table>')
+    expect(item[0].html).toContain('<ul>')
   })
 })
 
 describe('joinSections', () => {
   it('gộp theo ĐÚNG THỨ TỰ trong văn bản, không theo thứ tự tick', () => {
-    const muc = splitHtmlSections(BAI)
-    const ra = joinSections(muc, [muc[3].id, muc[1].id])
+    const item = splitHtmlSections(BAI)
+    const out = joinSections(item, [item[3].id, item[1].id])
 
-    expect(ra.indexOf('Điều 1')).toBeLessThan(ra.indexOf('Chương II'))
+    expect(out.indexOf('Điều 1')).toBeLessThan(out.indexOf('Chương II'))
   })
 
   it('không tick gì thì ra chuỗi rỗng', () => {
@@ -84,15 +84,15 @@ describe('joinSections', () => {
 
 describe('suggestExcerptTitle', () => {
   it('một mục thì lấy thẳng tên mục', () => {
-    const muc = splitHtmlSections(BAI)
+    const item = splitHtmlSections(BAI)
 
-    expect(suggestExcerptTitle(muc, [muc[1].id])).toBe('Trích Điều 1. Phạm vi')
+    expect(suggestExcerptTitle(item, [item[1].id])).toBe('Trích Điều 1. Phạm vi')
   })
 
   it('nhiều mục thì nói rõ còn bao nhiêu mục nữa', () => {
-    const muc = splitHtmlSections(BAI)
+    const item = splitHtmlSections(BAI)
 
-    expect(suggestExcerptTitle(muc, [muc[1].id, muc[2].id, muc[3].id])).toBe(
+    expect(suggestExcerptTitle(item, [item[1].id, item[2].id, item[3].id])).toBe(
       'Trích Điều 1. Phạm vi và 2 mục khác',
     )
   })

@@ -52,7 +52,7 @@ export function useResizablePanel({ storageKey, min, max, defaultValue }: Option
       dragOrigin.current = { x: event.clientX, width }
       let last = width
 
-      const keo = (e: PointerEvent) => {
+      const drag = (e: PointerEvent) => {
         const moc = dragOrigin.current
         if (!moc) return
         last = clamp(moc.width + (e.clientX - moc.x))
@@ -61,7 +61,7 @@ export function useResizablePanel({ storageKey, min, max, defaultValue }: Option
 
       const thaTay = () => {
         dragOrigin.current = null
-        window.removeEventListener('pointermove', keo)
+        window.removeEventListener('pointermove', drag)
         window.removeEventListener('pointerup', thaTay)
         //  `document.body` chứ không phải thẻ cột: trong lúc kéo, con trỏ đi lạc
         //  ra ngoài cột nên đặt trên cột thì con trỏ đổi hình nhấp nháy.
@@ -80,7 +80,7 @@ export function useResizablePanel({ storageKey, min, max, defaultValue }: Option
       //  cả loạt tiêu đề, nhìn như bị lỗi.
       document.body.style.setProperty('cursor', 'col-resize')
       document.body.style.setProperty('user-select', 'none')
-      window.addEventListener('pointermove', keo)
+      window.addEventListener('pointermove', drag)
       window.addEventListener('pointerup', thaTay)
     },
     [width, clamp, storageKey],
@@ -90,15 +90,15 @@ export function useResizablePanel({ storageKey, min, max, defaultValue }: Option
   const resizeByKey = useCallback(
     (buoc: number) => {
       setWidth((truoc) => {
-        const moi = clamp(truoc + buoc)
+        const latest = clamp(truoc + buoc)
         if (storageKey) {
           try {
-            localStorage.setItem(storageKey, String(moi))
+            localStorage.setItem(storageKey, String(latest))
           } catch {
             //  bỏ qua
           }
         }
-        return moi
+        return latest
       })
     },
     [clamp, storageKey],

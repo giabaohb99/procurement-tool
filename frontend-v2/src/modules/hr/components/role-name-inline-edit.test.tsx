@@ -15,7 +15,7 @@ const ROLES: Role = {
 
 const rename = vi.fn()
 
-function dung(props: Partial<Parameters<typeof RoleNameInlineEdit>[0]> = {}) {
+function build(props: Partial<Parameters<typeof RoleNameInlineEdit>[0]> = {}) {
   return render(
     <RoleNameInlineEdit
       role={ROLES}
@@ -29,7 +29,7 @@ function dung(props: Partial<Parameters<typeof RoleNameInlineEdit>[0]> = {}) {
 
 async function openEditor() {
   const nguoi = userEvent.setup()
-  dung()
+  build()
   await nguoi.click(screen.getByRole('button', { name: 'Đổi tên vai trò Nhân sự' }))
   return { nguoi, o: screen.getByLabelText('Tên vai trò employee') }
 }
@@ -38,7 +38,7 @@ beforeEach(() => rename.mockClear())
 
 describe('RoleNameInlineEdit', () => {
   it('bình thường hiện tên + mã, có nút đổi tên', () => {
-    dung()
+    build()
     expect(screen.getByText('Nhân sự')).toBeInTheDocument()
     expect(screen.getByText('employee')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Đổi tên vai trò Nhân sự' })).toBeInTheDocument()
@@ -104,7 +104,7 @@ describe('RoleNameInlineEdit', () => {
   })
 
   it('thiếu quyền ghi thì không có nút đổi tên', () => {
-    dung({ canWrite: false })
+    build({ canWrite: false })
     expect(screen.queryByRole('button', { name: /^Đổi tên vai trò/ })).not.toBeInTheDocument()
     expect(screen.getByText('Nhân sự')).toBeInTheDocument()
   })
@@ -113,7 +113,7 @@ describe('RoleNameInlineEdit', () => {
     //  Đang sửa dở rồi bấm sang vai trò khác ở cột trái: giữ nguyên ô nhập là
     //  người dùng lưu nhầm tên của vai trò trước vào vai trò mới.
     const nguoi = userEvent.setup()
-    const { rerender } = dung()
+    const { rerender } = build()
     await nguoi.click(screen.getByRole('button', { name: 'Đổi tên vai trò Nhân sự' }))
     await nguoi.type(screen.getByLabelText('Tên vai trò employee'), ' đang gõ dở')
 

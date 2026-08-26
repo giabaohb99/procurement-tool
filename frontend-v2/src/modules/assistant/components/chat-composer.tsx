@@ -51,18 +51,18 @@ export function ChatComposer({ disabled, busy, onSend }: ChatComposerProps) {
 
   const canSend = text.trim().length > 0 && !disabled && !busy
 
-  const gui = async () => {
+  const send = async () => {
     if (!canSend) return
-    const cau = text.trim()
+    const sentence = text.trim()
     //  Xóa ô ngay cho mượt, nhưng GỬI HỎNG THÌ TRẢ LẠI NGUYÊN VĂN.
     //  Trước 25/08/2026 câu hỏi mất trắng khi gọi hỏng: xóa khỏi ô nhập, mà
     //  bong bóng chờ trong luồng cũng bị gỡ — người dùng phải gõ lại từ đầu một
     //  câu vừa nghĩ cả phút (đã dựng lại được bằng cách ép `/chat` trả 500).
     setText('')
     try {
-      await onSend(cau)
+      await onSend(sentence)
     } catch {
-      setText(cau)
+      setText(sentence)
       oNhap.current?.focus()
     }
   }
@@ -73,7 +73,7 @@ export function ChatComposer({ disabled, busy, onSend }: ChatComposerProps) {
     if (e.nativeEvent.isComposing) return
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      void gui()
+      void send()
     }
   }
 
@@ -100,7 +100,7 @@ export function ChatComposer({ disabled, busy, onSend }: ChatComposerProps) {
 
           <button
             type="button"
-            onClick={() => void gui()}
+            onClick={() => void send()}
             disabled={!canSend}
             title="Gửi"
             aria-label="Gửi câu hỏi"

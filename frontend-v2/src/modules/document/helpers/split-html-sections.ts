@@ -34,11 +34,11 @@ export function splitHtmlSections(html: string): HtmlSection[] {
 
   //  `DOMParser` thay vì regex: nội dung có bảng, danh sách lồng nhau và thuộc
   //  tính style dài — regex cắt HTML là cách chắc chắn cắt nhầm giữa thẻ.
-  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html')
-  const khoi = Array.from(doc.body.children)
+  const read = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html')
+  const block = Array.from(read.body.children)
 
   //  Lượt 1: ghi lại vị trí mọi tiêu đề.
-  const moc = khoi
+  const moc = block
     .map((the, i) => ({ the, i }))
     .filter(({ the }) => HEADING_TAGS.has(the.tagName))
     .map(({ the, i }) => ({ i, level: Number(the.tagName[1]), title: (the.textContent || '').trim() }))
@@ -48,12 +48,12 @@ export function splitHtmlSections(html: string): HtmlSection[] {
   //  lượt duy nhất thì tiêu đề con bị nuốt vào cha và biến mất khỏi danh sách.
   return moc.map((m, thu_tu) => {
     const ke = moc.slice(thu_tu + 1).find((x) => x.level <= m.level)
-    const het = ke ? ke.i : khoi.length
+    const expired = ke ? ke.i : block.length
     return {
       id: `muc-${thu_tu}`,
       level: m.level,
       title: m.title,
-      html: khoi.slice(m.i, het).map((the) => the.outerHTML).join(''),
+      html: block.slice(m.i, expired).map((the) => the.outerHTML).join(''),
     }
   })
 }
@@ -61,9 +61,9 @@ export function splitHtmlSections(html: string): HtmlSection[] {
 
 /** Gộp HTML của những mục được tick, giữ đúng thứ tự trong văn bản. */
 export function joinSections(sections: HtmlSection[], ids: string[]): string {
-  const chon = new Set(ids)
+  const select = new Set(ids)
   return sections
-    .filter((s) => chon.has(s.id))
+    .filter((s) => select.has(s.id))
     .map((s) => s.html)
     .join('')
 }
@@ -75,7 +75,7 @@ export function joinSections(sections: HtmlSection[], ids: string[]): string {
  * vì ghép hết tên vào là một dòng dài không ai đọc.
  */
 export function suggestExcerptTitle(sections: HtmlSection[], ids: string[]): string {
-  const chon = sections.filter((s) => ids.includes(s.id))
-  if (!chon.length) return ''
-  return chon.length === 1 ? `Trích ${chon[0].title}` : `Trích ${chon[0].title} và ${chon.length - 1} mục khác`
+  const select = sections.filter((s) => ids.includes(s.id))
+  if (!select.length) return ''
+  return select.length === 1 ? `Trích ${select[0].title}` : `Trích ${select[0].title} và ${select.length - 1} mục khác`
 }

@@ -42,10 +42,10 @@ export function DocumentPrintPage() {
 
   useEffect(() => {
     if (!record) return
-    const truoc = document.title
+    const previous = document.title
     document.title = `${record.display_code || 'Văn bản'} — ${record.title}`
     return () => {
-      document.title = truoc
+      document.title = previous
     }
   }, [record])
 

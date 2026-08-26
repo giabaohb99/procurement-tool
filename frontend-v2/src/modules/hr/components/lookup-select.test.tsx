@@ -29,9 +29,9 @@ describe('LookupSelect', () => {
     )
 
     //  Mô phỏng đúng nhịp hỏng: thẻ select ẩn bắn `change` với chuỗi rỗng.
-    const an = document.querySelector('select')
-    expect(an).not.toBeNull()
-    fireEvent.change(an as HTMLSelectElement, { target: { value: '' } })
+    const hidden = document.querySelector('select')
+    expect(hidden).not.toBeNull()
+    fireEvent.change(hidden as HTMLSelectElement, { target: { value: '' } })
 
     expect(doi).not.toHaveBeenCalled()
   })
@@ -51,8 +51,8 @@ describe('LookupSelect', () => {
       </form>,
     )
 
-    const an = document.querySelector('select') as HTMLSelectElement
-    fireEvent.change(an, { target: { value: '0' } })
+    const hidden = document.querySelector('select') as HTMLSelectElement
+    fireEvent.change(hidden, { target: { value: '0' } })
 
     expect(doi).toHaveBeenCalledWith(0)
   })

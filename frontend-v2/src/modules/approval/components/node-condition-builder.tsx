@@ -68,18 +68,18 @@ export function NodeConditionBuilder({
     () => parseCondition(value, (name) => fields.some((field) => field.name === name)).rows,
   )
 
-  function ghi(rowsMoi: ConditionRow[]) {
+  function write(rowsMoi: ConditionRow[]) {
     setRows(rowsMoi)
     onChange(buildCondition(rowsMoi))
   }
 
   function changeRow(index: number, thayDoi: Partial<ConditionRow>) {
-    ghi(rows.map((row, i) => (i === index ? { ...row, ...thayDoi } : row)))
+    write(rows.map((row, i) => (i === index ? { ...row, ...thayDoi } : row)))
   }
 
   function addRow() {
     const field = fields[0]
-    ghi([...rows, { field: field.name, op: field.ops[0], value: defaultValue(field.ops[0]) }])
+    write([...rows, { field: field.name, op: field.ops[0], value: defaultValue(field.ops[0]) }])
   }
 
   //  Loại chứng từ chưa nối vào bộ máy duyệt (mới chỉ văn bản có
@@ -194,7 +194,7 @@ export function NodeConditionBuilder({
                   variant="ghost"
                   size="icon-sm"
                   title="Bỏ điều kiện này"
-                  onClick={() => ghi(rows.filter((_, i) => i !== index))}
+                  onClick={() => write(rows.filter((_, i) => i !== index))}
                 >
                   <X />
                 </Button>

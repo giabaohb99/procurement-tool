@@ -46,8 +46,8 @@ export function MessageThread({ messages, pending, isSending, idGoDan }: Message
   const stickToBottom = useRef(true)
 
   const scrollToBottom = () => {
-    const khung = scrollRef.current
-    if (khung && stickToBottom.current) khung.scrollTop = khung.scrollHeight
+    const frame = scrollRef.current
+    if (frame && stickToBottom.current) frame.scrollTop = frame.scrollHeight
   }
 
   /**

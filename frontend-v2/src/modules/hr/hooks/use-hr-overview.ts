@@ -136,7 +136,7 @@ function groupCount(employees: Employee[], keyOf: (employee: Employee) => string
   return [...head, { label: `Khác (${tail.length} mục)`, value: sum(tail) }]
 }
 
-const KHAC = 'Khác'
+const OTHER = 'Khác'
 
 /**
  * Lát bánh theo trạng thái nhân sự. Màu bám THỨ TỰ CỐ ĐỊNH của
@@ -152,7 +152,7 @@ function buildStatusSlices(employees: Employee[]): DonutSlice[] {
   const biet = new Set(EMPLOYEE_STATUS_OPTIONS.map((o) => o.value))
   for (const employee of employees) {
     const status = employee.status?.trim() || ''
-    const key = biet.has(status) ? status : KHAC
+    const key = biet.has(status) ? status : OTHER
     counter.set(key, (counter.get(key) ?? 0) + 1)
   }
 
@@ -162,7 +162,7 @@ function buildStatusSlices(employees: Employee[]): DonutSlice[] {
     color: CHART_COLORS[index],
   }))
 
-  const other = counter.get(KHAC) ?? 0
+  const other = counter.get(OTHER) ?? 0
   if (other > 0) slices.push({ label: 'Khác', value: other, color: CHART_NEUTRAL })
 
   // Bỏ lát rỗng để chú giải không liệt kê một loạt số 0.

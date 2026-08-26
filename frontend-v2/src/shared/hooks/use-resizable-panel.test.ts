@@ -3,11 +3,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { useResizablePanel } from './use-resizable-panel'
 
-const KHOA = 'erp.thu-be-rong'
-const CONFIG = { storageKey: KHOA, min: 200, max: 420, defaultValue: 256 }
+const KEY = 'erp.thu-be-rong'
+const CONFIG = { storageKey: KEY, min: 200, max: 420, defaultValue: 256 }
 
 /** Giả lập một cú kéo: nhấn ở `x=0` rồi rê tới `x=delta` và thả tay. */
-function keo(startDrag: (e: never) => void, delta: number) {
+function drag(startDrag: (e: never) => void, delta: number) {
   act(() => {
     startDrag({ preventDefault: () => {}, clientX: 0 } as never)
   })
@@ -30,19 +30,19 @@ describe('useResizablePanel', () => {
 
   it('kéo sang phải thì rộng ra đúng khoảng đã kéo', () => {
     const { result } = renderHook(() => useResizablePanel(CONFIG))
-    keo(result.current.startDrag, 100)
+    drag(result.current.startDrag, 100)
     expect(result.current.width).toBe(356)
   })
 
   it('kéo quá tay bị chặn ở TRẦN, không nuốt hết chỗ phần chính', () => {
     const { result } = renderHook(() => useResizablePanel(CONFIG))
-    keo(result.current.startDrag, 9999)
+    drag(result.current.startDrag, 9999)
     expect(result.current.width).toBe(420)
   })
 
   it('kéo hẹp bị chặn ở SÀN, không bóp thành một vạch', () => {
     const { result } = renderHook(() => useResizablePanel(CONFIG))
-    keo(result.current.startDrag, -9999)
+    drag(result.current.startDrag, -9999)
     expect(result.current.width).toBe(200)
   })
 
@@ -57,27 +57,27 @@ describe('useResizablePanel', () => {
     })
     //  Đang kéo dở: bề rộng đã đổi trên màn nhưng CHƯA ghi đĩa.
     expect(result.current.width).toBe(336)
-    expect(localStorage.getItem(KHOA)).toBeNull()
+    expect(localStorage.getItem(KEY)).toBeNull()
 
     act(() => {
       window.dispatchEvent(new PointerEvent('pointerup', { clientX: 80 }))
     })
-    expect(localStorage.getItem(KHOA)).toBe('336')
+    expect(localStorage.getItem(KEY)).toBe('336')
   })
 
   it('mở lại thì lấy đúng bề rộng đã lưu', () => {
-    localStorage.setItem(KHOA, '390')
+    localStorage.setItem(KEY, '390')
     const { result } = renderHook(() => useResizablePanel(CONFIG))
     expect(result.current.width).toBe(390)
   })
 
   it('giá trị lưu bị hỏng / ngoài khoảng thì không làm vỡ cột', () => {
     //  Người dùng sửa tay localStorage, hoặc bản cũ lưu khoảng khác.
-    localStorage.setItem(KHOA, 'không-phải-số')
+    localStorage.setItem(KEY, 'không-phải-số')
     const { result: a } = renderHook(() => useResizablePanel(CONFIG))
     expect(a.current.width).toBe(256)
 
-    localStorage.setItem(KHOA, '99999')
+    localStorage.setItem(KEY, '99999')
     const { result: b } = renderHook(() => useResizablePanel(CONFIG))
     expect(b.current.width).toBe(420)
   })
@@ -86,14 +86,14 @@ describe('useResizablePanel', () => {
     const { result } = renderHook(() => useResizablePanel(CONFIG))
     act(() => result.current.resizeByKey(16))
     expect(result.current.width).toBe(272)
-    expect(localStorage.getItem(KHOA)).toBe('272')
+    expect(localStorage.getItem(KEY)).toBe('272')
   })
 
   it('không khai `storageKey` thì không đụng tới localStorage', () => {
     const { result } = renderHook(() =>
       useResizablePanel({ min: 200, max: 420, defaultValue: 256 }),
     )
-    keo(result.current.startDrag, 50)
+    drag(result.current.startDrag, 50)
     expect(result.current.width).toBe(306)
     expect(localStorage.length).toBe(0)
   })
@@ -102,7 +102,7 @@ describe('useResizablePanel', () => {
     //  Quên gỡ thì mọi cú rê chuột sau đó đều kéo cột — lỗi kinh điển của
     //  listener gắn trên `window`.
     const { result } = renderHook(() => useResizablePanel(CONFIG))
-    keo(result.current.startDrag, 60)
+    drag(result.current.startDrag, 60)
     const afterDrop = result.current.width
 
     act(() => {

@@ -139,11 +139,11 @@ export function DocumentTypeLinkRulesCard({
 
   /** Đổi chỗ một dòng với dòng liền kề. `huong` = -1 lên, +1 xuống. */
   function swap(index: number, huong: -1 | 1) {
-    const dich = index + huong
-    if (dich < 0 || dich >= rows.length) return
+    const target = index + huong
+    if (target < 0 || target >= rows.length) return
 
     const reordered = [...rows]
-    ;[reordered[index], reordered[dich]] = [reordered[dich], reordered[index]]
+    ;[reordered[index], reordered[target]] = [reordered[target], reordered[index]]
 
     if (!docTypeId) {
       //  Đánh số lại luôn thay vì chỉ hoán vị mảng: mấy dòng này lát nữa gửi

@@ -29,9 +29,9 @@ export function AssistantThinking() {
       <div className="flex min-h-8 flex-col justify-center gap-1">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="flex gap-1" aria-hidden>
-            <Cham do={0} />
-            <Cham do={160} />
-            <Cham do={320} />
+            <Dot do={0} />
+            <Dot do={160} />
+            <Dot do={320} />
           </span>
           <span>Đang soạn trả lời</span>
           {/*  `tabular-nums` để con số không làm dòng chữ giật qua lại mỗi giây. */}
@@ -49,7 +49,7 @@ export function AssistantThinking() {
 }
 
 /** Một chấm nhấp nháy; `do` là độ trễ (ms) để ba chấm chạy lệch pha nhau. */
-function Cham({ do: treMs }: { do: number }) {
+function Dot({ do: treMs }: { do: number }) {
   return (
     <span
       className="size-1.5 animate-pulse rounded-full bg-primary/70"

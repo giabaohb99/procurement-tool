@@ -41,7 +41,7 @@ export function EmployeeDepartmentCard({
 }: EmployeeDepartmentCardProps) {
   const { data, isLoading } = useEmployeeDepartments(employeeId)
   const { data: departments } = useDepartments({ page_size: 500, is_active: true })
-  const luu = useSaveEmployeeDepartments(employeeId)
+  const save = useSaveEmployeeDepartments(employeeId)
 
   const [selection, setSelection] = useState<number[]>([])
   //  Chỉ đồng bộ khi người dùng CHƯA chọn dở — cùng lỗi đã gặp ở màn Phân quyền
@@ -92,11 +92,11 @@ export function EmployeeDepartmentCard({
           <Button
             size="sm"
             onClick={() =>
-              luu.mutate(selection, { onSuccess: () => setDangChonDo(false) })
+              save.mutate(selection, { onSuccess: () => setDangChonDo(false) })
             }
-            disabled={luu.isPending}
+            disabled={save.isPending}
           >
-            {luu.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+            {save.isPending ? <Loader2 className="animate-spin" /> : <Save />}
             Lưu kiêm nhiệm
           </Button>
         )}

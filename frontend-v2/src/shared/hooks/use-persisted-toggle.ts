@@ -18,17 +18,17 @@ export function usePersistedToggle(storageKey: string, defaultValue = false) {
     }
   })
 
-  const doi = useCallback(() => {
+  const toggle = useCallback(() => {
     datBat((truoc) => {
-      const moi = !truoc
+      const latest = !truoc
       try {
-        localStorage.setItem(storageKey, moi ? '1' : '0')
+        localStorage.setItem(storageKey, latest ? '1' : '0')
       } catch {
         //  bỏ qua
       }
-      return moi
+      return latest
     })
   }, [storageKey])
 
-  return [bat, doi] as const
+  return [bat, toggle] as const
 }

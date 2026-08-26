@@ -11,10 +11,10 @@ export function parseMoney(amount: number): string {
   if (n <= 0) return 'Không đồng'
   const d = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín']
   const readTriple = (num: number, showH: boolean) => {
-    const tram = Math.floor(num / 100), chuc = Math.floor((num % 100) / 10), dv = num % 10
+    const station = Math.floor(num / 100), chuc = Math.floor((num % 100) / 10), dv = num % 10
     const p: string[] = []
-    if (showH || tram > 0) p.push(d[tram] + ' trăm')
-    if (chuc === 0) { if (dv > 0) p.push((showH || tram > 0 ? 'lẻ ' : '') + d[dv]) }
+    if (showH || station > 0) p.push(d[station] + ' trăm')
+    if (chuc === 0) { if (dv > 0) p.push((showH || station > 0 ? 'lẻ ' : '') + d[dv]) }
     else if (chuc === 1) { p.push('mười'); if (dv === 5) p.push('lăm'); else if (dv > 0) p.push(d[dv]) }
     else { p.push(d[chuc] + ' mươi'); if (dv === 1) p.push('mốt'); else if (dv === 5) p.push('lăm'); else if (dv > 0) p.push(d[dv]) }
     return p.join(' ')

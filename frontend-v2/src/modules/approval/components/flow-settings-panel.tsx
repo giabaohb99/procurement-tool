@@ -48,7 +48,7 @@ export function FlowSettingsPanel({
     company_id: flow?.company_id ?? null,
   }))
 
-  function dat<K extends keyof ApprovalFlow>(khoa: K, gia_tri: ApprovalFlow[K]) {
+  function set<K extends keyof ApprovalFlow>(khoa: K, gia_tri: ApprovalFlow[K]) {
     setForm((truoc) => ({ ...truoc, [khoa]: gia_tri }))
   }
 
@@ -103,7 +103,7 @@ export function FlowSettingsPanel({
           <Select
             value={form.entity ?? 'document'}
             onValueChange={(value) => {
-              dat('entity', value)
+              set('entity', value)
               onEntityChange?.(value)
             }}
             disabled={Boolean(flow)}
@@ -133,7 +133,7 @@ export function FlowSettingsPanel({
           <Input
             placeholder="VD: Duyệt đơn mua hàng trên 50 triệu"
             value={form.name ?? ''}
-            onChange={(event) => dat('name', event.target.value)}
+            onChange={(event) => set('name', event.target.value)}
             className="h-10 rounded-xl"
           />
         </div>
@@ -143,7 +143,7 @@ export function FlowSettingsPanel({
           <Select
             value={form.company_id ? String(form.company_id) : ALL_COMPANIES}
             onValueChange={(value) =>
-              dat('company_id', value === ALL_COMPANIES ? null : Number(value))
+              set('company_id', value === ALL_COMPANIES ? null : Number(value))
             }
           >
             <SelectTrigger className="h-10 w-full rounded-xl">
@@ -172,7 +172,7 @@ export function FlowSettingsPanel({
             <Input
               placeholder="VD: PO_OVER_50M"
               value={form.code ?? ''}
-              onChange={(event) => dat('code', event.target.value)}
+              onChange={(event) => set('code', event.target.value)}
               className="h-10 rounded-xl font-mono text-xs"
             />
           </div>
@@ -181,7 +181,7 @@ export function FlowSettingsPanel({
             <Input
               type="number"
               value={form.priority ?? 0}
-              onChange={(event) => dat('priority', Number(event.target.value))}
+              onChange={(event) => set('priority', Number(event.target.value))}
               className="h-10 rounded-xl"
             />
           </div>
@@ -192,7 +192,7 @@ export function FlowSettingsPanel({
           <Input
             placeholder="Mô tả mục đích hoặc quy tắc duyệt..."
             value={form.description ?? ''}
-            onChange={(event) => dat('description', event.target.value)}
+            onChange={(event) => set('description', event.target.value)}
             className="h-10 rounded-xl"
           />
         </div>
@@ -201,7 +201,7 @@ export function FlowSettingsPanel({
           <FlowScopePicker
             entity={form.entity ?? 'document'}
             condition={form.condition ?? ''}
-            onChange={(condition) => dat('condition', condition)}
+            onChange={(condition) => set('condition', condition)}
           />
         </div>
 
@@ -219,7 +219,7 @@ export function FlowSettingsPanel({
           <Switch
             id="flow-active"
             checked={form.is_active ?? true}
-            onCheckedChange={(bat) => dat('is_active', bat)}
+            onCheckedChange={(bat) => set('is_active', bat)}
           />
         </div>
       </div>

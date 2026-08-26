@@ -14,10 +14,10 @@ vi.mock('@/modules/hr/hooks/use-employees', () => ({
 }))
 
 /** Dựng component kèm form thật, và trả `form` ra để test tự đặt giá trị. */
-function dung() {
+function build() {
   let form!: UseFormReturn<DocumentRecordFormValues>
 
-  function Khung() {
+  function Frame() {
     form = useForm<DocumentRecordFormValues>({ defaultValues: emptyDocumentForm() })
     return (
       <Form {...form}>
@@ -26,7 +26,7 @@ function dung() {
     )
   }
 
-  render(<Khung />)
+  render(<Frame />)
   return () => form
 }
 
@@ -44,14 +44,14 @@ function setDate(form: UseFormReturn<DocumentRecordFormValues>, tu: string, den?
 
 describe('DocumentLeaveFields', () => {
   it('chưa chọn ngày thì hiện HAI ô buổi như khoảng nhiều ngày', () => {
-    dung()
+    build()
     expect(visibleCellCount()).toBe(2)
   })
 
   it('chọn Từ ngày thì Đến ngày TỰ BÁM THEO', () => {
     //  «Nghỉ chiều thứ Sáu» là ca hay gặp nhất. Bắt khai đủ bốn ô cho một buổi
     //  nghỉ là bốn thao tác cho việc nhỏ nhất (khách góp ý 25/08/2026).
-    const lay = dung()
+    const lay = build()
     setDate(lay(), '2026-09-11')
 
     expect(lay().getValues('leave.to_date')).toBe('2026-09-11')
@@ -60,21 +60,21 @@ describe('DocumentLeaveFields', () => {
   it('nghỉ trong MỘT ngày thì gộp còn một ô buổi', () => {
     //  Hai ô buổi lúc đó nói về CÙNG một buổi — để hai ô là mời người ta đặt
     //  lệch nhau rồi ra dữ liệu vô nghĩa («sáng → chiều» của cùng một ngày).
-    const lay = dung()
+    const lay = build()
     setDate(lay(), '2026-09-11', '2026-09-11')
 
     expect(visibleCellCount()).toBe(1)
   })
 
   it('nghỉ nhiều ngày thì vẫn đủ hai ô buổi', () => {
-    const lay = dung()
+    const lay = build()
     setDate(lay(), '2026-09-11', '2026-09-14')
 
     expect(visibleCellCount()).toBe(2)
   })
 
   it('Đến ngày đã có và SAU Từ ngày thì không bị ghi đè', () => {
-    const lay = dung()
+    const lay = build()
     setDate(lay(), '2026-09-11', '2026-09-14')
     setDate(lay(), '2026-09-12')
 
@@ -82,7 +82,7 @@ describe('DocumentLeaveFields', () => {
   })
 
   it('đổi Từ ngày ra SAU Đến ngày thì kéo Đến ngày theo, không để khoảng ngược', () => {
-    const lay = dung()
+    const lay = build()
     setDate(lay(), '2026-09-11', '2026-09-14')
     setDate(lay(), '2026-09-20')
 
@@ -92,14 +92,14 @@ describe('DocumentLeaveFields', () => {
   it('tổng số ngày ĐIỀN SẴN theo khoảng đã chọn', () => {
     //  Bỏ trống KHÔNG làm con số biến mất — backend vẫn tự tính rồi lưu. Ô rỗng
     //  chỉ giấu đi một con số có thể sai (đếm cả cuối tuần).
-    const lay = dung()
+    const lay = build()
     setDate(lay(), '2026-09-11', '2026-09-14')
 
     expect(lay().getValues('leave.total_days')).toBe(4)
   })
 
   it('nửa ngày: cùng ngày + buổi sáng ra 0.5 công', () => {
-    const lay = dung()
+    const lay = build()
     setDate(lay(), '2026-09-11', '2026-09-11')
     act(() => {
       lay().setValue('leave.from_session', 'morning')

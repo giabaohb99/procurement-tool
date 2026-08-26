@@ -38,41 +38,41 @@ function prefersReducedMotion(): boolean {
 export function useTypewriter(text: string, bat: boolean): { display: string; isRunning: boolean } {
   //  Quyết định NGAY LÚC RENDER, không phải trong effect: người tắt hiệu ứng
   //  chuyển động ở hệ điều hành thì không được thấy một nhịp chữ rỗng nào.
-  const chay = bat && !prefersReducedMotion()
+  const run = bat && !prefersReducedMotion()
 
-  const [soTuHien, setSoTuHien] = useState(() => (chay ? 0 : Infinity))
+  const [soTuHien, setSoTuHien] = useState(() => (run ? 0 : Infinity))
 
   //  Đổi nội dung (đổi hội thoại) thì gõ LẠI TỪ ĐẦU. Gán state ngay trong lúc
   //  render thay vì `useEffect` — xem `use-has-changed.ts`; qua effect thì mắt
   //  kịp thấy một khung hình mang số từ của câu CŨ.
-  if (useHasChanged(text)) setSoTuHien(chay ? 0 : Infinity)
+  if (useHasChanged(text)) setSoTuHien(run ? 0 : Infinity)
 
   const tu = text.split(/(\s+)/) //  giữ cả khoảng trắng để ghép lại y nguyên
 
   useEffect(() => {
-    if (!chay || !text) return
+    if (!run || !text) return
 
     const tong = tu.length
     //  Mỗi nhịp vẽ bao nhiêu từ để trọn lượt không vượt trần thời gian.
     const tickCount = Math.max(1, Math.floor(MAX_DURATION_MS / TICK_MS))
     const perTick = Math.max(1, Math.ceil(tong / tickCount))
 
-    let dung = false
+    let build = false
     let current = 0
-    const buoc = () => {
-      if (dung) return
+    const step = () => {
+      if (build) return
       current += perTick
       setSoTuHien(current)
-      if (current < tong) setTimeout(buoc, TICK_MS)
+      if (current < tong) setTimeout(step, TICK_MS)
     }
-    const id = setTimeout(buoc, TICK_MS)
+    const id = setTimeout(step, TICK_MS)
 
     return () => {
-      dung = true
+      build = true
       clearTimeout(id)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text, chay])
+  }, [text, run])
 
   const xong = soTuHien >= tu.length
   return {
@@ -81,6 +81,6 @@ export function useTypewriter(text: string, bat: boolean): { display: string; is
     //  mảng một phần tử rỗng nên `soTuHien = 0` không bao giờ đuổi kịp, mà vòng
     //  chạy lại thoát sớm vì không có chữ — kẹt `dangChay = true` vĩnh viễn, con
     //  trỏ nhấp nháy mãi và nút Chép không bao giờ hiện ra (bài kiểm bắt được).
-    isRunning: chay && !xong && Boolean(text),
+    isRunning: run && !xong && Boolean(text),
   }
 }

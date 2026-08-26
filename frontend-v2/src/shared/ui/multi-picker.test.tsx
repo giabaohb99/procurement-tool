@@ -107,9 +107,9 @@ describe('MultiPicker — dải chip khi chọn nhiều', () => {
     await nguoi.click(screen.getByRole('button', { name: /Xem thêm 30/ }))
 
     const chip = screen.getAllByRole('button', { name: /^Bỏ Nhân sự/ })[0]
-    const khung = chip.closest('div')
-    expect(khung?.className).toMatch(/overflow-y-auto/)
-    expect(khung?.className).toMatch(/max-h-/)
+    const frame = chip.closest('div')
+    expect(frame?.className).toMatch(/overflow-y-auto/)
+    expect(frame?.className).toMatch(/max-h-/)
   })
 
   it('gập lại thì bỏ khung cuộn, không để lại ô trống lửng', async () => {

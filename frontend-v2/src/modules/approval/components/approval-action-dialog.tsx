@@ -58,7 +58,7 @@ const CONFIRM_LABELS: Record<ApprovalActionKind, string> = {
   comment: 'Gửi ý kiến',
 }
 
-const VIEC = [
+const TASKS = [
   {
     kind: 'approve' as const,
     icon: Check,
@@ -187,7 +187,7 @@ export function ApprovalActionDialog({ task, open, onOpenChange }: ApprovalActio
           //  có câu hậu quả dài hơn.
           className="grid items-stretch gap-2 sm:grid-cols-2"
         >
-          {VIEC.map((viec) => (
+          {TASKS.map((viec) => (
             <TaskPicker key={viec.kind} {...viec} dang={kind} />
           ))}
         </RadioGroup>
@@ -262,14 +262,14 @@ interface TaskPickerProps {
 }
 
 function TaskPicker({ kind, dang, icon: Icon, ten, hau_qua, nang }: TaskPickerProps) {
-  const chon = kind === dang
+  const select = kind === dang
   return (
     <label
       className={cn(
         'flex cursor-pointer items-start gap-2.5 rounded-md border p-3 text-sm transition-colors',
-        chon && nang && 'border-destructive bg-destructive/5',
-        chon && !nang && 'border-primary bg-accent/40',
-        !chon && 'hover:bg-muted/50',
+        select && nang && 'border-destructive bg-destructive/5',
+        select && !nang && 'border-primary bg-accent/40',
+        !select && 'hover:bg-muted/50',
       )}
     >
       {/*  Chấm chọn của việc phá phiếu cũng phải đỏ. Primitive ghim cứng

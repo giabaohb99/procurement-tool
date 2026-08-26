@@ -29,7 +29,7 @@ vi.mock('../components/document-partner-catalog', () => ({
   DocumentPartnerCatalog: () => <div>bảng đơn vị gửi nhận</div>,
 }))
 
-function dung() {
+function build() {
   render(
     <MemoryRouter>
       <DocumentSettingsPage />
@@ -48,7 +48,7 @@ describe('DocumentSettingsPage', () => {
   //  có `doc_type` mà thiếu `security_level` thì vào được rồi bấm tab ăn 403.
   it('chỉ hiện tab mà tài khoản đọc được', () => {
     canRead = ['doc_type', 'external_party']
-    dung()
+    build()
 
     expect(screen.getByRole('tab', { name: /Loại văn bản/ })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /Đơn vị gửi nhận/ })).toBeInTheDocument()
@@ -59,14 +59,14 @@ describe('DocumentSettingsPage', () => {
   it('chỉ có khóa của tab CUỐI thì vẫn mở đúng tab đó, không rơi vào tab trống', () => {
     //  `?tab=` mặc định trỏ vào «Loại văn bản» — tab người này không được xem.
     canRead = ['external_party']
-    dung()
+    build()
 
     expect(screen.getByText('bảng đơn vị gửi nhận')).toBeInTheDocument()
     expect(screen.queryByText('bảng loại văn bản')).not.toBeInTheDocument()
   })
 
   it('không có khóa nào thì nói thẳng, đừng hiện khung rỗng', () => {
-    dung()
+    build()
 
     expect(screen.getByText(/không có quyền xem danh mục nền nào/i)).toBeInTheDocument()
     expect(screen.queryByRole('tab')).not.toBeInTheDocument()

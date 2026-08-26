@@ -54,7 +54,7 @@ function account(roleIds: number[]) {
   }
 }
 
-function dung() {
+function build() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
@@ -100,7 +100,7 @@ describe('UserPermissionDetailPage', () => {
         : Promise.resolve(ROLES),
     )
 
-    const queryClient = dung()
+    const queryClient = build()
     const oDeptHead = await screen.findByRole('checkbox', { name: /Trưởng phòng/ })
 
     await nguoi.click(oDeptHead)
@@ -126,7 +126,7 @@ describe('UserPermissionDetailPage', () => {
         : Promise.resolve(ROLES),
     )
 
-    const queryClient = dung()
+    const queryClient = build()
     const oAdmin = await screen.findByRole('checkbox', { name: /Quản trị hệ thống/ })
     expect(oAdmin).not.toBeChecked()
 
@@ -148,7 +148,7 @@ describe('UserPermissionDetailPage', () => {
         : Promise.resolve(ROLES),
     )
 
-    dung()
+    build()
 
     expect(await screen.findByRole('checkbox', { name: /Quản trị hệ thống/ })).toBeDisabled()
     expect(screen.getByRole('button', { name: /Lưu vai trò/ })).toBeDisabled()

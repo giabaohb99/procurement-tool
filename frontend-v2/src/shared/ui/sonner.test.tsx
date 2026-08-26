@@ -16,11 +16,11 @@ vi.mock('next-themes', () => ({ useTheme: () => ({ theme: 'light' }) }))
 async function dungVoiMotBong(props: Parameters<typeof Toaster>[0] = {}) {
   render(<Toaster closeButton {...props} />)
   toast('Không xuất được danh sách. Thử lọc bớt rồi xuất lại.')
-  const chu = await screen.findByText(/Không xuất được danh sách/)
+  const text = await screen.findByText(/Không xuất được danh sách/)
 
   const thanh = document.querySelector('[data-sonner-toaster]')
   if (!(thanh instanceof HTMLElement)) throw new Error('không dựng được thẻ toaster')
-  return { thanh, khung: chu.closest('[data-sonner-toast]') }
+  return { thanh, khung: text.closest('[data-sonner-toast]') }
 }
 
 describe('Toaster', () => {

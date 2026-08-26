@@ -51,8 +51,8 @@ function StageApprovers({ viec }: { viec: ApprovalTask[] }) {
   ]
   if (rank.length === 0) return null
 
-  const hien = moRong ? rank : rank.slice(0, 1)
-  const remaining = rank.length - hien.length
+  const show = moRong ? rank : rank.slice(0, 1)
+  const remaining = rank.length - show.length
 
   return (
     <div className="mt-1.5 text-sm leading-5">
@@ -60,7 +60,7 @@ function StageApprovers({ viec }: { viec: ApprovalTask[] }) {
         {rank.length > 1 ? 'Người duyệt chặng này:' : 'Người duyệt:'}
       </span>
       <ul className="mt-0.5 space-y-1">
-        {hien.map((row) => (
+        {show.map((row) => (
           <li key={row.id} className="text-muted-foreground">
             <span className="font-medium text-foreground">{row.assignee_name}</span>
             {/*  Nhiều người cùng chặng thì mỗi người một trạng thái riêng —
@@ -91,12 +91,12 @@ function StageApprovers({ viec }: { viec: ApprovalTask[] }) {
 
 /** Bộ mặt của một chặng, gộp từ trạng thái các việc thuộc chặng đó. */
 function stageStatus(viec: ApprovalTask[], seq: number, instance: ApprovalInstance) {
-  const cua = viec.filter((row) => row.node_seq === seq)
-  if (cua.some((row) => row.status === TASK_STATUS.rejected)) return 'tu-choi'
-  if (cua.some((row) => row.status === TASK_STATUS.pending)) return 'dang-cho'
-  if (cua.length > 0 && cua.every((row) => row.status === TASK_STATUS.skippedDuplicate))
+  const of = viec.filter((row) => row.node_seq === seq)
+  if (of.some((row) => row.status === TASK_STATUS.rejected)) return 'tu-choi'
+  if (of.some((row) => row.status === TASK_STATUS.pending)) return 'dang-cho'
+  if (of.length > 0 && of.every((row) => row.status === TASK_STATUS.skippedDuplicate))
     return 'tu-qua'
-  if (cua.some((row) => row.status === TASK_STATUS.approved)) return 'xong'
+  if (of.some((row) => row.status === TASK_STATUS.approved)) return 'xong'
   //  Chưa có việc nào ở chặng này: hoặc chưa tới lượt, hoặc phiếu đã dừng trước
   //  khi tới đây. Cả hai đều vẽ như nhau — chặng chưa chạm tới.
   return instance.current_seq > seq ? 'khong-chay' : 'chua-toi'
@@ -113,7 +113,7 @@ function stageStatus(viec: ApprovalTask[], seq: number, instance: ApprovalInstan
  * `giai_thich` là câu cho nút `?`: mấy nhãn này ngắn tới mức mơ hồ ("Không chạy"
  * là lỗi hay là bình thường?).
  */
-const HINH = {
+const SHAPE = {
   xong: {
     icon: Check,
     nut: 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -240,7 +240,7 @@ export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTa
               const ten =
                 (instance.steps ?? []).find((buoc) => buoc.seq === seq)?.name || `Bước ${seq}`
               const status = stageStatus(viec, seq, instance)
-              const { icon: Icon, nut, huy_hieu, nhan, giai_thich } = HINH[status]
+              const { icon: Icon, nut, huy_hieu, nhan, giai_thich } = SHAPE[status]
               const nguoi = viec.filter((row) => row.node_seq === seq)
               const current = instance.status === INSTANCE_STATUS.running && seq === instance.current_seq
 

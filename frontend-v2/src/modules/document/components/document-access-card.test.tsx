@@ -68,10 +68,10 @@ describe('DocumentAccessCard — chữ «Hủy» thay cho «Thu hồi»', () => 
     await nguoi.click(screen.getByLabelText('Hủy quyền'))
 
     const hop = await screen.findByRole('alertdialog')
-    const nhan = [...hop.querySelectorAll('button')].map((nut) => nut.textContent?.trim())
-    expect(nhan).toContain('Hủy') //  nút bỏ qua
-    expect(nhan).toContain('Hủy quyền') //  nút thi hành
-    expect(new Set(nhan).size).toBe(nhan.length) //  không nhãn nào trùng nhau
+    const label = [...hop.querySelectorAll('button')].map((nut) => nut.textContent?.trim())
+    expect(label).toContain('Hủy') //  nút bỏ qua
+    expect(label).toContain('Hủy quyền') //  nút thi hành
+    expect(new Set(label).size).toBe(label.length) //  không nhãn nào trùng nhau
   })
 
   it('không có quyền sửa thì không hiện nút hủy', () => {

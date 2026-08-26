@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { EFFECT, SUBJECT_KIND, type DocumentAccessDraft } from '../types/document-access'
 import { AccessGroupEditDialog } from './document-access-group-dialog'
 
-function dong(doi: Partial<DocumentAccessDraft['values']> = {}, ten = 'Lý Phó Phòng'): DocumentAccessDraft {
+function row(doi: Partial<DocumentAccessDraft['values']> = {}, ten = 'Lý Phó Phòng'): DocumentAccessDraft {
   return {
     subjectLabel: ten,
     values: {
@@ -32,7 +32,7 @@ describe('AccessGroupEditDialog', () => {
         open
         onOpenChange={vi.fn()}
         deny
-        rows={[dong({ can_write: true, reason: 'Phối hợp rà soát quy chế' })]}
+        rows={[row({ can_write: true, reason: 'Phối hợp rà soát quy chế' })]}
         onApply={vi.fn()}
       />,
     )
@@ -48,7 +48,7 @@ describe('AccessGroupEditDialog', () => {
         open
         onOpenChange={vi.fn()}
         deny
-        rows={[dong({}, 'Lý Phó Phòng'), dong({ subject_id: 98 }, 'Hồ Quyền Trưởng Phòng')]}
+        rows={[row({}, 'Lý Phó Phòng'), row({ subject_id: 98 }, 'Hồ Quyền Trưởng Phòng')]}
         onApply={vi.fn()}
       />,
     )
@@ -61,7 +61,7 @@ describe('AccessGroupEditDialog', () => {
 
   it('gọi cụm là «không cho phép», cùng một chữ với nút chọn và tên cụm bên ngoài', () => {
     render(
-      <AccessGroupEditDialog open onOpenChange={vi.fn()} deny rows={[dong()]} onApply={vi.fn()} />,
+      <AccessGroupEditDialog open onOpenChange={vi.fn()} deny rows={[row()]} onApply={vi.fn()} />,
     )
     expect(screen.getByText('Sửa quyền cụm không cho phép')).toBeVisible()
   })

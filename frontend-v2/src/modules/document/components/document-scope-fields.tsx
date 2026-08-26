@@ -88,9 +88,9 @@ export function DocumentScopeFields({ rows, onChange }: DocumentScopeFieldsProps
           const existing = new Set(rows.map((item) => duplicateKey(item)))
           const canAdd: PendingScope[] = []
           for (const item of them) {
-            const khoa = duplicateKey(item)
-            if (existing.has(khoa)) continue
-            existing.add(khoa)
+            const lock = duplicateKey(item)
+            if (existing.has(lock)) continue
+            existing.add(lock)
             canAdd.push(item)
           }
 

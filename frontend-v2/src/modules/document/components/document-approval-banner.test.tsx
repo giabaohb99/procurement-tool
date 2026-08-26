@@ -27,7 +27,7 @@ function ve(instance: ApprovalInstance | null) {
   )
 }
 
-function phien(doi: Partial<ApprovalInstance> = {}): ApprovalInstance {
+function session(doi: Partial<ApprovalInstance> = {}): ApprovalInstance {
   return {
     id: 7,
     entity: 'document',
@@ -97,7 +97,7 @@ describe('DocumentApprovalBanner', () => {
   })
 
   it('đang chạy thì nói rõ đang ở bước nào và chờ ai', () => {
-    ve(phien())
+    ve(session())
 
     expect(screen.getByText(/bước 2/)).toBeInTheDocument()
     expect(screen.getByText(/Dego Admin/)).toBeInTheDocument()
@@ -107,7 +107,7 @@ describe('DocumentApprovalBanner', () => {
     //  LỖI ĐÃ XẢY RA: băng nói với tất cả mọi người là "xử lý ở màn «Việc của
     //  tôi»". Màn đó chỉ liệt kê việc của CHÍNH người đăng nhập, nên người soạn
     //  bấm sang chỉ thấy trống trơn và tưởng hệ thống hỏng.
-    ve(phien())
+    ve(session())
 
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
     expect(screen.getByText(/Bạn không phải làm gì/)).toBeInTheDocument()
@@ -118,7 +118,7 @@ describe('DocumentApprovalBanner', () => {
     //  việc để bấm nghĩa là ký một văn bản chưa mở ra đọc, hoặc phải đi hai vòng.
     taskBox.viec = myTasks()
 
-    ve(phien())
+    ve(session())
 
     expect(screen.getByText(/Đang chờ bạn duyệt/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Duyệt \/ Trả lại/ })).toBeInTheDocument()
@@ -127,14 +127,14 @@ describe('DocumentApprovalBanner', () => {
   it('bấm THAY người khác thì nói ra trước khi bấm, không phải sau', () => {
     taskBox.viec = myTasks({ on_behalf_of_name: 'Trần Văn B' })
 
-    ve(phien())
+    ve(session())
 
     expect(screen.getByText(/bạn bấm thay Trần Văn B/)).toBeInTheDocument()
   })
 
   it('duyệt xong TRỌN VẸN thì im lặng — không có gì để báo', () => {
     const { container } = ve(
-      phien({ status: INSTANCE_STATUS.approved, status_label: 'Đã duyệt', tasks: [] }),
+      session({ status: INSTANCE_STATUS.approved, status_label: 'Đã duyệt', tasks: [] }),
     )
     expect(container).toBeEmptyDOMElement()
   })
@@ -145,7 +145,7 @@ describe('DocumentApprovalBanner', () => {
     //  phiên ghi «Đã duyệt», văn bản nằm lại ở *chờ duyệt* không số, và lý do
     //  chỉ nằm trong log container — không ai biết có chuyện.
     ve(
-      phien({
+      session({
         status: INSTANCE_STATUS.approved,
         status_label: 'Đã duyệt',
         tasks: [],
@@ -160,7 +160,7 @@ describe('DocumentApprovalBanner', () => {
 
   it('phiếu kẹt vì không có người duyệt cũng phải kêu lên', () => {
     ve(
-      phien({
+      session({
         status: INSTANCE_STATUS.blocked,
         status_label: 'Kẹt — không có người duyệt',
         tasks: [],
@@ -178,7 +178,7 @@ describe('DocumentApprovalBanner', () => {
   //  — hai chỗ không ai nghĩ để mở. Câu người ta cần là "bị trả vì sao, giờ làm gì".
   it('bị TRẢ VỀ thì hiện lý do và nói luôn bước kế tiếp', () => {
     ve(
-      phien({
+      session({
         status: INSTANCE_STATUS.returned,
         status_label: 'Trả lại',
         tasks: [],
@@ -193,7 +193,7 @@ describe('DocumentApprovalBanner', () => {
 
   it('bị TỪ CHỐI thì chỉ đường Sao chép, không mời gửi duyệt lại', () => {
     ve(
-      phien({
+      session({
         status: INSTANCE_STATUS.rejected,
         status_label: 'Từ chối',
         tasks: [],

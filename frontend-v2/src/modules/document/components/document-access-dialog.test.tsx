@@ -25,7 +25,7 @@ vi.mock('@/modules/hr/hooks/use-companies', () => ({
 }))
 vi.mock('@/modules/hr/hooks/use-roles', () => ({ useRoles: () => ({ data: [] }) }))
 
-function dong(doi: Partial<DocumentAccessDraft['values']> = {}): DocumentAccessDraft {
+function row(doi: Partial<DocumentAccessDraft['values']> = {}): DocumentAccessDraft {
   return {
     subjectLabel: 'Lý Phó Phòng',
     values: {
@@ -52,7 +52,7 @@ describe('DocumentAccessDialog', () => {
       <DocumentAccessDialog
         open
         onOpenChange={vi.fn()}
-        initial={dong({ can_write: true, reason: 'Phối hợp rà soát quy chế' })}
+        initial={row({ can_write: true, reason: 'Phối hợp rà soát quy chế' })}
         onSubmit={vi.fn()}
       />,
     )
@@ -85,7 +85,7 @@ describe('DocumentAccessDialog', () => {
       <DocumentAccessDialog
         open
         onOpenChange={vi.fn()}
-        initial={dong({ effect: EFFECT.deny })}
+        initial={row({ effect: EFFECT.deny })}
         onSubmit={vi.fn()}
       />,
     )

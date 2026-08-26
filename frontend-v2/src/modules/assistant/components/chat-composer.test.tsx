@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { ChatComposer } from './chat-composer'
 
-function dung(props: Partial<Parameters<typeof ChatComposer>[0]> = {}) {
+function build(props: Partial<Parameters<typeof ChatComposer>[0]> = {}) {
   const onSend = vi.fn()
   render(<ChatComposer disabled={false} busy={false} onSend={onSend} {...props} />)
   return { onSend, o: screen.getByLabelText('Câu hỏi cho trợ lý') }
@@ -16,7 +16,7 @@ describe('ChatComposer', () => {
     //  mấy giây người dùng có thể gõ sẵn câu sau — mà câu trả lời hay mất vài
     //  giây tới cả chục giây.
     const nguoi = userEvent.setup()
-    const { o, onSend } = dung({ busy: true })
+    const { o, onSend } = build({ busy: true })
 
     expect(o).not.toBeDisabled()
     await nguoi.type(o, 'gõ sẵn câu sau')
@@ -42,14 +42,14 @@ describe('ChatComposer', () => {
 
   it('gửi được thì xóa ô, không giữ lại chữ cũ', async () => {
     const nguoi = userEvent.setup()
-    const { o } = dung()
+    const { o } = build()
     await nguoi.type(o, 'hỏi thử{Enter}')
     expect(o).toHaveValue('')
   })
 
   it('Shift+Enter xuống dòng chứ không gửi', async () => {
     const nguoi = userEvent.setup()
-    const { o, onSend } = dung()
+    const { o, onSend } = build()
     await nguoi.type(o, 'dòng một{Shift>}{Enter}{/Shift}dòng hai')
     expect(onSend).not.toHaveBeenCalled()
     expect(String(o.getAttribute('value') ?? (o as HTMLTextAreaElement).value)).toContain('\n')
@@ -57,7 +57,7 @@ describe('ChatComposer', () => {
 
   it('câu rỗng / toàn khoảng trắng thì không gửi', async () => {
     const nguoi = userEvent.setup()
-    const { o, onSend } = dung()
+    const { o, onSend } = build()
     await nguoi.type(o, '   {Enter}')
     expect(onSend).not.toHaveBeenCalled()
     expect(screen.getByLabelText('Gửi câu hỏi')).toBeDisabled()
@@ -65,13 +65,13 @@ describe('ChatComposer', () => {
 
   it('cắt khoảng trắng thừa trước khi gửi', async () => {
     const nguoi = userEvent.setup()
-    const { o, onSend } = dung()
+    const { o, onSend } = build()
     await nguoi.type(o, '   hỏi có khoảng trắng   {Enter}')
     expect(onSend).toHaveBeenCalledWith('hỏi có khoảng trắng')
   })
 
   it('chưa cấu hình nhà cung cấp thì khóa hẳn ô nhập', () => {
-    const { o } = dung({ disabled: true })
+    const { o } = build({ disabled: true })
     expect(o).toBeDisabled()
   })
 })

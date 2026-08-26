@@ -11,7 +11,7 @@ import type { InboxRow } from './approval-inbox-row'
  * cả, mà khai thành component trong tệp chỉ xuất dữ liệu thì hỏng luôn hot
  * reload của Vite (`react-refresh/only-export-components`).
  */
-const TRONG = <span className="text-muted-foreground">—</span>
+const EMPTY = <span className="text-muted-foreground">—</span>
 
 /**
  * CỘT của hộp duyệt văn bản (bảng gộp chờ-duyệt + đã-duyệt).
@@ -55,7 +55,7 @@ export const approvalInboxColumns: DataTableColumn<InboxRow>[] = [
     key: 'startedByName',
     header: 'Người trình',
     width: 160,
-    cell: (row) => row.startedByName || TRONG,
+    cell: (row) => row.startedByName || EMPTY,
   },
   {
     key: 'dueAt',
@@ -67,7 +67,7 @@ export const approvalInboxColumns: DataTableColumn<InboxRow>[] = [
           {formatDate(row.dueAt)}
         </span>
       ) : (
-        TRONG
+        EMPTY
       ),
   },
   {
@@ -78,7 +78,7 @@ export const approvalInboxColumns: DataTableColumn<InboxRow>[] = [
       row.decidedAt ? (
         <span className="tabular-nums">{formatDateTime(row.decidedAt)}</span>
       ) : (
-        TRONG
+        EMPTY
       ),
   },
   {
@@ -91,7 +91,7 @@ export const approvalInboxColumns: DataTableColumn<InboxRow>[] = [
       row.instanceStatusLabel ? (
         <span className="truncate text-muted-foreground">{row.instanceStatusLabel}</span>
       ) : (
-        TRONG
+        EMPTY
       ),
   },
   {
@@ -99,7 +99,7 @@ export const approvalInboxColumns: DataTableColumn<InboxRow>[] = [
     header: 'Ý kiến',
     width: 280,
     defaultHidden: true,
-    cell: (row) => <span className="truncate">{row.comment || TRONG}</span>,
+    cell: (row) => <span className="truncate">{row.comment || EMPTY}</span>,
   },
   {
     key: 'onBehalfOfName',
@@ -107,7 +107,7 @@ export const approvalInboxColumns: DataTableColumn<InboxRow>[] = [
     width: 160,
     defaultHidden: true,
     //  Ký thay người khác là việc khác hẳn ký cho mình, và nhật ký ghi cả hai tên.
-    cell: (row) => row.onBehalfOfName || TRONG,
+    cell: (row) => row.onBehalfOfName || EMPTY,
   },
   {
     key: 'kind',

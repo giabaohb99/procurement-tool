@@ -33,7 +33,7 @@ export const PAGE_MARKERS = [
 export function fillPageMarkers(mau: string, values: PageMarkerValues): string {
   if (!mau) return ''
 
-  const bang: Record<string, string> = {
+  const table: Record<string, string> = {
     '{{trang}}': values.trang === undefined ? '' : String(values.trang),
     '{{tong_trang}}': values.totalPages === undefined ? '' : String(values.totalPages),
     '{{so_hieu}}': values.docNumber ?? '',
@@ -41,7 +41,7 @@ export function fillPageMarkers(mau: string, values: PageMarkerValues): string {
     '{{ngay}}': values.ngay ?? '',
   }
 
-  return Object.entries(bang).reduce(
+  return Object.entries(table).reduce(
     (chuoi, [the, value]) => chuoi.split(the).join(value),
     mau,
   )

@@ -18,7 +18,7 @@ vi.mock('../hooks/use-my-document-approvals', () => ({
   useMyDocumentTask: () => null,
 }))
 
-function viec(doi: Partial<ApprovalTask> = {}): ApprovalTask {
+function task(doi: Partial<ApprovalTask> = {}): ApprovalTask {
   return {
     id: 11,
     instance_id: 8,
@@ -35,7 +35,7 @@ function viec(doi: Partial<ApprovalTask> = {}): ApprovalTask {
   }
 }
 
-function phien(doi: Partial<ApprovalInstance> = {}): ApprovalInstance {
+function session(doi: Partial<ApprovalInstance> = {}): ApprovalInstance {
   return {
     id: 8,
     entity: 'document',
@@ -56,14 +56,14 @@ function phien(doi: Partial<ApprovalInstance> = {}): ApprovalInstance {
       { seq: 1, name: 'Trưởng bộ phận duyệt nội dung', branch_key: '' },
       { seq: 2, name: 'Chánh Văn phòng ký ban hành', branch_key: '' },
     ],
-    tasks: [viec()],
+    tasks: [task()],
     ...doi,
   }
 }
 
 describe('DocumentApprovalTab', () => {
   it('vẽ các chặng thành timeline dọc có rail nối và phân cấp trạng thái', () => {
-    render(<DocumentApprovalTab instance={phien()} documentId={212} />)
+    render(<DocumentApprovalTab instance={session()} documentId={212} />)
 
     const timeline = screen.getByRole('list', { name: 'Các chặng phê duyệt' })
     expect(timeline.children).toHaveLength(2)
@@ -84,11 +84,11 @@ describe('DocumentApprovalTab', () => {
     render(
       <DocumentApprovalTab
         documentId={212}
-        instance={phien({
+        instance={session({
           current_seq: 2,
           tasks: [
-            viec({ status: TASK_STATUS.approved, status_label: 'Đã duyệt' }),
-            viec({
+            task({ status: TASK_STATUS.approved, status_label: 'Đã duyệt' }),
+            task({
               id: 12,
               node_seq: 2,
               node_name: 'Chánh Văn phòng ký ban hành',
@@ -118,13 +118,13 @@ describe('DocumentApprovalTab', () => {
     render(
       <DocumentApprovalTab
         documentId={212}
-        instance={phien({
+        instance={session({
           tasks: [
-            viec({ id: 1, status: TASK_STATUS.cancelled, status_label: 'Đã hủy',
+            task({ id: 1, status: TASK_STATUS.cancelled, status_label: 'Đã hủy',
                    assignee_name: 'Trưởng bộ phận (Demo)' }),
-            viec({ id: 2, status: TASK_STATUS.cancelled, status_label: 'Đã hủy',
+            task({ id: 2, status: TASK_STATUS.cancelled, status_label: 'Đã hủy',
                    assignee_name: 'Trưởng phòng Thu mua (Demo)' }),
-            viec({ id: 3, status: TASK_STATUS.approved, status_label: 'Đã duyệt',
+            task({ id: 3, status: TASK_STATUS.approved, status_label: 'Đã duyệt',
                    assignee_name: 'Nhân viên Thu mua (Demo)' }),
           ],
         })}
@@ -141,12 +141,12 @@ describe('DocumentApprovalTab', () => {
     render(
       <DocumentApprovalTab
         documentId={212}
-        instance={phien({
+        instance={session({
           tasks: [
-            viec({ id: 1, status: TASK_STATUS.approved, status_label: 'Đã duyệt',
+            task({ id: 1, status: TASK_STATUS.approved, status_label: 'Đã duyệt',
                    assignee_name: 'Người đã ký' }),
-            viec({ id: 2, assignee_name: 'Người còn chờ' }),
-            viec({ id: 3, assignee_name: 'Người nữa' }),
+            task({ id: 2, assignee_name: 'Người còn chờ' }),
+            task({ id: 3, assignee_name: 'Người nữa' }),
           ],
         })}
       />,
@@ -165,7 +165,7 @@ describe('DocumentApprovalTab', () => {
   })
 
   it('một người thì không bày nút xem thêm', () => {
-    render(<DocumentApprovalTab documentId={212} instance={phien()} />)
+    render(<DocumentApprovalTab documentId={212} instance={session()} />)
     expect(screen.queryByRole('button', { name: /Xem thêm/ })).not.toBeInTheDocument()
   })
 })

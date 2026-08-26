@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTypewriter } from './use-typewriter'
 
-const CAU = 'Một hai ba bốn năm sáu bảy tám chín mười'
+const SENTENCE = 'Một hai ba bốn năm sáu bảy tám chín mười'
 
 /** Giả lập `matchMedia` — jsdom không có sẵn. */
 function setReducedMotion(bat: boolean) {
@@ -27,40 +27,40 @@ afterEach(() => {
 
 describe('useTypewriter', () => {
   it('bật thì chữ hiện DẦN, không đập ra cả khối', () => {
-    const { result } = renderHook(() => useTypewriter(CAU, true))
+    const { result } = renderHook(() => useTypewriter(SENTENCE, true))
 
     expect(result.current.display).toBe('')
     expect(result.current.isRunning).toBe(true)
 
     act(() => void vi.advanceTimersByTime(100))
-    const giua = result.current.display
-    expect(giua.length).toBeGreaterThan(0)
-    expect(giua.length).toBeLessThan(CAU.length)
-    expect(CAU.startsWith(giua)).toBe(true) //  luôn là phần ĐẦU của câu
+    const middle = result.current.display
+    expect(middle.length).toBeGreaterThan(0)
+    expect(middle.length).toBeLessThan(SENTENCE.length)
+    expect(SENTENCE.startsWith(middle)).toBe(true) //  luôn là phần ĐẦU của câu
   })
 
   it('chạy xong thì ra ĐÚNG nguyên văn, không thiếu không thừa', () => {
-    const { result } = renderHook(() => useTypewriter(CAU, true))
+    const { result } = renderHook(() => useTypewriter(SENTENCE, true))
     act(() => void vi.advanceTimersByTime(3000))
 
-    expect(result.current.display).toBe(CAU)
+    expect(result.current.display).toBe(SENTENCE)
     expect(result.current.isRunning).toBe(false)
   })
 
   it('TẮT thì hiện thẳng trọn nội dung ngay từ nhịp đầu', () => {
     //  Tin cũ trong lịch sử: mở lại hội thoại mà gõ lại từ đầu thì vừa chậm vừa
     //  vô nghĩa.
-    const { result } = renderHook(() => useTypewriter(CAU, false))
-    expect(result.current.display).toBe(CAU)
+    const { result } = renderHook(() => useTypewriter(SENTENCE, false))
+    expect(result.current.display).toBe(SENTENCE)
     expect(result.current.isRunning).toBe(false)
   })
 
   it('người dùng tắt hiệu ứng chuyển động ở hệ điều hành thì bỏ qua hiệu ứng', () => {
     setReducedMotion(true)
-    const { result } = renderHook(() => useTypewriter(CAU, true))
+    const { result } = renderHook(() => useTypewriter(SENTENCE, true))
     act(() => void vi.advanceTimersByTime(20))
 
-    expect(result.current.display).toBe(CAU)
+    expect(result.current.display).toBe(SENTENCE)
     expect(result.current.isRunning).toBe(false)
   })
 
@@ -68,7 +68,7 @@ describe('useTypewriter', () => {
     //  Đổi hội thoại trong lúc đang gõ: nếu giữ nguyên số từ đã hiện thì câu mới
     //  bị cắt mất đoạn đầu đúng bằng số từ của câu cũ.
     const { result, rerender } = renderHook(({ t }) => useTypewriter(t, true), {
-      initialProps: { t: CAU },
+      initialProps: { t: SENTENCE },
     })
     act(() => void vi.advanceTimersByTime(200))
 

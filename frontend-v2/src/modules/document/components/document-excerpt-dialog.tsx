@@ -81,12 +81,12 @@ export function DocumentExcerptDialog({
    * chia ra ngoài, và sửa tiếp được nếu cần cắt bớt một đoạn.
    */
   function toggleCheck(id: string, bat: boolean) {
-    const moi = bat ? [...dangTick, id] : dangTick.filter((x) => x !== id)
-    setDangTick(moi)
-    setContent(joinSections(items, moi))
+    const latest = bat ? [...dangTick, id] : dangTick.filter((x) => x !== id)
+    setDangTick(latest)
+    setContent(joinSections(items, latest))
     //  Chỉ gợi ý tên khi người dùng CHƯA tự đặt — đặt rồi mà bị đè là mất công gõ.
     if (!title.trim() || title.startsWith('Trích ')) {
-      setTitle(suggestExcerptTitle(items, moi))
+      setTitle(suggestExcerptTitle(items, latest))
     }
   }
   const [secrecy, setSecrecy] = useState(String(Math.max(1, sourceSecrecy - 1)))
