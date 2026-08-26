@@ -76,7 +76,11 @@ export default function PrintPaymentRequest() {
   const co = req.company || {}
   const sup = req.supplier_name || req.supplier_code
   const period = (req.period || '').split('-').reverse().join('/')  // YYYY-MM -> MM/YYYY
-  const noiDung = `Thanh toán công nợ ${sup}${period ? ' ' + period : ''}`
+  // CR-146 (ticket #12): phiếu đánh dấu THANH TOÁN TRƯỚC thì đổi câu nội dung —
+  // dùng chung cho cả Diễn giải bảng và Nội dung chuyển khoản.
+  const noiDung = req.prepay
+    ? `Thanh toán trước cho nhà cung cấp ${sup}${period ? ' ' + period : ''}`
+    : `Thanh toán công nợ ${sup}${period ? ' ' + period : ''}`
   const isCash = req.payment_method === 'cash'   // CR-035 — chi tiền mặt thì bỏ TRỐNG cụm chuyển khoản
 
   const cell = { border: '1px solid #888', padding: '3px 6px', fontSize: 11 } as const

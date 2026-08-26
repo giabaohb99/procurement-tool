@@ -16,6 +16,7 @@ class PRequestCreate(BaseModel):
     request_date: str = ""
     note: str = ""
     payment_method: str = "transfer"   # transfer = Chuyển khoản | cash = Tiền mặt (CR-035)
+    prepay: int = 0                    # CR-146: 1 = thanh toán TRƯỚC (đơn trả trước), 0 = thanh toán công nợ
     # CR-066 — form trắng: không đi từ màn Công nợ nên NCC/công ty/loại do người lập chọn.
     # Chỉ dùng khi các dòng KHÔNG gắn khoản nợ; đi từ Công nợ thì lấy theo khoản nợ.
     supplier_code: str = ""
@@ -28,4 +29,5 @@ class PRequestUpdate(BaseModel):
     request_date: str | None = None
     note: str | None = None
     payment_method: str | None = None
+    prepay: int | None = None          # CR-146
     lines: list[LineIn] | None = None

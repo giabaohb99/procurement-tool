@@ -26,6 +26,12 @@ const PM: Record<string, string> = { transfer: 'Chuyển khoản', cash: 'Tiền
 const pmHint = (m: string) => m === 'cash'
   ? 'Bản in để TRỐNG cụm "Thông tin chuyển khoản".'
   : 'Bản in lấy số tài khoản / ngân hàng của nhà cung cấp.'
+// CR-146 (ticket #12): nội dung thanh toán trên bản in. Mặc định = thanh toán công nợ;
+// đơn TRẢ TRƯỚC chọn "Thanh toán trước" để bản in không ghi nhầm "Thanh toán công nợ".
+const PREPAY: Record<number, string> = { 0: 'Thanh toán công nợ (mặc định)', 1: 'Thanh toán trước' }
+const prepayHint = (p: number) => p
+  ? 'Bản in ghi: "Thanh toán trước cho nhà cung cấp <tên NCC> <kỳ>".'
+  : 'Mặc định — bản in ghi: "Thanh toán công nợ <tên NCC> <kỳ>". Đơn trả trước thì chọn "Thanh toán trước".'
 const hintStyle = { fontSize: 12, color: 'var(--muted)', marginTop: 4 } as const
 
 export default function PaymentRequestDetail() {
@@ -81,6 +87,7 @@ function PaymentRequestCreate() {
   const [loading, setLoading] = useState(false)
   const [requestDate, setRequestDate] = useState(new Date().toISOString().slice(0, 10))
   const [paymentMethod, setPaymentMethod] = useState('transfer')
+  const [prepay, setPrepay] = useState(0)
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   // Form trắng: phần đầu phiếu do người lập chọn (đi từ Công nợ/PO thì lấy theo state hoặc khoản nợ)
@@ -129,7 +136,7 @@ function PaymentRequestCreate() {
     setSaving(true)
     try {
       const payload: any = {
-        request_date: requestDate, note, payment_method: paymentMethod,
+        request_date: requestDate, note, payment_method: paymentMethod, prepay,
         supplier_code: headSupplier, company_id: companyId, source_type: headSource,
         lines: lines.map((l) => ({
           payable_id: l.payable_id, po_code: l.po_code, invoice_no: l.invoice_no,
@@ -209,6 +216,14 @@ function PaymentRequestCreate() {
               <option value="cash">Tiền mặt</option>
             </select>
             <div style={hintStyle}>{pmHint(paymentMethod)}</div>
+          </div>
+          <div className="form-row">
+            <label>Nội dung thanh toán</label>
+            <select value={String(prepay)} onChange={(e) => setPrepay(Number(e.target.value) || 0)}>
+              <option value="0">{PREPAY[0]}</option>
+              <option value="1">{PREPAY[1]}</option>
+            </select>
+            <div style={hintStyle}>{prepayHint(prepay)}</div>
           </div>
           <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label>
             <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ghi chú áp dụng cho các phiếu được tạo…" /></div>
@@ -304,6 +319,7 @@ function PaymentRequestView() {
     try {
       await api.patch(`${API}/${id}`, {
         request_date: req.request_date, note: req.note, payment_method: req.payment_method || 'transfer',
+        prepay: req.prepay ? 1 : 0,
         lines: req.lines.map((l: any) => ({
           payable_id: l.payable_id, po_code: l.po_code || '', invoice_no: l.invoice_no || '',
           invoice_date: l.invoice_date || '', amount: Number(l.amount) || 0,
@@ -373,6 +389,17 @@ function PaymentRequestView() {
               </select>
             ) : <input value={PM[req.payment_method] || PM.transfer} disabled />}
             <div style={hintStyle}>{pmHint(req.payment_method || 'transfer')}{editable ? ' Nhớ bấm Lưu sau khi đổi.' : ''}</div>
+          </div>
+          <div className="form-row">
+            <label>Nội dung thanh toán</label>
+            {editable ? (
+              <select value={String(req.prepay ? 1 : 0)}
+                      onChange={(e) => setReq((s: any) => ({ ...s, prepay: Number(e.target.value) || 0 }))}>
+                <option value="0">{PREPAY[0]}</option>
+                <option value="1">{PREPAY[1]}</option>
+              </select>
+            ) : <input value={PREPAY[req.prepay ? 1 : 0]} disabled />}
+            <div style={hintStyle}>{prepayHint(req.prepay ? 1 : 0)}{editable ? ' Nhớ bấm Lưu sau khi đổi.' : ''}</div>
           </div>
           <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><textarea value={req.note || ''} disabled={!editable} onChange={(e) => setReq((s: any) => ({ ...s, note: e.target.value }))} /></div>
         </div>

@@ -151,6 +151,7 @@ def create_requests(db: Session, data: PRequestCreate, user_id: int) -> list[Pay
             company_id=company_id, source_type=source_type,
             request_date=data.request_date, note=data.note, status="draft",
             payment_method=norm_method(data.payment_method),
+            prepay=1 if data.prepay else 0,
             total=round(sum(r["amount"] for r in rows), 2), created_by=user_id, updated_by=user_id)
         db.add(req)
         db.flush()
@@ -184,7 +185,11 @@ def update_request(db: Session, rid: int, data: PRequestUpdate, user_id: int) ->
     if req.status != "draft":
         raise HTTPException(400, EDIT_LOCK_MSG.get(req.status, "Phiếu không còn ở trạng thái nháp, không sửa được"))
     for k, v in data.model_dump(exclude_unset=True, exclude={"lines"}).items():
-        setattr(req, k, norm_method(v) if k == "payment_method" else v)
+        if k == "payment_method":
+            v = norm_method(v)
+        elif k == "prepay":                 # CR-146: chỉ nhận 0/1
+            v = 1 if v else 0
+        setattr(req, k, v)
     if data.lines is not None:
         db.query(PaymentRequestLine).filter(PaymentRequestLine.request_id == rid).delete()
         rows = _line_rows(db, data.lines, req.supplier_code, fill_from_payable=False)

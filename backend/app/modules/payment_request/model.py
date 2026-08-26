@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Numeric, String, Text
+from sqlalchemy import BigInteger, Numeric, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
@@ -18,6 +18,10 @@ class PaymentRequest(Base, AuditMixin):
     # CR-035 — hình thức thanh toán do người lập phiếu chọn; quyết định bản in có in
     # cụm "Thông tin chuyển khoản" hay để trống. transfer = Chuyển khoản, cash = Tiền mặt.
     payment_method: Mapped[str] = mapped_column(String(20), default="transfer")
+    # CR-146 (ticket #12) — cờ THANH TOÁN TRƯỚC: 0 = thanh toán công nợ (mặc định),
+    # 1 = trả trước cho đơn hàng. Quyết định câu nội dung trên bản in:
+    # "Thanh toán công nợ ..." hay "Thanh toán trước cho nhà cung cấp ...".
+    prepay: Mapped[int] = mapped_column(SmallInteger, default=0)
     total: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
     note: Mapped[str] = mapped_column(Text, default="")
     reject_reason: Mapped[str] = mapped_column(Text, default="")   # lý do từ chối (khi cancelled)
