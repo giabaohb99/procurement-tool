@@ -58,3 +58,7 @@ Code identifiers are English. **User-facing text, comments and documentation are
 Vietnamese** — this is an internal tool for a Vietnamese company and the domain
 vocabulary (YCMH, YCBG, ĐMH, NCC, YCTT…) is part of the spec. Do not "translate"
 existing Vietnamese strings or comments to English.
+
+## Function names / constants
+
+Function name should be verbs, not nouns. A function is an action, not a thing. Dont use **Vietnamese** in function names or constants.
