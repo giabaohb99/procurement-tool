@@ -2,7 +2,7 @@ import { Building2, MinusCircle, PlusCircle, User, Users, X } from 'lucide-react
 
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { chiToanDongLoaiTru } from '../helpers/scope-only-exclude'
+import { onlyExcludeRows } from '../helpers/scope-only-exclude'
 import { SCOPE_DIM, SCOPE_MODE, type PendingScope } from '../types/document-scope'
 import { DocumentScopeAddForm } from './document-scope-add-form'
 import { DocumentScopeOnlyExcludeNotice } from './document-scope-only-exclude-notice'
@@ -10,7 +10,7 @@ import { DocumentScopeOnlyExcludeNotice } from './document-scope-only-exclude-no
 export type { PendingScope }
 
 /** Khóa nhận diện một dòng phạm vi — hai dòng cùng khóa là khai trùng. */
-function khoaTrung({ values }: PendingScope): string {
+function duplicateKey({ values }: PendingScope): string {
   return [
     values.dim,
     values.mode,
@@ -60,7 +60,7 @@ export function DocumentScopeFields({ rows, onChange }: DocumentScopeFieldsProps
       {/*  Ghi chú "bỏ trống được" ở trên biến mất ngay khi có dòng đầu tiên. Nếu
            dòng đó lại là loại trừ thì màn hình không còn nói gì cả, trong khi
            người dùng vừa vô tình khai ra một văn bản không tới ai. */}
-      {chiToanDongLoaiTru(rows.map((row) => row.values.mode)) && (
+      {onlyExcludeRows(rows.map((row) => row.values.mode)) && (
         <DocumentScopeOnlyExcludeNotice />
       )}
 
@@ -85,19 +85,19 @@ export function DocumentScopeFields({ rows, onChange }: DocumentScopeFieldsProps
           //  Lọc trùng bằng `Set` khóa chuỗi, và cho khóa của các dòng MỚI vào
           //  luôn: một mẻ có thể chứa hai dòng y hệt nhau, so với `rows` không
           //  thôi thì cả hai cùng lọt.
-          const daCo = new Set(rows.map((item) => khoaTrung(item)))
-          const themDuoc: PendingScope[] = []
+          const existing = new Set(rows.map((item) => duplicateKey(item)))
+          const canAdd: PendingScope[] = []
           for (const item of them) {
-            const khoa = khoaTrung(item)
-            if (daCo.has(khoa)) continue
-            daCo.add(khoa)
-            themDuoc.push(item)
+            const khoa = duplicateKey(item)
+            if (existing.has(khoa)) continue
+            existing.add(khoa)
+            canAdd.push(item)
           }
 
           //  Ghi state ĐÚNG MỘT LẦN cho cả mẻ. Gọi `onChange` trong vòng lặp là
           //  lỗi cũ: `rows` đọc qua closure không đổi giữa các lượt nên lượt
           //  cuối ghi đè hết — chọn 13 pháp nhân chỉ còn 1 dòng.
-          if (themDuoc.length > 0) onChange([...rows, ...themDuoc])
+          if (canAdd.length > 0) onChange([...rows, ...canAdd])
         }}
       />
     </div>

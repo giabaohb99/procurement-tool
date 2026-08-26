@@ -28,11 +28,11 @@ export function IssueCodeRowEditor({ row, pending, onSave }: IssueCodeRowEditorP
   const [value, setValue] = useState(row.issue_code)
   const [xacNhan, setXacNhan] = useState(false)
 
-  const daDoi = value.trim() !== row.issue_code
-  const canXacNhan = row.da_cap_so && daDoi
+  const changed = value.trim() !== row.issue_code
+  const needsConfirm = row.da_cap_so && changed
 
   function luu() {
-    if (canXacNhan && !xacNhan) {
+    if (needsConfirm && !xacNhan) {
       setXacNhan(true)
       return
     }
@@ -49,7 +49,7 @@ export function IssueCodeRowEditor({ row, pending, onSave }: IssueCodeRowEditorP
 
       <div className="space-y-1">
         <Input
-          className={cn('h-8 font-mono', canXacNhan && xacNhan && 'border-amber-400')}
+          className={cn('h-8 font-mono', needsConfirm && xacNhan && 'border-amber-400')}
           value={value}
           placeholder="(chưa có mã)"
           onChange={(event) => {
@@ -59,7 +59,7 @@ export function IssueCodeRowEditor({ row, pending, onSave }: IssueCodeRowEditorP
             setXacNhan(false)
           }}
           onKeyDown={(event) => {
-            if (event.key === 'Enter' && daDoi) {
+            if (event.key === 'Enter' && changed) {
               event.preventDefault()
               luu()
             }
@@ -73,7 +73,7 @@ export function IssueCodeRowEditor({ row, pending, onSave }: IssueCodeRowEditorP
       </div>
 
       <div className="flex min-h-8 items-center">
-        {daDoi ? (
+        {changed ? (
           <Button
             type="button"
             size="sm"

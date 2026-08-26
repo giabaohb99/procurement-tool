@@ -186,13 +186,13 @@ export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardP
             //  ghi là một dòng MỚI — dòng cũ vẫn còn hiệu lực. Không thu hồi nó
             //  thì người dùng tưởng mình vừa "sửa", trong khi thực tế là vừa
             //  chia thêm cho một người nữa mà người cũ vẫn giữ nguyên quyền.
-            const conNguyen = rows.some(
+            const unchanged = rows.some(
               (row) =>
                 row.values.subject_kind === dongDangSua.subject_kind &&
                 row.values.subject_id === dongDangSua.subject_id &&
                 row.values.effect === dongDangSua.effect,
             )
-            if (!conNguyen) {
+            if (!unchanged) {
               await revoke.mutateAsync({
                 accessId: dongDangSua.id,
                 reason: 'Sửa lại dòng chia quyền',

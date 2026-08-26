@@ -189,7 +189,7 @@ export function useSetApprovalSwitch() {
 /** Năm thao tác trên phiếu — xem `action_service.py`. */
 export type ApprovalActionKind = 'approve' | 'reject' | 'return' | 'withdraw' | 'comment'
 
-const NHAN_THANH_CONG: Record<ApprovalActionKind, string> = {
+const SUCCESS_LABELS: Record<ApprovalActionKind, string> = {
   approve: 'Đã duyệt',
   reject: 'Đã từ chối',
   return: 'Đã trả lại',
@@ -249,7 +249,7 @@ export function useApprovalAction(instanceId: number, entity?: string) {
       return approvalApi.comment(instanceId, text)
     },
     onSuccess: (_data, variables) => {
-      toast.success(NHAN_THANH_CONG[variables.kind])
+      toast.success(SUCCESS_LABELS[variables.kind])
       invalidate()
       //  «Ghi ý kiến» KHÔNG đổi trạng thái chứng từ (xem `action_service.gop_y`)
       //  nên không cần kéo cả họ query của nó về lại.

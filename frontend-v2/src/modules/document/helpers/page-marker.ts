@@ -42,7 +42,7 @@ export function fillPageMarkers(mau: string, values: PageMarkerValues): string {
   }
 
   return Object.entries(bang).reduce(
-    (chuoi, [the, giaTri]) => chuoi.split(the).join(giaTri),
+    (chuoi, [the, value]) => chuoi.split(the).join(value),
     mau,
   )
 }

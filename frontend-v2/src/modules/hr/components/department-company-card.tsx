@@ -37,7 +37,7 @@ export function DepartmentCompanyCard({
   //  Tên trưởng bộ phận đang lưu, tra theo pháp nhân — để ô chọn hiện đúng tên
   //  cả khi người đó bị lọc khỏi danh sách (dữ liệu cũ: trưởng phòng thuộc pháp
   //  nhân khác). Không có nó thì ô hiện `#4`.
-  const tenTruongDangLuu = new Map(
+  const savingFieldName = new Map(
     (data ?? []).map((row) => [row.company_id, row.manager_name]),
   )
   const initialRows = (data ?? []).map(
@@ -58,7 +58,7 @@ export function DepartmentCompanyCard({
       primaryCompanyId={primaryCompanyId}
       canWrite={canWrite}
       initialRows={initialRows}
-      tenTruongDangLuu={tenTruongDangLuu}
+      savingFieldName={savingFieldName}
       isLoading={isLoading}
     />
   )
@@ -67,7 +67,7 @@ export function DepartmentCompanyCard({
 interface DepartmentCompanyEditorProps extends DepartmentCompanyCardProps {
   initialRows: DepartmentCompanyInput[]
   /** pháp nhân → tên trưởng bộ phận đang lưu. Xem chỗ dựng nó ở trên. */
-  tenTruongDangLuu: Map<number, string>
+  savingFieldName: Map<number, string>
   isLoading: boolean
 }
 
@@ -76,7 +76,7 @@ function DepartmentCompanyEditor({
   primaryCompanyId,
   canWrite,
   initialRows,
-  tenTruongDangLuu,
+  savingFieldName,
   isLoading,
 }: DepartmentCompanyEditorProps) {
   const save = useSaveDepartmentCompanies(departmentId)
@@ -240,7 +240,7 @@ function DepartmentCompanyEditor({
                         items={managerOptions}
                         placeholder="Chọn trưởng bộ phận"
                         emptyLabel="— Chưa chỉ định —"
-                        fallbackLabel={tenTruongDangLuu.get(row.company_id)}
+                        fallbackLabel={savingFieldName.get(row.company_id)}
                         disabled={!canWrite}
                       />
                     </TableCell>

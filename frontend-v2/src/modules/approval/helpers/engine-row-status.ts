@@ -14,19 +14,19 @@ export interface EngineRowStatus {
  * duyệt cũ. Người quản trị bật công tắc, thấy nút đã xanh, rồi ngồi chờ mãi
  * không thấy phiếu nào vào bộ máy mới — nên trạng thái này phải nói ra.
  */
-export function engineRowStatus(soLuong: number, dangBat: boolean): EngineRowStatus {
-  if (!dangBat) {
+export function engineRowStatus(quantity: number, isOn: boolean): EngineRowStatus {
+  if (!isOn) {
     return {
       label: 'Đường duyệt cũ',
       hint:
-        soLuong > 0
-          ? `Đã khai ${soLuong} luồng nhưng chưa bật — phiếu vẫn đi đường duyệt cũ.`
+        quantity > 0
+          ? `Đã khai ${quantity} luồng nhưng chưa bật — phiếu vẫn đi đường duyệt cũ.`
           : 'Phiếu đi theo đường duyệt cũ đang chạy.',
       tone: 'off',
     }
   }
 
-  if (soLuong === 0) {
+  if (quantity === 0) {
     return {
       label: 'Bật nhưng chưa có luồng',
       hint: 'Chưa khai luồng nào cho loại này nên phiếu vẫn đi đường duyệt cũ. Khai luồng rồi mới có tác dụng.',
@@ -36,7 +36,7 @@ export function engineRowStatus(soLuong: number, dangBat: boolean): EngineRowSta
 
   return {
     label: 'Bộ máy mới',
-    hint: `Phiếu tạo từ giờ chạy theo ${soLuong} luồng đã khai.`,
+    hint: `Phiếu tạo từ giờ chạy theo ${quantity} luồng đã khai.`,
     tone: 'running',
   }
 }

@@ -71,14 +71,14 @@ export function parseCondition(
 
   const rows: ConditionRow[] = []
   for (const item of data) {
-    const row = docMotDong(item, laOHopLe)
+    const row = readRow(item, laOHopLe)
     if (row === null) return { rows: [], advanced: true }
     rows.push(row)
   }
   return { rows, advanced: false }
 }
 
-function docMotDong(item: unknown, laOHopLe: (field: string) => boolean): ConditionRow | null {
+function readRow(item: unknown, laOHopLe: (field: string) => boolean): ConditionRow | null {
   if (typeof item !== 'object' || item === null) return null
 
   const { field, op, value } = item as { field?: unknown; op?: unknown; value?: unknown }
@@ -104,7 +104,7 @@ function docMotDong(item: unknown, laOHopLe: (field: string) => boolean): Condit
  * Dòng đã chọn đủ giá trị chưa. Dòng chưa đủ vẫn hiện trên màn hình (người
  * dùng đang khai dở) nhưng KHÔNG được gửi xuống backend.
  */
-export function dongDayDu(row: ConditionRow): boolean {
+export function fullRow(row: ConditionRow): boolean {
   if (!row.field) return false
   //  Mọi giá trị ở đây là id danh mục hoặc mức trong thang — đều bắt đầu từ 1.
   //  `0` là "chưa chọn", gửi xuống thành điều kiện không phiếu nào khớp.
@@ -113,9 +113,9 @@ export function dongDayDu(row: ConditionRow): boolean {
 
 /** Các dòng của bộ dựng → chuỗi gửi lên backend. Không dòng nào = luôn chạy. */
 export function buildCondition(rows: ConditionRow[]): string {
-  const dungDuoc = rows.filter(dongDayDu)
-  if (dungDuoc.length === 0) return ''
-  return JSON.stringify(dungDuoc)
+  const usable = rows.filter(fullRow)
+  if (usable.length === 0) return ''
+  return JSON.stringify(usable)
 }
 
 export function toArray(value: number | number[]): number[] {

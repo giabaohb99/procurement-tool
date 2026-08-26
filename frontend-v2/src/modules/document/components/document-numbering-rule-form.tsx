@@ -65,11 +65,11 @@ function emptyValues(direction: NumberingDirection): DocumentNumberingRuleFormVa
 }
 
 /** Chèn thẻ đúng tại vùng con trỏ đang chọn trong ô mẫu số hiệu. */
-function chenTheVaoMau(value: string, token: string, start: number, end: number) {
+function insertTagIntoTemplate(value: string, token: string, start: number, end: number) {
   return `${value.slice(0, start)}${token}${value.slice(end)}`
 }
 
-interface NutMauSoProps {
+interface NumberSampleButtonProps {
   item: { token: string; label: string }
   daDung: boolean
   locked: boolean
@@ -77,7 +77,7 @@ interface NutMauSoProps {
 }
 
 /** Một thẻ mã hoặc dấu phân cách — đều bấm và kéo thả được như nhau. */
-function NutMauSo({ item, daDung, locked, onClick }: NutMauSoProps) {
+function NumberSampleButton({ item, daDung, locked, onClick }: NumberSampleButtonProps) {
   return (
     <Button
       type="button"
@@ -214,7 +214,7 @@ export function DocumentNumberingRuleForm({
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {NUMBERING_TOKENS.map((item) => (
-                      <NutMauSo
+                      <NumberSampleButton
                         key={item.token}
                         item={item}
                         daDung={field.value.includes(item.token)}
@@ -228,7 +228,7 @@ export function DocumentNumberingRuleForm({
                       Dấu phân cách
                     </span>
                     {NUMBERING_SEPARATORS.map((item) => (
-                      <NutMauSo
+                      <NumberSampleButton
                         key={item.token}
                         item={item}
                         daDung={field.value.includes(item.token)}
@@ -265,7 +265,7 @@ export function DocumentNumberingRuleForm({
                         const input = event.currentTarget
                         const start = input.selectionStart ?? field.value.length
                         const end = input.selectionEnd ?? start
-                        const next = chenTheVaoMau(field.value, token, start, end)
+                        const next = insertTagIntoTemplate(field.value, token, start, end)
                         field.onChange(next)
 
                         // React dựng lại value sau `field.onChange`; đặt con trỏ

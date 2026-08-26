@@ -9,31 +9,31 @@ describe('flowStatus', () => {
   })
 
   it('luồng bật + bộ máy của loại đang bật mới là "Đang chạy"', () => {
-    const trang_thai = flowStatus({ is_active: true }, true)
+    const status = flowStatus({ is_active: true }, true)
 
-    expect(trang_thai.label).toBe('Đang chạy')
-    expect(trang_thai.tone).toBe('running')
+    expect(status.label).toBe('Đang chạy')
+    expect(status.tone).toBe('running')
   })
 
   it('luồng bật nhưng công tắc loại đang TẮT thì báo chờ, không báo đang chạy', () => {
     //  Đây là cái bẫy của cả màn: hai cờ độc lập nhau, bảng cũ chỉ đọc
     //  `is_active` nên dán nhãn "Đang dùng" cho luồng chưa chạy phút nào.
-    const trang_thai = flowStatus({ is_active: true }, false)
+    const status = flowStatus({ is_active: true }, false)
 
-    expect(trang_thai.label).toBe('Chờ bật bộ máy')
-    expect(trang_thai.tone).toBe('waiting')
-    expect(trang_thai.hint).toMatch(/đường duyệt cũ/)
+    expect(status.label).toBe('Chờ bật bộ máy')
+    expect(status.tone).toBe('waiting')
+    expect(status.hint).toMatch(/đường duyệt cũ/)
   })
 
   it('mỗi trạng thái kèm một câu giải thích, không để rỗng', () => {
-    const cac_truong_hop = [
+    const cases = [
       flowStatus({ is_active: false }, false),
       flowStatus({ is_active: true }, false),
       flowStatus({ is_active: true }, true),
     ]
 
-    for (const trang_thai of cac_truong_hop) {
-      expect(trang_thai.hint.length).toBeGreaterThan(0)
+    for (const status of cases) {
+      expect(status.hint.length).toBeGreaterThan(0)
     }
   })
 })

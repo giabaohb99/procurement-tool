@@ -37,7 +37,7 @@ const KHOANG = [
   { value: '90', label: '90 ngày qua' },
 ]
 
-const MAC_DINH_NGAY = '30'
+const DEFAULT_DATE = '30'
 
 /**
  * `preserveParams`: thiếu tên nào ở đây thì bấm "Áp dụng" bộ lọc nâng cao sẽ
@@ -81,18 +81,18 @@ function ApprovalInboxContent() {
 
   //  Ba ô lọc nhanh lấy URL làm nguồn sự thật: tải lại trang hay gửi link cho
   //  nhau vẫn ra đúng cái đang xem.
-  const { value: tuKhoa, setValue: setTuKhoa, debouncedValue } = useUrlSearchParam()
+  const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [scope, setScope] = useUrlParamState('scope', INBOX_SCOPE.all)
-  const [ngay, setNgay] = useUrlParamState('days', MAC_DINH_NGAY)
+  const [ngay, setNgay] = useUrlParamState('days', DEFAULT_DATE)
 
   const { items: viecCho, isLoading: dangTaiCho } = useMyDocumentTasks()
   const { items: daBam, isLoading: dangTaiBam } = useMyDocumentDecisions(Number(ngay))
 
-  const tatCa = useMemo(() => buildInboxRows(viecCho, daBam), [viecCho, daBam])
+  const all = useMemo(() => buildInboxRows(viecCho, daBam), [viecCho, daBam])
 
   const items = useMemo(() => {
     const can = debouncedValue.trim().toLowerCase()
-    const loc = tatCa.filter((row) => {
+    const loc = all.filter((row) => {
       if (scope === INBOX_SCOPE.pending && row.kind !== 'pending') return false
       if (scope === INBOX_SCOPE.overdue && !row.isOverdue) return false
       if (scope === INBOX_SCOPE.done && row.kind !== 'done') return false
@@ -107,23 +107,23 @@ function ApprovalInboxContent() {
       ].some((o) => o.toLowerCase().includes(can))
     })
     return applyClientFilter(loc, appliedState)
-  }, [tatCa, debouncedValue, scope, appliedState])
+  }, [all, debouncedValue, scope, appliedState])
 
-  const soQuaHan = viecCho.filter((row) => row.is_overdue).length
+  const overdueCount = viecCho.filter((row) => row.is_overdue).length
   //  Ô chọn khoảng chỉ ảnh hưởng phần đã duyệt — khi đang xem riêng việc chờ thì
   //  nó không làm gì cả, để lại chỉ tổ khiến người dùng tưởng danh sách bị cắt.
-  const hienKhoang = scope !== INBOX_SCOPE.pending && scope !== INBOX_SCOPE.overdue
+  const showRange = scope !== INBOX_SCOPE.pending && scope !== INBOX_SCOPE.overdue
 
   return (
     //  `contents` để hai con (băng cảnh báo + Card) nằm THẲNG trong lưới flex
     //  của trang: bọc thêm một `div` là Card mất `flex-1` và bảng không cao bằng
     //  khung nữa.
     <div className="contents">
-      {soQuaHan > 0 && (
+      {overdueCount > 0 && (
         <p className="mb-3 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700" />
           <span>
-            <b>{soQuaHan}</b> văn bản đã quá hạn duyệt.
+            <b>{overdueCount}</b> văn bản đã quá hạn duyệt.
           </span>
         </p>
       )}
@@ -145,7 +145,7 @@ function ApprovalInboxContent() {
           emptyMessage={
             //  Phân biệt "không có gì" với "lọc không ra gì": một bên là tin
             //  mừng, một bên là phải xóa bớt điều kiện.
-            tatCa.length > 0
+            all.length > 0
               ? 'Không có văn bản nào khớp điều kiện đang lọc.'
               : 'Không có văn bản nào đang chờ bạn duyệt.'
           }
@@ -156,8 +156,8 @@ function ApprovalInboxContent() {
                 <Input
                   className="pl-9"
                   placeholder="Tìm số hiệu, tên, bước…"
-                  value={tuKhoa}
-                  onChange={(event) => setTuKhoa(event.target.value)}
+                  value={keyword}
+                  onChange={(event) => setKeyword(event.target.value)}
                 />
               </div>
 
@@ -165,14 +165,14 @@ function ApprovalInboxContent() {
                 value={scope}
                 onChange={setScope}
                 soCho={viecCho.length}
-                soQuaHan={soQuaHan}
+                overdueCount={overdueCount}
                 soDaDuyet={daBam.length}
               />
 
               {/*  Ô này KHÔNG phải bộ lọc mà là khoảng dữ liệu đi hỏi backend —
                    để lẫn vào bộ lọc nâng cao thì lọc kiểu gì cũng không moi ra
                    được văn bản đã duyệt từ bốn tháng trước. */}
-              {hienKhoang && (
+              {showRange && (
                 <Select value={ngay} onValueChange={setNgay}>
                   <SelectTrigger className="w-40" aria-label="Khoảng thời gian đã duyệt">
                     <CalendarRange className="size-4 text-muted-foreground" />

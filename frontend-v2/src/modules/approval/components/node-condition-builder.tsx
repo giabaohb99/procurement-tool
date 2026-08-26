@@ -13,11 +13,11 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { conditionFieldsOf, type ConditionFieldDef } from '../config/condition-fields'
-import { cauDieuKien } from '../helpers/condition-sentence'
+import { conditionText } from '../helpers/condition-sentence'
 import { useConditionChoices } from '../hooks/use-condition-choices'
 import {
   buildCondition,
-  dongDayDu,
+  fullRow,
   laPhepNhieuGiaTri,
   OP_LABELS,
   parseCondition,
@@ -54,7 +54,7 @@ export function NodeConditionBuilder({
   employees,
 }: NodeConditionBuilderProps) {
   const fields = conditionFieldsOf(entity)
-  const layLuaChon = useConditionChoices(employees)
+  const getOptions = useConditionChoices(employees)
   const { advanced } = parseCondition(value, (name) =>
     fields.some((field) => field.name === name),
   )
@@ -73,13 +73,13 @@ export function NodeConditionBuilder({
     onChange(buildCondition(rowsMoi))
   }
 
-  function doiDong(index: number, thayDoi: Partial<ConditionRow>) {
+  function changeRow(index: number, thayDoi: Partial<ConditionRow>) {
     ghi(rows.map((row, i) => (i === index ? { ...row, ...thayDoi } : row)))
   }
 
-  function themDong() {
+  function addRow() {
     const field = fields[0]
-    ghi([...rows, { field: field.name, op: field.ops[0], value: giaTriMacDinh(field.ops[0]) }])
+    ghi([...rows, { field: field.name, op: field.ops[0], value: defaultValue(field.ops[0]) }])
   }
 
   //  Loại chứng từ chưa nối vào bộ máy duyệt (mới chỉ văn bản có
@@ -170,10 +170,10 @@ export function NodeConditionBuilder({
                     //  Đổi ô thì phải reset phép và giá trị: "Mật" của ô mức mật
                     //  đọc thành id phòng ban ở ô sau là một điều kiện sai mà
                     //  trông vẫn hợp lệ.
-                    doiDong(index, {
+                    changeRow(index, {
                       field: name,
                       op: field.ops[0],
-                      value: giaTriMacDinh(field.ops[0]),
+                      value: defaultValue(field.ops[0]),
                     })
                   }}
                 >
@@ -200,28 +200,28 @@ export function NodeConditionBuilder({
                 </Button>
               </div>
 
-              <DongGiaTri
+              <ValueRow
                 row={row}
                 field={fields.find((item) => item.name === row.field)}
                 options={(() => {
                   const field = fields.find((item) => item.name === row.field)
-                  return field ? layLuaChon(field) : []
+                  return field ? getOptions(field) : []
                 })()}
-                onChange={(thayDoi) => doiDong(index, thayDoi)}
+                onChange={(thayDoi) => changeRow(index, thayDoi)}
               />
             </li>
           ))}
         </ul>
       )}
 
-      <Button type="button" variant="outline" size="sm" onClick={themDong}>
+      <Button type="button" variant="outline" size="sm" onClick={addRow}>
         <Plus className="size-4" />
         Thêm điều kiện
       </Button>
 
       {/*  Dòng khai dở KHÔNG được lưu — nói ra, đừng để người dùng bấm lưu rồi
            mở lại mới phát hiện mất một dòng. */}
-      {rows.some((row) => !dongDayDu(row)) && (
+      {rows.some((row) => !fullRow(row)) && (
         <p className="text-xs text-amber-700">
           Điều kiện chưa chọn giá trị sẽ không được lưu.
         </p>
@@ -232,14 +232,14 @@ export function NodeConditionBuilder({
         //  lưu. Bốn ô chọn rời rạc không tự nói ra chúng ghép thành nghĩa gì.
         <p className="rounded-md bg-muted/60 px-3 py-2 text-xs">
           <span className="text-muted-foreground">Bước chỉ chạy khi </span>
-          <b>{cauDieuKien(rows, fields, layLuaChon)}</b>
+          <b>{conditionText(rows, fields, getOptions)}</b>
         </p>
       )}
     </div>
   )
 }
 
-interface DongGiaTriProps {
+interface ValueRowProps {
   row: ConditionRow
   field?: ConditionFieldDef
   options: { id: number; label: string; hint?: string }[]
@@ -247,7 +247,7 @@ interface DongGiaTriProps {
 }
 
 /** Phép so sánh + ô nhập giá trị của một dòng. */
-function DongGiaTri({ row, field, options, onChange }: DongGiaTriProps) {
+function ValueRow({ row, field, options, onChange }: ValueRowProps) {
   if (!field) return null
 
   return (
@@ -255,7 +255,7 @@ function DongGiaTri({ row, field, options, onChange }: DongGiaTriProps) {
       <Select
         value={row.op}
         onValueChange={(op) =>
-          onChange({ op: op as ConditionOp, value: giaTriMacDinh(op as ConditionOp) })
+          onChange({ op: op as ConditionOp, value: defaultValue(op as ConditionOp) })
         }
       >
         <SelectTrigger className="w-40 shrink-0">
@@ -281,7 +281,7 @@ function DongGiaTri({ row, field, options, onChange }: DongGiaTriProps) {
         ) : (
           <Select
             value={String(row.value || '')}
-            onValueChange={(giaTri) => onChange({ value: Number(giaTri) })}
+            onValueChange={(value) => onChange({ value: Number(value) })}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Chọn mức…" />
@@ -300,7 +300,7 @@ function DongGiaTri({ row, field, options, onChange }: DongGiaTriProps) {
   )
 }
 
-function giaTriMacDinh(op: ConditionOp): number | number[] {
+function defaultValue(op: ConditionOp): number | number[] {
   return laPhepNhieuGiaTri(op) ? [] : 0
 }
 

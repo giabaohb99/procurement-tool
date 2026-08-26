@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { AssistantAvatar } from './assistant-avatar'
 
 /** Sau chừng này giây thì nói thêm một câu trấn an, kẻo người dùng tưởng treo. */
-const NGUONG_LAU_GIAY = 8
+const SLOW_THRESHOLD_SEC = 8
 
 /**
  * Khối «đang soạn» hiện trong lúc chờ trả lời.
@@ -38,7 +38,7 @@ export function AssistantThinking() {
           <span className="tabular-nums">{giay}s</span>
         </div>
 
-        {giay >= NGUONG_LAU_GIAY && (
+        {giay >= SLOW_THRESHOLD_SEC && (
           <p className="text-xs text-muted-foreground/80">
             Câu này cần tra số liệu nên hơi lâu — vẫn đang chạy.
           </p>

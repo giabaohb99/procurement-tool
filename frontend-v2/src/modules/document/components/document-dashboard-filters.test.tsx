@@ -4,13 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DocumentDashboardFilters } from './document-dashboard-filters'
 
-const PHAP_NHAN = [
+const COMPANIES = [
   { id: 1, name: 'DEGO HOLDING', code: 'DEGO', is_active: true },
   { id: 12, name: 'SAM', code: 'SAM', is_active: true },
 ]
 
 //  Danh sách phòng ban "toàn bộ" — dùng khi CHƯA chọn pháp nhân nào.
-const MOI_PHONG = [
+const ALL_DEPARTMENTS = [
   { id: 4, name: 'Phòng Kế toán', company_id: 1, is_active: true },
   { id: 10, name: 'Phòng CNTT', company_id: 1, is_active: true },
 ]
@@ -19,11 +19,11 @@ const MOI_PHONG = [
 let capTheoPhapNhan: { department_id: number; department_name: string }[] = []
 
 vi.mock('@/modules/hr/hooks/use-companies', () => ({
-  useCompanies: () => ({ data: { items: PHAP_NHAN, total: PHAP_NHAN.length } }),
+  useCompanies: () => ({ data: { items: COMPANIES, total: COMPANIES.length } }),
 }))
 
 vi.mock('@/modules/hr/hooks/use-departments', () => ({
-  useDepartments: () => ({ data: { items: MOI_PHONG, total: MOI_PHONG.length } }),
+  useDepartments: () => ({ data: { items: ALL_DEPARTMENTS, total: ALL_DEPARTMENTS.length } }),
   useDepartmentsByCompanies: () => ({ data: capTheoPhapNhan }),
 }))
 
@@ -40,7 +40,7 @@ function dung(props: Partial<Parameters<typeof DocumentDashboardFilters>[0]> = {
 }
 
 /** Mở ô chọn phòng ban (ô thứ hai trên thanh lọc). */
-async function moOPhongBan(nguoi: ReturnType<typeof userEvent.setup>) {
+async function openDepartmentSelect(nguoi: ReturnType<typeof userEvent.setup>) {
   await nguoi.click(screen.getAllByRole('combobox')[1])
 }
 
@@ -52,7 +52,7 @@ describe('DocumentDashboardFilters', () => {
   it('chưa chọn pháp nhân thì hiện toàn bộ phòng ban', async () => {
     const nguoi = userEvent.setup()
     dung()
-    await moOPhongBan(nguoi)
+    await openDepartmentSelect(nguoi)
 
     expect(screen.getByText('Phòng Kế toán')).toBeInTheDocument()
     expect(screen.getByText('Phòng CNTT')).toBeInTheDocument()
@@ -65,7 +65,7 @@ describe('DocumentDashboardFilters', () => {
     capTheoPhapNhan = [{ department_id: 99, department_name: 'Phòng dùng chung' }]
     const nguoi = userEvent.setup()
     dung({ companyId: 12 })
-    await moOPhongBan(nguoi)
+    await openDepartmentSelect(nguoi)
 
     expect(screen.getByText('Phòng dùng chung')).toBeInTheDocument()
     //  Phòng có `company_id = 1` không được lọt vào khi đang xem pháp nhân 12.
@@ -79,7 +79,7 @@ describe('DocumentDashboardFilters', () => {
     capTheoPhapNhan = []
     const nguoi = userEvent.setup()
     dung({ companyId: 12 })
-    await moOPhongBan(nguoi)
+    await openDepartmentSelect(nguoi)
 
     expect(screen.getByText(/chưa khai phòng ban nào/i)).toBeInTheDocument()
   })
@@ -87,7 +87,7 @@ describe('DocumentDashboardFilters', () => {
   it('chưa chọn pháp nhân thì KHÔNG hiện câu «chưa khai»', async () => {
     const nguoi = userEvent.setup()
     dung()
-    await moOPhongBan(nguoi)
+    await openDepartmentSelect(nguoi)
 
     expect(screen.queryByText(/chưa khai phòng ban nào/i)).not.toBeInTheDocument()
   })

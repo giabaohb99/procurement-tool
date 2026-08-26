@@ -13,7 +13,7 @@ afterEach(() => {
   for (const editor of editors.splice(0)) editor.destroy()
 })
 
-function dungEditor(content: string) {
+function buildEditor(content: string) {
   const editor = new Editor({
     extensions: [
       StarterKit,
@@ -27,7 +27,7 @@ function dungEditor(content: string) {
   return editor
 }
 
-function chonTatCaO(editor: Editor) {
+function selectAllCells(editor: Editor) {
   const positions: number[] = []
   editor.state.doc.descendants((node, position) => {
     if (node.type.spec.tableRole === 'cell' || node.type.spec.tableRole === 'header_cell') {
@@ -56,7 +56,7 @@ function dan(
   editor.view.dom.dispatchEvent(event)
 }
 
-const BANG_DICH =
+const TRANSLATION_MAP =
   '<table><tbody>' +
   '<tr><td><p>cũ 1</p></td><td><p>cũ 2</p></td></tr>' +
   '<tr><td><p>cũ 3</p></td><td><p>cũ 4</p></td></tr>' +
@@ -64,8 +64,8 @@ const BANG_DICH =
 
 describe('dán bảng từ Excel vào bảng đang bôi đen', () => {
   it('ưu tiên bảng HTML thay vì ảnh xem trước mà Excel đính kèm', () => {
-    const editor = dungEditor(BANG_DICH)
-    chonTatCaO(editor)
+    const editor = buildEditor(TRANSLATION_MAP)
+    selectAllCells(editor)
 
     dan(editor, {
       html:
@@ -88,8 +88,8 @@ describe('dán bảng từ Excel vào bảng đang bôi đen', () => {
   })
 
   it('clipboard chỉ còn TSV thì vẫn rải đúng từng ô, không dồn vào một ô', () => {
-    const editor = dungEditor(BANG_DICH)
-    chonTatCaO(editor)
+    const editor = buildEditor(TRANSLATION_MAP)
+    selectAllCells(editor)
 
     dan(editor, {
       text: 'A & B\t<Hai>\nBa\tBốn',

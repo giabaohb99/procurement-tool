@@ -25,7 +25,7 @@ import {
 import type { ApprovalNode } from '../types/approval'
 
 /** Bảng bên phải đang bày gì (`null` = đóng panel). */
-type BangPhai =
+type RightTable =
   | null
   | { loai: 'cai-dat' }
   | { loai: 'sua-buoc'; nodeId: number }
@@ -37,46 +37,46 @@ type BangPhai =
 export function ApprovalFlowDesignerPage() {
   const params = useParams()
   const navigate = useNavigate()
-  const laTaoMoi = !params.id || params.id === 'new'
-  const flowId = laTaoMoi ? 0 : Number(params.id)
+  const isCreating = !params.id || params.id === 'new'
+  const flowId = isCreating ? 0 : Number(params.id)
 
-  const { data: flow, isLoading } = useApprovalFlow(laTaoMoi ? undefined : flowId)
+  const { data: flow, isLoading } = useApprovalFlow(isCreating ? undefined : flowId)
   const saveNode = useSaveApprovalNode(flowId)
   const deleteNode = useDeleteApprovalNode(flowId)
 
-  const [bangPhai, setBangPhai] = useState<BangPhai>(null)
+  const [bangPhai, setBangPhai] = useState<RightTable>(null)
   const [entityMoi, setEntityMoi] = useState('document')
 
   const nodes = flow?.nodes ?? []
   const cacChang = [...new Set(nodes.map((node) => node.seq))].sort((a, b) => a - b)
-  const nodeDangSua =
+  const editingNode =
     bangPhai?.loai === 'sua-buoc'
       ? (nodes.find((node) => node.id === bangPhai.nodeId) ?? null)
       : null
 
   /** Chèn vào sau chặng thứ `sauChang` → bước mới mang số chặng đó + 1. */
-  function seqGoiY(): number {
+  function suggestedSeq(): number {
     if (!bangPhai || bangPhai.loai !== 'them-buoc') return cacChang.length + 1
     if (bangPhai.vaoChang) return bangPhai.vaoChang
     return Math.min(bangPhai.sauChang + 1, cacChang.length + 1)
   }
 
-  function themBuoc(values: Partial<ApprovalNode>) {
+  function addStep(values: Partial<ApprovalNode>) {
     //  Chỗ đặt bước do BACKEND lo (`flow_service.them_buoc`): chèn giữa thì nó
     //  tự đẩy các chặng sau xuống, thêm nhánh thì tự đánh lại `branch_key`.
     //  Trước đây màn này chèn thẳng rồi mới gọi sắp lại thứ tự — mà chính lượt
     //  chèn đó đâm vào `UNIQUE(flow_id, seq, branch_key)` và trả 500, bước mới
     //  mất luôn.
-    const laNhanh = bangPhai?.loai === 'them-buoc' && !!bangPhai.vaoChang
+    const isQuick = bangPhai?.loai === 'them-buoc' && !!bangPhai.vaoChang
 
     saveNode.mutate(
-      { values, asBranch: laNhanh },
+      { values, asBranch: isQuick },
       { onSuccess: (moi) => setBangPhai({ loai: 'sua-buoc', nodeId: moi.id }) },
     )
   }
 
   // Màn hình tạo mới luồng
-  if (laTaoMoi) {
+  if (isCreating) {
     return (
       <PageContainer className="py-8">
         <div className="mx-auto max-w-xl space-y-4">
@@ -176,7 +176,7 @@ export function ApprovalFlowDesignerPage() {
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <FlowCanvasXY
           nodes={nodes}
-          nodeDangChon={nodeDangSua?.id ?? null}
+          nodeDangChon={editingNode?.id ?? null}
           onChon={(nodeId) => setBangPhai({ loai: 'sua-buoc', nodeId })}
           onBoChon={() => {
             if (bangPhai?.loai === 'sua-buoc') setBangPhai(null)
@@ -218,10 +218,10 @@ export function ApprovalFlowDesignerPage() {
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-foreground">
-                        {nodeDangSua ? `Thuộc tính: ${nodeDangSua.name || `Bước #${nodeDangSua.seq}`}` : 'Thêm bước duyệt mới'}
+                        {editingNode ? `Thuộc tính: ${editingNode.name || `Bước #${editingNode.seq}`}` : 'Thêm bước duyệt mới'}
                       </h3>
                       <p className="text-xs text-muted-foreground">
-                        {nodeDangSua ? 'Cấu hình người duyệt & chế độ phê duyệt' : `Chèn bước vào chặng #${seqGoiY()}`}
+                        {editingNode ? 'Cấu hình người duyệt & chế độ phê duyệt' : `Chèn bước vào chặng #${suggestedSeq()}`}
                       </p>
                     </div>
                   </div>
@@ -239,17 +239,17 @@ export function ApprovalFlowDesignerPage() {
 
                 <div className="flex-1 overflow-y-auto p-5">
                   <ApprovalNodeForm
-                    key={nodeDangSua?.id ?? `moi-${seqGoiY()}`}
-                    node={nodeDangSua ?? undefined}
+                    key={editingNode?.id ?? `moi-${suggestedSeq()}`}
+                    node={editingNode ?? undefined}
                     entity={flow.entity}
-                    seqGoiY={seqGoiY()}
+                    suggestedSeq={suggestedSeq()}
                     isPending={saveNode.isPending}
                     onCancel={() => setBangPhai(null)}
                     onSubmit={(values) => {
-                      if (nodeDangSua) {
-                        saveNode.mutate({ id: nodeDangSua.id, values }, { onSuccess: () => setBangPhai(null) })
+                      if (editingNode) {
+                        saveNode.mutate({ id: editingNode.id, values }, { onSuccess: () => setBangPhai(null) })
                       } else {
-                        themBuoc(values)
+                        addStep(values)
                       }
                     }}
                   />

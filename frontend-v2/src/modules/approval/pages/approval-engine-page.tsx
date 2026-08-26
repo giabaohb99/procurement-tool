@@ -41,16 +41,16 @@ export function ApprovalEnginePage() {
   const { data: flows } = useApprovalFlows()
   const setSwitch = useSetApprovalSwitch()
 
-  const dangBat = new Map((switches ?? []).map((row) => [row.entity, row.is_enabled]))
+  const isOn = new Map((switches ?? []).map((row) => [row.entity, row.is_enabled]))
   //  Đếm luồng ĐANG DÙNG: luồng đã tắt không được tính, nếu không màn này báo
   //  "có 2 luồng" trong khi cả hai đều nằm im.
-  const soLuong = new Map(
+  const quantity = new Map(
     CAC_LOAI.map((ma) => [
       ma,
       (flows?.items ?? []).filter((row) => row.entity === ma && row.is_active).length,
     ]),
   )
-  const soDangChay = CAC_LOAI.filter((ma) => dangBat.get(ma) && soLuong.get(ma)).length
+  const runningNumber = CAC_LOAI.filter((ma) => isOn.get(ma) && quantity.get(ma)).length
 
   return (
     <PageContainer>
@@ -84,30 +84,30 @@ export function ApprovalEnginePage() {
         <div className="flex items-baseline justify-between gap-3 border-b px-4 py-3">
           <h2 className="text-sm font-medium">Theo loại chứng từ</h2>
           <span className="text-xs text-muted-foreground">
-            {soDangChay}/{CAC_LOAI.length} loại đang chạy bộ máy mới
+            {runningNumber}/{CAC_LOAI.length} loại đang chạy bộ máy mới
           </span>
         </div>
 
         <ul className="divide-y">
           {CAC_LOAI.map((ma) => {
-            const bat = dangBat.get(ma) ?? false
-            const trangThai = engineRowStatus(soLuong.get(ma) ?? 0, bat)
+            const bat = isOn.get(ma) ?? false
+            const status = engineRowStatus(quantity.get(ma) ?? 0, bat)
 
             return (
               <li key={ma} className="flex items-center justify-between gap-4 px-4 py-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium">{ENTITY_LABELS[ma]}</p>
-                  <p className="text-xs text-muted-foreground">{trangThai.hint}</p>
+                  <p className="text-xs text-muted-foreground">{status.hint}</p>
                 </div>
 
                 <div className="flex shrink-0 items-center gap-3">
-                  <Badge variant={BADGE_VARIANT[trangThai.tone]}>{trangThai.label}</Badge>
+                  <Badge variant={BADGE_VARIANT[status.tone]}>{status.label}</Badge>
                   <Switch
                     checked={bat}
                     disabled={setSwitch.isPending}
                     aria-label={`Bật bộ máy duyệt mới cho ${ENTITY_LABELS[ma]}`}
-                    onCheckedChange={(giaTri) =>
-                      setSwitch.mutate({ entity: ma, is_enabled: giaTri, note: '' })
+                    onCheckedChange={(value) =>
+                      setSwitch.mutate({ entity: ma, is_enabled: value, note: '' })
                     }
                   />
                 </div>

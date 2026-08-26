@@ -37,7 +37,7 @@ export function DocumentTreeCard({ documentId }: DocumentTreeCardProps) {
   const { data: tree } = useDocumentTree(documentId)
   const children = tree?.children ?? []
   const quanHe = children.filter((node) => node.kind !== 'clone')
-  const banRieng = children.filter((node) => node.kind === 'clone')
+  const privateCopies = children.filter((node) => node.kind === 'clone')
 
   return (
     <Card>
@@ -53,7 +53,7 @@ export function DocumentTreeCard({ documentId }: DocumentTreeCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {tree && <GocCay node={tree} />}
+        {tree && <TreeRoot node={tree} />}
 
         {children.length === 0 && (
           <p className="text-sm text-muted-foreground">
@@ -70,9 +70,9 @@ export function DocumentTreeCard({ documentId }: DocumentTreeCardProps) {
           </NhomCay>
         )}
 
-        {banRieng.length > 0 && (
-          <NhomCay tieuDe={`Bản riêng ở pháp nhân con (${banRieng.length})`}>
-            {banRieng.map((node) => (
+        {privateCopies.length > 0 && (
+          <NhomCay tieuDe={`Bản riêng ở pháp nhân con (${privateCopies.length})`}>
+            {privateCopies.map((node) => (
               <CloneNode key={node.id} node={node} />
             ))}
           </NhomCay>
@@ -88,7 +88,7 @@ export function DocumentTreeCard({ documentId }: DocumentTreeCardProps) {
  * Có nó thì phần thụt lề bên dưới mới có mốc để so, và người dùng đọc ra ngay
  * "mình đang đứng ở đâu" thay vì phải đoán từ tiêu đề trang.
  */
-function GocCay({ node }: { node: DocumentTreeNode }) {
+function TreeRoot({ node }: { node: DocumentTreeNode }) {
   return (
     <div className="flex items-center gap-3 rounded-md border bg-muted/40 px-3 py-2">
       <FileText className="size-4 shrink-0 text-muted-foreground" />

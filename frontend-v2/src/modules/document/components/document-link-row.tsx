@@ -33,15 +33,15 @@ interface DocumentLinkRowProps {
  */
 export function DocumentLinkRow({ link, onDelete }: DocumentLinkRowProps) {
   const other = link.document
-  const diRa = link.direction === 'outgoing'
-  const goDuoc = onDelete && diRa && !link.is_system
-  const MuiTen = diRa ? ArrowUpRight : ArrowDownLeft
+  const leave = link.direction === 'outgoing'
+  const removable = onDelete && leave && !link.is_system
+  const Arrow = leave ? ArrowUpRight : ArrowDownLeft
 
   return (
     <li className="flex items-start gap-3 py-3 first:pt-0">
-      <MuiTen
+      <Arrow
         className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-        aria-label={diRa ? 'Văn bản này trỏ tới' : 'Trỏ tới văn bản này'}
+        aria-label={leave ? 'Văn bản này trỏ tới' : 'Trỏ tới văn bản này'}
       />
 
       <div className="min-w-0 flex-1 space-y-1">
@@ -106,7 +106,7 @@ export function DocumentLinkRow({ link, onDelete }: DocumentLinkRowProps) {
         )}
       </div>
 
-      {goDuoc && (
+      {removable && (
         <ConfirmIconButton
           icon={X}
           title="Gỡ quan hệ"

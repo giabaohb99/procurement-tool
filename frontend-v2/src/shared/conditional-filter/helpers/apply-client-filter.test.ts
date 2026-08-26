@@ -35,18 +35,18 @@ describe('applyClientFilter', () => {
   })
 
   it('nhiều điều kiện nối bằng VÀ thì phải thỏa hết', () => {
-    const ket_qua = applyClientFilter(
+    const result = applyClientFilter(
       HANG,
       state([
         { field: TEN, operator: 'contains', value: 'quy' },
         { field: SO, operator: 'gt', value: 10 },
       ]),
     )
-    expect(ket_qua.map((row) => row.ten)).toEqual(['Quy trình mua hàng'])
+    expect(result.map((row) => row.ten)).toEqual(['Quy trình mua hàng'])
   })
 
   it('nối bằng HOẶC thì chỉ cần thỏa một', () => {
-    const ket_qua = applyClientFilter(
+    const result = applyClientFilter(
       HANG,
       state(
         [
@@ -56,93 +56,93 @@ describe('applyClientFilter', () => {
         'or',
       ),
     )
-    expect(ket_qua).toHaveLength(2)
+    expect(result).toHaveLength(2)
   })
 
   it('so khớp chữ không phân biệt hoa thường', () => {
-    const ket_qua = applyClientFilter(
+    const result = applyClientFilter(
       HANG,
       state([{ field: TEN, operator: 'contains', value: 'BẢO MẬT' }]),
     )
-    expect(ket_qua).toHaveLength(1)
+    expect(result).toHaveLength(1)
   })
 
   describe('để trống / có giá trị', () => {
     it('số 0 và cờ false là CÓ giá trị, không phải để trống', () => {
       //  Lỗi kinh điển: dùng `!value` nên số 0 bị coi là rỗng và biến mất khỏi
       //  kết quả "có giá trị".
-      const ket_qua = applyClientFilter(HANG, state([{ field: SO, operator: 'is_not_empty' }]))
-      expect(ket_qua).toHaveLength(3)
+      const result = applyClientFilter(HANG, state([{ field: SO, operator: 'is_not_empty' }]))
+      expect(result).toHaveLength(3)
     })
 
     it('null là để trống', () => {
-      const ket_qua = applyClientFilter(HANG, state([{ field: NGAY, operator: 'is_empty' }]))
-      expect(ket_qua.map((row) => row.ten)).toEqual(['Thông báo nghỉ Tết'])
+      const result = applyClientFilter(HANG, state([{ field: NGAY, operator: 'is_empty' }]))
+      expect(result.map((row) => row.ten)).toEqual(['Thông báo nghỉ Tết'])
     })
   })
 
   describe('khoảng hở một đầu', () => {
     it('số: bỏ trống đầu trên thì không chặn phía trên', () => {
-      const ket_qua = applyClientFilter(
+      const result = applyClientFilter(
         HANG,
         state([{ field: SO, operator: 'between', value: ['5', ''] }]),
       )
-      expect(ket_qua.map((row) => row.so)).toEqual([5, 12])
+      expect(result.map((row) => row.so)).toEqual([5, 12])
     })
 
     it('ngày: bỏ trống đầu dưới thì không chặn phía dưới', () => {
-      const ket_qua = applyClientFilter(
+      const result = applyClientFilter(
         HANG,
         state([{ field: NGAY, operator: 'between', value: ['', '2026-06-30'] }]),
       )
-      expect(ket_qua.map((row) => row.ten)).toEqual(['Quy chế bảo mật'])
+      expect(result.map((row) => row.ten)).toEqual(['Quy chế bảo mật'])
     })
   })
 
   describe('ngày', () => {
     it('so sánh đúng thứ tự thời gian', () => {
-      const ket_qua = applyClientFilter(
+      const result = applyClientFilter(
         HANG,
         state([{ field: NGAY, operator: 'gte', value: '2026-06-01' }]),
       )
-      expect(ket_qua.map((row) => row.ten)).toEqual(['Quy trình mua hàng'])
+      expect(result.map((row) => row.ten)).toEqual(['Quy trình mua hàng'])
     })
 
     it('dòng KHÔNG có ngày bị loại khỏi mọi phép so sánh mốc', () => {
       //  Coi như lọt thì dòng trống ngày nằm lẫn trong kết quả "từ ngày X" —
       //  người đọc tưởng nó có ngày trong khoảng.
-      const ket_qua = applyClientFilter(
+      const result = applyClientFilter(
         HANG,
         state([{ field: NGAY, operator: 'lte', value: '2030-01-01' }]),
       )
-      expect(ket_qua.map((row) => row.ten)).not.toContain('Thông báo nghỉ Tết')
+      expect(result.map((row) => row.ten)).not.toContain('Thông báo nghỉ Tết')
     })
 
     it('mốc ngày khớp được cả giá trị có kèm giờ', () => {
       const hang = [{ ngay: '2026-03-01T08:30:00' }]
-      const ket_qua = applyClientFilter(
+      const result = applyClientFilter(
         hang,
         state([{ field: NGAY, operator: 'is', value: '2026-03-01' }]),
       )
-      expect(ket_qua).toHaveLength(1)
+      expect(result).toHaveLength(1)
     })
   })
 
   it('cờ đúng/sai nhận cả chuỗi "true" từ ô chọn', () => {
-    const ket_qua = applyClientFilter(
+    const result = applyClientFilter(
       HANG,
       state([{ field: CO, operator: 'is', value: 'true' }]),
     )
-    expect(ket_qua.map((row) => row.ten)).toEqual(['Quy chế bảo mật'])
+    expect(result.map((row) => row.ten)).toEqual(['Quy chế bảo mật'])
   })
 
   it('operator không đánh giá được thì LOẠI dòng, không cho lọt', () => {
     //  Cho lọt là người dùng tưởng đã lọc mà đang nhìn nguyên danh sách — sai
     //  mà không có dấu hiệu gì.
-    const ket_qua = applyClientFilter(
+    const result = applyClientFilter(
       HANG,
       state([{ field: TEN, operator: 'gt', value: 'x' }]),
     )
-    expect(ket_qua).toHaveLength(0)
+    expect(result).toHaveLength(0)
   })
 })

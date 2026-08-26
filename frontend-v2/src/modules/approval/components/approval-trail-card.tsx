@@ -103,12 +103,12 @@ export function ApprovalTrailCard({ instanceId, className }: ApprovalTrailCardPr
   const instance = data?.instance
   const lines = data?.lines ?? []
   const tasks = data?.tasks ?? []
-  const dangCho = tasks.filter((row) => row.status === TASK_STATUS.pending)
+  const pending = tasks.filter((row) => row.status === TASK_STATUS.pending)
   //  Activity kiểu GitHub đọc từ HIỆN TẠI về quá khứ: việc cần xử lý nằm đầu,
   //  rồi mới tới thao tác mới nhất. API trả dấu vết cũ → mới cho bản in.
   const recentLines = lines.slice().reverse()
   const currentStepName =
-    dangCho[0]?.node_name ||
+    pending[0]?.node_name ||
     lines
       .slice()
       .reverse()
@@ -220,14 +220,14 @@ export function ApprovalTrailCard({ instanceId, className }: ApprovalTrailCardPr
                 </span>
               </div>
 
-              {lines.length === 0 && dangCho.length === 0 ? (
+              {lines.length === 0 && pending.length === 0 ? (
                 <p className="rounded-md border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
                   Chưa có thao tác nào.
                 </p>
               ) : (
                 <ol aria-label="Các mốc phê duyệt">
-                  {dangCho.length > 0 && (
-                    <PendingEvent tasks={dangCho} showRail={recentLines.length > 0} />
+                  {pending.length > 0 && (
+                    <PendingEvent tasks={pending} showRail={recentLines.length > 0} />
                   )}
                   {recentLines.map((line, index) => (
                     <ApprovalEvent

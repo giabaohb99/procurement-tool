@@ -59,8 +59,8 @@ export function DocumentLinkAddForm({
   return (
     <div className="space-y-4">
       {slots.map((slot) => {
-        const daCo = countByRule[slot.rule_id] ?? 0
-        const daDu = slot.max_count > 0 && daCo >= slot.max_count
+        const existing = countByRule[slot.rule_id] ?? 0
+        const complete = slot.max_count > 0 && existing >= slot.max_count
         const value = picked[slot.rule_id] ?? ''
 
         return (
@@ -93,15 +93,15 @@ export function DocumentLinkAddForm({
 
               <span className="text-xs text-muted-foreground">
                 {slot.max_count > 0
-                  ? `đã khai ${daCo} trên tối đa ${slot.max_count}`
-                  : `đã khai ${daCo} · không giới hạn`}
+                  ? `đã khai ${existing} trên tối đa ${slot.max_count}`
+                  : `đã khai ${existing} · không giới hạn`}
               </span>
             </div>
 
             <div className="flex gap-2">
               <Select
                 value={value}
-                disabled={disabled || daDu || slot.options.length === 0}
+                disabled={disabled || complete || slot.options.length === 0}
                 onValueChange={(next) =>
                   setPicked((truoc) => ({ ...truoc, [slot.rule_id]: next }))
                 }
@@ -114,7 +114,7 @@ export function DocumentLinkAddForm({
                        tôi chọn"), dù câu giải thích đã có sẵn ở ngay bên dưới. */}
                   <SelectValue
                     placeholder={
-                      daDu
+                      complete
                         ? `Đã khai đủ ${slot.max_count} — gỡ bớt bên dưới rồi mới khai thêm được`
                         : slot.options.length === 0
                           ? 'Chưa có văn bản nào đang hiệu lực để chọn'
@@ -135,7 +135,7 @@ export function DocumentLinkAddForm({
               <Button
                 type="button"
                 variant="outline"
-                disabled={disabled || daDu || !value}
+                disabled={disabled || complete || !value}
                 onClick={() => {
                   onAdd(slot.relation, Number(value))
                   setPicked((truoc) => ({ ...truoc, [slot.rule_id]: '' }))
@@ -148,7 +148,7 @@ export function DocumentLinkAddForm({
 
             {/*  Câu này KHÔNG lặp lại placeholder ở trên — nó trả lời câu hỏi
                  tiếp theo: gỡ ở chỗ nào. */}
-            {daDu && (
+            {complete && (
               <p className="text-xs text-muted-foreground">
                 Ô này đã đủ số lượng tối đa. Gỡ một dòng ở thẻ «Văn bản này trỏ tới» bên
                 dưới rồi mới khai thêm được.

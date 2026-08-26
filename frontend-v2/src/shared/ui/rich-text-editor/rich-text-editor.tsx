@@ -152,8 +152,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
     const [outlineWidth, setOutlineWidth] = useState(224)
 
     //  Khung giấy cao hết phần màn hình còn lại — đo thật, xem hook.
-    const khungGiay = useRef<HTMLDivElement>(null)
-    const chieuCaoGiay = useFillViewportHeight(khungGiay)
+    const pageFrameRef = useRef<HTMLDivElement>(null)
+    const pageHeight = useFillViewportHeight(pageFrameRef)
     // Khi nhập file lớn, transaction chèn sẽ phát `onUpdate`. Không serialize
     // ở đó vì phía dưới còn bật lại pagination; chốt HTML đúng một lần sau khi
     // chèn xong để tránh duyệt cả cây tài liệu hai lần liên tiếp.
@@ -423,8 +423,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
             tới bốn dải cảnh báo hiện/ẩn tùy lúc, và bản chỉ đọc thì không có
             thanh công cụ — mọi hằng số đều sai ở đa số trường hợp. */}
           <div
-            ref={khungGiay}
-            style={{ height: chieuCaoGiay }}
+            ref={pageFrameRef}
+            style={{ height: pageHeight }}
             className="min-h-80 min-w-0 flex-1 overflow-x-auto overflow-y-auto bg-muted px-6 py-5"
           >
             {/* Phóng bằng `zoom` chứ không phải `transform: scale`: `zoom` co

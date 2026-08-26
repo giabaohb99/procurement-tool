@@ -53,7 +53,7 @@ export function AccessGroupEditDialog({
 }: AccessGroupEditDialogProps) {
   //  Cả cụm dùng chung một bộ quyền nên đọc ở dòng đầu là đủ — cùng cách đọc
   //  với dòng tóm tắt bên ngoài (`AccessGroup`).
-  const hienTai = rows[0]?.values
+  const current = rows[0]?.values
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -84,7 +84,7 @@ export function AccessGroupEditDialog({
         <GroupForm
           key={deny ? 'deny' : 'allow'}
           deny={deny}
-          hienTai={hienTai}
+          current={current}
           onCancel={() => onOpenChange(false)}
           onApply={onApply}
         />
@@ -96,16 +96,16 @@ export function AccessGroupEditDialog({
 interface GroupFormProps {
   deny: boolean
   /** Bộ quyền đang áp cho cụm — mở hộp ra là thấy đúng nó, không phải form trắng. */
-  hienTai?: DocumentAccessInput
+  current?: DocumentAccessInput
   onCancel: () => void
   onApply: (patch: GroupPatch) => void
 }
 
-function GroupForm({ deny, hienTai, onCancel, onApply }: GroupFormProps) {
-  const [canWrite, setCanWrite] = useState(hienTai?.can_write ?? false)
-  const [canDelete, setCanDelete] = useState(hienTai?.can_delete ?? false)
-  const [validTo, setValidTo] = useState(hienTai?.valid_to ?? '')
-  const [reason, setReason] = useState(hienTai?.reason ?? '')
+function GroupForm({ deny, current, onCancel, onApply }: GroupFormProps) {
+  const [canWrite, setCanWrite] = useState(current?.can_write ?? false)
+  const [canDelete, setCanDelete] = useState(current?.can_delete ?? false)
+  const [validTo, setValidTo] = useState(current?.valid_to ?? '')
+  const [reason, setReason] = useState(current?.reason ?? '')
 
   return (
     <>

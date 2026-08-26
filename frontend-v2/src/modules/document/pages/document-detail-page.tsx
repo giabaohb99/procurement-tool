@@ -115,14 +115,14 @@ export function DocumentDetailPage() {
   //  chỉ lúc đó mới cần hỏi lại bản ghi theo nhịp (xem `useDocument`).
   const { data: approvalData } = useEntityApproval('document', documentId)
   const approval = approvalData ?? null
-  const dangDuyetNhieuBuoc =
+  const isMultiStepApproval =
     approval?.status === INSTANCE_STATUS.running || approval?.status === INSTANCE_STATUS.blocked
 
   const {
     data: record,
     isLoading,
     isError: mucKhongDocDuoc,
-  } = useDocument(documentId, { dangDuyet: dangDuyetNhieuBuoc })
+  } = useDocument(documentId, { dangDuyet: isMultiStepApproval })
   const { data: versions = [] } = useDocumentVersions(documentId)
   const { data: permissions } = useDocumentPermissions(documentId)
 
@@ -220,7 +220,7 @@ export function DocumentDetailPage() {
 
   //  Thay sẵn những thẻ mà lúc soạn đã biết. Số trang thì để nhãn ngắn: trang
   //  giấy trong trình soạn thảo chưa biết mình là tờ thứ mấy của bản in.
-  const veKhungTrang = (mau: string) =>
+  const drawPageFrame = (mau: string) =>
     fillPageMarkers(mau, {
       trang: '#',
       tongTrang: 'N',
@@ -268,14 +268,14 @@ export function DocumentDetailPage() {
   //  từ chối vẫn `is_locked = false` — đúng cái bẫy đã ghi ở `document-version-row`.
   //  Đọc trạng thái của BẢN ĐANG XEM (bản 2.0 bị từ chối thì văn bản vẫn «Có
   //  hiệu lực» bằng bản 1.0, nên nhìn `record.status` là không thấy gì).
-  const daTuChoi =
+  const rejected =
     version?.status === VERSION_STATUS.rejected || record?.status === DOCUMENT_STATUS.rejected
 
   //  ĐANG TRÌNH DUYỆT thì đóng băng nội dung VÀ bộ trường chung (19/08/2026).
   //  Backend đã chặn (`version_service.chan_khi_dang_duyet`,
   //  `service.chan_sua_khi_dang_duyet`) — khóa ở đây để người dùng không gõ cả
   //  đoạn rồi mới nhận 409, và để tự động lưu không bắn lỗi theo từng nhịp gõ.
-  const khoaVietVi = isSubmitted || daTuChoi
+  const viLocaleKey = isSubmitted || rejected
 
   return (
     // `Tabs` bọc CẢ khung trang để hàng tab nằm cạnh tiêu đề — trang soạn thảo
@@ -302,7 +302,7 @@ export function DocumentDetailPage() {
               {/*  Chỉ nói "tự lưu" với người THẬT SỰ sửa được. Người duyệt nay
                    mở được văn bản để đọc — nói với họ là trang đang tự lưu thì
                    họ tưởng mình vừa động vào bài của người khác. */}
-              {tab === 'compose' && !isLocked && canWrite && !khoaVietVi && (
+              {tab === 'compose' && !isLocked && canWrite && !viLocaleKey && (
                 <>
                   <span aria-hidden>·</span>
                   <DocumentAutosaveStatus
@@ -395,7 +395,7 @@ export function DocumentDetailPage() {
                   Xuất Word
                 </DropdownMenuItem>
 
-                {tab === 'compose' && canWrite && !isLocked && !khoaVietVi && (
+                {tab === 'compose' && canWrite && !isLocked && !viLocaleKey && (
                   <DropdownMenuItem onSelect={() => setPageFrameOpen(true)}>
                     <PanelTop className="size-4" />
                     Đầu/chân trang
@@ -425,7 +425,7 @@ export function DocumentDetailPage() {
                  vào hệ. Chèn tại con trỏ nên vẫn ghép được vào bản đang gõ dở.
                  Điều kiện hiện nút bám đúng điều kiện SỬA ĐƯỢC (bản chưa khóa +
                  có quyền ghi) — như nút Lưu nội dung bên cạnh. */}
-            {tab === 'compose' && canWrite && !isLocked && !khoaVietVi && (
+            {tab === 'compose' && canWrite && !isLocked && !viLocaleKey && (
               <>
                 <DocumentImportButton
                   hasContent={() => editorRef.current?.hasContent() ?? false}
@@ -447,7 +447,7 @@ export function DocumentDetailPage() {
               </>
             )}
 
-            {tab === 'info' && canWrite && !khoaVietVi && (
+            {tab === 'info' && canWrite && !viLocaleKey && (
               <Button type="submit" form={FORM_ID} disabled={save.isPending}>
                 <Save className="size-4" />
                 Lưu thông tin
@@ -492,7 +492,7 @@ export function DocumentDetailPage() {
               </PermissionGate>
             )}
 
-            {isSubmitted && !dangDuyetNhieuBuoc && (
+            {isSubmitted && !isMultiStepApproval && (
               <PermissionGate entity="document" action="approve">
                 <Button
                   type="button"
@@ -567,7 +567,7 @@ export function DocumentDetailPage() {
               key={version.id}
               ref={editorRef}
               showOutline
-              editable={canWrite && !isLocked && !khoaVietVi}
+              editable={canWrite && !isLocked && !viLocaleKey}
               defaultContent={version.content_html ?? ''}
               onChange={autosave.handleChange}
               //  Lề đi theo PHIÊN BẢN: kéo thước xong là ghi xuống bản ghi, mở
@@ -581,10 +581,10 @@ export function DocumentDetailPage() {
               autoNumber={version.auto_heading_number}
               onAutoNumberChange={(bat) => saveAutoNumber.mutate(bat)}
               pageFrame={{
-                headerLeft: veKhungTrang(version.header_left),
-                headerRight: veKhungTrang(version.header_right),
-                footerLeft: veKhungTrang(version.footer_left),
-                footerRight: veKhungTrang(version.footer_right),
+                headerLeft: drawPageFrame(version.header_left),
+                headerRight: drawPageFrame(version.header_right),
+                footerLeft: drawPageFrame(version.footer_left),
+                footerRight: drawPageFrame(version.footer_right),
               }}
             />
           )}
@@ -603,12 +603,12 @@ export function DocumentDetailPage() {
             isNumbered={isNumbered}
             documentId={documentId}
             laNghiPhep={laNghiPhep}
-            readOnly={khoaVietVi || readonlyFromLink}
+            readOnly={viLocaleKey || readonlyFromLink}
             onSubmit={handleSubmitForm}
           >
             <DocumentAttachmentList
               versionId={versionId}
-              readOnly={!canWrite || isLocked || khoaVietVi}
+              readOnly={!canWrite || isLocked || viLocaleKey}
               documentCode={record?.display_code}
             />
             {/*  Phạm vi áp dụng (F01–F04) khác QUYỀN TRUY CẬP: phạm vi trả lời
@@ -684,8 +684,8 @@ export function DocumentDetailPage() {
               footer_left: version.footer_left,
               footer_right: version.footer_right,
             }}
-            onSubmit={(giaTri) =>
-              savePageFrame.mutate(giaTri, { onSuccess: () => setPageFrameOpen(false) })
+            onSubmit={(value) =>
+              savePageFrame.mutate(value, { onSuccess: () => setPageFrameOpen(false) })
             }
           />
         )}

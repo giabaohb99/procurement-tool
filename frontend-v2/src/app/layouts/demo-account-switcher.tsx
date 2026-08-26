@@ -21,7 +21,7 @@ import { DEMO_ACCOUNTS, type DemoAccount } from './demo-accounts'
  * của bản v1 (`frontend/src/layouts/AppLayout.tsx`) để một dòng duy nhất trong
  * `.env.dev` bật menu này cho cả hai app.
  */
-const HIEN_MENU_DEV = import.meta.env.DEV || import.meta.env.VITE_DEVELOPER_MODE === 'dev'
+const SHOW_DEV_MENU = import.meta.env.DEV || import.meta.env.VITE_DEVELOPER_MODE === 'dev'
 
 /**
  * ĐỔI TÀI KHOẢN NHANH — **chỉ có ở bản chạy DEV**, để trình diễn.
@@ -44,9 +44,9 @@ export function DemoAccountSwitcher() {
   const { user, login, logout } = useAuth()
   const [dangDoi, setDangDoi] = useState<string | null>(null)
 
-  if (!HIEN_MENU_DEV) return null
+  if (!SHOW_DEV_MENU) return null
 
-  async function doiSang(account: DemoAccount) {
+  async function switchTo(account: DemoAccount) {
     if (account.username === user?.emp_code) return
     setDangDoi(account.username)
     try {
@@ -108,7 +108,7 @@ export function DemoAccountSwitcher() {
               {ten}
             </DropdownMenuLabel>
             {DEMO_ACCOUNTS.filter((row) => row.group === ten).map((row) => {
-              const dangDung =
+              const isCurrent =
                 row.username === user?.emp_code ||
                 row.username === user?.email ||
                 row.username === user?.full_name
@@ -120,11 +120,11 @@ export function DemoAccountSwitcher() {
                     //  Giữ menu mở tới lúc đăng nhập xong thì người trình bày
                     //  thấy được vòng xoay, khỏi tưởng bấm hụt.
                     event.preventDefault()
-                    void doiSang(row)
+                    void switchTo(row)
                   }}
                   className="gap-2"
                 >
-                  <Check className={dangDung ? 'size-4' : 'invisible size-4'} />
+                  <Check className={isCurrent ? 'size-4' : 'invisible size-4'} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[13px] font-medium">{row.label}</span>
                     <span className="block truncate text-[11px] text-muted-foreground">

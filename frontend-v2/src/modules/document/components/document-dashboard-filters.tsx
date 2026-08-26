@@ -16,7 +16,7 @@ import {
 import { DATE_RANGES, type DateRangeKey } from '../helpers/dashboard-date-range'
 
 /** Giá trị ô select khi không lọc gì — Radix không nhận chuỗi rỗng làm value. */
-const TAT_CA = 'all'
+const ALL = 'all'
 
 interface DocumentDashboardFiltersProps {
   companyId?: number
@@ -72,17 +72,17 @@ export function DocumentDashboardFilters({
   //  Pháp nhân CHƯA khai phòng ban nào là chuyện có thật trên dữ liệu đang chạy
   //  (13 pháp nhân, phòng ban mới khai cho 2). Ô chọn bung ra rỗng trơn mà không
   //  nói gì thì người dùng tưởng hệ hỏng — nói thẳng ra là thiếu khai báo.
-  const chuaKhaiPhongBan = Boolean(companyId) && departmentOptions.length === 0
+  const noDepartmentDeclared = Boolean(companyId) && departmentOptions.length === 0
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2">
       <Select
-        value={companyId ? String(companyId) : TAT_CA}
+        value={companyId ? String(companyId) : ALL}
         onValueChange={(next) =>
           //  Đổi pháp nhân thì BỎ luôn phòng ban đang chọn: phòng đó thuộc pháp
           //  nhân cũ, giữ lại là lọc ra rỗng mà người dùng không hiểu vì sao.
           onChange({
-            companyId: next === TAT_CA ? undefined : Number(next),
+            companyId: next === ALL ? undefined : Number(next),
             departmentId: undefined,
             rangeKey,
             fromDate,
@@ -95,7 +95,7 @@ export function DocumentDashboardFilters({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={TAT_CA}>Toàn đơn vị</SelectItem>
+          <SelectItem value={ALL}>Toàn đơn vị</SelectItem>
           {(companies?.items ?? []).map((company) => (
             <SelectItem key={company.id} value={String(company.id)}>
               {company.name}
@@ -105,11 +105,11 @@ export function DocumentDashboardFilters({
       </Select>
 
       <Select
-        value={departmentId ? String(departmentId) : TAT_CA}
+        value={departmentId ? String(departmentId) : ALL}
         onValueChange={(next) =>
           onChange({
             companyId,
-            departmentId: next === TAT_CA ? undefined : Number(next),
+            departmentId: next === ALL ? undefined : Number(next),
             rangeKey,
             fromDate,
             toDate,
@@ -121,8 +121,8 @@ export function DocumentDashboardFilters({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={TAT_CA}>Tất cả phòng ban</SelectItem>
-          {chuaKhaiPhongBan && (
+          <SelectItem value={ALL}>Tất cả phòng ban</SelectItem>
+          {noDepartmentDeclared && (
             <p className="px-2 py-3 text-xs text-muted-foreground">
               Pháp nhân này chưa khai phòng ban nào. Khai ở <strong>Nhân sự ▸ Phòng ban</strong>.
             </p>

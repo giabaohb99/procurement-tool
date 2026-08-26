@@ -63,7 +63,7 @@ export function EditorRuler({
   const dragRef = useRef<{ side: keyof PageMargins; startX: number; startValue: number }>(null)
   //  Giá trị mới nhất trong lúc kéo — lúc thả tay, `margins` trong closure vẫn
   //  là giá trị của lần render bắt đầu kéo, ghi theo nó là ghi hụt cả cú kéo.
-  const moiNhatRef = useRef<PageMargins>(margins)
+  const latestRef = useRef<PageMargins>(margins)
   // Chỉ theo trục NGANG: thước này chỉ cần biết mép trái tờ giấy nằm ở đâu,
   // báo cả vị trí dọc thì cuộn xuống là nó vẽ lại theo từng khung hình cho
   // không.
@@ -87,12 +87,12 @@ export function EditorRuler({
       const delta = ((moveEvent.clientX - drag.startX) / zoom) * direction
       const next = Math.round((drag.startValue + delta) / RULER_SNAP_PX) * RULER_SNAP_PX
       const ke = { ...margins, [drag.side]: clamp(drag.side, next) }
-      moiNhatRef.current = ke
+      latestRef.current = ke
       onChange(ke)
     }
 
     const stop = () => {
-      if (dragRef.current) onCommit?.(moiNhatRef.current)
+      if (dragRef.current) onCommit?.(latestRef.current)
       dragRef.current = null
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', stop)
@@ -109,8 +109,8 @@ export function EditorRuler({
   }
 
   /** Bấm đúp con trượt: về lề mặc định — cũng là một lần buông tay. */
-  function datLai(side: keyof PageMargins, giaTri: number) {
-    const ke = { ...margins, [side]: giaTri }
+  function reset(side: keyof PageMargins, value: number) {
+    const ke = { ...margins, [side]: value }
     onChange(ke)
     onCommit?.(ke)
   }
@@ -174,7 +174,7 @@ export function EditorRuler({
           offset={at(margins.left)}
           valueCm={margins.left / PX_PER_CM}
           onPointerDown={(event) => startDrag('left', event)}
-          onReset={() => datLai('left', defaultMargins.left)}
+          onReset={() => reset('left', defaultMargins.left)}
           onNudge={(steps) => nudge('left', steps)}
         />
         <MarginHandle
@@ -182,7 +182,7 @@ export function EditorRuler({
           offset={at(margins.right)}
           valueCm={margins.right / PX_PER_CM}
           onPointerDown={(event) => startDrag('right', event)}
-          onReset={() => datLai('right', defaultMargins.right)}
+          onReset={() => reset('right', defaultMargins.right)}
           onNudge={(steps) => nudge('right', steps)}
         />
       </div>

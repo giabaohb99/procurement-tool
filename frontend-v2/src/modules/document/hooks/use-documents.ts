@@ -32,7 +32,7 @@ export function useDocuments(params: DocumentListParams = {}) {
  *
  * 20 giây, cùng nhịp với chuông thông báo.
  */
-const NHIP_DANG_DUYET_MS = 20_000
+const PENDING_POLL_MS = 20_000
 
 /**
  * Nhịp hỏi lại khi văn bản chỉ đang MỞ ĐỌC.
@@ -43,14 +43,14 @@ const NHIP_DANG_DUYET_MS = 20_000
  * ra thay vì ngồi lại với một trang đã chết — trước đây `false`, tức là **không
  * bao giờ** biết.
  */
-const NHIP_DOC_MS = 60_000
+const READ_POLL_MS = 60_000
 
 export function useDocument(id?: number, options: { dangDuyet?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.document.record(id ?? 0),
     queryFn: () => documentApi.getById(id as number),
     enabled: typeof id === 'number' && id > 0,
-    refetchInterval: options.dangDuyet ? NHIP_DANG_DUYET_MS : NHIP_DOC_MS,
+    refetchInterval: options.dangDuyet ? PENDING_POLL_MS : READ_POLL_MS,
     //  Quay lại tab là hỏi ngay, không đợi hết nhịp: người dùng chuyển sang màn
     //  khác rồi quay về là lúc hay gặp nhất.
     refetchOnWindowFocus: true,
@@ -190,7 +190,7 @@ export function useDeleteDocument() {
  * KHÔNG báo toast xanh: đây là thao tác dọn dẹp ngầm khi người dùng rời form,
  * họ không «làm» gì để mà được xác nhận. Bên gọi tự bắt lỗi.
  */
-export function useBoBanNhap() {
+export function useDiscardDraft() {
   const queryClient = useQueryClient()
 
   return useMutation({

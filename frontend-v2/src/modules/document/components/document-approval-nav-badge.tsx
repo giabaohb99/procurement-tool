@@ -15,7 +15,7 @@ export function DocumentApprovalNavBadge() {
   const { items } = useMyDocumentTasks()
   if (items.length === 0) return null
 
-  const quaHan = items.some((row) => row.is_overdue)
+  const overdue = items.some((row) => row.is_overdue)
 
   return (
     <span
@@ -24,7 +24,7 @@ export function DocumentApprovalNavBadge() {
       className={cn(
         'ml-auto rounded-full px-1.5 py-0.5 text-[0.6875rem] font-semibold',
         //  Có việc quá hạn thì đổi sang đỏ: cùng một con số nhưng gấp hơn hẳn.
-        quaHan ? 'bg-destructive text-white' : 'bg-primary text-primary-foreground',
+        overdue ? 'bg-destructive text-white' : 'bg-primary text-primary-foreground',
       )}
       //  Đọc màn hình chỉ nghe "3" thì không biết 3 cái gì.
       aria-label={`${items.length} văn bản đang chờ bạn duyệt`}

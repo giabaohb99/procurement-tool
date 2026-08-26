@@ -69,19 +69,19 @@ const NHOM: { key: keyof IssueCodeGroups; tab: string; tieuDe: string; mo_ta: st
  */
 export function IssueCodeDialog({ open, onOpenChange }: IssueCodeDialogProps) {
   const [tab, setTab] = useState<keyof IssueCodeGroups>('companies')
-  const [tuKhoa, setTuKhoa] = useState('')
+  const [keyword, setKeyword] = useState('')
   //  Chỉ nạp khi hộp thoại mở — 60+ dòng gom từ năm bảng.
   const { data, isLoading } = useIssueCodes(open)
   const save = useSaveIssueCode()
 
   const rows = useMemo(() => {
     const all: IssueCodeRow[] = data?.[tab] ?? []
-    const can = tuKhoa.trim().toLowerCase()
+    const can = keyword.trim().toLowerCase()
     if (!can) return all
     return all.filter((row) =>
       [row.name, row.code, row.issue_code].some((o) => (o ?? '').toLowerCase().includes(can)),
     )
-  }, [data, tab, tuKhoa])
+  }, [data, tab, keyword])
 
   const nhom = NHOM.find((item) => item.key === tab)
 
@@ -102,7 +102,7 @@ export function IssueCodeDialog({ open, onOpenChange }: IssueCodeDialogProps) {
             setTab(next as keyof IssueCodeGroups)
             //  Từ khóa của tab cũ gần như không bao giờ khớp tab mới — giữ lại
             //  là người dùng đổi tab xong thấy bảng rỗng và tưởng chưa có gì.
-            setTuKhoa('')
+            setKeyword('')
           }}
           className="flex min-h-0 flex-1 flex-col"
         >
@@ -125,8 +125,8 @@ export function IssueCodeDialog({ open, onOpenChange }: IssueCodeDialogProps) {
               <Input
                 className="pl-9"
                 placeholder="Tìm theo tên hoặc mã…"
-                value={tuKhoa}
-                onChange={(event) => setTuKhoa(event.target.value)}
+                value={keyword}
+                onChange={(event) => setKeyword(event.target.value)}
               />
             </div>
 

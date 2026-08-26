@@ -25,9 +25,9 @@ export interface ConditionFieldDef {
 }
 
 /** Phép so lớn nhỏ chỉ có nghĩa trên thang có thứ bậc (mức mật, độ khẩn). */
-const OPS_THANG: ConditionOp[] = ['gte', 'lte', 'eq', 'ne']
+const MONTH_OPS: ConditionOp[] = ['gte', 'lte', 'eq', 'ne']
 /** Danh mục thì không có "lớn hơn" — id lớn hơn không nghĩa là gì cả. */
-const OPS_DANH_MUC: ConditionOp[] = ['in', 'not_in']
+const CATALOG_OPS: ConditionOp[] = ['in', 'not_in']
 
 /**
  * Các ô của VĂN BẢN có thể đem ra rẽ nhánh.
@@ -42,7 +42,7 @@ export const DOCUMENT_CONDITION_FIELDS: ConditionFieldDef[] = [
     name: 'secrecy_level',
     label: 'Mức mật',
     source: 'level',
-    ops: OPS_THANG,
+    ops: MONTH_OPS,
     // `.value`, KHÔNG phải `.id`: điều kiện lưu xuống DB dạng
     // `{"field":"secrecy_level","op":"gte","value":3}`, so trực tiếp với con số
     // trên văn bản (`tab_document.secrecy_level`), không phải khóa chính danh mục.
@@ -53,15 +53,15 @@ export const DOCUMENT_CONDITION_FIELDS: ConditionFieldDef[] = [
     name: 'urgency',
     label: 'Độ khẩn',
     source: 'level',
-    ops: OPS_THANG,
+    ops: MONTH_OPS,
     choices: FALLBACK_URGENCY_LEVELS.map((item) => ({ value: item.value, label: item.name })),
   },
-  { name: 'doc_type_id', label: 'Loại văn bản', source: 'doc_type', ops: OPS_DANH_MUC },
-  { name: 'company_id', label: 'Pháp nhân', source: 'company', ops: OPS_DANH_MUC },
-  { name: 'department_id', label: 'Phòng ban soạn', source: 'department', ops: OPS_DANH_MUC },
-  { name: 'signer_employee_id', label: 'Người ký', source: 'employee', ops: OPS_DANH_MUC },
-  { name: 'owner_employee_id', label: 'Người phụ trách', source: 'employee', ops: OPS_DANH_MUC },
-  { name: 'drafter_employee_id', label: 'Người soạn', source: 'employee', ops: OPS_DANH_MUC },
+  { name: 'doc_type_id', label: 'Loại văn bản', source: 'doc_type', ops: CATALOG_OPS },
+  { name: 'company_id', label: 'Pháp nhân', source: 'company', ops: CATALOG_OPS },
+  { name: 'department_id', label: 'Phòng ban soạn', source: 'department', ops: CATALOG_OPS },
+  { name: 'signer_employee_id', label: 'Người ký', source: 'employee', ops: CATALOG_OPS },
+  { name: 'owner_employee_id', label: 'Người phụ trách', source: 'employee', ops: CATALOG_OPS },
+  { name: 'drafter_employee_id', label: 'Người soạn', source: 'employee', ops: CATALOG_OPS },
 ]
 
 /**

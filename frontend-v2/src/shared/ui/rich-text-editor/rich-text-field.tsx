@@ -80,7 +80,7 @@ export function RichTextField({
 
   if (!editor) return null
 
-  return <ThanOSoan editor={editor} placeholder={placeholder} className={className} />
+  return <ComposerBody editor={editor} placeholder={placeholder} className={className} />
 }
 
 /**
@@ -88,7 +88,7 @@ export function RichTextField({
  * `useEditor` thì trả `null` ở lần vẽ đầu — không thể gọi hook sau một câu
  * `return null`.
  */
-function ThanOSoan({
+function ComposerBody({
   editor,
   placeholder,
   className,
@@ -101,7 +101,7 @@ function ThanOSoan({
   //  React nên gõ phím / di con trỏ không làm component vẽ lại — đọc thẳng
   //  `editor.isActive('bold')` lúc vẽ thì nút "In đậm" không bao giờ sáng lên,
   //  và chữ gợi ý không bao giờ tắt. Cùng lý do với `use-toolbar-state.ts`.
-  const trangThai = useEditorState({
+  const status = useEditorState({
     editor,
     selector: ({ editor: instance }) => ({
       rong: instance.isEmpty,
@@ -117,11 +117,11 @@ function ThanOSoan({
     }),
   })
 
-  const canhLe = [
-    { giaTri: 'left', icon: AlignLeft, nhan: 'Canh trái', dangBat: trangThai.alignLeft },
-    { giaTri: 'center', icon: AlignCenter, nhan: 'Canh giữa', dangBat: trangThai.alignCenter },
-    { giaTri: 'right', icon: AlignRight, nhan: 'Canh phải', dangBat: trangThai.alignRight },
-    { giaTri: 'justify', icon: AlignJustify, nhan: 'Canh đều', dangBat: trangThai.alignJustify },
+  const align = [
+    { value: 'left', icon: AlignLeft, nhan: 'Canh trái', isOn: status.alignLeft },
+    { value: 'center', icon: AlignCenter, nhan: 'Canh giữa', isOn: status.alignCenter },
+    { value: 'right', icon: AlignRight, nhan: 'Canh phải', isOn: status.alignRight },
+    { value: 'justify', icon: AlignJustify, nhan: 'Canh đều', isOn: status.alignJustify },
   ] as const
 
   return (
@@ -130,19 +130,19 @@ function ThanOSoan({
         <ToolbarButton
           icon={Bold}
           label="In đậm"
-          active={trangThai.bold}
+          active={status.bold}
           onClick={() => editor.chain().focus().toggleBold().run()}
         />
         <ToolbarButton
           icon={Italic}
           label="In nghiêng"
-          active={trangThai.italic}
+          active={status.italic}
           onClick={() => editor.chain().focus().toggleItalic().run()}
         />
         <ToolbarButton
           icon={Underline}
           label="Gạch chân"
-          active={trangThai.underline}
+          active={status.underline}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
         />
 
@@ -151,25 +151,25 @@ function ThanOSoan({
         <ToolbarButton
           icon={List}
           label="Danh sách dấu chấm"
-          active={trangThai.bulletList}
+          active={status.bulletList}
           onClick={() => editor.chain().focus().toggleBulletList().run()}
         />
         <ToolbarButton
           icon={ListOrdered}
           label="Danh sách đánh số"
-          active={trangThai.orderedList}
+          active={status.orderedList}
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
         />
 
         <ToolbarDivider />
 
-        {canhLe.map((muc) => (
+        {align.map((muc) => (
           <ToolbarButton
-            key={muc.giaTri}
+            key={muc.value}
             icon={muc.icon}
             label={muc.nhan}
-            active={muc.dangBat}
-            onClick={() => editor.chain().focus().setTextAlign(muc.giaTri).run()}
+            active={muc.isOn}
+            onClick={() => editor.chain().focus().setTextAlign(muc.value).run()}
           />
         ))}
 
@@ -188,7 +188,7 @@ function ThanOSoan({
            placeholder` cho đúng một dòng chữ. `pointer-events-none` để bấm vào
            chỗ chữ gợi ý vẫn là bấm vào vùng gõ bên dưới. */}
       <div className="relative">
-        {trangThai.rong && placeholder && (
+        {status.rong && placeholder && (
           <p className="pointer-events-none absolute top-2.5 left-3 text-sm text-muted-foreground">
             {placeholder}
           </p>

@@ -30,7 +30,7 @@ export function applyClientFilter<T>(items: T[], state: FilterState): T[] {
  * Cho lọt là người dùng tưởng mình đã lọc mà thật ra đang nhìn nguyên danh
  * sách — sai mà không có dấu hiệu gì. Loại hết thì bảng trống, nhìn ra ngay.
  */
-const KHONG_DANH_GIA_DUOC = false
+const NOT_RATED = false
 
 function matchesRow<T>(item: T, row: FilterRow): boolean {
   const raw = (item as Record<string, unknown>)[row.field?.name ?? '']
@@ -76,7 +76,7 @@ function matchesText(text: string, row: FilterRow): boolean {
     case 'not_in':
       return !toLowerList(row.value).includes(text)
     default:
-      return KHONG_DANH_GIA_DUOC
+      return NOT_RATED
   }
 }
 
@@ -94,7 +94,7 @@ function matchesNumber(value: number, row: FilterRow): boolean {
   const moc = Number(row.value)
   if (Number.isNaN(moc)) return false
 
-  return soSanh(value, moc, row)
+  return compare(value, moc, row)
 }
 
 function matchesDate(value: string, row: FilterRow): boolean {
@@ -110,11 +110,11 @@ function matchesDate(value: string, row: FilterRow): boolean {
   }
 
   //  Ngày lưu dạng ISO nên so sánh chuỗi cũng là so đúng thứ tự thời gian.
-  return soSanh(value, ngayISO(row.value), row)
+  return compare(value, ngayISO(row.value), row)
 }
 
 /** Phần so sánh có thứ tự, dùng chung cho số và ngày. */
-function soSanh<V extends number | string>(value: V, moc: V, row: FilterRow): boolean {
+function compare<V extends number | string>(value: V, moc: V, row: FilterRow): boolean {
   switch (row.operator) {
     case 'is':
       return value === moc
@@ -129,7 +129,7 @@ function soSanh<V extends number | string>(value: V, moc: V, row: FilterRow): bo
     case 'lte':
       return value <= moc
     default:
-      return KHONG_DANH_GIA_DUOC
+      return NOT_RATED
   }
 }
 

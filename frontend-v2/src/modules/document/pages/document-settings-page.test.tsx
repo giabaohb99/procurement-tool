@@ -6,11 +6,11 @@ import type { PermissionEntity } from '@/core/authorization/permission-types'
 import { DocumentSettingsPage } from './document-settings-page'
 
 //  Khóa mà tài khoản đang thử được ĐỌC.
-let duocDoc: PermissionEntity[] = []
+let canRead: PermissionEntity[] = []
 
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({
-    can: (entity: PermissionEntity) => duocDoc.includes(entity),
+    can: (entity: PermissionEntity) => canRead.includes(entity),
     canAny: () => true,
   }),
 }))
@@ -38,7 +38,7 @@ function dung() {
 }
 
 beforeEach(() => {
-  duocDoc = []
+  canRead = []
 })
 
 describe('DocumentSettingsPage', () => {
@@ -47,7 +47,7 @@ describe('DocumentSettingsPage', () => {
   //  giữ *Đơn vị gửi nhận* không vào nổi trang chứa đúng tab của mình, còn người
   //  có `doc_type` mà thiếu `security_level` thì vào được rồi bấm tab ăn 403.
   it('chỉ hiện tab mà tài khoản đọc được', () => {
-    duocDoc = ['doc_type', 'external_party']
+    canRead = ['doc_type', 'external_party']
     dung()
 
     expect(screen.getByRole('tab', { name: /Loại văn bản/ })).toBeInTheDocument()
@@ -58,7 +58,7 @@ describe('DocumentSettingsPage', () => {
 
   it('chỉ có khóa của tab CUỐI thì vẫn mở đúng tab đó, không rơi vào tab trống', () => {
     //  `?tab=` mặc định trỏ vào «Loại văn bản» — tab người này không được xem.
-    duocDoc = ['external_party']
+    canRead = ['external_party']
     dung()
 
     expect(screen.getByText('bảng đơn vị gửi nhận')).toBeInTheDocument()

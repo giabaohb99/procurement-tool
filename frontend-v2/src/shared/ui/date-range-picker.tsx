@@ -19,22 +19,22 @@ export interface DateRangePickerProps {
 }
 
 /** `YYYY-MM-DD` theo giờ ĐỊA PHƯƠNG — `toISOString()` đổi sang UTC nên lệch ngày. */
-function chuoiNgay(day: Date): string {
+function toDateString(day: Date): string {
   const thang = String(day.getMonth() + 1).padStart(2, '0')
   const ngay = String(day.getDate()).padStart(2, '0')
   return `${day.getFullYear()}-${thang}-${ngay}`
 }
 
 /** `"2026-09-11"` → `Date` giờ địa phương. Chuỗi rỗng / sai → `undefined`. */
-function docNgay(raw?: string): Date | undefined {
+function parseDate(raw?: string): Date | undefined {
   if (!raw) return undefined
   const day = new Date(`${raw}T00:00:00`)
   return Number.isNaN(day.getTime()) ? undefined : day
 }
 
 /** `"2026-09-11"` → `"11/09/2026"`. Người Việt đọc ngày trước, tháng sau. */
-function hienThi(raw?: string): string {
-  const day = docNgay(raw)
+function display(raw?: string): string {
+  const day = parseDate(raw)
   if (!day) return '…'
   return day.toLocaleDateString('vi-VN')
 }
@@ -62,10 +62,10 @@ export function DateRangePicker({
   className,
 }: DateRangePickerProps) {
   const [open, setOpen] = useState(false)
-  const daChon = Boolean(from && to)
+  const selected = Boolean(from && to)
 
-  const khoang: DateRange | undefined = docNgay(from)
-    ? { from: docNgay(from), to: docNgay(to) }
+  const khoang: DateRange | undefined = parseDate(from)
+    ? { from: parseDate(from), to: parseDate(to) }
     : undefined
 
   return (
@@ -76,13 +76,13 @@ export function DateRangePicker({
           variant="outline"
           disabled={disabled}
           className={cn('w-auto min-w-56 justify-start gap-2 font-normal',
-                        !daChon && 'text-muted-foreground', className)}
+                        !selected && 'text-muted-foreground', className)}
         >
           <CalendarRange className="size-4 shrink-0 text-muted-foreground" />
           <span className="truncate">
-            {daChon ? `${hienThi(from)} – ${hienThi(to)}` : placeholder}
+            {selected ? `${display(from)} – ${display(to)}` : placeholder}
           </span>
-          {daChon && (
+          {selected && (
             <span
               role="button"
               tabIndex={-1}
@@ -105,11 +105,11 @@ export function DateRangePicker({
         <Calendar
           mode="range"
           numberOfMonths={2}
-          defaultMonth={docNgay(from)}
+          defaultMonth={parseDate(from)}
           selected={khoang}
           onSelect={(next) => {
             if (!next?.from || !next?.to) return
-            onChange(chuoiNgay(next.from), chuoiNgay(next.to))
+            onChange(toDateString(next.from), toDateString(next.to))
             setOpen(false)
           }}
         />

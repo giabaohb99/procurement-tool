@@ -36,13 +36,13 @@ export const KIEU_PDF = 'application/pdf'
  * hay từ Zalo thường về tới nơi với kiểu rỗng hoặc
  * `application/octet-stream`, mà đuôi thì luôn còn.
  */
-const DUOI_DOI_HTML = ['docx', 'doc', 'md', 'markdown', 'html', 'htm']
+const HTML_EXTENSION = ['docx', 'doc', 'md', 'markdown', 'html', 'htm']
 
 function chuanHoa(contentType: string | undefined): string {
   return (contentType || '').split(';')[0].trim().toLowerCase()
 }
 
-function duoiCua(filename: string | undefined): string {
+function extensionOf(filename: string | undefined): string {
   const ten = filename || ''
   return ten.includes('.') ? ten.split('.').pop()!.toLowerCase() : ''
 }
@@ -52,15 +52,15 @@ export function laAnh(contentType: string | undefined): boolean {
 }
 
 export function laPdf(contentType: string | undefined, filename?: string): boolean {
-  return chuanHoa(contentType) === KIEU_PDF || duoiCua(filename) === 'pdf'
+  return chuanHoa(contentType) === KIEU_PDF || extensionOf(filename) === 'pdf'
 }
 
 /** Tệp phải ĐỔI SANG HTML mới xem được (Word, Markdown, HTML). */
-export function xemBangHtml(contentType: string | undefined, filename?: string): boolean {
+export function viewAsHtml(contentType: string | undefined, filename?: string): boolean {
   if (laAnh(contentType) || laPdf(contentType, filename)) return false
-  return DUOI_DOI_HTML.includes(duoiCua(filename))
+  return HTML_EXTENSION.includes(extensionOf(filename))
 }
 
-export function xemTaiChoDuoc(contentType: string | undefined, filename?: string): boolean {
-  return laAnh(contentType) || laPdf(contentType, filename) || xemBangHtml(contentType, filename)
+export function canPreviewInline(contentType: string | undefined, filename?: string): boolean {
+  return laAnh(contentType) || laPdf(contentType, filename) || viewAsHtml(contentType, filename)
 }

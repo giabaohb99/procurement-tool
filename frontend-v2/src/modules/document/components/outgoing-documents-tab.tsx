@@ -74,7 +74,7 @@ function OutgoingDocumentsContent() {
   //  dòng đó. Đọc lại hộp việc đã nạp sẵn cho nút trên thanh trên, không thêm
   //  vòng mạng nào.
   const { items: viecDuyetCuaToi } = useMyDocumentTasks()
-  const choToiDuyet = useMemo(
+  const awaitingMyApproval = useMemo(
     () => new Set(viecDuyetCuaToi.map((row) => row.entity_id)),
     [viecDuyetCuaToi],
   )
@@ -86,7 +86,7 @@ function OutgoingDocumentsContent() {
 
   //  Điều kiện lọc gom một chỗ: bảng và nút Xuất Excel phải nhìn cùng một bộ,
   //  nếu không thì file tải về khác hẳn thứ đang hiện trên màn hình.
-  const dieuKienLoc = {
+  const filterParams = {
     ...queryParams,
     q: debouncedValue.trim() || undefined,
     doc_type_id: typeId === ALL ? undefined : Number(typeId),
@@ -94,22 +94,22 @@ function OutgoingDocumentsContent() {
   }
 
   const { data, isLoading, isError } = useDocuments({
-    ...dieuKienLoc,
+    ...filterParams,
     page,
     page_size: pageSize,
   })
 
   const [dangXuat, setDangXuat] = useState(false)
 
-  async function xuatExcel() {
+  async function exportExcel() {
     setDangXuat(true)
     try {
       //  KHÔNG gửi `cols`: người dùng ẩn cột trên màn hình để nhìn cho gọn,
       //  còn file Excel thì gần như luôn muốn đủ cột để lọc lại trong Excel.
       const query = new URLSearchParams()
-      for (const [khoa, giaTri] of Object.entries(dieuKienLoc)) {
-        if (giaTri !== undefined && giaTri !== null && giaTri !== '') {
-          query.set(khoa, String(giaTri))
+      for (const [khoa, value] of Object.entries(filterParams)) {
+        if (value !== undefined && value !== null && value !== '') {
+          query.set(khoa, String(value))
         }
       }
       const homNay = new Date().toISOString().slice(0, 10)
@@ -126,7 +126,7 @@ function OutgoingDocumentsContent() {
 
   //  Các BẢN RIÊNG của dòng đang bung. Backend giấu chúng khỏi danh sách chung
   //  (xem `an_ban_rieng_co_goc_xem_duoc`) nên phải hỏi đích danh theo bản gốc.
-  const { data: banRieng } = useDocuments({
+  const { data: privateCopies } = useDocuments({
     source_document_id: dongDangBung ?? undefined,
     page_size: 100,
   })
@@ -134,19 +134,19 @@ function OutgoingDocumentsContent() {
   const rows = useMemo(() => {
     const items = data?.items ?? []
     if (!dongDangBung) return items
-    const con = (banRieng?.items ?? []).filter((row) => row.source_document_id === dongDangBung)
+    const con = (privateCopies?.items ?? []).filter((row) => row.source_document_id === dongDangBung)
 
     return items.flatMap((row) => (row.id === dongDangBung ? [row, ...con] : [row]))
-  }, [data?.items, banRieng?.items, dongDangBung])
+  }, [data?.items, privateCopies?.items, dongDangBung])
 
   //  Bọc `useCallback` vì hook cột nhận nó vào mảng phụ thuộc của `useMemo`:
   //  hàm mới mỗi lần render là bộ cột dựng lại mỗi lần render.
-  const doiDongDangBung = useCallback((id: number | null) => setDongDangBung(id), [])
+  const setExpandedRow = useCallback((id: number | null) => setDongDangBung(id), [])
 
   const columns = useOutgoingDocumentColumns({
     dongDangBung,
-    setDongDangBung: doiDongDangBung,
-    choToiDuyet,
+    setDongDangBung: setExpandedRow,
+    awaitingMyApproval,
     canCreate,
   })
 
@@ -234,7 +234,7 @@ function OutgoingDocumentsContent() {
                  dịch — đừng "sửa" về «Xuất Excel». Tên tệp tải về vẫn giữ
                  tiếng Việt không dấu. */}
             <PermissionGate entity="document" action="export">
-              <Button variant="outline" onClick={() => void xuatExcel()} disabled={dangXuat}>
+              <Button variant="outline" onClick={() => void exportExcel()} disabled={dangXuat}>
                 {dangXuat ? <Loader2 className="size-4 animate-spin" /> : <Sheet className="size-4" />}
                 Export
               </Button>

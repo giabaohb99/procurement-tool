@@ -103,15 +103,15 @@ describe('CrudField — ô chọn', () => {
    * bản ghi có dữ liệu, bấm Lưu là ghi rỗng đè lên giá trị thật.
    */
   it('giá trị cũ ngoài danh sách chọn không bị xóa trắng sau khi nạp bản ghi', async () => {
-    const daLuu = vi.fn()
-    render(<Harness item={{ contract_type: 'Hợp đồng kinh tế', company_id: 1 }} onSubmit={daLuu} />)
+    const saved = vi.fn()
+    render(<Harness item={{ contract_type: 'Hợp đồng kinh tế', company_id: 1 }} onSubmit={saved} />)
 
     const oLoai = await screen.findByRole('combobox', { name: 'Loại hợp đồng' })
     await waitFor(() => expect(oLoai).toHaveTextContent('Hợp đồng kinh tế'))
 
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
-    await waitFor(() => expect(daLuu).toHaveBeenCalled())
-    expect(daLuu.mock.calls[0][0].contract_type).toBe('Hợp đồng kinh tế')
+    await waitFor(() => expect(saved).toHaveBeenCalled())
+    expect(saved.mock.calls[0][0].contract_type).toBe('Hợp đồng kinh tế')
   })
 
   /**
@@ -119,14 +119,14 @@ describe('CrudField — ô chọn', () => {
    * chưa về, nên KHÔNG có `<option>` nào khớp ở nhịp vẽ đó.
    */
   it('ô chọn nạp từ API giữ nguyên giá trị dù danh sách về sau', async () => {
-    const daLuu = vi.fn()
-    render(<Harness item={{ contract_type: 'purchase', company_id: 1 }} onSubmit={daLuu} />)
+    const saved = vi.fn()
+    render(<Harness item={{ contract_type: 'purchase', company_id: 1 }} onSubmit={saved} />)
 
-    const oCongTy = await screen.findByRole('combobox', { name: 'Công ty pháp nhân' })
-    await waitFor(() => expect(oCongTy).toHaveTextContent('CÔNG TY CP DEGO'))
+    const companyField = await screen.findByRole('combobox', { name: 'Công ty pháp nhân' })
+    await waitFor(() => expect(companyField).toHaveTextContent('CÔNG TY CP DEGO'))
 
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
-    await waitFor(() => expect(daLuu).toHaveBeenCalled())
-    expect(daLuu.mock.calls[0][0].company_id).toBe(1)
+    await waitFor(() => expect(saved).toHaveBeenCalled())
+    expect(saved.mock.calls[0][0].company_id).toBe(1)
   })
 })

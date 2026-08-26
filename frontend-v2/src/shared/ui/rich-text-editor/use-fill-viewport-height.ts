@@ -28,7 +28,7 @@ export function useFillViewportHeight(ref: RefObject<HTMLElement | null>): numbe
     const el = ref.current
     if (!el) return
 
-    function doLai() {
+    function remeasure() {
       const node = ref.current
       if (!node) return
       const top = node.getBoundingClientRect().top
@@ -38,15 +38,15 @@ export function useFillViewportHeight(ref: RefObject<HTMLElement | null>): numbe
       setChieuCao(Math.max(320, window.innerHeight - top - CHUA_DAY_PX))
     }
 
-    doLai()
-    window.addEventListener('resize', doLai)
+    remeasure()
+    window.addEventListener('resize', remeasure)
     //  Quan sát `body` chứ không quan sát chính `el`: thứ làm `el` tụt xuống là
     //  các khối ANH EM phía trên, đổi chiều cao của chúng mới là cái cần bắt.
-    const theo = new ResizeObserver(doLai)
+    const theo = new ResizeObserver(remeasure)
     theo.observe(document.body)
 
     return () => {
-      window.removeEventListener('resize', doLai)
+      window.removeEventListener('resize', remeasure)
       theo.disconnect()
     }
   }, [ref])

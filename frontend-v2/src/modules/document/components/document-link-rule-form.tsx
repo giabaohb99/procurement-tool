@@ -106,7 +106,7 @@ export function DocumentLinkRuleForm({
     setValues((truoc) => ({ ...truoc, [key]: value }))
   }
 
-  function doiMucSoLuong(next: string) {
+  function changeQtyLevel(next: string) {
     setPreset(next as typeof preset)
     const muc = COUNT_PRESETS.find((item) => item.value === next)
     //  "Tùy chỉnh" giữ nguyên số đang có rồi mở hai ô ra cho sửa — xóa về 0 thì
@@ -276,7 +276,7 @@ export function DocumentLinkRuleForm({
 
             <div className="space-y-2">
               <Label>Số văn bản được khai</Label>
-              <Select value={preset} onValueChange={doiMucSoLuong}>
+              <Select value={preset} onValueChange={changeQtyLevel}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>

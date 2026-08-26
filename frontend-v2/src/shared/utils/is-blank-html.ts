@@ -16,7 +16,7 @@ export function isBlankHtml(html: string | null | undefined): boolean {
   //  Mấy thẻ mang nội dung mà không mang chữ. Có một cái là không rỗng.
   if (/<(img|table|hr|video|iframe)\b/i.test(html)) return false
 
-  const chuThuan = html
+  const plainText = html
     //  `<br>` và hết một khối đều là xuống dòng — đổi thành khoảng trắng để
     //  `<p>a</p><p>b</p>` không dính thành "ab".
     .replace(/<br\s*\/?>/gi, ' ')
@@ -27,5 +27,5 @@ export function isBlankHtml(html: string | null | undefined): boolean {
     .replace(/&nbsp;/gi, ' ')
     .trim()
 
-  return chuThuan.length === 0
+  return plainText.length === 0
 }

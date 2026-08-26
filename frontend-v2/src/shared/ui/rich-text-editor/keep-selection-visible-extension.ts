@@ -33,10 +33,10 @@ export const KeepSelectionVisible = Extension.create({
 
         state: {
           init: () => false,
-          apply(tr, dangGiuConTro) {
+          apply(tr, hasFocus) {
             //  `focus`/`blur` gửi cờ qua meta; giao dịch khác thì giữ nguyên.
             const moi = tr.getMeta(keepSelectionVisibleKey)
-            return typeof moi === 'boolean' ? moi : dangGiuConTro
+            return typeof moi === 'boolean' ? moi : hasFocus
           },
         },
 
@@ -54,8 +54,8 @@ export const KeepSelectionVisible = Extension.create({
           },
 
           decorations(state) {
-            const dangGiuConTro = keepSelectionVisibleKey.getState(state)
-            if (dangGiuConTro) return DecorationSet.empty
+            const hasFocus = keepSelectionVisibleKey.getState(state)
+            if (hasFocus) return DecorationSet.empty
 
             const { from, to, empty } = state.selection
             //  Con trỏ nhấp nháy một chỗ thì không có gì để tô.

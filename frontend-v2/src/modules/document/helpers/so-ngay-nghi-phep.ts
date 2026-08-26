@@ -14,32 +14,32 @@
  */
 
 /** Số công của mỗi buổi — khớp `CONG_CUA_BUOI` bên backend. */
-const CONG_CUA_BUOI: Record<string, number> = {
+const SESSION_CREDIT: Record<string, number> = {
   full: 1,
   morning: 0.5,
   afternoon: 0.5,
 }
 
-export function soNgayGoiY(
-  tuNgay: string | undefined,
-  denNgay: string | undefined,
+export function suggestedDayCount(
+  fromDate: string | undefined,
+  toDate: string | undefined,
   buoiDi: string | undefined,
   buoiVe: string | undefined,
 ): number {
-  if (!tuNgay || !denNgay) return 0
+  if (!fromDate || !toDate) return 0
 
-  const d1 = new Date(`${tuNgay}T00:00:00`)
-  const d2 = new Date(`${denNgay}T00:00:00`)
+  const d1 = new Date(`${fromDate}T00:00:00`)
+  const d2 = new Date(`${toDate}T00:00:00`)
   if (Number.isNaN(d1.getTime()) || Number.isNaN(d2.getTime()) || d2 < d1) return 0
 
-  const congDi = CONG_CUA_BUOI[buoiDi ?? 'full'] ?? 1
-  const congVe = CONG_CUA_BUOI[buoiVe ?? 'full'] ?? 1
+  const outgoing = SESSION_CREDIT[buoiDi ?? 'full'] ?? 1
+  const incoming = SESSION_CREDIT[buoiVe ?? 'full'] ?? 1
 
   //  Cùng một ngày thì hai ô buổi nói về CÙNG một buổi — lấy một cái.
-  if (tuNgay === denNgay) return congDi
+  if (fromDate === toDate) return outgoing
 
   const tronVen = Math.round((d2.getTime() - d1.getTime()) / 86_400_000) - 1
-  return Math.max(0, tronVen) + congDi + congVe
+  return Math.max(0, tronVen) + outgoing + incoming
 }
 
 /**

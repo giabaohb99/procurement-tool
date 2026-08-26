@@ -16,7 +16,7 @@ import { Label } from '@/shared/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group'
 import { Textarea } from '@/shared/ui/textarea'
 import { cn } from '@/shared/utils/cn'
-import { soBanKeTiep } from '../helpers/next-version-no'
+import { nextVersionNo } from '../helpers/next-version-no'
 import { useDocumentVersions, useOpenVersion } from '../hooks/use-document-versions'
 import { CHANGE_KIND } from '../types/document-record'
 
@@ -33,30 +33,30 @@ interface DocumentVersionDialogProps {
  * Đây là câu trả lời trực tiếp cho "chọn cái này thì được gì", nên để ngay cạnh
  * tên chứ không giấu dưới dòng mô tả.
  */
-function MucSua({
-  giaTri,
-  dangChon,
+function EditLevel({
+  value,
+  selection,
   ten,
-  banMoi,
+  newVersion,
   moTa,
 }: {
-  giaTri: string
-  dangChon: boolean
+  value: string
+  selection: boolean
   ten: string
-  banMoi: string | null
+  newVersion: string | null
   moTa: string
 }) {
   return (
     <label
       className={cn(
         'flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors',
-        dangChon ? 'border-primary bg-primary/5' : 'hover:bg-muted/50',
+        selection ? 'border-primary bg-primary/5' : 'hover:bg-muted/50',
       )}
     >
-      <RadioGroupItem value={giaTri} className="mt-0.5" />
+      <RadioGroupItem value={value} className="mt-0.5" />
       <span>
         <span className="font-medium">{ten}</span>
-        {banMoi && <span className="text-muted-foreground"> — bản mới sẽ là {banMoi}</span>}
+        {newVersion && <span className="text-muted-foreground"> — bản mới sẽ là {newVersion}</span>}
         <span className="block text-muted-foreground">{moTa}</span>
       </span>
     </label>
@@ -147,18 +147,18 @@ export function DocumentVersionDialog({
             {/*  Viền theo lựa chọn đang chọn: hai ô cùng viền xám thì nhìn không
                  ra mình đang chọn cái nào, chỉ có cái chấm radio 16px nói. */}
             <RadioGroup value={changeKind} onValueChange={setChangeKind}>
-              <MucSua
-                giaTri={String(CHANGE_KIND.major)}
-                dangChon={changeKind === String(CHANGE_KIND.major)}
+              <EditLevel
+                value={String(CHANGE_KIND.major)}
+                selection={changeKind === String(CHANGE_KIND.major)}
                 ten="Sửa lớn"
-                banMoi={soBanKeTiep(versions, CHANGE_KIND.major)}
+                newVersion={nextVersionNo(versions, CHANGE_KIND.major)}
                 moTa="Đổi nội dung có ảnh hưởng tới người thực hiện; người đã đọc bản cũ phải xác nhận đã đọc lại."
               />
-              <MucSua
-                giaTri={String(CHANGE_KIND.minor)}
-                dangChon={changeKind === String(CHANGE_KIND.minor)}
+              <EditLevel
+                value={String(CHANGE_KIND.minor)}
+                selection={changeKind === String(CHANGE_KIND.minor)}
                 ten="Sửa nhỏ"
-                banMoi={soBanKeTiep(versions, CHANGE_KIND.minor)}
+                newVersion={nextVersionNo(versions, CHANGE_KIND.minor)}
                 moTa="Sửa lỗi chính tả, đổi số điện thoại — không đổi cách làm việc, không bắt ai đọc lại."
               />
             </RadioGroup>

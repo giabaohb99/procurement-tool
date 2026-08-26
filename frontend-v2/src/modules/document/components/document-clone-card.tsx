@@ -37,7 +37,7 @@ export function DocumentCloneCard({
   const items = data?.items ?? []
   const pending = data?.pending_companies ?? []
   const plan = data?.plan ?? []
-  const lechBan = items.filter((row) => row.is_outdated).length
+  const versionMismatch = items.filter((row) => row.is_outdated).length
 
   return (
     <Card>
@@ -60,11 +60,11 @@ export function DocumentCloneCard({
       <CardContent className="space-y-3">
         {/*  Câu "ai đang lệch bản" là câu khó nhất và nguy hiểm nhất — đưa lên
              đầu thay vì để người dùng tự đếm trong bảng. */}
-        {lechBan > 0 && (
+        {versionMismatch > 0 && (
           <p className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700" />
             <span>
-              <b>{lechBan}</b> bản clone đang bám phiên bản cũ của văn bản này. Người
+              <b>{versionMismatch}</b> bản clone đang bám phiên bản cũ của văn bản này. Người
               phụ trách đã được báo, nhưng bản của họ vẫn đang nói theo nội dung cũ.
             </span>
           </p>

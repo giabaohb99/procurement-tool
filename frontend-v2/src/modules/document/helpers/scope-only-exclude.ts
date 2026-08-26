@@ -14,6 +14,6 @@ import { SCOPE_MODE } from '../types/document-scope'
  * mình". Backend không chặn (dữ liệu vẫn hợp lệ), nên chỗ duy nhất nói được
  * điều này cho người dùng là giao diện.
  */
-export function chiToanDongLoaiTru(modes: number[]): boolean {
+export function onlyExcludeRows(modes: number[]): boolean {
   return modes.length > 0 && modes.every((mode) => mode === SCOPE_MODE.exclude)
 }

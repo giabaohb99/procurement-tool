@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { DocumentAccessCard } from './document-access-card'
 import { EFFECT } from '../types/document-access'
 
-const DONG_CON_HIEU_LUC = {
+const ACTIVE_GRANT = {
   id: 1,
   subject_kind: 1,
   subject_kind_label: 'Người',
@@ -26,8 +26,8 @@ const DONG_CON_HIEU_LUC = {
   revoke_reason: null,
 }
 
-const DONG_DA_HUY = {
-  ...DONG_CON_HIEU_LUC,
+const REVOKED_GRANT = {
+  ...ACTIVE_GRANT,
   id: 2,
   subject_name: 'Nhân viên (Demo)',
   is_active: false,
@@ -39,7 +39,7 @@ const DONG_DA_HUY = {
 const revoke = { mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }
 
 vi.mock('../hooks/use-document-access', () => ({
-  useDocumentAccess: () => ({ data: [DONG_CON_HIEU_LUC, DONG_DA_HUY] }),
+  useDocumentAccess: () => ({ data: [ACTIVE_GRANT, REVOKED_GRANT] }),
   useGrantAccess: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
   useRevokeAccess: () => revoke,
 }))

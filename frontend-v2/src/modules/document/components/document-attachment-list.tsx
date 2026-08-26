@@ -11,7 +11,7 @@ import {
 import { Button } from '@/shared/ui/button'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { FormCard } from '@/shared/ui/form-card'
-import { xemTaiChoDuoc } from '../helpers/inline-viewable'
+import { canPreviewInline } from '../helpers/inline-viewable'
 import { AttachmentViewerDialog } from './attachment-viewer-dialog'
 
 /**
@@ -157,7 +157,7 @@ export function DocumentAttachmentList({
                    liếc một cái, không phải để giữ một bản trên máy. Chỉ hiện với
                    kiểu tệp backend cho mở tại chỗ (ảnh + PDF) — kiểu khác bấm
                    vào chỉ nhận 415. */}
-              {xemTaiChoDuoc(file.content_type, file.filename) && (
+              {canPreviewInline(file.content_type, file.filename) && (
                 <Button
                   type="button"
                   variant="ghost"

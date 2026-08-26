@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 
-interface TuyChon {
+interface Options {
   /** Khóa localStorage để nhớ bề rộng sang phiên sau. Bỏ trống = không nhớ. */
   storageKey?: string
   /** Hẹp hơn nữa thì nội dung bị cắt cụt vô nghĩa. */
@@ -26,8 +26,8 @@ interface TuyChon {
  * Ghi vào `localStorage` lúc THẢ TAY, không phải mỗi nhịp kéo — mỗi nhịp một
  * lần ghi đĩa là mấy trăm lượt cho một cú kéo.
  */
-export function useResizablePanel({ storageKey, min, max, macDinh }: TuyChon) {
-  const gioiHan = useCallback(
+export function useResizablePanel({ storageKey, min, max, macDinh }: Options) {
+  const clamp = useCallback(
     (v: number) => Math.min(max, Math.max(min, Math.round(v))),
     [min, max],
   )
@@ -44,23 +44,23 @@ export function useResizablePanel({ storageKey, min, max, macDinh }: TuyChon) {
     }
   })
 
-  const mocKeo = useRef<{ x: number; width: number } | null>(null)
+  const dragOrigin = useRef<{ x: number; width: number } | null>(null)
 
-  const batDauKeo = useCallback(
+  const startDrag = useCallback(
     (event: ReactPointerEvent) => {
       event.preventDefault()
-      mocKeo.current = { x: event.clientX, width }
-      let cuoiCung = width
+      dragOrigin.current = { x: event.clientX, width }
+      let last = width
 
       const keo = (e: PointerEvent) => {
-        const moc = mocKeo.current
+        const moc = dragOrigin.current
         if (!moc) return
-        cuoiCung = gioiHan(moc.width + (e.clientX - moc.x))
-        setWidth(cuoiCung)
+        last = clamp(moc.width + (e.clientX - moc.x))
+        setWidth(last)
       }
 
       const thaTay = () => {
-        mocKeo.current = null
+        dragOrigin.current = null
         window.removeEventListener('pointermove', keo)
         window.removeEventListener('pointerup', thaTay)
         //  `document.body` chứ không phải thẻ cột: trong lúc kéo, con trỏ đi lạc
@@ -69,7 +69,7 @@ export function useResizablePanel({ storageKey, min, max, macDinh }: TuyChon) {
         document.body.style.removeProperty('user-select')
         if (storageKey) {
           try {
-            localStorage.setItem(storageKey, String(cuoiCung))
+            localStorage.setItem(storageKey, String(last))
           } catch {
             //  Không nhớ được thì thôi, không phá thao tác đang làm.
           }
@@ -83,14 +83,14 @@ export function useResizablePanel({ storageKey, min, max, macDinh }: TuyChon) {
       window.addEventListener('pointermove', keo)
       window.addEventListener('pointerup', thaTay)
     },
-    [width, gioiHan, storageKey],
+    [width, clamp, storageKey],
   )
 
   /** Chỉnh bằng phím mũi tên khi thanh kéo đang được chọn. */
-  const chinhBangPhim = useCallback(
+  const resizeByKey = useCallback(
     (buoc: number) => {
       setWidth((truoc) => {
-        const moi = gioiHan(truoc + buoc)
+        const moi = clamp(truoc + buoc)
         if (storageKey) {
           try {
             localStorage.setItem(storageKey, String(moi))
@@ -101,8 +101,8 @@ export function useResizablePanel({ storageKey, min, max, macDinh }: TuyChon) {
         return moi
       })
     },
-    [gioiHan, storageKey],
+    [clamp, storageKey],
   )
 
-  return { width, batDauKeo, chinhBangPhim }
+  return { width, startDrag, resizeByKey }
 }

@@ -96,11 +96,11 @@ export function DocumentSettingsPage() {
 
   //  Mỗi tab một khóa riêng từ CR-157. Menu chỉ hỏi «có BẤT KỲ khóa nào không»,
   //  nên vào tới đây rồi vẫn có thể thiếu khóa của vài tab — trang tự lọc.
-  const tabDuocXem = TABS.filter((item) => can(item.entity, 'read'))
+  const visibleTabs = TABS.filter((item) => can(item.entity, 'read'))
 
   //  `?tab=` trên URL có thể trỏ vào tab người này không được xem (link người
   //  khác gửi, hoặc quyền vừa bị gỡ). Rơi về tab đầu tiên họ xem được.
-  const current = tabDuocXem.find((item) => item.value === tab) ?? tabDuocXem[0]
+  const current = visibleTabs.find((item) => item.value === tab) ?? visibleTabs[0]
 
   if (!current) {
     return (
@@ -132,7 +132,7 @@ export function DocumentSettingsPage() {
 
       <Tabs value={current.value} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col">
         <TabsList>
-          {tabDuocXem.map(({ value, label, icon: Icon }) => (
+          {visibleTabs.map(({ value, label, icon: Icon }) => (
             <TabsTrigger key={value} value={value}>
               <Icon className="size-4" />
               {label}

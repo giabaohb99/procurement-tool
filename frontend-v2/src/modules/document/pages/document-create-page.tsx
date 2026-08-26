@@ -32,7 +32,7 @@ import { LEAVE_FIELDS } from '../helpers/so-ngay-nghi-phep'
 import { useDocumentBooks } from '../hooks/use-document-books'
 import { useActiveDocumentTypes } from '../hooks/use-document-types'
 import {
-  useBoBanNhap,
+  useDiscardDraft,
   useDocumentPrerequisites,
   useSaveDocument,
 } from '../hooks/use-documents'
@@ -111,7 +111,7 @@ export function DocumentCreatePage() {
   //  nhưng đọc lại là thêm một đường dữ liệu thứ hai cho cùng một việc).
   const [choXacNhan, setChoXacNhan] = useState<DocumentRecordFormValues | null>(null)
   const save = useSaveDocument()
-  const boNhap = useBoBanNhap()
+  const discardDraft = useDiscardDraft()
   const selectedTemplate = useDocumentTemplate(templateId)
   const { items: books } = useDocumentBooks()
   const documentTypes = useActiveDocumentTypes()
@@ -160,11 +160,11 @@ export function DocumentCreatePage() {
    */
   async function goNext() {
     //  Bước 1 có thêm ô của khối nghỉ phép — chỉ kiểm khi khối đó đang hiện.
-    const oCanKiem =
+    const cellToCheck =
       step === 0 && laNghiPhep
         ? [...STEPS[step].fields, ...LEAVE_FIELDS]
         : [...STEPS[step].fields]
-    const valid = await form.trigger(oCanKiem)
+    const valid = await form.trigger(cellToCheck)
     if (!valid) {
       toast.error(`Còn ô bắt buộc chưa nhập ở bước ${STEPS[step].title}`)
       return
@@ -200,10 +200,10 @@ export function DocumentCreatePage() {
    * Xóa hụt (đã cấp số, hoặc mất mạng) thì kệ, vẫn rời trang: bản nháp còn đó
    * người dùng xóa tay được, giữ họ lại trong form mới là vô lý.
    */
-  async function huyBo() {
+  async function cancel() {
     if (draftId) {
       try {
-        await boNhap.mutateAsync(draftId)
+        await discardDraft.mutateAsync(draftId)
       } catch {
         toast.error('Chưa xóa được bản nháp vừa sinh — mở danh sách để xóa lại.')
       }
@@ -220,32 +220,32 @@ export function DocumentCreatePage() {
    * còn tệ hơn — mỗi phần đều có chỗ khai lại ở trang chi tiết, và câu báo lỗi
    * nói rõ phải mở tab nào.
    */
-  async function guiPhanXepHang(documentId: number, versionId: number | null) {
-    const hongQuyen: string[] = []
+  async function sendQueued(documentId: number, versionId: number | null) {
+    const permissionFailed: string[] = []
     for (const row of pendingAccess) {
       try {
         await documentAccessApi.grant(documentId, row.values)
       } catch {
-        hongQuyen.push(row.subjectLabel || 'một đối tượng')
+        permissionFailed.push(row.subjectLabel || 'một đối tượng')
       }
     }
-    if (hongQuyen.length > 0) {
+    if (permissionFailed.length > 0) {
       toast.error(
-        `Chưa chia được quyền cho ${hongQuyen.join(', ')} — mở tab Thông tin để khai lại.`,
+        `Chưa chia được quyền cho ${permissionFailed.join(', ')} — mở tab Thông tin để khai lại.`,
       )
     }
 
-    const hongPhamVi: string[] = []
+    const scopeFailed: string[] = []
     for (const row of pendingScopes) {
       try {
         await documentScopeApi.create(documentId, row.values)
       } catch {
-        hongPhamVi.push(row.label || 'một dòng')
+        scopeFailed.push(row.label || 'một dòng')
       }
     }
-    if (hongPhamVi.length > 0) {
+    if (scopeFailed.length > 0) {
       toast.error(
-        `Chưa lưu được phạm vi cho ${hongPhamVi.join(', ')} — mở tab Phạm vi để khai lại.`,
+        `Chưa lưu được phạm vi cho ${scopeFailed.join(', ')} — mở tab Phạm vi để khai lại.`,
       )
     }
 
@@ -300,10 +300,10 @@ export function DocumentCreatePage() {
       return
     }
 
-    taoVanBan(values)
+    createDocument(values)
   }
 
-  function taoVanBan(values: DocumentRecordFormValues) {
+  function createDocument(values: DocumentRecordFormValues) {
     save.mutate(
       {
         //  Bước 1 đã sinh bản nháp rồi thì đây là lượt SỬA nó — tạo lần nữa là
@@ -319,7 +319,7 @@ export function DocumentCreatePage() {
           //  `current_version_id` do chính lượt tạo đặt (`service.create` dựng
           //  phiên bản 1.0 rồi trỏ vào nó) nên đây là id có thật, không phải
           //  đoán. Lượt SỬA không trả cột đó nên lấy lại cái đã nhớ từ bước 1.
-          await guiPhanXepHang(record.id, record.current_version_id ?? draftVersionId)
+          await sendQueued(record.id, record.current_version_id ?? draftVersionId)
           navigate(appRoutes.document.documentDetail(record.id), { replace: true })
         },
       },
@@ -444,7 +444,7 @@ export function DocumentCreatePage() {
             </Button>
 
             <div className="flex items-center gap-2">
-              <Button type="button" variant="ghost" onClick={huyBo}>
+              <Button type="button" variant="ghost" onClick={cancel}>
                 Hủy
               </Button>
 
@@ -487,7 +487,7 @@ export function DocumentCreatePage() {
         onConfirm={() => {
           const values = choXacNhan
           setChoXacNhan(null)
-          if (values) taoVanBan(values)
+          if (values) createDocument(values)
         }}
       />
     </PageContainer>

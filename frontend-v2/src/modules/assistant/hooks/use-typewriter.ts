@@ -3,12 +3,12 @@ import { useEffect, useState } from 'react'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 
 /** Thời gian tối đa cho một lượt hiện dần. Dài hơn là người dùng thấy phiền. */
-const TOI_DA_MS = 1200
+const MAX_DURATION_MS = 1200
 /** Nhịp tối thiểu giữa hai lần vẽ — dưới mức này mắt không phân biệt được. */
-const NHIP_MS = 16
+const TICK_MS = 16
 
 /** Người dùng đã tắt hiệu ứng chuyển động ở hệ điều hành? */
-function tatChuyenDong(): boolean {
+function prefersReducedMotion(): boolean {
   return (
     typeof window !== 'undefined' &&
     window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
@@ -35,10 +35,10 @@ function tatChuyenDong(): boolean {
  *             trong lịch sử: mở lại hội thoại mà gõ lại từ đầu thì vừa chậm vừa
  *             vô nghĩa).
  */
-export function useTypewriter(text: string, bat: boolean): { hienThi: string; dangChay: boolean } {
+export function useTypewriter(text: string, bat: boolean): { display: string; isRunning: boolean } {
   //  Quyết định NGAY LÚC RENDER, không phải trong effect: người tắt hiệu ứng
   //  chuyển động ở hệ điều hành thì không được thấy một nhịp chữ rỗng nào.
-  const chay = bat && !tatChuyenDong()
+  const chay = bat && !prefersReducedMotion()
 
   const [soTuHien, setSoTuHien] = useState(() => (chay ? 0 : Infinity))
 
@@ -54,18 +54,18 @@ export function useTypewriter(text: string, bat: boolean): { hienThi: string; da
 
     const tong = tu.length
     //  Mỗi nhịp vẽ bao nhiêu từ để trọn lượt không vượt trần thời gian.
-    const soNhip = Math.max(1, Math.floor(TOI_DA_MS / NHIP_MS))
-    const moiNhip = Math.max(1, Math.ceil(tong / soNhip))
+    const tickCount = Math.max(1, Math.floor(MAX_DURATION_MS / TICK_MS))
+    const perTick = Math.max(1, Math.ceil(tong / tickCount))
 
     let dung = false
-    let hienTai = 0
+    let current = 0
     const buoc = () => {
       if (dung) return
-      hienTai += moiNhip
-      setSoTuHien(hienTai)
-      if (hienTai < tong) setTimeout(buoc, NHIP_MS)
+      current += perTick
+      setSoTuHien(current)
+      if (current < tong) setTimeout(buoc, TICK_MS)
     }
-    const id = setTimeout(buoc, NHIP_MS)
+    const id = setTimeout(buoc, TICK_MS)
 
     return () => {
       dung = true
@@ -76,11 +76,11 @@ export function useTypewriter(text: string, bat: boolean): { hienThi: string; da
 
   const xong = soTuHien >= tu.length
   return {
-    hienThi: xong ? text : tu.slice(0, soTuHien).join(''),
+    display: xong ? text : tu.slice(0, soTuHien).join(''),
     //  `Boolean(text)` là chốt chặn cho câu trả lời RỖNG: `''.split(...)` ra
     //  mảng một phần tử rỗng nên `soTuHien = 0` không bao giờ đuổi kịp, mà vòng
     //  chạy lại thoát sớm vì không có chữ — kẹt `dangChay = true` vĩnh viễn, con
     //  trỏ nhấp nháy mãi và nút Chép không bao giờ hiện ra (bài kiểm bắt được).
-    dangChay: chay && !xong && Boolean(text),
+    isRunning: chay && !xong && Boolean(text),
   }
 }

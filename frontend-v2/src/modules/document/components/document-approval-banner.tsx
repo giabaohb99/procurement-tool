@@ -38,18 +38,18 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
   //  Việc của CHÍNH người đang đọc — `null` là không phải lượt họ. Hỏi hộp việc
   //  chứ không tự suy từ `instance.tasks`: chỉ hộp việc mới biết ai đang được
   //  ủy quyền bấm thay, mà bấm thay người khác là chuyện phải nói trước khi ký.
-  const viecCuaToi = useMyDocumentTask(documentId)
+  const myTasks = useMyDocumentTask(documentId)
   const [dangXuLy, setDangXuLy] = useState(false)
 
   if (!instance) return null
 
-  const dangCho = (instance.tasks ?? []).filter((row) => row.status === TASK_STATUS.pending)
-  const dangChay = instance.status === INSTANCE_STATUS.running
+  const pending = (instance.tasks ?? []).filter((row) => row.status === TASK_STATUS.pending)
+  const isRunning = instance.status === INSTANCE_STATUS.running
   const ket = instance.status === INSTANCE_STATUS.blocked
   //  Đã duyệt xong mà vẫn còn lý do ghi lại = có gì đó chưa hoàn tất được.
-  const chuaHoanTat = instance.status === INSTANCE_STATUS.approved && Boolean(instance.finish_reason)
+  const incomplete = instance.status === INSTANCE_STATUS.approved && Boolean(instance.finish_reason)
 
-  if (ket || chuaHoanTat) {
+  if (ket || incomplete) {
     return (
       <div className="mb-3 flex gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3">
         <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
@@ -71,15 +71,15 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
   //  Phê duyệt và trong `change_reason` của phiên bản — hai chỗ không ai nghĩ để
   //  mở. Câu người ta cần là "bị trả vì sao, giờ làm gì", nên nó phải nằm ngay
   //  đây, trên mọi tab.
-  const biTraVe = instance.status === INSTANCE_STATUS.returned
+  const returned = instance.status === INSTANCE_STATUS.returned
   const biTuChoi = instance.status === INSTANCE_STATUS.rejected
-  if (biTraVe || biTuChoi) {
+  if (returned || biTuChoi) {
     return (
       <div className="mb-3 flex gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3">
         <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
         <div className="text-sm">
           <p className="font-medium">
-            {biTraVe ? 'Văn bản bị trả về.' : 'Văn bản đã bị từ chối.'}
+            {returned ? 'Văn bản bị trả về.' : 'Văn bản đã bị từ chối.'}
           </p>
           {instance.finish_reason && (
             <p className="mt-0.5">
@@ -90,7 +90,7 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
           {/*  Nói luôn bước kế tiếp: hai ca này khác nhau đúng ở chỗ đó, mà đó
                cũng là câu người soạn đang cần. */}
           <p className="mt-0.5 text-muted-foreground">
-            {biTraVe
+            {returned
               ? 'Sửa lại nội dung rồi bấm Gửi duyệt lần nữa.'
               : 'Văn bản đã khóa sửa. Muốn làm lại thì bấm Sao chép để có bản nháp mới.'}
           </p>
@@ -99,12 +99,12 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
     )
   }
 
-  if (!dangChay) return null
+  if (!isRunning) return null
 
   //  ĐANG CHỜ TÔI: băng đổi hẳn màu và mọc thêm nút. Cùng một màu xám với ca
   //  "chờ người khác" thì thứ duy nhất phân biệt là một dòng chữ nhỏ — mà đây
   //  đúng là dòng người ta cần thấy khi liếc qua trang.
-  if (viecCuaToi) {
+  if (myTasks) {
     return (
       <>
         <div className="mb-3 flex flex-wrap items-center gap-3 rounded-md border border-primary/40 bg-primary/5 px-4 py-3">
@@ -112,19 +112,19 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
           <div className="min-w-0 flex-1 text-sm">
             <p className="font-semibold">Đang chờ bạn duyệt.</p>
             <p className="text-muted-foreground">
-              Bước «{viecCuaToi.node_name || `Bước ${viecCuaToi.node_seq}`}» của luồng «
+              Bước «{myTasks.node_name || `Bước ${myTasks.node_seq}`}» của luồng «
               {instance.flow_name}»
-              {viecCuaToi.started_by_name && ` · ${viecCuaToi.started_by_name} trình`}
-              {viecCuaToi.due_at && (
-                <span className={viecCuaToi.is_overdue ? 'font-medium text-destructive' : undefined}>
+              {myTasks.started_by_name && ` · ${myTasks.started_by_name} trình`}
+              {myTasks.due_at && (
+                <span className={myTasks.is_overdue ? 'font-medium text-destructive' : undefined}>
                   {' · '}
-                  {viecCuaToi.is_overdue ? 'quá hạn ' : 'hạn '}
-                  {formatDate(viecCuaToi.due_at)}
+                  {myTasks.is_overdue ? 'quá hạn ' : 'hạn '}
+                  {formatDate(myTasks.due_at)}
                 </span>
               )}
               {/*  Bấm THAY người khác phải hiện TRƯỚC cú bấm: nhật ký sẽ ghi cả
                    hai tên, biết sau khi ký thì đã muộn. */}
-              {viecCuaToi.on_behalf_of_name && ` · bạn bấm thay ${viecCuaToi.on_behalf_of_name}`}
+              {myTasks.on_behalf_of_name && ` · bạn bấm thay ${myTasks.on_behalf_of_name}`}
             </p>
           </div>
           <Button type="button" onClick={() => setDangXuLy(true)}>
@@ -137,7 +137,7 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
              mutation duyệt phiếu, mà băng này nằm trên mọi tab của trang chi
              tiết — treo sẵn ở đó cả buổi cho một cú bấm hiếm là thừa. */}
         {dangXuLy && (
-          <ApprovalActionDialog task={viecCuaToi} open onOpenChange={setDangXuLy} />
+          <ApprovalActionDialog task={myTasks} open onOpenChange={setDangXuLy} />
         )}
       </>
     )
@@ -149,11 +149,11 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
       <div className="text-sm">
         <p className="font-medium">
           Đang chạy luồng «{instance.flow_name}» — bước {instance.current_seq}
-          {dangCho.length > 0 && ` · ${dangCho[0].node_name}`}
+          {pending.length > 0 && ` · ${pending[0].node_name}`}
         </p>
-        {dangCho.length > 0 && (
+        {pending.length > 0 && (
           <p className="text-muted-foreground">
-            Chờ {dangCho.map((row) => row.assignee_name).join(', ')} duyệt. Bạn không phải
+            Chờ {pending.map((row) => row.assignee_name).join(', ')} duyệt. Bạn không phải
             làm gì — xem dấu vết ở tab <b>Phê duyệt</b>.
           </p>
         )}

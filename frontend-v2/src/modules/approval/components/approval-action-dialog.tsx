@@ -46,11 +46,11 @@ const CAN_LY_DO: ApprovalActionKind[] = ['reject', 'return', 'withdraw']
  * chặn: dán một đoạn dài vào ô lý do là nhận `500` trần, log ghi
  * `Data too long for column`.
  */
-const DAI_TOI_DA_LY_DO = 1000
-const DAI_TOI_DA_Y_KIEN = 5000
+const MAX_REASON_LENGTH = 1000
+const MAX_COMMENT_LENGTH = 5000
 
 /** Nhãn trên NÚT XÁC NHẬN — câu mệnh lệnh, khác nhãn trên thẻ chọn. */
-const NHAN_XAC_NHAN: Record<ApprovalActionKind, string> = {
+const CONFIRM_LABELS: Record<ApprovalActionKind, string> = {
   approve: 'Duyệt phiếu',
   reject: 'Từ chối phiếu',
   return: 'Trả lại người nộp',
@@ -107,8 +107,8 @@ export function ApprovalActionDialog({ task, open, onOpenChange }: ApprovalActio
   const action = useApprovalAction(task.instance_id, task.entity)
 
   const canLyDo = CAN_LY_DO.includes(kind)
-  const thieuLyDo = canLyDo && !text.trim()
-  const gioiHan = canLyDo ? DAI_TOI_DA_LY_DO : DAI_TOI_DA_Y_KIEN
+  const missingReason = canLyDo && !text.trim()
+  const clamp = canLyDo ? MAX_REASON_LENGTH : MAX_COMMENT_LENGTH
 
   function handleSubmit() {
     action.mutate(
@@ -188,7 +188,7 @@ export function ApprovalActionDialog({ task, open, onOpenChange }: ApprovalActio
           className="grid items-stretch gap-2 sm:grid-cols-2"
         >
           {VIEC.map((viec) => (
-            <ChonViec key={viec.kind} {...viec} dang={kind} />
+            <TaskPicker key={viec.kind} {...viec} dang={kind} />
           ))}
         </RadioGroup>
 
@@ -208,8 +208,8 @@ export function ApprovalActionDialog({ task, open, onOpenChange }: ApprovalActio
             //  biết là quá dài. Backend cũng chặn (`DAI_TOI_DA_LY_DO`) — trước
             //  24/08/2026 không nơi nào chặn nên một lý do dài quá cỡ cột đi
             //  thẳng xuống CSDL và trả về `500` trần.
-            maxLength={canLyDo ? DAI_TOI_DA_LY_DO : DAI_TOI_DA_Y_KIEN}
-            aria-invalid={thieuLyDo || undefined}
+            maxLength={canLyDo ? MAX_REASON_LENGTH : MAX_COMMENT_LENGTH}
+            aria-invalid={missingReason || undefined}
             placeholder={
               canLyDo
                 ? 'Nêu rõ cần sửa gì — thiếu câu này thì lần gửi sau y hệt lần trước.'
@@ -218,7 +218,7 @@ export function ApprovalActionDialog({ task, open, onOpenChange }: ApprovalActio
             value={text}
             onChange={(event) => setText(event.target.value)}
           />
-          {thieuLyDo && (
+          {missingReason && (
             <p className="flex items-center gap-1.5 text-sm text-destructive">
               <AlertTriangle className="size-3.5" />
               Phải nêu lý do thì người nộp mới biết sửa gì.
@@ -226,9 +226,9 @@ export function ApprovalActionDialog({ task, open, onOpenChange }: ApprovalActio
           )}
           {/*  Chỉ đếm khi đã gõ quá 4/5 hạn mức: hiện sẵn bộ đếm cho một ô mà
                99% lượt dùng chỉ gõ một dòng là bày ra thứ chẳng ai cần. */}
-          {text.length > gioiHan * 0.8 && (
+          {text.length > clamp * 0.8 && (
             <p className="text-right text-xs text-muted-foreground">
-              {text.length}/{gioiHan} ký tự
+              {text.length}/{clamp} ký tự
             </p>
           )}
         </div>
@@ -240,10 +240,10 @@ export function ApprovalActionDialog({ task, open, onOpenChange }: ApprovalActio
           <Button
             type="button"
             variant={kind === 'reject' ? 'destructive' : 'default'}
-            disabled={thieuLyDo || action.isPending}
+            disabled={missingReason || action.isPending}
             onClick={handleSubmit}
           >
-            {NHAN_XAC_NHAN[kind]}
+            {CONFIRM_LABELS[kind]}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -251,7 +251,7 @@ export function ApprovalActionDialog({ task, open, onOpenChange }: ApprovalActio
   )
 }
 
-interface ChonViecProps {
+interface TaskPickerProps {
   kind: ApprovalActionKind
   dang: ApprovalActionKind
   icon: React.ComponentType<{ className?: string }>
@@ -261,7 +261,7 @@ interface ChonViecProps {
   nang?: boolean
 }
 
-function ChonViec({ kind, dang, icon: Icon, ten, hau_qua, nang }: ChonViecProps) {
+function TaskPicker({ kind, dang, icon: Icon, ten, hau_qua, nang }: TaskPickerProps) {
   const chon = kind === dang
   return (
     <label

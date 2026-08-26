@@ -64,7 +64,7 @@ export function DocumentPageFrameDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ThanHopThoai value={value} pending={pending} onSubmit={onSubmit}
+        <DialogBody value={value} pending={pending} onSubmit={onSubmit}
                       onCancel={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
@@ -79,7 +79,7 @@ interface ThanHopThoaiProps {
 }
 
 /** Phần nhập liệu — tách riêng để `key` ở trên dựng lại được cùng state. */
-function ThanHopThoai({ value, pending, onSubmit, onCancel }: ThanHopThoaiProps) {
+function DialogBody({ value, pending, onSubmit, onCancel }: ThanHopThoaiProps) {
   const [form, setForm] = useState<PageFrame>(value)
 
   return (

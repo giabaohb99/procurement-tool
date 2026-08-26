@@ -6,7 +6,7 @@ import {
   useDeleteDocumentScope,
   useDocumentScopes,
 } from '../hooks/use-document-scopes'
-import { chiToanDongLoaiTru } from '../helpers/scope-only-exclude'
+import { onlyExcludeRows } from '../helpers/scope-only-exclude'
 import { DocumentScopeAddForm } from './document-scope-add-form'
 import { DocumentScopeOnlyExcludeNotice } from './document-scope-only-exclude-notice'
 import { DocumentScopeRow } from './document-scope-row'
@@ -80,7 +80,7 @@ export function DocumentScopeCard({
         {/*  Cùng câu cảnh báo với màn Tạo văn bản: khai toàn dòng loại trừ là
              văn bản không tới ai. Ở đây các dòng đã LƯU rồi nên còn cấp thiết
              hơn — có thể văn bản đã ban hành mà không ai nhận được. */}
-        {chiToanDongLoaiTru(items.map((scope) => scope.mode)) && (
+        {onlyExcludeRows(items.map((scope) => scope.mode)) && (
           <DocumentScopeOnlyExcludeNotice />
         )}
 

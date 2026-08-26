@@ -109,17 +109,17 @@ export function DocumentPrintSheet({
     }
   }, [html, contentHeight, contentWidth])
 
-  const soTo = pages?.length ?? 0
+  const sheetCount = pages?.length ?? 0
 
   /** Nội dung đầu/chân trang của tờ thứ `index` (0-based), đã thay hết thẻ. */
-  function khungTrang(index: number) {
+  function pageBox(index: number) {
     if (!pageFrame) return null
-    const giaTri: PageMarkerValues = { ...markers, trang: index + 1, tongTrang: soTo }
+    const value: PageMarkerValues = { ...markers, trang: index + 1, tongTrang: sheetCount }
     return {
-      headerLeft: fillPageMarkers(pageFrame.header_left, giaTri),
-      headerRight: fillPageMarkers(pageFrame.header_right, giaTri),
-      footerLeft: fillPageMarkers(pageFrame.footer_left, giaTri),
-      footerRight: fillPageMarkers(pageFrame.footer_right, giaTri),
+      headerLeft: fillPageMarkers(pageFrame.header_left, value),
+      headerRight: fillPageMarkers(pageFrame.header_right, value),
+      footerLeft: fillPageMarkers(pageFrame.footer_left, value),
+      footerRight: fillPageMarkers(pageFrame.footer_right, value),
     }
   }
 
@@ -165,18 +165,18 @@ export function DocumentPrintSheet({
           {/* Đầu trang / chân trang lặp trên MỌI tờ, số trang thay bằng số thật
               của chính tờ này. Ô rỗng thì không vẽ dải nào cả — tờ giấy trống
               trên đầu vẫn hơn một dải kẻ trống trơn. */}
-          {khungTrang(index) && (
+          {pageBox(index) && (
             <>
               {hasPageMarkerContent(pageFrame?.header_left, pageFrame?.header_right) && (
                 <div className="doc-print-frame doc-print-frame--top">
-                  <span>{khungTrang(index)?.headerLeft}</span>
-                  <span>{khungTrang(index)?.headerRight}</span>
+                  <span>{pageBox(index)?.headerLeft}</span>
+                  <span>{pageBox(index)?.headerRight}</span>
                 </div>
               )}
               {hasPageMarkerContent(pageFrame?.footer_left, pageFrame?.footer_right) && (
                 <div className="doc-print-frame doc-print-frame--bottom">
-                  <span>{khungTrang(index)?.footerLeft}</span>
-                  <span>{khungTrang(index)?.footerRight}</span>
+                  <span>{pageBox(index)?.footerLeft}</span>
+                  <span>{pageBox(index)?.footerRight}</span>
                 </div>
               )}
             </>

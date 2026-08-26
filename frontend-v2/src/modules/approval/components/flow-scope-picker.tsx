@@ -39,15 +39,15 @@ interface FlowScopePickerProps {
  * khai ở phần **rẽ nhánh của từng bước** — chỗ đó mới thật sự cần.
  */
 export function FlowScopePicker({ condition, onChange, entity }: FlowScopePickerProps) {
-  const daLuu = parseScope(condition)
+  const saved = parseScope(condition)
   const nangCao = laDieuKienNangCao(condition)
 
   //  Kiểu đang chọn giữ ở state RIÊNG, không suy thẳng từ chuỗi điều kiện.
   //  Chuỗi chỉ mang được lựa chọn ĐÃ ĐỦ: chọn «một số loại văn bản» mà chưa tick
   //  loại nào thì `buildScopeCondition` trả chuỗi rỗng, đọc ngược lại ra «tất
   //  cả» — nên bộ chọn bật lại về dòng đầu và ô tick không bao giờ hiện ra.
-  const [kind, setKind] = useState<FlowScopeKind>(daLuu.kind)
-  const ids = daLuu.kind === kind ? daLuu.ids : []
+  const [kind, setKind] = useState<FlowScopeKind>(saved.kind)
+  const ids = saved.kind === kind ? saved.ids : []
 
   const docTypes = useActiveDocumentTypes()
   //  Chỉ nạp danh sách văn bản khi người dùng thật sự chọn tới lựa chọn đó —
@@ -56,14 +56,14 @@ export function FlowScopePicker({ condition, onChange, entity }: FlowScopePicker
     kind === 'document' ? { page_size: 200 } : { page_size: 1 },
   )
 
-  const laVanBan = entity === 'document'
+  const isDocument = entity === 'document'
 
-  function doiKieu(kindMoi: FlowScopeKind) {
+  function convert(kindMoi: FlowScopeKind) {
     setKind(kindMoi)
     onChange(buildScopeCondition({ kind: kindMoi, ids: kindMoi === kind ? ids : [] }))
   }
 
-  if (!laVanBan) {
+  if (!isDocument) {
     //  Loại chứng từ khác chưa có bộ chọn riêng — nói thẳng thay vì bày một ô
     //  chọn rỗng không giải thích được.
     return (
@@ -103,7 +103,7 @@ export function FlowScopePicker({ condition, onChange, entity }: FlowScopePicker
         </div>
       ) : (
         <>
-          <Select value={kind} onValueChange={(value) => doiKieu(value as FlowScopeKind)}>
+          <Select value={kind} onValueChange={(value) => convert(value as FlowScopeKind)}>
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>

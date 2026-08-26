@@ -22,9 +22,9 @@ vi.mock('@/core/api', () => ({
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 //  Ai đang đăng nhập — trang khóa lại khi đó là tài khoản của chính họ.
-let dangDangNhapId = 99
+let currentUserId = 99
 vi.mock('@/core/auth/use-auth', () => ({
-  useAuth: () => ({ user: { id: dangDangNhapId } }),
+  useAuth: () => ({ user: { id: currentUserId } }),
 }))
 
 //  Trang chỉ cần biết «được ghi» — chốt quyền thật nằm ở backend.
@@ -36,13 +36,13 @@ vi.mock('../components/user-scope-dialog', () => ({
   UserScopeDialog: () => null,
 }))
 
-const VAI_TRO = [
+const ROLES = [
   { id: 1, code: 'admin', name: 'Quản trị hệ thống' },
   { id: 2, code: 'employee', name: 'Nhân sự' },
   { id: 3, code: 'dept_head', name: 'Trưởng phòng (duyệt PYC)' },
 ]
 
-function taiKhoan(roleIds: number[]) {
+function account(roleIds: number[]) {
   return {
     id: 31,
     email: 'ntktho@degoholding.vn',
@@ -73,7 +73,7 @@ function dung() {
 }
 
 beforeEach(() => {
-  dangDangNhapId = 99
+  currentUserId = 99
   apiGet.mockReset()
   httpPut.mockReset()
   httpPut.mockResolvedValue({ data: { success: true, message: 'Đã gán vai trò', data: null } })
@@ -96,8 +96,8 @@ describe('UserPermissionDetailPage', () => {
     let khoa = false
     apiGet.mockImplementation((url: string) =>
       url === '/api/users/31'
-        ? Promise.resolve({ ...taiKhoan([2]), is_active: !khoa })
-        : Promise.resolve(VAI_TRO),
+        ? Promise.resolve({ ...account([2]), is_active: !khoa })
+        : Promise.resolve(ROLES),
     )
 
     const queryClient = dung()
@@ -122,8 +122,8 @@ describe('UserPermissionDetailPage', () => {
     let roleIds = [2]
     apiGet.mockImplementation((url: string) =>
       url === '/api/users/31'
-        ? Promise.resolve(taiKhoan(roleIds))
-        : Promise.resolve(VAI_TRO),
+        ? Promise.resolve(account(roleIds))
+        : Promise.resolve(ROLES),
     )
 
     const queryClient = dung()
@@ -141,11 +141,11 @@ describe('UserPermissionDetailPage', () => {
     //  thoải mái rồi mới ăn 403 lúc bấm Lưu thì họ tưởng hệ hỏng chứ không tưởng
     //  là có luật. Trước 25/08/2026 bất kỳ ai có `user.write` đều tự phong quản
     //  trị hệ thống bằng đúng một lần bấm trên trang này.
-    dangDangNhapId = 31
+    currentUserId = 31
     apiGet.mockImplementation((url: string) =>
       url === '/api/users/31'
-        ? Promise.resolve(taiKhoan([2]))
-        : Promise.resolve(VAI_TRO),
+        ? Promise.resolve(account([2]))
+        : Promise.resolve(ROLES),
     )
 
     dung()

@@ -53,8 +53,8 @@ export function LookupSelect({
   fallbackLabel,
   disabled,
 }: LookupSelectProps) {
-  const daCo = !value || items.some((item) => item.id === value)
-  const danhSach = daCo
+  const existing = !value || items.some((item) => item.id === value)
+  const danhSach = existing
     ? items
     : [{ id: value, label: fallbackLabel || `#${value}` }, ...items]
 

@@ -17,24 +17,24 @@ vi.mock('../api/document-api', () => ({
 }))
 
 let queryClient: QueryClient
-let daNapLai: unknown[][]
+let reloaded: unknown[][]
 
-function bocNgoai({ children }: { children: ReactNode }) {
+function wrapper({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 }
 
 beforeEach(() => {
   queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  daNapLai = []
+  reloaded = []
   vi.spyOn(queryClient, 'invalidateQueries').mockImplementation((filters) => {
-    daNapLai.push((filters?.queryKey ?? []) as unknown[])
+    reloaded.push((filters?.queryKey ?? []) as unknown[])
     return Promise.resolve()
   })
 })
 
 /** Có nạp lại họ dữ liệu bắt đầu bằng khóa này không. */
-function coNapLai(goc: string): boolean {
-  return daNapLai.some((key) => key[0] === goc)
+function hasReload(goc: string): boolean {
+  return reloaded.some((key) => key[0] === goc)
 }
 
 describe('useDocumentWorkflow', () => {
@@ -43,30 +43,30 @@ describe('useDocumentWorkflow', () => {
     //  duyệt» nhưng phiên duyệt còn là kết quả cũ (`null`, hỏi từ lúc còn Nháp),
     //  nên trang chi tiết tưởng chưa vào bộ máy nhiều bước và vẫn bày hai nút
     //  «Trả lại» + «Duyệt và ban hành». Bấm vào chỉ nhận lỗi 409.
-    const { result } = renderHook(() => useDocumentWorkflow(7), { wrapper: bocNgoai })
+    const { result } = renderHook(() => useDocumentWorkflow(7), { wrapper: wrapper })
 
     result.current.submit.mutate()
 
-    await waitFor(() => expect(coNapLai('document')).toBe(true))
-    expect(coNapLai('approval')).toBe(true)
+    await waitFor(() => expect(hasReload('document')).toBe(true))
+    expect(hasReload('approval')).toBe(true)
   })
 
   it('ban hành xong cũng nạp lại phiên duyệt', async () => {
-    const { result } = renderHook(() => useDocumentWorkflow(7), { wrapper: bocNgoai })
+    const { result } = renderHook(() => useDocumentWorkflow(7), { wrapper: wrapper })
 
     result.current.approve.mutate(undefined)
 
-    await waitFor(() => expect(coNapLai('approval')).toBe(true))
+    await waitFor(() => expect(hasReload('approval')).toBe(true))
   })
 
   it('trả lại và bãi bỏ cũng vậy — mọi thao tác đổi trạng thái đều đụng phiên duyệt', async () => {
-    const { result } = renderHook(() => useDocumentWorkflow(7), { wrapper: bocNgoai })
+    const { result } = renderHook(() => useDocumentWorkflow(7), { wrapper: wrapper })
 
     result.current.reject.mutate('Sai nội dung')
-    await waitFor(() => expect(coNapLai('approval')).toBe(true))
+    await waitFor(() => expect(hasReload('approval')).toBe(true))
 
-    daNapLai = []
+    reloaded = []
     result.current.revoke.mutate('Hết hiệu lực')
-    await waitFor(() => expect(coNapLai('approval')).toBe(true))
+    await waitFor(() => expect(hasReload('approval')).toBe(true))
   })
 })

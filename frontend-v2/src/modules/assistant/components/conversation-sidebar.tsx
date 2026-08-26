@@ -16,9 +16,9 @@ import type { ConversationSummary } from '../types/assistant'
  * hết tác dụng. Trần 420px: rộng hơn nữa là ăn vào cột đọc bên phải, mà cột đọc
  * mới là chỗ người ta nhìn lâu nhất.
  */
-const HEP_NHAT = 200
-const RONG_NHAT = 420
-const MAC_DINH = 256
+const MIN_WIDTH = 200
+const MAX_WIDTH = 420
+const DEFAULT_VALUE = 256
 
 interface ConversationSidebarProps {
   items: ConversationSummary[]
@@ -56,11 +56,11 @@ export function ConversationSidebar({
   onSelect,
   onDelete,
 }: ConversationSidebarProps) {
-  const { width, batDauKeo, chinhBangPhim } = useResizablePanel({
+  const { width, startDrag, resizeByKey } = useResizablePanel({
     storageKey: 'erp.assistant-sidebar-width',
-    min: HEP_NHAT,
-    max: RONG_NHAT,
-    macDinh: MAC_DINH,
+    min: MIN_WIDTH,
+    max: MAX_WIDTH,
+    macDinh: DEFAULT_VALUE,
   })
   const [thuGon, doiThuGon] = usePersistedToggle('erp.assistant-sidebar-collapsed')
 
@@ -74,12 +74,12 @@ export function ConversationSidebar({
   if (thuGon) {
     return (
       <aside className="flex w-12 shrink-0 flex-col items-center gap-1 border-r bg-card py-2">
-        <NutBieuTuong
+        <IconButton
           icon={PanelLeftOpen}
           label="Mở lại cột hội thoại"
           onClick={doiThuGon}
         />
-        <NutBieuTuong icon={SquarePen} label="Hội thoại mới" onClick={onNew} />
+        <IconButton icon={SquarePen} label="Hội thoại mới" onClick={onNew} />
       </aside>
     )
   }
@@ -96,7 +96,7 @@ export function ConversationSidebar({
           <span className="truncate">Hội thoại mới</span>
         </button>
 
-        <NutBieuTuong
+        <IconButton
           icon={PanelLeftClose}
           label="Thu gọn cột hội thoại"
           onClick={doiThuGon}
@@ -165,17 +165,17 @@ export function ConversationSidebar({
       <ResizeHandle
         label="Kéo để đổi bề ngang cột hội thoại"
         width={width}
-        min={HEP_NHAT}
-        max={RONG_NHAT}
-        onPointerDown={batDauKeo}
-        onKeyResize={chinhBangPhim}
+        min={MIN_WIDTH}
+        max={MAX_WIDTH}
+        onPointerDown={startDrag}
+        onKeyResize={resizeByKey}
       />
     </aside>
   )
 }
 
 /** Nút chỉ có biểu tượng — nhãn nằm ở `aria-label` và `title`. */
-function NutBieuTuong({
+function IconButton({
   icon: Icon,
   label,
   onClick,

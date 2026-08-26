@@ -43,7 +43,7 @@ export function UserPermissionDetailPage() {
   //  KHÔNG TỰ SỬA QUYỀN CỦA CHÍNH MÌNH — chốt hai người. Backend chặn ở
   //  `core/privilege_escalation.py`; ở đây khóa luôn giao diện để người dùng
   //  thấy LUẬT chứ không tick xong rồi ăn 403 và tưởng hệ hỏng (CR-158).
-  const laChinhMinh = !!dangDangNhap && dangDangNhap.id === userId
+  const isSelf = !!dangDangNhap && dangDangNhap.id === userId
 
   // Đổi sang tài khoản khác thì mọi thứ tick dở không còn nghĩa gì.
   if (useHasChanged(userId)) {
@@ -96,7 +96,7 @@ export function UserPermissionDetailPage() {
 
   // Lưu xong thì bản của máy chủ mới là bản chuẩn, mở lại đường đồng bộ để lượt
   // nạp lại ngay sau đó (do `invalidateQueries`) ăn vào state.
-  const luuVaiTro = () =>
+  const saveRoles = () =>
     assignRoles.mutate(selectedRoleIds, { onSuccess: () => setDangTickDo(false) })
 
   const scopeRoleName = roles?.find((role) => role.id === scopeRoleId)?.name ?? ''
@@ -113,8 +113,8 @@ export function UserPermissionDetailPage() {
 
         <PermissionGate entity="user" action="write">
           <Button
-            onClick={luuVaiTro}
-            disabled={assignRoles.isPending || laChinhMinh}
+            onClick={saveRoles}
+            disabled={assignRoles.isPending || isSelf}
           >
             {assignRoles.isPending ? <Loader2 className="animate-spin" /> : <Save />}
             Lưu vai trò
@@ -130,7 +130,7 @@ export function UserPermissionDetailPage() {
         </p>
       </div>
 
-      {laChinhMinh && (
+      {isSelf && (
         <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           Đây là tài khoản của chính bạn nên chỉ xem được. Đổi quyền của mình phải
           nhờ một quản trị khác — chốt hai người của phân quyền, tránh việc một
@@ -165,7 +165,7 @@ export function UserPermissionDetailPage() {
                 <label className="flex h-full min-w-0 flex-1 cursor-pointer items-center gap-3">
                   <Checkbox
                     checked={checked}
-                    disabled={laChinhMinh}
+                    disabled={isSelf}
                     onCheckedChange={() => toggleRole(role.id)}
                   />
                   <span className="truncate font-medium text-navy">{role.name}</span>
@@ -179,7 +179,7 @@ export function UserPermissionDetailPage() {
                     variant="outline"
                     size="sm"
                     className="shrink-0"
-                    disabled={laChinhMinh}
+                    disabled={isSelf}
                     onClick={() => setScopeRoleId(role.id)}
                   >
                     <Filter />

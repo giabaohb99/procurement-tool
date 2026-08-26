@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { SearchSelect } from './search-select'
 
-const LOAI_VAN_BAN = [
+const DOC_TYPES = [
   { value: '1', label: 'Công văn · CV' },
   { value: '28', label: 'Giấy nghỉ phép · GNP' },
   { value: '5', label: 'Hợp đồng · HD' },
@@ -16,7 +16,7 @@ function dung(onChange = vi.fn()) {
     <SearchSelect
       value=""
       onChange={onChange}
-      options={LOAI_VAN_BAN}
+      options={DOC_TYPES}
       placeholder="Chọn loại văn bản"
       searchPlaceholder="Tìm theo tên hoặc mã loại…"
     />,
@@ -24,7 +24,7 @@ function dung(onChange = vi.fn()) {
   return onChange
 }
 
-async function moVaGo(nguoi: ReturnType<typeof userEvent.setup>, tu: string) {
+async function openAndType(nguoi: ReturnType<typeof userEvent.setup>, tu: string) {
   await nguoi.click(screen.getByRole('combobox'))
   if (tu) await nguoi.type(screen.getByPlaceholderText(/Tìm theo tên/), tu)
 }
@@ -37,7 +37,7 @@ describe('SearchSelect', () => {
     //  kết luận là danh mục không có loại đó.
     const nguoi = userEvent.setup()
     dung()
-    await moVaGo(nguoi, 'nghỉ phép')
+    await openAndType(nguoi, 'nghỉ phép')
 
     expect(screen.getByText('Giấy nghỉ phép · GNP')).toBeInTheDocument()
     expect(screen.queryByText('Công văn · CV')).not.toBeInTheDocument()
@@ -46,7 +46,7 @@ describe('SearchSelect', () => {
   it('gõ KHÔNG DẤU vẫn ra — người Việt tìm thường không bỏ dấu', async () => {
     const nguoi = userEvent.setup()
     dung()
-    await moVaGo(nguoi, 'nghi phep')
+    await openAndType(nguoi, 'nghi phep')
 
     expect(screen.getByText('Giấy nghỉ phép · GNP')).toBeInTheDocument()
   })
@@ -57,7 +57,7 @@ describe('SearchSelect', () => {
     //  "don vi" không ra "Đơn vị".
     const nguoi = userEvent.setup()
     dung()
-    await moVaGo(nguoi, 'don vi')
+    await openAndType(nguoi, 'don vi')
 
     expect(screen.getByText('Đơn vị gửi nhận · DVN')).toBeInTheDocument()
   })
@@ -65,7 +65,7 @@ describe('SearchSelect', () => {
   it('tìm theo MÃ loại cũng được', async () => {
     const nguoi = userEvent.setup()
     dung()
-    await moVaGo(nguoi, 'GNP')
+    await openAndType(nguoi, 'GNP')
 
     expect(screen.getByText('Giấy nghỉ phép · GNP')).toBeInTheDocument()
   })
@@ -73,7 +73,7 @@ describe('SearchSelect', () => {
   it('không khớp gì thì nói thẳng, đừng hiện danh sách trống', async () => {
     const nguoi = userEvent.setup()
     dung()
-    await moVaGo(nguoi, 'khong-co-that')
+    await openAndType(nguoi, 'khong-co-that')
 
     expect(screen.getByText(/Không tìm thấy/i)).toBeInTheDocument()
   })
@@ -81,7 +81,7 @@ describe('SearchSelect', () => {
   it('chọn xong báo đúng giá trị cho bên gọi', async () => {
     const nguoi = userEvent.setup()
     const onChange = dung()
-    await moVaGo(nguoi, 'nghi phep')
+    await openAndType(nguoi, 'nghi phep')
     await nguoi.click(screen.getByText('Giấy nghỉ phép · GNP'))
 
     expect(onChange).toHaveBeenCalledWith('28')
@@ -90,9 +90,9 @@ describe('SearchSelect', () => {
   it('chưa gõ gì thì hiện đủ danh sách', async () => {
     const nguoi = userEvent.setup()
     dung()
-    await moVaGo(nguoi, '')
+    await openAndType(nguoi, '')
 
-    for (const item of LOAI_VAN_BAN) {
+    for (const item of DOC_TYPES) {
       expect(screen.getByText(item.label)).toBeInTheDocument()
     }
   })
@@ -109,7 +109,7 @@ describe('SearchSelect', () => {
 
   it('ô kiểu `wrap` (dùng trong bảng) cũng vẫn căn trái', () => {
     render(
-      <SearchSelect value="" onChange={vi.fn()} options={LOAI_VAN_BAN} placeholder="Chọn" wrap />,
+      <SearchSelect value="" onChange={vi.fn()} options={DOC_TYPES} placeholder="Chọn" wrap />,
     )
     expect(screen.getByRole('combobox').className).toMatch(/\btext-left\b/)
   })
@@ -118,7 +118,7 @@ describe('SearchSelect', () => {
     //  Dữ liệu cũ hay trỏ tới mã đã bị gỡ khỏi danh mục. Giấu đi thì người dùng
     //  tưởng ô chưa chọn gì rồi chọn đè, mất luôn giá trị cũ mà không hay.
     render(
-      <SearchSelect value="999" onChange={vi.fn()} options={LOAI_VAN_BAN} placeholder="Chọn" />,
+      <SearchSelect value="999" onChange={vi.fn()} options={DOC_TYPES} placeholder="Chọn" />,
     )
     expect(screen.getByRole('combobox')).toHaveTextContent('999')
   })

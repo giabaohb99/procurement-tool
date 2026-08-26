@@ -6,7 +6,7 @@ import { Badge } from '@/shared/ui/badge'
 import type { DocumentTreeNode } from '../types/document-link'
 
 /** Thụt lề mỗi cấp. Vạch dọc vẽ ở `TreeNode` bám theo đúng con số này. */
-const BUOC_THUT_LE = 20
+const INDENT_STEP = 20
 
 /**
  * Cảnh báo LỆCH BẢN, nói thẳng nghĩa thay vì hai chữ "lệch bản".
@@ -14,7 +14,7 @@ const BUOC_THUT_LE = 20
  * Hai chữ đó là tiếng lóng nội bộ: người mở cây lần đầu không đoán được lệch
  * với cái gì, lệch thì sao, và có phải việc của mình không.
  */
-function CanhBaoLechBan({ loi }: { loi: string }) {
+function VersionMismatchWarning({ loi }: { loi: string }) {
   return (
     <span
       className="flex shrink-0 items-center gap-1 text-xs text-amber-700"
@@ -63,7 +63,7 @@ export function CloneLink({ node }: { node: DocumentTreeNode }) {
       </div>
 
       {node.is_outdated && (
-        <CanhBaoLechBan loi="Bản gốc đã lên phiên bản mới — pháp nhân này chưa cập nhật theo." />
+        <VersionMismatchWarning loi="Bản gốc đã lên phiên bản mới — pháp nhân này chưa cập nhật theo." />
       )}
 
       <Badge variant="outline" className="shrink-0">
@@ -82,7 +82,7 @@ export function TreeNode({ node, level }: { node: DocumentTreeNode; level: numbe
            Vạch dọc `border-l` để mắt lần được cấp nào thuộc cấp nào — chỉ thụt
            lề 20px thì ba cấp trông gần như một danh sách phẳng. */}
       <div
-        style={{ marginLeft: level > 0 ? `${BUOC_THUT_LE}px` : undefined }}
+        style={{ marginLeft: level > 0 ? `${INDENT_STEP}px` : undefined }}
         className={level > 0 ? 'border-l pl-2' : undefined}
       >
         {/*  Bản riêng ở CẤP SÂU vẫn phải đọc ra là bản riêng — xem `CloneLink`. */}
@@ -116,7 +116,7 @@ export function TreeNode({ node, level }: { node: DocumentTreeNode; level: numbe
             </div>
 
             {(node.needs_review || node.is_outdated) && (
-              <CanhBaoLechBan loi="Văn bản cha đã đổi sau lần khai này — cần rà lại nội dung." />
+              <VersionMismatchWarning loi="Văn bản cha đã đổi sau lần khai này — cần rà lại nội dung." />
             )}
 
             <Badge variant="outline" className="shrink-0">

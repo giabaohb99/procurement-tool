@@ -5,17 +5,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RoleSidePanel } from './role-side-panel'
 import type { Role } from '../types/role'
 
-const VAI_TRO: Role[] = [
+const ROLES: Role[] = [
   { id: 1, code: 'admin', name: 'Quản trị hệ thống', description: '', sort_order: 1 },
   { id: 2, code: 'employee', name: 'Nhân sự', description: '', sort_order: 2 },
   { id: 3, code: 'pur_staff', name: 'Nhân viên thu mua', description: '', sort_order: 3 },
 ]
 
-const luuThuTu = vi.fn()
-let quyenGhi = true
+const saveOrder = vi.fn()
+let canWrite = true
 
 vi.mock('@/core/authorization/use-permission', () => ({
-  usePermission: () => ({ can: () => quyenGhi }),
+  usePermission: () => ({ can: () => canWrite }),
 }))
 
 //  `PermissionGate` gọi tới auth store thật; ở đây chỉ cần nó vẽ children ra.
@@ -25,16 +25,16 @@ vi.mock('@/core/authorization/permission-gate', () => ({
 
 vi.mock('../hooks/use-roles', () => ({
   useCreateRole: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useSaveRoleOrder: () => ({ mutate: luuThuTu, isPending: false }),
+  useSaveRoleOrder: () => ({ mutate: saveOrder, isPending: false }),
 }))
 
 function dung() {
-  render(<RoleSidePanel roles={VAI_TRO} selectedId={null} onSelect={vi.fn()} />)
+  render(<RoleSidePanel roles={ROLES} selectedId={null} onSelect={vi.fn()} />)
 }
 
 beforeEach(() => {
-  quyenGhi = true
-  luuThuTu.mockClear()
+  canWrite = true
+  saveOrder.mockClear()
 })
 
 describe('RoleSidePanel', () => {
@@ -59,7 +59,7 @@ describe('RoleSidePanel', () => {
   })
 
   it('thiếu quyền ghi thì không kéo được', () => {
-    quyenGhi = false
+    canWrite = false
     dung()
     expect(screen.queryByRole('button', { name: /^Kéo để đổi chỗ/ })).not.toBeInTheDocument()
   })

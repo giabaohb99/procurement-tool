@@ -17,7 +17,7 @@ export interface HtmlSection {
   html: string
 }
 
-const THE_TIEU_DE = new Set(['H1', 'H2', 'H3'])
+const HEADING_TAGS = new Set(['H1', 'H2', 'H3'])
 
 /**
  * Cắt HTML thành danh sách mục.
@@ -40,7 +40,7 @@ export function splitHtmlSections(html: string): HtmlSection[] {
   //  Lượt 1: ghi lại vị trí mọi tiêu đề.
   const moc = khoi
     .map((the, i) => ({ the, i }))
-    .filter(({ the }) => THE_TIEU_DE.has(the.tagName))
+    .filter(({ the }) => HEADING_TAGS.has(the.tagName))
     .map(({ the, i }) => ({ i, level: Number(the.tagName[1]), title: (the.textContent || '').trim() }))
 
   //  Lượt 2: mỗi tiêu đề là MỘT MỤC, chạy tới tiêu đề kế cùng cấp hoặc cao hơn.

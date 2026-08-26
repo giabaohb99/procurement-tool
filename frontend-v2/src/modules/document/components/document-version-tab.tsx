@@ -52,7 +52,7 @@ export function DocumentVersionTab({
   //  Nút bị ẩn thì phải nói VÌ SAO ẩn. Trước đây nó biến mất không lời nào, nên
   //  người có quyền sửa mở tab ra chỉ thấy một danh sách trơ và không đoán được
   //  mở bản mới ở đâu.
-  const lyDoKhongMoDuoc = !canWrite
+  const blockedReason = !canWrite
     ? null
     : openDraft
       ? 'Đang có bản nháp mở — chốt xong bản đó rồi mới mở tiếp được.'
@@ -83,10 +83,10 @@ export function DocumentVersionTab({
             Mở phiên bản mới
           </Button>
         ) : (
-          lyDoKhongMoDuoc && (
+          blockedReason && (
             <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
               Chưa mở được phiên bản mới
-              <HelpHint label="Vì sao chưa mở được phiên bản mới">{lyDoKhongMoDuoc}</HelpHint>
+              <HelpHint label="Vì sao chưa mở được phiên bản mới">{blockedReason}</HelpHint>
             </span>
           )
         )}

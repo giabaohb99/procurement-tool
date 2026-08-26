@@ -58,7 +58,7 @@ const V2_PREFIXES = [
 ]
 
 /** Link có nằm trong nhánh của tiền tố này không (`/document` khớp `/document/x`). */
-function thuocNhanh(link: string, prefix: string): boolean {
+function quickProps(link: string, prefix: string): boolean {
   return link === prefix || link.startsWith(`${prefix}/`) || link.startsWith(`${prefix}?`)
 }
 
@@ -67,10 +67,10 @@ export function toAppPath(link: string): string | null {
 
   //  Đã là đường dẫn v2 thì giữ nguyên. Xét TRƯỚC bảng dịch: `/procurement/...`
   //  vừa là đích của bảng dịch vừa là tiền tố phân hệ, xét sau thì thừa một vòng.
-  if (V2_PREFIXES.some((prefix) => thuocNhanh(link, prefix))) return link
+  if (V2_PREFIXES.some((prefix) => quickProps(link, prefix))) return link
 
   for (const [from, to] of PREFIX_MAP) {
-    if (thuocNhanh(link, from)) return to + link.slice(from.length)
+    if (quickProps(link, from)) return to + link.slice(from.length)
   }
   return null
 }

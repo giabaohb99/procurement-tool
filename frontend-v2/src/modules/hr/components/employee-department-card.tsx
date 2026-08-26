@@ -17,7 +17,7 @@ interface EmployeeDepartmentCardProps {
   primaryDepartmentId: number
   canWrite: boolean
   /** Đúng tài khoản đang đăng nhập: khóa lại, không ai tự đổi phòng của mình. */
-  laChinhMinh: boolean
+  isSelf: boolean
 }
 
 /**
@@ -37,23 +37,23 @@ export function EmployeeDepartmentCard({
   companyId,
   primaryDepartmentId,
   canWrite,
-  laChinhMinh,
+  isSelf,
 }: EmployeeDepartmentCardProps) {
   const { data, isLoading } = useEmployeeDepartments(employeeId)
   const { data: departments } = useDepartments({ page_size: 500, is_active: true })
   const luu = useSaveEmployeeDepartments(employeeId)
 
-  const [dangChon, setDangChon] = useState<number[]>([])
+  const [selection, setSelection] = useState<number[]>([])
   //  Chỉ đồng bộ khi người dùng CHƯA chọn dở — cùng lỗi đã gặp ở màn Phân quyền
   //  (CR-156): một lượt nạp lại rơi vào giữa lúc đang chọn là mất thứ vừa chọn.
   const [dangChonDo, setDangChonDo] = useState(false)
-  if (useHasChanged(data) && !dangChonDo) setDangChon(data?.extra_department_ids ?? [])
+  if (useHasChanged(data) && !dangChonDo) setSelection(data?.extra_department_ids ?? [])
 
   //  Bỏ PHÒNG CHÍNH khỏi danh sách chọn: nó không phải kiêm nhiệm, và chọn lại
   //  chính nó ở đây thì backend cũng lọc ra.
   //  Chỉ phòng CÙNG PHÁP NHÂN — backend chặn gán chéo pháp nhân, bày ra rồi để
   //  người dùng ăn lỗi lúc bấm Lưu là bắt họ đoán luật.
-  const chonDuoc = (departments?.items ?? []).filter(
+  const selectable = (departments?.items ?? []).filter(
     (item) =>
       item.id !== primaryDepartmentId &&
       (!companyId || !item.company_id || item.company_id === companyId),
@@ -71,28 +71,28 @@ export function EmployeeDepartmentCard({
       </CardHeader>
 
       <CardContent className="space-y-3">
-        {laChinhMinh && (
+        {isSelf && (
           <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
             Đây là hồ sơ của chính bạn nên chỉ xem được — nhờ một quản trị khác đổi.
           </p>
         )}
 
         <DepartmentMultiSelect
-          value={dangChon}
+          value={selection}
           onChange={(ids) => {
             setDangChonDo(true)
-            setDangChon(ids)
+            setSelection(ids)
           }}
-          departments={chonDuoc}
+          departments={selectable}
           placeholder="Không kiêm nhiệm phòng nào"
-          disabled={!canWrite || laChinhMinh}
+          disabled={!canWrite || isSelf}
         />
 
-        {canWrite && !laChinhMinh && (
+        {canWrite && !isSelf && (
           <Button
             size="sm"
             onClick={() =>
-              luu.mutate(dangChon, { onSuccess: () => setDangChonDo(false) })
+              luu.mutate(selection, { onSuccess: () => setDangChonDo(false) })
             }
             disabled={luu.isPending}
           >

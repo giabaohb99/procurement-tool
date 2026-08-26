@@ -25,7 +25,7 @@ function coLop(node: Element | null, lop: string): boolean {
   return String(node?.className ?? '').split(/\s+/).includes(lop)
 }
 
-function dungHeader(className: string): Element | null {
+function buildHeader(className: string): Element | null {
   const { container } = render(
     <Card>
       <CardHeader className={className}>
@@ -39,13 +39,13 @@ function dungHeader(className: string): Element | null {
 
 describe('CardHeader — bẫy grid/flex-row', () => {
   it('chỉ `flex-row` thì KHÔNG thắng được `grid` mặc định', () => {
-    const head = dungHeader('flex-row items-center justify-between')
+    const head = buildHeader('flex-row items-center justify-between')
     expect(coLop(head, 'grid')).toBe(true) //  `grid` vẫn còn -> vẫn là lưới
     expect(coLop(head, 'flex')).toBe(false)
   })
 
   it('thêm `flex` thì `grid` bị gỡ, hàng ngang mới ăn', () => {
-    const head = dungHeader('flex flex-row items-center justify-between')
+    const head = buildHeader('flex flex-row items-center justify-between')
     expect(coLop(head, 'grid')).toBe(false)
     expect(coLop(head, 'flex')).toBe(true)
   })

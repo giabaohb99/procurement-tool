@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from
 import { cn } from '@/shared/utils/cn'
 
 /** Trần chiều cao ô nhập; quá thì tự cuộn trong ô, không đẩy khung chat lên. */
-const CAO_TOI_DA = 200
+const MAX_HEIGHT = 200
 
 interface ChatComposerProps {
   /** Không dùng được (chưa cấu hình nhà cung cấp) — khóa hẳn cả ô nhập. */
@@ -46,13 +46,13 @@ export function ChatComposer({ disabled, busy, onSend }: ChatComposerProps) {
     const o = oNhap.current
     if (!o) return
     o.style.height = 'auto' //  phải hạ về auto trước, nếu không nó chỉ phình ra
-    o.style.height = `${Math.min(o.scrollHeight, CAO_TOI_DA)}px`
+    o.style.height = `${Math.min(o.scrollHeight, MAX_HEIGHT)}px`
   }, [text])
 
-  const guiDuoc = text.trim().length > 0 && !disabled && !busy
+  const canSend = text.trim().length > 0 && !disabled && !busy
 
   const gui = async () => {
-    if (!guiDuoc) return
+    if (!canSend) return
     const cau = text.trim()
     //  Xóa ô ngay cho mượt, nhưng GỬI HỎNG THÌ TRẢ LẠI NGUYÊN VĂN.
     //  Trước 25/08/2026 câu hỏi mất trắng khi gọi hỏng: xóa khỏi ô nhập, mà
@@ -67,7 +67,7 @@ export function ChatComposer({ disabled, busy, onSend }: ChatComposerProps) {
     }
   }
 
-  const khiGoPhim = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     //  Bỏ qua khi bộ gõ tiếng Việt đang ghép chữ: Enter lúc đó là "chốt chữ",
     //  không phải "gửi" — không chặn thì gõ dấu xong là câu bay đi mất.
     if (e.nativeEvent.isComposing) return
@@ -92,7 +92,7 @@ export function ChatComposer({ disabled, busy, onSend }: ChatComposerProps) {
             value={text}
             disabled={disabled}
             onChange={(e) => setText(e.target.value)}
-            onKeyDown={khiGoPhim}
+            onKeyDown={onKeyDown}
             placeholder={busy ? 'Gõ sẵn câu tiếp theo…' : 'Hỏi trợ lý…'}
             aria-label="Câu hỏi cho trợ lý"
             className="max-h-[200px] flex-1 resize-none self-center bg-transparent py-2 text-sm outline-none placeholder:text-muted-foreground disabled:opacity-60"
@@ -101,12 +101,12 @@ export function ChatComposer({ disabled, busy, onSend }: ChatComposerProps) {
           <button
             type="button"
             onClick={() => void gui()}
-            disabled={!guiDuoc}
+            disabled={!canSend}
             title="Gửi"
             aria-label="Gửi câu hỏi"
             className={cn(
               'flex size-8 shrink-0 items-center justify-center rounded-full transition-colors',
-              guiDuoc
+              canSend
                 ? 'bg-primary text-primary-foreground hover:opacity-90'
                 : 'bg-muted text-muted-foreground',
             )}

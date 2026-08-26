@@ -23,7 +23,7 @@ interface DepartmentMembersTableProps {
 
 const ALL = 'all'
 /** Ô tìm gõ tay, không đẩy lên URL: đây là bảng con của trang chi tiết. */
-const DELAY_TIM = 350
+const SEARCH_DELAY_MS = 350
 
 /**
  * Danh sách nhân sự thuộc phòng ban, hiện ở trang chi tiết phòng ban.
@@ -45,14 +45,14 @@ export function DepartmentMembersTable({
   const navigate = useNavigate()
 
   const [keyword, setKeyword] = useState('')
-  const tuKhoa = useDebouncedValue(keyword, DELAY_TIM)
+  const debouncedKeyword = useDebouncedValue(keyword, SEARCH_DELAY_MS)
   const [status, setStatus] = useState(ALL)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
-  const [page, setPage] = usePageResetOnFilterChange([tuKhoa, status, departmentId])
+  const [page, setPage] = usePageResetOnFilterChange([debouncedKeyword, status, departmentId])
 
   //  Chỉ gửi key nằm trong whitelist FILTERABLE của backend.
   const params: ListParams = { department_id: departmentId, page, page_size: pageSize }
-  if (tuKhoa) params.full_name = tuKhoa
+  if (debouncedKeyword) params.full_name = debouncedKeyword
   if (status !== ALL) params.status = status
 
   const { data, isLoading, isError } = useEmployees(params)
@@ -102,7 +102,7 @@ export function DepartmentMembersTable({
           isLoading={isLoading}
           isError={isError}
           emptyMessage={
-            tuKhoa || status !== ALL
+            debouncedKeyword || status !== ALL
               ? 'Không có nhân sự nào khớp bộ lọc.'
               : 'Chưa có nhân sự nào thuộc phòng ban này.'
           }

@@ -37,7 +37,7 @@ export function ApprovalNodeAdvanced({
   entity,
   onChange,
 }: ApprovalNodeAdvancedProps) {
-  function chonSo(khoa: keyof ApprovalNode) {
+  function pickBook(khoa: keyof ApprovalNode) {
     return (value: string) => onChange(khoa, Number(value) as never)
   }
 
@@ -45,7 +45,7 @@ export function ApprovalNodeAdvanced({
     <div className="space-y-4 rounded-lg border bg-muted/30 p-3">
       <div className="space-y-2">
         <Label>Bước làm gì</Label>
-        <Select value={String(form.node_kind)} onValueChange={chonSo('node_kind')}>
+        <Select value={String(form.node_kind)} onValueChange={pickBook('node_kind')}>
           <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
@@ -66,7 +66,7 @@ export function ApprovalNodeAdvanced({
 
       <div className="space-y-2">
         <Label>Vai trò trong quy trình</Label>
-        <Select value={String(form.flow_role)} onValueChange={chonSo('flow_role')}>
+        <Select value={String(form.flow_role)} onValueChange={pickBook('flow_role')}>
           <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
@@ -82,7 +82,7 @@ export function ApprovalNodeAdvanced({
 
       <div className="space-y-2">
         <Label>Nếu người này đã duyệt ở bước trước</Label>
-        <Select value={String(form.skip_duplicate)} onValueChange={chonSo('skip_duplicate')}>
+        <Select value={String(form.skip_duplicate)} onValueChange={pickBook('skip_duplicate')}>
           <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
@@ -111,7 +111,7 @@ export function ApprovalNodeAdvanced({
 
       <div className="space-y-2">
         <Label>Không tìm được người duyệt thì</Label>
-        <Select value={String(form.on_no_approver)} onValueChange={chonSo('on_no_approver')}>
+        <Select value={String(form.on_no_approver)} onValueChange={pickBook('on_no_approver')}>
           <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>

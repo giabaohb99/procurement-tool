@@ -20,7 +20,7 @@ interface OutgoingColumnsOptions {
   dongDangBung: number | null
   setDongDangBung: (id: number | null) => void
   /** Id các văn bản đang chờ CHÍNH người đang xem duyệt. */
-  choToiDuyet: Set<number>
+  awaitingMyApproval: Set<number>
   canCreate: boolean
 }
 
@@ -38,7 +38,7 @@ interface OutgoingColumnsOptions {
 export function useOutgoingDocumentColumns({
   dongDangBung,
   setDongDangBung,
-  choToiDuyet,
+  awaitingMyApproval,
   canCreate,
 }: OutgoingColumnsOptions): DataTableColumn<DocumentRecord>[] {
   const securityLevelLabel = useSecurityLevelLabel()
@@ -46,7 +46,7 @@ export function useOutgoingDocumentColumns({
   //  ⚠️ Phải chặn `dongDangBung === null`: `source_document_id` của văn bản
   //  thường cũng là `null`, mà `null === null` là TRUE — so thẳng thì lúc chưa
   //  bung dòng nào, CẢ BẢNG bị đánh dấu là bản riêng.
-  const laConDangBung = useCallback(
+  const isExpandedChild = useCallback(
     (row: DocumentRecord) =>
       dongDangBung !== null && row.source_document_id === dongDangBung,
     [dongDangBung],
@@ -65,12 +65,12 @@ export function useOutgoingDocumentColumns({
           //  con xem được bản riêng nhưng KHÔNG xem được bản gốc — với họ đây
           //  là văn bản đứng một mình, kẻ mũi tên rẽ nhánh là trỏ vào một dòng
           //  cha không tồn tại trên màn hình.
-          const laBanRieng = laConDangBung(row)
-          const soBanRieng = row.clone_count ?? 0
+          const isPrivateCopy = isExpandedChild(row)
+          const privateCopyCount = row.clone_count ?? 0
 
           return (
             <div className="flex items-center gap-1">
-              {soBanRieng > 0 ? (
+              {privateCopyCount > 0 ? (
                 //  Nút bung phải chặn click lan lên dòng, nếu không mỗi lần mở
                 //  nhánh là mở luôn trang chi tiết của bản gốc.
                 <Button
@@ -83,8 +83,8 @@ export function useOutgoingDocumentColumns({
                   //  mới có nút này nên bảng còn so le cao thấp. Cùng cỡ với nút
                   //  sao chép ở cột Thao tác (`document-copy-action.tsx`).
                   className="-ml-1 -my-px size-6 shrink-0"
-                  title={`${soBanRieng} bản riêng ở pháp nhân con`}
-                  aria-label={`Xem ${soBanRieng} bản riêng`}
+                  title={`${privateCopyCount} bản riêng ở pháp nhân con`}
+                  aria-label={`Xem ${privateCopyCount} bản riêng`}
                   aria-expanded={dongDangBung === row.id}
                   onClick={(event) => {
                     event.stopPropagation()
@@ -98,17 +98,17 @@ export function useOutgoingDocumentColumns({
               ) : (
                 //  Chừa đúng chỗ của nút để cột số hiệu của mọi dòng thẳng hàng.
                 //  `w-5` = 24px của nút trừ 4px `-ml-1` nó tự thụt vào.
-                <span className={cn('shrink-0', laBanRieng ? 'w-3' : 'w-5')} />
+                <span className={cn('shrink-0', isPrivateCopy ? 'w-3' : 'w-5')} />
               )}
 
-              {laBanRieng && (
+              {isPrivateCopy && (
                 <CornerDownRight className="size-3.5 shrink-0 text-muted-foreground" />
               )}
 
               <span
                 className={cn(
                   'truncate',
-                  laBanRieng ? 'text-muted-foreground' : 'font-medium text-navy',
+                  isPrivateCopy ? 'text-muted-foreground' : 'font-medium text-navy',
                 )}
               >
                 {/* Chưa duyệt thì chưa có số — nói rõ chứ đừng để ô trống. */}
@@ -138,7 +138,7 @@ export function useOutgoingDocumentColumns({
         cell: (row) => (
           //  Với BẢN RIÊNG đang bung, pháp nhân là thứ duy nhất phân biệt nó
           //  với bản gốc (tiêu đề chép nguyên) — tô đậm để mắt bám vào cột đó.
-          <span className={cn('truncate', laConDangBung(row) && 'font-medium')}>
+          <span className={cn('truncate', isExpandedChild(row) && 'font-medium')}>
             {row.company_name}
           </span>
         ),
@@ -184,7 +184,7 @@ export function useOutgoingDocumentColumns({
           return (
             <div className="flex items-center gap-1.5">
               <Badge variant={label.variant}>{label.text}</Badge>
-              {choToiDuyet.has(row.id) && (
+              {awaitingMyApproval.has(row.id) && (
                 <Badge className="gap-1 bg-primary text-primary-foreground">
                   <ShieldCheck className="size-3" />
                   Chờ bạn duyệt
@@ -259,6 +259,6 @@ export function useOutgoingDocumentColumns({
         ),
       },
     ],
-    [dongDangBung, setDongDangBung, laConDangBung, choToiDuyet, canCreate, securityLevelLabel],
+    [dongDangBung, setDongDangBung, isExpandedChild, awaitingMyApproval, canCreate, securityLevelLabel],
   )
 }

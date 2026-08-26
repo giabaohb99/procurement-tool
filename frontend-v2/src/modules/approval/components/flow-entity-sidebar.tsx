@@ -29,7 +29,7 @@ export function FlowEntitySidebar({ flowId, onTaoLuong }: FlowEntitySidebarProps
   return (
     <nav className="w-60 shrink-0 space-y-4 overflow-y-auto pr-1">
       {Object.entries(ENTITY_LABELS).map(([ma, nhan]) => {
-        const cuaLoai = flows.filter((flow) => flow.entity === ma)
+        const ofType = flows.filter((flow) => flow.entity === ma)
         return (
           <div key={ma}>
             <div className="mb-1 flex items-center justify-between gap-2">
@@ -49,14 +49,14 @@ export function FlowEntitySidebar({ flowId, onTaoLuong }: FlowEntitySidebarProps
               </Button>
             </div>
 
-            {cuaLoai.length === 0 ? (
+            {ofType.length === 0 ? (
               <p className="px-2 text-xs text-muted-foreground">
                 Chưa có luồng — chứng từ loại này đi theo đường duyệt cũ.
               </p>
             ) : (
               <ul className="space-y-0.5">
-                {cuaLoai.map((flow) => (
-                  <DongLuong key={flow.id} flow={flow} dangMo={flow.id === flowId} />
+                {ofType.map((flow) => (
+                  <FlowRow key={flow.id} flow={flow} dangMo={flow.id === flowId} />
                 ))}
               </ul>
             )}
@@ -67,7 +67,7 @@ export function FlowEntitySidebar({ flowId, onTaoLuong }: FlowEntitySidebarProps
   )
 }
 
-function DongLuong({ flow, dangMo }: { flow: ApprovalFlow; dangMo: boolean }) {
+function FlowRow({ flow, dangMo }: { flow: ApprovalFlow; dangMo: boolean }) {
   return (
     <li>
       <Link

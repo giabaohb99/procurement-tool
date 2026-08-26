@@ -23,7 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
-import { idKhongDuocTuChan } from '../helpers/khong-tu-chan-chinh-minh'
+import { blockedSelfIds } from '../helpers/khong-tu-chan-chinh-minh'
 import { SubjectChips } from './access-subject-chips'
 import {
   EFFECT,
@@ -129,7 +129,7 @@ function draftKey(row: DocumentAccessDraft) {
 }
 
 function AccessForm({ pending, existing, initial, onCancel, onSubmit }: AccessFormProps) {
-  const dangSua = Boolean(initial)
+  const isEditing = Boolean(initial)
   const [subjectKind, setSubjectKind] = useState(
     String(initial?.values.subject_kind ?? SUBJECT_KIND.employee),
   )
@@ -151,7 +151,7 @@ function AccessForm({ pending, existing, initial, onCancel, onSubmit }: AccessFo
   const { data: companies } = useCompanies({ page_size: 200, is_active: true })
   const { data: roles } = useRoles()
 
-  const optionsTatCa = useMemo(() => {
+  const allOptions = useMemo(() => {
     switch (Number(subjectKind)) {
       case SUBJECT_KIND.department:
         return (departments?.items ?? [])
@@ -211,11 +211,11 @@ function AccessForm({ pending, existing, initial, onCancel, onSubmit }: AccessFo
   const kindLabel = SUBJECT_KIND_LABELS[Number(subjectKind)].toLowerCase()
 
   //  TỰ CHẶN CHÍNH MÌNH — luật nằm ở `idKhongDuocTuChan`, đọc chú thích ở đó.
-  const idTuChan = idKhongDuocTuChan(Number(subjectKind), user, isDeny)
-  const tenTuChan = optionsTatCa.find((option) => option.id === idTuChan)?.label ?? ''
+  const selfBlockedId = blockedSelfIds(Number(subjectKind), user, isDeny)
+  const selfBlockedName = allOptions.find((option) => option.id === selfBlockedId)?.label ?? ''
   //  Bỏ khỏi DANH SÁCH CHỌN luôn, không chỉ báo lỗi sau khi bấm: chọn được rồi
   //  mới bị mắng là bắt người ta làm lại một việc lẽ ra không nên mời họ làm.
-  const options = optionsTatCa.filter((option) => option.id !== idTuChan)
+  const options = allOptions.filter((option) => option.id !== selfBlockedId)
 
   const selectedOptions = options.filter((option) => selectedIds.includes(option.id))
   const allowDrafts = drafts.filter((row) => row.values.effect === EFFECT.allow)
@@ -274,8 +274,8 @@ function AccessForm({ pending, existing, initial, onCancel, onSubmit }: AccessFo
               onChange={setSelectedIds}
               kindLabel={kindLabel}
               ghiChuThieu={
-                tenTuChan &&
-                `Đã bỏ ${tenTuChan} khỏi danh sách — tự chặn thì bạn không mở lại được văn bản này, mà cũng không còn đường vào để gỡ.`
+                selfBlockedName &&
+                `Đã bỏ ${selfBlockedName} khỏi danh sách — tự chặn thì bạn không mở lại được văn bản này, mà cũng không còn đường vào để gỡ.`
               }
             />
           </div>
@@ -392,7 +392,7 @@ function AccessForm({ pending, existing, initial, onCancel, onSubmit }: AccessFo
         {/* Hai nút: một để khai tiếp cụm nữa (hộp ở lại), một để chốt cả lượt.
             Lúc SỬA một dòng thì bỏ nút thêm cụm — mở ra để sửa đúng dòng đó, gom
             thêm cụm khác vào cùng lượt chỉ làm rối chuyện đang làm. */}
-        {!dangSua && (
+        {!isEditing && (
           <Button
             type="button"
             variant="outline"
@@ -404,7 +404,7 @@ function AccessForm({ pending, existing, initial, onCancel, onSubmit }: AccessFo
           </Button>
         )}
         <Button type="button" onClick={handleSubmit} disabled={total === 0 || pending}>
-          {dangSua ? 'Lưu' : `Xong${total > 0 ? ` (${total})` : ''}`}
+          {isEditing ? 'Lưu' : `Xong${total > 0 ? ` (${total})` : ''}`}
         </Button>
       </DialogFooter>
     </>

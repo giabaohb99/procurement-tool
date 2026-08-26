@@ -14,7 +14,7 @@ import { OutgoingDocumentsTab } from '../components/outgoing-documents-tab'
 const DEN = 'incoming'
 const DI = 'outgoing'
 
-const MO_TA: Record<string, string> = {
+const DESCRIPTIONS: Record<string, string> = {
   [DEN]: 'Văn bản mà bạn nằm trong phạm vi áp dụng — không phải mọi văn bản bạn đọc được.',
   [DI]: 'Số hiệu do hệ cấp khi văn bản được duyệt — không ai gõ tay.',
 }
@@ -51,19 +51,19 @@ export function DocumentListPage() {
   //  nhập). Tab «Văn bản đi» gọi `/api/documents` (gác `document.read`), nên khi
   //  thiếu quyền phải ẩn HẲN cả nút tab lẫn nội dung — Radix mount sẵn mọi
   //  `TabsContent`, để lại là component con vẫn gọi API và ăn 403.
-  const xemDuocVanBanDi = can('document', 'read')
-  const tab = !xemDuocVanBanDi ? DEN : searchParams.get('tab') === DEN ? DEN : DI
+  const canViewOutgoing = can('document', 'read')
+  const tab = !canViewOutgoing ? DEN : searchParams.get('tab') === DEN ? DEN : DI
 
-  function doiTab(next: string) {
+  function changeTab(next: string) {
     setSearchParams(next === DI ? {} : { tab: next }, { replace: true })
   }
 
   return (
-    <Tabs value={tab} onValueChange={doiTab} className="flex h-full min-h-0 flex-col">
+    <Tabs value={tab} onValueChange={changeTab} className="flex h-full min-h-0 flex-col">
       <PageContainer fill>
         <PageHeader
           title="Văn bản"
-          description={MO_TA[tab]}
+          description={DESCRIPTIONS[tab]}
           actions={
             //  «Tạo văn bản» đứng ở đầu trang cho cả hai tab: soạn một văn bản
             //  mới là việc bắt đầu từ đây bất kể đang đứng ở tab nào. Còn
@@ -81,7 +81,7 @@ export function DocumentListPage() {
         {/*  Chỉ dựng thanh tab khi có cả hai tab. Người chỉ xem được «Văn bản
              đến» thì một tab đơn độc trông như lỗi — bỏ hẳn, tiêu đề trang đã
              nói rõ đang xem gì. */}
-        {xemDuocVanBanDi && (
+        {canViewOutgoing && (
           <TabsList className="mb-3 self-start">
             <TabsTrigger value={DEN}>
               <Inbox className="size-4" />
@@ -100,7 +100,7 @@ export function DocumentListPage() {
           <IncomingDocumentsTab />
         </TabsContent>
 
-        {xemDuocVanBanDi && (
+        {canViewOutgoing && (
           <TabsContent value={DI} className="mt-0 flex min-h-0 flex-1 flex-col">
             <OutgoingDocumentsTab />
           </TabsContent>

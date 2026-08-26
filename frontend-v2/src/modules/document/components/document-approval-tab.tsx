@@ -37,27 +37,27 @@ interface DocumentApprovalTabProps {
  * Xếp người ĐÃ QUYẾT lên trước: câu người đọc cần là *"ai ký chặng này"*, không
  * phải *"ai được giao"*.
  */
-function NguoiDuyetChang({ viec }: { viec: ApprovalTask[] }) {
+function StageApprovers({ viec }: { viec: ApprovalTask[] }) {
   const [moRong, setMoRong] = useState(false)
 
-  const conHieuLuc = viec.filter((row) => row.status !== TASK_STATUS.cancelled)
-  const daQuyet = (row: ApprovalTask) =>
+  const stillActive = viec.filter((row) => row.status !== TASK_STATUS.cancelled)
+  const decided = (row: ApprovalTask) =>
     row.status === TASK_STATUS.approved ||
     row.status === TASK_STATUS.rejected ||
     row.status === TASK_STATUS.skippedDuplicate
-  const xepHang = [
-    ...conHieuLuc.filter(daQuyet),
-    ...conHieuLuc.filter((row) => !daQuyet(row)),
+  const rank = [
+    ...stillActive.filter(decided),
+    ...stillActive.filter((row) => !decided(row)),
   ]
-  if (xepHang.length === 0) return null
+  if (rank.length === 0) return null
 
-  const hien = moRong ? xepHang : xepHang.slice(0, 1)
-  const conLai = xepHang.length - hien.length
+  const hien = moRong ? rank : rank.slice(0, 1)
+  const remaining = rank.length - hien.length
 
   return (
     <div className="mt-1.5 text-sm leading-5">
       <span className="text-xs text-muted-foreground">
-        {xepHang.length > 1 ? 'Người duyệt chặng này:' : 'Người duyệt:'}
+        {rank.length > 1 ? 'Người duyệt chặng này:' : 'Người duyệt:'}
       </span>
       <ul className="mt-0.5 space-y-1">
         {hien.map((row) => (
@@ -65,7 +65,7 @@ function NguoiDuyetChang({ viec }: { viec: ApprovalTask[] }) {
             <span className="font-medium text-foreground">{row.assignee_name}</span>
             {/*  Nhiều người cùng chặng thì mỗi người một trạng thái riêng —
                  thấy ngay còn thiếu chữ ký nào. */}
-            {xepHang.length > 1 && (
+            {rank.length > 1 && (
               <>
                 <span aria-hidden="true"> · </span>
                 {row.status_label}
@@ -74,7 +74,7 @@ function NguoiDuyetChang({ viec }: { viec: ApprovalTask[] }) {
           </li>
         ))}
       </ul>
-      {(conLai > 0 || moRong) && (
+      {(remaining > 0 || moRong) && (
         <Button
           type="button"
           variant="link"
@@ -82,7 +82,7 @@ function NguoiDuyetChang({ viec }: { viec: ApprovalTask[] }) {
           className="h-auto p-0 text-xs"
           onClick={() => setMoRong((truoc) => !truoc)}
         >
-          {moRong ? 'Thu gọn' : `Xem thêm ${conLai} người`}
+          {moRong ? 'Thu gọn' : `Xem thêm ${remaining} người`}
         </Button>
       )}
     </div>
@@ -90,7 +90,7 @@ function NguoiDuyetChang({ viec }: { viec: ApprovalTask[] }) {
 }
 
 /** Bộ mặt của một chặng, gộp từ trạng thái các việc thuộc chặng đó. */
-function trangThaiChang(viec: ApprovalTask[], seq: number, instance: ApprovalInstance) {
+function stageStatus(viec: ApprovalTask[], seq: number, instance: ApprovalInstance) {
   const cua = viec.filter((row) => row.node_seq === seq)
   if (cua.some((row) => row.status === TASK_STATUS.rejected)) return 'tu-choi'
   if (cua.some((row) => row.status === TASK_STATUS.pending)) return 'dang-cho'
@@ -180,7 +180,7 @@ const HINH = {
  * ký mà chưa mở văn bản ra.
  */
 export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTabProps) {
-  const viecCuaToi = useMyDocumentTask(documentId)
+  const myTasks = useMyDocumentTask(documentId)
   const [dangXuLy, setDangXuLy] = useState(false)
 
   if (!instance) {
@@ -225,7 +225,7 @@ export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTa
             </Badge>
             {/*  Chỉ đúng người đang cầm việc mới thấy nút. Bày cho mọi người là
                  đẻ lại đúng cái đường tắt mà bộ máy duyệt vừa bịt. */}
-            {viecCuaToi && (
+            {myTasks && (
               <Button type="button" size="sm" onClick={() => setDangXuLy(true)}>
                 <ShieldCheck className="size-4" />
                 Duyệt / Trả lại
@@ -239,16 +239,16 @@ export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTa
             {chang.map((seq, index) => {
               const ten =
                 (instance.steps ?? []).find((buoc) => buoc.seq === seq)?.name || `Bước ${seq}`
-              const trang_thai = trangThaiChang(viec, seq, instance)
-              const { icon: Icon, nut, huy_hieu, nhan, giai_thich } = HINH[trang_thai]
+              const status = stageStatus(viec, seq, instance)
+              const { icon: Icon, nut, huy_hieu, nhan, giai_thich } = HINH[status]
               const nguoi = viec.filter((row) => row.node_seq === seq)
-              const dangHienTai = instance.status === INSTANCE_STATUS.running && seq === instance.current_seq
+              const current = instance.status === INSTANCE_STATUS.running && seq === instance.current_seq
 
               return (
                 <li
                   key={seq}
                   className="relative flex gap-4 pb-6 last:pb-0"
-                  aria-current={dangHienTai ? 'step' : undefined}
+                  aria-current={current ? 'step' : undefined}
                 >
                   {index < chang.length - 1 && (
                     <span
@@ -283,7 +283,7 @@ export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTa
                       {/*  `aria-current` ở `<li>` chỉ trình đọc màn hình mới nghe
                            thấy. Người nhìn bằng mắt cũng cần biết phiếu ĐANG nằm
                            ở đâu trong luồng bốn bước. */}
-                      {dangHienTai && (
+                      {current && (
                         <Badge className="font-normal">phiếu đang ở đây</Badge>
                       )}
                     </div>
@@ -291,7 +291,7 @@ export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTa
                     {/*  Tên người phải có NHÃN. Đứng trơ một mình dưới tiêu đề
                          chặng thì không đọc ra được đó là người phải ký, người
                          đã ký, hay người soạn. */}
-                    <NguoiDuyetChang viec={nguoi} />
+                    <StageApprovers viec={nguoi} />
                   </div>
                 </li>
               )
@@ -302,8 +302,8 @@ export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTa
 
       <ApprovalTrailCard instanceId={instance.id} />
 
-      {dangXuLy && viecCuaToi && (
-        <ApprovalActionDialog task={viecCuaToi} open onOpenChange={setDangXuLy} />
+      {dangXuLy && myTasks && (
+        <ApprovalActionDialog task={myTasks} open onOpenChange={setDangXuLy} />
       )}
     </div>
   )

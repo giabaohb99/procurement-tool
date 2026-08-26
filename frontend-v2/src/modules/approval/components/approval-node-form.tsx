@@ -26,14 +26,14 @@ interface ApprovalNodeFormProps {
   node?: ApprovalNode
   /** Loại chứng từ của luồng — quyết định ô nào đem ra rẽ nhánh được. */
   entity: string
-  seqGoiY: number
+  suggestedSeq: number
   isPending?: boolean
   onSubmit: (values: Partial<ApprovalNode>) => void
   onCancel: () => void
 }
 
 /** Ô "Người duyệt" cần điền gì, theo từng cách chọn. */
-const GOI_Y_REF: Record<number, string> = {
+const SUGGESTION_REF: Record<number, string> = {
   [APPROVER_KIND.role]: 'Mã vai trò, ngăn bằng dấu phẩy: dept_head,pur_manager',
   [APPROVER_KIND.levelUp]: 'Số cấp cần lên, ví dụ: 2',
   [APPROVER_KIND.field]: 'Tên ô trên phiếu, ví dụ: signer_employee_id',
@@ -53,7 +53,7 @@ const GOI_Y_REF: Record<number, string> = {
 export function ApprovalNodeForm({
   node,
   entity,
-  seqGoiY,
+  suggestedSeq,
   isPending,
   onSubmit,
   onCancel,
@@ -66,7 +66,7 @@ export function ApprovalNodeForm({
   const [moNangCao, setMoNangCao] = useState(false)
 
   const [form, setForm] = useState<Partial<ApprovalNode>>(() => ({
-    seq: node?.seq ?? seqGoiY,
+    seq: node?.seq ?? suggestedSeq,
     branch_key: node?.branch_key ?? '',
     name: node?.name ?? '',
     node_kind: node?.node_kind ?? 1,
@@ -87,14 +87,14 @@ export function ApprovalNodeForm({
     setForm((truoc) => ({ ...truoc, [khoa]: gia_tri }))
   }
 
-  const chonDichDanh = form.approver_kind === APPROVER_KIND.employee
+  const pickExplicit = form.approver_kind === APPROVER_KIND.employee
   //  Chọn GHẾ chứ không chọn người: `approver_ref` là danh sách id phòng ban.
-  const chonPhongBan = form.approver_kind === APPROVER_KIND.deptHeadOf
+  const pickDepartment = form.approver_kind === APPROVER_KIND.deptHeadOf
   //  Chỉ ba cách cần ô nhập; ba cách còn lại (trưởng bộ phận, đại diện pháp
   //  nhân, đích danh) tự suy ra người nên bày ô trống chỉ tổ làm người dùng
   //  tưởng mình quên điền.
-  const canOThem = GOI_Y_REF[form.approver_kind ?? 0] !== undefined
-  const nhieuNguoi = danhSachId(form.approver_ref).length > 1 || !chonDichDanh
+  const needsExtraField = SUGGESTION_REF[form.approver_kind ?? 0] !== undefined
+  const multiUser = danhSachId(form.approver_ref).length > 1 || !pickExplicit
 
   return (
     <div className="space-y-4">
@@ -130,7 +130,7 @@ export function ApprovalNodeForm({
           </SelectContent>
         </Select>
 
-        {chonDichDanh && (
+        {pickExplicit && (
           <EmployeeMultiSelect
             value={danhSachId(form.approver_ref)}
             onChange={(ids) => dat('approver_ref', ghepId(ids))}
@@ -139,7 +139,7 @@ export function ApprovalNodeForm({
           />
         )}
 
-        {chonPhongBan && (
+        {pickDepartment && (
           <>
             <DepartmentMultiSelect
               value={danhSachId(form.approver_ref)}
@@ -154,20 +154,20 @@ export function ApprovalNodeForm({
           </>
         )}
 
-        {canOThem && (
+        {needsExtraField && (
           <>
             <Input
               value={form.approver_ref ?? ''}
               onChange={(event) => dat('approver_ref', event.target.value)}
             />
-            <p className="text-xs text-muted-foreground">{GOI_Y_REF[form.approver_kind ?? 0]}</p>
+            <p className="text-xs text-muted-foreground">{SUGGESTION_REF[form.approver_kind ?? 0]}</p>
           </>
         )}
       </div>
 
       {/*  Câu "nhiều người thì sao" chỉ có nghĩa khi bước THẬT SỰ có nhiều
            người. Chọn đúng một người mà vẫn hỏi là hỏi một câu không dùng. */}
-      {nhieuNguoi && (
+      {multiUser && (
         <div className="space-y-2">
           <Label>Nhiều người thì</Label>
           <Select

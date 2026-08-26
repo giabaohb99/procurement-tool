@@ -44,29 +44,29 @@ export function ChatMessage({ role, content, goDan = false }: ChatMessageProps) 
 }
 
 function AssistantTurn({ content, goDan }: { content: string; goDan: boolean }) {
-  const { hienThi, dangChay } = useTypewriter(content, goDan)
+  const { display, isRunning } = useTypewriter(content, goDan)
 
   return (
     <div className="group flex gap-3">
       <AssistantAvatar />
 
       <div className="min-w-0 flex-1">
-        <MarkdownMessage content={hienThi} className="text-sm text-foreground" />
+        <MarkdownMessage content={display} className="text-sm text-foreground" />
 
         {/*  Con trỏ nhấp nháy trong lúc chữ đang chạy ra — dấu hiệu quen thuộc
              cho biết "còn nữa", đừng vội đọc kết luận. */}
-        {dangChay && (
+        {isRunning && (
           <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-primary align-text-bottom" />
         )}
 
-        {!dangChay && <NutChep noiDung={content} />}
+        {!isRunning && <CopyButton content={content} />}
       </div>
     </div>
   )
 }
 
 /** Chép trọn câu trả lời. Ẩn cho tới khi rê chuột để không làm rối cột đọc. */
-function NutChep({ noiDung }: { noiDung: string }) {
+function CopyButton({ content }: { content: string }) {
   const [daChep, setDaChep] = useState(false)
 
   useEffect(() => {
@@ -81,7 +81,7 @@ function NutChep({ noiDung }: { noiDung: string }) {
       onClick={() => {
         //  Không có `navigator.clipboard` khi mở bằng IP nội bộ qua http (chỉ
         //  ngữ cảnh bảo mật mới có) — im lặng bỏ qua, người dùng bôi đen chép tay.
-        void navigator.clipboard?.writeText(noiDung).then(() => setDaChep(true))
+        void navigator.clipboard?.writeText(content).then(() => setDaChep(true))
       }}
       className={cn(
         'mt-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground',

@@ -3,7 +3,7 @@ import type { PointerEvent as ReactPointerEvent } from 'react'
 import { cn } from '@/shared/utils/cn'
 
 /** Mỗi lần bấm mũi tên đổi bao nhiêu px. */
-const BUOC_PHIM = 16
+const KEY_STEP_PX = 16
 
 interface ResizeHandleProps {
   label: string
@@ -48,11 +48,11 @@ export function ResizeHandle({
       onKeyDown={(e) => {
         if (e.key === 'ArrowLeft') {
           e.preventDefault()
-          onKeyResize(-BUOC_PHIM)
+          onKeyResize(-KEY_STEP_PX)
         }
         if (e.key === 'ArrowRight') {
           e.preventDefault()
-          onKeyResize(BUOC_PHIM)
+          onKeyResize(KEY_STEP_PX)
         }
       }}
       className={cn(

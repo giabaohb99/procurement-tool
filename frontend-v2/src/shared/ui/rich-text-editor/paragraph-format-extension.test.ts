@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
 import { ParagraphFormat } from './paragraph-format-extension'
 import { cssToWordLineSpacing } from './word-line-spacing'
 
-function dungEditor(content: string) {
+function buildEditor(content: string) {
   return new Editor({
     extensions: [
       StarterKit,
@@ -26,7 +26,7 @@ function dungEditor(content: string) {
  * Bỏ đoạn rỗng: Tiptap tự chèn một đoạn trắng sau bảng để con trỏ còn chỗ đứng,
  * đếm cả nó vào thì bài kiểm đọc như có thừa một đoạn.
  */
-function gianDong(editor: Editor): string[] {
+function rowGap(editor: Editor): string[] {
   const root = document.createElement('div')
   root.innerHTML = editor.getHTML()
   return Array.from(root.querySelectorAll('p, h1, h2, h3'))
@@ -36,28 +36,28 @@ function gianDong(editor: Editor): string[] {
 
 describe('setLineHeight', () => {
   it('đổi được giãn dòng của đoạn đang đứng', () => {
-    const editor = dungEditor('<p>Một đoạn.</p>')
+    const editor = buildEditor('<p>Một đoạn.</p>')
 
     editor.commands.selectAll()
     editor.commands.setLineHeight('2')
 
-    expect(gianDong(editor)).toEqual(['2'])
+    expect(rowGap(editor)).toEqual(['2'])
   })
 
   it('bôi đen NHIỀU đoạn thì đổi hết, không chỉ đoạn đầu', () => {
-    const editor = dungEditor('<p>Đoạn một.</p><p>Đoạn hai.</p><p>Đoạn ba.</p>')
+    const editor = buildEditor('<p>Đoạn một.</p><p>Đoạn hai.</p><p>Đoạn ba.</p>')
 
     editor.commands.selectAll()
     editor.commands.setLineHeight('2')
 
-    expect(gianDong(editor)).toEqual(['2', '2', '2'])
+    expect(rowGap(editor)).toEqual(['2', '2', '2'])
   })
 
   it('ĐÈ ĐƯỢC giãn dòng có sẵn của tệp Word vừa nhập', () => {
     //  LỖI NGƯỜI DÙNG BÁO (20/08/2026): nhập một tệp .doc lên rồi bôi đen đổi
     //  giãn dòng thì không ăn. Bộ chuyển của backend ghi `line-height` thẳng vào
     //  `style` của từng `<p>` (xem `docx_html.py`), nên đây là ca phải chạy đúng.
-    const editor = dungEditor(
+    const editor = buildEditor(
       '<p style="line-height: 1.725; margin-bottom: 8px">Đoạn từ Word.</p>' +
         '<p style="line-height: 1.725">Đoạn nữa từ Word.</p>',
     )
@@ -65,11 +65,11 @@ describe('setLineHeight', () => {
     editor.commands.selectAll()
     editor.commands.setLineHeight('1')
 
-    expect(gianDong(editor)).toEqual(['1', '1'])
+    expect(rowGap(editor)).toEqual(['1', '1'])
   })
 
   it('đổi giãn dòng KHÔNG làm mất các định dạng khác của đoạn', () => {
-    const editor = dungEditor(
+    const editor = buildEditor(
       '<p style="line-height: 1.725; margin-bottom: 8px; text-indent: 12px">Đoạn.</p>',
     )
 
@@ -85,21 +85,21 @@ describe('setLineHeight', () => {
   })
 
   it('trả về mặc định của trang khi truyền null', () => {
-    const editor = dungEditor('<p style="line-height: 2">Đoạn.</p>')
+    const editor = buildEditor('<p style="line-height: 2">Đoạn.</p>')
 
     editor.commands.selectAll()
     editor.commands.setLineHeight(null)
 
-    expect(gianDong(editor)).toEqual([''])
+    expect(rowGap(editor)).toEqual([''])
   })
 
   it('bôi đen lẫn TIÊU ĐỀ và đoạn văn thì cả hai cùng đổi', () => {
-    const editor = dungEditor('<h2>Tiêu đề</h2><p>Đoạn.</p>')
+    const editor = buildEditor('<h2>Tiêu đề</h2><p>Đoạn.</p>')
 
     editor.commands.selectAll()
     editor.commands.setLineHeight('2')
 
-    expect(gianDong(editor)).toEqual(['2', '2'])
+    expect(rowGap(editor)).toEqual(['2', '2'])
   })
 })
 
@@ -107,7 +107,7 @@ describe('setLineHeight', () => {
 //  Bộ tối giản ở trên có thể giấu lỗi do các extension khác gây ra, nên phần này
 //  dựng lại đúng những thứ mà nội dung nhập từ Word hay chạm tới.
 describe('setLineHeight với bảng — mẫu hành chính nào cũng có bảng', () => {
-  function dungEditorCoBang(content: string) {
+  function buildEditorWithTable(content: string) {
     return new Editor({
       extensions: [
         StarterKit,
@@ -123,7 +123,7 @@ describe('setLineHeight với bảng — mẫu hành chính nào cũng có bản
   it('đổi được giãn dòng của đoạn nằm TRONG ô bảng', () => {
     //  Khối đầu văn bản (quốc hiệu / số hiệu) của mọi mẫu hành chính là một
     //  bảng hai cột, nên đây là ca thường gặp nhất sau khi nhập tệp Word.
-    const editor = dungEditorCoBang(
+    const editor = buildEditorWithTable(
       '<table><tbody><tr>' +
         '<td><p style="line-height: 1.725">CÔNG TY TNHH DEGO</p></td>' +
         '<td><p style="line-height: 1.725">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p></td>' +
@@ -133,18 +133,18 @@ describe('setLineHeight với bảng — mẫu hành chính nào cũng có bản
     editor.commands.selectAll()
     editor.commands.setLineHeight('1')
 
-    expect(gianDong(editor)).toEqual(['1', '1'])
+    expect(rowGap(editor)).toEqual(['1', '1'])
   })
 
   it('bôi đen VẮT QUA cả bảng lẫn đoạn văn thường thì đổi hết', () => {
-    const editor = dungEditorCoBang(
+    const editor = buildEditorWithTable(
       '<table><tbody><tr><td><p>Trong ô.</p></td></tr></tbody></table><p>Ngoài bảng.</p>',
     )
 
     editor.commands.selectAll()
     editor.commands.setLineHeight('2')
 
-    expect(gianDong(editor)).toEqual(['2', '2'])
+    expect(rowGap(editor)).toEqual(['2', '2'])
   })
 })
 
@@ -154,7 +154,7 @@ describe('setLineHeight với bảng — mẫu hành chính nào cũng có bản
 //  đúng nhóm này — dòng thưa hẳn ra so với bản gốc.
 describe('setLineHeight khi tệp Word dùng giãn dòng tuyệt đối (px)', () => {
   it('đè được giá trị px bằng bội số dòng', () => {
-    const editor = dungEditor(
+    const editor = buildEditor(
       '<p style="line-height: 42.5px">Đoạn giãn dòng kiểu Exactly.</p>' +
         '<p style="line-height: 42.5px">Đoạn nữa.</p>',
     )
@@ -162,7 +162,7 @@ describe('setLineHeight khi tệp Word dùng giãn dòng tuyệt đối (px)', (
     editor.commands.selectAll()
     editor.commands.setLineHeight('1.15')
 
-    expect(gianDong(editor)).toEqual(['1.15', '1.15'])
+    expect(rowGap(editor)).toEqual(['1.15', '1.15'])
   })
 
   it('đọc ra "mấy dòng" thì chịu — px không quy đổi được, thanh công cụ không tick nấc nào', () => {

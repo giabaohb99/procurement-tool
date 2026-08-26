@@ -72,9 +72,9 @@ export function DocumentPrintPage() {
     )
   }
 
-  const daBanHanh =
+  const issued =
     record.status === DOCUMENT_STATUS.approved || record.status === DOCUMENT_STATUS.effective
-  const banNao = versions.find((item) => item.id === versionId)
+  const whichVersion = versions.find((item) => item.id === versionId)
 
   return (
     <main className="doc-print-root min-h-[100dvh] bg-slate-200 p-6">
@@ -96,7 +96,7 @@ export function DocumentPrintPage() {
 
         <span className="ml-auto text-sm text-slate-700">
           {record.display_code || 'Chưa cấp số'}
-          {banNao && ` · bản ${banNao.version_no}`}
+          {whichVersion && ` · bản ${whichVersion.version_no}`}
           {layout && ` · ${layout.pages} trang`}
         </span>
       </div>
@@ -120,7 +120,7 @@ export function DocumentPrintPage() {
           html={version.content_html ?? ''}
           marginLeftMm={version.margin_left_mm}
           marginRightMm={version.margin_right_mm}
-          watermark={daBanHanh ? undefined : 'BẢN NHÁP'}
+          watermark={issued ? undefined : 'BẢN NHÁP'}
           autoNumber={version.auto_heading_number}
           pageFrame={{
             header_left: version.header_left,

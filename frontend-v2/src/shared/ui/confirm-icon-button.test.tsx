@@ -11,10 +11,10 @@ describe('ConfirmIconButton', () => {
   //  «Cập nhật văn bản» đã nhảy — form đã bị gửi đi trước cả khi người dùng
   //  đồng ý thu hồi.
   it('nằm trong form mà bấm thì KHÔNG gửi form, chỉ mở hộp xác nhận', () => {
-    const guiForm = vi.fn((event: { preventDefault: () => void }) => event.preventDefault())
+    const submitForm = vi.fn((event: { preventDefault: () => void }) => event.preventDefault())
 
     render(
-      <form onSubmit={guiForm}>
+      <form onSubmit={submitForm}>
         <ConfirmIconButton
           icon={Ban}
           title="Thu hồi"
@@ -26,7 +26,7 @@ describe('ConfirmIconButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Thu hồi' }))
 
-    expect(guiForm).not.toHaveBeenCalled()
+    expect(submitForm).not.toHaveBeenCalled()
     expect(screen.getByText('Thu hồi quyền của Lý Phó Phòng?')).toBeInTheDocument()
   })
 

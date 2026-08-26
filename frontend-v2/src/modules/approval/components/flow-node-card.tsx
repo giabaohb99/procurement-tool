@@ -19,9 +19,9 @@ const CAN_REF = [APPROVER_KIND.employee, APPROVER_KIND.deptHeadOf] as number[]
 
 interface FlowNodeCardProps {
   node: ApprovalNode
-  dangChon: boolean
+  selection: boolean
   /** Chặng này có nhiều nhánh — thẻ hẹp lại và hiện nhãn nhánh. */
-  laNhanh?: boolean
+  isQuick?: boolean
   onChon: () => void
   onXoa: () => void
   onNhanBan: () => void
@@ -36,8 +36,8 @@ interface FlowNodeCardProps {
  */
 export function FlowNodeCard({
   node,
-  dangChon,
-  laNhanh,
+  selection,
+  isQuick,
   onChon,
   onXoa,
   onNhanBan,
@@ -45,7 +45,7 @@ export function FlowNodeCard({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: node.id })
 
-  const laBanSao = node.node_kind === NODE_KIND.cc
+  const isCopy = node.node_kind === NODE_KIND.cc
 
   return (
     <div
@@ -53,9 +53,9 @@ export function FlowNodeCard({
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
         'group relative rounded-lg border bg-background shadow-sm transition-colors',
-        dangChon && 'border-primary ring-2 ring-primary/20',
+        selection && 'border-primary ring-2 ring-primary/20',
         isDragging && 'z-10 opacity-60 shadow-lg',
-        laNhanh ? 'w-full' : 'w-full',
+        isQuick ? 'w-full' : 'w-full',
       )}
     >
       <div className="flex items-start gap-2 p-3">
@@ -72,7 +72,7 @@ export function FlowNodeCard({
         <button type="button" onClick={onChon} className="min-w-0 flex-1 text-left">
           <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
             {node.name || `Bước ${node.seq}`}
-            {laBanSao && (
+            {isCopy && (
               <Badge variant="outline" className="font-normal">
                 {node.node_kind_label}
               </Badge>

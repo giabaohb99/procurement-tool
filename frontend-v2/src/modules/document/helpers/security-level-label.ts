@@ -31,11 +31,11 @@ export function securityLevelLabel(
   const found = items.find((item) => item.kind === kind && item.value === value)
   if (found) return found.name
 
-  const duPhong = (
+  const fallback = (
     kind === SECURITY_LEVEL_KIND_CONFIDENTIAL
       ? FALLBACK_CONFIDENTIAL_LEVELS
       : FALLBACK_URGENCY_LEVELS
   ).find((item) => item.value === value)
 
-  return duPhong?.name ?? String(value)
+  return fallback?.name ?? String(value)
 }

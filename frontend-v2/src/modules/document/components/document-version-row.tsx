@@ -26,7 +26,7 @@ interface DocumentVersionRowProps {
  * *Nháp* sửa được, bản *Đã duyệt* thì không, bản *Đã thay thế* vẫn phải tra ra
  * được chứ không phải rác. Không nói ra thì người dùng bấm vào rồi mới biết.
  */
-const GIAI_THICH_TRANG_THAI: Record<number, string> = {
+const STATUS_HINTS: Record<number, string> = {
   [VERSION_STATUS.draft]: 'Đang soạn, chưa gửi duyệt — mở ra sửa được.',
   [VERSION_STATUS.submitted]: 'Đã gửi duyệt, đang chờ ký — không sửa được nữa.',
   [VERSION_STATUS.approved]:
@@ -48,7 +48,7 @@ const GIAI_THICH_TRANG_THAI: Record<number, string> = {
  * "Sửa được", mở ra gõ xong bấm lưu thì ăn 409, mà nhãn trạng thái ngay bên
  * cạnh lại vừa nói "không sửa được nữa" — một dòng tự mâu thuẫn.
  */
-const LY_DO_KHOA: Record<number, string> = {
+const LOCK_REASONS: Record<number, string> = {
   [VERSION_STATUS.draft]: 'Bản nháp — mở ra gõ trực tiếp được, tới khi gửi duyệt thì đóng lại.',
   [VERSION_STATUS.submitted]:
     'Đang trình duyệt nên đóng băng: người duyệt đọc bản nào thì ký đúng bản đó. Bị trả về thì bản chuyển sang «Trả về» và gõ tiếp được; rút phiếu thì về Nháp.',
@@ -69,7 +69,7 @@ const LY_DO_KHOA: Record<number, string> = {
  * Bản đầu tiên có `change_kind = 0` — không phải sửa lớn cũng không phải sửa
  * nhỏ, vì chưa sửa gì cả. Trả `null` để chỗ gọi tự bỏ huy hiệu.
  */
-function nhanMucSua(kind: number) {
+function editLevelLabel(kind: number) {
   if (kind === CHANGE_KIND.major) {
     return {
       nhan: 'Sửa lớn',
@@ -90,7 +90,7 @@ function nhanMucSua(kind: number) {
 }
 
 /** Tông của chấm số bản: đang dùng thì nổi, bản đang mở thì viền đứt, bản cũ thì mờ. */
-function tongChamSo(version: DocumentVersion) {
+function scoreTotal(version: DocumentVersion) {
   if (version.is_current) return 'border-primary bg-primary/10 text-primary'
   if (version.status === VERSION_STATUS.draft)
     return 'border-dashed border-amber-400 bg-amber-50 text-amber-700'
@@ -132,10 +132,10 @@ export function DocumentVersionRow({
   onSelect,
   cuoiDanhSach,
 }: DocumentVersionRowProps) {
-  const mucSua = nhanMucSua(version.change_kind)
+  const editLevel = editLevelLabel(version.change_kind)
   //  Bản bị TRẢ VỀ cũng sửa được — backend mở đúng như bản nháp
   //  (`version_service.chan_khi_dang_duyet` chỉ chặn «đang duyệt» và «đã từ chối»).
-  const suaDuoc =
+  const editable =
     version.status === VERSION_STATUS.draft || version.status === VERSION_STATUS.returned
 
   return (
@@ -160,7 +160,7 @@ export function DocumentVersionRow({
         <span
           className={cn(
             'grid size-12 shrink-0 place-items-center rounded-full border-2 bg-card text-sm font-semibold tabular-nums',
-            tongChamSo(version),
+            scoreTotal(version),
           )}
         >
           {version.version_no}
@@ -172,7 +172,7 @@ export function DocumentVersionRow({
               {version.status_label}
             </Badge>
             <HelpHint label={`«${version.status_label}» nghĩa là gì`} className="relative z-10">
-              {GIAI_THICH_TRANG_THAI[version.status]}
+              {STATUS_HINTS[version.status]}
             </HelpHint>
 
             {/*  «Đã duyệt» và «Bản đang dùng» là HAI TRỤC khác nhau: một văn bản
@@ -189,20 +189,20 @@ export function DocumentVersionRow({
               </>
             )}
 
-            {mucSua && (
+            {editLevel && (
               <>
-                <Badge variant="outline" className={cn('font-normal', mucSua.tong)}>
-                  {mucSua.nhan}
+                <Badge variant="outline" className={cn('font-normal', editLevel.tong)}>
+                  {editLevel.nhan}
                 </Badge>
-                <HelpHint label={`«${mucSua.nhan}» nghĩa là gì`} className="relative z-10">
-                  {mucSua.giai_thich}
+                <HelpHint label={`«${editLevel.nhan}» nghĩa là gì`} className="relative z-10">
+                  {editLevel.giai_thich}
                 </HelpHint>
               </>
             )}
 
             {/*  Ổ khóa CÓ NHÃN — xem ghi chú ở đầu tệp. */}
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              {suaDuoc ? (
+              {editable ? (
                 <>
                   <Pencil className="size-3.5" />
                   Sửa được
@@ -213,8 +213,8 @@ export function DocumentVersionRow({
                   Chỉ đọc
                 </>
               )}
-              <HelpHint label={suaDuoc ? 'Vì sao sửa được' : 'Vì sao chỉ đọc'} className="relative z-10">
-                {LY_DO_KHOA[version.status]}
+              <HelpHint label={editable ? 'Vì sao sửa được' : 'Vì sao chỉ đọc'} className="relative z-10">
+                {LOCK_REASONS[version.status]}
               </HelpHint>
             </span>
 

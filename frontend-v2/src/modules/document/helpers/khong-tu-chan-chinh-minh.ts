@@ -20,7 +20,7 @@ import { SUBJECT_KIND } from '../types/document-access'
  * người này đang giữ những vai trò nào, mà đoán mò rồi khóa nhầm một lựa chọn
  * hợp lệ thì phiền hơn.
  */
-export function idKhongDuocTuChan(
+export function blockedSelfIds(
   subjectKind: number,
   user: AuthUser | null | undefined,
   isDeny: boolean,

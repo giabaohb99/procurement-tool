@@ -14,15 +14,15 @@ import { EditorRuler, type PageMargins } from './editor-ruler'
  * `onChange` (chỉ để vẽ) không được dùng để ghi xuống bản ghi.
  */
 const LE: PageMargins = { left: 113, right: 76 }
-const MAC_DINH: PageMargins = { left: 113, right: 76 }
+const DEFAULT_VALUE: PageMargins = { left: 113, right: 76 }
 
-function dungThuoc() {
+function buildProps() {
   const onChange = vi.fn()
   const onCommit = vi.fn()
   render(
     <EditorRuler
       pageWidth={794}
-      defaultMargins={MAC_DINH}
+      defaultMargins={DEFAULT_VALUE}
       margins={LE}
       onChange={onChange}
       onCommit={onCommit}
@@ -40,7 +40,7 @@ function chuot(type: string, clientX: number) {
 
 describe('EditorRuler', () => {
   it('rê chuột thì vẽ liên tục nhưng CHƯA ghi', () => {
-    const { onChange, onCommit, tayTrai } = dungThuoc()
+    const { onChange, onCommit, tayTrai } = buildProps()
 
     fireEvent.pointerDown(tayTrai, { clientX: 100 })
     window.dispatchEvent(chuot('pointermove', 140))
@@ -51,7 +51,7 @@ describe('EditorRuler', () => {
   })
 
   it('buông tay thì ghi ĐÚNG MỘT LẦN, theo giá trị cuối cùng của cú kéo', () => {
-    const { onCommit, tayTrai } = dungThuoc()
+    const { onCommit, tayTrai } = buildProps()
 
     fireEvent.pointerDown(tayTrai, { clientX: 100 })
     window.dispatchEvent(chuot('pointermove', 140))
@@ -64,7 +64,7 @@ describe('EditorRuler', () => {
   })
 
   it('không ghi thêm lần nữa sau khi đã buông tay', () => {
-    const { onCommit, tayTrai } = dungThuoc()
+    const { onCommit, tayTrai } = buildProps()
 
     fireEvent.pointerDown(tayTrai, { clientX: 100 })
     window.dispatchEvent(chuot('pointermove', 140))
@@ -75,7 +75,7 @@ describe('EditorRuler', () => {
   })
 
   it('nhích bằng phím mũi tên cũng ghi ngay', () => {
-    const { onCommit, tayTrai } = dungThuoc()
+    const { onCommit, tayTrai } = buildProps()
 
     fireEvent.keyDown(tayTrai, { key: 'ArrowRight' })
 
@@ -89,7 +89,7 @@ describe('EditorRuler', () => {
     render(
       <EditorRuler
         pageWidth={794}
-        defaultMargins={MAC_DINH}
+        defaultMargins={DEFAULT_VALUE}
         margins={{ left: 170, right: 76 }}
         onChange={onChange}
         onCommit={onCommit}
@@ -101,6 +101,6 @@ describe('EditorRuler', () => {
     fireEvent.doubleClick(screen.getByLabelText(/^Lề trái/))
 
     expect(onCommit).toHaveBeenCalledTimes(1)
-    expect(onCommit.mock.calls[0][0].left).toBe(MAC_DINH.left)
+    expect(onCommit.mock.calls[0][0].left).toBe(DEFAULT_VALUE.left)
   })
 })

@@ -63,8 +63,8 @@ export function RolePermissionPage() {
   //  backend đã chặn bằng `privilege_escalation.chan_sua_vai_tro_cua_chinh_minh`.
   //  Khóa luôn ở giao diện để người ta biết là có LUẬT, chứ không tick xong hai
   //  chục ô rồi ăn 403 và tưởng hệ hỏng (CR-158).
-  const dangGiuVaiTroNay = !!selectedRoleId && !!user?.role_ids?.includes(selectedRoleId)
-  const canWriteRole = can('role', 'write') && !dangGiuVaiTroNay
+  const holdsThisRole = !!selectedRoleId && !!user?.role_ids?.includes(selectedRoleId)
+  const canWriteRole = can('role', 'write') && !holdsThisRole
 
   async function handleSave() {
     if (!selectedRoleId || !meta) return
@@ -137,7 +137,7 @@ export function RolePermissionPage() {
                       <PermissionGate entity="role" action="write">
                         <Button
                           onClick={handleSave}
-                          disabled={savePermissions.isPending || dangGiuVaiTroNay}
+                          disabled={savePermissions.isPending || holdsThisRole}
                         >
                           {savePermissions.isPending ? (
                             <Loader2 className="animate-spin" />
@@ -166,7 +166,7 @@ export function RolePermissionPage() {
                     </div>
                   </div>
 
-                  {dangGiuVaiTroNay && (
+                  {holdsThisRole && (
                     <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
                       Bạn đang giữ vai trò này nên chỉ xem được, không sửa. Tự tick
                       thêm quyền cho vai trò của chính mình là tự nâng quyền — nhờ

@@ -4,7 +4,7 @@ import { Sparkles } from 'lucide-react'
  * Câu hỏi mẫu — để người dùng biết trợ lý tra được gì, khỏi cảnh "không biết
  * hỏi gì". Mỗi câu bám đúng một nhóm công cụ loại A ở backend.
  */
-const CAU_HOI_MAU = [
+const SAMPLE_QUESTIONS = [
   'Hợp đồng nhà cung cấp nào sắp hết hạn?',
   'Nhà cung cấp nào mua hàng nhiều nhất năm nay?',
   'Tổng chi tiêu mua hàng theo từng tháng năm nay?',
@@ -40,7 +40,7 @@ export function ChatEmptyState({ onChon }: ChatEmptyStateProps) {
 
         {onChon && (
           <div className="mx-auto mt-6 grid max-w-xl gap-2 sm:grid-cols-2">
-            {CAU_HOI_MAU.map((cau) => (
+            {SAMPLE_QUESTIONS.map((cau) => (
               <button
                 key={cau}
                 type="button"

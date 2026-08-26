@@ -99,7 +99,7 @@ export function DocumentScopeAddForm({ disabled = false, onAdd }: DocumentScopeA
   //  "hệ thống hỏng" — trong khi sự thật là pháp nhân đó chưa khai phòng ban.
   //  Ở dữ liệu thật 11/13 pháp nhân đang rơi vào ca này, nên phải gọi tên đích
   //  danh và chỉ luôn chỗ đi khai.
-  const phapNhanChuaCoPhong = companies.filter(
+  const companyWithoutDepartment = companies.filter(
     (company) =>
       scopeCompanyIds.includes(company.id) &&
       !capOptions.some((cap) => cap.company_id === company.id),
@@ -303,11 +303,11 @@ export function DocumentScopeAddForm({ disabled = false, onAdd }: DocumentScopeA
             {/*  Gọi TÊN pháp nhân đang thiếu và chỉ luôn chỗ đi khai. Câu chung
                  chung "không tìm thấy mục nào" làm người dùng tưởng hệ hỏng,
                  rồi đứng đó không biết bước tiếp theo là gì. */}
-            {phapNhanChuaCoPhong.length > 0 ? (
+            {companyWithoutDepartment.length > 0 ? (
               <p className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
                 <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-700" />
                 <span>
-                  <b>{phapNhanChuaCoPhong.map((row) => row.name).join(', ')}</b> chưa khai
+                  <b>{companyWithoutDepartment.map((row) => row.name).join(', ')}</b> chưa khai
                   phòng ban nào nên không có gì để chọn. Khai ở{' '}
                   <Link
                     to={appRoutes.hr.departments}

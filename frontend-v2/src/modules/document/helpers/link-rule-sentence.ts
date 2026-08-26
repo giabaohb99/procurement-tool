@@ -27,32 +27,32 @@ export function linkRuleSentence({
   targetTypeName,
   sourceTypeName,
 }: LinkRuleSentenceArgs): string {
-  const chuNgu = sourceTypeName ? `Mỗi văn bản «${sourceTypeName}»` : 'Văn bản loại này'
+  const subject = sourceTypeName ? `Mỗi văn bản «${sourceTypeName}»` : 'Văn bản loại này'
   //  Nhãn quan hệ viết hoa chữ đầu vì đứng riêng ở cột bảng; vào giữa câu thì
   //  phải thường xuống, không thì đọc thành hai câu ghép vụng.
-  const dongTu = relationLabel.toLowerCase()
+  const verb = relationLabel.toLowerCase()
 
   //  Không kén loại thì KHÔNG bỏ vào ngoặc kép: «Loại bất kỳ» đọc ra thành tên
   //  một loại văn bản có thật, mà đó lại là chỗ duy nhất không có loại nào.
   const dich = targetTypeName ? `«${targetTypeName}»` : 'thuộc loại bất kỳ'
-  return `${chuNgu} ${dinhLuong(rule)} ${dongTu} ${luongVanBan(rule)} ${dich}.`
+  return `${subject} ${quantified(rule)} ${verb} ${documentFlow(rule)} ${dich}.`
 }
 
 /** "phải" hay "có thể" — phần quyết định người soạn có bị chặn gửi duyệt không. */
-function dinhLuong(rule: LinkRuleSentenceArgs['rule']): string {
+function quantified(rule: LinkRuleSentenceArgs['rule']): string {
   return rule.is_required ? 'phải' : 'có thể'
 }
 
 /** Phần số lượng: "đúng 1 văn bản", "ít nhất 2 văn bản", "một hoặc nhiều văn bản"… */
-function luongVanBan({ is_required, min_count, max_count }: LinkRuleSentenceArgs['rule']): string {
+function documentFlow({ is_required, min_count, max_count }: LinkRuleSentenceArgs['rule']): string {
   //  Bắt buộc mà khai tối thiểu 0 thì backend vẫn tính là 1 (`max(min_count, 1)`
   //  trong `missing_required`). Câu phải nói đúng cái backend làm, không thì
   //  người khai đọc "0" rồi ngạc nhiên vì bị chặn gửi duyệt.
-  const toiThieu = is_required ? Math.max(min_count, 1) : min_count
+  const minimum = is_required ? Math.max(min_count, 1) : min_count
 
-  if (max_count > 0 && toiThieu === max_count) return `đúng ${max_count} văn bản`
-  if (max_count > 0 && toiThieu > 0) return `${toiThieu}–${max_count} văn bản`
+  if (max_count > 0 && minimum === max_count) return `đúng ${max_count} văn bản`
+  if (max_count > 0 && minimum > 0) return `${minimum}–${max_count} văn bản`
   if (max_count > 0) return `tối đa ${max_count} văn bản`
-  if (toiThieu > 0) return `ít nhất ${toiThieu} văn bản`
+  if (minimum > 0) return `ít nhất ${minimum} văn bản`
   return 'một hoặc nhiều văn bản'
 }

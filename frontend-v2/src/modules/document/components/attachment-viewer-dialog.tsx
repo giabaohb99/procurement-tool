@@ -5,7 +5,7 @@ import { apiGet, extractErrorMessage, fetchBlobUrl } from '@/core/api'
 import { useAuth } from '@/core/auth/use-auth'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { formatDateTime } from '@/shared/utils/format-date'
-import { laAnh, xemBangHtml } from '../helpers/inline-viewable'
+import { laAnh, viewAsHtml } from '../helpers/inline-viewable'
 
 /**
  * Bọc HTML đã chuyển từ Word thành một trang hoàn chỉnh cho `<iframe srcdoc>`.
@@ -14,7 +14,7 @@ import { laAnh, xemBangHtml } from '../helpers/inline-viewable'
  * của trang cha — không khai thì chữ ra phông mặc định của trình duyệt, dính sát
  * mép trái.
  */
-function trangHtml(noiDung: string): string {
+function htmlPage(content: string): string {
   return `<!doctype html><html lang="vi"><head><meta charset="utf-8">
 <style>
   body { margin: 0; padding: 24px 28px; background: #fff;
@@ -23,7 +23,7 @@ function trangHtml(noiDung: string): string {
   img { max-width: 100%; height: auto; }
   table { border-collapse: collapse; max-width: 100%; }
   td, th { border: 1px solid #cbd5e1; padding: 6px 10px; }
-</style></head><body>${noiDung}</body></html>`
+</style></head><body>${content}</body></html>`
 }
 
 interface AttachmentViewerDialogProps {
@@ -70,7 +70,7 @@ export function AttachmentViewerDialog({
              vừa dễ sót (thấy nội dung tệp cũ một nhịp trước khi tệp mới về), vừa
              là kiểu đặt state đồng bộ trong effect mà `react-hooks` chặn. */}
         {linkId !== null && (
-          <RuotKhungXem
+          <ViewerBody
             key={linkId}
             linkId={linkId}
             filename={filename}
@@ -84,7 +84,7 @@ export function AttachmentViewerDialog({
 }
 
 /** Phần ruột — mỗi tệp một lần dựng mới, xem ghi chú `key` ở trên. */
-function RuotKhungXem({
+function ViewerBody({
   linkId,
   filename,
   contentType,
@@ -100,13 +100,13 @@ function RuotKhungXem({
   //  Word/Markdown/HTML đi đường khác: máy chủ đổi sang HTML rồi mới trả về.
   const [html, setHtml] = useState<string | null>(null)
   const [loi, setLoi] = useState('')
-  const doiSangHtml = xemBangHtml(contentType, filename)
+  const toHtml = viewAsHtml(contentType, filename)
 
   useEffect(() => {
     let huy = false
-    let urlDaTao = ''
+    let createdUrl = ''
 
-    if (doiSangHtml) {
+    if (toHtml) {
       apiGet<{ html: string }>(`/api/attachments/${linkId}/preview`)
         .then((data) => !huy && setHtml(data.html))
         .catch((error) => !huy && setLoi(extractErrorMessage(error)))
@@ -117,7 +117,7 @@ function RuotKhungXem({
 
     fetchBlobUrl(`/api/attachments/${linkId}/view`)
       .then((url) => {
-        urlDaTao = url
+        createdUrl = url
         //  Đóng khung trước khi tải xong thì thu hồi ngay, đừng gán vào state
         //  của một component sắp biến mất.
         if (huy) URL.revokeObjectURL(url)
@@ -128,9 +128,9 @@ function RuotKhungXem({
     return () => {
       huy = true
       //  Blob sống tới khi đóng tab nếu không thu hồi — tệp 30MB thấy ngay.
-      if (urlDaTao) URL.revokeObjectURL(urlDaTao)
+      if (createdUrl) URL.revokeObjectURL(createdUrl)
     }
-  }, [linkId, doiSangHtml])
+  }, [linkId, toHtml])
 
   const nhan = [user?.full_name || user?.email, formatDateTime(new Date()), documentCode]
     .filter(Boolean)
@@ -163,7 +163,7 @@ function RuotKhungXem({
              ứng dụng. Kèm theo: CSS của tài liệu không lem ra giao diện. */}
         {html !== null && (
           <iframe
-            srcDoc={trangHtml(html)}
+            srcDoc={htmlPage(html)}
             title={filename}
             sandbox=""
             className="h-[70vh] w-full bg-white"

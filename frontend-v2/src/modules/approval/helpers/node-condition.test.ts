@@ -2,51 +2,51 @@ import { describe, expect, it } from 'vitest'
 
 import { buildCondition, describeRow, parseCondition } from './node-condition'
 
-const O_HOP_LE = (field: string) => ['secrecy_level', 'doc_type_id'].includes(field)
+const VALID_CELL = (field: string) => ['secrecy_level', 'doc_type_id'].includes(field)
 
 describe('parseCondition', () => {
   it('chuỗi rỗng = không có điều kiện, KHÔNG phải khai tay', () => {
-    expect(parseCondition('', O_HOP_LE)).toEqual({ rows: [], advanced: false })
-    expect(parseCondition('   ', O_HOP_LE)).toEqual({ rows: [], advanced: false })
+    expect(parseCondition('', VALID_CELL)).toEqual({ rows: [], advanced: false })
+    expect(parseCondition('   ', VALID_CELL)).toEqual({ rows: [], advanced: false })
   })
 
   it('đọc được điều kiện một dòng', () => {
-    const ket_qua = parseCondition('[{"field":"secrecy_level","op":"gte","value":3}]', O_HOP_LE)
+    const result = parseCondition('[{"field":"secrecy_level","op":"gte","value":3}]', VALID_CELL)
 
-    expect(ket_qua.advanced).toBe(false)
-    expect(ket_qua.rows).toEqual([{ field: 'secrecy_level', op: 'gte', value: 3 }])
+    expect(result.advanced).toBe(false)
+    expect(result.rows).toEqual([{ field: 'secrecy_level', op: 'gte', value: 3 }])
   })
 
   it('phép "thuộc" giữ nguyên danh sách số', () => {
-    const ket_qua = parseCondition('[{"field":"doc_type_id","op":"in","value":[3,5]}]', O_HOP_LE)
+    const result = parseCondition('[{"field":"doc_type_id","op":"in","value":[3,5]}]', VALID_CELL)
 
-    expect(ket_qua.rows).toEqual([{ field: 'doc_type_id', op: 'in', value: [3, 5] }])
+    expect(result.rows).toEqual([{ field: 'doc_type_id', op: 'in', value: [3, 5] }])
   })
 
   it('JSON hỏng thì báo KHAI TAY, không im lặng trả về rỗng', () => {
     //  Trả rỗng lặng lẽ là bộ dựng ghi đè mất điều kiện người khác đã viết —
     //  luồng đổi hành vi mà không ai bấm gì.
-    expect(parseCondition('[{"field":', O_HOP_LE).advanced).toBe(true)
+    expect(parseCondition('[{"field":', VALID_CELL).advanced).toBe(true)
   })
 
   it('ô không nằm trong danh mục thì xếp vào khai tay', () => {
-    const ket_qua = parseCondition('[{"field":"total","op":"gte","value":50000000}]', O_HOP_LE)
+    const result = parseCondition('[{"field":"total","op":"gte","value":50000000}]', VALID_CELL)
 
-    expect(ket_qua.advanced).toBe(true)
-    expect(ket_qua.rows).toEqual([])
+    expect(result.advanced).toBe(true)
+    expect(result.rows).toEqual([])
   })
 
   it('phép lạ hoặc giá trị không phải số cũng là khai tay', () => {
-    expect(parseCondition('[{"field":"secrecy_level","op":"like","value":3}]', O_HOP_LE).advanced).toBe(
+    expect(parseCondition('[{"field":"secrecy_level","op":"like","value":3}]', VALID_CELL).advanced).toBe(
       true,
     )
     expect(
-      parseCondition('[{"field":"secrecy_level","op":"eq","value":"cao"}]', O_HOP_LE).advanced,
+      parseCondition('[{"field":"secrecy_level","op":"eq","value":"cao"}]', VALID_CELL).advanced,
     ).toBe(true)
   })
 
   it('danh sách rỗng của phép "thuộc" là khai tay — nó không bao giờ khớp', () => {
-    expect(parseCondition('[{"field":"doc_type_id","op":"in","value":[]}]', O_HOP_LE).advanced).toBe(
+    expect(parseCondition('[{"field":"doc_type_id","op":"in","value":[]}]', VALID_CELL).advanced).toBe(
       true,
     )
   })
@@ -54,7 +54,7 @@ describe('parseCondition', () => {
   it('một dòng hỏng thì cả chuỗi coi như khai tay, không lấy phần đọc được', () => {
     const raw = '[{"field":"secrecy_level","op":"gte","value":3},{"field":"total","op":"gte","value":1}]'
 
-    expect(parseCondition(raw, O_HOP_LE).advanced).toBe(true)
+    expect(parseCondition(raw, VALID_CELL).advanced).toBe(true)
   })
 })
 
@@ -82,7 +82,7 @@ describe('buildCondition', () => {
   it('đi vòng tròn parse → build ra đúng chuỗi ban đầu', () => {
     const rows = parseCondition(
       '[{"field":"secrecy_level","op":"gte","value":3},{"field":"doc_type_id","op":"in","value":[2]}]',
-      O_HOP_LE,
+      VALID_CELL,
     ).rows
 
     expect(buildCondition(rows)).toBe(

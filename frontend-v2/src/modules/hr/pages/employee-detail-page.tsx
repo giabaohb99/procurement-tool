@@ -324,7 +324,7 @@ export function EmployeeDetailPage() {
                 companyId={employee.company_id}
                 primaryDepartmentId={employee.department_id}
                 canWrite={canWrite}
-                laChinhMinh={dangDangNhap?.employee_id === employee.id}
+                isSelf={dangDangNhap?.employee_id === employee.id}
               />
               <EmployeeAccountCard employeeId={employee.id} email={employee.email} />
               <AuditTimeline entity="employee" entityId={employeeId} />

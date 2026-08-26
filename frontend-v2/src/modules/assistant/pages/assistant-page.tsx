@@ -85,11 +85,11 @@ export function AssistantPage() {
       //  Câu trả lời MỚI NHẤT của trợ lý trong luồng vừa nạp — chỉ mình nó được
       //  chạy hiệu ứng gõ. Lấy theo id thay vì "tin cuối" cho chắc: luồng trả về
       //  đã xếp theo thứ tự nhưng đừng phụ thuộc vào điều đó.
-      const traLoiMoi = [...chiTiet.messages]
+      const latestAnswer = [...chiTiet.messages]
         .filter((m) => m.role_name === 'assistant')
         .sort((a, b) => a.id - b.id)
         .at(-1)
-      setIdGoDan(traLoiMoi?.id ?? null)
+      setIdGoDan(latestAnswer?.id ?? null)
       void queryClient.invalidateQueries({ queryKey: queryKeys.assistant.conversations() })
       if (reply.conversation_id !== activeId) {
         setSearchParams({ c: String(reply.conversation_id) })

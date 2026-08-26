@@ -10,13 +10,13 @@ const DOCUMENT_ID = 135
 
 //  Việc duyệt của CHÍNH người đang đọc, lấy từ hộp việc. `null` = người ngoài
 //  cuộc, và đó là 9/10 lượt mở trang này.
-const hopViec: { viec: MyTask | null } = { viec: null }
+const taskBox: { viec: MyTask | null } = { viec: null }
 vi.mock('../hooks/use-my-document-approvals', () => ({
-  useMyDocumentTask: () => hopViec.viec,
+  useMyDocumentTask: () => taskBox.viec,
 }))
 
 beforeEach(() => {
-  hopViec.viec = null
+  taskBox.viec = null
 })
 
 function ve(instance: ApprovalInstance | null) {
@@ -63,7 +63,7 @@ function phien(doi: Partial<ApprovalInstance> = {}): ApprovalInstance {
   }
 }
 
-function viecCuaToi(doi: Partial<MyTask> = {}): MyTask {
+function myTasks(doi: Partial<MyTask> = {}): MyTask {
   return {
     id: 1,
     instance_id: 7,
@@ -116,7 +116,7 @@ describe('DocumentApprovalBanner', () => {
   it('đúng người đang giữ việc thì duyệt được NGAY TẠI VĂN BẢN', () => {
     //  Người dùng đòi đúng câu này: "vào thẳng văn bản đó duyệt". Dẫn sang hộp
     //  việc để bấm nghĩa là ký một văn bản chưa mở ra đọc, hoặc phải đi hai vòng.
-    hopViec.viec = viecCuaToi()
+    taskBox.viec = myTasks()
 
     ve(phien())
 
@@ -125,7 +125,7 @@ describe('DocumentApprovalBanner', () => {
   })
 
   it('bấm THAY người khác thì nói ra trước khi bấm, không phải sau', () => {
-    hopViec.viec = viecCuaToi({ on_behalf_of_name: 'Trần Văn B' })
+    taskBox.viec = myTasks({ on_behalf_of_name: 'Trần Văn B' })
 
     ve(phien())
 

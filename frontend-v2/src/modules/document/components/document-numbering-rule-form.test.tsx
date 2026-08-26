@@ -82,8 +82,8 @@ describe('DocumentNumberingRuleForm', () => {
 
     const token = screen.getByRole('button', { name: 'Ngày phát hành' })
     const input = screen.getByPlaceholderText('Ví dụ: {STT}/{Nam}/{LoaiVB}')
-    const viTri = (input as HTMLInputElement).value.indexOf('{Nam}')
-    ;(input as HTMLInputElement).setSelectionRange(viTri, viTri)
+    const position = (input as HTMLInputElement).value.indexOf('{Nam}')
+    ;(input as HTMLInputElement).setSelectionRange(position, position)
 
     fireEvent.dragStart(token, { dataTransfer })
     fireEvent.dragOver(input, { dataTransfer })
@@ -105,15 +105,15 @@ describe('DocumentNumberingRuleForm', () => {
       getData: vi.fn((type: string) => values.get(type) ?? ''),
     } as unknown as DataTransfer
 
-    const dauNgoac = screen.getByRole('button', { name: '(' })
+    const bracket = screen.getByRole('button', { name: '(' })
     const input = screen.getByPlaceholderText('Ví dụ: {STT}/{Nam}/{LoaiVB}')
     ;(input as HTMLInputElement).setSelectionRange(0, 0)
 
-    fireEvent.dragStart(dauNgoac, { dataTransfer })
+    fireEvent.dragStart(bracket, { dataTransfer })
     fireEvent.dragOver(input, { dataTransfer })
     fireEvent.drop(input, { dataTransfer })
 
     expect((input as HTMLInputElement).value).toMatch(/^\(\{STT\}/)
-    expect(dauNgoac).toHaveAttribute('aria-pressed', 'true')
+    expect(bracket).toHaveAttribute('aria-pressed', 'true')
   })
 })

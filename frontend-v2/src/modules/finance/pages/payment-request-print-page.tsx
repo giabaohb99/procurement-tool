@@ -9,7 +9,7 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney } from '@/shared/utils/format-money'
 import { usePaymentRequestPrintData } from '../hooks/use-payment-requests'
-import { docTien } from '../utils/doc-tien'
+import { parseMoney } from '../utils/doc-tien'
 
 const DOTS = '............................'
 
@@ -367,7 +367,7 @@ export function PaymentRequestPrintPage() {
           </div>
         </div>
         <div style={{ ...lbl, marginTop: 4 }}>
-          <b>Bằng chữ:</b> <i>{docTien(req.total)}</i>
+          <b>Bằng chữ:</b> <i>{parseMoney(req.total)}</i>
         </div>
 
         {/* Hình thức thanh toán — trái (đơn vị + hình thức) / phải (thông tin chuyển khoản). */}

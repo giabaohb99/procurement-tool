@@ -20,15 +20,15 @@ import { CHANGE_KIND, type DocumentVersion } from '../types/document-record'
  * Danh sách rỗng thì trả `null` — chỗ gọi tự bỏ phần "lên bản …" thay vì bịa ra
  * một con số.
  */
-export function soBanKeTiep(versions: DocumentVersion[], mucSua: number): string | null {
-  const caoNhat = versions.reduce<DocumentVersion | null>((moc, version) => {
+export function nextVersionNo(versions: DocumentVersion[], editLevel: number): string | null {
+  const maxHeight = versions.reduce<DocumentVersion | null>((moc, version) => {
     if (!moc) return version
     if (version.major !== moc.major) return version.major > moc.major ? version : moc
     return version.minor > moc.minor ? version : moc
   }, null)
 
-  if (!caoNhat) return null
-  return mucSua === CHANGE_KIND.major
-    ? `${caoNhat.major + 1}.0`
-    : `${caoNhat.major}.${caoNhat.minor + 1}`
+  if (!maxHeight) return null
+  return editLevel === CHANGE_KIND.major
+    ? `${maxHeight.major + 1}.0`
+    : `${maxHeight.major}.${maxHeight.minor + 1}`
 }

@@ -18,7 +18,7 @@ interface MessageThreadProps {
 }
 
 /** Còn cách đáy dưới ngưỡng này thì coi như người dùng đang theo dõi tin mới. */
-const GAN_DAY_PX = 120
+const NEAR_BOTTOM_PX = 120
 
 /**
  * Cột đọc của hội thoại.
@@ -28,8 +28,8 @@ const GAN_DAY_PX = 120
  * nên câu trả lời dài đọc rất mệt.
  */
 export function MessageThread({ messages, pending, isSending, idGoDan }: MessageThreadProps) {
-  const khungRef = useRef<HTMLDivElement>(null)
-  const noiDungRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
   /**
    * Có đang bám đáy không.
    *
@@ -43,11 +43,11 @@ export function MessageThread({ messages, pending, isSending, idGoDan }: Message
    * Cờ chỉ đổi khi CHÍNH NGƯỜI DÙNG cuộn (`onScroll`), nên khối có mọc nhanh
    * cỡ nào cũng không tuột.
    */
-  const bamDay = useRef(true)
+  const stickToBottom = useRef(true)
 
-  const xuongDay = () => {
-    const khung = khungRef.current
-    if (khung && bamDay.current) khung.scrollTop = khung.scrollHeight
+  const scrollToBottom = () => {
+    const khung = scrollRef.current
+    if (khung && stickToBottom.current) khung.scrollTop = khung.scrollHeight
   }
 
   /**
@@ -63,35 +63,35 @@ export function MessageThread({ messages, pending, isSending, idGoDan }: Message
    * thì hai bên giành nhau, nhìn giật.
    */
   useEffect(() => {
-    bamDay.current = true
-    xuongDay()
+    stickToBottom.current = true
+    scrollToBottom()
   }, [messages.length, pending, isSending])
 
   //  Khối trả lời CAO DẦN trong lúc chữ chạy ra: `ResizeObserver` bắt đúng cái
   //  đó, vì số tin không đổi nên effect ở trên không chạy lại.
   useEffect(() => {
-    const noiDung = noiDungRef.current
-    if (!noiDung) return
-    const theoDoi = new ResizeObserver(xuongDay)
-    theoDoi.observe(noiDung)
-    return () => theoDoi.disconnect()
+    const content = contentRef.current
+    if (!content) return
+    const observer = new ResizeObserver(scrollToBottom)
+    observer.observe(content)
+    return () => observer.disconnect()
   }, [])
 
   return (
     <div
-      ref={khungRef}
+      ref={scrollRef}
       onScroll={(e) => {
         //  Người dùng tự kéo lên đọc lại đoạn cũ thì THÔI bám, kẻo cứ bị lôi
         //  xuống đáy giữa chừng. Kéo về gần đáy thì bám lại.
         const el = e.currentTarget
-        bamDay.current = el.scrollHeight - el.clientHeight - el.scrollTop <= GAN_DAY_PX
+        stickToBottom.current = el.scrollHeight - el.clientHeight - el.scrollTop <= NEAR_BOTTOM_PX
       }}
       className="min-h-0 flex-1 overflow-y-auto"
     >
       {/*  `space-y-6` chứ không phải `space-y-4`: khoảng thở giữa hai LƯỢT phải
            rõ hơn khoảng cách giữa các đoạn BÊN TRONG một câu trả lời, nếu không
            thì nhìn thành một khối chữ liền. */}
-      <div ref={noiDungRef} className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6">
+      <div ref={contentRef} className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6">
         {messages.map((m) => (
           <ChatMessage
             key={m.id}

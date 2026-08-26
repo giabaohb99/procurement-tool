@@ -52,19 +52,19 @@ export function DocumentIssueDialog({
   //  Đọc thẳng PHẠM VI đang lưu chứ không đọc kế hoạch clone khai lúc tạo: phạm
   //  vi còn sửa được ở tab Phạm vi sau khi tạo, lấy bản khai cũ thì hộp thoại
   //  nói một đằng mà văn bản áp một nẻo. Cùng một luật với màn tạo văn bản.
-  const phapNhanNhanBanRieng = cloneTargetsFromScopes(scopes?.items ?? [], issuerCompanyId)
-  const tachBanRieng = phapNhanNhanBanRieng.length > 0
-  const applyMode = tachBanRieng ? APPLY_MODE.clone : APPLY_MODE.scope
+  const companiesGettingCopy = cloneTargetsFromScopes(scopes?.items ?? [], issuerCompanyId)
+  const splitPrivateCopy = companiesGettingCopy.length > 0
+  const applyMode = splitPrivateCopy ? APPLY_MODE.clone : APPLY_MODE.scope
 
   //  Gọi tên từng nơi thay vì chỉ đếm số: người ban hành phải nhận ra ngay có
   //  nơi nào lọt vào danh sách mà lẽ ra không nên có.
-  const tenPhapNhan = phapNhanNhanBanRieng
+  const companyName = companiesGettingCopy
     .map((id) => scopes?.items.find((row) => row.company_id === id)?.company_name)
     .filter(Boolean)
     .join(', ')
 
   //  Backend sẽ từ chối những thứ này — không bày ra nút bấm sẽ hỏng.
-  const biChan = (preview?.blockers.length ?? 0) > 0
+  const blocked = (preview?.blockers.length ?? 0) > 0
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -80,13 +80,13 @@ export function DocumentIssueDialog({
         {/*  J04 — bốn thứ sắp xảy ra. */}
         {preview && <IssuePreflightSummary preview={preview} />}
 
-        {tachBanRieng ? (
+        {splitPrivateCopy ? (
           <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
             <p className="flex items-start gap-2">
               <Building2 className="mt-0.5 size-4 shrink-0 text-amber-700" />
               <span>
-                Phạm vi đang khai <b>{phapNhanNhanBanRieng.length}</b> pháp nhân ngoài
-                nơi ban hành{tenPhapNhan && <> — {tenPhapNhan}</>}, nên mỗi nơi sẽ có{' '}
+                Phạm vi đang khai <b>{companiesGettingCopy.length}</b> pháp nhân ngoài
+                nơi ban hành{companyName && <> — {companyName}</>}, nên mỗi nơi sẽ có{' '}
                 <b>bản riêng</b>: số hiệu riêng, người ký riêng, hiệu lực riêng.
               </span>
             </p>
@@ -95,7 +95,7 @@ export function DocumentIssueDialog({
                  hiệu vĩnh viễn, chỗ chặn nhầm lẫn dời về đây — gọi tên từng pháp
                  nhân ở trên trước khi cho bấm. */}
             <p className="pl-6">
-              Bấm Ban hành là <b>{phapNhanNhanBanRieng.length} bản nháp sinh ra ngay</b> ở
+              Bấm Ban hành là <b>{companiesGettingCopy.length} bản nháp sinh ra ngay</b> ở
               các pháp nhân trên, mỗi nơi một bản để họ sửa cho đúng công ty mình rồi tự
               ban hành. Danh sách này lấy từ tab <b>Phạm vi</b> — sai chỗ nào thì thoát ra
               sửa ở đó trước, vì số hiệu cấp ra là cấp vĩnh viễn.
@@ -116,7 +116,7 @@ export function DocumentIssueDialog({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Hủy
           </Button>
-          <Button type="button" disabled={isPending || biChan} onClick={() => onConfirm(applyMode)}>
+          <Button type="button" disabled={isPending || blocked} onClick={() => onConfirm(applyMode)}>
             Ban hành
           </Button>
         </DialogFooter>

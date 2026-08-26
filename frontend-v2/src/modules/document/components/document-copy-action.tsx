@@ -14,7 +14,7 @@ import { useCopyDocument } from '../hooks/use-documents'
  * bảng «Văn bản đi» trông thưa hơn hẳn «Văn bản đến» dù hai bảng cùng một khung.
  * Vùng bấm 24px vẫn thoải mái vì cả ô là vùng chờ chuột.
  */
-const NUT_TREN_DONG = 'size-6 -my-px'
+const ROW_ACTIONS = 'size-6 -my-px'
 
 interface DocumentCopyActionProps {
   documentId: number
@@ -38,7 +38,7 @@ export function DocumentCopyAction({
       type="button"
       variant="outline"
       size={placement === 'row' ? 'icon-sm' : 'default'}
-      className={cn(placement === 'row' && NUT_TREN_DONG)}
+      className={cn(placement === 'row' && ROW_ACTIONS)}
       aria-label={placement === 'row' ? 'Sao chép' : undefined}
       disabled={copyDocument.isPending}
       title="Tạo một văn bản nháp mới giống bản ghi này"

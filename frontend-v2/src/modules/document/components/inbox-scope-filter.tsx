@@ -5,7 +5,7 @@ interface InboxScopeFilterProps {
   value: string
   onChange: (value: InboxScope) => void
   soCho: number
-  soQuaHan: number
+  overdueCount: number
   soDaDuyet: number
 }
 
@@ -27,14 +27,14 @@ export function InboxScopeFilter({
   value,
   onChange,
   soCho,
-  soQuaHan,
+  overdueCount,
   soDaDuyet,
 }: InboxScopeFilterProps) {
   const muc: { value: InboxScope; label: string; count: number; gap?: boolean }[] = [
     { value: INBOX_SCOPE.all, label: 'Tất cả', count: soCho + soDaDuyet },
     { value: INBOX_SCOPE.pending, label: 'Cần duyệt', count: soCho },
-    ...(soQuaHan > 0
-      ? [{ value: INBOX_SCOPE.overdue, label: 'Quá hạn', count: soQuaHan, gap: true }]
+    ...(overdueCount > 0
+      ? [{ value: INBOX_SCOPE.overdue, label: 'Quá hạn', count: overdueCount, gap: true }]
       : []),
     { value: INBOX_SCOPE.done, label: 'Đã duyệt', count: soDaDuyet },
   ]
@@ -42,18 +42,18 @@ export function InboxScopeFilter({
   return (
     <div className="inline-flex h-9 shrink-0 items-center gap-0.5 rounded-md border bg-muted/40 p-0.5">
       {muc.map((item) => {
-        const dangChon = value === item.value
+        const selection = value === item.value
         return (
           <button
             key={item.value}
             type="button"
             //  `aria-pressed` chứ không phải `role="tab"`: đây là bộ lọc trên
             //  một bảng, không phải mấy trang nội dung thay nhau hiện ra.
-            aria-pressed={dangChon}
+            aria-pressed={selection}
             onClick={() => onChange(item.value)}
             className={cn(
               'flex h-8 items-center gap-1.5 rounded-sm px-2.5 text-sm whitespace-nowrap transition-colors',
-              dangChon
+              selection
                 ? 'bg-background font-medium text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground',
             )}
@@ -66,7 +66,7 @@ export function InboxScopeFilter({
                 //  phụ thuộc vào chỗ này có đang được chọn hay không.
                 item.gap
                   ? 'bg-destructive text-white'
-                  : dangChon
+                  : selection
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground',
               )}

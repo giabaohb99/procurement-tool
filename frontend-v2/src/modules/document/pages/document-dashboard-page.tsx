@@ -47,8 +47,8 @@ export function DocumentDashboardPage() {
   )
 
   const kpi = data?.kpi
-  const banHanhNam = (data?.issued_12m ?? []).reduce((sum, item) => sum + item.value, 0)
-  const tongMaTran = Object.values(data?.priority_matrix ?? {}).reduce((sum, so) => sum + so, 0)
+  const issuedYear = (data?.issued_12m ?? []).reduce((sum, item) => sum + item.value, 0)
+  const matrixTotal = Object.values(data?.priority_matrix ?? {}).reduce((sum, so) => sum + so, 0)
 
   return (
     <PageContainer>
@@ -140,9 +140,9 @@ export function DocumentDashboardPage() {
         <ChartCard
           className="lg:col-span-2"
           title="Văn bản ban hành theo tháng"
-          description={`${banHanhNam} văn bản trong 12 tháng gần nhất`}
+          description={`${issuedYear} văn bản trong 12 tháng gần nhất`}
           loading={isLoading}
-          isEmpty={banHanhNam === 0}
+          isEmpty={issuedYear === 0}
           emptyLabel="12 tháng qua chưa ban hành văn bản nào."
         >
           <ColumnChart data={data?.issued_12m ?? []} unit="văn bản" />
@@ -186,7 +186,7 @@ export function DocumentDashboardPage() {
           title="Thống kê văn bản theo mức độ quan trọng, khẩn cấp"
           description="Văn bản đang có hiệu lực, chia theo hai trục ưu tiên."
           loading={isLoading}
-          isEmpty={tongMaTran === 0}
+          isEmpty={matrixTotal === 0}
           emptyLabel="Chưa có văn bản nào đang có hiệu lực."
         >
           <DocumentPriorityMatrix data={data?.priority_matrix} />

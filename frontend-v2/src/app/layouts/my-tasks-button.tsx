@@ -25,7 +25,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
  */
 export function MyTasksButton() {
   const { data } = useMyTasks()
-  const dangCho = data?.total ?? 0
+  const pending = data?.total ?? 0
 
   return (
     <Tooltip>
@@ -38,20 +38,20 @@ export function MyTasksButton() {
         >
           <Link
             to={appRoutes.document.pendingApproval}
-            aria-label={`Chờ tôi duyệt (${dangCho})`}
+            aria-label={`Chờ tôi duyệt (${pending})`}
           >
             <Inbox className="size-5" />
-            {dangCho > 0 && (
+            {pending > 0 && (
               //  Cùng hình dáng với huy hiệu của chuông để hai thứ đọc như một bộ.
               <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-destructive text-[0.625rem] font-semibold text-white">
-                {dangCho > 9 ? '9+' : dangCho}
+                {pending > 9 ? '9+' : pending}
               </span>
             )}
           </Link>
         </Button>
       </TooltipTrigger>
       <TooltipContent>
-        {dangCho > 0 ? `Chờ tôi duyệt — ${dangCho} việc đang chờ` : 'Chờ tôi duyệt'}
+        {pending > 0 ? `Chờ tôi duyệt — ${pending} việc đang chờ` : 'Chờ tôi duyệt'}
       </TooltipContent>
     </Tooltip>
   )

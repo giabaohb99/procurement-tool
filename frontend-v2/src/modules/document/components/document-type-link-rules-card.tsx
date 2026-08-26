@@ -45,7 +45,7 @@ interface DocumentTypeLinkRulesCardProps {
 }
 
 /** Dòng đang khai: `null` = thêm mới · số = vị trí dòng đang sửa. */
-type DangKhai = null | number
+type DeclaringState = null | number
 
 /**
  * QUAN HỆ VỚI LOẠI KHÁC — khai ngay trên trang loại văn bản (E01).
@@ -69,7 +69,7 @@ export function DocumentTypeLinkRulesCard({
   onPendingChange,
 }: DocumentTypeLinkRulesCardProps) {
   //  `undefined` = hộp thoại đóng.
-  const [dangKhai, setDangKhai] = useState<DangKhai | undefined>(undefined)
+  const [dangKhai, setDangKhai] = useState<DeclaringState | undefined>(undefined)
 
   const { data, isLoading } = useDocumentLinkRules(docTypeId, Boolean(docTypeId))
   const { items: docTypes } = useDocumentTypes()
@@ -85,12 +85,12 @@ export function DocumentTypeLinkRulesCard({
     ? (data?.items ?? []).map((rule) => ({ id: rule.id, values: linkRuleToInput(rule) }))
     : pending.map((values) => ({ id: undefined, values }))
 
-  function tenQuanHe(relation: number) {
+  function relationName(relation: number) {
     return options?.relations.find((item) => item.value === relation)?.label ?? String(relation)
   }
 
   /** `undefined` = quy tắc không kén loại đích — câu mô tả đọc khác hẳn. */
-  function tenLoaiDich(targetTypeId: number | null) {
+  function targetTypeName(targetTypeId: number | null) {
     if (!targetTypeId) return undefined
     return docTypes.find((type) => type.id === targetTypeId)?.name ?? 'Không rõ'
   }
@@ -101,11 +101,11 @@ export function DocumentTypeLinkRulesCard({
 
     //  Dòng thêm mới xuống CUỐI, đánh số tiếp theo dòng cuối đang có. Dòng đang
     //  sửa giữ nguyên chỗ của nó.
-    const xepSo = (row: DocTypeLinkRuleInput, i: number) =>
+    const assignNumber = (row: DocTypeLinkRuleInput, i: number) =>
       typeof index === 'number' ? row : { ...row, sort_order: rows.length + i + 1 }
 
     if (!docTypeId) {
-      const withSource = newRows.map((row, i) => ({ ...xepSo(row, i), source_type_id: 0 }))
+      const withSource = newRows.map((row, i) => ({ ...assignNumber(row, i), source_type_id: 0 }))
       onPendingChange?.(
         typeof index === 'number'
           ? pending.map((row, i) => (i === index ? withSource[0] : row))
@@ -118,7 +118,7 @@ export function DocumentTypeLinkRulesCard({
     save.mutate(
       {
         id: typeof index === 'number' ? data?.items[index]?.id : undefined,
-        rows: newRows.map((row, i) => ({ ...xepSo(row, i), source_type_id: docTypeId })),
+        rows: newRows.map((row, i) => ({ ...assignNumber(row, i), source_type_id: docTypeId })),
       },
       {
         //  Còn dòng hỏng (thường là trùng với quy tắc đã có) thì GIỮ hộp thoại:
@@ -138,21 +138,21 @@ export function DocumentTypeLinkRulesCard({
   }
 
   /** Đổi chỗ một dòng với dòng liền kề. `huong` = -1 lên, +1 xuống. */
-  function doiCho(index: number, huong: -1 | 1) {
+  function swap(index: number, huong: -1 | 1) {
     const dich = index + huong
     if (dich < 0 || dich >= rows.length) return
 
-    const xepLai = [...rows]
-    ;[xepLai[index], xepLai[dich]] = [xepLai[dich], xepLai[index]]
+    const reordered = [...rows]
+    ;[reordered[index], reordered[dich]] = [reordered[dich], reordered[index]]
 
     if (!docTypeId) {
       //  Đánh số lại luôn thay vì chỉ hoán vị mảng: mấy dòng này lát nữa gửi
       //  lên theo lô, mà `sort_order` mới là thứ backend đọc — mảng đúng thứ tự
       //  nhưng số cũ thì tải lại trang là về chỗ cũ.
-      onPendingChange?.(xepLai.map((row, i) => ({ ...row.values, sort_order: i + 1 })))
+      onPendingChange?.(reordered.map((row, i) => ({ ...row.values, sort_order: i + 1 })))
       return
     }
-    reorder.mutate(xepLai.map((row) => ({ id: row.id as number, values: row.values })))
+    reorder.mutate(reordered.map((row) => ({ id: row.id as number, values: row.values })))
   }
 
   return (
@@ -213,8 +213,8 @@ export function DocumentTypeLinkRulesCard({
                   <p className="text-sm">
                     {linkRuleSentence({
                       rule: row.values,
-                      relationLabel: tenQuanHe(row.values.relation),
-                      targetTypeName: tenLoaiDich(row.values.target_type_id),
+                      relationLabel: relationName(row.values.relation),
+                      targetTypeName: targetTypeName(row.values.target_type_id),
                       sourceTypeName: docTypeName,
                     })}
                   </p>
@@ -228,7 +228,7 @@ export function DocumentTypeLinkRulesCard({
                     title="Đưa lên trước"
                     aria-label="Đưa lên trước"
                     disabled={index === 0 || reorder.isPending}
-                    onClick={() => doiCho(index, -1)}
+                    onClick={() => swap(index, -1)}
                   >
                     <ArrowUp />
                   </Button>
@@ -240,7 +240,7 @@ export function DocumentTypeLinkRulesCard({
                     title="Đưa xuống sau"
                     aria-label="Đưa xuống sau"
                     disabled={index === rows.length - 1 || reorder.isPending}
-                    onClick={() => doiCho(index, 1)}
+                    onClick={() => swap(index, 1)}
                   >
                     <ArrowDown />
                   </Button>

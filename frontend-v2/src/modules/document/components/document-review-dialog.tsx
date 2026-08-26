@@ -16,13 +16,13 @@ import { Label } from '@/shared/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group'
 import { Textarea } from '@/shared/ui/textarea'
 import { cn } from '@/shared/utils/cn'
-import { soBanKeTiep } from '../helpers/next-version-no'
+import { nextVersionNo } from '../helpers/next-version-no'
 import { useDocumentVersions, useOpenVersion } from '../hooks/use-document-versions'
 import { useDocumentWorkflow } from '../hooks/use-documents'
 import { CHANGE_KIND } from '../types/document-record'
 
 /** Hai kết luận có thể có sau khi rà. */
-const KET_QUA = { giuNguyen: 'giu-nguyen', suaTheo: 'sua-theo' } as const
+const RESULTS = { giuNguyen: 'giu-nguyen', suaTheo: 'sua-theo' } as const
 
 interface DocumentReviewDialogProps {
   documentId: number
@@ -67,7 +67,7 @@ export function DocumentReviewDialog({
   note,
   sourceDocumentId,
 }: DocumentReviewDialogProps) {
-  const [ketQua, setKetQua] = useState<string>(KET_QUA.suaTheo)
+  const [ketQua, setKetQua] = useState<string>(RESULTS.suaTheo)
   const [ketLuan, setKetLuan] = useState('')
   const [changeKind, setChangeKind] = useState(String(CHANGE_KIND.major))
 
@@ -77,33 +77,33 @@ export function DocumentReviewDialog({
   //  Danh sách phiên bản đã nằm sẵn trong cache của trang chi tiết — đây không
   //  phải một lượt gọi thêm.
   const { data: versions = [] } = useDocumentVersions(documentId)
-  const banNhapDangMo = versions.find((version) => !version.is_locked)
+  const openDraft = versions.find((version) => !version.is_locked)
 
   //  Cùng điều kiện backend kiểm (`version_service.open_new_version`), nói
   //  TRƯỚC cho đỡ bấm vào rồi nhận lỗi.
-  const moDuocBanMoi =
-    !banNhapDangMo && versions.some((version) => version.is_current && version.is_locked)
-  const lyDoKhongMoDuoc = banNhapDangMo
+  const canOpenNewVersion =
+    !openDraft && versions.some((version) => version.is_current && version.is_locked)
+  const blockedReason = openDraft
     ? 'Đang có bản nháp mở — sửa tiếp vào bản nháp đó, không mở thêm được bản nữa.'
     : 'Chỉ mở phiên bản mới từ một bản ĐÃ DUYỆT. Bản đang dùng của văn bản này chưa duyệt xong.'
 
-  const moBanMoi = ketQua === KET_QUA.suaTheo && moDuocBanMoi
-  const dangChay = openVersion.isPending || confirmReviewed.isPending
+  const openNewVersion = ketQua === RESULTS.suaTheo && canOpenNewVersion
+  const isRunning = openVersion.isPending || confirmReviewed.isPending
 
   async function handleSubmit() {
-    const cauKetLuan = ketLuan.trim()
+    const summaryText = ketLuan.trim()
     try {
-      if (moBanMoi) {
+      if (openNewVersion) {
         await openVersion.mutateAsync({
           change_kind: Number(changeKind),
           //  Kết luận rà CHÍNH LÀ câu "sửa gì" của phiên bản mới — bắt gõ lại
           //  lần nữa thì người ta gõ "sửa theo bản gốc" cho xong việc.
-          change_summary: cauKetLuan,
+          change_summary: summaryText,
           change_reason: note || 'Rà lại theo phiên bản mới của bản gốc',
           effective_from: null,
         })
       }
-      await confirmReviewed.mutateAsync(cauKetLuan)
+      await confirmReviewed.mutateAsync(summaryText)
       handleOpenChange(false)
     } catch {
       //  Câu lỗi thật đã nằm trong `openVersion.error` (hiện ngay trong hộp
@@ -116,7 +116,7 @@ export function DocumentReviewDialog({
     if (!next) {
       openVersion.reset()
       setKetLuan('')
-      setKetQua(KET_QUA.suaTheo)
+      setKetQua(RESULTS.suaTheo)
       setChangeKind(String(CHANGE_KIND.major))
     }
     onOpenChange(next)
@@ -171,10 +171,10 @@ export function DocumentReviewDialog({
               <label
                 className={cn(
                   'flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors',
-                  ketQua === KET_QUA.suaTheo ? 'border-primary bg-primary/5' : 'hover:bg-muted/50',
+                  ketQua === RESULTS.suaTheo ? 'border-primary bg-primary/5' : 'hover:bg-muted/50',
                 )}
               >
-                <RadioGroupItem value={KET_QUA.suaTheo} className="mt-0.5" />
+                <RadioGroupItem value={RESULTS.suaTheo} className="mt-0.5" />
                 <span>
                   <span className="font-medium">Phải sửa theo bản gốc</span>
                   <span className="block text-muted-foreground">
@@ -186,10 +186,10 @@ export function DocumentReviewDialog({
               <label
                 className={cn(
                   'flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors',
-                  ketQua === KET_QUA.giuNguyen ? 'border-primary bg-primary/5' : 'hover:bg-muted/50',
+                  ketQua === RESULTS.giuNguyen ? 'border-primary bg-primary/5' : 'hover:bg-muted/50',
                 )}
               >
-                <RadioGroupItem value={KET_QUA.giuNguyen} className="mt-0.5" />
+                <RadioGroupItem value={RESULTS.giuNguyen} className="mt-0.5" />
                 <span>
                   <span className="font-medium">Giữ nguyên, không phải sửa</span>
                   <span className="block text-muted-foreground">
@@ -203,13 +203,13 @@ export function DocumentReviewDialog({
           {/*  Chọn "phải sửa" mà văn bản đang kẹt (còn bản nháp mở / bản đang
                dùng chưa duyệt) thì nói thẳng ra ở đây: vẫn cho ghi kết luận, chỉ
                là không mở bản mới. Giấu đi rồi âm thầm không mở mới là tệ. */}
-          {ketQua === KET_QUA.suaTheo && !moDuocBanMoi && (
+          {ketQua === RESULTS.suaTheo && !canOpenNewVersion && (
             <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-              Lần này chỉ ghi kết luận, chưa mở phiên bản mới được: {lyDoKhongMoDuoc}
+              Lần này chỉ ghi kết luận, chưa mở phiên bản mới được: {blockedReason}
             </p>
           )}
 
-          {moBanMoi && (
+          {openNewVersion && (
             <div className="space-y-2">
               <Label>Mức sửa</Label>
               <RadioGroup value={changeKind} onValueChange={setChangeKind}>
@@ -225,21 +225,21 @@ export function DocumentReviewDialog({
                     moTa: 'Sửa câu chữ, số liệu lặt vặt — không bắt ai đọc lại.',
                   },
                 ].map((muc) => {
-                  const dangChon = changeKind === String(muc.value)
-                  const banMoi = soBanKeTiep(versions, muc.value)
+                  const selection = changeKind === String(muc.value)
+                  const newVersion = nextVersionNo(versions, muc.value)
                   return (
                     <label
                       key={muc.value}
                       className={cn(
                         'flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors',
-                        dangChon ? 'border-primary bg-primary/5' : 'hover:bg-muted/50',
+                        selection ? 'border-primary bg-primary/5' : 'hover:bg-muted/50',
                       )}
                     >
                       <RadioGroupItem value={String(muc.value)} className="mt-0.5" />
                       <span>
                         <span className="font-medium">{muc.ten}</span>
-                        {banMoi && (
-                          <span className="text-muted-foreground"> — bản mới sẽ là {banMoi}</span>
+                        {newVersion && (
+                          <span className="text-muted-foreground"> — bản mới sẽ là {newVersion}</span>
                         )}
                         <span className="block text-muted-foreground">{muc.moTa}</span>
                       </span>
@@ -258,7 +258,7 @@ export function DocumentReviewDialog({
               id="review-conclusion"
               rows={3}
               placeholder={
-                moBanMoi
+                openNewVersion
                   ? 'Ví dụ: bản gốc bổ sung Điều 5 về phụ cấp ca đêm, bản của mình phải sửa theo'
                   : 'Ví dụ: đã đối chiếu bản 2.0, phần của pháp nhân mình vẫn đúng, không phải sửa'
               }
@@ -266,7 +266,7 @@ export function DocumentReviewDialog({
               onChange={(event) => setKetLuan(event.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              {moBanMoi
+              {openNewVersion
                 ? 'Câu này vào nhật ký rà soát và làm luôn dòng «sửa gì» của phiên bản mới.'
                 : 'Câu này vào nhật ký thao tác — người sau đọc lại phải biết bạn đã đối chiếu ra điều gì.'}
             </p>
@@ -281,10 +281,10 @@ export function DocumentReviewDialog({
             type="button"
             //  Backend đòi kết luận từ 3 ký tự (`schema.ReviewedIn`) — chặn ngay
             //  ở nút thay vì để người dùng bấm rồi ăn 422.
-            disabled={ketLuan.trim().length < 3 || dangChay}
+            disabled={ketLuan.trim().length < 3 || isRunning}
             onClick={() => void handleSubmit()}
           >
-            {moBanMoi ? 'Rà xong và mở phiên bản mới' : 'Rà xong'}
+            {openNewVersion ? 'Rà xong và mở phiên bản mới' : 'Rà xong'}
           </Button>
         </DialogFooter>
       </DialogContent>

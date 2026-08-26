@@ -6,7 +6,7 @@
  * bằng chữ với chứng từ cũ, lệch một chữ là phải in lại. Có sửa quy tắc đọc thì
  * sửa cả hai nơi cho tới khi bản v1 được tắt.
  */
-export function docTien(amount: number): string {
+export function parseMoney(amount: number): string {
   let n = Math.round(Number(amount) || 0)
   if (n <= 0) return 'Không đồng'
   const d = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín']

@@ -26,7 +26,7 @@ function iso(day: Date): string {
   return `${day.getFullYear()}-${thang}-${ngay}`
 }
 
-function truocNgay(so: number): Date {
+function beforeDate(so: number): Date {
   const day = new Date()
   day.setDate(day.getDate() - so)
   return day
@@ -45,17 +45,17 @@ export const DATE_RANGES: {
   {
     key: 'week',
     label: '7 ngày qua',
-    resolve: () => ({ from: iso(truocNgay(6)), to: iso(new Date()) }),
+    resolve: () => ({ from: iso(beforeDate(6)), to: iso(new Date()) }),
   },
   {
     key: 'month',
     label: '30 ngày qua',
-    resolve: () => ({ from: iso(truocNgay(29)), to: iso(new Date()) }),
+    resolve: () => ({ from: iso(beforeDate(29)), to: iso(new Date()) }),
   },
   {
     key: 'quarter',
     label: '90 ngày qua',
-    resolve: () => ({ from: iso(truocNgay(89)), to: iso(new Date()) }),
+    resolve: () => ({ from: iso(beforeDate(89)), to: iso(new Date()) }),
   },
   {
     key: 'year',

@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/shared/ui/textarea'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import type { DocumentRecordFormValues } from '../schemas/document-record-schema'
-import { soNgayGoiY } from '../helpers/so-ngay-nghi-phep'
+import { suggestedDayCount } from '../helpers/so-ngay-nghi-phep'
 
 interface DocumentLeaveFieldsProps {
   form: UseFormReturn<DocumentRecordFormValues>
@@ -47,11 +47,11 @@ interface DocumentLeaveFieldsProps {
  */
 export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
   const { data: employees } = useEmployees({ page_size: 2000 })
-  const nhanSu = employees?.items ?? []
+  const employee = employees?.items ?? []
 
-  const tuNgay = form.watch('leave.from_date')
-  const denNgay = form.watch('leave.to_date')
-  const goiY = soNgayGoiY(tuNgay, denNgay, form.watch('leave.from_session'),
+  const fromDate = form.watch('leave.from_date')
+  const toDate = form.watch('leave.to_date')
+  const suggestion = suggestedDayCount(fromDate, toDate, form.watch('leave.from_session'),
                           form.watch('leave.to_session'))
 
   //  NGHỈ TRONG MỘT NGÀY là ca hay gặp nhất — «chiều thứ Sáu», «sáng mai».
@@ -60,10 +60,10 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
   //  bốn thao tác cho việc nhỏ nhất, và hai ô «Buổi» lúc đó nói về CÙNG một
   //  buổi nên đặt lệch nhau là ra dữ liệu vô nghĩa. Nên: chọn ngày bắt đầu thì
   //  ngày kết thúc bám theo, và khi hai ngày trùng nhau thì gộp còn MỘT ô buổi.
-  if (useHasChanged(tuNgay) && tuNgay && (!denNgay || denNgay < tuNgay)) {
-    form.setValue('leave.to_date', tuNgay)
+  if (useHasChanged(fromDate) && fromDate && (!toDate || toDate < fromDate)) {
+    form.setValue('leave.to_date', fromDate)
   }
-  const nghiTrongMotNgay = !!tuNgay && tuNgay === denNgay
+  const sameDayLeave = !!fromDate && fromDate === toDate
 
   //  ĐIỀN SẴN số ngày, không để trống chờ người dùng gõ.
   //
@@ -73,8 +73,8 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
   //  (hệ chưa có bảng lịch làm việc). Điền sẵn thì người lập đơn nhìn thấy ngay
   //  và sửa được; để trống thì họ gửi đi mà không biết mình vừa khai 4 ngày phép.
   const [tuSuaSoNgay, setTuSuaSoNgay] = useState(false)
-  if (useHasChanged(goiY) && !tuSuaSoNgay) {
-    form.setValue('leave.total_days', goiY > 0 ? goiY : '')
+  if (useHasChanged(suggestion) && !tuSuaSoNgay) {
+    form.setValue('leave.total_days', suggestion > 0 ? suggestion : '')
   }
 
   /** Ô chọn buổi. `gopCaHai` = nghỉ trong một ngày, một ô nói cho cả hai đầu. */
@@ -115,7 +115,7 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
   )
 
   /** Ô chọn nhân sự — người nghỉ và người bàn giao dùng chung khuôn. */
-  const oNhanSu = (
+  const employeeField = (
     ten: 'leave.employee_id' | 'leave.handover_employee_id',
     nhan: string,
     nhanRong: string,
@@ -137,7 +137,7 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
             </FormControl>
             <SelectContent>
               <SelectItem value="0">{nhanRong}</SelectItem>
-              {nhanSu.map((item) => (
+              {employee.map((item) => (
                 <SelectItem key={item.id} value={String(item.id)}>
                   {item.full_name}
                 </SelectItem>
@@ -155,7 +155,7 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
     // bị kéo giãn theo ô cao nhất và nhãn lệch nhau.
     <div className="grid items-start gap-x-4 gap-y-3 md:grid-cols-12">
       {/* ── Hàng 1: ai nghỉ, nghỉ kiểu gì ─────────────────────────────── */}
-      {oNhanSu('leave.employee_id', 'Người nghỉ', '— Theo người chịu trách nhiệm —')}
+      {employeeField('leave.employee_id', 'Người nghỉ', '— Theo người chịu trách nhiệm —')}
 
       <FormField
         control={form.control}
@@ -187,7 +187,7 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
         control={form.control}
         name="leave.from_date"
         render={({ field }) => (
-          <FormItem className={nghiTrongMotNgay ? 'md:col-span-5' : 'md:col-span-4'}>
+          <FormItem className={sameDayLeave ? 'md:col-span-5' : 'md:col-span-4'}>
             <FormLabel>
               Từ ngày
               <RequiredMark />
@@ -203,13 +203,13 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
           </FormItem>
         )}
       />
-      {!nghiTrongMotNgay && oBuoi('leave.from_session')}
+      {!sameDayLeave && oBuoi('leave.from_session')}
 
       <FormField
         control={form.control}
         name="leave.to_date"
         render={({ field }) => (
-          <FormItem className={nghiTrongMotNgay ? 'md:col-span-5' : 'md:col-span-4'}>
+          <FormItem className={sameDayLeave ? 'md:col-span-5' : 'md:col-span-4'}>
             <FormLabel>
               Đến ngày
               <RequiredMark />
@@ -222,7 +222,7 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
         )}
       />
       {/*  Cùng ngày → MỘT ô buổi, gắn vào đầu ĐI và tự đồng bộ đầu VỀ. */}
-      {nghiTrongMotNgay ? oBuoi('leave.from_session', true) : oBuoi('leave.to_session')}
+      {sameDayLeave ? oBuoi('leave.from_session', true) : oBuoi('leave.to_session')}
 
       {/* ── Hàng 3: mấy ngày · ai gánh việc · gọi số nào ───────────────── */}
       <FormField
@@ -251,7 +251,7 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
         )}
       />
 
-      {oNhanSu('leave.handover_employee_id', 'Người bàn giao công việc', '— Không bàn giao —')}
+      {employeeField('leave.handover_employee_id', 'Người bàn giao công việc', '— Không bàn giao —')}
 
       <FormField
         control={form.control}

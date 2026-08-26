@@ -23,7 +23,7 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { APPROVAL_FLOW_FILTER_FIELDS } from '../config/approval-flow-filter-fields'
 import { conditionFieldsOf } from '../config/condition-fields'
-import { cauDieuKien } from '../helpers/condition-sentence'
+import { conditionText } from '../helpers/condition-sentence'
 import { parseCondition } from '../helpers/node-condition'
 import { useConditionChoices } from '../hooks/use-condition-choices'
 import { CAC_LOAI, ENTITY_LABELS } from '../helpers/entity-link'
@@ -89,7 +89,7 @@ function ApprovalFlowListContent() {
   //  Danh mục để dịch id trong điều kiện thành TÊN. Không truyền nhân sự: điều
   //  kiện ở tầng luồng chỉ lọc theo loại/pháp nhân/phòng, và nạp cả nghìn nhân
   //  sự chỉ để dựng một dòng chữ là quá đắt cho màn danh sách.
-  const layLuaChon = useConditionChoices([])
+  const getOptions = useConditionChoices([])
 
   const engineOn = useMemo(
     () => new Map((switches ?? []).map((row) => [row.entity, row.is_enabled])),
@@ -158,7 +158,7 @@ function ApprovalFlowListContent() {
           if (advanced || dieuKien.length === 0) {
             return <span className="truncate font-mono text-xs">{row.condition}</span>
           }
-          return <span className="truncate">{cauDieuKien(dieuKien, fields, layLuaChon)}</span>
+          return <span className="truncate">{conditionText(dieuKien, fields, getOptions)}</span>
         },
       },
       {
@@ -184,10 +184,10 @@ function ApprovalFlowListContent() {
         header: 'Trạng thái',
         width: 160,
         cell: (row) => {
-          const trangThai = flowStatus(row, engineOn.get(row.entity) ?? false)
+          const status = flowStatus(row, engineOn.get(row.entity) ?? false)
           return (
-            <Badge variant={BADGE_VARIANT[trangThai.tone]} title={trangThai.hint}>
-              {trangThai.label}
+            <Badge variant={BADGE_VARIANT[status.tone]} title={status.hint}>
+              {status.label}
             </Badge>
           )
         },
@@ -223,7 +223,7 @@ function ApprovalFlowListContent() {
           ) : null,
       },
     ],
-    [can, deleteFlow, engineOn, layLuaChon],
+    [can, deleteFlow, engineOn, getOptions],
   )
 
   return (

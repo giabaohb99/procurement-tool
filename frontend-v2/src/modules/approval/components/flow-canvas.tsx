@@ -74,18 +74,18 @@ export function FlowCanvas({
 
     //  Kéo giữa các CHẶNG = hoán vị vị trí hai chặng đó. Kéo trong cùng một
     //  chặng không đổi gì: các nhánh song song không có thứ tự với nhau.
-    const thuTuMoi = cacChang.slice()
-    const i = thuTuMoi.indexOf(tu.seq)
-    const j = thuTuMoi.indexOf(den.seq)
-    thuTuMoi.splice(i, 1)
-    thuTuMoi.splice(j, 0, tu.seq)
+    const newOrder = cacChang.slice()
+    const i = newOrder.indexOf(tu.seq)
+    const j = newOrder.indexOf(den.seq)
+    newOrder.splice(i, 1)
+    newOrder.splice(j, 0, tu.seq)
 
-    onDoiThuTu(thuTuMoi.map((seq) => nodes.filter((n) => n.seq === seq).map((n) => n.id)))
+    onDoiThuTu(newOrder.map((seq) => nodes.filter((n) => n.seq === seq).map((n) => n.id)))
   }
 
   return (
     <div className="flex flex-col items-center gap-0 py-2">
-      <MocDau icon={FileInput} label="Người trình duyệt" />
+      <StartMarker icon={FileInput} label="Người trình duyệt" />
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext
@@ -94,18 +94,18 @@ export function FlowCanvas({
         >
           {theoChang.map((cungChang, index) => {
             const seq = cacChang[index]
-            const coReNhanh = cungChang.length > 1
-            const thieuMacDinh = coReNhanh && !cungChang.some((node) => node.is_default_branch)
+            const hasBranch = cungChang.length > 1
+            const missingDefault = hasBranch && !cungChang.some((node) => node.is_default_branch)
 
             return (
               <div key={seq} className="flex w-full flex-col items-center">
-                <NoiTiep onThem={() => onThem(index)} />
+                <Connector onThem={() => onThem(index)} />
 
                 <div className="w-full max-w-xl">
                   <div className="mb-1.5 flex items-center justify-between gap-2">
                     <span className="text-xs font-medium text-muted-foreground">
                       Chặng {index + 1}
-                      {coReNhanh && ` · ${cungChang.length} nhánh, chỉ một nhánh chạy`}
+                      {hasBranch && ` · ${cungChang.length} nhánh, chỉ một nhánh chạy`}
                     </span>
                     <Button
                       type="button"
@@ -119,7 +119,7 @@ export function FlowCanvas({
                     </Button>
                   </div>
 
-                  {thieuMacDinh && (
+                  {missingDefault && (
                     <p className="mb-1.5 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900">
                       <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-700" />
                       <span>
@@ -129,13 +129,13 @@ export function FlowCanvas({
                     </p>
                   )}
 
-                  <div className={cn('grid gap-2', coReNhanh && 'sm:grid-cols-2')}>
+                  <div className={cn('grid gap-2', hasBranch && 'sm:grid-cols-2')}>
                     {cungChang.map((node) => (
                       <FlowNodeCard
                         key={node.id}
                         node={node}
-                        laNhanh={coReNhanh}
-                        dangChon={nodeDangChon === node.id}
+                        isQuick={hasBranch}
+                        selection={nodeDangChon === node.id}
                         onChon={() => onChon(node.id)}
                         onXoa={() => onXoa(node.id)}
                         onNhanBan={() => onNhanBan(node)}
@@ -149,14 +149,14 @@ export function FlowCanvas({
         </SortableContext>
       </DndContext>
 
-      <NoiTiep onThem={() => onThem(cacChang.length)} />
-      <MocDau icon={Flag} label="Kết thúc — phiếu được duyệt" />
+      <Connector onThem={() => onThem(cacChang.length)} />
+      <StartMarker icon={Flag} label="Kết thúc — phiếu được duyệt" />
     </div>
   )
 }
 
 /** Mốc đầu và mốc cuối — để người đọc biết sơ đồ chạy theo chiều nào. */
-function MocDau({ icon: Icon, label }: { icon: React.ComponentType<{ className?: string }>; label: string }) {
+function StartMarker({ icon: Icon, label }: { icon: React.ComponentType<{ className?: string }>; label: string }) {
   return (
     <Badge variant="outline" className="gap-1.5 bg-muted/50 py-1 font-normal">
       <Icon className="size-3.5" />
@@ -166,7 +166,7 @@ function MocDau({ icon: Icon, label }: { icon: React.ComponentType<{ className?:
 }
 
 /** Đoạn nối giữa hai chặng, kèm nút chèn bước vào ĐÚNG chỗ đó. */
-function NoiTiep({ onThem }: { onThem: () => void }) {
+function Connector({ onThem }: { onThem: () => void }) {
   return (
     <div className="group/noi flex flex-col items-center">
       <span aria-hidden className="h-4 w-px bg-border" />

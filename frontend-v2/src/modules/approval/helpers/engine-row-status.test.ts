@@ -15,16 +15,16 @@ describe('engineRowStatus', () => {
   it('bật nhưng CHƯA khai luồng nào thì không được báo là đang chạy', () => {
     //  `bat_dau()` không tìm được luồng thì trả None và phiếu đi đường cũ.
     //  Báo "đang chạy" ở đây là để người quản trị ngồi chờ một thứ không xảy ra.
-    const trang_thai = engineRowStatus(0, true)
+    const status = engineRowStatus(0, true)
 
-    expect(trang_thai.tone).toBe('idle')
-    expect(trang_thai.label).toBe('Bật nhưng chưa có luồng')
+    expect(status.tone).toBe('idle')
+    expect(status.label).toBe('Bật nhưng chưa có luồng')
   })
 
   it('bật + có luồng mới là đang chạy bộ máy mới', () => {
-    const trang_thai = engineRowStatus(2, true)
+    const status = engineRowStatus(2, true)
 
-    expect(trang_thai.tone).toBe('running')
-    expect(trang_thai.hint).toMatch(/2 luồng/)
+    expect(status.tone).toBe('running')
+    expect(status.hint).toMatch(/2 luồng/)
   })
 })

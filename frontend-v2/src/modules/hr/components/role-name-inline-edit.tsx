@@ -7,7 +7,7 @@ import { Input } from '@/shared/ui/input'
 import type { Role } from '../types/role'
 
 /** Trần độ dài khớp cột `tab_role.name` — backend chặn ở 100 (CR-173). */
-const DAI_NHAT = 100
+const MAX_LENGTH = 100
 
 interface RoleNameInlineEditProps {
   role: Role
@@ -39,37 +39,37 @@ export function RoleNameInlineEdit({
   pending,
   onRename,
 }: RoleNameInlineEditProps) {
-  const [dangSua, setDangSua] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const [ten, setTen] = useState(role.name)
 
   //  Đổi sang vai trò khác thì bỏ dở việc sửa và nạp lại tên của vai trò mới.
   if (useHasChanged(role.id)) {
-    setDangSua(false)
+    setIsEditing(false)
     setTen(role.name)
   }
 
   const sach = ten.trim()
-  const luuDuoc = sach.length > 0 && sach !== role.name
+  const canSave = sach.length > 0 && sach !== role.name
 
   function luu() {
-    if (!luuDuoc) return
+    if (!canSave) return
     onRename(role.id, sach)
-    setDangSua(false)
+    setIsEditing(false)
   }
 
-  function boQua() {
+  function cancel() {
     setTen(role.name)
-    setDangSua(false)
+    setIsEditing(false)
   }
 
-  if (dangSua) {
+  if (isEditing) {
     return (
       <div>
         <div className="flex items-center gap-1.5">
           <Input
             autoFocus
             value={ten}
-            maxLength={DAI_NHAT}
+            maxLength={MAX_LENGTH}
             aria-label={`Tên vai trò ${role.code}`}
             disabled={pending}
             onChange={(e) => setTen(e.target.value)}
@@ -81,7 +81,7 @@ export function RoleNameInlineEdit({
                 e.preventDefault()
                 luu()
               }
-              if (e.key === 'Escape') boQua()
+              if (e.key === 'Escape') cancel()
             }}
             className="h-8 w-72 font-semibold"
           />
@@ -91,7 +91,7 @@ export function RoleNameInlineEdit({
             variant="ghost"
             title="Lưu tên"
             aria-label="Lưu tên"
-            disabled={!luuDuoc || pending}
+            disabled={!canSave || pending}
             onClick={luu}
           >
             <Check className="text-emerald-600" />
@@ -102,7 +102,7 @@ export function RoleNameInlineEdit({
             variant="ghost"
             title="Bỏ qua"
             aria-label="Bỏ qua"
-            onClick={boQua}
+            onClick={cancel}
           >
             <X />
           </Button>
@@ -135,7 +135,7 @@ export function RoleNameInlineEdit({
             className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
             onClick={() => {
               setTen(role.name)
-              setDangSua(true)
+              setIsEditing(true)
             }}
           >
             <Pencil />

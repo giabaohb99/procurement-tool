@@ -53,9 +53,9 @@ export function RoleSidePanel({ roles, selectedId, onSelect }: RoleSidePanelProp
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  const daSapXep = xepTheoThuTuTamThoi(roles, thuTuTamThoi)
+  const sorted = applyPendingOrder(roles, thuTuTamThoi)
 
-  const visible = daSapXep.filter(
+  const visible = sorted.filter(
     (role) =>
       !keyword || `${role.name} ${role.code}`.toLowerCase().includes(keyword.toLowerCase()),
   )
@@ -63,14 +63,14 @@ export function RoleSidePanel({ roles, selectedId, onSelect }: RoleSidePanelProp
   //  ĐANG LỌC THÌ KHÔNG CHO KÉO. Trên danh sách đã lọc, "thả dòng A xuống dưới
   //  dòng B" không nói được gì về những dòng đang bị ẩn nằm giữa hai dòng đó —
   //  lưu xuống là thứ tự thật khác hẳn thứ người dùng vừa nhìn thấy.
-  const dangLoc = keyword.trim().length > 0
-  const choKeo = canWrite && !dangLoc
+  const isFiltering = keyword.trim().length > 0
+  const canDrag = canWrite && !isFiltering
 
-  function khiThaDong(event: DragEndEvent) {
+  function onDragEnd(event: DragEndEvent) {
     const { active, over } = event
     if (!over || active.id === over.id) return
 
-    const ids = daSapXep.map((role) => role.id)
+    const ids = sorted.map((role) => role.id)
     const tu = ids.indexOf(Number(active.id))
     const den = ids.indexOf(Number(over.id))
     if (tu < 0 || den < 0) return
@@ -151,7 +151,7 @@ export function RoleSidePanel({ roles, selectedId, onSelect }: RoleSidePanelProp
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
-          onDragEnd={khiThaDong}
+          onDragEnd={onDragEnd}
         >
           <SortableContext
             items={visible.map((role) => role.id)}
@@ -163,7 +163,7 @@ export function RoleSidePanel({ roles, selectedId, onSelect }: RoleSidePanelProp
                 role={role}
                 selected={role.id === selectedId}
                 onSelect={onSelect}
-                canDrag={choKeo}
+                canDrag={canDrag}
               />
             ))}
           </SortableContext>
@@ -172,7 +172,7 @@ export function RoleSidePanel({ roles, selectedId, onSelect }: RoleSidePanelProp
 
       {/*  Nói ra vì sao tay cầm kéo biến mất khi đang gõ tìm — không nói thì
            người dùng tưởng chức năng hỏng. */}
-      {canWrite && dangLoc && (
+      {canWrite && isFiltering && (
         <p className="text-xs text-muted-foreground">
           Xóa từ khóa tìm để kéo đổi thứ tự.
         </p>
@@ -188,10 +188,10 @@ export function RoleSidePanel({ roles, selectedId, onSelect }: RoleSidePanelProp
  * cuối chứ không bị bỏ rơi — mất một dòng khỏi cột trái là mất luôn đường vào
  * ma trận quyền của nó.
  */
-function xepTheoThuTuTamThoi(roles: Role[], thuTu: number[] | null): Role[] {
+function applyPendingOrder(roles: Role[], thuTu: number[] | null): Role[] {
   if (!thuTu) return roles
-  const viTri = new Map(thuTu.map((id, index) => [id, index]))
+  const position = new Map(thuTu.map((id, index) => [id, index]))
   return [...roles].sort(
-    (a, b) => (viTri.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (viTri.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+    (a, b) => (position.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (position.get(b.id) ?? Number.MAX_SAFE_INTEGER),
   )
 }
