@@ -34,7 +34,12 @@ _PARAMS = {
                         "type": "string",
                         "description": "Tên hàng + thông số kỹ thuật & chất lượng — bắt buộc.",
                     },
-                    "item_group": {"type": "string", "description": "Phân loại VTBB/NL (nếu biết)."},
+                    "item_group": {
+                        "type": "string",
+                        "description": "Phân loại VTBB/NL — CHỈ điền khi chắc chắn đúng tên "
+                                       "trong danh mục hệ thống; không chắc thì BỎ TRỐNG, "
+                                       "đừng tự đặt tên mới (ô này là ô chọn, tên lạ sẽ bị bỏ).",
+                    },
                     "request_qty": {"type": "number", "description": "Số lượng dự kiến mua."},
                     "uom": {"type": "string", "description": "Đơn vị tính (cái, bộ, kg...)."},
                     "proposed_price": {
@@ -57,11 +62,14 @@ _DESC = (
     "SOẠN SẴN dữ liệu cho phiếu Yêu cầu báo giá (YCBG) từ thông tin người dùng cung cấp. "
     "KHÔNG tạo phiếu — chỉ chuẩn bị bản đề xuất; giao diện sẽ hiện nút mở form tạo YCBG đã "
     "điền sẵn để người dùng rà lại và tự bấm Tạo. Gọi khi người dùng muốn được giúp lập phiếu "
-    "yêu cầu báo giá / xin báo giá một mặt hàng và đã cho biết tối thiểu: mặt hàng cần mua và "
-    "mục đích. Thiếu thì hỏi lại cho đủ rồi mới gọi. Đủ thông tin thì PHẢI gọi ngay trong lượt "
-    "trả lời — nút 'Tạo yêu cầu báo giá' trên giao diện chỉ xuất hiện khi tool được gọi, trả "
-    "lời suông thì người dùng không có nút nào để bấm. Sau khi gọi, báo người dùng bấm nút "
-    "'Tạo yêu cầu báo giá' ngay dưới câu trả lời để mở form — nhấn mạnh phiếu CHƯA được tạo."
+    "yêu cầu báo giá / xin báo giá và đã cho biết đủ: mặt hàng cần mua, SỐ LƯỢNG dự kiến và "
+    "mục đích. KHÔNG tự bịa thông tin người dùng chưa nói (số lượng, thông số, phân loại) — "
+    "thiếu gì thì gom hỏi trong MỘT lượt (số lượng? thông số/chất lượng? yêu cầu khác?) rồi "
+    "mới gọi; người dùng nói chưa biết số lượng thì mới để 0. Đủ thông tin thì PHẢI gọi ngay "
+    "trong lượt trả lời — nút 'Tạo yêu cầu báo giá' trên giao diện chỉ xuất hiện khi tool "
+    "được gọi, trả lời suông thì người dùng không có nút nào để bấm. Sau khi gọi, báo người "
+    "dùng bấm nút 'Tạo yêu cầu báo giá' ngay dưới câu trả lời để mở form — nhấn mạnh phiếu "
+    "CHƯA được tạo."
 )
 
 
@@ -111,16 +119,28 @@ def _run(ctx: ToolContext, args: dict) -> dict:
     groups = _catalog_names(ctx.db, ItemGroup)
 
     lines = []
+    dropped_groups = []   # phân loại model bịa ngoài danh mục — bỏ trống, kể lại cho model
+    thieu_so_luong = False
     for raw in raw_lines[:MAX_LINES]:
         if not isinstance(raw, dict):
             continue
         detail = _clean_text(raw.get("requirement_detail"))
         if not detail:
             continue
+        #  Ô Phân loại trên form là ô CHỌN đúng danh mục — khác ô ĐVT chữ tự do. Tên lạ
+        #  đổ vào ô chọn là form lỗi (bắt được khi khách test 26/08), nên không khớp thì
+        #  BỎ TRỐNG chứ không giữ nguyên như uom.
+        raw_group = _clean_text(raw.get("item_group"), 100)
+        group = groups.get(raw_group.lower(), "") if raw_group else ""
+        if raw_group and not group:
+            dropped_groups.append(raw_group)
+        qty = _clean_number(raw.get("request_qty"))
+        if qty <= 0:
+            thieu_so_luong = True
         lines.append({
             "requirement_detail": detail,
-            "item_group": _match_catalog(_clean_text(raw.get("item_group"), 100), groups),
-            "request_qty": _clean_number(raw.get("request_qty")),
+            "item_group": group,
+            "request_qty": qty,
             "uom": _match_catalog(_clean_text(raw.get("uom"), 50), units),
             "proposed_price": _clean_number(raw.get("proposed_price")),
             "other_requirement": _clean_text(raw.get("other_requirement")),
@@ -128,7 +148,7 @@ def _run(ctx: ToolContext, args: dict) -> dict:
     if not lines:
         return {"error": "Không có dòng hợp lệ nào (mỗi dòng cần requirement_detail)."}
 
-    return {
+    result = {
         "status": "ready",
         "draft": {"purpose": purpose, "note": _clean_text(args.get("note"), 500), "lines": lines},
         "total": len(lines),
@@ -136,6 +156,16 @@ def _run(ctx: ToolContext, args: dict) -> dict:
         "reminder": "Phiếu CHƯA được tạo. Hãy tóm tắt bản đề xuất và mời người dùng bấm nút "
                     "'Tạo yêu cầu báo giá' dưới câu trả lời để mở form đã điền sẵn.",
     }
+    if dropped_groups:
+        result["invalid_item_groups"] = dropped_groups
+        result["item_groups"] = sorted(groups.values())
+        result["reminder"] += (" Phân loại bạn điền KHÔNG có trong danh mục nên đã bị bỏ trống "
+                               "— nói rõ điều này và nêu danh sách phân loại hợp lệ "
+                               "(item_groups) để người dùng chọn, hoặc chọn trên form.")
+    if thieu_so_luong:
+        result["reminder"] += (" Có dòng chưa có số lượng — nhắc người dùng bổ sung số lượng "
+                               "trên form trước khi bấm Tạo.")
+    return result
 
 
 DRAFT_SURVEY_REQUEST_SPEC = ToolSpec(
@@ -194,8 +224,9 @@ _PR_DESC = (
     "SOẠN SẴN dữ liệu cho phiếu Yêu cầu mua hàng (YCMH) từ thông tin người dùng cung cấp. "
     "KHÔNG tạo phiếu — chỉ chuẩn bị bản đề xuất; giao diện sẽ hiện nút mở form tạo YCMH đã "
     "điền sẵn để người dùng rà lại và tự bấm Tạo. Gọi khi người dùng muốn được giúp lập phiếu "
-    "yêu cầu MUA hàng (đề nghị mua, không phải xin báo giá) và đã cho biết tối thiểu: mặt "
-    "hàng + mục đích. Thiếu thì hỏi lại cho đủ rồi mới gọi. Đủ thông tin thì PHẢI gọi ngay "
+    "yêu cầu MUA hàng (đề nghị mua, không phải xin báo giá) và đã cho biết đủ: mặt hàng, "
+    "SỐ LƯỢNG và mục đích. KHÔNG tự bịa thông tin người dùng chưa nói (số lượng, ngày cần "
+    "hàng, thông số) — thiếu gì thì gom hỏi trong MỘT lượt rồi mới gọi. Đủ thông tin thì PHẢI gọi ngay "
     "trong lượt trả lời — nút 'Tạo yêu cầu mua hàng' trên giao diện chỉ xuất hiện khi tool "
     "được gọi. Sau khi gọi, báo người dùng bấm nút đó để mở form — nhấn mạnh phiếu CHƯA được "
     "tạo; dòng nào chưa khớp được mã hàng trong danh mục thì nhắc họ chọn lại mã trên form."
@@ -282,6 +313,9 @@ def _run_purchase(ctx: ToolContext, args: dict) -> dict:
         result["unmatched"] = unmatched
         result["reminder"] += (" Có dòng chưa khớp được mã hàng trong danh mục — liệt kê gợi ý "
                                "(nếu có) và nhắc người dùng chọn lại mã trên form.")
+    if any(line["qty"] <= 0 for line in lines):
+        result["reminder"] += (" Có dòng chưa có số lượng — nhắc người dùng bổ sung số lượng "
+                               "trên form trước khi bấm Tạo.")
     return result
 
 

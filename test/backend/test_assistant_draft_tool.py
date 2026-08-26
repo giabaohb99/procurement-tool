@@ -68,6 +68,51 @@ def test_chuan_hoa_dvt_theo_danh_muc(db, seed, monkeypatch):
     assert out["draft"]["lines"][1]["uom"] == "chiếc"
 
 
+def test_phan_loai_bia_bi_bo_trong_va_tra_danh_muc(db, seed, monkeypatch):
+    """Model bịa phân loại ngoài danh mục ("Thiết bị văn phòng / IT") đổ vào ô CHỌN làm
+    form lỗi (khách bắt được khi test 26/08/2026). Không khớp thì BỎ TRỐNG + trả danh sách
+    hợp lệ để model nêu cho người dùng chọn; khớp lệch hoa thường thì lấy chính tả danh mục."""
+    from app.modules.catalog.model import ItemGroup
+    from app.modules.user.model import User
+
+    db.add(ItemGroup(code="TBIT", name="Thiết bị IT", is_active=True))
+    db.commit()
+
+    ctx = _ctx(db, db.get(User, seed.u_req_id), allowed=True, monkeypatch=monkeypatch)
+    out = _run(ctx, {"purpose": "Trang bị màn hình", "lines": [
+        {"requirement_detail": "Màn 27 inch", "request_qty": 2,
+         "item_group": "thiết bị it"},                          # lệch hoa thường -> khớp
+        {"requirement_detail": "Bàn phím", "request_qty": 1,
+         "item_group": "Thiết bị văn phòng / IT"},              # bịa -> bỏ trống
+    ]})
+    assert out["status"] == "ready"
+    lines = out["draft"]["lines"]
+    assert lines[0]["item_group"] == "Thiết bị IT"
+    assert lines[1]["item_group"] == ""
+    assert out["invalid_item_groups"] == ["Thiết bị văn phòng / IT"]
+    assert "Thiết bị IT" in out["item_groups"]
+    assert "KHÔNG có trong danh mục" in out["reminder"]
+
+
+def test_thieu_so_luong_thi_nhac_bo_sung(db, seed, monkeypatch):
+    """Người dùng chưa nói số lượng thì qty=0 vẫn soạn được (YCBG khảo sát giá là hợp lệ),
+    nhưng reminder phải dặn model nhắc bổ sung số lượng trên form."""
+    from app.modules.user.model import User
+
+    ctx = _ctx(db, db.get(User, seed.u_req_id), allowed=True, monkeypatch=monkeypatch)
+
+    thieu = _run(ctx, {"purpose": "Mua màn hình", "lines": [
+        {"requirement_detail": "Màn 27 inch"},
+    ]})
+    assert thieu["status"] == "ready"
+    assert "chưa có số lượng" in thieu["reminder"]
+
+    du = _run(ctx, {"purpose": "Mua màn hình", "lines": [
+        {"requirement_detail": "Màn 27 inch", "request_qty": 2},
+    ]})
+    assert "chưa có số lượng" not in du["reminder"]
+
+
 def test_cat_tran_so_dong_va_bao_loi_khi_thieu(db, seed, monkeypatch):
     from app.modules.user.model import User
 
@@ -169,6 +214,8 @@ def test_ycmh_khong_khop_gi_van_giu_dong_de_nguoi_dung_tu_dien(db, seed, monkeyp
     assert line["product_name"] == "Máy chiếu hologram"
     assert line["qty"] == 0
     assert out["unmatched"][0]["suggestions"] == []
+    # qty=0 vẫn soạn được nhưng phải nhắc bổ sung số lượng (cùng luật với YCBG).
+    assert "chưa có số lượng" in out["reminder"]
 
 # ── draft_leave_request (Giấy nghỉ phép) ────────────────────────────────────────────────
 
