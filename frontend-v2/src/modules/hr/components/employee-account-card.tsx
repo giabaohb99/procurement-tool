@@ -103,7 +103,12 @@ export function EmployeeAccountCard({ employeeId, email }: EmployeeAccountCardPr
 
           <div className="flex flex-wrap gap-2">
             {canSetPassword && (account || email) && (
-              <Button variant="outline" size="sm" onClick={() => setPasswordOpen(true)}>
+              // ⚠️ `type="button"` là BẮT BUỘC: thẻ này nằm TRONG `<form>` của
+              // trang chi tiết nhân sự, mà nút không khai `type` thì mặc định là
+              // `submit`. Bấm «Đặt lại mật khẩu» vừa mở hộp thoại vừa LƯU luôn
+              // hồ sơ — khách thấy bóng «Đã cập nhật nhân sự» hiện lên trong khi
+              // họ chưa sửa gì (báo 26/08/2026).
+              <Button type="button" variant="outline" size="sm" onClick={() => setPasswordOpen(true)}>
                 <KeyRound />
                 {account ? 'Đặt lại mật khẩu' : 'Tạo tài khoản đăng nhập'}
               </Button>

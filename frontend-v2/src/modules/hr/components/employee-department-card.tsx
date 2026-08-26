@@ -90,6 +90,10 @@ export function EmployeeDepartmentCard({
 
         {canWrite && !isSelf && (
           <Button
+            // ⚠️ Cùng cái bẫy với nút ở `employee-account-card`: thẻ này nằm
+            // TRONG `<form>` của trang chi tiết, thiếu `type` là mặc định
+            // `submit` — bấm «Lưu kiêm nhiệm» kéo theo một lần lưu cả hồ sơ.
+            type="button"
             size="sm"
             onClick={() =>
               save.mutate(selection, { onSuccess: () => setDangChonDo(false) })
