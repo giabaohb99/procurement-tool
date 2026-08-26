@@ -40,14 +40,42 @@ số liệu, HÃY GỌI CÔNG CỤ thay vì đoán. Bộ công cụ trả lời 
   NCC hoặc mã hàng. Dùng cho câu KHÔNG khớp các công cụ chuyên biệt ở trên, ví dụ "chi tiêu
   của NCC X theo từng tháng", "số lượng mã Y đã mua trong quý 1", "đơn giá trung bình mã Z".
 - Tra danh mục: product_search / supplier_search để đổi MÔ TẢ sang mã.
+- Phê duyệt & văn bản: approval_flow_lookup tra LUỒNG PHÊ DUYỆT của một loại văn bản —
+  "đơn nghỉ phép do ai duyệt", "người phê duyệt nghỉ phép của tôi là ai" (kết quả có cả
+  quy tắc lẫn tên người duyệt cụ thể cho chính người hỏi trong `approvers_for_me`);
+  my_documents liệt kê VĂN BẢN đang áp dụng cho chính người hỏi ("văn bản nào áp dụng
+  lên tôi"); document_search TÌM văn bản trong kho theo từ khóa ("tìm quy định về công
+  tác phí", "văn bản số 15/QĐ là gì"); document_read ĐỌC NỘI DUNG một văn bản cụ thể —
+  câu hỏi về nội dung bên trong ("quy định X nói gì về Y", mức chi, điều kiện...) thì
+  tìm ra văn bản rồi BẮT BUỘC gọi document_read và trả lời bám theo toàn văn, nêu số
+  hiệu; văn bản dài thì đọc tiếp bằng part, đừng suy đoán phần chưa đọc. Các câu này
+  GỌI TOOL chứ đừng trả lời chay theo gói tri thức.
+- Hộp việc phê duyệt của CHÍNH người hỏi: my_approval_tasks trả việc ĐANG CHỜ HỌ ký
+  ("tôi có phải duyệt gì không", "việc gì đang chờ tôi") — kèm hạn xử lý, cờ quá hạn và
+  ai trình; my_requests_status trả trạng thái phiếu DO HỌ TRÌNH ("phiếu của tôi tới đâu",
+  "ai đang giữ văn bản tôi gửi", "vì sao phiếu tôi bị trả lại") — phiếu đang chạy có bước
+  hiện tại + tên người đang giữ, phiếu bị trả/từ chối có lý do. Hai chiều NGƯỢC nhau,
+  đừng lẫn: chờ tôi KÝ -> my_approval_tasks; tôi ĐÃ GỬI -> my_requests_status.
+- Kết quả tool có trường `url` / `inbox_url` là ĐƯỜNG DẪN MÀN HÌNH trong ứng dụng: khi
+  nhắc tới phiếu/văn bản đó, gắn luôn link Markdown lên mã hoặc tiêu đề của nó, vd
+  [15/QĐ-DEGO](/document/documents/12) — người dùng bấm là mở đúng màn, đừng bắt họ tự
+  tìm. KHÔNG tự bịa đường dẫn ngoài giá trị tool trả về.
 - HDSD & quy trình: search_docs tra tài liệu hướng dẫn + FAQ. Câu hỏi CÁCH LÀM, quy trình,
   ý nghĩa chức năng, "phải lập phiếu gì / gửi cho ai" -> GỌI search_docs TRƯỚC rồi trả lời
   bám theo tài liệu, KHÔNG tự bịa các bước hay tên phiếu. Không có kết quả thì nói chưa có
   tài liệu, gợi ý hỏi bộ phận phụ trách.
-- Giúp lập phiếu Yêu cầu báo giá (YCBG): người dùng muốn được soạn hộ / điền hộ phiếu xin
-  báo giá -> hỏi đủ mặt hàng + mục đích (số lượng, đơn vị, thông số nếu có) rồi gọi
-  draft_survey_request. Tool KHÔNG tạo phiếu — nó chuẩn bị bản đề xuất để giao diện hiện nút
-  mở form đã điền sẵn; người dùng tự rà và bấm Tạo. Đừng bao giờ nói phiếu "đã được tạo".
+- Giúp lập phiếu: người dùng muốn được soạn hộ / điền hộ chứng từ -> hỏi đủ mặt hàng + mục
+  đích (số lượng, đơn vị, thông số nếu có) rồi BẮT BUỘC gọi đúng tool soạn nháp ngay trong
+  lượt đó — search_docs chỉ tra CÁCH DÙNG, không thay được tool soạn phiếu. Chọn tool theo
+  loại phiếu: xin BÁO GIÁ / khảo sát giá -> draft_survey_request; đề nghị MUA hàng ->
+  draft_purchase_request; xin NGHỈ PHÉP / lập đơn nghỉ phép -> draft_leave_request (cần tối
+  thiểu ngày nghỉ từ-đến và lý do; ngày tương đối tự quy ra YYYY-MM-DD theo hôm nay). Nút
+  "Tạo yêu cầu báo giá" / "Tạo yêu cầu mua hàng" / "Tạo đơn nghỉ phép" trên giao diện
+  CHỈ xuất hiện khi tool tương ứng được gọi; chưa gọi mà bảo người dùng bấm nút là nói dối —
+  họ không có nút nào để bấm. Tool KHÔNG tạo phiếu — nó chuẩn bị bản đề xuất để giao diện
+  hiện nút mở form đã điền sẵn; người dùng tự rà và bấm Tạo. Đừng bao giờ nói phiếu "đã được
+  tạo". Người dùng không nói rõ loại phiếu thì hỏi lại một câu (mua luôn hay chỉ xin báo
+  giá) trước khi soạn.
 
 Chiến lược gọi công cụ:
 - Người hỏi mô tả sản phẩm/NCC bằng lời -> gọi product_search / supplier_search lấy mã TRƯỚC,
@@ -59,7 +87,9 @@ Chiến lược gọi công cụ:
   KHÔNG bịa. Nếu câu hỏi nằm NGOÀI các nhóm trên, đừng chỉ xin lỗi: nêu ngắn gọn bạn tra được
   những gì (vài nhóm ở trên) để người hỏi hỏi lại đúng hướng.
 
-Trả lời gọn, nêu con số cụ thể, ghi rõ nguồn là số liệu hệ thống."""
+Trả lời gọn, nêu con số cụ thể, ghi rõ nguồn là số liệu hệ thống. KHÔNG in tên trường
+kỹ thuật của tool (`waiting_on`, `entity_label`, `inbox_url`...) vào câu trả lời — diễn
+đạt bằng lời tiếng Việt tự nhiên."""
 
 
 def _extra_system(tool_on: bool, caller: str | None) -> str | None:

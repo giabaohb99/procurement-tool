@@ -12,9 +12,13 @@ from app.core.audit import record
 from app.core.config import settings
 
 from ..provider import ToolDef
+from .approval_tool import MY_APPROVAL_TASKS_SPEC, MY_REQUESTS_STATUS_SPEC
 from .base import ToolContext
 from .catalog import SPECS
-from .draft_tool import DRAFT_SURVEY_REQUEST_SPEC
+from .document_tool import (APPROVAL_FLOW_LOOKUP_SPEC, DOCUMENT_READ_SPEC,
+                            DOCUMENT_SEARCH_SPEC, MY_DOCUMENTS_SPEC)
+from .draft_tool import (DRAFT_LEAVE_REQUEST_SPEC, DRAFT_PURCHASE_REQUEST_SPEC,
+                         DRAFT_SURVEY_REQUEST_SPEC)
 from .export_tool import EXPORT_REPORT_FILE_SPEC
 from .rag_tool import SEARCH_DOCS_SPEC
 
@@ -26,7 +30,11 @@ def _active_specs() -> list:
     Đọc cờ mỗi lần gọi thay vì chốt lúc import: bật/tắt RAG chỉ cần restart tiến trình, và test
     lật `settings.AI_RAG_ENABLED` không bị kẹt giá trị cũ.
     """
-    specs = list(SPECS) + [DRAFT_SURVEY_REQUEST_SPEC, EXPORT_REPORT_FILE_SPEC]
+    specs = list(SPECS) + [DRAFT_SURVEY_REQUEST_SPEC, DRAFT_PURCHASE_REQUEST_SPEC,
+                           DRAFT_LEAVE_REQUEST_SPEC, EXPORT_REPORT_FILE_SPEC,
+                           APPROVAL_FLOW_LOOKUP_SPEC, MY_DOCUMENTS_SPEC,
+                           DOCUMENT_SEARCH_SPEC, DOCUMENT_READ_SPEC,
+                           MY_APPROVAL_TASKS_SPEC, MY_REQUESTS_STATUS_SPEC]
     if settings.AI_RAG_ENABLED:
         specs.append(SEARCH_DOCS_SPEC)
     return specs
