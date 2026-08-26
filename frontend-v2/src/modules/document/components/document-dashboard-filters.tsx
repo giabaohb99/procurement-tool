@@ -6,6 +6,7 @@ import {
   useDepartmentsByCompanies,
 } from '@/modules/hr/hooks/use-departments'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
+import { cn } from '@/shared/utils/cn'
 import {
   Select,
   SelectContent,
@@ -46,6 +47,21 @@ interface DocumentDashboardFiltersProps {
  * Riêng biểu đồ 12 tháng KHÔNG chịu ảnh hưởng của ô này (nó tự khai cửa sổ của
  * nó) — mô tả dưới tiêu đề biểu đồ đó đã nói rõ "12 tháng gần nhất".
  */
+/**
+ * Lớp dùng chung cho ba ô lọc ở đây.
+ *
+ * ⚠️ `SelectTrigger` của shadcn để `justify-between`, mà ba ô này có **BA** con:
+ * biểu tượng · giá trị · mũi tên. Ô lại rộng hơn nội dung (`min-w-*`), nên ba
+ * thứ bị dàn đều ra và **chữ trôi vào giữa ô**, cách hẳn biểu tượng bên trái
+ * (khách báo 26/08/2026). Ô chọn thường chỉ có hai con nên không ai gặp.
+ *
+ * Cho ô giá trị `flex-1` là nó ăn hết chỗ thừa: biểu tượng dính mép trái, chữ
+ * bắt đầu ngay sau nó, mũi tên bị đẩy về mép phải. Sửa ở đây thay vì bỏ
+ * `min-w-*`: bề rộng tối thiểu là cố ý, để ba ô không nhảy qua nhảy lại mỗi lần
+ * đổi lựa chọn dài ngắn khác nhau.
+ */
+const O_LOC = 'w-auto gap-2 [&>[data-slot=select-value]]:flex-1 [&>[data-slot=select-value]]:text-left'
+
 export function DocumentDashboardFilters({
   companyId,
   departmentId,
@@ -90,7 +106,7 @@ export function DocumentDashboardFilters({
           })
         }
       >
-        <SelectTrigger className="w-auto min-w-52 gap-2">
+        <SelectTrigger className={cn(O_LOC, 'min-w-52')}>
           <Building2 className="size-4 text-muted-foreground" />
           <SelectValue />
         </SelectTrigger>
@@ -116,7 +132,7 @@ export function DocumentDashboardFilters({
           })
         }
       >
-        <SelectTrigger className="w-auto min-w-52 gap-2">
+        <SelectTrigger className={cn(O_LOC, 'min-w-52')}>
           <Network className="size-4 text-muted-foreground" />
           <SelectValue />
         </SelectTrigger>
@@ -147,7 +163,7 @@ export function DocumentDashboardFilters({
           })
         }
       >
-        <SelectTrigger className="w-auto min-w-40 gap-2">
+        <SelectTrigger className={cn(O_LOC, 'min-w-40')}>
           <CalendarRange className="size-4 text-muted-foreground" />
           <SelectValue />
         </SelectTrigger>
