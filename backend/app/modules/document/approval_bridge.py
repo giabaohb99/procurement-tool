@@ -232,21 +232,49 @@ def _ly_do(instance, mac_dinh: str) -> str:
 
 
 def _khi_duyet_xong(db: Session, document_id: int, instance) -> None:
-    """Duyệt hết các bước = ban hành: cấp số, khóa phiên bản, chuyển hiệu lực.
+    """Ký hết các bước. Ban hành LUÔN hay DỪNG LẠI chờ người soạn bấm?
 
-    Dùng lại đúng `service.approve()` chứ không viết lại luật ban hành ở đây —
-    viết lại là hai đường ban hành khác nhau, và một trong hai sẽ quên cấp số
-    hoặc quên khóa phiên bản.
+    Câu trả lời nằm ở cột `auto_issue_after_approval` của **loại văn bản**:
+
+    * bật (mặc định, mọi loại đang chạy) → ban hành luôn như trước: cấp số, khóa
+      phiên bản, chuyển hiệu lực;
+    * tắt → văn bản dừng ở **Chờ ban hành**. Người soạn thảo mở ra, chọn hộp thư
+      gửi thông báo rồi bấm *Ban hành* (26/08/2026).
+
+    Dùng lại đúng `service.approve()` ở nhánh trên chứ không viết lại luật ban
+    hành ở đây — viết lại là hai đường ban hành khác nhau, và một trong hai sẽ
+    quên cấp số hoặc quên khóa phiên bản.
     """
     from . import service
 
     doc = db.get(Document, document_id)
-    if doc is not None:
-        service.approve(db, doc, instance.updated_by or 0)
-        #  Câu ghi KHÔNG lặp lại nhãn hành động: giao diện đã in "Duyệt: …" nên
-        #  ghi thêm chữ "duyệt" nữa thành "Duyệt: Duyệt xong…".
+    if doc is None:
+        return
+
+    if not _tu_ban_hanh(db, doc):
+        service.cho_ban_hanh(db, doc, instance.updated_by or 0)
         _ghi_nhat_ky(db, document_id, instance, "approved",
-                     "Xong hết các bước của luồng — ban hành")
+                     "Xong hết các bước của luồng — chờ người soạn bấm Ban hành")
+        return
+
+    service.approve(db, doc, instance.updated_by or 0)
+    #  Câu ghi KHÔNG lặp lại nhãn hành động: giao diện đã in "Duyệt: …" nên
+    #  ghi thêm chữ "duyệt" nữa thành "Duyệt: Duyệt xong…".
+    _ghi_nhat_ky(db, document_id, instance, "approved",
+                 "Xong hết các bước của luồng — ban hành")
+
+
+def _tu_ban_hanh(db: Session, doc: Document) -> bool:
+    """Loại của văn bản này có cho duyệt xong ban hành luôn không.
+
+    Loại đã bị xóa khỏi danh mục thì trả `True` — giữ đúng hành vi cũ. Dừng một
+    văn bản ở «Chờ ban hành» vì lý do không đọc được cấu hình là để nó kẹt mà
+    không ai hiểu vì sao.
+    """
+    from app.modules.doc_catalog.model import DocType
+
+    loai = db.get(DocType, doc.doc_type_id) if doc.doc_type_id else None
+    return True if loai is None else bool(loai.auto_issue_after_approval)
 
 
 def _khi_tu_choi(db: Session, document_id: int, instance) -> None:

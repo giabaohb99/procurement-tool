@@ -10,6 +10,7 @@ import type {
   DocumentTreeNode,
   LinkedDocument,
 } from '../types/document-link'
+import type { IssueMailbox } from '../types/issue-mailbox'
 
 const BASE_URL = '/api/documents'
 
@@ -24,6 +25,10 @@ export const documentLinkApi = {
   /** J04 — bản xem trước lúc ban hành. Chỉ đọc, không chiếm số. */
   issuePreview: (documentId: number) =>
     apiGet<DocumentIssuePreview>(`${BASE_URL}/${documentId}/issue-preview`),
+
+  /** Hộp thư TÔI được gửi danh nghĩa khi ban hành văn bản này (26/08/2026). */
+  issueMailboxes: (documentId: number) =>
+    apiGet<IssueMailbox[]>(`${BASE_URL}/${documentId}/mailboxes`),
 
   /** J10 — văn bản này đã bị sửa đổi / thay thế / bãi bỏ bởi những văn bản nào. */
   amendedBy: (documentId: number) =>

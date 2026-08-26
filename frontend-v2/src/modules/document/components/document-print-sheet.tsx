@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 
 import { A4_HEIGHT_PX, A4_WIDTH_PX, MARGIN_TOP_MM, mmToPx } from '@/shared/ui/rich-text-editor'
 import { cn } from '@/shared/utils/cn'
+import { sanitizeHtml } from '@/shared/utils/sanitize-html'
 import {
   fillPageMarkers,
   hasPageMarkerContent,
@@ -60,6 +61,13 @@ export function DocumentPrintSheet({
   const measureRef = useRef<HTMLDivElement>(null)
   const [pages, setPages] = useState<PrintBlock[][] | null>(null)
 
+  //  Lọc XSS TRƯỚC khi đo và vẽ. Backend đã lọc lúc ghi, nhưng dữ liệu cũ và
+  //  đường ghi lỡ sót vẫn tới đây — mà người mở bản in thường là cấp trên đi
+  //  duyệt (xem `shared/utils/sanitize-html`). Đo trên bản đã sạch nên các
+  //  block tách ra bên dưới (dòng render thứ hai) cũng sạch theo, không phải
+  //  lọc lại.
+  const safeHtml = useMemo(() => sanitizeHtml(html), [html])
+
   const contentWidth = A4_WIDTH_PX - mmToPx(marginLeftMm) - mmToPx(marginRightMm)
   const contentHeight = A4_HEIGHT_PX - 2 * mmToPx(MARGIN_TOP_MM)
 
@@ -107,7 +115,7 @@ export function DocumentPrintSheet({
     return () => {
       huy = true
     }
-  }, [html, contentHeight, contentWidth])
+  }, [safeHtml, contentHeight, contentWidth])
 
   const sheetCount = pages?.length ?? 0
 
@@ -142,7 +150,7 @@ export function DocumentPrintSheet({
           visibility: 'hidden',
           pointerEvents: 'none',
         }}
-        dangerouslySetInnerHTML={{ __html: html }}
+        dangerouslySetInnerHTML={{ __html: safeHtml }}
       />
 
       {(pages ?? []).map((blocks, index) => (

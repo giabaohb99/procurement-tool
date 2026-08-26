@@ -66,6 +66,18 @@ export interface DocumentType {
    */
   needs_request: boolean
 
+  /**
+   * Ký đủ chữ ký xong có TỰ ban hành không (26/08/2026).
+   *
+   * `true` (mặc định) = duyệt xong là ban hành luôn, y như trước.
+   * `false` = văn bản dừng ở «Chờ ban hành»; chính người soạn thảo mở ra, chọn
+   * hộp thư gửi thông báo rồi bấm *Ban hành*.
+   *
+   * ⚠️ Cờ DUY NHẤT mặc định BẬT, nên nó không nằm trong `DOCUMENT_TYPE_FLAGS` —
+   * xem ghi chú ở `document-type-form`.
+   */
+  auto_issue_after_approval: boolean
+
   /** 0 = không rà định kỳ. */
   review_cycle_months: number
   retention_months: number

@@ -63,6 +63,8 @@ const EMPTY_FORM: DocumentTypeFormValues = {
   review_cycle_months: 0,
   retention_months: 0,
   is_active: true,
+  //  Mặc định TỰ ban hành: loại mới khai ra phải hành xử như mọi loại đang chạy.
+  auto_issue_after_approval: true,
   ...EMPTY_DOCUMENT_TYPE_FLAGS,
 }
 
@@ -286,6 +288,36 @@ export function DocumentTypeForm({
                   )}
                 />
               ))}
+
+              {/*
+                CHỜ NGƯỜI SOẠN BAN HÀNH (26/08/2026) — cố ý KHÔNG nằm trong
+                `DOCUMENT_TYPE_FLAGS` vì nó là cờ duy nhất mang cực NGƯỢC: ô
+                trong DB là `auto_issue_after_approval` và mặc định BẬT, nên nếu
+                đưa vào danh sách chung thì mọi loại văn bản đều đeo một con chip
+                sáng — hàng chip mất hết tác dụng "cái gì khác thường thì nhảy
+                ra". Chip này sáng khi loại đó KHÔNG tự ban hành, đúng cái đáng
+                chú ý.
+              */}
+              <FormField
+                control={form.control}
+                name="auto_issue_after_approval"
+                render={({ field }) => (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    title={
+                      'Ký đủ chữ ký xong, văn bản dừng ở «Chờ ban hành» để chính người ' +
+                      'soạn thảo bấm Ban hành và chọn địa chỉ gửi thông báo. Tắt = duyệt ' +
+                      'xong ban hành luôn (mặc định).'
+                    }
+                    aria-pressed={!field.value}
+                    onClick={() => field.onChange(!field.value)}
+                    className={cn(!field.value && 'border-primary bg-primary/5 text-primary')}
+                  >
+                    Chờ người soạn ban hành
+                  </Button>
+                )}
+              />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3">

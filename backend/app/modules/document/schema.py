@@ -256,6 +256,10 @@ class ApproveIn(BaseModel):
     """
 
     apply_mode: int | None = Field(default=None, ge=1, le=2)
+    #  Hộp thư gửi thông báo ban hành (26/08/2026). Bỏ trống = gửi bằng địa chỉ
+    #  hệ thống như trước. `0` cũng coi là bỏ trống — ô chọn trên giao diện trả
+    #  về 0 khi người dùng chọn dòng «Địa chỉ mặc định của hệ thống».
+    mailbox_id: int | None = Field(default=None, ge=0)
 
 
 class RejectIn(BaseModel):

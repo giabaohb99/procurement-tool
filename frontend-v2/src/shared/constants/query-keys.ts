@@ -157,6 +157,9 @@ export const queryKeys = {
     /** J04 — bản xem trước lúc ban hành. */
     issuePreview: (documentId: number) =>
       ['document', 'records', documentId, 'issue-preview'] as const,
+    /** Hộp thư TÔI được gửi danh nghĩa khi ban hành văn bản này (26/08/2026). */
+    issueMailboxes: (documentId: number) =>
+      ['document', 'records', documentId, 'mailboxes'] as const,
     /** J10 — văn bản này bị văn bản nào sửa đổi / thay thế / bãi bỏ. */
     amendedBy: (documentId: number) =>
       ['document', 'records', documentId, 'amended-by'] as const,
@@ -252,6 +255,8 @@ export const queryKeys = {
     settings: () => ['system', 'settings'] as const,
     backups: (params?: Record<string, unknown>) => ['system', 'backups', params ?? {}] as const,
     auditLogs: (params?: Record<string, unknown>) => ['system', 'audit-logs', params ?? {}] as const,
+    /** Hộp thư gửi danh nghĩa địa chỉ khác (26/08/2026). */
+    mailboxes: () => ['system', 'mailboxes'] as const,
   },
   /** Phân hệ Hỗ trợ — phiếu hỗ trợ (ticket) và luồng trao đổi trong từng phiếu. */
   support: {

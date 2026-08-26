@@ -118,6 +118,10 @@ SCOPE_FIELDS = {
     "category_assignee": PUBLIC,
     "role":             PUBLIC,
     "setting":          PUBLIC,
+    #  Danh mục quản trị, cố ý KHÔNG lọc theo `company_id` dù bảng có cột đó:
+    #  cột ấy là bộ LỌC HIỂN THỊ lúc chọn hộp thư, còn chốt "ai gửi được danh
+    #  nghĩa địa chỉ này" nằm ở bảng thành viên `tab_mailbox_member`.
+    "mailbox":          PUBLIC,
     # 2c. Quyền HÀNH ĐỘNG, không có bảng nào để lọc. `report`/`backup` là ô tick
     # trong ma trận phân quyền; `payment`/`import` thì đến model cũng không có
     # (không một chỗ nào gọi `require("payment", ...)`) — khai ra đây để bài
@@ -349,6 +353,25 @@ def _dept_include_cond(model, entity, scopeconf):
     inc = (scopeconf.get("inc") or {})
     return _dept_match(model, SCOPE_FIELDS.get(entity) or {},
                        inc.get("department") or [], inc.get("department_name") or [])
+
+
+def has_global_scope(profile: dict, entity: str, action: str) -> bool:
+    """Người này có grant `action` trên `entity` với phạm vi **tất cả** không?
+
+    Khác `scope_condition(...) is None` ở chỗ: hàm kia cần một `model` để dựng
+    điều kiện SQL, mà có những thứ phải phân biệt "quản trị toàn hệ" hay không
+    NHƯNG không gắn với bảng nào — điển hình là quyền **lập ủy quyền hộ người
+    khác** và **bàn giao việc duyệt của người khác**.
+
+    Dùng nó để mở ngoại lệ, đừng dùng để cấp quyền: nó chỉ trả lời "người này có
+    phải quản trị toàn hệ trên khóa đó không", còn hành động có được phép hay
+    không vẫn do `require(...)` gác ở tầng controller.
+    """
+    for grant in profile.get("grants", []):
+        perms = grant["perms"].get(entity)
+        if perms and perms.get(action) and perms.get("scope", "all") == "all":
+            return True
+    return False
 
 
 def scope_condition(model, entity: str, user, profile: dict, action: str = "read"):

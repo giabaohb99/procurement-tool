@@ -1,4 +1,4 @@
-import { Database, History, LayoutDashboard, Settings, SlidersHorizontal } from 'lucide-react'
+import { AtSign, Database, History, LayoutDashboard, Settings, SlidersHorizontal } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -44,6 +44,13 @@ export const systemModule: ErpModule = {
       manage: true,
     },
     {
+      label: 'Hộp thư gửi',
+      path: appRoutes.system.mailboxes,
+      icon: AtSign,
+      entity: 'mailbox',
+      manage: true,
+    },
+    {
       label: 'Nhật ký hệ thống',
       path: appRoutes.system.auditLogs,
       icon: History,
@@ -69,6 +76,12 @@ export const systemModule: ErpModule = {
       path: appRoutes.system.backups,
       lazy: async () => ({
         Component: (await import('./pages/backup-list-page')).BackupListPage,
+      }),
+    },
+    {
+      path: appRoutes.system.mailboxes,
+      lazy: async () => ({
+        Component: (await import('./pages/mailbox-list-page')).MailboxListPage,
       }),
     },
     {

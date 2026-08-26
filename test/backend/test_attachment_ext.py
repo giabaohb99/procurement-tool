@@ -37,9 +37,23 @@ def test_cdr_allowed_for_documents():
         _, exts, _ = policy(entity)
         assert "cdr" in exts, entity
     # Ô chỉ nhận ảnh thì vẫn chỉ ảnh
-    for entity in ("product", "avatar", "purchase_request_line_image"):
+    for entity in ("product", "company", "purchase_request_line_image"):
         _, exts, _ = policy(entity)
         assert "cdr" not in exts, entity
+
+
+def test_anh_dai_dien_KHONG_phai_mot_o_dinh_kem():
+    """`avatar` cố ý KHÔNG có trong `FILE_POLICY` — đừng thêm lại.
+
+    Ảnh đại diện không đi qua `FileLink`: nó lưu thẳng `tab_user.avatar_file_id`
+    → `tab_file` và do `user/service.set_user_avatar` quản (1 file = 1 người, đổi
+    ảnh là thay luôn tệp cũ). Khai lại nó ở đây là mở một đường thứ hai gắn ảnh
+    đại diện qua API đính kèm chung, và hai đường đó sẽ lệch nhau ở chỗ xóa.
+
+    Bài kiểm này từng đỏ vì hai bài khác còn dùng `avatar` như một entity đính
+    kèm sau khi nó đã bị gỡ — giữ lại đây để lần sau thấy ngay ý đồ.
+    """
+    assert policy("avatar") is None
 
 
 def test_document_size_floor_20mb():

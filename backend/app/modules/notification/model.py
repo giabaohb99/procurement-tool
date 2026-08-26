@@ -26,3 +26,10 @@ class EmailLog(Base, AuditMixin):
     status: Mapped[str] = mapped_column(String(20), default="pending")  # pending / sent / failed
     error: Mapped[str] = mapped_column(Text, nullable=True)
     sent_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+
+    #  HỘP THƯ GỬI DANH NGHĨA (26/08/2026) — rỗng = gửi bằng SMTP dùng chung như
+    #  trước. Ghi lại địa chỉ ĐÃ GỬI chứ không chỉ trỏ khóa ngoại: hộp thư đổi
+    #  địa chỉ hay bị xóa về sau thì nhật ký vẫn phải trả lời được câu "thư này
+    #  người nhận thấy nó đến từ đâu".
+    mailbox_id: Mapped[int] = mapped_column(BigInteger, nullable=True, index=True)
+    from_email: Mapped[str] = mapped_column(String(255), default="")

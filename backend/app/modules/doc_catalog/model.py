@@ -69,6 +69,21 @@ class DocType(Base, AuditMixin):
     #  Luật đầy đủ ở `document/access_service.dieu_kien_van_ban_ca_nhan`.
     is_personal: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    #  DUYỆT XONG CÓ TỰ BAN HÀNH KHÔNG (26/08/2026).
+    #
+    #  `True` (mặc định) = giữ nguyên hành vi đang chạy: ký hết các bước là bộ
+    #  máy duyệt ban hành luôn — cấp số, khóa phiên bản, chuyển hiệu lực.
+    #
+    #  `False` = ký xong văn bản dừng ở **Chờ ban hành**; người SOẠN THẢO phải mở
+    #  ra, chọn hộp thư gửi thông báo rồi bấm *Ban hành*. Dựng cho ca thông báo
+    #  toàn công ty: người ký duyệt nội dung, nhưng người chịu trách nhiệm phát
+    #  hành mới là người quyết định gửi đi lúc nào và danh nghĩa địa chỉ nào.
+    #
+    #  Mặc định `True` là cố ý: bật cờ này cho tất cả các loại đang chạy nghĩa là
+    #  mọi phiếu đang duyệt dở bỗng dừng lại chờ một cú bấm mà chưa ai biết là
+    #  phải bấm. Loại nào cần thì bật riêng loại đó.
+    auto_issue_after_approval: Mapped[bool] = mapped_column(Boolean, default=True)
+
     needs_approval: Mapped[bool] = mapped_column(Boolean, default=False)
     needs_signature: Mapped[bool] = mapped_column(Boolean, default=False)
     # Ban hành phải kèm một Quyết định. Kiểm ở mức PHIÊN BẢN, không phải mức văn

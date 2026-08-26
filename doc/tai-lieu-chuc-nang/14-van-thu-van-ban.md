@@ -26,25 +26,37 @@ Khác mọi phân hệ còn lại trong tài liệu này ở một điểm: **ph
 | `/document/settings?tab=templates` | Thư viện văn bản mẫu | Khung trắng để bắt đầu soạn |
 | `/document/settings?tab=security-levels` | Mức mật / độ khẩn | **Chỉ đọc** — thang cố định trong mã |
 | `/document/settings?tab=partners` | Đơn vị gửi nhận | Đối tác, cơ quan nhà nước, khách hàng… |
+| `/system/mailboxes` | **Hộp thư gửi** | Ngoài phân hệ (Quản trị). Địa chỉ đứng tên gửi thông báo ban hành — xem §14.3 |
 
 ---
 
 ## 2. Vòng đời văn bản
 
-### 2.1 Tám trạng thái
+### 2.1 Mười một trạng thái
 
 | # | Trạng thái | Nghĩa |
 |---|---|---|
 | 1 | **Nháp** | Đang soạn, sửa thoải mái, xóa được |
 | 2 | **Đang duyệt** | Đã gửi đi, **đóng băng toàn bộ** |
-| 3 | **Đã duyệt** | Đã ký nhưng **chưa tới ngày hiệu lực** |
+| 3 | **Đã duyệt** | **Đã ban hành xong**, có số hiệu, chỉ chưa tới ngày hiệu lực |
 | 4 | **Có hiệu lực** | Đang áp dụng |
 | 5 | **Đã thay thế** | Có văn bản mới thay |
 | 6 | **Hết hiệu lực** | Quá ngày hết hạn, hoặc cha bị bãi bỏ kéo theo |
 | 7 | **Bãi bỏ** | Thu hồi bằng quyết định |
 | 8 | **Lưu trữ** | Đóng hồ sơ |
+| 9 | **Trả về** | Người duyệt trả lại — **còn đường**: sửa rồi gửi duyệt lại |
+| 10 | **Đã từ chối** | Hết đường, khóa sửa; làm lại thì *Sao chép* ra bản mới |
+| 11 | **Chờ ban hành** | Đã ký đủ, **chưa cấp số**, đang chờ NGƯỜI SOẠN THẢO bấm *Ban hành* |
 
 Trạng thái **3 và 4** gọi chung là *còn sống* — chỉ văn bản còn sống mới vào phạm vi áp dụng, mới clone được, mới tạo bản trích được.
+
+⚠️ **Đừng nhầm 3 với 11.** Cả hai đều "đã ký xong" nhưng chờ hai thứ khác hẳn nhau:
+*Đã duyệt* là **đã ban hành rồi**, có số hiệu, không ai phải làm gì nữa — chỉ chờ tới
+ngày. *Chờ ban hành* là **chưa ban hành**: chưa số hiệu, chưa khóa phiên bản, và đang
+chờ một con người bấm nút. Gộp hai cái là màn danh sách không tách được "việc của tôi"
+khỏi "cứ để đó tới ngày".
+
+Trạng thái 11 chỉ xuất hiện ở loại văn bản khai **«Chờ người soạn ban hành»** — xem §14.2.
 
 ### 2.2 Đường đi thường gặp
 
@@ -53,9 +65,13 @@ Tạo (Nháp)
   → Gửi duyệt (Đang duyệt)   ← khóa nội dung + khóa cả bộ trường chung
       ├─ Trả lại  → về Nháp, sửa tiếp
       ├─ Rút phiếu → về Nháp, sửa tiếp
-      └─ Duyệt → cấp số hiệu → khóa phiên bản
-                    ├─ hiệu lực hôm nay → Có hiệu lực + chạy tác động dây chuyền
-                    └─ hiệu lực sau     → Đã duyệt, chờ tới ngày mới chạy tác động
+      ├─ Từ chối  → Đã từ chối (khóa hẳn, làm lại thì Sao chép)
+      └─ Duyệt → tùy cờ của LOẠI văn bản:
+           ├─ loại tự ban hành (mặc định)  → cấp số hiệu → khóa phiên bản
+           │        ├─ hiệu lực hôm nay → Có hiệu lực + chạy tác động dây chuyền
+           │        └─ hiệu lực sau     → Đã duyệt, chờ tới ngày mới chạy tác động
+           └─ loại «Chờ người soạn ban hành» → Chờ ban hành
+                    └─ người soạn bấm Ban hành (+ chọn hộp thư) → như nhánh trên
 ```
 
 Về sau: **Bãi bỏ** (giữ nguyên số hiệu trong sổ) hoặc **mở phiên bản mới** để sửa nội dung.
@@ -363,14 +379,72 @@ Màn **«Việc của tôi»** ở phân hệ Phê duyệt **đã xóa** (21/08/
 
 ## 14. Ban hành
 
+### 14.1 Hộp thoại ban hành
+
 Bấm **Duyệt và ban hành** mở bản **xem trước trước khi ban hành**, cho biết:
 
 - Số hiệu **sẽ** được cấp; phiên bản nào sẽ bị khóa; hiệu lực từ ngày nào.
 - Văn bản nào sẽ **đổi trạng thái** theo (bị thay thế / bị bãi bỏ).
 - Phạm vi áp dụng đang khai bao nhiêu dòng; pháp nhân nào sẽ nhận bản riêng.
 - **Khối chặn (đỏ)** và **khối cảnh báo (vàng)** tách bạch: chặn thì nút Ban hành mờ đi, cảnh báo thì vẫn ban hành được.
+- Ô **«Gửi thông báo danh nghĩa»** — xem §14.3. Ô này chỉ hiện khi người đang đăng nhập
+  thật sự được cấp hộp thư nào đó.
 
 Ban hành xong: cấp số → khóa phiên bản (tính SHA-256) → vào sổ → chạy tác động dây chuyền (nếu hiệu lực hôm nay).
+
+### 14.2 Duyệt xong KHÔNG phải lúc nào cũng ban hành
+
+Cột **«Chờ người soạn ban hành»** trên *Loại văn bản* quyết định nhịp cuối:
+
+| Cờ | Ký đủ chữ ký xong thì |
+|---|---|
+| **Tắt** (mặc định — mọi loại đang chạy) | Ban hành luôn: cấp số, khóa phiên bản, chuyển hiệu lực |
+| **Bật** | Dừng ở **Chờ ban hành**; **người soạn thảo** mở ra, chọn hộp thư rồi bấm *Ban hành* |
+
+Vì sao tách: với thông báo gửi toàn công ty, người ký duyệt **nội dung**, còn người chịu
+trách nhiệm phát hành mới là người quyết định **gửi đi lúc nào** và **danh nghĩa địa chỉ nào**.
+
+Luật của trạng thái *Chờ ban hành*:
+
+- **Chỉ người soạn thảo bấm được.** Quyền `document.approve` không thay được — người ký
+  đã ký xong phần của họ rồi; phát hành là một trách nhiệm khác và phải chỉ đúng một người.
+  So theo hồ sơ nhân sự (`drafter_employee_id` / `owner_employee_id`), không theo người tạo bản ghi.
+- **Khóa sửa y như lúc đang duyệt** (409). Chữ ký đã đặt lên nội dung này; mở ra sửa tiêu đề
+  hay nâng mức mật rồi mới bấm Ban hành là phát hành ra thứ khác với thứ người ký đã đọc.
+- **Không gửi duyệt chồng lên được** — bản đang mở vẫn ở tư thế "chờ duyệt" nên `submit` chặn.
+- Muốn sửa thì phải nhờ người duyệt **trả lại**.
+- Băng thông báo trên trang nói **hai câu khác nhau**: với người soạn là *"đang chờ bạn"*,
+  với người khác là *"chờ ai"*. Không nói ra thì người soạn ngồi chờ người khác, người khác
+  tưởng xong rồi, và văn bản nằm im vô thời hạn.
+
+### 14.3 Chọn hộp thư gửi thông báo
+
+Ca nghiệp vụ: nhân sự hành chính đăng nhập bằng tài khoản của chính mình
+(`nhanvien@gmail.com`) nhưng ban hành *Thông báo nghỉ lễ* cho toàn công ty **danh nghĩa
+`hr@gmail.com`** — người nhận phải thấy thư đến từ phòng Hành chính, không phải từ một cá nhân.
+
+- Khai hộp thư ở **Quản trị › Hộp thư gửi** (`/system/mailboxes`, entity quyền `mailbox`).
+- **Mỗi hộp thư giữ bộ SMTP RIÊNG**, không chỉ đổi dòng «Từ». Gmail **ghi đè** `From` về
+  đúng tài khoản đã đăng nhập trừ khi địa chỉ kia đã khai *Send mail as* trong chính hộp
+  thư đó — chỉ đổi tiêu đề là người nhận vẫn thấy địa chỉ cũ, hỏng mà không có lỗi nào báo.
+  Gmail đòi **Mật khẩu ứng dụng** (bật xác minh 2 bước rồi tạo), mật khẩu đăng nhập thường
+  không gửi được.
+- **Ai dùng được thì khai đích danh từng người.** Quyền gửi thư danh nghĩa cả một phòng ban
+  phải chỉ mặt đặt tên, và phải kiểm toán được về sau *"ai đã từng gửi thay ai"*. Cột
+  `company_id` của hộp thư chỉ là **bộ lọc hiển thị** theo pháp nhân, không phải chốt quyền.
+- Mật khẩu **mã hóa Fernet**, API không bao giờ trả ngược — chỉ trả cờ "đã có hay chưa".
+  ⚠️ Lúc sửa, ô mật khẩu **để trống nghĩa là GIỮ NGUYÊN**, không phải xóa: màn sửa không
+  nhận lại được giá trị cũ nên nó gửi rỗng ở mọi lần sửa tên hay ghi chú. Muốn xóa thật thì
+  có nút riêng.
+- Chốt quyền dùng hộp thư nằm ở **tầng dịch vụ**, không ở ô chọn: `mailbox_id` là một con
+  số trong thân request, giao diện chỉ bày hộp thư của mình nhưng ai cũng gõ số khác vào được.
+- Hộp thư thiếu SMTP **vẫn bày ra** trong hộp thoại nhưng không chọn được, kèm một dòng nói
+  rõ. Lặng lẽ bỏ khỏi danh sách thì người được cấp không thấy hộp thư của mình và không hiểu vì sao.
+- Không chọn gì → gửi bằng địa chỉ hệ thống, y như trước. Tính năng này là **thêm lựa chọn**,
+  không bắt buộc.
+- Hộp thư ngừng dùng thì **không xóa hẳn**: nhật ký thư cũ còn trỏ vào đây, và câu *"thư đó
+  gửi danh nghĩa ai"* phải trả lời được mãi về sau. `tab_email_log` giữ cả `mailbox_id` lẫn
+  `from_email` đã gửi thật.
 
 ---
 
@@ -391,7 +465,7 @@ Ban hành xong: cấp số → khóa phiên bản (tính SHA-256) → vào sổ 
 
 | Danh mục | Nội dung |
 |---|---|
-| **Loại văn bản** | Mã, tên, nhóm, kiểu định danh, thời điểm cấp số, mức mật mặc định, chu kỳ rà soát, các cờ quy tắc áp dụng, và **quy tắc quan hệ** của loại |
+| **Loại văn bản** | Mã, tên, nhóm, kiểu định danh, thời điểm cấp số, mức mật mặc định, chu kỳ rà soát, các cờ quy tắc áp dụng (kể cả **«Chờ người soạn ban hành»**, §14.2), và **quy tắc quan hệ** của loại |
 | **Thư viện văn bản mẫu** | Khung trắng theo từng loại; mọi chỗ phải điền để dấu chấm lửng, **không gán sẵn tên người hay số hiệu** |
 | **Mức mật / độ khẩn** | Chỉ đọc — thang cố định: Công khai · Nội bộ · Mật · Tuyệt mật; thường · khẩn · hỏa tốc |
 | **Đơn vị gửi nhận** | Cơ quan nhà nước · đối tác · khách hàng · đơn vị nội bộ · khác |

@@ -185,6 +185,8 @@ export const appRoutes = {
     backups: '/system/backups',
     /** Nhật ký hệ thống (Audit Logs). */
     auditLogs: '/system/audit-logs',
+    /** Hộp thư gửi danh nghĩa địa chỉ khác — dùng lúc ban hành văn bản. */
+    mailboxes: '/system/mailboxes',
   },
   production: {
     root: '/production',
