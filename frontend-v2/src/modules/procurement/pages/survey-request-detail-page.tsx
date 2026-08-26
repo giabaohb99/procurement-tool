@@ -13,7 +13,7 @@ import {
   Send,
 } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import type { AuthUser } from '@/core/auth/auth-types'
@@ -88,6 +88,7 @@ import {
   type SurveyRequestDetail,
   type SurveyRequestLine,
 } from '../types/survey-request-detail'
+import { parseAssistantDraft, type AssistantDraft } from '../utils/assistant-draft'
 import { validateSurveyRequest } from '../utils/required-fields'
 
 /** Tệp đính kèm của DÒNG khảo sát — đầu phiếu YCBG không có khu đính kèm riêng. */
@@ -140,8 +141,15 @@ export function SurveyRequestDetailPage() {
   const isNew = !id || id === 'new'
   const surveyRequestId = isNew ? 0 : Number(id)
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const { can } = usePermission()
+
+  // Bản nháp do Trợ lý AI soạn, truyền qua `location.state` khi bấm nút trong chat.
+  // Chỉ ĐIỀN SẴN form — người dùng rà lại rồi tự bấm Tạo, phiếu không tự sinh ra.
+  const assistantDraft = isNew
+    ? parseAssistantDraft((location.state as { assistantDraft?: unknown } | null)?.assistantDraft)
+    : null
 
   const { data: serverData, isLoading, isError } = useSurveyRequest(surveyRequestId)
   const { data: result } = useSurveyRequestResult(surveyRequestId, serverData?.status ?? '')
@@ -158,7 +166,7 @@ export function SurveyRequestDetailPage() {
   const createPurchaseRequests = useCreatePurchaseRequestsFromSurvey(surveyRequestId)
 
   const [draft, setDraft] = useState<SurveyRequestDetail | null>(() =>
-    isNew ? createEmptySurveyRequest(user) : null,
+    isNew ? applyAssistantDraft(createEmptySurveyRequest(user), assistantDraft) : null,
   )
   const [lineIndex, setLineIndex] = useState<number | null>(null)
   const [reasonFor, setReasonFor] = useState<ReasonAction | null>(null)
@@ -175,7 +183,11 @@ export function SurveyRequestDetailPage() {
   const serverDataChanged = useHasChanged(serverData)
   const userChanged = useHasChanged(user)
   if (isNewChanged || serverDataChanged || userChanged) {
-    setDraft(isNew ? (current) => current ?? createEmptySurveyRequest(user) : (serverData ?? null))
+    setDraft(
+      isNew
+        ? (current) => current ?? applyAssistantDraft(createEmptySurveyRequest(user), assistantDraft)
+        : (serverData ?? null),
+    )
   }
 
   // Hồ sơ nhân sự tải sau, mà chỉ ở đó mới có `department_id` (CR-086) — bù thêm
@@ -754,5 +766,22 @@ function createEmptySurveyRequest(user?: AuthUser | null): SurveyRequestDetail {
     created_at: new Date().toISOString(),
     created_by: user?.id ?? 0,
     lines: [],
+  }
+}
+
+/**
+ * Điền bản nháp của Trợ lý AI lên phiếu rỗng: mục đích, ghi chú và các dòng hàng.
+ * Dòng dựng từ `EMPTY_SURVEY_REQUEST_LINE` để đủ mọi trường phụ (mốc thu mua, trạng thái...).
+ */
+function applyAssistantDraft(
+  base: SurveyRequestDetail,
+  draft: AssistantDraft | null,
+): SurveyRequestDetail {
+  if (!draft) return base
+  return {
+    ...base,
+    purpose: draft.purpose,
+    note: draft.note,
+    lines: draft.lines.map((line) => ({ ...EMPTY_SURVEY_REQUEST_LINE, ...line })),
   }
 }

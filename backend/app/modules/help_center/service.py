@@ -7,6 +7,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.modules.assistant.rag.hooks import on_source_deleted, on_source_saved
 
 from .model import HelpArticle, HelpArticleSlide
 from .schema import (HelpArticleCreate, HelpArticleSlideCreate,
@@ -76,6 +77,7 @@ def create_article(db: Session, data: HelpArticleCreate, user_id: int) -> HelpAr
     db.commit()
     db.refresh(article)
     record(db, user_id, AUDIT_ENTITY, article.id, "create", f"Tạo bài viết {data.title}")
+    on_source_saved(db, "help_article", article.id)
     return article
 
 
@@ -138,6 +140,8 @@ def update_article(db: Session, article_id: int, data: HelpArticleUpdate, user_i
     if changes:
         record(db, user_id, AUDIT_ENTITY, article.id, "update",
                json.dumps(changes, ensure_ascii=False))
+        # Nạp lại kể cả khi chỉ đổi tiêu đề/tóm tắt: cả hai đều nằm trong vector (xem indexer).
+        on_source_saved(db, "help_article", article.id)
     return article
 
 
@@ -147,6 +151,14 @@ def count_branch(db: Session, article_id: int) -> int:
     for child in db.query(HelpArticle.id).filter(HelpArticle.parent_id == article_id).all():
         total += count_branch(db, child.id)
     return total
+
+
+def _branch_ids(db: Session, article_id: int) -> list[int]:
+    """Mọi id trong nhánh (cả gốc). Gom TRƯỚC khi xóa để còn biết đường gỡ khỏi chỉ mục."""
+    ids = [article_id]
+    for child in db.query(HelpArticle.id).filter(HelpArticle.parent_id == article_id).all():
+        ids.extend(_branch_ids(db, child.id))
+    return ids
 
 
 def _delete_branch(db: Session, article: HelpArticle):
@@ -165,7 +177,8 @@ def delete_article(db: Session, article_id: int, user_id: int):
     """Xóa bài viết CÙNG toàn bộ bài con/cháu bên trong."""
     article = get_article(db, article_id)
     title = article.title
-    total = count_branch(db, article.id)
+    branch = _branch_ids(db, article.id)
+    total = len(branch)
 
     _delete_branch(db, article)
     db.commit()
@@ -173,6 +186,8 @@ def delete_article(db: Session, article_id: int, user_id: int):
     message = (f"Xóa bài viết {title} cùng {total - 1} bài viết con"
                if total > 1 else f"Xóa bài viết {title}")
     record(db, user_id, AUDIT_ENTITY, article_id, "delete", message)
+    for i in branch:
+        on_source_deleted("help_article", i)
 
 
 SEARCH_LIMIT = 20

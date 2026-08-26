@@ -9,17 +9,32 @@ Bot KHÔNG chạm hàm nào ngoài allowlist này (tầng 2 của 7 tầng bảo
 import json
 
 from app.core.audit import record
+from app.core.config import settings
 
 from ..provider import ToolDef
 from .base import ToolContext
 from .catalog import SPECS
+from .draft_tool import DRAFT_SURVEY_REQUEST_SPEC
+from .export_tool import EXPORT_REPORT_FILE_SPEC
+from .rag_tool import SEARCH_DOCS_SPEC
 
-_BY_NAME = {spec.name: spec for spec in SPECS}
+
+def _active_specs() -> list:
+    """Tool đang bật: loại A + soạn nháp YCBG + xuất báo cáo luôn có; `search_docs` (loại B)
+    chỉ khi RAG bật.
+
+    Đọc cờ mỗi lần gọi thay vì chốt lúc import: bật/tắt RAG chỉ cần restart tiến trình, và test
+    lật `settings.AI_RAG_ENABLED` không bị kẹt giá trị cũ.
+    """
+    specs = list(SPECS) + [DRAFT_SURVEY_REQUEST_SPEC, EXPORT_REPORT_FILE_SPEC]
+    if settings.AI_RAG_ENABLED:
+        specs.append(SEARCH_DOCS_SPEC)
+    return specs
 
 
 def tool_defs() -> list[ToolDef]:
-    """Khai báo mọi tool cho provider (function calling)."""
-    return [spec.to_def() for spec in SPECS]
+    """Khai báo mọi tool đang bật cho provider (function calling)."""
+    return [spec.to_def() for spec in _active_specs()]
 
 
 def run_tool(db, user, name: str, args: dict) -> dict:
@@ -28,7 +43,7 @@ def run_tool(db, user, name: str, args: dict) -> dict:
     Handler tự lo hai lớp quyền (`ctx.can` + `apply_scope`). Ở đây chỉ chặn tên ngoài
     allowlist và ghi vết ai gọi gì.
     """
-    spec = _BY_NAME.get(name)
+    spec = {s.name: s for s in _active_specs()}.get(name)
     if spec is None:
         # Tên tool lạ = model bịa hoặc bị chèn — không chạy gì, báo lại để model tự sửa.
         return {"error": f"Không có công cụ tên '{name}'."}

@@ -90,6 +90,17 @@ services:
     networks:
       - procurement-internal
 
+  # Kho vector loại B (HDSD + FAQ). KHÔNG mở cổng ra ngoài — chỉ api gọi qua mạng nội bộ
+  # (QDRANT_URL=http://qdrant:6333). Soi khi cần bằng SSH tunnel như MySQL.
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant-dev
+    restart: always
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - procurement-internal
+
   celery-worker:
     build:
       context: .
@@ -133,3 +144,4 @@ networks:
 volumes:
   redis_data:
   beat_data:
+  qdrant_data:

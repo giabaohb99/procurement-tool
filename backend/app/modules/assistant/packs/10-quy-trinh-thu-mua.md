@@ -5,12 +5,30 @@ bằng tài liệu thật của công ty.
 
 ## Luồng nghiệp vụ chính
 
-Yêu cầu mua hàng (YCMH/PYC) -> Khảo sát giá (NCC/Sản phẩm) -> Đơn mua hàng (ĐMH/PO)
--> Nhận hàng (GR) -> Công nợ (Payables) -> Yêu cầu thanh toán (YCTT).
+Yêu cầu báo giá (YCBG) -> Khảo sát giá (NCC/Sản phẩm) -> Yêu cầu mua hàng (YCMH/PYC)
+-> Đơn mua hàng (ĐMH/PO) -> Nhận hàng (GR) -> Công nợ (Payables) -> Yêu cầu thanh toán (YCTT).
 
-- **Yêu cầu mua hàng**: người có nhu cầu lập, trưởng phòng duyệt theo phòng ban.
+- **Yêu cầu mua hàng**: với luồng khảo sát, bộ phận Thu mua tạo YCMH từ kết quả khảo sát đã duyệt; với luồng mua trực tiếp (đã biết rõ mặt hàng và giá), người có nhu cầu tạo YCMH thẳng. Trưởng phòng duyệt theo phòng ban.
 - **Yêu cầu báo giá / Khảo sát**: thu mua thu thập báo giá nhiều nhà cung cấp, chọn
   phương án. Khảo sát được duyệt mới dùng để lên đơn.
+
+## Ai liên hệ nhà cung cấp (rất quan trọng, đừng nói sai)
+
+Ở DEGO, người có nhu cầu (nhân sự các phòng ban) **KHÔNG tự liên hệ, không tự gửi yêu cầu
+báo giá cho nhà cung cấp**. Việc lấy báo giá, làm việc với NCC là của **bộ phận Thu mua**.
+
+Luồng đúng khi ai đó cần xin báo giá / cần mua một mặt hàng:
+1. Người có nhu cầu lập phiếu **Yêu cầu báo giá (YCBG)** trên hệ thống (mã phiếu bắt đầu bằng YCBG — ví dụ YCBG260826001; trên màn hình gọi là "Yêu cầu báo giá"): điền mặt hàng, số lượng, thông số/yêu cầu, mục đích.
+2. Gửi duyệt; trưởng bộ phận phê duyệt. Phiếu được duyệt mới chuyển sang **bộ phận Thu mua**.
+3. **Bộ phận Thu mua** là bên đi liên hệ nhà cung cấp, xin và so báo giá, chọn phương án; sau
+   đó Thu mua tạo **Yêu cầu mua hàng (YCMH)** rồi **Đơn mua hàng** từ phương án đã chọn.
+
+Nếu đã biết rõ mặt hàng và giá (không cần khảo sát) thì lập thẳng **Yêu cầu mua hàng (YCMH)**.
+
+Vì vậy khi người dùng hỏi cách xin báo giá / cách mua một mặt hàng, trợ lý hướng họ **lập
+phiếu Yêu cầu báo giá trên hệ thống và gửi duyệt để chuyển bộ phận Thu mua**, TUYỆT ĐỐI
+không bảo họ tự soạn thư hay tự gửi yêu cầu báo giá cho nhà cung cấp — trừ khi chính người
+hỏi thuộc bộ phận Thu mua. Cần các bước thao tác chi tiết thì tra HDSD (search_docs).
 - **Đơn mua hàng**: chốt nhà cung cấp, số lượng, đơn giá, VAT. Có luồng duyệt riêng.
 - **Nhận hàng**: ghi nhận hàng về, cập nhật tồn kho.
 - **Công nợ & Thanh toán**: từ đơn/nhận hàng phát sinh công nợ; lập yêu cầu thanh toán

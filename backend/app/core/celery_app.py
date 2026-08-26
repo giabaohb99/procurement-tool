@@ -43,6 +43,7 @@ celery_app.conf.update(
         "app.modules.backup.tasks",       # Sao lưu CSDL định kỳ (2 lần/ngày)
         "app.modules.notification.tasks", # Dọn thông báo cũ (mỗi ngày)
         "app.modules.audit.tasks",        # Lưu trữ audit ra R2 (hằng tháng, không xóa DB)
+        "app.modules.assistant.rag.tasks",  # Nạp chỉ mục vector loại B (HDSD + FAQ) khi có hook / bấm nút
         # "app.tasks.alerts",           # Phase 2 — cảnh báo theo lịch
         # "app.tasks.report_tasks",     # Phase 3 — refresh báo cáo
     ],

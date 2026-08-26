@@ -101,6 +101,16 @@ services:
     restart: unless-stopped
     command: redis-server --save 60 1
 
+  # Kho vector cho tìm kiếm loại B (HDSD + FAQ) của Trợ lý AI.
+  # Cổng 6333 mở ra localhost để soi bằng dashboard http://localhost:6333/dashboard (chỉ dev).
+  qdrant:
+    image: qdrant/qdrant:latest
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
   # GUI quản lý Redis (CHỈ dev) → http://localhost:5540
   redisinsight:
     image: redis/redisinsight:latest
@@ -139,3 +149,4 @@ services:
 volumes:
   db_data:
   redisinsight_data:
+  qdrant_data:

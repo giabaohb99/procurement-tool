@@ -80,6 +80,17 @@ services:
     networks:
       - procurement-internal
 
+  # Kho vector loại B (HDSD + FAQ). KHÔNG mở cổng — chỉ api trong mạng nội bộ gọi tới
+  # (QDRANT_URL=http://qdrant:6333). Chỉ chạy khi .env đặt AI_RAG_ENABLED=true.
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    restart: always
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - procurement-internal
+
   celery-worker:
     build:
       context: .
@@ -120,3 +131,4 @@ networks:
 volumes:
   redis_data:
   beat_data:
+  qdrant_data:

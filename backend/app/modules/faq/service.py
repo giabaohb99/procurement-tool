@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.modules.assistant.rag.hooks import on_source_deleted, on_source_saved
 
 from .model import Faq
 from .schema import FaqCreate, FaqUpdate
@@ -39,6 +40,7 @@ def create_faq(db: Session, data: FaqCreate, user_id: int) -> Faq:
     db.commit()
     db.refresh(faq)
     record(db, user_id, AUDIT_ENTITY, faq.id, "create", f"Tạo câu hỏi {data.question}")
+    on_source_saved(db, "faq", faq.id)
     return faq
 
 
@@ -66,6 +68,7 @@ def update_faq(db: Session, faq_id: int, data: FaqUpdate, user_id: int) -> Faq:
     if changes:
         record(db, user_id, AUDIT_ENTITY, faq.id, "update",
                json.dumps(changes, ensure_ascii=False))
+        on_source_saved(db, "faq", faq.id)
     return faq
 
 
@@ -75,3 +78,4 @@ def delete_faq(db: Session, faq_id: int, user_id: int):
     db.delete(faq)
     db.commit()
     record(db, user_id, AUDIT_ENTITY, faq_id, "delete", f"Xóa câu hỏi {question}")
+    on_source_deleted("faq", faq_id)

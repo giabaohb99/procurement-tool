@@ -122,7 +122,9 @@ def chat(db: Session, user, body) -> dict:
         conv.last_message_at = now
         conv.updated_by = user.id
 
-    usage = result.get("usage", {})
+    # KHÔNG đặt tên biến này là `usage` — trùng tên module `usage` đã import ở đầu file, khiến
+    # `usage.check_daily_limit(...)` phía trên bị Python coi là biến cục bộ chưa gán (UnboundLocalError).
+    usage_data = result.get("usage", {})
     db.add(AssistantMessage(
         conversation_id=conv.id, role=MessageRole.USER, content=body.message,
         created_by=user.id, updated_by=user.id,
@@ -130,11 +132,11 @@ def chat(db: Session, user, body) -> dict:
     db.add(AssistantMessage(
         conversation_id=conv.id, role=MessageRole.ASSISTANT, content=result["text"],
         provider=result["provider"], model=result["model"],
-        input_tokens=usage.get("input_tokens", 0),
-        output_tokens=usage.get("output_tokens", 0),
-        thinking_tokens=usage.get("thinking_tokens", 0),
-        cache_read_tokens=usage.get("cache_read_tokens", 0),
-        cache_write_tokens=usage.get("cache_write_tokens", 0),
+        input_tokens=usage_data.get("input_tokens", 0),
+        output_tokens=usage_data.get("output_tokens", 0),
+        thinking_tokens=usage_data.get("thinking_tokens", 0),
+        cache_read_tokens=usage_data.get("cache_read_tokens", 0),
+        cache_write_tokens=usage_data.get("cache_write_tokens", 0),
         created_by=user.id, updated_by=user.id,
     ))
     db.commit()

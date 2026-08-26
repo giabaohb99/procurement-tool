@@ -1,8 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query'
+import { FileDown, FilePlus } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
+import { downloadFile } from '@/core/api'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { queryKeys } from '@/shared/constants/query-keys'
+import { Button } from '@/shared/ui/button'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -33,6 +37,7 @@ function providerLabel(name: string): string {
 
 export function AssistantPage() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const activeId = Number(searchParams.get('c')) || 0
 
@@ -47,6 +52,19 @@ export function AssistantPage() {
   //  Id câu trả lời được chạy hiệu ứng gõ máy — chỉ đúng câu VỪA nhận trong
   //  phiên này. Mở lại hội thoại cũ thì mọi tin hiện thẳng, không gõ lại.
   const [typingId, setTypingId] = useState<number | null>(null)
+  //  Bản nháp YCBG trợ lý vừa soạn (tool `draft_survey_request`) — chỉ sống trong
+  //  lượt trả lời hiện tại, backend không lưu. Bấm nút mới mở form; phiếu KHÔNG tự tạo.
+  const [draftOffer, setDraftOffer] = useState<{
+    conversationId: number
+    args: Record<string, unknown>
+  } | null>(null)
+  //  File báo cáo trợ lý vừa xuất (tool `export_report_file`) — cũng chỉ sống trong lượt
+  //  trả lời hiện tại. Tải qua downloadFile (kèm Bearer), không gắn href thẳng.
+  const [fileOffer, setFileOffer] = useState<{
+    conversationId: number
+    filename: string
+    downloadUrl: string
+  } | null>(null)
 
   /** Chỉ chào nhà đã cấu hình key — chọn nhà chưa có key sẽ bị backend từ chối. */
   const configuredProviders = useMemo(
@@ -63,6 +81,8 @@ export function AssistantPage() {
   const setActive = (id: number) => {
     setPending(null)
     setTypingId(null) //  đổi hội thoại thì thôi gõ dở câu của hội thoại trước
+    setDraftOffer(null)
+    setFileOffer(null)
     if (id > 0) setSearchParams({ c: String(id) })
     else setSearchParams({})
   }
@@ -90,6 +110,33 @@ export function AssistantPage() {
         .sort((a, b) => a.id - b.id)
         .at(-1)
       setTypingId(latestAnswer?.id ?? null)
+
+      //  Trợ lý vừa soạn xong bản nháp YCBG (rows != null nghĩa là tool chạy thành công,
+      //  không bị từ chối quyền) -> chào nút mở form. Lượt sau không soạn thì gỡ nút.
+      const draftCall = (reply.tool_calls ?? [])
+        .filter((call) => call.name === 'draft_survey_request' && call.rows != null && call.rows > 0)
+        .at(-1)
+      setDraftOffer(
+        draftCall
+          ? //  Ưu tiên bản draft ĐÃ CHUẨN HÓA từ kết quả tool (ĐVT khớp chính tả danh mục
+            //  "cái" -> "Cái"); args thô của model chỉ là phương án dự phòng.
+            { conversationId: reply.conversation_id, args: draftCall.draft ?? draftCall.args }
+          : null,
+      )
+
+      //  Trợ lý vừa xuất file báo cáo -> chào nút tải. Lượt sau không xuất thì gỡ nút.
+      const fileCall = (reply.tool_calls ?? [])
+        .filter((call) => call.name === 'export_report_file' && call.file != null)
+        .at(-1)
+      setFileOffer(
+        fileCall?.file
+          ? {
+              conversationId: reply.conversation_id,
+              filename: fileCall.file.filename,
+              downloadUrl: fileCall.file.download_url,
+            }
+          : null,
+      )
       void queryClient.invalidateQueries({ queryKey: queryKeys.assistant.conversations() })
       if (reply.conversation_id !== activeId) {
         setSearchParams({ c: String(reply.conversation_id) })
@@ -181,6 +228,46 @@ export function AssistantPage() {
                   typingId={typingId}
                 />
               )}
+
+              {/*  Bản nháp YCBG trợ lý vừa soạn — bấm mới mở form ĐÃ ĐIỀN SẴN, người dùng
+                   rà lại rồi tự bấm Tạo trong form; ở đây chưa có phiếu nào được tạo. */}
+              {draftOffer && draftOffer.conversationId === activeId && !isSending ? (
+                <div className="flex items-center justify-between gap-3 border-t bg-muted/40 px-4 py-2.5">
+                  <p className="text-xs text-muted-foreground">
+                    Trợ lý đã soạn sẵn nội dung phiếu. Mở form để kiểm tra rồi bấm Tạo.
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      navigate(appRoutes.procurement.surveyRequestNew, {
+                        state: { assistantDraft: draftOffer.args },
+                      })
+                    }
+                  >
+                    <FilePlus />
+                    Tạo yêu cầu báo giá
+                  </Button>
+                </div>
+              ) : null}
+
+              {/*  File báo cáo trợ lý vừa xuất — file ĐÃ nằm trên máy chủ, nút chỉ tải về. */}
+              {fileOffer && fileOffer.conversationId === activeId && !isSending ? (
+                <div className="flex items-center justify-between gap-3 border-t bg-muted/40 px-4 py-2.5">
+                  <p className="min-w-0 truncate text-xs text-muted-foreground">
+                    Trợ lý đã tạo file báo cáo: {fileOffer.filename}
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      void downloadFile(fileOffer.downloadUrl, fileOffer.filename).catch(() => {})
+                    }
+                  >
+                    <FileDown />
+                    Tải báo cáo
+                  </Button>
+                </div>
+              ) : null}
 
               <ChatComposer disabled={noProvider} busy={isSending} onSend={handleSend} />
             </>

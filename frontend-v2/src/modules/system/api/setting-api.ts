@@ -22,4 +22,11 @@ export const settingApi = {
     apiPost<SettingTestResult>('/api/settings/test-email', { to }),
 
   testStorage: () => apiPost<SettingTestResult>('/api/settings/test-storage'),
+
+  /**
+   * Nạp lại TOÀN BỘ chỉ mục tìm kiếm tài liệu của Trợ lý AI (HDSD + FAQ) — đường A.
+   * Chạy NỀN ở worker: backend chỉ xếp hàng rồi trả `task_id` ngay, không chờ nhúng xong.
+   * RAG chưa bật thì backend trả 400 (http client tự hiện toast lỗi).
+   */
+  reindexDocs: () => apiPost<{ task_id: string }>('/api/assistant/rag/reindex'),
 }

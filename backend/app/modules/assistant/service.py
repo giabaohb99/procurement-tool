@@ -16,10 +16,12 @@ from .provider import ChatMessage, get_provider
 
 # kind câu hỏi -> cấu hình sinh. 'lookup' = loại A (tra cứu, rẻ, không cần suy nghĩ);
 # 'advice' = loại B (tư vấn quy trình, cần suy nghĩ); 'general' = mặc định.
-# `tools`: có mở lớp tool loại A cho model không. Loại B (advice) là hỏi văn bản -> chưa cần.
+# `tools`: có mở lớp tool cho model không. advice BẬT tool để model gọi được `search_docs`
+# (tra HDSD + FAQ thật) — trước đây tắt vì chưa có tool loại B, khiến câu tư vấn quy trình
+# phải trả lời chay theo gói tri thức + suy đoán, dễ bịa sai bước (vd "gửi báo giá cho NCC").
 ROUTING: dict[str, dict] = {
     "lookup":  {"thinking": False, "max_tokens": 1024, "temperature": 0.2, "tools": True},
-    "advice":  {"thinking": True,  "max_tokens": 2048, "temperature": 0.4, "tools": False},
+    "advice":  {"thinking": True,  "max_tokens": 2048, "temperature": 0.4, "tools": True},
     "general": {"thinking": False, "max_tokens": 1536, "temperature": 0.3, "tools": True},
 }
 
@@ -38,6 +40,14 @@ số liệu, HÃY GỌI CÔNG CỤ thay vì đoán. Bộ công cụ trả lời 
   NCC hoặc mã hàng. Dùng cho câu KHÔNG khớp các công cụ chuyên biệt ở trên, ví dụ "chi tiêu
   của NCC X theo từng tháng", "số lượng mã Y đã mua trong quý 1", "đơn giá trung bình mã Z".
 - Tra danh mục: product_search / supplier_search để đổi MÔ TẢ sang mã.
+- HDSD & quy trình: search_docs tra tài liệu hướng dẫn + FAQ. Câu hỏi CÁCH LÀM, quy trình,
+  ý nghĩa chức năng, "phải lập phiếu gì / gửi cho ai" -> GỌI search_docs TRƯỚC rồi trả lời
+  bám theo tài liệu, KHÔNG tự bịa các bước hay tên phiếu. Không có kết quả thì nói chưa có
+  tài liệu, gợi ý hỏi bộ phận phụ trách.
+- Giúp lập phiếu Yêu cầu báo giá (YCBG): người dùng muốn được soạn hộ / điền hộ phiếu xin
+  báo giá -> hỏi đủ mặt hàng + mục đích (số lượng, đơn vị, thông số nếu có) rồi gọi
+  draft_survey_request. Tool KHÔNG tạo phiếu — nó chuẩn bị bản đề xuất để giao diện hiện nút
+  mở form đã điền sẵn; người dùng tự rà và bấm Tạo. Đừng bao giờ nói phiếu "đã được tạo".
 
 Chiến lược gọi công cụ:
 - Người hỏi mô tả sản phẩm/NCC bằng lời -> gọi product_search / supplier_search lấy mã TRƯỚC,

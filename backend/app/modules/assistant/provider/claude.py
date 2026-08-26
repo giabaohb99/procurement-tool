@@ -174,7 +174,15 @@ class ClaudeProvider(Provider):
                 fname = tu.get("name", "")
                 fargs = dict(tu.get("input") or {})
                 result = execute(fname, fargs)
-                tool_calls.append({"name": fname, "args": fargs, "rows": _row_count(result)})
+                call: dict = {"name": fname, "args": fargs, "rows": _row_count(result)}
+                # Tool soạn nháp trả bản draft ĐÃ CHUẨN HÓA (vd "cái" -> "Cái" khớp danh mục
+                # ĐVT) — FE phải dùng bản này thay vì args thô model gõ vào.
+                if isinstance(result.get("draft"), dict):
+                    call["draft"] = result["draft"]
+                # Tool xuất file trả metadata file đã tạo — FE dựng nút "Tải báo cáo" từ đây.
+                if isinstance(result.get("file"), dict):
+                    call["file"] = result["file"]
+                tool_calls.append(call)
                 results.append({
                     "type": "tool_result",
                     "tool_use_id": tu.get("id"),

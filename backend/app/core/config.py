@@ -118,6 +118,17 @@ class Settings(BaseSettings):
     # Lưu ý: phải là model CÙNG nhà với AI_DEFAULT_PROVIDER đang dùng.
     AI_LOOKUP_MODEL: str = ""
 
+    # --- Tìm kiếm vector loại B: HDSD + FAQ (Phase 3) ---
+    # Tắt mặc định. Bật thì tool `search_docs` mới hiện ra cho bot và hook nạp lại chỉ mục mới
+    # chạy khi sửa HDSD/FAQ. Bật ở môi trường ĐÃ dựng service qdrant.
+    AI_RAG_ENABLED: bool = False
+    QDRANT_URL: str = "http://qdrant:6333"
+    # Model nhúng của Gemini. Đổi model => vector cũ vô nghĩa, PHẢI reindex toàn bộ.
+    AI_EMBED_MODEL: str = "gemini-embedding-001"
+    # Số chiều vector. Gemini cho cắt chiều (Matryoshka); 768 đủ chính xác mà nhẹ RAM Qdrant.
+    # Phải khớp với size collection đã tạo — đổi số này cũng buộc dựng lại collection.
+    AI_EMBED_DIM: int = 768
+
     # --- Celery / Redis ---
     # Broker + result backend dùng chung 1 Redis (đủ cho quy mô ~20-100 user).
     REDIS_URL: str = "redis://redis:6379/0"

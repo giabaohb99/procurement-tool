@@ -64,6 +64,24 @@ export interface ChatRequest {
   conversation_id?: number
 }
 
+/** Một lần trợ lý gọi công cụ trong lượt trả lời (backend chỉ trả tên + tham số). */
+export interface AssistantToolCall {
+  name: string
+  args: Record<string, unknown>
+  rows?: number | null
+  /** Bản nháp ĐÃ CHUẨN HÓA từ kết quả tool soạn nháp (vd ĐVT khớp chính tả danh mục) —
+   *  có thì dùng thay `args` thô do model gõ vào. */
+  draft?: Record<string, unknown>
+  /** File báo cáo tool `export_report_file` vừa sinh — dựng nút Tải báo cáo từ đây.
+   *  `download_url` là endpoint cần Bearer, phải tải qua `downloadFile` chứ đừng gắn href. */
+  file?: {
+    id: number
+    filename: string
+    size: number
+    download_url: string
+  }
+}
+
 /** Kết quả một lượt `/chat`. */
 export interface ChatReply {
   text: string
@@ -73,4 +91,6 @@ export interface ChatReply {
   usage: AssistantUsage
   conversation_id: number
   title: string
+  /** Chỉ có ở lượt trả lời SỐNG — không lưu DB, tải lại hội thoại là mất. */
+  tool_calls?: AssistantToolCall[]
 }

@@ -6,8 +6,10 @@ import {
   KeyRound,
   Loader2,
   Mail,
+  RefreshCw,
   Save,
   Send,
+  Sparkles,
 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -46,6 +48,9 @@ const GROUPS: { key: SettingGroup; title: string; icon: typeof Mail }[] = [
 export function SettingPage() {
   const { can } = usePermission()
   const canWrite = can('setting', 'write')
+  // Nạp lại chỉ mục = việc của người quản HDSD, gác theo đúng quyền backend đòi
+  // (`help_article.write`), không phải quyền sửa cấu hình.
+  const canReindex = can('help_article', 'write')
 
   const { data, isPending, isError, refetch } = useSettings()
   const saveSettings = useSaveSettings()
@@ -60,6 +65,7 @@ export function SettingPage() {
   const [secretInputs, setSecretInputs] = useState<Record<string, string>>({})
   const [testTo, setTestTo] = useState('')
   const [testing, setTesting] = useState<'' | 'email' | 'storage'>('')
+  const [reindexing, setReindexing] = useState(false)
 
   const draft: SettingField[] = (data?.fields ?? []).map((field) =>
     field.key in edited ? { ...field, value: edited[field.key] } : field,
@@ -96,6 +102,19 @@ export function SettingPage() {
       toast.error(extractErrorMessage(error))
     } finally {
       setTesting('')
+    }
+  }
+
+  async function runReindex() {
+    setReindexing(true)
+    try {
+      await settingApi.reindexDocs()
+      // Chạy nền: chỉ báo ĐÃ XẾP HÀNG, không hứa hẹn xong ngay.
+      toast.success('Đã xếp hàng nạp lại chỉ mục tài liệu — worker sẽ chạy nền ít phút')
+    } catch {
+      // http client đã hiện toast lỗi (kể cả 400 khi RAG chưa bật).
+    } finally {
+      setReindexing(false)
     }
   }
 
@@ -254,6 +273,31 @@ export function SettingPage() {
               </FormCard>
             )
           })}
+        </div>
+      )}
+
+      {canReindex && (
+        <div className="mt-4">
+          <FormCard
+            title="Trợ lý AI"
+            icon={Sparkles}
+            iconClassName="text-muted-foreground"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" disabled={reindexing} onClick={() => void runReindex()}>
+                {reindexing ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="size-4" />
+                )}
+                Nạp lại chỉ mục tài liệu
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Dựng lại kho tìm kiếm HDSD + FAQ cho Trợ lý AI. Chạy nền, có thể mất vài
+                phút. Dùng khi mới bật tìm kiếm tài liệu hoặc nghi chỉ mục lệch.
+              </span>
+            </div>
+          </FormCard>
         </div>
       )}
     </PageContainer>

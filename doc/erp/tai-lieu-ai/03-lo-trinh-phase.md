@@ -105,15 +105,56 @@ quyền người hỏi.
 Mục tiêu: hỏi trên nội dung văn bản (HDSD, quy trình) có trích dẫn.
 
 Đầu việc:
-- Docker Qdrant + embedding LOCAL (bge-m3 hoặc multilingual-e5).
+- Docker Qdrant (1 container) + embedding qua **API Gemini** (KHÔNG local — xem QĐ đổi bên dưới).
 - Bộ index nguồn có sẵn: Trung tâm HDSD (`help_center` / `tab_help_article`) + FAQ. Cắt
-  đoạn (chunk) + gắn nhãn quyền theo `apply_scope`.
-- Móc reindex khi bài viết sửa / xóa / đổi quyền (ràng buộc cứng).
-- Nhánh RAG trong `/assistant/chat`: tìm đoạn -> lọc theo quyền người hỏi TRƯỚC -> đưa cho
-  model -> trả lời kèm trích nguồn.
+  đoạn (chunk).
+- Móc reindex khi bài viết / câu FAQ sửa / xóa (ràng buộc cứng, nuốt lỗi để không vỡ nghiệp vụ).
+- Tool loại B `search_docs` cho bot: tìm đoạn -> lọc ngưỡng -> trả kèm trích nguồn.
 
 Phụ thuộc: Phase 0 (provider), độc lập với Phase 2.
 Định nghĩa xong: hỏi "quy trình nghiệm thu hàng mấy bước" -> bot trả theo HDSD, có link bài gốc.
+
+### QĐ đổi (26/08/2026): embedding dùng API Gemini, KHÔNG local
+
+Bản đầu định chạy model nhúng LOCAL (bge-m3 ~2.5-4GB, hoặc e5-small ~1GB resident). Bỏ vì VPS
+đang **chật RAM**: 7.8Gi tổng, còn trống ~1.4Gi, swap đã dùng 441Mi, 4 core, không GPU — nhét
+thêm một model thường trú là đẩy stack vào swap. Nút thắt là RAM chứ không phải độ trễ, nên:
+
+- **Nhúng qua API Gemini** (`gemini-embedding-001`, REST bằng `requests`, cùng khuôn provider
+  chat, KHÔNG kéo SDK). 0 RAM thường trú trên VPS. Nội dung loại B (HDSD/FAQ) là **công khai**
+  với mọi người đăng nhập nên gửi đi nhúng không phát sinh rủi ro lộ dữ liệu mới.
+- Bọc sau **giao diện `Embedder`** (`rag/embedder.py`): sau này muốn giữ trong nhà (khi có Văn
+  thư nhạy cảm) chỉ cần thêm `LocalEmbedder` và đổi `get_embedder()`, không đụng chỗ khác.
+- Chiều vector 768 (Gemini cho cắt chiều Matryoshka) — đủ chính xác, nhẹ Qdrant.
+- **Khóa API:** dev/test dùng chung `GEMINI_API_KEY` hiện có; **prod đổi key riêng** trước khi
+  bật thật; qua giai đoạn test sẽ đổi lại API theo yêu cầu sếp.
+- Không gắn nhãn quyền theo `apply_scope` cho loại B như bản đầu dự tính: nội dung này vốn công
+  khai với mọi người đăng nhập (đúng thứ họ đọc ở Trung tâm HDSD), nên tool `search_docs` không
+  gác quyền theo dòng.
+
+Cờ bật: `AI_RAG_ENABLED` (mặc định tắt). Tắt thì tool `search_docs` không hiện cho bot và hook
+reindex không chạy — môi trường chưa dựng Qdrant vẫn lưu HDSD/FAQ bình thường.
+
+### QĐ đổi (26/08/2026): nạp chỉ mục chạy NỀN qua Celery
+
+Nhúng đoạn gọi Gemini qua mạng, lúc nghẽn mất vài giây — không giữ request lưu bài / bấm nút chờ.
+Toàn bộ việc nạp chỉ mục đẩy sang **celery-worker**:
+
+- Hook HDSD/FAQ (sửa/xóa) chỉ **xếp hàng** (`.delay`) rồi trả ngay; lỗi broker (Redis) được nuốt,
+  không làm vỡ việc lưu bài. Task `assistant.rag.reindex_source` / `remove_source` chạy nền, mở
+  `SessionLocal` riêng, retry backoff 5 lần cho lỗi tạm thời (Gemini hết quota, Qdrant chập).
+- **Đường A (nạp lại toàn bộ)**: `POST /api/assistant/rag/reindex` (gác `help_article.write`) nay
+  **chỉ xếp hàng** task `assistant.rag.rebuild_all` rồi trả `task_id` + "đã xếp hàng" — không chờ
+  nhúng xong (tránh treo/timeout). Nút bấm nằm ở **Cấu hình hệ thống** của ERP v2 (`/system/settings`,
+  thẻ "Trợ lý AI"). `rebuild_all` KHÔNG nạp cả mẻ trong một task mà **rải ra** — liệt kê mọi nguồn
+  rồi xếp mỗi nguồn một task `reindex_source` riêng, để trần request/phút của bên nhúng không làm
+  hỏng cả mẻ (nguồn nào 429 chỉ mình nó retry; worker `-c 2` tự tiết lưu lượng dưới trần).
+- Task đăng ký ở `celery_app.conf.imports`; deploy backend phải **dựng lại celery-worker** vì thêm
+  phụ thuộc `qdrant-client`, và worker phải nằm trong mạng tới được `qdrant:6333`.
+
+Mã nguồn: `backend/app/modules/assistant/rag/` (`chunker` · `embedder` · `store` · `indexer` ·
+`search` · `hooks` · `tasks`) + tool `tools/rag_tool.py` + nút `frontend-v2/.../system/pages/setting-page.tsx`.
+Test: `test/backend/test_rag_chunker.py`, `test_rag_search_docs.py`, `test_rag_tasks.py`.
 
 ---
 

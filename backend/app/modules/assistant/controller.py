@@ -7,7 +7,7 @@ Phân quyền: cờ AI_ENABLED + quyền `assistant.read` (chỉ ban lãnh đạ
 company_head — xem seed.py). Bot LUÔN chạy dưới danh tính người hỏi (JWT của họ), không có tài
 khoản dịch vụ đặc quyền — để mọi tool loại A về sau vẫn đi qua apply_scope của chính user.
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
@@ -109,3 +109,50 @@ def delete_conversation(conv_id: int, user=Depends(require("assistant", "read"))
     if not convo.delete_conversation(db, user, conv_id):
         raise HTTPException(status_code=404, detail="Không tìm thấy hội thoại")
     return success(None, message="Đã xóa hội thoại")
+
+
+@router.get("/files/{file_id}/download")
+def download_report_file(file_id: int, user=Depends(require("assistant", "read")),
+                         db: Session = Depends(get_db)):
+    """Tải file báo cáo do tool `export_report_file` sinh ra — CHỈ chủ file tải được.
+
+    Không đi qua module attachment vì file này không có FileLink (không gắn chứng từ nào);
+    quyền ở đây là quyền SỞ HỮU: `created_by` phải là chính người đang hỏi. Kiểm thêm key
+    thuộc thư mục `assistant-report/` để endpoint không thành lối tải chung cho mọi file
+    người đó từng đính kèm nơi khác.
+    """
+    _guard()
+    from urllib.parse import quote
+
+    from app.core.storage import download_bytes
+    from app.modules.attachment.model import StoredFile
+
+    f = db.get(StoredFile, file_id)
+    if not f or f.created_by != user.id or "/assistant-report/" not in (f.file_key or ""):
+        raise HTTPException(status_code=404, detail="Không tìm thấy tệp")
+    data = download_bytes(f.file_key)
+    return Response(content=data, media_type=f.content_type or "application/octet-stream",
+                    headers={"Content-Disposition":
+                             f"attachment; filename*=UTF-8''{quote(f.filename)}"})
+
+
+@router.post("/rag/reindex")
+def rag_reindex(user=Depends(require("help_article", "write"))):
+    """Dựng lại toàn bộ chỉ mục vector loại B (HDSD + FAQ) — đường A, chạy NỀN.
+
+    Gác bằng quyền GHI TÀI LIỆU (`help_article.write`) chứ không phải `assistant` — người quản
+    nội dung HDSD mới là người cần bấm nạp lại. Dùng khi mới bật RAG, đổi model nhúng, hoặc nghi
+    chỉ mục lệch với dữ liệu.
+
+    Chỉ XẾP HÀNG cho celery-worker rồi trả ngay (không chờ nhúng xong) — nạp toàn bộ có thể gọi
+    Gemini nhiều lần, đồng bộ sẽ treo request / timeout. Kết quả xem ở log worker.
+    """
+    _guard()
+    if not settings.AI_RAG_ENABLED:
+        raise HTTPException(status_code=400, detail="Tìm kiếm vector chưa được bật (AI_RAG_ENABLED)")
+    from .rag.tasks import rebuild_all_task
+    try:
+        async_result = rebuild_all_task.delay()
+    except Exception as e:  # noqa: BLE001 - lỗi broker báo về cho người bấm, không để 500 trơ
+        raise HTTPException(status_code=502, detail=f"Xếp hàng nạp lại chỉ mục thất bại: {e}") from e
+    return success({"task_id": async_result.id}, message="Đã xếp hàng nạp lại chỉ mục tài liệu")
