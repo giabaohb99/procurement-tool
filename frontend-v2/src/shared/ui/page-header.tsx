@@ -3,7 +3,8 @@ import type { ReactNode } from 'react'
 import { cn } from '@/shared/utils/cn'
 
 interface PageHeaderProps {
-  title: string
+  /** Tiêu đề — nhận cả JSX để chèn huy hiệu/trạng thái NGAY CẠNH tiêu đề. */
+  title: ReactNode
   /** Dòng phụ dưới tiêu đề — nhận cả JSX để chèn trạng thái, huy hiệu… */
   description?: ReactNode
   /**

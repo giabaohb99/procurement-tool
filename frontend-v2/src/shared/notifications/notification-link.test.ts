@@ -20,6 +20,9 @@ describe('toAppPath', () => {
     //  Thông báo phiếu hỗ trợ: backend vẫn ghi `/tickets/{id}`, phải rơi đúng
     //  vào chi tiết phiếu ở phân hệ Hỗ trợ chứ không trả null.
     expect(toAppPath('/tickets/12')).toBe('/support/tickets/12')
+    //  Mẻ nhập: backend ghi `/import-batches/{id}` (import_tool/tasks.py); từ
+    //  Đ-13a màn Quản lý Import đã có ở phân hệ Quản trị nên phải dịch được.
+    expect(toAppPath('/import-batches/3')).toBe('/system/imports/3')
   })
 
   it('giữ nguyên link đã ở dạng phân hệ, không dịch lần hai', () => {
@@ -30,7 +33,6 @@ describe('toAppPath', () => {
 
   it('màn hình v2 chưa có thì trả null để đứng yên, không quăng vào trang trắng', () => {
     expect(toAppPath('/payment-requests/9')).toBeNull()
-    expect(toAppPath('/import-batches/3')).toBeNull()
   })
 
   it('không khớp nửa vời: `/documents` khác `/document`', () => {

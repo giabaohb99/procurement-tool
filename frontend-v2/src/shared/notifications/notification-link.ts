@@ -15,9 +15,9 @@
  * nhận bản clone) và «Cần rà lại» (bản gốc lên phiên bản mới). Nghĩa là toàn bộ
  * đường báo việc của luồng clone gãy ở bước cuối cùng.
  *
- * Màn hình nào v2 chưa có (yêu cầu thanh toán, mẻ nhập) thì vẫn trả `null` —
- * chỗ gọi đánh dấu đã đọc nhưng không điều hướng, thà đứng yên còn hơn quăng
- * người dùng vào trang trắng.
+ * Màn hình nào v2 chưa có thì vẫn trả `null` — chỗ gọi đánh dấu đã đọc nhưng
+ * không điều hướng, thà đứng yên còn hơn quăng người dùng vào trang trắng.
+ * (Mẻ nhập đã có màn từ Đ-13a nên nay dịch được sang `/system/imports`.)
  */
 const PREFIX_MAP: [from: string, to: string][] = [
   ['/purchase-requests', '/procurement/purchase-requests'],
@@ -28,6 +28,9 @@ const PREFIX_MAP: [from: string, to: string][] = [
   ['/employees', '/hr/employees'],
   //  Phiếu hỗ trợ: backend ghi `/tickets/12`, v2 gom vào phân hệ Hỗ trợ.
   ['/tickets', '/support/tickets'],
+  //  Mẻ nhập: backend ghi `/import-batches/12` (import_tool/tasks.py), v2 đặt ở
+  //  phân hệ Quản trị. Trước Đ-13a màn này chưa có nên link rơi xuống `null`.
+  ['/import-batches', '/system/imports'],
 ]
 
 /**

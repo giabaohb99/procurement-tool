@@ -257,6 +257,13 @@ export const queryKeys = {
     auditLogs: (params?: Record<string, unknown>) => ['system', 'audit-logs', params ?? {}] as const,
     /** Hộp thư gửi danh nghĩa địa chỉ khác (26/08/2026). */
     mailboxes: () => ['system', 'mailboxes'] as const,
+    imports: (params?: Record<string, unknown>) => ['system', 'imports', params ?? {}] as const,
+    importDetail: (id: number | string) => ['system', 'imports', 'detail', id] as const,
+    importLogs: (id: number | string, params?: Record<string, unknown>) =>
+      ['system', 'imports', 'logs', id, params ?? {}] as const,
+    exports: (params?: Record<string, unknown>) => ['system', 'exports', params ?? {}] as const,
+    exportEntities: () => ['system', 'exports', 'entities'] as const,
+    exportDetail: (id: number | string) => ['system', 'exports', 'detail', id] as const,
   },
   /** Phân hệ Hỗ trợ — phiếu hỗ trợ (ticket) và luồng trao đổi trong từng phiếu. */
   support: {

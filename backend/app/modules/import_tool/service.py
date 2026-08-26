@@ -5,11 +5,29 @@ import uuid
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.orm import Session
 
+from app.core.base_controller import apply_filters
 from app.core.storage import dated_key, upload_fileobj
 from app.modules.attachment.model import StoredFile
 
 from .model import (ImportBatch, ImportChange, ImportLog, ImportMode,
                     ImportModule, ImportStatus, LogLevel)
+
+# Bộ lọc điều kiện («Bộ lọc») chỉ được đụng các cột này qua cú pháp `<field>__<op>`.
+_FILTER_OPS = [
+    "status", "mode", "module", "filename", "created_at", "total_rows",
+    "created_count", "updated_count", "skipped_count",
+    "warning_count", "review_count", "error_count",
+]
+
+# Ô chọn «Phân hệ» -> tập ĐỐI TƯỢNG (module) thuộc phân hệ đó (khớp data-modules ở FE).
+_PHAN_HE_MODULES = {
+    "hr": [ImportModule.COMPANY, ImportModule.DEPARTMENT, ImportModule.EMPLOYEE],
+    "procurement": [ImportModule.SURVEY_REQUEST, ImportModule.PURCHASE_REQUEST,
+                    ImportModule.SURVEY, ImportModule.PURCHASE_ORDER],
+    "production": [ImportModule.SUPPLIER, ImportModule.PRODUCT, ImportModule.UNIT,
+                   ImportModule.ITEM_GROUP],
+    "inventory": [ImportModule.WAREHOUSE],
+}
 
 # tăng đếm theo level của log
 _LEVEL_COUNTER = {
@@ -40,6 +58,15 @@ def create_batch(db: Session, module: int, mode: int, sf: StoredFile, user_id: i
     return b
 
 
+def commit_dry_run(db: Session, batch: ImportBatch, user_id: int) -> ImportBatch:
+    """Ghi thật từ một bản CHẠY THỬ: tạo batch mới chế độ APPLY, DÙNG LẠI đúng file
+    đã tải lên (không phải upload lại). Trả batch mới để chỗ gọi đẩy Celery."""
+    sf = db.get(StoredFile, batch.file_id)
+    if not sf:
+        raise ValueError("Không tìm thấy file của bản chạy thử để ghi thật")
+    return create_batch(db, batch.module, ImportMode.APPLY, sf, user_id)
+
+
 def add_log(db: Session, batch: ImportBatch, sheet: str, row_no: int, level: int,
             category: str, message: str, ref_key: str = "", target_code: str = "", raw: str = "") -> None:
     """Ghi 1 dòng log + tăng đếm theo level (INFO không tính vào cảnh báo/lỗi)."""
@@ -51,12 +78,14 @@ def add_log(db: Session, batch: ImportBatch, sheet: str, row_no: int, level: int
         setattr(batch, col, (getattr(batch, col) or 0) + 1)
 
 
-def list_batches(db: Session, module: int | None, status: int | None, mode: int | None,
+def list_batches(db: Session, request, module: int | None, status: int | None, mode: int | None,
                  date_from: str | None, date_to: str | None,
-                 created_by_name: str | None, filename: str | None, pg: dict):
+                 created_by_name: str | None, filename: str | None, phan_he: str | None, pg: dict):
     q = db.query(ImportBatch)
     if module:
         q = q.filter(ImportBatch.module == module)
+    if phan_he in _PHAN_HE_MODULES:
+        q = q.filter(ImportBatch.module.in_([int(m) for m in _PHAN_HE_MODULES[phan_he]]))
     if status is not None:
         q = q.filter(ImportBatch.status == status)
     if mode is not None:
@@ -74,6 +103,9 @@ def list_batches(db: Session, module: int | None, status: int | None, mode: int 
             q = q.filter(ImportBatch.created_by.in_(uids))
         else:
             q = q.filter(ImportBatch.id < 0)  # no match
+    # «Bộ lọc» điều kiện (chỉ nhánh `<field>__<op>`; param trần để các ô chọn ở trên lo).
+    if request is not None:
+        q = apply_filters(q, ImportBatch, request, [], _FILTER_OPS)
     total = q.count()
     items = q.order_by(ImportBatch.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
     return total, items
@@ -125,9 +157,21 @@ def revert_batch(db: Session, batch: ImportBatch, user_id: int) -> dict:
     if not changes:
         return {"ok": False, "message": "Không có bản ghi snapshot để hoàn tác"}
 
+    from . import catalog_import, doc_import
+    #  Khảo sát / ĐMH revert qua hàm chuyên dụng (dọn đủ 2 loại dòng KS / cascade GR-công
+    #  nợ của ĐMH) — kể cả batch tạo bằng mẫu chuẩn mới (was_new=1 -> xoá đúng).
     if batch.module == ImportModule.PURCHASE_ORDER:
         deleted, restored = _revert_po(db, changes, user_id)
         what = "đơn"
+    elif batch.module == ImportModule.SURVEY:
+        deleted, restored = _revert_survey(db, changes, user_id)
+        what = "phiếu"
+    elif catalog_import.is_catalog_module(batch.module):
+        deleted, restored = catalog_import.revert(db, batch.module, changes, user_id)
+        what = "bản ghi"
+    elif doc_import.is_doc_module(batch.module):   # YCBG / YCMH
+        deleted, restored = doc_import.revert(db, batch.module, changes, user_id)
+        what = "phiếu"
     else:
         deleted, restored = _revert_survey(db, changes, user_id)
         what = "phiếu"

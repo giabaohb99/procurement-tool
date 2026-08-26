@@ -187,6 +187,12 @@ export const appRoutes = {
     auditLogs: '/system/audit-logs',
     /** Hộp thư gửi danh nghĩa địa chỉ khác — dùng lúc ban hành văn bản. */
     mailboxes: '/system/mailboxes',
+    /** Quản lý nhập dữ liệu — danh sách các lần nạp dữ liệu hàng loạt. */
+    imports: '/system/imports',
+    importDetail: (id: number | string) => `/system/imports/${id}`,
+    /** Quản lý xuất dữ liệu — nhật ký các lần xuất dữ liệu. */
+    exports: '/system/exports',
+    exportDetail: (id: number | string) => `/system/exports/${id}`,
   },
   production: {
     root: '/production',

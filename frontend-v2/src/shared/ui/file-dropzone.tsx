@@ -18,6 +18,8 @@ interface FileDropzoneProps {
   disabled?: boolean
   /** Đang tải lên — khóa vùng thả và hiện vòng quay. */
   busy?: boolean
+  /** Lọc loại tệp cho hộp chọn (thuộc tính `accept` của input), vd ".xlsx,.csv". */
+  accept?: string
   className?: string
 }
 
@@ -35,6 +37,7 @@ export function FileDropzone({
   children,
   disabled = false,
   busy = false,
+  accept,
   className,
 }: FileDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -92,6 +95,7 @@ export function FileDropzone({
         className="hidden"
         type="file"
         multiple
+        accept={accept}
         disabled={locked}
         onChange={(event) => emit(event.target.files)}
       />

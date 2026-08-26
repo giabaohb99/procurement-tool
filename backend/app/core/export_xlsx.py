@@ -55,6 +55,9 @@ class Col(NamedTuple):
     label: str
     kind: str = "text"   # text | money | price | qty | int | date | datetime | bool
     width: int = 16
+    #  Cột THAM CHIẾU: giá trị (id) được đổi sang MÃ của bảng đích để import lại
+    #  được. "company" | "department" | "employee" | "self" (cùng bảng, vd parent).
+    ref: str | None = None
 
 
 def parse_ids(ids: str | None) -> list[int]:
@@ -119,7 +122,8 @@ def cell_value(col: Col, row: dict) -> Any:
     if col.kind == "datetime":
         return _to_datetime(v)
     if col.kind == "bool":
-        return "Có" if v else ""
+        #  "Có"/"Không" (không để trống): import lại đọc đúng False, không nhầm mặc định.
+        return "Có" if v else "Không"
     return "" if v is None else str(v)
 
 

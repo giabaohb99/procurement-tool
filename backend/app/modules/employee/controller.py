@@ -243,13 +243,16 @@ def export_employees_csv(
 ):
     from app.core.csv_utils import export_csv_response
     from .model import Employee
-    
+
     query = apply_filters(db.query(Employee), Employee, request, service.FILTERABLE)
+    # Đ-13b: xuất CSV cũng phải bó theo phạm vi dữ liệu như màn danh sách — trước đây
+    # thiếu dòng này nên người phạm vi hẹp bấm Xuất là kéo được TOÀN BỘ nhân sự.
+    query = apply_scope(query, Employee, "employee", user, get_perm_profile(db, user))
     if ids:
         id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
         if id_list:
             query = query.filter(Employee.id.in_(id_list))
-            
+
     items = query.order_by(Employee.id.desc()).all()
     headers_map = {
         "code": "Mã NV",
@@ -264,6 +267,42 @@ def export_employees_csv(
         "status_label": "Trạng thái NS",
     }
     return export_csv_response(items, headers_map, "employees")
+
+
+@router.get("/export/xlsx")
+def export_employees_xlsx(
+    ids: str | None = Query(None),
+    request: Request = None,
+    db: Session = Depends(get_db),
+    user=Depends(require("employee", "export")),
+):
+    """Xuất Nhân sự ra .xlsx theo đúng bộ lọc đang áp + phạm vi dữ liệu (Đ-13b).
+
+    Endpoint MỚI nên gác thẳng bằng action `export` (QĐ-I4). Bản CSV cũ tạm giữ gác
+    `read` để không gãy màn cũ; sẽ chuẩn hoá về `export` ở Pha C."""
+    from app.core.export_xlsx import Col, check_row_limit, parse_ids, xlsx_response
+    from .model import Employee
+
+    query = apply_filters(db.query(Employee), Employee, request, service.FILTERABLE)
+    query = apply_scope(query, Employee, "employee", user, get_perm_profile(db, user))
+    id_list = parse_ids(ids)
+    if id_list:
+        query = query.filter(Employee.id.in_(id_list))
+    items = query.order_by(Employee.id.desc()).all()
+    check_row_limit(len(items))
+
+    cols = [
+        Col("code", "Mã NV", width=16),
+        Col("full_name", "Họ tên", width=28),
+        Col("email", "Email", width=24),
+        Col("phone", "Số điện thoại", width=16),
+        Col("department_name", "Phòng ban", width=22),
+        Col("company_name", "Công ty", width=22),
+        Col("position", "Vị trí", width=18),
+        Col("status_label", "Trạng thái NS", width=16),
+    ]
+    rows = [{c.key: getattr(it, c.key, "") for c in cols} for it in items]
+    return xlsx_response("nhan-su", cols, rows, "Nhan su")
 
 @router.post("/import/csv")
 def import_employees_csv(

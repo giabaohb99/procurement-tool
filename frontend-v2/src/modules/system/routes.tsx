@@ -1,4 +1,4 @@
-import { AtSign, Database, History, LayoutDashboard, Settings, SlidersHorizontal } from 'lucide-react'
+import { AtSign, Database, FileDown, FileUp, History, LayoutDashboard, Settings, SlidersHorizontal } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -57,6 +57,20 @@ export const systemModule: ErpModule = {
       entity: 'setting',
       manage: true,
     },
+    {
+      label: 'Nhập dữ liệu',
+      path: appRoutes.system.imports,
+      icon: FileUp,
+      entity: 'import',
+      group: 'Nhập / Xuất dữ liệu',
+    },
+    {
+      label: 'Xuất dữ liệu',
+      path: appRoutes.system.exports,
+      icon: FileDown,
+      entity: 'setting',
+      group: 'Nhập / Xuất dữ liệu',
+    },
   ],
 
   routes: [
@@ -88,6 +102,30 @@ export const systemModule: ErpModule = {
       path: appRoutes.system.auditLogs,
       lazy: async () => ({
         Component: (await import('./pages/audit-log-list-page')).AuditLogListPage,
+      }),
+    },
+    {
+      path: appRoutes.system.imports,
+      lazy: async () => ({
+        Component: (await import('./pages/import-list-page')).ImportListPage,
+      }),
+    },
+    {
+      path: appRoutes.system.importDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/import-detail-page')).ImportDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.system.exports,
+      lazy: async () => ({
+        Component: (await import('./pages/export-list-page')).ExportListPage,
+      }),
+    },
+    {
+      path: appRoutes.system.exportDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/export-detail-page')).ExportDetailPage,
       }),
     },
   ],

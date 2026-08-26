@@ -17,6 +17,19 @@ from app.core.base_model import Base, AuditMixin
 class ImportModule(IntEnum):
     SURVEY = 1
     PURCHASE_ORDER = 2
+    # Danh mục nền (Đ-13d) — chừa 3..9 cho nghiệp vụ, 10+ cho danh mục.
+    COMPANY = 10
+    DEPARTMENT = 11
+    EMPLOYEE = 12
+    # Danh mục Sản xuất + Kho (CR-174).
+    SUPPLIER = 13
+    PRODUCT = 14
+    UNIT = 15
+    ITEM_GROUP = 16
+    WAREHOUSE = 17
+    # Chứng từ nhiều dòng (CR-175) — mẫu chuẩn (khác importer Misa của SURVEY/PO).
+    SURVEY_REQUEST = 18
+    PURCHASE_REQUEST = 19
 
 
 class ImportMode(IntEnum):
@@ -55,6 +68,7 @@ class ImportBatch(Base, AuditMixin):
     total_rows: Mapped[int] = mapped_column(Integer, default=0)
     created_count: Mapped[int] = mapped_column(Integer, default=0)
     updated_count: Mapped[int] = mapped_column(Integer, default=0)
+    deleted_count: Mapped[int] = mapped_column(Integer, default=0)         # dòng đánh dấu __/delete/__
     skipped_count: Mapped[int] = mapped_column(Integer, default=0)
     warning_count: Mapped[int] = mapped_column(Integer, default=0)
     error_count: Mapped[int] = mapped_column(Integer, default=0)
