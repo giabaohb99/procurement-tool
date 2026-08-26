@@ -12,7 +12,6 @@ export function SupplierFilesTab({ supplierId }: { supplierId: number }) {
       entity="supplier"
       entityId={supplierId}
       canManage={can('supplier', 'write') || can('supplier', 'create')}
-      maxSizeMb={20}
     />
   )
 }

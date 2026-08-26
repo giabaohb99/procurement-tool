@@ -23,7 +23,6 @@ export function ContractFilesTab({ contractId }: { contractId: number }) {
       entity="contract"
       entityId={contractId}
       canManage={can('contract', 'write') || can('contract', 'create')}
-      maxSizeMb={30}
     />
   )
 }

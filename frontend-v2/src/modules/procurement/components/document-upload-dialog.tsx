@@ -62,7 +62,7 @@ export function DocumentUploadDialog({
   onOpenChange,
   entity,
   entityId,
-  maxSizeMb = 20,
+  maxSizeMb = 50,
   initialDocType = OTHER_DOC_TYPE,
 }: DocumentUploadDialogProps) {
   const [rows, setRows] = useState<UploadRow[]>([{ docType: initialDocType, files: [] }])

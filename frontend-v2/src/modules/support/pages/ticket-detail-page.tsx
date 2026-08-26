@@ -492,7 +492,7 @@ function ReplyComposer({
             {uploading ? <Loader2 className="size-4 animate-spin" /> : <Paperclip className="size-4" />}
           </Button>
           <span className="flex-1 text-xs text-muted-foreground">
-            {uploading ? 'Đang tải tệp lên…' : 'Ctrl/⌘ + Enter để gửi nhanh · tối đa 20MB mỗi tệp'}
+            {uploading ? 'Đang tải tệp lên…' : 'Ctrl/⌘ + Enter để gửi nhanh · tối đa 50MB mỗi tệp'}
           </span>
           <Button
             size="sm"

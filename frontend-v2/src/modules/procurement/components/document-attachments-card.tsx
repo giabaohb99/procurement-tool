@@ -56,9 +56,9 @@ interface DocumentAttachmentsCardProps {
   /**
    * Hạn mức dung lượng MỘT tệp, tính bằng MB — chỉ để hiện đúng câu nhắc.
    *
-   * Ngưỡng thật nằm ở `FILE_POLICY` trong `backend/app/core/file_registry.py` và
-   * mỗi loại chứng từ một khác (hợp đồng 30 MB, chứng từ mua hàng 20 MB). Ghi
-   * cứng 20 ở đây thì người dùng hợp đồng tưởng tệp 25 MB là hỏng nên không thử.
+   * Ngưỡng thật nằm ở `FILE_POLICY` trong `backend/app/core/file_registry.py`.
+   * Từ CR-148 (main) mọi ô chứng từ cùng trần 50MB nên mặc định là đủ; chỉ
+   * truyền đè khi backend khai một entity với trần khác đi.
    */
   maxSizeMb?: number
   /**
@@ -87,7 +87,7 @@ export function DocumentAttachmentsCard({
   entity,
   entityId,
   canManage,
-  maxSizeMb = 20,
+  maxSizeMb = 50,
   documentStatus = '',
 }: DocumentAttachmentsCardProps) {
   const [openType, setOpenType] = useState(ALL)
