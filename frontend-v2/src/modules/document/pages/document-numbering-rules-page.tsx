@@ -144,6 +144,8 @@ export function DocumentNumberingRulesPage() {
         // Khóa nhớ layout tách theo tab, giống Sổ văn bản: ba chiều có nhu cầu
         // ẩn/hiện cột khác nhau.
         storageKey={`document.numbering-rules.${direction}`}
+        //  `direction` ở màn này là TAB (đến / đi), không phải bộ lọc.
+        keepFilterParams={['direction']}
         items={items}
         columns={columns}
         searchFields={(row) => {

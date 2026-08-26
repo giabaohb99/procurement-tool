@@ -68,6 +68,33 @@ describe('FilterResetButton', () => {
     expect(nut()).not.toBeInTheDocument()
   })
 
+  it('GIỮ param tab do trang tự khai qua keepParams', async () => {
+    //  Màn Sổ văn bản chia tab bằng `kind`, Quy tắc đánh số bằng `direction`.
+    //  Không khai thì bấm Xóa lọc là nhảy về tab đầu — mất chỗ đang đứng. Không
+    //  nhét thẳng hai tên đó vào hằng số chung được: `kind` là bộ lọc THẬT ở màn
+    //  Phòng ban.
+    const nguoi = userEvent.setup()
+    build('/document/books?kind=2&company=3&q=abc', { keepParams: ['kind'] })
+
+    await nguoi.click(screen.getByRole('button', { name: /xóa lọc/i }))
+
+    const params = new URLSearchParams(screen.getByTestId('url').textContent ?? '')
+    expect(params.get('kind')).toBe('2')
+    expect(params.get('company')).toBeNull()
+    expect(params.get('q')).toBeNull()
+  })
+
+  it('param được keepParams giữ thì MỘT MÌNH nó không tính là đang lọc', async () => {
+    //  Đứng ở tab «Văn bản đi» mà chưa lọc gì thì không được mọc nút Xóa lọc.
+    build('/document/books?kind=2', { keepParams: ['kind'] })
+    expect(nut()).not.toBeInTheDocument()
+  })
+
+  it('KHÔNG khai keepParams thì param đó vẫn bị quét — mặc định không đoán bừa', () => {
+    build('/document/books?kind=2')
+    expect(nut()).toBeInTheDocument()
+  })
+
   it('trang tự lo bộ lọc thì bảng gọi hàm của trang và KHÔNG đụng vào URL', async () => {
     //  Bảng con trong trang chi tiết giữ bộ lọc bằng state cục bộ, mà URL lúc đó
     //  là của trang cha — quét sạch nó là phá trang cha.

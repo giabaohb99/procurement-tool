@@ -185,8 +185,16 @@ Mặc định nó **quét sạch query string** rồi gọi `reset()` của `Fil
 (nếu có) — đúng với quy ước "state bộ lọc nằm trên URL", nên nó dọn cả ô tìm
 kiếm, mọi select chính lẫn điều kiện nâng cao trong một nhát. Ba param được giữ
 lại vì **không phải bộ lọc**: `tab` (chia tập dữ liệu), `sort_by`, `sort_dir`.
-Đặt tên param mới mà nó không phải điều kiện lọc thì thêm vào `NON_FILTER_PARAMS`
-ở `shared/data-table/filter-reset-button.tsx`.
+
+⚠️ **Trang đặt tên param tab khác chữ `tab` thì phải tự khai** qua
+`keepFilterParams` — màn *Sổ văn bản* chia tab bằng `kind`, *Quy tắc đánh số*
+bằng `direction`. Không khai thì bấm *Xóa lọc* là nhảy về tab đầu, mất chỗ đang
+đứng. Đừng nhét hai tên đó vào `NON_FILTER_PARAMS`: `kind` là bộ lọc **thật** ở
+màn Phòng ban.
+
+```tsx
+<DataTable keepFilterParams={['kind']} … />
+```
 
 Bảng con trong trang **chi tiết** thường giữ bộ lọc bằng `useState` chứ không lên
 URL — mà URL lúc đó là của trang cha, quét sạch là phá trang cha. Những bảng đó

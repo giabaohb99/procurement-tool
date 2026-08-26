@@ -25,6 +25,15 @@ export interface FilterResetButtonProps {
    */
   active?: boolean
   /**
+   * Param của trang KHÔNG phải bộ lọc, cộng thêm vào `NON_FILTER_PARAMS`.
+   *
+   * Dùng cho trang đặt tên param tab khác chữ `tab`: màn Sổ văn bản chia tab
+   * bằng `kind`, màn Quy tắc đánh số bằng `direction`. Không khai thì bấm *Xóa
+   * lọc* là nhảy về tab đầu — mất chỗ đang đứng. Không nhét thẳng hai tên đó
+   * vào hằng số chung được: `kind` là bộ lọc THẬT ở màn Phòng ban.
+   */
+  keepParams?: string[]
+  /**
    * Việc chạy khi bấm. Bỏ trống = xóa mọi param lọc trên URL và xóa luôn điều
    * kiện của bộ lọc nâng cao. Bảng nào giữ bộ lọc bằng state cục bộ (bảng con
    * trong trang chi tiết) thì truyền hàm dọn state của chính nó vào.
@@ -42,19 +51,27 @@ export interface FilterResetButtonProps {
  *
  * `DataTable` tự vẽ nút này khi có `toolbar`, nên **không màn nào phải khai lại**.
  */
-export function FilterResetButton({ active, onReset }: FilterResetButtonProps) {
+export function FilterResetButton({ active, keepParams, onReset }: FilterResetButtonProps) {
   const [searchParams, setSearchParams] = useSearchParams()
   const filter = useOptionalFilterContext()
+
+  //  Nối chuỗi để làm dependency: mảng `keepParams` là mảng mới mỗi lần render
+  //  nếu chỗ gọi viết inline.
+  const keepKey = (keepParams ?? []).join(',')
+  const keep = useMemo(
+    () => [...NON_FILTER_PARAMS, ...(keepKey ? keepKey.split(',') : [])],
+    [keepKey],
+  )
 
   const hasUrlFilter = useMemo(() => {
     for (const [key, value] of searchParams.entries()) {
       if (!value) continue
       if (key === CONJUNCTION_PARAM) continue
-      if ((NON_FILTER_PARAMS as readonly string[]).includes(key)) continue
+      if (keep.includes(key)) continue
       return true
     }
     return false
-  }, [searchParams])
+  }, [searchParams, keep])
 
   const isActive = active ?? hasUrlFilter
 
@@ -74,12 +91,12 @@ export function FilterResetButton({ active, onReset }: FilterResetButtonProps) {
     //  nhật: hàm cập nhật đọc query string tại thời điểm chạy, mà ở đây có hai
     //  lần điều hướng trong cùng một nhịp.
     const kept = new URLSearchParams()
-    for (const name of NON_FILTER_PARAMS) {
+    for (const name of keep) {
       const value = searchParams.get(name)
       if (value) kept.set(name, value)
     }
     setSearchParams(kept, { replace: true })
-  }, [onReset, filter, searchParams, setSearchParams])
+  }, [onReset, filter, keep, searchParams, setSearchParams])
 
   if (!isActive) return null
 

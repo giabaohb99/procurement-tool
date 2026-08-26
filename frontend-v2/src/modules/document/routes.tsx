@@ -71,10 +71,21 @@ export const documentModule: ErpModule = {
       group: 'Nghiệp vụ',
     },
     {
+      //  KHÔNG khai `entity` — lần thứ ba của cùng một cái bẫy (xem hai mục
+      //  ngay trên). Quyền xem sổ **không chỉ** tới từ vai trò: văn thư thêm ai
+      //  đó vào ô «Người xem sổ» là đã quyết định cho người ấy xem, và người
+      //  được chia thường là nhân sự nghiệp vụ, KHÔNG có vai trò nào trên danh
+      //  mục Sổ. Gác `document_book.read` ở đây là giấu luôn quyển sổ vừa chia
+      //  khỏi mắt họ — mục menu biến mất, gõ thẳng URL thì ăn trang 403, trước
+      //  cả khi bộ lọc kịp chạy.
+      //
+      //  Backend đã mở đúng khe này từ 25/08/2026 (`nguoi_doc_so` chỉ đòi đăng
+      //  nhập, rồi `dieu_kien_xem_so` lọc theo TỪNG QUYỂN), nên bỏ khóa ở đây
+      //  không làm lộ gì: người không có vai trò và cũng không phải thành viên
+      //  sổ nào chỉ thấy một danh sách rỗng.
       label: 'Sổ văn bản',
       path: appRoutes.document.books,
       icon: BookMarked,
-      entity: 'document_book',
       group: 'Nghiệp vụ',
     },
     // Các danh mục nền gom vào MỘT mục menu: chúng chỉ được đụng tới lúc khai

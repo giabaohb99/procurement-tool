@@ -44,6 +44,11 @@ interface CatalogTableProps<T extends { id: number; is_active: boolean }> {
    * thang vào một bảng thì `id` KHÔNG còn duy nhất — xem `SecurityLevelCatalog`.
    */
   getRowId?: (row: T) => string | number
+  /**
+   * Param tab của trang chứa bảng, để nút *Xóa lọc* không quét mất nó. Màn Sổ
+   * văn bản chia tab bằng `kind` chứ không phải `tab`.
+   */
+  keepFilterParams?: string[]
 }
 
 /**
@@ -68,6 +73,7 @@ export function CatalogTable<T extends { id: number; is_active: boolean }>({
   extraToolbar,
   showStatusFilter = true,
   getRowId = (row) => row.id,
+  keepFilterParams,
 }: CatalogTableProps<T>) {
   const navigate = useNavigate()
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
@@ -95,6 +101,7 @@ export function CatalogTable<T extends { id: number; is_active: boolean }>({
         rows={rows}
         getRowId={getRowId}
         storageKey={storageKey}
+        keepFilterParams={keepFilterParams}
         fillHeight
         onRowClick={detailPath ? (row) => navigate(detailPath(row.id)) : undefined}
         emptyMessage={emptyMessage}

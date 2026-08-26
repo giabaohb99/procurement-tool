@@ -2,6 +2,8 @@ import { Plus } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { PermissionGate } from '@/core/authorization/permission-gate'
+import { usePermission } from '@/core/authorization/use-permission'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { appRoutes } from '@/shared/constants/app-routes'
 import type { DataTableColumn } from '@/shared/data-table'
@@ -43,8 +45,24 @@ export function DocumentBookPage() {
   const [companyId, setCompanyId] = useUrlParamState('company', ALL_COMPANIES)
   const [year, setYear] = useUrlParamState('year', String(YEARS[0]))
 
+  const { can } = usePermission()
+  //  Ô chọn pháp nhân mượn danh mục của phân hệ Nhân sự (`company.read`). Người
+  //  được CHIA SỔ thường không có quyền đó, mà không tắt query thì cứ mở trang
+  //  là ăn một toast 403 chẳng liên quan gì tới việc họ đang làm.
+  const canReadCompany = can('company', 'read')
+
   const { items, isLoading } = useDocumentBooks(Number(year))
-  const { data: companies } = useCompanies({ page_size: 200 })
+  const { data: companies } = useCompanies({ page_size: 200 }, { enabled: canReadCompany })
+
+  /** Số sổ mỗi loại, đã trừ đi ô lọc pháp nhân nhưng KHÔNG trừ ô tìm kiếm. */
+  const countByKind = useMemo(() => {
+    const total: Record<number, number> = { 1: 0, 2: 0, 3: 0 }
+    for (const row of items) {
+      if (companyId !== ALL_COMPANIES && row.company_id !== Number(companyId)) continue
+      total[row.kind] = (total[row.kind] ?? 0) + 1
+    }
+    return total
+  }, [items, companyId])
 
   const filterRows = useCallback(
     (rows: DocumentBook[]) =>
@@ -126,18 +144,28 @@ export function DocumentBookPage() {
         title="Sổ văn bản"
         description="Mỗi sổ có bộ đếm số riêng, đếm lại từ 1 mỗi năm."
         actions={
-          <Button onClick={() => navigate(appRoutes.document.bookNew)}>
-            <Plus className="size-4" />
-            Thêm mới
-          </Button>
+          //  Người được chia sổ vào đây để TRA CỨU, họ không có `document_book.create`
+          //  — bày nút ra là mời họ bấm rồi ăn 403 ở màn khai sổ.
+          <PermissionGate entity="document_book" action="create">
+            <Button onClick={() => navigate(appRoutes.document.bookNew)}>
+              <Plus className="size-4" />
+              Thêm mới
+            </Button>
+          </PermissionGate>
         }
       />
 
+      {/*  Số đếm trên từng tab: người được chia MỘT quyển sổ đi mà tab mặc định
+           là «Văn bản đến» thì mở lên chỉ thấy trống trơn và kết luận là chia sổ
+           không có tác dụng. Có số trên tab là thấy ngay sổ của mình nằm ở đâu. */}
       <Tabs value={kind} onValueChange={setKind} className="mb-4">
         <TabsList>
           {BOOK_KIND_OPTIONS.map((option) => (
             <TabsTrigger key={option.value} value={String(option.value)}>
               {BOOK_KIND_LABELS[option.value]}
+              <span className="ml-1.5 tabular-nums text-muted-foreground">
+                ({countByKind[option.value] ?? 0})
+              </span>
             </TabsTrigger>
           ))}
         </TabsList>
@@ -147,6 +175,9 @@ export function DocumentBookPage() {
         // Khóa nhớ layout tách theo tab: ba loại sổ có nhu cầu ẩn/hiện cột khác
         // nhau, dùng chung một khóa thì đổi cột ở tab này lại đổi luôn tab kia.
         storageKey={`document.books.${kind}`}
+        //  `kind` ở màn này là TAB, không phải bộ lọc — xóa lọc mà nhảy về tab
+        //  «Văn bản đến» là mất chỗ đang đứng.
+        keepFilterParams={['kind']}
         items={items}
         columns={columns}
         searchFields={(row) => [row.code, row.name, row.company_name]}

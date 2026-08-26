@@ -114,6 +114,12 @@ export interface DataTableProps<T> {
    * trống = tự suy từ query string. Đi kèm `onResetFilters`.
    */
   filtersActive?: boolean
+  /**
+   * Param trên URL của trang mà nút **Xóa lọc** phải GIỮ LẠI. Dùng cho trang đặt
+   * tên param tab khác chữ `tab` (màn Sổ văn bản dùng `kind`, Quy tắc đánh số
+   * dùng `direction`) — xem `FilterResetButtonProps.keepParams`.
+   */
+  keepFilterParams?: string[]
   /** Có thì bảng nhớ cột ẩn + độ rộng + thứ tự cột vào localStorage theo khóa này. */
   storageKey?: string
   pagination?: PaginationConfig
@@ -149,6 +155,7 @@ export function DataTable<T>({
   toolbar,
   onResetFilters,
   filtersActive,
+  keepFilterParams,
   storageKey,
   pagination,
   sortBy,
@@ -298,7 +305,13 @@ export function DataTable<T>({
             {/*  Nút "Xóa lọc" do BẢNG vẽ, không bắt từng màn tự nhớ: quên một
                  màn là màn đó lọc xong không có đường lùi. Đứng sát mép phải
                  ngay trước nút Tải lại, và tự ẩn khi chưa lọc gì. */}
-            {toolbar && <FilterResetButton active={filtersActive} onReset={onResetFilters} />}
+            {toolbar && (
+              <FilterResetButton
+                active={filtersActive}
+                keepParams={keepFilterParams}
+                onReset={onResetFilters}
+              />
+            )}
 
             <Button
               variant="outline"
