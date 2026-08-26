@@ -781,8 +781,10 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    ĐỔI NỀN SÁNG / TỐI — vòng loang từ chỗ vừa bấm (View Transitions API).
 
-   `--x` / `--y` do `shared/ui/theme-toggle.tsx` đặt ngay trước khi gọi
-   `startViewTransition`; không có chúng thì loang từ giữa màn hình.
+   Gốc loang neo cứng ở GÓC TRÊN BÊN PHẢI — đúng phía nút đổi giao diện nằm.
+   Trước đây lấy theo toạ độ con trỏ, nhưng từ khi khối chọn dời vào popover ảnh
+   đại diện thì chỗ bấm nằm lửng giữa màn, vòng loang bung ra từ giữa trang trông
+   như lỗi hiển thị.
 
    Cả hai ảnh chụp cùng nằm một chỗ và KHÔNG hoà trộn (`mix-blend-mode: normal`):
    để mặc định thì hai màu nền chồng nhau thành một màu thứ ba, nhấp nháy giữa
@@ -806,10 +808,11 @@
 @keyframes theme-reveal {
   from {
     /* Bán kính 0 tại điểm bấm -> phủ kín màn. `140%` để góc xa nhất cũng tới. */
-    clip-path: circle(0% at var(--x, 50%) var(--y, 50%));
+    clip-path: circle(0% at 100% 0%);
   }
   to {
-    clip-path: circle(140% at var(--x, 50%) var(--y, 50%));
+    /* 150% để góc đối diện (trái-dưới) cũng bị phủ kín. */
+    clip-path: circle(150% at 100% 0%);
   }
 }
 

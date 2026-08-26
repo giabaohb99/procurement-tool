@@ -1,7 +1,7 @@
 import { motion } from 'motion/react'
 import { Monitor, Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useCallback, type MouseEvent } from 'react'
+import { useCallback } from 'react'
 import { flushSync } from 'react-dom'
 
 import { cn } from '@/shared/utils/cn'
@@ -32,7 +32,7 @@ export function ThemeSwitch() {
   const { theme, setTheme } = useTheme()
 
   const pick = useCallback(
-    (next: string, event: MouseEvent<HTMLButtonElement>) => {
+    (next: string) => {
       if (next === theme) return
 
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -41,9 +41,10 @@ export function ThemeSwitch() {
         return
       }
 
-      //  Tâm vòng loang = chỗ con trỏ vừa bấm; CSS đọc qua `--x` / `--y`.
-      document.documentElement.style.setProperty('--x', `${event.clientX}px`)
-      document.documentElement.style.setProperty('--y', `${event.clientY}px`)
+      //  Tâm vòng loang neo cứng ở GÓC TRÊN BÊN PHẢI (xem `theme-reveal` trong
+      //  `index.css`), không chạy theo con trỏ. Từ khi khối này dời vào popover
+      //  ảnh đại diện, chỗ bấm nằm lửng giữa màn nên vòng loang bung ra từ giữa
+      //  trang — nhìn như màn hình bị lỗi chứ không ra hiệu ứng.
       document.startViewTransition(() => {
         flushSync(() => setTheme(next))
       })
@@ -55,7 +56,7 @@ export function ThemeSwitch() {
     <div
       role="radiogroup"
       aria-label="Giao diện"
-      className="flex items-center gap-0.5 rounded-full border bg-muted/50 p-[3px]"
+      className="flex items-center gap-0 rounded-full border bg-muted/50 p-0"
     >
       {OPTIONS.map(({ value, icon: Icon, label }) => {
         const active = theme === value
@@ -67,9 +68,9 @@ export function ThemeSwitch() {
             aria-checked={active}
             aria-label={label}
             title={label}
-            onClick={(event) => pick(value, event)}
+            onClick={() => pick(value)}
             className={cn(
-              'relative grid size-6 place-items-center rounded-full transition-colors',
+              'relative grid size-5 place-items-center rounded-full transition-colors',
               active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
             )}
           >
