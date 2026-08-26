@@ -164,6 +164,28 @@ def test_bang_chi_co_cot_id_van_loc_khop_chinh_xac(db, seed):
     assert [d.doc_code for d in q.all()] == ["VB-01"]
 
 
+def test_cot_ten_phai_la_COT_THAT_chu_khong_phai_relationship(db, seed):
+    """`Employee.department` là RELATIONSHIP trỏ sang bảng phòng ban, KHÔNG phải bản chụp tên.
+
+    `getattr` không phân biệt được hai thứ đó, nên `owns()` từng trả True cho bảng nhân sự:
+    `apply_filters` nhường cột, mà `employee/controller.py` lại không gọi `apply_ref_filters`
+    — `?department_id=` rơi vào khoảng không, lọc phòng ban trên màn Nhân sự bấm xong danh
+    sách không đổi và cũng chẳng báo lỗi gì (khách báo 26/08/2026).
+    """
+    from app.modules.employee import service as emp_service
+
+    assert owns(Employee, "department_id") is False
+
+    _emp(db, "NV-TRONG-PHONG", "Trong phòng", seed.company_id, seed.dept_id)
+    _emp(db, "NV-PHONG-KHAC", "Phòng khác", seed.company_id, seed.dept_id + 99)
+
+    q = apply_filters(db.query(Employee), Employee, _Req(department_id=str(seed.dept_id)),
+                      emp_service.FILTERABLE)
+    ma = [e.code for e in q.all()]
+    assert "NV-TRONG-PHONG" in ma
+    assert "NV-PHONG-KHAC" not in ma
+
+
 # ── Bộ lọc điều kiện (`<field>__<op>`) ───────────────────────────────────────────
 def test_bo_loc_dieu_kien_dung_id_khop_thang(db, seed):
     """`nspt_id__eq=` khớp id THẲNG, không nhánh lùi: bộ lọc điều kiện là chỗ người dùng tự dựng

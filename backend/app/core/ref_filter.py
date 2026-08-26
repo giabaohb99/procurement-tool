@@ -38,10 +38,19 @@ def owns(model, col_id: str) -> bool:
 
     Chỉ nhường khi model có ĐỦ cặp id + tên. Thiếu cột tên nghĩa là bảng đó neo bằng id ngay
     từ đầu, không có nợ nào để trả — cứ để `apply_filters` so khớp chính xác như cũ.
+
+    ⚠️ Đếm CỘT THẬT, không dùng `getattr`. `Employee.department` là một *relationship* trỏ
+    sang bảng phòng ban chứ không phải bản chụp tên, mà `getattr` thì không phân biệt được:
+    `owns()` trả True, `apply_filters` nhường cột, còn controller nhân sự lại không gọi
+    `apply_ref_filters` — nên `?department_id=` bị BỎ QUA IM LẶNG, lọc phòng ban trên màn
+    Nhân sự không có tác dụng gì (khách báo 26/08/2026). Hybrid property cũng lọt lưới
+    `getattr` y như vậy.
     """
     twin = REF_PAIRS.get(col_id)
-    return bool(twin) and getattr(model, col_id, None) is not None \
-        and getattr(model, twin, None) is not None
+    if not twin:
+        return False
+    columns = model.__mapper__.columns
+    return col_id in columns and twin in columns
 
 
 def ref_name(db, col_id: str, rid: int) -> str:
