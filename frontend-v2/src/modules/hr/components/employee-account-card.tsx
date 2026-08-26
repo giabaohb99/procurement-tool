@@ -66,12 +66,20 @@ export function EmployeeAccountCard({ employeeId, email }: EmployeeAccountCardPr
 
           {!isLoading && account && (
             <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={account.is_active ? 'default' : 'destructive'}>
-                  {account.is_active ? 'Đang hoạt động' : 'Đã khóa'}
-                </Badge>
-                <Badge variant="outline">{account.email}</Badge>
-              </div>
+              {/*  CHỈ hiện khi tài khoản BỊ KHÓA (26/08/2026).
+
+                   Trước đây hàng này luôn có hai huy hiệu: «Đang hoạt động» và
+                   một huy hiệu địa chỉ đăng nhập. Bỏ cả hai vì cùng một lý do —
+                   chúng nói thứ người dùng đã biết: gần như mọi tài khoản đều
+                   đang hoạt động, còn địa chỉ đăng nhập thì chính là ô Email
+                   ngay bên trái cùng trang. Tài khoản nào chưa có địa chỉ thì
+                   huy hiệu kia rỗng hoác, thành một viên xám trống cạnh viên
+                   xanh (đúng thứ khách chụp lại).
+
+                   Giữ lại đúng vế NGƯỢC: bị khóa là chuyện bất thường và người
+                   đó KHÔNG đăng nhập được. Bỏ nốt thì màn hình không còn chỗ
+                   nào nói ra, và người quản trị đi tìm mãi không hiểu vì sao. */}
+              {!account.is_active && <Badge variant="destructive">Đã khóa</Badge>}
 
               <div className="flex items-start gap-2 text-sm">
                 <ShieldCheck className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
