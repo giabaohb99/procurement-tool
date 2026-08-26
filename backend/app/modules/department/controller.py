@@ -34,6 +34,8 @@ def list_departments(
     request: Request,
     q: str | None = Query(None),
     is_active: bool | None = Query(None),
+    kind: int | None = Query(None, description="1 phòng chức năng · 2 đơn vị kinh doanh · 3 ban dự án"),
+    company_id: int | None = Query(None, description="Phòng ban HIỆN DIỆN ở pháp nhân này"),
     sort_by: str = Query(""),
     sort_dir: str = Query("asc"),
     pg: dict = Depends(pagination),
@@ -42,7 +44,8 @@ def list_departments(
 ):
     # request đi kèm để service gắn BỘ LỌC ĐIỀU KIỆN (`<field>__<op>`), xem core/filter_operators.py
     total, items = service.list_departments(db, q, pg, is_active, sort_by, sort_dir, request,
-                                            scope_cond=_dieu_kien_pham_vi(db, user))
+                                            scope_cond=_dieu_kien_pham_vi(db, user),
+                                            kind=kind, company_id=company_id)
     # manager_id (chọn cứng) + manager_name (property của model) tự lấy qua model_validate
     res = [DepartmentOut.model_validate(i).model_dump() for i in items]
     return success({

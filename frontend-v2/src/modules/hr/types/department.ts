@@ -23,6 +23,14 @@ export const DEPARTMENT_KIND_LABELS: Record<Department['kind'], string> = {
   3: 'Ban dự án',
 }
 
+const DEPARTMENT_KINDS = [1, 2, 3] as const
+
+/** Đổ vào ô chọn "Loại đơn vị"; dựng TỪ bảng nhãn để hai chỗ không trôi khỏi nhau. */
+export const DEPARTMENT_KIND_OPTIONS = DEPARTMENT_KINDS.map((value) => ({
+  value,
+  label: DEPARTMENT_KIND_LABELS[value],
+}))
+
 /**
  * Một CẶP phòng ban × pháp nhân — khớp `GET /api/departments/by-companies`.
  *

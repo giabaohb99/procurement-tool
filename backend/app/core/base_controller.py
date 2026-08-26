@@ -17,14 +17,32 @@ def pagination(
     }
 
 
+def is_numeric_column(col) -> bool:
+    """Cột này lưu SỐ (Integer/SmallInteger/BigInteger/Numeric/Float)?
+
+    Bọc trong try vì `col.type` của cột lạ (JSON, kiểu tự chế) có thể không so sánh được.
+    """
+    from sqlalchemy import Float, Integer, Numeric
+    try:
+        return isinstance(col.type, (Integer, Numeric, Float))
+    except Exception:
+        return False
+
+
+def looks_like_integer(val) -> bool:
+    """`"3"` và `"-1"` là số; `"abc"`, `""`, `"1.5"` thì không."""
+    text = str(val).strip()
+    return text.lstrip("-").isdigit() and text not in ("", "-")
+
+
 def apply_filters(query, model, request: Request, filterable: list[str],
                   operator_filterable: list[str] | None = None):
     """Filter động: đọc query params, chỉ áp dụng các trường nằm trong whitelist.
 
     Hai loại param cùng chạy qua đây:
 
-    1. Param TRẦN `<field>=<val>` — hành vi cũ, giữ nguyên: text -> LIKE %val%, `is_*` -> bool,
-       `id`/`*_id` -> so khớp chính xác. Luôn nối bằng AND. Whitelist là `filterable`.
+    1. Param TRẦN `<field>=<val>`: text -> LIKE %val%, `is_*` -> bool, `id`/`*_id` và mọi
+       CỘT SỐ -> so khớp chính xác. Luôn nối bằng AND. Whitelist là `filterable`.
     2. Param CÓ OPERATOR `<field>__<op>=<val>` (+ `conjunction=and|or`) — bộ lọc điều kiện,
        xem `app/core/filter_operators.py`. Whitelist là `operator_filterable`, bỏ trống thì
        dùng luôn `filterable`.
@@ -51,6 +69,15 @@ def apply_filters(query, model, request: Request, filterable: list[str],
                 elif key == 'id' or key.endswith('_id'):
                     # Khóa tham chiếu -> so khớp CHÍNH XÁC (tránh LIKE %21% khớp 121, 210…)
                     if str(val).isdigit():
+                        query = query.filter(col == int(val))
+                elif is_numeric_column(col):
+                    # Cột SỐ (mã trạng thái / cấp / loại — quy tắc R2 lưu SMALLINT) cũng phải
+                    # so khớp CHÍNH XÁC. `LIKE %1%` trên cột số là quả bom hẹn giờ: hôm nay
+                    # chỉ có cấp 1..3 nên trông vẫn đúng, thêm cấp thứ 10 là lọc "cấp 1" kéo
+                    # theo luôn cấp 10, 11, 21… mà không báo gì.
+                    # Không phải số -> BỎ QUA param (người dùng sửa tay URL), đừng để
+                    # SQLAlchemy ném lỗi làm vỡ cả trang.
+                    if looks_like_integer(val):
                         query = query.filter(col == int(val))
                 else:
                     query = query.filter(col.like(f"%{val}%"))

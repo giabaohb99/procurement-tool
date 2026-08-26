@@ -30,6 +30,14 @@ export const COMPANY_LEVEL_LABELS: Record<Company['level'], string> = {
   3: 'Đơn vị trực thuộc',
 }
 
+const COMPANY_LEVELS = [1, 2, 3] as const
+
+/** Đổ vào ô chọn "Cấp pháp nhân"; dựng TỪ bảng nhãn để hai chỗ không trôi khỏi nhau. */
+export const COMPANY_LEVEL_OPTIONS = COMPANY_LEVELS.map((value) => ({
+  value,
+  label: COMPANY_LEVEL_LABELS[value],
+}))
+
 /**
  * Chữ viết tắt cho logo: lấy chữ đầu của MÃ công ty. Tên pháp nhân hay bắt đầu
  * bằng "CÔNG TY CỔ PHẦN…" nên lấy theo tên thì công ty nào cũng ra "C".

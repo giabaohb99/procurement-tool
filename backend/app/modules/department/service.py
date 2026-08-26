@@ -45,11 +45,17 @@ def sync_department_ref(db: Session, obj) -> None:
 
 
 def list_departments(db: Session, q: str | None, pg: dict, is_active: bool | None = None,
-                     sort_by: str = "", sort_dir: str = "asc", request=None, scope_cond=None):
+                     sort_by: str = "", sort_dir: str = "asc", request=None, scope_cond=None,
+                     kind: int | None = None, company_id: int | None = None):
     """`scope_cond` — điều kiện phạm vi do controller dựng sẵn (B-07), `None` = thấy tất.
 
     Nhận điều kiện đã dựng thay vì tự gọi `apply_scope` để tầng service không phải biết
     tới user/profile; phần đếm `total` nằm SAU chỗ lọc nên số trang khớp với số dòng.
+
+    `kind` / `company_id` là hai ô CHỌN trên thanh công cụ. Endpoint này KHÔNG chạy qua
+    `apply_filters` (nó tự đọc `q` để tìm chung tên phòng HOẶC tên trưởng bộ phận), nên
+    param trần phải khai tay ở đây — thả vào `FILTERABLE` không thôi thì nó rơi vào khoảng
+    không y như `department_id` của màn Nhân sự.
     """
     from app.core.base_controller import apply_sort
     from app.core.filter_operators import apply_operator_filters
@@ -67,6 +73,18 @@ def list_departments(db: Session, q: str | None, pg: dict, is_active: bool | Non
         )
     if is_active is not None:
         query = query.filter(Department.is_active == is_active)
+    if kind:
+        query = query.filter(Department.kind == kind)
+    if company_id:
+        #  "Hiện diện ở pháp nhân này" = pháp nhân GỐC hoặc có mặt trong bảng ánh xạ A06.
+        #  Chỉ lọc theo `Department.company_id` là hụt: một phòng dùng chung ở nhiều pháp
+        #  nhân chỉ hiện ra ở đúng pháp nhân gốc, còn 12 pháp nhân kia coi như không có
+        #  phòng đó. Cùng cách gộp hai nguồn với `phong_ban_cua_cac_phap_nhan`.
+        present_at = (db.query(DepartmentCompany.department_id)
+                      .filter(DepartmentCompany.company_id == company_id,
+                              DepartmentCompany.is_active.is_(True)))
+        query = query.filter(or_(Department.company_id == company_id,
+                                 Department.id.in_(present_at)))
     total = query.count()
     query = apply_sort(query, Department, sort_by, sort_dir, default=Department.id.desc())
     items = query.offset(pg["offset"]).limit(pg["limit"]).all()

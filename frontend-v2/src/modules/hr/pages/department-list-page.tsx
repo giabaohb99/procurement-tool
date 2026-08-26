@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
+import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
 import { ConditionalFilter, FilterProvider, useFilterQuery } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -20,16 +21,21 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { DepartmentFormDialog } from '../components/department-form-dialog'
 import { DEPARTMENT_FILTER_FIELDS } from '../config/hr-filter-fields'
+import { useCompanies } from '../hooks/use-companies'
 import { useDepartments } from '../hooks/use-departments'
-import { DEPARTMENT_KIND_LABELS, type Department } from '../types/department'
+import {
+  DEPARTMENT_KIND_LABELS,
+  DEPARTMENT_KIND_OPTIONS,
+  type Department,
+} from '../types/department'
 
 const ALL = 'all'
 
-/** `preserveParams`: giữ select Trạng thái trên URL khi áp bộ lọc nâng cao. */
+/** `preserveParams`: giữ ba select của thanh công cụ trên URL khi áp bộ lọc nâng cao. */
 const FILTER_CONFIG = {
   fields: DEPARTMENT_FILTER_FIELDS,
   allowConjunctionToggle: true,
-  preserveParams: ['is_active'],
+  preserveParams: ['is_active', 'kind', 'company_id'],
 }
 
 export function DepartmentListPage() {
@@ -49,20 +55,37 @@ export function DepartmentListPage() {
 function DepartmentListContent() {
   const navigate = useNavigate()
 
+  const { can } = usePermission()
+  //  Ô chọn Pháp nhân mượn danh mục của phân hệ khác (`company.read`). Thiếu
+  //  quyền là cứ mount lên gọi API rồi ăn toast 403 chẳng liên quan gì tới việc
+  //  đang làm — nên vừa tắt query vừa giấu luôn ô chọn.
+  const canReadCompany = can('company', 'read')
+
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [active, setActive] = useUrlParamState('is_active', ALL)
+  const [kind, setKind] = useUrlParamState('kind', ALL)
+  const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const [isFormOpen, setFormOpen] = useState(false)
 
+  const { data: companies } = useCompanies({ page_size: 500 }, { enabled: canReadCompany })
   const { queryParams, queryKey } = useFilterQuery()
 
-  const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, active])
+  const [page, setPage] = usePageResetOnFilterChange([
+    queryKey,
+    debouncedValue,
+    active,
+    kind,
+    companyId,
+  ])
 
   const params: ListParams = { page, page_size: pageSize, ...queryParams }
   // `q` là tham số RIÊNG của endpoint này: khớp tên phòng ban HOẶC tên trưởng
   // bộ phận (join sang bảng nhân sự). Không phải cột trong whitelist filter.
   if (debouncedValue) params.q = debouncedValue
   if (active !== ALL) params.is_active = active === 'true'
+  if (kind !== ALL) params.kind = Number(kind)
+  if (companyId !== ALL) params.company_id = Number(companyId)
 
   const { data, isLoading, isError } = useDepartments(params)
 
@@ -153,6 +176,36 @@ function DepartmentListContent() {
                   onChange={(e) => setKeyword(e.target.value)}
                 />
               </div>
+
+              <Select value={kind} onValueChange={setKind}>
+                <SelectTrigger className="w-52">
+                  <SelectValue placeholder="Loại đơn vị" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>Tất cả loại đơn vị</SelectItem>
+                  {DEPARTMENT_KIND_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={String(option.value)}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {canReadCompany && (
+                <Select value={companyId} onValueChange={setCompanyId}>
+                  <SelectTrigger className="w-52">
+                    <SelectValue placeholder="Pháp nhân" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL}>Tất cả pháp nhân</SelectItem>
+                    {(companies?.items ?? []).map((company) => (
+                      <SelectItem key={company.id} value={String(company.id)}>
+                        {company.short_name || company.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
 
               <Select value={active} onValueChange={setActive}>
                 <SelectTrigger className="w-44">

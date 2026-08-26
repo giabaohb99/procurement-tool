@@ -21,15 +21,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CompanyFormDialog } from '../components/company-form-dialog'
 import { COMPANY_FILTER_FIELDS } from '../config/hr-filter-fields'
 import { useCompanies } from '../hooks/use-companies'
-import { companyInitial, type Company } from '../types/company'
+import {
+  COMPANY_LEVEL_LABELS,
+  COMPANY_LEVEL_OPTIONS,
+  companyInitial,
+  type Company,
+} from '../types/company'
 
 const ALL = 'all'
 
-/** `preserveParams`: giữ select Trạng thái trên URL khi áp bộ lọc nâng cao. */
+/** `preserveParams`: giữ hai select của thanh công cụ trên URL khi áp bộ lọc nâng cao. */
 const FILTER_CONFIG = {
   fields: COMPANY_FILTER_FIELDS,
   allowConjunctionToggle: true,
-  preserveParams: ['is_active'],
+  preserveParams: ['is_active', 'level'],
 }
 
 export function CompanyListPage() {
@@ -51,16 +56,18 @@ function CompanyListContent() {
 
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [active, setActive] = useUrlParamState('is_active', ALL)
+  const [level, setLevel] = useUrlParamState('level', ALL)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const [isFormOpen, setFormOpen] = useState(false)
 
   const { queryParams, queryKey } = useFilterQuery()
 
-  const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, active])
+  const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, active, level])
 
   const params: ListParams = { page, page_size: pageSize, ...queryParams }
   if (debouncedValue) params.name = debouncedValue
   if (active !== ALL) params.is_active = active === 'true'
+  if (level !== ALL) params.level = Number(level)
 
   const { data, isLoading, isError } = useCompanies(params)
 
@@ -86,6 +93,12 @@ function CompanyListContent() {
         ),
       },
       { key: 'code', header: 'Mã', width: 140, cell: (c) => c.code },
+      {
+        key: 'level',
+        header: 'Cấp',
+        width: 180,
+        cell: (c) => COMPANY_LEVEL_LABELS[c.level] ?? '—',
+      },
       {
         key: 'issue_code',
         header: 'Mã số hiệu',
@@ -173,6 +186,20 @@ function CompanyListContent() {
                   onChange={(e) => setKeyword(e.target.value)}
                 />
               </div>
+
+              <Select value={level} onValueChange={setLevel}>
+                <SelectTrigger className="w-52">
+                  <SelectValue placeholder="Cấp pháp nhân" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>Tất cả cấp</SelectItem>
+                  {COMPANY_LEVEL_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={String(option.value)}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
               <Select value={active} onValueChange={setActive}>
                 <SelectTrigger className="w-44">
