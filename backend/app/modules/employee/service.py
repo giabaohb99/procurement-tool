@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session, selectinload
 from app.core.audit import record
 from app.core.utils import generate_code
 
+from app.modules.department.model import Department
+
 from .model import Employee
 from .schema import EmployeeCreate, EmployeeUpdate
 
@@ -63,8 +65,21 @@ def list_employees(db: Session, base_query, pg: dict):
     total = base_query.count()
     # selectinload(user): danh sách có cột ảnh đại diện (lưu ở tab_user.avatar) — nạp gộp
     # 1 truy vấn cho cả trang, không để mỗi dòng tự lazy-load thành N+1.
+    # selectinload(company): cột Công ty (`EmployeeOut.company_name`) đọc qua
+    # quan hệ, thiếu dòng này là mỗi dòng một truy vấn.
+    #
+    # ⚠️ `department` (+ `department.manager`) nạp gộp luôn: `EmployeeOut` đã trả
+    # `department_name` và `manager_name` từ lâu, và cả hai đều đọc qua quan hệ —
+    # tức danh sách nhân sự **vốn đã N+1 từ trước**, chỉ là không ai đo. Bài kiểm
+    # `test_nhan_su_hien_cong_ty.py` đếm truy vấn nên nó lộ ra ngay lúc thêm cột
+    # Công ty. `manager_name` đi qua HAI cấp (`Employee.department.manager`) nên
+    # phải nối chuỗi loader, không thể chỉ nạp mỗi `department`.
     items = (
-        base_query.options(selectinload(Employee.user))
+        base_query.options(
+            selectinload(Employee.user),
+            selectinload(Employee.company),
+            selectinload(Employee.department).selectinload(Department.manager),
+        )
         .order_by(Employee.id.desc())
         .offset(pg["offset"])
         .limit(pg["limit"])

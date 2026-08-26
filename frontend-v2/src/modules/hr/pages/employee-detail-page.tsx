@@ -24,6 +24,7 @@ import {
   FormMessage,
 } from '@/shared/ui/form'
 import { FormSection } from '@/shared/ui/form-section'
+import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { RecordIdentityCard, type IdentityChip } from '@/shared/ui/record-identity-card'
@@ -228,6 +229,30 @@ export function EmployeeDetailPage() {
               </FormSection>
 
               <FormSection title="Công việc">
+                {/*  CÔNG TY (pháp nhân) — CHỈ XEM (26/08/2026).
+
+                     Cột `company_id` vốn có trong bảng nhưng chưa bao giờ hiện
+                     ra màn hình, nên mở hồ sơ không biết người này thuộc pháp
+                     nhân nào — trong khi pháp nhân là thứ quyết định phạm vi dữ
+                     liệu họ nhìn thấy.
+
+                     Để CHỈ XEM chứ chưa cho sửa: đổi pháp nhân của một người là
+                     đổi luôn tập dữ liệu họ đọc được, và phải kèm luật "phòng
+                     ban đang gán có thuộc pháp nhân mới không". Bày một ô chọn
+                     ra mà chưa có luật đó là mở đường lệch dữ liệu.
+
+                     Dùng `ReadOnlyValue`, KHÔNG dùng `<Input disabled>`: ô mờ
+                     thì không bôi đen, không copy được tên pháp nhân. */}
+                <FormItem>
+                  <FormLabel>Công ty</FormLabel>
+                  <ReadOnlyValue>
+                    {employee.company_name || '— Chưa gán công ty —'}
+                  </ReadOnlyValue>
+                  <FormDescription>
+                    Pháp nhân của nhân sự. Đổi pháp nhân làm ở màn Công ty.
+                  </FormDescription>
+                </FormItem>
+
                 <FormField
                   control={form.control}
                   name="department_id"

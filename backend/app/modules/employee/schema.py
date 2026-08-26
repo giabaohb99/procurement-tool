@@ -62,6 +62,10 @@ class EmployeeOut(EmployeeBase):
     # Đọc từ `Employee.status_label` (property trên model).
     status_label: str = ""
     department_name: str | None = None
+    #  Pháp nhân của nhân sự. Đọc từ property `Employee.company_name`; danh sách
+    #  phải `selectinload(Employee.company)` — xem `service.list_employees` — nếu
+    #  không mỗi dòng tự lazy-load thành N+1.
+    company_name: str | None = None
     manager_name: str | None = None
     created_at: datetime | None = None
     # Ảnh đại diện lấy từ tài khoản đăng nhập (tab_user.avatar). Danh sách phải

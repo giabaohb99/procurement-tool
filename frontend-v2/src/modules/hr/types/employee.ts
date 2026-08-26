@@ -8,6 +8,8 @@ export interface Employee {
   email: string
   phone: string
   company_id: number
+  /** Tên pháp nhân, backend trả kèm (`EmployeeOut.company_name`). */
+  company_name?: string | null
   department_id: number
   /** Vị trí / chức vụ — CHỈ là chữ, không liên quan tới phân quyền. */
   position: string

@@ -127,6 +127,15 @@ function EmployeeListContent() {
         cell: (e) => <span className="text-muted-foreground">{e.email || '—'}</span>,
       },
       {
+        //  Cột `company_id` vốn có trong bảng nhưng chưa bao giờ ra tới màn hình
+        //  (26/08/2026). Đứng TRƯỚC phòng ban vì pháp nhân là cấp trên của
+        //  phòng ban, và cùng tên phòng có thể tồn tại ở nhiều pháp nhân.
+        key: 'company_name',
+        header: 'Công ty',
+        width: 180,
+        cell: (e) => e.company_name || '—',
+      },
+      {
         key: 'department_name',
         header: 'Phòng ban',
         width: 180,
