@@ -59,7 +59,7 @@ export function EmployeeDetailPage() {
   const employeeId = Number(id)
 
   const { can } = usePermission()
-  const { user: dangDangNhap } = useAuth()
+  const { user: currentUser } = useAuth()
   const canWrite = can('employee', 'write')
 
   const { data: employee, isLoading, isError } = useEmployee(employeeId)
@@ -324,7 +324,7 @@ export function EmployeeDetailPage() {
                 companyId={employee.company_id}
                 primaryDepartmentId={employee.department_id}
                 canWrite={canWrite}
-                isSelf={dangDangNhap?.employee_id === employee.id}
+                isSelf={currentUser?.employee_id === employee.id}
               />
               <EmployeeAccountCard employeeId={employee.id} email={employee.email} />
               <AuditTimeline entity="employee" entityId={employeeId} />

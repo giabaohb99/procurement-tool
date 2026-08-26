@@ -30,7 +30,7 @@ function buildProps() {
       page={null}
     />,
   )
-  return { onChange, onCommit, tayTrai: screen.getByLabelText(/^Lề trái/) }
+  return { onChange, onCommit, leftHand: screen.getByLabelText(/^Lề trái/) }
 }
 
 /** jsdom chưa dựng `PointerEvent`; `MouseEvent` mang được `clientX` là đủ. */
@@ -40,9 +40,9 @@ function chuot(type: string, clientX: number) {
 
 describe('EditorRuler', () => {
   it('rê chuột thì vẽ liên tục nhưng CHƯA ghi', () => {
-    const { onChange, onCommit, tayTrai } = buildProps()
+    const { onChange, onCommit, leftHand } = buildProps()
 
-    fireEvent.pointerDown(tayTrai, { clientX: 100 })
+    fireEvent.pointerDown(leftHand, { clientX: 100 })
     window.dispatchEvent(chuot('pointermove', 140))
     window.dispatchEvent(chuot('pointermove', 180))
 
@@ -51,9 +51,9 @@ describe('EditorRuler', () => {
   })
 
   it('buông tay thì ghi ĐÚNG MỘT LẦN, theo giá trị cuối cùng của cú kéo', () => {
-    const { onCommit, tayTrai } = buildProps()
+    const { onCommit, leftHand } = buildProps()
 
-    fireEvent.pointerDown(tayTrai, { clientX: 100 })
+    fireEvent.pointerDown(leftHand, { clientX: 100 })
     window.dispatchEvent(chuot('pointermove', 140))
     window.dispatchEvent(chuot('pointermove', 180))
     window.dispatchEvent(chuot('pointerup', 180))
@@ -64,9 +64,9 @@ describe('EditorRuler', () => {
   })
 
   it('không ghi thêm lần nữa sau khi đã buông tay', () => {
-    const { onCommit, tayTrai } = buildProps()
+    const { onCommit, leftHand } = buildProps()
 
-    fireEvent.pointerDown(tayTrai, { clientX: 100 })
+    fireEvent.pointerDown(leftHand, { clientX: 100 })
     window.dispatchEvent(chuot('pointermove', 140))
     window.dispatchEvent(chuot('pointerup', 140))
     window.dispatchEvent(chuot('pointerup', 140))
@@ -75,9 +75,9 @@ describe('EditorRuler', () => {
   })
 
   it('nhích bằng phím mũi tên cũng ghi ngay', () => {
-    const { onCommit, tayTrai } = buildProps()
+    const { onCommit, leftHand } = buildProps()
 
-    fireEvent.keyDown(tayTrai, { key: 'ArrowRight' })
+    fireEvent.keyDown(leftHand, { key: 'ArrowRight' })
 
     expect(onCommit).toHaveBeenCalledTimes(1)
     expect(onCommit.mock.calls[0][0].left).toBeGreaterThan(LE.left)

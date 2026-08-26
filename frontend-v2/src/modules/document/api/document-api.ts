@@ -99,7 +99,7 @@ export const documentApi = {
    * quyền `delete`, nên gọi `remove` thì người dùng ăn 403 và bản nháp nằm lại
    * mãi mãi. Xem `document/service.bo_ban_nhap_cua_minh`.
    */
-  boBanNhap: (id: number) => apiDelete<null>(`${DOCUMENT_URL}/${id}/ban-nhap`),
+  discardDraft: (id: number) => apiDelete<null>(`${DOCUMENT_URL}/${id}/ban-nhap`),
 
   submit: (id: number) => apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/submit`, {}),
   /** `applyMode` = cơ chế áp dụng chọn lúc ban hành (F13). Bỏ trống là giữ nguyên. */

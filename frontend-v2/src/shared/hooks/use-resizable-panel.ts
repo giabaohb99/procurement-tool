@@ -7,7 +7,7 @@ interface Options {
   min: number
   /** Rộng hơn nữa thì lấn hết chỗ của phần chính. */
   max: number
-  macDinh: number
+  defaultValue: number
 }
 
 /**
@@ -26,21 +26,21 @@ interface Options {
  * Ghi vào `localStorage` lúc THẢ TAY, không phải mỗi nhịp kéo — mỗi nhịp một
  * lần ghi đĩa là mấy trăm lượt cho một cú kéo.
  */
-export function useResizablePanel({ storageKey, min, max, macDinh }: Options) {
+export function useResizablePanel({ storageKey, min, max, defaultValue }: Options) {
   const clamp = useCallback(
     (v: number) => Math.min(max, Math.max(min, Math.round(v))),
     [min, max],
   )
 
   const [width, setWidth] = useState(() => {
-    if (!storageKey) return macDinh
+    if (!storageKey) return defaultValue
     try {
       const raw = localStorage.getItem(storageKey)
       const so = raw ? Number(raw) : Number.NaN
-      return Number.isFinite(so) ? Math.min(max, Math.max(min, so)) : macDinh
+      return Number.isFinite(so) ? Math.min(max, Math.max(min, so)) : defaultValue
     } catch {
       //  Trình duyệt chặn storage: vẫn kéo được, chỉ là không nhớ sang phiên sau.
-      return macDinh
+      return defaultValue
     }
   })
 

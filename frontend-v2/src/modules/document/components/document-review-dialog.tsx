@@ -217,12 +217,12 @@ export function DocumentReviewDialog({
                   {
                     value: CHANGE_KIND.major,
                     ten: 'Sửa lớn',
-                    moTa: 'Đổi cách làm việc; người đã đọc bản cũ phải xác nhận đã đọc lại.',
+                    description: 'Đổi cách làm việc; người đã đọc bản cũ phải xác nhận đã đọc lại.',
                   },
                   {
                     value: CHANGE_KIND.minor,
                     ten: 'Sửa nhỏ',
-                    moTa: 'Sửa câu chữ, số liệu lặt vặt — không bắt ai đọc lại.',
+                    description: 'Sửa câu chữ, số liệu lặt vặt — không bắt ai đọc lại.',
                   },
                 ].map((muc) => {
                   const selection = changeKind === String(muc.value)
@@ -241,7 +241,7 @@ export function DocumentReviewDialog({
                         {newVersion && (
                           <span className="text-muted-foreground"> — bản mới sẽ là {newVersion}</span>
                         )}
-                        <span className="block text-muted-foreground">{muc.moTa}</span>
+                        <span className="block text-muted-foreground">{muc.description}</span>
                       </span>
                     </label>
                   )

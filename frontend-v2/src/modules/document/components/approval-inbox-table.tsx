@@ -85,10 +85,10 @@ function ApprovalInboxContent() {
   const [scope, setScope] = useUrlParamState('scope', INBOX_SCOPE.all)
   const [ngay, setNgay] = useUrlParamState('days', DEFAULT_DATE)
 
-  const { items: viecCho, isLoading: dangTaiCho } = useMyDocumentTasks()
-  const { items: daBam, isLoading: dangTaiBam } = useMyDocumentDecisions(Number(ngay))
+  const { items: pendingTasks, isLoading: loadingPending } = useMyDocumentTasks()
+  const { items: clicked, isLoading: loadingClick } = useMyDocumentDecisions(Number(ngay))
 
-  const all = useMemo(() => buildInboxRows(viecCho, daBam), [viecCho, daBam])
+  const all = useMemo(() => buildInboxRows(pendingTasks, clicked), [pendingTasks, clicked])
 
   const items = useMemo(() => {
     const can = debouncedValue.trim().toLowerCase()
@@ -109,7 +109,7 @@ function ApprovalInboxContent() {
     return applyClientFilter(loc, appliedState)
   }, [all, debouncedValue, scope, appliedState])
 
-  const overdueCount = viecCho.filter((row) => row.is_overdue).length
+  const overdueCount = pendingTasks.filter((row) => row.is_overdue).length
   //  Ô chọn khoảng chỉ ảnh hưởng phần đã duyệt — khi đang xem riêng việc chờ thì
   //  nó không làm gì cả, để lại chỉ tổ khiến người dùng tưởng danh sách bị cắt.
   const showRange = scope !== INBOX_SCOPE.pending && scope !== INBOX_SCOPE.overdue
@@ -140,7 +140,7 @@ function ApprovalInboxContent() {
           //  khóa là cách duy nhất để bố cục mới thật sự hiện ra.
           storageKey="document.approval-inbox.v2"
           fillHeight
-          isLoading={dangTaiCho || dangTaiBam}
+          isLoading={loadingPending || loadingClick}
           onRowClick={(row) => navigate(appRoutes.document.documentDetail(row.entityId))}
           emptyMessage={
             //  Phân biệt "không có gì" với "lọc không ra gì": một bên là tin
@@ -164,9 +164,9 @@ function ApprovalInboxContent() {
               <InboxScopeFilter
                 value={scope}
                 onChange={setScope}
-                soCho={viecCho.length}
+                pendingCount={pendingTasks.length}
                 overdueCount={overdueCount}
-                soDaDuyet={daBam.length}
+                approvedCount={clicked.length}
               />
 
               {/*  Ô này KHÔNG phải bộ lọc mà là khoảng dữ liệu đi hỏi backend —

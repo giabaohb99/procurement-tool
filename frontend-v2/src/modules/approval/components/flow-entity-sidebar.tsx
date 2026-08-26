@@ -12,7 +12,7 @@ import type { ApprovalFlow } from '../types/approval'
 interface FlowEntitySidebarProps {
   /** Luồng đang mở — để tô sáng đúng dòng. */
   flowId?: number
-  onTaoLuong: (entity: string) => void
+  onCreateFlow: (entity: string) => void
 }
 
 /**
@@ -22,7 +22,7 @@ interface FlowEntitySidebarProps {
  * nghĩ "luồng số 7 tên gì". Một danh sách phẳng toàn tên luồng bắt họ nhớ luồng
  * nào thuộc loại nào — mà đúng cái đó mới là câu họ đang hỏi.
  */
-export function FlowEntitySidebar({ flowId, onTaoLuong }: FlowEntitySidebarProps) {
+export function FlowEntitySidebar({ flowId, onCreateFlow }: FlowEntitySidebarProps) {
   const { data } = useApprovalFlows()
   const flows = data?.items ?? []
 
@@ -43,7 +43,7 @@ export function FlowEntitySidebar({ flowId, onTaoLuong }: FlowEntitySidebarProps
                 className="size-6"
                 title={`Tạo luồng cho ${nhan}`}
                 aria-label={`Tạo luồng cho ${nhan}`}
-                onClick={() => onTaoLuong(ma)}
+                onClick={() => onCreateFlow(ma)}
               >
                 <Plus className="size-3.5" />
               </Button>

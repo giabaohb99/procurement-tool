@@ -41,7 +41,7 @@ function ban(overrides: Partial<DocumentVersion> = {}): DocumentVersion {
 function ve(version: DocumentVersion, onSelect = vi.fn()) {
   render(
     <ul>
-      <DocumentVersionRow version={version} dangXem={false} onSelect={onSelect} cuoiDanhSach />
+      <DocumentVersionRow version={version} viewing={false} onSelect={onSelect} endOfList />
     </ul>,
   )
   return onSelect

@@ -194,7 +194,7 @@ export function useDiscardDraft() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: number) => documentApi.boBanNhap(id),
+    mutationFn: (id: number) => documentApi.discardDraft(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
     },

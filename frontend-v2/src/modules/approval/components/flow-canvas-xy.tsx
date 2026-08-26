@@ -42,22 +42,22 @@ const edgeTypes: EdgeTypes = {
 
 interface FlowCanvasXYProps {
   nodes: ApprovalNode[]
-  nodeDangChon: number | null
-  onChon: (nodeId: number) => void
-  onBoChon: () => void
-  onXoa: (nodeId: number) => void
-  onNhanBan: (node: ApprovalNode) => void
-  onThem: (sauChang: number, vaoChang?: number) => void
+  selectedNode: number | null
+  onPick: (nodeId: number) => void
+  onDeselect: () => void
+  onDelete: (nodeId: number) => void
+  onDuplicate: (node: ApprovalNode) => void
+  onAdd: (sauChang: number, vaoChang?: number) => void
 }
 
 function FlowCanvasInner({
   nodes: approvalNodes,
-  nodeDangChon,
-  onChon,
-  onBoChon,
-  onXoa,
-  onNhanBan,
-  onThem,
+  selectedNode,
+  onPick,
+  onDeselect,
+  onDelete,
+  onDuplicate,
+  onAdd,
 }: FlowCanvasXYProps) {
   const { fitView, zoomIn, zoomOut } = useReactFlow()
   const [showMiniMap, setShowMiniMap] = useState(true)
@@ -65,14 +65,14 @@ function FlowCanvasInner({
   const graphData = useMemo(() => {
     return buildFlowGraph({
       approvalNodes,
-      selectedNodeId: nodeDangChon,
-      onSelect: onChon,
-      onDelete: onXoa,
-      onDuplicate: onNhanBan,
-      onAdd: onThem,
-      onAddParallel: (seq) => onThem(seq - 1, seq),
+      selectedNodeId: selectedNode,
+      onSelect: onPick,
+      onDelete: onDelete,
+      onDuplicate: onDuplicate,
+      onAdd: onAdd,
+      onAddParallel: (seq) => onAdd(seq - 1, seq),
     })
-  }, [approvalNodes, nodeDangChon, onChon, onXoa, onNhanBan, onThem])
+  }, [approvalNodes, selectedNode, onPick, onDelete, onDuplicate, onAdd])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(graphData.nodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(graphData.edges)
@@ -114,10 +114,10 @@ function FlowCanvasInner({
         edgeTypes={edgeTypes}
         onNodeClick={(_event, node) => {
           if (node.type === 'step') {
-            onChon(Number(node.id))
+            onPick(Number(node.id))
           }
         }}
-        onPaneClick={onBoChon}
+        onPaneClick={onDeselect}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.2}
@@ -211,7 +211,7 @@ function FlowCanvasInner({
 
           <Button
             type="button"
-            onClick={() => onThem(lastSeq)}
+            onClick={() => onAdd(lastSeq)}
             className="h-10 gap-2 rounded-xl bg-primary px-4 font-semibold text-primary-foreground shadow-md transition-all hover:shadow-lg active:scale-98"
           >
             <PlusCircle className="size-4" />

@@ -92,11 +92,11 @@ export function toDashboardParams(
   departmentId: number | undefined,
   rangeKey: DateRangeKey,
   /** Chỉ dùng khi `rangeKey === 'custom'` — khoảng người dùng chọn trên lịch. */
-  khoangTuChon?: ResolvedRange,
+  customRange?: ResolvedRange,
 ): { company_id?: number; department_id?: number; from_date?: string; to_date?: string } {
   const khoang =
     rangeKey === 'custom'
-      ? khoangTuChon ?? {}
+      ? customRange ?? {}
       : DATE_RANGES.find((item) => item.key === rangeKey)?.resolve()
   return {
     company_id: companyId,

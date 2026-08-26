@@ -13,7 +13,7 @@ const SAMPLE_QUESTIONS = [
 
 interface ChatEmptyStateProps {
   /** Bấm một câu hỏi mẫu — gửi luôn câu đó. Bỏ trống khi đang bận gửi. */
-  onChon?: (cauHoi: string) => void
+  onPick?: (cauHoi: string) => void
 }
 
 /**
@@ -23,7 +23,7 @@ interface ChatEmptyStateProps {
  * người dùng cần làm là gõ câu hỏi, nên lời chào và ô nhập nên nằm gần nhau
  * trong tầm mắt thay vì cách nhau cả màn hình trắng.
  */
-export function ChatEmptyState({ onChon }: ChatEmptyStateProps) {
+export function ChatEmptyState({ onPick }: ChatEmptyStateProps) {
   return (
     <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-4 py-8">
       <div className="w-full max-w-3xl text-center">
@@ -38,13 +38,13 @@ export function ChatEmptyState({ onChon }: ChatEmptyStateProps) {
           đề xuất, không thay quyết định của bạn.
         </p>
 
-        {onChon && (
+        {onPick && (
           <div className="mx-auto mt-6 grid max-w-xl gap-2 sm:grid-cols-2">
             {SAMPLE_QUESTIONS.map((cau) => (
               <button
                 key={cau}
                 type="button"
-                onClick={() => onChon(cau)}
+                onClick={() => onPick(cau)}
                 className="rounded-xl border bg-card px-3.5 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-accent-foreground"
               >
                 {cau}

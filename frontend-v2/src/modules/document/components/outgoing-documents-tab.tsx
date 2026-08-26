@@ -66,17 +66,17 @@ function OutgoingDocumentsContent() {
   //  Bung MỘT dòng tại một thời điểm: các bản riêng phải hỏi máy chủ, mà hook
   //  không gọi được trong vòng lặp. Mở dòng khác thì dòng đang mở tự đóng —
   //  cũng đúng thói quen dùng: người ta soi từng bản gốc một.
-  const [dongDangBung, setDongDangBung] = useState<number | null>(null)
+  const [expandedRow, setExpandedRow] = useState<number | null>(null)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
   const documentTypes = useActiveDocumentTypes()
   //  Văn bản nào trong bảng đang chờ CHÍNH người đang xem duyệt — để đánh dấu
   //  dòng đó. Đọc lại hộp việc đã nạp sẵn cho nút trên thanh trên, không thêm
   //  vòng mạng nào.
-  const { items: viecDuyetCuaToi } = useMyDocumentTasks()
+  const { items: myApprovalTasks } = useMyDocumentTasks()
   const awaitingMyApproval = useMemo(
-    () => new Set(viecDuyetCuaToi.map((row) => row.entity_id)),
-    [viecDuyetCuaToi],
+    () => new Set(myApprovalTasks.map((row) => row.entity_id)),
+    [myApprovalTasks],
   )
   //  Điều kiện của bộ lọc nâng cao, đã dịch sang query param cho backend.
   const { queryParams, queryKey } = useFilterQuery()
@@ -127,25 +127,25 @@ function OutgoingDocumentsContent() {
   //  Các BẢN RIÊNG của dòng đang bung. Backend giấu chúng khỏi danh sách chung
   //  (xem `an_ban_rieng_co_goc_xem_duoc`) nên phải hỏi đích danh theo bản gốc.
   const { data: privateCopies } = useDocuments({
-    source_document_id: dongDangBung ?? undefined,
+    source_document_id: expandedRow ?? undefined,
     page_size: 100,
   })
 
   const rows = useMemo(() => {
     const items = data?.items ?? []
-    if (!dongDangBung) return items
-    const con = (privateCopies?.items ?? []).filter((row) => row.source_document_id === dongDangBung)
+    if (!expandedRow) return items
+    const con = (privateCopies?.items ?? []).filter((row) => row.source_document_id === expandedRow)
 
-    return items.flatMap((row) => (row.id === dongDangBung ? [row, ...con] : [row]))
-  }, [data?.items, privateCopies?.items, dongDangBung])
+    return items.flatMap((row) => (row.id === expandedRow ? [row, ...con] : [row]))
+  }, [data?.items, privateCopies?.items, expandedRow])
 
   //  Bọc `useCallback` vì hook cột nhận nó vào mảng phụ thuộc của `useMemo`:
   //  hàm mới mỗi lần render là bộ cột dựng lại mỗi lần render.
-  const setExpandedRow = useCallback((id: number | null) => setDongDangBung(id), [])
+  const handleExpandRow = useCallback((id: number | null) => setExpandedRow(id), [])
 
   const columns = useOutgoingDocumentColumns({
-    dongDangBung,
-    setDongDangBung: setExpandedRow,
+    expandedRow,
+    setExpandedRow: handleExpandRow,
     awaitingMyApproval,
     canCreate,
   })

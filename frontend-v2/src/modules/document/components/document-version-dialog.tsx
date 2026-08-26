@@ -38,13 +38,13 @@ function EditLevel({
   selection,
   ten,
   newVersion,
-  moTa,
+  description,
 }: {
   value: string
   selection: boolean
   ten: string
   newVersion: string | null
-  moTa: string
+  description: string
 }) {
   return (
     <label
@@ -57,7 +57,7 @@ function EditLevel({
       <span>
         <span className="font-medium">{ten}</span>
         {newVersion && <span className="text-muted-foreground"> — bản mới sẽ là {newVersion}</span>}
-        <span className="block text-muted-foreground">{moTa}</span>
+        <span className="block text-muted-foreground">{description}</span>
       </span>
     </label>
   )
@@ -152,14 +152,14 @@ export function DocumentVersionDialog({
                 selection={changeKind === String(CHANGE_KIND.major)}
                 ten="Sửa lớn"
                 newVersion={nextVersionNo(versions, CHANGE_KIND.major)}
-                moTa="Đổi nội dung có ảnh hưởng tới người thực hiện; người đã đọc bản cũ phải xác nhận đã đọc lại."
+                description="Đổi nội dung có ảnh hưởng tới người thực hiện; người đã đọc bản cũ phải xác nhận đã đọc lại."
               />
               <EditLevel
                 value={String(CHANGE_KIND.minor)}
                 selection={changeKind === String(CHANGE_KIND.minor)}
                 ten="Sửa nhỏ"
                 newVersion={nextVersionNo(versions, CHANGE_KIND.minor)}
-                moTa="Sửa lỗi chính tả, đổi số điện thoại — không đổi cách làm việc, không bắt ai đọc lại."
+                description="Sửa lỗi chính tả, đổi số điện thoại — không đổi cách làm việc, không bắt ai đọc lại."
               />
             </RadioGroup>
           </div>

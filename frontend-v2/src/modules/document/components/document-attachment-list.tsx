@@ -51,7 +51,7 @@ export function DocumentAttachmentList({
   const inputRef = useRef<HTMLInputElement>(null)
   const queryClient = useQueryClient()
   //  Tệp đang mở trong khung xem tại chỗ. `null` = khung đang đóng.
-  const [dangXem, setDangXem] = useState<AttachmentFile | null>(null)
+  const [viewing, setDangXem] = useState<AttachmentFile | null>(null)
 
   const queryKey = ['document', 'attachments', versionId ?? 0] as const
 
@@ -201,9 +201,9 @@ export function DocumentAttachmentList({
       )}
 
       <AttachmentViewerDialog
-        linkId={dangXem?.id ?? null}
-        filename={dangXem?.filename ?? ''}
-        contentType={dangXem?.content_type}
+        linkId={viewing?.id ?? null}
+        filename={viewing?.filename ?? ''}
+        contentType={viewing?.content_type}
         documentCode={documentCode}
         onClose={() => setDangXem(null)}
       />

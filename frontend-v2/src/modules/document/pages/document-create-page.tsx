@@ -141,7 +141,7 @@ export function DocumentCreatePage() {
     documentTypes.find((item) => item.id === docTypeId)?.code?.toUpperCase() === 'GNP'
   //  Hỏi ngay khi chọn loại dù hộp cảnh báo chỉ hiện lúc bấm Tạo — hỏi đúng
   //  nhịp bấm thì người dùng phải chờ một vòng mạng ở đúng nhịp sốt ruột nhất.
-  const { data: thieuTienQuyet } = useDocumentPrerequisites(docTypeId)
+  const { data: missingPrerequisite } = useDocumentPrerequisites(docTypeId)
 
   /**
    * Bấm «Tiếp tục» ở BƯỚC 1 thì SINH LUÔN BẢN NHÁP trên máy chủ.
@@ -295,7 +295,7 @@ export function DocumentCreatePage() {
 
     //  E04b — loại này bắt buộc trỏ tới loại khác mà kho chưa có cái nào để
     //  trỏ vào: hỏi lại một nhịp rồi vẫn cho tạo nếu họ chọn tiếp tục.
-    if (thieuTienQuyet?.length) {
+    if (missingPrerequisite?.length) {
       setChoXacNhan(values)
       return
     }
@@ -483,7 +483,7 @@ export function DocumentCreatePage() {
           if (!open) setChoXacNhan(null)
         }}
         docTypeName={documentTypes.find((type) => type.id === docTypeId)?.name ?? 'này'}
-        items={thieuTienQuyet ?? []}
+        items={missingPrerequisite ?? []}
         onConfirm={() => {
           const values = choXacNhan
           setChoXacNhan(null)

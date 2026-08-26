@@ -9,9 +9,9 @@
 export interface PageMarkerValues {
   /** Số trang hiện tại. Bỏ trống ở nơi chưa biết (trình soạn thảo). */
   trang?: number | string
-  tongTrang?: number | string
-  soHieu?: string
-  tenVanBan?: string
+  totalPages?: number | string
+  docNumber?: string
+  documentTitle?: string
   ngay?: string
 }
 
@@ -35,9 +35,9 @@ export function fillPageMarkers(mau: string, values: PageMarkerValues): string {
 
   const bang: Record<string, string> = {
     '{{trang}}': values.trang === undefined ? '' : String(values.trang),
-    '{{tong_trang}}': values.tongTrang === undefined ? '' : String(values.tongTrang),
-    '{{so_hieu}}': values.soHieu ?? '',
-    '{{ten_van_ban}}': values.tenVanBan ?? '',
+    '{{tong_trang}}': values.totalPages === undefined ? '' : String(values.totalPages),
+    '{{so_hieu}}': values.docNumber ?? '',
+    '{{ten_van_ban}}': values.documentTitle ?? '',
     '{{ngay}}': values.ngay ?? '',
   }
 

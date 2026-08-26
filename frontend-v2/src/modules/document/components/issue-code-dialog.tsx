@@ -20,38 +20,38 @@ interface IssueCodeDialogProps {
 }
 
 /** Bốn thẻ của mẫu số hiệu, cộng mã riêng theo pháp nhân. Nhãn nói thẳng thẻ nào. */
-const NHOM: { key: keyof IssueCodeGroups; tab: string; tieuDe: string; mo_ta: string }[] = [
+const NHOM: { key: keyof IssueCodeGroups; tab: string; title: string; mo_ta: string }[] = [
   {
     key: 'companies',
     tab: '{PhapNhan}',
-    tieuDe: 'Mã pháp nhân',
+    title: 'Mã pháp nhân',
     mo_ta: 'Đoạn cuối của số hiệu — «…-DEGO». Chỉ chữ không dấu và số.',
   },
   {
     key: 'departments',
     tab: '{PhongBan}',
-    tieuDe: 'Mã phòng ban',
+    title: 'Mã phòng ban',
     mo_ta:
       'Đoạn giữa — «…-NSHC-…». Bỏ trống thì số hiệu không có đoạn này. Đơn vị kinh doanh và ban dự án không vào số hiệu (A05).',
   },
   {
     key: 'department_companies',
     tab: 'Mã riêng',
-    tieuDe: 'Mã riêng của phòng tại từng pháp nhân',
+    title: 'Mã riêng của phòng tại từng pháp nhân',
     mo_ta:
       'Ghi đè mã phòng khi phòng đó dùng chung ở nhiều nơi — phòng Kế toán ở DEGO là KT, ở SAM là KTSAM. Bỏ trống = dùng mã phòng chung.',
   },
   {
     key: 'doc_types',
     tab: '{LoaiVB}',
-    tieuDe: 'Mã loại văn bản',
+    title: 'Mã loại văn bản',
     mo_ta:
       'Đoạn đầu của phần đuôi — «…/TB-…». Bắt buộc và không trùng nhau: mã này nằm trong khóa bộ đếm.',
   },
   {
     key: 'books',
     tab: '{SoVB}',
-    tieuDe: 'Mã sổ văn bản',
+    title: 'Mã sổ văn bản',
     mo_ta: 'Chỉ dùng khi mẫu có thẻ {SoVB}. Bỏ trống thì lấy mã sổ.',
   },
 ]
@@ -116,7 +116,7 @@ export function IssueCodeDialog({ open, onOpenChange }: IssueCodeDialogProps) {
 
           <TabsContent value={tab} className="mt-3 flex min-h-0 flex-1 flex-col gap-3">
             <div>
-              <p className="text-sm font-medium">{nhom?.tieuDe}</p>
+              <p className="text-sm font-medium">{nhom?.title}</p>
               <p className="text-xs text-muted-foreground">{nhom?.mo_ta}</p>
             </div>
 

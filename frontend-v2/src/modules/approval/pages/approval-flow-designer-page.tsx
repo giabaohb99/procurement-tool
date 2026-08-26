@@ -96,8 +96,8 @@ export function ApprovalFlowDesignerPage() {
           </div>
 
           <FlowSettingsPanel
-            entityMacDinh={entityMoi}
-            onDoiEntity={setEntityMoi}
+            defaultEntity={entityMoi}
+            onEntityChange={setEntityMoi}
             onSaved={(moi) => navigate(appRoutes.approval.flowDetail(moi.id), { replace: true })}
             onCancel={() => navigate(appRoutes.approval.flows)}
           />
@@ -176,26 +176,26 @@ export function ApprovalFlowDesignerPage() {
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <FlowCanvasXY
           nodes={nodes}
-          nodeDangChon={editingNode?.id ?? null}
-          onChon={(nodeId) => setBangPhai({ loai: 'sua-buoc', nodeId })}
-          onBoChon={() => {
+          selectedNode={editingNode?.id ?? null}
+          onPick={(nodeId) => setBangPhai({ loai: 'sua-buoc', nodeId })}
+          onDeselect={() => {
             if (bangPhai?.loai === 'sua-buoc') setBangPhai(null)
           }}
-          onXoa={(nodeId) => {
+          onDelete={(nodeId) => {
             deleteNode.mutate(nodeId)
             if (bangPhai?.loai === 'sua-buoc' && bangPhai.nodeId === nodeId) {
               setBangPhai(null)
             }
           }}
-          onNhanBan={(node) => {
-            const { id: _bo, flow_id: _bo2, ...phanConLai } = node
+          onDuplicate={(node) => {
+            const { id: _bo, flow_id: _bo2, ...remainder } = node
             //  Bản sao nằm NGAY SAU bản gốc: gửi lại đúng `seq` cũ thì backend
             //  hiểu là chèn chặng mới tại đó và đẩy bản gốc xuống dưới bản sao.
             saveNode.mutate({
-              values: { ...phanConLai, seq: node.seq + 1, name: `${node.name} (bản sao)` },
+              values: { ...remainder, seq: node.seq + 1, name: `${node.name} (bản sao)` },
             })
           }}
-          onThem={(sauChang, vaoChang) =>
+          onAdd={(sauChang, vaoChang) =>
             setBangPhai({ loai: 'them-buoc', sauChang, vaoChang })
           }
         />

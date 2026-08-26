@@ -22,9 +22,9 @@ interface FlowNodeCardProps {
   selection: boolean
   /** Chặng này có nhiều nhánh — thẻ hẹp lại và hiện nhãn nhánh. */
   isQuick?: boolean
-  onChon: () => void
-  onXoa: () => void
-  onNhanBan: () => void
+  onPick: () => void
+  onDelete: () => void
+  onDuplicate: () => void
 }
 
 /**
@@ -38,9 +38,9 @@ export function FlowNodeCard({
   node,
   selection,
   isQuick,
-  onChon,
-  onXoa,
-  onNhanBan,
+  onPick,
+  onDelete,
+  onDuplicate,
 }: FlowNodeCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: node.id })
@@ -69,7 +69,7 @@ export function FlowNodeCard({
           <GripVertical className="size-4" />
         </button>
 
-        <button type="button" onClick={onChon} className="min-w-0 flex-1 text-left">
+        <button type="button" onClick={onPick} className="min-w-0 flex-1 text-left">
           <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
             {node.name || `Bước ${node.seq}`}
             {isCopy && (
@@ -120,7 +120,7 @@ export function FlowNodeCard({
             className="size-7"
             title="Nhân bản bước"
             aria-label="Nhân bản bước"
-            onClick={onNhanBan}
+            onClick={onDuplicate}
           >
             <Copy className="size-3.5" />
           </Button>
@@ -131,7 +131,7 @@ export function FlowNodeCard({
             className="size-7 text-muted-foreground hover:text-destructive"
             title="Xóa bước"
             aria-label="Xóa bước"
-            onClick={onXoa}
+            onClick={onDelete}
           >
             <Trash2 className="size-3.5" />
           </Button>

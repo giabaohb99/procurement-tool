@@ -13,10 +13,10 @@ import {
 interface DocumentVersionRowProps {
   version: DocumentVersion
   /** Dòng này có phải bản đang mở ở khung soạn thảo bên cạnh không. */
-  dangXem: boolean
+  viewing: boolean
   onSelect: () => void
   /** Dòng cuối không kẻ tiếp đường nối xuống. */
-  cuoiDanhSach: boolean
+  endOfList: boolean
 }
 
 /**
@@ -128,9 +128,9 @@ function scoreTotal(version: DocumentVersion) {
  */
 export function DocumentVersionRow({
   version,
-  dangXem,
+  viewing,
   onSelect,
-  cuoiDanhSach,
+  endOfList,
 }: DocumentVersionRowProps) {
   const editLevel = editLevelLabel(version.change_kind)
   //  Bản bị TRẢ VỀ cũng sửa được — backend mở đúng như bản nháp
@@ -142,7 +142,7 @@ export function DocumentVersionRow({
     <li className="relative">
       {/*  Đường nối dọc — cùng ngôn ngữ với tab Phê duyệt: các bản là một chuỗi
            nối tiếp nhau, không phải mấy dòng rời rạc. Căn giữa chấm size-12. */}
-      {!cuoiDanhSach && (
+      {!endOfList && (
         <span
           aria-hidden="true"
           className="absolute top-14 bottom-0 left-[33px] w-0.5 bg-border"
@@ -152,7 +152,7 @@ export function DocumentVersionRow({
       <div
         className={cn(
           'relative flex items-start gap-4 rounded-md p-2 transition-colors hover:bg-muted/50',
-          dangXem && 'bg-muted/60',
+          viewing && 'bg-muted/60',
         )}
       >
         {/*  Số bản là thứ nhận diện dòng — cho nó thành chấm trên trục thay vì
@@ -218,7 +218,7 @@ export function DocumentVersionRow({
               </HelpHint>
             </span>
 
-            {dangXem && (
+            {viewing && (
               <span className="flex items-center gap-1 text-xs font-medium text-primary">
                 <Eye className="size-3.5" />
                 đang xem
@@ -269,7 +269,7 @@ export function DocumentVersionRow({
         <button
           type="button"
           onClick={onSelect}
-          aria-current={dangXem ? 'true' : undefined}
+          aria-current={viewing ? 'true' : undefined}
           className="absolute inset-0 rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
           <span className="sr-only">Mở phiên bản {version.version_no}</span>

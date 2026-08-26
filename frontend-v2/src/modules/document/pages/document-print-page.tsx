@@ -129,8 +129,8 @@ export function DocumentPrintPage() {
             footer_right: version.footer_right,
           }}
           markers={{
-            soHieu: record.display_code || '',
-            tenVanBan: record.title,
+            docNumber: record.display_code || '',
+            documentTitle: record.title,
             ngay: new Date().toLocaleDateString('vi-VN'),
           }}
           onLayout={setLayout}

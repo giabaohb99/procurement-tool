@@ -22,15 +22,15 @@ import { FlowNodeCard } from './flow-node-card'
 
 interface FlowCanvasProps {
   nodes: ApprovalNode[]
-  nodeDangChon: number | null
-  onChon: (nodeId: number) => void
-  onXoa: (nodeId: number) => void
-  onNhanBan: (node: ApprovalNode) => void
+  selectedNode: number | null
+  onPick: (nodeId: number) => void
+  onDelete: (nodeId: number) => void
+  onDuplicate: (node: ApprovalNode) => void
   /** Thêm bước vào SAU chặng này. `0` = thêm vào đầu luồng. */
-  onThem: (sauChang: number) => void
+  onAdd: (sauChang: number) => void
   /** Thêm một NHÁNH song song vào đúng chặng này. */
-  onThemNhanh: (chang: number) => void
-  onDoiThuTu: (stages: number[][]) => void
+  onQuickAdd: (chang: number) => void
+  onReorder: (stages: number[][]) => void
 }
 
 /**
@@ -46,13 +46,13 @@ interface FlowCanvasProps {
  */
 export function FlowCanvas({
   nodes,
-  nodeDangChon,
-  onChon,
-  onXoa,
-  onNhanBan,
-  onThem,
-  onThemNhanh,
-  onDoiThuTu,
+  selectedNode,
+  onPick,
+  onDelete,
+  onDuplicate,
+  onAdd,
+  onQuickAdd,
+  onReorder,
 }: FlowCanvasProps) {
   const sensors = useSensors(
     //  Phải kéo đi 6px mới tính là kéo — không có ngưỡng này thì mỗi cú bấm
@@ -80,7 +80,7 @@ export function FlowCanvas({
     newOrder.splice(i, 1)
     newOrder.splice(j, 0, tu.seq)
 
-    onDoiThuTu(newOrder.map((seq) => nodes.filter((n) => n.seq === seq).map((n) => n.id)))
+    onReorder(newOrder.map((seq) => nodes.filter((n) => n.seq === seq).map((n) => n.id)))
   }
 
   return (
@@ -99,7 +99,7 @@ export function FlowCanvas({
 
             return (
               <div key={seq} className="flex w-full flex-col items-center">
-                <Connector onThem={() => onThem(index)} />
+                <Connector onAdd={() => onAdd(index)} />
 
                 <div className="w-full max-w-xl">
                   <div className="mb-1.5 flex items-center justify-between gap-2">
@@ -112,7 +112,7 @@ export function FlowCanvas({
                       variant="ghost"
                       size="sm"
                       className="h-6 px-2 text-xs"
-                      onClick={() => onThemNhanh(seq)}
+                      onClick={() => onQuickAdd(seq)}
                     >
                       <GitBranch className="size-3.5" />
                       Thêm nhánh
@@ -135,10 +135,10 @@ export function FlowCanvas({
                         key={node.id}
                         node={node}
                         isQuick={hasBranch}
-                        selection={nodeDangChon === node.id}
-                        onChon={() => onChon(node.id)}
-                        onXoa={() => onXoa(node.id)}
-                        onNhanBan={() => onNhanBan(node)}
+                        selection={selectedNode === node.id}
+                        onPick={() => onPick(node.id)}
+                        onDelete={() => onDelete(node.id)}
+                        onDuplicate={() => onDuplicate(node)}
                       />
                     ))}
                   </div>
@@ -149,7 +149,7 @@ export function FlowCanvas({
         </SortableContext>
       </DndContext>
 
-      <Connector onThem={() => onThem(cacChang.length)} />
+      <Connector onAdd={() => onAdd(cacChang.length)} />
       <StartMarker icon={Flag} label="Kết thúc — phiếu được duyệt" />
     </div>
   )
@@ -166,7 +166,7 @@ function StartMarker({ icon: Icon, label }: { icon: React.ComponentType<{ classN
 }
 
 /** Đoạn nối giữa hai chặng, kèm nút chèn bước vào ĐÚNG chỗ đó. */
-function Connector({ onThem }: { onThem: () => void }) {
+function Connector({ onAdd }: { onAdd: () => void }) {
   return (
     <div className="group/noi flex flex-col items-center">
       <span aria-hidden className="h-4 w-px bg-border" />
@@ -177,7 +177,7 @@ function Connector({ onThem }: { onThem: () => void }) {
         className="size-6 rounded-full opacity-40 transition-opacity group-hover/noi:opacity-100"
         title="Chèn bước vào đây"
         aria-label="Chèn bước vào đây"
-        onClick={onThem}
+        onClick={onAdd}
       >
         <Plus className="size-3.5" />
       </Button>

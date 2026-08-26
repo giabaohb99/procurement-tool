@@ -7,14 +7,14 @@ import { useCallback, useState } from 'react'
  * thu gọn một lần thì lần sau mở lại phải thấy y như lúc rời đi, chứ không bắt
  * thu gọn lại mỗi lần vào trang.
  */
-export function usePersistedToggle(storageKey: string, macDinh = false) {
+export function usePersistedToggle(storageKey: string, defaultValue = false) {
   const [bat, datBat] = useState(() => {
     try {
       const raw = localStorage.getItem(storageKey)
-      return raw === null ? macDinh : raw === '1'
+      return raw === null ? defaultValue : raw === '1'
     } catch {
       //  Trình duyệt chặn storage: vẫn bấm được, chỉ là không nhớ sang phiên sau.
-      return macDinh
+      return defaultValue
     }
   })
 

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { useResizablePanel } from './use-resizable-panel'
 
 const KHOA = 'erp.thu-be-rong'
-const CONFIG = { storageKey: KHOA, min: 200, max: 420, macDinh: 256 }
+const CONFIG = { storageKey: KHOA, min: 200, max: 420, defaultValue: 256 }
 
 /** Giả lập một cú kéo: nhấn ở `x=0` rồi rê tới `x=delta` và thả tay. */
 function keo(startDrag: (e: never) => void, delta: number) {
@@ -91,7 +91,7 @@ describe('useResizablePanel', () => {
 
   it('không khai `storageKey` thì không đụng tới localStorage', () => {
     const { result } = renderHook(() =>
-      useResizablePanel({ min: 200, max: 420, macDinh: 256 }),
+      useResizablePanel({ min: 200, max: 420, defaultValue: 256 }),
     )
     keo(result.current.startDrag, 50)
     expect(result.current.width).toBe(306)

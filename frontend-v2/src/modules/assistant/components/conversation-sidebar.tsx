@@ -60,7 +60,7 @@ export function ConversationSidebar({
     storageKey: 'erp.assistant-sidebar-width',
     min: MIN_WIDTH,
     max: MAX_WIDTH,
-    macDinh: DEFAULT_VALUE,
+    defaultValue: DEFAULT_VALUE,
   })
   const [thuGon, doiThuGon] = usePersistedToggle('erp.assistant-sidebar-collapsed')
 

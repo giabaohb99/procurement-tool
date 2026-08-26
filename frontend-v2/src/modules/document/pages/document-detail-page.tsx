@@ -121,7 +121,7 @@ export function DocumentDetailPage() {
   const {
     data: record,
     isLoading,
-    isError: mucKhongDocDuoc,
+    isError: unreadableItem,
   } = useDocument(documentId, { dangDuyet: isMultiStepApproval })
   const { data: versions = [] } = useDocumentVersions(documentId)
   const { data: permissions } = useDocumentPermissions(documentId)
@@ -174,7 +174,7 @@ export function DocumentDetailPage() {
   //  tiếp, API trả 404. Không xử ở đây thì A ngồi trong một trang đã chết, với
   //  nút «Duyệt» sáng trưng, bấm vào chỉ nhận lỗi.
   useEffect(() => {
-    if (!mucKhongDocDuoc) return
+    if (!unreadableItem) return
     //  Hai nguyên nhân, nói cả hai: văn bản vừa bị BÃI BỎ (bãi bỏ thu hồi luôn
     //  quyền xem — `revoke_access.py`), hoặc việc duyệt đã chuyển người. Câu cũ
     //  chỉ nói vế thứ hai nên người bị đá ra vì bãi bỏ đọc xong càng khó hiểu.
@@ -182,7 +182,7 @@ export function DocumentDetailPage() {
       'Bạn không còn quyền xem văn bản này — văn bản có thể vừa bị bãi bỏ, hoặc việc duyệt đã chuyển sang người khác.',
     )
     navigate(appRoutes.document.documentsTab('outgoing'), { replace: true })
-  }, [mucKhongDocDuoc, navigate])
+  }, [unreadableItem, navigate])
 
   const { can } = usePermission()
   //  Ký là hành vi PHÊ DUYỆT, không phải sửa nội dung — gác bằng `approve` đúng
@@ -223,9 +223,9 @@ export function DocumentDetailPage() {
   const drawPageFrame = (mau: string) =>
     fillPageMarkers(mau, {
       trang: '#',
-      tongTrang: 'N',
-      soHieu: record?.display_code || '',
-      tenVanBan: record?.title || '',
+      totalPages: 'N',
+      docNumber: record?.display_code || '',
+      documentTitle: record?.title || '',
       ngay: new Date().toLocaleDateString('vi-VN'),
     })
 

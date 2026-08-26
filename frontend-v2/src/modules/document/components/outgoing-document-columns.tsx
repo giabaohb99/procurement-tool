@@ -17,8 +17,8 @@ import type { DocumentRecord } from '../types/document-record'
 
 interface OutgoingColumnsOptions {
   /** Dòng đang bung để xem bản riêng — `null` là chưa bung dòng nào. */
-  dongDangBung: number | null
-  setDongDangBung: (id: number | null) => void
+  expandedRow: number | null
+  setExpandedRow: (id: number | null) => void
   /** Id các văn bản đang chờ CHÍNH người đang xem duyệt. */
   awaitingMyApproval: Set<number>
   canCreate: boolean
@@ -36,8 +36,8 @@ interface OutgoingColumnsOptions {
  * mật), nên không dựng sẵn lúc nạp module được.
  */
 export function useOutgoingDocumentColumns({
-  dongDangBung,
-  setDongDangBung,
+  expandedRow,
+  setExpandedRow,
   awaitingMyApproval,
   canCreate,
 }: OutgoingColumnsOptions): DataTableColumn<DocumentRecord>[] {
@@ -48,8 +48,8 @@ export function useOutgoingDocumentColumns({
   //  bung dòng nào, CẢ BẢNG bị đánh dấu là bản riêng.
   const isExpandedChild = useCallback(
     (row: DocumentRecord) =>
-      dongDangBung !== null && row.source_document_id === dongDangBung,
-    [dongDangBung],
+      expandedRow !== null && row.source_document_id === expandedRow,
+    [expandedRow],
   )
 
   return useMemo<DataTableColumn<DocumentRecord>[]>(
@@ -85,14 +85,14 @@ export function useOutgoingDocumentColumns({
                   className="-ml-1 -my-px size-6 shrink-0"
                   title={`${privateCopyCount} bản riêng ở pháp nhân con`}
                   aria-label={`Xem ${privateCopyCount} bản riêng`}
-                  aria-expanded={dongDangBung === row.id}
+                  aria-expanded={expandedRow === row.id}
                   onClick={(event) => {
                     event.stopPropagation()
-                    setDongDangBung(dongDangBung === row.id ? null : row.id)
+                    setExpandedRow(expandedRow === row.id ? null : row.id)
                   }}
                 >
                   <ChevronRight
-                    className={cn('transition-transform', dongDangBung === row.id && 'rotate-90')}
+                    className={cn('transition-transform', expandedRow === row.id && 'rotate-90')}
                   />
                 </Button>
               ) : (
@@ -259,6 +259,6 @@ export function useOutgoingDocumentColumns({
         ),
       },
     ],
-    [dongDangBung, setDongDangBung, isExpandedChild, awaitingMyApproval, canCreate, securityLevelLabel],
+    [expandedRow, setExpandedRow, isExpandedChild, awaitingMyApproval, canCreate, securityLevelLabel],
   )
 }

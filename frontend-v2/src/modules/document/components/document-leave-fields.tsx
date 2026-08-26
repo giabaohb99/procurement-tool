@@ -118,7 +118,7 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
   const employeeField = (
     ten: 'leave.employee_id' | 'leave.handover_employee_id',
     nhan: string,
-    nhanRong: string,
+    wideLabel: string,
   ) => (
     <FormField
       control={form.control}
@@ -136,7 +136,7 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              <SelectItem value="0">{nhanRong}</SelectItem>
+              <SelectItem value="0">{wideLabel}</SelectItem>
               {employee.map((item) => (
                 <SelectItem key={item.id} value={String(item.id)}>
                   {item.full_name}

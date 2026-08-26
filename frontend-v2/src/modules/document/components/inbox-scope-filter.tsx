@@ -4,9 +4,9 @@ import { INBOX_SCOPE, type InboxScope } from './approval-inbox-row'
 interface InboxScopeFilterProps {
   value: string
   onChange: (value: InboxScope) => void
-  soCho: number
+  pendingCount: number
   overdueCount: number
-  soDaDuyet: number
+  approvedCount: number
 }
 
 /**
@@ -26,17 +26,17 @@ interface InboxScopeFilterProps {
 export function InboxScopeFilter({
   value,
   onChange,
-  soCho,
+  pendingCount,
   overdueCount,
-  soDaDuyet,
+  approvedCount,
 }: InboxScopeFilterProps) {
   const muc: { value: InboxScope; label: string; count: number; gap?: boolean }[] = [
-    { value: INBOX_SCOPE.all, label: 'Tất cả', count: soCho + soDaDuyet },
-    { value: INBOX_SCOPE.pending, label: 'Cần duyệt', count: soCho },
+    { value: INBOX_SCOPE.all, label: 'Tất cả', count: pendingCount + approvedCount },
+    { value: INBOX_SCOPE.pending, label: 'Cần duyệt', count: pendingCount },
     ...(overdueCount > 0
       ? [{ value: INBOX_SCOPE.overdue, label: 'Quá hạn', count: overdueCount, gap: true }]
       : []),
-    { value: INBOX_SCOPE.done, label: 'Đã duyệt', count: soDaDuyet },
+    { value: INBOX_SCOPE.done, label: 'Đã duyệt', count: approvedCount },
   ]
 
   return (

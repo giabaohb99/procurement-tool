@@ -273,7 +273,7 @@ function AccessForm({ pending, existing, initial, onCancel, onSubmit }: AccessFo
               value={selectedIds}
               onChange={setSelectedIds}
               kindLabel={kindLabel}
-              ghiChuThieu={
+              missingNote={
                 selfBlockedName &&
                 `Đã bỏ ${selfBlockedName} khỏi danh sách — tự chặn thì bạn không mở lại được văn bản này, mà cũng không còn đường vào để gỡ.`
               }
@@ -431,7 +431,7 @@ interface SubjectMultiSelectProps {
    * lúc chưa chọn gì đã thấy cả một băng cảnh báo cho việc mình chưa làm —
    * đúng chỗ người dùng bắt lỗi ngày 25/08/2026.
    */
-  ghiChuThieu?: string
+  missingNote?: string
 }
 
 /**
@@ -446,7 +446,7 @@ function SubjectMultiSelect({
   value,
   onChange,
   kindLabel,
-  ghiChuThieu,
+  missingNote,
 }: SubjectMultiSelectProps) {
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
@@ -531,10 +531,10 @@ function SubjectMultiSelect({
 
         {/*  Nói RA vì sao thiếu: lọc lặng lẽ thì người dùng tìm tên mình mãi
              không thấy rồi tưởng danh sách hỏng. */}
-        {ghiChuThieu && (
+        {missingNote && (
           <p className="flex items-start gap-2 border-t bg-sky-50 px-2 py-1.5 text-xs text-sky-900">
             <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
-            <span>{ghiChuThieu}</span>
+            <span>{missingNote}</span>
           </p>
         )}
 

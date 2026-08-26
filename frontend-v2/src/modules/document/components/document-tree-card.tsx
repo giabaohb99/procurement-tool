@@ -63,7 +63,7 @@ export function DocumentTreeCard({ documentId }: DocumentTreeCardProps) {
         )}
 
         {quanHe.length > 0 && (
-          <NhomCay tieuDe={`Văn bản thuộc về văn bản này (${quanHe.length})`}>
+          <NhomCay title={`Văn bản thuộc về văn bản này (${quanHe.length})`}>
             {quanHe.map((node) => (
               <TreeNode key={node.id} node={node} level={0} />
             ))}
@@ -71,7 +71,7 @@ export function DocumentTreeCard({ documentId }: DocumentTreeCardProps) {
         )}
 
         {privateCopies.length > 0 && (
-          <NhomCay tieuDe={`Bản riêng ở pháp nhân con (${privateCopies.length})`}>
+          <NhomCay title={`Bản riêng ở pháp nhân con (${privateCopies.length})`}>
             {privateCopies.map((node) => (
               <CloneNode key={node.id} node={node} />
             ))}
@@ -110,11 +110,11 @@ function TreeRoot({ node }: { node: DocumentTreeNode }) {
 }
 
 /** Hai nhánh của cây có tiêu đề CÂN NHAU — trước đây chỉ nhánh bản riêng có. */
-function NhomCay({ tieuDe, children }: { tieuDe: string; children: React.ReactNode }) {
+function NhomCay({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-1">
       <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {tieuDe}
+        {title}
       </h3>
       <ul className="space-y-0.5">{children}</ul>
     </section>

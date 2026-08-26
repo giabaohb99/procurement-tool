@@ -114,7 +114,7 @@ export function DocumentPrintSheet({
   /** Nội dung đầu/chân trang của tờ thứ `index` (0-based), đã thay hết thẻ. */
   function pageBox(index: number) {
     if (!pageFrame) return null
-    const value: PageMarkerValues = { ...markers, trang: index + 1, tongTrang: sheetCount }
+    const value: PageMarkerValues = { ...markers, trang: index + 1, totalPages: sheetCount }
     return {
       headerLeft: fillPageMarkers(pageFrame.header_left, value),
       headerRight: fillPageMarkers(pageFrame.header_right, value),

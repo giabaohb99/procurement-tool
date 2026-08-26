@@ -172,7 +172,7 @@ export function AssistantPage() {
                    lúc đó việc duy nhất cần làm là gõ câu hỏi, nên hai thứ đó phải
                    ở gần nhau trong tầm mắt. */}
               {messages.length === 0 && !pending ? (
-                <ChatEmptyState onChon={isSending ? undefined : (cau) => void handleSend(cau).catch(() => {})} />
+                <ChatEmptyState onPick={isSending ? undefined : (cau) => void handleSend(cau).catch(() => {})} />
               ) : (
                 <MessageThread
                   messages={messages}

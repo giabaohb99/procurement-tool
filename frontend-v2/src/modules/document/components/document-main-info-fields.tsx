@@ -81,7 +81,7 @@ export function DocumentMainInfoFields({
   const bookId = form.watch('book_id')
   const templates = useActiveDocumentTemplates(docTypeId, Boolean(onTemplateChange))
 
-  const { data: preview, isFetching: dangNapSoHieu } = useNumberPreview({
+  const { data: preview, isFetching: loadingNumber } = useNumberPreview({
     doc_type_id: docTypeId,
     company_id: companyId,
     department_id: departmentId,
@@ -292,7 +292,7 @@ export function DocumentMainInfoFields({
       />
 
       {/* Dòng xem trước số hiệu đứng ngay dưới các ô quyết định ra nó. */}
-      <DocumentNumberPreview preview={preview} isFetching={dangNapSoHieu} />
+      <DocumentNumberPreview preview={preview} isFetching={loadingNumber} />
 
       {/* B05 — hiện luôn văn bản cùng loại cùng phòng đang hiệu lực. Đây là thứ
           còn lại chống đẻ trùng quy trình sau khi bước xin phép bị cắt. */}

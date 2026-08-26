@@ -106,9 +106,9 @@ export function DocumentVersionTab({
             <DocumentVersionRow
               key={version.id}
               version={version}
-              dangXem={activeVersionId === version.id}
+              viewing={activeVersionId === version.id}
               onSelect={() => onSelect(version)}
-              cuoiDanhSach={index === versions.length - 1}
+              endOfList={index === versions.length - 1}
             />
           ))}
         </ul>

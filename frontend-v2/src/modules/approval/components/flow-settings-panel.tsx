@@ -19,8 +19,8 @@ const ALL_COMPANIES = 'all'
 interface FlowSettingsPanelProps {
   /** Bỏ trống = đang TẠO luồng mới. */
   flow?: ApprovalFlow
-  entityMacDinh?: string
-  onDoiEntity?: (entity: string) => void
+  defaultEntity?: string
+  onEntityChange?: (entity: string) => void
   onSaved?: (flow: ApprovalFlow) => void
   onCancel?: () => void
 }
@@ -30,15 +30,15 @@ interface FlowSettingsPanelProps {
  */
 export function FlowSettingsPanel({
   flow,
-  entityMacDinh,
-  onDoiEntity,
+  defaultEntity,
+  onEntityChange,
   onSaved,
   onCancel,
 }: FlowSettingsPanelProps) {
   const save = useSaveApprovalFlow()
   const { data: companies } = useCompanies({ page_size: 200, is_active: true })
   const [form, setForm] = useState<Partial<ApprovalFlow>>(() => ({
-    entity: flow?.entity ?? entityMacDinh ?? 'document',
+    entity: flow?.entity ?? defaultEntity ?? 'document',
     code: flow?.code ?? '',
     name: flow?.name ?? '',
     description: flow?.description ?? '',
@@ -104,7 +104,7 @@ export function FlowSettingsPanel({
             value={form.entity ?? 'document'}
             onValueChange={(value) => {
               dat('entity', value)
-              onDoiEntity?.(value)
+              onEntityChange?.(value)
             }}
             disabled={Boolean(flow)}
           >

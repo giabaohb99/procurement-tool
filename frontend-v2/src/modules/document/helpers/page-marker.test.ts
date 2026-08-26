@@ -5,9 +5,9 @@ import { fillPageMarkers, hasPageMarkerContent, PAGE_MARKERS } from './page-mark
 describe('fillPageMarkers', () => {
   it('thay đủ các thẻ trong một dòng', () => {
     const ra = fillPageMarkers('{{so_hieu}} — trang {{trang}}/{{tong_trang}}', {
-      soHieu: '08/2026/TB-DEGO',
+      docNumber: '08/2026/TB-DEGO',
       trang: 2,
-      tongTrang: 5,
+      totalPages: 5,
     })
 
     expect(ra).toBe('08/2026/TB-DEGO — trang 2/5')
@@ -39,9 +39,9 @@ describe('fillPageMarkers', () => {
     const mau = PAGE_MARKERS.map((m) => m.the).join(' ')
     const ra = fillPageMarkers(mau, {
       trang: 1,
-      tongTrang: 2,
-      soHieu: 'A',
-      tenVanBan: 'B',
+      totalPages: 2,
+      docNumber: 'A',
+      documentTitle: 'B',
       ngay: '19/08/2026',
     })
 

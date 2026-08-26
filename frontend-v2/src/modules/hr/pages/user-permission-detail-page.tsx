@@ -35,7 +35,7 @@ export function UserPermissionDetailPage() {
   // Người dùng đã tick/bỏ tick chưa, tính từ lần đồng bộ gần nhất với máy chủ.
   const [dangTickDo, setDangTickDo] = useState(false)
 
-  const { user: dangDangNhap } = useAuth()
+  const { user: currentUser } = useAuth()
   const { data: account, isLoading, isError } = useUserAccount(userId)
   const { data: roles } = useRoles()
   const assignRoles = useAssignRoles(userId)
@@ -43,7 +43,7 @@ export function UserPermissionDetailPage() {
   //  KHÔNG TỰ SỬA QUYỀN CỦA CHÍNH MÌNH — chốt hai người. Backend chặn ở
   //  `core/privilege_escalation.py`; ở đây khóa luôn giao diện để người dùng
   //  thấy LUẬT chứ không tick xong rồi ăn 403 và tưởng hệ hỏng (CR-158).
-  const isSelf = !!dangDangNhap && dangDangNhap.id === userId
+  const isSelf = !!currentUser && currentUser.id === userId
 
   // Đổi sang tài khoản khác thì mọi thứ tick dở không còn nghĩa gì.
   if (useHasChanged(userId)) {

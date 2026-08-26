@@ -88,10 +88,10 @@ export function DocumentScopeAddForm({ disabled = false, onAdd }: DocumentScopeA
   const companies = companyPage?.items ?? []
   //  Chỉ hỏi khi đang ở chiều phòng ban VÀ đã tick pháp nhân — hook tự tắt khi
   //  danh sách rỗng, nên chiều khác không tốn vòng gọi nào.
-  const { data: capPhongBan } = useDepartmentsByCompanies(
+  const { data: departmentLevel } = useDepartmentsByCompanies(
     dimValue === SCOPE_DIM.department ? scopeCompanyIds : [],
   )
-  const capOptions = capPhongBan ?? []
+  const capOptions = departmentLevel ?? []
 
   //  Pháp nhân nào đang tick mà KHÔNG có phòng ban nào.
   //

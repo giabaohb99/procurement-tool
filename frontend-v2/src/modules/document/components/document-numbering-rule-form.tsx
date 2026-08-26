@@ -71,21 +71,21 @@ function insertTagIntoTemplate(value: string, token: string, start: number, end:
 
 interface NumberSampleButtonProps {
   item: { token: string; label: string }
-  daDung: boolean
+  stopped: boolean
   locked: boolean
   onClick: () => void
 }
 
 /** Một thẻ mã hoặc dấu phân cách — đều bấm và kéo thả được như nhau. */
-function NumberSampleButton({ item, daDung, locked, onClick }: NumberSampleButtonProps) {
+function NumberSampleButton({ item, stopped, locked, onClick }: NumberSampleButtonProps) {
   return (
     <Button
       type="button"
       size="sm"
-      variant={daDung ? 'default' : 'secondary'}
+      variant={stopped ? 'default' : 'secondary'}
       disabled={locked}
       draggable={!locked}
-      aria-pressed={daDung}
+      aria-pressed={stopped}
       title={`${item.token} · Bấm để thêm cuối hoặc kéo vào mẫu`}
       className={!locked ? 'cursor-grab active:cursor-grabbing' : undefined}
       onDragStart={(event) => {
@@ -217,7 +217,7 @@ export function DocumentNumberingRuleForm({
                       <NumberSampleButton
                         key={item.token}
                         item={item}
-                        daDung={field.value.includes(item.token)}
+                        stopped={field.value.includes(item.token)}
                         locked={locked}
                         onClick={() => field.onChange(`${field.value}${item.token}`)}
                       />
@@ -231,7 +231,7 @@ export function DocumentNumberingRuleForm({
                       <NumberSampleButton
                         key={item.token}
                         item={item}
-                        daDung={field.value.includes(item.token)}
+                        stopped={field.value.includes(item.token)}
                         locked={locked}
                         onClick={() => field.onChange(`${field.value}${item.token}`)}
                       />

@@ -61,10 +61,10 @@ export function DocumentDashboardFilters({
   //  pháp nhân GỐC — lọc theo mình nó thì phòng phục vụ pháp nhân khác biến mất
   //  khỏi ô chọn. `by-companies` gộp cả hai nguồn (xem
   //  `department/service.phong_ban_cua_cac_phap_nhan`).
-  const { data: capPhongBan } = useDepartmentsByCompanies(companyId ? [companyId] : [])
+  const { data: departmentLevel } = useDepartmentsByCompanies(companyId ? [companyId] : [])
 
   const departmentOptions = companyId
-    ? (capPhongBan ?? []).map((cap) => ({ id: cap.department_id, name: cap.department_name }))
+    ? (departmentLevel ?? []).map((cap) => ({ id: cap.department_id, name: cap.department_name }))
     : (departments?.items ?? [])
         .filter((item) => item.is_active)
         .map((item) => ({ id: item.id, name: item.name }))
