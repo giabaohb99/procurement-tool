@@ -27,6 +27,29 @@ from .instance_model import INSTANCE_OPEN_STATUSES, ApprovalInstance
 router = APIRouter(prefix="/api/approval-flows", tags=["approval-flow"])
 
 
+def _trong_bang(labels: dict, ten_o: str):
+    """Chỉ nhận những giá trị CÓ TRONG bảng nhãn — không khóa cứng biên số.
+
+    ⚠️ Vá lỗi 26/08/2026. `approver_kind` từng khai `le=6` bằng tay; tới khi thêm
+    `APPROVER_DEPT_HEAD_OF = 7` thì `/options` bày ra lựa chọn thứ bảy nhưng
+    validator vẫn chặn ở 6 — người khai luồng chọn *«Trưởng bộ phận của phòng
+    ban chỉ định»* rồi lưu là ăn đúng một dòng đỏ **«approver_kind: Input should
+    be less than or equal to 6»**, không có cách nào khai được cái vừa bày ra.
+
+    Biên số viết tay lúc nào cũng là bản chép thứ hai của bảng nhãn, và bản chép
+    thứ hai thì sớm muộn cũng lệch. Buộc thẳng vào bảng nhãn thì thêm giá trị
+    mới không phải nhớ sửa thêm chỗ nào, mà giá trị bỏ trống ở giữa bảng cũng bị
+    chặn — thứ mà `ge/le` không làm được.
+    """
+    def _kiem(value: int) -> int:
+        if value not in labels:
+            cho_phep = ", ".join(f"{ma} ({ten})" for ma, ten in labels.items())
+            raise ValueError(f"{ten_o} không hợp lệ. Chọn một trong: {cho_phep}")
+        return value
+
+    return _kiem
+
+
 class FlowIn(BaseModel):
     entity: str = Field(min_length=1, max_length=50)
     code: str = ""
@@ -42,18 +65,30 @@ class NodeIn(BaseModel):
     seq: int = Field(ge=1)
     branch_key: str = ""
     name: str = ""
-    node_kind: int = 1
-    flow_role: int = 4
-    approver_kind: int = Field(default=1, ge=1, le=6)
+    #  Mọi ô "chọn một trong danh sách" đều buộc vào chính bảng nhãn mà
+    #  `/options` đổ ra ô chọn — xem `_trong_bang`.
+    node_kind: Annotated[int, AfterValidator(
+        _trong_bang(NODE_KIND_LABELS, "Bước làm gì"))] = 1
+    flow_role: Annotated[int, AfterValidator(
+        _trong_bang(ROLE_LABELS, "Vai trò bước"))] = 4
+    approver_kind: Annotated[int, AfterValidator(
+        _trong_bang(APPROVER_KIND_LABELS, "Cách chọn người duyệt"))] = 1
     approver_ref: str = ""
-    multi_mode: int = Field(default=1, ge=1, le=4)
+    multi_mode: Annotated[int, AfterValidator(
+        _trong_bang(MULTI_MODE_LABELS, "Nhiều người thì"))] = 1
     quorum_percent: int = Field(default=50, ge=1, le=100)
     condition: str = ""
     is_default_branch: bool = False
-    skip_duplicate: int = Field(default=1, ge=0, le=2)
+    skip_duplicate: Annotated[int, AfterValidator(
+        _trong_bang(SKIP_MODE_LABELS, "Trùng người thì"))] = 1
     sla_hours: int = Field(default=0, ge=0)
     fallback_employee_id: int | None = None
-    on_no_approver: int = Field(default=3, ge=1, le=3)
+    #  Riêng ô này dùng danh sách CÒN KHAI ĐƯỢC, không dùng bảng nhãn: nhãn còn
+    #  giữ giá trị 2 để đọc dữ liệu cũ, nhưng nó đã bỏ (CR-114) và không được
+    #  khai mới.
+    on_no_approver: Annotated[int, AfterValidator(_trong_bang(
+        {ma: NO_APPROVER_LABELS[ma] for ma in NO_APPROVER_CHOICES},
+        "Không tìm được người duyệt thì"))] = 3
 
 
 class SwitchIn(BaseModel):
