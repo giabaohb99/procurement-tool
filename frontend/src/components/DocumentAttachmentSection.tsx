@@ -230,7 +230,7 @@ export default function DocumentAttachmentSection({
   permEntity,
   title,
   isNew = false,
-  maxSizeMb = 20,
+  maxSizeMb = 50,
   showDocumentStatus = false,
   documentStatus = 'chưa có chứng từ',
   onDocumentStatusChange,

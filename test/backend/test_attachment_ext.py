@@ -42,11 +42,11 @@ def test_cdr_allowed_for_documents():
         assert "cdr" not in exts, entity
 
 
-def test_document_size_floor_20mb():
-    """Mọi ô đính kèm chứng từ tối thiểu 20MB — file .cdr thường nặng."""
+def test_document_size_floor_50mb():
+    """Mọi ô đính kèm chứng từ tối thiểu 50MB (CR-148) — PDF in ấn/.cdr thường 30-50MB."""
     for entity, (_, exts, max_mb) in FILE_POLICY.items():
         if "pdf" in exts:                       # ô chứng từ (khác ô chỉ nhận ảnh)
-            assert max_mb >= 20, f"{entity} = {max_mb}MB"
+            assert max_mb >= 50, f"{entity} = {max_mb}MB"
 
 
 def test_doc_type_validation():

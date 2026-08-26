@@ -8,28 +8,31 @@ _DOC = {"pdf", "jpg", "jpeg", "png", "webp", "xlsx", "xls", "docx", "doc", "txt"
         "cdr"}  # cdr = file thiết kế CorelDRAW (mẫu bao bì/nhãn NCC gửi kèm)
 _IMG = {"jpg", "jpeg", "png", "webp"}
 
+# CR-148: file thiết kế in ấn (PDF xuất từ Corel/AI, .cdr) thường 30-50MB nên trần
+# chứng từ nâng 20/30 → 50MB. Nới thêm phải xem lại client_max_body_size của nginx
+# (docker/nginx.prod.conf) và trần 100MB/request của Cloudflare tunnel bản free.
 FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
-    "purchase_request":       ("purchase_request", _DOC, 20),
-    "purchase_request_quote": ("purchase_request", _DOC, 20),
+    "purchase_request":       ("purchase_request", _DOC, 50),
+    "purchase_request_quote": ("purchase_request", _DOC, 50),
     "purchase_request_line_image": ("purchase_request", _IMG, 5),  # ảnh đối chiếu theo dòng PYC, entity_id = PurchaseRequestItem.id
-    "survey":                 ("survey", _DOC, 20),
-    "survey_line":            ("survey", _DOC, 20),
-    "survey_request":         ("survey_request", _DOC, 20),
-    "survey_request_line":    ("survey_request", _DOC, 20),
-    "purchase_order":         ("purchase_order", _DOC, 20),
-    "delivery":               ("purchase_order", _DOC, 20),
-    "contract":               ("contract", _DOC, 30),
-    "payment_request":        ("payment_request", _DOC, 20),
+    "survey":                 ("survey", _DOC, 50),
+    "survey_line":            ("survey", _DOC, 50),
+    "survey_request":         ("survey_request", _DOC, 50),
+    "survey_request_line":    ("survey_request", _DOC, 50),
+    "purchase_order":         ("purchase_order", _DOC, 50),
+    "delivery":               ("purchase_order", _DOC, 50),
+    "contract":               ("contract", _DOC, 50),
+    "payment_request":        ("payment_request", _DOC, 50),
     "product":                ("product", _IMG, 5),   # ảnh sản phẩm, ≤5MB, cần write/create trên product
-    "ticket":                 ("ticket", _DOC, 20),   # đính kèm phiếu hỗ trợ
-    "ticket_message":         ("ticket", _DOC, 20),   # đính kèm 1 tin nhắn trả lời
+    "ticket":                 ("ticket", _DOC, 50),   # đính kèm phiếu hỗ trợ
+    "ticket_message":         ("ticket", _DOC, 50),   # đính kèm 1 tin nhắn trả lời
     "avatar":                 ("__self__", _IMG, 5),   # __self__ = chỉ cần đăng nhập (ảnh của chính mình)
     # Đính kèm bình luận (CR-033). Bình luận treo được vào NHIỀU loại chứng từ khác nhau nên
     # không có một entity cha cố định để điền vào đây — quyền thật do API bình luận quyết
     # (`comment/service.resolve_doc`: quyền đọc + phạm vi dữ liệu của chính chứng từ đó).
     # `__self__` ở đây chỉ mở bước TẢI FILE TẠM (chưa gắn vào đâu), giống ảnh đại diện;
     # còn gắn/đọc/xóa link đều đi qua nhánh riêng trong `attachment/controller.py`.
-    "comment":                ("__self__", _DOC, 20),
+    "comment":                ("__self__", _DOC, 50),
 }
 
 
