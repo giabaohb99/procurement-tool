@@ -192,6 +192,7 @@ function PaymentRequestCreate() {
   })
   const [requestDate, setRequestDate] = useState<string>(() => today())
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('transfer')
+  const [prepay, setPrepay] = useState(0)
   const [note, setNote] = useState('')
   const [supplierCode, setSupplierCode] = useState<string>(() => stateRows?.[0]?.supplier_code ?? '')
   const [companyId, setCompanyId] = useState<number>(() => stateRows?.[0]?.company_id ?? 0)
@@ -253,6 +254,7 @@ function PaymentRequestCreate() {
       request_date: requestDate,
       note,
       payment_method: paymentMethod,
+      prepay,
       supplier_code: headSupplier,
       company_id: companyId,
       source_type: headSource,
@@ -409,6 +411,23 @@ function PaymentRequestCreate() {
               </Select>
               <p className="text-xs text-muted-foreground">{paymentMethodHint(paymentMethod)}</p>
             </div>
+            {/* CR-146 main (ticket #12): cờ Thanh toán trước — đổi câu nội dung trên bản in. */}
+            <div className="space-y-1.5">
+              <Label>Nội dung thanh toán</Label>
+              <Select value={String(prepay)} onValueChange={(value) => setPrepay(Number(value))}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(PREPAY_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">{prepayHint(prepay)}</p>
+            </div>
             <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
               <Label>Ghi chú</Label>
               <Textarea
@@ -462,6 +481,7 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
   const [lines, setLines] = useState<EditablePaymentLine[]>([])
   const [note, setNote] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('transfer')
+  const [prepay, setPrepay] = useState(0)
   const [rejectOpen, setRejectOpen] = useState(false)
   const [payOpen, setPayOpen] = useState(false)
 
@@ -471,6 +491,7 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
     setLines((req.lines ?? []).map(fromRequestLine))
     setNote(req.note ?? '')
     setPaymentMethod(req.payment_method ?? 'transfer')
+    setPrepay(req.prepay ? 1 : 0)
   }
 
   if (isLoading) {
@@ -515,6 +536,7 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
       request_date: req?.request_date,
       note,
       payment_method: paymentMethod,
+      prepay,
       lines: lines.map((line) => ({
         payable_id: line.payable_id,
         po_code: line.po_code,
@@ -668,6 +690,30 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
                 {editable && ' Nhớ bấm Lưu sau khi đổi.'}
               </p>
             </div>
+            {/* CR-146 main (ticket #12): cờ Thanh toán trước — đổi câu nội dung trên bản in. */}
+            <div className="space-y-1.5">
+              <Label>Nội dung thanh toán</Label>
+              {editable ? (
+                <Select value={String(prepay)} onValueChange={(value) => setPrepay(Number(value))}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(PREPAY_LABELS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <ReadOnlyValue>{PREPAY_LABELS[req.prepay ? 1 : 0]}</ReadOnlyValue>
+              )}
+              <p className="text-xs text-muted-foreground">
+                {prepayHint(editable ? prepay : req.prepay)}
+                {editable && ' Nhớ bấm Lưu sau khi đổi.'}
+              </p>
+            </div>
             <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
               <Label>Ghi chú</Label>
               {editable ? (
@@ -769,4 +815,16 @@ function paymentMethodHint(method: PaymentMethod): string {
   return method === 'cash'
     ? 'Bản in để trống cụm "Thông tin chuyển khoản".'
     : 'Bản in lấy số tài khoản / ngân hàng của nhà cung cấp.'
+}
+
+/** CR-146 main (ticket #12): nhãn cờ Thanh toán trước — quyết định câu nội dung bản in. */
+const PREPAY_LABELS: Record<number, string> = {
+  0: 'Thanh toán công nợ (mặc định)',
+  1: 'Thanh toán trước',
+}
+
+function prepayHint(prepay: number): string {
+  return prepay
+    ? 'Bản in ghi: "Thanh toán trước cho nhà cung cấp <tên NCC> <kỳ>".'
+    : 'Mặc định — bản in ghi: "Thanh toán công nợ <tên NCC> <kỳ>". Đơn trả trước thì chọn "Thanh toán trước".'
 }

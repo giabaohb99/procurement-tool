@@ -323,6 +323,25 @@ function OptionCard({
         </p>
       )}
 
+      {/* CR-147 main (ticket #11): hiện ghi chú của khảo sát SP lên thẻ phương án —
+          survey_note = cột 'Ghi chú' (đọc live), nstm_note = 'Lý do NSPT' (bản chụp). */}
+      {(option.survey_note || option.nstm_note) && (
+        <div className="mt-2 border-t border-dashed pt-2 text-xs whitespace-pre-wrap">
+          {!!option.survey_note && (
+            <p>
+              <span className="text-muted-foreground">Ghi chú: </span>
+              {option.survey_note}
+            </p>
+          )}
+          {!!option.nstm_note && (
+            <p>
+              <span className="text-muted-foreground">Lý do NSPT: </span>
+              {option.nstm_note}
+            </p>
+          )}
+        </div>
+      )}
+
       <div
         className="mt-2 border-t border-dashed pt-2 text-xs"
         onClick={(event) => event.stopPropagation()}

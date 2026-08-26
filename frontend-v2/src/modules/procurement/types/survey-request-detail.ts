@@ -128,6 +128,10 @@ export interface SurveyResultOption {
   snap_lab_result: string
   /** Ngày dòng khảo sát nguồn trả kết quả (không lộ khảo sát nào). */
   survey_result_date: string
+  /** CR-147 main (ticket #11): 'Ghi chú' của khảo sát SP — đọc live, NSTM sửa là thấy theo. */
+  survey_note: string
+  /** CR-147 main: 'Lý do NSPT' — bản chụp lúc tạo phương án. Khách chấp nhận rủi ro lộ tên NCC trong chữ tự do. */
+  nstm_note: string
   attachments: SurveyOptionAttachment[]
   ycmh_list: SurveyOptionPr[]
   ycmh_count: number

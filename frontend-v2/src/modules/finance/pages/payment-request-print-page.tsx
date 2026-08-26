@@ -128,7 +128,10 @@ export function PaymentRequestPrintPage() {
   const company = req.company ?? {}
   const supplier = req.supplier_name || req.supplier_code
   const period = (req.period || '').split('-').reverse().join('/') // YYYY-MM -> MM/YYYY
-  const content = `Thanh toán công nợ ${supplier}${period ? ` ${period}` : ''}`
+  // CR-146 main (ticket #12): phiếu đánh dấu THANH TOÁN TRƯỚC thì đổi câu nội dung
+  const content = req.prepay
+    ? `Thanh toán trước cho nhà cung cấp ${supplier}${period ? ` ${period}` : ''}`
+    : `Thanh toán công nợ ${supplier}${period ? ` ${period}` : ''}`
   const isCash = req.payment_method === 'cash' // CR-035 — tiền mặt thì bỏ trống cụm chuyển khoản
 
   return (

@@ -64,6 +64,8 @@ export interface PaymentRequestSummary {
   source_type: string
   request_date: string
   payment_method: PaymentMethod
+  /** CR-146 main (ticket #12): 0 = thanh toán công nợ (mặc định) · 1 = thanh toán trước. */
+  prepay: number
   total: number
   note: string
   reject_reason: string
@@ -104,6 +106,8 @@ export interface PaymentRequestCreateInput {
   request_date: string
   note: string
   payment_method: PaymentMethod
+  /** CR-146 main: 0 = công nợ (mặc định) · 1 = thanh toán trước. */
+  prepay?: number
   supplier_code: string
   company_id: number
   source_type: string
@@ -115,6 +119,8 @@ export interface PaymentRequestUpdateInput {
   request_date?: string
   note?: string
   payment_method?: PaymentMethod
+  /** CR-146 main: chỉ gửi khi người dùng đổi — 0/1. */
+  prepay?: number
   lines?: PaymentRequestLineInput[]
 }
 
