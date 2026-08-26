@@ -18,7 +18,9 @@ from app.modules.purchase_order.schema import POItemIn
 from app.modules.purchase_order.service import _save_items, pr_expected_map
 from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
 from app.modules.purchase_request.schema import ItemStatusIn
-from app.modules.purchase_request.service import sync_from_purchase_orders, update_item_status
+from app.modules.purchase_request.service import (_PROG_CANCELLED, _PROG_ORDERED,
+                                                  sync_from_purchase_orders,
+                                                  update_item_status)
 
 
 def _pr(db, expected="", assignee="DEMONV", code="PYC1", product="SP1",
@@ -34,8 +36,11 @@ def _pr(db, expected="", assignee="DEMONV", code="PYC1", product="SP1",
     return pr, it
 
 
+#  ⚠️ `progress_status` lưu MÃ, không lưu tiếng Việt (B-06). Hai bài dưới đây từng
+#  truyền thẳng "Đã đặt hàng" / "Hủy đơn" và đỏ sau đợt chuyển mã: dòng hủy không
+#  còn được nhận ra nên nó vẫn kéo ngày dự kiến ra xa.
 def _po_line(db, pr_code, product, expected, po_code="PO1", status="approved",
-             progress="Đã đặt hàng"):
+             progress=_PROG_ORDERED):
     po = PurchaseOrder(code=po_code, pr_code=pr_code, status=status)
     db.add(po)
     db.flush()
@@ -76,7 +81,7 @@ def test_moi_dong_dmh_deu_trong_thi_giu_nguyen(db, seed):
 def test_dong_huy_don_khong_tinh(db, seed):
     pr, pr_it = _pr(db, expected="")
     _po_line(db, "PYC1", "SP1", "2026-07-20", po_code="PO1")
-    _po_line(db, "PYC1", "SP1", "2026-09-30", po_code="PO2", progress="Hủy đơn")
+    _po_line(db, "PYC1", "SP1", "2026-09-30", po_code="PO2", progress=_PROG_CANCELLED)
     sync_from_purchase_orders(db, "PYC1")
     db.refresh(pr_it)
     assert pr_it.expected_date == "2026-07-20"   # dòng hủy không kéo ngày ra xa

@@ -205,10 +205,19 @@ def test_tai_tep_tam_chua_gan_vao_dau_thi_khong_soi_pham_vi(du_lieu, nguoi_dung)
     assert ac._check(du_lieu.db, user, "contract", "manage")
 
 
-def test_anh_dai_dien_khong_dinh_gi_toi_pham_vi(du_lieu, nguoi_dung):
-    """`avatar` là `__self__` — chỉ cần đăng nhập, không có chứng từ cha nào."""
+def test_o_khong_co_chung_tu_cha_thi_khong_soi_pham_vi(du_lieu, nguoi_dung):
+    """`__self__` — không có chứng từ cha nào để soi, nên `_check` đi thẳng.
+
+    Đại diện là `comment`: bình luận treo được vào NHIỀU loại chứng từ nên không
+    có một entity cha cố định; quyền thật do API bình luận quyết
+    (`comment/service.resolve_doc`), `__self__` ở đây chỉ mở bước tải tệp.
+
+    ⚠️ Bài này trước dùng `avatar` và đỏ từ lúc ảnh đại diện được gỡ khỏi
+    `FILE_POLICY` (nó lưu thẳng `tab_user.avatar_file_id`, không qua `FileLink`).
+    Xem `test_anh_dai_dien_KHONG_phai_mot_o_dinh_kem` ở `test_attachment_ext.py`.
+    """
     user = nguoi_dung(_profile([], scope="company"))
-    assert ac._check(du_lieu.db, user, "avatar", "manage", 12345)
+    assert ac._check(du_lieu.db, user, "comment", "manage", 12345)
 
 
 # ── Đường lùi theo chuỗi chứng từ ───────────────────────────────────────────────
