@@ -21,7 +21,7 @@ import type { ListParams } from '@/shared/types/api'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
-import { DateRangePresetPicker } from '@/shared/ui/date-range-preset-picker'
+import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -301,7 +301,7 @@ function PurchaseOrderListContent() {
         </SelectContent>
       </Select>
 
-      <DateRangePresetPicker
+      <DateRangePicker
         from={orderDateFrom}
         to={orderDateTo}
         placeholder="Ngày đặt..."

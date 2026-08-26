@@ -134,7 +134,60 @@ asChild` đã biến ô ngày thành một `<button>`, nút lồng trong nút l�
 
 ---
 
-## 6. Sửa chính component
+## 6. Chọn KHOẢNG ngày
+
+`DateRangePicker` (`@/shared/ui/date-range-picker`) — lịch hai tháng + hàng chọn
+nhanh, chốt bằng nút **Áp dụng**. Đây là ô khoảng ngày **duy nhất**; bản cũ
+`DateRangePresetPicker` đã xóa (nó dùng `<input type="date">`, thứ mục 1 cấm, và
+hiện thẳng chuỗi ISO `2026-08-11 -> …`).
+
+```tsx
+<DateRangePicker
+  from={fromDate}                       // 'yyyy-mm-dd', rỗng = chưa chọn
+  to={toDate}
+  onChange={(from, to) => { setFrom(from); setTo(to) }}   // xóa → hai chuỗi rỗng
+  placeholder="Ngày tạo…"
+  showPresets={false}                   // tắt hàng chọn nhanh nếu màn không cần
+/>
+```
+
+- **Chỉ báo ra ngoài khi người dùng tự chốt** (bấm *Áp dụng*, bấm một mức chọn
+  nhanh, hoặc xóa). Đóng popover giữa chừng = **hủy**, khoảng cũ còn nguyên.
+- Khoảng đang chỉnh nằm ở state **nháp** trong popover, nên bảng bên dưới không
+  nháy số theo từng cú bấm.
+- Mức chọn nhanh khai ở `@/shared/ui/date-range-presets` — là **hàm** `resolve()`
+  chứ không phải hai chuỗi cố định, nếu không thì trang mở qua đêm là "Hôm nay"
+  vẫn trỏ vào ngày hôm qua.
+
+### Vì sao phải tự đếm hai nhịp chọn
+
+Đây là chỗ đã phải vá (26/08/2026, khách báo *"range date khó xài"*) — cả hai lỗi
+đều đến từ việc tin vào `mode="range"` của react-day-picker:
+
+1. **Nó trả `{from: X, to: X}` ngay cú bấm ĐẦU TIÊN.** Chốt chặn
+   `if (!from || !to) return` lọt tuột, nên bấm một ngày là popover đóng và áp
+   luôn khoảng một ngày `10/08 – 10/08`. Không tài nào chọn nổi khoảng thật.
+2. **Đang có khoảng rồi thì nó NONG khoảng cũ ra chứ không chọn lại.** Đang
+   10/08–20/08 mà bấm 28/08 thì ra 10/08–28/08; muốn khoảng mới phải bấm ✕ xóa
+   trước.
+
+Nên `onSelect` chỉ lấy **ngày vừa bấm** (tham số thứ hai), còn nhịp 1 = ngày bắt
+đầu / nhịp 2 = ngày kết thúc do chính component đếm bằng cờ `pickingEnd`. Bấm
+ngược thì tự đảo lại — gửi `from > to` lên backend là danh sách trả rỗng và người
+dùng tưởng không có dữ liệu.
+
+### Tô dải
+
+`Calendar` chỉ khai `selected`, mà ở chế độ `range` react-day-picker gắn
+`selected` cho **mọi** ngày trong khoảng → cả dải thành một dãy ô xanh đặc rời
+rạc, không thấy đâu là hai đầu. `DateRangePicker` truyền lại khóa `selected` (rỗng)
+kèm `range_start` / `range_middle` / `range_end`. **Đừng chồng thêm class** để đè:
+hai chuỗi cùng ghi `bg-*` thì thứ tự thắng thua do Tailwind sắp, không đoán trước
+được.
+
+---
+
+## 7. Sửa chính component
 
 `DatePicker` và `Calendar` là primitive dùng chung — mọi form trong hệ ăn theo.
 Cần một biến thể riêng (chọn khoảng ngày, chọn tháng/năm, chặn ngày quá khứ…)

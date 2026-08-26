@@ -47,6 +47,20 @@ export function toDateInputValue(value: string | Date | null | undefined): strin
   return new Date(date.getTime() - offsetMs).toISOString().slice(0, 10)
 }
 
+/**
+ * `'2026-08-11'` → `Date` lúc 00:00 giờ ĐỊA PHƯƠNG. Rỗng / sai dạng → `undefined`.
+ *
+ * Tách số rồi dựng bằng `new Date(y, m, d)` chứ KHÔNG `new Date('2026-08-11')`:
+ * chuỗi chỉ có ngày được ECMAScript hiểu là mốc UTC, nên ở múi giờ dương như VN
+ * nó lùi về ngày hôm trước ngay khi đổi sang giờ máy.
+ */
+export function parseLocalDate(value: string | null | undefined): Date | undefined {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value || '')
+  if (!match) return undefined
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+  return Number.isNaN(date.getTime()) ? undefined : date
+}
+
 function toDate(value: string | Date | null | undefined): Date | null {
   if (!value) return null
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value

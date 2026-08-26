@@ -105,7 +105,10 @@ describe('DocumentDashboardFilters', () => {
   })
 
   it('đã có khoảng thì hiện dd/mm/yyyy, không phải chuỗi ISO', () => {
+    //  CÓ số 0 ở đầu. Bài này trước đây chốt `11/9/2026` — chính là đầu ra của
+    //  `toLocaleDateString('vi-VN')` trần, lệch hẳn với `formatDate` mà cả hệ
+    //  đang dùng, nên nó đang khóa cái sai lại chứ không canh cái đúng.
     dung({ rangeKey: 'custom', fromDate: '2026-09-11', toDate: '2026-09-14' })
-    expect(screen.getByText('11/9/2026 – 14/9/2026')).toBeInTheDocument()
+    expect(screen.getByText('11/09/2026 – 14/09/2026')).toBeInTheDocument()
   })
 })

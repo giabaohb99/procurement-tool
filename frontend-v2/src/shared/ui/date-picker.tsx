@@ -5,7 +5,7 @@ import { Button } from '@/shared/ui/button'
 import { Calendar } from '@/shared/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { cn } from '@/shared/utils/cn'
-import { formatDate, toDateInputValue } from '@/shared/utils/format-date'
+import { formatDate, parseLocalDate, toDateInputValue } from '@/shared/utils/format-date'
 
 interface DatePickerProps {
   /** Chuỗi `yyyy-mm-dd` (rỗng = chưa chọn) — đúng dạng API nhận và trả. */
@@ -105,10 +105,4 @@ export function DatePicker({
       </PopoverContent>
     </Popover>
   )
-}
-
-function parseLocalDate(value: string): Date | undefined {
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value || '')
-  if (!match) return undefined
-  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
 }
