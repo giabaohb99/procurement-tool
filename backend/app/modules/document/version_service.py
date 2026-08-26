@@ -19,6 +19,7 @@ from app.modules.attachment.model import FileLink
 
 from .model import Document
 from .schema import VersionContentUpdate, VersionCreate
+from .content_sanitize import sanitize_document_html
 from .serializer import holder_name
 from .service import ATTACH_ENTITY, open_version
 from .version_model import (CHANGE_MAJOR, VERSION_APPROVED, VERSION_DRAFT,
@@ -51,7 +52,9 @@ def save_content(db: Session, version: DocumentVersion, data: VersionContentUpda
     #  Kéo thước lề chỉ gửi hai số lề, không gửi thân văn bản — đừng xóa trắng
     #  nội dung chỉ vì trường vắng mặt.
     if data.content_html is not None:
-        version.content_html = data.content_html
+        #  Lọc XSS ngay tại cửa ghi. Chỉ đụng khi trường được GỬI LÊN — kéo
+        #  thước lề không gửi thân văn bản thì giữ nguyên nội dung đang có.
+        version.content_html = sanitize_document_html(data.content_html)
     if data.margin_left_mm is not None:
         version.margin_left_mm = data.margin_left_mm
     if data.margin_right_mm is not None:

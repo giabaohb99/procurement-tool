@@ -29,6 +29,7 @@ from .model import (ALIVE_STATUSES, APPLY_MODE_LABELS, EDITABLE_STATUSES,
                     STATUS_APPROVED, STATUS_DRAFT, STATUS_EFFECTIVE,
                     STATUS_REJECTED, STATUS_RETURNED, STATUS_REVOKED,
                     STATUS_SUBMITTED, Document)
+from .content_sanitize import sanitize_document_html
 from .query import documents_query
 from .schema import DocumentCreate, DocumentUpdate
 from .version_model import (OPEN_STATUSES, VERSION_APPROVED, VERSION_DRAFT,
@@ -147,7 +148,8 @@ def create_document(db: Session, data: DocumentCreate, actor: int) -> Document:
 
     version = DocumentVersion(
         document_id=doc.id, major=1, minor=0, status=VERSION_DRAFT,
-        content_html=data.content_html or "",
+        #  Lọc XSS ngay tại cửa ghi — xem `content_sanitize`.
+        content_html=sanitize_document_html(data.content_html),
         effective_from=data.effective_date,
         created_by=actor, updated_by=actor,
     )
