@@ -7,9 +7,12 @@
 # đã chuyển sang MySQL 8.4 và xoá bộ ERPNext (CR-059).
 #
 # ⚠ ~/procurement-tool (prod) và ~/procurement-tool-dev là HAI WORKTREE của cùng 1 repo git —
-#   prod giữ nhánh `main`, dev giữ nhánh `bao`, KHÔNG được để chung nhánh. Cập nhật code bằng:
+#   prod giữ nhánh `main`, dev giữ nhánh `erp-v2`, KHÔNG được để chung nhánh. Cập nhật code bằng:
 #       cd ~/procurement-tool && git fetch origin && git reset --hard origin/main
 #   rồi kiểm `git status --short` phải RỖNG trước khi build (xem chú thích trong compose dev).
+#   Đổi backend thì phải build lại CẢ BA: api + celery-worker + celery-beat (chung 1 image).
+#
+# Luật nhánh + quy trình deploy đầy đủ: doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md
 
 services:
   api:

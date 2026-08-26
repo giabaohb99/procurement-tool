@@ -2,7 +2,9 @@
 test_ncc_hiding.py — Kiểm tra serializer ẩn NCC và is_purchaser.
 
 Test 1: _out_result → options chỉ chứa whitelist field, KHÔNG có supplier_*,
-         snap_internal_code, nstm_note, product_survey_line_id.
+         snap_internal_code, product_survey_line_id.
+         (CR-147/ticket #11: nstm_note và survey_note nay CÔNG KHAI theo yêu cầu
+          khách — hiện ghi chú lên thẻ phương án; bỏ khỏi danh sách cấm.)
 Test 2: is_purchaser với các profile khác nhau.
 """
 import pytest
@@ -17,7 +19,6 @@ BANNED_FIELDS = [
     "supplier_name",
     "supplier_survey_id",
     "snap_internal_code",
-    "nstm_note",
     "product_survey_line_id",
 ]
 REQUIRED_FIELDS = [
@@ -26,6 +27,9 @@ REQUIRED_FIELDS = [
     "is_chosen",
     "public_id",
     "display_label",
+    # CR-147: ghi chú phải có mặt trên option công khai
+    "nstm_note",
+    "survey_note",
 ]
 
 

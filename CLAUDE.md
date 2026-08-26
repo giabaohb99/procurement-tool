@@ -19,6 +19,11 @@ Fixed code sets of either shape are declared in `backend/app/core/status_catalog
 
 Stack: FastAPI 0.115 · SQLAlchemy 2.0 · Pydantic v2 · MySQL 8 · Alembic · React 18 + Vite + TS. Runs entirely via Docker Compose.
 
+⚠️ **Trước khi đụng vào nhánh `main` hoặc vào VPS, đọc `doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md`.**
+Repo có **hai nhánh chạy song song**: `main` = prod (backend + `frontend/` + `help-center/`),
+`erp-v2` = dev (`frontend-v2/`). Merge **chỉ một chiều `main` → `erp-v2`**; đưa ngược lại là kéo
+34 migration chưa duyệt vào database thật. Deploy prod **bắt buộc** có `-f docker-compose.production.yml`.
+
 ## Commands
 
 Everything runs in Docker; there is no local venv/npm workflow.

@@ -39,3 +39,8 @@ db-export/*
 # máy cụ thể: sinh ra lúc kiểm bằng trình duyệt thật rồi bỏ. Kịch bản nào đáng
 # giữ lâu dài thì chuyển vào `test/e2e/` chứ không để ở đây.
 .claude/chrome-devtools/
+
+# Tệp tạm Vite sinh ra cạnh vite.config.ts khi nạp config (frontend/, frontend-v2/,
+# help-center/). Bình thường Vite tự xóa sau khi nạp xong; còn sót lại là do lần chạy
+# trước bị ngắt giữa chừng — đã lỡ commit một lần trong e7dbd99.
+*.timestamp-*.mjs

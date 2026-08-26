@@ -20,7 +20,7 @@ from .schema import PRequestCreate, PRequestUpdate
 router = APIRouter(prefix="/api/payment-requests", tags=["payment_request"])
 
 HEADER = ["id", "code", "supplier_code", "supplier_name", "company_id", "source_type",
-          "request_date", "payment_method", "total", "note", "reject_reason", "status"]
+          "request_date", "payment_method", "prepay", "total", "note", "reject_reason", "status"]
 
 
 def _line(db, ln) -> dict:

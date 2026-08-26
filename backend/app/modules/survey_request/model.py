@@ -107,6 +107,8 @@ class SurveyRequestOption(Base, AuditMixin):
     supplier_code: Mapped[str] = mapped_column(String(50), default="")
     supplier_name: Mapped[str] = mapped_column(String(255), default="")
     supplier_survey_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    # CR-147 (ticket #11): nstm_note (snapshot từ nspt_reason 'Lý do NSPT') nay HIỆN
+    # cho người YC trên thẻ phương án — khách chấp nhận rủi ro ghi chú nhắc tên NCC.
     nstm_note: Mapped[str] = mapped_column(Text, default="")
 
 
