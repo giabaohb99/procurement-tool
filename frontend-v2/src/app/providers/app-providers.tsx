@@ -13,8 +13,12 @@ import { Toaster } from '@/shared/ui/sonner'
  * zustand store (dùng được cả ngoài React).
  */
 export function AppProviders({ children }: { children: ReactNode }) {
+  //  `defaultTheme="system"` + `enableSystem`: chọn được cả ba (Theo hệ thống /
+  //  Sáng / Tối) ở popover ảnh đại diện. `disableTransitionOnChange` để mọi
+  //  `transition-colors` không chạy đua với hiệu ứng loang của View Transitions
+  //  — hai thứ cùng đổi màu một lúc thì nhìn nhòe.
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <QueryClientProvider client={queryClient}>
         {children}
         <Toaster position="top-right" richColors closeButton />

@@ -45,6 +45,8 @@
   /* Màu phụ của bộ nhận diện. */
   --navy: #1b2559;
   --navy-deep: #14224f;
+  /* Nền navy ĐẶC, GIỮ NGUYÊN ở nền tối — xem ghi chú ở khối `.dark`. */
+  --navy-solid: #1b2559;
   --teal-dark: #0096cc; /* điểm cuối gradient của nút chính */
   --sky-soft: #5ed0ff; /* icon trên nền navy */
   --brand-green: #92c83e;
@@ -80,6 +82,16 @@
 .dark {
   --background: #0f172a;
   --foreground: #e2e8f0;
+
+  /*  `--navy` là màu CHỮ ĐẬM (112 chỗ dùng `text-navy`), không phải màu thương
+      hiệu để tô nền. Ở nền tối phải lật thành màu sáng, nếu không thì mọi tiêu
+      đề thành chữ đen trên nền đen — đo được lúc bật chế độ tối lần đầu: nguyên
+      màn chọn phân hệ không đọc nổi một chữ nào.
+      Chỗ nào cần NỀN navy đặc (ảnh đại diện, lớp phủ) thì dùng `--navy-solid`
+      bên dưới — nó KHÔNG lật, vì nền tối + chữ trắng vẫn đúng ở cả hai chế độ. */
+  --navy: #e2e8f0;
+  --navy-deep: #cbd5e1;
+  --navy-solid: #1b2559;
 
   --card: #1e293b;
   --card-foreground: #e2e8f0;
@@ -159,6 +171,7 @@
   --color-chart-grid: var(--chart-grid);
 
   --color-navy: var(--navy);
+  --color-navy-solid: var(--navy-solid);
   --color-navy-deep: var(--navy-deep);
   --color-teal-dark: var(--teal-dark);
   --color-sky-soft: var(--sky-soft);
@@ -763,4 +776,49 @@
   /* `break-all` của thư viện cắt từ tiếng Việt ngay giữa chừng ("phòn|g ban"). */
   word-break: normal !important;
   overflow-wrap: break-word;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ĐỔI NỀN SÁNG / TỐI — vòng loang từ chỗ vừa bấm (View Transitions API).
+
+   `--x` / `--y` do `shared/ui/theme-toggle.tsx` đặt ngay trước khi gọi
+   `startViewTransition`; không có chúng thì loang từ giữa màn hình.
+
+   Cả hai ảnh chụp cùng nằm một chỗ và KHÔNG hoà trộn (`mix-blend-mode: normal`):
+   để mặc định thì hai màu nền chồng nhau thành một màu thứ ba, nhấp nháy giữa
+   chừng. Ảnh CŨ nằm dưới, ảnh MỚI loang ra đè lên.
+   ───────────────────────────────────────────────────────────────────────────── */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+  animation: theme-reveal 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes theme-reveal {
+  from {
+    /* Bán kính 0 tại điểm bấm -> phủ kín màn. `140%` để góc xa nhất cũng tới. */
+    clip-path: circle(0% at var(--x, 50%) var(--y, 50%));
+  }
+  to {
+    clip-path: circle(140% at var(--x, 50%) var(--y, 50%));
+  }
+}
+
+/* Người dùng đã tắt hiệu ứng chuyển động ở hệ điều hành: đổi thẳng, không loang.
+   `theme-toggle.tsx` cũng tự bỏ qua View Transitions, đây là lớp chắn thứ hai
+   phòng khi trình duyệt vẫn chạy hiệu ứng mặc định của chính nó. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
 }

@@ -37,7 +37,7 @@ const DEFAULT_MIN_WIDTH = 64
  * không còn đường kẻ nào. `inset shadow` nằm ngoài cơ chế collapse nên vẫn hiện.
  */
 const HEAD_CELL =
-  'relative h-10 px-3 text-[13px] font-bold text-slate-900 dark:text-slate-100 bg-slate-200/80 dark:bg-slate-800/90 shadow-[inset_-1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border)] last:shadow-[inset_0_-1px_0_0_var(--border)]'
+  'relative h-10 px-3 text-[13px] font-bold text-slate-900 dark:text-slate-100 bg-slate-200/80 dark:bg-slate-800 shadow-[inset_-1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border)] last:shadow-[inset_0_-1px_0_0_var(--border)]'
 const BODY_CELL = 'min-h-9 border-r px-3 py-1.5 last:border-r-0 align-middle text-[13.5px] text-foreground'
 /**
  * Thân bảng HÀNG CHẴN LẺ ĐẬM NHẠT XEN KẼ (Zebra striping đậm rõ màu):
@@ -55,10 +55,11 @@ const BODY_CELL = 'min-h-9 border-r px-3 py-1.5 last:border-r-0 align-middle tex
  * Cùng một bài học đã ghi ở hàng TIÊU ĐỀ bên dưới (`bg-muted hover:bg-muted`)
  * mà lúc đó chưa soi lại thân bảng.
  *
- * Mấy lớp `dark:` giữ nguyên vì chưa có đường nào bật chế độ tối; ngày bật lên
- * thì phải soi lại đúng chỗ này — `dark:even:bg-slate-800/60` cũng đang có alpha.
+ * ⚠️ NỀN TỐI cũng phải theo đúng luật đó. Chính chỗ này từng ghi "ngày bật chế
+ * độ tối thì phải soi lại" — nay đã bật (CR-181), và `dark:even:bg-slate-800/60`
+ * đúng là có alpha, nên đã bỏ `/60` thành `bg-slate-800` đục hoàn toàn.
  */
-const ROW_BG = 'group odd:bg-card even:bg-slate-100 dark:even:bg-slate-800/60 hover:bg-sky-100 dark:hover:bg-slate-800 data-[state=selected]:bg-blue-100 dark:data-[state=selected]:bg-slate-700 transition-colors'
+const ROW_BG = 'group odd:bg-card even:bg-slate-100 dark:even:bg-slate-800 hover:bg-sky-100 dark:hover:bg-slate-700 data-[state=selected]:bg-blue-100 dark:data-[state=selected]:bg-slate-600 transition-colors'
 /** Ô báo trạng thái (đang tải / lỗi / rỗng) trải hết bảng — không kẻ dọc, cao hơn. */
 const SPAN_CELL = 'h-20 px-3 text-center'
 

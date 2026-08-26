@@ -18,6 +18,7 @@ import { useAuth } from '@/core/auth/use-auth'
 import { useTranslation } from '@/core/i18n/use-translation'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
+import { ThemeSwitch } from '@/shared/ui/theme-switch'
 import { Button } from '@/shared/ui/button'
 import {
   DropdownMenu,
@@ -63,7 +64,7 @@ export function UserMenu() {
           <Button variant="ghost" className="h-11 gap-2 px-2">
             <Avatar className="size-8">
               <AvatarImage className="object-cover" src={user?.avatar} alt={user?.full_name} />
-              <AvatarFallback className="bg-navy text-xs font-semibold text-white">
+              <AvatarFallback className="bg-navy-solid text-xs font-semibold text-white">
                 {initials(user?.full_name)}
               </AvatarFallback>
             </Avatar>
@@ -90,7 +91,7 @@ export function UserMenu() {
                   src={user?.avatar}
                   alt={user?.full_name}
                 />
-                <AvatarFallback className="bg-navy text-base font-semibold text-white">
+                <AvatarFallback className="bg-navy-solid text-base font-semibold text-white">
                   {initials(user?.full_name)}
                 </AvatarFallback>
               </Avatar>
@@ -143,6 +144,18 @@ export function UserMenu() {
               <Phone className="size-4 shrink-0 text-slate-400" />
               <span className="truncate">{user?.phone || 'Chưa cập nhật SĐT'}</span>
             </p>
+          </div>
+
+          <DropdownMenuSeparator className="m-0" />
+
+          {/*  Chọn giao diện nằm TRONG popover này chứ không phải một nút riêng
+               trên thanh trên: đây là tùy chỉnh CÁ NHÂN, cùng nhóm với hồ sơ và
+               đăng xuất, mà thanh trên thì đã chật. */}
+          <div className="flex min-h-10 items-center justify-between gap-3 px-4">
+            <span className="text-[13px] font-medium text-navy dark:text-foreground">
+              Giao diện
+            </span>
+            <ThemeSwitch />
           </div>
 
           <DropdownMenuSeparator className="m-0" />

@@ -337,7 +337,7 @@ function MessageBubble({ message }: { message: TicketMessage }) {
     <div className={cn('flex gap-2.5', staff && 'flex-row-reverse')}>
       <Avatar size="sm" className="mt-0.5 shrink-0">
         <AvatarImage src={message.author_avatar} alt={message.author_name} className="object-cover" />
-        <AvatarFallback className={cn(staff ? 'bg-primary text-primary-foreground' : 'bg-navy text-white')}>
+        <AvatarFallback className={cn(staff ? 'bg-primary text-primary-foreground' : 'bg-navy-solid text-white')}>
           {initials(message.author_name)}
         </AvatarFallback>
       </Avatar>

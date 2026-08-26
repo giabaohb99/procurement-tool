@@ -71,7 +71,7 @@ export function AvatarUploader({
       {inner}
       <span
         className={cn(
-          'absolute inset-x-0 bottom-0 grid h-5 place-items-center bg-navy/70 text-white transition-opacity',
+          'absolute inset-x-0 bottom-0 grid h-5 place-items-center bg-navy-solid/70 text-white transition-opacity',
           busy ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
         )}
       >
