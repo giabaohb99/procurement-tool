@@ -9,7 +9,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from . import service
+from . import service, usage
 from .model import AssistantConversation, AssistantMessage, MessageRole
 
 # Số lượt gần nhất nạp lại làm ngữ cảnh khi hỏi tiếp (chặn phình token + chi phí).
@@ -78,6 +78,9 @@ def chat(db: Session, user, body) -> dict:
     - conversation_id: tiếp hội thoại cũ (kiểm đúng chủ), None = mở mới.
     - Lịch sử ngữ cảnh lấy từ DB (không tin `history` client gửi khi đã có hội thoại).
     """
+    # Guard chi phí: chặn TRƯỚC khi gọi model, kẻo vượt trần vẫn tốn một lượt.
+    usage.check_daily_limit(db, user)
+
     conv: AssistantConversation | None = None
     if body.conversation_id:
         conv = get_owned(db, user, body.conversation_id)

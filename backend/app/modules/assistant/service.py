@@ -8,6 +8,8 @@ Routing quyết định: bật/tắt suy nghĩ + trần token + có mở tool ha
 """
 from datetime import date
 
+from app.core.config import settings
+
 from . import tools as tool_layer
 from .knowledge import build_system
 from .provider import ChatMessage, get_provider
@@ -79,6 +81,12 @@ def ask(
     """
     cfg = ROUTING.get(kind, ROUTING["general"])
     prov = get_provider(provider)
+
+    # Guard chi phí: câu tra cứu / mặc định có thể chạy model RẺ hơn (nếu admin khai
+    # AI_LOOKUP_MODEL); câu tư vấn (advice) giữ model mặc định, thông minh hơn. Caller
+    # chỉ định model tường minh thì tôn trọng, không đè.
+    if model is None and settings.AI_LOOKUP_MODEL and kind in ("lookup", "general"):
+        model = settings.AI_LOOKUP_MODEL
 
     tool_on = bool(cfg["tools"] and db is not None and user is not None and prov.supports_tools)
 

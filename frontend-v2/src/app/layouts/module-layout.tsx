@@ -4,6 +4,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { canAccessRoute, canOpenModule } from '@/app/router/module-visibility'
 import { useActiveModule } from '@/app/router/use-active-module'
 import { usePermission } from '@/core/authorization/use-permission'
+import { AssistantWidget } from '@/modules/assistant/components/assistant-widget'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { ForbiddenPage } from '@/shared/ui/forbidden-page'
 import { SidebarInset, SidebarProvider } from '@/shared/ui/sidebar'
@@ -69,6 +70,9 @@ export function ModuleLayout() {
           {allowed ? <Outlet /> : <ForbiddenPage />}
         </main>
       </SidebarInset>
+
+      {/* Bong bóng Trợ lý AI nổi ở góc — chỉ ai có quyền mới thấy, khỏi bắn 403. */}
+      {can('assistant', 'read') && <AssistantWidget />}
     </SidebarProvider>
   )
 }

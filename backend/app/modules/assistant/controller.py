@@ -16,8 +16,10 @@ from app.core.database import get_db
 from app.core.response import success
 
 from . import conversation as convo
+from . import usage as usage_layer
 from .provider import ProviderError, configured_providers
 from .schema import AskIn
+from .usage import QuotaExceeded
 
 router = APIRouter(prefix="/api/assistant", tags=["assistant"])
 
@@ -47,11 +49,34 @@ def chat(body: AskIn, user=Depends(require("assistant", "read")),
     _guard()
     try:
         result = convo.chat(db, user, body)
+    except QuotaExceeded as e:
+        # 429 Too Many Requests: hết hạn mức hỏi trong ngày (guard chi phí).
+        raise HTTPException(status_code=429, detail=str(e)) from e
     except PermissionError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ProviderError as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
     return success(result)
+
+
+@router.get("/usage/mine")
+def my_usage(user=Depends(require("assistant", "read")),
+             db: Session = Depends(get_db)):
+    """Hạn mức hỏi HÔM NAY của chính người dùng — để giao diện hiện 'còn N câu'."""
+    _guard()
+    return success(usage_layer.my_quota(db, user))
+
+
+@router.get("/usage")
+def usage_summary(days: int = 30, user=Depends(require("assistant", "export")),
+                  db: Session = Depends(get_db)):
+    """Tổng hợp token/số câu theo ngày & theo người — soi chi phí. Chỉ admin.
+
+    `assistant.export` chỉ admin có (ensure_admin_role tự cấp mọi action), nên
+    endpoint này thực chất là cổng ADMIN — người khác ăn 403.
+    """
+    _guard()
+    return success(usage_layer.summary(db, days=days))
 
 
 @router.get("/conversations")

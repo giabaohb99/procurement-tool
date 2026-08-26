@@ -1,6 +1,8 @@
 import { Link, Outlet } from 'react-router-dom'
 
+import { usePermission } from '@/core/authorization/use-permission'
 import { env } from '@/core/config/env'
+import { AssistantWidget } from '@/modules/assistant/components/assistant-widget'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { NotificationBell } from '@/shared/notifications/notification-bell'
 import { DemoAccountSwitcher } from './demo-account-switcher'
@@ -11,6 +13,7 @@ import { UserMenu } from './user-menu'
  * Vào hẳn một phân hệ rồi thì đổi sang `ModuleLayout` (có sidebar).
  */
 export function LauncherLayout() {
+  const { can } = usePermission()
   return (
     <div className="flex min-h-screen flex-col bg-secondary">
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-background px-4">
@@ -36,6 +39,9 @@ export function LauncherLayout() {
       <main className="flex flex-1 flex-col">
         <Outlet />
       </main>
+
+      {/* Bong bóng Trợ lý AI cũng có mặt ở màn chọn phân hệ — chỉ ai có quyền mới thấy. */}
+      {can('assistant', 'read') && <AssistantWidget />}
     </div>
   )
 }

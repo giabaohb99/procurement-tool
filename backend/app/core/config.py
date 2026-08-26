@@ -109,6 +109,15 @@ class Settings(BaseSettings):
     AI_CLAUDE_MODEL: str = "claude-sonnet-5"
     AI_GEMINI_MODEL: str = "gemini-flash-latest"
 
+    # --- Guard chi phí Trợ lý AI (Phase 4) ---
+    # Trần số câu hỏi mỗi người mỗi ngày. Chặn một tài khoản đốt token vô hạn
+    # (mỗi lượt nhồi cả gói tri thức + lịch sử). 0 = không giới hạn.
+    AI_DAILY_MSG_LIMIT: int = 50
+    # Model RẺ cho câu tra cứu/mặc định (kind lookup|general). Rỗng = dùng model
+    # mặc định của nhà cung cấp. Câu tư vấn (kind=advice) luôn giữ model mặc định.
+    # Lưu ý: phải là model CÙNG nhà với AI_DEFAULT_PROVIDER đang dùng.
+    AI_LOOKUP_MODEL: str = ""
+
     # --- Celery / Redis ---
     # Broker + result backend dùng chung 1 Redis (đủ cho quy mô ~20-100 user).
     REDIS_URL: str = "redis://redis:6379/0"

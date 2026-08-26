@@ -18,7 +18,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <QueryClientProvider client={queryClient}>
         {children}
         <Toaster position="top-right" richColors closeButton />
-        {env.isDev && <ReactQueryDevtools initialIsOpen={false} />}
+        {/* Nút devtools để góc TRÁI-dưới: góc phải-dưới đã dành cho bong bóng Trợ lý AI. */}
+        {env.isDev && (
+          <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
+        )}
       </QueryClientProvider>
     </ThemeProvider>
   )

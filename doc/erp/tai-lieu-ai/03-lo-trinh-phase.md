@@ -122,14 +122,29 @@ Phụ thuộc: Phase 0 (provider), độc lập với Phase 2.
 Mục tiêu: vận hành được lâu dài, kiểm soát chi phí, thêm lối vào nhanh.
 
 Đầu việc:
-- Màn "Quản lý nguồn tri thức": khai báo nguồn, bật - tắt, trạng thái index, nút reindex,
-  đánh version gói tri thức nhà máy.
-- Bong bóng chat nổi ở góc (lối vào nhanh, dùng lại API Phase 1).
-- Guard chi phí: routing model theo loại câu + theo dõi usage.
-- Mở rộng tool loại A khi cần (payable / purchase_order / inventory).
+- [ ] Màn "Quản lý nguồn tri thức": khai báo nguồn, bật - tắt, trạng thái index, nút reindex,
+  đánh version gói tri thức nhà máy. (HOÃN LÀM SAU CÙNG theo yêu cầu sếp.)
+- [x] Bong bóng chat nổi ở góc (lối vào nhanh, dùng lại API Phase 1).
+- [x] Guard chi phí: routing model theo loại câu + theo dõi usage.
+- [ ] Mở rộng tool loại A khi cần (payable / purchase_order / inventory).
 
 Phụ thuộc: Phase 1-3.
 Định nghĩa xong: quản trị viên tự thêm - sửa nguồn tri thức và reindex mà không cần lập trình.
+
+Đã làm:
+- Bong bóng chat (P4-B): `modules/assistant/components/assistant-widget.tsx` — bong bóng nổi
+  góc phải-dưới, gắn ở cả `LauncherLayout` (màn chọn phân hệ) lẫn `ModuleLayout`, chỉ hiện khi
+  `can('assistant','read')` nên không bắn 403. Dùng lại nguyên hook/API Phase 1; giữ MỘT hội
+  thoại trong state cục bộ, nút "Mở toàn trang" giữ nguyên `?c=`. Devtools react-query dời sang
+  góc trái-dưới để nhường chỗ. Đã đồng bộ với bộ giao diện chat dựng lại (MessageThread /
+  ChatComposer / ChatEmptyState) — hiệu ứng gõ máy chỉ chạy cho câu VỪA nhận (`idGoDan`).
+- Guard chi phí (P4-C): trần số câu hỏi/người/ngày `AI_DAILY_MSG_LIMIT` (config, 0 = tắt) +
+  routing model rẻ `AI_LOOKUP_MODEL` cho câu lookup/general (advice giữ model mạnh). Chặn
+  TRƯỚC khi gọi model ở `conversation.chat()` (`usage.check_daily_limit`, quá trần trả HTTP 429).
+  `assistant/usage.py`: đếm câu trong ngày, tổng hợp token/số câu theo ngày & theo người đọc
+  thẳng các cột `*_tokens` (không thêm bảng). Endpoint `GET /assistant/usage/mine` (mọi người có
+  quyền, xem hạn mức còn lại) và `GET /assistant/usage` (chỉ admin qua `assistant.export`, soi
+  chi phí). Test: `test/backend/test_assistant_usage.py`.
 
 ---
 
