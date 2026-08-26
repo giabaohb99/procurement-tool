@@ -563,14 +563,16 @@ def complete_(sid: int, background_tasks: BackgroundTasks, data: dict | None = N
 # ─────────────── Phase 5C: người YC xem kết quả (ẨN NCC) + chọn option ───────────────
 
 # WHITELIST field an toàn trả cho người YC (KHÔNG có supplier_*, snap_internal_code,
-# nstm_note, supplier_survey_id, product_survey_line_id → không lộ NCC).
+# supplier_survey_id, product_survey_line_id → không lộ NCC).
+# CR-147 (ticket #11): nstm_note ('Lý do NSPT') nay TRẢ cho người YC — khách yêu cầu
+# hiện ghi chú lên thẻ phương án, chấp nhận rủi ro ghi chú có thể nhắc tên NCC.
 _OPT_PUBLIC_FIELDS = [
     "id", "public_id", "display_label", "is_chosen",
     "system_product_code",   # Mã VTBB/VL hệ thống (mã vật tư của chính người YC — KHÔNG lộ NCC)
     "snap_product_name", "snap_spec", "snap_origin", "snap_quote_unit",
     "snap_moq", "snap_price_by_volume", "snap_volume_range", "snap_vat",
     "snap_delivery_time", "snap_delivery_place", "snap_shipping_cost",
-    "snap_sample_ready", "snap_lab_result",
+    "snap_sample_ready", "snap_lab_result", "nstm_note",
 ]
 _LINE_PUBLIC_FIELDS = [
     "id", "item_group", "requirement_detail", "other_requirement",
@@ -598,12 +600,16 @@ def _opt_public(o, db: Session) -> dict:
     out = {k: d.get(k) for k in _OPT_PUBLIC_FIELDS}
     out["attachments"] = _opt_attachments(db, o.product_survey_line_id)
     # Ngày khảo sát = Ngày trả KQ của dòng khảo sát NCC nguồn (không lộ NCC nào).
+    # CR-147: survey_note = cột 'Ghi chú' của dòng khảo sát SP — đọc LIVE (không snapshot)
+    # để phiếu cũ cũng hiện ngay, và NSTM sửa ghi chú trên khảo sát là bên YC thấy bản mới.
     out["survey_result_date"] = ""
+    out["survey_note"] = ""
     if o.product_survey_line_id:
         from app.modules.survey.model import SurveyProductLine
         psl = db.get(SurveyProductLine, o.product_survey_line_id)
         if psl:
             out["survey_result_date"] = psl.result_date or ""
+            out["survey_note"] = psl.note or ""
     return out
 
 

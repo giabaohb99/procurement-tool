@@ -118,5 +118,7 @@ class SurveyProductLine(Base, AuditMixin):
     nspt_reason: Mapped[str] = mapped_column(Text, default="")
     line_approve: Mapped[str] = mapped_column(String(255), default="")
     line_approve_note: Mapped[str] = mapped_column(Text, default="")
-    note: Mapped[str] = mapped_column(Text, default="")                     # Ghi chú nội bộ (KHÔNG show ra Yêu cầu khảo sát)
+    # CR-147 (ticket #11): 'Ghi chú' nay HIỆN trên thẻ phương án của Yêu cầu báo giá
+    # (đọc live qua survey_request _opt_public) — hết là ghi chú nội bộ thuần túy.
+    note: Mapped[str] = mapped_column(Text, default="")
     import_line_key: Mapped[str] = mapped_column(String(200), default="", index=True)  # khoá idempotent khi import (Mã yêu cầu + MST)

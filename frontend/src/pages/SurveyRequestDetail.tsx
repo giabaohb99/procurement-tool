@@ -1004,6 +1004,14 @@ export default function SurveyRequestDetail() {
                               <span style={{ color: 'var(--muted)' }}>Thông số: </span>{o.snap_spec}
                             </div>
                           )}
+                          {/* CR-147 (ticket #11): hiện ghi chú của khảo sát SP lên thẻ phương án —
+                              survey_note = cột 'Ghi chú' (đọc live), nstm_note = 'Lý do NSPT' (snapshot). */}
+                          {(o.survey_note || o.nstm_note) && (
+                            <div style={{ marginTop: 8, fontSize: 12.5, borderTop: '1px dashed #E9EDF7', paddingTop: 8, whiteSpace: 'pre-wrap' }}>
+                              {o.survey_note && <div><span style={{ color: 'var(--muted)' }}>Ghi chú: </span>{o.survey_note}</div>}
+                              {o.nstm_note && <div><span style={{ color: 'var(--muted)' }}>Lý do NSPT: </span>{o.nstm_note}</div>}
+                            </div>
+                          )}
                           <div style={{ marginTop: 8, fontSize: 12.5, borderTop: '1px dashed #E9EDF7', paddingTop: 8 }} onClick={(e) => e.stopPropagation()}>
                             <div style={{ color: 'var(--muted)', marginBottom: 6 }}>Tài liệu đính kèm:</div>
                             {(o.attachments || []).length > 0 ? (
