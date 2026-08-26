@@ -6,7 +6,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
-from app.core.auth import require
+from app.core.auth import get_perm_profile, require
+from app.core.scoping import has_global_scope
 from app.core.database import get_db
 from app.core.response import success
 
@@ -41,12 +42,28 @@ def list_delegations(employee_id: int = 0, db: Session = Depends(get_db),
                     "items": [serializer.delegation_out(db, row) for row in rows]})
 
 
+def _acting_employee_id(db: Session, user, action: str) -> int | None:
+    """Người đang bấm, để tầng dịch vụ kiểm "anh có tư cách gì với người này".
+
+    Trả `None` khi người bấm là **quản trị toàn hệ** trên khóa `approval_flow`
+    (grant có phạm vi *tất cả*) — nghĩa là được lập hộ / bàn giao hộ, vì đó là
+    việc thật của hành chính và của người gỡ phiếu kẹt.
+
+    Ai chỉ có phạm vi hẹp (phòng ban, pháp nhân) thì KHÔNG được: quyền khai luồng
+    duyệt của một phòng không đồng nghĩa với quyền cho đi chữ ký của giám đốc.
+    """
+    if has_global_scope(get_perm_profile(db, user), "approval_flow", action):
+        return None
+    return getattr(user, "employee_id", 0) or 0
+
+
 @router.post("")
 def create_delegation(data: DelegationIn, db: Session = Depends(get_db),
                       user=Depends(require("approval_flow", "create"))):
     delegation_service.kiem_tra_truoc_khi_luu(
         db, data.from_employee_id, data.to_employee_id, data.entity,
-        data.from_date, data.to_date)
+        data.from_date, data.to_date,
+        actor_employee_id=_acting_employee_id(db, user, "create"))
 
     row = Delegation(**data.model_dump(), created_by=user.id, updated_by=user.id)
     db.add(row)
@@ -63,7 +80,8 @@ def update_delegation(delegation_id: int, data: DelegationIn,
     row = _load(db, delegation_id)
     delegation_service.kiem_tra_truoc_khi_luu(
         db, data.from_employee_id, data.to_employee_id, data.entity,
-        data.from_date, data.to_date, bo_qua_id=row.id)
+        data.from_date, data.to_date, bo_qua_id=row.id,
+        actor_employee_id=_acting_employee_id(db, user, "write"))
 
     for ten, gia_tri in data.model_dump().items():
         setattr(row, ten, gia_tri)

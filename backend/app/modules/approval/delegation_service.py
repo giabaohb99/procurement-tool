@@ -63,8 +63,29 @@ def tim_uy_quyen(db: Session, actor_employee_id: int, owner_employee_id: int,
 
 def kiem_tra_truoc_khi_luu(db: Session, from_employee_id: int, to_employee_id: int,
                            entity: str, from_date: date, to_date: date,
-                           bo_qua_id: int | None = None) -> None:
-    """Ba luật của ủy quyền, kiểm trước khi ghi."""
+                           bo_qua_id: int | None = None,
+                           actor_employee_id: int | None = None) -> None:
+    """Bốn luật của ủy quyền, kiểm trước khi ghi.
+
+    `actor_employee_id` = người đang bấm lưu. Bỏ trống (`None`) nghĩa là **chỗ
+    gọi đã tự kiểm quyền lập hộ** — xem `delegation_controller`.
+    """
+    #  ⚠️ CHỈ CHÍNH CHỦ MỚI CHO ĐI CHỮ KÝ CỦA MÌNH.
+    #
+    #  Đây là cửa hậu bẩn nhất của cả bộ máy duyệt và nó chỉ cần một quyền hành
+    #  chính tầm thường (`approval_flow.create`, thứ hay cấp cho trợ lý và admin
+    #  phân hệ): lập một dòng `from = giám đốc, to = chính mình`. Giám đốc không
+    #  bấm gì, không nhận thông báo nào, mà từ giây đó kẻ lập ký được MỌI phiếu
+    #  đang chờ ông ấy — dấu vết ghi «ký thay theo ủy quyền số 12», đúng thứ
+    #  người soát sổ sẽ lướt qua.
+    #
+    #  Ba luật cũ bên dưới đều đúng nhưng không luật nào hỏi câu này, vì chúng
+    #  chỉ nhìn cặp (from, to) chứ không nhìn NGƯỜI ĐANG BẤM.
+    if actor_employee_id is not None and actor_employee_id != from_employee_id:
+        raise HTTPException(
+            403, "Chỉ chính người ủy quyền mới lập được ủy quyền của mình. "
+                 "Cần lập hộ thì nhờ người quản trị hệ thống.")
+
     if from_employee_id == to_employee_id:
         raise HTTPException(400, "Không ủy quyền cho chính mình")
     if from_date > to_date:

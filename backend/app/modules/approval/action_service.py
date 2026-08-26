@@ -286,12 +286,33 @@ def gop_y(db: Session, instance: ApprovalInstance, actor_employee_id: int,
 
 
 def chuyen_nguoi_xu_ly(db: Session, task: ApprovalTask, to_employee_id: int,
-                       actor: int, ly_do: str = "") -> ApprovalTask:
-    """I07/I23 — đổi người xử lý một việc đang treo (nghỉ việc, bàn giao)."""
+                       actor: int, ly_do: str = "",
+                       actor_employee_id: int | None = None) -> ApprovalTask:
+    """I07/I23 — đổi người xử lý một việc đang treo (nghỉ việc, bàn giao).
+
+    `actor_employee_id` = người đang bấm. Bỏ trống nghĩa là chỗ gọi đã tự kiểm.
+    """
     if task.status not in (TASK_WAITING, TASK_PENDING):
         raise HTTPException(400, "Việc này đã xử lý xong, không chuyển được")
     if task.assignee_employee_id == to_employee_id:
         raise HTTPException(400, "Người nhận trùng người đang giữ việc")
+
+    #  ⚠️ KHÔNG TỰ BỐC VIỆC CỦA NGƯỜI KHÁC VỀ TAY MÌNH.
+    #
+    #  Bàn giao là thao tác dành cho người NGHỈ — có người thứ ba đứng ra sắp
+    #  xếp, hoặc chính người giữ việc nhường lại. Còn tự chuyển việc của giám đốc
+    #  sang tên mình rồi ký thì không phải bàn giao, đó là chiếm chữ ký; và nó
+    #  chỉ cần đúng `approval_flow.write`.
+    #
+    #  Nặng hơn ủy quyền một bậc: ủy quyền còn để lại chữ «ký thay A», còn ở đây
+    #  việc ĐỔI HẲN CHỦ nên bản in dấu vết không còn chỗ nào nói người ký không
+    #  phải người được giao ban đầu.
+    if (actor_employee_id is not None
+            and to_employee_id == actor_employee_id
+            and task.assignee_employee_id != actor_employee_id):
+        raise HTTPException(
+            403, "Không tự chuyển việc của người khác sang chính mình. "
+                 "Bàn giao phải do người đang giữ việc hoặc người quản trị làm.")
 
     instance = db.get(ApprovalInstance, task.instance_id)
     #  Cửa sau thứ hai đi vòng qua I08, và tiện hơn ủy quyền vì chỉ cần quyền
@@ -319,14 +340,28 @@ def chuyen_nguoi_xu_ly(db: Session, task: ApprovalTask, to_employee_id: int,
 
 
 def ban_giao_hang_loat(db: Session, from_employee_id: int, to_employee_id: int,
-                       actor: int, ly_do: str = "") -> int:
+                       actor: int, ly_do: str = "",
+                       actor_employee_id: int | None = None) -> int:
     """I23 — nghỉ việc: 30 phiếu đang chờ chuyển hết sang người khác một lần.
 
     Làm từng phiếu thì người bàn giao bỏ sót, và phiếu bỏ sót nằm im cho tới khi
     có người đi hỏi.
+
+    `actor_employee_id` = người đang bấm. Bỏ trống nghĩa là chỗ gọi đã tự kiểm.
     """
     if from_employee_id == to_employee_id:
         raise HTTPException(400, "Người nhận trùng người bàn giao")
+
+    #  ⚠️ Cùng luật với `chuyen_nguoi_xu_ly`, nhưng ở đây hậu quả nhân lên theo
+    #  số phiếu: MỘT cú gọi quét sạch hộp việc của giám đốc sang tên kẻ gọi, mà
+    #  nhật ký chỉ ghi «Bàn giao 30 việc duyệt» — nhìn y như một thao tác nghỉ
+    #  việc bình thường.
+    if (actor_employee_id is not None
+            and to_employee_id == actor_employee_id
+            and from_employee_id != actor_employee_id):
+        raise HTTPException(
+            403, "Không tự bàn giao việc của người khác về tay mình. "
+                 "Việc này phải do chính người đang giữ việc hoặc người quản trị làm.")
 
     dang_treo = (
         db.query(ApprovalTask)

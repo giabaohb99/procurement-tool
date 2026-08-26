@@ -10,7 +10,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
-from app.core.auth import get_current_user, require
+from app.core.auth import get_current_user, get_perm_profile, require
+from app.core.scoping import has_global_scope
 from app.core.database import get_db
 from app.core.response import success
 
@@ -19,6 +20,18 @@ from .concurrency import chay_chiu_tranh_chap
 from .instance_model import ApprovalInstance, ApprovalTask
 
 router = APIRouter(prefix="/api/approvals", tags=["approval"])
+
+
+def _acting_employee_id(db: Session, user, action: str) -> int | None:
+    """Người đang bấm, để tầng dịch vụ kiểm "anh có tư cách gì với người này".
+
+    `None` = quản trị toàn hệ trên khóa `approval_flow` (grant phạm vi *tất cả*)
+    -> được bàn giao hộ người khác. Phạm vi hẹp thì không: quyền khai luồng của
+    một phòng không đồng nghĩa với quyền bốc việc của giám đốc về tay mình.
+    """
+    if has_global_scope(get_perm_profile(db, user), "approval_flow", action):
+        return None
+    return getattr(user, "employee_id", 0) or 0
 
 
 #  Bằng ĐÚNG bề rộng cột `tab_approval_instance.finish_reason`. Không khai giới
@@ -159,7 +172,8 @@ def handover(data: HandoverIn, db: Session = Depends(get_db),
              user=Depends(require("approval_flow", "write"))):
     """I23 — nghỉ việc: chuyển hết việc đang chờ sang người khác trong một lần."""
     so_viec = action_service.ban_giao_hang_loat(
-        db, data.from_employee_id, data.to_employee_id, user.id, data.reason)
+        db, data.from_employee_id, data.to_employee_id, user.id, data.reason,
+        actor_employee_id=_acting_employee_id(db, user, "write"))
     record(db, user.id, "approval_flow", 0, "update",
            f"Bàn giao {so_viec} việc duyệt")
     return success({"count": so_viec}, f"Đã chuyển {so_viec} việc đang chờ")
@@ -253,7 +267,8 @@ def reassign(task_id: int, data: ReassignIn, db: Session = Depends(get_db),
     if task is None:
         raise HTTPException(404, "Không tìm thấy việc này")
     task = action_service.chuyen_nguoi_xu_ly(db, task, data.to_employee_id,
-                                             user.id, data.reason)
+                                             user.id, data.reason,
+                                             actor_employee_id=_acting_employee_id(db, user, "write"))
     return success(serializer.task_out(db, task), "Đã chuyển người xử lý")
 
 

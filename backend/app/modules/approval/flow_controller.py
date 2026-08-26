@@ -3,15 +3,18 @@
 Khai luồng bằng **dữ liệu**, không sửa mã và không deploy lại — đó là bài nghiệm
 thu số 1 của phase.
 """
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import AfterValidator, BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
 from app.core.auth import require
 from app.core.database import get_db
 from app.core.response import success
-from app.core.scoping import apply_scope, get_perm_profile, get_scoped
+from app.core.scoping import (apply_scope, get_perm_profile, get_scoped,
+                              has_global_scope)
 
 from . import entity_hooks, flow_service, flow_sync_service, serializer
 from .flow_model import (APPROVER_KIND_LABELS, MULTI_MODE_LABELS,
@@ -89,7 +92,25 @@ def list_switches(db: Session = Depends(get_db),
 @router.put("/switches")
 def set_switch(data: SwitchIn, db: Session = Depends(get_db),
                user=Depends(require("approval_flow", "write"))):
-    """I26 — đường lui của cả phase: tắt là quay về đường duyệt cũ ngay."""
+    """I26 — đường lui của cả phase: tắt là quay về đường duyệt cũ ngay.
+
+    ⚠️ **CÔNG TẮC TOÀN HỆ, nên đòi phạm vi TOÀN HỆ.**
+
+    Mọi endpoint khác ở đây đều đi qua `_load` (có `get_scoped`, nên phạm vi hẹp
+    chỉ đụng được luồng của pháp nhân mình). Riêng cái này không có `flow_id` để
+    mà kiểm — nó lật một cờ áp cho **cả 13 pháp nhân**. Chỉ `require(...)` thôi
+    thì một văn thư pháp nhân con có `approval_flow.write` phạm vi *công ty* tắt
+    được bộ máy duyệt của toàn hệ: từ giây đó mọi văn bản rơi về đường duyệt cũ,
+    mà nhật ký chỉ ghi một dòng «Tắt bộ máy duyệt mới cho document».
+
+    Cùng một họ lỗi với `handover` và ủy quyền: quyền vai trò trả lời *"được làm
+    việc này không"*, không trả lời *"được làm trên phạm vi nào"*.
+    """
+    if not has_global_scope(get_perm_profile(db, user), "approval_flow", "write"):
+        raise HTTPException(
+            403, "Công tắc này áp cho toàn hệ thống nên chỉ người quản trị có phạm vi "
+                 "«tất cả» mới bật/tắt được.")
+
     row = db.query(ApprovalSwitch).filter(ApprovalSwitch.entity == data.entity).first()
     if row is None:
         row = ApprovalSwitch(entity=data.entity, created_by=user.id, updated_by=user.id)
@@ -119,6 +140,13 @@ def list_flows(entity: str = "", db: Session = Depends(get_db),
 @router.post("")
 def create_flow(data: FlowIn, db: Session = Depends(get_db),
                 user=Depends(require("approval_flow", "create"))):
+    #  ⚠️ SỬA thì `_load` gác bằng `get_scoped`, còn TẠO MỚI thì trước đây không
+    #  ai hỏi gì — mà tạo mới đủ sức cướp luôn đường duyệt của cả tập đoàn:
+    #  khai một luồng `company_id = None` (áp cho MỌI pháp nhân) với `priority`
+    #  cao nhất và đúng một bước «người duyệt = tôi», thế là mọi văn bản mới đều
+    #  chạy về tay người khai. Không giả chữ ký của ai, chỉ đổi chỗ cần chữ ký.
+    _chan_pham_vi_khi_khai(db, user, data.company_id, "create")
+
     flow = ApprovalFlow(**data.model_dump(), created_by=user.id, updated_by=user.id)
     db.add(flow)
     db.commit()
@@ -141,6 +169,11 @@ def get_flow(flow_id: int, db: Session = Depends(get_db),
 def update_flow(flow_id: int, data: FlowIn, db: Session = Depends(get_db),
                 user=Depends(require("approval_flow", "write"))):
     flow = _load(db, flow_id, user, "write")
+    #  Sửa `company_id` sang pháp nhân khác (hoặc sang «mọi pháp nhân») là cùng
+    #  một cuộc chiếm đường duyệt như lúc tạo mới, chỉ khác là đi vòng qua một
+    #  luồng vốn thuộc phạm vi của mình.
+    if data.company_id != flow.company_id:
+        _chan_pham_vi_khi_khai(db, user, data.company_id, "write")
     for ten, gia_tri in data.model_dump().items():
         setattr(flow, ten, gia_tri)
     _len_ban_moi(db, flow, user.id)
@@ -256,6 +289,30 @@ def delete_node(flow_id: int, node_id: int, db: Session = Depends(get_db),
     db.delete(node)
     _len_ban_moi(db, flow, user.id)
     return success(None, "Đã xóa bước")
+
+
+def _chan_pham_vi_khi_khai(db: Session, user, company_id: int | None, action: str) -> None:
+    """Người này có được khai luồng cho pháp nhân đó không.
+
+    Hai bậc:
+      * phạm vi **tất cả** → khai cho pháp nhân nào cũng được, kể cả bỏ trống
+        (bỏ trống = áp cho MỌI pháp nhân);
+      * phạm vi hẹp → **bắt buộc** ghi rõ pháp nhân, và phải là pháp nhân của
+        chính mình.
+
+    Cố ý không đọc danh sách pháp nhân trong `UserScope`: khai luồng duyệt là
+    việc quản trị hiếm khi làm, thà chặt tay rồi nới sau khi có ca thật, còn hơn
+    để một `include` khai rộng tay mở đường cho việc này.
+    """
+    if has_global_scope(get_perm_profile(db, user), "approval_flow", action):
+        return
+    if not company_id:
+        raise HTTPException(
+            403, "Luồng để trống pháp nhân là áp cho MỌI pháp nhân — chỉ người quản trị "
+                 "có phạm vi «tất cả» mới khai được. Hãy chọn đúng pháp nhân của bạn.")
+    cua_minh = get_perm_profile(db, user).get("company_id") or 0
+    if company_id != cua_minh:
+        raise HTTPException(403, "Không khai được luồng duyệt cho pháp nhân khác")
 
 
 def _load(db: Session, flow_id: int, user, action: str = "read") -> ApprovalFlow:
