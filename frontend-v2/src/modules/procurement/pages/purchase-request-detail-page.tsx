@@ -15,7 +15,7 @@ import {
   X,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { useAuth } from '@/core/auth/use-auth'
@@ -85,6 +85,10 @@ import {
   toDraftFromRequest,
 } from '../utils/purchase-order-draft'
 import { validatePurchaseRequest } from '../utils/required-fields'
+import {
+  parsePurchaseAssistantDraft,
+  type PurchaseAssistantDraft,
+} from '../utils/assistant-draft'
 import { purchaseRequestApi } from '../api/purchase-request-api'
 import {
   isClosed,
@@ -125,6 +129,7 @@ const CONFIRM_ACTIONS: Record<ConfirmAction, { title: string; description: strin
 export function PurchaseRequestDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   // Route tạo mới là route tĩnh `/new`, không khai `:id`, nên `useParams()`
   // trả `undefined`. Vẫn chấp nhận giá trị `new` để component an toàn nếu sau
   // này route được gộp lại với route chi tiết.
@@ -132,6 +137,14 @@ export function PurchaseRequestDetailPage() {
   const purchaseRequestId = isNew ? 0 : Number(id)
   const { user } = useAuth()
   const { can } = usePermission()
+
+  //  Bản nháp do Trợ lý AI soạn (tool `draft_purchase_request`), truyền qua state khi
+  //  điều hướng từ trang chat. Chỉ áp cho phiếu MỚI; state không hợp lệ thì bỏ qua.
+  const assistantDraft = isNew
+    ? parsePurchaseAssistantDraft(
+        (location.state as { assistantDraft?: unknown } | null)?.assistantDraft,
+      )
+    : null
 
   const { data: serverData, isLoading, isError } = usePurchaseRequest(purchaseRequestId)
   const { data: progress } = useOrderProgress(purchaseRequestId)
@@ -146,7 +159,7 @@ export function PurchaseRequestDetailPage() {
 
   const [editing, setEditing] = useState(isNew)
   const [draft, setDraft] = useState<PurchaseRequestDetail | null>(() =>
-    isNew ? createEmptyPurchaseRequest(user) : null,
+    isNew ? applyPurchaseAssistantDraft(createEmptyPurchaseRequest(user), assistantDraft) : null,
   )
   // CR-071 — chỉ hỏi backend khi đang SỬA: ô TBP lúc chỉ đọc là chữ, không cần danh sách.
   const { data: deptHeadData } = useDeptHeadCandidates(purchaseRequestId, editing)
@@ -169,7 +182,10 @@ export function PurchaseRequestDetailPage() {
   const userChanged = useHasChanged(user)
   if (isNewChanged || serverDataChanged || userChanged) {
     if (isNew) {
-      setDraft((current) => current ?? createEmptyPurchaseRequest(user))
+      setDraft(
+        (current) =>
+          current ?? applyPurchaseAssistantDraft(createEmptyPurchaseRequest(user), assistantDraft),
+      )
       setEditing(true)
     } else {
       setDraft(serverData ?? null)
@@ -869,5 +885,24 @@ function createEmptyPurchaseRequest(user?: AuthUser | null): PurchaseRequestDeta
     subtotal: 0,
     vat: 0,
     total: 0,
+  }
+}
+
+/**
+ * Điền bản nháp Trợ lý AI vào phiếu rỗng. Dòng nháp thiếu trường nào thì giữ giá trị
+ * mặc định của dòng rỗng (vat_pct 8, line_status 'no_po'); dòng chưa khớp mã hàng có
+ * `product_code` rỗng — người dùng chọn lại trên form trước khi gửi duyệt.
+ */
+function applyPurchaseAssistantDraft(
+  base: PurchaseRequestDetail,
+  draft: PurchaseAssistantDraft | null,
+): PurchaseRequestDetail {
+  if (!draft) return base
+  return {
+    ...base,
+    purpose: draft.purpose,
+    note: draft.note,
+    need_date: draft.need_date || base.need_date,
+    items: draft.lines.map((line) => ({ ...EMPTY_PURCHASE_REQUEST_ITEM, ...line })),
   }
 }

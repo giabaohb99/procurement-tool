@@ -30,8 +30,9 @@ export function AssistantWidget() {
   const [open, setOpen] = useState(false)
   const [conversationId, setConversationId] = useState(0)
   const [pending, setPending] = useState<string | null>(null)
-  //  Id câu trả lời được chạy hiệu ứng gõ máy — chỉ câu VỪA nhận trong phiên này.
-  const [typingId, setTypingId] = useState<number | null>(null)
+  //  Mốc id chốt lúc bấm gửi — tin trợ lý mới hơn mốc này được chạy hiệu ứng gõ
+  //  máy (xem chú thích `typingAfterId` trong `message-thread.tsx`).
+  const [typingAfterId, setTypingAfterId] = useState<number | null>(null)
 
   const conversationQuery = useConversation(conversationId)
 
@@ -49,11 +50,16 @@ export function AssistantWidget() {
   const startNew = () => {
     setConversationId(0)
     setPending(null)
-    setTypingId(null) //  hội thoại mới thì thôi gõ dở câu của hội thoại trước
+    setTypingAfterId(null) //  hội thoại mới thì thôi gõ dở câu của hội thoại trước
   }
 
   const handleSend = async (message: string) => {
     setPending(message)
+    //  Chốt mốc gõ máy TRƯỚC khi gửi — tin nào server trả thêm về (id lớn hơn)
+    //  là câu vừa nhận. Đặt sau khi nhận thì thua race với render từ cache,
+    //  câu trả lời hiện full rồi gõ lại từ đầu — xem `message-thread.tsx`.
+    const currentMessages = conversationQuery.data?.messages ?? []
+    setTypingAfterId(currentMessages.reduce((max, m) => Math.max(max, m.id), 0))
     try {
       const reply = await sendMessage.mutateAsync({
         message,
@@ -62,17 +68,10 @@ export function AssistantWidget() {
       })
       // Nạp xong chi tiết hội thoại trước khi bỏ tin chờ, để câu vừa gửi không
       // nháy mất một nhịp (giống trang đầy đủ).
-      const detail = await queryClient.fetchQuery({
+      await queryClient.fetchQuery({
         queryKey: queryKeys.assistant.conversation(reply.conversation_id),
         queryFn: () => assistantApi.conversation(reply.conversation_id),
       })
-      //  Chỉ câu trả lời MỚI NHẤT của trợ lý được chạy hiệu ứng gõ; lấy theo id
-      //  cho chắc thay vì tin cuối luồng.
-      const latestAnswer = [...detail.messages]
-        .filter((m) => m.role_name === 'assistant')
-        .sort((a, b) => a.id - b.id)
-        .at(-1)
-      setTypingId(latestAnswer?.id ?? null)
       void queryClient.invalidateQueries({ queryKey: queryKeys.assistant.conversations() })
       if (reply.conversation_id !== conversationId) setConversationId(reply.conversation_id)
     } catch {
@@ -148,7 +147,7 @@ export function AssistantWidget() {
                   messages={messages}
                   pending={pending}
                   isSending={isSending}
-                  typingId={typingId}
+                  typingAfterId={typingAfterId}
                 />
               )}
               <ChatComposer disabled={noProvider} busy={isSending} onSend={handleSend} />

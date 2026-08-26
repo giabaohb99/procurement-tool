@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, ArrowRight, CalendarDays, Copy, Info, Layers, PenLine, Target } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { extractErrorMessage } from '@/core/api'
@@ -26,6 +26,7 @@ import { DocumentMainInfoFields, MAIN_INFO_FIELDS } from '../components/document
 import { DocumentPendingAttachments } from '../components/document-pending-attachments'
 import { DocumentPrerequisiteDialog } from '../components/document-prerequisite-dialog'
 import { DocumentScopeFields, type PendingScope } from '../components/document-scope-fields'
+import { parseAssistantLeaveDraft } from '../helpers/assistant-leave-draft'
 import { cloneTargetsFromScopes } from '../helpers/clone-targets-from-scopes'
 import { emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
 import { LEAVE_FIELDS } from '../helpers/suggested-day-count'
@@ -82,7 +83,15 @@ const LAST_STEP = STEPS.length - 1
  */
 export function DocumentCreatePage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
+  //  Bản nháp ĐƠN NGHỈ PHÉP do Trợ lý AI soạn — đi qua nút "Tạo đơn nghỉ phép" ở trang
+  //  chat (`state.assistantDraft`, cùng khuôn YCBG/YCMH). Chỉ là giá trị MỞ SẴN: người
+  //  dùng rà lại rồi tự bấm Tạo, không có gì tự sinh. State rác thì parse trả `null` và
+  //  form mở trắng như thường.
+  const assistantDraft = parseAssistantLeaveDraft(
+    (location.state as { assistantDraft?: unknown } | null)?.assistantDraft,
+  )
   const [step, setStep] = useState(0)
   //  Id BẢN NHÁP đã sinh ở bước 1. Khác `null` nghĩa là văn bản đã tồn tại trên
   //  máy chủ, nên từ đó trở đi mọi lần lưu là SỬA chứ không tạo thêm cái nữa —
@@ -118,12 +127,22 @@ export function DocumentCreatePage() {
 
   const form = useForm<DocumentRecordFormValues>({
     resolver: zodResolver(documentRecordSchema),
-    //  Mở sẵn theo hồ sơ người đang đăng nhập — xem `emptyDocumentForm`.
-    defaultValues: emptyDocumentForm({
-      company_id: user?.company_id,
-      department_id: user?.department_id,
-      employee_id: user?.employee_id,
-    }),
+    //  Mở sẵn theo hồ sơ người đang đăng nhập — xem `emptyDocumentForm`. Có bản nháp của
+    //  Trợ lý AI thì đè thêm loại văn bản + tiêu đề + khối nghỉ phép lên trên nền đó.
+    defaultValues: (() => {
+      const empty = emptyDocumentForm({
+        company_id: user?.company_id,
+        department_id: user?.department_id,
+        employee_id: user?.employee_id,
+      })
+      if (!assistantDraft) return empty
+      return {
+        ...empty,
+        doc_type_id: assistantDraft.doc_type_id,
+        title: assistantDraft.title || empty.title,
+        leave: { ...empty.leave, ...assistantDraft.leave },
+      }
+    })(),
   })
 
   //  Pháp nhân nhận bản riêng = các pháp nhân khai ở khối phạm vi, trừ nơi ban

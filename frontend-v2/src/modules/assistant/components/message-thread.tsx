@@ -10,11 +10,19 @@ interface MessageThreadProps {
   pending: string | null
   isSending: boolean
   /**
-   * Id câu trả lời được chạy hiệu ứng gõ máy. Chỉ đúng MỘT tin: câu vừa nhận
-   * trong phiên này. Bật cho cả luồng thì mở lại hội thoại cũ là ngồi xem máy
-   * gõ lại từ đầu — vừa chậm vừa vô nghĩa.
+   * MỐC id chốt lúc bấm gửi: tin trợ lý nào có id LỚN HƠN mốc này là câu vừa
+   * nhận trong phiên -> chạy hiệu ứng gõ máy. `null` = không gõ gì (mở lại hội
+   * thoại cũ mà ngồi xem máy gõ lại từ đầu thì vừa chậm vừa vô nghĩa).
+   *
+   * ⚠️ Vì sao là MỐC chứ không phải id của chính câu trả lời: id câu trả lời
+   * chỉ biết SAU khi server trả về, mà lúc đó React Query đã ghi tin mới vào
+   * cache và có thể render TRƯỚC nhịp `setState` id đó. Tin mới mount với
+   * `typing=false` -> hiện nguyên khối, rồi mới lật sang `true` -> hook gõ máy
+   * chạy lại từ đầu: khối chữ vừa hiện full bị rút ngắn rồi gõ lại, màn neo
+   * đáy tụt lên câu TRƯỚC ĐÓ — nhìn như "câu cũ đang gõ, câu mới hiện sẵn".
+   * Mốc thì chốt được TRƯỚC khi gửi nên tin mới mount là gõ ngay, hết race.
    */
-  typingId: number | null
+  typingAfterId: number | null
 }
 
 /** Còn cách đáy dưới ngưỡng này thì coi như người dùng đang theo dõi tin mới. */
@@ -27,7 +35,7 @@ const NEAR_BOTTOM_PX = 120
  * mất dấu đầu dòng khi xuống hàng. Bản cũ để chữ chạy hết bề ngang màn 1920px
  * nên câu trả lời dài đọc rất mệt.
  */
-export function MessageThread({ messages, pending, isSending, typingId }: MessageThreadProps) {
+export function MessageThread({ messages, pending, isSending, typingAfterId }: MessageThreadProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   /**
@@ -97,7 +105,7 @@ export function MessageThread({ messages, pending, isSending, typingId }: Messag
             key={m.id}
             role={m.role_name}
             content={m.content}
-            typing={m.id === typingId}
+            typing={m.role_name === 'assistant' && typingAfterId != null && m.id > typingAfterId}
           />
         ))}
 

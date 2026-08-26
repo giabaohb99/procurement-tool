@@ -49,14 +49,17 @@ export function AssistantPage() {
 
   const [pending, setPending] = useState<string | null>(null)
   const [provider, setProvider] = useState<string>('')
-  //  Id câu trả lời được chạy hiệu ứng gõ máy — chỉ đúng câu VỪA nhận trong
-  //  phiên này. Mở lại hội thoại cũ thì mọi tin hiện thẳng, không gõ lại.
-  const [typingId, setTypingId] = useState<number | null>(null)
-  //  Bản nháp YCBG trợ lý vừa soạn (tool `draft_survey_request`) — chỉ sống trong
-  //  lượt trả lời hiện tại, backend không lưu. Bấm nút mới mở form; phiếu KHÔNG tự tạo.
+  //  Mốc id chốt LÚC BẤM GỬI — tin trợ lý mới hơn mốc này được chạy hiệu ứng
+  //  gõ máy. Chốt trước khi gửi (không phải sau khi nhận) để tin mới mount là
+  //  gõ ngay; xem chú thích `typingAfterId` trong `message-thread.tsx`.
+  const [typingAfterId, setTypingAfterId] = useState<number | null>(null)
+  //  Bản nháp trợ lý vừa soạn (tool `draft_survey_request` = YCBG, `draft_purchase_request`
+  //  = YCMH, `draft_leave_request` = đơn nghỉ phép) — chỉ sống trong lượt trả lời hiện tại,
+  //  backend không lưu. Bấm nút mới mở form; phiếu KHÔNG tự tạo.
   const [draftOffer, setDraftOffer] = useState<{
     conversationId: number
     args: Record<string, unknown>
+    target: 'survey' | 'purchase' | 'leave'
   } | null>(null)
   //  File báo cáo trợ lý vừa xuất (tool `export_report_file`) — cũng chỉ sống trong lượt
   //  trả lời hiện tại. Tải qua downloadFile (kèm Bearer), không gắn href thẳng.
@@ -80,7 +83,7 @@ export function AssistantPage() {
 
   const setActive = (id: number) => {
     setPending(null)
-    setTypingId(null) //  đổi hội thoại thì thôi gõ dở câu của hội thoại trước
+    setTypingAfterId(null) //  đổi hội thoại thì thôi gõ dở câu của hội thoại trước
     setDraftOffer(null)
     setFileOffer(null)
     if (id > 0) setSearchParams({ c: String(id) })
@@ -89,6 +92,11 @@ export function AssistantPage() {
 
   const handleSend = async (message: string) => {
     setPending(message)
+    //  Chốt mốc gõ máy TRƯỚC khi gửi: mọi tin đang có đều cũ, tin nào server
+    //  trả thêm về (id lớn hơn) là câu vừa nhận -> được gõ. Đặt sau khi nhận
+    //  thì thua race với render từ cache — xem `message-thread.tsx`.
+    const currentMessages = conversationQuery.data?.messages ?? []
+    setTypingAfterId(currentMessages.reduce((max, m) => Math.max(max, m.id), 0))
     try {
       const reply = await sendMessage.mutateAsync({
         message,
@@ -97,30 +105,30 @@ export function AssistantPage() {
       })
       // Nạp XONG chi tiết hội thoại trước khi bỏ tin đang chờ, để câu vừa gửi
       // không biến mất một nhịp rồi mới hiện lại từ luồng tin của server.
-      const detail = await queryClient.fetchQuery({
+      await queryClient.fetchQuery({
         queryKey: queryKeys.assistant.conversation(reply.conversation_id),
         queryFn: () => assistantApi.conversation(reply.conversation_id),
       })
 
-      //  Câu trả lời MỚI NHẤT của trợ lý trong luồng vừa nạp — chỉ mình nó được
-      //  chạy hiệu ứng gõ. Lấy theo id thay vì "tin cuối" cho chắc: luồng trả về
-      //  đã xếp theo thứ tự nhưng đừng phụ thuộc vào điều đó.
-      const latestAnswer = [...detail.messages]
-        .filter((m) => m.role_name === 'assistant')
-        .sort((a, b) => a.id - b.id)
-        .at(-1)
-      setTypingId(latestAnswer?.id ?? null)
-
-      //  Trợ lý vừa soạn xong bản nháp YCBG (rows != null nghĩa là tool chạy thành công,
-      //  không bị từ chối quyền) -> chào nút mở form. Lượt sau không soạn thì gỡ nút.
+      //  Trợ lý vừa soạn xong bản nháp YCBG/YCMH (rows != null nghĩa là tool chạy thành
+      //  công, không bị từ chối quyền) -> chào nút mở form. Lượt sau không soạn thì gỡ nút.
+      const draftTargets: Record<string, 'survey' | 'purchase' | 'leave'> = {
+        draft_survey_request: 'survey',
+        draft_purchase_request: 'purchase',
+        draft_leave_request: 'leave',
+      }
       const draftCall = (reply.tool_calls ?? [])
-        .filter((call) => call.name === 'draft_survey_request' && call.rows != null && call.rows > 0)
+        .filter((call) => draftTargets[call.name] != null && call.rows != null && call.rows > 0)
         .at(-1)
       setDraftOffer(
         draftCall
           ? //  Ưu tiên bản draft ĐÃ CHUẨN HÓA từ kết quả tool (ĐVT khớp chính tả danh mục
-            //  "cái" -> "Cái"); args thô của model chỉ là phương án dự phòng.
-            { conversationId: reply.conversation_id, args: draftCall.draft ?? draftCall.args }
+            //  "cái" -> "Cái", mã hàng khớp danh mục); args thô của model chỉ là dự phòng.
+            {
+              conversationId: reply.conversation_id,
+              args: draftCall.draft ?? draftCall.args,
+              target: draftTargets[draftCall.name],
+            }
           : null,
       )
 
@@ -225,12 +233,13 @@ export function AssistantPage() {
                   messages={messages}
                   pending={pending}
                   isSending={isSending}
-                  typingId={typingId}
+                  typingAfterId={typingAfterId}
                 />
               )}
 
-              {/*  Bản nháp YCBG trợ lý vừa soạn — bấm mới mở form ĐÃ ĐIỀN SẴN, người dùng
-                   rà lại rồi tự bấm Tạo trong form; ở đây chưa có phiếu nào được tạo. */}
+              {/*  Bản nháp YCBG/YCMH/đơn nghỉ phép trợ lý vừa soạn — bấm mới mở form ĐÃ
+                   ĐIỀN SẴN, người dùng rà lại rồi tự bấm Tạo trong form; ở đây chưa có
+                   phiếu nào được tạo. */}
               {draftOffer && draftOffer.conversationId === activeId && !isSending ? (
                 <div className="flex items-center justify-between gap-3 border-t bg-muted/40 px-4 py-2.5">
                   <p className="text-xs text-muted-foreground">
@@ -239,13 +248,24 @@ export function AssistantPage() {
                   <Button
                     size="sm"
                     onClick={() =>
-                      navigate(appRoutes.procurement.surveyRequestNew, {
-                        state: { assistantDraft: draftOffer.args },
-                      })
+                      navigate(
+                        {
+                          survey: appRoutes.procurement.surveyRequestNew,
+                          purchase: appRoutes.procurement.purchaseRequestNew,
+                          leave: appRoutes.document.documentNew,
+                        }[draftOffer.target],
+                        { state: { assistantDraft: draftOffer.args } },
+                      )
                     }
                   >
                     <FilePlus />
-                    Tạo yêu cầu báo giá
+                    {
+                      {
+                        survey: 'Tạo yêu cầu báo giá',
+                        purchase: 'Tạo yêu cầu mua hàng',
+                        leave: 'Tạo đơn nghỉ phép',
+                      }[draftOffer.target]
+                    }
                   </Button>
                 </div>
               ) : null}
