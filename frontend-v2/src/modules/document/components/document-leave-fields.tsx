@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/shared/ui/textarea'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import type { DocumentRecordFormValues } from '../schemas/document-record-schema'
-import { suggestedDayCount } from '../helpers/so-ngay-nghi-phep'
+import { suggestedDayCount } from '../helpers/suggested-day-count'
 
 interface DocumentLeaveFieldsProps {
   form: UseFormReturn<DocumentRecordFormValues>

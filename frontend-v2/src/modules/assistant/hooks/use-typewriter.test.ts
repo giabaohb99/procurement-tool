@@ -6,9 +6,9 @@ import { useTypewriter } from './use-typewriter'
 const SENTENCE = 'Một hai ba bốn năm sáu bảy tám chín mười'
 
 /** Giả lập `matchMedia` — jsdom không có sẵn. */
-function setReducedMotion(bat: boolean) {
+function setReducedMotion(enabled: boolean) {
   vi.stubGlobal('matchMedia', (q: string) => ({
-    matches: bat,
+    matches: enabled,
     media: q,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
@@ -88,10 +88,10 @@ describe('useTypewriter', () => {
   })
 
   it('câu RẤT DÀI vẫn gõ xong trong tầm 1,2 giây, không bắt ngồi xem cả chục giây', () => {
-    const dai = Array.from({ length: 600 }, (_, i) => `từ${i}`).join(' ')
-    const { result } = renderHook(() => useTypewriter(dai, true))
+    const longText = Array.from({ length: 600 }, (_, i) => `từ${i}`).join(' ')
+    const { result } = renderHook(() => useTypewriter(longText, true))
 
     act(() => void vi.advanceTimersByTime(1400))
-    expect(result.current.display).toBe(dai)
+    expect(result.current.display).toBe(longText)
   })
 })

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { AuthUser } from '@/core/auth/auth-types'
 import { SUBJECT_KIND } from '../types/document-access'
-import { blockedSelfIds } from './khong-tu-chan-chinh-minh'
+import { blockedSelfIds } from './blocked-self-ids'
 
 const user = {
   employee_id: 94,

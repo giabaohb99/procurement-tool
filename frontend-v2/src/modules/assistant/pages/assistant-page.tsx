@@ -46,7 +46,7 @@ export function AssistantPage() {
   const [provider, setProvider] = useState<string>('')
   //  Id câu trả lời được chạy hiệu ứng gõ máy — chỉ đúng câu VỪA nhận trong
   //  phiên này. Mở lại hội thoại cũ thì mọi tin hiện thẳng, không gõ lại.
-  const [idGoDan, setIdGoDan] = useState<number | null>(null)
+  const [typingId, setTypingId] = useState<number | null>(null)
 
   /** Chỉ chào nhà đã cấu hình key — chọn nhà chưa có key sẽ bị backend từ chối. */
   const configuredProviders = useMemo(
@@ -62,7 +62,7 @@ export function AssistantPage() {
 
   const setActive = (id: number) => {
     setPending(null)
-    setIdGoDan(null) //  đổi hội thoại thì thôi gõ dở câu của hội thoại trước
+    setTypingId(null) //  đổi hội thoại thì thôi gõ dở câu của hội thoại trước
     if (id > 0) setSearchParams({ c: String(id) })
     else setSearchParams({})
   }
@@ -77,7 +77,7 @@ export function AssistantPage() {
       })
       // Nạp XONG chi tiết hội thoại trước khi bỏ tin đang chờ, để câu vừa gửi
       // không biến mất một nhịp rồi mới hiện lại từ luồng tin của server.
-      const chiTiet = await queryClient.fetchQuery({
+      const detail = await queryClient.fetchQuery({
         queryKey: queryKeys.assistant.conversation(reply.conversation_id),
         queryFn: () => assistantApi.conversation(reply.conversation_id),
       })
@@ -85,11 +85,11 @@ export function AssistantPage() {
       //  Câu trả lời MỚI NHẤT của trợ lý trong luồng vừa nạp — chỉ mình nó được
       //  chạy hiệu ứng gõ. Lấy theo id thay vì "tin cuối" cho chắc: luồng trả về
       //  đã xếp theo thứ tự nhưng đừng phụ thuộc vào điều đó.
-      const latestAnswer = [...chiTiet.messages]
+      const latestAnswer = [...detail.messages]
         .filter((m) => m.role_name === 'assistant')
         .sort((a, b) => a.id - b.id)
         .at(-1)
-      setIdGoDan(latestAnswer?.id ?? null)
+      setTypingId(latestAnswer?.id ?? null)
       void queryClient.invalidateQueries({ queryKey: queryKeys.assistant.conversations() })
       if (reply.conversation_id !== activeId) {
         setSearchParams({ c: String(reply.conversation_id) })
@@ -172,13 +172,13 @@ export function AssistantPage() {
                    lúc đó việc duy nhất cần làm là gõ câu hỏi, nên hai thứ đó phải
                    ở gần nhau trong tầm mắt. */}
               {messages.length === 0 && !pending ? (
-                <ChatEmptyState onPick={isSending ? undefined : (cau) => void handleSend(cau).catch(() => {})} />
+                <ChatEmptyState onPick={isSending ? undefined : (question) => void handleSend(question).catch(() => {})} />
               ) : (
                 <MessageThread
                   messages={messages}
                   pending={pending}
                   isSending={isSending}
-                  idGoDan={idGoDan}
+                  typingId={typingId}
                 />
               )}
 

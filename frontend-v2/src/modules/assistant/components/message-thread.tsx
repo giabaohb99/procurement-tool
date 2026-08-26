@@ -14,7 +14,7 @@ interface MessageThreadProps {
    * trong phiên này. Bật cho cả luồng thì mở lại hội thoại cũ là ngồi xem máy
    * gõ lại từ đầu — vừa chậm vừa vô nghĩa.
    */
-  idGoDan: number | null
+  typingId: number | null
 }
 
 /** Còn cách đáy dưới ngưỡng này thì coi như người dùng đang theo dõi tin mới. */
@@ -27,7 +27,7 @@ const NEAR_BOTTOM_PX = 120
  * mất dấu đầu dòng khi xuống hàng. Bản cũ để chữ chạy hết bề ngang màn 1920px
  * nên câu trả lời dài đọc rất mệt.
  */
-export function MessageThread({ messages, pending, isSending, idGoDan }: MessageThreadProps) {
+export function MessageThread({ messages, pending, isSending, typingId }: MessageThreadProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   /**
@@ -97,7 +97,7 @@ export function MessageThread({ messages, pending, isSending, idGoDan }: Message
             key={m.id}
             role={m.role_name}
             content={m.content}
-            goDan={m.id === idGoDan}
+            typing={m.id === typingId}
           />
         ))}
 

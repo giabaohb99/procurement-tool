@@ -31,7 +31,7 @@ export function AssistantWidget() {
   const [conversationId, setConversationId] = useState(0)
   const [pending, setPending] = useState<string | null>(null)
   //  Id câu trả lời được chạy hiệu ứng gõ máy — chỉ câu VỪA nhận trong phiên này.
-  const [idGoDan, setIdGoDan] = useState<number | null>(null)
+  const [typingId, setTypingId] = useState<number | null>(null)
 
   const conversationQuery = useConversation(conversationId)
 
@@ -49,7 +49,7 @@ export function AssistantWidget() {
   const startNew = () => {
     setConversationId(0)
     setPending(null)
-    setIdGoDan(null) //  hội thoại mới thì thôi gõ dở câu của hội thoại trước
+    setTypingId(null) //  hội thoại mới thì thôi gõ dở câu của hội thoại trước
   }
 
   const handleSend = async (message: string) => {
@@ -62,17 +62,17 @@ export function AssistantWidget() {
       })
       // Nạp xong chi tiết hội thoại trước khi bỏ tin chờ, để câu vừa gửi không
       // nháy mất một nhịp (giống trang đầy đủ).
-      const chiTiet = await queryClient.fetchQuery({
+      const detail = await queryClient.fetchQuery({
         queryKey: queryKeys.assistant.conversation(reply.conversation_id),
         queryFn: () => assistantApi.conversation(reply.conversation_id),
       })
       //  Chỉ câu trả lời MỚI NHẤT của trợ lý được chạy hiệu ứng gõ; lấy theo id
       //  cho chắc thay vì tin cuối luồng.
-      const traLoiMoi = [...chiTiet.messages]
+      const latestAnswer = [...detail.messages]
         .filter((m) => m.role_name === 'assistant')
         .sort((a, b) => a.id - b.id)
         .at(-1)
-      setIdGoDan(traLoiMoi?.id ?? null)
+      setTypingId(latestAnswer?.id ?? null)
       void queryClient.invalidateQueries({ queryKey: queryKeys.assistant.conversations() })
       if (reply.conversation_id !== conversationId) setConversationId(reply.conversation_id)
     } catch {
@@ -141,14 +141,14 @@ export function AssistantWidget() {
             <>
               {messages.length === 0 && !pending ? (
                 <ChatEmptyState
-                  onChon={isSending ? undefined : (cau) => void handleSend(cau)}
+                  onPick={isSending ? undefined : (question) => void handleSend(question)}
                 />
               ) : (
                 <MessageThread
                   messages={messages}
                   pending={pending}
                   isSending={isSending}
-                  idGoDan={idGoDan}
+                  typingId={typingId}
                 />
               )}
               <ChatComposer disabled={noProvider} busy={isSending} onSend={handleSend} />

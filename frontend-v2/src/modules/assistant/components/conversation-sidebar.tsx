@@ -62,7 +62,7 @@ export function ConversationSidebar({
     max: MAX_WIDTH,
     defaultValue: DEFAULT_VALUE,
   })
-  const [thuGon, doiThuGon] = usePersistedToggle('erp.assistant-sidebar-collapsed')
+  const [collapsed, toggleCollapsed] = usePersistedToggle('erp.assistant-sidebar-collapsed')
 
   /**
    * Thu gọn thì còn một THANH HẸP, không biến mất hẳn.
@@ -71,13 +71,13 @@ export function ConversationSidebar({
    * xong không biết bấm đâu để lấy lại. Thanh hẹp giữ đúng hai việc hay dùng
    * nhất: mở lại cột, và mở hội thoại mới.
    */
-  if (thuGon) {
+  if (collapsed) {
     return (
       <aside className="flex w-12 shrink-0 flex-col items-center gap-1 border-r bg-card py-2">
         <IconButton
           icon={PanelLeftOpen}
           label="Mở lại cột hội thoại"
-          onClick={doiThuGon}
+          onClick={toggleCollapsed}
         />
         <IconButton icon={SquarePen} label="Hội thoại mới" onClick={onNew} />
       </aside>
@@ -99,7 +99,7 @@ export function ConversationSidebar({
         <IconButton
           icon={PanelLeftClose}
           label="Thu gọn cột hội thoại"
-          onClick={doiThuGon}
+          onClick={toggleCollapsed}
         />
       </div>
 

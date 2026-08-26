@@ -13,7 +13,7 @@ const SAMPLE_QUESTIONS = [
 
 interface ChatEmptyStateProps {
   /** Bấm một câu hỏi mẫu — gửi luôn câu đó. Bỏ trống khi đang bận gửi. */
-  onPick?: (cauHoi: string) => void
+  onPick?: (question: string) => void
 }
 
 /**
@@ -40,14 +40,14 @@ export function ChatEmptyState({ onPick }: ChatEmptyStateProps) {
 
         {onPick && (
           <div className="mx-auto mt-6 grid max-w-xl gap-2 sm:grid-cols-2">
-            {SAMPLE_QUESTIONS.map((cau) => (
+            {SAMPLE_QUESTIONS.map((question) => (
               <button
-                key={cau}
+                key={question}
                 type="button"
-                onClick={() => onPick(cau)}
+                onClick={() => onPick(question)}
                 className="rounded-xl border bg-card px-3.5 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-accent-foreground"
               >
-                {cau}
+                {question}
               </button>
             ))}
           </div>

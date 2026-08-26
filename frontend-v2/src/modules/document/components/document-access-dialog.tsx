@@ -23,7 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
-import { blockedSelfIds } from '../helpers/khong-tu-chan-chinh-minh'
+import { blockedSelfIds } from '../helpers/blocked-self-ids'
 import { SubjectChips } from './access-subject-chips'
 import {
   EFFECT,

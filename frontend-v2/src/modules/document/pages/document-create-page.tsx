@@ -28,7 +28,7 @@ import { DocumentPrerequisiteDialog } from '../components/document-prerequisite-
 import { DocumentScopeFields, type PendingScope } from '../components/document-scope-fields'
 import { cloneTargetsFromScopes } from '../helpers/clone-targets-from-scopes'
 import { emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
-import { LEAVE_FIELDS } from '../helpers/so-ngay-nghi-phep'
+import { LEAVE_FIELDS } from '../helpers/suggested-day-count'
 import { useDocumentBooks } from '../hooks/use-document-books'
 import { useActiveDocumentTypes } from '../hooks/use-document-types'
 import {

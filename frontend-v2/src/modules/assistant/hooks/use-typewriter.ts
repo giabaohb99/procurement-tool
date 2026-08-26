@@ -28,59 +28,62 @@ function prefersReducedMotion(): boolean {
  * mỏi mắt; theo từ thì giống người đang viết ra.
  *
  * Tốc độ tự co theo độ dài để câu trả lời dài không bắt ngồi xem cả chục giây —
- * trần `TOI_DA_MS`.
+ * trần `MAX_DURATION_MS`.
  *
- * @param text Nội dung đầy đủ đã nhận được.
- * @param bat  Có chạy hiệu ứng không. `false` = hiện thẳng trọn nội dung (tin cũ
- *             trong lịch sử: mở lại hội thoại mà gõ lại từ đầu thì vừa chậm vừa
- *             vô nghĩa).
+ * @param text    Nội dung đầy đủ đã nhận được.
+ * @param enabled Có chạy hiệu ứng không. `false` = hiện thẳng trọn nội dung (tin
+ *                cũ trong lịch sử: mở lại hội thoại mà gõ lại từ đầu thì vừa chậm
+ *                vừa vô nghĩa).
  */
-export function useTypewriter(text: string, bat: boolean): { display: string; isRunning: boolean } {
+export function useTypewriter(
+  text: string,
+  enabled: boolean,
+): { display: string; isRunning: boolean } {
   //  Quyết định NGAY LÚC RENDER, không phải trong effect: người tắt hiệu ứng
   //  chuyển động ở hệ điều hành thì không được thấy một nhịp chữ rỗng nào.
-  const run = bat && !prefersReducedMotion()
+  const run = enabled && !prefersReducedMotion()
 
-  const [soTuHien, setSoTuHien] = useState(() => (run ? 0 : Infinity))
+  const [shownWords, setShownWords] = useState(() => (run ? 0 : Infinity))
 
   //  Đổi nội dung (đổi hội thoại) thì gõ LẠI TỪ ĐẦU. Gán state ngay trong lúc
   //  render thay vì `useEffect` — xem `use-has-changed.ts`; qua effect thì mắt
   //  kịp thấy một khung hình mang số từ của câu CŨ.
-  if (useHasChanged(text)) setSoTuHien(run ? 0 : Infinity)
+  if (useHasChanged(text)) setShownWords(run ? 0 : Infinity)
 
-  const tu = text.split(/(\s+)/) //  giữ cả khoảng trắng để ghép lại y nguyên
+  const words = text.split(/(\s+)/) //  giữ cả khoảng trắng để ghép lại y nguyên
 
   useEffect(() => {
     if (!run || !text) return
 
-    const tong = tu.length
+    const total = words.length
     //  Mỗi nhịp vẽ bao nhiêu từ để trọn lượt không vượt trần thời gian.
     const tickCount = Math.max(1, Math.floor(MAX_DURATION_MS / TICK_MS))
-    const perTick = Math.max(1, Math.ceil(tong / tickCount))
+    const perTick = Math.max(1, Math.ceil(total / tickCount))
 
-    let build = false
+    let stopped = false
     let current = 0
     const step = () => {
-      if (build) return
+      if (stopped) return
       current += perTick
-      setSoTuHien(current)
-      if (current < tong) setTimeout(step, TICK_MS)
+      setShownWords(current)
+      if (current < total) setTimeout(step, TICK_MS)
     }
     const id = setTimeout(step, TICK_MS)
 
     return () => {
-      build = true
+      stopped = true
       clearTimeout(id)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, run])
 
-  const xong = soTuHien >= tu.length
+  const done = shownWords >= words.length
   return {
-    display: xong ? text : tu.slice(0, soTuHien).join(''),
+    display: done ? text : words.slice(0, shownWords).join(''),
     //  `Boolean(text)` là chốt chặn cho câu trả lời RỖNG: `''.split(...)` ra
-    //  mảng một phần tử rỗng nên `soTuHien = 0` không bao giờ đuổi kịp, mà vòng
-    //  chạy lại thoát sớm vì không có chữ — kẹt `dangChay = true` vĩnh viễn, con
+    //  mảng một phần tử rỗng nên `shownWords = 0` không bao giờ đuổi kịp, mà vòng
+    //  chạy lại thoát sớm vì không có chữ — kẹt `isRunning = true` vĩnh viễn, con
     //  trỏ nhấp nháy mãi và nút Chép không bao giờ hiện ra (bài kiểm bắt được).
-    isRunning: run && !xong && Boolean(text),
+    isRunning: run && !done && Boolean(text),
   }
 }

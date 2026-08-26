@@ -5,7 +5,7 @@
  * Hai bên phải ra CÙNG một con số: backend là chốt cuối (nó ghi xuống CSDL), còn
  * bản này chỉ để ô «Tổng số ngày» hiện gợi ý ngay lúc gõ mà không phải gọi API
  * sau mỗi lần đổi ngày. Sửa một bên thì sửa cả hai — bài kiểm ở
- * `so-ngay-nghi-phep.test.ts` giữ đúng mấy mốc mà bản Python cũng kiểm.
+ * `suggested-day-count.test.ts` giữ đúng mấy mốc mà bản Python cũng kiểm.
  *
  * ⚠️ Cố ý KHÔNG trừ thứ Bảy / Chủ nhật / ngày lễ. Hệ chưa có bảng lịch làm việc,
  * mà mỗi pháp nhân lại làm việc khác nhau; đoán ra một con số trông có vẻ chính

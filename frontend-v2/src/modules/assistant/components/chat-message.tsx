@@ -10,7 +10,7 @@ interface ChatMessageProps {
   role: 'user' | 'assistant'
   content: string
   /** Chạy hiệu ứng gõ máy. Chỉ bật cho câu trả lời VỪA nhận, không cho tin cũ. */
-  goDan?: boolean
+  typing?: boolean
 }
 
 /**
@@ -29,7 +29,7 @@ interface ChatMessageProps {
  * Nút chép chỉ hiện khi rê chuột vào câu trả lời — số liệu tra xong hay được
  * dán sang chỗ khác, mà bôi đen tay thì dễ hụt đầu/cuối đoạn.
  */
-export function ChatMessage({ role, content, goDan = false }: ChatMessageProps) {
+export function ChatMessage({ role, content, typing = false }: ChatMessageProps) {
   if (role === 'user') {
     return (
       <div className="flex justify-end">
@@ -40,11 +40,11 @@ export function ChatMessage({ role, content, goDan = false }: ChatMessageProps) 
     )
   }
 
-  return <AssistantTurn content={content} goDan={goDan} />
+  return <AssistantTurn content={content} typing={typing} />
 }
 
-function AssistantTurn({ content, goDan }: { content: string; goDan: boolean }) {
-  const { display, isRunning } = useTypewriter(content, goDan)
+function AssistantTurn({ content, typing }: { content: string; typing: boolean }) {
+  const { display, isRunning } = useTypewriter(content, typing)
 
   return (
     <div className="group flex gap-3">
@@ -67,13 +67,13 @@ function AssistantTurn({ content, goDan }: { content: string; goDan: boolean }) 
 
 /** Chép trọn câu trả lời. Ẩn cho tới khi rê chuột để không làm rối cột đọc. */
 function CopyButton({ content }: { content: string }) {
-  const [daChep, setDaChep] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    if (!daChep) return
-    const id = setTimeout(() => setDaChep(false), 1500)
+    if (!copied) return
+    const id = setTimeout(() => setCopied(false), 1500)
     return () => clearTimeout(id)
-  }, [daChep])
+  }, [copied])
 
   return (
     <button
@@ -81,7 +81,7 @@ function CopyButton({ content }: { content: string }) {
       onClick={() => {
         //  Không có `navigator.clipboard` khi mở bằng IP nội bộ qua http (chỉ
         //  ngữ cảnh bảo mật mới có) — im lặng bỏ qua, người dùng bôi đen chép tay.
-        void navigator.clipboard?.writeText(content).then(() => setDaChep(true))
+        void navigator.clipboard?.writeText(content).then(() => setCopied(true))
       }}
       className={cn(
         'mt-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground',
@@ -89,8 +89,8 @@ function CopyButton({ content }: { content: string }) {
         'hover:bg-muted hover:text-foreground',
       )}
     >
-      {daChep ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
-      {daChep ? 'Đã chép' : 'Chép'}
+      {copied ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
+      {copied ? 'Đã chép' : 'Chép'}
     </button>
   )
 }

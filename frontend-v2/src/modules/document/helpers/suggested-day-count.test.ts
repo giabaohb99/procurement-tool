@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { suggestedDayCount } from './so-ngay-nghi-phep'
+import { suggestedDayCount } from './suggested-day-count'
 
 /**
  * ⚠️ Mấy mốc dưới đây phải khớp bản Python (`type_metadata.so_ngay_goi_y`), vì
