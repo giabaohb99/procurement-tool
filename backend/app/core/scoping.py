@@ -118,6 +118,10 @@ SCOPE_FIELDS = {
     "category_assignee": PUBLIC,
     "role":             PUBLIC,
     "setting":          PUBLIC,
+    #  Danh mục quản trị, cố ý KHÔNG lọc theo `company_id` dù bảng có cột đó:
+    #  cột ấy là bộ LỌC HIỂN THỊ lúc chọn hộp thư, còn chốt "ai gửi được danh
+    #  nghĩa địa chỉ này" nằm ở bảng thành viên `tab_mailbox_member`.
+    "mailbox":          PUBLIC,
     # 2c. Quyền HÀNH ĐỘNG, không có bảng nào để lọc. `report`/`backup` là ô tick
     # trong ma trận phân quyền; `payment`/`import` thì đến model cũng không có
     # (không một chỗ nào gọi `require("payment", ...)`) — khai ra đây để bài

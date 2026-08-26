@@ -38,7 +38,7 @@ from .model import ORIGIN_INTERNAL, Document
 from .version_model import DocumentVersion
 from .query import (an_ban_rieng_co_goc_xem_duoc, dem_ban_rieng,
                     documents_query)
-from .model import APPLY_MODE_LABELS
+from .model import APPLY_MODE_LABELS, STATUS_PENDING_ISSUE
 from .schema import (AccessGrant, AccessRevokeIn, ApproveIn, DocumentCreate, DocumentUpdate,
                      ReviewedIn,
                      ManualIssueNumberUpdate, RejectIn, VersionContentUpdate,
@@ -436,14 +436,75 @@ def approve_document(
     user=Depends(require("document", "approve")),
 ):
     doc = _load(db, document_id, user)
-    approval_bridge.chan_duong_cu(db, doc)
-    doc = service.approve(db, doc, user.id, data.apply_mode if data else None)
+    #  ĐÃ KÝ ĐỦ, CHỜ BAN HÀNH — nhịp này là của NGƯỜI SOẠN THẢO, không phải của
+    #  người có quyền duyệt. Kiểm trước `chan_duong_cu` để câu báo nói đúng
+    #  chuyện đang xảy ra thay vì câu chung về luồng nhiều bước.
+    if doc.status == STATUS_PENDING_ISSUE:
+        service.ensure_duoc_ban_hanh(db, doc, user)
+    else:
+        approval_bridge.chan_duong_cu(db, doc)
+
+    hop_thu = _hop_thu_da_chon(db, data, user)
+    doc = service.approve(db, doc, user.id,
+                          data.apply_mode if data else None,
+                          mailbox_id=hop_thu.id if hop_thu else None)
     #  Ghi luôn cơ chế áp dụng vào nhật ký: sáu tháng sau ai hỏi "vì sao văn bản
     #  này không clone xuống công ty con" thì có câu trả lời tại chỗ.
+    #  Ghi cả hộp thư đã gửi: "ai đứng tên phát hành" là câu phải trả lời được
+    #  từ nhật ký, không phải đi lục bảng thư.
     record(db, user.id, "document", doc.id, "approve",
            f"Ban hành {doc.doc_code or doc.issue_number}"
-           f" · {APPLY_MODE_LABELS.get(doc.apply_mode, '')}")
+           f" · {APPLY_MODE_LABELS.get(doc.apply_mode, '')}"
+           + (f" · gửi thông báo danh nghĩa {hop_thu.email}" if hop_thu else ""))
     return success(serializer.serialize(db, doc), "Đã duyệt và ban hành")
+
+
+def _hop_thu_da_chon(db: Session, data, user):
+    """Hộp thư người dùng chọn trong hộp thoại Ban hành, đã kiểm quyền dùng.
+
+    `None` = không chọn, gửi bằng địa chỉ hệ thống như trước. Kiểm ở tầng API
+    chứ không tin ô chọn: `mailbox_id` là một con số trong thân request, giao
+    diện chỉ bày hộp thư của mình nhưng ai cũng gõ số khác vào được.
+    """
+    mailbox_id = getattr(data, "mailbox_id", None) if data else None
+    if not mailbox_id:
+        return None
+
+    from app.modules.notification import mailbox_service
+
+    return mailbox_service.ensure_duoc_dung(
+        db, mailbox_id, getattr(user, "employee_id", None))
+
+
+@router.get("/{document_id}/mailboxes")
+def mailboxes_for_issue(
+    document_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(require("document", "read")),
+):
+    """Những hộp thư TÔI được gửi danh nghĩa khi ban hành văn bản này.
+
+    Đổ ra ô chọn trong hộp thoại Ban hành. Lọc theo pháp nhân ban hành để hộp
+    thư của công ty khác không bày ra cho rối; hộp thư cấp Tập đoàn (không khai
+    pháp nhân) thì nơi nào cũng thấy.
+    """
+    from app.modules.notification import mailbox_service
+
+    doc = _load(db, document_id, user)
+    rows = mailbox_service.cua_nhan_su(
+        db, getattr(user, "employee_id", None), doc.company_id)
+    return success([
+        {
+            "id": row.id,
+            "email": row.email,
+            "name": row.name,
+            "display_name": row.display_name or row.name,
+            #  Khai thiếu SMTP thì vẫn bày ra nhưng phải nói rõ, không thì người
+            #  dùng chọn xong ban hành xong mới phát hiện thư không đi.
+            "ready": mailbox_service.san_sang_gui(row),
+        }
+        for row in rows
+    ])
 
 
 @router.post("/{document_id}/reject")

@@ -251,7 +251,8 @@ export function useDocumentWorkflow(documentId: number) {
   })
 
   const approve = useMutation({
-    mutationFn: (applyMode?: number) => documentApi.approve(documentId, applyMode),
+    mutationFn: (input?: { applyMode?: number; mailboxId?: number }) =>
+      documentApi.approve(documentId, input?.applyMode, input?.mailboxId),
     onSuccess: (doc) => {
       //  Số hiệu thường được cấp đúng lúc này (`number_when = 2`) — nói ra luôn
       //  để người duyệt biết văn bản vừa mang số gì.

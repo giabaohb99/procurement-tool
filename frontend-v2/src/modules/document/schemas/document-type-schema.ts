@@ -41,6 +41,8 @@ export const documentTypeSchema = z.object({
   needs_approval: z.boolean(),
   needs_signature: z.boolean(),
   needs_decision: z.boolean(),
+  //  Mặc định `true` — xem ghi chú ở `DocumentType.auto_issue_after_approval`.
+  auto_issue_after_approval: z.boolean(),
   is_confidential_type: z.boolean(),
 
   is_active: z.boolean(),

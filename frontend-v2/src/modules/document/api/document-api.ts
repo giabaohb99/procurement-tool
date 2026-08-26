@@ -103,8 +103,13 @@ export const documentApi = {
 
   submit: (id: number) => apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/submit`, {}),
   /** `applyMode` = cơ chế áp dụng chọn lúc ban hành (F13). Bỏ trống là giữ nguyên. */
-  approve: (id: number, applyMode?: number) =>
-    apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/approve`, { apply_mode: applyMode ?? null }),
+  //  `mailboxId` = hộp thư gửi thông báo ban hành danh nghĩa địa chỉ khác
+  //  (26/08/2026). Bỏ trống thì backend gửi bằng địa chỉ hệ thống như cũ.
+  approve: (id: number, applyMode?: number, mailboxId?: number) =>
+    apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/approve`, {
+      apply_mode: applyMode ?? null,
+      mailbox_id: mailboxId ?? null,
+    }),
   reject: (id: number, reason: string) =>
     apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/reject`, { reason }),
   //  Bãi bỏ = lối gỡ bỏ của văn bản ĐÃ cấp số; xóa hẳn thì backend từ chối vì

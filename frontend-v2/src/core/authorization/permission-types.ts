@@ -68,6 +68,9 @@ export const ENTITIES = [
   'approval_flow',
   // Trợ lý AI — cổng quyền thuần (chỉ ban lãnh đạo), khai PUBLIC ở scoping backend.
   'assistant',
+  //  Ai được KHAI hộp thư gửi và cấp cho người khác dùng (26/08/2026). Khác hẳn
+  //  quyền *dùng* một hộp thư — cái đó khai đích danh ở `tab_mailbox_member`.
+  'mailbox',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

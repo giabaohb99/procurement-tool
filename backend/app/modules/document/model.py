@@ -55,6 +55,19 @@ STATUS_ARCHIVED = 8     # lưu trữ
 STATUS_RETURNED = 9     # bị trả về — sửa được, gửi duyệt lại được
 STATUS_REJECTED = 10    # đã từ chối — KHÓA, muốn làm lại thì sao chép
 
+#  ĐÃ KÝ ĐỦ, CHỜ NGƯỜI SOẠN BẤM BAN HÀNH (26/08/2026).
+#
+#  Chỉ dùng cho loại văn bản khai `auto_issue_after_approval = False`. Với loại
+#  đó, ký xong hết các bước KHÔNG còn là ban hành: người soạn thảo phải mở văn
+#  bản ra, chọn hộp thư gửi thông báo rồi mới bấm *Ban hành*.
+#
+#  ⚠️ KHÔNG gộp với `STATUS_APPROVED`. Hai mã trông giống nhau nhưng chờ hai thứ
+#  khác hẳn: `STATUS_APPROVED` là **đã ban hành xong**, có số hiệu, chỉ chờ tới
+#  NGÀY hiệu lực — không ai phải làm gì nữa. Còn mã này là chưa cấp số, chưa
+#  khóa phiên bản, và đang chờ MỘT CON NGƯỜI bấm. Gộp lại thì màn danh sách
+#  không tách được "việc của tôi" khỏi "cứ để đó tới ngày".
+STATUS_PENDING_ISSUE = 11
+
 STATUS_LABELS = {
     STATUS_DRAFT: "Nháp",
     STATUS_SUBMITTED: "Đang duyệt",
@@ -66,6 +79,7 @@ STATUS_LABELS = {
     STATUS_ARCHIVED: "Lưu trữ",
     STATUS_RETURNED: "Trả về",
     STATUS_REJECTED: "Đã từ chối",
+    STATUS_PENDING_ISSUE: "Chờ ban hành",
 }
 
 #  Trạng thái mà văn bản còn SỬA ĐƯỢC và còn GỬI DUYỆT được. Dùng một hằng chứ
@@ -226,6 +240,11 @@ class Document(Base, AuditMixin):
     clone_source_version_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     #  Cơ chế áp dụng, chọn LÚC BAN HÀNH (F13). Xem `APPLY_MODE_LABELS`.
     apply_mode: Mapped[int] = mapped_column(SmallInteger, default=1)
+    #  HỘP THƯ đã dùng để gửi thông báo ban hành (26/08/2026) — người soạn chọn
+    #  ngay trong hộp thoại Ban hành. Rỗng = gửi bằng địa chỉ hệ thống như cũ.
+    #  Giữ lại trên văn bản chứ không chỉ trên nhật ký thư: đây là câu trả lời
+    #  cho "văn bản này người nhận thấy do ai gửi", hỏi được từ chính văn bản.
+    issue_mailbox_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     cloned_at: Mapped[date | None] = mapped_column(Date, nullable=True)
     cloned_by: Mapped[int] = mapped_column(BigInteger, default=0)
     clone_note: Mapped[str] = mapped_column(String(500), default="")

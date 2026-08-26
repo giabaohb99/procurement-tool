@@ -32,6 +32,9 @@ class DocTypeCreate(BaseModel):
     needs_signature: bool = False
     needs_decision: bool = False
     needs_request: bool = False
+    #  Duyệt xong có TỰ ban hành không (26/08/2026). Mặc định `True` = giữ
+    #  nguyên hành vi đang chạy; xem ghi chú ở cột trong `model.py`.
+    auto_issue_after_approval: bool = True
 
     review_cycle_months: int = 0
     retention_months: int = 0
@@ -63,6 +66,7 @@ class DocTypeUpdate(BaseModel):
     needs_signature: bool | None = None
     needs_decision: bool | None = None
     needs_request: bool | None = None
+    auto_issue_after_approval: bool | None = None
 
     review_cycle_months: int | None = None
     retention_months: int | None = None

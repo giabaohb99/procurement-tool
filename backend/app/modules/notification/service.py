@@ -2,6 +2,7 @@ import smtplib
 import re
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.utils import formataddr
 from datetime import datetime
 from sqlalchemy.orm import Session
 
@@ -43,6 +44,24 @@ def render_template(html: str, context: dict) -> str:
     return html
 
 
+def _duong_smtp_cua_hop_thu(db, log):
+    """Đường SMTP riêng của hộp thư trên dòng nhật ký, `None` = dùng SMTP chung.
+
+    Hộp thư đã bị xóa hoặc ngừng dùng thì cũng trả `None` — thà gửi bằng địa chỉ
+    hệ thống còn hơn để một thư ban hành nằm chết trong hàng đợi. Ban hành đã
+    xong rồi, kênh thư chỉ là báo tin.
+    """
+    if not getattr(log, "mailbox_id", None):
+        return None
+    from .mailbox_model import Mailbox
+    from .mailbox_service import duong_smtp, san_sang_gui
+
+    mailbox = db.query(Mailbox).filter(Mailbox.id == log.mailbox_id).first()
+    if mailbox is None or not san_sang_gui(mailbox):
+        return None
+    return duong_smtp(mailbox)
+
+
 def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str, html_body: str, force: bool = False, apply_override: bool = True):
     """
     Sends SMTP email and updates the EmailLog status.
@@ -75,11 +94,27 @@ def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str
             db.commit()
             return
 
-        smtp_user = app_settings.get("smtp_user")
-        smtp_pass = app_settings.get("smtp_password")
-        if not smtp_user or not smtp_pass:
+        # HỘP THƯ GỬI DANH NGHĨA (26/08/2026): dòng nhật ký có `mailbox_id` thì
+        # đăng nhập bằng SMTP CỦA CHÍNH HỘP THƯ ĐÓ, không dùng tài khoản chung.
+        # Phải đăng nhập đúng hộp thư chứ không chỉ đổi tiêu đề `From` — Gmail
+        # ghi đè `From` về tài khoản đã đăng nhập, nên chỉ đổi tiêu đề là người
+        # nhận vẫn thấy địa chỉ cũ mà không có lỗi nào báo lên.
+        duong = _duong_smtp_cua_hop_thu(db, log)
+        if duong is None:
+            duong = {
+                "host": app_settings.get("smtp_host"),
+                "port": int(app_settings.get("smtp_port") or 587),
+                "user": app_settings.get("smtp_user"),
+                "password": app_settings.get("smtp_password"),
+                "use_tls": True,
+                "from_email": app_settings.get("smtp_from") or app_settings.get("smtp_user"),
+                "from_name": "",
+            }
+        if not duong["user"] or not duong["password"]:
             log.status = "failed"
-            log.error = "SMTP credentials not configured in settings."
+            log.error = ("Hộp thư gửi chưa khai mật khẩu ứng dụng."
+                         if log.mailbox_id else
+                         "SMTP credentials not configured in settings.")
             db.commit()
             return
 
@@ -88,18 +123,24 @@ def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str
         target = (app_settings.get("email_test_override") if apply_override else "") or to_email
 
         msg = MIMEMultipart()
-        msg["From"] = app_settings.get("smtp_from") or smtp_user
+        msg["From"] = formataddr((duong["from_name"], duong["from_email"])) \
+            if duong["from_name"] else duong["from_email"]
         msg["To"] = target
         msg["Subject"] = subject
         msg.attach(MIMEText(html_body, "html"))
 
         # Connect and send
-        with smtplib.SMTP(app_settings.get("smtp_host"), int(app_settings.get("smtp_port") or 587)) as server:
-            server.starttls()
-            server.login(smtp_user, smtp_pass)
+        with smtplib.SMTP(duong["host"], int(duong["port"] or 587)) as server:
+            if duong["use_tls"]:
+                server.starttls()
+            server.login(duong["user"], duong["password"])
             from email.utils import parseaddr
             _, from_email = parseaddr(msg["From"])
             server.sendmail(from_email or msg["From"], target, msg.as_string())
+
+        # Ghi lại địa chỉ NGƯỜI NHẬN THẬT SỰ THẤY — hộp thư đổi địa chỉ về sau
+        # thì nhật ký cũ vẫn phải đúng.
+        log.from_email = duong["from_email"] or ""
 
         log.status = "sent"
         log.sent_at = datetime.utcnow()

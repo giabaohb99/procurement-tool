@@ -34,6 +34,19 @@ export const DOCUMENT_STATUS = {
   returned: 9,
   /** Đã từ chối — HẾT đường: khóa sửa, muốn làm lại thì *Sao chép*. */
   rejected: 10,
+  /**
+   * Đã ký đủ, CHỜ NGƯỜI SOẠN THẢO bấm *Ban hành* (26/08/2026).
+   *
+   * Chỉ gặp ở loại văn bản khai `auto_issue_after_approval = false`. Với loại
+   * đó, ký xong hết các bước không còn là ban hành — người soạn phải mở ra,
+   * chọn hộp thư gửi thông báo, rồi mới phát hành.
+   *
+   * ⚠️ Đừng gộp với `approved` (3). Hai cái trông giống nhau nhưng chờ hai thứ
+   * khác hẳn: `approved` là **đã ban hành xong**, có số hiệu, chỉ chờ tới NGÀY
+   * hiệu lực — không ai phải làm gì. Còn cái này chưa có số hiệu và đang chờ
+   * MỘT CON NGƯỜI bấm.
+   */
+  pendingIssue: 11,
 } as const
 
 export const STATUS_LABELS: Record<number, string> = {
@@ -47,6 +60,7 @@ export const STATUS_LABELS: Record<number, string> = {
   8: 'Lưu trữ',
   9: 'Trả về',
   10: 'Đã từ chối',
+  11: 'Chờ ban hành',
 }
 
 /**
@@ -76,6 +90,9 @@ export const STATUS_VARIANTS: Record<number, 'default' | 'secondary' | 'outline'
     //  khỏi danh sách.
     9: 'destructive',
     10: 'destructive',
+    //  Cũng phải nhảy ra khỏi danh sách, nhưng không phải màu báo động: đây là
+    //  một VIỆC ĐANG CHỜ người soạn làm, không phải một thứ đã hỏng.
+    11: 'default',
   }
 
 /** Trạng thái của PHIÊN BẢN — thang riêng, xem chú thích đầu tệp. */

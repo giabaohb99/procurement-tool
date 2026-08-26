@@ -194,7 +194,12 @@ _CONTRACT_CRUD = {"contract": (["read", "create", "write", "delete"], "company")
 _ALL_ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
 # help_article nằm ở đây để nghiệp vụ thu mua KHÔNG tự động sửa được tài liệu HDSD —
 # quyền này chỉ cấp cho admin hệ thống và vai trò 'help_admin'.
-_SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article"}
+# `mailbox` cũng ở đây (26/08/2026): bảng hộp thư giữ MẬT KHẨU ỨNG DỤNG của các
+# địa chỉ gửi thật, và ai sửa được nó thì cấp được cho mình quyền gửi thư danh
+# nghĩa cả một phòng ban. Đó là việc của quản trị hệ thống, không phải của nghiệp
+# vụ thu mua — mà `_PUR_MANAGER_PERMS` dưới đây cấp TẤT CẢ những gì không nằm
+# trong tập này.
+_SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox"}
 _PUR_MANAGER_PERMS = {e: (_ALL_ACTIONS, "all") for e in ENTITIES if e not in _SYS_ENTITIES}
 
 STD_ROLES = {

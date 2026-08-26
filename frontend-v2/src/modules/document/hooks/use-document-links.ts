@@ -46,6 +46,20 @@ export function useIssuePreview(documentId?: number, enabled = false) {
 }
 
 /**
+ * Hộp thư tôi được gửi danh nghĩa khi ban hành văn bản này (26/08/2026).
+ *
+ * Cùng `enabled` với `useIssuePreview` và vì cùng một lý do: chỉ hỏi khi hộp
+ * thoại Ban hành thật sự mở. 99% lượt mở văn bản không đụng tới nó.
+ */
+export function useIssueMailboxes(documentId?: number, enabled = false) {
+  return useQuery({
+    queryKey: queryKeys.document.issueMailboxes(documentId ?? 0),
+    queryFn: () => documentLinkApi.issueMailboxes(documentId as number),
+    enabled: enabled && typeof documentId === 'number' && documentId > 0,
+  })
+}
+
+/**
  * J10 — nhãn "đã bị sửa đổi".
  *
  * Nạp cho MỌI văn bản, không chờ người dùng mở tab nào: đây là cảnh báo bắt

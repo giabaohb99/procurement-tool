@@ -27,8 +27,8 @@ from app.modules.doc_catalog.security_level_service import (ensure_valid,
 from . import numbering
 from .model import (ALIVE_STATUSES, APPLY_MODE_LABELS, EDITABLE_STATUSES,
                     STATUS_APPROVED, STATUS_DRAFT, STATUS_EFFECTIVE,
-                    STATUS_REJECTED, STATUS_RETURNED, STATUS_REVOKED,
-                    STATUS_SUBMITTED, Document)
+                    STATUS_PENDING_ISSUE, STATUS_REJECTED, STATUS_RETURNED,
+                    STATUS_REVOKED, STATUS_SUBMITTED, Document)
 from .content_sanitize import sanitize_document_html
 from .query import documents_query
 from .schema import DocumentCreate, DocumentUpdate
@@ -180,6 +180,14 @@ def chan_sua_khi_dang_duyet(doc: Document) -> None:
     if doc.status == STATUS_SUBMITTED:
         raise HTTPException(409, "Văn bản đang trình duyệt nên khóa thông tin. "
                                  "Muốn sửa thì rút phiếu duyệt (hoặc chờ người duyệt trả lại).")
+    #  ĐÃ KÝ ĐỦ, CHỜ BAN HÀNH — khóa CHẶT như lúc đang duyệt, và vì đúng một lý
+    #  do: chữ ký đã đặt lên nội dung này rồi. Mở ra thì người soạn sửa tiêu đề
+    #  hay nâng mức mật xong mới bấm Ban hành, và thứ phát hành ra không còn là
+    #  thứ người ký đã đọc — đúng cái lỗ mà cả `chan_sua_khi_dang_duyet` sinh ra
+    #  để bịt, chỉ dịch sang muộn hơn một nhịp.
+    if doc.status == STATUS_PENDING_ISSUE:
+        raise HTTPException(409, "Văn bản đã ký đủ và đang chờ ban hành nên khóa "
+                                 "thông tin. Muốn sửa thì nhờ người duyệt trả lại.")
     if doc.status == STATUS_REJECTED:
         raise HTTPException(409, "Văn bản đã bị từ chối nên khóa. "
                                  "Muốn làm lại thì bấm «Sao chép» để có bản nháp mới.")
@@ -413,13 +421,75 @@ def submit(db: Session, doc: Document, actor: int) -> Document:
     return doc
 
 
+def cho_ban_hanh(db: Session, doc: Document, actor: int) -> Document:
+    """Ký đủ chữ ký rồi, nhưng DỪNG LẠI chờ người soạn bấm *Ban hành*.
+
+    Chỉ chạy với loại khai `auto_issue_after_approval = False` (26/08/2026).
+
+    ⚠️ **Phiên bản giữ nguyên `VERSION_SUBMITTED`, không khóa, không cấp số.**
+    Đó là cả cơ chế của trạng thái này: `approve()` chạy được lần sau vì bản
+    vẫn đang ở đúng tư thế "chờ duyệt", trong khi `submit()` thì không nhận
+    (nó chặn thẳng bản đang chờ duyệt) nên không ai gửi duyệt chồng lên được.
+
+    Không đụng bản thứ hai trở đi: y như mọi nhịp khác, văn bản đang có hiệu lực
+    bằng bản cũ thì giữ nguyên trạng thái trong suốt lúc bản mới chờ — chỗ dễ
+    sai số 7 của `van-thu/02`.
+    """
+    version = open_version(db, doc)
+    if not version or version.status != VERSION_SUBMITTED:
+        raise HTTPException(400, "Không có bản nào đang chờ duyệt")
+
+    if version.prev_version_id is None:
+        doc.status = STATUS_PENDING_ISSUE
+    doc.updated_by = actor
+
+    from .clone_lifecycle_service import dong_bo_trang_thai
+    dong_bo_trang_thai(doc, actor)
+
+    db.commit()
+    db.refresh(doc)
+    return doc
+
+
+def ai_duoc_ban_hanh(db: Session, doc: Document, user) -> bool:
+    """Tài khoản này có phải NGƯỜI SOẠN THẢO của văn bản không.
+
+    Chốt của bước ban hành thủ công: *"user chịu trách nhiệm soạn thảo cái văn
+    bản đó bấm ban hành"*. Quyền `document.approve` KHÔNG thay được — người ký
+    đã ký xong phần của họ ở bộ máy duyệt rồi; ai phát hành là một trách nhiệm
+    khác, và nó phải chỉ đúng một người.
+
+    So theo hồ sơ nhân sự chứ không theo `created_by`: văn thư lập hộ thì người
+    soạn thảo ghi trên phiếu mới là người chịu trách nhiệm.
+    """
+    employee_id = getattr(user, "employee_id", None)
+    if not employee_id:
+        return False
+    return employee_id in (doc.drafter_employee_id, doc.owner_employee_id)
+
+
+def ensure_duoc_ban_hanh(db: Session, doc: Document, user) -> None:
+    if ai_duoc_ban_hanh(db, doc, user):
+        return
+    raise HTTPException(
+        403,
+        "Văn bản này đã ký đủ và đang chờ NGƯỜI SOẠN THẢO bấm Ban hành. "
+        "Bạn không phải người soạn thảo nên không ban hành thay được.",
+    )
+
+
 def approve(db: Session, doc: Document, actor: int,
-            apply_mode: int | None = None) -> Document:
+            apply_mode: int | None = None,
+            mailbox_id: int | None = None) -> Document:
     """Duyệt bản đang chờ: khóa phiên bản, cấp số nếu tới lượt, chuyển hiệu lực.
 
     ⚠️ **Không kéo `tab_document.status` về nháp.** Quy chế lên bản 2.0 thì văn
     bản VẪN đang có hiệu lực trong suốt lúc bản mới chờ duyệt — xem chỗ dễ sai
     số 7 của `van-thu/02`.
+
+    `mailbox_id` = hộp thư gửi thông báo ban hành danh nghĩa địa chỉ khác
+    (26/08/2026). Người gọi phải kiểm quyền dùng hộp thư TRƯỚC — xem
+    `mailbox_service.ensure_duoc_dung`; ở đây chỉ ghi lại.
     """
     from .version_service import lock_version
 
@@ -434,6 +504,11 @@ def approve(db: Session, doc: Document, actor: int,
         if apply_mode not in APPLY_MODE_LABELS:
             raise HTTPException(400, "Cơ chế áp dụng không hợp lệ")
         doc.apply_mode = apply_mode
+
+    #  Ghi TRƯỚC commit: `notify_document_issued` chạy sau đó và đọc thẳng ô này
+    #  để biết gửi bằng hộp thư nào.
+    if mailbox_id is not None:
+        doc.issue_mailbox_id = mailbox_id or None
 
     from .clone_notification import notify_clones_stale
     from .clone_service import clones_of, mark_clones_for_review

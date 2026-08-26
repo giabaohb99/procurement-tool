@@ -113,6 +113,9 @@ def notify_document_issued(
             to_email=recipient.email,
             subject=subject,
             status="pending",
+            #  Hộp thư người soạn đã chọn trong hộp thoại Ban hành. Rỗng thì tác
+            #  vụ gửi thư lùi về SMTP dùng chung, y như trước 26/08/2026.
+            mailbox_id=doc.issue_mailbox_id,
             created_by=actor,
         )
         db.add(email_log)

@@ -10,7 +10,7 @@ ENTITIES = [
     "purchase_request", "survey", "purchase_order", "goods_receipt",
     "inventory", "payable", "payment", "payment_request",
     "report", "setting", "category_assignee", "survey_request", "import", "backup",
-    "help_article", "ticket",
+    "help_article", "ticket", "mailbox",
     # Phân hệ Văn thư
     #  ⚠️ MỘT KHÓA = MỘT MÀN HÌNH. Trước 25/08/2026 bốn màn danh mục (Loại văn
     #  bản · Thư viện mẫu · Quy tắc đánh số · Quy tắc quan hệ) dùng CHUNG khóa
@@ -62,6 +62,9 @@ ENTITY_LABELS = {
     "backup": "Sao lưu CSDL",
     "help_article": "Hướng dẫn sử dụng (Help Center)",
     "ticket": "Phiếu hỗ trợ",
+    #  Ai được KHAI hộp thư gửi và cấp cho người khác dùng. Khác hẳn quyền
+    #  *dùng* một hộp thư — cái đó khai đích danh ở `tab_mailbox_member`.
+    "mailbox": "Hộp thư gửi (gửi danh nghĩa địa chỉ khác)",
     #  Nhãn đi theo ĐƯỜNG MENU chứ không theo tên bảng: người khai quyền tìm
     #  theo thứ họ bấm trên màn hình, không theo thứ lập trình viên đặt tên.
     "doc_type": "Văn thư › Thiết lập › Loại văn bản",

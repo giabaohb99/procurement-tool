@@ -21,6 +21,7 @@ from app.modules.payment_request import model as _payment_request  # noqa: F401
 from app.modules.role import model as _role  # noqa: F401
 from app.modules.user import model as _user  # noqa: F401
 from app.modules.notification import model as _notification  # noqa: F401
+from app.modules.notification import mailbox_model as _mailbox  # noqa: F401
 from app.modules.push import model as _push  # noqa: F401
 from app.modules.report import model as _report  # noqa: F401
 from app.modules.contract import model as _contract  # noqa: F401

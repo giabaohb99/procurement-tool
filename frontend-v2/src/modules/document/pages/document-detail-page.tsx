@@ -26,6 +26,7 @@ import { toast } from 'sonner'
 import { useEntityApproval } from '@/modules/approval/hooks/use-approvals'
 import { INSTANCE_STATUS } from '@/modules/approval/types/approval'
 import { downloadFile } from '@/core/api'
+import { useAuth } from '@/core/auth/use-auth'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -45,6 +46,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentAmendedBanner } from '../components/document-amended-banner'
 import { DocumentApprovalBanner } from '../components/document-approval-banner'
+import { DocumentPendingIssueNotice } from '../components/document-pending-issue-notice'
 import { DocumentApprovalTab } from '../components/document-approval-tab'
 import { DocumentAccessCard } from '../components/document-access-card'
 import { DocumentScopeCard } from '../components/document-scope-card'
@@ -111,6 +113,7 @@ export function DocumentDetailPage() {
   const editorRef = useRef<RichTextEditorHandle>(null)
 
   const documentId = Number(id)
+  const { user: currentUser } = useAuth()
   //  Đọc phiên duyệt TRƯỚC để biết văn bản có đang chạy trong bộ máy không —
   //  chỉ lúc đó mới cần hỏi lại bản ghi theo nhịp (xem `useDocument`).
   const { data: approvalData } = useEntityApproval('document', documentId)
@@ -256,9 +259,27 @@ export function DocumentDetailPage() {
     ? openVersion.status === VERSION_STATUS.draft ||
       openVersion.status === VERSION_STATUS.returned
     : EDITABLE_STATUSES.includes(record?.status ?? 0)
-  const isSubmitted = openVersion
-    ? openVersion.status === VERSION_STATUS.submitted
-    : record?.status === DOCUMENT_STATUS.submitted
+  //  CHỜ BAN HÀNH (26/08/2026) — ký đủ rồi, chờ chính người soạn thảo bấm.
+  //
+  //  ⚠️ Phải tách RA KHỎI `isSubmitted`. Ở trạng thái này phiên bản vẫn mang cờ
+  //  «đang chờ duyệt» (cố ý, để `approve()` chạy được lần sau), nên `isSubmitted`
+  //  vẫn đúng — mà phiên duyệt thì đã đóng, tức `isMultiStepApproval` đã tắt.
+  //  Không tách thì cụm nút *Trả lại / Duyệt và ban hành* bày ra cho mọi người
+  //  có quyền `document.approve`, và họ bấm vào chỉ nhận 403.
+  const isPendingIssue = record?.status === DOCUMENT_STATUS.pendingIssue
+  const isSubmitted =
+    !isPendingIssue &&
+    (openVersion
+      ? openVersion.status === VERSION_STATUS.submitted
+      : record?.status === DOCUMENT_STATUS.submitted)
+
+  //  Chỉ NGƯỜI SOẠN THẢO phát hành được — cùng luật với
+  //  `service.ai_duoc_ban_hanh` ở backend. Đây chỉ là tiện ích ẩn nút; chốt thật
+  //  nằm ở backend.
+  const isDrafter =
+    !!currentUser?.employee_id &&
+    (currentUser.employee_id === record?.drafter_employee_id ||
+      currentUser.employee_id === record?.owner_employee_id)
 
   //  ĐÃ TỪ CHỐI thì khóa hẳn — không còn đường gửi lại, gõ tiếp chỉ là gõ vào
   //  một bản chết. Backend chặn bằng 409 (`chan_sua_khi_dang_duyet` +
@@ -513,6 +534,21 @@ export function DocumentDetailPage() {
                 </Button>
               </PermissionGate>
             )}
+
+            {/*  CHỜ BAN HÀNH — ký đủ rồi, giờ tới lượt người soạn thảo phát
+                 hành và chọn địa chỉ gửi thông báo (26/08/2026). Không bọc
+                 `PermissionGate` quyền `approve`: nhịp này thuộc về người soạn,
+                 mà người soạn thường không có quyền duyệt. */}
+            {isPendingIssue && isDrafter && (
+              <Button
+                type="button"
+                onClick={() => setIssueOpen(true)}
+                disabled={workflow.approve.isPending}
+              >
+                <Check className="size-4" />
+                Ban hành
+              </Button>
+            )}
           </>
         }
         onDelete={
@@ -531,6 +567,15 @@ export function DocumentDetailPage() {
         {/*  Cũng đặt NGOÀI mọi tab: người soạn cần biết phiếu đang chờ ai, và
              nhất là biết khi nó kẹt — dù họ đang đứng ở tab nào. */}
         <DocumentApprovalBanner instance={approval} documentId={documentId} />
+
+        {/*  Cũng NGOÀI mọi tab, và vì cùng lý do: «Chờ ban hành» là lúc dễ tưởng
+             hệ đứng nhất — ký đủ rồi mà văn bản vẫn chưa có số hiệu. */}
+        {isPendingIssue && (
+          <DocumentPendingIssueNotice
+            isDrafter={isDrafter}
+            drafterName={record?.drafter_name}
+          />
+        )}
 
         <TabsContent value="compose" className="mt-0">
           {/*  Truyền `isSubmitted` chứ KHÔNG phải `khoaVietVi`: băng vàng này nói
@@ -667,8 +712,11 @@ export function DocumentDetailPage() {
             onOpenChange={setIssueOpen}
             issuerCompanyId={record.company_id}
             isPending={workflow.approve.isPending}
-            onConfirm={(applyMode) =>
-              workflow.approve.mutate(applyMode, { onSuccess: () => setIssueOpen(false) })
+            onConfirm={(applyMode, mailboxId) =>
+              workflow.approve.mutate(
+                { applyMode, mailboxId },
+                { onSuccess: () => setIssueOpen(false) },
+              )
             }
           />
         )}
