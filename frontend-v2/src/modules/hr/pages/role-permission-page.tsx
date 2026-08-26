@@ -17,6 +17,7 @@ import {
   RolePermissionMatrix,
   toPermissionPayload,
 } from '../components/role-permission-matrix'
+import { RoleNameInlineEdit } from '../components/role-name-inline-edit'
 import { RoleSidePanel } from '../components/role-side-panel'
 import { UserAccountTable } from '../components/user-account-table'
 import {
@@ -25,6 +26,7 @@ import {
   useRolePermissions,
   useRoles,
   useSaveRolePermissions,
+  useUpdateRole,
 } from '../hooks/use-roles'
 import type { RolePermissionRow } from '../types/role'
 
@@ -47,6 +49,7 @@ export function RolePermissionPage() {
   )
   const savePermissions = useSaveRolePermissions()
   const deleteRole = useDeleteRole()
+  const updateRole = useUpdateRole()
 
   // Đổi vai trò -> nạp lại ma trận. Khóa theo `entity` để tra nhanh khi tick ô.
   if (useHasChanged(savedRows)) {
@@ -110,20 +113,25 @@ export function RolePermissionPage() {
               nên ma trận quyền (rộng ~860px) sẽ nong cả trang thay vì tự cuộn
               ngang trong khung của nó.
             */}
-            <Card className="min-w-0 p-4">
+            {/*  `gap-3` ĐÈ lên `gap-6` mặc định của `Card`: không đè thì mỗi khối
+                 cách nhau 24px, cộng thêm mb/mt riêng của từng khối thành 40px —
+                 ba khối trông rời rạc như ba thẻ khác nhau (khách báo
+                 26/08/2026). Đặt gap ở đây rồi bỏ hết mb/mt bên trong, để chỉ
+                 MỘT chỗ quyết định khoảng thở. */}
+            <Card className="min-w-0 gap-3 p-4">
               {!selectedRole ? (
                 <p className="py-16 text-center text-sm text-muted-foreground">
                   Chọn một vai trò để xem hoặc chỉnh ma trận quyền.
                 </p>
               ) : (
                 <>
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b pb-4">
-                    <div>
-                      <p className="font-semibold text-navy">{selectedRole.name}</p>
-                      <p className="font-mono text-xs text-muted-foreground">
-                        {selectedRole.code}
-                      </p>
-                    </div>
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
+                    <RoleNameInlineEdit
+                      role={selectedRole}
+                      canWrite={can('role', 'write')}
+                      pending={updateRole.isPending}
+                      onRename={(roleId, name) => updateRole.mutate({ roleId, name })}
+                    />
 
                     <div className="flex items-center gap-2">
                       <PermissionGate entity="role" action="write">
@@ -159,7 +167,7 @@ export function RolePermissionPage() {
                   </div>
 
                   {dangGiuVaiTroNay && (
-                    <p className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
                       Bạn đang giữ vai trò này nên chỉ xem được, không sửa. Tự tick
                       thêm quyền cho vai trò của chính mình là tự nâng quyền — nhờ
                       một quản trị khác thao tác.
@@ -177,7 +185,7 @@ export function RolePermissionPage() {
                     />
                   )}
 
-                  <p className="mt-3 text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Cột "Phạm vi" là mặc định của vai trò. Phạm vi RIÊNG theo từng tài
                     khoản chỉnh ở tab Người dùng. Lưu ý: backend nhớ hồ sơ phân quyền
                     tối đa 60 giây, người đang đăng nhập có thể chờ tới một phút mới

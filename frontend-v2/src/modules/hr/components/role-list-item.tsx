@@ -1,8 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, Pencil } from 'lucide-react'
+import { GripVertical } from 'lucide-react'
 
-import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/utils/cn'
 import type { Role } from '../types/role'
 
@@ -10,38 +9,30 @@ interface RoleListItemProps {
   role: Role
   selected: boolean
   onSelect: (roleId: number) => void
-  /** Cho sửa tên + kéo thả. Tắt khi thiếu quyền `role.write`. */
-  canWrite: boolean
   /**
    * Cho kéo. Tách khỏi `canWrite` vì còn tắt lúc đang lọc theo từ khóa: thứ tự
    * kéo ra trên một danh sách đã lọc không nói lên thứ tự thật.
    */
   canDrag: boolean
-  /** Mở hộp đổi tên cho dòng này. */
-  onRename: (role: Role) => void
 }
 
 /**
- * MỘT DÒNG vai trò ở cột trái màn Phân quyền: kéo để đổi chỗ, bấm để chọn, bút
- * chì để mở hộp đổi tên.
+ * MỘT DÒNG vai trò ở cột trái màn Phân quyền: kéo để đổi chỗ, bấm để chọn.
  *
  * ⚠️ Dòng KHÔNG còn là một `<button>` bọc tất cả như bản cũ. Nút lồng trong nút
  * là HTML không hợp lệ, và trình duyệt sẽ dựng lại cây DOM theo cách của nó —
- * tay cầm kéo cùng nút bút chì rơi ra ngoài dòng. Nay dòng là một `<div>`, bên
- * trong có ba phần tử bấm được riêng biệt.
+ * tay cầm kéo rơi ra ngoài dòng. Nay dòng là một `<div>` chứa hai phần tử bấm
+ * được riêng biệt.
  *
- * ⚠️ Bút chì MỞ HỘP THOẠI chứ không đổi dòng thành ô nhập. Bản đầu sửa tại dòng
- * thì ô nhập phải chen với hai nút ✓ / ✕ trong cột 260px — còn chừng 150px cho
- * chữ, tên dài bị cắt ngay lúc đang gõ, mà mã vai trò cũng biến mất nên không
- * còn biết đang sửa dòng nào (khách báo 26/08/2026).
+ * ⚠️ KHÔNG có nút đổi tên ở đây. Cột này rộng 260px, nhét thêm ô nhập vào là
+ * còn ~150px cho chữ và tên dài bị cắt lúc đang gõ. Việc đổi tên nằm ở tiêu đề
+ * khung bên phải — xem `role-name-inline-edit.tsx`.
  */
 export function RoleListItem({
   role,
   selected,
   onSelect,
-  canWrite,
   canDrag,
-  onRename,
 }: RoleListItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: role.id,
@@ -91,19 +82,6 @@ export function RoleListItem({
         </span>
       </button>
 
-      {canWrite && (
-        <Button
-          type="button"
-          size="icon-sm"
-          variant="ghost"
-          title="Đổi tên vai trò"
-          aria-label={`Đổi tên vai trò ${role.name}`}
-          className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-          onClick={() => onRename(role)}
-        >
-          <Pencil />
-        </Button>
-      )}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -11,7 +11,6 @@ const VAI_TRO: Role[] = [
   { id: 3, code: 'pur_staff', name: 'Nhân viên thu mua', description: '', sort_order: 3 },
 ]
 
-const doiTen = vi.fn()
 const luuThuTu = vi.fn()
 let quyenGhi = true
 
@@ -26,7 +25,6 @@ vi.mock('@/core/authorization/permission-gate', () => ({
 
 vi.mock('../hooks/use-roles', () => ({
   useCreateRole: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useUpdateRole: () => ({ mutate: doiTen, isPending: false }),
   useSaveRoleOrder: () => ({ mutate: luuThuTu, isPending: false }),
 }))
 
@@ -36,15 +34,16 @@ function dung() {
 
 beforeEach(() => {
   quyenGhi = true
-  doiTen.mockClear()
   luuThuTu.mockClear()
 })
 
 describe('RoleSidePanel', () => {
-  it('mỗi vai trò có tay cầm kéo và nút đổi tên', () => {
+  it('mỗi vai trò có tay cầm kéo; KHÔNG có nút đổi tên ở cột này', () => {
+    //  Đổi tên đã dời sang tiêu đề khung bên phải (`role-name-inline-edit`):
+    //  cột này rộng 260px, nhét ô nhập vào là tên dài bị cắt lúc đang gõ.
     dung()
     expect(screen.getAllByRole('button', { name: /^Kéo để đổi chỗ vai trò/ })).toHaveLength(3)
-    expect(screen.getAllByRole('button', { name: /^Đổi tên vai trò/ })).toHaveLength(3)
+    expect(screen.queryByRole('button', { name: /^Đổi tên vai trò/ })).not.toBeInTheDocument()
   })
 
   it('ĐANG LỌC thì tắt kéo thả và nói rõ vì sao', async () => {
@@ -59,73 +58,10 @@ describe('RoleSidePanel', () => {
     expect(screen.getByText(/Xóa từ khóa tìm để kéo/)).toBeInTheDocument()
   })
 
-  it('thiếu quyền ghi thì không kéo cũng không đổi tên được', () => {
+  it('thiếu quyền ghi thì không kéo được', () => {
     quyenGhi = false
     dung()
     expect(screen.queryByRole('button', { name: /^Kéo để đổi chỗ/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /^Đổi tên vai trò/ })).not.toBeInTheDocument()
   })
 
-  it('bấm bút chì thì MỞ HỘP THOẠI, có sẵn tên cũ và mã vai trò', async () => {
-    //  Khách báo 26/08/2026: bản đầu sửa ngay tại dòng, ô nhập chen với hai nút
-    //  trong cột 260px nên tên dài bị cắt, mà MÃ vai trò cũng biến mất nên không
-    //  còn biết đang sửa dòng nào.
-    const nguoi = userEvent.setup()
-    dung()
-    await nguoi.click(screen.getByRole('button', { name: 'Đổi tên vai trò Nhân sự' }))
-
-    const hop = await screen.findByRole('dialog')
-    expect(within(hop).getByLabelText(/Tên vai trò/)).toHaveValue('Nhân sự')
-    expect(within(hop).getByText('employee')).toBeInTheDocument()
-  })
-
-  it('sửa tên rồi Enter thì gọi lưu đúng một lần với tên mới', async () => {
-    const nguoi = userEvent.setup()
-    dung()
-    await nguoi.click(screen.getByRole('button', { name: 'Đổi tên vai trò Nhân sự' }))
-
-    const o = within(await screen.findByRole('dialog')).getByLabelText(/Tên vai trò/)
-    await nguoi.clear(o)
-    await nguoi.type(o, 'Nhân sự & Hành chính{Enter}')
-
-    expect(doiTen).toHaveBeenCalledTimes(1)
-    expect(doiTen.mock.calls[0][0]).toEqual({ roleId: 2, name: 'Nhân sự & Hành chính' })
-  })
-
-  it('bấm Hủy thì đóng hộp và KHÔNG lưu gì', async () => {
-    const nguoi = userEvent.setup()
-    dung()
-    await nguoi.click(screen.getByRole('button', { name: 'Đổi tên vai trò Nhân sự' }))
-
-    const hop = await screen.findByRole('dialog')
-    await nguoi.type(within(hop).getByLabelText(/Tên vai trò/), 'xxx')
-    await nguoi.click(within(hop).getByRole('button', { name: 'Hủy' }))
-
-    expect(doiTen).not.toHaveBeenCalled()
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-  })
-
-  it('tên để trống thì KHÓA nút lưu và nói rõ vì sao', async () => {
-    //  Vai trò không tên là một dòng trắng trong cột trái — backend cũng chặn
-    //  (CR-173), nhưng để bấm được rồi mới ăn 422 thì người dùng tưởng hệ hỏng.
-    const nguoi = userEvent.setup()
-    dung()
-    await nguoi.click(screen.getByRole('button', { name: 'Đổi tên vai trò Nhân sự' }))
-
-    const hop = await screen.findByRole('dialog')
-    await nguoi.clear(within(hop).getByLabelText(/Tên vai trò/))
-
-    expect(within(hop).getByRole('button', { name: 'Lưu tên' })).toBeDisabled()
-    expect(within(hop).getByText(/không được để trống/i)).toBeInTheDocument()
-  })
-
-  it('tên không đổi thì khóa nút lưu, không gọi máy chủ', async () => {
-    const nguoi = userEvent.setup()
-    dung()
-    await nguoi.click(screen.getByRole('button', { name: 'Đổi tên vai trò Nhân sự' }))
-
-    const hop = await screen.findByRole('dialog')
-    expect(within(hop).getByRole('button', { name: 'Lưu tên' })).toBeDisabled()
-    expect(doiTen).not.toHaveBeenCalled()
-  })
 })
