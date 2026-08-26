@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from 'lucide-react'
+import { SquarePen, Trash2 } from 'lucide-react'
 
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -18,10 +18,17 @@ interface ConversationSidebarProps {
 /**
  * Cột trái: mở hội thoại mới + danh sách hội thoại đã lưu.
  *
- * Nền chìm (`bg-muted/40`) để tách khỏi cột đọc màu trắng bên phải — mắt nhận
- * ra ngay đâu là chỗ điều hướng, đâu là chỗ đọc. Nút «Hội thoại mới» để dạng
- * viền mảnh chứ không phải nút xanh đặc: trong màn này thứ đáng nổi bật nhất là
- * ô nhập câu hỏi, không phải nút mở hội thoại.
+ * Dựng theo mẫu khách đưa (26/08/2026). Ba điều đổi so với bản trước và đều là
+ * để **nhìn được nhiều hội thoại hơn trong một tầm mắt**:
+ *
+ *  - **Mỗi hội thoại một DÒNG**, chỉ có tiêu đề. Bản trước in thêm mốc thời gian
+ *    xuống dòng dưới, tức là mỗi mục chiếm gấp đôi chỗ để nói một thứ người dùng
+ *    hiếm khi cần — họ tìm theo NỘI DUNG đã hỏi, không tìm theo giờ. Mốc thời
+ *    gian không mất hẳn: nó nằm ở `title` (rê chuột vào là thấy).
+ *  - **«Hội thoại mới» là một hàng có biểu tượng**, không phải nút viền. Trong
+ *    màn này thứ đáng nổi bật nhất là ô nhập câu hỏi bên phải.
+ *  - **Nền trắng như phần đọc**, chỉ hàng đang chọn / rê chuột mới có nền chìm.
+ *    Cả cột nền xám thì hàng đang chọn phải tô đậm hơn nữa mới nổi lên được.
  */
 export function ConversationSidebar({
   items,
@@ -32,63 +39,59 @@ export function ConversationSidebar({
   onDelete,
 }: ConversationSidebarProps) {
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r bg-muted/40">
-      <div className="p-3">
+    <aside className="flex w-64 shrink-0 flex-col border-r bg-card">
+      <div className="p-2">
         <button
           type="button"
           onClick={onNew}
-          className="flex w-full items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm font-medium text-navy transition-colors hover:border-primary/40 hover:bg-accent"
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
         >
-          <Plus className="size-4 text-primary" />
+          <SquarePen className="size-4 shrink-0 text-muted-foreground" />
           Hội thoại mới
         </button>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
+        <p className="px-3 pt-2 pb-1 text-xs font-medium text-muted-foreground">Gần đây</p>
+
         {loading ? (
-          <div className="space-y-1.5 px-1">
-            <Skeleton className="h-11 w-full" />
-            <Skeleton className="h-11 w-full" />
-            <Skeleton className="h-11 w-full" />
+          <div className="space-y-1 px-1">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
           </div>
         ) : items.length === 0 ? (
-          <p className="px-3 py-6 text-center text-xs text-muted-foreground">
-            Chưa có hội thoại nào.
-          </p>
+          <p className="px-3 py-4 text-xs text-muted-foreground">Chưa có hội thoại nào.</p>
         ) : (
-          <ul className="space-y-0.5">
+          <ul>
             {items.map((conv) => {
               const active = conv.id === activeId
               return (
                 <li key={conv.id}>
                   <div
                     className={cn(
-                      'group flex items-center gap-1 rounded-lg pr-1 transition-colors',
-                      active ? 'bg-card shadow-sm' : 'hover:bg-card/70',
+                      'group flex items-center rounded-lg pr-1 transition-colors',
+                      active ? 'bg-muted' : 'hover:bg-muted/70',
                     )}
                   >
                     <button
                       type="button"
                       onClick={() => onSelect(conv.id)}
-                      className="min-w-0 flex-1 rounded-lg px-3 py-2 text-left"
+                      //  Mốc thời gian dồn vào đây thay vì chiếm một dòng riêng.
+                      title={`${conv.title}\n${formatDateTime(conv.last_message_at)}`}
+                      aria-current={active}
+                      className={cn(
+                        'min-w-0 flex-1 truncate rounded-lg px-3 py-2 text-left text-sm',
+                        active ? 'font-medium text-navy' : 'text-foreground',
+                      )}
                     >
-                      <p
-                        className={cn(
-                          'truncate text-sm',
-                          active ? 'font-medium text-navy' : 'text-foreground',
-                        )}
-                      >
-                        {conv.title}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {formatDateTime(conv.last_message_at)}
-                      </p>
+                      {conv.title}
                     </button>
 
-                    {/*  Nút xóa chỉ hiện khi rê chuột — bày sẵn 20 cái thùng rác
-                         trong một cột hẹp thì rối, mà đây lại là thao tác không
-                         hoàn tác được. */}
-                    <div className="opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                    {/*  Nút xóa chỉ hiện khi rê chuột — bày sẵn vài chục cái
+                         thùng rác trong một cột hẹp thì rối, mà đây lại là thao
+                         tác không hoàn tác được. */}
+                    <div className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
                       <ConfirmIconButton
                         icon={Trash2}
                         title="Xóa hội thoại"
