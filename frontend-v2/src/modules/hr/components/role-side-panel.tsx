@@ -24,6 +24,7 @@ import { Input } from '@/shared/ui/input'
 import { useCreateRole, useSaveRoleOrder, useUpdateRole } from '../hooks/use-roles'
 import type { Role } from '../types/role'
 import { RoleListItem } from './role-list-item'
+import { RoleRenameDialog } from './role-rename-dialog'
 
 interface RoleSidePanelProps {
   roles: Role[]
@@ -40,6 +41,8 @@ export function RoleSidePanel({ roles, selectedId, onSelect }: RoleSidePanelProp
   //  thì dòng vừa kéo nhảy về chỗ cũ chừng nửa giây — nhìn như thao tác trượt.
   //  `null` = chưa kéo lần nào, cứ theo thứ tự máy chủ trả.
   const [thuTuTamThoi, setThuTuTamThoi] = useState<number[] | null>(null)
+  //  Vai trò đang mở hộp đổi tên. `null` = hộp đóng.
+  const [dangDoiTen, setDangDoiTen] = useState<Role | null>(null)
 
   const { can } = usePermission()
   const canWrite = can('role', 'write')
@@ -166,13 +169,21 @@ export function RoleSidePanel({ roles, selectedId, onSelect }: RoleSidePanelProp
                 onSelect={onSelect}
                 canWrite={canWrite}
                 canDrag={choKeo}
-                renaming={updateRole.isPending}
-                onRename={(roleId, name) => updateRole.mutate({ roleId, name })}
+                onRename={setDangDoiTen}
               />
             ))}
           </SortableContext>
         </DndContext>
       </div>
+
+      <RoleRenameDialog
+        role={dangDoiTen}
+        pending={updateRole.isPending}
+        onOpenChange={(open) => !open && setDangDoiTen(null)}
+        onSubmit={(roleId, name) =>
+          updateRole.mutate({ roleId, name }, { onSuccess: () => setDangDoiTen(null) })
+        }
+      />
 
       {/*  Nói ra vì sao tay cầm kéo biến mất khi đang gõ tìm — không nói thì
            người dùng tưởng chức năng hỏng. */}

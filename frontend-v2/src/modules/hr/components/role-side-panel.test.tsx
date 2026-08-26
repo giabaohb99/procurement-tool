@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -66,54 +66,66 @@ describe('RoleSidePanel', () => {
     expect(screen.queryByRole('button', { name: /^Đổi tên vai trò/ })).not.toBeInTheDocument()
   })
 
-  it('bấm bút chì thì đổi thành ô nhập mang sẵn tên cũ', async () => {
+  it('bấm bút chì thì MỞ HỘP THOẠI, có sẵn tên cũ và mã vai trò', async () => {
+    //  Khách báo 26/08/2026: bản đầu sửa ngay tại dòng, ô nhập chen với hai nút
+    //  trong cột 260px nên tên dài bị cắt, mà MÃ vai trò cũng biến mất nên không
+    //  còn biết đang sửa dòng nào.
     const nguoi = userEvent.setup()
     dung()
     await nguoi.click(screen.getByRole('button', { name: 'Đổi tên vai trò Nhân sự' }))
 
-    expect(screen.getByLabelText('Tên vai trò employee')).toHaveValue('Nhân sự')
+    const hop = await screen.findByRole('dialog')
+    expect(within(hop).getByLabelText(/Tên vai trò/)).toHaveValue('Nhân sự')
+    expect(within(hop).getByText('employee')).toBeInTheDocument()
   })
 
   it('sửa tên rồi Enter thì gọi lưu đúng một lần với tên mới', async () => {
     const nguoi = userEvent.setup()
     dung()
     await nguoi.click(screen.getByRole('button', { name: 'Đổi tên vai trò Nhân sự' }))
-    const o = screen.getByLabelText('Tên vai trò employee')
+
+    const o = within(await screen.findByRole('dialog')).getByLabelText(/Tên vai trò/)
     await nguoi.clear(o)
     await nguoi.type(o, 'Nhân sự & Hành chính{Enter}')
 
     expect(doiTen).toHaveBeenCalledTimes(1)
-    expect(doiTen).toHaveBeenCalledWith({ roleId: 2, name: 'Nhân sự & Hành chính' })
+    expect(doiTen.mock.calls[0][0]).toEqual({ roleId: 2, name: 'Nhân sự & Hành chính' })
   })
 
-  it('Esc thì bỏ qua, KHÔNG lưu gì', async () => {
+  it('bấm Hủy thì đóng hộp và KHÔNG lưu gì', async () => {
     const nguoi = userEvent.setup()
     dung()
     await nguoi.click(screen.getByRole('button', { name: 'Đổi tên vai trò Nhân sự' }))
-    await nguoi.type(screen.getByLabelText('Tên vai trò employee'), 'xxx{Escape}')
+
+    const hop = await screen.findByRole('dialog')
+    await nguoi.type(within(hop).getByLabelText(/Tên vai trò/), 'xxx')
+    await nguoi.click(within(hop).getByRole('button', { name: 'Hủy' }))
 
     expect(doiTen).not.toHaveBeenCalled()
-    //  Về lại dòng thường: ô nhập biến mất, tên cũ hiện nguyên.
-    expect(screen.queryByLabelText('Tên vai trò employee')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Chọn vai trò Nhân sự' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('tên để trống thì bỏ qua — vai trò không tên là một dòng trắng trong danh sách', async () => {
+  it('tên để trống thì KHÓA nút lưu và nói rõ vì sao', async () => {
+    //  Vai trò không tên là một dòng trắng trong cột trái — backend cũng chặn
+    //  (CR-173), nhưng để bấm được rồi mới ăn 422 thì người dùng tưởng hệ hỏng.
     const nguoi = userEvent.setup()
     dung()
     await nguoi.click(screen.getByRole('button', { name: 'Đổi tên vai trò Nhân sự' }))
-    await nguoi.clear(screen.getByLabelText('Tên vai trò employee'))
-    await nguoi.click(screen.getByRole('button', { name: 'Lưu tên' }))
 
-    expect(doiTen).not.toHaveBeenCalled()
+    const hop = await screen.findByRole('dialog')
+    await nguoi.clear(within(hop).getByLabelText(/Tên vai trò/))
+
+    expect(within(hop).getByRole('button', { name: 'Lưu tên' })).toBeDisabled()
+    expect(within(hop).getByText(/không được để trống/i)).toBeInTheDocument()
   })
 
-  it('tên không đổi thì không gọi máy chủ', async () => {
+  it('tên không đổi thì khóa nút lưu, không gọi máy chủ', async () => {
     const nguoi = userEvent.setup()
     dung()
     await nguoi.click(screen.getByRole('button', { name: 'Đổi tên vai trò Nhân sự' }))
-    await nguoi.click(screen.getByRole('button', { name: 'Lưu tên' }))
 
+    const hop = await screen.findByRole('dialog')
+    expect(within(hop).getByRole('button', { name: 'Lưu tên' })).toBeDisabled()
     expect(doiTen).not.toHaveBeenCalled()
   })
 })

@@ -1,10 +1,8 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Check, GripVertical, Pencil, X } from 'lucide-react'
-import { useState } from 'react'
+import { GripVertical, Pencil } from 'lucide-react'
 
 import { Button } from '@/shared/ui/button'
-import { Input } from '@/shared/ui/input'
 import { cn } from '@/shared/utils/cn'
 import type { Role } from '../types/role'
 
@@ -19,18 +17,23 @@ interface RoleListItemProps {
    * kéo ra trên một danh sách đã lọc không nói lên thứ tự thật.
    */
   canDrag: boolean
-  onRename: (roleId: number, name: string) => void
-  renaming: boolean
+  /** Mở hộp đổi tên cho dòng này. */
+  onRename: (role: Role) => void
 }
 
 /**
  * MỘT DÒNG vai trò ở cột trái màn Phân quyền: kéo để đổi chỗ, bấm để chọn, bút
- * chì để đổi tên tại chỗ.
+ * chì để mở hộp đổi tên.
  *
  * ⚠️ Dòng KHÔNG còn là một `<button>` bọc tất cả như bản cũ. Nút lồng trong nút
  * là HTML không hợp lệ, và trình duyệt sẽ dựng lại cây DOM theo cách của nó —
  * tay cầm kéo cùng nút bút chì rơi ra ngoài dòng. Nay dòng là một `<div>`, bên
  * trong có ba phần tử bấm được riêng biệt.
+ *
+ * ⚠️ Bút chì MỞ HỘP THOẠI chứ không đổi dòng thành ô nhập. Bản đầu sửa tại dòng
+ * thì ô nhập phải chen với hai nút ✓ / ✕ trong cột 260px — còn chừng 150px cho
+ * chữ, tên dài bị cắt ngay lúc đang gõ, mà mã vai trò cũng biến mất nên không
+ * còn biết đang sửa dòng nào (khách báo 26/08/2026).
  */
 export function RoleListItem({
   role,
@@ -39,72 +42,11 @@ export function RoleListItem({
   canWrite,
   canDrag,
   onRename,
-  renaming,
 }: RoleListItemProps) {
-  const [dangSua, setDangSua] = useState(false)
-  const [ten, setTen] = useState(role.name)
-
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: role.id,
     disabled: !canDrag,
   })
-
-  function batDauSua() {
-    setTen(role.name) //  lấy lại tên hiện tại, không giữ bản nháp dở của lần trước
-    setDangSua(true)
-  }
-
-  function luu() {
-    const sach = ten.trim()
-    //  Tên rỗng thì thôi, coi như bỏ qua: vai trò không tên thì cả cột trái lẫn
-    //  ô chọn vai trò ở tab Người dùng đều hiện một dòng trống.
-    if (sach && sach !== role.name) onRename(role.id, sach)
-    setDangSua(false)
-  }
-
-  if (dangSua) {
-    return (
-      <div className="flex items-center gap-1 rounded-lg border border-dashed p-2">
-        <Input
-          autoFocus
-          value={ten}
-          onChange={(event) => setTen(event.target.value)}
-          onKeyDown={(event) => {
-            //  Enter lưu, Esc bỏ — và phải chặn nổi bọt: ô này nằm trong `<form>`
-            //  của trang, Enter trần là gửi cả form đi.
-            if (event.key === 'Enter') {
-              event.preventDefault()
-              luu()
-            }
-            if (event.key === 'Escape') setDangSua(false)
-          }}
-          className="h-8"
-          aria-label={`Tên vai trò ${role.code}`}
-        />
-        <Button
-          type="button"
-          size="icon-sm"
-          variant="ghost"
-          title="Lưu tên"
-          aria-label="Lưu tên"
-          disabled={renaming}
-          onClick={luu}
-        >
-          <Check className="text-emerald-600" />
-        </Button>
-        <Button
-          type="button"
-          size="icon-sm"
-          variant="ghost"
-          title="Bỏ qua"
-          aria-label="Bỏ qua"
-          onClick={() => setDangSua(false)}
-        >
-          <X />
-        </Button>
-      </div>
-    )
-  }
 
   return (
     <div
@@ -157,7 +99,7 @@ export function RoleListItem({
           title="Đổi tên vai trò"
           aria-label={`Đổi tên vai trò ${role.name}`}
           className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-          onClick={batDauSua}
+          onClick={() => onRename(role)}
         >
           <Pencil />
         </Button>
