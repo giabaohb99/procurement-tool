@@ -1,0 +1,108 @@
+import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+
+interface TuyChon {
+  /** Khóa localStorage để nhớ bề rộng sang phiên sau. Bỏ trống = không nhớ. */
+  storageKey?: string
+  /** Hẹp hơn nữa thì nội dung bị cắt cụt vô nghĩa. */
+  min: number
+  /** Rộng hơn nữa thì lấn hết chỗ của phần chính. */
+  max: number
+  macDinh: number
+}
+
+/**
+ * Bề ngang một cột KÉO GIÃN ĐƯỢC, nhớ lại giữa các phiên.
+ *
+ * Tách ra dùng chung vì đây là chỗ **thứ ba** cần đúng hành vi này — trước đó
+ * `app/layouts/sidebar-resize-handle.tsx` (menu trái) và
+ * `shared/ui/rich-text-editor/editor-outline-panel.tsx` (mục lục) mỗi nơi tự
+ * viết một bản. Hai bản cũ chưa dời sang đây; dời được thì nên dời, nhưng đó là
+ * việc riêng chứ không gộp vào đợt này.
+ *
+ * Nghe `pointermove` trên **window** chứ không trên chính thanh kéo: kéo nhanh
+ * thì con trỏ rời khỏi vạch 8px trước khi trình duyệt kịp bắn sự kiện, và cột
+ * đứng khựng giữa chừng.
+ *
+ * Ghi vào `localStorage` lúc THẢ TAY, không phải mỗi nhịp kéo — mỗi nhịp một
+ * lần ghi đĩa là mấy trăm lượt cho một cú kéo.
+ */
+export function useResizablePanel({ storageKey, min, max, macDinh }: TuyChon) {
+  const gioiHan = useCallback(
+    (v: number) => Math.min(max, Math.max(min, Math.round(v))),
+    [min, max],
+  )
+
+  const [width, setWidth] = useState(() => {
+    if (!storageKey) return macDinh
+    try {
+      const raw = localStorage.getItem(storageKey)
+      const so = raw ? Number(raw) : Number.NaN
+      return Number.isFinite(so) ? Math.min(max, Math.max(min, so)) : macDinh
+    } catch {
+      //  Trình duyệt chặn storage: vẫn kéo được, chỉ là không nhớ sang phiên sau.
+      return macDinh
+    }
+  })
+
+  const mocKeo = useRef<{ x: number; width: number } | null>(null)
+
+  const batDauKeo = useCallback(
+    (event: ReactPointerEvent) => {
+      event.preventDefault()
+      mocKeo.current = { x: event.clientX, width }
+      let cuoiCung = width
+
+      const keo = (e: PointerEvent) => {
+        const moc = mocKeo.current
+        if (!moc) return
+        cuoiCung = gioiHan(moc.width + (e.clientX - moc.x))
+        setWidth(cuoiCung)
+      }
+
+      const thaTay = () => {
+        mocKeo.current = null
+        window.removeEventListener('pointermove', keo)
+        window.removeEventListener('pointerup', thaTay)
+        //  `document.body` chứ không phải thẻ cột: trong lúc kéo, con trỏ đi lạc
+        //  ra ngoài cột nên đặt trên cột thì con trỏ đổi hình nhấp nháy.
+        document.body.style.removeProperty('cursor')
+        document.body.style.removeProperty('user-select')
+        if (storageKey) {
+          try {
+            localStorage.setItem(storageKey, String(cuoiCung))
+          } catch {
+            //  Không nhớ được thì thôi, không phá thao tác đang làm.
+          }
+        }
+      }
+
+      //  Khóa bôi đen trong lúc kéo, nếu không thì kéo qua danh sách là bôi đen
+      //  cả loạt tiêu đề, nhìn như bị lỗi.
+      document.body.style.setProperty('cursor', 'col-resize')
+      document.body.style.setProperty('user-select', 'none')
+      window.addEventListener('pointermove', keo)
+      window.addEventListener('pointerup', thaTay)
+    },
+    [width, gioiHan, storageKey],
+  )
+
+  /** Chỉnh bằng phím mũi tên khi thanh kéo đang được chọn. */
+  const chinhBangPhim = useCallback(
+    (buoc: number) => {
+      setWidth((truoc) => {
+        const moi = gioiHan(truoc + buoc)
+        if (storageKey) {
+          try {
+            localStorage.setItem(storageKey, String(moi))
+          } catch {
+            //  bỏ qua
+          }
+        }
+        return moi
+      })
+    },
+    [gioiHan, storageKey],
+  )
+
+  return { width, batDauKeo, chinhBangPhim }
+}

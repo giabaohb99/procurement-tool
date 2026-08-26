@@ -1,10 +1,24 @@
-import { SquarePen, Trash2 } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, SquarePen, Trash2 } from 'lucide-react'
 
+import { usePersistedToggle } from '@/shared/hooks/use-persisted-toggle'
+import { useResizablePanel } from '@/shared/hooks/use-resizable-panel'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
+import { ResizeHandle } from '@/shared/ui/resize-handle'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
 import type { ConversationSummary } from '../types/assistant'
+
+/**
+ * Khoảng bề rộng cho phép của cột hội thoại.
+ *
+ * Sàn 200px: hẹp hơn thì tiêu đề nào cũng cụt thành "Hợp đồng nhà cung…", cột
+ * hết tác dụng. Trần 420px: rộng hơn nữa là ăn vào cột đọc bên phải, mà cột đọc
+ * mới là chỗ người ta nhìn lâu nhất.
+ */
+const HEP_NHAT = 200
+const RONG_NHAT = 420
+const MAC_DINH = 256
 
 interface ConversationSidebarProps {
   items: ConversationSummary[]
@@ -28,7 +42,11 @@ interface ConversationSidebarProps {
  *  - **«Hội thoại mới» là một hàng có biểu tượng**, không phải nút viền. Trong
  *    màn này thứ đáng nổi bật nhất là ô nhập câu hỏi bên phải.
  *  - **Nền trắng như phần đọc**, chỉ hàng đang chọn / rê chuột mới có nền chìm.
- *    Cả cột nền xám thì hàng đang chọn phải tô đậm hơn nữa mới nổi lên được.
+ *
+ * **Kéo giãn** ở mép phải và **thu gọn** bằng nút ở đầu cột. Tiêu đề hội thoại
+ * do model tự đặt nên dài ngắn thất thường: cột cố định thì quá nửa số dòng bị
+ * cắt cụt, mà để rộng sẵn cho mọi trường hợp thì ngày thường phí một mảng màn
+ * hình. Cả bề rộng lẫn trạng thái thu gọn đều nhớ vào `localStorage`.
  */
 export function ConversationSidebar({
   items,
@@ -38,17 +56,51 @@ export function ConversationSidebar({
   onSelect,
   onDelete,
 }: ConversationSidebarProps) {
+  const { width, batDauKeo, chinhBangPhim } = useResizablePanel({
+    storageKey: 'erp.assistant-sidebar-width',
+    min: HEP_NHAT,
+    max: RONG_NHAT,
+    macDinh: MAC_DINH,
+  })
+  const [thuGon, doiThuGon] = usePersistedToggle('erp.assistant-sidebar-collapsed')
+
+  /**
+   * Thu gọn thì còn một THANH HẸP, không biến mất hẳn.
+   *
+   * Ẩn sạch thì nút mở lại phải đi nhờ chỗ khác trên trang — người dùng thu gọn
+   * xong không biết bấm đâu để lấy lại. Thanh hẹp giữ đúng hai việc hay dùng
+   * nhất: mở lại cột, và mở hội thoại mới.
+   */
+  if (thuGon) {
+    return (
+      <aside className="flex w-12 shrink-0 flex-col items-center gap-1 border-r bg-card py-2">
+        <NutBieuTuong
+          icon={PanelLeftOpen}
+          label="Mở lại cột hội thoại"
+          onClick={doiThuGon}
+        />
+        <NutBieuTuong icon={SquarePen} label="Hội thoại mới" onClick={onNew} />
+      </aside>
+    )
+  }
+
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r bg-card">
-      <div className="p-2">
+    <aside className="relative flex shrink-0 flex-col border-r bg-card" style={{ width }}>
+      <div className="flex items-center gap-1 p-2">
         <button
           type="button"
           onClick={onNew}
-          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+          className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
         >
           <SquarePen className="size-4 shrink-0 text-muted-foreground" />
-          Hội thoại mới
+          <span className="truncate">Hội thoại mới</span>
         </button>
+
+        <NutBieuTuong
+          icon={PanelLeftClose}
+          label="Thu gọn cột hội thoại"
+          onClick={doiThuGon}
+        />
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
@@ -109,6 +161,38 @@ export function ConversationSidebar({
           </ul>
         )}
       </div>
+
+      <ResizeHandle
+        label="Kéo để đổi bề ngang cột hội thoại"
+        width={width}
+        min={HEP_NHAT}
+        max={RONG_NHAT}
+        onPointerDown={batDauKeo}
+        onKeyResize={chinhBangPhim}
+      />
     </aside>
+  )
+}
+
+/** Nút chỉ có biểu tượng — nhãn nằm ở `aria-label` và `title`. */
+function NutBieuTuong({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: typeof SquarePen
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+    >
+      <Icon className="size-4" />
+    </button>
   )
 }
