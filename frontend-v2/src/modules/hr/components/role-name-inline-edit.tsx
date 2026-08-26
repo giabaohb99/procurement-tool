@@ -121,28 +121,37 @@ export function RoleNameInlineEdit({
     )
   }
 
-  return (
-    <div className="group">
-      <div className="flex items-center gap-1.5">
+  //  Thụt trái 6px để bù `px-1.5` của nút, nhờ vậy chữ "Nhân sự" và mã vai trò
+  //  vẫn thẳng hàng với mép khung như khi không có nút.
+  if (!canWrite) {
+    return (
+      <div>
         <p className="font-semibold text-navy dark:text-foreground">{role.name}</p>
-        {canWrite && (
-          <Button
-            type="button"
-            size="icon-sm"
-            variant="ghost"
-            title="Đổi tên vai trò"
-            aria-label={`Đổi tên vai trò ${role.name}`}
-            className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-            onClick={() => {
-              setTen(role.name)
-              setIsEditing(true)
-            }}
-          >
-            <Pencil />
-          </Button>
-        )}
+        <p className="font-mono text-xs text-muted-foreground">{role.code}</p>
       </div>
-      <p className="font-mono text-xs text-muted-foreground">{role.code}</p>
+    )
+  }
+
+  return (
+    <div className="-ml-1.5">
+      <button
+        type="button"
+        title="Đổi tên vai trò"
+        aria-label={`Đổi tên vai trò ${role.name}`}
+        className="group flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-left outline-none transition-colors hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        onClick={() => {
+          setTen(role.name)
+          setIsEditing(true)
+        }}
+      >
+        <span className="font-semibold text-navy dark:text-foreground">{role.name}</span>
+        {/*  Cây bút hiện SẴN, không chờ hover: hover-mới-hiện thì trên máy cảm ứng
+             không ai biết tên sửa được, mà cái ô nút 32px của bản cũ còn đội cao
+             hàng tiêu đề làm chữ bị canh giữa, nhìn như tụt xuống (khách báo
+             26/08/2026). Icon trần 14px nằm gọn trong dòng chữ, không đội gì cả. */}
+        <Pencil className="size-3.5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+      </button>
+      <p className="px-1.5 font-mono text-xs text-muted-foreground">{role.code}</p>
     </div>
   )
 }
