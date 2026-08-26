@@ -195,6 +195,13 @@ export function PurchaseHistoryTable({ productCode, supplierCode }: PurchaseHist
         isLoading={isLoading}
         isError={isError}
         onRefresh={() => refetch()}
+        //  Bảng con: từ khóa nằm ở state cục bộ chứ không lên URL, nên phải tự
+        //  khai — nút "Xóa lọc" mặc định của DataTable chỉ biết dọn URL.
+        filtersActive={searchInput !== '' || searchQuery !== ''}
+        onResetFilters={() => {
+          setSearchInput('')
+          setSearchQuery('')
+        }}
         storageKey={`production.${byProduct ? 'product' : 'supplier'}.purchase-history`}
         emptyMessage={
           searchQuery

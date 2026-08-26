@@ -107,6 +107,13 @@ export function DepartmentMembersTable({
               : 'Chưa có nhân sự nào thuộc phòng ban này.'
           }
           storageKey="hr.department-members"
+          //  Bảng con: bộ lọc nằm ở state cục bộ chứ không lên URL, nên phải tự
+          //  khai — nút "Xóa lọc" mặc định của DataTable chỉ biết dọn URL.
+          filtersActive={keyword !== '' || status !== ALL}
+          onResetFilters={() => {
+            setKeyword('')
+            setStatus(ALL)
+          }}
           onRowClick={(employee) => navigate(appRoutes.hr.employeeDetail(employee.id))}
           pagination={{
             page,

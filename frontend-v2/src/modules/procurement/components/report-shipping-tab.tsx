@@ -186,6 +186,14 @@ export function ReportShippingTab({
               : 'Chưa có chi phí vận chuyển.'
           }
           storageKey="procurement.purchase-report.shipping"
+          //  Bộ lọc của BẢNG này nằm ở state cục bộ chứ không lên URL, nên phải
+          //  tự khai. Cố ý không đụng tới pháp nhân / kỳ / năm: đó là bộ lọc của
+          //  cả trang báo cáo, nằm ở đầu trang chứ không thuộc bảng này.
+          filtersActive={carrier !== ALL || month !== ALL}
+          onResetFilters={() => {
+            setCarrier(ALL)
+            setMonth(ALL)
+          }}
           pagination={{
             page,
             pageSize,

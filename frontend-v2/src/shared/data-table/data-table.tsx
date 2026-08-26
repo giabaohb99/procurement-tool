@@ -10,6 +10,7 @@ import { columnColorStyle } from './column-color-palette'
 import { ColumnHeaderCell } from './column-header-cell'
 import { ColumnVisibilityMenu } from './column-visibility-menu'
 import { DataTablePagination } from './data-table-pagination'
+import { FilterResetButton } from './filter-reset-button'
 import { measureColumnContentWidth } from './measure-column-width'
 import { columnLabel } from './required-header'
 import type { DataTableColumn, DataTablePagination as PaginationConfig } from './types'
@@ -102,6 +103,17 @@ export interface DataTableProps<T> {
   onRefresh?: () => void | Promise<unknown>
   /** Nội dung chèn bên TRÁI menu "Cột" (ô tìm kiếm, select, nút Bộ lọc…). */
   toolbar?: ReactNode
+  /**
+   * Việc chạy khi bấm **Xóa lọc**. Bỏ trống = nút tự xóa mọi param lọc trên URL
+   * (đúng cho mọi màn danh sách, vì state bộ lọc nằm trên URL). Chỉ truyền vào
+   * khi bảng giữ bộ lọc bằng state cục bộ — bảng con trong trang chi tiết.
+   */
+  onResetFilters?: () => void
+  /**
+   * Có bộ lọc nào đang bật không, quyết định nút **Xóa lọc** hiện hay ẩn. Bỏ
+   * trống = tự suy từ query string. Đi kèm `onResetFilters`.
+   */
+  filtersActive?: boolean
   /** Có thì bảng nhớ cột ẩn + độ rộng + thứ tự cột vào localStorage theo khóa này. */
   storageKey?: string
   pagination?: PaginationConfig
@@ -135,6 +147,8 @@ export function DataTable<T>({
   onRowClick,
   onRefresh,
   toolbar,
+  onResetFilters,
+  filtersActive,
   storageKey,
   pagination,
   sortBy,
@@ -281,6 +295,11 @@ export function DataTable<T>({
         <div className="mb-4 flex shrink-0 flex-wrap items-center gap-3">
           {toolbar}
           <div className="ml-auto flex items-center gap-2">
+            {/*  Nút "Xóa lọc" do BẢNG vẽ, không bắt từng màn tự nhớ: quên một
+                 màn là màn đó lọc xong không có đường lùi. Đứng sát mép phải
+                 ngay trước nút Tải lại, và tự ẩn khi chưa lọc gì. */}
+            {toolbar && <FilterResetButton active={filtersActive} onReset={onResetFilters} />}
+
             <Button
               variant="outline"
               size="icon"

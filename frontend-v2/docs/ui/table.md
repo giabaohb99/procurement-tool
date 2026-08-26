@@ -140,14 +140,14 @@ useEffect(() => setPage(1), [queryKey, debouncedValue, departmentId, status])
 Một hàng duy nhất, thứ tự cố định để mọi màn nhìn như một:
 
 ```
-[ 🔍 ô tìm kiếm ] [ select chính 1 ] [ select chính 2 ] [ Bộ lọc ]  ……  [ ⟳ ] [ Cột ]
-└──────────────────── prop `toolbar` ────────────────────┘        └ DataTable tự vẽ ┘
+[ 🔍 ô tìm kiếm ] [ select chính 1 ] [ select chính 2 ] [ Bộ lọc ] …… [ Xóa lọc ] [ ⟳ ] [ Cột ]
+└──────────────────── prop `toolbar` ────────────────────┘          └─── DataTable tự vẽ ───┘
 ```
 
 - **Ô tìm kiếm** — `w-full max-w-xs`, icon `Search` đặt tuyệt đối bên trái, input `pl-9`.
 - **Select chính** — 1–3 ô CHỌN dùng hằng ngày (pháp nhân, trạng thái, loại…), `w-44` (rộng hơn thì `w-48`). Mỗi ô luôn có mục "Tất cả …" làm mặc định.
 - **`<ConditionalFilter />`** — bộ lọc nâng cao, đứng cuối cụm trái.
-- **Tải lại + Cột** — `DataTable` tự render, dính mép phải (`ml-auto`). Trang không phải khai gì.
+- **Xóa lọc + Tải lại + Cột** — `DataTable` tự render, dính mép phải (`ml-auto`). Trang không phải khai gì.
 
 ```tsx
 toolbar={
@@ -173,6 +173,38 @@ toolbar={
 
 Tab (vd luồng văn bản đến / đi / nội bộ) thì đặt **ngoài** `DataTable`, giữa
 `PageHeader` và `Card` — nó chia tập dữ liệu chứ không phải một ô lọc.
+
+### Nút Xóa lọc
+
+`DataTable` tự vẽ, **không màn nào phải khai** — quên một màn là màn đó lọc xong
+không có đường lùi. Chỉ hiện khi thật sự đang lọc, vì mấy ô select đều hiện chữ
+na ná nhau (*Tất cả trạng thái* / *Đã duyệt*), liếc qua rất khó biết bảng đang bị
+thu hẹp; thấy nút này là biết ngay.
+
+Mặc định nó **quét sạch query string** rồi gọi `reset()` của `FilterProvider`
+(nếu có) — đúng với quy ước "state bộ lọc nằm trên URL", nên nó dọn cả ô tìm
+kiếm, mọi select chính lẫn điều kiện nâng cao trong một nhát. Ba param được giữ
+lại vì **không phải bộ lọc**: `tab` (chia tập dữ liệu), `sort_by`, `sort_dir`.
+Đặt tên param mới mà nó không phải điều kiện lọc thì thêm vào `NON_FILTER_PARAMS`
+ở `shared/data-table/filter-reset-button.tsx`.
+
+Bảng con trong trang **chi tiết** thường giữ bộ lọc bằng `useState` chứ không lên
+URL — mà URL lúc đó là của trang cha, quét sạch là phá trang cha. Những bảng đó
+phải tự khai:
+
+```tsx
+<DataTable
+  filtersActive={keyword !== '' || status !== ALL}
+  onResetFilters={() => { setKeyword(''); setStatus(ALL) }}
+  …
+/>
+```
+
+⚠️ Ô tìm kiếm dùng `useUrlSearchParam` **nhận lại thay đổi đến từ ngoài** (nút
+này, nút Back của trình duyệt) — trước đây ô nhập là nguồn sự thật tuyệt đối sau
+lần khởi tạo nên xóa lọc xong từ khóa vẫn nằm trong ô. Nó phân biệt "ai ghi URL"
+bằng cách so với `debouncedValue`; đừng bỏ phép so đó, không thì lúc gõ nhanh
+nhịp ghi của ký tự trước sẽ nhảy ngược vào ô và nuốt ký tự vừa gõ.
 
 ### Nút Tải lại
 

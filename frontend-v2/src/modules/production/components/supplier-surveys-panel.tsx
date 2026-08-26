@@ -241,10 +241,20 @@ export function SupplierSurveysPanel({ supplier }: { supplier: Supplier }) {
     unitLabel: 'dòng',
   })
 
-  const emptyMessage =
-    keyword || approve !== SURVEY_APPROVE_ALL
-      ? 'Không có dòng khảo sát nào khớp bộ lọc.'
-      : 'Nhà cung cấp này chưa xuất hiện trong phiếu khảo sát nào.'
+  //  Bảng con: bộ lọc nằm ở state cục bộ chứ không lên URL, nên phải tự khai —
+  //  nút "Xóa lọc" mặc định của DataTable chỉ biết dọn URL. `subTab` KHÔNG bị
+  //  dọn theo: nó chia tập dữ liệu chứ không lọc.
+  const filtersActive = keyword !== '' || approve !== SURVEY_APPROVE_ALL
+
+  function resetFilters() {
+    setKeyword('')
+    setApprove(SURVEY_APPROVE_ALL)
+    resetPage()
+  }
+
+  const emptyMessage = filtersActive
+    ? 'Không có dòng khảo sát nào khớp bộ lọc.'
+    : 'Nhà cung cấp này chưa xuất hiện trong phiếu khảo sát nào.'
 
   return (
     <div className="space-y-4">
@@ -277,6 +287,8 @@ export function SupplierSurveysPanel({ supplier }: { supplier: Supplier }) {
             isError={isError}
             onRefresh={() => refetch()}
             onRowClick={(l) => openSurvey(l.survey_id)}
+            filtersActive={filtersActive}
+            onResetFilters={resetFilters}
             storageKey="production.supplier.surveys.ncc"
             emptyMessage={emptyMessage}
             pagination={pagination(supplierLines.length)}
@@ -291,6 +303,8 @@ export function SupplierSurveysPanel({ supplier }: { supplier: Supplier }) {
             isError={isError}
             onRefresh={() => refetch()}
             onRowClick={(l) => openSurvey(l.survey_id)}
+            filtersActive={filtersActive}
+            onResetFilters={resetFilters}
             storageKey="production.supplier.surveys.sp"
             emptyMessage={emptyMessage}
             pagination={pagination(productLines.length)}
