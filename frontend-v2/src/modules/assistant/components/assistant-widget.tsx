@@ -13,6 +13,13 @@ import { useConversation, useProviders, useSendMessage } from '../hooks/use-assi
 import { ChatComposer } from './chat-composer'
 import { ChatEmptyState } from './chat-empty-state'
 import { MessageThread } from './message-thread'
+import {
+  pickDraftOffer,
+  pickFileOffer,
+  type DraftOffer,
+  type FileOffer,
+} from '../utils/reply-offers'
+import { ReplyOffers } from './reply-offers'
 
 /**
  * Bong bóng chat nổi ở góc phải dưới — lối vào nhanh của Trợ lý AI, dùng lại
@@ -33,6 +40,10 @@ export function AssistantWidget() {
   //  Mốc id chốt lúc bấm gửi — tin trợ lý mới hơn mốc này được chạy hiệu ứng gõ
   //  máy (xem chú thích `typingAfterId` trong `message-thread.tsx`).
   const [typingAfterId, setTypingAfterId] = useState<number | null>(null)
+  //  Bản nháp phiếu / file báo cáo trợ lý vừa soạn — nút hành động dùng chung với
+  //  trang đầy đủ, xem `reply-offers.tsx`.
+  const [draftOffer, setDraftOffer] = useState<DraftOffer | null>(null)
+  const [fileOffer, setFileOffer] = useState<FileOffer | null>(null)
 
   const conversationQuery = useConversation(conversationId)
 
@@ -51,6 +62,8 @@ export function AssistantWidget() {
     setConversationId(0)
     setPending(null)
     setTypingAfterId(null) //  hội thoại mới thì thôi gõ dở câu của hội thoại trước
+    setDraftOffer(null)
+    setFileOffer(null)
   }
 
   const handleSend = async (message: string) => {
@@ -72,6 +85,10 @@ export function AssistantWidget() {
         queryKey: queryKeys.assistant.conversation(reply.conversation_id),
         queryFn: () => assistantApi.conversation(reply.conversation_id),
       })
+      //  Trợ lý vừa soạn bản nháp / xuất file -> chào nút hành động (trước đây chỉ
+      //  trang đầy đủ có nút, chat trong bong bóng bị mời bấm nút không tồn tại).
+      setDraftOffer(pickDraftOffer(reply))
+      setFileOffer(pickFileOffer(reply))
       void queryClient.invalidateQueries({ queryKey: queryKeys.assistant.conversations() })
       if (reply.conversation_id !== conversationId) setConversationId(reply.conversation_id)
     } catch {
@@ -150,6 +167,15 @@ export function AssistantWidget() {
                   typingAfterId={typingAfterId}
                 />
               )}
+              {/*  Nút mở form phiếu đã điền sẵn / tải báo cáo — thu gọn bong bóng khi
+                   điều hướng để form không bị che. */}
+              <ReplyOffers
+                draft={draftOffer}
+                file={fileOffer}
+                conversationId={conversationId}
+                busy={isSending}
+                onNavigate={() => setOpen(false)}
+              />
               <ChatComposer disabled={noProvider} busy={isSending} onSend={handleSend} />
             </>
           )}

@@ -1,12 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { FileDown, FilePlus } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 
-import { downloadFile } from '@/core/api'
-import { appRoutes } from '@/shared/constants/app-routes'
 import { queryKeys } from '@/shared/constants/query-keys'
-import { Button } from '@/shared/ui/button'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -22,6 +18,13 @@ import { ChatComposer } from '../components/chat-composer'
 import { ChatEmptyState } from '../components/chat-empty-state'
 import { ConversationSidebar } from '../components/conversation-sidebar'
 import { MessageThread } from '../components/message-thread'
+import { ReplyOffers } from '../components/reply-offers'
+import {
+  pickDraftOffer,
+  pickFileOffer,
+  type DraftOffer,
+  type FileOffer,
+} from '../utils/reply-offers'
 import {
   useConversation,
   useConversations,
@@ -37,7 +40,6 @@ function providerLabel(name: string): string {
 
 export function AssistantPage() {
   const queryClient = useQueryClient()
-  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const activeId = Number(searchParams.get('c')) || 0
 
@@ -53,21 +55,11 @@ export function AssistantPage() {
   //  gõ máy. Chốt trước khi gửi (không phải sau khi nhận) để tin mới mount là
   //  gõ ngay; xem chú thích `typingAfterId` trong `message-thread.tsx`.
   const [typingAfterId, setTypingAfterId] = useState<number | null>(null)
-  //  Bản nháp trợ lý vừa soạn (tool `draft_survey_request` = YCBG, `draft_purchase_request`
-  //  = YCMH, `draft_leave_request` = đơn nghỉ phép) — chỉ sống trong lượt trả lời hiện tại,
-  //  backend không lưu. Bấm nút mới mở form; phiếu KHÔNG tự tạo.
-  const [draftOffer, setDraftOffer] = useState<{
-    conversationId: number
-    args: Record<string, unknown>
-    target: 'survey' | 'purchase' | 'leave'
-  } | null>(null)
-  //  File báo cáo trợ lý vừa xuất (tool `export_report_file`) — cũng chỉ sống trong lượt
-  //  trả lời hiện tại. Tải qua downloadFile (kèm Bearer), không gắn href thẳng.
-  const [fileOffer, setFileOffer] = useState<{
-    conversationId: number
-    filename: string
-    downloadUrl: string
-  } | null>(null)
+  //  Bản nháp YCBG/YCMH/đơn nghỉ phép + file báo cáo trợ lý vừa soạn/xuất — chỉ sống
+  //  trong lượt trả lời hiện tại, backend không lưu. Logic bóc + nút nằm ở
+  //  `reply-offers.tsx` (dùng chung với bong bóng chat góc).
+  const [draftOffer, setDraftOffer] = useState<DraftOffer | null>(null)
+  const [fileOffer, setFileOffer] = useState<FileOffer | null>(null)
 
   /** Chỉ chào nhà đã cấu hình key — chọn nhà chưa có key sẽ bị backend từ chối. */
   const configuredProviders = useMemo(
@@ -110,41 +102,10 @@ export function AssistantPage() {
         queryFn: () => assistantApi.conversation(reply.conversation_id),
       })
 
-      //  Trợ lý vừa soạn xong bản nháp YCBG/YCMH (rows != null nghĩa là tool chạy thành
-      //  công, không bị từ chối quyền) -> chào nút mở form. Lượt sau không soạn thì gỡ nút.
-      const draftTargets: Record<string, 'survey' | 'purchase' | 'leave'> = {
-        draft_survey_request: 'survey',
-        draft_purchase_request: 'purchase',
-        draft_leave_request: 'leave',
-      }
-      const draftCall = (reply.tool_calls ?? [])
-        .filter((call) => draftTargets[call.name] != null && call.rows != null && call.rows > 0)
-        .at(-1)
-      setDraftOffer(
-        draftCall
-          ? //  Ưu tiên bản draft ĐÃ CHUẨN HÓA từ kết quả tool (ĐVT khớp chính tả danh mục
-            //  "cái" -> "Cái", mã hàng khớp danh mục); args thô của model chỉ là dự phòng.
-            {
-              conversationId: reply.conversation_id,
-              args: draftCall.draft ?? draftCall.args,
-              target: draftTargets[draftCall.name],
-            }
-          : null,
-      )
-
-      //  Trợ lý vừa xuất file báo cáo -> chào nút tải. Lượt sau không xuất thì gỡ nút.
-      const fileCall = (reply.tool_calls ?? [])
-        .filter((call) => call.name === 'export_report_file' && call.file != null)
-        .at(-1)
-      setFileOffer(
-        fileCall?.file
-          ? {
-              conversationId: reply.conversation_id,
-              filename: fileCall.file.filename,
-              downloadUrl: fileCall.file.download_url,
-            }
-          : null,
-      )
+      //  Trợ lý vừa soạn bản nháp / xuất file báo cáo -> chào nút hành động dưới
+      //  luồng chat. Lượt sau không soạn/xuất thì pick trả null và nút được gỡ.
+      setDraftOffer(pickDraftOffer(reply))
+      setFileOffer(pickFileOffer(reply))
       void queryClient.invalidateQueries({ queryKey: queryKeys.assistant.conversations() })
       if (reply.conversation_id !== activeId) {
         setSearchParams({ c: String(reply.conversation_id) })
@@ -237,57 +198,13 @@ export function AssistantPage() {
                 />
               )}
 
-              {/*  Bản nháp YCBG/YCMH/đơn nghỉ phép trợ lý vừa soạn — bấm mới mở form ĐÃ
-                   ĐIỀN SẴN, người dùng rà lại rồi tự bấm Tạo trong form; ở đây chưa có
-                   phiếu nào được tạo. */}
-              {draftOffer && draftOffer.conversationId === activeId && !isSending ? (
-                <div className="flex items-center justify-between gap-3 border-t bg-muted/40 px-4 py-2.5">
-                  <p className="text-xs text-muted-foreground">
-                    Trợ lý đã soạn sẵn nội dung phiếu. Mở form để kiểm tra rồi bấm Tạo.
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() =>
-                      navigate(
-                        {
-                          survey: appRoutes.procurement.surveyRequestNew,
-                          purchase: appRoutes.procurement.purchaseRequestNew,
-                          leave: appRoutes.document.documentNew,
-                        }[draftOffer.target],
-                        { state: { assistantDraft: draftOffer.args } },
-                      )
-                    }
-                  >
-                    <FilePlus />
-                    {
-                      {
-                        survey: 'Tạo yêu cầu báo giá',
-                        purchase: 'Tạo yêu cầu mua hàng',
-                        leave: 'Tạo đơn nghỉ phép',
-                      }[draftOffer.target]
-                    }
-                  </Button>
-                </div>
-              ) : null}
-
-              {/*  File báo cáo trợ lý vừa xuất — file ĐÃ nằm trên máy chủ, nút chỉ tải về. */}
-              {fileOffer && fileOffer.conversationId === activeId && !isSending ? (
-                <div className="flex items-center justify-between gap-3 border-t bg-muted/40 px-4 py-2.5">
-                  <p className="min-w-0 truncate text-xs text-muted-foreground">
-                    Trợ lý đã tạo file báo cáo: {fileOffer.filename}
-                  </p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      void downloadFile(fileOffer.downloadUrl, fileOffer.filename).catch(() => {})
-                    }
-                  >
-                    <FileDown />
-                    Tải báo cáo
-                  </Button>
-                </div>
-              ) : null}
+              {/*  Nút mở form phiếu đã điền sẵn + nút tải file báo cáo — xem `reply-offers.tsx`. */}
+              <ReplyOffers
+                draft={draftOffer}
+                file={fileOffer}
+                conversationId={activeId}
+                busy={isSending}
+              />
 
               <ChatComposer disabled={noProvider} busy={isSending} onSend={handleSend} />
             </>
