@@ -132,6 +132,11 @@ export function PaymentRequestPrintPage() {
   const content = req.prepay
     ? `Thanh toán trước cho nhà cung cấp ${supplier}${period ? ` ${period}` : ''}`
     : `Thanh toán công nợ ${supplier}${period ? ` ${period}` : ''}`
+  // CR-149 (ticket #14): người dùng sửa được 3 câu — khóa nào rỗng thì in câu tự động.
+  const printTexts = req.print_texts ?? {}
+  const contentText = printTexts.content || content
+  const lineDescText = printTexts.line_desc || content
+  const transferText = printTexts.transfer || content
   const isCash = req.payment_method === 'cash' // CR-035 — tiền mặt thì bỏ trống cụm chuyển khoản
 
   return (
@@ -224,7 +229,7 @@ export function PaymentRequestPrintPage() {
             <b>Mã khoản mục CP:</b> {DOTS}
           </div>
           <div style={lbl}>
-            <b>Nội dung:</b> {content}
+            <b>Nội dung:</b> {contentText}
           </div>
         </div>
 
@@ -270,7 +275,7 @@ export function PaymentRequestPrintPage() {
                 {/* Diễn giải gộp cho mọi dòng (rowSpan) — chỉ vẽ ở dòng đầu. */}
                 {index === 0 && (
                   <td style={{ ...cell, verticalAlign: 'middle' }} rowSpan={groupedLines.length || 1}>
-                    {content}
+                    {lineDescText}
                   </td>
                 )}
                 <td style={cellRight}>{formatMoney(line.amount)}</td>
@@ -282,7 +287,7 @@ export function PaymentRequestPrintPage() {
               <tr>
                 <td style={cell} />
                 <td style={cell} />
-                <td style={cell}>{content}</td>
+                <td style={cell}>{lineDescText}</td>
                 <td style={cell} />
                 <td style={cell} />
                 <td style={cell} />
@@ -401,7 +406,7 @@ export function PaymentRequestPrintPage() {
               <b>Ngân hàng:</b> {isCash ? DOTS : dot(req.bank_name)}
             </div>
             <div style={lbl}>
-              <b>Nội dung chuyển khoản:</b> {isCash ? DOTS : content}
+              <b>Nội dung chuyển khoản:</b> {isCash ? DOTS : transferText}
             </div>
           </div>
         </div>

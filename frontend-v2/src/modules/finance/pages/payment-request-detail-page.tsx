@@ -65,7 +65,9 @@ import {
   type PaymentMethod,
   type PaymentRequestCreateInput,
   type PaymentRequestLine,
+  type PrintTexts,
 } from '../types/payment-request'
+import { autoPrintText } from '../utils/print-texts'
 
 /**
  * Chi tiết / tạo mới Yêu cầu thanh toán (YCTT).
@@ -192,7 +194,6 @@ function PaymentRequestCreate() {
   })
   const [requestDate, setRequestDate] = useState<string>(() => today())
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('transfer')
-  const [prepay, setPrepay] = useState(0)
   const [note, setNote] = useState('')
   const [supplierCode, setSupplierCode] = useState<string>(() => stateRows?.[0]?.supplier_code ?? '')
   const [companyId, setCompanyId] = useState<number>(() => stateRows?.[0]?.company_id ?? 0)
@@ -254,7 +255,6 @@ function PaymentRequestCreate() {
       request_date: requestDate,
       note,
       payment_method: paymentMethod,
-      prepay,
       supplier_code: headSupplier,
       company_id: companyId,
       source_type: headSource,
@@ -411,23 +411,9 @@ function PaymentRequestCreate() {
               </Select>
               <p className="text-xs text-muted-foreground">{paymentMethodHint(paymentMethod)}</p>
             </div>
-            {/* CR-146 main (ticket #12): cờ Thanh toán trước — đổi câu nội dung trên bản in. */}
-            <div className="space-y-1.5">
-              <Label>Nội dung thanh toán</Label>
-              <Select value={String(prepay)} onValueChange={(value) => setPrepay(Number(value))}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(PREPAY_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">{prepayHint(prepay)}</p>
-            </div>
+            {/* CR-149 (thay CR-146): BỎ ô chọn "Nội dung thanh toán" (prepay) — bản in mặc
+                định luôn ghi "Thanh toán công nợ ...", ai cần câu khác sửa thẳng ở khối
+                "Nội dung bản in" trong màn chi tiết sau khi tạo phiếu. */}
             <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
               <Label>Ghi chú</Label>
               <Textarea
@@ -481,7 +467,7 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
   const [lines, setLines] = useState<EditablePaymentLine[]>([])
   const [note, setNote] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('transfer')
-  const [prepay, setPrepay] = useState(0)
+  const [printTexts, setPrintTexts] = useState<PrintTexts>({})
   const [rejectOpen, setRejectOpen] = useState(false)
   const [payOpen, setPayOpen] = useState(false)
 
@@ -491,7 +477,14 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
     setLines((req.lines ?? []).map(fromRequestLine))
     setNote(req.note ?? '')
     setPaymentMethod(req.payment_method ?? 'transfer')
-    setPrepay(req.prepay ? 1 : 0)
+    // CR-149: ĐIỀN SẴN câu tự động vào 3 ô "Nội dung bản in" — người dùng sửa
+    // thẳng; xóa trống rồi lưu thì backend nhận "" và bản in rơi về câu tự động.
+    const auto = autoPrintText(req)
+    setPrintTexts({
+      content: req.print_texts?.content || auto,
+      line_desc: req.print_texts?.line_desc || auto,
+      transfer: req.print_texts?.transfer || auto,
+    })
   }
 
   if (isLoading) {
@@ -518,6 +511,10 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
   }
 
   const editable = req.status === 'draft' && can('payment_request', 'write')
+  // CR-149: câu chữ bản in sửa được cả khi phiếu Chờ duyệt / Đã duyệt (người dùng
+  // in sau khi duyệt) — backend chỉ nhận PATCH *chỉ chứa* print_texts ở 2 trạng thái đó.
+  const printTextsEditable =
+    ['draft', 'submitted', 'approved'].includes(req.status) && can('payment_request', 'write')
   const companyName =
     (companiesData?.items ?? []).find((company) => company.id === req.company_id)?.name ?? '—'
   const total = lines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0)
@@ -536,7 +533,7 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
       request_date: req?.request_date,
       note,
       payment_method: paymentMethod,
-      prepay,
+      print_texts: printTexts,
       lines: lines.map((line) => ({
         payable_id: line.payable_id,
         po_code: line.po_code,
@@ -690,30 +687,8 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
                 {editable && ' Nhớ bấm Lưu sau khi đổi.'}
               </p>
             </div>
-            {/* CR-146 main (ticket #12): cờ Thanh toán trước — đổi câu nội dung trên bản in. */}
-            <div className="space-y-1.5">
-              <Label>Nội dung thanh toán</Label>
-              {editable ? (
-                <Select value={String(prepay)} onValueChange={(value) => setPrepay(Number(value))}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(PREPAY_LABELS).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <ReadOnlyValue>{PREPAY_LABELS[req.prepay ? 1 : 0]}</ReadOnlyValue>
-              )}
-              <p className="text-xs text-muted-foreground">
-                {prepayHint(editable ? prepay : req.prepay)}
-                {editable && ' Nhớ bấm Lưu sau khi đổi.'}
-              </p>
-            </div>
+            {/* CR-149 (thay CR-146): ô chọn prepay đã BỎ — câu chữ bản in sửa thẳng ở
+                khối "Nội dung bản in" phía dưới cụm Chứng từ. */}
             <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
               <Label>Ghi chú</Label>
               {editable ? (
@@ -767,6 +742,60 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
           documentStatus={req.status}
         />
 
+        {/* CR-149 (main, ticket #14): 3 câu chữ trên bản in, điền sẵn câu tự động. */}
+        <Card className="gap-4 py-4">
+          <CardHeader className="min-h-9 border-b px-4 pb-3!">
+            <CardTitle className="text-base text-navy dark:text-foreground">Nội dung bản in</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 px-4">
+            <p className="flex items-start gap-2 text-sm text-muted-foreground">
+              <Info className="mt-0.5 size-4 shrink-0" />
+              <span>
+                Bản in in đúng nội dung trong 3 ô dưới (đã điền sẵn câu tự động, sửa thẳng được).
+              </span>
+            </p>
+            <div className="grid gap-4 lg:grid-cols-3">
+              {PRINT_TEXT_FIELDS.map((field) => (
+                <div key={field.key} className="space-y-1.5">
+                  <Label>{field.label}</Label>
+                  {printTextsEditable ? (
+                    <Textarea
+                      rows={2}
+                      maxLength={500}
+                      value={printTexts[field.key] ?? ''}
+                      onChange={(event) =>
+                        setPrintTexts((current) => ({ ...current, [field.key]: event.target.value }))
+                      }
+                    />
+                  ) : (
+                    <ReadOnlyValue multiline>{printTexts[field.key]}</ReadOnlyValue>
+                  )}
+                  <p className="text-xs text-muted-foreground">{field.hint}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              {printTextsEditable && req.status !== 'draft' && (
+                <Button
+                  size="sm"
+                  onClick={() => void update.mutateAsync({ print_texts: printTexts })}
+                  disabled={update.isPending}
+                >
+                  {update.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+                  Lưu nội dung in
+                </Button>
+              )}
+              <p className="text-xs text-muted-foreground">
+                {req.status === 'draft'
+                  ? 'Bản nháp lưu chung bằng nút Lưu ở đầu trang.'
+                  : printTextsEditable
+                    ? 'Phiếu đã gửi duyệt / đã duyệt vẫn sửa được riêng 3 ô này — bấm Lưu nội dung in.'
+                    : 'Phiếu Đã chi / Đã từ chối: khóa, không sửa được nữa.'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <AuditTimeline entity="payment_request" entityId={paymentRequestId} showMessage dense />
       </div>
 
@@ -817,14 +846,13 @@ function paymentMethodHint(method: PaymentMethod): string {
     : 'Bản in lấy số tài khoản / ngân hàng của nhà cung cấp.'
 }
 
-/** CR-146 main (ticket #12): nhãn cờ Thanh toán trước — quyết định câu nội dung bản in. */
-const PREPAY_LABELS: Record<number, string> = {
-  0: 'Thanh toán công nợ (mặc định)',
-  1: 'Thanh toán trước',
-}
-
-function prepayHint(prepay: number): string {
-  return prepay
-    ? 'Bản in ghi: "Thanh toán trước cho nhà cung cấp <tên NCC> <kỳ>".'
-    : 'Mặc định — bản in ghi: "Thanh toán công nợ <tên NCC> <kỳ>". Đơn trả trước thì chọn "Thanh toán trước".'
-}
+/** CR-149: 3 ô của khối "Nội dung bản in" — khóa khớp `PrintTexts` của backend. */
+const PRINT_TEXT_FIELDS: { key: keyof PrintTexts; label: string; hint: string }[] = [
+  { key: 'content', label: 'Nội dung thanh toán', hint: 'Dòng "Nội dung" trong khối NỘI DUNG THANH TOÁN.' },
+  { key: 'line_desc', label: 'Diễn giải', hint: 'Cột "Diễn giải" của bảng Đề nghị thanh toán.' },
+  {
+    key: 'transfer',
+    label: 'Nội dung chuyển khoản',
+    hint: 'Dòng "Nội dung chuyển khoản" — phiếu Tiền mặt thì bản in vẫn để trống cụm này.',
+  },
+]

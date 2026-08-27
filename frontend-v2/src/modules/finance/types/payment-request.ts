@@ -73,10 +73,25 @@ export interface PaymentRequestSummary {
   created_by_name: string
 }
 
+/**
+ * CR-149 (main, ticket #14): 3 câu chữ bản in người dùng sửa được.
+ * Khóa nào vắng -> bản in in câu tự động theo `prepay` (CR-146) như cũ.
+ */
+export interface PrintTexts {
+  /** Dòng "Nội dung" trong khối NỘI DUNG THANH TOÁN. */
+  content?: string
+  /** Cột "Diễn giải" của bảng Đề nghị thanh toán. */
+  line_desc?: string
+  /** Dòng "Nội dung chuyển khoản" (tiền mặt vẫn để trống theo CR-035). */
+  transfer?: string
+}
+
 /** Chi tiết một phiếu — thêm ngày tạo và danh sách dòng. */
 export interface PaymentRequest extends PaymentRequestSummary {
   created_at: string
   lines: PaymentRequestLine[]
+  /** CR-149: `_out()` trả dict đã parse (rỗng = chưa sửa, in câu tự động). */
+  print_texts: PrintTexts
 }
 
 /** Dữ liệu bản in `/print` — kèm thông tin đơn vị, người lập và tài khoản nhận. */
@@ -101,27 +116,34 @@ export interface PaymentRequestLineInput {
   amount: number
 }
 
-/** Payload TẠO — server tách theo (supplier_code × source_type), trả về MẢNG phiếu. */
+/**
+ * Payload TẠO — server tách theo (supplier_code × source_type), trả về MẢNG phiếu.
+ *
+ * CR-149: ô chọn `prepay` đã BỎ khỏi giao diện (khách chốt: mặc định luôn
+ * "Thanh toán công nợ ...", ai cần câu khác tự gõ vào `print_texts`) — cờ vẫn
+ * còn ở backend cho phiếu cũ nên không khai ở đây nữa.
+ */
 export interface PaymentRequestCreateInput {
   request_date: string
   note: string
   payment_method: PaymentMethod
-  /** CR-146 main: 0 = công nợ (mặc định) · 1 = thanh toán trước. */
-  prepay?: number
   supplier_code: string
   company_id: number
   source_type: string
   lines: PaymentRequestLineInput[]
 }
 
-/** Payload SỬA bản nháp — chỉ các ô đầu phiếu cho sửa được và danh sách dòng. */
+/**
+ * Payload SỬA — các ô đầu phiếu cho sửa được và danh sách dòng (chỉ bản nháp).
+ * CR-149: payload CHỈ chứa `print_texts` thì backend cho sửa cả khi phiếu đã
+ * gửi duyệt / đã duyệt (người dùng in phiếu sau khi duyệt).
+ */
 export interface PaymentRequestUpdateInput {
   request_date?: string
   note?: string
   payment_method?: PaymentMethod
-  /** CR-146 main: chỉ gửi khi người dùng đổi — 0/1. */
-  prepay?: number
   lines?: PaymentRequestLineInput[]
+  print_texts?: PrintTexts
 }
 
 /** Đổi bảng nhãn trạng thái thành mảng option cho ô chọn, giữ nguyên thứ tự khai báo. */
