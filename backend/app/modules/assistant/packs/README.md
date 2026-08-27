@@ -20,6 +20,33 @@ nhồi thẳng tài liệu đứng yên vào ngữ cảnh.
 - "Quyền theo gói" (mỗi nhóm người dùng thấy gói khác nhau) là việc của Phase sau —
   hiện mọi người có quyền `assistant.read` dùng chung một gói.
 
+## Gói tri thức theo PHÂN HỆ
+
+Ngoài gói của nhà máy, mỗi phân hệ nghiệp vụ có thể có một gói riêng — chỗ ghi **luật
+mà trợ lý không được nói sai**. Các bước bấm nút chi tiết KHÔNG để ở đây: chúng nằm ở
+Help Center và trợ lý tra bằng `search_docs` (RAG index `help_article` + FAQ).
+
+| Tệp | Phân hệ | Token đo được |
+|---|---|---|
+| `10-quy-trinh-thu-mua.md` | Thu mua | ~830 |
+| `20-van-thu-van-ban.md` | Văn thư | ~3 100 |
+| `nhamay-tri-thuc-co-dong.md` | Nhà máy DEGO Organic | ~11 000 |
+
+Tổng system prompt hiện ~**15,3k token/lượt** (đo 27/08/2026 bằng
+`knowledge.build_system()`, ước 3,2 ký tự/token cho tiếng Việt).
+
+Viết gói phân hệ thì bám ba nguyên tắc:
+
+1. **Chỉ ghi thứ trợ lý dễ nói sai** — trạng thái nào khoá sửa, ai được bấm nút nào,
+   từ nào dùng đúng như trên màn hình. Thứ tra được ở HDSD thì đừng chép lại.
+2. **Ghi cả điều CẤM nói.** Ví dụ Văn thư: hệ trả 404 thay vì 403 khi không đủ quyền
+   đọc, nên trợ lý **không được nói "văn bản không tồn tại"**; và tuyệt đối không tiết
+   lộ đơn nghỉ phép của người khác.
+3. **Bảng từ dùng đúng** — dùng sai từ là người dùng tìm không ra nút.
+
+⚠️ Không có bài kiểm tự động nào ràng buộc nội dung gói. Sửa xong nên hỏi thử trợ lý
+vài câu thật để đối chiếu.
+
 ## Gói tri thức Nhà máy DEGO Organic
 
 - `nhamay-tri-thuc-co-dong.md` là bản CHƯNG CẤT từ bộ 11 tài liệu gốc của nhà máy
