@@ -14,6 +14,8 @@ audience mục 4.2 của `doc/erp/dien-dan/01`:
 Người thường KHÔNG có grant RBAC trên `forum_post` — đừng gọi `apply_scope`
 ở đây; entity đó chỉ gác cổng kiểm duyệt của `forum_admin`.
 """
+from datetime import datetime
+
 from fastapi import HTTPException
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
@@ -41,15 +43,15 @@ def _visible_cond(user, profile):
     (`company_id=0`) mà so bằng 0 sẽ khớp nhầm mọi bài đóng băng số 0 — cùng
     triết lý "thiếu dữ liệu thì chặn, không mở" của B-07.
     """
-    ve = [ForumPost.audience == int(ForumAudience.PUBLIC),
+    clauses = [ForumPost.audience == int(ForumAudience.PUBLIC),
           ForumPost.created_by == user.id]   # tác giả luôn thấy bài mình
     if profile.get("company_id"):
-        ve.append(and_(ForumPost.audience == int(ForumAudience.COMPANY),
+        clauses.append(and_(ForumPost.audience == int(ForumAudience.COMPANY),
                        ForumPost.company_id == profile["company_id"]))
     if profile.get("dept_id"):
-        ve.append(and_(ForumPost.audience == int(ForumAudience.DEPT),
+        clauses.append(and_(ForumPost.audience == int(ForumAudience.DEPT),
                        ForumPost.dept_id == profile["dept_id"]))
-    return and_(ForumPost.status == int(ForumPostStatus.PUBLISHED), or_(*ve))
+    return and_(ForumPost.status == int(ForumPostStatus.PUBLISHED), or_(*clauses))
 
 
 def can_view(db: Session, user, post: ForumPost | None, profile: dict | None = None) -> bool:
@@ -116,6 +118,48 @@ def list_posts(db: Session, user, profile: dict, limit: int = PAGE_SIZE,
     return q.order_by(ForumPost.id.desc()).limit(max(1, limit)).all()
 
 
+# ── Ghim bài (F9a/CR-199) ──────────────────────────────────────────────────────
+
+MAX_PINNED = 50   # trần phòng hờ — dải ghim mà tới đây là admin đang lạm dụng ghim
+
+
+def list_pinned_posts(db: Session, user, profile: dict) -> list[ForumPost]:
+    """Mọi bài ĐANG GHIM người này được thấy — dải đầu Bảng tin + tab «Thông báo».
+
+    Vẫn nguyên luật audience: thông báo ghim phạm vi phòng ban thì phòng khác
+    không thấy. Không con trỏ (ghim chỉ vài bài), sắp mốc ghim mới → cũ.
+    """
+    q = db.query(ForumPost).filter(ForumPost.pinned_at.isnot(None))
+    if can_moderate(db, user):
+        # admin thấy cả bài ghim đang bị ẩn (kèm nhãn) — thấy hết mới dọn được
+        q = q.filter(ForumPost.status.in_([int(ForumPostStatus.PUBLISHED),
+                                           int(ForumPostStatus.HIDDEN)]))
+    else:
+        q = q.filter(_visible_cond(user, profile))
+    return (q.order_by(ForumPost.pinned_at.desc(), ForumPost.id.desc())
+            .limit(MAX_PINNED).all())
+
+
+def set_post_pinned(db: Session, user, post: ForumPost, pinned: bool) -> ForumPost:
+    """Ghim / bỏ ghim một bài (quyền `forum_post.write` gác ở controller).
+
+    Chỉ ghim được bài PUBLISHED — ghim bài ẩn là treo thông báo không ai đọc
+    được; bài ghim sau đó bị ẩn/gỡ thì tự biến khỏi dải nhờ lọc status ở trên.
+    Bỏ ghim thì trạng thái nào cũng cho (dọn dẹp không bị kẹt luật).
+    """
+    if pinned:
+        if int(post.status) != int(ForumPostStatus.PUBLISHED):
+            raise HTTPException(400, "Chỉ ghim được bài viết đang hiển thị")
+        if post.pinned_at is None:
+            post.pinned_at = datetime.now()
+    else:
+        post.pinned_at = None
+    post.updated_by = user.id
+    db.commit()
+    db.refresh(post)
+    return post
+
+
 # ── Số đếm và dữ liệu kèm bài — mỗi loại đúng 1 query cho cả trang ─────────────
 
 def like_map(db: Session, post_ids: list[int], user_id: int) -> dict[int, dict]:
@@ -178,12 +222,12 @@ def create_post(db: Session, user, profile: dict, body: str, audience: int,
     body = (body or "").strip()
     file_ids = [int(i) for i in (file_ids or []) if i]
     try:
-        loai = ForumPostKind(int(kind))
+        post_kind = ForumPostKind(int(kind))
     except ValueError:
         raise HTTPException(400, f"Loại bài không hợp lệ: {kind}")
     # Bài đổi avatar (F10): ảnh là NHÂN VẬT CHÍNH — đúng 1 tấm (chính avatar
     # mới), caption có hay không tùy; thiếu ảnh thì dòng hệ thống thành nói suông.
-    if loai == ForumPostKind.AVATAR_UPDATE and len(file_ids) != 1:
+    if post_kind == ForumPostKind.AVATAR_UPDATE and len(file_ids) != 1:
         raise HTTPException(400, "Bài đổi ảnh đại diện phải kèm đúng 1 ảnh")
     if not body and not file_ids:
         raise HTTPException(400, "Bài viết không được để trống")
@@ -203,7 +247,7 @@ def create_post(db: Session, user, profile: dict, body: str, audience: int,
     if aud == ForumAudience.COMPANY and not profile.get("company_id"):
         raise HTTPException(400, "Hồ sơ nhân sự chưa gắn pháp nhân — không đăng được bài phạm vi công ty")
 
-    post = ForumPost(body=body, audience=int(aud), kind=int(loai),
+    post = ForumPost(body=body, audience=int(aud), kind=int(post_kind),
                      dept_id=profile.get("dept_id") or 0,
                      company_id=profile.get("company_id") or 0,
                      created_by=user.id, updated_by=user.id)
@@ -225,13 +269,13 @@ def attach_images(db: Session, post: ForumPost, file_ids: list[int], user_id: in
 
     if not file_ids:
         return 0
-    hop_le = {f.id for f in db.query(StoredFile.id)
+    valid = {f.id for f in db.query(StoredFile.id)
               .filter(StoredFile.id.in_(file_ids), StoredFile.created_by == user_id).all()}
-    da_gan = {fid for (fid,) in db.query(FileLink.file_id)
+    attached = {fid for (fid,) in db.query(FileLink.file_id)
               .filter(FileLink.file_id.in_(file_ids)).all()}
     n = 0
     for fid in file_ids:                      # giữ đúng thứ tự người dùng chọn
-        if fid not in hop_le or fid in da_gan:
+        if fid not in valid or fid in attached:
             continue
         db.add(FileLink(file_id=fid, entity="forum_post", entity_id=post.id, sort_order=n,
                         created_by=user_id, updated_by=user_id))
@@ -308,10 +352,10 @@ def moderate(db: Session, user, post: ForumPost,
     reason = (reason or "").strip()
     if action != ForumModerationAction.RESTORE and not reason:
         raise HTTPException(400, "Phải ghi lý do khi ẩn/xóa bài viết")
-    nguon, dich = _MOD_TRANSITIONS[action]
-    if ForumPostStatus(int(post.status)) not in nguon:
+    source, target = _MOD_TRANSITIONS[action]
+    if ForumPostStatus(int(post.status)) not in source:
         raise HTTPException(400, "Trạng thái bài viết không cho phép thao tác này")
-    post.status = int(dich)
+    post.status = int(target)
     log = ForumModerationLog(post_id=post.id, action=int(action), reason=reason,
                              created_by=user.id, updated_by=user.id)
     db.add(log)

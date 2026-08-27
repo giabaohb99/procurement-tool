@@ -121,25 +121,25 @@ def excerpts_of(db: Session, source_document_id: int) -> list[DocumentLink]:
     )
 
 
-def mark_excerpts_for_review(db: Session, source: Document, ly_do: str) -> int:
+def mark_excerpts_for_review(db: Session, source: Document, reason: str) -> int:
     """(a) Gốc lên phiên bản mới → mọi bản trích bị đánh dấu *cần rà lại*.
 
     Chỉ ĐÁNH DẤU. Không tự sửa nội dung, không tự bãi bỏ — người rà quyết định.
     """
-    dem = 0
+    count = 0
     for link in excerpts_of(db, source.id):
         excerpt = db.get(Document, link.source_document_id)
         if excerpt is None or excerpt.status == STATUS_EXPIRED:
             continue
         excerpt.needs_review = True
-        excerpt.needs_review_note = ly_do
-        dem += 1
-    return dem
+        excerpt.needs_review_note = reason
+        count += 1
+    return count
 
 
 def expire_excerpts(db: Session, source: Document) -> int:
     """(b) Gốc bị bãi bỏ → bản trích hết hiệu lực theo. Không có lựa chọn "không làm gì"."""
-    dem = 0
+    count = 0
     for link in excerpts_of(db, source.id):
         excerpt = db.get(Document, link.source_document_id)
         if excerpt is None or excerpt.status == STATUS_EXPIRED:
@@ -147,5 +147,5 @@ def expire_excerpts(db: Session, source: Document) -> int:
         excerpt.status = STATUS_EXPIRED
         excerpt.needs_review = True
         excerpt.needs_review_note = f"Bản gốc «{source.title}» đã bị bãi bỏ."
-        dem += 1
-    return dem
+        count += 1
+    return count

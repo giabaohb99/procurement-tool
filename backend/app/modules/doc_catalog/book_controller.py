@@ -25,7 +25,7 @@ router = APIRouter(prefix="/api/document-books", tags=["document_book"])
 FILTERABLE = ["code", "name", "kind", "company_id", "is_active"]
 
 
-def nguoi_doc_so(user=Depends(get_current_user)):
+def require_book_reader(user=Depends(get_current_user)):
     """Cổng vào của BA endpoint ĐỌC sổ — chỉ cần đăng nhập.
 
     Cố ý bỏ `require("document_book", "read")` và giao toàn bộ việc gác cho lớp
@@ -52,16 +52,16 @@ def list_books(
     year: int | None = Query(None, description="Năm tính số kế tiếp; mặc định năm nay"),
     pg: dict = Depends(pagination),
     db: Session = Depends(get_db),
-    user=Depends(nguoi_doc_so),
+    user=Depends(require_book_reader),
 ):
     profile = get_perm_profile(db, user)
     q = apply_filters(db.query(DocumentBook), DocumentBook, request, FILTERABLE)
     #  KHÔNG dùng `apply_scope`: phạm vi vai trò chỉ biết thu hẹp, mà sổ còn được
     #  chia ĐÍCH DANH qua `tab_document_book_member` — nguồn quyền cộng thêm đó
     #  phải OR vào, xem `service.dieu_kien_xem_so`.
-    dieu_kien = service.dieu_kien_xem_so(user, profile)
-    if dieu_kien is not None:
-        q = q.filter(dieu_kien)
+    condition = service.book_view_condition(user, profile)
+    if condition is not None:
+        q = q.filter(condition)
 
     total = q.count()
     items = (
@@ -79,9 +79,9 @@ def get_book(
     book_id: int,
     year: int | None = Query(None),
     db: Session = Depends(get_db),
-    user=Depends(nguoi_doc_so),
+    user=Depends(require_book_reader),
 ):
-    book = service.so_xem_duoc_hoac_404(db, book_id, user, get_perm_profile(db, user))
+    book = service.viewable_book_or_404(db, book_id, user, get_perm_profile(db, user))
     return success(service.serialize(db, book, year))
 
 
@@ -105,7 +105,7 @@ def update_book(
 ):
     #  Kiểm QUYỂN NÀO trước khi sửa: quyền vai trò `write` chỉ nói "được sửa sổ",
     #  không nói "được sửa sổ của pháp nhân khác". Xem `service.dieu_kien_sua_so`.
-    service.so_sua_duoc_hoac_404(db, book_id, user, get_perm_profile(db, user))
+    service.editable_book_or_404(db, book_id, user, get_perm_profile(db, user))
     book = service.update_book(db, book_id, data, user.id)
     record(db, user.id, "document_book", book.id, "update")
     return success(service.serialize(db, book), "Đã cập nhật")
@@ -117,7 +117,7 @@ def delete_book(
     db: Session = Depends(get_db),
     user=Depends(require("document_book", "delete")),
 ):
-    service.so_sua_duoc_hoac_404(db, book_id, user, get_perm_profile(db, user), "delete")
+    service.editable_book_or_404(db, book_id, user, get_perm_profile(db, user), "delete")
     service.delete_book(db, book_id)
     record(db, user.id, "document_book", book_id, "delete")
     return success(None, "Đã xóa sổ")
@@ -128,10 +128,10 @@ def get_counter(
     book_id: int,
     year: int | None = Query(None),
     db: Session = Depends(get_db),
-    user=Depends(nguoi_doc_so),
+    user=Depends(require_book_reader),
 ):
     """Tình trạng bộ đếm của sổ trong một năm — dùng cho khối "Bộ đếm" trên trang chi tiết."""
-    book = service.so_xem_duoc_hoac_404(db, book_id, user, get_perm_profile(db, user))
+    book = service.viewable_book_or_404(db, book_id, user, get_perm_profile(db, user))
 
     year = year or date.today().year
     data = service.serialize(db, book, year)

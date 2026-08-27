@@ -84,8 +84,8 @@ def auto_clone_after_issue(db: Session, source: Document, actor: int) -> list[Do
     #  Nơi đã có bản clone thì bỏ qua — ban hành phiên bản 2.0 không được đẻ thêm
     #  một bản thứ hai cho cùng pháp nhân. `create_clones` cũng chặn bằng cách ném
     #  lỗi, nhưng ở đây ném lỗi là hỏng cả mẻ vì một nơi trùng.
-    da_co = {clone.company_id for clone in clones_of(db, source.id)}
-    can_clone = [cid for cid in clone_targets(db, source) if cid not in da_co]
+    existing = {clone.company_id for clone in clones_of(db, source.id)}
+    can_clone = [cid for cid in clone_targets(db, source) if cid not in existing]
     if not can_clone:
         return []
 
@@ -100,7 +100,7 @@ def auto_clone_after_issue(db: Session, source: Document, actor: int) -> list[Do
 
 # ── Cột theo dõi đổi theo trạng thái văn bản ─────────────────────────────────
 
-def _trang_thai_tuong_ung(doc: Document) -> int | None:
+def _corresponding_status(doc: Document) -> int | None:
     """Bản clone đang ở đâu trong vòng đời của chính nó."""
     if doc.status in ALIVE_STATUSES:
         return CLONE_ISSUED
@@ -119,7 +119,7 @@ def _trang_thai_tuong_ung(doc: Document) -> int | None:
     return None
 
 
-def dong_bo_trang_thai(doc: Document, actor: int) -> bool:
+def sync_status(doc: Document, actor: int) -> bool:
     """Kéo `clone_status` theo trạng thái thật của bản clone. Trả về có đổi không.
 
     Gọi ở đúng ba nhịp bản clone **tự nó** đi tới: gửi duyệt · ban hành · bị trả
@@ -131,14 +131,14 @@ def dong_bo_trang_thai(doc: Document, actor: int) -> bool:
     if not doc.source_document_id:
         return False
 
-    moi = _trang_thai_tuong_ung(doc)
-    if moi is None or moi == doc.clone_status:
+    new = _corresponding_status(doc)
+    if new is None or new == doc.clone_status:
         return False
 
-    doc.clone_status = moi
+    doc.clone_status = new
     #  Mốc "xử lý xong" chỉ ghi MỘT LẦN, ở lần ban hành đầu tiên. Bản clone lên
     #  phiên bản 2.0 không phải là lần pháp nhân đó xử lý bản gốc.
-    if moi == CLONE_ISSUED and doc.clone_handled_at is None:
+    if new == CLONE_ISSUED and doc.clone_handled_at is None:
         doc.clone_handled_at = datetime.now()
     doc.updated_by = actor
     return True

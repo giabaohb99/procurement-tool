@@ -160,7 +160,7 @@ class DocumentOut(DocumentBase):
 class ReviewedIn(BaseModel):
     """Kết luận sau khi rà soát — bắt buộc, xem `service.xac_nhan_da_ra_soat`."""
 
-    ket_luan: str = Field(min_length=3, max_length=300)
+    conclusion: str = Field(min_length=3, max_length=300)
 
 
 class VersionCreate(BaseModel):
@@ -260,6 +260,10 @@ class ApproveIn(BaseModel):
     #  hệ thống như trước. `0` cũng coi là bỏ trống — ô chọn trên giao diện trả
     #  về 0 khi người dùng chọn dòng «Địa chỉ mặc định của hệ thống».
     mailbox_id: int | None = Field(default=None, ge=0)
+    #  CR-200 (F12) — «Đăng thông báo lên diễn đàn»: hệ clone văn bản vừa ban
+    #  hành thành MỘT bài diễn đàn đã ghim (tiêu đề + số hiệu + link về văn
+    #  bản). Văn thư vẫn là nguồn sự thật; diễn đàn chỉ giữ bản sao thông báo.
+    forum_announce: bool = False
 
 
 class RejectIn(BaseModel):

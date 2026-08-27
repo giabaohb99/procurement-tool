@@ -34,49 +34,49 @@ ENTITY = "document"
 
 
 @pytest.fixture()
-def nguoi(db, seed):
+def person(db, seed):
     ids = {"nop": seed.emp_req_id}
-    for ten in ("a", "b", "c"):
-        employee = Employee(code=f"CH_{ten.upper()}", full_name=f"Người {ten.upper()}",
+    for name in ("a", "b", "c"):
+        employee = Employee(code=f"CH_{name.upper()}", full_name=f"Người {name.upper()}",
                             company_id=seed.company_id, department_id=seed.dept_id,
                             is_active=True)
         db.add(employee)
         db.flush()
-        ids[ten] = employee.id
+        ids[name] = employee.id
     db.commit()
     return ids
 
 
-def _luong(db, cac_buoc: list[dict], code="CH-01") -> ApprovalFlow:
+def _luong(db, steps: list[dict], code="CH-01") -> ApprovalFlow:
     """Dựng luồng từ danh sách khai bước — mỗi dict là các cột của `ApprovalNode`."""
     flow = ApprovalFlow(entity=ENTITY, code=code, name="Luồng ca hiểm",
                         is_active=True, created_by=ACTOR, updated_by=ACTOR)
     db.add(flow)
     db.flush()
-    for buoc in cac_buoc:
+    for step in steps:
         db.add(ApprovalNode(**{"flow_id": flow.id, "skip_duplicate": SKIP_NONE,
                                "approver_kind": APPROVER_EMPLOYEE,
-                               "created_by": ACTOR, "updated_by": ACTOR, **buoc}))
+                               "created_by": ACTOR, "updated_by": ACTOR, **step}))
     db.commit()
     db.refresh(flow)
     return flow
 
 
-def _trinh(db, nguoi_nop, subject=None, entity_id=901):
-    return instance_service.bat_dau(db, ENTITY, entity_id, subject or {}, nguoi_nop,
+def _trinh(db, submitter, subject=None, entity_id=901):
+    return instance_service.start(db, ENTITY, entity_id, subject or {}, submitter,
                                     ACTOR, entity_code="VB-CH", entity_title="Phiếu ca hiểm")
 
 
 def _viec(db, instance, **loc):
-    rows = instance_service.viec_cua_phien(db, instance.id)
-    for ten, gia_tri in loc.items():
-        rows = [row for row in rows if getattr(row, ten) == gia_tri]
+    rows = instance_service.tasks_of_instance(db, instance.id)
+    for name, value in loc.items():
+        rows = [row for row in rows if getattr(row, name) == value]
     return rows
 
 
 # ── I08 × I12: ủy quyền có mở được đường tự duyệt không ─────────────────────
 
-def test_nguoi_nop_khong_duyet_ho_duoc_phieu_cua_chinh_minh(db, nguoi):
+def test_nguoi_nop_khong_duyet_ho_duoc_phieu_cua_chinh_minh(db, person):
     """Người duyệt đi vắng, ủy quyền cho ĐÚNG người vừa trình phiếu.
 
     Luật I08 «người nộp không duyệt phiếu của chính mình» đang cắt ở chỗ DỰNG
@@ -88,76 +88,76 @@ def test_nguoi_nop_khong_duyet_ho_duoc_phieu_cua_chinh_minh(db, nguoi):
     Đây không phải ca giả định: ủy quyền cho cấp dưới lúc đi công tác là việc
     thường ngày, và cấp dưới thì đúng là người hay trình phiếu.
     """
-    _luong(db, [dict(seq=1, name="Trưởng phòng duyệt", approver_ref=str(nguoi["a"]))])
-    instance = _trinh(db, nguoi["nop"])
+    _luong(db, [dict(seq=1, name="Trưởng phòng duyệt", approver_ref=str(person["a"]))])
+    instance = _trinh(db, person["nop"])
 
-    db.add(Delegation(from_employee_id=nguoi["a"], to_employee_id=nguoi["nop"],
+    db.add(Delegation(from_employee_id=person["a"], to_employee_id=person["nop"],
                       entity="", from_date=date.today() - timedelta(days=1),
                       to_date=date.today() + timedelta(days=1), is_active=True,
                       created_by=ACTOR, updated_by=ACTOR))
     db.commit()
 
-    with pytest.raises(HTTPException) as loi:
-        action_service.duyet(db, instance, nguoi["nop"], ACTOR, {})
-    assert loi.value.status_code == 403
+    with pytest.raises(HTTPException) as error:
+        action_service.approve(db, instance, person["nop"], ACTOR, {})
+    assert error.value.status_code == 403
 
 
-def test_uy_quyen_van_chay_binh_thuong_voi_nguoi_khac(db, nguoi):
+def test_uy_quyen_van_chay_binh_thuong_voi_nguoi_khac(db, person):
     """Chốt chặn trên KHÔNG được cắt nhầm ca ủy quyền thường."""
-    _luong(db, [dict(seq=1, name="Trưởng phòng duyệt", approver_ref=str(nguoi["a"]))])
-    instance = _trinh(db, nguoi["nop"])
+    _luong(db, [dict(seq=1, name="Trưởng phòng duyệt", approver_ref=str(person["a"]))])
+    instance = _trinh(db, person["nop"])
 
-    db.add(Delegation(from_employee_id=nguoi["a"], to_employee_id=nguoi["b"],
+    db.add(Delegation(from_employee_id=person["a"], to_employee_id=person["b"],
                       entity="", from_date=date.today() - timedelta(days=1),
                       to_date=date.today() + timedelta(days=1), is_active=True,
                       created_by=ACTOR, updated_by=ACTOR))
     db.commit()
 
-    instance = action_service.duyet(db, instance, nguoi["b"], ACTOR, {})
+    instance = action_service.approve(db, instance, person["b"], ACTOR, {})
     assert instance.status == INSTANCE_APPROVED
 
 
 # ── I08 × I23: chuyển người xử lý có mở được đường tự duyệt không ───────────
 
-def test_khong_chuyen_viec_duyet_sang_chinh_nguoi_trinh_phieu(db, nguoi):
+def test_khong_chuyen_viec_duyet_sang_chinh_nguoi_trinh_phieu(db, person):
     """Quản trị bàn giao việc, vô tình (hoặc cố ý) giao vào tay người trình.
 
     `chuyen_nguoi_xu_ly` chỉ kiểm «việc còn treo không» và «có trùng người đang
     giữ không». Không kiểm người nhận là ai — nên nó là cửa sau đi vòng qua I08,
     và cửa này còn tiện hơn ủy quyền vì chỉ cần quyền `approval_flow.write`.
     """
-    _luong(db, [dict(seq=1, name="Trưởng phòng duyệt", approver_ref=str(nguoi["a"]))])
-    instance = _trinh(db, nguoi["nop"])
+    _luong(db, [dict(seq=1, name="Trưởng phòng duyệt", approver_ref=str(person["a"]))])
+    instance = _trinh(db, person["nop"])
     task = _viec(db, instance, status=TASK_PENDING)[0]
 
-    with pytest.raises(HTTPException) as loi:
-        action_service.chuyen_nguoi_xu_ly(db, task, nguoi["nop"], ACTOR)
-    assert loi.value.status_code == 400
+    with pytest.raises(HTTPException) as error:
+        action_service.reassign(db, task, person["nop"], ACTOR)
+    assert error.value.status_code == 400
 
 
-def test_ban_giao_hang_loat_bo_qua_phieu_cua_chinh_nguoi_nhan(db, nguoi):
+def test_ban_giao_hang_loat_bo_qua_phieu_cua_chinh_nguoi_nhan(db, person):
     """Nghỉ việc, bàn giao 30 phiếu — trong đó có phiếu do người nhận trình.
 
     Cả mẻ không được đổ vì một phiếu: những phiếu còn lại vẫn phải chuyển, chỉ
     riêng phiếu đụng luật I08 thì để nguyên cho người bàn giao xử lý tay.
     """
-    _luong(db, [dict(seq=1, name="Duyệt", approver_ref=str(nguoi["a"]))])
-    cua_nguoi_nop = _trinh(db, nguoi["nop"], entity_id=911)
-    cua_nguoi_khac = _trinh(db, nguoi["b"], entity_id=912)
+    _luong(db, [dict(seq=1, name="Duyệt", approver_ref=str(person["a"]))])
+    cua_nguoi_nop = _trinh(db, person["nop"], entity_id=911)
+    cua_nguoi_khac = _trinh(db, person["b"], entity_id=912)
 
-    so_viec = action_service.ban_giao_hang_loat(db, nguoi["a"], nguoi["nop"], ACTOR)
+    task_count = action_service.bulk_handover(db, person["a"], person["nop"], ACTOR)
     db.commit()
 
-    assert so_viec == 1, "Chỉ phiếu của người khác được chuyển"
-    con_lai = _viec(db, cua_nguoi_nop, status=TASK_PENDING)[0]
-    assert con_lai.assignee_employee_id == nguoi["a"], "Phiếu của chính họ phải nằm im"
-    da_chuyen = _viec(db, cua_nguoi_khac, status=TASK_PENDING)[0]
-    assert da_chuyen.assignee_employee_id == nguoi["nop"]
+    assert task_count == 1, "Chỉ phiếu của người khác được chuyển"
+    remaining = _viec(db, cua_nguoi_nop, status=TASK_PENDING)[0]
+    assert remaining.assignee_employee_id == person["a"], "Phiếu của chính họ phải nằm im"
+    transferred = _viec(db, cua_nguoi_khac, status=TASK_PENDING)[0]
+    assert transferred.assignee_employee_id == person["nop"]
 
 
 # ── I09 × I05: trả về một bước rồi biểu quyết theo tỷ lệ ────────────────────
 
-def test_tra_ve_mot_buoc_khong_lam_phinh_mau_so_cua_bieu_quyet(db, nguoi):
+def test_tra_ve_mot_buoc_khong_lam_phinh_mau_so_cua_bieu_quyet(db, person):
     """Bước biểu quyết 100%, bị trả về, mở lại — và không bao giờ xong nữa.
 
     `chang_da_xong` đếm **mọi** việc từng có ở chặng, kể cả việc đã HỦY. Trả về
@@ -169,43 +169,43 @@ def test_tra_ve_mot_buoc_khong_lam_phinh_mau_so_cua_bieu_quyet(db, nguoi):
     cách im lặng, khó thấy hơn hẳn.
     """
     _luong(db, [
-        dict(seq=1, name="Mở màn", approver_ref=str(nguoi["a"])),
+        dict(seq=1, name="Mở màn", approver_ref=str(person["a"])),
         dict(seq=2, name="Hội đồng", multi_mode=MULTI_QUORUM, quorum_percent=100,
-             approver_ref=f"{nguoi['a']},{nguoi['b']},{nguoi['c']}"),
+             approver_ref=f"{person['a']},{person['b']},{person['c']}"),
     ])
-    instance = _trinh(db, nguoi["nop"])
-    instance = action_service.duyet(db, instance, nguoi["a"], ACTOR, {})
+    instance = _trinh(db, person["nop"])
+    instance = action_service.approve(db, instance, person["a"], ACTOR, {})
     assert instance.current_seq == 2
 
     #  Hội đồng trả về bước 1; bước 1 duyệt lại → hội đồng mở lại.
-    instance = action_service.tra_lai(db, instance, nguoi["a"], ACTOR, "Sửa lại số liệu",
-                                      {}, ve_buoc=1)
-    instance = action_service.duyet(db, instance, nguoi["a"], ACTOR, {})
+    instance = action_service.send_back(db, instance, person["a"], ACTOR, "Sửa lại số liệu",
+                                      {}, to_step=1)
+    instance = action_service.approve(db, instance, person["a"], ACTOR, {})
     assert instance.current_seq == 2
 
-    for ten in ("a", "b", "c"):
-        instance = action_service.duyet(db, instance, nguoi[ten], ACTOR, {})
+    for name in ("a", "b", "c"):
+        instance = action_service.approve(db, instance, person[name], ACTOR, {})
 
     assert instance.status == INSTANCE_APPROVED, (
         "Cả hội đồng đã duyệt lại mà phiếu vẫn không đi tiếp")
 
 
-def test_bieu_quyet_theo_ty_le_dem_dung_so_nguoi_dang_giu_viec(db, nguoi):
+def test_bieu_quyet_theo_ty_le_dem_dung_so_nguoi_dang_giu_viec(db, person):
     """Ca nền: 3 người, 50% → 2 người bấm là xong. Không được đòi tới người thứ 3."""
     _luong(db, [
         dict(seq=1, name="Hội đồng", multi_mode=MULTI_QUORUM, quorum_percent=50,
-             approver_ref=f"{nguoi['a']},{nguoi['b']},{nguoi['c']}"),
+             approver_ref=f"{person['a']},{person['b']},{person['c']}"),
     ])
-    instance = _trinh(db, nguoi["nop"])
-    instance = action_service.duyet(db, instance, nguoi["a"], ACTOR, {})
+    instance = _trinh(db, person["nop"])
+    instance = action_service.approve(db, instance, person["a"], ACTOR, {})
     assert instance.status == INSTANCE_RUNNING
-    instance = action_service.duyet(db, instance, nguoi["b"], ACTOR, {})
+    instance = action_service.approve(db, instance, person["b"], ACTOR, {})
     assert instance.status == INSTANCE_APPROVED
 
 
 # ── Bối cảnh phiếu: ai là người nói ra nó ───────────────────────────────────
 
-def test_nguoi_duyet_khong_tu_dat_boi_canh_de_chon_nguoi_duyet_ke_tiep(db, nguoi):
+def test_nguoi_duyet_khong_tu_dat_boi_canh_de_chon_nguoi_duyet_ke_tiep(db, person):
     """Người bấm Duyệt gửi kèm `subject` — và bộ máy tin nó.
 
     `subject` là bối cảnh phiếu: nó quyết định bước kế chạy NHÁNH nào và, với
@@ -217,25 +217,25 @@ def test_nguoi_duyet_khong_tu_dat_boi_canh_de_chon_nguoi_duyet_ke_tiep(db, nguoi
     đốc. Chứng từ nào tự dựng được bối cảnh (`entity_hooks.register_subject`)
     thì phải lấy bản của máy chủ, dict gửi lên chỉ dùng cho loại chưa khai.
     """
-    from app.modules.approval.instance_controller import _boi_canh
+    from app.modules.approval.instance_controller import _context
 
     _luong(db, [
-        dict(seq=1, name="Mở màn", approver_ref=str(nguoi["a"])),
+        dict(seq=1, name="Mở màn", approver_ref=str(person["a"])),
         dict(seq=2, name="Người ký", approver_kind=APPROVER_FIELD,
              approver_ref="nguoi_ky"),
     ])
-    instance = _trinh(db, nguoi["nop"], subject={"nguoi_ky": nguoi["b"]})
+    instance = _trinh(db, person["nop"], subject={"nguoi_ky": person["b"]})
 
-    entity_hooks.register_subject(ENTITY, lambda _db, _id: {"nguoi_ky": nguoi["b"]})
+    entity_hooks.register_subject(ENTITY, lambda _db, _id: {"nguoi_ky": person["b"]})
     try:
-        that = _boi_canh(db, instance, {"nguoi_ky": nguoi["c"]})
+        real_ids = _context(db, instance, {"nguoi_ky": person["c"]})
     finally:
         entity_hooks._SUBJECTS.pop(ENTITY, None)
 
-    assert that["nguoi_ky"] == nguoi["b"], "Phải lấy bối cảnh của máy chủ, không lấy của người bấm"
+    assert real_ids["nguoi_ky"] == person["b"], "Phải lấy bối cảnh của máy chủ, không lấy của người bấm"
 
 
-def test_buoc_sau_van_tim_ra_nguoi_duyet_khi_giao_dien_khong_gui_boi_canh(db, nguoi):
+def test_buoc_sau_van_tim_ra_nguoi_duyet_khi_giao_dien_khong_gui_boi_canh(db, person):
     """Mặt CÒN NẶNG HƠN của cùng một lỗ: giao diện không gửi bối cảnh bao giờ.
 
     `approval-api.ts` khai `subject: Record<string, unknown> = {}` và không chỗ
@@ -249,42 +249,42 @@ def test_buoc_sau_van_tim_ra_nguoi_duyet_khi_giao_dien_khong_gui_boi_canh(db, ng
     về nhánh mặc định — không khai mặc định là kẹt luôn. Đúng dạng «duyệt xong
     bước 1 rồi phiếu biến mất» mà không ai lần ra vì luồng khai hoàn toàn đúng.
     """
-    from app.modules.approval.instance_controller import _boi_canh
+    from app.modules.approval.instance_controller import _context
 
     _luong(db, [
-        dict(seq=1, name="Mở màn", approver_ref=str(nguoi["a"])),
+        dict(seq=1, name="Mở màn", approver_ref=str(person["a"])),
         dict(seq=2, name="Người ký", approver_kind=APPROVER_FIELD,
              approver_ref="signer_employee_id"),
     ], code="CH-06")
-    instance = _trinh(db, nguoi["nop"], subject={"signer_employee_id": nguoi["b"]})
+    instance = _trinh(db, person["nop"], subject={"signer_employee_id": person["b"]})
 
-    entity_hooks.register_subject(ENTITY, lambda _db, _id: {"signer_employee_id": nguoi["b"]})
+    entity_hooks.register_subject(ENTITY, lambda _db, _id: {"signer_employee_id": person["b"]})
     try:
         #  Đúng thứ giao diện gửi lên: rỗng.
-        instance = action_service.duyet(db, instance, nguoi["a"], ACTOR,
-                                        _boi_canh(db, instance, {}))
+        instance = action_service.approve(db, instance, person["a"], ACTOR,
+                                        _context(db, instance, {}))
     finally:
         entity_hooks._SUBJECTS.pop(ENTITY, None)
 
     assert instance.status == INSTANCE_RUNNING, f"Phiếu kẹt: {instance.finish_reason}"
-    dang_cho = _viec(db, instance, status=TASK_PENDING)
-    assert [row.assignee_employee_id for row in dang_cho] == [nguoi["b"]]
+    waiting = _viec(db, instance, status=TASK_PENDING)
+    assert [row.assignee_employee_id for row in waiting] == [person["b"]]
 
 
-def test_loai_chung_tu_chua_khai_boi_canh_van_dung_dict_gui_len(db, nguoi):
+def test_loai_chung_tu_chua_khai_boi_canh_van_dung_dict_gui_len(db, person):
     """Không được siết tới mức khóa các phân hệ chưa khai hàm dựng bối cảnh."""
-    from app.modules.approval.instance_controller import _boi_canh
+    from app.modules.approval.instance_controller import _context
 
-    _luong(db, [dict(seq=1, name="Duyệt", approver_ref=str(nguoi["a"]))])
-    instance = _trinh(db, nguoi["nop"])
+    _luong(db, [dict(seq=1, name="Duyệt", approver_ref=str(person["a"]))])
+    instance = _trinh(db, person["nop"])
 
     entity_hooks._SUBJECTS.pop(ENTITY, None)
-    assert _boi_canh(db, instance, {"total": 5}) == {"total": 5}
+    assert _context(db, instance, {"total": 5}) == {"total": 5}
 
 
 # ── Rút lại ────────────────────────────────────────────────────────────────
 
-def test_phieu_khong_ghi_nguoi_trinh_thi_khong_ai_rut_duoc(db, nguoi):
+def test_phieu_khong_ghi_nguoi_trinh_thi_khong_ai_rut_duoc(db, person):
     """Tài khoản chưa gắn hồ sơ nhân sự trình phiếu → `started_by` để trống.
 
     Câu kiểm hiện tại là `if instance.started_by_employee_id and ... != actor`,
@@ -293,17 +293,17 @@ def test_phieu_khong_ghi_nguoi_trinh_thi_khong_ai_rut_duoc(db, nguoi):
     lại / từ chối tự gác bằng «có việc đang chờ mình không», riêng đường rút thì
     không còn gì gác.
     """
-    _luong(db, [dict(seq=1, name="Duyệt", approver_ref=str(nguoi["a"]))])
+    _luong(db, [dict(seq=1, name="Duyệt", approver_ref=str(person["a"]))])
     instance = _trinh(db, None)
 
-    with pytest.raises(HTTPException) as loi:
-        action_service.rut_lai(db, instance, nguoi["b"], ACTOR, "Tôi rút hộ")
-    assert loi.value.status_code == 403
+    with pytest.raises(HTTPException) as error:
+        action_service.withdraw(db, instance, person["b"], ACTOR, "Tôi rút hộ")
+    assert error.value.status_code == 403
 
 
 # ── Trả về một bước: kiểm trước, sửa sau ───────────────────────────────────
 
-def test_tra_ve_buoc_khong_hop_le_khong_de_lai_viec_da_huy(db, nguoi):
+def test_tra_ve_buoc_khong_hop_le_khong_de_lai_viec_da_huy(db, person):
     """`to_seq` sai thì phải hỏng SẠCH, không để việc của người bấm thành đã hủy.
 
     Hiện tại `tra_lai` chiếm việc, ghi dấu vết, hủy việc còn treo RỒI mới kiểm
@@ -312,40 +312,40 @@ def test_tra_ve_buoc_khong_hop_le_khong_de_lai_viec_da_huy(db, nguoi):
     dựa vào chỗ khác.
     """
     _luong(db, [
-        dict(seq=1, name="Mở màn", approver_ref=str(nguoi["a"])),
-        dict(seq=2, name="Duyệt", approver_ref=str(nguoi["b"])),
+        dict(seq=1, name="Mở màn", approver_ref=str(person["a"])),
+        dict(seq=2, name="Duyệt", approver_ref=str(person["b"])),
     ])
-    instance = _trinh(db, nguoi["nop"])
-    instance = action_service.duyet(db, instance, nguoi["a"], ACTOR, {})
+    instance = _trinh(db, person["nop"])
+    instance = action_service.approve(db, instance, person["a"], ACTOR, {})
 
-    with pytest.raises(HTTPException) as loi:
-        action_service.tra_lai(db, instance, nguoi["b"], ACTOR, "Về bước không có thật",
-                               {}, ve_buoc=99)
-    assert loi.value.status_code == 400
+    with pytest.raises(HTTPException) as error:
+        action_service.send_back(db, instance, person["b"], ACTOR, "Về bước không có thật",
+                               {}, to_step=99)
+    assert error.value.status_code == 400
 
-    con_cho = db.query(ApprovalTask).filter(
+    still_pending = db.query(ApprovalTask).filter(
         ApprovalTask.instance_id == instance.id,
         ApprovalTask.node_seq == 2, ApprovalTask.status == TASK_PENDING).count()
-    assert con_cho == 1, "Việc của người bấm phải còn nguyên sau khi thao tác hỏng"
+    assert still_pending == 1, "Việc của người bấm phải còn nguyên sau khi thao tác hỏng"
 
 
-def test_tra_ve_chinh_buoc_dang_dung_bi_chan(db, nguoi):
+def test_tra_ve_chinh_buoc_dang_dung_bi_chan(db, person):
     """«Trả về bước 2» khi đang đứng ở bước 2 là quay vòng tại chỗ."""
     _luong(db, [
-        dict(seq=1, name="Mở màn", approver_ref=str(nguoi["a"])),
-        dict(seq=2, name="Duyệt", approver_ref=str(nguoi["b"])),
+        dict(seq=1, name="Mở màn", approver_ref=str(person["a"])),
+        dict(seq=2, name="Duyệt", approver_ref=str(person["b"])),
     ], code="CH-02")
-    instance = _trinh(db, nguoi["nop"])
-    instance = action_service.duyet(db, instance, nguoi["a"], ACTOR, {})
+    instance = _trinh(db, person["nop"])
+    instance = action_service.approve(db, instance, person["a"], ACTOR, {})
 
     with pytest.raises(HTTPException):
-        action_service.tra_lai(db, instance, nguoi["b"], ACTOR, "Quay tại chỗ",
-                               {}, ve_buoc=2)
+        action_service.send_back(db, instance, person["b"], ACTOR, "Quay tại chỗ",
+                               {}, to_step=2)
 
 
 # ── Nhiều người một bước, nhiều lần bấm ────────────────────────────────────
 
-def test_mot_nguoi_giu_hai_viec_trong_cung_mot_buoc_phai_bam_du_hai_lan(db, nguoi):
+def test_mot_nguoi_giu_hai_viec_trong_cung_mot_buoc_phai_bam_du_hai_lan(db, person):
     """Chuyển người xử lý dồn hai việc của một chặng vào một người.
 
     Chặng «tất cả phải duyệt» còn 2 việc, quản trị chuyển việc của B sang A —
@@ -354,45 +354,45 @@ def test_mot_nguoi_giu_hai_viec_trong_cung_mot_buoc_phai_bam_du_hai_lan(db, nguo
     """
     _luong(db, [
         dict(seq=1, name="Cả hai duyệt", multi_mode=MULTI_ALL,
-             approver_ref=f"{nguoi['a']},{nguoi['b']}"),
+             approver_ref=f"{person['a']},{person['b']}"),
     ], code="CH-03")
-    instance = _trinh(db, nguoi["nop"])
+    instance = _trinh(db, person["nop"])
 
     cua_b = [row for row in _viec(db, instance, status=TASK_PENDING)
-             if row.assignee_employee_id == nguoi["b"]][0]
-    action_service.chuyen_nguoi_xu_ly(db, cua_b, nguoi["a"], ACTOR)
+             if row.assignee_employee_id == person["b"]][0]
+    action_service.reassign(db, cua_b, person["a"], ACTOR)
 
-    instance = action_service.duyet(db, instance, nguoi["a"], ACTOR, {})
+    instance = action_service.approve(db, instance, person["a"], ACTOR, {})
     assert instance.status == INSTANCE_RUNNING, "Mới bấm một lần, còn một việc treo"
-    instance = action_service.duyet(db, instance, nguoi["a"], ACTOR, {})
+    instance = action_service.approve(db, instance, person["a"], ACTOR, {})
     assert instance.status == INSTANCE_APPROVED
 
 
-def test_bam_duyet_lan_hai_khi_phieu_da_xong_thi_bao_da_ket_thuc(db, nguoi):
+def test_bam_duyet_lan_hai_khi_phieu_da_xong_thi_bao_da_ket_thuc(db, person):
     """Nhấp đúp ở bước cuối — cú thứ hai phải là câu người đọc hiểu, không phải 500."""
-    _luong(db, [dict(seq=1, name="Duyệt", approver_ref=str(nguoi["a"]))], code="CH-04")
-    instance = _trinh(db, nguoi["nop"])
-    instance = action_service.duyet(db, instance, nguoi["a"], ACTOR, {})
+    _luong(db, [dict(seq=1, name="Duyệt", approver_ref=str(person["a"]))], code="CH-04")
+    instance = _trinh(db, person["nop"])
+    instance = action_service.approve(db, instance, person["a"], ACTOR, {})
 
-    with pytest.raises(HTTPException) as loi:
-        action_service.duyet(db, instance, nguoi["a"], ACTOR, {})
-    assert loi.value.status_code == 400
-    assert "kết thúc" in str(loi.value.detail)
+    with pytest.raises(HTTPException) as error:
+        action_service.approve(db, instance, person["a"], ACTOR, {})
+    assert error.value.status_code == 400
+    assert "kết thúc" in str(error.value.detail)
 
 
-def test_viec_da_huy_khong_chuyen_nguoi_duoc(db, nguoi):
+def test_viec_da_huy_khong_chuyen_nguoi_duoc(db, person):
     """Phiếu đã từ chối → việc hủy hết → không được phép bàn giao việc chết."""
     _luong(db, [
         dict(seq=1, name="Cả hai duyệt", multi_mode=MULTI_ALL,
-             approver_ref=f"{nguoi['a']},{nguoi['b']}"),
+             approver_ref=f"{person['a']},{person['b']}"),
     ], code="CH-05")
-    instance = _trinh(db, nguoi["nop"])
+    instance = _trinh(db, person["nop"])
     cua_b = [row for row in _viec(db, instance, status=TASK_PENDING)
-             if row.assignee_employee_id == nguoi["b"]][0]
+             if row.assignee_employee_id == person["b"]][0]
 
-    action_service.tu_choi(db, instance, nguoi["a"], ACTOR, "Không đạt")
+    action_service.reject(db, instance, person["a"], ACTOR, "Không đạt")
     db.refresh(cua_b)
     assert cua_b.status == TASK_CANCELLED
 
     with pytest.raises(HTTPException):
-        action_service.chuyen_nguoi_xu_ly(db, cua_b, nguoi["c"], ACTOR)
+        action_service.reassign(db, cua_b, person["c"], ACTOR)

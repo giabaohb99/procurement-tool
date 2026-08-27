@@ -19,7 +19,7 @@ from .instance_model import (ACTION_APPROVE, ACTION_ESCALATE, ACTION_LABELS,
                              ApprovalTask)
 
 
-def viec_cua_toi(db: Session, employee_id: int, entity: str = "") -> list[dict]:
+def my_tasks(db: Session, employee_id: int, entity: str = "") -> list[dict]:
     """Mọi thứ đang chờ một người — của cả văn thư lẫn thu mua, gom một chỗ.
 
     Gồm hai nguồn: việc của chính họ, và việc họ được **ủy quyền bấm thay**.
@@ -29,15 +29,15 @@ def viec_cua_toi(db: Session, employee_id: int, entity: str = "") -> list[dict]:
     if not employee_id:
         return []
 
-    nguoi_can_lam = {employee_id}
-    uy_quyen_theo_nguoi: dict[int, int] = {}
-    for row in delegation_service.nguoi_uy_quyen_cho(db, employee_id, entity or ""):
-        nguoi_can_lam.add(row.from_employee_id)
-        uy_quyen_theo_nguoi[row.from_employee_id] = row.id
+    assignees = {employee_id}
+    delegation_by_employee: dict[int, int] = {}
+    for row in delegation_service.delegators_of(db, employee_id, entity or ""):
+        assignees.add(row.from_employee_id)
+        delegation_by_employee[row.from_employee_id] = row.id
 
     query = (
         db.query(ApprovalTask)
-        .filter(ApprovalTask.assignee_employee_id.in_(nguoi_can_lam),
+        .filter(ApprovalTask.assignee_employee_id.in_(assignees),
                 ApprovalTask.status == TASK_PENDING)
     )
     #  ⚠️ KHÔNG dùng `.nulls_last()`: MySQL 8 không hiểu cú pháp `NULLS LAST` và
@@ -49,17 +49,17 @@ def viec_cua_toi(db: Session, employee_id: int, entity: str = "") -> list[dict]:
     if not tasks:
         return []
 
-    phien = {
+    instances = {
         row.id: row for row in
         db.query(ApprovalInstance)
         .filter(ApprovalInstance.id.in_({task.instance_id for task in tasks}))
         .all()
     }
 
-    bay_gio = datetime.now()
-    ket_qua = []
+    now = datetime.now()
+    result = []
     for task in tasks:
-        instance = phien.get(task.instance_id)
+        instance = instances.get(task.instance_id)
         #  Phiên đã đóng mà việc còn treo là dữ liệu lệch — đừng bày ra, người
         #  dùng bấm vào không làm được gì.
         if instance is None or instance.status not in INSTANCE_OPEN_STATUSES:
@@ -67,35 +67,35 @@ def viec_cua_toi(db: Session, employee_id: int, entity: str = "") -> list[dict]:
         if entity and instance.entity != entity:
             continue
 
-        dong = serializer.task_out(db, task)
-        dong.update({
+        entry = serializer.task_out(db, task)
+        entry.update({
             "entity": instance.entity,
             "entity_id": instance.entity_id,
             "entity_code": instance.entity_code,
             "entity_title": instance.entity_title,
-            "started_by_name": serializer._ten(db, instance.started_by_employee_id),
+            "started_by_name": serializer._name_of(db, instance.started_by_employee_id),
             "instance_status": instance.status,
             #  Bấm thay ai — hiện thẳng trên dòng để người dùng biết mình đang
             #  làm việc của người khác trước khi bấm, không phải sau.
             "on_behalf_of_id": (task.assignee_employee_id
                                 if task.assignee_employee_id != employee_id else None),
-            "on_behalf_of_name": (serializer._ten(db, task.assignee_employee_id)
+            "on_behalf_of_name": (serializer._name_of(db, task.assignee_employee_id)
                                   if task.assignee_employee_id != employee_id else ""),
-            "delegation_id": uy_quyen_theo_nguoi.get(task.assignee_employee_id),
-            "is_overdue": bool(task.due_at and task.due_at < bay_gio),
+            "delegation_id": delegation_by_employee.get(task.assignee_employee_id),
+            "is_overdue": bool(task.due_at and task.due_at < now),
         })
-        ket_qua.append(dong)
-    return ket_qua
+        result.append(entry)
+    return result
 
 
 #  Những việc coi là ĐÃ XỬ LÝ khi nhìn lại. Cố ý KHÔNG gồm «Ý kiến» (ghi ý kiến
 #  không đổi trạng thái phiếu) và «Chuyển người xử lý» (đó là việc của quản trị,
 #  không phải một quyết định trên phiếu).
-HANH_DONG_DA_XU_LY = (ACTION_APPROVE, ACTION_REJECT, ACTION_RETURN)
+HANDLED_ACTIONS = (ACTION_APPROVE, ACTION_REJECT, ACTION_RETURN)
 
 
-def viec_da_xu_ly(db: Session, employee_id: int, entity: str = "",
-                  ngay: int = 30, gioi_han: int = 50) -> list[dict]:
+def handled_tasks(db: Session, employee_id: int, entity: str = "",
+                  days: int = 30, limit: int = 50) -> list[dict]:
     """ĐÃ DUYỆT GẦN ĐÂY — nhìn lại những phiếu chính tôi vừa quyết định.
 
     Đọc từ **dấu vết** (`tab_approval_action`) chứ không từ bảng việc, vì hai lý
@@ -110,33 +110,33 @@ def viec_da_xu_ly(db: Session, employee_id: int, entity: str = "",
     if not employee_id:
         return []
 
-    tu_ngay = datetime.now() - timedelta(days=max(1, ngay))
+    from_date = datetime.now() - timedelta(days=max(1, days))
     rows = (
         db.query(ApprovalAction)
         .filter(ApprovalAction.actor_employee_id == employee_id,
-                ApprovalAction.action.in_(HANH_DONG_DA_XU_LY),
-                ApprovalAction.created_at >= tu_ngay)
+                ApprovalAction.action.in_(HANDLED_ACTIONS),
+                ApprovalAction.created_at >= from_date)
         .order_by(ApprovalAction.created_at.desc(), ApprovalAction.id.desc())
-        .limit(gioi_han * 3)   # dư ra để còn lọc theo `entity` bên dưới
+        .limit(limit * 3)   # dư ra để còn lọc theo `entity` bên dưới
         .all()
     )
     if not rows:
         return []
 
-    phien = {
+    instances = {
         row.id: row for row in
         db.query(ApprovalInstance)
         .filter(ApprovalInstance.id.in_({r.instance_id for r in rows})).all()
     }
 
-    ket_qua = []
+    result = []
     for row in rows:
-        instance = phien.get(row.instance_id)
+        instance = instances.get(row.instance_id)
         if instance is None:
             continue
         if entity and instance.entity != entity:
             continue
-        ket_qua.append({
+        result.append({
             "id": row.id,
             "instance_id": instance.id,
             "entity": instance.entity,
@@ -154,52 +154,52 @@ def viec_da_xu_ly(db: Session, employee_id: int, entity: str = "",
             "instance_status": instance.status,
             "instance_status_label": INSTANCE_STATUS_LABELS.get(instance.status, ""),
             #  Bấm THAY ai theo ủy quyền — nhật ký ghi cả hai tên, chỗ này cũng vậy.
-            "on_behalf_of_name": serializer._ten(db, row.on_behalf_of_id),
+            "on_behalf_of_name": serializer._name_of(db, row.on_behalf_of_id),
         })
-        if len(ket_qua) >= gioi_han:
+        if len(result) >= limit:
             break
-    return ket_qua
+    return result
 
 
-def dem_viec_cua_toi(db: Session, employee_id: int) -> int:
+def count_my_tasks(db: Session, employee_id: int) -> int:
     """Con số cho chuông/huy hiệu — đếm bằng chính hàm trên để hai chỗ không lệch."""
-    return len(viec_cua_toi(db, employee_id))
+    return len(my_tasks(db, employee_id))
 
 
-def viec_qua_han(db: Session, gio: int = 0) -> list[ApprovalTask]:
+def overdue_tasks(db: Session, hours: int = 0) -> list[ApprovalTask]:
     """I18 — việc quá hạn, dùng cho tác vụ nền nhắc và leo cấp."""
-    bay_gio = datetime.now()
+    now = datetime.now()
     return (
         db.query(ApprovalTask)
         .filter(ApprovalTask.status == TASK_PENDING,
                 ApprovalTask.due_at.isnot(None),
-                ApprovalTask.due_at < bay_gio)
+                ApprovalTask.due_at < now)
         .order_by(ApprovalTask.due_at.asc())
         .all()
     )
 
 
-def danh_dau_da_nhac(db: Session, task: ApprovalTask) -> None:
+def mark_reminded(db: Session, task: ApprovalTask) -> None:
     """Đã nhắc rồi thì thôi — nhắc lại mỗi lần chạy tác vụ nền là spam, và
     người ta tắt thông báo, rồi bỏ lỡ cả những cái quan trọng."""
     task.reminded_at = datetime.now()
     db.flush()
 
 
-def leo_cap(db: Session, task: ApprovalTask, len_employee_id: int, actor: int) -> None:
+def escalate(db: Session, task: ApprovalTask, to_employee_id: int, actor: int) -> None:
     """I18 — quá lâu thì đẩy lên cấp trên, ghi rõ vào dấu vết."""
     from . import instance_service
 
     instance = db.get(ApprovalInstance, task.instance_id)
-    nguoi_cu = task.assignee_employee_id
-    task.assignee_employee_id = len_employee_id
+    old_assignee = task.assignee_employee_id
+    task.assignee_employee_id = to_employee_id
     task.escalated_at = datetime.now()
     task.updated_by = actor
 
-    instance_service.ghi_dau_vet(
+    instance_service.record_audit(
         db, instance, ACTION_ESCALATE, actor, node_seq=task.node_seq,
         node_name=task.node_name, task_id=task.id,
-        actor_employee_id=len_employee_id, on_behalf_of_id=nguoi_cu,
+        actor_employee_id=to_employee_id, on_behalf_of_id=old_assignee,
         comment="Quá hạn duyệt — chuyển lên cấp trên",
     )
     db.flush()

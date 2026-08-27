@@ -29,7 +29,7 @@ class EmployeeCreate(EmployeeBase):
     # gần hết dữ liệu thật), nhân sự thì LUÔN có tình trạng làm việc — rỗng không mang nghĩa gì.
     @field_validator("status")
     @classmethod
-    def _kiem_status(cls, v: str) -> str:
+    def _check_status(cls, v: str) -> str:
         return EMPLOYEE_STATUS.validate(v, allow_blank=False)
 
 
@@ -46,7 +46,7 @@ class EmployeeUpdate(BaseModel):
 
     @field_validator("status")
     @classmethod
-    def _kiem_status(cls, v: str | None) -> str | None:
+    def _check_status(cls, v: str | None) -> str | None:
         # `None` = không gửi trường này (PATCH), cho qua. Nhưng `""` là CÓ gửi và gửi rỗng:
         # hồ sơ mang giá trị cũ ngoài bộ mã thì ô chọn không khớp mục nào, để rỗng lọt qua là
         # bấm lưu xong xóa trắng trạng thái thật của một con người mà không ai biết.

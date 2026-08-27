@@ -184,7 +184,7 @@ def get_perm_profile(db: Session, user) -> dict:
     dept_names: list[str] = []
     if getattr(user, "employee_id", 0):
         from app.modules.department.model import Department
-        from app.modules.employee.department_service import phong_ban_cua
+        from app.modules.employee.department_service import departments_of
         from app.modules.employee.model import Employee
         emp = db.get(Employee, user.employee_id)
         if emp:
@@ -200,12 +200,12 @@ def get_perm_profile(db: Session, user) -> dict:
             #  ⚠️ Lùi về đúng phòng chính khi bảng kiêm nhiệm chưa có dòng nào
             #  (hồ sơ tạo trước migration, hoặc dữ liệu nhập tay): thiếu nhánh
             #  này là người đó mất sạch phạm vi phòng ban.
-            dept_ids = phong_ban_cua(db, user.employee_id) or ([dept_id] if dept_id else [])
+            dept_ids = departments_of(db, user.employee_id) or ([dept_id] if dept_id else [])
             if dept_ids:
-                ten_phong = dict(db.query(Department.id, Department.name)
+                department_names = dict(db.query(Department.id, Department.name)
                                  .filter(Department.id.in_(dept_ids)).all())
-                dept_names = [ten_phong[i] for i in dept_ids if ten_phong.get(i)]
-                dept_name = ten_phong.get(dept_id, "")
+                dept_names = [department_names[i] for i in dept_ids if department_names.get(i)]
+                dept_name = department_names.get(dept_id, "")
 
     profile = {"grants": grants, "perms_union": perms_union, "company_id": company_id,
                "dept_name": dept_name, "dept_id": dept_id, "emp_code": emp_code, "emp_name": emp_name,

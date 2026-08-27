@@ -49,11 +49,11 @@ def main() -> int:
         numbers = list(pool.map(cap_mot_so, range(THREADS)))
 
     ok = sorted(numbers) == list(range(1, THREADS + 1))
-    trung = len(numbers) - len(set(numbers))
+    overlapping = len(numbers) - len(set(numbers))
 
     print(f"Đã cấp     : {len(numbers)} số")
     print(f"Nhỏ nhất   : {min(numbers)} · lớn nhất: {max(numbers)}")
-    print(f"Trùng      : {trung}")
+    print(f"Trùng      : {overlapping}")
     print(f"Thiếu số   : {sorted(set(range(1, THREADS + 1)) - set(numbers)) or 'không'}")
     print("KẾT QUẢ    :", "ĐẠT" if ok else "KHÔNG ĐẠT")
 

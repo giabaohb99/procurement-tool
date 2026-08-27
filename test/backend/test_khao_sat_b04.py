@@ -67,9 +67,9 @@ def test_khong_schema_dau_vao_nao_nhan_approve_status():
     xem `doc/erp/15` §3 B-04)."""
     from app.modules.survey import schema as sv_schema
 
-    for ten in ("SurveyCreate", "SurveyUpdate", "SupplierSurveyCreate", "ProductSurveyCreate",
+    for name in ("SurveyCreate", "SurveyUpdate", "SupplierSurveyCreate", "ProductSurveyCreate",
                 "SupplierSurveyUpdate", "ProductSurveyUpdate"):
-        assert "approve_status" not in getattr(sv_schema, ten).model_fields, ten
+        assert "approve_status" not in getattr(sv_schema, name).model_fields, name
 
 
 def test_phieu_moi_mac_dinh_la_chua_xet_duyet(db):
@@ -123,12 +123,12 @@ def test_nhan_ban_phieu_tra_ve_chua_xet_duyet(db):
     thêm `approve_status` vào danh sách đó là bản sao thừa hưởng luôn dấu đã duyệt."""
     assert "approve_status" not in sv_svc.HEADER_FIELDS
 
-    goc = Survey(code="KS90004", survey_type="combined", status="approved",
+    origin = Survey(code="KS90004", survey_type="combined", status="approved",
                  approve_status="approved")
-    db.add(goc)
+    db.add(origin)
     db.commit()
 
-    ban_sao = sv_svc.copy_survey(db, goc.id, user_id=1)
+    ban_sao = sv_svc.copy_survey(db, origin.id, user_id=1)
     assert ban_sao.approve_status == "pending"
 
 
@@ -217,13 +217,13 @@ def _doc(db) -> dict:
             for s in db.query(Survey).order_by(Survey.code).all()}
 
 
-def _dung_migration(db, mig, chieu: str) -> None:
+def _dung_migration(db, mig, direction: str) -> None:
     from alembic.migration import MigrationContext
     from alembic.operations import Operations
 
     ctx = MigrationContext.configure(db.connection())
     with Operations.context(ctx):
-        getattr(mig, chieu)()
+        getattr(mig, direction)()
     db.expire_all()
 
 
@@ -272,8 +272,8 @@ def test_chay_theo_lo_khong_bo_sot_dong_nao(db, monkeypatch):
     assert db.query(Survey).filter(Survey.approve_status == "pending").count() == 1
 
 
-@pytest.mark.parametrize("chieu", ["upgrade", "downgrade"])
-def test_bang_rong_khong_no(db, chieu):
+@pytest.mark.parametrize("direction", ["upgrade", "downgrade"])
+def test_bang_rong_khong_no(db, direction):
     """Môi trường mới dựng thì `tab_survey` rỗng; `MIN(id)` trả `NULL` và vòng lô không được
     lấy `NULL` ra mà cộng."""
-    _dung_migration(db, _nap_migration(), chieu)
+    _dung_migration(db, _nap_migration(), direction)

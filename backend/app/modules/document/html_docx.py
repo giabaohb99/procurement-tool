@@ -23,199 +23,199 @@ import base64
 import re
 from html.parser import HTMLParser
 
-from .docx_writer import (AnhNhung, GoiDocx, doan_dau_chan_trang, dong_goi,
-                          truong_so_trang, xml_escape)
+from .docx_writer import (EmbeddedImage, DocxPackage, header_footer_paragraph, pack,
+                          page_number_field, xml_escape)
 
 #  Thẻ khối tạo ra một đoạn mới trong Word.
-_THE_DOAN = {"p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote"}
+_PARAGRAPH_TAGS = {"p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote"}
 #  Thẻ bật/tắt một kiểu chữ.
-_THE_KIEU = {"strong": "b", "b": "b", "em": "i", "i": "i",
+_STYLE_TAGS = {"strong": "b", "b": "b", "em": "i", "i": "i",
              "u": "u", "s": "s", "strike": "s", "del": "s"}
 
-_CANH_LE = {"left": "left", "center": "center", "right": "right", "justify": "both"}
+_TEXT_ALIGN = {"left": "left", "center": "center", "right": "right", "justify": "both"}
 
 _EMU_PER_PX = 9525
 _TWIPS_PER_PX = 15
-_SO_LA_MA = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X",
+_ROMAN_NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X",
              "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX"]
 
 
-def _doc_style(chuoi: str) -> dict[str, str]:
-    ra: dict[str, str] = {}
-    for phan in (chuoi or "").split(";"):
-        if ":" not in phan:
+def _parse_style(raw: str) -> dict[str, str]:
+    out: dict[str, str] = {}
+    for part in (raw or "").split(";"):
+        if ":" not in part:
             continue
-        khoa, _, giatri = phan.partition(":")
-        ra[khoa.strip().lower()] = giatri.strip()
-    return ra
+        key, _, value = part.partition(":")
+        out[key.strip().lower()] = value.strip()
+    return out
 
 
-def _px(giatri: str | None) -> float | None:
-    if not giatri:
+def _px(value: str | None) -> float | None:
+    if not value:
         return None
-    so = re.match(r"^(-?[\d.]+)\s*px$", giatri.strip())
+    so = re.match(r"^(-?[\d.]+)\s*px$", value.strip())
     return float(so.group(1)) if so else None
 
 
-def _mau(giatri: str | None) -> str | None:
+def _color(value: str | None) -> str | None:
     """`#1a2b3c` hoặc `rgb(1,2,3)` → `1A2B3C`. Word không nhận dấu #."""
-    if not giatri:
+    if not value:
         return None
-    giatri = giatri.strip()
-    if giatri.startswith("#"):
-        so = giatri[1:]
+    value = value.strip()
+    if value.startswith("#"):
+        so = value[1:]
         if len(so) == 3:
             so = "".join(c * 2 for c in so)
         return so.upper() if len(so) == 6 else None
-    rgb = re.match(r"^rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)", giatri)
+    rgb = re.match(r"^rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)", value)
     if rgb:
         return "".join(f"{int(v):02X}" for v in rgb.groups())
     return None
 
 
-class _KieuChu:
+class _CharStyle:
     """Định dạng đang có hiệu lực tại một điểm trong cây HTML."""
 
     def __init__(self) -> None:
-        self.dam = self.nghieng = self.gach_chan = self.gach_ngang = False
-        self.phong: str | None = None
-        self.co_pt: float | None = None
-        self.mau: str | None = None
-        self.nen: str | None = None
+        self.bold = self.italic = self.underline = self.strike = False
+        self.font: str | None = None
+        self.size_pt: float | None = None
+        self.color: str | None = None
+        self.background: str | None = None
 
-    def nhan_ban(self) -> "_KieuChu":
-        moi = _KieuChu()
-        moi.__dict__.update(self.__dict__)
-        return moi
+    def clone(self) -> "_CharStyle":
+        new = _CharStyle()
+        new.__dict__.update(self.__dict__)
+        return new
 
     def rpr(self) -> str:
-        phan = ""
-        if self.phong:
-            ten = xml_escape(self.phong)
-            phan += f'<w:rFonts w:ascii="{ten}" w:hAnsi="{ten}" w:cs="{ten}"/>'
-        if self.dam:
-            phan += "<w:b/>"
-        if self.nghieng:
-            phan += "<w:i/>"
-        if self.gach_chan:
-            phan += '<w:u w:val="single"/>'
-        if self.gach_ngang:
-            phan += "<w:strike/>"
-        if self.mau:
-            phan += f'<w:color w:val="{self.mau}"/>'
-        if self.nen:
-            phan += f'<w:shd w:val="clear" w:color="auto" w:fill="{self.nen}"/>'
-        if self.co_pt:
-            nua_diem = int(round(self.co_pt * 2))
-            phan += f'<w:sz w:val="{nua_diem}"/><w:szCs w:val="{nua_diem}"/>'
-        return f"<w:rPr>{phan}</w:rPr>" if phan else ""
+        part = ""
+        if self.font:
+            name = xml_escape(self.font)
+            part += f'<w:rFonts w:ascii="{name}" w:hAnsi="{name}" w:cs="{name}"/>'
+        if self.bold:
+            part += "<w:b/>"
+        if self.italic:
+            part += "<w:i/>"
+        if self.underline:
+            part += '<w:u w:val="single"/>'
+        if self.strike:
+            part += "<w:strike/>"
+        if self.color:
+            part += f'<w:color w:val="{self.color}"/>'
+        if self.background:
+            part += f'<w:shd w:val="clear" w:color="auto" w:fill="{self.background}"/>'
+        if self.size_pt:
+            half_points = int(round(self.size_pt * 2))
+            part += f'<w:sz w:val="{half_points}"/><w:szCs w:val="{half_points}"/>'
+        return f"<w:rPr>{part}</w:rPr>" if part else ""
 
 
-class _BoChuyen(HTMLParser):
+class _Converter(HTMLParser):
     """Duyệt HTML một lượt, sinh thẳng XML của thân tài liệu."""
 
-    def __init__(self, *, danh_so_muc: bool = False) -> None:
+    def __init__(self, *, number_headings: bool = False) -> None:
         super().__init__(convert_charrefs=True)
-        self.ra: list[str] = []
-        self.anh: list[AnhNhung] = []
-        self.danh_so_muc = danh_so_muc
-        self._dem = [0, 0, 0]              # bộ đếm ba cấp tiêu đề
+        self.out: list[str] = []
+        self.images: list[EmbeddedImage] = []
+        self.number_headings = number_headings
+        self._counters = [0, 0, 0]              # bộ đếm ba cấp tiêu đề
 
-        self._kieu = [_KieuChu()]
-        self._doan_mo = False
+        self._styles = [_CharStyle()]
+        self._paragraph_open = False
         self._runs: list[str] = []
         self._ppr = ""
-        self._the_doan = "p"
-        self._ngan_xep_list: list[tuple[str, int]] = []   # (ul|ol, số thứ tự)
-        self._trong_bang = False
-        self._bang: list[str] = []
+        self._paragraph_tag = "p"
+        self._list_stack: list[tuple[str, int]] = []   # (ul|ol, số thứ tự)
+        self._in_labels = False
+        self._table: list[str] = []
 
     # ── tiện ích ─────────────────────────────────────────────────────────────
     @property
-    def _kieu_hien(self) -> _KieuChu:
-        return self._kieu[-1]
+    def _current_style(self) -> _CharStyle:
+        return self._styles[-1]
 
-    def _mo_doan(self, the: str, attrs: dict[str, str]) -> None:
-        self._doan_mo = True
-        self._the_doan = the
+    def _open_paragraph(self, tag: str, attrs: dict[str, str]) -> None:
+        self._paragraph_open = True
+        self._paragraph_tag = tag
         self._runs = []
-        self._ppr = self._tinh_ppr(the, attrs)
+        self._ppr = self._compute_ppr(tag, attrs)
 
-    def _tinh_ppr(self, the: str, attrs: dict[str, str]) -> str:
-        style = _doc_style(attrs.get("style", ""))
-        phan = ""
-        if the in {"h1", "h2", "h3"}:
-            phan += f'<w:pStyle w:val="Heading{the[1]}"/>'
-        elif the == "blockquote":
-            phan += '<w:ind w:left="720"/>'
+    def _compute_ppr(self, tag: str, attrs: dict[str, str]) -> str:
+        style = _parse_style(attrs.get("style", ""))
+        part = ""
+        if tag in {"h1", "h2", "h3"}:
+            part += f'<w:pStyle w:val="Heading{tag[1]}"/>'
+        elif tag == "blockquote":
+            part += '<w:ind w:left="720"/>'
 
-        canh = _CANH_LE.get(style.get("text-align", ""))
-        if canh:
-            phan += f'<w:jc w:val="{canh}"/>'
+        align = _TEXT_ALIGN.get(style.get("text-align", ""))
+        if align:
+            part += f'<w:jc w:val="{align}"/>'
 
-        thut_trai = _px(style.get("margin-left")) or 0
-        thut_dau = _px(style.get("text-indent")) or 0
+        left_indent = _px(style.get("margin-left")) or 0
+        first_line_indent = _px(style.get("text-indent")) or 0
         #  Danh sách: mỗi cấp thụt thêm một nấc, giữ đúng hình thức bản gốc.
-        thut_trai += 360 / _TWIPS_PER_PX * len(self._ngan_xep_list)
-        if thut_trai or thut_dau:
-            phan += '<w:ind'
-            if thut_trai:
-                phan += f' w:left="{int(thut_trai * _TWIPS_PER_PX)}"'
-            if thut_dau:
-                phan += f' w:firstLine="{int(thut_dau * _TWIPS_PER_PX)}"'
-            phan += "/>"
+        left_indent += 360 / _TWIPS_PER_PX * len(self._list_stack)
+        if left_indent or first_line_indent:
+            part += '<w:ind'
+            if left_indent:
+                part += f' w:left="{int(left_indent * _TWIPS_PER_PX)}"'
+            if first_line_indent:
+                part += f' w:firstLine="{int(first_line_indent * _TWIPS_PER_PX)}"'
+            part += "/>"
 
-        gian = style.get("line-height")
-        truoc = _px(style.get("margin-top"))
-        sau = _px(style.get("margin-bottom"))
+        line_height = style.get("line-height")
+        before = _px(style.get("margin-top"))
+        after = _px(style.get("margin-bottom"))
         spacing = ""
-        if gian:
+        if line_height:
             try:
                 #  CSS 1.5 = 1,5 dòng Word → 1.5 * 240 = 360. Không quy đổi hệ
                 #  số: xem `word-line-spacing.ts`, chốt "giãn dòng 1 là 1".
                 #  Bóc đuôi `em` — giao diện ghi `1.5em` để khống chế được cả
                 #  chữ to trong `<span>`; quên bóc thì `float()` nổ, khối `except`
                 #  nuốt mất và văn bản xuất ra không còn giãn dòng.
-                dong = float(str(gian).strip().removesuffix("em"))
-                spacing += f' w:line="{int(round(dong * 240))}" w:lineRule="auto"'
+                line_mult = float(str(line_height).strip().removesuffix("em"))
+                spacing += f' w:line="{int(round(line_mult * 240))}" w:lineRule="auto"'
             except ValueError:
                 pass
-        if truoc:
-            spacing += f' w:before="{int(truoc * _TWIPS_PER_PX)}"'
-        if sau:
-            spacing += f' w:after="{int(sau * _TWIPS_PER_PX)}"'
+        if before:
+            spacing += f' w:before="{int(before * _TWIPS_PER_PX)}"'
+        if after:
+            spacing += f' w:after="{int(after * _TWIPS_PER_PX)}"'
         if spacing:
-            phan += f"<w:spacing{spacing}/>"
-        return f"<w:pPr>{phan}</w:pPr>" if phan else ""
+            part += f"<w:spacing{spacing}/>"
+        return f"<w:pPr>{part}</w:pPr>" if part else ""
 
-    def _dong_doan(self) -> None:
-        if not self._doan_mo:
+    def _close_paragraph(self) -> None:
+        if not self._paragraph_open:
             return
-        self._doan_mo = False
-        noi_dung = "".join(self._runs)
+        self._paragraph_open = False
+        content = "".join(self._runs)
         #  Đoạn rỗng vẫn phải giữ: người soạn dùng nó làm khoảng trống ký tên.
-        xml = f"<w:p>{self._ppr}{noi_dung}</w:p>"
-        (self._bang if self._trong_bang else self.ra).append(xml)
+        xml = f"<w:p>{self._ppr}{content}</w:p>"
+        (self._table if self._in_labels else self.out).append(xml)
         self._runs = []
 
-    def _them_run(self, chu: str) -> None:
-        if not chu:
+    def _add_run(self, text: str) -> None:
+        if not text:
             return
         self._runs.append(
-            f'<w:r>{self._kieu_hien.rpr()}<w:t xml:space="preserve">{xml_escape(chu)}</w:t></w:r>'
+            f'<w:r>{self._current_style.rpr()}<w:t xml:space="preserve">{xml_escape(text)}</w:t></w:r>'
         )
 
-    def _tien_to_muc(self, the: str) -> str:
+    def _heading_prefix(self, tag: str) -> str:
         """Số mục tự động cho tiêu đề — viết thẳng vào chữ (xem chú thích đầu tệp)."""
-        cap = int(the[1])
-        if not self.danh_so_muc or cap > 3:
+        cap = int(tag[1])
+        if not self.number_headings or cap > 3:
             return ""
-        self._dem[cap - 1] += 1
-        for sau in range(cap, 3):
-            self._dem[sau] = 0
-        so = self._dem[cap - 1]
+        self._counters[cap - 1] += 1
+        for after in range(cap, 3):
+            self._counters[after] = 0
+        so = self._counters[cap - 1]
         if cap == 1:
-            return f"{_SO_LA_MA[so - 1] if so <= len(_SO_LA_MA) else so}. "
+            return f"{_ROMAN_NUMERALS[so - 1] if so <= len(_ROMAN_NUMERALS) else so}. "
         if cap == 2:
             return f"{so}. "
         return f"{chr(ord('a') + so - 1) if so <= 26 else so}) "
@@ -225,48 +225,48 @@ class _BoChuyen(HTMLParser):
         attrs = {k: (v or "") for k, v in attrs_list}
         tag = tag.lower()
 
-        if tag in _THE_KIEU:
-            moi = self._kieu_hien.nhan_ban()
-            setattr(moi, {"b": "dam", "i": "nghieng", "u": "gach_chan",
-                          "s": "gach_ngang"}[_THE_KIEU[tag]], True)
-            self._kieu.append(moi)
+        if tag in _STYLE_TAGS:
+            new = self._current_style.clone()
+            setattr(new, {"b": "bold", "i": "italic", "u": "underline",
+                          "s": "strike"}[_STYLE_TAGS[tag]], True)
+            self._styles.append(new)
             return
 
         if tag == "span":
-            style = _doc_style(attrs.get("style", ""))
-            moi = self._kieu_hien.nhan_ban()
+            style = _parse_style(attrs.get("style", ""))
+            new = self._current_style.clone()
             if style.get("font-family"):
-                moi.phong = style["font-family"].split(",")[0].strip(" '\"")
-            co = style.get("font-size", "")
-            if co.endswith("pt"):
+                new.font = style["font-family"].split(",")[0].strip(" '\"")
+            size = style.get("font-size", "")
+            if size.endswith("pt"):
                 try:
-                    moi.co_pt = float(co[:-2])
+                    new.size_pt = float(size[:-2])
                 except ValueError:
                     pass
-            moi.mau = _mau(style.get("color")) or moi.mau
-            moi.nen = _mau(style.get("background-color")) or moi.nen
-            self._kieu.append(moi)
+            new.color = _color(style.get("color")) or new.color
+            new.background = _color(style.get("background-color")) or new.background
+            self._styles.append(new)
             return
 
         if tag in {"ul", "ol"}:
-            self._ngan_xep_list.append((tag, 0))
+            self._list_stack.append((tag, 0))
             return
 
         if tag == "table":
-            self._trong_bang = True
-            self._bang = ["<w:tbl>", self._tbl_pr()]
+            self._in_labels = True
+            self._table = ["<w:tbl>", self._tbl_pr()]
             return
         if tag == "tr":
-            self._bang.append("<w:tr>")
+            self._table.append("<w:tr>")
             return
         if tag in {"td", "th"}:
-            self._bang.append(self._tc_pr(attrs))
+            self._table.append(self._tc_pr(attrs))
             #  Ô luôn phải mở bằng một đoạn, kể cả ô trống.
-            self._mo_doan("p", {})
+            self._open_paragraph("p", {})
             if tag == "th":
-                moi = self._kieu_hien.nhan_ban()
-                moi.dam = True
-                self._kieu.append(moi)
+                new = self._current_style.clone()
+                new.bold = True
+                self._styles.append(new)
             return
 
         if tag == "br":
@@ -274,180 +274,180 @@ class _BoChuyen(HTMLParser):
             return
 
         if tag == "img":
-            self._chen_anh(attrs)
+            self._insert_image(attrs)
             return
 
-        if tag in _THE_DOAN:
-            self._dong_doan()
-            self._mo_doan(tag, attrs)
-            if tag == "li" and self._ngan_xep_list:
-                loai, so = self._ngan_xep_list[-1]
+        if tag in _PARAGRAPH_TAGS:
+            self._close_paragraph()
+            self._open_paragraph(tag, attrs)
+            if tag == "li" and self._list_stack:
+                kind, so = self._list_stack[-1]
                 so += 1
-                self._ngan_xep_list[-1] = (loai, so)
-                self._them_run("• " if loai == "ul" else f"{so}. ")
+                self._list_stack[-1] = (kind, so)
+                self._add_run("• " if kind == "ul" else f"{so}. ")
             elif tag in {"h1", "h2", "h3"}:
-                self._them_run(self._tien_to_muc(tag))
+                self._add_run(self._heading_prefix(tag))
 
     def handle_endtag(self, tag: str) -> None:  # noqa: D102
         tag = tag.lower()
-        if tag in _THE_KIEU or tag == "span":
-            if len(self._kieu) > 1:
-                self._kieu.pop()
+        if tag in _STYLE_TAGS or tag == "span":
+            if len(self._styles) > 1:
+                self._styles.pop()
             return
-        if tag in {"ul", "ol"} and self._ngan_xep_list:
-            self._ngan_xep_list.pop()
+        if tag in {"ul", "ol"} and self._list_stack:
+            self._list_stack.pop()
             return
         if tag in {"td", "th"}:
-            self._dong_doan()
-            if tag == "th" and len(self._kieu) > 1:
-                self._kieu.pop()
-            self._bang.append("</w:tc>")
+            self._close_paragraph()
+            if tag == "th" and len(self._styles) > 1:
+                self._styles.pop()
+            self._table.append("</w:tc>")
             return
         if tag == "tr":
-            self._bang.append("</w:tr>")
+            self._table.append("</w:tr>")
             return
         if tag == "table":
-            self._bang.append("</w:tbl>")
-            self._trong_bang = False
-            self.ra.append("".join(self._bang))
+            self._table.append("</w:tbl>")
+            self._in_labels = False
+            self.out.append("".join(self._table))
             #  Word đòi một đoạn ngay sau bảng, thiếu thì hai bảng liền nhau dính
             #  làm một và người nhận không tách ra được.
-            self.ra.append("<w:p/>")
-            self._bang = []
+            self.out.append("<w:p/>")
+            self._table = []
             return
-        if tag in _THE_DOAN:
-            self._dong_doan()
+        if tag in _PARAGRAPH_TAGS:
+            self._close_paragraph()
 
     def handle_data(self, data: str) -> None:  # noqa: D102
         if not data:
             return
-        if not self._doan_mo:
+        if not self._paragraph_open:
             #  Chữ trần ngoài mọi thẻ khối — vẫn phải giữ.
             if not data.strip():
                 return
-            self._mo_doan("p", {})
-        self._them_run(data)
+            self._open_paragraph("p", {})
+        self._add_run(data)
 
     # ── bảng và ảnh ──────────────────────────────────────────────────────────
     def _tbl_pr(self) -> str:
-        canh = "".join(
+        align = "".join(
             f'<w:{v} w:val="single" w:sz="4" w:space="0" w:color="9CA3AF"/>'
             for v in ("top", "left", "bottom", "right", "insideH", "insideV")
         )
         return (f'<w:tblPr><w:tblW w:w="5000" w:type="pct"/>'
-                f'<w:tblBorders>{canh}</w:tblBorders></w:tblPr>')
+                f'<w:tblBorders>{align}</w:tblBorders></w:tblPr>')
 
     def _tc_pr(self, attrs: dict[str, str]) -> str:
-        style = _doc_style(attrs.get("style", ""))
-        phan = ""
-        rong = attrs.get("colwidth") or attrs.get("data-colwidth")
-        if rong and rong.split(",")[0].strip().isdigit():
-            phan += (f'<w:tcW w:w="{int(rong.split(",")[0]) * _TWIPS_PER_PX}" '
+        style = _parse_style(attrs.get("style", ""))
+        part = ""
+        width = attrs.get("colwidth") or attrs.get("data-colwidth")
+        if width and width.split(",")[0].strip().isdigit():
+            part += (f'<w:tcW w:w="{int(width.split(",")[0]) * _TWIPS_PER_PX}" '
                      f'w:type="dxa"/>')
-        nen = _mau(style.get("background-color"))
-        if nen:
-            phan += f'<w:shd w:val="clear" w:color="auto" w:fill="{nen}"/>'
+        background = _color(style.get("background-color"))
+        if background:
+            part += f'<w:shd w:val="clear" w:color="auto" w:fill="{background}"/>'
         #  Ô khai `border-*: hidden` (khối đầu văn bản hai cột) phải mất viền
         #  trong Word, nếu không bản xuất ra kẻ ô lù lù giữa quốc hiệu.
         an = [c for c in ("top", "left", "bottom", "right")
               if (style.get(f"border-{c}") or "").strip().startswith("hidden")]
         if an:
-            phan += ("<w:tcBorders>"
+            part += ("<w:tcBorders>"
                      + "".join(f'<w:{c} w:val="nil"/>' for c in an)
                      + "</w:tcBorders>")
         if attrs.get("colspan", "").isdigit() and int(attrs["colspan"]) > 1:
-            phan += f'<w:gridSpan w:val="{attrs["colspan"]}"/>'
-        return f'<w:tc><w:tcPr>{phan}</w:tcPr>' if phan else "<w:tc><w:tcPr/>"
+            part += f'<w:gridSpan w:val="{attrs["colspan"]}"/>'
+        return f'<w:tc><w:tcPr>{part}</w:tcPr>' if part else "<w:tc><w:tcPr/>"
 
-    def _chen_anh(self, attrs: dict[str, str]) -> None:
+    def _insert_image(self, attrs: dict[str, str]) -> None:
         src = attrs.get("src", "")
-        khop = re.match(r"^data:image/([a-z]+);base64,(.+)$", src, re.I | re.S)
-        if not khop:
+        matched = re.match(r"^data:image/([a-z]+);base64,(.+)$", src, re.I | re.S)
+        if not matched:
             #  Ảnh trỏ ra ngoài: không tải về trong lúc xuất tệp (chậm, và có thể
             #  là đường dẫn nội bộ người nhận không mở được). Ghi chú thay chỗ.
-            self._them_run("[ảnh]")
+            self._add_run("[ảnh]")
             return
-        duoi = khop.group(1).lower()
-        duoi = "jpg" if duoi == "jpeg" else duoi
+        ext = matched.group(1).lower()
+        ext = "jpg" if ext == "jpeg" else ext
         try:
-            du_lieu = base64.b64decode(khop.group(2))
+            data = base64.b64decode(matched.group(2))
         except Exception:      # noqa: BLE001 — ảnh hỏng thì bỏ qua, không chặn cả tệp
             return
 
-        stt = len(self.anh) + 1
-        anh = AnhNhung(ten=f"anh{stt}.{duoi}", du_lieu=du_lieu, duoi=duoi,
+        stt = len(self.images) + 1
+        images = EmbeddedImage(name=f"anh{stt}.{ext}", data=data, ext=ext,
                        rid=f"rIdAnh{stt}")
-        self.anh.append(anh)
+        self.images.append(images)
 
-        rong_px = _px(attrs.get("width", "")) or float(attrs.get("width") or 480)
-        cao_px = _px(attrs.get("height", "")) or float(attrs.get("height") or 0) or rong_px * 0.62
-        cx, cy = int(rong_px * _EMU_PER_PX), int(cao_px * _EMU_PER_PX)
+        width_px = _px(attrs.get("width", "")) or float(attrs.get("width") or 480)
+        height_px = _px(attrs.get("height", "")) or float(attrs.get("height") or 0) or width_px * 0.62
+        cx, cy = int(width_px * _EMU_PER_PX), int(height_px * _EMU_PER_PX)
         self._runs.append(
             f'<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">'
             f'<wp:extent cx="{cx}" cy="{cy}"/><wp:docPr id="{stt}" name="Anh {stt}"/>'
             f'<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/'
             f'drawingml/2006/picture">'
-            f'<pic:pic><pic:nvPicPr><pic:cNvPr id="{stt}" name="{anh.ten}"/>'
+            f'<pic:pic><pic:nvPicPr><pic:cNvPr id="{stt}" name="{images.name}"/>'
             f'<pic:cNvPicPr/></pic:nvPicPr>'
-            f'<pic:blipFill><a:blip r:embed="{anh.rid}"/><a:stretch><a:fillRect/>'
+            f'<pic:blipFill><a:blip r:embed="{images.rid}"/><a:stretch><a:fillRect/>'
             f'</a:stretch></pic:blipFill>'
             f'<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm>'
             f'<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>'
             f'</a:graphicData></a:graphic></wp:inline></w:drawing></w:r>'
         )
 
-    def ket_thuc(self) -> str:
-        self._dong_doan()
-        return "".join(self.ra) or "<w:p/>"
+    def finish(self) -> str:
+        self._close_paragraph()
+        return "".join(self.out) or "<w:p/>"
 
 
-def _dong_khung_trang(mau: str, thay: dict[str, str]) -> str:
+def _render_page_frame(template: str, replacements: dict[str, str]) -> str:
     """Một vế đầu/chân trang → chuỗi run XML, thẻ số trang thành trường Word."""
-    if not mau:
+    if not template:
         return ""
-    phan: list[str] = []
-    con_lai = mau
-    for the, truong in (("{{trang}}", "PAGE"), ("{{tong_trang}}", "NUMPAGES")):
-        moi: list[str] = []
-        for i, khuc in enumerate(con_lai.split(the)):
+    part: list[str] = []
+    remaining = template
+    for tag, field_code in (("{{trang}}", "PAGE"), ("{{tong_trang}}", "NUMPAGES")):
+        new: list[str] = []
+        for i, chunk in enumerate(remaining.split(tag)):
             if i:
-                moi.append("\x00" + truong + "\x00")
-            moi.append(khuc)
-        con_lai = "".join(moi)
-    for khuc in con_lai.split("\x00"):
-        if khuc in {"PAGE", "NUMPAGES"}:
-            phan.append(truong_so_trang(khuc))
+                new.append("\x00" + field_code + "\x00")
+            new.append(chunk)
+        remaining = "".join(new)
+    for chunk in remaining.split("\x00"):
+        if chunk in {"PAGE", "NUMPAGES"}:
+            part.append(page_number_field(chunk))
             continue
-        for the, giatri in thay.items():
-            khuc = khuc.replace(the, giatri)
-        if khuc:
-            phan.append(f'<w:r><w:t xml:space="preserve">{xml_escape(khuc)}</w:t></w:r>')
-    return "".join(phan)
+        for tag, value in replacements.items():
+            chunk = chunk.replace(tag, value)
+        if chunk:
+            part.append(f'<w:r><w:t xml:space="preserve">{xml_escape(chunk)}</w:t></w:r>')
+    return "".join(part)
 
 
 def html_to_docx(
-    noi_dung_html: str,
+    html_content: str,
     *,
-    le_trai_mm: int = 30,
-    le_phai_mm: int = 20,
-    danh_so_muc: bool = False,
-    dau_trang: tuple[str, str] = ("", ""),
-    chan_trang: tuple[str, str] = ("", ""),
-    the_thay: dict[str, str] | None = None,
+    margin_left_mm: int = 30,
+    margin_right_mm: int = 20,
+    number_headings: bool = False,
+    header: tuple[str, str] = ("", ""),
+    footer: tuple[str, str] = ("", ""),
+    replacements: dict[str, str] | None = None,
 ) -> bytes:
     """Chuyển nội dung một phiên bản văn bản thành tệp .docx (bytes)."""
-    bo = _BoChuyen(danh_so_muc=danh_so_muc)
-    bo.feed(noi_dung_html or "")
-    bo.close()
+    converter = _Converter(number_headings=number_headings)
+    converter.feed(html_content or "")
+    converter.close()
 
-    thay = the_thay or {}
-    goi = GoiDocx(than_xml=bo.ket_thuc(), anh=bo.anh)
+    replacements = replacements or {}
+    pkg = DocxPackage(body_xml=converter.finish(), images=converter.images)
 
-    trai, phai = (_dong_khung_trang(o, thay) for o in dau_trang)
-    if trai or phai:
-        goi.dau_trang_xml = doan_dau_chan_trang(trai, phai)
-    trai, phai = (_dong_khung_trang(o, thay) for o in chan_trang)
-    if trai or phai:
-        goi.chan_trang_xml = doan_dau_chan_trang(trai, phai)
+    left, right = (_render_page_frame(o, replacements) for o in header)
+    if left or right:
+        pkg.header_xml = header_footer_paragraph(left, right)
+    left, right = (_render_page_frame(o, replacements) for o in footer)
+    if left or right:
+        pkg.footer_xml = header_footer_paragraph(left, right)
 
-    return dong_goi(goi, le_trai_mm=le_trai_mm, le_phai_mm=le_phai_mm)
+    return pack(pkg, margin_left_mm=margin_left_mm, margin_right_mm=margin_right_mm)

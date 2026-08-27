@@ -579,9 +579,9 @@ def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db:
     # CR-034: mặc định KHÔNG tự động phân bổ NSTM ở đây — phiếu dừng ở "Đã duyệt", chờ Quản lý/Admin
     # thu mua duyệt lần 2 (/dispatch). Nếu công tắc `pr_dispatch_enabled` bị TẮT thì chạy luôn bước
     # điều phối ngay tại đây (luồng cũ: duyệt phát là có nhân sự phụ trách).
-    n = con_trong = 0
+    n = blank_count = 0
     if not service.dispatch_enabled():
-        pr, n, con_trong = service.dispatch_pr(db, pid, user.id)
+        pr, n, blank_count = service.dispatch_pr(db, pid, user.id)
         _notify_assigned(db, pr, user, background_tasks)
     trigger_notification(
         db=db,
@@ -596,8 +596,8 @@ def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db:
     )
     if not service.dispatch_enabled():
         msg = f"Đã duyệt — tự động phân bổ {n} dòng"
-        if con_trong:
-            msg += f" · còn {con_trong} dòng chưa có người phụ trách, hãy chọn tay"
+        if blank_count:
+            msg += f" · còn {blank_count} dòng chưa có người phụ trách, hãy chọn tay"
         return success(_out(db, pr, user), msg)
     return success(_out(db, pr, user), "Đã duyệt — phiếu chờ thu mua duyệt điều phối")
 
@@ -611,12 +611,12 @@ def dispatch_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depen
                                  "ngay khi trưởng bộ phận duyệt.")
     if not _can_dispatch(get_perm_profile(db, user)):
         raise HTTPException(403, "Chỉ Quản lý / Admin thu mua mới duyệt điều phối được phiếu")
-    pr, n, con_trong = service.dispatch_pr(db, pid, user.id)
+    pr, n, blank_count = service.dispatch_pr(db, pid, user.id)
     # Thông báo "được phân công phụ trách" cho NSTM vừa được gán (trước CR-034 nằm ở bước duyệt)
     _notify_assigned(db, pr, user, background_tasks)
     msg = f"Đã duyệt điều phối — tự động phân bổ {n} dòng"
-    if con_trong:
-        msg += f" · còn {con_trong} dòng chưa có người phụ trách, hãy chọn tay"
+    if blank_count:
+        msg += f" · còn {blank_count} dòng chưa có người phụ trách, hãy chọn tay"
     return success(_out(db, pr, user), msg)
 
 

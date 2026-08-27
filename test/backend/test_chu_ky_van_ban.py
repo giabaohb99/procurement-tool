@@ -41,7 +41,7 @@ def da_ban_hanh(db, seed):
     return doc, seed.emp_req_id
 
 
-def _ky(db, doc, version_id, employee_id, **kwargs):
+def _signature_block(db, doc, version_id, employee_id, **kwargs):
     return signature_service.sign(
         db, doc, version_id=version_id, signer_employee_id=employee_id,
         sign_kind=kwargs.get("sign_kind", SIGN_INTERNAL),
@@ -55,28 +55,28 @@ def _ky(db, doc, version_id, employee_id, **kwargs):
 def test_chu_ky_ghi_du_nguoi_thoi_diem_dia_chi_va_ma_bam(db, da_ban_hanh):
     """Thiếu bất kỳ thứ nào thì chữ ký chỉ là một dòng ai cũng ghi được."""
     doc, employee_id = da_ban_hanh
-    chu_ky = _ky(db, doc, doc.current_version_id, employee_id)
+    signature = _signature_block(db, doc, doc.current_version_id, employee_id)
 
-    assert chu_ky.signer_employee_id == employee_id
-    assert chu_ky.signed_at is not None
-    assert chu_ky.ip == "10.0.0.9"
-    assert len(chu_ky.content_sha256) == 64
+    assert signature.signer_employee_id == employee_id
+    assert signature.signed_at is not None
+    assert signature.ip == "10.0.0.9"
+    assert len(signature.content_sha256) == 64
 
 
 def test_ma_bam_chep_luc_ky_chu_khong_tro_sang_bang_phien_ban(db, da_ban_hanh):
     """Nội dung đổi sau khi ký thì chữ ký phải LỘ RA là đang lệch."""
     doc, employee_id = da_ban_hanh
-    chu_ky = _ky(db, doc, doc.current_version_id, employee_id)
-    assert signature_service.serialize(db, chu_ky)["content_matches"] is True
+    signature = _signature_block(db, doc, doc.current_version_id, employee_id)
+    assert signature_service.serialize(db, signature)["content_matches"] is True
 
     #  Giả lập nội dung bị đổi sau lúc ký.
     version = db.get(DocumentVersion, doc.current_version_id)
     version.content_sha256 = "0" * 64
     db.commit()
 
-    assert signature_service.serialize(db, chu_ky)["content_matches"] is False
+    assert signature_service.serialize(db, signature)["content_matches"] is False
     #  Bản thân chữ ký KHÔNG đổi theo — đó mới là bằng chứng.
-    assert chu_ky.content_sha256 != "0" * 64
+    assert signature.content_sha256 != "0" * 64
 
 
 # ── Chỉ ký được bản đã khóa ─────────────────────────────────────────────────
@@ -89,18 +89,18 @@ def test_khong_ky_duoc_ban_nhap(db, da_ban_hanh):
         change_kind=CHANGE_MAJOR, change_summary="Sửa điều 1",
     ), ACTOR)
 
-    with pytest.raises(HTTPException) as loi:
-        _ky(db, doc, ban_moi.id, employee_id)
-    assert "chưa khóa" in loi.value.detail
+    with pytest.raises(HTTPException) as error:
+        _signature_block(db, doc, ban_moi.id, employee_id)
+    assert "chưa khóa" in error.value.detail
 
 
 def test_mot_nguoi_chi_ky_mot_lan_tren_mot_phien_ban(db, da_ban_hanh):
     doc, employee_id = da_ban_hanh
-    _ky(db, doc, doc.current_version_id, employee_id)
+    _signature_block(db, doc, doc.current_version_id, employee_id)
 
-    with pytest.raises(HTTPException) as loi:
-        _ky(db, doc, doc.current_version_id, employee_id)
-    assert "đã ký" in loi.value.detail
+    with pytest.raises(HTTPException) as error:
+        _signature_block(db, doc, doc.current_version_id, employee_id)
+    assert "đã ký" in error.value.detail
 
 
 # ── J03 · không cho nhầm giá trị pháp lý ────────────────────────────────────
@@ -108,26 +108,26 @@ def test_ky_so_khong_co_chung_thu_bi_tu_choi(db, da_ban_hanh):
     """Thiếu chứng thư mà vẫn ghi là ký số = ký nội bộ đội lốt ký số."""
     doc, employee_id = da_ban_hanh
 
-    with pytest.raises(HTTPException) as loi:
-        _ky(db, doc, doc.current_version_id, employee_id, sign_kind=SIGN_CERTIFIED)
-    assert "chứng thư" in loi.value.detail
+    with pytest.raises(HTTPException) as error:
+        _signature_block(db, doc, doc.current_version_id, employee_id, sign_kind=SIGN_CERTIFIED)
+    assert "chứng thư" in error.value.detail
 
 
 def test_ky_so_co_du_chung_thu_thi_ghi_duoc(db, da_ban_hanh):
     doc, employee_id = da_ban_hanh
-    chu_ky = _ky(db, doc, doc.current_version_id, employee_id,
+    signature = _signature_block(db, doc, doc.current_version_id, employee_id,
                  sign_kind=SIGN_CERTIFIED, cert_serial="01ABCD",
                  cert_issuer="VNPT-CA")
 
-    assert chu_ky.sign_kind == SIGN_CERTIFIED
-    assert chu_ky.cert_serial == "01ABCD"
+    assert signature.sign_kind == SIGN_CERTIFIED
+    assert signature.cert_serial == "01ABCD"
 
 
 def test_moi_loai_chu_ky_deu_kem_cau_gia_tri_phap_ly(db, da_ban_hanh):
     """Câu này do backend cấp — giao diện không được tự viết lại nhẹ tay hơn."""
     doc, employee_id = da_ban_hanh
-    chu_ky = _ky(db, doc, doc.current_version_id, employee_id)
-    data = signature_service.serialize(db, chu_ky)
+    signature = _signature_block(db, doc, doc.current_version_id, employee_id)
+    data = signature_service.serialize(db, signature)
 
     assert data["legal_note"] == SIGN_KIND_NOTES[SIGN_INTERNAL]
     assert "KHÔNG có giá trị với bên ngoài" in data["legal_note"]
@@ -135,11 +135,11 @@ def test_moi_loai_chu_ky_deu_kem_cau_gia_tri_phap_ly(db, da_ban_hanh):
 
 def test_ky_giay_da_quet_khong_doi_hoi_chung_thu(db, da_ban_hanh):
     doc, employee_id = da_ban_hanh
-    assert _ky(db, doc, doc.current_version_id, employee_id,
+    assert _signature_block(db, doc, doc.current_version_id, employee_id,
                sign_kind=SIGN_SCANNED).sign_kind == SIGN_SCANNED
 
 
 def test_loai_chu_ky_la_bi_tu_choi(db, da_ban_hanh):
     doc, employee_id = da_ban_hanh
     with pytest.raises(HTTPException):
-        _ky(db, doc, doc.current_version_id, employee_id, sign_kind=9)
+        _signature_block(db, doc, doc.current_version_id, employee_id, sign_kind=9)

@@ -103,14 +103,14 @@ def create_employee(db: Session, data: EmployeeCreate, user_id: int) -> Employee
     obj = Employee(**data.model_dump(), created_by=user_id, updated_by=user_id)
     db.add(obj)
     db.flush()
-    _dong_bo_phong_chinh(db, obj, user_id)
+    _sync_primary_department(db, obj, user_id)
     db.commit()
     db.refresh(obj)
     record(db, user_id, ENTITY, obj.id, "create")
     return obj
 
 
-def _dong_bo_phong_chinh(db: Session, obj: Employee, user_id: int) -> None:
+def _sync_primary_department(db: Session, obj: Employee, user_id: int) -> None:
     """Giữ `tab_employee_department` khớp với `tab_employee.department_id`.
 
     ⚠️ KIÊM NHIỆM (CR-167) có HAI nguồn ghi phòng ban: cửa riêng
@@ -123,16 +123,16 @@ def _dong_bo_phong_chinh(db: Session, obj: Employee, user_id: int) -> None:
     các phòng kiêm nhiệm khác giữ nguyên. Đổi cả danh sách thì dùng cửa riêng —
     nó có ba chốt chống vượt quyền, cột này thì không.
     """
-    from .department_service import dat_phong_ban, phong_ban_cua
+    from .department_service import set_departments, departments_of
 
-    dang_co = phong_ban_cua(db, obj.id)
-    moi = obj.department_id or 0
-    if dang_co and dang_co[0] == moi:
+    existing = departments_of(db, obj.id)
+    new = obj.department_id or 0
+    if existing and existing[0] == new:
         return                        # phòng chính không đổi
 
-    con_lai = [x for x in dang_co if x != moi]
-    dat_phong_ban(db, obj, ([moi] if moi else []) + con_lai, user_id,
-                  phong_chinh=moi or None)
+    remaining = [x for x in existing if x != new]
+    set_departments(db, obj, ([new] if new else []) + remaining, user_id,
+                  primary_department=new or None)
 
 
 def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -> Employee:
@@ -143,7 +143,7 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
         setattr(obj, key, value)
     obj.updated_by = user_id
     if "department_id" in fields:
-        _dong_bo_phong_chinh(db, obj, user_id)
+        _sync_primary_department(db, obj, user_id)
     db.commit()
     db.refresh(obj)
     record(db, user_id, ENTITY, obj.id, "update")

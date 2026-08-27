@@ -69,7 +69,7 @@ MARGIN_RIGHT_MIN_MM, MARGIN_RIGHT_MAX_MM = 10, 60
 #  (bản xuất Word) và giao diện (bản in, trình soạn thảo) dùng chung một danh
 #  sách — thêm thẻ ở một nơi mà quên nơi kia thì người dùng gõ thẻ đúng nhưng
 #  chỗ này ra chữ, chỗ kia ra thẻ thô.
-THE_DAU_CHAN_TRANG = {
+HEADER_FOOTER_TAGS = {
     "{{trang}}": "số trang hiện tại",
     "{{tong_trang}}": "tổng số trang",
     "{{so_hieu}}": "số hiệu văn bản",

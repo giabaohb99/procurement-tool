@@ -90,6 +90,10 @@ class ForumPost(Base, AuditMixin):
     )
     dept_id: Mapped[int] = mapped_column(BigInteger, default=0)
     company_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    # Ghim bài (F9a/CR-199): CÓ MỐC = đang ghim, NULL = bài thường — một cột
+    # kiêm luôn thứ tự dải ghim (mới ghim lên đầu). Không cột boolean riêng,
+    # không index: số bài ghim đếm trên đầu ngón tay.
+    pinned_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class ForumReaction(Base, AuditMixin):

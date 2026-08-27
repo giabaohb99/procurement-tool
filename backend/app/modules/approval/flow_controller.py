@@ -27,7 +27,7 @@ from .instance_model import INSTANCE_OPEN_STATUSES, ApprovalInstance
 router = APIRouter(prefix="/api/approval-flows", tags=["approval-flow"])
 
 
-def _trong_bang(labels: dict, ten_o: str):
+def _in_labels(labels: dict, field_name: str):
     """Chỉ nhận những giá trị CÓ TRONG bảng nhãn — không khóa cứng biên số.
 
     ⚠️ Vá lỗi 26/08/2026. `approver_kind` từng khai `le=6` bằng tay; tới khi thêm
@@ -41,13 +41,13 @@ def _trong_bang(labels: dict, ten_o: str):
     mới không phải nhớ sửa thêm chỗ nào, mà giá trị bỏ trống ở giữa bảng cũng bị
     chặn — thứ mà `ge/le` không làm được.
     """
-    def _kiem(value: int) -> int:
+    def _check(value: int) -> int:
         if value not in labels:
-            cho_phep = ", ".join(f"{ma} ({ten})" for ma, ten in labels.items())
-            raise ValueError(f"{ten_o} không hợp lệ. Chọn một trong: {cho_phep}")
+            allowed = ", ".join(f"{code} ({label})" for code, label in labels.items())
+            raise ValueError(f"{field_name} không hợp lệ. Chọn một trong: {allowed}")
         return value
 
-    return _kiem
+    return _check
 
 
 class FlowIn(BaseModel):
@@ -68,26 +68,26 @@ class NodeIn(BaseModel):
     #  Mọi ô "chọn một trong danh sách" đều buộc vào chính bảng nhãn mà
     #  `/options` đổ ra ô chọn — xem `_trong_bang`.
     node_kind: Annotated[int, AfterValidator(
-        _trong_bang(NODE_KIND_LABELS, "Bước làm gì"))] = 1
+        _in_labels(NODE_KIND_LABELS, "Bước làm gì"))] = 1
     flow_role: Annotated[int, AfterValidator(
-        _trong_bang(ROLE_LABELS, "Vai trò bước"))] = 4
+        _in_labels(ROLE_LABELS, "Vai trò bước"))] = 4
     approver_kind: Annotated[int, AfterValidator(
-        _trong_bang(APPROVER_KIND_LABELS, "Cách chọn người duyệt"))] = 1
+        _in_labels(APPROVER_KIND_LABELS, "Cách chọn người duyệt"))] = 1
     approver_ref: str = ""
     multi_mode: Annotated[int, AfterValidator(
-        _trong_bang(MULTI_MODE_LABELS, "Nhiều người thì"))] = 1
+        _in_labels(MULTI_MODE_LABELS, "Nhiều người thì"))] = 1
     quorum_percent: int = Field(default=50, ge=1, le=100)
     condition: str = ""
     is_default_branch: bool = False
     skip_duplicate: Annotated[int, AfterValidator(
-        _trong_bang(SKIP_MODE_LABELS, "Trùng người thì"))] = 1
+        _in_labels(SKIP_MODE_LABELS, "Trùng người thì"))] = 1
     sla_hours: int = Field(default=0, ge=0)
     fallback_employee_id: int | None = None
     #  Riêng ô này dùng danh sách CÒN KHAI ĐƯỢC, không dùng bảng nhãn: nhãn còn
     #  giữ giá trị 2 để đọc dữ liệu cũ, nhưng nó đã bỏ (CR-114) và không được
     #  khai mới.
-    on_no_approver: Annotated[int, AfterValidator(_trong_bang(
-        {ma: NO_APPROVER_LABELS[ma] for ma in NO_APPROVER_CHOICES},
+    on_no_approver: Annotated[int, AfterValidator(_in_labels(
+        {code: NO_APPROVER_LABELS[code] for code in NO_APPROVER_CHOICES},
         "Không tìm được người duyệt thì"))] = 3
 
 
@@ -100,19 +100,19 @@ class SwitchIn(BaseModel):
 @router.get("/options")
 def options(user=Depends(require("approval_flow", "read"))):
     """Nhãn tiếng Việt do backend cấp — giao diện không chép cứng."""
-    def bang(labels):
+    def options_of(labels):
         return [{"value": value, "label": label} for value, label in labels.items()]
 
     return success({
-        "node_kinds": bang(NODE_KIND_LABELS),
-        "flow_roles": bang(ROLE_LABELS),
-        "approver_kinds": bang(APPROVER_KIND_LABELS),
-        "multi_modes": bang(MULTI_MODE_LABELS),
-        "skip_modes": bang(SKIP_MODE_LABELS),
+        "node_kinds": options_of(NODE_KIND_LABELS),
+        "flow_roles": options_of(ROLE_LABELS),
+        "approver_kinds": options_of(APPROVER_KIND_LABELS),
+        "multi_modes": options_of(MULTI_MODE_LABELS),
+        "skip_modes": options_of(SKIP_MODE_LABELS),
         #  CHỈ những lựa chọn còn khai được — «Đẩy lên cấp trên» đã bỏ (CR-114)
         #  nên không bày ra ô chọn nữa, dù nhãn của nó vẫn còn để đọc dữ liệu cũ.
-        "on_no_approver": [{"value": ma, "label": NO_APPROVER_LABELS[ma]}
-                           for ma in NO_APPROVER_CHOICES],
+        "on_no_approver": [{"value": code, "label": NO_APPROVER_LABELS[code]}
+                           for code in NO_APPROVER_CHOICES],
     })
 
 
@@ -180,7 +180,7 @@ def create_flow(data: FlowIn, db: Session = Depends(get_db),
     #  khai một luồng `company_id = None` (áp cho MỌI pháp nhân) với `priority`
     #  cao nhất và đúng một bước «người duyệt = tôi», thế là mọi văn bản mới đều
     #  chạy về tay người khai. Không giả chữ ký của ai, chỉ đổi chỗ cần chữ ký.
-    _chan_pham_vi_khi_khai(db, user, data.company_id, "create")
+    _block_scope_on_declare(db, user, data.company_id, "create")
 
     flow = ApprovalFlow(**data.model_dump(), created_by=user.id, updated_by=user.id)
     db.add(flow)
@@ -189,15 +189,15 @@ def create_flow(data: FlowIn, db: Session = Depends(get_db),
     record(db, user.id, "approval_flow", flow.id, "create", flow.name)
     #  Trùng luồng mặc định thì báo NGAY lúc lưu, không đợi người khai tự phát
     #  hiện phiếu đang chạy theo một luồng khác cái họ vừa sửa.
-    canh_bao = flow_service.canh_bao_trung_mac_dinh(db, flow)
+    warning = flow_service.default_overlap_warning(db, flow)
     return success(serializer.flow_out(db, flow),
-                   f"Đã tạo luồng duyệt. ⚠ {canh_bao}" if canh_bao else "Đã tạo luồng duyệt", 201)
+                   f"Đã tạo luồng duyệt. ⚠ {warning}" if warning else "Đã tạo luồng duyệt", 201)
 
 
 @router.get("/{flow_id}")
 def get_flow(flow_id: int, db: Session = Depends(get_db),
              user=Depends(require("approval_flow", "read"))):
-    return success(serializer.flow_out(db, _load(db, flow_id, user), kem_buoc=True))
+    return success(serializer.flow_out(db, _load(db, flow_id, user), with_steps=True))
 
 
 @router.patch("/{flow_id}")
@@ -208,20 +208,20 @@ def update_flow(flow_id: int, data: FlowIn, db: Session = Depends(get_db),
     #  một cuộc chiếm đường duyệt như lúc tạo mới, chỉ khác là đi vòng qua một
     #  luồng vốn thuộc phạm vi của mình.
     if data.company_id != flow.company_id:
-        _chan_pham_vi_khi_khai(db, user, data.company_id, "write")
-    for ten, gia_tri in data.model_dump().items():
-        setattr(flow, ten, gia_tri)
-    _len_ban_moi(db, flow, user.id)
-    canh_bao = flow_service.canh_bao_trung_mac_dinh(db, flow)
-    return success(serializer.flow_out(db, flow, kem_buoc=True),
-                   f"Đã lưu luồng duyệt. ⚠ {canh_bao}" if canh_bao else "Đã lưu luồng duyệt")
+        _block_scope_on_declare(db, user, data.company_id, "write")
+    for label, value in data.model_dump().items():
+        setattr(flow, label, value)
+    _new_version(db, flow, user.id)
+    warning = flow_service.default_overlap_warning(db, flow)
+    return success(serializer.flow_out(db, flow, with_steps=True),
+                   f"Đã lưu luồng duyệt. ⚠ {warning}" if warning else "Đã lưu luồng duyệt")
 
 
 @router.delete("/{flow_id}")
 def delete_flow(flow_id: int, db: Session = Depends(get_db),
                 user=Depends(require("approval_flow", "delete"))):
     flow = _load(db, flow_id, user, "delete")
-    _chan_khi_dang_chay(db, flow.id)
+    _block_while_running(db, flow.id)
     db.query(ApprovalNode).filter(ApprovalNode.flow_id == flow.id).delete()
     db.delete(flow)
     db.commit()
@@ -236,9 +236,9 @@ def add_node(flow_id: int, data: NodeIn, as_branch: bool = False,
     """Thêm một bước. `as_branch=true` = nhánh song song của chặng đó, mặc định
     là chèn hẳn một chặng mới tại vị trí `seq`."""
     flow = _load(db, flow_id, user, "write")
-    node = flow_service.them_buoc(db, flow.id, data.model_dump(), user.id,
-                                  la_nhanh=as_branch)
-    _len_ban_moi(db, flow, user.id)
+    node = flow_service.add_step(db, flow.id, data.model_dump(), user.id,
+                                  is_branch=as_branch)
+    _new_version(db, flow, user.id)
     db.refresh(node)
     return success(serializer.node_out(db, node), "Đã thêm bước", 201)
 
@@ -250,23 +250,23 @@ def update_node(flow_id: int, node_id: int, data: NodeIn, db: Session = Depends(
     node = db.get(ApprovalNode, node_id)
     if node is None or node.flow_id != flow.id:
         raise HTTPException(404, "Không tìm thấy bước này")
-    for ten, gia_tri in data.model_dump().items():
-        setattr(node, ten, gia_tri)
+    for label, value in data.model_dump().items():
+        setattr(node, label, value)
     db.flush()
 
     #  CR-114 — phiếu ĐANG CHẠY bám theo người duyệt vừa sửa. Trước đây chúng
     #  giữ nguyên bản chụp cũ, nên đổi người duyệt xong mở phiếu ra vẫn thấy tên
     #  người cũ và không có đường nào sửa — người dùng đọc ra là "sửa không ăn".
     #  Chỉ người duyệt mới bám theo; cấu trúc bước vẫn đóng băng theo bản chụp.
-    so_phieu = flow_sync_service.dong_bo_sau_khi_sua_buoc(
+    updated_count = flow_sync_service.sync_after_step_edit(
         db, node, user.id,
-        lambda entity, entity_id: entity_hooks.boi_canh(db, entity, entity_id))
+        lambda entity, entity_id: entity_hooks.entity_context(db, entity, entity_id))
 
-    _len_ban_moi(db, flow, user.id)
+    _new_version(db, flow, user.id)
     db.refresh(node)
     return success(
         serializer.node_out(db, node),
-        f"Đã lưu bước và cập nhật {so_phieu} phiếu đang chạy" if so_phieu
+        f"Đã lưu bước và cập nhật {updated_count} phiếu đang chạy" if updated_count
         else "Đã lưu bước",
     )
 
@@ -287,31 +287,31 @@ def reorder_nodes(flow_id: int, data: ReorderIn, db: Session = Depends(get_db),
     sau thắng mà không ai biết.
     """
     flow = _load(db, flow_id, user, "write")
-    theo_id = {node.id: node for node in flow_service.nodes_of(db, flow.id)}
+    by_id = {node.id: node for node in flow_service.nodes_of(db, flow.id)}
 
     #  ⚠️ HAI LƯỢT, không phải một. `UNIQUE(flow_id, seq, branch_key)` nổ ngay
     #  giữa chừng nếu gán thẳng: hoán vị chặng 1 với chặng 2 thì có một khoảnh
     #  khắc hai bước cùng mang seq = 1. Đẩy hết sang số ÂM trước rồi mới gán số
     #  thật — số âm không bao giờ trùng số thật.
-    for thu_tu, node in enumerate(theo_id.values(), start=1):
-        node.seq = -thu_tu
+    for order_index, node in enumerate(by_id.values(), start=1):
+        node.seq = -order_index
     db.flush()
 
-    for vi_tri, ids_cua_chang in enumerate(data.stages, start=1):
-        for nhanh, node_id in enumerate(ids_cua_chang):
-            node = theo_id.get(node_id)
+    for position, stage_node_ids in enumerate(data.stages, start=1):
+        for branch, node_id in enumerate(stage_node_ids):
+            node = by_id.get(node_id)
             if node is None:
                 raise HTTPException(400, f"Bước {node_id} không thuộc luồng này")
-            node.seq = vi_tri
+            node.seq = position
             #  Các nhánh song song phải khác `branch_key` nhau, nếu không cũng
             #  đâm vào chính ràng buộc trên. Đánh lại theo vị trí thay vì tin
             #  vào giá trị cũ — kéo một bước từ chặng khác sang là trùng ngay.
-            node.branch_key = "" if len(ids_cua_chang) == 1 else f"n{nhanh + 1}"
+            node.branch_key = "" if len(stage_node_ids) == 1 else f"n{branch + 1}"
             node.updated_by = user.id
     db.flush()
 
-    _len_ban_moi(db, flow, user.id)
-    return success(serializer.flow_out(db, flow, kem_buoc=True), "Đã lưu thứ tự các bước")
+    _new_version(db, flow, user.id)
+    return success(serializer.flow_out(db, flow, with_steps=True), "Đã lưu thứ tự các bước")
 
 
 @router.delete("/{flow_id}/nodes/{node_id}")
@@ -322,11 +322,11 @@ def delete_node(flow_id: int, node_id: int, db: Session = Depends(get_db),
     if node is None or node.flow_id != flow.id:
         raise HTTPException(404, "Không tìm thấy bước này")
     db.delete(node)
-    _len_ban_moi(db, flow, user.id)
+    _new_version(db, flow, user.id)
     return success(None, "Đã xóa bước")
 
 
-def _chan_pham_vi_khi_khai(db: Session, user, company_id: int | None, action: str) -> None:
+def _block_scope_on_declare(db: Session, user, company_id: int | None, action: str) -> None:
     """Người này có được khai luồng cho pháp nhân đó không.
 
     Hai bậc:
@@ -345,8 +345,8 @@ def _chan_pham_vi_khi_khai(db: Session, user, company_id: int | None, action: st
         raise HTTPException(
             403, "Luồng để trống pháp nhân là áp cho MỌI pháp nhân — chỉ người quản trị "
                  "có phạm vi «tất cả» mới khai được. Hãy chọn đúng pháp nhân của bạn.")
-    cua_minh = get_perm_profile(db, user).get("company_id") or 0
-    if company_id != cua_minh:
+    mine = get_perm_profile(db, user).get("company_id") or 0
+    if company_id != mine:
         raise HTTPException(403, "Không khai được luồng duyệt cho pháp nhân khác")
 
 
@@ -365,7 +365,7 @@ def _load(db: Session, flow_id: int, user, action: str = "read") -> ApprovalFlow
     return flow
 
 
-def _len_ban_moi(db: Session, flow: ApprovalFlow, actor: int) -> None:
+def _new_version(db: Session, flow: ApprovalFlow, actor: int) -> None:
     """I21 — mỗi lần sửa luồng là một bản mới.
 
     Phiếu ĐANG CHẠY không bị ảnh hưởng: chúng giữ bản chụp riêng
@@ -373,13 +373,13 @@ def _len_ban_moi(db: Session, flow: ApprovalFlow, actor: int) -> None:
     nhưng vẫn phải tăng, không thì hai luồng khác hẳn nhau cùng mang số 1 và
     bản in dấu vết nói sai phiếu chạy theo luồng nào.
     """
-    flow.version_no = _ban_ke_tiep(db, flow)
+    flow.version_no = _next_version(db, flow)
     flow.updated_by = actor
     db.commit()
     record(db, actor, "approval_flow", flow.id, "update", f"Lên bản {flow.version_no}")
 
 
-def _ban_ke_tiep(db: Session, flow: ApprovalFlow) -> int:
+def _next_version(db: Session, flow: ApprovalFlow) -> int:
     """Số bản kế tiếp CÒN TRỐNG của cặp (entity, code).
 
     ⚠️ Không phải `version_no + 1`. Bảng có `UNIQUE(entity, code, version_no)`,
@@ -393,7 +393,7 @@ def _ban_ke_tiep(db: Session, flow: ApprovalFlow) -> int:
     Nhảy qua số đã có người giữ: số bản chỉ để người đọc tra lịch sử, không cần
     liên tục — kẹt không sửa nổi luồng mới là cái giá đắt hơn nhiều.
     """
-    dang_dung = {
+    in_use = {
         row[0] for row in
         db.query(ApprovalFlow.version_no)
         .filter(ApprovalFlow.entity == flow.entity,
@@ -401,22 +401,22 @@ def _ban_ke_tiep(db: Session, flow: ApprovalFlow) -> int:
                 ApprovalFlow.id != flow.id)
         .all()
     }
-    ke_tiep = (flow.version_no or 0) + 1
-    while ke_tiep in dang_dung:
-        ke_tiep += 1
-    return ke_tiep
+    next_no = (flow.version_no or 0) + 1
+    while next_no in in_use:
+        next_no += 1
+    return next_no
 
 
-def _chan_khi_dang_chay(db: Session, flow_id: int) -> None:
-    dang_chay = (
+def _block_while_running(db: Session, flow_id: int) -> None:
+    running = (
         db.query(ApprovalInstance.id)
         .filter(ApprovalInstance.flow_id == flow_id,
                 ApprovalInstance.status.in_(INSTANCE_OPEN_STATUSES))
         .count()
     )
-    if dang_chay:
+    if running:
         raise HTTPException(
             400,
-            f"Còn {dang_chay} phiếu đang chạy theo luồng này. Tắt luồng "
+            f"Còn {running} phiếu đang chạy theo luồng này. Tắt luồng "
             f"(bỏ «Đang dùng») thay vì xóa — phiếu đang chạy vẫn đi hết bản của chúng.",
         )

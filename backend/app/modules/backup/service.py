@@ -56,10 +56,10 @@ def _dump_sql() -> bytes:
         raise RuntimeError(f"{exe} lỗi (mã {p.returncode}): {err}")
     if not p.stdout:
         raise RuntimeError("Dump rỗng — không nhận được dữ liệu")
-    return _bo_dong_sandbox(p.stdout)
+    return _strip_sandbox_lines(p.stdout)
 
 
-def _bo_dong_sandbox(sql: bytes) -> bytes:
+def _strip_sandbox_lines(sql: bytes) -> bytes:
     """Bỏ dòng '/*!999999\\- enable the sandbox mode */' do mariadb-dump chèn ở đầu file.
 
     MySQL không hiểu dòng này và sẽ báo lỗi cú pháp khi phục hồi, nên phải cắt bỏ
@@ -67,8 +67,8 @@ def _bo_dong_sandbox(sql: bytes) -> bytes:
     """
     if b"enable the sandbox mode" not in sql[:512]:
         return sql
-    dong = sql.split(b"\n")
-    return b"\n".join(d for d in dong if b"enable the sandbox mode" not in d)
+    lines = sql.split(b"\n")
+    return b"\n".join(d for d in lines if b"enable the sandbox mode" not in d)
 
 
 def _prune(db) -> int:

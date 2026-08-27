@@ -58,16 +58,16 @@ class TestVaiTroMacDinh:
         assert user_service._role_ids(db, u.id) == [role_nv.id]
 
     def test_chon_vai_tro_thi_giu_nguyen_lua_chon(self, db, seed, role_nv):
-        khac = Role(code="pur_staff", name="Nhân viên thu mua")
-        db.add(khac)
+        other = Role(code="pur_staff", name="Nhân viên thu mua")
+        db.add(other)
         emp = Employee(code="NSU101", full_name="Người Mới 2", is_active=True)
         db.add(emp)
         db.commit()
 
         u = user_service.provision_user(
-            db, UserProvision(employee_id=emp.id, password="123456", role_ids=[khac.id]), 1)
+            db, UserProvision(employee_id=emp.id, password="123456", role_ids=[other.id]), 1)
 
-        assert user_service._role_ids(db, u.id) == [khac.id]
+        assert user_service._role_ids(db, u.id) == [other.id]
 
 
 class TestXoaTaiKhoan:

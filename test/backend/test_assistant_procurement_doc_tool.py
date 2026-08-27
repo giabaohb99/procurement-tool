@@ -134,9 +134,9 @@ def test_doc_read_ycmh_va_ycks(db, seed, ho_so, cap_quyen):
     assert pr["total"] == 1 and pr["totals"]["amount"] == 3000.0
 
     # Phiếu đã xóa mềm coi như không tồn tại.
-    xoa = T.run_tool(db, user, "procurement_doc_read",
+    wipe = T.run_tool(db, user, "procurement_doc_read",
                      {"entity": "purchase_request", "code": "PYC-DEL"})
-    assert xoa.get("error")
+    assert wipe.get("error")
 
     sr = T.run_tool(db, user, "procurement_doc_read",
                     {"entity": "survey_request", "code": "YCKS-K1"})
@@ -190,10 +190,10 @@ def test_pending_loc_dich_danh_loai_khong_co_quyen(db, seed, ho_so, cap_quyen):
 def test_my_requests_chi_thay_phieu_cua_minh(db, seed, ho_so, cap_quyen):
     """Scope all nhưng hỏi "phiếu CỦA TÔI" thì chỉ trả phiếu mình đứng tên, kèm tiến độ."""
     # Phiếu của người khác — dù scope all cũng không được lọt vào "của tôi".
-    khac = PurchaseRequest(code="PYC-NGUOI-KHAC", status="approved",
+    other = PurchaseRequest(code="PYC-NGUOI-KHAC", status="approved",
                            company_id=seed.company_id, is_deleted=False,
                            created_by=seed.u_nstm_id)
-    db.add(khac)
+    db.add(other)
     db.commit()
 
     cap_quyen(seed.u_req_id, "purchase_request", scope="all", read=True)

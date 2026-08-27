@@ -60,10 +60,10 @@ def test_pr_gan_phap_nhan_thi_khong_nhat_phieu_cong_ty_khac(db):
 
     user, profile = _ai_do(company_id=CTY_A)
     cond = _role_scope_cond(PR, "purchase_request", "proc", user, profile)
-    con_lai = db.query(PR).filter(cond).all()
+    remaining = db.query(PR).filter(cond).all()
 
-    ma = {p.code for p in con_lai}
-    assert ma == {"PR-A"}, f"proc công ty A nhặt nhầm: {ma}"   # không có PR-B, không có phiếu nháp
+    code = {p.code for p in remaining}
+    assert code == {"PR-A"}, f"proc công ty A nhặt nhầm: {code}"   # không có PR-B, không có phiếu nháp
 
 
 def test_pr_chua_gan_phap_nhan_van_nhat_het_nhu_cu(db):
@@ -73,8 +73,8 @@ def test_pr_chua_gan_phap_nhan_van_nhat_het_nhu_cu(db):
     user, profile = _ai_do(company_id=0)
     cond = _role_scope_cond(PR, "purchase_request", "proc", user, profile)
 
-    ma = {p.code for p in db.query(PR).filter(cond).all()}
-    assert ma == {"PR-A", "PR-B"}, f"chưa gắn pháp nhân mà đã thu hẹp — sẽ làm sập Thu mua: {ma}"
+    code = {p.code for p in db.query(PR).filter(cond).all()}
+    assert code == {"PR-A", "PR-B"}, f"chưa gắn pháp nhân mà đã thu hẹp — sẽ làm sập Thu mua: {code}"
 
 
 # ── purchase_order ───────────────────────────────────────────────────────────────
@@ -98,8 +98,8 @@ def test_po_gan_phap_nhan_thi_khong_nhat_don_cong_ty_khac(db):
     user, profile = _ai_do(company_id=CTY_A)
     cond = _role_scope_cond(PO, "purchase_order", "proc", user, profile)
 
-    ma = {p.code for p in db.query(PO).filter(cond).all()}
-    assert ma == {"PO-A"}, f"proc công ty A nhặt nhầm đơn: {ma}"
+    code = {p.code for p in db.query(PO).filter(cond).all()}
+    assert code == {"PO-A"}, f"proc công ty A nhặt nhầm đơn: {code}"
 
 
 def test_po_chua_gan_phap_nhan_van_nhat_het_nhu_cu(db):
@@ -108,8 +108,8 @@ def test_po_chua_gan_phap_nhan_van_nhat_het_nhu_cu(db):
     user, profile = _ai_do(company_id=0)
     cond = _role_scope_cond(PO, "purchase_order", "proc", user, profile)
 
-    ma = {p.code for p in db.query(PO).filter(cond).all()}
-    assert ma == {"PO-A", "PO-B"}, f"chưa gắn pháp nhân mà đã thu hẹp đơn: {ma}"
+    code = {p.code for p in db.query(PO).filter(cond).all()}
+    assert code == {"PO-A", "PO-B"}, f"chưa gắn pháp nhân mà đã thu hẹp đơn: {code}"
 
 
 # ── Người tạo/được giao vẫn thấy phiếu của mình, kể cả khác công ty ───────────────
@@ -126,5 +126,5 @@ def test_pr_van_thay_phieu_minh_tao_du_khac_cong_ty(db):
     user, profile = _ai_do(company_id=CTY_A)
     cond = _role_scope_cond(PurchaseRequest, "purchase_request", "proc", user, profile)
 
-    ma = {p.code for p in db.query(PurchaseRequest).filter(cond).all()}
-    assert "PR-MINE" in ma, "phiếu do chính mình tạo bị mất sau khi thu hẹp theo pháp nhân"
+    code = {p.code for p in db.query(PurchaseRequest).filter(cond).all()}
+    assert "PR-MINE" in code, "phiếu do chính mình tạo bị mất sau khi thu hẹp theo pháp nhân"

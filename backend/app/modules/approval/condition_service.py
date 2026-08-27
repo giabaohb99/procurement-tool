@@ -48,10 +48,10 @@ def parse(raw: str) -> list[dict]:
 
 def matches(raw: str, subject: dict) -> bool:
     """Bối cảnh phiếu có thỏa điều kiện không. Không khai điều kiện = luôn thỏa."""
-    dieu_kien = parse(raw)
-    if not dieu_kien:
+    condition = parse(raw)
+    if not condition:
         return True
-    return all(_one(row, subject) for row in dieu_kien)
+    return all(_one(row, subject) for row in condition)
 
 
 def _one(row: dict, subject: dict) -> bool:
@@ -60,7 +60,7 @@ def _one(row: dict, subject: dict) -> bool:
 
     op = row.get("op", "eq")
     raw_value = subject.get(row.get("field", ""))
-    moc = row.get("value")
+    threshold = row.get("value")
 
     if op == "empty":
         return raw_value in (None, "", 0)
@@ -68,28 +68,28 @@ def _one(row: dict, subject: dict) -> bool:
         return raw_value not in (None, "", 0)
 
     if op == "in":
-        return _as_list(moc) and str(raw_value) in [str(item) for item in _as_list(moc)]
+        return _as_list(threshold) and str(raw_value) in [str(item) for item in _as_list(threshold)]
     if op == "not_in":
-        return str(raw_value) not in [str(item) for item in _as_list(moc)]
+        return str(raw_value) not in [str(item) for item in _as_list(threshold)]
     if op == "contains":
-        return str(moc or "").lower() in str(raw_value or "").lower()
+        return str(threshold or "").lower() in str(raw_value or "").lower()
 
     if op in ("eq", "ne"):
         #  So bằng chuỗi: `doc_type_id` từ ô chọn về là "3", từ phiếu là 3 —
         #  so thô thì không bao giờ khớp và nhánh im lặng không chạy.
-        bang = str(raw_value) == str(moc)
-        return bang if op == "eq" else not bang
+        equal = str(raw_value) == str(threshold)
+        return equal if op == "eq" else not equal
 
     #  Bốn phép còn lại là so lớn nhỏ, chỉ có nghĩa trên số.
     try:
-        trai, phai = float(raw_value), float(moc)
+        left, right = float(raw_value), float(threshold)
     except (TypeError, ValueError):
         return False
     return {
-        "gt": trai > phai,
-        "gte": trai >= phai,
-        "lt": trai < phai,
-        "lte": trai <= phai,
+        "gt": left > right,
+        "gte": left >= right,
+        "lt": left < right,
+        "lte": left <= right,
     }[op]
 
 
@@ -103,11 +103,11 @@ def _as_list(value) -> list:
 
 def describe(raw: str) -> str:
     """Câu tiếng Việt của điều kiện, cho bảng theo dõi và bản in dấu vết."""
-    dieu_kien = parse(raw)
-    if not dieu_kien:
+    condition = parse(raw)
+    if not condition:
         return "Mọi phiếu"
     return " và ".join(
         f"{row.get('field', '?')} {OP_LABELS.get(row.get('op', 'eq'), '?')} "
         f"{row.get('value', '')}".strip()
-        for row in dieu_kien
+        for row in condition
     )

@@ -34,13 +34,13 @@ def test_loi_ngoai_du_tinh_van_ra_dung_phong_bi():
 
 
 def test_co_MA_SU_CO_de_doi_chieu_voi_log():
-    loi = _goi()["than"]["error"]
+    error = _goi()["than"]["error"]
 
-    ma = loi["details"]["ma_su_co"]
-    assert len(ma) == 8 and ma.isalnum() and ma.upper() == ma
+    code = error["details"]["ma_su_co"]
+    assert len(code) == 8 and code.isalnum() and code.upper() == code
     #  Mã phải nằm luôn trong câu người dùng ĐỌC ĐƯỢC, không chỉ ở `details`:
     #  không ai mở tab Network để lấy mã đi báo lỗi.
-    assert ma in loi["message"]
+    assert code in error["message"]
 
 
 def test_moi_lan_no_la_mot_ma_khac():
@@ -51,8 +51,8 @@ def test_moi_lan_no_la_mot_ma_khac():
 
 def test_KHONG_bay_ruot_gan_ra_man_hinh():
     """Tên bảng, câu SQL, dấu vết Python chỉ được nằm trong log."""
-    cau = _goi()["than"]["error"]["message"]
+    message = _goi()["than"]["error"]["message"]
 
-    assert "RuntimeError" not in cau
-    assert "Duplicate entry" not in cau
-    assert "uq_" not in cau
+    assert "RuntimeError" not in message
+    assert "Duplicate entry" not in message
+    assert "uq_" not in message

@@ -70,9 +70,9 @@ def test_moi_cot_deu_co_du_lieu_that(db, doc):
     Canh đúng chỗ dễ vỡ âm thầm: đổi tên khóa ở serializer → cột rỗng, không lỗi.
     """
     row = _dong(db, doc)
-    thieu = [col.key for col in ex.COLUMNS if col.key not in row]
+    missing = [col.key for col in ex.COLUMNS if col.key not in row]
 
-    assert thieu == [], f"cột khai trong export nhưng không có trong dữ liệu: {thieu}"
+    assert missing == [], f"cột khai trong export nhưng không có trong dữ liệu: {missing}"
 
 
 def test_chon_cot_theo_man_hinh_giu_dung_thu_tu(db):
@@ -104,7 +104,7 @@ def test_xuat_di_qua_dung_truy_van_da_loc_quyen(db, doc):
 
 
 def test_bo_cot_khong_trung_khoa(db):
-    khoa = [c.key for c in ex.COLUMNS]
+    key = [c.key for c in ex.COLUMNS]
 
-    assert len(khoa) == len(set(khoa))
+    assert len(key) == len(set(key))
     assert all(isinstance(c, Col) for c in ex.COLUMNS)

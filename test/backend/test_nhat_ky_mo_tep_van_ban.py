@@ -33,48 +33,48 @@ def doc(db):
 @pytest.fixture()
 def cau_hinh(monkeypatch):
     """Ngưỡng 3 lượt / 10 phút — đủ nhỏ để bài kiểm chạy nhanh."""
-    gia_tri = {"doc_file_alert_threshold": 3, "doc_file_alert_window_min": 10,
+    value = {"doc_file_alert_threshold": 3, "doc_file_alert_window_min": 10,
                "doc_file_alert_recipients": ""}
-    monkeypatch.setattr(app_settings, "get", lambda key: gia_tri.get(key))
-    monkeypatch.setattr(nk, "setting", lambda key: gia_tri.get(key))
-    return gia_tri
+    monkeypatch.setattr(app_settings, "get", lambda key: value.get(key))
+    monkeypatch.setattr(nk, "setting", lambda key: value.get(key))
+    return value
 
 
 @pytest.fixture()
-def nguoi_nhan(monkeypatch):
+def recipients(monkeypatch):
     """Cắt phần dò người nhận — nó phụ thuộc vai trò/quyền, đã có bài kiểm riêng."""
-    monkeypatch.setattr(nk, "nguoi_nhan_canh_bao", lambda db: [QUAN_TRI, NGUOI_MO])
+    monkeypatch.setattr(nk, "alert_recipients", lambda db: [QUAN_TRI, NGUOI_MO])
 
 
 def _mo(db, doc, lan: int):
     for _ in range(lan):
-        nk.ghi_va_canh_bao(db, doc, SimpleNamespace(id=NGUOI_MO), nk.ACTION_XEM, "luong.pdf")
+        nk.log_and_alert(db, doc, SimpleNamespace(id=NGUOI_MO), nk.ACTION_VIEW, "luong.pdf")
 
 
 def _dem(db, action: str) -> int:
     return db.query(AuditLog).filter(AuditLog.action == action).count()
 
 
-def test_moi_luot_ghi_mot_dong_tren_chinh_van_ban(db, doc, cau_hinh, nguoi_nhan):
+def test_moi_luot_ghi_mot_dong_tren_chinh_van_ban(db, doc, cau_hinh, recipients):
     _mo(db, doc, 2)
 
-    dong = db.query(AuditLog).filter(AuditLog.action == nk.ACTION_XEM).all()
+    dong = db.query(AuditLog).filter(AuditLog.action == nk.ACTION_VIEW).all()
     assert len(dong) == 2
     assert all(d.entity == "document" and d.entity_id == doc.id for d in dong)
     assert "luong.pdf" in dong[0].message
 
 
-def test_chua_toi_nguong_thi_khong_bao(db, doc, cau_hinh, nguoi_nhan):
+def test_chua_toi_nguong_thi_khong_bao(db, doc, cau_hinh, recipients):
     _mo(db, doc, 2)  # ngưỡng là 3
 
     assert db.query(Notification).count() == 0
-    assert _dem(db, nk.ACTION_CANH_BAO) == 0
+    assert _dem(db, nk.ACTION_ALERT) == 0
 
 
-def test_toi_nguong_thi_bao(db, doc, cau_hinh, nguoi_nhan):
+def test_toi_nguong_thi_bao(db, doc, cau_hinh, recipients):
     _mo(db, doc, 3)
 
-    assert _dem(db, nk.ACTION_CANH_BAO) == 1
+    assert _dem(db, nk.ACTION_ALERT) == 1
     tin = db.query(Notification).all()
     #  Chỉ quản trị nhận; người đang thao tác thì không.
     assert [t.user_id for t in tin] == [QUAN_TRI]
@@ -82,24 +82,24 @@ def test_toi_nguong_thi_bao(db, doc, cau_hinh, nguoi_nhan):
     assert tin[0].link == f"/document/documents/{doc.id}"
 
 
-def test_khong_bao_lai_trong_cung_cua_so(db, doc, cau_hinh, nguoi_nhan):
+def test_khong_bao_lai_trong_cung_cua_so(db, doc, cau_hinh, recipients):
     """Báo mỗi lượt thì người nhận tắt chuông — lần sau có chuyện thật không ai nhìn."""
     _mo(db, doc, 6)  # vượt ngưỡng gấp đôi
 
-    assert _dem(db, nk.ACTION_CANH_BAO) == 1
+    assert _dem(db, nk.ACTION_ALERT) == 1
     assert db.query(Notification).count() == 1
 
 
-def test_nguong_0_la_tat_han_canh_bao_nhung_van_ghi(db, doc, monkeypatch, nguoi_nhan):
+def test_nguong_0_la_tat_han_canh_bao_nhung_van_ghi(db, doc, monkeypatch, recipients):
     monkeypatch.setattr(nk, "setting", lambda key: 0 if key == "doc_file_alert_threshold" else None)
 
     _mo(db, doc, 5)
 
-    assert _dem(db, nk.ACTION_XEM) == 5, "tắt cảnh báo KHÔNG được tắt nhật ký"
+    assert _dem(db, nk.ACTION_VIEW) == 5, "tắt cảnh báo KHÔNG được tắt nhật ký"
     assert db.query(Notification).count() == 0
 
 
-def test_dong_danh_dau_da_bao_treo_theo_NGUOI_khong_theo_van_ban(db, doc, cau_hinh, nguoi_nhan):
+def test_dong_danh_dau_da_bao_treo_theo_NGUOI_khong_theo_van_ban(db, doc, cau_hinh, recipients):
     """Một người mở dồn dập trên NHIỀU văn bản khác nhau vẫn chỉ bị báo một lần.
 
     Nếu dòng đánh dấu treo theo văn bản thì mở 3 tệp ở 5 văn bản = 5 lần báo.
@@ -108,6 +108,6 @@ def test_dong_danh_dau_da_bao_treo_theo_NGUOI_khong_theo_van_ban(db, doc, cau_hi
     doc_khac = Document(id=501, title="Hồ sơ thầu", doc_code="02/2026/HS-DEGO")
     _mo(db, doc_khac, 3)
 
-    assert _dem(db, nk.ACTION_CANH_BAO) == 1
-    dau = db.query(AuditLog).filter(AuditLog.action == nk.ACTION_CANH_BAO).first()
+    assert _dem(db, nk.ACTION_ALERT) == 1
+    dau = db.query(AuditLog).filter(AuditLog.action == nk.ACTION_ALERT).first()
     assert dau.entity_id == NGUOI_MO

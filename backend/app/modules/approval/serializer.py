@@ -18,14 +18,14 @@ from .instance_model import (ACTION_LABELS, INSTANCE_STATUS_LABELS,
                              ApprovalInstance, ApprovalTask)
 
 
-def _ten(db: Session, employee_id: int | None) -> str:
+def _name_of(db: Session, employee_id: int | None) -> str:
     if not employee_id:
         return ""
     employee = db.get(Employee, employee_id)
     return employee.full_name if employee else f"Nhân sự #{employee_id}"
 
 
-def flow_out(db: Session, flow: ApprovalFlow, kem_buoc: bool = False) -> dict:
+def flow_out(db: Session, flow: ApprovalFlow, with_steps: bool = False) -> dict:
     company = db.get(Company, flow.company_id) if flow.company_id else None
     data = {
         "id": flow.id,
@@ -42,9 +42,9 @@ def flow_out(db: Session, flow: ApprovalFlow, kem_buoc: bool = False) -> dict:
         "node_count": len(flow_service.nodes_of(db, flow.id)),
         #  Hai luồng mặc định cùng bật thì chỉ một cái chạy — nói ra ngay trên
         #  dòng danh sách, xem `flow_service.canh_bao_trung_mac_dinh`.
-        "duplicate_default_warning": flow_service.canh_bao_trung_mac_dinh(db, flow),
+        "duplicate_default_warning": flow_service.default_overlap_warning(db, flow),
     }
-    if kem_buoc:
+    if with_steps:
         data["nodes"] = [node_out(db, node) for node in flow_service.nodes_of(db, flow.id)]
     return data
 
@@ -63,7 +63,7 @@ def node_out(db: Session, node: ApprovalNode) -> dict:
         "approver_kind": node.approver_kind,
         "approver_kind_label": APPROVER_KIND_LABELS.get(node.approver_kind, ""),
         "approver_ref": node.approver_ref,
-        "approver_names": _ten_nguoi_duyet(db, node),
+        "approver_names": _approver_names(db, node),
         "multi_mode": node.multi_mode,
         "multi_mode_label": MULTI_MODE_LABELS.get(node.multi_mode, ""),
         "quorum_percent": node.quorum_percent,
@@ -73,13 +73,13 @@ def node_out(db: Session, node: ApprovalNode) -> dict:
         "skip_duplicate_label": SKIP_MODE_LABELS.get(node.skip_duplicate, ""),
         "sla_hours": node.sla_hours,
         "fallback_employee_id": node.fallback_employee_id,
-        "fallback_name": _ten(db, node.fallback_employee_id),
+        "fallback_name": _name_of(db, node.fallback_employee_id),
         "on_no_approver": node.on_no_approver,
         "on_no_approver_label": NO_APPROVER_LABELS.get(node.on_no_approver, ""),
     }
 
 
-def _ten_nguoi_duyet(db: Session, node: ApprovalNode) -> str:
+def _approver_names(db: Session, node: ApprovalNode) -> str:
     """Tên hiện trên thẻ bước. Rỗng = cách chọn này chỉ tính được lúc chạy.
 
     Hai cách chọn dựng được tên ngay lúc khai luồng, và cả hai đều nên dựng:
@@ -88,12 +88,12 @@ def _ten_nguoi_duyet(db: Session, node: ApprovalNode) -> str:
     """
     from .flow_model import APPROVER_DEPT_HEAD_OF, APPROVER_EMPLOYEE
 
-    ids = [int(phan) for phan in (node.approver_ref or "").split(",") if phan.strip().isdigit()]
+    ids = [int(part) for part in (node.approver_ref or "").split(",") if part.strip().isdigit()]
     if not ids:
         return ""
 
     if node.approver_kind == APPROVER_EMPLOYEE:
-        return ", ".join(_ten(db, employee_id) for employee_id in ids)
+        return ", ".join(_name_of(db, employee_id) for employee_id in ids)
 
     if node.approver_kind == APPROVER_DEPT_HEAD_OF:
         #  Ghi theo dạng «Trưởng phòng Nhân sự (Nguyễn Văn A)»: người khai chọn
@@ -101,23 +101,23 @@ def _ten_nguoi_duyet(db: Session, node: ApprovalNode) -> str:
         #  trống ghế trưởng thì nói thẳng — chọn vào đó là bước kẹt lúc chạy.
         from app.modules.department.model import Department
 
-        theo_id = {row.id: row for row in
+        by_id = {row.id: row for row in
                    db.query(Department).filter(Department.id.in_(ids)).all()}
-        phan = []
-        for phong_id in ids:
-            phong = theo_id.get(phong_id)
-            if phong is None:
-                phan.append(f"#{phong_id} (không còn)")
+        part = []
+        for department_id in ids:
+            department = by_id.get(department_id)
+            if department is None:
+                part.append(f"#{department_id} (không còn)")
                 continue
-            nguoi = _ten(db, phong.manager_id) if phong.manager_id else ""
-            phan.append(f"Trưởng {phong.name}"
-                        + (f" ({nguoi})" if nguoi else " (chưa có trưởng bộ phận)"))
-        return " · ".join(phan)
+            manager_name = _name_of(db, department.manager_id) if department.manager_id else ""
+            part.append(f"Trưởng {department.name}"
+                        + (f" ({manager_name})" if manager_name else " (chưa có trưởng bộ phận)"))
+        return " · ".join(part)
 
     return ""
 
 
-def instance_out(db: Session, instance: ApprovalInstance, kem_chi_tiet: bool = False) -> dict:
+def instance_out(db: Session, instance: ApprovalInstance, with_details: bool = False) -> dict:
     data = {
         "id": instance.id,
         "entity": instance.entity,
@@ -130,17 +130,17 @@ def instance_out(db: Session, instance: ApprovalInstance, kem_chi_tiet: bool = F
         "status": instance.status,
         "status_label": INSTANCE_STATUS_LABELS.get(instance.status, ""),
         "current_seq": instance.current_seq,
-        "started_by_name": _ten(db, instance.started_by_employee_id),
+        "started_by_name": _name_of(db, instance.started_by_employee_id),
         "started_at": instance.started_at,
         "finished_at": instance.finished_at,
         "finish_reason": instance.finish_reason,
     }
-    if kem_chi_tiet:
+    if with_details:
         data["tasks"] = [task_out(db, row) for row in instance_service_tasks(db, instance.id)]
         data["actions"] = [action_out(db, row) for row in actions_of(db, instance.id)]
         data["steps"] = [
             {"seq": node.seq, "name": node.name, "branch_key": node.branch_key}
-            for node in flow_service.cac_buoc(instance.flow_snapshot)
+            for node in flow_service.steps(instance.flow_snapshot)
         ]
     return data
 
@@ -148,7 +148,7 @@ def instance_out(db: Session, instance: ApprovalInstance, kem_chi_tiet: bool = F
 def instance_service_tasks(db: Session, instance_id: int) -> list[ApprovalTask]:
     from . import instance_service
 
-    return instance_service.viec_cua_phien(db, instance_id)
+    return instance_service.tasks_of_instance(db, instance_id)
 
 
 def actions_of(db: Session, instance_id: int) -> list[ApprovalAction]:
@@ -168,7 +168,7 @@ def task_out(db: Session, task: ApprovalTask) -> dict:
         "node_name": task.node_name,
         "order_no": task.order_no,
         "assignee_employee_id": task.assignee_employee_id,
-        "assignee_name": _ten(db, task.assignee_employee_id),
+        "assignee_name": _name_of(db, task.assignee_employee_id),
         "status": task.status,
         "status_label": TASK_STATUS_LABELS.get(task.status, ""),
         "due_at": task.due_at,
@@ -184,40 +184,40 @@ def action_out(db: Session, action: ApprovalAction) -> dict:
         "node_name": action.node_name,
         "action": action.action,
         "action_label": ACTION_LABELS.get(action.action, ""),
-        "actor_name": _ten(db, action.actor_employee_id),
-        "on_behalf_of_name": _ten(db, action.on_behalf_of_id),
+        "actor_name": _name_of(db, action.actor_employee_id),
+        "on_behalf_of_name": _name_of(db, action.on_behalf_of_id),
         "delegation_id": action.delegation_id,
         "comment": action.comment,
         "created_at": action.created_at,
-        "sentence": cau_dau_vet(db, action),
+        "sentence": audit_sentence(db, action),
     }
 
 
-def cau_dau_vet(db: Session, action: ApprovalAction) -> str:
+def audit_sentence(db: Session, action: ApprovalAction) -> str:
     """Câu cho BẢN IN dấu vết (I20).
 
     *"khi kiểm toán hoặc thanh tra hỏi «ai duyệt cái này», câu trả lời phải là
     một tờ giấy in ra được, không phải một ảnh chụp màn hình"* — nên câu này
     dựng ở backend, để bản in trên web và bản xuất ra tệp không bao giờ lệch chữ.
     """
-    ai = _ten(db, action.actor_employee_id) or "Hệ thống"
-    viec = ACTION_LABELS.get(action.action, "")
+    ai = _name_of(db, action.actor_employee_id) or "Hệ thống"
+    task = ACTION_LABELS.get(action.action, "")
 
     if action.on_behalf_of_id and action.delegation_id:
-        thay = _ten(db, action.on_behalf_of_id)
-        return f"{ai} {viec.lower()} thay {thay} theo ủy quyền số {action.delegation_id}"
+        on_behalf_name = _name_of(db, action.on_behalf_of_id)
+        return f"{ai} {task.lower()} thay {on_behalf_name} theo ủy quyền số {action.delegation_id}"
     if action.on_behalf_of_id:
-        return f"{viec}: {_ten(db, action.on_behalf_of_id)} → {ai}"
-    return f"{ai} — {viec}"
+        return f"{task}: {_name_of(db, action.on_behalf_of_id)} → {ai}"
+    return f"{ai} — {task}"
 
 
 def delegation_out(db: Session, row: Delegation) -> dict:
     return {
         "id": row.id,
         "from_employee_id": row.from_employee_id,
-        "from_name": _ten(db, row.from_employee_id),
+        "from_name": _name_of(db, row.from_employee_id),
         "to_employee_id": row.to_employee_id,
-        "to_name": _ten(db, row.to_employee_id),
+        "to_name": _name_of(db, row.to_employee_id),
         "entity": row.entity,
         "from_date": row.from_date,
         "to_date": row.to_date,

@@ -50,8 +50,8 @@ def notify_clone_created(db: Session, source: Document, clone: Document) -> int:
     if not recipients:
         return 0
 
-    han = f" Hạn xử lý {clone.clone_due_date:%d/%m/%Y}." if clone.clone_due_date else ""
-    goc = source.doc_code or source.issue_number or source.title
+    due_note = f" Hạn xử lý {clone.clone_due_date:%d/%m/%Y}." if clone.clone_due_date else ""
+    origin = source.doc_code or source.issue_number or source.title
 
     for user in recipients:
         db.add(Notification(
@@ -59,8 +59,8 @@ def notify_clone_created(db: Session, source: Document, clone: Document) -> int:
             title=f"Bản nháp cần xử lý: {clone.title}",
             #  Thân thư nêu đủ ba thứ F09 đòi: bản gốc, bản nháp, hạn xử lý.
             body=(
-                f"Pháp nhân của bạn nhận một bản nháp được clone từ văn bản «{goc}». "
-                f"Để nguyên nếu dùng được, hoặc soạn lại cho đúng pháp nhân mình.{han}"
+                f"Pháp nhân của bạn nhận một bản nháp được clone từ văn bản «{origin}». "
+                f"Để nguyên nếu dùng được, hoặc soạn lại cho đúng pháp nhân mình.{due_note}"
             ),
             link=f"/document/documents/{clone.id}",
             created_by=clone.cloned_by or 0,
@@ -74,8 +74,8 @@ def notify_clones_stale(db: Session, source: Document, clones: list[Document]) -
     Đánh dấu *cần rà lại* mà không báo cho ai thì cái dấu đó nằm im tới lúc có
     người tình cờ mở văn bản ra xem.
     """
-    dem = 0
-    goc = source.doc_code or source.issue_number or source.title
+    count = 0
+    origin = source.doc_code or source.issue_number or source.title
 
     for clone in clones:
         for user in _users_of_company(db, clone.company_id, clone.clone_assignee_employee_id):
@@ -83,11 +83,11 @@ def notify_clones_stale(db: Session, source: Document, clones: list[Document]) -
                 user_id=user.id,
                 title=f"Cần rà lại: {clone.title}",
                 body=(
-                    f"Văn bản gốc «{goc}» đã lên phiên bản mới. Rà lại bản của pháp "
+                    f"Văn bản gốc «{origin}» đã lên phiên bản mới. Rà lại bản của pháp "
                     "nhân mình xem còn đúng không."
                 ),
                 link=f"/document/documents/{clone.id}",
                 created_by=0,
             ))
-            dem += 1
-    return dem
+            count += 1
+    return count

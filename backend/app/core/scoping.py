@@ -193,7 +193,7 @@ def _proc_status_cond(model, f, company_id: int, statuses: list[str]):
     return status_cond
 
 
-def _chan(entity, scope, user, ly_do):
+def _chan(entity, scope, user, reason):
     """Phạm vi hẹp nhưng không dựng nổi điều kiện → CHẶN, và nói ra vì sao — B-07.
 
     Trước đợt này mọi nhánh kiểu này đều lặng lẽ `return None`, mà `None` là *thấy tất*:
@@ -203,7 +203,7 @@ def _chan(entity, scope, user, ly_do):
     (gắn pháp nhân/phòng ban cho nhân sự), không phải nới lại điều kiện ở đây.
     """
     log.warning("scope chan: entity=%s scope=%s user=%s — %s",
-                entity, scope, getattr(user, "id", None), ly_do)
+                entity, scope, getattr(user, "id", None), reason)
     return false()
 
 

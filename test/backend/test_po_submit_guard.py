@@ -109,31 +109,31 @@ def _po_voi_dong(db, **doi):
     return po
 
 
-@pytest.mark.parametrize("truong, nhan", [
+@pytest.mark.parametrize("field_code,label", [
     ("product_code", "Mã hàng"), ("item_group", "Phân loại"), ("product_name", "Tên hàng"),
     ("invoice_name", "Tên trên hóa đơn"), ("required_date", "Ngày yêu cầu có hàng"),
     ("expected_date", "Ngày dự kiến có hàng"), ("unit", "ĐVT"),
     ("warehouse_code", "Kho nhận mặc định"),
 ])
-def test_dong_thieu_truong_chu_thi_bi_chan(db, truong, nhan):
-    po = _po_voi_dong(db, **{truong: ""})
+def test_dong_thieu_truong_chu_thi_bi_chan(db, field_code, label):
+    po = _po_voi_dong(db, **{field_code: ""})
     with pytest.raises(HTTPException) as e:
         _submit(db, po)
     assert e.value.status_code == 400
-    assert nhan in e.value.detail
+    assert label in e.value.detail
     db.refresh(po)
     assert po.status == "draft"          # không được nhích trạng thái khi đã chặn
 
 
-@pytest.mark.parametrize("truong, nhan", [
+@pytest.mark.parametrize("field_code,label", [
     ("qty_request", "SL yêu cầu"), ("qty_order", "SL đặt NCC"), ("price", "Đơn giá"),
 ])
-def test_dong_co_o_so_bang_0_thi_bi_chan(db, truong, nhan):
+def test_dong_co_o_so_bang_0_thi_bi_chan(db, field_code, label):
     """Ô số: 0 ở đây là 'chưa nhập' thật — không có SL / không có giá thì không phải dòng để đặt."""
-    po = _po_voi_dong(db, **{truong: 0})
+    po = _po_voi_dong(db, **{field_code: 0})
     with pytest.raises(HTTPException) as e:
         _submit(db, po)
-    assert nhan in e.value.detail
+    assert label in e.value.detail
 
 
 def test_vat_bang_0_van_gui_duyet_duoc(db):
@@ -167,8 +167,8 @@ def test_bao_dich_danh_dong_nao_thieu_o_nao(db):
 
 
 def test_thieu_truong_dong_tra_ve_dung_nhan(db):
-    assert service.thieu_truong_dong(POItem(**dong_day_du())) == []
-    assert service.thieu_truong_dong(POItem(**dong_day_du(unit="", qty_order=0))) \
+    assert service.missing_line_fields(POItem(**dong_day_du())) == []
+    assert service.missing_line_fields(POItem(**dong_day_du(unit="", qty_order=0))) \
         == ["ĐVT", "SL đặt NCC"]                # đúng thứ tự hiện trên màn Chi tiết dòng
 
 

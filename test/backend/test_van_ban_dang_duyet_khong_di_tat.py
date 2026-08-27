@@ -33,29 +33,29 @@ ENTITY = "document"
 
 
 @pytest.fixture()
-def canh(db, seed):
+def align(db, seed):
     """Một quy chế đang chạy trong luồng hai bước."""
     doc_type = DocType(code="QC", name="Quy chế", id_scheme=1, number_when=2)
     db.add(doc_type)
     db.flush()
 
-    nguoi = {}
-    for ten in ("a", "b"):
-        employee = Employee(code=f"DUYET_{ten.upper()}", full_name=f"Người duyệt {ten.upper()}",
+    person = {}
+    for name in ("a", "b"):
+        employee = Employee(code=f"DUYET_{name.upper()}", full_name=f"Người duyệt {name.upper()}",
                             company_id=seed.company_id, department_id=seed.dept_id,
                             is_active=True)
         db.add(employee)
         db.flush()
-        nguoi[ten] = employee.id
+        person[name] = employee.id
 
     db.add(ApprovalSwitch(entity=ENTITY, is_enabled=True, created_by=ACTOR, updated_by=ACTOR))
     flow = ApprovalFlow(entity=ENTITY, code="VB-01", name="Duyệt quy chế",
                         is_active=True, created_by=ACTOR, updated_by=ACTOR)
     db.add(flow)
     db.flush()
-    for seq, ten in ((1, "a"), (2, "b")):
+    for seq, name in ((1, "a"), (2, "b")):
         db.add(ApprovalNode(flow_id=flow.id, seq=seq, name=f"Bước {seq}",
-                            approver_kind=APPROVER_EMPLOYEE, approver_ref=str(nguoi[ten]),
+                            approver_kind=APPROVER_EMPLOYEE, approver_ref=str(person[name]),
                             skip_duplicate=SKIP_NONE, created_by=ACTOR, updated_by=ACTOR))
     db.commit()
 
@@ -65,37 +65,37 @@ def canh(db, seed):
         content_html="<p>Điều 1. Nội dung.</p>",
     ), ACTOR)
     doc = service.submit(db, doc, ACTOR)
-    return {"doc": doc, "nguoi": nguoi, "doc_type": doc_type,
-            "phien": instance_service.phien_dang_chay(db, ENTITY, doc.id)}
+    return {"doc": doc, "nguoi": person, "doc_type": doc_type,
+            "phien": instance_service.running_instance(db, ENTITY, doc.id)}
 
 
 # ── 1 · không có đường tắt ──────────────────────────────────────────────────
 
-def test_dang_o_chang_1_thi_khong_ban_hanh_thang_duoc(db, canh):
-    with pytest.raises(HTTPException) as loi:
-        approval_bridge.chan_duong_cu(db, canh["doc"])
+def test_dang_o_chang_1_thi_khong_ban_hanh_thang_duoc(db, align):
+    with pytest.raises(HTTPException) as error:
+        approval_bridge.block_legacy_path(db, align["doc"])
 
-    assert loi.value.status_code == 400
-    assert "luồng duyệt nhiều bước" in loi.value.detail
+    assert error.value.status_code == 400
+    assert "luồng duyệt nhiều bước" in error.value.detail
     #  Và văn bản đứng nguyên chỗ cũ, không số.
-    db.refresh(canh["doc"])
-    assert canh["doc"].status == STATUS_SUBMITTED
-    assert not canh["doc"].doc_code
+    db.refresh(align["doc"])
+    assert align["doc"].status == STATUS_SUBMITTED
+    assert not align["doc"].doc_code
 
 
-def test_duyet_xong_het_cac_buoc_thi_chot_mo_ra(db, canh):
+def test_duyet_xong_het_cac_buoc_thi_chot_mo_ra(db, align):
     """Chốt chỉ chặn lúc phiên CÒN MỞ — hết phiên thì đường cũ dùng lại được.
 
     Quan trọng vì chính bộ máy nhiều bước gọi `service.approve()` khi duyệt hết
     bước: chặn nhầm ở đó là không văn bản nào ban hành nổi.
     """
-    action_service.duyet(db, canh["phien"], canh["nguoi"]["a"], ACTOR, {})
-    action_service.duyet(db, canh["phien"], canh["nguoi"]["b"], ACTOR, {})
-    assert canh["phien"].status == INSTANCE_APPROVED
+    action_service.approve(db, align["phien"], align["nguoi"]["a"], ACTOR, {})
+    action_service.approve(db, align["phien"], align["nguoi"]["b"], ACTOR, {})
+    assert align["phien"].status == INSTANCE_APPROVED
 
-    db.refresh(canh["doc"])
-    approval_bridge.chan_duong_cu(db, canh["doc"])   # không được ném lỗi
-    assert canh["doc"].status == STATUS_EFFECTIVE
+    db.refresh(align["doc"])
+    approval_bridge.block_legacy_path(db, align["doc"])   # không được ném lỗi
+    assert align["doc"].status == STATUS_EFFECTIVE
 
 
 def test_chua_vao_bo_may_thi_khong_chan_gi(db, seed):
@@ -109,7 +109,7 @@ def test_chua_vao_bo_may_thi_khong_chan_gi(db, seed):
         content_html="<p>Nội dung.</p>",
     ), ACTOR)
 
-    approval_bridge.chan_duong_cu(db, doc)   # không được ném lỗi
+    approval_bridge.block_legacy_path(db, doc)   # không được ném lỗi
 
 
 def test_thieu_phong_chu_tri_thi_chan_ngay_luc_tao(db, seed):
@@ -127,7 +127,7 @@ def test_thieu_phong_chu_tri_thi_chan_ngay_luc_tao(db, seed):
 
 # ── 1b · rút phiếu thì văn bản phải VỀ NHÁP ─────────────────────────────────
 
-def test_rut_phieu_thi_van_ban_ve_nhap_va_khong_con_duong_tat(db, canh):
+def test_rut_phieu_thi_van_ban_ve_nhap_va_khong_con_duong_tat(db, align):
     """Ca thật bắt được 19/08/2026.
 
     Trước đây rút phiếu chỉ đóng phiên duyệt, văn bản nằm lại ở *đang duyệt*:
@@ -136,51 +136,51 @@ def test_rut_phieu_thi_van_ban_ve_nhap_va_khong_con_duong_tat(db, canh):
     """
     from app.modules.document.model import STATUS_DRAFT
 
-    action_service.rut_lai(db, canh["phien"], canh["doc"].owner_employee_id,
+    action_service.withdraw(db, align["phien"], align["doc"].owner_employee_id,
                            ACTOR, "gửi nhầm bản")
 
-    db.refresh(canh["doc"])
-    assert canh["doc"].status == STATUS_DRAFT
-    assert not canh["doc"].doc_code
+    db.refresh(align["doc"])
+    assert align["doc"].status == STATUS_DRAFT
+    assert not align["doc"].doc_code
 
     #  Về nháp thì không còn bản nào "đang chờ duyệt" để mà ban hành thẳng.
     with pytest.raises(HTTPException):
-        service.approve(db, canh["doc"], ACTOR)
+        service.approve(db, align["doc"], ACTOR)
 
     #  Và gửi duyệt lại được — đây là đường đi tiếp đúng.
-    service.submit(db, canh["doc"], ACTOR)
-    assert canh["doc"].status == STATUS_SUBMITTED
+    service.submit(db, align["doc"], ACTOR)
+    assert align["doc"].status == STATUS_SUBMITTED
 
 
 # ── 2 · hỏng thì phải nói ra ────────────────────────────────────────────────
 
-def test_duyet_xong_ma_khong_ban_hanh_duoc_thi_ghi_ly_do_vao_phien(db, canh):
+def test_duyet_xong_ma_khong_ban_hanh_duoc_thi_ghi_ly_do_vao_phien(db, align):
     """Ca thật: loại «phải kèm Quyết định» mà thiếu Quyết định.
 
     Phiên vẫn ghi «Đã duyệt» — chữ ký là chữ ký, không xóa đi được. Nhưng lý do
     văn bản chưa ban hành phải nằm ở chỗ người dùng đọc được, không phải chỉ ở
     log container.
     """
-    canh["doc_type"].needs_decision = True
+    align["doc_type"].needs_decision = True
     db.commit()
 
-    action_service.duyet(db, canh["phien"], canh["nguoi"]["a"], ACTOR, {})
-    action_service.duyet(db, canh["phien"], canh["nguoi"]["b"], ACTOR, {})
+    action_service.approve(db, align["phien"], align["nguoi"]["a"], ACTOR, {})
+    action_service.approve(db, align["phien"], align["nguoi"]["b"], ACTOR, {})
 
-    assert canh["phien"].status == INSTANCE_APPROVED
-    db.refresh(canh["doc"])
-    assert canh["doc"].status == STATUS_SUBMITTED, "Thiếu Quyết định thì không ban hành"
-    assert canh["phien"].finish_reason, "Hỏng mà không ghi lý do là hỏng trong im lặng"
-    assert "Quyết định" in canh["phien"].finish_reason
+    assert align["phien"].status == INSTANCE_APPROVED
+    db.refresh(align["doc"])
+    assert align["doc"].status == STATUS_SUBMITTED, "Thiếu Quyết định thì không ban hành"
+    assert align["phien"].finish_reason, "Hỏng mà không ghi lý do là hỏng trong im lặng"
+    assert "Quyết định" in align["phien"].finish_reason
 
 
-def test_ban_hanh_tron_ven_thi_khong_de_lai_ly_do_hong(db, canh):
-    action_service.duyet(db, canh["phien"], canh["nguoi"]["a"], ACTOR, {})
-    action_service.duyet(db, canh["phien"], canh["nguoi"]["b"], ACTOR, {})
+def test_ban_hanh_tron_ven_thi_khong_de_lai_ly_do_hong(db, align):
+    action_service.approve(db, align["phien"], align["nguoi"]["a"], ACTOR, {})
+    action_service.approve(db, align["phien"], align["nguoi"]["b"], ACTOR, {})
 
-    db.refresh(canh["doc"])
-    assert canh["doc"].status == STATUS_EFFECTIVE
-    assert not canh["phien"].finish_reason
+    db.refresh(align["doc"])
+    assert align["doc"].status == STATUS_EFFECTIVE
+    assert not align["phien"].finish_reason
 
 
 # ── 3 · loại cần Quyết định phải khai được quan hệ đó ───────────────────────
@@ -196,12 +196,12 @@ def test_moi_loai_can_quyet_dinh_deu_khai_duoc_quan_he_kem_theo():
     from app.seed_data.document_phase1 import (ALL_DOC_TYPES,
                                                DOC_TYPE_LINK_RULES)
 
-    khai_duoc = {ma_nguon for ma_nguon, quan_he, ma_dich, *_ in DOC_TYPE_LINK_RULES
-                 if quan_he == RELATION_ATTACHED and ma_dich == "QD"}
-    can_quyet_dinh = {loai["code"] for loai in ALL_DOC_TYPES if loai.get("needs_decision")}
+    khai_duoc = {ma_nguon for ma_nguon, relation, ma_dich, *_ in DOC_TYPE_LINK_RULES
+                 if relation == RELATION_ATTACHED and ma_dich == "QD"}
+    needs_decision = {kind["code"] for kind in ALL_DOC_TYPES if kind.get("needs_decision")}
 
-    assert can_quyet_dinh, "Bộ danh mục mẫu phải còn ít nhất một loại cần Quyết định"
-    assert not (can_quyet_dinh - khai_duoc), (
+    assert needs_decision, "Bộ danh mục mẫu phải còn ít nhất một loại cần Quyết định"
+    assert not (needs_decision - khai_duoc), (
         "Loại cần Quyết định mà không khai được quan hệ «Kèm theo» tới Quyết định: "
-        f"{sorted(can_quyet_dinh - khai_duoc)}"
+        f"{sorted(needs_decision - khai_duoc)}"
     )

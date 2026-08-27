@@ -35,16 +35,16 @@ from app.modules.doc_catalog.numbering_rule_model import (
 from app.modules.employee.model import Employee
 
 ACTOR = 1
-HOM_NAY = date.today()
+TODAY = date.today()
 
 #  Ba chiều văn bản của quy tắc đánh số: đến · đi · nội bộ.
-CHIEU_DEN, CHIEU_DI, CHIEU_NOI_BO = 1, 2, 3
+DIR_INCOMING, DIR_OUTGOING, DIR_INTERNAL = 1, 2, 3
 
 
-def xoa(db) -> dict[str, int]:
+def wipe(db) -> dict[str, int]:
     """Dọn luồng duyệt + phiên đang chạy + quy tắc đánh số. Công tắc GIỮ NGUYÊN."""
-    dem = {}
-    for ten, model in [
+    count = {}
+    for name, model in [
         ("thao tác duyệt", ApprovalAction),
         ("việc chờ duyệt", ApprovalTask),
         ("phiên duyệt", ApprovalInstance),
@@ -55,12 +55,12 @@ def xoa(db) -> dict[str, int]:
         ("sổ của quy tắc số", DocumentNumberingRuleBook),
         ("quy tắc đánh số", DocumentNumberingRule),
     ]:
-        dem[ten] = db.query(model).delete()
+        count[name] = db.query(model).delete()
     db.commit()
-    return dem
+    return count
 
 
-def _gan_truong_phong(db, nguoi) -> None:
+def _assign_department_head(db, people) -> None:
     """Khai TRƯỞNG PHÒNG cho các phòng chưa có.
 
     Bước đầu của mọi luồng mẫu chọn người duyệt kiểu «trưởng bộ phận người nộp»
@@ -77,12 +77,12 @@ def _gan_truong_phong(db, nguoi) -> None:
     """
     from app.modules.department.model import Department
 
-    truong_bp = nguoi["truong_bp"]
-    chanh_vp_id = nguoi["chanh_vp"].id
+    dept_head = people["truong_bp"]
+    office_chief_id = people["chanh_vp"].id
 
-    for phong in db.query(Department).filter(
+    for department in db.query(Department).filter(
             (Department.manager_id.is_(None)) | (Department.manager_id == 0)).all():
-        phong.manager_id = truong_bp.id
+        department.manager_id = dept_head.id
 
     #  VÁ dữ liệu do chính bản seed cũ gán sai: phòng nào đang để `chanh_vp` làm
     #  trưởng phòng thì chuyển sang `truong_bp`. Không vá thì mọi máy đã seed
@@ -91,15 +91,15 @@ def _gan_truong_phong(db, nguoi) -> None:
     #
     #  Chỉ đụng đúng giá trị mà seed cũ ghi ra, và đây là seed DEMO chạy ở local
     #  — không phải nơi có trưởng phòng thật do người dùng khai.
-    if truong_bp.id != chanh_vp_id:
-        for phong in db.query(Department).filter(
-                Department.manager_id == chanh_vp_id).all():
-            phong.manager_id = truong_bp.id
+    if dept_head.id != office_chief_id:
+        for department in db.query(Department).filter(
+                Department.manager_id == office_chief_id).all():
+            department.manager_id = dept_head.id
 
     db.commit()
 
 
-def bat_cong_tac(db) -> str:
+def enable_switch(db) -> str:
     """BẬT bộ máy duyệt nhiều bước cho văn bản (I26).
 
     `xoa()` cố ý không đụng tới công tắc, nhưng nạp luồng mà để công tắc TẮT thì
@@ -125,61 +125,61 @@ def bat_cong_tac(db) -> str:
     return "giữ nguyên (đang bật)"
 
 
-def _nguoi(db) -> dict[str, Employee]:
+def _people(db) -> dict[str, Employee]:
     """Ba vai người duyệt. Ít nhân sự thì dùng lại người đầu — dữ liệu mẫu
     không được nổ chỉ vì máy local mới seed có hai nhân viên."""
-    ds = db.query(Employee).filter(Employee.is_active.is_(True)).order_by(Employee.id).all()
-    if not ds:
+    items = db.query(Employee).filter(Employee.is_active.is_(True)).order_by(Employee.id).all()
+    if not items:
         raise SystemExit("Chưa có nhân sự — chạy `python -m app.seed` trước.")
-    lay = lambda i: ds[i] if i < len(ds) else ds[-1]  # noqa: E731
-    chanh_vp = lay(3)
+    pick = lambda i: items[i] if i < len(items) else items[-1]  # noqa: E731
+    office_chief = pick(3)
 
     #  TRƯỞNG BỘ PHẬN mặc định của các phòng chưa khai — phải KHÁC `chanh_vp`,
     #  xem `_gan_truong_phong`. Lấy người thứ 5; máy chỉ có vài nhân sự thì tìm
     #  bất kỳ ai khác `chanh_vp` để ít nhất luồng hai bước vẫn ra hai người.
-    truong_bp = lay(4)
-    if truong_bp.id == chanh_vp.id:
-        truong_bp = next((e for e in ds if e.id != chanh_vp.id), chanh_vp)
+    dept_head = pick(4)
+    if dept_head.id == office_chief.id:
+        dept_head = next((e for e in items if e.id != office_chief.id), office_chief)
 
-    return {"tgd": lay(0), "phap_che": lay(1), "tai_chinh": lay(2),
-            "chanh_vp": chanh_vp, "truong_bp": truong_bp}
+    return {"tgd": pick(0), "phap_che": pick(1), "tai_chinh": pick(2),
+            "chanh_vp": office_chief, "truong_bp": dept_head}
 
 
-class _Xuong:
+class _Factory:
     def __init__(self, db):
         self.db = db
-        self.loai = {t.code: t for t in db.query(DocType).all()}
+        self.kind = {t.code: t for t in db.query(DocType).all()}
 
-    def luong(self, entity: str, ma: str, ten: str, mo_ta: str, *,
-              dieu_kien: str = "", uu_tien: int = 0) -> ApprovalFlow:
+    def flow(self, entity: str, code: str, name: str, description: str, *,
+              condition: str = "", priority: int = 0) -> ApprovalFlow:
         flow = ApprovalFlow(
-            entity=entity, code=ma, name=ten, description=mo_ta,
-            condition=dieu_kien, priority=uu_tien, is_active=True,
+            entity=entity, code=code, name=name, description=description,
+            condition=condition, priority=priority, is_active=True,
             created_by=ACTOR, updated_by=ACTOR,
         )
         self.db.add(flow)
         self.db.flush()
         return flow
 
-    def buoc(self, flow: ApprovalFlow, seq: int, ten: str, *,
-             nhanh: str = "", ai: int = APPROVER_DEPT_HEAD, ref: str = "",
-             nhieu_nguoi: int = MULTI_ANY, dieu_kien: str = "",
-             mac_dinh: bool = False, han_gio: int = 0, du_phong: int | None = None,
-             loai_buoc: int = NODE_APPROVAL, vai_tro: int = ROLE_APPROVE) -> ApprovalNode:
+    def step(self, flow: ApprovalFlow, seq: int, name: str, *,
+             branch: str = "", ai: int = APPROVER_DEPT_HEAD, ref: str = "",
+             multi_mode: int = MULTI_ANY, condition: str = "",
+             default: bool = False, due_hours: int = 0, fallback: int | None = None,
+             node_type: int = NODE_APPROVAL, role: int = ROLE_APPROVE) -> ApprovalNode:
         node = ApprovalNode(
-            flow_id=flow.id, seq=seq, branch_key=nhanh, name=ten,
-            node_kind=loai_buoc, flow_role=vai_tro,
-            approver_kind=ai, approver_ref=ref, multi_mode=nhieu_nguoi,
-            condition=dieu_kien, is_default_branch=mac_dinh,
-            sla_hours=han_gio, fallback_employee_id=du_phong,
-            on_no_approver=NO_APPROVER_FALLBACK if du_phong else 3,
+            flow_id=flow.id, seq=seq, branch_key=branch, name=name,
+            node_kind=node_type, flow_role=role,
+            approver_kind=ai, approver_ref=ref, multi_mode=multi_mode,
+            condition=condition, is_default_branch=default,
+            sla_hours=due_hours, fallback_employee_id=fallback,
+            on_no_approver=NO_APPROVER_FALLBACK if fallback else 3,
             created_by=ACTOR, updated_by=ACTOR,
         )
         self.db.add(node)
         self.db.flush()
         return node
 
-    def phong_nhan_su(self) -> str:
+    def hr_department(self) -> str:
         """Id phòng Nhân sự dạng chuỗi, cho `approver_ref` của bước «trưởng bộ
         phận của phòng ban chỉ định».
 
@@ -190,62 +190,62 @@ class _Xuong:
         """
         from app.modules.department.model import Department
 
-        phong = (self.db.query(Department)
+        department = (self.db.query(Department)
                  .filter(Department.code.in_(("PBA007", "NS", "HCNS")))
                  .order_by(Department.id).first())
-        if phong is None:
-            phong = (self.db.query(Department)
+        if department is None:
+            department = (self.db.query(Department)
                      .filter(Department.name.ilike("%nhân sự%"))
                      .order_by(Department.id).first())
-        return str(phong.id) if phong else ""
+        return str(department.id) if department else ""
 
-    def dieu_kien_loai(self, *ma_loai: str) -> str:
+    def type_condition(self, *type_code: str) -> str:
         """`[{"field":"doc_type_id","op":"in","value":[...]}]` — đúng dạng bộ dựng
         điều kiện trên giao diện sinh ra, để mở lên sửa được chứ không thành
         «điều kiện khai tay»."""
         import json
 
-        ids = [self.loai[ma].id for ma in ma_loai if ma in self.loai]
+        ids = [self.kind[code].id for code in type_code if code in self.kind]
         return json.dumps([{"field": "doc_type_id", "op": "in", "value": ids}])
 
 
-def nap_quy_tac_so(db) -> int:
+def seed_numbering_rules(db) -> int:
     """Quy tắc đánh số — theo thể thức Nghị định 30 và thực tế văn thư."""
-    from app.seed_data.approval_demo_corpus import QUY_TAC_SO
+    from app.seed_data.approval_demo_corpus import NUMBERING_RULES
 
-    loai = {t.code: t for t in db.query(DocType).all()}
-    for chieu, mau, uu_tien, reset, sua_tay, _ly_do, ma_loai in QUY_TAC_SO:
+    kind = {t.code: t for t in db.query(DocType).all()}
+    for direction, pattern, priority, reset, manual_edit, _reason, type_code in NUMBERING_RULES:
         rule = DocumentNumberingRule(
-            direction=chieu, pattern=mau, start_no=1, reset_yearly=reset,
-            allow_manual=sua_tay, priority=uu_tien,
+            direction=direction, pattern=pattern, start_no=1, reset_yearly=reset,
+            allow_manual=manual_edit, priority=priority,
             #  `doc_type_mode` 2 = chỉ áp cho các loại liệt kê ở bảng con.
-            doc_type_mode=2 if ma_loai else 1, book_mode=1,
+            doc_type_mode=2 if type_code else 1, book_mode=1,
             is_active=True, created_by=ACTOR, updated_by=ACTOR,
         )
         db.add(rule)
         db.flush()
-        for ma in ma_loai:
-            if ma in loai:
+        for code in type_code:
+            if code in kind:
                 db.add(DocumentNumberingRuleDocType(
-                    rule_id=rule.id, doc_type_id=loai[ma].id,
+                    rule_id=rule.id, doc_type_id=kind[code].id,
                     created_by=ACTOR, updated_by=ACTOR))
     db.commit()
-    return len(QUY_TAC_SO)
+    return len(NUMBERING_RULES)
 
 
-def nap_uy_quyen(db, nguoi) -> int:
+def seed_delegations(db, people) -> int:
     """I22 — Tổng Giám đốc đi công tác, ủy quyền Chánh Văn phòng ký thay."""
     db.add(Delegation(
-        from_employee_id=nguoi["tgd"].id, to_employee_id=nguoi["chanh_vp"].id,
-        entity="", from_date=HOM_NAY - timedelta(days=2),
-        to_date=HOM_NAY + timedelta(days=12), is_active=True,
+        from_employee_id=people["tgd"].id, to_employee_id=people["chanh_vp"].id,
+        entity="", from_date=TODAY - timedelta(days=2),
+        to_date=TODAY + timedelta(days=12), is_active=True,
         reason="Tổng Giám đốc đi công tác nước ngoài từ ngày 16/8 đến 30/8.",
         created_by=ACTOR, updated_by=ACTOR))
     db.commit()
     return 1
 
 
-def trinh_vai_van_ban(db) -> int:
+def assign_document_roles(db) -> int:
     """Trình hai văn bản đang chờ duyệt vào bộ máy, để «Việc của tôi» có dữ liệu.
 
     Đi qua đúng `service.submit` — cùng một cửa mà người dùng bấm «Gửi duyệt» —
@@ -266,36 +266,36 @@ def trinh_vai_van_ban(db) -> int:
     from app.modules.document import service
     from app.modules.document.model import STATUS_SUBMITTED, Document
 
-    dem = 0
+    count = 0
     for doc in db.query(Document).filter(Document.status == STATUS_SUBMITTED).all():
         service.submit(db, doc, ACTOR)
-        if instance_service.phien_dang_chay(db, "document", doc.id) is not None:
-            dem += 1
+        if instance_service.running_instance(db, "document", doc.id) is not None:
+            count += 1
     db.commit()
-    return dem
+    return count
 
 
 def run() -> None:
     db = SessionLocal()
     try:
         print("Đang xóa luồng duyệt và quy tắc đánh số cũ…")
-        for ten, so in xoa(db).items():
-            print(f"  - {ten}: {so}")
+        for name, so in wipe(db).items():
+            print(f"  - {name}: {so}")
 
-        nguoi = _nguoi(db)
-        _gan_truong_phong(db, nguoi)
-        xuong = _Xuong(db)
+        people = _people(db)
+        _assign_department_head(db, people)
+        factory = _Factory(db)
 
-        from app.seed_data.approval_demo_corpus import dung_luong
+        from app.seed_data.approval_demo_corpus import build_flows
 
-        luong = dung_luong(xuong, nguoi)
+        flow = build_flows(factory, people)
         db.commit()
-        print(f"Đã nạp {len(luong)} luồng duyệt, "
+        print(f"Đã nạp {len(flow)} luồng duyệt, "
               f"{db.query(ApprovalNode).count()} bước.")
-        print(f"Đã {bat_cong_tac(db)} bộ máy duyệt cho văn bản.")
-        print(f"Đã nạp {nap_quy_tac_so(db)} quy tắc đánh số.")
-        print(f"Đã nạp {nap_uy_quyen(db, nguoi)} dòng ủy quyền.")
-        print(f"Đã trình {trinh_vai_van_ban(db)} văn bản vào bộ máy duyệt.")
+        print(f"Đã {enable_switch(db)} bộ máy duyệt cho văn bản.")
+        print(f"Đã nạp {seed_numbering_rules(db)} quy tắc đánh số.")
+        print(f"Đã nạp {seed_delegations(db, people)} dòng ủy quyền.")
+        print(f"Đã trình {assign_document_roles(db)} văn bản vào bộ máy duyệt.")
         print("Xong.")
     finally:
         db.close()

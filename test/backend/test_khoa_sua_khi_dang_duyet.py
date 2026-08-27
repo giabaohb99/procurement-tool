@@ -65,34 +65,34 @@ def test_con_nhap_thi_van_sua_binh_thuong(db, doc):
 def test_gui_duyet_roi_thi_khong_sua_duoc_noi_dung(db, doc):
     service.submit(db, doc, ACTOR)
 
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         version_service.save_content(
             db, _ban(db, doc), VersionContentUpdate(content_html="<p>SỬA TRỘM.</p>"), ACTOR)
 
-    assert loi.value.status_code == 409
-    assert "rút phiếu" in loi.value.detail.lower()
+    assert error.value.status_code == 409
+    assert "rút phiếu" in error.value.detail.lower()
     assert _ban(db, doc).content_html == "<p>NỘI DUNG GỐC.</p>"
 
 
 def test_gui_duyet_roi_thi_khong_doi_duoc_le_trang(db, doc):
     service.submit(db, doc, ACTOR)
 
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         version_service.save_content(db, _ban(db, doc),
                                      VersionContentUpdate(margin_left_mm=35), ACTOR)
 
-    assert loi.value.status_code == 409
+    assert error.value.status_code == 409
 
 
 def test_gui_duyet_roi_thi_khong_doi_duoc_tieu_de_va_muc_mat(db, doc):
     """Nâng mức mật dưới tay người duyệt cũng là đưa họ ký thứ khác thứ họ đọc."""
     service.submit(db, doc, ACTOR)
 
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         service.update_document(
             db, doc, DocumentUpdate(title="Tiêu đề đổi trộm", secrecy_level=3), ACTOR)
 
-    assert loi.value.status_code == 409
+    assert error.value.status_code == 409
     assert doc.status == STATUS_SUBMITTED
     assert doc.title == "Quy chế thử"
     assert doc.secrecy_level != 3
@@ -105,7 +105,7 @@ def test_bi_tra_lai_thi_sua_tiep_duoc(db, doc):
     ghi được nội dung và sửa được trường chung, đúng như hồi còn về Nháp.
     """
     service.submit(db, doc, ACTOR)
-    service.tra_lai(db, doc, "thiếu căn cứ ở mục 2", ACTOR)
+    service.send_back(db, doc, "thiếu căn cứ ở mục 2", ACTOR)
 
     version_service.save_content(
         db, _ban(db, doc), VersionContentUpdate(content_html="<p>Sửa sau khi bị trả.</p>"), ACTOR)
@@ -122,15 +122,15 @@ def test_bi_tu_choi_thi_khoa_han(db, doc):
     ra cho gõ tiếp — người soạn sửa cả buổi rồi mới thấy không có nút nào gửi lại.
     """
     service.submit(db, doc, ACTOR)
-    service.tu_choi(db, doc, "không duyệt nhu cầu này", ACTOR)
+    service.reject(db, doc, "không duyệt nhu cầu này", ACTOR)
 
     assert doc.status == STATUS_REJECTED
     #  Bản bị từ chối NHẢ chỗ `open_slot` nên không còn bản nào "đang mở".
     assert service.open_version(db, doc) is None
 
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         service.update_document(db, doc, DocumentUpdate(title="Cố sửa bản đã từ chối"), ACTOR)
-    assert loi.value.status_code == 409
+    assert error.value.status_code == 409
 
     with pytest.raises(HTTPException) as loi_gui:
         service.submit(db, doc, ACTOR)
@@ -142,9 +142,9 @@ def test_da_duyet_van_bao_dung_cau_cu(db, doc):
     service.submit(db, doc, ACTOR)
     service.approve(db, doc, ACTOR)
 
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         version_service.save_content(
             db, _ban(db, doc), VersionContentUpdate(content_html="<p>x</p>"), ACTOR)
 
-    assert loi.value.status_code == 409
-    assert "mở phiên bản mới" in loi.value.detail.lower()
+    assert error.value.status_code == 409
+    assert "mở phiên bản mới" in error.value.detail.lower()

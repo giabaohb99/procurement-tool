@@ -67,8 +67,8 @@ def test_xem_truoc_va_cap_that_khong_lech_nhau_qua_nam(db, catalog):
     _cap_ma(db, company, doc_type, "Quy chế lương", 2026)
 
     xem_truoc = numbering.peek(db, doc_type, company.id, None, date(2027, 1, 2))
-    that = _cap_ma(db, company, doc_type, "Quy chế công tác phí", 2027).doc_code
-    assert xem_truoc == that == "DEGO-QC-002"
+    real_ids = _cap_ma(db, company, doc_type, "Quy chế công tác phí", 2027).doc_code
+    assert xem_truoc == real_ids == "DEGO-QC-002"
 
 
 def test_so_tat_reset_yearly_cung_dem_tiep_qua_nam(db):

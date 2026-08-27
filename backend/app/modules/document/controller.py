@@ -36,7 +36,7 @@ from . import (access_service, approval_bridge, duplicate_service, import_servic
                serializer, service, version_service)
 from .model import ORIGIN_INTERNAL, Document
 from .version_model import DocumentVersion
-from .query import (an_ban_rieng_co_goc_xem_duoc, dem_ban_rieng,
+from .query import (hide_private_copies_with_visible_source, count_private_copies,
                     documents_query)
 from .model import APPLY_MODE_LABELS, STATUS_PENDING_ISSUE
 from .schema import (AccessGrant, AccessRevokeIn, ApproveIn, DocumentCreate, DocumentUpdate,
@@ -100,7 +100,7 @@ def _load(db: Session, document_id: int, user, action: str = "read") -> Document
     return doc
 
 
-def _danh_sach_query(request: Request, db: Session, user, profile: dict,
+def _list_query(request: Request, db: Session, user, profile: dict,
                      q: str = "", effective_from: date | None = None,
                      effective_to: date | None = None):
     """Truy vấn danh sách văn bản — **một luật lọc duy nhất** cho cả màn danh
@@ -144,7 +144,7 @@ def _danh_sach_query(request: Request, db: Session, user, profile: dict,
     #  Hỏi đích danh bản riêng của một bản gốc thì KHÔNG gom nữa — người dùng
     #  vừa bung đúng dòng đó ra, gom lại là trả về rỗng.
     if not request.query_params.get("source_document_id"):
-        query = an_ban_rieng_co_goc_xem_duoc(query)
+        query = hide_private_copies_with_visible_source(query)
 
     return query, visible
 
@@ -160,7 +160,7 @@ def list_documents(
     user=Depends(require("document", "read")),
 ):
     profile = get_perm_profile(db, user)
-    query, visible = _danh_sach_query(request, db, user, profile, q,
+    query, visible = _list_query(request, db, user, profile, q,
                                       effective_from, effective_to)
 
     total = query.count()
@@ -173,12 +173,12 @@ def list_documents(
 
     #  Đếm trên một truy vấn CHỈ lọc quyền — không kèm bộ lọc/tìm kiếm của
     #  danh sách, nếu không lọc theo trạng thái là số bản riêng tụt theo.
-    dem_query = documents_query(db)
+    count_query = documents_query(db)
     if visible is not None:
-        dem_query = dem_query.filter(visible)
-    dem = dem_ban_rieng(dem_query, [doc.id for doc in items])
+        count_query = count_query.filter(visible)
+    count = count_private_copies(count_query, [doc.id for doc in items])
     for row in rows:
-        row["clone_count"] = dem.get(row["id"], 0)
+        row["clone_count"] = count.get(row["id"], 0)
 
     return success({"total": total, "items": rows})
 
@@ -279,7 +279,7 @@ def export_xlsx(
     from . import export as ex
 
     profile = get_perm_profile(db, user)
-    query, _ = _danh_sach_query(request, db, user, profile, q,
+    query, _ = _list_query(request, db, user, profile, q,
                                 effective_from, effective_to)
     id_list = parse_ids(ids)
     if id_list:
@@ -388,7 +388,7 @@ def update_issue_number(
 
 
 @router.delete("/{document_id}/ban-nhap")
-def bo_ban_nhap(
+def discard_draft(
     document_id: int,
     db: Session = Depends(get_db),
     user=Depends(require("document", "create")),
@@ -398,7 +398,7 @@ def bo_ban_nhap(
     Đi cùng `create` chứ không phải `delete`: xem `service.bo_ban_nhap_cua_minh`.
     """
     doc = _load(db, document_id, user, "read")
-    service.bo_ban_nhap_cua_minh(db, doc, user.id)
+    service.discard_own_draft(db, doc, user.id)
     record(db, user.id, "document", document_id, "delete", "Bỏ bản nháp đang soạn dở")
     return success(None, "Đã bỏ bản nháp")
 
@@ -440,14 +440,30 @@ def approve_document(
     #  người có quyền duyệt. Kiểm trước `chan_duong_cu` để câu báo nói đúng
     #  chuyện đang xảy ra thay vì câu chung về luồng nhiều bước.
     if doc.status == STATUS_PENDING_ISSUE:
-        service.ensure_duoc_ban_hanh(db, doc, user)
+        service.ensure_can_issue(db, doc, user)
     else:
-        approval_bridge.chan_duong_cu(db, doc)
+        approval_bridge.block_legacy_path(db, doc)
 
-    hop_thu = _hop_thu_da_chon(db, data, user)
+    mailbox = _selected_mailbox(db, data, user)
     doc = service.approve(db, doc, user.id,
                           data.apply_mode if data else None,
-                          mailbox_id=hop_thu.id if hop_thu else None)
+                          mailbox_id=mailbox.id if mailbox else None)
+
+    #  CR-200 (F12) — người ban hành tích «Đăng thông báo lên diễn đàn» thì clone
+    #  thành một bài diễn đàn đã ghim. Chạy SAU khi ban hành xong và nuốt lỗi
+    #  cùng luật với kênh chuông/email: diễn đàn hỏng không được biến một văn bản
+    #  đã cấp số thành thao tác thất bại.
+    forum_posted = False
+    if data and data.forum_announce:
+        try:
+            from .issue_notification import create_forum_announcement
+            create_forum_announcement(db, doc, user)
+            forum_posted = True
+        except Exception:  # noqa: BLE001 — kênh thông báo là best-effort
+            import logging
+            logging.getLogger(__name__).exception(
+                "Không đăng được thông báo diễn đàn cho văn bản #%s", doc.id)
+
     #  Ghi luôn cơ chế áp dụng vào nhật ký: sáu tháng sau ai hỏi "vì sao văn bản
     #  này không clone xuống công ty con" thì có câu trả lời tại chỗ.
     #  Ghi cả hộp thư đã gửi: "ai đứng tên phát hành" là câu phải trả lời được
@@ -455,11 +471,12 @@ def approve_document(
     record(db, user.id, "document", doc.id, "approve",
            f"Ban hành {doc.doc_code or doc.issue_number}"
            f" · {APPLY_MODE_LABELS.get(doc.apply_mode, '')}"
-           + (f" · gửi thông báo danh nghĩa {hop_thu.email}" if hop_thu else ""))
+           + (f" · gửi thông báo danh nghĩa {mailbox.email}" if mailbox else "")
+           + (" · đăng thông báo lên diễn đàn" if forum_posted else ""))
     return success(serializer.serialize(db, doc), "Đã duyệt và ban hành")
 
 
-def _hop_thu_da_chon(db: Session, data, user):
+def _selected_mailbox(db: Session, data, user):
     """Hộp thư người dùng chọn trong hộp thoại Ban hành, đã kiểm quyền dùng.
 
     `None` = không chọn, gửi bằng địa chỉ hệ thống như trước. Kiểm ở tầng API
@@ -472,7 +489,7 @@ def _hop_thu_da_chon(db: Session, data, user):
 
     from app.modules.notification import mailbox_service
 
-    return mailbox_service.ensure_duoc_dung(
+    return mailbox_service.ensure_can_use(
         db, mailbox_id, getattr(user, "employee_id", None))
 
 
@@ -491,7 +508,7 @@ def mailboxes_for_issue(
     from app.modules.notification import mailbox_service
 
     doc = _load(db, document_id, user)
-    rows = mailbox_service.cua_nhan_su(
+    rows = mailbox_service.for_employee(
         db, getattr(user, "employee_id", None), doc.company_id)
     return success([
         {
@@ -501,7 +518,7 @@ def mailboxes_for_issue(
             "display_name": row.display_name or row.name,
             #  Khai thiếu SMTP thì vẫn bày ra nhưng phải nói rõ, không thì người
             #  dùng chọn xong ban hành xong mới phát hiện thư không đi.
-            "ready": mailbox_service.san_sang_gui(row),
+            "ready": mailbox_service.ready_to_send(row),
         }
         for row in rows
     ])
@@ -515,8 +532,8 @@ def reject_document(
     user=Depends(require("document", "approve")),
 ):
     doc = _load(db, document_id, user)
-    approval_bridge.chan_duong_cu(db, doc)
-    doc = service.tra_lai(db, doc, data.reason, user.id)
+    approval_bridge.block_legacy_path(db, doc)
+    doc = service.send_back(db, doc, data.reason, user.id)
     record(db, user.id, "document", doc.id, "update", f"Trả về: {data.reason}")
     return success(serializer.serialize(db, doc), "Đã trả về cho người soạn")
 
@@ -535,11 +552,11 @@ def confirm_reviewed(
     tới hai hành động khác hẳn nhau nếu về sau có tranh chấp.
     """
     doc = _load(db, document_id, user, "write")
-    ghi_chu_cu = doc.needs_review_note
-    doc = service.xac_nhan_da_ra_soat(db, doc, data.ket_luan, user.id)
+    old_note = doc.needs_review_note
+    doc = service.confirm_reviewed(db, doc, data.conclusion, user.id)
     record(db, user.id, "document", doc.id, "update",
-           f"Xác nhận đã rà soát: {data.ket_luan}"
-           + (f" (dấu cũ: {ghi_chu_cu})" if ghi_chu_cu else ""))
+           f"Xác nhận đã rà soát: {data.conclusion}"
+           + (f" (dấu cũ: {old_note})" if old_note else ""))
     return success(serializer.serialize(db, doc), "Đã ghi nhận rà soát xong")
 
 
@@ -583,14 +600,14 @@ def export_docx(
     if version is None:
         raise HTTPException(404, "Văn bản chưa có phiên bản nào để xuất")
 
-    du_lieu = html_to_docx(
+    data = html_to_docx(
         version.content_html or "",
-        le_trai_mm=version.margin_left_mm,
-        le_phai_mm=version.margin_right_mm,
-        danh_so_muc=version.auto_heading_number,
-        dau_trang=(version.header_left, version.header_right),
-        chan_trang=(version.footer_left, version.footer_right),
-        the_thay={
+        margin_left_mm=version.margin_left_mm,
+        margin_right_mm=version.margin_right_mm,
+        number_headings=version.auto_heading_number,
+        header=(version.header_left, version.header_right),
+        footer=(version.footer_left, version.footer_right),
+        replacements={
             "{{so_hieu}}": doc.doc_code or doc.issue_number or "",
             "{{ten_van_ban}}": doc.title or "",
             "{{ngay}}": date.today().strftime("%d/%m/%Y"),
@@ -598,13 +615,13 @@ def export_docx(
     )
 
     #  Tên tệp lấy theo SỐ HIỆU nếu đã có — người nhận lưu về máy còn tra được.
-    ten = (doc.doc_code or doc.issue_number or doc.title or "van-ban")
-    ten = f"{ten.replace('/', '-')} - ban {version.version_no}.docx"
+    name = (doc.doc_code or doc.issue_number or doc.title or "van-ban")
+    name = f"{name.replace('/', '-')} - ban {version.version_no}.docx"
     return Response(
-        content=du_lieu,
+        content=data,
         media_type=("application/vnd.openxmlformats-officedocument."
                     "wordprocessingml.document"),
-        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(ten)}"},
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(name)}"},
     )
 
 

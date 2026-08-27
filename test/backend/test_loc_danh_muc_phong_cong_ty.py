@@ -129,7 +129,7 @@ def test_cot_chu_van_LIKE_nhu_cu(db, seed):
 
 
 # ── Phòng ban: kind + company_id ─────────────────────────────────────────────────
-def _phong(db, code, *, name=None, kind=1, company_id=0, is_active=True, manager_id=0):
+def _department_id(db, code, *, name=None, kind=1, company_id=0, is_active=True, manager_id=0):
     d = Department(code=code, name=name or f"Phòng {code}", kind=kind,
                    company_id=company_id, is_active=is_active, manager_id=manager_id)
     db.add(d)
@@ -144,15 +144,15 @@ def _gan_phap_nhan(db, dept_id, company_id, is_active=True):
 
 def _loc_phong(db, **kw):
     total, items = dept_service.list_departments(db, kw.pop("q", None), PG, **kw)
-    ma = sorted(d.code for d in items)
-    assert total == len(ma), "total phải đếm SAU khi lọc, nếu không số trang lệch số dòng"
-    return ma
+    code = sorted(d.code for d in items)
+    assert total == len(code), "total phải đếm SAU khi lọc, nếu không số trang lệch số dòng"
+    return code
 
 
 def test_loai_don_vi_loc_dung(db, seed):
-    _phong(db, "P-CN", kind=1)
-    _phong(db, "P-KD", kind=2)
-    _phong(db, "P-DA", kind=3)
+    _department_id(db, "P-CN", kind=1)
+    _department_id(db, "P-KD", kind=2)
+    _department_id(db, "P-DA", kind=3)
 
     assert _loc_phong(db, kind=2) == ["P-KD"]
     assert _loc_phong(db, kind=3) == ["P-DA"]
@@ -161,8 +161,8 @@ def test_loai_don_vi_loc_dung(db, seed):
 def test_loai_don_vi_bo_trong_thi_khong_loc(db, seed):
     """`None` = ô chọn đang ở "Tất cả loại đơn vị". `0` cũng vậy: không có loại 0, mà để nó
     lọc thật thì màn hình trắng trơn — người dùng tưởng mất dữ liệu."""
-    _phong(db, "P-CN", kind=1)
-    _phong(db, "P-KD", kind=2)
+    _department_id(db, "P-CN", kind=1)
+    _department_id(db, "P-KD", kind=2)
 
     assert "P-KD" in _loc_phong(db, kind=None)
     assert "P-KD" in _loc_phong(db)
@@ -170,14 +170,14 @@ def test_loai_don_vi_bo_trong_thi_khong_loc(db, seed):
 
 
 def test_loai_don_vi_khong_ton_tai_thi_rong(db, seed):
-    _phong(db, "P-CN", kind=1)
+    _department_id(db, "P-CN", kind=1)
     assert _loc_phong(db, kind=9) == []
 
 
 def test_phap_nhan_loc_theo_phap_nhan_GOC(db, seed):
-    khac = _cty(db, "CT-KHAC")
-    _phong(db, "P-GOC", company_id=seed.company_id)
-    _phong(db, "P-KHAC", company_id=khac.id)
+    other = _cty(db, "CT-KHAC")
+    _department_id(db, "P-GOC", company_id=seed.company_id)
+    _department_id(db, "P-KHAC", company_id=other.id)
 
     assert "P-GOC" in _loc_phong(db, company_id=seed.company_id)
     assert "P-KHAC" not in _loc_phong(db, company_id=seed.company_id)
@@ -187,43 +187,43 @@ def test_phap_nhan_thay_ca_phong_DUNG_CHUNG_qua_bang_anh_xa(db, seed):
     """A06: một phòng hiện diện ở nhiều pháp nhân qua `tab_department_company`, còn
     `Department.company_id` chỉ là pháp nhân GỐC. Chỉ lọc theo cột gốc là 12 pháp nhân kia
     coi như không có phòng đó — đúng thứ khối phạm vi văn bản đã phải gộp hai nguồn."""
-    khac = _cty(db, "CT-KHAC")
-    chung = _phong(db, "P-DUNG-CHUNG", company_id=seed.company_id)
-    _gan_phap_nhan(db, chung.id, khac.id)
+    other = _cty(db, "CT-KHAC")
+    chung = _department_id(db, "P-DUNG-CHUNG", company_id=seed.company_id)
+    _gan_phap_nhan(db, chung.id, other.id)
 
-    assert "P-DUNG-CHUNG" in _loc_phong(db, company_id=khac.id)
+    assert "P-DUNG-CHUNG" in _loc_phong(db, company_id=other.id)
     assert "P-DUNG-CHUNG" in _loc_phong(db, company_id=seed.company_id)
 
 
 def test_dong_anh_xa_da_TAT_thi_khong_tinh(db, seed):
     """Gỡ phòng khỏi một pháp nhân = tắt dòng ánh xạ. Vẫn đếm nó là "hiện diện" thì việc gỡ
     thành ra không có tác dụng gì."""
-    khac = _cty(db, "CT-KHAC")
-    chung = _phong(db, "P-DA-GO", company_id=seed.company_id)
-    _gan_phap_nhan(db, chung.id, khac.id, is_active=False)
+    other = _cty(db, "CT-KHAC")
+    chung = _department_id(db, "P-DA-GO", company_id=seed.company_id)
+    _gan_phap_nhan(db, chung.id, other.id, is_active=False)
 
-    assert _loc_phong(db, company_id=khac.id) == []
+    assert _loc_phong(db, company_id=other.id) == []
 
 
 def test_vua_o_goc_vua_co_anh_xa_thi_KHONG_nhan_doi_dong(db, seed):
     """Nếu lỡ viết bằng JOIN thay vì `IN (subquery)` thì phòng có hai dòng ánh xạ sẽ hiện
     hai lần, và `total` đếm thừa — phân trang lệch ngay trang đầu."""
-    chung = _phong(db, "P-CA-HAI", company_id=seed.company_id)
+    chung = _department_id(db, "P-CA-HAI", company_id=seed.company_id)
     _gan_phap_nhan(db, chung.id, seed.company_id)
 
     assert _loc_phong(db, company_id=seed.company_id).count("P-CA-HAI") == 1
 
 
 def test_phap_nhan_khong_ton_tai_thi_rong(db, seed):
-    _phong(db, "P-A", company_id=seed.company_id)
+    _department_id(db, "P-A", company_id=seed.company_id)
     assert _loc_phong(db, company_id=999999) == []
 
 
 def test_phap_nhan_bo_trong_thi_khong_loc(db, seed):
     """`0` là "chưa gán pháp nhân" ở cột `company_id`, KHÔNG phải một pháp nhân có thật —
     coi như ô chọn đang để "Tất cả pháp nhân"."""
-    _phong(db, "P-CHUA-GAN", company_id=0)
-    _phong(db, "P-CO-GAN", company_id=seed.company_id)
+    _department_id(db, "P-CHUA-GAN", company_id=0)
+    _department_id(db, "P-CO-GAN", company_id=seed.company_id)
 
     assert "P-CHUA-GAN" in _loc_phong(db, company_id=None)
     assert "P-CHUA-GAN" in _loc_phong(db, company_id=0)
@@ -231,12 +231,12 @@ def test_phap_nhan_bo_trong_thi_khong_loc(db, seed):
 
 def test_bon_o_loc_cua_phong_ban_noi_bang_AND(db, seed):
     """Ô tìm kiếm + Loại đơn vị + Pháp nhân + Trạng thái cùng bật một lúc."""
-    khac = _cty(db, "CT-KHAC")
-    _phong(db, "P-DUNG", name="Phòng Kinh doanh", kind=2, company_id=seed.company_id)
-    _phong(db, "P-SAI-LOAI", name="Phòng Kinh doanh", kind=1, company_id=seed.company_id)
-    _phong(db, "P-SAI-CTY", name="Phòng Kinh doanh", kind=2, company_id=khac.id)
-    _phong(db, "P-SAI-TEN", name="Phòng Kho vận", kind=2, company_id=seed.company_id)
-    _phong(db, "P-DA-AN", name="Phòng Kinh doanh", kind=2, company_id=seed.company_id,
+    other = _cty(db, "CT-KHAC")
+    _department_id(db, "P-DUNG", name="Phòng Kinh doanh", kind=2, company_id=seed.company_id)
+    _department_id(db, "P-SAI-LOAI", name="Phòng Kinh doanh", kind=1, company_id=seed.company_id)
+    _department_id(db, "P-SAI-CTY", name="Phòng Kinh doanh", kind=2, company_id=other.id)
+    _department_id(db, "P-SAI-TEN", name="Phòng Kho vận", kind=2, company_id=seed.company_id)
+    _department_id(db, "P-DA-AN", name="Phòng Kinh doanh", kind=2, company_id=seed.company_id,
            is_active=False)
 
     assert _loc_phong(db, q="Kinh doanh", kind=2, company_id=seed.company_id,
@@ -246,9 +246,9 @@ def test_bon_o_loc_cua_phong_ban_noi_bang_AND(db, seed):
 def test_o_tim_kiem_theo_TRUONG_BO_PHAN_van_chay_cung_cac_select_moi(db, seed):
     """`q` khớp tên phòng HOẶC tên trưởng bộ phận (join sang bảng nhân sự). Thêm hai select
     mới mà lỡ đặt sau `count()` hoặc làm hỏng join là ô tìm kiếm chết theo."""
-    _phong(db, "P-CO-TRUONG", name="Phòng Không Trùng Tên", kind=2,
+    _department_id(db, "P-CO-TRUONG", name="Phòng Không Trùng Tên", kind=2,
            company_id=seed.company_id, manager_id=seed.emp_tp_id)
-    _phong(db, "P-KHONG", name="Phòng Khác", kind=2, company_id=seed.company_id)
+    _department_id(db, "P-KHONG", name="Phòng Khác", kind=2, company_id=seed.company_id)
 
     assert _loc_phong(db, q="Trưởng Phòng", kind=2) == ["P-CO-TRUONG"]
 
@@ -257,8 +257,8 @@ def test_phan_trang_dem_dung_sau_khi_loc(db, seed):
     """`total` phải là số dòng SAU khi lọc; đếm trước là người dùng thấy "Tổng 30" rồi bấm
     sang trang 2 thì trống trơn."""
     for i in range(5):
-        _phong(db, f"P-KD-{i}", kind=2, company_id=seed.company_id)
-    _phong(db, "P-CN", kind=1, company_id=seed.company_id)
+        _department_id(db, f"P-KD-{i}", kind=2, company_id=seed.company_id)
+    _department_id(db, "P-CN", kind=1, company_id=seed.company_id)
 
     total, items = dept_service.list_departments(db, None, {"offset": 0, "limit": 2},
                                                  kind=2, company_id=seed.company_id)
@@ -273,8 +273,8 @@ def test_hai_cot_moi_van_nam_trong_whitelist_bo_loc_dieu_kien(db, seed):
     assert "company_id" in dept_service.FILTERABLE
     assert "level" in company_service.FILTERABLE
 
-    _phong(db, "P-KD", kind=2)
-    _phong(db, "P-CN", kind=1)
+    _department_id(db, "P-KD", kind=2)
+    _department_id(db, "P-CN", kind=1)
 
     total, items = dept_service.list_departments(db, None, PG, request=_Req(kind__eq="2"))
     assert [d.code for d in items] == ["P-KD"] and total == 1

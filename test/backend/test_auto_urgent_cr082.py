@@ -127,8 +127,8 @@ def test_nhan_ban_phieu_cung_tu_gap(db):
     items = pr_service.items_of(db, pr.id)
     items[0].required_date = "2026-08-12"       # dữ liệu cũ chưa qua luật này
     db.commit()
-    moi = pr_service.copy_pr(db, pr.id, user_id=1)
-    assert moi.is_urgent is True
+    new = pr_service.copy_pr(db, pr.id, user_id=1)
+    assert new.is_urgent is True
 
 
 def test_tat_tay_ngay_trong_lan_luu_do_thi_ton_trong(db):

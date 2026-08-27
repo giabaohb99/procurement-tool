@@ -63,7 +63,7 @@ def _ban_dang_mo(db, doc) -> DocumentVersion | None:
 # ── Bản ĐẦU TIÊN: văn bản đi theo phiên bản ──────────────────────────────────
 def test_tra_ve_ban_dau_thi_van_ban_sang_tra_ve(db, doc):
     service.submit(db, doc, ACTOR)
-    service.tra_lai(db, doc, "Thiếu căn cứ ở mục 2", ACTOR)
+    service.send_back(db, doc, "Thiếu căn cứ ở mục 2", ACTOR)
 
     assert doc.status == STATUS_RETURNED
     ban = _ban_dang_mo(db, doc)
@@ -74,7 +74,7 @@ def test_tra_ve_ban_dau_thi_van_ban_sang_tra_ve(db, doc):
 
 def test_tu_choi_ban_dau_thi_van_ban_sang_da_tu_choi(db, doc):
     service.submit(db, doc, ACTOR)
-    service.tu_choi(db, doc, "Không duyệt nhu cầu này", ACTOR)
+    service.reject(db, doc, "Không duyệt nhu cầu này", ACTOR)
 
     assert doc.status == STATUS_REJECTED
     assert _ban_dang_mo(db, doc) is None, "Bản bị từ chối phải nhả open_slot"
@@ -86,7 +86,7 @@ def test_tu_choi_ban_dau_thi_van_ban_sang_da_tu_choi(db, doc):
 def test_rut_phieu_thi_ve_nhap_chu_khong_phai_bi_tra(db, doc):
     """Người nộp tự rút thì không ai trả gì cho ai — đừng treo lên phiếu chữ «Trả về»."""
     service.submit(db, doc, ACTOR)
-    service.rut_phieu(db, doc, "Gửi sớm quá, cần bổ sung phụ lục", ACTOR)
+    service.withdraw_document(db, doc, "Gửi sớm quá, cần bổ sung phụ lục", ACTOR)
 
     assert doc.status == STATUS_DRAFT
     ban = _ban_dang_mo(db, doc)
@@ -97,7 +97,7 @@ def test_rut_phieu_thi_ve_nhap_chu_khong_phai_bi_tra(db, doc):
 def test_tra_ve_roi_gui_duyet_lai_duoc_ngay(db, doc):
     """Cả mục đích của trạng thái «Trả về»: sửa xong gửi lại trên chính văn bản đó."""
     service.submit(db, doc, ACTOR)
-    service.tra_lai(db, doc, "Sửa lại mục 2", ACTOR)
+    service.send_back(db, doc, "Sửa lại mục 2", ACTOR)
 
     version_service.save_content(
         db, _ban_dang_mo(db, doc),
@@ -110,12 +110,12 @@ def test_tra_ve_roi_gui_duyet_lai_duoc_ngay(db, doc):
 
 def test_tu_choi_roi_khong_gui_duyet_lai_duoc(db, doc):
     service.submit(db, doc, ACTOR)
-    service.tu_choi(db, doc, "Không duyệt", ACTOR)
+    service.reject(db, doc, "Không duyệt", ACTOR)
 
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         service.submit(db, doc, ACTOR)
-    assert loi.value.status_code == 400
-    assert "Sao chép" in loi.value.detail, "Phải chỉ ra đường ra, không chỉ báo lỗi"
+    assert error.value.status_code == 400
+    assert "Sao chép" in error.value.detail, "Phải chỉ ra đường ra, không chỉ báo lỗi"
 
 
 # ── Bản 2.0 trở đi: VĂN BẢN GIỮ NGUYÊN ───────────────────────────────────────
@@ -140,7 +140,7 @@ def test_tra_ve_ban_hai_thi_van_ban_van_co_hieu_luc(db, doc):
     _len_ban_hai(db, doc)
     assert doc.status == STATUS_EFFECTIVE, "Gửi duyệt bản 2.0 không được đổi trạng thái văn bản"
 
-    service.tra_lai(db, doc, "Chương II chưa khớp quy định mới", ACTOR)
+    service.send_back(db, doc, "Chương II chưa khớp quy định mới", ACTOR)
 
     assert doc.status == STATUS_EFFECTIVE
     ban = _ban_dang_mo(db, doc)
@@ -150,7 +150,7 @@ def test_tra_ve_ban_hai_thi_van_ban_van_co_hieu_luc(db, doc):
 
 def test_tu_choi_ban_hai_thi_van_ban_van_co_hieu_luc(db, doc):
     _len_ban_hai(db, doc)
-    service.tu_choi(db, doc, "Không cần sửa nữa", ACTOR)
+    service.reject(db, doc, "Không cần sửa nữa", ACTOR)
 
     assert doc.status == STATUS_EFFECTIVE
     assert _ban_dang_mo(db, doc) is None, "Bản 2.0 bị từ chối phải nhả chỗ cho bản khác"
@@ -164,25 +164,25 @@ def test_tu_choi_ban_hai_thi_van_ban_van_co_hieu_luc(db, doc):
 # ── Xóa ──────────────────────────────────────────────────────────────────────
 def test_xoa_duoc_van_ban_bi_tra_ve(db, doc):
     service.submit(db, doc, ACTOR)
-    service.tra_lai(db, doc, "Thôi khỏi làm nữa", ACTOR)
+    service.send_back(db, doc, "Thôi khỏi làm nữa", ACTOR)
 
     service.delete_document(db, doc)   # không ném lỗi là đủ
 
 
 def test_khong_xoa_duoc_van_ban_da_tu_choi(db, doc):
     service.submit(db, doc, ACTOR)
-    service.tu_choi(db, doc, "Không duyệt", ACTOR)
+    service.reject(db, doc, "Không duyệt", ACTOR)
 
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         service.delete_document(db, doc)
-    assert loi.value.status_code == 400
+    assert error.value.status_code == 400
 
 
 def test_khong_co_ban_nao_dang_cho_duyet_thi_khong_tra_ve_duoc(db, doc):
     """Bấm trả về hai lần, hoặc trả về một văn bản còn nháp — phải chặn."""
-    with pytest.raises(HTTPException) as loi:
-        service.tra_lai(db, doc, "sao cũng được", ACTOR)
-    assert loi.value.status_code == 400
+    with pytest.raises(HTTPException) as error:
+        service.send_back(db, doc, "sao cũng được", ACTOR)
+    assert error.value.status_code == 400
 
 
 def test_xoa_van_ban_thi_don_luon_phieu_duyet(db, doc):
@@ -198,18 +198,18 @@ def test_xoa_van_ban_thi_don_luon_phieu_duyet(db, doc):
     #  Dựng tay một phiếu duyệt đã đóng gắn vào văn bản — đúng thứ còn lại sau
     #  một lần bị trả về. Không chạy cả bộ máy duyệt ở đây: bài này hỏi *xóa có
     #  dọn không*, không hỏi *bộ máy chạy đúng không*.
-    phien = ApprovalInstance(entity="document", entity_id=doc.id, flow_id=1,
+    instance = ApprovalInstance(entity="document", entity_id=doc.id, flow_id=1,
                              status=4, current_seq=1, created_by=ACTOR, updated_by=ACTOR)
-    db.add(phien)
+    db.add(instance)
     db.flush()
-    db.add(ApprovalTask(instance_id=phien.id, node_seq=1, order_no=1,
+    db.add(ApprovalTask(instance_id=instance.id, node_seq=1, order_no=1,
                         assignee_employee_id=1, status=6,
                         created_by=ACTOR, updated_by=ACTOR))
-    db.add(ApprovalAction(instance_id=phien.id, node_seq=1, action=1,
+    db.add(ApprovalAction(instance_id=instance.id, node_seq=1, action=1,
                           created_by=ACTOR, updated_by=ACTOR))
     db.commit()
     #  Nhớ id TRƯỚC khi xóa: sau đó hai đối tượng ORM này không còn hàng để nạp.
-    doc_id, phien_id = doc.id, phien.id
+    doc_id, phien_id = doc.id, instance.id
 
     service.delete_document(db, doc)
 
@@ -230,14 +230,14 @@ def test_xoa_van_ban_thi_don_luon_QUAN_HE(db, doc):
     from app.modules.doc_catalog.link_rule_model import RELATION_REFERENCE
     from app.modules.document.link_model import DocumentLink
 
-    khac = service.create_document(db, DocumentCreate(
+    other = service.create_document(db, DocumentCreate(
         doc_type_id=doc.doc_type_id, company_id=doc.company_id,
         department_id=doc.department_id, owner_employee_id=doc.owner_employee_id,
         title="Văn bản còn sống", content_html="<p>x</p>"), ACTOR)
     #  Hai chiều: văn bản sắp xóa vừa là nguồn vừa là đích của một quan hệ.
-    db.add(DocumentLink(source_document_id=doc.id, target_document_id=khac.id,
+    db.add(DocumentLink(source_document_id=doc.id, target_document_id=other.id,
                         relation=RELATION_REFERENCE, created_by=ACTOR, updated_by=ACTOR))
-    db.add(DocumentLink(source_document_id=khac.id, target_document_id=doc.id,
+    db.add(DocumentLink(source_document_id=other.id, target_document_id=doc.id,
                         relation=RELATION_REFERENCE, created_by=ACTOR, updated_by=ACTOR))
     db.commit()
     doc_id = doc.id
@@ -281,10 +281,10 @@ def test_khong_tu_cam_chinh_minh_duoc(db, doc, seed):
                            can_read=True, can_write=False, can_delete=False,
                            valid_from=None, valid_to=None, reason="")
 
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         access_service.grant(db, doc, _cam(SUBJECT_EMPLOYEE, emp_id), user.id)
-    assert loi.value.status_code == 400
-    assert "chính mình" in loi.value.detail
+    assert error.value.status_code == 400
+    assert "chính mình" in error.value.detail
 
     if emp.department_id:
         with pytest.raises(HTTPException):
@@ -312,21 +312,21 @@ def test_tu_bo_duoc_ban_nhap_cua_minh_du_khong_co_quyen_xoa(db, doc):
     db.commit()
 
     #  Người khác thì không.
-    with pytest.raises(HTTPException) as loi:
-        service.bo_ban_nhap_cua_minh(db, doc, actor=8)
-    assert loi.value.status_code == 403
+    with pytest.raises(HTTPException) as error:
+        service.discard_own_draft(db, doc, actor=8)
+    assert error.value.status_code == 403
 
     #  Không phải Nháp thì không — «Trả về» đã qua tay người duyệt, bỏ nó là xóa
     #  thật nên vẫn phải có quyền `delete`.
     doc.status = STATUS_RETURNED
     db.commit()
-    with pytest.raises(HTTPException) as loi:
-        service.bo_ban_nhap_cua_minh(db, doc, actor=7)
-    assert loi.value.status_code == 400
+    with pytest.raises(HTTPException) as error:
+        service.discard_own_draft(db, doc, actor=7)
+    assert error.value.status_code == 400
 
     #  Chính chủ + đang Nháp thì xóa được, không cần quyền `delete`.
     doc.status = STATUS_DRAFT
     db.commit()
     doc_id = doc.id
-    service.bo_ban_nhap_cua_minh(db, doc, actor=7)
+    service.discard_own_draft(db, doc, actor=7)
     assert db.get(Document, doc_id) is None

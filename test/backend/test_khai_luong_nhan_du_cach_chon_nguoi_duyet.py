@@ -36,10 +36,10 @@ def test_truong_bo_phan_cua_phong_ban_chi_dinh_khai_duoc(kind=APPROVER_DEPT_HEAD
     assert NodeIn(seq=1, approver_kind=kind, approver_ref="12").approver_kind == kind
 
 
-@pytest.mark.parametrize("gia_tri", [0, -1, 99, max(APPROVER_KIND_LABELS) + 1])
-def test_cach_chon_khong_co_trong_danh_sach_thi_chan(gia_tri):
+@pytest.mark.parametrize("value", [0, -1, 99, max(APPROVER_KIND_LABELS) + 1])
+def test_cach_chon_khong_co_trong_danh_sach_thi_chan(value):
     with pytest.raises(ValidationError):
-        NodeIn(seq=1, approver_kind=gia_tri)
+        NodeIn(seq=1, approver_kind=value)
 
 
 @pytest.mark.parametrize("o,bang", [
@@ -51,8 +51,8 @@ def test_cach_chon_khong_co_trong_danh_sach_thi_chan(gia_tri):
 def test_cac_o_chon_khac_cung_khop_bang_nhan(o, bang):
     """Cùng một cái bẫy, bốn ô còn lại — `node_kind` và `flow_role` trước đây
     KHÔNG kiểm gì cả, tức khai số 99 cũng lưu được rồi hỏng lúc chạy luồng."""
-    for gia_tri in bang:
-        assert getattr(NodeIn(seq=1, **{o: gia_tri}), o) == gia_tri
+    for value in bang:
+        assert getattr(NodeIn(seq=1, **{o: value}), o) == value
     with pytest.raises(ValidationError):
         NodeIn(seq=1, **{o: max(bang) + 1})
 
@@ -60,7 +60,7 @@ def test_cac_o_chon_khac_cung_khop_bang_nhan(o, bang):
 def test_khong_khai_moi_duoc_lua_chon_da_bo():
     """«Đẩy lên cấp trên» (2) còn nhãn để đọc dữ liệu cũ nhưng đã bỏ từ CR-114 —
     nhãn còn không có nghĩa là khai mới được."""
-    for ma in NO_APPROVER_CHOICES:
-        assert NodeIn(seq=1, on_no_approver=ma).on_no_approver == ma
+    for code in NO_APPROVER_CHOICES:
+        assert NodeIn(seq=1, on_no_approver=code).on_no_approver == code
     with pytest.raises(ValidationError):
         NodeIn(seq=1, on_no_approver=2)

@@ -128,7 +128,7 @@ def create_document(db: Session, data: DocumentCreate, actor: int) -> Document:
         **payload,
         #  Người nghỉ mặc định là NGƯỜI CHỊU TRÁCH NHIỆM của văn bản — với đơn
         #  nghỉ phép hai thứ đó là một. Khai tường minh trong metadata thì thắng.
-        meta=type_metadata.lam_sach(doc_type.code, data.metadata,
+        meta=type_metadata.sanitize(doc_type.code, data.metadata,
                                     data.owner_employee_id),
         #  Bỏ trống thì theo mặc định của loại; loại đánh dấu "cả loại là loại
         #  bảo mật" thì kéo lên ít nhất mức Mật. Tra mức Mật theo MÃ chứ không
@@ -162,7 +162,7 @@ def create_document(db: Session, data: DocumentCreate, actor: int) -> Document:
     return doc
 
 
-def chan_sua_khi_dang_duyet(doc: Document) -> None:
+def block_edit_while_approving(doc: Document) -> None:
     """Văn bản ĐANG TRÌNH DUYỆT thì đóng băng cả bộ trường chung (19/08/2026).
 
     Không chỉ thân văn bản: đổi **mức mật** hay **tiêu đề** dưới tay người duyệt
@@ -195,7 +195,7 @@ def chan_sua_khi_dang_duyet(doc: Document) -> None:
 
 def update_document(db: Session, doc: Document, data: DocumentUpdate, actor: int) -> Document:
     """Sửa bộ trường chung. Không đụng nội dung (ở phiên bản) và không đụng số hiệu."""
-    chan_sua_khi_dang_duyet(doc)
+    block_edit_while_approving(doc)
 
     values = data.model_dump(exclude_unset=True)
     numbered = bool(doc.doc_code or doc.issue_number)
@@ -229,9 +229,9 @@ def update_document(db: Session, doc: Document, data: DocumentUpdate, actor: int
     #  bản ghi thì nó nằm trong `__dict__` của instance và **không bao giờ xuống
     #  CSDL** — mất dữ liệu im lặng, API vẫn trả 200.
     if "metadata" in values:
-        loai = db.get(DocType, values.get("doc_type_id", doc.doc_type_id))
-        doc.meta = type_metadata.lam_sach(
-            loai.code if loai else "", values.pop("metadata"),
+        kind = db.get(DocType, values.get("doc_type_id", doc.doc_type_id))
+        doc.meta = type_metadata.sanitize(
+            kind.code if kind else "", values.pop("metadata"),
             values.get("owner_employee_id", doc.owner_employee_id))
 
     for key, value in values.items():
@@ -299,7 +299,7 @@ def delete_document(db: Session, doc: Document):
     #  24/08/2026 trên đúng đường hợp lệ: tạo → gửi duyệt → bị trả về → Xóa).
     from app.modules.approval import instance_service
 
-    instance_service.xoa_theo_chung_tu(db, "document", doc.id)
+    instance_service.delete_by_entity(db, "document", doc.id)
 
     #  Và dọn QUAN HỆ — cả hai chiều. Cùng một loại lỗi, tìm ra ngay sau đó khi
     #  soi dữ liệu dev: hai dòng quan hệ mồ côi có từ 19/08 và 21/08. Văn bản
@@ -327,7 +327,7 @@ def delete_document(db: Session, doc: Document):
     db.commit()
 
 
-def bo_ban_nhap_cua_minh(db: Session, doc: Document, actor: int) -> None:
+def discard_own_draft(db: Session, doc: Document, actor: int) -> None:
     """Bỏ BẢN NHÁP DO CHÍNH MÌNH vừa mở ra — không đòi quyền `delete`.
 
     Từ 24/08/2026 màn *Tạo văn bản* bấm «Tiếp tục» là đã ghi một bản nháp thật
@@ -383,17 +383,17 @@ def submit(db: Session, doc: Document, actor: int) -> Document:
     #
     #  Chặn ở lúc GỬI, không phải lúc lưu nháp — cùng luật với `required-fields.ts`
     #  của Thu mua: lưu dở dang là quyền của người soạn, gửi đi mới là cam kết.
-    loai = db.get(DocType, doc.doc_type_id)
-    type_metadata.bat_buoc_khi_gui_duyet(loai.code if loai else "", doc.meta)
+    kind = db.get(DocType, doc.doc_type_id)
+    type_metadata.require_on_submit(kind.code if kind else "", doc.meta)
 
     #  Kiểm TRA LUỒNG trước khi chuyển bản nháp sang «Đang duyệt». Bản clone
     #  bắt buộc có luồng riêng của pháp nhân nhận; chặn sau `db.commit()` sẽ để
     #  lại một văn bản đang duyệt nhưng không có phiên duyệt nào nhặt nó lên.
-    from .approval_bridge import (dam_bao_co_luong_rieng, dang_bat,
-                                  trinh_duyet)
-    bo_may_duyet_bat = dang_bat(db)
-    if bo_may_duyet_bat:
-        dam_bao_co_luong_rieng(db, doc)
+    from .approval_bridge import (ensure_dedicated_flow, is_enabled,
+                                  submit_for_approval)
+    approval_engine_enabled = is_enabled(db)
+    if approval_engine_enabled:
+        ensure_dedicated_flow(db, doc)
 
     version.status, version.updated_by = VERSION_SUBMITTED, actor
     #  CHỈ bản đầu tiên mới kéo cả văn bản sang "đang duyệt". Từ bản thứ hai trở
@@ -405,8 +405,8 @@ def submit(db: Session, doc: Document, actor: int) -> Document:
 
     #  Văn bản này là bản clone thì bảng theo dõi ở bản gốc phải thấy ngay —
     #  không thì pháp nhân mẹ tưởng nơi đó còn chưa đụng tới.
-    from .clone_lifecycle_service import dong_bo_trang_thai
-    dong_bo_trang_thai(doc, actor)
+    from .clone_lifecycle_service import sync_status
+    sync_status(doc, actor)
 
     db.commit()
 
@@ -414,14 +414,14 @@ def submit(db: Session, doc: Document, actor: int) -> Document:
     #  một phiên nhiều bước. Cờ tắt, hoặc bật mà chưa khai luồng nào, thì
     #  `trinh_duyet` trả `None` và mọi thứ chạy y như trước: ba nút cứng
     #  submit → approve/reject trên trang chi tiết.
-    if bo_may_duyet_bat:
-        trinh_duyet(db, doc, actor)
+    if approval_engine_enabled:
+        submit_for_approval(db, doc, actor)
 
     db.refresh(doc)
     return doc
 
 
-def cho_ban_hanh(db: Session, doc: Document, actor: int) -> Document:
+def mark_pending_issue(db: Session, doc: Document, actor: int) -> Document:
     """Ký đủ chữ ký rồi, nhưng DỪNG LẠI chờ người soạn bấm *Ban hành*.
 
     Chỉ chạy với loại khai `auto_issue_after_approval = False` (26/08/2026).
@@ -443,15 +443,15 @@ def cho_ban_hanh(db: Session, doc: Document, actor: int) -> Document:
         doc.status = STATUS_PENDING_ISSUE
     doc.updated_by = actor
 
-    from .clone_lifecycle_service import dong_bo_trang_thai
-    dong_bo_trang_thai(doc, actor)
+    from .clone_lifecycle_service import sync_status
+    sync_status(doc, actor)
 
     db.commit()
     db.refresh(doc)
     return doc
 
 
-def ai_duoc_ban_hanh(db: Session, doc: Document, user) -> bool:
+def can_issue(db: Session, doc: Document, user) -> bool:
     """Tài khoản này có phải NGƯỜI SOẠN THẢO của văn bản không.
 
     Chốt của bước ban hành thủ công: *"user chịu trách nhiệm soạn thảo cái văn
@@ -468,8 +468,8 @@ def ai_duoc_ban_hanh(db: Session, doc: Document, user) -> bool:
     return employee_id in (doc.drafter_employee_id, doc.owner_employee_id)
 
 
-def ensure_duoc_ban_hanh(db: Session, doc: Document, user) -> None:
-    if ai_duoc_ban_hanh(db, doc, user):
+def ensure_can_issue(db: Session, doc: Document, user) -> None:
+    if can_issue(db, doc, user):
         return
     raise HTTPException(
         403,
@@ -535,7 +535,7 @@ def approve(db: Session, doc: Document, actor: int,
 
     #  Văn bản bị chính lượt ban hành này BÃI BỎ (quan hệ *bãi bỏ*). Khai ngoài
     #  nhánh `if` để phần gửi thông báo sau commit lúc nào cũng có biến để đọc.
-    bi_bai_bo: list[Document] = []
+    revoked_docs: list[Document] = []
 
     if effective <= date.today():
         switch_current(db, doc, version, previous)
@@ -549,7 +549,7 @@ def approve(db: Session, doc: Document, actor: int,
         #  đổi trạng thái sớm là khai tử một văn bản đang còn giá trị.
         #  Giữ lại danh sách văn bản bị BÃI BỎ để báo cho pháp nhân con SAU
         #  commit — xem `bao_bai_bo_theo_quan_he`.
-        bi_bai_bo.extend(apply_supersede(db, doc, actor))
+        revoked_docs.extend(apply_supersede(db, doc, actor))
         #  E07 — cha lên phiên bản mới thì MỌI văn bản con bị xử lý theo cột
         #  `on_parent_new_version` của quy tắc quan hệ. Bản trích là trường hợp
         #  đặc biệt: cột đó bị khóa cứng ở mức "đánh dấu cần rà lại" (E11 a).
@@ -573,8 +573,8 @@ def approve(db: Session, doc: Document, actor: int,
     #  Bản clone vừa được pháp nhân con ban hành → cột theo dõi ở bản gốc sang
     #  "Đã ban hành". Đặt TRƯỚC commit để đi chung một transaction với việc cấp
     #  số: có số hiệu mà bảng vẫn ghi "Đã gửi" là hai nguồn nói khác nhau.
-    from .clone_lifecycle_service import dong_bo_trang_thai
-    dong_bo_trang_thai(doc, actor)
+    from .clone_lifecycle_service import sync_status
+    sync_status(doc, actor)
 
     doc.updated_by = actor
     db.commit()
@@ -594,7 +594,7 @@ def approve(db: Session, doc: Document, actor: int,
 
     #  Văn bản CŨ vừa bị bãi bỏ bởi chính văn bản này: pháp nhân con giữ bản
     #  riêng của nó phải được báo, y như khi bấm nút «Bãi bỏ».
-    bao_bai_bo_theo_quan_he(db, bi_bai_bo, doc, actor)
+    notify_revocation_by_relation(db, revoked_docs, doc, actor)
 
     #  Thành viên thuộc phạm vi nhận cả chuông lẫn email có link chỉ đọc. Làm
     #  sau transaction ban hành và nuốt lỗi: SMTP/Redis hỏng không được biến
@@ -610,9 +610,9 @@ def approve(db: Session, doc: Document, actor: int,
     return doc
 
 
-def _dong_phien_duyet(db: Session, doc: Document, reason: str, actor: int, *,
-                      nhan: str, trang_thai_ban: int,
-                      trang_thai_van_ban: int) -> Document:
+def _close_approval_instance(db: Session, doc: Document, reason: str, actor: int, *,
+                      label: str, version_status: int,
+                      document_status: int) -> Document:
     """Nền chung của BA nhịp kết thúc phiên duyệt: trả về · từ chối · rút phiếu.
 
     Ba nhịp khác nhau đúng hai con số (trạng thái phiên bản, trạng thái văn bản)
@@ -631,63 +631,63 @@ def _dong_phien_duyet(db: Session, doc: Document, reason: str, actor: int, *,
     if not version or version.status != VERSION_SUBMITTED:
         raise HTTPException(400, "Không có bản nào đang chờ duyệt")
 
-    version.status, version.updated_by = trang_thai_ban, actor
+    version.status, version.updated_by = version_status, actor
     version.change_reason = (
-        f"{version.change_reason}\n[{nhan}] {reason}".strip()
-        if version.change_reason else f"[{nhan}] {reason}"
+        f"{version.change_reason}\n[{label}] {reason}".strip()
+        if version.change_reason else f"[{label}] {reason}"
     )
     #  Bản đầu tiên kéo cả văn bản theo; bản thứ hai trở đi thì VĂN BẢN GIỮ
     #  NGUYÊN trạng thái vì bản trước đó vẫn đang có hiệu lực — chỗ dễ sai số 7
     #  của `van-thu/02`. Lúc đó chỗ duy nhất nói được "bản này vừa bị trả" là
     #  dòng phiên bản, nên nó phải có thang trạng thái riêng.
     if version.prev_version_id is None:
-        doc.status = trang_thai_van_ban
+        doc.status = document_status
     doc.updated_by = actor
 
     #  Bản clone bị trả lại thì quay về "Đang soạn" ở bảng theo dõi — để nguyên
     #  "Đang duyệt" là pháp nhân mẹ chờ một cái duyệt không bao giờ tới.
-    from .clone_lifecycle_service import dong_bo_trang_thai
-    dong_bo_trang_thai(doc, actor)
+    from .clone_lifecycle_service import sync_status
+    sync_status(doc, actor)
 
     db.commit()
     db.refresh(doc)
     return doc
 
 
-def tra_lai(db: Session, doc: Document, reason: str, actor: int) -> Document:
+def send_back(db: Session, doc: Document, reason: str, actor: int) -> Document:
     """TRẢ VỀ kèm lý do — còn đường đi tiếp: sửa rồi **gửi duyệt lại**.
 
     Nội dung giữ nguyên để sửa tiếp, và phiên bản vẫn giữ `open_slot` nên không
     ai mở được một bản nháp thứ hai chen vào giữa.
     """
-    return _dong_phien_duyet(db, doc, reason, actor, nhan="Trả về",
-                             trang_thai_ban=VERSION_RETURNED,
-                             trang_thai_van_ban=STATUS_RETURNED)
+    return _close_approval_instance(db, doc, reason, actor, label="Trả về",
+                             version_status=VERSION_RETURNED,
+                             document_status=STATUS_RETURNED)
 
 
-def tu_choi(db: Session, doc: Document, reason: str, actor: int) -> Document:
+def reject(db: Session, doc: Document, reason: str, actor: int) -> Document:
     """TỪ CHỐI kèm lý do — hết đường: khóa sửa, muốn làm lại thì *Sao chép*.
 
     Phiên bản **nhả `open_slot`** (xem `OPEN_STATUSES`): bản đó chết hẳn, giữ chỗ
     thì văn bản bị nó chặn vĩnh viễn, không mở nổi bản mới.
     """
-    return _dong_phien_duyet(db, doc, reason, actor, nhan="Từ chối",
-                             trang_thai_ban=VERSION_REJECTED,
-                             trang_thai_van_ban=STATUS_REJECTED)
+    return _close_approval_instance(db, doc, reason, actor, label="Từ chối",
+                             version_status=VERSION_REJECTED,
+                             document_status=STATUS_REJECTED)
 
 
-def rut_phieu(db: Session, doc: Document, reason: str, actor: int) -> Document:
+def withdraw_document(db: Session, doc: Document, reason: str, actor: int) -> Document:
     """NGƯỜI NỘP TỰ RÚT — về Nháp, không phải "bị trả".
 
     Cố ý khác hai nhịp trên: không ai trả gì cho ai, nên đừng treo lên phiếu một
     trạng thái đọc như bị người khác đánh giá.
     """
-    return _dong_phien_duyet(db, doc, reason, actor, nhan="Rút phiếu",
-                             trang_thai_ban=VERSION_DRAFT,
-                             trang_thai_van_ban=STATUS_DRAFT)
+    return _close_approval_instance(db, doc, reason, actor, label="Rút phiếu",
+                             version_status=VERSION_DRAFT,
+                             document_status=STATUS_DRAFT)
 
 
-def xac_nhan_da_ra_soat(db: Session, doc: Document, ket_luan: str, actor: int) -> Document:
+def confirm_reviewed(db: Session, doc: Document, conclusion: str, actor: int) -> Document:
     """TẮT cờ «cần rà lại» sau khi người phụ trách đã đối chiếu xong.
 
     Cờ này có **năm chỗ bật** (bản gốc lên bản mới, cha bị bãi bỏ, cha lên bản
@@ -715,15 +715,15 @@ def xac_nhan_da_ra_soat(db: Session, doc: Document, ket_luan: str, actor: int) -
     #  quên chỗ này là chữa đúng một nửa — người rà thấy sạch, người ở tập đoàn
     #  mở bảng theo dõi vẫn thấy đỏ (bắt được 20/08/2026).
     if doc.source_document_id:
-        from .clone_lifecycle_service import dong_bo_trang_thai
+        from .clone_lifecycle_service import sync_status
 
-        goc = db.get(Document, doc.source_document_id)
-        if goc and goc.current_version_id:
-            doc.clone_source_version_id = goc.current_version_id
+        origin = db.get(Document, doc.source_document_id)
+        if origin and origin.current_version_id:
+            doc.clone_source_version_id = origin.current_version_id
         #  Gỡ luôn nhãn "Cần rà lại" khỏi cột theo dõi, trả về đúng chỗ bản clone
         #  đang đứng — đã ban hành thì là "Đã ban hành", còn nháp thì "Đang soạn".
         doc.clone_status = 0
-        dong_bo_trang_thai(doc, actor)
+        sync_status(doc, actor)
 
     doc.updated_by = actor
     db.commit()
@@ -817,7 +817,7 @@ def activate_due_versions(db: Session, document_id: int | None = None) -> int:
     changed = 0
     #  Văn bản bị bãi bỏ theo quan hệ trong cả lượt quét này — gom lại, báo một
     #  lần sau commit (xem `bao_bai_bo_theo_quan_he`).
-    bi_bai_bo: list[tuple[Document, Document]] = []
+    revoked_docs: list[tuple[Document, Document]] = []
     for doc, version in q.all():
         #  Văn bản đã trỏ đúng bản này rồi thì chỉ còn thiếu việc đổi trạng thái —
         #  trường hợp bản ĐẦU TIÊN duyệt trước ngày hiệu lực (`current_version_id`
@@ -825,7 +825,7 @@ def activate_due_versions(db: Session, document_id: int | None = None) -> int:
         if doc.current_version_id == version.id:
             if doc.status == STATUS_APPROVED:
                 switch_current(db, doc, version, None)
-                bi_bai_bo += [(cu, doc) for cu in _apply_effective_side_effects(db, doc)]
+                revoked_docs += [(old, doc) for old in _apply_effective_side_effects(db, doc)]
                 changed += 1
             continue
         current = db.get(DocumentVersion, doc.current_version_id) if doc.current_version_id else None
@@ -834,7 +834,7 @@ def activate_due_versions(db: Session, document_id: int | None = None) -> int:
         if current and (current.major, current.minor) > (version.major, version.minor):
             continue
         switch_current(db, doc, version, current)
-        bi_bai_bo += [(cu, doc) for cu in _apply_effective_side_effects(db, doc)]
+        revoked_docs += [(old, doc) for old in _apply_effective_side_effects(db, doc)]
         changed += 1
 
     if changed:
@@ -842,14 +842,14 @@ def activate_due_versions(db: Session, document_id: int | None = None) -> int:
 
     #  Actor 0 = hệ thống: tới ngày hiệu lực thì chính hệ đẩy văn bản cũ sang
     #  bãi bỏ, không phải ai bấm.
-    for cu, moi in bi_bai_bo:
-        bao_bai_bo_theo_quan_he(db, [cu], moi, 0)
+    for old, new in revoked_docs:
+        notify_revocation_by_relation(db, [old], new, 0)
 
     return changed
 
 
-def bao_bai_bo_theo_quan_he(db: Session, bi_bai_bo: list[Document],
-                            boi_van_ban: Document, actor: int) -> None:
+def notify_revocation_by_relation(db: Session, revoked_docs: list[Document],
+                            by_document: Document, actor: int) -> None:
     """Báo cho pháp nhân con của những văn bản vừa bị bãi bỏ BỞI MỘT VĂN BẢN KHÁC.
 
     Có HAI đường đưa một văn bản sang trạng thái bãi bỏ: bấm nút «Bãi bỏ»
@@ -860,20 +860,20 @@ def bao_bai_bo_theo_quan_he(db: Session, bi_bai_bo: list[Document],
     ⚠️ Gọi **sau commit**: hàm gửi thư tự commit để `EmailLog` tồn tại trước khi
     tác vụ nền đọc tới. Nuốt lỗi vì văn bản mới đã ban hành xong rồi.
     """
-    if not bi_bai_bo:
+    if not revoked_docs:
         return
 
-    ly_do = (
-        f"Bị bãi bỏ bởi {boi_van_ban.doc_code or boi_van_ban.issue_number or boi_van_ban.title}"
+    reason = (
+        f"Bị bãi bỏ bởi {by_document.doc_code or by_document.issue_number or by_document.title}"
     )
-    for cu in bi_bai_bo:
+    for old in revoked_docs:
         try:
             from .revoke_notification import notify_clones_revoked
 
-            notify_clones_revoked(db, cu, ly_do, actor)
+            notify_clones_revoked(db, old, reason, actor)
         except Exception:  # noqa: BLE001 — kênh thông báo là best-effort
             logging.getLogger(__name__).exception(
-                "Không gửi được thông báo bãi bỏ (theo quan hệ) cho văn bản #%s", cu.id)
+                "Không gửi được thông báo bãi bỏ (theo quan hệ) cho văn bản #%s", old.id)
 
 
 def _apply_effective_side_effects(db: Session, doc: Document) -> list[Document]:
@@ -892,7 +892,7 @@ def _apply_effective_side_effects(db: Session, doc: Document) -> list[Document]:
     from .supersede_service import apply_supersede
 
     #  Actor 0 = hệ thống. Đây đúng là hệ thống làm, không phải người nào bấm.
-    bi_bai_bo = apply_supersede(db, doc, 0)
+    revoked_docs = apply_supersede(db, doc, 0)
     apply_new_version(
         db, doc,
         f"Văn bản cha đã có hiệu lực từ {date.today():%d/%m/%Y}. "
@@ -903,7 +903,7 @@ def _apply_effective_side_effects(db: Session, doc: Document) -> list[Document]:
 
     #  Chưa gửi được thông báo bãi bỏ ở đây — `activate_due_versions` mới là chỗ
     #  commit. Đẩy danh sách lên cho nó.
-    return bi_bai_bo
+    return revoked_docs
 
 
 # ── Gợi ý văn bản đã có (B05) ────────────────────────────────────────────────

@@ -169,10 +169,10 @@ def add_link(db: Session, source: Document, relation: int, target_document_id: i
     if existing:
         raise HTTPException(400, "Quan hệ này đã khai rồi")
 
-    da_khai = (
+    registered = (
         _count_relation(db, source.id, relation, rule.target_type_id) if rule else 0
     )
-    if rule and rule.max_count and da_khai >= rule.max_count:
+    if rule and rule.max_count and registered >= rule.max_count:
         raise HTTPException(
             400,
             f"Quan hệ «{RELATION_LABELS[relation]}» chỉ được khai tối đa "
@@ -213,19 +213,19 @@ def delete_link(db: Session, source: Document, link_id: int):
 
 def missing_required(db: Session, doc: Document) -> list[str]:
     """Các quan hệ bắt buộc còn thiếu (E04). Rỗng nghĩa là đủ điều kiện gửi duyệt."""
-    thieu: list[str] = []
+    missing: list[str] = []
     for rule in rules_for_type(db, doc.doc_type_id):
         if not rule.is_required:
             continue
         can = max(rule.min_count, 1)
-        dang_co = _count_relation(db, doc.id, rule.relation, rule.target_type_id)
-        if dang_co < can:
-            ten_dich = _type_name(db, rule.target_type_id) if rule.target_type_id else "văn bản"
-            thieu.append(
-                f"«{RELATION_LABELS[rule.relation]}» tới {ten_dich} "
-                f"(cần {can}, đang có {dang_co})"
+        existing = _count_relation(db, doc.id, rule.relation, rule.target_type_id)
+        if existing < can:
+            target_name = _type_name(db, rule.target_type_id) if rule.target_type_id else "văn bản"
+            missing.append(
+                f"«{RELATION_LABELS[rule.relation]}» tới {target_name} "
+                f"(cần {can}, đang có {existing})"
             )
-    return thieu
+    return missing
 
 
 def missing_prerequisites(db: Session, doc_type_id: int) -> list[dict]:
@@ -241,15 +241,15 @@ def missing_prerequisites(db: Session, doc_type_id: int) -> list[dict]:
     hành cha sau là việc có thật — chặn cứng ở đây là chặn nhầm. Cổng thật vẫn
     nằm ở `ensure_required_links` lúc gửi duyệt.
     """
-    thieu: list[dict] = []
+    missing: list[dict] = []
     for rule in rules_for_type(db, doc_type_id):
         if not rule.is_required:
             continue
         can = max(rule.min_count, 1)
-        dang_co = _count_alive_of_type(db, rule.target_type_id)
-        if dang_co >= can:
+        existing = _count_alive_of_type(db, rule.target_type_id)
+        if existing >= can:
             continue
-        thieu.append({
+        missing.append({
             #  Giữ nguyên thứ tự của `rules_for_type` — màn tạo đánh số 1, 2, 3
             #  theo đúng thứ tự người khai đã xếp.
             "sort_order": rule.sort_order,
@@ -260,9 +260,9 @@ def missing_prerequisites(db: Session, doc_type_id: int) -> list[dict]:
                 _type_name(db, rule.target_type_id) if rule.target_type_id else "Loại bất kỳ"
             ),
             "need": can,
-            "available": dang_co,
+            "available": existing,
         })
-    return thieu
+    return missing
 
 
 def _count_alive_of_type(db: Session, target_type_id: int | None) -> int:
@@ -282,10 +282,10 @@ def _count_alive_of_type(db: Session, target_type_id: int | None) -> int:
 
 def ensure_required_links(db: Session, doc: Document):
     """Chặn gửi duyệt khi thiếu quan hệ bắt buộc, kèm câu báo rõ thiếu gì."""
-    thieu = missing_required(db, doc)
-    if thieu:
+    missing = missing_required(db, doc)
+    if missing:
         raise HTTPException(
-            400, "Chưa khai đủ quan hệ bắt buộc: " + "; ".join(thieu)
+            400, "Chưa khai đủ quan hệ bắt buộc: " + "; ".join(missing)
         )
 
 

@@ -55,7 +55,7 @@ _PROGRESS = {
     "tạm ngưng": "paused", "đã đặt": "ordered",
 }
 # Ô trống / chữ không nhận ra: về bước đầu chuỗi rồi để auto_advance_line kéo lên theo dữ liệu thật.
-PROG_MAC_DINH = PO_PROGRESS_STATUS.ordered_values[0]
+DEFAULT_PROGRESS = PO_PROGRESS_STATUS.ordered_values[0]
 
 
 def _last_row(ws) -> int:
@@ -241,14 +241,14 @@ def run(db, batch: ImportBatch, wb, apply: bool, default_nspt: str = "") -> None
         # làm giá trị mặc định của .get) nên một ô gõ sai là một dòng mang trạng thái không tồn
         # tại, không lọc ra được và không ai biết. Nay chữ lạ lùi về `not_ordered` + ghi log để
         # người nạp thấy — auto_advance_line ở cuối `run` sẽ tự kéo dòng lên mức thực tế.
-        _tho = _ncode(d["progress"]).lower()
-        _prog = _PROGRESS.get(_tho, "")
+        _raw = _ncode(d["progress"]).lower()
+        _prog = _PROGRESS.get(_raw, "")
         if not _prog:
-            _prog = PROG_MAC_DINH
-            if _tho:
+            _prog = DEFAULT_PROGRESS
+            if _raw:
                 log(r, LogLevel.WARNING, "progress_unknown",
                     f"Trạng thái '{d['progress']}' không nhận ra — tạm để "
-                    f"'{PO_PROGRESS_STATUS.label_of(PROG_MAC_DINH)}'",
+                    f"'{PO_PROGRESS_STATUS.label_of(DEFAULT_PROGRESS)}'",
                     ref_key=d["product_code"], target_code=po.code)
         fields = dict(product_code=d["product_code"], product_name=d["product_name"], invoice_name=d["invoice_name"],
                       item_group=d["item_group"], spec=d["spec"], fg_code=d["fg_code"], fg_name=d["fg_name"],

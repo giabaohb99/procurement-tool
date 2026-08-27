@@ -32,39 +32,39 @@ from .model import STATUS_REVOKED, Document
 
 #  Hai phạm vi được coi là "giữ sổ": thấy toàn bộ văn bản của một pháp nhân trở
 #  lên. Tên phạm vi lấy từ `core/scoping.py`.
-PHAM_VI_GIU_SO = ("company", "all")
+RETAIN_ACCESS_SCOPES = ("company", "all")
 
 
-def giu_so(profile: dict, action: str = "read") -> bool:
+def retains_access(profile: dict, action: str = "read") -> bool:
     """Người này có quyền `action` trên văn bản ở phạm vi công ty / toàn hệ không.
 
     Đọc thẳng từng GRANT chứ không dùng `perms_union`: hợp nhất quyền làm mất
     thông tin phạm vi, mà ở đây phạm vi mới là thứ quyết định.
     """
     for grant in profile.get("grants") or []:
-        quyen = (grant.get("perms") or {}).get("document") or {}
-        if quyen.get(action) and quyen.get("scope") in PHAM_VI_GIU_SO:
+        perms = (grant.get("perms") or {}).get("document") or {}
+        if perms.get(action) and perms.get("scope") in RETAIN_ACCESS_SCOPES:
             return True
     return False
 
 
-def dieu_kien_loc(user, profile: dict):
+def filter_condition(user, profile: dict):
     """Điều kiện SQL cộng thêm vào bộ lọc danh sách. `None` = không phải lọc gì."""
-    if giu_so(profile):
+    if retains_access(profile):
         return None
 
-    ve = [
+    clauses = [
         Document.status != STATUS_REVOKED,
         Document.created_by == user.id,
         Document.updated_by == user.id,
     ]
     employee_id = getattr(user, "employee_id", None) or 0
     if employee_id:
-        ve.append(Document.owner_employee_id == employee_id)
-    return or_(*ve)
+        clauses.append(Document.owner_employee_id == employee_id)
+    return or_(*clauses)
 
 
-def con_xem_duoc(doc: Document, user, profile: dict) -> bool:
+def still_visible(doc: Document, user, profile: dict) -> bool:
     """Bản ghi CỤ THỂ này người đang đăng nhập còn xem được không.
 
     Trả `True` cho mọi văn bản chưa bãi bỏ — chỗ gọi chỉ cần hỏi một câu, không
@@ -72,7 +72,7 @@ def con_xem_duoc(doc: Document, user, profile: dict) -> bool:
     """
     if doc.status != STATUS_REVOKED:
         return True
-    if giu_so(profile):
+    if retains_access(profile):
         return True
 
     employee_id = getattr(user, "employee_id", None) or 0

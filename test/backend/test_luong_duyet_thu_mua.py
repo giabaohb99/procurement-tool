@@ -98,9 +98,9 @@ def test_ycmh_gui_duyet_tu_nhap_va_bi_tra_lai(db, seed, cho_phep_duyet_ycmh, sta
 def test_ycmh_gui_duyet_phieu_dang_chay_bi_chan(db, seed, cho_phep_duyet_ycmh, status):
     """Chặn gửi lại phiếu đã đi tiếp — nếu không thì phiếu quay ngược về Chờ duyệt."""
     pr = _ycmh(db, seed, status=status)
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         pr_ctl.submit_pr(pr.id, BackgroundTasks(), db=db, user=USER)
-    assert loi.value.status_code == 400
+    assert error.value.status_code == 400
     db.refresh(pr)
     assert pr.status == status
 
@@ -108,18 +108,18 @@ def test_ycmh_gui_duyet_phieu_dang_chay_bi_chan(db, seed, cho_phep_duyet_ycmh, s
 def test_ycmh_khong_co_quyen_tren_phieu_thi_khong_gui_duyet_duoc(db, seed, monkeypatch):
     monkeypatch.setattr(pr_ctl, "_can_edit_own", lambda db, pr, user: False)
     pr = _ycmh(db, seed)
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         pr_ctl.submit_pr(pr.id, BackgroundTasks(), db=db, user=USER)
-    assert loi.value.status_code == 403
+    assert error.value.status_code == 403
 
 
 def test_ycmh_duyet_ngoai_pham_vi_bi_chan(db, seed, monkeypatch):
     """Có quyền `approve` chưa đủ — phiếu còn phải nằm trong phạm vi của người đó."""
     monkeypatch.setattr(pr_ctl, "_in_approve_scope", lambda db, user, pid: False)
     pr = _ycmh(db, seed, status="submitted")
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         pr_ctl.approve_pr(pr.id, ApproveIn(), BackgroundTasks(), db=db, user=USER)
-    assert loi.value.status_code == 403
+    assert error.value.status_code == 403
     db.refresh(pr)
     assert pr.status == "submitted"
 
@@ -160,9 +160,9 @@ def test_ycmh_truong_phong_khong_dieu_phoi_duoc(db, seed, monkeypatch):
     })
     pr = _ycmh(db, seed, status="approved")
 
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         pr_ctl.dispatch_pr(pr.id, BackgroundTasks(), db=db, user=USER)
-    assert loi.value.status_code == 403
+    assert error.value.status_code == 403
 
 
 def test_ycmh_tra_lai_roi_gui_duyet_lai_duoc(db, seed, cho_phep_duyet_ycmh):
@@ -212,27 +212,27 @@ def test_khao_sat_tra_lai_khac_tu_choi(db):
     Hai nút khác nhau trên cùng một màn hình, rất dễ bị gộp làm một khi viết lại
     bằng bộ máy duyệt chung.
     """
-    tra_lai = _khao_sat(db, code="KS-N01-TL")
-    sv_ctl.reject_(tra_lai.id, RejectIn(reason="Thiếu mẫu"), BackgroundTasks(), db=db, user=USER)
-    db.refresh(tra_lai)
-    assert tra_lai.status == "rejected"
+    send_back = _khao_sat(db, code="KS-N01-TL")
+    sv_ctl.reject_(send_back.id, RejectIn(reason="Thiếu mẫu"), BackgroundTasks(), db=db, user=USER)
+    db.refresh(send_back)
+    assert send_back.status == "rejected"
     #  MÃ, không phải tiếng Việt — xem ghi chú ở bài kiểm ngay trên.
-    assert tra_lai.approve_status == "rejected"
-    assert tra_lai.approve_status_label == "Không duyệt"
+    assert send_back.approve_status == "rejected"
+    assert send_back.approve_status_label == "Không duyệt"
 
-    tu_choi = _khao_sat(db, code="KS-N01-TC")
-    sv_ctl.cancel_(tu_choi.id, RejectIn(reason="Không cần nữa"), BackgroundTasks(),
+    reject = _khao_sat(db, code="KS-N01-TC")
+    sv_ctl.cancel_(reject.id, RejectIn(reason="Không cần nữa"), BackgroundTasks(),
                    db=db, user=USER)
-    db.refresh(tu_choi)
-    assert tu_choi.status == "cancelled"
+    db.refresh(reject)
+    assert reject.status == "cancelled"
 
 
 @pytest.mark.parametrize("status", ["draft", "approved", "cancelled"])
 def test_khao_sat_chi_tu_choi_duoc_phieu_dang_cho_duyet(db, status):
     phieu = _khao_sat(db, status=status, code=f"KS-N01-{status}")
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         sv_ctl.cancel_(phieu.id, RejectIn(reason="x"), BackgroundTasks(), db=db, user=USER)
-    assert loi.value.status_code == 400
+    assert error.value.status_code == 400
 
 
 def test_khao_sat_chua_chan_duyet_phieu_con_nhap(db):
@@ -276,9 +276,9 @@ def test_ycbg_gui_duyet_tu_nhap_va_bi_tra_lai(db, seed, cho_phep_gui_ycbg, statu
 @pytest.mark.parametrize("status", ["submitted", "approved", "processing", "cancelled"])
 def test_ycbg_gui_duyet_phieu_dang_chay_bi_chan(db, seed, cho_phep_gui_ycbg, status):
     sr = _ycbg(db, seed, status=status)
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         sr_ctl.submit_(sr.id, BackgroundTasks(), db=db, user=USER)
-    assert loi.value.status_code == 400
+    assert error.value.status_code == 400
     db.refresh(sr)
     assert sr.status == status
 
@@ -299,22 +299,22 @@ def test_ycbg_duyet_di_thang_sang_dang_xu_ly(db, seed):
 
 
 def test_ycbg_tra_lai_khac_tu_choi(db, seed, cho_phep_gui_ycbg):
-    tra_lai = _ycbg(db, seed, status="submitted", code="YCBG-N01-TL")
-    sr_ctl.reject_(tra_lai.id, RejectIn(reason="Thiếu thông tin"), BackgroundTasks(),
+    send_back = _ycbg(db, seed, status="submitted", code="YCBG-N01-TL")
+    sr_ctl.reject_(send_back.id, RejectIn(reason="Thiếu thông tin"), BackgroundTasks(),
                    db=db, user=USER)
-    db.refresh(tra_lai)
-    assert tra_lai.status == "rejected"
+    db.refresh(send_back)
+    assert send_back.status == "rejected"
     #  Trả lại thì gửi lại được — đó là điểm khác từ chối.
-    sr_ctl.submit_(tra_lai.id, BackgroundTasks(), db=db, user=USER)
-    db.refresh(tra_lai)
-    assert tra_lai.status == "submitted"
+    sr_ctl.submit_(send_back.id, BackgroundTasks(), db=db, user=USER)
+    db.refresh(send_back)
+    assert send_back.status == "submitted"
 
-    tu_choi = _ycbg(db, seed, status="submitted", code="YCBG-N01-TC")
-    sr_ctl.cancel_(tu_choi.id, RejectIn(reason="Không cần"), BackgroundTasks(), db=db, user=USER)
-    db.refresh(tu_choi)
-    assert tu_choi.status == "cancelled"
+    reject = _ycbg(db, seed, status="submitted", code="YCBG-N01-TC")
+    sr_ctl.cancel_(reject.id, RejectIn(reason="Không cần"), BackgroundTasks(), db=db, user=USER)
+    db.refresh(reject)
+    assert reject.status == "cancelled"
     with pytest.raises(HTTPException):
-        sr_ctl.submit_(tu_choi.id, BackgroundTasks(), db=db, user=USER)
+        sr_ctl.submit_(reject.id, BackgroundTasks(), db=db, user=USER)
 
 
 def test_ycbg_chua_chan_duyet_phieu_da_huy(db, seed):

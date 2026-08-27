@@ -24,7 +24,7 @@ from .instance_model import (ACTION_APPROVE, ACTION_FINISH,
 
 # ── Tra cứu ─────────────────────────────────────────────────────────────────
 
-def phien_dang_chay(db: Session, entity: str, entity_id: int) -> ApprovalInstance | None:
+def running_instance(db: Session, entity: str, entity_id: int) -> ApprovalInstance | None:
     return (
         db.query(ApprovalInstance)
         .filter(ApprovalInstance.entity == entity,
@@ -35,7 +35,7 @@ def phien_dang_chay(db: Session, entity: str, entity_id: int) -> ApprovalInstanc
     )
 
 
-def viec_cua_phien(db: Session, instance_id: int) -> list[ApprovalTask]:
+def tasks_of_instance(db: Session, instance_id: int) -> list[ApprovalTask]:
     return (
         db.query(ApprovalTask)
         .filter(ApprovalTask.instance_id == instance_id)
@@ -45,7 +45,7 @@ def viec_cua_phien(db: Session, instance_id: int) -> list[ApprovalTask]:
     )
 
 
-def ghi_dau_vet(db: Session, instance: ApprovalInstance, action: int, actor: int,
+def record_audit(db: Session, instance: ApprovalInstance, action: int, actor: int,
                 node_seq: int = 0, node_name: str = "", comment: str = "",
                 task_id: int | None = None, actor_employee_id: int | None = None,
                 on_behalf_of_id: int | None = None,
@@ -62,30 +62,30 @@ def ghi_dau_vet(db: Session, instance: ApprovalInstance, action: int, actor: int
 
 # ── Bắt đầu ─────────────────────────────────────────────────────────────────
 
-def bat_dau(db: Session, entity: str, entity_id: int, subject: dict,
+def start(db: Session, entity: str, entity_id: int, subject: dict,
             submitter_employee_id: int | None, actor: int,
             entity_code: str = "", entity_title: str = "", *,
-            chi_luong_phap_nhan: bool = False) -> ApprovalInstance | None:
+            company_flow_only: bool = False) -> ApprovalInstance | None:
     """Trình một phiếu vào bộ máy. `None` = không có luồng nào áp, gọi đường cũ."""
-    if phien_dang_chay(db, entity, entity_id):
+    if running_instance(db, entity, entity_id):
         raise HTTPException(400, "Phiếu này đang có một phiên duyệt chưa kết thúc")
 
-    flow = flow_service.chon_luong(
-        db, entity, subject, chi_phap_nhan=chi_luong_phap_nhan,
+    flow = flow_service.pick_flow(
+        db, entity, subject, company_only=company_flow_only,
     )
     if flow is None:
         return None
 
     raw_snapshot = flow_service.snapshot(db, flow)
-    chang = flow_service.cac_chang(raw_snapshot)
-    if not chang:
+    stage = flow_service.stages(raw_snapshot)
+    if not stage:
         raise HTTPException(400, f"Luồng «{flow.name}» chưa khai bước nào")
 
     instance = ApprovalInstance(
         entity=entity, entity_id=entity_id,
         entity_code=entity_code, entity_title=entity_title,
         flow_id=flow.id, flow_version=flow.version_no, flow_snapshot=raw_snapshot,
-        status=INSTANCE_RUNNING, current_seq=chang[0],
+        status=INSTANCE_RUNNING, current_seq=stage[0],
         started_by_employee_id=submitter_employee_id, started_at=datetime.now(),
         created_by=actor, updated_by=actor,
     )
@@ -104,10 +104,10 @@ def bat_dau(db: Session, entity: str, entity_id: int, subject: dict,
             409, "Phiếu duyệt của chứng từ này vừa được mở bởi một lượt bấm khác. "
                  "Tải lại trang để xem phiếu đang chạy.")
 
-    ghi_dau_vet(db, instance, ACTION_START, actor,
+    record_audit(db, instance, ACTION_START, actor,
                 actor_employee_id=submitter_employee_id,
                 comment=f"Trình duyệt theo luồng «{flow.name}» bản {flow.version_no}")
-    mo_chang(db, instance, subject, chang[0])
+    open_stage(db, instance, subject, stage[0])
     db.commit()
     db.refresh(instance)
     return instance
@@ -115,13 +115,13 @@ def bat_dau(db: Session, entity: str, entity_id: int, subject: dict,
 
 # ── Mở một chặng ────────────────────────────────────────────────────────────
 
-def mo_chang(db: Session, instance: ApprovalInstance, subject: dict, seq: int) -> None:
+def open_stage(db: Session, instance: ApprovalInstance, subject: dict, seq: int) -> None:
     """Dựng việc cho chặng `seq`, xử lý trùng người và ca không tìm được ai."""
-    node = flow_service.buoc_cua_chang(instance.flow_snapshot, seq, subject)
+    node = flow_service.step_of_stage(instance.flow_snapshot, seq, subject)
     if node is None:
         #  ⚠️ Không nhánh nào nhận. Đây đúng là ca phiếu biến mất khỏi mọi danh
         #  sách nếu bỏ qua — nên đánh dấu KẸT để nó còn hiện ở đâu đó.
-        _ket(db, instance, f"Chặng {seq}: không nhánh nào khớp và luồng không "
+        _finish(db, instance, f"Chặng {seq}: không nhánh nào khớp và luồng không "
                            f"khai nhánh mặc định")
         return
 
@@ -130,60 +130,60 @@ def mo_chang(db: Session, instance: ApprovalInstance, subject: dict, seq: int) -
     if node.node_kind == NODE_CC:
         #  I15 — bước nhận bản sao KHÔNG chặn luồng. Ghi dấu vết rồi đi tiếp
         #  ngay; người nhận biết qua thông báo.
-        ghi_dau_vet(db, instance, ACTION_APPROVE, instance.updated_by or 0,
+        record_audit(db, instance, ACTION_APPROVE, instance.updated_by or 0,
                     node_seq=seq, node_name=node.name or "",
                     comment="Bước nhận bản sao — không chặn luồng")
-        di_tiep(db, instance, subject)
+        advance(db, instance, subject)
         return
 
-    nguoi_duyet = approver_resolver.resolve(db, node, subject, instance.started_by_employee_id)
-    nguoi_duyet = _bo_nguoi_nop(instance, node, nguoi_duyet)
-    nguoi_duyet, da_bo_qua = _tach_nguoi_trung(db, instance, node, nguoi_duyet)
+    approvers = approver_resolver.resolve(db, node, subject, instance.started_by_employee_id)
+    approvers = _exclude_submitter(instance, node, approvers)
+    approvers, any_skipped = _split_duplicate_approvers(db, instance, node, approvers)
 
-    if not nguoi_duyet:
-        if da_bo_qua:
+    if not approvers:
+        if any_skipped:
             #  Cả chặng đều là người đã duyệt phía trước → coi như chặng xong.
-            di_tiep(db, instance, subject)
+            advance(db, instance, subject)
             return
-        _khong_co_nguoi_duyet(db, instance, node, subject)
+        _handle_no_approver(db, instance, node, subject)
         return
 
-    han = datetime.now() + timedelta(hours=node.sla_hours) if node.sla_hours else None
-    lan_luot = node.multi_mode == MULTI_SEQUENTIAL
+    due = datetime.now() + timedelta(hours=node.sla_hours) if node.sla_hours else None
+    sequential = node.multi_mode == MULTI_SEQUENTIAL
 
-    viec_moi = []
-    for thu_tu, employee_id in enumerate(nguoi_duyet, start=1):
+    new_tasks = []
+    for order_index, employee_id in enumerate(approvers, start=1):
         task = ApprovalTask(
             instance_id=instance.id, node_seq=seq, node_name=node.name or "",
-            order_no=thu_tu, assignee_employee_id=employee_id,
+            order_no=order_index, assignee_employee_id=employee_id,
             #  Bước "lần lượt" chỉ mở việc cho người đầu; những người sau còn
             #  chờ. Mở hết cùng lúc thì "lần lượt" không còn nghĩa gì.
-            status=TASK_WAITING if (lan_luot and thu_tu > 1) else TASK_PENDING,
-            due_at=han, created_by=instance.updated_by or 0,
+            status=TASK_WAITING if (sequential and order_index > 1) else TASK_PENDING,
+            due_at=due, created_by=instance.updated_by or 0,
             updated_by=instance.updated_by or 0,
         )
         db.add(task)
-        viec_moi.append(task)
+        new_tasks.append(task)
     db.flush()
     #  Báo NGAY khi việc mở ra. Không báo thì việc nằm im trong hộp «Việc của
     #  tôi» tới lúc người duyệt tự nhớ ra mà mở hộp — phiếu chết giữa luồng.
-    task_notification.bao_viec_moi(db, instance, viec_moi)
+    task_notification.notify_new_tasks(db, instance, new_tasks)
 
 
-def _bo_nguoi_nop(instance: ApprovalInstance, node, ids: list[int]) -> list[int]:
+def _exclude_submitter(instance: ApprovalInstance, node, ids: list[int]) -> list[int]:
     """I08 — người nộp không duyệt phiếu của chính mình.
 
     Bỏ họ khỏi danh sách chứ không chặn cả bước: bước còn người khác thì vẫn
     chạy bình thường. Bỏ hết thì rơi vào `_khong_co_nguoi_duyet`, và ở đó luật
     thường là đẩy lên cấp trên — đúng câu tài liệu ghi.
     """
-    nguoi_nop = instance.started_by_employee_id
-    if not nguoi_nop:
+    submitter = instance.started_by_employee_id
+    if not submitter:
         return ids
-    return [employee_id for employee_id in ids if employee_id != nguoi_nop]
+    return [employee_id for employee_id in ids if employee_id != submitter]
 
 
-def _tach_nguoi_trung(db: Session, instance: ApprovalInstance, node,
+def _split_duplicate_approvers(db: Session, instance: ApprovalInstance, node,
                       ids: list[int]) -> tuple[list[int], bool]:
     """I06 — ai đã duyệt phía trước thì bước này tự qua.
 
@@ -195,30 +195,30 @@ def _tach_nguoi_trung(db: Session, instance: ApprovalInstance, node,
     if node.skip_duplicate == SKIP_NONE or not ids:
         return ids, False
 
-    da_duyet = _da_duyet_truoc_do(db, instance, node)
-    con_lai, bo_qua = [], False
+    already_approved = _previously_approved(db, instance, node)
+    remaining, skipped = [], False
 
     for employee_id in ids:
-        if employee_id in da_duyet:
+        if employee_id in already_approved:
             db.add(ApprovalTask(
                 instance_id=instance.id, node_seq=node.seq, node_name=node.name or "",
                 order_no=0, assignee_employee_id=employee_id,
                 status=TASK_SKIPPED_DUPLICATE, decided_at=datetime.now(),
                 created_by=instance.updated_by or 0, updated_by=instance.updated_by or 0,
             ))
-            ghi_dau_vet(db, instance, ACTION_SKIP_DUPLICATE, instance.updated_by or 0,
+            record_audit(db, instance, ACTION_SKIP_DUPLICATE, instance.updated_by or 0,
                         node_seq=node.seq, node_name=node.name or "",
                         actor_employee_id=employee_id,
                         comment="Người này đã duyệt ở bước trước nên bước này tự qua")
-            bo_qua = True
+            skipped = True
         else:
-            con_lai.append(employee_id)
+            remaining.append(employee_id)
 
     db.flush()
-    return con_lai, bo_qua
+    return remaining, skipped
 
 
-def _da_duyet_truoc_do(db: Session, instance: ApprovalInstance, node) -> set[int]:
+def _previously_approved(db: Session, instance: ApprovalInstance, node) -> set[int]:
     query = db.query(ApprovalTask.assignee_employee_id).filter(
         ApprovalTask.instance_id == instance.id,
         ApprovalTask.status == TASK_APPROVED,
@@ -234,7 +234,7 @@ def _da_duyet_truoc_do(db: Session, instance: ApprovalInstance, node) -> set[int
     return {row[0] for row in query.all()}
 
 
-def _khong_co_nguoi_duyet(db: Session, instance: ApprovalInstance, node, subject: dict) -> None:
+def _handle_no_approver(db: Session, instance: ApprovalInstance, node, subject: dict) -> None:
     """I07 — bước không tìm được ai.
 
     ⚠️ **Không có nhánh "tự động duyệt qua"**, và đó là chủ ý. Lark có tùy chọn
@@ -255,32 +255,32 @@ def _khong_co_nguoi_duyet(db: Session, instance: ApprovalInstance, node, subject
             updated_by=instance.updated_by or 0,
         )
         db.add(task)
-        ghi_dau_vet(db, instance, ACTION_APPROVE, instance.updated_by or 0,
+        record_audit(db, instance, ACTION_APPROVE, instance.updated_by or 0,
                     node_seq=node.seq, node_name=node.name or "",
                     comment="Không tìm được người duyệt — chuyển cho người dự phòng")
         db.flush()
         #  Người dự phòng lại càng phải được báo: họ không hề chờ phiếu này.
-        task_notification.bao_viec_moi(db, instance, [task])
+        task_notification.notify_new_tasks(db, instance, [task])
         return
 
-    _ket(db, instance, f"Bước «{node.name or node.seq}» không tìm được người duyệt")
+    _finish(db, instance, f"Bước «{node.name or node.seq}» không tìm được người duyệt")
 
 
-def _ket(db: Session, instance: ApprovalInstance, ly_do: str) -> None:
+def _finish(db: Session, instance: ApprovalInstance, reason: str) -> None:
     """Phiếu kẹt — vẫn là phiên MỞ để nó còn hiện trên màn quản trị.
 
     Đóng luôn thì phiếu lặng lẽ biến mất và không ai biết là đang thiếu người.
     """
     instance.status = INSTANCE_BLOCKED
-    instance.finish_reason = ly_do
-    ghi_dau_vet(db, instance, ACTION_FINISH, instance.updated_by or 0,
-                node_seq=instance.current_seq, comment=ly_do)
+    instance.finish_reason = reason
+    record_audit(db, instance, ACTION_FINISH, instance.updated_by or 0,
+                node_seq=instance.current_seq, comment=reason)
     db.flush()
 
 
 # ── Đi tiếp ─────────────────────────────────────────────────────────────────
 
-def chang_da_xong(db: Session, instance: ApprovalInstance, node) -> bool:
+def stage_done(db: Session, instance: ApprovalInstance, node) -> bool:
     """Chặng hiện tại đã đủ điều kiện đi tiếp chưa — phần `multi_mode` của I05.
 
     ⚠️ **Bỏ việc ĐÃ HỦY ra khỏi phép đếm.** Chúng là dấu vết của một lượt duyệt
@@ -291,57 +291,57 @@ def chang_da_xong(db: Session, instance: ApprovalInstance, node) -> bool:
     nhất chỉ có 3 — cả hội đồng đã bấm Duyệt mà phiếu treo vĩnh viễn ở đó. Tỷ lệ
     50% thì không treo nhưng lặng lẽ đòi 3 người thay vì 2 (25/08/2026).
     """
-    viec = [row for row in viec_cua_phien(db, instance.id)
+    task = [row for row in tasks_of_instance(db, instance.id)
             if row.node_seq == node.seq and row.status != TASK_CANCELLED]
-    if not viec:
+    if not task:
         return True
 
-    thuan = [row for row in viec
+    in_favor = [row for row in task
              if row.status in (TASK_APPROVED, TASK_SKIPPED_DUPLICATE)]
-    con_cho = [row for row in viec if row.status in (TASK_WAITING, TASK_PENDING)]
+    still_pending = [row for row in task if row.status in (TASK_WAITING, TASK_PENDING)]
 
     if node.multi_mode == MULTI_ANY:
-        return bool(thuan)
+        return bool(in_favor)
     if node.multi_mode in (MULTI_ALL, MULTI_SEQUENTIAL):
-        return not con_cho
+        return not still_pending
     if node.multi_mode == MULTI_QUORUM:
-        can = len(viec) * max(1, min(node.quorum_percent, 100)) / 100
-        return len(thuan) >= can
-    return not con_cho
+        can = len(task) * max(1, min(node.quorum_percent, 100)) / 100
+        return len(in_favor) >= can
+    return not still_pending
 
 
-def di_tiep(db: Session, instance: ApprovalInstance, subject: dict) -> None:
+def advance(db: Session, instance: ApprovalInstance, subject: dict) -> None:
     """Sang chặng kế; hết chặng thì phiếu coi như đã duyệt xong."""
-    chang = flow_service.cac_chang(instance.flow_snapshot)
-    ke_tiep = next((seq for seq in chang if seq > instance.current_seq), None)
+    stage = flow_service.stages(instance.flow_snapshot)
+    next_no = next((seq for seq in stage if seq > instance.current_seq), None)
 
-    if ke_tiep is None:
+    if next_no is None:
         instance.status = INSTANCE_APPROVED
         instance.finished_at = datetime.now()
-        ghi_dau_vet(db, instance, ACTION_FINISH, instance.updated_by or 0,
+        record_audit(db, instance, ACTION_FINISH, instance.updated_by or 0,
                     node_seq=instance.current_seq, comment="Đã duyệt hết các bước")
         db.flush()
         #  Báo cho module chứng từ để nó tự đổi trạng thái theo luật của mình.
         entity_hooks.fire(db, instance, "approved")
         return
 
-    mo_chang(db, instance, subject, ke_tiep)
+    open_stage(db, instance, subject, next_no)
 
 
-def mo_viec_ke_tiep_trong_buoc(db: Session, instance: ApprovalInstance, node) -> None:
+def open_next_task_in_step(db: Session, instance: ApprovalInstance, node) -> None:
     """Bước «lần lượt»: người vừa duyệt xong thì mở việc cho người kế."""
     if node.multi_mode != MULTI_SEQUENTIAL:
         return
-    cho = [row for row in viec_cua_phien(db, instance.id)
+    waiting = [row for row in tasks_of_instance(db, instance.id)
            if row.node_seq == node.seq and row.status == TASK_WAITING]
-    if cho:
-        cho[0].status = TASK_PENDING
+    if waiting:
+        waiting[0].status = TASK_PENDING
         db.flush()
         #  Tới lượt ai thì báo người đó — việc của họ vừa từ "chờ" sang "phải làm".
-        task_notification.bao_viec_moi(db, instance, [cho[0]])
+        task_notification.notify_new_tasks(db, instance, [waiting[0]])
 
 
-def xoa_theo_chung_tu(db: Session, entity: str, entity_id: int) -> int:
+def delete_by_entity(db: Session, entity: str, entity_id: int) -> int:
     """Chứng từ bị XÓA thì dọn luôn phiếu duyệt của nó. Trả về số phiếu đã dọn.
 
     Không dọn thì phiếu duyệt nằm lại trỏ vào một chứng từ không còn tồn tại —

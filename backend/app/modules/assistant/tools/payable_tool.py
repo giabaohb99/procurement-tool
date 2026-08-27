@@ -52,11 +52,11 @@ def _scoped_payables(ctx: ToolContext, args: dict):
     company = _clean_text(args.get("company"), 255)
     company_hit = None
     if company:
-        company_hit, ten_hop_le = _match_company(ctx.db, company)
+        company_hit, matched_name = _match_company(ctx.db, company)
         if company_hit is None:
             return None, None, {"error": f"Không có công ty '{company}' trong danh mục — "
                                          "nêu danh sách hợp lệ (companies) để người dùng chọn.",
-                                "companies": ten_hop_le}
+                                "companies": matched_name}
         q = q.filter(Payable.company_id == company_hit.id)
 
     supplier = _clean_text(args.get("supplier"), 255)
@@ -96,9 +96,9 @@ def _run_lookup(ctx: ToolContext, args: dict) -> dict:
     if not ctx.can("payable"):
         return denied("công nợ phải trả (payable)")
 
-    q, _, loi = _scoped_payables(ctx, args)
-    if loi:
-        return loi
+    q, _, error = _scoped_payables(ctx, args)
+    if error:
+        return error
 
     status = _clean_text(args.get("status"), 20) or "outstanding"
     if status == "outstanding":
@@ -109,17 +109,17 @@ def _run_lookup(ctx: ToolContext, args: dict) -> dict:
     # Tổng hợp trên TOÀN BỘ kết quả lọc (không chỉ trang liệt kê) — câu "còn lại bao nhiêu"
     # trả lời bằng con số này. Quá hạn = còn nợ mà hạn trả đã qua (cùng công thức /summary).
     today = datetime.now().date().strftime("%Y-%m-%d")
-    qua_han = case(
+    overdue = case(
         (((Payable.status != ST_PAID) & (Payable.due_date != "") & (Payable.due_date < today)),
          Payable.remaining),
         else_=0,
     )
-    tong = q.with_entities(
+    total = q.with_entities(
         func.count(Payable.id),
         func.coalesce(func.sum(Payable.total), 0),
         func.coalesce(func.sum(Payable.paid_amount), 0),
         func.coalesce(func.sum(Payable.remaining), 0),
-        func.coalesce(func.sum(qua_han), 0),
+        func.coalesce(func.sum(overdue), 0),
     ).one()
 
     limit = args.get("limit")
@@ -127,15 +127,15 @@ def _run_lookup(ctx: ToolContext, args: dict) -> dict:
     rows = q.order_by(Payable.due_date.asc(), Payable.id.desc()).limit(limit).all()
 
     out = {
-        "total": int(tong[0]),
-        "summary": {"total": float(tong[1]), "paid": float(tong[2]),
-                    "remaining": float(tong[3]), "overdue": float(tong[4])},
+        "total": int(total[0]),
+        "summary": {"total": float(total[1]), "paid": float(total[2]),
+                    "remaining": float(total[3]), "overdue": float(total[4])},
         "items": [_payable_out(p) for p in rows],
     }
-    if tong[0] > limit:
-        out["note"] = (f"Chỉ liệt kê {limit}/{tong[0]} khoản tới hạn sớm nhất — summary vẫn "
+    if total[0] > limit:
+        out["note"] = (f"Chỉ liệt kê {limit}/{total[0]} khoản tới hạn sớm nhất — summary vẫn "
                        "tính trên toàn bộ.")
-    if not tong[0]:
+    if not total[0]:
         out["note"] = ("Không có khoản nợ nào khớp điều kiện trong phạm vi người hỏi được "
                        "xem — nói thẳng, đừng bịa số.")
     return out
@@ -215,15 +215,15 @@ def _run_draft(ctx: ToolContext, args: dict) -> dict:
         return {"error": "Cần payable_ids (từ payable_lookup) hoặc tối thiểu supplier để "
                          "biết trả nợ cho NCC nào — hỏi người dùng rồi gọi lại."}
 
-    q, _, loi = _scoped_payables(ctx, args)
-    if loi:
-        return loi
+    q, _, error = _scoped_payables(ctx, args)
+    if error:
+        return error
     if ids:
         q = q.filter(Payable.id.in_(ids[:MAX_DRAFT_LINES]))
     # Chỉ khoản còn phải trả — tiền dồn vào khoản đã tất toán là công nợ âm (lỗi 82ce6ad).
     q = q.filter(Payable.status != ST_PAID, Payable.remaining > 0)
 
-    tong_khop = q.count()
+    total_matched = q.count()
     rows = q.order_by(Payable.due_date.asc(), Payable.id.desc()).limit(MAX_DRAFT_LINES).all()
     if not rows:
         return {"error": "Không có khoản nợ CÒN PHẢI TRẢ nào khớp điều kiện trong phạm vi "
@@ -231,9 +231,9 @@ def _run_draft(ctx: ToolContext, args: dict) -> dict:
                          "kiện. Có thể gọi payable_lookup (status=all) để xem vì sao."}
 
     # Gom theo NCC để model tóm tắt — và vì backend tự TÁCH mỗi NCC một phiếu khi lưu.
-    theo_ncc: dict[str, dict] = {}
+    by_supplier: dict[str, dict] = {}
     for p in rows:
-        g = theo_ncc.setdefault(p.supplier_code or "?", {
+        g = by_supplier.setdefault(p.supplier_code or "?", {
             "supplier_code": p.supplier_code, "supplier_name": p.supplier_name,
             "lines": 0, "remaining": 0.0,
         })
@@ -246,7 +246,7 @@ def _run_draft(ctx: ToolContext, args: dict) -> dict:
             #  `kind` để giao diện chat phân biệt với bản nháp YCBG/YCMH/nghỉ phép.
             "kind": "payment_request",
             "payable_ids": [p.id for p in rows],
-            "suppliers": list(theo_ncc.values()),
+            "suppliers": list(by_supplier.values()),
             "total_remaining": round(sum(float(p.remaining or 0) for p in rows), 2),
         },
         "total": len(rows),
@@ -256,15 +256,15 @@ def _run_draft(ctx: ToolContext, args: dict) -> dict:
                     "mặc định bằng số CÒN LẠI từng khoản, sửa được trước khi Lưu.",
     }
     if ids:
-        thieu = sorted(set(ids) - {p.id for p in rows})
-        if thieu:
-            result["skipped_ids"] = thieu
+        missing = sorted(set(ids) - {p.id for p in rows})
+        if missing:
+            result["skipped_ids"] = missing
             result["reminder"] += (" Một số payable_id bị loại (đã tất toán, ngoài phạm vi "
                                    "được xem hoặc không tồn tại) — nói rõ cho người dùng.")
-    elif tong_khop > len(rows):
-        result["reminder"] += (f" Chỉ đưa vào {len(rows)}/{tong_khop} khoản tới hạn sớm "
+    elif total_matched > len(rows):
+        result["reminder"] += (f" Chỉ đưa vào {len(rows)}/{total_matched} khoản tới hạn sớm "
                                "nhất — phần còn lại người dùng tự tick thêm trên màn Công nợ.")
-    if len(theo_ncc) > 1:
+    if len(by_supplier) > 1:
         result["reminder"] += (" Các khoản thuộc NHIỀU nhà cung cấp — khi lưu hệ thống tự "
                                "tách mỗi NCC một phiếu, báo trước cho người dùng.")
     return result

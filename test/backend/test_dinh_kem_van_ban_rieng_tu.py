@@ -40,8 +40,8 @@ def test_ma_bam_van_tra_ve_ca_khi_giau_link():
 
 
 def test_ma_bam_dung_voi_noi_dung_tep():
-    noi_dung = b"quy che luong 2026"
-    assert _sha256_of(io.BytesIO(noi_dung)) == hashlib.sha256(noi_dung).hexdigest()
+    content = b"quy che luong 2026"
+    assert _sha256_of(io.BytesIO(content)) == hashlib.sha256(content).hexdigest()
 
 
 def test_bam_xong_phai_tra_con_tro_ve_dau():
@@ -50,9 +50,9 @@ def test_bam_xong_phai_tra_con_tro_ve_dau():
     Quên `seek(0)` thì nó đọc được 0 byte và đẩy lên kho một tệp RỖNG — mà không
     có lỗi nào bật lên, chỉ tới lúc ai đó bấm tải về mới lộ.
     """
-    luong = io.BytesIO(b"noi dung that")
-    _sha256_of(luong)
-    assert luong.read() == b"noi dung that"
+    flow = io.BytesIO(b"noi dung that")
+    _sha256_of(flow)
+    assert flow.read() == b"noi dung that"
 
 
 def test_tep_rong_van_co_ma_bam():

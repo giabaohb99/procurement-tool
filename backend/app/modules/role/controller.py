@@ -44,7 +44,7 @@ def create_role(data: RoleCreate, db: Session = Depends(get_db), user=Depends(re
 
 
 @router.put("/order")
-def sap_xep_vai_tro(
+def reorder_roles(
     data: RoleOrder, db: Session = Depends(get_db),
     user=Depends(require("role", "write")),
 ):
@@ -56,7 +56,7 @@ def sap_xep_vai_tro(
     không cấp thêm cho ai quyền gì — khác hẳn việc tick ô trong ma trận. Vẫn
     đòi `role.write` vì đây là thứ mọi người quản trị khác đều nhìn thấy.
     """
-    service.sap_xep_vai_tro(db, data.role_ids, user.id)
+    service.reorder_roles(db, data.role_ids, user.id)
     return success(None, "Đã lưu thứ tự vai trò")
 
 
@@ -96,8 +96,8 @@ def set_permissions(
     #  Cửa sau thứ ba của tự nâng quyền: không đụng tới tài khoản nào cả, chỉ
     #  tick thêm ô vào ma trận của CHÍNH vai trò mình đang giữ. Xem
     #  `core/privilege_escalation.py`.
-    privilege_escalation.chan_sua_vai_tro_cua_chinh_minh(db, rid, user)
-    privilege_escalation.chan_cap_vuot_quyen(
-        db, user, privilege_escalation.quyen_trong_ma_tran(data.permissions))
+    privilege_escalation.block_edit_own_role(db, rid, user)
+    privilege_escalation.block_privilege_escalation(
+        db, user, privilege_escalation.permissions_in_matrix(data.permissions))
     service.set_permissions(db, rid, data, user.id)
     return success(None, "Đã cập nhật phân quyền")

@@ -117,12 +117,12 @@ def _children(db: Session, document_id: int, depth: int, seen: set[int]) -> list
     #  bản gốc (`clone_service.create_clones`). Không gạt chúng ra khỏi vòng dưới
     #  thì nhánh quan hệ nhặt trước, và bản riêng hiện thành một dòng quan hệ
     #  thường: mất nhãn «Bản riêng», mất tên pháp nhân, mất trạng thái xử lý.
-    ids_ban_rieng = {row[0] for row in db.query(Document.id)
+    private_copy_ids = {row[0] for row in db.query(Document.id)
                      .filter(Document.source_document_id == document_id).all()}
 
     nodes: list[dict] = []
     for link in links:
-        if link.source_document_id in seen or link.source_document_id in ids_ban_rieng:
+        if link.source_document_id in seen or link.source_document_id in private_copy_ids:
             continue
         child = db.get(Document, link.source_document_id)
         if child is None:

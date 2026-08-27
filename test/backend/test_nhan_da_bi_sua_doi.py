@@ -31,16 +31,16 @@ ACTOR = 1
 def bo_quyet_dinh(db, seed):
     company = db.get(Company, seed.company_id)
     company.issue_code = "DEGO"
-    quyet_dinh = DocType(code="QD", name="Quyết định", id_scheme=2, number_when=2)
-    db.add(quyet_dinh)
+    decision = DocType(code="QD", name="Quyết định", id_scheme=2, number_when=2)
+    db.add(decision)
     db.commit()
 
     #  Quyết định được phép thay thế / sửa đổi / bãi bỏ Quyết định khác.
     for relation in (RELATION_REPLACE, RELATION_AMEND, RELATION_REVOKE):
-        db.add(DocTypeLinkRule(source_type_id=quyet_dinh.id, relation=relation,
-                               target_type_id=quyet_dinh.id))
+        db.add(DocTypeLinkRule(source_type_id=decision.id, relation=relation,
+                               target_type_id=decision.id))
     db.commit()
-    return {"QD": quyet_dinh, "seed": seed}
+    return {"QD": decision, "seed": seed}
 
 
 def _ban_hanh(db, ctx, title: str):
@@ -55,78 +55,78 @@ def _ban_hanh(db, ctx, title: str):
     return doc
 
 
-def _noi(db, moi, cu, relation):
-    link_service.add_link(db, moi, relation, cu.id, "", ACTOR)
+def _noi(db, new, old, relation):
+    link_service.add_link(db, new, relation, old.id, "", ACTOR)
 
 
 # ── Ba tác động tự động ──────────────────────────────────────────────────────
 def test_thay_the_thi_van_ban_cu_chuyen_sang_bi_thay_the(db, bo_quyet_dinh):
-    cu = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
+    old = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
 
-    moi = service.create_document(db, DocumentCreate(
+    new = service.create_document(db, DocumentCreate(
         doc_type_id=bo_quyet_dinh["QD"].id, company_id=bo_quyet_dinh["seed"].company_id,
         department_id=bo_quyet_dinh["seed"].dept_id,
         owner_employee_id=bo_quyet_dinh["seed"].emp_req_id,
         title="Quyết định 47", content_html="<p>Thay thế QĐ 15.</p>",
     ), ACTOR)
-    _noi(db, moi, cu, RELATION_REPLACE)
-    service.submit(db, moi, ACTOR)
-    service.approve(db, moi, ACTOR)
+    _noi(db, new, old, RELATION_REPLACE)
+    service.submit(db, new, ACTOR)
+    service.approve(db, new, ACTOR)
 
-    db.refresh(cu)
-    assert cu.status == STATUS_REPLACED
+    db.refresh(old)
+    assert old.status == STATUS_REPLACED
 
 
 def test_bai_bo_thi_van_ban_cu_chuyen_sang_bai_bo(db, bo_quyet_dinh):
-    cu = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
+    old = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
 
-    moi = service.create_document(db, DocumentCreate(
+    new = service.create_document(db, DocumentCreate(
         doc_type_id=bo_quyet_dinh["QD"].id, company_id=bo_quyet_dinh["seed"].company_id,
         department_id=bo_quyet_dinh["seed"].dept_id,
         owner_employee_id=bo_quyet_dinh["seed"].emp_req_id,
         title="Quyết định 50", content_html="<p>Bãi bỏ QĐ 15.</p>",
     ), ACTOR)
-    _noi(db, moi, cu, RELATION_REVOKE)
-    service.submit(db, moi, ACTOR)
-    service.approve(db, moi, ACTOR)
+    _noi(db, new, old, RELATION_REVOKE)
+    service.submit(db, new, ACTOR)
+    service.approve(db, new, ACTOR)
 
-    db.refresh(cu)
-    assert cu.status == STATUS_REVOKED
+    db.refresh(old)
+    assert old.status == STATUS_REVOKED
 
 
 def test_sua_doi_khong_doi_trang_thai_nhung_van_gan_nhan(db, bo_quyet_dinh):
     """Ca NGUY HIỂM NHẤT của nhóm J — xem chú thích đầu tệp."""
-    cu = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
+    old = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
 
-    moi = service.create_document(db, DocumentCreate(
+    new = service.create_document(db, DocumentCreate(
         doc_type_id=bo_quyet_dinh["QD"].id, company_id=bo_quyet_dinh["seed"].company_id,
         department_id=bo_quyet_dinh["seed"].dept_id,
         owner_employee_id=bo_quyet_dinh["seed"].emp_req_id,
         title="Quyết định 47", content_html="<p>Sửa đổi Điều 5 QĐ 15.</p>",
     ), ACTOR)
-    _noi(db, moi, cu, RELATION_AMEND)
-    service.submit(db, moi, ACTOR)
-    service.approve(db, moi, ACTOR)
+    _noi(db, new, old, RELATION_AMEND)
+    service.submit(db, new, ACTOR)
+    service.approve(db, new, ACTOR)
 
-    db.refresh(cu)
+    db.refresh(old)
     #  Phần không bị sửa vẫn có hiệu lực — KHÔNG đổi trạng thái.
-    assert cu.status == STATUS_EFFECTIVE
+    assert old.status == STATUS_EFFECTIVE
     #  Nhưng nhãn thì BẮT BUỘC phải có, vì nhìn trạng thái không ai biết gì cả.
-    nhan = supersede_service.amended_by(db, cu.id)
-    assert len(nhan) == 1
-    assert nhan[0]["relation_label"] == "Sửa đổi"
-    assert nhan[0]["title"] == "Quyết định 47"
+    label = supersede_service.amended_by(db, old.id)
+    assert len(label) == 1
+    assert label[0]["relation_label"] == "Sửa đổi"
+    assert label[0]["title"] == "Quyết định 47"
 
 
 # ── Nhãn ────────────────────────────────────────────────────────────────────
 def test_chua_bi_gi_thi_khong_co_nhan(db, bo_quyet_dinh):
-    cu = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
-    assert supersede_service.amended_by(db, cu.id) == []
+    old = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
+    assert supersede_service.amended_by(db, old.id) == []
 
 
 def test_du_thao_sua_doi_chua_ban_hanh_thi_chua_gan_nhan(db, bo_quyet_dinh):
     """Gắn nhãn sớm là dọa người đọc bằng một thứ chưa có hiệu lực."""
-    cu = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
+    old = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
 
     nhap = service.create_document(db, DocumentCreate(
         doc_type_id=bo_quyet_dinh["QD"].id, company_id=bo_quyet_dinh["seed"].company_id,
@@ -134,48 +134,48 @@ def test_du_thao_sua_doi_chua_ban_hanh_thi_chua_gan_nhan(db, bo_quyet_dinh):
         owner_employee_id=bo_quyet_dinh["seed"].emp_req_id,
         title="Dự thảo sửa QĐ 15", content_html="<p>x</p>",
     ), ACTOR)
-    _noi(db, nhap, cu, RELATION_AMEND)
+    _noi(db, nhap, old, RELATION_AMEND)
 
-    assert supersede_service.amended_by(db, cu.id) == []
-    db.refresh(cu)
-    assert cu.status == STATUS_EFFECTIVE
+    assert supersede_service.amended_by(db, old.id) == []
+    db.refresh(old)
+    assert old.status == STATUS_EFFECTIVE
 
 
 def test_khong_ghi_de_van_ban_da_bai_bo_tu_truoc(db, bo_quyet_dinh):
     """Ghi đè là xóa mất lý do bãi bỏ thật của nó."""
-    cu = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
-    service.revoke(db, cu, "Bãi bỏ theo kết luận họp", ACTOR)
-    assert cu.status == STATUS_REVOKED
+    old = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
+    service.revoke(db, old, "Bãi bỏ theo kết luận họp", ACTOR)
+    assert old.status == STATUS_REVOKED
 
-    moi = service.create_document(db, DocumentCreate(
+    new = service.create_document(db, DocumentCreate(
         doc_type_id=bo_quyet_dinh["QD"].id, company_id=bo_quyet_dinh["seed"].company_id,
         department_id=bo_quyet_dinh["seed"].dept_id,
         owner_employee_id=bo_quyet_dinh["seed"].emp_req_id,
         title="Quyết định 47", content_html="<p>Thay thế QĐ 15.</p>",
     ), ACTOR)
-    _noi(db, moi, cu, RELATION_REPLACE)
-    service.submit(db, moi, ACTOR)
-    service.approve(db, moi, ACTOR)
+    _noi(db, new, old, RELATION_REPLACE)
+    service.submit(db, new, ACTOR)
+    service.approve(db, new, ACTOR)
 
-    db.refresh(cu)
-    assert cu.status == STATUS_REVOKED
+    db.refresh(old)
+    assert old.status == STATUS_REVOKED
 
 
 def test_nhan_gom_nhieu_van_ban_cung_dung_vao_mot_van_ban(db, bo_quyet_dinh):
-    cu = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
+    old = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
 
     for title in ("Quyết định 47", "Quyết định 48"):
-        moi = service.create_document(db, DocumentCreate(
+        new = service.create_document(db, DocumentCreate(
             doc_type_id=bo_quyet_dinh["QD"].id, company_id=bo_quyet_dinh["seed"].company_id,
             department_id=bo_quyet_dinh["seed"].dept_id,
             owner_employee_id=bo_quyet_dinh["seed"].emp_req_id,
             title=title, content_html="<p>Sửa đổi.</p>",
         ), ACTOR)
-        _noi(db, moi, cu, RELATION_AMEND)
-        service.submit(db, moi, ACTOR)
-        service.approve(db, moi, ACTOR)
+        _noi(db, new, old, RELATION_AMEND)
+        service.submit(db, new, ACTOR)
+        service.approve(db, new, ACTOR)
 
-    assert len(supersede_service.amended_by(db, cu.id)) == 2
+    assert len(supersede_service.amended_by(db, old.id)) == 2
 
 
 # ── Văn bản hẹn hiệu lực TƯƠNG LAI ──────────────────────────────────────────
@@ -187,23 +187,23 @@ def test_nhan_gom_nhieu_van_ban_cung_dung_vao_mot_van_ban(db, bo_quyet_dinh):
 def test_hen_hieu_luc_tuong_lai_thi_chua_thay_the_ngay(db, bo_quyet_dinh):
     from datetime import date, timedelta
 
-    cu = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
-    moi = service.create_document(db, DocumentCreate(
+    old = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
+    new = service.create_document(db, DocumentCreate(
         doc_type_id=bo_quyet_dinh["QD"].id, company_id=bo_quyet_dinh["seed"].company_id,
         department_id=bo_quyet_dinh["seed"].dept_id,
         owner_employee_id=bo_quyet_dinh["seed"].emp_req_id,
         title="Quyết định 47", content_html="<p>Thay thế QĐ 15 từ tháng sau.</p>",
         effective_date=date.today() + timedelta(days=30),
     ), ACTOR)
-    _noi(db, moi, cu, RELATION_REPLACE)
-    service.submit(db, moi, ACTOR)
-    service.approve(db, moi, ACTOR)
+    _noi(db, new, old, RELATION_REPLACE)
+    service.submit(db, new, ACTOR)
+    service.approve(db, new, ACTOR)
 
-    db.refresh(cu)
+    db.refresh(old)
     #  Văn bản cũ CÒN hiệu lực cho tới ngày bản mới áp dụng.
-    assert cu.status == STATUS_EFFECTIVE
+    assert old.status == STATUS_EFFECTIVE
     #  Nhưng người đọc đã được cảnh báo ngay từ bây giờ.
-    assert len(supersede_service.amended_by(db, cu.id)) == 1
+    assert len(supersede_service.amended_by(db, old.id)) == 1
 
 
 def test_toi_ngay_hieu_luc_thi_moi_thay_the(db, bo_quyet_dinh):
@@ -212,23 +212,23 @@ def test_toi_ngay_hieu_luc_thi_moi_thay_the(db, bo_quyet_dinh):
 
     from app.modules.document.version_model import DocumentVersion
 
-    cu = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
-    moi = service.create_document(db, DocumentCreate(
+    old = _ban_hanh(db, bo_quyet_dinh, "Quyết định 15")
+    new = service.create_document(db, DocumentCreate(
         doc_type_id=bo_quyet_dinh["QD"].id, company_id=bo_quyet_dinh["seed"].company_id,
         department_id=bo_quyet_dinh["seed"].dept_id,
         owner_employee_id=bo_quyet_dinh["seed"].emp_req_id,
         title="Quyết định 47", content_html="<p>Thay thế QĐ 15.</p>",
         effective_date=date.today() + timedelta(days=30),
     ), ACTOR)
-    _noi(db, moi, cu, RELATION_REPLACE)
-    service.submit(db, moi, ACTOR)
-    service.approve(db, moi, ACTOR)
+    _noi(db, new, old, RELATION_REPLACE)
+    service.submit(db, new, ACTOR)
+    service.approve(db, new, ACTOR)
 
     #  Tua tới ngày hiệu lực rồi chạy việc bảo trì.
-    version = db.get(DocumentVersion, moi.current_version_id)
+    version = db.get(DocumentVersion, new.current_version_id)
     version.effective_from = date.today()
     db.commit()
     service.activate_due_versions(db)
 
-    db.refresh(cu)
-    assert cu.status == STATUS_REPLACED
+    db.refresh(old)
+    assert old.status == STATUS_REPLACED

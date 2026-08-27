@@ -66,13 +66,13 @@ def _ban_hanh(db, doc):
 
 # ── Sinh tự động lúc ban hành ────────────────────────────────────────────────
 def test_ban_hanh_thi_moi_phap_nhan_trong_pham_vi_co_ngay_mot_ban_nhap(db, nen):
-    goc = _tao_nhap(db, nen)
-    _pham_vi(db, goc.id, nen["a"].id)
-    _pham_vi(db, goc.id, nen["b"].id)
+    origin = _tao_nhap(db, nen)
+    _pham_vi(db, origin.id, nen["a"].id)
+    _pham_vi(db, origin.id, nen["b"].id)
 
-    _ban_hanh(db, goc)
+    _ban_hanh(db, origin)
 
-    clones = clone_service.clones_of(db, goc.id)
+    clones = clone_service.clones_of(db, origin.id)
     assert {c.company_id for c in clones} == {nen["a"].id, nen["b"].id}
     #  Dạng NHÁP để pháp nhân con sửa lại cho đúng công ty mình.
     assert all(c.status == STATUS_DRAFT for c in clones)
@@ -81,66 +81,66 @@ def test_ban_hanh_thi_moi_phap_nhan_trong_pham_vi_co_ngay_mot_ban_nhap(db, nen):
 def test_ban_clone_chep_noi_dung_ban_goc(db, nen):
     from app.modules.document.version_model import DocumentVersion
 
-    goc = _tao_nhap(db, nen)
-    _pham_vi(db, goc.id, nen["a"].id)
-    _ban_hanh(db, goc)
+    origin = _tao_nhap(db, nen)
+    _pham_vi(db, origin.id, nen["a"].id)
+    _ban_hanh(db, origin)
 
-    clone = clone_service.clones_of(db, goc.id)[0]
+    clone = clone_service.clones_of(db, origin.id)[0]
     assert "Điều 1" in db.get(DocumentVersion, clone.current_version_id).content_html
 
 
 def test_khong_khai_pham_vi_thi_khong_sinh_ban_nao(db, nen):
     """Văn bản chỉ áp trong pháp nhân ban hành — đẻ clone ra là thừa văn bản."""
-    goc = _tao_nhap(db, nen)
+    origin = _tao_nhap(db, nen)
 
-    _ban_hanh(db, goc)
+    _ban_hanh(db, origin)
 
-    assert clone_service.clones_of(db, goc.id) == []
+    assert clone_service.clones_of(db, origin.id) == []
 
 
 def test_khong_clone_ve_chinh_phap_nhan_ban_hanh(db, nen, seed):
-    goc = _tao_nhap(db, nen)
-    _pham_vi(db, goc.id, seed.company_id)
+    origin = _tao_nhap(db, nen)
+    _pham_vi(db, origin.id, seed.company_id)
 
-    _ban_hanh(db, goc)
+    _ban_hanh(db, origin)
 
-    assert clone_service.clones_of(db, goc.id) == []
+    assert clone_service.clones_of(db, origin.id) == []
 
 
 def test_dong_loai_tru_khong_sinh_clone(db, nen):
     """Loại trừ nói nơi đó KHÔNG áp dụng — clone về đó là tạo cho nơi vừa bị loại."""
-    goc = _tao_nhap(db, nen)
-    _pham_vi(db, goc.id, nen["a"].id, mode=MODE_EXCLUDE)
+    origin = _tao_nhap(db, nen)
+    _pham_vi(db, origin.id, nen["a"].id, mode=MODE_EXCLUDE)
 
-    _ban_hanh(db, goc)
+    _ban_hanh(db, origin)
 
-    assert clone_service.clones_of(db, goc.id) == []
+    assert clone_service.clones_of(db, origin.id) == []
 
 
 def test_dong_phong_ban_khong_sinh_clone(db, nen, seed):
     """Clone tách theo PHÁP NHÂN; dòng phòng ban không nói được nên tách cho ai."""
-    goc = _tao_nhap(db, nen)
-    _pham_vi(db, goc.id, nen["a"].id, dim=DIM_DEPARTMENT, department_id=seed.dept_id)
+    origin = _tao_nhap(db, nen)
+    _pham_vi(db, origin.id, nen["a"].id, dim=DIM_DEPARTMENT, department_id=seed.dept_id)
 
-    _ban_hanh(db, goc)
+    _ban_hanh(db, origin)
 
-    assert clone_service.clones_of(db, goc.id) == []
+    assert clone_service.clones_of(db, origin.id) == []
 
 
 def test_len_phien_ban_moi_khong_de_them_ban_clone_thu_hai(db, nen):
     """Ban hành 2.0 mà sinh thêm một bản nữa là pháp nhân con có hai văn bản trùng."""
     from app.modules.document import version_service
 
-    goc = _tao_nhap(db, nen)
-    _pham_vi(db, goc.id, nen["a"].id)
-    _ban_hanh(db, goc)
-    assert len(clone_service.clones_of(db, goc.id)) == 1
+    origin = _tao_nhap(db, nen)
+    _pham_vi(db, origin.id, nen["a"].id)
+    _ban_hanh(db, origin)
+    assert len(clone_service.clones_of(db, origin.id)) == 1
 
-    version_service.open_new_version(db, goc, VersionCreate(
+    version_service.open_new_version(db, origin, VersionCreate(
         change_kind=CHANGE_MAJOR, change_summary="Sửa điều 1"), ACTOR)
-    _ban_hanh(db, goc)
+    _ban_hanh(db, origin)
 
-    assert len(clone_service.clones_of(db, goc.id)) == 1
+    assert len(clone_service.clones_of(db, origin.id)) == 1
 
 
 def test_ban_clone_len_phien_ban_moi_van_nam_duoi_dung_ban_goc(db, nen):
@@ -148,10 +148,10 @@ def test_ban_clone_len_phien_ban_moi_van_nam_duoi_dung_ban_goc(db, nen):
     from app.modules.document import version_service
     from app.modules.document.version_model import DocumentVersion
 
-    goc = _tao_nhap(db, nen)
-    _pham_vi(db, goc.id, nen["a"].id)
-    _ban_hanh(db, goc)
-    clone = clone_service.clones_of(db, goc.id)[0]
+    origin = _tao_nhap(db, nen)
+    _pham_vi(db, origin.id, nen["a"].id)
+    _ban_hanh(db, origin)
+    clone = clone_service.clones_of(db, origin.id)[0]
     _ban_hanh(db, clone)
 
     document_count = db.query(Document.id).count()
@@ -163,8 +163,8 @@ def test_ban_clone_len_phien_ban_moi_van_nam_duoi_dung_ban_goc(db, nen):
     db.refresh(clone)
 
     assert db.query(Document.id).count() == document_count
-    assert clone.source_document_id == goc.id
-    assert [row.id for row in clone_service.clones_of(db, goc.id)] == [clone.id]
+    assert clone.source_document_id == origin.id
+    assert [row.id for row in clone_service.clones_of(db, origin.id)] == [clone.id]
     assert clone_service.clones_of(db, clone.id) == []
     assert db.query(DocumentVersion).filter(
         DocumentVersion.document_id == clone.id,
@@ -172,25 +172,25 @@ def test_ban_clone_len_phien_ban_moi_van_nam_duoi_dung_ban_goc(db, nen):
 
 
 def test_ban_clone_mang_so_hieu_cua_phap_nhan_con(db, nen):
-    goc = _tao_nhap(db, nen)
-    _pham_vi(db, goc.id, nen["a"].id)
-    _ban_hanh(db, goc)
+    origin = _tao_nhap(db, nen)
+    _pham_vi(db, origin.id, nen["a"].id)
+    _ban_hanh(db, origin)
 
-    clone = clone_service.clones_of(db, goc.id)[0]
+    clone = clone_service.clones_of(db, origin.id)[0]
     _ban_hanh(db, clone)
 
     #  Mã pháp nhân CON, không dùng lại số của Tập đoàn.
     assert clone.doc_code.startswith("ABA-")
-    assert not goc.doc_code.startswith("ABA-")
+    assert not origin.doc_code.startswith("ABA-")
 
 
 # ── Lỗ 1 · cột theo dõi đổi theo văn bản ─────────────────────────────────────
 def test_clone_ban_hanh_xong_thi_bang_theo_doi_ghi_da_ban_hanh(db, nen):
     """Từng ghi "Đã gửi" mãi mãi: API đổi trạng thái có, nhưng không màn nào gọi."""
-    goc = _tao_nhap(db, nen)
-    _pham_vi(db, goc.id, nen["a"].id)
-    _ban_hanh(db, goc)
-    clone = clone_service.clones_of(db, goc.id)[0]
+    origin = _tao_nhap(db, nen)
+    _pham_vi(db, origin.id, nen["a"].id)
+    _ban_hanh(db, origin)
+    clone = clone_service.clones_of(db, origin.id)[0]
     assert clone.clone_status == CLONE_SENT
 
     service.submit(db, clone, ACTOR)
@@ -199,17 +199,17 @@ def test_clone_ban_hanh_xong_thi_bang_theo_doi_ghi_da_ban_hanh(db, nen):
     service.approve(db, clone, ACTOR)
     assert clone.clone_status == CLONE_ISSUED
     assert clone.clone_handled_at is not None
-    assert clone_service.tracking(db, goc)[0]["clone_status_label"] == "Đã ban hành"
+    assert clone_service.tracking(db, origin)[0]["clone_status_label"] == "Đã ban hành"
 
 
 def test_clone_bi_tra_lai_thi_ve_dang_soan(db, nen):
-    goc = _tao_nhap(db, nen)
-    _pham_vi(db, goc.id, nen["a"].id)
-    _ban_hanh(db, goc)
-    clone = clone_service.clones_of(db, goc.id)[0]
+    origin = _tao_nhap(db, nen)
+    _pham_vi(db, origin.id, nen["a"].id)
+    _ban_hanh(db, origin)
+    clone = clone_service.clones_of(db, origin.id)[0]
 
     service.submit(db, clone, ACTOR)
-    service.tra_lai(db, clone, "Sai tên công ty", ACTOR)
+    service.send_back(db, clone, "Sai tên công ty", ACTOR)
 
     #  Cột theo dõi ở bản gốc trả lời "bản của pháp nhân đó tới đâu rồi", nên bị
     #  trả về vẫn là *đang soạn* — nó không kể lại từng nhịp trong nội bộ nơi nhận.
@@ -218,10 +218,10 @@ def test_clone_bi_tra_lai_thi_ve_dang_soan(db, nen):
 
 def test_van_ban_thuong_khong_dinh_cot_clone(db, nen):
     """Văn bản không phải bản clone thì cột này phải im — nó thuộc về bản gốc."""
-    goc = _tao_nhap(db, nen)
-    _ban_hanh(db, goc)
+    origin = _tao_nhap(db, nen)
+    _ban_hanh(db, origin)
 
-    assert goc.clone_status == 0
+    assert origin.clone_status == 0
 
 
 # ── Lỗ 2 · rà xong thì hết lệch bản ──────────────────────────────────────────
@@ -229,37 +229,37 @@ def test_ra_soat_xong_thi_het_lech_ban(db, nen):
     """Nút «Đã rà xong» từng tắt băng vàng mà quên dời con trỏ phiên bản."""
     from app.modules.document import version_service
 
-    goc = _tao_nhap(db, nen)
-    _pham_vi(db, goc.id, nen["a"].id)
-    _ban_hanh(db, goc)
-    clone = clone_service.clones_of(db, goc.id)[0]
+    origin = _tao_nhap(db, nen)
+    _pham_vi(db, origin.id, nen["a"].id)
+    _ban_hanh(db, origin)
+    clone = clone_service.clones_of(db, origin.id)[0]
     _ban_hanh(db, clone)
 
-    version_service.open_new_version(db, goc, VersionCreate(
+    version_service.open_new_version(db, origin, VersionCreate(
         change_kind=CHANGE_MAJOR, change_summary="Sửa điều 1"), ACTOR)
-    _ban_hanh(db, goc)
+    _ban_hanh(db, origin)
     db.refresh(clone)
     assert clone.needs_review is True
     assert clone.clone_status == CLONE_STALE
-    assert clone_service.tracking(db, goc)[0]["is_outdated"] is True
+    assert clone_service.tracking(db, origin)[0]["is_outdated"] is True
 
-    service.xac_nhan_da_ra_soat(db, clone, "Đã đối chiếu, vẫn đúng", ACTOR)
+    service.confirm_reviewed(db, clone, "Đã đối chiếu, vẫn đúng", ACTOR)
 
     assert clone.needs_review is False
-    assert clone_service.tracking(db, goc)[0]["is_outdated"] is False
+    assert clone_service.tracking(db, origin)[0]["is_outdated"] is False
     #  Trả về đúng chỗ bản clone đang đứng, không kẹt ở "Cần rà lại".
     assert clone.clone_status == CLONE_ISSUED
 
 
 def test_ra_soat_van_ban_thuong_khong_dung_toi_cot_clone(db, nen):
-    goc = _tao_nhap(db, nen)
-    goc.needs_review = True
+    origin = _tao_nhap(db, nen)
+    origin.needs_review = True
     db.commit()
 
-    service.xac_nhan_da_ra_soat(db, goc, "Đã đối chiếu", ACTOR)
+    service.confirm_reviewed(db, origin, "Đã đối chiếu", ACTOR)
 
-    assert goc.clone_status == 0
-    assert goc.clone_source_version_id is None
+    assert origin.clone_status == 0
+    assert origin.clone_source_version_id is None
 
 
 # ── Lỗ 3 · loại cấp số lúc nháp ──────────────────────────────────────────────
@@ -270,12 +270,12 @@ def test_loai_cap_so_luc_nhap_thi_ban_clone_cung_co_so_ngay(db, nen):
     db.add(dt)
     db.commit()
 
-    goc = _tao_nhap(db, nen, title="Thông báo X", doc_type=dt)
-    _pham_vi(db, goc.id, nen["a"].id)
-    _ban_hanh(db, goc)
+    origin = _tao_nhap(db, nen, title="Thông báo X", doc_type=dt)
+    _pham_vi(db, origin.id, nen["a"].id)
+    _ban_hanh(db, origin)
 
-    clone = clone_service.clones_of(db, goc.id)[0]
+    clone = clone_service.clones_of(db, origin.id)[0]
     assert (clone.doc_code or clone.issue_number), "bản clone phải có số ngay lúc nháp"
     #  Số của pháp nhân CON, không phải số Tập đoàn.
     assert "ABA" in (clone.doc_code or clone.issue_number)
-    assert (clone.doc_code or clone.issue_number) != (goc.doc_code or goc.issue_number)
+    assert (clone.doc_code or clone.issue_number) != (origin.doc_code or origin.issue_number)

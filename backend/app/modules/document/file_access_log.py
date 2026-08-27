@@ -30,39 +30,39 @@ from .model import Document
 
 LOGGER = logging.getLogger(__name__)
 
-ACTION_XEM = "view_file"
-ACTION_TAI = "download_file"
+ACTION_VIEW = "view_file"
+ACTION_DOWNLOAD = "download_file"
 #  Dòng đánh dấu "đã báo rồi" — dùng luôn nhật ký làm chỗ nhớ, khỏi đẻ bảng mới
 #  chỉ để chống gửi trùng.
-ACTION_CANH_BAO = "file_alert"
+ACTION_ALERT = "file_alert"
 
-NHAN_HANH_DONG = {ACTION_XEM: "Mở xem", ACTION_TAI: "Tải về"}
+ACTION_LABELS = {ACTION_VIEW: "Mở xem", ACTION_DOWNLOAD: "Tải về"}
 
 
-def ghi_va_canh_bao(db: Session, doc: Document, user, hanh_dong: str, ten_tep: str) -> None:
+def log_and_alert(db: Session, doc: Document, user, action: str, file_name: str) -> None:
     """Ghi một lượt mở/tải, rồi báo nếu người này đang mở dồn dập bất thường."""
-    record(db, user.id, "document", doc.id, hanh_dong,
-           f"{NHAN_HANH_DONG.get(hanh_dong, hanh_dong)} tệp «{ten_tep}»")
+    record(db, user.id, "document", doc.id, action,
+           f"{ACTION_LABELS.get(action, action)} tệp «{file_name}»")
 
-    nguong = int(setting("doc_file_alert_threshold") or 0)
-    if nguong <= 0:  # 0 = tắt hẳn phần cảnh báo
+    threshold = int(setting("doc_file_alert_threshold") or 0)
+    if threshold <= 0:  # 0 = tắt hẳn phần cảnh báo
         return
 
-    phut = int(setting("doc_file_alert_window_min") or 10)
-    tu_luc = _moc_cua_so(db, phut)
-    so_luot = _dem_luot(db, user.id, tu_luc)
-    if so_luot < nguong:
+    minutes = int(setting("doc_file_alert_window_min") or 10)
+    since = _window_start(db, minutes)
+    access_count = _count_accesses(db, user.id, since)
+    if access_count < threshold:
         return
-    if _da_bao_trong_cua_so(db, user.id, tu_luc):
+    if _already_alerted_in_window(db, user.id, since):
         #  Đã báo một lần trong cửa sổ này rồi. Không báo lại mỗi lượt tiếp theo:
         #  người nhận sẽ tắt tiếng chuông, và lần sau có chuyện thật thì không ai
         #  nhìn nữa.
         return
 
-    _bao_dong(db, doc, user, so_luot, phut)
+    _raise_alert(db, doc, user, access_count, minutes)
 
 
-def _moc_cua_so(db: Session, phut: int) -> datetime:
+def _window_start(db: Session, minutes: int) -> datetime:
     """Mốc đầu cửa sổ, đo bằng ĐỒNG HỒ CỦA CSDL.
 
     ⚠️ KHÔNG dùng `datetime.utcnow()` của Python. `created_at` do CSDL ghi
@@ -75,59 +75,59 @@ def _moc_cua_so(db: Session, phut: int) -> datetime:
     Hỏi thẳng CSDL thì hai vế của phép so luôn cùng một đồng hồ, khỏi phụ thuộc
     cấu hình múi giờ của từng môi trường.
     """
-    bay_gio = db.execute(select(func.now())).scalar()
-    if isinstance(bay_gio, str):  # SQLite trả chuỗi
-        bay_gio = datetime.fromisoformat(bay_gio)
-    return (bay_gio or datetime.now()) - timedelta(minutes=phut)
+    now = db.execute(select(func.now())).scalar()
+    if isinstance(now, str):  # SQLite trả chuỗi
+        now = datetime.fromisoformat(now)
+    return (now or datetime.now()) - timedelta(minutes=minutes)
 
 
-def _dem_luot(db: Session, user_id: int, tu_luc: datetime) -> int:
+def _count_accesses(db: Session, user_id: int, since: datetime) -> int:
     from app.modules.audit.model import AuditLog
 
     return (db.query(AuditLog)
             .filter(AuditLog.entity == "document",
-                    AuditLog.action.in_((ACTION_XEM, ACTION_TAI)),
+                    AuditLog.action.in_((ACTION_VIEW, ACTION_DOWNLOAD)),
                     AuditLog.created_by == user_id,
-                    AuditLog.created_at >= tu_luc)
+                    AuditLog.created_at >= since)
             .count())
 
 
-def _da_bao_trong_cua_so(db: Session, user_id: int, tu_luc: datetime) -> bool:
+def _already_alerted_in_window(db: Session, user_id: int, since: datetime) -> bool:
     from app.modules.audit.model import AuditLog
 
     return (db.query(AuditLog.id)
             .filter(AuditLog.entity == "document",
-                    AuditLog.action == ACTION_CANH_BAO,
+                    AuditLog.action == ACTION_ALERT,
                     AuditLog.entity_id == user_id,
-                    AuditLog.created_at >= tu_luc)
+                    AuditLog.created_at >= since)
             .first()) is not None
 
 
-def _bao_dong(db: Session, doc: Document, user, so_luot: int, phut: int) -> None:
-    ten = resolve_actor(db, user.id)
-    tieu_de = f"Bất thường: {ten} mở {so_luot} tệp trong {phut} phút"
-    than = (
-        f"{ten} vừa mở hoặc tải {so_luot} tệp đính kèm văn bản trong {phut} phút gần đây. "
+def _raise_alert(db: Session, doc: Document, user, access_count: int, minutes: int) -> None:
+    name = resolve_actor(db, user.id)
+    title = f"Bất thường: {name} mở {access_count} tệp trong {minutes} phút"
+    body = (
+        f"{name} vừa mở hoặc tải {access_count} tệp đính kèm văn bản trong {minutes} phút gần đây. "
         f"Tệp gần nhất thuộc văn bản «{doc.doc_code or doc.issue_number or doc.title}». "
         f"Mở sổ nhật ký của văn bản để xem chi tiết."
     )
 
-    nguoi_nhan = nguoi_nhan_canh_bao(db)
-    for uid in nguoi_nhan:
+    recipients = alert_recipients(db)
+    for uid in recipients:
         #  Không tự báo cho chính người đang thao tác: cảnh báo là để người khác
         #  biết, còn họ thì đã biết mình vừa làm gì.
         if uid == user.id:
             continue
-        db.add(Notification(user_id=uid, title=tieu_de, body=than,
+        db.add(Notification(user_id=uid, title=title, body=body,
                             link=f"/document/documents/{doc.id}", created_by=0))
 
     #  `entity_id` = id NGƯỜI bị cảnh báo (không phải id văn bản): chống gửi trùng
     #  tra theo người, mà một người thì mở nhiều văn bản khác nhau.
-    record(db, 0, "document", user.id, ACTION_CANH_BAO,
-           f"{tieu_de} — đã báo cho {len(nguoi_nhan)} người")
+    record(db, 0, "document", user.id, ACTION_ALERT,
+           f"{title} — đã báo cho {len(recipients)} người")
 
 
-def nguoi_nhan_canh_bao(db: Session) -> list[int]:
+def alert_recipients(db: Session) -> list[int]:
     """Ai nhận cảnh báo.
 
     Ưu tiên danh sách khai tay ở Cấu hình hệ thống (`doc_file_alert_recipients`,
@@ -138,28 +138,28 @@ def nguoi_nhan_canh_bao(db: Session) -> list[int]:
     Vì sao có đường tự suy: khai tay mà quên khai thì cảnh báo rơi vào hư không
     và không ai biết là nó đang không chạy.
     """
-    khai_tay = (setting("doc_file_alert_recipients") or "").strip()
-    if khai_tay:
-        return _theo_danh_sach(db, khai_tay)
-    return _theo_quyen_toan_he(db)
+    manual_list = (setting("doc_file_alert_recipients") or "").strip()
+    if manual_list:
+        return _by_list(db, manual_list)
+    return _by_system_permission(db)
 
 
-def _theo_danh_sach(db: Session, chuoi: str) -> list[int]:
+def _by_list(db: Session, raw: str) -> list[int]:
     from app.modules.employee.model import Employee
     from app.modules.user.model import User
 
-    khoa = [phan.strip() for phan in chuoi.split(",") if phan.strip()]
-    if not khoa:
+    keys = [part.strip() for part in raw.split(",") if part.strip()]
+    if not keys:
         return []
     rows = (db.query(User.id)
             .outerjoin(Employee, Employee.id == User.employee_id)
             .filter(User.is_active.is_(True),
-                    User.email.in_(khoa) | Employee.code.in_(khoa))
+                    User.email.in_(keys) | Employee.code.in_(keys))
             .all())
     return [row[0] for row in rows]
 
 
-def _theo_quyen_toan_he(db: Session) -> list[int]:
+def _by_system_permission(db: Session) -> list[int]:
     from app.modules.role.model import Permission
     from app.modules.user.model import User, UserRole
 

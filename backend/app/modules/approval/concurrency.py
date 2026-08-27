@@ -35,27 +35,27 @@ T = TypeVar("T")
 
 #  1213 = deadlock, 1205 = hết giờ chờ khóa. Cùng bản chất "tranh nhau một
 #  hàng", cùng cách chữa.
-MA_KET_KHOA = (1213, 1205)
+LOCK_ERROR_CODES = (1213, 1205)
 
-CAU_BAO = ("Việc này vừa được người khác xử lý cùng lúc. "
+CONFLICT_MESSAGE = ("Việc này vừa được người khác xử lý cùng lúc. "
            "Tải lại trang để xem phiếu đang ở đâu rồi thao tác tiếp.")
 
 
-def _la_ket_khoa(loi: OperationalError) -> bool:
-    ma = getattr(getattr(loi, "orig", None), "args", None)
-    return bool(ma) and ma[0] in MA_KET_KHOA
+def _is_lock_error(error: OperationalError) -> bool:
+    code = getattr(getattr(error, "orig", None), "args", None)
+    return bool(code) and code[0] in LOCK_ERROR_CODES
 
 
-def chay_chiu_tranh_chap(db: Session, viec: Callable[[], T]) -> T:
+def run_with_contention_retry(db: Session, task: Callable[[], T]) -> T:
     """Chạy `viec()`; kẹt khóa thì cuộn lại và trả 409 — KHÔNG chạy lại.
 
     Lỗi không phải kẹt khóa (cột sai kiểu, cú pháp hỏng…) thì để nguyên nó nổi
     lên: nuốt hết thành 409 là giấu lỗi thật sau một câu êm tai.
     """
     try:
-        return viec()
-    except OperationalError as loi:
-        if not _la_ket_khoa(loi):
+        return task()
+    except OperationalError as error:
+        if not _is_lock_error(error):
             raise
         db.rollback()
-        raise HTTPException(409, CAU_BAO) from loi
+        raise HTTPException(409, CONFLICT_MESSAGE) from error

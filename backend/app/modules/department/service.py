@@ -91,7 +91,7 @@ def list_departments(db: Session, q: str | None, pg: dict, is_active: bool | Non
     return total, items
 
 
-def phong_ban_cua_cac_phap_nhan(db: Session, company_ids: list[int]) -> list[dict]:
+def departments_of_companies(db: Session, company_ids: list[int]) -> list[dict]:
     """Các CẶP (phòng ban × pháp nhân) trong những pháp nhân được hỏi.
 
     Trả về **cặp** chứ không phải danh sách phòng ban, vì một phòng có thể hiện
@@ -110,7 +110,7 @@ def phong_ban_cua_cac_phap_nhan(db: Session, company_ids: list[int]) -> list[dic
     if not ids:
         return []
 
-    ten_cong_ty = {
+    company_names = {
         row.id: row.name
         for row in db.query(Company).filter(Company.id.in_(ids)).all()
     }
@@ -118,15 +118,15 @@ def phong_ban_cua_cac_phap_nhan(db: Session, company_ids: list[int]) -> list[dic
     #  Khóa là CẶP, nên hai nguồn trùng nhau tự gộp làm một.
     cap: dict[tuple[int, int], dict] = {}
 
-    def _them(department: Department, company_id: int) -> None:
-        if company_id not in ten_cong_ty:
+    def _add(department: Department, company_id: int) -> None:
+        if company_id not in company_names:
             return
         cap[(department.id, company_id)] = {
             "department_id": department.id,
             "department_name": department.name,
             "department_code": department.code,
             "company_id": company_id,
-            "company_name": ten_cong_ty[company_id],
+            "company_name": company_names[company_id],
         }
 
     for department, mapping in (
@@ -137,14 +137,14 @@ def phong_ban_cua_cac_phap_nhan(db: Session, company_ids: list[int]) -> list[dic
                 Department.is_active.is_(True))
         .all()
     ):
-        _them(department, mapping.company_id)
+        _add(department, mapping.company_id)
 
     for department in (
         db.query(Department)
         .filter(Department.company_id.in_(ids), Department.is_active.is_(True))
         .all()
     ):
-        _them(department, department.company_id)
+        _add(department, department.company_id)
 
     return sorted(cap.values(), key=lambda row: (row["company_name"], row["department_name"]))
 

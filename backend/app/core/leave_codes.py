@@ -33,4 +33,4 @@ LEAVE_SESSION_SET = register(CodeSet("leave_session", "Buổi nghỉ", [
 ]))
 
 #  Số công của mỗi buổi — dùng để GỢI Ý tổng số ngày.
-CONG_CUA_BUOI = {"full": 1.0, "morning": 0.5, "afternoon": 0.5}
+SESSION_WORK_CREDIT = {"full": 1.0, "morning": 0.5, "afternoon": 0.5}

@@ -18,22 +18,22 @@ def label_maps(db: Session) -> tuple[dict[int, str], dict[int, str]]:
     Đọc cả dòng đã ngừng dùng: văn bản cũ vẫn mang con số đó và vẫn phải tra ra
     tên. Lọc `is_active` ở đây là bản in cũ tự dưng mất chữ.
     """
-    mat: dict[int, str] = {}
-    khan: dict[int, str] = {}
+    confidential: dict[int, str] = {}
+    urgency: dict[int, str] = {}
     for row in db.query(SecurityLevel).all():
-        (mat if row.kind == KIND_CONFIDENTIAL else khan)[row.value] = row.name
-    return mat, khan
+        (confidential if row.kind == KIND_CONFIDENTIAL else urgency)[row.value] = row.name
+    return confidential, urgency
 
 
-def label(nhan: dict[int, str], value) -> str:
+def label(label: dict[int, str], value) -> str:
     """Số lạ (dữ liệu cũ, dòng đã bị xóa tay dưới DB) thì in ra chính con số —
     giống `secrecyLabel` bên giao diện. Trả chuỗi rỗng là mất luôn thông tin."""
     if value is None:
         return ""
-    return nhan.get(value) or str(value)
+    return label.get(value) or str(value)
 
 
-def value_of_code(db: Session, code: str, mac_dinh: int = 1) -> int:
+def value_of_code(db: Session, code: str, default: int = 1) -> int:
     """Bậc mang mã này đang là số mấy.
 
     Dùng cho những chỗ mã nguồn cần trỏ tới MỘT bậc cụ thể theo nghĩa của nó
@@ -45,7 +45,7 @@ def value_of_code(db: Session, code: str, mac_dinh: int = 1) -> int:
     `mac_dinh` — im lặng bỏ sàn còn hơn dựng đứng cả luồng tạo văn bản.
     """
     row = db.query(SecurityLevel.value).filter(SecurityLevel.code == code).first()
-    return row[0] if row else mac_dinh
+    return row[0] if row else default
 
 
 def ensure_valid(db: Session, kind: int, value: int | None):
@@ -57,14 +57,14 @@ def ensure_valid(db: Session, kind: int, value: int | None):
     """
     if value is None:
         return
-    hop_le = values_of(db, kind)
+    valid = values_of(db, kind)
     #  Thang RỖNG = chưa cấu hình, không phải "không giá trị nào hợp lệ". Chặn
     #  hết ở đây thì một lỗi cấu hình danh mục (hoặc seed chưa kịp chạy trên bản
     #  triển khai mới) làm CẢ phân hệ Văn bản không lưu nổi một dòng nào — hỏng
     #  nặng hơn nhiều so với việc thả lỏng một con số.
-    if not hop_le:
+    if not valid:
         return
-    if value not in hop_le:
+    if value not in valid:
         from .security_level_model import KIND_LABELS
 
         raise HTTPException(

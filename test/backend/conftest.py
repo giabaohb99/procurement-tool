@@ -134,7 +134,7 @@ def seed(db):
     db.flush()
 
     # ── CategoryAssignee: Nhãn + Thùng → primary=nstm, backup=backup ─────────────
-    ca_nhan = CategoryAssignee(
+    personal = CategoryAssignee(
         item_group_id=ig_nhan.id,
         primary_employee_id=emp_nstm.id,
         backup_employee_id=emp_backup.id,
@@ -144,7 +144,7 @@ def seed(db):
         primary_employee_id=emp_nstm.id,
         backup_employee_id=emp_backup.id,
     )
-    db.add_all([ca_nhan, ca_thung])
+    db.add_all([personal, ca_thung])
     db.flush()
 
     # ── Survey "Nhãn" ─────────────────────────────────────────────────────────────
@@ -293,14 +293,14 @@ def cap_quyen(db):
     from app.modules.role.model import Permission, Role
     from app.modules.user.model import UserRole
 
-    dem = {"n": 0}
+    count = {"n": 0}
 
-    def _cap(user_id: int, entity: str, scope: str = "all", **hanh_dong):
-        dem["n"] += 1
-        role = Role(code=f"VT_TEST_{dem['n']}", name=f"Vai trò test {dem['n']}")
+    def _cap(user_id: int, entity: str, scope: str = "all", **action):
+        count["n"] += 1
+        role = Role(code=f"VT_TEST_{count['n']}", name=f"Vai trò test {count['n']}")
         db.add(role)
         db.flush()
-        co = {f"can_{ten}": bool(gt) for ten, gt in hanh_dong.items()}
+        co = {f"can_{name}": bool(gt) for name, gt in action.items()}
         db.add(Permission(role_id=role.id, entity=entity, scope=scope, **co))
         db.add(UserRole(user_id=user_id, role_id=role.id))
         db.flush()

@@ -272,8 +272,8 @@ def test_xoa_goc_cuon_theo_phan_hoi_va_luot_thich(db, seed):
     root = service.create_comment(db, "purchase_request", pr.id, "gốc", user_id=10)
     r1 = service.create_comment(db, "purchase_request", pr.id, "ph1", user_id=20, parent_id=root.id)
     service.create_comment(db, "purchase_request", pr.id, "ph2", user_id=30, parent_id=root.id)
-    khac = service.create_comment(db, "purchase_request", pr.id, "gốc khác", user_id=10)
-    root_id, khac_id = root.id, khac.id
+    other = service.create_comment(db, "purchase_request", pr.id, "gốc khác", user_id=10)
+    root_id, khac_id = root.id, other.id
     service.toggle_reaction(db, root_id, 20)
     service.toggle_reaction(db, r1.id, 30)
     service.toggle_reaction(db, khac_id, 20)
@@ -308,8 +308,8 @@ def test_nguoi_duoc_nhac_ten_khong_nhan_them_chuong_chung(db, seed):
 # ── CR-031: nhắc tên nhiều người bằng thẻ @[id] ─────────────────────────────────
 
 def test_rut_id_nguoi_duoc_nhac_theo_thu_tu_va_bo_trung(db, seed):
-    ra = service.parse_mentions("nhờ @[12] xem giúp giá của @[7], @[12] nhé")
-    assert ra == [12, 7]
+    out = service.parse_mentions("nhờ @[12] xem giúp giá của @[7], @[12] nhé")
+    assert out == [12, 7]
 
 
 def test_chu_at_thuong_khong_bi_hieu_la_nhac_ten(db, seed):
@@ -344,9 +344,9 @@ def test_nhac_duoc_nhieu_nguoi_trong_mot_binh_luan(db, seed):
 
 def test_chuong_doi_the_thanh_ten_nguoi(db, seed):
     """Chuông là chữ thuần — không được để lọt "@[12]" ra thông báo."""
-    ra = service.strip_mentions(db, f"nhờ @[{seed.u_nstm_id}] xem giúp")
-    assert "@[" not in ra
-    assert ra.startswith("nhờ @")
+    out = service.strip_mentions(db, f"nhờ @[{seed.u_nstm_id}] xem giúp")
+    assert "@[" not in out
+    assert out.startswith("nhờ @")
 
 
 def test_xoa_binh_luan_cuon_theo_loi_nhac(db, seed):
@@ -387,13 +387,13 @@ def test_gan_tep_vao_binh_luan(db, seed):
     """Tệp gắn theo bài, đọc ra qua file_map — ảnh được đánh dấu để hiện thẳng ra."""
     pr = _pr(db, seed, user_id=10)
     pdf = _file(db, 10)
-    anh = _file(db, 10, "mau-bao-bi.jpg", "image/jpeg")
+    images = _file(db, 10, "mau-bao-bi.jpg", "image/jpeg")
     c = service.create_comment(db, "purchase_request", pr.id, "Gửi anh xem", user_id=10,
-                               file_ids=[pdf.id, anh.id])
+                               file_ids=[pdf.id, images.id])
 
-    ra = service.file_map(db, [c.id])[c.id]
-    assert [f["filename"] for f in ra] == ["baogia.pdf", "mau-bao-bi.jpg"]
-    assert [f["is_image"] for f in ra] == [False, True]
+    out = service.file_map(db, [c.id])[c.id]
+    assert [f["filename"] for f in out] == ["baogia.pdf", "mau-bao-bi.jpg"]
+    assert [f["is_image"] for f in out] == [False, True]
 
 
 def test_bai_chi_co_tep_van_gui_duoc(db, seed):

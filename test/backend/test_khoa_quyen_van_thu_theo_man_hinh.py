@@ -36,28 +36,28 @@ CHU_CUA_MAN = {
 
 
 def _khoa_trong(duong_dan: str) -> set[str]:
-    noi_dung = (GOC / duong_dan).read_text(encoding="utf-8")
-    return set(re.findall(r'require\(\s*"([a-z_]+)"', noi_dung))
+    content = (GOC / duong_dan).read_text(encoding="utf-8")
+    return set(re.findall(r'require\(\s*"([a-z_]+)"', content))
 
 
 # ── Khai báo ────────────────────────────────────────────────────────────────
 
-@pytest.mark.parametrize("khoa", KHOA_MOI)
-def test_khoa_moi_co_mat_du_ba_noi(khoa):
+@pytest.mark.parametrize("key", KHOA_MOI)
+def test_khoa_moi_co_mat_du_ba_noi(key):
     """Thiếu một trong ba là khóa chết: gác được nhưng không ai tick cho được."""
-    assert khoa in ENTITIES, "chưa khai ở core/permissions.ENTITIES"
-    assert khoa in ENTITY_LABELS, "chưa có nhãn — màn Phân quyền hiện mã trần"
-    assert khoa in SCOPE_FIELDS, "chưa khai phạm vi — apply_scope sẽ chặn sạch"
+    assert key in ENTITIES, "chưa khai ở core/permissions.ENTITIES"
+    assert key in ENTITY_LABELS, "chưa có nhãn — màn Phân quyền hiện mã trần"
+    assert key in SCOPE_FIELDS, "chưa khai phạm vi — apply_scope sẽ chặn sạch"
 
 
-@pytest.mark.parametrize("khoa", KHOA_MOI)
-def test_danh_muc_nen_khong_loc_theo_phap_nhan(khoa):
+@pytest.mark.parametrize("key", KHOA_MOI)
+def test_danh_muc_nen_khong_loc_theo_phap_nhan(key):
     """Ba danh mục này dùng chung cho mọi pháp nhân, cùng lẽ với `doc_type`.
 
     Khai nhầm thành có chiều lọc thì `_role_scope_cond` không dựng nổi điều kiện
     và **chặn tất cả** (luật B-07), tức là màn danh mục trống trơn với mọi người.
     """
-    assert SCOPE_FIELDS[khoa] is PUBLIC
+    assert SCOPE_FIELDS[key] is PUBLIC
 
 
 def test_nhan_doc_theo_duong_menu_khong_theo_ten_bang():
@@ -68,17 +68,17 @@ def test_nhan_doc_theo_duong_menu_khong_theo_ten_bang():
     """
     van_thu = ("doc_type", *KHOA_MOI, "external_party", "security_level",
                "document_book", "document")
-    for khoa in van_thu:
-        assert ENTITY_LABELS[khoa].startswith("Văn thư › "), ENTITY_LABELS[khoa]
+    for key in van_thu:
+        assert ENTITY_LABELS[key].startswith("Văn thư › "), ENTITY_LABELS[key]
 
 
 # ── Controller gác đúng khóa ────────────────────────────────────────────────
 
-@pytest.mark.parametrize("tep,khoa", sorted(CHU_CUA_MAN.items()))
-def test_controller_gac_bang_khoa_cua_chinh_man_do(tep, khoa):
-    dang_dung = _khoa_trong(tep)
-    assert khoa in dang_dung, f"{tep} chưa gác bằng {khoa}"
-    assert "doc_type" not in dang_dung, (
+@pytest.mark.parametrize("tep,key", sorted(CHU_CUA_MAN.items()))
+def test_controller_gac_bang_khoa_cua_chinh_man_do(tep, key):
+    in_use = _khoa_trong(tep)
+    assert key in in_use, f"{tep} chưa gác bằng {key}"
+    assert "doc_type" not in in_use, (
         f"{tep} vẫn còn gác bằng doc_type — tách khóa mà không đổi chỗ gác thì "
         "không tách được gì, chỉ thêm một khóa không ai dùng")
 
@@ -101,7 +101,7 @@ def test_nguoi_soan_van_ban_van_doc_duoc_thu_vien_mau():
     """
     from app.seed import STD_ROLES
 
-    quyen = STD_ROLES["vanban_sua"]["perms"]
-    assert "doc_template" in quyen, "vai trò soạn thảo chưa được khai doc_template"
-    hanh_dong, _pham_vi = quyen["doc_template"]
-    assert "read" in hanh_dong
+    perms = STD_ROLES["vanban_sua"]["perms"]
+    assert "doc_template" in perms, "vai trò soạn thảo chưa được khai doc_template"
+    action, _pham_vi = perms["doc_template"]
+    assert "read" in action

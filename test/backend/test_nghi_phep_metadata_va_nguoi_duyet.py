@@ -27,114 +27,114 @@ ACTOR = 1
 # ── Hình dạng metadata ──────────────────────────────────────────────────────
 
 def _don(**ghi_de) -> dict:
-    goc = {"from_date": "2026-09-01", "to_date": "2026-09-03",
-           "leave_type": type_metadata.NGHI_PHEP_NAM, "reason": "Về quê"}
-    return {**goc, **ghi_de}
+    origin = {"from_date": "2026-09-01", "to_date": "2026-09-03",
+           "leave_type": type_metadata.ANNUAL_LEAVE, "reason": "Về quê"}
+    return {**origin, **ghi_de}
 
 
 def test_loai_bo_khoa_la_chu_khong_luu(db):
     """Nhận bừa là mỗi người gửi một hình dạng, module đọc sau phải đỡ hết."""
-    sach = type_metadata.lam_sach("GNP", _don(salary=99999999, hacked="<script>"), 7)
-    assert "salary" not in sach
-    assert "hacked" not in sach
-    assert set(sach) == {"employee_id", "leave_type", "from_date", "from_session",
+    cleaned = type_metadata.sanitize("GNP", _don(salary=99999999, hacked="<script>"), 7)
+    assert "salary" not in cleaned
+    assert "hacked" not in cleaned
+    assert set(cleaned) == {"employee_id", "leave_type", "from_date", "from_session",
                          "to_date", "to_session", "total_days", "reason",
                          "handover_employee_id", "contact_phone"}
 
 
 def test_loai_chua_khai_hinh_dang_thi_khong_luu_gi(db):
     """Công văn không có phần riêng — gửi metadata lên cũng không nhận."""
-    assert type_metadata.lam_sach("CV", _don(), 7) is None
+    assert type_metadata.sanitize("CV", _don(), 7) is None
 
 
 def test_gui_rong_thi_khong_luu_de_con_luu_duoc_ban_nhap(db):
     """Chốt «phải nhập đủ» đặt ở lúc GỬI DUYỆT, không phải lúc lưu nháp."""
-    assert type_metadata.lam_sach("GNP", {}, 7) is None
-    assert type_metadata.lam_sach("GNP", None, 7) is None
+    assert type_metadata.sanitize("GNP", {}, 7) is None
+    assert type_metadata.sanitize("GNP", None, 7) is None
 
 
 def test_ngay_ve_truoc_ngay_di_bi_chan(db):
-    with pytest.raises(HTTPException) as loi:
-        type_metadata.lam_sach("GNP", _don(from_date="2026-09-05",
+    with pytest.raises(HTTPException) as error:
+        type_metadata.sanitize("GNP", _don(from_date="2026-09-05",
                                            to_date="2026-09-01"), 7)
-    assert loi.value.status_code == 400
+    assert error.value.status_code == 400
 
 
 def test_thieu_ly_do_bi_chan(db):
     with pytest.raises(HTTPException):
-        type_metadata.lam_sach("GNP", _don(reason="   "), 7)
+        type_metadata.sanitize("GNP", _don(reason="   "), 7)
 
 
 def test_loai_nghi_khong_co_trong_danh_muc_bi_chan(db):
     with pytest.raises(HTTPException):
-        type_metadata.lam_sach("GNP", _don(leave_type="khong_co_that"), 7)
+        type_metadata.sanitize("GNP", _don(leave_type="khong_co_that"), 7)
 
 
 def test_nghi_tu_chieu_den_sang_cung_ngay_la_khoang_trong(db):
     """Nửa ngày phải khai được, nhưng «chiều → sáng» cùng ngày thì vô nghĩa."""
     with pytest.raises(HTTPException):
-        type_metadata.lam_sach("GNP", _don(
+        type_metadata.sanitize("GNP", _don(
             from_date="2026-09-01", to_date="2026-09-01",
-            from_session=type_metadata.BUOI_CHIEU,
-            to_session=type_metadata.BUOI_SANG), 7)
+            from_session=type_metadata.SESSION_AFTERNOON,
+            to_session=type_metadata.SESSION_MORNING), 7)
 
 
 def test_nua_ngay_phep_tinh_ra_nua_cong(db):
     """Bỏ ô buổi đi thì người ta khai một ngày cho một buổi, sai từ nguồn."""
-    sach = type_metadata.lam_sach("GNP", _don(
+    cleaned = type_metadata.sanitize("GNP", _don(
         from_date="2026-09-01", to_date="2026-09-01",
-        from_session=type_metadata.BUOI_SANG,
-        to_session=type_metadata.BUOI_SANG), 7)
-    assert sach["total_days"] == 0.5
+        from_session=type_metadata.SESSION_MORNING,
+        to_session=type_metadata.SESSION_MORNING), 7)
+    assert cleaned["total_days"] == 0.5
 
 
 def test_ba_ngay_tron_ven_tinh_ra_ba_cong(db):
-    assert type_metadata.lam_sach("GNP", _don(), 7)["total_days"] == 3.0
+    assert type_metadata.sanitize("GNP", _don(), 7)["total_days"] == 3.0
 
 
 def test_nguoi_dung_sua_de_so_ngay_thi_giu_nguyen_cua_ho(db):
     """Lịch làm việc mỗi pháp nhân một khác — con số máy tính chỉ là gợi ý."""
-    assert type_metadata.lam_sach("GNP", _don(total_days=2), 7)["total_days"] == 2
+    assert type_metadata.sanitize("GNP", _don(total_days=2), 7)["total_days"] == 2
 
 
 def test_nguoi_nghi_mac_dinh_la_nguoi_chiu_trach_nhiem(db):
-    assert type_metadata.lam_sach("GNP", _don(), 7)["employee_id"] == 7
+    assert type_metadata.sanitize("GNP", _don(), 7)["employee_id"] == 7
 
 
 def test_khai_tuong_minh_nguoi_nghi_thi_thang(db):
     """Hành chính lập hộ — người nghỉ không phải người lập."""
-    assert type_metadata.lam_sach("GNP", _don(employee_id=12), 7)["employee_id"] == 12
+    assert type_metadata.sanitize("GNP", _don(employee_id=12), 7)["employee_id"] == 12
 
 
 # ── Chốt lúc gửi duyệt ──────────────────────────────────────────────────────
 
 def test_gui_duyet_ma_chua_khai_gi_thi_bi_chan(db):
-    with pytest.raises(HTTPException) as loi:
-        type_metadata.bat_buoc_khi_gui_duyet("GNP", None)
-    assert loi.value.status_code == 400
-    assert "nghỉ phép" in str(loi.value.detail)
+    with pytest.raises(HTTPException) as error:
+        type_metadata.require_on_submit("GNP", None)
+    assert error.value.status_code == 400
+    assert "nghỉ phép" in str(error.value.detail)
 
 
 def test_loai_thuong_khong_bi_doi_metadata(db):
     """Đừng chặn nhầm 32 loại còn lại."""
-    type_metadata.bat_buoc_khi_gui_duyet("CV", None)
+    type_metadata.require_on_submit("CV", None)
 
 
 def test_gui_duyet_don_thieu_metadata_bi_chan_that(db, seed):
     """Chạy qua đường thật `service.submit`, không chỉ gọi hàm kiểm."""
-    loai = DocType(code="GNP", name="Giấy nghỉ phép", id_scheme=2,
+    kind = DocType(code="GNP", name="Giấy nghỉ phép", id_scheme=2,
                    number_when=2, is_personal=True)
-    db.add(loai)
+    db.add(kind)
     db.flush()
     doc = service.create_document(db, DocumentCreate(
-        doc_type_id=loai.id, company_id=seed.company_id, department_id=seed.dept_id,
+        doc_type_id=kind.id, company_id=seed.company_id, department_id=seed.dept_id,
         owner_employee_id=seed.emp_req_id, title="Đơn nghỉ phép chưa khai gì",
         content_html="<p>Nội dung.</p>",
     ), ACTOR)
 
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         service.submit(db, doc, ACTOR)
-    assert loi.value.status_code == 400
+    assert error.value.status_code == 400
 
 
 # ── Lưu / sửa qua service ───────────────────────────────────────────────────
@@ -147,11 +147,11 @@ def test_metadata_xuong_duoc_toi_CSDL(db, seed):
     nằm trong `__dict__` của instance và **không bao giờ xuống CSDL** — API vẫn
     trả 200, dữ liệu thì mất.
     """
-    loai = DocType(code="GNP", name="Giấy nghỉ phép", id_scheme=2, number_when=2)
-    db.add(loai)
+    kind = DocType(code="GNP", name="Giấy nghỉ phép", id_scheme=2, number_when=2)
+    db.add(kind)
     db.flush()
     doc = service.create_document(db, DocumentCreate(
-        doc_type_id=loai.id, company_id=seed.company_id, department_id=seed.dept_id,
+        doc_type_id=kind.id, company_id=seed.company_id, department_id=seed.dept_id,
         owner_employee_id=seed.emp_req_id, title="Đơn nghỉ phép",
         content_html="<p>x</p>", metadata=_don(),
     ), ACTOR)
@@ -163,11 +163,11 @@ def test_metadata_xuong_duoc_toi_CSDL(db, seed):
 
 
 def test_sua_metadata_cung_xuong_duoc_CSDL(db, seed):
-    loai = DocType(code="GNP", name="Giấy nghỉ phép", id_scheme=2, number_when=2)
-    db.add(loai)
+    kind = DocType(code="GNP", name="Giấy nghỉ phép", id_scheme=2, number_when=2)
+    db.add(kind)
     db.flush()
     doc = service.create_document(db, DocumentCreate(
-        doc_type_id=loai.id, company_id=seed.company_id, department_id=seed.dept_id,
+        doc_type_id=kind.id, company_id=seed.company_id, department_id=seed.dept_id,
         owner_employee_id=seed.emp_req_id, title="Đơn nghỉ phép",
         content_html="<p>x</p>", metadata=_don(),
     ), ACTOR)
@@ -184,23 +184,23 @@ def test_sua_metadata_cung_xuong_duoc_CSDL(db, seed):
 # ── Người duyệt: trưởng bộ phận của phòng ban chỉ định ──────────────────────
 
 @pytest.fixture()
-def phong_ban(db, seed):
+def departments(db, seed):
     """Hai phòng, mỗi phòng một trưởng — và một phòng bỏ trống ghế trưởng."""
-    ket_qua = {}
-    for ma, ten in (("NS", "Nhân sự"), ("TC", "Tài chính"), ("TRONG", "Phòng trống")):
-        truong = None
-        if ma != "TRONG":
-            truong = Employee(code=f"TP_{ma}", full_name=f"Trưởng phòng {ten}",
+    result = {}
+    for code, name in (("NS", "Nhân sự"), ("TC", "Tài chính"), ("TRONG", "Phòng trống")):
+        field_code = None
+        if code != "TRONG":
+            field_code = Employee(code=f"TP_{code}", full_name=f"Trưởng phòng {name}",
                               company_id=seed.company_id, is_active=True)
-            db.add(truong)
+            db.add(field_code)
             db.flush()
-        phong = Department(code=f"P_{ma}", name=ten, company_id=seed.company_id,
-                           manager_id=truong.id if truong else None)
-        db.add(phong)
+        department = Department(code=f"P_{code}", name=name, company_id=seed.company_id,
+                           manager_id=field_code.id if field_code else None)
+        db.add(department)
         db.flush()
-        ket_qua[ma] = {"phong": phong.id, "truong": truong.id if truong else None}
+        result[code] = {"phong": department.id, "truong": field_code.id if field_code else None}
     db.commit()
-    return ket_qua
+    return result
 
 
 def _buoc(ref: str) -> ApprovalNode:
@@ -209,52 +209,52 @@ def _buoc(ref: str) -> ApprovalNode:
                         created_by=ACTOR, updated_by=ACTOR)
 
 
-def test_tra_ra_truong_cua_dung_phong_duoc_khai(db, phong_ban):
+def test_tra_ra_truong_cua_dung_phong_duoc_khai(db, departments):
     """Không phải phòng của người nộp — đó là cả điểm khác biệt."""
-    ra = approver_resolver.resolve(db, _buoc(str(phong_ban["NS"]["phong"])), {}, None)
-    assert ra == [phong_ban["NS"]["truong"]]
+    out = approver_resolver.resolve(db, _buoc(str(departments["NS"]["phong"])), {}, None)
+    assert out == [departments["NS"]["truong"]]
 
 
-def test_nguoi_nop_o_phong_khac_van_ra_dung_truong_phong_da_khai(db, phong_ban, seed):
+def test_nguoi_nop_o_phong_khac_van_ra_dung_truong_phong_da_khai(db, departments, seed):
     """Đơn nghỉ phép của MỌI phòng đều phải qua trưởng phòng Nhân sự."""
-    nguoi_nop = Employee(code="NV_TC", full_name="Nhân viên Tài chính",
+    submitter = Employee(code="NV_TC", full_name="Nhân viên Tài chính",
                          company_id=seed.company_id,
-                         department_id=phong_ban["TC"]["phong"], is_active=True)
-    db.add(nguoi_nop)
+                         department_id=departments["TC"]["phong"], is_active=True)
+    db.add(submitter)
     db.commit()
 
-    ra = approver_resolver.resolve(db, _buoc(str(phong_ban["NS"]["phong"])), {},
-                                   nguoi_nop.id)
-    assert ra == [phong_ban["NS"]["truong"]]
+    out = approver_resolver.resolve(db, _buoc(str(departments["NS"]["phong"])), {},
+                                   submitter.id)
+    assert out == [departments["NS"]["truong"]]
 
 
-def test_khai_nhieu_phong_thi_giu_dung_thu_tu_khai(db, phong_ban):
+def test_khai_nhieu_phong_thi_giu_dung_thu_tu_khai(db, departments):
     """Bước «lần lượt» đọc thứ tự này — `IN (...)` không hứa thứ tự trả về."""
-    ref = f"{phong_ban['TC']['phong']},{phong_ban['NS']['phong']}"
+    ref = f"{departments['TC']['phong']},{departments['NS']['phong']}"
     assert approver_resolver.resolve(db, _buoc(ref), {}, None) == [
-        phong_ban["TC"]["truong"], phong_ban["NS"]["truong"]]
+        departments["TC"]["truong"], departments["NS"]["truong"]]
 
 
-def test_phong_bo_trong_ghe_truong_thi_tra_rong_chu_khong_no(db, phong_ban):
+def test_phong_bo_trong_ghe_truong_thi_tra_rong_chu_khong_no(db, departments):
     """Rỗng thì `on_no_approver` của bước quyết định — không bịa ra người."""
-    assert approver_resolver.resolve(db, _buoc(str(phong_ban["TRONG"]["phong"])),
+    assert approver_resolver.resolve(db, _buoc(str(departments["TRONG"]["phong"])),
                                      {}, None) == []
 
 
-def test_phong_khong_ton_tai_thi_tra_rong(db, phong_ban):
+def test_phong_khong_ton_tai_thi_tra_rong(db, departments):
     assert approver_resolver.resolve(db, _buoc("999999"), {}, None) == []
 
 
-def test_khong_khai_phong_nao_thi_tra_rong(db, phong_ban):
+def test_khong_khai_phong_nao_thi_tra_rong(db, departments):
     for ref in ("", "   ", "abc"):
         assert approver_resolver.resolve(db, _buoc(ref), {}, None) == []
 
 
-def test_truong_phong_da_nghi_viec_thi_bi_loai(db, phong_ban):
+def test_truong_phong_da_nghi_viec_thi_bi_loai(db, departments):
     """Giao việc cho người đã tắt trạng thái là phiếu nằm im vĩnh viễn."""
-    truong = db.get(Employee, phong_ban["NS"]["truong"])
-    truong.is_active = False
+    field_code = db.get(Employee, departments["NS"]["truong"])
+    field_code.is_active = False
     db.commit()
 
-    assert approver_resolver.resolve(db, _buoc(str(phong_ban["NS"]["phong"])),
+    assert approver_resolver.resolve(db, _buoc(str(departments["NS"]["phong"])),
                                      {}, None) == []

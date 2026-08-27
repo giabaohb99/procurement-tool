@@ -121,7 +121,7 @@ def build_rows(db: Session, pos: list[PurchaseOrder], show_supplier: bool = True
             continue
         for i, (it, dl) in enumerate(lines, start=1):
             # B-06: cột trạng thái lưu MÃ, file xuất hiện chữ (`head` đã dịch sẵn phần đầu đơn)
-            r = progress_ex.dich_ma(progress_ex.row_values(po, it, dl, show_supplier))
+            r = progress_ex.translate_codes(progress_ex.row_values(po, it, dl, show_supplier))
             r["recv_amount"] = r.pop("amount", 0)
             r["company"] = company_name.get(po.company_id, "")
             r["line_no"] = i

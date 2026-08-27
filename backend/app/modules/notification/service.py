@@ -44,7 +44,7 @@ def render_template(html: str, context: dict) -> str:
     return html
 
 
-def _duong_smtp_cua_hop_thu(db, log):
+def _smtp_route_of_mailbox(db, log):
     """Đường SMTP riêng của hộp thư trên dòng nhật ký, `None` = dùng SMTP chung.
 
     Hộp thư đã bị xóa hoặc ngừng dùng thì cũng trả `None` — thà gửi bằng địa chỉ
@@ -54,12 +54,12 @@ def _duong_smtp_cua_hop_thu(db, log):
     if not getattr(log, "mailbox_id", None):
         return None
     from .mailbox_model import Mailbox
-    from .mailbox_service import duong_smtp, san_sang_gui
+    from .mailbox_service import smtp_route, ready_to_send
 
     mailbox = db.query(Mailbox).filter(Mailbox.id == log.mailbox_id).first()
-    if mailbox is None or not san_sang_gui(mailbox):
+    if mailbox is None or not ready_to_send(mailbox):
         return None
-    return duong_smtp(mailbox)
+    return smtp_route(mailbox)
 
 
 def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str, html_body: str, force: bool = False, apply_override: bool = True):
@@ -99,9 +99,9 @@ def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str
         # Phải đăng nhập đúng hộp thư chứ không chỉ đổi tiêu đề `From` — Gmail
         # ghi đè `From` về tài khoản đã đăng nhập, nên chỉ đổi tiêu đề là người
         # nhận vẫn thấy địa chỉ cũ mà không có lỗi nào báo lên.
-        duong = _duong_smtp_cua_hop_thu(db, log)
-        if duong is None:
-            duong = {
+        route = _smtp_route_of_mailbox(db, log)
+        if route is None:
+            route = {
                 "host": app_settings.get("smtp_host"),
                 "port": int(app_settings.get("smtp_port") or 587),
                 "user": app_settings.get("smtp_user"),
@@ -110,7 +110,7 @@ def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str
                 "from_email": app_settings.get("smtp_from") or app_settings.get("smtp_user"),
                 "from_name": "",
             }
-        if not duong["user"] or not duong["password"]:
+        if not route["user"] or not route["password"]:
             log.status = "failed"
             log.error = ("Hộp thư gửi chưa khai mật khẩu ứng dụng."
                          if log.mailbox_id else
@@ -123,24 +123,24 @@ def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str
         target = (app_settings.get("email_test_override") if apply_override else "") or to_email
 
         msg = MIMEMultipart()
-        msg["From"] = formataddr((duong["from_name"], duong["from_email"])) \
-            if duong["from_name"] else duong["from_email"]
+        msg["From"] = formataddr((route["from_name"], route["from_email"])) \
+            if route["from_name"] else route["from_email"]
         msg["To"] = target
         msg["Subject"] = subject
         msg.attach(MIMEText(html_body, "html"))
 
         # Connect and send
-        with smtplib.SMTP(duong["host"], int(duong["port"] or 587)) as server:
-            if duong["use_tls"]:
+        with smtplib.SMTP(route["host"], int(route["port"] or 587)) as server:
+            if route["use_tls"]:
                 server.starttls()
-            server.login(duong["user"], duong["password"])
+            server.login(route["user"], route["password"])
             from email.utils import parseaddr
             _, from_email = parseaddr(msg["From"])
             server.sendmail(from_email or msg["From"], target, msg.as_string())
 
         # Ghi lại địa chỉ NGƯỜI NHẬN THẬT SỰ THẤY — hộp thư đổi địa chỉ về sau
         # thì nhật ký cũ vẫn phải đúng.
-        log.from_email = duong["from_email"] or ""
+        log.from_email = route["from_email"] or ""
 
         log.status = "sent"
         log.sent_at = datetime.utcnow()

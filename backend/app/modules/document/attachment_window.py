@@ -22,12 +22,12 @@ from .version_model import DocumentVersion
 
 #  Entity của đính kèm văn bản. Các entity khác (YCMH, ĐMH, bình luận…) không
 #  có hạn xem nên đi qua đây là không đổi gì.
-ENTITY_DINH_KEM_VAN_BAN = "document_version"
+ENTITY_DOCUMENT_VERSION = "document_version"
 
 
-def van_ban_cua_dinh_kem(db: Session, entity: str, entity_id: int) -> Document | None:
+def document_of_attachment(db: Session, entity: str, entity_id: int) -> Document | None:
     """Văn bản chủ của một tệp đính kèm. `None` = tệp không thuộc văn bản nào."""
-    if entity != ENTITY_DINH_KEM_VAN_BAN:
+    if entity != ENTITY_DOCUMENT_VERSION:
         return None
     version = db.get(DocumentVersion, entity_id)
     if version is None:
@@ -35,7 +35,7 @@ def van_ban_cua_dinh_kem(db: Session, entity: str, entity_id: int) -> Document |
     return db.get(Document, version.document_id)
 
 
-def het_han_xem(doc: Document | None, hom_nay: date | None = None) -> bool:
+def view_window_expired(doc: Document | None, today: date | None = None) -> bool:
     """Văn bản này đã quá hạn cho xem tệp chưa.
 
     So bằng `>` chứ không `>=`: đặt hạn 24/08 nghĩa là **hết ngày 24/08 vẫn
@@ -43,17 +43,17 @@ def het_han_xem(doc: Document | None, hom_nay: date | None = None) -> bool:
     """
     if doc is None or doc.attachment_view_until is None:
         return False
-    return (hom_nay or date.today()) > doc.attachment_view_until
+    return (today or date.today()) > doc.attachment_view_until
 
 
-def chan_neu_het_han(db: Session, entity: str, entity_id: int) -> None:
+def block_if_expired(db: Session, entity: str, entity_id: int) -> None:
     """Ném 403 nếu tệp thuộc một văn bản đã quá hạn cho xem.
 
     403 chứ không 404: tệp có thật và người này vốn có quyền, chỉ là **hết
     giờ**. Trả 404 là nói dối và người dùng sẽ đi báo mất tệp.
     """
-    doc = van_ban_cua_dinh_kem(db, entity, entity_id)
-    if not het_han_xem(doc):
+    doc = document_of_attachment(db, entity, entity_id)
+    if not view_window_expired(doc):
         return
     raise HTTPException(
         403,

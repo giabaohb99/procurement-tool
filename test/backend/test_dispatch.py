@@ -47,16 +47,16 @@ class TestDispatch:
     def test_dispatch_gan_nstm_va_doi_trang_thai(self, db, seed):
         """Điều phối → gán NSTM theo phân loại + trạng thái 'dispatched'."""
         pr = _make_pr(db, seed, groups=("Nhãn", "Thùng"))
-        pr2, n, con_trong = S.dispatch_pr(db, pr.id, seed.u_req_id)
+        pr2, n, blank_count = S.dispatch_pr(db, pr.id, seed.u_req_id)
         assert pr2.status == "dispatched"
-        assert n == 2 and con_trong == 0
+        assert n == 2 and blank_count == 0
         assert all(it.assignee == seed.emp_nstm_code for it in S.items_of(db, pr.id))
 
     def test_dispatch_dem_dong_chua_co_nguoi(self, db, seed):
         """Phân loại chưa cấu hình người phụ trách → đếm để báo người điều phối chọn tay."""
         pr = _make_pr(db, seed, groups=("Nhãn", "PhanLoaiChuaCauHinh"))
-        _, n, con_trong = S.dispatch_pr(db, pr.id, seed.u_req_id)
-        assert n == 1 and con_trong == 1
+        _, n, blank_count = S.dispatch_pr(db, pr.id, seed.u_req_id)
+        assert n == 1 and blank_count == 1
 
     def test_dispatch_ton_trong_gan_tay(self, db, seed):
         """Dòng đã được chọn tay trước khi điều phối → giữ nguyên, không bị ghi đè."""
@@ -64,8 +64,8 @@ class TestDispatch:
         it = S.items_of(db, pr.id)[0]
         it.assignee = seed.emp_backup_code
         db.commit()
-        _, n, con_trong = S.dispatch_pr(db, pr.id, seed.u_req_id)
-        assert n == 0 and con_trong == 0
+        _, n, blank_count = S.dispatch_pr(db, pr.id, seed.u_req_id)
+        assert n == 0 and blank_count == 0
         assert S.items_of(db, pr.id)[0].assignee == seed.emp_backup_code
 
     @pytest.mark.parametrize("st", ["draft", "submitted", "dispatched", "processing",

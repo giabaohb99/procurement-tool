@@ -72,7 +72,7 @@ def _match(db: Session, row: DocumentScope, employee: Employee) -> bool:
     return False
 
 
-def mac_dinh_theo_phap_nhan(doc: Document | None, employee: Employee) -> bool:
+def default_by_company(doc: Document | None, employee: Employee) -> bool:
     """Quy tắc 3 — văn bản không khai dòng nào thì áp trong đúng pháp nhân của nó."""
     if doc is None:
         return False
@@ -85,22 +85,22 @@ def applies_to(db: Session, document_id: int, employee: Employee) -> bool:
     """Nhân sự này có thuộc phạm vi áp dụng của văn bản không."""
     rows = scopes_of(db, document_id)
     if not rows:
-        return mac_dinh_theo_phap_nhan(db.get(Document, document_id), employee)
+        return default_by_company(db.get(Document, document_id), employee)
 
-    trung = [row for row in rows if _match(db, row, employee)]
-    if not trung:
+    matched = [row for row in rows if _match(db, row, employee)]
+    if not matched:
         return False
 
-    bao_gom = [row.dim for row in trung if row.mode == MODE_INCLUDE]
-    if not bao_gom:
+    included = [row.dim for row in matched if row.mode == MODE_INCLUDE]
+    if not included:
         return False
 
-    loai_tru = [row.dim for row in trung if row.mode == MODE_EXCLUDE]
+    excluded = [row.dim for row in matched if row.mode == MODE_EXCLUDE]
     #  Hằng chiều cố ý xếp theo độ cụ thể: pháp nhân (1) < phòng ban (2) < cá
     #  nhân (3). Vì vậy một cá nhân được cho phép đích danh vẫn thuộc phạm vi
     #  khi phòng của họ bị loại. Cùng một cấp thì loại trừ thắng (`>=`), nên
     #  dòng cấm đích danh chính cá nhân vẫn được giữ nguyên.
-    return max(bao_gom) > max(loai_tru, default=0)
+    return max(included) > max(excluded, default=0)
 
 
 def document_ids_for(db: Session, employee: Employee) -> list[int]:
@@ -110,21 +110,21 @@ def document_ids_for(db: Session, employee: Employee) -> list[int]:
     và luật ưu tiên theo độ cụ thể không viết gọn thành một câu SQL được, mà số văn bản
     có khai phạm vi thì nhỏ hơn hẳn tổng số văn bản.
     """
-    co_khai = {row[0] for row in db.query(DocumentScope.document_id).distinct().all()}
+    declared_ids = {row[0] for row in db.query(DocumentScope.document_id).distinct().all()}
     #  Quy tắc 3 — văn bản còn sống của chính công ty người này, không khai dòng
     #  phạm vi nào, thì mặc định áp cho họ. Lọc luôn ở SQL cho khỏi kéo cả bảng.
-    ngam_dinh = {
+    implicit = {
         row[0]
         for row in db.query(Document.id)
         .filter(
             Document.company_id == employee.company_id,
             Document.status.in_(ALIVE_STATUSES),
-            Document.id.notin_(co_khai or {0}),
+            Document.id.notin_(declared_ids or {0}),
         )
         .all()
     }
-    ung_vien = co_khai | ngam_dinh
-    return sorted(doc_id for doc_id in ung_vien if applies_to(db, doc_id, employee))
+    candidates = declared_ids | implicit
+    return sorted(doc_id for doc_id in candidates if applies_to(db, doc_id, employee))
 
 
 def serialize(db: Session, row: DocumentScope) -> dict:

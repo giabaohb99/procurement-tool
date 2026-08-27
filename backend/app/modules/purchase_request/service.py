@@ -281,10 +281,10 @@ def recompute_status(db: Session, pr: PurchaseRequest) -> None:
     CR-034: 'approved' (TP duyệt xong) KHÔNG nằm ở đây — lúc đó phiếu chưa có NSTM, chưa đặt
     hàng được nên không có gì để suy. Mốc "làm việc được" giờ là 'dispatched'.
     Ngoại lệ: công tắc điều phối TẮT thì 'approved' cũng là mốc làm việc (phiếu cũ còn kẹt lại)."""
-    moc = ["dispatched", "processing", "completed"]
+    threshold = ["dispatched", "processing", "completed"]
     if not dispatch_enabled():
-        moc.append("approved")
-    if pr.status not in moc:
+        threshold.append("approved")
+    if pr.status not in threshold:
         return
     st = [(i.line_status or LINE_STATUS_NO_PO) for i in items_of(db, pr.id)]
     if not st:
@@ -433,8 +433,8 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
         else:
             it.line_status = LINE_STATUS_ORDERED     # đã đặt, chưa nhận
 
-        _DA_NHAN = (LINE_STATUS_RECEIVED, LINE_STATUS_COMPLETED)
-        if it.line_status in _DA_NHAN and old_st not in _DA_NHAN:
+        _RECEIVED_STATUSES = (LINE_STATUS_RECEIVED, LINE_STATUS_COMPLETED)
+        if it.line_status in _RECEIVED_STATUSES and old_st not in _RECEIVED_STATUSES:
             new_receives = True
 
     db.commit()
@@ -604,14 +604,14 @@ def dispatch_pr(db: Session, pid: int, user_id: int) -> tuple[PurchaseRequest, i
                                  "(trưởng phòng duyệt xong, chưa điều phối).")
     from app.modules.category_assignee.service import auto_assign_by_category
     n = auto_assign_by_category(db, pr)
-    con_trong = sum(1 for it in items_of(db, pid) if not (it.assignee or "").strip())
+    blank_count = sum(1 for it in items_of(db, pid) if not (it.assignee or "").strip())
     pr.status = "dispatched"
     pr.updated_by = user_id
     db.commit()
     record(db, user_id, ENTITY, pid, "dispatched",
-           f"Điều phối — tự động phân bổ {n} dòng" + (f", còn {con_trong} dòng chưa có người" if con_trong else ""))
+           f"Điều phối — tự động phân bổ {n} dòng" + (f", còn {blank_count} dòng chưa có người" if blank_count else ""))
     db.refresh(pr)
-    return pr, n, con_trong
+    return pr, n, blank_count
 
 
 def assign(db: Session, pid: int, data: AssignIn, user_id: int) -> PurchaseRequest:

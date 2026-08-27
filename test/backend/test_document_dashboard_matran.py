@@ -38,15 +38,15 @@ def catalog(db, seed):
     company.issue_code = "DEGO"
 
     #  Quy chế phải qua duyệt → QUAN TRỌNG. Giấy mời thì không cờ nào → thường.
-    quy_che = DocType(code="QC", name="Quy chế", id_scheme=1, number_when=2,
+    regulation = DocType(code="QC", name="Quy chế", id_scheme=1, number_when=2,
                       needs_approval=True)
     giay_moi = DocType(code="GM", name="Giấy mời", id_scheme=2, number_when=2)
     #  Cờ "cần QĐ ban hành" cũng đủ để tính là quan trọng, không cần duyệt.
-    quyet_dinh = DocType(code="QD", name="Quyết định", id_scheme=2, number_when=2,
+    decision = DocType(code="QD", name="Quyết định", id_scheme=2, number_when=2,
                          needs_decision=True)
-    db.add_all([quy_che, giay_moi, quyet_dinh])
+    db.add_all([regulation, giay_moi, decision])
     db.commit()
-    return {"QC": quy_che, "GM": giay_moi, "QD": quyet_dinh, "seed": seed}
+    return {"QC": regulation, "GM": giay_moi, "QD": decision, "seed": seed}
 
 
 def _tao_hieu_luc(db, catalog, code: str, title: str, urgency: int = 1,
@@ -132,9 +132,9 @@ def test_ban_nhap_khong_vao_ma_tran(db, catalog):
 
 def test_loc_theo_phap_nhan_thi_o_khac_khong_dem(db, catalog):
     _tao_hieu_luc(db, catalog, "QC", "Quy chế của pháp nhân A", urgency=2)
-    khac = catalog["seed"].company_id + 999
+    other = catalog["seed"].company_id + 999
 
-    assert _ma_tran(db, DashboardFilters(company_id=khac)) == {
+    assert _ma_tran(db, DashboardFilters(company_id=other)) == {
         "important_urgent": 0, "important_normal": 0,
         "normal_urgent": 0, "normal_normal": 0,
     }
@@ -151,9 +151,9 @@ def test_loc_khoang_ngay_lay_ca_van_ban_lap_trong_chinh_ngay_cuoi(db, catalog):
     09:00 > 00:00 của chính ngày đó.
     """
     _tao_hieu_luc(db, catalog, "QC", "Quy chế lập hôm nay", urgency=2)
-    hom_nay = date.today()
+    today = date.today()
 
-    assert _ma_tran(db, DashboardFilters(from_date=hom_nay, to_date=hom_nay)) == {
+    assert _ma_tran(db, DashboardFilters(from_date=today, to_date=today)) == {
         "important_urgent": 1, "important_normal": 0,
         "normal_urgent": 0, "normal_normal": 0,
     }
@@ -170,9 +170,9 @@ def test_khoang_ngay_khong_chua_hom_nay_thi_rong(db, catalog):
 def test_bieu_do_12_thang_khong_bi_khoang_ngay_cat(db, catalog):
     """Biểu đồ 12 tháng tự khai cửa sổ của nó; lọc chồng lên là cắt cụt cột cũ."""
     _tao_hieu_luc(db, catalog, "QC", "Quy chế đã ban hành", urgency=1)
-    hom_nay = date.today()
+    today = date.today()
 
-    du_lieu = dashboard_service.overview(
-        db, None, _profile(), DashboardFilters(from_date=hom_nay, to_date=hom_nay)
+    data = dashboard_service.overview(
+        db, None, _profile(), DashboardFilters(from_date=today, to_date=today)
     )
-    assert sum(diem["value"] for diem in du_lieu["issued_12m"]) == 1
+    assert sum(diem["value"] for diem in data["issued_12m"]) == 1

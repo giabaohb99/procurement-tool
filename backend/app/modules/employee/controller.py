@@ -59,7 +59,7 @@ def update_employee_avatar(eid: int, file: UploadFile = File(...), db: Session =
     return success({"avatar": url}, "Đã cập nhật ảnh đại diện")
 
 
-def _ma_trang_thai(raw: str) -> str:
+def _status_code(raw: str) -> str:
     """Đổi ô "Trạng thái NS" trong tệp CSV thành MÃ (B-03).
 
     Đây là NGOẠI LỆ có chủ đích của luật "không tự dịch nhãn thành mã": tệp CSV do người
@@ -87,9 +87,9 @@ def _ma_trang_thai(raw: str) -> str:
         return " ".join(s.replace("đ", "d").replace("Đ", "D").lower().split())
 
     can = norm(v)
-    for ma, nhan in EMPLOYEE_STATUS.labels.items():
-        if norm(nhan) == can:
-            return ma
+    for code, label in EMPLOYEE_STATUS.labels.items():
+        if norm(label) == can:
+            return code
     return ""
 
 
@@ -151,14 +151,14 @@ def update_employee(
     #  màn Phân quyền. Hai cửa cùng đổi một thứ thì phải cùng một luật.
     if data.department_id is not None:
         profile = get_perm_profile(db, user)
-        department_service.chan_tu_sua_phong_ban_cua_minh(db, eid, user)
-        department_service.chan_gan_phong_ngoai_tam(db, [data.department_id], user, profile)
+        department_service.block_edit_own_department(db, eid, user)
+        department_service.block_out_of_scope_departments(db, [data.department_id], user, profile)
 
     obj = service.update_employee(db, eid, data, user.id)
     return success(EmployeeOut.model_validate(obj).model_dump(), "Đã cập nhật")
 
 
-def _nhan_su_trong_pham_vi(db, eid: int, user, profile, action: str = "read"):
+def _employee_in_scope(db, eid: int, user, profile, action: str = "read"):
     """Hồ sơ nhân sự NẰM TRONG phạm vi của người đang thao tác, không thì 404.
 
     ⚠️ `GET /api/employees/{eid}` cũ dùng `service.get_employee` — **không xét
@@ -179,7 +179,7 @@ def _nhan_su_trong_pham_vi(db, eid: int, user, profile, action: str = "read"):
     return obj
 
 
-class KiemNhiemIn(BaseModel):
+class ExtraDepartmentsIn(BaseModel):
     """Đặt lại danh sách phòng KIÊM NHIỆM. Phòng chính KHÔNG đi qua đây."""
 
     extra_department_ids: list[int] = []
@@ -195,14 +195,14 @@ def list_employee_departments(
     là một luật ngầm mà người dùng không có cách nào biết, và nó làm ô «Phòng
     ban» của hồ sơ thành thừa.
     """
-    emp = _nhan_su_trong_pham_vi(db, eid, user, get_perm_profile(db, user))
+    emp = _employee_in_scope(db, eid, user, get_perm_profile(db, user))
     return success({"primary_department_id": emp.department_id or 0,
-                    "extra_department_ids": department_service.kiem_nhiem_cua(db, emp.id)})
+                    "extra_department_ids": department_service.extra_departments_of(db, emp.id)})
 
 
 @router.put("/{eid}/departments")
 def set_employee_departments(
-    eid: int, data: KiemNhiemIn, db: Session = Depends(get_db),
+    eid: int, data: ExtraDepartmentsIn, db: Session = Depends(get_db),
     user=Depends(require("employee", "write")),
 ):
     """KIÊM NHIỆM — đặt lại các phòng phụ trách THÊM. Phòng chính giữ nguyên.
@@ -213,11 +213,11 @@ def set_employee_departments(
     thấy. Lý lẽ đầy đủ ở `employee/department_service.py`.
     """
     profile = get_perm_profile(db, user)
-    emp = _nhan_su_trong_pham_vi(db, eid, user, profile, "write")
+    emp = _employee_in_scope(db, eid, user, profile, "write")
 
-    department_service.chan_tu_sua_phong_ban_cua_minh(db, emp.id, user)
-    department_service.chan_gan_phong_ngoai_tam(db, data.extra_department_ids, user, profile)
-    ids = department_service.dat_kiem_nhiem(db, emp, data.extra_department_ids, user.id)
+    department_service.block_edit_own_department(db, emp.id, user)
+    department_service.block_out_of_scope_departments(db, data.extra_department_ids, user, profile)
+    ids = department_service.set_extra_departments(db, emp, data.extra_department_ids, user.id)
     db.commit()
 
     audit_record(db, user.id, "employee", emp.id, "update",
@@ -330,7 +330,7 @@ def import_employees_csv(
     from app.core.status_codes import EMPLOYEE_STATUS
 
     created, updated, deleted = 0, 0, 0
-    for dong, row in enumerate(reader, start=2):   # 2 = dòng đầu tiên sau hàng tiêu đề
+    for line_no, row in enumerate(reader, start=2):   # 2 = dòng đầu tiên sau hàng tiêu đề
         action = (row.get("Hành động") or "").strip().lower()
         is_active = action not in ["xóa", "delete", "ngừng"]
         
@@ -346,12 +346,12 @@ def import_employees_csv(
         # thì mặc định Chính thức như trước. Gõ sai thì dừng cả lần nhập và nói rõ dòng nào
         # — im lặng cho qua là một hồ sơ nhân sự mang trạng thái không ai chọn được nữa.
         status_raw = (row.get("Trạng thái NS") or row.get("Trạng thái") or "").strip()
-        status = _ma_trang_thai(status_raw) or ("official" if not status_raw else "")
+        status = _status_code(status_raw) or ("official" if not status_raw else "")
         if not status:
-            hop_le = " / ".join(EMPLOYEE_STATUS.labels.values())
+            valid = " / ".join(EMPLOYEE_STATUS.labels.values())
             raise HTTPException(
-                400, f"Dòng {dong}: trạng thái nhân sự {status_raw!r} không hợp lệ. "
-                     f"Giá trị nhận: {hop_le}.")
+                400, f"Dòng {line_no}: trạng thái nhân sự {status_raw!r} không hợp lệ. "
+                     f"Giá trị nhận: {valid}.")
 
 
         if not code and not full_name:

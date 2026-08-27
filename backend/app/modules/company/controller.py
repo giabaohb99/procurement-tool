@@ -19,7 +19,7 @@ def _format_company(c: service.Company, logo_url: str = "") -> dict:
     return d
 
 
-def _cong_ty_trong_pham_vi(db, cid: int, user, action: str):
+def _company_in_scope(db, cid: int, user, action: str):
     """Lấy công ty #cid nếu nó nằm trong phạm vi của user, không thì 404 — B-07.
 
     Chiều phạm vi của chính bảng công ty là `id` (xem `SCOPE_FIELDS["company"]`), nên
@@ -58,7 +58,7 @@ def list_companies(
 
 @router.get("/{cid}")
 def get_company(cid: int, db: Session = Depends(get_db), user=Depends(require("company", "read"))):
-    comp = _cong_ty_trong_pham_vi(db, cid, user, "read")
+    comp = _company_in_scope(db, cid, user, "read")
     logo_map = service.get_company_logo_map(db, [cid])
     return success(_format_company(comp, logo_map.get(cid, "")))
 
@@ -76,7 +76,7 @@ def update_company(
     cid: int, data: CompanyUpdate, db: Session = Depends(get_db),
     user=Depends(require("company", "write")),
 ):
-    _cong_ty_trong_pham_vi(db, cid, user, "write")
+    _company_in_scope(db, cid, user, "write")
     obj = service.update_company(db, cid, data, user.id)
     logo_map = service.get_company_logo_map(db, [cid])
     return success(_format_company(obj, logo_map.get(cid, "")), "Đã cập nhật")
@@ -95,7 +95,7 @@ def update_company_logo(
     from app.modules.attachment.controller import _store_one
     from app.modules.attachment.model import FileLink
 
-    company = _cong_ty_trong_pham_vi(db, cid, user, "write")
+    company = _company_in_scope(db, cid, user, "write")
     _, exts, max_mb = policy("company")
     sf = _store_one(db, file, exts, max_mb, user.id)
 
@@ -127,7 +127,7 @@ def update_company_logo(
 
 @router.delete("/{cid}")
 def delete_company(cid: int, db: Session = Depends(get_db), user=Depends(require("company", "delete"))):
-    _cong_ty_trong_pham_vi(db, cid, user, "delete")
+    _company_in_scope(db, cid, user, "delete")
     service.delete_company(db, cid, user.id)
     return success(None, "Đã xóa")
 
@@ -145,12 +145,12 @@ def bulk_delete_companies(ids: str, db: Session = Depends(get_db), user=Depends(
     cond = scope_condition(Company, "company", user, get_perm_profile(db, user), "delete")
     if cond is not None:
         q = q.filter(cond)
-    xoa_duoc = [i for (i,) in q.with_entities(Company.id).all()]
-    if not xoa_duoc:
+    deletable_ids = [i for (i,) in q.with_entities(Company.id).all()]
+    if not deletable_ids:
         raise HTTPException(404, "Không tìm thấy công ty nào trong phạm vi của bạn")
-    db.query(Company).filter(Company.id.in_(xoa_duoc)).delete(synchronize_session=False)
+    db.query(Company).filter(Company.id.in_(deletable_ids)).delete(synchronize_session=False)
     db.commit()
     from app.core.audit import record
-    for cid in xoa_duoc:
+    for cid in deletable_ids:
         record(db, user.id, service.ENTITY, cid, "delete")
-    return success(None, f"Đã xóa {len(xoa_duoc)} công ty")
+    return success(None, f"Đã xóa {len(deletable_ids)} công ty")

@@ -28,7 +28,7 @@ def documents_query(db: Session, origin: int = ORIGIN_INTERNAL) -> Query:
     return q
 
 
-def an_ban_rieng_co_goc_xem_duoc(query: Query) -> Query:
+def hide_private_copies_with_visible_source(query: Query) -> Query:
     """Bỏ BẢN RIÊNG ra khỏi danh sách khi bản gốc của nó cũng nằm trong danh sách.
 
     Một văn bản clone cho mười hai pháp nhân sinh ra mười hai bản ghi mang cùng
@@ -41,15 +41,15 @@ def an_ban_rieng_co_goc_xem_duoc(query: Query) -> Query:
     của họ trống trơn. Vì vậy điều kiện dựa trên chính `query` đang lọc theo
     quyền của người đang xem, không phải trên toàn bảng.
     """
-    goc_xem_duoc = query.with_entities(Document.id).subquery()
+    visible_origins = query.with_entities(Document.id).subquery()
     return query.filter(or_(
         Document.source_document_id.is_(None),
         Document.source_document_id == 0,
-        Document.source_document_id.not_in(select(goc_xem_duoc.c.id)),
+        Document.source_document_id.not_in(select(visible_origins.c.id)),
     ))
 
 
-def dem_ban_rieng(query: Query, document_ids: list[int]) -> dict[int, int]:
+def count_private_copies(query: Query, document_ids: list[int]) -> dict[int, int]:
     """Mỗi văn bản có bao nhiêu bản riêng **mà người này xem được**.
 
     Nhận một `query` ĐÃ lọc quyền chứ không nhận `db`: đếm trên toàn bảng thì

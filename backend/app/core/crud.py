@@ -144,7 +144,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
             # phạm vi như nút sửa trên màn hình. Dòng nào trỏ vào bản ghi ngoài phạm vi
             # thì BỎ QUA và đếm riêng — không lặng lẽ ghi đè, cũng không dừng cả file.
             scope_cond = scope_condition(Model, entity, user, get_perm_profile(db, user), "write")
-            created, updated, deleted, bo_qua = 0, 0, 0, 0
+            created, updated, deleted, skipped = 0, 0, 0, 0
             for row in reader:
                 action = row.get("Hành động", "").strip().lower()
                 is_active = action not in ["xóa", "delete", "ngừng"]
@@ -164,7 +164,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
                     
                 if existing is not None and scope_cond is not None:
                     if db.query(Model.id).filter(Model.id == existing.id, scope_cond).first() is None:
-                        bo_qua += 1
+                        skipped += 1
                         continue
 
                 if existing:
@@ -190,8 +190,8 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
                     
             db.commit()
             msg = f"Nhập file thành công. Thêm mới {created}, cập nhật {updated}, ẩn {deleted}."
-            if bo_qua:
-                msg += f" Bỏ qua {bo_qua} dòng ngoài phạm vi của bạn."
+            if skipped:
+                msg += f" Bỏ qua {skipped} dòng ngoài phạm vi của bạn."
             return success(None, msg)
             
     return router

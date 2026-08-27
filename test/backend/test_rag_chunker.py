@@ -53,8 +53,8 @@ def test_cau_khong_lo_bi_cat_cung():
 
 def test_chong_lan_mang_cau_cuoi_sang_doan_sau():
     """Câu vắt qua ranh giới vẫn tìm được: câu cuối đoạn trước mở đầu đoạn sau."""
-    cau = [f"Câu chủ đề {i} nói về một ý riêng biệt." for i in range(8)]
-    text = " ".join(cau)
+    message = [f"Câu chủ đề {i} nói về một ý riêng biệt." for i in range(8)]
+    text = " ".join(message)
     chunks = chunk_text(text, max_chars=120)
     assert len(chunks) >= 2
     # Câu cuối của đoạn đầu xuất hiện lại ở đầu đoạn kế (chồng lấn).

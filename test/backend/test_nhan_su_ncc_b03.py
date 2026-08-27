@@ -16,7 +16,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.core.status_codes import EMPLOYEE_STATUS, SUPPLIER_LEGAL_TYPE
-from app.modules.employee.controller import _ma_trang_thai
+from app.modules.employee.controller import _status_code
 from app.modules.employee.model import Employee
 from app.modules.employee.schema import EmployeeCreate, EmployeeOut, EmployeeUpdate
 from app.modules.supplier.model import Supplier
@@ -58,10 +58,10 @@ def test_khong_bo_nao_khai_thu_tu_hay_trang_thai_ket():
 
 # ── Tầng ghi ────────────────────────────────────────────────────────────────────
 def test_chi_nhan_ma_trong_bo():
-    for ma in EMPLOYEE_STATUS.values:
-        assert EmployeeCreate(full_name="A", status=ma).status == ma
-    for ma in SUPPLIER_LEGAL_TYPE.values:
-        assert SupplierCreate(name="A", legal_type=ma).legal_type == ma
+    for code in EMPLOYEE_STATUS.values:
+        assert EmployeeCreate(full_name="A", status=code).status == code
+    for code in SUPPLIER_LEGAL_TYPE.values:
+        assert SupplierCreate(name="A", legal_type=code).legal_type == code
 
 
 def test_mac_dinh_la_ma_chu_khong_phai_nhan():
@@ -154,19 +154,19 @@ def test_ma_la_khong_lam_no_tang_doc_chi_la_khong_co_nhan():
 def test_csv_nhap_hieu_ca_nhan_lan_ma():
     """Tệp CSV do người dùng gõ trong Excel, không phải giao diện mình viết ra. Bắt họ gõ
     `maternity_leave` là vô lý, nên ĐÂY là chỗ được phép dịch nhãn thành mã."""
-    assert _ma_trang_thai("Chính thức") == "official"
-    assert _ma_trang_thai("official") == "official"
-    assert _ma_trang_thai("  NGHỈ   thai sản ") == "maternity_leave"
-    assert _ma_trang_thai("nghi viec") == "resigned"          # bản gõ không dấu
-    assert _ma_trang_thai("Cộng tác viên") == "collaborator"
+    assert _status_code("Chính thức") == "official"
+    assert _status_code("official") == "official"
+    assert _status_code("  NGHỈ   thai sản ") == "maternity_leave"
+    assert _status_code("nghi viec") == "resigned"          # bản gõ không dấu
+    assert _status_code("Cộng tác viên") == "collaborator"
 
 
 def test_csv_nhap_khong_doan_bua():
     """Không nhận ra thì trả rỗng để nơi gọi dừng cả lần nhập và nói rõ dòng nào. Đoán bừa
     thành "Chính thức" ở đây là ghi đè trạng thái thật của một con người."""
-    assert _ma_trang_thai("Đang thử việc") == ""
-    assert _ma_trang_thai("") == ""
-    assert _ma_trang_thai(None) == ""
+    assert _status_code("Đang thử việc") == ""
+    assert _status_code("") == ""
+    assert _status_code(None) == ""
 
 
 def test_csv_xuat_ra_nhan_chu_khong_ra_ma():

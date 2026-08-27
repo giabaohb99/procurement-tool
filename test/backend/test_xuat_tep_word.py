@@ -24,8 +24,8 @@ PHAN_BAT_BUOC = {
 
 
 def _doc_lai(data: bytes) -> str:
-    ra = docx_to_html(data)
-    return ra["content_html"] if isinstance(ra, dict) else str(ra)
+    out = docx_to_html(data)
+    return out["content_html"] if isinstance(out, dict) else str(out)
 
 
 def _chu(data: bytes) -> str:
@@ -96,11 +96,11 @@ def test_danh_so_muc_duoc_viet_thang_vao_chu():
     """Số mục ở giao diện do bộ đếm CSS vẽ, không nằm trong nội dung — sang Word
     phải tự viết vào, nếu không tệp xuất ra mất sạch số mục."""
     data = html_to_docx("<h1>A</h1><h2>B</h2><h3>C</h3><h3>D</h3><h2>E</h2><h1>F</h1>",
-                        danh_so_muc=True)
-    chu = _chu(data)
+                        number_headings=True)
+    text = _chu(data)
 
     for mong_doi in ("I. A", "1. B", "a) C", "b) D", "2. E", "II. F"):
-        assert mong_doi in chu, f"thiếu {mong_doi!r} trong: {chu}"
+        assert mong_doi in text, f"thiếu {mong_doi!r} trong: {text}"
 
 
 def test_khong_bat_thi_khong_tu_them_so():
@@ -108,15 +108,15 @@ def test_khong_bat_thi_khong_tu_them_so():
 
 
 def test_danh_sach_giu_ky_hieu_dau_dong():
-    chu = _chu(html_to_docx("<ul><li>ý một</li></ul><ol><li>số một</li><li>số hai</li></ol>"))
+    text = _chu(html_to_docx("<ul><li>ý một</li></ul><ol><li>số một</li><li>số hai</li></ol>"))
 
-    assert "• ý một" in chu
-    assert "1. số một" in chu and "2. số hai" in chu
+    assert "• ý một" in text
+    assert "1. số một" in text and "2. số hai" in text
 
 
 def test_le_trang_theo_dung_ban_ghi():
     """30mm ≈ 1701 twips. Sai đơn vị ở đây thì bản Word lệch hẳn so với bản in."""
-    xml = zipfile.ZipFile(BytesIO(html_to_docx("<p>x</p>", le_trai_mm=30, le_phai_mm=20))
+    xml = zipfile.ZipFile(BytesIO(html_to_docx("<p>x</p>", margin_left_mm=30, margin_right_mm=20))
                           ).read("word/document.xml").decode()
     pg_mar = re.search(r"<w:pgMar[^/]+/>", xml).group(0)
 
@@ -127,7 +127,7 @@ def test_le_trang_theo_dung_ban_ghi():
 def test_so_trang_la_TRUONG_cua_word_khong_phai_so_chep_cung():
     """Chép số cứng thì người nhận thêm một đoạn là số trang sai hết."""
     z = zipfile.ZipFile(BytesIO(html_to_docx(
-        "<p>x</p>", chan_trang=("", "Trang {{trang}}/{{tong_trang}}"))))
+        "<p>x</p>", footer=("", "Trang {{trang}}/{{tong_trang}}"))))
     footer = z.read("word/footer1.xml").decode()
 
     assert "PAGE" in footer and "NUMPAGES" in footer
@@ -136,8 +136,8 @@ def test_so_trang_la_TRUONG_cua_word_khong_phai_so_chep_cung():
 
 def test_the_khac_duoc_thay_bang_gia_tri_that():
     z = zipfile.ZipFile(BytesIO(html_to_docx(
-        "<p>x</p>", dau_trang=("{{so_hieu}}", ""),
-        the_thay={"{{so_hieu}}": "08/2026/TB-DEGO"})))
+        "<p>x</p>", header=("{{so_hieu}}", ""),
+        replacements={"{{so_hieu}}": "08/2026/TB-DEGO"})))
     header = z.read("word/header1.xml").decode()
 
     assert "08/2026/TB-DEGO" in header
@@ -145,10 +145,10 @@ def test_the_khac_duoc_thay_bang_gia_tri_that():
 
 
 def test_khong_khai_dau_chan_trang_thi_khong_sinh_phan_thua():
-    ten = set(zipfile.ZipFile(BytesIO(html_to_docx("<p>x</p>"))).namelist())
+    name = set(zipfile.ZipFile(BytesIO(html_to_docx("<p>x</p>"))).namelist())
 
-    assert "word/header1.xml" not in ten
-    assert "word/footer1.xml" not in ten
+    assert "word/header1.xml" not in name
+    assert "word/footer1.xml" not in name
 
 
 def test_anh_base64_duoc_nhung_vao_goi():

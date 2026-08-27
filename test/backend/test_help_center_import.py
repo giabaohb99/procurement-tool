@@ -269,22 +269,22 @@ def test_tim_bai_theo_dung_tieu_de(db):
 
 
 def test_thu_tu_bai_nhap_vao_nam_cuoi_muc(db):
-    goc = service.create_article(db, HelpArticleCreate(title="Muc"), user_id=1)
-    service.create_article(db, HelpArticleCreate(title="A", parent_id=goc.id, sort_order=3), user_id=1)
-    service.create_article(db, HelpArticleCreate(title="B", parent_id=goc.id, sort_order=7), user_id=1)
+    origin = service.create_article(db, HelpArticleCreate(title="Muc"), user_id=1)
+    service.create_article(db, HelpArticleCreate(title="A", parent_id=origin.id, sort_order=3), user_id=1)
+    service.create_article(db, HelpArticleCreate(title="B", parent_id=origin.id, sort_order=7), user_id=1)
 
-    assert service.next_sort_order(db, goc.id) == 8
+    assert service.next_sort_order(db, origin.id) == 8
 
 
 def test_thu_tu_trong_muc_rong_bat_dau_tu_1(db):
-    goc = service.create_article(db, HelpArticleCreate(title="Muc"), user_id=1)
+    origin = service.create_article(db, HelpArticleCreate(title="Muc"), user_id=1)
 
-    assert service.next_sort_order(db, goc.id) == 1
+    assert service.next_sort_order(db, origin.id) == 1
 
 
 def test_thu_tu_muc_goc_khong_dinh_muc_con(db):
     """Bài ở mục gốc và bài trong mục con đếm riêng, không được cộng nhầm sang nhau."""
-    goc = service.create_article(db, HelpArticleCreate(title="Muc", sort_order=2), user_id=1)
-    service.create_article(db, HelpArticleCreate(title="Con", parent_id=goc.id, sort_order=50), user_id=1)
+    origin = service.create_article(db, HelpArticleCreate(title="Muc", sort_order=2), user_id=1)
+    service.create_article(db, HelpArticleCreate(title="Con", parent_id=origin.id, sort_order=50), user_id=1)
 
     assert service.next_sort_order(db, None) == 3

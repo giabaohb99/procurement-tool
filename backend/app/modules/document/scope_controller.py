@@ -32,7 +32,7 @@ class ScopeCreate(BaseModel):
     include_children: bool = False
 
     @model_validator(mode="after")
-    def _kiem_chieu(self):
+    def _check_dim(self):
         #  F03 — chặn ở đây để có câu báo nói rõ VÌ SAO, và chặn lần nữa bằng
         #  CHECK ở tầng dữ liệu để không đường vòng nào lọt.
         if self.dim == DIM_DEPARTMENT:
@@ -89,11 +89,11 @@ def applies_to_me(db: Session = Depends(get_db), user=Depends(get_current_user))
     #  sách rộng hơn thứ mở được. Lọc lại bằng chính `can()` để hai đường không
     #  bao giờ lệch nhau nữa.
     profile = get_perm_profile(db, user)
-    doc_xem_duoc = [doc for doc in docs
+    visible_docs = [doc for doc in docs
                     if access_service.can(db, doc, user, profile, "read")]
 
-    return success({"total": len(doc_xem_duoc),
-                    "items": serializer.serialize_many(db, doc_xem_duoc)})
+    return success({"total": len(visible_docs),
+                    "items": serializer.serialize_many(db, visible_docs)})
 
 
 @router.get("/{document_id}/scopes")

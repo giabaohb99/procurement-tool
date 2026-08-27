@@ -38,7 +38,7 @@ class MailboxIn(BaseModel):
 
     @field_validator("email")
     @classmethod
-    def _dung_dinh_dang(cls, value: str) -> str:
+    def _validate_format(cls, value: str) -> str:
         value = (value or "").strip().lower()
         if not _EMAIL_RE.match(value):
             raise ValueError("Địa chỉ email không hợp lệ")
@@ -56,7 +56,7 @@ class MailboxIn(BaseModel):
     employee_ids: list[int] = []
 
 
-def _ra_json(db: Session, row: Mailbox) -> dict:
+def _to_json(db: Session, row: Mailbox) -> dict:
     return {
         "id": row.id,
         "code": row.code,
@@ -69,12 +69,12 @@ def _ra_json(db: Session, row: Mailbox) -> dict:
         #  KHÔNG trả mật khẩu, chỉ trả "đã có hay chưa" — cùng quy ước với
         #  `smtp_password` ở màn Cấu hình hệ thống.
         "has_password": bool(row.smtp_password_enc),
-        "ready": mailbox_service.san_sang_gui(row),
+        "ready": mailbox_service.ready_to_send(row),
         "use_tls": row.use_tls,
         "company_id": row.company_id,
         "note": row.note,
         "is_active": row.is_active,
-        "employee_ids": mailbox_service.thanh_vien_ids(db, row.id),
+        "employee_ids": mailbox_service.member_ids(db, row.id),
     }
 
 
@@ -103,7 +103,7 @@ def list_mailboxes(
                              | Mailbox.name.like(needle)
                              | Mailbox.email.like(needle))
     rows = query.order_by(Mailbox.name.asc()).all()
-    return success([_ra_json(db, row) for row in rows])
+    return success([_to_json(db, row) for row in rows])
 
 
 @router.get("/{mailbox_id}")
@@ -112,7 +112,7 @@ def get_mailbox(
     db: Session = Depends(get_db),
     user=Depends(require("mailbox", "read")),
 ):
-    return success(_ra_json(db, mailbox_service.get_or_404(db, mailbox_id)))
+    return success(_to_json(db, mailbox_service.get_or_404(db, mailbox_id)))
 
 
 @router.post("")
@@ -124,14 +124,14 @@ def create_mailbox(
     values = data.model_dump(exclude={"smtp_password", "employee_ids"})
     values["email"] = str(values["email"]).strip().lower()
     row = Mailbox(**values, created_by=user.id, updated_by=user.id)
-    mailbox_service.dat_mat_khau(row, data.smtp_password)
+    mailbox_service.set_password(row, data.smtp_password)
     db.add(row)
     db.flush()
-    mailbox_service.dat_thanh_vien(db, row, data.employee_ids, user.id)
+    mailbox_service.set_members(db, row, data.employee_ids, user.id)
     record(db, user.id, "mailbox", row.id, "create",
            f"Tạo hộp thư gửi {row.email}")
     db.commit()
-    return success(_ra_json(db, row), "Đã tạo hộp thư gửi")
+    return success(_to_json(db, row), "Đã tạo hộp thư gửi")
 
 
 @router.patch("/{mailbox_id}")
@@ -145,13 +145,13 @@ def update_mailbox(
     for field, value in data.model_dump(
             exclude={"smtp_password", "employee_ids"}).items():
         setattr(row, field, str(value).strip().lower() if field == "email" else value)
-    mailbox_service.dat_mat_khau(row, data.smtp_password)
+    mailbox_service.set_password(row, data.smtp_password)
     row.updated_by = user.id
-    so_nguoi = mailbox_service.dat_thanh_vien(db, row, data.employee_ids, user.id)
+    member_count = mailbox_service.set_members(db, row, data.employee_ids, user.id)
     record(db, user.id, "mailbox", row.id, "update",
-           f"Sửa hộp thư {row.email} · {so_nguoi} người được dùng")
+           f"Sửa hộp thư {row.email} · {member_count} người được dùng")
     db.commit()
-    return success(_ra_json(db, row), "Đã lưu hộp thư gửi")
+    return success(_to_json(db, row), "Đã lưu hộp thư gửi")
 
 
 @router.delete("/{mailbox_id}/password")
@@ -162,12 +162,12 @@ def clear_password(
 ):
     """Xóa mật khẩu ứng dụng — thao tác RIÊNG, có chủ ý. Xem `dat_mat_khau`."""
     row = mailbox_service.get_or_404(db, mailbox_id)
-    mailbox_service.xoa_mat_khau(row)
+    mailbox_service.clear_password(row)
     row.updated_by = user.id
     record(db, user.id, "mailbox", row.id, "update",
            f"Xóa mật khẩu ứng dụng của {row.email}")
     db.commit()
-    return success(_ra_json(db, row), "Đã xóa mật khẩu ứng dụng")
+    return success(_to_json(db, row), "Đã xóa mật khẩu ứng dụng")
 
 
 @router.delete("/{mailbox_id}")
@@ -184,7 +184,7 @@ def delete_mailbox(
     record(db, user.id, "mailbox", row.id, "delete",
            f"Ngừng dùng hộp thư {row.email}")
     db.commit()
-    return success(_ra_json(db, row), "Đã ngừng dùng hộp thư")
+    return success(_to_json(db, row), "Đã ngừng dùng hộp thư")
 
 
 @router.get("/cua-toi/danh-sach")
@@ -194,11 +194,11 @@ def my_mailboxes(
     user=Depends(require("document", "read")),
 ):
     """Hộp thư TÔI được gửi danh nghĩa — dùng cho các màn ngoài phân hệ Văn bản."""
-    rows = mailbox_service.cua_nhan_su(
+    rows = mailbox_service.for_employee(
         db, getattr(user, "employee_id", None), company_id)
     return success([
         {"id": row.id, "email": row.email, "name": row.name,
          "display_name": row.display_name or row.name,
-         "ready": mailbox_service.san_sang_gui(row)}
+         "ready": mailbox_service.ready_to_send(row)}
         for row in rows
     ])

@@ -30,42 +30,42 @@ def _luong(db, name: str, *, condition: str = "", is_active: bool = True,
 def test_mot_luong_mac_dinh_thi_khong_canh_bao_gi(db):
     flow = _luong(db, "Ban hành văn bản")
 
-    assert flow_service.canh_bao_trung_mac_dinh(db, flow) == ""
+    assert flow_service.default_overlap_warning(db, flow) == ""
 
 
 def test_hai_luong_mac_dinh_cung_bat_thi_goi_ten_ca_hai(db):
     thang = _luong(db, "Ban hành văn bản (mặc định)", priority=5)
     bi_che = _luong(db, "Ban hành văn bản hành chính", priority=1)
 
-    canh_bao = flow_service.canh_bao_trung_mac_dinh(db, bi_che)
+    warning = flow_service.default_overlap_warning(db, bi_che)
 
-    assert "Ban hành văn bản (mặc định)" in canh_bao
-    assert "Ban hành văn bản hành chính" in canh_bao
+    assert "Ban hành văn bản (mặc định)" in warning
+    assert "Ban hành văn bản hành chính" in warning
     #  Phải nói rõ CÁI NÀO chạy, không chỉ "có trùng".
-    assert f"chỉ «{thang.name}» chạy" in canh_bao
+    assert f"chỉ «{thang.name}» chạy" in warning
     #  Cái đang thắng cũng thấy cảnh báo — người mở luồng nào cũng phải biết.
-    assert flow_service.canh_bao_trung_mac_dinh(db, thang) != ""
+    assert flow_service.default_overlap_warning(db, thang) != ""
 
 
 def test_luong_co_dieu_kien_khong_tinh_la_trung(db):
     _luong(db, "Ban hành văn bản (mặc định)")
     co_dieu_kien = _luong(db, "Văn bản mật", condition='{"secrecy_level": 3}')
 
-    assert flow_service.canh_bao_trung_mac_dinh(db, co_dieu_kien) == ""
+    assert flow_service.default_overlap_warning(db, co_dieu_kien) == ""
 
 
 def test_luong_da_tat_khong_tinh_la_trung(db):
     _luong(db, "Ban hành văn bản (mặc định)", is_active=False)
-    dang_bat = _luong(db, "Ban hành văn bản hành chính")
+    is_enabled = _luong(db, "Ban hành văn bản hành chính")
 
-    assert flow_service.canh_bao_trung_mac_dinh(db, dang_bat) == ""
+    assert flow_service.default_overlap_warning(db, is_enabled) == ""
 
 
 def test_khac_loai_chung_tu_thi_khong_dinh_gi_den_nhau(db):
     _luong(db, "Duyệt YCMH", entity="purchase_request")
     van_ban = _luong(db, "Ban hành văn bản")
 
-    assert flow_service.canh_bao_trung_mac_dinh(db, van_ban) == ""
+    assert flow_service.default_overlap_warning(db, van_ban) == ""
 
 
 def test_hai_luong_khai_cho_hai_phap_nhan_khac_nhau_thi_khong_trung(db):
@@ -73,19 +73,19 @@ def test_hai_luong_khai_cho_hai_phap_nhan_khac_nhau_thi_khong_trung(db):
     _luong(db, "Ban hành — Công ty A", company_id=1)
     cong_ty_b = _luong(db, "Ban hành — Công ty B", company_id=2)
 
-    assert flow_service.canh_bao_trung_mac_dinh(db, cong_ty_b) == ""
+    assert flow_service.default_overlap_warning(db, cong_ty_b) == ""
 
 
 def test_luong_toan_he_khong_che_luong_rieng_cua_phap_nhan(db):
     """Luồng riêng luôn được xét trước; luồng toàn hệ chỉ là đường lùi."""
     _luong(db, "Ban hành toàn hệ")
-    rieng = _luong(db, "Ban hành — Công ty A", company_id=1)
+    specific = _luong(db, "Ban hành — Công ty A", company_id=1)
 
-    assert flow_service.canh_bao_trung_mac_dinh(db, rieng) == ""
+    assert flow_service.default_overlap_warning(db, specific) == ""
 
 
 def test_hai_luong_mac_dinh_cung_phap_nhan_van_canh_bao(db):
     _luong(db, "Ban hành A — cũ", company_id=1, priority=5)
-    moi = _luong(db, "Ban hành A — mới", company_id=1, priority=1)
+    new = _luong(db, "Ban hành A — mới", company_id=1, priority=1)
 
-    assert flow_service.canh_bao_trung_mac_dinh(db, moi) != ""
+    assert flow_service.default_overlap_warning(db, new) != ""

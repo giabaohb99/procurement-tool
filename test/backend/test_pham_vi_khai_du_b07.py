@@ -54,17 +54,17 @@ def test_moi_entity_deu_phai_duoc_khai_pham_vi():
     có chiều thật thì khai cột, cố ý không lọc thì khai `PUBLIC` kèm lý do. Không có
     lựa chọn thứ ba — bỏ trống là quay lại đúng lỗ N-14.
     """
-    thieu = [e for e in ENTITIES if e not in SCOPE_FIELDS]
-    assert thieu == [], (
-        f"{len(thieu)} entity chưa khai phạm vi: {thieu}. "
+    missing = [e for e in ENTITIES if e not in SCOPE_FIELDS]
+    assert missing == [], (
+        f"{len(missing)} entity chưa khai phạm vi: {missing}. "
         "Khai cột thật hoặc khai PUBLIC (kèm lý do) trong app/core/scoping.py."
     )
 
 
 def test_khong_khai_thua_entity_khong_ton_tai():
     """Khai dư = khai cho một entity không ai dùng → tưởng đã che mà thật ra chưa."""
-    thua = [e for e in SCOPE_FIELDS if e not in ENTITIES]
-    assert thua == [], f"khai thừa, không có trong ENTITIES: {thua}"
+    excess = [e for e in SCOPE_FIELDS if e not in ENTITIES]
+    assert excess == [], f"khai thừa, không có trong ENTITIES: {excess}"
 
 
 def test_du_45_entity():
@@ -167,15 +167,15 @@ def test_entity_cong_khai_khong_bi_loc(entity):
 def test_company_loc_theo_chinh_id_cua_no(db, seed):
     """Bảng công ty lấy `id` làm chiều pháp nhân, không phải `company_id`."""
     from app.modules.company.model import Company
-    khac = Company(name="Cty Khác", code="CT02", is_active=True)
-    db.add(khac)
+    other = Company(name="Cty Khác", code="CT02", is_active=True)
+    db.add(other)
     db.flush()
     assert db.query(Company).count() == 2
 
     user, profile = _ai_do(company_id=seed.company_id)
     cond = _role_scope_cond(Company, "company", "company", user, profile)
-    con_lai = db.query(Company).filter(cond).all()
-    assert [c.id for c in con_lai] == [seed.company_id]
+    remaining = db.query(Company).filter(cond).all()
+    assert [c.id for c in remaining] == [seed.company_id]
 
 
 def test_department_loc_theo_phap_nhan_chu_quan(db, seed):
@@ -186,9 +186,9 @@ def test_department_loc_theo_phap_nhan_chu_quan(db, seed):
 
     user, profile = _ai_do(company_id=seed.company_id)
     cond = _role_scope_cond(Department, "department", "company", user, profile)
-    con_lai = db.query(Department).filter(cond).all()
-    assert lac.id not in [d.id for d in con_lai]
-    assert seed.dept_id in [d.id for d in con_lai]
+    remaining = db.query(Department).filter(cond).all()
+    assert lac.id not in [d.id for d in remaining]
+    assert seed.dept_id in [d.id for d in remaining]
 
 
 def test_user_own_la_dung_tai_khoan_cua_minh(db, seed):
@@ -196,8 +196,8 @@ def test_user_own_la_dung_tai_khoan_cua_minh(db, seed):
     from app.modules.user.model import User
     user, profile = _ai_do(uid=seed.u_req_id, employee_id=seed.emp_req_id)
     cond = _role_scope_cond(User, "user", "own", user, profile)
-    con_lai = db.query(User).filter(cond).all()
-    assert [u.id for u in con_lai] == [seed.u_req_id]
+    remaining = db.query(User).filter(cond).all()
+    assert [u.id for u in remaining] == [seed.u_req_id]
 
 
 # ── 5. Đường vòng theo id — `get_scoped` ────────────────────────────────────────
@@ -209,8 +209,8 @@ def test_get_scoped_chan_go_thang_id_vao_url(db, seed):
     bịt nó, nơi gọi trả 404 y như id không tồn tại.
     """
     from app.modules.company.model import Company
-    khac = Company(name="Cty Khác", code="CT02", is_active=True)
-    db.add(khac)
+    other = Company(name="Cty Khác", code="CT02", is_active=True)
+    db.add(other)
     db.flush()
 
     user = SimpleNamespace(id=seed.u_req_id)
@@ -220,7 +220,7 @@ def test_get_scoped_chan_go_thang_id_vao_url(db, seed):
                            "scope": {}}]}
 
     assert get_scoped(db, Company, "company", seed.company_id, user, profile) is not None
-    assert get_scoped(db, Company, "company", khac.id, user, profile) is None
+    assert get_scoped(db, Company, "company", other.id, user, profile) is None
 
 
 def test_khong_grant_nao_thi_khong_thay_gi(db, seed):

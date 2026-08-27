@@ -162,7 +162,7 @@ def _run(ctx: ToolContext, args: dict) -> dict:
 
     lines = []
     dropped_groups = []   # phân loại model bịa ngoài danh mục — bỏ trống, kể lại cho model
-    thieu_so_luong = False
+    missing_quantity = False
     for raw in raw_lines[:MAX_LINES]:
         if not isinstance(raw, dict):
             continue
@@ -178,7 +178,7 @@ def _run(ctx: ToolContext, args: dict) -> dict:
             dropped_groups.append(raw_group)
         qty = _clean_number(raw.get("request_qty"))
         if qty <= 0:
-            thieu_so_luong = True
+            missing_quantity = True
         lines.append({
             "requirement_detail": detail,
             "item_group": group,
@@ -204,7 +204,7 @@ def _run(ctx: ToolContext, args: dict) -> dict:
         result["reminder"] += (" Phân loại bạn điền KHÔNG có trong danh mục nên đã bị bỏ trống "
                                "— nói rõ điều này và nêu danh sách phân loại hợp lệ "
                                "(item_groups) để người dùng chọn, hoặc chọn trên form.")
-    if thieu_so_luong:
+    if missing_quantity:
         result["reminder"] += (" Có dòng chưa có số lượng — nhắc người dùng bổ sung số lượng "
                                "trên form trước khi bấm Tạo.")
     _apply_company(ctx, args, result)
@@ -432,7 +432,7 @@ _LEAVE_DESC = (
 )
 
 
-def _ngay_iso(value) -> str | None:
+def _iso_date(value) -> str | None:
     """`YYYY-MM-DD` hợp lệ thì trả lại đúng chuỗi đó, sai thì `None` (model điền nên phải đỡ)."""
     from datetime import date
 
@@ -450,53 +450,53 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
 
     from app.core.leave_codes import LEAVE_SESSION_SET, LEAVE_TYPE_SET
     from app.modules.doc_catalog.model import DocType
-    from app.modules.document.type_metadata import (BUOI_CA_NGAY, BUOI_CHIEU,
-                                                    BUOI_SANG, LOAI_NGHI_PHEP,
-                                                    NGHI_PHEP_NAM, so_ngay_goi_y)
+    from app.modules.document.type_metadata import (SESSION_FULL_DAY, SESSION_AFTERNOON,
+                                                    SESSION_MORNING, LEAVE_DOC_TYPE,
+                                                    ANNUAL_LEAVE, suggested_days)
     from app.modules.employee.model import Employee
 
     #  Form tạo văn bản cần `doc_type_id` thật của môi trường đang chạy — tra sống, không
     #  đóng cứng id.
     gnp = (ctx.db.query(DocType)
-           .filter(DocType.code == LOAI_NGHI_PHEP, DocType.is_active.is_(True)).first())
+           .filter(DocType.code == LEAVE_DOC_TYPE, DocType.is_active.is_(True)).first())
     if gnp is None:
         return {"error": "Danh mục chưa khai loại văn bản Giấy nghỉ phép (mã GNP) hoặc loại "
                          "này đang tắt — báo người dùng liên hệ quản trị Văn thư."}
 
-    tu_ngay = _ngay_iso(args.get("from_date"))
-    den_ngay = _ngay_iso(args.get("to_date"))
-    ly_do = _clean_text(args.get("reason"), 500)
-    if not tu_ngay or not den_ngay or not ly_do:
+    from_date = _iso_date(args.get("from_date"))
+    to_date = _iso_date(args.get("to_date"))
+    reason = _clean_text(args.get("reason"), 500)
+    if not from_date or not to_date or not reason:
         return {"error": "Thiếu hoặc sai from_date / to_date (cần YYYY-MM-DD) hoặc reason — "
                          "hỏi người dùng bổ sung rồi gọi lại."}
-    if den_ngay < tu_ngay:
+    if to_date < from_date:
         return {"error": "«Đến ngày» đang trước «Từ ngày» — xác nhận lại ngày nghỉ với "
                          "người dùng rồi gọi lại."}
 
     #  Giá trị ngoài bộ mã thì về mặc định thay vì nổ lỗi: các ô này trên form là ô chọn,
     #  người dùng rà lại được; chặn cứng chỉ vì model gõ "morning " thừa dấu cách là quá tay.
-    def _trong_bo(value, bo, mac_dinh: str) -> str:
-        ma = _clean_text(value, 20)
-        return ma if ma in bo.values else mac_dinh
+    def _in_set(value, allowed, default: str) -> str:
+        code = _clean_text(value, 20)
+        return code if code in allowed.values else default
 
-    buoi_di = _trong_bo(args.get("from_session"), LEAVE_SESSION_SET, BUOI_CA_NGAY)
-    buoi_ve = _trong_bo(args.get("to_session"), LEAVE_SESSION_SET, BUOI_CA_NGAY)
-    if tu_ngay == den_ngay and buoi_di == BUOI_CHIEU and buoi_ve == BUOI_SANG:
+    from_session = _in_set(args.get("from_session"), LEAVE_SESSION_SET, SESSION_FULL_DAY)
+    to_session = _in_set(args.get("to_session"), LEAVE_SESSION_SET, SESSION_FULL_DAY)
+    if from_date == to_date and from_session == SESSION_AFTERNOON and to_session == SESSION_MORNING:
         return {"error": "Nghỉ từ buổi chiều đến buổi sáng CÙNG một ngày là khoảng trống — "
                          "hỏi lại người dùng buổi nghỉ."}
-    loai_nghi = _trong_bo(args.get("leave_type"), LEAVE_TYPE_SET, NGHI_PHEP_NAM)
+    leave_type = _in_set(args.get("leave_type"), LEAVE_TYPE_SET, ANNUAL_LEAVE)
 
     #  Cùng công thức gợi ý số ngày với form (đếm cả cuối tuần — người duyệt là chốt cuối).
-    so_ngay = so_ngay_goi_y(tu_ngay, den_ngay, buoi_di, buoi_ve)
+    day_count = suggested_days(from_date, to_date, from_session, to_session)
 
     emp = (ctx.db.get(Employee, ctx.user.employee_id)
            if getattr(ctx.user, "employee_id", None) else None)
-    ten = emp.full_name if emp else ""
-    d1, d2 = tu_ngay[8:10] + "/" + tu_ngay[5:7], den_ngay[8:10] + "/" + den_ngay[5:7]
-    khoang = d1 if tu_ngay == den_ngay else f"{d1} - {d2}"
+    name = emp.full_name if emp else ""
+    d1, d2 = from_date[8:10] + "/" + from_date[5:7], to_date[8:10] + "/" + to_date[5:7]
+    date_range = d1 if from_date == to_date else f"{d1} - {d2}"
     #  Tài khoản chưa gắn nhân sự thì tiêu đề bỏ tên — backend vẫn tự điền người nghỉ
     #  theo người tạo lúc lưu, không chặn ở đây.
-    title = " ".join(p for p in ("Giấy nghỉ phép", ten) if p) + f" ({khoang}/{den_ngay[:4]})"
+    title = " ".join(p for p in ("Giấy nghỉ phép", name) if p) + f" ({date_range}/{to_date[:4]})"
 
     return {
         "status": "ready",
@@ -508,18 +508,18 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
             "doc_type_code": gnp.code,
             "title": title,
             "leave": {
-                "leave_type": loai_nghi,
-                "from_date": tu_ngay,
-                "from_session": buoi_di,
-                "to_date": den_ngay,
-                "to_session": buoi_ve,
-                "total_days": so_ngay,
-                "reason": ly_do,
+                "leave_type": leave_type,
+                "from_date": from_date,
+                "from_session": from_session,
+                "to_date": to_date,
+                "to_session": to_session,
+                "total_days": day_count,
+                "reason": reason,
                 "contact_phone": _clean_text(args.get("contact_phone"), 30),
             },
         },
-        "leave_type_label": LEAVE_TYPE_SET.labels.get(loai_nghi, loai_nghi),
-        "note": f"Tổng số ngày {so_ngay} chỉ là GỢI Ý — đếm cả thứ Bảy/Chủ nhật vì hệ chưa "
+        "leave_type_label": LEAVE_TYPE_SET.labels.get(leave_type, leave_type),
+        "note": f"Tổng số ngày {day_count} chỉ là GỢI Ý — đếm cả thứ Bảy/Chủ nhật vì hệ chưa "
                 "có lịch làm việc; người dùng sửa được trên form và người duyệt là chốt cuối.",
         "reminder": "Đơn CHƯA được tạo. Hãy tóm tắt bản đề xuất (ngày nghỉ, loại nghỉ, số "
                     "ngày gợi ý, lý do) và mời người dùng bấm nút 'Tạo đơn nghỉ phép' dưới "

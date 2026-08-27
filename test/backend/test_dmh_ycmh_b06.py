@@ -122,11 +122,11 @@ def test_update_item_status_chan_chu_tieng_viet_kieu_cu(db, seed):
     db.add(it)
     db.commit()
 
-    def goi(gia_tri):
+    def goi(value):
         # `is_manager=True` để bỏ qua vế lọc "NSTM chỉ sửa dòng được giao cho mình" — ở đây
         # đang kiểm cửa chặn giá trị, không kiểm phân quyền.
         return pr_svc.update_item_status(
-            db, pr.id, ItemStatusIn(items=[ItemStatusItem(id=it.id, line_status=gia_tri)]),
+            db, pr.id, ItemStatusIn(items=[ItemStatusItem(id=it.id, line_status=value)]),
             seed.u_req_id, seed.emp_req_code, True)
 
     with pytest.raises(HTTPException) as e:
@@ -143,7 +143,7 @@ def test_import_misa_khong_ghi_thang_chu_la_vao_cot():
     một ô gõ sai là một dòng mang trạng thái không tồn tại. Nay lùi về bước đầu chuỗi."""
     from app.modules.import_tool import po_import
 
-    assert po_import.PROG_MAC_DINH == PO_PROGRESS_STATUS.ordered_values[0]
+    assert po_import.DEFAULT_PROGRESS == PO_PROGRESS_STATUS.ordered_values[0]
     assert set(po_import._PROGRESS.values()) <= set(PO_PROGRESS_STATUS.values)
     # "đang giao" từng được dịch thành "Đang giao hàng" — một chuỗi KHÔNG có trong máy trạng thái.
     assert po_import._PROGRESS["đang giao"] == "ordered"
@@ -164,7 +164,7 @@ def test_file_xuat_ra_CHU_con_api_tra_MA():
     gửi lại làm tham số lọc, file cần CHỮ cho người đọc. `dich_ma` là chỗ tách hai đường đó."""
     from app.modules.purchase_progress import export as pp_export
 
-    r = pp_export.dich_ma({"progress_status": "doc_sent", "line_status": "full",
+    r = pp_export.translate_codes({"progress_status": "doc_sent", "line_status": "full",
                            "delivery_status": "defect", "document_status": "none",
                            "po_code": "PO00001"})
     assert r["progress_status"] == "Đã gửi ĐMH cho KT"
@@ -179,7 +179,7 @@ def test_ma_la_khong_bi_nuot_mat():
     là người dùng tưởng dòng đó không có trạng thái nào."""
     from app.modules.purchase_progress import export as pp_export
 
-    r = pp_export.dich_ma({"progress_status": "Trạng thái lạ", "line_status": ""})
+    r = pp_export.translate_codes({"progress_status": "Trạng thái lạ", "line_status": ""})
     assert r["progress_status"] == "Trạng thái lạ"
     assert r["line_status"] == ""
 
@@ -189,10 +189,10 @@ _TEN_N1 = "a3f7d2e51c94_b06n1_chuan_hoa_bon_cot_phang_dmh_ycmh.py"
 _TEN_N2 = "b6e9c4801fa2_b06n2_chuan_hoa_may_trang_thai_tien_do_dong_dmh.py"
 
 
-def _nap_migration(ten: str, ten_mod: str):
-    duong_dan = Path(__file__).resolve().parents[2] / "migrations" / "versions" / ten
+def _nap_migration(name: str, ten_mod: str):
+    duong_dan = Path(__file__).resolve().parents[2] / "migrations" / "versions" / name
     if not duong_dan.exists():   # chạy trong container: /app/test/backend + /app/migrations
-        duong_dan = Path("/app/migrations/versions") / ten
+        duong_dan = Path("/app/migrations/versions") / name
     spec = importlib.util.spec_from_file_location(ten_mod, duong_dan)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -209,12 +209,12 @@ def n2():
     return _nap_migration(_TEN_N2, "mig_b06n2")
 
 
-def _dung_migration(db, mig, chieu: str) -> None:
+def _dung_migration(db, mig, direction: str) -> None:
     from alembic.migration import MigrationContext
     from alembic.operations import Operations
     ctx = MigrationContext.configure(db.connection())
     with Operations.context(ctx):
-        getattr(mig, chieu)()
+        getattr(mig, direction)()
     db.expire_all()
 
 
@@ -241,9 +241,9 @@ def test_n1_bang_nhan_cua_document_status_CO_Y_VIET_THUONG(n1):
     `status_codes.py` là "Chưa có chứng từ" (hoa chữ đầu) vì đó là chữ để HIỆN. `downgrade()`
     phải trả lại đúng thứ CSDL đang có, nên `_LABEL_PO_DOC` cố ý LỆCH với nhãn bộ mã."""
     assert set(n1._LABEL_PO_DOC) == set(PO_DOCUMENT_STATUS.values)
-    for ma, chu in n1._LABEL_PO_DOC.items():
-        assert chu == chu.lower(), ma
-        assert chu != PO_DOCUMENT_STATUS.label_of(ma), ma
+    for code, text in n1._LABEL_PO_DOC.items():
+        assert text == text.lower(), code
+        assert text != PO_DOCUMENT_STATUS.label_of(code), code
 
 
 @pytest.mark.parametrize("ten_map,ten_label,bo", [
@@ -258,8 +258,8 @@ def test_n1_ba_bo_con_lai_TRUNG_KHIT_nhan_bo_ma(n1, ten_map, ten_label, bo):
     label = getattr(n1, ten_label)
     assert set(getattr(n1, ten_map).values()) == set(bo.values)
     assert set(label) == set(bo.values)
-    for ma, chu in label.items():
-        assert chu == bo.label_of(ma), ma
+    for code, text in label.items():
+        assert text == bo.label_of(code), code
 
 
 def _nap_n1(db):
@@ -307,12 +307,12 @@ def test_n1_doi_het_bon_cot(db, n1):
 def test_n1_chay_xuoi_roi_nguoc_tra_ve_dung_tung_ky_tu(db, n1):
     """Điều kiện thứ ba của QĐ-12: `downgrade()` khôi phục byte-exact."""
     _nap_n1(db)
-    truoc = _doc_n1(db)
+    before = _doc_n1(db)
 
     _dung_migration(db, n1, "upgrade")
-    assert _doc_n1(db) != truoc
+    assert _doc_n1(db) != before
     _dung_migration(db, n1, "downgrade")
-    assert _doc_n1(db) == truoc
+    assert _doc_n1(db) == before
 
 
 def test_n1_o_rong_khong_bi_bia_thanh_mot_muc_that(db, n1):
@@ -342,14 +342,14 @@ def test_n1_chay_theo_lo_khong_bo_sot_dong_nao(db, n1, monkeypatch):
     db.commit()
 
     _dung_migration(db, n1, "upgrade")
-    con_lai = [r.line_status for r in db.query(POItem).all()]
-    assert con_lai == ["not_delivered"] * 7
+    remaining = [r.line_status for r in db.query(POItem).all()]
+    assert remaining == ["not_delivered"] * 7
 
 
-@pytest.mark.parametrize("chieu", ["upgrade", "downgrade"])
-def test_n1_bang_rong_khong_no(db, n1, chieu):
+@pytest.mark.parametrize("direction", ["upgrade", "downgrade"])
+def test_n1_bang_rong_khong_no(db, n1, direction):
     """Môi trường mới dựng chưa có đơn nào."""
-    _dung_migration(db, n1, chieu)
+    _dung_migration(db, n1, direction)
     assert _doc_n1(db) == {"pr": [], "doc": [], "item": [], "del": []}
 
 
@@ -358,8 +358,8 @@ def test_n2_bang_nhan_TRUNG_KHIT_nhan_bo_ma(n2):
     """Khác `document_status` ở nhịp 1: ở bộ này giá trị cũ và nhãn trùng nhau cả tám dòng."""
     assert set(n2._MAP.values()) == set(PO_PROGRESS_STATUS.values)
     assert set(n2._LABEL) == set(PO_PROGRESS_STATUS.values)
-    for ma, chu in n2._LABEL.items():
-        assert chu == PO_PROGRESS_STATUS.label_of(ma), ma
+    for code, text in n2._LABEL.items():
+        assert text == PO_PROGRESS_STATUS.label_of(code), code
 
 
 def test_n2_khop_ca_ban_go_khong_dau_va_chu_DMH(n2):
@@ -422,12 +422,12 @@ def test_n2_bo_tam_ngung_van_tra_dung_muc_truoc_do(db, n2):
 
 def test_n2_chay_xuoi_roi_nguoc_tra_ve_dung_tung_ky_tu(db, n2):
     _nap_n2(db)
-    truoc = _doc_n2(db)
+    before = _doc_n2(db)
 
     _dung_migration(db, n2, "upgrade")
-    assert _doc_n2(db) != truoc
+    assert _doc_n2(db) != before
     _dung_migration(db, n2, "downgrade")
-    assert _doc_n2(db) == truoc
+    assert _doc_n2(db) == before
 
 
 def test_n2_o_rong_cua_status_before_pause_giu_nguyen(db, n2):
@@ -457,9 +457,9 @@ def test_n2_chay_theo_lo_khong_bo_sot_dong_nao(db, n2, monkeypatch):
     assert [r.progress_status for r in db.query(POItem).all()] == ["not_ordered"] * 7
 
 
-@pytest.mark.parametrize("chieu", ["upgrade", "downgrade"])
-def test_n2_bang_rong_khong_no(db, n2, chieu):
-    _dung_migration(db, n2, chieu)
+@pytest.mark.parametrize("direction", ["upgrade", "downgrade"])
+def test_n2_bang_rong_khong_no(db, n2, direction):
+    _dung_migration(db, n2, direction)
     assert _doc_n2(db) == []
 
 
@@ -482,16 +482,16 @@ def test_hai_nhip_chay_noi_tiep_roi_lui_ve_dung_trang_thai_ban_dau(db, n1, n2):
                progress_status="Hoàn thành", status_before_pause=""),
     ])
     db.commit()
-    truoc = _doc_n1(db) | {"n2": _doc_n2(db)}
+    before = _doc_n1(db) | {"n2": _doc_n2(db)}
 
     _dung_migration(db, n1, "upgrade")
     _dung_migration(db, n2, "upgrade")
-    sau = _doc_n1(db) | {"n2": _doc_n2(db)}
-    assert sau["item"] == ["not_delivered", "full", ""]
-    assert sau["n2"] == [(1, "not_ordered", ""), (2, "paused", "doc_sent"),
+    after = _doc_n1(db) | {"n2": _doc_n2(db)}
+    assert after["item"] == ["not_delivered", "full", ""]
+    assert after["n2"] == [(1, "not_ordered", ""), (2, "paused", "doc_sent"),
                          (3, "completed", "")]
 
     # Lùi phải theo thứ tự ngược lại, đúng như alembic downgrade.
     _dung_migration(db, n2, "downgrade")
     _dung_migration(db, n1, "downgrade")
-    assert (_doc_n1(db) | {"n2": _doc_n2(db)}) == truoc
+    assert (_doc_n1(db) | {"n2": _doc_n2(db)}) == before

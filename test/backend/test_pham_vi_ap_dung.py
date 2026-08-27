@@ -142,9 +142,9 @@ def test_phong_ban_khai_kem_phap_nhan_chi_trung_dung_mot_noi(db, to_chuc):
 
 def test_khai_phong_ban_khong_kem_phap_nhan_bi_chan(db):
     """Chặn ở tầng nhập liệu, kèm câu nói rõ vì sao — không chỉ báo "sai dữ liệu"."""
-    with pytest.raises(ValidationError) as loi:
+    with pytest.raises(ValidationError) as error:
         ScopeCreate(dim=DIM_DEPARTMENT, department_id=9)
-    assert "13 pháp nhân" in str(loi.value)
+    assert "13 pháp nhân" in str(error.value)
 
 
 def test_khai_pham_vi_thieu_doi_tuong_bi_chan(db):
@@ -155,9 +155,9 @@ def test_khai_pham_vi_thieu_doi_tuong_bi_chan(db):
 
 
 def test_gom_don_vi_con_chi_co_nghia_voi_phap_nhan(db):
-    with pytest.raises(ValidationError) as loi:
+    with pytest.raises(ValidationError) as error:
         ScopeCreate(dim=DIM_EMPLOYEE, employee_id=1, include_children=True)
-    assert "đơn vị con" in str(loi.value)
+    assert "đơn vị con" in str(error.value)
 
 
 # ── F04 · gồm đơn vị con ────────────────────────────────────────────────────

@@ -35,7 +35,7 @@ def get_or_404(db: Session, rule_id: int) -> DocTypeLinkRule:
     return rule
 
 
-def _ap_khoa_trich_tu(values: dict) -> dict:
+def _apply_extracted_keys(values: dict) -> dict:
     """Dòng "trích từ" luôn mang đúng ba giá trị này, người khai không đổi được.
 
     Vì sao không cho khai: bản trích là CÙNG nội dung với gốc, chỉ ít hơn. Cho
@@ -48,7 +48,7 @@ def _ap_khoa_trich_tu(values: dict) -> dict:
     return values
 
 
-def _kiem_loai(db: Session, values: dict):
+def _check_types(db: Session, values: dict):
     if not db.get(DocType, values["source_type_id"]):
         raise HTTPException(400, "Loại văn bản nguồn không tồn tại")
     if values.get("target_type_id") and not db.get(DocType, values["target_type_id"]):
@@ -56,8 +56,8 @@ def _kiem_loai(db: Session, values: dict):
 
 
 def create_rule(db: Session, data: DocTypeLinkRuleCreate, actor: int) -> DocTypeLinkRule:
-    values = _ap_khoa_trich_tu(data.model_dump())
-    _kiem_loai(db, values)
+    values = _apply_extracted_keys(data.model_dump())
+    _check_types(db, values)
 
     rule = DocTypeLinkRule(**values, created_by=actor, updated_by=actor)
     db.add(rule)
@@ -77,8 +77,8 @@ def create_rule(db: Session, data: DocTypeLinkRuleCreate, actor: int) -> DocType
 
 def update_rule(db: Session, rule: DocTypeLinkRule, data: DocTypeLinkRuleUpdate,
                 actor: int) -> DocTypeLinkRule:
-    values = _ap_khoa_trich_tu(data.model_dump())
-    _kiem_loai(db, values)
+    values = _apply_extracted_keys(data.model_dump())
+    _check_types(db, values)
 
     for key, value in values.items():
         setattr(rule, key, value)

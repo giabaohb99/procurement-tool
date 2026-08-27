@@ -22,7 +22,7 @@ from app.modules.user.model import User
 
 
 @pytest.fixture()
-def du_lieu(db, monkeypatch):
+def data(db, monkeypatch):
     company = Company(code="MAIL-A", name="Pháp nhân A", issue_code="A", is_active=True)
     other_company = Company(code="MAIL-B", name="Pháp nhân B", issue_code="B", is_active=True)
     db.add_all([company, other_company])
@@ -125,11 +125,11 @@ def _scope(db, doc, *, dim, mode, company_id=None, department_id=None, employee_
         pytest.param("cho_lai_ca_nhan", [0, 2], id="loai-phong-cho-lai-mot-nguoi"),
     ],
 )
-def test_gui_chuong_va_email_dung_pham_vi(db, du_lieu, case, expected_indexes):
-    company = du_lieu["company"]
-    department = du_lieu["excluded_department"]
-    employees = du_lieu["employees"]
-    doc = du_lieu["doc"]
+def test_gui_chuong_va_email_dung_pham_vi(db, data, case, expected_indexes):
+    company = data["company"]
+    department = data["excluded_department"]
+    employees = data["employees"]
+    doc = data["doc"]
 
     if case != "mac_dinh_phap_nhan":
         _scope(db, doc, dim=DIM_COMPANY, mode=MODE_INCLUDE, company_id=company.id)
@@ -149,27 +149,27 @@ def test_gui_chuong_va_email_dung_pham_vi(db, du_lieu, case, expected_indexes):
     db.commit()
 
     count = issue_notification.notify_document_issued(
-        db, doc, du_lieu["version"], actor=du_lieu["users"][2].id)
+        db, doc, data["version"], actor=data["users"][2].id)
 
-    expected_user_ids = {du_lieu["users"][index].id for index in expected_indexes}
+    expected_user_ids = {data["users"][index].id for index in expected_indexes}
     notices = db.query(Notification).filter(Notification.title.like("[Văn bản mới]%")).all()
     logs = db.query(EmailLog).filter(EmailLog.event == "document_issued").all()
     assert count == len(expected_indexes)
     assert {row.user_id for row in notices} == expected_user_ids
     assert {row.to_email for row in logs} == {
-        du_lieu["employees"][index].email for index in expected_indexes
+        data["employees"][index].email for index in expected_indexes
     }
-    assert len(du_lieu["queued"]) == len(expected_indexes)
+    assert len(data["queued"]) == len(expected_indexes)
     assert all(row.link == f"/document/documents/{doc.id}?readonly=1" for row in notices)
-    assert all("?readonly=1" in args[3] for args in du_lieu["queued"])
-    assert all("XEM VĂN BẢN (CHỈ ĐỌC)" in args[3] for args in du_lieu["queued"])
-    assert all("Pháp nhân A" in args[3] for args in du_lieu["queued"])
+    assert all("?readonly=1" in args[3] for args in data["queued"])
+    assert all("XEM VĂN BẢN (CHỈ ĐỌC)" in args[3] for args in data["queued"])
+    assert all("Pháp nhân A" in args[3] for args in data["queued"])
 
 
-def test_nguoi_thuoc_pham_vi_duoc_doc_nhung_khong_duoc_sua(db, du_lieu):
-    user = du_lieu["users"][0]
-    employee = du_lieu["employees"][0]
-    doc = du_lieu["doc"]
+def test_nguoi_thuoc_pham_vi_duoc_doc_nhung_khong_duoc_sua(db, data):
+    user = data["users"][0]
+    employee = data["employees"][0]
+    doc = data["doc"]
     profile = {"employee_id": employee.id, "company_id": 0, "dept_id": 0, "grants": []}
 
     assert access_service.can(db, doc, user, profile, "read") is True
@@ -187,13 +187,13 @@ def test_nguoi_thuoc_pham_vi_duoc_doc_nhung_khong_duoc_sua(db, du_lieu):
     assert access_service.can(db, doc, user, profile, "read") is False
 
 
-def test_loi_hang_doi_khong_lam_hong_thong_bao(db, du_lieu, monkeypatch):
+def test_loi_hang_doi_khong_lam_hong_thong_bao(db, data, monkeypatch):
     def queue_failed(*_args):
         raise RuntimeError("Redis tạm ngắt")
 
     monkeypatch.setattr(send_email_task, "delay", queue_failed)
     count = issue_notification.notify_document_issued(
-        db, du_lieu["doc"], du_lieu["version"], actor=du_lieu["users"][2].id)
+        db, data["doc"], data["version"], actor=data["users"][2].id)
 
     assert count == 3
     assert db.query(Notification).count() == 3
@@ -203,12 +203,12 @@ def test_loi_hang_doi_khong_lam_hong_thong_bao(db, du_lieu, monkeypatch):
     assert all("Redis tạm ngắt" in row.error for row in logs)
 
 
-def test_trich_yeu_dai_khong_lam_tran_tieu_de_thong_bao(db, du_lieu):
-    du_lieu["doc"].title = "Văn bản có trích yếu dài " + ("x" * 500)
+def test_trich_yeu_dai_khong_lam_tran_tieu_de_thong_bao(db, data):
+    data["doc"].title = "Văn bản có trích yếu dài " + ("x" * 500)
     db.commit()
 
     issue_notification.notify_document_issued(
-        db, du_lieu["doc"], du_lieu["version"], actor=du_lieu["users"][2].id)
+        db, data["doc"], data["version"], actor=data["users"][2].id)
 
     assert all(len(row.title) <= 255 for row in db.query(Notification).all())
     assert all(len(row.subject) <= 255 for row in db.query(EmailLog).all())

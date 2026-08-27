@@ -36,7 +36,7 @@ from app.modules.user.model import User, UserRole, UserScope
 #
 #  Phòng ban khác nhau là CÓ Ý: ba trưởng phòng nằm ba phòng thì phạm vi dữ liệu
 #  `dept` mới nhìn ra được — cùng một màn danh sách, mỗi người thấy một tập phiếu.
-TAI_KHOAN = [
+ACCOUNTS = [
     ("TESTREQ", "Nhân sự tạo phiếu (Test)", "Nhân viên",
      "employee", "Phòng Kinh doanh", "người tạo phiếu test"),
     ("DEMONV", "Nhân viên xem văn bản (Demo)", "Nhân viên",
@@ -55,7 +55,7 @@ TAI_KHOAN = [
 
 #  Vai trò Văn bản gán THÊM cho hai tài khoản làm ví dụ. Cộng dồn với vai trò
 #  nghiệp vụ ở trên — hệ phân quyền là hợp (OR) của mọi vai trò người đó giữ.
-VAI_TRO_VAN_BAN = {
+DOCUMENT_ROLES = {
     "DEMONV": "vanban_xem",
     "DEMOTP": "vanban_sua",
     #  Quản lý công ty duyệt được văn bản của pháp nhân mình — dùng lại vai trò
@@ -66,26 +66,26 @@ VAI_TRO_VAN_BAN = {
 COMPANY_ME_ID = 1
 
 
-def _phong(db, ten: str, company_id: int) -> int | None:
+def _department_id(db, name: str, company_id: int) -> int | None:
     row = (db.query(Department.id)
-           .filter(Department.name == ten, Department.company_id == company_id)
+           .filter(Department.name == name, Department.company_id == company_id)
            .first())
     return row[0] if row else None
 
 
-def _vai_tro(db, code: str) -> Role | None:
+def _role(db, code: str) -> Role | None:
     return db.query(Role).filter(Role.code == code).first()
 
 
-def seed_tai_khoan_test(db, company_id: int = COMPANY_ME_ID) -> int:
+def seed_test_accounts(db, company_id: int = COMPANY_ME_ID) -> int:
     """Tạo/đồng bộ bảy tài khoản test. Chạy lại nhiều lần không đẻ thêm bản ghi.
 
     Trả về số HỒ SƠ NHÂN SỰ vừa tạo mới (0 nghĩa là đã có sẵn cả bảy).
     """
-    dem = 0
+    count = 0
 
-    for code, ho_ten, chuc_danh, role_code, ten_phong, _ghi_chu in TAI_KHOAN:
-        role = _vai_tro(db, role_code)
+    for code, full_name, job_title, role_code, department_name, _note in ACCOUNTS:
+        role = _role(db, role_code)
         if role is None:
             print(f"  Bỏ qua {code}: chưa có vai trò «{role_code}».")
             continue
@@ -93,15 +93,15 @@ def seed_tai_khoan_test(db, company_id: int = COMPANY_ME_ID) -> int:
         emp = db.query(Employee).filter(Employee.code == code).first()
         if not emp:
             emp = Employee(
-                code=code, full_name=ho_ten, company_id=company_id,
-                department_id=_phong(db, ten_phong, company_id),
-                position=chuc_danh,
+                code=code, full_name=full_name, company_id=company_id,
+                department_id=_department_id(db, department_name, company_id),
+                position=job_title,
                 status="official",   # B-03: MÃ, xem app/core/status_codes.EMPLOYEE_STATUS
                 is_active=True, created_by=1, updated_by=1,
             )
             db.add(emp)
             db.flush()
-            dem += 1
+            count += 1
 
         #  Mật khẩu = mã nhân viên, đúng quy ước của `demo-accounts.ts` và của bộ
         #  E2E (`test/e2e` đăng nhập TESTREQ/DEMONV/DEMOTP bằng chính mã).
@@ -125,10 +125,10 @@ def seed_tai_khoan_test(db, company_id: int = COMPANY_ME_ID) -> int:
         db.query(UserRole).filter(UserRole.user_id == user.id).delete(synchronize_session=False)
         db.add(UserRole(user_id=user.id, role_id=role.id, created_by=1, updated_by=1))
 
-        vai_tro_them = VAI_TRO_VAN_BAN.get(code)
-        role_vb = _vai_tro(db, vai_tro_them) if vai_tro_them else None
-        if vai_tro_them and role_vb is None:
-            print(f"  {code}: chưa có vai trò Văn bản «{vai_tro_them}», bỏ phần đó.")
+        extra_role = DOCUMENT_ROLES.get(code)
+        role_vb = _role(db, extra_role) if extra_role else None
+        if extra_role and role_vb is None:
+            print(f"  {code}: chưa có vai trò Văn bản «{extra_role}», bỏ phần đó.")
         if role_vb is not None:
             db.add(UserRole(user_id=user.id, role_id=role_vb.id, created_by=1, updated_by=1))
 
@@ -146,4 +146,4 @@ def seed_tai_khoan_test(db, company_id: int = COMPANY_ME_ID) -> int:
         perm_cache_clear(user.id)
 
     db.commit()
-    return dem
+    return count

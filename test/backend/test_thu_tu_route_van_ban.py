@@ -51,15 +51,15 @@ def test_moi_duong_dan_tinh_dang_ky_truoc_route_dong():
     )
     assert vi_tri_dong is not None, "Không tìm thấy route động /{document_id}"
 
-    muon = [
+    borrowed = [
         route.path for i, route in enumerate(app.routes)
         if i > vi_tri_dong
         and getattr(route, "path", "").startswith(PREFIX + "/")
         and _bi_nuot_boi_route_dong(route.path)
     ]
-    assert muon == [], (
+    assert borrowed == [], (
         "Các đường dẫn tĩnh sau đây đăng ký SAU /{document_id} nên sẽ bị nuốt và "
-        f"trả 422: {muon}. Chuyển router chứa chúng lên trước `document_router` "
+        f"trả 422: {borrowed}. Chuyển router chứa chúng lên trước `document_router` "
         "trong `app/main.py`."
     )
 

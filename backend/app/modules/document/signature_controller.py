@@ -59,7 +59,7 @@ def sign_document(
     user=Depends(require("document", "approve")),
 ):
     doc = _load(db, document_id, user)
-    chu_ky = signature_service.sign(
+    signature = signature_service.sign(
         db, doc,
         version_id=data.version_id,
         signer_employee_id=data.signer_employee_id,
@@ -73,8 +73,8 @@ def sign_document(
         actor=user.id,
     )
     record(db, user.id, "document", doc.id, "approve",
-           f"Ký {SIGN_KIND_LABELS.get(chu_ky.sign_kind, '')}")
-    return success(signature_service.serialize(db, chu_ky), "Đã ghi nhận chữ ký", 201)
+           f"Ký {SIGN_KIND_LABELS.get(signature.sign_kind, '')}")
+    return success(signature_service.serialize(db, signature), "Đã ghi nhận chữ ký", 201)
 
 
 #  KHÔNG có endpoint xóa chữ ký — cố ý. Bảng chỉ ghi thêm; một chữ ký gỡ được

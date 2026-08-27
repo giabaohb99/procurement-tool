@@ -303,7 +303,7 @@ def set_status(db: Session, rid: int, status: str, user_id: int, reason: str = "
                 if p_single:
                     matched_payables = [p_single]
 
-            def _tra(p, amt):
+            def _pay(p, amt):
                 p.paid_amount = round(float(p.paid_amount or 0) + amt, 2)
                 recalc_status(p)
                 if p.source_type == "goods" and p.ref_type == "delivery":
@@ -323,13 +323,13 @@ def set_status(db: Session, rid: int, status: str, user_id: int, reason: str = "
                 if p_rem <= 0:
                     continue
                 pay_part = min(rem_to_pay, p_rem)
-                _tra(p, pay_part)
+                _pay(p, pay_part)
                 rem_to_pay = round(rem_to_pay - pay_part, 2)
 
             if rem_to_pay > 0 and matched_payables:
                 # trả DƯ so với nợ (chi thêm, làm tròn...) -> ghi vào đúng khoản của dòng phiếu
                 p = (db.get(Payable, ln.payable_id) if ln.payable_id else None) or matched_payables[-1]
-                _tra(p, rem_to_pay)
+                _pay(p, rem_to_pay)
     db.commit()
     record(db, user_id, ENTITY, rid, status, reason)
     if status == "paid" and affected_po_ids:

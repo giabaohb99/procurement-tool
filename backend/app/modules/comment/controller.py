@@ -109,23 +109,23 @@ def _notify_new(db: Session, doc, label: str, route: str, c: Comment, user, back
     code = getattr(doc, "code", "") or f"#{c.entity_id}"
     who = get_user_display_name(db, user)
     # Chuông là chữ thuần, không render được chip -> đổi thẻ "@[12]" thành "@Tên"
-    noi_dung = service.strip_mentions(db, c.body)
-    excerpt = noi_dung if len(noi_dung) <= 140 else noi_dung[:140].rstrip() + "…"
+    content = service.strip_mentions(db, c.body)
+    excerpt = content if len(content) <= 140 else content[:140].rstrip() + "…"
     # Bài chỉ có file thì chuông trống trơn, người nhận không biết có gì -> ghi rõ số tệp.
-    so_tep = len(service.file_map(db, [c.id]).get(c.id, []))
-    if so_tep:
-        excerpt = (excerpt + " " if excerpt else "") + f"[đính kèm {so_tep} tệp]"
+    file_count = len(service.file_map(db, [c.id]).get(c.id, []))
+    if file_count:
+        excerpt = (excerpt + " " if excerpt else "") + f"[đính kèm {file_count} tệp]"
     link = f"{route}/{c.entity_id}"
 
     # Người được nhắc = chip "đang trả lời ai" + mọi người bị @ giữa câu (CR-031)
-    goi = [u for u in service.mention_map(db, [c.id]).get(c.id, []) if u != user.id]
-    if c.reply_to_user_id and c.reply_to_user_id != user.id and c.reply_to_user_id not in goi:
-        goi.insert(0, c.reply_to_user_id)
-    if goi:
-        _push(db, goi, f"{code} — Bạn được nhắc tên",
+    mentioned = [u for u in service.mention_map(db, [c.id]).get(c.id, []) if u != user.id]
+    if c.reply_to_user_id and c.reply_to_user_id != user.id and c.reply_to_user_id not in mentioned:
+        mentioned.insert(0, c.reply_to_user_id)
+    if mentioned:
+        _push(db, mentioned, f"{code} — Bạn được nhắc tên",
               f"{who} đã nhắc bạn trong {label} {code}: {excerpt}", link, user.id, background_tasks)
 
-    uids = service.recipient_ids(db, doc, c.entity, c.entity_id, user.id, exclude=set(goi))
+    uids = service.recipient_ids(db, doc, c.entity, c.entity_id, user.id, exclude=set(mentioned))
     _push(db, uids, f"{code} — Bình luận mới",
           f"{who} đã bình luận trong {label} {code}: {excerpt}", link, user.id, background_tasks)
 

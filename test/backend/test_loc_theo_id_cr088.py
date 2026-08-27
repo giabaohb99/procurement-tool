@@ -77,13 +77,13 @@ def test_hai_nguoi_trung_ten_loc_ra_dung_don_cua_tung_nguoi(db, seed):
 
 def test_like_khong_con_vo_lay_ten_chua_chuoi_con(db, seed):
     """`LIKE %Hân%` kéo luôn mọi người có chữ "Hân" trong tên. Lọc theo id thì không."""
-    han = _emp(db, "NV-HAN", "Hân", seed.company_id, seed.dept_id)
+    due = _emp(db, "NV-HAN", "Hân", seed.company_id, seed.dept_id)
     ngoc_han = _emp(db, "NV-NGOCHAN", "Nguyễn Thị Ngọc Hân", seed.company_id, seed.dept_id)
-    _po(db, "PO-HAN", company_id=seed.company_id, nspt_id=han.id, nspt="Hân")
+    _po(db, "PO-HAN", company_id=seed.company_id, nspt_id=due.id, nspt="Hân")
     _po(db, "PO-NGOCHAN", company_id=seed.company_id, nspt_id=ngoc_han.id,
         nspt="Nguyễn Thị Ngọc Hân")
 
-    assert _loc(db, nspt_id=str(han.id)) == ["PO-HAN"]
+    assert _loc(db, nspt_id=str(due.id)) == ["PO-HAN"]
     assert _loc(db, nspt="Hân") == ["PO-HAN", "PO-NGOCHAN"]     # đường cũ vẫn vơ cả hai
 
 
@@ -114,10 +114,10 @@ def test_nhanh_lui_so_BANG_chu_khong_LIKE(db, seed):
     """Nhánh lùi so tên bằng `==`. Nếu lỡ dùng `LIKE` thì nó thừa hưởng luôn tật khớp chuỗi con
     mà CR-088 đang đi chữa."""
     _emp(db, "NV-HAN", "Hân", seed.company_id, seed.dept_id)
-    han = db.query(Employee).filter(Employee.code == "NV-HAN").one()
+    due = db.query(Employee).filter(Employee.code == "NV-HAN").one()
     _po(db, "PO-CHUOI-CON", company_id=seed.company_id, nspt_id=0, nspt="Nguyễn Thị Ngọc Hân")
 
-    assert _loc(db, nspt_id=str(han.id)) == []
+    assert _loc(db, nspt_id=str(due.id)) == []
 
 
 def test_id_khac_thi_ten_trung_cung_khong_lot(db, seed):
@@ -181,9 +181,9 @@ def test_cot_ten_phai_la_COT_THAT_chu_khong_phai_relationship(db, seed):
 
     q = apply_filters(db.query(Employee), Employee, _Req(department_id=str(seed.dept_id)),
                       emp_service.FILTERABLE)
-    ma = [e.code for e in q.all()]
-    assert "NV-TRONG-PHONG" in ma
-    assert "NV-PHONG-KHAC" not in ma
+    code = [e.code for e in q.all()]
+    assert "NV-TRONG-PHONG" in code
+    assert "NV-PHONG-KHAC" not in code
 
 
 # ── Bộ lọc điều kiện (`<field>__<op>`) ───────────────────────────────────────────

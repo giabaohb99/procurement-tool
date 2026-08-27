@@ -22,8 +22,8 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy.exc import OperationalError
 
-from app.modules.approval.action_service import chiem_viec
-from app.modules.approval.concurrency import chay_chiu_tranh_chap
+from app.modules.approval.action_service import claim_task
+from app.modules.approval.concurrency import run_with_contention_retry
 from app.modules.approval.instance_model import (INSTANCE_APPROVED,
                                                  INSTANCE_BLOCKED,
                                                  INSTANCE_RETURNED,
@@ -31,7 +31,7 @@ from app.modules.approval.instance_model import (INSTANCE_APPROVED,
                                                  TASK_APPROVED, TASK_CANCELLED,
                                                  TASK_PENDING, TASK_REJECTED,
                                                  ApprovalInstance, ApprovalTask)
-from app.modules.approval.instance_controller import (DAI_TOI_DA_LY_DO,
+from app.modules.approval.instance_controller import (MAX_REASON_LEN,
                                                       ReasonIn)
 
 ACTOR = 1
@@ -79,10 +79,10 @@ def test_nhieu_phieu_DA_DONG_thi_van_binh_thuong(db):
     _phien(db, "document", 779, INSTANCE_RUNNING)   # phiếu đang chạy duy nhất
     db.flush()
 
-    dem = (db.query(ApprovalInstance)
+    count = (db.query(ApprovalInstance)
            .filter(ApprovalInstance.entity == "document",
                    ApprovalInstance.entity_id == 779).count())
-    assert dem == 3
+    assert count == 3
 
 
 def test_hai_chung_tu_khac_nhau_khong_dam_nhau(db):
@@ -101,13 +101,13 @@ def _loi_ket_khoa() -> OperationalError:
 
 
 def test_ket_khoa_thi_bao_409_chu_khong_phai_500(db):
-    def viec():
+    def task():
         raise _loi_ket_khoa()
 
-    with pytest.raises(HTTPException) as loi:
-        chay_chiu_tranh_chap(db, viec)
-    assert loi.value.status_code == 409
-    assert "người khác" in loi.value.detail
+    with pytest.raises(HTTPException) as error:
+        run_with_contention_retry(db, task)
+    assert error.value.status_code == 409
+    assert "người khác" in error.value.detail
 
 
 def test_TUYET_DOI_khong_chay_lai_khi_ket_khoa(db):
@@ -120,34 +120,34 @@ def test_TUYET_DOI_khong_chay_lai_khi_ket_khoa(db):
     """
     lan = {"dem": 0}
 
-    def viec():
+    def task():
         lan["dem"] += 1
         raise _loi_ket_khoa()
 
     with pytest.raises(HTTPException):
-        chay_chiu_tranh_chap(db, viec)
+        run_with_contention_retry(db, task)
     assert lan["dem"] == 1, "Chỉ được chạy ĐÚNG MỘT lần, không thử lại"
 
 
 def test_loi_KHONG_phai_ket_khoa_thi_de_nguyen(db):
     """Đừng nuốt lỗi thật thành 409 — cột sai kiểu, cú pháp hỏng… phải nổi lên."""
-    that = OperationalError("SELECT …", {}, Exception(1054, "Unknown column"))
+    real_ids = OperationalError("SELECT …", {}, Exception(1054, "Unknown column"))
 
-    def viec():
-        raise that
+    def task():
+        raise real_ids
 
     with pytest.raises(OperationalError):
-        chay_chiu_tranh_chap(db, viec)
+        run_with_contention_retry(db, task)
 
 
 def test_khong_thu_lai_khi_chay_tron(db):
     lan = {"dem": 0}
 
-    def viec():
+    def task():
         lan["dem"] += 1
         return "ok"
 
-    assert chay_chiu_tranh_chap(db, viec) == "ok"
+    assert run_with_contention_retry(db, task) == "ok"
     assert lan["dem"] == 1, "Chạy trót lọt thì tuyệt đối không chạy lại — nó ghi CSDL"
 
 
@@ -170,26 +170,26 @@ def test_chiem_viec_lan_hai_bi_chan(db):
     *Duyệt* và HAI dòng *Kết thúc* cho một người bấm một lần.
     """
     task = _viec(db)
-    chiem_viec(db, task, TASK_APPROVED, ACTOR)
+    claim_task(db, task, TASK_APPROVED, ACTOR)
     assert task.status == TASK_APPROVED
 
-    with pytest.raises(HTTPException) as loi:
-        chiem_viec(db, task, TASK_APPROVED, ACTOR)
-    assert loi.value.status_code == 409
-    assert "vừa được xử lý" in loi.value.detail
+    with pytest.raises(HTTPException) as error:
+        claim_task(db, task, TASK_APPROVED, ACTOR)
+    assert error.value.status_code == 409
+    assert "vừa được xử lý" in error.value.detail
 
 
 def test_khong_chiem_duoc_viec_da_bi_huy(db):
     """Việc đã hủy (phiếu bị trả lại) thì không ai bấm lên nó được nữa."""
     task = _viec(db, status=TASK_CANCELLED)
-    with pytest.raises(HTTPException) as loi:
-        chiem_viec(db, task, TASK_APPROVED, ACTOR)
-    assert loi.value.status_code == 409
+    with pytest.raises(HTTPException) as error:
+        claim_task(db, task, TASK_APPROVED, ACTOR)
+    assert error.value.status_code == 409
 
 
 def test_chiem_viec_ghi_dung_trang_thai_va_moc_gio(db):
     task = _viec(db)
-    chiem_viec(db, task, TASK_REJECTED, ACTOR)
+    claim_task(db, task, TASK_REJECTED, ACTOR)
     assert task.status == TASK_REJECTED
     assert task.decided_at is not None, "Phải đóng mốc giờ quyết định"
 
@@ -201,14 +201,14 @@ def test_ly_do_qua_dai_bi_chan_o_cua():
     from pydantic import ValidationError
 
     with pytest.raises(ValidationError):
-        ReasonIn(reason="X" * (DAI_TOI_DA_LY_DO + 1))
+        ReasonIn(reason="X" * (MAX_REASON_LEN + 1))
 
 
 def test_ly_do_dung_bang_tran_van_qua():
-    assert len(ReasonIn(reason="X" * DAI_TOI_DA_LY_DO).reason) == DAI_TOI_DA_LY_DO
+    assert len(ReasonIn(reason="X" * MAX_REASON_LEN).reason) == MAX_REASON_LEN
 
 
 def test_tran_ly_do_khop_be_rong_cot():
     """Hai con số này lệch nhau là lỗi quay lại: chặn 2000 mà cột chỉ chứa 1000."""
-    cot = ApprovalInstance.__table__.c.finish_reason.type.length
-    assert DAI_TOI_DA_LY_DO == cot
+    columns = ApprovalInstance.__table__.c.finish_reason.type.length
+    assert MAX_REASON_LEN == columns

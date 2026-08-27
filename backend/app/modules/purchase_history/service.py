@@ -81,7 +81,7 @@ def snapshot_line_safe(db: Session, po, item) -> None:
 
 
 def list_history(db: Session, pg: dict, product_code: str = "", supplier_code: str = "",
-                 search: str = "", tim_theo_ncc: bool = True) -> tuple[int, list]:
+                 search: str = "", search_by_supplier: bool = True) -> tuple[int, list]:
     """Danh sách lịch sử, mới nhất trước. Lọc theo mã SP hoặc mã NCC (dùng chung cho 2 màn).
 
     `search`: tìm gần đúng trên Mã PO / Tên NCC / Tên SP / Tên công ty — phục vụ ô tìm kiếm
@@ -99,12 +99,12 @@ def list_history(db: Session, pg: dict, product_code: str = "", supplier_code: s
     if search.strip():
         from sqlalchemy import or_
         kw = f"%{search.strip()}%"
-        ve = [PurchaseHistory.po_code.like(kw),
+        clauses = [PurchaseHistory.po_code.like(kw),
               PurchaseHistory.product_name.like(kw),
               PurchaseHistory.company_name.like(kw)]
-        if tim_theo_ncc:
-            ve.append(PurchaseHistory.supplier_name.like(kw))
-        query = query.filter(or_(*ve))
+        if search_by_supplier:
+            clauses.append(PurchaseHistory.supplier_name.like(kw))
+        query = query.filter(or_(*clauses))
     total = query.count()
     items = (query.order_by(PurchaseHistory.order_date.desc(), PurchaseHistory.id.desc())
              .offset(pg["offset"]).limit(pg["limit"]).all())

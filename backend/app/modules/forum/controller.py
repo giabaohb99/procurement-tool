@@ -54,6 +54,7 @@ def _out(p: ForumPost, authors: dict, user_id: int, likes: dict,
         "author_code": a.get("code", ""),
         "author_avatar": a.get("avatar", ""),
         "created_at": p.created_at,
+        "pinned_at": p.pinned_at,   # F9a: khác None = đang ghim, FE vẽ nhãn ghim
         "can_delete": p.created_by == user_id,   # tác giả xóa bài mình; admin đi đường F5
         "can_moderate": moderator,               # F5: FE mở menu ẩn/xóa/khôi phục
         "like_count": lk.get("count", 0),
@@ -80,7 +81,7 @@ def _pack(db: Session, rows: list[ForumPost], user) -> list[dict]:
             for p in rows]
 
 
-def _trang(db: Session, user, rows_plus: list[ForumPost], limit: int) -> dict:
+def _page(db: Session, user, rows_plus: list[ForumPost], limit: int) -> dict:
     """Đóng một trang feed: lấy dư 1 dòng để biết còn trang sau hay không."""
     has_more = len(rows_plus) > limit
     rows = rows_plus[:limit]
@@ -98,7 +99,19 @@ def feed(limit: int = Query(service.PAGE_SIZE, ge=1, le=50),
     """Bảng tin — thời gian thuần mới → cũ, con trỏ `before_id`, lọc audience trong SQL."""
     profile = get_perm_profile(db, user)
     rows = service.list_posts(db, user, profile, limit + 1, before_id)
-    return success(_trang(db, user, rows, limit))
+    return success(_page(db, user, rows, limit))
+
+
+@router.get("/posts/pinned")
+def pinned_feed(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Bài đang ghim (F9a/CR-199) — dải đầu Bảng tin + tab «Thông báo».
+
+    PHẢI khai TRƯỚC `GET /posts/{pid}` — không thì "pinned" bị nuốt vào `pid`
+    (khuôn static-trước-dynamic của router văn thư).
+    """
+    profile = get_perm_profile(db, user)
+    rows = service.list_pinned_posts(db, user, profile)
+    return success(_pack(db, rows, user))
 
 
 @router.get("/users/{author_id}/posts")
@@ -109,7 +122,7 @@ def user_feed(author_id: int,
     """Trang cá nhân = tủ bài viết (QĐ-D3). Trang của CHÍNH MÌNH thấy cả bài bị ẩn."""
     profile = get_perm_profile(db, user)
     rows = service.list_posts(db, user, profile, limit + 1, before_id, author_id=author_id)
-    return success(_trang(db, user, rows, limit))
+    return success(_page(db, user, rows, limit))
 
 
 @router.get("/posts/{pid}")
@@ -243,3 +256,25 @@ def remove_post(pid: int, data: schema.ModerationIn, background_tasks: Backgroun
                    f"Quản trị viên đã xóa bài viết của bạn. Lý do: {log.reason}",
                    "", user.id, background_tasks)
     return success(None, "Đã xóa bài viết")
+
+
+# ── Ghim bài (F9a/CR-199) — cùng cổng quyền `forum_post.write` với ẩn/khôi phục;
+# ghim là ĐỀ CAO chứ không phải chế tài nên không lý do, không nhật ký kiểm
+# duyệt, không chuông.
+
+@router.post("/posts/{pid}/pin")
+def pin_post(pid: int, db: Session = Depends(get_db),
+             user=Depends(require("forum_post", "write"))):
+    """Ghim bài lên dải Thông báo — chỉ bài đang hiển thị (service chặn 400)."""
+    post = _get_post_or_404(db, pid)
+    service.set_post_pinned(db, user, post, True)
+    return success(_pack(db, [post], user)[0], "Đã ghim bài viết")
+
+
+@router.post("/posts/{pid}/unpin")
+def unpin_post(pid: int, db: Session = Depends(get_db),
+               user=Depends(require("forum_post", "write"))):
+    """Bỏ ghim — bài vẫn nằm nguyên trên feed theo thời gian."""
+    post = _get_post_or_404(db, pid)
+    service.set_post_pinned(db, user, post, False)
+    return success(_pack(db, [post], user)[0], "Đã bỏ ghim bài viết")

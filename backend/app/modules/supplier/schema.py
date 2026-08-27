@@ -27,7 +27,7 @@ class SupplierCreate(SupplierBase):
     # Chặn ở CẢ Create lẫn Update — xem ghi chú cùng ý ở `employee/schema.py`.
     @field_validator("legal_type")
     @classmethod
-    def _kiem_legal_type(cls, v: str) -> str:
+    def _check_legal_type(cls, v: str) -> str:
         return SUPPLIER_LEGAL_TYPE.validate(v)
 
 
@@ -48,7 +48,7 @@ class SupplierUpdate(BaseModel):
 
     @field_validator("legal_type")
     @classmethod
-    def _kiem_legal_type(cls, v: str | None) -> str | None:
+    def _check_legal_type(cls, v: str | None) -> str | None:
         return SUPPLIER_LEGAL_TYPE.validate(v)
 
 

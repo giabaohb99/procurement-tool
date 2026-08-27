@@ -12,7 +12,7 @@ Bộ máy đi tìm trưởng bộ phận của người đó, không ra ai, và 
 """
 import pytest
 
-from app.modules.document.approval_bridge import _nhan_su_cua_tai_khoan
+from app.modules.document.approval_bridge import _employee_id_of_user
 from app.modules.employee.model import Employee
 from app.modules.user.model import User
 
@@ -31,7 +31,7 @@ def van_thu_con(db, seed):
 
 
 def test_lay_dung_nhan_su_cua_tai_khoan_dang_bam(db, van_thu_con):
-    assert _nhan_su_cua_tai_khoan(db, van_thu_con["user"].id) == van_thu_con["emp"].id
+    assert _employee_id_of_user(db, van_thu_con["user"].id) == van_thu_con["emp"].id
 
 
 def test_tai_khoan_chua_gan_ho_so_nhan_su_thi_tra_None(db):
@@ -40,12 +40,12 @@ def test_tai_khoan_chua_gan_ho_so_nhan_su_thi_tra_None(db):
     db.add(user)
     db.commit()
 
-    assert _nhan_su_cua_tai_khoan(db, user.id) is None
+    assert _employee_id_of_user(db, user.id) is None
 
 
 def test_khong_co_tai_khoan_thi_tra_None(db):
-    assert _nhan_su_cua_tai_khoan(db, 0) is None
-    assert _nhan_su_cua_tai_khoan(db, 999999) is None
+    assert _employee_id_of_user(db, 0) is None
+    assert _employee_id_of_user(db, 999999) is None
 
 
 def test_nguoi_nop_khac_nguoi_ghi_tren_phieu(db, seed, van_thu_con):
@@ -55,7 +55,7 @@ def test_nguoi_nop_khac_nguoi_ghi_tren_phieu(db, seed, van_thu_con):
     luồng định tuyến sai và phiếu kẹt. Sau bản vá phải ra người BẤM.
     """
     nguoi_ghi_tren_phieu = seed.emp_req_id
-    nguoi_bam = _nhan_su_cua_tai_khoan(db, van_thu_con["user"].id)
+    nguoi_bam = _employee_id_of_user(db, van_thu_con["user"].id)
 
     #  Hai người này khác nhau — đúng tình huống của bản clone.
     assert nguoi_bam != nguoi_ghi_tren_phieu

@@ -14,7 +14,7 @@ from .schema import ActiveUpdate, PasswordReset, RoleAssign, ScopeUpdate, UserOu
 router = APIRouter(prefix="/api/users", tags=["user"])
 
 
-def _chan_ngoai_pham_vi(db, user_id: int, user, action: str):
+def _block_out_of_scope(db, user_id: int, user, action: str):
     """Tài khoản #user_id phải nằm trong phạm vi của người đang thao tác — B-07.
 
     Danh sách tài khoản là màn nhạy nhất của hệ: các endpoint dưới đây đặt lại mật khẩu,
@@ -66,7 +66,7 @@ def reset_password(
     user_id: int, data: PasswordReset, db: Session = Depends(get_db),
     user=Depends(require("user", "write")),
 ):
-    _chan_ngoai_pham_vi(db, user_id, user, "write")
+    _block_out_of_scope(db, user_id, user, "write")
     service.reset_password(db, user_id, data.new_password, user.id)
     return success(None, "Đã đặt lại mật khẩu")
 
@@ -76,13 +76,13 @@ def assign_roles(
     user_id: int, data: RoleAssign, db: Session = Depends(get_db),
     user=Depends(require("user", "write")),
 ):
-    _chan_ngoai_pham_vi(db, user_id, user, "write")
+    _block_out_of_scope(db, user_id, user, "write")
     #  Ba chốt chống tự nâng quyền — xem `core/privilege_escalation.py`. Không có
     #  chúng thì bất kỳ ai có `user.write` tự phong quản trị hệ thống bằng đúng
     #  một lần bấm trên chính trang của mình (dựng lại được 25/08/2026).
-    privilege_escalation.chan_tu_sua_quyen_cua_minh(user_id, user)
-    privilege_escalation.chan_vai_tro_khong_ton_tai(db, data.role_ids)
-    privilege_escalation.chan_gan_vai_tro_vuot_quyen(db, user, data.role_ids)
+    privilege_escalation.block_edit_own_permissions(user_id, user)
+    privilege_escalation.block_missing_roles(db, data.role_ids)
+    privilege_escalation.block_role_escalation(db, user, data.role_ids)
     service.assign_roles(db, user_id, data, user.id)
     return success(None, "Đã gán vai trò")
 
@@ -92,7 +92,7 @@ def set_active(
     user_id: int, data: ActiveUpdate, db: Session = Depends(get_db),
     user=Depends(require("user", "write")),
 ):
-    _chan_ngoai_pham_vi(db, user_id, user, "write")
+    _block_out_of_scope(db, user_id, user, "write")
     #  Tự khóa mình là tự đá mình ra khỏi hệ: đăng nhập lại không được, mà cửa mở
     #  khóa lại nằm sau đúng cái đăng nhập đó. Người khác gỡ hộ được — trừ khi
     #  người vừa bấm là quản trị duy nhất, lúc đó cả hệ mất đường vào.
@@ -106,7 +106,7 @@ def set_active(
 
 @router.delete("/{user_id}")
 def delete_user(user_id: int, db: Session = Depends(get_db), user=Depends(require("user", "delete"))):
-    _chan_ngoai_pham_vi(db, user_id, user, "delete")
+    _block_out_of_scope(db, user_id, user, "delete")
     service.delete_user(db, user_id, user.id)
     return success(None, "Đã xóa tài khoản")
 
@@ -129,15 +129,15 @@ def get_user(user_id: int, db: Session = Depends(get_db), user=Depends(require("
 
 @router.get("/{user_id}/roles/{role_id}/scope")
 def get_scope(user_id: int, role_id: int, db: Session = Depends(get_db), user=Depends(require("user", "read"))):
-    _chan_ngoai_pham_vi(db, user_id, user, "read")
+    _block_out_of_scope(db, user_id, user, "read")
     return success(service.get_user_scope(db, user_id, role_id))
 
 
 @router.put("/{user_id}/roles/{role_id}/scope")
 def set_scope(user_id: int, role_id: int, data: ScopeUpdate, db: Session = Depends(get_db),
               user=Depends(require("user", "write"))):
-    _chan_ngoai_pham_vi(db, user_id, user, "write")
+    _block_out_of_scope(db, user_id, user, "write")
     #  Phạm vi dữ liệu cũng là quyền: tự đặt cho mình `all` là thấy toàn bộ hệ.
-    privilege_escalation.chan_tu_sua_quyen_cua_minh(user_id, user)
+    privilege_escalation.block_edit_own_permissions(user_id, user)
     service.set_user_scope(db, user_id, role_id, data, user.id)
     return success(None, "Đã lưu phạm vi")

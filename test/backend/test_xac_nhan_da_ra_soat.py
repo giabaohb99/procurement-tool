@@ -37,7 +37,7 @@ def doc(db, seed):
 
 
 def test_xac_nhan_thi_tat_co_va_xoa_ghi_chu(db, doc):
-    service.xac_nhan_da_ra_soat(db, doc, "Đã đối chiếu, vẫn đúng", ACTOR)
+    service.confirm_reviewed(db, doc, "Đã đối chiếu, vẫn đúng", ACTOR)
 
     assert doc.needs_review is False
     assert doc.needs_review_note == ""
@@ -45,23 +45,23 @@ def test_xac_nhan_thi_tat_co_va_xoa_ghi_chu(db, doc):
 
 def test_khong_co_dau_thi_khong_xac_nhan_duoc(db, doc):
     """Bấm hai lần, hoặc bấm trên văn bản không có dấu — phải báo rõ, không im lặng."""
-    service.xac_nhan_da_ra_soat(db, doc, "lần một", ACTOR)
+    service.confirm_reviewed(db, doc, "lần một", ACTOR)
 
-    with pytest.raises(HTTPException) as loi:
-        service.xac_nhan_da_ra_soat(db, doc, "lần hai", ACTOR)
+    with pytest.raises(HTTPException) as error:
+        service.confirm_reviewed(db, doc, "lần hai", ACTOR)
 
-    assert loi.value.status_code == 400
+    assert error.value.status_code == 400
 
 
 def test_xac_nhan_khong_dung_toi_noi_dung_hay_trang_thai(db, doc):
     """Rà soát là việc ĐỌC — không được đổi trạng thái hay nội dung văn bản."""
-    trang_thai = doc.status
-    tieu_de = doc.title
+    status = doc.status
+    title = doc.title
 
-    service.xac_nhan_da_ra_soat(db, doc, "Đã đối chiếu", ACTOR)
+    service.confirm_reviewed(db, doc, "Đã đối chiếu", ACTOR)
 
-    assert doc.status == trang_thai
-    assert doc.title == tieu_de
+    assert doc.status == status
+    assert doc.title == title
 
 
 def test_ket_luan_qua_ngan_bi_chan_o_schema(db):
@@ -69,14 +69,14 @@ def test_ket_luan_qua_ngan_bi_chan_o_schema(db):
     from app.modules.document.schema import ReviewedIn
 
     with pytest.raises(ValueError):
-        ReviewedIn(ket_luan="ok"[:2])
+        ReviewedIn(conclusion="ok"[:2])
 
     #  Ba ký tự trở lên thì nhận.
-    assert ReviewedIn(ket_luan="Đã rà").ket_luan == "Đã rà"
+    assert ReviewedIn(conclusion="Đã rà").conclusion == "Đã rà"
 
 
 def test_ket_luan_qua_dai_cung_bi_chan(db):
     from app.modules.document.schema import ReviewedIn
 
     with pytest.raises(ValueError):
-        ReviewedIn(ket_luan="x" * 301)
+        ReviewedIn(conclusion="x" * 301)

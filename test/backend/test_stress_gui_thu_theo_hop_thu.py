@@ -60,26 +60,26 @@ class SMTPGia:
     ghi: list = []
 
     def __init__(self, host, port=587, *a, **kw):
-        self.phien = {"host": host, "port": port, "tls": False,
+        self.instance = {"host": host, "port": port, "tls": False,
                       "login": None, "envelope_from": None, "raw": ""}
 
     def __enter__(self):
         return self
 
     def __exit__(self, *a):
-        SMTPGia.ghi.append(self.phien)
+        SMTPGia.ghi.append(self.instance)
         return False
 
     def starttls(self, *a, **kw):
-        self.phien["tls"] = True
+        self.instance["tls"] = True
 
     def login(self, user, password):
-        self.phien["login"] = (user, password)
+        self.instance["login"] = (user, password)
 
     def sendmail(self, from_addr, to_addrs, msg):
-        self.phien["envelope_from"] = from_addr
-        self.phien["to"] = to_addrs
-        self.phien["raw"] = msg
+        self.instance["envelope_from"] = from_addr
+        self.instance["to"] = to_addrs
+        self.instance["raw"] = msg
 
 
 @pytest.fixture()
@@ -130,8 +130,8 @@ class _PhienKhongDongDuoc:
     def __init__(self, db):
         self._db = db
 
-    def __getattr__(self, ten):
-        return getattr(self._db, ten)
+    def __getattr__(self, name):
+        return getattr(self._db, name)
 
     def close(self):
         pass
@@ -142,14 +142,14 @@ def _phien_db(db):
     return lambda: _PhienKhongDongDuoc(db)
 
 
-def _hop_thu(db, email="hr@gmail.com", *, ten="Phòng Hành chính", host="smtp.gmail.com",
-             mat_khau="mk-hr", tls=True, hoat_dong=True, nguoi_dung=()):
-    row = Mailbox(code=email.split("@")[0].upper()[:30], name=ten, email=email,
-                  display_name=ten, smtp_host=host, smtp_port=587,
+def _hop_thu(db, email="hr@gmail.com", *, name="Phòng Hành chính", host="smtp.gmail.com",
+             password="mk-hr", tls=True, hoat_dong=True, nguoi_dung=()):
+    row = Mailbox(code=email.split("@")[0].upper()[:30], name=name, email=email,
+                  display_name=name, smtp_host=host, smtp_port=587,
                   smtp_user=email, use_tls=tls, is_active=hoat_dong,
                   created_by=ACTOR, updated_by=ACTOR)
-    if mat_khau:
-        mailbox_service.dat_mat_khau(row, mat_khau)
+    if password:
+        mailbox_service.set_password(row, password)
     db.add(row)
     db.flush()
     for emp in nguoi_dung:
@@ -187,11 +187,11 @@ def test_dang_nhap_bang_CHINH_hop_thu_chu_khong_phai_tai_khoan_he_thong(db, smtp
     log = _gui(db, _thu(db, mailbox_id=hr.id))
 
     assert len(smtp.ghi) == 1
-    phien = smtp.ghi[0]
-    assert phien["host"] == "smtp.gmail.com", "Phải nối tới máy chủ CỦA HỘP THƯ"
-    assert phien["login"] == ("hr@gmail.com", "mk-hr"), \
+    instance = smtp.ghi[0]
+    assert instance["host"] == "smtp.gmail.com", "Phải nối tới máy chủ CỦA HỘP THƯ"
+    assert instance["login"] == ("hr@gmail.com", "mk-hr"), \
         "Phải đăng nhập bằng chính hộp thư, không phải tài khoản hệ thống"
-    assert phien["envelope_from"] == "hr@gmail.com"
+    assert instance["envelope_from"] == "hr@gmail.com"
     assert log.status == "sent"
 
 
@@ -229,10 +229,10 @@ def test_hop_thu_tat_TLS_thi_khong_goi_starttls(db, smtp, bat_email):
 def test_khong_chon_hop_thu_thi_gui_bang_SMTP_dung_chung(db, smtp, bat_email):
     log = _gui(db, _thu(db, mailbox_id=None))
 
-    phien = smtp.ghi[0]
-    assert phien["host"] == "smtp.hethong.vn"
-    assert phien["login"] == ("he-thong@dego.vn", "mk-he-thong")
-    assert phien["envelope_from"] == "he-thong@dego.vn"
+    instance = smtp.ghi[0]
+    assert instance["host"] == "smtp.hethong.vn"
+    assert instance["login"] == ("he-thong@dego.vn", "mk-he-thong")
+    assert instance["envelope_from"] == "he-thong@dego.vn"
     assert log.status == "sent"
 
 
@@ -269,7 +269,7 @@ def test_hop_thu_bi_xoa_sau_khi_ban_hanh_thi_lui_ve_dia_chi_he_thong(db, smtp, b
 def test_hop_thu_mat_mat_khau_thi_lui_chu_khong_bao_loi(db, smtp, bat_email):
     hr = _hop_thu(db)
     log = _thu(db, mailbox_id=hr.id)
-    mailbox_service.xoa_mat_khau(hr)
+    mailbox_service.clear_password(hr)
     db.commit()
 
     log = _gui(db, log)
@@ -295,10 +295,10 @@ def test_SMTP_cua_hop_thu_no_thi_ghi_that_bai_kem_ly_do(db, smtp, bat_email, mon
 # ── 4 · Chuỗi đầu–cuối: khai qua API → ban hành → soi thư ───────────────────
 
 @pytest.fixture()
-def canh(db, seed, cap_quyen):
+def align(db, seed, cap_quyen):
     """Nhân sự hành chính (soạn) + giám đốc (ký) + loại Thông báo chờ ban hành."""
-    def _nguoi(ma, ten, email):
-        emp = Employee(code=ma, full_name=ten, email=email,
+    def _people(code, name, email):
+        emp = Employee(code=code, full_name=name, email=email,
                        company_id=seed.company_id, department_id=seed.dept_id,
                        is_active=True)
         db.add(emp)
@@ -308,10 +308,10 @@ def canh(db, seed, cap_quyen):
         db.flush()
         return u
 
-    hc = _nguoi("HC01", "Nhân sự hành chính", "nhanvien@gmail.com")
-    gd = _nguoi("GD01", "Giám đốc", "giamdoc@dego.vn")
-    quan_tri = _nguoi("QT01", "Quản trị", "admin@dego.vn")
-    cap_quyen(quan_tri.id, "mailbox", scope="all",
+    hc = _people("HC01", "Nhân sự hành chính", "nhanvien@gmail.com")
+    gd = _people("GD01", "Giám đốc", "giamdoc@dego.vn")
+    governance_flow = _people("QT01", "Quản trị", "admin@dego.vn")
+    cap_quyen(governance_flow.id, "mailbox", scope="all",
               read=True, create=True, write=True, delete=True)
 
     tb = DocType(code="TB", name="Thông báo", id_scheme=1, number_when=2,
@@ -330,10 +330,10 @@ def canh(db, seed, cap_quyen):
                         approver_ref=str(gd.employee_id), skip_duplicate=SKIP_NONE,
                         created_by=ACTOR, updated_by=ACTOR))
     db.commit()
-    return {"hc": hc, "gd": gd, "qt": quan_tri, "tb": tb, "seed": seed}
+    return {"hc": hc, "gd": gd, "qt": governance_flow, "tb": tb, "seed": seed}
 
 
-def test_chuoi_day_du_tu_khai_hop_thu_den_thu_gui_ra(db, smtp, bat_email, canh):
+def test_chuoi_day_du_tu_khai_hop_thu_den_thu_gui_ra(db, smtp, bat_email, align):
     """Đúng ca khách mô tả, chạy trọn một lượt qua API thật.
 
     Quản trị khai `hr@gmail.com` và cấp cho nhân sự hành chính → người đó soạn
@@ -344,39 +344,39 @@ def test_chuoi_day_du_tu_khai_hop_thu_den_thu_gui_ra(db, smtp, bat_email, canh):
     from app.modules.notification import mailbox_controller as mb_ctl
 
     # (a) Quản trị khai hộp thư và cấp cho nhân sự hành chính.
-    tao = mb_ctl.create_mailbox(MailboxIn(
+    create = mb_ctl.create_mailbox(MailboxIn(
         code="HR", name="Phòng Hành chính", email="hr@gmail.com",
         display_name="Phòng Hành chính", smtp_host="smtp.gmail.com", smtp_port=587,
         smtp_user="hr@gmail.com", smtp_password="mk-hr", use_tls=True,
         company_id=None, note="", is_active=True,
-        employee_ids=[canh["hc"].employee_id],
-    ), db=db, user=canh["qt"])
+        employee_ids=[align["hc"].employee_id],
+    ), db=db, user=align["qt"])
     import json
-    mailbox_id = json.loads(tao.body)["data"]["id"]
+    mailbox_id = json.loads(create.body)["data"]["id"]
 
     # (b) Nhân sự hành chính soạn và gửi duyệt.
     doc = doc_service.create_document(db, DocumentCreate(
-        doc_type_id=canh["tb"].id, company_id=canh["seed"].company_id,
-        department_id=canh["seed"].dept_id,
-        owner_employee_id=canh["hc"].employee_id,
-        drafter_employee_id=canh["hc"].employee_id,
+        doc_type_id=align["tb"].id, company_id=align["seed"].company_id,
+        department_id=align["seed"].dept_id,
+        owner_employee_id=align["hc"].employee_id,
+        drafter_employee_id=align["hc"].employee_id,
         title="Thông báo nghỉ lễ 2/9",
         content_html="<p>Nghỉ từ 01/9 đến 03/9.</p>",
-    ), canh["hc"].id)
-    doc_service.submit(db, doc, canh["hc"].id)
+    ), align["hc"].id)
+    doc_service.submit(db, doc, align["hc"].id)
 
     # (c) Giám đốc ký → DỪNG ở «Chờ ban hành», chưa cấp số, chưa gửi thư nào.
-    phien = instance_service.phien_dang_chay(db, ENTITY, doc.id)
-    action_service.duyet(db, phien, canh["gd"].employee_id, canh["gd"].id, {})
+    instance = instance_service.running_instance(db, ENTITY, doc.id)
+    action_service.approve(db, instance, align["gd"].employee_id, align["gd"].id, {})
     db.refresh(doc)
     assert doc.status == STATUS_PENDING_ISSUE
     assert not (doc.doc_code or doc.issue_number)
     assert db.query(EmailLog).count() == 0, "Chưa ban hành thì chưa báo cho ai"
 
     # (d) Chính người soạn bấm Ban hành, chọn hộp thư.
-    doc_service.ensure_duoc_ban_hanh(db, doc, canh["hc"])
-    mailbox_service.ensure_duoc_dung(db, mailbox_id, canh["hc"].employee_id)
-    doc_service.approve(db, doc, canh["hc"].id, mailbox_id=mailbox_id)
+    doc_service.ensure_can_issue(db, doc, align["hc"])
+    mailbox_service.ensure_can_use(db, mailbox_id, align["hc"].employee_id)
+    doc_service.approve(db, doc, align["hc"].id, mailbox_id=mailbox_id)
 
     db.refresh(doc)
     assert doc.status == STATUS_EFFECTIVE
@@ -396,12 +396,12 @@ def test_chuoi_day_du_tu_khai_hop_thu_den_thu_gui_ra(db, smtp, bat_email, canh):
         assert phien_smtp["envelope_from"] == "hr@gmail.com"
 
 
-def test_nguoi_khac_khong_muon_duoc_hop_thu_khi_ban_hanh(db, canh):
+def test_nguoi_khac_khong_muon_duoc_hop_thu_khi_ban_hanh(db, align):
     """Chốt cuối cùng: `mailbox_id` là số trong thân request, ai cũng gõ được."""
     from fastapi import HTTPException
 
-    hr = _hop_thu(db, nguoi_dung=[canh["hc"].employee_id])
+    hr = _hop_thu(db, nguoi_dung=[align["hc"].employee_id])
 
-    with pytest.raises(HTTPException) as loi:
-        mailbox_service.ensure_duoc_dung(db, hr.id, canh["gd"].employee_id)
-    assert loi.value.status_code == 403
+    with pytest.raises(HTTPException) as error:
+        mailbox_service.ensure_can_use(db, hr.id, align["gd"].employee_id)
+    assert error.value.status_code == 403

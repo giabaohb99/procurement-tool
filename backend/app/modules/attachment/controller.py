@@ -19,7 +19,7 @@ from app.core.response import success
 from app.core.scoping import apply_scope
 from app.core.storage import (dated_key, delete_key, download_bytes,
                               upload_fileobj)
-from app.modules.document.file_access_log import ACTION_TAI, ACTION_XEM
+from app.modules.document.file_access_log import ACTION_DOWNLOAD, ACTION_VIEW
 
 from .model import FileLink, StoredFile
 from .service import _delete_file_if_orphan, attach_thumb, make_thumb_for
@@ -87,7 +87,7 @@ def _check(db: Session, user, entity: str, mode: str, entity_id: int | None = No
     return exts, max_mb
 
 
-def _chan_ban_dang_duyet(db: Session, entity: str, entity_id: int):
+def _block_version_in_approval(db: Session, entity: str, entity_id: int):
     """Đính kèm của VĂN BẢN đang trình duyệt thì khóa (19/08/2026).
 
     Bộ đính kèm là một phần hồ sơ trình duyệt: thêm hay gỡ một tệp trong lúc
@@ -102,11 +102,11 @@ def _chan_ban_dang_duyet(db: Session, entity: str, entity_id: int):
     if entity != "document_version":
         return
     from app.modules.document.version_model import DocumentVersion
-    from app.modules.document.version_service import chan_khi_dang_duyet
+    from app.modules.document.version_service import block_while_approving
 
     version = db.get(DocumentVersion, entity_id)
     if version:
-        chan_khi_dang_duyet(version)
+        block_while_approving(version)
 
 
 def _check_comment(db: Session, user, comment_id: int, mode: str):
@@ -252,7 +252,7 @@ def upload(
     """Upload + gắn luôn (record đã có id) — tương thích FE cũ."""
     _deny_comment(entity)
     exts, max_mb = _check(db, user, entity, "manage", entity_id)
-    _chan_ban_dang_duyet(db, entity, entity_id)
+    _block_version_in_approval(db, entity, entity_id)
     _valid_doc_type(doc_type)
     out = []
     for f in files:
@@ -290,7 +290,7 @@ def register_files(data: RegisterIn, db: Session = Depends(get_db), user=Depends
     """Gắn các file ĐÃ upload (theo file_id) vào 1 record — khi record vừa có id."""
     _deny_comment(data.entity)
     _check(db, user, data.entity, "manage", data.entity_id)
-    _chan_ban_dang_duyet(db, data.entity, data.entity_id)
+    _block_version_in_approval(db, data.entity, data.entity_id)
     _valid_doc_type(data.doc_type)
     out = []
     for fid in data.file_ids:
@@ -460,7 +460,7 @@ def chain_zip(entity: str = Query(...), entity_id: int = Query(...),
 #  cảnh của API: một tệp `.html` hay `.svg` do người dùng tải lên có thể mang mã
 #  JavaScript, mở ra là nó đọc được cookie/token của miền đó. Ảnh raster và PDF
 #  thì trình duyệt vẽ chứ không chạy.
-KIEU_XEM_TAI_CHO = {
+INLINE_VIEW_TYPES = {
     "image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp",
     "application/pdf",
 }
@@ -474,15 +474,15 @@ def view_one(link_id: int, db: Session = Depends(get_db), user=Depends(get_curre
     kiểu tệp an toàn** (`KIEU_XEM_TAI_CHO`). Kiểu khác vẫn phải đi đường tải về —
     thà bắt tải còn hơn mở một tệp có thể chạy mã ngay trên miền của API.
     """
-    lk, f = _lay_file_co_quyen(db, user, link_id, ACTION_XEM)
+    lk, f = _get_file_with_permission(db, user, link_id, ACTION_VIEW)
 
-    kieu = (f.content_type or "").split(";")[0].strip().lower()
-    if kieu not in KIEU_XEM_TAI_CHO:
+    mime_type = (f.content_type or "").split(";")[0].strip().lower()
+    if mime_type not in INLINE_VIEW_TYPES:
         raise HTTPException(415, "Kiểu tệp này không xem tại chỗ được — tải về để mở.")
 
     return Response(
         content=download_bytes(f.file_key),
-        media_type=kieu,
+        media_type=mime_type,
         headers={
             "Content-Disposition": f"inline; filename*=UTF-8''{quote(f.filename)}",
             #  `nosniff`: cấm trình duyệt tự đoán lại kiểu tệp — đoán sai một
@@ -513,31 +513,31 @@ def preview_one(link_id: int, db: Session = Depends(get_db), user=Depends(get_cu
     PDF và ảnh KHÔNG đi đường này — chúng nhúng thẳng qua `/view`, trình duyệt
     vẽ đẹp hơn mọi bản chuyển đổi.
     """
-    lk, f = _lay_file_co_quyen(db, user, link_id, ACTION_XEM)
+    lk, f = _get_file_with_permission(db, user, link_id, ACTION_VIEW)
 
     from app.modules.document.import_service import parse_document_file
 
     try:
-        ket_qua = parse_document_file(f.filename, download_bytes(f.file_key))
-    except ValueError as loi:
+        result = parse_document_file(f.filename, download_bytes(f.file_key))
+    except ValueError as error:
         #  415 = "hiểu yêu cầu nhưng không xử được kiểu tệp này". Câu của
         #  `parse_document_file` đã nói rõ vì sao (sai đuôi, tệp rỗng, quá lớn).
-        raise HTTPException(415, str(loi))
+        raise HTTPException(415, str(error))
 
-    return success({"filename": f.filename, "html": ket_qua["content_html"]})
+    return success({"filename": f.filename, "html": result["content_html"]})
 
 
 @router.get("/{link_id}/download")
 def download_one(link_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Tải 1 file (ép attachment, đúng tên gốc). Quyền theo entity cha của link."""
-    lk, f = _lay_file_co_quyen(db, user, link_id, ACTION_TAI)
+    lk, f = _get_file_with_permission(db, user, link_id, ACTION_DOWNLOAD)
     data = download_bytes(f.file_key)
     return Response(content=data, media_type=f.content_type or "application/octet-stream",
                     headers={"Content-Disposition": _content_disposition(f.filename)})
 
 
-def _lay_file_co_quyen(db: Session, user, link_id: int,
-                       hanh_dong: str) -> tuple[FileLink, StoredFile]:
+def _get_file_with_permission(db: Session, user, link_id: int,
+                       action: str) -> tuple[FileLink, StoredFile]:
     """Tra link + kiểm quyền + kiểm HẠN XEM. Dùng chung cho cả xem lẫn tải.
 
     Gom một chỗ vì hai đường phải chặn y hệt nhau: chặn ở đường xem mà quên
@@ -565,19 +565,19 @@ def _lay_file_co_quyen(db: Session, user, link_id: int,
     #  HẠN XEM xét SAU quyền: hết hạn là 403 «chỉ xem được tới ngày…», khác hẳn
     #  «không có quyền». Đặt trước phần quyền thì người vốn không được xem lại
     #  nhận đúng ngày hết hạn của một tệp họ không được biết là có.
-    from app.modules.document.attachment_window import chan_neu_het_han
-    chan_neu_het_han(db, lk.entity, lk.entity_id)
+    from app.modules.document.attachment_window import block_if_expired
+    block_if_expired(db, lk.entity, lk.entity_id)
 
     f = db.get(StoredFile, lk.file_id)
     if not f:
         raise HTTPException(404, "File không tồn tại")
 
-    _ghi_nhat_ky_neu_la_van_ban(db, lk, user, f.filename, hanh_dong)
+    _log_if_document(db, lk, user, f.filename, action)
     return lk, f
 
 
-def _ghi_nhat_ky_neu_la_van_ban(db: Session, lk: FileLink, user, ten_tep: str,
-                                hanh_dong: str) -> None:
+def _log_if_document(db: Session, lk: FileLink, user, file_name: str,
+                                action: str) -> None:
     """Ghi lượt mở/tải vào nhật ký của VĂN BẢN và báo động nếu bất thường.
 
     Chỉ đính kèm văn bản mới ghi. Ghi cho mọi entity thì nhật ký phình lên vì
@@ -587,13 +587,13 @@ def _ghi_nhat_ky_neu_la_van_ban(db: Session, lk: FileLink, user, ten_tep: str,
     ⚠️ **Nuốt lỗi.** Người dùng có quyền, tệp có thật, mà bấm vào lại nhận lỗi
     chỉ vì bảng nhật ký trục trặc là đổi một phiền toái nhỏ lấy một sự cố lớn.
     """
-    from app.modules.document.attachment_window import van_ban_cua_dinh_kem
-    from app.modules.document.file_access_log import ghi_va_canh_bao
+    from app.modules.document.attachment_window import document_of_attachment
+    from app.modules.document.file_access_log import log_and_alert
 
     try:
-        doc = van_ban_cua_dinh_kem(db, lk.entity, lk.entity_id)
+        doc = document_of_attachment(db, lk.entity, lk.entity_id)
         if doc is not None:
-            ghi_va_canh_bao(db, doc, user, hanh_dong, ten_tep)
+            log_and_alert(db, doc, user, action, file_name)
     except Exception:  # noqa: BLE001 — nhật ký hỏng không được chặn việc mở tệp
         import logging
         logging.getLogger(__name__).exception(
@@ -611,7 +611,7 @@ def remove(link_id: int, db: Session = Depends(get_db), user=Depends(get_current
         _check_forum(db, user, lk.entity_id, "manage")
     else:
         _check(db, user, lk.entity, "manage", lk.entity_id)
-        _chan_ban_dang_duyet(db, lk.entity, lk.entity_id)
+        _block_version_in_approval(db, lk.entity, lk.entity_id)
     fid = lk.file_id
     db.delete(lk); db.flush()
     _delete_file_if_orphan(db, fid)      # còn dùng chỗ khác thì giữ file

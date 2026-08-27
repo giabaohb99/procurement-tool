@@ -84,13 +84,13 @@ def upload_import(module: int = Form(...), mode: int = Form(0), file: UploadFile
 
 @router.get("")
 def list_imports(request: Request, module: int | None = Query(None), status: int | None = Query(None),
-                 mode: int | None = Query(None), phan_he: str | None = Query(None),
+                 mode: int | None = Query(None), subsystem: str | None = Query(None),
                  date_from: str | None = Query(None), date_to: str | None = Query(None),
                  created_by_name: str | None = Query(None), filename: str | None = Query(None),
                  pg: dict = Depends(pagination), db: Session = Depends(get_db), user=Depends(get_current_user)):
     _guard_view(db, user)
     total, items = service.list_batches(db, request, module, status, mode, date_from, date_to,
-                                        created_by_name, filename, phan_he, pg)
+                                        created_by_name, filename, subsystem, pg)
     creators = service.distinct_creators(db)
     return success({"total": total, "items": [_batch_out(db, b) for b in items], "creators": creators})
 

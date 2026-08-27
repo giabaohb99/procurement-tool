@@ -27,7 +27,7 @@ from app.modules.approval.flow_model import (APPROVER_FIELD, APPROVER_LEVEL_UP,
 from app.modules.doc_catalog.model import DocType
 from app.modules.document.model import STATUS_LABELS, Document
 from app.modules.document import access_service, scope_service
-from app.modules.document.query import (an_ban_rieng_co_goc_xem_duoc,
+from app.modules.document.query import (hide_private_copies_with_visible_source,
                                         documents_query)
 from app.modules.document.version_model import DocumentVersion
 from app.modules.employee.model import Employee
@@ -38,7 +38,7 @@ MAX_FLOWS = 10
 MAX_DOCS = 30
 #  Đường dẫn chi tiết văn bản bên frontend-v2 (`appRoutes.document.documentDetail`) — trả
 #  kèm để câu trả lời gắn link Markdown mở thẳng văn bản, người dùng khỏi tự đi tìm.
-_DUONG_DAN_VAN_BAN = "/document/documents/{id}"
+_DOCUMENT_URL = "/document/documents/{id}"
 #  Mỗi phần nội dung trả cho model — văn bản dài đọc theo từng phần (tham số `part`)
 #  thay vì nhồi cả quy chế vài chục trang vào một lượt.
 MAX_CONTENT_CHARS = 8000
@@ -51,13 +51,13 @@ def _run_flow_lookup(ctx: ToolContext, args: dict) -> dict:
     entity = str(args.get("entity") or "").strip()
 
     if doc_type_query:
-        return _luong_van_ban(ctx, doc_type_query)
+        return _document_flow(ctx, doc_type_query)
     if entity:
-        return _luong_chung_tu(ctx, entity)
+        return _entity_flow(ctx, entity)
     return {"error": "Cho biết loại văn bản (vd 'nghỉ phép') hoặc mã loại chứng từ cần tra."}
 
 
-def _tim_loai_van_ban(db, query: str) -> list[DocType]:
+def _find_doc_types(db, query: str) -> list[DocType]:
     """Tìm loại văn bản theo mã rồi theo tên.
 
     Người hỏi hay nói "đơn nghỉ phép" trong khi danh mục ghi "Giấy nghỉ phép" — LIKE cả
@@ -70,13 +70,13 @@ def _tim_loai_van_ban(db, query: str) -> list[DocType]:
     if exact:
         return [exact]
 
-    tu = query.split()
-    for bat_dau in range(len(tu)):
-        cum = " ".join(tu[bat_dau:])
-        if len(cum) < 3:
+    words = query.split()
+    for start in range(len(words)):
+        phrase = " ".join(words[start:])
+        if len(phrase) < 3:
             break
         rows = (db.query(DocType)
-                .filter(DocType.is_active.is_(True), DocType.name.like(f"%{cum}%"))
+                .filter(DocType.is_active.is_(True), DocType.name.like(f"%{phrase}%"))
                 .order_by(DocType.sort_order.asc(), DocType.id.asc())
                 .limit(6).all())
         if rows:
@@ -84,7 +84,7 @@ def _tim_loai_van_ban(db, query: str) -> list[DocType]:
     return []
 
 
-def _boi_canh_cua_toi(db, user) -> tuple[dict, int | None]:
+def _my_context(db, user) -> tuple[dict, int | None]:
     """Bối cảnh giả định CHÍNH NGƯỜI HỎI là người nộp phiếu — để giải ra tên người duyệt
     cụ thể ("người phê duyệt nghỉ phép CỦA TÔI là ai")."""
     emp = db.get(Employee, user.employee_id) if getattr(user, "employee_id", None) else None
@@ -95,101 +95,101 @@ def _boi_canh_cua_toi(db, user) -> tuple[dict, int | None]:
     return subject, (emp.id if emp else None)
 
 
-def _ten_nhan_su(db, employee_ids: list[int]) -> list[str]:
+def _employee_names(db, employee_ids: list[int]) -> list[str]:
     if not employee_ids:
         return []
-    theo_id = {row.id: row.full_name for row in
+    by_id = {row.id: row.full_name for row in
                db.query(Employee).filter(Employee.id.in_(employee_ids)).all()}
-    return [theo_id[i] for i in employee_ids if i in theo_id]
+    return [by_id[i] for i in employee_ids if i in by_id]
 
 
-def _mo_ta_buoc(db, node, subject: dict, submitter_id: int | None) -> dict:
+def _describe_step(db, node, subject: dict, submitter_id: int | None) -> dict:
     """Một bước duyệt, hai tầng thông tin: quy tắc khai + tên người giải ra cho người hỏi."""
     data = serializer.node_out(db, node)
 
-    quy_tac = data["approver_kind_label"]
+    rule = data["approver_kind_label"]
     ref = (node.approver_ref or "").strip()
     if data["approver_names"]:
-        quy_tac += f": {data['approver_names']}"
+        rule += f": {data['approver_names']}"
     elif node.approver_kind == APPROVER_ROLE and ref:
         from app.modules.role.model import Role
-        codes = [phan.strip() for phan in ref.split(",") if phan.strip()]
-        ten_vai = [row.name for row in db.query(Role).filter(Role.code.in_(codes)).all()]
-        quy_tac += ": " + ", ".join(ten_vai or codes)
+        codes = [part.strip() for part in ref.split(",") if part.strip()]
+        role_names = [row.name for row in db.query(Role).filter(Role.code.in_(codes)).all()]
+        rule += ": " + ", ".join(role_names or codes)
     elif node.approver_kind == APPROVER_LEVEL_UP and ref:
-        quy_tac += f" ({ref} cấp)"
+        rule += f" ({ref} cấp)"
     elif node.approver_kind == APPROVER_FIELD and ref:
-        quy_tac += f" (ô '{ref}' trên phiếu)"
+        rule += f" (ô '{ref}' trên phiếu)"
 
-    buoc = {
+    step = {
         "seq": node.seq,
         "name": node.name or data["node_kind_label"],
         "node_kind": data["node_kind_label"],
-        "approver_rule": quy_tac,
+        "approver_rule": rule,
         #  Tên NGƯỜI THẬT nếu chính người hỏi nộp phiếu này. Rỗng = chưa tính được
         #  (thiếu trưởng bộ phận, vai trò chưa gán ai...) — nói thẳng, đừng bịa.
-        "approvers_for_me": _ten_nhan_su(
+        "approvers_for_me": _employee_names(
             db, approver_resolver.resolve(db, node, subject, submitter_id)),
     }
     if node.branch_key:
-        buoc["branch"] = node.branch_key
+        step["branch"] = node.branch_key
     if (node.condition or "").strip():
-        buoc["condition"] = node.condition
+        step["condition"] = node.condition
     if data["multi_mode_label"] and node.multi_mode != 1:
-        buoc["multi_mode"] = data["multi_mode_label"]
-    return buoc
+        step["multi_mode"] = data["multi_mode_label"]
+    return step
 
 
 #  Khi bộ máy luồng nhiều bước chưa chạy (cờ tắt, hoặc bật mà chưa khai luồng) thì văn bản
 #  duyệt MỘT BƯỚC: người có quyền duyệt văn bản bấm Duyệt/Từ chối trên trang chi tiết.
-_DUYET_MOT_BUOC = ("Hiện phê duyệt MỘT BƯỚC: người có quyền duyệt văn bản "
+_ONE_STEP_APPROVAL_NOTE = ("Hiện phê duyệt MỘT BƯỚC: người có quyền duyệt văn bản "
                    "xem xét và bấm Duyệt/Từ chối trên trang chi tiết.")
 
 
-def _luong_van_ban(ctx: ToolContext, query: str) -> dict:
+def _document_flow(ctx: ToolContext, query: str) -> dict:
     """Luồng duyệt của một LOẠI VĂN BẢN — ai hỏi cũng được trả lời: đây chính là thông tin
     người nộp thấy khi gửi duyệt phiếu của mình, không phải cấu hình mật."""
     db, user = ctx.db, ctx.user
 
-    matches = _tim_loai_van_ban(db, query)
+    matches = _find_doc_types(db, query)
     if not matches:
-        vai_loai = [row.name for row in
+        type_role_names = [row.name for row in
                     db.query(DocType).filter(DocType.is_active.is_(True))
                     .order_by(DocType.sort_order.asc()).limit(10).all()]
         return {"error": f"Không tìm thấy loại văn bản nào khớp '{query}'.",
-                "available_types": vai_loai,
+                "available_types": type_role_names,
                 "reminder": "Hỏi lại người dùng xem họ muốn loại văn bản nào."}
     if len(matches) > 1:
         return {"status": "ambiguous",
                 "matches": [{"code": t.code, "name": t.name} for t in matches],
                 "reminder": "Nhiều loại văn bản cùng khớp — hỏi lại người dùng chọn một."}
 
-    loai = matches[0]
-    subject, submitter_id = _boi_canh_cua_toi(db, user)
-    subject["doc_type_id"] = loai.id
+    kind = matches[0]
+    subject, submitter_id = _my_context(db, user)
+    subject["doc_type_id"] = kind.id
 
-    ket_qua = {
-        "doc_type": {"code": loai.code, "name": loai.name,
-                     "is_personal": loai.is_personal,
-                     "needs_approval": loai.needs_approval},
+    result = {
+        "doc_type": {"code": kind.code, "name": kind.name,
+                     "is_personal": kind.is_personal,
+                     "needs_approval": kind.needs_approval},
         "engine_enabled": flow_service.is_enabled(db, "document"),
     }
 
-    if not loai.needs_approval:
-        ket_qua.update(status="no_approval", total=0,
-                       message=f"Loại văn bản «{loai.name}» KHÔNG cần phê duyệt.")
-        return ket_qua
+    if not kind.needs_approval:
+        result.update(status="no_approval", total=0,
+                       message=f"Loại văn bản «{kind.name}» KHÔNG cần phê duyệt.")
+        return result
 
-    flow = flow_service.chon_luong(db, "document", subject) if ket_qua["engine_enabled"] else None
+    flow = flow_service.pick_flow(db, "document", subject) if result["engine_enabled"] else None
     if flow is None:
-        ket_qua.update(status="one_step", total=0, message=(
-            ("Bộ máy luồng nhiều bước đang TẮT cho văn bản. " if not ket_qua["engine_enabled"]
-             else f"Chưa khai luồng phê duyệt nào áp cho «{loai.name}». ") + _DUYET_MOT_BUOC))
-        return ket_qua
+        result.update(status="one_step", total=0, message=(
+            ("Bộ máy luồng nhiều bước đang TẮT cho văn bản. " if not result["engine_enabled"]
+             else f"Chưa khai luồng phê duyệt nào áp cho «{kind.name}». ") + _ONE_STEP_APPROVAL_NOTE))
+        return result
 
-    steps = [_mo_ta_buoc(db, node, subject, submitter_id)
+    steps = [_describe_step(db, node, subject, submitter_id)
              for node in flow_service.nodes_of(db, flow.id)]
-    ket_qua.update(
+    result.update(
         status="flow", total=len(steps),
         flow={"name": flow.name, "description": flow.description},
         steps=steps,
@@ -197,17 +197,17 @@ def _luong_van_ban(ctx: ToolContext, query: str) -> dict:
               "người duyệt CỤ THỂ nếu chính người hỏi nộp phiếu. Danh sách rỗng nghĩa là "
               "chưa tính được (vd phòng chưa có trưởng bộ phận) — nói rõ, đừng đoán tên."),
     )
-    return ket_qua
+    return result
 
 
-def _luong_chung_tu(ctx: ToolContext, entity: str) -> dict:
+def _entity_flow(ctx: ToolContext, entity: str) -> dict:
     """Luồng của một loại CHỨNG TỪ bất kỳ (purchase_request...) — đây là màn cấu hình
     luồng nên gác đúng quyền của màn đó."""
     if not ctx.can("approval_flow"):
         return denied("cấu hình luồng phê duyệt")
 
     db = ctx.db
-    subject, submitter_id = _boi_canh_cua_toi(db, ctx.user)
+    subject, submitter_id = _my_context(db, ctx.user)
 
     from app.modules.approval.flow_model import ApprovalFlow
     flows = (db.query(ApprovalFlow)
@@ -215,22 +215,22 @@ def _luong_chung_tu(ctx: ToolContext, entity: str) -> dict:
              .order_by(ApprovalFlow.priority.desc(), ApprovalFlow.id.asc())
              .limit(MAX_FLOWS).all())
 
-    ket_qua = {"entity": entity,
+    result = {"entity": entity,
                "engine_enabled": flow_service.is_enabled(db, entity),
                "total": len(flows)}
     if not flows:
-        ket_qua["message"] = f"Chưa khai luồng phê duyệt nào cho loại chứng từ '{entity}'."
-        return ket_qua
+        result["message"] = f"Chưa khai luồng phê duyệt nào cho loại chứng từ '{entity}'."
+        return result
 
-    ket_qua["flows"] = [{
+    result["flows"] = [{
         "name": flow.name,
         "company_name": (serializer.flow_out(db, flow)["company_name"] or "Dùng chung"),
         "priority": flow.priority,
         "condition": flow.condition or "",
-        "steps": [_mo_ta_buoc(db, node, subject, submitter_id)
+        "steps": [_describe_step(db, node, subject, submitter_id)
                   for node in flow_service.nodes_of(db, flow.id)],
     } for flow in flows]
-    return ket_qua
+    return result
 
 
 APPROVAL_FLOW_LOOKUP_SPEC = ToolSpec(
@@ -292,7 +292,7 @@ def _run_my_documents(ctx: ToolContext, args: dict) -> dict:
     docs = [d for d in docs if access_service.can(db, d, user, ctx.profile, "read")]
     docs.sort(key=lambda d: (d.effective_date is None, d.effective_date), reverse=True)
 
-    loai_theo_id = {row.id: row.name for row in
+    types_by_id = {row.id: row.name for row in
                     db.query(DocType).filter(
                         DocType.id.in_({d.doc_type_id for d in docs if d.doc_type_id}))}
     return {
@@ -300,11 +300,11 @@ def _run_my_documents(ctx: ToolContext, args: dict) -> dict:
         "items": [{
             "issue_number": d.issue_number,
             "title": d.title,
-            "doc_type": loai_theo_id.get(d.doc_type_id, ""),
+            "doc_type": types_by_id.get(d.doc_type_id, ""),
             "status": STATUS_LABELS.get(d.status, ""),
             "effective_date": d.effective_date.isoformat() if d.effective_date else "",
             "expire_date": d.expire_date.isoformat() if d.expire_date else "",
-            "url": _DUONG_DAN_VAN_BAN.format(id=d.id),
+            "url": _DOCUMENT_URL.format(id=d.id),
         } for d in docs[:limit]],
     }
 
@@ -331,29 +331,29 @@ MY_DOCUMENTS_SPEC = ToolSpec(
 
 # ── document_search ─────────────────────────────────────────────────────────────────────
 
-def _dieu_kien_tu_khoa(keyword: str):
+def _keyword_condition(keyword: str):
     """AND theo TỪNG TỪ, mỗi từ OR trên các cột tìm của màn danh sách.
 
     LIKE cả câu thì "quy định công tác phí" trượt tiêu đề "Quy định về chế độ công tác
     phí" chỉ vì thiếu chữ "về". Tách từ rồi bắt mỗi từ khớp Ở ĐÂU ĐÓ (tiêu đề, số hiệu,
     số hiệu cũ, từ khóa, nơi lưu trữ) là đủ hẹp mà không bắt người hỏi thuộc nguyên văn."""
-    cot = (Document.title, Document.doc_code, Document.issue_number,
+    columns = (Document.title, Document.doc_code, Document.issue_number,
            Document.legacy_code, Document.keywords, Document.storage_location)
-    return and_(*[or_(*[c.like(f"%{tu}%") for c in cot]) for tu in keyword.split()])
+    return and_(*[or_(*[c.like(f"%{words}%") for c in columns]) for words in keyword.split()])
 
 
-def _dong_van_ban(d: Document, loai_theo_id: dict) -> dict:
+def _document_row(d: Document, types_by_id: dict) -> dict:
     return {
         "document_id": d.id,
         "issue_number": d.issue_number,
         "legacy_code": d.legacy_code or "",
         "title": d.title,
-        "doc_type": loai_theo_id.get(d.doc_type_id, ""),
+        "doc_type": types_by_id.get(d.doc_type_id, ""),
         "status": STATUS_LABELS.get(d.status, ""),
         "effective_date": d.effective_date.isoformat() if d.effective_date else "",
         "expire_date": d.expire_date.isoformat() if d.expire_date else "",
         "summary": (d.summary or "")[:200],
-        "url": _DUONG_DAN_VAN_BAN.format(id=d.id),
+        "url": _DOCUMENT_URL.format(id=d.id),
     }
 
 
@@ -375,27 +375,27 @@ def _run_document_search(ctx: ToolContext, args: dict) -> dict:
     visible = access_service.visible_condition(ctx.user, ctx.profile)
     if visible is not None:
         query = query.filter(visible)
-    query = query.filter(_dieu_kien_tu_khoa(keyword))
+    query = query.filter(_keyword_condition(keyword))
 
     out: dict = {}
-    loai_hoi = str(args.get("doc_type") or "").strip()
-    if loai_hoi:
-        loai = _tim_loai_van_ban(db, loai_hoi)
-        if loai:
-            query = query.filter(Document.doc_type_id.in_([r.id for r in loai]))
+    type_query = str(args.get("doc_type") or "").strip()
+    if type_query:
+        kind = _find_doc_types(db, type_query)
+        if kind:
+            query = query.filter(Document.doc_type_id.in_([r.id for r in kind]))
         else:
             #  Tên loại gõ sai thì bỏ bộ lọc chứ đừng chặn cả cuộc tìm — nhưng phải NÓI,
             #  im lặng là model tưởng kết quả đã lọc đúng loại.
-            out["note"] = f"Không thấy loại văn bản '{loai_hoi}' — kết quả chưa lọc theo loại."
+            out["note"] = f"Không thấy loại văn bản '{type_query}' — kết quả chưa lọc theo loại."
 
-    query = an_ban_rieng_co_goc_xem_duoc(query)
+    query = hide_private_copies_with_visible_source(query)
     total = query.count()
     docs = query.order_by(Document.id.desc()).limit(limit).all()
 
-    loai_theo_id = {row.id: row.name for row in
+    types_by_id = {row.id: row.name for row in
                     db.query(DocType).filter(
                         DocType.id.in_({d.doc_type_id for d in docs if d.doc_type_id}))}
-    out.update(total=total, items=[_dong_van_ban(d, loai_theo_id) for d in docs])
+    out.update(total=total, items=[_document_row(d, types_by_id) for d in docs])
     if total:
         out["reminder"] = ("Danh sách chỉ có tiêu đề/tóm tắt. Câu hỏi về NỘI DUNG văn bản "
                            "thì gọi tiếp document_read với document_id tương ứng.")
@@ -430,7 +430,7 @@ DOCUMENT_SEARCH_SPEC = ToolSpec(
 
 # ── document_read ───────────────────────────────────────────────────────────────────────
 
-def _html_thanh_van_ban(html: str) -> str:
+def _html_to_text(html: str) -> str:
     """Bóc HTML của trình soạn thảo thành văn bản thuần cho model đọc.
 
     Không cần render đẹp — chỉ cần giữ ranh giới đoạn/dòng và ô bảng (` | `) để câu chữ
@@ -450,13 +450,13 @@ def _html_thanh_van_ban(html: str) -> str:
 
 #  MỘT câu cho cả "không tồn tại" lẫn "không có quyền" — như màn chi tiết trả 404 chứ
 #  không 403: nói "có văn bản này nhưng anh không được xem" cũng đã là lộ thông tin.
-_KHONG_THAY = ("Không tìm thấy văn bản khớp (hoặc bạn không có quyền xem). "
+_NOT_FOUND_MSG = ("Không tìm thấy văn bản khớp (hoặc bạn không có quyền xem). "
                "Thử document_search để tra đúng số hiệu / document_id trước.")
 
 
 def _run_document_read(ctx: ToolContext, args: dict) -> dict:
     db, user = ctx.db, ctx.user
-    so_hieu = str(args.get("issue_number") or "").strip()
+    issue_number = str(args.get("issue_number") or "").strip()
     try:
         document_id = int(args.get("document_id") or 0)
     except (TypeError, ValueError):
@@ -464,11 +464,11 @@ def _run_document_read(ctx: ToolContext, args: dict) -> dict:
 
     if document_id > 0:
         docs = documents_query(db).filter(Document.id == document_id).all()
-    elif so_hieu:
-        docs = documents_query(db).filter(Document.issue_number == so_hieu).all()
+    elif issue_number:
+        docs = documents_query(db).filter(Document.issue_number == issue_number).all()
         if not docs:
             #  Người dùng hay gõ một khúc số hiệu ("15/QĐ") hoặc số hiệu CŨ bản giấy.
-            like = f"%{so_hieu}%"
+            like = f"%{issue_number}%"
             docs = (documents_query(db)
                     .filter(or_(Document.issue_number.like(like),
                                 Document.legacy_code.like(like)))
@@ -478,7 +478,7 @@ def _run_document_read(ctx: ToolContext, args: dict) -> dict:
 
     docs = [d for d in docs if access_service.can(db, d, user, ctx.profile, "read")]
     if not docs:
-        return {"error": _KHONG_THAY}
+        return {"error": _NOT_FOUND_MSG}
     if len(docs) > 1:
         return {"error": "Nhiều văn bản khớp số hiệu đó — gọi lại với document_id của đúng bản cần đọc.",
                 "matches": [{"document_id": d.id, "issue_number": d.issue_number,
@@ -486,36 +486,36 @@ def _run_document_read(ctx: ToolContext, args: dict) -> dict:
 
     doc = docs[0]
     version = db.get(DocumentVersion, doc.current_version_id) if doc.current_version_id else None
-    text = _html_thanh_van_ban(version.content_html if version else "")
+    text = _html_to_text(version.content_html if version else "")
 
     part = args.get("part")
     part = max(1, int(part)) if isinstance(part, (int, float)) else 1
-    tong_phan = max(1, -(-len(text) // MAX_CONTENT_CHARS))
-    part = min(part, tong_phan)
+    total_parts = max(1, -(-len(text) // MAX_CONTENT_CHARS))
+    part = min(part, total_parts)
 
-    loai = db.get(DocType, doc.doc_type_id) if doc.doc_type_id else None
+    kind = db.get(DocType, doc.doc_type_id) if doc.doc_type_id else None
     out = {
         "document": {
             "document_id": doc.id,
             "issue_number": doc.issue_number,
             "legacy_code": doc.legacy_code or "",
             "title": doc.title,
-            "doc_type": loai.name if loai else "",
+            "doc_type": kind.name if kind else "",
             "status": STATUS_LABELS.get(doc.status, ""),
             "effective_date": doc.effective_date.isoformat() if doc.effective_date else "",
             "expire_date": doc.expire_date.isoformat() if doc.expire_date else "",
             "summary": doc.summary or "",
-            "url": _DUONG_DAN_VAN_BAN.format(id=doc.id),
+            "url": _DOCUMENT_URL.format(id=doc.id),
         },
         "part": part,
-        "total_parts": tong_phan,
+        "total_parts": total_parts,
         "content": text[(part - 1) * MAX_CONTENT_CHARS: part * MAX_CONTENT_CHARS],
     }
     if not text:
         out["note"] = ("Văn bản chưa có nội dung soạn trên hệ thống (có thể chỉ có file "
                        "đính kèm) — trả lời theo tiêu đề/tóm tắt và nói rõ giới hạn này.")
-    elif part < tong_phan:
-        out["note"] = (f"Nội dung dài, đây là phần {part}/{tong_phan} — cần đọc tiếp thì "
+    elif part < total_parts:
+        out["note"] = (f"Nội dung dài, đây là phần {part}/{total_parts} — cần đọc tiếp thì "
                        f"gọi lại với part={part + 1}. Đừng suy đoán phần chưa đọc.")
     return out
 

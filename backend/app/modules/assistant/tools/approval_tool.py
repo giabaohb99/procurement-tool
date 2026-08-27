@@ -17,7 +17,7 @@ from app.modules.approval.instance_model import (INSTANCE_OPEN_STATUSES,
                                                  INSTANCE_STATUS_LABELS,
                                                  TASK_PENDING,
                                                  ApprovalInstance, ApprovalTask)
-from app.modules.approval.serializer import _ten
+from app.modules.approval.serializer import _name_of
 from app.modules.approval.task_notification import ENTITY_LABELS
 
 from .base import ToolContext, ToolSpec
@@ -29,7 +29,7 @@ MAX_ROWS = 30
 #  (`/purchase-requests/{id}`) rồi nhờ `toAppPath()` của tầng thông báo dịch sang tiền tố
 #  phân hệ — chat render Markdown thẳng, không đi qua tầng dịch đó, nên phải ghi đường
 #  ĐẦY ĐỦ đúng `app-routes.ts` của v2.
-_DUONG_DAN_CHI_TIET = {
+_DETAIL_URLS = {
     "document": "/document/documents/{id}",
     "purchase_request": "/procurement/purchase-requests/{id}",
     "purchase_order": "/procurement/purchase-orders/{id}",
@@ -43,21 +43,21 @@ _DUONG_DAN_CHI_TIET = {
 INBOX_URL = "/document/pending-approval"
 
 
-def _duong_dan(entity: str, entity_id: int) -> str:
-    mau = _DUONG_DAN_CHI_TIET.get(entity, "")
-    return mau.format(id=entity_id) if mau else ""
+def _detail_url(entity: str, entity_id: int) -> str:
+    template = _DETAIL_URLS.get(entity, "")
+    return template.format(id=entity_id) if template else ""
 
 
-def _iso(gia_tri) -> str:
-    return gia_tri.isoformat() if gia_tri else ""
+def _iso(value) -> str:
+    return value.isoformat() if value else ""
 
 
-def _gioi_han(args: dict, mac_dinh: int) -> int:
+def _limit(args: dict, default: int) -> int:
     limit = args.get("limit")
-    return max(1, min(int(limit), MAX_ROWS)) if isinstance(limit, (int, float)) else mac_dinh
+    return max(1, min(int(limit), MAX_ROWS)) if isinstance(limit, (int, float)) else default
 
 
-_CHUA_CO_HO_SO = ("Tài khoản chưa gắn hồ sơ nhân sự nên không tham gia luồng phê duyệt "
+_NO_EMPLOYEE_PROFILE = ("Tài khoản chưa gắn hồ sơ nhân sự nên không tham gia luồng phê duyệt "
                   "nào — liên hệ quản trị nếu điều này sai.")
 
 
@@ -66,12 +66,12 @@ _CHUA_CO_HO_SO = ("Tài khoản chưa gắn hồ sơ nhân sự nên không tham
 def _run_my_approval_tasks(ctx: ToolContext, args: dict) -> dict:
     db, user = ctx.db, ctx.user
     if not getattr(user, "employee_id", None):
-        return {"total": 0, "items": [], "note": _CHUA_CO_HO_SO}
+        return {"total": 0, "items": [], "note": _NO_EMPLOYEE_PROFILE}
 
     entity = str(args.get("entity") or "").strip()
-    limit = _gioi_han(args, mac_dinh=20)
+    limit = _limit(args, default=20)
 
-    rows = task_service.viec_cua_toi(db, user.employee_id, entity)
+    rows = task_service.my_tasks(db, user.employee_id, entity)
     out = {
         "total": len(rows),
         "items": [{
@@ -85,7 +85,7 @@ def _run_my_approval_tasks(ctx: ToolContext, args: dict) -> dict:
             "is_overdue": r["is_overdue"],
             #  Bấm THAY ai theo ủy quyền — rỗng nếu là việc của chính người hỏi.
             "on_behalf_of": r["on_behalf_of_name"],
-            "url": _duong_dan(r["entity"], r["entity_id"]),
+            "url": _detail_url(r["entity"], r["entity_id"]),
         } for r in rows[:limit]],
         "inbox_url": INBOX_URL,
     }
@@ -125,11 +125,11 @@ MY_APPROVAL_TASKS_SPEC = ToolSpec(
 def _run_my_requests_status(ctx: ToolContext, args: dict) -> dict:
     db, user = ctx.db, ctx.user
     if not getattr(user, "employee_id", None):
-        return {"total": 0, "items": [], "note": _CHUA_CO_HO_SO}
+        return {"total": 0, "items": [], "note": _NO_EMPLOYEE_PROFILE}
 
     entity = str(args.get("entity") or "").strip()
     only_open = bool(args.get("only_open"))
-    limit = _gioi_han(args, mac_dinh=10)
+    limit = _limit(args, default=10)
 
     query = (db.query(ApprovalInstance)
              .filter(ApprovalInstance.started_by_employee_id == user.employee_id))
@@ -142,14 +142,14 @@ def _run_my_requests_status(ctx: ToolContext, args: dict) -> dict:
 
     #  Phiếu đang chạy thì nói luôn ĐANG CHỜ AI — gom một truy vấn cho cả trang thay vì
     #  mỗi phiếu một câu.
-    phien_mo = [r.id for r in rows if r.status in INSTANCE_OPEN_STATUSES]
-    cho_theo_phien: dict[int, list[ApprovalTask]] = {}
-    if phien_mo:
+    open_instances = [r.id for r in rows if r.status in INSTANCE_OPEN_STATUSES]
+    pending_by_instance: dict[int, list[ApprovalTask]] = {}
+    if open_instances:
         for task in (db.query(ApprovalTask)
-                     .filter(ApprovalTask.instance_id.in_(phien_mo),
+                     .filter(ApprovalTask.instance_id.in_(open_instances),
                              ApprovalTask.status == TASK_PENDING)
                      .order_by(ApprovalTask.id.asc()).all()):
-            cho_theo_phien.setdefault(task.instance_id, []).append(task)
+            pending_by_instance.setdefault(task.instance_id, []).append(task)
 
     items = []
     for r in rows:
@@ -160,12 +160,12 @@ def _run_my_requests_status(ctx: ToolContext, args: dict) -> dict:
             "title": r.entity_title,
             "status": INSTANCE_STATUS_LABELS.get(r.status, str(r.status)),
             "submitted_at": _iso(r.started_at),
-            "url": _duong_dan(r.entity, r.entity_id),
+            "url": _detail_url(r.entity, r.entity_id),
         }
-        dang_cho = cho_theo_phien.get(r.id) or []
-        if dang_cho:
-            item["waiting_step"] = dang_cho[0].node_name
-            item["waiting_on"] = [_ten(db, t.assignee_employee_id) for t in dang_cho]
+        waiting = pending_by_instance.get(r.id) or []
+        if waiting:
+            item["waiting_step"] = waiting[0].node_name
+            item["waiting_on"] = [_name_of(db, t.assignee_employee_id) for t in waiting]
         if r.status not in INSTANCE_OPEN_STATUSES:
             item["finished_at"] = _iso(r.finished_at)
             if r.finish_reason:

@@ -236,21 +236,21 @@ def test_loc_theo_tien_do_dong_chia_dung_het_khong_trung(db):
     db.commit()
 
     # Nhãn mà cột tính gán cho từng dòng
-    def nhan(ln):
+    def label(ln):
         opts = db.query(SurveyRequestOption).filter(
             SurveyRequestOption.survey_request_line_id == ln.id).all()
         return ex.progress_state(ln, any(o.is_chosen for o in opts), len(opts))
 
     mong_doi = {}
     for ln in mau:
-        mong_doi.setdefault(nhan(ln), set()).add(ln.id)
+        mong_doi.setdefault(label(ln), set()).add(ln.id)
 
-    tong = 0
+    total = 0
     for state in ex.STATES:
         ids = {r.id for r in db.query(SurveyRequestLine).filter(_state_cond(state)).all()}
         assert ids == mong_doi.get(state, set()), f"lệch ở nhãn {state}"
-        tong += len(ids)
-    assert tong == len(mau)
+        total += len(ids)
+    assert total == len(mau)
 
 
 def test_loc_nhan_la_thi_khong_loc_gi(db):

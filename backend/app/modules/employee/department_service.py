@@ -29,7 +29,7 @@ from .department_model import EmployeeDepartment
 from .model import Employee
 
 
-def kiem_nhiem_cua(db: Session, employee_id: int) -> list[int]:
+def extra_departments_of(db: Session, employee_id: int) -> list[int]:
     """Phòng KIÊM NHIỆM — các phòng NGOÀI phòng chính.
 
     Phòng chính không nằm trong danh sách này: nó là ô «Phòng ban» của hồ sơ,
@@ -39,25 +39,25 @@ def kiem_nhiem_cua(db: Session, employee_id: int) -> list[int]:
     from .model import Employee
 
     emp = db.get(Employee, employee_id)
-    chinh = emp.department_id if emp else 0
-    return [x for x in phong_ban_cua(db, employee_id) if x != chinh]
+    primary = emp.department_id if emp else 0
+    return [x for x in departments_of(db, employee_id) if x != primary]
 
 
-def dat_kiem_nhiem(db: Session, employee: Employee, extra_ids: list[int],
+def set_extra_departments(db: Session, employee: Employee, extra_ids: list[int],
                    actor: int) -> list[int]:
     """Đặt lại danh sách phòng KIÊM NHIỆM. Phòng chính giữ nguyên.
 
     Phòng chính đổi ở ô «Phòng ban» của hồ sơ, không đổi qua đây — hai thao tác
     khác nhau thì hai cửa khác nhau.
     """
-    chinh = employee.department_id or 0
-    sach = [x for x in dict.fromkeys(int(v) for v in extra_ids if v) if x != chinh]
-    dat_phong_ban(db, employee, ([chinh] if chinh else []) + sach, actor,
-                  phong_chinh=chinh or None)
-    return sach
+    primary = employee.department_id or 0
+    cleaned = [x for x in dict.fromkeys(int(v) for v in extra_ids if v) if x != primary]
+    set_departments(db, employee, ([primary] if primary else []) + cleaned, actor,
+                  primary_department=primary or None)
+    return cleaned
 
 
-def phong_ban_cua(db: Session, employee_id: int) -> list[int]:
+def departments_of(db: Session, employee_id: int) -> list[int]:
     """Mọi phòng ban của một nhân sự, PHÒNG CHÍNH đứng đầu.
 
     Thứ tự có nghĩa: nơi gọi nào chỉ lấy được một phòng (dựng bối cảnh phiếu,
@@ -73,7 +73,7 @@ def phong_ban_cua(db: Session, employee_id: int) -> list[int]:
     return [row.department_id for row in rows if row.department_id]
 
 
-def phong_ban_cua_nhieu_nguoi(db: Session, employee_ids: list[int]) -> dict[int, list[int]]:
+def departments_of_many(db: Session, employee_ids: list[int]) -> dict[int, list[int]]:
     """Bản gọi MỘT LƯỢT cho danh sách — tránh N+1 ở màn danh sách nhân sự."""
     if not employee_ids:
         return {}
@@ -82,13 +82,13 @@ def phong_ban_cua_nhieu_nguoi(db: Session, employee_ids: list[int]) -> dict[int,
             .order_by(EmployeeDepartment.is_primary.desc(),
                       EmployeeDepartment.department_id.asc())
             .all())
-    ket_qua: dict[int, list[int]] = {}
+    result: dict[int, list[int]] = {}
     for row in rows:
-        ket_qua.setdefault(row.employee_id, []).append(row.department_id)
-    return ket_qua
+        result.setdefault(row.employee_id, []).append(row.department_id)
+    return result
 
 
-def nhan_su_cua_phong(db: Session, department_id: int) -> list[int]:
+def employees_of_department(db: Session, department_id: int) -> list[int]:
     """Ai có chân ở phòng này — KỂ CẢ người chỉ kiêm nhiệm.
 
     Dùng cho gửi thông báo và đếm quân số. Truy vấn cũ lọc
@@ -103,66 +103,66 @@ def nhan_su_cua_phong(db: Session, department_id: int) -> list[int]:
 
 # ── Ghi ─────────────────────────────────────────────────────────────────────
 
-def _kiem_phong_co_that(db: Session, employee: Employee,
+def _check_departments_exist(db: Session, employee: Employee,
                         department_ids: list[int]) -> list[Department]:
     """L3 — phòng có thật, đang bật, và cùng pháp nhân với nhân sự."""
     if not department_ids:
         return []
-    phong = db.query(Department).filter(Department.id.in_(set(department_ids))).all()
-    theo_id = {row.id: row for row in phong}
+    department = db.query(Department).filter(Department.id.in_(set(department_ids))).all()
+    by_id = {row.id: row for row in department}
 
-    thieu = sorted(set(department_ids) - set(theo_id))
-    if thieu:
-        raise HTTPException(400, f"Phòng ban không tồn tại: {thieu}")
+    missing = sorted(set(department_ids) - set(by_id))
+    if missing:
+        raise HTTPException(400, f"Phòng ban không tồn tại: {missing}")
 
     #  Pháp nhân: chỉ chặn khi CẢ HAI bên đều khai. Dữ liệu cũ có phòng chưa gắn
     #  pháp nhân, chặn cứng là không sửa nổi hồ sơ nào.
     if employee.company_id:
-        lac_cho = [row.name for row in phong
+        wrong_company_names = [row.name for row in department
                    if row.company_id and row.company_id != employee.company_id]
-        if lac_cho:
+        if wrong_company_names:
             raise HTTPException(
-                400, f"Phòng ban thuộc pháp nhân khác: {', '.join(lac_cho)}. "
+                400, f"Phòng ban thuộc pháp nhân khác: {', '.join(wrong_company_names)}. "
                      "Gán chéo pháp nhân là mở dữ liệu xuyên pháp nhân.")
-    return phong
+    return department
 
 
-def chan_tu_sua_phong_ban_cua_minh(db: Session, employee_id: int, actor) -> None:
+def block_edit_own_department(db: Session, employee_id: int, actor) -> None:
     """L1 — xem đầu tệp. Gọi ở MỌI cửa ghi vào bảng này.
 
     So theo `user.employee_id` chứ không theo `user.id`: cùng một con người,
     hai định danh khác nhau ở hai bảng.
     """
-    cua_minh = getattr(actor, "employee_id", None)
-    if cua_minh and cua_minh == employee_id:
+    mine = getattr(actor, "employee_id", None)
+    if mine and mine == employee_id:
         raise HTTPException(
             403, "Không tự đổi phòng ban của chính mình được — phòng ban quyết định "
                  "phạm vi dữ liệu bạn nhìn thấy. Nhờ một quản trị khác thao tác.")
 
 
 #  Bậc phạm vi từ hẹp tới rộng — dùng để lấy bậc RỘNG NHẤT trong các vai trò.
-_BAC = {"own": 0, "assigned": 1, "proc": 2, "dept": 3, "company": 4, "all": 5}
+_SCOPE_RANK = {"own": 0, "assigned": 1, "proc": 2, "dept": 3, "company": 4, "all": 5}
 
 
-def _bac_rong_nhat(profile: dict, entity: str, action: str) -> str | None:
+def _widest_scope(profile: dict, entity: str, action: str) -> str | None:
     """Bậc phạm vi rộng nhất mà người này có trên `(entity, action)`.
 
     `None` = không vai trò nào cấp hành động đó. Lấy bậc RỘNG NHẤT vì
     `scope_condition` cũng HỢP các grant lại — hẹp hơn ở đây là chặn nhầm người
     thật sự có quyền.
     """
-    bac = None
+    widest = None
     for grant in profile.get("grants", []):
         perms = grant["perms"].get(entity)
         if not perms or not perms.get(action):
             continue
-        ten = perms.get("scope", "all")
-        if bac is None or _BAC.get(ten, 5) > _BAC.get(bac, 5):
-            bac = ten
-    return bac
+        scope_name = perms.get("scope", "all")
+        if widest is None or _SCOPE_RANK.get(scope_name, 5) > _SCOPE_RANK.get(widest, 5):
+            widest = scope_name
+    return widest
 
 
-def phong_ban_gan_duoc(db: Session, profile: dict) -> set[int] | None:
+def assignable_departments(db: Session, profile: dict) -> set[int] | None:
     """Những phòng người này được phép GÁN cho người khác. `None` = không giới hạn.
 
     ⚠️ Đo bằng phạm vi trên entity **`employee`** (thứ đang bị ghi), KHÔNG phải
@@ -172,12 +172,12 @@ def phong_ban_gan_duoc(db: Session, profile: dict) -> set[int] | None:
     tôi tạo" — dùng làm thước thì người quản lý nhân sự phòng Kế toán không gán
     nổi chính phòng Kế toán.
     """
-    bac = _bac_rong_nhat(profile, "employee", "write")
-    if bac is None:
+    widest = _widest_scope(profile, "employee", "write")
+    if widest is None:
         return set()
-    if bac == "all":
+    if widest == "all":
         return None
-    if bac == "company":
+    if widest == "company":
         company_id = profile.get("company_id") or 0
         if not company_id:
             return set()
@@ -187,16 +187,16 @@ def phong_ban_gan_duoc(db: Session, profile: dict) -> set[int] | None:
 
     #  Bậc `dept` (và hẹp hơn): đúng những phòng CHÍNH NGƯỜI ĐÓ có chân, cộng
     #  các phòng được cấp thêm đích danh ở màn Phân quyền (`tab_user_scope`).
-    duoc = {x for x in (profile.get("dept_ids") or []) if x}
+    allowed_ids = {x for x in (profile.get("dept_ids") or []) if x}
     if profile.get("dept_id"):
-        duoc.add(profile["dept_id"])
+        allowed_ids.add(profile["dept_id"])
     for grant in profile.get("grants", []):
-        cap_them = (grant.get("scope") or {}).get("inc", {}).get("department") or []
-        duoc.update(x for x in cap_them if x)
-    return duoc
+        extra_grants = (grant.get("scope") or {}).get("inc", {}).get("department") or []
+        allowed_ids.update(x for x in extra_grants if x)
+    return allowed_ids
 
 
-def chan_gan_phong_ngoai_tam(db: Session, department_ids: list[int], actor,
+def block_out_of_scope_departments(db: Session, department_ids: list[int], actor,
                              profile: dict) -> None:
     """L2 — chỉ gán được phòng nằm trong tầm của chính người thao tác.
 
@@ -206,23 +206,23 @@ def chan_gan_phong_ngoai_tam(db: Session, department_ids: list[int], actor,
     if not department_ids:
         return
 
-    duoc = phong_ban_gan_duoc(db, profile)
-    if duoc is None:
+    allowed_ids = assignable_departments(db, profile)
+    if allowed_ids is None:
         return   # phạm vi *tất cả* — không siết
 
-    ngoai_tam = sorted(set(department_ids) - duoc)
-    if ngoai_tam:
-        ten = {row[0]: row[1] for row in
+    out_of_scope = sorted(set(department_ids) - allowed_ids)
+    if out_of_scope:
+        scope_name = {row[0]: row[1] for row in
                db.query(Department.id, Department.name)
-               .filter(Department.id.in_(ngoai_tam)).all()}
-        nhan = ", ".join(f"«{ten.get(i, i)}»" for i in ngoai_tam)
+               .filter(Department.id.in_(out_of_scope)).all()}
+        label = ", ".join(f"«{scope_name.get(i, i)}»" for i in out_of_scope)
         raise HTTPException(
-            403, f"Không gán được phòng ban mà chính bạn không có phạm vi trên đó: {nhan}. "
+            403, f"Không gán được phòng ban mà chính bạn không có phạm vi trên đó: {label}. "
                  "Nhờ người phụ trách phòng đó thao tác.")
 
 
-def dat_phong_ban(db: Session, employee: Employee, department_ids: list[int],
-                  actor: int, *, phong_chinh: int | None = None) -> list[int]:
+def set_departments(db: Session, employee: Employee, department_ids: list[int],
+                  actor: int, *, primary_department: int | None = None) -> list[int]:
     """Đặt LẠI toàn bộ danh sách phòng ban của một nhân sự.
 
     Đây là chỗ DUY NHẤT ghi vào `tab_employee_department`, và cũng là chỗ duy
@@ -234,21 +234,21 @@ def dat_phong_ban(db: Session, employee: Employee, department_ids: list[int],
 
     ⚠️ KHÔNG gọi thẳng từ controller — gọi ba hàm `chan_*` trước.
     """
-    sach = list(dict.fromkeys(int(x) for x in department_ids if x))
-    _kiem_phong_co_that(db, employee, sach)
+    cleaned = list(dict.fromkeys(int(x) for x in department_ids if x))
+    _check_departments_exist(db, employee, cleaned)
 
-    chinh = phong_chinh if phong_chinh in sach else (sach[0] if sach else 0)
+    primary = primary_department if primary_department in cleaned else (cleaned[0] if cleaned else 0)
 
     db.query(EmployeeDepartment).filter(
         EmployeeDepartment.employee_id == employee.id).delete(synchronize_session=False)
-    for department_id in sach:
+    for department_id in cleaned:
         db.add(EmployeeDepartment(
             employee_id=employee.id, department_id=department_id,
-            is_primary=(department_id == chinh),
+            is_primary=(department_id == primary),
             created_by=actor, updated_by=actor))
 
     #  Giữ cột cũ khớp với phòng chính — 12 chỗ trong mã vẫn đọc nó.
-    employee.department_id = chinh
+    employee.department_id = primary
     db.flush()
 
     #  Phạm vi dữ liệu của người này vừa đổi; hồ sơ quyền cache 60 giây nên
@@ -259,4 +259,4 @@ def dat_phong_ban(db: Session, employee: Employee, department_ids: list[int],
     for row in db.query(User.id).filter(User.employee_id == employee.id).all():
         perm_cache_clear(row[0])
 
-    return [chinh] + [x for x in sach if x != chinh] if chinh else sach
+    return [primary] + [x for x in cleaned if x != primary] if primary else cleaned

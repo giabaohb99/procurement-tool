@@ -69,10 +69,10 @@ def test_bo_qua_dong_gia_bang_0(db):
 
 def test_khong_co_ma_hoac_khong_co_lich_su_thi_tra_rong(db):
     """Phiếu khảo sát hàng chưa có mã trong hệ thống vẫn phải mở được, không nổ."""
-    rong = {"last": 0.0, "max": 0.0, "count": 0, "unit": "", "date": ""}
-    assert _price_hint(db, _survey(db, item_code="")) == rong
-    assert _price_hint(db, _survey(db, code="KS111B", item_code="   ")) == rong
-    assert _price_hint(db, _survey(db, code="KS111C", item_code="CHUA-MUA")) == rong
+    width = {"last": 0.0, "max": 0.0, "count": 0, "unit": "", "date": ""}
+    assert _price_hint(db, _survey(db, item_code="")) == width
+    assert _price_hint(db, _survey(db, code="KS111B", item_code="   ")) == width
+    assert _price_hint(db, _survey(db, code="KS111C", item_code="CHUA-MUA")) == width
 
 
 def test_payload_chi_tiet_co_san_price_hint(db):

@@ -15,10 +15,10 @@ from datetime import date, timedelta
 import pytest
 from fastapi import HTTPException
 
-from app.modules.document import attachment_window as han
+from app.modules.document import attachment_window as due
 from app.modules.document.model import Document
 
-HOM_NAY = date(2026, 8, 24)
+TODAY = date(2026, 8, 24)
 
 
 def _doc(view_until: date | None) -> Document:
@@ -26,30 +26,30 @@ def _doc(view_until: date | None) -> Document:
 
 
 def test_khong_dat_han_thi_khong_bao_gio_het():
-    assert han.het_han_xem(_doc(None), HOM_NAY) is False
+    assert due.view_window_expired(_doc(None), TODAY) is False
 
 
 def test_dung_ngay_han_van_con_xem_duoc():
     """"Xem tới ngày 24/08" = hết ngày 24/08 vẫn xem được — đúng cách người Việt đọc."""
-    assert han.het_han_xem(_doc(HOM_NAY), HOM_NAY) is False
+    assert due.view_window_expired(_doc(TODAY), TODAY) is False
 
 
 def test_qua_mot_ngay_la_het():
-    assert han.het_han_xem(_doc(HOM_NAY - timedelta(days=1)), HOM_NAY) is True
+    assert due.view_window_expired(_doc(TODAY - timedelta(days=1)), TODAY) is True
 
 
 def test_han_o_tuong_lai_thi_con_xem_duoc():
-    assert han.het_han_xem(_doc(HOM_NAY + timedelta(days=30)), HOM_NAY) is False
+    assert due.view_window_expired(_doc(TODAY + timedelta(days=30)), TODAY) is False
 
 
 def test_khong_co_van_ban_thi_khong_chan():
     """Tệp của YCMH/ĐMH/bình luận đi qua cùng hàm — không được dính hạn nào."""
-    assert han.het_han_xem(None, HOM_NAY) is False
+    assert due.view_window_expired(None, TODAY) is False
 
 
 def test_entity_khac_thi_khong_tra_ra_van_ban(db):
-    assert han.van_ban_cua_dinh_kem(db, "purchase_request", 1) is None
-    assert han.van_ban_cua_dinh_kem(db, "comment", 1) is None
+    assert due.document_of_attachment(db, "purchase_request", 1) is None
+    assert due.document_of_attachment(db, "comment", 1) is None
 
 
 def test_chan_neu_het_han_nem_403_kem_ngay(db, seed, monkeypatch):
@@ -59,20 +59,20 @@ def test_chan_neu_het_han_nem_403_kem_ngay(db, seed, monkeypatch):
     """
     doc = Document(id=99, title="Bảng lương kỳ 8",
                    attachment_view_until=date.today() - timedelta(days=1))
-    monkeypatch.setattr(han, "van_ban_cua_dinh_kem", lambda *a, **kw: doc)
+    monkeypatch.setattr(due, "document_of_attachment", lambda *a, **kw: doc)
 
-    with pytest.raises(HTTPException) as loi:
-        han.chan_neu_het_han(db, han.ENTITY_DINH_KEM_VAN_BAN, 1)
+    with pytest.raises(HTTPException) as error:
+        due.block_if_expired(db, due.ENTITY_DOCUMENT_VERSION, 1)
 
-    assert loi.value.status_code == 403
+    assert error.value.status_code == 403
     #  Câu báo phải nói RÕ NGÀY — "không xem được" trơ trọi thì người dùng đi hỏi
     #  vòng quanh xem ai khóa mất tệp.
-    assert doc.attachment_view_until.strftime("%d/%m/%Y") in loi.value.detail
+    assert doc.attachment_view_until.strftime("%d/%m/%Y") in error.value.detail
 
 
 def test_con_han_thi_khong_chan(db, monkeypatch):
     doc = Document(id=99, title="Còn hạn",
                    attachment_view_until=date.today() + timedelta(days=1))
-    monkeypatch.setattr(han, "van_ban_cua_dinh_kem", lambda *a, **kw: doc)
+    monkeypatch.setattr(due, "document_of_attachment", lambda *a, **kw: doc)
 
-    han.chan_neu_het_han(db, han.ENTITY_DINH_KEM_VAN_BAN, 1)  # không ném gì
+    due.block_if_expired(db, due.ENTITY_DOCUMENT_VERSION, 1)  # không ném gì

@@ -217,7 +217,7 @@ def product_purchase_history(ctx: ToolContext, args: dict) -> dict:
     see_supplier = ctx.can("supplier")
     total, rows = list_history(
         ctx.db, {"offset": 0, "limit": limit},
-        product_code=product_code, tim_theo_ncc=see_supplier,
+        product_code=product_code, search_by_supplier=see_supplier,
     )
     items = []
     for r in rows:

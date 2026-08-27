@@ -170,9 +170,9 @@ class ClaudeProvider(Provider):
             # Vọng lại nguyên lượt assistant (gồm tool_use) rồi trả tool_result cho từng khối.
             msgs.append({"role": "assistant", "content": blocks})
             results = []
-            for tu in tool_uses:
-                fname = tu.get("name", "")
-                fargs = dict(tu.get("input") or {})
+            for tool_use in tool_uses:
+                fname = tool_use.get("name", "")
+                fargs = dict(tool_use.get("input") or {})
                 result = execute(fname, fargs)
                 call: dict = {"name": fname, "args": fargs, "rows": _row_count(result)}
                 # Tool soạn nháp trả bản draft ĐÃ CHUẨN HÓA (vd "cái" -> "Cái" khớp danh mục
@@ -185,7 +185,7 @@ class ClaudeProvider(Provider):
                 tool_calls.append(call)
                 results.append({
                     "type": "tool_result",
-                    "tool_use_id": tu.get("id"),
+                    "tool_use_id": tool_use.get("id"),
                     "content": json.dumps(result, ensure_ascii=False),
                 })
             msgs.append({"role": "user", "content": results})

@@ -84,15 +84,15 @@ def _noi_dung_ban_moi_nhat(db, doc: Document) -> str:
 
 
 # ── Đường TẠO văn bản ────────────────────────────────────────────────────────
-@pytest.mark.parametrize("nhan,payload,cam", DON_TAN_CONG, ids=[d[0] for d in DON_TAN_CONG])
-def test_tao_van_ban_loc_sach_ma_doc(db, doc_type, nhan, payload, cam):
+@pytest.mark.parametrize("label,payload,cam", DON_TAN_CONG, ids=[d[0] for d in DON_TAN_CONG])
+def test_tao_van_ban_loc_sach_ma_doc(db, doc_type, label, payload, cam):
     doc = _tao(db, doc_type, payload)
-    luu = _noi_dung_ban_moi_nhat(db, doc)
+    archive_note = _noi_dung_ban_moi_nhat(db, doc)
 
-    assert cam.lower() not in luu.lower(), f"{nhan}: '{cam}' còn sót trong nội dung đã lưu"
+    assert cam.lower() not in archive_note.lower(), f"{label}: '{cam}' còn sót trong nội dung đã lưu"
     #  Không được cho `onerror`/`onload`/… bằng cách xóa TRẮNG cả nội dung —
     #  chữ lành phải giữ nguyên, chỉ cắt phần độc.
-    assert "steal" not in luu or "(" not in luu, f"{nhan}: còn nguyên lời gọi hàm độc"
+    assert "steal" not in archive_note or "(" not in archive_note, f"{label}: còn nguyên lời gọi hàm độc"
 
 
 def test_tao_van_ban_GIU_dinh_dang_lanh(db, doc_type):
@@ -101,15 +101,15 @@ def test_tao_van_ban_GIU_dinh_dang_lanh(db, doc_type):
             '<table><tr><td>ô</td></tr></table>'
             '<img src="data:image/png;base64,iVBORw0KGgo=" alt="dấu">')
     doc = _tao(db, doc_type, lanh)
-    luu = _noi_dung_ban_moi_nhat(db, doc)
+    archive_note = _noi_dung_ban_moi_nhat(db, doc)
 
     for phai_con in ("<strong>", "<em>", "<table>", "<h1>", "data:image/png"):
-        assert phai_con in luu, f"mất định dạng lành: {phai_con}"
+        assert phai_con in archive_note, f"mất định dạng lành: {phai_con}"
 
 
 # ── Đường LƯU NỘI DUNG (tự động lưu) ─────────────────────────────────────────
-@pytest.mark.parametrize("nhan,payload,cam", DON_TAN_CONG, ids=[d[0] for d in DON_TAN_CONG])
-def test_luu_noi_dung_nhap_loc_sach(db, doc_type, nhan, payload, cam):
+@pytest.mark.parametrize("label,payload,cam", DON_TAN_CONG, ids=[d[0] for d in DON_TAN_CONG])
+def test_luu_noi_dung_nhap_loc_sach(db, doc_type, label, payload, cam):
     """Đường tự động lưu là đường người ta gõ vào THẬT — phải sạch y như lúc tạo,
     nếu không kẻ tấn công chỉ cần tạo văn bản trắng rồi gõ payload vào sau."""
     doc = _tao(db, doc_type, "<p>ban đầu sạch</p>")
@@ -120,8 +120,8 @@ def test_luu_noi_dung_nhap_loc_sach(db, doc_type, nhan, payload, cam):
     version_service.save_content(
         db, version, VersionContentUpdate(content_html=payload), ACTOR)
 
-    luu = _noi_dung_ban_moi_nhat(db, doc)
-    assert cam.lower() not in luu.lower(), f"{nhan}: '{cam}' còn sót sau khi lưu nháp"
+    archive_note = _noi_dung_ban_moi_nhat(db, doc)
+    assert cam.lower() not in archive_note.lower(), f"{label}: '{cam}' còn sót sau khi lưu nháp"
 
 
 def test_luu_content_html_None_khong_xoa_trang_noi_dung(db, doc_type):

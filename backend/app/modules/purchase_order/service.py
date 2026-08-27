@@ -165,14 +165,14 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
             # Dòng ĐÃ NHẬN HÀNG → khóa nhận diện sản phẩm. Đổi mã hàng/tên hàng/ĐVT lúc này
             # sẽ dời phiếu nhập kho + tồn kho đã ghi nhận sang hàng khác (sai số liệu kho).
             if float(it.qty_received or 0) > 0:
-                ten_dong = (it.product_name or "").strip() or (it.product_code or "").strip() or f"#{it.id}"
+                line_name = (it.product_name or "").strip() or (it.product_code or "").strip() or f"#{it.id}"
                 for f, label in (("product_code", "Mã hàng"), ("product_name", "Tên hàng"), ("unit", "ĐVT")):
                     new_v = (data.get(f) or "").strip()
                     old_v = (getattr(it, f, "") or "").strip()
                     if new_v != old_v:
                         raise HTTPException(
                             400,
-                            f"Dòng '{ten_dong}' đã nhận hàng — không đổi được {label} "
+                            f"Dòng '{line_name}' đã nhận hàng — không đổi được {label} "
                             f"('{old_v}' → '{new_v}'). Hãy hủy dòng này rồi thêm dòng mới.",
                         )
             for k, v in data.items():
@@ -431,10 +431,10 @@ def _ensure_pr_dispatched(db: Session, pr_code: str) -> None:
     # Công tắc điều phối TẮT → không còn bước duyệt lần 2, phiếu "Đã duyệt" (phiếu cũ còn kẹt lại
     # từ lúc công tắc còn bật) coi như làm việc được, nếu không sẽ không ai gỡ được cho nó.
     from app.modules.purchase_request.service import dispatch_enabled
-    chua_lam_viec_duoc = ["draft", "submitted", "rejected"]
+    not_actionable_statuses = ["draft", "submitted", "rejected"]
     if dispatch_enabled():
-        chua_lam_viec_duoc.append("approved")
-    if pr.status in chua_lam_viec_duoc:
+        not_actionable_statuses.append("approved")
+    if pr.status in not_actionable_statuses:
         raise HTTPException(400, f"YCMH {pr_code} chưa được điều phối (chưa có nhân sự phụ trách) "
                                  f"— chưa tạo được đơn mua hàng.")
     if pr.status == "cancelled":
@@ -476,10 +476,10 @@ def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
 # cung cấp một nẻo mà không để lại dấu vết nào. Từ nay đơn đã duyệt chỉ còn sửa được các
 # ô PHÁT SINH SAU KHI DUYỆT; muốn đổi phần đã duyệt thì bấm "Hủy duyệt" (đơn về Nháp)
 # rồi gửi duyệt lại — đi qua đúng cổng kiểm tra CR-095 một lần nữa.
-TRANG_THAI_DA_DUYET = ("approved", "partial", "received")
+APPROVED_STATUSES = ("approved", "partial", "received")
 
 # Ô của DÒNG HÀNG còn sửa được sau khi duyệt (đúng các ô khoanh đỏ trong phiếu hỗ trợ).
-TRUONG_DONG_SUA_SAU_DUYET = {
+LINE_FIELDS_EDITABLE_AFTER_APPROVAL = {
     "invoice_name",            # Tên trên hóa đơn — kế toán chốt sau khi có hóa đơn thật
     "expected_date",           # Ngày dự kiến có hàng — NCC hẹn lại liên tục
     "warehouse_code",          # Kho nhận mặc định
@@ -491,7 +491,7 @@ TRUONG_DONG_SUA_SAU_DUYET = {
 }
 
 # Nhãn tiếng Việt để câu báo lỗi gọi đúng tên ô người dùng nhìn thấy trên màn hình.
-NHAN_TRUONG_DONG = {
+LINE_FIELD_LABELS = {
     "product_code": "Mã hàng", "product_name": "Tên hàng", "item_group": "Phân loại",
     "spec": "Xuất xứ / TSKT / chất liệu", "fg_code": "Mã HH (thành phẩm)",
     "fg_name": "Tên HH (thành phẩm)", "invoice_no": "Số hóa đơn", "invoice_date": "Ngày hóa đơn",
@@ -499,7 +499,7 @@ NHAN_TRUONG_DONG = {
     "unit": "ĐVT", "qty_request": "SL yêu cầu", "qty_order": "SL đặt NCC",
     "price": "Đơn giá", "vat": "VAT (%)",
 }
-NHAN_TRUONG_DON = {
+ORDER_FIELD_LABELS = {
     "misa_code": "Số hóa đơn (MISA)", "pr_code": "Mã YCMH nguồn", "survey_code": "Mã YCBG nguồn",
     "company_id": "Pháp nhân", "supplier_code": "Nhà cung cấp", "supplier_name": "Tên NCC",
     "department": "Bộ phận", "nspt": "NSPT phụ trách", "order_date": "Ngày đặt hàng",
@@ -509,59 +509,59 @@ NHAN_TRUONG_DON = {
 # Ô của ĐƠN còn sửa được sau khi duyệt: hồ sơ chứng từ (đã có endpoint riêng, cập nhật
 # được cả khi đơn Hoàn thành) và mã đơn MISA (kế toán nhập/sửa sau khi đã duyệt trên phần
 # mềm MISA) — mọi ô còn lại là nội dung đã được duyệt.
-TRUONG_DON_SUA_SAU_DUYET = {"document_status", "misa_code"}
+ORDER_FIELDS_EDITABLE_AFTER_APPROVAL = {"document_status", "misa_code"}
 
-_HUONG_DAN = "Bấm 'Hủy duyệt' để đưa đơn về Nháp, chỉnh rồi gửi duyệt lại."
+_EDIT_HINT = "Bấm 'Hủy duyệt' để đưa đơn về Nháp, chỉnh rồi gửi duyệt lại."
 
 
-def _khac_nhau(cu, moi) -> bool:
+def _differs(old, new) -> bool:
     """So sánh giá trị cũ (DB) với giá trị gửi lên, bỏ qua khác biệt kiểu Decimal/float
     và None/chuỗi rỗng — nếu không thì lần lưu nào cũng báo 'đã sửa' dù không ai chạm vào."""
-    if isinstance(cu, bool) or isinstance(moi, bool):
-        return bool(cu) != bool(moi)
-    if isinstance(cu, (int, float, Decimal)) or isinstance(moi, (int, float, Decimal)):
+    if isinstance(old, bool) or isinstance(new, bool):
+        return bool(old) != bool(new)
+    if isinstance(old, (int, float, Decimal)) or isinstance(new, (int, float, Decimal)):
         try:
-            return abs(float(cu or 0) - float(moi or 0)) > 1e-6
+            return abs(float(old or 0) - float(new or 0)) > 1e-6
         except (TypeError, ValueError):
             pass
-    return (str(cu or "").strip()) != (str(moi or "").strip())
+    return (str(old or "").strip()) != (str(new or "").strip())
 
 
-def chan_sua_don_da_duyet(db: Session, po: PurchaseOrder, data: POUpdate) -> None:
+def block_edit_approved_order(db: Session, po: PurchaseOrder, data: POUpdate) -> None:
     """Chặn mọi thay đổi ngoài danh sách cho phép khi đơn đã duyệt. So theo GIÁ TRỊ chứ
     không theo 'có gửi lên hay không': màn hình luôn gửi nguyên cả đơn mỗi lần Lưu."""
-    if po.status not in TRANG_THAI_DA_DUYET:
+    if po.status not in APPROVED_STATUSES:
         return
     payload = data.model_dump(exclude_unset=True)
     for k, v in payload.items():
-        if k == "items" or k in TRUONG_DON_SUA_SAU_DUYET:
+        if k == "items" or k in ORDER_FIELDS_EDITABLE_AFTER_APPROVAL:
             continue
-        if _khac_nhau(getattr(po, k, None), v):
-            raise HTTPException(400, f"Đơn đã duyệt — không sửa được '{NHAN_TRUONG_DON.get(k, k)}'. {_HUONG_DAN}")
+        if _differs(getattr(po, k, None), v):
+            raise HTTPException(400, f"Đơn đã duyệt — không sửa được '{ORDER_FIELD_LABELS.get(k, k)}'. {_EDIT_HINT}")
 
     rows = payload.get("items")
     if rows is None:
         return
-    dang_co = {it.id: it for it in items_of(db, po.id)}
+    existing = {it.id: it for it in items_of(db, po.id)}
     if any(not r.get("id") for r in rows):
-        raise HTTPException(400, f"Đơn đã duyệt — không thêm dòng hàng mới. {_HUONG_DAN}")
-    gui_len = {r.get("id") for r in rows}
-    if set(dang_co) - gui_len:
-        raise HTTPException(400, f"Đơn đã duyệt — không xóa dòng hàng. {_HUONG_DAN}")
+        raise HTTPException(400, f"Đơn đã duyệt — không thêm dòng hàng mới. {_EDIT_HINT}")
+    submitted_ids = {r.get("id") for r in rows}
+    if set(existing) - submitted_ids:
+        raise HTTPException(400, f"Đơn đã duyệt — không xóa dòng hàng. {_EDIT_HINT}")
     for r in rows:
-        it = dang_co.get(r.get("id"))
+        it = existing.get(r.get("id"))
         if it is None:
             raise HTTPException(400, "Dòng hàng không thuộc đơn này.")
         # Dòng Hoàn thành / Hủy đơn: _save_items đã bỏ qua nguyên dòng, không cần chặn thêm.
         if (it.progress_status or "") in (PROG_COMPLETED, PROG_CANCELLED):
             continue
-        ten_dong = (it.product_name or "").strip() or (it.product_code or "").strip() or f"#{it.id}"
+        line_name = (it.product_name or "").strip() or (it.product_code or "").strip() or f"#{it.id}"
         for k, v in r.items():
-            if k in ("id", "deliveries") or k in TRUONG_DONG_SUA_SAU_DUYET:
+            if k in ("id", "deliveries") or k in LINE_FIELDS_EDITABLE_AFTER_APPROVAL:
                 continue
-            if _khac_nhau(getattr(it, k, None), v):
-                nhan = NHAN_TRUONG_DONG.get(k, k)
-                raise HTTPException(400, f"Đơn đã duyệt — dòng '{ten_dong}' không sửa được '{nhan}'. {_HUONG_DAN}")
+            if _differs(getattr(it, k, None), v):
+                label = LINE_FIELD_LABELS.get(k, k)
+                raise HTTPException(400, f"Đơn đã duyệt — dòng '{line_name}' không sửa được '{label}'. {_EDIT_HINT}")
 
 
 def unapprove_po(db: Session, pid: int, user_id: int, reason: str = "") -> PurchaseOrder:
@@ -572,7 +572,7 @@ def unapprove_po(db: Session, pid: int, user_id: int, reason: str = "") -> Purch
     thì không lọt lên người duyệt được.
     """
     po = get_po(db, pid)
-    if po.status not in TRANG_THAI_DA_DUYET:
+    if po.status not in APPROVED_STATUSES:
         raise HTTPException(400, "Chỉ hủy duyệt được đơn đang ở trạng thái Đã duyệt / Nhận một phần / Đã nhận.")
     items = items_of(db, pid)
     if any(float(i.qty_received or 0) > 0 for i in items):
@@ -580,13 +580,13 @@ def unapprove_po(db: Session, pid: int, user_id: int, reason: str = "") -> Purch
                                  "muốn dừng thì hủy từng dòng ở cột Trạng thái.")
     if any((i.progress_status or "") == PROG_COMPLETED for i in items):
         raise HTTPException(400, "Đơn có dòng đã Hoàn thành — không hủy duyệt được.")
-    dinh_yctt = db.query(PaymentRequestLine.id).join(
+    linked_payment_lines = db.query(PaymentRequestLine.id).join(
         PaymentRequest, PaymentRequest.id == PaymentRequestLine.request_id
     ).filter(
         PaymentRequestLine.po_code == (po.code or ""),
         PaymentRequest.status != "cancelled",
     ).first()
-    if dinh_yctt:
+    if linked_payment_lines:
         raise HTTPException(400, "Đơn đã có yêu cầu thanh toán — không hủy duyệt được. "
                                  "Hủy phiếu thanh toán liên quan trước.")
     return set_status(db, pid, "draft", user_id, reason)
@@ -596,7 +596,7 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
     po = get_po(db, pid)
     if po.status in ("completed", "cancelled"):
         raise HTTPException(400, "Đơn đã hoàn thành/đã hủy — không sửa được. Dùng 'Nhân bản' để tạo đơn mới.")
-    chan_sua_don_da_duyet(db, po, data)
+    block_edit_approved_order(db, po, data)
     _new_pr_code = (data.model_dump(exclude_unset=True).get("pr_code") or "").strip()
     if _new_pr_code and _new_pr_code != (po.pr_code or ""):
         _ensure_pr_dispatched(db, _new_pr_code)   # CR-034: đổi sang YCMH khác cũng phải đã điều phối
@@ -720,7 +720,7 @@ def set_status(db: Session, pid: int, status: str, user_id: int, message: str = 
 # "chưa nhập" vừa nghĩa là "hàng không chịu thuế / thuế suất 0%" — hai thứ đó không phân
 # biệt được, chặn thì khóa luôn mặt hàng 0% hợp lệ. Ô nào để trống KHÔNG bắt buộc thì
 # giữ nguyên: xuất xứ/TSKT, mã & tên HH thành phẩm, ngày giao chứng từ cho KT, ghi chú.
-TRUONG_BAT_BUOC_DONG: list[tuple[str, str]] = [
+REQUIRED_LINE_FIELDS: list[tuple[str, str]] = [
     ("product_code", "Mã hàng"),
     ("item_group", "Phân loại"),
     ("product_name", "Tên hàng"),
@@ -735,18 +735,18 @@ TRUONG_BAT_BUOC_DONG: list[tuple[str, str]] = [
 ]
 # Ô số: 0 ở đây là "chưa nhập" thật — dòng hàng không có số lượng hoặc không có giá thì
 # không phải là dòng để đặt mua.
-_TRUONG_SO = {"qty_request", "qty_order", "price"}
+_NUMERIC_FIELDS = {"qty_request", "qty_order", "price"}
 
 
-def thieu_truong_dong(item: POItem) -> list[str]:
+def missing_line_fields(item: POItem) -> list[str]:
     """Nhãn các ô còn trống của MỘT dòng hàng, theo thứ tự hiện trên màn Chi tiết dòng."""
-    thieu = []
-    for ten, nhan in TRUONG_BAT_BUOC_DONG:
-        gia_tri = getattr(item, ten, None)
-        rong = float(gia_tri or 0) <= 0 if ten in _TRUONG_SO else not str(gia_tri or "").strip()
-        if rong:
-            thieu.append(nhan)
-    return thieu
+    missing = []
+    for field, label in REQUIRED_LINE_FIELDS:
+        value = getattr(item, field, None)
+        width = float(value or 0) <= 0 if field in _NUMERIC_FIELDS else not str(value or "").strip()
+        if width:
+            missing.append(label)
+    return missing
 
 
 # ───────────────────────── Máy trạng thái TIẾN ĐỘ của DÒNG ĐMH (progress_status) ─────────────────────────
@@ -887,8 +887,8 @@ def set_item_progress(db: Session, pid: int, item_id: int, target: str, reason: 
 
     item.updated_by = user_id
     db.commit()
-    nhan = "Tiếp tục" if target == "__resume__" else PO_PROGRESS_STATUS.label_of(target, target)
-    record(db, user_id, ENTITY, pid, "item_progress", f"{item.product_name}: {nhan}")
+    label = "Tiếp tục" if target == "__resume__" else PO_PROGRESS_STATUS.label_of(target, target)
+    record(db, user_id, ENTITY, pid, "item_progress", f"{item.product_name}: {label}")
     _sync_pr(db, po.pr_code)   # đồng bộ tiến độ sang YCMH nguồn
     db.refresh(po)
     return po

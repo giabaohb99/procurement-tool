@@ -14,7 +14,7 @@ from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 # Bốn cột của B-06 lưu MÃ tiếng Anh. File Excel là để NGƯỜI đọc nên phải dịch ngược ngay trước
 # khi ghi. `row_values` cố ý KHÔNG dịch sẵn: cùng hàm đó nuôi luôn API danh sách, mà giao diện
 # cần MÃ để tô màu badge và để gửi lại làm tham số lọc.
-_BO_MA_THEO_COT = {
+_CODE_SET_BY_COLUMN = {
     "progress_status": PO_PROGRESS_STATUS,
     "line_status": PO_ITEM_LINE_STATUS,
     "delivery_status": PO_DELIVERY_STATUS,
@@ -22,14 +22,14 @@ _BO_MA_THEO_COT = {
 }
 
 
-def dich_ma(r: dict) -> dict:
+def translate_codes(r: dict) -> dict:
     """Đổi MÃ trạng thái trong một hàng sang nhãn tiếng Việt — CHỈ dùng cho file xuất.
 
     Sửa tại chỗ và trả về chính `r`. Mã lạ giữ nguyên chứ không nuốt thành ô trống.
     """
-    for k, bo in _BO_MA_THEO_COT.items():
+    for k, code_set in _CODE_SET_BY_COLUMN.items():
         if k in r:
-            r[k] = bo.label_of(r[k]) or (r[k] or "")
+            r[k] = code_set.label_of(r[k]) or (r[k] or "")
     return r
 
 # Key bị GỠ KHỎI DỮ LIỆU với người không có `supplier.read` (rộng hơn `SUPPLIER_ONLY`

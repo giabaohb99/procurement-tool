@@ -81,10 +81,10 @@ def test_file_policy_anh_va_video_50mb():
     assert exts == _IMG | {"mp4", "webm"}
     assert max_mb == 50
     # đuôi tài liệu phải BỊ chặn — diễn đàn không phải chỗ chuyền file in ấn
-    for ten in ("bao_gia.pdf", "hop_dong.docx", "thiet_ke.cdr"):
-        assert ext_of(ten) not in exts
-    for ten in ("anh.jpg", "anh.jpeg", "anh.png", "anh.webp", "clip.mp4", "clip.webm"):
-        assert ext_of(ten) in exts
+    for name in ("bao_gia.pdf", "hop_dong.docx", "thiet_ke.cdr"):
+        assert ext_of(name) not in exts
+    for name in ("anh.jpg", "anh.jpeg", "anh.png", "anh.webp", "clip.mp4", "clip.webm"):
+        assert ext_of(name) in exts
 
 
 # ── 4. Dây phân quyền — forum_admin có, quản lý thu mua KHÔNG tự ăn theo ────────

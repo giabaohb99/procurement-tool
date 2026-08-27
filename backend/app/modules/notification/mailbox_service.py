@@ -21,7 +21,7 @@ def get_or_404(db: Session, mailbox_id: int) -> Mailbox:
 
 # ── Mật khẩu ứng dụng ────────────────────────────────────────────────────────
 
-def dat_mat_khau(mailbox: Mailbox, mat_khau: str) -> None:
+def set_password(mailbox: Mailbox, password: str) -> None:
     """Cất mật khẩu ứng dụng đã mã hóa. Chuỗi rỗng = **không đụng tới** cái cũ.
 
     ⚠️ Phân biệt "không gửi ô mật khẩu" với "xóa mật khẩu". Màn sửa hộp thư
@@ -29,17 +29,17 @@ def dat_mat_khau(mailbox: Mailbox, mat_khau: str) -> None:
     rỗng ở mọi lần sửa tên/ghi chú. Coi rỗng là xóa thì sửa một cái nhãn cũng đủ
     làm hộp thư ngừng gửi được, mà không dòng nào báo.
     """
-    if not (mat_khau or "").strip():
+    if not (password or "").strip():
         return
-    mailbox.smtp_password_enc = app_settings.encrypt(mat_khau.strip())
+    mailbox.smtp_password_enc = app_settings.encrypt(password.strip())
 
 
-def xoa_mat_khau(mailbox: Mailbox) -> None:
+def clear_password(mailbox: Mailbox) -> None:
     """Xóa hẳn — phải là một thao tác RIÊNG, có chủ ý. Xem `dat_mat_khau`."""
     mailbox.smtp_password_enc = ""
 
 
-def duong_smtp(mailbox: Mailbox) -> dict:
+def smtp_route(mailbox: Mailbox) -> dict:
     """Đường SMTP đã giải mã cho tác vụ gửi thư. **Không lộ ra API.**"""
     from app.core.app_settings import _decrypt
 
@@ -54,7 +54,7 @@ def duong_smtp(mailbox: Mailbox) -> dict:
     }
 
 
-def san_sang_gui(mailbox: Mailbox) -> bool:
+def ready_to_send(mailbox: Mailbox) -> bool:
     """Hộp thư đã khai đủ để gửi được chưa."""
     return bool(mailbox.smtp_host and mailbox.smtp_password_enc
                 and (mailbox.smtp_user or mailbox.email))
@@ -62,7 +62,7 @@ def san_sang_gui(mailbox: Mailbox) -> bool:
 
 # ── Ai dùng được hộp thư nào ─────────────────────────────────────────────────
 
-def cua_nhan_su(db: Session, employee_id: int | None,
+def for_employee(db: Session, employee_id: int | None,
                 company_id: int | None = None) -> list[Mailbox]:
     """Những hộp thư nhân sự này được gửi danh nghĩa.
 
@@ -83,7 +83,7 @@ def cua_nhan_su(db: Session, employee_id: int | None,
     return q.order_by(Mailbox.name.asc()).all()
 
 
-def duoc_dung(db: Session, mailbox_id: int, employee_id: int | None) -> bool:
+def can_use(db: Session, mailbox_id: int, employee_id: int | None) -> bool:
     if not employee_id:
         return False
     return (db.query(MailboxMember.id)
@@ -92,7 +92,7 @@ def duoc_dung(db: Session, mailbox_id: int, employee_id: int | None) -> bool:
             .first() is not None)
 
 
-def ensure_duoc_dung(db: Session, mailbox_id: int,
+def ensure_can_use(db: Session, mailbox_id: int,
                      employee_id: int | None) -> Mailbox:
     """Chốt chặn thật, gọi từ nhịp ban hành — không chỉ ẩn nút trên giao diện.
 
@@ -103,13 +103,13 @@ def ensure_duoc_dung(db: Session, mailbox_id: int,
     mailbox = get_or_404(db, mailbox_id)
     if not mailbox.is_active:
         raise HTTPException(400, f"Hộp thư «{mailbox.email}» đã ngừng dùng")
-    if not duoc_dung(db, mailbox_id, employee_id):
+    if not can_use(db, mailbox_id, employee_id):
         raise HTTPException(
             403,
             f"Bạn chưa được cấp quyền gửi thư danh nghĩa «{mailbox.email}». "
             "Đề nghị quản trị thêm bạn vào hộp thư này.",
         )
-    if not san_sang_gui(mailbox):
+    if not ready_to_send(mailbox):
         raise HTTPException(
             400,
             f"Hộp thư «{mailbox.email}» chưa khai đủ đường SMTP (máy chủ và mật "
@@ -118,23 +118,23 @@ def ensure_duoc_dung(db: Session, mailbox_id: int,
     return mailbox
 
 
-def dat_thanh_vien(db: Session, mailbox: Mailbox, employee_ids: list[int],
+def set_members(db: Session, mailbox: Mailbox, employee_ids: list[int],
                    actor: int) -> int:
     """Đặt LẠI toàn bộ danh sách người được dùng. Trả về số người sau khi đặt."""
-    muon = {int(value) for value in employee_ids if value}
-    dang_co = {row.employee_id: row for row in db.query(MailboxMember)
+    borrowed = {int(value) for value in employee_ids if value}
+    existing = {row.employee_id: row for row in db.query(MailboxMember)
                .filter(MailboxMember.mailbox_id == mailbox.id).all()}
 
-    for employee_id, row in dang_co.items():
-        if employee_id not in muon:
+    for employee_id, row in existing.items():
+        if employee_id not in borrowed:
             db.delete(row)
-    for employee_id in muon - set(dang_co):
+    for employee_id in borrowed - set(existing):
         db.add(MailboxMember(mailbox_id=mailbox.id, employee_id=employee_id,
                              created_by=actor, updated_by=actor))
     db.flush()
-    return len(muon)
+    return len(borrowed)
 
 
-def thanh_vien_ids(db: Session, mailbox_id: int) -> list[int]:
+def member_ids(db: Session, mailbox_id: int) -> list[int]:
     return [row[0] for row in db.query(MailboxMember.employee_id)
             .filter(MailboxMember.mailbox_id == mailbox_id).all()]

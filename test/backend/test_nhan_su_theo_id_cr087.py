@@ -48,12 +48,12 @@ def _visible(db, profile):
 
 def _sinh_doi(db, seed, code="SONGSINH"):
     """Thêm một nhân sự TRÙNG TÊN với `emp_nstm` — đúng tình huống đang có trên prod."""
-    goc = db.get(Employee, seed.emp_nstm_id)
-    doi = Employee(code=code, full_name=goc.full_name, company_id=seed.company_id,
-                   department_id=goc.department_id, is_active=True)
+    origin = db.get(Employee, seed.emp_nstm_id)
+    doi = Employee(code=code, full_name=origin.full_name, company_id=seed.company_id,
+                   department_id=origin.department_id, is_active=True)
     db.add(doi)
     db.commit()
-    return goc, doi
+    return origin, doi
 
 
 # ── Tra id nhân sự ───────────────────────────────────────────────────────────────
@@ -66,13 +66,13 @@ def test_tra_id_theo_ten_va_ma(db, seed):
 
 
 def test_trung_ten_thi_khong_doan_bua(db, seed):
-    goc, doi = _sinh_doi(db, seed)
-    assert emp_id_by_name(db, goc.full_name) == 0          # hai người, không chọn bừa ai
+    origin, doi = _sinh_doi(db, seed)
+    assert emp_id_by_name(db, origin.full_name) == 0          # hai người, không chọn bừa ai
     # Cùng pháp nhân luôn thì pháp nhân cũng không phân giải được → vẫn 0.
-    assert emp_id_by_name(db, goc.full_name, company_id=seed.company_id) == 0
+    assert emp_id_by_name(db, origin.full_name, company_id=seed.company_id) == 0
     doi.company_id = 777
     db.commit()
-    assert emp_id_by_name(db, goc.full_name, company_id=seed.company_id) == seed.emp_nstm_id
+    assert emp_id_by_name(db, origin.full_name, company_id=seed.company_id) == seed.emp_nstm_id
 
 
 # ── Ghi kép id ↔ tên ─────────────────────────────────────────────────────────────
@@ -119,11 +119,11 @@ def test_don_chua_dien_lui_duoc_id_thi_so_bang_ten(db, seed):
 
 def test_trung_ten_thi_khong_con_thay_don_cua_nhau(db, seed):
     """LỖ ĐANG RÒ trước CR-087: hai người trùng tên, khớp bằng tên là thấy đơn của nhau."""
-    goc, doi = _sinh_doi(db, seed)
-    _po(db, "PO-CUA-GOC", seed.company_id, goc.id, goc.full_name)
+    origin, doi = _sinh_doi(db, seed)
+    _po(db, "PO-CUA-GOC", seed.company_id, origin.id, origin.full_name)
     _po(db, "PO-CUA-DOI", seed.company_id, doi.id, doi.full_name)
 
-    prof = _profile(employee_id=goc.id, emp_name=goc.full_name, company_id=seed.company_id)
+    prof = _profile(employee_id=origin.id, emp_name=origin.full_name, company_id=seed.company_id)
     assert _visible(db, prof) == ["PO-CUA-GOC"]
 
 

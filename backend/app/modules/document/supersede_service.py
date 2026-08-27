@@ -69,7 +69,7 @@ def apply_supersede(db: Session, doc: Document, actor: int) -> list[Document]:
 
     from .parent_change_service import apply_obsolete
 
-    bi_bai_bo: list[Document] = []
+    revoked_docs: list[Document] = []
 
     links = (
         db.query(DocumentLink)
@@ -78,37 +78,37 @@ def apply_supersede(db: Session, doc: Document, actor: int) -> list[Document]:
         .all()
     )
     for link in links:
-        cu = db.get(Document, link.target_document_id)
-        if cu is None:
+        old = db.get(Document, link.target_document_id)
+        if old is None:
             continue
-        moi = SUPERSEDE_EFFECT[link.relation]
+        new = SUPERSEDE_EFFECT[link.relation]
         #  Chỉ đụng văn bản CÒN SỐNG. Văn bản đã bãi bỏ từ trước thì để nguyên —
         #  ghi đè là xóa mất lý do bãi bỏ thật của nó.
-        if cu.status not in ALIVE_STATUSES or cu.status == moi:
+        if old.status not in ALIVE_STATUSES or old.status == new:
             continue
-        cu.status = moi
-        record(db, actor, "document", cu.id, "update",
+        old.status = new
+        record(db, actor, "document", old.id, "update",
                f"{RELATION_LABELS.get(link.relation, '')} bởi "
                f"{doc.doc_code or doc.issue_number or doc.title}"
-               f" → {STATUS_LABELS.get(moi, '')}")
+               f" → {STATUS_LABELS.get(new, '')}")
 
-        if moi == STATUS_REVOKED:
+        if new == STATUS_REVOKED:
             #  Ngày bãi bỏ = ngày hết hiệu lực, y như `service.revoke`.
-            cu.expire_date = date.today()
+            old.expire_date = date.today()
             #  ⚠️ PHẢI ghi `updated_by`. Luật quyền xem sau khi bãi bỏ coi cột
             #  này là "người bãi bỏ" (`revoke_access.py`); không ghi thì nó vẫn
             #  là người SỬA CUỐI CÙNG trước đó — và người đó giữ nguyên quyền xem
             #  một văn bản lẽ ra đã bị giấu khỏi họ. Dựng lại được: văn bản 339
             #  do admin tạo, DEMO_MANAGER sửa lần cuối; bãi bỏ theo quan hệ xong
             #  DEMO_MANAGER vẫn `can_read=True`.
-            cu.updated_by = actor
+            old.updated_by = actor
             #  E08 — văn bản con xử lý theo cột `on_parent_obsolete`. Thiếu dòng
             #  này thì bãi bỏ bằng quan hệ không kéo con theo, còn bãi bỏ bằng
             #  nút bấm thì có.
-            apply_obsolete(db, cu)
-            bi_bai_bo.append(cu)
+            apply_obsolete(db, old)
+            revoked_docs.append(old)
 
-    return bi_bai_bo
+    return revoked_docs
 
 
 def amended_by(db: Session, document_id: int) -> list[dict]:
@@ -125,18 +125,18 @@ def amended_by(db: Session, document_id: int) -> list[dict]:
         .all()
     )
 
-    ket_qua: list[dict] = []
+    result: list[dict] = []
     for link in links:
-        moi = db.get(Document, link.source_document_id)
-        if moi is None or moi.status not in ALIVE_STATUSES:
+        new = db.get(Document, link.source_document_id)
+        if new is None or new.status not in ALIVE_STATUSES:
             continue
-        ket_qua.append({
-            "document_id": moi.id,
-            "title": moi.title,
-            "display_code": moi.doc_code or moi.issue_number or "",
+        result.append({
+            "document_id": new.id,
+            "title": new.title,
+            "display_code": new.doc_code or new.issue_number or "",
             "relation": link.relation,
             "relation_label": RELATION_LABELS.get(link.relation, str(link.relation)),
-            "effective_date": moi.effective_date,
-            "status_label": STATUS_LABELS.get(moi.status, str(moi.status)),
+            "effective_date": new.effective_date,
+            "status_label": STATUS_LABELS.get(new.status, str(new.status)),
         })
-    return ket_qua
+    return result

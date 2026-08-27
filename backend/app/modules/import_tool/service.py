@@ -20,7 +20,7 @@ _FILTER_OPS = [
 ]
 
 # Ô chọn «Phân hệ» -> tập ĐỐI TƯỢNG (module) thuộc phân hệ đó (khớp data-modules ở FE).
-_PHAN_HE_MODULES = {
+_SUBSYSTEM_MODULES = {
     "hr": [ImportModule.COMPANY, ImportModule.DEPARTMENT, ImportModule.EMPLOYEE],
     "procurement": [ImportModule.SURVEY_REQUEST, ImportModule.PURCHASE_REQUEST,
                     ImportModule.SURVEY, ImportModule.PURCHASE_ORDER],
@@ -80,12 +80,12 @@ def add_log(db: Session, batch: ImportBatch, sheet: str, row_no: int, level: int
 
 def list_batches(db: Session, request, module: int | None, status: int | None, mode: int | None,
                  date_from: str | None, date_to: str | None,
-                 created_by_name: str | None, filename: str | None, phan_he: str | None, pg: dict):
+                 created_by_name: str | None, filename: str | None, subsystem: str | None, pg: dict):
     q = db.query(ImportBatch)
     if module:
         q = q.filter(ImportBatch.module == module)
-    if phan_he in _PHAN_HE_MODULES:
-        q = q.filter(ImportBatch.module.in_([int(m) for m in _PHAN_HE_MODULES[phan_he]]))
+    if subsystem in _SUBSYSTEM_MODULES:
+        q = q.filter(ImportBatch.module.in_([int(m) for m in _SUBSYSTEM_MODULES[subsystem]]))
     if status is not None:
         q = q.filter(ImportBatch.status == status)
     if mode is not None:

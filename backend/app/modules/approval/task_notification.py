@@ -51,12 +51,12 @@ ENTITY_LINKS = {
 }
 
 
-def _ten(db: Session, employee_id: int | None) -> str:
+def _name_of(db: Session, employee_id: int | None) -> str:
     employee = db.get(Employee, employee_id) if employee_id else None
     return employee.full_name if employee else ""
 
 
-def _tai_khoan(db: Session, employee_ids: set[int]) -> list[User]:
+def _accounts(db: Session, employee_ids: set[int]) -> list[User]:
     if not employee_ids:
         return []
     return (
@@ -66,33 +66,33 @@ def _tai_khoan(db: Session, employee_ids: set[int]) -> list[User]:
     )
 
 
-def _nguoi_can_biet(db: Session, instance: ApprovalInstance,
+def _recipients(db: Session, instance: ApprovalInstance,
                     task: ApprovalTask) -> list[User]:
     """Người mang tên trên việc, cộng những ai đang được họ ủy quyền bấm thay."""
-    can_biet = {task.assignee_employee_id}
-    for row in delegation_service.nguoi_duoc_uy_quyen_boi(
+    recipients = {task.assignee_employee_id}
+    for row in delegation_service.delegatees_of(
             db, task.assignee_employee_id, instance.entity):
-        can_biet.add(row.to_employee_id)
-    return _tai_khoan(db, {row for row in can_biet if row})
+        recipients.add(row.to_employee_id)
+    return _accounts(db, {row for row in recipients if row})
 
 
-def _than_thu(instance: ApprovalInstance, task: ApprovalTask,
-              thay_cho: str = "") -> str:
-    loai = ENTITY_LABELS.get(instance.entity, "Phiếu")
-    ma = instance.entity_code or f"#{instance.entity_id}"
-    buoc = task.node_name or f"bước {task.node_seq}"
+def _message_body(instance: ApprovalInstance, task: ApprovalTask,
+              on_behalf_of: str = "") -> str:
+    kind = ENTITY_LABELS.get(instance.entity, "Phiếu")
+    code = instance.entity_code or f"#{instance.entity_id}"
+    step = task.node_name or f"bước {task.node_seq}"
 
-    cau = f"{loai} {ma} đang chờ bạn ở «{buoc}»."
-    if thay_cho:
+    message = f"{kind} {code} đang chờ bạn ở «{step}»."
+    if on_behalf_of:
         #  Ký thay người khác là việc khác hẳn ký cho mình, và nhật ký sẽ ghi cả
         #  hai tên — nói ra ngay trong thư chứ không để họ biết sau khi đã bấm.
-        cau += f" Bạn xử lý THAY {thay_cho} theo ủy quyền."
+        message += f" Bạn xử lý THAY {on_behalf_of} theo ủy quyền."
     if task.due_at:
-        cau += f" Hạn duyệt {task.due_at:%d/%m/%Y %H:%M}."
-    return cau
+        message += f" Hạn duyệt {task.due_at:%d/%m/%Y %H:%M}."
+    return message
 
 
-def bao_viec_moi(db: Session, instance: ApprovalInstance,
+def notify_new_tasks(db: Session, instance: ApprovalInstance,
                  tasks: list[ApprovalTask]) -> int:
     """Báo cho người duyệt của những việc VỪA MỞ. Trả về số thư đã ghi.
 
@@ -104,27 +104,27 @@ def bao_viec_moi(db: Session, instance: ApprovalInstance,
     lên thì cả giao dịch bị hủy và phiếu không đi tiếp được — mất phiếu vì không
     gửi được thư thì tệ hơn nhiều so với việc thiếu một cái thư.
     """
-    da_ghi = 0
+    written = 0
     try:
         for task in tasks:
             if task.status != TASK_PENDING or not task.assignee_employee_id:
                 continue
             link = ENTITY_LINKS.get(instance.entity, "").format(id=instance.entity_id)
-            tieu_de = f"Chờ bạn duyệt: {instance.entity_title or instance.entity_code}"
+            title = f"Chờ bạn duyệt: {instance.entity_title or instance.entity_code}"
 
-            for user in _nguoi_can_biet(db, instance, task):
-                thay_cho = ""
+            for user in _recipients(db, instance, task):
+                on_behalf_of = ""
                 if user.employee_id != task.assignee_employee_id:
-                    thay_cho = _ten(db, task.assignee_employee_id)
+                    on_behalf_of = _name_of(db, task.assignee_employee_id)
                 db.add(Notification(
                     user_id=user.id,
-                    title=tieu_de,
-                    body=_than_thu(instance, task, thay_cho),
+                    title=title,
+                    body=_message_body(instance, task, on_behalf_of),
                     link=link,
                     created_by=instance.updated_by or 0,
                 ))
-                da_ghi += 1
-    except Exception as loi:   # noqa: BLE001 — xem ghi chú trên
+                written += 1
+    except Exception as error:   # noqa: BLE001 — xem ghi chú trên
         logging.getLogger(__name__).exception(
-            "Không báo được việc duyệt của phiên %s: %s", instance.id, loi)
-    return da_ghi
+            "Không báo được việc duyệt của phiên %s: %s", instance.id, error)
+    return written

@@ -28,19 +28,19 @@ ACTOR = 1
 def ctx(db, seed):
     company = db.get(Company, seed.company_id)
     company.issue_code = "DEGO"
-    quy_che = DocType(code="QC", name="Quy chế", id_scheme=1, number_when=2,
+    regulation = DocType(code="QC", name="Quy chế", id_scheme=1, number_when=2,
                       needs_decision=True)
-    quyet_dinh = DocType(code="QD", name="Quyết định", id_scheme=2, number_when=2)
-    db.add_all([quy_che, quyet_dinh])
+    decision = DocType(code="QD", name="Quyết định", id_scheme=2, number_when=2)
+    db.add_all([regulation, decision])
     db.commit()
 
     #  Quy chế ban hành kèm ĐÚNG MỘT Quyết định; Quyết định thay thế Quyết định.
-    db.add(DocTypeLinkRule(source_type_id=quy_che.id, relation=RELATION_ATTACHED,
-                           target_type_id=quyet_dinh.id))
-    db.add(DocTypeLinkRule(source_type_id=quyet_dinh.id, relation=RELATION_REPLACE,
-                           target_type_id=quyet_dinh.id))
+    db.add(DocTypeLinkRule(source_type_id=regulation.id, relation=RELATION_ATTACHED,
+                           target_type_id=decision.id))
+    db.add(DocTypeLinkRule(source_type_id=decision.id, relation=RELATION_REPLACE,
+                           target_type_id=decision.id))
     db.commit()
-    return {"QC": quy_che, "QD": quyet_dinh, "seed": seed}
+    return {"QC": regulation, "QD": decision, "seed": seed}
 
 
 def _tao(db, ctx, code: str, title: str):
@@ -60,21 +60,21 @@ def _ban_hanh(db, doc):
 
 # ── J11 · loại phải kèm Quyết định ──────────────────────────────────────────
 def test_thieu_quyet_dinh_thi_khong_ban_hanh_duoc(db, ctx):
-    quy_che = _tao(db, ctx, "QC", "Quy chế lương")
-    service.submit(db, quy_che, ACTOR)
+    regulation = _tao(db, ctx, "QC", "Quy chế lương")
+    service.submit(db, regulation, ACTOR)
 
-    with pytest.raises(HTTPException) as loi:
-        service.approve(db, quy_che, ACTOR)
-    assert "kèm một Quyết định" in loi.value.detail
+    with pytest.raises(HTTPException) as error:
+        service.approve(db, regulation, ACTOR)
+    assert "kèm một Quyết định" in error.value.detail
 
 
 def test_co_quyet_dinh_kem_theo_thi_ban_hanh_duoc(db, ctx):
-    quyet_dinh = _ban_hanh(db, _tao(db, ctx, "QD", "Quyết định ban hành quy chế lương"))
-    quy_che = _tao(db, ctx, "QC", "Quy chế lương")
-    link_service.add_link(db, quy_che, RELATION_ATTACHED, quyet_dinh.id, "", ACTOR)
+    decision = _ban_hanh(db, _tao(db, ctx, "QD", "Quyết định ban hành quy chế lương"))
+    regulation = _tao(db, ctx, "QC", "Quy chế lương")
+    link_service.add_link(db, regulation, RELATION_ATTACHED, decision.id, "", ACTOR)
 
-    _ban_hanh(db, quy_che)
-    assert quy_che.doc_code
+    _ban_hanh(db, regulation)
+    assert regulation.doc_code
 
 
 def test_loai_khong_doi_quyet_dinh_thi_ban_hanh_thoai_mai(db, ctx):
@@ -85,22 +85,22 @@ def test_loai_khong_doi_quyet_dinh_thi_ban_hanh_thoai_mai(db, ctx):
 # ── J04 · bản xem trước ─────────────────────────────────────────────────────
 def test_xem_truoc_khong_dung_vao_du_lieu(db, ctx):
     """Gọi bao nhiêu lần cũng không chiếm số, không khóa phiên bản."""
-    quy_che = _tao(db, ctx, "QC", "Quy chế lương")
-    service.submit(db, quy_che, ACTOR)
+    regulation = _tao(db, ctx, "QC", "Quy chế lương")
+    service.submit(db, regulation, ACTOR)
 
-    issue_service.preview(db, quy_che)
-    issue_service.preview(db, quy_che)
+    issue_service.preview(db, regulation)
+    issue_service.preview(db, regulation)
 
-    db.refresh(quy_che)
-    assert not quy_che.doc_code
-    assert service.open_version(db, quy_che).is_locked is False
+    db.refresh(regulation)
+    assert not regulation.doc_code
+    assert service.open_version(db, regulation).is_locked is False
 
 
 def test_xem_truoc_neu_ro_so_hieu_sap_cap_va_phien_ban_sap_khoa(db, ctx):
-    quy_che = _tao(db, ctx, "QC", "Quy chế lương")
-    service.submit(db, quy_che, ACTOR)
+    regulation = _tao(db, ctx, "QC", "Quy chế lương")
+    service.submit(db, regulation, ACTOR)
 
-    data = issue_service.preview(db, quy_che)
+    data = issue_service.preview(db, regulation)
 
     assert data["version_no"] == "1.0"
     assert data["number_on_approve"] is True
@@ -108,10 +108,10 @@ def test_xem_truoc_neu_ro_so_hieu_sap_cap_va_phien_ban_sap_khoa(db, ctx):
 
 
 def test_thieu_quyet_dinh_hien_o_muc_CHAN_chu_khong_phai_canh_bao(db, ctx):
-    quy_che = _tao(db, ctx, "QC", "Quy chế lương")
-    service.submit(db, quy_che, ACTOR)
+    regulation = _tao(db, ctx, "QC", "Quy chế lương")
+    service.submit(db, regulation, ACTOR)
 
-    data = issue_service.preview(db, quy_che)
+    data = issue_service.preview(db, regulation)
 
     assert any("Quyết định" in item for item in data["blockers"])
     assert not any("Quyết định" in item for item in data["warnings"])
@@ -123,10 +123,10 @@ def test_chua_khai_pham_vi_khong_chan_ma_cung_khong_canh_bao(db, ctx):
     Nên đây không còn là thiếu sót để dọa người ban hành — dọa mỗi lần thì họ
     học cách bỏ qua mọi cảnh báo, kể cả cái thật.
     """
-    quyet_dinh = _tao(db, ctx, "QD", "Quyết định 15")
-    service.submit(db, quyet_dinh, ACTOR)
+    decision = _tao(db, ctx, "QD", "Quyết định 15")
+    service.submit(db, decision, ACTOR)
 
-    data = issue_service.preview(db, quyet_dinh)
+    data = issue_service.preview(db, decision)
 
     assert data["scope_count"] == 0
     assert not any("phạm vi" in item for item in data["warnings"])
@@ -134,13 +134,13 @@ def test_chua_khai_pham_vi_khong_chan_ma_cung_khong_canh_bao(db, ctx):
 
 
 def test_khai_pham_vi_roi_thi_het_canh_bao(db, ctx):
-    quyet_dinh = _tao(db, ctx, "QD", "Quyết định 15")
-    service.submit(db, quyet_dinh, ACTOR)
-    db.add(DocumentScope(document_id=quyet_dinh.id, dim=DIM_COMPANY,
+    decision = _tao(db, ctx, "QD", "Quyết định 15")
+    service.submit(db, decision, ACTOR)
+    db.add(DocumentScope(document_id=decision.id, dim=DIM_COMPANY,
                          company_id=ctx["seed"].company_id, mode=MODE_INCLUDE))
     db.commit()
 
-    data = issue_service.preview(db, quyet_dinh)
+    data = issue_service.preview(db, decision)
 
     assert data["scope_count"] == 1
     assert not any("phạm vi" in item for item in data["warnings"])
@@ -148,12 +148,12 @@ def test_khai_pham_vi_roi_thi_het_canh_bao(db, ctx):
 
 def test_xem_truoc_liet_ke_van_ban_se_bi_thay_the(db, ctx):
     """Đây là hậu quả không lùi được — phải thấy TRƯỚC khi bấm."""
-    cu = _ban_hanh(db, _tao(db, ctx, "QD", "Quyết định 15"))
-    moi = _tao(db, ctx, "QD", "Quyết định 47")
-    link_service.add_link(db, moi, RELATION_REPLACE, cu.id, "", ACTOR)
-    service.submit(db, moi, ACTOR)
+    old = _ban_hanh(db, _tao(db, ctx, "QD", "Quyết định 15"))
+    new = _tao(db, ctx, "QD", "Quyết định 47")
+    link_service.add_link(db, new, RELATION_REPLACE, old.id, "", ACTOR)
+    service.submit(db, new, ACTOR)
 
-    data = issue_service.preview(db, moi)
+    data = issue_service.preview(db, new)
 
     assert len(data["will_supersede"]) == 1
     muc = data["will_supersede"][0]
@@ -165,10 +165,10 @@ def test_xem_truoc_liet_ke_van_ban_se_bi_thay_the(db, ctx):
 def test_xem_truoc_noi_ro_co_hieu_luc_ngay_hay_khong(db, ctx):
     from datetime import date, timedelta
 
-    quyet_dinh = _tao(db, ctx, "QD", "Quyết định 15")
-    service.submit(db, quyet_dinh, ACTOR)
-    assert issue_service.preview(db, quyet_dinh)["effective_now"] is True
+    decision = _tao(db, ctx, "QD", "Quyết định 15")
+    service.submit(db, decision, ACTOR)
+    assert issue_service.preview(db, decision)["effective_now"] is True
 
-    quyet_dinh.effective_date = date.today() + timedelta(days=30)
+    decision.effective_date = date.today() + timedelta(days=30)
     db.commit()
-    assert issue_service.preview(db, quyet_dinh)["effective_now"] is False
+    assert issue_service.preview(db, decision)["effective_now"] is False

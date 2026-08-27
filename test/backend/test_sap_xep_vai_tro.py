@@ -13,7 +13,7 @@ from app.modules.role.model import Role
 from app.modules.role.schema import RoleCreate
 
 
-def _vai_tro(db, code: str, sort_order: int = 0) -> Role:
+def _role(db, code: str, sort_order: int = 0) -> Role:
     obj = Role(code=code, name=f"Vai trò {code}", description="",
                sort_order=sort_order, created_by=1, updated_by=1)
     db.add(obj)
@@ -27,7 +27,7 @@ def test_chua_xep_thi_giu_nguyen_thu_tu_theo_id(db):
     Nếu không có khóa phụ này, MySQL trả về thứ tự tùy hứng và danh sách nhảy
     lung tung giữa hai lần nạp — người dùng mất dấu vai trò vừa bấm.
     """
-    a, b, c = _vai_tro(db, "aaa"), _vai_tro(db, "bbb"), _vai_tro(db, "ccc")
+    a, b, c = _role(db, "aaa"), _role(db, "bbb"), _role(db, "ccc")
     db.commit()
 
     ids = [r.id for r in service.list_roles_query(db).all()]
@@ -36,10 +36,10 @@ def test_chua_xep_thi_giu_nguyen_thu_tu_theo_id(db):
 
 
 def test_sap_xep_ghi_dung_day_nhan_duoc(db):
-    a, b, c = _vai_tro(db, "aaa"), _vai_tro(db, "bbb"), _vai_tro(db, "ccc")
+    a, b, c = _role(db, "aaa"), _role(db, "bbb"), _role(db, "ccc")
     db.commit()
 
-    service.sap_xep_vai_tro(db, [c.id, a.id, b.id], user_id=1)
+    service.reorder_roles(db, [c.id, a.id, b.id], user_id=1)
 
     assert [r.code for r in service.list_roles_query(db).all()] == ["ccc", "aaa", "bbb"]
     assert (c.sort_order, a.sort_order, b.sort_order) == (1, 2, 3)
@@ -51,9 +51,9 @@ def test_sap_xep_bat_dau_tu_1_de_khong_lan_voi_vai_tro_chua_xep(db):
     Đánh số từ 0 thì dòng vừa kéo lên đầu lại hòa với đám chưa xếp, và `id` mới
     là thứ quyết định — tức là cú kéo không có tác dụng gì.
     """
-    a, b = _vai_tro(db, "aaa"), _vai_tro(db, "bbb")
+    a, b = _role(db, "aaa"), _role(db, "bbb")
     db.commit()
-    service.sap_xep_vai_tro(db, [b.id], user_id=1)
+    service.reorder_roles(db, [b.id], user_id=1)
 
     assert b.sort_order == 1
     assert a.sort_order == 0
@@ -65,10 +65,10 @@ def test_id_la_thi_bo_qua_chu_khong_vut_ca_luot(db):
 
     Chặn cả lượt vì một dòng đã biến mất là vứt luôn công sắp xếp của người dùng.
     """
-    a, b = _vai_tro(db, "aaa"), _vai_tro(db, "bbb")
+    a, b = _role(db, "aaa"), _role(db, "bbb")
     db.commit()
 
-    service.sap_xep_vai_tro(db, [b.id, 999_999, a.id], user_id=1)
+    service.reorder_roles(db, [b.id, 999_999, a.id], user_id=1)
 
     assert b.sort_order == 1
     assert a.sort_order == 3      # giữ nguyên vị trí trong dãy, không dồn lên
@@ -76,9 +76,9 @@ def test_id_la_thi_bo_qua_chu_khong_vut_ca_luot(db):
 
 
 def test_day_rong_khong_doi_gi(db):
-    a = _vai_tro(db, "aaa", sort_order=5)
+    a = _role(db, "aaa", sort_order=5)
     db.commit()
-    service.sap_xep_vai_tro(db, [], user_id=1)
+    service.reorder_roles(db, [], user_id=1)
     assert a.sort_order == 5
 
 
@@ -86,7 +86,7 @@ def test_doi_ten_khong_dung_toi_thu_tu(db):
     """Đổi tên và xếp thứ tự là hai việc rời nhau — sửa cái này không được đụng cái kia."""
     from app.modules.role.schema import RoleUpdate
 
-    a = _vai_tro(db, "aaa", sort_order=7)
+    a = _role(db, "aaa", sort_order=7)
     db.commit()
 
     service.update_role(db, a.id, RoleUpdate(name="Tên mới"), user_id=1)
@@ -113,9 +113,9 @@ def test_route_order_khai_truoc_route_id():
     """
     from app.modules.role.controller import router
 
-    duong = [getattr(r, "path", "") for r in router.routes]
-    assert "/api/roles/order" in duong
-    assert duong.index("/api/roles/order") < duong.index("/api/roles/{rid}")
+    route = [getattr(r, "path", "") for r in router.routes]
+    assert "/api/roles/order" in route
+    assert route.index("/api/roles/order") < route.index("/api/roles/{rid}")
 
 
 def test_khong_tim_thay_vai_tro_thi_404(db):
@@ -131,24 +131,24 @@ def test_vai_tro_moi_xuong_CUOI_danh_sach_da_xep(db):
     `sort_order = 0` mặc định nên **nhảy lên đứng đầu**, trên cả «Quản trị hệ
     thống» — phá đúng cái thứ tự họ vừa dựng.
     """
-    a, b = _vai_tro(db, "aaa"), _vai_tro(db, "bbb")
+    a, b = _role(db, "aaa"), _role(db, "bbb")
     db.commit()
-    service.sap_xep_vai_tro(db, [a.id, b.id], user_id=1)
+    service.reorder_roles(db, [a.id, b.id], user_id=1)
 
-    moi = service.create_role(db, RoleCreate(code="moi", name="Mới"), user_id=1)
+    new = service.create_role(db, RoleCreate(code="moi", name="Mới"), user_id=1)
 
-    assert moi.sort_order == 3
+    assert new.sort_order == 3
     assert [r.code for r in service.list_roles_query(db).all()][-1] == "moi"
 
 
 def test_danh_sach_chua_ai_xep_thi_vai_tro_moi_van_nam_cuoi(db):
     """Mọi vai trò cũ đều `sort_order = 0`; vai trò mới nhận 1 nên vẫn đứng cuối."""
-    _vai_tro(db, "aaa"), _vai_tro(db, "bbb")
+    _role(db, "aaa"), _role(db, "bbb")
     db.commit()
 
-    moi = service.create_role(db, RoleCreate(code="moi", name="Mới"), user_id=1)
+    new = service.create_role(db, RoleCreate(code="moi", name="Mới"), user_id=1)
 
-    assert moi.sort_order == 1
+    assert new.sort_order == 1
     assert [r.code for r in service.list_roles_query(db).all()][-1] == "moi"
 
 
@@ -156,14 +156,14 @@ def test_danh_sach_chua_ai_xep_thi_vai_tro_moi_van_nam_cuoi(db):
 #  Cả ba ca dưới đây LỌT trước 25/08/2026. Trước CR-172 không ai đổi tên vai trò
 #  từ giao diện được nên chưa ai chạm tới; nay có nút bút chì nên nó thành cửa
 #  thật, phải đóng.
-@pytest.mark.parametrize("ten", ["", "   ", "\t\n"])
-def test_ten_rong_bi_chan(ten):
+@pytest.mark.parametrize("name", ["", "   ", "\t\n"])
+def test_ten_rong_bi_chan(name):
     """Vai trò không tên = một dòng TRẮNG trong cột trái màn Phân quyền."""
     from pydantic import ValidationError
 
     from app.modules.role.schema import RoleUpdate
     with pytest.raises(ValidationError):
-        RoleUpdate(name=ten)
+        RoleUpdate(name=name)
 
 
 def test_ten_dai_hon_cot_bi_chan_o_tang_schema():

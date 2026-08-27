@@ -124,9 +124,9 @@ def test_api_gan_san_nhan_tieng_viet(db):
     db.add(p)
     db.commit()
 
-    ra = pay_ctrl._out(db, p)
-    assert ra["status"] == "partial"
-    assert ra["status_label"] == "Thanh toán một phần"
+    out = pay_ctrl._out(db, p)
+    assert out["status"] == "partial"
+    assert out["status_label"] == "Thanh toán một phần"
 
 
 def test_ma_la_khong_bi_nuot_mat():
@@ -145,11 +145,11 @@ def test_nam_cho_ngoai_phan_he_dung_hang_chu_khong_go_chuoi():
     from app.modules.report import controller as report_ctrl
 
     assert pay_svc.ST_PAID == "paid"
-    for mod, ten in [(alert_ctrl, "alert"), (dash_ctrl, "dashboard"),
+    for mod, name in [(alert_ctrl, "alert"), (dash_ctrl, "dashboard"),
                      (report_ctrl, "report"), (pay_ctrl, "payable")]:
         src = inspect.getsource(mod)
-        assert "Đã TT" not in src, f"{ten}/controller.py còn so sánh với chữ tiếng Việt"
-        assert "ST_PAID" in src, f"{ten}/controller.py không dùng hằng ST_PAID"
+        assert "Đã TT" not in src, f"{name}/controller.py còn so sánh với chữ tiếng Việt"
+        assert "ST_PAID" in src, f"{name}/controller.py không dùng hằng ST_PAID"
 
 
 # ── Migration ───────────────────────────────────────────────────────────────────
@@ -166,12 +166,12 @@ def _nap_migration():
     return mod
 
 
-def _dung_migration(db, mig, chieu: str) -> None:
+def _dung_migration(db, mig, direction: str) -> None:
     from alembic.migration import MigrationContext
     from alembic.operations import Operations
     ctx = MigrationContext.configure(db.connection())
     with Operations.context(ctx):
-        getattr(mig, chieu)()
+        getattr(mig, direction)()
     db.expire_all()
 
 
@@ -181,12 +181,12 @@ def _doc(db) -> dict:
 
 def _tong_theo_ncc(db) -> dict:
     """Tổng công nợ theo từng NCC — chính là số kế hoạch bắt phải khớp từng đồng."""
-    ra: dict[str, tuple] = {}
+    out: dict[str, tuple] = {}
     for p in db.query(Payable).all():
-        t, pa, r = ra.get(p.supplier_code, (0.0, 0.0, 0.0))
-        ra[p.supplier_code] = (t + float(p.total or 0), pa + float(p.paid_amount or 0),
+        t, pa, r = out.get(p.supplier_code, (0.0, 0.0, 0.0))
+        out[p.supplier_code] = (t + float(p.total or 0), pa + float(p.paid_amount or 0),
                                r + float(p.remaining or 0))
-    return ra
+    return out
 
 
 def _nap_du_lieu_cu(db, cap):
@@ -234,8 +234,8 @@ def test_bang_nhan_chieu_xuong_tra_lai_chu_VIET_TAT_chu_khong_phai_nhan_bo_ma():
     mig = _nap_migration()
     assert mig._LABEL == {"unpaid": "Chờ TT", "partial": "Trả một phần", "paid": "Đã TT"}
     assert set(mig._LABEL) == set(PAYABLE_STATUS.values)
-    for ma, chu in mig._LABEL.items():
-        assert chu != PAYABLE_STATUS.label_of(ma), ma
+    for code, text in mig._LABEL.items():
+        assert text != PAYABLE_STATUS.label_of(code), code
 
 
 def test_doi_het_ba_gia_tri(db):
@@ -252,25 +252,25 @@ def test_khong_dong_nao_doi_so_tien(db):
     (fix 82ce6ad), nên "màn hình chạy được" không phải bằng chứng."""
     mig = _nap_migration()
     _nap_du_lieu_cu(db, _MAU)
-    truoc = _tong_theo_ncc(db)
+    before = _tong_theo_ncc(db)
 
     _dung_migration(db, mig, "upgrade")
-    assert _tong_theo_ncc(db) == truoc
+    assert _tong_theo_ncc(db) == before
 
     _dung_migration(db, mig, "downgrade")
-    assert _tong_theo_ncc(db) == truoc
+    assert _tong_theo_ncc(db) == before
 
 
 def test_chay_xuoi_roi_nguoc_tra_ve_dung_tung_ky_tu(db):
     """Điều kiện thứ ba của QĐ-12: `downgrade()` khôi phục byte-exact."""
     mig = _nap_migration()
     _nap_du_lieu_cu(db, _MAU)
-    truoc = _doc(db)
+    before = _doc(db)
 
     _dung_migration(db, mig, "upgrade")
-    assert truoc != _doc(db)
+    assert before != _doc(db)
     _dung_migration(db, mig, "downgrade")
-    assert _doc(db) == truoc
+    assert _doc(db) == before
 
 
 def test_gia_tri_la_giu_nguyen_chu_khong_doan_bua(db):
@@ -297,9 +297,9 @@ def test_chay_theo_lo_khong_bo_sot_dong_nao(db, monkeypatch):
     assert len(_doc(db)) == 7
 
 
-@pytest.mark.parametrize("chieu", ["upgrade", "downgrade"])
-def test_bang_rong_khong_no(db, chieu):
+@pytest.mark.parametrize("direction", ["upgrade", "downgrade"])
+def test_bang_rong_khong_no(db, direction):
     """Môi trường mới dựng chưa có công nợ nào."""
     mig = _nap_migration()
-    _dung_migration(db, mig, chieu)
+    _dung_migration(db, mig, direction)
     assert _doc(db) == {}

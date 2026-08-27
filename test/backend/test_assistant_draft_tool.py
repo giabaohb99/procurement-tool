@@ -101,11 +101,11 @@ def test_thieu_so_luong_thi_nhac_bo_sung(db, seed, monkeypatch):
 
     ctx = _ctx(db, db.get(User, seed.u_req_id), allowed=True, monkeypatch=monkeypatch)
 
-    thieu = _run(ctx, {"purpose": "Mua màn hình", "lines": [
+    missing = _run(ctx, {"purpose": "Mua màn hình", "lines": [
         {"requirement_detail": "Màn 27 inch"},
     ]})
-    assert thieu["status"] == "ready"
-    assert "chưa có số lượng" in thieu["reminder"]
+    assert missing["status"] == "ready"
+    assert "chưa có số lượng" in missing["reminder"]
 
     du = _run(ctx, {"purpose": "Mua màn hình", "lines": [
         {"requirement_detail": "Màn 27 inch", "request_qty": 2},

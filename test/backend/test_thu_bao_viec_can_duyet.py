@@ -31,19 +31,19 @@ DOCUMENT_ID = 731
 
 
 @pytest.fixture()
-def nguoi(db, seed):
+def person(db, seed):
     """Ba người duyệt, mỗi người một tài khoản để nhận được thư."""
     ids = {"nop": seed.emp_req_id}
-    for ten in ("a", "b", "khong_tai_khoan"):
-        employee = Employee(code=f"NV_{ten.upper()}", full_name=f"Người {ten.upper()}",
+    for name in ("a", "b", "khong_tai_khoan"):
+        employee = Employee(code=f"NV_{name.upper()}", full_name=f"Người {name.upper()}",
                             company_id=seed.company_id, department_id=seed.dept_id,
                             is_active=True)
         db.add(employee)
         db.flush()
-        ids[ten] = employee.id
+        ids[name] = employee.id
         #  Người thứ ba CỐ Ý không có tài khoản — xem bài 4.
-        if ten != "khong_tai_khoan":
-            db.add(User(email=f"USER_{ten.upper()}", employee_id=employee.id,
+        if name != "khong_tai_khoan":
+            db.add(User(email=f"USER_{name.upper()}", employee_id=employee.id,
                         password_hash="x", is_active=True))
     db.commit()
     return ids
@@ -70,9 +70,9 @@ def _buoc(db, flow, seq, employee_ids, **kw):
     return node
 
 
-def _trinh(db, nguoi_nop):
-    return instance_service.bat_dau(
-        db, ENTITY, DOCUMENT_ID, {}, nguoi_nop, ACTOR,
+def _trinh(db, submitter):
+    return instance_service.start(
+        db, ENTITY, DOCUMENT_ID, {}, submitter, ACTOR,
         entity_code="VB-731", entity_title="Quy chế bảo mật",
     )
 
@@ -84,13 +84,13 @@ def _thu_cua(db, employee_id) -> list[Notification]:
     return db.query(Notification).filter(Notification.user_id == user.id).all()
 
 
-def test_mo_chang_thi_nguoi_duyet_co_thu_dan_thang_toi_van_ban(db, seed, nguoi):
+def test_mo_chang_thi_nguoi_duyet_co_thu_dan_thang_toi_van_ban(db, seed, person):
     flow = _luong(db)
-    _buoc(db, flow, 1, [nguoi["a"]], name="Trưởng bộ phận duyệt")
+    _buoc(db, flow, 1, [person["a"]], name="Trưởng bộ phận duyệt")
 
-    _trinh(db, nguoi["nop"])
+    _trinh(db, person["nop"])
 
-    thu = _thu_cua(db, nguoi["a"])
+    thu = _thu_cua(db, person["a"])
     assert len(thu) == 1, "Người đang giữ việc phải nhận đúng một thư"
     assert "Quy chế bảo mật" in thu[0].title
     assert "Trưởng bộ phận duyệt" in thu[0].body
@@ -99,65 +99,65 @@ def test_mo_chang_thi_nguoi_duyet_co_thu_dan_thang_toi_van_ban(db, seed, nguoi):
     assert thu[0].link == f"/document/documents/{DOCUMENT_ID}"
 
 
-def test_nguoi_khong_lien_quan_khong_nhan_thu(db, seed, nguoi):
+def test_nguoi_khong_lien_quan_khong_nhan_thu(db, seed, person):
     flow = _luong(db)
-    _buoc(db, flow, 1, [nguoi["a"]])
-    _buoc(db, flow, 2, [nguoi["b"]])
+    _buoc(db, flow, 1, [person["a"]])
+    _buoc(db, flow, 2, [person["b"]])
 
-    _trinh(db, nguoi["nop"])
+    _trinh(db, person["nop"])
 
     #  B đứng ở chặng 2, chưa tới lượt — báo sớm là làm loãng chính cái thư sẽ
     #  gửi khi tới lượt họ thật.
-    assert _thu_cua(db, nguoi["b"]) == []
+    assert _thu_cua(db, person["b"]) == []
 
 
-def test_buoc_lan_luot_chi_bao_nguoi_dang_toi_luot(db, seed, nguoi):
+def test_buoc_lan_luot_chi_bao_nguoi_dang_toi_luot(db, seed, person):
     flow = _luong(db)
-    _buoc(db, flow, 1, [nguoi["a"], nguoi["b"]], multi_mode=MULTI_SEQUENTIAL)
+    _buoc(db, flow, 1, [person["a"], person["b"]], multi_mode=MULTI_SEQUENTIAL)
 
-    instance = _trinh(db, nguoi["nop"])
-    assert len(_thu_cua(db, nguoi["a"])) == 1
-    assert _thu_cua(db, nguoi["b"]) == [], "Người xếp sau chưa tới lượt thì chưa báo"
+    instance = _trinh(db, person["nop"])
+    assert len(_thu_cua(db, person["a"])) == 1
+    assert _thu_cua(db, person["b"]) == [], "Người xếp sau chưa tới lượt thì chưa báo"
 
-    action_service.duyet(db, instance, nguoi["a"], ACTOR, {})
+    action_service.approve(db, instance, person["a"], ACTOR, {})
 
-    assert len(_thu_cua(db, nguoi["b"])) == 1, "Tới lượt ai thì báo người đó"
+    assert len(_thu_cua(db, person["b"])) == 1, "Tới lượt ai thì báo người đó"
 
 
-def test_nguoi_duoc_uy_quyen_cung_nhan_thu_va_thu_noi_ro_bam_thay(db, seed, nguoi):
+def test_nguoi_duoc_uy_quyen_cung_nhan_thu_va_thu_noi_ro_bam_thay(db, seed, person):
     """Việc mang tên người ĐI VẮNG — báo mỗi họ là thư rơi vào hộp không ai đọc."""
     db.add(Delegation(
-        from_employee_id=nguoi["a"], to_employee_id=nguoi["b"], entity="",
+        from_employee_id=person["a"], to_employee_id=person["b"], entity="",
         from_date=date(2020, 1, 1), to_date=date(2099, 12, 31), is_active=True,
         created_by=ACTOR, updated_by=ACTOR,
     ))
     db.commit()
 
     flow = _luong(db)
-    _buoc(db, flow, 1, [nguoi["a"]])
+    _buoc(db, flow, 1, [person["a"]])
 
-    _trinh(db, nguoi["nop"])
+    _trinh(db, person["nop"])
 
-    thu_nguoi_thay = _thu_cua(db, nguoi["b"])
+    thu_nguoi_thay = _thu_cua(db, person["b"])
     assert len(thu_nguoi_thay) == 1
     #  Ký thay người khác là việc khác hẳn ký cho mình, và nhật ký ghi cả hai
     #  tên — nói ra trong thư chứ không để họ biết sau khi đã bấm.
     assert "THAY" in thu_nguoi_thay[0].body
     assert "Người A" in thu_nguoi_thay[0].body
     #  Người gốc vẫn nhận thư của mình: ủy quyền không chuyển việc đi đâu cả.
-    assert len(_thu_cua(db, nguoi["a"])) == 1
+    assert len(_thu_cua(db, person["a"])) == 1
 
 
-def test_nguoi_duyet_khong_co_tai_khoan_thi_phien_van_chay(db, seed, nguoi):
+def test_nguoi_duyet_khong_co_tai_khoan_thi_phien_van_chay(db, seed, person):
     """Không gửi được thư KHÔNG được phép làm hỏng việc duyệt.
 
     Mất phiếu vì không gửi nổi một cái thư thì tệ hơn nhiều so với thiếu thư.
     """
     flow = _luong(db)
-    _buoc(db, flow, 1, [nguoi["khong_tai_khoan"]])
+    _buoc(db, flow, 1, [person["khong_tai_khoan"]])
 
-    instance = _trinh(db, nguoi["nop"])
+    instance = _trinh(db, person["nop"])
 
     assert instance is not None
-    cho = [row for row in instance_service.viec_cua_phien(db, instance.id)]
-    assert [row.assignee_employee_id for row in cho] == [nguoi["khong_tai_khoan"]]
+    cho = [row for row in instance_service.tasks_of_instance(db, instance.id)]
+    assert [row.assignee_employee_id for row in cho] == [person["khong_tai_khoan"]]

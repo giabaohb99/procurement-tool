@@ -18,7 +18,7 @@ def list_roles_query(db: Session):
     return db.query(Role).order_by(Role.sort_order, Role.id)
 
 
-def sap_xep_vai_tro(db: Session, role_ids: list[int], user_id: int) -> None:
+def reorder_roles(db: Session, role_ids: list[int], user_id: int) -> None:
     """Ghi lại thứ tự vai trò theo đúng dãy `role_ids` nhận được.
 
     Nhận **toàn bộ** dãy chứ không nhận từng cặp (id, vị trí): kéo một dòng lên
@@ -29,11 +29,11 @@ def sap_xep_vai_tro(db: Session, role_ids: list[int], user_id: int) -> None:
     dùng vẫn đang kéo trên danh sách cũ, chặn cả lượt vì một dòng đã biến mất là
     vứt luôn công sắp xếp của họ.
     """
-    for vi_tri, rid in enumerate(role_ids, start=1):
+    for position, rid in enumerate(role_ids, start=1):
         obj = db.get(Role, rid)
         if obj is None:
             continue
-        obj.sort_order = vi_tri
+        obj.sort_order = position
         obj.updated_by = user_id
     db.commit()
 
@@ -58,9 +58,9 @@ def create_role(db: Session, data: RoleCreate, user_id: int) -> Role:
     #  «Quản trị hệ thống» — phá đúng cái thứ tự họ vừa dựng. Thứ mới thêm thì
     #  người ta trông nó ở cuối. Danh sách chưa ai xếp (toàn 0) thì vai trò mới
     #  nhận 1, vẫn nằm cuối — đúng như xếp theo `id` trước đây.
-    ke_tiep = (db.query(func.max(Role.sort_order)).scalar() or 0) + 1
+    next_no = (db.query(func.max(Role.sort_order)).scalar() or 0) + 1
     obj = Role(code=data.code, name=data.name, description=data.description,
-               sort_order=ke_tiep, created_by=user_id, updated_by=user_id)
+               sort_order=next_no, created_by=user_id, updated_by=user_id)
     db.add(obj)
     db.commit()
     db.refresh(obj)
@@ -96,11 +96,11 @@ def delete_role(db: Session, rid: int, user_id: int) -> None:
     #  luồng duyệt còn phiếu đang chạy.
     from app.modules.user.model import UserRole, UserScope
 
-    con_giu = db.query(UserRole).filter(UserRole.role_id == rid).count()
-    if con_giu:
+    still_in_use = db.query(UserRole).filter(UserRole.role_id == rid).count()
+    if still_in_use:
         raise HTTPException(
             400,
-            f"Vai trò này đang gán cho {con_giu} tài khoản nên chưa xóa được. "
+            f"Vai trò này đang gán cho {still_in_use} tài khoản nên chưa xóa được. "
             "Gỡ vai trò khỏi các tài khoản đó trước — hoặc để nguyên nếu chỉ muốn "
             "ngừng dùng.")
 

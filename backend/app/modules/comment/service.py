@@ -38,9 +38,9 @@ def strip_mentions(db: Session, body: str) -> str:
         return body
     from app.modules.notification.service import get_user_display_name
     from app.modules.user.model import User
-    ten = {u.id: get_user_display_name(db, u)
+    names = {u.id: get_user_display_name(db, u)
            for u in db.query(User).filter(User.id.in_(ids)).all()}
-    return MENTION_TAG.sub(lambda m: "@" + ten.get(int(m.group(1)), "?"), body)
+    return MENTION_TAG.sub(lambda m: "@" + names.get(int(m.group(1)), "?"), body)
 
 
 def resolve_doc(db: Session, user, entity: str, entity_id: int):
@@ -192,11 +192,11 @@ def mentionable(db: Session, doc, entity: str, entity_id: int, me_id: int,
     from app.modules.notification.service import get_user_display_name
     from app.modules.user.model import User
 
-    lien_quan = {getattr(doc, "created_by", 0) or 0}
-    lien_quan.update(uid for (uid,) in db.query(Comment.created_by)
+    related = {getattr(doc, "created_by", 0) or 0}
+    related.update(uid for (uid,) in db.query(Comment.created_by)
                      .filter(Comment.entity == entity, Comment.entity_id == entity_id).distinct())
-    lien_quan.discard(0)
-    lien_quan.discard(me_id)
+    related.discard(0)
+    related.discard(me_id)
 
     q = (q or "").strip()
     users = db.query(User).filter(User.is_active == True)  # noqa: E712
@@ -208,23 +208,23 @@ def mentionable(db: Session, doc, entity: str, entity_id: int, me_id: int,
         if emp_ids:
             cond.append(User.employee_id.in_(emp_ids))
         users = users.filter(or_(*cond))
-    elif lien_quan:
-        users = users.filter(User.id.in_(lien_quan))
+    elif related:
+        users = users.filter(User.id.in_(related))
     else:
         return []
 
     rows = users.limit(60).all()
     emp = {e.id: e for e in db.query(Employee).filter(
         Employee.id.in_([u.employee_id for u in rows if u.employee_id])).all()} if rows else {}
-    ra = [{"user_id": u.id,
+    out = [{"user_id": u.id,
            "name": get_user_display_name(db, u),
            "code": (emp.get(u.employee_id or 0).code if emp.get(u.employee_id or 0) else "") or "",
            "avatar": getattr(u, "avatar", "") or "",
-           "related": u.id in lien_quan}
+           "related": u.id in related}
           for u in rows if u.id != me_id]
     # Người đang dính tới phiếu luôn nổi lên đầu, phần còn lại xếp theo tên
-    ra.sort(key=lambda x: (not x["related"], x["name"]))
-    return ra[:limit]
+    out.sort(key=lambda x: (not x["related"], x["name"]))
+    return out[:limit]
 
 
 # ── Ghi ─────────────────────────────────────────────────────────────────────────
@@ -281,13 +281,13 @@ def attach_files(db: Session, c: Comment, file_ids: list[int], user_id: int) -> 
 
     if not file_ids:
         return 0
-    hop_le = {f.id for f in db.query(StoredFile.id)
+    valid = {f.id for f in db.query(StoredFile.id)
               .filter(StoredFile.id.in_(file_ids), StoredFile.created_by == user_id).all()}
-    da_gan = {fid for (fid,) in db.query(FileLink.file_id)
+    attached = {fid for (fid,) in db.query(FileLink.file_id)
               .filter(FileLink.file_id.in_(file_ids)).all()}
     n = 0
     for fid in file_ids:                      # giữ đúng thứ tự người dùng chọn
-        if fid not in hop_le or fid in da_gan:
+        if fid not in valid or fid in attached:
             continue
         db.add(FileLink(file_id=fid, entity="comment", entity_id=c.id, sort_order=n,
                         created_by=user_id, updated_by=user_id))
@@ -309,13 +309,13 @@ def save_mentions(db: Session, c: Comment, user_id: int) -> list[int]:
     ids = [i for i in ids if i != user_id]
     if not ids:
         return []
-    that = [u.id for u in db.query(User.id)
+    real_ids = [u.id for u in db.query(User.id)
             .filter(User.id.in_(ids), User.is_active == True).all()]  # noqa: E712
-    for uid in that:
+    for uid in real_ids:
         db.add(CommentMention(comment_id=c.id, user_id=uid,
                               created_by=user_id, updated_by=user_id))
     db.commit()
-    return that
+    return real_ids
 
 
 def delete_comment(db: Session, c: Comment) -> int:

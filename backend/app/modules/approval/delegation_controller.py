@@ -60,7 +60,7 @@ def _acting_employee_id(db: Session, user, action: str) -> int | None:
 @router.post("")
 def create_delegation(data: DelegationIn, db: Session = Depends(get_db),
                       user=Depends(require("approval_flow", "create"))):
-    delegation_service.kiem_tra_truoc_khi_luu(
+    delegation_service.validate_before_save(
         db, data.from_employee_id, data.to_employee_id, data.entity,
         data.from_date, data.to_date,
         actor_employee_id=_acting_employee_id(db, user, "create"))
@@ -78,13 +78,13 @@ def update_delegation(delegation_id: int, data: DelegationIn,
                       db: Session = Depends(get_db),
                       user=Depends(require("approval_flow", "write"))):
     row = _load(db, delegation_id)
-    delegation_service.kiem_tra_truoc_khi_luu(
+    delegation_service.validate_before_save(
         db, data.from_employee_id, data.to_employee_id, data.entity,
-        data.from_date, data.to_date, bo_qua_id=row.id,
+        data.from_date, data.to_date, exclude_id=row.id,
         actor_employee_id=_acting_employee_id(db, user, "write"))
 
-    for ten, gia_tri in data.model_dump().items():
-        setattr(row, ten, gia_tri)
+    for name, value in data.model_dump().items():
+        setattr(row, name, value)
     row.updated_by = user.id
     db.commit()
     db.refresh(row)

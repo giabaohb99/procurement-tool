@@ -186,8 +186,8 @@ def delete_user(db: Session, user_id: int, actor_id: int) -> None:
     # lúc đó tài khoản mới thành mồ côi và xóa được).
     emp = db.get(Employee, user.employee_id) if user.employee_id else None
     if emp:
-        ten = " ".join(x for x in [emp.code, emp.full_name] if x)
-        raise HTTPException(400, f"Tài khoản này thuộc hồ sơ nhân sự {ten}"
+        name = " ".join(x for x in [emp.code, emp.full_name] if x)
+        raise HTTPException(400, f"Tài khoản này thuộc hồ sơ nhân sự {name}"
                                  f"{'' if user.is_active else ' (tài khoản đã khóa)'} — "
                                  "chỉ xóa được tài khoản mồ côi. Hãy khóa tài khoản, "
                                  "hoặc xóa hồ sơ nhân sự trước rồi xóa tài khoản.")

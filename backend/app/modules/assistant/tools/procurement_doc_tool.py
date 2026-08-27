@@ -30,7 +30,7 @@ from app.modules.survey_request.model import (SurveyRequest, SurveyRequestLine,
                                               SurveyRequestOption)
 
 #  Một nguồn đường dẫn chi tiết duy nhất cho cả gói tool — xem chú thích tại chỗ khai báo.
-from .approval_tool import _duong_dan
+from .approval_tool import _detail_url
 from .base import ToolContext, ToolSpec, denied
 
 MAX_LINES = 30        # trần số dòng hàng trả về trong một recap
@@ -92,9 +92,9 @@ def _cat(text: str, n: int = 200) -> str:
     return text if len(text) <= n else text[: n - 1] + "…"
 
 
-def _gioi_han(args: dict, mac_dinh: int) -> int:
+def _limit(args: dict, default: int) -> int:
     limit = args.get("limit")
-    return max(1, min(int(limit), MAX_ROWS)) if isinstance(limit, (int, float)) else mac_dinh
+    return max(1, min(int(limit), MAX_ROWS)) if isinstance(limit, (int, float)) else default
 
 
 def _fetch_scoped(ctx: ToolContext, model, entity: str, code: str, doc_id):
@@ -112,9 +112,9 @@ def _fetch_scoped(ctx: ToolContext, model, entity: str, code: str, doc_id):
     return q.first()
 
 
-def _khong_thay(entity: str, code: str, doc_id) -> dict:
-    ten = code or (f"id {doc_id}" if doc_id else "")
-    return {"error": (f"Không tìm thấy {_ENTITY_LABELS[entity]} '{ten}' trong phạm vi dữ "
+def _not_found(entity: str, code: str, doc_id) -> dict:
+    name = code or (f"id {doc_id}" if doc_id else "")
+    return {"error": (f"Không tìm thấy {_ENTITY_LABELS[entity]} '{name}' trong phạm vi dữ "
                       "liệu của bạn — mã sai, hoặc phiếu nằm ngoài quyền xem.")}
 
 
@@ -123,7 +123,7 @@ def _khong_thay(entity: str, code: str, doc_id) -> dict:
 def _read_po(ctx: ToolContext, code: str, doc_id) -> dict:
     po = _fetch_scoped(ctx, PurchaseOrder, "purchase_order", code, doc_id)
     if po is None:
-        return _khong_thay("purchase_order", code, doc_id)
+        return _not_found("purchase_order", code, doc_id)
     see_supplier = ctx.can("supplier")
 
     header = {
@@ -140,7 +140,7 @@ def _read_po(ctx: ToolContext, code: str, doc_id) -> dict:
         "is_urgent": bool(po.is_urgent),
         "note": _cat(po.note),
         "approve_note": _cat(po.approve_note),
-        "url": _duong_dan("purchase_order", po.id),
+        "url": _detail_url("purchase_order", po.id),
     }
     if see_supplier:
         header["supplier_code"] = po.supplier_code
@@ -167,8 +167,8 @@ def _read_po(ctx: ToolContext, code: str, doc_id) -> dict:
     #  Đếm tiến độ trên TOÀN BỘ dòng (kể cả phần bị cắt) để recap không nói dối.
     progress: dict[str, int] = {}
     for it in items:
-        nhan = PO_PROGRESS_STATUS.label_of(it.progress_status, it.progress_status)
-        progress[nhan] = progress.get(nhan, 0) + 1
+        label = PO_PROGRESS_STATUS.label_of(it.progress_status, it.progress_status)
+        progress[label] = progress.get(label, 0) + 1
 
     out = {
         "entity": "purchase_order",
@@ -190,7 +190,7 @@ def _read_po(ctx: ToolContext, code: str, doc_id) -> dict:
 
     #  Công nợ phát sinh từ đơn — chỉ khi người hỏi vốn được xem công nợ, và vẫn qua scope.
     if ctx.can("payable"):
-        so_khoan, tong, da_tra, con_lai = (
+        item_count, total, paid, remaining = (
             apply_scope(ctx.db.query(func.count(Payable.id), func.sum(Payable.total),
                                      func.sum(Payable.paid_amount),
                                      func.sum(Payable.remaining)),
@@ -198,10 +198,10 @@ def _read_po(ctx: ToolContext, code: str, doc_id) -> dict:
             .filter(Payable.po_code == po.code).one()
         )
         out["payables"] = {
-            "count": int(so_khoan or 0),
-            "total": round(_num(tong), 2),
-            "paid": round(_num(da_tra), 2),
-            "remaining": round(_num(con_lai), 2),
+            "count": int(item_count or 0),
+            "total": round(_num(total), 2),
+            "paid": round(_num(paid), 2),
+            "remaining": round(_num(remaining), 2),
         }
     else:
         out["payable_note"] = "Không kèm công nợ của đơn vì người hỏi không có quyền xem công nợ."
@@ -211,7 +211,7 @@ def _read_po(ctx: ToolContext, code: str, doc_id) -> dict:
 def _read_pr(ctx: ToolContext, code: str, doc_id) -> dict:
     pr = _fetch_scoped(ctx, PurchaseRequest, "purchase_request", code, doc_id)
     if pr is None:
-        return _khong_thay("purchase_request", code, doc_id)
+        return _not_found("purchase_request", code, doc_id)
     see_supplier = ctx.can("supplier")
 
     header = {
@@ -226,7 +226,7 @@ def _read_pr(ctx: ToolContext, code: str, doc_id) -> dict:
         "status_label": _label("purchase_request", pr.status),
         "is_urgent": bool(pr.is_urgent),
         "note": _cat(pr.note),
-        "url": _duong_dan("purchase_request", pr.id),
+        "url": _detail_url("purchase_request", pr.id),
     }
     #  `suggested_supplier` là "NCC hiệu lực" — có thể chứa NCC từ khảo sát (cụm pur, Task 4)
     #  nên chỉ trả khi có supplier.read; cẩn thận hơn màn hình cũng không sai luật ẩn NCC.
@@ -270,7 +270,7 @@ def _read_pr(ctx: ToolContext, code: str, doc_id) -> dict:
 def _read_sr(ctx: ToolContext, code: str, doc_id) -> dict:
     sr = _fetch_scoped(ctx, SurveyRequest, "survey_request", code, doc_id)
     if sr is None:
-        return _khong_thay("survey_request", code, doc_id)
+        return _not_found("survey_request", code, doc_id)
 
     header = {
         "code": sr.code,
@@ -282,7 +282,7 @@ def _read_sr(ctx: ToolContext, code: str, doc_id) -> dict:
         "status_label": _label("survey_request", sr.status),
         "note": _cat(sr.note),
         "reject_reason": _cat(sr.reject_reason),
-        "url": _duong_dan("survey_request", sr.id),
+        "url": _detail_url("survey_request", sr.id),
     }
 
     rows = (ctx.db.query(SurveyRequestLine)
@@ -291,20 +291,20 @@ def _read_sr(ctx: ToolContext, code: str, doc_id) -> dict:
 
     #  Số PHƯƠNG ÁN đã gắn / đã chọn theo dòng — chỉ ĐẾM, tuyệt đối không trả chi tiết
     #  option (bảng option chứa supplier_* thuộc cơ chế ẩn NCC).
-    dem: dict[int, list[int]] = {}
+    count: dict[int, list[int]] = {}
     if rows:
-        for line_id, tong, da_chon in (
+        for line_id, total, chosen in (
             ctx.db.query(SurveyRequestOption.survey_request_line_id,
                          func.count(SurveyRequestOption.id),
                          func.sum(func.coalesce(SurveyRequestOption.is_chosen, 0)))
             .filter(SurveyRequestOption.survey_request_line_id.in_([r.id for r in rows]))
             .group_by(SurveyRequestOption.survey_request_line_id).all()
         ):
-            dem[line_id] = [int(tong or 0), int(da_chon or 0)]
+            count[line_id] = [int(total or 0), int(chosen or 0)]
 
     lines = []
     for r in rows[:MAX_LINES]:
-        tong, da_chon = dem.get(r.id, [0, 0])
+        total, chosen = count.get(r.id, [0, 0])
         lines.append({
             "item_group": r.item_group,
             "requirement_detail": _cat(r.requirement_detail),
@@ -316,8 +316,8 @@ def _read_sr(ctx: ToolContext, code: str, doc_id) -> dict:
             "result_date": r.result_date,
             "line_status": _SR_LINE_LABELS.get(r.line_status, r.line_status),
             "no_option": bool(r.no_option),
-            "options": tong,
-            "options_chosen": da_chon,
+            "options": total,
+            "options_chosen": chosen,
             "pr_code": r.pr_code,       # YCMH đã sinh từ dòng (nếu có)
         })
 
@@ -329,7 +329,7 @@ def _read_sr(ctx: ToolContext, code: str, doc_id) -> dict:
         "total": len(rows),
         "totals": {
             "completed": sum(1 for r in rows if r.is_completed),
-            "with_options": sum(1 for lid in dem if dem[lid][0] > 0),
+            "with_options": sum(1 for lid in count if count[lid][0] > 0),
         },
     }
     if len(rows) > MAX_LINES:
@@ -433,24 +433,24 @@ _PENDING = [
     ("payment_request", PaymentRequest, _pend_pttt),
 ]
 
-_NHAC_KHONG_DUYET_HO = ("Trợ lý không duyệt hộ — mở `url` từng phiếu để xem và bấm Duyệt "
+_NO_PROXY_APPROVAL_NOTE = ("Trợ lý không duyệt hộ — mở `url` từng phiếu để xem và bấm Duyệt "
                         "trên màn hình.")
 
 
 def _run_pending(ctx: ToolContext, args: dict) -> dict:
     entity_filter = str(args.get("entity") or "").strip()
-    hop_le = [e for e, _, _ in _PENDING]
-    if entity_filter and entity_filter not in hop_le:
-        return {"error": f"entity phải là một trong: {', '.join(hop_le)}."}
-    limit = _gioi_han(args, mac_dinh=10)
+    valid = [e for e, _, _ in _PENDING]
+    if entity_filter and entity_filter not in valid:
+        return {"error": f"entity phải là một trong: {', '.join(valid)}."}
+    limit = _limit(args, default=10)
     see_supplier = ctx.can("supplier")
 
-    groups, khong_quyen = [], []
+    groups, denied = [], []
     for entity, model, builder in _PENDING:
         if entity_filter and entity != entity_filter:
             continue
         if not ctx.can(entity, "approve"):
-            khong_quyen.append(_ENTITY_LABELS[entity])
+            denied.append(_ENTITY_LABELS[entity])
             continue
         q = apply_scope(ctx.db.query(model), model, entity, ctx.user, ctx.profile) \
             .filter(model.status == "submitted")
@@ -464,7 +464,7 @@ def _run_pending(ctx: ToolContext, args: dict) -> dict:
             "entity_label": _ENTITY_LABELS[entity],
             "pending": pending,
             "items": [{**builder(r, see_supplier),
-                       "url": _duong_dan(entity, r.id)} for r in rows],
+                       "url": _detail_url(entity, r.id)} for r in rows],
         }
         if pending > limit:
             group["note"] = f"Chỉ liệt kê {limit}/{pending} phiếu trình sớm nhất."
@@ -473,16 +473,16 @@ def _run_pending(ctx: ToolContext, args: dict) -> dict:
     out: dict = {
         "total": sum(g["pending"] for g in groups),
         "groups": groups,
-        "reminder": _NHAC_KHONG_DUYET_HO,
+        "reminder": _NO_PROXY_APPROVAL_NOTE,
     }
-    if entity_filter and khong_quyen:
+    if entity_filter and denied:
         #  Hỏi đích danh một loại mà không có quyền duyệt loại đó -> nói thẳng, đừng trả 0.
         return {"denied": True,
-                "reason": f"Bạn không có quyền duyệt {khong_quyen[0]}."}
+                "reason": f"Bạn không có quyền duyệt {denied[0]}."}
     if not groups:
         out["note"] = "Bạn không có quyền duyệt loại phiếu thu mua nào."
-    elif khong_quyen:
-        out["note"] = "Bỏ qua các loại phiếu bạn không có quyền duyệt: " + ", ".join(khong_quyen) + "."
+    elif denied:
+        out["note"] = "Bỏ qua các loại phiếu bạn không có quyền duyệt: " + ", ".join(denied) + "."
     if groups and not see_supplier:
         out["supplier_note"] = _AN_NCC
     return out
@@ -522,34 +522,34 @@ PENDING_PROCUREMENT_APPROVALS_SPEC = ToolSpec(
 
 # ── my_procurement_requests ─────────────────────────────────────────────────────────────
 
-def _cua_toi(q, model, user):
+def _filter_mine(q, model, user):
     """Ép về phiếu CỦA CHÍNH người hỏi — kể cả khi scope của họ là all (quản lý hỏi
     "phiếu của tôi" thì vẫn chỉ trả phiếu họ đứng tên, không đổ cả công ty)."""
-    dieu_kien = [model.created_by == user.id]
+    condition = [model.created_by == user.id]
     emp_id = getattr(user, "employee_id", None)
     if emp_id:
         # requester_id là ID NHÂN SỰ (không phải id tài khoản) — phiếu người khác nhập hộ
         # nhưng đứng tên mình vẫn phải hiện ra.
-        dieu_kien.append(model.requester_id == emp_id)
-    return q.filter(or_(*dieu_kien))
+        condition.append(model.requester_id == emp_id)
+    return q.filter(or_(*condition))
 
 
 def _run_my_requests(ctx: ToolContext, args: dict) -> dict:
     entity_filter = str(args.get("entity") or "").strip()
-    hop_le = ["survey_request", "purchase_request"]
-    if entity_filter and entity_filter not in hop_le:
-        return {"error": f"entity phải là một trong: {', '.join(hop_le)}."}
-    limit = _gioi_han(args, mac_dinh=10)
+    valid = ["survey_request", "purchase_request"]
+    if entity_filter and entity_filter not in valid:
+        return {"error": f"entity phải là một trong: {', '.join(valid)}."}
+    limit = _limit(args, default=10)
 
-    groups, khong_quyen = [], []
+    groups, denied = [], []
     for entity, model in (("survey_request", SurveyRequest),
                           ("purchase_request", PurchaseRequest)):
         if entity_filter and entity != entity_filter:
             continue
         if not ctx.can(entity):
-            khong_quyen.append(_ENTITY_LABELS[entity])
+            denied.append(_ENTITY_LABELS[entity])
             continue
-        q = _cua_toi(apply_scope(ctx.db.query(model), model, entity, ctx.user, ctx.profile),
+        q = _filter_mine(apply_scope(ctx.db.query(model), model, entity, ctx.user, ctx.profile),
                      model, ctx.user)
         if entity == "purchase_request":
             q = q.filter(model.is_deleted == False)  # noqa: E712
@@ -559,9 +559,9 @@ def _run_my_requests(ctx: ToolContext, args: dict) -> dict:
 
         if entity == "purchase_request":
             #  Tiến độ mua gộp theo dòng: một truy vấn group-by cho cả trang, không N+1.
-            gom: dict[int, dict] = {}
+            grouped: dict[int, dict] = {}
             if ids:
-                for pr_id, ls, so_dong, sl, sl_dat, sl_nhan in (
+                for pr_id, ls, line_count, qty, qty_ordered, qty_received in (
                     ctx.db.query(PurchaseRequestItem.pr_id,
                                  PurchaseRequestItem.line_status,
                                  func.count(PurchaseRequestItem.id),
@@ -571,15 +571,15 @@ def _run_my_requests(ctx: ToolContext, args: dict) -> dict:
                     .filter(PurchaseRequestItem.pr_id.in_(ids))
                     .group_by(PurchaseRequestItem.pr_id, PurchaseRequestItem.line_status)
                 ):
-                    g = gom.setdefault(pr_id, {"lines": 0, "progress": {},
+                    g = grouped.setdefault(pr_id, {"lines": 0, "progress": {},
                                                "qty": 0.0, "qty_ordered": 0.0,
                                                "qty_received": 0.0})
-                    nhan = PR_LINE_STATUS.label_of(ls, ls or "Chưa xác định")
-                    g["lines"] += int(so_dong or 0)
-                    g["progress"][nhan] = g["progress"].get(nhan, 0) + int(so_dong or 0)
-                    g["qty"] += _num(sl)
-                    g["qty_ordered"] += _num(sl_dat)
-                    g["qty_received"] += _num(sl_nhan)
+                    label = PR_LINE_STATUS.label_of(ls, ls or "Chưa xác định")
+                    g["lines"] += int(line_count or 0)
+                    g["progress"][label] = g["progress"].get(label, 0) + int(line_count or 0)
+                    g["qty"] += _num(qty)
+                    g["qty_ordered"] += _num(qty_ordered)
+                    g["qty_received"] += _num(qty_received)
             items = [{
                 "code": r.code,
                 "request_date": r.request_date,
@@ -588,15 +588,15 @@ def _run_my_requests(ctx: ToolContext, args: dict) -> dict:
                 "status_label": _label("purchase_request", r.status),
                 "is_urgent": bool(r.is_urgent),
                 "purpose": _cat(r.purpose, 100),
-                "url": _duong_dan("purchase_request", r.id),
-                **gom.get(r.id, {"lines": 0, "progress": {}, "qty": 0.0,
+                "url": _detail_url("purchase_request", r.id),
+                **grouped.get(r.id, {"lines": 0, "progress": {}, "qty": 0.0,
                                  "qty_ordered": 0.0, "qty_received": 0.0}),
             } for r in rows]
         else:
             #  YCKS: đếm dòng đã khảo sát xong + dòng đã sinh YCMH — đủ để nói "tới đâu".
-            gom = {}
+            grouped = {}
             if ids:
-                for sr_id, so_dong, xong, da_tao_pr in (
+                for sr_id, line_count, done, pr_created in (
                     ctx.db.query(SurveyRequestLine.survey_request_id,
                                  func.count(SurveyRequestLine.id),
                                  func.sum(case((SurveyRequestLine.is_completed == True, 1),  # noqa: E712
@@ -606,17 +606,17 @@ def _run_my_requests(ctx: ToolContext, args: dict) -> dict:
                     .filter(SurveyRequestLine.survey_request_id.in_(ids))
                     .group_by(SurveyRequestLine.survey_request_id)
                 ):
-                    gom[sr_id] = {"lines": int(so_dong or 0),
-                                  "lines_completed": int(xong or 0),
-                                  "lines_pr_created": int(da_tao_pr or 0)}
+                    grouped[sr_id] = {"lines": int(line_count or 0),
+                                  "lines_completed": int(done or 0),
+                                  "lines_pr_created": int(pr_created or 0)}
             items = [{
                 "code": r.code,
                 "request_date": r.request_date,
                 "status": r.status,
                 "status_label": _label("survey_request", r.status),
                 "purpose": _cat(r.purpose, 100),
-                "url": _duong_dan("survey_request", r.id),
-                **gom.get(r.id, {"lines": 0, "lines_completed": 0, "lines_pr_created": 0}),
+                "url": _detail_url("survey_request", r.id),
+                **grouped.get(r.id, {"lines": 0, "lines_completed": 0, "lines_pr_created": 0}),
             } for r in rows]
 
         group = {"entity": entity, "entity_label": _ENTITY_LABELS[entity],
@@ -625,13 +625,13 @@ def _run_my_requests(ctx: ToolContext, args: dict) -> dict:
             group["note"] = f"Chỉ liệt kê {limit}/{total} phiếu mới nhất."
         groups.append(group)
 
-    if entity_filter and khong_quyen:
-        return {"denied": True, "reason": f"Bạn không có quyền xem {khong_quyen[0]}."}
+    if entity_filter and denied:
+        return {"denied": True, "reason": f"Bạn không có quyền xem {denied[0]}."}
     out: dict = {"total": sum(g["total"] for g in groups), "groups": groups}
     if not groups:
         out["note"] = "Bạn không có quyền xem Yêu cầu báo giá lẫn Yêu cầu mua hàng."
-    elif khong_quyen:
-        out["note"] = "Bỏ qua loại phiếu bạn không có quyền xem: " + ", ".join(khong_quyen) + "."
+    elif denied:
+        out["note"] = "Bỏ qua loại phiếu bạn không có quyền xem: " + ", ".join(denied) + "."
     return out
 
 

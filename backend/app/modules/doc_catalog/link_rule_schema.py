@@ -19,7 +19,7 @@ class DocTypeLinkRuleBase(BaseModel):
     is_active: bool = True
 
     @model_validator(mode="after")
-    def _kiem_so_luong(self):
+    def _check_count(self):
         #  Khai `từ 2 tới 1` thì không văn bản nào thỏa mãn, và câu báo lúc gửi
         #  duyệt sẽ đòi một thứ không bao giờ khai đủ được.
         if self.max_count and self.min_count > self.max_count:

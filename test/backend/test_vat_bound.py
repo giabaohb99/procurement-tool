@@ -23,33 +23,33 @@ SCHEMA_VAT = [
 ]
 
 
-@pytest.mark.parametrize("ten,cls,field,buoc", SCHEMA_VAT)
-def test_vat_hop_le(ten, cls, field, buoc):
+@pytest.mark.parametrize("name,cls,field,step", SCHEMA_VAT)
+def test_vat_hop_le(name, cls, field, step):
     """Mọi thuế suất thực tế đều qua được, kể cả mức không có trong <select> cũ."""
     for v in (0, 5, 8, 10, 3.5, 7.25, 99.99):
-        obj = cls(**buoc, **{field: v})
-        assert float(getattr(obj, field)) == pytest.approx(v), f"{ten} — {v}"
+        obj = cls(**step, **{field: v})
+        assert float(getattr(obj, field)) == pytest.approx(v), f"{name} — {v}"
 
 
-@pytest.mark.parametrize("ten,cls,field,buoc", SCHEMA_VAT)
-def test_vat_tu_100_tro_len_bi_chan(ten, cls, field, buoc):
+@pytest.mark.parametrize("name,cls,field,step", SCHEMA_VAT)
+def test_vat_tu_100_tro_len_bi_chan(name, cls, field, step):
     """Yêu cầu của khách là "< 100%" — 100 cũng KHÔNG hợp lệ."""
     for v in (100, 100.01, 150, 1000):
         with pytest.raises(ValidationError):
-            cls(**buoc, **{field: v})
+            cls(**step, **{field: v})
 
 
-@pytest.mark.parametrize("ten,cls,field,buoc", SCHEMA_VAT)
-def test_vat_am_bi_chan(ten, cls, field, buoc):
+@pytest.mark.parametrize("name,cls,field,step", SCHEMA_VAT)
+def test_vat_am_bi_chan(name, cls, field, step):
     for v in (-0.01, -8):
         with pytest.raises(ValidationError):
-            cls(**buoc, **{field: v})
+            cls(**step, **{field: v})
 
 
-@pytest.mark.parametrize("ten,cls,field,buoc", SCHEMA_VAT)
-def test_vat_mac_dinh_bang_0(ten, cls, field, buoc):
+@pytest.mark.parametrize("name,cls,field,step", SCHEMA_VAT)
+def test_vat_mac_dinh_bang_0(name, cls, field, step):
     """Không gửi VAT thì vẫn tạo được dòng (dòng chưa có giá) — mặc định 0."""
-    assert float(getattr(cls(**buoc), field)) == 0
+    assert float(getattr(cls(**step), field)) == 0
 
 
 # ── NCC: VAT mặc định lưu dạng TỈ LỆ, không phải % ──────────────────────────────

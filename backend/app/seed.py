@@ -1036,9 +1036,9 @@ def run():
         # có bản ghi nào trong CSDL, bấm vào chỉ ăn toast lỗi.
         # CHẠY SAU seed_standard_roles vì nó gán vai trò chuẩn.
         if getattr(settings, "SEED_DEMO_ACCOUNTS", True):
-            from app.seed_tai_khoan_test import seed_tai_khoan_test
+            from app.seed_tai_khoan_test import seed_test_accounts
 
-            n_test = seed_tai_khoan_test(db, company.id)
+            n_test = seed_test_accounts(db, company.id)
             if n_test:
                 print(f"Tạo {n_test} tài khoản test (TESTREQ, DEMONV, DEMOTP…).")
 
@@ -1072,9 +1072,9 @@ def run():
         # Văn thư ở TỪNG pháp nhân con — CHỈ local. Không có mấy tài khoản này thì
         # bản clone sinh ra ở 12 công ty con không ai mở được, tức là nửa sau của
         # luồng "ban hành xuống pháp nhân con" không diễn được.
-        from app.seed_van_thu_phap_nhan_con import seed_van_thu_phap_nhan_con
+        from app.seed_van_thu_phap_nhan_con import seed_subsidiary_document_data
 
-        n_vt = seed_van_thu_phap_nhan_con(db)
+        n_vt = seed_subsidiary_document_data(db)
         if n_vt:
             print(f"Tạo {n_vt} văn thư ở pháp nhân con.")
 

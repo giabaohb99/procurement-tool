@@ -402,10 +402,10 @@ def submit_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
         raise HTTPException(400, f"Chưa gửi duyệt được — đơn còn thiếu {' và '.join(missing)}.")
     # CR-095: từng dòng hàng phải điền đủ bộ trường bắt buộc. Nêu ĐÍCH DANH dòng nào
     # thiếu ô nào — báo chung chung thì người lập phải mở lần lượt từng dòng để dò.
-    loi_dong = [f"dòng {i} ({it.product_code or 'chưa có mã hàng'}): {', '.join(t)}"
-                for i, it in enumerate(items, 1) if (t := service.thieu_truong_dong(it))]
-    if loi_dong:
-        raise HTTPException(400, "Chưa gửi duyệt được — còn thiếu " + "; ".join(loi_dong) + ".")
+    line_errors = [f"dòng {i} ({it.product_code or 'chưa có mã hàng'}): {', '.join(t)}"
+                for i, it in enumerate(items, 1) if (t := service.missing_line_fields(it))]
+    if line_errors:
+        raise HTTPException(400, "Chưa gửi duyệt được — còn thiếu " + "; ".join(line_errors) + ".")
     po = service.set_status(db, pid, "submitted", user.id)
     trigger_notification(db=db, event="po_submitted", doc_type="purchase_order", doc_code=po.code,
                          creator_id=po.created_by or user.id, background_tasks=background_tasks,

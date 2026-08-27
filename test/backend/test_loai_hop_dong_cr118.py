@@ -31,8 +31,8 @@ def test_bo_ma_la_ascii_khong_lot_tieng_viet_vao_cot_luu():
 
 
 def test_chi_nhan_ma_trong_bo_co_dinh():
-    for ma in sorted(CONTRACT_TYPE_VALUES):
-        assert ContractCreate(contract_type=ma).contract_type == ma
+    for code in sorted(CONTRACT_TYPE_VALUES):
+        assert ContractCreate(contract_type=code).contract_type == code
 
 
 def test_bo_trong_van_qua_vi_chua_phan_loai_khong_phai_loi():

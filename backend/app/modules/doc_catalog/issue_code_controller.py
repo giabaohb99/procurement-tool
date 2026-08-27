@@ -36,20 +36,20 @@ class IssueCodeUpdate(BaseModel):
 def list_issue_codes(db: Session = Depends(get_db),
                      user=Depends(require("doc_numbering_rule", "read"))):
     """Mọi mã đang đi vào số hiệu, gom theo bốn thẻ của mẫu."""
-    return success(service.danh_sach(db))
+    return success(service.list_all(db))
 
 
 @router.patch("")
 def update_issue_code(data: IssueCodeUpdate, db: Session = Depends(get_db),
                       user=Depends(require("doc_numbering_rule", "write"))):
-    ket_qua = service.sua(db, data.kind, data.id, data.issue_code,
+    result = service.edit(db, data.kind, data.id, data.issue_code,
                           company_id=data.company_id, force=data.force)
 
     #  Ghi đè chốt D07 là chuyện phải để lại dấu vết: sổ sẽ có hai kiểu mã cạnh
     #  nhau, và ba tháng sau phải trả lời được "ai đổi, lúc nào".
-    ghi_chu = f"Đổi mã số hiệu {data.kind}#{data.id}: {ket_qua['cu'] or '(trống)'} → {ket_qua['moi'] or '(trống)'}"
-    if data.force and ket_qua["da_cap_so"]:
-        ghi_chu += " — GHI ĐÈ dù đơn vị này đã cấp số"
-    record(db, user.id, "doc_type", data.id, "update", ghi_chu)
+    note = f"Đổi mã số hiệu {data.kind}#{data.id}: {result['cu'] or '(trống)'} → {result['moi'] or '(trống)'}"
+    if data.force and result["da_cap_so"]:
+        note += " — GHI ĐÈ dù đơn vị này đã cấp số"
+    record(db, user.id, "doc_type", data.id, "update", note)
 
-    return success(ket_qua, "Đã lưu mã")
+    return success(result, "Đã lưu mã")

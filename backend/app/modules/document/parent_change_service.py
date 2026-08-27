@@ -53,7 +53,7 @@ EXCERPT_FALLBACK = {
 #  đó xong. Và vì MỌI thông báo bãi bỏ đều có đúng quan hệ này nên đây là báo
 #  động sai **có hệ thống**, không phải ca hiếm — đúng thứ làm người dùng quen
 #  mắt với băng vàng rồi thôi không đọc nữa (xem CR-141).
-QUAN_HE_NGUOC_CHIEU = (RELATION_REPLACE, RELATION_REVOKE)
+REVERSE_RELATIONS = (RELATION_REPLACE, RELATION_REVOKE)
 
 
 def _children_links(db: Session, parent_id: int) -> list[DocumentLink]:
@@ -65,7 +65,7 @@ def _children_links(db: Session, parent_id: int) -> list[DocumentLink]:
     return (
         db.query(DocumentLink)
         .filter(DocumentLink.target_document_id == parent_id,
-                DocumentLink.relation.notin_(QUAN_HE_NGUOC_CHIEU))
+                DocumentLink.relation.notin_(REVERSE_RELATIONS))
         .order_by(DocumentLink.relation.asc(), DocumentLink.id.asc())
         .all()
     )
@@ -90,15 +90,15 @@ def _rule_of(db: Session, link: DocumentLink, child: Document,
     return wildcard[0] if wildcard else None
 
 
-def _hanh_dong(db: Session, link: DocumentLink, child: Document, parent: Document,
-               cot: str, mac_dinh: int) -> int:
+def _action(db: Session, link: DocumentLink, child: Document, parent: Document,
+               columns: str, default: int) -> int:
     if link.relation == RELATION_EXCERPT:
         rule = _rule_of(db, link, child, parent)
         #  Kể cả có quy tắc thì ba cột của trích từ đã bị `link_rule_service` ép
         #  lại rồi; không có quy tắc thì dùng giá trị khóa cứng.
-        return getattr(rule, cot) if rule else EXCERPT_FALLBACK[cot]
+        return getattr(rule, columns) if rule else EXCERPT_FALLBACK[columns]
     rule = _rule_of(db, link, child, parent)
-    return getattr(rule, cot) if rule else mac_dinh
+    return getattr(rule, columns) if rule else default
 
 
 def impact_of(db: Session, parent: Document, *, obsolete: bool) -> list[dict]:
@@ -107,73 +107,73 @@ def impact_of(db: Session, parent: Document, *, obsolete: bool) -> list[dict]:
     Gọi trước khi bấm, để người ban hành nhìn thấy hậu quả rồi mới quyết. Không
     đụng vào dữ liệu.
     """
-    cot = "on_parent_obsolete" if obsolete else "on_parent_new_version"
-    mac_dinh = OBSOLETE_REVIEW if obsolete else NEW_VERSION_ASK
+    columns = "on_parent_obsolete" if obsolete else "on_parent_new_version"
+    default = OBSOLETE_REVIEW if obsolete else NEW_VERSION_ASK
 
-    ket_qua: list[dict] = []
+    result: list[dict] = []
     for link in _children_links(db, parent.id):
         child = db.get(Document, link.source_document_id)
         if child is None or child.status == STATUS_EXPIRED:
             continue
-        hanh_dong = _hanh_dong(db, link, child, parent, cot, mac_dinh)
-        ket_qua.append({
+        action = _action(db, link, child, parent, columns, default)
+        result.append({
             "document_id": child.id,
             "title": child.title,
             "display_code": child.doc_code or child.issue_number or "",
             "status_label": child.status,
             "relation": link.relation,
             "relation_label": RELATION_LABELS.get(link.relation, str(link.relation)),
-            "action": hanh_dong,
-            "action_label": _nhan_hanh_dong(hanh_dong, obsolete),
+            "action": action,
+            "action_label": _action_label(action, obsolete),
         })
-    return ket_qua
+    return result
 
 
-def _nhan_hanh_dong(hanh_dong: int, obsolete: bool) -> str:
+def _action_label(action: int, obsolete: bool) -> str:
     if obsolete:
         return {
             OBSOLETE_NOTHING: "Không đổi gì",
             OBSOLETE_REVIEW: "Đánh dấu cần rà lại",
             OBSOLETE_EXPIRE: "Hết hiệu lực theo cha",
-        }.get(hanh_dong, str(hanh_dong))
+        }.get(action, str(action))
     return {
         NEW_VERSION_ASK: "Đánh dấu cần rà lại và ghi nhật ký",
         NEW_VERSION_REVIEW: "Đánh dấu cần rà lại",
-    }.get(hanh_dong, "Không đổi gì")
+    }.get(action, "Không đổi gì")
 
 
-def apply_new_version(db: Session, parent: Document, ly_do: str) -> int:
+def apply_new_version(db: Session, parent: Document, reason: str) -> int:
     """E07 — cha lên phiên bản mới. Trả về số văn bản con bị đánh dấu.
 
     Giá trị 3 (*hỏi người ban hành rồi ghi nhật ký*) xử lý y như 2 ở tầng dữ
     liệu: **đều chỉ đánh dấu**. Khác biệt nằm ở giao diện — 3 thì bày bảng tác
     động ra hỏi trước, 2 thì làm lặng lẽ. Không có giá trị nào tự sửa nội dung.
     """
-    dem = 0
-    for muc in impact_of(db, parent, obsolete=False):
-        if muc["action"] == NEW_VERSION_ASK or muc["action"] == NEW_VERSION_REVIEW:
-            child = db.get(Document, muc["document_id"])
+    count = 0
+    for item in impact_of(db, parent, obsolete=False):
+        if item["action"] == NEW_VERSION_ASK or item["action"] == NEW_VERSION_REVIEW:
+            child = db.get(Document, item["document_id"])
             if child is None:
                 continue
             child.needs_review = True
-            child.needs_review_note = ly_do
-            dem += 1
-    return dem
+            child.needs_review_note = reason
+            count += 1
+    return count
 
 
 def apply_obsolete(db: Session, parent: Document) -> int:
     """E08 — cha bị bãi bỏ. Trả về số văn bản con bị đụng tới."""
-    dem = 0
-    for muc in impact_of(db, parent, obsolete=True):
-        child = db.get(Document, muc["document_id"])
-        if child is None or muc["action"] == OBSOLETE_NOTHING:
+    count = 0
+    for item in impact_of(db, parent, obsolete=True):
+        child = db.get(Document, item["document_id"])
+        if child is None or item["action"] == OBSOLETE_NOTHING:
             continue
 
         child.needs_review = True
         child.needs_review_note = f"Văn bản cha «{parent.title}» đã bị bãi bỏ."
         #  Chỉ mức 3 mới kéo con chết theo. Mức 2 giữ con còn hiệu lực — Biểu
         #  mẫu vẫn dùng được dù Quy trình cha đã bỏ, chỉ là phải rà lại.
-        if muc["action"] == OBSOLETE_EXPIRE:
+        if item["action"] == OBSOLETE_EXPIRE:
             child.status = STATUS_EXPIRED
-        dem += 1
-    return dem
+        count += 1
+    return count

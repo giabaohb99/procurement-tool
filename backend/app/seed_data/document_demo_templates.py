@@ -12,25 +12,25 @@ Mỗi mẫu gắn với MỘT loại văn bản: form tạo văn bản lọc m�
 Thể thức (khối đầu hai cột, khối ký) lấy từ `document_the_thuc.py` — sửa thể
 thức một chỗ là cả bộ mẫu lẫn bộ văn bản demo cùng đổi theo.
 """
-from . import document_the_thuc as the_thuc
+from . import document_the_thuc as layout
 
 #  Khối đầu HAI CỘT đúng Nghị định 30 — dựng ở `document_the_thuc.py`, dùng
 #  chung với bộ văn bản demo để hai nơi không lệch thể thức.
-_DAU_MAU = the_thuc.khoi_dau("{{PHAP_NHAN}}", "……/……/……",
+_TEMPLATE_HEADER = layout.opening_block("{{PHAP_NHAN}}", "……/……/……",
                              "…………, ngày …… tháng …… năm 20……")
 
 
-def _mau(ten_loai: str, trich_yeu_goi_y: str, than: str, ky: str) -> str:
+def _template(type_name: str, suggested_subject: str, body: str, signature: str) -> str:
     return (
-        _DAU_MAU
-        + the_thuc.khoi_ten_loai(ten_loai, trich_yeu_goi_y)
-        + than
-        + the_thuc.khoi_noi_nhan("Như trên", "………………")
-        + the_thuc.khoi_ky_mot_ben(ky)
+        _TEMPLATE_HEADER
+        + layout.title_block(type_name, suggested_subject)
+        + body
+        + layout.recipients_block("Như trên", "………………")
+        + layout.single_signature_block(signature)
     )
 
 
-def _bien_ban_hop() -> str:
+def _meeting_minutes() -> str:
     """BIÊN BẢN HỌP — dựng riêng, không dùng `_mau`.
 
     Khác mọi mẫu khác ở hai chỗ và cả hai đều đúng với biên bản ngoài đời:
@@ -39,8 +39,8 @@ def _bien_ban_hop() -> str:
     biên bản không có giá trị đối chiếu.
     """
     return (
-        _DAU_MAU
-        + the_thuc.khoi_ten_loai("BIÊN BẢN HỌP", "Về việc ……………………………………")
+        _TEMPLATE_HEADER
+        + layout.title_block("BIÊN BẢN HỌP", "Về việc ……………………………………")
         + "<p>Hôm nay, vào lúc ……… giờ ……… ngày …… tháng …… năm ………</p>"
           "<p>Tại ………………………………………………………………………</p>"
           "<p>Diễn ra cuộc họp với nội dung ………………………………………</p>"
@@ -63,16 +63,16 @@ def _bien_ban_hop() -> str:
           "<p>Cuộc họp kết thúc vào lúc …… giờ …… ngày …… tháng …… năm ………, "
           "nội dung cuộc họp đã được các thành viên dự họp thông qua và cùng ký "
           "vào biên bản./.</p>"
-        + the_thuc.khoi_ky_hai_ben("THƯ KÝ", "CHỦ TRÌ CUỘC HỌP")
+        + layout.dual_signature_block("THƯ KÝ", "CHỦ TRÌ CUỘC HỌP")
     )
 
 
 #  (mã loại, tên mẫu, mô tả, nội dung)
-VAN_BAN_MAU = [
+SAMPLE_DOCUMENTS = [
     ("CV", "Công văn trao đổi, đề nghị",
      "Khung công văn hành chính thông thường: kính gửi, nội dung chia ý, đề nghị "
      "và thời hạn phản hồi.",
-     _mau("CÔNG VĂN", "V/v ……………………………………",
+     _template("CÔNG VĂN", "V/v ……………………………………",
           "<p><strong>Kính gửi:</strong> ………………………………………</p>"
           "<p>Căn cứ ……………………………………………………………;</p>"
           "<p>………………… (nêu bối cảnh, lý do gửi công văn) …………………</p>"
@@ -86,7 +86,7 @@ VAN_BAN_MAU = [
     ("QD", "Quyết định ban hành văn bản nội bộ",
      "Khung quyết định có phần căn cứ, các điều khoản ban hành, hiệu lực và "
      "trách nhiệm thi hành.",
-     _mau("QUYẾT ĐỊNH", "Về việc ……………………………………",
+     _template("QUYẾT ĐỊNH", "Về việc ……………………………………",
           "<h3>TỔNG GIÁM ĐỐC</h3>"
           "<p><em>Căn cứ</em> Điều lệ tổ chức và hoạt động của ………………;</p>"
           "<p><em>Căn cứ</em> ……………………………………………………………;</p>"
@@ -102,7 +102,7 @@ VAN_BAN_MAU = [
     ("TB", "Thông báo điều hành",
      "Khung thông báo nội bộ: nội dung thông báo, phân công thực hiện và thời "
      "hạn áp dụng.",
-     _mau("THÔNG BÁO", "Về việc ……………………………………",
+     _template("THÔNG BÁO", "Về việc ……………………………………",
           "<p>……………… (đơn vị) thông báo tới các đơn vị nội dung sau:</p>"
           "<p><strong>1. Nội dung thông báo.</strong> …………………………………</p>"
           "<p><strong>2. Thời gian áp dụng.</strong> Từ ngày ……/……/……… đến "
@@ -113,7 +113,7 @@ VAN_BAN_MAU = [
 
     ("TTR", "Tờ trình phê duyệt",
      "Khung tờ trình: sự cần thiết, nội dung trình và kiến nghị cụ thể.",
-     _mau("TỜ TRÌNH", "Về việc ……………………………………",
+     _template("TỜ TRÌNH", "Về việc ……………………………………",
           "<p><strong>Kính trình:</strong> ………………………………………</p>"
           "<p><strong>1. Sự cần thiết.</strong> ………………………………………</p>"
           "<p><strong>2. Nội dung trình.</strong> ………………………………………</p>"
@@ -126,12 +126,12 @@ VAN_BAN_MAU = [
     ("BB", "Biên bản họp",
      "Khung biên bản họp thông dụng: thời gian địa điểm, thành phần tham dự, "
      "nội dung, biểu quyết và kết luận; ký hai bên thư ký — chủ trì.",
-     _bien_ban_hop()),
+     _meeting_minutes()),
 
     ("KH", "Kế hoạch triển khai",
      "Khung kế hoạch bốn phần: mục đích yêu cầu, nội dung và tiến độ, kinh phí, "
      "tổ chức thực hiện.",
-     _mau("KẾ HOẠCH", "……………………………………",
+     _template("KẾ HOẠCH", "……………………………………",
           "<h3>I. MỤC ĐÍCH, YÊU CẦU</h3><p>………………………………………</p>"
           "<h3>II. NỘI DUNG VÀ TIẾN ĐỘ</h3>"
           "<table><tbody>"
@@ -148,7 +148,7 @@ VAN_BAN_MAU = [
 
     ("GM", "Giấy mời họp",
      "Khung giấy mời: nội dung, thời gian, địa điểm và đề nghị xác nhận.",
-     _mau("GIẤY MỜI", "Về việc ……………………………………",
+     _template("GIẤY MỜI", "Về việc ……………………………………",
           "<p>……………… trân trọng kính mời: ………………………………</p>"
           "<p><strong>Tới dự:</strong> ………………………………………</p>"
           "<p><strong>Thời gian:</strong> ……… giờ ………, ngày ……/……/………</p>"
@@ -162,7 +162,7 @@ VAN_BAN_MAU = [
     ("QDI", "Quy định nội bộ",
      "Khung quy định theo điều khoản: phạm vi, nội dung quy định, trách nhiệm "
      "và hiệu lực thi hành.",
-     _mau("QUY ĐỊNH", "Về ……………………………………",
+     _template("QUY ĐỊNH", "Về ……………………………………",
           "<p><strong>Điều 1. Phạm vi điều chỉnh và đối tượng áp dụng</strong></p>"
           "<p>………………………………………………………………</p>"
           "<p><strong>Điều 2. Giải thích từ ngữ</strong></p>"

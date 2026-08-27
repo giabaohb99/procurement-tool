@@ -21,70 +21,70 @@ from app.modules.approval.flow_model import (APPROVER_DEPT_HEAD,
 
 #  Mức mật 3 = MẬT. Xem `security-level.ts` phía giao diện và cột
 #  `secrecy_level` trên `tab_document`.
-MUC_MAT = 3
+SECRET_LEVEL = 3
 
 
-def _dieu_kien_mat_tu_muc_3() -> str:
-    return json.dumps([{"field": "secrecy_level", "op": "gte", "value": MUC_MAT}])
+def _condition_confidential_from_level_3() -> str:
+    return json.dumps([{"field": "secrecy_level", "op": "gte", "value": SECRET_LEVEL}])
 
 
-def dung_luong(x, nguoi) -> list:
+def build_flows(x, people) -> list:
     """Ba luồng cho văn bản + một luồng cho đơn mua hàng."""
-    ra = []
+    out = []
 
     # ── 1. Văn bản quản trị: quy chế, quy định, quy trình, chính sách ────────
-    quan_tri = x.luong(
+    governance_flow = x.flow(
         "document", "VB_QUAN_TRI", "Ban hành văn bản quản trị",
         "Quy chế, quy định, quy trình, chính sách — phải qua pháp chế và tài "
         "chính trước khi trình ký.",
-        dieu_kien=x.dieu_kien_loai("QC", "QDI", "QT", "CS"), uu_tien=20)
-    x.buoc(quan_tri, 1, "Trưởng bộ phận soạn thảo rà soát",
-           ai=APPROVER_DEPT_HEAD, vai_tro=ROLE_CHECK, han_gio=24)
+        condition=x.type_condition("QC", "QDI", "QT", "CS"), priority=20)
+    x.step(governance_flow, 1, "Trưởng bộ phận soạn thảo rà soát",
+           ai=APPROVER_DEPT_HEAD, role=ROLE_CHECK, due_hours=24)
     #  MỘT bước, HAI người, «tất cả phải duyệt» — đây mới là song song thật.
     #  Khai thành hai bước cùng chặng là RẼ NHÁNH: chỉ một nhánh được chạy.
-    x.buoc(quan_tri, 2, "Pháp chế và Tài chính cùng rà soát",
+    x.step(governance_flow, 2, "Pháp chế và Tài chính cùng rà soát",
            ai=APPROVER_EMPLOYEE,
-           ref=f"{nguoi['phap_che'].id},{nguoi['tai_chinh'].id}",
-           nhieu_nguoi=MULTI_ALL, vai_tro=ROLE_CHECK, han_gio=48)
+           ref=f"{people['phap_che'].id},{people['tai_chinh'].id}",
+           multi_mode=MULTI_ALL, role=ROLE_CHECK, due_hours=48)
     #  Chặng 3 rẽ hai nhánh theo độ mật — nhánh có điều kiện phải đứng trước,
     #  nhánh mặc định hứng phần còn lại. Thiếu nhánh mặc định là phiếu không
     #  khớp gì sẽ KẸT và biến mất khỏi mọi danh sách.
-    x.buoc(quan_tri, 3, "Tổng Giám đốc ký ban hành", nhanh="n1",
-           ai=APPROVER_EMPLOYEE, ref=str(nguoi["tgd"].id),
-           dieu_kien=_dieu_kien_mat_tu_muc_3(), han_gio=24)
-    x.buoc(quan_tri, 3, "Phó Tổng Giám đốc ký ban hành", nhanh="n2",
-           ai=APPROVER_EMPLOYEE, ref=str(nguoi["chanh_vp"].id),
-           mac_dinh=True, han_gio=24)
+    x.step(governance_flow, 3, "Tổng Giám đốc ký ban hành", branch="n1",
+           ai=APPROVER_EMPLOYEE, ref=str(people["tgd"].id),
+           condition=_condition_confidential_from_level_3(), due_hours=24)
+    x.step(governance_flow, 3, "Phó Tổng Giám đốc ký ban hành", branch="n2",
+           ai=APPROVER_EMPLOYEE, ref=str(people["chanh_vp"].id),
+           default=True, due_hours=24)
     #  Văn thư chỉ NHẬN BẢN SAO để vào sổ, không chặn luồng.
-    x.buoc(quan_tri, 4, "Văn thư vào sổ và phát hành",
-           ai=APPROVER_EMPLOYEE, ref=str(nguoi["chanh_vp"].id),
-           loai_buoc=NODE_CC, vai_tro=ROLE_EXECUTE)
-    ra.append(quan_tri)
+    x.step(governance_flow, 4, "Văn thư vào sổ và phát hành",
+           ai=APPROVER_EMPLOYEE, ref=str(people["chanh_vp"].id),
+           node_type=NODE_CC, role=ROLE_EXECUTE)
+    out.append(governance_flow)
 
     # ── 2. Văn bản hành chính thường ngày ────────────────────────────────────
-    hanh_chinh = x.luong(
+    administrative_flow = x.flow(
         "document", "VB_HANH_CHINH", "Ban hành văn bản hành chính",
         "Công văn, thông báo, giấy mời, giấy giới thiệu — hai bước, có hạn duyệt "
         "trong ngày.",
-        dieu_kien=x.dieu_kien_loai("CV", "TB", "GM", "GGT"), uu_tien=10)
+        condition=x.type_condition("CV", "TB", "GM", "GGT"), priority=10)
     #  Có người dự phòng: trưởng phòng nghỉ thì phiếu không đứng im chờ, cũng
     #  không tự duyệt qua.
-    x.buoc(hanh_chinh, 1, "Trưởng bộ phận duyệt nội dung",
-           ai=APPROVER_DEPT_HEAD, vai_tro=ROLE_CHECK, han_gio=8,
-           du_phong=nguoi["chanh_vp"].id)
-    x.buoc(hanh_chinh, 2, "Chánh Văn phòng ký ban hành",
-           ai=APPROVER_EMPLOYEE, ref=str(nguoi["chanh_vp"].id), han_gio=8)
-    ra.append(hanh_chinh)
+    x.step(administrative_flow, 1, "Trưởng bộ phận duyệt nội dung",
+           ai=APPROVER_DEPT_HEAD, role=ROLE_CHECK, due_hours=8,
+           fallback=people["chanh_vp"].id)
+    x.step(administrative_flow, 2, "Chánh Văn phòng ký ban hành",
+           ai=APPROVER_EMPLOYEE, ref=str(people["chanh_vp"].id), due_hours=8)
+    out.append(administrative_flow)
 
     # ── 3. Luồng MẶC ĐỊNH — không khai điều kiện, ưu tiên thấp nhất ─────────
-    mac_dinh = x.luong(
+    default = x.flow(
         "document", "VB_MAC_DINH", "Ban hành văn bản (mặc định)",
         "Áp cho mọi loại văn bản chưa có luồng riêng. Không có luồng mặc định "
         "thì phiếu không khớp luồng nào sẽ rơi về đường duyệt cũ.")
-    x.buoc(mac_dinh, 1, "Trưởng bộ phận duyệt", ai=APPROVER_DEPT_HEAD, han_gio=24)
-    x.buoc(mac_dinh, 2, "Chánh Văn phòng ký",
-           ai=APPROVER_EMPLOYEE, ref=str(nguoi["chanh_vp"].id))
-    ra.append(mac_dinh)
+    x.step(default, 1, "Trưởng bộ phận duyệt", ai=APPROVER_DEPT_HEAD, due_hours=24)
+    x.step(default, 2, "Chánh Văn phòng ký",
+           ai=APPROVER_EMPLOYEE, ref=str(people["chanh_vp"].id))
+    out.append(default)
 
     # ── 4. ĐƠN NGHỈ PHÉP — chặng 2 trỏ vào GHẾ, không trỏ vào người ─────────
     #
@@ -94,30 +94,30 @@ def dung_luong(x, nguoi) -> list:
     #  ⚠️ Cả hai chặng đều có NGƯỜI DỰ PHÒNG vì luật I08 bỏ người nộp khỏi danh
     #  sách người duyệt: trưởng phòng tự xin nghỉ thì chặng 1 rỗng, mà quản lý
     #  thì cũng phải nghỉ phép. Không khai dự phòng là những đơn đó kẹt.
-    nghi_phep = x.luong(
+    leave_flow = x.flow(
         "document", "VB_NGHI_PHEP", "Duyệt đơn nghỉ phép",
         "Trưởng bộ phận của người xin nghỉ duyệt trước, rồi tới trưởng phòng "
         "Nhân sự. Chặng 2 trỏ vào GHẾ trưởng phòng Nhân sự nên đổi người ngồi "
         "ghế thì luồng tự đi theo.",
-        dieu_kien=x.dieu_kien_loai("GNP"), uu_tien=30)
-    x.buoc(nghi_phep, 1, "Trưởng bộ phận duyệt",
-           ai=APPROVER_DEPT_HEAD, han_gio=24, du_phong=nguoi["chanh_vp"].id)
-    x.buoc(nghi_phep, 2, "Trưởng phòng Nhân sự duyệt",
-           ai=APPROVER_DEPT_HEAD_OF, ref=x.phong_nhan_su(), han_gio=24,
-           du_phong=nguoi["tgd"].id)
-    ra.append(nghi_phep)
+        condition=x.type_condition("GNP"), priority=30)
+    x.step(leave_flow, 1, "Trưởng bộ phận duyệt",
+           ai=APPROVER_DEPT_HEAD, due_hours=24, fallback=people["chanh_vp"].id)
+    x.step(leave_flow, 2, "Trưởng phòng Nhân sự duyệt",
+           ai=APPROVER_DEPT_HEAD_OF, ref=x.hr_department(), due_hours=24,
+           fallback=people["tgd"].id)
+    out.append(leave_flow)
 
     # ── 5. Đơn mua hàng — bộ máy này dùng chung, không riêng văn bản ─────────
-    mua_hang = x.luong(
+    purchasing_flow = x.flow(
         "purchase_order", "PO_CHUAN", "Duyệt đơn mua hàng",
         "Trưởng bộ phận duyệt rồi Quản lý thu mua ký. Bộ máy duyệt dùng chung "
         "cho mọi loại chứng từ, không riêng văn bản.")
-    x.buoc(mua_hang, 1, "Trưởng bộ phận duyệt", ai=APPROVER_DEPT_HEAD, han_gio=24)
-    x.buoc(mua_hang, 2, "Quản lý thu mua ký",
-           ai=APPROVER_EMPLOYEE, ref=str(nguoi["tai_chinh"].id))
-    ra.append(mua_hang)
+    x.step(purchasing_flow, 1, "Trưởng bộ phận duyệt", ai=APPROVER_DEPT_HEAD, due_hours=24)
+    x.step(purchasing_flow, 2, "Quản lý thu mua ký",
+           ai=APPROVER_EMPLOYEE, ref=str(people["tai_chinh"].id))
+    out.append(purchasing_flow)
 
-    return ra
+    return out
 
 
 # ── QUY TẮC ĐÁNH SỐ ─────────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ def dung_luong(x, nguoi) -> list:
 #  đơn vị soạn>-<viết tắt pháp nhân>`. Văn bản quản trị nội bộ thì dùng MÃ BẤT
 #  BIẾN (`DEGO-QC-001`) — nó được viện dẫn suốt nhiều năm, gắn năm vào là mỗi
 #  lần sang năm lại phải sửa hết các văn bản trỏ tới nó.
-QUY_TAC_SO = [
+NUMBERING_RULES = [
     (2, "{STT}/{Nam}/{LoaiVB}-{PhongBan}-{PhapNhan}", 100, True, False,
      "Thể thức chuẩn Nghị định 30 cho văn bản gửi ra ngoài.", []),
     (2, "{STT}/{Nam}/QĐ-{PhapNhan}", 50, True, False,

@@ -43,14 +43,14 @@ def before_create(db: Session, data):
     ensure_kind_value_free(db, data.kind, data.value)
 
 
-def _dem_van_ban(db: Session, level: SecurityLevel) -> int:
+def _count_documents(db: Session, level: SecurityLevel) -> int:
     from app.modules.document.model import Document
 
-    cot = Document.secrecy_level if level.kind == KIND_CONFIDENTIAL else Document.urgency
-    return db.query(Document.id).filter(cot == level.value).count()
+    columns = Document.secrecy_level if level.kind == KIND_CONFIDENTIAL else Document.urgency
+    return db.query(Document.id).filter(columns == level.value).count()
 
 
-def _dem_loai_van_ban(db: Session, level: SecurityLevel) -> int:
+def _count_doc_types(db: Session, level: SecurityLevel) -> int:
     #  Chỉ mức mật mới là mặc định của loại văn bản; độ khẩn không có cột tương ứng.
     if level.kind != KIND_CONFIDENTIAL:
         return 0
@@ -59,7 +59,7 @@ def _dem_loai_van_ban(db: Session, level: SecurityLevel) -> int:
     return db.query(DocType.id).filter(DocType.default_secrecy == level.value).count()
 
 
-def _luong_duyet_dang_tro_toi(db: Session, level: SecurityLevel) -> list[str]:
+def _flows_pointing_to(db: Session, level: SecurityLevel) -> list[str]:
     """Tên các luồng / nút có điều kiện nhắc tới bậc này.
 
     Đọc JSON trong Python chứ không lọc bằng SQL: điều kiện là cây lồng nhau
@@ -70,44 +70,44 @@ def _luong_duyet_dang_tro_toi(db: Session, level: SecurityLevel) -> list[str]:
     from app.modules.approval.flow_model import ApprovalFlow, ApprovalNode
 
     field = FIELD_BY_KIND[level.kind]
-    dang_tro: list[str] = []
+    pointing: list[str] = []
 
     for Model in (ApprovalFlow, ApprovalNode):
         #  `condition` là `Text` mặc định chuỗi rỗng, không phải NULL.
         for row in db.query(Model).filter(Model.condition != "").all():
-            if _dieu_kien_co_nhac(row.condition, field, level.value):
-                dang_tro.append(row.name or f"#{row.id}")
+            if _condition_mentions(row.condition, field, level.value):
+                pointing.append(row.name or f"#{row.id}")
 
-    return dang_tro
+    return pointing
 
 
-def _dieu_kien_co_nhac(dieu_kien, field: str, value: int) -> bool:
+def _condition_mentions(condition, field: str, value: int) -> bool:
     """Cây điều kiện có mệnh đề nào trỏ vào `field` với đúng con số này không."""
-    if not dieu_kien:
+    if not condition:
         return False
-    if isinstance(dieu_kien, str):
+    if isinstance(condition, str):
         try:
-            dieu_kien = json.loads(dieu_kien)
+            condition = json.loads(condition)
         except (ValueError, TypeError):
             return False
-    return _quet(dieu_kien, field, value)
+    return _scan(condition, field, value)
 
 
-def _quet(nut, field: str, value: int) -> bool:
-    if isinstance(nut, list):
-        return any(_quet(con, field, value) for con in nut)
-    if not isinstance(nut, dict):
+def _scan(node, field: str, value: int) -> bool:
+    if isinstance(node, list):
+        return any(_scan(con, field, value) for con in node)
+    if not isinstance(node, dict):
         return False
-    if nut.get("field") == field:
-        moc = nut.get("value")
+    if node.get("field") == field:
+        threshold = node.get("value")
         #  `in` nhận danh sách; các phép còn lại nhận một giá trị. So bằng chuỗi
         #  vì `condition_service._one()` cũng so bằng chuỗi — khớp đúng cách bộ
         #  máy duyệt đọc, không khớp cách mình đoán.
-        moc_list = moc if isinstance(moc, list) else [moc]
-        if any(str(m) == str(value) for m in moc_list):
+        thresholds = threshold if isinstance(threshold, list) else [threshold]
+        if any(str(m) == str(value) for m in thresholds):
             return True
     #  Mệnh đề lồng: `{"all": [...]}`, `{"any": [...]}`, hoặc khóa bất kỳ.
-    return any(_quet(con, field, value) for con in nut.values())
+    return any(_scan(con, field, value) for con in node.values())
 
 
 def before_delete(db: Session, level: SecurityLevel):
@@ -116,25 +116,25 @@ def before_delete(db: Session, level: SecurityLevel):
     Câu "không xóa được vì đang được dùng" bắt người dùng tự đi tìm; mà tìm điều
     kiện luồng duyệt thì không có màn nào tra ngược được.
     """
-    vuong: list[str] = []
+    blockers: list[str] = []
 
-    so_van_ban = _dem_van_ban(db, level)
-    if so_van_ban:
-        vuong.append(f"{so_van_ban} văn bản đang ở bậc này")
+    document_count = _count_documents(db, level)
+    if document_count:
+        blockers.append(f"{document_count} văn bản đang ở bậc này")
 
-    so_loai = _dem_loai_van_ban(db, level)
-    if so_loai:
-        vuong.append(f"{so_loai} loại văn bản đang lấy làm mức mật mặc định")
+    type_count = _count_doc_types(db, level)
+    if type_count:
+        blockers.append(f"{type_count} loại văn bản đang lấy làm mức mật mặc định")
 
-    luong = _luong_duyet_dang_tro_toi(db, level)
-    if luong:
-        ten = ", ".join(f"«{t}»" for t in luong[:5])
-        them = f" và {len(luong) - 5} chỗ nữa" if len(luong) > 5 else ""
-        vuong.append(f"điều kiện phê duyệt đang trỏ tới: {ten}{them}")
+    flow = _flows_pointing_to(db, level)
+    if flow:
+        names = ", ".join(f"«{t}»" for t in flow[:5])
+        suffix = f" và {len(flow) - 5} chỗ nữa" if len(flow) > 5 else ""
+        blockers.append(f"điều kiện phê duyệt đang trỏ tới: {names}{suffix}")
 
-    if vuong:
+    if blockers:
         raise HTTPException(
             400,
-            f"Không xóa được bậc «{level.name}» — " + "; ".join(vuong) + ". "
+            f"Không xóa được bậc «{level.name}» — " + "; ".join(blockers) + ". "
             "Muốn thôi dùng thì bỏ tick «Đang dùng» thay vì xóa.",
         )

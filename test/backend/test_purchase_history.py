@@ -201,11 +201,11 @@ def test_khong_co_quyen_ncc_thi_khong_tim_duoc_theo_ten_ncc(db):
     assert total == 1
 
     # Không quyền: tên NCC không còn là vế tìm kiếm -> không suy ngược ra được NCC nào
-    total, _ = list_history(db, PG, product_code="SP001", search="Đông Tây", tim_theo_ncc=False)
+    total, _ = list_history(db, PG, product_code="SP001", search="Đông Tây", search_by_supplier=False)
     assert total == 0
 
     # Các vế còn lại (mã PO / tên SP / công ty) vẫn tìm bình thường
-    total, items = list_history(db, PG, product_code="SP001", search="ALPHA", tim_theo_ncc=False)
+    total, items = list_history(db, PG, product_code="SP001", search="ALPHA", search_by_supplier=False)
     assert (total, [i.po_code for i in items]) == (1, ["PO_ALPHA"])
 
 
@@ -220,7 +220,7 @@ def test_payload_xoa_ten_va_ma_ncc_khi_khong_co_quyen(db):
     co = _payload(1, items)["items"][0]
     assert (co["supplier_code"], co["supplier_name"]) == ("NCC01", "NCC Một")
 
-    khong = _payload(1, items, hien_ncc=False)["items"][0]
+    khong = _payload(1, items, show_supplier=False)["items"][0]
     assert (khong["supplier_code"], khong["supplier_name"]) == ("", "")
     # Chỉ che NCC — phần giá/số lượng vẫn phải còn để người yêu cầu tham chiếu
     assert khong["po_code"] == "PO0001" and khong["price"]

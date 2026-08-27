@@ -78,45 +78,45 @@ def tap_doan(db, seed):
     db.add_all([sam, aba])
     db.flush()
 
-    phong = {}
-    for cong_ty in (sam, aba):
-        phong[cong_ty.code] = Department(
-            code=f"HC-{cong_ty.code}", name="Hành chính",
-            company_id=cong_ty.id, is_active=True)
-    db.add_all(phong.values())
+    department = {}
+    for companies in (sam, aba):
+        department[companies.code] = Department(
+            code=f"HC-{companies.code}", name="Hành chính",
+            company_id=companies.id, is_active=True)
+    db.add_all(department.values())
     db.flush()
 
-    def _nguoi(ma, ten, company_id, department_id):
-        nhan_su = Employee(code=ma, full_name=ten, company_id=company_id,
+    def _people(code, name, company_id, department_id):
+        nhan_su = Employee(code=code, full_name=name, company_id=company_id,
                            department_id=department_id, is_active=True)
         db.add(nhan_su)
         db.flush()
-        tai_khoan = User(email=ma, employee_id=nhan_su.id,
+        tai_khoan = User(email=code, employee_id=nhan_su.id,
                          password_hash="x", is_active=True)
         db.add(tai_khoan)
         db.flush()
-        return SimpleNamespace(emp=nhan_su.id, user=tai_khoan.id, code=ma)
+        return SimpleNamespace(emp=nhan_su.id, user=tai_khoan.id, code=code)
 
     nhan_su = {
         # Tập đoàn: văn thư soạn, trưởng phòng ký bước 1, tổng giám đốc ký bước 2
-        "vt_td": _nguoi("VTTD", "Văn thư Tập đoàn", me.id, seed.dept_id),
-        "tp_td": _nguoi("TPTD", "Trưởng phòng Tập đoàn", me.id, seed.dept_id),
-        "tgd_td": _nguoi("TGDTD", "Tổng giám đốc Tập đoàn", me.id, seed.dept_id),
+        "vt_td": _people("VTTD", "Văn thư Tập đoàn", me.id, seed.dept_id),
+        "tp_td": _people("TPTD", "Trưởng phòng Tập đoàn", me.id, seed.dept_id),
+        "tgd_td": _people("TGDTD", "Tổng giám đốc Tập đoàn", me.id, seed.dept_id),
         # Pháp nhân con: mỗi nơi một văn thư và một người ký
-        "vt_sam": _nguoi("VTSAM", "Văn thư SAM", sam.id, phong["SAM"].id),
-        "gd_sam": _nguoi("GDSAM", "Giám đốc SAM", sam.id, phong["SAM"].id),
-        "vt_aba": _nguoi("VTABA", "Văn thư ABA", aba.id, phong["ABA"].id),
-        "gd_aba": _nguoi("GDABA", "Giám đốc ABA", aba.id, phong["ABA"].id),
+        "vt_sam": _people("VTSAM", "Văn thư SAM", sam.id, department["SAM"].id),
+        "gd_sam": _people("GDSAM", "Giám đốc SAM", sam.id, department["SAM"].id),
+        "vt_aba": _people("VTABA", "Văn thư ABA", aba.id, department["ABA"].id),
+        "gd_aba": _people("GDABA", "Giám đốc ABA", aba.id, department["ABA"].id),
     }
 
     #  Cấp số LÚC DUYỆT — đúng loại khó nhất: số hiệu chỉ ra đời ở nhịp ban hành,
     #  nên mọi lỗi "ban hành mà quên cấp số" đều lộ ở đây.
-    loai = DocType(code="QC", name="Quy chế", id_scheme=1, number_when=2)
-    db.add(loai)
+    kind = DocType(code="QC", name="Quy chế", id_scheme=1, number_when=2)
+    db.add(kind)
     db.commit()
 
     return SimpleNamespace(
-        me=me, sam=sam, aba=aba, phong=phong, loai=loai,
+        me=me, sam=sam, aba=aba, department=department, kind=kind,
         seed=seed, ns=nhan_su,
     )
 
@@ -159,7 +159,7 @@ def bo_may(db, tap_doan):
 def _soan(db, tap_doan, *, actor, title="Quy chế bảo mật thông tin",
           content="<p>Điều 1. Phạm vi áp dụng.</p>"):
     return service.create_document(db, DocumentCreate(
-        doc_type_id=tap_doan.loai.id,
+        doc_type_id=tap_doan.kind.id,
         company_id=tap_doan.me.id,
         department_id=tap_doan.seed.dept_id,
         owner_employee_id=tap_doan.ns["vt_td"].emp,
@@ -177,17 +177,17 @@ def _khai_pham_vi(db, document_id, company_id):
 
 
 def _phien(db, document_id):
-    return instance_service.phien_dang_chay(db, ENTITY, document_id)
+    return instance_service.running_instance(db, ENTITY, document_id)
 
 
 def _dang_cho(db, instance_id) -> list[int]:
     return [row.assignee_employee_id
-            for row in instance_service.viec_cua_phien(db, instance_id)
+            for row in instance_service.tasks_of_instance(db, instance_id)
             if row.status == TASK_PENDING]
 
 
-def _clone_cua(db, goc, company_id) -> Document:
-    for clone in clone_service.clones_of(db, goc.id):
+def _clone_cua(db, origin, company_id) -> Document:
+    for clone in clone_service.clones_of(db, origin.id):
         if clone.company_id == company_id:
             return clone
     raise AssertionError(f"Không có bản clone nào cho pháp nhân #{company_id}")
@@ -200,76 +200,76 @@ def test_chuoi_day_du_tu_soan_den_phap_nhan_con_ban_hanh(db, tap_doan, bo_may):
     ns = tap_doan.ns
 
     # (a) Văn thư Tập đoàn soạn, khai phạm vi cho hai pháp nhân con.
-    goc = _soan(db, tap_doan, actor=ns["vt_td"].user)
-    _khai_pham_vi(db, goc.id, tap_doan.sam.id)
-    _khai_pham_vi(db, goc.id, tap_doan.aba.id)
-    assert goc.status == STATUS_DRAFT
-    assert not (goc.doc_code or goc.issue_number), "Nháp chưa được có số hiệu"
+    origin = _soan(db, tap_doan, actor=ns["vt_td"].user)
+    _khai_pham_vi(db, origin.id, tap_doan.sam.id)
+    _khai_pham_vi(db, origin.id, tap_doan.aba.id)
+    assert origin.status == STATUS_DRAFT
+    assert not (origin.doc_code or origin.issue_number), "Nháp chưa được có số hiệu"
 
     # (b) Gửi duyệt → mở phiên hai bước của Tập đoàn, việc đứng ở người ký 1.
-    service.submit(db, goc, ns["vt_td"].user)
-    phien = _phien(db, goc.id)
-    assert phien is not None and phien.flow_id == bo_may.td.id
-    assert phien.status == INSTANCE_RUNNING
-    assert _dang_cho(db, phien.id) == [ns["tp_td"].emp]
-    db.refresh(goc)
-    assert goc.status == STATUS_SUBMITTED
-    assert service.open_version(db, goc).status == VERSION_SUBMITTED
-    assert not (goc.doc_code or goc.issue_number), "Chưa ký xong thì chưa cấp số"
+    service.submit(db, origin, ns["vt_td"].user)
+    instance = _phien(db, origin.id)
+    assert instance is not None and instance.flow_id == bo_may.td.id
+    assert instance.status == INSTANCE_RUNNING
+    assert _dang_cho(db, instance.id) == [ns["tp_td"].emp]
+    db.refresh(origin)
+    assert origin.status == STATUS_SUBMITTED
+    assert service.open_version(db, origin).status == VERSION_SUBMITTED
+    assert not (origin.doc_code or origin.issue_number), "Chưa ký xong thì chưa cấp số"
 
     # (c) Ký bước 1 — chuyển sang người ký 2, TUYỆT ĐỐI chưa ban hành.
-    action_service.duyet(db, phien, ns["tp_td"].emp, ns["tp_td"].user, {})
-    db.refresh(goc)
-    assert goc.status == STATUS_SUBMITTED, "Một chữ ký chưa phải ban hành"
-    assert _dang_cho(db, phien.id) == [ns["tgd_td"].emp]
-    assert clone_service.clones_of(db, goc.id) == [], "Chưa ban hành mà đã đẻ clone"
+    action_service.approve(db, instance, ns["tp_td"].emp, ns["tp_td"].user, {})
+    db.refresh(origin)
+    assert origin.status == STATUS_SUBMITTED, "Một chữ ký chưa phải ban hành"
+    assert _dang_cho(db, instance.id) == [ns["tgd_td"].emp]
+    assert clone_service.clones_of(db, origin.id) == [], "Chưa ban hành mà đã đẻ clone"
 
     # (d) Ký bước 2 — BAN HÀNH thật: cấp số, khóa phiên bản, chuyển hiệu lực.
-    action_service.duyet(db, phien, ns["tgd_td"].emp, ns["tgd_td"].user, {})
-    db.refresh(goc)
-    assert phien.status == INSTANCE_APPROVED
-    assert goc.status == STATUS_EFFECTIVE
-    assert (goc.doc_code or "").startswith("DEGO-"), goc.doc_code
-    assert service.open_version(db, goc) is None, "Ban hành xong phải khóa phiên bản"
-    assert db.get(DocumentVersion, goc.current_version_id).status == VERSION_APPROVED
+    action_service.approve(db, instance, ns["tgd_td"].emp, ns["tgd_td"].user, {})
+    db.refresh(origin)
+    assert instance.status == INSTANCE_APPROVED
+    assert origin.status == STATUS_EFFECTIVE
+    assert (origin.doc_code or "").startswith("DEGO-"), origin.doc_code
+    assert service.open_version(db, origin) is None, "Ban hành xong phải khóa phiên bản"
+    assert db.get(DocumentVersion, origin.current_version_id).status == VERSION_APPROVED
 
     # (e) Hai pháp nhân con nhận ngay bản nháp riêng, chép đúng nội dung gốc.
-    clones = clone_service.clones_of(db, goc.id)
+    clones = clone_service.clones_of(db, origin.id)
     assert {c.company_id for c in clones} == {tap_doan.sam.id, tap_doan.aba.id}
     for clone in clones:
         assert clone.status == STATUS_DRAFT
         assert clone.clone_status == CLONE_SENT
-        assert clone.source_document_id == goc.id
+        assert clone.source_document_id == origin.id
         assert "Điều 1" in db.get(DocumentVersion, clone.current_version_id).content_html
 
     # (f) SAM gửi duyệt bản của mình → chạy LUỒNG CỦA SAM, người ký của SAM.
-    clone_sam = _clone_cua(db, goc, tap_doan.sam.id)
+    clone_sam = _clone_cua(db, origin, tap_doan.sam.id)
     service.submit(db, clone_sam, ns["vt_sam"].user)
     phien_sam = _phien(db, clone_sam.id)
     assert phien_sam.flow_id == bo_may.sam.id, "Bản của SAM phải chạy luồng SAM"
-    assert phien_sam.id != phien.id
+    assert phien_sam.id != instance.id
     assert _dang_cho(db, phien_sam.id) == [ns["gd_sam"].emp]
     db.refresh(clone_sam)
     assert clone_sam.status == STATUS_SUBMITTED
     assert clone_sam.clone_status == CLONE_SUBMITTED, "Bảng theo dõi ở gốc phải thấy ngay"
 
     # (g) Giám đốc SAM ký → bản của SAM ban hành, mang SỐ HIỆU CỦA SAM.
-    action_service.duyet(db, phien_sam, ns["gd_sam"].emp, ns["gd_sam"].user, {})
+    action_service.approve(db, phien_sam, ns["gd_sam"].emp, ns["gd_sam"].user, {})
     db.refresh(clone_sam)
     assert clone_sam.status == STATUS_EFFECTIVE
     assert (clone_sam.doc_code or "").startswith("SAM-"), clone_sam.doc_code
-    assert clone_sam.doc_code != goc.doc_code
+    assert clone_sam.doc_code != origin.doc_code
     assert clone_sam.clone_status == CLONE_ISSUED
     assert clone_sam.clone_handled_at is not None
     assert service.open_version(db, clone_sam) is None
 
     # (h) ABA vẫn đứng yên — ban hành bên SAM không được kéo theo ai.
-    clone_aba = _clone_cua(db, goc, tap_doan.aba.id)
+    clone_aba = _clone_cua(db, origin, tap_doan.aba.id)
     assert clone_aba.status == STATUS_DRAFT
     assert clone_aba.clone_status == CLONE_SENT
 
     # (i) Bảng theo dõi ở bản gốc kể đúng hai câu chuyện khác nhau.
-    theo_doi = {row["company_id"]: row for row in clone_service.tracking(db, goc)}
+    theo_doi = {row["company_id"]: row for row in clone_service.tracking(db, origin)}
     assert theo_doi[tap_doan.sam.id]["clone_status_label"] == "Đã ban hành"
     assert theo_doi[tap_doan.aba.id]["clone_status_label"] == "Đã gửi"
 
@@ -277,11 +277,11 @@ def test_chuoi_day_du_tu_soan_den_phap_nhan_con_ban_hanh(db, tap_doan, bo_may):
     service.submit(db, clone_aba, ns["vt_aba"].user)
     phien_aba = _phien(db, clone_aba.id)
     assert phien_aba.flow_id == bo_may.aba.id
-    action_service.duyet(db, phien_aba, ns["gd_aba"].emp, ns["gd_aba"].user, {})
+    action_service.approve(db, phien_aba, ns["gd_aba"].emp, ns["gd_aba"].user, {})
     db.refresh(clone_aba)
     assert (clone_aba.doc_code or "").startswith("ABA-")
-    so_hieu = {goc.doc_code, clone_sam.doc_code, clone_aba.doc_code}
-    assert len(so_hieu) == 3, f"Số hiệu bị trùng: {so_hieu}"
+    issue_number = {origin.doc_code, clone_sam.doc_code, clone_aba.doc_code}
+    assert len(issue_number) == 3, f"Số hiệu bị trùng: {issue_number}"
     #  Ba văn bản thật, không nhiều hơn: không có bản clone của bản clone.
     assert db.query(Document.id).count() == 3
     assert clone_service.clones_of(db, clone_sam.id) == []
@@ -292,31 +292,31 @@ def test_chuoi_day_du_tu_soan_den_phap_nhan_con_ban_hanh(db, tap_doan, bo_may):
 def test_dang_chay_phien_thi_khong_ban_hanh_thang_duoc(db, tap_doan, bo_may):
     """Đường tắt nguy hiểm nhất: ai có quyền `approve` cũng ban hành được văn bản
     mới ký một bước. `chan_duong_cu` là chốt duy nhất chặn nó."""
-    goc = _soan(db, tap_doan, actor=tap_doan.ns["vt_td"].user)
-    service.submit(db, goc, tap_doan.ns["vt_td"].user)
+    origin = _soan(db, tap_doan, actor=tap_doan.ns["vt_td"].user)
+    service.submit(db, origin, tap_doan.ns["vt_td"].user)
 
-    with pytest.raises(HTTPException) as loi:
-        approval_bridge.chan_duong_cu(db, goc)
-    assert loi.value.status_code == 400
-    assert "nhiều bước" in loi.value.detail
+    with pytest.raises(HTTPException) as error:
+        approval_bridge.block_legacy_path(db, origin)
+    assert error.value.status_code == 400
+    assert "nhiều bước" in error.value.detail
 
-    db.refresh(goc)
-    assert goc.status == STATUS_SUBMITTED
-    assert not (goc.doc_code or goc.issue_number), "Chặn rồi mà vẫn cấp số là hỏng"
+    db.refresh(origin)
+    assert origin.status == STATUS_SUBMITTED
+    assert not (origin.doc_code or origin.issue_number), "Chặn rồi mà vẫn cấp số là hỏng"
 
 
 def test_dang_duyet_thi_khong_sua_duoc_van_ban(db, tap_doan, bo_may):
     """Sửa được lúc đang duyệt = người ký duyệt một nội dung, hệ lưu nội dung khác."""
-    goc = _soan(db, tap_doan, actor=tap_doan.ns["vt_td"].user)
-    service.submit(db, goc, tap_doan.ns["vt_td"].user)
+    origin = _soan(db, tap_doan, actor=tap_doan.ns["vt_td"].user)
+    service.submit(db, origin, tap_doan.ns["vt_td"].user)
 
-    with pytest.raises(HTTPException) as loi:
-        service.update_document(db, goc, DocumentUpdate(title="Đổi tên giữa chừng"),
+    with pytest.raises(HTTPException) as error:
+        service.update_document(db, origin, DocumentUpdate(title="Đổi tên giữa chừng"),
                                 tap_doan.ns["vt_td"].user)
-    assert loi.value.status_code == 409
-    assert "rút phiếu" in loi.value.detail, "Câu chặn phải chỉ được đường ra"
-    db.refresh(goc)
-    assert goc.title == "Quy chế bảo mật thông tin"
+    assert error.value.status_code == 409
+    assert "rút phiếu" in error.value.detail, "Câu chặn phải chỉ được đường ra"
+    db.refresh(origin)
+    assert origin.title == "Quy chế bảo mật thông tin"
 
 
 def test_ban_clone_thieu_luong_rieng_thi_chan_TRUOC_khi_doi_trang_thai(db, tap_doan):
@@ -327,16 +327,16 @@ def test_ban_clone_thieu_luong_rieng_thi_chan_TRUOC_khi_doi_trang_thai(db, tap_d
     _luong(db, "VB-TD", "Duyệt Tập đoàn", tap_doan.me.id,
            [tap_doan.ns["tp_td"].emp])
 
-    goc = _soan(db, tap_doan, actor=tap_doan.ns["vt_td"].user)
-    _khai_pham_vi(db, goc.id, tap_doan.sam.id)
-    service.submit(db, goc, tap_doan.ns["vt_td"].user)
-    action_service.duyet(db, _phien(db, goc.id), tap_doan.ns["tp_td"].emp,
+    origin = _soan(db, tap_doan, actor=tap_doan.ns["vt_td"].user)
+    _khai_pham_vi(db, origin.id, tap_doan.sam.id)
+    service.submit(db, origin, tap_doan.ns["vt_td"].user)
+    action_service.approve(db, _phien(db, origin.id), tap_doan.ns["tp_td"].emp,
                          tap_doan.ns["tp_td"].user, {})
-    clone = _clone_cua(db, goc, tap_doan.sam.id)
+    clone = _clone_cua(db, origin, tap_doan.sam.id)
 
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         service.submit(db, clone, tap_doan.ns["vt_sam"].user)
-    assert "chưa có luồng duyệt Văn bản riêng" in loi.value.detail
+    assert "chưa có luồng duyệt Văn bản riêng" in error.value.detail
 
     db.refresh(clone)
     assert clone.status == STATUS_DRAFT
@@ -348,41 +348,41 @@ def test_ban_clone_thieu_luong_rieng_thi_chan_TRUOC_khi_doi_trang_thai(db, tap_d
 def test_phap_nhan_con_tu_choi_thi_ban_goc_van_nguyen_hieu_luc(db, tap_doan, bo_may):
     """Từ chối ở nơi nhận là việc của nơi nhận, không được đụng bản gốc."""
     ns = tap_doan.ns
-    goc = _soan(db, tap_doan, actor=ns["vt_td"].user)
-    _khai_pham_vi(db, goc.id, tap_doan.sam.id)
-    service.submit(db, goc, ns["vt_td"].user)
-    phien = _phien(db, goc.id)
-    action_service.duyet(db, phien, ns["tp_td"].emp, ns["tp_td"].user, {})
-    action_service.duyet(db, phien, ns["tgd_td"].emp, ns["tgd_td"].user, {})
+    origin = _soan(db, tap_doan, actor=ns["vt_td"].user)
+    _khai_pham_vi(db, origin.id, tap_doan.sam.id)
+    service.submit(db, origin, ns["vt_td"].user)
+    instance = _phien(db, origin.id)
+    action_service.approve(db, instance, ns["tp_td"].emp, ns["tp_td"].user, {})
+    action_service.approve(db, instance, ns["tgd_td"].emp, ns["tgd_td"].user, {})
 
-    clone = _clone_cua(db, goc, tap_doan.sam.id)
+    clone = _clone_cua(db, origin, tap_doan.sam.id)
     service.submit(db, clone, ns["vt_sam"].user)
-    action_service.tu_choi(db, _phien(db, clone.id), ns["gd_sam"].emp,
+    action_service.reject(db, _phien(db, clone.id), ns["gd_sam"].emp,
                            ns["gd_sam"].user, "SAM không áp dụng quy chế này")
 
     db.refresh(clone)
-    db.refresh(goc)
+    db.refresh(origin)
     assert clone.status == STATUS_REJECTED
     assert clone.clone_status == CLONE_REJECTED
     assert service.open_version(db, clone) is None, "Bản bị từ chối phải nhả open_slot"
-    assert goc.status == STATUS_EFFECTIVE, "Bản gốc không liên quan"
-    assert clone_service.tracking(db, goc)[0]["clone_status_label"] == "Từ chối áp dụng"
+    assert origin.status == STATUS_EFFECTIVE, "Bản gốc không liên quan"
+    assert clone_service.tracking(db, origin)[0]["clone_status_label"] == "Từ chối áp dụng"
 
 
 def test_tra_lai_roi_gui_lai_o_phap_nhan_con(db, tap_doan, bo_may):
     """Ca hay gặp nhất ở pháp nhân con: bị trả vì sai tên công ty, sửa, gửi lại."""
     ns = tap_doan.ns
-    goc = _soan(db, tap_doan, actor=ns["vt_td"].user)
-    _khai_pham_vi(db, goc.id, tap_doan.sam.id)
-    service.submit(db, goc, ns["vt_td"].user)
-    phien = _phien(db, goc.id)
-    action_service.duyet(db, phien, ns["tp_td"].emp, ns["tp_td"].user, {})
-    action_service.duyet(db, phien, ns["tgd_td"].emp, ns["tgd_td"].user, {})
+    origin = _soan(db, tap_doan, actor=ns["vt_td"].user)
+    _khai_pham_vi(db, origin.id, tap_doan.sam.id)
+    service.submit(db, origin, ns["vt_td"].user)
+    instance = _phien(db, origin.id)
+    action_service.approve(db, instance, ns["tp_td"].emp, ns["tp_td"].user, {})
+    action_service.approve(db, instance, ns["tgd_td"].emp, ns["tgd_td"].user, {})
 
-    clone = _clone_cua(db, goc, tap_doan.sam.id)
+    clone = _clone_cua(db, origin, tap_doan.sam.id)
     service.submit(db, clone, ns["vt_sam"].user)
     phien_sam = _phien(db, clone.id)
-    action_service.tra_lai(db, phien_sam, ns["gd_sam"].emp, ns["gd_sam"].user,
+    action_service.send_back(db, phien_sam, ns["gd_sam"].emp, ns["gd_sam"].user,
                            "Sai tên công ty ở Điều 1", {})
 
     db.refresh(clone)
@@ -401,7 +401,7 @@ def test_tra_lai_roi_gui_lai_o_phap_nhan_con(db, tap_doan, bo_may):
     assert phien_moi is not None and phien_moi.id != phien_sam.id
     assert phien_moi.flow_id == bo_may.sam.id
 
-    action_service.duyet(db, phien_moi, ns["gd_sam"].emp, ns["gd_sam"].user, {})
+    action_service.approve(db, phien_moi, ns["gd_sam"].emp, ns["gd_sam"].user, {})
     db.refresh(clone)
     assert clone.status == STATUS_EFFECTIVE
     assert (clone.doc_code or "").startswith("SAM-")
@@ -412,22 +412,22 @@ def test_rut_phieu_giua_chung_thi_ve_nhap_va_gui_lai_duoc(db, tap_doan, bo_may):
     """Rút xong mà kẹt ở «đang duyệt» thì vừa không gửi lại được, vừa mở ra một
     đường ban hành không ai ký (`chan_duong_cu` chỉ khóa khi phiên còn chạy)."""
     ns = tap_doan.ns
-    goc = _soan(db, tap_doan, actor=ns["vt_td"].user)
-    service.submit(db, goc, ns["vt_td"].user)
-    phien = _phien(db, goc.id)
+    origin = _soan(db, tap_doan, actor=ns["vt_td"].user)
+    service.submit(db, origin, ns["vt_td"].user)
+    instance = _phien(db, origin.id)
 
-    action_service.rut_lai(db, phien, ns["vt_td"].emp, ns["vt_td"].user, "Soạn nhầm bản")
+    action_service.withdraw(db, instance, ns["vt_td"].emp, ns["vt_td"].user, "Soạn nhầm bản")
 
-    db.refresh(goc)
-    assert goc.status == STATUS_DRAFT
-    assert _phien(db, goc.id) is None
-    assert service.open_version(db, goc).status == VERSION_DRAFT
-    assert not (goc.doc_code or goc.issue_number)
+    db.refresh(origin)
+    assert origin.status == STATUS_DRAFT
+    assert _phien(db, origin.id) is None
+    assert service.open_version(db, origin).status == VERSION_DRAFT
+    assert not (origin.doc_code or origin.issue_number)
 
     #  Gửi lại từ đầu: phiên mới, và việc quay lại đứng ở BƯỚC 1.
-    service.submit(db, goc, ns["vt_td"].user)
-    phien_moi = _phien(db, goc.id)
-    assert phien_moi is not None and phien_moi.id != phien.id
+    service.submit(db, origin, ns["vt_td"].user)
+    phien_moi = _phien(db, origin.id)
+    assert phien_moi is not None and phien_moi.id != instance.id
     assert _dang_cho(db, phien_moi.id) == [ns["tp_td"].emp]
 
 
@@ -435,56 +435,56 @@ def test_ban_hanh_ban_2_0_khong_de_them_clone_va_bao_con_ra_lai(db, tap_doan, bo
     """Bản gốc lên 2.0: pháp nhân con phải được báo rà lại, nhưng KHÔNG được đẻ
     thêm một văn bản thứ hai cho cùng nơi đó, và số hiệu bản con giữ nguyên."""
     ns = tap_doan.ns
-    goc = _soan(db, tap_doan, actor=ns["vt_td"].user)
-    _khai_pham_vi(db, goc.id, tap_doan.sam.id)
-    service.submit(db, goc, ns["vt_td"].user)
-    phien = _phien(db, goc.id)
-    action_service.duyet(db, phien, ns["tp_td"].emp, ns["tp_td"].user, {})
-    action_service.duyet(db, phien, ns["tgd_td"].emp, ns["tgd_td"].user, {})
+    origin = _soan(db, tap_doan, actor=ns["vt_td"].user)
+    _khai_pham_vi(db, origin.id, tap_doan.sam.id)
+    service.submit(db, origin, ns["vt_td"].user)
+    instance = _phien(db, origin.id)
+    action_service.approve(db, instance, ns["tp_td"].emp, ns["tp_td"].user, {})
+    action_service.approve(db, instance, ns["tgd_td"].emp, ns["tgd_td"].user, {})
 
-    clone = _clone_cua(db, goc, tap_doan.sam.id)
+    clone = _clone_cua(db, origin, tap_doan.sam.id)
     service.submit(db, clone, ns["vt_sam"].user)
-    action_service.duyet(db, _phien(db, clone.id), ns["gd_sam"].emp,
+    action_service.approve(db, _phien(db, clone.id), ns["gd_sam"].emp,
                          ns["gd_sam"].user, {})
     db.refresh(clone)
     so_hieu_con = clone.doc_code
-    so_van_ban = db.query(Document.id).count()
+    document_count = db.query(Document.id).count()
 
     #  Tập đoàn lên bản 2.0 và ký lại đủ hai bước.
-    version_service.open_new_version(db, goc, VersionCreate(
+    version_service.open_new_version(db, origin, VersionCreate(
         change_kind=CHANGE_MAJOR, change_summary="Sửa Điều 5"), ns["vt_td"].user)
-    service.submit(db, goc, ns["vt_td"].user)
-    phien2 = _phien(db, goc.id)
-    action_service.duyet(db, phien2, ns["tp_td"].emp, ns["tp_td"].user, {})
-    action_service.duyet(db, phien2, ns["tgd_td"].emp, ns["tgd_td"].user, {})
+    service.submit(db, origin, ns["vt_td"].user)
+    phien2 = _phien(db, origin.id)
+    action_service.approve(db, phien2, ns["tp_td"].emp, ns["tp_td"].user, {})
+    action_service.approve(db, phien2, ns["tgd_td"].emp, ns["tgd_td"].user, {})
 
-    db.refresh(goc)
+    db.refresh(origin)
     db.refresh(clone)
-    assert goc.status == STATUS_EFFECTIVE
-    assert db.query(Document.id).count() == so_van_ban, "Không được đẻ clone thứ hai"
+    assert origin.status == STATUS_EFFECTIVE
+    assert db.query(Document.id).count() == document_count, "Không được đẻ clone thứ hai"
     assert clone.needs_review is True
     assert clone.clone_status == CLONE_STALE
     assert clone.doc_code == so_hieu_con, "Số hiệu đã cấp là vĩnh viễn"
-    assert clone_service.tracking(db, goc)[0]["is_outdated"] is True
+    assert clone_service.tracking(db, origin)[0]["is_outdated"] is True
 
 
 def test_hai_lan_gui_duyet_lien_tiep_khong_mo_hai_phien(db, tap_doan, bo_may):
     """Bấm *Gửi duyệt* hai lần (mạng chậm, người dùng bấm lại) không được đẻ hai
     phiên — hai phiên cùng chạy là văn bản ban hành xong vẫn còn việc treo."""
     ns = tap_doan.ns
-    goc = _soan(db, tap_doan, actor=ns["vt_td"].user)
-    service.submit(db, goc, ns["vt_td"].user)
-    phien = _phien(db, goc.id)
+    origin = _soan(db, tap_doan, actor=ns["vt_td"].user)
+    service.submit(db, origin, ns["vt_td"].user)
+    instance = _phien(db, origin.id)
 
-    with pytest.raises(HTTPException) as loi:
-        service.submit(db, goc, ns["vt_td"].user)
-    assert loi.value.status_code == 400
+    with pytest.raises(HTTPException) as error:
+        service.submit(db, origin, ns["vt_td"].user)
+    assert error.value.status_code == 400
 
     from app.modules.approval.instance_model import ApprovalInstance
     assert db.query(ApprovalInstance).filter(
         ApprovalInstance.entity == ENTITY,
-        ApprovalInstance.entity_id == goc.id).count() == 1
-    assert _phien(db, goc.id).id == phien.id
+        ApprovalInstance.entity_id == origin.id).count() == 1
+    assert _phien(db, origin.id).id == instance.id
 
 
 def test_ngay_hieu_luc_tuong_lai_van_sinh_clone_nhung_chua_co_hieu_luc(db, tap_doan, bo_may):
@@ -492,23 +492,23 @@ def test_ngay_hieu_luc_tuong_lai_van_sinh_clone_nhung_chua_co_hieu_luc(db, tap_d
     pháp nhân con vẫn phải có bản nháp trong tay để chuẩn bị."""
     ns = tap_doan.ns
     mai_sau = date.today() + timedelta(days=30)
-    goc = _soan(db, tap_doan, actor=ns["vt_td"].user)
-    goc.effective_date = mai_sau
-    ban = service.open_version(db, goc)
+    origin = _soan(db, tap_doan, actor=ns["vt_td"].user)
+    origin.effective_date = mai_sau
+    ban = service.open_version(db, origin)
     ban.effective_from = mai_sau
     db.commit()
-    _khai_pham_vi(db, goc.id, tap_doan.sam.id)
+    _khai_pham_vi(db, origin.id, tap_doan.sam.id)
 
-    service.submit(db, goc, ns["vt_td"].user)
-    phien = _phien(db, goc.id)
-    action_service.duyet(db, phien, ns["tp_td"].emp, ns["tp_td"].user, {})
-    action_service.duyet(db, phien, ns["tgd_td"].emp, ns["tgd_td"].user, {})
+    service.submit(db, origin, ns["vt_td"].user)
+    instance = _phien(db, origin.id)
+    action_service.approve(db, instance, ns["tp_td"].emp, ns["tp_td"].user, {})
+    action_service.approve(db, instance, ns["tgd_td"].emp, ns["tgd_td"].user, {})
 
-    db.refresh(goc)
-    assert goc.status == STATUS_APPROVED, "Chưa tới ngày thì chưa có hiệu lực"
-    assert goc.effective_date == mai_sau
-    assert (goc.doc_code or "").startswith("DEGO-"), "Ký xong là cấp số, dù chưa áp dụng"
-    assert len(clone_service.clones_of(db, goc.id)) == 1
+    db.refresh(origin)
+    assert origin.status == STATUS_APPROVED, "Chưa tới ngày thì chưa có hiệu lực"
+    assert origin.effective_date == mai_sau
+    assert (origin.doc_code or "").startswith("DEGO-"), "Ký xong là cấp số, dù chưa áp dụng"
+    assert len(clone_service.clones_of(db, origin.id)) == 1
 
 
 def test_nguoi_ky_cua_phap_nhan_con_doc_duoc_ban_clone(db, tap_doan, bo_may):
@@ -518,13 +518,13 @@ def test_nguoi_ky_cua_phap_nhan_con_doc_duoc_ban_clone(db, tap_doan, bo_may):
     from app.modules.approval import entity_hooks
 
     ns = tap_doan.ns
-    goc = _soan(db, tap_doan, actor=ns["vt_td"].user)
-    _khai_pham_vi(db, goc.id, tap_doan.sam.id)
-    service.submit(db, goc, ns["vt_td"].user)
-    phien = _phien(db, goc.id)
-    action_service.duyet(db, phien, ns["tp_td"].emp, ns["tp_td"].user, {})
-    action_service.duyet(db, phien, ns["tgd_td"].emp, ns["tgd_td"].user, {})
-    clone = _clone_cua(db, goc, tap_doan.sam.id)
+    origin = _soan(db, tap_doan, actor=ns["vt_td"].user)
+    _khai_pham_vi(db, origin.id, tap_doan.sam.id)
+    service.submit(db, origin, ns["vt_td"].user)
+    instance = _phien(db, origin.id)
+    action_service.approve(db, instance, ns["tp_td"].emp, ns["tp_td"].user, {})
+    action_service.approve(db, instance, ns["tgd_td"].emp, ns["tgd_td"].user, {})
+    clone = _clone_cua(db, origin, tap_doan.sam.id)
 
     #  Gửi duyệt bản của SAM: từ lúc này giám đốc SAM có một việc đang chờ mình.
     service.submit(db, clone, ns["vt_sam"].user)
@@ -534,6 +534,6 @@ def test_nguoi_ky_cua_phap_nhan_con_doc_duoc_ban_clone(db, tap_doan, bo_may):
     nguoi_ky = db.get(User, ns["gd_sam"].user)
     nguoi_ngoai = db.get(User, ns["gd_aba"].user)
 
-    assert entity_hooks.doc_duoc(db, phien_sam, nguoi_ky) is True
-    assert entity_hooks.doc_duoc(db, phien_sam, nguoi_ngoai) is False, \
+    assert entity_hooks.can_read(db, phien_sam, nguoi_ky) is True
+    assert entity_hooks.can_read(db, phien_sam, nguoi_ngoai) is False, \
         "Người của pháp nhân khác không được đọc bản riêng của SAM"

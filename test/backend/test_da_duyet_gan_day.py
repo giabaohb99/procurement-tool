@@ -27,15 +27,15 @@ ENTITY = "document"
 
 
 @pytest.fixture()
-def nguoi(db, seed):
+def person(db, seed):
     ids = {"nop": seed.emp_req_id}
-    for ten in ("a", "b"):
-        employee = Employee(code=f"NV_{ten.upper()}", full_name=f"Người {ten.upper()}",
+    for name in ("a", "b"):
+        employee = Employee(code=f"NV_{name.upper()}", full_name=f"Người {name.upper()}",
                             company_id=seed.company_id, department_id=seed.dept_id,
                             is_active=True)
         db.add(employee)
         db.flush()
-        ids[ten] = employee.id
+        ids[name] = employee.id
     db.commit()
     return ids
 
@@ -58,20 +58,20 @@ def _buoc(db, flow, seq, employee_id, name=None):
     return node
 
 
-def _trinh(db, nguoi_nop, entity=ENTITY, entity_id=555, code="VB-555"):
-    return instance_service.bat_dau(db, entity, entity_id, {}, nguoi_nop, ACTOR,
+def _trinh(db, submitter, entity=ENTITY, entity_id=555, code="VB-555"):
+    return instance_service.start(db, entity, entity_id, {}, submitter, ACTOR,
                                     entity_code=code, entity_title="Phiếu thử")
 
 
-def test_duyet_xong_thi_thay_lai_trong_danh_sach(db, seed, nguoi):
+def test_duyet_xong_thi_thay_lai_trong_danh_sach(db, seed, person):
     flow = _luong(db)
-    _buoc(db, flow, 1, nguoi["a"], name="Trưởng bộ phận duyệt")
-    _buoc(db, flow, 2, nguoi["b"])
+    _buoc(db, flow, 1, person["a"], name="Trưởng bộ phận duyệt")
+    _buoc(db, flow, 2, person["b"])
 
-    instance = _trinh(db, nguoi["nop"])
-    action_service.duyet(db, instance, nguoi["a"], ACTOR, {})
+    instance = _trinh(db, person["nop"])
+    action_service.approve(db, instance, person["a"], ACTOR, {})
 
-    rows = task_service.viec_da_xu_ly(db, nguoi["a"], ENTITY)
+    rows = task_service.handled_tasks(db, person["a"], ENTITY)
     assert len(rows) == 1
     assert rows[0]["entity_code"] == "VB-555"
     assert rows[0]["action"] == ACTION_APPROVE
@@ -80,60 +80,60 @@ def test_duyet_xong_thi_thay_lai_trong_danh_sach(db, seed, nguoi):
     assert rows[0]["instance_status"] == INSTANCE_RUNNING
 
 
-def test_nguoi_khac_khong_thay_quyet_dinh_cua_toi(db, seed, nguoi):
+def test_nguoi_khac_khong_thay_quyet_dinh_cua_toi(db, seed, person):
     flow = _luong(db)
-    _buoc(db, flow, 1, nguoi["a"])
-    instance = _trinh(db, nguoi["nop"])
-    action_service.duyet(db, instance, nguoi["a"], ACTOR, {})
+    _buoc(db, flow, 1, person["a"])
+    instance = _trinh(db, person["nop"])
+    action_service.approve(db, instance, person["a"], ACTOR, {})
 
-    assert task_service.viec_da_xu_ly(db, nguoi["b"], ENTITY) == []
+    assert task_service.handled_tasks(db, person["b"], ENTITY) == []
 
 
-def test_tu_choi_cung_la_mot_quyet_dinh(db, seed, nguoi):
+def test_tu_choi_cung_la_mot_quyet_dinh(db, seed, person):
     """Nhìn lại thì "tôi đã từ chối" cũng quan trọng y như "tôi đã duyệt"."""
     flow = _luong(db)
-    _buoc(db, flow, 1, nguoi["a"])
-    instance = _trinh(db, nguoi["nop"])
-    action_service.tu_choi(db, instance, nguoi["a"], ACTOR, "thiếu căn cứ ở mục 2")
+    _buoc(db, flow, 1, person["a"])
+    instance = _trinh(db, person["nop"])
+    action_service.reject(db, instance, person["a"], ACTOR, "thiếu căn cứ ở mục 2")
 
-    rows = task_service.viec_da_xu_ly(db, nguoi["a"], ENTITY)
+    rows = task_service.handled_tasks(db, person["a"], ENTITY)
     assert [r["action"] for r in rows] == [ACTION_REJECT]
     assert rows[0]["comment"] == "thiếu căn cứ ở mục 2"
 
 
-def test_ghi_y_kien_khong_phai_mot_quyet_dinh(db, seed, nguoi):
+def test_ghi_y_kien_khong_phai_mot_quyet_dinh(db, seed, person):
     """Ý kiến không đổi trạng thái phiếu — gộp vào là danh sách đầy dòng thừa."""
     flow = _luong(db)
-    _buoc(db, flow, 1, nguoi["a"])
-    instance = _trinh(db, nguoi["nop"])
-    action_service.gop_y(db, instance, nguoi["a"], ACTOR, "để mai xem tiếp")
+    _buoc(db, flow, 1, person["a"])
+    instance = _trinh(db, person["nop"])
+    action_service.give_comment(db, instance, person["a"], ACTOR, "để mai xem tiếp")
 
-    assert task_service.viec_da_xu_ly(db, nguoi["a"], ENTITY) == []
+    assert task_service.handled_tasks(db, person["a"], ENTITY) == []
 
 
-def test_loc_dung_loai_chung_tu(db, seed, nguoi):
+def test_loc_dung_loai_chung_tu(db, seed, person):
     """Màn Văn bản chỉ hỏi văn bản; việc của Thu mua không được lọt vào."""
     vb = _luong(db, ENTITY, "LS-VB")
-    _buoc(db, vb, 1, nguoi["a"])
-    action_service.duyet(db, _trinh(db, nguoi["nop"]), nguoi["a"], ACTOR, {})
+    _buoc(db, vb, 1, person["a"])
+    action_service.approve(db, _trinh(db, person["nop"]), person["a"], ACTOR, {})
 
     po = _luong(db, "purchase_order", "LS-PO")
-    _buoc(db, po, 1, nguoi["a"])
-    action_service.duyet(db, _trinh(db, nguoi["nop"], "purchase_order", 77, "PO-77"),
-                         nguoi["a"], ACTOR, {})
+    _buoc(db, po, 1, person["a"])
+    action_service.approve(db, _trinh(db, person["nop"], "purchase_order", 77, "PO-77"),
+                         person["a"], ACTOR, {})
 
-    chi_van_ban = task_service.viec_da_xu_ly(db, nguoi["a"], ENTITY)
+    chi_van_ban = task_service.handled_tasks(db, person["a"], ENTITY)
     assert [r["entity"] for r in chi_van_ban] == ["document"]
     #  Bỏ trống `entity` thì lấy hết — đường dùng chung cho màn gom mọi loại.
-    assert len(task_service.viec_da_xu_ly(db, nguoi["a"], "")) == 2
+    assert len(task_service.handled_tasks(db, person["a"], "")) == 2
 
 
-def test_phieu_duyet_xong_thi_ghi_dung_trang_thai_cuoi(db, seed, nguoi):
+def test_phieu_duyet_xong_thi_ghi_dung_trang_thai_cuoi(db, seed, person):
     flow = _luong(db)
-    _buoc(db, flow, 1, nguoi["a"])
-    instance = _trinh(db, nguoi["nop"])
-    action_service.duyet(db, instance, nguoi["a"], ACTOR, {})
+    _buoc(db, flow, 1, person["a"])
+    instance = _trinh(db, person["nop"])
+    action_service.approve(db, instance, person["a"], ACTOR, {})
 
     assert instance.status == INSTANCE_APPROVED
-    rows = task_service.viec_da_xu_ly(db, nguoi["a"], ENTITY)
+    rows = task_service.handled_tasks(db, person["a"], ENTITY)
     assert rows[0]["instance_status"] == INSTANCE_APPROVED

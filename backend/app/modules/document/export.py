@@ -62,11 +62,11 @@ def build_rows(db, rows: list[dict]) -> list[dict]:
     from app.modules.doc_catalog.security_level_service import label, label_maps
 
     #  Tra MỘT LẦN cho cả danh sách, không mỗi dòng một truy vấn.
-    nhan_mat, nhan_khan = label_maps(db)
+    security_labels, urgency_labels = label_maps(db)
 
     for row in rows:
-        row["secrecy_label"] = label(nhan_mat, row.get("secrecy_level"))
-        row["urgency_label"] = label(nhan_khan, row.get("urgency"))
+        row["secrecy_label"] = label(security_labels, row.get("secrecy_level"))
+        row["urgency_label"] = label(urgency_labels, row.get("urgency"))
         row["needs_review_text"] = "Cần rà soát" if row.get("needs_review") else ""
         #  Bản riêng của pháp nhân con: nói rõ ra, nếu không thì trong file
         #  Excel nó nằm lẫn giữa các bản gốc mà không có gì phân biệt.

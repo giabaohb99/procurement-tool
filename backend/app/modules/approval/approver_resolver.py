@@ -30,24 +30,24 @@ def resolve(db: Session, node, subject: dict, submitter_employee_id: int | None)
     if kind == APPROVER_EMPLOYEE:
         ids = _refs_as_ints(node.approver_ref)
     elif kind == APPROVER_ROLE:
-        ids = _theo_vai_tro(db, node.approver_ref)
+        ids = _by_role(db, node.approver_ref)
     elif kind == APPROVER_DEPT_HEAD:
-        ids = _truong_bo_phan(db, submitter_employee_id, subject)
+        ids = _submitter_department_head(db, submitter_employee_id, subject)
     elif kind == APPROVER_LEVEL_UP:
         ids = _len_n_cap(db, submitter_employee_id, subject, node.approver_ref)
     elif kind == APPROVER_COMPANY_REP:
-        ids = _dai_dien_phap_nhan(db, subject)
+        ids = _legal_representatives(db, subject)
     elif kind == APPROVER_FIELD:
-        ids = _tu_o_tren_phieu(subject, node.approver_ref)
+        ids = _from_subject_field(subject, node.approver_ref)
     elif kind == APPROVER_DEPT_HEAD_OF:
-        ids = _truong_cua_phong_chi_dinh(db, node.approver_ref)
+        ids = _heads_of_specified_departments(db, node.approver_ref)
     else:
         ids = []
 
-    return _chi_nguoi_dang_lam_viec(db, ids)
+    return _only_active_employees(db, ids)
 
 
-def _chi_nguoi_dang_lam_viec(db: Session, ids: list[int]) -> list[int]:
+def _only_active_employees(db: Session, ids: list[int]) -> list[int]:
     """Bỏ người đã nghỉ và bỏ trùng, GIỮ NGUYÊN thứ tự khai.
 
     Giao việc cho người đã tắt trạng thái là phiếu nằm im vĩnh viễn: không ai
@@ -55,31 +55,31 @@ def _chi_nguoi_dang_lam_viec(db: Session, ids: list[int]) -> list[int]:
     """
     if not ids:
         return []
-    dang_lam = {
+    active = {
         row[0] for row in
         db.query(Employee.id).filter(Employee.id.in_(ids), Employee.is_active.is_(True)).all()
     }
-    ket_qua: list[int] = []
+    result: list[int] = []
     for employee_id in ids:
-        if employee_id in dang_lam and employee_id not in ket_qua:
-            ket_qua.append(employee_id)
-    return ket_qua
+        if employee_id in active and employee_id not in result:
+            result.append(employee_id)
+    return result
 
 
 def _refs_as_ints(raw: str) -> list[int]:
     ids = []
-    for phan in (raw or "").split(","):
-        phan = phan.strip()
-        if phan.isdigit():
-            ids.append(int(phan))
+    for part in (raw or "").split(","):
+        part = part.strip()
+        if part.isdigit():
+            ids.append(int(part))
     return ids
 
 
-def _theo_vai_tro(db: Session, raw: str) -> list[int]:
+def _by_role(db: Session, raw: str) -> list[int]:
     from app.modules.role.model import Role, UserRole
     from app.modules.user.model import User
 
-    codes = [phan.strip() for phan in (raw or "").split(",") if phan.strip()]
+    codes = [part.strip() for part in (raw or "").split(",") if part.strip()]
     if not codes:
         return []
 
@@ -99,7 +99,7 @@ def _theo_vai_tro(db: Session, raw: str) -> list[int]:
     ]
 
 
-def _phong_cua_nguoi_nop(db: Session, submitter_employee_id: int | None,
+def _submitter_department(db: Session, submitter_employee_id: int | None,
                          subject: dict) -> Department | None:
     """Phòng ban để tính cấp trên: ưu tiên phòng của NGƯỜI NỘP, sau mới tới phiếu.
 
@@ -116,18 +116,18 @@ def _phong_cua_nguoi_nop(db: Session, submitter_employee_id: int | None,
     return None
 
 
-def _truong_bo_phan(db: Session, submitter_employee_id: int | None, subject: dict) -> list[int]:
-    phong = _phong_cua_nguoi_nop(db, submitter_employee_id, subject)
-    if phong is None or not phong.manager_id:
+def _submitter_department_head(db: Session, submitter_employee_id: int | None, subject: dict) -> list[int]:
+    department = _submitter_department(db, submitter_employee_id, subject)
+    if department is None or not department.manager_id:
         return []
     #  Trưởng bộ phận tự nộp phiếu thì bước này rỗng — để `on_no_approver` của
     #  bước quyết định (thường là đẩy lên cấp trên). Trả về chính họ là tự duyệt.
-    if phong.manager_id == submitter_employee_id:
+    if department.manager_id == submitter_employee_id:
         return []
-    return [phong.manager_id]
+    return [department.manager_id]
 
 
-def _truong_cua_phong_chi_dinh(db: Session, raw: str) -> list[int]:
+def _heads_of_specified_departments(db: Session, raw: str) -> list[int]:
     """Trưởng bộ phận của những phòng ban ĐƯỢC KHAI THẲNG trong bước.
 
     Khác `_truong_bo_phan` ở đúng một chỗ, và đó là chỗ quan trọng: hàm kia bám
@@ -142,42 +142,42 @@ def _truong_cua_phong_chi_dinh(db: Session, raw: str) -> list[int]:
     Khai được NHIỀU phòng: một bước có thể cần cả trưởng Nhân sự lẫn trưởng Tài
     chính cùng ký. Giữ nguyên thứ tự khai vì bước «lần lượt» đọc thứ tự đó.
     """
-    phong_ids = _refs_as_ints(raw)
-    if not phong_ids:
+    department_ids = _refs_as_ints(raw)
+    if not department_ids:
         return []
 
     #  Một câu truy vấn cho cả danh sách, rồi xếp lại theo ĐÚNG thứ tự khai —
     #  `IN (...)` không hứa thứ tự trả về.
-    truong_theo_phong = {
+    heads_by_department = {
         row[0]: row[1] for row in
         db.query(Department.id, Department.manager_id)
-        .filter(Department.id.in_(phong_ids)).all()
+        .filter(Department.id.in_(department_ids)).all()
     }
-    return [truong_theo_phong[pid] for pid in phong_ids
-            if truong_theo_phong.get(pid)]
+    return [heads_by_department[pid] for pid in department_ids
+            if heads_by_department.get(pid)]
 
 
 def _len_n_cap(db: Session, submitter_employee_id: int | None, subject: dict,
                raw: str) -> list[int]:
-    so_cap = int(raw) if (raw or "").strip().isdigit() else 1
-    so_cap = max(1, min(so_cap, MAX_LEVEL_UP))
+    level_count = int(raw) if (raw or "").strip().isdigit() else 1
+    level_count = max(1, min(level_count, MAX_LEVEL_UP))
 
-    phong = _phong_cua_nguoi_nop(db, submitter_employee_id, subject)
-    da_qua: set[int] = set()
+    department = _submitter_department(db, submitter_employee_id, subject)
+    visited: set[int] = set()
 
-    for _ in range(so_cap):
-        if phong is None or phong.id in da_qua:
+    for _ in range(level_count):
+        if department is None or department.id in visited:
             #  Đã đi qua phòng này rồi = cây khai vòng. Dừng, đừng quay tiếp.
             return []
-        da_qua.add(phong.id)
-        phong = db.get(Department, phong.parent) if phong.parent else None
+        visited.add(department.id)
+        department = db.get(Department, department.parent) if department.parent else None
 
-    if phong is None or not phong.manager_id:
+    if department is None or not department.manager_id:
         return []
-    return [phong.manager_id]
+    return [department.manager_id]
 
 
-def _dai_dien_phap_nhan(db: Session, subject: dict) -> list[int]:
+def _legal_representatives(db: Session, subject: dict) -> list[int]:
     company_id = subject.get("company_id")
     if not company_id:
         return []
@@ -187,14 +187,14 @@ def _dai_dien_phap_nhan(db: Session, subject: dict) -> list[int]:
     return [company.legal_representative_id]
 
 
-def _tu_o_tren_phieu(subject: dict, raw: str) -> list[int]:
+def _from_subject_field(subject: dict, raw: str) -> list[int]:
     """Người duyệt ghi sẵn trên chính phiếu — vd ô "Người ký" của văn bản."""
-    ten_o = (raw or "").strip()
-    if not ten_o:
+    field_name = (raw or "").strip()
+    if not field_name:
         return []
-    gia_tri = subject.get(ten_o)
-    if gia_tri in (None, "", 0):
+    value = subject.get(field_name)
+    if value in (None, "", 0):
         return []
-    if isinstance(gia_tri, (list, tuple)):
-        return [int(item) for item in gia_tri if str(item).isdigit()]
-    return [int(gia_tri)] if str(gia_tri).isdigit() else []
+    if isinstance(value, (list, tuple)):
+        return [int(item) for item in value if str(item).isdigit()]
+    return [int(value)] if str(value).isdigit() else []

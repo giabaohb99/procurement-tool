@@ -16,7 +16,7 @@ from app.core.database import get_db
 from app.core.response import success
 
 from . import action_service, entity_hooks, serializer, task_service
-from .concurrency import chay_chiu_tranh_chap
+from .concurrency import run_with_contention_retry
 from .instance_model import ApprovalInstance, ApprovalTask
 
 router = APIRouter(prefix="/api/approvals", tags=["approval"])
@@ -39,21 +39,21 @@ def _acting_employee_id(db: Session, user, action: str) -> int | None:
 #  `Data too long for column 'finish_reason'` → người duyệt nhận `500` trần
 #  (dựng lại được 24/08/2026 với lý do 5000 ký tự). Chặn ở cửa thì ra `422` kèm
 #  câu chỉ rõ ô nào quá dài.
-DAI_TOI_DA_LY_DO = 1000
+MAX_REASON_LEN = 1000
 #  `comment` nằm ở cột `Text` nên rộng hơn nhiều, nhưng vẫn phải có trần: không
 #  ai gõ tay 20 nghìn ký tự vào ô ý kiến, mà dán nhầm cả tệp thì có.
-DAI_TOI_DA_Y_KIEN = 5000
+MAX_COMMENT_LEN = 5000
 
 
 class ActionIn(BaseModel):
-    comment: str = Field("", max_length=DAI_TOI_DA_Y_KIEN)
+    comment: str = Field("", max_length=MAX_COMMENT_LEN)
     #  Bối cảnh phiếu để tính điều kiện rẽ nhánh của bước kế. Module chứng từ
     #  gửi lên; bộ máy duyệt cố ý không biết đọc bảng của chứng từ.
     subject: dict = {}
 
 
 class ReasonIn(BaseModel):
-    reason: str = Field("", max_length=DAI_TOI_DA_LY_DO)
+    reason: str = Field("", max_length=MAX_REASON_LEN)
     subject: dict = {}
     to_seq: int | None = None
 
@@ -69,7 +69,7 @@ class HandoverIn(BaseModel):
     reason: str = ""
 
 
-def _boi_canh(db: Session, instance: ApprovalInstance, gui_len: dict) -> dict:
+def _context(db: Session, instance: ApprovalInstance, payload: dict) -> dict:
     """Bối cảnh phiếu — LẤY TỪ MÁY CHỦ khi loại chứng từ tự dựng được.
 
     ⚠️ Đây không phải chuyện gọn gàng. `subject` quyết định hai thứ nặng: bước
@@ -87,8 +87,8 @@ def _boi_canh(db: Session, instance: ApprovalInstance, gui_len: dict) -> dict:
     chứng từ CHƯA khai hàm dựng bối cảnh thì vẫn dùng dict gửi lên — siết tới
     mức khóa luôn các phân hệ chưa tới lượt là đổi thứ đang chạy.
     """
-    tu_may_chu = entity_hooks.boi_canh(db, instance.entity, instance.entity_id)
-    return tu_may_chu if tu_may_chu else (gui_len or {})
+    server_context = entity_hooks.entity_context(db, instance.entity, instance.entity_id)
+    return server_context if server_context else (payload or {})
 
 
 def _employee_id(user) -> int:
@@ -110,7 +110,7 @@ def my_tasks(entity: str = "", db: Session = Depends(get_db),
     """
     if not getattr(user, "employee_id", None):
         return success({"total": 0, "items": []})
-    items = task_service.viec_cua_toi(db, user.employee_id, entity)
+    items = task_service.my_tasks(db, user.employee_id, entity)
     return success({"total": len(items), "items": items})
 
 
@@ -128,14 +128,14 @@ def my_history(entity: str = "", days: int = 30, limit: int = 50,
     """
     if not getattr(user, "employee_id", None):
         return success({"total": 0, "items": []})
-    items = task_service.viec_da_xu_ly(
+    items = task_service.handled_tasks(
         db, user.employee_id, entity,
-        ngay=max(1, min(days, 365)), gioi_han=max(1, min(limit, 200)))
+        days=max(1, min(days, 365)), limit=max(1, min(limit, 200)))
     return success({"total": len(items), "items": items})
 
 
 @router.get("/of/{entity}/{entity_id}")
-def phien_cua_chung_tu(entity: str, entity_id: int, db: Session = Depends(get_db),
+def instances_of_entity(entity: str, entity_id: int, db: Session = Depends(get_db),
                        user=Depends(get_current_user)):
     """Phiên duyệt MỚI NHẤT của một chứng từ — `null` nếu nó chưa vào bộ máy.
 
@@ -162,21 +162,21 @@ def phien_cua_chung_tu(entity: str, entity_id: int, db: Session = Depends(get_db
         .order_by(ApprovalInstance.id.desc())
         .first()
     )
-    if instance is None or not entity_hooks.doc_duoc(db, instance, user):
+    if instance is None or not entity_hooks.can_read(db, instance, user):
         return success(None)
-    return success(serializer.instance_out(db, instance, kem_chi_tiet=True))
+    return success(serializer.instance_out(db, instance, with_details=True))
 
 
 @router.post("/handover")
 def handover(data: HandoverIn, db: Session = Depends(get_db),
              user=Depends(require("approval_flow", "write"))):
     """I23 — nghỉ việc: chuyển hết việc đang chờ sang người khác trong một lần."""
-    so_viec = action_service.ban_giao_hang_loat(
+    task_count = action_service.bulk_handover(
         db, data.from_employee_id, data.to_employee_id, user.id, data.reason,
         actor_employee_id=_acting_employee_id(db, user, "write"))
     record(db, user.id, "approval_flow", 0, "update",
-           f"Bàn giao {so_viec} việc duyệt")
-    return success({"count": so_viec}, f"Đã chuyển {so_viec} việc đang chờ")
+           f"Bàn giao {task_count} việc duyệt")
+    return success({"count": task_count}, f"Đã chuyển {task_count} việc đang chờ")
 
 
 # ── Đường động ──────────────────────────────────────────────────────────────
@@ -184,7 +184,7 @@ def handover(data: HandoverIn, db: Session = Depends(get_db),
 @router.get("/{instance_id}")
 def get_instance(instance_id: int, db: Session = Depends(get_db),
                  user=Depends(get_current_user)):
-    return success(serializer.instance_out(db, _load(db, instance_id, user), kem_chi_tiet=True))
+    return success(serializer.instance_out(db, _load(db, instance_id, user), with_details=True))
 
 
 @router.get("/{instance_id}/trail")
@@ -215,18 +215,18 @@ def approve(instance_id: int, data: ActionIn, db: Session = Depends(get_db),
     #  Nạp lại phiếu BÊN TRONG hàm: hai người bấm cùng lúc thì lượt thua bị
     #  cuộn lại và chạy lại, mà chạy lại trên một đối tượng ORM đã hết hạn là
     #  ghi đè bằng trạng thái của lượt hỏng — xem `concurrency.py`.
-    def chay():
+    def run():
         instance = _load(db, instance_id)
-        return action_service.duyet(db, instance, _employee_id(user), user.id,
-                                    _boi_canh(db, instance, data.subject), data.comment)
+        return action_service.approve(db, instance, _employee_id(user), user.id,
+                                    _context(db, instance, data.subject), data.comment)
 
-    return success(serializer.instance_out(db, chay_chiu_tranh_chap(db, chay)), "Đã duyệt")
+    return success(serializer.instance_out(db, run_with_contention_retry(db, run)), "Đã duyệt")
 
 
 @router.post("/{instance_id}/reject")
 def reject(instance_id: int, data: ReasonIn, db: Session = Depends(get_db),
            user=Depends(get_current_user)):
-    instance = chay_chiu_tranh_chap(db, lambda: action_service.tu_choi(
+    instance = run_with_contention_retry(db, lambda: action_service.reject(
         db, _load(db, instance_id), _employee_id(user), user.id, data.reason))
     return success(serializer.instance_out(db, instance), "Đã từ chối")
 
@@ -234,19 +234,19 @@ def reject(instance_id: int, data: ReasonIn, db: Session = Depends(get_db),
 @router.post("/{instance_id}/return")
 def return_(instance_id: int, data: ReasonIn, db: Session = Depends(get_db),
             user=Depends(get_current_user)):
-    def chay():
+    def run():
         instance = _load(db, instance_id)
-        return action_service.tra_lai(db, instance, _employee_id(user), user.id,
-                                      data.reason, _boi_canh(db, instance, data.subject),
+        return action_service.send_back(db, instance, _employee_id(user), user.id,
+                                      data.reason, _context(db, instance, data.subject),
                                       data.to_seq)
 
-    return success(serializer.instance_out(db, chay_chiu_tranh_chap(db, chay)), "Đã trả lại")
+    return success(serializer.instance_out(db, run_with_contention_retry(db, run)), "Đã trả lại")
 
 
 @router.post("/{instance_id}/withdraw")
 def withdraw(instance_id: int, data: ReasonIn, db: Session = Depends(get_db),
              user=Depends(get_current_user)):
-    instance = chay_chiu_tranh_chap(db, lambda: action_service.rut_lai(
+    instance = run_with_contention_retry(db, lambda: action_service.withdraw(
         db, _load(db, instance_id), _employee_id(user), user.id, data.reason))
     return success(serializer.instance_out(db, instance), "Đã rút lại")
 
@@ -255,7 +255,7 @@ def withdraw(instance_id: int, data: ReasonIn, db: Session = Depends(get_db),
 def comment(instance_id: int, data: ActionIn, db: Session = Depends(get_db),
             user=Depends(get_current_user)):
     """I16 — trao đổi ngay trên phiếu, không qua chat riêng."""
-    chay_chiu_tranh_chap(db, lambda: action_service.gop_y(
+    run_with_contention_retry(db, lambda: action_service.give_comment(
         db, _load(db, instance_id, user), _employee_id(user), user.id, data.comment))
     return success(None, "Đã ghi ý kiến")
 
@@ -266,7 +266,7 @@ def reassign(task_id: int, data: ReassignIn, db: Session = Depends(get_db),
     task = db.get(ApprovalTask, task_id)
     if task is None:
         raise HTTPException(404, "Không tìm thấy việc này")
-    task = action_service.chuyen_nguoi_xu_ly(db, task, data.to_employee_id,
+    task = action_service.reassign(db, task, data.to_employee_id,
                                              user.id, data.reason,
                                              actor_employee_id=_acting_employee_id(db, user, "write"))
     return success(serializer.task_out(db, task), "Đã chuyển người xử lý")
@@ -287,6 +287,6 @@ def _load(db: Session, instance_id: int, user=None) -> ApprovalInstance:
     instance = db.get(ApprovalInstance, instance_id)
     if instance is None:
         raise HTTPException(404, "Không tìm thấy phiên duyệt")
-    if user is not None and not entity_hooks.doc_duoc(db, instance, user):
+    if user is not None and not entity_hooks.can_read(db, instance, user):
         raise HTTPException(404, "Không tìm thấy phiên duyệt")
     return instance

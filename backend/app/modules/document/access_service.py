@@ -125,7 +125,7 @@ def _book_ids(profile: dict, action: str):
                         DocumentBookMember.role.in_(roles))))
 
 
-def _loai_ca_nhan_ids(db_hoac_none=None):
+def _personal_type_ids(db_or_none=None):
     """Id của những LOẠI văn bản bật cờ «văn bản cá nhân».
 
     Trả về một `select(...)` để nhét thẳng vào `IN (...)` — không truy vấn ở đây,
@@ -136,7 +136,7 @@ def _loai_ca_nhan_ids(db_hoac_none=None):
     return select(DocType.id).where(DocType.is_personal.is_(True))
 
 
-def dieu_kien_van_ban_ca_nhan(user, profile: dict):
+def personal_document_condition(user, profile: dict):
     """VĂN BẢN CÁ NHÂN — ai được thấy. Trả điều kiện SQL, `None` = thấy tất cả.
 
     Đơn nghỉ phép, đơn từ chức, phiếu lương… là dữ liệu của MỘT người. Phạm vi
@@ -163,31 +163,31 @@ def dieu_kien_van_ban_ca_nhan(user, profile: dict):
     employee_id = profile.get("employee_id") or 0
     user_id = getattr(user, "id", 0) or 0
 
-    khong_phai_ca_nhan = ~Document.doc_type_id.in_(_loai_ca_nhan_ids())
+    not_personal = ~Document.doc_type_id.in_(_personal_type_ids())
 
-    co_chan = [Document.created_by == user_id]
+    involvement_conds = [Document.created_by == user_id]
     if employee_id:
-        co_chan.append(Document.owner_employee_id == employee_id)
+        involvement_conds.append(Document.owner_employee_id == employee_id)
         #  Người nghỉ ghi trong metadata. MySQL 8 và SQLite đều đọc được JSON
         #  bằng toán tử của SQLAlchemy; so bằng CHUỖI vì JSON không hứa kiểu số.
-        co_chan.append(
+        involvement_conds.append(
             Document.meta["employee_id"].as_string() == str(employee_id))
-        co_chan.append(Document.id.in_(_van_ban_minh_co_viec_duyet(employee_id)))
+        involvement_conds.append(Document.id.in_(_documents_with_my_tasks(employee_id)))
 
-    return or_(khong_phai_ca_nhan, *co_chan)
+    return or_(not_personal, *involvement_conds)
 
 
-def _la_van_ban_ca_nhan(db: Session, doc: Document) -> bool:
+def _is_personal_document(db: Session, doc: Document) -> bool:
     """Loại của văn bản này có bật cờ «văn bản cá nhân» không."""
     from app.modules.doc_catalog.model import DocType
 
     if not doc.doc_type_id:
         return False
-    loai = db.get(DocType, doc.doc_type_id)
-    return bool(loai and loai.is_personal)
+    kind = db.get(DocType, doc.doc_type_id)
+    return bool(kind and kind.is_personal)
 
 
-def _co_chan_trong_don(doc: Document, user, profile: dict) -> bool:
+def _involved_in_document(doc: Document, user, profile: dict) -> bool:
     """Người này là NGƯỜI NGHỈ hay NGƯỜI LẬP tờ đơn.
 
     Hai vai còn lại (đang/đã duyệt · được chia đích danh) đã xét ở trên trong
@@ -203,7 +203,7 @@ def _co_chan_trong_don(doc: Document, user, profile: dict) -> bool:
     return str((doc.meta or {}).get("employee_id") or "") == str(employee_id)
 
 
-def _van_ban_minh_co_viec_duyet(employee_id: int):
+def _documents_with_my_tasks(employee_id: int):
     """Id văn bản mà người này đang hoặc ĐÃ có một việc duyệt.
 
     Bản SQL của `dang_duyet_van_ban_nay` — dùng cho danh sách. Hai chỗ phải nói
@@ -265,7 +265,7 @@ def visible_condition(user, profile: dict, action: str = "read"):
     #  cho ai; và cũng chỉ ở chiều ĐỌC.
     if action == "read" and (profile.get("employee_id") or 0):
         extra.append(Document.id.in_(
-            _van_ban_minh_co_viec_duyet(profile["employee_id"])))
+            _documents_with_my_tasks(profile["employee_id"])))
 
     if extra:
         #  `scope is None` = vai trò đã thấy tất cả, không cần cộng thêm gì.
@@ -282,12 +282,12 @@ def visible_condition(user, profile: dict, action: str = "read"):
     #
     #  `scope is None` = vai trò phạm vi *tất cả* (HR, quản trị) → không siết.
     if scope is not None:
-        ca_nhan = dieu_kien_van_ban_ca_nhan(user, profile)
+        personal = personal_document_condition(user, profile)
         #  Chia đích danh thắng: dòng CHO PHÉP là quyết định có ý thức của người
         #  giữ văn bản, không phải hệ quả của một phạm vi khai rộng tay.
         if allow is not None:
-            ca_nhan = or_(ca_nhan, Document.id.in_(allow))
-        base = ca_nhan if base is None else and_(base, ca_nhan)
+            personal = or_(personal, Document.id.in_(allow))
+        base = personal if base is None else and_(base, personal)
 
     if deny is None:
         direct = base
@@ -299,16 +299,16 @@ def visible_condition(user, profile: dict, action: str = "read"):
     #  VĂN BẢN ĐÃ BÃI BỎ chỉ còn người tạo / người chịu trách nhiệm / người bãi
     #  bỏ / người giữ sổ nhìn thấy (xem `revoke_access.py`). Nhân với điều kiện
     #  chứ không thay thế: bãi bỏ **thu hẹp** tầm nhìn, không mở thêm cho ai.
-    han_che = revoke_access.dieu_kien_loc(user, profile)
-    if han_che is not None:
-        direct = han_che if direct is None else and_(direct, han_che)
+    restriction = revoke_access.filter_condition(user, profile)
+    if restriction is not None:
+        direct = restriction if direct is None else and_(direct, restriction)
 
     #  `None` = đã thấy tất cả, không cần cộng nguồn quyền nào. Các hành động
     #  sửa / xóa tuyệt đối không được kéo theo từ bản clone sang bản gốc.
     return direct
 
 
-def dang_duyet_van_ban_nay(db: Session, document_id: int, employee_id: int | None) -> bool:
+def approving_this_document(db: Session, document_id: int, employee_id: int | None) -> bool:
     """Người này có chân trong một phiên duyệt của văn bản này không.
 
     Tính cả việc ĐÃ xử lý xong: người vừa ký phải mở lại được thứ mình đã ký,
@@ -330,7 +330,7 @@ def dang_duyet_van_ban_nay(db: Session, document_id: int, employee_id: int | Non
     )
 
 
-def co_ban_clone_xem_duoc(db: Session, source_document_id: int, user,
+def has_visible_clone(db: Session, source_document_id: int, user,
                           profile: dict) -> bool:
     """Người dùng có đọc được ít nhất một bản clone của văn bản gốc hay không.
 
@@ -374,7 +374,7 @@ def can(db: Session, doc: Document, user, profile: dict, action: str = "read") -
     #  ĐÃ BÃI BỎ thì chặn TRƯỚC mọi khe cấp quyền bên dưới — người duyệt cũ,
     #  dòng chia đích danh, phạm vi áp dụng, thành viên sổ, bản clone: khe nào
     #  cũng phải đóng. Đặt sau chúng thì mỗi khe là một đường vòng.
-    if not revoke_access.con_xem_duoc(doc, user, profile):
+    if not revoke_access.still_visible(doc, user, profile):
         return False
 
     #  ĐỌC ĐƯỢC THỨ MÌNH PHẢI KÝ. Người duyệt trong luồng thường không có vai
@@ -385,7 +385,7 @@ def can(db: Session, doc: Document, user, profile: dict, action: str = "read") -
     #
     #  CHỈ mở quyền ĐỌC. Sửa, xóa, ban hành vẫn đi theo phân quyền như cũ — việc
     #  của người duyệt là xem xét rồi ký, không phải sửa bài người khác.
-    if action == "read" and dang_duyet_van_ban_nay(
+    if action == "read" and approving_this_document(
             db, doc.id, getattr(user, "employee_id", None)):
         return True
 
@@ -413,7 +413,7 @@ def can(db: Session, doc: Document, user, profile: dict, action: str = "read") -
     #  tiếp: người nghỉ và người lập đơn. Còn lại chặn thẳng, trừ vai trò phạm vi
     #  *tất cả* (HR, quản trị) — họ phải tổng hợp được ngày phép và gỡ được phiếu
     #  kẹt. Xem `dieu_kien_van_ban_ca_nhan` để đối chiếu với bản dùng cho danh sách.
-    if _la_van_ban_ca_nhan(db, doc) and not _co_chan_trong_don(doc, user, profile):
+    if _is_personal_document(db, doc) and not _involved_in_document(doc, user, profile):
         return scope_condition(Document, "document", user, profile, action) is None
 
     #  Người nằm trong PHẠM VI ÁP DỤNG phải mở được chính văn bản đã ban hành
@@ -438,7 +438,7 @@ def can(db: Session, doc: Document, user, profile: dict, action: str = "read") -
     #  khi chỉnh và ban hành. Nếu người này đọc được ít nhất một bản clone của
     #  gốc thì mở thêm quyền ĐỌC gốc, nhưng tuyệt đối không kéo theo sửa / xóa.
     #  Dòng CẤM đích danh trên bản gốc đã được xét ở trên nên vẫn thắng.
-    if action == "read" and co_ban_clone_xem_duoc(db, doc.id, user, profile):
+    if action == "read" and has_visible_clone(db, doc.id, user, profile):
         return True
 
     scope = scope_condition(Document, "document", user, profile, action)
@@ -475,7 +475,7 @@ def list_access(db: Session, doc: Document, include_revoked: bool = True) -> lis
                       DocumentAccess.effect.desc(), DocumentAccess.id.desc()).all()
 
 
-def chan_tu_cam_chinh_minh(db: Session, data, actor: int) -> None:
+def block_self_ban(db: Session, data, actor: int) -> None:
     """KHÔNG ai được tự đưa mình vào dòng CẤM — kể cả bằng cách gọi thẳng API.
 
     Nhìn bảng luật ở đầu tệp: *cấm đích danh* thắng tất cả, **kể cả người tạo,
@@ -505,17 +505,17 @@ def chan_tu_cam_chinh_minh(db: Session, data, actor: int) -> None:
     if emp is None:
         return
 
-    cua_minh = {
+    mine = {
         SUBJECT_EMPLOYEE: emp.id,
         SUBJECT_DEPARTMENT: emp.department_id or 0,
         SUBJECT_COMPANY: emp.company_id or 0,
     }
-    if cua_minh.get(data.subject_kind) and cua_minh[data.subject_kind] == data.subject_id:
-        ten = {SUBJECT_EMPLOYEE: "chính mình",
+    if mine.get(data.subject_kind) and mine[data.subject_kind] == data.subject_id:
+        labels = {SUBJECT_EMPLOYEE: "chính mình",
                SUBJECT_DEPARTMENT: "phòng ban của mình",
                SUBJECT_COMPANY: "pháp nhân của mình"}[data.subject_kind]
         raise HTTPException(
-            400, f"Không chặn được {ten}: dòng cấm thắng cả quyền của người tạo, "
+            400, f"Không chặn được {labels}: dòng cấm thắng cả quyền của người tạo, "
                  "nên bạn sẽ không mở lại được văn bản này và cũng không còn đường "
                  "vào để gỡ. Nhờ người khác chặn hộ nếu thật sự cần.")
 
@@ -529,7 +529,7 @@ def grant(db: Session, doc: Document, data, actor: int) -> DocumentAccess:
     if data.valid_from and data.valid_to and data.valid_from > data.valid_to:
         raise HTTPException(400, "Ngày hết hạn phải sau ngày bắt đầu")
 
-    chan_tu_cam_chinh_minh(db, data, actor)
+    block_self_ban(db, data, actor)
 
     existing = (db.query(DocumentAccess)
                 .filter(DocumentAccess.document_id == doc.id,

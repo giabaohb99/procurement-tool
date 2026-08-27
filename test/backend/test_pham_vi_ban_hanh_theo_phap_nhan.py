@@ -29,25 +29,25 @@ ACTOR_CON = 2
 
 @pytest.fixture()
 def to_chuc(db, seed):
-    goc = db.get(Company, seed.company_id)
-    goc.issue_code = "GOC"
+    origin = db.get(Company, seed.company_id)
+    origin.issue_code = "GOC"
     con = Company(code="CON", name="Pháp nhân con", issue_code="CON",
                   level=2, is_active=True)
 
     phong_khac_goc = Department(code="PB-GOC-2", name="Phòng khác gốc",
-                                company_id=goc.id, is_active=True)
+                                company_id=origin.id, is_active=True)
     phong_chinh_con = Department(code="PB-CON-1", name="Phòng chính con",
                                  company_id=0, is_active=True)
     phong_khac_con = Department(code="PB-CON-2", name="Phòng khác con",
                                 company_id=0, is_active=True)
-    loai = DocType(code="QCPV", name="Quy chế phạm vi", id_scheme=1, number_when=2)
-    db.add_all([con, phong_khac_goc, phong_chinh_con, phong_khac_con, loai])
+    kind = DocType(code="QCPV", name="Quy chế phạm vi", id_scheme=1, number_when=2)
+    db.add_all([con, phong_khac_goc, phong_chinh_con, phong_khac_con, kind])
     db.flush()
     phong_chinh_con.company_id = con.id
     phong_khac_con.company_id = con.id
 
     nguoi_khac_goc = Employee(code="NV-GOC-3", full_name="Người phòng khác gốc",
-                              company_id=goc.id, department_id=phong_khac_goc.id,
+                              company_id=origin.id, department_id=phong_khac_goc.id,
                               is_active=True)
     nguoi_mot_con = Employee(code="NV-CON-1", full_name="Người một pháp nhân con",
                              company_id=con.id, department_id=phong_chinh_con.id,
@@ -62,9 +62,9 @@ def to_chuc(db, seed):
     db.commit()
 
     return {
-        "goc": goc,
+        "goc": origin,
         "con": con,
-        "loai": loai,
+        "loai": kind,
         "phong_goc": db.get(Department, seed.dept_id),
         "phong_con": phong_chinh_con,
         "nguoi_goc": [
@@ -159,13 +159,13 @@ def test_van_ban_goc_ban_hanh_cho_mot_phap_nhan(db, to_chuc, case, expected):
 def test_phap_nhan_con_tu_chon_pham_vi_khi_ban_hanh_clone(
     db, to_chuc, case, expected,
 ):
-    goc = _tao_nhap(db, to_chuc, f"Văn bản sinh clone — {case}")
-    _them_pham_vi(db, goc.id, dim=DIM_COMPANY, mode=MODE_INCLUDE,
+    origin = _tao_nhap(db, to_chuc, f"Văn bản sinh clone — {case}")
+    _them_pham_vi(db, origin.id, dim=DIM_COMPANY, mode=MODE_INCLUDE,
                   company_id=to_chuc["con"].id)
     db.commit()
-    _ban_hanh(db, goc, ACTOR_GOC)
+    _ban_hanh(db, origin, ACTOR_GOC)
 
-    clones = clone_service.clones_of(db, goc.id)
+    clones = clone_service.clones_of(db, origin.id)
     assert len(clones) == 1
     clone = clones[0]
     assert clone.company_id == to_chuc["con"].id

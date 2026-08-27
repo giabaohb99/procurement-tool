@@ -62,21 +62,21 @@ def create_clones(db: Session, source: Document, company_ids: list[int],
     if source.status not in ALIVE_STATUSES:
         raise HTTPException(400, "Chỉ clone được văn bản đã ban hành")
 
-    goc_version = (
+    origin_version = (
         db.get(DocumentVersion, source.current_version_id)
         if source.current_version_id else None
     )
-    if goc_version is None:
+    if origin_version is None:
         raise HTTPException(400, "Bản gốc chưa có phiên bản nào đang dùng")
     if not company_ids:
         raise HTTPException(400, "Chưa chọn pháp nhân nào để clone")
 
     #  Hạn và ghi chú khai sẵn từ lúc tạo văn bản (xem `clone_plan_model`) là
     #  giá trị mặc định cho pháp nhân đó, nếu lần bấm này không khai đè.
-    ke_hoach = {row.company_id: row for row in plan_for(db, source.id)}
+    plans = {row.company_id: row for row in plan_for(db, source.id)}
     doc_type = doc_type_or_400(db, source.doc_type_id)
 
-    ket_qua: list[Document] = []
+    result: list[Document] = []
     for company_id in dict.fromkeys(company_ids):
         if company_id == source.company_id:
             raise HTTPException(400, "Không clone văn bản về chính pháp nhân đã ban hành nó")
@@ -86,13 +86,13 @@ def create_clones(db: Session, source: Document, company_ids: list[int],
 
         #  UNIQUE(source_document_id, company_id) ở tầng dữ liệu cũng chặn, nhưng
         #  báo trước thì người dùng biết là clone cũ vẫn còn chứ không phải lỗi.
-        da_co = (
+        existing = (
             db.query(Document.id)
             .filter(Document.source_document_id == source.id,
                     Document.company_id == company_id)
             .first()
         )
-        if da_co:
+        if existing:
             raise HTTPException(
                 400, f"Pháp nhân «{company.name}» đã có bản clone của văn bản này rồi"
             )
@@ -121,12 +121,12 @@ def create_clones(db: Session, source: Document, company_ids: list[int],
             #  Bám theo PHIÊN BẢN nào của gốc — cột làm nên toàn bộ giá trị của
             #  việc theo dõi clone: so với `current_version_id` của gốc là biết
             #  bản clone đã lạc hậu chưa.
-            clone_source_version_id=goc_version.id,
+            clone_source_version_id=origin_version.id,
             clone_status=CLONE_SENT,
-            clone_due_date=due_date or (ke_hoach[company_id].due_date
-                                        if company_id in ke_hoach else None),
-            clone_note=note or (ke_hoach[company_id].note
-                                if company_id in ke_hoach else ""),
+            clone_due_date=due_date or (plans[company_id].due_date
+                                        if company_id in plans else None),
+            clone_note=note or (plans[company_id].note
+                                if company_id in plans else ""),
             cloned_at=date.today(),
             cloned_by=actor,
             created_by=actor, updated_by=actor,
@@ -143,14 +143,14 @@ def create_clones(db: Session, source: Document, company_ids: list[int],
 
         version = DocumentVersion(
             document_id=clone.id, major=1, minor=0, status=VERSION_DRAFT,
-            content_html=goc_version.content_html,
+            content_html=origin_version.content_html,
             created_by=actor, updated_by=actor,
         )
         db.add(version)
         db.flush()
         clone.current_version_id = version.id
 
-        _copy_attachments(db, goc_version.id, version.id, actor)
+        _copy_attachments(db, origin_version.id, version.id, actor)
         _copy_scopes(db, source.id, clone.id, company_id, actor)
 
         #  Điều kiện 1 — liên kết ngược, `is_system` nên không màn hình nào,
@@ -164,16 +164,16 @@ def create_clones(db: Session, source: Document, company_ids: list[int],
             note="Bản clone của pháp nhân con",
             created_by=actor, updated_by=actor,
         ))
-        ket_qua.append(clone)
+        result.append(clone)
 
     #  Dòng kế hoạch đã thành bản clone thật thì gỡ khỏi kế hoạch: để nguyên là
     #  pháp nhân đó nằm cả ở "dự kiến" lẫn "đã có", và bảng theo dõi đếm hai lần.
-    consume_plan(db, source.id, [clone.company_id for clone in ket_qua])
+    consume_plan(db, source.id, [clone.company_id for clone in result])
 
     db.commit()
-    for clone in ket_qua:
+    for clone in result:
         db.refresh(clone)
-    return ket_qua
+    return result
 
 
 # ── Kế hoạch clone: khai lúc tạo, chạy lúc ban hành ──────────────────────────
@@ -197,7 +197,7 @@ def set_plan(db: Session, doc: Document, company_ids: list[int],
     """
     da_clone = {clone.company_id for clone in clones_of(db, doc.id)}
 
-    muon: list[int] = []
+    borrowed: list[int] = []
     for company_id in dict.fromkeys(company_ids):
         if company_id == doc.company_id:
             raise HTTPException(
@@ -209,13 +209,13 @@ def set_plan(db: Session, doc: Document, company_ids: list[int],
             continue
         if db.get(Company, company_id) is None:
             raise HTTPException(400, f"Pháp nhân {company_id} không tồn tại")
-        muon.append(company_id)
+        borrowed.append(company_id)
 
     for row in plan_for(db, doc.id):
         db.delete(row)
     db.flush()
 
-    for company_id in muon:
+    for company_id in borrowed:
         db.add(DocumentClonePlan(
             document_id=doc.id, company_id=company_id,
             due_date=due_date, note=note,
@@ -336,7 +336,7 @@ def clones_of(db: Session, source_document_id: int) -> list[Document]:
 
 def mark_clones_for_review(db: Session, source: Document) -> int:
     """Điều kiện 3 — bản gốc lên phiên bản mới thì mọi bản clone *cần rà lại*."""
-    dem = 0
+    count = 0
     for clone in clones_of(db, source.id):
         if clone.clone_source_version_id == source.current_version_id:
             continue
@@ -346,8 +346,8 @@ def mark_clones_for_review(db: Session, source: Document) -> int:
             "Rà lại xem bản của pháp nhân mình còn đúng không."
         )
         clone.clone_status = CLONE_STALE
-        dem += 1
-    return dem
+        count += 1
+    return count
 
 
 def tracking(db: Session, source: Document) -> list[dict]:
@@ -356,9 +356,9 @@ def tracking(db: Session, source: Document) -> list[dict]:
     Trả lời đủ bốn câu tài liệu đòi: ai đã ban hành, ai còn nháp, ai chưa đụng
     tới, ai đang lệch bản.
     """
-    goc_version_id = source.current_version_id
+    origin_version_id = source.current_version_id
 
-    ket_qua: list[dict] = []
+    result: list[dict] = []
     for clone in clones_of(db, source.id):
         company = db.get(Company, clone.company_id)
         assignee = (
@@ -372,9 +372,9 @@ def tracking(db: Session, source: Document) -> list[dict]:
         #  "Lệch bản" = bản clone đang bám phiên bản CŨ của gốc. Đây là câu hỏi
         #  khó trả lời nhất trong bốn câu, và là lý do cột
         #  `clone_source_version_id` tồn tại.
-        lech_ban = bool(goc_version_id and clone.clone_source_version_id != goc_version_id)
+        version_drift = bool(origin_version_id and clone.clone_source_version_id != origin_version_id)
 
-        ket_qua.append({
+        result.append({
             "document_id": clone.id,
             "company_id": clone.company_id,
             "company_name": company.name if company else "",
@@ -385,12 +385,12 @@ def tracking(db: Session, source: Document) -> list[dict]:
             "clone_status": clone.clone_status,
             "clone_status_label": CLONE_STATUS_LABELS.get(clone.clone_status, ""),
             "version_no": version.version_no if version else "",
-            "is_outdated": lech_ban,
+            "is_outdated": version_drift,
             "assignee_name": assignee.full_name if assignee else "",
             "due_date": clone.clone_due_date,
             "handled_at": clone.clone_handled_at.isoformat() if clone.clone_handled_at else "",
         })
-    return ket_qua
+    return result
 
 
 def pending_companies(db: Session, source: Document) -> list[dict]:
@@ -399,7 +399,7 @@ def pending_companies(db: Session, source: Document) -> list[dict]:
     da_clone.add(source.company_id)
     #  Đã khai từ lúc tạo văn bản thì hộp thoại tick sẵn — việc còn lại đúng một
     #  nút bấm, không phải chọn lại từ đầu danh sách mười ba pháp nhân.
-    da_khai = {row.company_id for row in plan_for(db, source.id)}
+    registered = {row.company_id for row in plan_for(db, source.id)}
 
     rows = (
         db.query(Company)
@@ -409,7 +409,7 @@ def pending_companies(db: Session, source: Document) -> list[dict]:
     )
     return [
         {"company_id": row.id, "company_name": row.name,
-         "planned": row.id in da_khai}
+         "planned": row.id in registered}
         for row in rows
     ]
 

@@ -55,7 +55,7 @@ DEMO_ORDERS = [
 VAT = 8  # % — dùng chung cho mọi dòng demo
 
 
-def _xoa_demo_cu(db) -> int:
+def _delete_old_demo(db) -> int:
     """Xóa ĐMH demo + dòng hàng + lịch sử tương ứng. Chỉ đụng bản ghi có tiền tố PODEMO."""
     pos = db.query(PurchaseOrder).filter(PurchaseOrder.code.like(f"{DEMO_PREFIX}%")).all()
     if not pos:
@@ -75,72 +75,72 @@ def _xoa_demo_cu(db) -> int:
 def run():
     db = SessionLocal()
     try:
-        da_xoa = _xoa_demo_cu(db)
-        if da_xoa:
-            print(f"Đã dọn {da_xoa} ĐMH demo cũ.")
+        deleted_count = _delete_old_demo(db)
+        if deleted_count:
+            print(f"Đã dọn {deleted_count} ĐMH demo cũ.")
 
         # Tên NCC lấy từ danh mục thật để lịch sử hiển thị đúng tên pháp lý
-        ten_ncc = {s.code: s.name for s in db.query(Supplier).all()}
+        supplier_names = {s.code: s.name for s in db.query(Supplier).all()}
 
-        so_po = so_dong = so_lich_su = 0
+        po_count = line_count = history_count = 0
         for code, order_date, sup_code, company_id, urgent, lines in DEMO_ORDERS:
-            if sup_code not in ten_ncc:
+            if sup_code not in supplier_names:
                 print(f"  ⚠ Bỏ qua {code}: không tìm thấy NCC '{sup_code}' trong danh mục.")
                 continue
 
-            tat_ca_xong = all(ln[5] for ln in lines)
+            all_done = all(ln[5] for ln in lines)
             po = PurchaseOrder(
                 code=code,
                 pr_code=f"PYC{code[-2:]}DEMO",
                 misa_code=f"MISA{code[-2:]}",
                 company_id=company_id,
                 supplier_code=sup_code,
-                supplier_name=ten_ncc[sup_code],
+                supplier_name=supplier_names[sup_code],
                 department="Phòng Mua hàng",
                 nspt="Nguyễn Thanh Tiên",
                 order_date=order_date,
                 payment_terms="Công nợ 30 ngày",
                 is_urgent=urgent,
-                status="completed" if tat_ca_xong else "received",
+                status="completed" if all_done else "received",
                 # B-06: cột lưu MÃ, xem PO_DOCUMENT_STATUS trong app/core/status_codes.py
-                document_status="full" if tat_ca_xong else "none",
+                document_status="full" if all_done else "none",
                 note="Dữ liệu demo cho màn Lịch sử mua hàng",
             )
             db.add(po)
             db.commit()
             db.refresh(po)
-            so_po += 1
+            po_count += 1
 
-            for sp_code, sp_name, unit, qty, price, xong in lines:
-                thanh_tien = qty * price * (1 + VAT / 100)
+            for sp_code, sp_name, unit, qty, price, done in lines:
+                line_total = qty * price * (1 + VAT / 100)
                 it = POItem(
                     po_id=po.id,
                     product_code=sp_code, product_name=sp_name, unit=unit,
                     qty_order=qty, qty_request=qty, qty_received=qty, qty_remaining=0,
-                    price=price, vat=VAT, amount=thanh_tien,
+                    price=price, vat=VAT, amount=line_total,
                     line_status="full",  # B-06: mức giao hàng của dòng, xem PO_ITEM_LINE_STATUS
                     invoice_no=f"HD{code[-2:]}{sp_code[-3:]}",
                     invoice_date=order_date,
-                    document_delivery_date=order_date if xong else "",
+                    document_delivery_date=order_date if done else "",
                     required_date=order_date,
-                    progress_status=PROG_COMPLETED if xong else PROG_RECEIVED,
+                    progress_status=PROG_COMPLETED if done else PROG_RECEIVED,
                 )
                 db.add(it)
                 db.commit()
                 db.refresh(it)
-                so_dong += 1
+                line_count += 1
 
                 # Chỉ dòng đã hoàn thành mới có lịch sử — dùng đúng hàm production
-                if xong:
+                if done:
                     snapshot_line(db, po, it)
                     db.commit()
-                    so_lich_su += 1
+                    history_count += 1
 
-        print(f"Đã tạo {so_po} ĐMH · {so_dong} dòng hàng · {so_lich_su} bản ghi lịch sử.")
+        print(f"Đã tạo {po_count} ĐMH · {line_count} dòng hàng · {history_count} bản ghi lịch sử.")
         print("\nKiểm chứng nhanh:")
-        for ma in ("THI0002", "THC0003", "NL0001"):
-            n = db.query(PurchaseHistory).filter(PurchaseHistory.product_code == ma).count()
-            print(f"  Sản phẩm {ma}: {n} lần mua")
+        for product_code in ("THI0002", "THC0003", "NL0001"):
+            n = db.query(PurchaseHistory).filter(PurchaseHistory.product_code == product_code).count()
+            print(f"  Sản phẩm {product_code}: {n} lần mua")
         for ncc in ("Cẩm Hùng", "Đông Tây", "Tân Đức"):
             n = db.query(PurchaseHistory).filter(PurchaseHistory.supplier_code == ncc).count()
             print(f"  NCC {ncc}: {n} lần bán")

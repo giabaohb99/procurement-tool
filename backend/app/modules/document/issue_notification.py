@@ -154,3 +154,37 @@ def notify_document_issued(
                 db.commit()
 
     return len(recipients)
+
+
+def create_forum_announcement(db: Session, doc: Document, user: User):
+    """CR-200 (F12) — ô «Đăng thông báo lên diễn đàn» trong hộp thoại Ban hành.
+
+    Clone văn bản vừa ban hành thành MỘT bài diễn đàn ĐÃ GHIM (tiêu đề + số
+    hiệu + link về văn bản) — diễn đàn chỉ giữ bản sao thông báo, văn bản gốc
+    vẫn nằm ở Văn thư (chốt với sếp 27/08/2026: «clone thành 1 bài viết bên này
+    là đúng logic hơn»). Bài đứng tên chính người ban hành, đối tượng xem
+    TOÀN TẬP ĐOÀN: thông báo ban hành sinh ra để mọi người thấy — ai được đọc
+    NỘI DUNG văn bản vẫn do phạm vi bên Văn thư gác, link chỉ dẫn tới cửa.
+
+    Import diễn đàn để trong thân hàm: ghép lỏng — module document không phụ
+    thuộc forum lúc nạp, diễn đàn có tắt cũng không kéo đổ luồng ban hành.
+    """
+    from app.core.auth import get_perm_profile
+    from app.modules.forum import service as forum_service
+    from app.modules.forum.model import ForumAudience
+
+    display_code = doc.doc_code or doc.issue_number or ""
+    lines = [f"[THÔNG BÁO] Ban hành văn bản: {doc.title}"]
+    if display_code:
+        lines.append(f"Số hiệu: {display_code}")
+    if doc.effective_date:
+        lines.append(f"Hiệu lực từ: {doc.effective_date:%d/%m/%Y}")
+    lines.append("Xem văn bản: " + _abs_link(f"/document/documents/{doc.id}?readonly=1"))
+
+    post = forum_service.create_post(
+        db, user, get_perm_profile(db, user),
+        "\n".join(lines), int(ForumAudience.PUBLIC),
+    )
+    #  Dùng chung `set_post_pinned` với nút ghim tay (F9a): bài vừa đăng luôn
+    #  published nên không vướng chốt "chỉ ghim bài đang hiển thị".
+    return forum_service.set_post_pinned(db, user, post, True)

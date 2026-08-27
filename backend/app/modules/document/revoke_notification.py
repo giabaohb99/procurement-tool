@@ -43,24 +43,24 @@ def notify_clones_revoked(db: Session, source: Document, reason: str, actor: int
     if not clones:
         return 0
 
-    goc = source.doc_code or source.issue_number or source.title
-    subject = f"Văn bản gốc đã bãi bỏ: {goc}"
+    origin = source.doc_code or source.issue_number or source.title
+    subject = f"Văn bản gốc đã bãi bỏ: {origin}"
     jobs: list[tuple[int, str, str]] = []
-    da_bao: set[int] = set()
+    already_notified: set[int] = set()
 
     for clone in clones:
         for user in _users_of_company(db, clone.company_id, clone.clone_assignee_employee_id):
             #  Một người phụ trách nhiều pháp nhân thì chỉ nhận MỘT thư: cùng
             #  một tin, gửi ba lần là người ta bắt đầu bỏ qua cả ba.
-            if user.id in da_bao:
+            if user.id in already_notified:
                 continue
-            da_bao.add(user.id)
+            already_notified.add(user.id)
 
             db.add(Notification(
                 user_id=user.id,
                 title=subject,
                 body=(
-                    f"Văn bản gốc «{goc}» đã bị bãi bỏ. "
+                    f"Văn bản gốc «{origin}» đã bị bãi bỏ. "
                     f"Bản riêng «{clone.title}» của pháp nhân bạn đang căn cứ theo văn bản này "
                     f"— mở ra rà lại xem còn dùng được không."
                 ),
@@ -89,7 +89,7 @@ def notify_clones_revoked(db: Session, source: Document, reason: str, actor: int
             db.flush()
             jobs.append((email_log.id, email, render_template(DOCUMENT_REVOKED_TEMPLATE, {
                 "subject": _text(subject),
-                "doc_code": _text(goc),
+                "doc_code": _text(origin),
                 "document_title": _text(source.title),
                 "clone_title": _text(clone.title),
                 "reason": _text(reason),
@@ -112,4 +112,4 @@ def notify_clones_revoked(db: Session, source: Document, reason: str, actor: int
                 log.error = f"Không đưa được email vào hàng đợi: {exc}"
                 db.commit()
 
-    return len(da_bao)
+    return len(already_notified)

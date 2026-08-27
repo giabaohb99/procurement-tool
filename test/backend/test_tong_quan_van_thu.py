@@ -69,8 +69,8 @@ def test_bieu_do_luon_du_12_o_thang_ke_ca_thang_rong(db, ctx, monkeypatch):
 def test_kpi_dem_dung_tung_nhom(db, ctx, monkeypatch):
     _tao(db, ctx, "Đã ban hành", ban_hanh=True)
     _tao(db, ctx, "Còn nháp")
-    cho_duyet = _tao(db, ctx, "Đang duyệt")
-    service.submit(db, cho_duyet, ACTOR)
+    submitted_count = _tao(db, ctx, "Đang duyệt")
+    service.submit(db, submitted_count, ACTOR)
 
     kpi = _overview(db, monkeypatch)["kpi"]
 
@@ -91,12 +91,12 @@ def test_dem_van_ban_sap_het_hieu_luc_trong_30_ngay(db, ctx, monkeypatch):
 
 def test_viec_can_xu_ly_bo_han_nhom_rong(db, ctx, monkeypatch):
     """Danh sách toàn số 0 làm loãng đúng dòng đang cần người xử lý."""
-    cho_duyet = _tao(db, ctx, "Đang duyệt")
-    service.submit(db, cho_duyet, ACTOR)
+    submitted_count = _tao(db, ctx, "Đang duyệt")
+    service.submit(db, submitted_count, ACTOR)
 
-    viec = _overview(db, monkeypatch)["todo"]
+    task = _overview(db, monkeypatch)["todo"]
 
-    assert [item["key"] for item in viec] == ["submitted"]
+    assert [item["key"] for item in task] == ["submitted"]
 
 
 def test_van_ban_can_ra_lai_len_dau_danh_sach_viec(db, ctx, monkeypatch):
@@ -104,10 +104,10 @@ def test_van_ban_can_ra_lai_len_dau_danh_sach_viec(db, ctx, monkeypatch):
     doc.needs_review = True
     db.commit()
 
-    viec = _overview(db, monkeypatch)["todo"]
+    task = _overview(db, monkeypatch)["todo"]
 
-    assert viec[0]["key"] == "needs_review"
-    assert viec[0]["tone"] == "warning"
+    assert task[0]["key"] == "needs_review"
+    assert task[0]["tone"] == "warning"
 
 
 def test_co_cau_theo_loai_xep_nhieu_nhat_len_truoc(db, ctx, monkeypatch):

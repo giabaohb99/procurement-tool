@@ -9,7 +9,7 @@ trên dữ liệu thật. Mỗi lần sửa luồng thì `version_no += 1`; lu�
 đâm vào luồng A đang giữ bản 2 →
 `Duplicate entry 'document--2' for key 'uq_approval_flow_code_version'`.
 """
-from app.modules.approval.flow_controller import _ban_ke_tiep
+from app.modules.approval.flow_controller import _next_version
 from app.modules.approval.flow_model import ApprovalFlow
 
 ACTOR = 1
@@ -29,7 +29,7 @@ def test_ma_rong_trung_nhau_thi_NHAY_QUA_ban_da_co_nguoi_giu(db):
     _luong(db, "", 2, "Luồng A")
     b = _luong(db, "", 1, "Luồng B")
 
-    assert _ban_ke_tiep(db, b) == 3
+    assert _next_version(db, b) == 3
 
 
 def test_nhay_qua_NHIEU_ban_lien_tiep(db):
@@ -38,7 +38,7 @@ def test_nhay_qua_NHIEU_ban_lien_tiep(db):
     _luong(db, "", 4, "C")
     d = _luong(db, "", 1, "D")
 
-    assert _ban_ke_tiep(db, d) == 5
+    assert _next_version(db, d) == 5
 
 
 def test_khac_MA_thi_khong_dung_toi_nhau(db):
@@ -46,24 +46,24 @@ def test_khac_MA_thi_khong_dung_toi_nhau(db):
     _luong(db, "VB_A", 2, "A")
     b = _luong(db, "VB_B", 1, "B")
 
-    assert _ban_ke_tiep(db, b) == 2
+    assert _next_version(db, b) == 2
 
 
 def test_khac_LOAI_CHUNG_TU_cung_khong_dung_toi_nhau(db):
     _luong(db, "", 2, "Của văn bản")
-    khac = ApprovalFlow(entity="purchase_request", code="", name="Của YCMH", version_no=1,
+    other = ApprovalFlow(entity="purchase_request", code="", name="Của YCMH", version_no=1,
                         is_active=True, created_by=ACTOR, updated_by=ACTOR)
-    db.add(khac)
+    db.add(other)
     db.commit()
 
-    assert _ban_ke_tiep(db, khac) == 2
+    assert _next_version(db, other) == 2
 
 
 def test_luong_don_le_van_tang_deu_nhu_cu(db):
     """Vá xong không được đổi hành vi bình thường: không ai giữ chỗ thì +1."""
     a = _luong(db, "VB_RIENG", 7, "A")
 
-    assert _ban_ke_tiep(db, a) == 8
+    assert _next_version(db, a) == 8
 
 
 def test_ban_ke_tiep_chi_DOC_khong_sua_luong_khac(db):
@@ -71,7 +71,7 @@ def test_ban_ke_tiep_chi_DOC_khong_sua_luong_khac(db):
     a = _luong(db, "", 2, "A")
     b = _luong(db, "", 1, "B")
 
-    _ban_ke_tiep(db, b)
+    _next_version(db, b)
 
     db.refresh(a)
     assert a.version_no == 2

@@ -24,12 +24,12 @@ from app.modules.user.model import User
 ACTOR = 1
 
 
-def _nguoi(db, ma: str, company_id: int, dept_id: int):
-    employee = Employee(code=ma, full_name=f"Người {ma}", company_id=company_id,
+def _people(db, code: str, company_id: int, dept_id: int):
+    employee = Employee(code=code, full_name=f"Người {code}", company_id=company_id,
                         department_id=dept_id, is_active=True)
     db.add(employee)
     db.flush()
-    user = User(email=f"{ma.lower()}@test.local", employee_id=employee.id,
+    user = User(email=f"{code.lower()}@test.local", employee_id=employee.id,
                 password_hash="x", is_active=True)
     db.add(user)
     db.flush()
@@ -37,19 +37,19 @@ def _nguoi(db, ma: str, company_id: int, dept_id: int):
 
 
 @pytest.fixture()
-def canh(db, seed, cap_quyen):
+def align(db, seed, cap_quyen):
     """Một sổ của pháp nhân A + một người của pháp nhân B.
 
     Người B có quyền `document_book.read` nhưng phạm vi `company` — tức là theo
     vai trò thì KHÔNG bao giờ thấy sổ của A. Đây đúng là ca khắc nghiệt nhất của
     việc chia sổ: chia đích danh phải thắng được cả ranh giới pháp nhân.
     """
-    khac = Company(code="CTB", name="Công ty B", issue_code="CTB", level=2, is_active=True)
-    db.add(khac)
+    other = Company(code="CTB", name="Công ty B", issue_code="CTB", level=2, is_active=True)
+    db.add(other)
     db.flush()
 
-    _, tk_a = _nguoi(db, "SO_A", seed.company_id, seed.dept_id)
-    nv_b, tk_b = _nguoi(db, "SO_B", khac.id, seed.dept_id)
+    _, tk_a = _people(db, "SO_A", seed.company_id, seed.dept_id)
+    nv_b, tk_b = _people(db, "SO_B", other.id, seed.dept_id)
     cap_quyen(tk_a.id, "document_book", scope="company", read=True)
     cap_quyen(tk_b.id, "document_book", scope="company", read=True)
 
@@ -58,60 +58,60 @@ def canh(db, seed, cap_quyen):
         manager_ids=[seed.emp_tp_id], viewer_ids=[],
     ), ACTOR)
     db.commit()
-    return {"so": so, "tk_a": tk_a, "tk_b": tk_b, "nv_b": nv_b, "cty_b": khac.id}
+    return {"so": so, "tk_a": tk_a, "tk_b": tk_b, "nv_b": nv_b, "cty_b": other.id}
 
 
 def _danh_sach(db, user):
     """Đúng câu truy vấn mà endpoint danh sách chạy."""
-    dieu_kien = book_service.dieu_kien_xem_so(user, get_perm_profile(db, user))
+    condition = book_service.book_view_condition(user, get_perm_profile(db, user))
     q = db.query(DocumentBook)
-    if dieu_kien is not None:
-        q = q.filter(dieu_kien)
+    if condition is not None:
+        q = q.filter(condition)
     return [row.code for row in q.all()]
 
 
-def test_chua_chia_thi_nguoi_phap_nhan_khac_khong_thay(db, canh):
-    assert _danh_sach(db, canh["tk_b"]) == []
+def test_chua_chia_thi_nguoi_phap_nhan_khac_khong_thay(db, align):
+    assert _danh_sach(db, align["tk_b"]) == []
 
 
-def test_chia_xong_thi_THAY_NGAY_trong_danh_sach(db, canh):
+def test_chia_xong_thi_THAY_NGAY_trong_danh_sach(db, align):
     """Chính là lỗi khách báo: chia rồi mà danh sách vẫn rỗng."""
-    book_service.update_book(db, canh["so"].id, _sua(viewer_ids=[canh["nv_b"].id]), ACTOR)
+    book_service.update_book(db, align["so"].id, _sua(viewer_ids=[align["nv_b"].id]), ACTOR)
     db.commit()
 
-    assert _danh_sach(db, canh["tk_b"]) == [canh["so"].code]
+    assert _danh_sach(db, align["tk_b"]) == [align["so"].code]
 
 
-def test_go_khoi_danh_sach_thi_so_bien_mat_lai(db, canh):
-    book_service.update_book(db, canh["so"].id, _sua(viewer_ids=[canh["nv_b"].id]), ACTOR)
+def test_go_khoi_danh_sach_thi_so_bien_mat_lai(db, align):
+    book_service.update_book(db, align["so"].id, _sua(viewer_ids=[align["nv_b"].id]), ACTOR)
     db.commit()
-    book_service.update_book(db, canh["so"].id, _sua(viewer_ids=[]), ACTOR)
+    book_service.update_book(db, align["so"].id, _sua(viewer_ids=[]), ACTOR)
     db.commit()
 
-    assert _danh_sach(db, canh["tk_b"]) == []
+    assert _danh_sach(db, align["tk_b"]) == []
 
 
-def test_go_thanh_vien_book_id_khong_mo_duong_URL(db, canh):
+def test_go_thanh_vien_book_id_khong_mo_duong_URL(db, align):
     """Lọc ở danh sách bao nhiêu cũng vô nghĩa nếu gõ id lên URL là mở được."""
-    profile = get_perm_profile(db, canh["tk_b"])
-    with pytest.raises(HTTPException) as loi:
-        book_service.so_xem_duoc_hoac_404(db, canh["so"].id, canh["tk_b"], profile)
+    profile = get_perm_profile(db, align["tk_b"])
+    with pytest.raises(HTTPException) as error:
+        book_service.viewable_book_or_404(db, align["so"].id, align["tk_b"], profile)
     #  404 chứ không 403: nói "có sổ này nhưng anh không được xem" cũng là lộ.
-    assert loi.value.status_code == 404
+    assert error.value.status_code == 404
 
-    book_service.update_book(db, canh["so"].id, _sua(viewer_ids=[canh["nv_b"].id]), ACTOR)
+    book_service.update_book(db, align["so"].id, _sua(viewer_ids=[align["nv_b"].id]), ACTOR)
     db.commit()
-    profile = get_perm_profile(db, canh["tk_b"])
-    assert book_service.so_xem_duoc_hoac_404(
-        db, canh["so"].id, canh["tk_b"], profile).id == canh["so"].id
+    profile = get_perm_profile(db, align["tk_b"])
+    assert book_service.viewable_book_or_404(
+        db, align["so"].id, align["tk_b"], profile).id == align["so"].id
 
 
-def test_nguoi_cung_phap_nhan_van_thay_nhu_cu(db, canh):
+def test_nguoi_cung_phap_nhan_van_thay_nhu_cu(db, align):
     """Vá xong không được làm hẹp hơn trước: phạm vi vai trò vẫn phải chạy."""
-    assert _danh_sach(db, canh["tk_a"]) == [canh["so"].code]
+    assert _danh_sach(db, align["tk_a"]) == [align["so"].code]
 
 
-def test_tai_khoan_chua_gan_nhan_su_khong_no(db, canh, cap_quyen):
+def test_tai_khoan_chua_gan_nhan_su_khong_no(db, align, cap_quyen):
     """Tài khoản hệ thống không có hồ sơ nhân sự — không có gì để cộng thêm."""
     tk = User(email="hethong@test.local", employee_id=None, password_hash="x", is_active=True)
     db.add(tk)
@@ -129,68 +129,68 @@ def _sua(**doi):
 
 # ── Chiều GHI: sửa / xóa sổ ──────────────────────────────────────────────────
 
-def test_co_quyen_ghi_nhung_so_cua_phap_nhan_KHAC_thi_khong_sua_duoc(db, canh, cap_quyen):
+def test_co_quyen_ghi_nhung_so_cua_phap_nhan_KHAC_thi_khong_sua_duoc(db, align, cap_quyen):
     """Quyền vai trò `write` nói "được sửa sổ", KHÔNG nói "sổ của mọi pháp nhân".
 
     Trước 25/08/2026 hai endpoint sửa / xóa sổ không gọi một hàm phạm vi nào —
     ai có `document_book.write` là sửa được mọi quyển, kể cả sổ của pháp nhân
     khác. Cùng họ lỗi với chỗ đọc sổ ở trên.
     """
-    cap_quyen(canh["tk_b"].id, "document_book", scope="company", write=True, delete=True)
-    profile = get_perm_profile(db, canh["tk_b"])
+    cap_quyen(align["tk_b"].id, "document_book", scope="company", write=True, delete=True)
+    profile = get_perm_profile(db, align["tk_b"])
 
-    for hanh_dong in ("write", "delete"):
-        with pytest.raises(HTTPException) as loi:
-            book_service.so_sua_duoc_hoac_404(
-                db, canh["so"].id, canh["tk_b"], profile, hanh_dong)
-        assert loi.value.status_code == 404, hanh_dong
+    for action in ("write", "delete"):
+        with pytest.raises(HTTPException) as error:
+            book_service.editable_book_or_404(
+                db, align["so"].id, align["tk_b"], profile, action)
+        assert error.value.status_code == 404, action
 
 
-def test_NGUOI_QUAN_LY_so_thi_sua_duoc_du_o_phap_nhan_khac(db, canh, cap_quyen):
+def test_NGUOI_QUAN_LY_so_thi_sua_duoc_du_o_phap_nhan_khac(db, align, cap_quyen):
     """Đúng câu chú thích dưới ô *Người quản lý*: «Sửa, đóng và xóa được sổ».
 
     Trước đây câu đó là chữ suông — backend không đọc tới bảng thành viên khi
     xét quyền sửa.
     """
-    cap_quyen(canh["tk_b"].id, "document_book", scope="company", write=True, delete=True)
-    book_service.update_book(db, canh["so"].id,
-                             _sua(manager_ids=[canh["nv_b"].id]), ACTOR)
+    cap_quyen(align["tk_b"].id, "document_book", scope="company", write=True, delete=True)
+    book_service.update_book(db, align["so"].id,
+                             _sua(manager_ids=[align["nv_b"].id]), ACTOR)
     db.commit()
-    profile = get_perm_profile(db, canh["tk_b"])
+    profile = get_perm_profile(db, align["tk_b"])
 
-    assert book_service.so_sua_duoc_hoac_404(
-        db, canh["so"].id, canh["tk_b"], profile, "write").id == canh["so"].id
+    assert book_service.editable_book_or_404(
+        db, align["so"].id, align["tk_b"], profile, "write").id == align["so"].id
 
 
-def test_chi_NGUOI_XEM_thi_van_khong_sua_duoc(db, canh, cap_quyen):
+def test_chi_NGUOI_XEM_thi_van_khong_sua_duoc(db, align, cap_quyen):
     """Chia để đọc không phải là chia để sửa — hai vai khác nhau."""
-    cap_quyen(canh["tk_b"].id, "document_book", scope="company", write=True)
-    book_service.update_book(db, canh["so"].id,
-                             _sua(viewer_ids=[canh["nv_b"].id]), ACTOR)
+    cap_quyen(align["tk_b"].id, "document_book", scope="company", write=True)
+    book_service.update_book(db, align["so"].id,
+                             _sua(viewer_ids=[align["nv_b"].id]), ACTOR)
     db.commit()
-    profile = get_perm_profile(db, canh["tk_b"])
+    profile = get_perm_profile(db, align["tk_b"])
 
     #  Xem thì được…
-    assert book_service.so_xem_duoc_hoac_404(
-        db, canh["so"].id, canh["tk_b"], profile).id == canh["so"].id
+    assert book_service.viewable_book_or_404(
+        db, align["so"].id, align["tk_b"], profile).id == align["so"].id
     #  …sửa thì không.
-    with pytest.raises(HTTPException) as loi:
-        book_service.so_sua_duoc_hoac_404(db, canh["so"].id, canh["tk_b"], profile, "write")
-    assert loi.value.status_code == 404
+    with pytest.raises(HTTPException) as error:
+        book_service.editable_book_or_404(db, align["so"].id, align["tk_b"], profile, "write")
+    assert error.value.status_code == 404
 
 
-def test_vua_quan_ly_vua_nguoi_xem_thi_danh_sach_KHONG_nhan_doi(db, canh, cap_quyen):
+def test_vua_quan_ly_vua_nguoi_xem_thi_danh_sach_KHONG_nhan_doi(db, align, cap_quyen):
     """Một người khai ở cả hai vai là chuyện thường; sổ không được hiện hai dòng."""
-    book_service.update_book(db, canh["so"].id, _sua(
-        manager_ids=[canh["nv_b"].id], viewer_ids=[canh["nv_b"].id]), ACTOR)
+    book_service.update_book(db, align["so"].id, _sua(
+        manager_ids=[align["nv_b"].id], viewer_ids=[align["nv_b"].id]), ACTOR)
     db.commit()
 
-    assert _danh_sach(db, canh["tk_b"]) == [canh["so"].code]
+    assert _danh_sach(db, align["tk_b"]) == [align["so"].code]
 
 
 # ── Cửa vào: được chia sổ thì KHÔNG cần vai trò trên danh mục Sổ ─────────────
 
-def test_bo_loc_cho_qua_nguoi_duoc_chia_du_KHONG_co_vai_tro(db, canh):
+def test_bo_loc_cho_qua_nguoi_duoc_chia_du_KHONG_co_vai_tro(db, align):
     """Nửa BỘ LỌC của việc chia sổ (nửa CỬA nằm ở bài kiểm cuối tệp).
 
     Người được chia thường là nhân sự nghiệp vụ, KHÔNG có vai trò nào trên danh
@@ -198,37 +198,37 @@ def test_bo_loc_cho_qua_nguoi_duoc_chia_du_KHONG_co_vai_tro(db, canh):
     """
     from app.modules.doc_catalog.book_model import DocumentBookMember
 
-    _, tk_ngoai = _nguoi(db, "SO_NGOAI", canh["cty_b"], 0)
+    _, tk_ngoai = _people(db, "SO_NGOAI", align["cty_b"], 0)
     nv_ngoai = db.query(Employee).filter(Employee.code == "SO_NGOAI").one()
-    db.add(DocumentBookMember(book_id=canh["so"].id, employee_id=nv_ngoai.id,
+    db.add(DocumentBookMember(book_id=align["so"].id, employee_id=nv_ngoai.id,
                               role=2, created_by=ACTOR, updated_by=ACTOR))
     db.commit()
 
     #  Không cấp vai trò `document_book` nào cho người này — đúng bối cảnh thật.
     assert get_perm_profile(db, tk_ngoai)["perms_union"].get("document_book") is None
-    assert canh["so"].code in _danh_sach(db, tk_ngoai)
+    assert align["so"].code in _danh_sach(db, tk_ngoai)
 
 
-def test_nguoi_NGOAI_CUOC_van_khong_thay_gi(db, canh):
+def test_nguoi_NGOAI_CUOC_van_khong_thay_gi(db, align):
     """CẶP ĐỐI CHỨNG. Mở cửa cho người được chia không được biến nó thành cửa mở
     toang: người không có vai trò VÀ không phải thành viên vẫn phải thấy rỗng."""
-    _, tk_la = _nguoi(db, "SO_LA", canh["cty_b"], 0)
+    _, tk_la = _people(db, "SO_LA", align["cty_b"], 0)
     db.commit()
 
     assert get_perm_profile(db, tk_la)["perms_union"].get("document_book") is None
     assert _danh_sach(db, tk_la) == []
 
 
-def test_nguoi_ngoai_cuoc_go_thang_id_len_URL_an_404(db, canh):
+def test_nguoi_ngoai_cuoc_go_thang_id_len_URL_an_404(db, align):
     from fastapi import HTTPException
 
-    _, tk_la = _nguoi(db, "SO_LA2", canh["cty_b"], 0)
+    _, tk_la = _people(db, "SO_LA2", align["cty_b"], 0)
     db.commit()
 
-    with pytest.raises(HTTPException) as loi:
-        book_service.so_xem_duoc_hoac_404(
-            db, canh["so"].id, tk_la, get_perm_profile(db, tk_la))
-    assert loi.value.status_code == 404
+    with pytest.raises(HTTPException) as error:
+        book_service.viewable_book_or_404(
+            db, align["so"].id, tk_la, get_perm_profile(db, tk_la))
+    assert error.value.status_code == 404
 
 
 def test_ba_cua_DOC_mo_cho_nguoi_dang_nhap_con_GHI_thi_khong(db):
@@ -254,8 +254,8 @@ def test_ba_cua_DOC_mo_cho_nguoi_dang_nhap_con_GHI_thi_khong(db):
 
     import app as goi_app
 
-    ma = (Path(goi_app.__file__).resolve().parent
+    code = (Path(goi_app.__file__).resolve().parent
           / "modules" / "doc_catalog" / "book_controller.py").read_text(encoding="utf-8")
-    assert len(re.findall(r"Depends\(nguoi_doc_so\)", ma)) == 3, "đúng ba cửa ĐỌC"
-    for hanh_dong in ("create", "write", "delete"):
-        assert f'require("document_book", "{hanh_dong}")' in ma, hanh_dong
+    assert len(re.findall(r"Depends\(require_book_reader\)", code)) == 3, "đúng ba cửa ĐỌC"
+    for action in ("create", "write", "delete"):
+        assert f'require("document_book", "{action}")' in code, action

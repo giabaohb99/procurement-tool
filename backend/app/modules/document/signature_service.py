@@ -55,13 +55,13 @@ def sign(db: Session, doc: Document, version_id: int, signer_employee_id: int,
         raise HTTPException(400, "Người ký không tồn tại")
 
     #  (2) — một người, một phiên bản, một chữ ký.
-    da_ky = (
+    signed = (
         db.query(DocumentSignature.id)
         .filter(DocumentSignature.version_id == version_id,
                 DocumentSignature.signer_employee_id == signer_employee_id)
         .first()
     )
-    if da_ky:
+    if signed:
         raise HTTPException(400, "Người này đã ký phiên bản này rồi")
 
     #  (3) — ký số mà không có chứng thư thì nó chỉ là ký nội bộ.
@@ -72,7 +72,7 @@ def sign(db: Session, doc: Document, version_id: int, signer_employee_id: int,
             "Thiếu chứng thư thì đây là ký nội bộ, chọn đúng loại đó.",
         )
 
-    chu_ky = DocumentSignature(
+    signature = DocumentSignature(
         document_id=doc.id,
         version_id=version_id,
         signer_employee_id=signer_employee_id,
@@ -88,10 +88,10 @@ def sign(db: Session, doc: Document, version_id: int, signer_employee_id: int,
         user_agent=user_agent[:300],
         created_by=actor, updated_by=actor,
     )
-    db.add(chu_ky)
+    db.add(signature)
     db.commit()
-    db.refresh(chu_ky)
-    return chu_ky
+    db.refresh(signature)
+    return signature
 
 
 def serialize(db: Session, row: DocumentSignature) -> dict:

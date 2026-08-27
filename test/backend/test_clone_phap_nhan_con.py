@@ -34,15 +34,15 @@ def tap_doan(db, seed):
     db.add_all([con_a, con_b, doc_type])
     db.commit()
 
-    goc = service.create_document(db, DocumentCreate(
+    origin = service.create_document(db, DocumentCreate(
         doc_type_id=doc_type.id, company_id=seed.company_id, department_id=seed.dept_id,
         owner_employee_id=seed.emp_req_id, title="Quy chế bảo mật",
         content_html="<p>Điều 1. Nội dung.</p>",
     ), ACTOR)
-    service.submit(db, goc, ACTOR)
-    service.approve(db, goc, ACTOR)
+    service.submit(db, origin, ACTOR)
+    service.approve(db, origin, ACTOR)
 
-    return {"goc": goc, "a": con_a, "b": con_b, "seed": seed}
+    return {"goc": origin, "a": con_a, "b": con_b, "seed": seed}
 
 
 # ── F06 · sinh bản nháp ─────────────────────────────────────────────────────
@@ -67,21 +67,21 @@ def test_clone_chep_noi_dung_ban_goc(db, tap_doan):
 
 def test_clone_tu_dien_pham_vi_ban_hanh_cua_phap_nhan_nhan(db, tap_doan):
     """Bản của Công ty A chỉ nhận phần phạm vi của A, không kéo theo Công ty B."""
-    goc = tap_doan["goc"]
+    origin = tap_doan["goc"]
     db.add_all([
         DocumentScope(
-            document_id=goc.id, dim=DIM_COMPANY, mode=MODE_INCLUDE,
+            document_id=origin.id, dim=DIM_COMPANY, mode=MODE_INCLUDE,
             company_id=tap_doan["a"].id, created_by=ACTOR, updated_by=ACTOR,
         ),
         DocumentScope(
-            document_id=goc.id, dim=DIM_COMPANY, mode=MODE_INCLUDE,
+            document_id=origin.id, dim=DIM_COMPANY, mode=MODE_INCLUDE,
             company_id=tap_doan["b"].id, created_by=ACTOR, updated_by=ACTOR,
         ),
     ])
     db.commit()
 
     clone = clone_service.create_clones(
-        db, goc, [tap_doan["a"].id], None, "", ACTOR,
+        db, origin, [tap_doan["a"].id], None, "", ACTOR,
     )[0]
     rows = scope_service.scopes_of(db, clone.id)
 
@@ -111,18 +111,18 @@ def test_khong_clone_van_ban_chua_ban_hanh(db, tap_doan, seed):
         title="Quy chế còn nháp", content_html="<p>x</p>",
     ), ACTOR)
 
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         clone_service.create_clones(db, nhap, [tap_doan["a"].id], None, "", ACTOR)
-    assert "đã ban hành" in loi.value.detail
+    assert "đã ban hành" in error.value.detail
 
 
 def test_moi_phap_nhan_chi_nhan_mot_ban_clone(db, tap_doan):
     """UNIQUE ở tầng dữ liệu cũng chặn, nhưng báo trước thì người dùng hiểu vì sao."""
     clone_service.create_clones(db, tap_doan["goc"], [tap_doan["a"].id], None, "", ACTOR)
 
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         clone_service.create_clones(db, tap_doan["goc"], [tap_doan["a"].id], None, "", ACTOR)
-    assert "đã có bản clone" in loi.value.detail
+    assert "đã có bản clone" in error.value.detail
 
 
 def test_khong_clone_ve_chinh_phap_nhan_da_ban_hanh(db, tap_doan):
@@ -149,9 +149,9 @@ def test_khong_xoa_duoc_lien_ket_nguoc(db, tap_doan):
                                         None, "", ACTOR)[0]
     link = link_service.links_of(db, clone.id)[0]
 
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         link_service.delete_link(db, clone, link.id)
-    assert "không xóa được" in loi.value.detail
+    assert "không xóa được" in error.value.detail
 
 
 # ── ĐIỀU KIỆN 2 · số hiệu của pháp nhân con ─────────────────────────────────
@@ -205,7 +205,7 @@ def test_nguoi_phu_trach_duoc_bao_khi_goc_len_ban_moi(db, tap_doan, seed):
     db.commit()
 
     clone_service.create_clones(db, tap_doan["goc"], [tap_doan["a"].id], None, "", ACTOR)
-    truoc = db.query(Notification).count()
+    before = db.query(Notification).count()
 
     open_new_version(db, tap_doan["goc"], VersionCreate(
         change_kind=CHANGE_MAJOR, change_summary="Sửa Điều 1",
@@ -213,7 +213,7 @@ def test_nguoi_phu_trach_duoc_bao_khi_goc_len_ban_moi(db, tap_doan, seed):
     service.submit(db, tap_doan["goc"], ACTOR)
     service.approve(db, tap_doan["goc"], ACTOR)
 
-    assert db.query(Notification).count() > truoc
+    assert db.query(Notification).count() > before
 
 
 # ── ĐIỀU KIỆN 4 · bảng theo dõi ─────────────────────────────────────────────
@@ -249,10 +249,10 @@ def test_bang_theo_doi_chi_ra_ai_chua_dung_toi(db, tap_doan):
 
     chua_nhan = clone_service.pending_companies(db, tap_doan["goc"])
 
-    ten = {row["company_name"] for row in chua_nhan}
-    assert "Công ty B" in ten
+    name = {row["company_name"] for row in chua_nhan}
+    assert "Công ty B" in name
     #  Không kể chính pháp nhân đã ban hành và pháp nhân đã nhận clone.
-    assert "Công ty A" not in ten
+    assert "Công ty A" not in name
 
 
 def test_phap_nhan_con_cap_nhat_tinh_trang_xu_ly(db, tap_doan):
@@ -266,6 +266,6 @@ def test_phap_nhan_con_cap_nhat_tinh_trang_xu_ly(db, tap_doan):
 
 
 def test_van_ban_thuong_khong_cap_nhat_tinh_trang_clone_duoc(db, tap_doan):
-    with pytest.raises(HTTPException) as loi:
+    with pytest.raises(HTTPException) as error:
         clone_service.mark_handled(db, tap_doan["goc"], clone_service.CLONE_ISSUED, ACTOR)
-    assert "không phải bản clone" in loi.value.detail
+    assert "không phải bản clone" in error.value.detail

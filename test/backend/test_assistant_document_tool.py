@@ -57,7 +57,7 @@ def _bat_bo_may(db):
     db.commit()
 
 
-def _luong_van_ban(db, **kw):
+def _document_flow(db, **kw):
     from app.modules.approval.flow_model import ApprovalFlow
 
     flow = ApprovalFlow(entity="document", code=kw.pop("code", "VB-01"),
@@ -121,7 +121,7 @@ def test_co_luong_tra_buoc_va_ten_nguoi_duyet_cua_toi(db, seed):
     _them_loai(db, "GNP", "Giấy nghỉ phép", is_personal=True)
     _bat_bo_may(db)
     db.get(Department, seed.dept_id).manager_id = seed.emp_tp_id
-    flow = _luong_van_ban(db)
+    flow = _document_flow(db)
     _buoc(db, flow, 1, approver_kind=APPROVER_DEPT_HEAD)
     _buoc(db, flow, 2, approver_kind=APPROVER_EMPLOYEE, approver_ref=str(seed.emp_nstm_id))
     db.commit()
@@ -155,20 +155,20 @@ def test_van_ban_ap_dung_cho_toi_dung_pham_vi(db, seed):
                                             Document)
     from app.modules.user.model import User
 
-    loai = _them_loai(db, "QC", "Quy chế / Quy trình")
+    kind = _them_loai(db, "QC", "Quy chế / Quy trình")
     cty_khac = Company(name="Cty Khác", code="CT02", is_active=True)
     db.add(cty_khac)
     db.flush()
     #  Văn bản nội bộ (origin=1) bị CHECK ép có đủ loại + pháp nhân + người chịu
     #  trách nhiệm nội dung — thiếu owner là không chèn nổi bản ghi.
     db.add_all([
-        Document(title="Quy chế bảo mật", doc_type_id=loai.id, company_id=seed.company_id,
+        Document(title="Quy chế bảo mật", doc_type_id=kind.id, company_id=seed.company_id,
                  owner_employee_id=seed.emp_tp_id, status=STATUS_EFFECTIVE,
                  issue_number="01/QC", created_by=ACTOR, updated_by=ACTOR),
-        Document(title="Quy chế công ty khác", doc_type_id=loai.id, company_id=cty_khac.id,
+        Document(title="Quy chế công ty khác", doc_type_id=kind.id, company_id=cty_khac.id,
                  owner_employee_id=seed.emp_tp_id, status=STATUS_EFFECTIVE,
                  created_by=ACTOR, updated_by=ACTOR),
-        Document(title="Quy chế nháp", doc_type_id=loai.id, company_id=seed.company_id,
+        Document(title="Quy chế nháp", doc_type_id=kind.id, company_id=seed.company_id,
                  owner_employee_id=seed.emp_tp_id, status=STATUS_DRAFT,
                  created_by=ACTOR, updated_by=ACTOR),
     ])
@@ -197,12 +197,12 @@ def test_tai_khoan_chua_gan_nhan_su_bao_loi_mem(db, seed):
 
 # ── document_search + document_read ─────────────────────────────────────────────────────
 
-def _van_ban(db, loai, title, company_id, owner_id, so_hieu="", content="", **kw):
+def _van_ban(db, kind, title, company_id, owner_id, issue_number="", content="", **kw):
     from app.modules.document.model import STATUS_EFFECTIVE, Document
     from app.modules.document.version_model import DocumentVersion
 
-    doc = Document(title=title, doc_type_id=loai.id, company_id=company_id,
-                   owner_employee_id=owner_id, issue_number=so_hieu,
+    doc = Document(title=title, doc_type_id=kind.id, company_id=company_id,
+                   owner_employee_id=owner_id, issue_number=issue_number,
                    status=kw.pop("status", STATUS_EFFECTIVE),
                    created_by=ACTOR, updated_by=ACTOR, **kw)
     db.add(doc)
@@ -233,13 +233,13 @@ def test_tim_van_ban_theo_tung_tu_va_dung_pham_vi(db, seed, monkeypatch):
     from app.modules.company.model import Company
     from app.modules.user.model import User
 
-    loai = _them_loai(db, "QD", "Quy định")
+    kind = _them_loai(db, "QD", "Quy định")
     cty_khac = Company(name="Cty Khác", code="CT02", is_active=True)
     db.add(cty_khac)
     db.flush()
-    _van_ban(db, loai, "Quy định về chế độ công tác phí", seed.company_id,
-             seed.emp_tp_id, so_hieu="05/QD")
-    _van_ban(db, loai, "Quy định công tác phí bên kia", cty_khac.id, seed.emp_tp_id)
+    _van_ban(db, kind, "Quy định về chế độ công tác phí", seed.company_id,
+             seed.emp_tp_id, issue_number="05/QD")
+    _van_ban(db, kind, "Quy định công tác phí bên kia", cty_khac.id, seed.emp_tp_id)
 
     monkeypatch.setattr(ToolContext, "can", lambda self, entity, action="read": True)
     ctx = _ctx(db, db.get(User, seed.u_req_id),
@@ -260,9 +260,9 @@ def test_doc_van_ban_theo_so_hieu_va_boc_html(db, seed):
     không còn thẻ HTML, kèm nhãn trạng thái tiếng Việt."""
     from app.modules.user.model import User
 
-    loai = _them_loai(db, "QC", "Quy chế / Quy trình")
-    _van_ban(db, loai, "Quy chế công tác phí", seed.company_id, seed.emp_req_id,
-             so_hieu="01/QC-DEGO",
+    kind = _them_loai(db, "QC", "Quy chế / Quy trình")
+    _van_ban(db, kind, "Quy chế công tác phí", seed.company_id, seed.emp_req_id,
+             issue_number="01/QC-DEGO",
              content="<h2>Điều 1</h2><p>Mức chi tối đa</p>"
                      "<table><tr><td>Hà Nội</td><td>500.000đ/ngày</td></tr></table>")
 
@@ -285,23 +285,23 @@ def test_doc_van_ban_khong_quyen_nhu_khong_ton_tai(db, seed):
     from app.modules.document.model import STATUS_DRAFT
     from app.modules.user.model import User
 
-    loai = _them_loai(db, "QC", "Quy chế / Quy trình")
-    doc = _van_ban(db, loai, "Quy chế lương", seed.company_id, seed.emp_req_id,
+    kind = _them_loai(db, "QC", "Quy chế / Quy trình")
+    doc = _van_ban(db, kind, "Quy chế lương", seed.company_id, seed.emp_req_id,
                    content="<p>Mật</p>", status=STATUS_DRAFT)
 
     ctx = _ctx(db, db.get(User, seed.u_nstm_id), _profile(employee_id=seed.emp_nstm_id))
-    khong_quyen = _run_document_read(ctx, {"document_id": doc.id})
+    denied = _run_document_read(ctx, {"document_id": doc.id})
     khong_co = _run_document_read(ctx, {"document_id": 999999})
-    assert khong_quyen["error"] == khong_co["error"]
-    assert "content" not in khong_quyen
+    assert denied["error"] == khong_co["error"]
+    assert "content" not in denied
 
 
 def test_noi_dung_dai_chia_phan_va_nhieu_ban_khop(db, seed, monkeypatch):
     from app.modules.user.model import User
 
-    loai = _them_loai(db, "QC", "Quy chế / Quy trình")
-    doc = _van_ban(db, loai, "Quy chế dài", seed.company_id, seed.emp_req_id,
-                   so_hieu="02/QC", content="<p>" + "A" * 70 + "B" * 30 + "</p>")
+    kind = _them_loai(db, "QC", "Quy chế / Quy trình")
+    doc = _van_ban(db, kind, "Quy chế dài", seed.company_id, seed.emp_req_id,
+                   issue_number="02/QC", content="<p>" + "A" * 70 + "B" * 30 + "</p>")
     ctx = _ctx(db, db.get(User, seed.u_req_id), _profile(employee_id=seed.emp_req_id))
 
     monkeypatch.setattr(document_tool, "MAX_CONTENT_CHARS", 70)
@@ -316,8 +316,8 @@ def test_noi_dung_dai_chia_phan_va_nhieu_ban_khop(db, seed, monkeypatch):
     assert _run_document_read(ctx, {"document_id": doc.id, "part": 99})["part"] == 2
 
     #  Hai bản cùng số hiệu (bản gốc + bản riêng) -> bắt chọn đích danh, kèm danh sách.
-    _van_ban(db, loai, "Quy chế dài (bản riêng)", seed.company_id, seed.emp_req_id,
-             so_hieu="02/QC")
+    _van_ban(db, kind, "Quy chế dài (bản riêng)", seed.company_id, seed.emp_req_id,
+             issue_number="02/QC")
     nhieu = _run_document_read(ctx, {"issue_number": "02/QC"})
     assert "error" in nhieu
     assert len(nhieu["matches"]) == 2

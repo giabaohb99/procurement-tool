@@ -107,16 +107,16 @@ def open_new_version(db: Session, doc: Document, data: VersionCreate,
     #  `IntegrityError` bên dưới lại dịch thành câu "một bản nháp khác vừa được
     #  mở", tức là báo sai hẳn nguyên nhân. Số đã dùng thì cháy: nó nằm trong dấu
     #  vết duyệt mà người ta đã đọc, tái sử dụng là hai bản khác nhau cùng một số.
-    cao_nhat = (
+    highest = (
         db.query(DocumentVersion)
         .filter(DocumentVersion.document_id == doc.id)
         .order_by(DocumentVersion.major.desc(), DocumentVersion.minor.desc())
         .first()
     ) or base
     if data.change_kind == CHANGE_MAJOR:
-        major, minor = cao_nhat.major + 1, 0
+        major, minor = highest.major + 1, 0
     else:
-        major, minor = cao_nhat.major, cao_nhat.minor + 1
+        major, minor = highest.major, highest.minor + 1
 
     version = DocumentVersion(
         document_id=doc.id, major=major, minor=minor, status=VERSION_DRAFT,
@@ -176,10 +176,10 @@ def _require_open(db: Session, version: DocumentVersion):
     if version.is_locked or version.status == VERSION_APPROVED:
         raise HTTPException(409, f"Phiên bản {version.version_no} đã duyệt, không sửa được. "
                                  "Muốn sửa thì mở phiên bản mới.")
-    chan_khi_dang_duyet(version)
+    block_while_approving(version)
 
 
-def chan_khi_dang_duyet(version: DocumentVersion) -> None:
+def block_while_approving(version: DocumentVersion) -> None:
     """ĐANG TRÌNH DUYỆT thì đóng băng — 409 (19/08/2026).
 
     Trước đây bản «đang duyệt» vẫn ghi được, với lý do "trả lại thì gõ tiếp".

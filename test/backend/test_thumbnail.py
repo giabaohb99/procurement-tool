@@ -30,27 +30,27 @@ def _jpeg_nhieu_chi_tiet(size):
 
 def test_anh_to_duoc_thu_ve_1280_va_nhe_hon():
     from PIL import Image
-    goc = _jpeg_nhieu_chi_tiet((2400, 1600))
-    goc_size = len(goc.getvalue())
-    thumb = make_thumb(goc)
+    origin = _jpeg_nhieu_chi_tiet((2400, 1600))
+    goc_size = len(origin.getvalue())
+    thumb = make_thumb(origin)
     assert thumb is not None
-    ra = Image.open(thumb)
-    assert max(ra.size) == 1280
+    out = Image.open(thumb)
+    assert max(out.size) == 1280
     thumb.seek(0, 2)
     assert thumb.tell() < goc_size
     # Con trỏ luồng gốc phải về 0 — ngay sau make_thumb bên gọi còn upload chính nó.
-    assert goc.tell() == 0
+    assert origin.tell() == 0
 
 
 def test_png_trong_suot_ra_jpeg_nen_trang_khong_hoa_den():
     from PIL import Image
-    goc = _png((2000, 2000), color=(0, 0, 0, 0), mode="RGBA")
-    thumb = make_thumb(goc)
+    origin = _png((2000, 2000), color=(0, 0, 0, 0), mode="RGBA")
+    thumb = make_thumb(origin)
     assert thumb is not None
-    ra = Image.open(thumb)
-    assert ra.mode == "RGB"
+    out = Image.open(thumb)
+    assert out.mode == "RGB"
     # Vùng trong suốt phải thành TRẮNG — convert("RGB") thẳng là hóa đen (lỗi kinh điển).
-    assert ra.getpixel((10, 10)) == (255, 255, 255)
+    assert out.getpixel((10, 10)) == (255, 255, 255)
 
 
 def test_tep_khong_phai_anh_tra_none_khong_no():

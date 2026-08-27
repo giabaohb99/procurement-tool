@@ -28,8 +28,8 @@ from app.modules.document.access_model import (EFFECT_ALLOW, EFFECT_DENY,
                                                SUBJECT_EMPLOYEE, SUBJECT_ROLE,
                                                DocumentAccess)
 from app.modules.document.model import Document
-from app.modules.document.query import (an_ban_rieng_co_goc_xem_duoc,
-                                        dem_ban_rieng, documents_query)
+from app.modules.document.query import (hide_private_copies_with_visible_source,
+                                        count_private_copies, documents_query)
 from app.modules.document.schema import AccessGrant, DocumentCreate
 
 OWNER_USER_ID = 10
@@ -326,8 +326,8 @@ def test_doc_duoc_ban_clone_thi_xem_lai_duoc_ban_goc(db, doc, seed):
     query = documents_query(db).filter(cond)
     #  Bản gốc không xem được trong danh sách nên bản riêng KHÔNG bị gom — nó
     #  chính là văn bản của pháp nhân này.
-    assert [row.id for row in an_ban_rieng_co_goc_xem_duoc(query).all()] == [clone.id]
-    assert dem_ban_rieng(query, [clone.id]) == {}
+    assert [row.id for row in hide_private_copies_with_visible_source(query).all()] == [clone.id]
+    assert count_private_copies(query, [clone.id]) == {}
 
 
 def test_cam_dich_danh_ban_goc_van_thang_quyen_doc_qua_clone(db, doc, seed):

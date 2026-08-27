@@ -53,10 +53,10 @@ def test_ma_dung_trong_cau_truy_van_van_con_trong_bo():
 
 # ── Tầng ghi ────────────────────────────────────────────────────────────────────
 def test_chi_nhan_ma_trong_bo():
-    for ma in CONTRACT_PARTY_TYPE.values:
-        assert ContractCreate(party_type=ma).party_type == ma
-    for ma in CONTRACT_STATUS.values:
-        assert ContractCreate(status=ma).status == ma
+    for code in CONTRACT_PARTY_TYPE.values:
+        assert ContractCreate(party_type=code).party_type == code
+    for code in CONTRACT_STATUS.values:
+        assert ContractCreate(status=code).status == code
 
 
 def test_mac_dinh_la_ma_chu_khong_phai_nhan():
@@ -93,12 +93,12 @@ def test_khong_tu_dich_nhan_thanh_ma():
 # ── Tầng đọc ────────────────────────────────────────────────────────────────────
 def test_expiry_state_tra_ma_chu_khong_tra_chu():
     from datetime import date, timedelta
-    hom_nay = date.today()
+    today = date.today()
     assert expiry_state("") == ""
     assert expiry_state("khong-phai-ngay") == ""
-    assert expiry_state((hom_nay - timedelta(days=1)).strftime("%Y-%m-%d")) == "expired"
-    assert expiry_state((hom_nay + timedelta(days=10)).strftime("%Y-%m-%d")) == "expiring_soon"
-    assert expiry_state((hom_nay + timedelta(days=90)).strftime("%Y-%m-%d")) == "valid"
+    assert expiry_state((today - timedelta(days=1)).strftime("%Y-%m-%d")) == "expired"
+    assert expiry_state((today + timedelta(days=10)).strftime("%Y-%m-%d")) == "expiring_soon"
+    assert expiry_state((today + timedelta(days=90)).strftime("%Y-%m-%d")) == "valid"
 
 
 def test_out_gui_kem_nhan_de_giao_dien_cu_khong_phai_khai_lai_bang_nhan():

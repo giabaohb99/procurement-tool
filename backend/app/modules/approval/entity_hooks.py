@@ -40,7 +40,7 @@ def register(entity: str, *, on_approved: Callable | None = None,
     }
 
 
-def fire(db: Session, instance, ket_cuc: str) -> None:
+def fire(db: Session, instance, outcome: str) -> None:
     """Gọi hàm của module chứng từ, nếu có khai.
 
     ⚠️ Nuốt lỗi CÓ CHỦ Ý. Tới đây phiên duyệt đã kết thúc và đã ghi vào dấu vết;
@@ -54,20 +54,20 @@ def fire(db: Session, instance, ket_cuc: str) -> None:
     chỉ vào log container: phiếu ghi «Đã duyệt» còn văn bản nằm lại ở *chờ
     duyệt* không số, và không ai — kể cả người vừa ký — biết là có chuyện.
     """
-    ham = (_HOOKS.get(instance.entity) or {}).get(ket_cuc)
-    if ham is None:
+    hook_fn = (_HOOKS.get(instance.entity) or {}).get(outcome)
+    if hook_fn is None:
         return
     try:
-        ham(db, instance.entity_id, instance)
-    except Exception as loi:   # noqa: BLE001 — xem ghi chú trên
+        hook_fn(db, instance.entity_id, instance)
+    except Exception as error:   # noqa: BLE001 — xem ghi chú trên
         import logging
 
         logging.getLogger(__name__).exception(
             "Phiên duyệt %s đã %s nhưng %s #%s không đổi được trạng thái: %s",
-            instance.id, ket_cuc, instance.entity, instance.entity_id, loi,
+            instance.id, outcome, instance.entity, instance.entity_id, error,
         )
         try:
-            instance.finish_reason = _cau_bao_hong(loi)
+            instance.finish_reason = _failure_message(error)
             db.flush()
         except Exception:   # noqa: BLE001
             #  Hỏng vì lỗi cơ sở dữ liệu thì phiên làm việc đã không dùng được
@@ -77,21 +77,21 @@ def fire(db: Session, instance, ket_cuc: str) -> None:
                 "Không ghi được lý do hỏng vào phiên duyệt %s", instance.id)
 
 
-def _cau_bao_hong(loi: Exception) -> str:
+def _failure_message(error: Exception) -> str:
     """Câu để người dùng đọc, không phải câu để lập trình viên đọc.
 
     `HTTPException` mang sẵn thông điệp đã soạn cho người dùng (ví dụ "phải ban
     hành kèm một Quyết định") — lấy đúng câu đó. Lỗi khác thì không bày ruột
     gan ra màn hình, chỉ nói có chuyện và bảo họ gọi ai.
     """
-    chi_tiet = getattr(loi, "detail", None)
-    if isinstance(chi_tiet, str) and chi_tiet.strip():
-        return f"Đã duyệt hết các bước nhưng CHƯA hoàn tất được: {chi_tiet}"
+    detail = getattr(error, "detail", None)
+    if isinstance(detail, str) and detail.strip():
+        return f"Đã duyệt hết các bước nhưng CHƯA hoàn tất được: {detail}"
     return ("Đã duyệt hết các bước nhưng chứng từ chưa đổi được trạng thái. "
             "Báo quản trị hệ thống kiểm tra.")
 
 
-def da_khai(entity: str) -> bool:
+def registered(entity: str) -> bool:
     return entity in _HOOKS
 
 
@@ -112,7 +112,7 @@ def register_reader(entity: str, fn: Callable) -> None:
     _READERS[entity] = fn
 
 
-def doc_duoc(db: Session, instance, user) -> bool:
+def can_read(db: Session, instance, user) -> bool:
     """Người này có được xem phiếu duyệt của chứng từ đó không.
 
     Loại chứng từ **chưa khai** hàm kiểm thì trả `True` — giữ nguyên hành vi cũ
@@ -146,7 +146,7 @@ def register_subject(entity: str, fn: Callable) -> None:
     _SUBJECTS[entity] = fn
 
 
-def boi_canh(db: Session, entity: str, entity_id: int) -> dict:
+def entity_context(db: Session, entity: str, entity_id: int) -> dict:
     """Bối cảnh của một chứng từ. `{}` khi loại đó chưa khai hàm hoặc chứng từ đã xóa.
 
     Trả `{}` thay vì ném lỗi: bối cảnh rỗng làm điều kiện rẽ nhánh không khớp và

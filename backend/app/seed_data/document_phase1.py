@@ -110,7 +110,7 @@ OFFICIAL_DOC_TYPES = [
 ]
 
 
-TRICH_LUC_DOC_TYPE = _doc_type(
+EXTRACT_DOC_TYPE = _doc_type(
     "TL",
     "Trích lục",
     "F",
@@ -121,7 +121,7 @@ TRICH_LUC_DOC_TYPE = _doc_type(
     review_cycle_months=0,
 )
 
-ALL_DOC_TYPES = OFFICIAL_DOC_TYPES + [TRICH_LUC_DOC_TYPE]
+ALL_DOC_TYPES = OFFICIAL_DOC_TYPES + [EXTRACT_DOC_TYPE]
 for _sort_order, _row in enumerate(ALL_DOC_TYPES, start=1):
     _row["sort_order"] = _sort_order
 

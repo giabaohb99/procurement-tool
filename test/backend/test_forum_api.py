@@ -21,7 +21,7 @@ from app.modules.forum import service
 from app.modules.forum.model import ForumAudience, ForumPost, ForumPostStatus
 
 
-def _nguoi(db, code, company_id, dept_id):
+def _people(db, code, company_id, dept_id):
     from app.modules.employee.model import Employee
     from app.modules.user.model import User
     emp = Employee(code=code, full_name=f"NV {code}", company_id=company_id,
@@ -51,9 +51,9 @@ def bo_may(db, seed):
     db.flush()
 
     tac_gia = db.get(User, seed.u_req_id)   # DEPT01 / CT01
-    cung_phong = _nguoi(db, "FCUNGPHONG", seed.company_id, seed.dept_id)
-    khac_phong = _nguoi(db, "FKHACPHONG", seed.company_id, dept2.id)
-    khac_cty = _nguoi(db, "FKHACCTY", cty2.id, dept3.id)
+    cung_phong = _people(db, "FCUNGPHONG", seed.company_id, seed.dept_id)
+    khac_phong = _people(db, "FKHACPHONG", seed.company_id, dept2.id)
+    khac_cty = _people(db, "FKHACCTY", cty2.id, dept3.id)
     db.commit()
     return SimpleNamespace(tac_gia=tac_gia, cung_phong=cung_phong,
                            khac_phong=khac_phong, khac_cty=khac_cty)
@@ -87,8 +87,8 @@ def test_bai_pham_vi_cong_ty(db, bo_may):
 
 def test_bai_public_ai_cung_thay(db, bo_may):
     p = _dang(db, bo_may.tac_gia, ForumAudience.PUBLIC)
-    for nguoi in (bo_may.cung_phong, bo_may.khac_phong, bo_may.khac_cty):
-        assert p.id in _feed_ids(db, nguoi)
+    for person in (bo_may.cung_phong, bo_may.khac_phong, bo_may.khac_cty):
+        assert p.id in _feed_ids(db, person)
 
 
 def test_xem_mot_bai_ngoai_pham_vi_bi_403(db, bo_may):
@@ -112,21 +112,21 @@ def test_forum_admin_thay_het_khong_theo_audience(db, bo_may, cap_quyen):
 # ── 4. Con trỏ không lặp, không sót ────────────────────────────────────────────
 
 def test_con_tro_khong_lap_khong_sot_khi_co_bai_chen(db, bo_may):
-    cu = [_dang(db, bo_may.tac_gia, ForumAudience.PUBLIC, f"bài {i}").id for i in range(5)]
+    old = [_dang(db, bo_may.tac_gia, ForumAudience.PUBLIC, f"bài {i}").id for i in range(5)]
     nguoi_xem = bo_may.cung_phong
 
     trang1 = _feed_ids(db, nguoi_xem, limit=2)
-    assert trang1 == [cu[4], cu[3]]              # mới nhất trước
+    assert trang1 == [old[4], old[3]]              # mới nhất trước
 
     # Bài mới chen vào GIỮA hai lần tải — chính là ca OFFSET làm lệch trang
-    moi = _dang(db, bo_may.tac_gia, ForumAudience.PUBLIC, "bài chen giữa").id
+    new = _dang(db, bo_may.tac_gia, ForumAudience.PUBLIC, "bài chen giữa").id
 
     trang2 = _feed_ids(db, nguoi_xem, limit=2, before_id=trang1[-1])
     trang3 = _feed_ids(db, nguoi_xem, limit=2, before_id=trang2[-1])
-    gom = trang1 + trang2 + trang3
-    assert len(gom) == len(set(gom))             # không lặp
-    assert set(gom) == set(cu)                   # không sót, bài chen không đẩy lệch
-    assert moi in _feed_ids(db, nguoi_xem, limit=10)   # tải lại trang đầu mới thấy nó
+    grouped = trang1 + trang2 + trang3
+    assert len(grouped) == len(set(grouped))             # không lặp
+    assert set(grouped) == set(old)                   # không sót, bài chen không đẩy lệch
+    assert new in _feed_ids(db, nguoi_xem, limit=10)   # tải lại trang đầu mới thấy nó
 
 
 # ── 5. Comment ăn theo luật audience ────────────────────────────────────────────
@@ -193,20 +193,20 @@ def test_trang_ca_nhan_minh_thay_ca_bai_an(db, bo_may):
 
 def test_gan_anh_chi_nhan_file_cua_minh_chua_gan(db, bo_may):
     from app.modules.attachment.model import StoredFile
-    cua_minh = StoredFile(filename="a.jpg", file_key="k1", url="u1", content_type="image/jpeg",
+    mine = StoredFile(filename="a.jpg", file_key="k1", url="u1", content_type="image/jpeg",
                           size=1, sha256="s1",
                           created_by=bo_may.tac_gia.id, updated_by=bo_may.tac_gia.id)
     cua_nguoi_khac = StoredFile(filename="b.jpg", file_key="k2", url="u2", content_type="image/jpeg",
                                 size=1, sha256="s2",
                                 created_by=bo_may.khac_phong.id, updated_by=bo_may.khac_phong.id)
-    db.add_all([cua_minh, cua_nguoi_khac])
+    db.add_all([mine, cua_nguoi_khac])
     db.commit()
 
     p = service.create_post(db, bo_may.tac_gia, get_perm_profile(db, bo_may.tac_gia),
                             "kèm ảnh", int(ForumAudience.PUBLIC),
-                            [cua_minh.id, cua_nguoi_khac.id])
-    anh = service.image_map(db, [p.id])[p.id]
-    assert [a["file_id"] for a in anh] == [cua_minh.id]   # file người khác bị lặng lẽ bỏ
+                            [mine.id, cua_nguoi_khac.id])
+    images = service.image_map(db, [p.id])[p.id]
+    assert [a["file_id"] for a in images] == [mine.id]   # file người khác bị lặng lẽ bỏ
 
 
 def test_check_forum_cua_dinh_kem_theo_luat_bai(db, bo_may):
@@ -292,9 +292,9 @@ def test_an_bai_khong_ly_do_bi_400(db, bo_may, cap_quyen):
     from app.modules.forum.model import ForumModerationAction
     admin = _admin(db, bo_may, cap_quyen)
     p = _dang(db, bo_may.tac_gia, ForumAudience.PUBLIC)
-    for ly_do in ("", "   "):
+    for reason in ("", "   "):
         with pytest.raises(HTTPException) as e:
-            service.moderate(db, admin, p, ForumModerationAction.HIDE, ly_do)
+            service.moderate(db, admin, p, ForumModerationAction.HIDE, reason)
         assert e.value.status_code == 400
     with pytest.raises(HTTPException) as e:
         service.moderate(db, admin, p, ForumModerationAction.REMOVE, "")
@@ -395,3 +395,67 @@ def test_bai_avatar_f10_caption_rong_van_dang_duoc(db, bo_may):
     # bài thường không truyền kind thì mặc định NORMAL
     p2 = _dang(db, u, ForumAudience.PUBLIC)
     assert p2.kind == int(ForumPostKind.NORMAL)
+
+
+# ── F9a (CR-199). Ghim bài + dải Thông báo ─────────────────────────────────────
+
+def _pinned_ids(db, user):
+    from app.core.auth import get_perm_profile
+    rows = service.list_pinned_posts(db, user, get_perm_profile(db, user))
+    return [p.id for p in rows]
+
+
+def test_ghim_va_bo_ghim(db, bo_may, cap_quyen):
+    """Ghim xong bài vào dải Thông báo mới → cũ theo MỐC GHIM (không theo lúc
+    đăng); bỏ ghim là rời dải nhưng bài vẫn nguyên trên feed thường."""
+    admin = _admin(db, bo_may, cap_quyen)
+    cu = _dang(db, bo_may.tac_gia, ForumAudience.PUBLIC, "thông báo cũ")
+    moi = _dang(db, bo_may.tac_gia, ForumAudience.PUBLIC, "thông báo mới")
+    assert _pinned_ids(db, bo_may.cung_phong) == []
+
+    # ghim bài ĐĂNG SAU trước — dải phải sắp theo mốc ghim, bài `cu` lên đầu
+    service.set_post_pinned(db, admin, moi, True)
+    service.set_post_pinned(db, admin, cu, True)
+    assert cu.pinned_at is not None
+    assert _pinned_ids(db, bo_may.cung_phong) == [cu.id, moi.id]
+
+    # ghim lại bài đang ghim không đổi mốc (không nhảy đầu dải vô cớ)
+    moc = cu.pinned_at
+    service.set_post_pinned(db, admin, cu, True)
+    assert cu.pinned_at == moc
+
+    service.set_post_pinned(db, admin, cu, False)
+    assert cu.pinned_at is None
+    assert _pinned_ids(db, bo_may.cung_phong) == [moi.id]
+    assert cu.id in _feed_ids(db, bo_may.cung_phong)   # feed thường vẫn còn
+
+
+def test_dai_ghim_van_theo_luat_audience(db, bo_may, cap_quyen):
+    """Ghim không phá luật audience: thông báo phạm vi phòng ban ghim lên thì
+    phòng khác vẫn không thấy — cả trên dải ghim lẫn feed."""
+    admin = _admin(db, bo_may, cap_quyen)
+    p = _dang(db, bo_may.tac_gia, ForumAudience.DEPT, "họp phòng cuối tuần")
+    service.set_post_pinned(db, admin, p, True)
+    assert p.id in _pinned_ids(db, bo_may.cung_phong)
+    assert p.id not in _pinned_ids(db, bo_may.khac_phong)
+
+
+def test_ghim_bai_an_bi_chan_va_bai_ghim_bi_an_roi_dai(db, bo_may, cap_quyen):
+    """Ghim bài đang ẩn phải 400 (treo thông báo không ai đọc được); bài ghim
+    bị ẩn SAU ĐÓ tự rời dải của người thường nhưng admin còn thấy để dọn."""
+    from app.modules.forum.model import ForumModerationAction
+    admin = _admin(db, bo_may, cap_quyen)
+    p = _dang(db, bo_may.tac_gia, ForumAudience.PUBLIC)
+    service.moderate(db, admin, p, ForumModerationAction.HIDE, "sai chỗ")
+    with pytest.raises(HTTPException) as e:
+        service.set_post_pinned(db, admin, p, True)
+    assert e.value.status_code == 400
+
+    service.moderate(db, admin, p, ForumModerationAction.RESTORE, "")
+    service.set_post_pinned(db, admin, p, True)
+    service.moderate(db, admin, p, ForumModerationAction.HIDE, "hết hiệu lực")
+    assert p.id not in _pinned_ids(db, bo_may.cung_phong)
+    assert p.id in _pinned_ids(db, admin)
+    # bỏ ghim bài đang ẩn vẫn được — dọn dẹp không kẹt luật trạng thái
+    service.set_post_pinned(db, admin, p, False)
+    assert p.pinned_at is None

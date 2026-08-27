@@ -21,9 +21,9 @@ def test_ho_so_tra_ve_ten_cong_ty(db, seed):
         full_name="Nhân Viên A", company_id=seed.company_id), 1)
     db.commit()
 
-    ra = EmployeeOut.model_validate(obj)
-    assert ra.company_id == seed.company_id
-    assert ra.company_name == "Cty Test"
+    out = EmployeeOut.model_validate(obj)
+    assert out.company_id == seed.company_id
+    assert out.company_name == "Cty Test"
 
 
 def test_chua_gan_cong_ty_thi_de_trong_chu_khong_no(db, seed):
@@ -34,16 +34,16 @@ def test_chua_gan_cong_ty_thi_de_trong_chu_khong_no(db, seed):
     assert EmployeeOut.model_validate(obj).company_name is None
 
 
-def _dem_truy_van(db, so_dong: int) -> tuple[int, list]:
+def _dem_truy_van(db, line_count: int) -> tuple[int, list]:
     """Đếm số truy vấn để dựng một trang danh sách `so_dong` dòng."""
     from sqlalchemy import event
 
     from app.modules.employee.model import Employee
 
-    dem = {"n": 0}
+    count = {"n": 0}
 
     def _ghi(conn, cursor, statement, params, context, executemany):
-        dem["n"] += 1
+        count["n"] += 1
 
     #  ⚠️ `expunge_all`, KHÔNG phải `expire_all`. `expire_all` chỉ đánh dấu thuộc
     #  tính là cũ nhưng ĐỂ NGUYÊN đối tượng trong identity map, nên `emp.company`
@@ -55,11 +55,11 @@ def _dem_truy_van(db, so_dong: int) -> tuple[int, list]:
     event.listen(db.get_bind(), "before_cursor_execute", _ghi)
     try:
         _, items = emp_service.list_employees(
-            db, db.query(Employee), {"offset": 0, "limit": so_dong})
-        ten = [EmployeeOut.model_validate(row).company_name for row in items]
+            db, db.query(Employee), {"offset": 0, "limit": line_count})
+        name = [EmployeeOut.model_validate(row).company_name for row in items]
     finally:
         event.remove(db.get_bind(), "before_cursor_execute", _ghi)
-    return dem["n"], ten
+    return count["n"], name
 
 
 def test_danh_sach_NAP_GOP_khong_de_thanh_N_cong_1(db, seed):
@@ -80,7 +80,7 @@ def test_danh_sach_NAP_GOP_khong_de_thanh_N_cong_1(db, seed):
     #  bài kiểm rỗng: dù không nạp gộp, SQLAlchemy chỉ hỏi CSDL đúng MỘT lần cho
     #  pháp nhân đó rồi lấy lại từ identity map — số truy vấn vẫn là hằng số và
     #  N+1 không lộ ra. Bản đầu của bài này dính đúng chỗ đó.
-    def _them(so_luong: int, tu: int = 0) -> None:
+    def _add(so_luong: int, tu: int = 0) -> None:
         for i in range(tu, tu + so_luong):
             cty = Company(code=f"C{i:03d}", name=f"Công ty {i}", is_active=True)
             db.add(cty)
@@ -89,11 +89,11 @@ def test_danh_sach_NAP_GOP_khong_de_thanh_N_cong_1(db, seed):
                 full_name=f"Nhân Viên {i}", company_id=cty.id), 1)
         db.commit()
 
-    _them(3)
-    it_dong, ten = _dem_truy_van(db, 3)
-    assert "Công ty 2" in ten
+    _add(3)
+    it_dong, name = _dem_truy_van(db, 3)
+    assert "Công ty 2" in name
 
-    _them(22, tu=3)
+    _add(22, tu=3)
 
     nhieu_dong, _ = _dem_truy_van(db, 25)
 

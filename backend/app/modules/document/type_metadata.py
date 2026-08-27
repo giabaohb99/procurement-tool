@@ -17,51 +17,51 @@ from datetime import date
 
 from fastapi import HTTPException
 
-from app.core.leave_codes import (CONG_CUA_BUOI, LEAVE_SESSION_SET,
+from app.core.leave_codes import (SESSION_WORK_CREDIT, LEAVE_SESSION_SET,
                                   LEAVE_TYPE_SET)
 
 #  Mã loại văn bản — dùng ở nhiều nơi nên đặt hằng, đừng gõ chuỗi rải rác.
-LOAI_NGHI_PHEP = "GNP"
+LEAVE_DOC_TYPE = "GNP"
 
 #  Loại nghỉ và buổi khai ở `core/leave_codes.py` để `gen_status_ts.py` sinh bản
 #  TypeScript — danh sách này tuyệt đối không gõ tay hai lần ở hai đầu.
-BUOI_CA_NGAY = "full"
-BUOI_SANG = "morning"
-BUOI_CHIEU = "afternoon"
-NGHI_PHEP_NAM = "annual"
+SESSION_FULL_DAY = "full"
+SESSION_MORNING = "morning"
+SESSION_AFTERNOON = "afternoon"
+ANNUAL_LEAVE = "annual"
 
 
-def _chuoi_trong_bo(gia_tri, bo, ten: str, mac_dinh: str) -> str:
+def _string_in_set(value, allowed, name: str, default: str) -> str:
     """Giá trị phải nằm trong bộ mã đã khai. Bỏ trống thì lấy mặc định."""
-    ma = (str(gia_tri).strip() if gia_tri not in (None, "") else "") or mac_dinh
-    if ma not in bo.values:
+    code = (str(value).strip() if value not in (None, "") else "") or default
+    if code not in allowed.values:
         raise HTTPException(
-            400, f"«{ten}» không hợp lệ. Giá trị nhận: {', '.join(sorted(bo.values))}")
-    return ma
+            400, f"«{name}» không hợp lệ. Giá trị nhận: {', '.join(sorted(allowed.values))}")
+    return code
 
 
-def _so(gia_tri, ten: str, *, bat_buoc: bool) -> int:
-    if gia_tri in (None, ""):
-        if bat_buoc:
-            raise HTTPException(400, f"Thiếu «{ten}»")
+def _number(value, name: str, *, required: bool) -> int:
+    if value in (None, ""):
+        if required:
+            raise HTTPException(400, f"Thiếu «{name}»")
         return 0
     try:
-        return int(gia_tri)
+        return int(value)
     except (TypeError, ValueError):
-        raise HTTPException(400, f"«{ten}» phải là số")
+        raise HTTPException(400, f"«{name}» phải là số")
 
 
-def _ngay(gia_tri, ten: str) -> str:
+def _date(value, name: str) -> str:
     """Nhận `YYYY-MM-DD`, trả lại đúng chuỗi đó. Ngày lưu dạng chuỗi trong JSON."""
-    if not gia_tri:
-        raise HTTPException(400, f"Thiếu «{ten}»")
+    if not value:
+        raise HTTPException(400, f"Thiếu «{name}»")
     try:
-        return date.fromisoformat(str(gia_tri)[:10]).isoformat()
+        return date.fromisoformat(str(value)[:10]).isoformat()
     except ValueError:
-        raise HTTPException(400, f"«{ten}» không phải ngày hợp lệ (cần YYYY-MM-DD)")
+        raise HTTPException(400, f"«{name}» không phải ngày hợp lệ (cần YYYY-MM-DD)")
 
 
-def so_ngay_goi_y(tu_ngay: str, den_ngay: str, buoi_di: str, buoi_ve: str) -> float:
+def suggested_days(from_date: str, to_date: str, from_session: str, to_session: str) -> float:
     """Số ngày công GỢI Ý — đếm cả cuối tuần và ngày lễ.
 
     ⚠️ Cố ý KHÔNG trừ thứ Bảy / Chủ nhật / ngày lễ: hệ chưa có bảng lịch làm việc
@@ -69,71 +69,71 @@ def so_ngay_goi_y(tu_ngay: str, den_ngay: str, buoi_di: str, buoi_ve: str) -> fl
     chính xác còn tệ hơn đưa ra con số thô để người ta sửa. Ô này người dùng sửa
     đè được, và người duyệt là chốt cuối.
     """
-    d1, d2 = date.fromisoformat(tu_ngay), date.fromisoformat(den_ngay)
+    d1, d2 = date.fromisoformat(from_date), date.fromisoformat(to_date)
     if d1 == d2:
         #  Trong CÙNG một ngày thì hai ô buổi nói về cùng một buổi — lấy một cái.
-        return CONG_CUA_BUOI.get(buoi_di, 1.0)
-    tron_ven = (d2 - d1).days - 1
-    return max(0.0, tron_ven) + CONG_CUA_BUOI.get(buoi_di, 1.0) + CONG_CUA_BUOI.get(buoi_ve, 1.0)
+        return SESSION_WORK_CREDIT.get(from_session, 1.0)
+    full_days = (d2 - d1).days - 1
+    return max(0.0, full_days) + SESSION_WORK_CREDIT.get(from_session, 1.0) + SESSION_WORK_CREDIT.get(to_session, 1.0)
 
 
-def _kiem_nghi_phep(gui_len: dict, nguoi_tao_employee_id: int | None) -> dict:
+def _check_leave(payload: dict, creator_employee_id: int | None) -> dict:
     """Tám ô của Giấy nghỉ phép. Trả về dict ĐÃ LÀM SẠCH, đúng thứ được lưu."""
-    tu_ngay = _ngay(gui_len.get("from_date"), "Từ ngày")
-    den_ngay = _ngay(gui_len.get("to_date"), "Đến ngày")
-    if den_ngay < tu_ngay:
+    from_date = _date(payload.get("from_date"), "Từ ngày")
+    to_date = _date(payload.get("to_date"), "Đến ngày")
+    if to_date < from_date:
         raise HTTPException(400, "«Đến ngày» phải bằng hoặc sau «Từ ngày»")
 
-    buoi_di = _chuoi_trong_bo(gui_len.get("from_session"), LEAVE_SESSION_SET,
-                              "Buổi bắt đầu", BUOI_CA_NGAY)
-    buoi_ve = _chuoi_trong_bo(gui_len.get("to_session"), LEAVE_SESSION_SET,
-                              "Buổi kết thúc", BUOI_CA_NGAY)
-    if tu_ngay == den_ngay and buoi_di == BUOI_CHIEU and buoi_ve == BUOI_SANG:
+    from_session = _string_in_set(payload.get("from_session"), LEAVE_SESSION_SET,
+                              "Buổi bắt đầu", SESSION_FULL_DAY)
+    to_session = _string_in_set(payload.get("to_session"), LEAVE_SESSION_SET,
+                              "Buổi kết thúc", SESSION_FULL_DAY)
+    if from_date == to_date and from_session == SESSION_AFTERNOON and to_session == SESSION_MORNING:
         raise HTTPException(400, "Nghỉ từ buổi chiều đến buổi sáng cùng ngày là khoảng trống")
 
     #  Người nghỉ mặc định là người đang lập đơn. Lập hộ người khác vẫn được —
     #  trợ lý / hành chính lập hộ là việc có thật — nên cho khai tường minh.
-    nguoi_nghi = _so(gui_len.get("employee_id"), "Người nghỉ", bat_buoc=False) \
-        or (nguoi_tao_employee_id or 0)
-    if not nguoi_nghi:
+    leave_taker = _number(payload.get("employee_id"), "Người nghỉ", required=False) \
+        or (creator_employee_id or 0)
+    if not leave_taker:
         raise HTTPException(400, "Chưa xác định được người nghỉ")
 
-    ly_do = (gui_len.get("reason") or "").strip()
-    if not ly_do:
+    reason = (payload.get("reason") or "").strip()
+    if not reason:
         raise HTTPException(400, "Thiếu «Lý do nghỉ»")
 
     #  Số ngày: lấy của người dùng nếu họ sửa, không thì tự tính.
-    tho = gui_len.get("total_days")
+    raw = payload.get("total_days")
     try:
-        so_ngay = float(tho) if tho not in (None, "") else so_ngay_goi_y(
-            tu_ngay, den_ngay, buoi_di, buoi_ve)
+        day_count = float(raw) if raw not in (None, "") else suggested_days(
+            from_date, to_date, from_session, to_session)
     except (TypeError, ValueError):
         raise HTTPException(400, "«Tổng số ngày» phải là số")
-    if so_ngay <= 0:
+    if day_count <= 0:
         raise HTTPException(400, "«Tổng số ngày» phải lớn hơn 0")
 
     return {
-        "employee_id": nguoi_nghi,
-        "leave_type": _chuoi_trong_bo(gui_len.get("leave_type"), LEAVE_TYPE_SET,
-                                      "Loại nghỉ", NGHI_PHEP_NAM),
-        "from_date": tu_ngay,
-        "from_session": buoi_di,
-        "to_date": den_ngay,
-        "to_session": buoi_ve,
-        "total_days": so_ngay,
-        "reason": ly_do[:500],
-        "handover_employee_id": _so(gui_len.get("handover_employee_id"),
-                                    "Người bàn giao", bat_buoc=False),
-        "contact_phone": (gui_len.get("contact_phone") or "").strip()[:30],
+        "employee_id": leave_taker,
+        "leave_type": _string_in_set(payload.get("leave_type"), LEAVE_TYPE_SET,
+                                      "Loại nghỉ", ANNUAL_LEAVE),
+        "from_date": from_date,
+        "from_session": from_session,
+        "to_date": to_date,
+        "to_session": to_session,
+        "total_days": day_count,
+        "reason": reason[:500],
+        "handover_employee_id": _number(payload.get("handover_employee_id"),
+                                    "Người bàn giao", required=False),
+        "contact_phone": (payload.get("contact_phone") or "").strip()[:30],
     }
 
 
 #  mã loại → hàm kiểm. Loại không có mặt ở đây thì KHÔNG nhận metadata.
-_KIEM = {LOAI_NGHI_PHEP: _kiem_nghi_phep}
+_VALIDATORS = {LEAVE_DOC_TYPE: _check_leave}
 
 
-def lam_sach(ma_loai: str, gui_len: dict | None,
-             nguoi_tao_employee_id: int | None = None) -> dict | None:
+def sanitize(type_code: str, payload: dict | None,
+             creator_employee_id: int | None = None) -> dict | None:
     """Lọc metadata gửi lên theo hình dạng của loại văn bản.
 
     * loại CHƯA khai hình dạng → trả `None`, tức là **không lưu gì**. Không im
@@ -143,21 +143,21 @@ def lam_sach(ma_loai: str, gui_len: dict | None,
       vẫn lưu được. Chốt "phải nhập đủ" đặt ở lúc GỬI DUYỆT, không phải lúc lưu
       nháp — cùng luật với `required-fields.ts` của Thu mua.
     """
-    ham = _KIEM.get((ma_loai or "").strip().upper())
-    if ham is None or not gui_len:
+    hook_fn = _VALIDATORS.get((type_code or "").strip().upper())
+    if hook_fn is None or not payload:
         return None
-    return ham(gui_len, nguoi_tao_employee_id)
+    return hook_fn(payload, creator_employee_id)
 
 
-def bat_buoc_khi_gui_duyet(ma_loai: str, dang_luu: dict | None) -> None:
+def require_on_submit(type_code: str, stored: dict | None) -> None:
     """Gửi duyệt mà chưa khai phần riêng của loại thì chặn.
 
     Người duyệt mở đơn nghỉ phép ra mà không có ngày nghỉ lẫn lý do thì họ duyệt
     cái gì.
     """
-    if (ma_loai or "").strip().upper() not in _KIEM:
+    if (type_code or "").strip().upper() not in _VALIDATORS:
         return
-    if not dang_luu:
+    if not stored:
         raise HTTPException(
             400, "Chưa khai thông tin nghỉ phép — mở lại văn bản và nhập đủ "
                  "ngày nghỉ, loại nghỉ và lý do trước khi gửi duyệt.")

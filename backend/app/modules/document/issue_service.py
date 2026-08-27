@@ -52,21 +52,21 @@ def will_supersede(db: Session, doc: Document) -> list[dict]:
         .all()
     )
 
-    ket_qua = []
+    result = []
     for link in links:
-        cu = db.get(Document, link.target_document_id)
-        if cu is None:
+        old = db.get(Document, link.target_document_id)
+        if old is None:
             continue
-        moi = SUPERSEDE_EFFECT[link.relation]
-        ket_qua.append({
-            "document_id": cu.id,
-            "title": cu.title,
-            "display_code": cu.doc_code or cu.issue_number or "",
+        new = SUPERSEDE_EFFECT[link.relation]
+        result.append({
+            "document_id": old.id,
+            "title": old.title,
+            "display_code": old.doc_code or old.issue_number or "",
             "relation_label": RELATION_LABELS.get(link.relation, ""),
-            "current_status_label": STATUS_LABELS.get(cu.status, ""),
-            "next_status_label": STATUS_LABELS.get(moi, ""),
+            "current_status_label": STATUS_LABELS.get(old.status, ""),
+            "next_status_label": STATUS_LABELS.get(new, ""),
         })
-    return ket_qua
+    return result
 
 
 def preview(db: Session, doc: Document) -> dict:
@@ -76,54 +76,54 @@ def preview(db: Session, doc: Document) -> dict:
 
     #  Số hiệu: chỉ XEM TRƯỚC, tuyệt đối không chiếm số. Con số này lệch được
     #  nếu có người cấp số xen vào giữa — chấp nhận được với một dòng xem trước.
-    so_hieu = doc.doc_code or doc.issue_number or ""
-    if not so_hieu and doc_type.number_when == NUMBER_ON_APPROVE:
-        so_hieu = numbering.peek(
+    issue_number = doc.doc_code or doc.issue_number or ""
+    if not issue_number and doc_type.number_when == NUMBER_ON_APPROVE:
+        issue_number = numbering.peek(
             db, doc_type, doc.company_id, doc.department_id,
             doc.effective_date or date.today(), doc.book_id,
         )
 
-    hieu_luc = (version.effective_from if version else None) or doc.effective_date or date.today()
-    thieu_quan_he = missing_required(db, doc)
-    can_quyet_dinh = bool(doc_type.needs_decision)
-    co_quyet_dinh = has_decision(db, doc)
-    so_dong_pham_vi = len(scopes_of(db, doc.id))
+    effective_date = (version.effective_from if version else None) or doc.effective_date or date.today()
+    missing_relations = missing_required(db, doc)
+    needs_decision = bool(doc_type.needs_decision)
+    decision_exists = has_decision(db, doc)
+    scope_row_count = len(scopes_of(db, doc.id))
 
     #  CHẶN — backend sẽ từ chối, nói trước để khỏi bấm rồi mới biết.
-    chan: list[str] = []
+    blockers: list[str] = []
     if version is None:
-        chan.append("Không có phiên bản nào đang chờ duyệt.")
-    if thieu_quan_he:
-        chan.append("Chưa khai đủ quan hệ bắt buộc: " + "; ".join(thieu_quan_he))
-    if can_quyet_dinh and not co_quyet_dinh:
-        chan.append(
+        blockers.append("Không có phiên bản nào đang chờ duyệt.")
+    if missing_relations:
+        blockers.append("Chưa khai đủ quan hệ bắt buộc: " + "; ".join(missing_relations))
+    if needs_decision and not decision_exists:
+        blockers.append(
             f"Loại «{doc_type.name}» phải ban hành kèm một Quyết định. "
             "Khai quan hệ «Kèm theo» tới Quyết định ban hành ở tab Quan hệ."
         )
 
     #  CẢNH BÁO — vẫn ban hành được, nhưng gần như chắc chắn là quên.
-    canh_bao: list[str] = []
+    warning: list[str] = []
     #  Không khai phạm vi KHÔNG còn là thiếu sót: văn bản mặc định áp trong đúng
     #  pháp nhân ban hành (quy tắc 3, xem `scope_service`). Màn xem trước nói ra
     #  chuyện đó ở dòng "Phạm vi áp dụng" chứ không dọa nữa.
     if not doc.signer_employee_id:
-        canh_bao.append("Chưa chọn người ký ban hành.")
+        warning.append("Chưa chọn người ký ban hành.")
 
     return {
         "version_id": version.id if version else None,
         "version_no": version.version_no if version else "",
         #  Ngày hiệu lực quyết định luôn việc văn bản cũ có bị thay thế NGAY hay
         #  không — nên nó phải hiện, không được để người dùng đoán.
-        "effective_date": hieu_luc,
-        "effective_now": hieu_luc <= date.today(),
-        "issue_number_preview": so_hieu,
+        "effective_date": effective_date,
+        "effective_now": effective_date <= date.today(),
+        "issue_number_preview": issue_number,
         "number_on_approve": doc_type.number_when == NUMBER_ON_APPROVE,
-        "needs_decision": can_quyet_dinh,
-        "has_decision": co_quyet_dinh,
-        "scope_count": so_dong_pham_vi,
+        "needs_decision": needs_decision,
+        "has_decision": decision_exists,
+        "scope_count": scope_row_count,
         "will_supersede": will_supersede(db, doc),
-        "blockers": chan,
-        "warnings": canh_bao,
+        "blockers": blockers,
+        "warnings": warning,
     }
 
 

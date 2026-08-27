@@ -69,9 +69,9 @@ def test_cho_toi_duyet_khong_ho_so_tra_rong_kem_giai_thich(db, seed):
 def test_cho_toi_duyet_tra_viec_kem_duong_dan(db, seed):
     from app.modules.user.model import User
 
-    phien = _phien(db, entity_id=7, code="05/QDI-DEGO", title="Quy định công tác phí",
+    instance = _phien(db, entity_id=7, code="05/QDI-DEGO", title="Quy định công tác phí",
                    started_by=seed.emp_req_id)
-    _viec(db, phien, seed.emp_nstm_id)
+    _viec(db, instance, seed.emp_nstm_id)
 
     out = _run_my_approval_tasks(_ctx(db, db.get(User, seed.u_nstm_id)), {})
     assert out["total"] == 1
@@ -86,8 +86,8 @@ def test_cho_toi_duyet_tra_viec_kem_duong_dan(db, seed):
 def test_cho_toi_duyet_khong_thay_viec_cua_nguoi_khac(db, seed):
     from app.modules.user.model import User
 
-    phien = _phien(db, started_by=seed.emp_req_id)
-    _viec(db, phien, seed.emp_nstm_id)   # việc của NSTM, không phải của người hỏi
+    instance = _phien(db, started_by=seed.emp_req_id)
+    _viec(db, instance, seed.emp_nstm_id)   # việc của NSTM, không phải của người hỏi
 
     out = _run_my_approval_tasks(_ctx(db, db.get(User, seed.u_req_id)), {})
     assert out["total"] == 0
@@ -98,9 +98,9 @@ def test_cho_toi_duyet_khong_thay_viec_cua_nguoi_khac(db, seed):
 def test_phieu_cua_toi_dang_chay_noi_ro_dang_cho_ai(db, seed):
     from app.modules.user.model import User
 
-    phien = _phien(db, entity_id=3, code="12/CV", title="Công văn xin xe",
+    instance = _phien(db, entity_id=3, code="12/CV", title="Công văn xin xe",
                    started_by=seed.emp_req_id)
-    _viec(db, phien, seed.emp_nstm_id, node_name="NSTM soát nội dung")
+    _viec(db, instance, seed.emp_nstm_id, node_name="NSTM soát nội dung")
 
     out = _run_my_requests_status(_ctx(db, db.get(User, seed.u_req_id)), {})
     assert out["total"] == 1

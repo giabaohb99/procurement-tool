@@ -18,10 +18,10 @@ from .schema import PurchaseHistoryOut
 router = APIRouter(tags=["purchase_history"])
 
 
-def _payload(total: int, items, hien_ncc: bool = True) -> dict:
+def _payload(total: int, items, show_supplier: bool = True) -> dict:
     """`hien_ncc=False` -> xóa tên/mã NCC khỏi payload (người xem không có quyền supplier.read)."""
     rows = [PurchaseHistoryOut.model_validate(i).model_dump() for i in items]
-    if not hien_ncc:
+    if not show_supplier:
         for r in rows:
             r["supplier_code"] = ""
             r["supplier_name"] = ""
@@ -40,10 +40,10 @@ def product_purchase_history(
     # nhưng NCC là thông tin riêng của khối thu mua -> ai không có `supplier.read` thì
     # không được thấy. Chặn ở BACKEND chứ không chỉ ẩn cột: ẩn ở giao diện thì gọi thẳng
     # API vẫn đọc được nguyên tên NCC.
-    hien_ncc = user_has_permission(db, user, "supplier", "read")
+    show_supplier = user_has_permission(db, user, "supplier", "read")
     total, items = service.list_history(db, pg, product_code=code, search=search,
-                                        tim_theo_ncc=hien_ncc)
-    return success(_payload(total, items, hien_ncc))
+                                        search_by_supplier=show_supplier)
+    return success(_payload(total, items, show_supplier))
 
 
 @router.get("/api/suppliers/{code}/purchase-history")

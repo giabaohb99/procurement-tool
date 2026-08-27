@@ -28,7 +28,7 @@ COMPANY_ME_ID = 1
 #  Mật khẩu = mã nhân viên, đúng quy ước của các tài khoản demo sẵn có.
 #  Đây là CSDL trên máy lập trình, không phải hệ thật.
 
-QUYEN = {
+PERMISSIONS = {
     #  Đủ để làm trọn việc của mình trên bản clone: mở ra, sửa, gửi duyệt, ban
     #  hành. `scope: company` — chỉ thấy văn bản của chính pháp nhân mình, và đó
     #  là điều đáng cho người xem demo thấy.
@@ -50,7 +50,7 @@ QUYEN = {
 }
 
 
-def _tao_vai_tro(db) -> Role:
+def _create_role(db) -> Role:
     role = db.query(Role).filter(Role.code == ROLE_CODE).first()
     if not role:
         role = Role(code=ROLE_CODE, name=ROLE_NAME)
@@ -61,7 +61,7 @@ def _tao_vai_tro(db) -> Role:
     #  ngay, không phải nhớ xóa tay. Vai trò này chỉ do tệp này quản.
     db.query(Permission).filter(Permission.role_id == role.id).delete(synchronize_session=False)
     db.flush()
-    for entity, (actions, scope) in QUYEN.items():
+    for entity, (actions, scope) in PERMISSIONS.items():
         db.add(Permission(
             role_id=role.id, entity=entity, scope=scope,
             **{f"can_{a}": (a in actions) for a in
@@ -71,7 +71,7 @@ def _tao_vai_tro(db) -> Role:
     return role
 
 
-def _phong_hanh_chinh_id(db) -> int | None:
+def _admin_department_id(db) -> int | None:
     """Phòng của người nộp quyết định ai duyệt — để trống thì luồng dò theo phiếu."""
     from app.modules.department.model import Department
 
@@ -79,30 +79,30 @@ def _phong_hanh_chinh_id(db) -> int | None:
     return row[0] if row else None
 
 
-def seed_van_thu_phap_nhan_con(db) -> int:
+def seed_subsidiary_document_data(db) -> int:
     """Mỗi pháp nhân con một văn thư. Chạy lại nhiều lần không đẻ thêm bản ghi."""
-    role = _tao_vai_tro(db)
-    dept_id = _phong_hanh_chinh_id(db)
-    dem = 0
+    role = _create_role(db)
+    dept_id = _admin_department_id(db)
+    count = 0
 
-    cong_ty = (
+    companies = (
         db.query(Company)
         .filter(Company.is_active.is_(True), Company.id != COMPANY_ME_ID)
         .order_by(Company.id)
         .all()
     )
 
-    for company in cong_ty:
+    for company in companies:
         #  Mã lấy từ `issue_code` (chỉ chữ và số) chứ không lấy `code` — `code`
         #  chứa dấu và khoảng trắng ("HỘ KD DR.XANH"), gõ vào ô đăng nhập thì sai.
-        ma = (company.issue_code or "").strip() or f"CTY{company.id}"
-        emp_code = f"VT{ma}"
+        code = (company.issue_code or "").strip() or f"CTY{company.id}"
+        emp_code = f"VT{code}"
 
         emp = db.query(Employee).filter(Employee.code == emp_code).first()
         if not emp:
             emp = Employee(
                 code=emp_code,
-                full_name=f"Văn thư {ma}",
+                full_name=f"Văn thư {code}",
                 company_id=company.id,
                 department_id=dept_id,
                 position="Văn thư",
@@ -112,7 +112,7 @@ def seed_van_thu_phap_nhan_con(db) -> int:
             )
             db.add(emp)
             db.flush()
-            dem += 1
+            count += 1
 
         email = f"{emp_code.lower()}@dego.test"
         user = db.query(User).filter(User.email == email).first()
@@ -141,4 +141,4 @@ def seed_van_thu_phap_nhan_con(db) -> int:
                          created_by=1, updated_by=1))
 
     db.commit()
-    return dem
+    return count
