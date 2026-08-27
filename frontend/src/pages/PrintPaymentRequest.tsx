@@ -81,6 +81,12 @@ export default function PrintPaymentRequest() {
   const noiDung = req.prepay
     ? `Thanh toán trước cho nhà cung cấp ${sup}${period ? ' ' + period : ''}`
     : `Thanh toán công nợ ${sup}${period ? ' ' + period : ''}`
+  // CR-149 (ticket #14): người dùng sửa được 3 câu này trên màn chi tiết (lưu print_texts);
+  // khóa nào để trống thì in câu tự động ở trên.
+  const pt = req.print_texts || {}
+  const ndThanhToan = pt.content || noiDung
+  const ndDienGiai = pt.line_desc || noiDung
+  const ndChuyenKhoan = pt.transfer || noiDung
   const isCash = req.payment_method === 'cash'   // CR-035 — chi tiền mặt thì bỏ TRỐNG cụm chuyển khoản
 
   const cell = { border: '1px solid #888', padding: '3px 6px', fontSize: 11 } as const
@@ -150,7 +156,7 @@ export default function PrintPaymentRequest() {
         <div style={{ lineHeight: 1.55, marginBottom: 4 }}>
           <div style={lbl}><b>Đối tượng:</b> {sup}</div>
           <div style={lbl}><b>Mã khoản mục CP:</b> ............................</div>
-          <div style={lbl}><b>Nội dung:</b> {noiDung}</div>
+          <div style={lbl}><b>Nội dung:</b> {ndThanhToan}</div>
         </div>
 
         <div style={{ ...lbl, fontWeight: 700 }}>Đề nghị thanh toán:</div>
@@ -181,7 +187,7 @@ export default function PrintPaymentRequest() {
                 <td style={{ ...cell, textAlign: 'center' }}>{dmy(l.invoice_date)}</td>
                 {/* Diễn giải GỘP cho mọi dòng (rowSpan) — chỉ render ở dòng đầu */}
                 {i === 0 && (
-                  <td style={{ ...cell, verticalAlign: 'middle' }} rowSpan={groupedLines.length || 1}>{noiDung}</td>
+                  <td style={{ ...cell, verticalAlign: 'middle' }} rowSpan={groupedLines.length || 1}>{ndDienGiai}</td>
                 )}
                 <td style={{ ...cell, textAlign: 'right' }}>{fmt(l.amount)}</td>
                 <td style={cell} />
@@ -189,7 +195,7 @@ export default function PrintPaymentRequest() {
               </tr>
             ))}
             {groupedLines.length === 0 && (
-              <tr><td style={cell} /><td style={cell} /><td style={cell}>{noiDung}</td><td style={cell} /><td style={cell} /><td style={cell} /></tr>
+              <tr><td style={cell} /><td style={cell} /><td style={cell}>{ndDienGiai}</td><td style={cell} /><td style={cell} /><td style={cell} /></tr>
             )}
             <tr>
               <td style={{ ...cell, fontWeight: 700, textAlign: 'center' }} colSpan={3}>Cộng</td>
@@ -261,7 +267,7 @@ export default function PrintPaymentRequest() {
             <div style={lbl}><b>Tên TK thụ hưởng:</b> {isCash ? dots : sup}</div>
             <div style={lbl}><b>Số TK thụ hưởng:</b> {isCash ? dots : dot(req.bank_account)}</div>
             <div style={lbl}><b>Ngân hàng:</b> {isCash ? dots : dot(req.bank_name)}</div>
-            <div style={lbl}><b>Nội dung chuyển khoản:</b> {isCash ? dots : noiDung}</div>
+            <div style={lbl}><b>Nội dung chuyển khoản:</b> {isCash ? dots : ndChuyenKhoan}</div>
           </div>
         </div>
 

@@ -22,6 +22,10 @@ class PaymentRequest(Base, AuditMixin):
     # 1 = trả trước cho đơn hàng. Quyết định câu nội dung trên bản in:
     # "Thanh toán công nợ ..." hay "Thanh toán trước cho nhà cung cấp ...".
     prepay: Mapped[int] = mapped_column(SmallInteger, default=0)
+    # CR-149 (ticket #14) — 3 câu chữ trên BẢN IN người dùng sửa được, lưu JSON:
+    # {"content": Nội dung, "line_desc": Diễn giải bảng, "transfer": Nội dung chuyển khoản}.
+    # Khóa nào rỗng / cột rỗng -> bản in rơi về câu tự động theo prepay (CR-146).
+    print_texts: Mapped[str] = mapped_column(Text, default="")
     total: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
     note: Mapped[str] = mapped_column(Text, default="")
     reject_reason: Mapped[str] = mapped_column(Text, default="")   # lý do từ chối (khi cancelled)

@@ -1,4 +1,6 @@
 """Yêu cầu thanh toán: gom khoản nợ theo NCC (mỗi NCC 1 phiếu); khi 'Đã chi' cập nhật payable."""
+import json
+
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
@@ -21,6 +23,36 @@ PAYMENT_METHODS = ("transfer", "cash")
 def norm_method(v) -> str:
     """Chuẩn hóa hình thức thanh toán; giá trị lạ -> 'transfer' (không để bản in mất thông tin NCC)."""
     return v if v in PAYMENT_METHODS else "transfer"
+
+
+# CR-149 (ticket #14) — 3 câu chữ bản in người dùng sửa được: Nội dung thanh toán /
+# Diễn giải bảng / Nội dung chuyển khoản. Chỉ nhận đúng 3 khóa này, khóa lạ bị bỏ.
+PRINT_TEXT_KEYS = ("content", "line_desc", "transfer")
+PRINT_TEXT_MAX = 500   # câu in trên khổ A4, dài hơn là tràn dòng — cắt thẳng tay
+
+
+def norm_print_texts(v) -> str:
+    """Chuẩn hóa dict người dùng gửi -> chuỗi JSON lưu DB; cả 3 khóa rỗng -> lưu ""
+    (bản in rơi về câu tự động theo prepay như trước CR-149)."""
+    if not isinstance(v, dict):
+        return ""
+    out = {}
+    for k in PRINT_TEXT_KEYS:
+        s = str(v.get(k) or "").strip()[:PRINT_TEXT_MAX]
+        if s:
+            out[k] = s
+    return json.dumps(out, ensure_ascii=False) if out else ""
+
+
+def parse_print_texts(raw) -> dict:
+    """Đọc cột print_texts (JSON) -> dict cho API/bản in; rỗng hay hỏng -> {} (câu tự động)."""
+    try:
+        d = json.loads(raw or "")
+    except (ValueError, TypeError):
+        return {}
+    if not isinstance(d, dict):
+        return {}
+    return {k: str(d[k]) for k in PRINT_TEXT_KEYS if str(d.get(k) or "").strip()}
 
 
 def get_request(db: Session, rid: int) -> PaymentRequest:
@@ -182,13 +214,20 @@ EDIT_LOCK_MSG = {
 
 def update_request(db: Session, rid: int, data: PRequestUpdate, user_id: int) -> PaymentRequest:
     req = get_request(db, rid)
-    if req.status != "draft":
+    # CR-149: người dùng in phiếu SAU khi duyệt, nên câu chữ bản in phải sửa được ở
+    # cả submitted/approved — nhưng chỉ khi payload KHÔNG đụng trường nào khác
+    # (tiền, hóa đơn, hình thức... vẫn khóa cứng như CR-066). paid/cancelled khóa hẳn.
+    fields = data.model_dump(exclude_unset=True)
+    only_print_texts = set(fields) == {"print_texts"}
+    if req.status != "draft" and not (only_print_texts and req.status in ("submitted", "approved")):
         raise HTTPException(400, EDIT_LOCK_MSG.get(req.status, "Phiếu không còn ở trạng thái nháp, không sửa được"))
     for k, v in data.model_dump(exclude_unset=True, exclude={"lines"}).items():
         if k == "payment_method":
             v = norm_method(v)
         elif k == "prepay":                 # CR-146: chỉ nhận 0/1
             v = 1 if v else 0
+        elif k == "print_texts":            # CR-149: dict -> JSON đã lọc khóa + cắt độ dài
+            v = norm_print_texts(v)
         setattr(req, k, v)
     if data.lines is not None:
         db.query(PaymentRequestLine).filter(PaymentRequestLine.request_id == rid).delete()

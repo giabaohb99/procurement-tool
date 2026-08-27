@@ -34,6 +34,22 @@ const prepayHint = (p: number) => p
   : 'Mặc định — bản in ghi: "Thanh toán công nợ <tên NCC> <kỳ>". Đơn trả trước thì chọn "Thanh toán trước".'
 const hintStyle = { fontSize: 12, color: 'var(--muted)', marginTop: 4 } as const
 
+// CR-149 (ticket #14): 3 câu chữ trên bản in người dùng sửa được (lưu print_texts JSON).
+// Ô nào để trống thì bản in dùng câu tự động theo prepay (CR-146) như trước.
+const PT_FIELDS: { key: string; label: string; hint: string }[] = [
+  { key: 'content', label: 'Nội dung thanh toán', hint: 'Dòng "Nội dung" trong khối NỘI DUNG THANH TOÁN.' },
+  { key: 'line_desc', label: 'Diễn giải', hint: 'Cột "Diễn giải" của bảng Đề nghị thanh toán.' },
+  { key: 'transfer', label: 'Nội dung chuyển khoản', hint: 'Dòng "Nội dung chuyển khoản" — phiếu Tiền mặt thì bản in vẫn để trống cụm này.' },
+]
+// Câu tự động — phải khớp đúng công thức của trang in (PrintPaymentRequest.tsx)
+const autoPrintText = (req: any) => {
+  const sup = req.supplier_name || req.supplier_code
+  const period = (req.request_date || '').slice(0, 7).split('-').reverse().join('/')
+  return req.prepay
+    ? `Thanh toán trước cho nhà cung cấp ${sup}${period ? ' ' + period : ''}`
+    : `Thanh toán công nợ ${sup}${period ? ' ' + period : ''}`
+}
+
 export default function PaymentRequestDetail() {
   const { id } = useParams()
   // CR-025: `/payment-requests/new` KHÔNG còn là "phiếu đã tạo" — là màn nhập liệu, chỉ ghi DB khi bấm Tạo.
@@ -310,6 +326,11 @@ function PaymentRequestView() {
 
   // CR-066: chỉ bản NHÁP mới sửa được. Gửi duyệt / duyệt xong là khóa cứng (backend cũng chặn).
   const editable = req.status === 'draft' && can('payment_request', 'write')
+  // CR-149: riêng CÂU CHỮ BẢN IN sửa được đến trước khi Đã chi / Đã từ chối —
+  // người dùng in phiếu sau khi duyệt nên phải chỉnh được lúc đó.
+  const ptEditable = ['draft', 'submitted', 'approved'].includes(req.status) && can('payment_request', 'write')
+  const setPT = (key: string, v: string) =>
+    setReq((s: any) => ({ ...s, print_texts: { ...(s.print_texts || {}), [key]: v } }))
   const companyName = companies.find((c) => c.id === req.company_id)?.name || '—'
   const setLine = (i: number, patch: any) =>
     setReq((s: any) => ({ ...s, lines: s.lines.map((l: any, idx: number) => idx === i ? { ...l, ...patch } : l) }))
@@ -320,12 +341,20 @@ function PaymentRequestView() {
       await api.patch(`${API}/${id}`, {
         request_date: req.request_date, note: req.note, payment_method: req.payment_method || 'transfer',
         prepay: req.prepay ? 1 : 0,
+        print_texts: req.print_texts || {},   // CR-149
         lines: req.lines.map((l: any) => ({
           payable_id: l.payable_id, po_code: l.po_code || '', invoice_no: l.invoice_no || '',
           invoice_date: l.invoice_date || '', amount: Number(l.amount) || 0,
         })),
       })
       toast.success('Đã lưu'); loadAll()
+    } catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
+  }
+  // CR-149: phiếu ĐÃ GỬI DUYỆT / ĐÃ DUYỆT thì chỉ được PATCH mỗi print_texts (backend chặn phần còn lại)
+  async function savePrintTexts() {
+    try {
+      await api.patch(`${API}/${id}`, { print_texts: req.print_texts || {} })
+      toast.success('Đã lưu nội dung bản in'); loadAll()
     } catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
   }
   async function action(path: string) {
@@ -403,6 +432,34 @@ function PaymentRequestView() {
           </div>
           <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><textarea value={req.note || ''} disabled={!editable} onChange={(e) => setReq((s: any) => ({ ...s, note: e.target.value }))} /></div>
         </div>
+      </div>
+
+      {/* CR-149 (ticket #14): sửa 3 câu chữ trên bản in — được sửa đến trước khi Đã chi / Đã từ chối */}
+      <div className="card" style={{ padding: 18, marginBottom: 16 }}>
+        <h3 className="sec-title">Nội dung bản in</h3>
+        <div style={{ ...hintStyle, marginTop: 0, marginBottom: 10 }}>
+          Ô nào để trống thì bản in dùng câu tự động: <b>"{autoPrintText(req)}"</b>.
+          {ptEditable ? ' Sửa được đến trước khi phiếu Đã chi / Đã từ chối.' : ''}
+        </div>
+        <div className="form-grid">
+          {PT_FIELDS.map((f) => (
+            <div className="form-row" style={{ gridColumn: '1 / -1' }} key={f.key}>
+              <label>{f.label}</label>
+              <textarea rows={2} maxLength={500} placeholder={autoPrintText(req)}
+                        value={req.print_texts?.[f.key] || ''} disabled={!ptEditable}
+                        onChange={(e) => setPT(f.key, e.target.value)} />
+              <div style={hintStyle}>{f.hint}</div>
+            </div>
+          ))}
+        </div>
+        {ptEditable && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+            {req.status !== 'draft' && <button className="btn" onClick={savePrintTexts}><i className="ti ti-device-floppy" />Lưu nội dung in</button>}
+            <span style={hintStyle}>
+              {req.status === 'draft' ? 'Sửa xong nhớ bấm Lưu ở đầu trang.' : 'Phiếu đã khóa — chỉ còn sửa được phần nội dung bản in này.'}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ padding: 18, marginBottom: 16 }}>

@@ -50,6 +50,8 @@ def _line(db, ln) -> dict:
 def _out(db: Session, req: PaymentRequest) -> dict:
     d = {c: getattr(req, c) for c in HEADER}
     d["total"] = float(req.total or 0)
+    # CR-149: trả dict đã parse (không trả chuỗi JSON thô) — màn chi tiết + bản in dùng chung
+    d["print_texts"] = service.parse_print_texts(req.print_texts)
     d["created_by_name"] = resolve_actor(db, req.created_by)
     d["created_at"] = req.created_at
     d["lines"] = [_line(db, ln) for ln in service.lines_of(db, req.id)]
