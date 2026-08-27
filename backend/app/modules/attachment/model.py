@@ -22,6 +22,12 @@ class StoredFile(Base, AuditMixin):
     #  Tệp tải lên TRƯỚC khi có cột này để rỗng: tính lại phải tải toàn bộ
     #  object từ storage về, tốn kém mà không ai đang cần đối chiếu tệp cũ.
     sha256: Mapped[str] = mapped_column(String(64), default="")
+    #  Bản thumbnail sinh lúc upload (core/images.py) — chỗ hiển thị đọc bản nhẹ,
+    #  bấm xem lớn/tải về mới đụng bản gốc. Rỗng = không có (tệp không phải ảnh,
+    #  ảnh nhỏ sẵn không đáng nén, hoặc tệp tải lên trước khi có tính năng này)
+    #  → bên đọc fallback về `url`.
+    thumb_key: Mapped[str] = mapped_column(String(500), default="", server_default="")
+    thumb_url: Mapped[str] = mapped_column(String(1000), default="", server_default="")
 
 
 class FileLink(Base, AuditMixin):

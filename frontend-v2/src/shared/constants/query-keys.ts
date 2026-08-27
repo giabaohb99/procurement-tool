@@ -273,6 +273,26 @@ export const queryKeys = {
     /** Tệp gửi kèm lúc TẠO phiếu (entity `ticket`) — tách khỏi tệp trong tin nhắn. */
     ticketAttachments: (id: number) => ['support', 'tickets', id, 'attachments'] as const,
   },
+  /** Diễn đàn nội bộ — bảng tin cuộn vô hạn + từng bài viết. */
+  forum: {
+    all: ['forum'] as const,
+    /** Feed chung, phân trang con trỏ — khóa của `useInfiniteQuery`. */
+    feed: () => ['forum', 'posts', 'feed'] as const,
+    /**
+     * Bài MỚI NHẤT trên máy chủ (limit=1) — nút "Có bài viết mới" thăm dò bằng
+     * khóa này. Tách khỏi `feed` để lời thăm dò không đè cache của feed.
+     */
+    feedHead: () => ['forum', 'posts', 'head'] as const,
+    post: (id: number) => ['forum', 'posts', id] as const,
+    /** Mọi tủ bài viết cá nhân — dùng để reset cả cụm sau khi đăng/xóa bài. */
+    userPostsAll: () => ['forum', 'posts', 'user'] as const,
+    /** Tủ bài viết của một người (trang cá nhân) — cũng cuộn vô hạn như feed. */
+    userPosts: (userId: number) => ['forum', 'posts', 'user', userId] as const,
+    /** Danh sách người đã thích một bài — chỉ nạp khi mở hộp thoại. */
+    postLikes: (postId: number) => ['forum', 'posts', postId, 'likes'] as const,
+    /** Trang bình luận GỐC của một bài (F4) — phản hồi tải riêng khi bung, không có khóa. */
+    comments: (postId: number) => ['forum', 'posts', postId, 'comments'] as const,
+  },
   /** Trợ lý AI — nhà cung cấp, danh sách hội thoại và từng hội thoại kèm tin. */
   assistant: {
     all: ['assistant'] as const,

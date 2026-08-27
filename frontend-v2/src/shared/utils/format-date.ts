@@ -39,6 +39,33 @@ export function formatWeekdayDate(value: string | Date | null | undefined): stri
   return `${label}, ${day}.${month}.${year}`
 }
 
+/**
+ * `Vừa xong` · `5 phút trước` · `3 giờ trước` · `2 ngày trước` · `1 tuần trước`
+ * · `1 tháng trước`, quá ~2 tháng thì trả về ngày cụ thể — dùng cho dòng thời
+ * gian kiểu bảng tin (diễn đàn). Chuyển theo khuôn `fmtRelative` của v1.
+ *
+ * `now` truyền được từ ngoài để test không phụ thuộc "hôm nay"; mốc TƯƠNG LAI
+ * quá 5 phút là dữ liệu hỏng — hiện thẳng ngày giờ cho lộ ra thay vì âm số.
+ */
+export function formatRelativeTime(
+  value: string | Date | null | undefined,
+  now: Date = new Date(),
+): string {
+  const date = toDate(value)
+  if (!date) return ''
+  const minutes = Math.floor((now.getTime() - date.getTime()) / 60_000)
+  if (minutes < -5) return formatDateTime(date)
+  if (minutes < 1) return 'Vừa xong'
+  if (minutes < 60) return `${minutes} phút trước`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours} giờ trước`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days} ngày trước`
+  if (days < 30) return `${Math.floor(days / 7)} tuần trước`
+  if (days < 60) return `${Math.floor(days / 30)} tháng trước`
+  return formatDate(date)
+}
+
 /** `2026-08-11` — dạng dùng cho `<input type="date">` và tham số query. */
 export function toDateInputValue(value: string | Date | null | undefined): string {
   const date = toDate(value)

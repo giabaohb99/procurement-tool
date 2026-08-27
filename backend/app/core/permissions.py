@@ -28,6 +28,10 @@ ENTITIES = [
     # Trợ lý AI — cổng bật/tắt theo vai trò (chỉ ban lãnh đạo). Không có bảng
     # dữ liệu để lọc theo dòng nên khai PUBLIC ở scoping.
     "assistant",
+    # Diễn đàn nội bộ — entity này chỉ dành cho vai trò `forum_admin` (ẩn/xóa
+    # bài người khác, QĐ-D1). Người dùng thường KHÔNG cần grant: đăng/đọc đi
+    # theo luật audience riêng trong API diễn đàn, giống comment CR-033.
+    "forum_post",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -82,6 +86,7 @@ ENTITY_LABELS = {
     "driver": "Tài xế",
     "approval_flow": "Luồng phê duyệt (dùng chung)",
     "assistant": "Trợ lý AI",
+    "forum_post": "Diễn đàn › Kiểm duyệt bài viết",
 }
 
 ACTION_LABELS = {

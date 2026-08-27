@@ -199,7 +199,9 @@ _ALL_ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print
 # nghĩa cả một phòng ban. Đó là việc của quản trị hệ thống, không phải của nghiệp
 # vụ thu mua — mà `_PUR_MANAGER_PERMS` dưới đây cấp TẤT CẢ những gì không nằm
 # trong tập này.
-_SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox"}
+# `forum_post` cũng ở đây (27/08/2026): kiểm duyệt bài diễn đàn là việc của vai
+# trò `forum_admin`, không phải của nghiệp vụ thu mua — cùng lý do với help_article.
+_SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox", "forum_post"}
 _PUR_MANAGER_PERMS = {e: (_ALL_ACTIONS, "all") for e in ENTITIES if e not in _SYS_ENTITIES}
 
 STD_ROLES = {
@@ -277,6 +279,12 @@ STD_ROLES = {
     # Nhóm Hỗ trợ: xử lý tập trung MỌI phiếu hỗ trợ (đọc/trả lời/đổi trạng thái/đóng), phạm vi all.
     "support": {"name": "Nhân viên hỗ trợ", "perms": {
         "ticket": (["read", "create", "write", "delete"], "all"),
+    }},
+    # Quản trị Diễn đàn nội bộ (QĐ-D1): ẩn/xóa/khôi phục bài người khác — bắt buộc
+    # kèm lý do + thông báo tác giả (luật nằm ở service, F5). Người dùng thường
+    # KHÔNG cần vai trò nào: đăng/đọc bài đi theo luật audience của API diễn đàn.
+    "forum_admin": {"name": "Quản trị Diễn đàn", "perms": {
+        "forum_post": (["read", "write", "delete"], "all"),
     }},
     # ── Hai vai trò MẪU cho phân hệ Văn bản (24/08/2026) ─────────────────────
     #

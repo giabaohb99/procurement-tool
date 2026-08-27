@@ -88,6 +88,15 @@ export interface ErpModule {
    * `nav: []`, `routes: []` và bị loại khỏi router.
    */
   externalUrl?: () => string
+  /**
+   * Phân hệ TỰ MANG KHUNG riêng thay vì dùng `ModuleLayout` (sidebar nghiệp vụ).
+   * Route của nó gắn thẳng dưới `ProtectedRoute`, và `routes.tsx` của phân hệ
+   * phải tự khai layout + `errorElement` cho nhánh của mình.
+   *
+   * Sinh ra cho Diễn đàn (QĐ-D6): mạng nội bộ một cột kiểu bảng tin, sidebar
+   * chứng từ không có nghĩa ở đó.
+   */
+  customLayout?: boolean
   /** Tab điều hướng bên trong module. */
   nav: ModuleNavItem[]
   /** Route con, gắn vào bên trong `AppLayout`. */

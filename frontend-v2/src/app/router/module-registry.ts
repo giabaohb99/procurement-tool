@@ -5,6 +5,7 @@ import { customerModule } from '@/modules/customer/routes'
 import { degoCoffeeModule } from '@/modules/dego-coffee/routes'
 import { documentModule } from '@/modules/document/routes'
 import { financeModule } from '@/modules/finance/routes'
+import { forumModule } from '@/modules/forum/routes'
 import { helpCenterModule } from '@/modules/help/routes'
 import { hrModule } from '@/modules/hr/routes'
 import { inventoryModule } from '@/modules/inventory/routes'
@@ -43,6 +44,7 @@ export const allModules: ErpModule[] = [
   reportModule,
   supportModule,
   assistantModule,
+  forumModule,
   systemModule,
   // Đứng cuối: không phải phân hệ nghiệp vụ mà là link sang app Hướng dẫn sử dụng.
   helpCenterModule,
@@ -57,5 +59,16 @@ export const moduleRegistry: ErpModule[] = allModules.filter(
   (m) => m.enabled && !m.externalUrl,
 )
 
-/** Toàn bộ route của các phân hệ ĐANG BẬT, đã dàn phẳng để đưa vào router. */
-export const moduleRoutes = moduleRegistry.flatMap((m) => m.routes)
+/**
+ * Route của các phân hệ ĐANG BẬT chạy trong khung `ModuleLayout` (sidebar).
+ * Phân hệ `customLayout` (Diễn đàn) KHÔNG nằm đây — khung của nó do chính
+ * `routes.tsx` của phân hệ tự khai, xem `customModuleRoutes`.
+ */
+export const moduleRoutes = moduleRegistry
+  .filter((m) => !m.customLayout)
+  .flatMap((m) => m.routes)
+
+/** Route của các phân hệ tự mang khung riêng — gắn thẳng dưới `ProtectedRoute`. */
+export const customModuleRoutes = moduleRegistry
+  .filter((m) => m.customLayout)
+  .flatMap((m) => m.routes)

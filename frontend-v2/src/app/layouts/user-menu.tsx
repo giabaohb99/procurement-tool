@@ -15,6 +15,7 @@ import { toast } from 'sonner'
 import { CreateTicketDialog } from '@/app/components/profile/create-ticket-dialog'
 import { apiPost } from '@/core/api'
 import { useAuth } from '@/core/auth/use-auth'
+import { AvatarPostDialog } from '@/modules/forum/components/avatar-post-dialog'
 import { useTranslation } from '@/core/i18n/use-translation'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
@@ -37,6 +38,8 @@ export function UserMenu() {
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false)
+  // Ảnh vừa đổi xong, đang chờ chủ nhân quyết "đăng lên diễn đàn hay thôi" (F10).
+  const [sharing, setSharing] = useState<{ file: File; url: string } | null>(null)
 
   async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -50,6 +53,7 @@ export function UserMenu() {
       const result = await apiPost<{ avatar: string }>('/api/auth/avatar', formData)
       setUser({ ...user, avatar: result.avatar })
       toast.success('Đã cập nhật ảnh đại diện')
+      setSharing({ file, url: result.avatar })
     } catch {
       // HTTP client đã hiện thông báo lỗi cho thao tác POST.
     } finally {
@@ -199,6 +203,15 @@ export function UserMenu() {
       <CreateTicketDialog
         open={ticketDialogOpen}
         onOpenChange={setTicketDialogOpen}
+      />
+
+      <AvatarPostDialog
+        open={!!sharing}
+        onOpenChange={(open) => {
+          if (!open) setSharing(null)
+        }}
+        file={sharing?.file ?? null}
+        previewUrl={sharing?.url ?? ''}
       />
     </>
   )

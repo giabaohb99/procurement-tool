@@ -56,6 +56,14 @@ def resolve_doc(db: Session, user, entity: str, entity_id: int):
     if not pol:
         raise HTTPException(400, f"Không hỗ trợ bình luận cho: {entity}")
     parent, label, route = pol
+    #  Diễn đàn (F1) rẽ nhánh TRƯỚC lớp RBAC: người thường không có grant
+    #  `forum_post` nào cả — ai thấy bài (nên đọc/góp ý được) đi theo luật
+    #  audience của chính bài đó (`forum/service.can_view`). Kiểm ở đây là đủ
+    #  cho cả đính kèm trong bình luận, vì `_check_comment` cũng qua hàm này.
+    if entity == "forum_post":
+        from app.modules.forum.service import get_visible_post
+        post = get_visible_post(db, user, entity_id)
+        return post, label, route
     if not user_has_permission(db, user, parent, "read"):
         raise HTTPException(403, "Không có quyền xem chứng từ này")
     model = doc_model(entity)

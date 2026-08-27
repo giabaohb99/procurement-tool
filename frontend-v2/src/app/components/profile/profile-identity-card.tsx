@@ -1,10 +1,12 @@
 import { Bell, Building, BriefcaseBusiness, IdCard, ShieldCheck } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { apiPost } from '@/core/api'
 import type { AuthUser } from '@/core/auth/auth-types'
 import { useAuth } from '@/core/auth/use-auth'
+import { AvatarPostDialog } from '@/modules/forum/components/avatar-post-dialog'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -30,6 +32,8 @@ function initials(fullName?: string): string {
  */
 export function ProfileIdentityCard({ profile }: { profile: AuthUser | null }) {
   const { user, setUser } = useAuth()
+  // Ảnh vừa đổi xong, đang chờ chủ nhân quyết "đăng lên diễn đàn hay thôi" (F10).
+  const [sharing, setSharing] = useState<{ file: File; url: string } | null>(null)
 
   const name = profile?.full_name || user?.full_name || 'Người dùng'
   const avatar = user?.avatar || profile?.avatar || ''
@@ -46,6 +50,7 @@ export function ProfileIdentityCard({ profile }: { profile: AuthUser | null }) {
       const result = await apiPost<{ avatar: string }>('/api/auth/avatar', formData)
       if (user) setUser({ ...user, avatar: result.avatar })
       toast.success('Đã cập nhật ảnh đại diện')
+      setSharing({ file, url: result.avatar })
     } catch {
       // HTTP client đã hiện thông báo lỗi cho thao tác POST.
     }
@@ -101,6 +106,15 @@ export function ProfileIdentityCard({ profile }: { profile: AuthUser | null }) {
           </Link>
         </Button>
       </div>
+
+      <AvatarPostDialog
+        open={!!sharing}
+        onOpenChange={(open) => {
+          if (!open) setSharing(null)
+        }}
+        file={sharing?.file ?? null}
+        previewUrl={sharing?.url ?? ''}
+      />
     </Card>
   )
 }

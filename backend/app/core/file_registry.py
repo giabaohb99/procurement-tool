@@ -36,6 +36,14 @@ FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
     # `__self__` ở đây chỉ mở bước TẢI FILE TẠM (chưa gắn vào đâu);
     # còn gắn/đọc/xóa link đều đi qua nhánh riêng trong `attachment/controller.py`.
     "comment":                ("__self__", _DOC, 50),
+    # Bài viết diễn đàn: ảnh + video (D-Q3 chốt 27/08/2026 — video quay điện thoại
+    # đăng thẳng, mp4/webm là hai định dạng <video> mọi trình duyệt phát được).
+    # Trần 50MB/tệp vì video: ảnh cũng ăn chung trần này — chấp nhận, vì policy
+    # mỗi entity chỉ có một con số; trần 10 TỆP/bài kiểm ở tầng service khi gắn.
+    # `__self__` vì người dùng thường không có grant RBAC trên `forum_post`
+    # (đăng/đọc đi theo luật audience) — F1 thêm nhánh kiểm audience riêng trong
+    # `attachment/controller.py`, đúng khuôn `_check_comment`.
+    "forum_post":             ("__self__", _IMG | {"mp4", "webm"}, 50),
     # Đính kèm của văn bản treo vào PHIÊN BẢN (`entity_id` = id phiên bản), không
     # vào văn bản: bản đã duyệt phải tra ra đúng bộ tệp lúc duyệt, kể cả sau khi
     # bản mới đã gỡ bớt. Quyền kiểm trên entity cha `document`.

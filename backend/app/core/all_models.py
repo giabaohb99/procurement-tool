@@ -57,3 +57,4 @@ from app.modules.approval import delegation_model as _approval_delegation  # noq
 from app.modules.seal_request import model as _seal_request  # noqa: F401
 from app.modules.vehicle_booking import model as _vehicle_booking  # noqa: F401
 from app.modules.assistant import model as _assistant  # noqa: F401
+from app.modules.forum import model as _forum  # noqa: F401

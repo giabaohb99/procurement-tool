@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -55,6 +55,42 @@ describe('ImageLightbox', () => {
     // Lỗi hay gặp: quá đầu không vòng lại mà kẹt ở 0 (hoặc ra -1).
     await userEvent.click(screen.getByRole('button', { name: 'Ảnh trước' }))
     expect(onIndexChange).toHaveBeenCalledWith(2)
+  })
+
+  it('bấm "Sao chép liên kết ảnh" thì chép URL tuyệt đối vào clipboard', async () => {
+    // CR-190 port: liên kết chép ra phải là URL tuyệt đối, không phải đường dẫn tương đối.
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    // Dùng fireEvent thay vì userEvent vì userEvent tự thay navigator.clipboard bằng stub riêng.
+    Object.defineProperty(window.navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+    render(
+      <ImageLightbox
+        images={IMAGES}
+        index={0}
+        open
+        onOpenChange={vi.fn()}
+        onIndexChange={vi.fn()}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Sao chép liên kết ảnh' }))
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(new URL('a.png', window.location.href).href),
+    )
+  })
+
+  it('có nút tải ảnh xuống trên thanh công cụ', () => {
+    render(
+      <ImageLightbox
+        images={IMAGES}
+        index={0}
+        open
+        onOpenChange={vi.fn()}
+        onIndexChange={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Tải ảnh xuống' })).toBeInTheDocument()
   })
 
   it('chỉ một ảnh thì ẩn nút chuyển', () => {

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   formatDate,
   formatDateTime,
+  formatRelativeTime,
   formatWeekdayDate,
   toDateInputValue,
 } from './format-date'
@@ -69,6 +70,41 @@ describe('toDateInputValue', () => {
   it('trả rỗng khi không có giá trị', () => {
     expect(toDateInputValue(null)).toBe('')
     expect(toDateInputValue('lung tung')).toBe('')
+  })
+})
+
+describe('formatRelativeTime', () => {
+  // Mốc "bây giờ" cố định: 27/08/2026 17:00 giờ VN = 10:00 UTC.
+  const now = new Date('2026-08-27T10:00:00Z')
+
+  it('leo thang theo độ xa: vừa xong, phút, giờ, ngày, tuần, tháng', () => {
+    expect(formatRelativeTime('2026-08-27T09:59:40', now)).toBe('Vừa xong')
+    expect(formatRelativeTime('2026-08-27T09:55:00', now)).toBe('5 phút trước')
+    expect(formatRelativeTime('2026-08-27T07:00:00', now)).toBe('3 giờ trước')
+    expect(formatRelativeTime('2026-08-25T10:00:00', now)).toBe('2 ngày trước')
+    expect(formatRelativeTime('2026-08-18T10:00:00', now)).toBe('1 tuần trước')
+    expect(formatRelativeTime('2026-07-20T10:00:00', now)).toBe('1 tháng trước')
+  })
+
+  it('quá ~2 tháng thì thôi đếm, hiện thẳng ngày', () => {
+    expect(formatRelativeTime('2026-05-01T10:00:00', now)).toBe('01/05/2026')
+  })
+
+  it('mốc TƯƠNG LAI quá 5 phút là dữ liệu hỏng — hiện ngày giờ cho lộ ra', () => {
+    // Không được ra "-30 phút trước"; lệch nhỏ vài phút (giờ máy chưa khớp) thì
+    // vẫn coi là "Vừa xong".
+    expect(formatRelativeTime('2026-08-27T10:30:00', now)).toBe('27/08/2026 17:30')
+    expect(formatRelativeTime('2026-08-27T10:02:00', now)).toBe('Vừa xong')
+  })
+
+  it('chuỗi TRẦN của backend được hiểu là UTC như mọi hàm khác trong tệp này', () => {
+    // 09:00 trần = 16:00 giờ VN, tức 1 giờ trước mốc 17:00 — không phải 8 giờ.
+    expect(formatRelativeTime('2026-08-27T09:00:00', now)).toBe('1 giờ trước')
+  })
+
+  it('trả rỗng khi không có giá trị', () => {
+    expect(formatRelativeTime(null, now)).toBe('')
+    expect(formatRelativeTime('hỏng', now)).toBe('')
   })
 })
 

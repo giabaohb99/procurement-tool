@@ -22,7 +22,7 @@ from app.core.storage import (dated_key, delete_key, download_bytes,
 from app.modules.document.file_access_log import ACTION_TAI, ACTION_XEM
 
 from .model import FileLink, StoredFile
-from .service import _delete_file_if_orphan
+from .service import _delete_file_if_orphan, attach_thumb, make_thumb_for
 
 router = APIRouter(prefix="/api/attachments", tags=["attachment"])
 
@@ -36,6 +36,7 @@ def _link_out(link: FileLink, f: StoredFile) -> dict:
     #  nó cho mọi entity khác; đổi kiểu trả về là làm vỡ màn đang chạy thật.
     return {"id": link.id, "file_id": f.id, "filename": f.filename,
             "url": "" if is_private(link.entity) else f.url,
+            "thumb_url": "" if is_private(link.entity) else f.thumb_url,
             "content_type": f.content_type, "size": f.size, "sha256": f.sha256,
             "entity": link.entity, "entity_id": link.entity_id,
             "doc_type": link.doc_type, "sort_order": link.sort_order}
@@ -43,6 +44,7 @@ def _link_out(link: FileLink, f: StoredFile) -> dict:
 
 def _file_out(f: StoredFile) -> dict:
     return {"file_id": f.id, "filename": f.filename, "url": f.url,
+            "thumb_url": f.thumb_url,
             "content_type": f.content_type, "size": f.size, "sha256": f.sha256}
 
 
@@ -127,14 +129,37 @@ def _check_comment(db: Session, user, comment_id: int, mode: str):
     return c
 
 
-def _deny_comment(entity: str):
-    """Chặn các lối gắn link chung chung vào bình luận.
+def _check_forum(db: Session, user, post_id: int, mode: str):
+    """Quyền với ảnh của MỘT bài diễn đàn (F1) — khuôn `_check_comment`.
 
-    Đính kèm bình luận CHỈ được gắn khi gửi bài (POST /api/comments với `file_ids`) — đi cửa
-    khác thì bỏ qua kiểm quyền theo chứng từ cha, và sinh ra file treo vào bình luận không có thật.
+    `FILE_POLICY["forum_post"]` để `__self__` vì người thường không có grant RBAC
+    trên `forum_post` — ai xem được ảnh đi theo LUẬT AUDIENCE của chính bài đó
+    (`forum/service.can_view`). Thiếu bước này thì ai đăng nhập cũng tải được
+    ảnh trong bài phạm vi phòng ban của phòng khác chỉ bằng cách đoán link_id.
+    """
+    from app.modules.forum.model import ForumPost
+    from app.modules.forum.service import can_view
+
+    p = db.get(ForumPost, post_id)
+    if not p:
+        raise HTTPException(404, "Bài viết không tồn tại")
+    if not can_view(db, user, p):
+        raise HTTPException(403, "Bạn không được xem bài viết này")
+    if mode == "manage" and p.created_by != user.id:
+        raise HTTPException(403, "Chỉ tác giả mới gỡ được ảnh của bài viết")
+    return p
+
+
+def _deny_comment(entity: str):
+    """Chặn các lối gắn link chung chung vào bình luận / bài diễn đàn.
+
+    Đính kèm hai loại này CHỈ được gắn khi gửi bài (`file_ids` lúc tạo) — đi cửa
+    khác thì bỏ qua kiểm quyền theo chứng từ cha, và sinh ra link treo vào bản ghi không có thật.
     """
     if entity == "comment":
         raise HTTPException(400, "Đính kèm bình luận phải gửi kèm khi tạo bình luận")
+    if entity == "forum_post":
+        raise HTTPException(400, "Ảnh bài viết phải gửi kèm khi đăng bài (file_ids)")
 
 
 def _sha256_of(fileobj) -> str:
@@ -166,12 +191,15 @@ def _store_one(db: Session, f: UploadFile, exts: set, max_mb: int, user_id: int)
                     created_by=user_id, updated_by=user_id)
     db.add(sf); db.flush()
     key = dated_key("attachment", f.filename or "file", sf.id)
+    # Thumb phải sinh TRƯỚC upload bản gốc — boto3 đóng f.file khi đẩy xong.
+    thumb = make_thumb_for(f.filename or "", f.file)
     try:
         url = upload_fileobj(f.file, key, f.content_type or "")
     except RuntimeError as e:
         db.rollback()
         raise HTTPException(400, str(e))
     sf.file_key = key; sf.url = url
+    attach_thumb(sf, thumb)
     db.commit(); db.refresh(sf)
     return sf
 
@@ -183,6 +211,8 @@ def list_attachments(
 ):
     if entity == "comment":
         _check_comment(db, user, entity_id, "read")
+    elif entity == "forum_post":
+        _check_forum(db, user, entity_id, "read")
     else:
         _check(db, user, entity, "read", entity_id)
     rows = (db.query(FileLink, StoredFile)
@@ -518,6 +548,8 @@ def _lay_file_co_quyen(db: Session, user, link_id: int,
         raise HTTPException(404, "Không tìm thấy file")
     if lk.entity == "comment":
         _check_comment(db, user, lk.entity_id, "read")
+    elif lk.entity == "forum_post":
+        _check_forum(db, user, lk.entity_id, "read")
     else:
         try:
             _check(db, user, lk.entity, "read", lk.entity_id)
@@ -575,6 +607,8 @@ def remove(link_id: int, db: Session = Depends(get_db), user=Depends(get_current
         raise HTTPException(404, "Không tìm thấy file")
     if lk.entity == "comment":
         _check_comment(db, user, lk.entity_id, "manage")
+    elif lk.entity == "forum_post":
+        _check_forum(db, user, lk.entity_id, "manage")
     else:
         _check(db, user, lk.entity, "manage", lk.entity_id)
         _chan_ban_dang_duyet(db, lk.entity, lk.entity_id)

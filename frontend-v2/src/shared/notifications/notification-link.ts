@@ -48,6 +48,7 @@ const V2_PREFIXES = [
   '/dego-coffee',
   '/document',
   '/finance',
+  '/forum',
   '/hr',
   '/inventory',
   '/procurement',

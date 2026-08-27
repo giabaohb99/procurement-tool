@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { allModules, moduleRegistry, moduleRoutes } from './module-registry'
+import {
+  allModules,
+  customModuleRoutes,
+  moduleRegistry,
+  moduleRoutes,
+} from './module-registry'
 
 /**
  * Hợp đồng "thêm module = thêm một dòng" chỉ đứng vững nếu bảng đăng ký luôn
@@ -61,8 +66,18 @@ describe('module-registry', () => {
     }
   })
 
-  it('moduleRoutes gom đủ route của các phân hệ đang bật', () => {
-    const total = moduleRegistry.reduce((sum, m) => sum + m.routes.length, 0)
-    expect(moduleRoutes).toHaveLength(total)
+  it('moduleRoutes + customModuleRoutes gom đủ route của các phân hệ đang bật, không lẫn nhau', () => {
+    const inLayout = moduleRegistry
+      .filter((m) => !m.customLayout)
+      .reduce((sum, m) => sum + m.routes.length, 0)
+    const custom = moduleRegistry
+      .filter((m) => m.customLayout)
+      .reduce((sum, m) => sum + m.routes.length, 0)
+    expect(moduleRoutes).toHaveLength(inLayout)
+    expect(customModuleRoutes).toHaveLength(custom)
+    // Một route lọt cả hai danh sách là được mount hai lần — router sẽ khớp bừa.
+    for (const route of customModuleRoutes) {
+      expect(moduleRoutes).not.toContain(route)
+    }
   })
 })

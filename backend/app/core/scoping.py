@@ -134,6 +134,11 @@ SCOPE_FIELDS = {
     # `assistant` là cổng require() thuần (chỉ ban lãnh đạo), không có bảng nào
     # để lọc theo dòng — dữ liệu bot đọc đã đi qua apply_scope của từng tool.
     "assistant":        PUBLIC,
+    # Diễn đàn: ai thấy bài nào KHÔNG đi theo phạm vi RBAC mà theo luật audience
+    # riêng (phòng ban / pháp nhân / public đóng băng trên từng bài — QĐ-D3),
+    # viết thẳng trong WHERE của API feed. Entity này chỉ gác cổng kiểm duyệt
+    # của `forum_admin` bằng require(), nên khai PUBLIC.
+    "forum_post":       PUBLIC,
 }
 
 

@@ -108,6 +108,17 @@ export const appRoutes = {
   customer: {
     root: '/customer',
   },
+  /**
+   * Diễn đàn nội bộ (QĐ-D6) — phân hệ `customLayout`, một cột kiểu bảng tin,
+   * KHÔNG dùng sidebar nghiệp vụ. `/forum/me` và `/forum/users/:id` là F3.
+   */
+  forum: {
+    root: '/forum',
+    postDetail: (id: number | string) => `/forum/posts/${id}`,
+    /** Trang cá nhân của CHÍNH MÌNH (QĐ-D3) — thấy cả bài bị ẩn của mình. */
+    me: '/forum/me',
+    userProfile: (id: number | string) => `/forum/users/${id}`,
+  },
   project: {
     root: '/project',
   },

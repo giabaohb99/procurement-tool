@@ -2,9 +2,34 @@ import hashlib
 
 from sqlalchemy.orm import Session
 
+from app.core.file_registry import ext_of
+from app.core.images import THUMBABLE_EXTS, make_thumb
 from app.core.storage import dated_key, delete_key, upload_fileobj
 
 from .model import FileLink, StoredFile
+
+
+def make_thumb_for(filename: str, fileobj, *, max_edge: int = 1280):
+    """Sinh bản thumbnail trong RAM. PHẢI gọi TRƯỚC khi upload bản gốc:
+    boto3 `upload_fileobj` ĐÓNG fileobj khi đẩy xong, gọi sau là chỉ còn
+    luồng chết và make_thumb lặng lẽ trả None (không thumb nào được sinh)."""
+    if ext_of(filename or "") not in THUMBABLE_EXTS:
+        return None
+    return make_thumb(fileobj, max_edge=max_edge)
+
+
+def attach_thumb(sf: StoredFile, thumb):
+    """Tải bản thumbnail đã sinh sẵn lên storage, cạnh bản gốc (chưa commit).
+    Mọi lỗi nuốt trong im lặng — thiếu thumb thì bên đọc fallback về `url`,
+    không được vì thumb mà hỏng cú upload."""
+    if not thumb:
+        return
+    key = f"{sf.file_key}.thumb.jpg"
+    try:
+        sf.thumb_url = upload_fileobj(thumb, key, "image/jpeg")
+        sf.thumb_key = key
+    except Exception:
+        pass
 
 
 def _sha256_of(fileobj) -> str:
@@ -19,7 +44,8 @@ def _sha256_of(fileobj) -> str:
 
 
 def create_stored_file(db: Session, *, fileobj, filename: str, content_type: str,
-                       category: str, actor_id: int) -> StoredFile:
+                       category: str, actor_id: int,
+                       thumb_max_edge: int = 1280) -> StoredFile:
     """Tải 1 tệp lên storage + tạo dòng tab_file ĐỘC LẬP (không FileLink).
     Dùng cho ảnh đại diện: 1 file = 1 người, quản lý/xóa trực tiếp qua avatar_file_id."""
     fileobj.seek(0, 2); size = fileobj.tell(); fileobj.seek(0)
@@ -28,8 +54,10 @@ def create_stored_file(db: Session, *, fileobj, filename: str, content_type: str
                     size=size, sha256=digest, created_by=actor_id, updated_by=actor_id)
     db.add(sf); db.flush()  # lấy id để đặt key có cấu trúc {env}/{category}/{năm}/{tháng}/{id}-tên
     key = dated_key(category, filename, sf.id)
+    thumb = make_thumb_for(filename, fileobj, max_edge=thumb_max_edge)
     url = upload_fileobj(fileobj, key, content_type or "")
     sf.file_key = key; sf.url = url
+    attach_thumb(sf, thumb)
     db.flush()
     return sf
 
@@ -41,11 +69,19 @@ def delete_stored_file(db: Session, file_id: int):
         return
     f = db.get(StoredFile, file_id)
     if f:
+        _delete_storage_of(f)
+        db.delete(f)
+
+
+def _delete_storage_of(f: StoredFile):
+    """Xóa tệp gốc + bản thumbnail (nếu có) trên storage."""
+    for key in (f.file_key, f.thumb_key):
+        if not key:
+            continue
         try:
-            delete_key(f.file_key)
+            delete_key(key)
         except Exception:
             pass
-        db.delete(f)
 
 
 def _delete_file_if_orphan(db: Session, file_id: int):
@@ -54,10 +90,7 @@ def _delete_file_if_orphan(db: Session, file_id: int):
         return
     f = db.get(StoredFile, file_id)
     if f:
-        try:
-            delete_key(f.file_key)
-        except Exception:
-            pass
+        _delete_storage_of(f)
         db.delete(f)
 
 

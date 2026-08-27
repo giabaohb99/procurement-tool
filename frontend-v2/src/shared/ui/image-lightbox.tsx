@@ -1,6 +1,7 @@
-import { ChevronLeft, ChevronRight, ExternalLink, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, ExternalLink, Link, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { Dialog as DialogPrimitive } from 'radix-ui'
+import { toast } from 'sonner'
 
 import { cn } from '@/shared/utils/cn'
 
@@ -27,6 +28,34 @@ export function useImageLightbox() {
       },
       onIndexChange: (i: number) => setIndex(i),
     },
+  }
+}
+
+// Tải qua fetch -> blob vì gán thẳng href sẽ bị trình duyệt mở tab thay vì tải về.
+async function downloadImage(img: LightboxImage) {
+  try {
+    const res = await fetch(img.url)
+    if (!res.ok) throw new Error(String(res.status))
+    const blobUrl = URL.createObjectURL(await res.blob())
+    const a = document.createElement('a')
+    a.href = blobUrl
+    a.download = img.name || decodeURIComponent(img.url.split('/').pop() || 'anh')
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(blobUrl)
+  } catch {
+    toast.error('Tải ảnh thất bại')
+  }
+}
+
+async function copyImageLink(img: LightboxImage) {
+  const absolute = new URL(img.url, window.location.href).href
+  try {
+    await navigator.clipboard.writeText(absolute)
+    toast.success('Đã sao chép liên kết ảnh')
+  } catch {
+    toast.error('Không sao chép được liên kết')
   }
 }
 
@@ -96,7 +125,7 @@ export function ImageLightbox({
             {current.name || 'Xem ảnh'}
           </DialogPrimitive.Title>
 
-          {/* Thanh trên: tên · bộ đếm · mở tab mới · đóng */}
+          {/* Thanh trên: tên · bộ đếm · sao chép liên kết · tải xuống · mở tab mới · đóng */}
           <div className="flex items-center gap-3 px-4 py-3">
             <span className="min-w-0 flex-1 truncate text-sm" title={current.name}>
               {current.name}
@@ -106,6 +135,24 @@ export function ImageLightbox({
                 {index + 1}/{count}
               </span>
             )}
+            <button
+              type="button"
+              title="Sao chép liên kết ảnh"
+              aria-label="Sao chép liên kết ảnh"
+              onClick={() => void copyImageLink(current)}
+              className="shrink-0 rounded-md p-1.5 opacity-80 transition-opacity hover:bg-white/10 hover:opacity-100"
+            >
+              <Link className="size-5" />
+            </button>
+            <button
+              type="button"
+              title="Tải ảnh xuống"
+              aria-label="Tải ảnh xuống"
+              onClick={() => void downloadImage(current)}
+              className="shrink-0 rounded-md p-1.5 opacity-80 transition-opacity hover:bg-white/10 hover:opacity-100"
+            >
+              <Download className="size-5" />
+            </button>
             <a
               href={current.url}
               target="_blank"

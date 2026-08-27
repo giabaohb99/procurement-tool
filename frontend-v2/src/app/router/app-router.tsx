@@ -10,7 +10,7 @@ import { ResetPasswordPage } from '@/core/auth/pages/reset-password-page'
 import { NotFoundPage } from '@/shared/ui/not-found-page'
 import { RouteErrorPage } from '@/shared/ui/route-error-page'
 import { appRoutes } from '@/shared/constants/app-routes'
-import { moduleRoutes } from './module-registry'
+import { customModuleRoutes, moduleRoutes } from './module-registry'
 import { ProtectedRoute } from './protected-route'
 
 /**
@@ -83,6 +83,9 @@ export const router = createBrowserRouter([
             }),
             errorElement: <RouteErrorPage />,
           },
+          //  Phân hệ TỰ MANG KHUNG riêng (Diễn đàn) — đứng ngoài `ModuleLayout`
+          //  như các trang in; `routes.tsx` của phân hệ tự lo layout + errorElement.
+          ...customModuleRoutes,
           {
             element: <LauncherLayout />,
             children: [

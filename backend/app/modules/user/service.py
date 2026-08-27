@@ -24,8 +24,10 @@ def set_user_avatar(db: Session, user: User, *, fileobj, filename: str,
     file cũ (hết ảnh mồ côi). Trả về URL để phản hồi cho client. Commit tại đây."""
     from app.modules.attachment.service import create_stored_file, delete_stored_file
     old = user.avatar_file_id
+    # Avatar vẽ tối đa 144px (retina ~288) — thumb 320 là dư nét, nhẹ hơn cả trăm lần.
     sf = create_stored_file(db, fileobj=fileobj, filename=filename,
-                            content_type=content_type, category="avatar", actor_id=actor_id)
+                            content_type=content_type, category="avatar", actor_id=actor_id,
+                            thumb_max_edge=320)
     user.avatar_file_id = sf.id
     db.flush()
     if old and old != sf.id:

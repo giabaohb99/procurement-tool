@@ -39,9 +39,13 @@ class User(Base, AuditMixin):
     @property
     def avatar(self) -> str:
         """URL ảnh đại diện để hiển thị — giữ nguyên kiểu chuỗi như trước để mọi nơi
-        đang đọc `user.avatar` (đăng nhập, bình luận, phiếu hỗ trợ, nhân sự) không đổi."""
+        đang đọc `user.avatar` (đăng nhập, bình luận, phiếu hỗ trợ, nhân sự) không đổi.
+        Ưu tiên bản thumbnail (avatar vẽ 32–144px, tải nguyên tệp gốc là phí băng
+        thông); ảnh cũ chưa có thumb thì vẫn về bản gốc."""
         f = self.avatar_file
-        return (f.url or "") if f else ""
+        if not f:
+            return ""
+        return f.thumb_url or f.url or ""
 
 
 class UserRole(Base, AuditMixin):

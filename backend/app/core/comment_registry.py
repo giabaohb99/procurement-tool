@@ -13,6 +13,11 @@ COMMENT_POLICY: dict[str, tuple[str, str, str]] = {
     "survey_request":   ("survey_request",   "Yêu cầu báo giá",  "/survey-requests"),
     "survey":           ("survey",           "Phiếu khảo sát",   "/surveys"),
     "purchase_order":   ("purchase_order",   "Đơn mua hàng",     "/purchase-orders"),
+    # Diễn đàn (F1): entity cha chỉ để ĐẶT TÊN — `resolve_doc` rẽ nhánh riêng kiểm
+    # theo luật audience của bài, KHÔNG kiểm RBAC (người thường không có grant nào).
+    # Route ghi THẲNG dạng v2 (khuôn Văn thư): diễn đàn chỉ có trên `frontend-v2`,
+    # ghi "/posts" thì `notification-link.toAppPath` bên FE trả null — chuông câm.
+    "forum_post":       ("forum_post",       "Bài viết diễn đàn", "/forum/posts"),
 }
 
 
@@ -38,4 +43,7 @@ def doc_model(entity: str):
     if entity == "purchase_order":
         from app.modules.purchase_order.model import PurchaseOrder
         return PurchaseOrder
+    if entity == "forum_post":
+        from app.modules.forum.model import ForumPost
+        return ForumPost
     return None

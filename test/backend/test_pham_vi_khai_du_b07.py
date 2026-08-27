@@ -67,7 +67,7 @@ def test_khong_khai_thua_entity_khong_ton_tai():
     assert thua == [], f"khai thừa, không có trong ENTITIES: {thua}"
 
 
-def test_du_44_entity():
+def test_du_45_entity():
     """Chốt cứng con số để lần sau đọc test là biết ngay quy mô.
 
     39 → 42 ngày 25/08/2026 (CR-157): tách `doc_template`, `doc_numbering_rule`,
@@ -76,9 +76,12 @@ def test_du_44_entity():
     42 → 43: thêm entity `assistant` cho Trợ lý AI (gác `assistant.read`).
     43 → 44 ngày 26/08/2026: thêm `mailbox` — ai được KHAI hộp thư gửi và cấp
     cho người khác dùng (quyền *dùng* thì khai đích danh ở `tab_mailbox_member`).
+    44 → 45 ngày 27/08/2026: thêm `forum_post` (Diễn đàn, F0) — PUBLIC vì ai
+    thấy bài nào đi theo luật audience riêng của API feed, entity chỉ gác cổng
+    kiểm duyệt của `forum_admin`.
     """
-    assert len(ENTITIES) == 44
-    assert len(SCOPE_FIELDS) == 44
+    assert len(ENTITIES) == 45
+    assert len(SCOPE_FIELDS) == 45
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────
