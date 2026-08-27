@@ -1,4 +1,4 @@
-import { Maximize2, Sparkles, SquarePen, X } from 'lucide-react'
+import { Loader2, Maximize2, Sparkles, SquarePen, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -6,10 +6,16 @@ import { useQueryClient } from '@tanstack/react-query'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 import { queryKeys } from '@/shared/constants/query-keys'
+import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/utils/cn'
 import { assistantApi } from '../api/assistant-api'
-import { useConversation, useProviders, useSendMessage } from '../hooks/use-assistant'
+import {
+  useConversation,
+  useConversations,
+  useProviders,
+  useSendMessage,
+} from '../hooks/use-assistant'
 import { ChatComposer } from './chat-composer'
 import { ChatEmptyState } from './chat-empty-state'
 import { MessageThread } from './message-thread'
@@ -36,6 +42,9 @@ export function AssistantWidget() {
 
   const [open, setOpen] = useState(false)
   const [conversationId, setConversationId] = useState(0)
+  //  Đã chọn xong hội thoại mở đầu (tự nạp cái gần nhất) hay chưa — sau đó thì
+  //  tôn trọng lựa chọn của người dùng, kể cả "Trò chuyện mới" (id = 0).
+  const [autoPicked, setAutoPicked] = useState(false)
   const [pending, setPending] = useState<string | null>(null)
   //  Mốc id chốt lúc bấm gửi — tin trợ lý mới hơn mốc này được chạy hiệu ứng gõ
   //  máy (xem chú thích `typingAfterId` trong `message-thread.tsx`).
@@ -47,6 +56,16 @@ export function AssistantWidget() {
 
   const conversationQuery = useConversation(conversationId)
 
+  //  Mở bong bóng thì nạp danh sách hội thoại và TỰ MỞ LẠI hội thoại gần nhất —
+  //  người dùng thường quay lại đúng câu đang hỏi dở, không phải màn chào.
+  const conversationsQuery = useConversations({ enabled: open && !autoPicked })
+  const conversationsChanged = useHasChanged(conversationsQuery.data)
+  if (conversationsChanged && conversationsQuery.data && !autoPicked) {
+    const latest = conversationsQuery.data[0]
+    if (latest && conversationId === 0) setConversationId(latest.id)
+    setAutoPicked(true)
+  }
+
   // Trợ lý tắt ở máy chủ (AI_ENABLED) hoặc chưa có khóa -> /providers trả 403.
   // Ẩn hẳn bong bóng thay vì hiện nút bấm vào rồi báo lỗi.
   if (providersQuery.isError) return null
@@ -57,9 +76,15 @@ export function AssistantWidget() {
 
   const messages = conversationQuery.data?.messages ?? []
   const isSending = sendMessage.isPending
+  //  Đang dò hội thoại gần nhất / đang nạp tin của nó — hiện vòng chờ thay vì
+  //  nháy màn chào rồi mới đổ tin cũ vào.
+  const historyLoading =
+    (!autoPicked && conversationsQuery.isLoading) ||
+    (conversationId > 0 && conversationQuery.isLoading)
 
   const startNew = () => {
     setConversationId(0)
+    setAutoPicked(true) //  người dùng chủ động mở trang trắng — đừng tự nạp lại cái cũ
     setPending(null)
     setTypingAfterId(null) //  hội thoại mới thì thôi gõ dở câu của hội thoại trước
     setDraftOffer(null)
@@ -109,7 +134,9 @@ export function AssistantWidget() {
       {open && (
         <div
           className={cn(
-            'flex h-[30rem] max-h-[calc(100svh-7rem)] w-[calc(100vw-2rem)] sm:w-96',
+            //  Khổ lớn (khách chê bản 30rem x 24rem nhỏ quá): cao gần hết màn hình,
+            //  rộng 30rem từ sm và 34rem từ lg; máy nhỏ vẫn ăn theo bề rộng màn hình.
+            'flex h-[40rem] max-h-[calc(100svh-6.5rem)] w-[calc(100vw-2rem)] sm:w-[30rem] lg:w-[34rem]',
             'flex-col overflow-hidden rounded-xl border bg-background shadow-2xl',
           )}
         >
@@ -155,7 +182,11 @@ export function AssistantWidget() {
             </div>
           ) : (
             <>
-              {messages.length === 0 && !pending ? (
+              {historyLoading ? (
+                <div className="flex flex-1 items-center justify-center text-muted-foreground">
+                  <Loader2 className="size-5 animate-spin" />
+                </div>
+              ) : messages.length === 0 && !pending ? (
                 <ChatEmptyState
                   onPick={isSending ? undefined : (question) => void handleSend(question)}
                 />

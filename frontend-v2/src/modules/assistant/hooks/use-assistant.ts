@@ -16,11 +16,15 @@ export function useProviders() {
   })
 }
 
-/** Danh sách hội thoại của chính người dùng. */
-export function useConversations() {
+/**
+ * Danh sách hội thoại của chính người dùng (server xếp mới trước).
+ * `enabled`: bong bóng chat chỉ nạp khi người dùng MỞ nó — đừng gọi ngầm ở mọi trang.
+ */
+export function useConversations(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.assistant.conversations(),
     queryFn: () => assistantApi.conversations().then((r) => r.items),
+    enabled: options.enabled ?? true,
   })
 }
 
