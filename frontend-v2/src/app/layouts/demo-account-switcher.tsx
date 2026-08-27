@@ -2,6 +2,7 @@ import { Check, LoaderCircle, Users } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import { useAuthStore } from '@/core/auth/auth-store'
 import { useAuth } from '@/core/auth/use-auth'
 import { Button } from '@/shared/ui/button'
 import {
@@ -55,7 +56,9 @@ export function DemoAccountSwitcher() {
       //  đúng lúc người xem đang nhìn chằm chằm vào nó.
       logout()
       await login({ username: account.username, password: account.password })
-      toast.success(`Đang là ${account.label}`)
+      //  Họ và tên lấy từ store SAU khi login (user trong closure là bản cũ).
+      const fullName = useAuthStore.getState().user?.full_name || account.label
+      toast.success(`Welcome ${fullName}!`)
     } catch {
       toast.error(`Không đăng nhập được ${account.username} — kiểm lại dữ liệu seed`)
     } finally {

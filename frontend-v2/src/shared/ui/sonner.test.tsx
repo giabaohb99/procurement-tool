@@ -24,24 +24,19 @@ async function dungVoiMotBong(props: Parameters<typeof Toaster>[0] = {}) {
 }
 
 describe('Toaster', () => {
-  it('nút đóng nằm bên PHẢI và ở TRONG khung, không phải góc trái treo ra ngoài', async () => {
-    //  Khách báo 25/08/2026: nút X của bóng thông báo treo lơ lửng ngoài khung,
-    //  góc trên bên trái, đè lên thanh trên cùng của trang.
-    //  Mặc định của sonner (đo được trong trình duyệt) là:
-    //    --toast-close-button-start: 0 · --toast-close-button-end: unset
-    //    --toast-close-button-transform: translate(-35%, -35%)
-    //  tức bám mép TRÁI rồi kéo ngược RA NGOÀI. Đảo lại: bỏ `start`, ghim
-    //  `end: 0`, và transform phải kéo VÀO TRONG (x âm = sang trái, y dương =
-    //  xuống dưới) chứ không được âm cả hai như bản gốc.
-    const { thanh } = await dungVoiMotBong()
+  it('nút đóng nằm bên PHẢI, TRONG khung và canh GIỮA chiều cao', async () => {
+    //  Trước dùng ba biến `--toast-close-button-*` để định vị; nay chuyển sang
+    //  lớp Tailwind ở `classNames.closeButton` (dễ đọc, khỏi đấu đặc tả với sonner).
+    //  Nút X phải bám mép PHẢI (`right-2.5`), TRONG khung (không `left-0`) và canh
+    //  giữa chiều cao (`top-1/2` + `translateY(-50%)`).
+    const { khung } = await dungVoiMotBong()
+    const nutX = khung?.querySelector('[data-close-button]')
+    expect(nutX).toBeTruthy()
 
-    expect(thanh.style.getPropertyValue('--toast-close-button-start').trim()).toBe('unset')
-    expect(thanh.style.getPropertyValue('--toast-close-button-end').trim()).toBe('0')
-
-    const transform = thanh.style.getPropertyValue('--toast-close-button-transform')
-    const [x, y] = [...transform.matchAll(/(-?\d+(?:\.\d+)?)%/g)].map((m) => Number(m[1]))
-    expect(x).toBeLessThan(0) //  kéo sang TRÁI, vào trong khung
-    expect(y).toBeGreaterThan(0) //  kéo XUỐNG, vào trong khung
+    expect(nutX?.className).toMatch(/\bright-2\.5!/)
+    expect(nutX?.className).toMatch(/\btop-1\/2!/)
+    expect(nutX?.className).toMatch(/\bleft-auto!/)
+    expect(nutX?.className).not.toMatch(/\bleft-0!/)
   })
 
   it('chừa lề phải cho nút đóng, kẻo chữ chạy xuống dưới nút', async () => {
@@ -60,6 +55,7 @@ describe('Toaster', () => {
     const { thanh } = await dungVoiMotBong({ style: { '--width': '420px' } as React.CSSProperties })
 
     expect(thanh.style.getPropertyValue('--width').trim()).toBe('420px')
-    expect(thanh.style.getPropertyValue('--toast-close-button-end').trim()).toBe('0')
+    //  Đồng thời style RIÊNG của component (nền toast) vẫn còn, không bị props nuốt.
+    expect(thanh.style.getPropertyValue('--normal-bg').trim()).toBe('var(--popover)')
   })
 })

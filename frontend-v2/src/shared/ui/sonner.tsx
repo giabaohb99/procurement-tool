@@ -28,12 +28,19 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       toastOptions={{
         classNames: {
-          //  Chừa chỗ cho nút đóng ở góc trên bên PHẢI. Không chừa thì dòng chữ
-          //  đầu tiên chạy thẳng xuống dưới nút. `!` vì luật gốc của sonner là
-          //  `[data-sonner-toast][data-styled="true"]` (đặc tả 0,2,0) — một lớp
-          //  Tailwind thường thua, mà lớp tiện ích lại còn nằm trong `@layer`
-          //  nên thua cả luật không-lớp. Quan trọng `!important` thắng cả hai.
-          toast: "pr-9!",
+          //  Bóng gọn, bo tròn; chừa lề PHẢI đủ cho nút đóng lớn nằm giữa cạnh phải.
+          //  `!` vì luật gốc của sonner (`[data-sonner-toast][data-styled]`) đặc tả
+          //  cao hơn một lớp Tailwind thường; `!important` thắng cả hai.
+          //  `w-fit` -> bóng ôm sát nội dung (bằng chữ), `max-w` để chữ dài thì xuống
+          //  dòng; `items-center` canh icon/chữ/nút X theo chiều cao.
+          //  Nút X nay vắt qua GÓC TRÊN PHẢI (tâm trùng đỉnh góc) nên lề trái/phải
+          //  cân nhau; `overflow-visible` để nửa nút ló ra ngoài khung không bị cắt.
+          //  `pr-9` chừa chỗ cho nút X nằm TRONG khung + một khoảng cách với chữ.
+          toast: "w-fit! max-w-[92vw]! items-center! gap-2.5! rounded-xl! pl-3.5! pr-9! py-3! text-[13.5px]! leading-snug! sm:max-w-md!",
+          //  Nút X: TRONG khung, ghim bên PHẢI và canh GIỮA chiều cao hàng
+          //  (`top-1/2` + `translateY(-50%)`). Vòng đếm (::before) bao quanh theo.
+          closeButton:
+            "left-auto! right-2.5! top-1/2! bottom-auto! [transform:translateY(-50%)]! m-0! size-4! rounded-full! border-0! bg-transparent! p-0! text-muted-foreground! opacity-100! transition-colors! hover:bg-foreground/10! hover:text-foreground! [&>svg]:size-3!",
         },
         ...props.toastOptions,
       }}
@@ -43,18 +50,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
           "--border-radius": "var(--radius)",
-          //  NÚT ĐÓNG: góc trên bên PHẢI, NẰM TRONG khung (khách báo 25/08/2026).
-          //  Mặc định của sonner là `start: 0 / end: unset` kèm
-          //  `translate(-35%, -35%)` — tức góc trên bên TRÁI và bị kéo ra NGOÀI
-          //  khung, nên nút trôi lên trên viền, đè vào thanh trên cùng của trang.
-          //  Đảo lại: bỏ `start`, ghim `end: 0`, rồi kéo VÀO trong 25%.
-          //  Đặt bằng `style` (nội tuyến) chứ không bằng lớp CSS: ba biến này
-          //  được khai ở `[data-sonner-toaster][dir="ltr"], html[dir="ltr"]` —
-          //  style nội tuyến trên chính thẻ toaster là cách chắc thắng, và
-          //  biến di truyền xuống nút con.
-          "--toast-close-button-start": "unset",
-          "--toast-close-button-end": "0",
-          "--toast-close-button-transform": "translate(-25%, 25%)",
+          //  Vị trí nút đóng nay do `classNames.closeButton` lo (giữa cạnh phải).
           ...props.style,
         } as React.CSSProperties
       }

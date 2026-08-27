@@ -825,3 +825,42 @@
     animation: none !important;
   }
 }
+
+/* ── Vòng đếm thời gian quanh nút X của Toast ──────────────────────────────────
+   Vòng conic cạn dần theo thời gian toast tự tắt (mặc định 4s của sonner), DỪNG
+   khi rê chuột vào toast (sonner cũng tạm dừng đồng hồ tắt lúc hover nên khớp
+   nhau). Bao QUANH nút đóng, không đè lên dấu X (mask chừa rỗng ở giữa). */
+@property --toast-ring {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 360deg;
+}
+
+[data-sonner-toast] [data-close-button]::before {
+  content: '';
+  position: absolute;
+  inset: 0; /* ôm đúng nút X 16px -> vòng đếm 16px */
+  border-radius: 9999px;
+  background: conic-gradient(currentColor var(--toast-ring), transparent 0);
+  /* Chỉ chừa VÀNH ngoài ~2px, rỗng ở giữa -> thành vòng bao quanh nút X. */
+  -webkit-mask: radial-gradient(farthest-side, #0000 calc(100% - 2px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, #0000 calc(100% - 2px), #000 calc(100% - 2px));
+  opacity: 0.6;
+  pointer-events: none;
+  animation: toast-ring-deplete 4s linear forwards;
+}
+
+@keyframes toast-ring-deplete {
+  from { --toast-ring: 360deg; }
+  to { --toast-ring: 0deg; }
+}
+
+/* Rê chuột vào toast -> dừng vòng đếm (khớp với việc sonner dừng đồng hồ tắt). */
+[data-sonner-toast]:hover [data-close-button]::before {
+  animation-play-state: paused;
+}
+
+/* Người dùng tắt hiệu ứng chuyển động thì ẩn vòng đếm cho gọn. */
+@media (prefers-reduced-motion: reduce) {
+  [data-sonner-toast] [data-close-button]::before { animation: none; opacity: 0; }
+}

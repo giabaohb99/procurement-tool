@@ -21,7 +21,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <QueryClientProvider client={queryClient}>
         {children}
-        <Toaster position="top-right" richColors closeButton />
+        <Toaster position="top-center" richColors closeButton />
         {/* Nút devtools để góc TRÁI-dưới: góc phải-dưới đã dành cho bong bóng Trợ lý AI. */}
         {env.isDev && (
           <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
