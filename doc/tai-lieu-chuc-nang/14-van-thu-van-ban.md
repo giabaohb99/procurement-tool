@@ -4,6 +4,10 @@ Tài liệu mô tả phân hệ **Văn thư** (`/document`): soạn thảo, phê
 
 Khác mọi phân hệ còn lại trong tài liệu này ở một điểm: **phân hệ này chỉ có trên `frontend-v2`** (cổng 8083), không có bản trên `frontend/` đang đóng băng.
 
+> **Muốn biết hành vi nào đã được bài kiểm tự động khoá lại** (phê duyệt · phân quyền ·
+> bảo mật · ban hành · stress test · số đo hiệu năng · lỗi đã biết chưa sửa) thì xem
+> [15-van-thu-cac-ca-da-kiem.md](15-van-thu-cac-ca-da-kiem.md).
+
 > **Phạm vi bản 1.** Chỉ làm **văn bản nội bộ do chính tập đoàn ban hành** (`origin = 1`). Hai nhánh còn lại — văn bản pháp luật ngoài (`origin = 2`) và văn bản đến (`origin = 3`) — đã khai sẵn cột nhưng **chưa có màn hình nào sinh ra chúng**.
 
 ---
