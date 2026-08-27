@@ -18,6 +18,7 @@ import { EditorRuler, type PageMargins } from './editor-ruler'
 import { EditorToolbar } from './editor-toolbar'
 import { EditorVerticalRuler } from './editor-vertical-ruler'
 import { ImportTrace } from './import-trace-extension'
+import { DocumentSignature } from './signature-extension'
 import {
   A4_HEIGHT_PX,
   A4_WIDTH_PX,
@@ -66,6 +67,21 @@ interface RichTextEditorProps {
    */
   autoNumber?: boolean
   onAutoNumberChange?: (bat: boolean) => void
+  /**
+   * Ảnh chữ ký của CHÍNH người đang đăng nhập, cho nút «Chèn chữ ký».
+   *
+   * Cố ý nhận qua prop chứ không tự đọc `useAuth()` bên trong: khung soạn thảo
+   * này còn dùng ở ô rich text trong hộp thoại và ở trang dựng mẫu — những nơi
+   * không có khái niệm "chữ ký của tôi". Nơi nào cần thì tự truyền vào.
+   */
+  /**
+   * Báo ra thể hiện trình soạn thảo khi dựng xong (và `null` khi gỡ).
+   *
+   * Có nó thì các lệnh cần trình soạn thảo mà lại đặt NGOÀI khung — như nút
+   * *Chữ ký* nằm ở hàng thao tác của trang — mới gọi được. Khác `ref`: đây là
+   * state nên trang cha vẽ lại đúng lúc trình soạn thảo sẵn sàng.
+   */
+  onEditorReady?: (editor: Editor | null) => void
   /**
    * Đầu trang / chân trang vẽ trên MỌI tờ giấy. Trang cha đã thay sẵn các thẻ
    * mà nó biết (số hiệu, tên, ngày); thẻ số trang thì trang cha để lại nhãn
@@ -131,6 +147,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       onMarginsChange,
       autoNumber,
       onAutoNumberChange,
+      onEditorReady,
       pageFrame,
       className,
     },
@@ -194,6 +211,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         // Vết tích nguồn nhập (trang PDF nào ra node nào) — chỉ trang soạn thảo
         // toàn màn hình mới có luồng nhập tệp nên không đưa vào lược đồ chung.
         ImportTrace,
+        //  Chữ ký đặt tự do trên tờ giấy — xem `signature-extension.ts`.
+        DocumentSignature,
         // Gõ quá một trang thì tự sang TRANG MỚI như Google Docs, thay vì kéo
         // dài mãi một tờ giấy — soạn công văn phải biết nội dung tràn sang trang
         // thứ mấy. Số đo lấy theo A4 ở 96dpi, khớp `.doc-page` trong `index.css`.
@@ -258,6 +277,20 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         },
       },
     })
+
+    //  Báo ra (và thu hồi) thể hiện trình soạn thảo cho trang cha.
+    //
+    //  Giữ hàm báo trong ref: trang cha hay truyền hàm dựng mới mỗi lần vẽ, để
+    //  nó vào mảng phụ thuộc là báo đi báo lại vô tận.
+    const bao = useRef(onEditorReady)
+    useEffect(() => {
+      bao.current = onEditorReady
+    })
+    useEffect(() => {
+      if (!editor) return
+      bao.current?.(editor)
+      return () => bao.current?.(null)
+    }, [editor])
 
     useImperativeHandle(
       ref,

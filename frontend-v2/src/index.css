@@ -322,7 +322,11 @@
    ⚠️ KHÔNG khai `padding` / `min-height` ở đây: chiều cao trang, lề và khe
    ngắt trang do `PaginationPlus` (xem `rich-text-editor.tsx`) tự vẽ theo đúng
    bộ số đo trên — khai thêm ở CSS là cộng dồn hai lần lề. */
+/* CHỮ KÝ ĐẶT TỰ DO — xem `signature-extension.ts`.
+   `position: relative` ở đây là MỐC NEO cho chữ ký: toạ độ left/top của nó tính
+   từ mép tờ giấy. Bỏ dòng này là mọi chữ ký nhảy về góc màn hình. */
 .doc-page {
+  position: relative;
   width: 794px;
   max-width: 100%;
   margin-inline: auto;
@@ -864,3 +868,176 @@
 @media (prefers-reduced-motion: reduce) {
   [data-sonner-toast] [data-close-button]::before { animation: none; opacity: 0; }
 }
+
+/* ── Chữ ký đặt tự do trên tờ giấy ─────────────────────────────────────────
+   MỐC NEO cao 0px nằm trong dòng chảy, chữ ký đặt lệch so với nó. Bản in ghi ra
+   đúng cấu trúc này (span.doc-signature-anchor > img) nên soạn sao in vậy.
+
+   `margin: 0` KHÔNG phải cho đẹp: `.doc-page > * + *` đặt `margin-top: 6pt` cho
+   mọi khối con, mà với phần tử `position: absolute` thì `margin-top` KHÔNG bị bỏ
+   qua — nó cộng thẳng vào `top`, làm chữ ký in ra thấp hơn chỗ đặt lúc soạn. */
+.doc-signature-anchor {
+  position: relative;
+  display: block;
+  height: 0;
+  margin: 0 !important;
+}
+
+.doc-page > img.doc-signature {
+  margin: 0 !important;
+}
+
+.doc-signature-holder {
+  position: absolute;
+  z-index: 5;
+  cursor: move;
+  /* Mốc xoay là TÂM ảnh — xoay quanh góc trên trái thì chữ ký văng ra khỏi chỗ
+     vừa đặt, người dùng phải kéo lại sau mỗi lần chỉnh. */
+  transform-origin: center center;
+}
+
+.doc-signature-holder > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/*
+ * BỘ NÚM CHỈ HIỆN KHI ĐÃ CHỌN, không hiện theo rê chuột.
+ *
+ * Rê chuột qua thì chưa chắc đã định làm gì; hiện sẵn bộ núm là tờ giấy nhấp
+ * nháy mỗi lần con trỏ đi ngang, mà núm xoay lại nhô lên đè vào dòng chữ ở trên.
+ * Bấm vào chữ ký mới coi là "đang chỉnh cái này".
+ */
+/* Viền NÉT ĐỨT: phân biệt rõ với đường kẻ thật của bảng biểu trong văn bản —
+   nét liền dễ bị đọc nhầm là một khung đã in ra giấy. */
+.doc-signature-holder.is-selected {
+  outline: 1px dashed var(--color-primary, #2563eb);
+  outline-offset: 2px;
+}
+
+.doc-signature-handle,
+.doc-signature-toolbar {
+  display: none;
+}
+
+.doc-signature-holder.is-selected .doc-signature-handle,
+.doc-signature-holder.is-selected .doc-signature-toolbar {
+  display: flex;
+}
+
+/* ── Bốn núm góc: co giãn ─────────────────────────────────────────────────── */
+.doc-signature-handle {
+  position: absolute;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  /* Núm góc để TRÒN. */
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.18);
+  /* Cùng màu xám với cụm nút trên: việc phân biệt nằm ở BIỂU TƯỢNG, không ở
+     màu — bốn chấm xanh đặt quanh chữ ký nhìn như lỗi hiển thị. */
+  color: var(--color-muted-foreground, #64748b);
+}
+
+.doc-signature-handle > svg {
+  width: 11px;
+  height: 11px;
+}
+
+.doc-signature-handle:hover {
+  border-color: var(--color-primary, #2563eb);
+  color: var(--color-primary, #2563eb);
+}
+
+.doc-signature-handle--nw {
+  top: -9px;
+  left: -9px;
+  cursor: nwse-resize;
+}
+.doc-signature-handle--ne {
+  top: -9px;
+  right: -9px;
+  cursor: nesw-resize;
+}
+.doc-signature-handle--sw {
+  bottom: -9px;
+  left: -9px;
+  cursor: nesw-resize;
+}
+.doc-signature-handle--se {
+  right: -9px;
+  bottom: -9px;
+  cursor: nwse-resize;
+}
+
+/* Đang bị hút vào góc vuông — GIỮ NÉT ĐỨT, chỉ dày lên, để cái "khựng" một nhịp
+   lúc xoay có phản hồi nhìn thấy được. Đổi sang nét liền thì trông như vừa nhảy
+   sang một trạng thái khác hẳn, mà thực ra vẫn đang chọn cùng một chữ ký. */
+.doc-signature-holder.is-snapped {
+  outline: 2px dashed var(--color-primary, #2563eb);
+}
+
+/* ── Cụm giữa mép trên: xoay + xoá ────────────────────────────────────────── */
+.doc-signature-toolbar {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.14);
+}
+
+.doc-signature-tool {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  /* Một màu chữ xám cho cả hai nút; việc phân biệt nằm ở biểu tượng, không ở
+     màu. Trước đây núm xoay xanh lá và núm xoá đỏ, nhìn như đèn báo. */
+  color: var(--color-muted-foreground, #64748b);
+  cursor: pointer;
+}
+
+.doc-signature-tool:hover {
+  background: var(--color-accent, #f1f5f9);
+  color: var(--color-foreground, #0f172a);
+}
+
+.doc-signature-tool--rotate {
+  cursor: grab;
+}
+
+.doc-signature-tool > svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Bản in không có khung, không có núm — chỉ còn hình chữ ký. */
+@media print {
+  .doc-signature-holder {
+    outline: none !important;
+  }
+
+  .doc-signature-handle,
+  .doc-signature-toolbar {
+    display: none !important;
+  }
+}
+
+
+/* Núm xoay nhô lên TRÊN ĐẦU — quy ước chung, không lẫn với núm co giãn. */

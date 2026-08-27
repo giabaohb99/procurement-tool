@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import type { Editor } from '@tiptap/react'
 import {
   Ban,
   Check,
@@ -42,6 +43,7 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { ReasonConfirmDialog } from '@/shared/ui/reason-confirm-dialog'
 import { mmToPx, RichTextEditor, type RichTextEditorHandle } from '@/shared/ui/rich-text-editor'
+import { SignatureMenu } from '@/shared/ui/rich-text-editor/signature-menu'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentAmendedBanner } from '../components/document-amended-banner'
@@ -111,6 +113,10 @@ export function DocumentDetailPage() {
   const readonlyFromLink = searchParams.get('readonly') === '1'
   const [tab, setTab] = useUrlParamState('tab', 'compose')
   const editorRef = useRef<RichTextEditorHandle>(null)
+  //  Thể hiện trình soạn thảo, để nút *Chữ ký* ở hàng thao tác chèn được vào
+  //  đúng bản đang mở. Phải là state chứ không phải ref: nút cần vẽ lại đúng
+  //  lúc trình soạn thảo sẵn sàng.
+  const [composeEditor, setComposeEditor] = useState<Editor | null>(null)
 
   const documentId = Number(id)
   const { user: currentUser } = useAuth()
@@ -448,6 +454,14 @@ export function DocumentDetailPage() {
                  có quyền ghi) — như nút Lưu nội dung bên cạnh. */}
             {tab === 'compose' && canWrite && !isLocked && !viLocaleKey && (
               <>
+                {/*  Chữ ký của CHÍNH người đang đăng nhập — không có đường chọn
+                     chữ ký người khác, xem `signature-menu`. Cùng điều kiện hiện
+                     với *Lưu nội dung*: chỉ khi thật sự sửa được. */}
+                <SignatureMenu
+                  editor={composeEditor}
+                  signatureUrl={currentUser?.signature}
+                  onOpenProfile={() => navigate(appRoutes.me)}
+                />
                 <DocumentImportButton
                   hasContent={() => editorRef.current?.hasContent() ?? false}
                   onInsert={(html, mode) =>
@@ -625,6 +639,7 @@ export function DocumentDetailPage() {
               //  Đánh số mục tự động: cờ của chính phiên bản này, bấm là ghi ngay.
               autoNumber={version.auto_heading_number}
               onAutoNumberChange={(bat) => saveAutoNumber.mutate(bat)}
+              onEditorReady={setComposeEditor}
               pageFrame={{
                 headerLeft: drawPageFrame(version.header_left),
                 headerRight: drawPageFrame(version.header_right),

@@ -55,6 +55,7 @@ interface EditorToolbarProps {
    */
   autoNumber?: boolean
   onToggleAutoNumber?: () => void
+  /** Ảnh chữ ký của chính người đang đăng nhập; bỏ trống thì nút vẫn hiện và chỉ nhắc cách tải lên. */
 }
 
 export function EditorToolbar({
@@ -122,6 +123,7 @@ export function EditorToolbar({
 
       <ToolbarStyleSelects editor={editor} state={state} zoom={zoom} onZoomChange={onZoomChange} />
       <ToolbarDivider />
+
 
       <ToolbarButton
         icon={Bold}
