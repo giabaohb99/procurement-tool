@@ -10,12 +10,32 @@ const DRAFT_ROUTES: Record<DraftTarget, string> = {
   survey: appRoutes.procurement.surveyRequestNew,
   purchase: appRoutes.procurement.purchaseRequestNew,
   leave: appRoutes.document.documentNew,
+  payment: appRoutes.finance.paymentRequestNew,
 }
 
 const DRAFT_LABELS: Record<DraftTarget, string> = {
   survey: 'Tạo yêu cầu báo giá',
   purchase: 'Tạo yêu cầu mua hàng',
   leave: 'Tạo đơn nghỉ phép',
+  payment: 'Tạo đề nghị thanh toán',
+}
+
+/**
+ * YCTT không truyền state: form tạo YCTT đọc `?payables=<ids>` rồi tự nạp lại các khoản
+ * dưới quyền người đang đăng nhập (CR-025) — backend kiểm lại phạm vi, an toàn hơn tin
+ * dữ liệu chat. Các loại còn lại truyền nguyên bản nháp qua `state.assistantDraft`.
+ */
+function draftNavigation(draft: DraftOffer): {
+  to: string
+  state?: { assistantDraft: Record<string, unknown> }
+} {
+  if (draft.target === 'payment') {
+    const ids = Array.isArray(draft.args.payable_ids)
+      ? draft.args.payable_ids.filter((v): v is number => typeof v === 'number')
+      : []
+    return { to: `${DRAFT_ROUTES.payment}?payables=${ids.join(',')}` }
+  }
+  return { to: DRAFT_ROUTES[draft.target], state: { assistantDraft: draft.args } }
 }
 
 interface ReplyOffersProps {
@@ -53,7 +73,8 @@ export function ReplyOffers({ draft, file, conversationId, busy, onNavigate }: R
             className="shrink-0"
             onClick={() => {
               onNavigate?.()
-              navigate(DRAFT_ROUTES[draft.target], { state: { assistantDraft: draft.args } })
+              const nav = draftNavigation(draft)
+              navigate(nav.to, nav.state ? { state: nav.state } : undefined)
             }}
           >
             <FilePlus />

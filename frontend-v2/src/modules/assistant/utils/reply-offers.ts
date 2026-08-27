@@ -1,7 +1,7 @@
 import type { ChatReply } from '../types/assistant'
 
 /** Loại phiếu trợ lý soạn nháp được — khớp bộ tool `draft_*` của backend. */
-export type DraftTarget = 'survey' | 'purchase' | 'leave'
+export type DraftTarget = 'survey' | 'purchase' | 'leave' | 'payment'
 
 /** Bản nháp trợ lý vừa soạn — chỉ sống trong lượt trả lời hiện tại, backend không lưu. */
 export interface DraftOffer {
@@ -21,6 +21,7 @@ const DRAFT_TARGETS: Record<string, DraftTarget> = {
   draft_survey_request: 'survey',
   draft_purchase_request: 'purchase',
   draft_leave_request: 'leave',
+  draft_payment_request: 'payment',
 }
 
 /**

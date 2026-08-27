@@ -30,6 +30,21 @@ describe('pickDraftOffer', () => {
     expect(offer).toEqual({ conversationId: 7, args: { purpose: 'x' }, target: 'purchase' })
   })
 
+  it('tool soạn nháp YCTT trả target payment kèm danh sách khoản nợ đã chuẩn hóa', () => {
+    const offer = pickDraftOffer(
+      reply([
+        {
+          name: 'draft_payment_request',
+          args: { supplier: 'NCCA' },
+          rows: 2,
+          draft: { kind: 'payment_request', payable_ids: [3, 5] },
+        },
+      ]),
+    )
+    expect(offer?.target).toBe('payment')
+    expect(offer?.args).toEqual({ kind: 'payment_request', payable_ids: [3, 5] })
+  })
+
   it('ưu tiên bản draft đã chuẩn hóa từ kết quả tool thay vì args thô của model', () => {
     const offer = pickDraftOffer(
       reply([
