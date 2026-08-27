@@ -18,7 +18,12 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '3b46d70224ea'
-down_revision: Union[str, None] = 'c4d8a2f9e617'
+down_revision: Union[str, None] = 'c3d9e14a58b7'  # noi tiep sau migration dien dan
+# Ban dau tro vao 'c4d8a2f9e617'. Nhanh dien dan (CR-193) cung xuat phat tu do va
+# len truoc, nen sau khi gop lai co HAI dau migration - `alembic upgrade head` se
+# bao "Multiple head revisions are present" va deploy chet. Doi sang noi tiep sau
+# no. Bang tab_user_preference khong dung chung bang nao voi dien dan nen thu tu
+# chay khong quan trong.
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
