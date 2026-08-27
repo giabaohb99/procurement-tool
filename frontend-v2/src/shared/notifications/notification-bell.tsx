@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
+import { pickBellAlerts } from './bell-alerts'
 import { toAppPath } from './notification-link'
 import type { AppNotification, SystemAlert } from './notification-types'
 import { useNotificationActions, useNotifications, useSystemAlerts } from './use-notifications'
@@ -30,7 +31,8 @@ export function NotificationBell() {
 
   const unread = notifications?.unread ?? 0
   const items = notifications?.items ?? []
-  const alertItems = alerts?.items ?? []
+  //  Chỉ vẽ vài cảnh báo đầu — `/api/alerts` trả về toàn bộ, xem `pickBellAlerts`.
+  const { shown: alertItems, hidden: alertHidden } = pickBellAlerts(alerts?.items ?? [])
   const badge = unread + (alerts?.danger ?? 0)
 
   function openNotification(item: AppNotification) {
@@ -141,6 +143,15 @@ export function NotificationBell() {
               <span className="min-w-0 flex-1 text-xs text-foreground">{alert.title}</span>
             </button>
           ))}
+          {/*  Nói rõ đã cắt bớt bao nhiêu. Cắt im lặng thì người dùng đọc năm
+               dòng rồi tưởng chỉ có đúng năm việc — nguy hiểm hơn là danh sách
+               dài. Không gắn link vì cảnh báo không có màn danh sách riêng:
+               mỗi cái tự dẫn về màn nghiệp vụ của nó (ĐMH, Công nợ, Hợp đồng). */}
+          {alertHidden > 0 && (
+            <p className="px-3 py-2 text-[11px] text-muted-foreground">
+              …và {alertHidden} cảnh báo khác. Bấm vào một cảnh báo để mở màn tương ứng.
+            </p>
+          )}
         </div>
 
         <div className="flex items-center justify-between gap-2 border-t bg-muted/40 px-3 py-2">
