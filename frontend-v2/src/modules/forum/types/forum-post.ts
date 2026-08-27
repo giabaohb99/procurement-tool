@@ -67,6 +67,8 @@ export interface ForumPost {
   author_code: string
   author_avatar: string
   created_at: string
+  /** Mốc ghim (F9a/CR-199) — khác null = bài đang trên dải Thông báo. */
+  pinned_at: string | null
   can_delete: boolean
   /** Người xem là quản trị viên diễn đàn (F5) — FE mở menu ẩn/khôi phục/xóa. */
   can_moderate: boolean

@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { AtSign, Building2, Target, TriangleAlert } from 'lucide-react'
+import { AtSign, Building2, Megaphone, Target, TriangleAlert } from 'lucide-react'
 
 import { Button } from '@/shared/ui/button'
+import { Checkbox } from '@/shared/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -35,7 +36,7 @@ interface DocumentIssueDialogProps {
   issuerCompanyId: number
   isPending?: boolean
   /** `mailboxId` rỗng = gửi bằng địa chỉ hệ thống, y như trước 26/08/2026. */
-  onConfirm: (applyMode: number, mailboxId?: number) => void
+  onConfirm: (applyMode: number, mailboxId?: number, forumAnnounce?: boolean) => void
 }
 
 /**
@@ -64,13 +65,19 @@ export function DocumentIssueDialog({
   const { data: mailboxes } = useIssueMailboxes(documentId, open)
 
   const [mailboxValue, setMailboxValue] = useState(SYSTEM_MAILBOX)
+  //  CR-200 (F12): mặc định TẮT — không phải văn bản nào cũng đáng một bài ghim
+  //  trên diễn đàn, người ban hành chủ động tích mới đăng.
+  const [forumAnnounce, setForumAnnounce] = useState(false)
 
   //  Đóng hộp thoại là quên lựa chọn. Làm ở ĐƯỜNG ĐÓNG chứ không bằng `useEffect`
   //  theo dõi `open`: đặt state trong effect gây render dây chuyền (đúng cảnh báo
   //  `react-hooks/set-state-in-effect`), mà ở đây không cần — mọi đường người
   //  dùng đóng hộp thoại đều đi qua đúng hàm này.
   const closeAndReset = (next: boolean) => {
-    if (!next) setMailboxValue(SYSTEM_MAILBOX)
+    if (!next) {
+      setMailboxValue(SYSTEM_MAILBOX)
+      setForumAnnounce(false)
+    }
     onOpenChange(next)
   }
 
@@ -181,6 +188,28 @@ export function DocumentIssueDialog({
           </div>
         )}
 
+        {/*  CR-200 (F12) — clone văn bản thành MỘT bài diễn đàn đã ghim (tiêu đề
+             + số hiệu + link về văn bản). Văn thư vẫn là nguồn sự thật; ai đọc
+             được nội dung vẫn do phạm vi bên Văn thư gác. */}
+        <div className="space-y-1.5">
+          <label
+            htmlFor="issue-forum-announce"
+            className="flex cursor-pointer items-center gap-2 text-sm font-medium"
+          >
+            <Checkbox
+              id="issue-forum-announce"
+              checked={forumAnnounce}
+              onCheckedChange={(checked) => setForumAnnounce(checked === true)}
+            />
+            <Megaphone className="size-4 text-muted-foreground" />
+            Đăng thông báo lên diễn đàn
+          </label>
+          <p className="pl-6 text-xs text-muted-foreground">
+            Hệ thống đăng một bài thông báo <b>đã ghim</b> đứng tên bạn, kèm số hiệu và
+            link về văn bản, cho toàn tập đoàn thấy trên diễn đàn.
+          </p>
+        </div>
+
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => closeAndReset(false)}>
             Hủy
@@ -192,6 +221,7 @@ export function DocumentIssueDialog({
               onConfirm(
                 applyMode,
                 mailboxValue === SYSTEM_MAILBOX ? undefined : Number(mailboxValue),
+                forumAnnounce,
               )
             }
           >

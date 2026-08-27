@@ -17,13 +17,15 @@ import { cn } from '@/shared/utils/cn'
 export function ForumLayout() {
   return (
     <div className="flex min-h-svh flex-col bg-muted/40">
+      {/*  Header trải HẾT bề ngang (không bó max-w-2xl như cột feed) — bó chung
+          với feed thì gặp tên tài khoản dài là tab bị ép gãy chữ xuống hai dòng. */}
       <header className="sticky top-0 z-10 border-b border-border bg-background">
-        <div className="mx-auto flex h-14 w-full max-w-2xl items-center gap-1 px-2 sm:px-4">
+        <div className="flex h-14 w-full items-center gap-1 px-2 sm:px-6">
           <Button
             asChild
             variant="ghost"
             size="icon"
-            className="text-muted-foreground hover:text-foreground"
+            className="shrink-0 text-muted-foreground hover:text-foreground"
           >
             <NavLink to={appRoutes.launcher} title="Về màn chọn phân hệ">
               <LayoutGrid className="size-5" />
@@ -31,17 +33,18 @@ export function ForumLayout() {
             </NavLink>
           </Button>
 
-          <span className="ml-1 flex items-center gap-2 font-semibold text-navy">
+          <span className="ml-1 flex shrink-0 items-center gap-2 whitespace-nowrap font-semibold text-navy">
             <MessagesSquare className="size-5 text-blue-600" />
-            <span className="hidden sm:inline">Diễn đàn</span>
+            <span className="hidden md:inline">Diễn đàn</span>
           </span>
 
-          <nav className="ml-3 flex h-full items-stretch gap-1">
+          <nav className="ml-1 flex h-full shrink-0 items-stretch gap-1 sm:ml-3">
             <ForumTab to={appRoutes.forum.root} label="Bảng tin" />
+            <ForumTab to={appRoutes.forum.announcements} label="Thông báo" />
             <ForumTab to={appRoutes.forum.me} label="Trang của tôi" />
           </nav>
 
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex min-w-0 shrink items-center gap-1">
             <NotificationBell />
             {/*  Chỉ hiện ở bản DEV — tự trả về null khi build thật. */}
             <DemoAccountSwitcher />
@@ -63,9 +66,12 @@ function ForumTab({ to, label }: { to: string; label: string }) {
     <NavLink
       to={to}
       end
+      // Đang giữa trang mà bấm tab (kể cả tab đang mở) thì về đầu trang —
+      // SPA đổi route không tự cuộn, người dùng tưởng bấm không ăn.
+      onClick={() => window.scrollTo({ top: 0 })}
       className={({ isActive }) =>
         cn(
-          'flex items-center border-b-2 px-3 text-sm font-medium transition-colors',
+          'flex items-center whitespace-nowrap border-b-2 px-2 text-sm font-medium transition-colors sm:px-3',
           isActive
             ? 'border-blue-600 text-blue-600'
             : 'border-transparent text-muted-foreground hover:text-foreground',

@@ -30,6 +30,7 @@ function makePost(overrides: Partial<ForumPost> = {}): ForumPost {
     author_code: 'NV001',
     author_avatar: '',
     created_at: '2026-08-27T08:00:00',
+    pinned_at: null,
     can_delete: false,
     can_moderate: false,
     hidden_reason: '',
@@ -104,6 +105,38 @@ describe('PostCard — kiểm duyệt (F5)', () => {
     expect(
       screen.queryByRole('button', { name: 'Thao tác với bài viết' }),
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('PostCard — ghim bài (F9a/CR-199)', () => {
+  it('bài đang ghim hiện nhãn «Đã ghim» trên đầu bài', () => {
+    renderCard(makePost({ pinned_at: '2026-08-27T09:00:00' }))
+    expect(screen.getByText('Đã ghim')).toBeInTheDocument()
+  })
+
+  it('bài thường không hiện nhãn ghim', () => {
+    renderCard(makePost())
+    expect(screen.queryByText('Đã ghim')).not.toBeInTheDocument()
+  })
+
+  it('quản trị viên thấy «Ghim bài viết» với bài đang hiển thị', async () => {
+    renderCard(makePost({ can_moderate: true }))
+    await userEvent.click(screen.getByRole('button', { name: 'Thao tác với bài viết' }))
+    expect(await screen.findByText('Ghim bài viết')).toBeInTheDocument()
+  })
+
+  it('bài đã ghim thì mục Ghim đổi thành «Bỏ ghim bài viết»', async () => {
+    renderCard(makePost({ can_moderate: true, pinned_at: '2026-08-27T09:00:00' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Thao tác với bài viết' }))
+    expect(await screen.findByText('Bỏ ghim bài viết')).toBeInTheDocument()
+    expect(screen.queryByText('Ghim bài viết')).not.toBeInTheDocument()
+  })
+
+  it('bài đang ẨN không có mục Ghim — ghim bài ẩn là treo thông báo không ai đọc được', async () => {
+    renderCard(makePost({ can_moderate: true, status: FORUM_POST_STATUS.hidden }))
+    await userEvent.click(screen.getByRole('button', { name: 'Thao tác với bài viết' }))
+    expect(await screen.findByText('Khôi phục bài viết')).toBeInTheDocument()
+    expect(screen.queryByText('Ghim bài viết')).not.toBeInTheDocument()
   })
 })
 

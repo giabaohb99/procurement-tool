@@ -38,6 +38,8 @@ export function useTogglePostLike() {
         { queryKey: queryKeys.forum.userPostsAll() },
         patchPages,
       )
+      // Dải ghim (F9a) cũng vẽ nút thích — thiếu nhánh này là bấm ở đó không nhúc nhích.
+      queryClient.setQueryData<ForumPost[]>(queryKeys.forum.pinned(), (old) => old?.map(patch))
       // Hộp "ai đã thích" nếu đã từng mở thì con số vừa đổi — nạp lại lần mở sau.
       void queryClient.invalidateQueries({ queryKey: queryKeys.forum.postLikes(postId) })
     },

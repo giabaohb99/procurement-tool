@@ -727,9 +727,9 @@ export function DocumentDetailPage() {
             onOpenChange={setIssueOpen}
             issuerCompanyId={record.company_id}
             isPending={workflow.approve.isPending}
-            onConfirm={(applyMode, mailboxId) =>
+            onConfirm={(applyMode, mailboxId, forumAnnounce) =>
               workflow.approve.mutate(
-                { applyMode, mailboxId },
+                { applyMode, mailboxId, forumAnnounce },
                 { onSuccess: () => setIssueOpen(false) },
               )
             }

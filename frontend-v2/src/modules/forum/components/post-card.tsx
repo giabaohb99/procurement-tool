@@ -1,4 +1,4 @@
-import { EyeOff, MessageCircle, ThumbsUp } from 'lucide-react'
+import { EyeOff, MessageCircle, Pin, ThumbsUp } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -109,6 +109,13 @@ export function PostCard({ post, detail = false, flat = false }: PostCardProps) 
             <span aria-hidden>·</span>
             <AudienceIcon className="size-3.5" aria-hidden />
             <span>{audience.label}</span>
+            {post.pinned_at != null && (
+              <>
+                <span aria-hidden>·</span>
+                <Pin className="size-3.5 text-blue-600" aria-hidden />
+                <span className="text-blue-600">Đã ghim</span>
+              </>
+            )}
           </div>
         </div>
         {(post.can_delete || post.can_moderate) && (

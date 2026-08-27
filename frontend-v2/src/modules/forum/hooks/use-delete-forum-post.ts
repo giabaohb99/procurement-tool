@@ -13,6 +13,8 @@ export function useDeleteForumPost() {
     onSuccess: async () => {
       await queryClient.resetQueries({ queryKey: queryKeys.forum.feed() })
       await queryClient.resetQueries({ queryKey: queryKeys.forum.userPostsAll() })
+      // Bài đang ghim mà tác giả tự xóa thì cũng phải rời dải Thông báo (F9a).
+      await queryClient.invalidateQueries({ queryKey: queryKeys.forum.pinned() })
     },
   })
 }

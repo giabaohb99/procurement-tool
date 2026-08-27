@@ -105,10 +105,13 @@ export const documentApi = {
   /** `applyMode` = cơ chế áp dụng chọn lúc ban hành (F13). Bỏ trống là giữ nguyên. */
   //  `mailboxId` = hộp thư gửi thông báo ban hành danh nghĩa địa chỉ khác
   //  (26/08/2026). Bỏ trống thì backend gửi bằng địa chỉ hệ thống như cũ.
-  approve: (id: number, applyMode?: number, mailboxId?: number) =>
+  //  `forumAnnounce` = ô «Đăng thông báo lên diễn đàn» (CR-200): tích thì backend
+  //  clone văn bản thành một bài diễn đàn đã ghim, không tích thì như cũ.
+  approve: (id: number, applyMode?: number, mailboxId?: number, forumAnnounce?: boolean) =>
     apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/approve`, {
       apply_mode: applyMode ?? null,
       mailbox_id: mailboxId ?? null,
+      forum_announce: forumAnnounce ?? false,
     }),
   reject: (id: number, reason: string) =>
     apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/reject`, { reason }),

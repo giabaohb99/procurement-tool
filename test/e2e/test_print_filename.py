@@ -55,18 +55,18 @@ def _mo_trang_in(page: Page, route: str, doc_id) -> str:
 
 
 class TestTenFilePhieuIn:
-    @pytest.mark.parametrize("ten,route,endpoint,cot_ngay", PHIEU,
+    @pytest.mark.parametrize("name,route,endpoint,date_col", PHIEU,
                              ids=[p[1] for p in PHIEU])
-    def test_tieu_de_la_ma_chung_tu_va_ngay(self, page_admin: Page, ten, route,
-                                            endpoint, cot_ngay):
+    def test_tieu_de_la_ma_chung_tu_va_ngay(self, page_admin: Page, name, route,
+                                            endpoint, date_col):
         """Mọi phiếu in đều đặt tiêu đề tab = <mã chứng từ>-DDMMYYYY."""
         ct = _mot_chung_tu(page_admin, endpoint)
         title = _mo_trang_in(page_admin, route, ct["id"])
-        assert DANG_TEN.match(title), f"{ten}: sai dạng <mã>-DDMMYYYY: {title!r}"
-        assert title.startswith(ct["code"] + "-"), f"{ten}: không bắt đầu bằng mã chứng từ"
+        assert DANG_TEN.match(title), f"{name}: sai dạng <mã>-DDMMYYYY: {title!r}"
+        assert title.startswith(ct["code"] + "-"), f"{name}: không bắt đầu bằng mã chứng từ"
         # Ngày trong tên file phải là NGÀY CHỨNG TỪ, không phải ngày in (bug dễ mắc nhất).
-        y, m, d = ct[cot_ngay].split("-")
-        assert title.endswith(f"{d}{m}{y}"), f"{ten}: ngày trong tên file không phải {cot_ngay}"
+        y, m, d = ct[date_col].split("-")
+        assert title.endswith(f"{d}{m}{y}"), f"{name}: ngày trong tên file không phải {date_col}"
 
     def test_ma_misa_khong_lam_ten_file(self, page_admin: Page):
         """Đơn nhập từ hệ thống cũ có mã MISA vẫn phải lấy Mã PO — mã MISA trùng nhau

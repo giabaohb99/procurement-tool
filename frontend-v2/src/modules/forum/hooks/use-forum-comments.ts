@@ -10,6 +10,7 @@ import {
   toggleCommentLike,
   uploadCommentFiles,
 } from '../api/forum-comment-api'
+import { refreshPostInCaches } from '../utils/patch-post-caches'
 
 /** Trang bình luận gốc MỚI NHẤT của một bài; trang cũ hơn tải tay qua `fetchPostComments`. */
 export function useForumComments(postId: number) {
@@ -42,8 +43,8 @@ export function useCreateForumComment(postId: number) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.forum.comments(postId) })
-      // Số "N bình luận" dưới bài lấy từ PostOut — nạp lại bài cho khớp.
-      void queryClient.invalidateQueries({ queryKey: queryKeys.forum.post(postId) })
+      // Số "N bình luận" dưới bài lấy từ PostOut — vá lại bài vào MỌI cache.
+      void refreshPostInCaches(queryClient, postId)
     },
   })
 }
@@ -62,7 +63,7 @@ export function useForumCommentActions(postId: number) {
     onSuccess: () => {
       toast.success('Đã xóa bình luận')
       void queryClient.invalidateQueries({ queryKey: queryKeys.forum.comments(postId) })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.forum.post(postId) })
+      void refreshPostInCaches(queryClient, postId)
     },
   })
 

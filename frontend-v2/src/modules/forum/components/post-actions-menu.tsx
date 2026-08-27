@@ -1,4 +1,4 @@
-import { Eye, EyeOff, MoreHorizontal, ShieldX, Trash2 } from 'lucide-react'
+import { Eye, EyeOff, MoreHorizontal, Pin, PinOff, ShieldX, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -26,6 +26,7 @@ import { cn } from '@/shared/utils/cn'
 
 import { useDeleteForumPost } from '../hooks/use-delete-forum-post'
 import { useModerateForumPost } from '../hooks/use-moderate-forum-post'
+import { usePinForumPost } from '../hooks/use-pin-forum-post'
 import { FORUM_POST_STATUS } from '../types/forum-post'
 import type { ForumPost } from '../types/forum-post'
 import { ModeratePostDialog } from './moderate-post-dialog'
@@ -45,10 +46,12 @@ export function PostActionsMenu({ post, detail }: PostActionsMenuProps) {
   const navigate = useNavigate()
   const remove = useDeleteForumPost()
   const moderate = useModerateForumPost()
+  const pin = usePinForumPost()
   const [confirming, setConfirming] = useState(false)
   const [moderating, setModerating] = useState<'hide' | 'remove' | null>(null)
 
   const hidden = post.status === FORUM_POST_STATUS.hidden
+  const pinned = post.pinned_at != null
 
   async function confirmDelete() {
     try {
@@ -64,6 +67,15 @@ export function PostActionsMenu({ post, detail }: PostActionsMenuProps) {
     try {
       await moderate.mutateAsync({ postId: post.id, action: 'restore' })
       toast.success('Đã khôi phục bài viết')
+    } catch (error) {
+      toast.error(extractErrorMessage(error))
+    }
+  }
+
+  async function togglePin() {
+    try {
+      await pin.mutateAsync({ postId: post.id, pinned: !pinned })
+      toast.success(pinned ? 'Đã bỏ ghim bài viết' : 'Đã ghim bài viết')
     } catch (error) {
       toast.error(extractErrorMessage(error))
     }
@@ -87,6 +99,21 @@ export function PostActionsMenu({ post, detail }: PostActionsMenuProps) {
           )}
           {post.can_moderate && (
             <>
+              {/*  F9a: ghim là ĐỀ CAO — chỉ bài đang hiển thị (ghim bài ẩn là
+                  treo thông báo không ai đọc được, backend cũng chặn 400). */}
+              {pinned ? (
+                <DropdownMenuItem onSelect={() => void togglePin()}>
+                  <PinOff className="size-4" />
+                  Bỏ ghim bài viết
+                </DropdownMenuItem>
+              ) : (
+                !hidden && (
+                  <DropdownMenuItem onSelect={() => void togglePin()}>
+                    <Pin className="size-4" />
+                    Ghim bài viết
+                  </DropdownMenuItem>
+                )
+              )}
               {hidden ? (
                 <DropdownMenuItem onSelect={() => void restore()}>
                   <Eye className="size-4" />

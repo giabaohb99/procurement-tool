@@ -114,6 +114,8 @@ export const appRoutes = {
    */
   forum: {
     root: '/forum',
+    /** Tab «Thông báo» (F9a/CR-199) — mọi bài đang được quản trị viên ghim. */
+    announcements: '/forum/announcements',
     postDetail: (id: number | string) => `/forum/posts/${id}`,
     /** Trang cá nhân của CHÍNH MÌNH (QĐ-D3) — thấy cả bài bị ẩn của mình. */
     me: '/forum/me',

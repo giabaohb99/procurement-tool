@@ -285,6 +285,8 @@ export const queryKeys = {
      * khóa này. Tách khỏi `feed` để lời thăm dò không đè cache của feed.
      */
     feedHead: () => ['forum', 'posts', 'head'] as const,
+    /** Bài đang ghim (F9a) — dải đầu Bảng tin + tab «Thông báo», không phân trang. */
+    pinned: () => ['forum', 'posts', 'pinned'] as const,
     post: (id: number) => ['forum', 'posts', id] as const,
     /** Mọi tủ bài viết cá nhân — dùng để reset cả cụm sau khi đăng/xóa bài. */
     userPostsAll: () => ['forum', 'posts', 'user'] as const,

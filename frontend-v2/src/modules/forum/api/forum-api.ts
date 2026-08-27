@@ -38,6 +38,14 @@ export function fetchForumPost(id: number): Promise<ForumPost> {
 }
 
 /**
+ * Bài đang ghim (F9a/CR-199), mốc ghim mới → cũ — không phân trang (ghim chỉ
+ * vài bài). Vẫn nguyên luật audience: mỗi người chỉ thấy thông báo trong phạm vi.
+ */
+export function fetchPinnedForumPosts(): Promise<ForumPost[]> {
+  return apiGet<ForumPost[]>(`${FORUM_URL}/posts/pinned`)
+}
+
+/**
  * Tải ảnh/video lên TRƯỚC, giữ `file_id`, rồi mới gắn vào bài lúc đăng (khuôn
  * tải-trước-gắn-sau của phiếu hỗ trợ). Backend kiểm đuôi (ảnh + mp4/webm,
  * D-Q3) và trần 50MB/tệp theo `FILE_POLICY` entity `forum_post`.
@@ -84,4 +92,14 @@ export function restoreForumPost(id: number): Promise<null> {
 /** Xóa bài (kiểm duyệt) — bài biến khỏi mọi mắt nhưng backend giữ dòng đối soát. */
 export function removeForumPost(id: number, reason: string): Promise<null> {
   return apiPost<null>(`${FORUM_URL}/posts/${id}/remove`, { reason })
+}
+
+/** Ghim bài lên dải Thông báo (F9a) — backend 400 nếu bài không ở trạng thái hiển thị. */
+export function pinForumPost(id: number): Promise<ForumPost> {
+  return apiPost<ForumPost>(`${FORUM_URL}/posts/${id}/pin`, {})
+}
+
+/** Bỏ ghim — bài vẫn nằm nguyên trên feed theo thời gian. */
+export function unpinForumPost(id: number): Promise<ForumPost> {
+  return apiPost<ForumPost>(`${FORUM_URL}/posts/${id}/unpin`, {})
 }

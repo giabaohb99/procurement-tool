@@ -31,6 +31,8 @@ export function useModerateForumPost() {
       await queryClient.resetQueries({ queryKey: queryKeys.forum.feed() })
       await queryClient.resetQueries({ queryKey: queryKeys.forum.userPostsAll() })
       await queryClient.invalidateQueries({ queryKey: queryKeys.forum.post(postId) })
+      // Ẩn/gỡ bài đang ghim làm bài rời (hoặc quay lại) dải Thông báo (F9a).
+      await queryClient.invalidateQueries({ queryKey: queryKeys.forum.pinned() })
     },
   })
 }

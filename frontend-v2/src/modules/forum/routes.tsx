@@ -1,4 +1,4 @@
-import { MessagesSquare, UserRound } from 'lucide-react'
+import { Megaphone, MessagesSquare, UserRound } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -30,6 +30,12 @@ export const forumModule: ErpModule = {
       end: true,
     },
     {
+      label: 'Thông báo',
+      path: appRoutes.forum.announcements,
+      icon: Megaphone,
+      end: true,
+    },
+    {
       label: 'Trang của tôi',
       path: appRoutes.forum.me,
       icon: UserRound,
@@ -55,6 +61,13 @@ export const forumModule: ErpModule = {
               index: true,
               lazy: async () => ({
                 Component: (await import('./pages/forum-feed-page')).ForumFeedPage,
+              }),
+            },
+            {
+              path: 'announcements',
+              lazy: async () => ({
+                Component: (await import('./pages/forum-announcements-page'))
+                  .ForumAnnouncementsPage,
               }),
             },
             {

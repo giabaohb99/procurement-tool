@@ -283,6 +283,7 @@ Tổng: **174 tính năng**, trong đó **132 thuộc bản đầu tiên**.
 | J09 | Thu hồi văn bản đã ban hành | Có luồng duyệt riêng, giữ nguyên bản gốc, đánh dấu bị thu hồi và ghi lý do | 2 | `[ ]` |
 | J10 | Nhãn "đã bị sửa đổi" trên văn bản hành chính | Mở Quyết định 15 phải thấy ngay nó đã bị sửa bởi Quyết định 47. **Bắt buộc, không phải tùy chọn** — không thấy thì người ta đọc điều khoản cũ và làm sai mà không ai phát hiện | 1 | `[ ]` |
 | J11 | Quyết định ban hành kiểm ở mức phiên bản | Loại có khai "ban hành phải kèm Quyết định" thì mỗi lần sửa lớn phải kèm một Quyết định mới, không dùng lại Quyết định ban hành lần đầu | 1 | `[ ]` |
+| J12 | Đăng thông báo lên Diễn đàn khi ban hành | Màn ban hành có ô chọn «Đăng thông báo lên diễn đàn»: hệ **clone** thành một bài diễn đàn đã ghim (tiêu đề + tóm tắt + link về văn bản) — văn bản gốc vẫn ở Văn thư, diễn đàn chỉ giữ bản sao thông báo. Chốt với sếp 27/08/2026; phía diễn đàn là F12/CR-200 ở `doc/erp/dien-dan/02-lo-trinh-phase.md` | 1 | `[x]` CR-200 |
 
 ---
 
