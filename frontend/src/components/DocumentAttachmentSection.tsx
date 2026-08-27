@@ -6,6 +6,7 @@ import { askConfirm } from './confirm'
 import { toast } from './toast'
 import DocumentUploadModal from './DocumentUploadModal'
 import FileDropzone from './FileDropzone'
+import Lightbox from './Lightbox'
 import { fmtSize, fileIcon } from '../utils/file-type'
 
 export type AttachmentFile = {
@@ -66,6 +67,10 @@ type Props = {
 // Cache nhãn loại chứng từ dùng chung toàn app
 let _docTypeLabelsCache: Record<string, string> | null = null
 
+// Tệp là ảnh? — ảnh thì bấm tên mở lightbox trong app thay vì nhảy tab mới
+const laAnh = (f: AttachmentFile) =>
+  (f.content_type || '').startsWith('image/') || /\.(jpe?g|png|webp|gif)$/i.test(f.filename || '')
+
 // Modal Popup hiển thị danh sách file theo Mục / Loại chứng từ
 function CategoryFilesModal({
   categoryLabel,
@@ -85,6 +90,9 @@ function CategoryFilesModal({
   onDeleteFile: (f: AttachmentFile) => void
   onUploadMore: () => void
 }) {
+  // Lightbox xem ảnh của mục này — bấm tên file ảnh mở popup, chuyển qua lại giữa các ảnh
+  const anh = files.filter(laAnh)
+  const [imgIdx, setImgIdx] = useState<number | null>(null)
   return (
     <div className="modal-backdrop" onClick={onClose} style={{ zIndex: 1000 }}>
       <div
@@ -143,25 +151,51 @@ function CategoryFilesModal({
                   </span>
                 )}
 
-                <a
-                  href={f.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: 'var(--navy)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    textDecoration: 'none',
-                  }}
-                  title={f.filename}
-                >
-                  {f.filename}
-                </a>
+                {laAnh(f) ? (
+                  <button
+                    type="button"
+                    onClick={() => setImgIdx(anh.findIndex((x) => x.id === f.id))}
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color: 'var(--navy)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      textAlign: 'left',
+                      border: 'none',
+                      background: 'none',
+                      padding: 0,
+                      cursor: 'zoom-in',
+                      fontFamily: 'inherit',
+                    }}
+                    title={f.filename}
+                  >
+                    {f.filename}
+                  </button>
+                ) : (
+                  <a
+                    href={f.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color: 'var(--navy)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      textDecoration: 'none',
+                    }}
+                    title={f.filename}
+                  >
+                    {f.filename}
+                  </a>
+                )}
 
                 <span style={{ color: 'var(--muted)', fontSize: 12, flexShrink: 0 }}>
                   {fmtSize(f.size)}
@@ -217,6 +251,11 @@ function CategoryFilesModal({
             Đóng
           </button>
         </div>
+
+        {/* Popup xem ảnh (zIndex 3000, nổi trên modal 1000) */}
+        {imgIdx !== null && (
+          <Lightbox images={anh} index={imgIdx} onClose={() => setImgIdx(null)} onNav={setImgIdx} />
+        )}
       </div>
     </div>
   )

@@ -7,6 +7,7 @@ import { initialsOf } from '../utils/name'
 import { toast } from '../components/toast'
 import { askConfirm } from '../components/confirm'
 import { fileIcon, fmtSize, isImageFile } from '../utils/file-type'
+import Lightbox from '../components/Lightbox'
 import { StatusBadge, PriorityBadge } from '../config/ticketMeta'
 
 // Bố cục: THÔNG TIN YÊU CẦU ở trên (tiêu đề + đầy đủ thông tin + mô tả + tệp gửi kèm),
@@ -31,15 +32,19 @@ type Ticket = {
 }
 
 
-/** 1 tệp đính kèm trong bong bóng tin nhắn / phần mô tả: ảnh xem luôn, tệp khác là thẻ bấm mở. */
-function FileChip({ f, compact }: { f: TFile; compact?: boolean }) {
+/** 1 tệp đính kèm trong bong bóng tin nhắn / phần mô tả: ảnh xem luôn, tệp khác là thẻ bấm mở.
+ *  Ảnh bấm mở lightbox trong app (onView) thay vì nhảy tab mới. */
+function FileChip({ f, compact, onView }: { f: TFile; compact?: boolean; onView?: () => void }) {
   if (isImageFile(f.filename, f.content_type)) {
     return (
-      <a href={f.url} target="_blank" rel="noreferrer" title={f.filename}
-        style={{ display: 'block', lineHeight: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)' }}>
+      <div role="button" tabIndex={0} title={f.filename}
+        onClick={onView}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onView?.() }}
+        style={{ display: 'block', lineHeight: 0, borderRadius: 10, overflow: 'hidden',
+          border: '1px solid var(--border)', cursor: 'zoom-in' }}>
         <img src={f.url} alt={f.filename}
           style={{ display: 'block', maxWidth: compact ? 200 : 240, maxHeight: 180, objectFit: 'cover' }} />
-      </a>
+      </div>
     )
   }
   const ic = fileIcon(f.filename, f.content_type)
@@ -66,6 +71,12 @@ export default function TicketDetail() {
 
   const [t, setT] = useState<Ticket | null>(null)
   const [files, setFiles] = useState<TFile[]>([])     // tệp gửi kèm lúc tạo phiếu (entity 'ticket')
+  // Lightbox ảnh đính kèm — nhóm ảnh theo khối (mô tả / từng tin nhắn) để chuyển qua lại
+  const [vwr, setVwr] = useState<{ images: { url: string; filename?: string }[]; index: number } | null>(null)
+  const xemAnh = (list: TFile[], f: TFile) => {
+    const imgs = list.filter((x) => isImageFile(x.filename, x.content_type))
+    setVwr({ images: imgs, index: Math.max(0, imgs.findIndex((x) => x.id === f.id)) })
+  }
   const [reply, setReply] = useState('')
   const [draft, setDraft] = useState<TFile[]>([])     // tệp đã upload, chờ gắn vào tin nhắn sắp gửi
   const [uploading, setUploading] = useState(false)
@@ -276,7 +287,9 @@ export default function TicketDetail() {
           </div>
           {(files.length > 0 || (desc?.files?.length || 0) > 0) && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
-              {[...files, ...(desc?.files || [])].map((f) => <FileChip key={f.id} f={f} />)}
+              {[...files, ...(desc?.files || [])].map((f, _i, ds) => (
+                <FileChip key={f.id} f={f} onView={() => xemAnh(ds, f)} />
+              ))}
             </div>
           )}
         </div>
@@ -322,7 +335,9 @@ export default function TicketDetail() {
                 )}
                 {(m.files?.length || 0) > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: m.is_staff ? 'flex-end' : 'flex-start' }}>
-                    {m.files!.map((f) => <FileChip key={f.id} f={f} compact />)}
+                    {m.files!.map((f) => (
+                      <FileChip key={f.id} f={f} compact onView={() => xemAnh(m.files!, f)} />
+                    ))}
                   </div>
                 )}
               </div>
@@ -382,6 +397,12 @@ export default function TicketDetail() {
           )}
         </div>
       </div>
+
+      {/* Popup xem ảnh đính kèm: chuyển hình, tải xuống, sao chép liên kết */}
+      {vwr && (
+        <Lightbox images={vwr.images} index={vwr.index} onClose={() => setVwr(null)}
+          onNav={(i) => setVwr({ ...vwr, index: i })} />
+      )}
     </div>
   )
 }
