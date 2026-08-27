@@ -36,7 +36,23 @@ const navItemClass = [
   // lạc khỏi phần còn lại của giao diện — thẻ, nút, ô nhập đều dùng bo góc nhỏ.
   'h-9 gap-3 rounded-lg px-3 text-sm font-medium text-sidebar-foreground/80',
   '[&>svg]:size-5 [&>svg]:text-sidebar-foreground/50',
-  'hover:bg-sidebar-accent hover:text-sidebar-foreground hover:[&>svg]:text-sidebar-foreground/70',
+  //  Nền hover pha từ chính MÀU CHỮ của menu, không lấy `--sidebar-accent`.
+  //
+  //  ⚠️ `sidebar-accent` là màu NHẤN và nhiều bảng màu đặt nó rực hẳn (Starry
+  //  Night nền tối để #ffe066 vàng chanh) — tô đục cả một mục menu thì rê chuột
+  //  qua là hiện một thanh vàng chóe, chẳng liên quan gì tới phần còn lại. Lỗi
+  //  thấy được 27/08/2026.
+  //
+  //  Pha alpha từ `--sidebar-foreground` thì tự đúng ở cả hai chế độ nền: menu
+  //  sáng có chữ tối nên ra vệt xám nhạt, menu tối có chữ sáng nên ra vệt hửng
+  //  lên. Và nó TRUNG TÍNH nên không đá nhau với nền màu nhấn của mục đang mở
+  //  ngay bên dưới.
+  'hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground hover:[&>svg]:text-sidebar-foreground/70',
+  //  Lúc ĐANG NHẤN chuột. Phải khai riêng vì `SidebarMenuButton` gốc của shadcn
+  //  có sẵn `active:bg-sidebar-accent` — ghi đè `hover:` thôi là chưa đủ, bấm
+  //  vào mục menu vẫn lóe một nhịp vàng chóe rồi mới đổi lại (lỗi 27/08/2026).
+  //  Đậm hơn hover một bậc để có cảm giác "đã ăn cú bấm".
+  'active:bg-sidebar-foreground/15 active:text-sidebar-foreground',
   'data-[active=true]:bg-primary/10 data-[active=true]:font-semibold data-[active=true]:text-primary',
   'data-[active=true]:[&>svg]:text-primary',
 ].join(' ')
