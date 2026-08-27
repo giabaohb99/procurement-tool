@@ -51,7 +51,18 @@ export function ColumnChart({
           tickFormatter={(value: number) => formatValue?.(value) ?? String(value)}
         />
         <Tooltip
-          cursor={{ fill: 'var(--accent)' }}
+          cursor={{
+            //  Dải sáng sau cột đang rê chuột. Dùng CHUNG token với hàng bảng
+            //  danh sách để cả ứng dụng chỉ có một thứ tiếng "chỗ này đang được
+            //  trỏ tới".
+            //
+            //  ⚠️ TRƯỚC ĐÂY là `var(--accent)` và hỏng ở bảng màu nhập ngoài:
+            //  `accent` của shadcn là màu NHẤN cho nút/mục menu nhỏ, nhiều bảng
+            //  màu đặt nó đậm hẳn (Starry Night #6ea3c1 xanh thép) — tô đục cả
+            //  một dải ngang sau cột thì cột chìm vào chính cái dải đó. Lỗi
+            //  thấy được 27/08/2026.
+            fill: 'var(--row-hover)',
+          }}
           wrapperStyle={{ outline: 'none' }}
           content={<ChartTooltipContent unit={unit} formatValue={formatValue} />}
         />

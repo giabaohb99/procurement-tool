@@ -12,6 +12,7 @@ Domain language is **Vietnamese** — entity names, code comments, and UI labels
 **Status columns — rule R2 (QĐ-11, 22/08/2026). For anything NEW, do not store text.** A column meaning status / type / level / stage stores a **`SMALLINT` backed by an `IntEnum`**; the API returns the number plus a label, and Vietnamese lives only in the display layer. Reference implementation: the `import_tool`, `document/`, `approval/` and `doc_catalog/` modules.
 
 Legacy exceptions, do not copy them into new code:
+
 - **12 columns used to hold Vietnamese text** (e.g. `line_status == "Hủy đơn"`, `tab_po_item.progress_status`). Batches B-01…B-06 converted **all twelve** to codes on branch `erp-v2` — plan and per-batch record in [`doc/erp/15-do-be-tong-nen-v2.md`](doc/erp/15-do-be-tong-nen-v2.md). Two known leftovers stay in Vietnamese and are **out of scope** of that plan: `line_approve` on the two survey line tables (§2.2) and the `STATE_*` constants in `survey_request/line_state.py` (derived, never stored).
 - **Thu mua migrates to fixed English string codes, not numbers** (QĐ-9), because its document `status` columns already use codes like `draft | submitted | approved`. Mixing two shapes inside one document is worse than the inconsistency between modules. This applies **only** to columns already in that plan — it is not a licence for new ones.
 
@@ -23,6 +24,10 @@ Stack: FastAPI 0.115 · SQLAlchemy 2.0 · Pydantic v2 · MySQL 8 · Alembic · R
 Repo có **hai nhánh chạy song song**: `main` = prod (backend + `frontend/` + `help-center/`),
 `erp-v2` = dev (`frontend-v2/`). Merge **chỉ một chiều `main` → `erp-v2`**; đưa ngược lại là kéo
 34 migration chưa duyệt vào database thật. Deploy prod **bắt buộc** có `-f docker-compose.production.yml`.
+
+## Rules
+
+    Pls check rule in @backend/.claude/rules/**
 
 ## Commands
 
@@ -107,44 +112,44 @@ shadcn/Radix + TanStack Query + zustand). Backend không đổi: v2 gọi đúng
 Phân xử khi có yêu cầu mới: **sửa lỗi** màn đang chạy thật → `frontend/`; **tính năng mới**
 → `frontend-v2/`, màn đó chưa có ở v2 thì dựng màn đó trước. `frontend/` chưa được tắt vì v2
 còn thiếu màn. **Số đo đầy đủ và kế hoạch dời nằm ở `doc/erp/13-ke-hoach-man-con-lai-v2.md`**
-(bản 2.0, xem **CR-097**): bản cũ có **48 màn** — *(đếm 24/08/2026, CR-132)* **35 xong** ·
+(bản 2.0, xem **CR-097**): bản cũ có **48 màn** — _(đếm 24/08/2026, CR-132)_ **35 xong** ·
 **1 có nhưng KHUYẾT** · **9 chưa có** · 2 đã bỏ · 1 chờ quyết. Chia **15 đợt Đ-01 … Đ-15**: đã
-xong **Đ-01…Đ-12, Đ-14**; còn mỗi **Đ-15** (tắt `frontend/`), mà nó chờ **Đ-13** *Quản lý Import*
+xong **Đ-01…Đ-12, Đ-14**; còn mỗi **Đ-15** (tắt `frontend/`), mà nó chờ **Đ-13** _Quản lý Import_
 đang **hoãn**. Nghĩa là **không còn việc dựng màn hình nào trước mắt**.
 ⚠️ Mấy con số này cũ rất nhanh — **luôn mở §0 và bảng §3 của `13-...md` để lấy số mới nhất**,
 đừng trích lại dòng này.
-⚠️ **NHẬN ĐỢT TRƯỚC KHI LÀM.** Nhiều người cùng đẩy lên `erp-v2`, nên cột ***Ai làm*** trong bảng
+⚠️ **NHẬN ĐỢT TRƯỚC KHI LÀM.** Nhiều người cùng đẩy lên `erp-v2`, nên cột **_Ai làm_** trong bảng
 §3 của `13-...md` là **chỗ ghi phân công duy nhất** — luật bốn dòng ở §3.1: ghi tên + đổi
-*Đang làm* rồi **push riêng dòng đó ngay** trước khi gõ mã, xong thì đổi *Xong (CR-xxx)*, bỏ
-giữa chừng thì trả về *(chưa nhận)*. `git fetch` trước mỗi lần bắt đầu và trước mỗi lần push.
+_Đang làm_ rồi **push riêng dòng đó ngay** trước khi gõ mã, xong thì đổi _Xong (CR-xxx)_, bỏ
+giữa chừng thì trả về _(chưa nhận)_. `git fetch` trước mỗi lần bắt đầu và trước mỗi lần push.
 **Cụm Yêu cầu thanh toán ĐÃ XONG** (Đ-06/07/08, CR-119): danh sách + chi tiết + phiếu in ở
 `/finance/payment-requests` theo QĐ-5 — `modules/finance/pages/payment-request-{list,detail,print}-page.tsx`,
 route in đăng ở `app/router/app-router.tsx`. Bản in cũng đã có **gom dòng trùng số chứng từ** và
-tab *Mẫu thuế* giống hệt bản v1 (CR-127). Nghĩa là **không còn màn nào chặn nghiệp vụ** — dòng
+tab _Mẫu thuế_ giống hệt bản v1 (CR-127). Nghĩa là **không còn màn nào chặn nghiệp vụ** — dòng
 "chặn nghiệp vụ chỉ còn Yêu cầu thanh toán" ở các bản CLAUDE.md trước nay đã sai, bỏ đi.
-Trong 9 màn còn thiếu, nặng nhất là *Quản lý Import* (MC-6) và khách đã cho **hoãn**; danh sách
-đầy đủ ở §1 của `13-...md`. *Tiến độ báo giá* và *Xử lý khảo sát* (`SurveyRequestProcess.tsx`)
+Trong 9 màn còn thiếu, nặng nhất là _Quản lý Import_ (MC-6) và khách đã cho **hoãn**; danh sách
+đầy đủ ở §1 của `13-...md`. _Tiến độ báo giá_ và _Xử lý khảo sát_ (`SurveyRequestProcess.tsx`)
 **đã quyết BỎ** — xem `doc/erp/12-...` mục 2.7.
 **Đã xong Đ-11** (CR-132 — số cũ CR-129 bị trùng nên đánh lại): Trang chủ có lại đủ 4 khối
-(*Top nhà cung cấp*, *Chi tiêu theo bộ phận*, *Trạng thái đơn hàng*, *Tuổi nợ*) và thao tác nhanh
-*Duyệt / Trả lại* YCMH; **Tổng quan Tài chính** và **Tổng quan Kho** đã dựng xong. §1.8 của `13`
-nay chỉ còn một dòng: chi tiết Yêu cầu báo giá thiếu nút *Xử lý khảo sát* (màn đó đã bỏ nên việc
+(_Top nhà cung cấp_, _Chi tiêu theo bộ phận_, _Trạng thái đơn hàng_, _Tuổi nợ_) và thao tác nhanh
+_Duyệt / Trả lại_ YCMH; **Tổng quan Tài chính** và **Tổng quan Kho** đã dựng xong. §1.8 của `13`
+nay chỉ còn một dòng: chi tiết Yêu cầu báo giá thiếu nút _Xử lý khảo sát_ (màn đó đã bỏ nên việc
 chọn phương án sẽ dời vào chính màn chi tiết ở P6).
 ⚠️ **`/api/dashboard/overview` chỉ đòi đăng nhập, rồi gác TỪNG KHỐI bên trong bằng `can(entity)`
 và BỎ HẲN khóa** khi thiếu quyền — nên đọc nhầm khóa của phân hệ khác thì không ai ăn 403, chỉ
 thấy **0** vĩnh viễn. Mọi khóa trong `DashboardOverview.kpi` là **tùy chọn**, luôn đọc kèm `?? 0`.
-Hai khóa dễ nhầm nhất: `top_suppliers` = **CHI TIÊU** theo NCC *(khối `purchase_order`)*, còn
-`top_debt_suppliers` = **NỢ CÒN LẠI** *(khối `payable`)*. Xem `test/backend/test_tong_quan_thu_mua.py`.
-Màn **Công nợ đã đủ** cột tick chọn + nút *Tạo đề nghị thanh toán* từ Đ-09 (CR-119).
+Hai khóa dễ nhầm nhất: `top_suppliers` = **CHI TIÊU** theo NCC _(khối `purchase_order`)_, còn
+`top_debt_suppliers` = **NỢ CÒN LẠI** _(khối `payable`)_. Xem `test/backend/test_tong_quan_thu_mua.py`.
+Màn **Công nợ đã đủ** cột tick chọn + nút _Tạo đề nghị thanh toán_ từ Đ-09 (CR-119).
 **Đã xong MC-1…MC-4** (CR-094): Đặt lại mật khẩu · Thông báo (`/notifications`) · Trang cá
 nhân (`/me`) · Cấu hình hệ thống (`/system/settings`, phân hệ Quản trị nay **bật**).
 **Đã xong Đ-01** (CR-098): Dựng khung Generic Declarative CRUD (`frontend-v2/src/shared/crud/`)
 kế thừa 3 cấp độ (CrudListPage + CrudDetailPage có RecordIdentityCard + AuditTimeline + hỗ trợ tabs/bảng con DataTable + CrudFormDialog) và dời Danh mục Kho (`/inventory/warehouses` và `/inventory/warehouses/:id`).
 **Đã xong Đ-02** (CR-099): Dời Đơn vị tính (`/production/units` + `/production/units/:id`) và Phân loại VTBB/NL (`/production/item-groups` + `/production/item-groups/:id`) sang `frontend-v2` kế thừa 100% tầng generic CRUD, gắn vào phân hệ Sản xuất.
-**Đã xong Đ-03** (CR-100): Dời Sản phẩm & Vật tư (`/production/products` + `/production/products/:id`) sang `frontend-v2` có tab *Lịch sử mua hàng* (`PurchaseHistoryTable` với `DataTable` riêng, ẩn/hiện cột NCC theo quyền `supplier.read`, link sang ĐMH và gắn `AuditTimeline`).
+**Đã xong Đ-03** (CR-100): Dời Sản phẩm & Vật tư (`/production/products` + `/production/products/:id`) sang `frontend-v2` có tab _Lịch sử mua hàng_ (`PurchaseHistoryTable` với `DataTable` riêng, ẩn/hiện cột NCC theo quyền `supplier.read`, link sang ĐMH và gắn `AuditTimeline`).
 **Đã xong Đ-05** (CR-106): **Nhà cung cấp** — danh sách `/production/suppliers` dời sang khung CRUD
 khai báo (`production/config/supplier-crud.tsx`) và dựng `/production/suppliers/:id` **5 tab** đúng
-bản cũ: *Thông tin* · *Hợp đồng* · *Công nợ & Đánh giá* · *Lịch sử mua hàng* · *Khảo sát của NCC*
+bản cũ: _Thông tin_ · _Hợp đồng_ · _Công nợ & Đánh giá_ · _Lịch sử mua hàng_ · _Khảo sát của NCC_
 (kế hoạch `erp/13` ghi "3 tab" là đếm sai, đã đính chính). Đây là màn danh sách **cuối cùng** còn tự
 ghép `<Table>`. Khung CRUD nay có kiểu trường **`percent`** (`shared/crud/field-values.ts`) — dùng nó
 cho VAT, đừng tự nhân chia 100 ở tầng màn: `Supplier.vat` lưu **tỷ lệ** `0.08` chứ không lưu `8`
@@ -153,8 +158,8 @@ cho VAT, đừng tự nhân chia 100 ở tầng màn: `Supplier.vat` lưu **tỷ
 ngay lúc mở tab; truyền `enabled` hoặc bọc bằng `can(...)` trước khi dựng component con.
 **Bảng DÒNG CHỨNG TỪ dùng chung `LinesTable`** (`shared/data-table/lines-table.tsx`, CR-101 + CR-102):
 bốn bảng dòng (YCMH · YCBG · ĐMH · Giao hàng nhiều lần trong popup chi tiết dòng ĐMH) đều chạy trên
-nó — ghim cột, kéo thả đổi thứ tự, co giãn + auto-fit, tô màu, nhớ `localStorage`, nút *Bảng rút gọn
-/ Bảng đầy đủ* (cột phụ khai `compactHidden`, bảng nhiều cột bật `defaultCompact`). Bảng dòng mới
+nó — ghim cột, kéo thả đổi thứ tự, co giãn + auto-fit, tô màu, nhớ `localStorage`, nút _Bảng rút gọn
+/ Bảng đầy đủ_ (cột phụ khai `compactHidden`, bảng nhiều cột bật `defaultCompact`). Bảng dòng mới
 **phải dùng `LinesTable`**, đừng chép khung. ⚠️ **Không đặt bề rộng cứng cho `<table>`** —
 `table-fixed` + `w-full` là đủ; gắn `style={{ width: totalWidth }}` thì ẩn cột xong bảng co lại,
 chừa một lỗ trắng bên phải trong khung viền (đúng lỗi CR-102 phải vá). Xem `doc/erp/13-...md` §6.
@@ -174,12 +179,12 @@ YCBG thì backend **không kiểm**, luật chỉ nằm ở giao diện. Đừng
 Đụng vào **bảng dòng của phiếu khảo sát** (cả hai bản) thì đọc **hợp đồng hiển thị** ở dòng
 **CR-090** trong `doc/tai-lieu-ky-thuat/change-log.md` trước — 5 điều kiện về xuống dòng /
 ô chỉ xem / ô chọn NCC / phím Enter / bề rộng cột, làm hụt là lủng đúng chỗ vừa sửa lỗi.
-*Tiến độ mua hàng* và *Phân quyền* thì **đã có ở v2** rồi
+_Tiến độ mua hàng_ và _Phân quyền_ thì **đã có ở v2** rồi
 (`procurement/pages/purchase-progress-page.tsx`, `hr/pages/role-permission-page.tsx` +
 `user-permission-detail-page.tsx`) — danh sách cũ ghi sai.
 Vừa dời xong: **chi tiết Phiếu khảo sát** (`procurement/pages/survey-detail-page.tsx`, xem
 CR-091), **chi tiết Yêu cầu báo giá** (`procurement/pages/survey-request-detail-page.tsx` —
-còn khuyết nút *Xử lý khảo sát*, chờ màn đó), **Công nợ**
+còn khuyết nút _Xử lý khảo sát_, chờ màn đó), **Công nợ**
 (`finance/pages/payable-list-page.tsx` — cột tick chọn đã có lại ở Đ-09/CR-119),
 **Tồn kho** (`inventory/pages/inventory-list-page.tsx`) và **Báo cáo mua hàng**
 (`procurement/pages/purchase-report-page.tsx` — tám tab, dữ liệu vẫn gom theo TÊN phòng
