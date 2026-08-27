@@ -29,10 +29,16 @@ const DEFAULT_MIN_WIDTH = 40
  * bảng chứ không thuộc ô, nên `<thead>` dính đỉnh là mất sạch đường kẻ.
  */
 const HEAD_CELL =
-  'relative h-10 px-2.5 text-[13px] font-bold text-slate-900 dark:text-slate-100 bg-slate-200/80 dark:bg-slate-800/90 shadow-[inset_-1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border)] last:shadow-[inset_0_-1px_0_0_var(--border)]'
-const BODY_CELL = 'border-r px-2.5 py-1.5 align-middle last:border-r-0 text-[13.5px] text-foreground'
+  'relative h-10 px-2.5 text-[13px] font-bold text-row-head-foreground bg-row-head shadow-[inset_-1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border)] last:shadow-[inset_0_-1px_0_0_var(--border)]'
 /**
- * Nền hàng xen kẽ sọc đậm/nhạt rõ nét (zebra striping: odd bg-card, even bg-slate-100).
+ * Vạch dọc vẽ bằng `inset shadow` cho khớp hàng tiêu đề — xem chú thích dài ở
+ * `BODY_CELL` trong `data-table.tsx` về lỗi lệch nửa pixel do trộn `border-r`
+ * (bị chia đôi khi `border-collapse: collapse`) với `inset shadow`.
+ */
+const BODY_CELL =
+  'px-2.5 py-1.5 align-middle text-[13.5px] text-foreground shadow-[inset_-1px_0_0_0_var(--border)] last:shadow-none'
+/**
+ * Nền hàng xen kẽ sọc đậm/nhạt rõ nét (zebra: odd `bg-card`, even `bg-row-stripe`).
  * Ô của cột ghim lấy `bg-inherit` từ hàng nên tự động thừa hưởng màu sọc tương ứng.
  *
  * ⚠️ Và **chính vì `bg-inherit` mà nền hàng không được có ALPHA**: hàng trong
@@ -41,7 +47,8 @@ const BODY_CELL = 'border-r px-2.5 py-1.5 align-middle last:border-r-0 text-[13.
  * chuột vào một hàng của bảng đang cuộn ngang là hai dòng chữ chồng lên nhau.
  * Giữ hệt luật của `data-table.tsx`, hai bảng này phải nói cùng một câu.
  */
-const ROW_BG = 'group odd:bg-card even:bg-slate-100 dark:even:bg-slate-800/60 hover:bg-sky-100 dark:hover:bg-slate-800 transition-colors'
+const ROW_BG =
+  'group odd:bg-card even:bg-row-stripe hover:bg-row-hover data-[state=selected]:bg-row-selected transition-colors'
 
 export interface LinesTableProps<T> {
   columns: LinesTableColumn[]
@@ -224,12 +231,12 @@ export function LinesTable<T>({
       */}
       <div className="isolate overflow-hidden rounded-lg border">
         <Table ref={tableRef} className="table-fixed">
-          <TableHeader className="bg-muted">
+          <TableHeader className="bg-row-head">
             {/*
-              `hover:bg-muted` không thừa: `TableRow` mặc định có `hover:bg-muted/50`
+              `hover:bg-row-head` không thừa: `TableRow` mặc định có `hover:bg-muted/50`
               — nền alpha ở hàng tiêu đề là ô cột ghim `bg-inherit` lộ hàng bên dưới.
             */}
-            <TableRow ref={headerRowRef} className="bg-muted hover:bg-muted">
+            <TableRow ref={headerRowRef} className="bg-row-head hover:bg-row-head">
               {visibleColumns.map((column) => (
                 <ColumnHeaderCell
                   key={column.key}

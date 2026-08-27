@@ -24,8 +24,36 @@
   --secondary: #f6f8fb;
   --secondary-foreground: #1b2559;
 
+  /*  NỀN TRANG (khu nội dung, màn chọn phân hệ, dải tiêu đề dính).
+      Tách riêng khỏi `--secondary` vì hai thứ có VAI TRÒ khác nhau, dù ở bộ màu
+      DEGO chúng trùng giá trị: `--secondary` là màu NHẤN cho nút phụ, còn cái
+      này là mảng nền lớn. Bảng màu nhập từ ngoài đặt `secondary` là màu rực
+      (Starry Night dùng #f7c873 vàng cam, Bubblegum dùng #8acfd1 xanh ngọc) —
+      lấy nó làm nền trang thì cả ứng dụng nhuộm một màu chói, trong khi bản
+      mẫu của họ chỉ tô màu đó lên một cái nút. */
+  --canvas: #f6f8fb;
+
   --muted: #f6f8fb;
   --muted-foreground: #64748b;
+
+  /* Nền các HÀNG của bảng danh sách (`DataTable`, `LinesTable`).
+
+     Trước đây năm màu này viết cứng bằng bảng màu Tailwind gốc — `bg-slate-200/80`
+     cho hàng tiêu đề, `even:bg-slate-100` cho vằn hàng chẵn, `hover:bg-sky-100`,
+     `data-[state=selected]:bg-blue-100`. Màu Tailwind gốc KHÔNG đi theo bảng màu,
+     nên khi người dùng đổi giao diện thì một cái bảng có tới ba họ màu đánh nhau:
+     tiêu đề lấy `--muted` của bảng màu (Starry Night là kem), vằn hàng và hover
+     vẫn xanh slate/sky cố định. Lỗi thấy được 27/08/2026.
+
+     Giá trị dưới đây ghim ĐÚNG màu đang chạy hôm nay (hàng tiêu đề ghim màu đã
+     chồng sẵn: slate-200 phủ 80% lên `--muted`), nên bảng màu DEGO không đổi một
+     pixel nào; bảng màu nhập từ ngoài thì suy ra từ chính `--card` và `--primary`
+     của nó (xem `DERIVED_TOKENS` trong `shared/theme/build-theme-css.ts`). */
+  --row-head: #e6ebf2;
+  --row-head-foreground: #0f172a;
+  --row-stripe: #f1f5f9;
+  --row-hover: #e0f2fe;
+  --row-selected: #dbeafe;
 
   --accent: #eef4fb;
   --accent-foreground: #14507a;
@@ -104,9 +132,18 @@
 
   --secondary: #1e293b;
   --secondary-foreground: #e2e8f0;
+  --canvas: #1e293b;
 
   --muted: #1e293b;
   --muted-foreground: #94a3b8;
+
+  /* Xem chú thích ở `:root`. Nền tối thì hàng tiêu đề vốn đã đục sẵn
+     (`dark:bg-slate-800`) nên ghim thẳng, không phải chồng alpha. */
+  --row-head: #1e293b;
+  --row-head-foreground: #f1f5f9;
+  --row-stripe: #1e293b;
+  --row-hover: #334155;
+  --row-selected: #475569;
 
   --accent: #334155;
   --accent-foreground: #e2e8f0;
@@ -149,8 +186,14 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+  --color-canvas: var(--canvas);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-row-head: var(--row-head);
+  --color-row-head-foreground: var(--row-head-foreground);
+  --color-row-stripe: var(--row-stripe);
+  --color-row-hover: var(--row-hover);
+  --color-row-selected: var(--row-selected);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);

@@ -109,7 +109,7 @@ export function RolePermissionMatrix({
                 // mờ sẽ để lộ các ô tick chạy bên dưới.
                 // `h-12` để mọi dòng cao bằng nhau — ô có dropdown "Phạm vi"
                 // không được kéo dòng đó cao hơn các dòng chỉ có ô tick.
-                className="group/row h-12 bg-card even:bg-secondary hover:bg-accent even:hover:bg-accent"
+                className="group/row h-12 bg-card even:bg-canvas hover:bg-accent even:hover:bg-accent"
               >
                 <TableCell className="sticky left-0 z-10 border-r bg-inherit">
                   <div className="flex items-center gap-2">

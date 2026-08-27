@@ -1,0 +1,74 @@
+/**
+ * Kiểu dữ liệu của BẢNG MÀU (theme preset).
+ *
+ * Một bảng màu = hai bộ biến CSS (nền sáng / nền tối). Nó KHÔNG thay thế công
+ * tắc Sáng·Tối·Theo hệ thống: hai thứ vuông góc nhau — người dùng chọn bảng màu
+ * *và* chọn chế độ nền, hệ sinh ra cả hai khối CSS một lượt rồi để class `.dark`
+ * của `next-themes` quyết định khối nào có hiệu lực.
+ */
+
+/** Tên biến màu shadcn mà một bảng màu khai. Trùng tên biến trong `index.css`. */
+export type ThemeColorKey =
+  | 'background'
+  | 'foreground'
+  | 'card'
+  | 'card-foreground'
+  | 'popover'
+  | 'popover-foreground'
+  | 'primary'
+  | 'primary-foreground'
+  | 'secondary'
+  | 'secondary-foreground'
+  | 'muted'
+  | 'muted-foreground'
+  | 'accent'
+  | 'accent-foreground'
+  | 'destructive'
+  | 'destructive-foreground'
+  | 'border'
+  | 'input'
+  | 'ring'
+  | 'chart-1'
+  | 'chart-2'
+  | 'chart-3'
+  | 'chart-4'
+  | 'chart-5'
+  | 'sidebar'
+  | 'sidebar-foreground'
+  | 'sidebar-primary'
+  | 'sidebar-primary-foreground'
+  | 'sidebar-accent'
+  | 'sidebar-accent-foreground'
+  | 'sidebar-border'
+  | 'sidebar-ring'
+  //  Token RIÊNG của DEGO, tweakcn không có. Bảng màu nhập từ tweakcn để trống
+  //  và `build-theme-css.ts` tự suy ra; chỉ bảng màu DEGO khai tay để giữ đúng
+  //  bộ màu gốc đã kiểm tương phản + mù màu.
+  | 'canvas'
+  | 'row-head'
+  | 'row-head-foreground'
+  | 'row-stripe'
+  | 'row-hover'
+  | 'row-selected'
+  | 'navy'
+  | 'navy-deep'
+  | 'navy-solid'
+  | 'teal-dark'
+  | 'sky-soft'
+  | 'chart-neutral'
+  | 'chart-track'
+  | 'chart-grid'
+
+/** Một chế độ nền của bảng màu. Khóa nào thiếu thì giữ nguyên giá trị `index.css`. */
+export type ThemeModeColors = Partial<Record<ThemeColorKey, string>>
+
+export interface ThemePresetColors {
+  /** Định danh lưu xuống máy chủ — kebab-case, đừng đổi khi đã có người dùng chọn. */
+  id: string
+  /** Nhãn hiện trên thẻ chọn. */
+  label: string
+  /** Mô tả một dòng tiếng Việt. */
+  description: string
+  light: ThemeModeColors
+  dark: ThemeModeColors
+}

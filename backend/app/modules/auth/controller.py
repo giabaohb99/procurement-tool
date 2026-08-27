@@ -12,6 +12,7 @@ from app.core.limiter import limiter
 from app.core.response import success
 from app.modules.employee.model import Employee
 from app.modules.user.model import User, UserRole
+from app.modules.user_preference.service import get_preferences
 
 from . import service
 from . import schema, service
@@ -55,6 +56,12 @@ def _me_payload(db: Session, user) -> dict:
             row[0] for row in
             db.query(UserRole.role_id).filter(UserRole.user_id == user.id).all()),
         "permissions": get_user_permissions(db, user),
+        #  Tuỳ chọn hiển thị cá nhân (hiện có: bảng màu giao diện). Gửi kèm ở đây
+        #  chứ không để client gọi thêm một vòng: nó cần NGAY ở khung hình đầu
+        #  tiên, gọi sau thì người dùng thấy màu mặc định lóe lên rồi mới nhảy
+        #  sang màu họ chọn. `refresh` cũng đi qua payload này nên đổi bảng màu ở
+        #  máy khác là lần làm mới token kế tiếp đã đồng bộ.
+        "preferences": get_preferences(db, user.id),
     }
 
 

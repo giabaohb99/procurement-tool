@@ -31,7 +31,7 @@ export function ErrorState({
     <div
       className={cn(
         'flex flex-col items-center justify-center px-6 text-center',
-        fullScreen ? 'min-h-screen bg-secondary' : 'min-h-[60vh]',
+        fullScreen ? 'min-h-screen bg-canvas' : 'min-h-[60vh]',
       )}
     >
       {code && <p className="text-5xl font-semibold text-primary">{code}</p>}

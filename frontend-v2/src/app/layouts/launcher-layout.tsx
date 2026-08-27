@@ -15,7 +15,7 @@ import { UserMenu } from './user-menu'
 export function LauncherLayout() {
   const { can } = usePermission()
   return (
-    <div className="flex min-h-screen flex-col bg-secondary">
+    <div className="flex min-h-screen flex-col bg-canvas">
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-background px-4">
         <Link
           to={appRoutes.launcher}

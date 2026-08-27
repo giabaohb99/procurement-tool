@@ -245,4 +245,8 @@ export const appRoutes = {
   degoCoffee: {
     root: '/dego-coffee',
   },
+  /** Tuỳ chỉnh hiển thị của CHÍNH người đang đăng nhập — bảng màu, chế độ nền. */
+  appearance: {
+    root: '/appearance',
+  },
 } as const

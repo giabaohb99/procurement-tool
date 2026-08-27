@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { CheckSquare, LifeBuoy, User } from 'lucide-react'
+import { CheckSquare, LifeBuoy, Palette, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
@@ -13,6 +13,7 @@ import { authService } from '@/core/auth/auth-service'
 import { useAuth } from '@/core/auth/use-auth'
 import { usePermission } from '@/core/authorization/use-permission'
 import { queryKeys } from '@/shared/constants/query-keys'
+import { ThemePresetPicker } from '@/shared/theme/theme-preset-picker'
 import { Badge } from '@/shared/ui/badge'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
@@ -38,7 +39,14 @@ export function ProfilePage() {
   const canReadTickets = can('ticket', 'read')
 
   const rawTab = searchParams.get('tab')
-  const activeTab = rawTab === 'tasks' ? 'tasks' : rawTab === 'tickets' && canReadTickets ? 'tickets' : 'info'
+  const activeTab =
+    rawTab === 'tasks'
+      ? 'tasks'
+      : rawTab === 'appearance'
+        ? 'appearance'
+        : rawTab === 'tickets' && canReadTickets
+          ? 'tickets'
+          : 'info'
 
   const handleTabChange = (val: string) => {
     setSearchParams(val === 'info' ? {} : { tab: val }, { replace: true })
@@ -105,6 +113,10 @@ export function ProfilePage() {
                   )}
                 </TabsTrigger>
               )}
+              <TabsTrigger value="appearance" className="gap-2">
+                <Palette className="size-4" />
+                <span>Giao diện</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="info" className="space-y-6">
@@ -135,6 +147,12 @@ export function ProfilePage() {
                 <ProfileTicketsTab onCountChange={setTicketCount} />
               </TabsContent>
             )}
+
+            {/* Cùng một bộ chọn với phân hệ Giao diện — chỉ khác số cột, vì tab
+                này hẹp hơn (khung hồ sơ giới hạn `max-w-5xl`). */}
+            <TabsContent value="appearance" className="space-y-4">
+              <ThemePresetPicker columnsClassName="sm:grid-cols-3 lg:grid-cols-4" />
+            </TabsContent>
           </Tabs>
         </div>
       )}

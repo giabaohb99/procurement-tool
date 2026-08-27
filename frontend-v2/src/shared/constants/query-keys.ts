@@ -10,6 +10,8 @@ export const queryKeys = {
   auth: {
     all: ['auth'] as const,
     me: () => ['auth', 'me'] as const,
+    /** Tuỳ chọn hiển thị cá nhân (bảng màu giao diện). */
+    preferences: () => ['auth', 'preferences'] as const,
   },
   procurement: {
     all: ['procurement'] as const,

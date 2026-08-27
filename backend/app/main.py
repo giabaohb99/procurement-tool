@@ -51,6 +51,7 @@ from app.modules.survey.controller import report_router as survey_report_router
 from app.modules.supplier.controller import router as supplier_router
 from app.modules.user.controller import router as user_router
 from app.modules.setting.controller import router as setting_router
+from app.modules.user_preference.controller import router as user_preference_router
 from app.modules.notification.controller import router as notification_router
 from app.modules.notification.mailbox_controller import router as mailbox_router
 from app.modules.push.controller import router as push_router
@@ -187,6 +188,7 @@ app.include_router(contract_router)
 app.include_router(meta_router)
 app.include_router(alert_router)
 app.include_router(setting_router)
+app.include_router(user_preference_router)
 app.include_router(notification_router)
 app.include_router(mailbox_router)
 app.include_router(push_router)

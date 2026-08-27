@@ -41,6 +41,7 @@ const PREFIX_MAP: [from: string, to: string][] = [
  * kiểm canh chuyện đó, thêm phân hệ mà quên thêm vào đây là test đỏ.
  */
 const V2_PREFIXES = [
+  '/appearance',
   '/approval',
   '/approval-seal',
   '/assistant',

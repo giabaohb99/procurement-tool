@@ -1,3 +1,4 @@
+import { appearanceModule } from '@/modules/appearance/routes'
 import { approvalModule } from '@/modules/approval/routes'
 import { approvalSealModule } from '@/modules/approval-seal/routes'
 import { assistantModule } from '@/modules/assistant/routes'
@@ -46,6 +47,9 @@ export const allModules: ErpModule[] = [
   assistantModule,
   forumModule,
   systemModule,
+  //  Không phải phân hệ nghiệp vụ: tuỳ chọn hiển thị của chính người đang đăng
+  //  nhập, nên xếp cuối cùng cạnh Hướng dẫn sử dụng chứ không lẫn vào giữa.
+  appearanceModule,
   // Đứng cuối: không phải phân hệ nghiệp vụ mà là link sang app Hướng dẫn sử dụng.
   helpCenterModule,
 ]

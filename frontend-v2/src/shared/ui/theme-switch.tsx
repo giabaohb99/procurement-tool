@@ -20,9 +20,14 @@ const OPTIONS = [
  * chứ không phải chốt cứng một bên. Công tắc hai trạng thái không diễn tả được
  * ý đó.
  *
- * Đổi giao diện dùng **View Transitions API**: nền mới loang ra từ chính chỗ vừa
- * bấm thay vì đảo màu đột ngột cả màn hình (xem `@keyframes theme-reveal` trong
- * `index.css`).
+ * ⚠️ Đây là bản **THU NHỎ cho popover ảnh đại diện** — nút 20px, icon 12px, không
+ * nhãn chữ, và là chỗ DUY NHẤT đổi chế độ nền. Đừng thả nó vào một thẻ nội dung
+ * rộng: khối ngoài là `flex` mức khối nên nó giãn hết bề ngang, thành một thanh
+ * bo tròn rỗng có ba cái icon tí xíu dồn về bên trái. Màn Giao diện từng bày nó
+ * ra như vậy và đã gỡ đi (27/08/2026) — màn đó chỉ còn chọn bảng màu.
+ *
+ * Đổi giao diện dùng **View Transitions API**: nền mới loang ra thay vì đảo màu
+ * đột ngột cả màn hình (xem `@keyframes theme-reveal` trong `index.css`).
  *
  * ⚠️ `flushSync` là bắt buộc quanh `setTheme`: `startViewTransition` chụp ảnh DOM
  * ngay sau callback, mà React gộp cập nhật theo lô — không ép ghi ngay thì nó

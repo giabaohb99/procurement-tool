@@ -25,6 +25,15 @@ export interface AuthUser {
    * không tưởng là có luật.
    */
   role_ids?: number[]
+  /**
+   * Tuỳ chọn HIỂN THỊ cá nhân, lưu ở `tab_user_preference` phía máy chủ nên đi
+   * theo tài khoản chứ không theo trình duyệt. Hiện chỉ có `theme_preset`
+   * (bảng màu giao diện — xem `@/shared/theme`).
+   *
+   * Kiểu là `Record<string, string>` chứ không liệt kê từng khoá: máy chủ nhận
+   * khoá tuỳ ý, khai cứng ở đây thì thêm một tuỳ chọn phải sửa hai nơi.
+   */
+  preferences?: Record<string, string>
   permissions: PermissionMap
 }
 

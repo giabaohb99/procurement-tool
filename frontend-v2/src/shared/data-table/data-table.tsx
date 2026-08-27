@@ -38,13 +38,40 @@ const DEFAULT_MIN_WIDTH = 64
  * không còn đường kẻ nào. `inset shadow` nằm ngoài cơ chế collapse nên vẫn hiện.
  */
 const HEAD_CELL =
-  'relative h-10 px-3 text-[13px] font-bold text-slate-900 dark:text-slate-100 bg-slate-200/80 dark:bg-slate-800 shadow-[inset_-1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border)] last:shadow-[inset_0_-1px_0_0_var(--border)]'
-const BODY_CELL = 'min-h-9 border-r px-3 py-1.5 last:border-r-0 align-middle text-[13.5px] text-foreground'
+  'relative h-10 px-3 text-[13px] font-bold text-row-head-foreground bg-row-head shadow-[inset_-1px_0_0_0_var(--border),inset_0_-1px_0_0_var(--border)] last:shadow-[inset_0_-1px_0_0_var(--border)]'
+/**
+ * Ô THÂN BẢNG. Vạch dọc vẽ bằng `inset shadow`, KHÔNG dùng `border-r`.
+ *
+ * ⚠️ LỖI ĐÃ XẢY RA (27/08/2026, bảng màu Notebook). Trước đây ô thân dùng
+ * `border-r` còn ô tiêu đề dùng `inset shadow` — hai cơ chế khác nhau vẽ CÙNG
+ * một đường lưới, và bảng đang để `border-collapse: collapse`:
+ *
+ * - `border-r` khi collapse thì viền được CHIA ĐÔI qua ranh giới hai ô, tức vẽ
+ *   ở khoảng `[mép − 0.5px, mép + 0.5px)`;
+ * - `inset shadow` luôn vẽ HẲN BÊN TRONG ô, ở `[mép − 1px, mép)`.
+ *
+ * Lệch nửa pixel. Bộ màu DEGO có `--border` rất nhạt nên không ai thấy; bảng màu
+ * Notebook đặt `--border` xám đậm thì lộ ngay — vạch dọc của tiêu đề và của thân
+ * bảng so le nhau đúng chỗ chúng phải nối liền.
+ *
+ * Cột GHIM vốn đã vẽ bằng `inset shadow` (xem `PIN_*`) nên nó không dính lỗi này;
+ * nay cả bảng dùng chung một cơ chế.
+ */
+const BODY_CELL =
+  'min-h-9 px-3 py-1.5 align-middle text-[13.5px] text-foreground shadow-[inset_-1px_0_0_0_var(--border)] last:shadow-none'
 /**
  * Thân bảng HÀNG CHẴN LẺ ĐẬM NHẠT XEN KẼ (Zebra striping đậm rõ màu):
- * Hàng lẻ (odd): nền trắng bg-card
- * Hàng chẵn (even): nền xám rõ màu `even:bg-slate-100`
- * Hover: `hover:bg-sky-100`
+ * Hàng lẻ (odd): nền thẻ `bg-card`
+ * Hàng chẵn (even): `even:bg-row-stripe`
+ * Hover: `hover:bg-row-hover` · Hàng đang chọn: `bg-row-selected`
+ *
+ * ⚠️ **KHÔNG dùng màu bảng màu Tailwind gốc ở đây** (`bg-slate-100`, `bg-sky-100`,
+ * `bg-blue-100`…). Chúng KHÔNG đi theo bảng màu người dùng chọn, nên đổi giao diện
+ * là một cái bảng có ba họ màu đánh nhau: hàng tiêu đề theo bảng màu, còn vằn hàng
+ * và hover thì đứng yên màu xanh slate. Lỗi thật bắt được 27/08/2026 với bảng màu
+ * Starry Night — tiêu đề kem, vằn hàng xanh, hover xanh lơ, ba màu chẳng liên quan
+ * gì nhau. Năm token `--row-*` khai ở `index.css` và suy ra từ `--card`/`--primary`
+ * cho bảng màu nhập ngoài.
  *
  * ⚠️ **NỀN HÀNG PHẢI ĐỤC, TUYỆT ĐỐI KHÔNG ALPHA.** Ô của cột GHIM lấy
  * `bg-inherit` từ hàng (xem `PIN_*` bên dưới), nên hàng trong suốt bao nhiêu thì
@@ -58,9 +85,11 @@ const BODY_CELL = 'min-h-9 border-r px-3 py-1.5 last:border-r-0 align-middle tex
  *
  * ⚠️ NỀN TỐI cũng phải theo đúng luật đó. Chính chỗ này từng ghi "ngày bật chế
  * độ tối thì phải soi lại" — nay đã bật (CR-181), và `dark:even:bg-slate-800/60`
- * đúng là có alpha, nên đã bỏ `/60` thành `bg-slate-800` đục hoàn toàn.
+ * đúng là có alpha, nên đã bỏ `/60` thành nền đục hoàn toàn. Token `--row-*` khai
+ * riêng giá trị cho `.dark`, nên ở đây không còn biến thể `dark:` nào nữa.
  */
-const ROW_BG = 'group odd:bg-card even:bg-slate-100 dark:even:bg-slate-800 hover:bg-sky-100 dark:hover:bg-slate-700 data-[state=selected]:bg-blue-100 dark:data-[state=selected]:bg-slate-600 transition-colors'
+const ROW_BG =
+  'group odd:bg-card even:bg-row-stripe hover:bg-row-hover data-[state=selected]:bg-row-selected transition-colors'
 /** Ô báo trạng thái (đang tải / lỗi / rỗng) trải hết bảng — không kẻ dọc, cao hơn. */
 const SPAN_CELL = 'h-20 px-3 text-center'
 
@@ -381,7 +410,7 @@ export function DataTable<T>({
           containerClassName={cn(fillHeight && 'min-h-0 flex-1 overflow-auto')}
         >
           {/*
-            Nền hàng tiêu đề phải ĐỤC (`bg-muted`, không phải `/60`): vừa để
+            Nền hàng tiêu đề phải ĐỤC (`bg-row-head`, không phải `/60`): vừa để
             dòng trôi qua bên dưới không lộ ra khi tiêu đề dính đỉnh, vừa để ô
             của cột ghim `bg-inherit` che được phần bảng cuộn ngang phía sau.
           */}
@@ -394,16 +423,16 @@ export function DataTable<T>({
             border của hàng tiêu đề dính đỉnh biến mất khi cuộn.
           */}
           <TableHeader
-            className={cn('bg-muted [&_tr]:border-b-0', fillHeight && 'sticky top-0 z-30')}
+            className={cn('bg-row-head [&_tr]:border-b-0', fillHeight && 'sticky top-0 z-30')}
           >
             {/*
-              `hover:bg-muted` KHÔNG thừa: `TableRow` của shadcn mặc định có
+              `hover:bg-row-head` KHÔNG thừa: `TableRow` của shadcn mặc định có
               `hover:bg-muted/50` — nền CÓ ALPHA. Rê chuột lên hàng tiêu đề đang
               dính đỉnh là nó trong suốt một nửa, các dòng trôi bên dưới hiện
               xuyên qua (và ô cột ghim `bg-inherit` cũng lộ theo). Ghi đè bằng
               đúng màu đục để hover không đổi gì cả.
             */}
-            <TableRow ref={headerRowRef} className="bg-muted hover:bg-muted">
+            <TableRow ref={headerRowRef} className="bg-row-head hover:bg-row-head">
               {visibleColumns.map((column) => (
                 <ColumnHeaderCell
                   key={column.key}

@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 
 import { queryClient } from '@/core/api'
 import { env } from '@/core/config/env'
+import { ThemeSync } from '@/shared/theme/theme-sync'
 import { Toaster } from '@/shared/ui/sonner'
 
 /**
@@ -20,6 +21,9 @@ export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <QueryClientProvider client={queryClient}>
+        {/* Bảng màu đi theo TÀI KHOẢN (máy chủ), khác `ThemeProvider` ở trên chỉ
+            lo chế độ nền Sáng/Tối và nhớ trong máy. Hai thứ vuông góc nhau. */}
+        <ThemeSync />
         {children}
         <Toaster position="top-center" richColors closeButton />
         {/* Nút devtools để góc TRÁI-dưới: góc phải-dưới đã dành cho bong bóng Trợ lý AI. */}

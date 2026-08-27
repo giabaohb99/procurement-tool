@@ -41,7 +41,7 @@ export function PageHeader({
       className={cn(
         'mb-5 flex flex-wrap items-start justify-between gap-3',
         sticky &&
-          'sticky top-0 z-20 -mx-4 -mt-4 border-b bg-secondary px-4 py-3 lg:-mx-6 lg:-mt-6 lg:px-6',
+          'sticky top-0 z-20 -mx-4 -mt-4 border-b bg-canvas px-4 py-3 lg:-mx-6 lg:-mt-6 lg:px-6',
       )}
     >
       <div className="flex items-start gap-3">

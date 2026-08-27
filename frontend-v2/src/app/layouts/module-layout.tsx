@@ -66,7 +66,7 @@ export function ModuleLayout() {
           `overflow-auto` chứ không `overflow-hidden`: trang CHI TIẾT không dùng
           `fill`, nội dung dài hơn màn hình thì vẫn phải cuộn được.
         */}
-        <main className="min-h-0 min-w-0 flex-1 overflow-auto bg-secondary">
+        <main className="min-h-0 min-w-0 flex-1 overflow-auto bg-canvas">
           {allowed ? <Outlet /> : <ForbiddenPage />}
         </main>
       </SidebarInset>
