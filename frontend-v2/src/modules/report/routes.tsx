@@ -13,7 +13,7 @@ export const reportModule: ErpModule = {
   description: 'Báo cáo điều hành và số liệu tổng hợp.',
   icon: ChartColumn,
   path: appRoutes.report.root,
-  accent: 'bg-cyan-50 text-cyan-600',
+  accent: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400',
   enabled: false,
   entity: 'report',
   nav: [],

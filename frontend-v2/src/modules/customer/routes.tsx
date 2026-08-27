@@ -13,7 +13,7 @@ export const customerModule: ErpModule = {
   description: 'Hồ sơ khách hàng, hợp đồng và chăm sóc.',
   icon: Handshake,
   path: appRoutes.customer.root,
-  accent: 'bg-indigo-50 text-indigo-600',
+  accent: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
   enabled: false,
   nav: [],
   routes: [],

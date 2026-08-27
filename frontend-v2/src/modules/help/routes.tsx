@@ -20,7 +20,7 @@ export const helpCenterModule: ErpModule = {
   icon: BookOpen,
   path: '',
   externalUrl: buildHelpCenterUrl,
-  accent: 'bg-amber-50 text-amber-600',
+  accent: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
   enabled: true,
   nav: [],
   routes: [],

@@ -80,4 +80,19 @@ describe('module-registry', () => {
       expect(moduleRoutes).not.toContain(route)
     }
   })
+  it('màu icon phân hệ chạy được ở CẢ hai chế độ nền', () => {
+    //  LỖI ĐÃ XẢY RA (27/08/2026): cả 20 phân hệ tô nền ô icon bằng bậc nhạt đặc
+    //  (`bg-rose-50`, `bg-slate-100`). Bậc đó có độ sáng 96–98% nên nó trắng ở
+    //  MỌI chế độ nền — bật nền tối là 20 mảng trắng chóe trên trang tối. Nền
+    //  phải là màu đậm pha alpha để lộ nền phía sau, và chữ phải có biến thể
+    //  `dark:` vì bậc 600 quá tối trên nền tối.
+    const sai: string[] = []
+    for (const module of moduleRegistry) {
+      const khop = module.accent.match(
+        /^bg-([a-z]+)-500\/10 text-\1-600 dark:text-\1-400$/,
+      )
+      if (!khop) sai.push(`${module.id}: ${module.accent}`)
+    }
+    expect(sai).toEqual([])
+  })
 })

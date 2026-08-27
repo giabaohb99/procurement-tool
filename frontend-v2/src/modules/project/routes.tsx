@@ -13,7 +13,7 @@ export const projectModule: ErpModule = {
   description: 'Kế hoạch, công việc và tiến độ dự án.',
   icon: ClipboardList,
   path: appRoutes.project.root,
-  accent: 'bg-orange-50 text-orange-600',
+  accent: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
   enabled: false,
   nav: [],
   routes: [],

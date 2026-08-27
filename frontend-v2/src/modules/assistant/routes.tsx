@@ -16,7 +16,7 @@ export const assistantModule: ErpModule = {
   description: 'Hỏi đáp trên nền gói tri thức nội bộ.',
   icon: Sparkles,
   path: appRoutes.assistant.root,
-  accent: 'bg-violet-50 text-violet-600',
+  accent: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
   enabled: true,
   entity: 'assistant',
 

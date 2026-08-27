@@ -29,7 +29,7 @@ export const procurementModule: ErpModule = {
   description: 'Yêu cầu báo giá, khảo sát, yêu cầu và đơn mua hàng.',
   icon: ShoppingCart,
   path: appRoutes.procurement.root,
-  accent: 'bg-sky-50 text-sky-600',
+  accent: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
   enabled: true,
   entity: 'purchase_request',
 

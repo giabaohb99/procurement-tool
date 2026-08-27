@@ -17,7 +17,7 @@ export const supportModule: ErpModule = {
   description: 'Phiếu hỗ trợ người dùng và trao đổi xử lý.',
   icon: LifeBuoy,
   path: appRoutes.support.root,
-  accent: 'bg-teal-50 text-teal-600',
+  accent: 'bg-teal-500/10 text-teal-600 dark:text-teal-400',
   enabled: true,
   entity: 'ticket',
 

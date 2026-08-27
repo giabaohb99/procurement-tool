@@ -14,7 +14,7 @@ export const inventoryModule: ErpModule = {
   description: 'Tồn kho, nhập xuất và luân chuyển kho.',
   icon: Boxes,
   path: appRoutes.inventory.root,
-  accent: 'bg-amber-50 text-amber-600',
+  accent: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
   enabled: true,
   entity: 'inventory',
 

@@ -10,7 +10,7 @@ export const hrModule: ErpModule = {
   description: 'Nhân viên, phòng ban, pháp nhân và phân quyền tài khoản.',
   icon: Users,
   path: appRoutes.hr.root,
-  accent: 'bg-rose-50 text-rose-600',
+  accent: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
   enabled: true,
   entity: 'employee',
 

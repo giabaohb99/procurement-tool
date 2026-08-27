@@ -9,7 +9,7 @@ export const degoCoffeeModule: ErpModule = {
   description: 'Quản lý và tra cứu điểm thưởng, đặt nước trực tuyến tại quán cà phê nội bộ.',
   icon: Coffee,
   path: appRoutes.degoCoffee.root,
-  accent: 'bg-amber-50 text-amber-600',
+  accent: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
   enabled: false,
 
   nav: [

@@ -17,7 +17,7 @@ export const financeModule: ErpModule = {
   description: 'Công nợ, đề nghị thanh toán và chi phí.',
   icon: Wallet,
   path: appRoutes.finance.root,
-  accent: 'bg-violet-50 text-violet-600',
+  accent: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
   enabled: true,
   // KHÔNG khai `entity` ở tầng module (trước để `payment`): người chỉ có
   // `payable.read` — xem công nợ nhưng không được lập đề nghị thanh toán — sẽ

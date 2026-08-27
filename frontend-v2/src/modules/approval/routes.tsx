@@ -27,7 +27,7 @@ export const approvalModule: ErpModule = {
   description: 'Khai luồng duyệt dùng chung và bật bộ máy theo loại chứng từ.',
   icon: ListChecks,
   path: appRoutes.approval.root,
-  accent: 'bg-amber-50 text-amber-600',
+  accent: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
   enabled: true,
   //  Cả phân hệ nay chỉ còn màn cấu hình, nên khóa thẳng bằng `approval_flow`:
   //  người dùng thường không có việc gì ở đây nữa.

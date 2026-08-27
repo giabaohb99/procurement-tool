@@ -16,7 +16,7 @@ export const systemModule: ErpModule = {
   description: 'Cấu hình hệ thống, sao lưu CSDL và các tác vụ quản trị.',
   icon: Settings,
   path: appRoutes.system.root,
-  accent: 'bg-slate-100 text-slate-600',
+  accent: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
   enabled: true,
   entity: 'setting',
 

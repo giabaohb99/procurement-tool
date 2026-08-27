@@ -64,8 +64,22 @@ export interface ErpModule {
   /** Đường dẫn gốc; cũng dùng để xác định module đang mở. */
   path: string
   /**
-   * Cặp class Tailwind tô màu icon trên thẻ. Mỗi phân hệ một màu để nhận ra
-   * bằng mắt thay vì phải đọc chữ.
+   * Class Tailwind tô ô icon trên thẻ chọn phân hệ. Mỗi phân hệ một màu để nhận
+   * ra bằng mắt thay vì phải đọc chữ.
+   *
+   * Khuôn bắt buộc: **`bg-<màu>-500/10 text-<màu>-600 dark:text-<màu>-400`**.
+   *
+   * ⚠️ Nền phải là màu ĐẬM PHA ALPHA (`-500/10`), KHÔNG được dùng bậc nhạt đặc
+   * (`bg-rose-50`). Bậc nhạt có độ sáng 96–98% nên nó trắng ở MỌI chế độ nền —
+   * bật nền tối là 20 ô icon thành 20 mảng trắng chóe trên trang tối (lỗi thấy
+   * được 27/08/2026). Alpha thì lộ nền phía sau nên tự đúng ở cả hai chế độ.
+   * Chữ cũng phải có biến thể `dark:` vì bậc 600 quá tối trên nền tối.
+   *
+   * Màu này CỐ Ý không đi theo bảng màu người dùng chọn: nó là dấu chỉ đường
+   * (Nhân sự = hồng, Thu mua = xanh lơ...), suy ra từ bảng màu thì cả 20 phân hệ
+   * chung một sắc và mất luôn tác dụng nhận diện.
+   *
+   * Có test canh khuôn này ở `module-registry.test.ts`.
    */
   accent: string
   /**

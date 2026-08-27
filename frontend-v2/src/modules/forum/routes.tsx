@@ -18,7 +18,7 @@ export const forumModule: ErpModule = {
   description: 'Bảng tin nội bộ: bài viết, hình ảnh và trao đổi toàn công ty.',
   icon: MessagesSquare,
   path: appRoutes.forum.root,
-  accent: 'bg-blue-50 text-blue-600',
+  accent: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
   enabled: true,
   customLayout: true,
 

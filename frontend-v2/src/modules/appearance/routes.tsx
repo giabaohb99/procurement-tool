@@ -17,7 +17,7 @@ export const appearanceModule: ErpModule = {
   description: 'Chọn bảng màu và chế độ nền cho riêng bạn.',
   icon: Palette,
   path: appRoutes.appearance.root,
-  accent: 'bg-fuchsia-50 text-fuchsia-600',
+  accent: 'bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400',
   enabled: true,
 
   nav: [

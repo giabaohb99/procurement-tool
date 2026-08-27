@@ -10,7 +10,7 @@ export const salesModule: ErpModule = {
   description: 'Đơn hàng, khách hàng và doanh thu.',
   icon: Receipt,
   path: appRoutes.sales.root,
-  accent: 'bg-emerald-50 text-emerald-600',
+  accent: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   enabled: false,
 
   nav: [

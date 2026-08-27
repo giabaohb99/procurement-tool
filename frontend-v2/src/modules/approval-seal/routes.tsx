@@ -15,7 +15,7 @@ export const approvalSealModule: ErpModule = {
   description: 'Trình ký, duyệt và đóng dấu chứng từ, hợp đồng, văn bản hành chính.',
   icon: Stamp,
   path: appRoutes.approvalSeal.root,
-  accent: 'bg-red-50 text-red-600',
+  accent: 'bg-red-500/10 text-red-600 dark:text-red-400',
   enabled: false,
 
   nav: [

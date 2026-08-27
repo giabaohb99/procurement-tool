@@ -15,7 +15,7 @@ export const vehicleBookingModule: ErpModule = {
   description: 'Duyệt yêu cầu sử dụng xe nội bộ, điều phối xe và tài xế.',
   icon: Car,
   path: appRoutes.vehicleBooking.root,
-  accent: 'bg-orange-50 text-orange-600',
+  accent: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
   enabled: false,
 
   nav: [

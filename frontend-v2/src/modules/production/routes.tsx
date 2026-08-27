@@ -15,7 +15,7 @@ export const productionModule: ErpModule = {
   description: 'Lệnh sản xuất, định mức nguyên liệu và tiến độ.',
   icon: Factory,
   path: appRoutes.production.root,
-  accent: 'bg-teal-50 text-teal-600',
+  accent: 'bg-teal-500/10 text-teal-600 dark:text-teal-400',
   enabled: true,
 
   nav: [

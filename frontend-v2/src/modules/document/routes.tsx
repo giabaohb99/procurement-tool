@@ -32,7 +32,7 @@ export const documentModule: ErpModule = {
   description: 'Công văn, quyết định, hợp đồng và biểu mẫu nội bộ.',
   icon: FileText,
   path: appRoutes.document.root,
-  accent: 'bg-indigo-50 text-indigo-600',
+  accent: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
   enabled: true,
   //  Không có quyền nào trên văn bản thì không thấy cả phân hệ.
   entity: 'document',
